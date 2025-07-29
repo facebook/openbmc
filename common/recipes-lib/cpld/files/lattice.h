@@ -54,6 +54,7 @@
 #define USERCODE                      0xC0
 #define ISC_DISABLE                   0x26
 #define ISC_PROGRAM_USERCODE          0xC2
+#define LSC_WRITE_ADDRESS             0xB4
 
 
 typedef struct

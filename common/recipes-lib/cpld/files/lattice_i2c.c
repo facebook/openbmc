@@ -25,23 +25,20 @@ typedef enum {
   NX,
 } cpld_type;
 
+static int verify_page(cpld_type type, uint8_t *data);
+static int program_page(cpld_type type, uint8_t *data);
 int cpld_i2c_rdwr(uint8_t bus, uint8_t addr, uint8_t *tbuf, uint8_t tcnt, uint8_t *rbuf, uint8_t rcnt);
 static int (*cpld_xfer)(uint8_t, uint8_t, uint8_t *, uint8_t, uint8_t *, uint8_t) = &cpld_i2c_rdwr;
 uint8_t g_bus = 0;
 uint8_t g_addr = 0;
+int g_i2c_dev_fd = -1;
 
 int cpld_i2c_rdwr(uint8_t bus, uint8_t addr,
                   uint8_t *tbuf, uint8_t tcnt,
                   uint8_t *rbuf, uint8_t rcnt) {
-  int ret, fd;
+  int ret;
 
-  if ((fd = i2c_cdev_slave_open(bus, (addr>>1), I2C_SLAVE_FORCE_CLAIM)) < 0) {
-    return -1;
-  }
-
-  ret = retry_cond(!i2c_rdwr_msg_transfer(fd, addr, tbuf, tcnt, rbuf, rcnt), 3, 10);
-  close(fd);
-
+  ret = retry_cond(!i2c_rdwr_msg_transfer(g_i2c_dev_fd, addr, tbuf, tcnt, rbuf, rcnt), 3, 10);
   return ret;
 }
 
@@ -237,6 +234,47 @@ bit_swap(uint8_t input) {
 }
 
 static int
+set_page_address(cpld_type type, uint8_t sector, uint16_t addr) {
+  int ret = 0;
+  uint8_t tbuf[8]= {LSC_WRITE_ADDRESS, 0x00 , 0x00, 0x00};
+  uint8_t tlen = 8;
+
+  if (type == XO2_XO3) {
+    if (sector == CFG0) {
+        tbuf[4] = 0x00;
+    } else if (sector == UFM0) {
+        tbuf[4] = 0x40;
+    } else { // unexpect sector
+        return -1;
+    }
+    tbuf[5] = 0x00;
+    tbuf[6] = (addr / 256);
+    tbuf[7] = (addr % 256);
+  } else if (type == NX) {
+    tbuf[4] = 0x00;
+    tbuf[5] = 0x00;
+    tbuf[6] = ((addr >> 8) & 0x3f);
+    tbuf[7] = (addr & 0xff);
+    if (sector == CFG0) {
+        tbuf[6] |= 0x00;
+    } else if (sector == UFM0) {
+        tbuf[6] |= 0x40;
+    } else { // unexpect sector
+        return -1;
+    }
+  } else { // unsupport
+    return -1;
+  }
+
+  ret = cpld_xfer(g_bus, g_addr, tbuf, tlen, NULL, 0);
+  if ( ret < 0 ) {
+    printf("Couldn't send set page address cmd\n");
+  }
+
+  return ret;
+}
+
+static int
 program_page(cpld_type type, uint8_t *data) {
   int ret = 0;
   int retry = CHECK_STATUS_RETRY;
@@ -267,8 +305,10 @@ program_page(cpld_type type, uint8_t *data) {
 static int
 program_sector(cpld_type type, CPLDInfo *dev_info, uint8_t sector) {
   uint32_t fsize = dev_info->CF_Line / 20;
+  const size_t max_retries = 10;
   uint32_t record_offset = 0;
   int i , data_idx;
+  size_t retry;
   int ret = 0;
 
   unsigned int line = 0;
@@ -286,16 +326,43 @@ program_sector(cpld_type type, CPLDInfo *dev_info, uint8_t sector) {
   }
 
   for (i = 0, data_idx = 0; i < line; i++, data_idx+=4) {
-    ret = program_page(type, (uint8_t *)&data[data_idx]);
-    if ( ret < 0 ) {
-      printf("send data but ret < 0 at line:%d. exit!\n",i);
-      return ret;
+    for (retry = 0; retry < max_retries; retry++)
+    {
+      ret = set_page_address(type, sector, i);
+      if ( ret < 0 ) {
+        printf("set page address ret < 0 at line:%d. exit!\n",i);
+        continue;
+      }
+
+      ret = program_page(type, (uint8_t *)&data[data_idx]);
+      if ( ret < 0 ) {
+        printf("send data but ret < 0 at line:%d. exit!\n",i);
+        continue;
+      }
+
+      ret = set_page_address(type, sector, i);
+      if ( ret < 0 ) {
+        printf("set page address ret < 0 at line:%d. exit!\n",i);
+        continue;
+      }
+
+      ret = verify_page(type, (uint8_t *)&data[data_idx]);
+      if ( ret < 0 ) {
+        printf("Read cf data but ret < 0. exit\n");
+        continue;
+      }
+
+      if ( (record_offset + fsize) <= i ) {
+        printf("\rupdated cpld: %d %%", (int) (i/fsize)*5);
+        fflush(stdout);
+        record_offset += fsize;
+      }
+
+      break; // success, break retry loop
     }
 
-    if ( (record_offset + fsize) <= i ) {
-      printf("\rupdated cpld: %d %%", (int) (i/fsize)*5);
-      fflush(stdout);
-      record_offset += fsize;
+    if (retry >= max_retries) {
+      return ret;
     }
   }
 
@@ -382,6 +449,12 @@ verify_sector(cpld_type type, CPLDInfo *dev_info, uint8_t sector) {
   fsize = line / 20;
 
   for (int i = 0, data_idx = 0; i < line; i++, data_idx+=4) {
+    ret = set_page_address(type, sector, i);
+    if ( ret < 0 ) {
+      printf("set page address ret < 0 at line:%d. exit!\n",i);
+      return ret;
+    }
+
     ret = verify_page(type, (uint8_t *)&data[data_idx]);
     if ( ret < 0 ) {
       printf("Read cf data but ret < 0. exit\n");
@@ -869,10 +942,18 @@ int cpld_dev_open_i2c(void *_attr) {
 
   g_bus = attr->bus_id;
   g_addr = (attr->slv_addr) << 1;
+
+  if ((g_i2c_dev_fd = i2c_cdev_slave_open(g_bus, (g_addr>>1), I2C_SLAVE_FORCE_CLAIM)) < 0) {
+    perror("open");
+    return -1;
+  }
+
   return 0;
 }
 
 int cpld_dev_close_i2c(void) {
   g_addr = 0;
+  close(g_i2c_dev_fd);
+  g_i2c_dev_fd = -1;
   return 0;
 }

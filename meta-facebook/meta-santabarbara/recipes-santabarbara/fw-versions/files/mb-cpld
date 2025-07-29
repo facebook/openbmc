@@ -1,0 +1,12 @@
+#!/bin/bash
+set -e
+
+version=$(cpld-fw-handler version -i i2c -b 0 -a 0x60 -c LFMXO5-25 | awk '{print $NF}')
+
+echo "MB CPLD version: $version"
+
+busctl set-property \
+    xyz.openbmc_project.Settings \
+    /xyz/openbmc_project/software/chassis/Santabarbara_MB_cpld \
+    xyz.openbmc_project.Software.Version \
+    Version "s" "$version"

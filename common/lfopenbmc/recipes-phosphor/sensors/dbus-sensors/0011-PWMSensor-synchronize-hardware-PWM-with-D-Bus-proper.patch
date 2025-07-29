@@ -1,0 +1,182 @@
+From 219a215bbb2b207c5871fd804c5553249fcdcc24 Mon Sep 17 00:00:00 2001
+From: Yang Chen <yang.chen@quantatw.com>
+Date: Wed, 23 Jul 2025 14:47:58 +0800
+Subject: [PATCH] PWMSensor: synchronize hardware PWM with D-Bus property
+
+The Fan PWM sensor property setter (Value/Target) previously only
+tracked the last set value (resp), but the actual hardware PWM
+controller may reset to its own default value after a power cycle,
+reset, or hot-plug event. If a client tries to set the same PWM value as
+before, the setter compares only with resp and ignores the request,
+leaving the hardware PWM unsynchronized with the D-Bus property.
+
+This update changes the property setter logic to always compare the
+requested value (converted to hardware PWM) with the actual hardware
+PWM value read from the controller. If the hardware value differs from
+the requested value, the hardware PWM is updated and the "resp" value is
+always synchronized from the controller. This ensures the D-Bus property
+and the actual hardware PWM remain consistent, even after controller
+resets or power events.
+
+Tested:
+```
+Test old code behavior on Meta Ventura platform:
+
+Test target will not be set again with the same value after the
+controller is reset
+
+1. Set fan duty from target to 127
+root@bmc:~# busctl set-property xyz.openbmc_project.FanSensor  /xyz/openbmc_project/control/fanpwm/FCB_0_FAN0_PWM_PCT xyz.openbmc_project.Control.FanPwm Target t 127
+
+2. Get fan duty from dbus target property
+root@bmc:~# busctl get-property xyz.openbmc_project.FanSensor  /xyz/openbmc_project/control/fanpwm/FCB_0_FAN0_PWM_PCT xyz.openbmc_project.Control.FanPwm Target
+t 127
+
+3. Read PWM value from driver
+root@bmc:~# cat /sys/class/i2c-dev/i2c-18/device/18-0020/hwmon/hwmon7/pwm1
+127
+
+4. Use i2c command to reset the PWM controller
+root@bmc:~# i2cset -y -f 18 0x20 0x00 0x60
+
+5. Check that the PWM value is back to default 255 after reset
+root@bmc:~# cat /sys/class/i2c-dev/i2c-18/device/18-0020/hwmon/hwmon7/pwm1
+255
+
+6. Set fan duty from target to 127 again
+root@bmc:~# busctl set-property xyz.openbmc_project.FanSensor  /xyz/openbmc_project/control/fanpwm/FCB_0_FAN0_PWM_PCT xyz.openbmc_project.Control.FanPwm Target t 127
+
+7. Check that the PWM value from the driver has not changed.
+root@bmc:~# cat /sys/class/i2c-dev/i2c-18/device/18-0020/hwmon/hwmon7/pwm1
+255
+
+Test value will not be set again with the same value after the
+controller is reset
+
+1. Set fan duty from value to 50
+busctl set-property xyz.openbmc_project.FanSensor  /xyz/openbmc_project/sensors/fan_pwm/FCB_0_FAN0_PWM_PCT xyz.openbmc_project.Sensor.Value Value d 50
+
+2. Read PWM value from driver
+root@bmc:~# cat /sys/class/i2c-dev/i2c-18/device/18-0020/hwmon/hwmon7/pwm1
+128
+
+3. Use i2c command to reset the PWM controller
+root@bmc:~# i2cset -y -f 18 0x20 0x00 0x60
+
+4. Check that the PWM value is back to default 255 after reset
+root@bmc:~# cat /sys/class/i2c-dev/i2c-18/device/18-0020/hwmon/hwmon7/pwm1
+255
+
+5. Set fan duty from value to 50 again
+busctl set-property xyz.openbmc_project.FanSensor  /xyz/openbmc_project/sensors/fan_pwm/FCB_0_FAN0_PWM_PCT xyz.openbmc_project.Sensor.Value Value d 50
+
+6. Check that the PWM value from the driver has not changed.
+root@bmc:~# cat /sys/class/i2c-dev/i2c-18/device/18-0020/hwmon/hwmon7/pwm1
+255
+
+Test the code that this commit changed behavior on Meta Ventura platform:
+
+Test target will be set again with the same value after the controller is reset
+
+1. Set fan duty from target to 127
+root@bmc:~# busctl set-property xyz.openbmc_project.FanSensor  /xyz/openbmc_project/control/fanpwm/FCB_0_FAN0_PWM_PCT xyz.openbmc_project.Control.FanPwm Target t 127
+
+2. Read PWM value from driver
+root@bmc:~# cat /sys/class/i2c-dev/i2c-18/device/18-0020/hwmon/hwmon7/pwm1
+127
+
+3. Use i2c command to reset the PWM controller
+root@bmc:~# i2cset -y -f 18 0x20 0x00 0x60
+
+4. Check that the PWM value is back to default 255 after reset
+root@bmc:~# cat /sys/class/i2c-dev/i2c-18/device/18-0020/hwmon/hwmon7/pwm1
+255
+
+5. Set fan duty from target to 127 again
+root@bmc:~# busctl set-property xyz.openbmc_project.FanSensor  /xyz/openbmc_project/control/fanpwm/FCB_0_FAN0_PWM_PCT xyz.openbmc_project.Control.FanPwm Target t 127
+
+6. Check that the PWM value from the driver has changed.
+root@bmc:~# cat /sys/class/i2c-dev/i2c-18/device/18-0020/hwmon/hwmon7/pwm1
+127
+
+Test value will be set again with the same value after the controller is reset
+
+1. Set fan duty from value to 70
+root@bmc:~# busctl set-property xyz.openbmc_project.FanSensor  /xyz/openbmc_project/sensors/fan_pwm/FCB_0_FAN0_PWM_PCT xyz.openbmc_project.Sensor.Value Value d 70
+
+2. Read PWM value from driver
+root@bmc:~# cat /sys/class/i2c-dev/i2c-18/device/18-0020/hwmon/hwmon7/pwm1
+179
+
+3. Use i2c command to reset the PWM controller
+root@bmc:~# i2cset -y -f 18 0x20 0x00 0x60
+
+4. Check that the PWM value is back to default 255 after reset
+root@bmc:~# cat /sys/class/i2c-dev/i2c-18/device/18-0020/hwmon/hwmon7/pwm1
+255
+
+5. Set fan duty from value to 70 again
+busctl set-property xyz.openbmc_project.FanSensor  /xyz/openbmc_project/sensors/fan_pwm/FCB_0_FAN0_PWM_PCT xyz.openbmc_project.Sensor.Value Value d 70
+
+6. Check that the PWM value from the driver has changed
+root@bmc:~# cat /sys/class/i2c-dev/i2c-18/device/18-0020/hwmon/hwmon7/pwm1
+179
+```
+
+Change-Id: Ia8205ff9df14005a586da2f0dbc73472f4374baf
+Signed-off-by: Yang Chen <yang.chen@quantatw.com>
+---
+ src/PwmSensor.cpp | 22 +++++++++++-----------
+ 1 file changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/src/PwmSensor.cpp b/src/PwmSensor.cpp
+index 926ca1b92..aae90dfbf 100644
+--- a/src/PwmSensor.cpp
++++ b/src/PwmSensor.cpp
+@@ -82,14 +82,14 @@ PwmSensor::PwmSensor(const std::string& pwmname, const std::string& sysPath,
+                 return -1;
+             }
+ 
++            auto getInt = getValue();
+             double reqValue = (req / 100.0) * pwmMax;
+-            double respValue = (resp / 100.0) * pwmMax;
+             auto reqInt = static_cast<uint32_t>(std::round(reqValue));
+-            auto respInt = static_cast<uint32_t>(std::round(respValue));
+             // Avoid floating-point equality, compare as integers
+-            if (reqInt == respInt)
++            if (reqInt != getInt)
+             {
+-                return 1;
++                setValue(reqInt);
++                controlInterface->signal_property("Target");
+             }
+             // Scale Value to match Target unit
+             auto scaledValue =
+@@ -130,17 +130,17 @@ PwmSensor::PwmSensor(const std::string& pwmname, const std::string& sysPath,
+                 throw std::runtime_error("Value out of range");
+                 return -1;
+             }
+-            if (req == resp)
+-            {
+-                return 1;
+-            }
++            auto getInt = getValue();
+             auto scaledValue = static_cast<double>(req) / targetIfaceMax;
+             auto roundValue = std::round(scaledValue * pwmMax);
+-            setValue(static_cast<uint32_t>(roundValue));
+-            resp = req;
+ 
+-            sensorInterface->signal_property("Value");
++            if (getInt != roundValue)
++            {
++                setValue(static_cast<uint32_t>(roundValue));
++                sensorInterface->signal_property("Value");
++            }
+ 
++            resp = req;
+             return 1;
+         },
+         [this](uint64_t& curVal) {
+-- 
+2.34.1
+

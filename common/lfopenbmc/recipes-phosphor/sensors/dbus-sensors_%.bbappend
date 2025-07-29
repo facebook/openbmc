@@ -11,6 +11,7 @@ SRC_URI:append = " \
     file://0008-pwm-sensor-Align-Target-with-user-intent.patch \
     file://0009-psu-support-gpio-bridge.patch \
     file://0010-meta-facebook-ventura-add-SCM-sensor-offset.patch \
+    file://0011-PWMSensor-synchronize-hardware-PWM-with-D-Bus-proper.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \

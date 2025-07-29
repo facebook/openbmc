@@ -1,0 +1,31 @@
+From 8535a7fc863780bb6dfce1395567ec607c9e1a4d Mon Sep 17 00:00:00 2001
+From: Prabha Veerubhotla <vvlprabha@gmail.com>
+Date: Thu, 24 Jul 2025 14:21:12 -0700
+Subject: [PATCH] configurations: harma: Update Sparepartnumber for Broadcom
+ NIC
+
+Add the SparePartNumber from the internal database. It is unique
+for all the NICs.
+
+Change-Id: I6070258a162d12b3c603977110f81d5d90d9de69
+Signed-off-by: Prabha Veerubhotla <vvlprabha@gmail.com>
+---
+ configurations/brcm_200g_1p_ocp_mezz.json | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/configurations/brcm_200g_1p_ocp_mezz.json b/configurations/brcm_200g_1p_ocp_mezz.json
+index 3f028b7..fc39392 100644
+--- a/configurations/brcm_200g_1p_ocp_mezz.json
++++ b/configurations/brcm_200g_1p_ocp_mezz.json
+@@ -40,6 +40,7 @@
+         "Manufacturer": "$BOARD_MANUFACTURER",
+         "Model": "$BOARD_PRODUCT_NAME",
+         "PartNumber": "$BOARD_PART_NUMBER",
+-        "SerialNumber": "$BOARD_SERIAL_NUMBER"
++        "SerialNumber": "$BOARD_SERIAL_NUMBER",
++        "SparePartNumber": "19-100661"
+     }
+ }
+-- 
+2.47.3
+

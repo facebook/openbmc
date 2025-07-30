@@ -1,0 +1,65 @@
+From 9bc40892418ea31953a5946c72794260624103a9 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Wed, 30 Jul 2025 19:39:20 +0800
+Subject: [PATCH 1/1] ARM: dts: aspeed: catalina: enable i2c slave timeout
+
+Enable the I2C slave timeout property in the Harma device tree to
+prevent the slave interface from hanging due to incomplete or abnormal
+I2C transactions.
+
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+---
+ .../arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
+index 506e08fe5afb9..8b9fcc40edf2e 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
+@@ -196,6 +196,8 @@ flash@1 {
+ &i2c0 {
+ 	status = "okay";
+ 	multi-master;
++	i2c-scl-clk-low-timeout-us = <31744>;
++
+ 	mctp@10 {
+ 		compatible = "mctp-i2c-controller";
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+@@ -850,6 +852,8 @@ &i2c7 {
+ 	status = "okay";
+ 	bus-frequency = <100000>;
+ 	multi-master;
++	i2c-scl-clk-low-timeout-us = <31744>;
++
+ 	aspeed,hw-timeout-ms = <1000>;
+ 	aspeed,enable-byte;
+ 
+@@ -899,6 +903,8 @@ &i2c10 {
+ 	status = "okay";
+ 	multi-master;
+ 	mctp-controller;
++	i2c-scl-clk-low-timeout-us = <31744>;
++
+ 	mctp@10 {
+ 		compatible = "mctp-i2c-controller";
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+@@ -920,6 +926,7 @@ eeprom@50 {
+ &i2c11 {
+ 	status = "okay";
+ 	aspeed,enable-byte;
++	i2c-scl-clk-low-timeout-us = <31744>;
+ 
+ 	ssif-bmc@10 {
+ 		compatible = "ssif-bmc";
+@@ -1029,6 +1036,8 @@ &i2c15 {
+ 	status = "okay";
+ 	multi-master;
+ 	mctp-controller;
++	i2c-scl-clk-low-timeout-us = <31744>;
++
+ 	mctp@10 {
+ 		compatible = "mctp-i2c-controller";
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+-- 
+2.31.1
+

@@ -1,0 +1,9 @@
+{
+    "platform_name": "celestica-bmc",
+    "eeprom devices": [
+        {
+            "name": "chassis_eeprom",
+            "sysfs_path": "/sys/bus/i2c/devices/6-0053/eeprom"
+        }
+    ]
+}

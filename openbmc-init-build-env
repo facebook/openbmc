@@ -27,6 +27,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-bletchley:lf-master
   meta-bletchley15:lf-master
   meta-catalina:lf-master
+  meta-celestica-bmc:lf-master
   meta-clearcreek:lf-master
   meta-clemente:lf-master
   meta-elbert:lf-master
@@ -44,7 +45,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-gtartemis:lf-master
   meta-halfdome:lf-master
   meta-harma:lf-master
-  meta-icecube800bc:lf-master
   meta-inspirationpoint:lf-master
   meta-janga:lf-master
   meta-javaisland:lf-master

@@ -1,0 +1,49 @@
+From 1346080f4a19bb4b3f6a26ca32775e02be81d5d3 Mon Sep 17 00:00:00 2001
+From: Alex Wang <alex.ts.wang@fii-foxconn.com>
+Date: Thu, 31 Jul 2025 11:35:27 +0800
+Subject: [PATCH 1/1] Update CX7 sensor thresholds
+
+---
+ configurations/cx7_ocp.json | 19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
+
+diff --git a/configurations/cx7_ocp.json b/configurations/cx7_ocp.json
+index e9c46f9..abe8839 100644
+--- a/configurations/cx7_ocp.json
++++ b/configurations/cx7_ocp.json
+@@ -14,20 +14,25 @@
+             "Timeout": 30.0,
+             "Thresholds": [
+                 {
+-                    "Direction": "less than",
+-                    "Hysteresis": 0.1,
++                    "Direction": "greater than",
+                     "Index": 2,
+-                    "Name": "lower critical",
+-                    "Severity": 1,
+-                    "Value": 5
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 85
+                 },
+                 {
+                     "Direction": "greater than",
+-                    "Hysteresis": 2.1,
+                     "Index": 2,
+                     "Name": "upper critical",
+                     "Severity": 1,
+-                    "Value": 105
++                    "Value": 83
++                },
++                {
++                    "Direction": "greater than",
++                    "Index": 2,
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 80
+                 }
+             ],
+             "Type": "ExternalSensor"
+-- 
+2.43.0
+

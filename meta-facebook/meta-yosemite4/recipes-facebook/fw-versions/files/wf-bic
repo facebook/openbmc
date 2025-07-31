@@ -31,6 +31,6 @@ while [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
 done
 
 if [ "$RETRY_COUNT" -eq "$MAX_RETRIES" ]; then
-    echo "Failed to get slot$slot sd bic version"
+    echo "Failed to get slot$slot wf bic version"
     exit 1
 fi

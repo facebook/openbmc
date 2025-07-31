@@ -79,7 +79,7 @@ void SensorChip::enumerate()
   }
 }
 
-unique_ptr<Sensor> FanSensorChip::make_sensor(const sensors_chip_name *chip, const std::string &name)
+unique_ptr<Sensor> FanSensorChip::make_fan_sensor(const sensors_chip_name *chip, const std::string &name)
 {
   return unique_ptr<PWMSensor>(new PWMSensor(chip, name));
 }
@@ -97,14 +97,14 @@ void FanSensorChip::enumerate()
   while ((ent = readdir(dir)) != NULL) {
     string name(ent->d_name);
     if (regex_match(name, pwm_regex)) {
-      unique_ptr<Sensor> snr = make_sensor(chip, name);
+      unique_ptr<Sensor> snr = make_fan_sensor(chip, name);
       addsensor(move(snr));
     }
   }
   closedir(dir);
 }
 
-unique_ptr<Sensor> LegacyFanSensorChip::make_sensor(const sensors_chip_name *chip, const std::string &name)
+unique_ptr<Sensor> LegacyFanSensorChip::make_fan_sensor(const sensors_chip_name *chip, const std::string &name)
 {
   return unique_ptr<LegacyPWMSensor>(new LegacyPWMSensor(chip, name));
 }
@@ -124,7 +124,7 @@ void LegacyFanSensorChip::enumerate()
     string name(ent->d_name);
     if (regex_match(name, sm, pwm_regex)) {
       name = sm.str(1);
-      unique_ptr<Sensor> snr = make_sensor(chip, name);
+      unique_ptr<Sensor> snr = make_fan_sensor(chip, name);
       addsensor(move(snr));
     }
   }

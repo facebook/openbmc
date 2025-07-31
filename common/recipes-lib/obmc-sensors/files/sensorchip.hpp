@@ -48,7 +48,7 @@ class SensorChip : public std::map<std::string, std::unique_ptr<Sensor>> {
 // Collection of sensors in a Fan chip (Works for 4.18 and above kernels).
 class FanSensorChip : public SensorChip {
   protected:
-    virtual std::unique_ptr<Sensor> make_sensor(const sensors_chip_name *chip,
+    virtual std::unique_ptr<Sensor> make_fan_sensor(const sensors_chip_name *chip,
         const std::string &name);
   public:
   FanSensorChip(const sensors_chip_name *_chip, const std::string &n) : SensorChip(_chip, n) {}
@@ -59,7 +59,7 @@ class FanSensorChip : public SensorChip {
 // Collection of sensors in a legacy-fan chip (Works for 4.1 kernels)
 class LegacyFanSensorChip : public SensorChip {
   protected:
-    virtual std::unique_ptr<Sensor> make_sensor(const sensors_chip_name *chip,
+    virtual std::unique_ptr<Sensor> make_fan_sensor(const sensors_chip_name *chip,
         const std::string &name);
   public:
   LegacyFanSensorChip(const sensors_chip_name *_chip, const std::string &n) : SensorChip(_chip, n) {}

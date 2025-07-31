@@ -1,0 +1,40 @@
+From b30da4be6446623b122a8fe7857d3372fa47bd2d Mon Sep 17 00:00:00 2001
+From: Fred Chen <fredchen.openbmc@gmail.com>
+Date: Tue, 29 Jul 2025 16:01:39 +0800
+Subject: [PATCH 1002/1003] ARM: dts: aspeed: santabarbara: Enable MCTP for
+ frontend NIC
+
+Add the mctp-controller property and MCTP node to enable frontend NIC
+management via PLDM over MCTP.
+
+Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
+---
+LORE: https://lore.kernel.org/all/20250729091351.3964939-3-fredchen.openbmc@gmail.com/
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts  | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+index 3aa99b0bf56e..ff168fe9d889 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+@@ -1248,8 +1248,16 @@ temperature-sensor@49 {
+ };
+ 
+ &i2c11 {
++	multi-master;
++	mctp-controller;
+ 	status = "okay";
+ 
++	mctp@10 {
++		compatible = "mctp-i2c-controller";
++		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++		label = "mb_nic0_mctp";
++	};
++
+ 	// OCP NIC TEMP
+ 	temperature-sensor@1f {
+ 		compatible = "ti,tmp421";
+-- 
+2.49.0
+

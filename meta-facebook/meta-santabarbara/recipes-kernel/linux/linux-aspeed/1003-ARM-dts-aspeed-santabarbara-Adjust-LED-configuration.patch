@@ -1,0 +1,46 @@
+From 8b1f3e63a2462fa605755acdf51f02b0605eb386 Mon Sep 17 00:00:00 2001
+From: Fred Chen <fredchen.openbmc@gmail.com>
+Date: Tue, 29 Jul 2025 16:02:49 +0800
+Subject: [PATCH 1003/1003] ARM: dts: aspeed: santabarbara: Adjust LED
+ configuration
+
+Add a new power fault LED on GPIOB5 and relocate the ID LED to GPIOQ4.
+The ID LED is now driven by the CPLD, allowing it to reflect multiple
+system states depending on CPLD logic.
+
+Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
+---
+LORE: https://lore.kernel.org/all/20250729091351.3964939-4-fredchen.openbmc@gmail.com/
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts  | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+index ff168fe9d889..2fd47c325ef9 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+@@ -94,7 +94,7 @@ led-0 {
+ 		};
+ 
+ 		led-1 {
+-			label = "fp_id_amber";
++			label = "power_fault";
+ 			default-state = "off";
+ 			gpios = <&gpio0 ASPEED_GPIO(B, 5) GPIO_ACTIVE_HIGH>;
+ 		};
+@@ -104,6 +104,12 @@ led-2 {
+ 			default-state = "off";
+ 			gpios = <&gpio0 ASPEED_GPIO(P, 4) GPIO_ACTIVE_HIGH>;
+ 		};
++
++		led-3 {
++			label = "fp_id_amber";
++			default-state = "off";
++			gpios = <&gpio0 ASPEED_GPIO(Q, 4) GPIO_ACTIVE_HIGH>;
++		};
+ 	};
+ 
+ 	memory@80000000 {
+-- 
+2.49.0
+

@@ -1,18 +1,17 @@
-From 4f0a2783cf1cd5729694f0cb639fcf3488fcfe55 Mon Sep 17 00:00:00 2001
+From f5746626de8187080e70212eb0961a3689d2da4b Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
-Date: Fri, 18 Jul 2025 00:56:02 +0800
-Subject: [PATCH 1/1] Add nvidia_hmc new sensor
+Date: Thu, 31 Jul 2025 17:02:26 +0800
+Subject: [PATCH 1/1] Update nvidia_hmc.json
 
-Change-Id: Ia1f0534595d447b2efabe68a0102c37fc7896ac3
 ---
- configurations/nvidia_hmc.json | 1118 ++++++++++++++++++++++++++++++++
- 1 file changed, 1118 insertions(+)
+ configurations/nvidia_hmc.json | 1006 ++++++++++++++++++++++++++++++++
+ 1 file changed, 1006 insertions(+)
 
 diff --git a/configurations/nvidia_hmc.json b/configurations/nvidia_hmc.json
-index f541408..a44a5af 100644
+index f541408..90b628b 100644
 --- a/configurations/nvidia_hmc.json
 +++ b/configurations/nvidia_hmc.json
-@@ -12,6 +12,1124 @@
+@@ -12,6 +12,1012 @@
              "Name": "HMC",
              "Port": 80,
              "Type": "SatelliteController"
@@ -27,20 +26,6 @@ index f541408..a44a5af 100644
 +            "PowerState": "On",
 +            "ReadOffset": 25,
 +            "Thresholds": [
-+                {
-+                    "Direction": "greater than",
-+                    "Hysteresis": 2.2,
-+                    "Name": "upper non recoverable",
-+                    "Severity": 4,
-+                    "Value": 110.0
-+                },
-+                {
-+                    "Direction": "greater than",
-+                    "Hysteresis": 2.14,
-+                    "Name": "upper critical",
-+                    "Severity": 1,
-+                    "Value": 107.0
-+                },
 +                {
 +                    "Direction": "greater than",
 +                    "Hysteresis": 2.1,
@@ -65,20 +50,6 @@ index f541408..a44a5af 100644
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
-+                    "Hysteresis": 2.2,
-+                    "Name": "upper non recoverable",
-+                    "Severity": 4,
-+                    "Value": 110.0
-+                },
-+                {
-+                    "Direction": "greater than",
-+                    "Hysteresis": 2.14,
-+                    "Name": "upper critical",
-+                    "Severity": 1,
-+                    "Value": 107.0
-+                },
-+                {
-+                    "Direction": "greater than",
 +                    "Hysteresis": 2.1,
 +                    "Name": "upper non critical",
 +                    "Severity": 0,
@@ -101,20 +72,6 @@ index f541408..a44a5af 100644
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
-+                    "Hysteresis": 2.2,
-+                    "Name": "upper non recoverable",
-+                    "Severity": 4,
-+                    "Value": 110.0
-+                },
-+                {
-+                    "Direction": "greater than",
-+                    "Hysteresis": 2.14,
-+                    "Name": "upper critical",
-+                    "Severity": 1,
-+                    "Value": 107.0
-+                },
-+                {
-+                    "Direction": "greater than",
 +                    "Hysteresis": 2.1,
 +                    "Name": "upper non critical",
 +                    "Severity": 0,
@@ -135,20 +92,6 @@ index f541408..a44a5af 100644
 +            "PowerState": "On",
 +            "ReadOffset": 37,
 +            "Thresholds": [
-+                {
-+                    "Direction": "greater than",
-+                    "Hysteresis": 2.2,
-+                    "Name": "upper non recoverable",
-+                    "Severity": 4,
-+                    "Value": 110.0
-+                },
-+                {
-+                    "Direction": "greater than",
-+                    "Hysteresis": 2.14,
-+                    "Name": "upper critical",
-+                    "Severity": 1,
-+                    "Value": 107.0
-+                },
 +                {
 +                    "Direction": "greater than",
 +                    "Hysteresis": 2.1,
@@ -228,7 +171,7 @@ index f541408..a44a5af 100644
 +                    "Hysteresis": 0.001,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": -0.05
++                    "Value": 0
 +                },
 +                {
 +                    "Direction": "less than",
@@ -264,7 +207,7 @@ index f541408..a44a5af 100644
 +                    "Hysteresis": 0.001,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": -0.05
++                    "Value": 0
 +                },
 +                {
 +                    "Direction": "less than",
@@ -300,7 +243,7 @@ index f541408..a44a5af 100644
 +                    "Hysteresis": 0.001,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": -0.05
++                    "Value": 0
 +                },
 +                {
 +                    "Direction": "less than",
@@ -336,7 +279,7 @@ index f541408..a44a5af 100644
 +                    "Hysteresis": 0.001,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": -0.05
++                    "Value": 0
 +                },
 +                {
 +                    "Direction": "less than",
@@ -496,7 +439,7 @@ index f541408..a44a5af 100644
 +                    "Hysteresis": 0.001,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": -0.05
++                    "Value": 5
 +                }
 +            ],
 +            "Type": "SmbpbiVirtualEeprom",
@@ -515,24 +458,10 @@ index f541408..a44a5af 100644
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
-+                    "Hysteresis": 1.74,
-+                    "Name": "upper non recoverable",
-+                    "Severity": 4,
-+                    "Value": 87.0
-+                },
-+                {
-+                    "Direction": "greater than",
-+                    "Hysteresis": 1.68,
-+                    "Name": "upper critical",
-+                    "Severity": 1,
-+                    "Value": 84.0
-+                },
-+                {
-+                    "Direction": "greater than",
 +                    "Hysteresis": 1.64,
 +                    "Name": "upper non critical",
 +                    "Severity": 0,
-+                    "Value": 82.0
++                    "Value": 87.0
 +                }
 +            ],
 +            "Type": "SmbpbiVirtualEeprom",
@@ -551,24 +480,10 @@ index f541408..a44a5af 100644
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
-+                    "Hysteresis": 1.74,
-+                    "Name": "upper non recoverable",
-+                    "Severity": 4,
-+                    "Value": 87.0
-+                },
-+                {
-+                    "Direction": "greater than",
-+                    "Hysteresis": 1.68,
-+                    "Name": "upper critical",
-+                    "Severity": 1,
-+                    "Value": 84.0
-+                },
-+                {
-+                    "Direction": "greater than",
 +                    "Hysteresis": 1.64,
 +                    "Name": "upper non critical",
 +                    "Severity": 0,
-+                    "Value": 82.0
++                    "Value": 87.0
 +                }
 +            ],
 +            "Type": "SmbpbiVirtualEeprom",
@@ -587,24 +502,10 @@ index f541408..a44a5af 100644
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
-+                    "Hysteresis": 1.74,
-+                    "Name": "upper non recoverable",
-+                    "Severity": 4,
-+                    "Value": 87.0
-+                },
-+                {
-+                    "Direction": "greater than",
-+                    "Hysteresis": 1.68,
-+                    "Name": "upper critical",
-+                    "Severity": 1,
-+                    "Value": 84.0
-+                },
-+                {
-+                    "Direction": "greater than",
 +                    "Hysteresis": 1.64,
 +                    "Name": "upper non critical",
 +                    "Severity": 0,
-+                    "Value": 82.0
++                    "Value": 87.0
 +                }
 +            ],
 +            "Type": "SmbpbiVirtualEeprom",
@@ -623,24 +524,10 @@ index f541408..a44a5af 100644
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
-+                    "Hysteresis": 1.74,
-+                    "Name": "upper non recoverable",
-+                    "Severity": 4,
-+                    "Value": 87.0
-+                },
-+                {
-+                    "Direction": "greater than",
-+                    "Hysteresis": 1.68,
-+                    "Name": "upper critical",
-+                    "Severity": 1,
-+                    "Value": 84.0
-+                },
-+                {
-+                    "Direction": "greater than",
 +                    "Hysteresis": 1.64,
 +                    "Name": "upper non critical",
 +                    "Severity": 0,
-+                    "Value": 82.0
++                    "Value": 87.0
 +                }
 +            ],
 +            "Type": "SmbpbiVirtualEeprom",
@@ -662,21 +549,21 @@ index f541408..a44a5af 100644
 +                    "Hysteresis": 1.1,
 +                    "Name": "upper non recoverable",
 +                    "Severity": 4,
-+                    "Value": 65.0
++                    "Value": 80.0
 +                },
 +                {
 +                    "Direction": "greater than",
 +                    "Hysteresis": 1.06,
 +                    "Name": "upper critical",
 +                    "Severity": 1,
-+                    "Value": 63.0
++                    "Value": 78.0
 +                },
 +                {
 +                    "Direction": "greater than",
 +                    "Hysteresis": 1,
 +                    "Name": "upper non critical",
 +                    "Severity": 0,
-+                    "Value": 60.0
++                    "Value": 75.0
 +                }
 +            ],
 +            "Type": "SmbpbiVirtualEeprom",
@@ -698,21 +585,21 @@ index f541408..a44a5af 100644
 +                    "Hysteresis": 1.1,
 +                    "Name": "upper non recoverable",
 +                    "Severity": 4,
-+                    "Value": 65.0
++                    "Value": 80.0
 +                },
 +                {
 +                    "Direction": "greater than",
 +                    "Hysteresis": 1.06,
 +                    "Name": "upper critical",
 +                    "Severity": 1,
-+                    "Value": 63.0
++                    "Value": 78.0
 +                },
 +                {
 +                    "Direction": "greater than",
 +                    "Hysteresis": 1,
 +                    "Name": "upper non critical",
 +                    "Severity": 0,
-+                    "Value": 60.0
++                    "Value": 75.0
 +                }
 +            ],
 +            "Type": "SmbpbiVirtualEeprom",
@@ -734,21 +621,21 @@ index f541408..a44a5af 100644
 +                    "Hysteresis": 1.3,
 +                    "Name": "upper non recoverable",
 +                    "Severity": 4,
-+                    "Value": 75.0
++                    "Value": 89.0
 +                },
 +                {
 +                    "Direction": "greater than",
 +                    "Hysteresis": 1.26,
 +                    "Name": "upper critical",
 +                    "Severity": 1,
-+                    "Value": 73.0
++                    "Value": 86.0
 +                },
 +                {
 +                    "Direction": "greater than",
 +                    "Hysteresis": 1.2,
 +                    "Name": "upper non critical",
 +                    "Severity": 0,
-+                    "Value": 70.0
++                    "Value": 84.0
 +                }
 +            ],
 +            "Type": "SmbpbiVirtualEeprom",
@@ -770,21 +657,21 @@ index f541408..a44a5af 100644
 +                    "Hysteresis": 1.1,
 +                    "Name": "upper non recoverable",
 +                    "Severity": 4,
-+                    "Value": 65.0
++                    "Value": 80.0
 +                },
 +                {
 +                    "Direction": "greater than",
 +                    "Hysteresis": 1.06,
 +                    "Name": "upper critical",
 +                    "Severity": 1,
-+                    "Value": 63.0
++                    "Value": 78.0
 +                },
 +                {
 +                    "Direction": "greater than",
 +                    "Hysteresis": 1,
 +                    "Name": "upper non critical",
 +                    "Severity": 0,
-+                    "Value": 60.0
++                    "Value": 75.0
 +                }
 +            ],
 +            "Type": "SmbpbiVirtualEeprom",
@@ -806,21 +693,21 @@ index f541408..a44a5af 100644
 +                    "Hysteresis": 1.1,
 +                    "Name": "upper non recoverable",
 +                    "Severity": 4,
-+                    "Value": 65.0
++                    "Value": 80.0
 +                },
 +                {
 +                    "Direction": "greater than",
 +                    "Hysteresis": 1.06,
 +                    "Name": "upper critical",
 +                    "Severity": 1,
-+                    "Value": 63.0
++                    "Value": 78.0
 +                },
 +                {
 +                    "Direction": "greater than",
 +                    "Hysteresis": 1,
 +                    "Name": "upper non critical",
 +                    "Severity": 0,
-+                    "Value": 60.0
++                    "Value": 75.0
 +                }
 +            ],
 +            "Type": "SmbpbiVirtualEeprom",
@@ -842,21 +729,21 @@ index f541408..a44a5af 100644
 +                    "Hysteresis": 1.3,
 +                    "Name": "upper non recoverable",
 +                    "Severity": 4,
-+                    "Value": 75.0
++                    "Value": 89.0
 +                },
 +                {
 +                    "Direction": "greater than",
 +                    "Hysteresis": 1.26,
 +                    "Name": "upper critical",
 +                    "Severity": 1,
-+                    "Value": 73.0
++                    "Value": 86.0
 +                },
 +                {
 +                    "Direction": "greater than",
 +                    "Hysteresis": 1.2,
 +                    "Name": "upper non critical",
 +                    "Severity": 0,
-+                    "Value": 70.0
++                    "Value": 84.0
 +                }
 +            ],
 +            "Type": "SmbpbiVirtualEeprom",
@@ -952,7 +839,7 @@ index f541408..a44a5af 100644
 +                    "Hysteresis": 0.001,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": -0.05
++                    "Value": 0
 +                },
 +                {
 +                    "Direction": "less than",
@@ -1088,7 +975,7 @@ index f541408..a44a5af 100644
 +                    "Hysteresis": 0.001,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": -0.05
++                    "Value": 0
 +                },
 +                {
 +                    "Direction": "less than",

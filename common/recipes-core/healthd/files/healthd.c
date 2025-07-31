@@ -847,7 +847,7 @@ initilize_all_kv() {
 }
 
 static void *
-hb_handler() {
+hb_handler(void *unused __attribute__((unused))) {
   // set flag to notice BMC healthd hb_handler is ready
   kv_set("flag_healthd_hb_led", "1", 0, 0);
 
@@ -864,7 +864,7 @@ hb_handler() {
 }
 
 static void *
-watchdog_handler() {
+watchdog_handler(void *unused __attribute__((unused))) {
 
   /* Start watchdog in manual mode */
   open_watchdog(0, 0);
@@ -892,7 +892,7 @@ watchdog_handler() {
 }
 
 static void *
-i2c_mon_handler() {
+i2c_mon_handler(void *unused __attribute__((unused))) {
   char i2c_bus_device[16];
   int dev;
   int bus_status = 0;
@@ -984,7 +984,7 @@ i2c_mon_handler() {
 }
 
 static void *
-CPU_usage_monitor() {
+CPU_usage_monitor(void *unused __attribute__((unused))) {
   unsigned long long user, nice, system, idle, iowait, irq, softirq, steal, guest, guest_nice;
   unsigned long long total_diff, idle_diff, non_idle, idle_time = 0, total = 0, pre_total = 0, pre_idle = 0;
   char cpu[CPU_NAME_LENGTH] = {0};
@@ -1102,7 +1102,7 @@ static int set_panic_on_oom(void) {
 }
 
 static void *
-memory_usage_monitor() {
+memory_usage_monitor(void *unused __attribute__((unused))) {
   struct sysinfo s_info;
   size_t i, timer = 0;
   int error, ready_flag = 0, retry = 0;
@@ -1170,7 +1170,7 @@ memory_usage_monitor() {
 
 // Thread to monitor the ECC counter
 static void *
-ecc_mon_handler() {
+ecc_mon_handler(void *unused __attribute__((unused))) {
   int mcr_fd = 0;
   uint32_t ecc_status = 0;
   uint32_t unrecover_ecc_err_addr = 0;
@@ -1231,7 +1231,7 @@ ecc_mon_handler() {
 }
 
 static void *
-bmc_health_monitor()
+bmc_health_monitor(void *unused __attribute__((unused)))
 {
   int bmc_health_last_state = 1;
   int bmc_health_kv_state = 1;
@@ -1370,7 +1370,7 @@ nm_selftest(uint8_t fru) {
 
 
 static void *
-nm_monitor()
+nm_monitor(void *unused __attribute__((unused)))
 {
   int fru;
 
@@ -1429,7 +1429,7 @@ crit_proc_ongoing_handle(bool is_crit_proc_updating)
 
 //Block reboot and shutdown commands in BMC during any FW updating
 static void *
-crit_proc_monitor() {
+crit_proc_monitor(void *unused __attribute__((unused))) {
 
   bool is_fw_updating = false;
   bool is_crashdump_ongoing = false;
@@ -1749,7 +1749,7 @@ log_reboot_cause(char *sled_off_time)
 
 // Thread to monitor SLED Cycles by using time stamp
 static void *
-timestamp_handler()
+timestamp_handler(void *unused __attribute__((unused)))
 {
   int count = 0;
   struct timespec ts;
@@ -1902,7 +1902,7 @@ next_run:
 }
 
 static void *
-log_rearm_check() {
+log_rearm_check(void *unused __attribute__((unused))) {
   int ret = 0;
   size_t i = 0;
   char val[MAX_KEY_LEN] = {0};
@@ -1947,7 +1947,7 @@ log_rearm_check() {
 }
 
 static void *
-ubifs_health_monitor() {
+ubifs_health_monitor(void *unused __attribute__((unused))) {
   const char ubifs_ro_error[] = "/sys/kernel/debug/ubifs/ubi0_0/ro_error";
   FILE *fp;
   int val;

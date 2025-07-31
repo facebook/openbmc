@@ -29,7 +29,7 @@ static struct
     void* udata;
     logLockFn lock;
     FILE* fp;
-    void (*ptr)();
+    void (*ptr)(char*);
     int level;
     int quiet;
     bool traceEn;
@@ -74,7 +74,7 @@ void asteraLogSetFp(FILE* fp)
     AsteraLogger.fp = fp;
 }
 
-void asteraLogSetCallback(void (*ptr)())
+void asteraLogSetCallback(void (*ptr)(char*))
 {
     AsteraLogger.ptr = ptr;
 }

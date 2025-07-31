@@ -62,7 +62,7 @@ enum
 void asteraLogSetUdata(void* udata);
 void asteraLogSetLock(logLockFn fn);
 void asteraLogSetFp(FILE* fp);
-void asteraLogSetCallback(void (*ptr)());
+void asteraLogSetCallback(void (*ptr)(char*));
 void asteraLogSetLevel(int level);
 void asteraLogSetQuiet(int enable);
 

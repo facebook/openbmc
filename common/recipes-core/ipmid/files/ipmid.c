@@ -632,7 +632,7 @@ app_get_device_id (unsigned char *request, unsigned char req_len,
 }
 
 static void *
-wait_and_reboot() {
+wait_and_reboot(void *unused __attribute__((unused))) {
   sleep(1);
   pal_bmc_reboot(RB_AUTOBOOT);
   return NULL;

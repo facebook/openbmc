@@ -672,7 +672,7 @@ static void app_get_device_id(
   *res_len = data - &res->data[0];
 }
 
-static void* wait_and_reboot() {
+static void* wait_and_reboot(void *unused __attribute__((unused))) {
   sleep(1);
   ipmi_bmc_reboot(RB_AUTOBOOT);
   return NULL;

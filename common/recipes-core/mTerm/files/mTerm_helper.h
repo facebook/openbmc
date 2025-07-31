@@ -65,7 +65,7 @@ typedef struct TlvHeader {
   uint16_t length;
 }TlvHeader;
 
-void setFru();
+void setFru(char *dev);
 //esc mode processing
 void escHelp();
 int processEscMode(int clientfd, char c, escMode* mode);

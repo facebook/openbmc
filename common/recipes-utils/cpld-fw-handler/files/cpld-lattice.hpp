@@ -66,7 +66,7 @@ class CpldLatticeManager : public CpldManager
     {}
 
     int getVersion() override;
-    int fwUpdate(bool legacy);
+    int fwUpdate(bool legacy) override;
     int jedFileParser();
 
   private:

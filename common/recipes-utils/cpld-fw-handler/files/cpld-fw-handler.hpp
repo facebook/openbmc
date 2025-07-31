@@ -42,7 +42,7 @@ class CpldManager
         }
     }
 
-    virtual int fwUpdate()
+    virtual int fwUpdate(bool /* legacy */)
     {
         std::cerr << "fwUpdate() not implemented" << std::endl;
         return -1;

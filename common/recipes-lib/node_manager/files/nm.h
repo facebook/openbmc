@@ -1,5 +1,5 @@
 #ifndef __NODE_MANAGER_H__
-#define __NODE_NANAGER_H__
+#define __NODE_MANAGER_H__
 
 #ifdef __cplusplus
 extern "C" {

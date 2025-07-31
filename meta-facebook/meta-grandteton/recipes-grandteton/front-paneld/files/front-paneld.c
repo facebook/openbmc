@@ -53,7 +53,7 @@ is_btn_blocked(uint8_t fru) {
 
 // Thread to handle LED state of the SLED
 static void *
-led_sync_handler() {
+led_sync_handler(void *) {
   gpio_desc_t *PCH_BEEP = gpio_open_by_shadow("FM_PCH_BEEP_LED");
   gpio_desc_t *HDD_LED = gpio_open_by_shadow("FM_HDD_LED_N");
   gpio_desc_t *PCH_BEEP_OUT = gpio_open_by_shadow("FM_PCH_BEEP_LED_OUT");
@@ -138,7 +138,7 @@ led_sync_handler() {
 }
 
 static void *
-rst_btn_handler() {
+rst_btn_handler(void *) {
   int ret;
   int i;
   uint8_t btn;
@@ -215,7 +215,7 @@ rst_btn_handler() {
 
 // Thread to handle Power Button and power on/off the selected server
 static void *
-pwr_btn_handler() {
+pwr_btn_handler(void *) {
   int ret, i;
   uint8_t btn;
   bool release_flag = true;

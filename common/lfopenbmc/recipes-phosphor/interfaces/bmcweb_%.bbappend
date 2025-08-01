@@ -7,6 +7,9 @@ SRC_URI:append = " \
 
 EXTRA_OEMESON:append = " -Dredfish-updateservice-use-dbus=enabled"
 
+# S546922: Disable HTTP2 as it's not working with cert auth
+EXTRA_OEMESON:append = " -Dhttp2=disabled"
+
 # Enable PDI-generated Redfish Message Registries
 EXTRA_OEMESON:append = " -Dredfish-allow-dbus-messages-mapping=enabled"
 # Patches for PDI-generated Redfish Message Registries

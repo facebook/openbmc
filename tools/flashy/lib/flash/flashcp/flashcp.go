@@ -286,6 +286,7 @@ var eraseFlashDevice = func(
 			start:  off,
 			length: m.erasesize,
 		}
+		log.Printf("Erasing block offset: %v with length: %v", e.start, e.length)
 
 		err = IOCTL(deviceFile.Fd(), MEMERASE, uintptr(unsafe.Pointer(&e)))
 		if err != nil {
@@ -335,11 +336,14 @@ var flashImage = func(
 		if size > chunkSize {
 			size = chunkSize
 		}
+		log.Printf("Fetching image data for offset: %v, size: %v", off, size)
+
 		activeImageData, err := utils.BytesSliceRange(imFile.data, off, off+size)
 		if err != nil {
 			return errors.Errorf("Unable to get image data after roOffset (%v): %v", roOffset, err)
 		}
 
+		log.Printf("Flashing image data for offset: %v, size: %v", off, size)
 		// use Pwrite, WriteAt may call Pwrite multiple times under the hood
 		n, err := fileutils.Pwrite(int(deviceFile.Fd()), activeImageData, int64(off))
 		if err != nil {

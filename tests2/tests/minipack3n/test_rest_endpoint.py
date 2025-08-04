@@ -47,11 +47,7 @@ class RestEndpointTest(FbossRestEndpointTest, unittest.TestCase):
 
     # "/api/sys/mb/fruid"
     def set_endpoint_fruid_attributes(self):
-        self.endpoint_fruid_attrb = (
-            self.FRUID_ATTRIBUTES_V5
-            + self.FRUID_ATTRIBUTES_V5_BMC
-            + self.FRUID_ATTRIBUTES_V5_SWITCH_ASIC
-        )
+        self.endpoint_fruid_attrb = self.FRUID_ATTRIBUTES_V6
 
     @unittest.skip("not available")
     # "/api/sys/firmware_info/all"

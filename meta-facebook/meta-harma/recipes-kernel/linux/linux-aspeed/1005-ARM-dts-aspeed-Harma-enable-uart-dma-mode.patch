@@ -1,18 +1,18 @@
-From ee841ef174d3306d4a6b762e7d04e294688680da Mon Sep 17 00:00:00 2001
+From 0b0e2895dc2b92ba8f65bca07d31af73a8daa65e Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 22 Aug 2024 22:50:05 +0800
-Subject: [PATCH 1005/1007] ARM: dts: aspeed: Harma: enable uart dma mode
+Subject: [PATCH 1005/1005] ARM: dts: aspeed: Harma: enable uart dma mode
 
 enable uart dma mode in uart4 and uart6.
 
 BaseOn: https://lore.kernel.org/openbmc/20230320081133.23655-1-chiawei_wang@aspeedtech.com/
 The DMA UART driver has not yet been merged upstream, so the patch is currently only in the meta layer.
 ---
- .../boot/dts/aspeed/aspeed-bmc-facebook-harma.dts    | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-index de43ea16437c..ef1d904f1807 100644
+index de43ea16437c..e941f38c54ae 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 @@ -86,21 +86,30 @@ tpm@0 {
@@ -46,17 +46,6 @@ index de43ea16437c..ef1d904f1807 100644
  };
  
  // BMC Debug Console
-@@ -110,7 +119,10 @@ &uart5 {
- 
- // MTIA
- &uart6 {
-+	compatible = "aspeed,ast2600-uart";
- 	status = "okay";
-+	dmas = <&udma 8>, <&udma 9>;
-+	dma-names = "tx", "rx";
- };
- 
- &uart_routing {
 -- 
-2.49.0
+2.25.1
 

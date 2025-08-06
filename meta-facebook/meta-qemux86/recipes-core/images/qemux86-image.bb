@@ -20,6 +20,8 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-rest3 \
   "
 
+PACKAGE_EXCLUDE += "dbus-ptest"
+
 # Certain image post-process commands tend to depend
 # on the deploy directory being created by some process
 # Since we do not use the standard image generation

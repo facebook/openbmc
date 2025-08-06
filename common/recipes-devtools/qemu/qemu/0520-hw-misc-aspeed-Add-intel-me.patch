@@ -1,4 +1,4 @@
-From 5822d1a72e43bc08f7a9152b1e355434d6f5de89 Mon Sep 17 00:00:00 2001
+From 207af7fec783127816a5f812bd1489a6fe06bc6a Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH 520/532] hw/misc/aspeed: Add intel-me
@@ -26,10 +26,10 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  create mode 100644 hw/misc/intel_me.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index ace35c640d..1b504deeb7 100644
+index 13a5dcf4da..0d46aaa0a6 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -1136,6 +1136,7 @@ F: tests/*/*aspeed*
+@@ -1164,6 +1164,7 @@ F: tests/*/*aspeed*
  F: tests/*/*ast2700*
  F: hw/arm/fby35.c
  F: hw/misc/fby35_sb_cpld.c
@@ -206,10 +206,10 @@ index 0000000000..933ae45101
 +
 +DEFINE_TYPES(types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 7364646691..1c63cdbb4d 100644
+index a4576f6ad9..c79eb3fb05 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -133,7 +133,8 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -138,7 +138,8 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_xdma.c',
    'aspeed_peci.c',
    'aspeed_sli.c',
@@ -220,10 +220,10 @@ index 7364646691..1c63cdbb4d 100644
  system_ss.add(when: 'CONFIG_MSF2', if_true: files('msf2-sysreg.c'))
  system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
 diff --git a/hw/misc/trace-events b/hw/misc/trace-events
-index 944408a3df..8154d1994b 100644
+index 73f55a161b..1babb562b8 100644
 --- a/hw/misc/trace-events
 +++ b/hw/misc/trace-events
-@@ -371,3 +371,11 @@ aspeed_sliio_read(uint64_t offset, unsigned int size, uint32_t data) "To 0x%" PR
+@@ -399,3 +399,11 @@ i2c_echo_send(const char *id, uint8_t data) "%s: send 0x%02" PRIx8
  # fby35_sb_cpld.c
  fby35_sb_cpld_read(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"
  fby35_sb_cpld_write(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"
@@ -236,5 +236,5 @@ index 944408a3df..8154d1994b 100644
 +intel_me_tx_data(uint8_t addr, uint8_t data) "addr 0x%02x data 0x%02x"
 +intel_me_tx_end(uint8_t addr) "addr 0x%02x"
 -- 
-2.44.2
+2.49.1
 

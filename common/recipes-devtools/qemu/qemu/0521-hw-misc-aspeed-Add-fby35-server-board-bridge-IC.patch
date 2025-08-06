@@ -1,4 +1,4 @@
-From 749b5a2980d0e6ae5fa5845e9fd514db90b0e813 Mon Sep 17 00:00:00 2001
+From 890fa578ed3747a7e9f3695d6de143b17f47a563 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 23 Aug 2022 16:57:35 -0700
 Subject: [PATCH 521/532] hw/misc/aspeed: Add fby35 server board bridge IC
@@ -405,10 +405,10 @@ index 0000000000..245fd2df5a
 +
 +DEFINE_TYPES(types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 1c63cdbb4d..da1339dd3c 100644
+index c79eb3fb05..655d2845e2 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -134,6 +134,7 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -139,6 +139,7 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_peci.c',
    'aspeed_sli.c',
    'fby35_sb_cpld.c',
@@ -417,10 +417,10 @@ index 1c63cdbb4d..da1339dd3c 100644
  
  system_ss.add(when: 'CONFIG_MSF2', if_true: files('msf2-sysreg.c'))
 diff --git a/hw/misc/trace-events b/hw/misc/trace-events
-index 8154d1994b..9d52253c86 100644
+index 1babb562b8..7b87cedb02 100644
 --- a/hw/misc/trace-events
 +++ b/hw/misc/trace-events
-@@ -372,6 +372,10 @@ aspeed_sliio_read(uint64_t offset, unsigned int size, uint32_t data) "To 0x%" PR
+@@ -400,6 +400,10 @@ i2c_echo_send(const char *id, uint8_t data) "%s: send 0x%02" PRIx8
  fby35_sb_cpld_read(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"
  fby35_sb_cpld_write(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"
  
@@ -432,5 +432,5 @@ index 8154d1994b..9d52253c86 100644
  intel_me_rx_start(uint8_t addr) "addr 0x%02x"
  intel_me_rx_data(uint8_t addr, uint8_t data) "addr 0x%02x data 0x%02x"
 -- 
-2.44.2
+2.49.1
 

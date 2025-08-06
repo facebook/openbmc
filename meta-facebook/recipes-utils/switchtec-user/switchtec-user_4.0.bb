@@ -11,7 +11,7 @@ SRC_URI[md5sum] = "e922fac2d7345e643459fb39e3d77c53"
 SRC_URI[sha256sum] = "e2850a8e39ff17a2de3956ab50ef34ba639c535da9e2cab79d31ef43cc033ad9"
 
 # This package is pretty old and doesn't use git.  Ignore the QA warning.
-ERROR_QA:remove="src-uri-bad"
+ERROR_QA:remove = "src-uri-bad"
 
 S = "${WORKDIR}/switchtec-user-${PV}"
 

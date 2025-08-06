@@ -322,6 +322,12 @@ exit:
   syslog(LOG_ERR, "Get CPLD reg command fail");
   return;
 }
+
+static void power_fail_check_init(gpiopoll_pin_t *, gpio_value_t)
+{
+  power_fail_check();
+}
+
 static void gpio_smb_alert_handler (gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
 {
   power_fail_check();
@@ -371,7 +377,7 @@ static struct gpiopoll_config g_gpios[] = {
   {"CARRIER_0_ALERT_R_N", "CARRIER_0", GPIO_EDGE_FALLING, gpio_carrier_log_handler, NULL},
   {"CARRIER_1_ALERT_R_N", "CARRIER_1", GPIO_EDGE_FALLING, gpio_carrier_log_handler, NULL},
   {"SYS_PWR_READY", "SYS_PWR_READY", GPIO_EDGE_BOTH, gpio_sys_pwr_ready_handler, NULL},
-  {"CPLD_SMB_ALERT_N_R", "GPIOE5", GPIO_EDGE_BOTH, gpio_smb_alert_handler, power_fail_check},
+  {"CPLD_SMB_ALERT_N_R", "GPIOE5", GPIO_EDGE_BOTH, gpio_smb_alert_handler, power_fail_check_init},
   {"SMB_PMBUS_ISO_HSC_R2_ALERT_0_1", "GPIOS0", GPIO_EDGE_RISING, gpio_event_handle_low_active, NULL},
   {"SMB_PMBUS_ISO_HSC_R2_ALERT_2_3", "GPIOS1", GPIO_EDGE_RISING, gpio_event_handle_low_active, NULL},
   {"PEX0_SYS_ERR_BMC", "GPION4", GPIO_EDGE_BOTH, gpio_event_pex_error, NULL},

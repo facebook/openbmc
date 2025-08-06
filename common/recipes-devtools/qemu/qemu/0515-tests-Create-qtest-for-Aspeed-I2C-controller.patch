@@ -1,4 +1,4 @@
-From 2cc0c671fb02f87794fd99b99200396d27b6d285 Mon Sep 17 00:00:00 2001
+From bcf817702af26e5f323a004d4396f6bd584be5d9 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Fri, 26 Aug 2022 07:12:09 -0700
 Subject: [PATCH 515/532] tests: Create qtest for Aspeed I2C controller
@@ -158,5 +158,5 @@ index 0000000000..1db23222f0
 +    return g_test_run();
 +}
 -- 
-2.44.2
+2.49.1
 

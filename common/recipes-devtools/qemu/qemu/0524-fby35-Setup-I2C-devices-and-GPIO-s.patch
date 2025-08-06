@@ -1,4 +1,4 @@
-From c2405e21d83e206815a0f043f84049708943cc5a Mon Sep 17 00:00:00 2001
+From 87e21414ef31c2851219bb442d4c7e90f4e305d9 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 23 Aug 2022 23:24:36 -0700
 Subject: [PATCH 524/532] fby35: Setup I2C devices and GPIO's
@@ -11,10 +11,10 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  3 files changed, 104 insertions(+), 25 deletions(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index f18d6c7f14..78ca428491 100644
+index f6cbbb3df0..97e4ed1a3e 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -1042,35 +1042,13 @@ static void bletchley_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -1046,35 +1046,13 @@ static void bletchley_bmc_i2c_init(AspeedMachineState *bmc)
  static void fby35_i2c_init(AspeedMachineState *bmc)
  {
      AspeedSoCState *soc = bmc->soc;
@@ -52,7 +52,7 @@ index f18d6c7f14..78ca428491 100644
  }
  
  static void fbttn_i2c_init(AspeedMachineState *bmc)
-@@ -1618,7 +1596,6 @@ static void aspeed_machine_bletchley_class_init(ObjectClass *oc, void *data)
+@@ -1619,7 +1597,6 @@ static void aspeed_machine_bletchley_class_init(ObjectClass *oc, void *data)
  static void fby35_reset(MachineState *state, ResetType type)
  {
      AspeedMachineState *bmc = ASPEED_MACHINE(state);
@@ -60,7 +60,7 @@ index f18d6c7f14..78ca428491 100644
  
      qemu_devices_reset(type);
  
-@@ -1639,6 +1616,8 @@ static void fby35_reset(MachineState *state, ResetType type)
+@@ -1640,6 +1617,8 @@ static void fby35_reset(MachineState *state, ResetType type)
      object_property_set_bool(OBJECT(gpio), "gpioB3", false, &error_fatal);
      object_property_set_bool(OBJECT(gpio), "gpioB4", false, &error_fatal);
      object_property_set_bool(OBJECT(gpio), "gpioB5", false, &error_fatal);
@@ -70,15 +70,15 @@ index f18d6c7f14..78ca428491 100644
  
  static void aspeed_machine_fby35_class_init(ObjectClass *oc, void *data)
 diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
-index 490f5d6e23..0066030f62 100644
+index 1e043924f6..593730617f 100644
 --- a/hw/arm/fby35.c
 +++ b/hw/arm/fby35.c
 @@ -9,6 +9,7 @@
  #include "qemu/units.h"
  #include "qapi/error.h"
- #include "sysemu/sysemu.h"
-+#include "sysemu/reset.h"
- #include "sysemu/block-backend.h"
+ #include "system/system.h"
++#include "system/reset.h"
+ #include "system/block-backend.h"
  #include "hw/boards.h"
  #include "hw/qdev-clock.h"
 @@ -17,6 +18,11 @@
@@ -216,9 +216,9 @@ index 490f5d6e23..0066030f62 100644
  
  static bool fby35_get_mmio_exec(Object *obj, Error **errp)
  {
-@@ -184,6 +278,7 @@ static void fby35_class_init(ObjectClass *oc, void *data)
-     mc->no_floppy = 1;
+@@ -185,6 +279,7 @@ static void fby35_class_init(ObjectClass *oc, void *data)
      mc->no_cdrom = 1;
+     mc->auto_create_sdcard = true;
      mc->min_cpus = mc->max_cpus = mc->default_cpus = 3;
 +    mc->reset = fby35_reset;
  
@@ -239,5 +239,5 @@ index 20bd43fbae..87cb1a10c2 100644
 +
  #endif
 -- 
-2.44.2
+2.49.1
 

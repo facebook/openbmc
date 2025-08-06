@@ -2992,7 +2992,7 @@ server_12v_cycle_physically(uint8_t slot_id){
   int pair_set_type=-1;
   char pwr_state[MAX_VALUE_LEN] = {0};
 
-  if (pal_is_all_fan_fail(slot_id)) {
+  if (pal_is_all_fan_fail()) {
     printf("Fail to 12V cycle fru %u due to fan fail.\n", slot_id);
     return -3;
   }
@@ -3199,7 +3199,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
     case SERVER_FORCE_POWER_ON:
       force = true;
     case SERVER_POWER_ON:
-      if (!force && pal_is_all_fan_fail(slot_id)) {
+      if (!force && pal_is_all_fan_fail()) {
         printf("Fail to power fru %u to ON state due to fan fail.\n", slot_id);
         syslog(LOG_CRIT, "SERVER_POWER_ON fail for FRU: %d due to fan fail", slot_id);
         return -3;
@@ -3261,7 +3261,7 @@ pal_set_server_power(uint8_t slot_id, uint8_t cmd) {
     case SERVER_FORCE_12V_ON:
       force = true;
     case SERVER_12V_ON:
-      if (!force && pal_is_all_fan_fail(slot_id)) {
+      if (!force && pal_is_all_fan_fail()) {
         printf("Fail to 12V Powering fru %u to ON state due to fan fail.\n", slot_id);
         syslog(LOG_CRIT, "SERVER_12V_ON fail for FRU: %d due to fan fail", slot_id);
         return -3;

@@ -1,4 +1,4 @@
-From a7a57258aa81593acb930becd8220396906ac0d4 Mon Sep 17 00:00:00 2001
+From 1fd6e21a1e7693384954d9fd06294f3b9be9fbee Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 24 Aug 2022 01:53:43 -0700
 Subject: [PATCH 511/532] hw/i2c/aspeed: Add slave event traces
@@ -10,10 +10,10 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  2 files changed, 15 insertions(+)
 
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index 479a501d98..e8703c774e 100644
+index c3a9f7445c..3c781bd6a1 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
-@@ -1307,9 +1307,18 @@ static const TypeInfo aspeed_i2c_info = {
+@@ -1306,9 +1306,18 @@ static const TypeInfo aspeed_i2c_info = {
      .abstract   = true,
  };
  
@@ -32,7 +32,7 @@ index 479a501d98..e8703c774e 100644
      switch (event) {
      case I2C_START_SEND_ASYNC:
          if (!SHARED_ARRAY_FIELD_EX32(bus->regs, R_I2CS_CMD, RX_DMA_EN)) {
-@@ -1355,6 +1364,8 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
+@@ -1354,6 +1363,8 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
          return aspeed_i2c_bus_new_slave_event(bus, event);
      }
  
@@ -41,7 +41,7 @@ index 479a501d98..e8703c774e 100644
      switch (event) {
      case I2C_START_SEND_ASYNC:
          /* Bit[0] == 0 indicates "send". */
-@@ -1375,6 +1386,8 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
+@@ -1374,6 +1385,8 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
          break;
  
      default:
@@ -51,7 +51,7 @@ index 479a501d98..e8703c774e 100644
      }
  
 diff --git a/hw/i2c/trace-events b/hw/i2c/trace-events
-index 5657cc0ec8..b955c63b3c 100644
+index cdee7ad05c..8de645838b 100644
 --- a/hw/i2c/trace-events
 +++ b/hw/i2c/trace-events
 @@ -34,6 +34,8 @@ aspeed_i2c_bus_read(uint32_t busid, uint64_t offset, unsigned size, uint64_t val
@@ -64,5 +64,5 @@ index 5657cc0ec8..b955c63b3c 100644
  
  # mpc_i2c.c
 -- 
-2.44.2
+2.49.1
 

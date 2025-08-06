@@ -1,4 +1,4 @@
-From 9438e8e9567855ec7d7edcc707bad1eebf7d855c Mon Sep 17 00:00:00 2001
+From 8fab1f763b803e97a56f0bab6c49bef50b629fc9 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 27 Apr 2022 16:23:48 -0700
 Subject: [PATCH 503/532] hw/misc: Add i2c-netdev device
@@ -60,17 +60,17 @@ Usage:
 
 Signed-off-by: Peter Delevoryas <pdel@fb.com>
 ---
- hw/misc/i2c-netdev.c | 217 +++++++++++++++++++++++++++++++++++++++++++
+ hw/misc/i2c-netdev.c | 216 +++++++++++++++++++++++++++++++++++++++++++
  hw/misc/meson.build  |   1 +
- 2 files changed, 218 insertions(+)
+ 2 files changed, 217 insertions(+)
  create mode 100644 hw/misc/i2c-netdev.c
 
 diff --git a/hw/misc/i2c-netdev.c b/hw/misc/i2c-netdev.c
 new file mode 100644
-index 0000000000..83faa942b1
+index 0000000000..3153946b70
 --- /dev/null
 +++ b/hw/misc/i2c-netdev.c
-@@ -0,0 +1,217 @@
+@@ -0,0 +1,216 @@
 +#include "qemu/osdep.h"
 +#include "qemu/main-loop.h"
 +#include "qapi/error.h"
@@ -258,9 +258,8 @@ index 0000000000..83faa942b1
 +    s->guest_os_rx_len = 0;
 +}
 +
-+static Property i2c_netdev_props[] = {
++static const Property i2c_netdev_props[] = {
 +    DEFINE_NIC_PROPERTIES(I2CNetdev, nic_conf),
-+    DEFINE_PROP_END_OF_LIST(),
 +};
 +
 +static void i2c_netdev_class_init(ObjectClass *cls, void *data)
@@ -289,10 +288,10 @@ index 0000000000..83faa942b1
 +
 +type_init(register_types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index d02d96e403..944d701658 100644
+index 6d47de482c..ce7105f4f9 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -140,6 +140,7 @@ system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
+@@ -145,6 +145,7 @@ system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
  system_ss.add(when: 'CONFIG_GRLIB', if_true: files('grlib_ahb_apb_pnp.c'))
  
  system_ss.add(when: 'CONFIG_I2C_ECHO', if_true: files('i2c-echo.c'))
@@ -301,5 +300,5 @@ index d02d96e403..944d701658 100644
  specific_ss.add(when: 'CONFIG_AVR_POWER', if_true: files('avr_power.c'))
  
 -- 
-2.44.2
+2.49.1
 

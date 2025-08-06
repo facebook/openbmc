@@ -1,4 +1,4 @@
-From c23a8a40017d28233c4c50c254084a0b8a81c1fd Mon Sep 17 00:00:00 2001
+From 70ab472380495075febb6811633bde5958da6415 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH 517/532] aspeed: Expose i2c buses to machine
@@ -16,7 +16,7 @@ Signed-off-by: Cédric Le Goater <clg@kaod.org>
  4 files changed, 36 insertions(+), 1 deletion(-)
 
 diff --git a/hw/arm/aspeed_soc_common.c b/hw/arm/aspeed_soc_common.c
-index a5ff33c46d..5d13d75632 100644
+index 1ddcb26c1e..9eeb138b50 100644
 --- a/hw/arm/aspeed_soc_common.c
 +++ b/hw/arm/aspeed_soc_common.c
 @@ -107,6 +107,20 @@ bool aspeed_soc_dram_init(AspeedSoCState *s, Error **errp)
@@ -41,7 +41,7 @@ index a5ff33c46d..5d13d75632 100644
  {
      memory_region_add_subregion(s->memory, addr,
 diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
-index c9964bd283..490f5d6e23 100644
+index 6d3663f14a..1e043924f6 100644
 --- a/hw/arm/fby35.c
 +++ b/hw/arm/fby35.c
 @@ -14,6 +14,9 @@
@@ -74,10 +74,10 @@ index c9964bd283..490f5d6e23 100644
  }
  
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index f7693618c1..041222a200 100644
+index 0326f8a7e4..69a54030eb 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
-@@ -1466,7 +1466,12 @@ static void aspeed_i2c_bus_realize(DeviceState *dev, Error **errp)
+@@ -1465,7 +1465,12 @@ static void aspeed_i2c_bus_realize(DeviceState *dev, Error **errp)
  
      sysbus_init_irq(SYS_BUS_DEVICE(dev), &s->irq);
  
@@ -91,16 +91,16 @@ index f7693618c1..041222a200 100644
      s->slave = i2c_slave_create_simple(s->bus, TYPE_ASPEED_I2C_BUS_SLAVE,
                                         0xff);
      ASPEED_I2C_BUS_SLAVE(s->slave)->bus = s;
-@@ -1484,6 +1489,7 @@ static Property aspeed_i2c_bus_properties[] = {
+@@ -1483,6 +1488,7 @@ static const Property aspeed_i2c_bus_properties[] = {
      DEFINE_PROP_UINT8("bus-id", AspeedI2CBus, id, 0),
      DEFINE_PROP_LINK("controller", AspeedI2CBus, controller, TYPE_ASPEED_I2C,
                       AspeedI2CState *),
 +    DEFINE_PROP_LINK("bus", AspeedI2CBus, bus, TYPE_I2C_BUS, I2CBus *),
-     DEFINE_PROP_END_OF_LIST(),
  };
  
+ static void aspeed_i2c_bus_get_scl_timeout(Object *obj, Visitor *v,
 diff --git a/include/hw/arm/aspeed_soc.h b/include/hw/arm/aspeed_soc.h
-index 689f52dae8..0ab37bccff 100644
+index f069d17d16..3965c25817 100644
 --- a/include/hw/arm/aspeed_soc.h
 +++ b/include/hw/arm/aspeed_soc.h
 @@ -255,6 +255,8 @@ qemu_irq aspeed_soc_get_irq(AspeedSoCState *s, int dev);
@@ -113,5 +113,5 @@ index 689f52dae8..0ab37bccff 100644
  void aspeed_mmio_map_unimplemented(AspeedSoCState *s, SysBusDevice *dev,
                                     const char *name, hwaddr addr,
 -- 
-2.44.2
+2.49.1
 

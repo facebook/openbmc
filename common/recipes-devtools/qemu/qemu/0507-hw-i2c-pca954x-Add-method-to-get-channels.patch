@@ -1,4 +1,4 @@
-From 8752796e58ae1b4b1cc470c07e766753253c1554 Mon Sep 17 00:00:00 2001
+From 3dfbc06e1099c160e5da980ebfcaf7a0a9484934 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH 507/532] hw/i2c/pca954x: Add method to get channels
@@ -36,10 +36,10 @@ Signed-off-by: Cédric Le Goater <clg@kaod.org>
  3 files changed, 32 insertions(+), 20 deletions(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index efefc17ac8..9360b0c822 100644
+index 89190089c1..4ed7a252a7 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -888,15 +888,6 @@ static void rainier_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -892,15 +892,6 @@ static void rainier_bmc_i2c_init(AspeedMachineState *bmc)
      create_pca9552(soc, 15, 0x60);
  }
  
@@ -55,7 +55,7 @@ index efefc17ac8..9360b0c822 100644
  #define TYPE_LM75 TYPE_TMP105
  #define TYPE_TMP75 TYPE_TMP105
  #define TYPE_TMP422 "tmp422"
-@@ -909,20 +900,18 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -913,20 +904,18 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
      for (int i = 0; i < 16; i++) {
          i2c[i] = aspeed_i2c_get_bus(&soc->i2c, i);
      }
@@ -86,7 +86,7 @@ index efefc17ac8..9360b0c822 100644
  
      i2c_slave_create_simple(i2c[17], TYPE_LM75, 0x4c);
 diff --git a/hw/i2c/i2c_mux_pca954x.c b/hw/i2c/i2c_mux_pca954x.c
-index db5db956a6..1340dd9143 100644
+index 779cc4e66e..c824e7ba1d 100644
 --- a/hw/i2c/i2c_mux_pca954x.c
 +++ b/hw/i2c/i2c_mux_pca954x.c
 @@ -172,6 +172,16 @@ I2CBus *pca954x_i2c_get_bus(I2CSlave *mux, uint8_t channel)
@@ -129,5 +129,5 @@ index 3dd25ec983..3a676a30a9 100644
 +
  #endif
 -- 
-2.44.2
+2.49.1
 

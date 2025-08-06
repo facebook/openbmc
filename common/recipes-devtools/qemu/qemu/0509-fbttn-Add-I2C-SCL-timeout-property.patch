@@ -1,4 +1,4 @@
-From fc762885e15fa34d7d2f7d79923777f2ab79587f Mon Sep 17 00:00:00 2001
+From 58fb09ff8db2af9c29a3f78f7d92dcf275634a19 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Tue, 16 Aug 2022 00:32:54 -0700
 Subject: [PATCH 509/532] fbttn: Add I2C SCL timeout property
@@ -24,10 +24,10 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  4 files changed, 52 insertions(+)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index e9b1980ab9..53e52f1402 100644
+index 372093f061..481a6f76dc 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -1070,6 +1070,12 @@ static void fby35_i2c_init(AspeedMachineState *bmc)
+@@ -1074,6 +1074,12 @@ static void fby35_i2c_init(AspeedMachineState *bmc)
       */
  }
  
@@ -40,7 +40,7 @@ index e9b1980ab9..53e52f1402 100644
  static void qcom_dc_scm_bmc_i2c_init(AspeedMachineState *bmc)
  {
      AspeedSoCState *soc = bmc->soc;
-@@ -2011,6 +2017,7 @@ static const struct FBMachineData fb_machines[] = {
+@@ -2037,6 +2043,7 @@ static const struct FBMachineData fb_machines[] = {
          .macs_mask   = ASPEED_MAC0_ON,
          .stdout_path = ASPEED_DEV_UART5,
          .ram_size    = 1 * GiB,
@@ -49,7 +49,7 @@ index e9b1980ab9..53e52f1402 100644
      {
          .name        = "fbtp-bmc",
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index 3ae22cb052..b80f863634 100644
+index a8fbb9f44a..c92878bbcb 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
 @@ -26,6 +26,7 @@
@@ -98,8 +98,8 @@ index 3ae22cb052..b80f863634 100644
          aspeed_i2c_set_state(bus, state);
  
          addr = aspeed_i2c_get_addr(bus);
-@@ -1453,6 +1473,24 @@ static Property aspeed_i2c_bus_properties[] = {
-     DEFINE_PROP_END_OF_LIST(),
+@@ -1451,6 +1471,24 @@ static const Property aspeed_i2c_bus_properties[] = {
+                      AspeedI2CState *),
  };
  
 +static void aspeed_i2c_bus_get_scl_timeout(Object *obj, Visitor *v,
@@ -123,7 +123,7 @@ index 3ae22cb052..b80f863634 100644
  static void aspeed_i2c_bus_class_init(ObjectClass *klass, void *data)
  {
      DeviceClass *dc = DEVICE_CLASS(klass);
-@@ -1461,6 +1499,11 @@ static void aspeed_i2c_bus_class_init(ObjectClass *klass, void *data)
+@@ -1459,6 +1497,11 @@ static void aspeed_i2c_bus_class_init(ObjectClass *klass, void *data)
      dc->realize = aspeed_i2c_bus_realize;
      device_class_set_legacy_reset(dc, aspeed_i2c_bus_reset);
      device_class_set_props(dc, aspeed_i2c_bus_properties);
@@ -136,7 +136,7 @@ index 3ae22cb052..b80f863634 100644
  
  static const TypeInfo aspeed_i2c_bus_info = {
 diff --git a/hw/i2c/trace-events b/hw/i2c/trace-events
-index f708a7ace1..93a1971dd7 100644
+index 1ad0e95c0e..5337e922b5 100644
 --- a/hw/i2c/trace-events
 +++ b/hw/i2c/trace-events
 @@ -34,6 +34,7 @@ aspeed_i2c_bus_read(uint32_t busid, uint64_t offset, unsigned size, uint64_t val
@@ -160,5 +160,5 @@ index 2c4c81bd20..1622490024 100644
      uint32_t regs[ASPEED_I2C_NEW_NUM_REG];
      uint8_t pool[ASPEED_I2C_BUS_POOL_SIZE];
 -- 
-2.44.2
+2.49.1
 

@@ -570,7 +570,7 @@ gpio_monitor_poll(void *ptr) {
 } /* function definition*/
 
 static void *
-cpld_io_mon() {
+cpld_io_mon(void *) {
   uint8_t uart_pos = 0x00;
   uint8_t card_prsnt = 0x00;
   uint8_t prev_uart_pos = 0xff;
@@ -616,7 +616,7 @@ cpld_io_mon() {
 }
 
 static void *
-host_pwr_mon() {
+host_pwr_mon(void *) {
 #define MAX_NIC_PWR_RETRY   15
 #define POWER_ON_DELAY       2
 #define NON_PFR_POWER_OFF_DELAY  -2
@@ -737,7 +737,7 @@ host_pwr_mon() {
 }
 
 static void *
-stby_pwr_mon() {
+stby_pwr_mon(void *) {
   int ret;
   uint8_t i, fru, pwr_sts;
   uint8_t pre_pwr_sts[MAX_NUM_SLOTS] = {0xff, 0xff, 0xff, 0xff};

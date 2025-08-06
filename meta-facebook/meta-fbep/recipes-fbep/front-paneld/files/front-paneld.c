@@ -37,7 +37,7 @@
 #define LED_IDENTIFY_INTERVAL 500
 
 // Thread to handle STATUS/ID LED state of the SLED
-static void* led_sync_handler()
+static void* led_sync_handler(void *)
 {
   int ret;
   uint8_t status, fru;
@@ -73,7 +73,7 @@ static void* led_sync_handler()
   return NULL;
 }
 
-static void* get_asic_id_handler()
+static void* get_asic_id_handler(void *)
 {
   char* mfr_list[MFR_MAX_NUM+1] = {
     [GPU_NVIDIA] = MFR_NVIDIA,

@@ -264,7 +264,6 @@ KNOWN_USAGE_STRINGS = {
         "mv [-finT] SOURCE DEST",  # BusyBox v1.35.0
     ],
     "nc": ["nc [-l] [-p PORT] [IPADDR PORT]"],
-    "netstat": ["netstat [-ral] [-tuwx] [-en]"],
     "nohup": ["nohup PROG ARGS"],
     "nslookup": [
         "nslookup [HOST] [SERVER]",

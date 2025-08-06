@@ -1,24 +1,24 @@
-From f7126c0cd1d53c497c107e54ede089097e664718 Mon Sep 17 00:00:00 2001
+From 29d361ab48f6795702531bfdf22d6432c69aad46 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Tue, 7 Jun 2022 07:31:54 -0700
 Subject: [PATCH 504/532] hw/misc: Add byte-by-byte i2c network device
 
 Signed-off-by: Peter Delevoryas <pdel@fb.com>
 ---
- hw/misc/i2c-netdev2.c         | 260 ++++++++++++++++++++++++++++++++++
+ hw/misc/i2c-netdev2.c         | 259 ++++++++++++++++++++++++++++++++++
  hw/misc/meson.build           |   2 +-
  tests/qtest/aspeed_i2c-test.c | 243 +++++++++++++++++++++++++++++++
  tests/qtest/meson.build       |   3 +-
- 4 files changed, 506 insertions(+), 2 deletions(-)
+ 4 files changed, 505 insertions(+), 2 deletions(-)
  create mode 100644 hw/misc/i2c-netdev2.c
  create mode 100644 tests/qtest/aspeed_i2c-test.c
 
 diff --git a/hw/misc/i2c-netdev2.c b/hw/misc/i2c-netdev2.c
 new file mode 100644
-index 0000000000..e60846081e
+index 0000000000..44c68f953a
 --- /dev/null
 +++ b/hw/misc/i2c-netdev2.c
-@@ -0,0 +1,260 @@
+@@ -0,0 +1,259 @@
 +#include "qemu/osdep.h"
 +#include "qemu/main-loop.h"
 +#include "qapi/error.h"
@@ -248,9 +248,8 @@ index 0000000000..e60846081e
 +    return 0;
 +}
 +
-+static Property i2c_netdev2_props[] = {
++static const Property i2c_netdev2_props[] = {
 +    DEFINE_NIC_PROPERTIES(I2CNetdev2, nic_conf),
-+    DEFINE_PROP_END_OF_LIST(),
 +};
 +
 +static void i2c_netdev2_class_init(ObjectClass *cls, void *data)
@@ -280,10 +279,10 @@ index 0000000000..e60846081e
 +
 +type_init(register_types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 944d701658..0237b88b0e 100644
+index ce7105f4f9..332590206d 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -140,7 +140,7 @@ system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
+@@ -145,7 +145,7 @@ system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
  system_ss.add(when: 'CONFIG_GRLIB', if_true: files('grlib_ahb_apb_pnp.c'))
  
  system_ss.add(when: 'CONFIG_I2C_ECHO', if_true: files('i2c-echo.c'))
@@ -542,10 +541,10 @@ index 0000000000..aaf8c85427
 +    return ret;
 +}
 diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
-index bd41c9da5f..5771c725ce 100644
+index 3136d15e0f..cd989f7b65 100644
 --- a/tests/qtest/meson.build
 +++ b/tests/qtest/meson.build
-@@ -212,7 +212,8 @@ qtests_npcm7xx = \
+@@ -213,7 +213,8 @@ qtests_npcm7xx = \
  qtests_aspeed = \
    ['aspeed_hace-test',
     'aspeed_smc-test',
@@ -553,8 +552,8 @@ index bd41c9da5f..5771c725ce 100644
 +   'aspeed_gpio-test',
 +   'aspeed_i2c-test']
  qtests_aspeed64 = \
-   ['ast2700-gpio-test']
- 
+   ['ast2700-gpio-test',
+    'ast2700-smc-test']
 -- 
-2.44.2
+2.49.1
 

@@ -1,4 +1,4 @@
-From c82a0f35a04dfd706b6170dbfbedee339bf1e7e8 Mon Sep 17 00:00:00 2001
+From 64920761bac106cb6941f35df6de81eed772abf4 Mon Sep 17 00:00:00 2001
 From: Hao Wu <wuhaotsh@google.com>
 Date: Tue, 5 Apr 2022 15:36:35 -0700
 Subject: [PATCH 505/532] hw/intc: Add a property to allow GIC to reset into
@@ -16,18 +16,18 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/hw/intc/arm_gic_common.c b/hw/intc/arm_gic_common.c
-index 53fb2c4e2d..74d63a1e61 100644
+index 5ac56e3389..8053ed0642 100644
 --- a/hw/intc/arm_gic_common.c
 +++ b/hw/intc/arm_gic_common.c
-@@ -360,6 +360,8 @@ static Property arm_gic_common_properties[] = {
+@@ -360,6 +360,8 @@ static const Property arm_gic_common_properties[] = {
      /* True if the GIC should implement the virtualization extensions */
      DEFINE_PROP_BOOL("has-virtualization-extensions", GICState, virt_extn, 0),
      DEFINE_PROP_UINT32("num-priority-bits", GICState, n_prio_bits, 8),
 +    /* True if we want to directly booting a kernel into NonSecure */
 +    DEFINE_PROP_BOOL("irq-reset-nonsecure", GICState, irq_reset_nonsecure, 0),
-     DEFINE_PROP_END_OF_LIST(),
  };
  
+ static void arm_gic_common_class_init(ObjectClass *klass, void *data)
 -- 
-2.44.2
+2.49.1
 

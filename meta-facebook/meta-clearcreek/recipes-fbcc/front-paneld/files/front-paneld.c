@@ -37,7 +37,7 @@
 #define LED_IDENTIFY_INTERVAL 500
 
 // Thread to handle STATUS/ID LED state of the SLED
-static void* led_sync_handler()
+static void* led_sync_handler(void*)
 {
   int ret;
   uint8_t status, fru;
@@ -88,7 +88,7 @@ is_btn_blocked(uint8_t fru) {
 }
 
 static void *
-rst_btn_handler() {
+rst_btn_handler(void *) {
   int ret;
   uint8_t pos = FRU_MB;
   int i;

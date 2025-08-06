@@ -1,4 +1,4 @@
-From 7b9e576e1836bff3871b23504809dfeed3daac31 Mon Sep 17 00:00:00 2001
+From f8e662cd829beb834a59a9f433d9a36e8a9393a5 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Fri, 20 May 2022 17:07:55 -0700
 Subject: [PATCH 508/532] hw/arm/aspeed: Add fb_machine_class_init
@@ -9,10 +9,10 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  1 file changed, 332 insertions(+)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 9360b0c822..e9b1980ab9 100644
+index 4ed7a252a7..372093f061 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -966,6 +966,30 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -970,6 +970,30 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
      }
  }
  
@@ -43,7 +43,7 @@ index 9360b0c822..e9b1980ab9 100644
  #define TYPE_TMP421 "tmp421"
  
  static void bletchley_bmc_i2c_init(AspeedMachineState *bmc)
-@@ -1085,6 +1109,47 @@ static void qcom_dc_scm_firework_i2c_init(AspeedMachineState *bmc)
+@@ -1089,6 +1113,47 @@ static void qcom_dc_scm_firework_i2c_init(AspeedMachineState *bmc)
      i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 9), "max31785", 0x54);
  }
  
@@ -91,7 +91,7 @@ index 9360b0c822..e9b1980ab9 100644
  static bool aspeed_get_mmio_exec(Object *obj, Error **errp)
  {
      return ASPEED_MACHINE(obj)->mmio_exec;
-@@ -1834,3 +1899,270 @@ static const TypeInfo aspeed_machine_types[] = {
+@@ -1860,3 +1925,270 @@ static const TypeInfo aspeed_machine_types[] = {
  };
  
  DEFINE_TYPES(aspeed_machine_types)
@@ -363,5 +363,5 @@ index 9360b0c822..e9b1980ab9 100644
 +
 +type_init(fb_register_machines);
 -- 
-2.44.2
+2.49.1
 

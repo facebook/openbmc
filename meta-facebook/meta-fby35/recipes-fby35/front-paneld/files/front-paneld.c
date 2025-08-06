@@ -27,7 +27,7 @@
 
 // Thread for update the uart_select
 static void *
-debug_card_handler() {
+debug_card_handler(void *) {
 #define  DELAY_READ 500
   int ret = 0;
   uint8_t card_prsnt = 0x00;
@@ -70,7 +70,7 @@ debug_card_handler() {
 
 // Thread to handle LED state of the server at given slot
 static void *
-led_handler() {
+led_handler(void *) {
 #define DELAY_PERIOD 1
   int i = 0;
   uint8_t slot_hlth = 0;

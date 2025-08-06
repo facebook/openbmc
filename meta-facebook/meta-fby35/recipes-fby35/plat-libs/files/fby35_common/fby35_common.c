@@ -39,8 +39,8 @@
 
 const char *slot_usage = "slot1|slot2|slot3|slot4";
 const char *slot_list[] = {"all", "slot1", "slot2", "slot3", "slot4", "bb", "nic", "bmc", "nicexp", "ocpdbg"};
-const char plat_sig[PLAT_SIG_SIZE] = "Yosemite V3.5   ";
-const char plat_sig_vf[PLAT_SIG_SIZE] = "Yosemite V3     ";
+const char plat_sig[PLAT_SIG_SIZE + 1] = "Yosemite V3.5   ";
+const char plat_sig_vf[PLAT_SIG_SIZE + 1] = "Yosemite V3     ";
 
 int
 fby35_common_set_fru_i2c_isolated(uint8_t fru, uint8_t val) {

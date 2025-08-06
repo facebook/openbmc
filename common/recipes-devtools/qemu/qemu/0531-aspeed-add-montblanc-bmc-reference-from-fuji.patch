@@ -1,4 +1,4 @@
-From 560ba2c480f4d4482df2cf2df44f97cdf7e147e1 Mon Sep 17 00:00:00 2001
+From 0baf1fc1e8b0b74b7f15a174c47aa681fa29ccae Mon Sep 17 00:00:00 2001
 From: Sittisak Sinprem <ssinprem@celestica.com>
 Date: Mon, 8 May 2023 14:37:18 +0700
 Subject: [PATCH 531/532] aspeed add montblanc bmc reference from fuji
@@ -14,10 +14,10 @@ Signed-off-by: Sittisak Sinprem <ssinprem@celestica.com>
  3 files changed, 118 insertions(+)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 6e43bfefee..068d75f204 100644
+index a2ced88730..4d14e3756c 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -198,6 +198,10 @@ struct AspeedMachineState {
+@@ -196,6 +196,10 @@ struct AspeedMachineState {
  #define FUJI_BMC_HW_STRAP1    0x00000000
  #define FUJI_BMC_HW_STRAP2    0x00000000
  
@@ -28,7 +28,7 @@ index 6e43bfefee..068d75f204 100644
  /* Bletchley hardware value */
  /* TODO: Leave same as EVB for now. */
  #define BLETCHLEY_BMC_HW_STRAP1 AST2600_EVB_HW_STRAP1
-@@ -967,6 +971,39 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -971,6 +975,39 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
      }
  }
  
@@ -96,7 +96,7 @@ index 6e43bfefee..068d75f204 100644
  #define BLETCHLEY_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
  
  static void aspeed_machine_bletchley_class_init(ObjectClass *oc, void *data)
-@@ -1848,6 +1906,10 @@ static const TypeInfo aspeed_machine_types[] = {
+@@ -1870,6 +1928,10 @@ static const TypeInfo aspeed_machine_types[] = {
          .name          = MACHINE_TYPE_NAME("fuji-bmc"),
          .parent        = TYPE_ASPEED_MACHINE,
          .class_init    = aspeed_machine_fuji_class_init,
@@ -188,5 +188,5 @@ index f08c16ef50..1a770664ae 100644
 +
  #endif
 -- 
-2.44.2
+2.49.1
 

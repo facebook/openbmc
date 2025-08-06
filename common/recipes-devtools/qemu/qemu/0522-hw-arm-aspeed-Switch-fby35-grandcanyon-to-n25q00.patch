@@ -1,4 +1,4 @@
-From 4aa088683d902a97d529767b78c81cb7dbc242a2 Mon Sep 17 00:00:00 2001
+From ff565fce10beca0b5e11bc1b5d070c161658b27d Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Tue, 14 Jun 2022 11:33:56 -0700
 Subject: [PATCH 522/532] hw/arm/aspeed: Switch fby35, grandcanyon to n25q00
@@ -12,10 +12,10 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index d1028ae54f..ac3951cc83 100644
+index 124a1eeb05..00020a5020 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -1646,7 +1646,7 @@ static void aspeed_machine_fby35_class_init(ObjectClass *oc, void *data)
+@@ -1647,7 +1647,7 @@ static void aspeed_machine_fby35_class_init(ObjectClass *oc, void *data)
  
      mc->desc       = "Facebook fby35 BMC (Cortex-A7)";
      mc->reset      = fby35_reset;
@@ -24,7 +24,7 @@ index d1028ae54f..ac3951cc83 100644
      amc->num_cs    = 2;
      amc->macs_mask = ASPEED_MAC3_ON;
      amc->i2c_init  = fby35_i2c_init;
-@@ -1981,7 +1981,7 @@ static const struct FBMachineData fb_machines[] = {
+@@ -2007,7 +2007,7 @@ static const struct FBMachineData fb_machines[] = {
          .soc_name    = "ast2600-a3",
          .hw_strap1   = AST2600_EVB_HW_STRAP1,
          .hw_strap2   = AST2600_EVB_HW_STRAP2,
@@ -34,5 +34,5 @@ index d1028ae54f..ac3951cc83 100644
          .stdout_path = ASPEED_DEV_UART5,
          .ram_size    = FUJI_BMC_RAM_SIZE,
 -- 
-2.44.2
+2.49.1
 

@@ -436,7 +436,7 @@ static struct gpiopoll_config g_class2_gpios[] = {
 };
 
 static void
-*ac_button_event() {
+*ac_button_event(void *) {
   unsigned int gpio_vals = 0x0;
   /*
   Baseboard AC button:

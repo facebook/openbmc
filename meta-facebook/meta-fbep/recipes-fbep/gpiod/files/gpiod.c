@@ -727,7 +727,7 @@ struct gpioexppoll_config {
   gpio_value_t curr;
 };
 
-static void* fan_status_monitor()
+static void* fan_status_monitor(void *)
 {
   int i;
   struct gpioexppoll_config fan_gpios[] = {
@@ -776,7 +776,7 @@ static void* fan_status_monitor()
   return NULL;
 }
 
-static void* asic_status_monitor()
+static void* asic_status_monitor(void *)
 {
   int i;
   struct gpioexppoll_config asic_gpios[] = {

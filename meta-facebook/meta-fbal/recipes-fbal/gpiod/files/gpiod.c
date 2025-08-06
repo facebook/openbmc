@@ -241,7 +241,7 @@ static int gpio_set(const char *shadow, gpio_value_t val)
 }
 */
 
-static void* ioex0_monitor()
+static void* ioex0_monitor(void *)
 {
   int i;
   uint8_t status;
@@ -742,7 +742,7 @@ ierr_mcerr_event_log(bool is_caterr, const char *err_type) {
 }
 
 static void *
-ierr_mcerr_event_handler() {
+ierr_mcerr_event_handler(void *) {
   uint8_t caterr_cnt = 0;
   uint8_t msmi_cnt = 0;
   gpio_value_t value;
@@ -907,7 +907,7 @@ platform_reset_init(gpiopoll_pin_t *desc, gpio_value_t value) {
 
 // Thread for gpio timer
 static void
-*gpio_timer() {
+*gpio_timer(void *) {
   uint8_t status = 0;
   uint8_t fru = FRU_MB;
   long int pot;
@@ -958,7 +958,7 @@ static void
 
 // Thread for gpio timer
 static void
-*power_fail_monitor() {
+*power_fail_monitor(void *) {
   static uint8_t init_cache=0;
   static uint8_t retry=1;
 

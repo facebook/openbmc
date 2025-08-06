@@ -1,4 +1,4 @@
-From 979cc4ce01172d26e8ff8345a80b80619f11d18e Mon Sep 17 00:00:00 2001
+From e6a8d6bf265b5997e6a9494d0daa11e4ecbecb43 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Fri, 17 Jun 2022 12:21:22 -0700
 Subject: [PATCH 501/532] aspeed: Zero extend flash files to 128MB
@@ -40,10 +40,10 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  2 files changed, 15 insertions(+), 2 deletions(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 6ca145362c..efefc17ac8 100644
+index 82f42582fa..89190089c1 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -317,12 +317,25 @@ void aspeed_board_init_flashes(AspeedSMCState *s, const char *flashtype,
+@@ -315,12 +315,25 @@ void aspeed_board_init_flashes(AspeedSMCState *s, const char *flashtype,
      }
  
      for (i = 0; i < count; ++i) {
@@ -71,10 +71,10 @@ index 6ca145362c..efefc17ac8 100644
          qdev_prop_set_uint8(dev, "cs", i);
          qdev_realize_and_unref(dev, BUS(s->spi), &error_fatal);
 diff --git a/hw/block/block.c b/hw/block/block.c
-index 3ceca7dce6..8b632e7cec 100644
+index 2e10611d95..c39d18a71f 100644
 --- a/hw/block/block.c
 +++ b/hw/block/block.c
-@@ -72,7 +72,7 @@ bool blk_check_size_and_read_all(BlockBackend *blk, DeviceState *dev,
+@@ -77,7 +77,7 @@ bool blk_check_size_and_read_all(BlockBackend *blk, DeviceState *dev,
                           "can't get size of %s block backend", blk_name(blk));
          return false;
      }
@@ -84,5 +84,5 @@ index 3ceca7dce6..8b632e7cec 100644
          error_setg(errp, "%s device '%s' requires %" HWADDR_PRIu
                     " bytes, %s block backend provides %" PRIu64 " bytes",
 -- 
-2.44.2
+2.49.1
 

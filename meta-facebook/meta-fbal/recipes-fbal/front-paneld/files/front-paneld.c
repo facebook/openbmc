@@ -77,7 +77,7 @@ recover_cm() {
 }
 
 static void *
-cm_monitor() {
+cm_monitor(void *) {
   ipmi_dev_id_t cm_dev_id;
   int recovery_tries = 0;
   int last_state = 0;
@@ -109,7 +109,7 @@ cm_monitor() {
 
 // Thread to handle LED state of the SLED
 static void *
-led_sync_handler() {
+led_sync_handler(void *) {
   int ret;
   uint8_t id_on = 0xFF;
   char identify[MAX_VALUE_LEN] = {0};
@@ -139,7 +139,7 @@ led_sync_handler() {
 }
 
 static void *
-fault_led_handler() {
+fault_led_handler(void *) {
   int ret;
   uint8_t mb_health = FRU_STATUS_GOOD, pdb_health = FRU_STATUS_GOOD;
   uint8_t nic0_health = FRU_STATUS_GOOD, nic1_health = FRU_STATUS_GOOD;
@@ -175,7 +175,7 @@ fault_led_handler() {
 }
 
 static void *
-rst_btn_handler() {
+rst_btn_handler(void *) {
   int ret;
   uint8_t pos = FRU_MB;
   int i;

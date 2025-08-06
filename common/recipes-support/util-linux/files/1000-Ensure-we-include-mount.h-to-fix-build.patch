@@ -1,0 +1,24 @@
+From 3bb92fab191001cad19c99d721c1698c0c0cf747 Mon Sep 17 00:00:00 2001
+From: Amithash Prasad <amithash@meta.com>
+Date: Tue, 29 Jul 2025 20:26:57 -0700
+Subject: [PATCH] Ensure we include mount.h to fix build
+
+---
+ libmount/src/btrfs.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/libmount/src/btrfs.c b/libmount/src/btrfs.c
+index eb569f2..4ea98d9 100644
+--- a/libmount/src/btrfs.c
++++ b/libmount/src/btrfs.c
+@@ -15,6 +15,7 @@
+ #include <dirent.h>
+ #include <sys/ioctl.h>
+ #include <stdlib.h>
++#include <sys/mount.h>
+ #include <linux/btrfs.h>
+ 
+ #include "mountP.h"
+-- 
+2.47.3
+

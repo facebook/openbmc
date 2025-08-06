@@ -1,4 +1,4 @@
-From 2a85ff0b4eeace5e78e13ce34b3ddf9b4157d70f Mon Sep 17 00:00:00 2001
+From 4585b4974fdfec2842c97de1aef0ee6a154cb23a Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 15 Jun 2022 13:45:39 -0700
 Subject: [PATCH 518/532] aspeed: fby35: Add bmc, bb, and nic FRU's
@@ -78,13 +78,13 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  create mode 100644 scripts/gen_eeprom.py
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 53e52f1402..d1028ae54f 100644
+index 481a6f76dc..124a1eeb05 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
 @@ -30,6 +30,7 @@
  #include "qemu/units.h"
  #include "hw/qdev-clock.h"
- #include "sysemu/sysemu.h"
+ #include "system/system.h"
 +#include "hw/arm/fby35.h"
  
  static struct arm_boot_info aspeed_board_binfo = {
@@ -229,5 +229,5 @@ index 0000000000..b5eceb47bd
 +            sys.stdout.write('0x%02x,' % b)
 +    sys.stdout.write('\n};\n')
 -- 
-2.44.2
+2.49.1
 

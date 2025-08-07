@@ -16,6 +16,7 @@
 #include <xyz/openbmc_project/State/Boot/PostCode/client.hpp>
 #include <xyz/openbmc_project/State/Chassis/client.hpp>
 #include <xyz/openbmc_project/State/Host/client.hpp>
+#include <xyz/openbmc_project/State/Leak/Detector/client.hpp>
 
 #include <string>
 
@@ -207,5 +208,14 @@ inline auto path_prefix()
 
 } // namespace version
 } // namespace software
+
+namespace leak::detector
+{
+using Proxy = sdbusplus::client::xyz::openbmc_project::state::leak::Detector<>;
+static constexpr auto ns_path = Proxy::namespace_path::value;
+static constexpr auto interface = Proxy::interface;
+} // namespace leak::detector
+
+
 
 } // namespace mfgtool::dbuspath

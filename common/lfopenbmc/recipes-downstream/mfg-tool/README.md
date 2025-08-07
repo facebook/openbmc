@@ -33,6 +33,7 @@ mfg-tool supports the following subcommands:
 - `fan-mode`: Displays and manipulating the fan mode of the BMC system.
 - `bmc-arch`: Shows the architecture of the BMC system.
 - `bmc-state`: Displays the BMC's readiness state.
+- `leakdetector-display` : Display leakdetectors.
 
 ## 1. sensor-display
 
@@ -1843,3 +1844,43 @@ If the BMC is in a quiescent state
     "state": "quiesced"
 }
 ```
+
+
+
+## 12. leakdetector-display
+The `leakdetector-display` subcommand displays the leak leakdetector names along with corresponding details such as status and leakdetector type.
+
+### Usage
+
+To use the `leakdetector-display` subcommand, execute the following command:
+
+```bash
+$ mfg-tool leakdetector-display
+```
+
+### Output
+
+The output will resemble the following:
+
+```bash
+{
+    "RackLeftManifold": {
+        "name": "RackLeftManifold",
+        "status": "ok",
+        "type": "Moisture"
+    },
+    "RackRightManifold": {
+        "name": "RackRightManifold",
+        "status": "ok",
+        "type": "Moisture"
+    },
+    ...
+}
+```
+
+It includes the following information for each leakdetector:
+- The name of the leakdetector.
+- status: The current status of leakdetector. Possible values -
+    - ok : No leak detected.
+    - critical : Leak detected.
+- type: The type of leakdetector. Possible values : moisture.

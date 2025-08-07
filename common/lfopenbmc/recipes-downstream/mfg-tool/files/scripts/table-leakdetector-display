@@ -1,0 +1,18 @@
+#!/bin/bash
+
+jq --raw-output '
+  [["leakdetector", "status", "type"]] +
+  (to_entries | map([
+    .value.name,
+    .value.status,
+    .value.type
+  ])) | transpose |
+  map(
+    map(tostring) | (map(length) | max) as $max |
+    map(. + (" " * ($max - length)))
+  ) | transpose |
+  .[0],
+  (.[0] | map(length * "-")),
+  .[1:][] |
+  @tsv
+'

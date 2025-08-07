@@ -32,6 +32,7 @@ executable(
   'mfg-tool.cpp',
   'cmd/bmc-arch.cpp',
   'cmd/bmc-state.cpp',
+  'cmd/leakdetector-display.cpp',
   'cmd/fan-leader.cpp',
   'cmd/fan-mode.cpp',
   'cmd/fan-speed.cpp',

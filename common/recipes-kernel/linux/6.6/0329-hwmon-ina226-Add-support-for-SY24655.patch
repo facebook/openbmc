@@ -1,7 +1,7 @@
-From 11e6b75fef6c65dd6a223229dd09d4e01ee16aa2 Mon Sep 17 00:00:00 2001
+From 4358d4602d072f8d6e346d34b789186192d23b92 Mon Sep 17 00:00:00 2001
 From: Wenliang Yan <wenliang202407@163.com>
 Date: Wed, 6 Nov 2024 10:05:46 -0500
-Subject: [PATCH 329/330] hwmon: (ina226) Add support for SY24655
+Subject: [PATCH 329/331] hwmon: (ina226) Add support for SY24655
 
 SY24655: Support for current and voltage detection as well as
 power calculation.
@@ -316,5 +316,5 @@ index cecc80a41a97..345fe7db9de9 100644
  MODULE_DEVICE_TABLE(of, ina2xx_of_match);
  
 -- 
-2.47.1
+2.47.3
 

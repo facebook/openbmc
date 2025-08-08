@@ -1,7 +1,7 @@
-From 69978cefc969737f8754eea98f39cf5d3574762e Mon Sep 17 00:00:00 2001
+From 10b9bbb8f9ff53c98dbfa2fb4d8702c5e4dc849e Mon Sep 17 00:00:00 2001
 From: Jacky Chou <jacky_chou@aspeedtech.com>
 Date: Tue, 27 Aug 2024 11:05:13 +0800
-Subject: [PATCH 10/10] net: ftgmac100: Get link speed and duplex for NC-SI
+Subject: [PATCH 7/7] net: ftgmac100: Get link speed and duplex for NC-SI
 
 The ethtool of this driver uses the phy API of ethtool
 to get the link information from PHY driver.
@@ -20,7 +20,7 @@ Signed-off-by: Jakub Kicinski <kuba@kernel.org>
  1 file changed, 26 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/net/ethernet/faraday/ftgmac100.c b/drivers/net/ethernet/faraday/ftgmac100.c
-index 05297123b515..3a288765c4b6 100644
+index d61451dbaded..4c096aaba665 100644
 --- a/drivers/net/ethernet/faraday/ftgmac100.c
 +++ b/drivers/net/ethernet/faraday/ftgmac100.c
 @@ -25,6 +25,7 @@
@@ -47,7 +47,7 @@ index 05297123b515..3a288765c4b6 100644
  struct ftgmac100 {
  	/* Registers */
  	struct resource *res;
-@@ -1560,7 +1570,8 @@ static int ftgmac100_open(struct net_device *netdev)
+@@ -1561,7 +1571,8 @@ static int ftgmac100_open(struct net_device *netdev)
  	if (netdev->phydev) {
  		/* If we have a PHY, start polling */
  		phy_start(netdev->phydev);
@@ -57,7 +57,7 @@ index 05297123b515..3a288765c4b6 100644
  		/* If using NC-SI, set our carrier on and start the stack */
  		netif_carrier_on(netdev);
  
-@@ -1573,6 +1584,7 @@ static int ftgmac100_open(struct net_device *netdev)
+@@ -1574,6 +1585,7 @@ static int ftgmac100_open(struct net_device *netdev)
  	return 0;
  
  err_ncsi:
@@ -65,7 +65,7 @@ index 05297123b515..3a288765c4b6 100644
  	napi_disable(&priv->napi);
  	netif_stop_queue(netdev);
  err_alloc:
-@@ -1606,7 +1618,7 @@ static int ftgmac100_stop(struct net_device *netdev)
+@@ -1607,7 +1619,7 @@ static int ftgmac100_stop(struct net_device *netdev)
  	netif_napi_del(&priv->napi);
  	if (netdev->phydev)
  		phy_stop(netdev->phydev);
@@ -74,7 +74,7 @@ index 05297123b515..3a288765c4b6 100644
  		ncsi_stop_dev(priv->ndev);
  
  	ftgmac100_stop_hw(priv);
-@@ -1744,6 +1756,9 @@ static void ftgmac100_phy_disconnect(struct net_device *netdev)
+@@ -1745,6 +1757,9 @@ static void ftgmac100_phy_disconnect(struct net_device *netdev)
  	phy_disconnect(netdev->phydev);
  	if (of_phy_is_fixed_link(priv->dev->of_node))
  		of_phy_deregister_fixed_link(priv->dev->of_node);
@@ -84,7 +84,7 @@ index 05297123b515..3a288765c4b6 100644
  }
  
  static void ftgmac100_destroy_mdio(struct net_device *netdev)
-@@ -1821,6 +1836,7 @@ static int ftgmac100_probe(struct platform_device *pdev)
+@@ -1822,6 +1837,7 @@ static int ftgmac100_probe(struct platform_device *pdev)
  	struct resource *res;
  	int irq;
  	struct net_device *netdev;
@@ -92,7 +92,7 @@ index 05297123b515..3a288765c4b6 100644
  	struct ftgmac100 *priv;
  	struct device_node *np;
  	int err = 0;
-@@ -1908,6 +1924,14 @@ static int ftgmac100_probe(struct platform_device *pdev)
+@@ -1909,6 +1925,14 @@ static int ftgmac100_probe(struct platform_device *pdev)
  			err = -EINVAL;
  			goto err_phy_connect;
  		}
@@ -108,5 +108,5 @@ index 05297123b515..3a288765c4b6 100644
  		struct phy_device *phy;
  
 -- 
-2.25.1
+2.47.3
 

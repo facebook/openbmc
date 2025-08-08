@@ -1,7 +1,7 @@
-From 915e88a6e521a26e287f20745ecd5b3c35bea8f9 Mon Sep 17 00:00:00 2001
+From bc3e01e0d36a7d3957541eb70ea272ac24690e12 Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Tue, 23 Jul 2024 16:04:29 -0700
-Subject: [PATCH 318/330] hwmon: (ina2xx) Re-initialize chip using regmap
+Subject: [PATCH 318/331] hwmon: (ina2xx) Re-initialize chip using regmap
  functions
 
 If it is necessary to re-initialize the chip, for example because
@@ -137,5 +137,5 @@ index ed8764a29d3f..db6432523e59 100644
  }
  
 -- 
-2.47.1
+2.47.3
 

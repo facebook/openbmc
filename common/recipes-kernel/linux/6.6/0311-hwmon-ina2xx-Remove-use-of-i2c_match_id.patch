@@ -1,7 +1,7 @@
-From 05c98e6587ba985f13a24565ff727fcd3b3c8e8a Mon Sep 17 00:00:00 2001
+From 90d7edbc1de4ac6b387d263c1f7249392cfb66fe Mon Sep 17 00:00:00 2001
 From: Andrew Davis <afd@ti.com>
 Date: Wed, 3 Apr 2024 15:36:13 -0500
-Subject: [PATCH 311/330] hwmon: (ina2xx) Remove use of i2c_match_id()
+Subject: [PATCH 311/331] hwmon: (ina2xx) Remove use of i2c_match_id()
 
 The function i2c_match_id() is used to fetch the matching ID from
 the i2c_device_id table. This is often used to then retrieve the
@@ -50,5 +50,5 @@ index d8415d1f21fc..f8b5d972191e 100644
  	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
  	if (!data)
 -- 
-2.47.1
+2.47.3
 

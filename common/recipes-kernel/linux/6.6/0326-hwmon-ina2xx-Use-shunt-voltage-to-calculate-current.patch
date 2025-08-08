@@ -1,7 +1,7 @@
-From c32f9bdd5747bfa3363cf98c4aeb39b75e0f1315 Mon Sep 17 00:00:00 2001
+From 28e6b56a1735bf8c5f21bc018dd368e8ecf0f2c3 Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Wed, 28 Aug 2024 17:21:41 -0700
-Subject: [PATCH 326/330] hwmon: (ina2xx) Use shunt voltage to calculate
+Subject: [PATCH 326/331] hwmon: (ina2xx) Use shunt voltage to calculate
  current
 
 Since the shunt voltage and the current register report the same values
@@ -51,5 +51,5 @@ index 10c8c475c634..f0fa6d073627 100644
  		return ina226_alert_limit_read(data, INA226_SHUNT_UNDER_VOLTAGE_MASK,
  					       INA2XX_CURRENT, val);
 -- 
-2.47.1
+2.47.3
 

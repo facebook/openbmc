@@ -1,7 +1,7 @@
-From 219a215bbb2b207c5871fd804c5553249fcdcc24 Mon Sep 17 00:00:00 2001
+From dc654f17616c50738af5dedbafb1be739ba9d4ae Mon Sep 17 00:00:00 2001
 From: Yang Chen <yang.chen@quantatw.com>
 Date: Wed, 23 Jul 2025 14:47:58 +0800
-Subject: [PATCH] PWMSensor: synchronize hardware PWM with D-Bus property
+Subject: [PATCH 11/11] PWMSensor: synchronize hardware PWM with D-Bus property
 
 The Fan PWM sensor property setter (Value/Target) previously only
 tracked the last set value (resp), but the actual hardware PWM
@@ -130,7 +130,7 @@ Signed-off-by: Yang Chen <yang.chen@quantatw.com>
  1 file changed, 11 insertions(+), 11 deletions(-)
 
 diff --git a/src/PwmSensor.cpp b/src/PwmSensor.cpp
-index 926ca1b92..aae90dfbf 100644
+index 926ca1b..aae90df 100644
 --- a/src/PwmSensor.cpp
 +++ b/src/PwmSensor.cpp
 @@ -82,14 +82,14 @@ PwmSensor::PwmSensor(const std::string& pwmname, const std::string& sysPath,
@@ -178,5 +178,5 @@ index 926ca1b92..aae90dfbf 100644
          },
          [this](uint64_t& curVal) {
 -- 
-2.34.1
+2.47.3
 

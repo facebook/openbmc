@@ -1,4 +1,4 @@
-From 0fd3aa06876828c059388f23536ccaf73053b221 Mon Sep 17 00:00:00 2001
+From 1ecb5d4e58cca47b3676a8e94a41a3a9c7a64db3 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 11 Mar 2025 13:47:42 +0800
 Subject: [PATCH 6/7] entity-manager: Add config-prefix filtering
@@ -19,11 +19,11 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  5 files changed, 73 insertions(+), 41 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index eb9b96b..0063474 100644
+index 4acc81d..c3fd7fe 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -7,6 +7,11 @@ project(
-     meson_version: '>=1.1.1',
+     meson_version: '>=1.3.0',
  )
  add_project_arguments('-Wno-psabi', language: 'cpp')
 +config_prefix_val = get_option('config-prefix')
@@ -49,11 +49,11 @@ index bd962e4..b8d8a47 100644
 +    description: 'Comma-separated list of JSON filename prefixes to filter. Default loads all JSON files.',
 +)
 diff --git a/src/entity_manager/configuration.cpp b/src/entity_manager/configuration.cpp
-index 137f4e3..0c78a22 100644
+index 9463133..0e40a95 100644
 --- a/src/entity_manager/configuration.cpp
 +++ b/src/entity_manager/configuration.cpp
-@@ -37,13 +37,17 @@ bool writeJsonFiles(const nlohmann::json& systemConfiguration)
- bool loadConfigurations(std::list<nlohmann::json>& configurations)
+@@ -25,13 +25,17 @@ Configuration::Configuration()
+ void Configuration::loadConfigurations()
  {
      const auto start = std::chrono::steady_clock::now();
 +    const std::string configPrefixesEnv = CONFIG_PREFIX;
@@ -75,10 +75,10 @@ index 137f4e3..0c78a22 100644
          std::cerr << "Unable to find any configuration files in "
                    << configurationDirectory << "\n";
 diff --git a/src/utils.cpp b/src/utils.cpp
-index 0d3a6d0..a4cb962 100644
+index f0e8d25..354bd97 100644
 --- a/src/utils.cpp
 +++ b/src/utils.cpp
-@@ -33,60 +33,71 @@
+@@ -19,60 +19,71 @@
  
  namespace fs = std::filesystem;
  
@@ -185,10 +185,10 @@ index 0d3a6d0..a4cb962 100644
  
      return !foundPaths.empty();
 diff --git a/src/utils.hpp b/src/utils.hpp
-index 105330c..7a227ed 100644
+index 123a316..6678731 100644
 --- a/src/utils.hpp
 +++ b/src/utils.hpp
-@@ -34,10 +34,16 @@ using MapperGetSubTreeResponse =
+@@ -20,10 +20,16 @@ using MapperGetSubTreeResponse =
  
  bool findFiles(const std::filesystem::path& dirPath,
                 const std::string& matchString,
@@ -209,5 +209,5 @@ index 105330c..7a227ed 100644
  bool getI2cDevicePaths(
      const std::filesystem::path& dirPath,
 -- 
-2.47.1
+2.47.3
 

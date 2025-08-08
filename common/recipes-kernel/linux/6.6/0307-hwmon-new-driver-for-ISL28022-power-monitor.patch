@@ -1,7 +1,7 @@
-From d79a879a9b09ab6c182d6fd772bef8055623a04d Mon Sep 17 00:00:00 2001
+From ce11b6f5d3b40faded26861b5399092325e964be Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Wed, 4 Sep 2024 10:08:31 +0800
-Subject: [PATCH 307/330] hwmon: new driver for ISL28022 power monitor
+Subject: [PATCH 307/331] hwmon: new driver for ISL28022 power monitor
 
 lore link:
 https://lore.kernel.org/all/20240906061421.9392-1-Delphine_CC_Chiu@wiwynn.com/
@@ -90,7 +90,7 @@ index 000000000000..dd82a80e4115
 +        };
 +    };
 diff --git a/Documentation/hwmon/index.rst b/Documentation/hwmon/index.rst
-index 47847951482a..bbdb7daacbe5 100644
+index 0a666500d297..b8e5642eacdd 100644
 --- a/Documentation/hwmon/index.rst
 +++ b/Documentation/hwmon/index.rst
 @@ -94,6 +94,7 @@ Hardware Monitoring Kernel Drivers
@@ -171,7 +171,7 @@ index 000000000000..8d4422a2dacd
 +shunt_voltage		shunt voltage (micro Volt)
 +======================= =======================================================
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 15f2c1d316ed..930f4a82d71a 100644
+index 0542f5ed3223..c0f5214c320f 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
 @@ -11212,6 +11212,14 @@ F:	drivers/isdn/Makefile
@@ -741,5 +741,5 @@ index 000000000000..67ba93cf16d8
 +MODULE_DESCRIPTION("ISL28022 driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.47.1
+2.47.3
 

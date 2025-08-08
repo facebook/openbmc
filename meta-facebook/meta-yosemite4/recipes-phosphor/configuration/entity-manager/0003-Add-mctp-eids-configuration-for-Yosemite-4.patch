@@ -1,4 +1,4 @@
-From 5d074e8c0f45f0068e17ab681705b679586d36cc Mon Sep 17 00:00:00 2001
+From 4857fade31b4e62340e8154b801581c5aa67c2b2 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 25 Sep 2023 11:10:46 +0800
 Subject: [PATCH 3/7] Add mctp eids configuration for Yosemite 4
@@ -220,10 +220,10 @@ index 7a865bf..3260535 100644
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
 diff --git a/schemas/exposes_record.json b/schemas/exposes_record.json
-index 06531dd..0343f3e 100644
+index ead34d8..d5c2348 100644
 --- a/schemas/exposes_record.json
 +++ b/schemas/exposes_record.json
-@@ -164,6 +164,9 @@
+@@ -170,6 +170,9 @@
                  },
                  {
                      "$ref": "modbus.json#/$defs/ModbusRTUDetect"
@@ -234,7 +234,7 @@ index 06531dd..0343f3e 100644
              ]
          },
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index df5f0a1..b7a9d52 100644
+index 01ee9fe..3e7506b 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
 @@ -1,6 +1,43 @@
@@ -281,7 +281,7 @@ index df5f0a1..b7a9d52 100644
          "ExitAirTempSensor": {
              "description": "implemented in dbus-sensors: ExitAirTempSensor",
              "additionalProperties": false,
-@@ -1150,6 +1187,9 @@
+@@ -1176,6 +1213,9 @@
              "EntityInstance": {
                  "type": "number"
              },
@@ -291,7 +291,7 @@ index df5f0a1..b7a9d52 100644
              "GpioPins": {
                  "items": {
                      "type": "number"
-@@ -1159,6 +1199,9 @@
+@@ -1185,6 +1225,9 @@
              "GpioPolarity": {
                  "enum": ["Low"]
              },
@@ -301,7 +301,7 @@ index df5f0a1..b7a9d52 100644
              "Index": {
                  "type": "number",
                  "minimum": 0,
-@@ -1179,6 +1222,10 @@
+@@ -1205,6 +1248,10 @@
              "MaxValue": {
                  "type": "number"
              },
@@ -313,5 +313,5 @@ index df5f0a1..b7a9d52 100644
                  "type": "number"
              },
 -- 
-2.47.1
+2.47.3
 

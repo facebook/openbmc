@@ -1,7 +1,7 @@
-From f260a1b283950d07ef66669e1d334299bf7dbdc0 Mon Sep 17 00:00:00 2001
+From 2145511bfb9448177484a83910ef2402fd3520f4 Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Tue, 29 Oct 2024 09:43:50 +0800
-Subject: [PATCH] Add ASPEED AST2600 I2Cv2 controller driver
+Subject: [PATCH 166/166] Add ASPEED AST2600 I2Cv2 controller driver
 
 Add AST2600 i2cv2 new register set driver.
 
@@ -16,7 +16,7 @@ https://lore.kernel.org/lkml/20241007035235.2254138-1-ryan_chen@aspeedtech.com/
  create mode 100644 drivers/i2c/busses/i2c-ast2600.c
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-index cd12be534e92..c5c3dee82d17 100644
+index 7c061fdef09b..4e88884032fc 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 +++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 @@ -952,11 +952,17 @@ otp: otp@1e6f2000 {
@@ -220,7 +220,7 @@ index cd12be534e92..c5c3dee82d17 100644
  		resets = <&syscon ASPEED_RESET_I2C>;
  		interrupts = <GIC_SPI 125 IRQ_TYPE_LEVEL_HIGH>;
 diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index 982007a112c2..1de825f3440a 100644
+index 8d4270664ebd..baaa8a30cc68 100644
 --- a/drivers/i2c/busses/Kconfig
 +++ b/drivers/i2c/busses/Kconfig
 @@ -402,6 +402,17 @@ config I2C_ASPEED
@@ -2007,5 +2007,5 @@ index 000000000000..9e035b87f6c9
 +MODULE_DESCRIPTION("ASPEED AST2600 I2C Controller Driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.25.1
+2.47.3
 

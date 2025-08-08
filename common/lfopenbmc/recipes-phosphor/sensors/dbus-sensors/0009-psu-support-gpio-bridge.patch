@@ -1,7 +1,7 @@
-From d7f302361e8d91150252a8a27216d39571986b82 Mon Sep 17 00:00:00 2001
+From 7ac8d991c0853d11e56539fc6210d3783342d929 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Mon, 19 May 2025 15:12:23 +0800
-Subject: [PATCH 9/9] psu: support gpio bridge
+Subject: [PATCH 09/11] psu: support gpio bridge
 
 Support for GPIO bridge is required for certain components that
 need a GPIO to be set before reading, such as battery voltage.
@@ -268,7 +268,7 @@ index c4f3a38..dd43fe5 100644
      boost::asio::random_access_file inputDev;
      boost::asio::steady_timer waitTimer;
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index cce0af6..edadffd 100644
+index 76343a5..94ab56c 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -31,6 +31,7 @@
@@ -295,7 +295,7 @@ index cce0af6..edadffd 100644
  
  static const I2CDeviceTypeMap sensorTypes{
      {"ADC128D818", I2CDeviceType{"adc128d818", true}},
-@@ -323,6 +326,69 @@ static void checkPWMSensor(
+@@ -324,6 +327,69 @@ static void checkPWMSensor(
          name, pwmPathStr, dbusConnection, objectServer, objPath, "PSU");
  }
  
@@ -365,7 +365,7 @@ index cce0af6..edadffd 100644
  static void createSensorsCallback(
      boost::asio::io_context& io, sdbusplus::asio::object_server& objectServer,
      std::shared_ptr<sdbusplus::asio::connection>& dbusConnection,
-@@ -743,6 +809,8 @@ static void createSensorsCallback(
+@@ -744,6 +810,8 @@ static void createSensorsCallback(
                  }
                  continue;
              }
@@ -374,7 +374,7 @@ index cce0af6..edadffd 100644
  
              // Protect the hardcoded labelMatch list from changes,
              // by making a copy and modifying that instead.
-@@ -1036,7 +1104,7 @@ static void createSensorsCallback(
+@@ -1037,7 +1105,7 @@ static void createSensorsCallback(
                      readState, findSensorUnit->second, factor,
                      psuProperty.maxReading, psuProperty.minReading,
                      psuProperty.sensorOffset, labelHead, thresholdConfSize,
@@ -396,5 +396,5 @@ index 9e3ee7b..9b71691 100644
      include_directories: src_inc,
      install: true,
 -- 
-2.47.1
+2.47.3
 

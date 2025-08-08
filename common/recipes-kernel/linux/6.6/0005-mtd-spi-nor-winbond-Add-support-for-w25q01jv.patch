@@ -1,7 +1,7 @@
-From 2e75a21f440d500433a9c8b52d5d852d1d9b840f Mon Sep 17 00:00:00 2001
+From 95d447b357631c3410789ab6f9b08f104d239bec Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Mon, 30 Dec 2024 17:43:06 +0800
-Subject: [PATCH 8/8] mtd: spi-nor: winbond: Add support for w25q01jv
+Subject: [PATCH 5/7] mtd: spi-nor: winbond: Add support for w25q01jv
 
 Lore:https://lore.kernel.org/lkml/20241224-winbond-6-12-rc1-nor-volatile-bit-v1-1-f7c4dff66182@bootlin.com/
 
@@ -231,5 +231,5 @@ index f9986add5d65..fe96cdee221f 100644
  		params->otp.ops = &winbond_nor_otp_ops;
  
 -- 
-2.47.1
+2.47.3
 

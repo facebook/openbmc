@@ -1,4 +1,4 @@
-From f427dc79c30523c57bad313945b7d39e2d19bbd5 Mon Sep 17 00:00:00 2001
+From 63bd4ff924614dd2220a562cf47dd62a1d8eb84e Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Tue, 2 Jan 2024 17:50:00 +0800
 Subject: [PATCH 181/182] NCSI: Add propety : no-channel-monitor and
@@ -20,10 +20,10 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  2 files changed, 28 insertions(+), 1 deletion(-)
 
 diff --git a/net/ncsi/internal.h b/net/ncsi/internal.h
-index 4e0842df5234..6c1865e3cbe0 100644
+index ad1f671ffc37..35922ccfae3b 100644
 --- a/net/ncsi/internal.h
 +++ b/net/ncsi/internal.h
-@@ -202,6 +202,11 @@ struct ncsi_channel_stats {
+@@ -201,6 +201,11 @@ struct ncsi_channel_stats {
  	u32 pt_rx_os_err;	/* Rx oversize errors         */
  };
  
@@ -35,7 +35,7 @@ index 4e0842df5234..6c1865e3cbe0 100644
  struct ncsi_dev_priv;
  struct ncsi_package;
  
-@@ -347,6 +352,7 @@ struct ncsi_dev_priv {
+@@ -346,6 +351,7 @@ struct ncsi_dev_priv {
  	bool                mlx_multi_host;  /* Enable multi host Mellanox */
  	u32                 package_whitelist; /* Packages to configure    */
  	unsigned char       channel_count;     /* Num of channels to probe   */
@@ -104,5 +104,5 @@ index a5d3615d7996..24f75b570ce7 100644
  		ndp->package_probe_id = 0;
  		ndp->channel_probe_id = 0;
 -- 
-2.47.1
+2.47.3
 

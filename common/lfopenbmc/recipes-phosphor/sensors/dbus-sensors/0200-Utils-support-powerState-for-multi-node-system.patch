@@ -1,4 +1,4 @@
-From fc62e227124c06c1f6c23db837b2bd74e11436c0 Mon Sep 17 00:00:00 2001
+From e541c6cc70d70c1b559c643e285c6745f37751d0 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH 200/203] Utils: support powerState for multi-node system
@@ -825,10 +825,10 @@ index dd43fe5..8f85908 100644
      ~PSUProperty() = default;
  
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index edadffd..3067c8e 100644
+index 94ab56c..fe95edf 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -619,6 +619,7 @@ static void createSensorsCallback(
+@@ -620,6 +620,7 @@ static void createSensorsCallback(
          checkGroupEvent(directory.string(), groupEventPathList);
  
          PowerState readState = getPowerState(*baseConfig);
@@ -836,7 +836,7 @@ index edadffd..3067c8e 100644
  
          /* Check if there are more sensors in the same interface */
          int i = 1;
-@@ -1104,7 +1105,7 @@ static void createSensorsCallback(
+@@ -1105,7 +1106,7 @@ static void createSensorsCallback(
                      readState, findSensorUnit->second, factor,
                      psuProperty.maxReading, psuProperty.minReading,
                      psuProperty.sensorOffset, labelHead, thresholdConfSize,
@@ -845,7 +845,7 @@ index edadffd..3067c8e 100644
                  sensors[sensorName]->setupRead();
                  ++numCreated;
                  if constexpr (debug)
-@@ -1282,7 +1283,11 @@ static void powerStateChanged(
+@@ -1283,7 +1284,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {
@@ -898,5 +898,5 @@ index daa3940..4c0519d 100644
  
      void markFunctional(bool isFunctional)
 -- 
-2.47.1
+2.47.3
 

@@ -1,7 +1,7 @@
-From 2796726ad6312bd70e4d63160fc7ebdcfa1cfa08 Mon Sep 17 00:00:00 2001
+From ea19ee9d06f6c65ad14098678ea7c578bf6f85d0 Mon Sep 17 00:00:00 2001
 From: Rush Chen <Rush_Chen@wiwynn.com>
 Date: Fri, 23 Aug 2024 11:10:41 +0800
-Subject: [PATCH 308/330] Add SQ52205 driver
+Subject: [PATCH 308/331] Add SQ52205 driver
 
 Add power monitor SQ52205 driver.
 
@@ -15,10 +15,10 @@ https://lore.kernel.org/all/20240812154240.3570-1-wenliang202407@163.com/
  create mode 100644 drivers/hwmon/pmbus/sq52205.c
 
 diff --git a/drivers/hwmon/pmbus/Kconfig b/drivers/hwmon/pmbus/Kconfig
-index 68ef37bfd7c0..dfa777e8e4da 100644
+index cb536c0b62f3..86915444b8ec 100644
 --- a/drivers/hwmon/pmbus/Kconfig
 +++ b/drivers/hwmon/pmbus/Kconfig
-@@ -573,4 +573,13 @@ config SENSORS_ZL6100
+@@ -590,4 +590,13 @@ config SENSORS_ZL6100
  	  This driver can also be built as a module. If so, the module will
  	  be called zl6100.
  
@@ -33,10 +33,10 @@ index 68ef37bfd7c0..dfa777e8e4da 100644
 +
  endif # PMBUS
 diff --git a/drivers/hwmon/pmbus/Makefile b/drivers/hwmon/pmbus/Makefile
-index 946dffe15d13..78171d4ef3b8 100644
+index f4319efe4cad..d4de536bbcc4 100644
 --- a/drivers/hwmon/pmbus/Makefile
 +++ b/drivers/hwmon/pmbus/Makefile
-@@ -58,3 +58,4 @@ obj-$(CONFIG_SENSORS_XDPE132)   += xdpe132g5c.o
+@@ -59,3 +59,4 @@ obj-$(CONFIG_SENSORS_XDPE132)   += xdpe132g5c.o
  obj-$(CONFIG_SENSORS_ZL6100)	+= zl6100.o
  obj-$(CONFIG_SENSORS_PIM4328)	+= pim4328.o
  obj-$(CONFIG_SENSORS_CRPS)	+= crps.o
@@ -610,5 +610,5 @@ index 000000000000..eeb59ebb75f2
 +
 +
 -- 
-2.47.1
+2.47.3
 

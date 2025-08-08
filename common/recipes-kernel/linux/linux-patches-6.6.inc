@@ -4,16 +4,13 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/6.6:"
 # Patches to be upstreamed soon.
 #
 SRC_URI:append = " \
-    file://0001-ARM-dts-aspeed-Remove-eMMC-from-ast2600-facebook-net.patch \
-    file://0002-ARM-dts-aspeed-elbert-Enable-eMMC-device.patch \
-    file://0003-ARM-dts-aspeed-fuji-Enable-eMMC-device.patch \
-    file://0004-ARM-dts-aspeed-Add-Facebook-FBDarwin-AST2600-BMC.patch \
-    file://0005-ARM-dts-aspeed-elbert-Enable-mdio0-devices.patch \
-    file://0006-ARM-dts-aspeed-Add-Facebook-fblite-r1-BMC.patch \
-    file://0007-ARM-dts-aspeed-Expand-data0-partition-in-facebook-bm.patch \
-    file://0008-mtd-spi-nor-winbond-Add-support-for-w25q01jv.patch \
-    file://0009-net-ftgmac100-reset-MAC-by-SCU-on-RMII.patch \
-    file://0010-net-ftgmac100-Get-link-speed-and-duplex-for-NC-SI.patch \
+    file://0001-ARM-dts-aspeed-Add-Facebook-FBDarwin-AST2600-BMC.patch \
+    file://0002-ARM-dts-aspeed-elbert-Enable-mdio0-devices.patch \
+    file://0003-ARM-dts-aspeed-Add-Facebook-fblite-r1-BMC.patch \
+    file://0004-ARM-dts-aspeed-Expand-data0-partition-in-facebook-bm.patch \
+    file://0005-mtd-spi-nor-winbond-Add-support-for-w25q01jv.patch \
+    file://0006-net-ftgmac100-reset-MAC-by-SCU-on-RMII.patch \
+    file://0007-net-ftgmac100-Get-link-speed-and-duplex-for-NC-SI.patch \
 "
 
 #

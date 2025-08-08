@@ -1,7 +1,7 @@
-From 6800d2799a83fc3bdb009b94bb5c9cfc6923e8ac Mon Sep 17 00:00:00 2001
+From 2f7c3600dad475778cf088290b7c5800147d7019 Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Tue, 27 Aug 2024 12:57:10 -0700
-Subject: [PATCH 327/330] hwmon: (ina2xx) Add support for has_alerts
+Subject: [PATCH 327/331] hwmon: (ina2xx) Add support for has_alerts
  configuration flag
 
 Add configuration flag indicating if the chip supports alerts and limits
@@ -103,5 +103,5 @@ index f0fa6d073627..03a011c9b73d 100644
  
  		regmap_update_bits(regmap, INA226_MASK_ENABLE,
 -- 
-2.47.1
+2.47.3
 

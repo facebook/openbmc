@@ -1,7 +1,7 @@
-From 429ac64f671841cef7e729e1d7c863fa896460ed Mon Sep 17 00:00:00 2001
+From 9aa8d49a419732bf3d3302b3399c8708bdadc1ab Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Tue, 1 Jul 2025 13:04:47 +0800
-Subject: [PATCH] Add the vr driver for mp2869a/mp29612a
+Subject: [PATCH 331/331] Add the vr driver for mp2869a/mp29612a
 
 Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
 ---
@@ -15,10 +15,10 @@ Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
  create mode 100644 drivers/hwmon/pmbus/mp2869a.c
 
 diff --git a/Documentation/hwmon/index.rst b/Documentation/hwmon/index.rst
-index 8da1591aa247..18a17ebcca9a 100644
+index b8e5642eacdd..082f1f6ca5a1 100644
 --- a/Documentation/hwmon/index.rst
 +++ b/Documentation/hwmon/index.rst
-@@ -160,6 +160,7 @@ Hardware Monitoring Kernel Drivers
+@@ -161,6 +161,7 @@ Hardware Monitoring Kernel Drivers
     menf21bmc
     mlxreg-fan
     mp2856
@@ -119,7 +119,7 @@ index 000000000000..a98ccb3d630d
 +
 +
 diff --git a/drivers/hwmon/pmbus/Kconfig b/drivers/hwmon/pmbus/Kconfig
-index cc829c6fe113..739f588b403e 100644
+index 86915444b8ec..948347abb80b 100644
 --- a/drivers/hwmon/pmbus/Kconfig
 +++ b/drivers/hwmon/pmbus/Kconfig
 @@ -336,6 +336,16 @@ config SENSORS_MP2856
@@ -140,7 +140,7 @@ index cc829c6fe113..739f588b403e 100644
  	tristate "MPS MP2888"
  	help
 diff --git a/drivers/hwmon/pmbus/Makefile b/drivers/hwmon/pmbus/Makefile
-index 3d1363006a21..9c85e6a9749d 100644
+index d4de536bbcc4..468e413af63e 100644
 --- a/drivers/hwmon/pmbus/Makefile
 +++ b/drivers/hwmon/pmbus/Makefile
 @@ -35,6 +35,7 @@ obj-$(CONFIG_SENSORS_MAX31785)	+= max31785.o
@@ -457,5 +457,5 @@ index 000000000000..f0d6e1ef1ddb
 +MODULE_LICENSE("GPL");
 +MODULE_IMPORT_NS(PMBUS);
 -- 
-2.43.0
+2.47.3
 

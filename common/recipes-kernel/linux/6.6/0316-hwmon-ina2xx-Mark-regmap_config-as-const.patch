@@ -1,7 +1,7 @@
-From a7c1dcaea32d3de86fb6dcd2b3ddb59f699cb90d Mon Sep 17 00:00:00 2001
+From 280ccea461ddf573a4cbceaa5b6770addd5057ce Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Thu, 1 Aug 2024 16:43:03 -0700
-Subject: [PATCH 316/330] hwmon: (ina2xx) Mark regmap_config as const
+Subject: [PATCH 316/331] hwmon: (ina2xx) Mark regmap_config as const
 
 Recent versions of checkpatch complain that struct regmap_config
 should be declared as const.
@@ -83,5 +83,5 @@ index 1b4170d02c94..9d93190874d7 100644
  	if (IS_ERR(data->regmap)) {
  		dev_err(dev, "failed to allocate register map\n");
 -- 
-2.47.1
+2.47.3
 

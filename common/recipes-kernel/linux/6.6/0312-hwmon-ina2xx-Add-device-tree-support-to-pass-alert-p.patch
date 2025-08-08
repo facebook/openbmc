@@ -1,7 +1,7 @@
-From 4ea27c39dcca90873582a1d589bd2b36e8d07ae8 Mon Sep 17 00:00:00 2001
+From d756e7bc8706f7ef850d51628398f4a88bb59fe8 Mon Sep 17 00:00:00 2001
 From: Amna Waseem <Amna.Waseem@axis.com>
 Date: Tue, 11 Jun 2024 11:36:26 +0200
-Subject: [PATCH 312/330] hwmon: (ina2xx) Add device tree support to pass alert
+Subject: [PATCH 312/331] hwmon: (ina2xx) Add device tree support to pass alert
  polarity
 
 The INA230 has an Alert pin which is asserted when the alert
@@ -79,5 +79,5 @@ index f8b5d972191e..9ab4205622e2 100644
  	if (ret < 0) {
  		dev_err(dev, "error configuring the device: %d\n", ret);
 -- 
-2.47.1
+2.47.3
 

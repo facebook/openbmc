@@ -1,7 +1,7 @@
-From a861fcc94ddb41889646908ea6a7cb871c2d20b3 Mon Sep 17 00:00:00 2001
+From 1677cf4fd7e3123f9dba6e1cc2aa4a5f58f58a17 Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Tue, 23 Jul 2024 13:25:31 -0700
-Subject: [PATCH 315/330] hwmon: (ina2xx) Use bit operations
+Subject: [PATCH 315/331] hwmon: (ina2xx) Use bit operations
 
 Use bit operations where possible to make the code more generic and to
 align it with other drivers. Also use compile time conversion from bit
@@ -210,5 +210,5 @@ index 897657f8d685..1b4170d02c94 100644
  /* shunt resistance */
  static SENSOR_DEVICE_ATTR_RW(shunt_resistor, ina2xx_shunt, INA2XX_CALIBRATION);
 -- 
-2.47.1
+2.47.3
 

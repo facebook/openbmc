@@ -1,7 +1,7 @@
-From 5e18a4b82e18b190931aa9a656554d02bae61e09 Mon Sep 17 00:00:00 2001
+From 7a259a08b1f8158bac3dc4c1651615de5200ff7f Mon Sep 17 00:00:00 2001
 From: Jason Hsu <Jason-Hsu@quantatw.com>
 Date: Fri, 27 Jun 2025 10:35:17 +0800
-Subject: [PATCH] meta-facebook: ventura: add SCM sensor offset
+Subject: [PATCH 10/11] meta-facebook: ventura: add SCM sensor offset
 
 Signed-off-by: Jason Hsu <Jason-Hsu@quantatw.com>
 ---
@@ -11,7 +11,7 @@ Signed-off-by: Jason Hsu <Jason-Hsu@quantatw.com>
  3 files changed, 17 insertions(+), 3 deletions(-)
 
 diff --git a/src/adc/ADCSensor.cpp b/src/adc/ADCSensor.cpp
-index cbf7132a8..eea550fb4 100644
+index cbf7132..eea550f 100644
 --- a/src/adc/ADCSensor.cpp
 +++ b/src/adc/ADCSensor.cpp
 @@ -54,7 +54,7 @@ ADCSensor::ADCSensor(
@@ -44,7 +44,7 @@ index cbf7132a8..eea550fb4 100644
              updateValue(nvalue);
          }
 diff --git a/src/adc/ADCSensor.hpp b/src/adc/ADCSensor.hpp
-index 618c43f22..4f6b9a31a 100644
+index 618c43f..4f6b9a3 100644
 --- a/src/adc/ADCSensor.hpp
 +++ b/src/adc/ADCSensor.hpp
 @@ -77,7 +77,7 @@ class ADCSensor : public Sensor, public std::enable_shared_from_this<ADCSensor>
@@ -65,7 +65,7 @@ index 618c43f22..4f6b9a31a 100644
      std::optional<BridgeGpio> bridgeGpio;
      thresholds::ThresholdTimer thresholdTimer;
 diff --git a/src/adc/ADCSensorMain.cpp b/src/adc/ADCSensorMain.cpp
-index 7949280cc..13aa713b5 100644
+index 7949280..13aa713 100644
 --- a/src/adc/ADCSensorMain.cpp
 +++ b/src/adc/ADCSensorMain.cpp
 @@ -259,6 +259,13 @@ void createSensors(
@@ -92,5 +92,5 @@ index 7949280cc..13aa713b5 100644
                  sensor->setupRead();
              }
 -- 
-2.34.1
+2.47.3
 

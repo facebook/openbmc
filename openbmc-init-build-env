@@ -34,7 +34,6 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fbal:lf-master
   meta-fbdarwin:lf-master
   meta-fbep:lf-master
-  meta-fbttn2:lf-master
   meta-fby2-nd:lf-master
   meta-fby35:lf-master
   meta-fby3:lf-master

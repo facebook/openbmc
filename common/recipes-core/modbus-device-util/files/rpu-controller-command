@@ -13,7 +13,7 @@ if [ $# -lt 2 ]; then
     exit 1
 fi
 
-OVERRIDE_CONFIG_FILE=${3:-/run/mnt-persist/var-data/lib/rpu-controller/override-config.json}
+OVERRIDE_CONFIG_FILE=${3:-/run/mnt-persist/var-data/lib/modbus-device-util/override-config.json}
 
 set -eux
 
@@ -22,7 +22,7 @@ UDA="$1"
 
 COMMAND="$2"
 
-CONFIG_FILE="/var/lib/rpu-controller/default-config.json"
+CONFIG_FILE="/var/lib/modbus-device-util/default-config.json"
 
 if [ -f "$OVERRIDE_CONFIG_FILE" ]; then
     CONFIG_FILE="$OVERRIDE_CONFIG_FILE"

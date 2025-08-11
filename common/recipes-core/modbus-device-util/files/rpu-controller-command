@@ -79,8 +79,8 @@ function start_rpu {
         exit 1
     fi
 
-    pumpDuty=$(jq -er ".manufacturers.${manufacturer}.pumpDutyPercentage" "$CONFIG_FILE")
-    targetCoolantOutletTemp=$(jq -er ".manufacturers.${manufacturer}.targetCoolantOutletTempTimesTen" "$CONFIG_FILE")
+    pumpDuty=$(jq -er ".rpu.manufacturers.${manufacturer}.pumpDutyPercentage" "$CONFIG_FILE")
+    targetCoolantOutletTemp=$(jq -er ".rpu.manufacturers.${manufacturer}.targetCoolantOutletTempTimesTen" "$CONFIG_FILE")
 
     if [ "$manufacturer" == "delta" ]; then
         # Set RPU_Control to enable pump 1 and 2

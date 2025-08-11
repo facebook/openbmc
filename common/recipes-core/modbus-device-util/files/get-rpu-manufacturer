@@ -17,7 +17,7 @@ set -u
 UDA="$1"
 CONFIG_FILE="$2"
 
-registerName=$(jq -er .manufacturerDiscriminator "$CONFIG_FILE")
+registerName=$(jq -er .rpu.manufacturerDiscriminator "$CONFIG_FILE")
 
 registerValue=$(rackmoncli data --json --latest --dev-addr "$UDA" --reg-name "$registerName" |
     jq -er ".[0].regList[] | select(.name == \"$registerName\") | .history.[0].value.strValue")
@@ -30,7 +30,7 @@ fi
 jq \
     -er \
     --arg value "$registerValue" \
-    '.manufacturers | to_entries[] | select(.value.registerValues | any(. == $value)) | .key' \
+    '.rpu.manufacturers | to_entries[] | select(.value.registerValues | any(. == $value)) | .key' \
     "$CONFIG_FILE"
 
 if [ $? -ne 0 ]; then

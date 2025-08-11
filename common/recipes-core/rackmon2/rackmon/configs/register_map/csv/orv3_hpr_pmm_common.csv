@@ -97,3 +97,12 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 ,,,,15,Test_Mode_Enable,,,,,,,,
 4096,1,,,,,INTEGER,,,,,,,Module_ID
 4097,1,,,,,INTEGER,,,,,,,Vendor_ID
+384,8,,,,,STRING,,,,,,,Shelf_Type
+392,8,,,,,STRING,,,,,,,Shelf_MFR_Name
+400,8,,,,,STRING,,,,,,,Shelf_FBPN
+408,8,,,,,STRING,,,,,,,Shelf_MFR_Model
+416,4,,,,,STRING,,,,,,,Shelf_Build_Revision
+420,4,,,,,STRING,,,,,,,Shelf_HW_Revision
+424,16,,,,,STRING,,,,,,,Shelf_MFR_Serial
+440,8,,,,,STRING,,,,,,,Shelf_MFR_Date
+448,4,,,,,STRING,,,,,,,Shelf_Workorder

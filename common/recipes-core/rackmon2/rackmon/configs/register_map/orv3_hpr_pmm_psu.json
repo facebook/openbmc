@@ -526,6 +526,60 @@
             "length": 1,
             "format": "INTEGER",
             "name": "Vendor_ID"
+        },
+        {
+            "begin": 384,
+            "length": 8,
+            "format": "STRING",
+            "name": "Shelf_Type"
+        },
+        {
+            "begin": 392,
+            "length": 8,
+            "format": "STRING",
+            "name": "Shelf_MFR_Name"
+        },
+        {
+            "begin": 400,
+            "length": 8,
+            "format": "STRING",
+            "name": "Shelf_FBPN"
+        },
+        {
+            "begin": 408,
+            "length": 8,
+            "format": "STRING",
+            "name": "Shelf_MFR_Model"
+        },
+        {
+            "begin": 416,
+            "length": 4,
+            "format": "STRING",
+            "name": "Shelf_Build_Revision"
+        },
+        {
+            "begin": 420,
+            "length": 4,
+            "format": "STRING",
+            "name": "Shelf_HW_Revision"
+        },
+        {
+            "begin": 424,
+            "length": 16,
+            "format": "STRING",
+            "name": "Shelf_MFR_Serial"
+        },
+        {
+            "begin": 440,
+            "length": 8,
+            "format": "STRING",
+            "name": "Shelf_MFR_Date"
+        },
+        {
+            "begin": 448,
+            "length": 4,
+            "format": "STRING",
+            "name": "Shelf_Workorder"
         }
     ]
 }

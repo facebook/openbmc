@@ -2,23 +2,14 @@
 
 # ARGUMENTS:
 # 1: RPU unique device address
-# 2: Optional override config
 
 if [ $# -lt 1 ]; then
-    echo "Usage: $0 <rpu_uda> [override_config]
-      rpu_uda: The RPU unique device address
-      override_config: Optional configuration file to override default settings"
+    echo "Usage: $0 <rpu_uda>
+      rpu_uda: The RPU unique device address"
     exit 1
 fi
 
 set -u
-
-OVERRIDE_CONFIG_FILE=${2:-/run/mnt-persist/var-data/lib/modbus-device-util/override-config.json}
-CONFIG_FILE="/var/lib/modbus-device-util/default-config.json"
-
-if [ -f "$OVERRIDE_CONFIG_FILE" ]; then
-    CONFIG_FILE="$OVERRIDE_CONFIG_FILE"
-fi
 
 # unique device address
 UDA="$1"

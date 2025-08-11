@@ -3,21 +3,12 @@
 # ARGUMENTS:
 # 1: RPU unique device address
 # 2: Command
-# 3: Optional override config
 
 if [ $# -lt 2 ]; then
-    echo "Usage: $0 <rpu_uda> <command> [override_config]
+    echo "Usage: $0 <rpu_uda> <command>
       rpu_uda: The RPU unique device address
-      command: The command to execute on the device: start, stop, restart, clear-sticky-registers
-      override_config: Optional configuration file to override default settings"
+      command: The command to execute on the device: start, stop, restart, clear-sticky-registers"
     exit 1
-fi
-
-OVERRIDE_CONFIG_FILE=${3:-/run/mnt-persist/var-data/lib/modbus-device-util/override-config.json}
-CONFIG_FILE="/var/lib/modbus-device-util/default-config.json"
-
-if [ -f "$OVERRIDE_CONFIG_FILE" ]; then
-    CONFIG_FILE="$OVERRIDE_CONFIG_FILE"
 fi
 
 # unique device address

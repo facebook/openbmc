@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# ARGUMENTS:
+# 1: Device Type
+# 2: Unique Dev Address
+# 3: Config file
+
+if [ $# -lt 3 ]; then
+    echo "Usage: $0 <device_type> <unique_device_address> <config>
+      device_type: The device type which should match the top level key from the config (rpu, bbu, psu, etc)
+      unique_device_address: The address of the modbus device to interact with
+      config: Configuration file that include mapping of device type to manufacturer determinator"
+    exit 1
+fi
+
+set -u
+
+DEVICE_TYPE="$1"
+# unique device address
+UDA="$2"
+CONFIG_FILE="$3"
+
+registerName=$(jq -er ".${DEVICE_TYPE}.manufacturerDiscriminator" "$CONFIG_FILE")
+
+registerValue=$(rackmoncli data --json --latest --dev-addr "$UDA" --reg-name "$registerName" |
+    jq -er ".[0].regList[] | select(.name == \"$registerName\") | .history.[0].value.strValue")
+
+if [ $? -ne 0 ]; then
+    echo "unknown"
+    exit 0
+fi
+
+filter='select(.value.registerValues | any(. == $value))'
+
+jq \
+    -er \
+    --arg value "$registerValue" \
+    ".${DEVICE_TYPE}.manufacturers | to_entries[] | ${filter} | .key" \
+    "$CONFIG_FILE"
+
+if [ $? -ne 0 ]; then
+    echo "unknown"
+    exit 0
+fi

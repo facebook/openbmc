@@ -12,7 +12,7 @@ fi
 
 script_dir=$( dirname "${BASH_SOURCE[0]}" )
 rackmoncli list --json | jq '.[] | select(.deviceType == "ORV3_RPU").uniqueDevAddress' | while read -r uda; do
-  manufacturer=$("$script_dir/get-rpu-manufacturer" "$uda" "$CONFIG_FILE")
+  manufacturer=$("$script_dir/get-manufacturer" rpu "$uda" "$CONFIG_FILE")
   jq -n --arg key "$uda" --arg manufacturer "$manufacturer" \
     '{($key): {manufacturer: $manufacturer}}'
 done | jq -s 'add'

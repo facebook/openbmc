@@ -72,7 +72,7 @@ function clear_sticky_registers {
 function start_rpu {
     echo "Using $CONFIG_FILE config file"
     script_dir=$( dirname "${BASH_SOURCE[0]}" )
-    manufacturer=$("$script_dir/get-rpu-manufacturer" "$UDA" "$CONFIG_FILE")
+    manufacturer=$("$script_dir/get-manufacturer" rpu "$UDA" "$CONFIG_FILE")
 
     if [ -z "$manufacturer" ] || [ "$manufacturer" == "unknown" ]; then
         echo "Could not identify manufacturer. Exiting!"

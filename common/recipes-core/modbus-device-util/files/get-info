@@ -16,6 +16,9 @@ rackmoncli list --json | jq -er '.[] | "\(.deviceType) \(.uniqueDevAddress)"' | 
     "ORV3_BBU")
       manufacturer=$("$script_dir/get-manufacturer" bbu "$uda" "$CONFIG_FILE")
       ;;
+    "ORV3_PSU")
+      manufacturer=$("$script_dir/get-manufacturer" psu "$uda" "$CONFIG_FILE")
+      ;;
     "ORV3_RPU")
       manufacturer=$("$script_dir/get-manufacturer" rpu "$uda" "$CONFIG_FILE")
       ;;

@@ -10,6 +10,17 @@
             }
         }
     },
+    "psu": {
+        "manufacturerDiscriminator": "PSU_MFR_Serial",
+        "manufacturers": {
+            "artesyn": {
+                "registerRegex": "^.{8}AE"
+            },
+            "delta": {
+                "registerRegex": "^.{8}DE"
+            }
+        }
+    },
     "rpu": {
         "manufacturerDiscriminator": "RPU_MFR_Model",
         "manufacturers": {

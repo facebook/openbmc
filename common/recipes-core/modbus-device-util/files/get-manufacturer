@@ -30,15 +30,23 @@ if [ $? -ne 0 ]; then
     exit 0
 fi
 
-filter='select(.value.registerValues | any(. == $value))'
+result=$(
+    jq -er ".${DEVICE_TYPE}.manufacturers | to_entries[] | \"\(.key) \(.value.registerValues // []) \(.value.registerRegex) \"" "$CONFIG_FILE" |
+    while read -r manufacturer values regex; do
 
-jq \
-    -er \
-    --arg value "$registerValue" \
-    ".${DEVICE_TYPE}.manufacturers | to_entries[] | ${filter} | .key" \
-    "$CONFIG_FILE"
+    if [[ "$regex" != "null" ]]; then
+        if [[ "$registerValue" =~ $regex ]]; then
+            echo -n "$manufacturer"
+        fi
+    else
+        if jq -er --arg target "$registerValue" '.[] | select(. == $target)' <<< "$values" &> /dev/null; then
+            echo -n "$manufacturer"
+        fi
+    fi
+done)
 
-if [ $? -ne 0 ]; then
+if [[ -z "$result" ]]; then
     echo "unknown"
-    exit 0
+else
+    echo "$result"
 fi

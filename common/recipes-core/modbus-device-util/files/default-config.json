@@ -1,4 +1,15 @@
 {
+    "bbu": {
+        "manufacturerDiscriminator": "Manufacture_Name",
+        "manufacturers": {
+            "delta": {
+                "registerValues": ["Delta"]
+            },
+            "panasonic": {
+                "registerValues": ["Panasonic", "ARTESYN"]
+            }
+        }
+    },
     "rpu": {
         "manufacturerDiscriminator": "RPU_MFR_Model",
         "manufacturers": {

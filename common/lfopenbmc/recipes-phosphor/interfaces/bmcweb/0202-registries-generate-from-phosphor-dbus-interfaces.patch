@@ -1,4 +1,4 @@
-From bb201a46f05e50540a70027fd90214f647dff6d0 Mon Sep 17 00:00:00 2001
+From 79411d4b91730ce06375d04426091775cf3d6e40 Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Thu, 27 Feb 2025 22:13:03 -0500
 Subject: [PATCH 202/205] registries: generate from phosphor-dbus-interfaces
@@ -24,30 +24,24 @@ $ curl --silent -k https://localhost:18080/redfish/v1/Registries/ | jq '.Members
 Signed-off-by: Patrick Williams <patrick@stwcx.xyz>
 Change-Id: I069d3086954d4d439759f4acfdddc84466237012
 ---
- meson.build                               | 52 ++++++++++++++++++++---
+ meson.build                               | 46 ++++++++++++++++++++++-
  src/pdi_hello.cpp                         |  6 +++
  subprojects/phosphor-dbus-interfaces.wrap |  3 ++
- 3 files changed, 54 insertions(+), 7 deletions(-)
+ 3 files changed, 53 insertions(+), 2 deletions(-)
  create mode 100644 src/pdi_hello.cpp
  create mode 100644 subprojects/phosphor-dbus-interfaces.wrap
 
 diff --git a/meson.build b/meson.build
-index ef95c8f0..d86d5560 100644
+index c7e09aba..9d485f9f 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -252,15 +252,27 @@ if not nghttp2.found()
+@@ -252,10 +252,26 @@ if not nghttp2.found()
  endif
  bmcweb_dependencies += nghttp2
  
--sdbusplus = dependency('sdbusplus', required: false, include_type: 'system')
--if not sdbusplus.found()
--    sdbusplus_proj = subproject('sdbusplus', required: true)
--    sdbusplus = sdbusplus_proj.get_variable('sdbusplus_dep')
--    sdbusplus = sdbusplus.as_system('system')
--endif
+-sdbusplus = dependency('sdbusplus')
 +sdbusplus = dependency(
 +    'sdbusplus',
-+    include_type: 'system',
 +    default_options: ['cpp_rtti=true'],
 +)
  bmcweb_dependencies += sdbusplus
@@ -69,7 +63,7 @@ index ef95c8f0..d86d5560 100644
  cli11 = dependency('CLI11', required: false, include_type: 'system')
  if not cli11.found()
      cli11_proj = subproject('cli11', required: true)
-@@ -384,6 +396,29 @@ subdir('features')
+@@ -379,6 +395,29 @@ subdir('features')
  # Source files
  fs = import('fs')
  
@@ -99,7 +93,7 @@ index ef95c8f0..d86d5560 100644
  srcfiles_bmcweb = files(
      'http/mutual_tls.cpp',
      'http/routing/sserule.cpp',
-@@ -420,7 +455,10 @@ bmcweblib = static_library(
+@@ -415,7 +454,10 @@ bmcweblib = static_library(
      'bmcweblib',
      srcfiles_bmcweb,
      include_directories: incdir,
@@ -133,5 +127,5 @@ index 00000000..935a8b25
 +url = https://github.com/openbmc/phosphor-dbus-interfaces.git
 +revision = HEAD
 -- 
-2.47.1
+2.47.3
 

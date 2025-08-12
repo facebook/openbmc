@@ -1,4 +1,4 @@
-From 1ecb5d4e58cca47b3676a8e94a41a3a9c7a64db3 Mon Sep 17 00:00:00 2001
+From a0e2f2da3f2f999e4091432451d4548c0367aa0d Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 11 Mar 2025 13:47:42 +0800
 Subject: [PATCH 6/7] entity-manager: Add config-prefix filtering
@@ -19,7 +19,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  5 files changed, 73 insertions(+), 41 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index 4acc81d..c3fd7fe 100644
+index 6b98f8c..125f5d6 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -7,6 +7,11 @@ project(

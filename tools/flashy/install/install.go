@@ -32,6 +32,7 @@ import (
 	_ "github.com/facebook/openbmc/tools/flashy/checks_and_remediations/bletchley"
 	_ "github.com/facebook/openbmc/tools/flashy/checks_and_remediations/catalina"
 	_ "github.com/facebook/openbmc/tools/flashy/checks_and_remediations/common"
+	_ "github.com/facebook/openbmc/tools/flashy/checks_and_remediations/morgan800cc"
 	_ "github.com/facebook/openbmc/tools/flashy/checks_and_remediations/ventura"
 	_ "github.com/facebook/openbmc/tools/flashy/checks_and_remediations/wedge100"
 	_ "github.com/facebook/openbmc/tools/flashy/checks_and_remediations/yamp"

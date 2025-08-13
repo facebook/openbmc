@@ -601,6 +601,13 @@ func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 			want:            "bletchley-v2023.02.1",
 			wantErr:         nil,
 		},
+		{
+			name:             "morgan800cc factory image",
+			etcIssueContents: `OpenBMC morgan800cc-65c81dc2d64`,
+			etcIssueReadErr:  nil,
+			want:             "morgan800cc-65c81dc2d64",
+			wantErr:          nil,
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

@@ -87,7 +87,7 @@ struct command
         "xyz.openbmc_project.Inventory";
 
     using InventoryTypes = sdbusplus::utility::dedup_variant<
-        bool, size_t, int64_t, uint64_t, uint16_t, std::string,
+        bool, size_t, int64_t, uint64_t, uint16_t, double, std::string,
         std::vector<uint8_t>, std::vector<std::string>>;
 };
 MFGTOOL_REGISTER(command);

@@ -188,7 +188,7 @@ read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
 
     kv_get("gpu_http_err", err_code, NULL, 0);
     if(!strcmp(err_code, "500") || snr_failed) {
-      if(fan_asserted == false) {
+      if(!fan_asserted) {
         fan_asserted = true;
         ret = system("/usr/local/bin/setup-gpu-fan-ctrl.sh enable");
         if(ret) {
@@ -197,7 +197,7 @@ read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
       }
     }
     else{
-      if(fan_asserted == true) {
+      if(fan_asserted) {
         fan_asserted = false;
         ret = system("/usr/local/bin/setup-gpu-fan-ctrl.sh disable");
         if(ret) {
@@ -210,7 +210,7 @@ read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
 
   if (!ubb_sensor_map[sensor_num].stby_read &&
       (kv_get("gpu_snr_valid", snr_valid, NULL, 0) || strcmp(snr_valid, "valid"))) {
-    snr_failed |= true;
+    snr_failed = true;
     return -1;
   }
 
@@ -218,7 +218,9 @@ read_snr(uint8_t fru, uint8_t sensor_num, float *value) {
   if(ubb_sensor_map[sensor_num].units == TEMP) {
     if(*value == 0 ||
        *value < ubb_sensor_map[sensor_num].snr_thresh.lcr_thresh) {
-      snr_failed |= true;
+      if (sensor_num != GPU_RETIMER_0_1_2_3_1V2_VR_TEMP && sensor_num != GPU_RETIMER_4_5_6_7_1V2_VR_TEMP) {
+        snr_failed = true;
+      }
     }
   }
 

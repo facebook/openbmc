@@ -171,7 +171,7 @@ index f541408..90b628b 100644
 +                    "Hysteresis": 0.001,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": 0
++                    "Value": -0.05
 +                },
 +                {
 +                    "Direction": "less than",
@@ -207,7 +207,7 @@ index f541408..90b628b 100644
 +                    "Hysteresis": 0.001,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": 0
++                    "Value": -0.05
 +                },
 +                {
 +                    "Direction": "less than",
@@ -243,7 +243,7 @@ index f541408..90b628b 100644
 +                    "Hysteresis": 0.001,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": 0
++                    "Value": -0.05
 +                },
 +                {
 +                    "Direction": "less than",
@@ -279,7 +279,7 @@ index f541408..90b628b 100644
 +                    "Hysteresis": 0.001,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": 0
++                    "Value": -0.05
 +                },
 +                {
 +                    "Direction": "less than",
@@ -839,7 +839,7 @@ index f541408..90b628b 100644
 +                    "Hysteresis": 0.001,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": 0
++                    "Value": -0.05
 +                },
 +                {
 +                    "Direction": "less than",
@@ -975,7 +975,7 @@ index f541408..90b628b 100644
 +                    "Hysteresis": 0.001,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": 0
++                    "Value": -0.05
 +                },
 +                {
 +                    "Direction": "less than",

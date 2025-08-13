@@ -17,4 +17,6 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/patches_6.12:"
 
-SRC_URI:append = "file://1001-ARM-dts-aspeed-Add-Facebook-Morgan800cc-BMC.patch"
+SRC_URI:append = " \
+	file://1001-ARM-dts-aspeed-Add-Facebook-Morgan800cc-BMC.patch \
+"

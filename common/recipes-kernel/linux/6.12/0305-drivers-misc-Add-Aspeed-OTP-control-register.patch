@@ -1,4 +1,4 @@
-From edbc00e2158951321d284b1aa76f2f5e343301eb Mon Sep 17 00:00:00 2001
+From 8ef227ad062c639944027ffa091be13a1b092dac Mon Sep 17 00:00:00 2001
 From: Johnny Huang <johnny_huang@aspeedtech.com>
 Date: Mon, 26 Dec 2022 10:04:48 +0800
 Subject: [PATCH 305/306] drivers/misc: Add Aspeed OTP control register
@@ -13,14 +13,14 @@ Change-Id: Ic2e8c2bf829dbde4d4e437c97edcc0a4591bcb46
  arch/arm/boot/dts/aspeed/aspeed-g6.dtsi |   6 +
  drivers/soc/aspeed/Kconfig              |   4 +
  drivers/soc/aspeed/Makefile             |   1 +
- drivers/soc/aspeed/aspeed-otp.c         | 639 ++++++++++++++++++++++++
+ drivers/soc/aspeed/aspeed-otp.c         | 637 ++++++++++++++++++++++++
  include/uapi/linux/aspeed-otp.h         |  39 ++
- 5 files changed, 689 insertions(+)
+ 5 files changed, 687 insertions(+)
  create mode 100644 drivers/soc/aspeed/aspeed-otp.c
  create mode 100644 include/uapi/linux/aspeed-otp.h
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-index f2b858d536af..10c58faeeb93 100644
+index f2b858d53..10c58faee 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 +++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 @@ -957,6 +957,12 @@ udma: dma-controller@1e79e000 {
@@ -37,7 +37,7 @@ index f2b858d536af..10c58faeeb93 100644
  
  		i3c: bus@1e7a0000 {
 diff --git a/drivers/soc/aspeed/Kconfig b/drivers/soc/aspeed/Kconfig
-index aaf4596ae4f9..bdea4b0a687b 100644
+index aaf4596ae..bdea4b0a6 100644
 --- a/drivers/soc/aspeed/Kconfig
 +++ b/drivers/soc/aspeed/Kconfig
 @@ -69,6 +69,10 @@ config ASPEED_SBC
@@ -52,7 +52,7 @@ index aaf4596ae4f9..bdea4b0a687b 100644
  
  endif
 diff --git a/drivers/soc/aspeed/Makefile b/drivers/soc/aspeed/Makefile
-index 5f61bb4cc36c..224127a1dd55 100644
+index 5f61bb4cc..224127a1d 100644
 --- a/drivers/soc/aspeed/Makefile
 +++ b/drivers/soc/aspeed/Makefile
 @@ -6,3 +6,4 @@ obj-$(CONFIG_ASPEED_P2A_CTRL)		+= aspeed-p2a-ctrl.o
@@ -62,10 +62,10 @@ index 5f61bb4cc36c..224127a1dd55 100644
 +obj-$(CONFIG_ASPEED_OTP)		+= aspeed-otp.o
 diff --git a/drivers/soc/aspeed/aspeed-otp.c b/drivers/soc/aspeed/aspeed-otp.c
 new file mode 100644
-index 000000000000..38b3890e5ad0
+index 000000000..205ff11f2
 --- /dev/null
 +++ b/drivers/soc/aspeed/aspeed-otp.c
-@@ -0,0 +1,639 @@
+@@ -0,0 +1,637 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Copyright (C) ASPEED Technology Inc.
@@ -681,14 +681,12 @@ index 000000000000..38b3890e5ad0
 +	return 0;
 +}
 +
-+static int aspeed_otp_remove(struct platform_device *pdev)
++static void aspeed_otp_remove(struct platform_device *pdev)
 +{
 +	struct aspeed_otp *ctx = dev_get_drvdata(&pdev->dev);
 +
 +	kfree(ctx->data);
 +	misc_deregister(&ctx->miscdev);
-+
-+	return 0;
 +}
 +
 +static struct platform_driver aspeed_otp_driver = {
@@ -708,7 +706,7 @@ index 000000000000..38b3890e5ad0
 \ No newline at end of file
 diff --git a/include/uapi/linux/aspeed-otp.h b/include/uapi/linux/aspeed-otp.h
 new file mode 100644
-index 000000000000..3293555c312c
+index 000000000..3293555c3
 --- /dev/null
 +++ b/include/uapi/linux/aspeed-otp.h
 @@ -0,0 +1,39 @@
@@ -753,5 +751,5 @@ index 000000000000..3293555c312c
 +#endif /* _UAPI_LINUX_ASPEED_JTAG_H */
 \ No newline at end of file
 -- 
-2.43.5
+2.43.0
 

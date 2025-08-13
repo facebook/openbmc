@@ -12,12 +12,8 @@ UNPACKDIR = "${S}"
 
 FW_TOOLS = "\
     scm-tpm,system-state-init@.service,multi-user.target,multi-user.target,0 \
-    scm-cpld,system-state-init@.service,multi-user.target,multi-user.target,0 \
     nic,network-wait-ipv6-ll@eth0.service,multi-user.target,multi-user.target,0 \
     cb-cpld,system-state-init@.service,multi-user.target,multi-user.target,0 \
-    mb-cpld,system-state-init@.service,multi-user.target,multi-user.target,0 \
-    mb-retimer,deassert-power-good.service_host-poweron@%i.service_host-powercycle@%i.service,obmc-host-start@%i.target_obmc-host-reboot@%i.target,obmc-host-start@%i.target_obmc-host-reboot@%i.target,0 \
-    mb-vr,system-state-init@.service,xyz.openbmc_project.psusensor.service,multi-user.target,0 \
     ag-bic,system-state-init@.service,multi-user.target,multi-user.target,0 \
     ag-vr,,phosphor-multi-gpio-monitor.service,multi-user.target,0 \
 "

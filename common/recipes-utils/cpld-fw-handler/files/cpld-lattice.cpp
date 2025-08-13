@@ -379,54 +379,116 @@ int CpldLatticeManager::resetConfigFlash()
     return i2cWriteReadCmd(cmd);
 }
 
+int CpldLatticeManager::programSinglePage(uint16_t page_offset, std::span<const uint8_t> page_data)
+{
+    std::vector<uint8_t> setPageAddrCmd = {CMD_SET_PAGE_ADDRESS, 0x0, 0x0, 0x0, 0x00, 0x00, 0x00, 0x00};
+    setPageAddrCmd[6] = (page_offset / 256);
+    setPageAddrCmd[7] = (page_offset % 256);
+
+    // Set Page Offset
+    if (i2cWriteReadCmd(setPageAddrCmd) < 0)
+    {
+        std::cerr << "Set page address fail (write)" << std::endl;
+        return -1;
+    }
+
+    // Write Page Data
+    std::vector<uint8_t> writeCmd = {CMD_PROGRAM_PAGE, 0x0, 0x0, 0x01};
+    writeCmd.insert(writeCmd.end(), page_data.begin(), page_data.end());
+
+    if (i2cWriteReadCmd(writeCmd) < 0)
+    {
+        std::cerr << "Write page data failed" << std::endl;
+        return -1;
+    }
+
+    usleep(200);
+
+    if (!waitBusyAndVerify())
+    {
+        std::cerr << "Wait busy and verify fail" << std::endl;
+        return -1;
+    }
+
+    return 0;
+}
+
+int CpldLatticeManager::verifySinglePage(uint16_t page_offset, std::span<const uint8_t> page_data)
+{
+    std::vector<uint8_t> setPageAddrCmd = {CMD_SET_PAGE_ADDRESS, 0x0, 0x0, 0x0, 0x00, 0x00, 0x00, 0x00};
+    setPageAddrCmd[6] = (page_offset / 256);
+    setPageAddrCmd[7] = (page_offset % 256);
+
+    // Set Page Offset
+    if (i2cWriteReadCmd(setPageAddrCmd) < 0)
+    {
+        std::cerr << "Set page address fail (read)" << std::endl;
+        return -1;
+    }
+
+    // Read Page Data
+    std::vector<uint8_t> readCmd = {CMD_READ_PAGE, 0x0, 0x0, 0x1};
+    std::vector<uint8_t> readData(16);
+    if (i2cWriteReadCmd(readCmd, page_data.size(), readData) < 0)
+    {
+        std::cerr << "Read page data failed" << std::endl;
+        return -1;
+    }
+
+    auto mismatch_pair = std::mismatch(page_data.begin(), page_data.end(), readData.begin());
+    if (mismatch_pair.first != page_data.end())
+    {
+        size_t idx = std::distance(page_data.begin(), mismatch_pair.first);
+        std::cerr << "Verify failed at " << ((page_offset * 16) + idx) << std::endl;
+        return -1;
+    }
+
+    return 0;
+}
+
 int CpldLatticeManager::writeProgramPage()
 {
-    /*
-    CMD_PROGRAM_PAGE = 0x70,
+    const size_t iterSize = 16;
 
-    Program one NVCM/Flash page. Can be
-    used to program the NVCM0/CFG or
-    NVCM1/UFM.
-
-    */
-    std::vector<uint8_t> cmd = {CMD_PROGRAM_PAGE, 0x0, 0x0, 0x01};
-    size_t iterSize = 16;
-
-    for (size_t i = 0; i < fwInfo.cfgData.size(); i += iterSize)
+    for (size_t i = 0; (i * iterSize) < fwInfo.cfgData.size(); i ++)
     {
+        size_t byteOffset = i * iterSize;
         double progressRate =
-            ((double(i) / double(fwInfo.cfgData.size())) * 100);
+            ((double(byteOffset) / double(fwInfo.cfgData.size())) * 100);
         std::cout << "Update : " << std::fixed << std::dec
                   << std::setprecision(2) << progressRate << "% \r";
 
-        uint8_t len = ((i + iterSize) < fwInfo.cfgData.size())
+        uint8_t len = ((byteOffset + iterSize) < fwInfo.cfgData.size())
                           ? iterSize
-                          : (fwInfo.cfgData.size() - i);
-        std::vector<uint8_t> data = cmd;
+                          : (fwInfo.cfgData.size() - byteOffset);
 
-        data.insert(data.end(), fwInfo.cfgData.begin() + i,
-                    fwInfo.cfgData.begin() + i + len);
+        auto page_data = std::vector<uint8_t>(fwInfo.cfgData.begin() + byteOffset, fwInfo.cfgData.begin() + byteOffset + len);
 
-        if (i2cWriteReadCmd(data) < 0)
+        size_t retry = 0;
+        const size_t maxWriteRetry = 10;
+        while (retry < maxWriteRetry)
         {
-            return -1;
+            if (programSinglePage(i, page_data) == 0 &&
+                verifySinglePage(i, page_data) == 0)
+            {
+                break; // Success
+            }
+
+            ++retry;
         }
 
-        /*
-         Reference spec
-         Important! If don't sleep, it will take a long time to update.
-        */
-        usleep(200);
-
-        if (!waitBusyAndVerify())
+        if (retry >= maxWriteRetry)
         {
-            std::cerr << "Wait busy and verify fail" << std::endl;
+            std::cerr << "Program and verify page failed" << std::endl;
             return -1;
         }
-
-        data.clear();
     }
 
+    if (!waitBusyAndVerify())
+    {
+        std::cerr << "Wait busy and verify fail" << std::endl;
+        return -1;
+    }
     return 0;
 }
 
@@ -477,37 +539,27 @@ int CpldLatticeManager::programDone()
 
 int CpldLatticeManager::verifyData()
 {
-    // CMD_READ_PAGE = 0x73
-    std::vector<uint8_t> cmd = {CMD_READ_PAGE, 0x0, 0x0, 0x1};
-    std::vector<uint8_t> read(16);
-    size_t iterSize = 16;
+    const size_t iterSize = 16;
 
-    for (size_t i = 0; i < fwInfo.cfgData.size(); i += iterSize)
+    for (size_t i = 0; (i * iterSize) < fwInfo.cfgData.size(); i ++)
     {
+        size_t byteOffset = i * iterSize;
         double progressRate =
-            ((double(i) / double(fwInfo.cfgData.size())) * 100);
+            ((double(byteOffset) / double(fwInfo.cfgData.size())) * 100);
         std::cout << "Verify : " << std::fixed << std::dec
                   << std::setprecision(2) << progressRate << "% \r";
 
-        uint8_t len = ((i + iterSize) < fwInfo.cfgData.size())
+        uint8_t len = ((byteOffset + iterSize) < fwInfo.cfgData.size())
                           ? iterSize
-                          : (fwInfo.cfgData.size() - i);
+                          : (fwInfo.cfgData.size() - byteOffset);
 
-        if (i2cWriteReadCmd(cmd, len, read) < 0)
+        auto page_data = std::vector<uint8_t>(fwInfo.cfgData.begin() + byteOffset, fwInfo.cfgData.begin() + byteOffset + len);
+
+        if (verifySinglePage(i, page_data) < 0)
         {
             return -1;
         }
-
-        for (size_t j = 0; j < len; j++)
-        {
-            if (fwInfo.cfgData.at(i + j) != read.at(j))
-            {
-                std::cerr << "Verify failed at " << i + j << std::endl;
-                return -1;
-            }
-        }
     }
-
     return 0;
 }
 
@@ -779,6 +831,81 @@ int CpldLatticeManager::XO2XO3Family_update()
     std::cout << "\nUpdate completed! Please AC." << std::endl;
 
     return 0;
+}
+
+int CpldLatticeManager::XO2XO3Family_verifyOnly()
+{
+    if (readDeviceId() < 0)
+    {
+        return -1;
+    }
+
+    if (jedFileParser() < 0)
+    {
+        std::cerr << "JED file parsing failed" << std::endl;
+        return -1;
+    }
+
+    if (debugMode)
+    {
+        if (isLCMXO3D)
+        {
+            std::cerr << "isLCMXO3D\n";
+        }
+        else
+        {
+            std::cerr << "is not LCMXO3D\n";
+        }
+    }
+
+    std::cout << "Start to verify ..." << std::endl;
+    std::cout << "Enable program mode." << std::endl;
+
+    waitBusyAndVerify();
+
+    if (enableProgramMode() < 0)
+    {
+        std::cout << "Enable program mode failed." << std::endl;
+        return -1;
+    }
+
+    bool verifyFail = false;
+
+    std::cout << "Reset config flash for verification." << std::endl;
+    if (resetConfigFlash() < 0)
+    {
+        std::cerr << "Reset config flash for verification failed." << std::endl;
+        verifyFail = true;
+        goto cleanup;
+    }
+
+    std::cout << "Verify data." << std::endl;
+    if (verifyData() < 0)
+    {
+        std::cerr << "Verify data failed." << std::endl;
+        verifyFail = true;
+        goto cleanup;
+    }
+
+    std::cout << "Verify user code." << std::endl;
+    if (verifyUserCode() < 0)
+    {
+        std::cerr << "Verify user code failed." << std::endl;
+        verifyFail = true;
+        goto cleanup;
+    }
+
+cleanup:
+    std::cout << "Disable config interface." << std::endl;
+    if (disableConfigInterface() < 0)
+    {
+        std::cerr << "Disable Config Interface failed." << std::endl;
+        return -1;
+    }
+
+    std::cout << "\nVerify " << (verifyFail ? "failed" : "completed") << "!."
+              << std::endl; 
+    return (verifyFail ? -1 : 0);
 }
 
 bool XO5I2CManager::setPage(uint8_t cfg, uint8_t block, uint8_t page)
@@ -1080,6 +1207,17 @@ int CpldLatticeManager::fwUpdate(bool legacy)
         return XO2XO3Family_update();
     } else if (chip == "LFMXO5-25") {
         return XO5Family_update(legacy);
+    } else {
+        std::cerr << "Unsupported chip type: " << chip << std::endl;
+        return -1;
+    }
+}
+
+int CpldLatticeManager::fwVerifyOnly(bool legacy [[maybe_unused]])
+{
+    if (chip == "LCMXO3LF-4300" || chip == "LCMXO3LF-6900" ||
+        chip == "LCMXO3D-4300" || chip == "LCMXO3D-9400") {
+        return XO2XO3Family_verifyOnly();
     } else {
         std::cerr << "Unsupported chip type: " << chip << std::endl;
         return -1;

@@ -17,6 +17,7 @@ int main(int argc, char** argv)
     std::string chip, interface, target;
     bool debugMode{false};
     bool legacyMode{false};
+    bool verifyOnly{false};
 
     CLI::App app{"CPLD update tool"};
 
@@ -40,6 +41,7 @@ int main(int argc, char** argv)
     update->add_flag("-v,--verbose", debugMode, "debug mode");
     update->add_flag("-l,--legacy", legacyMode,
                      "Use legacy update protocol for LFMXO5-25");
+    update->add_flag("--verify-only", verifyOnly, "verify only");
 
     auto version = app.add_subcommand("version", "Get Frimware Version");
 
@@ -101,10 +103,21 @@ int main(int argc, char** argv)
         using namespace std::chrono;
 
         auto start = high_resolution_clock::now();
-        if (cpldManager.fwUpdate(legacyMode) < 0)
+        if (verifyOnly)
         {
-            std::cerr << "CPLD update failed" << std::endl;
-            return -1;
+            if  (cpldManager.fwVerifyOnly(legacyMode) < 0)
+            {
+                std::cerr << "CPLD verify failed" << std::endl;
+                return -1;
+            }
+        }
+        else
+        {
+            if (cpldManager.fwUpdate(legacyMode) < 0)
+            {
+                std::cerr << "CPLD update failed" << std::endl;
+                return -1;
+            }
         }
 
         auto stop = high_resolution_clock::now();

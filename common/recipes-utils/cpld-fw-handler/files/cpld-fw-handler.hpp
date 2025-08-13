@@ -48,6 +48,12 @@ class CpldManager
         return -1;
     }
 
+    virtual int fwVerifyOnly(bool /* legacy */)
+    {
+        std::cerr << "fwVerifyOnly() not implemented" << std::endl;
+        return -1;
+    }
+
     virtual int getVersion()
     {
         std::cerr << "getVersion() not implemented" << std::endl;

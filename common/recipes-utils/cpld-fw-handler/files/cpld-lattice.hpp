@@ -37,6 +37,7 @@ enum cpldI2cCmd
     CMD_PROGRAM_PAGE = 0x70,
     CMD_READ_PAGE = 0x73,
     CMD_ENABLE_CONFIG_MODE = 0x74,
+    CMD_SET_PAGE_ADDRESS = 0xB4,
     CMD_READ_FW_VERSION = 0xC0,
     CMD_PROGRAM_USER_CODE = 0xC2,
     CMD_READ_DEVICE_ID = 0xE0,
@@ -67,6 +68,7 @@ class CpldLatticeManager : public CpldManager
 
     int getVersion() override;
     int fwUpdate(bool legacy) override;
+    int fwVerifyOnly(bool legacy) override;
     int jedFileParser();
 
   private:
@@ -87,7 +89,10 @@ class CpldLatticeManager : public CpldManager
     bool waitBusyAndVerify();
     int readUserCode(uint32_t& userCode);
     int XO2XO3Family_update();
+    int XO2XO3Family_verifyOnly();
     int XO5Family_update(bool legacy);
+    int programSinglePage(uint16_t page_offset, std::span<const uint8_t> page_data);
+    int verifySinglePage(uint16_t page_offset, std::span<const uint8_t> page_data);
     static void updateFailedWarning();
 };
 

@@ -35,20 +35,16 @@ wait_for_update_complete() {
         if [ "${progress}" == 100 ]; then
             echo -ne \\n"Update done."\\n
             update_success=true
+            return 0
             break
         fi
         counter=$((counter+5))
-        if [ "${counter}" == 900 ]; then
+        if [ "${counter}" == 400 ]; then
             echo -ne \\n"Time out. Fail"\\n
+            return $FAIL_TO_UPDATE_WF_CXL_TIME_OUT_ERROR
             break
         fi
     done
-
-    if [ "${update_success}" ]; then
-        return 0
-    else
-        return $FAIL_TO_UPDATE_WF_CXL_TIME_OUT_ERROR
-    fi
 }
 
 PLDM_FW_IDENT_PASS=0
@@ -163,11 +159,12 @@ update_cxl() {
         wait_for_update_complete
         ret=$?
         if [ "$ret" -ne 0 ]; then
-            exit $ret
+            return $ret
         fi
     else
         echo "Fail: Miss software id."
     fi
+    return 0
 }
 
 prompt_confirmation() {
@@ -183,6 +180,42 @@ error_and_exit() {
     echo "Please provide valid PLDM image"
     show_usage
     exit "$INVALID_INPUT"
+}
+
+MAX_RETRIES=3
+
+retry_update_cxl() {
+    local retries=0
+    local ret=0
+
+    update_cxl "$pldm_image"
+    ret=$?
+    if [ $ret -eq 0 ]; then
+        return 0
+    fi
+
+    while [ $retries -lt $MAX_RETRIES ]; do
+        retries=$((retries + 1))
+        echo "CXL firmware update failed. Retrying... ($retries/$MAX_RETRIES)"
+        # each retry before restart pldmd
+        systemctl stop pldmd
+        sleep 10
+        systemctl start pldmd
+        sleep 60
+        # Try to delete previous software_id before retry
+        if [ -n "$software_id" ]; then
+            busctl call xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Object Delete --timeout=120
+            sleep 2
+        fi
+        update_cxl "$pldm_image"
+        ret=$?
+        if [ $ret -eq 0 ]; then
+            return 0
+        fi
+    done
+
+    echo "Maximum retries ($MAX_RETRIES) reached. Exiting with error code: $ret."
+    return $ret
 }
 
 # Check for minimum required arguments
@@ -244,13 +277,13 @@ ret=$?
 fi
 
 
-update_cxl "$pldm_image"
+retry_update_cxl
 
 busctl call xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Object.Delete Delete --timeout=120 2>&1
 ret=$?
 if [ "$ret" -ne 0 ]; then
-echo "Failed to delete software id: Exit code $ret"
-exit "$FAIL_TO_UPDATE_WF_CXL_FAIL_TO_DELETE_SOFTWARE_ID"
+    echo "Failed to delete software id: Exit code $ret"
+    exit "$FAIL_TO_UPDATE_WF_CXL_FAIL_TO_DELETE_SOFTWARE_ID"
 fi
 
 echo "Done. If there was no error appeared, please conduct DC cycle to load the new firmware."

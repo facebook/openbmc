@@ -4,6 +4,7 @@ SRC_URI += " \
     file://phosphor-reset-host-reboot-attempts_override.conf \
     file://yosemite4-dbus-timeout.conf \
     file://1000-Add-retry-mechanism-with-configurable-Meson-option.patch \
+    file://rescan-cxl-eid \
 "
 EXTRA_OEMESON:append = " \
     -Dretry_attempts=5 \
@@ -23,10 +24,12 @@ do_install:append() {
         install -d "$s.d"
         install -m 0644 ${UNPACKDIR}/yosemite4-dbus-timeout.conf "$s.d/"
     done
+    install -m 0755 ${UNPACKDIR}/rescan-cxl-eid ${D}${libexecdir}/phosphor-state-manager/rescan-cxl-eid
 }
 
 FILES:${PN} += " \
     ${systemd_system_unitdir}/phosphor-reset-host-reboot-attempts@.service.d/phosphor-reset-host-reboot-attempts_override.conf \
     ${systemd_system_unitdir}/*.service.d \
     ${systemd_system_unitdir}/*.service.d/*.conf \
+    ${libexecdir}/phosphor-state-manager/rescan-cxl-eid \
 "

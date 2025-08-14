@@ -272,21 +272,21 @@ PAL_SENSOR_MAP ubb_sensor_map[] = {
   {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                           //0x0F
 
   {"FPGA_0_TEMP", 0 , read_snr, true, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x10
-  {"HSC_0_TEMP" , 0 , read_snr, true, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x11
-  {"HSC_1_TEMP" , 0 , read_snr, true, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x12
-  {"HSC_2_TEMP" , 0 , read_snr, true, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x13
-  {"HSC_3_TEMP" , 0 , read_snr, true, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x14
-  {"HSC_4_TEMP" , 0 , read_snr, true, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x15
-  {"HSC_5_TEMP" , 0 , read_snr, true, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x16
-  {"HSC_6_TEMP" , 0 , read_snr, true, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x17
-  {"HSC_7_TEMP" , 0 , read_snr, true, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x18
-  {"HSC_8_TEMP" , 0 , read_snr, true, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x19
-  {"HSC_9_TEMP" , 0 , read_snr, true, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x1A
+  {"HSC_0_TEMP" , 0 , read_snr, true, {125.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x11
+  {"HSC_1_TEMP" , 0 , read_snr, true, {125.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x12
+  {"HSC_2_TEMP" , 0 , read_snr, true, {125.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x13
+  {"HSC_3_TEMP" , 0 , read_snr, true, {125.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x14
+  {"HSC_4_TEMP" , 0 , read_snr, true, {125.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x15
+  {"HSC_5_TEMP" , 0 , read_snr, true, {125.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x16
+  {"HSC_6_TEMP" , 0 , read_snr, true, {125.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x17
+  {"HSC_7_TEMP" , 0 , read_snr, true, {125.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x18
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                           //0x19
+  {NULL, 0, NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                           //0x20
   {"Standby_HSC_TEMP", 0 , read_snr, true, {100.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x1B
   {"Outlet_0_TEMP", 0, read_snr, true, {85.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP},  //0x1C
   {"Inlet_1_TEMP", 0, read_snr, true, {55.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP},  //0x1D
   {NULL, 0,  NULL, 0, {0, 0, 0, 0, 0, 0, 0, 0}, 0},                          //0x1E
-  {"IBC_TEMP"    , 0 , read_snr, true, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},      //0x1F
+  {"IBC_TEMP"    , 0 , read_snr, true, {110, 0, 0, 5.0, 0, 0, 0, 0}, TEMP},  //0x1F
 
   {"PCB_OAM7_TEMP",  0 , read_snr, true, {90.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x20
   {"PCB_IBC_TEMP" ,  0 , read_snr, true, {90.0, 0, 0, 5.0, 0, 0, 0, 0}, TEMP}, //0x21

@@ -4,6 +4,7 @@ import re
 from datetime import datetime, timedelta
 
 from pathlib import Path
+from typing import List
 
 from fixmybmc.bmccheck import bmcCheck
 from fixmybmc.status import Problem, Warning
@@ -15,7 +16,7 @@ fscd_logfile = Path("/var/log/fscd.log")
 fscd_date_format = "%Y-%m-%d %H:%M:%S"
 
 
-def get_recent_logs(file_path: Path, time_format: str, days_ago: int = 7) -> list[str]:
+def get_recent_logs(file_path: Path, time_format: str, days_ago: int = 7) -> List[str]:
     cutoff_date = datetime.now() - timedelta(days=days_ago)
     time_str_len = len(datetime.now().strftime(time_format))
 

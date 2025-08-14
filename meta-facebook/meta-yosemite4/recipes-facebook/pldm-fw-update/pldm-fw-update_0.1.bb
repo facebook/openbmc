@@ -12,12 +12,17 @@ UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://pldm-fw-update.sh \
+    file://uart_fw_py_arm32  \
+    file://ast1030_uart_fw.bin  \
     "
 
 RDEPENDS:${PN} = "bash"
-
+RDEPENDS:${PN} += "zlib"
+INSANE_SKIP:${PN} += "already-stripped"
 do_install() {
     install -d ${D}/${bindir}
     install -m 0755 ${UNPACKDIR}/pldm-fw-update.sh ${D}/${bindir}/
+    install -m 0777 ${UNPACKDIR}/uart_fw_py_arm32  ${D}/${bindir}/
+    install -m 0755 ${UNPACKDIR}/ast1030_uart_fw.bin ${D}/${bindir}/
 }
 

@@ -73,7 +73,8 @@ show_usage() {
 	echo "Usage: pldm-fw-update.sh [sd|wf|sd_vr|wf_vr|sd_retimer] (--rcvy <slot_id> <uart image>) (<slot_id>) <pldm image>"
 	echo "       update all PLDM component  : pldm-fw-update.sh [sd|wf] <pldm image>"
 	echo "       update one PLDM component  : pldm-fw-update.sh [sd|wf|sd_vr|wf_vr|sd_retimer] <slot_id> <pldm image>"
-	echo "       recover and then update one BIC. : pldm-fw-update.sh [sd|wf] --rcvy <slot_id> <uart image> <pldm image>"
+	echo "       recover and then update one BIC(old method, NOT recommended) : pldm-fw-update.sh [sd|wf] --rcvy <slot_id> <uart image> <pldm image>"
+	echo "       recover and then update one BIC by uart(new method, recommended): pldm-fw-update.sh [sd|wf] --rcvy <slot_id> <bic image>"
 	echo "       recovery SD re-timer : pldm-fw-update.sh [sd_retimer] <slot_id> <pldm recovery image>"
 	echo ""
 }
@@ -452,7 +453,99 @@ recovery_bic_by_uart() {
 	echo "Recovery BIC is finished."
 	return 0
 }
+recover_and_update_bic_by_uart() {
+	local slot=$1
+	local cpld_uart_routing=$2
+	local boot_strap_reg=$3
+	local bic_image=$4
+	local uart_num=$((slot < 5 ? slot - 1 :slot))
+	local i2c_bus=$((slot-1))
+	local ret=255
+	echo "UART is ttyS$uart_num"
+	echo "i2c bus is $i2c_bus"
+	# Switch UART to corresponding BIC
+	i2ctransfer -f -y "$i2c_bus" w2@"$SB_CPLD_ADDR" "$SB_UART_MUX_SWITCH_REG" "$cpld_uart_routing"
+	ret=$?
+	if [ "$ret" -ne 0 ]; then
+		return $ret
+	fi
+	# Set BIC boot from UART
+	echo "Setting BIC boot from UART"
+	i2ctransfer -f -y "$i2c_bus" w2@"$SB_CPLD_ADDR" "$BIC_BOOT_STRAP_REG" "$boot_strap_reg"
+	ret=$?
+	if [ "$ret" -ne 0 ]; then
+		return $ret
+	fi
+	# Notify Nuvoton MGM CPLD to change baud rate to 115200
+	if [ -n "$is_nuvoton_board" ]; then
+		if [ "$slot" -ge 5 ] && [ "$slot" -le 8 ]; then
+			set_val=$((0x1 << (slot-1)))
+			i2ctransfer -f -y $MANAGEMENT_BOARD_IO_EXP_BUS_NUM w2@0x21 0x0C "$set_val"
+		fi
+	fi
 
+	# set UART to 115200
+	/bin/stty -F "/dev/ttyS$uart_num" raw -echo 115200
+	ret=$?
+	if [ "$ret" -ne 0 ]; then
+		return $ret
+	fi
+
+	# Stop the obmc-console service to avoid multiple access to the UART.
+	systemctl stop obmc-console@ttyS$uart_num.service
+	sleep 3
+	
+    # Recover and update the BIC firmware via UART using the Aspeed tool.
+	(sleep 10; printf '\n') | timeout 120s /usr/bin/uart_fw_py_arm32 \
+    --platform ast1030 \
+    --spi 0 \
+    --cs 0 \
+    --comport /dev/ttyS$uart_num \
+	--baudrate 115200   \
+    --input_image $bic_image
+	sleep 5
+
+	# Notify Nuvoton MGM CPLD to change baud rate to 57600
+	if [ -n "$is_nuvoton_board" ]; then
+		if [ "$slot" -ge 5 ] && [ "$slot" -le 8 ]; then
+			i2ctransfer -f -y $MANAGEMENT_BOARD_IO_EXP_BUS_NUM w2@0x21 0x0C 0x0
+		fi
+	fi
+
+	# set UART back to 57600
+	/bin/stty -F "/dev/ttyS$uart_num" 57600
+	ret=$?
+	if [ "$ret" -ne 0 ]; then
+		return $ret
+	fi
+
+	# Set BIC boot from spi
+	i2ctransfer -f -y "$i2c_bus" w2@"$SB_CPLD_ADDR" "$BIC_BOOT_STRAP_REG" "$BIC_BOOT_STRAP_SPI_VAL"
+	ret=$?
+	if [ "$ret" -ne 0 ]; then
+		return $ret
+	fi
+	echo "Restart MCTP service and PLDM service"
+	sleep 3
+	systemctl restart mctpd
+	sleep 20
+	systemctl restart pldmd
+	sleep 60
+	# Restart the obmc-console service
+	systemctl restart obmc-console@ttyS$uart_num.service
+	sleep 3
+
+	echo "Slot$slot: Do 12V cycle"
+	if ! busctl set-property xyz.openbmc_project.State.Chassis"$slot" /xyz/openbmc_project/state/chassis"$slot" xyz.openbmc_project.State.Chassis RequestedPowerTransition s "xyz.openbmc_project.State.Chassis.Transition.PowerCycle" --timeout=120 2>&1; then
+		echo "Failed to do 12V cycle"
+	fi
+
+	sleep 40
+	# Update BIC version to Settings D-Bus
+	update_bic_version_dbus "$bic_name" "$slot_id"
+	echo "Update BIC via UART is finished."
+	return 0
+}
 wait_for_update_complete() {
 	local counter=5
 	while true
@@ -529,6 +622,80 @@ delete_software_id() {
 		done
 	fi
 }
+update_bic_version_dbus() {
+	local bic_name=$1
+	local slot_id=$2
+	if [ "$bic_name" == "sd" ]; then
+	echo "Updating SD BIC version to Settings D-Bus"
+	sleep 15 # wait for BIC reset
+	# Check if slot_id is empty
+	if [ -z "$slot_id" ]; then
+		# Loop through slot_id values from 1 to 8 if slot_id is empty
+		for slot_id in {1..8}; do
+			# Check EID presence first
+			echo "$mctp_tree" | grep -q "/au/com/codeconstruct/mctp1/networks/1/endpoints/${slot_id}0"
+			ret=$?
+			if [ "$ret" -eq 0 ]; then
+				/usr/libexec/fw-versions/sd-bic "$slot_id"
+				ret=$?
+				# Check if the command was successful
+				if [ "$ret" -eq 0 ]; then
+					version=$(busctl get-property xyz.openbmc_project.Settings \
+						"/xyz/openbmc_project/software/host$slot_id/Sentinel_Dome_bic" \
+						xyz.openbmc_project.Software.Version Version --timeout=120 2>&1 | awk -F'"' '{print $2}')
+					echo "Version retrieved successfully: $version"
+				fi
+			fi
+		done
+	else
+		# Execute the command with the provided slot_id
+		/usr/libexec/fw-versions/sd-bic "$slot_id"
+		ret=$?
+		# Check if the command was successful
+		if [ "$ret" -eq 0 ]; then
+			version=$(busctl get-property xyz.openbmc_project.Settings \
+				"/xyz/openbmc_project/software/host$slot_id/Sentinel_Dome_bic" \
+				xyz.openbmc_project.Software.Version Version --timeout=120 2>&1 | awk -F'"' '{print $2}')
+			echo "Version retrieved successfully: $version"
+		fi
+	fi
+	elif [ "$bic_name" == "wf" ]; then
+		echo "Updating WF BIC version to Settings D-Bus"
+		sleep 15 # wait for BIC reset
+		# Check if slot_id is empty
+		if [ -z "$slot_id" ]; then
+			# Loop through slot_id values from 1 to 8 if slot_id is empty
+			for slot_id in {1..8}; do
+				# Check EID presence first
+				echo "$mctp_tree" | grep -q "/au/com/codeconstruct/mctp1/networks/1/endpoints/${slot_id}2"
+				ret=$?
+				if [ "$ret" -eq 0 ]; then
+					/usr/libexec/fw-versions/wf-bic "$slot_id"
+					ret=$?
+					# Check if the command was successful
+					if [ "$ret" -eq 0 ]; then
+						version=$(busctl get-property xyz.openbmc_project.Settings \
+							"/xyz/openbmc_project/software/host$slot_id/Wailua_Falls_bic" \
+							xyz.openbmc_project.Software.Version Version --timeout=120 2>&1 | awk -F'"' '{print $2}')
+						echo "Version retrieved successfully: $version"
+					fi
+				fi
+			done
+		else
+			# Execute the command with the provided slot_id
+			/usr/libexec/fw-versions/wf-bic "$slot_id"
+			ret=$?
+			# Check if the command was successful
+			if [ "$ret" -eq 0 ]; then
+				version=$(busctl get-property xyz.openbmc_project.Settings \
+					"/xyz/openbmc_project/software/host$slot_id/Wailua_Falls_bic" \
+					xyz.openbmc_project.Software.Version Version --timeout=120 2>&1 | awk -F'"' '{print $2}')
+				echo "Version retrieved successfully: $version"
+			fi
+		fi
+	fi
+}
+
 
 update_bic() {
 	cp "$1" /tmp/pldm_images
@@ -809,7 +976,7 @@ check_if_no_retimer_sku() {
     return 0
 }
 
-sd_bic_do_i3c_re-init () {
+sd_bic_do_i3c_re_init () {
 	# Workaround: Sentinel dome BIC do i3c hub re-init
 	mapfile -t eid_arr < <(echo "$mctp_tree" | cut -d "/" -f 9)
 	for EID in "${eid_arr[@]}"
@@ -827,6 +994,7 @@ sd_bic_do_i3c_re-init () {
 	done
 	sleep 5
 }
+
 
 handle_firmware_operations () {
 	# Execute recovery operations if in recovery mode, based on the value of bic_name
@@ -943,77 +1111,8 @@ handle_firmware_operations () {
 	fi
 
 	delete_software_id
-
 	# Update BIC version to Settings D-Bus
-	if [ "$bic_name" == "sd" ]; then
-		echo "Updating SD BIC version to Settings D-Bus"
-		sleep 15 # wait for BIC reset
-		# Check if slot_id is empty
-		if [ -z "$slot_id" ]; then
-			# Loop through slot_id values from 1 to 8 if slot_id is empty
-			for slot_id in {1..8}; do
-				# Check EID presence first
-				echo "$mctp_tree" | grep -q "/au/com/codeconstruct/mctp1/networks/1/endpoints/${slot_id}0"
-				ret=$?
-				if [ "$ret" -eq 0 ]; then
-					/usr/libexec/fw-versions/sd-bic "$slot_id"
-					ret=$?
-					# Check if the command was successful
-					if [ "$ret" -eq 0 ]; then
-						version=$(busctl get-property xyz.openbmc_project.Settings \
-							"/xyz/openbmc_project/software/host$slot_id/Sentinel_Dome_bic" \
-							xyz.openbmc_project.Software.Version Version --timeout=120 2>&1 | awk -F'"' '{print $2}')
-						echo "Version retrieved successfully: $version"
-					fi
-				fi
-			done
-		else
-			# Execute the command with the provided slot_id
-			/usr/libexec/fw-versions/sd-bic "$slot_id"
-			ret=$?
-			# Check if the command was successful
-			if [ "$ret" -eq 0 ]; then
-				version=$(busctl get-property xyz.openbmc_project.Settings \
-					"/xyz/openbmc_project/software/host$slot_id/Sentinel_Dome_bic" \
-					xyz.openbmc_project.Software.Version Version --timeout=120 2>&1 | awk -F'"' '{print $2}')
-				echo "Version retrieved successfully: $version"
-			fi
-		fi
-	elif [ "$bic_name" == "wf" ]; then
-		echo "Updating WF BIC version to Settings D-Bus"
-		sleep 15 # wait for BIC reset
-		# Check if slot_id is empty
-		if [ -z "$slot_id" ]; then
-			# Loop through slot_id values from 1 to 8 if slot_id is empty
-			for slot_id in {1..8}; do
-				# Check EID presence first
-				echo "$mctp_tree" | grep -q "/au/com/codeconstruct/mctp1/networks/1/endpoints/${slot_id}2"
-				ret=$?
-				if [ "$ret" -eq 0 ]; then
-					/usr/libexec/fw-versions/wf-bic "$slot_id"
-					ret=$?
-					# Check if the command was successful
-					if [ "$ret" -eq 0 ]; then
-						version=$(busctl get-property xyz.openbmc_project.Settings \
-							"/xyz/openbmc_project/software/host$slot_id/Wailua_Falls_bic" \
-							xyz.openbmc_project.Software.Version Version --timeout=120 2>&1 | awk -F'"' '{print $2}')
-						echo "Version retrieved successfully: $version"
-					fi
-				fi
-			done
-		else
-			# Execute the command with the provided slot_id
-			/usr/libexec/fw-versions/wf-bic "$slot_id"
-			ret=$?
-			# Check if the command was successful
-			if [ "$ret" -eq 0 ]; then
-				version=$(busctl get-property xyz.openbmc_project.Settings \
-					"/xyz/openbmc_project/software/host$slot_id/Wailua_Falls_bic" \
-					xyz.openbmc_project.Software.Version Version --timeout=120 2>&1 | awk -F'"' '{print $2}')
-				echo "Version retrieved successfully: $version"
-			fi
-		fi
-	fi
+	update_bic_version_dbus "$bic_name" "$slot_id"
 	echo "Completed firmware operations for slot $slot_id."
 	echo "Done"
 	return 0
@@ -1055,7 +1154,10 @@ pldm_image=$2
 
 # Determine recovery mode and check for required image files based on argument count
 if [ $# -eq 5 ] && [ "$2" == "--rcvy" ]; then
-
+	echo -e "[Warning]: You are recovering and updating one BIC using an outdated method. 
+			This method is not recommended and will no longer be maintained.\n\n 
+			It is recommended to run the following command:
+		  	pldm-fw-update.sh [sd|wf] --rcvy <slot_id> <bic image>"
 	if [ "$bic_name" == "sd_vr" ] || [ "$bic_name" == "wf_vr" ]; then
 		echo "VR device can't be updated in recovery mode"
 		exit 255
@@ -1076,6 +1178,36 @@ if [ $# -eq 5 ] && [ "$2" == "--rcvy" ]; then
 		exit 255
 	fi
 	retry_firmware_operation
+elif [ $# -eq 4 ] && [ "$2" == "--rcvy" ]; then
+    if [ "$bic_name" == "sd_vr" ] || [ "$bic_name" == "wf_vr" ]; then
+		echo "VR device can't be updated in recovery mode"
+		exit 255
+	elif [ "$bic_name" == "sd" ]; then
+		echo "Initiate SD BIC recovery"
+	elif [ "$bic_name" == "wf" ]; then
+		echo "Initiate WF BIC recovery"
+	fi
+	use_uart_update=true
+	is_rcvy=true
+	slot_id=$3
+	bic_image=$4
+
+	#Aspeed tool requires ast1030_uart_fw.bin to be in the Work directory
+	ln -s /usr/bin/ast1030_uart_fw.bin $(pwd)/ast1030_uart_fw.bin
+	
+	echo "Start recover and update  $slot_id $bic_name BIC via UART"
+	case $bic_name in
+	sd)
+		recover_and_update_bic_by_uart "$slot_id" "0x04" "0x01" "$bic_image"
+		ret=$?
+		;;
+	wf)
+		check_power_on "$slot_id"
+		recover_and_update_bic_by_uart "$slot_id" "0x01" "0x02" "$bic_image"
+		ret=$?
+		;;
+	esac
+	rm $(pwd)/ast1030_uart_fw.bin
 elif [ $# -eq 3 ] && [[ "$2" =~ ^[1-8]+$ ]]; then
 	slot_id=$2
 	pldm_image=$3
@@ -1160,7 +1292,11 @@ else
 	done
 fi
 
-[ ! -f "$pldm_image" ] && error_and_exit "PLDM"
+if [ -z "$use_uart_update" ]; then
+    [ ! -f "$pldm_image" ] && error_and_exit "PLDM"
+else
+    echo "Using UART mode: skip PLDM image check"
+fi
 
 #unlock
 flock -u 200

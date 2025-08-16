@@ -1,0 +1,2 @@
+- name: FileNotFound
+  description: "The requested file does not exist."

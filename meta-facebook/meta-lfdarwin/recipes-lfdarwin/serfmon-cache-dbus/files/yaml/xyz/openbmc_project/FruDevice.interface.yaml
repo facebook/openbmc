@@ -1,0 +1,5 @@
+properties:
+  - name: SerialNumber
+    type: string
+  - name: PRODUCT_PRODUCT_NAME
+    type: string

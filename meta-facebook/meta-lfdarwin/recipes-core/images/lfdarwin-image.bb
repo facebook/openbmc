@@ -5,4 +5,5 @@ IMAGE_INSTALL:append = " serfmon-cache \
                          prefdl-eeprom \
                          eth0-mac-fixup \
                          sol \
+                         wedge-power \
                         "

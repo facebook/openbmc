@@ -4,4 +4,5 @@ IMAGE_INSTALL:append = " serfmon-cache \
                          serfmon-cache-dbus \
                          prefdl-eeprom \
                          eth0-mac-fixup \
+                         sol \
                         "

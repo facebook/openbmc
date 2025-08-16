@@ -6,4 +6,5 @@ IMAGE_INSTALL:append = " serfmon-cache \
                          eth0-mac-fixup \
                          sol \
                          wedge-power \
+                         boot-info \
                         "

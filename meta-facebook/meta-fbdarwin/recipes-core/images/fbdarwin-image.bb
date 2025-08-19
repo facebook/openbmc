@@ -8,6 +8,7 @@ IMAGE_INSTALL += " \
   prefdl-eeprom \
   serfmon-cache \
   show-tech \
+  bmc-eeprom-checker \
   "
 
 #

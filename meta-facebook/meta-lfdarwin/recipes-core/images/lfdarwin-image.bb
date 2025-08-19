@@ -8,4 +8,5 @@ IMAGE_INSTALL:append = " serfmon-cache \
                          wedge-power \
                          boot-info \
                          mfg-tool \
+                         bmc-eeprom-checker \
                         "

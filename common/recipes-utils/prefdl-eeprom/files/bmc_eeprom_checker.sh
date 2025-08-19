@@ -1,4 +1,6 @@
-# Copyright 2024-present Facebook. All Rights Reserved.
+#!/bin/bash
+#
+# Copyright 2025-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,21 +16,18 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-LICENSE = "GPL-2.0-or-later"
-LIC_FILES_CHKSUM = "file://prefdl_weutil.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
-SRC_URI += " \
-          file://utils \
-          "
-S = "${WORKDIR}/utils"
+#
 
-do_install() {
-    install -d ${D}${bindir}
-    install -m 0755 weutil_prefdl ${D}${bindir}/weutil_prefdl
-    install -m 0755 weutil-compat-wrapper.sh ${D}${bindir}/weutil
+META_EEPROM_OFFSET=$((15 * 1024))
+
+bmc_has_meta_eeprom() {
+    # Check if the BMC EEPROM has been programmed with Meta EEPROM format.
+    local eeprom_file="/sys/bus/i2c/drivers/at24/0-0050/eeprom"
+    local meta_hdr_bytes="fbfb[0-9a-f]{2}ff"
+    bmc_hdr=$(hexdump -e '16/1 "%02x" "\n"' -n 4 -s ${META_EEPROM_OFFSET} \
+              ${eeprom_file} | awk '{$1=$1};1')
+    if [[ "${bmc_hdr}" =~ $meta_hdr_bytes ]]; then
+        return 0;
+    fi
+    return 1
 }
-
-RDEPENDS:${PN} += "bash"
-RDEPENDS:${PN} += "libprefdl-eeprom bmc-eeprom-checker"
-DEPENDS += "libprefdl-eeprom bmc-eeprom-checker"
-FILES:${PN} = "${bindir}"

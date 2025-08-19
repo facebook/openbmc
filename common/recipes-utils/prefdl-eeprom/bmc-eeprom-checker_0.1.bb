@@ -1,4 +1,4 @@
-# Copyright 2024-present Facebook. All Rights Reserved.
+# Copyright 2025-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,21 +14,25 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+
+SUMMARY = "bmc-eeprom-checker"
+DESCRIPTION = "Check the BMC's EEPROM format"
+SECTION = "base"
+PR = "r1"
 LICENSE = "GPL-2.0-or-later"
-LIC_FILES_CHKSUM = "file://prefdl_weutil.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
-SRC_URI += " \
-          file://utils \
-          "
-S = "${WORKDIR}/utils"
+LIC_FILES_CHKSUM = "file://bmc_eeprom_checker.sh;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
+
+S = "${WORKDIR}/sources"
+UNPACKDIR = "${S}"
+
+LOCAL_URI = " \
+    file://bmc_eeprom_checker.sh \
+    "
 
 do_install() {
-    install -d ${D}${bindir}
-    install -m 0755 weutil_prefdl ${D}${bindir}/weutil_prefdl
-    install -m 0755 weutil-compat-wrapper.sh ${D}${bindir}/weutil
+    install -d ${D}/usr/bin
+    install -m 0755 ${UNPACKDIR}/bmc_eeprom_checker.sh ${D}/usr/bin
 }
 
 RDEPENDS:${PN} += "bash"
-RDEPENDS:${PN} += "libprefdl-eeprom bmc-eeprom-checker"
-DEPENDS += "libprefdl-eeprom bmc-eeprom-checker"
-FILES:${PN} = "${bindir}"
+FILES:${PN} += "${prefix}/bin ${sysconfdir} "

@@ -27,7 +27,7 @@
 ### END INIT INFO
 
 # shellcheck disable=SC1091
-. /usr/local/bin/openbmc-utils.sh
+. /usr/bin/bmc_eeprom_checker.sh
 
 MTERM_LOGFILE="/var/log/mTerm_wedge.log"
 SERFMON_CACHE="/mnt/data1/.serfmon.txt"

@@ -92,20 +92,6 @@ chassis_power_cycle() {
     exit 1
 }
 
-META_EEPROM_OFFSET=$((15 * 1024))
-
-bmc_has_meta_eeprom() {
-    # Check if the BMC EEPROM has been programmed with Meta EEPROM format.
-    local eeprom_file="/sys/bus/i2c/drivers/at24/0-0050/eeprom"
-    local meta_hdr_bytes="fbfb[0-9a-f]{2}ff"
-    bmc_hdr=$(hexdump -e '16/1 "%02x" "\n"' -n 4 -s ${META_EEPROM_OFFSET} \
-              ${eeprom_file} | awk '{$1=$1};1')
-    if [[ "${bmc_hdr}" =~ $meta_hdr_bytes ]]; then
-        return 0;
-    fi
-    return 1
-}
-
 bmc_mac_addr() {
     weutil bmc | grep '^Extended MAC Base' | cut -d ' ' -f 4
 }

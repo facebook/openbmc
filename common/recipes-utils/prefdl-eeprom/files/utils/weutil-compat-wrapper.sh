@@ -22,7 +22,7 @@
 # older prefdl EEPROM format and the old parser.
 
 # shellcheck disable=SC1091
-. /usr/local/bin/openbmc-utils.sh
+. /usr/bin/bmc_eeprom_checker.sh
 
 # If weutil is invoked in the old prefdl parser style, meaning the EEPROM
 # target [chassis|bmc] is passed directly to the utility without the

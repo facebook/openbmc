@@ -1,2 +1,4 @@
 - name: FileNotFound
   description: "The requested file does not exist."
+- name: MalformedLine
+  description: "The Serial Number line is not in the expected format."

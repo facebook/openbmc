@@ -22,6 +22,8 @@ Requires=serfmon-cache.service
 
 [Service]
 ExecStart=/usr/bin/serfmon-cache-dbus
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target

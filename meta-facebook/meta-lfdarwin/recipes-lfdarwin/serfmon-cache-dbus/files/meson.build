@@ -6,6 +6,7 @@ project('calculator-aserver', 'cpp', 'c',
     version: '1.0.0',
 )
 
+fmt_dep = dependency('fmt', required: true)
 sdbusplus_dep = dependency('sdbusplus')
 sdbusplusplus_prog = find_program('sdbus++', native: true)
 sdbuspp_gen_meson_prog = find_program('sdbus++-gen-meson', native: true)
@@ -21,6 +22,8 @@ yaml_sources = []
 subdir('gen')
 subdir('gen/xyz')
 
+
+
 server = executable(
     'server',
     'server.cpp',
@@ -28,5 +31,6 @@ server = executable(
     include_directories: include_directories('gen'),
     dependencies: [
         sdbusplus_dep,
+        fmt_dep,
     ],
 )

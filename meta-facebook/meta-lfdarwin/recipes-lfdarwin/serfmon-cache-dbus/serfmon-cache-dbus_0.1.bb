@@ -38,9 +38,14 @@ SRC_URI = " \
 "
 
 DEPENDS += " \
+    fmt \
     sdbusplus \
     ${PYTHON_PN}-sdbus++-native \
 "
+
+RDEPENDS:${PN} += " \
+    fmt \
+    "
 
 do_install() {
     install -d ${D}/usr/bin

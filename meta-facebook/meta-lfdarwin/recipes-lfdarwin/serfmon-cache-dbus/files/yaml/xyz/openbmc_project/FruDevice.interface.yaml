@@ -3,3 +3,5 @@ properties:
     type: string
   - name: PRODUCT_PRODUCT_NAME
     type: string
+  - name: PRODUCT_MANUFACTURER
+    type: string

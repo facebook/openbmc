@@ -7,4 +7,5 @@ IMAGE_INSTALL:append = " serfmon-cache \
                          sol \
                          wedge-power \
                          boot-info \
+                         mfg-tool \
                         "

@@ -1,0 +1,99 @@
+diff --git a/console-server.h b/console-server.h
+index 7c45f18..b19b8e3 100644
+--- a/console-server.h
++++ b/console-server.h
+@@ -98,6 +98,11 @@ enum tty_device {
+ 	TTY_DEVICE_PTY,
+ };
+ 
++enum escape_state {
++	escape_idle = 0,
++	escape_ctrl_l,
++};
++
+ struct console_server {
+ 	struct {
+ 		const char *kname;
+@@ -161,6 +166,8 @@ struct console {
+ 	struct poller **pollers;
+ 	long n_pollers;
+ 
++	enum escape_state state;
++
+ 	// values to configure the mux
+ 	unsigned long mux_index;
+ };
+diff --git a/socket-handler.c b/socket-handler.c
+index c036b58..b78180c 100644
+--- a/socket-handler.c
++++ b/socket-handler.c
+@@ -37,6 +37,8 @@
+ /* Set poll() timeout to 4000 uS, or 4 mS */
+ #define SOCKET_HANDLER_PKT_US_TIMEOUT 4000
+ 
++#define ASCII_CTRL_L 0x0c
++
+ struct client {
+ 	struct socket_handler *sh;
+ 	struct poller *poller;
+@@ -272,6 +274,7 @@ static enum poller_ret client_poll(struct handler *handler, int events,
+ {
+ 	struct socket_handler *sh = to_socket_handler(handler);
+ 	struct client *client = data;
++
+ 	uint8_t buf[4096];
+ 	ssize_t rc;
+ 
+@@ -287,7 +290,51 @@ static enum poller_ret client_poll(struct handler *handler, int events,
+ 			goto err_close;
+ 		}
+ 
+-		console_data_out(sh->console, buf, rc);
++		assert(rc >= 0 && (size_t)rc < sizeof(buf));
++		uint8_t *end = buf + rc;
++		uint8_t *begin = buf;
++		while (begin < end) {
++			uint8_t *cursor = NULL;
++			switch (sh->console->state) {
++			case escape_idle:
++				if (!cursor) {
++					/* Use memchr to avoid switching every state corresponding to
++					 * every character in the buffer and calling console_data_out
++					 * for each non-escape character so we can minimize syscalls
++					 */
++					cursor = memchr(begin, ASCII_CTRL_L,
++							end - begin);
++				}
++				if (cursor) {
++					sh->console->state = escape_ctrl_l;
++					/* Include <CTRL-L> in the output as it may have just been transmitted without
++						 * wanting to signal a break */
++					cursor += 1;
++				} else if (!cursor) {
++					/* If no <CTRL-L> has been found, this will propagate back to the 'begin' pointer,
++				  	 * effectively exiting the loop after writing the data to the tty */
++					cursor = end;
++				}
++
++				console_data_out(sh->console, begin,
++						 cursor - begin);
++				begin = cursor;
++
++				break;
++			case escape_ctrl_l:
++				/* Either we send a break or no, we still return to the idle state, set it now */
++				sh->console->state = escape_idle;
++				assert(begin < end);
++				if (*begin == 'b') {
++					tcsendbreak(sh->console->server->tty.fd,
++						    0);
++					begin++;
++					break;
++				}
++				/* No break signal so we should just fall back to the default state */
++				break;
++			}
++		}
+ 	}
+ 
+ 	if (events & POLLOUT) {

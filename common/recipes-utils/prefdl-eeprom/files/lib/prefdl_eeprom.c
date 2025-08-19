@@ -33,7 +33,12 @@
 #define FBDARWIN_EEPROM_BMC_OBJ         "BMC"
 #define FBDARWIN_EEPROM_BMC             "0-0050"
 #define FBDARWIN_EEPROM_CHASSIS_OBJ     "CHASSIS"
+
+#ifdef IS_LFDARWIN
+#define FBDARWIN_EEPROM_CHASSIS_PATH	"/mnt/data/.chassis_eeprom"
+#else
 #define FBDARWIN_EEPROM_CHASSIS_PATH    "/mnt/data1/.chassis_eeprom"
+#endif
 
 #define FBDARWIN_EEPROM_SIZE            256
 #define FBDARWIN_EEPROM_FORMAT_V2       "0002"

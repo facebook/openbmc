@@ -3,17 +3,19 @@
 lockfile="/tmp/pldm-fw-upate.lock"
 
 FAIL_TO_UPDATE_WF_CXL_PLDM_SERVICE_NOT_RUNING=16
-FAIL_TO_UPDATE_WF_CXL_EID_DOES_NOT_EXIST=17
+# FAIL_TO_UPDATE_WF_CXL_EID_DOES_NOT_EXIST=17
 FAIL_TO_UPDATE_WF_CXL_CAN_ONLY_UPDATE_ONE_BIC_AT_A_TIME=18
 FAIL_TO_UPDATE_WF_CXL_TIME_OUT_ERROR=19
 FAIL_TO_UPDATE_WF_CXL_FAIL_TO_DELETE_SOFTWARE_ID=20
 #FAIL_TO_UPDATE_WF_CXL_FAIL_TO_SET_REQUESTED_ACTIVATION=21
 FAIL_TO_UPDATE_PLDM_IMAGE_DOES_NOT_MATCH=24
+FAIL_TO_UPDATE_WF_EID_DOES_NOT_EXIST=25
 INVALID_INPUT=255
 
 exec 200>"$lockfile"
 flock -n 200 || { echo "BIC update is already running"; exit 1; }
 
+WF_EID_suffix=2
 CXL1_EID_suffix=4
 CXL2_EID_suffix=5
 
@@ -258,8 +260,11 @@ mctp_output=$(busctl tree au.com.codeconstruct.MCTP1 --timeout=120 2>&1 | grep "
 echo "Check MCTP EID"
 echo "$mctp_output"
 if ! echo "$mctp_output" | grep -qE "/au/com/codeconstruct/mctp1/networks/1/endpoints/$((slot_id * 10 + (instance_num == 1 ? CXL1_EID_suffix : CXL2_EID_suffix)))"; then
-  echo "Not allowed. The CXL EID $((slot_id * 10 + (instance_num == 1 ? CXL1_EID_suffix : CXL2_EID_suffix))) does not exist."
-  exit "$FAIL_TO_UPDATE_WF_CXL_EID_DOES_NOT_EXIST"
+  echo "WARNING! The CXL EID $((slot_id * 10 + (instance_num == 1 ? CXL1_EID_suffix : CXL2_EID_suffix))) does not exist."
+  if ! echo "$mctp_output" | grep -qE "/au/com/codeconstruct/mctp1/networks/1/endpoints/$((slot_id * 10 + (WF_EID_suffix)))"; then
+    echo "Not allowed. The WF EID $((slot_id * 10 + (WF_EID_suffix))) does not exist."
+    exit "$FAIL_TO_UPDATE_WF_EID_DOES_NOT_EXIST"
+  fi
 fi
 
 

@@ -107,6 +107,7 @@ SRC_URI:append = " \
     file://0202-dt-bindings-i3c-hub-Add-Renesas-RG3MxxB12A1-I3C-HUB.patch \
     file://0203-i3c-i3c-hub-Add-Renesas-RG3MxxB12A1-I3C-HUB-driver.patch \
     file://0204-mctp-Fix-incorrect-tx-flow-invalidation-condition-in.patch \
+    file://0205-i3c-dw-Add-err-messages-for-ibi_fifo_clear-handling.patch \
 "
 
 #

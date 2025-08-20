@@ -796,21 +796,46 @@ func TestIsBMCLite(t *testing.T) {
 	defer func() {
 		fileutils.ReadFile = readFileOrig
 	}()
-	cases := []struct {
+
+	// Create test cases dynamically based on the actual BMCLitePlatforms
+	var cases []struct {
+		name             string
+		readFileContents string
+		readFileError    error
+		want             bool
+	}
+
+	// Add test cases for each BMC lite platform from the generated list
+	for _, platform := range BMCLitePlatforms {
+		cases = append(cases, struct {
+			name             string
+			readFileContents string
+			readFileError    error
+			want             bool
+		}{
+			name:             fmt.Sprintf("Is BMC Lite - %s", platform),
+			readFileContents: fmt.Sprintf("OpenBMC Release %s-v2023.01.1", platform),
+			readFileError:    nil,
+			want:             true,
+		})
+	}
+
+	// Add negative test cases
+	cases = append(cases, []struct {
 		name             string
 		readFileContents string
 		readFileError    error
 		want             bool
 	}{
 		{
-			name:             "Is BMC Lite",
-			readFileContents: `OpenBMC Release fbdarwin-v2022.27.1`,
+			name:             "Not BMC Lite - wedge100",
+			readFileContents: `OpenBMC Release wedge100-v2020.07.1`,
 			readFileError:    nil,
-			want:             true,
+			want:             false,
 		},
 		{
-			name:             "Not BMC Lite",
-			readFileContents: `foobar`,
+			name:             "Not BMC Lite - random platform",
+			readFileContents: `OpenBMC Release foobar`,
 			readFileError:    nil,
 			want:             false,
 		},
@@ -820,7 +845,8 @@ func TestIsBMCLite(t *testing.T) {
 			readFileError:    errors.Errorf("file read error"),
 			want:             false,
 		},
-	}
+	}...)
+
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			fileutils.ReadFile = func(filename string) ([]byte, error) {
@@ -836,6 +862,109 @@ func TestIsBMCLite(t *testing.T) {
 				t.Errorf("want '%v' got '%v'", tc.want, got)
 			}
 		})
+	}
+}
+
+func TestBMCLitePlatformsExists(t *testing.T) {
+	if BMCLitePlatforms == nil {
+		t.Fatal("BMCLitePlatforms should not be nil - generation may have failed")
+	}
+}
+
+func TestBMCLitePlatformsNotEmpty(t *testing.T) {
+	if len(BMCLitePlatforms) == 0 {
+		t.Error("BMCLitePlatforms should not be empty - no BMC lite platforms found")
+	}
+}
+
+func TestBMCLitePlatformsValidNames(t *testing.T) {
+	for i, platform := range BMCLitePlatforms {
+		if platform == "" {
+			t.Errorf("BMCLitePlatforms[%d] should not be empty string", i)
+		}
+		// Platform names should not contain spaces or special characters
+		if regexp.MustCompile(`[^a-zA-Z0-9_-]`).MatchString(platform) {
+			t.Errorf("BMCLitePlatforms[%d] '%s' contains invalid characters", i, platform)
+		}
+	}
+}
+
+func TestBMCLitePlatformsNoDuplicates(t *testing.T) {
+	seen := make(map[string]bool)
+	for _, platform := range BMCLitePlatforms {
+		if seen[platform] {
+			t.Errorf("Duplicate platform found: '%s'", platform)
+		}
+		seen[platform] = true
+	}
+}
+
+func TestBMCLiteFunctionUsesGeneratedVariable(t *testing.T) {
+	originalPlatforms := BMCLitePlatforms
+	defer func() {
+		BMCLitePlatforms = originalPlatforms
+	}()
+
+	readFileOrig := fileutils.ReadFile
+	defer func() {
+		fileutils.ReadFile = readFileOrig
+	}()
+
+	// Test with a custom platform list
+	BMCLitePlatforms = []string{"testplatform"}
+
+	fileutils.ReadFile = func(filename string) ([]byte, error) {
+		return []byte("OpenBMC Release testplatform-v2023.01.1"), nil
+	}
+
+	if !IsBMCLite() {
+		t.Error("IsBMCLite() should return true when /etc/issue contains a platform from BMCLitePlatforms")
+	}
+}
+
+func TestBMCLiteFunctionRejectsUnknownPlatforms(t *testing.T) {
+	originalPlatforms := BMCLitePlatforms
+	defer func() {
+		BMCLitePlatforms = originalPlatforms
+	}()
+
+	readFileOrig := fileutils.ReadFile
+	defer func() {
+		fileutils.ReadFile = readFileOrig
+	}()
+
+	BMCLitePlatforms = []string{"testplatform"}
+
+	fileutils.ReadFile = func(filename string) ([]byte, error) {
+		return []byte("OpenBMC Release notinlist-v2023.01.1"), nil
+	}
+
+	if IsBMCLite() {
+		t.Error("IsBMCLite() should return false when /etc/issue contains a platform not in BMCLitePlatforms")
+	}
+}
+
+func TestBMCLiteAllCurrentPlatformsWork(t *testing.T) {
+	originalPlatforms := BMCLitePlatforms
+	defer func() {
+		BMCLitePlatforms = originalPlatforms
+	}()
+
+	readFileOrig := fileutils.ReadFile
+	defer func() {
+		fileutils.ReadFile = readFileOrig
+	}()
+
+	BMCLitePlatforms = originalPlatforms
+
+	for _, platform := range BMCLitePlatforms {
+		fileutils.ReadFile = func(filename string) ([]byte, error) {
+			return []byte(fmt.Sprintf("OpenBMC Release %s-v2023.01.1", platform)), nil
+		}
+
+		if !IsBMCLite() {
+			t.Errorf("IsBMCLite() should return true for platform '%s'", platform)
+		}
 	}
 }
 

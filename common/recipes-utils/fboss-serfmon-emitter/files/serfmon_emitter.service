@@ -1,0 +1,7 @@
+[Unit]
+Description=Serfmon Emitter Service
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/serfmon_emitter

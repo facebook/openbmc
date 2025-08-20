@@ -1,0 +1,58 @@
+#!/usr/bin/python3
+#
+# Copyright 2025-present Facebook. All Rights Reserved.
+#
+# This program file is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; version 2 of the License.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+# FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+# for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program in a file named COPYING; if not, write to the
+# Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor,
+# Boston, MA 02110-1301 USA
+#
+#
+# Run periodically on the BMC to send serfmon string via the console.
+#   https://fburl.com/wiki/8slj6i8v
+#
+
+import os
+import re
+import subprocess
+from typing import List
+
+SERFMON_FORMAT = "!serfmon:{payload_length}:{payload}:{checksum}"
+WEUTIL_PATH = "/usr/bin/weutil"
+CONSOLE_PATH = "/dev/console"
+RE_SERIAL_NUMBERS = re.compile("(?<=^Product Serial Number: ).+", flags=re.M)
+
+
+# Construct single serfmon string for the given serial number
+def serfmon_string(serial: str) -> str:
+    cksum = 0
+    for char in serial:
+        cksum ^= ord(char)
+    return SERFMON_FORMAT.format(
+        payload_length=len(serial), payload=serial, checksum=cksum
+    )
+
+
+# Fetch serial number(s) for the host.
+def get_serials() -> List[str]:
+    if os.access(WEUTIL_PATH, os.R_OK):
+        out = subprocess.check_output(WEUTIL_PATH)
+        return RE_SERIAL_NUMBERS.findall(out.decode())
+    return []
+
+
+all_serials = get_serials()
+if len(all_serials) > 0:
+    with open(CONSOLE_PATH, "w") as f:
+        for serial in all_serials:
+            f.write("\n%s\n" % serfmon_string(serial))

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run serfmon_emitter on boot and daily
+
+[Timer]
+OnBootSec=1min
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target

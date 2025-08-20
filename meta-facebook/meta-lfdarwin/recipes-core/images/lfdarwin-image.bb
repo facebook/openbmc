@@ -9,4 +9,5 @@ IMAGE_INSTALL:append = " serfmon-cache \
                          boot-info \
                          mfg-tool \
                          bmc-eeprom-checker \
+                         fboss-serfmon-emitter \
                         "

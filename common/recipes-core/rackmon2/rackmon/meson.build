@@ -105,8 +105,10 @@ if get_option('orv3') == true
         'orv3_power_recv.json',
         'orv3_hpr_pmm_psu.json',
         'orv3_hpr_pmm_bbu.json',
+        'orv3_hpr_pmm_cbu.json',
         'orv3_hpr_psu.json',
         'orv3_hpr_bbu.json',
+        'orv3_hpr_cbu.json',
     ]
 endif
 

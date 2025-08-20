@@ -1,0 +1,107 @@
+{
+    "name": "ORV3_HPR_CBU",
+    "address_range": [
+        [
+            54,
+            56
+        ],
+        [
+            70,
+            72
+        ],
+        [
+            86,
+            88
+        ],
+        [
+            102,
+            104
+        ],
+        [
+            118,
+            120
+        ],
+        [
+            134,
+            136
+        ],
+        [
+            150,
+            152
+        ],
+        [
+            166,
+            168
+        ]
+    ],
+    "probe_register": 0,
+    "baudrate": 115200,
+    "special_handlers": [
+        {
+            "reg": 101,
+            "len": 2,
+            "period": 3600,
+            "action": "write",
+            "info": {
+                "interpret": "INTEGER",
+                "shell": "date +%s"
+            }
+        }
+    ],
+    "registers": [
+        {
+            "begin": 0,
+            "length": 8,
+            "format": "STRING",
+            "name": "Manufacture_Name"
+        },
+        {
+            "begin": 8,
+            "length": 8,
+            "format": "STRING",
+            "name": "Manufacture_Model"
+        },
+        {
+            "begin": 16,
+            "length": 8,
+            "format": "STRING",
+            "name": "Manufacture_Date"
+        },
+        {
+            "begin": 24,
+            "length": 8,
+            "format": "STRING",
+            "name": "Facebook_Part_Number"
+        },
+        {
+            "begin": 48,
+            "length": 2,
+            "format": "STRING",
+            "name": "Build_Revision"
+        },
+        {
+            "begin": 52,
+            "length": 4,
+            "format": "STRING",
+            "name": "HW_Revision"
+        },
+        {
+            "begin": 56,
+            "length": 4,
+            "format": "STRING",
+            "name": "FW_Revision"
+        },
+        {
+            "begin": 60,
+            "length": 4,
+            "format": "STRING",
+            "name": "Workorder"
+        },
+        {
+            "begin": 64,
+            "length": 16,
+            "format": "STRING",
+            "name": "MFR_Serial"
+        }
+    ]
+}

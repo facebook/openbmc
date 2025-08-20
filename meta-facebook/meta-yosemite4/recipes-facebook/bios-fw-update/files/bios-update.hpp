@@ -4,12 +4,15 @@
 
 constexpr size_t IANA_ID_SIZE = 3;
 constexpr uint32_t IANA_ID = 0x00A015;
+constexpr uint8_t ERASE_FLASH_IANA_ID[IANA_ID_SIZE] = {0x15, 0xA0, 0x00};
 constexpr size_t SUCCESS = 0;
 constexpr int MAX_RETRY_TIME = 3;
 
 constexpr size_t NETFN_OEM_1S_REQ = 0x38;
 constexpr size_t CMD_OEM_1S_UPDATE_FW = 0x9;
 constexpr size_t CMD_OEM_1S_MSG_OUT = 0x02;
+constexpr size_t CMD_OEM_1S_ERASE_BIOS_FLASH = 0xB4;
+constexpr size_t CMD_OEM_1S_GET_BIOS_ERASE_PROGRESS = 0xB5;
 
 class BIOSupdater
 {

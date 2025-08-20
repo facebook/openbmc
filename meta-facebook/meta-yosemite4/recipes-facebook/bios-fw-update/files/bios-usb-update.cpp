@@ -78,9 +78,8 @@ int send_bic_usb_packet(usb_dev* udev, bic_usb_packet* pkt)
     return -1;
 }
 
-int receive_bic_usb_packet(usb_dev* udev, bic_usb_packet* pkt)
+int receive_bic_usb_packet(usb_dev* udev, bic_usb_packet* pkt, const int receivelen)
 {
-    const int receivelen = USB_PKT_RES_HDR_SIZE + IANA_ID_SIZE;
     int received = 0;
     int total_received = 0;
     bic_usb_res_packet* res_hdr = (bic_usb_res_packet*)pkt;
@@ -378,7 +377,7 @@ int bic_update_fw_usb(const std::string& imagePath, usb_dev* udev,
             }
 
             udev->epaddr = USB_OUTPUT_PORT;
-            rc = receive_bic_usb_packet(udev, pkt);
+            rc = receive_bic_usb_packet(udev, pkt, USB_PKT_RES_HDR_SIZE + IANA_ID_SIZE);
             if (rc < 0)
             {
                 fprintf(stderr, "Return code : %d\n", rc);
@@ -414,7 +413,7 @@ int bic_update_fw_usb(const std::string& imagePath, usb_dev* udev,
 }
 
 int update_bic_usb_bios(uint8_t slot_id, const std::string& imageFilePath,
-                        const std::string& cpuType)
+                        const std::string& cpuType, bool eraseOnly)
 {
     struct timeval start, end;
     int ret = -1;
@@ -431,28 +430,94 @@ int update_bic_usb_bios(uint8_t slot_id, const std::string& imageFilePath,
         goto error_exit;
     }
 
-    gettimeofday(&start, nullptr);
+    if (eraseOnly) {
+        bic_usb_packet pkt = {};
+        pkt.netfn = NETFN_OEM_1S_REQ << 2;
+        pkt.cmd = CMD_OEM_1S_ERASE_BIOS_FLASH;
+        memcpy(pkt.iana, ERASE_FLASH_IANA_ID, IANA_ID_SIZE);
+        pkt.target = UPDATE_BIOS;
+        auto it = cpuTypeToOffset.find(cpuType);
+        pkt.offset = (it != cpuTypeToOffset.end()) ? it->second : 0x0;
+        pkt.length = 0;
+        udev->epaddr = USB_INPUT_PORT;
 
-    // sending file
-    for (const auto& c : cpuTypeToOffset)
-    {
-        if (cpuType == c.first)
-        {
-            ret = bic_update_fw_usb(imageFilePath, udev, c.second);
-            if (ret < 0)
-                goto error_exit;
+        ret = send_bic_usb_packet(udev, &pkt);
+        if (ret < 0) {
+            std::cerr << "Failed to send erase packet\n";
+            goto error_exit;
         }
+
+        udev->epaddr = USB_OUTPUT_PORT;
+        ret = receive_bic_usb_packet(udev, &pkt, USB_PKT_RES_HDR_SIZE + IANA_ID_SIZE);
+        if (ret < 0) {
+            std::cerr << "Failed to receive erase ack, ret=" << ret << "\n";
+            goto error_exit;
+        }
+        
+        while (true) {
+            int progress = get_bios_erase_progress(udev);
+            if (progress < 0) {
+                std::cerr << "Failed to query erase progress\n";
+                break;
+            }
+            
+            std::cout << "\r[ERASE] Progress： " << progress << "% ...";
+            std::cout.flush();
+
+            if (progress >= 100) {
+                // std::cout << "\n[ERASE] BIOS erase completed!\n";
+                break;
+            }
+            std::this_thread::sleep_for(std::chrono::seconds(5));
+
+        }
+        std::cout << std::endl;
+    } else {
+        gettimeofday(&start, nullptr);
+
+        // sending file
+        for (const auto& c : cpuTypeToOffset)
+        {
+            if (cpuType == c.first)
+            {
+                ret = bic_update_fw_usb(imageFilePath, udev, c.second);
+                if (ret < 0)
+                    goto error_exit;
+            }
+        }
+
+        gettimeofday(&end, nullptr);
+        std::cerr << "Elapsed time: " << (int)(end.tv_sec - start.tv_sec)
+                  << "sec.\n";
+
+        ret = 0;
     }
-
-    gettimeofday(&end, nullptr);
-    std::cerr << "Elapsed time: " << (int)(end.tv_sec - start.tv_sec)
-              << "sec.\n";
-
-    ret = 0;
 
 error_exit:
     // close usb device
     bic_close_usb_dev(udev);
 
     return ret;
+}
+
+int get_bios_erase_progress(usb_dev* udev)
+{
+    bic_usb_packet pkt = {};
+    pkt.netfn = NETFN_OEM_1S_REQ << 2;
+    pkt.cmd = CMD_OEM_1S_GET_BIOS_ERASE_PROGRESS;
+    memcpy(pkt.iana, ERASE_FLASH_IANA_ID, IANA_ID_SIZE);
+    pkt.target = UPDATE_BIOS;
+    pkt.offset = 0;
+    pkt.length = 0;
+    udev->epaddr = USB_INPUT_PORT;
+
+    int ret = send_bic_usb_packet(udev, &pkt);
+    if (ret < 0) return -1;
+
+    bic_usb_bios_erase_res_packet res_pkt = {};
+    udev->epaddr = USB_OUTPUT_PORT;
+    ret = receive_bic_usb_packet(udev, (bic_usb_packet*)&res_pkt, USB_PKT_RES_BIOS_ERASE_HDR_SIZE + IANA_ID_SIZE);
+    if (ret < 0) return -1;
+
+    return int(res_pkt.data[3]);
 }

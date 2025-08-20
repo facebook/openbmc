@@ -38,5 +38,16 @@ struct bic_usb_res_packet
 } __attribute__((packed));
 #define USB_PKT_RES_HDR_SIZE (sizeof(bic_usb_res_packet))
 
+struct bic_usb_bios_erase_res_packet
+{
+    uint8_t netfn;
+    uint8_t cmd;
+    uint8_t cc;
+    uint8_t data[1];
+} __attribute__((packed));
+#define USB_PKT_RES_BIOS_ERASE_HDR_SIZE (sizeof(bic_usb_bios_erase_res_packet))
+
 int update_bic_usb_bios(uint8_t slot_id, const std::string& imageFilePath,
-                        const std::string& cpuType);
+                        const std::string& cpuType, bool eraseOnly = false);
+
+int get_bios_erase_progress(usb_dev* udev);

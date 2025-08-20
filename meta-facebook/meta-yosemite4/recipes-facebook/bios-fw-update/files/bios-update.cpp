@@ -81,6 +81,12 @@ bool power_ctrl(sdbusplus::bus_t& bus, POWER ctrl, uint8_t slotId)
 
 bool BIOSupdater::run()
 {
+    // erase only
+    if (imagePath.empty()) {
+        int ret = update_bic_usb_bios(slotId, imagePath, cpuType);
+        return (ret < 0) ? false : true;
+    }
+
     // raw image validation
     std::ifstream imageFile(imagePath, std::ios::binary);
     if (!imageFile)
@@ -194,11 +200,11 @@ int main(int argc, char** argv)
     std::string imagePath{};
     uint8_t slotId;
     std::string cpuType = "ALL";
+    bool eraseFlag = false;
 
-    CLI::App app{"Update the firmware BIOS via USB to BIC"};
+    CLI::App app{"Update or erase the firmware BIOS via USB to BIC"};
 
     app.add_option("-f,--file", imagePath, "The path of bios image file.")
-        ->required()
         ->check(CLI::ExistingFile);
 
     app.add_option("-s,--slot", slotId, "The number of slot to update.")
@@ -206,6 +212,8 @@ int main(int argc, char** argv)
 
     app.add_option("-c, --cpu", cpuType,
                    "BERGAMO or TURIN or TURINES. Update both blocks if it is not set.");
+
+    app.add_flag("--erase", eraseFlag, "Erase BIOS flash only (do not update)");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -215,6 +223,22 @@ int main(int argc, char** argv)
         return 0;
     }
 
+    // Check that update mode requires imagePath
+    if (!eraseFlag && imagePath.empty()) {
+        std::cerr << "Error: BIOS image file is required unless --erase is specified.\n";
+        return -1;
+    }
+    
+    if (eraseFlag) {
+        std::cout << "[ERASE] Start erasing BIOS flash ...\n";
+        int ret = update_bic_usb_bios(slotId, imagePath, cpuType, /*eraseOnly=*/true);
+        if (ret == 0)
+            std::cout << "[ERASE] BIOS erase: success\n";
+        else
+            std::cout << "[ERASE] BIOS erase: fail\n";
+        return ret;
+    }
+    
     std::ifstream package(imagePath, std::ios::binary);
     if (!package) {
         std::cerr << "Failed to open package file: " << imagePath << std::endl;

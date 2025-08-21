@@ -1,7 +1,7 @@
-From ea8745e40aecb2271f279ceae9e658b16158ee1e Mon Sep 17 00:00:00 2001
+From bca76546a1d09e77a3b0480290b30cd8133511e0 Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
 Date: Wed, 16 Jul 2025 00:47:24 +0800
-Subject: [PATCH 1/1] configurations: Fix fan naming issue on D-Bus
+Subject: [PATCH 6/6] configurations: Fix fan naming issue on D-Bus
 
 Adjust the variable $BUS and underscore (_) placement to ensure
 fan names are correctly displayed on D-Bus.
@@ -191,5 +191,5 @@ index af40dc8..5c11db6 100644
              "Thresholds": [
                  {
 -- 
-2.43.0
+2.47.3
 

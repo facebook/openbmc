@@ -1,7 +1,7 @@
-From c3ba4f4f709b50814eb5f34dd93cdcc82a3e84c0 Mon Sep 17 00:00:00 2001
+From db3d2e5b9b6a741060b4f77ab6e9d2018207e48d Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Sun, 23 Mar 2025 11:03:46 +0800
-Subject: [PATCH 4/5] configurations: nvidia_gb200_io_board: Use external
+Subject: [PATCH 4/6] configurations: nvidia_gb200_io_board: Use external
  sensor service for temperature monitoring
 
 Due to a hardware design limitation, the port temperature is only
@@ -14,13 +14,13 @@ readings.
 Signed-off-by: Potin Lai <potin.lai@quantatw.com>
 Change-Id: Iee90f1b75cf3a7ddabcd5f5cd640897431d4a6ea
 ---
- configurations/nvidia_gb200_io_board.json | 90 ++++++++++++++++++-----
+ .../nvidia_cx7_mezzanine_module.json          | 90 ++++++++++++++-----
  1 file changed, 70 insertions(+), 20 deletions(-)
 
-diff --git a/configurations/nvidia_gb200_io_board.json b/configurations/nvidia_gb200_io_board.json
+diff --git a/configurations/nvidia_cx7_mezzanine_module.json b/configurations/nvidia_cx7_mezzanine_module.json
 index 7a00978..1a07e06 100644
---- a/configurations/nvidia_gb200_io_board.json
-+++ b/configurations/nvidia_gb200_io_board.json
+--- a/configurations/nvidia_cx7_mezzanine_module.json
++++ b/configurations/nvidia_cx7_mezzanine_module.json
 @@ -7,72 +7,122 @@
              "Type": "EEPROM"
          },
@@ -165,5 +165,5 @@ index 7a00978..1a07e06 100644
      ],
      "Name": "NVIDIA GB200 IO Board $bus - 29 % 11",
 -- 
-2.47.1
+2.47.3
 

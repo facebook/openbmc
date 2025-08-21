@@ -1,7 +1,7 @@
-From 993c58bbac5b20600f747428fa6dd4d31ab94e0e Mon Sep 17 00:00:00 2001
+From 8955cc841674e3c95792c4a7704b3c48d00b4098 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
-Subject: [PATCH 17/19] platform-mc: Add option for discovering FRU data
+Subject: [PATCH 17/22] platform-mc: Add option for discovering FRU data
 
 Allow enabling or disabling the discovery of FRU data from terminus.
 Supports retrieving FRU data during the terminus discovery phase and
@@ -19,7 +19,7 @@ Upstream-Status: Pending
  5 files changed, 68 insertions(+), 2 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index 829969e..9098b0d 100644
+index 47e883a..2d255d7 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -139,6 +139,10 @@ conf_data.set(
@@ -50,7 +50,7 @@ index c66d751..9b398f5 100644
 +    value: 'enabled',
 +)
 diff --git a/platform-mc/platform_manager.cpp b/platform-mc/platform_manager.cpp
-index 1e35477..fd624f5 100644
+index ae3a421..caf1f61 100644
 --- a/platform-mc/platform_manager.cpp
 +++ b/platform-mc/platform_manager.cpp
 @@ -618,6 +618,7 @@ exec::task<int> PlatformManager::eventMessageSupported(
@@ -138,7 +138,7 @@ index 1e35477..fd624f5 100644
  
  } // namespace platform_mc
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 2401a24..1912832 100644
+index fdaacf4..6ef3813 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -103,9 +103,14 @@ bool Terminus::createInventoryPath(std::string tName)
@@ -188,7 +188,7 @@ index 2401a24..1912832 100644
  
  std::vector<std::string> Terminus::getSensorNames(const SensorId& sensorId)
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index 8ea5a57..1a63dd2 100644
+index fd878b5..3e3db5d 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
 @@ -11,6 +11,9 @@
@@ -212,7 +212,7 @@ index 8ea5a57..1a63dd2 100644
  
  /** @struct EntityKey
   *
-@@ -320,8 +327,13 @@ class Terminus
+@@ -326,8 +333,13 @@ class Terminus
      /** @brief Terminus name */
      EntityName terminusName{};
      /* @brief The pointer of inventory D-Bus interface for the terminus */
@@ -227,5 +227,5 @@ index 8ea5a57..1a63dd2 100644
      /* @brief Inventory D-Bus object path of the terminus */
      std::string inventoryPath;
 -- 
-2.47.1
+2.43.0
 

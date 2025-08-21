@@ -1,7 +1,7 @@
-From 8a62fa1a195831c8344c3cf98b2e712d803a3ffa Mon Sep 17 00:00:00 2001
+From 00ea04081dcc29db360de46ff1d0529a85e2bf9c Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
-Subject: [PATCH 01/19] requester: support multi-host MCTP devices hot plug
+Subject: [PATCH 01/22] requester: support multi-host MCTP devices hot plug
 
 Currently, pldmd listens for new MCTP endpoint exposed by mctpd, but
 they only shows their EID, Network Id, and SupportedMessageTypes, which
@@ -54,7 +54,7 @@ index 1cec506..aa85b21 100644
 +                (const override));
  };
 diff --git a/common/utils.cpp b/common/utils.cpp
-index 06c256c..46769aa 100644
+index dff6c4e..50a4df3 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
 @@ -445,6 +445,23 @@ PropertyMap DBusHandler::getDbusPropertiesVariant(
@@ -82,10 +82,10 @@ index 06c256c..46769aa 100644
                                   const nlohmann::json& value)
  {
 diff --git a/common/utils.hpp b/common/utils.hpp
-index bccd929..409de80 100644
+index b2b5c3c..92d17fb 100644
 --- a/common/utils.hpp
 +++ b/common/utils.hpp
-@@ -264,6 +264,10 @@ class DBusHandlerInterface
+@@ -243,6 +243,10 @@ class DBusHandlerInterface
          const sdbusplus::message::object_path& objectPath,
          const sdbusplus::message::object_path& subtree, int depth,
          const std::vector<std::string>& ifaceList) const = 0;
@@ -96,7 +96,7 @@ index bccd929..409de80 100644
  };
  
  /**
-@@ -370,6 +374,9 @@ class DBusHandler : public DBusHandlerInterface
+@@ -349,6 +353,9 @@ class DBusHandler : public DBusHandlerInterface
          const char* serviceName, const char* objPath,
          const char* dbusInterface) const override;
  
@@ -107,7 +107,7 @@ index bccd929..409de80 100644
       *         path
       *
 diff --git a/meson.build b/meson.build
-index 945886f..8583fce 100644
+index 6fa74c7..f43c3d6 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -260,6 +260,7 @@ executable(
@@ -641,5 +641,5 @@ index f269561..d30d884 100644
  foreach t : tests
      test(
 -- 
-2.47.1
+2.43.0
 

@@ -1,7 +1,7 @@
-From 684c69bbdf05021007d18f969be9f4609fe5e72b Mon Sep 17 00:00:00 2001
+From 61fe5a0c5f6d5d505d8f6a60d57aff5697b17bb4 Mon Sep 17 00:00:00 2001
 From: KayYCHuang-wiwynn <kay.yc.huang.wiwynn@gmail.com>
 Date: Thu, 24 Jul 2025 15:54:40 +0000
-Subject: [PATCH] Add event log type for post timeout
+Subject: [PATCH 21/22] Add event log type for post timeout
 
 [Task Description]
 - Related to YV4T1M-1993
@@ -19,7 +19,7 @@ Signed-off-by: KayYCHuang-wiwynn <kay.yc.huang.wiwynn@gmail.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
-index 3af8216..99c09c9 100644
+index ef8a1c6..57a720a 100644
 --- a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
 @@ -114,6 +114,7 @@ int EventLogHandler::write(const message& eventData)
@@ -31,5 +31,5 @@ index 3af8216..99c09c9 100644
  
      static constexpr auto pmic_event_type = std::to_array({
 -- 
-2.25.1
+2.43.0
 

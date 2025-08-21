@@ -1,7 +1,7 @@
-From 069fa86274ba51a1504046f5e084e2c3fd6f2489 Mon Sep 17 00:00:00 2001
+From f9456494ec04219a82291f76183769339cd29bfd Mon Sep 17 00:00:00 2001
 From: Lora Lin <lora.lin.wiwynn@gmail.com>
 Date: Thu, 11 Jul 2024 10:10:27 +0800
-Subject: [PATCH] Add event log type for PMIC error/VR alert
+Subject: [PATCH 10/22] Add event log type for PMIC error/VR alert
 
 Summary:
 - Add event log type for PMIC error/PMbus alert/VR fault event.
@@ -239,5 +239,5 @@ index e58c1a2..43843f4 100644
   *
   *  @brief Inherits and implements FileHandler. This class is used
 -- 
-2.25.1
+2.43.0
 

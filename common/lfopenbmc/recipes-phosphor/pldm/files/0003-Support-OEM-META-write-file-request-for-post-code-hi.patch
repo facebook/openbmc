@@ -1,7 +1,7 @@
-From ada776e7f984188168088b832e520419f717fa59 Mon Sep 17 00:00:00 2001
+From 5a1e9a015b1e459482508eed0032d813c1a3fa5a Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
-Subject: [PATCH 03/19] Support OEM-META write file request for post code
+Subject: [PATCH 03/22] Support OEM-META write file request for post code
  history
 
 Support write file req when multiple hosts send postcode to BMC
@@ -55,7 +55,7 @@ index acbb400..c0e3ea7 100644
      'pldmresponder',
      sources,
 diff --git a/meson.build b/meson.build
-index 8583fce..8a492c7 100644
+index f43c3d6..564bcc7 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -141,6 +141,10 @@ conf_data.set('UPDATE_TIMEOUT_SECONDS', get_option('update-timeout-seconds'))
@@ -476,5 +476,5 @@ index ea8036e..6a6c88e 100644
          FRU_JSONS_DIR, FRU_MASTER_JSON, pdrRepo.get(), entityTree.get(),
          bmcEntityTree.get());
 -- 
-2.47.1
+2.43.0
 

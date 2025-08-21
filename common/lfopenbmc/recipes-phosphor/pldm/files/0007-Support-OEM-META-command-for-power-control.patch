@@ -1,7 +1,7 @@
-From 57533678137c8403293952df2f74e12b5dd6ffdf Mon Sep 17 00:00:00 2001
+From bbc4526b8a202f999c35651a4d07c9ad75dbe30b Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 14 Jun 2024 16:24:31 +0800
-Subject: [PATCH 07/19] Support OEM-META command for power control
+Subject: [PATCH 07/22] Support OEM-META command for power control
 
 Summary:
   - Add handler for write-file command "SLED_CYCLE, 12V-CYCLE
@@ -325,5 +325,5 @@ index 0000000..e18e5b6
 +
 +} // namespace pldm::responder::oem_meta
 -- 
-2.47.1
+2.43.0
 

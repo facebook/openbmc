@@ -1,7 +1,7 @@
-From 39a0c7934b9b9a57e27bf358fc272d79dae81e6c Mon Sep 17 00:00:00 2001
+From 5af87847b17a1e266ea72ac03595cf08eeb7e2b3 Mon Sep 17 00:00:00 2001
 From: lora <lora.lin.wiwynn@gmail.com>
 Date: Fri, 27 Sep 2024 14:51:48 +0800
-Subject: [PATCH 04/19] platform-mc: Add OEM Meta event handler
+Subject: [PATCH 04/22] platform-mc: Add OEM Meta event handler
 
 Add OEM Meta handler with event type 0xFB. It will print the logs
 with prefix "BIOS_IPMI_SEL", so the user can utilize it to filter
@@ -63,12 +63,12 @@ Upstream-Status: Pending
  platform-mc/manager.hpp                 |  27 +-
  platform-mc/test/meson.build            |   2 +
  pldmd/pldmd.cpp                         |  16 +-
- 8 files changed, 1085 insertions(+), 13 deletions(-)
+ 8 files changed, 1087 insertions(+), 13 deletions(-)
  create mode 100644 oem/meta/platform-mc/event_oem_meta.cpp
  create mode 100644 oem/meta/platform-mc/event_oem_meta.hpp
 
 diff --git a/meson.build b/meson.build
-index 8a492c7..47ec24d 100644
+index 564bcc7..68881f6 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -265,6 +265,7 @@ executable(
@@ -81,7 +81,7 @@ index 8a492c7..47ec24d 100644
      install: true,
 diff --git a/oem/meta/platform-mc/event_oem_meta.cpp b/oem/meta/platform-mc/event_oem_meta.cpp
 new file mode 100644
-index 0000000..0dba526
+index 0000000..721fb8a
 --- /dev/null
 +++ b/oem/meta/platform-mc/event_oem_meta.cpp
 @@ -0,0 +1,976 @@
@@ -1336,5 +1336,5 @@ index 6a6c88e..3128e68 100644
  
      auto platformHandler = std::make_unique<platform::Handler>(
 -- 
-2.47.1
+2.43.0
 

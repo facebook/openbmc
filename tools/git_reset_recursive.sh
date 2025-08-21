@@ -7,7 +7,9 @@ if [[ $# != 1 ]]; then
 fi
 tag="$1"
 
+# Go to the root of the repo
 cd "$(dirname "$0")"
+cd "$(git rev-parse --show-toplevel)"
 
 git fetch --tags
 

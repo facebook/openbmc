@@ -8,7 +8,11 @@ SRC_URI += " \
     file://0006-configurations-Fix-fan-naming-issue-on-D-Bus.patch \
 "
 
-SRC_URI:append:catalina = "file://0500-configurations-nvidia_hmc-add-SmbpbiVirtualEeprom-se.patch"
-SRC_URI:append:clemente = "file://0500-configurations-nvidia_hmc-add-Virtual-Eeprom-sensor-.patch \
-                           file://0501-configurations-gb300-Update-CX7-sensor-thresholds.patch \
+SRC_URI:append = " \
+    file://0500-configurations-nvidia_hmc-add-SmbpbiVirtualEeprom-se.patch \
+"
+
+SRC_URI:append:clemente = " \
+    file://0501-Update-nvidia_hmc.json.patch \
+    file://0502-Update-CX7-sensor-thresholds.patch \
 "

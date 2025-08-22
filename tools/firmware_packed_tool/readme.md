@@ -35,7 +35,7 @@ python3 packed_tool.py -c <compatible> -i <input_file> [-v <version>] [-o <outpu
 ---
 
 ## Required arguments
--c, --compatible: Target device identifier. Supported values include:
+-c, --compatible: Target device hardware compatible string. Supported values include:
 - harma-mb-cpld
 - harma-scm-cpld
 - harma-aegis-cpld

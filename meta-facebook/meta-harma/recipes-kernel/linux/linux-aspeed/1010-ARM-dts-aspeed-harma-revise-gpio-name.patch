@@ -1,6 +1,6 @@
-From 694cc0e93342c0eb14b7d7a6a6f133cb12bc7530 Mon Sep 17 00:00:00 2001
+From a16954ef821f3d8a29d7ad7011cbbf6d6725c425 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
-Date: Thu, 7 Aug 2025 11:02:09 +0800
+Date: Mon, 11 Aug 2025 15:32:07 +0800
 Subject: [PATCH 1010/1010] ARM: dts: aspeed: harma: revise gpio name
 
 Update GPIO label definitions in the device tree to reflect the correct
@@ -13,19 +13,19 @@ power and control signal names. This includes:
   - power-pvdd33-s5
   - power-pvdd18-s5
   - power-asic-good
+  - power-12v-memory-good
+
 - Replace unnamed GPIOs with appropriate labels such as:
   - irq-pvddcore0-ocp-alert
   - irq-pvddcore1-ocp-alert
 
-Lore:https://lore.kernel.org/all/20250811073208.787063-3-peteryin.openbmc@gmail.com/
-
 Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
 ---
- .../dts/aspeed/aspeed-bmc-facebook-harma.dts  | 19 +++++++++++--------
- 1 file changed, 11 insertions(+), 8 deletions(-)
+ .../dts/aspeed/aspeed-bmc-facebook-harma.dts  | 21 +++++++++++--------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-index 741d2d9b6d03..2622954d0ce3 100644
+index 741d2d9b6d03..81278a7702de 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 @@ -234,7 +234,7 @@ gpio@12 {
@@ -74,6 +74,15 @@ index 741d2d9b6d03..2622954d0ce3 100644
  	"presence-cmm","ac-control-n",
  	/*G0-G3 line 96-103*/
  	"FM_CPU_CORETYPE2","",
+@@ -801,7 +801,7 @@ &sgpiom0 {
+ 	"asic0-card-type-detection2-n","",
+ 	"uart-switch-lsb","",
+ 	"uart-switch-msb","",
+-	"","",
++	"power-12v-memory-good","",
+ 	/*M4-M7 line 200-207*/
+ 	"","","","","","","","",
+ 	/*N0-N3 line 208-215*/
 @@ -809,7 +809,10 @@ &sgpiom0 {
  	/*N4-N7 line 216-223*/
  	"","","","","","","","",
@@ -87,5 +96,5 @@ index 741d2d9b6d03..2622954d0ce3 100644
  	"","","","","","","","",
  	/*P0-P3 line 240-247*/
 -- 
-2.25.1
+2.43.0
 

@@ -93,6 +93,7 @@ class CpldLatticeManager : public CpldManager
     int XO5Family_update(bool legacy);
     int programSinglePage(uint16_t page_offset, std::span<const uint8_t> page_data);
     int verifySinglePage(uint16_t page_offset, std::span<const uint8_t> page_data);
+    int setPageAddr(uint16_t page_offset);
     static void updateFailedWarning();
 };
 

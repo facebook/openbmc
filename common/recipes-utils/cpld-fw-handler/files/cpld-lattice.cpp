@@ -379,16 +379,43 @@ int CpldLatticeManager::resetConfigFlash()
     return i2cWriteReadCmd(cmd);
 }
 
-int CpldLatticeManager::programSinglePage(uint16_t page_offset, std::span<const uint8_t> page_data)
+int CpldLatticeManager::setPageAddr(uint16_t page_offset)
 {
-    std::vector<uint8_t> setPageAddrCmd = {CMD_SET_PAGE_ADDRESS, 0x0, 0x0, 0x0, 0x00, 0x00, 0x00, 0x00};
-    setPageAddrCmd[6] = (page_offset / 256);
-    setPageAddrCmd[7] = (page_offset % 256);
+    std::vector<uint8_t> cmd = {CMD_SET_PAGE_ADDRESS, 0x0, 0x0, 0x0, 0x00, 0x00, 0x00, 0x00};
 
-    // Set Page Offset
-    if (i2cWriteReadCmd(setPageAddrCmd) < 0)
+    // Set Address command Bit[17:14]:
+    // 4’h0              CFG0
+    // 4’h1              UFM0
+    // 4’h2              Reserved
+    // 4’h3              FEA
+    // 4’h4              CFG1
+    // 4’h5              UFM1
+    // 4’h6              PUBKEY
+    // 4’h7              CSEC
+    // 4’h8              UFM2
+    // 4’h9              UFM3
+    // 4’hA              ASEKEY
+    // 4’hB              USEC
+    if (target == "CFG1") {
+        cmd[5] = 0x01;
+    }
+
+    cmd[6] = (page_offset / 256);
+    cmd[7] = (page_offset % 256);
+
+    if (i2cWriteReadCmd(cmd) < 0)
     {
         std::cerr << "Set page address fail (write)" << std::endl;
+        return -1;
+    }
+
+    return 0;
+}
+
+int CpldLatticeManager::programSinglePage(uint16_t page_offset, std::span<const uint8_t> page_data)
+{
+    if (setPageAddr(page_offset) < 0) {
+        std::cerr << "Set page command failed" << std::endl;
         return -1;
     }
 
@@ -415,14 +442,8 @@ int CpldLatticeManager::programSinglePage(uint16_t page_offset, std::span<const 
 
 int CpldLatticeManager::verifySinglePage(uint16_t page_offset, std::span<const uint8_t> page_data)
 {
-    std::vector<uint8_t> setPageAddrCmd = {CMD_SET_PAGE_ADDRESS, 0x0, 0x0, 0x0, 0x00, 0x00, 0x00, 0x00};
-    setPageAddrCmd[6] = (page_offset / 256);
-    setPageAddrCmd[7] = (page_offset % 256);
-
-    // Set Page Offset
-    if (i2cWriteReadCmd(setPageAddrCmd) < 0)
-    {
-        std::cerr << "Set page address fail (read)" << std::endl;
+    if (setPageAddr(page_offset) < 0) {
+        std::cerr << "Set page command failed" << std::endl;
         return -1;
     }
 

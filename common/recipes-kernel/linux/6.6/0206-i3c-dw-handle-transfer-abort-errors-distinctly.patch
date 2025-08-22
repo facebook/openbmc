@@ -1,0 +1,50 @@
+From 802590c1ffc8f58fdc75444d5062e613002746e8 Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Thu, 21 Aug 2025 10:50:13 +0800
+Subject: [PATCH] i3c: dw: handle transfer abort errors distinctly
+
+Handle transfer abort errors separately from other I/O errors
+to prevent halting the controller unnecessarily. Adjust error handling
+logic to skip halting the controller for EINTR cases, ensuring smoother
+error recovery.
+Each transfer abort is triggered by software to place the I3C controller
+into the halt state. The software is then responsible for continuing the
+subsequent steps (resetting the queue and resuming the FSM).
+Therefore, the interrupt handler must skip the same process to ensure
+that each enter-halt and exit-halt operation is executed as a proper pair.
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+Change-Id: Ief964fe7b2a37014cb101a68e4bcdd7f035ebb56
+---
+ drivers/i3c/master/dw-i3c-master.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
+index ded5974b7c4be..784afc39d3ccb 100644
+--- a/drivers/i3c/master/dw-i3c-master.c
++++ b/drivers/i3c/master/dw-i3c-master.c
+@@ -692,9 +692,11 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
+ 		switch (xfer->cmds[i].error) {
+ 		case RESPONSE_NO_ERROR:
+ 			break;
++		case RESPONSE_ERROR_TRANSF_ABORT:
++			ret = -EINTR;
++			break;
+ 		case RESPONSE_ERROR_PARITY:
+ 		case RESPONSE_ERROR_IBA_NACK:
+-		case RESPONSE_ERROR_TRANSF_ABORT:
+ 		case RESPONSE_ERROR_CRC:
+ 		case RESPONSE_ERROR_FRAME:
+ 			ret = -EIO;
+@@ -713,7 +715,7 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
+ 	xfer->ret = ret;
+ 	complete(&xfer->comp);
+ 
+-	if (ret < 0) {
++	if (ret < 0 && ret != -EINTR) {
+ 		/*
+ 		 * The controller will enter the HALT state if an error occurs.
+ 		 * Therefore, there is no need to manually halt the controller
+-- 
+2.25.1
+

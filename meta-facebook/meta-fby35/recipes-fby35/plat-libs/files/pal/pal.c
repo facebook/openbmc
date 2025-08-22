@@ -1824,7 +1824,7 @@ pal_dev_fruid_write(uint8_t fru, uint8_t dev_id, char *path) {
   if ( (dev_id == BOARD_1OU) && ((config_status & PRESENT_1OU) == PRESENT_1OU) && (bmc_location != NIC_BMC) ) { // 1U
     return bic_write_fruid(fru, 0, path, FEXP_BIC_INTF);
   } else if ( (config_status & PRESENT_2OU) == PRESENT_2OU &&
-    (dev_id == BOARD_2OU || dev_id == DPV2_X16_BOARD)) {
+    (dev_id == BOARD_2OU || dev_id == BOARD_2OU_X16)) {
     if ( fby35_common_get_2ou_board_type(fru, &type_2ou) == 0 ) {
       if ( dev_id == BOARD_2OU_X16 && ((type_2ou & DPV2_X16_BOARD) == DPV2_X16_BOARD)) {
         return bic_write_fruid(fru, 1, path, NONE_INTF);

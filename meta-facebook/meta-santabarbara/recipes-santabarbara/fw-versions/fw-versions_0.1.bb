@@ -12,6 +12,7 @@ UNPACKDIR = "${S}"
 
 FW_TOOLS = "\
     mb-cpld,,multi-user.target,multi-user.target,0 \
+    nic,pldmd.service,multi-user.target,multi-user.target,0:1:2:3:4 \
 "
 
 LOCAL_URI = " \
@@ -22,6 +23,8 @@ LOCAL_URI = " \
 RDEPENDS:${PN}:append = " \
     bash \
     cpld-fw-handler \
+    jq \
+    pldmtool \
 "
 
 FILES:${PN}:append = " \

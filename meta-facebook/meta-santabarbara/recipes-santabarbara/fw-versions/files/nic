@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# NIC configurations
+declare -A NIC_CONFIG=(
+    [0]="49:mb_nic0"
+    [1]="50:swb_nic1" 
+    [2]="51:swb_nic2"
+    [3]="54:swb_nic3"
+    [4]="55:swb_nic4"
+)
+
+nic_index=$1
+config=${NIC_CONFIG[$nic_index]}
+eid=${config%:*}
+dbus_path=${config#*:}
+
+echo "Getting NIC$nic_index version (EID=$eid)"
+
+MAX_RETRIES=3
+RETRY_COUNT=0
+version=""
+
+while [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
+    version=$(pldmtool fw_update GetFwParams -m "$eid" 2>/dev/null | \
+              jq -r '.ComponentParameterEntries[].ActiveComponentVersionString' 2>/dev/null)
+
+    if [ -n "$version" ] && [ "$version" != "null" ]; then
+        echo "NIC$nic_index version: $version"
+        
+        busctl set-property xyz.openbmc_project.Settings \
+            "/xyz/openbmc_project/software/chassis/$dbus_path" \
+            xyz.openbmc_project.Software.Version Version "s" "$version"
+        
+        break
+    else
+        echo "Version is empty, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES)"
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        sleep 5
+    fi
+done

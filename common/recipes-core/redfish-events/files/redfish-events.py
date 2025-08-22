@@ -250,7 +250,7 @@ class RedfishEventHandler(web.Application):
                 logging.info(formerLog)
                 self.sel(formerLog)
 
-                if len(latterACA) > 1:
+                if len(latterACA) > 1 and formerACA != latterACA:
                     if latterACA.find("Poison_Consumed: Yes") != -1:
                         log = prefix_log.replace("UnCorrected Non-Fatal", "Fatal Error")
                     latterLog = log + latterACA + " AdditionalData: " + data_path

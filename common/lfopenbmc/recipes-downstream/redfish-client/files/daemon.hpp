@@ -1,5 +1,6 @@
 #pragma once
 
+#include "config.hpp"
 #include "sensor.hpp"
 
 #include <sdbusplus/async.hpp>
@@ -15,65 +16,13 @@
 namespace redfish_client_daemon
 {
 
-/*
-E.g. json snippet from daemon config:
-
-  "sensor_configs": {
-    "association_path": "/xyz/openbmc_project/inventory/system/board/HMC",
-    "sensors": {
-      "/machine1_temp": {
-        "url": "/redfish/v1/Chassis/machine1/Sensors/machine1_temp",
-        "symbolic_namespace": "temperature"
-      },
-      "/machine1_power": {
-        "url": "/redfish/v1/Chassis/HGX_CPU_0/Sensors/machine1_power",
-        "symbolic_namespace": "power"
-      },
-*/
-
-// SensorConfigValue holds the dictionary values corresponding to the
-// "sensor_configs" dictionary in the daemon config json.
-struct SensorConfigValue
-{
-    std::string url;
-    std::string symbolicNamespace;
-};
-
-struct EventLogConfigs
-{
-    std::vector<std::string> urls;
-    size_t intervalMilliseconds;
-};
-
-// DaemonConfig holds the parsed representation of the daemon config json.
-struct DaemonConfig
-{
-    static DaemonConfig fromJson(const std::string& configJson);
-    std::string serviceName;
-    std::string hostPort;
-    std::string sensorAssociation;
-    // Keys are the dbus paths of the sensors. Values are the SensorConfigValue.
-
-    // E.g. "/machine1_temp" ->
-    // /xyz/openbmc_project/sensors/temperature/machine1_temp
-    std::unordered_map<std::string, SensorConfigValue> sensorConfigs;
-
-    // Daemon exeuction parameters.
-    size_t intervalMilliseconds;
-    int retries;
-    size_t waitMilliseconds;
-
-    // Event log polling parameters.
-    std::optional<EventLogConfigs> eventLogConfigs;
-};
-
 void installSignalHandlers();
 
 // The dbus server runs till process receives SIGINT or SIGTERM and does a clean
 // shutdown after that.
-void runDbusServerTillInterrupted(const DaemonConfig& daemonConfig,
-                                  sdbusplus::async::context& ctx,
-                                  std::string persistDir = "");
+void runDbusServerTillInterrupted(
+    const Config& config, const std::string& serviceName,
+    sdbusplus::async::context& ctx, std::string persistDir = "");
 
 // The following helpers are exposed for unit testing purposes.
 // This is the interface to use for sensor values before emitting the data.

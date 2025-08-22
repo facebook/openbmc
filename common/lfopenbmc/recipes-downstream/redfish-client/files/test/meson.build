@@ -29,6 +29,7 @@ tests = {
     'redfish_binding_common_tests': ['redfish_binding_common_tests.cpp'],
     'redfish_binding_tests': ['redfish_binding_tests.cpp'],
     'sensor_tests': ['sensor_tests.cpp'],
+    'config_tests': ['config_tests.cpp'],
 }
 
 foreach name, sources : tests

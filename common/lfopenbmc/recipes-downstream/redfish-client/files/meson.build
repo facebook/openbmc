@@ -59,6 +59,7 @@ link_args = ['-rdynamic']
 
 srcs = [
     'async_http_client.cpp',
+    'config.cpp',
     'daemon.cpp',
     'persist_map.cpp',
     'sensor.cpp',

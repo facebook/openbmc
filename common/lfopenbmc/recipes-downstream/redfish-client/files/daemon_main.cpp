@@ -10,7 +10,6 @@
 #include <optional>
 #include <streambuf>
 #include <string>
-#include <thread>
 
 PHOSPHOR_LOG2_USING;
 
@@ -30,13 +29,14 @@ int main(int argc, const char** argv)
     std::string jsonContents((std::istreambuf_iterator<char>(fileStream)),
                              std::istreambuf_iterator<char>());
 
-    auto daemonConfig = DaemonConfig::fromJson(jsonContents.c_str());
+    auto config = Config::parse(jsonContents);
 
     // Create a new scope to ensure the context is destroyed cleanly before
     // http client is destroyed.
     {
+        const std::string kServiceName = "xyz.openbmc_project.RedfishClient";
         sdbusplus::async::context ctx;
-        runDbusServerTillInterrupted(daemonConfig, ctx, persistDir);
+        runDbusServerTillInterrupted(config, kServiceName, ctx, persistDir);
     }
 
     info("daemon-main clean exit\n");

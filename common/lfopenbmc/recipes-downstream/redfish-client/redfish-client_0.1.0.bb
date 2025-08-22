@@ -43,6 +43,8 @@ SRC_URI = " \
     file://persist_map.hpp \
     file://sensor.cpp \
     file://sensor.hpp \
+    file://config.hpp \
+    file://config.cpp \
     file://xyz.openbmc_project.RedfishClient.service \
 "
 

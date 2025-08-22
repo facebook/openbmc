@@ -14,28 +14,33 @@ using namespace redfish_client_daemon;
 namespace
 {
 
-static constexpr auto kBusName = "xyz.openbmc_project.test.AService";
+static constexpr auto kServiceName = "xyz.openbmc_project.test.AService";
 
 static constexpr auto kTestConfigFormat = R"(
   {{
-    "service_name": "xyz.openbmc_project.test.AService",
-    "host_port": "localhost:{}",
-    "interval_milliseconds": 10,
-    "retries": 1,
-    "wait_milliseconds": 1,
-    "sensor_configs": {{
-      "/Host0_Temp0": {{
-        "url": "/redfish/v1/Chassis/Host0/Sensors/Temp0",
-        "symbolic_namespace": "temperature"
-      }},
-      "/Host0_Temp1": {{
-        "url": "/redfish/v1/Chassis/Host0/Sensors/Temp1",
-        "symbolic_namespace": "temperature"
-      }},
-      "/Host0_Pressure0": {{
-        "url": "/redfish/v1/Chassis/Host0/Sensors/Pressure0",
-        "symbolic_namespace": "pressure"
-      }}
+    "host": "localhost:{}",
+    "sensorConfig": {{
+      "associationPath": "/xyz/openbmc_project/inventory/system/host0",
+      "intervalMilliseconds": 10,
+      "maxRetries": 1,
+      "retryIntervalMilliseconds": 1,
+      "mappers": [
+        {{
+          "fromUrl": "/redfish/v1/Chassis/Host0/Sensors/Temp0",
+          "toNamespace": "temperature",
+          "toId": "Host0_Temp0"
+        }},
+        {{
+          "fromUrl": "/redfish/v1/Chassis/Host0/Sensors/Temp1",
+          "toNamespace": "temperature",
+          "toId": "Host0_Temp1"
+        }},
+        {{
+          "fromUrl": "/redfish/v1/Chassis/Host0/Sensors/Pressure0",
+          "toNamespace": "pressure",
+          "toId": "Host0_Pressure0"
+        }}
+      ]
     }}
   }}
 )";
@@ -86,7 +91,7 @@ auto getSensorClient(sdbusplus::async::context& ctx, const char* metricPath)
 {
     using ValueClient =
         sdbusplus::client::xyz::openbmc_project::sensor::Value<>;
-    return ValueClient(ctx).service(kBusName).path(metricPath);
+    return ValueClient(ctx).service(kServiceName).path(metricPath);
 }
 
 } // namespace
@@ -97,11 +102,11 @@ TEST(DBusServerTests, SimpleDaemonRun)
     sdbusplus::async::context ctx;
     std::unordered_map<std::string, std::string> responseHeaders;
     SimpleTestHttpServer server(generateResponse, responseHeaders);
-    auto config = std::format(kTestConfigFormat, server.getPort());
+    auto configJson = std::format(kTestConfigFormat, server.getPort());
 
-    auto daemonThread = std::make_unique<std::thread>([&ctx, &config]() {
-        auto daemonConfig = DaemonConfig::fromJson(config);
-        runDbusServerTillInterrupted(daemonConfig, ctx);
+    auto daemonThread = std::make_unique<std::thread>([&ctx, &configJson]() {
+        auto config = Config::parse(configJson);
+        runDbusServerTillInterrupted(config, kServiceName, ctx);
     });
 
     ctx.spawn(

@@ -4,7 +4,6 @@
 #include "log_service_handler.hpp"
 
 #include <boost/stacktrace.hpp>
-#include <nlohmann/json.hpp>
 #include <phosphor-logging/lg2.hpp>
 
 #include <csignal>
@@ -140,63 +139,6 @@ const char* getActualMetricNamespace(const char* logicalNameParam)
     throw std::invalid_argument(logicalName.c_str());
 }
 
-DaemonConfig DaemonConfig::fromJson(const std::string& configJson)
-{
-    using json = nlohmann::json;
-    DaemonConfig rv;
-    json parsed = json::parse(configJson);
-    rv.serviceName = parsed["service_name"].get<std::string>();
-    rv.hostPort = parsed["host_port"].get<std::string>();
-    auto& parsedSensorConfigs = parsed["sensor_configs"];
-    if (parsedSensorConfigs.contains("association_path"))
-    {
-        rv.sensorAssociation =
-            parsedSensorConfigs["association_path"].get<std::string>();
-    }
-    auto& sensors = parsedSensorConfigs["sensors"];
-    for (json::iterator it = sensors.begin(); it != sensors.end(); ++it)
-    {
-        SensorConfigValue item;
-        std::string expandedUrl = "http://";
-        expandedUrl += rv.hostPort;
-        expandedUrl += it.value()["url"].get<std::string>();
-        item.url = expandedUrl;
-        item.symbolicNamespace =
-            it.value()["symbolic_namespace"].get<std::string>();
-
-        rv.sensorConfigs[it.key()] = item;
-    }
-    rv.intervalMilliseconds = parsed["interval_milliseconds"].get<size_t>();
-    rv.retries = parsed["retries"].get<int>();
-    rv.waitMilliseconds = parsed["wait_milliseconds"].get<size_t>();
-
-    static constexpr auto kEventLogConfigKey = "event_log_configs";
-    if (parsed.contains(kEventLogConfigKey))
-    {
-        auto parsedEventLogConfigs = parsed[kEventLogConfigKey];
-        EventLogConfigs configs;
-        configs.intervalMilliseconds =
-            parsedEventLogConfigs["eventlog_interval_milliseconds"]
-                .get<size_t>();
-        auto& parsedPaths = parsedEventLogConfigs["paths"];
-        for (json::iterator it = parsedPaths.begin(); it != parsedPaths.end();
-             ++it)
-        {
-            std::string expandedUrl = "http://";
-            expandedUrl += rv.hostPort;
-            expandedUrl += it.value().get<std::string>();
-            configs.urls.push_back(expandedUrl);
-        }
-
-        if (configs.urls.size() > 0)
-        {
-            rv.eventLogConfigs = configs;
-        }
-    }
-
-    return rv;
-}
-
 const char* getSensorRootPath()
 {
     return PathIntf::value;
@@ -209,9 +151,9 @@ struct SensorDbusObject
     SensorDbusObject(SensorDbusObject&&) = delete;
 
     SensorDbusObject(sdbusplus::async::context& ctx, const char* metricPath,
-                     const SensorConfigValue& sensorConfigValue,
+                     const SensorMapper& mapper,
                      const std::string& associationPath) :
-        ctx(ctx), metricPath(metricPath), sensorConfigValue(sensorConfigValue),
+        ctx(ctx), metricPath(metricPath), mapper(mapper),
         associationPath(associationPath)
     {}
 
@@ -341,7 +283,7 @@ struct SensorDbusObject
     double lastNotifiedValue = std::numeric_limits<double>::quiet_NaN();
     bool minValueNotified = false;
     bool maxValueNotified = false;
-    SensorConfigValue sensorConfigValue;
+    SensorMapper mapper;
     const std::string& associationPath;
 };
 
@@ -350,47 +292,50 @@ class DbusServer
   public:
     DbusServer() = delete;
 
-    explicit DbusServer(sdbusplus::async::context& ctx,
-                        const DaemonConfig& daemonConfig,
+    explicit DbusServer(sdbusplus::async::context& ctx, const Config& config,
                         std::string persistDir) :
-        ctx(ctx), daemonConfig(daemonConfig), persistDir(persistDir)
+        ctx(ctx), config(config), persistDir(persistDir)
     {
-        info("Creating Dbus Server with sensor config size {SIZE}", "SIZE",
-             daemonConfig.sensorConfigs.size());
-
-        info("Creating Sensor dbus objects");
-        for (const auto& [sensorConfigKey, sensorConfig] :
-             daemonConfig.sensorConfigs)
+        if (config.sensorConfig.has_value())
         {
-            auto metricNamespace = std::string(getActualMetricNamespace(
-                sensorConfig.symbolicNamespace.c_str()));
+            const auto& sensorConfig = config.sensorConfig.value();
+            info("Creating Dbus Server with sensor config size {SIZE}", "SIZE",
+                 sensorConfig.mappers.size());
+            info("Creating Sensor dbus objects");
+            for (const auto& mapper : sensorConfig.mappers)
+            {
+                auto metricNamespace = std::string(
+                    getActualMetricNamespace(mapper.toNamespace.c_str()));
 
-            std::string fullMetricPath =
-                std::string(getSensorRootPath()) + std::string("/") +
-                metricNamespace + sensorConfigKey;
+                std::string fullMetricPath =
+                    std::string(getSensorRootPath()) + "/" + metricNamespace +
+                    "/" + mapper.toId;
 
-            metrics[sensorConfigKey] = std::make_shared<SensorDbusObject>(
-                ctx, fullMetricPath.c_str(), sensorConfig,
-                daemonConfig.sensorAssociation);
+                metrics[mapper.toId] = std::make_shared<SensorDbusObject>(
+                    ctx, fullMetricPath.c_str(), mapper,
+                    sensorConfig.associationPath);
+            }
+            sensorThread = std::thread([this] { runSensorLoop(); });
         }
 
-        if (daemonConfig.eventLogConfigs.has_value())
+        if (config.logServiceConfig.has_value())
         {
-            const auto& eventLogConfigs = daemonConfig.eventLogConfigs.value();
-            info("eventLogConfigs intervalMilliseconds = {INTERVAL}",
-                 "INTERVAL", eventLogConfigs.intervalMilliseconds);
-            for (const auto& url : eventLogConfigs.urls)
+            const auto& logServiceConfig = config.logServiceConfig.value();
+            info("logServiceConfig intervalMilliseconds = {INTERVAL}",
+                 "INTERVAL", logServiceConfig.intervalMilliseconds);
+            for (const auto& url : logServiceConfig.urls)
             {
-                info("eventLogConfigs url = {URL}", "URL", url.c_str());
+                auto expandedUrl = std::format("http://{}{}", config.host, url);
+                info("logServiceConfig url = {URL}", "URL",
+                     expandedUrl.c_str());
                 info("persistDir = {PERSIST_DIR}", "PERSIST_DIR", persistDir);
 
                 logServiceHandlers.push_back(
-                    std::make_shared<LogServiceHandler>(ctx, url, persistDir));
+                    std::make_shared<LogServiceHandler>(ctx, expandedUrl,
+                                                        persistDir));
             }
+            ctx.spawn(runEventPollingLoop());
         }
-
-        ctx.spawn(runEventPollingLoop());
-        sensorThread = std::thread([this] { runSensorLoop(); });
     }
 
     ~DbusServer()
@@ -403,22 +348,22 @@ class DbusServer
     }
 
   private:
-    std::optional<Sensor> readWithRetries(
-        const SensorConfigValue& sensorConfigValue)
+    std::optional<Sensor> readWithRetries(const SensorMapper& mapper)
     {
-        for (int i = 0; i < daemonConfig.retries; ++i)
+        for (size_t i = 0; i < config.sensorConfig.value().maxRetries; ++i)
         {
             std::string sensorJson;
-
+            auto expandedUrl =
+                std::format("http://{}{}", config.host, mapper.fromUrl);
             try
             {
-                const auto& url = sensorConfigValue.url;
-                auto it = httpHandles.find(url);
+                auto it = httpHandles.find(expandedUrl);
                 if (it == httpHandles.end())
                 {
                     it = httpHandles
-                             .insert(
-                                 {url, std::make_unique<AsyncHttpHandle>(url)})
+                             .insert({expandedUrl,
+                                      std::make_unique<AsyncHttpHandle>(
+                                          expandedUrl)})
                              .first;
                 }
                 auto& httpHandle = it->second;
@@ -441,7 +386,7 @@ class DbusServer
             {
                 info("Exception while querying url {EXC}", "EXC", exn.what());
                 debug("Exception while querying url: {URL}", "URL",
-                      sensorConfigValue.url.c_str());
+                      expandedUrl.c_str());
             };
 
             try
@@ -456,8 +401,8 @@ class DbusServer
                       sensorJson.c_str());
             };
 
-            std::this_thread::sleep_for(
-                std::chrono::milliseconds(daemonConfig.waitMilliseconds));
+            std::this_thread::sleep_for(std::chrono::milliseconds(
+                config.sensorConfig.value().retryIntervalMilliseconds));
         }
         return std::nullopt;
     }
@@ -481,9 +426,9 @@ class DbusServer
                 }
 
                 co_await sdbusplus::async::sleep_for(
-                    ctx, std::chrono::milliseconds(
-                             daemonConfig.eventLogConfigs.value()
-                                 .intervalMilliseconds));
+                    ctx,
+                    std::chrono::milliseconds(
+                        config.logServiceConfig.value().intervalMilliseconds));
             }
         }
         catch (const std::logic_error& exn)
@@ -503,8 +448,7 @@ class DbusServer
             {
                 for (const auto& [metricKey, metric] : metrics)
                 {
-                    auto maybeSensor =
-                        readWithRetries(metric->sensorConfigValue);
+                    auto maybeSensor = readWithRetries(metric->mapper);
                     if (!maybeSensor.has_value())
                     {
                         continue;
@@ -512,7 +456,7 @@ class DbusServer
                     ctx.spawn(metric->update(maybeSensor.value()));
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(
-                    daemonConfig.intervalMilliseconds));
+                    config.sensorConfig.value().intervalMilliseconds));
             }
         }
         catch (const std::logic_error& exn)
@@ -524,7 +468,7 @@ class DbusServer
     sdbusplus::async::context& ctx;
     std::unordered_map<std::string, std::shared_ptr<SensorDbusObject>> metrics;
     std::vector<std::shared_ptr<LogServiceHandler>> logServiceHandlers;
-    DaemonConfig daemonConfig;
+    Config config;
     std::thread sensorThread;
     std::string persistDir;
     std::unordered_map<std::string, std::unique_ptr<AsyncHttpHandle>>
@@ -543,21 +487,21 @@ void installSignalHandlers()
     std::signal(SIGABRT, printStackTraceOnCrashHandler);
 }
 
-void runDbusServerTillInterrupted(const DaemonConfig& daemonConfig,
-                                  sdbusplus::async::context& ctx,
-                                  std::string persistDir)
+void runDbusServerTillInterrupted(
+    const Config& config, const std::string& serviceName,
+    sdbusplus::async::context& ctx, std::string persistDir)
 {
     sdbusplus::server::manager_t manager{ctx, getSensorRootPath()};
 
     info("Creating DbusServer");
 
     ctx.spawn([](sdbusplus::async::context& ctx,
-                 const DaemonConfig& daemonConfig) -> sdbusplus::async::task<> {
-        ctx.request_name(daemonConfig.serviceName.c_str());
+                 const std::string& serviceName) -> sdbusplus::async::task<> {
+        ctx.request_name(serviceName.c_str());
         co_return;
-    }(ctx, daemonConfig));
+    }(ctx, serviceName));
 
-    DbusServer server(ctx, daemonConfig, persistDir);
+    DbusServer server(ctx, config, persistDir);
 
     ctx.run();
 }
@@ -569,11 +513,10 @@ struct SensorDbusObjectForTest : public ISensorDbusObject
     SensorDbusObjectForTest(SensorDbusObjectForTest&&) = delete;
 
     SensorDbusObjectForTest(sdbusplus::async::context& ctx,
-                            const char* metricPath,
-                            const SensorConfigValue& sensorConfigValue,
+                            const char* metricPath, const SensorMapper& mapper,
                             const std::string& associationPath) :
         ctx(ctx), innerObject(std::make_shared<SensorDbusObject>(
-                      ctx, metricPath, sensorConfigValue, associationPath))
+                      ctx, metricPath, mapper, associationPath))
     {}
 
     sdbusplus::async::task<> update(Sensor sensor) override
@@ -589,9 +532,9 @@ std::shared_ptr<ISensorDbusObject> createSensorDbusObjectForTest(
     sdbusplus::async::context& ctx, const char* metricPath,
     const std::string& associationPath)
 {
-    SensorConfigValue fakeSensorConfigValue;
+    SensorMapper fakeMapper;
     return std::make_shared<SensorDbusObjectForTest>(
-        ctx, metricPath, fakeSensorConfigValue, associationPath);
+        ctx, metricPath, fakeMapper, associationPath);
 }
 
 } // namespace redfish_client_daemon

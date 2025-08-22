@@ -1,7 +1,7 @@
-From be4e7a2cd979a8fa8b002b67e871875bc8cf5289 Mon Sep 17 00:00:00 2001
+From 6b3ee117ca4fefe6f5ffec04ebe93feb2eed994f Mon Sep 17 00:00:00 2001
 From: Fred Chen <fredchen.openbmc@gmail.com>
-Date: Tue, 29 Jul 2025 16:01:16 +0800
-Subject: [PATCH 1001/1003] ARM: dts: aspeed: santabarbara: add sensor support
+Date: Wed, 6 Aug 2025 15:56:41 +0800
+Subject: [PATCH 1001/1004] ARM: dts: aspeed: santabarbara: add sensor support
  for extension boards
 
 add power monitor and temperature sensors for extension boards in bus 6,
@@ -9,13 +9,13 @@ add power monitor and temperature sensors for extension boards in bus 6,
 
 Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
 ---
-LORE: https://lore.kernel.org/all/20250729091351.3964939-2-fredchen.openbmc@gmail.com/
+LORE: https://lore.kernel.org/all/20250814131706.1567067-2-fredchen.openbmc@gmail.com/
 ---
  .../aspeed-bmc-facebook-santabarbara.dts      | 824 ++++++++++++++++++
  1 file changed, 824 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-index 27baa27d5f2c..3aa99b0bf56e 100644
+index ee93a971c500..2f5712e9ba9f 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 @@ -39,6 +39,38 @@ aliases {

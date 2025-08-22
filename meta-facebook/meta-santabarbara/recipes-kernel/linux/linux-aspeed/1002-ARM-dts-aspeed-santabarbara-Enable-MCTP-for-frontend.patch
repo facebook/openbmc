@@ -1,7 +1,7 @@
-From b30da4be6446623b122a8fe7857d3372fa47bd2d Mon Sep 17 00:00:00 2001
+From 75856a8d25820c447f15147d6752be09297df215 Mon Sep 17 00:00:00 2001
 From: Fred Chen <fredchen.openbmc@gmail.com>
-Date: Tue, 29 Jul 2025 16:01:39 +0800
-Subject: [PATCH 1002/1003] ARM: dts: aspeed: santabarbara: Enable MCTP for
+Date: Wed, 6 Aug 2025 15:56:41 +0800
+Subject: [PATCH 1002/1004] ARM: dts: aspeed: santabarbara: Enable MCTP for
  frontend NIC
 
 Add the mctp-controller property and MCTP node to enable frontend NIC
@@ -9,13 +9,13 @@ management via PLDM over MCTP.
 
 Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
 ---
-LORE: https://lore.kernel.org/all/20250729091351.3964939-3-fredchen.openbmc@gmail.com/
+LORE: https://lore.kernel.org/all/20250814131706.1567067-3-fredchen.openbmc@gmail.com/
 ---
  .../boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts  | 8 ++++++++
  1 file changed, 8 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-index 3aa99b0bf56e..ff168fe9d889 100644
+index 2f5712e9ba9f..ed30f3bf61a4 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 @@ -1248,8 +1248,16 @@ temperature-sensor@49 {

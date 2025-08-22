@@ -1,0 +1,44 @@
+From 87e7208d3334c99708bc91c7c4bf9ab1df15db7f Mon Sep 17 00:00:00 2001
+From: Fred Chen <fredchen.openbmc@gmail.com>
+Date: Wed, 13 Aug 2025 18:56:06 +0800
+Subject: [PATCH 1004/1004] ARM: dts: aspeed: santabarbara: add sgpio line name
+ for leak detection
+
+Add leak-related line names for the SGPIO inputs that report chassis
+leaks, so userspace can detect and handle leak events
+
+Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
+---
+LORE: https://lore.kernel.org/all/20250814131706.1567067-5-fredchen.openbmc@gmail.com/
+---
+ .../dts/aspeed/aspeed-bmc-facebook-santabarbara.dts  | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+index ed2432f37609..6af8b22f72e1 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+@@ -1767,11 +1767,17 @@ &sgpiom0 {
+ 	"PRSNT_LEAK_CABLE_1_R_N","",
+ 	"PRSNT_LEAK_CABLE_2_R_N","",
+ 	"PRSNT_HDT_N","",
+-	"","",
++	"LEAK_SWB_COLDPLATE","",
+ 	/*P0-P3 line 240-247*/
+-	"","","","","","","","",
++	"LEAK_R3_COLDPLATE","",
++	"LEAK_R2_COLDPLATE","",
++	"LEAK_R1_COLDPLATE","",
++	"LEAK_R0_COLDPLATE","",
+ 	/*P4-P7 line 248-255*/
+-	"","","","","","","","";
++	"LEAK_MB_COLDPLATE","",
++	"LEAK_PDB1_RIGHT_MANIFOLD","",
++	"LEAK_PDB1_LEFT_MANIFOLD","",
++	"LEAK_MB_MANIFOLD","";
+ 	status = "okay";
+ };
+ 
+-- 
+2.49.0
+

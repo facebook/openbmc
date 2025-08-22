@@ -1,22 +1,28 @@
-From 8b1f3e63a2462fa605755acdf51f02b0605eb386 Mon Sep 17 00:00:00 2001
+From 1753ba431a4376fab80e046888d89eb751fad1f9 Mon Sep 17 00:00:00 2001
 From: Fred Chen <fredchen.openbmc@gmail.com>
-Date: Tue, 29 Jul 2025 16:02:49 +0800
-Subject: [PATCH 1003/1003] ARM: dts: aspeed: santabarbara: Adjust LED
+Date: Wed, 6 Aug 2025 15:56:41 +0800
+Subject: [PATCH 1003/1004] ARM: dts: aspeed: santabarbara: Adjust LED
  configuration
 
-Add a new power fault LED on GPIOB5 and relocate the ID LED to GPIOQ4.
-The ID LED is now driven by the CPLD, allowing it to reflect multiple
-system states depending on CPLD logic.
+Update LED definitions to match changes in the hardware spec. Add a
+power-fault LED on GPIOB5 and relocate the ID LED to GPIOQ4 via the
+CPLD. The ID LED now shares the power LED: it blinks when ID is active
+and otherwise indicates power state with logic controlled by the CPLD.
+Retain the 'fp_id_amber' label so /sys/class/leds/fp_id_amber remains
+valid for existing users.
+
+Add a 'bmc_ready_noled' LED on GPIOB3 with GPIO_TRANSITORY to ensure its
+state resets on BMC reboot.
 
 Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
 ---
-LORE: https://lore.kernel.org/all/20250729091351.3964939-4-fredchen.openbmc@gmail.com/
+LORE: https://lore.kernel.org/all/20250814131706.1567067-4-fredchen.openbmc@gmail.com/
 ---
- .../boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts  | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ .../dts/aspeed/aspeed-bmc-facebook-santabarbara.dts | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-index ff168fe9d889..2fd47c325ef9 100644
+index ed30f3bf61a4..ed2432f37609 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 @@ -94,7 +94,7 @@ led-0 {
@@ -28,7 +34,7 @@ index ff168fe9d889..2fd47c325ef9 100644
  			default-state = "off";
  			gpios = <&gpio0 ASPEED_GPIO(B, 5) GPIO_ACTIVE_HIGH>;
  		};
-@@ -104,6 +104,12 @@ led-2 {
+@@ -104,6 +104,17 @@ led-2 {
  			default-state = "off";
  			gpios = <&gpio0 ASPEED_GPIO(P, 4) GPIO_ACTIVE_HIGH>;
  		};
@@ -37,6 +43,11 @@ index ff168fe9d889..2fd47c325ef9 100644
 +			label = "fp_id_amber";
 +			default-state = "off";
 +			gpios = <&gpio0 ASPEED_GPIO(Q, 4) GPIO_ACTIVE_HIGH>;
++		};
++
++		led-4 {
++			label = "bmc_ready_noled";
++			gpios = <&gpio0 ASPEED_GPIO(B, 3) (GPIO_ACTIVE_HIGH|GPIO_TRANSITORY)>;
 +		};
  	};
  

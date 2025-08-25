@@ -1,5 +1,5 @@
 {
-  "version": "CL_EMR_FSCV2.0",
+  "version": "CL_EMR_FSCV4.3",
   "pwm_transition_value": 80,
   "pwm_boost_value": 90,
   "non_fanfail_limited_boost_value": 100,
@@ -71,17 +71,16 @@
       "negative_hysteresis": 3,
       "data": [
         [ -23, 10 ],
-        [ -22, 11 ],
-        [ -21, 12 ],
-        [ -20, 13 ],
-        [ -19, 14 ],
-        [ -18, 15 ],
-        [ -17, 16 ],
-        [ -16, 17 ],
-        [ -15, 18 ],
-        [ -14, 19 ],
-        [ -13, 20 ],
-        [ -12, 21 ]
+        [ -22, 12 ],
+        [ -21, 14 ],
+        [ -20, 16 ],
+        [ -19, 16 ],
+        [ -18, 17 ],
+        [ -17, 18 ],
+        [ -16, 19 ],
+        [ -15, 20 ],
+        [ -14, 22 ],
+        [ -13, 24 ]
       ]
     },
     "pid_cpu": {
@@ -92,8 +91,8 @@
       "setpoint": -11,
       "negative_hysteresis": 3,
       "positive_hysteresis": 0,
-      "kp": -4.75,
-      "ki": -0.0065,
+      "kp": -2.5,
+      "ki": -0.033,
       "kd": 0
     },
     "linear_dimm": {
@@ -190,9 +189,16 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [63, 10],
-        [64, 11],
-        [65, 12]
+        [57, 10],
+        [58, 12],
+        [59, 14],
+        [60, 16],
+        [61, 18],
+        [62, 19],
+        [63, 20],
+        [64, 22],
+        [65, 24],
+        [66, 25]
       ]
     },
     "pid_e1s_temp": {
@@ -201,10 +207,10 @@
       },
       "type": "pid",
       "setpoint": 68,
-      "negative_hysteresis": 2,
+      "negative_hysteresis": 3,
       "positive_hysteresis": 0,
-      "kp": -5,
-      "ki": -0.035,
+      "kp": -2.2,
+      "ki": -0.045,
       "kd": 0
     },
     "linear_non_fru_sensor": {

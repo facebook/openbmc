@@ -10,4 +10,6 @@ IMAGE_INSTALL:append = " serfmon-cache \
                          mfg-tool \
                          bmc-eeprom-checker \
                          fboss-serfmon-emitter \
+                         lldp-util \
+                         dhcp-id \
                         "

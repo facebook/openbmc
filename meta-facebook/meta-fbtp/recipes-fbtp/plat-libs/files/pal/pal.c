@@ -1157,10 +1157,16 @@ read_hsc_vdelta_value(float *value) {
   for ( int i = 0; i < 2; i++ ) {
     req->data[9] = hsc_volt_reg[i];
     rlen = ipmb_send_buf(bus_id, tlen);
-    if ( rlen > 0 && rbuf[6] == CC_SUCCESS ) {
-      ret = CC_SUCCESS;
+    if ( rlen >= MIN_IPMB_RES_LEN ) {
       memset(rbuf, 0, sizeof(rbuf));
       memcpy(rbuf, ipmb_rxb(), rlen);
+    }
+    else {
+      return READING_NA;
+    }
+
+    if ( rbuf[6] == CC_SUCCESS ) {
+      ret = CC_SUCCESS;
       hsc_volt[i] = ((float) (rbuf[11] << 8 | rbuf[10])*100-hsc_b )/(19599);
     }
     else {
@@ -1188,8 +1194,7 @@ read_hsc_vdelta_value(float *value) {
     }
   }
   else {
-    syslog(LOG_WARNING, "%s, ME error occured, rlen=%d, comp_code=%02X\n",
-                         __FUNCTION__, rlen, rbuf[6]);
+    syslog(LOG_WARNING, "%s, ME error occurred, rlen=%d\n", __FUNCTION__, rlen);
     return ret;
   }
 

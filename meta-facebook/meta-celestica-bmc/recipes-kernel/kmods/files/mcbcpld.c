@@ -92,13 +92,60 @@ static const i2c_dev_attr_st mcbcpld_attrs[] = {
 		1,
 	},
 	{
+		"timer_base_lsb",
+		"PWR Cycle Timer Base Setting\n"
+		" 0x01: 10ms\n"
+		" 0x02: 100ms\n"
+		" 0x04: 1s\n"
+		" 0x08: 10s",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		I2C_DEV_ATTR_STORE_DEFAULT,
+		/* I2C register 0x20 bit0 - bit3 for PWR Cycle Timer Base Setting */
+		0x20,
+		0,
+		4,
+	},
+	{
+		"timer_counter_setting",
+		"This timer is used for power up automatically\n"
+		"When counter down to zero, the power will repower up.",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		I2C_DEV_ATTR_STORE_DEFAULT,
+		/* I2C register 0x21 for PWR Cycle Timer Counter Setting */
+		0x21,
+		0,
+		8,
+	},
+	{
+		"timer_counter_state",
+		"The Timer counter current state",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		I2C_DEV_ATTR_STORE_DEFAULT,
+		/* I2C register 0x22 for PWR Cycle Timer Counter State */
+		0x22,
+		0,
+		8,
+	},
+	{
 		"power_cycle_go",
 		"0: No power cycle\n"
 		"1: Start the power cycle",
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		I2C_DEV_ATTR_STORE_DEFAULT,
+		/* I2C register 0x23 bit0 for PWR Cycle Timer Misc Control-POWER_CYCLE_GO */
 		0x23,
 		0,
+		1,
+	},
+	{
+		"timer_counter_setting_update",
+		"0: No update\n"
+		"1: Update timer_base_setting 0x20, timer_counter_setting 0x21",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		I2C_DEV_ATTR_STORE_DEFAULT,
+		/* I2C register 0x23 bit1 for PWR Cycle Timer Misc Control-TIMER_COUNTER_SETTING_UPDATE */
+		0x23,
+		1,
 		1,
 	}
 };

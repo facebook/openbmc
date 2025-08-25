@@ -1,0 +1,81 @@
+From 21e9ee417fe45bfa9baab724b13735ca166bd2be Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Mon, 4 Aug 2025 16:55:04 +0800
+Subject: [PATCH] wedge_power_powercycle_with_delay
+
+---
+ wedge_power.sh        | 42 ++++++++++++++-----
+ 1 file changed, 32 insertions(+), 10 deletions(-)
+
+diff --git a/wedge_power.sh b/wedge_power.sh
+index ab9f129d9d5..5757645f4a1 100755
+--- a/wedge_power.sh
++++ b/wedge_power.sh
+@@ -104,15 +104,30 @@ do_off() {
+     return 1
+ }
+ 
+-do_reset() {
+-    local opt
+-    local system=0
++# This function is used to check whether the power is turned off successfully after a delay.
++defer_check_if_powered_off(){
++    local var_delay=$1
++    sleep "$var_delay"
++    # If the shutdown is unsuccessful, an error is displayed.
++    logger -p user.crit "Power reset the whole system failed"
++    echo  "Power reset the whole system failed"
++    return 1
++}
+ 
++do_reset() {
++    local system timer wake_t opt
++    system=0
++    timer=0
++    wake_t=0
+     while getopts "st:" opt; do
+         case $opt in
+             s)
+                 system=1
+                 ;;
++            t)
++                timer=1
++                wake_t=$OPTARG
++                ;;
+             *)
+                 usage
+                 exit 1
+@@ -123,16 +138,23 @@ do_reset() {
+     if [ $system -eq 1 ]; then
+         logger -p user.crit "Power reset the whole system ..."
+         echo  "Power reset the whole system ..."
+-
++        echo  "DO NOT PERFORM ANY UPDATE WHILE WAITING FOR THE SYSTEM SHUTDOWN"
++        do_get_reset_timer_settings
+         sync
++        if [ $timer -eq 0 ]; then
+ 
+-        chassis_power_cycle
++            chassis_power_cycle
++            defer_check_if_powered_off $((PWR_CYCLE_DEF_INTERVAL + PWR_OFF_CHECK_TOLERANCE)) &
+ 
+-        sleep 3
+-        # Control should not reach here!!!
+-        logger -p user.crit "Failed to reset the system!!!"
+-        echo "Failed to reset the system!!!"
+-        exit 1
++        else
++            do_config_reset_timer "$wake_t"
++            logger -p user.crit "Power reset the whole system with start-up time delay $wake_t seconds ..."
++            echo  "Power reset the whole system with start-up time delay $wake_t seconds ..."
++            sync
++            chassis_power_cycle
++            # The BMC does not immediately power off after performing chassis_power_cycle.
++            defer_check_if_powered_off $((wake_t + PWR_OFF_CHECK_TOLERANCE)) &
++        fi
+     else
+         if userver_power_is_on; then
+             logger -p user.crit "Power reset x86 (userver) ..."
+-- 
+2.25.1
+

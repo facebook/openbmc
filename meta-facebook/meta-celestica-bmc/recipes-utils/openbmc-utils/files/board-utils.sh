@@ -18,6 +18,8 @@
 # Boston, MA 02110-1301 USA
 
 #shellcheck disable=SC1091
+#shellcheck disable=SC2034
+
 # Do not change this line to openbmc-utils.sh, or it will generate a source loop.
 . /usr/local/bin/i2c-utils.sh
 
@@ -31,7 +33,14 @@ COME_POWER_OFF="${SCMCPLD_SYSFS_DIR}/pwr_force_off"
 COME_SYSTEM_WARM_RESET="${SCMCPLD_SYSFS_DIR}/cb_sys_reset"
 XP5P0_COME_PG="${SCMCPLD_SYSFS_DIR}/xp5p0_come_pg"
 XP12P0_COME_PG="${SCMCPLD_SYSFS_DIR}/xp12p0_come_pg"
-
+#According to the CPLD specification: timer base supportted 10ms 100ms 1s 10s
+TIMER_BASE="${MCBCPLD_SYSFS_DIR}/timer_base_lsb"
+TIMER_COUNTER_SETTING="${MCBCPLD_SYSFS_DIR}/timer_counter_setting"
+TIMER_COUNTER_SETTING_UPDATE="${MCBCPLD_SYSFS_DIR}/timer_counter_setting_update"
+declare -g PWR_OFF_CHECK_TOLERANCE=15
+declare -g PWR_CYCLE_DEF_INTERVAL=0
+TIMER_BASE_1S=0x04
+TIMER_BASE_10S=0x08
 CHASSIS_POWER_CYCLE="${MCBCPLD_SYSFS_DIR}/power_cycle_go"
 
 wedge_board_type() {
@@ -179,4 +188,84 @@ userver_mac_addr() {
     else
         echo "$cpu_mac"
     fi
+}
+
+# This function is used to get PWR Cycle Timer settings from MCBCPLD
+do_get_reset_timer_settings() {
+    local reset_timer_base=0
+    local reset_timer_counter_setting=0
+    local timer_base=0
+    reset_timer_base=$(head -n 1 < "$TIMER_BASE" 2> /dev/null)
+    reset_timer_counter_setting=$(head -n 1 < "$TIMER_COUNTER_SETTING" 2> /dev/null)
+    # hex to dec
+    timer_base=$((timer_base))
+    reset_timer_counter_setting=$((reset_timer_counter_setting))
+    #10ms 100ms 1s 10s x100 avoid using float
+    times=(1 10 100 1000)
+    for i in 0 1 2 3; do
+        # check if bit i == 1
+        if (( (reset_timer_base >> i) & 0x01 )); then
+            timer_base=$((timer_base + times[i]))
+        fi
+    done
+    if [ "$timer_base" -eq 0 ] || [ "$reset_timer_counter_setting" -eq 0 ]; then
+        return 1
+    fi
+    # ignore decimals
+    PWR_CYCLE_DEF_INTERVAL=$(( (timer_base * reset_timer_counter_setting) / 100 + 1))
+    export PWR_CYCLE_DEF_INTERVAL
+    #echo "got pwr_cycle_def_interval: $PWR_CYCLE_DEF_INTERVAL"
+    return 0
+}
+
+# This function is used to configure PWR Cycle Timer (0x20,0x21,0x22,0x23) of MCBCPLD to allow next power on with a time delay
+do_config_reset_timer() {
+    # get default time delay from CPLD
+   if ! do_get_reset_timer_settings; then
+        echo "Get reset timer setting of CPLD failed"
+        logger -p user.crit "Get reset timer setting of CPLD failed"
+   fi
+    # Check numeric
+    wake_t=$1
+    echo "$wake_t" | grep -E -q '^[0-9]+$'
+    ret=$?
+    if [ $ret -ne 0 ]; then
+        usage
+        exit 1
+    else
+        if [ "$wake_t" -ge 0 ] && [ "$wake_t" -lt "$PWR_CYCLE_DEF_INTERVAL" ]; then
+            # Handle delays less than the default CPLD interval
+            if ! sysfs_write "$TIMER_BASE" "$TIMER_BASE_1S"; then
+                return 1
+            fi
+            if ! sysfs_write "$TIMER_COUNTER_SETTING" "$wake_t"; then
+                return 1
+            fi
+            echo "The default time delay in CPLD: $PWR_CYCLE_DEF_INTERVAL seconds, now overwritten"
+        elif [ "$wake_t" -ge "$PWR_CYCLE_DEF_INTERVAL" ] && [ "$wake_t" -lt 250 ]; then
+            # Handle delays less than 250 seconds
+            if ! sysfs_write "$TIMER_BASE" "$TIMER_BASE_1S"; then
+                return 1
+            fi
+            if ! sysfs_write "$TIMER_COUNTER_SETTING" "$wake_t"; then
+                return 1
+            fi
+        elif [ "$wake_t" -ge 250 ] && [ "$wake_t" -le 2550 ]; then
+            # Handle delays between 250 and 2550 seconds
+            if ! sysfs_write "$TIMER_BASE" "$TIMER_BASE_10S"; then
+                return 1
+            fi
+            local wake_t_div=$((wake_t/10))
+            if ! sysfs_write "$TIMER_COUNTER_SETTING" "$wake_t_div"; then
+                return 1
+            fi
+        else
+            echo "The time delay parameter you entered: $wake_t is out of range (0--2550)"
+            exit 1
+        fi
+        if ! sysfs_write "$TIMER_COUNTER_SETTING_UPDATE" 1; then
+            return 1
+        fi
+    fi
+    return 0
 }

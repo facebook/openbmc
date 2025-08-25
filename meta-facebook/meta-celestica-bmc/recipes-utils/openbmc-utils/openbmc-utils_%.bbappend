@@ -22,4 +22,5 @@ LOCAL_URI += "\
     file://setup_board.sh \
     file://setup-gpio.sh \
     file://setup_i2c.sh \
+    file://wedge_power_powercycle_with_delay.patch \
     "

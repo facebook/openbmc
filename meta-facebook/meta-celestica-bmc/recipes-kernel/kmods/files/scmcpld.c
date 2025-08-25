@@ -18,7 +18,8 @@ static const i2c_dev_attr_st scmcpld_attrs[] = {
 		"Meta Networking system board type:\n"
 		" 0x7 : Santabarbara\n"
 		" 0x8 : Icecube\n"
-		" 0x9 : Icetea",
+		" 0x9 : Icetea\n"
+		" 0xD : Anacapa",
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,
 		0x0,
@@ -134,9 +135,9 @@ static const i2c_dev_attr_st scmcpld_attrs[] = {
 		1,
 	},
 	{
-    "e1_s_ssd_prsnt0",
-    " 0x00: not present\n"
-    " 0x01: present",
+		"e1_s_ssd_prsnt0",
+		" 0x00: not present\n"
+		" 0x01: present",
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,
 		0xb4,

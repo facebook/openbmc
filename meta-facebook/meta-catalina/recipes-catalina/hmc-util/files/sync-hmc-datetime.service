@@ -1,6 +1,6 @@
 [Unit]
 Description=Sync HMC Datetime
-After=catalina-sys-init.service
+After=platform-sys-init.service
 
 [Service]
 Type=simple

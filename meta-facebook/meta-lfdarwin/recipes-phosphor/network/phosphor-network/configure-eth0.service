@@ -15,18 +15,17 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-#
-# Note: dependency on network-pre.target does not seem to work properly with
-# systemd 234.  Ensure this starts before systemd-networkd.service instead.
-#
 [Unit]
-Description=Fixup BMC MAC Address
-Before=systemd-networkd.service
+Description=Set up DHCP vendor options
+Before=network-pre.target
+Wants=network-pre.target
+After=serfmon-cache.service
+Requires=serfmon-cache.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/usr/bin/eth0_mac_fixup.sh
+ExecStart=/bin/sh -c '/bin/sed -i \"s/VENDOR_SERIAL_HERE/$(/usr/local/bin/dhcp-id)/\" 	/etc/systemd/network/10-eth0.network'
 
 [Install]
-WantedBy=network-pre.target systemd-networkd.service
+WantedBy=multi-user.target

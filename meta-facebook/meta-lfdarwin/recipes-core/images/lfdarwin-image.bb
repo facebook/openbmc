@@ -12,4 +12,5 @@ IMAGE_INSTALL:append = " serfmon-cache \
                          fboss-serfmon-emitter \
                          lldp-util \
                          dhcp-id \
+                         fboss-board-revision \
                         "

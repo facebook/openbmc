@@ -1,4 +1,4 @@
-From 50cfc4862e12bd8f5512601b3274a96862e86ae5 Mon Sep 17 00:00:00 2001
+From 7249f1f0d1ce3bddad3df635a4e2b4d654496f7d Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 12:50:55 +0000
 Subject: [PATCH 201/205] Add generation for Vendor registries and a DBus to RF
@@ -27,11 +27,11 @@ Ran the script, and it generated vendor registries and the map.
 Change-Id: Iede2df06406ce426a7cd8b7f8219f50d547e81a3
 Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
 ---
- scripts/parse_registries.py | 405 ++++++++++++++++++++++++++++++------
- 1 file changed, 341 insertions(+), 64 deletions(-)
+ scripts/parse_registries.py | 421 ++++++++++++++++++++++++++++++------
+ 1 file changed, 349 insertions(+), 72 deletions(-)
 
 diff --git a/scripts/parse_registries.py b/scripts/parse_registries.py
-index 53e11378..0bd72a35 100755
+index 3219483a..b27ce559 100755
 --- a/scripts/parse_registries.py
 +++ b/scripts/parse_registries.py
 @@ -4,6 +4,7 @@ import json
@@ -409,7 +409,16 @@ index 53e11378..0bd72a35 100755
  def main() -> None:
      dmtf_registries = OrderedDict(
          [
-@@ -744,56 +1005,72 @@ def main() -> None:
+@@ -732,7 +993,7 @@ def main() -> None:
+             ("storage_device", "1.2.1"),
+             ("task_event", "1.0.3"),
+             ("telemetry", "1.0.0"),
+-            ("update", "1.2.0"),
++            ("update", "1.0.2"),
+         ]
+     )
+ 
+@@ -744,63 +1005,79 @@ def main() -> None:
          + ",".join([dmtf for dmtf in dmtf_registries]),
          help="Comma delimited list of registries to update",
      )
@@ -442,13 +451,6 @@ index 53e11378..0bd72a35 100755
 -            "Base",
 -            "base",
 -            "error",
--        )
--    if "heartbeat_event" in registries_map:
--        create_error_registry(
--            registries_map["heartbeat_event"],
--            "HeartbeatEvent",
--            "heartbeat_event",
--            "heartbeat",
 +    dbus_registries_map: t.Dict[str, DBusToRedfish] = {}
 +
 +    if args.with_registry:
@@ -458,6 +460,13 @@ index 53e11378..0bd72a35 100755
 +            registries_map,
 +            dbus_registries_map,
          )
+-    if "heartbeat_event" in registries_map:
+-        create_error_registry(
+-            registries_map["heartbeat_event"],
+-            "HeartbeatEvent",
+-            "heartbeat_event",
+-            "heartbeat",
+-        )
 -    if "resource_event" in registries_map:
 -        create_error_registry(
 -            registries_map["resource_event"],
@@ -471,6 +480,13 @@ index 53e11378..0bd72a35 100755
 -            "TaskEvent",
 -            "task_event",
 -            "task",
+-        )
+-    if "update" in registries_map:
+-        create_error_registry(
+-            registries_map["update"],
+-            "Update",
+-            "update",
+-            "update",
 -        )
 -
 -    if "privilege" in registries:
@@ -521,11 +537,18 @@ index 53e11378..0bd72a35 100755
 +                "task_event",
 +                "task",
 +            )
++        if "update" in registries_map:
++            create_error_registry(
++                registries_map["update"],
++                "Update",
++                "update",
++                "update",
++            )
 +        if "privilege" in registries:
 +            make_privilege_registry()
  
  
  if __name__ == "__main__":
 -- 
-2.47.1
+2.47.3
 

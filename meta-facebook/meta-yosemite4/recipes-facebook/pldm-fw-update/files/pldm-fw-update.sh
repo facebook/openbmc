@@ -24,6 +24,7 @@ check_uptime_and_pldmd_conservative() {
 			| head -n1)
 		if [ -n "$uptime_min" ] && [ "$uptime_min" -lt 7 ]; then
 			echo "BLOCK: BMC just booted (uptime ${uptime_min} min < 7 min). Please wait at least 7 minutes before running the update."
+			sleep 60
 			exit $PRECHECK_BMC_UPTIME_TOO_SHORT
 		fi
 	fi
@@ -50,11 +51,13 @@ check_uptime_and_pldmd_conservative() {
 				case "$unit" in
 				ms|s)
 					echo "BLOCK: pldmd just started very recently (${ago_text}). Please wait about 3 minutes and retry."
+					sleep 60
 					exit $PRECHECK_PLDMD_JUST_STARTED_MS_OR_S
 					;;
 				min|mins)
 					if [ -n "$num" ] && [ "$num" -lt 3 ]; then
 						echo "BLOCK: pldmd just started (${num} min ago < 3 min). Please wait about 3 minutes and retry."
+						sleep 60
 						exit $PRECHECK_PLDMD_JUST_STARTED_MIN
 					fi
 					;;

@@ -3,6 +3,74 @@
 # shellcheck source=meta-facebook/meta-yosemite4/recipes-yosemite4/plat-tool/files/yosemite4-common-functions
 source /usr/libexec/yosemite4-common-functions
 
+# Exit code constants
+PRECHECK_BMC_UPTIME_TOO_SHORT=10
+PRECHECK_PLDMD_INACTIVE=11
+PRECHECK_PLDMD_JUST_STARTED_MS_OR_S=12
+PRECHECK_PLDMD_JUST_STARTED_MIN=13
+
+check_uptime_and_pldmd_conservative() {
+	echo "=== Pre-check (conservative) ==="
+
+	local uptime_line up_part uptime_min=""
+	uptime_line=$(uptime)
+	echo "BMC uptime: $uptime_line"
+	up_part=$(echo "$uptime_line" | sed -E 's/.* up[[:space:]]+([^,]+).*/\1/')
+
+	if echo "$up_part" | grep -Eq '(^|[^0-9A-Za-z])[0-9]+[[:space:]]*min(s)?([^0-9A-Za-z]|$)'; then
+		uptime_min=$(echo "$up_part" \
+			| grep -Eo '(^|[^0-9A-Za-z])[0-9]+[[:space:]]*min(s)?([^0-9A-Za-z]|$)' \
+			| grep -Eo '[0-9]+' \
+			| head -n1)
+		if [ -n "$uptime_min" ] && [ "$uptime_min" -lt 7 ]; then
+			echo "BLOCK: BMC just booted (uptime ${uptime_min} min < 7 min). Please wait at least 7 minutes before running the update."
+			exit $PRECHECK_BMC_UPTIME_TOO_SHORT
+		fi
+	fi
+
+	if ! systemctl is-active --quiet pldmd; then
+		echo "BLOCK: pldmd is not active. Please run 'systemctl start pldmd' and retry after about 3 minutes."
+		exit $PRECHECK_PLDMD_INACTIVE
+	fi
+
+	local active_line ago_text
+	active_line=$(systemctl status pldmd 2>/dev/null | grep -E 'Active:' | head -n1)
+	echo "pldmd status (systemd): $active_line"
+	ago_text=$(echo "$active_line" | sed -nE 's/.*;\s*([^)]*ago).*/\1/p')
+
+	if [ -n "$ago_text" ]; then
+		if echo "$ago_text" | grep -Eq '([0-9]+)[[:space:]]*(h|hr|hrs|hour|hours|d|day|days|w|week|weeks|month|months|y|year|years)\b'; then
+			:
+		else
+			unit_match=$(echo "$ago_text" | grep -Eo '(^|[^0-9A-Za-z])([0-9]+)[[:space:]]*(ms|s|min|mins)([^0-9A-Za-z]|$)' | head -n1)
+			if [ -n "$unit_match" ]; then
+				num=$(echo "$unit_match" | grep -Eo '[0-9]+' | head -n1)
+				unit=$(echo "$unit_match" | grep -Eo '(ms|s|min|mins)' | head -n1)
+
+				case "$unit" in
+				ms|s)
+					echo "BLOCK: pldmd just started very recently (${ago_text}). Please wait about 3 minutes and retry."
+					exit $PRECHECK_PLDMD_JUST_STARTED_MS_OR_S
+					;;
+				min|mins)
+					if [ -n "$num" ] && [ "$num" -lt 3 ]; then
+						echo "BLOCK: pldmd just started (${num} min ago < 3 min). Please wait about 3 minutes and retry."
+						exit $PRECHECK_PLDMD_JUST_STARTED_MIN
+					fi
+					;;
+				esac
+			fi
+		fi
+	fi
+
+
+	echo "Pre-check passed (conservative)."
+	echo "==============================="
+	return 0
+}
+
+check_uptime_and_pldmd_conservative
+
 RETRY_UPDATE_COUNT=200
 MAX_RETRIES=3
 lockfile="/tmp/pldm-fw-update.lock"
@@ -26,6 +94,36 @@ do
         break
     fi
 done
+
+SIGNAL_UNKNOWN=128
+SIGNAL_EXIT_INT=130   # SIGINT (Ctrl+C)
+SIGNAL_EXIT_TERM=143  # SIGTERM
+SIGNAL_EXIT_HUP=129   # SIGHUP
+SIGNAL_EXIT_QUIT=131  # SIGQUIT
+SIGNAL_EXIT_PIPE=141  # SIGPIPE
+
+trap 'cleanup_on_signal INT' INT
+trap 'cleanup_on_signal TERM' TERM
+trap 'cleanup_on_signal HUP' HUP
+trap 'cleanup_on_signal QUIT' QUIT
+trap 'cleanup_on_signal PIPE' PIPE
+
+cleanup_on_signal() {
+	local sig="$1"
+	echo "signal received: $sig; restarting pldmd in background and exiting."
+	systemctl restart pldmd >/dev/null 2>&1 &
+	echo "NOTICE: pldmd is restarting. Please wait about 3 minutes before retrying the update."
+
+	case "$sig" in
+	INT)  exit $SIGNAL_EXIT_INT  ;;  # 130
+	TERM) exit $SIGNAL_EXIT_TERM ;;  # 143
+	HUP)  exit $SIGNAL_EXIT_HUP  ;;  # 129
+	QUIT) exit $SIGNAL_EXIT_QUIT ;;  # 131
+	PIPE) exit $SIGNAL_EXIT_PIPE ;;  # 141
+	*)    exit $SIGNAL_UNKNOWN ;; #128
+	esac
+}
+
 
 SB_CPLD_ADDR="0x22"
 SB_UART_MUX_SWITCH_REG="0x08"

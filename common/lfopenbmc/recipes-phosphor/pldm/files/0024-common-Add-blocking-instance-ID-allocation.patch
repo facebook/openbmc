@@ -1,0 +1,207 @@
+From 3acd8c6cb5f58938449d6a98a8cfbd1a4e6cacb8 Mon Sep 17 00:00:00 2001
+From: Amithash Prasad <amithash@meta.com>
+Date: Wed, 21 May 2025 16:23:33 -0700
+Subject: [PATCH 2/3] common: Add blocking instance ID allocation
+
+Adds an optional parameter for users to provide a timeout
+in seconds so we could optionally wait for the instance ID
+to be allocated. This might be useful for critical paths
+like firmware upgrade where a failure at one point can
+be catastrophic
+
+Change-Id: I0cef570a1610b930accd2e7d122d5377e63cfc9f
+Signed-off-by: Amithash Prasad <amithash@meta.com>
+---
+ common/instance_id.hpp    | 58 +++++++++++++++++++++++++++++++--------
+ test/instance_id_test.cpp | 57 ++++++++++++++++++++++++++++++++++++++
+ test/meson.build          |  2 +-
+ 3 files changed, 105 insertions(+), 12 deletions(-)
+ create mode 100644 test/instance_id_test.cpp
+
+diff --git a/common/instance_id.hpp b/common/instance_id.hpp
+index 2a29f82..114a6a5 100644
+--- a/common/instance_id.hpp
++++ b/common/instance_id.hpp
+@@ -3,8 +3,11 @@
+ #include <libpldm/instance-id.h>
+ 
+ #include <cerrno>
++#include <chrono>
++#include <condition_variable>
+ #include <cstdint>
+ #include <exception>
++#include <mutex>
+ #include <expected>
+ #include <string>
+ #include <system_error>
+@@ -88,7 +91,7 @@ class InstanceIdDb
+      *
+      *  @param[in] path - instance ID database path
+      */
+-    InstanceIdDb(const std::string& path)
++    InstanceIdDb(const std::string& path) : dbPath(path)
+     {
+         int rc = pldm_instance_db_init(&pldmInstanceIdDb, path.c_str());
+         if (rc)
+@@ -96,6 +99,23 @@ class InstanceIdDb
+             throw std::system_category().default_error_condition(rc);
+         }
+     }
++    InstanceIdDb(const InstanceIdDb& other)
++    {
++        dbPath = other.dbPath;
++        int rc =
++            dbPath ? pldm_instance_db_init(&pldmInstanceIdDb, (*dbPath).c_str())
++                   : pldm_instance_db_init_default(&pldmInstanceIdDb);
++        if (rc)
++        {
++            throw std::system_category().default_error_condition(rc);
++        }
++    }
++    InstanceIdDb(InstanceIdDb&& other) noexcept
++    {
++        dbPath = std::move(other.dbPath);
++        pldmInstanceIdDb = other.pldmInstanceIdDb;
++        other.pldmInstanceIdDb = nullptr;
++    }
+ 
+     ~InstanceIdDb()
+     {
+@@ -111,21 +131,33 @@ class InstanceIdDb
+ 
+     /** @brief Allocate an instance ID for the given terminus
+      *  @param[in] tid - the terminus ID the instance ID is associated with
++     *  @param[in] timeout - [optional] If non-zero the function will block
++     *                       for the provided timeout till a instance Id
++     *                       is available
+      *  @return - PLDM instance id on success, or InstanceIdError on failure
+      */
+-    std::expected<uint8_t, InstanceIdError> next(uint8_t tid)
++    std::expected<uint8_t, InstanceIdError> next(uint8_t tid, uint32_t timeout = 1)
+     {
+-        uint8_t id;
+-        int rc = pldm_instance_id_alloc(pldmInstanceIdDb, tid, &id);
+-
+-        if (rc)
++        std::unique_lock<std::mutex> lk(dbMutex);
++        auto timeout_sec =
++            std::chrono::system_clock::now() + std::chrono::seconds(timeout);
++        uint8_t id = 0xff;
++        int rc = 0;
++        bool done = dbEvent.wait_until(lk, timeout_sec, [&]() {
++            return pldm_instance_id_alloc(pldmInstanceIdDb, tid, &id) == 0;
++        });
++        if (!done || id == 0xff)
+         {
+-            return std::unexpected(
+-                InstanceIdError{rc, "Failed to allocate instance ID for EID " +
+-                                        std::to_string(tid) + ": " +
+-                                        InstanceIdError::rcToMsg(rc)});
++            // Try to allocate again just one more time.
++            rc = pldm_instance_id_alloc(pldmInstanceIdDb, tid, &id);
++            if (rc)
++            {
++                return std::unexpected(
++                    InstanceIdError{rc, "Failed to allocate instance ID for EID " +
++                                            std::to_string(tid) + ": " +
++                                            InstanceIdError::rcToMsg(rc)});
++            }
+         }
+-
+         return id;
+     }
+ 
+@@ -146,10 +178,14 @@ class InstanceIdDb
+         {
+             throw std::system_category().default_error_condition(rc);
+         }
++        dbEvent.notify_all();
+     }
+ 
+   private:
++    std::optional<std::string> dbPath{};
+     pldm_instance_db* pldmInstanceIdDb = nullptr;
++    std::mutex dbMutex{};
++    std::condition_variable dbEvent{};
+ };
+ 
+ } // namespace pldm
+diff --git a/test/instance_id_test.cpp b/test/instance_id_test.cpp
+new file mode 100644
+index 0000000..e47c3c5
+--- /dev/null
++++ b/test/instance_id_test.cpp
+@@ -0,0 +1,57 @@
++#include "test/test_instance_id.hpp"
++
++#include <chrono>
++
++#include <gtest/gtest.h>
++
++TEST(TestInstanceIds, NoTimeout)
++{
++    TestInstanceIdDb db;
++    for (int i = 0; i < 32; i++)
++    {
++        auto iid = db.next(12);
++        ASSERT_TRUE(iid.has_value());
++        EXPECT_LT(iid.value(), 32);
++    }
++    {
++        auto iid = db.next(12);
++        EXPECT_FALSE(iid.has_value());
++        EXPECT_EQ(iid.error().rc(), -EAGAIN);
++        EXPECT_EQ(iid.error().msg(), "No free instance ids");
++    }
++    db.free(12, 0);
++    {
++        auto iid = db.next(12);
++        ASSERT_TRUE(iid.has_value());
++        EXPECT_EQ(iid.value(), 0);
++
++    }
++    EXPECT_NO_THROW(db.free(12, 24));
++    EXPECT_THROW(db.free(12, 24), std::runtime_error);
++}
++
++TEST(TestInstanceIds, Timeout)
++{
++    using namespace std::literals;
++    TestInstanceIdDb db;
++    for (int i = 0; i < 32; i++)
++    {
++        auto iid = db.next(12);
++        ASSERT_TRUE(iid.has_value());
++        EXPECT_LT(iid.value(), 32);
++    }
++    {
++        auto iid = db.next(12);
++        EXPECT_FALSE(iid.has_value());
++    }
++    auto tid = std::thread([&]() {
++        std::this_thread::sleep_for(100ms);
++        db.free(12, 0);
++    });
++    {
++        auto iid = db.next(12, 1);
++        ASSERT_TRUE(iid.has_value());
++        EXPECT_EQ(iid.value(), 0);
++    }
++    tid.join();
++}
+diff --git a/test/meson.build b/test/meson.build
+index 96fbeaf..c47bd3c 100644
+--- a/test/meson.build
++++ b/test/meson.build
+@@ -1,7 +1,7 @@
+ pldmd_inc = include_directories('../')
+ test_src = declare_dependency(include_directories: pldmd_inc)
+ 
+-tests = ['pldmd_registration_test']
++tests = ['pldmd_registration_test', 'instance_id_test']
+ 
+ foreach t : tests
+     test(
+-- 
+2.43.0
+

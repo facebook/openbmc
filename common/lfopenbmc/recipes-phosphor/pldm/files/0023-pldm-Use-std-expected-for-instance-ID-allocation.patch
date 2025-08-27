@@ -1,0 +1,790 @@
+From f0a0d94b22e0924b12d5da1cd9f31dbeb8b79b7c Mon Sep 17 00:00:00 2001
+From: Eric Yang <eric.yang.wiwynn@gmail.com>
+Date: Tue, 15 Jul 2025 10:22:29 +0000
+Subject: [PATCH 1/3] pldm: Use std::expected for instance ID allocation
+
+Refactor InstanceIdDb::next() to return
+std::expected<uint8_t, InstanceIdError> instead of throwing exceptions.
+With this change, errors are no longer thrown by default.
+Instead, the caller can inspect allocation errors as values, extract
+the error message or code as needed, or explicitly throw the error
+further up the stack if appropriate.
+This approach allows for more flexible and explicit error handling, and
+reduces reliance on exception-based control flow.
+
+Motivation:
+This change aims to improve robustness by enabling explicit error
+handling and reducing the risk of uncaught exceptions that could lead
+to a pldmd core dump if an instance ID allocation fails for a single
+EID. Such a core dump could disrupt ongoing operations such as sensor
+polling or firmware updates for other EIDs
+
+Note:
+Currently, some call sites are still void-returning functions and
+cannot propagate errors via return values.
+As a result, errors from InstanceIdDb::next() are thrown as
+InstanceIdError at these locations to avoid silent failures.
+Ideally, it would be preferable for these functions to propagate errors
+by value (for example, using std::expected), so that errors can always
+be handled explicitly without relying on exceptions.
+
+Change-Id: I7189e97f206bae1eed5c8db44ebbbcd4393c8f8d
+Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
+---
+ common/instance_id.hpp                        | 73 ++++++++++++++++---
+ common/utils.hpp                              | 24 ++++++
+ fw-update/device_updater.cpp                  | 42 +++++++++--
+ fw-update/inventory_manager.cpp               | 35 +++++++--
+ host-bmc/dbus_to_event_handler.cpp            |  8 +-
+ host-bmc/host_pdr_handler.cpp                 | 48 ++++++++++--
+ libpldmresponder/platform.cpp                 |  7 +-
+ oem/ibm/host-bmc/host_lamp_test.cpp           |  8 +-
+ oem/ibm/libpldmresponder/oem_ibm_handler.cpp  |  8 +-
+ oem/ibm/libpldmresponder/platform_oem_ibm.cpp |  7 +-
+ oem/ibm/requester/dbus_to_file_handler.cpp    | 16 +++-
+ platform-mc/dbus_to_terminus_effecters.cpp    | 16 +++-
+ platform-mc/terminus_manager.cpp              | 21 +++++-
+ pldmtool/pldm_cmd_helper.cpp                  |  8 +-
+ requester/test/handler_test.cpp               | 29 ++++++--
+ softoff/softoff.cpp                           |  9 ++-
+ 16 files changed, 312 insertions(+), 47 deletions(-)
+
+diff --git a/common/instance_id.hpp b/common/instance_id.hpp
+index 40de1f1..2a29f82 100644
+--- a/common/instance_id.hpp
++++ b/common/instance_id.hpp
+@@ -5,12 +5,70 @@
+ #include <cerrno>
+ #include <cstdint>
+ #include <exception>
++#include <expected>
+ #include <string>
+ #include <system_error>
+ 
+ namespace pldm
+ {
+ 
++/**
++ * @class InstanceIdError
++ * @brief Exception for PLDM instance ID allocation and management errors.
++ */
++class InstanceIdError : public std::exception
++{
++  public:
++    InstanceIdError(const InstanceIdError&) noexcept = default;
++    InstanceIdError(InstanceIdError&&) noexcept = default;
++    InstanceIdError& operator=(const InstanceIdError&) noexcept = default;
++    InstanceIdError& operator=(InstanceIdError&&) noexcept = default;
++    ~InstanceIdError() noexcept override = default;
++
++    /** @brief Construct with an error code. */
++    explicit InstanceIdError(int rc) : rc_(rc), msg_(rcToMsg(rc)) {}
++
++    /** @brief Construct with an error code and a string message (copied). */
++    InstanceIdError(int rc, const std::string& m) : rc_(rc), msg_(m) {}
++
++    /** @brief Construct with an error code and a string message (moved). */
++    InstanceIdError(int rc, std::string&& m) : rc_(rc), msg_(std::move(m)) {}
++
++    /** @brief Get the error code. */
++    int rc() const noexcept
++    {
++        return rc_;
++    }
++
++    /** @brief Get the error message. */
++    const std::string& msg() const noexcept
++    {
++        return msg_;
++    }
++
++    /** @brief Convert an error code to a message. */
++    static std::string rcToMsg(int rc)
++    {
++        switch (rc)
++        {
++            case -EAGAIN:
++                return "No free instance ids";
++            default:
++                return std::system_category().message(rc);
++        }
++    }
++
++    /** @brief Get the error message (for std::exception). */
++    const char* what() const noexcept override
++    {
++        return msg_.c_str();
++    }
++
++  private:
++    int rc_;
++    std::string msg_;
++};
++
+ /** @class InstanceId
+  *  @brief Implementation of PLDM instance id as per DSP0240 v1.0.0
+  */
+@@ -53,22 +111,19 @@ class InstanceIdDb
+ 
+     /** @brief Allocate an instance ID for the given terminus
+      *  @param[in] tid - the terminus ID the instance ID is associated with
+-     *  @return - PLDM instance id or -EAGAIN if there are no available instance
+-     *            IDs
++     *  @return - PLDM instance id on success, or InstanceIdError on failure
+      */
+-    uint8_t next(uint8_t tid)
++    std::expected<uint8_t, InstanceIdError> next(uint8_t tid)
+     {
+         uint8_t id;
+         int rc = pldm_instance_id_alloc(pldmInstanceIdDb, tid, &id);
+ 
+-        if (rc == -EAGAIN)
+-        {
+-            throw std::runtime_error("No free instance ids");
+-        }
+-
+         if (rc)
+         {
+-            throw std::system_category().default_error_condition(rc);
++            return std::unexpected(
++                InstanceIdError{rc, "Failed to allocate instance ID for EID " +
++                                        std::to_string(tid) + ": " +
++                                        InstanceIdError::rcToMsg(rc)});
+         }
+ 
+         return id;
+diff --git a/common/utils.hpp b/common/utils.hpp
+index e17e306..409de80 100644
+--- a/common/utils.hpp
++++ b/common/utils.hpp
+@@ -1,5 +1,6 @@
+ #pragma once
+ 
++#include "instance_id.hpp"
+ #include "types.hpp"
+ 
+ #include <libpldm/base.h>
+@@ -20,6 +21,7 @@
+ #include <cstdint>
+ #include <deque>
+ #include <exception>
++#include <expected>
+ #include <filesystem>
+ #include <iostream>
+ #include <map>
+@@ -164,6 +166,28 @@ T decimalToBcd(T decimal)
+     return bcd;
+ }
+ 
++/**
++ * @brief Unwraps the result of InstanceId allocation and logs errors.
++ *
++ * Logs errors if present, but always returns the original result so the caller
++ * can choose to handle the error (return, throw, etc).
++ *
++ * @tparam T      Instance ID value type.
++ * @param[in] result  The result from InstanceIdDb::next().
++ * @return std::expected<T, InstanceIdError>
++ *     Returns the original result (value or error).
++ */
++template <typename T>
++std::expected<T, pldm::InstanceIdError> getInstanceId(
++    const std::expected<T, pldm::InstanceIdError>& result)
++{
++    if (!result)
++    {
++        std::cerr << result.error().msg() << std::endl;
++    }
++    return result;
++}
++
+ struct DBusMapping
+ {
+     std::string objectPath;   //!< D-Bus object path
+diff --git a/fw-update/device_updater.cpp b/fw-update/device_updater.cpp
+index f61428b..e446aa0 100644
+--- a/fw-update/device_updater.cpp
++++ b/fw-update/device_updater.cpp
+@@ -19,7 +19,13 @@ namespace fw_update
+ 
+ void DeviceUpdater::startFwUpdateFlow()
+ {
+-    auto instanceId = updateManager->instanceIdDb.next(eid);
++    auto instanceIdResult =
++        pldm::utils::getInstanceId(updateManager->instanceIdDb.next(eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     // NumberOfComponents
+     const auto& applicableComponents =
+         std::get<ApplicableComponents>(fwDeviceIDRecord);
+@@ -114,7 +120,13 @@ void DeviceUpdater::sendPassCompTableRequest(size_t offset)
+ {
+     pldmRequest.reset();
+ 
+-    auto instanceId = updateManager->instanceIdDb.next(eid);
++    auto instanceIdResult =
++        pldm::utils::getInstanceId(updateManager->instanceIdDb.next(eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     // TransferFlag
+     const auto& applicableComponents =
+         std::get<ApplicableComponents>(fwDeviceIDRecord);
+@@ -265,7 +277,13 @@ void DeviceUpdater::sendUpdateComponentRequest(size_t offset)
+ {
+     pldmRequest.reset();
+ 
+-    auto instanceId = updateManager->instanceIdDb.next(eid);
++    auto instanceIdResult =
++        pldm::utils::getInstanceId(updateManager->instanceIdDb.next(eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     const auto& applicableComponents =
+         std::get<ApplicableComponents>(fwDeviceIDRecord);
+     const auto& comp = compImageInfos[applicableComponents[offset]];
+@@ -710,7 +728,14 @@ Response DeviceUpdater::applyComplete(const pldm_msg* request,
+ void DeviceUpdater::sendActivateFirmwareRequest()
+ {
+     pldmRequest.reset();
+-    auto instanceId = updateManager->instanceIdDb.next(eid);
++
++    auto instanceIdResult =
++        pldm::utils::getInstanceId(updateManager->instanceIdDb.next(eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     Request request(
+         sizeof(pldm_msg_hdr) + sizeof(struct pldm_activate_firmware_req));
+     auto requestMsg = new (request.data()) pldm_msg;
+@@ -781,7 +806,14 @@ void DeviceUpdater::activateFirmware(mctp_eid_t eid, const pldm_msg* response,
+ void DeviceUpdater::sendCancelUpdateComponentRequest()
+ {
+     pldmRequest.reset();
+-    auto instanceId = updateManager->instanceIdDb.next(eid);
++
++    auto instanceIdResult =
++        pldm::utils::getInstanceId(updateManager->instanceIdDb.next(eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     Request request(sizeof(pldm_msg_hdr));
+     auto requestMsg = new (request.data()) pldm_msg;
+ 
+diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
+index 38e8392..28cb737 100644
+--- a/fw-update/inventory_manager.cpp
++++ b/fw-update/inventory_manager.cpp
+@@ -34,7 +34,12 @@ void InventoryManager::discoverFDs(const std::vector<mctp_eid_t>& eids)
+ 
+ void InventoryManager::sendQueryDeviceIdentifiersRequest(mctp_eid_t eid)
+ {
+-    auto instanceId = instanceIdDb.next(eid);
++    auto instanceIdResult = pldm::utils::getInstanceId(instanceIdDb.next(eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     Request requestMsg(
+         sizeof(pldm_msg_hdr) + PLDM_QUERY_DEVICE_IDENTIFIERS_REQ_BYTES);
+     auto request = new (requestMsg.data()) pldm_msg;
+@@ -170,7 +175,12 @@ void InventoryManager::queryDeviceIdentifiers(
+ void InventoryManager::sendQueryDownstreamDevicesRequest(mctp_eid_t eid)
+ {
+     Request requestMsg(sizeof(pldm_msg_hdr));
+-    auto instanceId = instanceIdDb.next(eid);
++    auto instanceIdResult = pldm::utils::getInstanceId(instanceIdDb.next(eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     auto request = new (requestMsg.data()) pldm_msg;
+     auto rc = encode_query_downstream_devices_req(instanceId, request);
+     if (rc)
+@@ -277,7 +287,12 @@ void InventoryManager::sendQueryDownstreamIdentifiersRequest(
+     mctp_eid_t eid, uint32_t dataTransferHandle,
+     enum transfer_op_flag transferOperationFlag)
+ {
+-    auto instanceId = instanceIdDb.next(eid);
++    auto instanceIdResult = pldm::utils::getInstanceId(instanceIdDb.next(eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     Request requestMsg(
+         sizeof(pldm_msg_hdr) + PLDM_QUERY_DOWNSTREAM_IDENTIFIERS_REQ_BYTES);
+     auto request = new (requestMsg.data()) pldm_msg;
+@@ -453,7 +468,12 @@ void InventoryManager::sendGetDownstreamFirmwareParametersRequest(
+ {
+     Request requestMsg(sizeof(pldm_msg_hdr) +
+                        PLDM_GET_DOWNSTREAM_FIRMWARE_PARAMETERS_REQ_BYTES);
+-    auto instanceId = instanceIdDb.next(eid);
++    auto instanceIdResult = pldm::utils::getInstanceId(instanceIdDb.next(eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     auto request = new (requestMsg.data()) pldm_msg;
+     pldm_get_downstream_firmware_parameters_req requestParameters{
+         dataTransferHandle, static_cast<uint8_t>(transferOperationFlag)};
+@@ -546,7 +566,12 @@ void InventoryManager::getDownstreamFirmwareParameters(
+ 
+ void InventoryManager::sendGetFirmwareParametersRequest(mctp_eid_t eid)
+ {
+-    auto instanceId = instanceIdDb.next(eid);
++    auto instanceIdResult = pldm::utils::getInstanceId(instanceIdDb.next(eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     Request requestMsg(
+         sizeof(pldm_msg_hdr) + PLDM_GET_FIRMWARE_PARAMETERS_REQ_BYTES);
+     auto request = new (requestMsg.data()) pldm_msg;
+diff --git a/host-bmc/dbus_to_event_handler.cpp b/host-bmc/dbus_to_event_handler.cpp
+index 6149050..5f8f8be 100644
+--- a/host-bmc/dbus_to_event_handler.cpp
++++ b/host-bmc/dbus_to_event_handler.cpp
+@@ -27,7 +27,13 @@ DbusToPLDMEvent::DbusToPLDMEvent(
+ void DbusToPLDMEvent::sendEventMsg(uint8_t eventType,
+                                    const std::vector<uint8_t>& eventDataVec)
+ {
+-    auto instanceId = instanceIdDb.next(mctp_eid);
++    auto instanceIdResult =
++        pldm::utils::getInstanceId(instanceIdDb.next(mctp_eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     std::vector<uint8_t> requestMsg(
+         sizeof(pldm_msg_hdr) + PLDM_PLATFORM_EVENT_MESSAGE_MIN_REQ_BYTES +
+         eventDataVec.size());
+diff --git a/host-bmc/host_pdr_handler.cpp b/host-bmc/host_pdr_handler.cpp
+index 61b4ccb..c02cbec 100644
+--- a/host-bmc/host_pdr_handler.cpp
++++ b/host-bmc/host_pdr_handler.cpp
+@@ -189,7 +189,13 @@ void HostPDRHandler::getHostPDR(uint32_t nextRecordHandle)
+     {
+         recordHandle = nextRecordHandle;
+     }
+-    auto instanceId = instanceIdDb.next(mctp_eid);
++    auto instanceIdResult =
++        pldm::utils::getInstanceId(instanceIdDb.next(mctp_eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+ 
+     auto rc =
+         encode_get_pdr_req(instanceId, recordHandle, 0, PLDM_GET_FIRSTPART,
+@@ -388,7 +394,13 @@ void HostPDRHandler::sendPDRRepositoryChgEvent(std::vector<uint8_t>&& pdrTypes,
+             "RC", rc);
+         return;
+     }
+-    auto instanceId = instanceIdDb.next(mctp_eid);
++    auto instanceIdResult =
++        pldm::utils::getInstanceId(instanceIdDb.next(mctp_eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     std::vector<uint8_t> requestMsg(
+         sizeof(pldm_msg_hdr) + PLDM_PLATFORM_EVENT_MESSAGE_MIN_REQ_BYTES +
+         actualSize);
+@@ -715,7 +727,13 @@ void HostPDRHandler::_processFetchPDREvent(
+ void HostPDRHandler::setHostFirmwareCondition()
+ {
+     responseReceived = false;
+-    auto instanceId = instanceIdDb.next(mctp_eid);
++    auto instanceIdResult =
++        pldm::utils::getInstanceId(instanceIdDb.next(mctp_eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     std::vector<uint8_t> requestMsg(
+         sizeof(pldm_msg_hdr) + PLDM_GET_VERSION_REQ_BYTES);
+     auto request = new (requestMsg.data()) pldm_msg;
+@@ -787,7 +805,13 @@ void HostPDRHandler::setHostSensorState(const PDRList& stateSensorPDRs)
+                 sensorRearm.byte = 0;
+                 uint8_t tid = std::get<0>(terminusInfo);
+ 
+-                auto instanceId = instanceIdDb.next(mctp_eid);
++                auto instanceIdResult =
++                    pldm::utils::getInstanceId(instanceIdDb.next(mctp_eid));
++                if (!instanceIdResult)
++                {
++                    throw pldm::InstanceIdError(instanceIdResult.error());
++                }
++                auto instanceId = instanceIdResult.value();
+                 std::vector<uint8_t> requestMsg(
+                     sizeof(pldm_msg_hdr) +
+                     PLDM_GET_STATE_SENSOR_READINGS_REQ_BYTES);
+@@ -929,7 +953,13 @@ void HostPDRHandler::setHostSensorState(const PDRList& stateSensorPDRs)
+ void HostPDRHandler::getFRURecordTableMetadataByRemote(
+     const PDRList& fruRecordSetPDRs)
+ {
+-    auto instanceId = instanceIdDb.next(mctp_eid);
++    auto instanceIdResult =
++        pldm::utils::getInstanceId(instanceIdDb.next(mctp_eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     std::vector<uint8_t> requestMsg(
+         sizeof(pldm_msg_hdr) + PLDM_GET_FRU_RECORD_TABLE_METADATA_REQ_BYTES);
+ 
+@@ -1007,7 +1037,13 @@ void HostPDRHandler::getFRURecordTableByRemote(const PDRList& fruRecordSetPDRs,
+         return;
+     }
+ 
+-    auto instanceId = instanceIdDb.next(mctp_eid);
++    auto instanceIdResult =
++        pldm::utils::getInstanceId(instanceIdDb.next(mctp_eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     std::vector<uint8_t> requestMsg(
+         sizeof(pldm_msg_hdr) + PLDM_GET_FRU_RECORD_TABLE_REQ_BYTES);
+ 
+diff --git a/libpldmresponder/platform.cpp b/libpldmresponder/platform.cpp
+index 7a3b63c..449b222 100644
+--- a/libpldmresponder/platform.cpp
++++ b/libpldmresponder/platform.cpp
+@@ -980,7 +980,12 @@ void Handler::setEventReceiver()
+     std::vector<uint8_t> requestMsg(
+         sizeof(pldm_msg_hdr) + PLDM_SET_EVENT_RECEIVER_REQ_BYTES);
+     auto request = new (requestMsg.data()) pldm_msg;
+-    auto instanceId = instanceIdDb->next(eid);
++    auto instanceIdResult = pldm::utils::getInstanceId(instanceIdDb->next(eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     uint8_t eventMessageGlobalEnable =
+         PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC_KEEP_ALIVE;
+     uint8_t transportProtocolType = PLDM_TRANSPORT_PROTOCOL_TYPE_MCTP;
+diff --git a/oem/ibm/host-bmc/host_lamp_test.cpp b/oem/ibm/host-bmc/host_lamp_test.cpp
+index e7485d8..1dda9f2 100644
+--- a/oem/ibm/host-bmc/host_lamp_test.cpp
++++ b/oem/ibm/host-bmc/host_lamp_test.cpp
+@@ -109,7 +109,13 @@ uint16_t HostLampTest::getEffecterID()
+ uint8_t HostLampTest::setHostStateEffecter(uint16_t effecterID)
+ {
+     constexpr uint8_t effecterCount = 1;
+-    auto instanceId = instanceIdDb.next(mctp_eid);
++    auto instanceIdResult =
++        pldm::utils::getInstanceId(instanceIdDb.next(mctp_eid));
++    if (!instanceIdResult)
++    {
++        return PLDM_ERROR;
++    }
++    auto instanceId = instanceIdResult.value();
+ 
+     std::vector<uint8_t> requestMsg(
+         sizeof(pldm_msg_hdr) + sizeof(effecterID) + sizeof(effecterCount) +
+diff --git a/oem/ibm/libpldmresponder/oem_ibm_handler.cpp b/oem/ibm/libpldmresponder/oem_ibm_handler.cpp
+index decb953..e74828c 100644
+--- a/oem/ibm/libpldmresponder/oem_ibm_handler.cpp
++++ b/oem/ibm/libpldmresponder/oem_ibm_handler.cpp
+@@ -524,7 +524,13 @@ void pldm::responder::oem_ibm_platform::Handler::sendStateSensorEvent(
+     eventClass->sensor_offset = sensorOffset;
+     eventClass->event_state = eventState;
+     eventClass->previous_event_state = prevEventState;
+-    auto instanceId = instanceIdDb.next(mctp_eid);
++    auto instanceIdResult =
++        pldm::utils::getInstanceId(instanceIdDb.next(mctp_eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     std::vector<uint8_t> requestMsg(
+         sizeof(pldm_msg_hdr) + PLDM_PLATFORM_EVENT_MESSAGE_MIN_REQ_BYTES +
+         sensorEventDataVec.size());
+diff --git a/oem/ibm/libpldmresponder/platform_oem_ibm.cpp b/oem/ibm/libpldmresponder/platform_oem_ibm.cpp
+index 47c1e53..0663b01 100644
+--- a/oem/ibm/libpldmresponder/platform_oem_ibm.cpp
++++ b/oem/ibm/libpldmresponder/platform_oem_ibm.cpp
+@@ -61,7 +61,12 @@ int sendBiosAttributeUpdateEvent(
+             "ERROR", e);
+     }
+ 
+-    auto instanceId = instanceIdDb->next(eid);
++    auto instanceIdResult = pldm::utils::getInstanceId(instanceIdDb->next(eid));
++    if (!instanceIdResult)
++    {
++        return PLDM_ERROR;
++    }
++    auto instanceId = instanceIdResult.value();
+ 
+     std::vector<uint8_t> requestMsg(
+         sizeof(pldm_msg_hdr) + sizeof(pldm_bios_attribute_update_event_req) -
+diff --git a/oem/ibm/requester/dbus_to_file_handler.cpp b/oem/ibm/requester/dbus_to_file_handler.cpp
+index 6ca2975..83f2908 100644
+--- a/oem/ibm/requester/dbus_to_file_handler.cpp
++++ b/oem/ibm/requester/dbus_to_file_handler.cpp
+@@ -40,7 +40,13 @@ void DbusToFileHandler::sendNewFileAvailableCmd(uint64_t fileSize)
+             "xyz.openbmc_project.bmc.pldm.InternalFailure");
+         return;
+     }
+-    auto instanceId = instanceIdDb->next(mctp_eid);
++    auto instanceIdResult =
++        pldm::utils::getInstanceId(instanceIdDb->next(mctp_eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     std::vector<uint8_t> requestMsg(
+         sizeof(pldm_msg_hdr) + PLDM_NEW_FILE_REQ_BYTES);
+     auto request = reinterpret_cast<pldm_msg*>(requestMsg.data());
+@@ -252,7 +258,13 @@ void DbusToFileHandler::newFileAvailableSendToHost(
+             "xyz.openbmc_project.bmc.pldm.InternalFailure");
+         return;
+     }
+-    auto instanceId = instanceIdDb->next(mctp_eid);
++    auto instanceIdResult =
++        pldm::utils::getInstanceId(instanceIdDb->next(mctp_eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     std::vector<uint8_t> requestMsg(
+         sizeof(pldm_msg_hdr) + PLDM_NEW_FILE_REQ_BYTES);
+     auto request = reinterpret_cast<pldm_msg*>(requestMsg.data());
+diff --git a/platform-mc/dbus_to_terminus_effecters.cpp b/platform-mc/dbus_to_terminus_effecters.cpp
+index 0c27f95..594e3c4 100644
+--- a/platform-mc/dbus_to_terminus_effecters.cpp
++++ b/platform-mc/dbus_to_terminus_effecters.cpp
+@@ -481,7 +481,13 @@ int HostEffecterParser::setTerminusNumericEffecter(
+         }
+     }
+ 
+-    auto instanceId = instanceIdDb->next(mctpEid);
++    auto instanceIdResult =
++        pldm::utils::getInstanceId(instanceIdDb->next(mctpEid));
++    if (!instanceIdResult)
++    {
++        return PLDM_ERROR;
++    }
++    auto instanceId = instanceIdResult.value();
+     int rc = PLDM_ERROR;
+     std::vector<uint8_t> requestMsg;
+ 
+@@ -620,7 +626,13 @@ int HostEffecterParser::setHostStateEffecter(
+     }
+ 
+     uint8_t& compEffCnt = hostEffecterInfo[effecterInfoIndex].compEffecterCnt;
+-    auto instanceId = instanceIdDb->next(mctpEid);
++    auto instanceIdResult =
++        pldm::utils::getInstanceId(instanceIdDb->next(mctpEid));
++    if (!instanceIdResult)
++    {
++        return PLDM_ERROR;
++    }
++    auto instanceId = instanceIdResult.value();
+ 
+     std::vector<uint8_t> requestMsg(
+         sizeof(pldm_msg_hdr) + sizeof(effecterId) + sizeof(compEffCnt) +
+diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
+index 5064c33..898cf24 100644
+--- a/platform-mc/terminus_manager.cpp
++++ b/platform-mc/terminus_manager.cpp
+@@ -471,7 +471,12 @@ exec::task<int> TerminusManager::sendRecvPldmMsgOverMctp(
+ 
+ exec::task<int> TerminusManager::getTidOverMctp(mctp_eid_t eid, pldm_tid_t* tid)
+ {
+-    auto instanceId = instanceIdDb.next(eid);
++    auto instanceIdResult = pldm::utils::getInstanceId(instanceIdDb.next(eid));
++    if (!instanceIdResult)
++    {
++        co_return PLDM_ERROR;
++    }
++    auto instanceId = instanceIdResult.value();
+     Request request(sizeof(pldm_msg_hdr));
+     auto requestMsg = new (request.data()) pldm_msg;
+     auto rc = encode_get_tid_req(instanceId, requestMsg);
+@@ -517,7 +522,12 @@ exec::task<int> TerminusManager::getTidOverMctp(mctp_eid_t eid, pldm_tid_t* tid)
+ 
+ exec::task<int> TerminusManager::setTidOverMctp(mctp_eid_t eid, pldm_tid_t tid)
+ {
+-    auto instanceId = instanceIdDb.next(eid);
++    auto instanceIdResult = pldm::utils::getInstanceId(instanceIdDb.next(eid));
++    if (!instanceIdResult)
++    {
++        co_return PLDM_ERROR;
++    }
++    auto instanceId = instanceIdResult.value();
+     Request request(sizeof(pldm_msg_hdr) + sizeof(pldm_set_tid_req));
+     auto requestMsg = new (request.data()) pldm_msg;
+     auto rc = encode_set_tid_req(instanceId, tid, requestMsg);
+@@ -691,7 +701,12 @@ exec::task<int> TerminusManager::sendRecvPldmMsg(
+ 
+     auto eid = std::get<0>(mctpInfo.value());
+     auto requestMsg = new (request.data()) pldm_msg;
+-    requestMsg->hdr.instance_id = instanceIdDb.next(eid);
++    auto instanceIdResult = pldm::utils::getInstanceId(instanceIdDb.next(eid));
++    if (!instanceIdResult)
++    {
++        co_return PLDM_ERROR;
++    }
++    requestMsg->hdr.instance_id = instanceIdResult.value();
+     auto rc = co_await sendRecvPldmMsgOverMctp(eid, request, responseMsg,
+                                                responseLen);
+ 
+diff --git a/pldmtool/pldm_cmd_helper.cpp b/pldmtool/pldm_cmd_helper.cpp
+index e488557..337cee8 100644
+--- a/pldmtool/pldm_cmd_helper.cpp
++++ b/pldmtool/pldm_cmd_helper.cpp
+@@ -89,7 +89,13 @@ void fillCompletionCode(uint8_t completionCode, ordered_json& data,
+ 
+ void CommandInterface::exec()
+ {
+-    instanceId = instanceIdDb.next(mctp_eid);
++    auto instanceIdResult =
++        pldm::utils::getInstanceId(instanceIdDb.next(mctp_eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     auto [rc, requestMsg] = createRequestMsg();
+     if (rc != PLDM_SUCCESS)
+     {
+diff --git a/requester/test/handler_test.cpp b/requester/test/handler_test.cpp
+index caa4663..ebccdf7 100644
+--- a/requester/test/handler_test.cpp
++++ b/requester/test/handler_test.cpp
+@@ -79,7 +79,9 @@ TEST_F(HandlerTest, singleRequestResponseScenario)
+         pldmTransport, event, instanceIdDb, false, seconds(1), 2,
+         milliseconds(100));
+     pldm::Request request{};
+-    auto instanceId = instanceIdDb.next(eid);
++    auto instanceIdResult = pldm::utils::getInstanceId(instanceIdDb.next(eid));
++    ASSERT_TRUE(instanceIdResult);
++    auto instanceId = instanceIdResult.value();
+     EXPECT_EQ(instanceId, 0);
+     auto rc = reqHandler.registerRequest(
+         eid, instanceId, 0, 0, std::move(request),
+@@ -102,7 +104,9 @@ TEST_F(HandlerTest, singleRequestInstanceIdTimerExpired)
+         pldmTransport, event, instanceIdDb, false, seconds(1), 2,
+         milliseconds(100));
+     pldm::Request request{};
+-    auto instanceId = instanceIdDb.next(eid);
++    auto instanceIdResult = pldm::utils::getInstanceId(instanceIdDb.next(eid));
++    ASSERT_TRUE(instanceIdResult);
++    auto instanceId = instanceIdResult.value();
+     EXPECT_EQ(instanceId, 0);
+     auto rc = reqHandler.registerRequest(
+         eid, instanceId, 0, 0, std::move(request),
+@@ -123,7 +127,9 @@ TEST_F(HandlerTest, multipleRequestResponseScenario)
+         pldmTransport, event, instanceIdDb, false, seconds(2), 2,
+         milliseconds(100));
+     pldm::Request request{};
+-    auto instanceId = instanceIdDb.next(eid);
++    auto instanceIdResult = pldm::utils::getInstanceId(instanceIdDb.next(eid));
++    ASSERT_TRUE(instanceIdResult);
++    auto instanceId = instanceIdResult.value();
+     EXPECT_EQ(instanceId, 0);
+     auto rc = reqHandler.registerRequest(
+         eid, instanceId, 0, 0, std::move(request),
+@@ -133,7 +139,10 @@ TEST_F(HandlerTest, multipleRequestResponseScenario)
+     EXPECT_EQ(rc, PLDM_SUCCESS);
+ 
+     pldm::Request requestNxt{};
+-    auto instanceIdNxt = instanceIdDb.next(eid);
++    auto instanceIdNxtResult =
++        pldm::utils::getInstanceId(instanceIdDb.next(eid));
++    ASSERT_TRUE(instanceIdNxtResult);
++    auto instanceIdNxt = instanceIdNxtResult.value();
+     EXPECT_EQ(instanceIdNxt, 1);
+     rc = reqHandler.registerRequest(
+         eid, instanceIdNxt, 0, 0, std::move(requestNxt),
+@@ -168,7 +177,9 @@ TEST_F(HandlerTest, singleRequestResponseScenarioUsingCoroutine)
+         pldmTransport, event, instanceIdDb, false, seconds(1), 2,
+         milliseconds(100));
+ 
+-    auto instanceId = instanceIdDb.next(eid);
++    auto instanceIdResult = pldm::utils::getInstanceId(instanceIdDb.next(eid));
++    ASSERT_TRUE(instanceIdResult);
++    auto instanceId = instanceIdResult.value();
+     EXPECT_EQ(instanceId, 0);
+ 
+     scope.spawn(
+@@ -214,7 +225,9 @@ TEST_F(HandlerTest, singleRequestCancellationScenarioUsingCoroutine)
+     Handler<NiceMock<MockRequest>> reqHandler(
+         pldmTransport, event, instanceIdDb, false, seconds(1), 2,
+         milliseconds(100));
+-    auto instanceId = instanceIdDb.next(eid);
++    auto instanceIdResult = pldm::utils::getInstanceId(instanceIdDb.next(eid));
++    ASSERT_TRUE(instanceIdResult);
++    auto instanceId = instanceIdResult.value();
+     EXPECT_EQ(instanceId, 0);
+ 
+     bool stopped = false;
+@@ -271,7 +284,9 @@ TEST_F(HandlerTest, asyncRequestResponseByCoroutine)
+     exec::async_scope scope;
+     Handler<MockRequest> reqHandler(pldmTransport, event, instanceIdDb, false,
+                                     seconds(1), 2, milliseconds(100));
+-    auto instanceId = instanceIdDb.next(eid);
++    auto instanceIdResult = pldm::utils::getInstanceId(instanceIdDb.next(eid));
++    ASSERT_TRUE(instanceIdResult);
++    auto instanceId = instanceIdResult.value();
+ 
+     uint8_t expectedTid = 1;
+ 
+diff --git a/softoff/softoff.cpp b/softoff/softoff.cpp
+index 9721c7e..d72af59 100644
+--- a/softoff/softoff.cpp
++++ b/softoff/softoff.cpp
+@@ -271,7 +271,6 @@ int SoftPowerOff::hostSoftOff(sdeventplus::Event& event)
+ {
+     constexpr uint8_t effecterCount = 1;
+     PldmTransport pldmTransport{};
+-    uint8_t instanceID;
+     uint8_t mctpEID;
+ 
+     mctpEID = pldm::utils::readHostEID();
+@@ -285,7 +284,13 @@ int SoftPowerOff::hostSoftOff(sdeventplus::Event& event)
+     auto request = new (requestMsg.data()) pldm_msg;
+     set_effecter_state_field stateField{
+         PLDM_REQUEST_SET, PLDM_SW_TERM_GRACEFUL_SHUTDOWN_REQUESTED};
+-    instanceID = instanceIdDb.next(pldmTID);
++    auto instanceIdResult =
++        pldm::utils::getInstanceId(instanceIdDb.next(pldmTID));
++    if (!instanceIdResult)
++    {
++        return PLDM_ERROR;
++    }
++    auto instanceID = instanceIdResult.value();
+     auto rc = encode_set_state_effecter_states_req(
+         instanceID, effecterID, effecterCount, &stateField, request);
+     if (rc != PLDM_SUCCESS)
+-- 
+2.43.0
+

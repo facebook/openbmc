@@ -26,6 +26,8 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0020-Sync-the-pldm-oem-event-type-list-from-BIC.patch \
     file://0021-Add-event-log-type-for-post-timeout.patch \
     file://0022-pldmd-oem-Add-MMC-VR-failure-event.patch \
+    file://0023-pldm-Use-std-expected-for-instance-ID-allocation.patch \
+    file://0024-common-Add-blocking-instance-ID-allocation.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

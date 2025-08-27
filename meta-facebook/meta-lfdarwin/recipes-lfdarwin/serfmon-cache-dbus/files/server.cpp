@@ -44,9 +44,7 @@ Boston, MA 02110-1301 USA
 #define SECONDS_BETWEEN_FILE_READ 5
 
 /* Regex capture group indexes */
-#define LENGTH_GROUP 0
-#define SERIAL_GROUP 1
-#define CRC_GROUP 2
+enum SerfmonGroup { LENGTH_GROUP = 1, SERIAL_GROUP = 2, CRC_GROUP = 3 };
 
 /* Expected line format : !serfmon:11:FGN22111126:75\r
  *                        !serfmon:<length>:<serial>:<crc> */

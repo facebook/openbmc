@@ -18,11 +18,11 @@ namespace redfish_client_daemon
 
 void installSignalHandlers();
 
-// The dbus server runs till process receives SIGINT or SIGTERM and does a clean
-// shutdown after that.
-void runDbusServerTillInterrupted(
-    const Config& config, const std::string& serviceName,
-    sdbusplus::async::context& ctx, std::string persistDir = "");
+// Run redfish client till process receives SIGINT or SIGTERM
+void runRedfishClient(const std::string& serviceName,
+                      sdbusplus::async::context& ctx,
+                      const std::string& configPath,
+                      std::string persistDir = "");
 
 // The following helpers are exposed for unit testing purposes.
 // This is the interface to use for sensor values before emitting the data.

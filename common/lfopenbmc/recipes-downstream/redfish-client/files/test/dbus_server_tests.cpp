@@ -4,6 +4,8 @@
 #include <xyz/openbmc_project/Sensor/Value/client.hpp>
 
 #include <chrono>
+#include <filesystem>
+#include <fstream>
 #include <thread>
 
 #include <gmock/gmock.h>
@@ -96,7 +98,7 @@ auto getSensorClient(sdbusplus::async::context& ctx, const char* metricPath)
 
 } // namespace
 
-TEST(DBusServerTests, SimpleDaemonRun)
+TEST(RedfishClientTests, SimpleDaemonRun)
 {
     installSignalHandlers();
     sdbusplus::async::context ctx;
@@ -104,9 +106,14 @@ TEST(DBusServerTests, SimpleDaemonRun)
     SimpleTestHttpServer server(generateResponse, responseHeaders);
     auto configJson = std::format(kTestConfigFormat, server.getPort());
 
-    auto daemonThread = std::make_unique<std::thread>([&ctx, &configJson]() {
-        auto config = Config::parse(configJson);
-        runDbusServerTillInterrupted(config, kServiceName, ctx);
+    auto configPath =
+        std::filesystem::temp_directory_path() / "test_config.json";
+    std::ofstream file(configPath);
+    file << configJson;
+    file.close();
+
+    auto daemonThread = std::make_unique<std::thread>([&ctx, configPath]() {
+        runRedfishClient(kServiceName, ctx, configPath);
     });
 
     ctx.spawn(

@@ -6,9 +6,7 @@
 #include <phosphor-logging/lg2.hpp>
 
 #include <exception>
-#include <fstream>
 #include <optional>
-#include <streambuf>
 #include <string>
 
 PHOSPHOR_LOG2_USING;
@@ -25,20 +23,14 @@ int main(int argc, const char** argv)
                    "directory where persist data can be stored");
     CLI11_PARSE(app, argc, argv);
     installSignalHandlers();
-    std::ifstream fileStream(configPath);
-    std::string jsonContents((std::istreambuf_iterator<char>(fileStream)),
-                             std::istreambuf_iterator<char>());
-
-    auto config = Config::parse(jsonContents);
-
     // Create a new scope to ensure the context is destroyed cleanly before
     // http client is destroyed.
     {
         const std::string kServiceName = "xyz.openbmc_project.RedfishClient";
         sdbusplus::async::context ctx;
-        runDbusServerTillInterrupted(config, kServiceName, ctx, persistDir);
+        runRedfishClient(kServiceName, ctx, configPath, persistDir);
     }
 
-    info("daemon-main clean exit\n");
+    info("redfish client clean exit\n");
     return 0;
 }

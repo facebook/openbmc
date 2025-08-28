@@ -7,6 +7,8 @@
 #include <phosphor-logging/lg2.hpp>
 
 #include <csignal>
+#include <fstream>
+#include <streambuf>
 
 PHOSPHOR_LOG2_USING;
 
@@ -287,21 +289,26 @@ struct SensorDbusObject
     const std::string& associationPath;
 };
 
-class DbusServer
+class RedfishClient
 {
   public:
-    DbusServer() = delete;
+    RedfishClient() = delete;
 
-    explicit DbusServer(sdbusplus::async::context& ctx, const Config& config,
-                        std::string persistDir) :
-        ctx(ctx), config(config), persistDir(persistDir)
+    explicit RedfishClient(sdbusplus::async::context& ctx,
+                           const std::string& configPath,
+                           const std::string& persistDir) :
+        ctx(ctx), configPath(configPath), persistDir(persistDir)
+    {}
+
+    auto run() -> sdbusplus::async::task<>
     {
+        info("Running RedfishClient");
+        co_await loadConfig();
         if (config.sensorConfig.has_value())
         {
             const auto& sensorConfig = config.sensorConfig.value();
-            info("Creating Dbus Server with sensor config size {SIZE}", "SIZE",
+            info("Creating Sensor objects: {SIZE}", "SIZE",
                  sensorConfig.mappers.size());
-            info("Creating Sensor dbus objects");
             for (const auto& mapper : sensorConfig.mappers)
             {
                 auto metricNamespace = std::string(
@@ -336,11 +343,11 @@ class DbusServer
             }
             ctx.spawn(runEventPollingLoop());
         }
+        co_return;
     }
 
-    ~DbusServer()
+    ~RedfishClient()
     {
-        ctx.request_stop();
         if (sensorThread.joinable())
         {
             sensorThread.join();
@@ -414,7 +421,7 @@ class DbusServer
             co_return;
         }
 
-        info("Running DBus Server event polling loop");
+        info("Running event polling loop");
 
         try
         {
@@ -441,7 +448,7 @@ class DbusServer
 
     void runSensorLoop()
     {
-        info("Running DBus Server sensor loop");
+        info("Running sensor loop");
         try
         {
             while (!ctx.stop_requested())
@@ -465,9 +472,19 @@ class DbusServer
         };
     }
 
+    auto loadConfig() -> sdbusplus::async::task<>
+    {
+        std::ifstream fileStream(configPath);
+        std::string jsonContents((std::istreambuf_iterator<char>(fileStream)),
+                                 std::istreambuf_iterator<char>());
+        config = Config::parse(jsonContents);
+        co_return;
+    }
+
     sdbusplus::async::context& ctx;
     std::unordered_map<std::string, std::shared_ptr<SensorDbusObject>> metrics;
     std::vector<std::shared_ptr<LogServiceHandler>> logServiceHandlers;
+    std::string configPath;
     Config config;
     std::thread sensorThread;
     std::string persistDir;
@@ -487,22 +504,14 @@ void installSignalHandlers()
     std::signal(SIGABRT, printStackTraceOnCrashHandler);
 }
 
-void runDbusServerTillInterrupted(
-    const Config& config, const std::string& serviceName,
-    sdbusplus::async::context& ctx, std::string persistDir)
+void runRedfishClient(const std::string& serviceName,
+                      sdbusplus::async::context& ctx,
+                      const std::string& configPath, std::string persistDir)
 {
+    ctx.request_name(serviceName.c_str());
     sdbusplus::server::manager_t manager{ctx, getSensorRootPath()};
-
-    info("Creating DbusServer");
-
-    ctx.spawn([](sdbusplus::async::context& ctx,
-                 const std::string& serviceName) -> sdbusplus::async::task<> {
-        ctx.request_name(serviceName.c_str());
-        co_return;
-    }(ctx, serviceName));
-
-    DbusServer server(ctx, config, persistDir);
-
+    RedfishClient client(ctx, configPath, persistDir);
+    ctx.spawn(client.run());
     ctx.run();
 }
 

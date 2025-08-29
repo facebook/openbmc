@@ -102,6 +102,786 @@
             "length": 16,
             "format": "STRING",
             "name": "MFR_Serial"
+        },
+        {
+            "begin": 90,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "shift": -273.15,
+            "name": "Temp1"
+        },
+        {
+            "begin": 91,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "shift": -273.15,
+            "name": "Temp2"
+        },
+        {
+            "begin": 92,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "shift": -273.15,
+            "name": "Temp3"
+        },
+        {
+            "begin": 93,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "shift": -273.15,
+            "name": "Temp4"
+        },
+        {
+            "begin": 94,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Relative_State_Of_Charge"
+        },
+        {
+            "begin": 95,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Absolute_State_Of_Charge"
+        },
+        {
+            "begin": 96,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Supercap_Pack_Voltage"
+        },
+        {
+            "begin": 97,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "sign": true,
+            "scale": 0.01,
+            "name": "Supercap_Pack_Current"
+        },
+        {
+            "begin": 98,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "sign": true,
+            "scale": 0.01,
+            "name": "Average_Current"
+        },
+        {
+            "begin": 99,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Remaining_Capacity"
+        },
+        {
+            "begin": 100,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Full_Charge_Capacity"
+        },
+        {
+            "begin": 101,
+            "length": 2,
+            "format": "INTEGER",
+            "sign": true,
+            "name": "Wall_Clock_Time"
+        },
+        {
+            "begin": 104,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    15,
+                    "Discharge_Not_Allowed"
+                ],
+                [
+                    14,
+                    "Charge_Not_Allowed"
+                ],
+                [
+                    13,
+                    "Temperature_Failure"
+                ],
+                [
+                    12,
+                    "Pack_Over_Current"
+                ],
+                [
+                    11,
+                    "Cell_Under_Voltage"
+                ],
+                [
+                    10,
+                    "Pack_Under_Voltage"
+                ],
+                [
+                    9,
+                    "Cell_Over_Voltage"
+                ],
+                [
+                    8,
+                    "Pack_Over_Voltage"
+                ],
+                [
+                    7,
+                    "EOL"
+                ],
+                [
+                    6,
+                    "Fan_Failure"
+                ],
+                [
+                    5,
+                    "Cell_Balancing_Failure"
+                ],
+                [
+                    4,
+                    "Thermal_Throtting"
+                ]
+            ],
+            "name": "CBU_Status"
+        },
+        {
+            "begin": 106,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Manufacturer_Access"
+        },
+        {
+            "begin": 107,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    14,
+                    "EOL_Threshold_Override"
+                ],
+                [
+                    13,
+                    "System_Control_Enable"
+                ],
+                [
+                    9,
+                    "HW_Reset_Pin_Enable_Disable"
+                ],
+                [
+                    4,
+                    "Standby"
+                ],
+                [
+                    3,
+                    "Fault_Mode"
+                ],
+                [
+                    1,
+                    "Discharging"
+                ],
+                [
+                    0,
+                    "Charging"
+                ]
+            ],
+            "name": "CBU_Mode"
+        },
+        {
+            "begin": 108,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    14,
+                    "Terminate_Charge_Alarm"
+                ],
+                [
+                    12,
+                    "Over_Temperature_Alarm"
+                ],
+                [
+                    11,
+                    "Terminate_Discharge_Alarm"
+                ],
+                [
+                    9,
+                    "Remaining_Capacity_Alarm"
+                ],
+                [
+                    7,
+                    "Charging"
+                ],
+                [
+                    6,
+                    "Discharging"
+                ]
+            ],
+            "name": "Supercap_Pack_Status"
+        },
+        {
+            "begin": 109,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Cell_Voltage1"
+        },
+        {
+            "begin": 110,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Cell_Voltage2"
+        },
+        {
+            "begin": 111,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Cell_Voltage3"
+        },
+        {
+            "begin": 112,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Cell_Voltage4"
+        },
+        {
+            "begin": 113,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Cell_Voltage5"
+        },
+        {
+            "begin": 114,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Cell_Voltage6"
+        },
+        {
+            "begin": 115,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Cell_Voltage7"
+        },
+        {
+            "begin": 116,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Cell_Voltage8"
+        },
+        {
+            "begin": 117,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Cell_Voltage9"
+        },
+        {
+            "begin": 118,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Cell_Voltage10"
+        },
+        {
+            "begin": 119,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Cell_Voltage11"
+        },
+        {
+            "begin": 120,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Cell_Voltage12"
+        },
+        {
+            "begin": 123,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Size_Module_Reg_Map"
+        },
+        {
+            "begin": 124,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Cell_Voltage13"
+        },
+        {
+            "begin": 125,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Cell_Voltage14"
+        },
+        {
+            "begin": 126,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Cell_Voltage15"
+        },
+        {
+            "begin": 127,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Cell_Voltage16"
+        },
+        {
+            "begin": 136,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Design_Capacity"
+        },
+        {
+            "begin": 137,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Design_Voltage"
+        },
+        {
+            "begin": 141,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_3_Speed"
+        },
+        {
+            "begin": 142,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "SOH"
+        },
+        {
+            "begin": 143,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_2_Speed"
+        },
+        {
+            "begin": 144,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Charging_Current"
+        },
+        {
+            "begin": 145,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Charging_Voltage"
+        },
+        {
+            "begin": 146,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.01,
+            "name": "Discharge_Current"
+        },
+        {
+            "begin": 147,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Shelf_Busbar_Voltage"
+        },
+        {
+            "begin": 148,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Inlet_Ambient_Temperature"
+        },
+        {
+            "begin": 149,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Outlet_Ambient_Temperature"
+        },
+        {
+            "begin": 150,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Supercap_Pack_Temperature"
+        },
+        {
+            "begin": 151,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "DCDC_Module_Temperature"
+        },
+        {
+            "begin": 152,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_1_Speed"
+        },
+        {
+            "begin": 153,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    6,
+                    "Power_Off_Mode"
+                ],
+                [
+                    5,
+                    "Fan_3_Fault"
+                ],
+                [
+                    4,
+                    "Fan_2_Fault"
+                ],
+                [
+                    3,
+                    "Fan_1_Fault"
+                ],
+                [
+                    2,
+                    "Buck_Mode_Fault"
+                ],
+                [
+                    1,
+                    "Boost_Mode_Fault"
+                ],
+                [
+                    0,
+                    "Temperature_Fault"
+                ]
+            ],
+            "name": "CBU_Status_Word"
+        },
+        {
+            "begin": 154,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    4,
+                    "Discharge_Input_UVP"
+                ],
+                [
+                    2,
+                    "Discharge_Output_OVP"
+                ],
+                [
+                    1,
+                    "Discharge_Output_OCP"
+                ]
+            ],
+            "name": "CBU_Status_Power_Charger"
+        },
+        {
+            "begin": 155,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    3,
+                    "Charge_Output_OVP"
+                ],
+                [
+                    2,
+                    "Charge_Input_UVP"
+                ],
+                [
+                    0,
+                    "Charge_Output_OCP"
+                ]
+            ],
+            "name": "CBU_Status_Power_Discharger"
+        },
+        {
+            "begin": 157,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    4,
+                    "Supercap_Pack_OTP"
+                ],
+                [
+                    3,
+                    "DCDC_Module2_OTP"
+                ],
+                [
+                    2,
+                    "DCDC_Module1_OTP"
+                ],
+                [
+                    1,
+                    "Output_Ambient_OTP"
+                ],
+                [
+                    0,
+                    "Input_Ambient_OTP"
+                ]
+            ],
+            "name": "CBU_Status_Temperature"
+        },
+        {
+            "begin": 159,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "CBU_Output_Voltage_Inside_Oring"
+        },
+        {
+            "begin": 161,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 2.0,
+            "name": "CBU_Total_Service_Time"
+        },
+        {
+            "begin": 163,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Number_of_Installed_CBUs"
+        },
+        {
+            "begin": 164,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    14,
+                    "PSKILL"
+                ],
+                [
+                    13,
+                    "CBU_ALERT_L"
+                ],
+                [
+                    12,
+                    "CBU_Reset"
+                ],
+                [
+                    10,
+                    "AC_Loss_1_L"
+                ],
+                [
+                    8,
+                    "Daisy_Chain_CBU"
+                ],
+                [
+                    6,
+                    "A2"
+                ],
+                [
+                    5,
+                    "A1"
+                ],
+                [
+                    4,
+                    "A0"
+                ],
+                [
+                    3,
+                    "Shelf_Addr_Int_2"
+                ],
+                [
+                    2,
+                    "Shelf_Addr_Int_1"
+                ],
+                [
+                    1,
+                    "Shelf_Addr_Int_0"
+                ],
+                [
+                    0,
+                    "Ishare_Cable_Detection"
+                ]
+            ],
+            "name": "CBU_Module_Hardware_Signals"
+        },
+        {
+            "begin": 166,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Power_Good_On"
+                ],
+                [
+                    1,
+                    "Power_Good_Blink"
+                ],
+                [
+                    2,
+                    "LOWV_On"
+                ],
+                [
+                    3,
+                    "LOWV_Blink"
+                ],
+                [
+                    4,
+                    "EOL_On"
+                ],
+                [
+                    5,
+                    "EOL_Blink"
+                ],
+                [
+                    6,
+                    "Fault_Loc_On"
+                ],
+                [
+                    7,
+                    "Fault_Loc_Blink"
+                ]
+            ],
+            "name": "LED_Status"
+        },
+        {
+            "begin": 224,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Bus_Voltage_Max_Since_Power_On"
+        },
+        {
+            "begin": 225,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Bus_Voltage_Min_Since_Power_On"
+        },
+        {
+            "begin": 226,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Bus_Voltage_Max_Over_Period"
+        },
+        {
+            "begin": 227,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.001,
+            "name": "Bus_Voltage_Min_Over_Period"
+        },
+        {
+            "begin": 228,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "AC_Loss_1_Count_Requested"
+        },
+        {
+            "begin": 234,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Shelf_Location"
+        },
+        {
+            "begin": 235,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "shift": -273.15,
+            "name": "Highest_Of_Temp1_To_Temp4"
+        },
+        {
+            "begin": 237,
+            "length": 2,
+            "format": "INTEGER",
+            "name": "Power_Off_Unix_Time"
+        },
+        {
+            "begin": 288,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Variable_Modbus_Baud_Rate"
+        },
+        {
+            "begin": 289,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Configurable_CBU_Maximum_Power"
+        },
+        {
+            "begin": 290,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Configurable_CBU_Maximum_PreCharge_Power"
+        },
+        {
+            "begin": 293,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Speed_Override"
+        },
+        {
+            "begin": 304,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "EOL_Threshold_Override"
+        },
+        {
+            "begin": 306,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "System_Control_Mode"
+        },
+        {
+            "begin": 313,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Clear_CBU_Faults_And_Latch"
+                ]
+            ],
+            "name": "CBU_Clear_Fault"
         }
     ]
 }

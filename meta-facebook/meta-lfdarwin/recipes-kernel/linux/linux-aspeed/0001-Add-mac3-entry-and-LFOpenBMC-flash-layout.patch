@@ -1,4 +1,4 @@
-From 441a6053767e74e57ea35ecb495e7a73f89d467a Mon Sep 17 00:00:00 2001
+From 834218faa76b211bf3bf6972e2d8306edba9a129 Mon Sep 17 00:00:00 2001
 From: Robert Ercean Dima <robert3@meta.com>
 Date: Fri, 22 Aug 2025 03:55:05 -0700
 Subject: [PATCH] Add mac3 entry for darwin dts and make it have LFOpenBMC
@@ -47,7 +47,7 @@ index 58c107a1b6cf..2cb52cbb869a 100644
  		compatible = "atmel,24c512";
 diff --git a/arch/arm/boot/dts/aspeed/ast2600-facebook-lf-netbmc-common.dtsi b/arch/arm/boot/dts/aspeed/ast2600-facebook-lf-netbmc-common.dtsi
 new file mode 100644
-index 000000000000..cd9a73ab4ad8
+index 000000000000..b8ddf6c6eccd
 --- /dev/null
 +++ b/arch/arm/boot/dts/aspeed/ast2600-facebook-lf-netbmc-common.dtsi
 @@ -0,0 +1,157 @@
@@ -101,14 +101,14 @@ index 000000000000..cd9a73ab4ad8
 +	flash@0 {
 +		status = "okay";
 +		m25p,fast-read;
-+		label = "bmc";
++		label = "flash0";
 +		spi-max-frequency = <50000000>;
 +#include "openbmc-flash-layout-128.dtsi"
 +	};
 +	flash@1 {
 +		status = "okay";
 +		m25p,fast-read;
-+		label = "alt-bmc";
++		label = "flash1";
 +		spi-max-frequency = <50000000>;
 +	};
 +};

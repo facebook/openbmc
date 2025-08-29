@@ -1,2 +1,2 @@
 Common targets are:
-    lfdarwin-image
+    fbdarwin-image

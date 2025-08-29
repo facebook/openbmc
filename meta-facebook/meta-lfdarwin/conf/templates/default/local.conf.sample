@@ -1,5 +1,5 @@
 #
 # Local configuration file for building the OpenBMC image.
 #
-MACHINE ??= "lfdarwin"
+MACHINE ??= "fbdarwin"
 DISTRO ?= "openbmc-fb-lf"

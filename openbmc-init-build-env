@@ -27,7 +27,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-bletchley:lf-master
   meta-bletchley15:lf-master
   meta-catalina:lf-master
-  meta-celestica-bmc:lf-master
+  meta-celesticabmc:lf-master
   meta-clearcreek:lf-master
   meta-clemente:lf-master
   meta-elbert:lf-master

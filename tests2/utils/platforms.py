@@ -3,7 +3,7 @@ PLATFORMS = [
     "bletchley",
     "bletchley15",
     "catalina",
-    "celestica_bmc",
+    "celesticabmc",
     "clearcreek",
     "clemente",
     "elbert",

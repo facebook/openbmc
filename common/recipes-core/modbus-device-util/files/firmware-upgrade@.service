@@ -1,0 +1,8 @@
+# Copyright 2014-present Facebook. All Rights Reserved.
+[Unit]
+Description=Run firmware update command %i <device type>:<uniqueDevAddresses separated by hyphens>:<uuid>
+Requires=rackmond.service
+
+[Service]
+Type=simple
+ExecStart=/bin/sh -c 'echo %i | cut -d: -f1,2 | tr : " " | xargs /usr/libexec/modbus-device-util/firmware-upgrade'

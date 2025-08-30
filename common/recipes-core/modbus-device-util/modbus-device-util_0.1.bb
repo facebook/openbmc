@@ -12,6 +12,8 @@ UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://default-config.json \
+    file://firmware-upgrade@.service \
+    file://firmware-upgrade \
     file://get-manufacturer \
     file://get-info \
     file://rpu-controller-command \
@@ -20,15 +22,17 @@ LOCAL_URI = " \
     file://start-rpu-service-and-get-logs \
 "
 
-RDEPENDS:${PN}:append = "bash rackmon"
+RDEPENDS:${PN}:append = "bash rackmon psu-update"
 
-SYSTEMD_SERVICE:${PN} += "rpu@.service"
+SYSTEMD_SERVICE:${PN} += "rpu@.service firmware-upgrade@.service"
 
 do_install() {
     install -d ${D}${systemd_system_unitdir}
     install -m 0644 ${UNPACKDIR}/rpu@.service ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/firmware-upgrade@.service ${D}${systemd_system_unitdir}
 
     install -d ${D}${libexecdir}/${PN}
+    install -m 0755 ${UNPACKDIR}/firmware-upgrade ${D}${libexecdir}/${PN}/firmware-upgrade
     install -m 0755 ${UNPACKDIR}/get-manufacturer ${D}${libexecdir}/${PN}/get-manufacturer
     install -m 0755 ${UNPACKDIR}/get-info ${D}${libexecdir}/${PN}/get-info
     install -m 0755 ${UNPACKDIR}/start-rpu-service-and-get-logs ${D}${libexecdir}/${PN}/start-rpu-service-and-get-logs

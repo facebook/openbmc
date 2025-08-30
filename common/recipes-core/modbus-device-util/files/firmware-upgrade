@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# ARGUMENTS:
+# 1: device type
+# 2: pipe separated list of unique device addresses
+# 3: Optional override config
+
+if [ $# -lt 2 ]; then
+    echo "Usage: $0 <device_type> <unique_device_addresses> [override_config]
+      device_type: device type we will be upgrading
+      unique_device_addresses: The addresses of the modbus device to upgrade (pipe separated)
+      override_config: Optional configuration file to override default settings"
+    exit 1
+fi
+
+OVERRIDE_CONFIG_FILE=${3:-/run/mnt-persist/var-data/lib/modbus-device-util/override-config.json}
+
+set -u
+
+DEVICE_TYPE="$1"
+
+# unique device addresses
+UDAS="$2"
+
+CONFIG_FILE="/var/lib/modbus-device-util/default-config.json"
+
+if [ -f "$OVERRIDE_CONFIG_FILE" ]; then
+    CONFIG_FILE="$OVERRIDE_CONFIG_FILE"
+fi
+
+echo "Using $CONFIG_FILE config file"
+script_dir=$( dirname "${BASH_SOURCE[0]}" )
+
+FLOCK="flock /tmp/modbus_dynamo_solitonbeam.lock"
+
+ERRORS=""
+SUCCESSES=""
+OLD_IFS="$IFS"
+IFS='-'
+FIRMWARE_FILE=""
+UPDATE_COMMANDS=()
+for uda in $UDAS; do
+    if [ -z "$FIRMWARE_FILE" ]; then
+        FIRMWARE_FILE="/tmp/firmware-${DEVICE_TYPE}-${uda}"
+        trap "rm ${FIRMWARE_FILE}" EXIT
+    fi
+
+    manufacturer=$("$script_dir/get-manufacturer" "$DEVICE_TYPE" "$uda" "$CONFIG_FILE")
+
+    case "$manufacturer" in
+        "delta")
+            case "$DEVICE_TYPE" in
+                "rpu")
+                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/rpu-update-delta-plc.py --addr $uda --oem-block $FIRMWARE_FILE")
+                    ;;
+                *)
+                    ERRORS+="${DEVICE_TYPE} at address ${uda} has ${manufacturer} without known firmware upgrade process\n"
+                    ;;
+            esac
+            ;;
+        *)
+            ERRORS+="Could not identify manufacturer for ${DEVICE_TYPE} at address ${uda}\n"
+            ;;
+    esac
+done
+
+IFS="$OLD_IFS"
+
+for cmd in "${UPDATE_COMMANDS[@]}"; do
+    if eval "$cmd"; then
+        SUCCESSES+="Successfully upgraded ${DEVICE_TYPE} with command: ${cmd}\n"
+    else
+        ERRORS+="Failed to upgrade ${DEVICE_TYPE} with command: ${cmd}\n"
+    fi
+done
+
+if [ -z "$ERRORS" ]; then
+    echo "No errors"
+    echo -e "${SUCCESSES}"
+    exit 0
+fi
+
+echo -e "${SUCCESSES}"
+echo "FAILED TO UPGRADE ALL DEVICES. LOOK ABOVE FOR LOGS"
+echo -e "${ERRORS}"
+exit 1

@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# ARGUMENTS:
+# 1: firmware-update service template parameter
+
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <firmware_update_template_parameter>
+      firmware_update_template_parameter: This should have the pattern <device type>:<hyphen separated unique device addresses>:<uuid>"
+    exit 1
+fi
+
+service="firmware-upgrade@${1}.service"
+
+if [ $(systemctl is-active "$service") == "failed" ]; then
+  echo -n FAIL
+elif journalctl -u "$service" -n 1 | grep -q -- '-- No entries --' ; then
+  echo -n UNKNOWN
+elif [ $(systemctl is-active "$service") == "active" ]; then
+  echo -n IN_PROGRESS
+else
+  echo -n SUCCESS
+fi

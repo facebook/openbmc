@@ -15,6 +15,7 @@ LOCAL_URI = " \
     file://firmware-upgrade@.service \
     file://firmware-upgrade \
     file://get-manufacturer \
+    file://get-firmware-upgrade-status \
     file://get-info \
     file://rpu-controller-command \
     file://rpu-ready \
@@ -34,6 +35,7 @@ do_install() {
     install -d ${D}${libexecdir}/${PN}
     install -m 0755 ${UNPACKDIR}/firmware-upgrade ${D}${libexecdir}/${PN}/firmware-upgrade
     install -m 0755 ${UNPACKDIR}/get-manufacturer ${D}${libexecdir}/${PN}/get-manufacturer
+    install -m 0755 ${UNPACKDIR}/get-firmware-upgrade-status ${D}${libexecdir}/${PN}/get-firmware-upgrade-status
     install -m 0755 ${UNPACKDIR}/get-info ${D}${libexecdir}/${PN}/get-info
     install -m 0755 ${UNPACKDIR}/start-rpu-service-and-get-logs ${D}${libexecdir}/${PN}/start-rpu-service-and-get-logs
     install -m 0755 ${UNPACKDIR}/rpu-controller-command ${D}${libexecdir}/${PN}/rpu-controller-command

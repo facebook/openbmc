@@ -11,12 +11,14 @@ fi
 
 set -u
 
+FLOCK="flock /tmp/modbus_dynamo_solitonbeam.lock"
+
 # unique device address
 UDA="$1"
 
 aalcStatusAlarmRegister=37377
 
-if ! output=$(rackmoncli read "$UDA" "$aalcStatusAlarmRegister") ; then
+if ! output=$($FLOCK rackmoncli read "$UDA" "$aalcStatusAlarmRegister") ; then
   echo "{\"message\": \"Rackmon output: $output\", \"status\": \"error\"}"
   exit 1
 fi

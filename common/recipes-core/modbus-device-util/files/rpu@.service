@@ -5,4 +5,4 @@ Requires=rackmond.service
 
 [Service]
 Type=oneshot
-ExecStart=/bin/sh -c 'echo %i | tr : " " | xargs /usr/libexec/modbus-device-util/rpu-controller-command'
+ExecStart=/bin/sh -c 'flock /tmp/modbus_dynamo_solitonbeam.lock echo %i | tr : " " | xargs /usr/libexec/modbus-device-util/rpu-controller-command'

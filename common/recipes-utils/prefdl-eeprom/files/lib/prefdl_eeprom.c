@@ -34,11 +34,8 @@
 #define FBDARWIN_EEPROM_BMC             "0-0050"
 #define FBDARWIN_EEPROM_CHASSIS_OBJ     "CHASSIS"
 
-#ifdef IS_LFDARWIN
-#define FBDARWIN_EEPROM_CHASSIS_PATH	"/mnt/data/.chassis_eeprom"
-#else
 #define FBDARWIN_EEPROM_CHASSIS_PATH    "/mnt/data1/.chassis_eeprom"
-#endif
+#define LFDARWIN_EEPROM_CHASSIS_PATH    "/mnt/data/.chassis_eeprom"
 
 #define FBDARWIN_EEPROM_SIZE            256
 #define FBDARWIN_EEPROM_FORMAT_V2       "0002"
@@ -210,9 +207,17 @@ int fbdarwin_eeprom_parse(const char *target, struct wedge_eeprom_st *eeprom)
   }
 
   fin = fopen(fn, "r");
+
+  if (fin == NULL && !strcmp(local_target, FBDARWIN_EEPROM_CHASSIS_OBJ)) {
+    /* Path didn't exist, most likely we're in LFDarwin, so also try the LFDarwin
+     * virtual chassis EEPROM path before throwing an error */
+    sprintf(fn, "%s", LFDARWIN_EEPROM_CHASSIS_PATH);
+    fin = fopen(fn, "r");
+  }
+
   if (fin == NULL) {
     rc = -EINVAL;
-    OBMC_ERROR(rc, "Failed to open %s", fn);
+    OBMC_ERROR(rc, "Failed to open either %s or %s", FBDARWIN_EEPROM_CHASSIS_PATH, LFDARWIN_EEPROM_CHASSIS_PATH);
     goto out;
   }
 

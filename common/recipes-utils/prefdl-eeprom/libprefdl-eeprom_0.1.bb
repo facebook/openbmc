@@ -28,8 +28,6 @@ LDFLAGS += "-llog -lobmc-i2c"
 DEPENDS += "liblog libobmc-i2c"
 RDEPENDS:${PN} = "liblog libobmc-i2c"
 
-CFLAGS:lfdarwin:append = " -DIS_LFDARWIN"
-
 S = "${WORKDIR}/lib"
 
 do_install() {

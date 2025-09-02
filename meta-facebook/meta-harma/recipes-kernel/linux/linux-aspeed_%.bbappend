@@ -14,4 +14,5 @@ SRC_URI:append = " \
     file://1008-ARM-dts-aspeed-Harma-Enable-i2c-slave-timeout.patch \
     file://1009-ARM-dts-aspeed-harma-add-power-monitor-support.patch \
     file://1010-ARM-dts-aspeed-harma-revise-gpio-name.patch \
+    file://1011-ARM-dts-aspeed-harma-add-mp5990.patch \
 "

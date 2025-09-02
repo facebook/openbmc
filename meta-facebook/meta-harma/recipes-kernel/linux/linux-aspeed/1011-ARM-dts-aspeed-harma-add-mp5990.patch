@@ -1,0 +1,36 @@
+From 1755760f9d5090d16ed50a71dbc0ac2947f24326 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peteryin.openbmc@gmail.com>
+Date: Fri, 22 Aug 2025 17:23:00 +0800
+Subject: [PATCH v3 3/3] ARM: dts: aspeed: harma: add mp5990
+
+Add support for the HSC MP5990 device on the Harma platform.
+
+This change updates the device tree to include the MP5990 HSC
+(Hot Swap Controller), allowing proper configuration and integration
+with the platform.
+
+Lore:https://lore.kernel.org/all/20250828074955.542711-4-peteryin.openbmc@gmail.com/
+
+Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index 81278a7702de..23eaf47a38e8 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -520,6 +520,10 @@ imux28: i2c@0 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			reg = <0>;
++			power-sensor@20 {
++				compatible = "mps,mp5990";
++				reg = <0x20>;
++			};
+ 			power-monitor@61 {
+ 				compatible = "isil,isl69260";
+ 				reg = <0x61>;
+-- 
+2.43.0
+

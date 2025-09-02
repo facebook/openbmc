@@ -17,19 +17,16 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import unittest
 
-from common.base_bmc_mac_test import BaseBMCMacTest
-from tests.celesticabmc.test_data.mac.mac import MAC_ADDRESS_PATTERN
-
-
-class BMCMacTest(BaseBMCMacTest, unittest.TestCase):
-    def set_bmc_mac(self):
-        self.bmc_mac_cmd = [". openbmc-utils.sh && bmc_mac_addr"]
-
-    def set_bmc_interface(self):
-        self.bmc_interface = "eth0"
-
-    def set_valid_mac_pattern(self):
-        # use Celestica Vendor OUI from celestica_bmc data
-        self.mac_pattern = MAC_ADDRESS_PATTERN
+# Celestica Vendor OUI
+# ref: https://maclookup.app/vendors/celestica-inc
+MAC_ADDRESS_PATTERN = [
+    r"(00\:e0\:ec\:..\:..\:..)",  # 1998-04-22
+    r"(0c\:48\:c6\:..\:..\:..)",  # 2019-12-11
+    r"(34\:ad\:61\:..\:..\:..)",  # 2022-01-27
+    r"(b4\:db\:91\:..\:..\:..)",  # 2022-07-07
+    r"(8c\:1f\:64\:72\:3.\:..)",  # 2022-12-07
+    r"(dc\:da\:4d\:..\:..\:..)",  # 2023-12-14
+    r"(d8\:49\:bf\:..\:..\:..)",  # 2024-11-13
+    r"(88\:5a\:23\:..\:..\:..)",  # 2025-04-09
+]

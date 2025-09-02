@@ -20,6 +20,7 @@
 import unittest
 
 from common.base_bmc_mac_test import BaseBMCMacTest
+from tests.celesticabmc.test_data.mac.mac import MAC_ADDRESS_PATTERN
 
 
 class BMCMacTest(BaseBMCMacTest, unittest.TestCase):
@@ -30,9 +31,5 @@ class BMCMacTest(BaseBMCMacTest, unittest.TestCase):
         self.bmc_interface = "eth0"
 
     def set_valid_mac_pattern(self):
-        # Celestica Vendor OUI
-        # ref: https://rst.im/oui/CELESTICA%20INC
-        self.mac_pattern = [
-            r"(b4\:db\:91\:..\:..\:..)",
-            r"(dc\:da\:4d\:..\:..\:..)",
-        ]
+        # use Celestica Vendor OUI from celestica_bmc data
+        self.mac_pattern = MAC_ADDRESS_PATTERN

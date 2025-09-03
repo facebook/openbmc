@@ -61,6 +61,8 @@ aspeed_soc_chip_ver() {
 # Function to set RGMII delay values for MAC#3 and MAC#4 interfaces
 # Usage: ast2600_setup_RGMII34_clock_delay MAC4_TX=<value> MAC4_RX=<value> MAC3_TX=<value> MAC3_RX=<value>
 # Each parameter is optional. Provide only the delay values you want to set
+# using without arguments will display the current delay values.
+#
 # Support only for AST G6
 ast2600_setup_RGMII34_clock_delay() {
         chip_ver=$(aspeed_soc_chip_ver)
@@ -89,6 +91,22 @@ ast2600_setup_RGMII34_clock_delay() {
         #   5:0    R/W     MAC#3 RGMII TXCLK (1G) clock output delay
 
         value=$(devmem "$SCU350")
+
+        #
+        # using without arguments will display the current delay values.
+        #
+        if [ $# -eq 0 ]; then
+                MAC3_TX=$((value & 0x3F))          # Extract MAC3 TX delay value
+                MAC3_RX=$(((value >> 12) & 0x3F))  # Extract MAC3 RX delay value
+                MAC4_TX=$(((value >> 6) & 0x3F))   # Extract MAC4 TX delay value
+                MAC4_RX=$(((value >> 18) & 0x3F))  # Extract MAC4 RX delay value
+                echo "Current RGMII34 Clock Delays:"
+                echo "MAC3_TX: $MAC3_TX"
+                echo "MAC3_RX: $MAC3_RX"
+                echo "MAC4_TX: $MAC4_TX"
+                echo "MAC4_RX: $MAC4_RX"
+                return 0
+        fi
 
         # Parse arguments
         for arg in "$@"; do
@@ -121,5 +139,5 @@ ast2600_setup_RGMII34_clock_delay() {
                 esac
         done
         # Write the modified value back to the register
-        devmem "$SCU350" 32 $value
+        devmem "$SCU350" 32 "$value"
 }

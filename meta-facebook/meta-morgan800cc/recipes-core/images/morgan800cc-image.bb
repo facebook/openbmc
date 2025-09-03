@@ -20,4 +20,5 @@ require recipes-core/images/fboss-lite-image.inc
 IMAGE_INSTALL += " \
     fbmc-snapshot \
     otp \
+    mdio-tools \
     "

@@ -27,6 +27,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/facebook/openbmc/tools/flashy/flash_procedure"
 	"github.com/facebook/openbmc/tools/flashy/install"
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/logger"
@@ -131,8 +132,8 @@ WARRANTIES OFF`)
 		return
 	}
 
-	// code below this point is for a symlink-ed step
-	// (e.g. flash_procedure/flash_wedge100)
+	// code below this point is for flash procedure steps
+	// (e.g. flash_wedge100, flash_fby3, etc.)
 
 	// ignore signals for steps
 	ignoreSignals()
@@ -142,12 +143,23 @@ WARRANTIES OFF`)
 	failIfFlagEmpty("imagepath", stepParams.ImageFilePath)
 	failIfFlagEmpty("device", stepParams.DeviceID)
 
-	if _, exists := step.StepMap[binName]; !exists {
-		log.Fatalf("Unknown binary '%v'", binName)
-	}
+	var stepErr step.StepExitError
 
 	log.Printf("Starting: %v", binName)
-	stepErr := step.StepMap[binName](stepParams)
+
+	if binName != "flashy" {
+		if _, exists := step.StepMap[binName]; !exists {
+			log.Fatalf("Unknown binary '%v'", binName)
+		}
+		stepErr = step.StepMap[binName](stepParams)
+	} else {
+		platformName, err := utils.GetOpenBMCPlatformFromIssueFile()
+		if err != nil {
+			log.Fatalf("Failed to get platform name: %v", err)
+		}
+		stepErr = flash_procedure.ExecuteFlashProcedure(platformName, stepParams)
+	}
+
 	if stepErr != nil {
 		step.HandleStepError(stepErr)
 	}

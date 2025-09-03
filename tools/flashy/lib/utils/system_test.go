@@ -518,6 +518,163 @@ func TestSystemdAvailable(t *testing.T) {
 	}
 }
 
+func TestBMCLiteAllCurrentPlatformsWork(t *testing.T) {
+	readFileOrig := fileutils.ReadFile
+	defer func() {
+		fileutils.ReadFile = readFileOrig
+	}()
+
+	cases := []struct {
+		name             string
+		etcIssueContents string
+		etcIssueReadErr  error
+		want             string
+		wantErr          error
+	}{
+		{
+			name: "example fbtp /etc/issue",
+			etcIssueContents: `OpenBMC Release fbtp-v2020.09.1
+   `,
+			etcIssueReadErr: nil,
+			want:            "fbtp",
+			wantErr:         nil,
+		},
+		{
+			name: "example wedge100 /etc/issue",
+			etcIssueContents: `OpenBMC Release wedge100-v2020.07.1
+   `,
+			etcIssueReadErr: nil,
+			want:            "wedge100",
+			wantErr:         nil,
+		},
+		{
+			name: "example with Facebook prefix",
+			etcIssueContents: `Facebook OpenBMC bletchley-v2023.02.1 \\n \\l
+ `,
+			etcIssueReadErr: nil,
+			want:            "bletchley",
+			wantErr:         nil,
+		},
+		{
+			name:             "factory image with hash",
+			etcIssueContents: `OpenBMC morgan800cc-65c81dc2d64`,
+			etcIssueReadErr:  nil,
+			want:             "morgan800cc",
+			wantErr:          nil,
+		},
+		{
+			name:             "factory image with longer hash",
+			etcIssueContents: `OpenBMC testplatform-a1b2c3d4e5f6g7h8`,
+			etcIssueReadErr:  nil,
+			want:             "testplatform",
+			wantErr:          nil,
+		},
+		{
+			name:             "very old format with space",
+			etcIssueContents: `OpenBMC oldplatform v2020.01.1`,
+			etcIssueReadErr:  nil,
+			want:             "oldplatform",
+			wantErr:          nil,
+		},
+		{
+			name: "ancient release special case",
+			etcIssueContents: "OpenBMC Release \n",
+			etcIssueReadErr: nil,
+			want:            "unknown",
+			wantErr:         nil,
+		},
+		{
+			name:             "case insensitive matching",
+			etcIssueContents: `openbmc release TESTPLATFORM-v2020.07.1`,
+			etcIssueReadErr:  nil,
+			want:             "testplatform",
+			wantErr:          nil,
+		},
+		{
+			name:             "platform with numbers",
+			etcIssueContents: `OpenBMC Release wedge400c-v2021.03.1`,
+			etcIssueReadErr:  nil,
+			want:             "wedge400c",
+			wantErr:          nil,
+		},
+		{
+			name:             "platform with underscores",
+			etcIssueContents: `OpenBMC Release test_platform-v2020.01.1`,
+			etcIssueReadErr:  nil,
+			want:             "test_platform",
+			wantErr:          nil,
+		},
+		{
+			name:             "version with patch number",
+			etcIssueContents: `OpenBMC Release fbtp-v2020.09.1.2`,
+			etcIssueReadErr:  nil,
+			want:             "fbtp",
+			wantErr:          nil,
+		},
+		{
+			name:             "version with additional suffix",
+			etcIssueContents: `OpenBMC Release fbtp-v2020.09.1-rc1`,
+			etcIssueReadErr:  nil,
+			want:             "fbtp",
+			wantErr:          nil,
+		},
+		{
+			name:             "multiline with extra content",
+			etcIssueContents: `Some other text
+OpenBMC Release fbtp-v2020.09.1
+More text here`,
+			etcIssueReadErr: nil,
+			want:            "fbtp",
+			wantErr:         nil,
+		},
+		{
+			name:             "read error",
+			etcIssueContents: ``,
+			etcIssueReadErr:  errors.Errorf("/etc/issue read error"),
+			want:             "",
+			wantErr:          errors.Errorf("Error reading /etc/issue: /etc/issue read error"),
+		},
+		{
+			name:             "no platform match",
+			etcIssueContents: `Some random content without platform info`,
+			etcIssueReadErr:  nil,
+			want:             "",
+			wantErr:          errors.Errorf("Unable to get platform from /etc/issue: No match for regex '(?i)(?:.*\\s)?(?P<platform>[^\\s-]+)\\s+v[0-9]+' for input 'Some random content without platform info'"),
+		},
+		{
+			name:             "empty platform after regex match",
+			etcIssueContents: `OpenBMC Release -v2020.09.1`,
+			etcIssueReadErr:  nil,
+			want:             "",
+			wantErr:          errors.Errorf("Unable to get platform from /etc/issue: No match for regex '(?i)(?:.*\\s)?(?P<platform>[^\\s-]+)\\s+v[0-9]+' for input 'OpenBMC Release -v2020.09.1'"),
+		},
+		{
+			name:             "malformed version format",
+			etcIssueContents: `OpenBMC Release platform-invalid`,
+			etcIssueReadErr:  nil,
+			want:             "",
+			wantErr:          errors.Errorf("Unable to get platform from /etc/issue: No match for regex '(?i)(?:.*\\s)?(?P<platform>[^\\s-]+)\\s+v[0-9]+' for input 'OpenBMC Release platform-invalid'"),
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fileutils.ReadFile = func(filename string) ([]byte, error) {
+				if filename != "/etc/issue" {
+					return []byte{}, errors.Errorf("filename: want '%v' got '%v'", "/etc/issue", filename)
+				}
+				return []byte(tc.etcIssueContents), tc.etcIssueReadErr
+			}
+			got, err := GetOpenBMCPlatformFromIssueFile()
+
+			if tc.want != got {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+			tests.CompareTestErrors(tc.wantErr, err, t)
+		})
+	}
+}
+
 func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 	// save and defer restore ReadFile
 	readFileOrig := fileutils.ReadFile
@@ -535,7 +692,7 @@ func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 		{
 			name: "example fbtp /etc/issue",
 			etcIssueContents: `OpenBMC Release fbtp-v2020.09.1
-  `,
+   `,
 			etcIssueReadErr: nil,
 			want:            "fbtp-v2020.09.1",
 			wantErr:         nil,
@@ -543,7 +700,7 @@ func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 		{
 			name: "example wedge100 /etc/issue",
 			etcIssueContents: `OpenBMC Release wedge100-v2020.07.1
-  `,
+   `,
 			etcIssueReadErr: nil,
 			want:            "wedge100-v2020.07.1",
 			wantErr:         nil,
@@ -551,7 +708,7 @@ func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 		{
 			name: "ancient /etc/issue",
 			etcIssueContents: `Open BMC Release v52.1
-  `,
+   `,
 			etcIssueReadErr: nil,
 			want:            "unknown-v52.1",
 			wantErr:         nil,
@@ -559,15 +716,14 @@ func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 		{
 			name: "older /etc/issue",
 			etcIssueContents: `OpenBMC Release v42
-  `,
+   `,
 			etcIssueReadErr: nil,
 			want:            "unknown-v42",
 			wantErr:         nil,
 		},
 		{
 			name: "ancient /etc/issue",
-			etcIssueContents: `OpenBMC Release 
-`,
+			etcIssueContents: "OpenBMC Release \n",
 			etcIssueReadErr: nil,
 			want:            "unknown-v1",
 			wantErr:         nil,
@@ -596,7 +752,7 @@ func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 		{
 			name: "early bletchley",
 			etcIssueContents: `Facebook OpenBMC bletchley-v2023.02.1 \\n \\l
-`,
+ `,
 			etcIssueReadErr: nil,
 			want:            "bletchley-v2023.02.1",
 			wantErr:         nil,
@@ -617,13 +773,13 @@ func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 				}
 				return []byte(tc.etcIssueContents), tc.etcIssueReadErr
 			}
-		})
-		got, err := GetOpenBMCVersionFromIssueFile()
+			got, err := GetOpenBMCVersionFromIssueFile()
 
-		if tc.want != got {
-			t.Errorf("want '%v' got '%v'", tc.want, got)
-		}
-		tests.CompareTestErrors(tc.wantErr, err, t)
+			if tc.want != got {
+				t.Errorf("want '%v' got '%v'", tc.want, got)
+			}
+			tests.CompareTestErrors(tc.wantErr, err, t)
+		})
 	}
 }
 
@@ -944,29 +1100,6 @@ func TestBMCLiteFunctionRejectsUnknownPlatforms(t *testing.T) {
 	}
 }
 
-func TestBMCLiteAllCurrentPlatformsWork(t *testing.T) {
-	originalPlatforms := BMCLitePlatforms
-	defer func() {
-		BMCLitePlatforms = originalPlatforms
-	}()
-
-	readFileOrig := fileutils.ReadFile
-	defer func() {
-		fileutils.ReadFile = readFileOrig
-	}()
-
-	BMCLitePlatforms = originalPlatforms
-
-	for _, platform := range BMCLitePlatforms {
-		fileutils.ReadFile = func(filename string) ([]byte, error) {
-			return []byte(fmt.Sprintf("OpenBMC Release %s-v2023.01.1", platform)), nil
-		}
-
-		if !IsBMCLite() {
-			t.Errorf("IsBMCLite() should return true for platform '%s'", platform)
-		}
-	}
-}
 
 func TestCheckOtherFlasherRunning(t *testing.T) {
 	// mock and defer restore

@@ -33,6 +33,7 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
+	"github.com/facebook/openbmc/tools/flashy/flash_procedure"
 	"github.com/pkg/errors"
 )
 
@@ -79,8 +80,8 @@ func getBuildNames() ([]string, error) {
 	return buildNames, nil
 }
 
-// TestPlatformSpecificFiles tests to ensure that platform-specific files
-// (e.g. flash_procedure/flash_wedge100.go) are well-formed.
+// TestPlatformSpecificFiles validates platform-specific file
+// organization and naming conventions in the flashy codebase.
 func TestPlatformSpecificFiles(t *testing.T) {
 	openBMCBuildNames, err := getBuildNames()
 	if err != nil {
@@ -98,9 +99,6 @@ func TestPlatformSpecificFiles(t *testing.T) {
 		"checks_and_remediations": []string{
 			"common/(?P<step_name>[0-9]{2}_[^ ]+).go$",
 			fmt.Sprintf("%v/(?P<step_name>[0-9]{2}_[^ ]+).go$", buildNameCapturingGroup),
-		},
-		"flash_procedure": []string{
-			fmt.Sprintf("flash_%v.go$", buildNameCapturingGroup),
 		},
 	}
 
@@ -144,4 +142,33 @@ func TestPlatformSpecificFiles(t *testing.T) {
 			t.Errorf("Test Platform-specific files failed: %v", err)
 		}
 	}
+}
+
+func TestFlashCommonPlatformNames(t *testing.T) {
+    openBMCBuildNames, err := getBuildNames()
+    if err != nil {
+        t.Fatalf("Failed to get build names from repo: %v", err)
+    }
+
+    var generatedPlatforms []string
+    for platformName := range flash_procedure.GeneratedFlashProcedureMappings {
+        generatedPlatforms = append(generatedPlatforms, platformName)
+    }
+
+    if len(generatedPlatforms) != len(openBMCBuildNames) {
+        t.Errorf("Size mismatch: GeneratedFlashProcedureMappings has %d platforms, but OpenBMC build names has %d platforms",
+            len(generatedPlatforms), len(openBMCBuildNames))
+    }
+
+    for _, platformName := range generatedPlatforms {
+        if utils.StringFind(platformName, openBMCBuildNames) == -1 {
+            t.Errorf("Platform name '%v' in GeneratedFlashProcedureMappings is not a valid OpenBMC build name", platformName)
+        }
+    }
+
+    for _, buildName := range openBMCBuildNames {
+        if utils.StringFind(buildName, generatedPlatforms) == -1 {
+            t.Errorf("OpenBMC build name '%v' is missing from GeneratedFlashProcedureMappings", buildName)
+        }
+    }
 }

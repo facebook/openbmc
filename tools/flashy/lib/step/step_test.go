@@ -39,12 +39,10 @@ func TestGetFlashyStepBaseNames(t *testing.T) {
 	StepMap = StepMapType{
 		"checks_and_remediations/common/00_truncate_logs": dummyStep,
 		"checks_and_remediations/wedge100/00_fix_romcs1":  dummyStep,
-		"flash_procedure/flash_wedge100":                  dummyStep,
 	}
 	want := []string{
 		"00_truncate_logs",
 		"00_fix_romcs1",
-		"flash_wedge100",
 	}
 	got := GetFlashyStepBaseNames()
 	// order is not guaranteed in a map, so we sort first

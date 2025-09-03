@@ -17,13 +17,27 @@
  * Boston, MA 02110-1301 USA
  */
 
-package flash_procedure
+package flash
 
 import (
-	"github.com/facebook/openbmc/tools/flashy/lib/flash"
+	"log"
+
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 )
 
-func init() {
-	step.RegisterStep(flash.FlashCp)
+// Variables for testing - can be overridden in tests
+var (
+	flashFwUtilFunc = FlashFwUtil
+	flashCpVbootFunc = FlashCpVboot
+)
+
+// Known vboot systems: fby3.
+func Yv3Flash(stepParams step.StepParams) step.StepExitError {
+	if utils.IsPfrSystem() {
+		log.Printf("This is a PFR system: Using fw-util to flash.")
+		return flashFwUtilFunc(stepParams)
+	}
+	log.Printf("Not a PFR system: Using flashcp vboot to flash.")
+	return flashCpVbootFunc(stepParams)
 }

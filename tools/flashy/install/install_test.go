@@ -44,7 +44,6 @@ var stepPaths []string
 // to make sure the step is registered correctly
 var directoriesToTest = []string{
 	"checks_and_remediations",
-	"flash_procedure",
 }
 
 func populateStepPaths() {

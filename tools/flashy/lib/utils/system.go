@@ -286,6 +286,63 @@ var SystemdAvailable = func() (bool, error) {
 	return false, nil
 }
 
+// GetOpenBMCPlatformFromIssueFile gets OpenBMC platform from /etc/issue.
+// examples: fbtp, wedge100
+// WARNING: There is no guarantee that /etc/issue is well-formed
+// in old images.
+var GetOpenBMCPlatformFromIssueFile = func() (string, error) {
+	const rPlatform = "platform"
+	const re = `(?i)(?:.*\s)?(?P<%v>[^\s-]+)-v[0-9]+(?:\.[0-9]+)*(?:[^\s]*)?`
+	etcIssuePlatformRegEx := fmt.Sprintf(re, rPlatform)
+
+	etcIssueBuf, err := fileutils.ReadFile(etcIssueFilePath)
+	if err != nil {
+		return "", errors.Errorf("Error reading %v: %v",
+			etcIssueFilePath, err)
+	}
+	etcIssueStr := string(etcIssueBuf)
+
+	// Handle special case for ancient releases
+	if strings.HasPrefix(strings.ToLower(etcIssueStr), "openbmc release \n") {
+		return "unknown", nil
+	}
+
+	etcIssueMap, err := GetRegexSubexpMap(
+		etcIssuePlatformRegEx, etcIssueStr)
+
+	if err != nil {
+		// Try fallback patterns for edge cases
+		fallbackPatterns := []string{
+			// Pattern for factory images without version
+			`(?i)(?:.*\s)?(?P<platform>[^\s-]+)-[a-f0-9]{8,}`,
+			// Pattern for very old formats
+			`(?i)(?:.*\s)?(?P<platform>[^\s-]+)\s+v[0-9]+`,
+		}
+
+		for _, pattern := range fallbackPatterns {
+			fallbackRegEx := fmt.Sprintf(pattern)
+			etcIssueMap, err = GetRegexSubexpMap(fallbackRegEx, etcIssueStr)
+			if err == nil {
+				break
+			}
+		}
+
+		if err != nil {
+			return "", errors.Errorf("Unable to get platform from %v: %v",
+				etcIssueFilePath, err)
+		}
+	}
+
+	platform := etcIssueMap[rPlatform]
+	if platform == "" {
+		return "", errors.Errorf("Unable to get platform from %v: missing platform info",
+			etcIssueFilePath)
+	}
+
+	// Convert to lowercase for consistency
+	return strings.ToLower(platform), nil
+}
+
 // GetOpenBMCVersionFromIssueFile gets OpenBMC version from /etc/issue.
 // examples: fbtp-v2020.09.1, wedge100-v2020.07.1
 // WARNING: There is no guarantee that /etc/issue is well-formed

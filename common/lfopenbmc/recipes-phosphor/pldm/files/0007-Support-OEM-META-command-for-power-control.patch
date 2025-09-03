@@ -1,7 +1,7 @@
-From bbc4526b8a202f999c35651a4d07c9ad75dbe30b Mon Sep 17 00:00:00 2001
+From 0060188b575f97119bdb0836b413853b1d9942b1 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 14 Jun 2024 16:24:31 +0800
-Subject: [PATCH 07/22] Support OEM-META command for power control
+Subject: [PATCH 07/17] Support OEM-META command for power control
 
 Summary:
   - Add handler for write-file command "SLED_CYCLE, 12V-CYCLE

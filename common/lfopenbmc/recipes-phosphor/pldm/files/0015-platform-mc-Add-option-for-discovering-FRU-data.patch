@@ -1,7 +1,7 @@
-From 8955cc841674e3c95792c4a7704b3c48d00b4098 Mon Sep 17 00:00:00 2001
+From 53508525d8211124fc19891dfc1172ab56945178 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
-Subject: [PATCH 17/22] platform-mc: Add option for discovering FRU data
+Subject: [PATCH 15/17] platform-mc: Add option for discovering FRU data
 
 Allow enabling or disabling the discovery of FRU data from terminus.
 Supports retrieving FRU data during the terminus discovery phase and
@@ -19,10 +19,10 @@ Upstream-Status: Pending
  5 files changed, 68 insertions(+), 2 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index 47e883a..2d255d7 100644
+index 2438dcd..7a6aff4 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -139,6 +139,10 @@ conf_data.set(
+@@ -142,6 +142,10 @@ conf_data.set(
  conf_data.set('SENSOR_POLLING_TIME', get_option('sensor-polling-time'))
  conf_data.set('UPDATE_TIMEOUT_SECONDS', get_option('update-timeout-seconds'))
  conf_data.set('MCTP_RECOVERY', get_option('mctp-recovery').allowed())

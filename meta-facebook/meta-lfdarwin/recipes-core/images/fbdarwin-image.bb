@@ -13,4 +13,5 @@ IMAGE_INSTALL:append = " serfmon-cache \
                          lldp-util \
                          dhcp-id \
                          fboss-board-revision \
+                         packagegroup-openbmc-emmc \
                         "

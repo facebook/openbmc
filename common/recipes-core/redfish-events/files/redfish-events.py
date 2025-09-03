@@ -192,29 +192,28 @@ class RedfishEventHandler(web.Application):
                 )
         return formattedString
 
-    def decodeACA(self) -> list[str]:
-        url = self.target_url + "/redfish/v1/Systems/UBB/LogServices/Dump/Entries"
+    def decodeACA(self, eid: int) -> list[str]:
+        url = f"{self.target_url}/redfish/v1/Systems/UBB/LogServices/EventLog/Entries/{eid}"
         req = request.Request(url)
         resp = request.urlopen(req)
-        obj = json.loads(resp.read().decode())
+        event = json.loads(resp.read().decode())
         decodedList = ["", ""]
 
-        if 'Members' in obj and obj['Members']:
-            lastMember = obj['Members'][-1]
-            if ('Oem' in lastMember and
-                'ErrDataArr' in lastMember['Oem'] and
-                lastMember['Oem']['ErrDataArr']):
-                if len(lastMember['Oem']['ErrDataArr']) == 1:
-                    decodedList[0] = self.FormatACA(lastMember['Oem']['ErrDataArr'][0])
-                    decodedList[1] = ""
-                else:
-                    decodedList[0] = self.FormatACA(lastMember['Oem']['ErrDataArr'][0])
-                    decodedList[1] = self.FormatACA(lastMember['Oem']['ErrDataArr'][-1])
+        try:
+            err_data_arr = event['Oem']['ErrDataArr']
+            if len(event['Oem']['ErrDataArr']) == 1:
+                decodedList[0] = self.FormatACA(event['Oem']['ErrDataArr'][0])
+                decodedList[1] = ""
+            else:
+                decodedList[0] = self.FormatACA(event['Oem']['ErrDataArr'][0])
+                decodedList[1] = self.FormatACA(event['Oem']['ErrDataArr'][-1])
+        except Exception as e:
+            logging.warning(f"Error processing ErrDataArr: {e}")
+            return decodedList
+
         return decodedList
 
     def handleEvent(self, event: Dict[str, Any]):
-        # eid = event.get('EventId', 'Unknown')
-        # egid = event.get('EventGroupId', 'Unknown')
         tsp_spec = event.get("EventTimestamp", "Unknown")
         tsp = event.get("EventTimeStamp", tsp_spec)
         sev = event.get("Severity", "Unknown")
@@ -243,19 +242,17 @@ class RedfishEventHandler(web.Application):
                     os.makedirs(cper_path)
                 data_path = cper_path + event_id + "_" + tsp + ".cper"
 
-                formerACA, latterACA = self.decodeACA()
-                if formerACA.find("Poison_Consumed: Yes") != -1:
-                    log = prefix_log.replace("UnCorrected Non-Fatal", "Fatal Error")
-                formerLog = log + formerACA + " AdditionalData: " + data_path
-                logging.info(formerLog)
-                self.sel(formerLog)
+                eid = int(event.get("EventId"))
+                if eid is not None:
+                    formerACA, latterACA = self.decodeACA(eid)
+                    formerLog = log + formerACA + " AdditionalData: " + data_path
+                    logging.info(formerLog)
+                    self.sel(formerLog)
 
-                if len(latterACA) > 1 and formerACA != latterACA:
-                    if latterACA.find("Poison_Consumed: Yes") != -1:
-                        log = prefix_log.replace("UnCorrected Non-Fatal", "Fatal Error")
-                    latterLog = log + latterACA + " AdditionalData: " + data_path
-                    logging.info(latterLog)
-                    self.sel(latterLog)
+                    if len(latterACA) > 1:
+                        latterLog = log + latterACA + " AdditionalData: " + data_path
+                        logging.info(latterLog)
+                        self.sel(latterLog)
             else:
                 data_path = "/mnt/data/" + mid + str(time.time()) + ".dat"
                 log += " AdditionalData: " + data_path

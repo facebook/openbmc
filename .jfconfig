@@ -234,6 +234,39 @@
             ]
         },
         {
+            "alias": "openbmc-cit-celesticabmc-determinator",
+            "args": {
+                "name": "openbmc-cit-celesticabmc-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-celesticabmc-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform celesticabmc"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-celesticabmc/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-cit-clearcreek-determinator",
             "args": {
                 "name": "openbmc-cit-clearcreek-determinator",

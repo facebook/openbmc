@@ -15,6 +15,7 @@ var GeneratedFlashProcedureMappings = map[string]func(step.StepParams) step.Step
 	"bletchley15":      flash.FlashCp,
 	"bletchley":        flash.FlashCp,
 	"catalina":         flash.FlashCp,
+	"celesticabmc":     flash.FlashCp,
 	"clearcreek":       flash.FlashCpVboot,
 	"clemente":         flash.FlashCp,
 	"elbert":           flash.FlashCp,

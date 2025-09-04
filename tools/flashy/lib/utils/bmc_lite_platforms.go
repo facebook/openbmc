@@ -5,6 +5,7 @@ package utils
 
 // BMCLitePlatforms contains the list of BMC lite platform names
 var BMCLitePlatforms = []string{
+	"celesticabmc",
 	"fbdarwin",
 	"janga",
 	"meru",

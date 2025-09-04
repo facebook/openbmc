@@ -30,7 +30,7 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 ,,,,5,Cell_Balancing_Failure,,,,,,,,
 ,,,,6,Fan_Failure,,,,,,,,
 ,,,,7,EOL,,,,,,,,
-,,,,8,Pack_Over_Voltage ,,,,,,,,
+,,,,8,Pack_Over_Voltage,,,,,,,,
 ,,,,9,Cell_Over_Voltage,,,,,,,,
 ,,,,10,Pack_Under_Voltage,,,,,,,,
 ,,,,11,Cell_Under_Voltage,,,,,,,,
@@ -104,7 +104,7 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 139,1,,,,,INTEGER,,,,,,,At_Rate_Time_To_Full
 140,1,,,,,INTEGER,,,,,,,At_Rate_Time_To_Empty
 141,1,,,,,INTEGER,,,,,,,At_Rate_OK
-142,1,,,,,INTEGER,,,,,,,SOH 
+142,1,,,,,INTEGER,,,,,,,SOH
 143,1,,,,,INTEGER,,,,,,,Max_Error
 144,1,,,,,INTEGER,,,,,,,Charging_Current
 145,1,,,,,INTEGER,,,,,,,Charging_Voltage

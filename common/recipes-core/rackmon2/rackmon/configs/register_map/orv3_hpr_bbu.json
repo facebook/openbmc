@@ -238,7 +238,7 @@
                 ],
                 [
                     8,
-                    "Pack_Over_Voltage "
+                    "Pack_Over_Voltage"
                 ],
                 [
                     9,
@@ -600,7 +600,7 @@
             "begin": 142,
             "length": 1,
             "format": "INTEGER",
-            "name": "SOH "
+            "name": "SOH"
         },
         {
             "begin": 143,

@@ -123,7 +123,7 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 ,,,,8,Sync_Stop,,,,,,,,
 ,,,,9,Sync_Start,,,,,,,,
 ,,,,10,Alert,,,,,,,,
-,,,,11, Reset_Latch_Fault,,,,,,,,
+,,,,11,Reset_Latch_Fault,,,,,,,,
 ,,,,12,PSKILL,,,,,,,,
 121,1,,,,,INTEGER,,,,,,,AC_Loss_Count_Requested
 122,1,,,,,INTEGER,,,,,,,Pulse_Mgmt_Count_Requested

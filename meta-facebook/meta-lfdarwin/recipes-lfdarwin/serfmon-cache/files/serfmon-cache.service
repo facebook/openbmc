@@ -20,7 +20,7 @@ Description=Serial and Mac cache service
 Requires=mnt-data.mount
 
 [Service]
-ExecStart=/usr/bin/find_serfmon.sh
+ExecStart=/usr/local/bin/find_serfmon.sh
 
 [Install]
 WantedBy=multi-user.target

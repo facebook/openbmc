@@ -33,13 +33,13 @@ LOCAL_URI = " \
 inherit systemd
 
 do_install() {
-    install -d ${D}/usr/bin
+    install -d ${D}/usr/local/bin
     install -d ${D}${systemd_system_unitdir}
 
-    install -m 0755 ${UNPACKDIR}/find_serfmon.sh ${D}/usr/bin
+    install -m 0755 ${UNPACKDIR}/find_serfmon.sh ${D}/usr/local/bin
     install -m 0644 ${UNPACKDIR}/serfmon-cache.service ${D}${systemd_system_unitdir}
 }
 
 RDEPENDS:${PN} += "bash"
-FILES:${PN} += "${prefix}/bin ${sysconfdir} "
+FILES:${PN} += "${prefix}/local/bin ${sysconfdir} "
 SYSTEMD_SERVICE:${PN} = "serfmon-cache.service"

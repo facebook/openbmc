@@ -1,8 +1,8 @@
-From be7d871bd41d97bbbf552facc3fa722013d33924 Mon Sep 17 00:00:00 2001
+From 686eb073c36c53f25f927f8bd3b68f391a2a947f Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Mon, 4 Nov 2024 19:13:30 +0800
-Subject: [PATCH 10/14] ARM: dts: aspeed: catalina: update pdb board cpld ioexp
- linename
+Subject: [PATCH 1010/1016] ARM: dts: aspeed: catalina: update pdb board cpld
+ ioexp linename
 
 Due to there are huge changes of PDB CPLD IOEXP pin definitions since
 DVT version, Update the CPLD IOEXP nodes and GPIO linename of each PDB
@@ -14,7 +14,7 @@ Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
  1 file changed, 47 insertions(+), 65 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
-index 306a228839918..ee770e29ceebe 100644
+index 5440db79bfb4..9a6b36bcecce 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 @@ -925,8 +925,8 @@ &i2c14 {
@@ -195,5 +195,5 @@ index 306a228839918..ee770e29ceebe 100644
 -		"FAB_BMC_REV_ID0","";
 -};
 -- 
-2.31.1
+2.47.3
 

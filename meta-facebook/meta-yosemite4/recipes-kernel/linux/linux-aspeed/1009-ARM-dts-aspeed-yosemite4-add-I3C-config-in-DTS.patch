@@ -1,7 +1,7 @@
-From eaab476a7d1b22c61f3148faa6f78f78e58f17d5 Mon Sep 17 00:00:00 2001
+From 831c45571f5101ebfe3de04eb018fdad52002afe Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 6 May 2024 19:35:43 +0800
-Subject: [PATCH 1009/1013] ARM: dts: aspeed: yosemite4: add I3C config in DTS
+Subject: [PATCH 1009/1016] ARM: dts: aspeed: yosemite4: add I3C config in DTS
 
 Set I3C config in yosemite4 DTS.
 
@@ -17,10 +17,10 @@ Signed-off-by: MarshallZhan-wiwynn <marshall_zhan@wiwynn.com>
  1 file changed, 86 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 259a341fb40f..e5d74c6eb041 100644
+index 923535f1b50c..8389a85ebf89 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -1580,6 +1580,92 @@ eeprom@50 {
+@@ -1620,6 +1620,92 @@ eeprom@50 {
  	};
  };
  
@@ -114,5 +114,5 @@ index 259a341fb40f..e5d74c6eb041 100644
  	status = "okay";
  	pinctrl-0 = <&pinctrl_adc0_default &pinctrl_adc1_default
 -- 
-2.25.1
+2.47.3
 

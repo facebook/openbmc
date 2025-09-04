@@ -1,0 +1,137 @@
+From 657211204ed1d6d321e2ba3486ada13736951801 Mon Sep 17 00:00:00 2001
+From: Leo Wang <leo.jt.wang@gmail.com>
+Date: Thu, 17 Jul 2025 18:44:46 +0800
+Subject: [PATCH] clemente: dts: Add NCSI properties, fan TACH
+
+This commit updates Clemente DTS with the following enhancements:
+- Set compatible = "aspeed,ast2600-uart" for uart3.
+- Add ncsi-ctrl,start-redo-probe and ncsi-package properties for mac2 and mac3.
+- Define TACH sensor channels (channel@5 and channel@6) for all max31790 fan controller nodes.
+- Enable I2C bus nodes and populate them with additional devices
+---
+ .../aspeed/aspeed-bmc-facebook-clemente.dts   | 56 +++++++++++++++++++
+ 1 file changed, 56 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
+index ecef44d89977..561287850f4f 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
+@@ -654,24 +654,64 @@ power-monitor@14 {
+ 	fanctl0: fan-controller@20{
+ 		compatible = "maxim,max31790";
+ 		reg = <0x20>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		channel@5 {
++			reg = <5>;
++			sensor-type = "TACH";
++		};
++		channel@6 {
++			reg = <6>;
++			sensor-type = "TACH";
++		};
+ 	};
+ 
+ 	// Module 0
+ 	fanctl1: fan-controller@23{
+ 		compatible = "maxim,max31790";
+ 		reg = <0x23>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		channel@5 {
++			reg = <5>;
++			sensor-type = "TACH";
++		};
++		channel@6 {
++			reg = <6>;
++			sensor-type = "TACH";
++		};
+ 	};
+ 
+ 	// Module 1
+ 	fanctl2: fan-controller@2c{
+ 		compatible = "maxim,max31790";
+ 		reg = <0x2c>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		channel@5 {
++			reg = <5>;
++			sensor-type = "TACH";
++		};
++		channel@6 {
++			reg = <6>;
++			sensor-type = "TACH";
++		};
+ 	};
+ 
+ 	// Module 1
+ 	fanctl3: fan-controller@2f{
+ 		compatible = "maxim,max31790";
+ 		reg = <0x2f>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		channel@5 {
++			reg = <5>;
++			sensor-type = "TACH";
++		};
++		channel@6 {
++			reg = <6>;
++			sensor-type = "TACH";
++		};
+ 	};
+ 
+ 	// Module 0 Leak Sensor
+@@ -945,6 +985,15 @@ rtc@6f {
+ 
+ &i2c7 {
+ 	status = "okay";
++	bus-frequency = <100000>;
++	multi-master;
++	aspeed,hw-timeout-ms = <1000>;
++	//USB Debug Connector
++	ipmb@10 {
++		compatible = "ipmb-dev";
++		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++		i2c-protocol;
++	};
+ };
+ 
+ &i2c8 {
+@@ -1025,6 +1074,8 @@ &i2c11 {
+ 	ssif-bmc@10 {
+ 		compatible = "ssif-bmc";
+ 		reg = <0x10>;
++		alert-gpios = <&gpio0 ASPEED_GPIO(C, 7) GPIO_ACTIVE_LOW>;
++		timeout-ms = <5000>;
+ 	};
+ };
+ 
+@@ -1242,6 +1293,8 @@ &mac2 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_ncsi3_default>;
+ 	use-ncsi;
++	ncsi-ctrl,start-redo-probe;
++	ncsi-package = <1>;
+ };
+ 
+ &mac3 {
+@@ -1249,6 +1302,8 @@ &mac3 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_ncsi4_default>;
+ 	use-ncsi;
++	ncsi-ctrl,start-redo-probe;
++	ncsi-package = <2>;
+ };
+ 
+ &udma {
+@@ -1260,6 +1315,7 @@ &uart1 {
+ };
+ 
+ &uart3 {
++	compatible = "aspeed,ast2600-uart";
+ 	status = "okay";
+ };
+ 
+-- 
+2.47.3
+

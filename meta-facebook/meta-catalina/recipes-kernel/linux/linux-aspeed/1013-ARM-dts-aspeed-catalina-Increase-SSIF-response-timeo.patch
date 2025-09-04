@@ -1,7 +1,7 @@
-From 750d81a487ed65449577385ea7b391f3dc304fe6 Mon Sep 17 00:00:00 2001
+From 75b25186fc2ce01e35e62bf8c3e61e5a9d3ecd1d Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Tue, 4 Feb 2025 11:00:25 +0800
-Subject: [PATCH 13/14] ARM: dts: aspeed: catalina: Increase SSIF response
+Subject: [PATCH 1013/1016] ARM: dts: aspeed: catalina: Increase SSIF response
  timeout
 
 The SSIF driver has a default response timeout of 500ms. If an
@@ -18,7 +18,7 @@ Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
-index abf350fdac996..4caa6b9f2861c 100644
+index 9dba948282bd..524e845ab474 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 @@ -923,6 +923,7 @@ ssif-bmc@10 {
@@ -30,5 +30,5 @@ index abf350fdac996..4caa6b9f2861c 100644
  };
  
 -- 
-2.31.1
+2.47.3
 

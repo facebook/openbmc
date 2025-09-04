@@ -1,7 +1,7 @@
-From 71322e842e938595a1a385da1dbb9ee6c573f76b Mon Sep 17 00:00:00 2001
+From eb5e3f133dbae749da15e390ac85c8f6522818cf Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 22 May 2024 17:15:50 +0800
-Subject: [PATCH 1010/1013] ARM: dts: aspeed: yosemite4: add fan led config
+Subject: [PATCH 1010/1016] ARM: dts: aspeed: yosemite4: add fan led config
 
 Set fan led config in yosemite4 DTS.
 
@@ -13,7 +13,7 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  1 file changed, 163 insertions(+), 3 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index e5d74c6eb041..1ed7c3f6e785 100644
+index 8389a85ebf89..bbaba5fe6701 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -73,6 +73,160 @@ tpm@0 {
@@ -177,7 +177,7 @@ index e5d74c6eb041..1ed7c3f6e785 100644
  };
  
  &uart1 {
-@@ -1047,11 +1201,17 @@ gpio@20 {
+@@ -1087,11 +1241,17 @@ gpio@20 {
  				#gpio-cells = <2>;
  			};
  
@@ -196,7 +196,7 @@ index e5d74c6eb041..1ed7c3f6e785 100644
  			};
  
  			gpio@22 {
-@@ -1325,7 +1485,7 @@ eeprom@52 {
+@@ -1365,7 +1525,7 @@ eeprom@52 {
  				reg = <0x52>;
  			};
  
@@ -205,7 +205,7 @@ index e5d74c6eb041..1ed7c3f6e785 100644
  				compatible = "nxp,pca9552";
  				reg = <0x61>;
  				#address-cells = <1>;
-@@ -1463,7 +1623,7 @@ eeprom@52 {
+@@ -1503,7 +1663,7 @@ eeprom@52 {
  				reg = <0x52>;
  			};
  
@@ -215,5 +215,5 @@ index e5d74c6eb041..1ed7c3f6e785 100644
  				reg = <0x61>;
  				#address-cells = <1>;
 -- 
-2.25.1
+2.47.3
 

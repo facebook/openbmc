@@ -1,4 +1,4 @@
-From 341e80aa8239e08557391729eb3cc72e8fea664d Mon Sep 17 00:00:00 2001
+From f0c031f6187bca1e8d721fa0f6a2079e2dc81897 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 15:59:10 +0000
 Subject: [PATCH 204/205] Map DBus event to RF MessageID and parse args
@@ -108,7 +108,7 @@ Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
  create mode 100644 test/redfish-core/lib/log_services_test.cpp
 
 diff --git a/config/meson.build b/config/meson.build
-index d4c44990..d389c6d3 100644
+index eb29cf63..9df21963 100644
 --- a/config/meson.build
 +++ b/config/meson.build
 @@ -25,6 +25,7 @@ feature_options = [
@@ -154,11 +154,11 @@ index 105e898b..a2fc31cb 100644
      'redfish-core/src/utils/json_utils.cpp',
      'redfish-core/src/utils/time_utils.cpp',
 diff --git a/meson.options b/meson.options
-index aee691d8..f9afee56 100644
+index 6a287511..067ee87f 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -321,6 +321,21 @@ option(
-                     will be disabled by default June 2024. ''',
+@@ -322,6 +322,21 @@ option(
+                     This option will be removed June 2026.''',
  )
  
 +# BMCWEB_REDFISH_ALLOW_DBUS_MESSAGES_MAPPING
@@ -385,12 +385,12 @@ index a31d7389..4977d82a 100644
  }
  
 diff --git a/redfish-core/src/dbus_log_watcher.cpp b/redfish-core/src/dbus_log_watcher.cpp
-index c6ca3811..77390bdc 100644
+index 4418bb49..37bd4c80 100644
 --- a/redfish-core/src/dbus_log_watcher.cpp
 +++ b/redfish-core/src/dbus_log_watcher.cpp
 @@ -7,13 +7,14 @@
  #include "logging.hpp"
- #include "metric_report.hpp"
+ #include "telemetry_readings.hpp"
  #include "utils/dbus_event_log_entry.hpp"
 -#include "utils/time_utils.hpp"
 +#include "utils/dbus_registries_map_utils.hpp"
@@ -566,10 +566,10 @@ index 41f2c6a4..a58bfa0c 100644
  
      if (eventRecords.empty())
 diff --git a/redfish-core/src/subscription.cpp b/redfish-core/src/subscription.cpp
-index 7f61b9b4..ef8782ef 100644
+index 8464282f..e3b5d64f 100644
 --- a/redfish-core/src/subscription.cpp
 +++ b/redfish-core/src/subscription.cpp
-@@ -37,7 +37,6 @@
+@@ -35,7 +35,6 @@
  #include <format>
  #include <functional>
  #include <memory>
@@ -577,7 +577,7 @@ index 7f61b9b4..ef8782ef 100644
  #include <string>
  #include <string_view>
  #include <utility>
-@@ -213,13 +212,8 @@ void Subscription::filterAndSendEventLogs(
+@@ -211,13 +210,8 @@ void Subscription::filterAndSendEventLogs(
  
          nlohmann::json::object_t bmcLogEntry;
          uint64_t memberId = 0;

@@ -1,7 +1,7 @@
-From 0d0f0ffd5cb2f960df05685b9727a79901e98fa8 Mon Sep 17 00:00:00 2001
+From fb54d815154293d92b105ac3849a09b9c2b4b18a Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Wed, 19 Jun 2024 16:14:08 +0800
-Subject: [PATCH 1003/1007] ARM: dts: aspeed: Harma: set ncsi package equal to
+Subject: [PATCH 1003/1008] ARM: dts: aspeed: Harma: set ncsi package equal to
  1
 
 Set ncsi package=1.
@@ -12,7 +12,7 @@ Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-index ea40c529e6f9..23f004e89c79 100644
+index 2c2d5a9f4b31..17cc5870a8ab 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 @@ -134,6 +134,7 @@ &mac3 {
@@ -24,5 +24,5 @@ index ea40c529e6f9..23f004e89c79 100644
  
  &fmc {
 -- 
-2.49.0
+2.47.3
 

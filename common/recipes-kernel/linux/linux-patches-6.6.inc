@@ -134,34 +134,32 @@ SRC_URI:append = " \
     file://0302-hwmon-max31790-add-fanN_enable-for-all-fans.patch \
     file://0303-hwmon-max31790-revise-the-scale-to-write-pwm.patch \
     file://0304-hwmon-pmbus-Add-xdpe132g5c-driver.patch \
-    file://0305-Add-adm1281-driver.patch \
-    file://0306-hwmon-Driver-for-Nuvoton-NCT7363Y.patch \
-    file://0307-hwmon-new-driver-for-ISL28022-power-monitor.patch \
-    file://0308-Add-SQ52205-driver.patch \
-    file://0309-hwmon-Add-net_brcm-driver.patch \
-    file://0310-Kernel6v5-Support-apml-driver.patch \
-    file://0311-hwmon-ina2xx-Remove-use-of-i2c_match_id.patch \
-    file://0312-hwmon-ina2xx-Add-device-tree-support-to-pass-alert-p.patch \
-    file://0313-hwmon-ina2xx-Reorder-include-files-to-alphabetic-ord.patch \
-    file://0314-hwmon-ina2xx-Replace-platform-data-with-device-prope.patch \
-    file://0315-hwmon-ina2xx-Use-bit-operations.patch \
-    file://0316-hwmon-ina2xx-Mark-regmap_config-as-const.patch \
-    file://0317-hwmon-ina2xx-Use-local-regmap-pointer-if-used-more-t.patch \
-    file://0318-hwmon-ina2xx-Re-initialize-chip-using-regmap-functio.patch \
-    file://0319-hwmon-ina2xx-Fix-various-overflow-issues.patch \
-    file://0320-hwmon-ina2xx-Consolidate-chip-initialization-code.patch \
-    file://0321-hwmon-ina2xx-Set-alert-latch.patch \
-    file://0322-hwmon-ina2xx-Move-ina2xx_get_value.patch \
-    file://0323-hwmon-ina2xx-Convert-to-use-with_info-hwmon-API.patch \
-    file://0324-hwmon-ina2xx-Pass-register-to-alert-limit-write-func.patch \
-    file://0325-hwmon-ina2xx-Add-support-for-current-limits.patch \
-    file://0326-hwmon-ina2xx-Use-shunt-voltage-to-calculate-current.patch \
-    file://0327-hwmon-ina2xx-Add-support-for-has_alerts-configuratio.patch \
-    file://0328-hwmon-ina2xx-Add-support-for-INA260.patch \
-    file://0329-hwmon-ina226-Add-support-for-SY24655.patch \
-    file://0330-hwmon-ina2xx-switch-regmap-cache-to-flat.patch \
-    file://0331-Add-the-vr-driver-for-mp2869a-mp29612a.patch \
-    file://0332-hwmon-pmbus-adm1275-add-adm1273-support.patch \
+    file://0305-hwmon-Driver-for-Nuvoton-NCT7363Y.patch \
+    file://0306-hwmon-new-driver-for-ISL28022-power-monitor.patch \
+    file://0307-Add-SQ52205-driver.patch \
+    file://0308-hwmon-Add-net_brcm-driver.patch \
+    file://0309-Kernel6v5-Support-apml-driver.patch \
+    file://0310-hwmon-ina2xx-Remove-use-of-i2c_match_id.patch \
+    file://0311-hwmon-ina2xx-Add-device-tree-support-to-pass-alert-p.patch \
+    file://0312-hwmon-ina2xx-Reorder-include-files-to-alphabetic-ord.patch \
+    file://0313-hwmon-ina2xx-Replace-platform-data-with-device-prope.patch \
+    file://0314-hwmon-ina2xx-Use-bit-operations.patch \
+    file://0315-hwmon-ina2xx-Mark-regmap_config-as-const.patch \
+    file://0316-hwmon-ina2xx-Use-local-regmap-pointer-if-used-more-t.patch \
+    file://0317-hwmon-ina2xx-Re-initialize-chip-using-regmap-functio.patch \
+    file://0318-hwmon-ina2xx-Fix-various-overflow-issues.patch \
+    file://0319-hwmon-ina2xx-Consolidate-chip-initialization-code.patch \
+    file://0320-hwmon-ina2xx-Set-alert-latch.patch \
+    file://0321-hwmon-ina2xx-Move-ina2xx_get_value.patch \
+    file://0322-hwmon-ina2xx-Convert-to-use-with_info-hwmon-API.patch \
+    file://0323-hwmon-ina2xx-Pass-register-to-alert-limit-write-func.patch \
+    file://0324-hwmon-ina2xx-Add-support-for-current-limits.patch \
+    file://0325-hwmon-ina2xx-Use-shunt-voltage-to-calculate-current.patch \
+    file://0326-hwmon-ina2xx-Add-support-for-has_alerts-configuratio.patch \
+    file://0327-hwmon-ina2xx-Add-support-for-INA260.patch \
+    file://0328-hwmon-ina226-Add-support-for-SY24655.patch \
+    file://0329-hwmon-ina2xx-switch-regmap-cache-to-flat.patch \
+    file://0330-Add-the-vr-driver-for-mp2869a-mp29612a.patch \
 "
 
 #

@@ -1,7 +1,7 @@
-From fefe0af6227dadb2b476f4b9574572a5c3de92a3 Mon Sep 17 00:00:00 2001
+From 836d113df146a66e70f82a8d9d211088d5cbaaeb Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Mon, 3 Feb 2025 20:46:01 +0800
-Subject: [PATCH 03/14] ipmi: ssif_bmc: Add support for adjustable response
+Subject: [PATCH 1003/1016] ipmi: ssif_bmc: Add support for adjustable response
  timeout
 
 Implement support for the `timeout-ms` device tree property, allowing
@@ -12,14 +12,14 @@ If `timeout-ms` is not specified, the default response timeout remains
 platforms that require longer timeouts due to BMC or application load.
 
 Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
----
+
 LORE: https://lore.kernel.org/all/20250203-ssif-response-timeout-ms-v1-2-6fe279740181@gmail.com/
 ---
  drivers/char/ipmi/ssif_bmc.c | 8 +++++++-
  1 file changed, 7 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/char/ipmi/ssif_bmc.c b/drivers/char/ipmi/ssif_bmc.c
-index b863f854ab175..886b697c3a4ee 100644
+index b863f854ab17..886b697c3a4e 100644
 --- a/drivers/char/ipmi/ssif_bmc.c
 +++ b/drivers/char/ipmi/ssif_bmc.c
 @@ -88,6 +88,7 @@ struct ssif_bmc_ctx {
@@ -52,5 +52,5 @@ index b863f854ab175..886b697c3a4ee 100644
  	ssif_bmc->alert = devm_gpiod_get(&client->dev, "alert", GPIOD_ASIS);
  	if (!IS_ERR(ssif_bmc->alert))
 -- 
-2.31.1
+2.47.3
 

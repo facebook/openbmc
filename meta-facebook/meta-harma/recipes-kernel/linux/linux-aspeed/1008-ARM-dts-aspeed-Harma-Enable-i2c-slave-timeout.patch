@@ -1,4 +1,4 @@
-From c44e4e9b7c9e67c64d6cc61b0684704c2f928a26 Mon Sep 17 00:00:00 2001
+From f515ea4348944cce0a02031e45c53272d9fb6eab Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Mon, 21 Jul 2025 13:14:41 +0800
 Subject: [PATCH 1008/1008] ARM: dts: aspeed: Harma: Enable i2c slave timeout
@@ -6,16 +6,15 @@ Subject: [PATCH 1008/1008] ARM: dts: aspeed: Harma: Enable i2c slave timeout
 Enable the I2C slave timeout property in the Harma device tree to
 prevent the slave interface from hanging due to incomplete or abnormal
 I2C transactions, such as those occurring during MMC reboot.
-
 ---
  arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts | 1 +
  1 file changed, 1 insertion(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-index 1b48ae56d37f..73808ebca3ee 100644
+index 0d43e212c816..a978b6c4741e 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-@@ -461,6 +461,7 @@ &i2c9 {
+@@ -460,6 +460,7 @@ &i2c9 {
  
  	mctp-controller;
  	multi-master;
@@ -24,5 +23,5 @@ index 1b48ae56d37f..73808ebca3ee 100644
  	mctp@10 {
  		compatible = "mctp-i2c-controller";
 -- 
-2.25.1
+2.47.3
 

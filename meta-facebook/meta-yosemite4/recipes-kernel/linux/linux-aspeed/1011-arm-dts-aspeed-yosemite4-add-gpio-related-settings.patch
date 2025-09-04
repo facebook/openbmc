@@ -1,7 +1,8 @@
-From 016d6aafc985545650cb4eaf55e6d684f1279535 Mon Sep 17 00:00:00 2001
+From 2d78255912a5e1f76c2ddb5abe27beb4d4793a2a Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Fri, 1 Nov 2024 14:26:15 +0800
-Subject: [PATCH 1011/1013] arm: dts: aspeed: yosemite4: add gpio related settings
+Subject: [PATCH 1011/1016] arm: dts: aspeed: yosemite4: add gpio related
+ settings
 
 1. Support SGPIO.
 2. Disable GPIO internal Pull-Down for hardware validation.
@@ -15,10 +16,10 @@ contribute the GPIO settings.
  1 file changed, 355 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 1ed7c3f6e785..7339d1343c62 100644
+index bbaba5fe6701..85228be8a1e0 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -1855,3 +1855,358 @@ &uhci {
+@@ -1895,3 +1895,358 @@ &uhci {
  &jtag1 {
  	status = "okay";
  };
@@ -378,5 +379,5 @@ index 1ed7c3f6e785..7339d1343c62 100644
 +	};
 +};
 -- 
-2.25.1
+2.47.3
 

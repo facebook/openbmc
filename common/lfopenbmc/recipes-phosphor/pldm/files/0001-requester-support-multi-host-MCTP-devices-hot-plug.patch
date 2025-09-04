@@ -1,7 +1,7 @@
-From 00ea04081dcc29db360de46ff1d0529a85e2bf9c Mon Sep 17 00:00:00 2001
+From 7da96c0a4fcde6be1ab6262fde5fd81ec13aef8a Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
-Subject: [PATCH 01/22] requester: support multi-host MCTP devices hot plug
+Subject: [PATCH 01/17] requester: support multi-host MCTP devices hot plug
 
 Currently, pldmd listens for new MCTP endpoint exposed by mctpd, but
 they only shows their EID, Network Id, and SupportedMessageTypes, which
@@ -54,10 +54,10 @@ index 1cec506..aa85b21 100644
 +                (const override));
  };
 diff --git a/common/utils.cpp b/common/utils.cpp
-index dff6c4e..50a4df3 100644
+index 7406e1f..c5c6de0 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
-@@ -445,6 +445,23 @@ PropertyMap DBusHandler::getDbusPropertiesVariant(
+@@ -450,6 +450,23 @@ PropertyMap DBusHandler::getDbusPropertiesVariant(
      return bus.call(method, dbusTimeout).unpack<PropertyMap>();
  }
  
@@ -82,10 +82,10 @@ index dff6c4e..50a4df3 100644
                                   const nlohmann::json& value)
  {
 diff --git a/common/utils.hpp b/common/utils.hpp
-index b2b5c3c..92d17fb 100644
+index c031af1..c006e13 100644
 --- a/common/utils.hpp
 +++ b/common/utils.hpp
-@@ -243,6 +243,10 @@ class DBusHandlerInterface
+@@ -257,6 +257,10 @@ class DBusHandlerInterface
          const sdbusplus::message::object_path& objectPath,
          const sdbusplus::message::object_path& subtree, int depth,
          const std::vector<std::string>& ifaceList) const = 0;
@@ -96,7 +96,7 @@ index b2b5c3c..92d17fb 100644
  };
  
  /**
-@@ -349,6 +353,9 @@ class DBusHandler : public DBusHandlerInterface
+@@ -363,6 +367,9 @@ class DBusHandler : public DBusHandlerInterface
          const char* serviceName, const char* objPath,
          const char* dbusInterface) const override;
  
@@ -107,10 +107,10 @@ index b2b5c3c..92d17fb 100644
       *         path
       *
 diff --git a/meson.build b/meson.build
-index 6fa74c7..f43c3d6 100644
+index ddf9efc..e0b5f00 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -260,6 +260,7 @@ executable(
+@@ -263,6 +263,7 @@ executable(
      'platform-mc/dbus_to_terminus_effecters.cpp',
      oem_files,
      'requester/mctp_endpoint_discovery.cpp',
@@ -119,7 +119,7 @@ index 6fa74c7..f43c3d6 100644
      dependencies: deps,
      install: true,
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 9387ffe..ea8036e 100644
+index 00da6b2..f7c79a6 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -7,6 +7,7 @@
@@ -130,7 +130,7 @@ index 9387ffe..ea8036e 100644
  #include "requester/handler.hpp"
  #include "requester/mctp_endpoint_discovery.hpp"
  #include "requester/request.hpp"
-@@ -244,6 +245,10 @@ int main(int argc, char** argv)
+@@ -251,6 +252,10 @@ int main(int argc, char** argv)
      }
      std::shared_ptr<HostPDRHandler> hostPDRHandler;
      std::unique_ptr<DbusToPLDMEvent> dbusToPLDMEventHandler;
@@ -641,5 +641,5 @@ index f269561..d30d884 100644
  foreach t : tests
      test(
 -- 
-2.43.0
+2.47.3
 

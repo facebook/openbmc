@@ -1,7 +1,7 @@
-From bb7bbbdc4b99a81aaf68f39d858257cbfb990783 Mon Sep 17 00:00:00 2001
+From 6b1633f849decfa23acbd85e18d455b7763bc56f Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Mon, 31 Mar 2025 14:36:07 +0800
-Subject: [PATCH 1007/1007] ARM: dts: aspeed: Harma: enable I2Cv2 driver and
+Subject: [PATCH 1007/1008] ARM: dts: aspeed: Harma: enable I2Cv2 driver and
  fine-tune freq
 
 I2C in old mode is less efficient. When the BMC is busy with numerous
@@ -15,10 +15,10 @@ In order to have better margin, modify the duty cycle of the i2c bus.
  1 file changed, 1 insertion(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-index e38adf5b1224..1b48ae56d37f 100644
+index f822275802a2..0d43e212c816 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-@@ -620,6 +620,7 @@ rtc@51 {
+@@ -623,6 +623,7 @@ rtc@51 {
  &i2c14 {
  	status = "okay";
  	multi-master;
@@ -27,5 +27,5 @@ index e38adf5b1224..1b48ae56d37f 100644
  	ipmb@10 {
  		compatible = "ipmb-dev";
 -- 
-2.49.0
+2.47.3
 

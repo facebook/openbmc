@@ -1,0 +1,107 @@
+From 287049bcf5150e7d5ebb1aa60960a0ce1917ed0e Mon Sep 17 00:00:00 2001
+From: Guenter Roeck <linux@roeck-us.net>
+Date: Tue, 27 Aug 2024 12:57:10 -0700
+Subject: [PATCH 326/330] hwmon: (ina2xx) Add support for has_alerts
+ configuration flag
+
+Add configuration flag indicating if the chip supports alerts and limits
+to prepare for adding INA260 support.
+
+Reviewed-by: Tzung-Bi Shih <tzungbi@kernel.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ drivers/hwmon/ina2xx.c | 18 +++++++++++-------
+ 1 file changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
+index f0fa6d073627..03a011c9b73d 100644
+--- a/drivers/hwmon/ina2xx.c
++++ b/drivers/hwmon/ina2xx.c
+@@ -129,6 +129,7 @@ enum ina2xx_ids { ina219, ina226 };
+ 
+ struct ina2xx_config {
+ 	u16 config_default;
++	bool has_alerts;	/* chip supports alerts and limits */
+ 	int calibration_value;
+ 	int shunt_div;
+ 	int bus_voltage_shift;
+@@ -155,6 +156,7 @@ static const struct ina2xx_config ina2xx_config[] = {
+ 		.bus_voltage_shift = 3,
+ 		.bus_voltage_lsb = 4000,
+ 		.power_lsb_factor = 20,
++		.has_alerts = false,
+ 	},
+ 	[ina226] = {
+ 		.config_default = INA226_CONFIG_DEFAULT,
+@@ -163,6 +165,7 @@ static const struct ina2xx_config ina2xx_config[] = {
+ 		.bus_voltage_shift = 0,
+ 		.bus_voltage_lsb = 1250,
+ 		.power_lsb_factor = 25,
++		.has_alerts = true,
+ 	},
+ };
+ 
+@@ -624,6 +627,7 @@ static umode_t ina2xx_is_visible(const void *_data, enum hwmon_sensor_types type
+ 				 u32 attr, int channel)
+ {
+ 	const struct ina2xx_data *data = _data;
++	bool has_alerts = data->config->has_alerts;
+ 	enum ina2xx_ids chip = data->chip;
+ 
+ 	switch (type) {
+@@ -633,12 +637,12 @@ static umode_t ina2xx_is_visible(const void *_data, enum hwmon_sensor_types type
+ 			return 0444;
+ 		case hwmon_in_lcrit:
+ 		case hwmon_in_crit:
+-			if (chip == ina226)
++			if (has_alerts)
+ 				return 0644;
+ 			break;
+ 		case hwmon_in_lcrit_alarm:
+ 		case hwmon_in_crit_alarm:
+-			if (chip == ina226)
++			if (has_alerts)
+ 				return 0444;
+ 			break;
+ 		default:
+@@ -651,12 +655,12 @@ static umode_t ina2xx_is_visible(const void *_data, enum hwmon_sensor_types type
+ 			return 0444;
+ 		case hwmon_curr_lcrit:
+ 		case hwmon_curr_crit:
+-			if (chip == ina226)
++			if (has_alerts)
+ 				return 0644;
+ 			break;
+ 		case hwmon_curr_lcrit_alarm:
+ 		case hwmon_curr_crit_alarm:
+-			if (chip == ina226)
++			if (has_alerts)
+ 				return 0444;
+ 			break;
+ 		default:
+@@ -668,11 +672,11 @@ static umode_t ina2xx_is_visible(const void *_data, enum hwmon_sensor_types type
+ 		case hwmon_power_input:
+ 			return 0444;
+ 		case hwmon_power_crit:
+-			if (chip == ina226)
++			if (has_alerts)
+ 				return 0644;
+ 			break;
+ 		case hwmon_power_crit_alarm:
+-			if (chip == ina226)
++			if (has_alerts)
+ 				return 0444;
+ 			break;
+ 		default:
+@@ -802,7 +806,7 @@ static int ina2xx_init(struct device *dev, struct ina2xx_data *data)
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	if (data->chip == ina226) {
++	if (data->config->has_alerts) {
+ 		bool active_high = device_property_read_bool(dev, "ti,alert-polarity-active-high");
+ 
+ 		regmap_update_bits(regmap, INA226_MASK_ENABLE,
+-- 
+2.47.3
+

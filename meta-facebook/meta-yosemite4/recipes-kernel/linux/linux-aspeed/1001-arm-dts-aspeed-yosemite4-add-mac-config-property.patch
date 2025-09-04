@@ -1,7 +1,8 @@
-From 974f3021165ff7da6e66a36eb458b302d385f3f2 Mon Sep 17 00:00:00 2001
+From 33e3afa98dc9fb1a3ed9df124c458312c66c7163 Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Fri, 1 Nov 2024 13:50:21 +0800
-Subject: [PATCH 1001/1013] arm: dts: aspeed: yosemite4: add mac config property
+Subject: [PATCH 1001/1016] arm: dts: aspeed: yosemite4: add mac config
+ property
 
 Add mac config property to fix the issue that Mellanox CX7 cannot get IP after NIC re-plug.
 - Haven't contributed because it is depend on following patch:
@@ -11,7 +12,7 @@ https://github.com/facebookexternal/openbmc.wiwynn/blob/542f21879cb950b22d979226
  1 file changed, 4 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index c84df416e47b..83e70b4cc06a 100644
+index fc9081899231..1fbe050b428b 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -135,6 +135,8 @@ &mac2 {
@@ -33,5 +34,5 @@ index c84df416e47b..83e70b4cc06a 100644
  
  &fmc {
 -- 
-2.25.1
+2.47.3
 

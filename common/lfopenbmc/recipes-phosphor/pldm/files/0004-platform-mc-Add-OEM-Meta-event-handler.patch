@@ -1,7 +1,7 @@
-From 5af87847b17a1e266ea72ac03595cf08eeb7e2b3 Mon Sep 17 00:00:00 2001
+From c2a23072a28a8bd34e0240b4210711ecf8e8486d Mon Sep 17 00:00:00 2001
 From: lora <lora.lin.wiwynn@gmail.com>
 Date: Fri, 27 Sep 2024 14:51:48 +0800
-Subject: [PATCH 04/22] platform-mc: Add OEM Meta event handler
+Subject: [PATCH 04/17] platform-mc: Add OEM Meta event handler
 
 Add OEM Meta handler with event type 0xFB. It will print the logs
 with prefix "BIOS_IPMI_SEL", so the user can utilize it to filter
@@ -68,10 +68,10 @@ Upstream-Status: Pending
  create mode 100644 oem/meta/platform-mc/event_oem_meta.hpp
 
 diff --git a/meson.build b/meson.build
-index 564bcc7..68881f6 100644
+index 167007f..3ffaee7 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -265,6 +265,7 @@ executable(
+@@ -268,6 +268,7 @@ executable(
      oem_files,
      'requester/mctp_endpoint_discovery.cpp',
      'requester/configuration_discovery_handler.cpp',
@@ -1294,7 +1294,7 @@ index 2d722e9..5720af4 100644
      include_directories: ['../../requester', '../../pldmd'],
  )
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 6a6c88e..3128e68 100644
+index bfea9d1..f4ea0c0 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -222,8 +222,12 @@ int main(int argc, char** argv)
@@ -1309,9 +1309,9 @@ index 6a6c88e..3128e68 100644
 +        std::make_unique<platform_mc::Manager>(event, reqHandler, instanceIdDb,
 +                                               configurationDiscovery.get());
  
- #ifdef LIBPLDMRESPONDER
-     using namespace pldm::state_sensor;
-@@ -249,9 +253,6 @@ int main(int argc, char** argv)
+     std::unique_ptr<pldm::host_effecters::HostEffecterParser>
+         hostEffecterParser =
+@@ -256,9 +260,6 @@ int main(int argc, char** argv)
      std::shared_ptr<HostPDRHandler> hostPDRHandler;
      std::unique_ptr<DbusToPLDMEvent> dbusToPLDMEventHandler;
  
@@ -1336,5 +1336,5 @@ index 6a6c88e..3128e68 100644
  
      auto platformHandler = std::make_unique<platform::Handler>(
 -- 
-2.43.0
+2.47.3
 

@@ -1,7 +1,7 @@
-From 5a1e9a015b1e459482508eed0032d813c1a3fa5a Mon Sep 17 00:00:00 2001
+From c6ff7237bd7ccf2d414a8171a43432fa2e834aa9 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
-Subject: [PATCH 03/22] Support OEM-META write file request for post code
+Subject: [PATCH 03/17] Support OEM-META write file request for post code
  history
 
 Support write file req when multiple hosts send postcode to BMC
@@ -55,10 +55,10 @@ index acbb400..c0e3ea7 100644
      'pldmresponder',
      sources,
 diff --git a/meson.build b/meson.build
-index f43c3d6..564bcc7 100644
+index e0b5f00..167007f 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -141,6 +141,10 @@ conf_data.set('UPDATE_TIMEOUT_SECONDS', get_option('update-timeout-seconds'))
+@@ -144,6 +144,10 @@ conf_data.set('UPDATE_TIMEOUT_SECONDS', get_option('update-timeout-seconds'))
  
  configure_file(output: 'config.h', configuration: conf_data)
  
@@ -449,7 +449,7 @@ index 0000000..81ff4eb
 +
 +} // namespace pldm::responder::oem_meta
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index ea8036e..6a6c88e 100644
+index f7c79a6..bfea9d1 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -67,6 +67,9 @@ PHOSPHOR_LOG2_USING;
@@ -476,5 +476,5 @@ index ea8036e..6a6c88e 100644
          FRU_JSONS_DIR, FRU_MASTER_JSON, pdrRepo.get(), entityTree.get(),
          bmcEntityTree.get());
 -- 
-2.43.0
+2.47.3
 

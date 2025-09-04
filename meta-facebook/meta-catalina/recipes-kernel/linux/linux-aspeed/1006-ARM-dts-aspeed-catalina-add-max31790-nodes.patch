@@ -1,7 +1,7 @@
-From 6e7e5aaeea2fe1843f0bf18cc9b0e77f99a7a098 Mon Sep 17 00:00:00 2001
+From a5c3886999b30eef0e91bce8f6afc8f140868627 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Fri, 2 Aug 2024 17:32:49 +0800
-Subject: [PATCH 06/14] ARM: dts: aspeed: catalina: add max31790 nodes
+Subject: [PATCH 1006/1016] ARM: dts: aspeed: catalina: add max31790 nodes
 
 max31790 nodes were removed due to compatible string not exist on upstream.
 Add back max31790 nodes back in this patch.
@@ -12,11 +12,11 @@ Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
  1 file changed, 20 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
-index 399688f27fa1b..c870f19993118 100644
+index d2a099f6b7c0..deadea760d18 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 @@ -533,10 +533,30 @@ fan-3 {
- 			fanctl0: fan-controller@21{
+ 			fanctl0: fan-controller@21 {
  				compatible = "maxim,max31790";
  				reg = <0x21>;
 +				#address-cells = <1>;
@@ -30,7 +30,7 @@ index 399688f27fa1b..c870f19993118 100644
 +					sensor-type = "TACH";
 +				};
  			};
- 			fanctl1: fan-controller@27{
+ 			fanctl1: fan-controller@27 {
  				compatible = "maxim,max31790";
  				reg = <0x27>;
 +				#address-cells = <1>;
@@ -47,5 +47,5 @@ index 399688f27fa1b..c870f19993118 100644
  		};
  		i2c1mux0ch3: i2c@3 {
 -- 
-2.31.1
+2.47.3
 

@@ -1,7 +1,7 @@
-From e777dbd124d3f2aabae0ccf031c418b75691d873 Mon Sep 17 00:00:00 2001
+From 27e71e1d575f2154892412168a6f2e94d63329d4 Mon Sep 17 00:00:00 2001
 From: Daniel Hsu <Daniel-Hsu@quantatw.com>
 Date: Tue, 25 Mar 2025 15:54:55 +0800
-Subject: [PATCH 204/204] mctp: Fix incorrect tx flow invalidation condition in
+Subject: [PATCH 204/206] mctp: Fix incorrect tx flow invalidation condition in
  mctp-i2c
 
 Lore link: https://lore.kernel.org/all/20250325081008.3372960-1-Daniel-Hsu@quantatw.com/
@@ -33,5 +33,5 @@ index cfe3dadd6117..c2e24972adbb 100644
  
  		break;
 -- 
-2.47.1
+2.47.3
 

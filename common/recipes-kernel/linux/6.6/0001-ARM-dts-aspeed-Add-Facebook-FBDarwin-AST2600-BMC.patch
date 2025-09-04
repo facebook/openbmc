@@ -1,4 +1,4 @@
-From 19a6721e60a58205faed14137a71ba9e314cff1f Mon Sep 17 00:00:00 2001
+From e9876ca696da52b8226b2f37f0a96007316f618d Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Fri, 28 Oct 2022 11:50:15 -0700
 Subject: [PATCH 1/7] ARM: dts: aspeed: Add Facebook FBDarwin (AST2600) BMC
@@ -14,10 +14,10 @@ for health monitoring purpose.
  create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fbdarwin.dts
 
 diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
-index 8062c685f7e8..71a38f9824d5 100644
+index 0f0b5b707654..7d271158a14e 100644
 --- a/arch/arm/boot/dts/aspeed/Makefile
 +++ b/arch/arm/boot/dts/aspeed/Makefile
-@@ -23,6 +23,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
+@@ -24,6 +24,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
  	aspeed-bmc-facebook-darwin.dtb \
  	aspeed-bmc-facebook-elbert.dtb \
  	aspeed-bmc-facebook-fuji-data64.dtb \

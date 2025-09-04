@@ -1,14 +1,15 @@
-From 254d1d8a6df96db38677db70caaa62feaed8f2db Mon Sep 17 00:00:00 2001
+From 976d7471445874494c582ca0a7f0f34efc30cd9f Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Fri, 18 Oct 2024 15:22:55 +0800
-Subject: [PATCH 1012/1013] ARM: dts: aspeed: yosemite4: modify I2C mode and freq
+Subject: [PATCH 1012/1016] ARM: dts: aspeed: yosemite4: modify I2C mode and
+ freq
 
 ---
  .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 55 +++++++++++--------
  1 file changed, 32 insertions(+), 23 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 7339d1343c62..eff5fdb771e0 100644
+index 85228be8a1e0..a4eb5194a6f1 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -327,8 +327,8 @@ flash@1 {
@@ -22,7 +23,7 @@ index 7339d1343c62..eff5fdb771e0 100644
  
  	mctp@10 {
  		compatible = "mctp-i2c-controller";
-@@ -373,8 +373,8 @@ power-sensor@40 {
+@@ -378,8 +378,8 @@ power-sensor@40 {
  &i2c1 {
  	status = "okay";
  	mctp-controller;
@@ -33,7 +34,7 @@ index 7339d1343c62..eff5fdb771e0 100644
  
  	mctp@10 {
  		compatible = "mctp-i2c-controller";
-@@ -419,8 +419,8 @@ power-sensor@40 {
+@@ -429,8 +429,8 @@ power-sensor@40 {
  &i2c2 {
  	status = "okay";
  	mctp-controller;
@@ -44,7 +45,7 @@ index 7339d1343c62..eff5fdb771e0 100644
  
  	mctp@10 {
  		compatible = "mctp-i2c-controller";
-@@ -465,8 +465,8 @@ power-sensor@40 {
+@@ -480,8 +480,8 @@ power-sensor@40 {
  &i2c3 {
  	status = "okay";
  	mctp-controller;
@@ -55,7 +56,7 @@ index 7339d1343c62..eff5fdb771e0 100644
  
  	mctp@10 {
  		compatible = "mctp-i2c-controller";
-@@ -511,8 +511,8 @@ power-sensor@40 {
+@@ -531,8 +531,8 @@ power-sensor@40 {
  &i2c4 {
  	status = "okay";
  	mctp-controller;
@@ -66,7 +67,7 @@ index 7339d1343c62..eff5fdb771e0 100644
  
  	mctp@10 {
  		compatible = "mctp-i2c-controller";
-@@ -557,8 +557,8 @@ power-sensor@40 {
+@@ -582,8 +582,8 @@ power-sensor@40 {
  &i2c5 {
  	status = "okay";
  	mctp-controller;
@@ -77,7 +78,7 @@ index 7339d1343c62..eff5fdb771e0 100644
  
  	mctp@10 {
  		compatible = "mctp-i2c-controller";
-@@ -603,8 +603,8 @@ power-sensor@40 {
+@@ -633,8 +633,8 @@ power-sensor@40 {
  &i2c6 {
  	status = "okay";
  	mctp-controller;
@@ -88,7 +89,7 @@ index 7339d1343c62..eff5fdb771e0 100644
  
  	mctp@10 {
  		compatible = "mctp-i2c-controller";
-@@ -649,8 +649,8 @@ power-sensor@40 {
+@@ -684,8 +684,8 @@ power-sensor@40 {
  &i2c7 {
  	status = "okay";
  	mctp-controller;
@@ -99,7 +100,7 @@ index 7339d1343c62..eff5fdb771e0 100644
  
  	mctp@10 {
  		compatible = "mctp-i2c-controller";
-@@ -696,7 +696,8 @@ &i2c8 {
+@@ -736,7 +736,8 @@ &i2c8 {
  	#address-cells = <1>;
  	#size-cells = <0>;
  	status = "okay";
@@ -109,7 +110,7 @@ index 7339d1343c62..eff5fdb771e0 100644
  	i2c-clk-high-min-percent = <40>;
  
  	i2c-mux@70 {
-@@ -820,7 +821,8 @@ &i2c9 {
+@@ -860,7 +861,8 @@ &i2c9 {
  	#address-cells = <1>;
  	#size-cells = <0>;
  	status = "okay";
@@ -119,7 +120,7 @@ index 7339d1343c62..eff5fdb771e0 100644
  	i2c-clk-high-min-percent = <40>;
  
  	i2c-mux@71 {
-@@ -944,7 +946,8 @@ &i2c10 {
+@@ -984,7 +986,8 @@ &i2c10 {
  	#address-cells = <1>;
  	#size-cells = <0>;
  	status = "okay";
@@ -129,7 +130,7 @@ index 7339d1343c62..eff5fdb771e0 100644
  	i2c-clk-high-min-percent = <40>;
  
  	i2c-mux@74 {
-@@ -1013,6 +1016,8 @@ imux29: i2c@1 {
+@@ -1053,6 +1056,8 @@ imux29: i2c@1 {
  
  &i2c11 {
  	status = "okay";
@@ -138,7 +139,7 @@ index 7339d1343c62..eff5fdb771e0 100644
  	power-sensor@10 {
  		compatible = "adi,adm1272";
  		reg = <0x10>;
-@@ -1160,7 +1165,8 @@ &i2c12 {
+@@ -1200,7 +1205,8 @@ &i2c12 {
  	#address-cells = <1>;
  	#size-cells = <0>;
  	status = "okay";
@@ -148,7 +149,7 @@ index 7339d1343c62..eff5fdb771e0 100644
  
  	i2c-mux@70 {
  		compatible = "nxp,pca9544";
-@@ -1239,8 +1245,9 @@ imux35: i2c@1 {
+@@ -1279,8 +1285,9 @@ imux35: i2c@1 {
  
  &i2c13 {
  	status = "okay";
@@ -159,7 +160,7 @@ index 7339d1343c62..eff5fdb771e0 100644
  
  	ipmb@10 {
  		compatible = "ipmb-dev";
-@@ -1253,7 +1260,8 @@ &i2c14 {
+@@ -1293,7 +1300,8 @@ &i2c14 {
  	#address-cells = <1>;
  	#size-cells = <0>;
  	status = "okay";
@@ -169,7 +170,7 @@ index 7339d1343c62..eff5fdb771e0 100644
  	adc@1d {
  		compatible = "ti,adc128d818";
  		reg = <0x1d>;
-@@ -1640,7 +1648,8 @@ &i2c15 {
+@@ -1680,7 +1688,8 @@ &i2c15 {
  	#size-cells = <0>;
  	status = "okay";
  	multi-master;
@@ -180,5 +181,5 @@ index 7339d1343c62..eff5fdb771e0 100644
  
  	mctp@10 {
 -- 
-2.25.1
+2.47.3
 

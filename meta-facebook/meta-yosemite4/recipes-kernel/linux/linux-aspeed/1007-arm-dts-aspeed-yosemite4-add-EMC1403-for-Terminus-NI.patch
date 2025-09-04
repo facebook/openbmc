@@ -1,8 +1,8 @@
-From abf4f8206cbaf1e0e6e5d9fe247bb4e1b7dd432f Mon Sep 17 00:00:00 2001
+From 75fa7c080336f51f34751a0c46f7371b711d2a48 Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Fri, 1 Nov 2024 14:06:29 +0800
-Subject: [PATCH 1007/1013] arm: dts: aspeed: yosemite4: add EMC1403 for Terminus
- NICs.
+Subject: [PATCH 1007/1016] arm: dts: aspeed: yosemite4: add EMC1403 for
+ Terminus NICs.
 
 Add EMC1403 for the temperature sensor on Terminus NICs.
 - Haven't contributed because there is no binding document of emc1403 on upstream.
@@ -11,10 +11,10 @@ Add EMC1403 for the temperature sensor on Terminus NICs.
  1 file changed, 20 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 4169ec2689d7..79dff8fc6dbe 100644
+index 380a0a998077..ac64a1a2594e 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -1504,6 +1504,11 @@ temperature-sensor@1f {
+@@ -1544,6 +1544,11 @@ temperature-sensor@1f {
  				reg = <0x1f>;
  			};
  
@@ -26,7 +26,7 @@ index 4169ec2689d7..79dff8fc6dbe 100644
  			eeprom@50 {
  				compatible = "atmel,24c64";
  				reg = <0x50>;
-@@ -1520,6 +1525,11 @@ temperature-sensor@1f {
+@@ -1560,6 +1565,11 @@ temperature-sensor@1f {
  				reg = <0x1f>;
  			};
  
@@ -38,7 +38,7 @@ index 4169ec2689d7..79dff8fc6dbe 100644
  			eeprom@50 {
  				compatible = "atmel,24c64";
  				reg = <0x50>;
-@@ -1536,6 +1546,11 @@ temperature-sensor@1f {
+@@ -1576,6 +1586,11 @@ temperature-sensor@1f {
  				reg = <0x1f>;
  			};
  
@@ -50,7 +50,7 @@ index 4169ec2689d7..79dff8fc6dbe 100644
  			eeprom@50 {
  				compatible = "atmel,24c64";
  				reg = <0x50>;
-@@ -1552,6 +1567,11 @@ temperature-sensor@1f {
+@@ -1592,6 +1607,11 @@ temperature-sensor@1f {
  				reg = <0x1f>;
  			};
  
@@ -63,5 +63,5 @@ index 4169ec2689d7..79dff8fc6dbe 100644
  				compatible = "atmel,24c64";
  				reg = <0x50>;
 -- 
-2.25.1
+2.47.3
 

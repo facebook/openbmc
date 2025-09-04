@@ -1,17 +1,17 @@
-From c13b6fecef2dbb2b42058f993d1be20760d7a8b2 Mon Sep 17 00:00:00 2001
+From 9b61960de548cf36cc1270d48143f75cc611c7b4 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Sun, 8 Jun 2025 20:24:14 +0800
-Subject: [PATCH 1/1] i2c-ast2600: support ssif
+Subject: [PATCH 1014/1016] i2c-ast2600: support ssif
 
 ---
  drivers/i2c/busses/i2c-ast2600.c | 22 ++++++++++++++++------
  1 file changed, 16 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/i2c/busses/i2c-ast2600.c b/drivers/i2c/busses/i2c-ast2600.c
-index d89f799550aeb..259dce3550afa 100644
+index 9e035b87f6c9..0df10a243e1a 100644
 --- a/drivers/i2c/busses/i2c-ast2600.c
 +++ b/drivers/i2c/busses/i2c-ast2600.c
-@@ -797,16 +797,28 @@ static void ast2600_i2c_slave_byte_irq(struct ast2600_i2c_bus *i2c_bus, u32 sts)
+@@ -801,16 +801,28 @@ static void ast2600_i2c_slave_byte_irq(struct ast2600_i2c_bus *i2c_bus, u32 sts)
  {
  	u32 i2c_buff = readl(i2c_bus->reg_base + AST2600_I2CC_STS_AND_BUFF);
  	u32 cmd = AST2600_I2CS_ACTIVE_ALL;
@@ -42,7 +42,7 @@ index d89f799550aeb..259dce3550afa 100644
  		byte_data = AST2600_I2CC_GET_RX_BUFF(i2c_buff);
  		i2c_slave_event(i2c_bus->slave, I2C_SLAVE_WRITE_RECEIVED, &byte_data);
  		break;
-@@ -821,14 +833,12 @@ static void ast2600_i2c_slave_byte_irq(struct ast2600_i2c_bus *i2c_bus, u32 sts)
+@@ -825,14 +837,12 @@ static void ast2600_i2c_slave_byte_irq(struct ast2600_i2c_bus *i2c_bus, u32 sts)
  		i2c_slave_event(i2c_bus->slave, I2C_SLAVE_READ_PROCESSED, &byte_data);
  		writel(byte_data, i2c_bus->reg_base + AST2600_I2CC_STS_AND_BUFF);
  		break;
@@ -60,4 +60,5 @@ index d89f799550aeb..259dce3550afa 100644
  	writel(sts, i2c_bus->reg_base + AST2600_I2CS_ISR);
  	readl(i2c_bus->reg_base + AST2600_I2CS_ISR);
 -- 
-2.31.1
+2.47.3
+

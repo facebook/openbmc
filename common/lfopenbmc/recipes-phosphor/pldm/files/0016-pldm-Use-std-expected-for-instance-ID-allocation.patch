@@ -1,4 +1,4 @@
-From 0e2ae07138a14df30f295471671eded6a42ef52b Mon Sep 17 00:00:00 2001
+From 0c7d19dc564cb11b0b94def1360bf6405eea5a83 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 15 Jul 2025 10:22:29 +0000
 Subject: [PATCH 16/17] pldm: Use std::expected for instance ID allocation
@@ -786,5 +786,5 @@ index 9721c7e..d72af59 100644
          instanceID, effecterID, effecterCount, &stateField, request);
      if (rc != PLDM_SUCCESS)
 -- 
-2.43.0
+2.47.3
 

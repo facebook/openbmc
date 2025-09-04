@@ -1,8 +1,8 @@
-From 93fbd4d52742bd750b232a31604615db1833880d Mon Sep 17 00:00:00 2001
+From f4e6f381a1e3700d732f9db58a6c61d0fdc438a3 Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Fri, 1 Nov 2024 11:25:35 +0800
-Subject: [PATCH 1003/1013] arm: dts: aspeed: yosemite4: add power and adc sensors
- on Medusa Board
+Subject: [PATCH 1003/1016] arm: dts: aspeed: yosemite4: add power and adc
+ sensors on Medusa Board
 
 1. Add XDP710 for 2nd source 48V HSC devices.
   - Haven't contributed to kernel org.
@@ -18,10 +18,10 @@ Subject: [PATCH 1003/1013] arm: dts: aspeed: yosemite4: add power and adc sensor
  1 file changed, 42 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 878bf52e1135..851d71224421 100644
+index 57c72b08adab..bdfc81582da2 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -864,11 +864,21 @@ power-sensor@10 {
+@@ -904,11 +904,21 @@ power-sensor@10 {
  		reg = <0x10>;
  	};
  
@@ -43,7 +43,7 @@ index 878bf52e1135..851d71224421 100644
  	gpio@20 {
  		compatible = "nxp,pca9555";
  		reg = <0x20>;
-@@ -944,6 +954,18 @@ gpio@23 {
+@@ -984,6 +994,18 @@ gpio@23 {
  				  "HSC7_ALERT2_R_N", "HSC8_ALERT2_R_N";
  	};
  
@@ -62,7 +62,7 @@ index 878bf52e1135..851d71224421 100644
  	temperature-sensor@48 {
  		compatible = "ti,tmp75";
  		reg = <0x48>;
-@@ -958,6 +980,26 @@ eeprom@54 {
+@@ -998,6 +1020,26 @@ eeprom@54 {
  		compatible = "atmel,24c128";
  		reg = <0x54>;
  	};
@@ -90,5 +90,5 @@ index 878bf52e1135..851d71224421 100644
  
  &i2c12 {
 -- 
-2.25.1
+2.47.3
 

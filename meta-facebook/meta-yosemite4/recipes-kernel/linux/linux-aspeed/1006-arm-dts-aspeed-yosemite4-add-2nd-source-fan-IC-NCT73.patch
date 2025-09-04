@@ -1,7 +1,7 @@
-From 3cf70e2e2bc04b405a2f04c9f7e0a512d049455a Mon Sep 17 00:00:00 2001
+From ad77c51bc3c2bfc529b19dbbe16efd2c4ebb9bee Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Fri, 1 Nov 2024 13:42:42 +0800
-Subject: [PATCH 1006/1013] arm: dts: aspeed: yosemite4: add 2nd source fan IC
+Subject: [PATCH 1006/1016] arm: dts: aspeed: yosemite4: add 2nd source fan IC
  NCT7363 on Fan Boards
 
 Add 2nd source fan IC NCT7363 on Fan Boards.
@@ -11,10 +11,10 @@ Add 2nd source fan IC NCT7363 on Fan Boards.
  1 file changed, 144 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index ffc57f7589b3..4169ec2689d7 100644
+index 9f67113d9368..380a0a998077 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -1222,6 +1222,42 @@ channel@5 {
+@@ -1262,6 +1262,42 @@ channel@5 {
  				};
  			};
  
@@ -54,10 +54,10 @@ index ffc57f7589b3..4169ec2689d7 100644
 +				};
 +			};
 +
- 			gpio@22{
+ 			gpio@22 {
  				compatible = "ti,tca6424";
  				reg = <0x22>;
-@@ -1229,6 +1265,42 @@ gpio@22{
+@@ -1269,6 +1305,42 @@ gpio@22 {
  				#gpio-cells = <2>;
  			};
  
@@ -97,10 +97,10 @@ index ffc57f7589b3..4169ec2689d7 100644
 +				};
 +			};
 +
- 			pwm@2f{
+ 			pwm@2f {
  				compatible = "maxim,max31790";
  				reg = <0x2f>;
-@@ -1288,6 +1360,42 @@ channel@5 {
+@@ -1328,6 +1400,42 @@ channel@5 {
  				};
  			};
  
@@ -140,10 +140,10 @@ index ffc57f7589b3..4169ec2689d7 100644
 +				};
 +			};
 +
- 			gpio@22{
+ 			gpio@22 {
  				compatible = "ti,tca6424";
  				reg = <0x22>;
-@@ -1295,6 +1403,42 @@ gpio@22{
+@@ -1335,6 +1443,42 @@ gpio@22 {
  				#gpio-cells = <2>;
  			};
  
@@ -183,9 +183,9 @@ index ffc57f7589b3..4169ec2689d7 100644
 +				};
 +			};
 +
- 			pwm@2f{
+ 			pwm@2f {
  				compatible = "maxim,max31790";
  				reg = <0x2f>;
 -- 
-2.25.1
+2.47.3
 

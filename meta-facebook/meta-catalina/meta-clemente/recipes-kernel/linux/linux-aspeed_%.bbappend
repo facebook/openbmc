@@ -1,9 +1,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-aspeed:"
 
 SRC_URI += " \
-    file://1000-dt-bindings-arm-aspeed-add-Meta-Clemente-board.patch \
-    file://1001-ARM-dts-aspeed-clemente-add-Meta-Clemente-BMC.patch \
-    file://1002-ARM-dts-aspeed-clemente-add-various-device-nodes-and.patch \
+    file://1000-clemente-dts-Add-NCSI-properties-fan-TACH.patch \
     file://clemente-sensor.cfg \
 "
 

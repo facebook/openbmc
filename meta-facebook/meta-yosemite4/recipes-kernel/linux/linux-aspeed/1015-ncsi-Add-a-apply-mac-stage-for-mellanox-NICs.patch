@@ -1,0 +1,51 @@
+From c4c9a5be985272931239f965bca98763d4d9b908 Mon Sep 17 00:00:00 2001
+From: Amithash Prasad <amithash@meta.com>
+Date: Thu, 27 Mar 2025 21:53:23 -0700
+Subject: [PATCH 1015/1016] ncsi: Add a apply-mac stage for mellanox NICs.
+
+Mellanox NICs need to discover MACs in the probe stage.
+We need to apply the MAC at an early stage. So add an
+additional step to clone what we do with the regular
+NICs.
+---
+ net/ncsi/internal.h    |  1 +
+ net/ncsi/ncsi-manage.c | 10 +++++++++-
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/net/ncsi/internal.h b/net/ncsi/internal.h
+index ad1f671ffc37..6cb952ba2134 100644
+--- a/net/ncsi/internal.h
++++ b/net/ncsi/internal.h
+@@ -278,6 +278,7 @@ enum {
+ 	ncsi_dev_state_probe_package,
+ 	ncsi_dev_state_probe_channel,
+ 	ncsi_dev_state_probe_mlx_gma,
++	ncsi_dev_state_probe_mlx_apply_mac,
+ 	ncsi_dev_state_probe_mlx_smaf,
+ 	ncsi_dev_state_probe_cis,
+ 	ncsi_dev_state_probe_keep_phy,
+diff --git a/net/ncsi/ncsi-manage.c b/net/ncsi/ncsi-manage.c
+index a5d3615d7996..cc196badbf1d 100644
+--- a/net/ncsi/ncsi-manage.c
++++ b/net/ncsi/ncsi-manage.c
+@@ -1428,8 +1428,16 @@ static void ncsi_probe_channel(struct ncsi_dev_priv *ndp)
+ 		if (ret)
+ 			goto error;
+ 
+-		nd->state = ncsi_dev_state_probe_mlx_smaf;
++		nd->state = ncsi_dev_state_probe_mlx_apply_mac;
+ 		break;
++	case ncsi_dev_state_probe_mlx_apply_mac:
++		nd->state = ncsi_dev_state_probe_mlx_smaf;
++		rtnl_lock();
++		ret = dev_set_mac_address(ndp->ndev.dev, &ndp->pending_mac, NULL);
++		rtnl_unlock();
++		if (ret < 0)
++			netdev_warn(ndp->ndev.dev, "NCSI: 'Writing MAC address to device failed\n");
++		fallthrough;
+ 	case ncsi_dev_state_probe_mlx_smaf:
+ 		ndp->pending_req_num = 1;
+ 
+-- 
+2.47.3
+

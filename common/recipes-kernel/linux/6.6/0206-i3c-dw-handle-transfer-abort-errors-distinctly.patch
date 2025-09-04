@@ -1,7 +1,7 @@
-From 802590c1ffc8f58fdc75444d5062e613002746e8 Mon Sep 17 00:00:00 2001
+From 05d5b8e8fa383eaa42fc63f0e6ad9da9bf8496b6 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Thu, 21 Aug 2025 10:50:13 +0800
-Subject: [PATCH] i3c: dw: handle transfer abort errors distinctly
+Subject: [PATCH 206/206] i3c: dw: handle transfer abort errors distinctly
 
 Handle transfer abort errors separately from other I/O errors
 to prevent halting the controller unnecessarily. Adjust error handling
@@ -20,10 +20,10 @@ Change-Id: Ief964fe7b2a37014cb101a68e4bcdd7f035ebb56
  1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
-index ded5974b7c4be..784afc39d3ccb 100644
+index 7156bde4fdec..5ac6419939b1 100644
 --- a/drivers/i3c/master/dw-i3c-master.c
 +++ b/drivers/i3c/master/dw-i3c-master.c
-@@ -692,9 +692,11 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
+@@ -589,9 +589,11 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
  		switch (xfer->cmds[i].error) {
  		case RESPONSE_NO_ERROR:
  			break;
@@ -36,7 +36,7 @@ index ded5974b7c4be..784afc39d3ccb 100644
  		case RESPONSE_ERROR_CRC:
  		case RESPONSE_ERROR_FRAME:
  			ret = -EIO;
-@@ -713,7 +715,7 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
+@@ -610,7 +612,7 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
  	xfer->ret = ret;
  	complete(&xfer->comp);
  
@@ -46,5 +46,5 @@ index ded5974b7c4be..784afc39d3ccb 100644
  		 * The controller will enter the HALT state if an error occurs.
  		 * Therefore, there is no need to manually halt the controller
 -- 
-2.25.1
+2.47.3
 

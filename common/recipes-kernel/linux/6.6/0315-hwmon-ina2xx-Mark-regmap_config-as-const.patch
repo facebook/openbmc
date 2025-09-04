@@ -1,0 +1,87 @@
+From a7e0fc5c05ae741605fa904e838f00b80897c66c Mon Sep 17 00:00:00 2001
+From: Guenter Roeck <linux@roeck-us.net>
+Date: Thu, 1 Aug 2024 16:43:03 -0700
+Subject: [PATCH 315/330] hwmon: (ina2xx) Mark regmap_config as const
+
+Recent versions of checkpatch complain that struct regmap_config
+should be declared as const.
+
+WARNING: struct regmap_config should normally be const
+
+Doing so reveals a potential problem in the driver: If both supported
+chips are present in a single system, the maximum number of registers
+may race when devices are instantiated since max_registers is updated
+in the probe function. Solve the problem by setting .max_registers to the
+maximum register address of all supported chips. This does not make a
+practical difference while fixing the potential race condition and reducing
+code complexity.
+
+Reviewed-by: Tzung-Bi Shih <tzungbi@kernel.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ drivers/hwmon/ina2xx.c | 12 ++----------
+ 1 file changed, 2 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
+index 1b4170d02c94..9d93190874d7 100644
+--- a/drivers/hwmon/ina2xx.c
++++ b/drivers/hwmon/ina2xx.c
+@@ -50,10 +50,6 @@
+ #define INA226_ALERT_LIMIT		0x07
+ #define INA226_DIE_ID			0xFF
+ 
+-/* register count */
+-#define INA219_REGISTERS		6
+-#define INA226_REGISTERS		8
+-
+ #define INA2XX_MAX_REGISTERS		8
+ 
+ /* settings - depend on use case */
+@@ -95,9 +91,10 @@
+  */
+ #define INA226_TOTAL_CONV_TIME_DEFAULT	2200
+ 
+-static struct regmap_config ina2xx_regmap_config = {
++static const struct regmap_config ina2xx_regmap_config = {
+ 	.reg_bits = 8,
+ 	.val_bits = 16,
++	.max_register = INA2XX_MAX_REGISTERS,
+ };
+ 
+ enum ina2xx_ids { ina219, ina226 };
+@@ -105,7 +102,6 @@ enum ina2xx_ids { ina219, ina226 };
+ struct ina2xx_config {
+ 	u16 config_default;
+ 	int calibration_value;
+-	int registers;
+ 	int shunt_div;
+ 	int bus_voltage_shift;
+ 	int bus_voltage_lsb;	/* uV */
+@@ -128,7 +124,6 @@ static const struct ina2xx_config ina2xx_config[] = {
+ 	[ina219] = {
+ 		.config_default = INA219_CONFIG_DEFAULT,
+ 		.calibration_value = 4096,
+-		.registers = INA219_REGISTERS,
+ 		.shunt_div = 100,
+ 		.bus_voltage_shift = 3,
+ 		.bus_voltage_lsb = 4000,
+@@ -137,7 +132,6 @@ static const struct ina2xx_config ina2xx_config[] = {
+ 	[ina226] = {
+ 		.config_default = INA226_CONFIG_DEFAULT,
+ 		.calibration_value = 2048,
+-		.registers = INA226_REGISTERS,
+ 		.shunt_div = 400,
+ 		.bus_voltage_shift = 0,
+ 		.bus_voltage_lsb = 1250,
+@@ -646,8 +640,6 @@ static int ina2xx_probe(struct i2c_client *client)
+ 
+ 	ina2xx_set_shunt(data, val);
+ 
+-	ina2xx_regmap_config.max_register = data->config->registers;
+-
+ 	data->regmap = devm_regmap_init_i2c(client, &ina2xx_regmap_config);
+ 	if (IS_ERR(data->regmap)) {
+ 		dev_err(dev, "failed to allocate register map\n");
+-- 
+2.47.3
+

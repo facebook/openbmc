@@ -1,0 +1,53 @@
+From f415b67fe89c7787a6a5f39c80fa4c55d7bc8d27 Mon Sep 17 00:00:00 2001
+From: Guenter Roeck <linux@roeck-us.net>
+Date: Tue, 23 Jul 2024 13:21:12 -0700
+Subject: [PATCH 312/330] hwmon: (ina2xx) Reorder include files to alphabetic
+ order
+
+Simplify driver maintenance by reordering include files to alphabetic
+order.
+
+Whule at it, drop unnecessary / unused jiffies.h.
+
+No functional change.
+
+Reviewed-by: Tzung-Bi Shih <tzungbi@kernel.org>
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ drivers/hwmon/ina2xx.c | 15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/hwmon/ina2xx.c b/drivers/hwmon/ina2xx.c
+index 9ab4205622e2..a6a619a85eb6 100644
+--- a/drivers/hwmon/ina2xx.c
++++ b/drivers/hwmon/ina2xx.c
+@@ -22,19 +22,18 @@
+  * Thanks to Jan Volkering
+  */
+ 
+-#include <linux/kernel.h>
+-#include <linux/module.h>
+-#include <linux/init.h>
++#include <linux/delay.h>
+ #include <linux/err.h>
+-#include <linux/slab.h>
+-#include <linux/i2c.h>
+ #include <linux/hwmon.h>
+ #include <linux/hwmon-sysfs.h>
+-#include <linux/jiffies.h>
++#include <linux/i2c.h>
++#include <linux/init.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
+ #include <linux/of.h>
+-#include <linux/delay.h>
+-#include <linux/util_macros.h>
+ #include <linux/regmap.h>
++#include <linux/slab.h>
++#include <linux/util_macros.h>
+ 
+ #include <linux/platform_data/ina2xx.h>
+ 
+-- 
+2.47.3
+

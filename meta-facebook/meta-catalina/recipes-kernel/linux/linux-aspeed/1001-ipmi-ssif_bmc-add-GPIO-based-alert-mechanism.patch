@@ -1,7 +1,7 @@
-From e7a707400f0e2cf40ff0629512be53ab26c8309d Mon Sep 17 00:00:00 2001
+From 26acc7b980391bacca1c9d441f3a6e9c3b1e5d64 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Wed, 2 Oct 2024 12:10:32 +0800
-Subject: [PATCH 01/14] ipmi: ssif_bmc: add GPIO-based alert mechanism
+Subject: [PATCH 1001/1016] ipmi: ssif_bmc: add GPIO-based alert mechanism
 
 Implement GPIO-based alert mechanism in the SSIF BMC driver to notify
 the host when a response is ready.
@@ -10,14 +10,14 @@ This improves host-BMC communication efficiency by providing immediate
 notification, potentially reducing host polling overhead.
 
 Signed-off-by: Cosmo Chou <chou.cosmo@gmail.com>
----
+
 LORE: https://lore.kernel.org/all/20241022-ssif-alert-gpios-v2-2-c7dd6dd17a7e@gmail.com/
 ---
  drivers/char/ipmi/ssif_bmc.c | 15 +++++++++++++++
  1 file changed, 15 insertions(+)
 
 diff --git a/drivers/char/ipmi/ssif_bmc.c b/drivers/char/ipmi/ssif_bmc.c
-index e8460e966b83e..b863f854ab175 100644
+index e8460e966b83..b863f854ab17 100644
 --- a/drivers/char/ipmi/ssif_bmc.c
 +++ b/drivers/char/ipmi/ssif_bmc.c
 @@ -17,6 +17,7 @@
@@ -78,5 +78,5 @@ index e8460e966b83e..b863f854ab175 100644
  
  	init_waitqueue_head(&ssif_bmc->wait_queue);
 -- 
-2.31.1
+2.47.3
 

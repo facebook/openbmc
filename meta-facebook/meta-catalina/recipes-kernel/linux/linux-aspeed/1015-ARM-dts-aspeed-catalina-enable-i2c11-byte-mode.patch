@@ -1,7 +1,7 @@
-From 23a7de8dbb7b7aca65a35decfc5086749d566cb5 Mon Sep 17 00:00:00 2001
+From 8f1eb06ab1233219f1c018942b42e645c614a474 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 25 Jun 2025 12:47:27 +0800
-Subject: [PATCH 1/1] ARM: dts: aspeed: catalina: enable i2c11 byte mode
+Subject: [PATCH 1015/1016] ARM: dts: aspeed: catalina: enable i2c11 byte mode
 
 Enable i2c11 byte mode
 
@@ -11,7 +11,7 @@ Signed-off-by: Potin Lai <potin.lai@quantatw.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
-index 4caa6b9f2861c..d3908e5087e54 100644
+index 524e845ab474..8c4afa6bb718 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 @@ -918,6 +918,7 @@ eeprom@50 {
@@ -23,5 +23,5 @@ index 4caa6b9f2861c..d3908e5087e54 100644
  	ssif-bmc@10 {
  		compatible = "ssif-bmc";
 -- 
-2.31.1
+2.47.3
 

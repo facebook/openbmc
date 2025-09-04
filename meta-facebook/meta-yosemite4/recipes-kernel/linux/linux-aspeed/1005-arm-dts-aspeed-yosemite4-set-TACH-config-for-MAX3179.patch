@@ -1,7 +1,7 @@
-From 9836a15a20473f78f14b76f2b76a77c86b931b6e Mon Sep 17 00:00:00 2001
+From 146893808ed5e7fed46d597d0ba795ee22a98bcb Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Fri, 1 Nov 2024 13:32:56 +0800
-Subject: [PATCH 1005/1013] arm: dts: aspeed: yosemite4: set TACH config for
+Subject: [PATCH 1005/1016] arm: dts: aspeed: yosemite4: set TACH config for
  MAX31790 on Fan Boards
 
 Add the setting for max31790 to config PWM as TACH.
@@ -12,11 +12,11 @@ https://github.com/facebookexternal/openbmc.wiwynn/blob/main/common/recipes-kern
  1 file changed, 36 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 8024974006b8..ffc57f7589b3 100644
+index d216505fb2c4..9f67113d9368 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -1211,6 +1211,15 @@ adc@1f {
- 			pwm@20{
+@@ -1251,6 +1251,15 @@ adc@1f {
+ 			pwm@20 {
  				compatible = "maxim,max31790";
  				reg = <0x20>;
 +				channel@4 {
@@ -30,9 +30,9 @@ index 8024974006b8..ffc57f7589b3 100644
 +				};
  			};
  
- 			gpio@22{
-@@ -1223,6 +1232,15 @@ gpio@22{
- 			pwm@2f{
+ 			gpio@22 {
+@@ -1263,6 +1272,15 @@ gpio@22 {
+ 			pwm@2f {
  				compatible = "maxim,max31790";
  				reg = <0x2f>;
 +				channel@4 {
@@ -47,8 +47,8 @@ index 8024974006b8..ffc57f7589b3 100644
  			};
  
  			adc@33 {
-@@ -1259,6 +1277,15 @@ adc@1f {
- 			pwm@20{
+@@ -1299,6 +1317,15 @@ adc@1f {
+ 			pwm@20 {
  				compatible = "maxim,max31790";
  				reg = <0x20>;
 +				channel@4 {
@@ -62,9 +62,9 @@ index 8024974006b8..ffc57f7589b3 100644
 +				};
  			};
  
- 			gpio@22{
-@@ -1271,6 +1298,15 @@ gpio@22{
- 			pwm@2f{
+ 			gpio@22 {
+@@ -1311,6 +1338,15 @@ gpio@22 {
+ 			pwm@2f {
  				compatible = "maxim,max31790";
  				reg = <0x2f>;
 +				channel@4 {
@@ -80,5 +80,5 @@ index 8024974006b8..ffc57f7589b3 100644
  
  			adc@33 {
 -- 
-2.25.1
+2.47.3
 

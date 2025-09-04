@@ -1,7 +1,7 @@
-From 11a30eef229b58ac5aa65f463df1b461a3763555 Mon Sep 17 00:00:00 2001
+From 36563e44b0a7bee50573cec4ae3606297cda6173 Mon Sep 17 00:00:00 2001
 From: Steven Niu <steven.niu.uj@renesas.com>
 Date: Sat, 17 Feb 2024 21:14:12 +0800
-Subject: [PATCH 203/204] i3c: i3c-hub: Add Renesas RG3MxxB12A1 I3C HUB driver
+Subject: [PATCH 203/206] i3c: i3c-hub: Add Renesas RG3MxxB12A1 I3C HUB driver
 
 RG3MxxB12A1 I3C HUB is smart device which provide multiple functionality:
 * Enabling voltage compatibility across I3C Controller and Target Device.
@@ -2044,7 +2044,7 @@ index 000000000000..f999561c04e1
 +MODULE_DESCRIPTION("I3C HUB driver");
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/i3c/master.c b/drivers/i3c/master.c
-index cbe8fbe0fc0b..e13aff3d350a 100644
+index 500982d07284..91602e21f6eb 100644
 --- a/drivers/i3c/master.c
 +++ b/drivers/i3c/master.c
 @@ -2292,15 +2292,26 @@ static int of_populate_i3c_bus(struct i3c_master_controller *master)

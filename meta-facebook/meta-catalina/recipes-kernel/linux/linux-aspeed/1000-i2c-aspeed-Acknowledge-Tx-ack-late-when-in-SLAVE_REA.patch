@@ -1,7 +1,7 @@
-From e3fbf7f9ed888305ebe3cfd6c4eb90fe63be9f49 Mon Sep 17 00:00:00 2001
+From c2fa4fda560eb5515073d15a83ea43e0bf84c9c2 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Mon, 20 Nov 2023 17:17:46 +0800
-Subject: [PATCH 1/1] i2c: aspeed: Acknowledge Tx ack late when in
+Subject: [PATCH 1000/1016] i2c: aspeed: Acknowledge Tx ack late when in
  SLAVE_READ_PROCESSED
 
 commit 2be6b47211e1 ("i2c: aspeed: Acknowledge most interrupts early
@@ -15,14 +15,14 @@ the problem that the next byte is not sent correctly.
 
 Fixes: 2be6b47211e1 ("i2c: aspeed: Acknowledge most interrupts early in interrupt handler")
 Signed-off-by: Cosmo Chou <chou.cosmo@gmail.com>
----
+
 LORE: https://lore.kernel.org/all/20231120091746.2866232-1-chou.cosmo@gmail.com/
 ---
  drivers/i2c/busses/i2c-aspeed.c | 17 ++++++++++++++---
  1 file changed, 14 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/i2c/busses/i2c-aspeed.c b/drivers/i2c/busses/i2c-aspeed.c
-index 3069ed1e0b5c7..0858ea690ddf7 100644
+index 3069ed1e0b5c..0858ea690ddf 100644
 --- a/drivers/i2c/busses/i2c-aspeed.c
 +++ b/drivers/i2c/busses/i2c-aspeed.c
 @@ -400,6 +400,12 @@ static u32 aspeed_i2c_slave_irq(struct aspeed_i2c_bus *bus, u32 irq_status)
@@ -61,5 +61,5 @@ index 3069ed1e0b5c7..0858ea690ddf7 100644
  	irq_received &= ASPEED_I2CD_INTR_RECV_MASK;
  	irq_remaining = irq_received;
 -- 
-2.31.1
+2.47.3
 

@@ -1,7 +1,7 @@
-From 7df4a38574ec8e405a25a738e1ad90ec5944c9a2 Mon Sep 17 00:00:00 2001
+From e7587c6e88b3ffd65cf4417956940fe76e6cddcd Mon Sep 17 00:00:00 2001
 From: Jerry C Chen <Jerry_C_Chen@wiwynn.com>
 Date: Wed, 22 Jan 2025 15:45:12 +0800
-Subject: [PATCH] adc128: filter out 0x1ff
+Subject: [PATCH 1014/1016] adc128: filter out 0x1ff
 
 lore link:
 https://lore.kernel.org/linux-hwmon/20250206063600.321650-1-Jerry_C_Chen@wiwynn.com/T/#u
@@ -10,7 +10,7 @@ https://lore.kernel.org/linux-hwmon/20250206063600.321650-1-Jerry_C_Chen@wiwynn.
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/hwmon/adc128d818.c b/drivers/hwmon/adc128d818.c
-index 73fd96799847..42b58370b182 100644
+index 73fd96799847..1f91e2cfcb7d 100644
 --- a/drivers/hwmon/adc128d818.c
 +++ b/drivers/hwmon/adc128d818.c
 @@ -89,7 +89,7 @@ static struct adc128_data *adc128_update_device(struct device *dev)
@@ -23,5 +23,5 @@ index 73fd96799847..42b58370b182 100644
  			data->in[0][i] = rv >> 4;
  
 -- 
-2.25.1
+2.47.3
 

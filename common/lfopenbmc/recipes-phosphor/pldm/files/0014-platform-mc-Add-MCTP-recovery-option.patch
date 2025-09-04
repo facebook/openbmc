@@ -1,4 +1,4 @@
-From e54d1d112f732816d42f1a80cfbbaff3918bc075 Mon Sep 17 00:00:00 2001
+From 824a1563b6e7689e078b495a4c260c19123f55d1 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 16:48:20 +0800
 Subject: [PATCH 14/17] platform-mc: Add MCTP recovery option
@@ -87,5 +87,5 @@ index fa0040f..6f0b371 100644
      co_return rc;
  }
 -- 
-2.43.0
+2.47.3
 

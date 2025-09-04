@@ -1,7 +1,7 @@
-From 503cd27f8c47eae12d2e0781b2fbecec663eff42 Mon Sep 17 00:00:00 2001
+From 35f55ae3e6701baf2aa960223741c802fdd34bca Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 8 Aug 2024 15:07:36 +0800
-Subject: [PATCH 1004/1007] ARM: dts: aspeed: Harma: Setting i3c to i2c device
+Subject: [PATCH 1004/1008] ARM: dts: aspeed: Harma: Setting i3c to i2c device
 
 Setting PMIC device.
 base on: https://lore.kernel.org/all/20240506105120.3028083-2-dylan_hung@aspeedtech.com/
@@ -10,10 +10,10 @@ base on: https://lore.kernel.org/all/20240506105120.3028083-2-dylan_hung@aspeedt
  1 file changed, 50 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-index 23f004e89c79..de43ea16437c 100644
+index 17cc5870a8ab..cc399a222aac 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-@@ -833,3 +833,53 @@ &sgpiom0 {
+@@ -842,3 +842,53 @@ &sgpiom0 {
  	/*P4-P7 line 248-255*/
  	"","","","","","","","";
  };
@@ -68,5 +68,5 @@ index 23f004e89c79..de43ea16437c 100644
 +	};
 +};
 -- 
-2.49.0
+2.47.3
 

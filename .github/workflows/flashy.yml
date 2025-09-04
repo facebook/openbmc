@@ -14,7 +14,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v4
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Run unit tests
         run: tools/flashy/scripts/run_unit_tests.sh
 
@@ -24,7 +24,7 @@ jobs:
       - name: Install Go
         uses: actions/setup-go@v4
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Build flashy
         run: tools/flashy/build.sh
       - name: Upload artifact
@@ -32,7 +32,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: flashy
-          path: tools/flashy/build/flashy
+          path: tools/flashy/build/
 
   flashy-release:
     if: github.ref == 'refs/heads/helium'
@@ -42,7 +42,7 @@ jobs:
       - flashy-build
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Download flashy build
         uses: actions/download-artifact@v5
         with:
@@ -50,12 +50,14 @@ jobs:
           path: tools/flashy/build
       - name: Prepare release folder
         run: |
-          mkdir tools/flashy/release tools/flashy/release/scripts
+          mkdir -p tools/flashy/release/scripts
           cp tools/flashy/build/flashy tools/flashy/release/flashy
           cp tools/flashy/scripts/run_flashy*.sh tools/flashy/release/scripts
       - name: Get short SHA
         id: slug
         run: echo "sha7=$(echo ${GITHUB_SHA} | cut -c1-7)" >> $GITHUB_OUTPUT
+      - name: Zip release folder
+        run: zip -r tools/flashy/release.zip tools/flashy/release
       - name: Create Release
         id: create_release
         uses: actions/create-release@v1
@@ -73,6 +75,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: tools/flashy/release
-          asset_name: flashy
+          asset_path: tools/flashy/release.zip
+          asset_name: flashy.zip
           asset_content_type: application/zip

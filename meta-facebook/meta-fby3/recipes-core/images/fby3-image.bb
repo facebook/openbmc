@@ -70,4 +70,5 @@ IMAGE_INSTALL += " \
   syseventgen-util \
   usbip \
   exar1420 \
+  dimm-util \
   "

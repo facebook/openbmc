@@ -1,0 +1,29 @@
+#!/bin/bash
+
+eid=52
+dbus_path="swb_pcie_switch"
+
+echo "Getting version (EID=$eid)"
+
+MAX_RETRIES=3
+RETRY_COUNT=0
+version=""
+
+while [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
+    version=$(pldmtool fw_update GetFwParams -m "$eid" 2>/dev/null | \
+              jq -r '.ComponentParameterEntries[].ActiveComponentVersionString' 2>/dev/null)
+
+    if [ -n "$version" ] && [ "$version" != "null" ]; then
+        echo "Version: $version"
+        
+        busctl set-property xyz.openbmc_project.Settings \
+            "/xyz/openbmc_project/software/chassis/$dbus_path" \
+            xyz.openbmc_project.Software.Version Version "s" "$version"
+        
+        break
+    else
+        echo "Version is empty, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES)"
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        sleep 5
+    fi
+done

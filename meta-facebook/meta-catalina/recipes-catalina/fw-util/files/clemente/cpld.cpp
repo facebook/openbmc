@@ -152,18 +152,25 @@ public:
   int get_version(json& j)
   {
     int ret;
+    int retries = 5;
     gpiod_line* line = gpiod_line_find(linename.c_str());
     if (!line) {
       std::cerr << "Failed to find GPIO line: " << linename << std::endl;
       throw std::runtime_error("GPIO line not found");
     }
 
-    if (gpiod_line_request_output(line, "fw-util", is_high_active ? 1 : 0) != 0) {
-      std::cerr << "Failed to request GPIO line as output" << std::endl;
-      gpiod_line_close_chip(line);
-      throw std::runtime_error("Failed to request GPIO line as output");
+    while (retries--) {
+        if (gpiod_line_request_output(line, "fw-util", is_high_active ? 1 : 0) == 0) {
+            break;
+        }
+        msleep(100);
     }
-    msleep(100);
+
+    if (retries <= 0) {
+        std::cerr << "Failed to request GPIO line as output after retries" << std::endl;
+        gpiod_line_close_chip(line);
+        throw std::runtime_error("Failed to request GPIO line as output");
+    }
 
     ret = CpldComponent::get_version(j);
 

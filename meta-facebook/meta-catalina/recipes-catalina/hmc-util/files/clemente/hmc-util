@@ -18,7 +18,9 @@ HMC_MANG_COMP_LIST=(
     "HGX_FW_ERoT_CPU_0"
     "HGX_FW_ERoT_CPU_1"
     "HGX_FW_ERoT_FPGA_0"
+    "HGX_FW_ERoT_FPGA_1"
     "HGX_FW_FPGA_0"
+    "HGX_FW_FPGA_1"
     "HGX_FW_GPU_0"
     "HGX_FW_GPU_1"
     "HGX_FW_GPU_2"
@@ -147,6 +149,9 @@ check_erot_background_copy_status()
             ;;
         "HGX_FW_FPGA_0")
             is_erot_background_copy_status_done "HGX_ERoT_FPGA_0" || ALL_EROT_BC_DONE=false
+            ;;
+        "HGX_FW_FPGA_1")
+            is_erot_background_copy_status_done "HGX_ERoT_FPGA_1" || ALL_EROT_BC_DONE=false
             ;;
         "HGX_FW_CPU_0")
             is_erot_background_copy_status_done "HGX_ERoT_CPU_0" || ALL_EROT_BC_DONE=false

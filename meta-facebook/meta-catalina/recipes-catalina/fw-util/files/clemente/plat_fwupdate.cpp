@@ -20,7 +20,7 @@ using namespace std;
 
 int pal_get_fru_id(char *str, uint8_t *fru)
 {
-  const char *list[] = {"all", "bmc", "hdd0", "hdd1", "hmc", "nic0", "nic1", "pdb", "scm"};
+  const char *list[] = {"all", "bmc", "hdd0", "hdd1", "hmc", "nic0", "nic1", "interposer", "pdb", "scm"};
   uint8_t id;
 
   if (!str || !fru)

@@ -90,7 +90,11 @@ int CpldComponent::get_version(json& j) {
   string comp(this->component());
   string fru(this->fru());
   transform(comp.begin(), comp.end(), comp.begin(), ::toupper);
-  transform(fru.begin(), fru.end(), fru.begin(), ::toupper);
+  if (fru == "interposer") {
+    fru[0] = std::toupper(fru[0]);
+  } else {
+    transform(fru.begin(), fru.end(), fru.begin(), ::toupper);
+  }
   j["PRETTY_COMPONENT"] = fru + "_" + comp;
 
   if (!cpld_intf_open(pld_type, INTF_I2C, attr)) {
@@ -196,9 +200,9 @@ public:
     }
     static GpioControlCpld scm_cpld("scm", "cpld", MAX10_10M16, &scm_cpld_attr, "USBDBG_IPMI_EN_L", true);
 
-    // PDB CPLD
-    static i2c_attr_t pdb_cpld_attr = {14, 0x40, nullptr};
-    static CpldComponent pdb_cpld("pdb", "cpld", LCMXO3_2100C, &pdb_cpld_attr);
+    // Interposer CPLD
+    static i2c_attr_t interposer_cpld_attr = {14, 0x40, nullptr};
+    static CpldComponent interposer_cpld("interposer", "cpld", LCMXO3_2100C, &interposer_cpld_attr);
 
     // HDD CPLD 0
     static i2c_attr_t hdd_cpld0_attr = {25, 0x40, nullptr};

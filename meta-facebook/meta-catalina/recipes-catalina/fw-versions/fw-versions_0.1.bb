@@ -43,10 +43,12 @@ FW_TOOLS = "\
 # Append HDD-specific services for clemente, enabling support for two HDDs
 FW_TOOLS:append:clemente = " \
     hdd-cpld,platform-sys-init.service,,multi-user.target,1 \
+    interposer-cpld,platform-sys-init.service,,multi-user.target,0 \
 "
 # Remove vr-aux-specific services for clemente, PDB not support
 FW_TOOLS:remove:clemente = " \
     pdb-vr-aux,platform-sys-init.service,,multi-user.target,0 \
+    pdb-cpld,platform-sys-init.service,,multi-user.target,0 \
 "
 
 LOCAL_URI = " \

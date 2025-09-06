@@ -33,8 +33,12 @@ check_source() {
 cpp_linter() {
   sources=$(find . -regex '.*\.\(cpp\|h\)$' -print)
   for f in $sources; do
-    echo "Checking $f"
-    check_source "$f"
+    if [[ "$f" == ./subprojects/* ]]; then
+      echo "Skipping $f"
+    else
+      echo "Checking $f"
+      check_source "$f"
+    fi
   done
 }
 

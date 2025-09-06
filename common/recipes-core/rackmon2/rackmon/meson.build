@@ -45,12 +45,16 @@ test_srcs = svc_common + files(
 
 cc = meson.get_compiler('cpp')
 
-glog_dep = declare_dependency(
-    compile_args: ['-DGLOG_USE_GLOG_EXPORT'],
-    dependencies: [cc.find_library('glog')],
-)
+deps = [dependency('threads')]
+if cc.find_library('glog', required: false).found()
+    deps += [declare_dependency(
+        compile_args: ['-DGLOG_USE_GLOG_EXPORT'],
+        dependencies: [cc.find_library('glog')],
+    )]
+else
+    deps += [dependency('glog', include_type: 'system')]
+endif
 
-deps = [dependency('threads'), glog_dep]
 
 if get_option('syslog') == true
     add_global_arguments('-DRACKMON_SYSLOG=1', language: 'cpp')

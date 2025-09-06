@@ -1,0 +1,10 @@
+[wrap-git]
+url = https://github.com/google/glog
+revision = v0.6.0
+method = cmake
+
+[cmake]
+cmake_args = -DWITH_GFLAGS=OFF -DWITH_GTEST=OFF -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=OFF
+
+[provide]
+glog = glog_dep

@@ -2,6 +2,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
     file://wantedby.conf \
+    file://mctp-config \
 "
 
 FILES:${PN} += "${systemd_system_unitdir}/*"

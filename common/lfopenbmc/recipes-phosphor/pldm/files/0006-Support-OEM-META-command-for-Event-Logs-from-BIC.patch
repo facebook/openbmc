@@ -1,7 +1,7 @@
-From 43d1f1c24505bfd7f49ae8a6c481eb7020767727 Mon Sep 17 00:00:00 2001
+From 08b6ff183fcc57f65110eeb1b6c1fe469433b5a9 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Wed, 26 Jun 2024 14:25:18 +0800
-Subject: [PATCH 06/17] Support OEM-META command for Event Logs from BIC
+Subject: [PATCH] Support OEM-META command for Event Logs from BIC
 
 Summary:
   - Add handler for write-file command "EVENT_LOG", which is sent
@@ -68,7 +68,7 @@ index abf8369..f2e44de 100644
  class FileHandler
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
 new file mode 100644
-index 0000000..97ae0dc
+index 0000000..d7bd044
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
 @@ -0,0 +1,496 @@
@@ -234,8 +234,8 @@ index 0000000..97ae0dc
 +    {" MTIA FAULT", 0x3D, "MTIA_LDO_IN_1V2",                  "/xyz/openbmc_project/inventory/system/board/Minerva_Aegis/ldo_in_1v2", "VoltageRegulatorFault"},
 +    {" MTIA FAULT", 0x3E, "MTIA_PLL_VDDA15_MAX_CORE_S",       "/xyz/openbmc_project/inventory/system/board/Minerva_Aegis/pll_vdda15_max_core_s", "VoltageRegulatorFault"},
 +    {" MTIA FAULT", 0x50, "MTIA_POWER_ON_SEQUENCE_FAIL",      "/xyz/openbmc_project/inventory/system/board/Minerva_Aegis/asic0", "PowerRailFault"},
-+    {" MTIA FAULT", 0x51, "MTIA_FM_ASIC_0_THERMTRIP_N",       "/xyz/openbmc_project/inventory/system/board/Minerva_Aegis/asic0", "DeviceOverOperatingTemperatureFault"},
-+    {" MTIA FAULT", 0x52, "MTIA_FM_ATH_PLD_HBM3_CATTRIP",     "/xyz/openbmc_project/inventory/system/board/Minerva_Aegis/asic0", "DeviceOverOperatingTemperatureFault"},
++    {" MTIA FAULT", 0x51, "MTIA_FM_ASIC_0_THERMTRIP_N",       "/xyz/openbmc_project/inventory/system/board/Minerva_Aegis/asic_0_thermtrip_n", "DeviceOverOperatingTemperatureFault"},
++    {" MTIA FAULT", 0x52, "MTIA_FM_ATH_PLD_HBM3_CATTRIP",     "/xyz/openbmc_project/inventory/system/board/Minerva_Aegis/ath_pld_hbm3_cattrip", "DeviceOverOperatingTemperatureFault"},
 +};
 +
 +const FaultDesc* lookupFaultByIndex(uint8_t index)

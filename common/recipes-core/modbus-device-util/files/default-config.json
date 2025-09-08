@@ -30,7 +30,7 @@
                 "targetCoolantOutletTempTimesTen": 350
             },
             "quanta": {
-                "registerValues": ["TBD"],
+                "registerValues": ["L05T"],
                 "pumpDutyPercentage": 50,
                 "targetCoolantOutletTempTimesTen": 350
             }

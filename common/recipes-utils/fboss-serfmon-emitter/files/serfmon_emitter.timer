@@ -2,7 +2,7 @@
 Description=Run serfmon_emitter on boot and daily
 
 [Timer]
-OnBootSec=1min
+OnBootSec=5min
 OnCalendar=daily
 Persistent=true
 

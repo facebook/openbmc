@@ -442,7 +442,9 @@ int main(int argc, const char** argv) {
   read_cmd->add_option("-t,--timeout", raw_cmd_timeout, "Timeout (ms)");
   read_cmd
       ->add_option(
-          "UniqueDeviceAddress", devAddress, "The device from which we want to read")
+          "UniqueDeviceAddress",
+          devAddress,
+          "The device from which we want to read")
       ->required();
   read_cmd
       ->add_option(
@@ -463,7 +465,9 @@ int main(int argc, const char** argv) {
   write_cmd->add_option("-t,--timeout", raw_cmd_timeout, "Timeout (ms)");
   write_cmd
       ->add_option(
-          "UniqueDeviceAddress", devAddress, "The device to which we want to write")
+          "UniqueDeviceAddress",
+          devAddress,
+          "The device to which we want to write")
       ->required();
   write_cmd
       ->add_option(

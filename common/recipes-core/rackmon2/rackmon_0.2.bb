@@ -126,6 +126,7 @@ LOCAL_URI += " \
     file://tests/RackmonTest.cpp \
     file://tests/UnixSockTest.cpp \
     file://tests/TempDir.h \
+    file://tests/TestUtils.h \
     file://tests/test_pyrmd.py \
     "
 

@@ -1,5 +1,5 @@
 #include <glog/logging.h>
-#include <gtest/gtest.h>
+#include "TestUtils.h"
 
 int main(int argc, char** argv) {
   ::google::InitGoogleLogging(argv[0]);

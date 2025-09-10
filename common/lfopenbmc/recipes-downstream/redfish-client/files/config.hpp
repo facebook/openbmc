@@ -39,6 +39,7 @@ struct LogServiceConfig
 struct Config
 {
     std::string host;
+    std::string compatible;
     std::optional<SensorConfig> sensorConfig;
     std::optional<LogServiceConfig> logServiceConfig;
 

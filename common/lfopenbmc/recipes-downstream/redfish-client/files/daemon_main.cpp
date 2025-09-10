@@ -15,10 +15,10 @@ using namespace redfish_client_daemon;
 
 int main(int argc, const char** argv)
 {
-    std::string configPath;
+    std::string configDir;
     std::string persistDir;
     CLI::App app{"daemon that runs as a redfish client talking to SMC"};
-    app.add_option("config", configPath, "config file path")->required();
+    app.add_option("config-dir", configDir, "config file directory")->required();
     app.add_option("-p,--persist-dir", persistDir,
                    "directory where persist data can be stored");
     CLI11_PARSE(app, argc, argv);
@@ -28,7 +28,7 @@ int main(int argc, const char** argv)
     {
         const std::string kServiceName = "xyz.openbmc_project.RedfishClient";
         sdbusplus::async::context ctx;
-        runRedfishClient(kServiceName, ctx, configPath, persistDir);
+        runRedfishClient(kServiceName, ctx, configDir, persistDir);
     }
 
     info("redfish client clean exit\n");

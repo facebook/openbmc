@@ -1,12 +1,12 @@
 [Unit]
 Description=Redfish Client
-After=network-online.target xyz.openbmc_project.EntityManager.service xyz.openbmc_project.Logging.service catalina-sys-init.service
-Wants=network-online.target xyz.openbmc_project.EntityManager.service xyz.openbmc_project.Logging.service catalina-sys-init.service
+After=network-online.target xyz.openbmc_project.EntityManager.service xyz.openbmc_project.Logging.service platform-sys-init.service
+Wants=network-online.target xyz.openbmc_project.EntityManager.service xyz.openbmc_project.Logging.service platform-sys-init.service
 
 [Service]
 Restart=on-failure
 ExecStartPre=/bin/mkdir -p /var/lib/redfish-client
-ExecStart=/usr/bin/redfish-client /usr/share/redfish-client/configurations/catalina.json -p /var/lib/redfish-client
+ExecStart=/usr/bin/redfish-client /usr/share/redfish-client/configurations/ -p /var/lib/redfish-client
 WatchdogSec=1m
 
 [Install]

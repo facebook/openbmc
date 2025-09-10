@@ -1,6 +1,6 @@
 {
   "host": "172.31.13.251",
-  "compatible": "com.meta.Hardware.BMC.Catalina",
+  "compatible": "com.meta.Hardware.BMC.Clemente",
   "sensorConfig": {
     "associationPath": "/xyz/openbmc_project/inventory/system/board/NVIDIA_HMC",
     "intervalMilliseconds": 2000,
@@ -21,6 +21,16 @@
         "fromUrl": "/redfish/v1/Chassis/HGX_GPU_1/Sensors/HGX_GPU_1_Voltage_0",
         "toNamespace": "voltage",
         "toId": "HGX_GPU1_VOLT_V"
+      },
+      {
+        "fromUrl": "/redfish/v1/Chassis/HGX_GPU_2/Sensors/HGX_GPU_2_Voltage_0",
+        "toNamespace": "voltage",
+        "toId": "HGX_GPU2_VOLT_V"
+      },
+      {
+        "fromUrl": "/redfish/v1/Chassis/HGX_GPU_3/Sensors/HGX_GPU_3_Voltage_0",
+        "toNamespace": "voltage",
+        "toId": "HGX_GPU3_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/HGX_ProcessorModule_0/Sensors/HGX_ProcessorModule_0_AltitudePressure_0",

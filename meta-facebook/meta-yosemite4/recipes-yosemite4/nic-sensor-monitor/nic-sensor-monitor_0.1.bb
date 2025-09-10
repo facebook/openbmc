@@ -6,12 +6,13 @@ inherit allarch systemd obmc-phosphor-systemd
 S = "${WORKDIR}/sources"
 UNPACKDIR = "${S}"
 
-RDEPENDS:${PN} += "bash"
+RDEPENDS:${PN} += "bash expect"
 
 SRC_URI += " \
     file://nic-sensor-monitor.timer \
     file://nic-sensor-monitor.service \
     file://nic-sensor-monitor.sh \
+    file://slice_diagnostics.expect \
     "
 
 SYSTEMD_SERVICE:${PN}:append = " \
@@ -25,4 +26,5 @@ do_install() {
     install -m 0644 ${UNPACKDIR}/nic-sensor-monitor.timer ${D}/${systemd_system_unitdir}/nic-sensor-monitor.timer
     install -d ${D}${libexecdir}
     install -m 0755 ${UNPACKDIR}/nic-sensor-monitor.sh ${D}${libexecdir}/nic-sensor-monitor
+    install -m 0755 ${UNPACKDIR}/slice_diagnostics.expect ${D}${libexecdir}/nic-slice-diagnostics
 }

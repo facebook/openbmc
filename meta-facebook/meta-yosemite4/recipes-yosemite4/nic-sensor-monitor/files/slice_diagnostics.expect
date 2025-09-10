@@ -1,0 +1,54 @@
+#!/usr/bin/expect
+
+log_user 0
+if { $argc != 2 } {
+        puts "Usage: $argv0  <device, e. g., ctrlcpnic1>  <slice, 0 or 2>"
+        exit 1
+}
+set dev [lindex $argv 0]
+set slice [lindex $argv 1]
+set timeout 2
+spawn obmc-console-client -i $dev
+send \r
+expect timeout
+send \r
+expect -r ".*uart:~\\$ "
+send "t uart $slice\r"
+send \r
+expect timeout
+send \r
+expect -r ".*uart:~\\$ "
+set timeout 200
+send "t version\r"
+expect -re ".*?(t version\r\n)"
+puts "\r\n################  COMMAND: $expect_out(1,string)"
+expect -re "(.*?)uart:~\\$ "
+puts "\r\n$expect_out(1,string)"
+send "t log\r"
+expect -re ".*?(t log\r\n)"
+puts "\r\n################  COMMAND: $expect_out(1,string)\r\n"
+expect {
+    full_buffer {puts -nonewline "$expect_out(buffer)"; exp_continue}
+    -re "(.*?)uart:~\\$ "
+}
+puts "$expect_out(1,string)"
+send "t rbt\r"
+expect -re ".*?(t rbt\r\n)"
+puts "\r\n################  COMMAND: $expect_out(1,string)"
+expect -re "(.*?)uart:~\\$ "
+puts "\r\n$expect_out(1,string)"
+send "pcie\r"
+expect -re ".*?(pcie\r\n)"
+puts "\r\n################  COMMAND: $expect_out(1,string)"
+expect -re "(.*?)uart:~\\$ "
+puts "\r\n$expect_out(1,string)"
+send "phy\r"
+expect -re ".*?(phy\r\n)"
+puts "\r\n################  COMMAND: $expect_out(1,string)"
+expect -re "(.*?)uart:~\\$ "
+puts "\r\n$expect_out(1,string)"
+send "t ncsi\r"
+expect -re ".*?(t ncsi\r\n)"
+puts "\r\n################  COMMAND: $expect_out(1,string)"
+expect -re "(.*?)uart:~\\$ "
+puts "\r\n$expect_out(1,string)"

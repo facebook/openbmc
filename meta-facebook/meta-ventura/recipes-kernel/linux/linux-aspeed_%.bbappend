@@ -9,6 +9,6 @@ SRC_URI += " \
     file://0004-ARM-dts-aspeed-ventura-modify-dts-for-Pilot-stage.patch \
     file://0005-ARM-dts-aspeed-ventura-modify-dts-for-PVT-exit-stage.patch \
     file://0006-iio-adc-aspeed-Support-deglitch-feature.patch \
-    file://0007-ARM-dts-aspeed-ventura-add-missing-cable-presence-gpios.patch \
+    file://0007-ARM-dts-aspeed-ventura-add-missing-cable-presence-gpios-v2.patch \
     file://0008-ARM-dts-aspeed-Ventura-Enable-i2c-slave-timeout.patch \
 "

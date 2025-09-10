@@ -1,7 +1,8 @@
-From 16a5667c4ffc5f5717eec85fae661fc9efc93674 Mon Sep 17 00:00:00 2001
-From: "P.K. Lee" <p.k.lee@quantatw.com>
-Date: Fri, 1 Aug 2025 15:42:04 +0800
+From 52864ecc6f0e20635125b1c6812c8ea3c1b0ce48 Mon Sep 17 00:00:00 2001
+From: Jason Hsu <Jason-Hsu@quantatw.com>
+Date: Wed, 10 Sep 2025 18:13:00 +0800
 Subject: [PATCH] ARM: dts: aspeed: ventura: add missing cable presence gpios
+ v2
 
 Since the 9 x cable presence GPIOs for 4 x AALC cables, 5 x Rack level
 leak cables are missing from the Ventura DTS, we added those to the
@@ -11,19 +12,23 @@ This commit additionally adds IRQ support in GPIO expanders under i2c10 to
 handle edge-triggered, and reorders the nodes based on upstream suggestions.
 
 LORE link:
-https://lore.kernel.org/all/20250801141131.2238599-1-pkleequanta@gmail.com/T/#u
+https://lore.kernel.org/all/20250903120600.632041-1-pkleequanta@gmail.com/T/#u
 
 Tested:
 The physical port mapping and line-names have been verified to math
 correctly.
 
-Signed-off-by: P.K. Lee <p.k.lee@quantatw.com>
+We have updated patch 0007 v2(version 2) to fix the issue where Bus3
+i2c3mux0ch6 and i2c3mux0ch7 should not be part of the i2c3mux0ch5 configuration.
+We have adjusted their positions accordingly.
+
+Signed-off-by: Jason Hsu <Jason-Hsu@quantatw.com>
 ---
- .../aspeed/aspeed-bmc-facebook-ventura.dts    | 653 ++++++++++--------
- 1 file changed, 365 insertions(+), 288 deletions(-)
+ .../aspeed/aspeed-bmc-facebook-ventura.dts    | 615 ++++++++++--------
+ 1 file changed, 346 insertions(+), 269 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
-index 54528a560f77..3d16c80a40c7 100644
+index 54528a560..72076cf2f 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
 @@ -53,8 +53,8 @@ chosen {
@@ -345,7 +350,7 @@ index 54528a560f77..3d16c80a40c7 100644
  			};
  
  			fan_leds_g1_gpio: gpio@21 {
-@@ -963,27 +1175,27 @@ fan_leds_g1_gpio: gpio@21 {
+@@ -963,16 +1175,16 @@ fan_leds_g1_gpio: gpio@21 {
  				"", "";
  			};
  
@@ -359,17 +364,16 @@ index 54528a560f77..3d16c80a40c7 100644
  				compatible = "maxim,max11617";
  				reg = <0x35>;
  			};
--		};
 +
 +			// Fan Board 0 FRU
 +			eeprom@56 {
 +				compatible = "atmel,24c128";
 +				reg = <0x56>;
 +			};
-+		};
+ 		};
  
  		i2c3mux0ch4: i2c@4 {
- 			#address-cells = <1>;
+@@ -980,10 +1192,10 @@ i2c3mux0ch4: i2c@4 {
  			#size-cells = <0>;
  			reg = <4>;
  
@@ -407,32 +411,7 @@ index 54528a560f77..3d16c80a40c7 100644
  		};
  
  		i2c3mux0ch5: i2c@5 {
-@@ -1020,18 +1232,37 @@ i2c3mux0ch5: i2c@5 {
- 			#size-cells = <0>;
- 			reg = <5>;
- 
-+		i2c3mux0ch6: i2c@6 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <6>;
-+
-+			// REAR-IO Board FRU
-+			eeprom@56 {
-+				compatible = "atmel,24c128";
-+				reg = <0x56>;
-+			};
-+		};
-+
-+		i2c3mux0ch7: i2c@7 {
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+			reg = <7>;
-+			status = "okay";
-+		};
-+
- 			pwm@20 {
- 				compatible = "max31790";
- 				reg = <0x20>;
+@@ -1026,12 +1238,12 @@ pwm@20 {
  				#address-cells = <1>;
  				#size-cells = <0>;
  				channel@2 {
@@ -449,31 +428,14 @@ index 54528a560f77..3d16c80a40c7 100644
  				};
  			};
  
-@@ -1089,24 +1320,6 @@ fan-7 {
- 				};
- 			};
- 		};
--
--		i2c3mux0ch6: i2c@6 {
--			#address-cells = <1>;
--			#size-cells = <0>;
--			reg = <6>;
--			// REAR-IO Board FRU
--			eeprom@56 {
--				compatible = "atmel,24c128";
--				reg = <0x56>;
--			};
--		};
--
--		i2c3mux0ch7: i2c@7 {
--			#address-cells = <1>;
--			#size-cells = <0>;
--			reg = <7>;
--			status = "okay";
--		};
- 	};
- };
- 
+@@ -1094,6 +1306,7 @@ i2c3mux0ch6: i2c@6 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			reg = <6>;
++
+ 			// REAR-IO Board FRU
+ 			eeprom@56 {
+ 				compatible = "atmel,24c128";
 @@ -1117,17 +1330,19 @@ &i2c4 {
  &i2c5 {
  	status = "okay";
@@ -845,5 +807,5 @@ index 54528a560f77..3d16c80a40c7 100644
 -	aspeed,ext-pulse-duration = <256>;
 -};
 -- 
-2.43.0
+2.34.1
 

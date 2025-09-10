@@ -1,0 +1,9 @@
+[Unit]
+Description=Watch for creation of /mnt/data/.chassis_eeprom
+
+[Path]
+PathExists=/mnt/data/.chassis_eeprom
+Unit=configure-eth0.service
+
+[Install]
+WantedBy=multi-user.target

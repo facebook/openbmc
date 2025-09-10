@@ -17,15 +17,10 @@
 #
 [Unit]
 Description=Set up DHCP vendor options
-Before=network-pre.target
-Wants=network-pre.target
-After=serfmon-cache.service
-Requires=serfmon-cache.service
 
 [Service]
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/bin/sh -c '/bin/sed -i \"s/VENDOR_SERIAL_HERE/$(/usr/local/bin/dhcp-id)/\" 	/etc/systemd/network/10-eth0.network'
-
-[Install]
-WantedBy=multi-user.target
+ExecStartPost=/bin/systemctl restart systemd-networkd.service
+ExecStartPost=/bin/systemctl stop configure-eth0.path

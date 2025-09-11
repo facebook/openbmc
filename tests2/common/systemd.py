@@ -39,6 +39,12 @@ PLATFORM_SETTINGS: Dict[str, ExpectedFailedUnits] = {
             "reconfig-interface-duid-ll@eth0.service",
         ],
     ),
+    "harma": ExpectedFailedUnits(
+        failed_units=[
+            "fw-versions-ag-vr@0.service",
+            "pldmSoftPowerOff.service",
+        ],
+    ),
 }
 
 

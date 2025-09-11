@@ -51,6 +51,14 @@ FW_TOOLS:remove:clemente = " \
     pdb-cpld,platform-sys-init.service,,multi-user.target,0 \
 "
 
+# Append secondary Bianca GPU for clemente
+FW_TOOLS:append:clemente = " \
+    hmc-hgx-fw-gpu-2,platform-sys-init.service,,multi-user.target,0 \
+    hmc-hgx-fw-gpu-3,platform-sys-init.service,,multi-user.target,0 \
+    hmc-hgx-inforom-gpu-2,platform-sys-init.service,,multi-user.target,0 \
+    hmc-hgx-inforom-gpu-3,platform-sys-init.service,,multi-user.target,0 \
+"
+
 LOCAL_URI = " \
     file://fw-versions@.service \
     ${@ ' '.join([ f"file://" + x.split(',')[0] for x in d.getVar('FW_TOOLS', True).split() ])} \

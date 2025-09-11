@@ -1,0 +1,83 @@
+From 31411f3a5352ee91c7f7ce875ad1e29a2b1bdd39 Mon Sep 17 00:00:00 2001
+From: Alex Wang <alex.ts.wang@fii-foxconn.com>
+Date: Thu, 31 Jul 2025 17:32:03 +0800
+Subject: [PATCH 1/1] configurations: nvidia: cx8: Update sensor thresholds
+
+Update sensor thresholds based on data provided by Nvidia.
+Threshold values were adjusted to align with the official sensor
+definition,
+ensuring accuracy and consistency with the hardware reference.
+
+Change-Id: I38af7021dbe3552d01a8c3e8330251dee0997a22
+Signed-off-by: Alex Wang <alex.ts.wang@fii-foxconn.com>
+---
+ .../nvidia_cx8_mezzanine_module.json          | 38 ++++++-------------
+ 1 file changed, 12 insertions(+), 26 deletions(-)
+
+diff --git a/configurations/nvidia_cx8_mezzanine_module.json b/configurations/nvidia_cx8_mezzanine_module.json
+index 0f2b997..676441e 100644
+--- a/configurations/nvidia_cx8_mezzanine_module.json
++++ b/configurations/nvidia_cx8_mezzanine_module.json
+@@ -19,23 +19,16 @@
+                 {
+                     "Direction": "greater than",
+                     "Index": 2,
+-                    "Name": "upper critical",
+-                    "Severity": 1,
+-                    "Value": 108.0
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 115
+                 },
+                 {
+                     "Direction": "greater than",
+                     "Index": 2,
+-                    "Name": "upper non critical",
+-                    "Severity": 0,
+-                    "Value": 105.0
+-                },
+-                {
+-                    "Direction": "less than",
+-                    "Index": 2,
+-                    "Name": "lower non critical",
+-                    "Severity": 0,
+-                    "Value": 5
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 97
+                 }
+             ],
+             "Type": "TMP421"
+@@ -53,23 +46,16 @@
+                 {
+                     "Direction": "greater than",
+                     "Index": 2,
+-                    "Name": "upper critical",
+-                    "Severity": 1,
+-                    "Value": 108.0
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 115
+                 },
+                 {
+                     "Direction": "greater than",
+                     "Index": 2,
+-                    "Name": "upper non critical",
+-                    "Severity": 0,
+-                    "Value": 105.0
+-                },
+-                {
+-                    "Direction": "less than",
+-                    "Index": 2,
+-                    "Name": "lower non critical",
+-                    "Severity": 0,
+-                    "Value": 5
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 97
+                 }
+             ],
+             "Type": "TMP421"
+-- 
+2.43.0
+

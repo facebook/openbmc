@@ -46,6 +46,79 @@ get_pim_spidev() {
     echo "$spidev_file"
 }
 
+flash_chip_expected_list() {
+    echo "MX25U3235E/F"
+}
+
+# Override using flash_extrach_info from flashrom-utils.sh
+#
+# helper to fix the issue flashrom detect multiple flash chips
+# - "MX25L3239E"      failed one
+# - "MX25U3235E/F"    good one
+#
+# by compare detected flash chips with expected good flash chip list
+#
+get_flash_info() {
+    pim_flash="$1"
+    valid=0
+    # replace space with underscore for easier parsing
+    info=$(flash_extract_info "$pim_flash" | tr ' ' '+')
+    # Validate flash info amount
+    count=$(echo "$info" | wc -l)
+
+    if [ $((count)) -eq 1 ]; then
+        # In case only one flash chip detected, just return it
+        echo "$info"
+    elif [ $((count)) -gt 1 ]; then
+        expected_list=$(flash_chip_expected_list)
+        # get the first detected from valid chip list
+        for chip in $expected_list; do
+            # split by line and check each line
+            for line in $info; do
+                if echo "$line" | grep -q "$chip"; then
+                    echo "$line" | tr '+' ' '
+                    valid=1
+                    break 2
+                fi
+            done
+        done
+        if [ $((valid)) -ne 1 ]; then
+            echo "None of the detected flash chips are in good list!" >&2
+            echo " $expected_list" >&2
+            flash_dump_summary "$1"
+            return 1
+        fi
+    else
+        echo "No flash chip detected! flashrom output:"
+        flash_dump_summary "$1"
+        return 1
+    fi
+}
+
+get_flash_model() {
+    pim_flash="$1"
+    info=$(get_flash_info "$pim_flash")
+    model=$(echo "$info" | cut -d '"' -f 2)
+    if [ -z "$model" ]; then
+        echo "Unable to determine flash model! flashrom output:"
+        flash_dump_summary "$1"
+        return 1
+    fi
+    echo "$model"
+}
+
+get_flash_size() {
+    pim_flash="$1"
+    info=$(get_flash_info "$pim_flash")
+    size=$(echo "$info" | cut -d '(' -f 2 | cut -d ' ' -f 1)
+    if ! is_decimal "$size"; then
+        echo "Unable to determine flash size! flashrom output:"
+        flash_dump_summary "$1"
+        return 1
+    fi
+    echo "$size"
+}
+
 fpga_update(){
     # extend the image size to fit flash size
     cp "$fpgaimg" "$tmpfile"
@@ -55,29 +128,29 @@ fpga_update(){
     printf "\nUsb-spi dom fpga update:\n\n"
 
     pim1_flash=$(get_pim_spidev 1)
-    flash_size=$(flash_get_size "$pim1_flash")
+    flash_size=$(get_flash_size "$pim1_flash")
     addsize=$(($((flash_size * 1024)) - filesize))
 
     if [ $((addsize)) -gt 0 ];then
-	dd if=/dev/zero bs="$addsize" count=1 | tr "\000" "\377" >> "$tmpfile"
+        dd if=/dev/zero bs="$addsize" count=1 | tr "\000" "\377" >> "$tmpfile"
     fi
 
     if [ "$target" == "all" ];then
 
         for(( pimnum=1 ; pimnum<=MAX_PIMNUM ; pimnum++ ))
         do
-	    printf " \e[mstart pim %s dom fpga update.\e[m\n" "$((pimnum))"
-	    pim_flash=$(get_pim_spidev "$pimnum")
-	    flash_model=$(flash_get_model "$pim_flash")
-	    ( flash_write "$pim_flash" "$tmpfile" "$flash_model" > ${log_dir}flash_"${pim_flash}"_multi_log )  &
+        printf " \e[mstart pim %s dom fpga update.\e[m\n" "$((pimnum))"
+        pim_flash=$(get_pim_spidev "$pimnum")
+        flash_model=$(get_flash_model "$pim_flash")
+        ( flash_write "$pim_flash" "$tmpfile" "$flash_model" > ${log_dir}flash_"${pim_flash}"_multi_log )  &
         done
     else
-	pimnum=$(($(echo "$target" | cut -b 4)))
-	printf " \e[mstart pim %s dom fpga update.\e[m\n" "$((pimnum))"
+    pimnum=$(($(echo "$target" | cut -b 4)))
+    printf " \e[mstart pim %s dom fpga update.\e[m\n" "$((pimnum))"
 
-	pim_flash=$(get_pim_spidev "$pimnum")
-	flash_model=$(flash_get_model "$pim_flash")
-	( flash_write "$pim_flash" "$tmpfile" "$flash_model" > ${log_dir}flash_"${pim_flash}"_single_log )  &
+    pim_flash=$(get_pim_spidev "$pimnum")
+    flash_model=$(get_flash_model "$pim_flash")
+    ( flash_write "$pim_flash" "$tmpfile" "$flash_model" > ${log_dir}flash_"${pim_flash}"_single_log )  &
     fi
 
     printf "\n \e[mwaitting for the update finished...\e[m"

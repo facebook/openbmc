@@ -37,6 +37,7 @@ CSV_HEADERS = {
     "scale": float,
     "shift": float,
     "name": str,
+    "unit": str,
 }
 CSV_MANDATORY_HEADERS = {"begin", "length", "flags_bit", "flags_name", "format", "name"}
 

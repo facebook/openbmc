@@ -25,3 +25,4 @@ IMAGE_INSTALL:append = " pldm-monitor"
 IMAGE_INSTALL:append = " nic-sensor-monitor"
 # Add expect needed for NIC console development
 IMAGE_INSTALL:append = " expect"
+IMAGE_INSTALL:append = " dimm-util"

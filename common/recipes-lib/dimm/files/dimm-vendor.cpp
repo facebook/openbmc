@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 #include "dimm.h"
 
 typedef struct _dimm_mfg {
@@ -35,6 +36,39 @@ static dimm_mfg dimm_manufacturer[] = {
  { 0x8c8a, "Richtek"  },
 };
 
+struct loc_decode { uint8_t code; const char* name; };
+static const loc_decode LOC_SAMSUNG[] = {
+  { 1, "South Korea" },
+  { 2, "China"       },
+  { 3, "Philippines" },
+  { 4, "Vietnam"     },
+};
+
+static const loc_decode LOC_MICRON[] = {
+  {  1, "SIG (USA)"         },
+  {  2, "MTB (Taiwan)"      },
+  {  5, "MNG (Malaysia)"    },
+  {  6, "MMP (Malaysia)"    },
+  {  7, "MNI (India)"       },
+  {  8, "SING (Singapore)"  },
+  { 10, "MSI (India)"       },
+  { 15, "MXA (China)"       },
+  { 26, "Hotayi (Malaysia)" },
+  { 37, "TSMT (Taiwan)"     },
+};
+
+static const loc_decode LOC_HYNIX[] = {
+  { 1, "Korea" },
+  { 2, "China"       },
+  { 3, "Vietnam" },
+};
+
+static const char* lookup_loc(uint8_t code, const loc_decode* tbl, size_t n) {
+  for (size_t i = 0; i < n; ++i)
+    if (tbl[i].code == code) return tbl[i].name;
+  return nullptr;
+}
+
 const char *
 mfg_string(uint16_t id) {
   uint8_t i;
@@ -62,6 +96,48 @@ get_spd5_mfg(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint16_t offs, char *mfg
   mfg_id = (buf[1] << 8) | buf[0];
   snprintf(mfg_str, LEN_MFG_STRING, "%s", mfg_string(mfg_id));
 
+  return 0;
+}
+
+int get_spd5_dimm_vendor_location(uint8_t fru_id, uint8_t cpu, uint8_t dimm, char *out) {
+  // byte514
+  if (!out){
+    return -1;
+  }
+
+  out[0] = '\0';
+
+  char vendor[LEN_MFG_STRING] = {0};
+  if (get_spd5_dimm_vendor(fru_id, cpu, dimm, vendor) < 0) {
+    snprintf(out, LEN_MFG_STRING, "Unknown");
+    return -1;
+  }
+
+  uint8_t loc_raw = 0, got = 0;
+  if (util_read_spd_with_retry(fru_id, cpu, dimm, 0x0202, 1, 1000, &loc_raw, &got) != 0 || got != 1) {
+    snprintf(out, LEN_MFG_STRING, "Unknown");
+    return -1;
+  }
+
+  if (strcmp(vendor, "Samsung") == 0) {
+    if (const char* s = lookup_loc(loc_raw, LOC_SAMSUNG, ARRAY_SIZE(LOC_SAMSUNG))) {
+      snprintf(out, LEN_MFG_STRING, "%s", s);
+      return 0;
+    }
+  } else if (strcmp(vendor, "Micron") == 0) {
+    if (const char* s = lookup_loc(loc_raw, LOC_MICRON, ARRAY_SIZE(LOC_MICRON))) {
+      snprintf(out, LEN_MFG_STRING, "%s", s);
+      return 0;
+    }
+  } else if (strcmp(vendor, "SK Hynix") == 0) {
+    if (const char* s = lookup_loc(loc_raw, LOC_HYNIX, ARRAY_SIZE(LOC_HYNIX))) {
+      snprintf(out, LEN_MFG_STRING, "%s", s);
+      return 0;
+    }
+  }
+
+
+  snprintf(out, LEN_MFG_STRING, "0x%02X", loc_raw);
   return 0;
 }
 

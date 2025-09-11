@@ -122,6 +122,7 @@ const char * mfg_string(uint16_t id);
 int get_spd5_dimm_vendor(uint8_t fru_id, uint8_t cpu, uint8_t dimm, char *mfg_str);
 int get_spd5_reg_vendor(uint8_t fru_id, uint8_t cpu, uint8_t dimm, char *mfg_str);
 int get_spd5_pmic_vendor(uint8_t fru_id, uint8_t cpu, uint8_t dimm, char *mfg_str);
+int get_spd5_dimm_vendor_location(uint8_t fru_id, uint8_t cpu, uint8_t dimm, char *mfg_loc);
 int get_spd5_dimm_mfg_date(uint8_t fru_id, uint8_t cpu, uint8_t dimm, char *date_str);
 int get_spd5_dimm_size(uint8_t fru_id, uint8_t cpu, uint8_t dimm, char *size_str);
 int get_spd5_dimm_speed(uint8_t fru_id, uint8_t cpu, uint8_t dimm, char *speed_str);

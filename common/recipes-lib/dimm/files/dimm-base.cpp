@@ -679,6 +679,7 @@ get_config_spd5(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t type, json_t 
   char size[LEN_SIZE_STRING] = {0};
   char speed[LEN_SPEED_STRING] = {0};
   char mfg[LEN_MFG_STRING] = {0};
+  char mfg_loc[LEN_MFG_STRING] = {0};
   char mfg_date[LEN_MFG_STRING] = {0};
   char pn[LEN_PN_STRING] = {0};
   char sn[LEN_SERIAL_STRING] = {0};
@@ -688,6 +689,7 @@ get_config_spd5(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t type, json_t 
   get_spd5_dimm_size(fru_id, cpu, dimm, size);
   get_spd5_dimm_speed(fru_id, cpu, dimm, speed);
   get_spd5_dimm_vendor(fru_id, cpu, dimm, mfg);
+  get_spd5_dimm_vendor_location(fru_id, cpu, dimm, mfg_loc);
   get_spd5_dimm_mfg_date(fru_id, cpu, dimm, mfg_date);
   get_part(fru_id, cpu, dimm, pn);
   get_serial(fru_id, cpu, dimm, sn);
@@ -699,6 +701,7 @@ get_config_spd5(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t type, json_t 
     json_object_set_new(obj, "Size", json_string(size));
     json_object_set_new(obj, "Speed", json_string(speed));
     json_object_set_new(obj, "Manufacturer", json_string(mfg));
+    json_object_set_new(obj, "Manufacturing Location", json_string(mfg_loc));
     json_object_set_new(obj, "Manufacturing Date", json_string(mfg_date));
     json_object_set_new(obj, "Part Number", json_string(pn));
     json_object_set_new(obj, "Serial Number", json_string(sn));
@@ -709,6 +712,7 @@ get_config_spd5(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t type, json_t 
     printf("\tSize: %s\n", size);
     printf("\tSpeed: %s\n", speed);
     printf("\tManufacturer: %s\n", mfg);
+    printf("\tManufacturing Location: %s\n", mfg_loc);
     printf("\tManufacturing Date: %s\n", mfg_date);
     printf("\tPart Number: %s\n", pn);
     printf("\tSerial Number: %s\n", sn);

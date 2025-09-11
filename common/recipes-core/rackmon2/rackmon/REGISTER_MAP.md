@@ -81,6 +81,7 @@ Registers can be described as a CSV for easy human consumption and management.
 | scale | [Optional for FLOAT, default=1.0] constant number to multiply the register float value before shifted: `final = READ * scale + shift` |
 | shift | [Optional for FLOAT, default=0.0] constant number to be added to the register float value: `final = READ * scale + shift` |
 | name | Name of the register. Preferred format is First_Name_Upper_Case_With_Underscore |
+| unit | Unit of the value stored in the register |
 
 NOTE: For flags, after the row describing the register, the subsequent rows provide information for each bit utilizing the `flags_bit` and `flags_name` only.
 Should be easier to see from an example:

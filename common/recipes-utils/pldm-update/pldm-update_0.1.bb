@@ -1,5 +1,3 @@
-FILESEXTRAPATHS:append := "${THISDIR}/files:"
-
 SUMMARY = "OpenBMC PLDM Update Tool"
 DESCRIPTION = "OpenBMC PLDM Update Tool"
 
@@ -16,9 +14,10 @@ LOCAL_URI = " \
     file://pldm-update.hpp \
     file://pldm-update.cpp \
     file://mmc-recovery.hpp \
-    file://mmc-recovery.cpp \
+    file://mmc-recovery-main.cpp \
     file://options.cpp \
     file://meson.build \
+    file://plat/meson.build \
     "
 
 DEPENDS += " \
@@ -26,4 +25,3 @@ DEPENDS += " \
     sdbusplus \
     libpldm \
     "
-

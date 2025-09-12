@@ -5,6 +5,8 @@
 #include <fstream>
 #include <vector>
 
+RecoveryOps::~RecoveryOps() {}
+
 namespace fs = std::filesystem;
 
 #pragma pack(push, 1)
@@ -24,6 +26,10 @@ typedef struct
     uint8_t status;
 } uart_resp_t;
 #pragma pack(pop)
+
+std::string board_num;
+std::string board;
+
 
 static auto encode_uart_cmd(npcm_uart_cmd cmd, unsigned int addr, 
                             uint16_t pkg_len = PACKAGE_CMD_LENGTH)
@@ -85,52 +91,62 @@ static auto set_console_service_state(std::string console, bool state)
     return true;
 }
 
-static auto set_recovery_mode(bool state)
-{
-    // 0x00 -> RSVD_GPIO_1 pull low
-    // 0x40 -> RSVD_GPIO_1 pull high
-    auto cmd = std::string("i2cset -y 11 0x21 0x32 ") + (state ? "0x00" : "0x40");
-    cmd += " && sleep 1s ";
-    cmd += " && i2cset -y 11 0x21 0x00 0xF7";
-    cmd += " && sleep 5s";
-    cmd += " && i2cset -y 11 0x21 0x00 0xFF";
-    cmd += " && sleep 3s"; // mmc at least need 2s to power up
-
-    std::cout << "Attempting to " << (state ? "enable" : "disable") 
-              << " recovery mode..." << std::endl;
-
-    auto rc = std::system(cmd.c_str());
-    if (rc)
-    {
-        std::cerr << "Failed to set recovery mode to " << state 
-                  << ", rc=" << rc << std::endl;
-        return false;
+class DefaultRecoveryOps : public RecoveryOps {
+public:
+    bool set_recovery_mode(bool enable, int bus) override { 
+        std::string cmd;
+        cmd += "i2cset -y " + std::to_string(bus) + " 0x21 0x32 " + (enable ? "0x00" : "0x40");
+        cmd += " && sleep 1s";
+        cmd += " && i2cset -y " + std::to_string(bus) + " 0x21 0x00 0xF7";
+        cmd += " && sleep 5s";
+        cmd += " && i2cset -y " + std::to_string(bus) + " 0x21 0x00 0xFF";
+        cmd += " && sleep 3s";
+        std::cout << "Attempting to " << (enable ? "enable" : "disable")
+                  << " recovery mode on bus " << bus << "...\n";
+        auto rc = std::system(cmd.c_str());
+        if (rc)
+        {
+            std::cerr << "Failed to set recovery mode to " << enable 
+                    << ", rc=" << rc << std::endl;
+            return false;
+        }
+        return true;
     }
-    return true;
+
+    SerialSel resolve_serial(const std::string&, const std::string&) override {
+        std::cout << "[INFO] Using default UART/bus\n";
+        return SerialSel{DEFAULT_SERIAL_PORT, 11};
+    }
+};
+
+std::unique_ptr<RecoveryOps> __attribute__((weak)) create_recovery_ops() {
+    return std::make_unique<DefaultRecoveryOps>();
 }
 
 class NpcmDevice
 {
   public:
-    explicit NpcmDevice(const std::string& serialPath): serial(serialPath)
-    {
-        // Need to stop console service before using the serial port
+    NpcmDevice(RecoveryOps& ops_, const std::string& serialPath, int i2cBus)
+    : ops(ops_), serial(serialPath), bus(i2cBus) {
         set_console_service_state(serial.get_path(), false);
-        set_recovery_mode(true);
+        ops.set_recovery_mode(true, bus);
         serial.open_port();
-    }
-
+        sleep(1);
+      }
     ~NpcmDevice()
     {
-        set_recovery_mode(false);
+        ops.set_recovery_mode(false, bus);
         set_console_service_state(serial.get_path(), true);
     }
 
     bool program_loader(const std::string& loaderFile)
     {
         std::cout << "Check if loader is alive..." << std::endl;
+        std::cout << "Sending UART_CMD_LOADER_ALIVE to address: 0x" 
+                << std::hex << UART_LOADER_ADDRESS << std::dec << std::endl;
         auto rc = send_uart_cmd_to_npcm(UART_CMD_LOADER_ALIVE, 
                                         UART_LOADER_ADDRESS, nullptr, 0);
+        std::cout << "UART command return code: " << rc << std::endl;
     
         if (rc == UART_RESP_STATUS_NO_ERR)
         {
@@ -283,7 +299,9 @@ class NpcmDevice
     }
 
   private:
+    RecoveryOps& ops;
     SerialDevice serial;
+    int bus;
 
     int select_flash(uint8_t flash)
     {
@@ -549,7 +567,49 @@ class NpcmDevice
     }
 };
 
-void recover_mmc(const std::string& tarFile)
+void check_gpio_switch()
+{
+    FILE* pipe = popen("gpiofind SCM_USB_SEL", "r");
+    if (!pipe)
+    {
+        std::cerr << "Failed to run gpiofind." << std::endl;
+        return;
+    }
+    char buffer[128];
+    std::string gpioPath;
+    if (fgets(buffer, sizeof(buffer), pipe) != nullptr)
+    {
+        gpioPath = std::string(buffer);
+        gpioPath.erase(gpioPath.find_last_not_of(" \n\r\t") + 1);
+    }
+    pclose(pipe);
+    if (gpioPath.empty())
+    {
+        std::cerr << "GPIO SCM_USB_SEL not found." << std::endl;
+        return;
+    }
+    std::cout << "Found GPIO path: " << gpioPath << std::endl;
+    std::string gpiosetCmd = "gpioset " + gpioPath + "=0";
+    int rc = std::system(gpiosetCmd.c_str());
+    if (rc != 0)
+    {
+        std::cerr << "Failed to set GPIO low: " << gpiosetCmd << std::endl;
+        return;
+    }
+    sleep(5);
+    rc = std::system("ls /dev/ttyUSB* > /dev/null 2>&1");
+    if (rc == 0)
+    {
+        std::cout << "[OK] UART enumerated, switch is likely working." << std::endl;
+    }
+    else
+    {
+        std::cerr << "[ERROR] UART device not found. Switch may be in recovery or failed." << std::endl;
+    }    
+}
+
+ void recover_mmc(RecoveryOps *ops, const std::string& tarFile,
+    const std::string& board_num, std::string board)
 {
     std::unique_ptr<PldmUpdateLock> lock;
     try
@@ -602,6 +662,8 @@ void recover_mmc(const std::string& tarFile)
     auto loaderFile = tmpDir / "loader_signed.bin";
     auto updateFile = tmpDir / (filename.string() + ".bin");
 
+
+
     if (!fs::exists(loaderFile, ec) || !fs::exists(updateFile, ec))
     {
         std::cerr << "Required files " << loaderFile << " and " << updateFile
@@ -611,7 +673,8 @@ void recover_mmc(const std::string& tarFile)
     }
     else
     {
-        NpcmDevice npcmDevice(DEFAULT_SERIAL_PORT);
+        SerialSel sel = ops->resolve_serial(board_num, board);
+        NpcmDevice npcmDevice(*ops, sel.uart_path, sel.bus);
         if (!npcmDevice.run_recovery(loaderFile.string(), updateFile.string()))
         {
             std::cerr << "Failed to run recovery." << std::endl;

@@ -11,9 +11,13 @@ project(
   ]
 )
 
+headers = [
+  'mmc-recovery.hpp',
+]
+
 src = [
   'pldm-update.cpp',
-  'mmc-recovery.cpp',
+  'mmc-recovery-main.cpp',
   'options.cpp',
 ]
 
@@ -21,6 +25,12 @@ deps = [
   dependency('sdbusplus'),
   dependency('libpldm')
 ]
+
+subdir('plat')
+
+install_headers(
+    headers,
+    subdir: 'openbmc')
 
 executable(
   'pldm-update',

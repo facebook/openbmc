@@ -29,8 +29,10 @@ constexpr uint8_t MIN_PACKAGE_LENGTH = CRC8_START_OFFSET + PACKAGE_CMD_LENGTH + 
 constexpr uint8_t PACKAGE_RESP_LENGTH = 2;  // cmd + status
 constexpr uint8_t DATA_RESP_LENGTH = 2;     // data length
 constexpr uint8_t MIN_RESP_PACKAGE_LENGTH = CRC8_START_OFFSET + PACKAGE_RESP_LENGTH + CRC8_LENGTH;
-
 constexpr const char* DEFAULT_SERIAL_PORT = "/dev/ttyUSB6";
+
+extern std::string board_num;
+extern std::string board;
 
 enum npcm_uart_cmd
 {
@@ -65,6 +67,21 @@ enum npcm_uart_resp_status
 	UART_RESP_STATUS_READ_ERR,
 	UART_RESP_STATUS_VIRIFY_ERR,
 };
+
+struct SerialSel {
+    std::string uart_path;
+    int bus = -1;
+};
+
+class RecoveryOps {
+public:
+    virtual ~RecoveryOps();
+    virtual SerialSel resolve_serial(const std::string& board_num,
+                                     const std::string& board) = 0;
+
+    virtual bool set_recovery_mode(bool state, int bus);
+};
+std::unique_ptr<RecoveryOps> create_recovery_ops();
 
 class SerialDevice
 {
@@ -198,4 +215,5 @@ struct RemovablePath
     RemovablePath& operator=(RemovablePath&&) = delete;
 };
 
-void recover_mmc(const std::string& tarFile);
+void recover_mmc(RecoveryOps *ops, const std::string& tarFile, 
+        const std::string& board_num, std::string board);

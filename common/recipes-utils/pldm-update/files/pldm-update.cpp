@@ -333,14 +333,14 @@ pldm_update(const std::string& file)
     }
 
     active_update(pldmdBusName, softwareId);
-    for (int time = 0; time <= 600; ++time)
+    for (int time = 0; time <= 3600; ++time)
     {
         std::this_thread::sleep_for(std::chrono::seconds(1));
         auto progress = get_progress(pldmdBusName, softwareId);
 
         if (progress == 0xFF) {
             break;
-        } else if (time == 600) {
+        } else if (time == 3600) {
             std::cout << "\nTime out : pldmd.service did not finish update."
                       << std::endl;
             break;

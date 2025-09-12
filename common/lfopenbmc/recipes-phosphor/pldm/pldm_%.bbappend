@@ -21,6 +21,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0015-platform-mc-Add-option-for-discovering-FRU-data.patch \
     file://0016-pldm-Use-std-expected-for-instance-ID-allocation.patch \
     file://0017-common-Add-blocking-instance-ID-allocation.patch \
+    file://0018-pldmtool-Use-a-non-listening-transport-for-command-a.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

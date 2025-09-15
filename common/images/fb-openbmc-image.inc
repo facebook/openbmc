@@ -8,3 +8,6 @@ IMAGE_INSTALL += "packagegroup-openbmc-tests2"
 
 # Add the mfgtool.
 IMAGE_INSTALL += "mfg-tool"
+
+# Add overlay-helper for developers
+IMAGE_INSTALL += "overlay-helper"

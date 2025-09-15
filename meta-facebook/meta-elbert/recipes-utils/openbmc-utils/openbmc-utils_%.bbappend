@@ -62,6 +62,7 @@ LOCAL_URI += "\
     file://mount_data1.service \
     file://setup_gpio.service \
     file://dpm_dump.service \
+    file://reset_pim_i2c_mux.sh \
     "
 
 OPENBMC_UTILS_FILES += " \
@@ -94,6 +95,7 @@ OPENBMC_UTILS_FILES += " \
     th4_qspi_ver.sh \
     dpeCheck.sh \
     bmc_board_rev.sh \
+    reset_pim_i2c_mux.sh \
     "
 
 DEPENDS:append = " update-rc.d-native"

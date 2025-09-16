@@ -20,7 +20,7 @@
 import unittest
 
 from common.base_bmc_mac_test import BaseBMCMacTest
-from tests.celesticabmc.test_data.mac.mac import MAC_ADDRESS_PATTERN
+from utils.mac import MAC_ADDRESS_PATTERN
 
 
 class BMCMacTest(BaseBMCMacTest, unittest.TestCase):

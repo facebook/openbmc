@@ -54,7 +54,7 @@ else
 fi
 
 if [ -n "$mac" ]; then
-    ifconfig eth0 hw ether "$mac"
+    ip link set dev eth0 address "$mac"
 else
     # No MAC from either EEPROM or u-boot, use whatever was assigned by kernel
     mac=$(ifconfig eth0 | grep HWaddr | awk '{ print $5 }')

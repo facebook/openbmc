@@ -1,4 +1,4 @@
-From c2a23072a28a8bd34e0240b4210711ecf8e8486d Mon Sep 17 00:00:00 2001
+From 8577b46b93dd36ad678ac8a6b472c9c037afe252 Mon Sep 17 00:00:00 2001
 From: lora <lora.lin.wiwynn@gmail.com>
 Date: Fri, 27 Sep 2024 14:51:48 +0800
 Subject: [PATCH 04/17] platform-mc: Add OEM Meta event handler
@@ -68,10 +68,10 @@ Upstream-Status: Pending
  create mode 100644 oem/meta/platform-mc/event_oem_meta.hpp
 
 diff --git a/meson.build b/meson.build
-index 167007f..3ffaee7 100644
+index 1827a26..cae006a 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -268,6 +268,7 @@ executable(
+@@ -270,6 +270,7 @@ executable(
      oem_files,
      'requester/mctp_endpoint_discovery.cpp',
      'requester/configuration_discovery_handler.cpp',
@@ -1294,7 +1294,7 @@ index 2d722e9..5720af4 100644
      include_directories: ['../../requester', '../../pldmd'],
  )
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index bfea9d1..f4ea0c0 100644
+index 040bc00..1e5be72 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -222,8 +222,12 @@ int main(int argc, char** argv)

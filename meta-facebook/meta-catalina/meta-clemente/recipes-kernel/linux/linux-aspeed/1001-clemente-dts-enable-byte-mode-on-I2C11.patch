@@ -1,0 +1,37 @@
+From 1fd980378a5bbc7828d0553ec178efec3f75d730 Mon Sep 17 00:00:00 2001
+From: Leo Wang <leo.jt.wang@fii-foxconn.com>
+Date: Mon, 15 Sep 2025 10:27:24 +0800
+Subject: [PATCH] clemente: dts: enable byte mode on I2C11
+
+Enable `aspeed,enable-byte` on I2C11 to support SSIF BMC access,
+which requires byte-mode transactions on this bus.
+
+This property was added to resolve runtime issues with I2C11 devices,
+but `dtbs_check` reported the following error during upstream review:
+
+  arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dtb:
+    i2c@600 (aspeed,ast2600-i2c-bus): Unevaluated properties are not allowed
+    ('aspeed,enable-byte' was unexpected)
+    from schema $id: http://devicetree.org/schemas/i2c/aspeed,i2c.yaml#
+
+lore link:
+https://lore.kernel.org/all/175296991777.777229.6170492596613432717.robh@kernel.org/
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
+index 561287850f4f..94f304a1a2ec 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
+@@ -1070,6 +1070,7 @@ eeprom@50 {
+ 
+ &i2c11 {
+ 	status = "okay";
++	aspeed,enable-byte;
+ 
+ 	ssif-bmc@10 {
+ 		compatible = "ssif-bmc";
+-- 
+2.43.0
+

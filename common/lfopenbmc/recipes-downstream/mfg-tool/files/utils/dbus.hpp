@@ -17,6 +17,7 @@
 #include <xyz/openbmc_project/State/Chassis/client.hpp>
 #include <xyz/openbmc_project/State/Host/client.hpp>
 #include <xyz/openbmc_project/State/Leak/Detector/client.hpp>
+#include <xyz/openbmc_project/Control/Valve/client.hpp>
 
 #include <string>
 
@@ -182,6 +183,14 @@ namespace mode
 using Proxy = sdbusplus::client::xyz::openbmc_project::control::Mode<>;
 static constexpr auto interface = Proxy::interface;
 } // namespace mode
+
+namespace valve
+{
+using Proxy = sdbusplus::client::xyz::openbmc_project::control::Valve<>;
+static constexpr auto interface = Proxy::interface;
+} // namespace valve
+
+
 } // namespace control
 
 namespace debug
@@ -215,7 +224,5 @@ using Proxy = sdbusplus::client::xyz::openbmc_project::state::leak::Detector<>;
 static constexpr auto ns_path = Proxy::namespace_path::value;
 static constexpr auto interface = Proxy::interface;
 } // namespace leak::detector
-
-
 
 } // namespace mfgtool::dbuspath

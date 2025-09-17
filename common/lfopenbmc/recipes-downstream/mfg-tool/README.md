@@ -34,6 +34,7 @@ mfg-tool supports the following subcommands:
 - `bmc-arch`: Shows the architecture of the BMC system.
 - `bmc-state`: Displays the BMC's readiness state.
 - `leakdetector-display` : Display leakdetectors.
+- `valve-control` : Controls the open/close status of the valve.
 
 ## 1. sensor-display
 
@@ -1884,3 +1885,31 @@ It includes the following information for each leakdetector:
     - ok : No leak detected.
     - critical : Leak detected.
 - type: The type of leakdetector. Possible values : moisture.
+
+
+
+## 13. valve-control
+The `valve-control` commands manipulates the open/close status of the liquid cooling valves.
+
+### Usage
+
+To use the `valve-control` subcommand, execute the following command:
+
+```bash
+$ mfg-tool valve-control -p 1 -d return -a open
+```
+
+where
+- p : Indicates the position of the valve.
+- d : Indicates the direction of the valve.
+- a : Indicates the open/close action.
+
+### Output
+
+The output will resemble the following:
+
+```bash
+{
+    "SupplyValve_1": "success"
+}
+```

@@ -1,4 +1,4 @@
-From 8c7b735a786976f29b958b32b485492a94f3afbb Mon Sep 17 00:00:00 2001
+From ff0cbade277585630c8a1d909d245590b9dba269 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Wed, 26 Mar 2025 16:20:54 +0000
 Subject: [PATCH 205/205] Show mapped and raw Dbus messages in Log services
@@ -59,10 +59,10 @@ Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
  1 file changed, 14 insertions(+), 11 deletions(-)
 
 diff --git a/redfish-core/lib/log_services.hpp b/redfish-core/lib/log_services.hpp
-index e45983aa..0d96d6cd 100644
+index d9b276e1..e9c095cf 100644
 --- a/redfish-core/lib/log_services.hpp
 +++ b/redfish-core/lib/log_services.hpp
-@@ -1439,26 +1439,29 @@ static LogParseError fillEventLogEntryJson(
+@@ -1143,26 +1143,29 @@ inline void requestRoutesEventLogService(App& app)
  inline void fillEventLogLogEntryFromDbusLogEntry(
      const DbusEventLogEntry& entry, nlohmann::json& objectToFillOut)
  {
@@ -104,5 +104,5 @@ index e45983aa..0d96d6cd 100644
          objectToFillOut["Message"] = entry.Message;
          if ((entry.Resolution != nullptr) && !entry.Resolution->empty())
 -- 
-2.47.1
+2.47.3
 

@@ -1,7 +1,7 @@
-From bca76546a1d09e77a3b0480290b30cd8133511e0 Mon Sep 17 00:00:00 2001
+From ea69a99927ee29f6cf357269075283702fb0ebc0 Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
 Date: Wed, 16 Jul 2025 00:47:24 +0800
-Subject: [PATCH 6/6] configurations: Fix fan naming issue on D-Bus
+Subject: [PATCH 6/7] configurations: Fix fan naming issue on D-Bus
 
 Adjust the variable $BUS and underscore (_) placement to ensure
 fan names are correctly displayed on D-Bus.
@@ -13,11 +13,11 @@ fail to display the sensor properly.
 Change-Id: Icc4171337bcabeea54e18f1e2856ed44661e4d00
 Signed-off-by: Alex Wang <alex.ts.wang@fii-foxconn.com>
 ---
- configurations/nvidia_gb300.json | 52 ++++++++++++++++----------------
- 1 file changed, 26 insertions(+), 26 deletions(-)
+ configurations/nvidia_gb300.json | 36 ++++++++++++++++----------------
+ 1 file changed, 18 insertions(+), 18 deletions(-)
 
 diff --git a/configurations/nvidia_gb300.json b/configurations/nvidia_gb300.json
-index af40dc8..5c11db6 100644
+index 44246aa..3844b0e 100644
 --- a/configurations/nvidia_gb300.json
 +++ b/configurations/nvidia_gb300.json
 @@ -6,7 +6,7 @@
@@ -38,17 +38,16 @@ index af40dc8..5c11db6 100644
          },
          {
              "Address": "$address",
-@@ -70,15 +70,15 @@
+@@ -70,7 +70,7 @@
              "Address": "$bus - 1 % 2 * 12 + 32",
              "Bus": 1,
              "Connector": {
 -                "Name": "FAN$bus - 1 % 2 * 4 + 0_TACH_IL",
 +                "Name": "FAN$bus - 1 % 2 * 4 + 0 TACH_IL",
                  "Pwm": 2,
--                "PwmName": "FAN$bus - 1 % 2 * 4 + 0_PWM",
-+                "PwmName": "FAN$bus - 1 % 2 * 4 + 0 PWM",
+                 "PwmName": "FAN$bus - 1 % 2 * 4 + 0_PWM_PCT",
                  "Tachs": [
-                     4
+@@ -78,7 +78,7 @@
                  ]
              },
              "Index": 4,
@@ -57,17 +56,16 @@ index af40dc8..5c11db6 100644
              "PowerState": "Always",
              "Thresholds": [
                  {
-@@ -100,15 +100,15 @@
+@@ -100,7 +100,7 @@
              "Address": "$bus - 1 % 2 * 12 + 32",
              "Bus": 1,
              "Connector": {
 -                "Name": "FAN$bus - 1 % 2 * 4 + 0_TACH_OL",
 +                "Name": "FAN$bus - 1 % 2 * 4 + 0 TACH_OL",
                  "Pwm": 2,
--                "PwmName": "FAN$bus - 1 % 2 * 4 + 0_PWM",
-+                "PwmName": "FAN$bus - 1 % 2 * 4 + 0 PWM",
+                 "PwmName": "FAN$bus - 1 % 2 * 4 + 0_PWM_PCT",
                  "Tachs": [
-                     5
+@@ -108,7 +108,7 @@
                  ]
              },
              "Index": 5,
@@ -76,17 +74,16 @@ index af40dc8..5c11db6 100644
              "PowerState": "Always",
              "Thresholds": [
                  {
-@@ -130,15 +130,15 @@
+@@ -130,7 +130,7 @@
              "Address": "$bus - 1 % 2 * 12 + 32",
              "Bus": 1,
              "Connector": {
 -                "Name": "FAN$bus - 1 % 2 * 4 + 1_TACH_IL",
 +                "Name": "FAN$bus - 1 % 2 * 4 + 1 TACH_IL",
                  "Pwm": 3,
--                "PwmName": "FAN$bus - 1 % 2 * 4 + 1_PWM",
-+                "PwmName": "FAN$bus - 1 % 2 * 4 + 1 PWM",
+                 "PwmName": "FAN$bus - 1 % 2 * 4 + 1_PWM_PCT",
                  "Tachs": [
-                     10
+@@ -138,7 +138,7 @@
                  ]
              },
              "Index": 10,
@@ -95,17 +92,16 @@ index af40dc8..5c11db6 100644
              "PowerState": "Always",
              "Thresholds": [
                  {
-@@ -160,15 +160,15 @@
+@@ -160,7 +160,7 @@
              "Address": "$bus - 1 % 2 * 12 + 32",
              "Bus": 1,
              "Connector": {
 -                "Name": "FAN$bus - 1 % 2 * 4 + 1_TACH_OL",
 +                "Name": "FAN$bus - 1 % 2 * 4 + 1 TACH_OL",
                  "Pwm": 3,
--                "PwmName": "FAN$bus - 1 % 2 * 4 + 1_PWM",
-+                "PwmName": "FAN$bus - 1 % 2 * 4 + 1 PWM",
+                 "PwmName": "FAN$bus - 1 % 2 * 4 + 1_PWM_PCT",
                  "Tachs": [
-                     11
+@@ -168,7 +168,7 @@
                  ]
              },
              "Index": 11,
@@ -114,17 +110,16 @@ index af40dc8..5c11db6 100644
              "PowerState": "Always",
              "Thresholds": [
                  {
-@@ -190,15 +190,15 @@
+@@ -190,7 +190,7 @@
              "Address": "$bus - 1 % 2 * 12 + 35",
              "Bus": 1,
              "Connector": {
 -                "Name": "FAN$bus - 1 % 2 * 4 + 2_TACH_IL",
 +                "Name": "FAN$bus - 1 % 2 * 4 + 2 TACH_IL",
                  "Pwm": 0,
--                "PwmName": "FAN$bus - 1 % 2 * 4 + 2_PWM",
-+                "PwmName": "FAN$bus - 1 % 2 * 4 + 2 PWM",
+                 "PwmName": "FAN$bus - 1 % 2 * 4 + 2_PWM_PCT",
                  "Tachs": [
-                     0
+@@ -198,7 +198,7 @@
                  ]
              },
              "Index": 0,
@@ -133,17 +128,16 @@ index af40dc8..5c11db6 100644
              "PowerState": "Always",
              "Thresholds": [
                  {
-@@ -220,15 +220,15 @@
+@@ -220,7 +220,7 @@
              "Address": "$bus - 1 % 2 * 12 + 35",
              "Bus": 1,
              "Connector": {
 -                "Name": "FAN$bus - 1 % 2 * 4 + 2_TACH_OL",
 +                "Name": "FAN$bus - 1 % 2 * 4 + 2 TACH_OL",
                  "Pwm": 0,
--                "PwmName": "FAN$bus - 1 % 2 * 4 + 2_PWM",
-+                "PwmName": "FAN$bus - 1 % 2 * 4 + 2 PWM",
+                 "PwmName": "FAN$bus - 1 % 2 * 4 + 2_PWM_PCT",
                  "Tachs": [
-                     1
+@@ -228,7 +228,7 @@
                  ]
              },
              "Index": 1,
@@ -152,17 +146,16 @@ index af40dc8..5c11db6 100644
              "PowerState": "Always",
              "Thresholds": [
                  {
-@@ -250,15 +250,15 @@
+@@ -250,7 +250,7 @@
              "Address": "$bus - 1 % 2 * 12 + 35",
              "Bus": 1,
              "Connector": {
 -                "Name": "FAN$bus - 1 % 2 * 4 + 3_TACH_IL",
 +                "Name": "FAN$bus - 1 % 2 * 4 + 3 TACH_IL",
                  "Pwm": 1,
--                "PwmName": "FAN$bus - 1 % 2 * 4 + 3_PWM",
-+                "PwmName": "FAN$bus - 1 % 2 * 4 + 3 PWM",
+                 "PwmName": "FAN$bus - 1 % 2 * 4 + 3_PWM_PCT",
                  "Tachs": [
-                     2
+@@ -258,7 +258,7 @@
                  ]
              },
              "Index": 2,
@@ -171,17 +164,16 @@ index af40dc8..5c11db6 100644
              "PowerState": "Always",
              "Thresholds": [
                  {
-@@ -280,15 +280,15 @@
+@@ -280,7 +280,7 @@
              "Address": "$bus - 1 % 2 * 12 + 35",
              "Bus": 1,
              "Connector": {
 -                "Name": "FAN$bus - 1 % 2 * 4 + 3_TACH_OL",
 +                "Name": "FAN$bus - 1 % 2 * 4 + 3 TACH_OL",
                  "Pwm": 1,
--                "PwmName": "FAN$bus - 1 % 2 * 4 + 3_PWM",
-+                "PwmName": "FAN$bus - 1 % 2 * 4 + 3 PWM",
+                 "PwmName": "FAN$bus - 1 % 2 * 4 + 3_PWM_PCT",
                  "Tachs": [
-                     3
+@@ -288,7 +288,7 @@
                  ]
              },
              "Index": 3,

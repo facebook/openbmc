@@ -35,6 +35,7 @@ mfg-tool supports the following subcommands:
 - `bmc-state`: Displays the BMC's readiness state.
 - `leakdetector-display` : Display leakdetectors.
 - `valve-control` : Controls the open/close status of the valve.
+- `valve-state` : Displays the valves state for the system.
 
 ## 1. sensor-display
 
@@ -1911,5 +1912,37 @@ The output will resemble the following:
 ```bash
 {
     "SupplyValve_1": "success"
+}
+```
+
+## 14. valve-state
+The `valve-state` commands displays the valve's open/close status and reading of the valves in the system.
+
+### Usage
+
+To use the `valve-state` subcommand, execute the following command:
+
+```bash
+$ mfg-tool valve-state
+```
+
+### Output
+
+The output will resemble the following:
+
+```bash
+{
+    "ReturnValve_1": {
+        "direction": "return",
+        "position": "1",
+        "reading": 0.0,
+        "status": "close"
+    },
+    "SupplyValve_1": {
+        "direction": "supply",
+        "position": "1",
+        "reading": 0.0,
+        "status": "close"
+    }
 }
 ```

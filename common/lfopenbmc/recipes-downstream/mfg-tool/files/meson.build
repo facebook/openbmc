@@ -47,6 +47,7 @@ executable(
   'cmd/power-state.cpp',
   'cmd/sensor-display.cpp',
   'cmd/valve-control.cpp',
+  'cmd/valve-state.cpp',
   'cmd/version-display.cpp',
   'utils/json.cpp',
   'utils/mapper.cpp',

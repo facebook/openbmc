@@ -126,7 +126,8 @@ if [ -z "$TEMPLATECONF" ]; then
         machines=$(find . -maxdepth 6 \
                     '(' -path "./yocto/*" -o -path "./build-*" ')' -prune -o \
                     -path "./meta-*/machine/*.conf" '(' -type f -o -type l ')' \
-                    -print | grep -v "upstream-overrides" )
+                    -print | grep -v "upstream-overrides" \
+                    | sort )
         for md in ${machines}; do
             machine=$(basename "$md" | sed 's/\.conf//')
             meta=$(dirname "$(dirname "$md")")

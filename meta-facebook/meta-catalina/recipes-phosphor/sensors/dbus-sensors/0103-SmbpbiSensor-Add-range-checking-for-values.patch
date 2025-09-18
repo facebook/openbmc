@@ -29,7 +29,7 @@ index a2583a6..581e3ee 100644
  
 -    if (ret >= 0)
 +    if (ret >= 0 && ((temp >= minValue && temp <= maxValue) ||
-+                     (sensorType == "Energy" && temp >= minValue)))
++                     (sensorType == "energy" && temp >= minValue)))
      {
          if constexpr (debug)
          {

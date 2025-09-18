@@ -108,3 +108,7 @@ If you are a BMC SoC vendor, you can contribute your SoC specific drivers to the
 
 If you are a board vendor, you can contribute your board specific configurations and tools to the Board specific layer. If the board uses a new BMC SoC that is not part of the BMC SoC layer, the SoC specific driver contribution to the BMC SoC layer is also required.
 
+## License
+OpenBMC is Apache licensed, as found in the [LICENSE][l] file.
+
+[l]: https://github.com/facebook/openbmc/blob/main/LICENSE

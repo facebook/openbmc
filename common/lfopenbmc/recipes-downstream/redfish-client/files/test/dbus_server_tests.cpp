@@ -21,6 +21,7 @@ static constexpr auto kServiceName = "xyz.openbmc_project.test.AService";
 static constexpr auto kTestConfigFormat = R"(
   {{
     "host": "localhost:{}",
+    "compatible": "com.meta.Hardware.BMC.TEST",
     "sensorConfig": {{
       "associationPath": "/xyz/openbmc_project/inventory/system/host0",
       "intervalMilliseconds": 10,
@@ -105,15 +106,10 @@ TEST(RedfishClientTests, SimpleDaemonRun)
     std::unordered_map<std::string, std::string> responseHeaders;
     SimpleTestHttpServer server(generateResponse, responseHeaders);
     auto configJson = std::format(kTestConfigFormat, server.getPort());
+    auto config = Config::parse(configJson);
 
-    auto configPath =
-        std::filesystem::temp_directory_path() / "test_config.json";
-    std::ofstream file(configPath);
-    file << configJson;
-    file.close();
-
-    auto daemonThread = std::make_unique<std::thread>([&ctx, configPath]() {
-        runRedfishClient(kServiceName, ctx, configPath);
+    auto daemonThread = std::make_unique<std::thread>([&ctx, &config]() {
+        runRedfishClient(kServiceName, ctx, config);
     });
 
     ctx.spawn(

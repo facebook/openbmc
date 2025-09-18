@@ -21,7 +21,10 @@ void installSignalHandlers();
 // Run redfish client till process receives SIGINT or SIGTERM
 void runRedfishClient(const std::string& serviceName,
                       sdbusplus::async::context& ctx,
-                      const std::string configDir,
+                      const std::string configDir, std::string persistDir = "");
+
+void runRedfishClient(const std::string& serviceName,
+                      sdbusplus::async::context& ctx, const Config& config,
                       std::string persistDir = "");
 
 // The following helpers are exposed for unit testing purposes.

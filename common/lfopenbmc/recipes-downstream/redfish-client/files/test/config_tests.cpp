@@ -9,6 +9,7 @@ TEST(Config, FullConfig)
     std::string configJson = R"(
 {
   "host": "0.0.0.1",
+  "compatible": "com.meta.Hardware.BMC.TEST",
   "sensorConfig": {
     "associationPath": "/xyz/openbmc_project/inventory/system/board/A",
     "intervalMilliseconds": 2000,
@@ -37,6 +38,7 @@ TEST(Config, FullConfig)
 )";
     auto config = Config::parse(configJson);
     EXPECT_EQ(config.host, "0.0.0.1");
+    EXPECT_EQ(config.compatible, "com.meta.Hardware.BMC.TEST");
     EXPECT_EQ(config.sensorConfig.has_value(), true);
     EXPECT_EQ(config.sensorConfig->associationPath,
               "/xyz/openbmc_project/inventory/system/board/A");
@@ -64,6 +66,7 @@ TEST(Config, PartialConfig)
     std::string configJson = R"(
 {
   "host": "0.0.0.1",
+  "compatible": "com.meta.Hardware.BMC.TEST",
   "logServiceConfig": {
     "urls": [
       "/redfish/v1/Systems/system_0/LogServices/EventLog/Entries"
@@ -74,6 +77,7 @@ TEST(Config, PartialConfig)
 )";
     auto config = Config::parse(configJson);
     EXPECT_EQ(config.host, "0.0.0.1");
+    EXPECT_EQ(config.compatible, "com.meta.Hardware.BMC.TEST");
     EXPECT_EQ(config.sensorConfig.has_value(), false);
     EXPECT_EQ(config.logServiceConfig.has_value(), true);
     EXPECT_EQ(config.logServiceConfig->urls.size(), 1);

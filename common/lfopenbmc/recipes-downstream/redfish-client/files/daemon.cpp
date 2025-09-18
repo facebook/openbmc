@@ -295,19 +295,26 @@ class RedfishClient
   public:
     RedfishClient() = delete;
 
-    explicit RedfishClient(sdbusplus::async::context& ctx,
-                           const std::string& configDir,
-                           const std::string& persistDir) :
+    RedfishClient(sdbusplus::async::context& ctx, const std::string& configDir,
+                  const std::string& persistDir) :
         ctx(ctx), configDir(configDir), persistDir(persistDir)
+    {}
+
+    RedfishClient(sdbusplus::async::context& ctx, const Config& config,
+                  const std::string& persistDir) :
+        ctx(ctx), config(config), persistDir(persistDir)
     {}
 
     auto run() -> sdbusplus::async::task<>
     {
         info("Running RedfishClient");
-        co_await loadConfig();
-        if (config.sensorConfig.has_value())
+        if (!config.has_value())
         {
-            const auto& sensorConfig = config.sensorConfig.value();
+            co_await loadConfig();
+        }
+        if (config->sensorConfig.has_value())
+        {
+            const auto& sensorConfig = config->sensorConfig.value();
             info("Creating Sensor objects: {SIZE}", "SIZE",
                  sensorConfig.mappers.size());
             for (const auto& mapper : sensorConfig.mappers)
@@ -326,14 +333,15 @@ class RedfishClient
             sensorThread = std::thread([this] { runSensorLoop(); });
         }
 
-        if (config.logServiceConfig.has_value())
+        if (config->logServiceConfig.has_value())
         {
-            const auto& logServiceConfig = config.logServiceConfig.value();
+            const auto& logServiceConfig = config->logServiceConfig.value();
             info("logServiceConfig intervalMilliseconds = {INTERVAL}",
                  "INTERVAL", logServiceConfig.intervalMilliseconds);
             for (const auto& url : logServiceConfig.urls)
             {
-                auto expandedUrl = std::format("http://{}{}", config.host, url);
+                auto expandedUrl =
+                    std::format("http://{}{}", config->host, url);
                 info("logServiceConfig url = {URL}", "URL",
                      expandedUrl.c_str());
                 info("persistDir = {PERSIST_DIR}", "PERSIST_DIR", persistDir);
@@ -358,11 +366,11 @@ class RedfishClient
   private:
     std::optional<Sensor> readWithRetries(const SensorMapper& mapper)
     {
-        for (size_t i = 0; i < config.sensorConfig.value().maxRetries; ++i)
+        for (size_t i = 0; i < config->sensorConfig.value().maxRetries; ++i)
         {
             std::string sensorJson;
             auto expandedUrl =
-                std::format("http://{}{}", config.host, mapper.fromUrl);
+                std::format("http://{}{}", config->host, mapper.fromUrl);
             try
             {
                 auto it = httpHandles.find(expandedUrl);
@@ -410,7 +418,7 @@ class RedfishClient
             };
 
             std::this_thread::sleep_for(std::chrono::milliseconds(
-                config.sensorConfig.value().retryIntervalMilliseconds));
+                config->sensorConfig.value().retryIntervalMilliseconds));
         }
         return std::nullopt;
     }
@@ -436,7 +444,7 @@ class RedfishClient
                 co_await sdbusplus::async::sleep_for(
                     ctx,
                     std::chrono::milliseconds(
-                        config.logServiceConfig.value().intervalMilliseconds));
+                        config->logServiceConfig.value().intervalMilliseconds));
             }
         }
         catch (const std::logic_error& exn)
@@ -464,7 +472,7 @@ class RedfishClient
                     ctx.spawn(metric->update(maybeSensor.value()));
                 }
                 std::this_thread::sleep_for(std::chrono::milliseconds(
-                    config.sensorConfig.value().intervalMilliseconds));
+                    config->sensorConfig.value().intervalMilliseconds));
             }
         }
         catch (const std::logic_error& exn)
@@ -480,40 +488,44 @@ class RedfishClient
         co_return;
     }
 
-    Config loadCompatibleConfig(const std::string& configDir, const std::string& compatiblePlatformName)
+    Config loadCompatibleConfig(const std::string& configDir,
+                                const std::string& compatiblePlatformName)
     {
         namespace fs = std::filesystem;
-        Config config;
-        for(const auto& entry : fs::directory_iterator(configDir))
+        for (const auto& entry : fs::directory_iterator(configDir))
         {
             std::ifstream file(entry.path());
             if (!file.is_open())
             {
-                error("Failed to open file: {FILE}", "FILE", entry.path().string());
+                error("Failed to open file: {FILE}", "FILE",
+                      entry.path().string());
                 continue;
             }
             std::string jsonContents((std::istreambuf_iterator<char>(file)),
-                                       std::istreambuf_iterator<char>());
-            config = Config::parse(jsonContents);
+                                     std::istreambuf_iterator<char>());
+            auto config = Config::parse(jsonContents);
 
             if (config.compatible == compatiblePlatformName)
             {
-                info("Matched config file: {FILE}", "FILE", entry.path().string());
+                info("Matched config file: {FILE}", "FILE",
+                     entry.path().string());
                 return config;
             }
         }
-        error("No matching config file found for platform: {PLATFORM}", "PLATFORM", compatiblePlatformName);
-        return config;
+        error("No matching config file found for platform: {PLATFORM}",
+              "PLATFORM", compatiblePlatformName);
+        throw std::runtime_error("No matching config file found");
     }
 
-    static inline auto subtree(sdbusplus::async::context& ctx, const auto& subpath,
-                               const auto& interface, size_t depth = 0)
+    static inline auto subtree(sdbusplus::async::context& ctx,
+                               const auto& subpath, const auto& interface,
+                               size_t depth = 0)
     {
         using ObjectMapper =
             sdbusplus::client::xyz::openbmc_project::ObjectMapper<>;
         auto mapper = ObjectMapper(ctx)
-                        .service(ObjectMapper::default_service)
-                        .path(ObjectMapper::instance_path);
+                          .service(ObjectMapper::default_service)
+                          .path(ObjectMapper::instance_path);
         return mapper.get_sub_tree(subpath, depth, {interface});
     }
 
@@ -521,7 +533,8 @@ class RedfishClient
         sdbusplus::async::context& ctx, const std::string& subpath,
         const std::string& targetInterface,
         const std::function<sdbusplus::async::task<>(
-        const std::string&, const std::string&, const std::string&)>& coroutine,
+            const std::string&, const std::string&, const std::string&)>&
+            coroutine,
         size_t depth) -> sdbusplus::async::task<>
     {
         auto objects = co_await subtree(ctx, subpath, targetInterface, depth);
@@ -531,7 +544,8 @@ class RedfishClient
             for (const auto& [service, interfaces] : services)
             {
                 info("Examining {INTERFACE} at {PATH} by {SERVICE}",
-                        "INTERFACE", targetInterface, "PATH", path, "SERVICE", service);
+                     "INTERFACE", targetInterface, "PATH", path, "SERVICE",
+                     service);
                 co_await coroutine(path, service, targetInterface);
             }
         }
@@ -543,23 +557,26 @@ class RedfishClient
         std::string platformName;
         while (!ctx.stop_requested() && platformName.empty())
         {
-            try{
+            try
+            {
                 co_await subtree_for_target_interface(
-                    ctx,
-                    "/xyz/openbmc_project/inventory/system/board/",
+                    ctx, "/xyz/openbmc_project/inventory/system/board/",
                     "xyz.openbmc_project.Inventory.Decorator.Compatible",
-                    [&](const auto& path, const auto& service, const auto& interface)
-                        -> sdbusplus::async::task<>
-                    {
-                        auto names = co_await sdbusplus::async::proxy()
-                                        .service(service)
-                                        .path(path)
-                                        .interface("xyz.openbmc_project.Inventory.Decorator.Compatible")
-                                        .template get_property<std::vector<std::string>>(ctx, "Names");
+                    [&](const auto& path, const auto& service,
+                        const auto& interface) -> sdbusplus::async::task<> {
+                        auto names =
+                            co_await sdbusplus::async::proxy()
+                                .service(service)
+                                .path(path)
+                                .interface(
+                                    "xyz.openbmc_project.Inventory.Decorator.Compatible")
+                                .template get_property<
+                                    std::vector<std::string>>(ctx, "Names");
                         if (!names.empty())
                         {
                             platformName = names[0];
-                            info("Compatible : Names : {PLATFORMNAME}","PLATFORMNAME", platformName);
+                            info("Compatible : Names : {PLATFORMNAME}",
+                                 "PLATFORMNAME", platformName);
                         }
                         co_return;
                     },
@@ -570,10 +587,12 @@ class RedfishClient
                     info("platformName is still empty. Retry again");
                 }
             }
-            catch (const sdbusplus::exception::SdBusError& e){
+            catch (const sdbusplus::exception::SdBusError& e)
+            {
                 info("subtree query failed: {ERR}", "ERR", e.what());
             }
-            co_await sdbusplus::async::sleep_for(ctx, std::chrono::milliseconds(500));
+            co_await sdbusplus::async::sleep_for(
+                ctx, std::chrono::milliseconds(500));
         }
         co_return platformName;
     }
@@ -582,7 +601,7 @@ class RedfishClient
     std::unordered_map<std::string, std::shared_ptr<SensorDbusObject>> metrics;
     std::vector<std::shared_ptr<LogServiceHandler>> logServiceHandlers;
     std::string configDir;
-    Config config;
+    std::optional<Config> config;
     std::thread sensorThread;
     std::string persistDir;
     std::unordered_map<std::string, std::unique_ptr<AsyncHttpHandle>>
@@ -608,6 +627,17 @@ void runRedfishClient(const std::string& serviceName,
     ctx.request_name(serviceName.c_str());
     sdbusplus::server::manager_t manager{ctx, getSensorRootPath()};
     RedfishClient client(ctx, configDir, persistDir);
+    ctx.spawn(client.run());
+    ctx.run();
+}
+
+void runRedfishClient(const std::string& serviceName,
+                      sdbusplus::async::context& ctx, const Config& config,
+                      std::string persistDir)
+{
+    ctx.request_name(serviceName.c_str());
+    sdbusplus::server::manager_t manager{ctx, getSensorRootPath()};
+    RedfishClient client(ctx, config, persistDir);
     ctx.spawn(client.run());
     ctx.run();
 }

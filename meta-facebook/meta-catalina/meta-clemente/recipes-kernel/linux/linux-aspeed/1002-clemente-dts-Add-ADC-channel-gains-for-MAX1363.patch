@@ -1,0 +1,82 @@
+From 2e5c6a234c4e554015d76fb98af8cec9fdbffddd Mon Sep 17 00:00:00 2001
+From: Leo Wang <leo.jt.wang@fii-foxconn.com>
+Date: Mon, 15 Sep 2025 09:51:48 +0800
+Subject: [PATCH]     clemente: dts: Add ADC channel gains for MAX1363
+
+    The Clemente board uses MAX1363 ADCs for sensor monitoring.
+    This patch explicitly defines channel nodes with `ti,gain`
+    properties for both ADCs at addresses 0x34 and 0x35.
+
+    This change fixes dtbs_check errors reported upstream:
+
+    arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dtb: adc@34 (maxim,max1363): '#address-cells', '#size-cells', 'channel@0', 'channel@1', 'channel@2', 'channel@3' do not match any of the regexes: '^pinctrl-[0-9]+$'
+        from schema $id: http://devicetree.org/schemas/iio/adc/maxim,max1363.yaml#
+    arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dtb: adc@35 (maxim,max1363): '#address-cells', '#size-cells', 'channel@0', 'channel@1', 'channel@2', 'channel@3' do not match any of the regexes: '^pinctrl-[0-9]+$'
+        from schema $id: http://devicetree.org/schemas/iio/adc/maxim,max1363.yaml#
+
+    Reference:
+    https://lore.kernel.org/all/175296991777.777229.6170492596613432717.robh@kernel.org/
+---
+ .../aspeed/aspeed-bmc-facebook-clemente.dts   | 40 +++++++++++++++++++
+ 1 file changed, 40 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
+index 561287850f4f..8fdd0380f15c 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
+@@ -718,12 +718,52 @@ channel@6 {
+ 	adc@34 {
+ 		compatible = "maxim,max1363";
+ 		reg = <0x34>;
++
++		channel@0 {
++			reg = <0>;
++			ti,gain = <2>;
++		};
++
++		channel@1 {
++			reg = <1>;
++			ti,gain = <2>;
++		};
++
++		channel@2 {
++			reg = <2>;
++			ti,gain = <2>;
++		};
++
++		channel@3 {
++			reg = <3>;
++			ti,gain = <2>;
++		};
+ 	};
+ 
+ 	// Module 1 Leak Sensor
+ 	adc@35 {
+ 		compatible = "maxim,max1363";
+ 		reg = <0x35>;
++
++		channel@0 {
++			reg = <0>;
++			ti,gain = <2>;
++		};
++
++		channel@1 {
++			reg = <1>;
++			ti,gain = <2>;
++		};
++
++		channel@2 {
++			reg = <2>;
++			ti,gain = <2>;
++		};
++
++		channel@3 {
++			reg = <3>;
++			ti,gain = <2>;
++		};
+ 	};
+ 
+ 	// PDB TEMP SENSOR
+-- 
+2.43.0
+

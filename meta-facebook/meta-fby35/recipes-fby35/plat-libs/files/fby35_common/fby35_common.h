@@ -306,6 +306,8 @@ enum {
 
 // 2OU card type
 enum {
+  TYPE_2OU_HSM_MARVELL = 0x0,
+  TYPE_2OU_HSM_ENTRUST,
   TYPE_2OU_DPV2_8 = 0x07, // DPV2x8
   TYPE_2OU_DPV2_16 = 0x70, // DPV2x16
   TYPE_2OU_DPV2_8_16 = 0x77, // DPV2x8 + DPV2x16

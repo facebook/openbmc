@@ -491,9 +491,23 @@ gpio_monitor_poll(void *ptr) {
     pal_get_post_complete(fru, &bios_post_complete);
     if (bios_post_complete == POST_COMPLETE) {
       if (retry_sec[fru-1] == (MAX_READ_RETRY*12)) {
+        char value[MAX_VALUE_LEN] = {0};
+        kv_get(host_key[fru-1], value, NULL, 0);
         kv_set(host_key[fru-1], "1", 0, 0);
         bios_post_cmplt[fru-1] = true;
         retry_sec[fru-1] = 0;
+
+        // Dynamic swap fan table for HSM
+        if ((!strcmp(value, "0"))) {
+          uint8_t type2 = TYPE_2OU_UNKNOWN;
+          ret = bic_get_card_type(fru, CARD_TYPE_2OU, &type2);
+          syslog(LOG_INFO, "FRU: %d, 2OU_CARD_TYPE: %d, POST_COMPLETE.", fru, type2);
+          if ((fby35_common_get_slot_type(fru) == SERVER_TYPE_CL_EMR) &&
+              (type2 == TYPE_2OU_HSM_MARVELL)) {
+            syslog(LOG_INFO, "FRU: %d, detect Marvell HSM.", fru);
+            // wip: swap table and restart fscd
+          }
+        }
       }
       retry_sec[fru-1]++;
     } else {

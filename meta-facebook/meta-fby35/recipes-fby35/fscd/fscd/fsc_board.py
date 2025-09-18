@@ -133,6 +133,8 @@ elif "EMR" in system_conf:
     one_fan_fail_tuple = (fan_mode["trans_mode"], 90)
     for i in [1, 2, 3, 4]:
         lfby35_hndl.fby35_common_get_1ou_m2_prsnt(int(i))
+elif "HSM" in system_conf:
+    one_fan_fail_tuple = (fan_mode["trans_mode"], 90)
 elif "JI" in system_conf:
     one_fan_fail_tuple = (fan_mode["trans_mode"], 60)
     GPIO_FM_BIOS_POST_CMPLT_BMC_N = 12 # FPGA_CPU_BOOT_DONE:
@@ -279,6 +281,9 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     if ("EMR" in system_conf) and (num != "0") and (num != "4"):
                         # always check dimm present in EMR project
                         return 1
+                    if ("HSM" in system_conf) and (num != "0") and (num != "4"):
+                        # always check dimm present in HSM project
+                        return 1
 
                     return is_dimm_prsnt(board, num)
 
@@ -286,6 +291,9 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     num = sname[10 : sname.find("_t")]
                     if ("EMR" in system_conf) and (num != "2"):
                         # always check e1s present in EMR project
+                        return 1
+                    if ("HSM" in system_conf) and (num == "3"):
+                        # always check e1s present in HSM project
                         return 1
                     return is_e1s_prsnt(board, num)
                 return 1

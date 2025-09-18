@@ -11,7 +11,7 @@ init_class2_sensord() {
 
 init_class1_sensord() {
   sys_config="$($KV_CMD get sled_system_conf persistent)"
-  if [[ "$sys_config" == "Type_8" ]]; then
+  if [[ "$sys_config" =~ ^(Type_(8|HSM))$ ]]; then
     SLOTS=(slot1)
   elif [[ "$sys_config" =~ ^(Type_(DPV2|HD|GL))$ ]]; then
     SLOTS=(slot1 slot3)

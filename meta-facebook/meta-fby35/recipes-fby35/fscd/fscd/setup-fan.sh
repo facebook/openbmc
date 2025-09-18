@@ -163,6 +163,9 @@ init_class1_fsc() {
         target_fsc_config="/etc/FSC_CLASS1_HD_config.json"
         ;;
       esac
+    elif [[ $server_type -eq 6 ]]; then
+      config_type="HSM"
+      target_fsc_config="/etc/FSC_CLASS1_HSM_config.json"
     else
       config_type="DPV2"
       target_fsc_config="/etc/FSC_CLASS1_DPV2_config.json"
@@ -258,7 +261,7 @@ reload_sled_fsc() {
       run_fscd=true
     elif [[ "$sys_config" =~ ^(Type_(DPV2|HD|GL))$ && "$cnt" -eq 2 ]]; then
       run_fscd=true
-    elif [[ "$sys_config" == "Type_8" && "$cnt" -eq 1 ]]; then
+    elif [[ "$sys_config" =~ ^(Type_(8|HSM))$ && "$cnt" -eq 1 ]]; then
       run_fscd=true
     else
       run_fscd=false

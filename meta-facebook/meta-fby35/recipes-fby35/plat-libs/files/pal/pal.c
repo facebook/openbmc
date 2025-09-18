@@ -1346,6 +1346,7 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
       if ( strcmp(sys_conf, "Type_1") == 0 ) config = CONFIG_A;
       else if ( strcmp(sys_conf, "Type_DPV2") == 0 ) config = CONFIG_B;
       else if ( strcmp(sys_conf, "Type_HD") == 0 ) config = CONFIG_B;
+      else if ( strcmp(sys_conf, "Type_HSM") == 0 ) config = CONFIG_B;
       else if ( (strcmp(sys_conf, "Type_17") == 0) || (strcmp(sys_conf, "Type_8") == 0)) config = CONFIG_D;
       else if ( strcmp(sys_conf, "Type_VF") == 0 ) config = CONFIG_C;
       else if ( strcmp(sys_conf, "Type_EMR") == 0 ) config = CONFIG_C;
@@ -1382,7 +1383,8 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
       }
       break;
     case FRU_SLOT3:
-      if (config != CONFIG_D) {
+      if (config != CONFIG_D && ((config == CONFIG_B) && 
+         (fby35_common_get_slot_type(FRU_SLOT1) != SERVER_TYPE_CL_EMR))) {
         *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
         FRU_CAPABILITY_SERVER | FRU_CAPABILITY_POWER_ALL |
         FRU_CAPABILITY_POWER_12V_ALL | FRU_CAPABILITY_HAS_DEVICE;
@@ -6269,7 +6271,7 @@ pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_
 
   //check snr number first. If it not holds, it will move on
   if (sensor_num < sensor_base->base_1ou || (((board_type[fru-1] & DPV2_X16_BOARD) == DPV2_X16_BOARD) && (board_type[fru-1] != UNKNOWN_BOARD) &&
-      (sensor_num >= BIC_DPV2_SENSOR_DPV2_2_12V_VIN && sensor_num <= BIC_DPV2_SENSOR_DPV2_2_EFUSE_PWR))) { //server board
+      (sensor_num >= BIC_DPV2_SENSOR_DPV2_2_12V_VIN && sensor_num <= BIC_DPV2_SENSOR_DPV2_2_HSM_TEMP))) { //server board
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, NONE_INTF);
     bic_ou_status = ret;
   } else if ( (sensor_num < sensor_base->base_2ou) && (bmc_location != NIC_BMC) && //1OU
@@ -6299,7 +6301,7 @@ pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_
        (ret == BIC_STATUS_2OU_FAILURE) || 
        (ret == BIC_STATUS_3OU_FAILURE) || 
        (ret == BIC_STATUS_4OU_FAILURE) ) {
-    syslog(LOG_WARNING, "%s() Failed to run bic_get_sensor_reading(). fru: %x, snr#0x%x", __func__, fru, sensor_num);
+    syslog(LOG_WARNING, "%s() Failed to run bic_get_sensor_reading(). fru: %x, snr#0x%x, ret: %x", __func__, fru, sensor_num, ret);
   }
 
   return ret;

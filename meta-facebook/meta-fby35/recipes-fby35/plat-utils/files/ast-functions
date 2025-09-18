@@ -417,6 +417,28 @@ get_1ou_card_type() {
   return 0
 }
 
+# Get 2OU card type
+# 00h - Marvell HSM
+# 01h - Entrust HSM
+# FEh - no present card
+# FFh - No expected type
+get_2ou_card_type() {
+  local slot_str=$1
+  local card_type_2ou
+  local val
+
+  if val=$(/usr/bin/bic-util "$slot_str" 0xe0 0xa1 $IANA_ID 0x1); then
+    val=($(echo "$val" | tr ' '))
+    card_type_2ou=$((16#${val[4]}))
+    echo "${card_type_2ou}"
+  else
+    # bic-util get card type command failed
+    return 1
+  fi
+
+  return 0
+}
+
 get_system_sku() {
   sys_sku=$($KV_CMD get system_sku)
   echo $sys_sku

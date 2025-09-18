@@ -73,7 +73,7 @@ slot_present(gpiopoll_pin_t *gpdesc, gpio_value_t value) {
   if (strcmp(sys_conf, "Type_DPV2") == 0 || strcmp(sys_conf, "Type_HD") == 0 ||
       strcmp(sys_conf, "Type_GL") == 0) {
     if (slot_id == 2 || slot_id == 4) return;
-  } else if (strcmp(sys_conf, "Type_8") == 0) {
+  } else if (strcmp(sys_conf, "Type_8") == 0 || strcmp(sys_conf, "Type_HSM") == 0) {
     if (slot_id != FRU_SLOT1)
       return;
   }

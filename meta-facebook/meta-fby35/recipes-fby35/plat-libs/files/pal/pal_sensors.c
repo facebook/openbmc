@@ -571,6 +571,7 @@ const uint8_t bic_dpv2_x16_sensor_list[] = {
   BIC_DPV2_SENSOR_DPV2_2_12V_IOUT,
   BIC_DPV2_SENSOR_DPV2_2_EFUSE_TEMP,
   BIC_DPV2_SENSOR_DPV2_2_EFUSE_PWR,
+  BIC_DPV2_SENSOR_DPV2_2_HSM_TEMP,
 };
 
 // BIC Rainbow Falls Sensors
@@ -703,6 +704,7 @@ const uint8_t bic_skip_sensor_list[] = {
   BIC_DPV2_SENSOR_DPV2_2_12V_IOUT,
   BIC_DPV2_SENSOR_DPV2_2_EFUSE_TEMP,
   BIC_DPV2_SENSOR_DPV2_2_EFUSE_PWR,
+  BIC_DPV2_SENSOR_DPV2_2_HSM_TEMP,
 };
 
 
@@ -2263,6 +2265,7 @@ read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
     if ( strcmp(sys_conf, "Type_1") == 0 ) config = CONFIG_A;
     else if ( strcmp(sys_conf, "Type_DPV2") == 0 ) config = CONFIG_B;
     else if ( strcmp(sys_conf, "Type_HD") == 0 ) config = CONFIG_B;
+    else if ( strcmp(sys_conf, "Type_HSM") == 0 ) config = CONFIG_B;
     else if ( (strcmp(sys_conf, "Type_17") == 0) || (strcmp(sys_conf, "Type_8") == 0)) config = CONFIG_D;
     else if ( strcmp(sys_conf, "Type_VF") == 0 ) config = CONFIG_C;
     else if ( strcmp(sys_conf, "Type_EMR") == 0 ) config = CONFIG_C;
@@ -2280,6 +2283,9 @@ read_snr_from_all_slots(uint8_t target_snr_num, uint8_t action, float *val) {
   for ( i = FRU_SLOT1; i <= FRU_SLOT4; i++ ) {
     //Only two slots are present on Config B. Skip slot2 and slot4.
     if ( (config == CONFIG_B) && (i % 2 == 0) ) continue;
+    // Config B system with HSM only has one slot
+    if ( (config == CONFIG_B) && (i != FRU_SLOT1) &&
+         (fby35_common_get_slot_type(FRU_SLOT1) == SERVER_TYPE_CL_EMR) ) continue;
     // Config D system only has one slot
     if ((config == CONFIG_D) && (i != FRU_SLOT1))
       continue;

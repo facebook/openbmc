@@ -126,6 +126,9 @@ show_sys_configuration(sys_conf *system) {
         if ( i == FRU_SLOT2 || i == FRU_SLOT4) {
           continue;
         }
+        if ( i == FRU_SLOT3 && (fby35_common_get_slot_type(FRU_SLOT1) == SERVER_TYPE_CL_EMR)) {
+          continue;
+        }
       }
       //create the object
       data[i-1] = json_object();
@@ -171,6 +174,9 @@ show_sys_configuration(sys_conf *system) {
     for ( i = FRU_SLOT1; i <= fru_cnt; i++) {
       if ( (system->sys_config == 0xB) || (system->sys_config == 0xD) ) {
         if ( i == FRU_SLOT2 || i == FRU_SLOT4) {
+          continue;
+        }
+        if ( i == FRU_SLOT3 && (fby35_common_get_slot_type(FRU_SLOT1) == SERVER_TYPE_CL_EMR)) {
           continue;
         }
       }

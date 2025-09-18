@@ -1,8 +1,8 @@
-From 8535a7fc863780bb6dfce1395567ec607c9e1a4d Mon Sep 17 00:00:00 2001
+From 0e68425ed6b0dae3ffe4644cd751b64722a7efbd Mon Sep 17 00:00:00 2001
 From: Prabha Veerubhotla <vvlprabha@gmail.com>
 Date: Thu, 24 Jul 2025 14:21:12 -0700
-Subject: [PATCH] configurations: harma: Update Sparepartnumber for Broadcom
- NIC
+Subject: [PATCH 2/2] configurations: harma: Update Sparepartnumber for
+ Broadcom NIC
 
 Add the SparePartNumber from the internal database. It is unique
 for all the NICs.
@@ -14,7 +14,7 @@ Signed-off-by: Prabha Veerubhotla <vvlprabha@gmail.com>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/configurations/brcm_200g_1p_ocp_mezz.json b/configurations/brcm_200g_1p_ocp_mezz.json
-index 3f028b7..fc39392 100644
+index 9e14efc..e8b0741 100644
 --- a/configurations/brcm_200g_1p_ocp_mezz.json
 +++ b/configurations/brcm_200g_1p_ocp_mezz.json
 @@ -40,6 +40,7 @@

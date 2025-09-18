@@ -1,4 +1,4 @@
-From a0e2f2da3f2f999e4091432451d4548c0367aa0d Mon Sep 17 00:00:00 2001
+From 7de65871ec7cf909b0a7565d3c5e35716d60ebcb Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 11 Mar 2025 13:47:42 +0800
 Subject: [PATCH 6/7] entity-manager: Add config-prefix filtering
@@ -19,7 +19,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  5 files changed, 73 insertions(+), 41 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index 6b98f8c..125f5d6 100644
+index dbce245..511d071 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -7,6 +7,11 @@ project(
@@ -35,10 +35,10 @@ index 6b98f8c..125f5d6 100644
  boost_args = [
      '-DBOOST_ASIO_NO_DEPRECATED',
 diff --git a/meson.options b/meson.options
-index bd962e4..b8d8a47 100644
+index d53e7d6..1bb31fa 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -40,3 +40,9 @@ option(
+@@ -47,3 +47,9 @@ option(
      value: true,
      description: 'Build gpio presence daemon',
  )
@@ -75,10 +75,10 @@ index 9463133..0e40a95 100644
          std::cerr << "Unable to find any configuration files in "
                    << configurationDirectory << "\n";
 diff --git a/src/utils.cpp b/src/utils.cpp
-index f0e8d25..354bd97 100644
+index b408aea..8d44cf9 100644
 --- a/src/utils.cpp
 +++ b/src/utils.cpp
-@@ -19,60 +19,71 @@
+@@ -18,60 +18,71 @@
  
  namespace fs = std::filesystem;
  

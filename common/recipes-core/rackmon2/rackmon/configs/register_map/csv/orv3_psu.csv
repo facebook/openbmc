@@ -67,8 +67,8 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 85,1,,,,,FLOAT,,,9,,,,PSU_ITHD,
 86,1,,,,,FLOAT,,,9,,,,PSU_Power_Factor,
 87,1,,,,,FLOAT,,,3,,,,PSU_Input_Power,
-88,1,,,,,FLOAT,,,6,,,,PSU_Input_Voltage_AC,
-89,1,,,,,FLOAT,,,10,,,,PSU_Input_Current_AC,
+88,1,,,,,FLOAT,,,6,,,,PSU_Input_Voltage_AC,Volts
+89,1,,,,,FLOAT,,,10,,,,PSU_Input_Current_AC,Amperes
 90,1,,,,,INTEGER,,,,,,,PSU_Fault_Counter,
 92,2,,,,,INTEGER,,,,,,,Power_Cycle_Unix_Time,
 94,1,,,,,FLAGS,,,,,,,PSU_Setting_Register,

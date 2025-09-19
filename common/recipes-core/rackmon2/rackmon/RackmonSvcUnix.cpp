@@ -67,6 +67,8 @@ void from_json(const json& filter, ModbusDataFilter& out) {
       out.regFilter.addrFilter = jregFilter["addressFilter"];
     } else if (jregFilter.contains("nameFilter")) {
       out.regFilter.nameFilter = jregFilter["nameFilter"];
+    } else if (jregFilter.contains("unitsOnly") && jregFilter["unitsOnly"]) {
+      out.regFilter.unitsOnly = jregFilter["unitsOnly"];
     } else {
       throw std::logic_error("Register Filter needs at least one set");
     }

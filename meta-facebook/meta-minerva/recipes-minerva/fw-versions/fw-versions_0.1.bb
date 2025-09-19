@@ -13,10 +13,7 @@ UNPACKDIR = "${S}"
 FCB_INSTANCES = "1:2:3:4:5:6"
 
 FW_TOOLS = "\
-    scm-bmc,minerva-sys-init.service,multi-user.target,multi-user.target,0 \
     bmc-tpm,minerva-sys-init.service,multi-user.target,multi-user.target,0 \
-    scm-cpld,minerva-sys-init.service,multi-user.target,multi-user.target,0 \
-    cmm-cpld,minerva-sys-init.service,multi-user.target,multi-user.target,0 \
     fcb-cpld,minerva-sys-init.service,multi-user.target,multi-user.target,${FCB_INSTANCES} \
     ethernet-switch,minerva-sys-init.service,multi-user.target,multi-user.target,0 \
 "

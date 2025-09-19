@@ -166,18 +166,24 @@ if [ "$mb_product" != "GTA" ]; then
     output=$(i2cget -y -f 32 0x13 $i | tr -d ' \t\n\r')
     output=${output#0x}
     pres=$((16#${output} & 0x80 ))
+    index=$((i-8))
     if [ "$pres" == "0" ]; then
       kv set swb_nic_present 0
-      # Workaround for BRCM NIC
-      if [ "$mb_product" == "GTI" ] || [ "$mb_product" == "GT1.5" ]; then
-        echo 0 > /var/volatile/tmp/gpionames/RST_SWB_BIC_N/value
-        sleep 0.2
-        echo 1 > /var/volatile/tmp/gpionames/RST_SWB_BIC_N/value
-        sleep 5
-      fi
-      break
+      kv set swb_nic${index}_present 0
+    else
+      kv set swb_nic${index}_present 1
     fi
   done
+
+  # Workaround for BRCM NIC
+  if [ "$(kv get swb_nic_present)" == "0" ]; then
+    if [ "$mb_product" == "GTI" ] || [ "$mb_product" == "GT1.5" ]; then
+      echo 0 > /var/volatile/tmp/gpionames/RST_SWB_BIC_N/value
+      sleep 0.2
+      echo 1 > /var/volatile/tmp/gpionames/RST_SWB_BIC_N/value
+      sleep 5
+    fi
+  fi
 
   bic_ready=$(gpio_get FM_SWB_BIC_READY_ISO_R_N)
   #SWB HSC

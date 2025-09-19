@@ -33,7 +33,27 @@ int PLDMNicComponent::get_version(json& j) {
   } catch (std::exception& e) {
     j["PRETTY_COMPONENT"] = _ver_key;
   }
-  j["VERSION"] = get_pldm_active_ver(_bus_id, _eid, ver) ? "NA": ver;
+
+  try {
+    if (fru() == "swb") {
+      uint8_t lower_digit;
+      std::string kv_path;
+
+      lower_digit = _eid & 0xF;
+      kv_path = std::string("swb_nic") + std::to_string(lower_digit) + "_present";
+      if (kv::get(kv_path, kv::region::temp) == "0") {
+        j["VERSION"] = get_pldm_active_ver(_bus_id, _eid, ver) ? "NA": ver;
+      }
+      else {
+        j["VERSION"] = "Not present";
+      }
+    }
+    else {
+      j["VERSION"] = get_pldm_active_ver(_bus_id, _eid, ver) ? "NA": ver;
+    }
+  } catch (std::exception& e) {
+    j["VERSION"] = "NA";
+  }
 
   return FW_STATUS_SUCCESS;
 }

@@ -8,6 +8,7 @@
 #include <string>
 #include <openbmc/pal.h>
 #include <openbmc/vr.h>
+#include <openbmc/kv.hpp>
 #include "vr_fw.h"
 #include "cpld.hpp"
 

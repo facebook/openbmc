@@ -24,6 +24,29 @@ enable_ACA () {
 }
 
 enable_err_inj() {
+  retry=10
+  while [ $retry -gt 0 ];
+  do
+    smc_ver=$(/usr/bin/fw-util ubb --version | awk '/SMC Version/ {print $3}')
+    case "$smc_ver" in
+    *C)
+      break
+      ;;
+    *F|*E)
+      return
+      ;;
+    *)
+      sleep 3
+      retry=$((retry - 1))
+      ;;
+    esac
+  done
+
+  if [ $retry -eq 0 ]; then
+    /usr/bin/logger -t "gpiod" -p daemon.warning "Fail to retrieve SMC version, skip enabling error injection"
+    return
+  fi
+
   for i in 0 1 2 3 4 5 6 7 ;
   do
     response=$(curl -ks http://192.168.31.1/redfish/v1/Chassis/OAM_${i}  | grep "EINJState")

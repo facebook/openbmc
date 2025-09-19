@@ -20,7 +20,7 @@ struct command
     void init(CLI::App& app)
     {
         auto cmd = app.add_subcommand("fan-speed", "Manipulate the fan mode");
-        cmd->add_option("-t,--target", arg_target, "Desired PWM percentage");
+        cmd->add_option("-t,--target", arg_target, "Desired PWM percentage")->check(CLI::Range(0,100));
         cmd->add_option("-p,--position", arg_position, "Fan position");
 
         init_callback(cmd, *this);

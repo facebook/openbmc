@@ -159,7 +159,9 @@ SRC_URI:append = " \
     file://0327-hwmon-ina2xx-Add-support-for-INA260.patch \
     file://0328-hwmon-ina226-Add-support-for-SY24655.patch \
     file://0329-hwmon-ina2xx-switch-regmap-cache-to-flat.patch \
-    file://0330-Add-the-vr-driver-for-mp2869a-mp29612a.patch \
+    file://0330-dt-bindings-hwmon-Add-MPS-mp2869-mp29608-mp29612-mp2.patch \
+    file://0331-hwmon-add-MP2869-MP29608-MP29612-and-MP29816-series-.patch \
+    file://0332-hwmon-add-MP29502-driver.patch \
 "
 
 #

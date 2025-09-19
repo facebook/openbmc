@@ -358,6 +358,14 @@ fru_presence(uint8_t fru_id, uint8_t *status) {
     case FRU_FIO:
     case FRU_SHSC:
     case FRU_SWB:
+    case FRU_SWB_NIC0:
+    case FRU_SWB_NIC1:
+    case FRU_SWB_NIC2:
+    case FRU_SWB_NIC3:
+    case FRU_SWB_NIC4:
+    case FRU_SWB_NIC5:
+    case FRU_SWB_NIC6:
+    case FRU_SWB_NIC7:
       gpio_value = gpio_get_value_by_shadow(BIC_READY);
       if(gpio_value != GPIO_VALUE_INVALID) {
         *status = gpio_value ? FRU_NOT_PRSNT: FRU_PRSNT;

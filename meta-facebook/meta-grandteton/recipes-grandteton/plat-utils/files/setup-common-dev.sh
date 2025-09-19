@@ -278,13 +278,16 @@ if [ "$mb_product" != "GTA" ]; then
         val=$((16#${array[3]}))
         if [ "$val" -eq 1 ]; then
           kv set swb_nic_source "$SWB_1ST_SOURCE"
-          kv set swb_nic_vendor "Mellanox "
+          kv set swb_nic_vendor "Mellanox"
         elif [ "$val" -eq 2 ]; then
           kv set swb_nic_source "$SWB_2ND_SOURCE"
-          kv set swb_nic_vendor "Mellanox "
+          kv set swb_nic_vendor "Mellanox"
         elif [ "$val" -eq 3 ]; then
           kv set swb_nic_source "$SWB_3RD_SOURCE"
-          kv set swb_nic_vendor "Broadcom "
+          kv set swb_nic_vendor "Broadcom"
+        elif [ "$val" -eq 4 ]; then
+          kv set swb_nic_source "$SWB_4TH_SOURCE"
+          kv set swb_nic_vendor "AMD"
         fi
         break
       fi

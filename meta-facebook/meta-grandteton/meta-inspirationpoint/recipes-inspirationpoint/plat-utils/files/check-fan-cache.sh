@@ -159,15 +159,16 @@ check_mb_rev() {
 
 check_swb_nic_source()
 {
-   readonly NIC_MLX=0
-   readonly NIC_MLX_OPTIC=1
-   readonly NIC_BRCM_OPTIC=2
+  readonly NIC_MLX=0
+  readonly NIC_MLX_OPTIC=1
+  readonly NIC_BRCM_OPTIC=2
+  readonly NIC_AMD_OPTIC=3
 
-   nic_source=$(kv get swb_nic_source)
-   expr_file=$(awk -F': ' '/"expr_file"/ {gsub(/[",]/, "", $2); print $2}' $DEFAULT_FSC_CONFIG)
+  nic_source=$(kv get swb_nic_source)
+  expr_file=$(awk -F': ' '/"expr_file"/ {gsub(/[",]/, "", $2); print $2}' $DEFAULT_FSC_CONFIG)
 
-   if [ -n "$nic_source" ]; then
-     sed -i '/swb_tray_switch_linear(/i \
+  if [ -n "$nic_source" ]; then
+    sed -i '/swb_tray_switch_linear(/i \
   swb_tray_nic_linear(\
     max([\
       all:swb_swb_nic0_temp_c,\
@@ -191,8 +192,9 @@ check_swb_nic_source()
     ' /etc/fsc/"$expr_file"
    fi
 
-   if [ "$nic_source" == $NIC_MLX_OPTIC ] ||
-      [ "$nic_source" == $NIC_BRCM_OPTIC ]; then
+   if [ "$nic_source" == $NIC_MLX_OPTIC ]  ||
+      [ "$nic_source" == $NIC_BRCM_OPTIC ] ||
+      [ "$nic_source" == $NIC_AMD_OPTIC ]; then
      sed -i '/swb_tray_switch_linear(/i \
   swb_tray_nic_optic_linear(\
     max([\

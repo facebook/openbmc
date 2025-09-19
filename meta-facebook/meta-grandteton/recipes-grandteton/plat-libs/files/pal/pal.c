@@ -78,7 +78,8 @@
 "cb_accl9, cb_accl10, cb_accl11, cb_accl12";
 #else
   const char pal_fru_list[] = \
-"all, mb, nic0, nic1, swb, hgx, bmc, scm, vpdb, hpdb, fan_bp1, fan_bp2, fio, hsc, swb_hsc, ubb, hmc, cx7";
+"all, mb, nic0, nic1, swb, hgx, bmc, scm, vpdb, hpdb, fan_bp1, fan_bp2, fio, hsc, swb_hsc, ubb, hmc, cx7" \
+"swb_nic0, swb_nic1, swb_nic2, swb_nic3, swb_nic4, swb_nic5, swb_nic6, swb_nic7";
 #endif
 
 const char pal_server_list[] = "mb";
@@ -208,7 +209,15 @@ struct fru_dev_info fru_dev_data[] = {
   //UBB
   {FRU_UBB, "ubb", "UBB Board", 9, 0x54, UBB_CAPABILITY, FRU_PATH_NONE, fru_presence, PLDM_FRU_NOT_SUPPORT},
   {FRU_HMC, "hmc",  "HGX HMC",  9, 0x4e, FRU_ONLY_CAP, FRU_PATH_NONE, fru_presence, PLDM_FRU_NOT_SUPPORT},
-  {FRU_CX7, "cx7", "HGX CX7",   9, 0x4d, FRU_ONLY_CAP, FRU_PATH_NONE, fru_presence, PLDM_FRU_NOT_SUPPORT}
+  {FRU_CX7, "cx7", "HGX CX7",   9, 0x4d, FRU_ONLY_CAP, FRU_PATH_NONE, fru_presence, PLDM_FRU_NOT_SUPPORT},
+  {FRU_SWB_NIC0, "swb_nic0", "SWB NIC0", 3, 0x20, FRU_ONLY_CAP, FRU_PATH_PLDM, fru_presence, PLDM_FRU_SWB_NIC0},
+  {FRU_SWB_NIC1, "swb_nic1", "SWB NIC1", 3, 0x20, FRU_ONLY_CAP, FRU_PATH_PLDM, fru_presence, PLDM_FRU_SWB_NIC1},
+  {FRU_SWB_NIC2, "swb_nic2", "SWB NIC2", 3, 0x20, FRU_ONLY_CAP, FRU_PATH_PLDM, fru_presence, PLDM_FRU_SWB_NIC2},
+  {FRU_SWB_NIC3, "swb_nic3", "SWB NIC3", 3, 0x20, FRU_ONLY_CAP, FRU_PATH_PLDM, fru_presence, PLDM_FRU_SWB_NIC3},
+  {FRU_SWB_NIC4, "swb_nic4", "SWB NIC4", 3, 0x20, FRU_ONLY_CAP, FRU_PATH_PLDM, fru_presence, PLDM_FRU_SWB_NIC4},
+  {FRU_SWB_NIC5, "swb_nic5", "SWB NIC5", 3, 0x20, FRU_ONLY_CAP, FRU_PATH_PLDM, fru_presence, PLDM_FRU_SWB_NIC5},
+  {FRU_SWB_NIC6, "swb_nic6", "SWB NIC6", 3, 0x20, FRU_ONLY_CAP, FRU_PATH_PLDM, fru_presence, PLDM_FRU_SWB_NIC6},
+  {FRU_SWB_NIC7, "swb_nic7", "SWB NIC7", 3, 0x20, FRU_ONLY_CAP, FRU_PATH_PLDM, fru_presence, PLDM_FRU_SWB_NIC7},
 };
 
 uint8_t
@@ -842,6 +851,14 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps) {
       case FRU_HMC:
       case FRU_CX7:
       case FRU_SHSC:
+      case FRU_SWB_NIC0:
+      case FRU_SWB_NIC1:
+      case FRU_SWB_NIC2:
+      case FRU_SWB_NIC3:
+      case FRU_SWB_NIC4:
+      case FRU_SWB_NIC5:
+      case FRU_SWB_NIC6:
+      case FRU_SWB_NIC7:
         *caps = 0; // Not in Artemis
         break;
       case FRU_HSC:
@@ -905,6 +922,21 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps) {
         break;
       case FRU_SHSC:
         if (is_swb_hsc_module()) {
+          *caps = FRU_ONLY_CAP;
+        } else {
+          *caps = 0;
+        }
+        break;
+      case FRU_SWB_NIC0:
+      case FRU_SWB_NIC1:
+      case FRU_SWB_NIC2:
+      case FRU_SWB_NIC3:
+      case FRU_SWB_NIC4:
+      case FRU_SWB_NIC5:
+      case FRU_SWB_NIC6:
+      case FRU_SWB_NIC7:
+        char prsnt[MAX_VALUE_LEN] = {0};
+        if ((kv_get("swb_nic_present", prsnt, NULL, 0) == 0) && prsnt[0] == '0') {
           *caps = FRU_ONLY_CAP;
         } else {
           *caps = 0;
@@ -1445,6 +1477,14 @@ pal_get_bic_intf(bic_intf *fru_bic_info) {
   switch (fru_bic_info->fru_id) {
     case FRU_SWB:
     case FRU_SHSC:
+    case FRU_SWB_NIC0:
+    case FRU_SWB_NIC1:
+    case FRU_SWB_NIC2:
+    case FRU_SWB_NIC3:
+    case FRU_SWB_NIC4:
+    case FRU_SWB_NIC5:
+    case FRU_SWB_NIC6:
+    case FRU_SWB_NIC7:
       fru_bic_info->root_fru = FRU_SWB;
       fru_bic_info->bic_eid = SWB_BIC_EID;
       fru_bic_info->bus_id  = SWB_BUS_ID;

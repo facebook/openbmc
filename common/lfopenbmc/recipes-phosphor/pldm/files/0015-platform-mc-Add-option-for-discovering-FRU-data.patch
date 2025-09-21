@@ -1,4 +1,4 @@
-From 0cbb7821f9b9fbc25f88e925693b0d8cba9dff81 Mon Sep 17 00:00:00 2001
+From 8d2209cb417294727f087b6c2adfe13e6db61070 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
 Subject: [PATCH 15/17] platform-mc: Add option for discovering FRU data
@@ -15,11 +15,11 @@ Upstream-Status: Pending
  meson.options                    |  8 ++++++++
  platform-mc/platform_manager.cpp | 31 +++++++++++++++++++++++++++++++
  platform-mc/terminus.cpp         | 15 +++++++++++++--
- platform-mc/terminus.hpp         | 12 ++++++++++++
- 5 files changed, 68 insertions(+), 2 deletions(-)
+ platform-mc/terminus.hpp         | 11 +++++++++++
+ 5 files changed, 67 insertions(+), 2 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index 2438dcd..7a6aff4 100644
+index d382ad2..9e28130 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -142,6 +142,10 @@ conf_data.set(
@@ -138,7 +138,7 @@ index ae3a421..caf1f61 100644
  
  } // namespace platform_mc
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index fdaacf4..6ef3813 100644
+index eb87d3b..8d28232 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -103,9 +103,14 @@ bool Terminus::createInventoryPath(std::string tName)
@@ -156,7 +156,7 @@ index fdaacf4..6ef3813 100644
          return true;
      }
      catch (const sdbusplus::exception_t& e)
-@@ -607,8 +612,9 @@ std::shared_ptr<NumericSensor> Terminus::getSensorObject(SensorId id)
+@@ -607,8 +612,9 @@ std::shared_ptr<NumericSensor> Terminus::getSensorObject(SensorID id)
   *  @param[in] p - pointer to each record of FRU record table
   *  @param[in] tableSize - FRU table size
   */
@@ -186,9 +186,9 @@ index fdaacf4..6ef3813 100644
 +#endif
  }
  
- std::vector<std::string> Terminus::getSensorNames(const SensorId& sensorId)
+ std::vector<std::string> Terminus::getSensorNames(const SensorID& sensorId)
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index fd878b5..3e3db5d 100644
+index 147e6e7..6085f39 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
 @@ -11,6 +11,9 @@
@@ -201,18 +201,7 @@ index fd878b5..3e3db5d 100644
  
  #include <algorithm>
  #include <bitset>
-@@ -35,6 +38,10 @@ using SensorName = std::string;
- using SensorAuxiliaryNames = std::tuple<
-     SensorId, SensorCnt,
-     std::vector<std::vector<std::pair<NameLanguageTag, SensorName>>>>;
-+#ifndef DISCOVERY_FRU_DATA
-+using InventoryItemBoardIntf = sdbusplus::server::object_t<
-+    sdbusplus::xyz::openbmc_project::Inventory::Item::server::Board>;
-+#endif
- 
- /** @struct EntityKey
-  *
-@@ -326,8 +333,13 @@ class Terminus
+@@ -293,8 +296,16 @@ class Terminus
      /** @brief Terminus name */
      EntityName terminusName{};
      /* @brief The pointer of inventory D-Bus interface for the terminus */
@@ -220,6 +209,9 @@ index fd878b5..3e3db5d 100644
      std::unique_ptr<pldm::dbus_api::PldmEntityReq> inventoryItemBoardInft =
          nullptr;
 +#else
++    using InventoryItemBoardIntf = sdbusplus::server::object_t<
++        sdbusplus::xyz::openbmc_project::Inventory::Item::server::Board>;
++
 +    /* @brief The pointer of iventory D-Bus interface for the terminus */
 +    std::unique_ptr<InventoryItemBoardIntf> inventoryItemBoardInft = nullptr;
 +#endif

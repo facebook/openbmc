@@ -1,7 +1,7 @@
-From 106aaaf3a27af7121d8828c2824461532da99640 Mon Sep 17 00:00:00 2001
+From e6c97341d598437f8f1556ccf89227fc0519e462 Mon Sep 17 00:00:00 2001
 From: Amithash Prasasd <amithash@meta.com>
 Date: Thu, 21 Nov 2024 21:00:02 -0800
-Subject: [PATCH 05/11] Add structured logging for Threshold events
+Subject: [PATCH 05/12] Add structured logging for Threshold events
 
 Add capability to create structured logs for threshold crossing
 (compatible with Redfish Sensor Events) along with ability to
@@ -47,12 +47,12 @@ Signed-off-by: Amithash Prasasd <amithash@meta.com>
  4 files changed, 176 insertions(+), 1 deletion(-)
 
 diff --git a/meson.build b/meson.build
-index d1f1207..3aeff4c 100644
+index 0110986..c7f6996 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -40,10 +40,12 @@ gpiodcxx = dependency('libgpiodcxx', default_options: ['bindings=cxx'])
- boost = dependency('boost', version: '>=1.83.0', include_type: 'system')
- sdbusplus = dependency('sdbusplus', include_type: 'system')
+@@ -45,10 +45,12 @@ boost = dependency(
+ )
+ sdbusplus = dependency('sdbusplus')
  phosphor_logging_dep = dependency('phosphor-logging')
 +phosphor_dbus_interfaces_dep = dependency('phosphor-dbus-interfaces')
  

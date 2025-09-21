@@ -1,4 +1,4 @@
-From 09344de9d959b14078e212f06d2ffd66c315efdb Mon Sep 17 00:00:00 2001
+From 37e077a648a322344db72c8b8c302258c662f0f4 Mon Sep 17 00:00:00 2001
 From: Rush Chen <Rush_Chen@wiwynn.com>
 Date: Wed, 4 Jun 2025 17:23:22 +0800
 Subject: [PATCH 7/7] meta-facebook: yosemite4: Add virtual NIC temperature
@@ -24,13 +24,13 @@ Content-Transfer-Encoding: 8bit
 - Trigger NIC temperature sensors to report "NA" and <10°C.
 - Verify that the fan speed ramps up to 100% when virtual sensor value is low.
 ---
- configurations/meta/yosemite4.json | 44 ++++++++++++++++++++++++++++++
+ configurations/meta/yv4/yosemite4.json | 44 ++++++++++++++++++++++++++
  1 file changed, 44 insertions(+)
 
-diff --git a/configurations/meta/yosemite4.json b/configurations/meta/yosemite4.json
+diff --git a/configurations/meta/yv4/yosemite4.json b/configurations/meta/yv4/yosemite4.json
 index 81040e2..e30f31f 100644
---- a/configurations/meta/yosemite4.json
-+++ b/configurations/meta/yosemite4.json
+--- a/configurations/meta/yv4/yosemite4.json
++++ b/configurations/meta/yv4/yosemite4.json
 @@ -761,6 +761,50 @@
                  }
              ],
@@ -83,5 +83,5 @@ index 81040e2..e30f31f 100644
      ],
      "Name": "Yosemite 4 Management Board",
 -- 
-2.47.1
+2.47.3
 

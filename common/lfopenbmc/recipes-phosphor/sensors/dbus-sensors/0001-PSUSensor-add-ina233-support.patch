@@ -1,7 +1,7 @@
-From be0ca1c27d7687d5b3d361714f18e2b1f139e687 Mon Sep 17 00:00:00 2001
+From 51af7716189342fac6d670b0f70cbc09e47512ff Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 22 Sep 2023 09:49:53 +0800
-Subject: [PATCH 01/11] PSUSensor: add ina233 support
+Subject: [PATCH 01/12] PSUSensor: add ina233 support
 
 add device ina233 pmbus reading support
 

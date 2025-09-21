@@ -1,7 +1,7 @@
-From 3884d762dcc4859b73f29aa8edce29f7ee15f2a5 Mon Sep 17 00:00:00 2001
+From f9424d7052b173eff0c18b2e3abe0c712677d2aa Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
 Date: Thu, 31 Jul 2025 17:32:03 +0800
-Subject: [PATCH 7/7] configurations: nvidia: cx8: Update sensor thresholds
+Subject: [PATCH 6/6] configurations: nvidia: cx8: Update sensor thresholds
 
 Update sensor thresholds based on data provided by Nvidia.
 Threshold values were adjusted to align with the official sensor
@@ -11,13 +11,13 @@ ensuring accuracy and consistency with the hardware reference.
 Change-Id: I38af7021dbe3552d01a8c3e8330251dee0997a22
 Signed-off-by: Alex Wang <alex.ts.wang@fii-foxconn.com>
 ---
- .../nvidia_cx8_mezzanine_module.json          | 38 ++++++-------------
+ .../nvidia/nvidia_cx8_mezzanine_module.json   | 38 ++++++-------------
  1 file changed, 12 insertions(+), 26 deletions(-)
 
-diff --git a/configurations/nvidia_cx8_mezzanine_module.json b/configurations/nvidia_cx8_mezzanine_module.json
+diff --git a/configurations/nvidia/nvidia_cx8_mezzanine_module.json b/configurations/nvidia/nvidia_cx8_mezzanine_module.json
 index 0f2b997..676441e 100644
---- a/configurations/nvidia_cx8_mezzanine_module.json
-+++ b/configurations/nvidia_cx8_mezzanine_module.json
+--- a/configurations/nvidia/nvidia_cx8_mezzanine_module.json
++++ b/configurations/nvidia/nvidia_cx8_mezzanine_module.json
 @@ -19,23 +19,16 @@
                  {
                      "Direction": "greater than",

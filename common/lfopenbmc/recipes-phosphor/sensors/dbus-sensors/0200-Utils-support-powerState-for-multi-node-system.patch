@@ -1,4 +1,4 @@
-From e541c6cc70d70c1b559c643e285c6745f37751d0 Mon Sep 17 00:00:00 2001
+From 045dfe388c60f494b419f8aa8042ca1ba23b9e12 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH 200/203] Utils: support powerState for multi-node system
@@ -792,10 +792,10 @@ index a7d9eb2..745235d 100644
      buffer = std::make_shared<std::array<char, 128>>();
      std::string unitPath = sensor_paths::getPathForUnits(sensorUnits);
 diff --git a/src/psu/PSUSensor.hpp b/src/psu/PSUSensor.hpp
-index dd43fe5..8f85908 100644
+index e679dc2..e66f68c 100644
 --- a/src/psu/PSUSensor.hpp
 +++ b/src/psu/PSUSensor.hpp
-@@ -87,7 +87,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+@@ -97,7 +97,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
                double factor, double max, double min, double offset,
                const std::string& label, size_t tSize, double pollRate,
                const std::shared_ptr<I2CDevice>& i2cDevice,
@@ -804,7 +804,7 @@ index dd43fe5..8f85908 100644
      ~PSUSensor() override;
      void setupRead();
      void activate(const std::string& newPath,
-@@ -125,6 +125,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+@@ -135,6 +135,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
      static constexpr double defaultSensorPoll = 1.0;
      static constexpr unsigned int defaultSensorPollMs =
          static_cast<unsigned int>(defaultSensorPoll * 1000);
@@ -812,7 +812,7 @@ index dd43fe5..8f85908 100644
  };
  
  class PSUProperty
-@@ -132,8 +133,9 @@ class PSUProperty
+@@ -142,8 +143,9 @@ class PSUProperty
    public:
      PSUProperty(std::string name, double max, double min, double factor,
                  double offset) :
@@ -825,7 +825,7 @@ index dd43fe5..8f85908 100644
      ~PSUProperty() = default;
  
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 94ab56c..fe95edf 100644
+index 56d8887..4af7e88 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -620,6 +620,7 @@ static void createSensorsCallback(

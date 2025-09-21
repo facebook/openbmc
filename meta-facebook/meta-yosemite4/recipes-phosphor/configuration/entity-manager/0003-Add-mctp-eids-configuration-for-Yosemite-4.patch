@@ -1,4 +1,4 @@
-From 9a80a75d724cace3eff125c63f89618648e58eb2 Mon Sep 17 00:00:00 2001
+From 54fd2a7335ddac72b3914a144d590230203918cd Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 25 Sep 2023 11:10:46 +0800
 Subject: [PATCH 3/7] Add mctp eids configuration for Yosemite 4
@@ -18,20 +18,20 @@ Tested: check D-Bus path for configuration.
 Change-Id: I587f5a69051f783753f5855d2f51242aa1cd5bc4
 Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 ---
- .../meta/yosemite4_floatingfalls.json         | 23 ++++++++-
- .../meta/yosemite4_sentineldome_t1.json       | 16 +++++++
+ .../meta/yv4/yosemite4_floatingfalls.json     | 23 ++++++++-
+ .../meta/yv4/yosemite4_sentineldome_t1.json   | 16 +++++++
  .../yosemite4_sentineldome_t1_retimer.json    | 16 +++++++
- .../meta/yosemite4_sentineldome_t2.json       | 16 +++++++
+ .../meta/yv4/yosemite4_sentineldome_t2.json   | 16 +++++++
  .../yosemite4_sentineldome_t2_retimer.json    | 16 +++++++
- .../meta/yosemite4_wailuafalls.json           | 45 ++++++++++++++++++
+ .../meta/yv4/yosemite4_wailuafalls.json       | 45 ++++++++++++++++++
  schemas/exposes_record.json                   |  3 ++
  schemas/legacy.json                           | 47 +++++++++++++++++++
  8 files changed, 181 insertions(+), 1 deletion(-)
 
-diff --git a/configurations/meta/yosemite4_floatingfalls.json b/configurations/meta/yosemite4_floatingfalls.json
+diff --git a/configurations/meta/yv4/yosemite4_floatingfalls.json b/configurations/meta/yv4/yosemite4_floatingfalls.json
 index 1ee4e91..3fe8702 100644
---- a/configurations/meta/yosemite4_floatingfalls.json
-+++ b/configurations/meta/yosemite4_floatingfalls.json
+--- a/configurations/meta/yv4/yosemite4_floatingfalls.json
++++ b/configurations/meta/yv4/yosemite4_floatingfalls.json
 @@ -1,5 +1,26 @@
  {
 -    "Exposes": [],
@@ -60,10 +60,10 @@ index 1ee4e91..3fe8702 100644
      "Name": "Yosemite 4 Floating Falls Slot $bus % 15",
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Floating Falls', 'PRODUCT_PRODUCT_NAME': 'Yosemite V4'})",
      "Type": "Board",
-diff --git a/configurations/meta/yosemite4_sentineldome_t1.json b/configurations/meta/yosemite4_sentineldome_t1.json
+diff --git a/configurations/meta/yv4/yosemite4_sentineldome_t1.json b/configurations/meta/yv4/yosemite4_sentineldome_t1.json
 index 3af370e..667b31c 100644
---- a/configurations/meta/yosemite4_sentineldome_t1.json
-+++ b/configurations/meta/yosemite4_sentineldome_t1.json
+--- a/configurations/meta/yv4/yosemite4_sentineldome_t1.json
++++ b/configurations/meta/yv4/yosemite4_sentineldome_t1.json
 @@ -1,5 +1,21 @@
  {
      "Exposes": [
@@ -86,10 +86,10 @@ index 3af370e..667b31c 100644
          {
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
-diff --git a/configurations/meta/yosemite4_sentineldome_t1_retimer.json b/configurations/meta/yosemite4_sentineldome_t1_retimer.json
+diff --git a/configurations/meta/yv4/yosemite4_sentineldome_t1_retimer.json b/configurations/meta/yv4/yosemite4_sentineldome_t1_retimer.json
 index 10575a2..3941f5a 100644
---- a/configurations/meta/yosemite4_sentineldome_t1_retimer.json
-+++ b/configurations/meta/yosemite4_sentineldome_t1_retimer.json
+--- a/configurations/meta/yv4/yosemite4_sentineldome_t1_retimer.json
++++ b/configurations/meta/yv4/yosemite4_sentineldome_t1_retimer.json
 @@ -1,5 +1,21 @@
  {
      "Exposes": [
@@ -112,10 +112,10 @@ index 10575a2..3941f5a 100644
          {
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
-diff --git a/configurations/meta/yosemite4_sentineldome_t2.json b/configurations/meta/yosemite4_sentineldome_t2.json
+diff --git a/configurations/meta/yv4/yosemite4_sentineldome_t2.json b/configurations/meta/yv4/yosemite4_sentineldome_t2.json
 index ac32603..6ceab38 100644
---- a/configurations/meta/yosemite4_sentineldome_t2.json
-+++ b/configurations/meta/yosemite4_sentineldome_t2.json
+--- a/configurations/meta/yv4/yosemite4_sentineldome_t2.json
++++ b/configurations/meta/yv4/yosemite4_sentineldome_t2.json
 @@ -1,5 +1,21 @@
  {
      "Exposes": [
@@ -138,10 +138,10 @@ index ac32603..6ceab38 100644
          {
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
-diff --git a/configurations/meta/yosemite4_sentineldome_t2_retimer.json b/configurations/meta/yosemite4_sentineldome_t2_retimer.json
+diff --git a/configurations/meta/yv4/yosemite4_sentineldome_t2_retimer.json b/configurations/meta/yv4/yosemite4_sentineldome_t2_retimer.json
 index e4610c1..d8b564c 100644
---- a/configurations/meta/yosemite4_sentineldome_t2_retimer.json
-+++ b/configurations/meta/yosemite4_sentineldome_t2_retimer.json
+--- a/configurations/meta/yv4/yosemite4_sentineldome_t2_retimer.json
++++ b/configurations/meta/yv4/yosemite4_sentineldome_t2_retimer.json
 @@ -1,5 +1,21 @@
  {
      "Exposes": [
@@ -164,10 +164,10 @@ index e4610c1..d8b564c 100644
          {
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
-diff --git a/configurations/meta/yosemite4_wailuafalls.json b/configurations/meta/yosemite4_wailuafalls.json
+diff --git a/configurations/meta/yv4/yosemite4_wailuafalls.json b/configurations/meta/yv4/yosemite4_wailuafalls.json
 index 7a865bf..3260535 100644
---- a/configurations/meta/yosemite4_wailuafalls.json
-+++ b/configurations/meta/yosemite4_wailuafalls.json
+--- a/configurations/meta/yv4/yosemite4_wailuafalls.json
++++ b/configurations/meta/yv4/yosemite4_wailuafalls.json
 @@ -1,5 +1,50 @@
  {
      "Exposes": [
@@ -234,7 +234,7 @@ index 9196b54..fbae083 100644
              ]
          },
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index 01ee9fe..3e7506b 100644
+index 4aa9521..7d734b5 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
 @@ -1,6 +1,43 @@

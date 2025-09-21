@@ -1,7 +1,7 @@
-From 8617b6c658fc7ed59e298d65ea35d76eeb81d333 Mon Sep 17 00:00:00 2001
+From a171cff6bd6fe8f6f8c416f8e63d6fa33d30238c Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 23 Jan 2025 15:10:57 +0800
-Subject: [PATCH 06/11] psusensor: fixed not activate for multiple power state
+Subject: [PATCH 06/12] psusensor: fixed not activate for multiple power state
 
 Link:https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/77426
 

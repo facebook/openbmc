@@ -1,7 +1,7 @@
-From 53fccf3059d668f51c7ab30bbfd0d4533b5f2a1b Mon Sep 17 00:00:00 2001
+From 1dd835a25b608378bdf9d81ffdd0a0129b7f7350 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 23 Jan 2025 14:27:45 +0800
-Subject: [PATCH 07/11] psusensors: fixed multiple power state issue
+Subject: [PATCH 07/12] psusensors: fixed multiple power state issue
 
 Link:https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/77391
 

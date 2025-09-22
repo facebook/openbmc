@@ -1,4 +1,4 @@
-From 1dd835a25b608378bdf9d81ffdd0a0129b7f7350 Mon Sep 17 00:00:00 2001
+From 88f1ba164ac30f1332046b29a0d454eab888facf Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 23 Jan 2025 14:27:45 +0800
 Subject: [PATCH 07/12] psusensors: fixed multiple power state issue
@@ -17,10 +17,10 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  1 file changed, 4 insertions(+)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 9f9814b..76343a5 100644
+index 1674873..6c4b5fd 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -861,6 +861,10 @@ static void createSensorsCallback(
+@@ -862,6 +862,10 @@ static void createSensorsCallback(
                                                      findPowerState->second);
                  setReadState(powerState, readState);
              }

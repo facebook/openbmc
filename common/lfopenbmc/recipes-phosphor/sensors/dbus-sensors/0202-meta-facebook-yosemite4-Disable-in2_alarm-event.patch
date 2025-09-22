@@ -1,4 +1,4 @@
-From 48e859182ec907fa42d884c4a448611f843a3062 Mon Sep 17 00:00:00 2001
+From 2b4a3fdcbd3349f257d5b4a1c3441b682c890ebc Mon Sep 17 00:00:00 2001
 From: KayYCHuang-wiwynn <kay.yc.huang.wiwynn@gmail.com>
 Date: Mon, 17 Mar 2025 02:25:46 +0000
 Subject: [PATCH 202/203] meta-facebook: yosemite4: Disable in2_alarm event
@@ -10,7 +10,7 @@ Subject: [PATCH 202/203] meta-facebook: yosemite4: Disable in2_alarm event
  3 files changed, 12 insertions(+)
 
 diff --git a/meson.build b/meson.build
-index 3aeff4c..ab277c7 100644
+index c7f6996..1b30ce6 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -31,6 +31,10 @@ add_project_arguments(
@@ -39,10 +39,10 @@ index 3eee161..ca4a0c3 100644
 +    description: 'Disable in2_alarm event.',
 +)
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index fe95edf..2c3c4c6 100644
+index de8428c..ec69f5a 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -1257,7 +1257,9 @@ void propertyInitialize()
+@@ -1258,7 +1258,9 @@ void propertyInitialize()
                         {"Failure", {"crit_alarm", "lcrit_alarm"}}};
  
      eventMatch = {{"PredictiveFailure", {"power1_alarm"}},

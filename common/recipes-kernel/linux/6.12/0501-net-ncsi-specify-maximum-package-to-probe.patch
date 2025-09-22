@@ -1,7 +1,7 @@
-From ebde92c52d4ed09a31c19167f846b51fcbc886c9 Mon Sep 17 00:00:00 2001
+From 3b059698fcc918aa52de38642c285d6d9288f604 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <cosmo.chou@quantatw.com>
 Date: Wed, 22 May 2024 01:36:37 +0800
-Subject: [PATCH 501/502] net/ncsi: specify maximum package to probe
+Subject: [PATCH 501/501] net/ncsi: specify maximum package to probe
 
 Most NICs have a single package. For OCP3.0 NICs, the package ID is
 determined by the slot ID. Probing all 8 package IDs is usually
@@ -18,22 +18,22 @@ link:https://lore.kernel.org/all/20240701154336.3536924-1-peteryin.openbmc@gmail
  2 files changed, 13 insertions(+), 4 deletions(-)
 
 diff --git a/net/ncsi/internal.h b/net/ncsi/internal.h
-index 0a613c4f9e74..f44d7c555158 100644
+index 35922ccfae3b..ad795a6749cf 100644
 --- a/net/ncsi/internal.h
 +++ b/net/ncsi/internal.h
-@@ -346,6 +346,7 @@ struct ncsi_dev_priv {
+@@ -347,6 +347,7 @@ struct ncsi_dev_priv {
  #define NCSI_MAX_VLAN_VIDS	15
  	struct list_head    vlan_vids;       /* List of active VLAN IDs */
  
-+	unsigned int        max_package;     /* Num of packages to probe   */
++	unsigned int	    max_package;     /* Num of packages to probe   */
  	bool                multi_package;   /* Enable multiple packages   */
  	bool                mlx_multi_host;  /* Enable multi host Mellanox */
  	u32                 package_whitelist; /* Packages to configure    */
 diff --git a/net/ncsi/ncsi-manage.c b/net/ncsi/ncsi-manage.c
-index fbe35032c95b..573d6d66cc19 100644
+index fe4c617ce00c..555c890f2d92 100644
 --- a/net/ncsi/ncsi-manage.c
 +++ b/net/ncsi/ncsi-manage.c
-@@ -1359,12 +1359,12 @@ static void ncsi_probe_channel(struct ncsi_dev_priv *ndp)
+@@ -1371,12 +1371,12 @@ static void ncsi_probe_channel(struct ncsi_dev_priv *ndp)
  		nd->state = ncsi_dev_state_probe_deselect;
  		fallthrough;
  	case ncsi_dev_state_probe_deselect:
@@ -48,16 +48,16 @@ index fbe35032c95b..573d6d66cc19 100644
  			nca.package = index;
  			ret = ncsi_xmit_cmd(&nca);
  			if (ret)
-@@ -1492,7 +1492,7 @@ static void ncsi_probe_channel(struct ncsi_dev_priv *ndp)
- 
- 		/* Probe next package */
- 		ndp->package_probe_id++;
+@@ -1386,7 +1386,7 @@ static void ncsi_probe_channel(struct ncsi_dev_priv *ndp)
+ 		nd->state = ncsi_dev_state_probe_package;
+ 		break;
+ 	case ncsi_dev_state_probe_package:
 -		if (ndp->package_probe_id >= 8) {
 +		if (ndp->package_probe_id >= ndp->max_package) {
- 			/* Probe finished */
+ 			/* Last package probed, finishing */
  			ndp->flags |= NCSI_DEV_PROBED;
  			break;
-@@ -1747,7 +1747,7 @@ struct ncsi_dev *ncsi_register_dev(struct net_device *dev,
+@@ -1760,7 +1760,7 @@ struct ncsi_dev *ncsi_register_dev(struct net_device *dev,
  	struct platform_device *pdev;
  	struct device_node *np;
  	unsigned long flags;
@@ -66,7 +66,7 @@ index fbe35032c95b..573d6d66cc19 100644
  
  	/* Check if the device has been registered or not */
  	nd = ncsi_find_dev(dev);
-@@ -1803,6 +1803,14 @@ struct ncsi_dev *ncsi_register_dev(struct net_device *dev,
+@@ -1816,6 +1816,14 @@ struct ncsi_dev *ncsi_register_dev(struct net_device *dev,
  
  		if (np && of_get_property(np, "ncsi-ctrl,start-redo-probe", NULL))
  			ndp->ctrl_flags |= NCSI_CTRL_FLAG_START_REDO_PROBE;
@@ -82,5 +82,5 @@ index fbe35032c95b..573d6d66cc19 100644
  
  	return nd;
 -- 
-2.43.5
+2.47.3
 

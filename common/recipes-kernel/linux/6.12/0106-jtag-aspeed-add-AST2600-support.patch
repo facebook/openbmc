@@ -1,4 +1,4 @@
-From ffb031d2591843f863251fb9e16573a49f963388 Mon Sep 17 00:00:00 2001
+From 58cf4e956cae58618083f11f15de5abcec62c7c5 Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Joan=20Olguy=20Can=C3=A9us?= <joancaneus@fb.com>
 Date: Wed, 12 Aug 2020 18:01:39 -0700
 Subject: [PATCH 106/112] jtag: aspeed: add AST2600 support
@@ -40,7 +40,7 @@ Signature: 23093876:1597303153:b675914f7904fed79b330947f007fe50ffcb70b0
  1 file changed, 51 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/jtag/jtag-aspeed.c b/drivers/jtag/jtag-aspeed.c
-index 2d4a631ca4ac..e0a46fd12bca 100644
+index beba9d80ebe0..d351121aded7 100644
 --- a/drivers/jtag/jtag-aspeed.c
 +++ b/drivers/jtag/jtag-aspeed.c
 @@ -21,6 +21,14 @@
@@ -145,7 +145,7 @@ index 2d4a631ca4ac..e0a46fd12bca 100644
  	aspeed_jtag->pclk = devm_clk_get(aspeed_jtag->dev, NULL);
  	if (IS_ERR(aspeed_jtag->pclk)) {
  		dev_err(aspeed_jtag->dev, "devm_clk_get failed\n");
-@@ -1216,6 +1261,7 @@ static int aspeed_jtag_remove(struct platform_device *pdev)
+@@ -1215,6 +1260,7 @@ static void aspeed_jtag_remove(struct platform_device *pdev)
  static const struct of_device_id aspeed_jtag_of_match[] = {
  	{ .compatible = "aspeed,ast2400-jtag", },
  	{ .compatible = "aspeed,ast2500-jtag", },
@@ -154,5 +154,5 @@ index 2d4a631ca4ac..e0a46fd12bca 100644
  };
  
 -- 
-2.43.5
+2.47.3
 

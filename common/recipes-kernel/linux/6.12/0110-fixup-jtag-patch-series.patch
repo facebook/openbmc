@@ -1,4 +1,4 @@
-From 310238c18b9b6d89fb046dbff0f26571103b2836 Mon Sep 17 00:00:00 2001
+From 6a87366d1141df80949b38653682ddb9204b4a42 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Thu, 13 Oct 2022 03:38:28 -0700
 Subject: [PATCH 110/112] fixup jtag patch series
@@ -45,5 +45,5 @@ index 45d1c3e630f7..d97bef3ddfae 100644
  
  # GPIO must come after pinctrl as gpios may need to mux pins etc
 -- 
-2.43.5
+2.47.3
 

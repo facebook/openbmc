@@ -1,4 +1,4 @@
-From 4c0f13c778a07d8eae646c1d5fec3e9c6e7c4b55 Mon Sep 17 00:00:00 2001
+From ccf04231b8e9cd7b016caf2bcf1ad7d6898f6b1e Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Tue, 14 Jul 2020 23:25:29 -0700
 Subject: [PATCH 105/112] jtag: aspeed: support JTAG_RUN_CYCLE ioctl command
@@ -21,7 +21,7 @@ Signature: 22554564:1594850436:323f132b9f83cff67bc8db7dd1b3d7815b4ec9e9
  1 file changed, 64 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/jtag/jtag-aspeed.c b/drivers/jtag/jtag-aspeed.c
-index 0a30413efb93..2d4a631ca4ac 100644
+index ff92223919a7..beba9d80ebe0 100644
 --- a/drivers/jtag/jtag-aspeed.c
 +++ b/drivers/jtag/jtag-aspeed.c
 @@ -16,6 +16,8 @@
@@ -111,5 +111,5 @@ index 0a30413efb93..2d4a631ca4ac 100644
  
  static int aspeed_jtag_probe(struct platform_device *pdev)
 -- 
-2.43.5
+2.47.3
 

@@ -1,7 +1,7 @@
-From a5428eb1f5d71637eac0b440bb8780d924c4f1d4 Mon Sep 17 00:00:00 2001
+From a1aacbac2bb8de0ae3555f7cb2baae8fca5a17ef Mon Sep 17 00:00:00 2001
 From: Rush Chen <Rush_Chen@wiwynn.com>
 Date: Fri, 23 Aug 2024 11:10:41 +0800
-Subject: [PATCH 606/608] hwmon: (pmbus) Add SQ52205 driver
+Subject: [PATCH 606/607] hwmon: (pmbus) Add SQ52205 driver
 
 Add power monitor SQ52205 driver.
 
@@ -15,12 +15,12 @@ https://lore.kernel.org/all/20240812154240.3570-1-wenliang202407@163.com/
  create mode 100644 drivers/hwmon/pmbus/sq52205.c
 
 diff --git a/drivers/hwmon/pmbus/Kconfig b/drivers/hwmon/pmbus/Kconfig
-index 85c837843647..0558b4adb85f 100644
+index 30a5e3e883ec..ccee2e184c4c 100644
 --- a/drivers/hwmon/pmbus/Kconfig
 +++ b/drivers/hwmon/pmbus/Kconfig
-@@ -628,4 +628,13 @@ config SENSORS_INA233
-           This driver can also be built as a module. If so, the module will
-           be called ina233.
+@@ -502,6 +502,15 @@ config SENSORS_Q54SJ108A2
+ 	  This driver can also be built as a module. If so, the module will
+ 	  be called q54sj108a2.
  
 +config SENSORS_SQ52205
 +	tristate "Silergy SQ52205 and compatibles"
@@ -31,9 +31,11 @@ index 85c837843647..0558b4adb85f 100644
 +	  This driver can also be built as a module. If so, the module will
 +	  be called sq52205.
 +
- endif # PMBUS
+ config SENSORS_STPDDC60
+ 	tristate "ST STPDDC60"
+ 	help
 diff --git a/drivers/hwmon/pmbus/Makefile b/drivers/hwmon/pmbus/Makefile
-index 956f18acf795..0375eccc50ce 100644
+index 42a1e7a6c7c3..8998ec341573 100644
 --- a/drivers/hwmon/pmbus/Makefile
 +++ b/drivers/hwmon/pmbus/Makefile
 @@ -50,6 +50,7 @@ obj-$(CONFIG_SENSORS_PLI1209BC)	+= pli1209bc.o
@@ -43,7 +45,7 @@ index 956f18acf795..0375eccc50ce 100644
 +obj-$(CONFIG_SENSORS_SQ52205)	+= sq52205.o
  obj-$(CONFIG_SENSORS_STPDDC60)	+= stpddc60.o
  obj-$(CONFIG_SENSORS_TDA38640)	+= tda38640.o
- obj-$(CONFIG_SENSORS_TPS40422)	+= tps40422.o
+ obj-$(CONFIG_SENSORS_TPS25990)	+= tps25990.o
 diff --git a/drivers/hwmon/pmbus/sq52205.c b/drivers/hwmon/pmbus/sq52205.c
 new file mode 100644
 index 000000000000..76e3504de2bb
@@ -610,5 +612,5 @@ index 000000000000..76e3504de2bb
 +MODULE_DESCRIPTION("SQ522xx driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.43.5
+2.47.3
 

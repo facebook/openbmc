@@ -1,4 +1,4 @@
-From ec696b96e6ce6a07bd8c3c0bfc294c582f98d65a Mon Sep 17 00:00:00 2001
+From ccbb784278e8bb1ddde90c6f0e2020cd6ed8bed1 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Tue, 14 Jul 2020 22:18:35 -0700
 Subject: [PATCH 103/112] jtag: aspeed: support sysfs interface
@@ -40,7 +40,7 @@ index 0cc163f9ad44..d3814e57d638 100644
 +	  If you say yes here, you get a set of sysfs interfaces and ioctl
 +	  commands for supporting legacy user space applications.
 diff --git a/drivers/jtag/jtag-aspeed.c b/drivers/jtag/jtag-aspeed.c
-index 254548762dc5..0a30413efb93 100644
+index 9f4e6ba88f04..ff92223919a7 100644
 --- a/drivers/jtag/jtag-aspeed.c
 +++ b/drivers/jtag/jtag-aspeed.c
 @@ -942,9 +942,147 @@ static int aspeed_jtag_init(struct platform_device *pdev,
@@ -205,5 +205,5 @@ index 254548762dc5..0a30413efb93 100644
  
  err_jtag_register:
 -- 
-2.43.5
+2.47.3
 

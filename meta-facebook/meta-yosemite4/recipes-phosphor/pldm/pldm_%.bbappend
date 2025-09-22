@@ -18,7 +18,7 @@ SYSTEMD_SERVICE:${PN} += " \
 
 EXTRA_OEMESON:append = " \
   -Dtransport-implementation=af-mctp \
-  -Dmaximum-transfer-size=150 \
+  -Dmaximum-transfer-size=245 \
   -Dsensor-polling-time=2000 \
   -Ddbus-timeout-value=10 \
   -Dinstance-id-expiration-interval=6 \

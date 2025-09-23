@@ -1,0 +1,844 @@
+From e393b6b4a4445d457254c8e01c6d4d7df0de347f Mon Sep 17 00:00:00 2001
+From: "Fred.Chen" <Fred.Chen@quantatw.com>
+Date: Tue, 10 Jun 2025 18:29:38 +0800
+Subject: [PATCH] ARM: dts: aspeed: santabarbara: add device nodes behind the
+ i3c hub
+
+Add device nodes behind the i3c hub. Each hub slave port can be
+configured to use either SMBus or I3C protocol.
+
+Kept as a local patch for now; will send upstream once the i3c hub
+driver is merged.
+
+I3C hub lore link:
+https://lore.kernel.org/all/20250917142055.2806576-2-steven.niu.uj@renesas.com/
+---
+ .../aspeed-bmc-facebook-santabarbara.dts      | 805 ++++++++++++++++++
+ 1 file changed, 805 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+index 873aa9ac9329..e2853787606e 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+@@ -39,6 +39,14 @@ aliases {
+ 		i2c37 = &i2c12mux0ch5;
+ 		i2c38 = &i2c12mux0ch6;
+ 		i2c39 = &i2c12mux0ch7;
++		i2c40 = &i3c0hubp2mux0ch0;
++		i2c41 = &i3c0hubp2mux0ch1;
++		i2c42 = &i3c0hubp2mux0ch2;
++		i2c43 = &i3c0hubp2mux0ch3;
++		i2c44 = &i3c0hubp3mux0ch0;
++		i2c45 = &i3c0hubp3mux0ch1;
++		i2c46 = &i3c0hubp3mux0ch2;
++		i2c47 = &i3c0hubp3mux0ch3;
+ 		i2c48 = &i2c6mux0ch0;
+ 		i2c49 = &i2c6mux0ch1;
+ 		i2c50 = &i2c6mux0ch2;
+@@ -1601,6 +1609,803 @@ &i2c15 {
+ 	status = "okay";
+ };
+ 
++&i3c0 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i3c1_default>;
++	i3c-pp-scl-hi-period-ns = <30>;
++	i3c-pp-scl-lo-period-ns = <50>;
++	i3c-od-scl-hi-period-ns = <380>;
++	i3c-od-scl-lo-period-ns = <620>;
++	sda-tx-hold-ns = <10>;
++
++	hub@0,4cc00000000 {
++		reg = <0x0 0x4cc 0x0>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		dcr = /bits/ 8 <0xc2>;
++
++		control-port {
++			port-name = "CP0";
++			io-microvolt = <1000000>;
++			vio-source = "external";
++		};
++
++		target-group-0 {
++			io-microvolt = <1800000>;
++			vio-source = "internal";
++			io-internal-pullups-ohms = <2000>;
++			io-strength-ohms = <40>;
++		};
++
++		target-group-1 {
++			io-microvolt = <1800000>;
++			vio-source = "internal";
++			io-internal-pullups-ohms = <2000>;
++			io-strength-ohms = <40>;
++		};
++
++		target-port@0 {
++			compatible = "i3c-hub-smbus";
++			reg = <0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clock-frequency = <100000>;
++			io-internal-pullups-disable;
++			multi-master;
++			mctp-controller;
++			status = "okay";
++
++			mctp@10 {
++				compatible = "mctp-i2c-controller";
++				reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++			};
++		};
++
++		target-port@1 {
++			compatible = "i3c-hub-smbus";
++			reg = <1>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clock-frequency = <100000>;
++			io-internal-pullups-disable;
++			multi-master;
++			mctp-controller;
++			status = "okay";
++
++			mctp@10 {
++				compatible = "mctp-i2c-controller";
++				reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++			};
++		};
++
++		target-port@2 {
++			compatible = "i3c-hub-smbus";
++			reg = <2>;
++
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clock-frequency = <100000>;
++
++			// PDB2 FRU
++			eeprom@52 {
++				compatible = "atmel,24c256";
++				reg = <0x52>;
++			};
++
++			i2c-mux@72 {
++				compatible = "nxp,pca9546";
++				reg = <0x72>;
++				#address-cells = <1>;
++				#size-cells = <0>;
++				i2c-mux-idle-disconnect;
++
++				i3c0hubp2mux0ch0: i2c@0 {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					reg = <0>;
++				};
++				i3c0hubp2mux0ch1: i2c@1 {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					reg = <1>;
++				};
++				i3c0hubp2mux0ch2: i2c@2 {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					reg = <2>;
++				};
++				i3c0hubp2mux0ch3: i2c@3 {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					reg = <3>;
++				};
++			};
++		};
++
++		target-port@3 {
++			compatible = "i3c-hub-smbus";
++			reg = <3>;
++
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clock-frequency = <100000>;
++
++			// PDB1 FRU
++			eeprom@54 {
++				compatible = "atmel,24c256";
++				reg = <0x54>;
++			};
++
++			i2c-mux@74 {
++				compatible = "nxp,pca9546";
++				reg = <0x74>;
++				#address-cells = <1>;
++				#size-cells = <0>;
++				i2c-mux-idle-disconnect;
++
++				i3c0hubp3mux0ch0: i2c@0 {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					reg = <0>;
++				};
++
++				i3c0hubp3mux0ch1: i2c@1 {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					reg = <1>;
++				};
++
++				i3c0hubp3mux0ch2: i2c@2 {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					reg = <2>;
++				};
++
++				i3c0hubp3mux0ch3: i2c@3 {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					reg = <3>;
++				};
++			};
++		};
++
++		target-port@4 {
++			compatible = "i3c-hub-smbus";
++			reg = <4>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clock-frequency = <100000>;
++			io-internal-pullups-disable;
++			multi-master;
++			mctp-controller;
++			status = "okay";
++
++			mctp@10 {
++				compatible = "mctp-i2c-controller";
++				reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++			};
++		};
++
++		target-port@5 {
++			compatible = "i3c-hub-smbus";
++			reg = <5>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clock-frequency = <100000>;
++			io-internal-pullups-disable;
++			multi-master;
++			mctp-controller;
++			status = "okay";
++
++			mctp@10 {
++				compatible = "mctp-i2c-controller";
++				reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++			};
++		};
++
++		i3c0hubp6: target-port@6 {
++			compatible = "i3c-hub-i3c";
++			reg = <6>;
++			device-scan-delay-ms = <2>;
++			status = "okay";
++		};
++	};
++};
++
++&i3c0hubp6 {
++	hub@0,4cc00000001 {
++		reg = <0x0 0x4cc 0x0>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		dcr = /bits/ 8 <0xc2>;
++
++		control-port {
++			port-name = "CP0";
++			io-microvolt = <1800000>;
++			vio-source = "external";
++		};
++
++		target-group-0 {
++			io-microvolt = <1800000>;
++			vio-source = "internal";
++			io-internal-pullups-ohms = <2000>;
++			io-strength-ohms = <40>;
++		};
++
++		target-group-1 {
++			io-microvolt = <1800000>;
++			vio-source = "internal";
++			io-internal-pullups-ohms = <2000>;
++			io-strength-ohms = <40>;
++		};
++
++		target-port@0 {
++			compatible = "i3c-hub-smbus";
++			reg = <0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clock-frequency = <100000>;
++			multi-master;
++			mctp-controller;
++			status = "okay";
++
++			mctp@10 {
++				compatible = "mctp-i2c-controller";
++				reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++			};
++
++			// OCP NIC TEMP
++			temperature-sensor@1f {
++				compatible = "ti,tmp421";
++				reg = <0x1f>;
++			};
++
++			// OCP NIC FRU
++			eeprom@50 {
++				compatible = "atmel,24c64";
++				reg = <0x50>;
++			};
++		};
++
++		target-port@1 {
++			compatible = "i3c-hub-smbus";
++			reg = <1>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clock-frequency = <100000>;
++			multi-master;
++			mctp-controller;
++			status = "okay";
++
++			mctp@10 {
++				compatible = "mctp-i2c-controller";
++				reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++			};
++
++			// OCP NIC TEMP
++			temperature-sensor@1f {
++				compatible = "ti,tmp421";
++				reg = <0x1f>;
++			};
++
++			// OCP NIC FRU
++			eeprom@50 {
++				compatible = "atmel,24c64";
++				reg = <0x50>;
++			};
++		};
++
++		target-port@2 {
++			compatible = "i3c-hub-smbus";
++			reg = <2>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clock-frequency = <100000>;
++			multi-master;
++			mctp-controller;
++			io-internal-pullups-disable;
++			status = "okay";
++
++			mctp@10 {
++				compatible = "mctp-i2c-controller";
++				reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++			};
++		};
++
++		target-port@4 {
++			compatible = "i3c-hub-smbus";
++			reg = <4>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clock-frequency = <100000>;
++			multi-master;
++			mctp-controller;
++			status = "okay";
++
++			mctp@10 {
++				compatible = "mctp-i2c-controller";
++				reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++			};
++
++			// OCP NIC TEMP
++			temperature-sensor@1f {
++				compatible = "ti,tmp421";
++				reg = <0x1f>;
++			};
++
++			// OCP NIC FRU
++			eeprom@50 {
++				compatible = "atmel,24c64";
++				reg = <0x50>;
++			};
++		};
++
++		target-port@5 {
++			compatible = "i3c-hub-smbus";
++			reg = <5>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clock-frequency = <100000>;
++			multi-master;
++			mctp-controller;
++			status = "okay";
++
++			mctp@10 {
++				compatible = "mctp-i2c-controller";
++				reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++			};
++
++			// OCP NIC TEMP
++			temperature-sensor@1f {
++				compatible = "ti,tmp421";
++				reg = <0x1f>;
++			};
++
++			// OCP NIC FRU
++			eeprom@50 {
++				compatible = "atmel,24c64";
++				reg = <0x50>;
++			};
++		};
++	};
++};
++
++&i3c1 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i3c2_default>;
++	i3c-pp-scl-hi-period-ns = <30>;
++	i3c-pp-scl-lo-period-ns = <50>;
++	i3c-od-scl-hi-period-ns = <380>;
++	i3c-od-scl-lo-period-ns = <620>;
++	sda-tx-hold-ns = <10>;
++
++	hub@1,4cc00000000 {
++		reg = <0x0 0x4cc 0x0>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		dcr = /bits/ 8 <0xc2>;
++
++		control-port {
++			port-name = "CP0";
++			io-microvolt = <1000000>;
++			vio-source = "internal";
++		};
++
++		target-group-0 {
++			io-microvolt = <1100000>;
++			vio-source = "internal";
++			io-internal-pullups-ohms = <500>;
++			io-strength-ohms = <20>;
++		};
++
++		target-group-1 {
++			io-microvolt = <1100000>;
++			vio-source = "internal";
++			io-internal-pullups-ohms = <500>;
++			io-strength-ohms = <20>;
++		};
++
++		i3c1hubp0: target-port@0 {
++			compatible = "i3c-hub-i3c";
++			reg = <0>;
++			device-scan-delay-ms = <2>;
++			status = "disabled";
++		};
++
++		i3c1hubp1: target-port@1 {
++			compatible = "i3c-hub-i3c";
++			reg = <1>;
++			device-scan-delay-ms = <2>;
++			status = "disabled";
++		};
++	};
++};
++
++&i3c1hubp0 {
++	status = "okay";
++
++	hub@1,4cc00000001 {
++		reg = <0x0 0x4cc 0x0>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		dcr = /bits/ 8 <0xc2>;
++
++		control-port {
++			port-name = "CP1";
++			io-microvolt = <1100000>;
++			vio-source = "internal";
++		};
++
++		target-group-0 {
++			io-microvolt = <1000000>;
++			vio-source = "internal";
++			io-internal-pullups-ohms = <500>;
++			io-strength-ohms = <40>;
++		};
++
++		target-group-1 {
++			io-microvolt = <1000000>;
++			vio-source = "internal";
++			io-internal-pullups-ohms = <500>;
++			io-strength-ohms = <40>;
++		};
++
++		target-port@0 {
++			compatible = "i3c-hub-i3c";
++			reg = <0>;
++		};
++
++		target-port@1 {
++			compatible = "i3c-hub-i3c";
++			reg = <1>;
++		};
++
++		target-port@2 {
++			compatible = "i3c-hub-i3c";
++			reg = <2>;
++		};
++
++		target-port@3 {
++			compatible = "i3c-hub-i3c";
++			reg = <3>;
++		};
++
++		target-port@4 {
++			compatible = "i3c-hub-i3c";
++			reg = <4>;
++		};
++
++		target-port@5 {
++			compatible = "i3c-hub-i3c";
++			reg = <5>;
++		};
++
++		target-port@6 {
++			compatible = "i3c-hub-i3c";
++			reg = <6>;
++		};
++
++		target-port@7 {
++			compatible = "i3c-hub-i3c";
++			reg = <7>;
++		};
++	};
++};
++
++&i3c1hubp1 {
++	status = "okay";
++
++	hub@1,4cc00000002 {
++		reg = <0x0 0x4cc 0x0>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		dcr = /bits/ 8 <0xc2>;
++
++		control-port {
++			port-name = "CP1";
++			io-microvolt = <1100000>;
++			vio-source = "internal";
++		};
++
++		target-group-0 {
++			io-microvolt = <1000000>;
++			vio-source = "internal";
++			io-internal-pullups-ohms = <500>;
++			io-strength-ohms = <40>;
++		};
++
++		target-group-1 {
++			io-microvolt = <1000000>;
++			vio-source = "internal";
++			io-internal-pullups-ohms = <500>;
++			io-strength-ohms = <40>;
++		};
++
++		target-port@0 {
++			compatible = "i3c-hub-i3c";
++			reg = <0>;
++		};
++
++		target-port@1 {
++			compatible = "i3c-hub-i3c";
++			reg = <1>;
++		};
++
++		target-port@2 {
++			compatible = "i3c-hub-i3c";
++			reg = <2>;
++		};
++
++		target-port@3 {
++			compatible = "i3c-hub-i3c";
++			reg = <3>;
++		};
++
++		target-port@4 {
++			compatible = "i3c-hub-i3c";
++			reg = <4>;
++		};
++
++		target-port@5 {
++			compatible = "i3c-hub-i3c";
++			reg = <5>;
++		};
++
++		target-port@6 {
++			compatible = "i3c-hub-i3c";
++			reg = <6>;
++		};
++
++		target-port@7 {
++			compatible = "i3c-hub-i3c";
++			reg = <7>;
++		};
++	};
++};
++
++&i3c0hubp2mux0ch0 {
++	temperature-sensor@4a {
++		compatible = "ti,tmp75";
++		reg = <0x4a>;
++	};
++
++	temperature-sensor@4e {
++		compatible = "ti,tmp75";
++		reg = <0x4e>;
++	};
++};
++
++&i3c0hubp2mux0ch1 {
++	power-monitor@40 {
++		compatible = "ti,ina230";
++		reg = <0x40>;
++		shunt-resistor = <2000>;
++	};
++
++	power-monitor@43 {
++		compatible = "ti,ina230";
++		reg = <0x43>;
++		shunt-resistor = <2000>;
++	};
++
++	power-monitor@44 {
++		compatible = "ti,ina230";
++		reg = <0x44>;
++		shunt-resistor = <2000>;
++	};
++
++	power-monitor@47 {
++		compatible = "ti,ina230";
++		reg = <0x47>;
++		shunt-resistor = <2000>;
++	};
++};
++
++&i3c0hubp2mux0ch3 {
++	fanctl1: fan-controller@2 {
++		compatible = "nuvoton,nct7363";
++		reg = <0x2>;
++		#pwm-cells = <2>;
++
++		fan-9 {
++			pwms = <&fanctl1 0 40000>;
++			tach-ch = /bits/ 8 <0x09>;
++		};
++		fan-10 {
++			pwms = <&fanctl1 0 40000>;
++			tach-ch = /bits/ 8 <0x0a>;
++		};
++		fan-13 {
++			pwms = <&fanctl1 4 40000>;
++			tach-ch = /bits/ 8 <0x0d>;
++		};
++		fan-14 {
++			pwms = <&fanctl1 4 40000>;
++			tach-ch = /bits/ 8 <0x0e>;
++		};
++	};
++
++	fan-controller@21{
++		compatible = "maxim,max31790";
++		reg = <0x21>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		channel@2 {
++			reg = <2>;
++			sensor-type = "TACH";
++		};
++		channel@5 {
++			reg = <5>;
++			sensor-type = "TACH";
++		};
++	};
++
++	gpio@22 {
++		compatible = "nxp,pca9555";
++		reg = <0x22>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++			"P12V_FAN0_PWRGD","P12V_FAN1_PWRGD",
++			"P12V_FAN2_PWRGD","P12V_FAN3_PWRGD",
++			"PDB2_REV_ID_0","PDB2_REV_ID_1",
++			"PDB2_REV_ID_2","PDB2_SKU_ID_0",
++			"PDB2_SKU_ID_1","PDB2_SKU_ID_2",
++			"PDB2_SKU_ID_3","PDB2_SKU_ID_4",
++			"PDB2_SKU_ID_5","PDB2_SKU_ID_6",
++			"PDB2_SKU_ID_7","";
++	};
++
++	fanctl0: fan-controller@23 {
++		compatible = "nuvoton,nct7363";
++		reg = <0x23>;
++		#pwm-cells = <2>;
++
++		fan-1 {
++			pwms = <&fanctl0 8 40000>;
++			tach-ch = /bits/ 8 <0x01>;
++		};
++		fan-2 {
++			pwms = <&fanctl0 8 40000>;
++			tach-ch = /bits/ 8 <0x02>;
++		};
++		fan-5 {
++			pwms = <&fanctl0 12 40000>;
++			tach-ch = /bits/ 8 <0x05>;
++		};
++		fan-6 {
++			pwms = <&fanctl0 12 40000>;
++			tach-ch = /bits/ 8 <0x06>;
++		};
++		fan-9 {
++			pwms = <&fanctl0 0 40000>;
++			tach-ch = /bits/ 8 <0x09>;
++		};
++		fan-10 {
++			pwms = <&fanctl0 0 40000>;
++			tach-ch = /bits/ 8 <0x0a>;
++		};
++		fan-13 {
++			pwms = <&fanctl0 4 40000>;
++			tach-ch = /bits/ 8 <0x0d>;
++		};
++		fan-14 {
++			pwms = <&fanctl0 4 40000>;
++			tach-ch = /bits/ 8 <0x0e>;
++		};
++	};
++
++	gpio@26 {
++		compatible = "nxp,pca9555";
++		reg = <0x26>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		interrupt-parent = <&sgpiom0>;
++		interrupts = <88 IRQ_TYPE_LEVEL_LOW>;
++		gpio-line-names =
++			"P12V_BRICK1_ALERT_N","P12V_BRICK2_ALERT_N",
++			"P12V_FAN0_ADC_ALERT_R1","P12V_FAN1_ADC_ALERT_R1",
++			"P12V_FAN2_ADC_ALERT_R1","P12V_FAN3_ADC_ALERT_R1",
++			"PDB1_EXP_INT","CHASSIS0_LEAK_Q_N_R",
++			"PDB2_LEAK_DETECT","PRSNT_CHASSIS0_LEAK_CABLE_N",
++			"","","","","","";
++	};
++};
++
++&i3c0hubp3mux0ch0 {
++	temperature-sensor@4a {
++		compatible = "ti,tmp75";
++		reg = <0x4a>;
++	};
++
++	temperature-sensor@4e {
++		compatible = "ti,tmp75";
++		reg = <0x4e>;
++	};
++
++	gpio@22 {
++		compatible = "nxp,pca9554";
++		reg = <0x22>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++			"TRAY_SLOT_ID0","TRAY_SLOT_ID1",
++			"TRAY_SLOT_ID2","TRAY_SLOT_ID3",
++			"TRAY_SLOT_ID4","TRAY_SLOT_PRESENT_N",
++			"P52V_PDB1_ALERT_N","P52V_SENSE_ALERT_N";
++	};
++
++	gpio@25 {
++		compatible = "nxp,pca9554";
++		reg = <0x25>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++			"PDB1_REV_ID_0","PDB1_REV_ID_1",
++			"PDB1_REV_ID_2","PDB1_SKU_ID_1",
++			"PDB1_SKU_ID_2","PDB1_SKU_ID_3",
++			"PDB1_SKU_ID_4","PDB1_SKU_ID_5";
++	};
++};
++
++&i3c0hubp3mux0ch1 {
++	vdrop-sensor@42 {
++		compatible = "ti,ina238";
++		reg = <0x42>;
++	};
++
++	vdrop-sensor@40 {
++		compatible = "ti,ina238";
++		reg = <0x43>;
++	};
++};
++
++&i3c0hubp3mux0ch2 {
++	power-monitor@40 {
++		compatible = "ti,ina238";
++		reg = <0x40>;
++		shunt-resistor = <500>;
++	};
++
++	power-monitor@41 {
++		compatible = "ti,ina238";
++		reg = <0x41>;
++		shunt-resistor = <500>;
++	};
++
++	power-monitor@44 {
++		compatible = "ti,ina238";
++		reg = <0x44>;
++		shunt-resistor = <500>;
++	};
++
++	power-monitor@45 {
++		compatible = "ti,ina238";
++		reg = <0x45>;
++		shunt-resistor = <500>;
++	};
++};
++
++&i3c0hubp3mux0ch3 {
++	power-monitor@41 {
++		compatible = "lltc,ltc4287";
++		reg = <0x41>;
++		shunt-resistor-micro-ohms = <100>;
++	};
++
++	power-monitor@43 {
++		compatible = "lltc,ltc4287";
++		reg = <0x43>;
++		shunt-resistor-micro-ohms = <150>;
++	};
++};
++
+ &kcs2 {
+ 	aspeed,lpc-io-reg = <0xca8>;
+ 	status = "okay";
+-- 
+2.49.0
+

@@ -22,9 +22,10 @@ from modbus_update_helper import (
 )
 from pyrmd import ModbusException, RackmonInterface as rmd
 
+import delta_key
 
 parser = get_parser()
-parser.add_argument("--key", type=auto_int, required=True, help="Sec key")
+parser.add_argument("--key", type=auto_int, default=delta_key.key, help="Sec key")
 
 
 class StatusRegister:
@@ -293,6 +294,9 @@ def print_revision(addr):
 
 def main():
     args = parser.parse_args()
+    if args.key is None:
+        print("PSU Update Key is needed to upgrade this device")
+        sys.exit(1)
     with suppress_monitoring(args.addr):
         try:
             print_revision(args.addr)

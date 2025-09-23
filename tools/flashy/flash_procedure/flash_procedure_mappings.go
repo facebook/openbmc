@@ -52,5 +52,6 @@ var GeneratedFlashProcedureMappings = map[string]func(step.StepParams) step.Step
 	"wedge400":         flash.FlashCp,
 	"yamp":             flash.FlashCp,
 	"yosemite4":        flash.FlashCp,
+	"yosemite5":        flash.FlashCp,
 	"yosemite":         flash.FlashCp,
 }

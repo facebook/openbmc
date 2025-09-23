@@ -1,21 +1,21 @@
-From 9a4862b94e4dd3c0a498b4e1373276580fe7c80d Mon Sep 17 00:00:00 2001
+From 980d4edd53d987f2a8949b16eeb3e2b8af48848b Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Fri, 1 Nov 2024 13:24:13 +0800
-Subject: [PATCH 1004/1016] arm: dts: aspeed: yosemite4: add multi source of
- power sensors on Spider Board
+Subject: [PATCH] arm: dts: aspeed: yosemite4: add multi source of power
+ sensors on Spider Board
 
 Add INA233, RTQ6056, and SQ52205 for the power sensors on Spider Board.
 - Haven't contributed because there is no INA233 and SQ52205 driver on
 upstream.
 ---
- .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 20 ++++++++++++++-----
- 1 file changed, 15 insertions(+), 5 deletions(-)
+ .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 25 +++++++++++++++----
+ 1 file changed, 20 insertions(+), 5 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index bdfc81582da2..d216505fb2c4 100644
+index 58d269ddb7c9..6cef0b4ba7a8 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-@@ -1153,28 +1153,38 @@ adc@37 {
+@@ -1153,28 +1153,43 @@ adc@37 {
  	};
  
  	power-sensor@40 {
@@ -24,6 +24,7 @@ index bdfc81582da2..d216505fb2c4 100644
  		reg = <0x40>;
 +		shunt-resistor = <5000>;
 +		ti,maximum-expected-current-microamp = <32768000>;
++		status = "disabled";
  	};
  
  	power-sensor@41 {
@@ -32,6 +33,7 @@ index bdfc81582da2..d216505fb2c4 100644
  		reg = <0x41>;
 +		shunt-resistor = <5000>;
 +		ti,maximum-expected-current-microamp = <32768000>;
++		status = "disabled";
  	};
  
  	power-sensor@42 {
@@ -40,6 +42,7 @@ index bdfc81582da2..d216505fb2c4 100644
  		reg = <0x42>;
 +		shunt-resistor = <5000>;
 +		ti,maximum-expected-current-microamp = <32768000>;
++		status = "disabled";
  	};
  
  	power-sensor@43 {
@@ -48,6 +51,7 @@ index bdfc81582da2..d216505fb2c4 100644
  		reg = <0x43>;
 +		shunt-resistor = <5000>;
 +		ti,maximum-expected-current-microamp = <32768000>;
++		status = "disabled";
  	};
  
  	power-sensor@44 {
@@ -56,9 +60,10 @@ index bdfc81582da2..d216505fb2c4 100644
  		reg = <0x44>;
 +		shunt-resistor = <5000>;
 +		ti,maximum-expected-current-microamp = <32768000>;
++		status = "disabled";
  	};
  
  	temperature-sensor@4e {
 -- 
-2.47.3
+2.43.0
 

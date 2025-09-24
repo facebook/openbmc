@@ -1,0 +1,53 @@
+From 986c3978b89b6a3e72802eb2ac961751ba1c4248 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Tue, 23 Sep 2025 17:50:53 -0700
+Subject: [PATCH] usb: gadget: f_ecm: disable suspend/resume feature
+
+Summary:
+
+Disable suspend/resume feature in f_ecm usb gadget driver to mitigate
+the usb0 interface down failure across x86 reboots in FBOSS platforms.
+
+FIXME: this is a hack, and we need to figure out proper fix later.
+
+Test Plan:
+
+Reboot x86 of MP3 and make sure fe80::1%usb0 is still reachable across
+x86 reboots.
+---
+ drivers/usb/gadget/function/f_ecm.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/gadget/function/f_ecm.c b/drivers/usb/gadget/function/f_ecm.c
+index 549efc84dd83..19f167bf0253 100644
+--- a/drivers/usb/gadget/function/f_ecm.c
++++ b/drivers/usb/gadget/function/f_ecm.c
+@@ -872,6 +872,7 @@ static struct usb_function_instance *ecm_alloc_inst(void)
+ 	return &opts->func_inst;
+ }
+ 
++#if 0
+ static void ecm_suspend(struct usb_function *f)
+ {
+ 	struct f_ecm *ecm = func_to_ecm(f);
+@@ -891,6 +892,7 @@ static void ecm_resume(struct usb_function *f)
+ 
+ 	gether_resume(&ecm->port);
+ }
++#endif
+ 
+ static int ecm_get_status(struct usb_function *f)
+ {
+@@ -965,9 +967,7 @@ static struct usb_function *ecm_alloc(struct usb_function_instance *fi)
+ 	ecm->port.func.setup = ecm_setup;
+ 	ecm->port.func.disable = ecm_disable;
+ 	ecm->port.func.free_func = ecm_free;
+-	ecm->port.func.suspend = ecm_suspend;
+ 	ecm->port.func.get_status = ecm_get_status;
+-	ecm->port.func.resume = ecm_resume;
+ 
+ 	return &ecm->port.func;
+ }
+-- 
+2.47.3
+

@@ -79,4 +79,5 @@ SRC_URI:append = " \
     file://0900-jffs2-kill-garbage-collect-thread-when-filesystem-is.patch \
     file://0901-jffs2-suppress-jffs2-messages-when-reading-inode.patch \
     file://0902-mmc-sdhci-of-aspeed-add-skip_probe-module-parameter.patch \
+    file://0903-usb-gadget-f_ecm-disable-suspend-resume-feature.patch \
 "

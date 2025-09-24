@@ -1,0 +1,71 @@
+From aad8237429664c941913cbc5d96f57f8d14d60df Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Wed, 17 Sep 2025 15:57:25 +0800
+Subject: [PATCH 1011/1012] ARM: dts: aspeed: harma: add sq52206 power monitor
+ device
+
+lore:https://lore.kernel.org/all/20250917101828.2589069-4-peteryin.openbmc@gmail.com/
+
+Add the SQ52206 power monitor device and reorder the sequence.
+
+Signed-off-by: Peter Yin <peter.yin@quantatw.com>
+---
+ .../dts/aspeed/aspeed-bmc-facebook-harma.dts  | 28 +++++++++++--------
+ 1 file changed, 17 insertions(+), 11 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index bcef91e6eb54..fe72d47a7632 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -353,14 +353,15 @@ eeprom@52 {
+ 		reg = <0x52>;
+ 	};
+ 
+-	power-monitor@69 {
+-		compatible = "pmbus";
+-		reg = <0x69>;
++	power-monitor@40 {
++		compatible = "infineon,xdp710";
++		reg = <0x40>;
+ 	};
+ 
+-	temperature-sensor@49 {
+-		compatible = "ti,tmp75";
+-		reg = <0x49>;
++	power-monitor@41 {
++		compatible = "silergy,sq52206";
++		reg = <0x41>;
++		shunt-resistor = <500>;
+ 	};
+ 
+ 	power-monitor@44 {
+@@ -369,16 +370,21 @@ power-monitor@44 {
+ 		shunt-resistor-micro-ohms = <250>;
+ 	};
+ 
+-	power-monitor@40 {
+-		compatible = "infineon,xdp710";
+-		reg = <0x40>;
+-	};
+-
+ 	power-monitor@45 {
+ 		compatible = "ti,ina238";
+ 		reg = <0x45>;
+ 		shunt-resistor = <500>;
+ 	};
++
++	power-monitor@69 {
++		compatible = "pmbus";
++		reg = <0x69>;
++	};
++
++	temperature-sensor@49 {
++		compatible = "ti,tmp75";
++		reg = <0x49>;
++	};
+ };
+ 
+ &i2c5 {
+-- 
+2.43.0
+

@@ -1,0 +1,33 @@
+From 366572080ad4d0a32ab94be0f1b37005f4f125be Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Wed, 17 Sep 2025 16:06:53 +0800
+Subject: [PATCH 1012/1012] ARM: dts: aspeed: harma: add retimer sgpio
+
+lore:https://lore.kernel.org/all/20250917101828.2589069-5-peteryin.openbmc@gmail.com/
+
+Add irq-retimer0-0v9-alert and irq-retimer1-0v9-alert
+for power fail monitor.
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index fe72d47a7632..37b5e2614a9a 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -828,9 +828,10 @@ &sgpiom0 {
+ 	"","",
+ 	"irq-pvddcore0-ocp-alert","",
+ 	"irq-pvddcore1-ocp-alert","",
+-	"","",
++	"irq-retimer0-0v9-alert","",
+ 	/*O4-O7 line 232-239*/
+-	"","","","","","","","",
++	"irq-retimer1-0v9-alert","",
++	"","","","","","",
+ 	/*P0-P3 line 240-247*/
+ 	"","","","","","","","",
+ 	/*P4-P7 line 248-255*/
+-- 
+2.43.0
+

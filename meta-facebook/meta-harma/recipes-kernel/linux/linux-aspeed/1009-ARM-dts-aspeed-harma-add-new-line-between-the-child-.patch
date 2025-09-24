@@ -1,0 +1,56 @@
+From 15e611783c462850143c6d050709b67e3ccab908 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Wed, 17 Sep 2025 15:33:57 +0800
+Subject: [PATCH 1009/1012] ARM: dts: aspeed: harma: add new line between the
+ child nodes
+
+lore:https://lore.kernel.org/all/20250917101828.2589069-2-peteryin.openbmc@gmail.com/
+
+Add new line between the child nodes of imux28 to match DTS
+style.
+
+Signed-off-by: Peter Yin <peter.yin@quantatw.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index 23eaf47a38e8..41ae86180534 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -524,26 +524,32 @@ power-sensor@20 {
+ 				compatible = "mps,mp5990";
+ 				reg = <0x20>;
+ 			};
++
+ 			power-monitor@61 {
+ 				compatible = "isil,isl69260";
+ 				reg = <0x61>;
+ 			};
++
+ 			power-monitor@62 {
+ 				compatible = "isil,isl69260";
+ 				reg = <0x62>;
+ 			};
++
+ 			power-monitor@63 {
+ 				compatible = "isil,isl69260";
+ 				reg = <0x63>;
+ 			};
++
+ 			power-monitor@64 {
+ 				compatible = "infineon,xdpe152c4";
+ 				reg = <0x64>;
+ 			};
++
+ 			power-monitor@66 {
+ 				compatible = "infineon,xdpe152c4";
+ 				reg = <0x66>;
+ 			};
++
+ 			power-monitor@68 {
+ 				compatible = "infineon,xdpe152c4";
+ 				reg = <0x68>;
+-- 
+2.43.0
+

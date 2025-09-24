@@ -1,0 +1,101 @@
+From 6fdf8d658ce8677ce79d2e59b841713d6c3f71b6 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Wed, 17 Sep 2025 15:39:16 +0800
+Subject: [PATCH 1010/1012] ARM: dts: aspeed: harma: use power-monitor instead
+ of power-sensor
+
+lore:https://lore.kernel.org/all/20250917101828.2589069-3-peteryin.openbmc@gmail.com/
+
+Revise the node name from "power-sensor" to "power-monitor"
+in the Harma device tree to follow Device Tree naming convention.
+
+Signed-off-by: Peter Yin <peter.yin@quantatw.com>
+---
+ .../dts/aspeed/aspeed-bmc-facebook-harma.dts  | 20 +++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index 41ae86180534..bcef91e6eb54 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -190,25 +190,25 @@ pwm@5e{
+ 		#size-cells = <0>;
+ 	};
+ 
+-	power-sensor@40 {
++	power-monitor@40 {
+ 		compatible = "ti,ina238";
+ 		reg = <0x40>;
+ 		shunt-resistor = <1000>;
+ 	};
+ 
+-	power-sensor@41 {
++	power-monitor@41 {
+ 		compatible = "ti,ina238";
+ 		reg = <0x41>;
+ 		shunt-resistor = <1000>;
+ 	};
+ 
+-	power-sensor@44 {
++	power-monitor@44 {
+ 		compatible = "ti,ina238";
+ 		reg = <0x44>;
+ 		shunt-resistor = <1000>;
+ 	};
+ 
+-	power-sensor@45 {
++	power-monitor@45 {
+ 		compatible = "ti,ina238";
+ 		reg = <0x45>;
+ 		shunt-resistor = <1000>;
+@@ -264,25 +264,25 @@ pwm@5e{
+ 		#size-cells = <0>;
+ 	};
+ 
+-	power-sensor@40 {
++	power-monitor@40 {
+ 		compatible = "ti,ina238";
+ 		reg = <0x40>;
+ 		shunt-resistor = <1000>;
+ 	};
+ 
+-	power-sensor@41 {
++	power-monitor@41 {
+ 		compatible = "ti,ina238";
+ 		reg = <0x41>;
+ 		shunt-resistor = <1000>;
+ 	};
+ 
+-	power-sensor@44 {
++	power-monitor@44 {
+ 		compatible = "ti,ina238";
+ 		reg = <0x44>;
+ 		shunt-resistor = <1000>;
+ 	};
+ 
+-	power-sensor@45 {
++	power-monitor@45 {
+ 		compatible = "ti,ina238";
+ 		reg = <0x45>;
+ 		shunt-resistor = <1000>;
+@@ -374,7 +374,7 @@ power-monitor@40 {
+ 		reg = <0x40>;
+ 	};
+ 
+-	power-sensor@45 {
++	power-monitor@45 {
+ 		compatible = "ti,ina238";
+ 		reg = <0x45>;
+ 		shunt-resistor = <500>;
+@@ -520,7 +520,7 @@ imux28: i2c@0 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			reg = <0>;
+-			power-sensor@20 {
++			power-monitor@20 {
+ 				compatible = "mps,mp5990";
+ 				reg = <0x20>;
+ 			};
+-- 
+2.43.0
+

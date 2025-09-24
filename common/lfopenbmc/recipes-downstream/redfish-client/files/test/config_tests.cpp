@@ -33,6 +33,25 @@ TEST(Config, FullConfig)
       "/redfish/v1/Systems/system_0/LogServices/EventLog/Entries"
     ],
     "intervalMilliseconds": 5000
+  },
+  "updateServiceConfig": {
+    "intervalMilliseconds": 100000,
+    "firmwareMappers": [
+      {
+        "fromId": "FW1",
+        "toId": "chassis/FW1"
+      },
+      {
+        "fromId": "FW2",
+        "toId": "chassis/FW2"
+      }
+    ],
+    "softwareMappers": [
+      {
+        "fromId": "SW0",
+        "toId": "chassis/SW0"
+      }
+    ]
   }
 }
 )";
@@ -59,6 +78,18 @@ TEST(Config, FullConfig)
     EXPECT_EQ(config.logServiceConfig->urls[0],
               "/redfish/v1/Systems/system_0/LogServices/EventLog/Entries");
     EXPECT_EQ(config.logServiceConfig->intervalMilliseconds, 5000);
+    EXPECT_EQ(config.updateServiceConfig->intervalMilliseconds, 100000);
+    EXPECT_EQ(config.updateServiceConfig->firmwareMappers.size(), 2);
+    EXPECT_EQ(config.updateServiceConfig->firmwareMappers[0].fromId, "FW1");
+    EXPECT_EQ(config.updateServiceConfig->firmwareMappers[0].toId,
+              "chassis/FW1");
+    EXPECT_EQ(config.updateServiceConfig->firmwareMappers[1].fromId, "FW2");
+    EXPECT_EQ(config.updateServiceConfig->firmwareMappers[1].toId,
+              "chassis/FW2");
+    EXPECT_EQ(config.updateServiceConfig->softwareMappers.size(), 1);
+    EXPECT_EQ(config.updateServiceConfig->softwareMappers[0].fromId, "SW0");
+    EXPECT_EQ(config.updateServiceConfig->softwareMappers[0].toId,
+              "chassis/SW0");
 }
 
 TEST(Config, PartialConfig)

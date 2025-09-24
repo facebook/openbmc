@@ -64,6 +64,7 @@ srcs = [
     'persist_map.cpp',
     'sensor.cpp',
     'log_service_handler.cpp',
+    'update_service_handler.cpp',
 ]
 
 redfish_client_library = static_library(

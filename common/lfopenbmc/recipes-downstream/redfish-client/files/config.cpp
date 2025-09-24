@@ -15,6 +15,10 @@ void from_json(const nlohmann::json& json, Config& config)
     {
         config.logServiceConfig = it->template get<LogServiceConfig>();
     }
+    if (auto it = json.find("updateServiceConfig"); it != json.end())
+    {
+        config.updateServiceConfig = it->template get<UpdateServiceConfig>();
+    }
 }
 
 Config Config::parse(const std::string& configJson)

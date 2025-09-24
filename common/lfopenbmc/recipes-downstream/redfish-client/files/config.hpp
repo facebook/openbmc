@@ -36,12 +36,29 @@ struct LogServiceConfig
     NLOHMANN_DEFINE_TYPE_INTRUSIVE(LogServiceConfig, urls, intervalMilliseconds)
 };
 
+struct UpdateServiceMapper
+{
+    std::string fromId;
+    std::string toId;
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(UpdateServiceMapper, fromId, toId)
+};
+
+struct UpdateServiceConfig
+{
+    std::vector<UpdateServiceMapper> firmwareMappers;
+    std::vector<UpdateServiceMapper> softwareMappers;
+    size_t intervalMilliseconds;
+    NLOHMANN_DEFINE_TYPE_INTRUSIVE(UpdateServiceConfig, firmwareMappers,
+                                   softwareMappers, intervalMilliseconds)
+};
+
 struct Config
 {
     std::string host;
     std::string compatible;
     std::optional<SensorConfig> sensorConfig;
     std::optional<LogServiceConfig> logServiceConfig;
+    std::optional<UpdateServiceConfig> updateServiceConfig;
 
     static Config parse(const std::string& configJson);
 };

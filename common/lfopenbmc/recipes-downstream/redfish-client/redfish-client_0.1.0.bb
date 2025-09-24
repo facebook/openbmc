@@ -45,6 +45,8 @@ SRC_URI = " \
     file://sensor.hpp \
     file://config.hpp \
     file://config.cpp \
+    file://update_service_handler.hpp \
+    file://update_service_handler.cpp \
     file://xyz.openbmc_project.RedfishClient.service \
 "
 

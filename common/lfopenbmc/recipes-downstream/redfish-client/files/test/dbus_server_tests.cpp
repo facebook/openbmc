@@ -1,7 +1,9 @@
 #include "daemon.hpp"
 #include "helper.hpp"
+#include "update_service_handler.hpp"
 
 #include <xyz/openbmc_project/Sensor/Value/client.hpp>
+#include <xyz/openbmc_project/Software/Version/client.hpp>
 
 #include <chrono>
 #include <filesystem>
@@ -44,6 +46,25 @@ static constexpr auto kTestConfigFormat = R"(
           "toId": "Host0_Pressure0"
         }}
       ]
+    }},
+    "updateServiceConfig": {{
+      "intervalMilliseconds": 10,
+      "firmwareMappers": [
+        {{
+          "fromId": "FW0",
+          "toId": "Host0_FW0"
+        }},
+        {{
+          "fromId": "FW1",
+          "toId": "BMC_FW1"
+        }}
+      ],
+      "softwareMappers": [
+        {{
+          "fromId": "SW0",
+          "toId": "CPLD_SW0"
+        }}
+      ]
     }}
   }}
 )";
@@ -72,6 +93,58 @@ static constexpr auto kTestResponse1 = R"(
   }
 )";
 
+static constexpr auto kFirmwareInventoryResponse = R"(
+{
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory",
+  "@odata.type": "#SoftwareInventoryCollection.SoftwareInventoryCollection",
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/FW0",
+      "@odata.type": "#SoftwareInventory.v1_4_0.SoftwareInventory",
+      "Id": "FW0",
+      "Version": "FW0-V1"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/FW1",
+      "@odata.type": "#SoftwareInventory.v1_4_0.SoftwareInventory",
+      "Id": "FW1",
+      "Version": "FW1-V2"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/FW2",
+      "@odata.type": "#SoftwareInventory.v1_4_0.SoftwareInventory",
+      "Id": "FW2",
+      "Version": "FW2-V4"
+    }
+  ],
+  "Members@odata.count": 3,
+  "Name": "Software Inventory Collection"
+}
+)";
+
+static constexpr auto kSoftwareInventoryResponse = R"(
+{
+  "@odata.id": "/redfish/v1/UpdateService/SoftwareInventory",
+  "@odata.type": "#SoftwareInventoryCollection.SoftwareInventoryCollection",
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/UpdateService/SoftwareInventory/SW0",
+      "@odata.type": "#SoftwareInventory.v1_4_0.SoftwareInventory",
+      "Id": "SW0",
+      "Version": "SW-v1.5"
+    },
+    {
+      "@odata.id": "/redfish/v1/UpdateService/SoftwareInventory/SW1",
+      "@odata.type": "#SoftwareInventory.v1_4_0.SoftwareInventory",
+      "Id": "SW1",
+      "Version": "SW-v2.0.0"
+    }
+  ],
+  "Members@odata.count": 2,
+  "Name": "Software Inventory Collection"
+}
+)";
+
 std::string generateResponse(
     const SimpleTestHttpServer::ReceivedHttpRequest& request)
 {
@@ -82,6 +155,16 @@ std::string generateResponse(
     else if (request.path.ends_with("/Temp1"))
     {
         return kTestResponse1;
+    }
+    else if (request.path.ends_with(
+                 "/UpdateService/FirmwareInventory?$expand=."))
+    {
+        return kFirmwareInventoryResponse;
+    }
+    else if (request.path.ends_with(
+                 "/UpdateService/SoftwareInventory?$expand=."))
+    {
+        return kSoftwareInventoryResponse;
     }
     else
     {
@@ -97,6 +180,13 @@ auto getSensorClient(sdbusplus::async::context& ctx, const char* metricPath)
     return ValueClient(ctx).service(kServiceName).path(metricPath);
 }
 
+auto getSoftwareVersionClient(sdbusplus::async::context& ctx, const char* path)
+{
+    return sdbusplus::client::xyz::openbmc_project::software::Version<>(ctx)
+        .service(kServiceName)
+        .path(path);
+}
+
 } // namespace
 
 TEST(RedfishClientTests, SimpleDaemonRun)
@@ -107,7 +197,7 @@ TEST(RedfishClientTests, SimpleDaemonRun)
     SimpleTestHttpServer server(generateResponse, responseHeaders);
     auto configJson = std::format(kTestConfigFormat, server.getPort());
     auto config = Config::parse(configJson);
-
+    Software::randomIdGenerator() = []() { return 1234; };
     auto daemonThread = std::make_unique<std::thread>([&ctx, &config]() {
         runRedfishClient(kServiceName, ctx, config);
     });
@@ -138,6 +228,27 @@ TEST(RedfishClientTests, SimpleDaemonRun)
             auto sensorClient2 = getSensorClient(
                 ctx, "/xyz/openbmc_project/sensors/pressure/Host0_Pressure0");
             EXPECT_THROW(co_await sensorClient2.value(),
+                         sdbusplus::exception::SdBusError);
+
+            auto fw0Client = getSoftwareVersionClient(
+                ctx, "/xyz/openbmc_project/software/Host0_FW0_1234");
+            EXPECT_EQ("FW0-V1", co_await fw0Client.version());
+
+            auto fw1Client = getSoftwareVersionClient(
+                ctx, "/xyz/openbmc_project/software/BMC_FW1_1234");
+            EXPECT_EQ("FW1-V2", co_await fw1Client.version());
+
+            auto fw2Client = getSoftwareVersionClient(
+                ctx, "/xyz/openbmc_project/software/FW2_1234");
+            EXPECT_THROW(co_await fw2Client.version(),
+                         sdbusplus::exception::SdBusError);
+
+            auto sw0Client = getSoftwareVersionClient(
+                ctx, "/xyz/openbmc_project/software/CPLD_SW0_1234");
+            EXPECT_EQ("SW-v1.5", co_await sw0Client.version());
+            auto sw1Client = getSoftwareVersionClient(
+                ctx, "/xyz/openbmc_project/software/SW1_1234");
+            EXPECT_THROW(co_await sw1Client.version(),
                          sdbusplus::exception::SdBusError);
 
             ctx.request_stop();

@@ -162,6 +162,8 @@ SRC_URI:append = " \
     file://0330-dt-bindings-hwmon-Add-MPS-mp2869-mp29608-mp29612-mp2.patch \
     file://0331-hwmon-add-MP2869-MP29608-MP29612-and-MP29816-series-.patch \
     file://0332-hwmon-add-MP29502-driver.patch \
+    file://0333-hwmon-ina238-add-ina237-support.patch \
+    file://0334-hwmon-ina238-Add-support-for-SQ52206.patch \
 "
 
 #

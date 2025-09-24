@@ -1,0 +1,158 @@
+From 41fd812e0ae9ef695965ef34878e5633460a4f12 Mon Sep 17 00:00:00 2001
+From: Richard Leitner <richard.leitner@linux.dev>
+Date: Thu, 26 Oct 2023 09:08:49 +0200
+Subject: [PATCH 331/332] hwmon: (ina238) add ina237 support
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The INA237 "85-V, 16-Bit, Precision Power Monitor With I2C Interface" is
+basically the same as INA328. Therefore add a corresponding compatible
+to the driver.
+
+According to the datasheet the main difference is the current and power
+monitoring accuracy:
+
++------------------------+---------------+---------------+
+|                        | INA238        | INA237        |
++------------------------+---------------+---------------+
+| Offset voltage         | +/- 5µV       | +/- 50µV      |
+| Offset drift           | +/- 0.02µV/°C | +/- 0.02µV/°C |
+| Gain error             | +/- 0.1%      | +/- 0.3%      |
+| Gain error drift       | +/- 25ppm/°C  | +/- 50ppm/°C  |
+| Common mode rejection  | 140dB         | 120dB         |
+| Power accuracy         | 0.7%          | 1.6%          |
++------------------------+---------------+---------------+
+
+As well as the missing DEVICE_ID register at 0x3F, which is currently
+not in use by the driver.
+
+Signed-off-by: Richard Leitner <richard.leitner@linux.dev>
+Link: https://lore.kernel.org/r/20231026-ina237-v2-1-dec44811a3c9@linux.dev
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+(cherry picked from commit 2358151bfb304aedda44348384557c161151bf57)
+---
+ drivers/hwmon/ina238.c | 58 ++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 53 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/hwmon/ina238.c b/drivers/hwmon/ina238.c
+index f519c22d3907..f5f2892c1e89 100644
+--- a/drivers/hwmon/ina238.c
++++ b/drivers/hwmon/ina238.c
+@@ -33,7 +33,7 @@
+ #define INA238_BUS_UNDER_VOLTAGE	0xf
+ #define INA238_TEMP_LIMIT		0x10
+ #define INA238_POWER_LIMIT		0x11
+-#define INA238_DEVICE_ID		0x3f
++#define INA238_DEVICE_ID		0x3f /* not available on INA237 */
+ 
+ #define INA238_CONFIG_ADCRANGE		BIT(4)
+ 
+@@ -102,7 +102,20 @@ static struct regmap_config ina238_regmap_config = {
+ 	.val_bits = 16,
+ };
+ 
++enum ina238_ids { ina238, ina237 };
++
++struct ina238_config {
++	bool has_power_highest;		/* chip detection power peak */
++	bool has_energy;			/* chip detection energy */
++	u8 temp_shift;				/* fixed parameters for temp calculate */
++	u32 power_calculate_factor;	/* fixed parameters for power calculate */
++	u16 config_default;			/* Power-on default state */
++	int bus_voltage_lsb;		/* use for temperature calculate, uV/lsb */
++	int temp_lsb;				/* use for temperature calculate */
++};
++
+ struct ina238_data {
++	const struct ina238_config *config;
+ 	struct i2c_client *client;
+ 	struct mutex config_lock;
+ 	struct regmap *regmap;
+@@ -110,6 +123,27 @@ struct ina238_data {
+ 	int gain;
+ };
+ 
++static const struct ina238_config ina238_config[] = {
++	[ina238] = {
++		.has_energy = false,
++		.has_power_highest = false,
++		.temp_shift = 4,
++		.power_calculate_factor = 20,
++		.config_default = INA238_CONFIG_DEFAULT,
++		.bus_voltage_lsb = INA238_BUS_VOLTAGE_LSB,
++		.temp_lsb = INA238_DIE_TEMP_LSB,
++	},
++	[ina237] = {
++		.has_energy = false,
++		.has_power_highest = false,
++		.temp_shift = 4,
++		.power_calculate_factor = 20,
++		.config_default = INA238_CONFIG_DEFAULT,
++		.bus_voltage_lsb = INA238_BUS_VOLTAGE_LSB,
++		.temp_lsb = INA238_DIE_TEMP_LSB,
++	},
++};
++
+ static int ina238_read_reg24(const struct i2c_client *client, u8 reg, u32 *val)
+ {
+ 	u8 data[3];
+@@ -536,14 +570,20 @@ static int ina238_probe(struct i2c_client *client)
+ 	struct device *dev = &client->dev;
+ 	struct device *hwmon_dev;
+ 	struct ina238_data *data;
++	enum ina238_ids chip;
+ 	int config;
+ 	int ret;
+ 
++	chip = (uintptr_t)i2c_get_match_data(client);
++
+ 	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
+ 	if (!data)
+ 		return -ENOMEM;
+ 
+ 	data->client = client;
++	/* set the device type */
++	data->config = &ina238_config[chip];
++
+ 	mutex_init(&data->config_lock);
+ 
+ 	data->regmap = devm_regmap_init_i2c(client, &ina238_regmap_config);
+@@ -570,7 +610,7 @@ static int ina238_probe(struct i2c_client *client)
+ 	}
+ 
+ 	/* Setup CONFIG register */
+-	config = INA238_CONFIG_DEFAULT;
++	config = data->config->config_default;
+ 	if (data->gain == 1)
+ 		config |= INA238_CONFIG_ADCRANGE; /* ADCRANGE = 1 is /1 */
+ 	ret = regmap_write(data->regmap, INA238_CONFIG, config);
+@@ -616,14 +656,22 @@ static int ina238_probe(struct i2c_client *client)
+ }
+ 
+ static const struct i2c_device_id ina238_id[] = {
+-	{ "ina238", 0 },
++	{ "ina237", ina237 },
++	{ "ina238", ina238 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, ina238_id);
+ 
+ static const struct of_device_id __maybe_unused ina238_of_match[] = {
+-	{ .compatible = "ti,ina238" },
+-	{ },
++	{
++		.compatible = "ti,ina237",
++		.data = (void *)ina237
++	},
++	{
++		.compatible = "ti,ina238",
++		.data = (void *)ina238
++	},
++	{ }
+ };
+ MODULE_DEVICE_TABLE(of, ina238_of_match);
+ 
+-- 
+2.43.0
+

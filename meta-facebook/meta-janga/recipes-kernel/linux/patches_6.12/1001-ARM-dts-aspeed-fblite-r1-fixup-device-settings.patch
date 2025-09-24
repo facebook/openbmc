@@ -1,0 +1,58 @@
+From 4b63d2c3e24d78991b4c836e0730e0488a7439e9 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Sun, 21 Sep 2025 14:04:09 -0700
+Subject: [PATCH] ARM: dts: aspeed: fblite-r1: fixup device settings
+
+Summary:
+
+Enable a few more devices in fblite-r1.dts.
+
+Test Plan:
+
+1) "bitbake montblanc-image" passed.
+2) booted up montblanc-image successfully.
+---
+ .../aspeed/aspeed-bmc-facebook-fblite-r1.dts  | 30 +++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+index d14c0141533b..c3e9af8ac77b 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+@@ -73,3 +73,33 @@ fixed-link {
+ 		full-duplex;
+ 	};
+ };
++
++&spi1 {
++	status = "okay";
++
++	reg = < 0x1e630000 0xc4
++		0x30000000 0x2000000 >;
++
++	flash@0 {
++		status = "okay";
++		m25p,fast-read;
++		label = "spi1.0";
++		spi-rx-bus-width = <1>;
++		spi-max-frequency = <5000000>;
++
++		partitions {
++			compatible = "fixed-partitions";
++			#address-cells = <1>;
++			#size-cells = <1>;
++
++			flash1@0 {
++				reg = <0x0 0x2000000>;
++				label = "host-flash";
++			};
++		};
++	};
++};
++
++&jtag1 {
++	status = "okay";
++};
+-- 
+2.47.3
+

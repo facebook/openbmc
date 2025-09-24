@@ -26,3 +26,5 @@ IMAGE_INSTALL:append = " nic-sensor-monitor"
 # Add expect needed for NIC console development
 IMAGE_INSTALL:append = " expect"
 IMAGE_INSTALL:append = " dimm-util"
+# Add support for collecting CXL coredump via UART
+IMAGE_INSTALL:append = " cxl-coredump-collection"

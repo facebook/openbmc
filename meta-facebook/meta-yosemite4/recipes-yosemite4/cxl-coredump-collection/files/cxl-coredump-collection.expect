@@ -1,0 +1,209 @@
+#!/usr/bin/expect
+
+log_user 0
+if { $argc != 3 } {
+    puts "Usage: cxl-coredump-collection {1 ~ 8} {cxl_1 or cxl_2} {coredump filename}"
+    exit 1
+}
+
+set slot [lindex $argv 0]
+set cxl_device [lindex $argv 1]
+set coredump_file_name [lindex $argv 2]
+
+if {![string is integer $slot] || $slot < 1 || $slot > 8} {
+    puts "Slot must be between 1 ~ 8"
+    exit 1
+}
+set uart_num [expr {$slot < 5 ? $slot - 1 : $slot}]
+# enable flow control
+exec /bin/stty -F "/dev/ttyS$uart_num" crtscts
+set bus_num [expr {$slot - 1}]
+set wf_eid [expr {$slot * 10 + 2}]
+
+switch $cxl_device {
+    "cxl_1" {
+        set cxl_offset "0x01"
+    }
+    "cxl_2" {
+        set cxl_offset "0x02"
+    }
+    default {
+        puts "Invalid CXL device. Use cxl_1 or cxl_2."
+        exit 1
+    }
+}
+
+if {[catch {exec pldmtool raw -d 0x80 0x02 0x39 0x3 0x0 0x1 0x01 $cxl_offset -m $wf_eid} result]} {
+        puts "Send pldm command to slot $slot WF BIC failed"
+        exit 1
+    }
+
+set i2c_offset "0x1"
+if {[catch {exec i2ctransfer -f -y $bus_num w2@0x22 0x88 $i2c_offset} result]} {
+        puts "Failed to set UART out to BMC"
+        exit 1
+    }
+
+proc hex_to_le {hex_str} {
+    set bytes {}
+    for {set i 0} {$i < [string length $hex_str]} {incr i 2} {
+        lappend bytes [string range $hex_str $i [expr {$i + 1}]]
+    }
+    set reversed_bytes [lreverse $bytes]
+    set le [join $reversed_bytes ""]
+    return $le
+}
+
+proc check_coredump_header {address} {
+    expect {
+        -re "${address}:(.*)\r?\n" {
+            set line $expect_out(1,string)
+            set bar [string first "|" $line]
+            set line_hex [string range $line 0 [expr {$bar - 1}]]
+            regsub -all {[^0-9A-Fa-f]} $line_hex "" header_hex
+            set sig_hex   [string range $header_hex 0 7]
+            set chk_hex   [string range $header_hex 8 15]
+            set len_hex   [string range $header_hex 16 31]
+            #change to little-endian string
+            set sig_le [hex_to_le $sig_hex]
+            set chk_le [hex_to_le $chk_hex]
+            set len_le [hex_to_le $len_hex]
+            return [list $sig_le $chk_le $len_le]
+        }
+        timeout {
+            puts "Timeout reading $address please check URAT status"
+            exit 1
+        }
+    }
+}
+
+proc calc_checksum {bin} {
+    set sum 0
+    binary scan $bin cu* bytes  
+    foreach b $bytes {
+        set sum [expr {$sum + $b}]
+    }
+    return [expr {$sum & 0xFFFF}]
+}
+
+proc verify_checksum {bin header_checksum} {
+    set bin_checksum [calc_checksum $bin]
+    return [expr {$bin_checksum == $header_checksum}]
+}
+
+set timeout 2
+if {[catch {spawn obmc-console-client -i host$slot} errmsg]} {
+    puts "Please check obmc-console service status"
+    exit 1
+}
+send \r
+expect timeout
+send \r
+expect -r ".*uart:~\\$ "
+send "qspi rf 0x01f80000 16\r"
+send \r
+expect timeout
+set result [check_coredump_header "01F80000"]
+set coredump_signature [lindex $result 0]
+set coredump_checksum [scan [lindex $result 1] %x]
+#  unpadded size
+set coredump_length [scan [lindex $result 2] %x]
+#  padded size
+set coredump_length_padded [expr {(( $coredump_length + 3 ) / 4) * 4}]
+if {$coredump_signature == "cdcd0100"} {
+    puts "Coredump header present"
+} elseif {$coredump_signature == "ffffffff"} {
+    puts "Coredump header not present"
+    exit 1
+} else {
+    puts "Coredump header not present"
+    exit 1
+}
+
+set max_retries 3
+# When using the Coredump API, the UART speed minimal ~ 2.4KB/s
+set timeout [expr {$coredump_length / 2400}]
+match_max [expr {int($coredump_length * 2.2)}]
+
+for {set attempt 0} {$attempt < $max_retries} {incr attempt} {
+    if { $attempt != 0 } {
+        puts "Retrying to collect coredump, attempt $attempt of $max_retries"
+    }
+    puts "Copy coredump... Please wait."
+    catch {unset expect_out(buffer)}
+    set has_err 0; set has_begin 0
+    send "coredump print\r"
+    expect {
+        -re "#CD:BEGIN#" {
+            set has_begin 1
+            exp_continue
+        }
+        -re "#CD:END#" {
+              if {!$has_begin} {
+                puts "Error: END found but no BEGIN"
+                set has_err 1
+            }
+        }
+        -re "#CD:ERROR CANNOT DUMP#" {
+            puts "Error: coredump cannot be dumped"
+            set has_err 1
+            exp_continue
+        }
+        timeout {
+            puts "coredump timeout"
+            set has_err 1
+        }
+    }
+    set buffer_content $expect_out(buffer)
+    set coredump_log [open "coredump_log.txt" w]
+    puts $coredump_log $buffer_content
+    close $coredump_log
+    exec bash -c {grep '^#CD:' coredump_log.txt | \
+                sed '/#CD:BEGIN#/d; /#CD:END#/d; s/^#CD://' | \
+                tr -d '\r\n' > tmpfile && mv tmpfile coredump_log.txt}
+    set coredump_log [open "coredump_log.txt" r]
+    set hex_txt [read $coredump_log]
+    set hex_len [string length $hex_txt]
+    close $coredump_log
+    if {$hex_len % 2 != 0 || $hex_len != [expr {$coredump_length_padded * 2}]} {
+        puts "Warning: invalid hex length"
+        continue
+    } elseif {[catch {set bin [binary format H* $hex_txt]}]} {
+        puts "Warning: invalid hex format"
+        continue
+    } elseif {![verify_checksum $bin $coredump_checksum]} {
+        puts "Warning: checksum mismatch"
+        continue
+    } elseif {$has_err} {
+        puts "Warning: packet loss"
+        continue
+    } else {
+        break
+    }
+}
+
+if {$has_err && $attempt == $max_retries} {
+    puts "Failed to collect coredump after $max_retries attempts"
+    file delete coredump_log.txt
+    exit 1
+}
+set coredump_file [open "$coredump_file_name" w]
+fconfigure $coredump_file -translation binary -encoding binary
+#remove padding part
+set pad_size [expr {$coredump_length_padded - $coredump_length}]
+if { $pad_size > 0 } {
+    puts -nonewline $coredump_file [string range $bin 0 [expr {$coredump_length - 1}]]
+    puts "Removed $pad_size padding bytes"
+
+} else {
+    puts -nonewline $coredump_file $bin
+}
+
+close $coredump_file
+set filesize [file size $coredump_file_name]
+puts "final size = $filesize bytes"
+if {[file exists coredump_log.txt]} {
+file delete coredump_log.txt
+}
+exec /bin/stty -F "/dev/ttyS$uart_num" -crtscts
+puts "Done. Binary file saved to $coredump_file_name"

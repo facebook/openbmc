@@ -2,13 +2,13 @@
 
 # ARGUMENTS:
 # 1: device type
-# 2: pipe separated list of unique device addresses
+# 2: hyphen separated list of unique device addresses
 # 3: Optional override config
 
 if [ $# -lt 2 ]; then
     echo "Usage: $0 <device_type> <unique_device_addresses> [override_config]
       device_type: device type we will be upgrading
-      unique_device_addresses: The addresses of the modbus device to upgrade (pipe separated)
+      unique_device_addresses: The addresses of the modbus device to upgrade (hyphen separated)
       override_config: Optional configuration file to override default settings"
     exit 1
 fi
@@ -48,10 +48,36 @@ for uda in $UDAS; do
     manufacturer=$("$script_dir/get-manufacturer" "$DEVICE_TYPE" "$uda" "$CONFIG_FILE")
 
     case "$manufacturer" in
+        "artesyn")
+            case "$DEVICE_TYPE" in
+                "psu")
+                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/psu-update-aei.py --addr $uda $FIRMWARE_FILE")
+                    ;;
+                *)
+                    ERRORS+="${DEVICE_TYPE} at address ${uda} has ${manufacturer} without known firmware upgrade process\n"
+                    ;;
+            esac
+            ;;
         "delta")
             case "$DEVICE_TYPE" in
+                "bbu")
+                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/orv3-device-update-mailbox.py -vendor delta --addr $uda $FIRMWARE_FILE")
+                    ;;
+                "psu")
+                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/psu-update-delta-orv3.py --addr $uda $FIRMWARE_FILE")
+                    ;;
                 "rpu")
                     UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/rpu-update-delta-plc.py --addr $uda --oem-block $FIRMWARE_FILE")
+                    ;;
+                *)
+                    ERRORS+="${DEVICE_TYPE} at address ${uda} has ${manufacturer} without known firmware upgrade process\n"
+                    ;;
+            esac
+            ;;
+        "panasonic")
+            case "$DEVICE_TYPE" in
+                "bbu")
+                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/orv3-device-update-mailbox.py -vendor panasonic --addr $uda $FIRMWARE_FILE")
                     ;;
                 *)
                     ERRORS+="${DEVICE_TYPE} at address ${uda} has ${manufacturer} without known firmware upgrade process\n"

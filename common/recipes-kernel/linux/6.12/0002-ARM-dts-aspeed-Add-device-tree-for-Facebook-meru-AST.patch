@@ -1,0 +1,160 @@
+From 1c7925fd72cf00da743a0a4a2f0e9c8017328028 Mon Sep 17 00:00:00 2001
+From: Matthew Parker <mparker@arista.com>
+Date: Wed, 25 Oct 2023 13:17:43 -0700
+Subject: [PATCH] ARM: dts: aspeed: Add device tree for Facebook meru (AST2600)
+ BMC
+
+meru is Facebook's next generation switch platform with an AST2600
+BMC integrated for health monitoring purpose.
+---
+ arch/arm/boot/dts/aspeed/Makefile             |   1 +
+ .../dts/aspeed/aspeed-bmc-facebook-meru.dts   | 125 ++++++++++++++++++
+ 2 files changed, 126 insertions(+)
+ create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-meru.dts
+
+diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
+index 45d1fbd2ef32..4c2d63a10244 100644
+--- a/arch/arm/boot/dts/aspeed/Makefile
++++ b/arch/arm/boot/dts/aspeed/Makefile
+@@ -29,6 +29,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
+ 	aspeed-bmc-facebook-galaxy100.dtb \
+ 	aspeed-bmc-facebook-greatlakes.dtb \
+ 	aspeed-bmc-facebook-harma.dtb \
++	aspeed-bmc-facebook-meru.dtb \
+ 	aspeed-bmc-facebook-minerva.dtb \
+ 	aspeed-bmc-facebook-minipack.dtb \
+ 	aspeed-bmc-facebook-santabarbara.dtb \
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-meru.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-meru.dts
+new file mode 100644
+index 000000000000..8fc5ee440a66
+--- /dev/null
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-meru.dts
+@@ -0,0 +1,125 @@
++// SPDX-License-Identifier: GPL-2.0+
++// Copyright (c) 2023 Facebook Inc.
++
++/dts-v1/;
++
++#include "ast2600-facebook-netbmc-common.dtsi"
++
++/ {
++	model = "Facebook MERU BMC";
++	compatible = "facebook,meru-bmc", "aspeed,ast2600";
++
++	aliases {
++		serial0 = &uart5;
++		serial1 = &uart1;
++		serial2 = &uart2;
++		serial3 = &uart3;
++	};
++
++	chosen {
++		stdout-path = &uart5;
++	};
++
++	spi_gpio: spi {
++		num-chipselects = <1>;
++		cs-gpios = <&gpio0 ASPEED_GPIO(X, 0) GPIO_ACTIVE_LOW>;
++	};
++
++	iio-hwmon {
++		compatible = "iio-hwmon";
++		io-channels = <&adc0 0>, <&adc0 1>, <&adc0 2>, <&adc0 3>,
++				<&adc0 4>, <&adc0 5>, <&adc0 6>, <&adc0 7>,
++				<&adc1 0>, <&adc1 1>, <&adc1 2>, <&adc1 3>,
++				<&adc1 4>, <&adc1 5>, <&adc1 6>, <&adc1 7>;
++	};
++};
++
++&spi1 {
++	status = "okay";
++	compatible = "aspeed,ast2600-spi-user";
++
++	spidev@0 {
++		compatible = "rohm,dh2228fv";
++		spi-max-frequency = <5000000>;
++		reg = <0>;
++	};
++
++	spidev@1 {
++		compatible = "rohm,dh2228fv";
++		spi-max-frequency = <5000000>;
++		reg = <1>;
++	};
++};
++
++&lpc_ctrl {
++	status = "okay";
++};
++
++&kcs2 {
++	status = "okay";
++	aspeed,lpc-io-reg = <0xca8>;
++};
++
++&kcs3 {
++	status = "okay";
++	aspeed,lpc-io-reg = <0xca2>;
++};
++
++&wdt1 {
++	status = "okay";
++};
++
++&mac3 {
++	status = "okay";
++	phy-mode = "rgmii";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_rgmii4_default>;
++	fixed-link {
++		speed = <1000>;
++		full-duplex;
++	};
++};
++
++&i2c0 {
++	eeprom@50 {
++		compatible = "atmel,24c512";
++		reg = <0x50>;
++	};
++};
++
++&i2c11 {
++	status = "okay";
++};
++
++&i2c14 {
++	status = "okay";
++};
++
++&jtag1 {
++	/*
++	 * JTAG programming is done via bit-banging rather than through
++	 * the driver, so prevent the driver from controlling GPIOs.
++	 */
++	status = "okay";
++	pinctrl-0 = <>;
++};
++
++&adc0 {
++	status = "okay";
++	vref = <2500>;
++
++	pinctrl-0 = <&pinctrl_adc0_default &pinctrl_adc1_default
++		&pinctrl_adc2_default &pinctrl_adc3_default
++		&pinctrl_adc4_default &pinctrl_adc5_default
++		&pinctrl_adc6_default &pinctrl_adc7_default>;
++};
++
++&adc1 {
++	status = "okay";
++	vref = <2500>;
++
++	pinctrl-0 = <&pinctrl_adc8_default &pinctrl_adc9_default
++		&pinctrl_adc10_default &pinctrl_adc11_default
++		&pinctrl_adc12_default &pinctrl_adc13_default
++		&pinctrl_adc14_default &pinctrl_adc15_default>;
++};
+-- 
+2.47.3
+

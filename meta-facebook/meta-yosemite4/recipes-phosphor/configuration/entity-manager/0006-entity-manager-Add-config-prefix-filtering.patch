@@ -1,4 +1,4 @@
-From 7de65871ec7cf909b0a7565d3c5e35716d60ebcb Mon Sep 17 00:00:00 2001
+From 8a1cb95de9a58aa0479ec97c083d30867f8947f1 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 11 Mar 2025 13:47:42 +0800
 Subject: [PATCH 6/7] entity-manager: Add config-prefix filtering
@@ -35,12 +35,12 @@ index dbce245..511d071 100644
  boost_args = [
      '-DBOOST_ASIO_NO_DEPRECATED',
 diff --git a/meson.options b/meson.options
-index d53e7d6..1bb31fa 100644
+index 8cdd903..efbf48c 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -47,3 +47,9 @@ option(
+@@ -53,3 +53,9 @@ option(
      value: true,
-     description: 'Build gpio presence daemon',
+     description: 'Cache the current configuration to support new-device detection. This option can be set to false for development, which will force re-parsing of configuration.',
  )
 +option(
 +    'config-prefix',
@@ -49,7 +49,7 @@ index d53e7d6..1bb31fa 100644
 +    description: 'Comma-separated list of JSON filename prefixes to filter. Default loads all JSON files.',
 +)
 diff --git a/src/entity_manager/configuration.cpp b/src/entity_manager/configuration.cpp
-index 9463133..0e40a95 100644
+index 7532fc1..1cbd0c1 100644
 --- a/src/entity_manager/configuration.cpp
 +++ b/src/entity_manager/configuration.cpp
 @@ -25,13 +25,17 @@ Configuration::Configuration()

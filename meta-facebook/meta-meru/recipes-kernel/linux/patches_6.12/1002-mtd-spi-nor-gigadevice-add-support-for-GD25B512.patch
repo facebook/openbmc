@@ -1,0 +1,29 @@
+From 48793508aaf3db1888094c2b00a70c4bac02a5f2 Mon Sep 17 00:00:00 2001
+From: adamc <adamc@arista.com>
+Date: Tue, 3 Sep 2024 18:22:05 -0700
+Subject: [PATCH 1002/1002] mtd: spi-nor: gigadevice: add support for GD25B512
+
+---
+ drivers/mtd/spi-nor/gigadevice.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/drivers/mtd/spi-nor/gigadevice.c b/drivers/mtd/spi-nor/gigadevice.c
+index ef1edd0add70..db9d99dee6fa 100644
+--- a/drivers/mtd/spi-nor/gigadevice.c
++++ b/drivers/mtd/spi-nor/gigadevice.c
+@@ -64,6 +64,12 @@ static const struct flash_info gigadevice_nor_parts[] = {
+ 		.flags = SPI_NOR_HAS_LOCK | SPI_NOR_HAS_TB | SPI_NOR_TB_SR_BIT6,
+ 		.fixups = &gd25q256_fixups,
+ 		.fixup_flags = SPI_NOR_4B_OPCODES,
++	}, {
++		.id = SNOR_ID(0xc8, 0x47, 0x1a),
++		.name = "gd25b512",
++		.flags = SPI_NOR_HAS_LOCK,
++		.fixup_flags = SPI_NOR_4B_OPCODES,
++		.no_sfdp_flags = SECT_4K | SPI_NOR_QUAD_READ,
+ 	}, {
+ 		.id = SNOR_ID(0xc8, 0x60, 0x16),
+ 		.name = "gd25lq32",
+-- 
+2.47.3
+

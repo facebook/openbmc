@@ -13,6 +13,7 @@ SRC_URI:append = " \
     file://0010-meta-facebook-ventura-add-SCM-sensor-offset.patch \
     file://0011-PWMSensor-synchronize-hardware-PWM-with-D-Bus-proper.patch \
     file://0012-leakdetector-use-new-aserver-constructor.patch \
+    file://0013-leakdetector-check-event-before-event_read.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \

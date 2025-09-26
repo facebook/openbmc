@@ -113,6 +113,7 @@ if get_option('orv3') == true
         'orv3_hpr_psu.json',
         'orv3_hpr_bbu.json',
         'orv3_hpr_cbu.json',
+        'miniups.json',
     ]
 endif
 

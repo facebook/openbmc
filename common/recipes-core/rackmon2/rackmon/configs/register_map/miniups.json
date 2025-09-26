@@ -1,0 +1,19 @@
+{
+    "name": "MINIUPS",
+    "address_range": [
+        [
+            11,
+            11
+        ]
+    ],
+    "probe_register": 266,
+    "baudrate": 115200,
+    "registers": [
+        {
+            "begin": 266,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "TEST"
+        }
+    ]
+}

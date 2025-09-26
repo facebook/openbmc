@@ -164,6 +164,7 @@ SRC_URI:append = " \
     file://0332-hwmon-add-MP29502-driver.patch \
     file://0333-hwmon-ina238-add-ina237-support.patch \
     file://0334-hwmon-ina238-Add-support-for-SQ52206.patch \
+    file://0335-hwmon-pmbus-Add-support-for-the-MP5998-controllers.patch \
 "
 
 #

@@ -1,0 +1,91 @@
+From 41e4a63a51145b9ce3d3d6156d59ca6a67541ec5 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Tue, 23 Sep 2025 22:30:15 -0700
+Subject: [PATCH] ARM: dts: aspeed: darwin: Fixup device settings
+
+Apply more settings on top of the upstreamed version of darwin dts.
+
+These local settings will be upstreamed step by step.
+---
+ .../dts/aspeed/aspeed-bmc-facebook-darwin.dts | 51 +++++++++++++++++++
+ 1 file changed, 51 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-darwin.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-darwin.dts
+index 58c107a1b6cf..fdd94e292d0d 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-darwin.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-darwin.dts
+@@ -34,6 +34,55 @@ spi_gpio: spi {
+ 	};
+ };
+ 
++&mdio0 {
++	status = "okay";
++
++	ethernet-switch@1e {
++		compatible = "brcm,bcm53134";
++		reg = <30>;
++
++		ethernet-ports {
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			port@0 {
++				reg = <0>;
++				label = "uplink-port";
++			};
++
++			port@1 {
++				reg = <1>;
++				label = "x86-mgmt";
++			};
++
++			port@8 {
++				reg = <8>;
++				label = "bmc-mgmt";
++				phy-mode = "rgmii";
++				fixed-link {
++					speed = <1000>;
++					full-duplex;
++				};
++			};
++		};
++	};
++};
++
++/*
++ * BMC's "mac3" controller is connected to BCM53134P's IMP_RGMII port
++ * directly (fixed link, no PHY in between).
++ */
++&mac3 {
++	status = "okay";
++	phy-mode = "rgmii";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_rgmii4_default>;
++	fixed-link {
++		speed = <1000>;
++		full-duplex;
++	};
++};
++
+ &i2c0 {
+ 	eeprom@50 {
+ 		compatible = "atmel,24c512";
+@@ -43,6 +92,7 @@ eeprom@50 {
+ 
+ &adc0 {
+ 	status = "okay";
++	vref = <2500>;
+ 
+ 	pinctrl-0 = <&pinctrl_adc0_default &pinctrl_adc1_default
+ 		     &pinctrl_adc2_default &pinctrl_adc3_default
+@@ -52,6 +102,7 @@ &pinctrl_adc4_default &pinctrl_adc5_default
+ 
+ &adc1 {
+ 	status = "okay";
++	vref = <2500>;
+ 
+ 	pinctrl-0 = <&pinctrl_adc8_default &pinctrl_adc9_default
+ 		     &pinctrl_adc10_default &pinctrl_adc11_default
+-- 
+2.47.3
+

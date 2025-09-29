@@ -1,4 +1,4 @@
-From f76632a716733626a15a7b39601e792178e053d1 Mon Sep 17 00:00:00 2001
+From 8211272b4d29da0b467464efc52a6300dc165e40 Mon Sep 17 00:00:00 2001
 From: Chris Wang <Chris_Wang@wiwynn.com>
 Date: Wed, 10 Apr 2024 21:04:02 +0800
 Subject: [PATCH 05/17] Support OEM-META command for host BIOS version
@@ -350,7 +350,7 @@ index 0000000..ad672f0
 +
 +} // namespace pldm::responder::oem_meta
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 3128e68..d568b4c 100644
+index 1e5be72..4f64265 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -282,7 +282,7 @@ int main(int argc, char** argv)

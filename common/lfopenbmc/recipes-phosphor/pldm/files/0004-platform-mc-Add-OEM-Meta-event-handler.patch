@@ -1,4 +1,4 @@
-From 8577b46b93dd36ad678ac8a6b472c9c037afe252 Mon Sep 17 00:00:00 2001
+From 4b08fc854b4f31df5a9a9a9a50e09676bdcc9c9a Mon Sep 17 00:00:00 2001
 From: lora <lora.lin.wiwynn@gmail.com>
 Date: Fri, 27 Sep 2024 14:51:48 +0800
 Subject: [PATCH 04/17] platform-mc: Add OEM Meta event handler

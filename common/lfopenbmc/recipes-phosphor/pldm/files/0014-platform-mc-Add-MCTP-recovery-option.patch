@@ -1,4 +1,4 @@
-From 824a1563b6e7689e078b495a4c260c19123f55d1 Mon Sep 17 00:00:00 2001
+From ca7227a54b9579ec1567e9b53cd549da961b287b Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 16:48:20 +0800
 Subject: [PATCH 14/17] platform-mc: Add MCTP recovery option
@@ -17,7 +17,7 @@ Upstream-Status: Pending
  4 files changed, 15 insertions(+)
 
 diff --git a/common/utils.cpp b/common/utils.cpp
-index c5c6de0..efd26bc 100644
+index 5e88ec6..e486d08 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
 @@ -584,6 +584,7 @@ int emitStateSensorEventSignal(uint8_t tid, uint16_t sensorId,
@@ -39,7 +39,7 @@ index c5c6de0..efd26bc 100644
  
  uint16_t findStateSensorId(const pldm_pdr* pdrRepo, uint8_t tid,
 diff --git a/meson.build b/meson.build
-index 3ffaee7..2438dcd 100644
+index cae006a..d382ad2 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -141,6 +141,7 @@ conf_data.set(

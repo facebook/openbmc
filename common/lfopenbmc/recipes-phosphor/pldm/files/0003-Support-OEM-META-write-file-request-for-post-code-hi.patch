@@ -1,4 +1,4 @@
-From c6ff7237bd7ccf2d414a8171a43432fa2e834aa9 Mon Sep 17 00:00:00 2001
+From 427f5e4d592417bc80d3da5b1bce8d67fc9cb671 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
 Subject: [PATCH 03/17] Support OEM-META write file request for post code
@@ -55,7 +55,7 @@ index acbb400..c0e3ea7 100644
      'pldmresponder',
      sources,
 diff --git a/meson.build b/meson.build
-index e0b5f00..167007f 100644
+index 54521d1..1827a26 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -144,6 +144,10 @@ conf_data.set('UPDATE_TIMEOUT_SECONDS', get_option('update-timeout-seconds'))
@@ -449,7 +449,7 @@ index 0000000..81ff4eb
 +
 +} // namespace pldm::responder::oem_meta
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index f7c79a6..bfea9d1 100644
+index 1e98055..040bc00 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -67,6 +67,9 @@ PHOSPHOR_LOG2_USING;

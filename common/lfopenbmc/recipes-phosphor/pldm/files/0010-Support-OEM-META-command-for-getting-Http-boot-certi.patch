@@ -1,4 +1,4 @@
-From 52a54c0144318b92b55e2b513ef061fa273bb0f9 Mon Sep 17 00:00:00 2001
+From c958ac1b5e7a88a33a79f54f48db53589a72b6f4 Mon Sep 17 00:00:00 2001
 From: lora <lora.lin.wiwynn@gmail.com>
 Date: Fri, 27 Sep 2024 16:21:45 +0800
 Subject: [PATCH 10/17] Support OEM-META command for getting Http boot
@@ -15,12 +15,12 @@ Signed-off-by: Lora Lin <lora.lin.wiwynn@gmail.com>
 Upstream-Status: Pending
 ---
  libpldmresponder/meson.build                  |   1 +
- .../libpldmresponder/oem_meta_file_io.cpp     |  78 +++++++++
+ .../libpldmresponder/oem_meta_file_io.cpp     |  78 ++++++++
  .../libpldmresponder/oem_meta_file_io.hpp     |  17 ++
  .../oem_meta_file_io_by_type.hpp              |   1 +
- .../oem_meta_file_io_type_http_boot.cpp       | 165 ++++++++++++++++++
- .../oem_meta_file_io_type_http_boot.hpp       |  40 +++++
- 6 files changed, 302 insertions(+)
+ .../oem_meta_file_io_type_http_boot.cpp       | 178 ++++++++++++++++++
+ .../oem_meta_file_io_type_http_boot.hpp       |  40 ++++
+ 6 files changed, 315 insertions(+)
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_http_boot.cpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_http_boot.hpp
 
@@ -186,10 +186,10 @@ index bdd5fce..89d3385 100644
  };
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_http_boot.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_http_boot.cpp
 new file mode 100644
-index 0000000..c637193
+index 0000000..9b0622c
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_http_boot.cpp
-@@ -0,0 +1,165 @@
+@@ -0,0 +1,178 @@
 +#include "oem_meta_file_io_type_http_boot.hpp"
 +
 +#include <fcntl.h>
@@ -235,6 +235,7 @@ index 0000000..c637193
 +    if (fstat(fd, &sb) == -1)
 +    {
 +        error("Failed to get Http boot certification file size");
++        close(fd);
 +        return PLDM_ERROR;
 +    }
 +
@@ -248,6 +249,7 @@ index 0000000..c637193
 +                error(
 +                    "Invalid request data length for http boot attribute, option={OPTION}, data size={SIZE}",
 +                    "OPTION", data->option, "SIZE", read_length);
++                close(fd);
 +                return PLDM_ERROR;
 +            }
 +
@@ -255,6 +257,7 @@ index 0000000..c637193
 +            {
 +                data->info.attr.size = 0;
 +                data->info.attr.crc32 = 0;
++                close(fd);
 +                return PLDM_SUCCESS;
 +            }
 +
@@ -264,6 +267,7 @@ index 0000000..c637193
 +                error(
 +                    "Failed to allocate buffer for http boot, length={LENGTH}",
 +                    "LENGTH", sb.st_size);
++                close(fd);
 +                return PLDM_ERROR;
 +            }
 +
@@ -272,6 +276,7 @@ index 0000000..c637193
 +            {
 +                error("Failed to read all Http boot certification file");
 +                free(buffer);
++                close(fd);
 +                return PLDM_ERROR;
 +            }
 +
@@ -280,6 +285,7 @@ index 0000000..c637193
 +
 +            data->info.attr.size = sb.st_size;
 +            data->info.attr.crc32 = checksum;
++            close(fd);
 +            return PLDM_SUCCESS;
 +        }
 +        break;
@@ -290,6 +296,7 @@ index 0000000..c637193
 +                data->length = 0;
 +                data->info.data.transferFlag = PLDM_END;
 +                data->info.data.offset = 0;
++                close(fd);
 +                return PLDM_SUCCESS;
 +            }
 +
@@ -302,6 +309,7 @@ index 0000000..c637193
 +                error(
 +                    "Failed to lseek at offset={OFFSET} of length={LENGTH} on Http boot certification file",
 +                    "OFFSET", offset, "LENGTH", read_length);
++                close(fd);
 +                return PLDM_ERROR;
 +            }
 +
@@ -321,6 +329,7 @@ index 0000000..c637193
 +                error(
 +                    "Failed to allocate buffer for http boot, length={LENGTH}",
 +                    "LENGTH", read_length);
++                close(fd);
 +                return PLDM_ERROR;
 +            }
 +
@@ -331,6 +340,7 @@ index 0000000..c637193
 +                    "Failed to read file content at offset={OFFSET} of length={LENGTH} on Http boot certification file",
 +                    "OFFSET", offset, "LENGTH", read_length);
 +                free(buffer);
++                close(fd);
 +                return PLDM_ERROR;
 +            }
 +
@@ -343,6 +353,7 @@ index 0000000..c637193
 +            data->length = read_length;
 +            data->info.data.transferFlag = transferFlag;
 +            data->info.data.offset = offset;
++            close(fd);
 +
 +            return PLDM_SUCCESS;
 +        }
@@ -350,8 +361,10 @@ index 0000000..c637193
 +        default:
 +            error("Get invalid http boot option, option={OPTION}", "OPTION",
 +                  data->option);
++            close(fd);
 +            return PLDM_ERROR;
 +    }
++    close(fd);
 +}
 +
 +} // namespace pldm::responder::oem_meta
@@ -402,5 +415,5 @@ index 0000000..28b085d
 +
 +} // namespace pldm::responder::oem_meta
 -- 
-2.43.0
+2.47.3
 

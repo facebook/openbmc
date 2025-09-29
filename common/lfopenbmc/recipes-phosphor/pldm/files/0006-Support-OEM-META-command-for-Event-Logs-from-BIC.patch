@@ -1,4 +1,4 @@
-From 5b267adcc7492ecab79c954c456e44d574aac83d Mon Sep 17 00:00:00 2001
+From 70ddb08d24d37558792a6a34ca8aabf6839fd7ee Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Wed, 26 Jun 2024 14:25:18 +0800
 Subject: [PATCH 06/17] Support OEM-META command for Event Logs from BIC

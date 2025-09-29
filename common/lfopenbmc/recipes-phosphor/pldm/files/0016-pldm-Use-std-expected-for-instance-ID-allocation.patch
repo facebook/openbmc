@@ -1,4 +1,4 @@
-From 6cd77f3c7ff81ca90a2ae569ad6e36fbe8ee65ff Mon Sep 17 00:00:00 2001
+From b50c74607cde07eb3b6cff7e9897f74ecf7f497e Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 15 Jul 2025 10:22:29 +0000
 Subject: [PATCH 16/17] pldm: Use std::expected for instance ID allocation

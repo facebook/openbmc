@@ -1,8 +1,12 @@
-LCONF_VERSION = "8"
+LCONF_VERSION = "7"
 
 BBPATH = "${TOPDIR}"
 BBFILES ?= ""
 
+#
+# Please refer to below patch for fbdarwin-to-lfdarwin transition:
+# https://github.com/facebook/openbmc/commit/7a881d07f295e8ebe24922d9e6412650462bae29
+#
 BBLAYERS ?= " \
   ##OEROOT##/meta \
   ##OEROOT##/meta-openembedded/meta-oe \
@@ -12,13 +16,11 @@ BBLAYERS ?= " \
   ##OEROOT##/meta-openembedded/meta-webserver \
   ##OEROOT##/meta-security \
   ##OEROOT##/meta-security/meta-tpm \
-  ##OEROOT##/meta-phosphor \
-  ##OEROOT##/meta-aspeed \
-  ##OEROOT##/meta-facebook \
-  ##OEROOT##/meta-facebook/meta-fbdarwin \
   ##OEROOT##/../.. \
+  ##OEROOT##/../../meta-aspeed \
   ##OEROOT##/../../meta-facebook \
-  ##OEROOT##/../../meta-facebook/meta-lfdarwin \
   ##OEROOT##/../../meta-facebook/meta-python3 \
   ##OEROOT##/../../meta-facebook/meta-backports \
+  ##OEROOT##/../../meta-facebook/meta-fbdarwin \
+  ##OEROOT##/../../meta-facebook/meta-fboss-lite \
   "

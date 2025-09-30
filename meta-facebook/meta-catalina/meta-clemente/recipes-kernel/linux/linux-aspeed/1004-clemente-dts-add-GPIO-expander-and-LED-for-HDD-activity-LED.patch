@@ -1,0 +1,48 @@
+From 95394eba0db25e0517664c94a06db935eeea5cb5 Mon Sep 17 00:00:00 2001
+From: Alex Wang <alex.ts.wang@fii-foxconn.com>
+Date: Wed, 24 Sep 2025 15:08:35 +0800
+Subject: [PATCH] ARM: dts: aspeed: clemente: Add GPIO and LED
+
+Define a GPIO expander pin for the HDD LED and expose it via the
+LED subsystem. This allows the BMC to control the front panel
+HDD activity LED.
+
+Changes include:
+ - Add `led-hdd` node under the LED definitions
+ - Name the expander pin "HDD_LED_N" in io_expander13
+
+ref:
+https://lore.kernel.org/all/20250926-leo-dts-add-shunt-resistor-v1-1-c871a68792f0@gmail.com/
+
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
+index a614f947dafc..450446913e36 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
+@@ -95,6 +95,11 @@ led-3 {
+ 			label = "bmc_ready_cpld_noled";
+ 			gpios = <&gpio0 ASPEED_GPIO(P, 5) (GPIO_ACTIVE_HIGH|GPIO_TRANSITORY)>;
+ 		};
++
++		led-hdd {
++			label = "hdd_led";
++			gpios = <&io_expander13 1 GPIO_ACTIVE_LOW>;
++		};
+ 	};
+ 
+ 	memory@80000000 {
+@@ -1199,7 +1204,7 @@ io_expander13: gpio@14 {
+ 		#gpio-cells = <2>;
+ 		gpio-line-names =
+ 			"rmc_en_dc_pwr_on",
+-			"",
++			"HDD_LED_N",
+ 			"",
+ 			"",
+ 			"",
+-- 
+2.43.0
+

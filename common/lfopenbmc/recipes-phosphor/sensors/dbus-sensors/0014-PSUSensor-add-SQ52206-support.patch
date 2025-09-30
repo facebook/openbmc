@@ -1,0 +1,28 @@
+From 98d3ba0b69bf0cd08d5ef3abccef8acbfadad798 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Tue, 16 Sep 2025 16:56:41 +0800
+Subject: [PATCH 12/12] PSUSensor: add SQ52206 support
+
+Add device SQ52206 reading support.
+
+Change-Id: I42c57ceb7f7308a73ede91c87857619e47c846a0
+Signed-off-by: Peter Yin <peter.yin@quantatw.com>
+---
+ src/psu/PSUSensorMain.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
+index 56d8887..308460e 100644
+--- a/src/psu/PSUSensorMain.cpp
++++ b/src/psu/PSUSensorMain.cpp
+@@ -129,6 +129,7 @@ static const I2CDeviceTypeMap sensorTypes{
+     {"PLI1209BC", I2CDeviceType{"pli1209bc", true}},
+     {"pmbus", I2CDeviceType{"pmbus", true}},
+     {"PXE1610", I2CDeviceType{"pxe1610", true}},
++    {"SQ52206", I2CDeviceType{"sq52206", true}},
+     {"RAA228000", I2CDeviceType{"raa228000", true}},
+     {"RAA228004", I2CDeviceType{"raa228004", true}},
+     {"RAA228228", I2CDeviceType{"raa228228", true}},
+-- 
+2.43.0
+

@@ -1,7 +1,7 @@
-From e6c97341d598437f8f1556ccf89227fc0519e462 Mon Sep 17 00:00:00 2001
+From 6c6577a84efcdb2437a5e3b1ec8b3aaad1868635 Mon Sep 17 00:00:00 2001
 From: Amithash Prasasd <amithash@meta.com>
 Date: Thu, 21 Nov 2024 21:00:02 -0800
-Subject: [PATCH 05/12] Add structured logging for Threshold events
+Subject: [PATCH 05/13] Add structured logging for Threshold events
 
 Add capability to create structured logs for threshold crossing
 (compatible with Redfish Sensor Events) along with ability to
@@ -41,10 +41,10 @@ Change-Id: Icaa5fef672f7570bf0cc2efd9d350261115f169a
 Signed-off-by: Amithash Prasasd <amithash@meta.com>
 ---
  meson.build        |   2 +
- src/Thresholds.cpp | 150 ++++++++++++++++++++++++++++++++++++++++++++-
+ src/Thresholds.cpp | 152 ++++++++++++++++++++++++++++++++++++++++++++-
  src/Thresholds.hpp |  10 +++
  src/sensor.hpp     |  15 +++++
- 4 files changed, 176 insertions(+), 1 deletion(-)
+ 4 files changed, 178 insertions(+), 1 deletion(-)
 
 diff --git a/meson.build b/meson.build
 index 0110986..c7f6996 100644
@@ -64,10 +64,10 @@ index 0110986..c7f6996 100644
      sdbusplus,
      uring,
 diff --git a/src/Thresholds.cpp b/src/Thresholds.cpp
-index 2489fc8..df64886 100644
+index 2489fc8..2695b19 100644
 --- a/src/Thresholds.cpp
 +++ b/src/Thresholds.cpp
-@@ -8,18 +8,27 @@
+@@ -8,18 +8,28 @@
  #include <boost/asio/error.hpp>
  #include <boost/asio/steady_timer.hpp>
  #include <boost/container/flat_map.hpp>
@@ -80,6 +80,7 @@ index 2489fc8..df64886 100644
 +#include <sdbusplus/message/native_types.hpp>
 +#include <xyz/openbmc_project/Sensor/Threshold/event.hpp>
 +#include <xyz/openbmc_project/Sensor/Value/common.hpp>
++#include <xyz/openbmc_project/Sensor/event.hpp>
  
 +#include <algorithm>
  #include <array>
@@ -95,7 +96,7 @@ index 2489fc8..df64886 100644
  #include <string>
  #include <tuple>
  #include <utility>
-@@ -239,11 +248,13 @@ static int cLoFalse = 0;
+@@ -239,11 +249,13 @@ static int cLoFalse = 0;
  static int cLoMidstate = 0;
  static int cDebugThrottle = 0;
  static constexpr int assertLogCount = 10;
@@ -110,7 +111,7 @@ index 2489fc8..df64886 100644
      {}
  
      Threshold threshold;
-@@ -450,6 +461,135 @@ void checkThresholdsPowerDelay(const std::weak_ptr<Sensor>& weakSensor,
+@@ -450,6 +462,136 @@ void checkThresholdsPowerDelay(const std::weak_ptr<Sensor>& weakSensor,
      }
  }
  
@@ -234,7 +235,8 @@ index 2489fc8..df64886 100644
 +    }
 +    catch (std::out_of_range& e)
 +    {
-+        lg2::commit(errors::InvalidSensorReading("SENSOR_NAME", objPath));
++        lg2::commit(sdbusplus::error::xyz::openbmc_project::Sensor::
++                        InvalidSensorReading("SENSOR_NAME", objPath));
 +    }
 +    catch (std::exception& e)
 +    {
@@ -246,7 +248,7 @@ index 2489fc8..df64886 100644
  void assertThresholds(Sensor* sensor, double assertValue,
                        thresholds::Level level, thresholds::Direction direction,
                        bool assert)
-@@ -486,6 +626,14 @@ void assertThresholds(Sensor* sensor, double assertValue,
+@@ -486,6 +628,14 @@ void assertThresholds(Sensor* sensor, double assertValue,
              lg2::error(
                  "Failed to send thresholdAsserted signal with assertValue");
          }
@@ -304,7 +306,7 @@ index 17c2649..e220b38 100644
  {
      bool used;
 diff --git a/src/sensor.hpp b/src/sensor.hpp
-index 07d70ec..daa3940 100644
+index b21df1e..b5c922e 100644
 --- a/src/sensor.hpp
 +++ b/src/sensor.hpp
 @@ -10,6 +10,8 @@
@@ -324,7 +326,7 @@ index 07d70ec..daa3940 100644
  #include <string>
  #include <utility>
  #include <vector>
-@@ -88,6 +91,10 @@ struct Sensor
+@@ -93,6 +96,10 @@ struct Sensor
      virtual ~Sensor() = default;
      virtual void checkThresholds() = 0;
      std::string name;
@@ -335,7 +337,7 @@ index 07d70ec..daa3940 100644
      std::string configurationPath;
      std::string configInterface;
      bool isSensorSettable;
-@@ -271,6 +278,14 @@ struct Sensor
+@@ -276,6 +283,14 @@ struct Sensor
              setupPowerMatch(dbusConnection);
          }
  

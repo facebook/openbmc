@@ -1,4 +1,4 @@
-From b50c74607cde07eb3b6cff7e9897f74ecf7f497e Mon Sep 17 00:00:00 2001
+From 093d06ce573b1bba291d6538a63797b5d9ee4904 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 15 Jul 2025 10:22:29 +0000
 Subject: [PATCH 16/17] pldm: Use std::expected for instance ID allocation
@@ -376,7 +376,7 @@ index 6149050..5f8f8be 100644
          sizeof(pldm_msg_hdr) + PLDM_PLATFORM_EVENT_MESSAGE_MIN_REQ_BYTES +
          eventDataVec.size());
 diff --git a/host-bmc/host_pdr_handler.cpp b/host-bmc/host_pdr_handler.cpp
-index 079c6dc..b475293 100644
+index de828ec..60e2ed2 100644
 --- a/host-bmc/host_pdr_handler.cpp
 +++ b/host-bmc/host_pdr_handler.cpp
 @@ -205,7 +205,13 @@ void HostPDRHandler::getHostPDR(uint32_t nextRecordHandle)
@@ -470,10 +470,10 @@ index 079c6dc..b475293 100644
          sizeof(pldm_msg_hdr) + PLDM_GET_FRU_RECORD_TABLE_REQ_BYTES);
  
 diff --git a/libpldmresponder/platform.cpp b/libpldmresponder/platform.cpp
-index 7a3b63c..449b222 100644
+index 5ffc572..de65b3f 100644
 --- a/libpldmresponder/platform.cpp
 +++ b/libpldmresponder/platform.cpp
-@@ -980,7 +980,12 @@ void Handler::setEventReceiver()
+@@ -987,7 +987,12 @@ void Handler::setEventReceiver()
      std::vector<uint8_t> requestMsg(
          sizeof(pldm_msg_hdr) + PLDM_SET_EVENT_RECEIVER_REQ_BYTES);
      auto request = new (requestMsg.data()) pldm_msg;

@@ -3,6 +3,7 @@
 #include "update_service_handler.hpp"
 
 #include <xyz/openbmc_project/Sensor/Value/client.hpp>
+#include <xyz/openbmc_project/Software/Activation/client.hpp>
 #include <xyz/openbmc_project/Software/Version/client.hpp>
 
 #include <chrono>
@@ -187,6 +188,14 @@ auto getSoftwareVersionClient(sdbusplus::async::context& ctx, const char* path)
         .path(path);
 }
 
+auto getSoftwareActivationClient(sdbusplus::async::context& ctx,
+                                 const char* path)
+{
+    return sdbusplus::client::xyz::openbmc_project::software::Activation<>(ctx)
+        .service(kServiceName)
+        .path(path);
+}
+
 } // namespace
 
 TEST(RedfishClientTests, SimpleDaemonRun)
@@ -202,58 +211,94 @@ TEST(RedfishClientTests, SimpleDaemonRun)
         runRedfishClient(kServiceName, ctx, config);
     });
 
-    ctx.spawn(
-        [&server](sdbusplus::async::context& ctx) -> sdbusplus::async::task<> {
-            // First wait for the getBodyCount value to go up to a large enough
-            // number. This gives the test daemon enough time to write those
-            // sensor values to dbus.
-            static constexpr auto kMaxRequests = 50;
-            static constexpr auto kSleepMilliseconds = 100;
-            while (server.getReceivedRequests().size() < kMaxRequests)
-            {
-                co_await sdbusplus::async::sleep_for(
-                    ctx, std::chrono::milliseconds(kSleepMilliseconds));
-            }
+    ctx.spawn([&server](
+                  sdbusplus::async::context& ctx) -> sdbusplus::async::task<> {
+        // First wait for the getBodyCount value to go up to a large enough
+        // number. This gives the test daemon enough time to write those
+        // sensor values to dbus.
+        static constexpr auto kMaxRequests = 50;
+        static constexpr auto kSleepMilliseconds = 100;
+        while (server.getReceivedRequests().size() < kMaxRequests)
+        {
+            co_await sdbusplus::async::sleep_for(
+                ctx, std::chrono::milliseconds(kSleepMilliseconds));
+        }
 
-            auto sensorClient0 = getSensorClient(
-                ctx, "/xyz/openbmc_project/sensors/temperature/Host0_Temp0");
-            EXPECT_EQ(100.0, co_await sensorClient0.value());
+        auto sensorClient0 = getSensorClient(
+            ctx, "/xyz/openbmc_project/sensors/temperature/Host0_Temp0");
+        EXPECT_EQ(100.0, co_await sensorClient0.value());
 
-            auto sensorClient1 = getSensorClient(
-                ctx, "/xyz/openbmc_project/sensors/temperature/Host0_Temp1");
-            EXPECT_EQ(200.0, co_await sensorClient1.value());
+        auto sensorClient1 = getSensorClient(
+            ctx, "/xyz/openbmc_project/sensors/temperature/Host0_Temp1");
+        EXPECT_EQ(200.0, co_await sensorClient1.value());
 
-            // Source sends bad json for this, so we should not be able to read
-            // it.
-            auto sensorClient2 = getSensorClient(
-                ctx, "/xyz/openbmc_project/sensors/pressure/Host0_Pressure0");
-            EXPECT_THROW(co_await sensorClient2.value(),
-                         sdbusplus::exception::SdBusError);
+        // Source sends bad json for this, so we should not be able to read
+        // it.
+        auto sensorClient2 = getSensorClient(
+            ctx, "/xyz/openbmc_project/sensors/pressure/Host0_Pressure0");
+        EXPECT_THROW(co_await sensorClient2.value(),
+                     sdbusplus::exception::SdBusError);
 
-            auto fw0Client = getSoftwareVersionClient(
-                ctx, "/xyz/openbmc_project/software/Host0_FW0_1234");
-            EXPECT_EQ("FW0-V1", co_await fw0Client.version());
+        constexpr auto fw0Path = "/xyz/openbmc_project/software/Host0_FW0_1234";
+        auto fw0VersionClient = getSoftwareVersionClient(ctx, fw0Path);
+        EXPECT_EQ("FW0-V1", co_await fw0VersionClient.version());
+        EXPECT_EQ(SoftwareVersion::VersionPurpose::Other,
+                  co_await fw0VersionClient.purpose());
+        auto fw0ActivationClient = getSoftwareActivationClient(ctx, fw0Path);
+        EXPECT_EQ(SoftwareActivation::Activations::Active,
+                  co_await fw0ActivationClient.activation());
+        EXPECT_EQ(SoftwareActivation::RequestedActivations::None,
+                  co_await fw0ActivationClient.requested_activation());
 
-            auto fw1Client = getSoftwareVersionClient(
-                ctx, "/xyz/openbmc_project/software/BMC_FW1_1234");
-            EXPECT_EQ("FW1-V2", co_await fw1Client.version());
+        constexpr auto fw1Path = "/xyz/openbmc_project/software/BMC_FW1_1234";
+        auto fw1VersionClient = getSoftwareVersionClient(ctx, fw1Path);
+        EXPECT_EQ("FW1-V2", co_await fw1VersionClient.version());
+        EXPECT_EQ(SoftwareVersion::VersionPurpose::Other,
+                  co_await fw1VersionClient.purpose());
+        auto fw1ActivationClient = getSoftwareActivationClient(ctx, fw1Path);
+        EXPECT_EQ(SoftwareActivation::Activations::Active,
+                  co_await fw1ActivationClient.activation());
+        EXPECT_EQ(SoftwareActivation::RequestedActivations::None,
+                  co_await fw1ActivationClient.requested_activation());
 
-            auto fw2Client = getSoftwareVersionClient(
-                ctx, "/xyz/openbmc_project/software/FW2_1234");
-            EXPECT_THROW(co_await fw2Client.version(),
-                         sdbusplus::exception::SdBusError);
+        constexpr auto fw2Path = "/xyz/openbmc_project/software/FW2_1234";
+        auto fw2VersionClient = getSoftwareVersionClient(ctx, fw2Path);
+        EXPECT_THROW(co_await fw2VersionClient.version(),
+                     sdbusplus::exception::SdBusError);
+        EXPECT_THROW(co_await fw2VersionClient.purpose(),
+                     sdbusplus::exception::SdBusError);
+        auto fw2ActivationClient = getSoftwareActivationClient(ctx, fw2Path);
+        EXPECT_THROW(co_await fw2ActivationClient.activation(),
+                     sdbusplus::exception::SdBusError);
+        EXPECT_THROW(co_await fw2ActivationClient.requested_activation(),
+                     sdbusplus::exception::SdBusError);
 
-            auto sw0Client = getSoftwareVersionClient(
-                ctx, "/xyz/openbmc_project/software/CPLD_SW0_1234");
-            EXPECT_EQ("SW-v1.5", co_await sw0Client.version());
-            auto sw1Client = getSoftwareVersionClient(
-                ctx, "/xyz/openbmc_project/software/SW1_1234");
-            EXPECT_THROW(co_await sw1Client.version(),
-                         sdbusplus::exception::SdBusError);
+        constexpr auto sw0Path = "/xyz/openbmc_project/software/CPLD_SW0_1234";
+        auto sw0VersionClient = getSoftwareVersionClient(ctx, sw0Path);
+        EXPECT_EQ("SW-v1.5", co_await sw0VersionClient.version());
+        EXPECT_EQ(SoftwareVersion::VersionPurpose::Other,
+                  co_await sw0VersionClient.purpose());
+        auto sw0ActivationClient = getSoftwareActivationClient(ctx, sw0Path);
+        EXPECT_EQ(SoftwareActivation::Activations::Active,
+                  co_await sw0ActivationClient.activation());
+        EXPECT_EQ(SoftwareActivation::RequestedActivations::None,
+                  co_await sw0ActivationClient.requested_activation());
 
-            ctx.request_stop();
-            co_return;
-        }(ctx));
+        constexpr auto sw1Path = "/xyz/openbmc_project/software/SW1_1234";
+        auto sw1VersionClient = getSoftwareVersionClient(ctx, sw1Path);
+        EXPECT_THROW(co_await sw1VersionClient.version(),
+                     sdbusplus::exception::SdBusError);
+        EXPECT_THROW(co_await sw1VersionClient.purpose(),
+                     sdbusplus::exception::SdBusError);
+        auto sw1ActivationClient = getSoftwareActivationClient(ctx, sw1Path);
+        EXPECT_THROW(co_await sw1ActivationClient.activation(),
+                     sdbusplus::exception::SdBusError);
+        EXPECT_THROW(co_await sw1ActivationClient.requested_activation(),
+                     sdbusplus::exception::SdBusError);
+
+        ctx.request_stop();
+        co_return;
+    }(ctx));
     daemonThread->join();
     daemonThread = nullptr; // Make sure it's destroyed before the context.
 }

@@ -5,6 +5,7 @@
 #include "redfish-binding/SoftwareInventory_SoftwareInventory.hpp"
 
 #include <sdbusplus/async/context.hpp>
+#include <xyz/openbmc_project/Software/Activation/aserver.hpp>
 #include <xyz/openbmc_project/Software/Version/aserver.hpp>
 
 #include <functional>
@@ -15,15 +16,31 @@ namespace redfish_client_daemon
 
 class Software;
 
-using SoftwareIntf = sdbusplus::async::server_t<
-    Software, sdbusplus::aserver::xyz::openbmc_project::software::Version>;
+using SoftwareVersion =
+    sdbusplus::aserver::xyz::openbmc_project::software::Version<Software>;
 
-class Software : public SoftwareIntf
+using SoftwareActivation =
+    sdbusplus::aserver::xyz::openbmc_project::software::Activation<Software>;
+
+class Software : private sdbusplus::async::context_ref
 {
   public:
-    Software(sdbusplus::async::context& ctx, const std::string& path);
+    Software() = delete;
+
+    Software(sdbusplus::async::context& ctx, const std::string& id);
+
+    sdbusplus::message::object_path getPath() const;
+
+    void setVersion(const std::string& versionStr);
+
+    void setActivation(SoftwareActivation::Activations act);
 
     static std::function<int()>& randomIdGenerator();
+
+  private:
+    const sdbusplus::message::object_path path;
+    std::unique_ptr<SoftwareVersion> version{nullptr};
+    std::unique_ptr<SoftwareActivation> activation{nullptr};
 };
 
 class UpdateServiceHandler : private sdbusplus::async::context_ref
@@ -44,8 +61,7 @@ class UpdateServiceHandler : private sdbusplus::async::context_ref
         redfish_binding::SoftwareInventory::SoftwareInventory& newSoftware,
         const std::vector<UpdateServiceMapper>& mappers);
 
-    std::unordered_map<std::string, std::unique_ptr<Software>>
-        pathToSoftwareMap;
+    std::unordered_map<std::string, std::unique_ptr<Software>> softwareMap;
 };
 
 } // namespace redfish_client_daemon

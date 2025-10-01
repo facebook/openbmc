@@ -13,11 +13,48 @@ PHOSPHOR_LOG2_USING;
 namespace redfish_client_daemon
 {
 
-Software::Software(sdbusplus::async::context& ctx, const std::string& path) :
-    SoftwareIntf(ctx, path.c_str())
+Software::Software(sdbusplus::async::context& ctx, const std::string& id) :
+    sdbusplus::async::context_ref(ctx),
+    path(sdbusplus::message::object_path(SoftwareVersion::namespace_path) /
+         std::format("{}_{}", id, randomIdGenerator()()))
+{}
+
+sdbusplus::message::object_path Software::getPath() const
 {
-    purpose(SoftwareIntf::VersionPurpose::Other);
-    emit_added();
+    return path;
+}
+
+void Software::setVersion(const std::string& versionStr)
+{
+    if (!version)
+    {
+        version = std::make_unique<SoftwareVersion>(
+            ctx, path.str.c_str(),
+            SoftwareVersion::properties_t{
+                .version = versionStr,
+                .purpose = SoftwareVersion::VersionPurpose::Other,
+            });
+        version->emit_added();
+        return;
+    }
+    version->version(versionStr);
+}
+
+void Software::setActivation(SoftwareActivation::Activations act)
+{
+    if (!activation)
+    {
+        activation = std::make_unique<SoftwareActivation>(
+            ctx, path.str.c_str(),
+            SoftwareActivation::properties_t{
+                .activation = act,
+                .requested_activation =
+                    SoftwareActivation::RequestedActivations::None,
+            });
+        activation->emit_added();
+        return;
+    }
+    activation->activation(act);
 }
 
 std::function<int()>& Software::randomIdGenerator()
@@ -57,7 +94,7 @@ auto UpdateServiceHandler::loop(const std::string url,
     {
         co_return;
     }
-    sdbusplus::server::manager_t manager{ctx, SoftwareIntf::namespace_path};
+    sdbusplus::server::manager_t manager{ctx, SoftwareVersion::namespace_path};
     auto handle = std::make_unique<AsyncHttpHandle>(url);
     bool skipSleep = true;
     while (!ctx.stop_requested())
@@ -135,22 +172,18 @@ void UpdateServiceHandler::update(
     {
         return;
     }
-    const auto path =
-        std::format("{}/{}", SoftwareIntf::namespace_path, mapperIt->toId);
-    auto softwareIt = pathToSoftwareMap.find(path);
-    if (softwareIt == pathToSoftwareMap.end())
+    auto softwareIt = softwareMap.find(id);
+    if (softwareIt == softwareMap.end())
     {
-        const auto pathWithRandomId =
-            std::format("{}_{}", path, Software::randomIdGenerator()());
         softwareIt =
-            pathToSoftwareMap
-                .insert(
-                    {path, std::make_unique<Software>(ctx, pathWithRandomId)})
+            softwareMap
+                .insert({id, std::make_unique<Software>(ctx, mapperIt->toId)})
                 .first;
-        info("Create software {PATH} from {ID}", "PATH", pathWithRandomId, "ID",
-             id);
+        info("Create software {PATH} from {ID}", "PATH",
+             softwareIt->second->getPath().str, "ID", id);
     }
-    softwareIt->second->version(version);
+    softwareIt->second->setVersion(version);
+    softwareIt->second->setActivation(SoftwareActivation::Activations::Active);
 }
 
 } // namespace redfish_client_daemon

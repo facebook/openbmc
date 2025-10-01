@@ -165,6 +165,7 @@ SRC_URI:append = " \
     file://0333-hwmon-ina238-add-ina237-support.patch \
     file://0334-hwmon-ina238-Add-support-for-SQ52206.patch \
     file://0335-hwmon-pmbus-Add-support-for-the-MP5998-controllers.patch \
+    file://0336-iio-adc-rtq6056-Correct-the-sign-bit-index.patch \
 "
 
 #

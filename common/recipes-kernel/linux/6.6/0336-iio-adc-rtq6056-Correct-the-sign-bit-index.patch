@@ -1,0 +1,32 @@
+From c29eac56ab2e1b3f6b356608d75e3a3a154d7e7d Mon Sep 17 00:00:00 2001
+From: ChiYuan Huang <cy_huang@richtek.com>
+Date: Thu, 18 Sep 2025 11:10:59 +0800
+Subject: [PATCH] iio: adc: rtq6056: Correct the sign bit index
+
+The vshunt/current reported register is a signed 16bit integer. The
+sign bit index should be '15', not '16'.
+
+Link: https://lore.kernel.org/lkml/7e43ad09f814d63b570ab6b2b9fe3fe17775d22d.1758164614.git.cy_huang@richtek.com/raw
+Fixes: 4396f45d211b ("iio: adc: Add rtq6056 support")
+Reported-by: Andy Hsu <andy_ya_hsu@wiwynn.com>
+Signed-off-by: ChiYuan Huang <cy_huang@richtek.com>
+---
+ drivers/iio/adc/rtq6056.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/iio/adc/rtq6056.c b/drivers/iio/adc/rtq6056.c
+index ad4cea6839b2..3ffdcb9f8833 100644
+--- a/drivers/iio/adc/rtq6056.c
++++ b/drivers/iio/adc/rtq6056.c
+@@ -171,7 +171,7 @@ static int rtq6056_adc_read_channel(struct rtq6056_priv *priv,
+ 	if (addr == RTQ6056_REG_BUSVOLT || addr == RTQ6056_REG_POWER)
+ 		*val = regval;
+ 	else
+-		*val = sign_extend32(regval, 16);
++		*val = sign_extend32(regval, 15);
+ 
+ 	return IIO_VAL_INT;
+ }
+-- 
+2.43.0
+

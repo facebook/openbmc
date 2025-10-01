@@ -1,4 +1,4 @@
-From 42725cc1bfffc6f9be8eda84270dd70ccd18d9e1 Mon Sep 17 00:00:00 2001
+From f406698f1a026c4bb9612fbcbf63007646a4c484 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 26 Nov 2024 15:28:02 +0800
 Subject: [PATCH 12/17] requester: Validate MCTP EID before removal
@@ -47,5 +47,5 @@ index db764bf..61d5872 100644
      {
          info("Removing Endpoint networkId '{NETWORK}' and  EID '{EID}'",
 -- 
-2.47.3
+2.43.0
 

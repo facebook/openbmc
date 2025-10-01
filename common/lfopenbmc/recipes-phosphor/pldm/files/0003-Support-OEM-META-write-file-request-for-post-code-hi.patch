@@ -1,4 +1,4 @@
-From 427f5e4d592417bc80d3da5b1bce8d67fc9cb671 Mon Sep 17 00:00:00 2001
+From aac4bec44c15744debd007fd6450e3f0b93b054c Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
 Subject: [PATCH 03/17] Support OEM-META write file request for post code
@@ -476,5 +476,5 @@ index 1e98055..040bc00 100644
          FRU_JSONS_DIR, FRU_MASTER_JSON, pdrRepo.get(), entityTree.get(),
          bmcEntityTree.get());
 -- 
-2.47.3
+2.43.0
 

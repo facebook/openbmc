@@ -1,7 +1,7 @@
-From dcd7d397e9a333dc866260e572fbceca7606a2f8 Mon Sep 17 00:00:00 2001
+From bbfd8227abddc67fdc7d46d233da9bafebadb9bf Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Wed, 26 Jun 2024 14:25:18 +0800
-Subject: [PATCH] Support OEM-META command for Event Logs from BIC
+Subject: [PATCH 06/17] Support OEM-META command for Event Logs from BIC
 
 Summary:
   - Add handler for write-file command "EVENT_LOG", which is sent
@@ -14,9 +14,9 @@ Upstream-Status: Pending
  libpldmresponder/meson.build                  |   1 +
  .../libpldmresponder/oem_meta_file_io.cpp     |   4 +
  .../oem_meta_file_io_by_type.hpp              |   1 +
- .../oem_meta_file_io_type_event_log.cpp       | 507 ++++++++++++++++++
+ .../oem_meta_file_io_type_event_log.cpp       | 511 ++++++++++++++++++
  .../oem_meta_file_io_type_event_log.hpp       |  78 +++
- 5 files changed, 591 insertions(+)
+ 5 files changed, 595 insertions(+)
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
  create mode 100644 oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.hpp
 
@@ -68,10 +68,10 @@ index abf8369..f2e44de 100644
  class FileHandler
 diff --git a/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
 new file mode 100644
-index 0000000..1ce73b9
+index 0000000..30506f6
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/oem_meta_file_io_type_event_log.cpp
-@@ -0,0 +1,507 @@
+@@ -0,0 +1,511 @@
 +#include "oem_meta_file_io_type_event_log.hpp"
 +
 +#include <phosphor-logging/commit.hpp>
@@ -501,6 +501,10 @@ index 0000000..1ce73b9
 +        recordEventLog(*faultEvent, eventStatus, data);
 +        return PLDM_SUCCESS;
 +    }
++    else
++    {
++      event_name = eventList[eventType];
++    }
 +
 +    if (eventStatus == EVENT_ASSERTED)
 +    {
@@ -664,5 +668,5 @@ index 0000000..550755e
 +
 +} // namespace pldm::responder::oem_meta
 -- 
-2.34.1
+2.43.0
 

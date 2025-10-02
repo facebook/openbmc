@@ -206,7 +206,7 @@ AriesErrorType AriesPrintState()
     }
 
     asteraI2CCloseConnection(i2cDriver.handle);
-
+    return 0;
 }
 
 AriesErrorType AriesMargin ()
@@ -297,7 +297,7 @@ AriesErrorType AriesMargin ()
 
     // Close all open connections
     asteraI2CCloseConnection(i2cDriver.handle);
-
+    return 0;
   }
 
 #ifdef __cplusplus

@@ -759,5 +759,75 @@
       "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries"
     ],
     "intervalMilliseconds": 2000
+  },
+  "updateServiceConfig": {
+    "intervalMilliseconds": 30000,
+    "softwareMappers": [],
+    "firmwareMappers": [
+      {
+        "fromId": "HGX_FW_BMC_0",
+        "toId": "HGX_bmc"
+      },
+      {
+        "fromId": "HGX_FW_CPLD_0",
+        "toId": "HGX_cpld_0"
+      },
+      {
+        "fromId": "HGX_FW_CPU_0",
+        "toId": "HGX_cpu_0"
+      },
+      {
+        "fromId": "HGX_FW_CPU_1",
+        "toId": "HGX_cpu_1"
+      },
+      {
+        "fromId": "HGX_FW_FPGA_0",
+        "toId": "HGX_fpga_0"
+      },
+      {
+        "fromId": "HGX_FW_FPGA_1",
+        "toId": "HGX_fpga_1"
+      },
+      {
+        "fromId": "HGX_FW_GPU_0",
+        "toId": "HGX_gpu_0"
+      },
+      {
+        "fromId": "HGX_FW_GPU_1",
+        "toId": "HGX_gpu_1"
+      },
+      {
+        "fromId": "HGX_FW_ERoT_BMC_0",
+        "toId": "HGX_erot_bmc"
+      },
+      {
+        "fromId": "HGX_FW_ERoT_CPU_0",
+        "toId": "HGX_erot_cpu_0"
+      },
+      {
+        "fromId": "HGX_FW_ERoT_CPU_1",
+        "toId": "HGX_erot_cpu_1"
+      },
+      {
+        "fromId": "HGX_FW_ERoT_FPGA_0",
+        "toId": "HGX_erot_fpga_0"
+      },
+      {
+        "fromId": "HGX_FW_ERoT_FPGA_1",
+        "toId": "HGX_erot_fpga_1"
+      },
+      {
+        "fromId": "HGX_InfoROM_GPU_0",
+        "toId": "HGX_inforom_gpu_0"
+      },
+      {
+        "fromId": "HGX_InfoROM_GPU_1",
+        "toId": "HGX_inforom_gpu_1"
+      },
+      {
+        "fromId": "HGX_PCIeSwitchConfig_0",
+        "toId": "HGX_pcieswitchconfig_0"
+      }
+    ]
   }
 }

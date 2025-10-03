@@ -22,4 +22,5 @@ SRC_URI:append:fb-compute-multihost = " \
     file://0201-Avoid-recreating-hwmon-temp-when-blade-cycle.patch \
     file://0202-meta-facebook-yosemite4-Disable-in2_alarm-event.patch \
     file://0203-Add-retry-attempts-configuration-for-fan-sensors.patch \
+    file://0204-PSUSensor-add-property-to-sensorTable-and-labelMatch.patch \
 "

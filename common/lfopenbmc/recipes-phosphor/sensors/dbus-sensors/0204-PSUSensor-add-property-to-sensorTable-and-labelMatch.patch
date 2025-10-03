@@ -1,0 +1,53 @@
+From 085b3a3525e9cc48e0e1d664d97d102cc7cf542a Mon Sep 17 00:00:00 2001
+From: Andy-Hsu-wiwynn <andy.hsu.wiwynn@gmail.com>
+Date: Fri, 15 Aug 2025 15:44:31 +0800
+Subject: [PATCH] PSUSensor:add property to sensorTable and labelMatch
+
+Description
+Add "current" to the sensorTable, and add "in_current" and "in_power"
+ to labelMatch.
+
+Motivation
+Using the RTQ6056 to monitor current and power requires additional
+ properties.
+
+Test Plan
+Confirmed expected sensors appeared on dbus
+
+Change-Id: I4767352847d2e43ad356ebb57f61b5a0d9f6180d
+Signed-off-by: Andy Hsu <andy.hsu.wiwynn@gmail.com>
+---
+ src/psu/PSUSensorMain.cpp | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
+index ad8b10f..dde8f12 100644
+--- a/src/psu/PSUSensorMain.cpp
++++ b/src/psu/PSUSensorMain.cpp
+@@ -1126,12 +1126,14 @@ void propertyInitialize()
+                    {"temp", sensor_paths::unitDegreesC},
+                    {"in", sensor_paths::unitVolts},
+                    {"voltage", sensor_paths::unitVolts},
+-                   {"fan", sensor_paths::unitRPMs}};
++                   {"fan", sensor_paths::unitRPMs},
++                   {"current", sensor_paths::unitAmperes}};
+ 
+     labelMatch = {
+         {"pin", PSUProperty("Input Power", 3000, 0, 6, 0)},
+         {"pout", PSUProperty("Output Power", 3000, 0, 6, 0)},
+         {"power", PSUProperty("Output Power", 3000, 0, 6, 0)},
++        {"in_power", PSUProperty("Output Power", 3000, 0, 6, 0)},
+         {"maxpin", PSUProperty("Max Input Power", 3000, 0, 6, 0)},
+         {"vin", PSUProperty("Input Voltage", 300, 0, 3, 0)},
+         {"maxvin", PSUProperty("Max Input Voltage", 300, 0, 3, 0)},
+@@ -1143,6 +1145,7 @@ void propertyInitialize()
+         {"iin", PSUProperty("Input Current", 20, 0, 3, 0)},
+         {"iout", PSUProperty("Output Current", 255, 0, 3, 0)},
+         {"curr", PSUProperty("Output Current", 255, 0, 3, 0)},
++        {"in_current", PSUProperty("Output Current", 255, 0, 3, 0)},
+         {"maxiout", PSUProperty("Max Output Current", 255, 0, 3, 0)},
+         {"temp", PSUProperty("Temperature", 127, -128, 3, 0)},
+         {"maxtemp", PSUProperty("Max Temperature", 127, -128, 3, 0)},
+-- 
+2.43.0
+

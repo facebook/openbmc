@@ -80,6 +80,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-churchillmono:lf-kirkstone
   meta-cloudripper:lf-dunfell
   meta-netlakemtp:lf-dunfell
+  meta-netlakenext:lf-dunfell
   meta-minilaketb:rocko
   meta-sandia:lf-kirkstone
 )

@@ -1,4 +1,4 @@
-From e5e9401816084c8ab90b210173fe283ead4514bb Mon Sep 17 00:00:00 2001
+From 073cdfaa8efb62cb45f7d8b0d00977812a2d992e Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH 200/203] Utils: support powerState for multi-node system
@@ -647,7 +647,7 @@ index 52f9394..3e20529 100644
  
  void setupPowerMatch(const std::shared_ptr<sdbusplus::asio::connection>& conn)
 diff --git a/src/Utils.hpp b/src/Utils.hpp
-index cb96822..e3df9a4 100644
+index 9f799f5..5c63401 100644
 --- a/src/Utils.hpp
 +++ b/src/Utils.hpp
 @@ -56,6 +56,7 @@ using ManagedObjectType =
@@ -753,10 +753,10 @@ index cb96822..e3df9a4 100644
  
      void getPath(const std::string& path, const std::string& interface,
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
-index cd86571..386e419 100644
+index cdd7cdc..a92c940 100644
 --- a/src/hwmon-temp/HwmonTempMain.cpp
 +++ b/src/hwmon-temp/HwmonTempMain.cpp
-@@ -596,7 +596,11 @@ static void powerStateChanged(
+@@ -597,7 +597,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {
@@ -825,10 +825,10 @@ index e679dc2..e66f68c 100644
      ~PSUProperty() = default;
  
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 2751f58..de8428c 100644
+index 90c6ae8..7f8093b 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -621,6 +621,7 @@ static void createSensorsCallback(
+@@ -622,6 +622,7 @@ static void createSensorsCallback(
          checkGroupEvent(directory.string(), groupEventPathList);
  
          PowerState readState = getPowerState(*baseConfig);
@@ -836,7 +836,7 @@ index 2751f58..de8428c 100644
  
          /* Check if there are more sensors in the same interface */
          int i = 1;
-@@ -1106,7 +1107,7 @@ static void createSensorsCallback(
+@@ -1107,7 +1108,7 @@ static void createSensorsCallback(
                      readState, findSensorUnit->second, factor,
                      psuProperty.maxReading, psuProperty.minReading,
                      psuProperty.sensorOffset, labelHead, thresholdConfSize,
@@ -845,7 +845,7 @@ index 2751f58..de8428c 100644
                  sensors[sensorName]->setupRead();
                  ++numCreated;
                  if constexpr (debug)
-@@ -1284,7 +1285,11 @@ static void powerStateChanged(
+@@ -1286,7 +1287,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {

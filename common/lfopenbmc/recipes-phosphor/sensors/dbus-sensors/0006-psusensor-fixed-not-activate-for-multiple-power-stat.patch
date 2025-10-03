@@ -1,7 +1,7 @@
-From 9cc769fcf2b24f72059e41f3d097458c5fc95151 Mon Sep 17 00:00:00 2001
+From 6609f6873eef2952fb3850e422f3580441460246 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 23 Jan 2025 15:10:57 +0800
-Subject: [PATCH 06/13] psusensor: fixed not activate for multiple power state
+Subject: [PATCH 06/14] psusensor: fixed not activate for multiple power state
 
 Link:https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/77426
 
@@ -38,7 +38,7 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  1 file changed, 26 insertions(+)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 8cac1e4..1674873 100644
+index ef899ae..468ae35 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -264,6 +264,27 @@ void checkEventLimits(const std::string& sensorPathStr,

@@ -1,7 +1,7 @@
-From f403abedb2e0c4976dc723d5525baec492d5ee3d Mon Sep 17 00:00:00 2001
+From 6363aeee30aaa3348a883cbbce7c205a0f5095f3 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Mon, 19 May 2025 15:12:23 +0800
-Subject: [PATCH 09/13] psu: support gpio bridge
+Subject: [PATCH 09/14] psu: support gpio bridge
 
 Support for GPIO bridge is required for certain components that
 need a GPIO to be set before reading, such as battery voltage.
@@ -278,7 +278,7 @@ index c4f3a38..e679dc2 100644
      boost::asio::random_access_file inputDev;
      boost::asio::steady_timer waitTimer;
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 6c4b5fd..2751f58 100644
+index 0c376d0..6705ccc 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -31,6 +31,7 @@

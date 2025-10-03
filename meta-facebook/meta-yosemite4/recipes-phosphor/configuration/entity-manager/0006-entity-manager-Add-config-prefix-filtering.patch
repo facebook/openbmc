@@ -1,4 +1,4 @@
-From 8a1cb95de9a58aa0479ec97c083d30867f8947f1 Mon Sep 17 00:00:00 2001
+From 599c08fcfe02dbb873f00667460fc8bf71b52f37 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 11 Mar 2025 13:47:42 +0800
 Subject: [PATCH 6/7] entity-manager: Add config-prefix filtering
@@ -185,10 +185,10 @@ index b408aea..8d44cf9 100644
  
      return !foundPaths.empty();
 diff --git a/src/utils.hpp b/src/utils.hpp
-index 123a316..6678731 100644
+index 3a3a083..1ae5e99 100644
 --- a/src/utils.hpp
 +++ b/src/utils.hpp
-@@ -20,10 +20,16 @@ using MapperGetSubTreeResponse =
+@@ -21,10 +21,16 @@ using MapperGetSubTreeResponse =
  
  bool findFiles(const std::filesystem::path& dirPath,
                 const std::string& matchString,

@@ -1,4 +1,4 @@
-From ff0cbade277585630c8a1d909d245590b9dba269 Mon Sep 17 00:00:00 2001
+From 1a92a9435eb5f4417b88a8f725178bfef6d0f8e9 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Wed, 26 Mar 2025 16:20:54 +0000
 Subject: [PATCH 205/205] Show mapped and raw Dbus messages in Log services
@@ -55,14 +55,14 @@ Ran it in QEMU, fetched logs and raw and mapped are shown [1].
 Change-Id: I84258ce334e1572d5c4debd65d9bb5ffb89924df
 Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
 ---
- redfish-core/lib/log_services.hpp | 25 ++++++++++++++-----------
+ .../lib/systems_logservices_dbus_eventlog.hpp | 25 +++++++++++--------
  1 file changed, 14 insertions(+), 11 deletions(-)
 
-diff --git a/redfish-core/lib/log_services.hpp b/redfish-core/lib/log_services.hpp
-index d9b276e1..e9c095cf 100644
---- a/redfish-core/lib/log_services.hpp
-+++ b/redfish-core/lib/log_services.hpp
-@@ -1143,26 +1143,29 @@ inline void requestRoutesEventLogService(App& app)
+diff --git a/redfish-core/lib/systems_logservices_dbus_eventlog.hpp b/redfish-core/lib/systems_logservices_dbus_eventlog.hpp
+index a21f5d10..ec90dcb3 100644
+--- a/redfish-core/lib/systems_logservices_dbus_eventlog.hpp
++++ b/redfish-core/lib/systems_logservices_dbus_eventlog.hpp
+@@ -90,26 +90,29 @@ inline std::string translateSeverityDbusToRedfish(const std::string& s)
  inline void fillEventLogLogEntryFromDbusLogEntry(
      const DbusEventLogEntry& entry, nlohmann::json& objectToFillOut)
  {

@@ -1,7 +1,7 @@
-From 3ac69fd750aba7e29df81475e11d2f8718a5a261 Mon Sep 17 00:00:00 2001
+From 1019b330d1e490205c1f7d2a6e2c6b71d77e8b6b Mon Sep 17 00:00:00 2001
 From: Yang Chen <yang.chen@quantatw.com>
 Date: Wed, 23 Jul 2025 14:47:58 +0800
-Subject: [PATCH 11/13] PWMSensor: synchronize hardware PWM with D-Bus property
+Subject: [PATCH 11/14] PWMSensor: synchronize hardware PWM with D-Bus property
 
 The Fan PWM sensor property setter (Value/Target) previously only
 tracked the last set value (resp), but the actual hardware PWM

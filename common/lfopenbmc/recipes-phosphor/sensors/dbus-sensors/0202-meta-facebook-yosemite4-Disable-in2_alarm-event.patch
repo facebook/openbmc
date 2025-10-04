@@ -1,7 +1,7 @@
-From f8557dd15baba3d0ae39d627643acc02bb9cbb66 Mon Sep 17 00:00:00 2001
+From 7f75481389ac3b330960294d31223b0594777979 Mon Sep 17 00:00:00 2001
 From: KayYCHuang-wiwynn <kay.yc.huang.wiwynn@gmail.com>
 Date: Mon, 17 Mar 2025 02:25:46 +0000
-Subject: [PATCH 202/203] meta-facebook: yosemite4: Disable in2_alarm event
+Subject: [PATCH 202/204] meta-facebook: yosemite4: Disable in2_alarm event
 
 ---
  meson.build               | 4 ++++

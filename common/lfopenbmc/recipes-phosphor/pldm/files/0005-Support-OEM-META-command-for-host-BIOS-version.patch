@@ -1,7 +1,7 @@
-From 58ed8d51fab684a73c49571324553cf3af25d9bb Mon Sep 17 00:00:00 2001
+From 7d8e4f418ddba7f2c85ccacfd26686324a33ee09 Mon Sep 17 00:00:00 2001
 From: Chris Wang <Chris_Wang@wiwynn.com>
 Date: Wed, 10 Apr 2024 21:04:02 +0800
-Subject: [PATCH 05/17] Support OEM-META command for host BIOS version
+Subject: [PATCH 05/18] Support OEM-META command for host BIOS version
 
 Summary:
   - Add handler for write-file command "BIOS_VERSION", which is sent
@@ -363,5 +363,5 @@ index 1e5be72..4f64265 100644
  
      auto fruHandler = std::make_unique<fru::Handler>(
 -- 
-2.43.0
+2.47.3
 

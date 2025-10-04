@@ -1,7 +1,7 @@
-From 6c0a809d8930c58566dbd8ed0288eabf43fe92cf Mon Sep 17 00:00:00 2001
+From bd2e2ccdaa478e1881807d855a39f3dffc6f1b52 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 28 Jun 2024 16:57:45 +0800
-Subject: [PATCH 09/17] Support OEM-META command for NIC power cycle
+Subject: [PATCH 09/18] Support OEM-META command for NIC power cycle
 
 Summary:
 - Add option to let Host can trigger NIC card power cycle to
@@ -73,5 +73,5 @@ index 3dfa83e..c9c557c 100644
              error("Get invalid power control option, option={OPTION}", "OPTION",
                    option);
 -- 
-2.43.0
+2.47.3
 

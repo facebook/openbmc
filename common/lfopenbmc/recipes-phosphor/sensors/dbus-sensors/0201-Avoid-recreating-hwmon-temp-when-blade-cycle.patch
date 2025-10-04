@@ -1,7 +1,7 @@
-From fde4dfb4854616121187315aa25de90fd22431f3 Mon Sep 17 00:00:00 2001
+From 894139eb2f424fd61ffbfc70bf756541fa79d7bd Mon Sep 17 00:00:00 2001
 From: MandyMCHung <mandy.hung.wiwynn@gmail.com>
 Date: Mon, 3 Mar 2025 10:39:31 +0800
-Subject: [PATCH 201/203] Avoid recreating hwmon temp when blade cycle
+Subject: [PATCH 201/204] Avoid recreating hwmon temp when blade cycle
 
 Problem:
 AC/DC cycles cause all hwmon temperature sensors to become unavailable.

@@ -1,7 +1,7 @@
-From ff52acbd1ba33bc274d9c4acc0c0450098e74981 Mon Sep 17 00:00:00 2001
+From ea1029e9157cf971619ac9cf0468ba6712411b3a Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 2 Oct 2025 08:50:56 +0000
-Subject: [PATCH] requester: Always re-initialize MCTP info
+Subject: [PATCH 18/18] requester: Always re-initialize MCTP info
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -85,10 +85,10 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  2 files changed, 52 insertions(+)
 
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index db764bf..92413ed 100644
+index 61d5872..7b029a4 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
-@@ -278,6 +278,50 @@ void MctpDiscovery::removeFromExistingMctpInfos(MctpInfos& mctpInfos,
+@@ -291,6 +291,50 @@ void MctpDiscovery::removeFromExistingMctpInfos(MctpInfos& mctpInfos,
      }
  }
  
@@ -139,7 +139,7 @@ index db764bf..92413ed 100644
  void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
  {
      using Interface = std::string;
-@@ -329,6 +373,7 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
+@@ -342,6 +386,7 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
              {
                  if (availability)
                  {
@@ -147,7 +147,7 @@ index db764bf..92413ed 100644
                      // The endpoint not in existingMctpInfos and is
                      // available Add it to existingMctpInfos
                      info(
-@@ -352,6 +397,7 @@ void MctpDiscovery::discoverEndpoints(sdbusplus::message_t& msg)
+@@ -365,6 +410,7 @@ void MctpDiscovery::discoverEndpoints(sdbusplus::message_t& msg)
  {
      MctpInfos addedInfos;
      getAddedMctpInfos(msg, addedInfos);
@@ -173,5 +173,5 @@ index 7692849..e48a339 100644
  
    private:
 -- 
-2.43.0
+2.47.3
 

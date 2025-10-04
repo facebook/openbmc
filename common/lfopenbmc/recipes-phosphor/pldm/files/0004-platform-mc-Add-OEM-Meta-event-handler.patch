@@ -1,7 +1,7 @@
-From 78709f8ec9fc353c9d6eecad5eed1a7b58dab682 Mon Sep 17 00:00:00 2001
+From 63d0513f220b7d121f150ffe3a977cbf90a9d120 Mon Sep 17 00:00:00 2001
 From: lora <lora.lin.wiwynn@gmail.com>
 Date: Fri, 27 Sep 2024 14:51:48 +0800
-Subject: [PATCH 04/17] platform-mc: Add OEM Meta event handler
+Subject: [PATCH 04/18] platform-mc: Add OEM Meta event handler
 
 Add OEM Meta handler with event type 0xFB. It will print the logs
 with prefix "BIOS_IPMI_SEL", so the user can utilize it to filter
@@ -1336,5 +1336,5 @@ index 040bc00..1e5be72 100644
  
      auto platformHandler = std::make_unique<platform::Handler>(
 -- 
-2.43.0
+2.47.3
 

@@ -1242,7 +1242,7 @@ retry_firmware_operation() {
     done
 
     echo "Maximum retries ($MAX_RETRIES) reached. Exiting with error code: $ret."
-    return $ret
+    exit "$ret"
 }
 
 # Check for minimum required arguments

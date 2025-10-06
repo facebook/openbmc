@@ -1,7 +1,7 @@
-From 004ba373ea2ff680ad3cf7ed5b77bd2166499f03 Mon Sep 17 00:00:00 2001
+From bfb291a327486d67f931e674cd1c5bdd29c967c5 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Sun, 8 Jun 2025 11:05:34 +0800
-Subject: [PATCH 102/102] smbpbi: Add support for PowerState config option
+Subject: [PATCH] smbpbi: Add support for PowerState config option
 
 This change adds support for the `PowerState` configuration option for
 SmbpbiVirtualEeprom sensor.

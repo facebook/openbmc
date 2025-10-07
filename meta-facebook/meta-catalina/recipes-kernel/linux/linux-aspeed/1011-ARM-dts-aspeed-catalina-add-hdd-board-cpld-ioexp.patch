@@ -1,7 +1,7 @@
-From ce27700e9885150f858b2f2fa052d4a0e2274ec1 Mon Sep 17 00:00:00 2001
+From 53c814e403db6e5855d9ea533421831573b387a8 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Mon, 4 Nov 2024 19:20:09 +0800
-Subject: [PATCH 1011/1016] ARM: dts: aspeed: catalina: add hdd board cpld
+Subject: [PATCH 1011/1015] ARM: dts: aspeed: catalina: add hdd board cpld
  ioexp
 
 Add HDD board CPLD IO expender based on latest DVT HDD board CPLD

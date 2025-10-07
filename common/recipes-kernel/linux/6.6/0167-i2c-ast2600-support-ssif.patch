@@ -1,7 +1,7 @@
-From 9b61960de548cf36cc1270d48143f75cc611c7b4 Mon Sep 17 00:00:00 2001
+From b03ad539d5cd73e78fe193a5d17a7f0030d3431c Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Sun, 8 Jun 2025 20:24:14 +0800
-Subject: [PATCH 1014/1016] i2c-ast2600: support ssif
+Subject: [PATCH 167/167] i2c-ast2600: support ssif
 
 ---
  drivers/i2c/busses/i2c-ast2600.c | 22 ++++++++++++++++------

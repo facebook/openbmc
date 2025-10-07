@@ -1,7 +1,7 @@
-From c3350c699f88e16a5ab391f9cea54e983e832467 Mon Sep 17 00:00:00 2001
+From f57eb4da47d07072181ce9f783a1c8acfa182b77 Mon Sep 17 00:00:00 2001
 From: Jeremy Kerr <jk@codeconstruct.com.au>
 Date: Wed, 19 Jun 2024 22:06:08 +0800
-Subject: [PATCH 165/166] net: mctp-i2c: invalidate flows immediately on TX
+Subject: [PATCH 165/167] net: mctp-i2c: invalidate flows immediately on TX
  errors
 
 If we encounter an error on i2c packet transmit, we won't have a valid
@@ -81,5 +81,5 @@ index ddd95cd605a3..cfe3dadd6117 100644
  
  	case MCTP_I2C_TX_FLOW_INVALID:
 -- 
-2.47.1
+2.47.3
 

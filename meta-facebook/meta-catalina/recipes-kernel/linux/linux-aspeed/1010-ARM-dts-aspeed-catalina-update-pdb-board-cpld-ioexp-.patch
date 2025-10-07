@@ -1,7 +1,7 @@
-From 686eb073c36c53f25f927f8bd3b68f391a2a947f Mon Sep 17 00:00:00 2001
+From fc12afdbd16037ce691bcf17933ae1f9d4c26881 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Mon, 4 Nov 2024 19:13:30 +0800
-Subject: [PATCH 1010/1016] ARM: dts: aspeed: catalina: update pdb board cpld
+Subject: [PATCH 1010/1015] ARM: dts: aspeed: catalina: update pdb board cpld
  ioexp linename
 
 Due to there are huge changes of PDB CPLD IOEXP pin definitions since

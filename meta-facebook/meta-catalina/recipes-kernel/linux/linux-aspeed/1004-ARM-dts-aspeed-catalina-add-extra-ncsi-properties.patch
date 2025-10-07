@@ -1,7 +1,7 @@
-From dc8b215c756ec53d823c64e25fe7582bc7bbfd19 Mon Sep 17 00:00:00 2001
+From dbfecdd9df781db0682d45e073ccabbc1490bbc7 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Fri, 26 Jul 2024 19:03:48 +0800
-Subject: [PATCH 1004/1016] ARM: dts: aspeed: catalina: add extra ncsi
+Subject: [PATCH 1004/1015] ARM: dts: aspeed: catalina: add extra ncsi
  properties
 
 Add extra properties which only avaliable in Meta common patches.

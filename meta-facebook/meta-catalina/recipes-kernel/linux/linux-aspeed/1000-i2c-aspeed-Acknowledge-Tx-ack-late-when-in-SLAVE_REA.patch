@@ -1,7 +1,7 @@
-From c2fa4fda560eb5515073d15a83ea43e0bf84c9c2 Mon Sep 17 00:00:00 2001
+From 45fc33ecf512cad37cc396be68a8c50ffb872895 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Mon, 20 Nov 2023 17:17:46 +0800
-Subject: [PATCH 1000/1016] i2c: aspeed: Acknowledge Tx ack late when in
+Subject: [PATCH 1000/1015] i2c: aspeed: Acknowledge Tx ack late when in
  SLAVE_READ_PROCESSED
 
 commit 2be6b47211e1 ("i2c: aspeed: Acknowledge most interrupts early
@@ -22,10 +22,10 @@ LORE: https://lore.kernel.org/all/20231120091746.2866232-1-chou.cosmo@gmail.com/
  1 file changed, 14 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/i2c/busses/i2c-aspeed.c b/drivers/i2c/busses/i2c-aspeed.c
-index 3069ed1e0b5c..0858ea690ddf 100644
+index 83e6714901b2..6a9e0c469d04 100644
 --- a/drivers/i2c/busses/i2c-aspeed.c
 +++ b/drivers/i2c/busses/i2c-aspeed.c
-@@ -400,6 +400,12 @@ static u32 aspeed_i2c_slave_irq(struct aspeed_i2c_bus *bus, u32 irq_status)
+@@ -360,6 +360,12 @@ static u32 aspeed_i2c_slave_irq(struct aspeed_i2c_bus *bus, u32 irq_status)
  		break;
  	}
  
@@ -38,7 +38,7 @@ index 3069ed1e0b5c..0858ea690ddf 100644
  	return irq_handled;
  }
  #endif /* CONFIG_I2C_SLAVE */
-@@ -658,13 +664,18 @@ static u32 aspeed_i2c_master_irq(struct aspeed_i2c_bus *bus, u32 irq_status)
+@@ -618,13 +624,18 @@ static u32 aspeed_i2c_master_irq(struct aspeed_i2c_bus *bus, u32 irq_status)
  static irqreturn_t aspeed_i2c_bus_irq(int irq, void *dev_id)
  {
  	struct aspeed_i2c_bus *bus = dev_id;

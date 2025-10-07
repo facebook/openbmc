@@ -1,7 +1,7 @@
-From 250ca02ca5d03dc6b4353d093a1f199651e3ac54 Mon Sep 17 00:00:00 2001
+From dbe2ba2d83e3f71474a3356c81b813afc19e3070 Mon Sep 17 00:00:00 2001
 From: Michael Garner <garnermic@fb.com>
 Date: Tue, 21 Jun 2022 15:13:30 -0700
-Subject: [PATCH 163/166] i2c: add a slave backend to receive and queue
+Subject: [PATCH 163/167] i2c: add a slave backend to receive and queue
  messages
 
 Summary:
@@ -432,5 +432,5 @@ index 000000000000..ab7840b5b015
 +MODULE_AUTHOR("Haiyue Wang <haiyue.wang@linux.intel.com>");
 +MODULE_DESCRIPTION("I2C slave mode for receiving and queuing messages");
 -- 
-2.47.1
+2.47.3
 

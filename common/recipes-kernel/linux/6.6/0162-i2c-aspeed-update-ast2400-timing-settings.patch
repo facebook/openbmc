@@ -1,7 +1,7 @@
-From 61ee429aa6c0528014a117337b083a20946ef9b9 Mon Sep 17 00:00:00 2001
+From 4842a97c16f3a14db82f365c1276f75a567a1517 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Wed, 21 Apr 2021 16:20:34 -0700
-Subject: [PATCH 162/166] i2c: aspeed: update ast2400 timing settings
+Subject: [PATCH 162/167] i2c: aspeed: update ast2400 timing settings
 
 Summary:
 We have seen consistent I2C transaction failures in wedge100 i2c-3/4/9
@@ -60,5 +60,5 @@ index 289c8424ca74..4a163f6ef313 100644
  
  static u32 aspeed_i2c_25xx_get_clk_reg_val(struct device *dev, u32 divisor, u32 duty_cycle)
 -- 
-2.47.1
+2.47.3
 

@@ -1,7 +1,7 @@
-From 77e95b6e0efb155fde36e261d98cccab82a5528f Mon Sep 17 00:00:00 2001
+From f9a17b292f1fc75e8d60916e371a056544dc3456 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Mon, 3 Feb 2025 20:26:28 +0800
-Subject: [PATCH 1002/1016] bindings: ipmi: ssif-bmc: Add property to adjust
+Subject: [PATCH 1002/1015] bindings: ipmi: ssif-bmc: Add property to adjust
  response timeout
 
 The SSIF response is handled by a userspace application, which may exceed

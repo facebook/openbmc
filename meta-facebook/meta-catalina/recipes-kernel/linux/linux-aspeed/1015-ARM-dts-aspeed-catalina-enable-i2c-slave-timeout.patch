@@ -1,7 +1,7 @@
-From 5ed7d85c0fb46cd9f4fde3a3cc2a33c23193f1e7 Mon Sep 17 00:00:00 2001
+From 1f922f0e113cf0387e6baa18ea2d70be9e555069 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 30 Jul 2025 19:39:20 +0800
-Subject: [PATCH 1016/1016] ARM: dts: aspeed: catalina: enable i2c slave
+Subject: [PATCH 1015/1015] ARM: dts: aspeed: catalina: enable i2c slave
  timeout
 
 Enable the I2C slave timeout property in the Harma device tree to

@@ -72,6 +72,7 @@ SRC_URI:append = " \
     file://0164-i2c-aspeed-add-i2c-slave-inactive-timeout-support.patch \
     file://0165-net-mctp-i2c-invalidate-flows-immediately-on-TX-erro.patch \
     file://0166-Add-ASPEED-AST2600-I2Cv2-controller-driver.patch \
+    file://0167-i2c-ast2600-support-ssif.patch \
 "
 
 #

@@ -1,7 +1,7 @@
-From 02b51d0182e331e547f4e441bf3aacc67ef84099 Mon Sep 17 00:00:00 2001
+From d0ab8834e28d1dc9a3434ca6c412a307b86c14e8 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Fri, 2 Aug 2024 17:34:10 +0800
-Subject: [PATCH 1007/1016] ARM: dts: aspeed: catalina: add raa228004 nodes
+Subject: [PATCH 1007/1015] ARM: dts: aspeed: catalina: add raa228004 nodes
 
 raa228004 nodes were removed due to compatible string not exist on upstream.
 Add back raa228004 nodes back in this patch.

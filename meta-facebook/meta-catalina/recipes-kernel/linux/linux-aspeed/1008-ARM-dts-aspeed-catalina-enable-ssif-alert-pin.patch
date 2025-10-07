@@ -1,7 +1,7 @@
-From b62df1e3bd4cedf6af2b5cad073be19c9b503ea3 Mon Sep 17 00:00:00 2001
+From 9264fe0100395ac21801e7db94ff08f60ce05502 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Fri, 18 Oct 2024 15:13:23 +0800
-Subject: [PATCH 1008/1016] ARM: dts: aspeed: catalina: enable ssif alert pin
+Subject: [PATCH 1008/1015] ARM: dts: aspeed: catalina: enable ssif alert pin
 
 Set GPIOC7 as SSIF alert pin for improving SSIF message performance.
 

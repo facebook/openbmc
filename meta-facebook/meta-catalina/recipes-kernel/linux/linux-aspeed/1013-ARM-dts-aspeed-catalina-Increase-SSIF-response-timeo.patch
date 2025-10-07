@@ -1,7 +1,7 @@
-From 75b25186fc2ce01e35e62bf8c3e61e5a9d3ecd1d Mon Sep 17 00:00:00 2001
+From 1780555f635c8994e1a68ff305c302318fdb866e Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Tue, 4 Feb 2025 11:00:25 +0800
-Subject: [PATCH 1013/1016] ARM: dts: aspeed: catalina: Increase SSIF response
+Subject: [PATCH 1013/1015] ARM: dts: aspeed: catalina: Increase SSIF response
  timeout
 
 The SSIF driver has a default response timeout of 500ms. If an

@@ -1,7 +1,7 @@
-From a5c3886999b30eef0e91bce8f6afc8f140868627 Mon Sep 17 00:00:00 2001
+From fd6ccb24f5d73e13482dcf67d4d096bf433e762a Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Fri, 2 Aug 2024 17:32:49 +0800
-Subject: [PATCH 1006/1016] ARM: dts: aspeed: catalina: add max31790 nodes
+Subject: [PATCH 1006/1015] ARM: dts: aspeed: catalina: add max31790 nodes
 
 max31790 nodes were removed due to compatible string not exist on upstream.
 Add back max31790 nodes back in this patch.

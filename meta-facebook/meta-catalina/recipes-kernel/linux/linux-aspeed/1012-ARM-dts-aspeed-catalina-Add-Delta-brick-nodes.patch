@@ -1,7 +1,7 @@
-From af51b5eed763718ccf512d5e21f6c079711a8759 Mon Sep 17 00:00:00 2001
+From 35d72e02f73c47a3d041c4c08ac86c5229ca2dc8 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Thu, 9 Jan 2025 14:38:01 +0800
-Subject: [PATCH 1012/1016] ARM: dts: aspeed: catalina: Add Delta brick nodes
+Subject: [PATCH 1012/1015] ARM: dts: aspeed: catalina: Add Delta brick nodes
 
 Add Delta brick nodes to support power sensors monitoring on PDB brick
 board.

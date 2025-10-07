@@ -1,7 +1,7 @@
-From 8f1eb06ab1233219f1c018942b42e645c614a474 Mon Sep 17 00:00:00 2001
+From 463faaff486facef456ce7da8c3c9da91add6884 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 25 Jun 2025 12:47:27 +0800
-Subject: [PATCH 1015/1016] ARM: dts: aspeed: catalina: enable i2c11 byte mode
+Subject: [PATCH 1014/1015] ARM: dts: aspeed: catalina: enable i2c11 byte mode
 
 Enable i2c11 byte mode
 

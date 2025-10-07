@@ -1,7 +1,7 @@
-From 25ba3ba8eb2c8f3c48a03f6cfca957ba3e0c1456 Mon Sep 17 00:00:00 2001
+From d662d0ecd15a877b0e6e5090698cc7dcc0df63cd Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Fri, 2 Aug 2024 17:29:42 +0800
-Subject: [PATCH 1005/1016] ARM: dts: aspeed: catalina: add ipmb-dev node
+Subject: [PATCH 1005/1015] ARM: dts: aspeed: catalina: add ipmb-dev node
 
 ipmb-dev node was removed due to compatible string not exist on upstream.
 Add back ipmb-dev node back in this patch.

@@ -1,7 +1,7 @@
-From e9f3016d914d08e6e42dcb9bb76918df98acb8a4 Mon Sep 17 00:00:00 2001
+From 223deadac56b235f106e5cf91fa649fe93bf3ff8 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 2 Nov 2023 14:52:04 +0800
-Subject: [PATCH 300/330] To support MCP9600 temperature driver
+Subject: [PATCH 300/336] To support MCP9600 temperature driver
 
 LF-Kernel link:
 link:https://lore.kernel.org/all/20231025233153.5454-1-andrew.hepp@ahepp.dev/

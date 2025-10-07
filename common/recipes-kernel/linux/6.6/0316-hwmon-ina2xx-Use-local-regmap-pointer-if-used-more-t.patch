@@ -1,7 +1,7 @@
-From 896e555dc8a8fc105ec88aaf3a6293ff405f94ff Mon Sep 17 00:00:00 2001
+From a1320e32d5f2e179ae42310eaf3ae138117d3f75 Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Thu, 1 Aug 2024 14:57:39 -0700
-Subject: [PATCH 316/330] hwmon: (ina2xx) Use local regmap pointer if used more
+Subject: [PATCH 316/336] hwmon: (ina2xx) Use local regmap pointer if used more
  than once
 
 If regmap is accessed more than once in a function, declare and used

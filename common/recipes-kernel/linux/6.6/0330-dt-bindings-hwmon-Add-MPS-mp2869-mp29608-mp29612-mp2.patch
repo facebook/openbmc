@@ -1,15 +1,15 @@
-From ab61212ac3f6954fa6ed78d8c3677cb0e030223d Mon Sep 17 00:00:00 2001
+From 376823447b2ec3ee3087082e205455af5a61a789 Mon Sep 17 00:00:00 2001
 From: Wensheng Wang <wenswang@yeah.net>
 Date: Tue, 5 Aug 2025 18:20:18 +0800
-Subject: [PATCH 330/332] dt-bindings: hwmon: Add MPS
+Subject: [PATCH 330/336] dt-bindings: hwmon: Add MPS
  mp2869,mp29608,mp29612,mp29816 and mp29502
 
 Add support for MPS mp2869/mp2869a,mp29608/mp29608a,mp29612/mp29612a,
 mp29816/mp29816a/mp29816b/mp29816c and mp29502 controller.
 
----
+-
 LORE: https://lore.kernel.org/all/20250805102020.749850-1-wenswang@yeah.net/
----
+-
 
 Acked-by: Rob Herring (Arm) <robh@kernel.org>
 Signed-off-by: Wensheng Wang <wenswang@yeah.net>
@@ -18,7 +18,7 @@ Signed-off-by: Wensheng Wang <wenswang@yeah.net>
  1 file changed, 10 insertions(+)
 
 diff --git a/Documentation/devicetree/bindings/trivial-devices.yaml b/Documentation/devicetree/bindings/trivial-devices.yaml
-index 4f2916904..de76fb145 100644
+index 4f291690420f..de76fb145317 100644
 --- a/Documentation/devicetree/bindings/trivial-devices.yaml
 +++ b/Documentation/devicetree/bindings/trivial-devices.yaml
 @@ -125,14 +125,24 @@ properties:
@@ -47,5 +47,5 @@ index 4f2916904..de76fb145 100644
            - mps,mp5990
              # Monolithic Power Systems Inc. synchronous step-down converter mpq8785
 -- 
-2.43.0
+2.47.3
 

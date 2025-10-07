@@ -1,7 +1,7 @@
-From 1a897b739cca1411fff1d73f3e8b4595680f4142 Mon Sep 17 00:00:00 2001
+From eb40faff391eec85f00f3010a5cabb3dfcf93a9f Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Wed, 28 Aug 2024 15:18:51 -0700
-Subject: [PATCH 323/330] hwmon: (ina2xx) Pass register to alert limit write
+Subject: [PATCH 323/336] hwmon: (ina2xx) Pass register to alert limit write
  functions
 
 Pass the to-be-limited register to alert functions and use it to determine

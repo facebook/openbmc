@@ -1,7 +1,7 @@
-From c1233b78cdce42251379316d121cd738b8372f91 Mon Sep 17 00:00:00 2001
+From b47a4d61bdaf88d6b49faada1caec5f19f0ae22c Mon Sep 17 00:00:00 2001
 From: Leo Yang <Leo-Yang@quantatw.com>
 Date: Fri, 19 Sep 2025 10:29:55 +0800
-Subject: [PATCH] hwmon: (pmbus) Add support for the MP5998 controllers
+Subject: [PATCH 335/336] hwmon: (pmbus) Add support for the MP5998 controllers
 
 Add support for the MP5998 controllers from Monolithic Power Systems, Inc. (MPS).
 
@@ -14,7 +14,7 @@ These drivers were sent to the Linux upstream and are now pending review Lore:
  3 files changed, 87 insertions(+), 12 deletions(-)
 
 diff --git a/Documentation/devicetree/bindings/trivial-devices.yaml b/Documentation/devicetree/bindings/trivial-devices.yaml
-index de76fb145..7442ccf96 100644
+index de76fb145317..7442ccf96a4a 100644
 --- a/Documentation/devicetree/bindings/trivial-devices.yaml
 +++ b/Documentation/devicetree/bindings/trivial-devices.yaml
 @@ -145,6 +145,8 @@ properties:
@@ -27,7 +27,7 @@ index de76fb145..7442ccf96 100644
            - mps,mpq8785
              # Honeywell Humidicon HIH-6130 humidity/temperature sensor
 diff --git a/Documentation/hwmon/mp5990.rst b/Documentation/hwmon/mp5990.rst
-index 6f2f0c099..bb6e3c791 100644
+index 6f2f0c099d44..bb6e3c7914b2 100644
 --- a/Documentation/hwmon/mp5990.rst
 +++ b/Documentation/hwmon/mp5990.rst
 @@ -9,9 +9,13 @@ Supported chips:
@@ -97,7 +97,7 @@ index 6f2f0c099..bb6e3c791 100644
  
  **temp1_input**
 diff --git a/drivers/hwmon/pmbus/mp5990.c b/drivers/hwmon/pmbus/mp5990.c
-index 2d721b6ac..a0c7a51f2 100644
+index 2d721b6acfb8..a0c7a51f29cb 100644
 --- a/drivers/hwmon/pmbus/mp5990.c
 +++ b/drivers/hwmon/pmbus/mp5990.c
 @@ -8,6 +8,8 @@

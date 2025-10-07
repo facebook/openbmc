@@ -1,7 +1,7 @@
-From cc4b3247846e4124c20bf0246ba7dc6e0910a263 Mon Sep 17 00:00:00 2001
+From 31441a11200b8bd61086549e6c255516d4ebf159 Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Thu, 1 Aug 2024 15:34:48 -0700
-Subject: [PATCH 321/330] hwmon: (ina2xx) Move ina2xx_get_value()
+Subject: [PATCH 321/336] hwmon: (ina2xx) Move ina2xx_get_value()
 
 ina2xx_get_value() will be needed earlier in the next patch, so move it.
 No functional change.

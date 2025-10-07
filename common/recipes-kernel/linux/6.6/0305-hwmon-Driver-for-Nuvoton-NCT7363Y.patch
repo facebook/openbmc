@@ -1,7 +1,7 @@
-From 4e723ca04aa2676d9b56239e29a4877bbdd22fdc Mon Sep 17 00:00:00 2001
+From 6698bed20936b3fc67cd61c469ba476d102d87e9 Mon Sep 17 00:00:00 2001
 From: Eric <Eric_LC_Chen@wiwynn.com>
 Date: Wed, 20 Mar 2024 11:45:42 +0800
-Subject: [PATCH 305/330] hwmon: Driver for Nuvoton NCT7363Y
+Subject: [PATCH 305/336] hwmon: Driver for Nuvoton NCT7363Y
 
 NCT7363Y is an I2C based hardware monitoring chip from Nuvoton.
 

@@ -1,7 +1,7 @@
-From f792315d62c059adb1fabd3eea737c9134242fe1 Mon Sep 17 00:00:00 2001
+From 532b0e84b4a031b58a8a27db70fef20ebd66593d Mon Sep 17 00:00:00 2001
 From: Rush Chen <Rush_Chen@wiwynn.com>
 Date: Fri, 23 Aug 2024 11:10:41 +0800
-Subject: [PATCH 307/330] Add SQ52205 driver
+Subject: [PATCH 307/336] Add SQ52205 driver
 
 Add power monitor SQ52205 driver.
 

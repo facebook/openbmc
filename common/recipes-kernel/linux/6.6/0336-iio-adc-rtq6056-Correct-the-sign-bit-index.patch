@@ -1,7 +1,7 @@
-From c29eac56ab2e1b3f6b356608d75e3a3a154d7e7d Mon Sep 17 00:00:00 2001
+From 78107c66aa103c3b7b4a2bdea1cbd3c374bc172e Mon Sep 17 00:00:00 2001
 From: ChiYuan Huang <cy_huang@richtek.com>
 Date: Thu, 18 Sep 2025 11:10:59 +0800
-Subject: [PATCH] iio: adc: rtq6056: Correct the sign bit index
+Subject: [PATCH 336/336] iio: adc: rtq6056: Correct the sign bit index
 
 The vshunt/current reported register is a signed 16bit integer. The
 sign bit index should be '15', not '16'.
@@ -28,5 +28,5 @@ index ad4cea6839b2..3ffdcb9f8833 100644
  	return IIO_VAL_INT;
  }
 -- 
-2.43.0
+2.47.3
 

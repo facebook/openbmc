@@ -1,16 +1,16 @@
-From 2cd0dd0233f30fa584e1c1d27aa3b2959b274ac9 Mon Sep 17 00:00:00 2001
+From 7891f051ea3029f20c2b5324616979fdb99ef238 Mon Sep 17 00:00:00 2001
 From: Wensheng Wang <wenswang@yeah.net>
 Date: Tue, 5 Aug 2025 18:20:19 +0800
-Subject: [PATCH 331/332] hwmon: add MP2869,MP29608,MP29612 and MP29816 series
+Subject: [PATCH 331/336] hwmon: add MP2869,MP29608,MP29612 and MP29816 series
  driver
 
 Add support for MPS VR mp2869/mp2869a,mp29608/mp29608a,mp29612/mp29612a
 and mp29816/mp29816a/mp29816b/mp29816c controller. This driver exposes
 telemetry and limit value readings and writtings.
 
----
+-
 LORE: https://lore.kernel.org/all/20250805102020.749850-2-wenswang@yeah.net/
----
+-
 
 Signed-off-by: Wensheng Wang <wenswang@yeah.net>
 ---
@@ -25,7 +25,7 @@ Signed-off-by: Wensheng Wang <wenswang@yeah.net>
  create mode 100644 drivers/hwmon/pmbus/mp2869.c
 
 diff --git a/Documentation/hwmon/index.rst b/Documentation/hwmon/index.rst
-index a6df69912..27bb73a8c 100644
+index a6df699122ca..27bb73a8cccf 100644
 --- a/Documentation/hwmon/index.rst
 +++ b/Documentation/hwmon/index.rst
 @@ -161,6 +161,7 @@ Hardware Monitoring Kernel Drivers
@@ -38,7 +38,7 @@ index a6df69912..27bb73a8c 100644
     mp5023
 diff --git a/Documentation/hwmon/mp2869.rst b/Documentation/hwmon/mp2869.rst
 new file mode 100644
-index 000000000..c4fea1fad
+index 000000000000..c4fea1fad03c
 --- /dev/null
 +++ b/Documentation/hwmon/mp2869.rst
 @@ -0,0 +1,175 @@
@@ -219,7 +219,7 @@ index 000000000..c4fea1fad
 +**temp2_max_alarm**
 \ No newline at end of file
 diff --git a/MAINTAINERS b/MAINTAINERS
-index c0f5214c3..76f68a63f 100644
+index c0f5214c320f..76f68a63fa5f 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
 @@ -14548,6 +14548,13 @@ S:	Maintained
@@ -237,7 +237,7 @@ index c0f5214c3..76f68a63f 100644
  M:	Alexey Klimov <klimov.linux@gmail.com>
  L:	linux-media@vger.kernel.org
 diff --git a/drivers/hwmon/pmbus/Kconfig b/drivers/hwmon/pmbus/Kconfig
-index 696a4b918..e1897c6b1 100644
+index 696a4b918fe6..e1897c6b18ac 100644
 --- a/drivers/hwmon/pmbus/Kconfig
 +++ b/drivers/hwmon/pmbus/Kconfig
 @@ -336,6 +336,15 @@ config SENSORS_MP2856
@@ -257,7 +257,7 @@ index 696a4b918..e1897c6b1 100644
  	tristate "MPS MP2888"
  	help
 diff --git a/drivers/hwmon/pmbus/Makefile b/drivers/hwmon/pmbus/Makefile
-index cb9401884..13404b4e4 100644
+index cb9401884657..13404b4e457b 100644
 --- a/drivers/hwmon/pmbus/Makefile
 +++ b/drivers/hwmon/pmbus/Makefile
 @@ -35,6 +35,7 @@ obj-$(CONFIG_SENSORS_MAX31785)	+= max31785.o
@@ -270,7 +270,7 @@ index cb9401884..13404b4e4 100644
  obj-$(CONFIG_SENSORS_MP5023)	+= mp5023.o
 diff --git a/drivers/hwmon/pmbus/mp2869.c b/drivers/hwmon/pmbus/mp2869.c
 new file mode 100644
-index 000000000..265a31df3
+index 000000000000..265a31df337c
 --- /dev/null
 +++ b/drivers/hwmon/pmbus/mp2869.c
 @@ -0,0 +1,659 @@
@@ -935,5 +935,5 @@ index 000000000..265a31df3
 +MODULE_IMPORT_NS(PMBUS);
 \ No newline at end of file
 -- 
-2.43.0
+2.47.3
 

@@ -1,7 +1,7 @@
-From c9e160dd3d13352a3f504e47710cf7480a3a1608 Mon Sep 17 00:00:00 2001
+From e7400172195911670cf9dcee900af8913343c804 Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Wed, 4 Sep 2024 10:08:31 +0800
-Subject: [PATCH 306/330] hwmon: new driver for ISL28022 power monitor
+Subject: [PATCH 306/336] hwmon: new driver for ISL28022 power monitor
 
 lore link:
 https://lore.kernel.org/all/20240906061421.9392-1-Delphine_CC_Chiu@wiwynn.com/

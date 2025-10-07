@@ -1,7 +1,7 @@
-From a743da34151e4c1e173be5dd62345a81b745f068 Mon Sep 17 00:00:00 2001
+From 036f55215e7858e792b44af7592d0ed7a03db67b Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Tue, 23 Jul 2024 16:17:02 -0700
-Subject: [PATCH 320/330] hwmon: (ina2xx) Set alert latch
+Subject: [PATCH 320/336] hwmon: (ina2xx) Set alert latch
 
 Alerts should only be cleared after reported, not immediately after the
 alert condition has been cleared. Set the latch enable bit to keep alerts

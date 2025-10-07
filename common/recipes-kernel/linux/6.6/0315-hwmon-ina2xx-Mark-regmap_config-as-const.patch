@@ -1,7 +1,7 @@
-From a7e0fc5c05ae741605fa904e838f00b80897c66c Mon Sep 17 00:00:00 2001
+From 1f62d50370ab377e460c083f3fd57b90bb725619 Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Thu, 1 Aug 2024 16:43:03 -0700
-Subject: [PATCH 315/330] hwmon: (ina2xx) Mark regmap_config as const
+Subject: [PATCH 315/336] hwmon: (ina2xx) Mark regmap_config as const
 
 Recent versions of checkpatch complain that struct regmap_config
 should be declared as const.

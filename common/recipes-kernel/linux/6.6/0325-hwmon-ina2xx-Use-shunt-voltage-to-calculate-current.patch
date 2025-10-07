@@ -1,7 +1,7 @@
-From cff56996af989c0076b6bbf02e880449c19d1fda Mon Sep 17 00:00:00 2001
+From 2010259d02a1034eff5d893cc5a1cd0cd573622b Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Wed, 28 Aug 2024 17:21:41 -0700
-Subject: [PATCH 325/330] hwmon: (ina2xx) Use shunt voltage to calculate
+Subject: [PATCH 325/336] hwmon: (ina2xx) Use shunt voltage to calculate
  current
 
 Since the shunt voltage and the current register report the same values

@@ -1,7 +1,7 @@
-From cbfad58284cb61c374996de455ac8157fd5b0ee9 Mon Sep 17 00:00:00 2001
+From b2139613107ac911312e5189c1746c612b661840 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Thu, 8 Apr 2021 15:23:48 -0700
-Subject: [PATCH 308/330] hwmon: Add net_brcm driver
+Subject: [PATCH 308/336] hwmon: Add net_brcm driver
 
 Summary:
 

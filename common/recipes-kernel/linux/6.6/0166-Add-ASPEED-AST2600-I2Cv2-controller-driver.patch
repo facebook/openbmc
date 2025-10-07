@@ -1,4 +1,4 @@
-From 2145511bfb9448177484a83910ef2402fd3520f4 Mon Sep 17 00:00:00 2001
+From 149ce8cb14bc4dea994ffdd0d04ea3384a63df09 Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Tue, 29 Oct 2024 09:43:50 +0800
 Subject: [PATCH 166/166] Add ASPEED AST2600 I2Cv2 controller driver
@@ -16,10 +16,10 @@ https://lore.kernel.org/lkml/20241007035235.2254138-1-ryan_chen@aspeedtech.com/
  create mode 100644 drivers/i2c/busses/i2c-ast2600.c
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-index 7c061fdef09b..4e88884032fc 100644
+index 674eb3a3619d..2150b9ae43e5 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 +++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-@@ -952,11 +952,17 @@ otp: otp@1e6f2000 {
+@@ -950,11 +950,17 @@ otp: otp@1e6f2000 {
  #include "aspeed-g6-pinctrl.dtsi"
  
  &i2c {
@@ -39,7 +39,7 @@ index 7c061fdef09b..4e88884032fc 100644
  		clocks = <&syscon ASPEED_CLK_APB2>;
  		resets = <&syscon ASPEED_RESET_I2C>;
  		interrupts = <GIC_SPI 110 IRQ_TYPE_LEVEL_HIGH>;
-@@ -969,8 +975,9 @@ i2c0: i2c@80 {
+@@ -967,8 +973,9 @@ i2c0: i2c@80 {
  	i2c1: i2c@100 {
  		#address-cells = <1>;
  		#size-cells = <0>;
@@ -51,7 +51,7 @@ index 7c061fdef09b..4e88884032fc 100644
  		clocks = <&syscon ASPEED_CLK_APB2>;
  		resets = <&syscon ASPEED_RESET_I2C>;
  		interrupts = <GIC_SPI 111 IRQ_TYPE_LEVEL_HIGH>;
-@@ -983,8 +990,9 @@ i2c1: i2c@100 {
+@@ -981,8 +988,9 @@ i2c1: i2c@100 {
  	i2c2: i2c@180 {
  		#address-cells = <1>;
  		#size-cells = <0>;
@@ -63,7 +63,7 @@ index 7c061fdef09b..4e88884032fc 100644
  		clocks = <&syscon ASPEED_CLK_APB2>;
  		resets = <&syscon ASPEED_RESET_I2C>;
  		interrupts = <GIC_SPI 112 IRQ_TYPE_LEVEL_HIGH>;
-@@ -997,8 +1005,9 @@ i2c2: i2c@180 {
+@@ -995,8 +1003,9 @@ i2c2: i2c@180 {
  	i2c3: i2c@200 {
  		#address-cells = <1>;
  		#size-cells = <0>;
@@ -75,7 +75,7 @@ index 7c061fdef09b..4e88884032fc 100644
  		clocks = <&syscon ASPEED_CLK_APB2>;
  		resets = <&syscon ASPEED_RESET_I2C>;
  		interrupts = <GIC_SPI 113 IRQ_TYPE_LEVEL_HIGH>;
-@@ -1011,8 +1020,9 @@ i2c3: i2c@200 {
+@@ -1009,8 +1018,9 @@ i2c3: i2c@200 {
  	i2c4: i2c@280 {
  		#address-cells = <1>;
  		#size-cells = <0>;
@@ -87,7 +87,7 @@ index 7c061fdef09b..4e88884032fc 100644
  		clocks = <&syscon ASPEED_CLK_APB2>;
  		resets = <&syscon ASPEED_RESET_I2C>;
  		interrupts = <GIC_SPI 114 IRQ_TYPE_LEVEL_HIGH>;
-@@ -1025,8 +1035,9 @@ i2c4: i2c@280 {
+@@ -1023,8 +1033,9 @@ i2c4: i2c@280 {
  	i2c5: i2c@300 {
  		#address-cells = <1>;
  		#size-cells = <0>;
@@ -99,7 +99,7 @@ index 7c061fdef09b..4e88884032fc 100644
  		clocks = <&syscon ASPEED_CLK_APB2>;
  		resets = <&syscon ASPEED_RESET_I2C>;
  		interrupts = <GIC_SPI 115 IRQ_TYPE_LEVEL_HIGH>;
-@@ -1039,8 +1050,9 @@ i2c5: i2c@300 {
+@@ -1037,8 +1048,9 @@ i2c5: i2c@300 {
  	i2c6: i2c@380 {
  		#address-cells = <1>;
  		#size-cells = <0>;
@@ -111,7 +111,7 @@ index 7c061fdef09b..4e88884032fc 100644
  		clocks = <&syscon ASPEED_CLK_APB2>;
  		resets = <&syscon ASPEED_RESET_I2C>;
  		interrupts = <GIC_SPI 116 IRQ_TYPE_LEVEL_HIGH>;
-@@ -1053,8 +1065,9 @@ i2c6: i2c@380 {
+@@ -1051,8 +1063,9 @@ i2c6: i2c@380 {
  	i2c7: i2c@400 {
  		#address-cells = <1>;
  		#size-cells = <0>;
@@ -123,7 +123,7 @@ index 7c061fdef09b..4e88884032fc 100644
  		clocks = <&syscon ASPEED_CLK_APB2>;
  		resets = <&syscon ASPEED_RESET_I2C>;
  		interrupts = <GIC_SPI 117 IRQ_TYPE_LEVEL_HIGH>;
-@@ -1067,8 +1080,9 @@ i2c7: i2c@400 {
+@@ -1065,8 +1078,9 @@ i2c7: i2c@400 {
  	i2c8: i2c@480 {
  		#address-cells = <1>;
  		#size-cells = <0>;
@@ -135,7 +135,7 @@ index 7c061fdef09b..4e88884032fc 100644
  		clocks = <&syscon ASPEED_CLK_APB2>;
  		resets = <&syscon ASPEED_RESET_I2C>;
  		interrupts = <GIC_SPI 118 IRQ_TYPE_LEVEL_HIGH>;
-@@ -1081,8 +1095,9 @@ i2c8: i2c@480 {
+@@ -1079,8 +1093,9 @@ i2c8: i2c@480 {
  	i2c9: i2c@500 {
  		#address-cells = <1>;
  		#size-cells = <0>;
@@ -147,7 +147,7 @@ index 7c061fdef09b..4e88884032fc 100644
  		clocks = <&syscon ASPEED_CLK_APB2>;
  		resets = <&syscon ASPEED_RESET_I2C>;
  		interrupts = <GIC_SPI 119 IRQ_TYPE_LEVEL_HIGH>;
-@@ -1095,8 +1110,9 @@ i2c9: i2c@500 {
+@@ -1093,8 +1108,9 @@ i2c9: i2c@500 {
  	i2c10: i2c@580 {
  		#address-cells = <1>;
  		#size-cells = <0>;
@@ -159,7 +159,7 @@ index 7c061fdef09b..4e88884032fc 100644
  		clocks = <&syscon ASPEED_CLK_APB2>;
  		resets = <&syscon ASPEED_RESET_I2C>;
  		interrupts = <GIC_SPI 120 IRQ_TYPE_LEVEL_HIGH>;
-@@ -1109,8 +1125,9 @@ i2c10: i2c@580 {
+@@ -1107,8 +1123,9 @@ i2c10: i2c@580 {
  	i2c11: i2c@600 {
  		#address-cells = <1>;
  		#size-cells = <0>;
@@ -171,7 +171,7 @@ index 7c061fdef09b..4e88884032fc 100644
  		clocks = <&syscon ASPEED_CLK_APB2>;
  		resets = <&syscon ASPEED_RESET_I2C>;
  		interrupts = <GIC_SPI 121 IRQ_TYPE_LEVEL_HIGH>;
-@@ -1123,8 +1140,9 @@ i2c11: i2c@600 {
+@@ -1121,8 +1138,9 @@ i2c11: i2c@600 {
  	i2c12: i2c@680 {
  		#address-cells = <1>;
  		#size-cells = <0>;
@@ -183,7 +183,7 @@ index 7c061fdef09b..4e88884032fc 100644
  		clocks = <&syscon ASPEED_CLK_APB2>;
  		resets = <&syscon ASPEED_RESET_I2C>;
  		interrupts = <GIC_SPI 122 IRQ_TYPE_LEVEL_HIGH>;
-@@ -1137,8 +1155,9 @@ i2c12: i2c@680 {
+@@ -1135,8 +1153,9 @@ i2c12: i2c@680 {
  	i2c13: i2c@700 {
  		#address-cells = <1>;
  		#size-cells = <0>;
@@ -195,7 +195,7 @@ index 7c061fdef09b..4e88884032fc 100644
  		clocks = <&syscon ASPEED_CLK_APB2>;
  		resets = <&syscon ASPEED_RESET_I2C>;
  		interrupts = <GIC_SPI 123 IRQ_TYPE_LEVEL_HIGH>;
-@@ -1151,8 +1170,9 @@ i2c13: i2c@700 {
+@@ -1149,8 +1168,9 @@ i2c13: i2c@700 {
  	i2c14: i2c@780 {
  		#address-cells = <1>;
  		#size-cells = <0>;
@@ -207,7 +207,7 @@ index 7c061fdef09b..4e88884032fc 100644
  		clocks = <&syscon ASPEED_CLK_APB2>;
  		resets = <&syscon ASPEED_RESET_I2C>;
  		interrupts = <GIC_SPI 124 IRQ_TYPE_LEVEL_HIGH>;
-@@ -1165,8 +1185,9 @@ i2c14: i2c@780 {
+@@ -1163,8 +1183,9 @@ i2c14: i2c@780 {
  	i2c15: i2c@800 {
  		#address-cells = <1>;
  		#size-cells = <0>;

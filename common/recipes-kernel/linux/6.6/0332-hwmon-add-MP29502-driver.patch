@@ -1,14 +1,14 @@
-From 8e6e73ae45703234fae06a50a406010ab3c7ca2d Mon Sep 17 00:00:00 2001
+From 11ed39bd066e118391a042c943b4f832c847e56f Mon Sep 17 00:00:00 2001
 From: Wensheng Wang <wenswang@yeah.net>
 Date: Tue, 5 Aug 2025 18:20:20 +0800
-Subject: [PATCH 332/332] hwmon: add MP29502 driver
+Subject: [PATCH 332/336] hwmon: add MP29502 driver
 
 Add support for MPS VR controller mp29502. This driver exposes
 telemetry and limits value readings and writtings.
 
----
+-
 LORE: https://lore.kernel.org/all/20250805102020.749850-3-wenswang@yeah.net/
----
+-
 
 Signed-off-by: Wensheng Wang <wenswang@yeah.net>
 ---
@@ -23,7 +23,7 @@ Signed-off-by: Wensheng Wang <wenswang@yeah.net>
  create mode 100644 drivers/hwmon/pmbus/mp29502.c
 
 diff --git a/Documentation/hwmon/index.rst b/Documentation/hwmon/index.rst
-index 27bb73a8c..5eb4ac227 100644
+index 27bb73a8cccf..5eb4ac22746d 100644
 --- a/Documentation/hwmon/index.rst
 +++ b/Documentation/hwmon/index.rst
 @@ -163,6 +163,7 @@ Hardware Monitoring Kernel Drivers
@@ -36,7 +36,7 @@ index 27bb73a8c..5eb4ac227 100644
     mp5990
 diff --git a/Documentation/hwmon/mp29502.rst b/Documentation/hwmon/mp29502.rst
 new file mode 100644
-index 000000000..5149f703a
+index 000000000000..5149f703acfe
 --- /dev/null
 +++ b/Documentation/hwmon/mp29502.rst
 @@ -0,0 +1,93 @@
@@ -135,7 +135,7 @@ index 000000000..5149f703a
 +**temp1_max_alarm**
 \ No newline at end of file
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 76f68a63f..4c88d15aa 100644
+index 76f68a63fa5f..4c88d15aa470 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
 @@ -14555,6 +14555,13 @@ S:	Maintained
@@ -153,7 +153,7 @@ index 76f68a63f..4c88d15aa 100644
  M:	Alexey Klimov <klimov.linux@gmail.com>
  L:	linux-media@vger.kernel.org
 diff --git a/drivers/hwmon/pmbus/Kconfig b/drivers/hwmon/pmbus/Kconfig
-index e1897c6b1..1324ca51d 100644
+index e1897c6b18ac..1324ca51dbca 100644
 --- a/drivers/hwmon/pmbus/Kconfig
 +++ b/drivers/hwmon/pmbus/Kconfig
 @@ -354,6 +354,15 @@ config SENSORS_MP2888
@@ -173,7 +173,7 @@ index e1897c6b1..1324ca51d 100644
  	tristate "MPS MP2975"
  	help
 diff --git a/drivers/hwmon/pmbus/Makefile b/drivers/hwmon/pmbus/Makefile
-index 13404b4e4..5e63831ef 100644
+index 13404b4e457b..5e63831ef834 100644
 --- a/drivers/hwmon/pmbus/Makefile
 +++ b/drivers/hwmon/pmbus/Makefile
 @@ -37,6 +37,7 @@ obj-$(CONFIG_SENSORS_MAX8688)	+= max8688.o
@@ -186,7 +186,7 @@ index 13404b4e4..5e63831ef 100644
  obj-$(CONFIG_SENSORS_MP5990)	+= mp5990.o
 diff --git a/drivers/hwmon/pmbus/mp29502.c b/drivers/hwmon/pmbus/mp29502.c
 new file mode 100644
-index 000000000..88b3f556f
+index 000000000000..88b3f556fc92
 --- /dev/null
 +++ b/drivers/hwmon/pmbus/mp29502.c
 @@ -0,0 +1,670 @@
@@ -862,5 +862,5 @@ index 000000000..88b3f556f
 +MODULE_IMPORT_NS(PMBUS);
 \ No newline at end of file
 -- 
-2.43.0
+2.47.3
 

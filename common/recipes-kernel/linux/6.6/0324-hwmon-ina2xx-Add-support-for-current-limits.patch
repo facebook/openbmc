@@ -1,7 +1,7 @@
-From 9c5aa56ee81a3484a07bbb1d6a3dcd1817a9c643 Mon Sep 17 00:00:00 2001
+From bee2a5e8a30afa4f01febfff64a18b6a21f0e145 Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Wed, 28 Aug 2024 15:23:53 -0700
-Subject: [PATCH 324/330] hwmon: (ina2xx) Add support for current limits
+Subject: [PATCH 324/336] hwmon: (ina2xx) Add support for current limits
 
 While the chips supported by this driver do not directly support current
 limits, they do support setting shunt voltage limits. The shunt voltage

@@ -1,7 +1,7 @@
-From de8af5389de2b667161aa4c8400700b5b6e586a5 Mon Sep 17 00:00:00 2001
+From 6a43506d18977b8d1e35deaff3832b709da2097d Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Fri, 24 Nov 2023 15:54:07 +0800
-Subject: [PATCH 309/330] Kernel6v5: Support apml driver
+Subject: [PATCH 309/336] Kernel6v5: Support apml driver
 
 https://github.com/AMDESE/OpenBMC/blob/master/meta-amd/meta-common/recipes-kernel/linux/linux-aspeed/0057-apml_sbrmi-Add-support-to-identify-register-address-.patch
 

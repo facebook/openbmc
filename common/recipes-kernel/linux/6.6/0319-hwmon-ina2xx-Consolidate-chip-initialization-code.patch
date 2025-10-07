@@ -1,7 +1,7 @@
-From d5590bbd78f69c53c833f9608708f5e3e78922db Mon Sep 17 00:00:00 2001
+From 8ab5afd46d99277996433a23bd756addfeadf36b Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Wed, 24 Jul 2024 09:31:08 -0700
-Subject: [PATCH 319/330] hwmon: (ina2xx) Consolidate chip initialization code
+Subject: [PATCH 319/336] hwmon: (ina2xx) Consolidate chip initialization code
 
 Move all chip initialization code into a single function.
 

@@ -1,7 +1,7 @@
-From a17308400321137d60cf8648db9b42097bbffcef Mon Sep 17 00:00:00 2001
+From 63ee4d6b805b7dfe64a6cef40ca431cd8b672e2f Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Wed, 24 Jul 2024 22:41:16 -0700
-Subject: [PATCH 322/330] hwmon: (ina2xx) Convert to use with_info hwmon API
+Subject: [PATCH 322/336] hwmon: (ina2xx) Convert to use with_info hwmon API
 
 Convert driver to use the with_info hardware monitoring API
 to reduce its dependency on sysfs attribute functions.

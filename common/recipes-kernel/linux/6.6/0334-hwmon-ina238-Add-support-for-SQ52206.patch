@@ -1,7 +1,7 @@
-From e331fd1492a4264df6f660d6383b81a1ffa56662 Mon Sep 17 00:00:00 2001
+From 8178ac7e517d6cf18d6223bfd76e6ab372719735 Mon Sep 17 00:00:00 2001
 From: Wenliang Yan <wenliang202407@163.com>
 Date: Tue, 6 May 2025 01:37:39 -0400
-Subject: [PATCH 332/332] hwmon: (ina238) Add support for SQ52206
+Subject: [PATCH 334/336] hwmon: (ina238) Add support for SQ52206
 
 Add support for SQ52206 to the Ina238 driver. Add registers,
 increase compatibility, add compatibility programs for
@@ -590,5 +590,5 @@ index f5f2892c1e89..9dbc05a1de3c 100644
  };
  MODULE_DEVICE_TABLE(of, ina238_of_match);
 -- 
-2.43.0
+2.47.3
 

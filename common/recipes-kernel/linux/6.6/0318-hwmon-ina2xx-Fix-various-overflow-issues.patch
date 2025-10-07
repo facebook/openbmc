@@ -1,7 +1,7 @@
-From 65c252f499d220e49c1a41facf9736b7f5cb5fff Mon Sep 17 00:00:00 2001
+From 90602a538f844abffd9a96300f4d7352e3f3cf00 Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Wed, 24 Jul 2024 09:42:16 -0700
-Subject: [PATCH 318/330] hwmon: (ina2xx) Fix various overflow issues
+Subject: [PATCH 318/336] hwmon: (ina2xx) Fix various overflow issues
 
 Module tests show various overflow problems when writing limits
 and other attributes.

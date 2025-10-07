@@ -1,4 +1,4 @@
-From 2742141f5fdb5a11899c4f6f2135db896f3df793 Mon Sep 17 00:00:00 2001
+From 245d040a0b4cb0f2e901904b360c7fd55f821920 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Wed, 13 Mar 2024 09:19:06 +0800
 Subject: [PATCH 180/182] meta-facebook: common: add pcc config
@@ -9,10 +9,10 @@ Add PCC config in aspeed-g6.dtsi
  1 file changed, 7 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-index 4200e1463d11..7513735151d5 100644
+index 3b46ca276e85..bae85b4d9954 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 +++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-@@ -766,6 +766,13 @@ lpc_snoop: lpc-snoop@80 {
+@@ -764,6 +764,13 @@ lpc_snoop: lpc-snoop@80 {
  					status = "disabled";
  				};
  

@@ -1,7 +1,7 @@
-From bc86eeb1d56717503dce8214bd104d4811ffa10a Mon Sep 17 00:00:00 2001
+From ae82f249d041e8671d0061b91ddb2d8c865fd61e Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Tue, 23 Jul 2024 13:23:30 -0700
-Subject: [PATCH 313/330] hwmon: (ina2xx) Replace platform data with device
+Subject: [PATCH 313/336] hwmon: (ina2xx) Replace platform data with device
  properties
 
 There are no in-tree users of ina2xx platform data. Drop it and support

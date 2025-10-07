@@ -1,7 +1,7 @@
-From 287049bcf5150e7d5ebb1aa60960a0ce1917ed0e Mon Sep 17 00:00:00 2001
+From 9bbe513d32dbfc45d799644621e2cc627deaa03f Mon Sep 17 00:00:00 2001
 From: Guenter Roeck <linux@roeck-us.net>
 Date: Tue, 27 Aug 2024 12:57:10 -0700
-Subject: [PATCH 326/330] hwmon: (ina2xx) Add support for has_alerts
+Subject: [PATCH 326/336] hwmon: (ina2xx) Add support for has_alerts
  configuration flag
 
 Add configuration flag indicating if the chip supports alerts and limits

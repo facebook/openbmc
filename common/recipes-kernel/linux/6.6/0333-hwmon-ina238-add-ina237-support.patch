@@ -1,7 +1,7 @@
-From 41fd812e0ae9ef695965ef34878e5633460a4f12 Mon Sep 17 00:00:00 2001
+From 2e0988f7e45dd3e04e7a1aaf35922527090d5b4e Mon Sep 17 00:00:00 2001
 From: Richard Leitner <richard.leitner@linux.dev>
 Date: Thu, 26 Oct 2023 09:08:49 +0200
-Subject: [PATCH 331/332] hwmon: (ina238) add ina237 support
+Subject: [PATCH 333/336] hwmon: (ina238) add ina237 support
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -154,5 +154,5 @@ index f519c22d3907..f5f2892c1e89 100644
  MODULE_DEVICE_TABLE(of, ina238_of_match);
  
 -- 
-2.43.0
+2.47.3
 

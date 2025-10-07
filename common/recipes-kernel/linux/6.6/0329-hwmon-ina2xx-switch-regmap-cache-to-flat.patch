@@ -1,7 +1,7 @@
-From 625fb246ebca89dcd8f1cf15f28c0901625b1688 Mon Sep 17 00:00:00 2001
+From 7880e4d5c76ebb0988569175c4f6d6f653cdc073 Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Mon, 24 Feb 2025 17:10:48 -0500
-Subject: [PATCH 329/330] hwmon: ina2xx: switch regmap cache to flat
+Subject: [PATCH 329/336] hwmon: ina2xx: switch regmap cache to flat
 
 We are getting kernel panics in the ina2xx driver.  There are a large
 number of fixes since 6.6 in the REGMAP_MAPLE.  Let's asssume it

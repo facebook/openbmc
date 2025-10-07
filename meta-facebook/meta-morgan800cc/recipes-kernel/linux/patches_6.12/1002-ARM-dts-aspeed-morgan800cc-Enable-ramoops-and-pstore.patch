@@ -1,0 +1,51 @@
+From fc67a946221b66cdf595d86d2aa1e2ad4ece05e9 Mon Sep 17 00:00:00 2001
+From: Guhan Balasubramanian <gubalasu@cisco.com>
+Date: Wed, 24 Sep 2025 13:14:58 -0700
+Subject: [PATCH] ARM: dts: aspeed: morgan800cc: Enable ramoops and pstore
+
+Summary: enable pstore and ramoops feature for morgan800cc in kernel 6.12
+
+- Creating a reserved memory region in the RAM for storing kernel panics
+and console messages surrounding the panic.
+- The address given (0x9df00000) is a 1MB block in a valid RAM memory region where
+  the kernel operates.
+- The oops record size is 128KB.
+- The conosle log size is 256KB
+- The user messages if when configured is 128KB.
+
+Test: Observe kernel panics and dmesg console logs stored in pstore
+mount when the kernel config for pstore is enabled.
+
+Signed-off-by: Guhan Balasubramanian <gubalasu@cisco.com>
+---
+ .../dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts   | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+index 5a954c324..5178d961a 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+@@ -17,6 +17,20 @@ spi_gpio: spi {
+ 		num-chipselects = <1>;
+ 		cs-gpios = <&gpio0 ASPEED_GPIO(X, 0) GPIO_ACTIVE_LOW>;
+ 	};
++
++	reserved-memory {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
++
++		ramoops@9df00000 {
++			compatible = "ramoops";
++			reg = <0x9df00000 0x00100000>;
++			record-size = <0x00020000>;
++			console-size = <0x00040000>;
++			pmsg-size = <0x00020000>;
++		};
++	};
+ };
+ 
+ &fmc {
+-- 
+2.43.0
+

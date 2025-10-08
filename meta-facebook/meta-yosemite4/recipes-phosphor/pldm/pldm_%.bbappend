@@ -24,6 +24,7 @@ EXTRA_OEMESON:append = " \
   -Dinstance-id-expiration-interval=6 \
   -Dmctp-recovery=disabled \
   -Ddiscovery-fru-data-from-terminus=disabled \
+  -Dterminus-discovery-retry-count=2 \
 "
 
 do_install:append() {

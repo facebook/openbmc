@@ -1,7 +1,7 @@
-From 95394eba0db25e0517664c94a06db935eeea5cb5 Mon Sep 17 00:00:00 2001
+From 6c022f3813e5f48c68a9d7a5d0477d55b4848b2c Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
 Date: Wed, 24 Sep 2025 15:08:35 +0800
-Subject: [PATCH] ARM: dts: aspeed: clemente: Add GPIO and LED
+Subject: [PATCH 1/1] ARM: dts: aspeed: clemente: Add GPIO and LED
 
 Define a GPIO expander pin for the HDD LED and expose it via the
 LED subsystem. This allows the BMC to control the front panel
@@ -13,28 +13,30 @@ Changes include:
 
 ref:
 https://lore.kernel.org/all/20250926-leo-dts-add-shunt-resistor-v1-1-c871a68792f0@gmail.com/
-
 ---
- arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts | 7 ++++++-
- 1 file changed, 6 insertions(+), 1 deletion(-)
+ .../boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts   | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
-index a614f947dafc..450446913e36 100644
+index 341484f951a20..77b351120391b 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
-@@ -95,6 +95,11 @@ led-3 {
- 			label = "bmc_ready_cpld_noled";
- 			gpios = <&gpio0 ASPEED_GPIO(P, 5) (GPIO_ACTIVE_HIGH|GPIO_TRANSITORY)>;
+@@ -97,6 +97,14 @@ led-3 {
  		};
-+
-+		led-hdd {
+ 	};
+ 
++	hdd-leds {
++		compatible = "gpio-leds";
++		led-0 {
 +			label = "hdd_led";
 +			gpios = <&io_expander13 1 GPIO_ACTIVE_LOW>;
 +		};
- 	};
- 
++	};
++
  	memory@80000000 {
-@@ -1199,7 +1204,7 @@ io_expander13: gpio@14 {
+ 		device_type = "memory";
+ 		reg = <0x80000000 0x80000000>;
+@@ -1295,7 +1303,7 @@ io_expander13: gpio@14 {
  		#gpio-cells = <2>;
  		gpio-line-names =
  			"rmc_en_dc_pwr_on",
@@ -44,5 +46,5 @@ index a614f947dafc..450446913e36 100644
  			"",
  			"",
 -- 
-2.43.0
+2.31.1
 

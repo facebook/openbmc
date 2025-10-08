@@ -1,0 +1,155 @@
+From 68aef764677ce89796a55d1bd97719b7b53eb3b3 Mon Sep 17 00:00:00 2001
+From: KayYCHuang-wiwynn <kay_yc_huang@wiwynn.com>
+Date: Tue, 7 Oct 2025 01:42:43 +0000
+Subject: [PATCH] Revert "entity-manager: Handle left-over template vars"
+
+This reverts commit 7962944f072b54e22075e8290e1e6708bdb30c38.
+---
+ src/entity_manager/utils.cpp                | 60 ---------------------
+ src/entity_manager/utils.hpp                |  2 -
+ test/entity_manager/test_entity-manager.cpp | 28 ----------
+ 3 files changed, 90 deletions(-)
+
+diff --git a/src/entity_manager/utils.cpp b/src/entity_manager/utils.cpp
+index 28e6d11..0f1d1db 100644
+--- a/src/entity_manager/utils.cpp
++++ b/src/entity_manager/utils.cpp
+@@ -10,7 +10,6 @@
+ #include <boost/algorithm/string/find.hpp>
+ #include <boost/algorithm/string/replace.hpp>
+ #include <boost/algorithm/string/split.hpp>
+-#include <phosphor-logging/lg2.hpp>
+ #include <sdbusplus/bus/match.hpp>
+ 
+ #include <fstream>
+@@ -71,63 +70,6 @@ bool fwVersionIsSame()
+     return false;
+ }
+ 
+-void handleLeftOverTemplateVars(nlohmann::json::iterator& keyPair)
+-{
+-    if (keyPair.value().type() == nlohmann::json::value_t::object ||
+-        keyPair.value().type() == nlohmann::json::value_t::array)
+-    {
+-        for (auto nextLayer = keyPair.value().begin();
+-             nextLayer != keyPair.value().end(); nextLayer++)
+-        {
+-            handleLeftOverTemplateVars(nextLayer);
+-        }
+-        return;
+-    }
+-
+-    std::string* strPtr = keyPair.value().get_ptr<std::string*>();
+-    if (strPtr == nullptr)
+-    {
+-        return;
+-    }
+-
+-    // Walking through the string to find $<templateVar>
+-    while (true)
+-    {
+-        boost::iterator_range<std::string::const_iterator> findStart =
+-            boost::ifind_first(*strPtr, std::string_view(templateChar));
+-
+-        if (!findStart)
+-        {
+-            break;
+-        }
+-
+-        boost::iterator_range<std::string::iterator> searchRange(
+-            strPtr->begin() + (findStart.end() - strPtr->begin()),
+-            strPtr->end());
+-        boost::iterator_range<std::string::const_iterator> findSpace =
+-            boost::ifind_first(searchRange, " ");
+-
+-        std::string::const_iterator templateVarEnd;
+-
+-        if (!findSpace)
+-        {
+-            // No space means the template var spans to the end of
+-            // of the keyPair value
+-            templateVarEnd = strPtr->end();
+-        }
+-        else
+-        {
+-            // A space marks the end of a template var
+-            templateVarEnd = findSpace.begin();
+-        }
+-
+-        lg2::error(
+-            "There's still template variable {VAR} un-replaced. Removing it from the string.\n",
+-            "VAR", std::string(findStart.begin(), templateVarEnd));
+-        strPtr->erase(findStart.begin(), templateVarEnd);
+-    }
+-}
+-
+ // Replaces the template character like the other version of this function,
+ // but checks all properties on all interfaces provided to do the substitution
+ // with.
+@@ -140,11 +82,9 @@ std::optional<std::string> templateCharReplace(
+         auto ret = templateCharReplace(keyPair, interface, index, replaceStr);
+         if (ret)
+         {
+-            handleLeftOverTemplateVars(keyPair);
+             return ret;
+         }
+     }
+-    handleLeftOverTemplateVars(keyPair);
+     return std::nullopt;
+ }
+ 
+diff --git a/src/entity_manager/utils.hpp b/src/entity_manager/utils.hpp
+index d7a4857..b638239 100644
+--- a/src/entity_manager/utils.hpp
++++ b/src/entity_manager/utils.hpp
+@@ -26,8 +26,6 @@ constexpr const char* get = "Get";
+ 
+ bool fwVersionIsSame();
+ 
+-void handleLeftOverTemplateVars(nlohmann::json::iterator& keyPair);
+-
+ std::optional<std::string> templateCharReplace(
+     nlohmann::json::iterator& keyPair, const DBusObject& object, size_t index,
+     const std::optional<std::string>& replaceStr = std::nullopt);
+diff --git a/test/entity_manager/test_entity-manager.cpp b/test/entity_manager/test_entity-manager.cpp
+index cc59e44..7966090 100644
+--- a/test/entity_manager/test_entity-manager.cpp
++++ b/test/entity_manager/test_entity-manager.cpp
+@@ -240,34 +240,6 @@ TEST(TemplateCharReplace, singleHex)
+     EXPECT_EQ(expected, j["foo"]);
+ }
+ 
+-TEST(TemplateCharReplace, leftOverTemplateVars)
+-{
+-    nlohmann::json j = {{"foo", "$EXISTENT_VAR and $NON_EXISTENT_VAR"}};
+-    auto it = j.begin();
+-
+-    DBusInterface data;
+-    data["EXISTENT_VAR"] = std::string("Replaced");
+-
+-    DBusObject object;
+-    object["PATH"] = data;
+-
+-    em_utils::templateCharReplace(it, object, 0);
+-
+-    nlohmann::json expected = "Replaced and ";
+-    EXPECT_EQ(expected, j["foo"]);
+-}
+-
+-TEST(HandleLeftOverTemplateVars, replaceLeftOverTemplateVar)
+-{
+-    nlohmann::json j = {{"foo", "the Test $TEST is $TESTED"}};
+-    auto it = j.begin();
+-
+-    em_utils::handleLeftOverTemplateVars(it);
+-
+-    nlohmann::json expected = "the Test  is ";
+-    EXPECT_EQ(expected, j["foo"]);
+-}
+-
+ TEST(MatchProbe, stringEqString)
+ {
+     nlohmann::json j = R"("foo")"_json;
+-- 
+2.25.1
+

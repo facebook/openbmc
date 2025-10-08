@@ -82,6 +82,40 @@ mfg_string(uint16_t id) {
   return "Unknown";
 }
 
+static const char* ddr_loc_string_by_vendor(const char* vendor, uint8_t code) {
+  if (strcmp(vendor, "Samsung") == 0) {
+    if (const char* s = lookup_loc(code, LOC_SAMSUNG, ARRAY_SIZE(LOC_SAMSUNG))) return s;
+  } else if (strcmp(vendor, "Micron") == 0) {
+    if (const char* s = lookup_loc(code, LOC_MICRON, ARRAY_SIZE(LOC_MICRON)))  return s;
+  } else if (strcmp(vendor, "SK Hynix") == 0) {
+    if (const char* s = lookup_loc(code, LOC_HYNIX, ARRAY_SIZE(LOC_HYNIX)))   return s;
+  } else if (strcmp(vendor, "Nanya") == 0) {
+    if (code == 0x4D) return "Taiwan";
+  }
+
+  static char hexbuf[6];
+  snprintf(hexbuf, sizeof(hexbuf), "0x%02X", code);
+  return hexbuf;
+}
+
+const char* get_ddr4_dimm_vendor_location_string(uint8_t fru_id, uint8_t cpu, uint8_t dimm) {
+  static const char* kUnknown = "Unknown";
+  util_set_EE_page(fru_id, cpu, dimm, 1);
+  uint8_t id_buf[2] = {0}, present = 0;
+  if (util_read_spd_with_retry(fru_id, cpu, dimm, 0x40, 2, 0, id_buf, &present) != 0 || !present) {
+    return kUnknown;
+  }
+  uint16_t mfg_id = ((uint16_t)id_buf[1] << 8) | id_buf[0];
+  const char* vendor = mfg_string(mfg_id);
+
+  uint8_t loc = 0; present = 0;
+  if (util_read_spd_with_retry(fru_id, cpu, dimm, 0x42, 1, 0, &loc, &present) != 0 || !present) {
+    return kUnknown;
+  }
+
+  return ddr_loc_string_by_vendor(vendor, loc);
+}
+
 static int
 get_spd5_mfg(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint16_t offs, char *mfg_str) {
   uint8_t buf[16] = {0}, dimm_present = 0;

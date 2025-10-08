@@ -663,6 +663,7 @@ get_config(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t type, json_t *obj)
     json_object_set_new(obj, "Serial Number", json_string(sn));
     json_object_set_new(obj, "Part Number", json_string(pn));
     json_object_set_new(obj, "Manufacturing Date", json_string(week));
+    json_object_set_new(obj, "Manufacturing Location", json_string(get_ddr4_dimm_vendor_location_string(fru_id, cpu, dimm)));
   } else {
     printf("\tSize: %s\n", size);
     printf("\tType: %s\n", dimm_type_string(type));
@@ -671,6 +672,7 @@ get_config(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t type, json_t *obj)
     printf("\tSerial Number: %s\n", sn);
     printf("\tPart Number: %s\n", pn);
     printf("\tManufacturing Date: %s\n", week);
+    printf("\tManufacturing Location: %s\n", get_ddr4_dimm_vendor_location_string(fru_id, cpu, dimm));
   }
 }
 

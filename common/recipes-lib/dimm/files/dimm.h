@@ -119,6 +119,7 @@ int get_bus_width_bits(uint8_t data);
 int get_device_width_bits(uint8_t data);
 
 const char * mfg_string(uint16_t id);
+const char* get_ddr4_dimm_vendor_location_string(uint8_t fru_id, uint8_t cpu, uint8_t dimm);
 int get_spd5_dimm_vendor(uint8_t fru_id, uint8_t cpu, uint8_t dimm, char *mfg_str);
 int get_spd5_reg_vendor(uint8_t fru_id, uint8_t cpu, uint8_t dimm, char *mfg_str);
 int get_spd5_pmic_vendor(uint8_t fru_id, uint8_t cpu, uint8_t dimm, char *mfg_str);

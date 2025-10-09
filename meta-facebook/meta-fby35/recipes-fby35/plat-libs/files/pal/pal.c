@@ -342,6 +342,8 @@ MAPTOSTRING root_port_common_mapping[] = {
     {0x4e, 0, 0x00, 0xFF, "DEV 3", "4OU"}, // Endpoint of 4OU DEV 3
     {0x47, 5, 0x00, 0xFF, "DEV 4", "4OU"}, // Root port of 4OU DEV 4
     {0x4f, 0, 0x00, 0xFF, "DEV 4", "4OU"}, // Endpoint of 4OU DEV 4
+    // HSM
+    {0x4d, 1, 0x00, 0x2A, "Class 1", "HSM"}, // root_port=0x2A, Class 1 HSM
 };
 
 MAPTOSTRING root_port_mapping_e1s[] = {

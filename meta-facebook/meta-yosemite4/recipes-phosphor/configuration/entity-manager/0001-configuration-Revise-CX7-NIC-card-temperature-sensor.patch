@@ -1,4 +1,4 @@
-From 8523144ceea9cf617de9c214e0c837c47c4028b8 Mon Sep 17 00:00:00 2001
+From 3f5eb6526da90ec02f84a68371dfb2836e43c42c Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Wed, 17 Jul 2024 11:06:18 +0800
 Subject: [PATCH 1/7] configuration: Revise CX7 NIC card temperature sensor
@@ -7,13 +7,13 @@ Description
 1. Revise the CX7 NIC temperature sensor name to NICX_TEMP_C.
 2. Revise the temperature threshold.
 ---
- configurations/cx7_ocp.json | 16 ++++++++--------
+ configurations/ocp/cx7_ocp.json | 16 ++++++++--------
  1 file changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/configurations/cx7_ocp.json b/configurations/cx7_ocp.json
+diff --git a/configurations/ocp/cx7_ocp.json b/configurations/ocp/cx7_ocp.json
 index 3f11519..9403a23 100644
---- a/configurations/cx7_ocp.json
-+++ b/configurations/cx7_ocp.json
+--- a/configurations/ocp/cx7_ocp.json
++++ b/configurations/ocp/cx7_ocp.json
 @@ -3,7 +3,7 @@
          {
              "Address": "$address",
@@ -55,5 +55,5 @@ index 3f11519..9403a23 100644
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
 -- 
-2.47.1
+2.47.3
 

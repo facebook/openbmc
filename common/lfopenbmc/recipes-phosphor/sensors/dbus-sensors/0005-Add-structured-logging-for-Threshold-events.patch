@@ -1,7 +1,7 @@
-From 880beba6d64756991851591225b570d9ff7dd8b8 Mon Sep 17 00:00:00 2001
+From 1df15e62afa310c32236f8a488b24bb41d6bea1a Mon Sep 17 00:00:00 2001
 From: Amithash Prasasd <amithash@meta.com>
 Date: Thu, 21 Nov 2024 21:00:02 -0800
-Subject: [PATCH 05/14] Add structured logging for Threshold events
+Subject: [PATCH 05/15] Add structured logging for Threshold events
 
 Add capability to create structured logs for threshold crossing
 (compatible with Redfish Sensor Events) along with ability to
@@ -64,7 +64,7 @@ index 0110986..c7f6996 100644
      sdbusplus,
      uring,
 diff --git a/src/Thresholds.cpp b/src/Thresholds.cpp
-index 2489fc8..2695b19 100644
+index f46fd46..df6e8fb 100644
 --- a/src/Thresholds.cpp
 +++ b/src/Thresholds.cpp
 @@ -8,18 +8,28 @@
@@ -96,7 +96,7 @@ index 2489fc8..2695b19 100644
  #include <string>
  #include <tuple>
  #include <utility>
-@@ -239,11 +249,13 @@ static int cLoFalse = 0;
+@@ -238,11 +248,13 @@ static int cLoFalse = 0;
  static int cLoMidstate = 0;
  static int cDebugThrottle = 0;
  static constexpr int assertLogCount = 10;
@@ -111,7 +111,7 @@ index 2489fc8..2695b19 100644
      {}
  
      Threshold threshold;
-@@ -450,6 +462,136 @@ void checkThresholdsPowerDelay(const std::weak_ptr<Sensor>& weakSensor,
+@@ -446,6 +458,136 @@ void checkThresholdsPowerDelay(const std::weak_ptr<Sensor>& weakSensor,
      }
  }
  
@@ -248,7 +248,7 @@ index 2489fc8..2695b19 100644
  void assertThresholds(Sensor* sensor, double assertValue,
                        thresholds::Level level, thresholds::Direction direction,
                        bool assert)
-@@ -486,6 +628,14 @@ void assertThresholds(Sensor* sensor, double assertValue,
+@@ -482,6 +624,14 @@ void assertThresholds(Sensor* sensor, double assertValue,
              lg2::error(
                  "Failed to send thresholdAsserted signal with assertValue");
          }

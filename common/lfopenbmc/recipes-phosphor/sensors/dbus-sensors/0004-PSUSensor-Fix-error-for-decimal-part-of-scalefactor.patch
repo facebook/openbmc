@@ -1,7 +1,7 @@
-From cbce3e0ca6bda7e04f2e7d3788172e9e714df5dd Mon Sep 17 00:00:00 2001
+From f9c0aa285a5e218bf998807a13d08e6ae9232194 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 22 Sep 2023 09:43:49 +0800
-Subject: [PATCH 04/14] PSUSensor: Fix error for decimal part of scalefactor
+Subject: [PATCH 04/15] PSUSensor: Fix error for decimal part of scalefactor
 
 Customized scale factor declaration from schema in entity-manager,
 declared as type "number." If a number is used in PSUSensor, it loses
@@ -35,43 +35,24 @@ Get adc128d818 and ina233 reading from PSUSensor by dbus introspect
 Change-Id: If3692ab6b0c790072064a44001e9ef58cb50024c
 Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 ---
- src/psu/PSUSensor.cpp     | 21 +++++++++++----------
+ src/psu/PSUSensor.cpp     |  2 +-
  src/psu/PSUSensor.hpp     |  8 ++++----
  src/psu/PSUSensorMain.cpp | 15 ++++++++++-----
- 3 files changed, 25 insertions(+), 19 deletions(-)
+ 3 files changed, 15 insertions(+), 10 deletions(-)
 
 diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
-index 2ba212e..9e43f52 100644
+index bc9430f..14da1dc 100644
 --- a/src/psu/PSUSensor.cpp
 +++ b/src/psu/PSUSensor.cpp
-@@ -44,16 +44,17 @@ static constexpr const char* sensorPathPrefix = "/xyz/openbmc_project/sensors/";
- 
- static constexpr bool debug = false;
- 
--PSUSensor::PSUSensor(
--    const std::string& path, const std::string& objectType,
--    sdbusplus::asio::object_server& objectServer,
--    std::shared_ptr<sdbusplus::asio::connection>& conn,
--    boost::asio::io_context& io, const std::string& sensorName,
--    std::vector<thresholds::Threshold>&& thresholdsIn,
--    const std::string& sensorConfiguration, const PowerState& powerState,
+@@ -49,7 +49,7 @@ PSUSensor::PSUSensor(
+     boost::asio::io_context& io, const std::string& sensorName,
+     std::vector<thresholds::Threshold>&& thresholdsIn,
+     const std::string& sensorConfiguration, const PowerState& powerState,
 -    const std::string& sensorUnits, unsigned int factor, double max, double min,
--    double offset, const std::string& label, size_t tSize, double pollRate,
--    const std::shared_ptr<I2CDevice>& i2cDevice) :
-+PSUSensor::PSUSensor(const std::string& path, const std::string& objectType,
-+                     sdbusplus::asio::object_server& objectServer,
-+                     std::shared_ptr<sdbusplus::asio::connection>& conn,
-+                     boost::asio::io_context& io, const std::string& sensorName,
-+                     std::vector<thresholds::Threshold>&& thresholdsIn,
-+                     const std::string& sensorConfiguration,
-+                     const PowerState& powerState,
-+                     const std::string& sensorUnits, double factor, double max,
-+                     double min, double offset, const std::string& label,
-+                     size_t tSize, double pollRate,
-+                     const std::shared_ptr<I2CDevice>& i2cDevice) :
++    const std::string& sensorUnits, double factor, double max, double min,
+     double offset, const std::string& label, size_t tSize, double pollRate,
+     const std::shared_ptr<I2CDevice>& i2cDevice) :
      Sensor(escapeName(sensorName), std::move(thresholdsIn), sensorConfiguration,
-            objectType, false, false, max, min, conn, powerState),
-     i2cDevice(i2cDevice), objServer(objectServer),
 diff --git a/src/psu/PSUSensor.hpp b/src/psu/PSUSensor.hpp
 index 0aa2c9e..c4f3a38 100644
 --- a/src/psu/PSUSensor.hpp
@@ -112,10 +93,10 @@ index 0aa2c9e..c4f3a38 100644
      double sensorOffset;
  };
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 16c1374..ef899ae 100644
+index f17b2d4..859f0a7 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -761,7 +761,7 @@ static void createSensorsCallback(
+@@ -737,7 +737,7 @@ static void createSensorsCallback(
                  try
                  {
                      psuProperty.sensorScaleFactor = std::visit(
@@ -124,7 +105,7 @@ index 16c1374..ef899ae 100644
                  }
                  catch (const std::invalid_argument&)
                  {
-@@ -770,7 +770,8 @@ static void createSensorsCallback(
+@@ -746,7 +746,8 @@ static void createSensorsCallback(
                  }
  
                  // Avoid later division by zero
@@ -134,7 +115,7 @@ index 16c1374..ef899ae 100644
                  {
                      customizedScale = true;
                  }
-@@ -896,7 +897,7 @@ static void createSensorsCallback(
+@@ -868,7 +869,7 @@ static void createSensorsCallback(
              // Similarly, if sensor scaling factor is being customized,
              // then the below power-of-10 constraint becomes unnecessary,
              // as config should be able to specify an arbitrary divisor.
@@ -143,7 +124,7 @@ index 16c1374..ef899ae 100644
              if (!customizedScale)
              {
                  // Preserve existing usage of hardcoded labelMatch table below
-@@ -913,8 +914,12 @@ static void createSensorsCallback(
+@@ -885,8 +886,12 @@ static void createSensorsCallback(
                  auto findScaleFactor = baseConfig->find(strScaleFactor);
                  if (findScaleFactor != baseConfig->end())
                  {
@@ -157,7 +138,7 @@ index 16c1374..ef899ae 100644
 +                    }
                  }
  
-                 if constexpr (debug)
+                 lg2::debug(
 -- 
 2.47.3
 

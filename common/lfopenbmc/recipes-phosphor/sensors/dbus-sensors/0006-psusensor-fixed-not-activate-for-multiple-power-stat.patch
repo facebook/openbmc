@@ -1,7 +1,7 @@
-From 6609f6873eef2952fb3850e422f3580441460246 Mon Sep 17 00:00:00 2001
+From a406ac0471731475de2f132817999337b62940a6 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 23 Jan 2025 15:10:57 +0800
-Subject: [PATCH 06/14] psusensor: fixed not activate for multiple power state
+Subject: [PATCH 06/15] psusensor: fixed not activate for multiple power state
 
 Link:https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/77426
 
@@ -38,10 +38,10 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  1 file changed, 26 insertions(+)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index ef899ae..468ae35 100644
+index 859f0a7..68abc8e 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -264,6 +264,27 @@ void checkEventLimits(const std::string& sensorPathStr,
+@@ -263,6 +263,27 @@ void checkEventLimits(const std::string& sensorPathStr,
      }
  }
  
@@ -69,7 +69,7 @@ index ef899ae..468ae35 100644
  static void checkPWMSensor(
      const std::filesystem::path& sensorPath, std::string& labelHead,
      const std::string& interfacePath,
-@@ -476,6 +497,11 @@ static void createSensorsCallback(
+@@ -472,6 +493,11 @@ static void createSensorsCallback(
          std::shared_ptr<I2CDevice> i2cDev;
          if (findI2CDev != devices.end())
          {

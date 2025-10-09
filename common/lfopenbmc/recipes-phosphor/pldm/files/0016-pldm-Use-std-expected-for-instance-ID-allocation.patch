@@ -1,4 +1,4 @@
-From e7bcccf6a686a0c0259a5343a71b925103326aee Mon Sep 17 00:00:00 2001
+From 6bd7cd0361f37bcf82634207980fb85e63ccf538 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 15 Jul 2025 10:22:29 +0000
 Subject: [PATCH 16/19] pldm: Use std::expected for instance ID allocation
@@ -37,7 +37,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  fw-update/inventory_manager.cpp               | 35 +++++++--
  host-bmc/dbus_to_event_handler.cpp            |  8 +-
  host-bmc/host_pdr_handler.cpp                 | 48 ++++++++++--
- libpldmresponder/platform.cpp                 |  7 +-
+ libpldmresponder/platform.cpp                 | 14 +++-
  oem/ibm/host-bmc/host_lamp_test.cpp           |  8 +-
  oem/ibm/libpldmresponder/oem_ibm_handler.cpp  |  8 +-
  oem/ibm/libpldmresponder/platform_oem_ibm.cpp |  7 +-
@@ -47,7 +47,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  pldmtool/pldm_cmd_helper.cpp                  |  8 +-
  requester/test/handler_test.cpp               | 29 ++++++--
  softoff/softoff.cpp                           |  9 ++-
- 16 files changed, 312 insertions(+), 47 deletions(-)
+ 16 files changed, 318 insertions(+), 48 deletions(-)
 
 diff --git a/common/instance_id.hpp b/common/instance_id.hpp
 index 40de1f1..2a29f82 100644
@@ -470,7 +470,7 @@ index de828ec..60e2ed2 100644
          sizeof(pldm_msg_hdr) + PLDM_GET_FRU_RECORD_TABLE_REQ_BYTES);
  
 diff --git a/libpldmresponder/platform.cpp b/libpldmresponder/platform.cpp
-index 5ffc572..de65b3f 100644
+index c1aab2b..f8c8a0c 100644
 --- a/libpldmresponder/platform.cpp
 +++ b/libpldmresponder/platform.cpp
 @@ -987,7 +987,12 @@ void Handler::setEventReceiver()
@@ -487,6 +487,20 @@ index 5ffc572..de65b3f 100644
      uint8_t eventMessageGlobalEnable =
          PLDM_EVENT_MESSAGE_GLOBAL_ENABLE_ASYNC_KEEP_ALIVE;
      uint8_t transportProtocolType = PLDM_TRANSPORT_PROTOCOL_TYPE_MCTP;
+@@ -1080,7 +1085,12 @@ void Handler::sendPDRRepositoryChgEventbyPDRHandles(
+             "RC", static_cast<int>(rc));
+         return;
+     }
+-    auto instanceId = instanceIdDb->next(eid);
++    auto instanceIdResult = pldm::utils::getInstanceId(instanceIdDb->next(eid));
++    if (!instanceIdResult)
++    {
++        throw pldm::InstanceIdError(instanceIdResult.error());
++    }
++    auto instanceId = instanceIdResult.value();
+     std::vector<uint8_t> requestMsg(
+         sizeof(pldm_msg_hdr) + PLDM_PLATFORM_EVENT_MESSAGE_MIN_REQ_BYTES +
+         actualSize);
 diff --git a/oem/ibm/host-bmc/host_lamp_test.cpp b/oem/ibm/host-bmc/host_lamp_test.cpp
 index e7485d8..1dda9f2 100644
 --- a/oem/ibm/host-bmc/host_lamp_test.cpp

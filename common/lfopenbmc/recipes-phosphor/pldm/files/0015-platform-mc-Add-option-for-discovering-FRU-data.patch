@@ -1,4 +1,4 @@
-From db42109359e76fd806027295674cea52dfbb6dd4 Mon Sep 17 00:00:00 2001
+From dcf03392fcf1d99f2d4b926b7575304f13f51c59 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
 Subject: [PATCH 15/19] platform-mc: Add option for discovering FRU data
@@ -138,7 +138,7 @@ index ae3a421..caf1f61 100644
  
  } // namespace platform_mc
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 97b0c36..4e13f21 100644
+index cc86184..3f96b15 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -103,9 +103,14 @@ bool Terminus::createInventoryPath(std::string tName)
@@ -156,7 +156,7 @@ index 97b0c36..4e13f21 100644
          return true;
      }
      catch (const sdbusplus::exception_t& e)
-@@ -611,8 +616,9 @@ std::shared_ptr<NumericSensor> Terminus::getSensorObject(SensorID id)
+@@ -603,8 +608,9 @@ std::shared_ptr<NumericSensor> Terminus::getSensorObject(SensorID id)
   *  @param[in] p - pointer to each record of FRU record table
   *  @param[in] tableSize - FRU table size
   */
@@ -168,7 +168,7 @@ index 97b0c36..4e13f21 100644
  {
      auto offset = p - table;
      return (tableSize - offset) < sizeof(struct pldm_fru_record_data_format);
-@@ -621,6 +627,7 @@ static bool isTableEnd(const uint8_t* table, const uint8_t* p,
+@@ -613,6 +619,7 @@ static bool isTableEnd(const uint8_t* table, const uint8_t* p,
  void Terminus::updateInventoryWithFru(const uint8_t* fruData,
                                        const size_t fruLen)
  {
@@ -176,7 +176,7 @@ index 97b0c36..4e13f21 100644
      auto tmp = getTerminusName();
      if (!tmp || tmp.value().empty())
      {
-@@ -732,6 +739,10 @@ void Terminus::updateInventoryWithFru(const uint8_t* fruData,
+@@ -724,6 +731,10 @@ void Terminus::updateInventoryWithFru(const uint8_t* fruData,
              ptr += sizeof(pldm_fru_record_tlv) - 1 + tlv->length;
          }
      }

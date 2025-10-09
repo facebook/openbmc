@@ -1,4 +1,4 @@
-From 59e363a461c4030384b39e21b3d5a9a1b93ad091 Mon Sep 17 00:00:00 2001
+From f886a4612d97a0b026ece8f2c27290c791a0304d Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH 200/204] Utils: support powerState for multi-node system
@@ -770,10 +770,10 @@ index cdd7cdc..a92c940 100644
          }
      }
 diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
-index a7d9eb2..745235d 100644
+index 7f17bf2..c5750e6 100644
 --- a/src/psu/PSUSensor.cpp
 +++ b/src/psu/PSUSensor.cpp
-@@ -55,14 +55,14 @@ PSUSensor::PSUSensor(
+@@ -53,14 +53,14 @@ PSUSensor::PSUSensor(
      const std::string& sensorUnits, double factor, double max, double min,
      double offset, const std::string& label, size_t tSize, double pollRate,
      const std::shared_ptr<I2CDevice>& i2cDevice,
@@ -825,10 +825,10 @@ index e679dc2..e66f68c 100644
      ~PSUProperty() = default;
  
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 90c6ae8..7f8093b 100644
+index 5a67c03..a51132b 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -622,6 +622,7 @@ static void createSensorsCallback(
+@@ -610,6 +610,7 @@ static void createSensorsCallback(
          checkGroupEvent(directory.string(), groupEventPathList);
  
          PowerState readState = getPowerState(*baseConfig);
@@ -836,7 +836,7 @@ index 90c6ae8..7f8093b 100644
  
          /* Check if there are more sensors in the same interface */
          int i = 1;
-@@ -1107,7 +1108,7 @@ static void createSensorsCallback(
+@@ -1061,7 +1062,7 @@ static void createSensorsCallback(
                      readState, findSensorUnit->second, factor,
                      psuProperty.maxReading, psuProperty.minReading,
                      psuProperty.sensorOffset, labelHead, thresholdConfSize,
@@ -844,8 +844,8 @@ index 90c6ae8..7f8093b 100644
 +                    pollRate, i2cDev, std::move(bridgeGpio), readSlot);
                  sensors[sensorName]->setupRead();
                  ++numCreated;
-                 if constexpr (debug)
-@@ -1286,7 +1287,11 @@ static void powerStateChanged(
+                 lg2::debug("Created '{NUM}' sensors so far", "NUM", numCreated);
+@@ -1233,7 +1234,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {

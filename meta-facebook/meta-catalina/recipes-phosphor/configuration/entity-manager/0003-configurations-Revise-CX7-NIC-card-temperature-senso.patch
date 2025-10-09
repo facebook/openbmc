@@ -1,4 +1,4 @@
-From 0464b217402bcaad6d47453556c66de28b7b95b7 Mon Sep 17 00:00:00 2001
+From f3546a22d170ae8f622e505e9a66657c72cd7bcc Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 25 Sep 2024 23:36:54 +0800
 Subject: [PATCH 3/5] configurations: Revise CX7 NIC card temperature sensor
@@ -8,13 +8,13 @@ Revise the CX7 NIC temperature sensor name for Catalina system.
 Signed-off-by: Potin Lai <potin.lai@quantatw.com>
 Change-Id: I7ac22c0fb872f091141f2d77ef97b9686ddfcbae
 ---
- configurations/cx7_ocp.json | 10 ++++++----
+ configurations/ocp/cx7_ocp.json | 10 ++++++----
  1 file changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/configurations/cx7_ocp.json b/configurations/cx7_ocp.json
+diff --git a/configurations/ocp/cx7_ocp.json b/configurations/ocp/cx7_ocp.json
 index 3f11519..5ffa735 100644
---- a/configurations/cx7_ocp.json
-+++ b/configurations/cx7_ocp.json
+--- a/configurations/ocp/cx7_ocp.json
++++ b/configurations/ocp/cx7_ocp.json
 @@ -3,7 +3,7 @@
          {
              "Address": "$address",

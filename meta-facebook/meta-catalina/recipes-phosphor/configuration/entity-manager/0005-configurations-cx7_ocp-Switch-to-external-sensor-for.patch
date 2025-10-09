@@ -1,4 +1,4 @@
-From 7675a730a3ba134952fec6fc3041c411e132f818 Mon Sep 17 00:00:00 2001
+From 33d2453af63642b27b77d63715246e7cc03d0c8c Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Tue, 10 Jun 2025 09:11:21 +0800
 Subject: [PATCH 5/5] configurations: cx7_ocp: Switch to external sensor for
@@ -13,13 +13,13 @@ NIC temperature and updates the external sensor accordingly.
 Signed-off-by: Potin Lai <potin.lai@quantatw.com>
 Change-Id: I8a6fcb383b4d020b10e48543314a9f1b865ec0de
 ---
- configurations/cx7_ocp.json | 12 +++++-------
+ configurations/ocp/cx7_ocp.json | 12 +++++-------
  1 file changed, 5 insertions(+), 7 deletions(-)
 
-diff --git a/configurations/cx7_ocp.json b/configurations/cx7_ocp.json
+diff --git a/configurations/ocp/cx7_ocp.json b/configurations/ocp/cx7_ocp.json
 index 5ffa735..e9c46f9 100644
---- a/configurations/cx7_ocp.json
-+++ b/configurations/cx7_ocp.json
+--- a/configurations/ocp/cx7_ocp.json
++++ b/configurations/ocp/cx7_ocp.json
 @@ -7,13 +7,11 @@
              "Type": "EEPROM"
          },

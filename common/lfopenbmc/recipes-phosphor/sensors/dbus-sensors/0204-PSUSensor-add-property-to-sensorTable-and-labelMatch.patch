@@ -1,4 +1,4 @@
-From c8e86df53995bc29a6220dbefece422e5746d60a Mon Sep 17 00:00:00 2001
+From 26d74e6a66983aa1685edd6b54ba302447a1ff8c Mon Sep 17 00:00:00 2001
 From: Andy-Hsu-wiwynn <andy.hsu.wiwynn@gmail.com>
 Date: Fri, 15 Aug 2025 15:44:31 +0800
 Subject: [PATCH 204/204] PSUSensor:add property to sensorTable and labelMatch
@@ -21,10 +21,10 @@ Signed-off-by: Andy Hsu <andy.hsu.wiwynn@gmail.com>
  1 file changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 90736b5..2a09aaa 100644
+index 5b67458..2fb22bb 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -1234,12 +1234,14 @@ void propertyInitialize()
+@@ -1181,12 +1181,14 @@ void propertyInitialize()
                     {"temp", sensor_paths::unitDegreesC},
                     {"in", sensor_paths::unitVolts},
                     {"voltage", sensor_paths::unitVolts},
@@ -40,7 +40,7 @@ index 90736b5..2a09aaa 100644
          {"maxpin", PSUProperty("Max Input Power", 3000, 0, 6, 0)},
          {"vin", PSUProperty("Input Voltage", 300, 0, 3, 0)},
          {"maxvin", PSUProperty("Max Input Voltage", 300, 0, 3, 0)},
-@@ -1251,6 +1253,7 @@ void propertyInitialize()
+@@ -1198,6 +1200,7 @@ void propertyInitialize()
          {"iin", PSUProperty("Input Current", 20, 0, 3, 0)},
          {"iout", PSUProperty("Output Current", 255, 0, 3, 0)},
          {"curr", PSUProperty("Output Current", 255, 0, 3, 0)},

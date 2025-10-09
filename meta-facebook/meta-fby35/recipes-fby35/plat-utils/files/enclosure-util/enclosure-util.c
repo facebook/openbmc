@@ -387,7 +387,8 @@ setup_sys_config(uint8_t slot_id, sys_config_t* sys_conf) {
   }
 
   // config setup
-  if (sys_conf->present == PRESENT_1OU && sys_conf->type_1ou == TYPE_1OU_VERNAL_FALLS_WITH_AST) {
+  if (((sys_conf->present & PRESENT_1OU) == PRESENT_1OU) &&
+      sys_conf->type_1ou == TYPE_1OU_VERNAL_FALLS_WITH_AST) {
     sys_conf->dev_start = DEV_ID0_1OU;
     sys_conf->dev_end = DEV_ID3_1OU;
     sys_conf->nvme_ops = &vf_1u_ops;

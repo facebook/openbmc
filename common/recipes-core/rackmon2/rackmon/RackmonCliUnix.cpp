@@ -331,7 +331,8 @@ do_raw_cmd(const std::string& req_s, int timeout, int resp_len, bool json_fmt) {
     std::vector<int>& regFilter,
     std::vector<std::string>& regNameFilter,
     bool latestOnly,
-    bool registersWithUnitsOnly) {
+    bool registersWithUnitsOnly,
+    bool flagsOnly) {
   json req;
   req["type"] = type;
   if (deviceFilter.size()) {
@@ -341,6 +342,9 @@ do_raw_cmd(const std::string& req_s, int timeout, int resp_len, bool json_fmt) {
   }
   if (registersWithUnitsOnly) {
     req["filter"]["registerFilter"]["unitsOnly"] = registersWithUnitsOnly;
+  }
+  if (flagsOnly) {
+    req["filter"]["registerFilter"]["flagsOnly"] = flagsOnly;
   }
   if (regFilter.size()) {
     req["filter"]["registerFilter"]["addressFilter"] = regFilter;
@@ -533,6 +537,7 @@ int main(int argc, const char** argv) {
   std::vector<std::string> regNameFilter{};
   bool latestOnly = false;
   bool registersWithUnitsOnly = false;
+  bool flagsOnly = false;
   auto data = app.add_subcommand("data", "Return detailed monitoring data");
   data->callback([&]() {
     return_code = do_data_cmd(
@@ -543,7 +548,8 @@ int main(int argc, const char** argv) {
         regFilter,
         regNameFilter,
         latestOnly,
-        registersWithUnitsOnly);
+        registersWithUnitsOnly,
+        flagsOnly);
   });
   data->add_option("-f,--format", format, "Format the data")
       ->check(CLI::IsMember({"raw", "value"}));
@@ -567,6 +573,7 @@ int main(int argc, const char** argv) {
       "Returns only the latest stored value for a given register");
   data->add_flag(
       "--sensors", registersWithUnitsOnly, "Returns only registers with units");
+  data->add_flag("--flags", flagsOnly, "Returns only registers that are flags");
   auto reload = app.add_subcommand("reload", "Reload requested registers");
   reload->callback([&]() {
     return_code =

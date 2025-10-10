@@ -69,8 +69,15 @@ void from_json(const json& filter, ModbusDataFilter& out) {
       out.regFilter.nameFilter = jregFilter["nameFilter"];
     } else if (jregFilter.contains("unitsOnly") && jregFilter["unitsOnly"]) {
       out.regFilter.unitsOnly = jregFilter["unitsOnly"];
+    } else if (jregFilter.contains("flagsOnly") && jregFilter["flagsOnly"]) {
+      out.regFilter.flagsOnly = jregFilter["flagsOnly"];
     } else {
       throw std::logic_error("Register Filter needs at least one set");
+    }
+
+    if (out.regFilter.unitsOnly && out.regFilter.flagsOnly) {
+      throw std::logic_error(
+          "Register Filter must set at most one of sensors and flags");
     }
   }
   out.latestValueOnly = filter.value("latestValueOnly", false);

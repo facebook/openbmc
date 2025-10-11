@@ -1,0 +1,28 @@
+#!/bin/bash
+
+if [[ $(systemctl show -p ExecStart rackmond.service --value) =~ argv\[]=[^[:space:]]+[[:space:]]+([^[:space:]]+) ]]; then
+  PORT_TO_NAME=$(jq \
+                 '.interfaces | map({key: .port|tostring, value: .device_path | gsub("/"; "")}) | from_entries' \
+                 < "${BASH_REMATCH[1]}")
+  if [ ${#PORT_TO_NAME} -lt 2 ]; then
+    # Did not create a valid json object
+    PORT_TO_NAME="{}"
+  fi
+else
+  PORT_TO_NAME="{}"
+fi
+
+function getDeviceName {
+  port=$(( $1 >> 8 ))
+  echo "$PORT_TO_NAME" | jq -r --arg port "$port" --arg fallback "port_${port}" '.[$port] // $fallback'
+}
+
+rackmoncli data --json --latest --sensors | jq -c .[] | while read -r item; do
+  name=$(echo "$item" | jq -r ".devInfo.deviceType")
+  addr=$(echo "$item" | jq ".devInfo.devAddress")
+  uda=$(echo "$item" | jq ".devInfo.uniqueDevAddress")
+  deviceName=$(getDeviceName "$uda")
+  export PREFIX="${name}_${addr}_${deviceName}_"
+
+  echo "$item" | jq ".regList.[].name |= env.PREFIX + ."
+done | jq --slurp

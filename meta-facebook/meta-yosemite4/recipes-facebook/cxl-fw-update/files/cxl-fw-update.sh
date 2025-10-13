@@ -15,9 +15,32 @@ INVALID_INPUT=255
 exec 200>"$lockfile"
 flock -n 200 || { echo "BIC update is already running"; exit 1; }
 
+readonly WF_CXL_MSG="WF CXL"
+readonly SUCCESS_MSG="Success"
+readonly FAILURE_MSG="Failure"
+
+# phosphor-dbus-interfaces define
+readonly TargetDetermined="xyz.openbmc_project.Software.Update.TargetDetermined"
+readonly UpdateSuccessful="xyz.openbmc_project.Software.Update.UpdateSuccessful"
+readonly ApplyFailed="xyz.openbmc_project.Software.Update.ApplyFailed"
+
 WF_EID_suffix=2
 CXL1_EID_suffix=4
 CXL2_EID_suffix=5
+
+add_init_sel() {
+	log-create ${TargetDetermined} --json "{\"TARGET_NAME\":\"${WF_CXL_MSG} slot${slot_id} instance_num${instance_num}\", \"IMAGE_DATA\":\"${pldm_image}\"}"
+}
+
+add_result_sel() {
+	RESULT="$1"
+
+	if [ "${RESULT}" == "${FAILURE_MSG}" ]; then
+		log-create ${ApplyFailed} --json "{\"IMAGE_DATA\":\"${pldm_image}\", \"TARGET_NAME\":\"${WF_CXL_MSG} slot${slot_id} instance_num${instance_num}\"}"
+	elif [ "${RESULT}" == "${SUCCESS_MSG}" ]; then
+		log-create ${UpdateSuccessful} --json "{\"TARGET_NAME\":\"${WF_CXL_MSG} slot${slot_id} instance_num${instance_num}\", \"IMAGE_DATA\":\"${pldm_image}\"}"
+	fi
+}
 
 show_usage() {
     echo "Usage: cxl-fw-update.sh <slot_id> (<instance_num>) <pldm image>"
@@ -28,7 +51,6 @@ show_usage() {
 
 wait_for_update_complete() {
     local counter=0
-    local update_success=false
     while true;
     do
         sleep 5
@@ -36,15 +58,12 @@ wait_for_update_complete() {
         progress=$(busctl get-property xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Software.ActivationProgress Progress --timeout=120 2>&1 | cut -d " " -f 2)
         if [ "${progress}" == 100 ]; then
             echo -ne \\n"Update done."\\n
-            update_success=true
             return 0
-            break
         fi
         counter=$((counter+5))
         if [ "${counter}" == 400 ]; then
             echo -ne \\n"Time out. Fail"\\n
             return $FAIL_TO_UPDATE_WF_CXL_TIME_OUT_ERROR
-            break
         fi
     done
 }
@@ -156,6 +175,7 @@ update_cxl() {
 		sleep 10
         if ! busctl set-property xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Software.Activation RequestedActivation s "xyz.openbmc_project.Software.Activation.RequestedActivations.Active" --timeout=120 2>&1; then
             echo "Failed to set RequestedActivation. Exit with error code: $FAIL_TO_UPDATE_PLDM_FAIL_TO_SET_REQUESTED_ACTIVATION"
+            add_result_sel "${FAILURE_MSG}"
             exit "$FAIL_TO_UPDATE_PLDM_FAIL_TO_SET_REQUESTED_ACTIVATION"
         fi
         wait_for_update_complete
@@ -233,10 +253,13 @@ fi
 
 [ ! -f "$pldm_image" ] && error_and_exit
 
+add_init_sel
+
 pldm_fw_identify "$pldm_image"
 ident_result=$?
 if [ $ident_result -eq $PLDM_FW_IDENT_FAIL ]; then
     echo "This image is not compatible with CXL"
+    add_result_sel "${FAILURE_MSG}"
     exit "$INVALID_INPUT"
 fi
 
@@ -246,11 +269,13 @@ if [ $# -eq 3 ] && [[ "$instance_num" =~ ^[1-2]$ ]]; then
     pldm_image="${pldm_image}_re_wrapped"
 else
     echo "Instance number must between 1 and 2."
+    add_result_sel "${FAILURE_MSG}"
     exit "$INVALID_INPUT"
 fi
 
 if ! systemctl is-active --quiet pldmd; then
     echo "STOP. PLDM service is not running. Please check pldmd status."
+    add_result_sel "${FAILURE_MSG}"
     exit "$FAIL_TO_UPDATE_WF_CXL_PLDM_SERVICE_NOT_RUNING"
 fi
 
@@ -263,6 +288,7 @@ if ! echo "$mctp_output" | grep -qE "/au/com/codeconstruct/mctp1/networks/1/endp
   echo "WARNING! The CXL EID $((slot_id * 10 + (instance_num == 1 ? CXL1_EID_suffix : CXL2_EID_suffix))) does not exist."
   if ! echo "$mctp_output" | grep -qE "/au/com/codeconstruct/mctp1/networks/1/endpoints/$((slot_id * 10 + (WF_EID_suffix)))"; then
     echo "Not allowed. The WF EID $((slot_id * 10 + (WF_EID_suffix))) does not exist."
+    add_result_sel "${FAILURE_MSG}"
     exit "$FAIL_TO_UPDATE_WF_EID_DOES_NOT_EXIST"
   fi
 fi
@@ -277,20 +303,30 @@ busctl get-property xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$pre
 ret=$?
     if [ "$ret" -eq 0 ]; then
         echo "It can only be updated one BIC at a time. Please wait until the software update is completed."
+        add_result_sel "${FAILURE_MSG}"
         exit "$FAIL_TO_UPDATE_WF_CXL_CAN_ONLY_UPDATE_ONE_BIC_AT_A_TIME"
     fi
 fi
 
 
 retry_update_cxl
+ret=$?
+if [ "$ret" -ne 0 ]; then
+    echo "Firmware update failed after retries. Exit code: $ret"
+    add_result_sel "${FAILURE_MSG}"
+    flock -u 200
+    exit "$ret"
+fi
 
 busctl call xyz.openbmc_project.PLDM /xyz/openbmc_project/software/"$software_id" xyz.openbmc_project.Object.Delete Delete --timeout=120 2>&1
 ret=$?
 if [ "$ret" -ne 0 ]; then
     echo "Failed to delete software id: Exit code $ret"
+    add_result_sel "${FAILURE_MSG}"
     exit "$FAIL_TO_UPDATE_WF_CXL_FAIL_TO_DELETE_SOFTWARE_ID"
 fi
 
+add_result_sel "${SUCCESS_MSG}"
 echo "Done. If there was no error appeared, please conduct DC cycle to load the new firmware."
 
 #unlock

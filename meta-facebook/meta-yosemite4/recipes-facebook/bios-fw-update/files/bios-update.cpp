@@ -87,67 +87,74 @@ bool BIOSupdater::run()
         return (ret < 0) ? false : true;
     }
 
-    // raw image validation
-    std::ifstream imageFile(imagePath, std::ios::binary);
-    if (!imageFile)
+    if (!forceFlag)
     {
-        std::cerr << "Failed to open image file: " << imagePath << std::endl;
-        return false;
-    }
-    imageFile.seekg(0x61000);
-    size_t pos = imageFile.tellg();
-    if (pos != 0x61000)
-    {
-        std::cerr << "Invalid image file: " << imagePath << std::endl;
-        return false;
-    }
-    uint32_t signature = 0;
-    if (imageFile.read(reinterpret_cast<char*>(&signature), sizeof(signature)))
-    {
-        if (signature != 0x50535024)
+        // raw image validation
+        std::ifstream imageFile(imagePath, std::ios::binary);
+        if (!imageFile)
+        {
+            std::cerr << "Failed to open image file: " << imagePath
+                      << std::endl;
+            return false;
+        }
+        imageFile.seekg(0x61000);
+        size_t pos = imageFile.tellg();
+        if (pos != 0x61000)
         {
             std::cerr << "Invalid image file: " << imagePath << std::endl;
             return false;
         }
-    }
-    // TURIN target validation
-    std::cout << "Start to validate TURIN target image...\n";
-    std::cout << "Notice: validation period may take up to 6 minutes...\n";
-    imageFile.seekg(0, std::ios::end);
-    pos = std::min(imageFile.tellg(), std::streampos(0x1000000));
-    bool isTurin = false;
-    for (size_t offset = pos - 12; offset > 0; offset--)
-    {
-        imageFile.seekg(offset);
+        uint32_t signature = 0;
         if (imageFile.read(reinterpret_cast<char*>(&signature),
                            sizeof(signature)))
         {
-            if (signature == 0x44494624) // "$FID"
+            if (signature != 0x50535024)
             {
-                imageFile.seekg(3, std::ios::cur);
-                char cpu[6] = {0};
-                if (!imageFile.read(cpu, sizeof(cpu) - 1))
-                {
-                    std::cerr << "Failed to read CPU type from image file: "
-                              << imagePath << std::endl;
-                    return false;
-                }
-                if (strcmp(cpu, "0ACST") != 0) // "TURIN"
-                {
-                    std::cerr << "Wrong CPU target image file: " << imagePath
-                              << std::endl;
-                    return false;
-                }
-                isTurin = true;
-                break;
+                std::cerr << "Invalid image file: " << imagePath << std::endl;
+                return false;
             }
         }
-    }
-    imageFile.close();
-    if (!isTurin)
-    {
-        std::cerr << "Wrong CPU target image file: " << imagePath << std::endl;
-        return false;
+        // TURIN target validation
+        std::cout << "Start to validate TURIN target image...\n";
+        std::cout << "Notice: validation period may take up to 6 minutes...\n";
+        imageFile.seekg(0, std::ios::end);
+        pos = std::min(imageFile.tellg(), std::streampos(0x1000000));
+        bool isTurin = false;
+        for (size_t offset = pos - 12; offset > 0; offset--)
+        {
+            imageFile.seekg(offset);
+            if (imageFile.read(reinterpret_cast<char*>(&signature),
+                               sizeof(signature)))
+            {
+                if (signature == 0x44494624) // "$FID"
+                {
+                    imageFile.seekg(3, std::ios::cur);
+                    char cpu[6] = {0};
+                    if (!imageFile.read(cpu, sizeof(cpu) - 1))
+                    {
+                        std::cerr << "Failed to read CPU type from image file: "
+                                  << imagePath << std::endl;
+                        return false;
+                    }
+                    if (strcmp(cpu, "0ACST") != 0) // "TURIN"
+                    {
+                        std::cerr
+                            << "Wrong CPU target image file: " << imagePath
+                            << std::endl;
+                        return false;
+                    }
+                    isTurin = true;
+                    break;
+                }
+            }
+        }
+        imageFile.close();
+        if (!isTurin)
+        {
+            std::cerr << "Wrong CPU target image file: " << imagePath
+                      << std::endl;
+            return false;
+        }
     }
     int ret = 0;
 
@@ -239,6 +246,7 @@ int main(int argc, char** argv)
     uint8_t slotId;
     std::string cpuType = "ALL";
     bool eraseFlag = false;
+    bool forceFlag = false;
 
     CLI::App app{"Update or erase the firmware BIOS via USB to BIC"};
 
@@ -252,6 +260,9 @@ int main(int argc, char** argv)
                    "BERGAMO or TURIN or TURINES. Update both blocks if it is not set.");
 
     app.add_flag("--erase", eraseFlag, "Erase BIOS flash only (do not update)");
+
+    app.add_flag("--force", forceFlag,
+                 "Force to update BIOS (skip validation)");
 
     CLI11_PARSE(app, argc, argv);
 
@@ -414,7 +425,7 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    auto bios = BIOSupdater(bus, imagePath, slotId, cpuType);
+    auto bios = BIOSupdater(bus, imagePath, slotId, cpuType, forceFlag);
     if (bios.run())
     {
         std::cerr << "BIOS update: success\n";

@@ -104,7 +104,20 @@ wedge_slot_id() {
 
 wedge_board_rev() {
     # Assume P1
-    return 1
+    echo 'P1'
+    return 0
+}
+
+wedge_board_type_rev() {
+    board_type=$(wedge_board_type)
+    board_rev=$(wedge_board_rev)
+
+    if [ -z "$board_type" ] || [ -z "$board_rev" ]; then
+        echo "Error: Unable to determine board type or revision!"
+        return 1
+    fi
+
+    echo "${board_type}_${board_rev}"
 }
 
 wedge_should_enable_oob() {
@@ -294,7 +307,7 @@ maybe_enable_isl_wp() {
     then
         return 0
     fi
-    
+
     # Disable all writes except for WRITE_PROTECT, OPERATION, and PAGE
     i2cset -f -y "$bus" "$dev" "$WRITE_PROTECT_REG" 0x40
 }
@@ -308,7 +321,7 @@ maybe_disable_isl_wp() {
     then
         return 0
     fi
-    
+
     # Enable all writes
     i2cset -f -y "$bus" "$dev" 0x10 0x0
 }

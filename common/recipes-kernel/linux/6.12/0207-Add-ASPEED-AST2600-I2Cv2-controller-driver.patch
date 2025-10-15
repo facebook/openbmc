@@ -1,4 +1,4 @@
-From 0b165e6245d11c4b554ac452e5d2b51adb34fbdb Mon Sep 17 00:00:00 2001
+From 424a7c1124e635870a4fdaee77c09427f8d554ec Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Tue, 29 Oct 2024 09:43:50 +0800
 Subject: [PATCH 207/216] Add ASPEED AST2600 I2Cv2 controller driver
@@ -11,8 +11,8 @@ https://lore.kernel.org/lkml/20241007035235.2254138-1-ryan_chen@aspeedtech.com/
  arch/arm/boot/dts/aspeed/aspeed-g6.dtsi |   85 +-
  drivers/i2c/busses/Kconfig              |   11 +
  drivers/i2c/busses/Makefile             |    1 +
- drivers/i2c/busses/i2c-ast2600.c        | 1743 +++++++++++++++++++++++
- 4 files changed, 1808 insertions(+), 32 deletions(-)
+ drivers/i2c/busses/i2c-ast2600.c        | 1741 +++++++++++++++++++++++
+ 4 files changed, 1806 insertions(+), 32 deletions(-)
  create mode 100644 drivers/i2c/busses/i2c-ast2600.c
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
@@ -255,10 +255,10 @@ index ecc07c50f2a0..be83654bec62 100644
  ifeq ($(CONFIG_I2C_AT91_SLAVE_EXPERIMENTAL),y)
 diff --git a/drivers/i2c/busses/i2c-ast2600.c b/drivers/i2c/busses/i2c-ast2600.c
 new file mode 100644
-index 000000000000..d89f799550ae
+index 000000000000..35c1461ae4d7
 --- /dev/null
 +++ b/drivers/i2c/busses/i2c-ast2600.c
-@@ -0,0 +1,1743 @@
+@@ -0,0 +1,1741 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
 + * ASPEED AST2600 new register set I2C controller driver
@@ -1969,15 +1969,13 @@ index 000000000000..d89f799550ae
 +	return 0;
 +}
 +
-+static int ast2600_i2c_remove(struct platform_device *pdev)
++static void ast2600_i2c_remove(struct platform_device *pdev)
 +{
 +	struct ast2600_i2c_bus *i2c_bus = platform_get_drvdata(pdev);
 +
 +	/* Disable everything. */
 +	writel(0, i2c_bus->reg_base + AST2600_I2CC_FUN_CTRL);
 +	writel(0, i2c_bus->reg_base + AST2600_I2CM_IER);
-+
-+	return 0;
 +}
 +
 +static const struct of_device_id ast2600_i2c_bus_of_table[] = {

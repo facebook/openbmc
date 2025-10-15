@@ -1,4 +1,4 @@
-From 65a5304e3394d3b9d1f7eb623489de0ea6a30e0d Mon Sep 17 00:00:00 2001
+From 27ca462b394facd0a69797f8ab4ae853834d62e4 Mon Sep 17 00:00:00 2001
 From: Johnny Huang <johnny_huang@aspeedtech.com>
 Date: Mon, 26 Dec 2022 10:04:48 +0800
 Subject: [PATCH 215/216] drivers/misc: Add Aspeed OTP control register
@@ -13,9 +13,9 @@ Change-Id: Ic2e8c2bf829dbde4d4e437c97edcc0a4591bcb46
  arch/arm/boot/dts/aspeed/aspeed-g6.dtsi |   6 +
  drivers/soc/aspeed/Kconfig              |   4 +
  drivers/soc/aspeed/Makefile             |   1 +
- drivers/soc/aspeed/aspeed-otp.c         | 637 ++++++++++++++++++++++++
+ drivers/soc/aspeed/aspeed-otp.c         | 625 ++++++++++++++++++++++++
  include/uapi/linux/aspeed-otp.h         |  39 ++
- 5 files changed, 687 insertions(+)
+ 5 files changed, 675 insertions(+)
  create mode 100644 drivers/soc/aspeed/aspeed-otp.c
  create mode 100644 include/uapi/linux/aspeed-otp.h
 
@@ -62,10 +62,10 @@ index 5f61bb4cc36c..224127a1dd55 100644
 +obj-$(CONFIG_ASPEED_OTP)		+= aspeed-otp.o
 diff --git a/drivers/soc/aspeed/aspeed-otp.c b/drivers/soc/aspeed/aspeed-otp.c
 new file mode 100644
-index 000000000000..205ff11f24c9
+index 000000000000..0dd62a21261c
 --- /dev/null
 +++ b/drivers/soc/aspeed/aspeed-otp.c
-@@ -0,0 +1,637 @@
+@@ -0,0 +1,625 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Copyright (C) ASPEED Technology Inc.
@@ -470,18 +470,6 @@ index 000000000000..205ff11f24c9
 +}
 +EXPORT_SYMBOL(otp_read_data_buf);
 +
-+void otp_read_conf_buf(u32 offset, u32 *buf, u32 len)
-+{
-+	int i, j;
-+
-+	aspeed_otp_write(glob_ctx, OTP_PASSWD, OTP_PROTECT_KEY);
-+	otp_soak(glob_ctx, 0);
-+	for (i = offset, j = 0; j < len; i++, j++)
-+		otp_read_conf_dw(glob_ctx, i, &buf[j]);
-+	aspeed_otp_write(glob_ctx, 0, OTP_PROTECT_KEY);
-+}
-+EXPORT_SYMBOL(otp_read_conf_buf);
-+
 +static long otp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 +{
 +	struct miscdevice *c = file->private_data;
@@ -703,7 +691,6 @@ index 000000000000..205ff11f24c9
 +MODULE_AUTHOR("Johnny Huang <johnny_huang@aspeedtech.com>");
 +MODULE_LICENSE("GPL");
 +MODULE_DESCRIPTION("ASPEED OTP Driver");
-\ No newline at end of file
 diff --git a/include/uapi/linux/aspeed-otp.h b/include/uapi/linux/aspeed-otp.h
 new file mode 100644
 index 000000000000..3293555c312c

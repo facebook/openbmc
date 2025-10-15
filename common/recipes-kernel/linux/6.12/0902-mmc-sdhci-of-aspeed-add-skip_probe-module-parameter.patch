@@ -1,7 +1,7 @@
-From fa12c1d1e985f5bfd1be5776a5795512330c12ff Mon Sep 17 00:00:00 2001
+From 4dfe934fa2f0eaafa8ac46c9ce62980b9ba51b86 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Tue, 18 Oct 2022 11:38:44 -0700
-Subject: [PATCH 902/902] mmc: sdhci-of-aspeed: add "skip_probe" module
+Subject: [PATCH 902/903] mmc: sdhci-of-aspeed: add "skip_probe" module
  parameter
 
 Add "skip_probe" module parameter to allow users to skip mmc device

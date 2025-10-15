@@ -1,4 +1,4 @@
-From 88a670e29c7ac14885edec9b69cdbfde4335fc8d Mon Sep 17 00:00:00 2001
+From 8ed0207985adc9fcf1e7bc92b3ddb04769d396e9 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 15:59:10 +0000
 Subject: [PATCH 204/205] Map DBus event to RF MessageID and parse args
@@ -108,10 +108,10 @@ Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
  create mode 100644 test/redfish-core/lib/log_services_test.cpp
 
 diff --git a/config/meson.build b/config/meson.build
-index 9668f5cb..d6c7efd7 100644
+index 61478e9f..b7dc0f42 100644
 --- a/config/meson.build
 +++ b/config/meson.build
-@@ -25,6 +25,7 @@ feature_options = [
+@@ -26,6 +26,7 @@ feature_options = [
      'redfish-aggregation',
      'redfish-allow-deprecated-indicatorled',
      'redfish-allow-deprecated-power-thermal',
@@ -142,10 +142,10 @@ index 407909a1..d849c508 100644
  
  // clang-format on
 diff --git a/meson.build b/meson.build
-index d18e2527..952868f4 100644
+index 79e80c13..36aa17d7 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -426,6 +426,7 @@ srcfiles_bmcweb = files(
+@@ -427,6 +427,7 @@ srcfiles_bmcweb = files(
      'redfish-core/src/subscription.cpp',
      'redfish-core/src/task_messages.cpp',
      'redfish-core/src/update_messages.cpp',
@@ -154,7 +154,7 @@ index d18e2527..952868f4 100644
      'redfish-core/src/utils/json_utils.cpp',
      'redfish-core/src/utils/time_utils.cpp',
 diff --git a/meson.options b/meson.options
-index 5ec28cde..488b3d50 100644
+index bf44d113..58099a87 100644
 --- a/meson.options
 +++ b/meson.options
 @@ -335,6 +335,21 @@ option(

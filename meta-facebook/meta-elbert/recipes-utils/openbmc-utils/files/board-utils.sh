@@ -36,7 +36,6 @@ BOARD_VER_VAL="1.0"
 
 TMP_BIOS_FILE="/tmp/.tmp_bios_image"
 BIOS_VER_CACHE="/mnt/data/.bios_ver.txt"
-BIOS_REGEX="CONFIG_LOCALVERSION"
 
 wedge_iso_buf_enable() {
     return 0
@@ -492,6 +491,11 @@ ABOOT_CONF_START=$(get_section_start aboot_conf)
 FLASH_SIZE=$(get_total_size)
 ABOOT_CONF_SIZE=$(get_section_size aboot_conf)
 SECTION_BLOCK_SIZE=$((0x1000))
+
+BIOS_VER_START=$(get_section_start bios_ver)
+BIOS_VER_SIZE=$(get_section_size bios_ver)
+BIOS_VER_BLOCKS=$((BIOS_VER_SIZE / SECTION_BLOCK_SIZE))
+BIOS_VER_SKIP=$((BIOS_VER_START / SECTION_BLOCK_SIZE))
 
 create_aboot_conf_image() {
     local conf_file="$1"

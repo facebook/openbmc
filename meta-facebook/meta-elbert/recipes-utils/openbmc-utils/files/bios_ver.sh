@@ -29,8 +29,10 @@ cleanup() {
 
 if [ ! -f "$BIOS_VER_CACHE" ]; then
     # force read it
-    bios_util.sh read "$TMP_BIOS_FILE" > /dev/null 2>&1
-    ver=$(grep -a "$BIOS_REGEX" "$TMP_BIOS_FILE" | awk -F'[/=/"]' '{print $3}')
+    bios_util.sh read "$TMP_BIOS_FILE" --partition bios_ver > /dev/null 2>&1
+    ver=$(dd if="$TMP_BIOS_FILE" bs="$SECTION_BLOCK_SIZE" count="$BIOS_VER_BLOCKS" \
+          skip="$BIOS_VER_SKIP" 2>/dev/null | grep -a "CONFIG_LOCALVERSION" \
+          | awk -F'[/=/"]' '{print $3}')
     if [ -z "$ver" ]; then
         ver="UNKNOWN"
     fi

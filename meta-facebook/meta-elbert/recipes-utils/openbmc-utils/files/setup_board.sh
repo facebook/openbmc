@@ -27,4 +27,6 @@
 ### END INIT INFO
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
+# Obtain bios version on boot so it is readily available for REST calls
+/usr/local/bin/bios_ver.sh
 

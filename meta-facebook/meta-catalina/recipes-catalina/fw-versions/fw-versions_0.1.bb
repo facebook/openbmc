@@ -22,22 +22,6 @@ FW_TOOLS = "\
     pdb-vr-n2,platform-sys-init.service,,multi-user.target,0 \
     scm-cpld,platform-sys-init.service,,multi-user.target,0 \
     hdd-cpld,platform-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-bmc-0,platform-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-cpld-0,platform-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-cpu-0,platform-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-cpu-1,platform-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-erot-bmc-0,platform-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-erot-cpu-0,platform-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-erot-cpu-1,platform-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-erot-fpga-0,platform-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-erot-fpga-1,platform-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-fpga-0,platform-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-fpga-1,platform-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-gpu-0,platform-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-gpu-1,platform-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-inforom-gpu-0,platform-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-inforom-gpu-1,platform-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-pcieswitchconfig-0,platform-sys-init.service,,multi-user.target,0 \
 "
 
 # Append HDD-specific services for clemente, enabling support for two HDDs
@@ -51,14 +35,6 @@ FW_TOOLS:remove:clemente = " \
     pdb-cpld,platform-sys-init.service,,multi-user.target,0 \
 "
 
-# Append secondary Bianca GPU for clemente
-FW_TOOLS:append:clemente = " \
-    hmc-hgx-fw-gpu-2,platform-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-fw-gpu-3,platform-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-inforom-gpu-2,platform-sys-init.service,,multi-user.target,0 \
-    hmc-hgx-inforom-gpu-3,platform-sys-init.service,,multi-user.target,0 \
-"
-
 LOCAL_URI = " \
     file://fw-versions@.service \
     ${@ ' '.join([ f"file://" + x.split(',')[0] for x in d.getVar('FW_TOOLS', True).split() ])} \
@@ -67,7 +43,6 @@ LOCAL_URI = " \
 RDEPENDS:${PN}:append = " \
     bash \
     fw-util \
-    hmc-util \
 "
 
 FILES:${PN}:append = " \

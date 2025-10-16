@@ -29,6 +29,13 @@ check_uptime_and_pldmd_conservative() {
 		fi
 	fi
 
+	if [ $# -eq 4 ] && [ "$2" == "--rcvy" ]; then
+		echo "Recover and then update one BIC by uart mode, skip pldmd status check."
+		echo "Pre-check passed (conservative)."
+		echo "==============================="
+		return 0
+	fi
+
 	if ! systemctl is-active --quiet pldmd; then
 		echo "BLOCK: pldmd is not active. Please run 'systemctl start pldmd' and retry after about 3 minutes."
 		exit $PRECHECK_PLDMD_INACTIVE
@@ -72,7 +79,7 @@ check_uptime_and_pldmd_conservative() {
 	return 0
 }
 
-check_uptime_and_pldmd_conservative
+check_uptime_and_pldmd_conservative "$@"
 
 RETRY_UPDATE_COUNT=200
 MAX_RETRIES=3
@@ -603,7 +610,7 @@ recover_and_update_bic_by_uart() {
     --cs 0 \
     --comport /dev/ttyS$uart_num \
 	--baudrate 115200   \
-    --input_image $bic_image
+    --input_image "$bic_image"
 	sleep 5
 
 	# Notify Nuvoton MGM CPLD to change baud rate to 57600
@@ -1294,7 +1301,7 @@ elif [ $# -eq 4 ] && [ "$2" == "--rcvy" ]; then
 	bic_image=$4
 
 	#Aspeed tool requires ast1030_uart_fw.bin to be in the Work directory
-	ln -s /usr/bin/ast1030_uart_fw.bin $(pwd)/ast1030_uart_fw.bin
+	ln -s /usr/bin/ast1030_uart_fw.bin "$(pwd)/ast1030_uart_fw.bin"
 	
 	echo "Start recover and update  $slot_id $bic_name BIC via UART"
 	case $bic_name in
@@ -1308,7 +1315,7 @@ elif [ $# -eq 4 ] && [ "$2" == "--rcvy" ]; then
 		ret=$?
 		;;
 	esac
-	rm $(pwd)/ast1030_uart_fw.bin
+	rm "$(pwd)/ast1030_uart_fw.bin"
 elif [ $# -eq 3 ] && [[ "$2" =~ ^[1-8]+$ ]]; then
 	slot_id=$2
 	pldm_image=$3

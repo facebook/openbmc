@@ -6273,7 +6273,7 @@ pal_read_bic_sensor(uint8_t fru, uint8_t sensor_num, ipmi_extend_sensor_reading_
 
   //check snr number first. If it not holds, it will move on
   if (sensor_num < sensor_base->base_1ou || (((board_type[fru-1] & DPV2_X16_BOARD) == DPV2_X16_BOARD) && (board_type[fru-1] != UNKNOWN_BOARD) &&
-      (sensor_num >= BIC_DPV2_SENSOR_DPV2_2_12V_VIN && sensor_num <= BIC_DPV2_SENSOR_DPV2_2_HSM_TEMP))) { //server board
+      (sensor_num >= BIC_DPV2_SENSOR_DPV2_2_12V_VIN && sensor_num <= BIC_DPV2_SENSOR_DPV2_2_HSM_SOC_TEMP))) { //server board
     ret = bic_get_sensor_reading(fru, sensor_num, sensor, NONE_INTF);
     bic_ou_status = ret;
   } else if ( (sensor_num < sensor_base->base_2ou) && (bmc_location != NIC_BMC) && //1OU

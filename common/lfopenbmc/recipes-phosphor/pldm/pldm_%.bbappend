@@ -23,6 +23,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0017-common-Add-blocking-instance-ID-allocation.patch \
     file://0018-requester-Always-re-initialize-MCTP-info.patch \
     file://0019-platform-mc-Add-retries-for-terminus-discovery.patch \
+    file://0020-platform-mc-Make-fallback-terminus-name-optional.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

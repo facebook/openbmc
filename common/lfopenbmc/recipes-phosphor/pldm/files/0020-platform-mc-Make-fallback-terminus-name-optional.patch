@@ -1,0 +1,99 @@
+From 918472143c08f194f6d409595cc3aa4a7e6e84b7 Mon Sep 17 00:00:00 2001
+From: Eric Yang <eric.yang.wiwynn@gmail.com>
+Date: Mon, 13 Oct 2025 11:10:37 +0000
+Subject: [PATCH] platform-mc: Make fallback terminus name optional
+
+Previously, since commit `platform-mc: Use a default terminus name if
+empty` [1], a fallback name in the format "Terminus_{tid}" was always
+used when `findTerminusName()` did not return a valid name.
+
+This commit makes that behavior optional, allowing platforms to disable
+fallback terminus naming via the `enable_fallback_terminus_name` option.
+
+Scope and behavior:
+- If either ENTITY_AUXILIARY_NAMES_PDR or EM (Entity Manager) provides a
+  terminus name, that name is used.
+- If neither PDR nor EM provides a terminus name:
+  - When `enable-fallback-terminus-name=enabled` (default), pldmd uses
+    "Terminus_{tid}" and proceeds to create inventory and sensors.
+  - When `enable-fallback-terminus-name=disabled`, pldmd skips inventory
+      path creation and sensor creation for that terminus.
+
+Motivation:
+For certain platform requirements, some PLDM termini do not provide
+terminus names and rely on PLDM solely for firmware update flows.
+Sensor probing for these devices is expected to be handled entirely
+through BMC-side configurations, using EM configuration and having
+sensors created via dbus-sensors rather than relying on terminus
+responses.
+
+In such cases, automatic sensor probing via PLDM when the terminus name
+is missing may lead to unintended behavior, such as unmanaged or
+duplicate sensors. By making the fallback terminus name optional,
+platforms can choose to skip sensor creation when a terminus name is
+not available, ensuring better alignment with platform-specific sensor
+management strategies.
+
+[1]: https://gerrit.openbmc.org/c/openbmc/pldm/+/84134
+
+Change-Id: I250e3927081344f5211b6c486ac4ecfa9a1a6410
+Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
+---
+ meson.build              | 4 ++++
+ meson.options            | 8 ++++++++
+ platform-mc/terminus.cpp | 7 +++++++
+ 3 files changed, 19 insertions(+)
+
+diff --git a/meson.build b/meson.build
+index bee9e21..41821bb 100644
+--- a/meson.build
++++ b/meson.build
+@@ -150,6 +150,10 @@ conf_data.set(
+     'TERMINUS_DISCOVERY_RETRY_COUNT',
+     get_option('terminus-discovery-retry-count'),
+ )
++conf_data.set(
++    'ENABLE_FALLBACK_TERMINUS_NAME',
++    get_option('enable-fallback-terminus-name').enabled(),
++)
+ 
+ configure_file(output: 'config.h', configuration: conf_data)
+ 
+diff --git a/meson.options b/meson.options
+index e7d12e7..6654aa0 100644
+--- a/meson.options
++++ b/meson.options
+@@ -257,3 +257,11 @@ option(
+     value: 0,
+     description: 'Per-endpoint retry attempts for terminus discovery on failures. Initial attempt not counted; 0 disables retries.',
+ )
++
++# This option allows platforms to control whether a fallback terminus name is used when none is provided.
++option(
++    'enable-fallback-terminus-name',
++    type: 'feature',
++    value: 'enabled',
++    description: 'Enable fallback terminus name "Terminus_{tid}" when no terminus name is found.',
++)
+diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
+index 3f96b15..119e9ac 100644
+--- a/platform-mc/terminus.cpp
++++ b/platform-mc/terminus.cpp
+@@ -216,7 +216,14 @@ void Terminus::parseTerminusPDRs()
+ 
+     if (terminusName.empty())
+     {
++#ifdef ENABLE_FALLBACK_TERMINUS_NAME
+         terminusName = std::format("Terminus_{}", tid);
++#else
++        lg2::error(
++            "Terminus ID {TID}: DOES NOT have name. Skip Adding sensors.",
++            "TID", tid);
++        return;
++#endif
+     }
+ 
+     if (createInventoryPath(terminusName))
+-- 
+2.43.0
+

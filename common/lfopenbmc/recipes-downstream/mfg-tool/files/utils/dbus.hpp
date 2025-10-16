@@ -2,6 +2,7 @@
 #include <xyz/openbmc_project/Common/Threshold/client.hpp>
 #include <xyz/openbmc_project/Control/FanPwm/client.hpp>
 #include <xyz/openbmc_project/Control/Mode/client.hpp>
+#include <xyz/openbmc_project/Control/Valve/client.hpp>
 #include <xyz/openbmc_project/Debug/Pid/Zone/client.hpp>
 #include <xyz/openbmc_project/Inventory/Decorator/Asset/client.hpp>
 #include <xyz/openbmc_project/Inventory/Item/client.hpp>
@@ -17,7 +18,6 @@
 #include <xyz/openbmc_project/State/Chassis/client.hpp>
 #include <xyz/openbmc_project/State/Host/client.hpp>
 #include <xyz/openbmc_project/State/Leak/Detector/client.hpp>
-#include <xyz/openbmc_project/Control/Valve/client.hpp>
 
 #include <string>
 
@@ -189,7 +189,6 @@ namespace valve
 using Proxy = sdbusplus::client::xyz::openbmc_project::control::Valve<>;
 static constexpr auto interface = Proxy::interface;
 } // namespace valve
-
 
 } // namespace control
 

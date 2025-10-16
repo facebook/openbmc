@@ -20,7 +20,8 @@ struct command
     void init(CLI::App& app)
     {
         auto cmd = app.add_subcommand("fan-speed", "Manipulate the fan mode");
-        cmd->add_option("-t,--target", arg_target, "Desired PWM percentage")->check(CLI::Range(0,100));
+        cmd->add_option("-t,--target", arg_target, "Desired PWM percentage")
+            ->check(CLI::Range(0, 100));
         cmd->add_option("-p,--position", arg_position, "Fan position");
 
         init_callback(cmd, *this);
@@ -36,7 +37,7 @@ struct command
 
         auto result = json::empty_map();
         auto pwm_tach_value = std::vector<std::pair<std::string, js>>{};
-		
+
         debug("Finding Control.FanPwm objects.");
         co_await subtree_for_each(
             ctx, "/", control::fan_pwm::interface,
@@ -84,7 +85,8 @@ struct command
                     sensor::Proxy(ctx).service(service).path(sensor_path);
 
                 result_json["current"] = co_await sensor.value();
-                pwm_tach_value.emplace_back(fan_name, std::move(result[fan_name]));
+                pwm_tach_value.emplace_back(fan_name,
+                                            std::move(result[fan_name]));
             });
 
         debug("Finding Sensor objects in Tach namespace.");
@@ -119,7 +121,8 @@ struct command
 
                 auto sensor =
                     sensor::Proxy(ctx).service(service).path(path.str);
-                pwm_tach_value.emplace_back(fan_name, js{{tach_shortname, co_await sensor.value()}});
+                pwm_tach_value.emplace_back(
+                    fan_name, js{{tach_shortname, co_await sensor.value()}});
             });
         json::sort_json_values(pwm_tach_value);
         auto json_result = json::merge_duplicate_keys_to_json(pwm_tach_value);

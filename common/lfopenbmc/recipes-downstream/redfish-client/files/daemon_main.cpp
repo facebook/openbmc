@@ -18,7 +18,8 @@ int main(int argc, const char** argv)
     std::string configDir;
     std::string persistDir;
     CLI::App app{"daemon that runs as a redfish client talking to SMC"};
-    app.add_option("config-dir", configDir, "config file directory")->required();
+    app.add_option("config-dir", configDir, "config file directory")
+        ->required();
     app.add_option("-p,--persist-dir", persistDir,
                    "directory where persist data can be stored");
     CLI11_PARSE(app, argc, argv);

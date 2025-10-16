@@ -1,6 +1,7 @@
 #pragma once
 
 #include <nlohmann/json.hpp>
+
 #include <regex>
 namespace mfgtool
 {
@@ -14,6 +15,7 @@ inline auto empty_map()
     return R"({})"_json;
 }
 void sort_json_values(std::vector<std::pair<std::string, js>>& values);
-ordered_js merge_duplicate_keys_to_json(const std::vector<std::pair<std::string, js>>& values);
+ordered_js merge_duplicate_keys_to_json(
+    const std::vector<std::pair<std::string, js>>& values);
 } // namespace json
 } // namespace mfgtool

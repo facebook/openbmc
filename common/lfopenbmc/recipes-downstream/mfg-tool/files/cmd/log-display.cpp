@@ -38,7 +38,7 @@ struct command
 
         auto result = json::empty_map();
         auto log_value = std::vector<std::pair<std::string, js>>{};
-		
+
         debug("Finding log entries.");
         co_await utils::mapper::subtree_for_each(
             ctx, log_entry::ns_path, log_entry::interface,
@@ -133,7 +133,8 @@ struct command
                         redfish["args"] = std::move(args);
                         entry_json["redfish"] = std::move(redfish);
                     }
-                    log_value.emplace_back(std::to_string(properties.id), std::move(entry_json));
+                    log_value.emplace_back(std::to_string(properties.id),
+                                           std::move(entry_json));
                 }
                 catch (...)
                 {

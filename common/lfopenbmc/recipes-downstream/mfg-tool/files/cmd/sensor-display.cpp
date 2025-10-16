@@ -59,10 +59,9 @@ struct command
                     {
                         entry_json["min"] = v;
                     }
-                    entry_json["unit"] =
-                        last_element(sdbusplus::message::convert_to_string(
-                                         properties.unit),
-                                     '.');
+                    entry_json["unit"] = last_element(
+                        sdbusplus::message::convert_to_string(properties.unit),
+                        '.');
                 }
                 catch (const sdbusplus::exception::SdBusError& e)
                 {
@@ -94,8 +93,7 @@ struct command
                         entry_json["high"] = v;
                         update_status<std::greater>(sensor_json, v, "critical");
                     }
-                    if (auto v = properties.hard_shutdown_low;
-                        std::isfinite(v))
+                    if (auto v = properties.hard_shutdown_low; std::isfinite(v))
                     {
                         entry_json["low"] = v;
                         update_status<std::less>(sensor_json, v, "critical");
@@ -125,14 +123,12 @@ struct command
                             path.str);
                     auto properties = co_await proxy.properties();
 
-                    if (auto v = properties.critical_high;
-                        std::isfinite(v))
+                    if (auto v = properties.critical_high; std::isfinite(v))
                     {
                         entry_json["high"] = v;
                         update_status<std::greater>(sensor_json, v, "critical");
                     }
-                    if (auto v = properties.critical_low;
-                        std::isfinite(v))
+                    if (auto v = properties.critical_low; std::isfinite(v))
                     {
                         entry_json["low"] = v;
                         update_status<std::less>(sensor_json, v, "critical");
@@ -162,8 +158,7 @@ struct command
                             path.str);
                     auto properties = co_await proxy.properties();
 
-                    if (auto v = properties.warning_high;
-                        std::isfinite(v))
+                    if (auto v = properties.warning_high; std::isfinite(v))
                     {
                         entry_json["high"] = v;
                         update_status<std::greater>(sensor_json, v, "warning");
@@ -258,10 +253,9 @@ struct command
                     {
                         entry_json["min"] = v;
                     }
-                    entry_json["unit"] =
-                        last_element(sdbusplus::message::convert_to_string(
-                                         properties.unit),
-                                     '.');
+                    entry_json["unit"] = last_element(
+                        sdbusplus::message::convert_to_string(properties.unit),
+                        '.');
                 }
                 catch (const sdbusplus::exception::SdBusError& e)
                 {

@@ -1,8 +1,8 @@
+#include <cstdint>
 #include <fstream>
 #include <functional>
 #include <iostream>
 #include <string>
-#include <cstdint>
 
 #define VERSION_LENGTH_OFFSET 0x23
 #define VERSION_START_OFFSET 0x24
@@ -36,7 +36,8 @@ size_t calculateHash(const std::string& image)
     file.seekg(VERSION_LENGTH_OFFSET);
     if (!file)
     {
-        std::cerr << "Failed to seek to offset " << std::hex << VERSION_LENGTH_OFFSET << std::endl;
+        std::cerr << "Failed to seek to offset " << std::hex
+                  << VERSION_LENGTH_OFFSET << std::endl;
         return 0;
     }
 
@@ -48,7 +49,8 @@ size_t calculateHash(const std::string& image)
     file.seekg(VERSION_START_OFFSET);
     if (!file)
     {
-        std::cerr << "Failed to seek to offset " << std::hex << VERSION_START_OFFSET << std::endl;
+        std::cerr << "Failed to seek to offset " << std::hex
+                  << VERSION_START_OFFSET << std::endl;
         return 0;
     }
 

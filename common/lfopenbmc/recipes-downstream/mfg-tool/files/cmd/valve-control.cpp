@@ -20,20 +20,21 @@ enum class action
 
 enum class direction
 {
-  supplyDirection,
-  returnDirection
+    supplyDirection,
+    returnDirection
 };
 
 struct command
 {
     void init(CLI::App& app)
     {
-        auto cmd = app.add_subcommand("valve-control", "Manipulate valve open/close state");
+        auto cmd = app.add_subcommand("valve-control",
+                                      "Manipulate valve open/close state");
 
-        cmd->add_option("-p,--position", arg_pos, "Valve position")
-            ->required();
+        cmd->add_option("-p,--position", arg_pos, "Valve position")->required();
 
-        cmd->add_option("-d,--direction", arg_direction, "Valve direction for liquid flow")
+        cmd->add_option("-d,--direction", arg_direction,
+                        "Valve direction for liquid flow")
             ->required()
             ->check(CLI::IsMember(keys(direction_map())));
 
@@ -55,7 +56,8 @@ struct command
 
     static auto direction_map() -> std::map<std::string, direction>
     {
-        return {{"supply", direction::supplyDirection}, {"return", direction::returnDirection}};
+        return {{"supply", direction::supplyDirection},
+                {"return", direction::returnDirection}};
     }
 
     static auto keys(const auto&& m) -> std::vector<std::string>
@@ -76,7 +78,6 @@ struct command
 
             [&](const auto& path,
                 const auto& service) -> sdbusplus::async::task<> {
-
                 if (!path.str.starts_with(ControlPathPrefix))
                 {
                     co_return;
@@ -84,32 +85,37 @@ struct command
 
                 auto pathSuffix = last_element(path);
                 auto lowerPathSuffix = pathSuffix;
-                std::transform(lowerPathSuffix.begin(), lowerPathSuffix.end(), lowerPathSuffix.begin(),
-                    [](unsigned char c) { return std::tolower(c); });
+                std::transform(lowerPathSuffix.begin(), lowerPathSuffix.end(),
+                               lowerPathSuffix.begin(),
+                               [](unsigned char c) { return std::tolower(c); });
 
-                if (!pathSuffix.ends_with(std::format("_{}", arg_pos)) || !lowerPathSuffix.starts_with(arg_direction))
+                if (!pathSuffix.ends_with(std::format("_{}", arg_pos)) ||
+                    !lowerPathSuffix.starts_with(arg_direction))
                 {
                     co_return;
                 }
 
-                auto control = valveControl::Proxy(ctx).service(service).path(path.str);
+                auto control =
+                    valveControl::Proxy(ctx).service(service).path(path.str);
 
                 switch (action_map()[arg_action])
                 {
-                  case action::open:
-                      co_await control.state(valveControl::Proxy::State::Open);
-                      break;
-                  case action::close:
-                      co_await control.state(valveControl::Proxy::State::Close);
-                      break;
+                    case action::open:
+                        co_await control.state(
+                            valveControl::Proxy::State::Open);
+                        break;
+                    case action::close:
+                        co_await control.state(
+                            valveControl::Proxy::State::Close);
+                        break;
                 }
                 result[pathSuffix] = "success";
             });
 
         if (result.empty())
         {
-          json::display("failed");
-          co_return;
+            json::display("failed");
+            co_return;
         }
         json::display(result);
     }

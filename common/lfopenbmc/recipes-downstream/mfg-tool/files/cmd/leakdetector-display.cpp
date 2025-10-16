@@ -18,7 +18,8 @@ struct command
 {
     void init(CLI::App& app)
     {
-        auto cmd = app.add_subcommand("leakdetector-display", "Display leak detectors.");
+        auto cmd = app.add_subcommand("leakdetector-display",
+                                      "Display leak detectors.");
 
         init_callback(cmd, *this);
     }
@@ -28,39 +29,48 @@ struct command
         auto result = json::empty_map();
 
         debug("Finding leak detector entries.");
-        co_await utils::mapper::subtree_for_each(
-            ctx, leakdetector::ns_path, leakdetector::interface,
+        try
+        {
+            co_await utils::mapper::subtree_for_each(
+                ctx, leakdetector::ns_path, leakdetector::interface,
 
-            [&](const auto& path,
-                const auto& service) -> sdbusplus::async::task<> {
-                auto& entry_json = result[last_element(path)];
-                try
-                {
-                    auto proxy =
-                        leakdetector::Proxy(ctx).service(service).path(path.str);
-                    auto properties = co_await proxy.properties();
+                [&](const auto& path,
+                    const auto& service) -> sdbusplus::async::task<> {
+                    auto& entry_json = result[last_element(path)];
+                    try
+                    {
+                        auto proxy =
+                            leakdetector::Proxy(ctx).service(service).path(
+                                path.str);
+                        auto properties = co_await proxy.properties();
 
-                    entry_json["name"] = properties.pretty_name;
+                        entry_json["name"] = properties.pretty_name;
 
-                    auto state = properties.state;
-                    entry_json["status"] = (state == leakdetector::Proxy::DetectorState::Normal ? "ok" : "critical");
-                    entry_json["type"] = "Moisture";
-
-                }
-                catch (const sdbusplus::exception::SdBusError& e)
-                {
-                    warning(
-                        "Failed to get leak detector state: {PATH}, error: {ERROR}",
-                        "PATH", path.str, "ERROR", e);
-                    entry_json["status"] = "dbus error";
-                }
-            });
+                        auto state = properties.state;
+                        entry_json["status"] =
+                            (state == leakdetector::Proxy::DetectorState::Normal
+                                 ? "ok"
+                                 : "critical");
+                        entry_json["type"] = "Moisture";
+                    }
+                    catch (const sdbusplus::exception::SdBusError& e)
+                    {
+                        warning(
+                            "Failed to get leak detector state: {PATH}, error: {ERROR}",
+                            "PATH", path.str, "ERROR", e);
+                        entry_json["status"] = "dbus error";
+                    }
+                });
+        }
+        catch (const sdbusplus::exception::SdBusError& e)
+        {
+            warning("No leak detectors found: {ERROR}", "ERROR", e.what());
+        }
 
         json::display(result);
 
         co_return;
     }
-
 };
 
 MFGTOOL_REGISTER(command);

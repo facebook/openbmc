@@ -1,0 +1,35 @@
+From e065ca8a1962ac62c50d7292df534bd9b1ee25b4 Mon Sep 17 00:00:00 2001
+From: Cosmo Chou <chou.cosmo@gmail.com>
+Date: Thu, 16 Oct 2025 10:00:52 +0800
+Subject: [PATCH 1002/1002] ARM: dts: aspeed: bletchley: remove WDTRST1
+ assertion from wdt1
+
+Remove the external signal configuration from wdt1 to prevent the
+WDTRST1 pin from being asserted during watchdog resets.
+
+Signed-off-by: Cosmo Chou <chou.cosmo@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
+index db3227424..74b0a0a0b 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
+@@ -1100,13 +1100,7 @@ pinctrl_gpiov2_unbiased_default: gpiov2 {
+ 
+ &wdt1 {
+ 	status = "okay";
+-	pinctrl-names = "default";
+-	pinctrl-0 = <&pinctrl_wdtrst1_default>;
+ 	aspeed,reset-type = "soc";
+-	aspeed,external-signal;
+-	aspeed,ext-push-pull;
+-	aspeed,ext-active-high;
+-	aspeed,ext-pulse-duration = <256>;
+ };
+ 
+ &pwm_tach {
+-- 
+2.43.0
+

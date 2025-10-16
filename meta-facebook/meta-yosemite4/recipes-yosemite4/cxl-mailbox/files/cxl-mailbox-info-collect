@@ -1,0 +1,234 @@
+# CXL Mailbox Information Collection Script
+# Usage: cxl-mailbox-info-collect <slot> <device> [--output-path <path_without_extension>] [--keep-temp]
+
+KEEP_TEMP=false
+OUTPUT_PATH_BASE=""
+
+# Check minimum arguments
+if [ $# -lt 2 ]; then
+    echo "Usage: cxl-mailbox-info-collect <slot> <device> [--output-path <path_without_extension>] [--keep-temp]"
+    echo "  slot: 1-8"
+    echo "  device: cxl_1 or cxl_2"
+    echo "  --output-path: Specify full output path WITHOUT .tar.gz extension"
+    echo "                 (default: /home/root/slot<SLOT>_<DEVICE>_mailbox_info_<TIMESTAMP>)"
+    echo "                 Script will automatically append .tar.gz"
+    echo "  --keep-temp: Keep temporary directory after archive creation"
+    exit 1
+fi
+
+SLOT=$1
+DEVICE=$2
+
+# Parse optional arguments
+shift 2
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --keep-temp)
+            KEEP_TEMP=true
+            shift
+            ;;
+        --output-path)
+            if [ -n "$2" ] && [ "${2:0:1}" != "-" ]; then
+                OUTPUT_PATH_BASE="$2"
+                shift 2
+            else
+                echo "Error: --output-path requires a path argument"
+                exit 1
+            fi
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: cxl-mailbox-info-collect <slot> <device> [--output-path <path_without_extension>] [--keep-temp]"
+            exit 1
+            ;;
+    esac
+done
+
+# Validate parameters
+if [ "$SLOT" -lt 1 ] || [ "$SLOT" -gt 8 ]; then
+    echo "Error: slot must be between 1 and 8"
+    exit 1
+fi
+
+if [ "$DEVICE" != "cxl_1" ] && [ "$DEVICE" != "cxl_2" ]; then
+    echo "Error: device must be cxl_1 or cxl_2"
+    exit 1
+fi
+
+# Generate timestamp
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+
+# If output path not specified, use default
+if [ -z "$OUTPUT_PATH_BASE" ]; then
+    OUTPUT_PATH_BASE="/home/root/slot${SLOT}_${DEVICE}_mailbox_info_${TIMESTAMP}"
+fi
+
+# Remove .tar.gz if user accidentally added it
+OUTPUT_PATH_BASE="${OUTPUT_PATH_BASE%.tar.gz}"
+OUTPUT_PATH_BASE="${OUTPUT_PATH_BASE%.tgz}"
+# Extract work directory name from output path base
+WORK_DIR_NAME=$(basename "$OUTPUT_PATH_BASE")
+# Set work directory path
+WORK_DIR="/tmp/${WORK_DIR_NAME}"
+# Construct final output path with .tar.gz extension
+OUTPUT_PATH="${OUTPUT_PATH_BASE}.tar.gz"
+# Extract directory from output path
+OUTPUT_DIR=$(dirname "$OUTPUT_PATH")
+
+# Validate and create output directory if needed
+if [ ! -d "$OUTPUT_DIR" ]; then
+    echo "Output directory does not exist, creating: $OUTPUT_DIR"
+    mkdir -p "$OUTPUT_DIR"
+    if [ $? -ne 0 ]; then
+        echo "Error: Failed to create output directory: $OUTPUT_DIR"
+        exit 1
+    fi
+fi
+
+# Check if output directory is writable
+if [ ! -w "$OUTPUT_DIR" ]; then
+    echo "Error: Output directory is not writable: $OUTPUT_DIR"
+    exit 1
+fi
+
+# Check if work directory already exists
+if [ -d "$WORK_DIR" ]; then
+    echo "Warning: Work directory already exists, removing: $WORK_DIR"
+    rm -rf "$WORK_DIR"
+fi
+
+# Create work directory
+mkdir -p "$WORK_DIR"
+if [ $? -ne 0 ]; then
+    echo "Error: Failed to create work directory: $WORK_DIR"
+    exit 1
+fi
+
+# Calculate EID
+if [ "$DEVICE" = "cxl_1" ]; then
+    EID=$((SLOT * 10 + 4))
+else
+    EID=$((SLOT * 10 + 5))
+fi
+
+# Display start info
+echo "Starting CXL mailbox collection - Slot:$SLOT Device:$DEVICE EID:$EID Timestamp:$TIMESTAMP"
+echo "Work directory: $WORK_DIR"
+echo "Output path: $OUTPUT_PATH"
+
+# Create main log file
+MAIN_LOG="$WORK_DIR/mailbox_info.log"
+echo "CXL Mailbox Information Collection" > "$MAIN_LOG"
+echo "====================================" >> "$MAIN_LOG"
+echo "Slot: $SLOT" >> "$MAIN_LOG"
+echo "Device: $DEVICE" >> "$MAIN_LOG"
+echo "EID: $EID" >> "$MAIN_LOG"
+echo "Timestamp: $TIMESTAMP" >> "$MAIN_LOG"
+echo "Work Directory: $WORK_DIR" >> "$MAIN_LOG"
+echo "Output Path: $OUTPUT_PATH" >> "$MAIN_LOG"
+echo "Keep Temp Directory: $KEEP_TEMP" >> "$MAIN_LOG"
+echo "====================================" >> "$MAIN_LOG"
+echo "" >> "$MAIN_LOG"
+
+# Execute command and log
+execute_command() {
+    local cmd="$1"
+    local log_file="$2"
+    local description="$3"
+    
+    echo "Executing: $description" >> "$MAIN_LOG"
+    echo "Command: $cmd" >> "$MAIN_LOG"
+    echo "Output file: $log_file" >> "$MAIN_LOG"
+    echo "---" >> "$MAIN_LOG"
+    
+    if eval "$cmd" > "$log_file" 2>&1; then
+        echo "SUCCESS: $description completed" >> "$MAIN_LOG"
+    else
+        echo "ERROR: $description failed" >> "$MAIN_LOG"
+    fi
+    echo "" >> "$MAIN_LOG"
+}
+
+# Execute commands
+execute_command \
+    "cxl-mailbox -m $EID get-event-records" \
+    "$WORK_DIR/get-event-records.log" \
+    "Get Event Records"
+
+SUPPORTED_LOGS_FILE="$WORK_DIR/get-supported-logs.log"
+execute_command \
+    "cxl-mailbox -m $EID get-supported-logs" \
+    "$SUPPORTED_LOGS_FILE" \
+    "Get Supported Logs"
+
+echo "Parsing supported logs for dynamic parameters..." >> "$MAIN_LOG"
+
+# Extract UUID and size from supported logs
+LOG_PARAMS=$(grep -E "entries\[[0-9]+\] uuid:" "$SUPPORTED_LOGS_FILE" | \
+    sed -E 's/.*entries\[[0-9]+\] uuid: ([^,]+), size: ([0-9]+).*/\1 \2/')
+
+# Execute get-log commands based on parsed results
+log_count=0
+while IFS=' ' read -r uuid size; do
+    if [ -n "$uuid" ] && [ -n "$size" ]; then
+        log_count=$((log_count + 1))
+        execute_command \
+            "cxl-mailbox -m $EID get-log -l $uuid -s $size" \
+            "$WORK_DIR/get-log-${log_count}.log" \
+            "Get Log $log_count (UUID: $uuid, Size: $size)"
+    fi
+done <<< "$LOG_PARAMS"
+
+execute_command \
+    "cxl-mailbox -m $EID health-counters-get" \
+    "$WORK_DIR/health-counters-get.log" \
+    "Get Health Counters"
+
+execute_command \
+    "cxl-mailbox -m $EID get-cxl-membridge-stats" \
+    "$WORK_DIR/get-cxl-membridge-stats.log" \
+    "Get CXL Membridge Stats"
+
+# Log generated files
+echo "Generated Files:" >> "$MAIN_LOG"
+echo "================" >> "$MAIN_LOG"
+for file in "$WORK_DIR"/*.log; do
+    if [ -f "$file" ] && [ "$(basename "$file")" != "mailbox_info.log" ]; then
+        file_size=$(stat -c%s "$file")
+        echo "$(basename "$file") - Size: $file_size bytes" >> "$MAIN_LOG"
+    fi
+done
+
+# Complete all logging before archiving
+echo "Creating compressed archive..." >> "$MAIN_LOG"
+echo "Archive will be created at: $OUTPUT_PATH" >> "$MAIN_LOG"
+
+if [ "$KEEP_TEMP" = true ]; then
+    echo "Temporary directory will be preserved: $WORK_DIR" >> "$MAIN_LOG"
+else
+    echo "Temporary directory will be cleaned up after archive creation" >> "$MAIN_LOG"
+fi
+
+echo "CXL mailbox information collection completed successfully!" >> "$MAIN_LOG"
+
+# Create archive using -C option to change directory for tar only
+# This avoids using cd command
+if tar -czf "$OUTPUT_PATH" -C /tmp "$WORK_DIR_NAME" 2>/dev/null; then
+    # Output the archive path in a parseable format (for C++ to capture)
+    echo "ARCHIVE_PATH:$OUTPUT_PATH"
+    
+    # Archive created successfully
+    if [ "$KEEP_TEMP" = true ]; then
+        # Keep temporary directory
+        echo "CXL mailbox collection completed - Archive: $OUTPUT_PATH (Temp dir preserved: $WORK_DIR)"
+    else
+        # Clean up temporary directory
+        rm -rf "$WORK_DIR"
+        echo "CXL mailbox collection completed - Archive: $OUTPUT_PATH"
+    fi
+    exit 0
+else
+    echo "ERROR: Failed to create archive at: $OUTPUT_PATH"
+    echo "ERROR: Work directory was: $WORK_DIR"
+    exit 1
+fi

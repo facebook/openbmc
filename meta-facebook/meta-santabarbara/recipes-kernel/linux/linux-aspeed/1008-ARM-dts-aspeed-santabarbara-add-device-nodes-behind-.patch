@@ -1,8 +1,8 @@
-From e393b6b4a4445d457254c8e01c6d4d7df0de347f Mon Sep 17 00:00:00 2001
+From 543943ce58f77320325e62c4972a6e86385ff8d7 Mon Sep 17 00:00:00 2001
 From: "Fred.Chen" <Fred.Chen@quantatw.com>
 Date: Tue, 10 Jun 2025 18:29:38 +0800
-Subject: [PATCH] ARM: dts: aspeed: santabarbara: add device nodes behind the
- i3c hub
+Subject: [PATCH 1008/1008] ARM: dts: aspeed: santabarbara: add device nodes
+ behind the i3c hub
 
 Add device nodes behind the i3c hub. Each hub slave port can be
 configured to use either SMBus or I3C protocol.
@@ -17,7 +17,7 @@ https://lore.kernel.org/all/20250917142055.2806576-2-steven.niu.uj@renesas.com/
  1 file changed, 805 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-index 873aa9ac9329..e2853787606e 100644
+index 66d0d28e5216..698128d0f270 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 @@ -39,6 +39,14 @@ aliases {
@@ -35,7 +35,7 @@ index 873aa9ac9329..e2853787606e 100644
  		i2c48 = &i2c6mux0ch0;
  		i2c49 = &i2c6mux0ch1;
  		i2c50 = &i2c6mux0ch2;
-@@ -1601,6 +1609,803 @@ &i2c15 {
+@@ -1657,6 +1665,803 @@ &i2c15 {
  	status = "okay";
  };
  

@@ -1,21 +1,21 @@
-From 6b3ee117ca4fefe6f5ffec04ebe93feb2eed994f Mon Sep 17 00:00:00 2001
+From dddd09bcda5c3011cf415f4d103898d9001f4e52 Mon Sep 17 00:00:00 2001
 From: Fred Chen <fredchen.openbmc@gmail.com>
-Date: Wed, 6 Aug 2025 15:56:41 +0800
-Subject: [PATCH 1001/1004] ARM: dts: aspeed: santabarbara: add sensor support
+Date: Wed, 17 Sep 2025 13:56:39 +0800
+Subject: [PATCH 1002/1008] ARM: dts: aspeed: santabarbara: Add sensor support
  for extension boards
 
 add power monitor and temperature sensors for extension boards in bus 6,
 8, 10 and 13.
 
+lore link: https://lore.kernel.org/all/20251015143916.1850450-3-fredchen.openbmc@gmail.com/
+
 Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
 ---
-LORE: https://lore.kernel.org/all/20250814131706.1567067-2-fredchen.openbmc@gmail.com/
----
- .../aspeed-bmc-facebook-santabarbara.dts      | 824 ++++++++++++++++++
- 1 file changed, 824 insertions(+)
+ .../aspeed-bmc-facebook-santabarbara.dts      | 848 ++++++++++++++++++
+ 1 file changed, 848 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-index ee93a971c500..2f5712e9ba9f 100644
+index 06924a28553b..015333ad6ed5 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 @@ -39,6 +39,38 @@ aliases {
@@ -57,7 +57,7 @@ index ee93a971c500..2f5712e9ba9f 100644
  	};
  
  	chosen {
-@@ -574,6 +606,204 @@ eeprom@52 {
+@@ -587,6 +619,210 @@ eeprom@52 {
  		compatible = "atmel,24c256";
  		reg = <0x52>;
  	};
@@ -101,6 +101,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +					#address-cells = <1>;
 +					#size-cells = <0>;
 +				};
++
 +				i2c6mux1ch1: i2c@1 {
 +					reg = <1>;
 +					#address-cells = <1>;
@@ -111,7 +112,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +						reg = <0x48>;
 +					};
 +
-+					voltage-sensorr@49 {
++					voltage-sensor@49 {
 +						compatible = "ti,ads7830";
 +						reg = <0x49>;
 +					};
@@ -131,11 +132,13 @@ index ee93a971c500..2f5712e9ba9f 100644
 +						reg = <0x56>;
 +					};
 +				};
++
 +				i2c6mux1ch2: i2c@2 {
 +					reg = <2>;
 +					#address-cells = <1>;
 +					#size-cells = <0>;
 +				};
++
 +				i2c6mux1ch3: i2c@3 {
 +					reg = <3>;
 +					#address-cells = <1>;
@@ -143,6 +146,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +				};
 +			};
 +		};
++
 +		i2c6mux0ch1: i2c@1 {
 +			reg = <1>;
 +			#address-cells = <1>;
@@ -181,6 +185,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +				shunt-resistor = <1000>;
 +			};
 +		};
++
 +		i2c6mux0ch2: i2c@2 {
 +			reg = <2>;
 +			#address-cells = <1>;
@@ -219,6 +224,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +				shunt-resistor = <1000>;
 +			};
 +		};
++
 +		i2c6mux0ch3: i2c@3 {
 +			reg = <3>;
 +			#address-cells = <1>;
@@ -262,7 +268,7 @@ index ee93a971c500..2f5712e9ba9f 100644
  };
  
  &i2c7 {
-@@ -588,6 +818,204 @@ eeprom@52 {
+@@ -601,6 +837,210 @@ eeprom@52 {
  		compatible = "atmel,24c256";
  		reg = <0x52>;
  	};
@@ -306,6 +312,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +					#address-cells = <1>;
 +					#size-cells = <0>;
 +				};
++
 +				i2c8mux1ch1: i2c@1 {
 +					reg = <1>;
 +					#address-cells = <1>;
@@ -316,7 +323,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +						reg = <0x48>;
 +					};
 +
-+					voltage-sensorr@49 {
++					voltage-sensor@49 {
 +						compatible = "ti,ads7830";
 +						reg = <0x49>;
 +					};
@@ -336,11 +343,13 @@ index ee93a971c500..2f5712e9ba9f 100644
 +						reg = <0x56>;
 +					};
 +				};
++
 +				i2c8mux1ch2: i2c@2 {
 +					reg = <2>;
 +					#address-cells = <1>;
 +					#size-cells = <0>;
 +				};
++
 +				i2c8mux1ch3: i2c@3 {
 +					reg = <3>;
 +					#address-cells = <1>;
@@ -348,6 +357,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +				};
 +			};
 +		};
++
 +		i2c8mux0ch1: i2c@1 {
 +			reg = <1>;
 +			#address-cells = <1>;
@@ -386,6 +396,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +				shunt-resistor = <1000>;
 +			};
 +		};
++
 +		i2c8mux0ch2: i2c@2 {
 +			reg = <2>;
 +			#address-cells = <1>;
@@ -424,6 +435,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +				shunt-resistor = <1000>;
 +			};
 +		};
++
 +		i2c8mux0ch3: i2c@3 {
 +			reg = <3>;
 +			#address-cells = <1>;
@@ -467,7 +479,7 @@ index ee93a971c500..2f5712e9ba9f 100644
  };
  
  &i2c9 {
-@@ -619,6 +1047,204 @@ eeprom@52 {
+@@ -632,6 +1072,210 @@ eeprom@52 {
  		compatible = "atmel,24c256";
  		reg = <0x52>;
  	};
@@ -511,6 +523,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +					#address-cells = <1>;
 +					#size-cells = <0>;
 +				};
++
 +				i2c10mux1ch1: i2c@1 {
 +					reg = <1>;
 +					#address-cells = <1>;
@@ -521,7 +534,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +						reg = <0x48>;
 +					};
 +
-+					voltage-sensorr@49 {
++					voltage-sensor@49 {
 +						compatible = "ti,ads7830";
 +						reg = <0x49>;
 +					};
@@ -541,11 +554,13 @@ index ee93a971c500..2f5712e9ba9f 100644
 +						reg = <0x56>;
 +					};
 +				};
++
 +				i2c10mux1ch2: i2c@2 {
 +					reg = <2>;
 +					#address-cells = <1>;
 +					#size-cells = <0>;
 +				};
++
 +				i2c10mux1ch3: i2c@3 {
 +					reg = <3>;
 +					#address-cells = <1>;
@@ -553,6 +568,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +				};
 +			};
 +		};
++
 +		i2c10mux0ch1: i2c@1 {
 +			reg = <1>;
 +			#address-cells = <1>;
@@ -591,6 +607,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +				shunt-resistor = <1000>;
 +			};
 +		};
++
 +		i2c10mux0ch2: i2c@2 {
 +			reg = <2>;
 +			#address-cells = <1>;
@@ -629,6 +646,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +				shunt-resistor = <1000>;
 +			};
 +		};
++
 +		i2c10mux0ch3: i2c@3 {
 +			reg = <3>;
 +			#address-cells = <1>;
@@ -672,7 +690,7 @@ index ee93a971c500..2f5712e9ba9f 100644
  };
  
  &i2c11 {
-@@ -748,6 +1374,204 @@ eeprom@52 {
+@@ -768,6 +1412,210 @@ eeprom@52 {
  		compatible = "atmel,24c256";
  		reg = <0x52>;
  	};
@@ -716,6 +734,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +					#address-cells = <1>;
 +					#size-cells = <0>;
 +				};
++
 +				i2c13mux1ch1: i2c@1 {
 +					reg = <1>;
 +					#address-cells = <1>;
@@ -726,7 +745,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +						reg = <0x48>;
 +					};
 +
-+					voltage-sensorr@49 {
++					voltage-sensor@49 {
 +						compatible = "ti,ads7830";
 +						reg = <0x49>;
 +					};
@@ -746,11 +765,13 @@ index ee93a971c500..2f5712e9ba9f 100644
 +						reg = <0x56>;
 +					};
 +				};
++
 +				i2c13mux1ch2: i2c@2 {
 +					reg = <2>;
 +					#address-cells = <1>;
 +					#size-cells = <0>;
 +				};
++
 +				i2c13mux1ch3: i2c@3 {
 +					reg = <3>;
 +					#address-cells = <1>;
@@ -758,6 +779,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +				};
 +			};
 +		};
++
 +		i2c13mux0ch1: i2c@1 {
 +			reg = <1>;
 +			#address-cells = <1>;
@@ -796,6 +818,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +				shunt-resistor = <1000>;
 +			};
 +		};
++
 +		i2c13mux0ch2: i2c@2 {
 +			reg = <2>;
 +			#address-cells = <1>;
@@ -834,6 +857,7 @@ index ee93a971c500..2f5712e9ba9f 100644
 +				shunt-resistor = <1000>;
 +			};
 +		};
++
 +		i2c13mux0ch3: i2c@3 {
 +			reg = <3>;
 +			#address-cells = <1>;

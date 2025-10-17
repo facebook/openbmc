@@ -1,0 +1,35 @@
+From 34bd918e605c7c0dc52cade8917b2010ca6375b1 Mon Sep 17 00:00:00 2001
+From: Fred Chen <fredchen.openbmc@gmail.com>
+Date: Wed, 17 Sep 2025 13:56:40 +0800
+Subject: [PATCH 1004/1008] ARM: dts: aspeed: santabarbara: Add bmc_ready_noled
+ Led
+
+Add a 'bmc_ready_noled' LED on GPIOB3 with GPIO_TRANSITORY to ensure its
+state resets on BMC reboot.
+
+lore link: https://lore.kernel.org/all/20251015143916.1850450-5-fredchen.openbmc@gmail.com/
+
+Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
+---
+ .../arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+index 60b5412e62af..eba504f209ab 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+@@ -104,6 +104,11 @@ led-2 {
+ 			default-state = "off";
+ 			gpios = <&gpio0 ASPEED_GPIO(P, 4) GPIO_ACTIVE_HIGH>;
+ 		};
++
++		led-3 {
++			label = "bmc_ready_noled";
++			gpios = <&gpio0 ASPEED_GPIO(B, 3) (GPIO_ACTIVE_HIGH|GPIO_TRANSITORY)>;
++		};
+ 	};
+ 
+ 	memory@80000000 {
+-- 
+2.49.0
+

@@ -47,7 +47,10 @@ get_pim_spidev() {
 }
 
 flash_chip_expected_list() {
+    # Micron : MX25U3232FM2I02 , MX25U3235FM2I-10G
     echo "MX25U3235E/F"
+    # Winbond : W25Q32JWSSIQ
+    echo "W25Q32JW...Q"
 }
 
 # Override using flash_extrach_info from flashrom-utils.sh

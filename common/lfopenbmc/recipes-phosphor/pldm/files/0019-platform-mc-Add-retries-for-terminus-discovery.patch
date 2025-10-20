@@ -1,7 +1,7 @@
-From 75f098c04315484789c205397793ad623e77c033 Mon Sep 17 00:00:00 2001
+From 97906f8d5d6e45db08145758a5a0116a69c59b04 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 23 Sep 2025 09:47:45 +0000
-Subject: [PATCH 19/19] platform-mc: Add retries for terminus discovery
+Subject: [PATCH 19/20] platform-mc: Add retries for terminus discovery
 
 Adds a configurable, per-endpoint retry mechanism to terminus discovery.
 Endpoints are scheduled for retry when:
@@ -66,7 +66,7 @@ index 9b398f5..e7d12e7 100644
 +    description: 'Per-endpoint retry attempts for terminus discovery on failures. Initial attempt not counted; 0 disables retries.',
 +)
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index a247d7a..752b546 100644
+index 48b32e7..b18031c 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
 @@ -186,16 +186,18 @@ TerminiMapper::iterator TerminusManager::findTerminusPtr(

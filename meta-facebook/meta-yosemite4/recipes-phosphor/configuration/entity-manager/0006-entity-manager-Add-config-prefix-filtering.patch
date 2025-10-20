@@ -1,4 +1,4 @@
-From 599c08fcfe02dbb873f00667460fc8bf71b52f37 Mon Sep 17 00:00:00 2001
+From 842d1b6ca58976b32a390af8a11e5cff6e4eb045 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 11 Mar 2025 13:47:42 +0800
 Subject: [PATCH 6/7] entity-manager: Add config-prefix filtering
@@ -19,7 +19,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  5 files changed, 73 insertions(+), 41 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index dbce245..511d071 100644
+index c364a9e..d347e67 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -7,6 +7,11 @@ project(
@@ -49,10 +49,10 @@ index 8cdd903..efbf48c 100644
 +    description: 'Comma-separated list of JSON filename prefixes to filter. Default loads all JSON files.',
 +)
 diff --git a/src/entity_manager/configuration.cpp b/src/entity_manager/configuration.cpp
-index 7532fc1..1cbd0c1 100644
+index b6ece2b..d4954b6 100644
 --- a/src/entity_manager/configuration.cpp
 +++ b/src/entity_manager/configuration.cpp
-@@ -25,13 +25,17 @@ Configuration::Configuration()
+@@ -24,13 +24,17 @@ Configuration::Configuration()
  void Configuration::loadConfigurations()
  {
      const auto start = std::chrono::steady_clock::now();
@@ -72,13 +72,13 @@ index 7532fc1..1cbd0c1 100644
 +                    std::filesystem::path(hostConfigurationDirectory)},
 +                   R"(.*\.json)", jsonPaths, configPrefixes))
      {
-         std::cerr << "Unable to find any configuration files in "
-                   << configurationDirectory << "\n";
+         lg2::error("Unable to find any configuration files in {DIR}", "DIR",
+                    configurationDirectory);
 diff --git a/src/utils.cpp b/src/utils.cpp
-index b408aea..8d44cf9 100644
+index d88df36..83b42ee 100644
 --- a/src/utils.cpp
 +++ b/src/utils.cpp
-@@ -18,60 +18,71 @@
+@@ -19,60 +19,71 @@
  
  namespace fs = std::filesystem;
  
@@ -185,10 +185,10 @@ index b408aea..8d44cf9 100644
  
      return !foundPaths.empty();
 diff --git a/src/utils.hpp b/src/utils.hpp
-index 3a3a083..1ae5e99 100644
+index 107d97e..241a940 100644
 --- a/src/utils.hpp
 +++ b/src/utils.hpp
-@@ -21,10 +21,16 @@ using MapperGetSubTreeResponse =
+@@ -23,10 +23,16 @@ using LastIndex = size_t;
  
  bool findFiles(const std::filesystem::path& dirPath,
                 const std::string& matchString,

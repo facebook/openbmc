@@ -1,4 +1,4 @@
-From 2d64011b264518d981bdb242c69578802ecb1ffe Mon Sep 17 00:00:00 2001
+From 399908f7f618ede5c7c92958e998d86e181894d6 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 25 Sep 2023 11:10:46 +0800
 Subject: [PATCH 3/7] Add mctp eids configuration for Yosemite 4
@@ -220,10 +220,10 @@ index 7a865bf..3260535 100644
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
 diff --git a/schemas/exposes_record.json b/schemas/exposes_record.json
-index 1bad51f..6ff9f40 100644
+index 36dae8c..9488439 100644
 --- a/schemas/exposes_record.json
 +++ b/schemas/exposes_record.json
-@@ -176,6 +176,9 @@
+@@ -179,6 +179,9 @@
                  },
                  {
                      "$ref": "valve.json#/$defs/GPIOValve"

@@ -1,7 +1,7 @@
-From eee6c0361f262beed637e93ad91892631072da17 Mon Sep 17 00:00:00 2001
+From 855d67c833c1473dbef2352c670b5dab2708c7f0 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
-Subject: [PATCH 03/19] Support OEM-META write file request for post code
+Subject: [PATCH 03/20] Support OEM-META write file request for post code
  history
 
 Support write file req when multiple hosts send postcode to BMC
@@ -449,7 +449,7 @@ index 0000000..81ff4eb
 +
 +} // namespace pldm::responder::oem_meta
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 1e98055..040bc00 100644
+index 3b68896..8f3817c 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -67,6 +67,9 @@ PHOSPHOR_LOG2_USING;

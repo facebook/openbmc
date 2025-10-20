@@ -1,7 +1,7 @@
-From 6bd7cd0361f37bcf82634207980fb85e63ccf538 Mon Sep 17 00:00:00 2001
+From 3332169552d458713e748f2c6841e0319c8ea33e Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 15 Jul 2025 10:22:29 +0000
-Subject: [PATCH 16/19] pldm: Use std::expected for instance ID allocation
+Subject: [PATCH 16/20] pldm: Use std::expected for instance ID allocation
 
 Refactor InstanceIdDb::next() to return
 std::expected<uint8_t, InstanceIdError> instead of throwing exceptions.
@@ -626,10 +626,10 @@ index 0c27f95..594e3c4 100644
      std::vector<uint8_t> requestMsg(
          sizeof(pldm_msg_hdr) + sizeof(effecterId) + sizeof(compEffCnt) +
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index 6f0b371..a247d7a 100644
+index 9a88e83..48b32e7 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
-@@ -480,7 +480,12 @@ exec::task<int> TerminusManager::sendRecvPldmMsgOverMctp(
+@@ -481,7 +481,12 @@ exec::task<int> TerminusManager::sendRecvPldmMsgOverMctp(
  
  exec::task<int> TerminusManager::getTidOverMctp(mctp_eid_t eid, pldm_tid_t* tid)
  {
@@ -643,7 +643,7 @@ index 6f0b371..a247d7a 100644
      Request request(sizeof(pldm_msg_hdr));
      auto requestMsg = new (request.data()) pldm_msg;
      auto rc = encode_get_tid_req(instanceId, requestMsg);
-@@ -526,7 +531,12 @@ exec::task<int> TerminusManager::getTidOverMctp(mctp_eid_t eid, pldm_tid_t* tid)
+@@ -527,7 +532,12 @@ exec::task<int> TerminusManager::getTidOverMctp(mctp_eid_t eid, pldm_tid_t* tid)
  
  exec::task<int> TerminusManager::setTidOverMctp(mctp_eid_t eid, pldm_tid_t tid)
  {
@@ -657,7 +657,7 @@ index 6f0b371..a247d7a 100644
      Request request(sizeof(pldm_msg_hdr) + sizeof(pldm_set_tid_req));
      auto requestMsg = new (request.data()) pldm_msg;
      auto rc = encode_set_tid_req(instanceId, tid, requestMsg);
-@@ -700,7 +710,12 @@ exec::task<int> TerminusManager::sendRecvPldmMsg(
+@@ -701,7 +711,12 @@ exec::task<int> TerminusManager::sendRecvPldmMsg(
  
      auto eid = std::get<0>(mctpInfo.value());
      auto requestMsg = new (request.data()) pldm_msg;

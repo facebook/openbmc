@@ -1,7 +1,7 @@
-From 446c410beec40dc6645270f21f70685ace52e9a8 Mon Sep 17 00:00:00 2001
+From 9db8cf2d612f41a674fdf42ac960e569457cd36c Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 26 Nov 2024 15:28:02 +0800
-Subject: [PATCH 12/19] requester: Validate MCTP EID before removal
+Subject: [PATCH 12/20] requester: Validate MCTP EID before removal
 
 Due to potential inaccuracies in MCTP infos obtained from the object
 mapper, PLDM may inadvertently remove an existing PLDM device.

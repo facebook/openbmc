@@ -34,7 +34,7 @@ for _ in {1..30}; do
   # wait getting address from NC-SI
   if [ "$(cat /sys/class/net/eth0/addr_assign_type)" = "3" ]; then
     if [ "$(cat /sys/class/net/eth0/address)" != "$(cat /sys/class/net/br0/address)" ]; then
-      ifconfig br0 hw ether "$(cat /sys/class/net/eth0/address)"
+      ip link set dev br0 address "$(cat /sys/class/net/eth0/address)"
     fi
     exp_ll=$(mac_to_ll "$(cat /sys/class/net/eth0/address)")
     ll=$(ip -6 addr show dev eth0 scope link | sed -e's/^.*inet6 \([^ ]*\)\/.*$/\1/;t;d')

@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# ARGUMENTS:
+# 1: Optional override config
+
+OVERRIDE_CONFIG_FILE=${1:-/run/mnt-persist/var-data/lib/modbus-device-util/override-config.json}
+CONFIG_FILE="/var/lib/modbus-device-util/default-config.json"
+
+if [ -f "$OVERRIDE_CONFIG_FILE" ]; then
+    CONFIG_FILE="$OVERRIDE_CONFIG_FILE"
+fi
+
+rackmoncli data --latest --json | jq -c '.[]' | while read -r line; do
+  deviceType=$(echo "$line" | jq -cr '.devInfo.deviceType')
+  uda=$(echo "$line" | jq -cr '.devInfo.uniqueDevAddress')
+
+  case $deviceType in
+    "ORV3_BBU")
+      device=bbu
+      ;;
+    "ORV3_PSU")
+      device=psu
+      ;;
+    "ORV3_RPU")
+      device=rpu
+      ;;
+    *)
+      device=unknown
+      ;;
+  esac
+
+  jq --arg deviceType "$device" -cr '.[$deviceType].firmware // [] | .[] | "\(.register) \(.component) \(.type)"' < "$CONFIG_FILE" | while read -r register component type; do
+    registerValue=$(echo "$line" | jq -cr --arg register "$register" --arg valueKey "${type}Value" '.regList.[] | select(.name == $register and .history[0].timestamp > 0) | .history[0].value.[$valueKey]')
+    jq -n --arg component "$component" --arg version "$registerValue" '{($component): $version}'
+  done | jq --arg uda "$uda" --arg device "$device" -s  'add | . + {device: $device} | {($uda): .}'
+done  | jq -s 'add'

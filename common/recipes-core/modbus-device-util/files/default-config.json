@@ -8,7 +8,19 @@
             "panasonic": {
                 "registerValues": ["Panasonic", "ARTESYN"]
             }
-        }
+        },
+        "firmware": [
+            {
+                "register": "FW_Revision",
+                "component": "BBU_FW_VERSION",
+                "type": "str"
+            },
+            {
+                "register": "Battery_Pack_FW_Revision",
+                "component": "BBU_BATTERY_PACK_FW_VERSION",
+                "type": "int"
+            }
+        ]
     },
     "psu": {
         "manufacturerDiscriminator": "PSU_MFR_Serial",
@@ -19,7 +31,19 @@
             "delta": {
                 "registerRegex": "^.{8}DE"
             }
-        }
+        },
+        "firmware": [
+            {
+                "register": "PSU_FW_Revision",
+                "component": "PSU_FW_Revision",
+                "type": "str"
+            },
+            {
+                "register": "PSU_FBL_FW_Revision",
+                "component": "PSU_FBL_FW_Revision",
+                "type": "str"
+            }
+        ]
     },
     "rpu": {
         "manufacturerDiscriminator": "RPU_MFR_Model",
@@ -34,6 +58,18 @@
                 "pumpDutyPercentage": 50,
                 "targetCoolantOutletTempTimesTen": 350
             }
-        }
+        },
+        "firmware": [
+            {
+                "register": "RPU_PLC_FW_Revision",
+                "component": "RPU_FIRMWARE_VERSION",
+                "type": "str"
+            },
+            {
+                "register": "RPU_HEX_FW_Revision",
+                "component": "RPU_HEX_FIRMWARE_VERSION",
+                "type": "str"
+            }
+        ]
     }
 }

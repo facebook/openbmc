@@ -13,6 +13,31 @@ PHOSPHOR_LOG2_USING;
 namespace redfish_client_daemon
 {
 
+namespace
+{
+
+auto loop(sdbusplus::async::context& ctx,
+          std::unique_ptr<UpdateServiceHandler> handler,
+          size_t intervalMilliseconds) -> sdbusplus::async::task<void>
+{
+    sdbusplus::server::manager_t manager{ctx, SoftwareVersion::namespace_path};
+    while (!ctx.stop_requested())
+    {
+        try
+        {
+            co_await handler->load(ctx);
+        }
+        catch (const std::exception& exn)
+        {
+            info("Exception loading inventory: {EXC}", "EXC", exn.what());
+        }
+        co_await sdbusplus::async::sleep_for(
+            ctx, std::chrono::milliseconds(intervalMilliseconds));
+    };
+    co_return;
+}
+} // anonymous namespace
+
 Software::Software(sdbusplus::async::context& ctx, const std::string& id) :
     sdbusplus::async::context_ref(ctx),
     path(sdbusplus::message::object_path(SoftwareVersion::namespace_path) /
@@ -70,120 +95,88 @@ std::function<int()>& Software::randomIdGenerator()
 }
 
 UpdateServiceHandler::UpdateServiceHandler(
-    sdbusplus::async::context& ctx, const std::string& host,
-    const UpdateServiceConfig& config) : sdbusplus::async::context_ref(ctx)
-{
-    ctx.spawn(loop(
-        std::format(
-            "http://{}/redfish/v1/UpdateService/FirmwareInventory?$expand=.",
-            host),
-        config.firmwareMappers, config.intervalMilliseconds));
-    ctx.spawn(loop(
-        std::format(
-            "http://{}/redfish/v1/UpdateService/SoftwareInventory?$expand=.",
-            host),
-        config.softwareMappers, config.intervalMilliseconds));
-}
+    const std::string& host, const std::string& inventoryName,
+    const std::vector<UpdateServiceMapper>& mappers) :
+    handle(std::make_unique<AsyncHttpHandle>(
+        std::format("http://{}/redfish/v1/UpdateService/{}?$expand=.", host,
+                    inventoryName))),
+    mappers(mappers)
+{}
 
-auto UpdateServiceHandler::loop(const std::string url,
-                                const std::vector<UpdateServiceMapper>& mappers,
-                                size_t intervalMilliseconds)
+auto UpdateServiceHandler::load(sdbusplus::async::context& ctx)
     -> sdbusplus::async::task<void>
 {
-    if (mappers.empty())
+    auto response = co_await handle->get(ctx);
+    if (response.code != 200)
+    {
+        throw std::runtime_error(
+            std::format("Http response error code: {}", response.code));
+    }
+    auto inventoryCollection = redfish_binding::SoftwareInventoryCollection::
+        parseSoftwareInventoryCollection(response.body);
+    auto& maybeMembers = inventoryCollection.getMembers();
+    if (!maybeMembers.hasValue())
     {
         co_return;
     }
-    sdbusplus::server::manager_t manager{ctx, SoftwareVersion::namespace_path};
-    auto handle = std::make_unique<AsyncHttpHandle>(url);
-    bool skipSleep = true;
-    while (!ctx.stop_requested())
+    for (auto& member : maybeMembers.value())
     {
-        if (!skipSleep)
-        {
-            co_await sdbusplus::async::sleep_for(
-                ctx, std::chrono::milliseconds(intervalMilliseconds));
-            skipSleep = false;
-        }
-        std::string inventoryCollectionJson;
-        try
-        {
-            auto response = co_await handle->get(ctx);
-            if (response.code != 200)
-            {
-                throw std::runtime_error(
-                    std::format("Http response error code: {}", response.code));
-            }
-            inventoryCollectionJson = response.body;
-        }
-        catch (const std::exception& exn)
-        {
-            info("Exception while querying url {URL}: {EXC}", "URL", url, "EXC",
-                 exn.what());
-            continue;
-        }
-        redfish_binding::SoftwareInventoryCollection::
-            SoftwareInventoryCollection inventoryCollection;
-        try
-        {
-            inventoryCollection = redfish_binding::SoftwareInventoryCollection::
-                parseSoftwareInventoryCollection(inventoryCollectionJson);
-        }
-        catch (const std::exception& exn)
-        {
-            info("Exception while parsing response from url {URL}: {EXC}",
-                 "URL", url, "EXC", exn.what());
-            continue;
-        }
-        auto& maybeMembers = inventoryCollection.getMembers();
-        if (!maybeMembers.hasValue())
+        auto& maybeId = member.getId();
+        if (!maybeId.hasValue())
         {
             continue;
         }
-
-        for (auto& member : maybeMembers.value())
+        const auto& id = maybeId.value();
+        auto& maybeVersion = member.getVersion();
+        if (!maybeVersion.hasValue())
         {
-            update(member, mappers);
+            continue;
         }
+        const auto& version = maybeVersion.value();
+        const auto mapperIt =
+            std::find_if(mappers.begin(), mappers.end(),
+                         [&](auto mapper) { return mapper.fromId == id; });
+        if (mapperIt == mappers.end())
+        {
+            continue;
+        }
+        auto softwareIt = inventory.find(id);
+        if (softwareIt == inventory.end())
+        {
+            softwareIt =
+                inventory
+                    .insert(
+                        {id, std::make_unique<Software>(ctx, mapperIt->toId)})
+                    .first;
+            info("Create software {PATH} from {ID}", "PATH",
+                 softwareIt->second->getPath().str, "ID", id);
+        }
+        softwareIt->second->setVersion(version);
+        softwareIt->second->setActivation(
+            SoftwareActivation::Activations::Active);
     }
-    co_return;
 }
 
-void UpdateServiceHandler::update(
-    redfish_binding::SoftwareInventory::SoftwareInventory& newSoftware,
-    const std::vector<UpdateServiceMapper>& mappers)
+auto UpdateServiceHandler::run(sdbusplus::async::context& ctx,
+                               const std::string& host,
+                               const UpdateServiceConfig& config)
+    -> sdbusplus::async::task<void>
 {
-    auto& maybeId = newSoftware.getId();
-    if (!maybeId.hasValue())
+    if (!config.firmwareMappers.empty())
     {
-        return;
+        ctx.spawn(loop(ctx,
+                       std::make_unique<UpdateServiceHandler>(
+                           host, "FirmwareInventory", config.firmwareMappers),
+                       config.intervalMilliseconds));
     }
-    const auto& id = maybeId.value();
-    auto& maybeVersion = newSoftware.getVersion();
-    if (!maybeVersion.hasValue())
+    if (!config.softwareMappers.empty())
     {
-        return;
+        ctx.spawn(loop(ctx,
+                       std::make_unique<UpdateServiceHandler>(
+                           host, "SoftwareInventory", config.softwareMappers),
+                       config.intervalMilliseconds));
     }
-    const auto& version = maybeVersion.value();
-    const auto mapperIt =
-        std::find_if(mappers.begin(), mappers.end(),
-                     [&](auto mapper) { return mapper.fromId == id; });
-    if (mapperIt == mappers.end())
-    {
-        return;
-    }
-    auto softwareIt = softwareMap.find(id);
-    if (softwareIt == softwareMap.end())
-    {
-        softwareIt =
-            softwareMap
-                .insert({id, std::make_unique<Software>(ctx, mapperIt->toId)})
-                .first;
-        info("Create software {PATH} from {ID}", "PATH",
-             softwareIt->second->getPath().str, "ID", id);
-    }
-    softwareIt->second->setVersion(version);
-    softwareIt->second->setActivation(SoftwareActivation::Activations::Active);
+    co_return;
 }
 
 } // namespace redfish_client_daemon

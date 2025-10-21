@@ -356,9 +356,8 @@ class RedfishClient
 
         if (config->updateServiceConfig.has_value())
         {
-            updateServiceHandlers.push_back(
-                std::make_shared<UpdateServiceHandler>(
-                    ctx, config->host, config->updateServiceConfig.value()));
+            ctx.spawn(UpdateServiceHandler::run(
+                ctx, config->host, config->updateServiceConfig.value()));
         }
         co_return;
     }
@@ -608,7 +607,6 @@ class RedfishClient
     sdbusplus::async::context& ctx;
     std::unordered_map<std::string, std::shared_ptr<SensorDbusObject>> metrics;
     std::vector<std::shared_ptr<LogServiceHandler>> logServiceHandlers;
-    std::vector<std::shared_ptr<UpdateServiceHandler>> updateServiceHandlers;
     std::string configDir;
     std::optional<Config> config;
     std::thread sensorThread;

@@ -43,25 +43,25 @@ class Software : private sdbusplus::async::context_ref
     std::unique_ptr<SoftwareActivation> activation{nullptr};
 };
 
-class UpdateServiceHandler : private sdbusplus::async::context_ref
+class UpdateServiceHandler
 {
   public:
     UpdateServiceHandler() = delete;
 
-    UpdateServiceHandler(sdbusplus::async::context& ctx,
-                         const std::string& host,
-                         const UpdateServiceConfig& config);
+    UpdateServiceHandler(const std::string& host,
+                         const std::string& inventoryName,
+                         const std::vector<UpdateServiceMapper>& mappers);
+
+    static auto run(sdbusplus::async::context& ctx, const std::string& host,
+                    const UpdateServiceConfig& config)
+        -> sdbusplus::async::task<void>;
+
+    auto load(sdbusplus::async::context& ctx) -> sdbusplus::async::task<void>;
 
   private:
-    auto loop(const std::string url,
-              const std::vector<UpdateServiceMapper>& mappers,
-              size_t intervalMilliseconds) -> sdbusplus::async::task<void>;
-
-    void update(
-        redfish_binding::SoftwareInventory::SoftwareInventory& newSoftware,
-        const std::vector<UpdateServiceMapper>& mappers);
-
-    std::unordered_map<std::string, std::unique_ptr<Software>> softwareMap;
+    std::unique_ptr<AsyncHttpHandle> handle;
+    const std::vector<UpdateServiceMapper>& mappers;
+    std::unordered_map<std::string, std::unique_ptr<Software>> inventory;
 };
 
 } // namespace redfish_client_daemon

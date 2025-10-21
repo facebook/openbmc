@@ -1,7 +1,7 @@
-From b7692dc3a454f2dc01c4c4182b412f838fae07ee Mon Sep 17 00:00:00 2001
+From a18eb9dc1b520b6073c7c3bda52747318e1eecb7 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Mon, 5 Feb 2024 15:28:46 -0800
-Subject: [PATCH 1/2] ARM: dts: aspeed: Add Facebook fblite-r1 BMC
+Subject: [PATCH 1/4] ARM: dts: aspeed: Add Facebook fblite-r1 BMC
 
 Add Meta/Facebook FBOSS BMC-Lite Flavor-1 OpenBMC dts. The dts is
 currently being used by Minipack3, Janga and Tahan BMC platforms.

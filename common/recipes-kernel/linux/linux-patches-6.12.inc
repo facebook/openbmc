@@ -6,6 +6,8 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/6.12:"
 SRC_URI:append = " \
     file://0001-ARM-dts-aspeed-Add-Facebook-fblite-r1-BMC.patch \
     file://0002-ARM-dts-aspeed-Add-device-tree-for-Facebook-meru-AST.patch \
+    file://0003-ARM-dts-aspeed-Expand-data0-partition-in-facebook-bm.patch \
+    file://0004-net-ftgmac100-reset-MAC-by-SCU-on-RMII.patch \
 "
 
 #

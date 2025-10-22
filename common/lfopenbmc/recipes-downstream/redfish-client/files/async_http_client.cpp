@@ -1,5 +1,7 @@
 #include "async_http_client.hpp"
 
+#include <unistd.h>
+
 #include <sdbusplus/async/fdio.hpp>
 
 #include <format>
@@ -9,6 +11,20 @@ namespace redfish_client_daemon
 
 namespace
 {
+size_t fdRead(char* buffer, size_t size, size_t nitems, void* arg)
+{
+    int fd = *static_cast<int*>(arg);
+    auto count = read(fd, buffer, size * nitems);
+    return count < 0 ? CURL_READFUNC_ABORT : count;
+}
+
+int fdSeek(void* arg, curl_off_t offset, int origin)
+{
+    int fd = *static_cast<int*>(arg);
+    return lseek(fd, offset, origin) == -1 ? CURL_SEEKFUNC_FAIL
+                                           : CURL_SEEKFUNC_OK;
+}
+
 class GlobalInit
 {
   public:
@@ -20,6 +36,7 @@ class GlobalInit
                                                  curl_easy_strerror(res)));
         }
     }
+
     ~GlobalInit()
     {
         curl_global_cleanup();
@@ -56,6 +73,96 @@ class HandleLock
     CURLM* multiHandle;
     std::unique_lock<std::mutex> lock;
 };
+
+class Mime
+{
+  public:
+    Mime(CURL* easyHandle,
+         const std::vector<HttpMultipartBodyPart>& multipart) :
+        easyHandle(easyHandle), mime(curl_mime_init(easyHandle))
+    {
+        if (!mime)
+        {
+            throw std::runtime_error("curl_mime_init failed");
+        }
+        for (const auto& p : multipart)
+        {
+            auto part = curl_mime_addpart(mime);
+            if (!part)
+            {
+                throw std::runtime_error("curl_mime_addpart failed");
+            }
+            if (p.name.has_value())
+            {
+                if (auto res = curl_mime_name(part, p.name->c_str());
+                    res != CURLE_OK)
+                {
+                    throw std::runtime_error(std::format(
+                        "curl_mime_name failed: {}", curl_easy_strerror(res)));
+                }
+            }
+            if (p.type.has_value())
+            {
+                if (auto res = curl_mime_type(part, p.type->c_str());
+                    res != CURLE_OK)
+                {
+                    throw std::runtime_error(std::format(
+                        "curl_mime_type failed: {}", curl_easy_strerror(res)));
+                }
+            }
+            if (p.data.has_value())
+            {
+                if (auto res = curl_mime_data(part, p.data->c_str(),
+                                              CURL_ZERO_TERMINATED);
+                    res != CURLE_OK)
+                {
+                    throw std::runtime_error(std::format(
+                        "curl_mime_data failed: {}", curl_easy_strerror(res)));
+                }
+            }
+            if (p.fd)
+            {
+                auto size = lseek(*p.fd, 0, SEEK_END);
+                if (size < 0)
+                {
+                    throw std::runtime_error(std::format(
+                        "failed to determine file size from fd: {}", *p.fd));
+                }
+                if (lseek(*p.fd, 0, SEEK_SET) != 0)
+                {
+                    throw std::runtime_error(std::format(
+                        "failed to reset file offset to 0 for fd: {}", *p.fd));
+                }
+                if (auto res = curl_mime_data_cb(part, size, fdRead, fdSeek,
+                                                 nullptr, p.fd);
+                    res != CURLE_OK)
+                {
+                    throw std::runtime_error(
+                        std::format("curl_mime_data_cb failed: {}",
+                                    curl_easy_strerror(res)));
+                }
+            }
+        }
+        if (auto res = curl_easy_setopt(easyHandle, CURLOPT_MIMEPOST, mime);
+            res != CURLE_OK)
+        {
+            throw std::runtime_error(
+                std::format("curl_easy_setopt CURLOPT_MIMEPOST failed: {}",
+                            curl_easy_strerror(res)));
+        }
+    }
+
+    ~Mime()
+    {
+        curl_easy_setopt(easyHandle, CURLOPT_MIMEPOST, nullptr);
+        curl_mime_free(mime);
+    }
+
+  private:
+    CURL* easyHandle;
+    curl_mime* mime;
+};
+
 } // namespace
 
 size_t AsyncHttpResponse::write(char* ptr, size_t size, size_t nmemb,
@@ -113,6 +220,21 @@ sdbusplus::async::task<AsyncHttpResponse> AsyncHttpHandle::get(
     sdbusplus::async::context& ctx)
 {
     HandleLock lock(easyHandle, multiHandle, mutex);
+    co_return co_await perform(ctx);
+}
+
+sdbusplus::async::task<AsyncHttpResponse> AsyncHttpHandle::post(
+    sdbusplus::async::context& ctx,
+    const std::vector<HttpMultipartBodyPart>& multipart)
+{
+    HandleLock lock(easyHandle, multiHandle, mutex);
+    Mime mime{easyHandle, multipart};
+    co_return co_await perform(ctx);
+}
+
+sdbusplus::async::task<AsyncHttpResponse> AsyncHttpHandle::perform(
+    sdbusplus::async::context& ctx)
+{
     AsyncHttpResponse response;
     if (auto res = curl_easy_setopt(easyHandle, CURLOPT_WRITEDATA, &response);
         res != CURLE_OK)

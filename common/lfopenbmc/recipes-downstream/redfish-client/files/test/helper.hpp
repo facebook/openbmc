@@ -14,8 +14,8 @@ class SimpleTestHttpServer
     {
         std::string method;
         std::string path;
-        std::string version;
         std::unordered_map<std::string, std::string> headers;
+        std::string body;
     };
     using ResponseGenerator =
         std::function<std::string(const ReceivedHttpRequest&)>;
@@ -42,9 +42,6 @@ class SimpleTestHttpServer
     std::vector<ReceivedHttpRequest> getReceivedRequests();
 
   private:
-    static ReceivedHttpRequest parseSimpleRequest(
-        const std::string& requestStr);
-
     void handleAccept(const boost::system::error_code& error,
                       std::shared_ptr<boost::asio::ip::tcp::socket> socket);
 

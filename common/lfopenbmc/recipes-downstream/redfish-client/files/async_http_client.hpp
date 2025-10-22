@@ -19,6 +19,14 @@ struct AsyncHttpResponse
     static size_t write(char* ptr, size_t size, size_t nmemb, void* userdata);
 };
 
+struct HttpMultipartBodyPart
+{
+    std::optional<std::string> name;
+    std::optional<std::string> type;
+    std::optional<std::string> data;
+    int* fd{nullptr};
+};
+
 class AsyncHttpHandle
 {
   public:
@@ -37,10 +45,17 @@ class AsyncHttpHandle
     sdbusplus::async::task<AsyncHttpResponse> get(
         sdbusplus::async::context& ctx);
 
+    sdbusplus::async::task<AsyncHttpResponse> post(
+        sdbusplus::async::context& ctx,
+        const std::vector<HttpMultipartBodyPart>& multipart);
+
   private:
     CURL* easyHandle;
     CURLM* multiHandle;
     std::mutex mutex;
+
+    sdbusplus::async::task<AsyncHttpResponse> perform(
+        sdbusplus::async::context& ctx);
 };
 
 } // namespace redfish_client_daemon

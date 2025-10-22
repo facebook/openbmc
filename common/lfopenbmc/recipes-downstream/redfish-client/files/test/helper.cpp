@@ -1,5 +1,10 @@
 #include "helper.hpp"
 
+#include <boost/beast/core.hpp>
+#include <boost/beast/http.hpp>
+
+#include <numeric>
+
 namespace redfish_client_daemon
 {
 
@@ -54,35 +59,6 @@ std::vector<ReceivedHttpRequest> SimpleTestHttpServer::getReceivedRequests()
     return requests;
 }
 
-ReceivedHttpRequest SimpleTestHttpServer::parseSimpleRequest(
-    const std::string& requestStr)
-{
-    ReceivedHttpRequest rv;
-
-    // Parse the first line (method, url, version)
-    size_t pos = requestStr.find(' ');
-    rv.method = requestStr.substr(0, pos);
-    size_t pos2 = requestStr.find(' ', pos + 1);
-    rv.path = requestStr.substr(pos + 1, pos2 - pos - 1);
-    rv.version = requestStr.substr(pos2 + 1, requestStr.find('\n') - pos2 - 1);
-
-    // Parse the headers
-    while ((pos = requestStr.find('\n', pos2)) != std::string::npos)
-    {
-        pos2 = requestStr.find('\n', pos + 1);
-        if (pos2 == std::string::npos)
-            break;
-        size_t colonPos = requestStr.find(':', pos + 1);
-        if (colonPos == std::string::npos || colonPos > pos2)
-            continue;
-        std::string key = requestStr.substr(pos + 1, colonPos - pos - 1);
-        std::string value =
-            requestStr.substr(colonPos + 1, pos2 - colonPos - 1);
-        rv.headers[key] = value;
-    }
-    return rv;
-}
-
 void SimpleTestHttpServer::handleAccept(
     const boost::system::error_code& error,
     std::shared_ptr<boost::asio::ip::tcp::socket> socket)
@@ -92,27 +68,42 @@ void SimpleTestHttpServer::handleAccept(
         // Server stopping, no need to process this request.
         return;
     }
-    boost::asio::streambuf requestBuffer;
-    boost::asio::read_until(*socket, requestBuffer, "\r\n\r\n");
-
-    std::string requestStr((std::istreambuf_iterator<char>(&requestBuffer)),
-                           std::istreambuf_iterator<char>());
-    ReceivedHttpRequest request = parseSimpleRequest(requestStr);
-
+    boost::beast::error_code ec;
+    // This buffer is required to persist across reads
+    boost::beast::flat_buffer buffer;
+    boost::beast::http::request<boost::beast::http::string_body> req;
+    boost::beast::http::read(*socket, buffer, req, ec);
     // Response result.
-    std::string response = "HTTP/1.1 200 OK\r\n";
-
-    // Add some response headers.
-    for (const auto& header : responseHeaders)
+    std::string response;
+    if (!ec)
     {
-        response += header.first + ": " + header.second + "\r\n";
+        ReceivedHttpRequest request{
+            .method = req.method_string(),
+            .path = req.target(),
+            .body = req.body(),
+        };
+        for (const auto& header : req.base())
+        {
+            request.headers[header.name_string()] = header.value();
+        }
+        updateReceivedRequest(request);
+        response = "HTTP/1.1 200 OK\r\n";
+        // Add some response headers.
+        response = std::accumulate(
+            responseHeaders.begin(), responseHeaders.end(), response,
+            [](const std::string& acc, const auto& header) {
+                return acc + header.first + ": " + header.second + "\r\n";
+            });
+        // Response body.
+        response += "\r\n";
+        response += responseGenerator(request);
+    }
+    else
+    {
+        response = "HTTP/1.1 400 Bad Request\r\n";
     }
 
-    // Response body.
-    response += "\r\n";
-    response += responseGenerator(request);
     boost::asio::write(*socket, boost::asio::buffer(response));
-    updateReceivedRequest(request);
     startAccept();
 }
 

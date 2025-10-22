@@ -134,7 +134,7 @@ run_checks_and_remediations() {
 
 run_flash() {
     echo "Starting to flash..." >&2
-    "${openbmc_flashy_path}/flash_procedure/flashy" \
+    "${openbmc_flashy_path}/flashy" \
     --imagepath "$openbmc_image_path" --device "$device_id" \
     || handle_flashy_error "$?"
     echo "Flashing succeeded. It is safe to reboot this system." >&2

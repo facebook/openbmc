@@ -1,7 +1,7 @@
-From 2442b42f4f263a5f22ae7519a7ba75af7126f88c Mon Sep 17 00:00:00 2001
+From ce0e5dc2983e882d593176db6fdafca53717b009 Mon Sep 17 00:00:00 2001
 From: Jae Hyun Yoo <jae.hyun.yoo@linux.intel.com>
 Date: Tue, 13 Sep 2022 08:56:54 -0700
-Subject: [PATCH 206/216] i2c: aspeed: add i2c slave inactive timeout support
+Subject: [PATCH 206/217] i2c: aspeed: add i2c slave inactive timeout support
 
 Summary:
 backport below patches to kernel 5.15 to support i2c slave inactive timeout.

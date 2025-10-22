@@ -1,7 +1,7 @@
-From 019cc8b17889cf66c19c86791009dc5d136712b0 Mon Sep 17 00:00:00 2001
+From 7a06809a0b81e3eb4537ffdae9606c6fc30c9384 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Mon, 9 May 2022 22:55:21 -0700
-Subject: [PATCH 201/216] spi: add user-mode aspeed spi driver
+Subject: [PATCH 201/217] spi: add user-mode aspeed spi driver
 
 Summary:
 The driver was copied from linux-aspeed-5.15, and it is used to access

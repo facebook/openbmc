@@ -1,7 +1,7 @@
-From 699cd683b088d9421e8de08798ad72e8b2af358d Mon Sep 17 00:00:00 2001
+From 189b2bb38ce331e553a00386493adc4afaba7eae Mon Sep 17 00:00:00 2001
 From: dhineskumareswaran <dhineskumar.eswaran@celestica.com>
 Date: Mon, 5 Dec 2022 12:17:20 +0000
-Subject: [PATCH 200/216] spi: aspeed: add shutdown path for AST25XX SPI
+Subject: [PATCH 200/217] spi: aspeed: add shutdown path for AST25XX SPI
  controller
 
 Summary:

@@ -1,7 +1,7 @@
-From 27ca462b394facd0a69797f8ab4ae853834d62e4 Mon Sep 17 00:00:00 2001
+From 0ad7311efaf9568399e105766c75d65d61b231d2 Mon Sep 17 00:00:00 2001
 From: Johnny Huang <johnny_huang@aspeedtech.com>
 Date: Mon, 26 Dec 2022 10:04:48 +0800
-Subject: [PATCH 215/216] drivers/misc: Add Aspeed OTP control register
+Subject: [PATCH 215/217] drivers/misc: Add Aspeed OTP control register
 
 AST2600 built-in 64Kbit one time programmable (OTP) memory for
 configuration, strap, key storage, patch and user data. Each memory
@@ -20,10 +20,10 @@ Change-Id: Ic2e8c2bf829dbde4d4e437c97edcc0a4591bcb46
  create mode 100644 include/uapi/linux/aspeed-otp.h
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-index 752d3682abf6..be70904582c8 100644
+index 0a8dd7ad1674..fc4eabbeb300 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 +++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-@@ -955,6 +955,12 @@ udma: dma-controller@1e79e000 {
+@@ -959,6 +959,12 @@ udma: dma-controller@1e79e000 {
  				#dma-cells = <1>;
  				status = "disabled";
  			};

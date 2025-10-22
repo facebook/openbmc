@@ -51,6 +51,7 @@ SRC_URI:append = " \
     file://0214-serial-8250-Add-AST2600-UART-driver.patch \
     file://0215-drivers-misc-Add-Aspeed-OTP-control-register.patch \
     file://0216-soc-aspeed-Add-Post-Code-Control.patch \
+    file://0217-i2c-ast2600-support-ssif.patch \
 "
 
 #

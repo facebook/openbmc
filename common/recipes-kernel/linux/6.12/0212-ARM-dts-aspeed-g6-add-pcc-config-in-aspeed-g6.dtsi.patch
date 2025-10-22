@@ -1,7 +1,7 @@
-From 0c8dc842bd122780ef81914996664d9926b746dc Mon Sep 17 00:00:00 2001
+From 44e888ddb9269cae570ab3205ca54b81921bbfed Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Wed, 13 Mar 2024 09:19:06 +0800
-Subject: [PATCH 212/216] ARM: dts: aspeed-g6: add pcc config in aspeed-g6.dtsi
+Subject: [PATCH 212/217] ARM: dts: aspeed-g6: add pcc config in aspeed-g6.dtsi
 
 Add PCC config in aspeed-g6.dtsi
 ---
@@ -9,10 +9,10 @@ Add PCC config in aspeed-g6.dtsi
  1 file changed, 7 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-index acd86dcc40f3..752d3682abf6 100644
+index 6bb1558a17f7..0a8dd7ad1674 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 +++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-@@ -766,6 +766,13 @@ lpc_snoop: lpc-snoop@80 {
+@@ -770,6 +770,13 @@ lpc_snoop: lpc-snoop@80 {
  					status = "disabled";
  				};
  

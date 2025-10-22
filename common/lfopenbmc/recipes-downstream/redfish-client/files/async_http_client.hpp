@@ -5,6 +5,7 @@
 #include <sdbusplus/async/context.hpp>
 #include <sdbusplus/async/task.hpp>
 
+#include <expected>
 #include <memory>
 #include <string>
 
@@ -45,9 +46,16 @@ class AsyncHttpHandle
     sdbusplus::async::task<AsyncHttpResponse> get(
         sdbusplus::async::context& ctx);
 
+    sdbusplus::async::task<std::expected<AsyncHttpResponse, std::string>>
+        tryGet(sdbusplus::async::context& ctx);
+
     sdbusplus::async::task<AsyncHttpResponse> post(
         sdbusplus::async::context& ctx,
         const std::vector<HttpMultipartBodyPart>& multipart);
+
+    sdbusplus::async::task<std::expected<AsyncHttpResponse, std::string>>
+        tryPost(sdbusplus::async::context& ctx,
+                const std::vector<HttpMultipartBodyPart>& multipart);
 
   private:
     CURL* easyHandle;

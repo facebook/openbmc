@@ -17,6 +17,9 @@
 % endfor
 % endif
 
+#include <exception>
+#include <expected>
+
 #include <nlohmann/json.hpp>
 
 namespace redfish_binding
@@ -96,6 +99,18 @@ NLOHMANN_JSON_SERIALIZE_ENUM(${cpp_def.identifier.id}, {
 inline ${cpp_def.identifier.id} parse${cpp_def.identifier.id}(const std::string& json)
 {
   return nlohmann::json::parse(json).template get<${cpp_def.identifier.id}>();
+}
+
+inline std::expected<${cpp_def.identifier.id}, std::string> tryParse${cpp_def.identifier.id}(const std::string& json)
+{
+  try
+    {
+        return parse${cpp_def.identifier.id}(json);
+    }
+    catch (const std::exception& exn)
+    {
+        return std::unexpected(exn.what());
+    }
 }
 
 } // namespace ${cpp_def.identifier.namespace}

@@ -223,6 +223,19 @@ sdbusplus::async::task<AsyncHttpResponse> AsyncHttpHandle::get(
     co_return co_await perform(ctx);
 }
 
+sdbusplus::async::task<std::expected<AsyncHttpResponse, std::string>>
+    AsyncHttpHandle::tryGet(sdbusplus::async::context& ctx)
+{
+    try
+    {
+        co_return co_await get(ctx);
+    }
+    catch (const std::exception& exn)
+    {
+        co_return std::unexpected(exn.what());
+    }
+}
+
 sdbusplus::async::task<AsyncHttpResponse> AsyncHttpHandle::post(
     sdbusplus::async::context& ctx,
     const std::vector<HttpMultipartBodyPart>& multipart)
@@ -230,6 +243,21 @@ sdbusplus::async::task<AsyncHttpResponse> AsyncHttpHandle::post(
     HandleLock lock(easyHandle, multiHandle, mutex);
     Mime mime{easyHandle, multipart};
     co_return co_await perform(ctx);
+}
+
+sdbusplus::async::task<std::expected<AsyncHttpResponse, std::string>>
+    AsyncHttpHandle::tryPost(
+        sdbusplus::async::context& ctx,
+        const std::vector<HttpMultipartBodyPart>& multipart)
+{
+    try
+    {
+        co_return co_await post(ctx, multipart);
+    }
+    catch (const std::exception& exn)
+    {
+        co_return std::unexpected(exn.what());
+    }
 }
 
 sdbusplus::async::task<AsyncHttpResponse> AsyncHttpHandle::perform(

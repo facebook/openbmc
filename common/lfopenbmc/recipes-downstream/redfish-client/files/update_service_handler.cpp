@@ -23,14 +23,7 @@ auto loop(sdbusplus::async::context& ctx,
     sdbusplus::server::manager_t manager{ctx, SoftwareVersion::namespace_path};
     while (!ctx.stop_requested())
     {
-        try
-        {
-            co_await handler->load(ctx);
-        }
-        catch (const std::exception& exn)
-        {
-            info("Exception loading inventory: {EXC}", "EXC", exn.what());
-        }
+        co_await handler->load(ctx);
         co_await sdbusplus::async::sleep_for(
             ctx, std::chrono::milliseconds(intervalMilliseconds));
     };
@@ -97,23 +90,36 @@ std::function<int()>& Software::randomIdGenerator()
 UpdateServiceHandler::UpdateServiceHandler(
     const std::string& host, const std::string& inventoryName,
     const std::vector<UpdateServiceMapper>& mappers) :
-    handle(std::make_unique<AsyncHttpHandle>(
-        std::format("http://{}/redfish/v1/UpdateService/{}?$expand=.", host,
-                    inventoryName))),
-    mappers(mappers)
+    inventoryUrl(std::format("http://{}/redfish/v1/UpdateService/{}?$expand=.",
+                             host, inventoryName)),
+    handle(std::make_unique<AsyncHttpHandle>(inventoryUrl)), mappers(mappers)
 {}
 
 auto UpdateServiceHandler::load(sdbusplus::async::context& ctx)
     -> sdbusplus::async::task<void>
 {
-    auto response = co_await handle->get(ctx);
-    if (response.code != 200)
+    auto response = co_await handle->tryGet(ctx);
+    if (!response.has_value())
     {
-        throw std::runtime_error(
-            std::format("Http response error code: {}", response.code));
+        error("Http error for {URL}: {ERR}", "URL", inventoryUrl, "ERR",
+              response.error());
+        co_return;
     }
-    auto inventoryCollection = redfish_binding::SoftwareInventoryCollection::
-        parseSoftwareInventoryCollection(response.body);
+    if (response->code != 200)
+    {
+        error("Http response error code from {URL}: {CODE}", "URL",
+              inventoryUrl, "CODE", response->code);
+        co_return;
+    }
+    auto tryInventoryCollection = redfish_binding::SoftwareInventoryCollection::
+        tryParseSoftwareInventoryCollection(response->body);
+    if (!tryInventoryCollection.has_value())
+    {
+        error("Failed to parse software inventory collection from {URL}: {ERR}",
+              "URL", inventoryUrl, "ERR", tryInventoryCollection.error());
+        co_return;
+    }
+    auto& inventoryCollection = tryInventoryCollection.value();
     auto& maybeMembers = inventoryCollection.getMembers();
     if (!maybeMembers.hasValue())
     {

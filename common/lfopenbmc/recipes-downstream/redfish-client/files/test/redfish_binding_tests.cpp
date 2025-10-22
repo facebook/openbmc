@@ -3,6 +3,13 @@
 
 #include <gtest/gtest.h>
 
+TEST(RedfishBindingTest, ParseErrorTest)
+{
+  std::string invalidJson = "{invalid=";
+  auto res = redfish_binding::Sensor::tryParseSensor(invalidJson);
+  EXPECT_EQ(res.has_value(), false);
+}
+
 TEST(RedfishBindingTest, ParseSensorTest)
 {
     std::string sensorJson = R"(

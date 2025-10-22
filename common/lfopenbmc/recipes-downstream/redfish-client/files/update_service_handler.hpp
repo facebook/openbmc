@@ -59,6 +59,7 @@ class UpdateServiceHandler
     auto load(sdbusplus::async::context& ctx) -> sdbusplus::async::task<void>;
 
   private:
+    const std::string inventoryUrl;
     std::unique_ptr<AsyncHttpHandle> handle;
     const std::vector<UpdateServiceMapper>& mappers;
     std::unordered_map<std::string, std::unique_ptr<Software>> inventory;

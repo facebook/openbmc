@@ -85,6 +85,20 @@ RETRY_UPDATE_COUNT=200
 MAX_RETRIES=3
 lockfile="/tmp/pldm-fw-update.lock"
 
+# pldm ComponentIdentifier
+readonly SD_S3_VR_ID="02" # SD VR PVDD11_S3
+readonly SD_CPU0_VR_ID="03" # SD VR PVDDCR_CPU0
+readonly SD_CPU1_VR_ID="01" # SD VR PVDDCR_CPU1
+readonly WF_VR_INF_AB_CXL1="01" # WF VR PVDDQ_AB 1
+readonly WF_VR_INF_AB_CXL2="03" # WF VR PVDDQ_AB 2
+readonly WF_VR_INF_CD_CXL1="02" # WF VR PVDDQ_CD 1
+readonly WF_VR_INF_CD_CXL2="04" # WF VR PVDDQ_CD 2
+
+# phosphor-dbus-interfaces define
+readonly TargetDetermined="xyz.openbmc_project.Software.Update.TargetDetermined"
+readonly UpdateSuccessful="xyz.openbmc_project.Software.Update.UpdateSuccessful"
+readonly ApplyFailed="xyz.openbmc_project.Software.Update.ApplyFailed"
+
 exec 200>"$lockfile"
 retry_remain_count=$RETRY_UPDATE_COUNT
 echo ""
@@ -97,6 +111,7 @@ do
         if [ $retry_remain_count -eq 0 ]; then
             echo ""
 			echo "Retry time exhausted, abort"
+			add_result_sel "${FAILURE_MSG}"
             exit 1
         fi
         sleep 10
@@ -154,6 +169,9 @@ VR_HIGHBYTE_OFFSET=""
 VR_LOWBYTE_OFFSET=""
 remaining_write_times=""
 
+readonly SUCCESS_MSG="Success"
+readonly FAILURE_MSG="Failure"
+
 # For firmware update
 # PLDM update
 FAIL_TO_UPDATE_PLDM_TIME_OUT_ERROR=22
@@ -194,6 +212,7 @@ check_power_on() {
 
 	power_status=$(gpioget "$(basename /sys/bus/i2c/devices/"$i2c_bus"-0023/*gpiochip*)" 16)
 	if [ "$power_status" != "1" ]; then
+	    add_result_sel "${FAILURE_MSG}"
 		echo "Check Power : Off"
 		echo "Power on before WF PLDM component update"
 		exit 255
@@ -228,6 +247,7 @@ retimer_get_source() {
 		GetSubTree sias "/xyz/openbmc_project/FruDevice" \
 		0 1 "xyz.openbmc_project.FruDevice") || {
 		echo "Failed to execute busctl call ObjectMapper"
+		add_result_sel "${FAILURE_MSG}"
 		exit 1
 	}
 
@@ -245,6 +265,46 @@ retimer_get_source() {
 
 	echo "Cannot found corresponding vendor of bus $target_bus"
 	exit 1
+}
+
+update_vr_new_bic_name() {
+	local org_bic_name=${bic_name}
+	local vr_type=$1
+
+	if [ "${org_bic_name}" == "sd_vr" ]; then
+		case "$vr_type" in
+			*"$SD_S3_VR_ID")
+				NEW_BIC_NAME="SD VR PVDD11_S3"
+				;;
+			*"$SD_CPU0_VR_ID")
+				NEW_BIC_NAME="SD VR PVDDCR_CPU0"
+				;;
+			*"$SD_CPU1_VR_ID")
+				NEW_BIC_NAME="SD VR PVDDCR_CPU1"
+				;;
+			*)
+				echo "Failed to set the new bic name because of unknown VR type"
+				;;
+		esac
+	elif [ "${org_bic_name}" == "wf_vr" ]; then
+		case "$vr_type" in
+			*"$WF_VR_INF_AB_CXL1")
+				NEW_BIC_NAME="WF VR PVDDQ_AB 1"
+				;;
+			*"$WF_VR_INF_AB_CXL2")
+				NEW_BIC_NAME="WF VR PVDDQ_AB 2"
+				;;
+			*"$WF_VR_INF_CD_CXL1")
+				NEW_BIC_NAME="WF VR PVDDQ_CD 1"
+				;;
+			*"$WF_VR_INF_CD_CXL2")
+				NEW_BIC_NAME="WF VR PVDDQ_CD 2"
+				;;
+			*)
+				echo "Failed to set the new bic name because of unknown VR type"
+				;;
+		esac
+	fi
 }
 
 sd_vr_get_source() {
@@ -932,6 +992,7 @@ is_other_bic_updating() {
 			if [ $retry_remain_count -eq 0 ]; then
 				echo ""
 				echo "Retry time exhausted, abort"
+				add_result_sel "${FAILURE_MSG}"
 				exit 255
 			fi
 		else
@@ -958,27 +1019,26 @@ prompt_confirmation() {
 error_and_exit() {
 	echo "Please provide $1 image"
 	show_usage
+	add_result_sel "${FAILURE_MSG}"
 	exit 255
 }
 
 get_offset_for_vr_type() {
     local vr_type=$1
-    local S3_VR_ID="02"
-    local CPU0_VR_ID="03"
-    local CPU1_VR_ID="01"
 
     case "$vr_type" in
-        *"$S3_VR_ID")
+        *"$SD_S3_VR_ID")
             printf "%s\n" "${S3_REMAINING_WRTIE_OFFSET[@]}"
             ;;
-        *"$CPU0_VR_ID")
+        *"$SD_CPU0_VR_ID")
             printf "%s\n" "${CPU0_REMAINING_WRTIE_OFFSET[@]}"
             ;;
-        *"$CPU1_VR_ID")
+        *"$SD_CPU1_VR_ID")
             printf "%s\n" "${CPU1_REMAINING_WRTIE_OFFSET[@]}"
             ;;
         *)
             echo "Failed to initialize remaining write because of unknown VR type"
+			add_result_sel "${FAILURE_MSG}"
             exit 255
             ;;
     esac
@@ -1001,6 +1061,7 @@ Initialize_vr_remaining_write() {
             ;;
         *)
             echo "Failed to initialize remaining write because of unknown VR device"
+			add_result_sel "${FAILURE_MSG}"
             exit $FAIL_TO_UPDATE_PLDM_FAIL_TO_INIT_REAMAINING_WRITE_UNKNOWN_VR_DEVICE
             ;;
     esac
@@ -1025,6 +1086,7 @@ check_vr_remaining_write() {
 
     if [ "$remaining_write_times" -eq 0 ]; then
         echo "VR device can't be updated because the remaining write times is 0"
+		add_result_sel "${FAILURE_MSG}"
         exit 255
     fi
 }
@@ -1131,6 +1193,7 @@ handle_firmware_operations () {
 			systemctl start pldmd
 			sleep 60
 			echo "Failed to Recovery BIC. Exiting with error code: $ret"
+			add_result_sel "${FAILURE_MSG}"
 			exit "$ret"
 		fi
 
@@ -1146,6 +1209,7 @@ handle_firmware_operations () {
 	if [ "$bic_name" == "sd_vr" ]; then
 		if ! [[ "$slot_id" =~ ^[1-8]$ ]]; then
 			echo "Failed to update SD VR because <slot${slot_id}> is wrong"
+			add_result_sel "${FAILURE_MSG}"
 			exit $FAIL_TO_UPDATE_PLDM_SD_VR_SLOT_ID_IS_WRONG
 		fi
 		check_vr_remaining_write "$slot_id" "$SD_EEPROM_ADDR" "$pldm_image"
@@ -1154,6 +1218,7 @@ handle_firmware_operations () {
 
 	if ! systemctl is-active --quiet pldmd; then
 		echo "STOP. PLDM service is not running. Please check pldmd status."
+		add_result_sel "${FAILURE_MSG}"
 		exit 255
 	fi
 
@@ -1221,6 +1286,7 @@ handle_firmware_operations () {
 	delete_software_id
 	# Update BIC version to Settings D-Bus
 	update_bic_version_dbus "$bic_name" "$slot_id"
+	add_result_sel "${SUCCESS_MSG}"
 	echo "Completed firmware operations for slot $slot_id."
 	echo "Done"
 	return 0
@@ -1235,6 +1301,7 @@ retry_firmware_operation() {
     if [ $ret -eq 0 ]; then
         return 0
 	elif [ $ret -eq $FAIL_TO_UPDATE_PLDM_MCTP_EID_NOT_EXIST ]; then
+	    add_result_sel "${FAILURE_MSG}"
 		return $ret
     fi
 
@@ -1248,8 +1315,55 @@ retry_firmware_operation() {
         fi
     done
 
+    add_result_sel "${FAILURE_MSG}"
     echo "Maximum retries ($MAX_RETRIES) reached. Exiting with error code: $ret."
     exit "$ret"
+}
+
+add_init_sel() {
+	log-create ${TargetDetermined} --json "{\"TARGET_NAME\":\"${NEW_BIC_NAME} slot${slot_id}\", \"IMAGE_DATA\":\"${pldm_image}\"}"
+}
+
+add_result_sel() {
+	RESULT="$1"
+
+	if [ "${RESULT}" == "${FAILURE_MSG}" ]; then
+		log-create ${ApplyFailed} --json "{\"IMAGE_DATA\":\"${pldm_image}\", \"TARGET_NAME\":\"${NEW_BIC_NAME} slot${slot_id}\"}"
+	elif [ "${RESULT}" == "${SUCCESS_MSG}" ]; then
+		log-create ${UpdateSuccessful} --json "{\"TARGET_NAME\":\"${NEW_BIC_NAME} slot${slot_id}\", \"IMAGE_DATA\":\"${pldm_image}\"}"
+	fi
+}
+
+get_new_bic_name() {
+	local bic_name="$1"
+	case "$bic_name" in
+		sd)
+			echo "SD BIC"
+			;;
+		wf)
+			echo "WF BIC"
+			;;
+		sd_retimer)
+			echo "SD RETIMER"
+			;;
+		sd_vr)
+			;;
+		wf_vr)
+			;;
+		*)
+			echo "$bic_name"
+			;;
+	esac
+}
+
+get_vr_type() {
+	local init_header_offset descriptor_header_offset vr_hex
+
+	init_header_offset=$(hexdump -n 1 -s 0x23 -e '1/1 "%d"' "$pldm_image") || return 1
+	descriptor_header_offset=$(hexdump -n 1 -s $((0x23 + init_header_offset + 2)) -e '1/2 "%d"' "$pldm_image") || return 1
+	vr_hex=$(hexdump -n 1 -s $((0x23 + init_header_offset + 2 + descriptor_header_offset + 4)) -e '1/1 "%02x"' "$pldm_image") || return 1
+
+	echo "$vr_hex"
 }
 
 # Check for minimum required arguments
@@ -1260,6 +1374,8 @@ slot_id=
 bic_name=$1
 pldm_image=$2
 
+NEW_BIC_NAME=$(get_new_bic_name "$bic_name")
+
 # Determine recovery mode and check for required image files based on argument count
 if [ $# -eq 5 ] && [ "$2" == "--rcvy" ]; then
 	echo -e "[Warning]: You are recovering and updating one BIC using an outdated method. 
@@ -1268,6 +1384,7 @@ if [ $# -eq 5 ] && [ "$2" == "--rcvy" ]; then
 		  	pldm-fw-update.sh [sd|wf] --rcvy <slot_id> <bic image>"
 	if [ "$bic_name" == "sd_vr" ] || [ "$bic_name" == "wf_vr" ]; then
 		echo "VR device can't be updated in recovery mode"
+		add_result_sel "${FAILURE_MSG}"
 		exit 255
 	elif [ "$bic_name" == "sd" ]; then
 		echo "Initiate SD BIC recovery"
@@ -1283,12 +1400,14 @@ if [ $# -eq 5 ] && [ "$2" == "--rcvy" ]; then
 	pldm_fw_identify "$bic_name" "$pldm_image"
 	ident_result=$?
 	if [ $ident_result -eq $PLDM_FW_IDENT_FAIL ]; then
+		add_result_sel "${FAILURE_MSG}"
 		exit 255
 	fi
 	retry_firmware_operation
 elif [ $# -eq 4 ] && [ "$2" == "--rcvy" ]; then
     if [ "$bic_name" == "sd_vr" ] || [ "$bic_name" == "wf_vr" ]; then
 		echo "VR device can't be updated in recovery mode"
+		add_result_sel "${FAILURE_MSG}"
 		exit 255
 	elif [ "$bic_name" == "sd" ]; then
 		echo "Initiate SD BIC recovery"
@@ -1302,7 +1421,7 @@ elif [ $# -eq 4 ] && [ "$2" == "--rcvy" ]; then
 
 	#Aspeed tool requires ast1030_uart_fw.bin to be in the Work directory
 	ln -s /usr/bin/ast1030_uart_fw.bin "$(pwd)/ast1030_uart_fw.bin"
-	
+
 	echo "Start recover and update  $slot_id $bic_name BIC via UART"
 	case $bic_name in
 	sd)
@@ -1320,6 +1439,10 @@ elif [ $# -eq 3 ] && [[ "$2" =~ ^[1-8]+$ ]]; then
 	slot_id=$2
 	pldm_image=$3
 
+	if [ "$bic_name" != "sd_vr" ] && [ "$bic_name" != "wf_vr" ]; then
+		add_init_sel
+	fi
+
 	pldm_fw_identify "$bic_name" "$pldm_image" "$slot_id"
 	ident_result=$?
 	if [ $ident_result -eq $PLDM_FW_IDENT_FAIL ]; then
@@ -1335,10 +1458,11 @@ elif [ $# -eq 3 ] && [[ "$2" =~ ^[1-8]+$ ]]; then
 			pldm-package-re-wrapper bic -s "$slot_id" -f "$pldm_image"
 			pldm_image="${pldm_image}_re_wrapped"
 		fi
-		# get offset in uint8_t
-		init_header_offset=$(hexdump -n 1 -s 0x23 -e '1/1 "%d"' "$pldm_image")
-		descriptor_header_offset=$(hexdump -n 1 -s $((0x23+init_header_offset+2)) -e '1/2 "%d"' "$pldm_image")
-		VR_TYPE=$(hexdump -n 1 -s $((0x23+init_header_offset+2+descriptor_header_offset+4)) -e '1/1 "%02x"' "$pldm_image")
+
+		VR_TYPE="$(get_vr_type)" || { echo "parse VR_TYPE failed"; exit 1; }
+		update_vr_new_bic_name "${VR_TYPE}"
+	    add_init_sel
+
 		#VR_TYPE=$(hexdump -n 1 -s 0x6D -e '1/1 "%02x"' "$pldm_image")
 		mapfile -t VR_OFFSET < <(get_offset_for_vr_type "$VR_TYPE")
 		VR_HIGHBYTE_OFFSET="${VR_OFFSET[0]}"
@@ -1352,6 +1476,10 @@ elif [ $# -eq 3 ] && [[ "$2" =~ ^[1-8]+$ ]]; then
 			pldm-package-re-wrapper bic -s "$slot_id" -f "$pldm_image"
 			pldm_image="${pldm_image}_re_wrapped"
 		fi
+
+		VR_TYPE="$(get_vr_type)" || { echo "parse VR_TYPE failed"; exit 1; }
+		update_vr_new_bic_name "${VR_TYPE}"
+	    add_init_sel
 	elif [ "$bic_name" == "sd" ]; then
 		echo "Initiate SD BIC update"
 		pldm-package-re-wrapper bic -s "$slot_id" -f "$pldm_image"
@@ -1373,8 +1501,10 @@ elif [ $# -eq 3 ] && [[ "$2" =~ ^[1-8]+$ ]]; then
 		exit_code=$?
 		if [ $exit_code -eq $NO_RETIMER_ON_THE_FRU ]; then
 			echo "Retimer update failed, no retimer on the slot${slot_id}."
+			add_result_sel "${FAILURE_MSG}"
 			exit $exit_code
 		elif [ $exit_code -ne 0 ]; then
+			add_result_sel "${FAILURE_MSG}"
 			exit $exit_code
 		fi
 	fi
@@ -1383,6 +1513,7 @@ else
 	pldm_fw_identify "$bic_name" "$pldm_image"
 	ident_result=$?
 	if [ $ident_result -eq $PLDM_FW_IDENT_FAIL ]; then
+		add_result_sel "${FAILURE_MSG}"
 		exit 255
 	fi
 	prompt_confirmation

@@ -20,6 +20,7 @@
 #include <string.h>
 #include <facebook/bic_power.h>
 #include <facebook/bic_xfer.h>
+#include <facebook/bic_ipmi.h>
 #include <openbmc/kv.h>
 #include "dimm.h"
 #include "dimm-util-plat.h"
@@ -114,6 +115,11 @@ static const char *fru_name_fby35[NUM_FRU_FBY35] = {
   "all",
 };
 
+static const char *fru_name_fby35_hsm[FRU_ID_MIN_FBY35 + 1] = {
+  "slot1",
+  "all",
+};
+
 static bool direct_xfer = false;
 static uint8_t bic_bus_base = BIC_I3C_BASE;
 static int type = 0;
@@ -156,6 +162,14 @@ plat_init(void) {
 
     num_dimms_per_cpu = MAX_DIMM_NUM_FBGL;
     direct_xfer = true;
+  } else if (type == SERVER_TYPE_CL_EMR &&
+   ((bic_is_exp_prsnt(FRU_ID_MIN_FBY35) & PRESENT_2OU) == PRESENT_2OU)) {
+    //type_HSM only have slot1
+    num_frus = FRU_ID_MIN_FBY35 + 1;
+    fru_name = fru_name_fby35_hsm;
+    fru_id_max = FRU_ID_MIN_FBY35;
+    fru_id_all = FRU_ID_MIN_FBY35 + 1;
+    num_dimms_per_cpu = MAX_DIMM_NUM_FBY35;
   } else {
     num_dimms_per_cpu = MAX_DIMM_NUM_FBY35;
   }

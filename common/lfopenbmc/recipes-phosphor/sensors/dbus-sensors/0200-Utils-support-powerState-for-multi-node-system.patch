@@ -1,7 +1,7 @@
-From 879642d18908130c63e92c8e841f14f0242c962e Mon Sep 17 00:00:00 2001
+From 520344c32ae0eda0712178682881ccd440817c08 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
-Subject: [PATCH] Utils: support powerState for multi-node system
+Subject: [PATCH 200/204] Utils: support powerState for multi-node system
 
 The current code of dbus-sensors only get powerState values for Chassis0
 and Host0 which cannot be used for the system with multiple server
@@ -885,10 +885,10 @@ index 9f799f5..221645b 100644
  
      void getPath(const std::string& path, const std::string& interface,
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
-index 0ee4009..5d155f8 100644
+index cdd7cdc..a92c940 100644
 --- a/src/hwmon-temp/HwmonTempMain.cpp
 +++ b/src/hwmon-temp/HwmonTempMain.cpp
-@@ -606,7 +606,11 @@ static void powerStateChanged(
+@@ -597,7 +597,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {
@@ -957,7 +957,7 @@ index e679dc2..e66f68c 100644
      ~PSUProperty() = default;
  
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 996265b..d0f9977 100644
+index cdca188..ee31633 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -612,6 +612,7 @@ static void createSensorsCallback(
@@ -977,7 +977,7 @@ index 996265b..d0f9977 100644
                  sensors[sensorName]->setupRead();
                  ++numCreated;
                  lg2::debug("Created '{NUM}' sensors so far", "NUM", numCreated);
-@@ -1240,7 +1241,11 @@ static void powerStateChanged(
+@@ -1235,7 +1236,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {
@@ -1028,5 +1028,5 @@ index b5c922e..2d96ccf 100644
  
      void markFunctional(bool isFunctional)
 -- 
-2.25.1
+2.47.3
 

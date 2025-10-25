@@ -1,4 +1,4 @@
-#include "daemon.hpp"
+#include <redfish_client/daemon.hpp>
 
 #include <xyz/openbmc_project/Association/Definitions/client.hpp>
 #include <xyz/openbmc_project/Sensor/Value/client.hpp>

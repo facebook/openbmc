@@ -42,7 +42,7 @@ foreach name, sources : tests
             cpp_args: cpp_args,
             link_args: link_args,
             link_with: redfish_client_library,
-            include_directories: '../',
+            include_directories: ['../', '../include/'],
         ),
     )
 endforeach

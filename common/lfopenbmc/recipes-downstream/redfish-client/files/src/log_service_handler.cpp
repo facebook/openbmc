@@ -1,4 +1,4 @@
-#include "log_service_handler.hpp"
+#include <redfish_client/log_service_handler.hpp>
 
 #include <phosphor-logging/commit.hpp>
 #include <phosphor-logging/lg2.hpp>

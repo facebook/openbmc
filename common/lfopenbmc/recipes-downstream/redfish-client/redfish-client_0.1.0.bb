@@ -32,21 +32,8 @@ SRC_URI = " \
     file://configurations \
     file://redfish-binding \
     file://test \
-    file://async_http_client.cpp \
-    file://async_http_client.hpp \
-    file://daemon.cpp \
-    file://daemon.hpp \
-    file://daemon_main.cpp \
-    file://log_service_handler.cpp \
-    file://log_service_handler.hpp \
-    file://persist_map.cpp \
-    file://persist_map.hpp \
-    file://sensor.cpp \
-    file://sensor.hpp \
-    file://config.hpp \
-    file://config.cpp \
-    file://update_service_handler.hpp \
-    file://update_service_handler.cpp \
+    file://include \
+    file://src \
     file://xyz.openbmc_project.RedfishClient.service \
 "
 

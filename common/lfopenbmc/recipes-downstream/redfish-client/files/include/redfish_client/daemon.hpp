@@ -1,7 +1,7 @@
 #pragma once
 
-#include "config.hpp"
-#include "sensor.hpp"
+#include <redfish_client/config.hpp>
+#include <redfish_client/sensor.hpp>
 
 #include <sdbusplus/async.hpp>
 #include <xyz/openbmc_project/Association/Definitions/aserver.hpp>

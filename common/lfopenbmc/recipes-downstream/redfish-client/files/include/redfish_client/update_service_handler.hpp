@@ -1,7 +1,7 @@
 #pragma once
 
-#include "async_http_client.hpp"
-#include "config.hpp"
+#include <redfish_client/async_http_client.hpp>
+#include <redfish_client/config.hpp>
 #include "redfish-binding/SoftwareInventory_SoftwareInventory.hpp"
 
 #include <sdbusplus/async/context.hpp>

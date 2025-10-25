@@ -1,6 +1,6 @@
-#include "sensor.hpp"
+#include <redfish_client/sensor.hpp>
 
-#include "redfish-binding/Sensor_Sensor.hpp"
+#include <redfish-binding/Sensor_Sensor.hpp>
 
 namespace redfish_client_daemon
 {

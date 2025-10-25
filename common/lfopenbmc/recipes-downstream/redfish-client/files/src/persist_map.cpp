@@ -1,5 +1,4 @@
-
-#include "persist_map.hpp"
+#include <redfish_client/persist_map.hpp>
 
 #include <nlohmann/json.hpp>
 #include <phosphor-logging/lg2.hpp>

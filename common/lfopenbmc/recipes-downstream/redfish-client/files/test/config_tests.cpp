@@ -1,4 +1,4 @@
-#include "config.hpp"
+#include <redfish_client/config.hpp>
 
 #include <gtest/gtest.h>
 

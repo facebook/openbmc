@@ -1,4 +1,4 @@
-#include "sensor.hpp"
+#include <redfish_client/sensor.hpp>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>

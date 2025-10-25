@@ -1,4 +1,4 @@
-#include "log_service_handler.hpp"
+#include <redfish_client/log_service_handler.hpp>
 
 #include <nlohmann/json.hpp>
 #include <sdbusplus/server.hpp>

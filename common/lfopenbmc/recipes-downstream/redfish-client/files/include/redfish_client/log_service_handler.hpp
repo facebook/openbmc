@@ -1,7 +1,7 @@
 #pragma once
 
-#include "async_http_client.hpp"
-#include "persist_map.hpp"
+#include <redfish_client/async_http_client.hpp>
+#include <redfish_client/persist_map.hpp>
 #include "redfish-binding/LogEntryCollection_LogEntryCollection.hpp"
 #include "redfish-binding/LogEntry_EventSeverity.hpp"
 #include "redfish-binding/LogEntry_LogEntry.hpp"

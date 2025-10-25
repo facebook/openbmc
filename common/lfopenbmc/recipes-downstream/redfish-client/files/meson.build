@@ -58,14 +58,16 @@ cpp_args = ['-DBOOST_STACKTRACE_USE_ADDR2LINE', '-ggdb', '-fPIC']
 link_args = ['-rdynamic']
 
 srcs = [
-    'async_http_client.cpp',
-    'config.cpp',
-    'daemon.cpp',
-    'persist_map.cpp',
-    'sensor.cpp',
-    'log_service_handler.cpp',
-    'update_service_handler.cpp',
+    'src/async_http_client.cpp',
+    'src/config.cpp',
+    'src/daemon.cpp',
+    'src/persist_map.cpp',
+    'src/sensor.cpp',
+    'src/log_service_handler.cpp',
+    'src/update_service_handler.cpp',
 ]
+
+root_inc = include_directories('include')
 
 redfish_client_library = static_library(
     'redfish-client-lib',
@@ -73,12 +75,20 @@ redfish_client_library = static_library(
     cpp_args: cpp_args,
     link_args: link_args,
     dependencies: base_deps,
+    include_directories: root_inc,
+)
+
+install_subdir(
+    'include/redfish_client',
+    install_dir: get_option('includedir'),
+    strip_directory: false,
 )
 
 executable(
     'redfish-client',
-    'daemon_main.cpp',
+    'src/daemon_main.cpp',
     dependencies: base_deps,
+    include_directories: root_inc,
     cpp_args: cpp_args,
     link_args: link_args,
     link_with: redfish_client_library,

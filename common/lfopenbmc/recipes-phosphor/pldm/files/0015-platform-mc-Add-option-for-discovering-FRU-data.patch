@@ -1,4 +1,4 @@
-From e2be0d3dbcabb4e952e49549e4a5762343af464d Mon Sep 17 00:00:00 2001
+From f2b095ba8672763f02b76c21626944c924b17d54 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
 Subject: [PATCH 15/20] platform-mc: Add option for discovering FRU data
@@ -19,7 +19,7 @@ Upstream-Status: Pending
  5 files changed, 67 insertions(+), 2 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index d382ad2..9e28130 100644
+index c75d9fe..7613501 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -142,6 +142,10 @@ conf_data.set(
@@ -31,13 +31,13 @@ index d382ad2..9e28130 100644
 +    get_option('discovery-fru-data-from-terminus').allowed(),
 +)
  
- configure_file(output: 'config.h', configuration: conf_data)
- 
+ # Firmware update inotify option
+ if get_option('fw-update-pkg-inotify').allowed()
 diff --git a/meson.options b/meson.options
-index c66d751..9b398f5 100644
+index b9e7155..49e51cb 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -239,3 +239,11 @@ option(
+@@ -247,3 +247,11 @@ option(
      description: 'Recovery in request timeout. Calls `.Recover` method on timeout to handle communication recovery',
      value: 'enabled',
  )

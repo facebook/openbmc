@@ -1,4 +1,4 @@
-From bfb99397dad9661340d2e52ff90604d582426f1b Mon Sep 17 00:00:00 2001
+From a68ba30fa7e40fb847acb22f7397f8f758e304e8 Mon Sep 17 00:00:00 2001
 From: lora <lora.lin.wiwynn@gmail.com>
 Date: Fri, 27 Sep 2024 14:51:48 +0800
 Subject: [PATCH 04/20] platform-mc: Add OEM Meta event handler
@@ -68,10 +68,10 @@ Upstream-Status: Pending
  create mode 100644 oem/meta/platform-mc/event_oem_meta.hpp
 
 diff --git a/meson.build b/meson.build
-index 1827a26..cae006a 100644
+index 544deec..1c07979 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -270,6 +270,7 @@ executable(
+@@ -283,6 +283,7 @@ executable(
      oem_files,
      'requester/mctp_endpoint_discovery.cpp',
      'requester/configuration_discovery_handler.cpp',

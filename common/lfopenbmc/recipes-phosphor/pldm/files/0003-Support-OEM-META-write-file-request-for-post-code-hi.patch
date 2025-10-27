@@ -1,4 +1,4 @@
-From 855d67c833c1473dbef2352c670b5dab2708c7f0 Mon Sep 17 00:00:00 2001
+From e32a852b07febc65b8a8b54d4c2c8a7d6ae147a0 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 23 Oct 2023 17:06:54 +0800
 Subject: [PATCH 03/20] Support OEM-META write file request for post code
@@ -55,10 +55,10 @@ index acbb400..c0e3ea7 100644
      'pldmresponder',
      sources,
 diff --git a/meson.build b/meson.build
-index 54521d1..1827a26 100644
+index ee237f5..544deec 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -144,6 +144,10 @@ conf_data.set('UPDATE_TIMEOUT_SECONDS', get_option('update-timeout-seconds'))
+@@ -149,6 +149,10 @@ endif
  
  configure_file(output: 'config.h', configuration: conf_data)
  
@@ -70,7 +70,7 @@ index 54521d1..1827a26 100644
      '-include',
      '@0@'.format(meson.current_build_dir() / 'config.h'),
 diff --git a/meson.options b/meson.options
-index bd51f70..effb649 100644
+index f49ffc0..aa2f019 100644
 --- a/meson.options
 +++ b/meson.options
 @@ -172,6 +172,14 @@ option(

@@ -1,4 +1,4 @@
-From 0b7b2d41537c9866bf0d9155598a856c3a4f68cc Mon Sep 17 00:00:00 2001
+From ecbcfa7c4292c5e88833fc143739a5ed53076e29 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Tue, 11 Mar 2025 12:10:57 +0000
 Subject: [PATCH 203/205] Add required MemberId to the EventRecord definition
@@ -46,10 +46,10 @@ Change-Id: I99fcdcdccc97bfa39581d3e42ef407a8cfadaa83
  1 file changed, 2 insertions(+)
 
 diff --git a/redfish-core/src/subscription.cpp b/redfish-core/src/subscription.cpp
-index 69836a83..8464282f 100644
+index 5d6d629e..74368ab2 100644
 --- a/redfish-core/src/subscription.cpp
 +++ b/redfish-core/src/subscription.cpp
-@@ -210,6 +210,7 @@ void Subscription::filterAndSendEventLogs(
+@@ -209,6 +209,7 @@ void Subscription::filterAndSendEventLogs(
              logEntry.messageArgs.begin(), logEntry.messageArgs.end());
  
          nlohmann::json::object_t bmcLogEntry;
@@ -57,7 +57,7 @@ index 69836a83..8464282f 100644
          if (event_log::formatEventLogEntry(
                  eventId, logEntry.id, logEntry.messageId, messageArgsView,
                  logEntry.timestamp, userSub->customText, bmcLogEntry) != 0)
-@@ -234,6 +235,7 @@ void Subscription::filterAndSendEventLogs(
+@@ -233,6 +234,7 @@ void Subscription::filterAndSendEventLogs(
              }
          }
  

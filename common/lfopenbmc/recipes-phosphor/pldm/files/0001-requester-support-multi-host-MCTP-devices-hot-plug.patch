@@ -1,4 +1,4 @@
-From de58411e2ea4cc10c6261e48ac5ae6642e7d3323 Mon Sep 17 00:00:00 2001
+From 0708dab94a70e8bab172508a049b4d35aa4da014 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
 Subject: [PATCH 01/20] requester: support multi-host MCTP devices hot plug
@@ -107,10 +107,10 @@ index 867e064..0ca0b9d 100644
       *         path
       *
 diff --git a/meson.build b/meson.build
-index 461d657..54521d1 100644
+index 9b5b00b..ee237f5 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -265,6 +265,7 @@ executable(
+@@ -278,6 +278,7 @@ executable(
      'platform-mc/dbus_to_terminus_effecters.cpp',
      oem_files,
      'requester/mctp_endpoint_discovery.cpp',

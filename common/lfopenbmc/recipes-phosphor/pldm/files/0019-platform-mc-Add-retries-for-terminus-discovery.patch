@@ -1,4 +1,4 @@
-From 97906f8d5d6e45db08145758a5a0116a69c59b04 Mon Sep 17 00:00:00 2001
+From 10440f260265c38509b129993e33791c8eb47d3d Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 23 Sep 2025 09:47:45 +0000
 Subject: [PATCH 19/20] platform-mc: Add retries for terminus discovery
@@ -33,7 +33,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  4 files changed, 93 insertions(+), 6 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index 9e28130..bee9e21 100644
+index 7613501..224b86d 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -146,6 +146,10 @@ conf_data.set(
@@ -45,13 +45,13 @@ index 9e28130..bee9e21 100644
 +    get_option('terminus-discovery-retry-count'),
 +)
  
- configure_file(output: 'config.h', configuration: conf_data)
- 
+ # Firmware update inotify option
+ if get_option('fw-update-pkg-inotify').allowed()
 diff --git a/meson.options b/meson.options
-index 9b398f5..e7d12e7 100644
+index 49e51cb..e9df133 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -247,3 +247,13 @@ option(
+@@ -255,3 +255,13 @@ option(
      description: 'Enable discovery of FRU data from terminus during the terminus discovery phase.',
      value: 'enabled',
  )

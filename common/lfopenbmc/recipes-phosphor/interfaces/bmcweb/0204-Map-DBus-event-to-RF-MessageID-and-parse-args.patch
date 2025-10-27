@@ -1,4 +1,4 @@
-From 8ed0207985adc9fcf1e7bc92b3ddb04769d396e9 Mon Sep 17 00:00:00 2001
+From 0686cec6f2edfd95c6c0c2461b85c5c5f30a392f Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 15:59:10 +0000
 Subject: [PATCH 204/205] Map DBus event to RF MessageID and parse args
@@ -558,10 +558,10 @@ index 41f2c6a4..a58bfa0c 100644
  
      if (eventRecords.empty())
 diff --git a/redfish-core/src/subscription.cpp b/redfish-core/src/subscription.cpp
-index 8464282f..e3b5d64f 100644
+index 74368ab2..7baa3819 100644
 --- a/redfish-core/src/subscription.cpp
 +++ b/redfish-core/src/subscription.cpp
-@@ -35,7 +35,6 @@
+@@ -34,7 +34,6 @@
  #include <format>
  #include <functional>
  #include <memory>
@@ -569,7 +569,7 @@ index 8464282f..e3b5d64f 100644
  #include <string>
  #include <string_view>
  #include <utility>
-@@ -211,13 +210,8 @@ void Subscription::filterAndSendEventLogs(
+@@ -210,13 +209,8 @@ void Subscription::filterAndSendEventLogs(
  
          nlohmann::json::object_t bmcLogEntry;
          uint64_t memberId = 0;

@@ -1,0 +1,2 @@
+Common targets are:
+    grandcanyon2-image

@@ -1,0 +1,289 @@
+# Copyright 2020-present Facebook. All Rights Reserved.
+#
+#
+# GrandCanyon 2.0 Project
+I2CTRANSFER_CMD=/usr/sbin/i2ctransfer
+GPIOCLI_CMD=/usr/local/bin/gpiocli
+POWERUTIL_CMD=/usr/local/bin/power-util
+IPMBUTIL_CMD=/usr/local/bin/ipmb-util
+EXPANDERUTIL_CMD=/usr/bin/expander-util
+CFGUTIL_CMD=/usr/local/bin/cfg-util
+FRUIDUTIL_CMD=/usr/local/bin/fruid-util
+KV_CMD=/usr/bin/kv
+ME_CMD=/usr/bin/me-util
+NTP_CMD=/usr/sbin/ntpq
+
+MAX_RETRY=3
+
+I2C_UIC_FPGA_BUS="5"
+UIC_FPGA_SLAVE_ADDR="0x0f"
+UIC_FPGA_SYS_TYPE_OFFSET="0x11"
+
+I2C_BS_FPGA_BUS="3"
+BS_FPGA_SLAVE_ADDR="0x0f"
+BS_FPGA_BIC_STANDBY_PWR_CHECK_OFFSET="0x03"
+BS_FPGA_BIC_STANDBY_PWR_RDY_BIT="0x04"
+
+I2C_BIC_BUS="2"
+BIC_SLAVE_ADDR="0x40"
+NETFN_OEM_1S_REQ="0xe0"
+BIC_CMD_OEM_GET_SET_GPIO="0x41"
+GPIO_GET_OUTPUT_STATUS="0"
+BIC_PWR_STATUS_GPIO_NUM="15"
+IANA_ID_2="0x15"
+IANA_ID_1="0xa0"
+IANA_ID_0="0x00"
+POWER_STATUS_BYTE=5
+
+SERVER_PRESENT=1
+SERVER_ABSENT=0
+SERVER_STATUS_DC_ON=1
+SERVER_STATUS_DC_OFF=0
+GPIO_VALUE_LOW=0
+GPIO_VALUE_HIGH=1
+
+SERVER_PRSNT_PIN="COMP_PRSNT_N"
+SERVER_STANDBY_PG_PIN="COMP_STBY_PG_IN"
+
+NETFN_EXPANDER_REQ="0x30"
+CMD_GET_UIC_LOCATION="0x40"
+
+NETFN_STORAGE_REQ="0x28" #after shift left 2 bits
+CMD_GET_SEL_TIME="0x48"
+
+UIC_LOCATION_A="1"
+UIC_LOCATION_B="2"
+UIC_LOCATION_A_STR="01 "
+UIC_LOCATION_B_STR="02 "
+UIC_LOCATION_SIZE=2
+UIC_LOCATION_MASK=0x3
+
+#Type 5: 0000b, Type 7 Headnode: 0101b
+UIC_TYPE_5="0"
+UIC_TYPE_7_HEADNODE="5"
+UIC_TYPE_SIZE=4
+UIC_TYPE_MASK=0xf
+
+PAL_SKU_SIZE=6
+
+KEY_SYSTEM_INFO="system_info"
+
+KEY_AST_POR_FLAG="ast_por_flag"
+STR_VALUE_0="0"
+STR_VALUE_1="1"
+
+SYNC_TIME_OK=0
+SEL_TIME_RESPONSE_LEN=12
+
+# system stage
+STAGE_PRE_EVT=0
+STAGE_EVT=1
+STAGE_DVT=2
+STAGE_PVT=3
+STAGE_MP=4
+
+FAN_FRU_CNT=4
+
+gpio_set() {
+  local shadow val
+  shadow=$1
+  val=$2
+  $GPIOCLI_CMD set-init-value --shadow $shadow $val
+}
+
+gpio_get() {
+  local shadow
+  shadow=$1
+  $GPIOCLI_CMD get-value --shadow $shadow | awk -F= '{print $2}'
+}
+
+is_e1s_iocm_i2c_enabled() {
+  if [[ $(gpio_get E1S_1_P3V3_PG_R) == "1" && $(gpio_get E1S_2_P3V3_PG_R) == "1" ]]; then
+    echo 1
+  else
+    echo 0
+  fi
+}
+
+#             UIC_LOC_TYPE_IN   UIC_RMT_TYPE_IN   SCC_LOC_TYPE_0   SCC_RMT_TYPE_0
+#  Type 5                   0                 0                0                0
+#  Type 7 Headnode          0                 1                0                1
+get_chassis_type() {
+  if [[ $(gpio_get UIC_LOC_TYPE_IN) == "0" && $(gpio_get UIC_RMT_TYPE_IN) == "0" && $(gpio_get SCC_LOC_TYPE_0) == "0" && $(gpio_get SCC_RMT_TYPE_0) == "0" ]]; then
+    return "$UIC_TYPE_5"
+  elif [[ $(gpio_get UIC_LOC_TYPE_IN) == "0" && $(gpio_get UIC_RMT_TYPE_IN) == "1" && $(gpio_get SCC_LOC_TYPE_0) == "0" && $(gpio_get SCC_RMT_TYPE_0) == "1" ]]; then
+    return "$UIC_TYPE_7_HEADNODE" 
+  else
+    return -1
+  fi
+}
+
+get_system_stage() {
+  local stage=0
+  for i in $(seq 2 -1 0); do
+    val=$(gpio_get BOARD_REV_ID${i})
+    ((stage*=2))
+    ((stage+=$val))
+  done
+  echo $stage
+}
+
+is_module_loaded() {
+  local module
+  module=$1
+  if lsmod | grep "$module" &> /dev/null ; then
+    echo 1
+  else
+    echo 0
+  fi
+}
+
+#Check server power status
+server_power_status() {
+  output=$("$IPMBUTIL_CMD" \
+           "$I2C_BIC_BUS" \
+           "$BIC_SLAVE_ADDR" \
+           "$NETFN_OEM_1S_REQ" \
+           "$BIC_CMD_OEM_GET_SET_GPIO" \
+           "$IANA_ID_2" "$IANA_ID_1" "$IANA_ID_0" \
+           "$GPIO_GET_OUTPUT_STATUS" \
+           "$BIC_PWR_STATUS_GPIO_NUM")
+
+  status=$(echo $output | cut -d' ' -f $POWER_STATUS_BYTE)
+  #Convert string to integer
+  status=$((16#${status}))
+  
+  if [ "$((status&1))" = "$SERVER_STATUS_DC_ON" ]; then
+    echo "$SERVER_STATUS_DC_ON"
+  elif [ "$((status&1))" = "$SERVER_STATUS_DC_OFF" ]; then
+    echo "$SERVER_STATUS_DC_OFF"
+  fi
+}
+
+# Check to see if BMC power-on-reset
+is_bmc_por() {
+  kv_por_flag=`$KV_CMD get $KEY_AST_POR_FLAG`
+  if [ ! -n "$kv_por_flag" ]; then
+    # Read Boot Magic
+    sig=$(devmem 0x10015c08 2>/dev/null)
+    # Check Power on reset SRST# event log (SCU074[0]) to determine if this boot is AC on or not
+    val=$(devmem 0x1e6e2074 2>/dev/null)
+    if [[ "$sig" != "0xFB420054" && "$((val & 0x1))" == "1" ]]; then
+      # Power ON Reset
+      $KV_CMD set $KEY_AST_POR_FLAG $STR_VALUE_1
+      echo $STR_VALUE_1
+    else
+      # External Reset
+      $KV_CMD set $KEY_AST_POR_FLAG $STR_VALUE_0
+      echo $STR_VALUE_0
+    fi
+    # Clear SCU074
+    devmem 0x1e6e2074 32 $((val & 0xffffffff)) 2>/dev/null
+  else
+    echo $kv_por_flag
+  fi
+}
+
+# Check to see if server is present or not
+is_server_prsnt() {
+  prsnt=$(gpio_get "$SERVER_PRSNT_PIN")
+  if [ "$prsnt" = "$GPIO_VALUE_LOW" ]; then
+    # Server is prsent
+    echo $SERVER_PRESENT
+  else                                       
+    echo $SERVER_ABSENT
+  fi
+}
+
+# Check if server is 12V-on or not
+is_server_12v_on() {
+  status=$(gpio_get "$SERVER_STANDBY_PG_PIN")
+  if [ "$status" = "$GPIO_VALUE_HIGH" ]; then
+    # Server is in standby mode (12v-on only)
+    echo true
+  else
+    echo false
+  fi
+}
+
+# Check if server bic standby power is on or not
+is_sb_bic_standby_pwr_on() {
+  logger -s -p user.warn -t ${source_name%%.*} "Inside is_sb_bic_standby_pwr_on()"
+  local value
+  source_name=$0
+  value=$($I2CTRANSFER_CMD -y "$I2C_BS_FPGA_BUS" \
+                                w1@"$BS_FPGA_SLAVE_ADDR" \
+                                "$BS_FPGA_BIC_STANDBY_PWR_CHECK_OFFSET" \
+                                r1 2>/dev/null)
+  logger -s -p user.warn -t ${source_name%%.*} "Get BIC PWR VALUE:$value"
+  if [ "$((value & $BS_FPGA_BIC_STANDBY_PWR_RDY_BIT))" == "1" ]; then
+    logger -s -p user.warn -t ${source_name%%.*} "BIC standby power ready (value=$value)"
+    echo true
+  else 
+    logger -s -p user.warn -t ${source_name%%.*} "BIC standby power ready (value=$value)"
+    echo false
+  fi
+  echo false
+}
+
+# Check to see if Server Board Present & Bridge-IC is ready
+is_sb_bic_ready() {
+  local ready
+  local val
+
+  if [[ $(is_server_prsnt) == "$SERVER_ABSENT" ]]; then
+    ready=0
+  else
+    val=$(gpio_get "BIC_READY_IN")
+    if [ "$val" -eq "$GPIO_VALUE_HIGH" ]; then
+      ready=1
+    else
+      ready=0
+    fi
+  fi
+
+  echo $ready
+}
+
+get_uic_location_by_gpio()
+{
+  if [ "$(gpio_get BMC_UIC_LOCATION_IN)" = "$GPIO_VALUE_LOW" ]; then
+    return "$UIC_LOCATION_A"
+  else
+    return "$UIC_LOCATION_B"
+  fi
+}
+
+get_uic_location_by_exp()
+{
+  RETRY=20
+  source_name=$0
+
+  while [ $RETRY -gt 0 ]
+  do
+    # * UIC_ID: 1=UIC_A; 2=UIC_B
+
+    uic_id=$("$EXPANDERUTIL_CMD" "$NETFN_EXPANDER_REQ" "$CMD_GET_UIC_LOCATION")
+
+    if [ "$uic_id" = "$UIC_LOCATION_A_STR" ] || [ "$uic_id" = "$UIC_LOCATION_B_STR" ]; then
+      return "$uic_id"
+    fi
+
+    logger -s -p user.warn -t ${source_name%%.*} "Retrying get uic location"
+    RETRY=$((RETRY-1))
+    sleep 1
+  done
+  logger -s -p user.warn -t ${source_name%%.*} "Get uic location - failed"
+
+  return 0
+}
+
+get_uic_location()
+{
+  stage=$(get_system_stage)
+  if [ "$stage" -lt "$STAGE_DVT" ]; then
+    get_uic_location_by_exp
+  else
+    get_uic_location_by_gpio
+  fi
+}

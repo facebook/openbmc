@@ -1,0 +1,10 @@
+#
+# Local configuration file for building the OpenBMC image.
+#
+OLDEST_KERNEL = "5.10"
+
+# Machine Selection
+MACHINE ??= "grandcanyon2"
+
+# OpenBMC distro settings
+DISTRO ?= "openbmc-fb-master"

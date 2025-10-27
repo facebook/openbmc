@@ -145,6 +145,26 @@
                 [
                     5,
                     "Module6_Present"
+                ],
+                [
+                    6,
+                    "Module7_Present"
+                ],
+                [
+                    7,
+                    "Module8_Present"
+                ],
+                [
+                    8,
+                    "Module9_Present"
+                ],
+                [
+                    9,
+                    "Module10_Present"
+                ],
+                [
+                    10,
+                    "Module11_Present"
                 ]
             ],
             "name": "Module_Present"
@@ -177,6 +197,26 @@
                 [
                     5,
                     "Module6_Alert"
+                ],
+                [
+                    6,
+                    "Module7_Alert"
+                ],
+                [
+                    7,
+                    "Module8_Alert"
+                ],
+                [
+                    8,
+                    "Module9_Alert"
+                ],
+                [
+                    9,
+                    "Module10_Alert"
+                ],
+                [
+                    10,
+                    "Module11_Alert"
                 ]
             ],
             "name": "Module_Alert"
@@ -245,6 +285,26 @@
                 [
                     5,
                     "Module6_Planned"
+                ],
+                [
+                    6,
+                    "Module7_Planned"
+                ],
+                [
+                    7,
+                    "Module8_Planned"
+                ],
+                [
+                    8,
+                    "Module9_Planned"
+                ],
+                [
+                    9,
+                    "Module10_Planned"
+                ],
+                [
+                    10,
+                    "Module11_Planned"
                 ]
             ],
             "name": "Module_Planned"
@@ -309,6 +369,26 @@
                 [
                     8,
                     "Shelf_EEPROM_Fault"
+                ],
+                [
+                    9,
+                    "Module7_Modbus_Fault"
+                ],
+                [
+                    10,
+                    "Module8_Modbus_Fault"
+                ],
+                [
+                    11,
+                    "Module9_Modbus_Fault"
+                ],
+                [
+                    12,
+                    "Module10_Modbus_Fault"
+                ],
+                [
+                    13,
+                    "Module11_Modbus_Fault"
                 ]
             ],
             "name": "Communication_Alarm_Status_Register"
@@ -514,6 +594,186 @@
                 ]
             ],
             "name": "Digital_Outputs_Test"
+        },
+        {
+            "begin": 125,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 7,
+            "sign": true,
+            "name": "BB1_Pos_TEMP1"
+        },
+        {
+            "begin": 126,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 7,
+            "sign": true,
+            "name": "BB1_Neg_TEMP1"
+        },
+        {
+            "begin": 127,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 7,
+            "sign": true,
+            "name": "BB2_Pos_TEMP1"
+        },
+        {
+            "begin": 128,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 7,
+            "sign": true,
+            "name": "BB2_Neg_TEMP1"
+        },
+        {
+            "begin": 129,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 7,
+            "sign": true,
+            "name": "BB3_Pos_TEMP1"
+        },
+        {
+            "begin": 130,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 7,
+            "sign": true,
+            "name": "BB3_Neg_TEMP1"
+        },
+        {
+            "begin": 131,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Next_DCPSU_Shelf_Location_Received"
+        },
+        {
+            "begin": 132,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Next_CBU_Shelf_Location_Received"
+        },
+        {
+            "begin": 133,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Next_DCPSU_Shelf_Location_Sent"
+        },
+        {
+            "begin": 134,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Next_CBU_Shelf_Location_Sent"
+        },
+        {
+            "begin": 135,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_CRC_Error_Counter_7"
+        },
+        {
+            "begin": 136,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_CRC_Error_Counter_8"
+        },
+        {
+            "begin": 137,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_CRC_Error_Counter_9"
+        },
+        {
+            "begin": 138,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_CRC_Error_Counter_10"
+        },
+        {
+            "begin": 139,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_CRC_Error_Counter_11"
+        },
+        {
+            "begin": 141,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_Timeout_Error_Counter_7"
+        },
+        {
+            "begin": 142,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_Timeout_Error_Counter_8"
+        },
+        {
+            "begin": 143,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_Timeout_Error_Counter_9"
+        },
+        {
+            "begin": 144,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_Timeout_Error_Counter_10"
+        },
+        {
+            "begin": 145,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_Timeout_Error_Counter_11"
+        },
+        {
+            "begin": 147,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 7,
+            "sign": true,
+            "name": "BB1_Pos_TEMP2"
+        },
+        {
+            "begin": 148,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 7,
+            "sign": true,
+            "name": "BB1_Neg_TEMP2"
+        },
+        {
+            "begin": 149,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 7,
+            "sign": true,
+            "name": "BB2_Pos_TEMP2"
+        },
+        {
+            "begin": 150,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 7,
+            "sign": true,
+            "name": "BB2_Neg_TEMP2"
+        },
+        {
+            "begin": 151,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 7,
+            "sign": true,
+            "name": "BB3_Pos_TEMP2"
+        },
+        {
+            "begin": 152,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 7,
+            "sign": true,
+            "name": "BB3_Neg_TEMP2"
         },
         {
             "begin": 4096,

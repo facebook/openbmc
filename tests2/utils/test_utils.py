@@ -108,7 +108,8 @@ def read_data_from_filepath(path):
 
 
 def running_systemd():
-    return "systemd" in os.readlink("/proc/1/exe")
+    """Made friendly for non root user to check"""
+    return os.path.isdir("/usr/lib/systemd")
 
 
 def tests_dir():

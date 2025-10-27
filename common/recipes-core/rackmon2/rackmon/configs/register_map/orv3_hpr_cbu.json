@@ -659,6 +659,18 @@
             "name": "CBU_Status_Temperature"
         },
         {
+            "begin": 158,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "CBU_EOL"
+                ]
+            ],
+            "name": "End_Of_Life_Status"
+        },
+        {
             "begin": 159,
             "length": 1,
             "format": "FLOAT",
@@ -852,6 +864,18 @@
             "length": 1,
             "format": "INTEGER",
             "name": "Configurable_CBU_Maximum_PreCharge_Power"
+        },
+        {
+            "begin": 292,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Fault_Loc_Blink"
+                ]
+            ],
+            "name": "LED_Override"
         },
         {
             "begin": 293,

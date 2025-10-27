@@ -11,6 +11,7 @@ SRC_URI:append = " \
     file://0005-mtd-spi-nor-winbond-Add-support-for-w25q01jv.patch \
     file://0006-net-ftgmac100-reset-MAC-by-SCU-on-RMII.patch \
     file://0007-net-ftgmac100-Get-link-speed-and-duplex-for-NC-SI.patch \
+    file://0008-net-ncsi-check-for-netlink-driven-responses-before-r.patch \
 "
 
 #

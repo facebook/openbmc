@@ -1,16 +1,17 @@
 #pragma once
 
-#include <string>
 #include <iostream>
+#include <fcntl.h>
+#include <string>
 #include <stdexcept>
 #include <sys/file.h>
-#include <fcntl.h>
+#include <thread>
 #include <unistd.h>
 
 struct PldmUpdateLock
 {
   int fd = -1;
-  PldmUpdateLock() 
+  PldmUpdateLock()
   {
     fd = open("/tmp/pldm-update-ag.lock", O_CREAT | O_RDWR, 0666);
     if (fd < 0)
@@ -35,4 +36,18 @@ struct PldmUpdateLock
   }
 };
 
+template <typename Func>
+bool retry(Func func, int maxRetries, int delayS = 1)
+{
+  for (int attempt = 1; attempt <= maxRetries; ++attempt)
+  {
+    if (func())
+    {
+      return true;
+    }
+    std::this_thread::sleep_for(std::chrono::seconds(delayS));
+  }
+  return false;
+}
 void pldm_update(const std::string& file);
+void wait_for_device_reactivation_and_fetch_info();

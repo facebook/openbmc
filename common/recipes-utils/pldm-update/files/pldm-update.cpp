@@ -6,7 +6,6 @@
 #include <libpldm/firmware_update.h>
 
 #include <filesystem> // path, copy
-#include <thread>     // sleep_for
 #include <chrono>     // seconds
 
 namespace fs = std::filesystem;
@@ -21,20 +20,6 @@ public:
 private:
     int fd;
 };
-
-template <typename Func>
-bool retry(Func func, int maxRetries, int delayS = 1)
-{
-    for (int attempt = 1; attempt <= maxRetries; ++attempt)
-    {
-        if (func())
-        {
-            return true;
-        }
-        std::this_thread::sleep_for(std::chrono::seconds(delayS));
-    }
-    return false;
-}
 
 bool
 is_pldmd_service_running(std::string& pldmdBusName)
@@ -365,4 +350,11 @@ pldm_update(const std::string& file)
                   << " is stuck in \"Activating\" state." << std::endl;
         return;
     }
+    wait_for_device_reactivation_and_fetch_info();
+}
+
+void __attribute__((weak))
+wait_for_device_reactivation_and_fetch_info()
+{
+    return;
 }

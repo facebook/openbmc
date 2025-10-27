@@ -740,6 +740,12 @@
             "name": "Pulse_Mgmt_Count_Requested"
         },
         {
+            "begin": 123,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Size_Module_Reg_Map"
+        },
+        {
             "begin": 124,
             "length": 1,
             "format": "INTEGER",
@@ -749,7 +755,13 @@
             "begin": 125,
             "length": 1,
             "format": "INTEGER",
-            "name": "Size_Module_Reg_Map"
+            "name": "PSU_RPM_Fan2"
+        },
+        {
+            "begin": 126,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "PSU_RPM_Fan3"
         },
         {
             "begin": 4096,

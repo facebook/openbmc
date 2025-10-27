@@ -1,0 +1,34 @@
+From 3abd869f343231ff8b412205a82767b357462fd0 Mon Sep 17 00:00:00 2001
+From: Leo Yang <Leo-Yang@quantatw.com>
+Date: Tue, 21 Oct 2025 13:54:46 +0800
+Subject: [PATCH] PSUSensor: add RAA228006 support
+
+Add device RAA228006 reading support for YV5 project.
+
+Tested:
+Patch driver and build.
+```
+root@bmc:~# cat /sys/bus/i2c/devices/8-005c/hwmon/hwmon39/
+curr1_input   curr2_label   in1_label     in3_input     of_node/      power1_label  subsystem/    temp3_input
+curr1_label   device/       in2_input     in3_label     power/        power2_input  temp1_input   uevent
+curr2_input   in1_input     in2_label     name          power1_input  power2_label  temp2_input
+```
+---
+ src/psu/PSUSensorMain.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
+index 5a67c03..1e0257e 100644
+--- a/src/psu/PSUSensorMain.cpp
++++ b/src/psu/PSUSensorMain.cpp
+@@ -132,6 +132,7 @@ static const I2CDeviceTypeMap sensorTypes{
+     {"SQ52206", I2CDeviceType{"sq52206", true}},
+     {"RAA228000", I2CDeviceType{"raa228000", true}},
+     {"RAA228004", I2CDeviceType{"raa228004", true}},
++    {"RAA228006", I2CDeviceType{"raa228006", true}},
+     {"RAA228228", I2CDeviceType{"raa228228", true}},
+     {"RAA228620", I2CDeviceType{"raa228620", true}},
+     {"RAA229001", I2CDeviceType{"raa229001", true}},
+-- 
+2.47.3
+

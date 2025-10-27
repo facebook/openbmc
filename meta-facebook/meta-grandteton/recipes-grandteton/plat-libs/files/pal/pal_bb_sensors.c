@@ -1062,7 +1062,7 @@ read_fan_speed(uint8_t fru, uint8_t sensor_num, float *value) {
     return -1;
 
   ret = fan_ctrl_map[dev_id].get_rpm(fru, sensor_num, value);
-  if (*value == 0) {
+  if (*value == 0 || ret) {
     retry[tach_id]++;
     return retry_err_handle(retry[tach_id], 2);
   }

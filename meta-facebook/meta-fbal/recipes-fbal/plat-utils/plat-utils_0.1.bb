@@ -35,8 +35,6 @@ LOCAL_URI = " \
     file://setup-cmc.sh \
     file://setup-bridge.sh \
     file://run-bridge.sh \
-    file://eth0_mac_fixup.sh \
-    file://run-ipv4-fix.sh \
     file://COPYING \
     "
 
@@ -71,9 +69,6 @@ do_install() {
   update-rc.d -r ${D} sync_date.sh start 66 5 .
   install -m 755 setup-cmc.sh ${D}${sysconfdir}/init.d/setup-cmc.sh
   update-rc.d -r ${D} setup-cmc.sh start 67 5 .
-  install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
-  install -m 755 run-ipv4-fix.sh ${D}${sysconfdir}/init.d/run-ipv4-fix.sh
-  update-rc.d -r ${D} run-ipv4-fix.sh start 71 5 .
   install -m 755 setup-por.sh ${D}${sysconfdir}/init.d/setup-por.sh
   update-rc.d -r ${D} setup-por.sh start 70 S .
   install -m 755 setup-usbhub.sh ${D}${sysconfdir}/init.d/setup-usbhub.sh

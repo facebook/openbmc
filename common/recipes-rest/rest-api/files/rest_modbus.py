@@ -95,7 +95,17 @@ async def get_modbus_registers(request: aiohttp.web.Request) -> aiohttp.web.Resp
             },
             status=400,
         )
-    except Exception:
+    except Exception as e:
+        text_payload = await request.text()
+        # If payload is not empty, its not a valid JSON
+        if text_payload:
+            return aiohttp.web.json_response(
+                {
+                    "status": "Bad Request",
+                    "details": "Json validation error: " + str(e),
+                },
+                status=400,
+            )
         payload = {}
 
     response = await pyrmd.RackmonAsyncInterface.data(

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <redfish_client/async_http_client.hpp>
-#include <redfish_client/config.hpp>
+#include <redfish_client/core/async_http_client.hpp>
+#include <redfish_client/core/config.hpp>
 #include "redfish-binding/SoftwareInventory_SoftwareInventory.hpp"
 
 #include <sdbusplus/async/context.hpp>
@@ -11,7 +11,7 @@
 #include <functional>
 #include <string>
 
-namespace redfish_client_daemon
+namespace redfish_client::core
 {
 
 class Software;
@@ -65,4 +65,4 @@ class UpdateServiceHandler
     std::unordered_map<std::string, std::unique_ptr<Software>> inventory;
 };
 
-} // namespace redfish_client_daemon
+} // namespace redfish_client::core

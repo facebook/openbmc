@@ -1,6 +1,6 @@
 #include "helper.hpp"
 #include <redfish_client/daemon.hpp>
-#include <redfish_client/update_service_handler.hpp>
+#include <redfish_client/core/update_service_handler.hpp>
 
 #include <xyz/openbmc_project/Sensor/Value/client.hpp>
 #include <xyz/openbmc_project/Software/Activation/client.hpp>
@@ -15,6 +15,7 @@
 #include <gtest/gtest.h>
 
 using namespace redfish_client_daemon;
+using namespace redfish_client::core;
 
 namespace
 {

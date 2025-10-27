@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 
-namespace redfish_client_daemon
+namespace redfish_client::core
 {
 
 struct AsyncHttpResponse
@@ -66,4 +66,4 @@ class AsyncHttpHandle
         sdbusplus::async::context& ctx);
 };
 
-} // namespace redfish_client_daemon
+} // namespace redfish_client::core

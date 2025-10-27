@@ -1,4 +1,5 @@
 #include <redfish_client/daemon.hpp>
+#include <redfish_client/core/sensor_dbus_object.hpp>
 
 #include <xyz/openbmc_project/Association/Definitions/client.hpp>
 #include <xyz/openbmc_project/Sensor/Value/client.hpp>
@@ -7,6 +8,7 @@
 #include <gtest/gtest.h>
 
 using namespace redfish_client_daemon;
+using namespace redfish_client::core;
 
 TEST(DbusUtilsTest, SensorRootPath)
 {

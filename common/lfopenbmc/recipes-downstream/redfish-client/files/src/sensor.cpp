@@ -1,8 +1,8 @@
-#include <redfish_client/sensor.hpp>
+#include <redfish_client/core/sensor.hpp>
 
 #include <redfish-binding/Sensor_Sensor.hpp>
 
-namespace redfish_client_daemon
+namespace redfish_client::core
 {
 
 namespace
@@ -42,4 +42,36 @@ std::optional<Sensor> Sensor::parseSensor(const std::string& sensorJson)
     return sensor;
 }
 
-} // namespace redfish_client_daemon
+double Sensor::getReading() const
+{
+    return reading;
+}
+
+const std::string& Sensor::getSensorUnitText() const
+{
+    return sensorUnit;
+}
+
+std::optional<double> Sensor::getMinValue() const
+{
+    return minValue;
+}
+
+std::optional<double> Sensor::getMaxValue() const
+{
+    return maxValue;
+}
+
+Sensor Sensor::createTestSensor(double reading, const char* sensorUnit,
+                               std::optional<double> minValue,
+                               std::optional<double> maxValue)
+{
+    Sensor rv;
+    rv.reading = reading;
+    rv.sensorUnit = sensorUnit;
+    rv.minValue = minValue;
+    rv.maxValue = maxValue;
+    return rv;
+}
+
+} // namespace redfish_client::core

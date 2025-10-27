@@ -1,9 +1,9 @@
-#include <redfish_client/sensor.hpp>
+#include <redfish_client/core/sensor.hpp>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-using namespace redfish_client_daemon;
+using namespace redfish_client::core;
 
 TEST(SensorTests, FailWithBadJson)
 {

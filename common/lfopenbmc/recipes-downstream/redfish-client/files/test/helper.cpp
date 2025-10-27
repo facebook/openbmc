@@ -5,7 +5,7 @@
 
 #include <numeric>
 
-namespace redfish_client_daemon
+namespace redfish_client::core
 {
 
 using ReceivedHttpRequest = SimpleTestHttpServer::ReceivedHttpRequest;
@@ -122,4 +122,4 @@ void SimpleTestHttpServer::startAccept()
                              boost::asio::placeholders::error, socket));
 }
 
-}; // namespace redfish_client_daemon
+}; // namespace redfish_client::core

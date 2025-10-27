@@ -1,4 +1,4 @@
-#include <redfish_client/async_http_client.hpp>
+#include <redfish_client/core/async_http_client.hpp>
 #include "helper.hpp"
 
 #include <sdbusplus/async/execution.hpp>
@@ -6,7 +6,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-namespace redfish_client_daemon
+namespace redfish_client::core
 {
 
 sdbusplus::async::task<> sendGetRequests(
@@ -104,4 +104,4 @@ TEST(AsyncHttpClientTests, HttpPost)
     }
 }
 
-} // namespace redfish_client_daemon
+} // namespace redfish_client::core

@@ -1,11 +1,9 @@
 #pragma once
 
-#include <redfish_client/config.hpp>
-#include <redfish_client/sensor.hpp>
+#include <redfish_client/core/config.hpp>
+#include <redfish_client/core/sensor.hpp>
 
 #include <sdbusplus/async.hpp>
-#include <xyz/openbmc_project/Association/Definitions/aserver.hpp>
-#include <xyz/openbmc_project/Sensor/Value/aserver.hpp>
 
 #include <memory>
 #include <optional>
@@ -15,6 +13,8 @@
 
 namespace redfish_client_daemon
 {
+
+using namespace redfish_client::core;
 
 void installSignalHandlers();
 
@@ -26,16 +26,6 @@ void runRedfishClient(const std::string& serviceName,
 void runRedfishClient(const std::string& serviceName,
                       sdbusplus::async::context& ctx, const Config& config,
                       std::string persistDir = "");
-
-// The following helpers are exposed for unit testing purposes.
-// This is the interface to use for sensor values before emitting the data.
-using ValueIntf = sdbusplus::common::xyz::openbmc_project::sensor::Value;
-
-const char* getSensorRootPath();
-
-const char* getActualMetricNamespace(const char* logicalNameParam);
-
-std::optional<ValueIntf::Unit> toMaybeIntfUnits(const std::string& unitsStr);
 
 // SensorDbusObject interface
 class ISensorDbusObject

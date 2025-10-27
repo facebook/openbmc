@@ -1,4 +1,4 @@
-#include <redfish_client/update_service_handler.hpp>
+#include <redfish_client/core/update_service_handler.hpp>
 
 #include "redfish-binding/SoftwareInventoryCollection_SoftwareInventoryCollection.hpp"
 
@@ -10,7 +10,7 @@
 
 PHOSPHOR_LOG2_USING;
 
-namespace redfish_client_daemon
+namespace redfish_client::core
 {
 
 namespace
@@ -185,4 +185,4 @@ auto UpdateServiceHandler::run(sdbusplus::async::context& ctx,
     co_return;
 }
 
-} // namespace redfish_client_daemon
+} // namespace redfish_client::core

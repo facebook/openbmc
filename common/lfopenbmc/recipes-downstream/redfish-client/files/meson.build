@@ -65,6 +65,9 @@ srcs = [
     'src/sensor.cpp',
     'src/log_service_handler.cpp',
     'src/update_service_handler.cpp',
+    'src/redfish_client.cpp',
+    'src/sensor_dbus_object.cpp',
+    'src/server_object_intf.cpp',
 ]
 
 root_inc = include_directories('include')

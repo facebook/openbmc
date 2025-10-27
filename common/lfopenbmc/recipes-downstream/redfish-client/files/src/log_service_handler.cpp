@@ -1,4 +1,4 @@
-#include <redfish_client/log_service_handler.hpp>
+#include <redfish_client/core/log_service_handler.hpp>
 
 #include <phosphor-logging/commit.hpp>
 #include <phosphor-logging/lg2.hpp>
@@ -12,7 +12,7 @@
 
 PHOSPHOR_LOG2_USING;
 
-namespace redfish_client_daemon
+namespace redfish_client::core
 {
 
 using EventSeverity = redfish_binding::LogEntry::EventSeverity;
@@ -249,4 +249,4 @@ std::string LogServiceHandler::getPersistPath(const std::string& url,
                          url, std::regex("[^a-zA-Z0-9]"), "_"));
 }
 
-} // namespace redfish_client_daemon
+} // namespace redfish_client::core

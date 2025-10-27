@@ -1,7 +1,7 @@
 #pragma once
 
-#include <redfish_client/async_http_client.hpp>
-#include <redfish_client/persist_map.hpp>
+#include <redfish_client/core/async_http_client.hpp>
+#include <redfish_client/core/persist_map.hpp>
 #include "redfish-binding/LogEntryCollection_LogEntryCollection.hpp"
 #include "redfish-binding/LogEntry_EventSeverity.hpp"
 #include "redfish-binding/LogEntry_LogEntry.hpp"
@@ -12,7 +12,7 @@
 #include <memory>
 #include <string>
 
-namespace redfish_client_daemon
+namespace redfish_client::core
 {
 
 class LogServiceHandler : private sdbusplus::async::context_ref
@@ -43,4 +43,4 @@ class LogServiceHandler : private sdbusplus::async::context_ref
                                       const std::string& persistDir);
 };
 
-} // namespace redfish_client_daemon
+} // namespace redfish_client::core

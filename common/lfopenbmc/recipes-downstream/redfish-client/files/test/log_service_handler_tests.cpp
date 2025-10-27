@@ -1,4 +1,4 @@
-#include <redfish_client/log_service_handler.hpp>
+#include <redfish_client/core/log_service_handler.hpp>
 
 #include <nlohmann/json.hpp>
 #include <sdbusplus/server.hpp>
@@ -14,7 +14,7 @@
 
 #include <gtest/gtest.h>
 
-namespace redfish_client_daemon
+namespace redfish_client::core
 {
 
 using LoggingLevel =
@@ -298,4 +298,4 @@ TEST_F(LogServiceHandlerTest, OnFilePersistTest)
     std::filesystem::remove_all(tmpdir);
 }
 
-} // namespace redfish_client_daemon
+} // namespace redfish_client::core

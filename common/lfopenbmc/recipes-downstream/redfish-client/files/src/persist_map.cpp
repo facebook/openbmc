@@ -1,4 +1,4 @@
-#include <redfish_client/persist_map.hpp>
+#include <redfish_client/core/persist_map.hpp>
 
 #include <nlohmann/json.hpp>
 #include <phosphor-logging/lg2.hpp>
@@ -7,7 +7,7 @@
 
 PHOSPHOR_LOG2_USING;
 
-namespace redfish_client_daemon
+namespace redfish_client::core
 {
 
 bool PersistMap::update(const std::string& key, const std::string& value)
@@ -67,4 +67,4 @@ void PersistMap::flush()
     file.close();
 }
 
-} // namespace redfish_client_daemon
+} // namespace redfish_client::core

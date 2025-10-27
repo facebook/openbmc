@@ -1,8 +1,8 @@
-#include <redfish_client/config.hpp>
+#include <redfish_client/core/config.hpp>
 
 #include <gtest/gtest.h>
 
-using redfish_client_daemon::Config;
+using redfish_client::core::Config;
 
 TEST(Config, FullConfig)
 {

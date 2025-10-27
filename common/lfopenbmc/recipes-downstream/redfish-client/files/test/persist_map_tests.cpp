@@ -1,11 +1,11 @@
-#include <redfish_client/persist_map.hpp>
+#include <redfish_client/core/persist_map.hpp>
 
 #include <cstdio>
 #include <fstream>
 
 #include <gtest/gtest.h>
 
-namespace redfish_client_daemon
+namespace redfish_client::core
 {
 
 TEST(PersistMapTest, InMemoryTest)
@@ -45,4 +45,4 @@ TEST(PersistMapTest, CorruptedFileTest)
     std::remove(tmpf.c_str());
 }
 
-} // namespace redfish_client_daemon
+} // namespace redfish_client::core

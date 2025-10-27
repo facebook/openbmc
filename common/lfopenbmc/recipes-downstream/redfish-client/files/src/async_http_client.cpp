@@ -1,4 +1,4 @@
-#include <redfish_client/async_http_client.hpp>
+#include <redfish_client/core/async_http_client.hpp>
 
 #include <unistd.h>
 
@@ -6,7 +6,7 @@
 
 #include <format>
 
-namespace redfish_client_daemon
+namespace redfish_client::core
 {
 
 namespace
@@ -324,4 +324,4 @@ sdbusplus::async::task<AsyncHttpResponse> AsyncHttpHandle::perform(
     co_return response;
 }
 
-} // namespace redfish_client_daemon
+} // namespace redfish_client::core

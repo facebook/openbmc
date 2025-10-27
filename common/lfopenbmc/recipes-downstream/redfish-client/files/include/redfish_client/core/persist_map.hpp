@@ -3,7 +3,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace redfish_client_daemon
+namespace redfish_client::core
 {
 
 class PersistMap
@@ -31,4 +31,4 @@ class PersistMap
     void flush();
 };
 
-} // namespace redfish_client_daemon
+} // namespace redfish_client::core

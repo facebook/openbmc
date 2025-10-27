@@ -1,6 +1,6 @@
-#include <redfish_client/config.hpp>
+#include <redfish_client/core/config.hpp>
 
-namespace redfish_client_daemon
+namespace redfish_client::core
 {
 
 void from_json(const nlohmann::json& json, Config& config)
@@ -26,4 +26,4 @@ Config Config::parse(const std::string& configJson)
     return nlohmann::json::parse(configJson).template get<Config>();
 }
 
-} // namespace redfish_client_daemon
+} // namespace redfish_client::core

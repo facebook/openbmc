@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-namespace redfish_client_daemon
+namespace redfish_client::core
 {
 
 struct SensorMapper
@@ -65,4 +65,4 @@ struct Config
 
 void from_json(const nlohmann::json& json, Config& config);
 
-} // namespace redfish_client_daemon
+} // namespace redfish_client::core

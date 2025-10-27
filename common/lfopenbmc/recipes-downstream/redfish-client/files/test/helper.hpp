@@ -4,7 +4,7 @@
 #include <boost/bind/bind.hpp>
 #include <boost/system/error_code.hpp>
 
-namespace redfish_client_daemon
+namespace redfish_client::core
 {
 
 class SimpleTestHttpServer
@@ -60,4 +60,4 @@ class SimpleTestHttpServer
     std::atomic<bool> serverThreadStopped{false};
 };
 
-}; // namespace redfish_client_daemon
+}; // namespace redfish_client::core

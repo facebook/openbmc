@@ -110,6 +110,24 @@
             "name": "Random_Number_Of_SoH_Test"
         },
         {
+            "begin": 88,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "shift": -273.15,
+            "name": "Lead_Plate_Temp1"
+        },
+        {
+            "begin": 89,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "shift": -273.15,
+            "name": "Lead_Plate_Temp2"
+        },
+        {
             "begin": 90,
             "length": 1,
             "format": "FLOAT",
@@ -536,6 +554,12 @@
             "name": "SOH_Count"
         },
         {
+            "begin": 122,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Cell_Voltage13"
+        },
+        {
             "begin": 123,
             "length": 1,
             "format": "INTEGER",
@@ -722,6 +746,10 @@
             "format": "FLAGS",
             "flags": [
                 [
+                    5,
+                    "Discharge_Input_UV"
+                ],
+                [
                     4,
                     "Power_Boost_UVP"
                 ],
@@ -789,6 +817,30 @@
             "length": 1,
             "format": "FLAGS",
             "flags": [
+                [
+                    11,
+                    "Oring_OTP"
+                ],
+                [
+                    10,
+                    "Discharge_5_OTP"
+                ],
+                [
+                    9,
+                    "Discharge_4_OTP"
+                ],
+                [
+                    8,
+                    "Discharge_3_OTP"
+                ],
+                [
+                    7,
+                    "Discharge_2_OTP"
+                ],
+                [
+                    6,
+                    "Discharge_1_OTP"
+                ],
                 [
                     5,
                     "Battery_Pack_OTP"
@@ -998,6 +1050,10 @@
                 [
                     10,
                     "RTCSMC"
+                ],
+                [
+                    9,
+                    "Communication_Fail"
                 ],
                 [
                     7,
@@ -1300,6 +1356,18 @@
             "length": 1,
             "format": "INTEGER",
             "name": "Time_in_Charging_in_Extreme_Temperatures"
+        },
+        {
+            "begin": 263,
+            "length": 16,
+            "format": "STRING",
+            "name": "Serial_Number_Extended"
+        },
+        {
+            "begin": 279,
+            "length": 8,
+            "format": "STRING",
+            "name": "Serial_Number_Extended"
         },
         {
             "begin": 288,

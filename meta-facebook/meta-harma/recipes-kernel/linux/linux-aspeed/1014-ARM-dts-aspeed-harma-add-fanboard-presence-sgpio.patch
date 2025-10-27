@@ -1,0 +1,38 @@
+From 5275ca08e7465eb587a0c8523828d562dfec0bb0 Mon Sep 17 00:00:00 2001
+From: OpenEmbedded <oe.patch@oe>
+Date: Fri, 17 Oct 2025 21:50:41 +0800
+Subject: [PATCH 1/1] ARM: dts: aspeed: harma: add fanboard presence sgpio
+
+lore: https://lore.kernel.org/all/20251017134402.2073042-1-Daniel-Hsu@quantatw.com/T/#u
+
+Add the SGPIO definition for detecting fanboard presence on the Harma
+platform. This allows the BMC to determine whether the fanboard is
+attached.
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+index a5bccd33c..3c73884f5 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
+@@ -870,9 +870,14 @@ &sgpiom0 {
+ 	"irq-retimer0-0v9-alert","",
+ 	/*O4-O7 line 232-239*/
+ 	"irq-retimer1-0v9-alert","",
+-	"","","","","","",
++	"","",
++    "presence-lower-fanboard1","",
++    "presence-lower-fanboard2","",
+ 	/*P0-P3 line 240-247*/
+-	"","","","","","","","",
++	"presence-upper-fanboard1","",
++    "presence-upper-fanboard2","",
++    "","",
++    "","",
+ 	/*P4-P7 line 248-255*/
+ 	"","","","","","","","";
+ };
+-- 
+2.43.0
+

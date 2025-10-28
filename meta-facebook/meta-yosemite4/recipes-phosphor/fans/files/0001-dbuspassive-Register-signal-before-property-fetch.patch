@@ -1,4 +1,4 @@
-From 64384806bef708e3feb731c5fff39d007ff0d911 Mon Sep 17 00:00:00 2001
+From c896d687a360dbfc6691b4271694978cb59a0cd5 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Wed, 13 Aug 2025 10:39:50 +0000
 Subject: [PATCH] dbuspassive: Register signal before property fetch
@@ -57,10 +57,10 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  3 files changed, 40 insertions(+), 23 deletions(-)
 
 diff --git a/dbus/dbuspassive.cpp b/dbus/dbuspassive.cpp
-index 6878d18..a0c2dc3 100644
+index 3cbc677..d96ee8f 100644
 --- a/dbus/dbuspassive.cpp
 +++ b/dbus/dbuspassive.cpp
-@@ -104,6 +104,8 @@ std::unique_ptr<ReadInterface> DbusPassive::createDbusPassive(
+@@ -92,6 +92,8 @@ std::unique_ptr<ReadInterface> DbusPassive::createDbusPassive(
          // in MissingIsAcceptable. CASE2 results in continuous restart until
          // recovery.
  
@@ -69,7 +69,7 @@ index 6878d18..a0c2dc3 100644
          failed = true;
          objectMissing = true;
          settings.value = std::numeric_limits<double>::quiet_NaN();
-@@ -115,18 +117,20 @@ std::unique_ptr<ReadInterface> DbusPassive::createDbusPassive(
+@@ -103,18 +105,20 @@ std::unique_ptr<ReadInterface> DbusPassive::createDbusPassive(
              settings.min = 0;
              settings.max = 0;
          }
@@ -95,7 +95,7 @@ index 6878d18..a0c2dc3 100644
      }
      catch (const std::exception& e)
      {
-@@ -141,35 +145,24 @@ std::unique_ptr<ReadInterface> DbusPassive::createDbusPassive(
+@@ -129,35 +133,24 @@ std::unique_ptr<ReadInterface> DbusPassive::createDbusPassive(
      }
  
      settings.unavailableAsFailed = info->unavailableAsFailed;
@@ -135,7 +135,7 @@ index 6878d18..a0c2dc3 100644
  }
  
  ReadReturn DbusPassive::read(void)
-@@ -326,6 +319,29 @@ void DbusPassive::setFunctional(bool value)
+@@ -314,6 +307,29 @@ void DbusPassive::setFunctional(bool value)
  void DbusPassive::setAvailable(bool value)
  {
      _available = value;

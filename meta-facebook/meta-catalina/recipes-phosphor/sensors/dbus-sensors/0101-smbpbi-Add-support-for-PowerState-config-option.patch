@@ -1,4 +1,4 @@
-From e48f916ccfc3aaa6eb789fccddb3751d71db19a0 Mon Sep 17 00:00:00 2001
+From 4ddffb8ae169606de2a2037e4c39fbebbf10156d Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Sun, 8 Jun 2025 11:05:34 +0800
 Subject: [PATCH] smbpbi: Add support for PowerState config option
@@ -60,10 +60,10 @@ Gerrit: https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/80918
  2 files changed, 46 insertions(+), 6 deletions(-)
 
 diff --git a/src/smbpbi/SmbpbiSensor.cpp b/src/smbpbi/SmbpbiSensor.cpp
-index 2e5c934..55e9ff6 100644
+index 17e9192..c61525c 100644
 --- a/src/smbpbi/SmbpbiSensor.cpp
 +++ b/src/smbpbi/SmbpbiSensor.cpp
-@@ -56,9 +56,10 @@ SmbpbiSensor::SmbpbiSensor(
+@@ -55,9 +55,10 @@ SmbpbiSensor::SmbpbiSensor(
      std::vector<thresholds::Threshold>&& thresholdData, uint8_t busId,
      uint8_t addr, uint16_t offset, std::string& sensorUnits,
      std::string& valueType, size_t pollTime, double minVal, double maxVal,
@@ -76,7 +76,7 @@ index 2e5c934..55e9ff6 100644
      busId(busId), addr(addr), offset(offset), sensorUnits(sensorUnits),
      valueType(valueType), objectServer(objectServer),
      inputDev(io, path, boost::asio::random_access_file::read_only),
-@@ -115,9 +116,16 @@ SmbpbiSensor::~SmbpbiSensor()
+@@ -114,9 +115,16 @@ SmbpbiSensor::~SmbpbiSensor()
  
  void SmbpbiSensor::init()
  {
@@ -93,7 +93,7 @@ index 2e5c934..55e9ff6 100644
  void SmbpbiSensor::checkThresholds()
  {
      thresholds::checkThresholds(this);
-@@ -407,6 +415,8 @@ static void createSensorCallback(
+@@ -406,6 +414,8 @@ static void createSensorCallback(
  
              uint16_t off = loadVariant<uint16_t>(entry.second, "ReadOffset");
  
@@ -102,7 +102,7 @@ index 2e5c934..55e9ff6 100644
              std::string sensorUnits =
                  loadVariant<std::string>(entry.second, "Units");
  
-@@ -434,11 +444,12 @@ static void createSensorCallback(
+@@ -433,11 +443,12 @@ static void createSensorCallback(
                  "\tValue Type : {VALUETYPE}\n"
                  "\tPollrate: {RATE}\n"
                  "\tMinValue: {MIN}\n"
@@ -117,7 +117,7 @@ index 2e5c934..55e9ff6 100644
  
              auto& sensor = sensors[name];
              sensor = nullptr;
-@@ -448,7 +459,7 @@ static void createSensorCallback(
+@@ -447,7 +458,7 @@ static void createSensorCallback(
              sensor = std::make_unique<SmbpbiSensor>(
                  dbusConnection, io, name, pathPair.first, objectType,
                  objectServer, std::move(sensorThresholds), busId, addr, off,
@@ -126,7 +126,7 @@ index 2e5c934..55e9ff6 100644
  
              sensor->init();
          }
-@@ -477,6 +488,28 @@ void createSensors(
+@@ -476,6 +487,28 @@ void createSensors(
          "org.freedesktop.DBus.ObjectManager", "GetManagedObjects");
  }
  
@@ -155,7 +155,7 @@ index 2e5c934..55e9ff6 100644
  int main()
  {
      boost::asio::io_context io;
-@@ -525,6 +558,12 @@ int main()
+@@ -524,6 +557,12 @@ int main()
          eventHandler);
  
      setupManufacturingModeMatch(*systemBus);
@@ -169,10 +169,10 @@ index 2e5c934..55e9ff6 100644
      return 0;
  }
 diff --git a/src/smbpbi/SmbpbiSensor.hpp b/src/smbpbi/SmbpbiSensor.hpp
-index c869ce3..bd8b075 100644
+index d27fce9..12fe184 100644
 --- a/src/smbpbi/SmbpbiSensor.hpp
 +++ b/src/smbpbi/SmbpbiSensor.hpp
-@@ -40,7 +40,7 @@ struct SmbpbiSensor : public Sensor
+@@ -39,7 +39,7 @@ struct SmbpbiSensor : public Sensor
          std::vector<thresholds::Threshold>&& thresholdData, uint8_t busId,
          uint8_t addr, uint16_t offset, std::string& sensorUnits,
          std::string& valueType, size_t pollTime, double minVal, double maxVal,
@@ -181,7 +181,7 @@ index c869ce3..bd8b075 100644
      ~SmbpbiSensor() override;
  
      void checkThresholds() override;
-@@ -51,6 +51,7 @@ struct SmbpbiSensor : public Sensor
+@@ -50,6 +50,7 @@ struct SmbpbiSensor : public Sensor
      }
      void read();
      void init();

@@ -1,7 +1,7 @@
-From b978040204355ec8d5340964f874398313656a2f Mon Sep 17 00:00:00 2001
+From 927fa983745f00eb3ae9f4ce5d31aa5c810b6e40 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Mon, 19 May 2025 15:12:23 +0800
-Subject: [PATCH 09/15] psu: support gpio bridge
+Subject: [PATCH 09/16] psu: support gpio bridge
 
 Support for GPIO bridge is required for certain components that
 need a GPIO to be set before reading, such as battery voltage.

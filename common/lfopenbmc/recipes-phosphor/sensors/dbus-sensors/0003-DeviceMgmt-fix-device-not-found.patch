@@ -1,7 +1,7 @@
-From af84511a3fd61557ea1571f337c7a6e4fbd868e6 Mon Sep 17 00:00:00 2001
+From 96af7dc875d487cd80d910b86b1c0a63e2e03169 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <cosmo.chou@quantatw.com>
 Date: Tue, 31 Dec 2024 14:39:48 +0800
-Subject: [PATCH 03/15] DeviceMgmt: fix device not found
+Subject: [PATCH 03/16] DeviceMgmt: fix device not found
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

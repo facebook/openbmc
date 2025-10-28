@@ -90,6 +90,7 @@ class InfoChecker {
 
   public:
     explicit InfoChecker(const signed_header_t& info):comp_info(info){}
+    explicit InfoChecker() {}
 };
 
 struct FW_IMG_INFO {

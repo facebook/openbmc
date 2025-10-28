@@ -870,7 +870,7 @@ update_bic() {
 	sleep 6
 
 	echo "Generating software ID..."
-	software_id=$(compute-software-id "$1")
+	software_id=$(busctl tree xyz.openbmc_project.PLDM | grep "/xyz/openbmc_project/software/[0-9]\+" | awk -F'/' '{print $5}' | head -n1)
 	echo "software_id = $software_id"
 
 	if [ "$software_id" != "" ]; then

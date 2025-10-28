@@ -26,6 +26,7 @@ EXTRA_OEMESON:append = " \
   -Ddiscovery-fru-data-from-terminus=disabled \
   -Dterminus-discovery-retry-count=2 \
   -Denable-fallback-terminus-name=disabled \
+  -Dfw-update-pkg-inotify=enabled \
 "
 
 do_install:append() {

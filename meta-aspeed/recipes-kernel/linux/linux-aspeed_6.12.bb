@@ -18,14 +18,13 @@
 
 include linux-aspeed.inc
 require recipes-kernel/linux/linux-yocto.inc
-require common/recipes-kernel/linux/linux-patches-6.12.inc
 
 KBRANCH = "dev-6.12"
 KSRC ?= "git://github.com/openbmc/linux;protocol=https;branch=${KBRANCH}"
 SRC_URI += "${KSRC}"
 
-SRCREV = "d14bc684031b54339fabf0dd69425faa275841a0"
-LINUX_VERSION ?= "6.12.48"
+SRCREV = "277b60476c9957fe575d798c750b974493bdc646"
+LINUX_VERSION ?= "6.12.55"
 LINUX_VERSION_EXTENSION ?= "-aspeed"
 PR = "r1"
 PV = "${LINUX_VERSION}"

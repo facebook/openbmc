@@ -1,4 +1,4 @@
-From c896d687a360dbfc6691b4271694978cb59a0cd5 Mon Sep 17 00:00:00 2001
+From 45955cdc01942f44b19cf1457ac5bff3345ca42f Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Wed, 13 Aug 2025 10:39:50 +0000
 Subject: [PATCH] dbuspassive: Register signal before property fetch
@@ -195,10 +195,10 @@ index 9167e33..3a75b67 100644
  
      bool _typeMargin = false;
 diff --git a/test/dbus_passive_unittest.cpp b/test/dbus_passive_unittest.cpp
-index b1f3d3d..26185f3 100644
+index 0bd6626..4ffe397 100644
 --- a/test/dbus_passive_unittest.cpp
 +++ b/test/dbus_passive_unittest.cpp
-@@ -64,8 +64,7 @@ TEST(DbusPassiveTest, BoringConstructorTest)
+@@ -72,8 +72,7 @@ TEST(DbusPassiveTest, BoringConstructorTest)
      auto helper = std::make_unique<DbusHelperMock>();
      SensorProperties properties;
  

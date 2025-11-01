@@ -110,7 +110,7 @@ cd /usr/lib/fscd/ptest
 if [ ! -d /var/volatile/log ]; then
   mkdir /var/volatile/log
 fi
-PYTHONPATH = /usr/bin python3 ./fsc_tester.py
+PYTHONPATH=/usr/bin python3 ./fsc_tester.py
 EOF
 }
 

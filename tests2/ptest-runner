@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 
 
 def openbmc_path():
@@ -165,6 +166,7 @@ def main(args):
             rootfs + "/dev/pts",
         ]
     )  # fake shm,tmp for flake8
+    need_background_broker = False
     if not args.tmpfs:
         base_cmd = [
             "unshare",
@@ -177,6 +179,7 @@ def main(args):
             "chroot",
             rootfs,
         ]
+        need_background_broker = True
         init_steps = [
             "export PATH=/bin:${PATH}",
             "mount -t proc proc /proc",
@@ -189,7 +192,6 @@ def main(args):
             "sed -i 's/user>messagebus/user>root/' /usr/share/dbus-1/system.conf",
             "sed -i 's/deny own=/allow own=/' /usr/share/dbus-1/system.conf",
             "sed -i 's/deny send_type=/allow send_type=/' /usr/share/dbus-1/system.conf",
-            "dbus-daemon --config-file=/usr/share/dbus-1/system.conf --nosyslog",
         ]
     else:
         # If we unpacked the rootfs within an existing tmpfs, then we don't have
@@ -202,6 +204,10 @@ def main(args):
         with open(rootfs + init_file, "w") as f:
             f.write("\n".join(init_steps))
         subprocess.check_call(base_cmd + ["/bin/bash", "--init-file", init_file])
+        if need_background_broker:
+            p = subprocess.Popen("systemd-socket-activate -l /run/dbus/system_bus_socket -- dbus-broker-launch --scope system", shell=True)
+            time.sleep(2)
+            assert(p.poll() is None)
     elif not args.skip_tests:
         exit_error = False
         if args.recipes is None or len(args.recipes) == 0:
@@ -212,9 +218,22 @@ def main(args):
         cmd = base_cmd + [
             "/bin/bash",
             "-c",
-            " && ".join(init_steps + [ptest_cmd]),
+            " && ".join(init_steps),
         ]
         try:
+            out = subprocess.check_output(cmd).decode()
+            print(out)
+
+            if need_background_broker:
+                p = subprocess.Popen("systemd-socket-activate -l /run/dbus/system_bus_socket -- dbus-broker-launch --scope system", shell=True)
+                time.sleep(2)
+                assert(p.poll() is None)
+
+            cmd = [
+                "/bin/bash",
+                "-c",
+                " && ".join([ptest_cmd]),
+            ]
             out = subprocess.check_output(cmd).decode()
             print(out)
         except subprocess.CalledProcessError as e:
@@ -225,6 +244,8 @@ def main(args):
         if args.execute is not None:
             cmd = base_cmd + ["sh", "-c", args.execute]
             print(subprocess.check_output(cmd).decode())
+        if p and p.poll() is None:
+            p.kill()
         if exit_error:
             sys.exit(1)
 

@@ -40,8 +40,10 @@ struct UpdateServiceMapper
 {
     std::string fromId;
     std::string toId;
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(UpdateServiceMapper, fromId, toId)
+    std::optional<std::vector<std::string>> updateParametersTargetsOverride;
 };
+
+void from_json(const nlohmann::json& json, UpdateServiceMapper& mapper);
 
 struct UpdateServiceConfig
 {

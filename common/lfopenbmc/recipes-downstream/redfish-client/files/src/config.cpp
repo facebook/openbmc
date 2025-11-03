@@ -3,6 +3,18 @@
 namespace redfish_client::core
 {
 
+void from_json(const nlohmann::json& json, UpdateServiceMapper& mapper)
+{
+    json.at("fromId").get_to(mapper.fromId);
+    json.at("toId").get_to(mapper.toId);
+    if (auto it = json.find("updateParametersTargetsOverride");
+        it != json.end())
+    {
+        mapper.updateParametersTargetsOverride =
+            it->template get<std::vector<std::string>>();
+    }
+}
+
 void from_json(const nlohmann::json& json, Config& config)
 {
     json.at("host").get_to(config.host);

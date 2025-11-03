@@ -1,8 +1,8 @@
-#include <redfish_client/core/async_http_client.hpp>
-
 #include <unistd.h>
 
+#include <redfish_client/core/async_http_client.hpp>
 #include <sdbusplus/async/fdio.hpp>
+#include <sdbusplus/async/timer.hpp>
 
 #include <format>
 
@@ -173,7 +173,7 @@ size_t AsyncHttpResponse::write(char* ptr, size_t size, size_t nmemb,
     return nmemb;
 }
 
-AsyncHttpHandle::AsyncHttpHandle(const std::string& url) :
+AsyncHttpHandle::AsyncHttpHandle(const std::string& url, int timeoutSec) :
     easyHandle(curl_easy_init()), multiHandle(curl_multi_init())
 {
     static const GlobalInit init{};
@@ -200,8 +200,7 @@ AsyncHttpHandle::AsyncHttpHandle(const std::string& url) :
             std::format("curl_easy_setopt CURLOPT_WRITEFUNCTION failed: {}",
                         curl_easy_strerror(res)));
     }
-    if (auto res =
-            curl_easy_setopt(easyHandle, CURLOPT_TIMEOUT, kDefaultTimeoutSec);
+    if (auto res = curl_easy_setopt(easyHandle, CURLOPT_TIMEOUT, timeoutSec);
         res != CURLE_OK)
     {
         throw std::runtime_error(
@@ -220,7 +219,7 @@ sdbusplus::async::task<AsyncHttpResponse> AsyncHttpHandle::get(
     sdbusplus::async::context& ctx)
 {
     HandleLock lock(easyHandle, multiHandle, mutex);
-    co_return co_await perform(ctx);
+    co_return co_await perform(ctx, true /*fdioEnabled*/);
 }
 
 sdbusplus::async::task<std::expected<AsyncHttpResponse, std::string>>
@@ -242,7 +241,7 @@ sdbusplus::async::task<AsyncHttpResponse> AsyncHttpHandle::post(
 {
     HandleLock lock(easyHandle, multiHandle, mutex);
     Mime mime{easyHandle, multipart};
-    co_return co_await perform(ctx);
+    co_return co_await perform(ctx, false /*fdioEnabled*/);
 }
 
 sdbusplus::async::task<std::expected<AsyncHttpResponse, std::string>>
@@ -261,7 +260,7 @@ sdbusplus::async::task<std::expected<AsyncHttpResponse, std::string>>
 }
 
 sdbusplus::async::task<AsyncHttpResponse> AsyncHttpHandle::perform(
-    sdbusplus::async::context& ctx)
+    sdbusplus::async::context& ctx, bool fdioEnabled)
 {
     AsyncHttpResponse response;
     if (auto res = curl_easy_setopt(easyHandle, CURLOPT_WRITEDATA, &response);
@@ -271,9 +270,6 @@ sdbusplus::async::task<AsyncHttpResponse> AsyncHttpHandle::perform(
             std::format("curl_easy_setopt CURLOPT_WRITEDATA failed: {}",
                         curl_easy_strerror(res)));
     }
-    constexpr auto fdSize = 1;
-    curl_waitfd fds[fdSize];
-    unsigned int fdCount = 0;
     int stillRunning = 0;
     do
     {
@@ -287,18 +283,30 @@ sdbusplus::async::task<AsyncHttpResponse> AsyncHttpHandle::perform(
         {
             break;
         }
-        if (auto res = curl_multi_waitfds(multiHandle, fds, fdSize, &fdCount);
-            res != CURLM_OK)
+        if (fdioEnabled)
         {
-            throw std::runtime_error(std::format(
-                "curl_multi_waitfds failed: {}", curl_multi_strerror(res)));
+            constexpr auto fdSize = 1;
+            curl_waitfd fds[fdSize];
+            unsigned int fdCount = 0;
+            if (auto res =
+                    curl_multi_waitfds(multiHandle, fds, fdSize, &fdCount);
+                res != CURLM_OK)
+            {
+                throw std::runtime_error(std::format(
+                    "curl_multi_waitfds failed: {}", curl_multi_strerror(res)));
+            }
+            if (fdCount == 0 || (fds[0].events & CURL_WAIT_POLLIN) == 0)
+            {
+                continue;
+            }
+            sdbusplus::async::fdio fdioInstance{ctx, fds[0].fd};
+            co_await fdioInstance.next();
         }
-        if (fdCount == 0 || (fds[0].events & CURL_WAIT_POLLIN) == 0)
+        else
         {
-            continue;
+            co_await sdbusplus::async::sleep_for(ctx,
+                                                 std::chrono::milliseconds(20));
         }
-        sdbusplus::async::fdio fdioInstance{ctx, fds[0].fd};
-        co_await fdioInstance.next();
     } while (stillRunning > 0);
     int msgq = 0;
     auto msg = curl_multi_info_read(multiHandle, &msgq);
@@ -306,7 +314,6 @@ sdbusplus::async::task<AsyncHttpResponse> AsyncHttpHandle::perform(
     {
         throw std::runtime_error("curl_multi_info_read failed");
     }
-
     if (msg->data.result != CURLE_OK)
     {
         throw std::runtime_error(

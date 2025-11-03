@@ -39,7 +39,8 @@ TEST(Config, FullConfig)
     "firmwareMappers": [
       {
         "fromId": "FW1",
-        "toId": "chassis/FW1"
+        "toId": "chassis/FW1",
+        "updateParametersTargetsOverride": ["A"]
       },
       {
         "fromId": "FW2",
@@ -83,13 +84,25 @@ TEST(Config, FullConfig)
     EXPECT_EQ(config.updateServiceConfig->firmwareMappers[0].fromId, "FW1");
     EXPECT_EQ(config.updateServiceConfig->firmwareMappers[0].toId,
               "chassis/FW1");
+    EXPECT_EQ(config.updateServiceConfig->firmwareMappers[0]
+                  .updateParametersTargetsOverride.has_value(),
+              true);
+    EXPECT_EQ(config.updateServiceConfig->firmwareMappers[0]
+                  .updateParametersTargetsOverride.value(),
+              std::vector<std::string>{"A"});
     EXPECT_EQ(config.updateServiceConfig->firmwareMappers[1].fromId, "FW2");
     EXPECT_EQ(config.updateServiceConfig->firmwareMappers[1].toId,
               "chassis/FW2");
+    EXPECT_EQ(config.updateServiceConfig->firmwareMappers[1]
+                  .updateParametersTargetsOverride.has_value(),
+              false);
     EXPECT_EQ(config.updateServiceConfig->softwareMappers.size(), 1);
     EXPECT_EQ(config.updateServiceConfig->softwareMappers[0].fromId, "SW0");
     EXPECT_EQ(config.updateServiceConfig->softwareMappers[0].toId,
               "chassis/SW0");
+    EXPECT_EQ(config.updateServiceConfig->softwareMappers[0]
+                  .updateParametersTargetsOverride.has_value(),
+              false);
 }
 
 TEST(Config, PartialConfig)

@@ -39,7 +39,8 @@ class AsyncHttpHandle
     AsyncHttpHandle& operator=(const AsyncHttpHandle&) = delete;
     AsyncHttpHandle& operator=(AsyncHttpHandle&&) = delete;
 
-    explicit AsyncHttpHandle(const std::string& url);
+    explicit AsyncHttpHandle(const std::string& url,
+                             int timeoutSec = kDefaultTimeoutSec);
 
     ~AsyncHttpHandle();
 
@@ -63,7 +64,7 @@ class AsyncHttpHandle
     std::mutex mutex;
 
     sdbusplus::async::task<AsyncHttpResponse> perform(
-        sdbusplus::async::context& ctx);
+        sdbusplus::async::context& ctx, bool fdioEnabled);
 };
 
 } // namespace redfish_client::core

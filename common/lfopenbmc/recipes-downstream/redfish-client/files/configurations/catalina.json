@@ -766,7 +766,8 @@
     "firmwareMappers": [
       {
         "fromId": "HGX_FW_BMC_0",
-        "toId": "HGX_bmc"
+        "toId": "HGX_bmc",
+        "updateParametersTargetsOverride": []
       },
       {
         "fromId": "HGX_FW_CPLD_0",

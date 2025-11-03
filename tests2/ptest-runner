@@ -54,7 +54,9 @@ def recipes_with_ptest():
                     total_recipes += 1
                     if f not in avoidlist and contains_ptest(f_full):
                         recipes.add(recipe_name(f))
-    print(f"Found {total_recipes} recipes of which {len(recipes)} define unit-tests")
+    print(
+        f"Found {total_recipes} recipes of which {len(recipes)} define unit-tests"
+    )
     return list(recipes)
 
 
@@ -149,8 +151,7 @@ def main(args):
     deploy = args.build + "/tmp/deploy/images/qemux86"
     rootfs_zip = deploy + "/qemux86-image-qemux86.tar.bz2"
     rootfs_zip = os.path.abspath(rootfs_zip)
-    rootfs = args.tmpfs if args.tmpfs else deploy
-    rootfs += "/rootfs"
+    rootfs = deploy + "/rootfs"
     if os.path.isdir(rootfs):
         shutil.rmtree(rootfs)
     os.makedirs(rootfs)
@@ -166,44 +167,40 @@ def main(args):
             rootfs + "/dev/pts",
         ]
     )  # fake shm,tmp for flake8
-    if not args.tmpfs:
-        base_cmd = [
-            "unshare",
-            "--user",
-            "--mount",
-            "--pid",
-            "--map-root-user",
-            "--mount-proc",
-            "--fork",
-            "chroot",
-            rootfs,
-        ]
-        init_steps = [
-            "export PATH=/bin:${PATH}",
-            "mount -t proc proc /proc",
-            "mount -t tmpfs -o size=512m tmpfs /dev/shm",
-            "mount -t tmpfs -o size=512m tmpfs /run",
-            "mount -t devpts devpts /dev/pts",
-            "ln -s /dev/pts/ptmx /dev/ptmx",
-            "touch /dev/null",
-            "mkdir -p /run/dbus",
-            "sed -i 's/user>messagebus/user>root/' /usr/share/dbus-1/system.conf",
-            "sed -i 's/deny own=/allow own=/' /usr/share/dbus-1/system.conf",
-            "sed -i 's/deny send_type=/allow send_type=/' /usr/share/dbus-1/system.conf",
-            "(systemd-socket-activate -l /run/dbus/system_bus_socket -- dbus-broker-launch --config /usr/share/dbus-1/system.conf --scope system &)",
-            "while [ ! -e /run/dbus/system_bus_socket ]; do sleep .1; done",
-        ]
-    else:
-        # If we unpacked the rootfs within an existing tmpfs, then we don't have
-        # to mount /dev/shm as a tmpfs.
-        base_cmd = ["sudo", "chroot", rootfs]
-        init_steps = []
+    base_cmd = [
+        "unshare",
+        "--user",
+        "--mount",
+        "--pid",
+        "--map-root-user",
+        "--mount-proc",
+        "--fork",
+        "chroot",
+        rootfs,
+    ]
+    init_steps = [
+        "export PATH=/bin:${PATH}",
+        "mount -t proc proc /proc",
+        "mount -t tmpfs -o size=512m tmpfs /dev/shm",
+        "mount -t tmpfs -o size=512m tmpfs /run",
+        "mount -t devpts devpts /dev/pts",
+        "ln -s /dev/pts/ptmx /dev/ptmx",
+        "touch /dev/null",
+        "mkdir -p /run/dbus",
+        "sed -i 's/user>messagebus/user>root/' /usr/share/dbus-1/system.conf",
+        "sed -i 's/deny own=/allow own=/' /usr/share/dbus-1/system.conf",
+        "sed -i 's/deny send_type=/allow send_type=/' /usr/share/dbus-1/system.conf",
+        "(systemd-socket-activate -l /run/dbus/system_bus_socket -- dbus-broker-launch --config /usr/share/dbus-1/system.conf --scope system &)",
+        "while [ ! -e /run/dbus/system_bus_socket ]; do sleep .1; done",
+    ]
 
     if args.shell:
         init_file = "/init-file.sh"
         with open(rootfs + init_file, "w") as f:
             f.write("\n".join(init_steps))
-        subprocess.check_call(base_cmd + ["/bin/bash", "--init-file", init_file])
+        subprocess.check_call(
+            base_cmd + ["/bin/bash", "--init-file", init_file]
+        )
     elif not args.skip_tests:
         exit_error = False
         if args.recipes is None or len(args.recipes) == 0:
@@ -239,17 +236,15 @@ def main(args):
             sys.exit(1)
 
 
-parser = argparse.ArgumentParser(description="Helper to run unit-tests natively")
+parser = argparse.ArgumentParser(
+    description="Helper to run unit-tests natively"
+)
 parser.add_argument(
     "--build",
     "-b",
     help="Use an existing build directory instead of building one (For debugging)",
     dest="build",
     default=None,
-)
-parser.add_argument(
-    "--tmpfs",
-    help="Unpack the rootfs in an existing tmpfs instead of trying to mount ones",
 )
 parser.add_argument(
     "--force-rebuild",

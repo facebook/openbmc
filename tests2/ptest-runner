@@ -235,8 +235,6 @@ def main(args):
         if args.execute is not None:
             cmd = base_cmd + ["sh", "-c", args.execute]
             print(subprocess.check_output(cmd).decode())
-        if p and p.poll() is None:
-            p.kill()
         if exit_error:
             sys.exit(1)
 

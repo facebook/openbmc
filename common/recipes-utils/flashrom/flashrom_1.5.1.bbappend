@@ -17,6 +17,6 @@
 # Boston, MA 02110-1301 USA
 #
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/1.2:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/1.5.1:"
 
-SRC_URI += "file://0001-flashchip-support-identify-S25FL128S.patch"
+SRC_URI += "file://0001-disable-wp-func-in-linux_mtd-to-avoid-warn-msg.patch"

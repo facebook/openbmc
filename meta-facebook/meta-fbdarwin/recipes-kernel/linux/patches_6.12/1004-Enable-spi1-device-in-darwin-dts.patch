@@ -1,0 +1,41 @@
+From a5143da5f755e7efeb5007d862d1c2d66002d1ea Mon Sep 17 00:00:00 2001
+From: Anoop Kailathu Rajeev <arajeev@arista.com>
+Date: Fri, 24 Oct 2025 08:18:58 +0000
+Subject: [PATCH] Enable spi1 device in darwin dts.
+
+---
+ .../dts/aspeed/aspeed-bmc-facebook-darwin.dts | 21 +++++++++++++++++++
+ 1 file changed, 21 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-darwin.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-darwin.dts
+index 58c107a1b6cf..ce8650dd8368 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-darwin.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-darwin.dts
+@@ -70,3 +70,24 @@ &emmc {
+ 	max-frequency = <25000000>;
+ 	bus-width = <4>;
+ };
++
++&spi1 {
++	status = "okay";
++	compatible = "spi-gpio";
++	#address-cells = <1>;
++	#size-cells = <0>;
++	num-chipselects = <2>;
++
++	gpio-sck = <&gpio0 ASPEED_GPIO(Z, 3) GPIO_ACTIVE_HIGH>;
++	gpio-mosi = <&gpio0 ASPEED_GPIO(Z, 4) GPIO_ACTIVE_HIGH>;
++	gpio-miso = <&gpio0 ASPEED_GPIO(Z, 5) GPIO_ACTIVE_HIGH>;
++	cs-gpios = <0>, <&gpio0 ASPEED_GPIO(Z, 0) GPIO_ACTIVE_HIGH>;
++
++	eeprom@1 {
++		compatible = "atmel,at93c86";
++		spi-max-frequency = <250000>;
++		data-size = <16>;
++		spi-cs-high;
++		reg = <1>;
++	};
++};
+-- 
+2.47.0
+

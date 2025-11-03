@@ -24,4 +24,5 @@ SRC_URI:append = " \
     file://1001-ARM-dts-aspeed-darwin-Fixup-device-settings.patch \
     file://1002-misc-eeprom_93xx46-Add-93C76-93C86-support.patch \
     file://1003-gpiolib-of-Respect-High-CS-in-spi-gpio.patch \
+    file://1004-Enable-spi1-device-in-darwin-dts.patch \
 "

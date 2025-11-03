@@ -1,4 +1,4 @@
-From a2d1efb5517bc1d235773cdec3242f4e88a81383 Mon Sep 17 00:00:00 2001
+From e88ad348e5553f29d617c426d68410662d5ca40a Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Thu, 11 Apr 2024 08:27:09 +0800
 Subject: [PATCH 501/503] Add method for setting up MCTP EID by config path
@@ -9,14 +9,14 @@ Change:
 The code have been update to
 https://github.com/CodeConstruct/mctp/pull/17
 ---
- src/mctpd.c | 195 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 195 insertions(+)
+ src/mctpd.c | 196 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 196 insertions(+)
 
 diff --git a/src/mctpd.c b/src/mctpd.c
-index b6fb787..b6c0fa0 100644
+index cdce537..e342184 100644
 --- a/src/mctpd.c
 +++ b/src/mctpd.c
-@@ -2466,6 +2466,189 @@ out:
+@@ -3075,6 +3075,190 @@ out:
  	return rc;
  }
  
@@ -24,7 +24,7 @@ index b6fb787..b6c0fa0 100644
 +{
 +	int rc = 0;
 +	int net;
-+	ctx *ctx = data;
++	struct ctx *ctx = data;
 +	const char *object_path = NULL;
 +	const char *bmc_interface_p = NULL;
 +	char bmc_interface[MAX_STRING_SIZE];
@@ -32,7 +32,7 @@ index b6fb787..b6c0fa0 100644
 +	char parent_path[MAX_STRING_SIZE];
 +	char *peer_path;
 +	dest_phys desti = {0}, *dest = &desti;
-+	peer *peer = NULL;
++	struct peer *peer = NULL;
 +	struct sockaddr_mctp_ext addr;
 +	struct mctp_ctrl_cmd_get_eid req = {0};
 +	req.ctrl_hdr.rq_dgram_inst = RQDI_REQ;
@@ -117,9 +117,9 @@ index b6fb787..b6c0fa0 100644
 +	sd_bus_message_read(message, "t", &bus);
 +
 +	if (strcmp(bmc_interface, "I3C") == 0) {
-+		sprintf(ifname, "mctpi3c%ld", bus);
++		sprintf(ifname, "mctpi3c%llu", (unsigned long long)bus);
 +	} else {
-+		sprintf(ifname, "mctpi2c%ld", bus);
++		sprintf(ifname, "mctpi2c%llu", (unsigned long long)bus);
 +	}
 +
 +	dest->ifindex = mctp_nl_ifindex_byname(ctx->nl, ifname);
@@ -159,7 +159,7 @@ index b6fb787..b6c0fa0 100644
 +	if (ret)
 +		*ret = '\0';
 +
-+	rc = add_peer(ctx, dest, eid, net, parent_path, &peer);
++	rc = add_peer(ctx, dest, eid, net, parent_path, &peer, false);
 +	if (rc < 0) {
 +		warnx("Failed to add peer for EID %d", eid);
 +		goto err;
@@ -181,7 +181,7 @@ index b6fb787..b6c0fa0 100644
 +
 +	rc = query_peer_properties(peer);
 +
-+	rc = publish_peer(peer, true);
++	rc = publish_peer(peer);
 +	if (rc < 0) {
 +		warnx("Error publishing remote eid %d net %d", eid, net);
 +		goto err;
@@ -189,9 +189,10 @@ index b6fb787..b6c0fa0 100644
 +
 +	message = sd_bus_message_unref(message);
 +
-+	rc = path_from_peer(peer, &peer_path);
-+	if (rc < 0)
++	if (!path_from_peer(peer)) {
++		rc = -EPROTO;
 +		goto err;
++  }
 +	dfree(peer_path);
 +
 +	return sd_bus_reply_method_return(call, "yisb",
@@ -206,7 +207,7 @@ index b6fb787..b6c0fa0 100644
  // Query various properties of a peer.
  // To be called when a new peer is discovered/assigned, once an EID is known
  // and routable.
-@@ -3113,11 +3296,23 @@ static const sd_bus_vtable bus_owner_vtable[] = {
+@@ -3798,11 +3982,23 @@ static const sd_bus_vtable bus_link_owner_vtable[] = {
  		SD_BUS_PARAM(found),
  		method_learn_endpoint,
  		0),
@@ -231,5 +232,5 @@ index b6fb787..b6c0fa0 100644
  
  };
 -- 
-2.49.1
+2.47.3
 

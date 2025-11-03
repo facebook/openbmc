@@ -1,4 +1,4 @@
-From 661f30f5579da7483db0ecaa98a5d0f333c4f753 Mon Sep 17 00:00:00 2001
+From 1b81934bf83169516e910394efed484d233764e1 Mon Sep 17 00:00:00 2001
 From: Jerry-wiwynn <Jerry_C_Chen@wiwynn.com>
 Date: Wed, 15 May 2024 14:06:23 +0800
 Subject: [PATCH 502/503] mctpd: fix mctpd crash issue
@@ -9,19 +9,19 @@ Add null check in find_peer_by_association() to prevent access violation
  1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/src/mctpd.c b/src/mctpd.c
-index b6c0fa0..22b255b 100644
+index e342184..974b09d 100644
 --- a/src/mctpd.c
 +++ b/src/mctpd.c
-@@ -335,7 +335,7 @@ static peer * find_peer_by_association(ctx *ctx, const char *object_path)
+@@ -397,7 +397,7 @@ static struct peer * find_peer_by_association(struct ctx *ctx, const char *objec
  {
- 	for (size_t i = 0; i < ctx->size_peers; i++) {
- 		peer *peer = &ctx->peers[i];
+ 	for (size_t i = 0; i < ctx->num_peers; i++) {
+ 		struct peer *peer = ctx->peers[i];
 -		if (peer->state != REMOTE)
 +		if (peer->state != REMOTE || peer->association == NULL)
  			continue;
  		if (strcmp(peer->association->object_path, object_path) == 0)
  			return peer;
-@@ -4429,7 +4429,8 @@ static int on_interface_removed(sd_bus_message *m, void *userdata, sd_bus_error
+@@ -4712,7 +4712,8 @@ static int on_interface_removed(sd_bus_message *m, void *userdata, sd_bus_error
  
  	for (peer = find_peer_by_association(ctx, temp); peer;
  		 peer = find_peer_by_association(ctx, temp)) {
@@ -32,5 +32,5 @@ index b6c0fa0..22b255b 100644
  
  	return rc;
 -- 
-2.49.1
+2.47.3
 

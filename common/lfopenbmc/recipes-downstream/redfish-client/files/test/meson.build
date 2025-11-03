@@ -36,7 +36,7 @@ foreach name, sources : tests
     test(
         name,
         executable(
-            name,
+            'test-' + name,
             sources,
             dependencies: [gtest_dep, gmock_dep, base_deps],
             cpp_args: cpp_args,

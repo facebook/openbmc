@@ -7,10 +7,10 @@ struct RBInfo {
 };
 
 constexpr std::array<RBInfo, 4> rb_map = {{
-    {6,  "/dev/tty_RB_0", "/dev/tty_SITV_0"},
-    {13,  "/dev/tty_RB_1", "/dev/tty_SITV_1"},
-    {8, "/dev/tty_RB_2", "/dev/tty_SITV_2"},
-    {10, "/dev/tty_RB_3", "/dev/tty_SITV_3"},
+    {6,  "/dev/ttyUSBdevice56", "/dev/ttyUSBdevice1"},
+    {10,  "/dev/ttyUSBdevice58", "/dev/ttyUSBdevice29"},
+    {8, "/dev/ttyUSBdevice57", "/dev/ttyUSBdevice15"},
+    {13, "/dev/ttyUSBdevice59", "/dev/ttyUSBdevice43"},
 }};
 
 class SanatabarbaraRecoveryOps : public RecoveryOps {

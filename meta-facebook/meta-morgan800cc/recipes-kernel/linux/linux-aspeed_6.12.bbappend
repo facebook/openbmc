@@ -20,4 +20,5 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/patches_6.12:"
 SRC_URI:append = " \
 	file://1001-ARM-dts-aspeed-fblite-r1-fixup-device-settings.patch \
 	file://1002-ARM-dts-aspeed-morgan800cc-Enable-ramoops-and-pstore.patch \
+	file://1003-ARM-dts-aspeed-Add-data-partition-for-flash1.patch \
 "

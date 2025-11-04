@@ -16,3 +16,6 @@ IMAGE_INSTALL:append = " modbus-device-util"
 
 # Scripts to perform FW Upgrade of PSU/BBU/RPU via rackmon
 IMAGE_INSTALL:append = " psu-update"
+
+# Service to detect erroring usb-serial
+IMAGE_INSTALL:append = " usb-serial-monitor"

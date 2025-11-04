@@ -157,39 +157,24 @@ def main(args):
     os.makedirs(rootfs)
     untar = ["tar", "-xf", rootfs_zip, "-C", rootfs]
     subprocess.check_call(untar)
-    subprocess.check_call(
-        [
-            "mkdir",
-            "-p",
-            rootfs + "/dev/shm",
-            rootfs + "/tmp",
-            rootfs + "/proc",
-            rootfs + "/dev/pts",
-        ]
-    )  # fake shm,tmp for flake8
     base_cmd = [
-        "unshare",
-        "--user",
-        "--mount",
-        "--pid",
-        "--map-root-user",
-        "--mount-proc",
-        "--fork",
-        "chroot",
+        "podman",
+        "run",
+        "--rm",
+        "--systemd",
+        "true",
+        "--rootfs",
         rootfs,
     ]
     init_steps = [
-        "export PATH=/bin:${PATH}",
-        "mount -t proc proc /proc",
-        "mount -t tmpfs -o size=512m tmpfs /dev/shm",
-        "mount -t tmpfs -o size=512m tmpfs /run",
-        "mount -t devpts devpts /dev/pts",
-        "ln -s /dev/pts/ptmx /dev/ptmx",
-        "touch /dev/null",
-        "mkdir -p /run/dbus",
+        "systemd-machine-id-setup",
+        "mkdir -p /run/systemd/journal",
+        "(systemd-socket-activate -d -l /run/systemd/journal/socket -- /usr/lib/systemd/systemd-journald &)",
+        "while [ ! -e /run/systemd/journal/socket ]; do sleep .1; done",
         "sed -i 's/user>messagebus/user>root/' /usr/share/dbus-1/system.conf",
         "sed -i 's/deny own=/allow own=/' /usr/share/dbus-1/system.conf",
         "sed -i 's/deny send_type=/allow send_type=/' /usr/share/dbus-1/system.conf",
+        "mkdir -p /run/dbus",
         "(systemd-socket-activate -l /run/dbus/system_bus_socket -- dbus-broker-launch --config /usr/share/dbus-1/system.conf --scope system &)",
         "while [ ! -e /run/dbus/system_bus_socket ]; do sleep .1; done",
     ]
@@ -211,17 +196,9 @@ def main(args):
         cmd = base_cmd + [
             "/bin/bash",
             "-c",
-            " && ".join(init_steps),
+            " && ".join(init_steps + [ptest_cmd]),
         ]
         try:
-            out = subprocess.check_output(cmd).decode()
-            print(out)
-
-            cmd = [
-                "/bin/bash",
-                "-c",
-                " && ".join([ptest_cmd]),
-            ]
             out = subprocess.check_output(cmd).decode()
             print(out)
         except subprocess.CalledProcessError as e:

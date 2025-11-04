@@ -72,7 +72,6 @@ SRC_URI:append = " \
     file://0603-hwmon-Driver-for-Nuvoton-NCT7363Y.patch \
     file://0604-hwmon-new-driver-for-ISL28022-power-monitor.patch \
     file://0605-hwmon-Add-net_brcm-driver.patch \
-    file://0606-hwmon-pmbus-Add-SQ52205-driver.patch \
     file://0607-Kernel6v5-Support-apml-driver.patch \
 "
 

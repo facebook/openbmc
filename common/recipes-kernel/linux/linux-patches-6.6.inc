@@ -138,7 +138,6 @@ SRC_URI:append = " \
     file://0304-hwmon-pmbus-Add-xdpe132g5c-driver.patch \
     file://0305-hwmon-Driver-for-Nuvoton-NCT7363Y.patch \
     file://0306-hwmon-new-driver-for-ISL28022-power-monitor.patch \
-    file://0307-Add-SQ52205-driver.patch \
     file://0308-hwmon-Add-net_brcm-driver.patch \
     file://0309-Kernel6v5-Support-apml-driver.patch \
     file://0310-hwmon-ina2xx-Remove-use-of-i2c_match_id.patch \

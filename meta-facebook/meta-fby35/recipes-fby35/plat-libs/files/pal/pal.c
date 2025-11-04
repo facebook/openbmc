@@ -1385,8 +1385,8 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
       }
       break;
     case FRU_SLOT3:
-      if (config != CONFIG_D && ((config == CONFIG_B) && 
-         (fby35_common_get_slot_type(FRU_SLOT1) != SERVER_TYPE_CL_EMR))) {
+      if (config != CONFIG_D && !((config == CONFIG_B) &&
+         (fby35_common_get_slot_type(FRU_SLOT1) == SERVER_TYPE_CL_EMR))) {
         *caps = FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL |
         FRU_CAPABILITY_SERVER | FRU_CAPABILITY_POWER_ALL |
         FRU_CAPABILITY_POWER_12V_ALL | FRU_CAPABILITY_HAS_DEVICE;

@@ -1,0 +1,10 @@
+[Unit]
+Description=Monitor USB Serial health
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/usb-serial-monitor
+
+[Install]
+WantedBy=multi-user.target
+

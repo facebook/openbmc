@@ -1,0 +1,9 @@
+[Unit]
+Description=Monitor USB Serial health every 3 minutes.
+
+[Timer]
+OnCalendar=*:0/3
+
+[Install]
+WantedBy=timers.target
+

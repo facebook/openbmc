@@ -133,8 +133,36 @@ wedge_power_asic() {
 }
 
 wedge_board_rev() {
-    board_rev=$($WEUTIL_CMD scm|grep "Product Version"|awk '{print $3}')
-    echo "${board_rev}"
+    board_rev=$($WEUTIL_CMD scm|grep "Product Production State"|awk '{print $4}')
+    case "$((board_rev))" in
+        1)
+            echo "EVT"
+            ;;
+        2)
+            echo "DVT"
+            ;;
+        3)
+            echo "PVT"
+            ;;
+        4)
+            echo "MP"
+            ;;
+        *)
+            echo "Revision: unknown value [$board_rev]"
+            ;;
+    esac
+}
+
+wedge_board_type_rev() {
+    board_type=$(wedge_board_type)
+    board_rev=$(wedge_board_rev)
+
+    if [ -z "$board_type" ] || [ -z "$board_rev" ]; then
+        echo "Error: Unable to determine board type or revision!"
+        return 1
+    fi
+
+    echo "${board_type}_${board_rev}"
 }
 
 wedge_is_scm_p1()

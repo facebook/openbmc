@@ -6,6 +6,7 @@ SRC_URI += " \
     file://1002-clemente-dts-Add-ADC-channel-gains-for-MAX1363.patch \
     file://1003-clemente-dts-add-shunt-resistor-micro-ohm.patch \
     file://1004-clemente-dts-add-GPIO-expander-and-LED-for-HDD-activity-LED.patch \
+    file://1005-clemente-dts-Add-EEPROMs-for-boot-and-data-drive-FRUs.patch \
     file://clemente-sensor.cfg \
 "
 

@@ -1,0 +1,87 @@
+From d378cf117654d74b3bf09f60d8c026d0885577a9 Mon Sep 17 00:00:00 2001
+From: Leo Wang <leo.jt.wang@gmail.com>
+Date: Wed, 22 Oct 2025 14:59:41 +0800
+Subject: [PATCH] clemente: Add EEPROMs for boot and data drive FRUs
+
+Add EEPROM devices on the I2C buses used for the boot and data NVMe
+drives. These EEPROMs store FRU information for each drive, allowing
+the BMC to identify.
+
+lore link:
+https://lore.kernel.org/all/20251021-leo-dts-add-nvme-eeprom-v1-1-33166b3665b4@gmail.com/
+---
+ .../aspeed/aspeed-bmc-facebook-clemente.dts   | 30 +++++++++++++++++++
+ 1 file changed, 30 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
+index cde25093cb06..36cf79d2d68d 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
+@@ -314,6 +314,12 @@ i2c0mux0ch1mux0ch0: i2c@0 {
+ 					#address-cells = <1>;
+ 					#size-cells = <0>;
+ 					reg = <0>;
++
++					// HDD NVMe SSD FRU 0
++					eeprom@53 {
++						compatible = "atmel,24c02";
++						reg = <0x53>;
++					};
+ 				};
+ 
+ 				i2c0mux0ch1mux0ch1: i2c@1 {
+@@ -326,6 +332,12 @@ i2c0mux0ch1mux0ch2: i2c@2 {
+ 					#address-cells = <1>;
+ 					#size-cells = <0>;
+ 					reg = <2>;
++
++					// HDD NVMe SSD FRU 1
++					eeprom@53 {
++						compatible = "atmel,24c02";
++						reg = <0x53>;
++					};
+ 				};
+ 
+ 				i2c0mux0ch1mux0ch3: i2c@3 {
+@@ -496,6 +508,12 @@ i2c0mux3ch1mux0ch0: i2c@0 {
+ 					#address-cells = <1>;
+ 					#size-cells = <0>;
+ 					reg = <0>;
++
++					// HDD NVMe SSD FRU 2
++					eeprom@53 {
++						compatible = "atmel,24c02";
++						reg = <0x53>;
++					};
+ 				};
+ 
+ 				i2c0mux3ch1mux0ch1: i2c@1 {
+@@ -508,6 +526,12 @@ i2c0mux3ch1mux0ch2: i2c@2 {
+ 					#address-cells = <1>;
+ 					#size-cells = <0>;
+ 					reg = <2>;
++
++					// HDD NVMe SSD FRU 3
++					eeprom@53 {
++						compatible = "atmel,24c02";
++						reg = <0x53>;
++					};
+ 				};
+ 
+ 				i2c0mux3ch1mux0ch3: i2c@3 {
+@@ -622,6 +646,12 @@ i2c0mux5ch1: i2c@1 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			reg = <1>;
++
++			// BOOT DRIVE FRU
++			eeprom@53 {
++				compatible = "atmel,24c02";
++				reg = <0x53>;
++			};
+ 		};
+ 
+ 		i2c0mux5ch2: i2c@2 {
+-- 
+2.43.0
+

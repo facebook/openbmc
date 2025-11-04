@@ -1,4 +1,4 @@
-From f2b095ba8672763f02b76c21626944c924b17d54 Mon Sep 17 00:00:00 2001
+From 73341fb43fc5668efb10f2595c3d9eb38e3c6340 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
 Subject: [PATCH 15/20] platform-mc: Add option for discovering FRU data
@@ -219,5 +219,5 @@ index 147e6e7..6085f39 100644
      /* @brief Inventory D-Bus object path of the terminus */
      std::string inventoryPath;
 -- 
-2.47.3
+2.43.0
 

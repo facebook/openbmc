@@ -1,4 +1,4 @@
-From 3332169552d458713e748f2c6841e0319c8ea33e Mon Sep 17 00:00:00 2001
+From f1f3b7465c0753c6539deeab28e4b96e15634112 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 15 Jul 2025 10:22:29 +0000
 Subject: [PATCH 16/20] pldm: Use std::expected for instance ID allocation
@@ -283,7 +283,7 @@ index f61428b..e446aa0 100644
      auto requestMsg = new (request.data()) pldm_msg;
  
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index 6ad9f39..a136c37 100644
+index 7975f7a..062cc4c 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
 @@ -48,7 +48,12 @@ void InventoryManager::removeFDs(const MctpInfos& mctpInfos)
@@ -470,7 +470,7 @@ index de828ec..60e2ed2 100644
          sizeof(pldm_msg_hdr) + PLDM_GET_FRU_RECORD_TABLE_REQ_BYTES);
  
 diff --git a/libpldmresponder/platform.cpp b/libpldmresponder/platform.cpp
-index c1aab2b..f8c8a0c 100644
+index 85491c0..e1c0b29 100644
 --- a/libpldmresponder/platform.cpp
 +++ b/libpldmresponder/platform.cpp
 @@ -987,7 +987,12 @@ void Handler::setEventReceiver()
@@ -800,5 +800,5 @@ index 71fa9dc..8a177c0 100644
          instanceID, effecterID, effecterCount, &stateField, request);
      if (rc != PLDM_SUCCESS)
 -- 
-2.47.3
+2.43.0
 

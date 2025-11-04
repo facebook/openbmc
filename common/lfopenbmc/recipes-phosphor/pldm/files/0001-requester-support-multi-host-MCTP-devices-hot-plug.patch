@@ -1,4 +1,4 @@
-From 0708dab94a70e8bab172508a049b4d35aa4da014 Mon Sep 17 00:00:00 2001
+From 1384328126148290140ac3b219ebe265276c8de9 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 18 Dec 2023 18:40:23 +0800
 Subject: [PATCH 01/20] requester: support multi-host MCTP devices hot plug
@@ -641,5 +641,5 @@ index f269561..d30d884 100644
  foreach t : tests
      test(
 -- 
-2.47.3
+2.43.0
 

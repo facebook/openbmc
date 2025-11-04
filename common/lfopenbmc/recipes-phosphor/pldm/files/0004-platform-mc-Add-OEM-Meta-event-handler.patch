@@ -1,4 +1,4 @@
-From a68ba30fa7e40fb847acb22f7397f8f758e304e8 Mon Sep 17 00:00:00 2001
+From 29c0950cfe87f94ed38ffe07e13a62ca79d2ac76 Mon Sep 17 00:00:00 2001
 From: lora <lora.lin.wiwynn@gmail.com>
 Date: Fri, 27 Sep 2024 14:51:48 +0800
 Subject: [PATCH 04/20] platform-mc: Add OEM Meta event handler
@@ -60,10 +60,10 @@ Upstream-Status: Pending
  oem/meta/platform-mc/event_oem_meta.hpp |  21 +
  platform-mc/event_manager.cpp           |  42 +-
  platform-mc/event_manager.hpp           |  15 +-
- platform-mc/manager.hpp                 |  27 +-
+ platform-mc/manager.hpp                 |  26 +-
  platform-mc/test/meson.build            |   2 +
  pldmd/pldmd.cpp                         |  16 +-
- 8 files changed, 1087 insertions(+), 13 deletions(-)
+ 8 files changed, 1086 insertions(+), 13 deletions(-)
  create mode 100644 oem/meta/platform-mc/event_oem_meta.cpp
  create mode 100644 oem/meta/platform-mc/event_oem_meta.hpp
 
@@ -1211,7 +1211,7 @@ index 0eb52d7..bf94a93 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
-index de7bb28..6a6c3c0 100644
+index de7bb28..431e0d0 100644
 --- a/platform-mc/manager.hpp
 +++ b/platform-mc/manager.hpp
 @@ -4,6 +4,7 @@
@@ -1252,7 +1252,7 @@ index de7bb28..6a6c3c0 100644
      {}
  
      /** @brief Helper function to do the actions before discovering terminus
-@@ -199,6 +206,18 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+@@ -199,6 +206,17 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
          return PLDM_SUCCESS;
      }
  
@@ -1263,15 +1263,14 @@ index de7bb28..6a6c3c0 100644
 +        auto eventData = reinterpret_cast<const uint8_t*>(request->payload) +
 +                         eventDataOffset;
 +        auto eventDataSize = payloadLength - eventDataOffset;
-+        eventManager.handlePlatformEvent(tid, 0x00, PLDM_OEM_EVENT_CLASS_0xFB,
++        return eventManager.handlePlatformEvent(tid, 0x00, PLDM_OEM_EVENT_CLASS_0xFB,
 +                                         eventData, eventDataSize);
-+        return PLDM_SUCCESS;
 +    }
 +
      /** @brief The function to trigger the event polling
       *
       *  @param[in] tid - Terminus ID
-@@ -284,6 +303,8 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+@@ -284,6 +302,8 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
  
      /** @brief map of PLDM event type to EventHandlers */
      PollHandlers pollHandlers;
@@ -1336,5 +1335,5 @@ index 8f3817c..a0040a1 100644
  
      auto platformHandler = std::make_unique<platform::Handler>(
 -- 
-2.47.3
+2.43.0
 

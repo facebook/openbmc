@@ -1,4 +1,4 @@
-From b07cb3de9342d86b1925be1f571b13600123f28e Mon Sep 17 00:00:00 2001
+From 24628e721f8a62ddd77f2797244897a4e37aa3a1 Mon Sep 17 00:00:00 2001
 From: Chris Wang <Chris_Wang@wiwynn.com>
 Date: Wed, 10 Apr 2024 21:04:02 +0800
 Subject: [PATCH 05/20] Support OEM-META command for host BIOS version
@@ -363,5 +363,5 @@ index a0040a1..20f5b0a 100644
  
      auto fruHandler = std::make_unique<fru::Handler>(
 -- 
-2.47.3
+2.43.0
 

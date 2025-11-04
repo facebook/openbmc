@@ -1,4 +1,4 @@
-From 525303e2df11712020529febeeb5bce24b5b8387 Mon Sep 17 00:00:00 2001
+From 7f497df4e85d575554ff6c2e20b66339e337c722 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Mon, 13 Oct 2025 11:10:37 +0000
 Subject: [PATCH 20/20] platform-mc: Make fallback terminus name optional
@@ -95,5 +95,5 @@ index 3f96b15..119e9ac 100644
  
      if (createInventoryPath(terminusName))
 -- 
-2.47.3
+2.43.0
 

@@ -1,4 +1,4 @@
-From 10440f260265c38509b129993e33791c8eb47d3d Mon Sep 17 00:00:00 2001
+From efc9daef2d01c3a281f7b782fdcbbfa8194fb127 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 23 Sep 2025 09:47:45 +0000
 Subject: [PATCH 19/20] platform-mc: Add retries for terminus discovery
@@ -227,5 +227,5 @@ index 8382201..97a2a9c 100644
  } // namespace platform_mc
  } // namespace pldm
 -- 
-2.47.3
+2.43.0
 

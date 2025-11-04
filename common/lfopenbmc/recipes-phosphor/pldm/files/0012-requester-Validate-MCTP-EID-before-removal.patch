@@ -1,4 +1,4 @@
-From 9db8cf2d612f41a674fdf42ac960e569457cd36c Mon Sep 17 00:00:00 2001
+From 954e8904075b228b030fcf9bc483e8af532c7a27 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 26 Nov 2024 15:28:02 +0800
 Subject: [PATCH 12/20] requester: Validate MCTP EID before removal
@@ -16,7 +16,7 @@ Upstream-Status: Pending
  1 file changed, 14 insertions(+), 1 deletion(-)
 
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index db764bf..61d5872 100644
+index cbcf333..711c5da 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -262,12 +262,25 @@ void MctpDiscovery::removeFromExistingMctpInfos(MctpInfos& mctpInfos,
@@ -47,5 +47,5 @@ index db764bf..61d5872 100644
      {
          info("Removing Endpoint networkId '{NETWORK}' and  EID '{EID}'",
 -- 
-2.47.3
+2.43.0
 

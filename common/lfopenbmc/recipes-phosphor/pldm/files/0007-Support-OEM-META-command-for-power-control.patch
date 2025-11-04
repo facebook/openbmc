@@ -1,4 +1,4 @@
-From b8a6ca48e1f7e08272212ee8fcad4c2318c08dcc Mon Sep 17 00:00:00 2001
+From d22207317a376852a95572e65358ab57370ad9c1 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 14 Jun 2024 16:24:31 +0800
 Subject: [PATCH 07/20] Support OEM-META command for power control
@@ -325,5 +325,5 @@ index 0000000..e18e5b6
 +
 +} // namespace pldm::responder::oem_meta
 -- 
-2.47.3
+2.43.0
 

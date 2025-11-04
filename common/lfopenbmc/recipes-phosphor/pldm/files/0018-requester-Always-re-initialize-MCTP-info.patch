@@ -1,4 +1,4 @@
-From d107aee36cb91d97f8eafd0dfb9765dcb6f166ad Mon Sep 17 00:00:00 2001
+From ba76562094f5f5d4aac9390e5a2b4b6981cc608a Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 2 Oct 2025 08:50:56 +0000
 Subject: [PATCH 18/20] requester: Always re-initialize MCTP info
@@ -85,7 +85,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  2 files changed, 52 insertions(+)
 
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 61d5872..7b029a4 100644
+index 711c5da..e8bfdf9 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -291,6 +291,50 @@ void MctpDiscovery::removeFromExistingMctpInfos(MctpInfos& mctpInfos,
@@ -173,5 +173,5 @@ index 7692849..e48a339 100644
  
    private:
 -- 
-2.47.3
+2.43.0
 

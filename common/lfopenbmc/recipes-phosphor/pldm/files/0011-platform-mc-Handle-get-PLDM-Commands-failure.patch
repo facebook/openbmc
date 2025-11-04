@@ -1,4 +1,4 @@
-From d41e25440387157d9d2a42eb05e1a4866dd4c8b3 Mon Sep 17 00:00:00 2001
+From c140b7f8b25d51cf0ee1351b0f292d5aa8e74946 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Fri, 1 Nov 2024 17:44:55 +0800
 Subject: [PATCH 11/20] platform-mc: Handle get PLDM Commands failure
@@ -34,5 +34,5 @@ index bcbbb95..3479074 100644
  
          for (size_t i = 0; i < cmds.size(); i++)
 -- 
-2.47.3
+2.43.0
 

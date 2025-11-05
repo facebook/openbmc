@@ -41,6 +41,8 @@ var compatibleVersionMapping = map[string]string{
 	"fby3vboot2": "fby3",
 	"fbnd":       "northdome",
 	"kodiak":     "sandia",
+	"minipack3n": "acctonbmc",
+	"minipack3ba": "acctonbmc",
 }
 
 var normalizeVersion = func(ver string) string {

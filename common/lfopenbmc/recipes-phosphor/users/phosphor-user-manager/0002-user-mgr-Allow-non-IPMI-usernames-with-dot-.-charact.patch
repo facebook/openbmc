@@ -1,4 +1,4 @@
-From 2dd6e85d53533db9b950e2a608aea072f367ddd5 Mon Sep 17 00:00:00 2001
+From 56d793654befa844d4c820c28dcaa0c19df7333b Mon Sep 17 00:00:00 2001
 From: Marco Kawajiri <kawajiri@meta.com>
 Date: Fri, 5 Apr 2024 07:54:27 -0700
 Subject: [PATCH 2/2] user-mgr: Allow non-IPMI usernames with dot '.' character
@@ -38,10 +38,10 @@ Signed-off-by: Marco Kawajiri <kawajiri@meta.com>
  2 files changed, 20 insertions(+), 4 deletions(-)
 
 diff --git a/test/user_mgr_test.cpp b/test/user_mgr_test.cpp
-index 187d3c2..435f13e 100644
+index 9e55fc8..e36f526 100644
 --- a/test/user_mgr_test.cpp
 +++ b/test/user_mgr_test.cpp
-@@ -569,12 +569,23 @@ TEST_F(UserMgrInTest,
+@@ -597,12 +597,23 @@ TEST_F(UserMgrInTest,
  {
      std::string startWithNumber = "0ABC";
      std::string startWithDisallowedCharacter = "[test";
@@ -66,10 +66,10 @@ index 187d3c2..435f13e 100644
  
  TEST_F(UserMgrInTest, UserAddNotRootFailedWithInternalFailure)
 diff --git a/user_mgr.cpp b/user_mgr.cpp
-index 2aa15e8..41a2bdb 100644
+index 6b31208..72995c2 100644
 --- a/user_mgr.cpp
 +++ b/user_mgr.cpp
-@@ -125,6 +125,11 @@ constexpr std::array<const char*, 4> allowedGroupPrefix = {
+@@ -124,6 +124,11 @@ constexpr std::array<const char*, 4> allowedGroupPrefix = {
      "openbmc_orfp_", // OpenBMC Redfish OEM Privileges
  };
  
@@ -81,7 +81,7 @@ index 2aa15e8..41a2bdb 100644
  void checkAndThrowsForGroupChangeAllowed(const std::string& groupName)
  {
      bool allowed = false;
-@@ -249,8 +254,8 @@ void UserMgr::throwForUserExists(const std::string& userName)
+@@ -248,8 +253,8 @@ void UserMgr::throwForUserExists(const std::string& userName)
  void UserMgr::throwForUserNameConstraints(
      const std::string& userName, const std::vector<std::string>& groupNames)
  {
@@ -92,7 +92,7 @@ index 2aa15e8..41a2bdb 100644
      {
          if (userName.length() > ipmiMaxUserNameLen)
          {
-@@ -272,8 +277,8 @@ void UserMgr::throwForUserNameConstraints(
+@@ -271,8 +276,8 @@ void UserMgr::throwForUserNameConstraints(
          elog<InvalidArgument>(Argument::ARGUMENT_NAME("User name"),
                                Argument::ARGUMENT_VALUE("Invalid length"));
      }
@@ -104,5 +104,5 @@ index 2aa15e8..41a2bdb 100644
          lg2::error("Invalid username '{USERNAME}'", "USERNAME", userName);
          elog<InvalidArgument>(Argument::ARGUMENT_NAME("User name"),
 -- 
-2.47.1
+2.47.3
 

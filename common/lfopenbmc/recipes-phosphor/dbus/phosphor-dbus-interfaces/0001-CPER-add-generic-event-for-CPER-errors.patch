@@ -1,4 +1,4 @@
-From ccbb47b5b67abe0bbbc83982a416b534a4a022e2 Mon Sep 17 00:00:00 2001
+From 4ee0986f59a7cea510dbb1edcb46d54c259b0f40 Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Wed, 5 Mar 2025 16:12:45 -0500
 Subject: [PATCH] CPER: add generic event for CPER errors
@@ -53,7 +53,7 @@ index 0000000..ef93af1
 +)
 +
 diff --git a/gen/xyz/openbmc_project/State/meson.build b/gen/xyz/openbmc_project/State/meson.build
-index 2d4861d..a38d66b 100644
+index 1d3b4d4..25c93b1 100644
 --- a/gen/xyz/openbmc_project/State/meson.build
 +++ b/gen/xyz/openbmc_project/State/meson.build
 @@ -2,6 +2,7 @@
@@ -64,7 +64,7 @@ index 2d4861d..a38d66b 100644
  subdir('Cable')
  subdir('Chassis')
  subdir('Decorator')
-@@ -70,6 +71,50 @@ generated_markdown += custom_target(
+@@ -97,6 +98,50 @@ generated_markdown += custom_target(
      build_by_default: should_generate_markdown,
  )
  
@@ -156,5 +156,5 @@ index 0000000..3d37809
 +          message: A generic CPER fault has been detected on {Source}.
 +      errno: EIO
 -- 
-2.45.3
+2.47.3
 

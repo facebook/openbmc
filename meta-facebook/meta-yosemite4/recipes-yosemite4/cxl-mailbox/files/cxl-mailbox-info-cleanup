@@ -1,0 +1,136 @@
+# CXL Mailbox Information Cleanup Script
+# Usage: cxl-mailbox-info-cleanup --clean-dir <directory> --max-size <size_in_kb> [--debug]
+
+# Enable debug mode if DEBUG environment variable is set
+DEBUG=${DEBUG:-0}
+
+debug_log() {
+    if [ "$DEBUG" = "1" ]; then
+        echo "[DEBUG] $1" >&2
+    fi
+}
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --clean-dir)
+            LOG_DIR="$2"
+            shift 2
+            ;;
+        --max-size)
+            MAX_SIZE_KB="$2"
+            shift 2
+            ;;
+        --debug)
+            DEBUG=1
+            shift
+            ;;
+        *)
+            echo "Usage: cxl-mailbox-info-cleanup --clean-dir <directory> --max-size <size_in_kb> [--debug]"
+            exit 1
+            ;;
+    esac
+done
+
+debug_log "Script started"
+debug_log "LOG_DIR: $LOG_DIR"
+debug_log "MAX_SIZE_KB: $MAX_SIZE_KB"
+
+if [ -z "$LOG_DIR" ] || [ -z "$MAX_SIZE_KB" ]; then
+    echo "Error: Missing required arguments"
+    echo "Usage: cxl-mailbox-info-cleanup --clean-dir <directory> --max-size <size_in_kb> [--debug]"
+    exit 1
+fi
+
+if ! [[ "$MAX_SIZE_KB" =~ ^[0-9]+$ ]]; then
+    echo "Error: max-size must be a positive integer"
+    exit 1
+fi
+
+# Remove trailing slash if present
+LOG_DIR="${LOG_DIR%/}"
+debug_log "LOG_DIR after removing trailing slash: $LOG_DIR"
+
+# Check if directory exists
+if [ ! -d "$LOG_DIR" ]; then
+    debug_log "Directory does not exist: $LOG_DIR"
+    exit 0
+fi
+
+# Remove oldest files until directory size is under limit
+current_size=$(du -sk "$LOG_DIR" | cut -f1)
+debug_log "Initial directory size: ${current_size}KB"
+
+if [ $current_size -le $MAX_SIZE_KB ]; then
+    debug_log "Directory size under limit, no cleanup needed"
+    exit 0
+fi
+
+files_removed=0
+
+debug_log "Starting cleanup loop"
+
+while [ $(du -sk "$LOG_DIR" | cut -f1) -gt $MAX_SIZE_KB ]; do
+    current_loop_size=$(du -sk "$LOG_DIR" | cut -f1)
+    debug_log "Current size: ${current_loop_size}KB, Target: ${MAX_SIZE_KB}KB"
+    
+    # Find oldest file using BusyBox-compatible method
+    debug_log "Searching for oldest file..."
+    oldest=""
+    oldest_time=0
+    file_count=0
+    
+    for file in "$LOG_DIR"/slot*_cxl_*_mailbox_info_*.tar.gz; do
+        # Check if file exists (handle case when no files match)
+        [ -f "$file" ] || continue
+        
+        file_count=$((file_count + 1))
+        
+        # Get file modification time
+        file_time=$(stat -c %Y "$file" 2>/dev/null)
+        
+        debug_log "  Checking: $(basename "$file") - Time: $file_time"
+        
+        # Find the oldest file
+        if [ -z "$oldest" ] || [ "$file_time" -lt "$oldest_time" ]; then
+            oldest="$file"
+            oldest_time="$file_time"
+            debug_log "    -> Currently oldest"
+        fi
+    done
+    
+    debug_log "Total files checked: $file_count"
+    
+    if [ -n "$oldest" ] && [ -f "$oldest" ]; then
+        file_size=$(stat -c %s "$oldest" 2>/dev/null)
+        file_size_kb=$((file_size / 1024))
+        
+        debug_log "Selected for removal: $(basename "$oldest") (${file_size_kb}KB)"
+        
+        rm -f "$oldest"
+        if [ $? -eq 0 ]; then
+            files_removed=$((files_removed + 1))
+            new_size=$(du -sk "$LOG_DIR" | cut -f1)
+            
+            debug_log "File removed successfully (total removed: $files_removed)"
+            debug_log "New size: ${new_size}KB"
+        else
+            debug_log "Failed to remove file"
+            exit 2
+        fi
+    else
+        debug_log "No more files to remove"
+        break
+    fi
+done
+
+final_size=$(du -sk "$LOG_DIR" | cut -f1)
+debug_log "Cleanup completed - Final size: ${final_size}KB, Files removed: $files_removed"
+
+if [ $files_removed -gt 0 ]; then
+    debug_log "Exit code: 3"
+    exit 3
+fi
+
+debug_log "Exit code: 0"
+exit 0

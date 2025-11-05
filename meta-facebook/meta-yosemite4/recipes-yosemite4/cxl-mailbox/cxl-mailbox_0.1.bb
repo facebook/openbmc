@@ -11,6 +11,7 @@ UNPACKDIR = "${S}"
 inherit meson pkgconfig
 
 LOCAL_URI = " \
+    file://cxl-mailbox-info-cleanup \
     file://cxl-mailbox-info-collect \
     file://cxl-mailbox.cpp \
     file://cxl-mailbox.hpp \
@@ -28,4 +29,5 @@ RDEPENDS:${PN} = "bash"
 do_install:append() {
     install -d ${D}/${bindir}
     install -m 0755 ${UNPACKDIR}/cxl-mailbox-info-collect ${D}/${bindir}/
+    install -m 0755 ${UNPACKDIR}/cxl-mailbox-info-cleanup ${D}/${bindir}/
 }

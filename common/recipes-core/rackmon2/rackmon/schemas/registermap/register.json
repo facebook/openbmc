@@ -67,7 +67,7 @@
       },
       "unit": {
         "type": "string",
-        "enum": ["Amperes", "AmpereHours", "DegreesC", "Percent", "Volts"]
+        "enum": ["Amperes", "AmpereHours", "DegreesC", "Percent", "Volts", "CFM", "Hertz", "Joules", "LPM", "Meters", "PercentRH", "Pascals", "RPMS", "Watts"]
       }
     },
     "allOf": [

@@ -14,6 +14,7 @@ LOCAL_URI = " \
     file://default-config.json \
     file://firmware-upgrade@.service \
     file://firmware-upgrade \
+    file://fix-registers \
     file://get-manufacturer \
     file://get-firmware-upgrade-status \
     file://get-firmware-versions \
@@ -36,6 +37,7 @@ do_install() {
 
     install -d ${D}${libexecdir}/${PN}
     install -m 0755 ${UNPACKDIR}/firmware-upgrade ${D}${libexecdir}/${PN}/firmware-upgrade
+    install -m 0755 ${UNPACKDIR}/fix-registers ${D}${libexecdir}/${PN}/fix-registers
     install -m 0755 ${UNPACKDIR}/get-manufacturer ${D}${libexecdir}/${PN}/get-manufacturer
     install -m 0755 ${UNPACKDIR}/get-firmware-upgrade-status ${D}${libexecdir}/${PN}/get-firmware-upgrade-status
     install -m 0755 ${UNPACKDIR}/get-firmware-versions ${D}${libexecdir}/${PN}/get-firmware-versions

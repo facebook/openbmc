@@ -9,6 +9,13 @@
                 "registerValues": ["Panasonic", "ARTESYN"]
             }
         },
+        "expectedRegisterValues": [
+            {
+                "register": "Configurable_BBU_Maximum_Discharge_Time",
+                "type": "int",
+                "value": 90
+            }
+        ],
         "firmware": [
             {
                 "register": "FW_Revision",

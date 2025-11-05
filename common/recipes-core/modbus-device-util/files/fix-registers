@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# This inspects every modbus device and verifies the register values we expect
+# for the type (defined in configuration) and writes expected value when there
+# are discrepancies
+
+# ARGUMENTS:
+# 1: Optional override config
+
+OVERRIDE_CONFIG_FILE=${1:-/run/mnt-persist/var-data/lib/modbus-device-util/override-config.json}
+CONFIG_FILE="/var/lib/modbus-device-util/default-config.json"
+
+if [ -f "$OVERRIDE_CONFIG_FILE" ]; then
+    CONFIG_FILE="$OVERRIDE_CONFIG_FILE"
+fi
+
+rackmoncli data --latest --json | jq -c '.[]' | while read -r line; do
+  deviceType=$(echo "$line" | jq -cr '.devInfo.deviceType')
+  uda=$(echo "$line" | jq -cr '.devInfo.uniqueDevAddress')
+
+  case $deviceType in
+    "ORV3_BBU")
+      device=bbu
+      ;;
+    "ORV3_PSU")
+      device=psu
+      ;;
+    "ORV3_RPU")
+      device=rpu
+      ;;
+    *)
+      device=unknown
+      ;;
+  esac
+
+  jq --arg deviceType "$device" -cr '.[$deviceType].expectedRegisterValues // [] | .[] | "\(.register) \(.type) \(.value)"' < "$CONFIG_FILE" | while read -r register type expectedValue; do
+    registerAddress=$(echo "$line" | jq -cr --arg register "$register" '.regList.[] | select(.name == $register) | .regAddress')
+    registerValue=$(echo "$line" | jq -cr --arg register "$register" --arg valueKey "${type}Value" '.regList.[] | select(.name == $register and .history[0].timestamp > 0) | .history[0].value.[$valueKey]')
+    if [[ "$expectedValue" = "$registerValue" ]]; then
+      echo "$device at $uda has $register already set to $registerValue"
+    else
+      echo "$device at $uda has $register set to $registerValue. Will update it to $expectedValue"
+
+      if rackmoncli write "$uda" "$registerAddress" "$expectedValue"; then
+        echo "Successfully set $register ($registerAddress) of $device at $uda to $expectedValue"
+      else
+        echo "FAILED to set $register ($registerAddress) of $device at $uda to $expectedValue"
+      fi
+    fi
+  done
+done

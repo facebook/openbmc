@@ -101,6 +101,39 @@
             ]
         },
         {
+            "alias": "openbmc-cit-acctonbmc-determinator",
+            "args": {
+                "name": "openbmc-cit-acctonbmc-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-acctonbmc-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform acctonbmc"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-acctonbmc/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-cit-angelslanding-determinator",
             "args": {
                 "name": "openbmc-cit-angelslanding-determinator",

@@ -110,7 +110,7 @@ check_fan_type() {
   done
 }
 
-update_emr_fan_table() {
+update_fan_table_power_sensor() {
   sensor_name="flex"
   power_module_cnt=$(/usr/local/bin/sensor-util bmc | grep -c VPDB)
   delta_name=$(/usr/local/bin/sensor-util bmc | grep VPDB_DELTA)
@@ -124,7 +124,7 @@ update_emr_fan_table() {
     str="max([all:bmc_pdb_vpdb_${sensor_name}1_temp_c, all:bmc_pdb_vpdb_${sensor_name}2_temp_c])"
   fi
 
-  sed -i "s/power_sensor_list/${str}/g" /etc/fsc/FSC_CLASS1_CL_EMR_zone1.fsc
+  sed -i "s/power_sensor_list/${str}/g" "$1"
 }
 
 init_class1_fsc() {
@@ -141,7 +141,7 @@ init_class1_fsc() {
     elif [[ $server_type -eq 6 ]]; then
       config_type="EMR"
       target_fsc_config="/etc/FSC_CLASS1_CL_EMR_config.json"
-      update_emr_fan_table
+      update_fan_table_power_sensor "/etc/fsc/FSC_CLASS1_CL_EMR_zone1.fsc"
     else
       config_type="1"
       target_fsc_config="/etc/FSC_CLASS1_type1_config.json"
@@ -166,6 +166,8 @@ init_class1_fsc() {
     elif [[ $server_type -eq 6 ]]; then
       config_type="HSM"
       target_fsc_config="/etc/FSC_CLASS1_HSM_config.json"
+      update_fan_table_power_sensor "/etc/fsc/FSC_CLASS1_HSM_zone1.fsc"
+      update_fan_table_power_sensor "/etc/fsc/FSC_CLASS1_HSM_MRVL_zone1.fsc"
     else
       config_type="DPV2"
       target_fsc_config="/etc/FSC_CLASS1_DPV2_config.json"
@@ -181,7 +183,7 @@ init_class1_fsc() {
           if [[ $server_type -eq 6 ]]; then
             config_type="EMR"
             target_fsc_config="/etc/FSC_CLASS1_CL_EMR_config.json"
-            update_emr_fan_table
+            update_fan_table_power_sensor "/etc/fsc/FSC_CLASS1_CL_EMR_zone1.fsc"
           else
             config_type="VF"
             target_fsc_config="/etc/FSC_CLASS1_type3_10_config.json"

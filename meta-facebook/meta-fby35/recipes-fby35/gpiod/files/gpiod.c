@@ -30,6 +30,7 @@
 #include <math.h>
 #include <string.h>
 #include <pthread.h>
+#include <limits.h>
 #include <sys/un.h>
 #include <sys/file.h>
 #include <sys/stat.h>
@@ -40,6 +41,8 @@
 #define MAX_NUM_SLOTS       4
 #define DELAY_GPIOD_READ    1000000
 #define GPIO_NOT_SUPPORT    0xFF
+#define FSC_CFG_PATH        "/etc/fsc-config.json"
+#define MRVL_FSC_CFG_PATH   "/etc/FSC_CLASS1_HSM_MRVL_config.json"
 
 
 /* To hold the gpio info and status */
@@ -498,14 +501,38 @@ gpio_monitor_poll(void *ptr) {
         retry_sec[fru-1] = 0;
 
         // Dynamic swap fan table for HSM
-        if ((!strcmp(value, "0"))) {
+        if (!strcmp(value, "0")) {
           uint8_t type2 = TYPE_2OU_UNKNOWN;
           ret = bic_get_card_type(fru, CARD_TYPE_2OU, &type2);
-          syslog(LOG_INFO, "FRU: %d, 2OU_CARD_TYPE: %d, POST_COMPLETE.", fru, type2);
+
           if ((fby35_common_get_slot_type(fru) == SERVER_TYPE_CL_EMR) &&
               (type2 == TYPE_2OU_HSM_MARVELL)) {
-            syslog(LOG_INFO, "FRU: %d, detect Marvell HSM.", fru);
-            // wip: swap table and restart fscd
+            char target_buffer[PATH_MAX];
+            ssize_t len;
+
+            len = readlink(FSC_CFG_PATH, target_buffer, sizeof(target_buffer) - 1);
+            if (len == -1) {
+                syslog(LOG_ERR, "FRU: %d, Failed to read fsc-config link.", fru);
+            }
+
+            target_buffer[len] = '\0';
+
+            if (strcmp(target_buffer, MRVL_FSC_CFG_PATH)) {
+              if (remove(FSC_CFG_PATH) == 0) {
+                if (symlink(MRVL_FSC_CFG_PATH, FSC_CFG_PATH) == -1) {
+                  syslog(LOG_ERR, "FRU: %d, Failed to create Marvell HSM fsc-config link.", fru);
+                } else {
+                  ret = run_command("sv restart fscd");
+                  if(ret == 0) {
+                    syslog(LOG_INFO, "FRU: %d, Change Marvell HSM fsc-config and restart fscd.", fru);
+                  } else {
+                    syslog(LOG_ERR, "FRU: %d, Failed to restart fscd.", fru);
+                  }
+                }
+              } else {
+                syslog(LOG_ERR, "FRU: %d, Failed to delete fsc-config link.", fru);
+              }
+            }
           }
         }
       }

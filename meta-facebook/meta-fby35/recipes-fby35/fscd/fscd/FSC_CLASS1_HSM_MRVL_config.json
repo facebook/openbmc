@@ -1,5 +1,5 @@
 {
-  "version": "CL_HSM_FSCV2.0",
+  "version": "CL_HSM_MRVL_FSCV2.0",
   "pwm_transition_value": 80,
   "pwm_boost_value": 90,
   "non_fanfail_limited_boost_value": 100,
@@ -54,9 +54,9 @@
         [ 31, 15 ],
         [ 32, 16 ],
         [ 33, 17 ],
-        [ 34, 18 ],
-        [ 35, 18 ],
-        [ 36, 18 ],
+        [ 34, 25 ],
+        [ 35, 25 ],
+        [ 36, 25 ],
         [ 37, 30 ],
         [ 38, 40 ],
         [ 39, 50 ]
@@ -70,13 +70,17 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 3,
       "data": [
-        [ -27, 10 ],
-        [ -26, 12 ],
-        [ -25, 14 ],
-        [ -24, 15 ],
-        [ -23, 16 ],
-        [ -22, 17 ],
-        [ -21, 18 ]
+        [ -25, 10 ],
+        [ -24, 11 ],
+        [ -23, 12 ],
+        [ -22, 13 ],
+        [ -21, 14 ],
+        [ -20, 15 ],
+        [ -19, 16 ],
+        [ -18, 17 ],
+        [ -17, 18 ],
+        [ -16, 19 ],
+        [ -15, 20 ]
       ]
     },
     "pid_cpu": {
@@ -209,6 +213,38 @@
       "ki": -0.045,
       "kd": 0
     },
+    "linear_hsm": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 2,
+      "data": [
+        [73, 10],
+        [74, 12],
+        [75, 14],
+        [76, 15],
+        [77, 16],
+        [78, 17],
+        [79, 18],
+        [80, 19],
+        [81, 20],
+        [82, 21]
+      ]
+    },
+    "pid_hsm": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "pid",
+      "setpoint": 84,
+      "negative_hysteresis": 3,
+      "positive_hysteresis": 0,
+      "kp": -2.5,
+      "ki": -0.045,
+      "kd": 0
+    },
     "linear_non_fru_sensor": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
@@ -258,7 +294,7 @@
   "zones": {
     "zone_1": {
       "pwm_output": [0],
-      "expr_file": "FSC_CLASS1_HSM_zone1.fsc"
+      "expr_file": "FSC_CLASS1_HSM_MRVL_zone1.fsc"
     }
   }
 }

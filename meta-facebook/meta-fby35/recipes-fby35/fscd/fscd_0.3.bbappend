@@ -45,6 +45,8 @@ LOCAL_URI += " \
     file://FSC_CLASS1_CL_EMR_zone1.fsc \
     file://FSC_CLASS1_HSM_config.json \
     file://FSC_CLASS1_HSM_zone1.fsc \
+    file://FSC_CLASS1_HSM_MRVL_config.json \
+    file://FSC_CLASS1_HSM_MRVL_zone1.fsc \
     "
 
 RDEPENDS:${PN} += "bash"
@@ -62,6 +64,7 @@ FSC_CONFIG += "FSC_CLASS1_type1_config.json \
                FSC_CLASS1_type8_2.2_GL_config.json \
                FSC_CLASS1_CL_EMR_config.json \
                FSC_CLASS1_HSM_config.json \
+               FSC_CLASS1_HSM_MRVL_config.json \
               "
 
 FSC_ZONE_CONFIG += "FSC_CLASS1_type1_zone1.fsc \
@@ -77,5 +80,6 @@ FSC_ZONE_CONFIG += "FSC_CLASS1_type1_zone1.fsc \
                     FSC_CLASS1_type8_2.2_GL_zone1.fsc \
                     FSC_CLASS1_CL_EMR_zone1.fsc \
                     FSC_CLASS1_HSM_zone1.fsc \
+                    FSC_CLASS1_HSM_MRVL_zone1.fsc \
                    "
 FSC_INIT_FILE += "setup-fan.sh"

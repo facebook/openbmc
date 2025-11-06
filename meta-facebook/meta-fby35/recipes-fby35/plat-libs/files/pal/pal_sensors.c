@@ -1777,6 +1777,13 @@ done:
   case FRU_SLOT2:
   case FRU_SLOT3:
   case FRU_SLOT4:
+    uint8_t prsnt = 0;
+    if (fby35_common_is_fru_prsnt(fru, &prsnt) < 0 || prsnt == 0) {
+      *sensor_list = NULL;
+      *cnt = 0;
+      break;
+    }
+
     server_type = fby35_common_get_slot_type(fru);
     if (server_type < 0) {
       syslog(LOG_WARNING, "%s() Error while getting slot%d type: %d", __func__, fru, server_type);

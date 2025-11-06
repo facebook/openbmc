@@ -1,0 +1,37 @@
+From fe84fa518eda43ebba0a7d3282b028fdd6833a4c Mon Sep 17 00:00:00 2001
+From: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
+Date: Wed, 5 Nov 2025 14:44:58 +0800
+Subject: [PATCH] ARM: dts: aspeed: clemente: add gpio line name to io expander
+
+The chassis power cycle process requires a forced shutdown before
+cutting off the standby power. Therefore, SCM CPLD adds a hard shutdown
+host function and triggers it via the IO expander in Clemente platform.
+    
+Thus, a new GPIO line named "hard_shutdown_host" is added to the
+PCA9555 IO expander at line 10 to notify the CPLD to execute the hard
+shutdown host function.
+
+lore link:
+https://lore.kernel.org/all/20251106-dts-add-gpio-to-io-expander-v1-1-b4765c092ebe@fii-foxconn.com/
+
+Signed-off-by: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
+index 450446913e36..0eafd8ea04ac 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
+@@ -1105,7 +1105,7 @@ io_expander4: gpio@4f {
+ 			"",
+ 			"",
+ 			"",
+-			"",
++			"hard_shutdown_host",
+ 			"",
+ 			"",
+ 			"",
+-- 
+2.34.1
+

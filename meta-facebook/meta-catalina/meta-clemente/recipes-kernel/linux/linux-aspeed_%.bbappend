@@ -7,6 +7,7 @@ SRC_URI += " \
     file://1003-clemente-dts-add-shunt-resistor-micro-ohm.patch \
     file://1004-clemente-dts-add-GPIO-expander-and-LED-for-HDD-activity-LED.patch \
     file://1005-clemente-dts-Add-EEPROMs-for-boot-and-data-drive-FRUs.patch \
+    file://1006-clemente-dts-add-gpio-line-name-to-io-exp.patch \
     file://clemente-sensor.cfg \
 "
 

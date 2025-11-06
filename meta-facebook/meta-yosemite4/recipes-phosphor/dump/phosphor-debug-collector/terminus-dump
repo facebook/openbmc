@@ -1,0 +1,31 @@
+#!/bin/bash
+#
+# config: 2 99
+# @brief: Collect Terminus NIC debug data.
+#
+
+# The sourced `functions` file is not
+# available during shellcheck linting
+#
+# shellcheck disable=SC1091
+. "$DREPORT_INCLUDE/functions"
+
+terminus=$(mfg-tool inventory 2> /dev/null | grep Terminus_NIC)
+if [ "$terminus" == "" ]; then
+  # Skip this step for non-terminus NICs.
+  exit 0
+fi
+
+for i in $(seq 0 7); do
+  nic=$((i/2))
+  slice=$((i%2))
+  if [ $slice != 0 ]; then
+    slice=2
+  fi
+  nic=$((nic+1))
+  niccons="ctrlcpnic$nic"
+  cmd="/usr/libexec/nic-slice-diagnostics $niccons $slice"
+  file_name="terminus_${nic}_${slice}_dump.log"
+  desc="Terminus NIC${nic} Slice $slice Diagnostics"
+  add_cmd_output "$cmd" "$file_name" "$desc"
+done

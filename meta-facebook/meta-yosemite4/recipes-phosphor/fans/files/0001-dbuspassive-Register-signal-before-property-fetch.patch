@@ -1,4 +1,4 @@
-From 45955cdc01942f44b19cf1457ac5bff3345ca42f Mon Sep 17 00:00:00 2001
+From fd529f354e28f19389c3b37fd9f79419fe2ed424 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Wed, 13 Aug 2025 10:39:50 +0000
 Subject: [PATCH] dbuspassive: Register signal before property fetch
@@ -30,6 +30,7 @@ createDbusPassive()
     |
     +-- initialize DbusPassive with settings info
 
+Motivation:
 For certain sensors, such as CPU/DIMM temperature sensors, there is
 only one opportunity during a host power-on for the sensor to
 transition from unavailable to available.
@@ -51,25 +52,29 @@ available status is always consistent with its actual state on D-Bus.
 Change-Id: I7b4e3e9749b3d5966a13ff9bc70096ca27e2901a
 Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
 ---
- dbus/dbuspassive.cpp           | 56 ++++++++++++++++++++++------------
- dbus/dbuspassive.hpp           |  4 ++-
- test/dbus_passive_unittest.cpp |  3 +-
- 3 files changed, 40 insertions(+), 23 deletions(-)
+ dbus/dbuspassive.cpp           | 61 +++++++++++++++++++++-------------
+ dbus/dbuspassive.hpp           |  8 +++--
+ test/dbus_passive_unittest.cpp |  4 +--
+ 3 files changed, 44 insertions(+), 29 deletions(-)
 
 diff --git a/dbus/dbuspassive.cpp b/dbus/dbuspassive.cpp
-index 3cbc677..d96ee8f 100644
+index 3cbc677..5a716b7 100644
 --- a/dbus/dbuspassive.cpp
 +++ b/dbus/dbuspassive.cpp
-@@ -92,6 +92,8 @@ std::unique_ptr<ReadInterface> DbusPassive::createDbusPassive(
+@@ -91,9 +91,10 @@ std::unique_ptr<ReadInterface> DbusPassive::createDbusPassive(
+         // Only CASE1 may send the zone to failsafe mode if the sensor is not
          // in MissingIsAcceptable. CASE2 results in continuous restart until
          // recovery.
- 
+-
+-        failed = true;
+         objectMissing = true;
 +        auto sensor = std::make_unique<DbusPassive>(
 +            bus, type, id, std::move(helper), objectMissing, path, redundancy);
-         failed = true;
-         objectMissing = true;
++        failed = true;
          settings.value = std::numeric_limits<double>::quiet_NaN();
-@@ -103,18 +105,20 @@ std::unique_ptr<ReadInterface> DbusPassive::createDbusPassive(
+         settings.unit = getSensorUnit(type);
+         settings.available = false;
+@@ -103,18 +104,20 @@ std::unique_ptr<ReadInterface> DbusPassive::createDbusPassive(
              settings.min = 0;
              settings.max = 0;
          }
@@ -95,7 +100,7 @@ index 3cbc677..d96ee8f 100644
      }
      catch (const std::exception& e)
      {
-@@ -129,35 +133,24 @@ std::unique_ptr<ReadInterface> DbusPassive::createDbusPassive(
+@@ -129,35 +132,24 @@ std::unique_ptr<ReadInterface> DbusPassive::createDbusPassive(
      }
  
      settings.unavailableAsFailed = info->unavailableAsFailed;
@@ -116,8 +121,9 @@ index 3cbc677..d96ee8f 100644
      const std::shared_ptr<DbusPassiveRedundancy>& redundancy) :
      ReadInterface(), _signal(bus, getMatch(path), dbusHandleSignal, this),
 -    _id(id), _helper(std::move(helper)), _failed(failed),
-+    _id(id), _helper(std::move(helper)),
-     _objectMissing(objectMissing), path(path), redundancy(redundancy)
+-    _objectMissing(objectMissing), path(path), redundancy(redundancy)
++    _id(id), _helper(std::move(helper)), _objectMissing(objectMissing),
++    path(path), redundancy(redundancy)
  
  {
 -    _scale = settings.scale;
@@ -135,7 +141,7 @@ index 3cbc677..d96ee8f 100644
  }
  
  ReadReturn DbusPassive::read(void)
-@@ -314,6 +307,29 @@ void DbusPassive::setFunctional(bool value)
+@@ -314,6 +306,29 @@ void DbusPassive::setFunctional(bool value)
  void DbusPassive::setAvailable(bool value)
  {
      _available = value;
@@ -166,17 +172,21 @@ index 3cbc677..d96ee8f 100644
  
  int64_t DbusPassive::getScale(void)
 diff --git a/dbus/dbuspassive.hpp b/dbus/dbuspassive.hpp
-index 9167e33..3a75b67 100644
+index 9167e33..6bc796d 100644
 --- a/dbus/dbuspassive.hpp
 +++ b/dbus/dbuspassive.hpp
-@@ -46,7 +46,6 @@ class DbusPassive : public ReadInterface
+@@ -45,9 +45,8 @@ class DbusPassive : public ReadInterface
+ 
      DbusPassive(sdbusplus::bus_t& bus, const std::string& type,
                  const std::string& id,
-                 std::unique_ptr<DbusHelperInterface> helper,
+-                std::unique_ptr<DbusHelperInterface> helper,
 -                const SensorProperties& settings, bool failed,
-                 bool objectMissing, const std::string& path,
+-                bool objectMissing, const std::string& path,
++                std::unique_ptr<DbusHelperInterface> helper, bool objectMissing,
++                const std::string& path,
                  const std::shared_ptr<DbusPassiveRedundancy>& redundancy);
  
+     ReadReturn read(void) override;
 @@ -66,6 +65,8 @@ class DbusPassive : public ReadInterface
      std::string getID(void);
      double getMax(void);
@@ -195,12 +205,14 @@ index 9167e33..3a75b67 100644
  
      bool _typeMargin = false;
 diff --git a/test/dbus_passive_unittest.cpp b/test/dbus_passive_unittest.cpp
-index 0bd6626..4ffe397 100644
+index 0bd6626..15813fe 100644
 --- a/test/dbus_passive_unittest.cpp
 +++ b/test/dbus_passive_unittest.cpp
-@@ -72,8 +72,7 @@ TEST(DbusPassiveTest, BoringConstructorTest)
+@@ -70,10 +70,8 @@ TEST(DbusPassiveTest, BoringConstructorTest)
+         std::format("{}/unknown/id", SensorValue::namespace_path::value);
+ 
      auto helper = std::make_unique<DbusHelperMock>();
-     SensorProperties properties;
+-    SensorProperties properties;
  
 -    DbusPassive(bus_mock, type, id, std::move(helper), properties, false, false,
 -                path, nullptr);
@@ -209,5 +221,5 @@ index 0bd6626..4ffe397 100644
  }
  
 -- 
-2.47.3
+2.43.0
 

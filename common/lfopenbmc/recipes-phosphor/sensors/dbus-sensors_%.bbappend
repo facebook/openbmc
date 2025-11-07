@@ -17,6 +17,7 @@ SRC_URI:append = " \
     file://0014-PSUSensor-add-SQ52206-support.patch \
     file://0015-Add-delay-before-leak-event-log-to-prevent-AC-OFF-gl.patch \
     file://0016-PSUSensor-add-RAA228006-support.patch \
+    file://0017-PSUSensor-add-property-to-sensorTable-and-labelMatch.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \
@@ -24,5 +25,4 @@ SRC_URI:append:fb-compute-multihost = " \
     file://0201-Avoid-recreating-hwmon-temp-when-blade-cycle.patch \
     file://0202-meta-facebook-yosemite4-Disable-in2_alarm-event.patch \
     file://0203-Add-retry-attempts-configuration-for-fan-sensors.patch \
-    file://0204-PSUSensor-add-property-to-sensorTable-and-labelMatch.patch \
 "

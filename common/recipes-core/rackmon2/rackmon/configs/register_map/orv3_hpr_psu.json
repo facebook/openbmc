@@ -275,6 +275,10 @@
                 [
                     8,
                     "Fan_Failure"
+                ],
+                [
+                    9,
+                    "Temp_Sensor_Failure"
                 ]
             ],
             "name": "Temperature_Alarm_Status_Register"
@@ -762,6 +766,27 @@
             "length": 1,
             "format": "INTEGER",
             "name": "PSU_RPM_Fan3"
+        },
+        {
+            "begin": 144,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "PSU_HPRV2_Input_Power_Inst"
+        },
+        {
+            "begin": 145,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "PSU_HPRV2_Output_Power"
+        },
+        {
+            "begin": 146,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "PSU_HPRV2_Input_Power"
         },
         {
             "begin": 4096,

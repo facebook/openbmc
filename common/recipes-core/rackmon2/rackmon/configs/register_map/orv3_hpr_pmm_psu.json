@@ -251,6 +251,14 @@
                     "Module_Alerts"
                 ],
                 [
+                    9,
+                    "BB_Temp_OT_Warn"
+                ],
+                [
+                    10,
+                    "BB_Temp_OTP"
+                ],
+                [
                     12,
                     "ISHARE_Cable_Not_Detected"
                 ]
@@ -308,6 +316,18 @@
                 ]
             ],
             "name": "Module_Planned"
+        },
+        {
+            "begin": 91,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "BB_Temp_OTP_enable"
+                ]
+            ],
+            "name": "PMM_Settings"
         },
         {
             "begin": 92,
@@ -476,6 +496,14 @@
             "length": 1,
             "format": "INTEGER",
             "name": "Module_Timeout_Error_Counter_6"
+        },
+        {
+            "begin": 110,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 7,
+            "sign": true,
+            "name": "BB_Temp_OTP_Set"
         },
         {
             "begin": 112,

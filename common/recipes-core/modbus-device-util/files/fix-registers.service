@@ -1,0 +1,10 @@
+[Unit]
+Description=Fix Modbus Device Registers
+Requires=rackmond.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/modbus-device-util/fix-registers
+
+[Install]
+WantedBy=multi-user.target

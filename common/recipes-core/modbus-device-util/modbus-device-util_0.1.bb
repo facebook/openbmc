@@ -15,6 +15,8 @@ LOCAL_URI = " \
     file://firmware-upgrade@.service \
     file://firmware-upgrade \
     file://fix-registers \
+    file://fix-registers.service \
+    file://fix-registers.timer \
     file://get-manufacturer \
     file://get-firmware-upgrade-status \
     file://get-firmware-versions \
@@ -28,12 +30,14 @@ LOCAL_URI = " \
 
 RDEPENDS:${PN}:append = "bash rackmon psu-update"
 
-SYSTEMD_SERVICE:${PN} += "rpu@.service firmware-upgrade@.service"
+SYSTEMD_SERVICE:${PN} += "rpu@.service firmware-upgrade@.service fix-registers.service fix-registers.timer"
 
 do_install() {
     install -d ${D}${systemd_system_unitdir}
     install -m 0644 ${UNPACKDIR}/rpu@.service ${D}${systemd_system_unitdir}
     install -m 0644 ${UNPACKDIR}/firmware-upgrade@.service ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/fix-registers.service ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/fix-registers.timer ${D}${systemd_system_unitdir}
 
     install -d ${D}${libexecdir}/${PN}
     install -m 0755 ${UNPACKDIR}/firmware-upgrade ${D}${libexecdir}/${PN}/firmware-upgrade

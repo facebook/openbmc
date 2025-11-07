@@ -1,0 +1,11 @@
+[Unit]
+Description=Run fix-registers script every hour
+Requires=fix-registers.service
+
+[Timer]
+OnBootSec=30min
+OnUnitActiveSec=1h
+Unit=fix-registers.service
+
+[Install]
+WantedBy=timers.target

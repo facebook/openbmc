@@ -1,4 +1,4 @@
-From e88ad348e5553f29d617c426d68410662d5ca40a Mon Sep 17 00:00:00 2001
+From 3e16e054cb0a650676265a63f2a560103d288d05 Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Thu, 11 Apr 2024 08:27:09 +0800
 Subject: [PATCH 501/503] Add method for setting up MCTP EID by config path
@@ -13,10 +13,10 @@ https://github.com/CodeConstruct/mctp/pull/17
  1 file changed, 196 insertions(+)
 
 diff --git a/src/mctpd.c b/src/mctpd.c
-index cdce537..e342184 100644
+index 60f1698..2f6f1f8 100644
 --- a/src/mctpd.c
 +++ b/src/mctpd.c
-@@ -3075,6 +3075,190 @@ out:
+@@ -3078,6 +3078,190 @@ out:
  	return rc;
  }
  
@@ -207,7 +207,7 @@ index cdce537..e342184 100644
  // Query various properties of a peer.
  // To be called when a new peer is discovered/assigned, once an EID is known
  // and routable.
-@@ -3798,11 +3982,23 @@ static const sd_bus_vtable bus_link_owner_vtable[] = {
+@@ -3812,11 +3996,23 @@ static const sd_bus_vtable bus_link_owner_vtable[] = {
  		SD_BUS_PARAM(found),
  		method_learn_endpoint,
  		0),

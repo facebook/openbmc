@@ -1,7 +1,7 @@
-From 10f08dcef767d91e74c8a3f00e0b4de260febd6b Mon Sep 17 00:00:00 2001
+From 48985e61cafb7c9feb00527cb585ac5a5804c07e Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Wed, 17 Sep 2025 15:12:11 -0700
-Subject: [PATCH 13/16] leakdetector: check event before event_read()
+Subject: [PATCH 13/17] leakdetector: check event before event_read()
 
 The event_read() does not clear the EPOLLIN flag immediately; it is
 cleared during the subsequent epoll check. This may cause issue for a

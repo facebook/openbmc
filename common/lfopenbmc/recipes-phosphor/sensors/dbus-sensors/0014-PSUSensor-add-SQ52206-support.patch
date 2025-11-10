@@ -1,7 +1,7 @@
-From 4ee1319ba0247f226db5dd7cfaea9712cc198fb9 Mon Sep 17 00:00:00 2001
+From 492d1828c48465e149055f539edf7bc3ef7e3c77 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 16 Sep 2025 16:56:41 +0800
-Subject: [PATCH 14/16] PSUSensor: add SQ52206 support
+Subject: [PATCH 14/17] PSUSensor: add SQ52206 support
 
 Add device SQ52206 reading support.
 

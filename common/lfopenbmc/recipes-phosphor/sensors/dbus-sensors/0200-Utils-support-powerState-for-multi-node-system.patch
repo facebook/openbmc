@@ -1,7 +1,7 @@
-From 2f0a8eb8a5763c76767fa80a9680e19ce331847d Mon Sep 17 00:00:00 2001
+From 89aa273d8bec7e74e03e1b5ac048b9cb4c864130 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
-Subject: [PATCH 200/204] Utils: support powerState for multi-node system
+Subject: [PATCH 200/203] Utils: support powerState for multi-node system
 
 The current code of dbus-sensors only get powerState values for Chassis0
 and Host0 which cannot be used for the system with multiple server
@@ -957,7 +957,7 @@ index e679dc2..e66f68c 100644
      ~PSUProperty() = default;
  
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 53e6b17..0eb6fd4 100644
+index 81de177..b4d806f 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -613,6 +613,7 @@ static void createSensorsCallback(
@@ -977,7 +977,7 @@ index 53e6b17..0eb6fd4 100644
                  sensors[sensorName]->setupRead();
                  ++numCreated;
                  lg2::debug("Created '{NUM}' sensors so far", "NUM", numCreated);
-@@ -1236,7 +1237,11 @@ static void powerStateChanged(
+@@ -1239,7 +1240,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {

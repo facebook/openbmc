@@ -1,7 +1,7 @@
-From 5d23615994a8abfffa6d6cbe9e0b2dc7d06e7b4d Mon Sep 17 00:00:00 2001
+From 01642e72b3c66e90a4c766ce3062ee799441134a Mon Sep 17 00:00:00 2001
 From: Leo Yang <Leo-Yang@quantatw.com>
 Date: Tue, 21 Oct 2025 13:54:46 +0800
-Subject: [PATCH 16/16] PSUSensor: add RAA228006 support
+Subject: [PATCH 16/17] PSUSensor: add RAA228006 support
 
 Add device RAA228006 reading support for YV5 project.
 

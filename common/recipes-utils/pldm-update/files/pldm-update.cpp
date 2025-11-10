@@ -7,6 +7,7 @@
 
 #include <filesystem> // path, copy
 #include <chrono>     // seconds
+#include <regex>
 
 namespace fs = std::filesystem;
 
@@ -89,42 +90,29 @@ is_pldmd_service_running(std::string& pldmdBusName)
 }
 
 std::string
-get_compute_software_id(const std::string& file)
+get_compute_software_id()
 {
-    std::string softwareId{};
+    const char* cmd = "busctl tree xyz.openbmc_project.PLDM";
+    std::array<char, 256> buffer{};
+    std::string result;
 
-    FileDescriptor fd(open(file.c_str(), O_RDONLY));
-    if (fd < 0) {
-        std::cerr << "Cannot open "
-                << file
-                << std::endl;
-        return softwareId;
+    std::unique_ptr<FILE, int (*)(FILE*)> pipe(popen(cmd, "r"), pclose);
+    if (!pipe)
+        return {};
+
+    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr)
+    {
+        result += buffer.data();
     }
 
-    auto offset = sizeof(pldm_package_header_information);
-    auto pkgData = std::vector<uint8_t>(offset);
-    auto pkgHdr = reinterpret_cast<pldm_package_header_information*>(pkgData.data());
-
-    // read Package Header Info
-    if (read(fd, pkgData.data(), offset) != (int)offset) {
-        std::cerr << "Can not read "
-                << file
-                << std::endl;
-        return softwareId;
+    std::regex re(R"(/xyz/openbmc_project/software/([0-9]+))");
+    std::smatch match;
+    if (std::regex_search(result, match, re))
+    {
+        return match[1];
     }
-    auto pkgVerLen = pkgHdr->package_version_string_length;
-    pkgData.resize(offset + pkgVerLen);
-    if (read(fd, pkgData.data() + offset, pkgVerLen) != (int)pkgVerLen) {
-        std::cerr << "Can not read "
-                << file
-                << std::endl;
-        return softwareId;
-    }
-    auto str = std::string(
-        reinterpret_cast<const char*>(pkgData.data()+offset), pkgVerLen);
 
-    softwareId = std::to_string(std::hash<std::string>{}(str));
-    return softwareId;
+    return {};
 }
 
 bool
@@ -286,16 +274,6 @@ pldm_update(const std::string& file)
         return;
     }
 
-    auto softwareId = get_compute_software_id(file);
-    if (softwareId.empty())
-    {
-        std::cerr << "Error: software ID is invalid." << std::endl;
-        return;
-    }
-
-    std::cout << "pldm_update: " << file << std::endl;
-    std::cout << "softwareId: " << softwareId << std::endl;
-
     try {
         auto src = fs::path(file);
         auto dest = fs::path("/tmp/pldm_images") / src.filename();
@@ -307,6 +285,16 @@ pldm_update(const std::string& file)
         std::cerr << "Error: " << e.what() << std::endl;
         return;
     }
+
+    auto softwareId = get_compute_software_id();
+    if (softwareId.empty())
+    {
+        std::cerr << "Error: software ID is invalid." << std::endl;
+        return;
+    }
+
+    std::cout << "pldm_update: " << file << std::endl;
+    std::cout << "softwareId: " << softwareId << std::endl;
 
     // wait for pldmd.service process
     if (!retry([&]() {

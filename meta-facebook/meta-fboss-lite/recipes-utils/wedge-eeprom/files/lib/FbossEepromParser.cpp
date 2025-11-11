@@ -24,10 +24,7 @@ enum entryType {
   FIELD_LE_HEX,
   FIELD_BE_HEX,
   FIELD_STRING,
-  FIELD_LEGACY_MAC,
-  FIELD_V4_MAC,
-  FIELD_V5_MAC,
-  FIELD_DATE
+  FIELD_V5_MAC
 };
 
 typedef struct {
@@ -37,54 +34,6 @@ typedef struct {
   std::optional<int> length;
   std::optional<int> offset;
 } EepromFieldEntry;
-
-std::vector<EepromFieldEntry> kFieldDictionaryV3 = {
-    {0, "Version", FIELD_LE_UINT, 1, 2}, // TypeCode 0 is reserved
-    {1, "Product Name", FIELD_STRING, 20, 3},
-    {2, "Product Part Number", FIELD_STRING, 8, 23},
-    {3, "System Assembly Part Number", FIELD_STRING, 12, 31},
-    {4, "Meta PCBA Part Number", FIELD_STRING, 12, 43},
-    {5, "Meta PCB Part Number", FIELD_STRING, 12, 55},
-    {6, "ODM/JDM PCBA Part Number", FIELD_STRING, 13, 67},
-    {7, "ODM/JDM PCBA Serial Number", FIELD_STRING, 13, 80},
-    {8, "Product Production State", FIELD_LE_UINT, 1, 93},
-    {9, "Product Version", FIELD_LE_UINT, 1, 94},
-    {10, "Product Sub-Version", FIELD_LE_UINT, 1, 95},
-    {11, "Product Serial Number", FIELD_STRING, 13, 96},
-    {12, "Product Asset Tag", FIELD_STRING, 12, 109},
-    {13, "System Manufacturer", FIELD_STRING, 8, 121},
-    {14, "System Manufacturing Date", FIELD_DATE, 4, 129},
-    {15, "PCB Manufacturer", FIELD_STRING, 8, 133},
-    {16, "Assembled At", FIELD_STRING, 8, 141},
-    {17, "Local MAC", FIELD_LEGACY_MAC, 12, 149},
-    {17, "Extended MAC Base", FIELD_LEGACY_MAC, 12, 161},
-    {18, "Extended MAC Address Size", FIELD_LE_UINT, 2, 173},
-    {19, "Location on Fabric", FIELD_STRING, 20, 175},
-    {250, "CRC8", FIELD_LE_HEX, 1, 195}};
-
-std::vector<EepromFieldEntry> kFieldDictionaryV4 = {
-    {0, "NA", FIELD_LE_UINT, -1, -1}, // TypeCode 0 is reserved
-    {1, "Product Name", FIELD_STRING, VARIABLE, VARIABLE},
-    {2, "Product Part Number", FIELD_STRING, VARIABLE, VARIABLE},
-    {3, "System Assembly Part Number", FIELD_STRING, 8, VARIABLE},
-    {4, "Meta PCBA Part Number", FIELD_STRING, 12, VARIABLE},
-    {5, "Meta PCB Part Number", FIELD_STRING, 12, VARIABLE},
-    {6, "ODM/JDM PCBA Part Number", FIELD_STRING, VARIABLE, VARIABLE},
-    {7, "ODM/JDM PCBA Serial Number", FIELD_STRING, VARIABLE, VARIABLE},
-    {8, "Product Production State", FIELD_LE_UINT, 1, VARIABLE},
-    {9, "Product Version", FIELD_LE_UINT, 1, VARIABLE},
-    {10, "Product Sub-Version", FIELD_LE_UINT, 1, VARIABLE},
-    {11, "Product Serial Number", FIELD_STRING, VARIABLE, VARIABLE},
-    {12, "System Manufacturer", FIELD_STRING, VARIABLE, VARIABLE},
-    {13, "System Manufacturing Date", FIELD_STRING, 8, VARIABLE},
-    {14, "PCB Manufacturer", FIELD_STRING, VARIABLE, VARIABLE},
-    {15, "Assembled At", FIELD_STRING, VARIABLE, VARIABLE},
-    {16, "Local MAC", FIELD_V4_MAC, 6, VARIABLE},
-    {17, "Extended MAC Base", FIELD_V4_MAC, 6, VARIABLE},
-    {18, "Extended MAC Address Size", FIELD_LE_UINT, 2, VARIABLE},
-    {19, "EEPROM location on Fabric", FIELD_STRING, VARIABLE, VARIABLE},
-    {250, "CRC16", FIELD_LE_HEX, 2, VARIABLE},
-};
 
 std::vector<EepromFieldEntry> kFieldDictionaryV5 = {
     {0, "NA", FIELD_LE_UINT, -1, -1}, // TypeCode 0 is reserved
@@ -142,12 +91,6 @@ const std::vector<EepromFieldEntry> kFieldDictionaryV6 = {
 
 std::vector<EepromFieldEntry> getEepromFieldDict(int version) {
   switch (version) {
-    case 3:
-      return kFieldDictionaryV3;
-      break;
-    case 4:
-      return kFieldDictionaryV4;
-      break;
     case 5:
       return kFieldDictionaryV5;
     case 6:
@@ -194,10 +137,6 @@ FbossEepromParser::getContents() {
   std::unordered_map<int, std::string> parsedValue;
   int eepromVer = buffer[2];
   switch (eepromVer) {
-    case 3:
-      parsedValue = parseEepromBlobLinear(buffer);
-      break;
-    case 4:
     case 5:
     case 6:
       parsedValue = parseEepromBlobTLV(
@@ -205,7 +144,7 @@ FbossEepromParser::getContents() {
       break;
     default:
       throw std::runtime_error(
-          "EEPROM version is not supported. Only ver 4+ is supported.");
+          "EEPROM version is not supported. Only ver 5+ is supported.");
       break;
   }
 
@@ -261,53 +200,7 @@ int FbossEepromParser::loadEeprom(
   return readCount;
 }
 
-/*
- * Helper function of getInfo, for V3 eeprom
- * V3 eeprom has fixed length / offset fields, so is parsed
- * differently from V4, which is basically TLV structured.
- */
-std::unordered_map<int, std::string> FbossEepromParser::parseEepromBlobLinear(
-    const unsigned char* buffer) {
-  std::unordered_map<int, std::string> parsedValue;
-  for (auto dictItem : kFieldDictionaryV3) {
-    std::string key = dictItem.fieldName;
-    std::string value;
-    int itemCode = dictItem.typeCode;
-    int itemOffset = dictItem.offset.value();
-    int itemLength = dictItem.length.value();
-    unsigned char* itemDataPtr = (unsigned char*)&buffer[itemOffset];
-    entryType itemType = dictItem.fieldType;
-    switch (itemType) {
-      case FIELD_LE_UINT:
-        value = parseLeUint(itemLength, itemDataPtr);
-        break;
-      case FIELD_LE_HEX:
-        value = parseLeHex(itemLength, itemDataPtr);
-        break;
-      case FIELD_STRING:
-        value = parseString(itemLength, itemDataPtr);
-        break;
-      case FIELD_LEGACY_MAC:
-        value = parseLegacyMac(itemLength, itemDataPtr);
-        break;
-      case FIELD_DATE:
-        value = parseDate(itemLength, itemDataPtr);
-        break;
-      default:
-        // Create the issue (story) of this item (juice) as juicetory
-        std::string juicetory = "Unknown field type " +
-            std::to_string(itemType) + " at position " +
-            std::to_string(itemOffset);
-        std::cout << juicetory << std::endl;
-        throw std::runtime_error(juicetory);
-        break;
-    }
-    parsedValue[itemCode] = value;
-  }
-  return parsedValue;
-}
-
-// Helper function of getInfo, for V4 eeprom and newer
+// Helper function of getInfo, for V5 eeprom and newer
 std::unordered_map<int, std::string> FbossEepromParser::parseEepromBlobTLV(
     int eepromVer,
     const unsigned char* buffer,
@@ -371,9 +264,6 @@ std::unordered_map<int, std::string> FbossEepromParser::parseEepromBlobTLV(
       case FIELD_STRING:
         value = parseString(itemLength, itemDataPtr);
         break;
-      case FIELD_V4_MAC:
-        value = parseV4Mac(itemLength, itemDataPtr);
-        break;
       case FIELD_V5_MAC:
         value = parseV5Mac(itemLength, itemDataPtr);
         break;
@@ -390,7 +280,8 @@ std::unordered_map<int, std::string> FbossEepromParser::parseEepromBlobTLV(
     // the CRC16 is the last content, parsing must stop.
     if (key == "CRC16") {
       uint16_t crcProgrammed = std::stoi(value, nullptr, 16);
-      uint16_t crcCalculated = weutil::CrcLib::crc16_ccitt_aug(buffer, cursor - 4);
+      uint16_t crcCalculated =
+          weutil::CrcLib::crc16_ccitt_aug(buffer, cursor - 4);
       if (crcProgrammed == crcCalculated) {
         parsedValue[itemCode] += " (CRC Matched)";
       } else {
@@ -465,7 +356,7 @@ FbossEepromParser::prepareEepromFieldMap(
 }
 
 // Parse Little Endian Uint field
-std::string FbossEepromParser::parseLeUint(int len, unsigned char* ptr) {
+std::string FbossEepromParser::parseLeUint(int len, const unsigned char* ptr) {
   // For now, we only support up to 4 Bytes of data
   if (len > 4) {
     throw std::runtime_error("Unsigned int can be up to 4 bytes only.");
@@ -483,7 +374,7 @@ std::string FbossEepromParser::parseLeUint(int len, unsigned char* ptr) {
 }
 
 // Parse Big Endian Uint field
-std::string FbossEepromParser::parseBeUint(int len, unsigned char* ptr) {
+std::string FbossEepromParser::parseBeUint(int len, const unsigned char* ptr) {
   // For now, we only support up to 4 Bytes of data
   if (len > 4) {
     throw std::runtime_error("Unsigned int can be up to 4 bytes only.");
@@ -498,7 +389,7 @@ std::string FbossEepromParser::parseBeUint(int len, unsigned char* ptr) {
   return std::to_string(readVal);
 }
 
-std::string FbossEepromParser::parseLeHex(int len, unsigned char* ptr) {
+std::string FbossEepromParser::parseLeHex(int len, const unsigned char* ptr) {
   std::string retVal = "";
   // Values in the EEPROM is Little endian
   // Thus cursor starts from the end and goes backwards
@@ -512,7 +403,7 @@ std::string FbossEepromParser::parseLeHex(int len, unsigned char* ptr) {
   return "0x" + retVal;
 }
 
-std::string FbossEepromParser::parseBeHex(int len, unsigned char* ptr) {
+std::string FbossEepromParser::parseBeHex(int len, const unsigned char* ptr) {
   std::string retVal = "";
   // Values in the EEPROM is big endian
   for (int i = 0; i < len; i++) {
@@ -524,7 +415,7 @@ std::string FbossEepromParser::parseBeHex(int len, unsigned char* ptr) {
 }
 
 // Parse String field
-std::string FbossEepromParser::parseString(int len, unsigned char* ptr) {
+std::string FbossEepromParser::parseString(int len, const unsigned char* ptr) {
   std::string retVal = "";
   // We convert char array to string only upto len or null pointer
   int juice = 0;
@@ -533,13 +424,6 @@ std::string FbossEepromParser::parseString(int len, unsigned char* ptr) {
     juice = juice + 1;
   }
   return retVal;
-}
-
-// For EEPROM V4, Parse MAC with the format XX:XX:XX:XX:XX:XX
-std::string FbossEepromParser::parseV4Mac(int len, unsigned char* ptr) {
-  // In V4 EEPROM, all fields are little endian, even the MAC address
-  // therefore we parse it in the LE way (not the network byte order)
-  return parseMacHelper(len, ptr, false);
 }
 
 // For EEPROM V5, Parse MAC with the format XX:XX:XX:XX:XX:XX, along with two
@@ -551,40 +435,6 @@ std::string FbossEepromParser::parseV5Mac(int len, unsigned char* ptr) {
   retVal =
       parseMacHelper(len - 2, ptr, true) + "," + parseBeUint(2, &ptr[len - 2]);
   return retVal;
-}
-
-// For EEPROM V3, MAC is represented as XXXXXXXXXXXX. Therefore,
-// parse the MAC into the human readable format as XX:XX:XX:XX:XX:XX
-std::string FbossEepromParser::parseLegacyMac(int len, unsigned char* ptr) {
-  std::string retVal = "";
-  if (len != 12) {
-    throw std::runtime_error("Legacy(v3) MAC field must be 12 Bytes Long!");
-  }
-  for (int i = 0; i < 12; i++) {
-    retVal += (ptr[i]);
-    if (((i % 2) == 1) && (i != 11)) {
-      retVal += ":";
-    }
-  }
-  return retVal;
-}
-
-std::string FbossEepromParser::parseDate(int len, unsigned char* ptr) {
-  std::string retVal = "";
-  // We convert char array to string only upto len or null pointer
-  if (len != 4) {
-    throw std::runtime_error("Date field must be 4 Bytes Long!");
-  }
-  unsigned int year = (unsigned int)ptr[1] + (unsigned int)ptr[0];
-  unsigned int month = (unsigned int)ptr[2];
-  unsigned int day = (unsigned int)ptr[3];
-  std::string yearString = std::to_string(year % 100);
-  std::string monthString = std::to_string(month);
-  std::string dayString = std::to_string(day);
-  yearString = (yearString.length() == 1 ? "0" : "") + yearString;
-  monthString = (monthString.length() == 1 ? "0" : "") + monthString;
-  dayString = (dayString.length() == 1 ? "0" : "") + dayString;
-  return monthString + "-" + dayString + "-" + yearString;
 }
 
 } // namespace facebook::fboss::platform

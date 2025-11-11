@@ -23,8 +23,6 @@ class FbossEepromParser {
       unsigned char* output,
       int offset,
       int max);
-  std::unordered_map<int, std::string> parseEepromBlobLinear(
-      const unsigned char* buffer);
   std::unordered_map<int, std::string> parseEepromBlobTLV(
       int eepromVer,
       const unsigned char* buffer,
@@ -37,15 +35,12 @@ class FbossEepromParser {
   std::vector<std::pair<std::string, std::string>> prepareEepromFieldMap(
       std::unordered_map<int, std::string> parsedValue,
       int eepromVer);
-  std::string parseLeUint(int len, unsigned char* ptr);
-  std::string parseBeUint(int len, unsigned char* ptr);
-  std::string parseLeHex(int len, unsigned char* ptr);
-  std::string parseBeHex(int len, unsigned char* ptr);
-  std::string parseString(int len, unsigned char* ptr);
-  std::string parseV4Mac(int len, unsigned char* ptr);
+  std::string parseLeUint(int len, const unsigned char* ptr);
+  std::string parseBeUint(int len, const unsigned char* ptr);
+  std::string parseLeHex(int len, const unsigned char* ptr);
+  std::string parseBeHex(int len, const unsigned char* ptr);
+  std::string parseString(int len, const unsigned char* ptr);
   std::string parseV5Mac(int len, unsigned char* ptr);
-  std::string parseLegacyMac(int len, unsigned char* ptr);
-  std::string parseDate(int len, unsigned char* ptr);
 
   std::string eepromPath_;
   uint16_t offset_;

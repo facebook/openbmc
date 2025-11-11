@@ -21,10 +21,8 @@
 #include <vector>
 
 #include "Cfg.h"
-#include "Eeprom.h"
-#include "FbossEeprom.h"
-#include "WeutilInterface.h"
 #include "FbossEepromParser.h"
+#include "WeutilInterface.h"
 
 using namespace weutil;
 using namespace facebook::fboss::platform;
@@ -38,25 +36,6 @@ std::vector<std::pair<std::string, std::string>> eepromParseNew(
   std::string eepromFmt = cfg->eFormat(ePath);
   off = (ARISTA_PREFDL == eepromFmt) ? ARISTA_EEPROM_OFFSET : 0;
   return FbossEepromParser(ePath, off).getContents();
-}
-
-std::map<fieldId, std::pair<std::string, std::string>> eepromParse(
-    const std::string& eepromDeviceName) {
-  uint16_t off = 0;
-  std::map<fieldId, std::pair<std::string, std::string>> res;
-  std::string ePath = cfg->eepromNameToPath(eepromDeviceName).value_or("");
-  std::string eepromFmt = cfg->eFormat(ePath);
-
-  if (META_EEPROM_V4 == eepromFmt || ARISTA_PREFDL == eepromFmt) {
-    // they all use the meta-eeprom-v4 format, but has different offset value.
-    off = (ARISTA_PREFDL == eepromFmt) ? ARISTA_EEPROM_OFFSET : 0;
-    std::unique_ptr<EepromFboss> ep;
-    ep = std::make_unique<EepromFboss>(ePath, off);
-    res = ep->getEepromData();
-  } else {
-    throw std::runtime_error("unsupported eeprom format ");
-  }
-  return res;
 }
 
 std::map<std::string, std::string> listEepromDevices() {

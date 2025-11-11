@@ -24,13 +24,9 @@ deps = [
 libsrcs = files(
     'WeLibApi.cpp',
     'CrcLib.h',
-    'Eeprom.h',
-    'Eeprom.cpp',
     'Cfg.h',
     'Cfg.cpp',
     'WeutilInterface.h',
-    'FbossEeprom.h',
-    'FbossEeprom.cpp',
     'FbossEepromParser.h',
     'FbossEepromParser.cpp',
     )

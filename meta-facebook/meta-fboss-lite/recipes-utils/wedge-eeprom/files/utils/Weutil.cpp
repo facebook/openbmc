@@ -24,8 +24,6 @@
 
 #include <facebook/WeutilInterface.h>
 
-#define USE_NEW_EEPROM_LIB true
-
 using ojson = nlohmann::ordered_json;
 
 namespace {
@@ -55,44 +53,27 @@ static void usage() {
 }
 
 static void printEepromData(const std::string& eDeviceName, bool jFlag) {
-  if (USE_NEW_EEPROM_LIB) {
-    std::vector<std::pair<std::string, std::string>> parsedData =
-        eepromParseNew(eDeviceName);
-    auto production_state = std::find_if(
-        parsedData.begin(), parsedData.end(), [](const auto& item) {
-          return item.first == "Production State";
-        });
-    if (production_state != parsedData.end()) {
-      production_state->second =
-          getProductionStateString(production_state->second);
+  std::vector<std::pair<std::string, std::string>> parsedData =
+      eepromParseNew(eDeviceName);
+  auto production_state =
+      std::find_if(parsedData.begin(), parsedData.end(), [](const auto& item) {
+        return item.first == "Production State";
+      });
+  if (production_state != parsedData.end()) {
+    production_state->second =
+        getProductionStateString(production_state->second);
+  }
+  if (jFlag) {
+    ojson j;
+    for (auto item : parsedData) {
+      j[item.first] = item.second;
     }
-    if (jFlag) {
-      ojson j;
-      for (auto item : parsedData) {
-        j[item.first] = item.second;
-      }
-      std::cout << std::setw(4) << j << '\n';
-    } else {
-      for (auto item : parsedData) {
-        std::cout << item.first << ": " << item.second << '\n';
-      }
-    }
+    std::cout << std::setw(4) << j << '\n';
   } else {
-    std::map<fieldId, std::pair<std::string, std::string>> devTbl =
-        eepromParse(eDeviceName);
-    if (jFlag) {
-      ojson j;
-      for (auto& item : devTbl) {
-        j[item.second.first] = item.second.second;
-      }
-      std::cout << std::setw(4) << j << '\n';
-    } else {
-      for (auto& item : devTbl) {
-        std::cout << item.second.first << ": " << item.second.second << '\n';
-      }
+    for (auto item : parsedData) {
+      std::cout << item.first << ": " << item.second << '\n';
     }
   }
-  return;
 }
 
 int main(int argc, char* argv[]) {
@@ -164,7 +145,7 @@ int main(int argc, char* argv[]) {
 
   if (listFlag) {
     std::map<std::string, std::string> res = listEepromDevices();
-    for (auto& item : res) {
+    for (const auto& item : res) {
       std::cout << item.first << "    " << item.second << "\n";
     }
     exit(0);
@@ -172,7 +153,7 @@ int main(int argc, char* argv[]) {
 
   if (allFlag) {
     std::map<std::string, std::string> res = listEepromDevices();
-    for (auto listEnt : res) {
+    for (const auto& listEnt : res) {
       std::cout << "EEPROM: " + listEnt.first << std::endl;
       printEepromData(listEnt.first, jsonFlag);
       std::cout << std::endl;

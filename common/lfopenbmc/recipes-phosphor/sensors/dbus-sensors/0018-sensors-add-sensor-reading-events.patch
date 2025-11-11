@@ -1,0 +1,161 @@
+From 0e648f369de822c8dafcd38e33cc10233a134f58 Mon Sep 17 00:00:00 2001
+From: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
+Date: Tue, 30 Sep 2025 11:50:42 +0800
+Subject: [PATCH] Add sensor reading events
+
+1.
+This modification implements the "Sensors Invalid Reading" and
+"Restored" generic sensor events [1]. These events are compatible
+with the Redfish Message Registry's SensorEvent [2].
+
+This allows abnormal sensor statuses, recorded in the Redfish
+Event Registry, to be viewed. It helps track the historical status
+of the sensors.
+
+2.
+If a sensor is expected to become invalid in a non-good power state
+(from entity manager Configuration), its sensor event reporting
+will be ignored.
+
+Test plan:
+1.Enables Sensor override feature.(dbus-sensors repo
+"insecure-sensor-override" option).
+2.used busctl set-property command setting params sensor value to
+NaN and normal.
+3.Check BMC event log and Redfish event registry entries to
+confirm the events are recorded correctly.
+4.Perform power off and cycle operations, and check if any redundant
+events are triggered.
+
+References:
+[1] https://github.com/openbmc/phosphor-dbus-interfaces/blob/master/yaml/xyz/openbmc_project/Sensor.events.yaml
+[2] https://github.com/DMTF/Redfish-Publications/blob/main/registries/SensorEvent.1.0.1.json#L306
+
+Change-Id: I3d9a44ed81157e7096c840c266c89fb9d88bb5a7
+Signed-off-by: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
+---
+ src/sensor.hpp | 62 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 61 insertions(+), 1 deletion(-)
+
+diff --git a/src/sensor.hpp b/src/sensor.hpp
+index b5c922e..fb2bcac 100644
+--- a/src/sensor.hpp
++++ b/src/sensor.hpp
+@@ -6,12 +6,14 @@
+ #include "Thresholds.hpp"
+ #include "Utils.hpp"
+ 
++#include <phosphor-logging/commit.hpp>
+ #include <phosphor-logging/lg2.hpp>
+ #include <sdbusplus/asio/connection.hpp>
+ #include <sdbusplus/asio/object_server.hpp>
+ #include <sdbusplus/exception.hpp>
+ #include <sdbusplus/message/native_types.hpp>
+ #include <xyz/openbmc_project/Sensor/Value/common.hpp>
++#include <xyz/openbmc_project/Sensor/event.hpp>
+ 
+ #include <array>
+ #include <cerrno>
+@@ -23,6 +25,7 @@
+ #include <memory>
+ #include <stdexcept>
+ #include <string>
++#include <unordered_map>
+ #include <utility>
+ #include <vector>
+ 
+@@ -128,7 +131,7 @@ struct Sensor
+     PowerState readState;
+     size_t errCount{0};
+     std::unique_ptr<SensorInstrumentation> instrumentation;
+-
++    std::unordered_map<std::string, bool> invalidReadingLoggedMap;
+     // This member variable provides a hook that can be used to receive
+     // notification whenever this Sensor's value is externally set via D-Bus.
+     // If interested, assign your own lambda to this variable, during
+@@ -246,6 +249,7 @@ struct Sensor
+ 
+     int setSensorValue(const double& newValue, double& oldValue)
+     {
++        bool updated = false;
+         if (!internalSet)
+         {
+             if (insecureSensorOverride == 0 && !isSensorSettable &&
+@@ -256,6 +260,7 @@ struct Sensor
+ 
+             oldValue = newValue;
+             overriddenState = true;
++            updated = true;
+             // check thresholds for external set
+             value = newValue;
+             checkThresholds();
+@@ -269,6 +274,29 @@ struct Sensor
+         else if (!overriddenState)
+         {
+             oldValue = newValue;
++            updated = true;
++        }
++
++        if (updated)
++        {
++            // If the power state of the sensor is non-always (from the Entity
++            // Manager config), these sensors are expected to become invalid,
++            // and we will ignore their sensor event reporting. This helps avoid
++            // seeing redundant sensor events during power operations.
++            if (!readingStateGood())
++            {
++                return 1;
++            }
++
++            auto objPath = sensorInterface->get_object_path();
++            if (std::isnan(newValue) && !invalidReadingLoggedMap[objPath])
++            {
++                logInvalidSensorReading();
++            }
++            else if (!std::isnan(newValue) && invalidReadingLoggedMap[objPath])
++            {
++                logSensorRestored();
++            }
+         }
+         return 1;
+     }
+@@ -619,4 +647,36 @@ struct Sensor
+         updateProperty(sensorInterface, value, newValue, "Value");
+         internalSet = false;
+     }
++
++    void logInvalidSensorReading()
++    {
++        namespace errors = sdbusplus::error::xyz::openbmc_project::Sensor;
++        auto objPath = sensorInterface->get_object_path();
++        try
++        {
++            lg2::commit(errors::InvalidSensorReading("SENSOR_NAME", objPath));
++            invalidReadingLoggedMap[objPath] = true;
++        }
++        catch (const std::exception& e)
++        {
++            lg2::error(
++                "Could not create InvalidSensorReading log entry for {SENSOR}",
++                "SENSOR", objPath);
++        }
++    }
++    void logSensorRestored()
++    {
++        namespace events = sdbusplus::event::xyz::openbmc_project::Sensor;
++        auto objPath = sensorInterface->get_object_path();
++        try
++        {
++            lg2::commit(events::SensorRestored("SENSOR_NAME", objPath));
++            invalidReadingLoggedMap[objPath] = false;
++        }
++        catch (const std::exception& e)
++        {
++            lg2::error("Could not create SensorRestored log entry for {SENSOR}",
++                       "SENSOR", objPath);
++        }
++    }
+ };
+-- 
+2.34.1
+

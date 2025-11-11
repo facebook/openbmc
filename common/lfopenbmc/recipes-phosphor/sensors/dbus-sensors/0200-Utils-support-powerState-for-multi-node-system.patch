@@ -994,7 +994,7 @@ diff --git a/src/sensor.hpp b/src/sensor.hpp
 index b5c922e..2d96ccf 100644
 --- a/src/sensor.hpp
 +++ b/src/sensor.hpp
-@@ -75,13 +75,13 @@ struct Sensor
+@@ -78,13 +78,13 @@ struct Sensor
             const std::string& configurationPath, const std::string& objectType,
             bool isSettable, bool isMutable, const double max, const double min,
             std::shared_ptr<sdbusplus::asio::connection>& conn,
@@ -1010,15 +1010,15 @@ index b5c922e..2d96ccf 100644
          instrumentation(enableInstrumentation
                              ? std::make_unique<SensorInstrumentation>()
                              : nullptr)
-@@ -126,6 +126,7 @@ struct Sensor
+@@ -129,6 +129,7 @@ struct Sensor
      double hysteresisPublish = 1.0;
      std::shared_ptr<sdbusplus::asio::connection> dbusConnection;
      PowerState readState;
 +    size_t slotId;
      size_t errCount{0};
      std::unique_ptr<SensorInstrumentation> instrumentation;
- 
-@@ -456,7 +457,7 @@ struct Sensor
+     std::unordered_map<std::string, bool> invalidReadingLoggedMap;
+@@ -484,7 +485,7 @@ struct Sensor
  
      bool readingStateGood() const
      {

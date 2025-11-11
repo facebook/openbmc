@@ -1,0 +1,129 @@
+From d3857b517798444a6aefdddc76161a230e32603b Mon Sep 17 00:00:00 2001
+From: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
+Date: Tue, 30 Sep 2025 13:54:36 +0800
+Subject: [PATCH] Add sensor reading events for virtual sensors
+
+This modification implements the "Sensors Invalid Reading" and
+"Restored" generic sensor events [1]. These events are compatible
+with the Redfish Message Registry's SensorEvent [2].
+
+This allows abnormal sensor statuses, recorded in the Redfish
+Event Registry, to be viewed. It helps track the historical status
+of the sensors.
+
+Test plan:
+1. Enables Sensor override feature.(dbus-sensors repo
+"insecure-sensor-override" option)
+2. used busctl set-property command setting params sensor value to
+NaN and normal.(Make the virtual sensor value calculation result NaN.)
+3. Check BMC event log and Redfish event registry entries to
+confirm the events are recorded correctly.
+
+References:
+[1] https://github.com/openbmc/phosphor-dbus-interfaces/blob/master/yaml/xyz/openbmc_project/Sensor.events.yaml
+[2] https://github.com/DMTF/Redfish-Publications/blob/main/registries/SensorEvent.1.0.1.json#L306
+
+Change-Id: I1c56fef6bfe9ee1f7be0317a4873a1ba2e564a28
+Signed-off-by: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
+---
+ src/virtualSensor.cpp | 42 ++++++++++++++++++++++++++++++++++++++++++
+ src/virtualSensor.hpp |  8 ++++++++
+ 2 files changed, 50 insertions(+)
+
+diff --git a/src/virtualSensor.cpp b/src/virtualSensor.cpp
+index c6bc6da..3601091 100644
+--- a/src/virtualSensor.cpp
++++ b/src/virtualSensor.cpp
+@@ -2,7 +2,9 @@
+ 
+ #include "calculate.hpp"
+ 
++#include <phosphor-logging/commit.hpp>
+ #include <phosphor-logging/lg2.hpp>
++#include <xyz/openbmc_project/Sensor/event.hpp>
+ 
+ #include <fstream>
+ 
+@@ -461,6 +463,37 @@ bool VirtualSensor::sensorInRange(double value)
+     return false;
+ }
+ 
++void VirtualSensor::logInvalidVirtualSensorReading()
++{
++    namespace errors = sdbusplus::error::xyz::openbmc_project::Sensor;
++    try
++    {
++        lg2::commit(errors::InvalidSensorReading("SENSOR_NAME", objPath));
++        invalidReadingLogged = true;
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error(
++            "Could not create InvalidSensorReading log entry for {SENSOR}",
++            "SENSOR", objPath);
++    }
++}
++
++void VirtualSensor::logVirtualSensorRestored()
++{
++    namespace events = sdbusplus::event::xyz::openbmc_project::Sensor;
++    try
++    {
++        lg2::commit(events::SensorRestored("SENSOR_NAME", objPath));
++        invalidReadingLogged = false;
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error("Could not create SensorRestored log entry for {SENSOR}",
++                   "SENSOR", objPath);
++    }
++}
++
+ void VirtualSensor::updateVirtualSensor()
+ {
+     for (auto& param : paramMap)
+@@ -485,6 +518,15 @@ void VirtualSensor::updateVirtualSensor()
+     setSensorValue(val);
+     debug("Sensor {NAME} = {VALUE}", "NAME", this->name, "VALUE", val);
+ 
++    if (std::isnan(val) && !invalidReadingLogged)
++    {
++        logInvalidVirtualSensorReading();
++    }
++    else if (!std::isnan(val) && invalidReadingLogged)
++    {
++        logVirtualSensorRestored();
++    }
++
+     /* Check sensor thresholds and log required message */
+     auto changed = false;
+     auto normal = checkThresholds(val, perfLossIface, changed);
+diff --git a/src/virtualSensor.hpp b/src/virtualSensor.hpp
+index 1b3683f..bfc9066 100644
+--- a/src/virtualSensor.hpp
++++ b/src/virtualSensor.hpp
+@@ -167,6 +167,9 @@ class VirtualSensor : public ValueObject
+     /** @brief The minimum valid value for an input sensor **/
+     double minValidInput = -std::numeric_limits<double>::infinity();
+ 
++    /** @brief Flag for invalid reading event */
++    bool invalidReadingLogged = false;
++
+     /** @brief The critical threshold interface object */
+     std::unique_ptr<Threshold<CriticalObject>> criticalIface;
+     /** @brief The warning threshold interface object */
+@@ -275,6 +278,11 @@ class VirtualSensor : public ValueObject
+     /** @brief Create Association from entityPath*/
+     void createAssociation(const std::string& objPath,
+                            const std::string& entityPath);
++
++    /** @brief Log invalid virtual sensor reading event */
++    void logInvalidVirtualSensorReading();
++    /** @brief Log virtual sensor restored event */
++    void logVirtualSensorRestored();
+ };
+ 
+ class VirtualSensors
+-- 
+2.34.1
+

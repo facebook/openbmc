@@ -36,7 +36,7 @@ class ChassisEepromTest(EepromV5Test, unittest.TestCase):
             BoardRevision.BRD_TYPE_SANTABARBARA: ["TAHANSB"],
             BoardRevision.BRD_TYPE_ICECUBE: ["ICECUBE"],
             BoardRevision.BRD_TYPE_ICETEA: ["ICETEA"],
-            BoardRevision.BRD_TYPE_ANACAPA: ["ANACAPA"],
+            BoardRevision.BRD_TYPE_LADAKH800BCLS: ["LADAKH800BCLS"],
         }
         self.product_name = platform_to_product_name_map.get(get_platform_id())
         if self.product_name is None:

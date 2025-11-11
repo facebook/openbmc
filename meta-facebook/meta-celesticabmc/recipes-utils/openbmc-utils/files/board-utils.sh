@@ -56,7 +56,7 @@ wedge_board_type() {
             echo "ICETEA"
             ;;
         13)
-            echo "ANACAPA"
+            echo "LADAKH800BCLS"
             ;;
         *)
             echo "unknown value [$board_id]"

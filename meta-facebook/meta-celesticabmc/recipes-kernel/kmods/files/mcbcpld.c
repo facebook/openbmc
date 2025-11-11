@@ -19,7 +19,7 @@ static const i2c_dev_attr_st mcbcpld_attrs[] = {
 		" 0x7 : Santabarbara\n"
 		" 0x8 : Icecube\n"
 		" 0x9 : Icetea\n"
-		" 0xD : Anacapa",
+		" 0xD : Ladakh800bcls",
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,
 		0x0,

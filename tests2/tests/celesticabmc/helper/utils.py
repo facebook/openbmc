@@ -3,7 +3,7 @@ import subprocess
 
 class BoardRevision:
 
-    BRD_TYPE_SANTABARBARA = 0x07
+    BRD_TYPE_TAHANSB800BC = 0x07
     BRD_TYPE_ICECUBE = 0x08
     BRD_TYPE_ICETEA = 0x09
     BRD_TYPE_LADAKH800BCLS = 0x0D
@@ -20,7 +20,7 @@ class BoardRevision:
     # Mapping of board types to platform names
     # Depend on board-utils wedge_board_type()
     platform_type = {
-        BRD_TYPE_SANTABARBARA: "SANTABARBARA",
+        BRD_TYPE_TAHANSB800BC: "TAHANSB800BC",
         BRD_TYPE_ICECUBE: "ICECUBE800BC",
         BRD_TYPE_ICETEA: "ICETEA",
         BRD_TYPE_LADAKH800BCLS: "LADAKH800BCLS",

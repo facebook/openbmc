@@ -47,7 +47,7 @@ wedge_board_type() {
     board_id=$(head -n 1 < "$BOARD_ID" 2> /dev/null)
     case "$((board_id))" in
         7)
-            echo "SANTABARBARA"
+            echo "TAHANSB800BC"
             ;;
         8)
             echo "ICECUBE800BC"

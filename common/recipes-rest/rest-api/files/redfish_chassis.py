@@ -288,7 +288,7 @@ async def _get_chassis_power_state(fru_name: str) -> str:
 
 
 async def _get_wedge_power_state() -> str:
-    cmd = ["/usr/local/bin/wedge_power.sh", " status"]
+    cmd = ["/usr/local/bin/wedge_power.sh", "status"]
     _, stdout, _ = await common_utils.async_exec(cmd)
     return "On" if "is on" in stdout else "Off"
 

@@ -17,7 +17,7 @@ SRC_URI:append = " \
     file://0014-Add-delay-before-leak-event-log-to-prevent-AC-OFF-gl.patch \
     file://0015-PSUSensor-add-RAA228006-support.patch \
     file://0016-PSUSensor-add-property-to-sensorTable-and-labelMatch.patch \
-    file://0018-sensors-add-sensor-reading-events.patch \
+    file://0017-Add-sensor-reading-events.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \

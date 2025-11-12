@@ -1,4 +1,4 @@
-From 842d1b6ca58976b32a390af8a11e5cff6e4eb045 Mon Sep 17 00:00:00 2001
+From 0c54d1a36d55cdfc0f0dd621ea95fbd7c50cf92c Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 11 Mar 2025 13:47:42 +0800
 Subject: [PATCH 6/7] entity-manager: Add config-prefix filtering
@@ -13,10 +13,10 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
 ---
  meson.build                          |  5 ++
  meson.options                        |  6 +++
- src/entity_manager/configuration.cpp | 12 +++--
- src/utils.cpp                        | 79 ++++++++++++++++------------
- src/utils.hpp                        | 12 +++--
- 5 files changed, 73 insertions(+), 41 deletions(-)
+ src/entity_manager/configuration.cpp |  7 ++-
+ src/utils.cpp                        | 78 ++++++++++++++++------------
+ src/utils.hpp                        | 10 +++-
+ 5 files changed, 70 insertions(+), 36 deletions(-)
 
 diff --git a/meson.build b/meson.build
 index c364a9e..d347e67 100644
@@ -49,10 +49,10 @@ index 8cdd903..efbf48c 100644
 +    description: 'Comma-separated list of JSON filename prefixes to filter. Default loads all JSON files.',
 +)
 diff --git a/src/entity_manager/configuration.cpp b/src/entity_manager/configuration.cpp
-index b6ece2b..d4954b6 100644
+index 99f7f66..240faa5 100644
 --- a/src/entity_manager/configuration.cpp
 +++ b/src/entity_manager/configuration.cpp
-@@ -24,13 +24,17 @@ Configuration::Configuration()
+@@ -26,10 +26,15 @@ Configuration::Configuration(
  void Configuration::loadConfigurations()
  {
      const auto start = std::chrono::steady_clock::now();
@@ -64,91 +64,101 @@ index b6ece2b..d4954b6 100644
  
      // find configuration files
      std::vector<std::filesystem::path> jsonPaths;
--    if (!findFiles(
--            std::vector<std::filesystem::path>{configurationDirectory,
--                                               hostConfigurationDirectory},
--            R"(.*\.json)", jsonPaths))
-+    if (!findFiles({std::filesystem::path(configurationDirectory),
-+                    std::filesystem::path(hostConfigurationDirectory)},
-+                   R"(.*\.json)", jsonPaths, configPrefixes))
+-    if (!findFiles(configurationDirectories, R"(.*\.json)", jsonPaths))
++    if (!findFiles(configurationDirectories, R"(.*\.json)", jsonPaths, configPrefixes))
      {
-         lg2::error("Unable to find any configuration files in {DIR}", "DIR",
-                    configurationDirectory);
+         for (const auto& configurationDirectory : configurationDirectories)
+         {
 diff --git a/src/utils.cpp b/src/utils.cpp
-index d88df36..83b42ee 100644
+index b5bac09..a99980f 100644
 --- a/src/utils.cpp
 +++ b/src/utils.cpp
-@@ -19,60 +19,71 @@
+@@ -19,8 +19,29 @@
  
  namespace fs = std::filesystem;
  
--bool findFiles(const fs::path& dirPath, const std::string& matchString,
--               std::vector<fs::path>& foundPaths)
 +std::vector<std::string> splitConfigString(const std::string& input,
 +                                           char delimiter, bool ignoreSpaces)
- {
--    if (!fs::exists(dirPath))
--    {
--        return false;
--    }
++{
 +    std::vector<std::string> parts;
 +    std::istringstream stream(input);
 +    std::string part;
- 
--    std::regex search(matchString);
--    std::smatch match;
--    for (const auto& p : fs::directory_iterator(dirPath))
++
 +    while (std::getline(stream, part, delimiter))
-     {
--        std::string path = p.path().string();
--        if (std::regex_search(path, match, search))
++    {
 +        if (ignoreSpaces)
-         {
--            foundPaths.emplace_back(p.path());
++        {
 +            part.erase(0, part.find_first_not_of(" \t"));
 +            part.erase(part.find_last_not_of(" \t") + 1);
-         }
++        }
 +
 +        parts.emplace_back(std::move(part));
-     }
--    return true;
++    }
 +    return parts;
- }
- 
--bool findFiles(const std::vector<fs::path>&& dirPaths,
--               const std::string& matchString,
++}
++
+ bool findFiles(const fs::path& dirPath, const std::string& matchString,
 -               std::vector<fs::path>& foundPaths)
-+bool findFiles(const fs::path& dirPath, const std::string& matchString,
 +               std::vector<fs::path>& foundPaths,
 +               const std::vector<std::string>& prefixes)
  {
--    std::map<fs::path, fs::path> paths;
-+    if (!fs::exists(dirPath))
-+    {
-+        return false;
-+    }
-+
+     if (!fs::exists(dirPath))
+     {
+@@ -28,51 +49,42 @@ bool findFiles(const fs::path& dirPath, const std::string& matchString,
+     }
+ 
      std::regex search(matchString);
 -    std::smatch match;
--    for (const auto& dirPath : dirPaths)
+-    for (const auto& p : fs::directory_iterator(dirPath))
 +
 +    for (const auto& entry : fs::recursive_directory_iterator(dirPath))
      {
--        if (!fs::exists(dirPath))
+-        std::string path = p.path().string();
+-        if (std::regex_search(path, match, search))
 +        const std::string filename = entry.path().filename().string();
 +
 +        if (!std::regex_search(filename, search))
          {
-             continue;
-         }
- 
--        for (const auto& p : fs::recursive_directory_iterator(dirPath))
+-            foundPaths.emplace_back(p.path());
++            continue;
++        }
++
 +        if (!prefixes.empty() &&
 +            !std::any_of(prefixes.begin(), prefixes.end(),
 +                         [&filename](const std::string& prefix) {
 +                             return filename.starts_with(prefix);
 +                         }))
++        {
++            continue;
+         }
++
++        foundPaths.emplace_back(entry.path());
+     }
+-    return true;
++
++    return !foundPaths.empty();
+ }
+ 
+ bool findFiles(const std::vector<fs::path>& dirPaths,
+                const std::string& matchString,
+-               std::vector<fs::path>& foundPaths)
++               std::vector<fs::path>& foundPaths,
++               const std::vector<std::string>& prefixes)
+ {
+-    std::map<fs::path, fs::path> paths;
+-    std::regex search(matchString);
+-    std::smatch match;
+     for (const auto& dirPath : dirPaths)
+     {
+-        if (!fs::exists(dirPath))
++        if (fs::exists(dirPath))
          {
+-            continue;
++            findFiles(dirPath, matchString, foundPaths, prefixes);
+         }
+-
+-        for (const auto& p : fs::recursive_directory_iterator(dirPath))
+-        {
 -            std::error_code ec;
 -            if (p.is_directory(ec))
 -            {
@@ -160,32 +170,17 @@ index d88df36..83b42ee 100644
 -            {
 -                paths[p.path().filename()] = p.path();
 -            }
-+            continue;
-         }
-+
-+        foundPaths.emplace_back(entry.path());
-     }
- 
+-        }
+-    }
+-
 -    for (const auto& [key, value] : paths)
-+    return !foundPaths.empty();
-+}
-+bool findFiles(const std::vector<fs::path>& dirPaths,
-+               const std::string& matchString,
-+               std::vector<fs::path>& foundPaths,
-+               const std::vector<std::string>& prefixes)
-+{
-+    for (const auto& dirPath : dirPaths)
-     {
+-    {
 -        foundPaths.emplace_back(value);
-+        if (fs::exists(dirPath))
-+        {
-+            findFiles(dirPath, matchString, foundPaths, prefixes);
-+        }
      }
  
      return !foundPaths.empty();
 diff --git a/src/utils.hpp b/src/utils.hpp
-index 107d97e..241a940 100644
+index 368de5a..241a940 100644
 --- a/src/utils.hpp
 +++ b/src/utils.hpp
 @@ -23,10 +23,16 @@ using LastIndex = size_t;
@@ -193,11 +188,10 @@ index 107d97e..241a940 100644
  bool findFiles(const std::filesystem::path& dirPath,
                 const std::string& matchString,
 -               std::vector<std::filesystem::path>& foundPaths);
--bool findFiles(const std::vector<std::filesystem::path>&& dirPaths,
 +               std::vector<std::filesystem::path>& foundPaths,
 +               const std::vector<std::string>& prefixes = {});
 +
-+bool findFiles(const std::vector<std::filesystem::path>& dirPaths,
+ bool findFiles(const std::vector<std::filesystem::path>& dirPaths,
                 const std::string& matchString,
 -               std::vector<std::filesystem::path>& foundPaths);
 +               std::vector<std::filesystem::path>& foundPaths,

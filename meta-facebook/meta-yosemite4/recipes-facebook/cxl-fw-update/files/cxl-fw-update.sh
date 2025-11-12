@@ -163,7 +163,7 @@ update_cxl() {
 
     sleep 1
 
-    software_id=$(compute-software-id "$pldm_image")
+    software_id=$(busctl tree xyz.openbmc_project.PLDM | grep "/xyz/openbmc_project/software/[0-9]\+" | awk -F'/' '{print $5}' | head -n1)
     echo "software_id = $software_id"
     sleep 1
 

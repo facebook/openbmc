@@ -19,6 +19,7 @@
 
 # shellcheck disable=SC1091,SC2034
 . /usr/local/bin/i2c-utils.sh
+. /usr/local/bin/gpio-utils.sh
 
 MCBCPLD_SYSFS_DIR=$(i2c_device_sysfs_abspath 12-0060)
 
@@ -137,14 +138,31 @@ userver_power_off() {
 
 userver_reset() {
     #
+    # Before triggering x86 power cycling COMe + I210 + SSD
+    # it must to wait x86 platform reset signal is high (value = 1).
+    # If x86 platform reset value = 0, reset process will not be triggered.
+    #
+    timeout=10 #timeout 10 second
+    until [[ $(gpio_get_value RST_PLTRST_L 2>/dev/null) -eq 1 ]] \
+        || [ $((timeout)) -lt 0 ]; do
+        sleep 1
+        timeout=$((timeout-1))
+    done
+
+    if [[ $(gpio_get_value RST_PLTRST_L 2>/dev/null) -eq 0 ]]; then
+        echo " Still in the process of x86 power sequencing" >&2
+        exit 16  # Exit with EBUSY error code
+    fi
+
+    #
     # write 0 to trigger CPLD power cycling COMe + I210 + SSD
     # then this bit will auto set to 1 after Power cycle finish
     #
     if ! sysfs_write "$PWR_COME_CYCLE_DEV_N" 0; then
-        return 1
+        echo " Reset with IO error" >&2
+        exit 5 # Exit with EIO error code
     fi
 
-    timeout=10 #timeout 10 second
     until [[ $(head -n 1 < "$PWR_COME_CYCLE_DEV_N" 2>/dev/null) -eq 1 ]] \
         || [ $((timeout)) -lt 0 ]; do
         sleep 1
@@ -152,8 +170,8 @@ userver_reset() {
     done
 
     if [[ $(head -n 1 < "$PWR_COME_CYCLE_DEV_N" 2>/dev/null) -eq 0 ]]; then
-        echo "Reset timed out" >&2
-        return 1
+        echo " Reset timed out" >&2
+        exit 62 # Exit with ETIME error code
     fi
 
     return 0

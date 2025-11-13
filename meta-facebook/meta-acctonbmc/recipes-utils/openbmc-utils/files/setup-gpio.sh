@@ -32,3 +32,6 @@
 
 # BMC ready event to COME
 setup_gpio FM_BMC_READY_R_L                 GPIOP0 out 0
+
+# COME platform reset signal
+setup_gpio RST_PLTRST_L                     GPION2 in

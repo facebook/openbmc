@@ -1,46 +1,46 @@
---- a/flashchips.c
-+++ b/flashchips.c
-@@ -5961,6 +5961,33 @@ const struct flashchip flashchips[] = {
- 		.voltage	= {1695, 1950},
- 	},
+--- a/flashchips.c	2025-08-19 13:22:40.290563557 +0000
++++ b/flashchips.c	2025-08-19 16:16:56.516271941 +0000
+@@ -6881,6 +6881,43 @@
  
-+	{
-+		.vendor		= "GigaDevice",
+ 	{
+ 		.vendor		= "GigaDevice",
 +		.name		= "GD25LQ256D",
 +		.bustype	= BUS_SPI,
 +		.manufacture_id	= GIGADEVICE_ID,
-+		.model_id	= GIGADEVICE_GD25LQ256D,
++		.model_id	= GIGADEVICE_GD25LQ255E,
 +		.total_size	= 32768,
 +		.page_size	= 256,
 +		/* OTP: 1024B total, 256B reserved; read 0x48; write 0x42, erase 0x44 */
-+		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP,
++		.feature_bits	= FEATURE_WRSR_WREN | FEATURE_OTP | FEATURE_WRSR_EXT2,
 +		.tested		= TEST_UNTESTED,
-+		.probe		= probe_spi_rdid,
++		.probe		= PROBE_SPI_RDID,
 +		.probe_timing	= TIMING_ZERO,
 +		.block_erasers	=
 +		{
 +			{
 +				.eraseblocks = { {4 * 1024, 8192} },
-+				.block_erase = spi_block_erase_20,
++				.block_erase = SPI_BLOCK_ERASE_20,
 +			}
 +		},
-+		.printlock	= spi_prettyprint_status_register_bp4_srwd,
-+		.unlock		= spi_disable_blockprotect_bp4_srwd, /* TODO: 2nd status reg (read with 0x35) */
-+		.write		= spi_chip_write_256,
-+		.read		= spi_chip_read, /* Fast read (0x0B) and multi I/O supported */
++		.printlock	= SPI_PRETTYPRINT_STATUS_REGISTER_BP4_SRWD,
++		.unlock		= SPI_DISABLE_BLOCKPROTECT_BP4_SRWD, /* TODO: 2nd status reg (read with 0x35) */
++		.write		= SPI_CHIP_WRITE256,
++		.read		= SPI_CHIP_READ, /* Fast read (0x0B) and multi I/O supported */
 +		.voltage	= {1695, 1950},
++		.reg_bits	=
++		{
++			.srp    = {STATUS1, 7, RW},
++			.srl    = {STATUS2, 0, RW},
++			.bp     = {{STATUS1, 2, RW}, {STATUS1, 3, RW}, {STATUS1, 4, RW}},
++			.tb     = {STATUS1, 5, RW}, /* Called BP3 in datasheet, acts like TB */
++			.sec    = {STATUS1, 6, RW}, /* Called BP4 in datasheet, acts like SEC */
++			.cmp    = {STATUS2, 6, RW},
++		},
++		.decode_range	= DECODE_RANGE_SPI25,
 +	},
 +
- 	{
- 		.vendor		= "GigaDevice",
- 		.name		= "GD25LQ16",
---- a/flashchips.h
-+++ b/flashchips.h
-@@ -384,6 +384,7 @@
- #define GIGADEVICE_GD25LQ32	0x6016
- #define GIGADEVICE_GD25LQ64	0x6017	/* Same as GD25LQ64B (which is faster) */
- #define GIGADEVICE_GD25LQ128CD	0x6018
-+#define GIGADEVICE_GD25LQ256D	0x6019
- #define GIGADEVICE_GD29GL064CAB	0x7E0601
- 
- #define HYUNDAI_ID		0xAD	/* Hyundai */
++	{
++		.vendor		= "GigaDevice",
+ 		.name		= "GD25LQ255E",
+ 		.bustype	= BUS_SPI,
+ 		.manufacture_id	= GIGADEVICE_ID,

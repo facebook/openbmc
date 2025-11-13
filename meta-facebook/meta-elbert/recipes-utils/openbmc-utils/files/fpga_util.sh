@@ -238,6 +238,31 @@ do_fan() {
       --ioctl IOCBITBANG
 }
 
+spi_chip_option() {
+    # Sometimes multiple chips share one JEDEC ID. When this happens,
+    # flashrom can't distinguish between them and will not perform the
+    # requested operation unless we use --chip with the exact chip we
+    # want to probe. Check for these chips and, if detected, return
+    # the option to use with flashrom.
+    DRIVER="$1"
+    CHIPS_WITH_SHARED_JEDEC_ID=(
+        "MX25U25635F"
+        "MT25QU256"
+        "GD25LQ256D"
+    )
+
+    OUTPUT=$(flashrom -p "$DRIVER" --flash-name)
+    DETECTED_CHIPS=$(echo "${OUTPUT}" | grep "^Found.*flash chip" | \
+                     sed 's/.*"\([^"]*\)".*/\1/')
+    for CHIP in "${CHIPS_WITH_SHARED_JEDEC_ID[@]}"; do
+        if echo "$DETECTED_CHIPS" | grep -q "^${CHIP}$"; then
+            echo "--chip ${CHIP}"
+            return
+        fi
+    done
+    echo ""
+}
+
 program_spi_image() {
     ORIGINAL_IMAGE="$1" # Image path
     ACTION="${4^^}"         # Program or verify
@@ -352,13 +377,19 @@ program_spi_image() {
         exit 1
     fi
 
+    CHIP=$(spi_chip_option "$DRIVER")
+    if [ -n "$CHIP" ] ; then
+        echo "Detected chip with shared JEDEC ID, using $CHIP"
+    fi
+
     # Retry the programming if it fails up to 3 times
     n=1
     max=3
     while true; do
         # Program the 32MB pim image
+        # shellcheck disable=SC2086 # Intended splitting of CHIP
         if flashrom -p "$DRIVER" -N --layout /usr/local/bin/elbert_pim.layout \
-           --image "$PARTITION" $OPERATION "$TEMP_IMAGE" ; then
+           --image "$PARTITION" $CHIP $OPERATION "$TEMP_IMAGE" ; then
             break
         else
             if [ $n -lt $max ]; then
@@ -445,11 +476,18 @@ read_spi_partition_image() {
 
     echo "Selected partition $PARTITION to read."
 
-    flashrom -p "$DRIVER" \
+    CHIP=$(spi_chip_option "$DRIVER")
+    if [ -n "$CHIP" ] ; then
+        echo "Detected chip with shared JEDEC ID, using $CHIP"
+    fi
+
+    # shellcheck disable=SC2086 # Intended splitting of CHIP
+    flashrom -p "$DRIVER" $CHIP \
         --layout /usr/local/bin/elbert_pim.layout --image "$PARTITION" -r "$TEMP_SPI_IMAGE" \
         || return 1
     sleep 1
-    flashrom -p "$DRIVER" \
+    # shellcheck disable=SC2086 # Intended splitting of CHIP
+    flashrom -p "$DRIVER" $CHIP \
         --layout /usr/local/bin/elbert_pim.layout --image "$PARTITION" -v "$TEMP_SPI_IMAGE" \
         || return 1
     dd if="$TEMP_SPI_IMAGE" of="$DEST" bs="$BS" count="$COUNT" skip="$SKIP_MB" 2> /dev/null

@@ -1,4 +1,4 @@
-From fd529f354e28f19389c3b37fd9f79419fe2ed424 Mon Sep 17 00:00:00 2001
+From 82cb8ff992829ef7da2a5980302fd4ddbf2c00f2 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Wed, 13 Aug 2025 10:39:50 +0000
 Subject: [PATCH] dbuspassive: Register signal before property fetch
@@ -58,10 +58,10 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  3 files changed, 44 insertions(+), 29 deletions(-)
 
 diff --git a/dbus/dbuspassive.cpp b/dbus/dbuspassive.cpp
-index 3cbc677..5a716b7 100644
+index 3e56b52..9492bc1 100644
 --- a/dbus/dbuspassive.cpp
 +++ b/dbus/dbuspassive.cpp
-@@ -91,9 +91,10 @@ std::unique_ptr<ReadInterface> DbusPassive::createDbusPassive(
+@@ -94,9 +94,10 @@ std::unique_ptr<ReadInterface> DbusPassive::createDbusPassive(
          // Only CASE1 may send the zone to failsafe mode if the sensor is not
          // in MissingIsAcceptable. CASE2 results in continuous restart until
          // recovery.
@@ -74,7 +74,7 @@ index 3cbc677..5a716b7 100644
          settings.value = std::numeric_limits<double>::quiet_NaN();
          settings.unit = getSensorUnit(type);
          settings.available = false;
-@@ -103,18 +104,20 @@ std::unique_ptr<ReadInterface> DbusPassive::createDbusPassive(
+@@ -106,18 +107,20 @@ std::unique_ptr<ReadInterface> DbusPassive::createDbusPassive(
              settings.min = 0;
              settings.max = 0;
          }
@@ -100,7 +100,7 @@ index 3cbc677..5a716b7 100644
      }
      catch (const std::exception& e)
      {
-@@ -129,35 +132,24 @@ std::unique_ptr<ReadInterface> DbusPassive::createDbusPassive(
+@@ -132,35 +135,24 @@ std::unique_ptr<ReadInterface> DbusPassive::createDbusPassive(
      }
  
      settings.unavailableAsFailed = info->unavailableAsFailed;
@@ -141,7 +141,7 @@ index 3cbc677..5a716b7 100644
  }
  
  ReadReturn DbusPassive::read(void)
-@@ -314,6 +306,29 @@ void DbusPassive::setFunctional(bool value)
+@@ -317,6 +309,29 @@ void DbusPassive::setFunctional(bool value)
  void DbusPassive::setAvailable(bool value)
  {
      _available = value;
@@ -221,5 +221,5 @@ index 0bd6626..15813fe 100644
  }
  
 -- 
-2.43.0
+2.47.3
 

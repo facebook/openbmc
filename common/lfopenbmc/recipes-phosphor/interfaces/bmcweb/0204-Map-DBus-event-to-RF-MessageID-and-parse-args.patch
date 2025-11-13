@@ -1,4 +1,4 @@
-From 0686cec6f2edfd95c6c0c2461b85c5c5f30a392f Mon Sep 17 00:00:00 2001
+From c2e92b00672d5881e3eba826ff81bda8eaf58808 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 15:59:10 +0000
 Subject: [PATCH 204/205] Map DBus event to RF MessageID and parse args
@@ -108,7 +108,7 @@ Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
  create mode 100644 test/redfish-core/lib/log_services_test.cpp
 
 diff --git a/config/meson.build b/config/meson.build
-index 61478e9f..b7dc0f42 100644
+index 7e4b6f8f..5e4a85de 100644
 --- a/config/meson.build
 +++ b/config/meson.build
 @@ -26,6 +26,7 @@ feature_options = [
@@ -154,10 +154,10 @@ index 79e80c13..36aa17d7 100644
      'redfish-core/src/utils/json_utils.cpp',
      'redfish-core/src/utils/time_utils.cpp',
 diff --git a/meson.options b/meson.options
-index bf44d113..58099a87 100644
+index cd89d62f..83e3fd8c 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -335,6 +335,21 @@ option(
+@@ -324,6 +324,21 @@ option(
                      This option will be removed June 2026.''',
  )
  
@@ -713,10 +713,10 @@ index 00000000..5f036526
 +} // namespace dbus_registries_map
 +} // namespace redfish
 diff --git a/test/meson.build b/test/meson.build
-index 344a26fc..16c06270 100644
+index 81cff84f..cd1fad11 100644
 --- a/test/meson.build
 +++ b/test/meson.build
-@@ -46,6 +46,7 @@ srcfiles_unittest = files(
+@@ -47,6 +47,7 @@ srcfiles_unittest = files(
      'redfish-core/lib/chassis_test.cpp',
      'redfish-core/lib/ethernet_test.cpp',
      'redfish-core/lib/log_services_dump_test.cpp',

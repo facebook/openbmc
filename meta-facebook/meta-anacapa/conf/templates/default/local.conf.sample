@@ -1,0 +1,5 @@
+#
+# Local configuration file for building the OpenBMC image.
+#
+MACHINE ??= "anacapa"
+DISTRO ?= "openbmc-fb-lf"

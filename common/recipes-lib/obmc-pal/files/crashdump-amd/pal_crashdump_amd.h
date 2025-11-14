@@ -152,6 +152,18 @@ typedef struct {
   uint32_t mca_deaddr_hf;
   uint32_t mca_misc1_lf;
   uint32_t mca_misc1_hf;
+  uint32_t mca_synd1msr_lf;
+  uint32_t mca_synd1msr_hf;
+  uint32_t mca_synd2msr_lf;
+  uint32_t mca_synd2msr_hf;
+  uint32_t sync_flood_lf;
+  uint32_t sync_flood_hf;
+  uint32_t mca_transaddr_lf;
+  uint32_t mca_transaddr_hf;
+  uint32_t mca_transsynd_lf;
+  uint32_t mca_transsynd_hf;
+  uint32_t mca_transstat_lf;
+  uint32_t mca_transstat_hf;
 } __attribute__((packed)) amdcrd_mca_bank_t;
 
 //==============================================================================
@@ -195,7 +207,23 @@ typedef struct {
   uint32_t rspq_wdt_io_trans_log_low[CPU_WDT_CCM_NUM];
   uint32_t hw_assert_msk_hi[CPU_WDT_CCM_NUM];
   uint32_t hw_assert_msk_low[CPU_WDT_CCM_NUM];
-} __attribute__((packed)) amdcrd_cpu_wdt_bank_t;
+} __attribute__((packed)) amdcrd_milan_cpu_wdt_bank_t;
+
+typedef struct {
+  uint32_t hw_assert_sts_hi[CPU_WDT_CCM_NUM];
+  uint32_t hw_assert_sts_low[CPU_WDT_CCM_NUM];
+  uint32_t orig_wdt_addr_log_hi[CPU_WDT_CCM_NUM];
+  uint32_t orig_wdt_addr_log_low[CPU_WDT_CCM_NUM];
+  uint32_t hw_assert_msk_hi[CPU_WDT_CCM_NUM];
+  uint32_t hw_assert_msk_low[CPU_WDT_CCM_NUM];
+  uint32_t orig_wdt_addr_log_sts[CPU_WDT_CCM_NUM];
+} __attribute__((packed)) amdcrd_genoa_cpu_wdt_bank_t;
+
+typedef struct {
+  uint32_t orig_wdt_addr_log_hi[CPU_WDT_CCM_NUM];
+  uint32_t orig_wdt_addr_log_low[CPU_WDT_CCM_NUM];
+  uint32_t orig_wdt_addr_log_sts[CPU_WDT_CCM_NUM];
+} __attribute__((packed)) amdcrd_turin_cpu_wdt_bank_t;
 
 //==============================================================================
 // Type 0x04: SMU/PSP/PTDMA Watchdog Timers address bank

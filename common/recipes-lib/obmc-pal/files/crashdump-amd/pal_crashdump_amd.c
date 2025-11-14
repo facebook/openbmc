@@ -45,7 +45,10 @@ static uint8_t amdcrd_mac_bank_handler (FILE* fp, const uint8_t idx, const amdcr
 static uint8_t amdcrd_virtual_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_virtual_bank_t* pbank);
 static uint8_t amdcrd_virtual_bank_v2_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_virtual_bank_v2_t* pbank);
 static uint8_t amdcrd_header_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_header_bank_t* pbank);
-static uint8_t amdcrd_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_cpu_wdt_bank_t* pbank);
+static uint8_t amdcrd_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const void* pbank);
+static uint8_t amdcrd_milan_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_milan_cpu_wdt_bank_t* pbank);
+static uint8_t amdcrd_genoa_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_genoa_cpu_wdt_bank_t* pbank);
+static uint8_t amdcrd_turin_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_turin_cpu_wdt_bank_t* pbank);
 static uint8_t amdcrd_wdt_addr_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_wdt_addr_bank_t* pbank);
 static uint8_t amdcrd_wdt_data_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_wdt_data_bank_t* pbank);
 static uint8_t amdcrd_tcdx_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_tcdx_bank_t* pbank);
@@ -214,7 +217,7 @@ pal_amdcrd_save_mca_to_file(uint8_t slot, uint8_t* req_data, uint8_t req_len, ui
       break;
 
     case TYPE_CPU_WDT_BANK:
-      completion_code = amdcrd_cpu_wdt_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_cpu_wdt_bank_t*)data_ptr);
+      completion_code = amdcrd_cpu_wdt_bank_handler(fp, slot, &phdr->bank_hdr, (const void*) data_ptr);
       break;
 
     case TYPE_WDT_ADDR_BANK:
@@ -290,6 +293,8 @@ amdcrd_mac_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* p
   fprintf(fp, " %s : 0x%02X, %s : 0x%02X \n",
       "Bank ID", phdr->bank_id, "Core ID", phdr->core_id);
   fprintf(fp, " %-15s : 0x%08X_%08X \n",
+      "SYNCFLOOD_STATUS", pbank->sync_flood_hf, pbank->sync_flood_lf);
+  fprintf(fp, " %-15s : 0x%08X_%08X \n",
       "MCA_CTRL", pbank->mca_ctrl_hf, pbank->mca_ctrl_lf);
   fprintf(fp, " %-15s : 0x%08X_%08X \n",
       "MCA_STATUS", pbank->mca_status_hf, pbank->mca_status_lf);
@@ -307,12 +312,20 @@ amdcrd_mac_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* p
       "MCA_SYND", pbank->mca_synd_hf, pbank->mca_synd_lf);
   fprintf(fp, " %-15s : 0x%08X_%08X \n",
       "MCA_DESTAT", pbank->mca_destat_hf, pbank->mca_destat_lf);
-  fprintf(
-      fp, " %-15s : 0x%08X_%08X \n",
+  fprintf(fp, " %-15s : 0x%08X_%08X \n",
       "MCA_DEADDR", pbank->mca_deaddr_hf, pbank->mca_deaddr_lf);
-  fprintf(
-      fp, " %-15s : 0x%08X_%08X \n",
+  fprintf(fp, " %-15s : 0x%08X_%08X \n",
       "MCA_MISC1", pbank->mca_misc1_hf, pbank->mca_misc1_lf);
+  fprintf(fp, " %-15s : 0x%08X_%08X \n",
+      "MCA_SYND1MSR", pbank->mca_synd1msr_hf, pbank->mca_synd1msr_lf);
+  fprintf(fp, " %-15s : 0x%08X_%08X \n",
+      "MCA_SYND2MSR", pbank->mca_synd2msr_hf, pbank->mca_synd2msr_lf);
+  fprintf(fp, " %-15s : 0x%08X_%08X \n",
+      "MCA_TRANSADDR", pbank->mca_transaddr_hf, pbank->mca_transaddr_lf);
+  fprintf(fp, " %-15s : 0x%08X_%08X \n",
+      "MCA_TRANSSYND", pbank->mca_transsynd_hf, pbank->mca_transsynd_lf);
+  fprintf(fp, " %-15s : 0x%08X_%08X \n",
+      "MCA_TRANSSTAT", pbank->mca_transstat_hf, pbank->mca_transstat_lf);
   fprintf(fp, "\n");
 
   if (g_recv_list[idx].count < MAX_VAILD_LIST_LENGTH) {
@@ -433,7 +446,21 @@ out:
 }
 
 static uint8_t
-amdcrd_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_cpu_wdt_bank_t* pbank) {
+amdcrd_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const void* pbank) {
+  switch (phdr->bank_fmt_ver) {
+    case 2:
+      return amdcrd_milan_cpu_wdt_bank_handler (fp, idx, phdr, (const amdcrd_milan_cpu_wdt_bank_t*)pbank);
+    case 3:
+      return amdcrd_genoa_cpu_wdt_bank_handler (fp, idx, phdr, (const amdcrd_genoa_cpu_wdt_bank_t*)pbank);
+    case 4:
+      return amdcrd_turin_cpu_wdt_bank_handler (fp, idx, phdr, (const amdcrd_turin_cpu_wdt_bank_t*)pbank);
+    default:
+      return CC_INVALID_PARAM;
+  }
+}
+
+static uint8_t
+amdcrd_milan_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_milan_cpu_wdt_bank_t* pbank) {
   uint8_t i;
   uint8_t completion_code = CC_SUCCESS;
 
@@ -448,10 +475,56 @@ amdcrd_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_
     fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertStsLow", pbank->hw_assert_sts_low[i]);
     fprintf(fp, "    %-20s : 0x%08X \n", "RSPQWDTIoTransLogHi", pbank->rspq_wdt_io_trans_log_hi[i]);
     fprintf(fp, "    %-20s : 0x%08X \n", "RSPQWDTIoTransLogLow", pbank->rspq_wdt_io_trans_log_low[i]);
-    if (phdr->bank_fmt_ver == 2) {
-      fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskHi", pbank->hw_assert_msk_hi[i]);
-      fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskLow", pbank->hw_assert_sts_low[i]);
-    }
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskHi", pbank->hw_assert_msk_hi[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskLow", pbank->hw_assert_msk_low[i]);
+  }
+  fprintf(fp, "\n");
+
+out:
+  return completion_code;
+}
+
+static uint8_t
+amdcrd_genoa_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_genoa_cpu_wdt_bank_t* pbank) {
+  uint8_t i;
+  uint8_t completion_code = CC_SUCCESS;
+
+  if (amdcrd_set_state(idx, AMDCRD_CTRL_BMC_WAIT_DATA) != AMDCRD_SET_STATE_SUCCESS) {
+    completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+    goto out;
+  }
+
+  for (i = 0; i < CPU_WDT_CCM_NUM; i++) {
+    fprintf(fp, "  [CCM%u]\n", i);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertStsHi", pbank->hw_assert_sts_hi[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertStsLow", pbank->hw_assert_sts_low[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "OrigWdtAddrLogHi", pbank->orig_wdt_addr_log_hi[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "OrigWdtAddrLogLo", pbank->orig_wdt_addr_log_low[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskHi", pbank->hw_assert_msk_hi[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "HwAssertMskLow", pbank->hw_assert_msk_low[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "OrigWdtAddrLogStat", pbank->orig_wdt_addr_log_sts[i]);
+  }
+  fprintf(fp, "\n");
+
+out:
+  return completion_code;
+}
+
+static uint8_t
+amdcrd_turin_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_turin_cpu_wdt_bank_t* pbank) {
+  uint8_t i;
+  uint8_t completion_code = CC_SUCCESS;
+
+  if (amdcrd_set_state(idx, AMDCRD_CTRL_BMC_WAIT_DATA) != AMDCRD_SET_STATE_SUCCESS) {
+    completion_code = CC_NOT_SUPP_IN_CURR_STATE;
+    goto out;
+  }
+
+  for (i = 0; i < CPU_WDT_CCM_NUM; i++) {
+    fprintf(fp, "  [CCM%u]\n", i);
+    fprintf(fp, "    %-20s : 0x%08X \n", "OrigWdtAddrLogHi", pbank->orig_wdt_addr_log_hi[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "OrigWdtAddrLogLo", pbank->orig_wdt_addr_log_low[i]);
+    fprintf(fp, "    %-20s : 0x%08X \n", "OrigWdtAddrLogStat", pbank->orig_wdt_addr_log_sts[i]);
   }
   fprintf(fp, "\n");
 
@@ -682,7 +755,7 @@ amdcrd_pcie_aer_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr
     goto out;
   }
 
-  fprintf(fp, "  [Bus%u Dev%u Fun%u]\n", pbank->bus, pbank->dev,pbank->fun);
+  fprintf(fp, "  [Bus%x Dev%u Fun%u]\n", pbank->bus, pbank->dev, pbank->fun);
   fprintf(fp, "    Command                      : 0x%04X \n", pbank->cmd);
   fprintf(fp, "    Status                       : 0x%04X \n", pbank->sts);
   fprintf(fp, "    Slot                         : 0x%04X \n", pbank->slot);

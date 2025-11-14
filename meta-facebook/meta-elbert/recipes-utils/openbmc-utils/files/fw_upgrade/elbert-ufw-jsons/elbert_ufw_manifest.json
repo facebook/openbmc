@@ -24,7 +24,7 @@
         "priority" : 5
     },
     "th4_qspi" : {
-        "get_version" : "th4_qspi_ver.sh | grep FIRMWARE_VERSION | cut -f 2 -d ' '",
+        "get_version" : "th4_qspi_ver.sh | grep FIRMWARE_STRING_VERSION | cut -f 2 -d ' '",
         "upgrade_cmd" : "fpga_util.sh th4_qspi program {filename}",
         "post_action" : "/usr/local/bin/wedge_power.sh reset",
         "priority" : 5

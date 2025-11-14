@@ -1,4 +1,4 @@
-From 183262417ebd4660036e5e08549d8dd5dda38688 Mon Sep 17 00:00:00 2001
+From b2a2277fc87b861ae68c52f2d9b790dc38bd1ac5 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 16:48:20 +0800
 Subject: [PATCH 04/15] platform-mc: Add MCTP recovery option
@@ -17,17 +17,17 @@ Upstream-Status: Pending
  4 files changed, 15 insertions(+)
 
 diff --git a/common/utils.cpp b/common/utils.cpp
-index 374037e..b34816c 100644
+index 374037e..e05c92f 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
-@@ -573,6 +573,7 @@ int emitStateSensorEventSignal(uint8_t tid, uint16_t sensorId,
+@@ -572,6 +572,7 @@ int emitStateSensorEventSignal(uint8_t tid, uint16_t sensorId,
+ 
  void recoverMctpEndpoint(const std::string& endpointObjPath)
  {
 +#ifdef MCTP_RECOVERY
      auto& bus = DBusHandler::getBus();
      try
      {
-         std::string service = DBusHandler().getService(endpointObjPath.c_str(),
 @@ -589,6 +590,9 @@ void recoverMctpEndpoint(const std::string& endpointObjPath)
              "failed to make a D-Bus call to recover MCTP Endpoint, ERROR {ERR_EXCEP}",
              "ERR_EXCEP", e);

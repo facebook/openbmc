@@ -1,7 +1,7 @@
-From 73341fb43fc5668efb10f2595c3d9eb38e3c6340 Mon Sep 17 00:00:00 2001
+From 9beac7125bc75ed7a0fe65b31cb8818f96ac0551 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
-Subject: [PATCH 15/20] platform-mc: Add option for discovering FRU data
+Subject: [PATCH 05/15] platform-mc: Add option for discovering FRU data
 
 Allow enabling or disabling the discovery of FRU data from terminus.
 Supports retrieving FRU data during the terminus discovery phase and
@@ -14,12 +14,12 @@ Upstream-Status: Pending
  meson.build                      |  4 ++++
  meson.options                    |  8 ++++++++
  platform-mc/platform_manager.cpp | 31 +++++++++++++++++++++++++++++++
- platform-mc/terminus.cpp         | 15 +++++++++++++--
- platform-mc/terminus.hpp         | 11 +++++++++++
- 5 files changed, 67 insertions(+), 2 deletions(-)
+ platform-mc/terminus.cpp         | 14 ++++++++++++--
+ platform-mc/terminus.hpp         |  9 +++++++++
+ 5 files changed, 64 insertions(+), 2 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index c75d9fe..7613501 100644
+index b23e1d8..4047bce 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -142,6 +142,10 @@ conf_data.set(
@@ -34,14 +34,13 @@ index c75d9fe..7613501 100644
  # Firmware update inotify option
  if get_option('fw-update-pkg-inotify').allowed()
 diff --git a/meson.options b/meson.options
-index b9e7155..49e51cb 100644
+index 4465948..fc80c24 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -247,3 +247,11 @@ option(
-     description: 'Recovery in request timeout. Calls `.Recover` method on timeout to handle communication recovery',
+@@ -240,6 +240,14 @@ option(
      value: 'enabled',
  )
-+
+ 
 +## Discovery FRU Data from Terminus Option
 +option(
 +    'discovery-fru-data-from-terminus',
@@ -49,6 +48,10 @@ index b9e7155..49e51cb 100644
 +    description: 'Enable discovery of FRU data from terminus during the terminus discovery phase.',
 +    value: 'enabled',
 +)
++
+ # Firmware Update configuration parameters
+ option(
+     'fw-update-pkg-inotify',
 diff --git a/platform-mc/platform_manager.cpp b/platform-mc/platform_manager.cpp
 index ae3a421..caf1f61 100644
 --- a/platform-mc/platform_manager.cpp
@@ -138,7 +141,7 @@ index ae3a421..caf1f61 100644
  
  } // namespace platform_mc
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index cc86184..3f96b15 100644
+index cc86184..965f557 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -103,9 +103,14 @@ bool Terminus::createInventoryPath(std::string tName)
@@ -156,19 +159,18 @@ index cc86184..3f96b15 100644
          return true;
      }
      catch (const sdbusplus::exception_t& e)
-@@ -603,8 +608,9 @@ std::shared_ptr<NumericSensor> Terminus::getSensorObject(SensorID id)
+@@ -603,8 +608,8 @@ std::shared_ptr<NumericSensor> Terminus::getSensorObject(SensorID id)
   *  @param[in] p - pointer to each record of FRU record table
   *  @param[in] tableSize - FRU table size
   */
 -static bool isTableEnd(const uint8_t* table, const uint8_t* p,
 -                       const size_t tableSize)
-+
 +[[maybe_unused]] static bool isTableEnd(const uint8_t* table, const uint8_t* p,
 +                                        const size_t tableSize)
  {
      auto offset = p - table;
      return (tableSize - offset) < sizeof(struct pldm_fru_record_data_format);
-@@ -613,6 +619,7 @@ static bool isTableEnd(const uint8_t* table, const uint8_t* p,
+@@ -613,6 +618,7 @@ static bool isTableEnd(const uint8_t* table, const uint8_t* p,
  void Terminus::updateInventoryWithFru(const uint8_t* fruData,
                                        const size_t fruLen)
  {
@@ -176,7 +178,7 @@ index cc86184..3f96b15 100644
      auto tmp = getTerminusName();
      if (!tmp || tmp.value().empty())
      {
-@@ -724,6 +731,10 @@ void Terminus::updateInventoryWithFru(const uint8_t* fruData,
+@@ -724,6 +730,10 @@ void Terminus::updateInventoryWithFru(const uint8_t* fruData,
              ptr += sizeof(pldm_fru_record_tlv) - 1 + tlv->length;
          }
      }
@@ -188,20 +190,10 @@ index cc86184..3f96b15 100644
  
  std::vector<std::string> Terminus::getSensorNames(const SensorID& sensorId)
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index 147e6e7..6085f39 100644
+index 147e6e7..87ad0be 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
-@@ -11,6 +11,9 @@
- 
- #include <sdbusplus/server/object.hpp>
- #include <sdeventplus/event.hpp>
-+#ifndef DISCOVERY_FRU_DATA
-+#include <xyz/openbmc_project/Inventory/Item/Board/server.hpp>
-+#endif
- 
- #include <algorithm>
- #include <bitset>
-@@ -293,8 +296,16 @@ class Terminus
+@@ -293,8 +293,17 @@ class Terminus
      /** @brief Terminus name */
      EntityName terminusName{};
      /* @brief The pointer of inventory D-Bus interface for the terminus */
@@ -215,9 +207,10 @@ index 147e6e7..6085f39 100644
 +    /* @brief The pointer of iventory D-Bus interface for the terminus */
 +    std::unique_ptr<InventoryItemBoardIntf> inventoryItemBoardInft = nullptr;
 +#endif
++
  
      /* @brief Inventory D-Bus object path of the terminus */
      std::string inventoryPath;
 -- 
-2.43.0
+2.47.3
 

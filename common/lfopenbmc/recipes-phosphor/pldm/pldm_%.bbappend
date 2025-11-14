@@ -4,26 +4,21 @@ FILESEXTRAPATHS:prepend:openbmc-fb-lf := "${THISDIR}/files:"
 
 SRC_URI:append:openbmc-fb-lf = " \
     file://host_eid \
-    file://0001-requester-support-multi-host-MCTP-devices-hot-plug.patch \
-    file://0002-pldm-Revise-image-path-for-update.patch \
-    file://0003-Support-OEM-META-write-file-request-for-post-code-hi.patch \
-    file://0004-platform-mc-Add-OEM-Meta-event-handler.patch \
-    file://0005-Support-OEM-META-command-for-host-BIOS-version.patch \
-    file://0006-Support-OEM-META-command-for-Event-Logs-from-BIC.patch \
-    file://0007-Support-OEM-META-command-for-power-control.patch \
-    file://0008-oem-meta-Add-APML-alert-handler.patch \
-    file://0009-Support-OEM-META-command-for-NIC-power-cycle.patch \
-    file://0010-Support-OEM-META-command-for-getting-Http-boot-certi.patch \
-    file://0011-platform-mc-Handle-get-PLDM-Commands-failure.patch \
-    file://0012-requester-Validate-MCTP-EID-before-removal.patch \
-    file://0013-Support-OEM-META-command-for-crashdump-from-BIC.patch \
-    file://0014-platform-mc-Add-MCTP-recovery-option.patch \
-    file://0015-platform-mc-Add-option-for-discovering-FRU-data.patch \
-    file://0016-pldm-Use-std-expected-for-instance-ID-allocation.patch \
-    file://0017-common-Add-blocking-instance-ID-allocation.patch \
-    file://0018-requester-Always-re-initialize-MCTP-info.patch \
-    file://0019-platform-mc-Add-retries-for-terminus-discovery.patch \
-    file://0020-platform-mc-Make-fallback-terminus-name-optional.patch \
+    file://0001-pldm-Revise-image-path-for-update.patch \
+    file://0002-platform-mc-Handle-get-PLDM-Commands-failure.patch \
+    file://0003-requester-Validate-MCTP-EID-before-removal.patch \
+    file://0004-platform-mc-Add-MCTP-recovery-option.patch \
+    file://0005-platform-mc-Add-option-for-discovering-FRU-data.patch \
+    file://0006-pldm-Use-std-expected-for-instance-ID-allocation.patch \
+    file://0007-common-Add-blocking-instance-ID-allocation.patch \
+    file://0008-requester-Always-re-initialize-MCTP-info.patch \
+    file://0009-platform-mc-Add-retries-for-terminus-discovery.patch \
+    file://0010-platform-mc-Make-fallback-terminus-name-optional.patch \
+    file://0011-oem-meta-Add-file-IO-responder-for-event-logs-from-B.patch \
+    file://0012-oem-meta-Add-file-IO-responder-for-crashdump-from-BI.patch \
+    file://0013-oem-meta-Add-APML-alert-handler.patch \
+    file://0014-oem-meta-Add-call-to-the-fw-versions-sd-retimer-serv.patch \
+    file://0015-oem-meta-Add-MCTP-configuration-discovery.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

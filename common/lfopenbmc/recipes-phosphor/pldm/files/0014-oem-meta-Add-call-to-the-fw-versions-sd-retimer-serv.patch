@@ -1,0 +1,67 @@
+From a3374c2ecf36ff6844821790d2a2c55acb14b5c7 Mon Sep 17 00:00:00 2001
+From: Sora Su <baxiche@gmail.com>
+Date: Thu, 23 Oct 2025 14:34:12 +0800
+Subject: [PATCH 14/15] oem-meta: Add call to the fw-versions-sd-retimer
+ service
+
+The fw-versions-sd-retimer service is triggered by the POST_COMPLETED
+and POST_ENDED events. This is a downstream-only implementation, as
+the service is not supported upstream.
+
+Change-Id: Iffcf7ac3473689785fcd44b38081f52533dac552
+Signed-off-by: Sora Su <baxiche@gmail.com>
+---
+ .../file_io_type_event_log.cpp                | 23 +++++++++++++++++--
+ 1 file changed, 21 insertions(+), 2 deletions(-)
+
+diff --git a/oem/meta/libpldmresponder/file_io_type_event_log.cpp b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
+index 750765a..748b46e 100644
+--- a/oem/meta/libpldmresponder/file_io_type_event_log.cpp
++++ b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
+@@ -428,6 +428,27 @@ const std::string EventLogHandler::handleEventType(
+                     dimm_id[eventData[2]] + pmic_event_type[eventData[3]];
+             break;
+         }
++        case EventType::POST_COMPLETED:
++        case EventType::POST_ENDED:
++        {
++            static constexpr auto SYSTEMD_SERVICE = "org.freedesktop.systemd1";
++            static constexpr auto SYSTEMD_ROOT = "/org/freedesktop/systemd1";
++            static constexpr auto SYSTEMD_INTERFACE =
++                "org.freedesktop.systemd1.Manager";
++
++            /* The retimer is not available temporary after fw update.
++               We should update fw version on d-bus when post-complete. */
++            auto bus = sdbusplus::bus::new_default();
++            auto method = bus.new_method_call(SYSTEMD_SERVICE, SYSTEMD_ROOT,
++                                              SYSTEMD_INTERFACE, "StartUnit");
++            auto service = std::string("fw-versions-sd-retimer@") + slotNum +
++                           ".service";
++            method.append(service, "replace");
++            bus.call_noreply(method);
++
++            event = eventList[static_cast<int>(eventType)];
++            break;
++        }
+         case EventType::CPU_THERMAL_TRIP:
+         case EventType::HSC_OCP:
+         case EventType::P12V_STBY_UV:
+@@ -447,7 +468,6 @@ const std::string EventLogHandler::handleEventType(
+         case EventType::HSC_FAULT:
+         case EventType::SYS_THROTTLE:
+         case EventType::SYSTEM_MANAGEMENT_ERROR:
+-        case EventType::POST_COMPLETED:
+         case EventType::FAN_ERROR:
+         case EventType::HDT_PRSNT_ASSERTION:
+         case EventType::PLTRST_ASSERTION:
+@@ -455,7 +475,6 @@ const std::string EventLogHandler::handleEventType(
+         case EventType::CXL1_HB:
+         case EventType::CXL2_HB:
+         case EventType::POST_STARTED:
+-        case EventType::POST_ENDED:
+         case EventType::
+             PROCHOT_IS_TRIGGERED_DUE_TO_SD_SENSOR_READING_EXCEED_UCR:
+         case EventType::FRB2_WDT_HARD_RST:
+-- 
+2.47.3
+

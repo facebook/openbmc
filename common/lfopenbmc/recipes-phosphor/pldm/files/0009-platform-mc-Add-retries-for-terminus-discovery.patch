@@ -1,7 +1,7 @@
-From efc9daef2d01c3a281f7b782fdcbbfa8194fb127 Mon Sep 17 00:00:00 2001
+From 0dab26c3e1a49f2b037ddfd2fde72399479f2fa5 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 23 Sep 2025 09:47:45 +0000
-Subject: [PATCH 19/20] platform-mc: Add retries for terminus discovery
+Subject: [PATCH 09/15] platform-mc: Add retries for terminus discovery
 
 Adds a configurable, per-endpoint retry mechanism to terminus discovery.
 Endpoints are scheduled for retry when:
@@ -33,7 +33,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  4 files changed, 93 insertions(+), 6 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index 7613501..224b86d 100644
+index 4047bce..330a229 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -146,6 +146,10 @@ conf_data.set(
@@ -48,14 +48,13 @@ index 7613501..224b86d 100644
  # Firmware update inotify option
  if get_option('fw-update-pkg-inotify').allowed()
 diff --git a/meson.options b/meson.options
-index 49e51cb..e9df133 100644
+index fc80c24..3c2e40f 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -255,3 +255,13 @@ option(
-     description: 'Enable discovery of FRU data from terminus during the terminus discovery phase.',
+@@ -248,6 +248,16 @@ option(
      value: 'enabled',
  )
-+
+ 
 +# Terminus discovery options
 +option(
 +    'terminus-discovery-retry-count',
@@ -65,8 +64,12 @@ index 49e51cb..e9df133 100644
 +    value: 0,
 +    description: 'Per-endpoint retry attempts for terminus discovery on failures. Initial attempt not counted; 0 disables retries.',
 +)
++
+ # Firmware Update configuration parameters
+ option(
+     'fw-update-pkg-inotify',
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index 48b32e7..b18031c 100644
+index 8732826..175b43a 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
 @@ -186,16 +186,18 @@ TerminiMapper::iterator TerminusManager::findTerminusPtr(
@@ -227,5 +230,5 @@ index 8382201..97a2a9c 100644
  } // namespace platform_mc
  } // namespace pldm
 -- 
-2.43.0
+2.47.3
 

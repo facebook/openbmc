@@ -58,7 +58,21 @@ enable_err_inj() {
   done
 }
 
+disable_cper_compression() {
+  # Check if enabled.
+  response=$(curl -k http://192.168.31.1/redfish/v1/Chassis/UBB | grep -i "ArchiveCPEROnThreshold")
+  if echo "$response" | grep -i "Enabled"; then
+    logger -p user.info "UBB Disabling ArchiveCPEROnThreshold"
+    curl -k http://192.168.31.1/redfish/v1/Chassis/UBB -X PATCH -d '{"Oem" : { "ArchiveCPEROnThreshold": "Disabled"}}'
+    curl -k http://192.168.31.1/redfish/v1/Systems/UBB/LogServices/Dump/Actions/Oem/Dump.Configuration -X PATCH -d '{"SplitCPER": true}'
+  else
+    logger -p user.info "UBB started with ArchiveCPEROnThreshold disabled"
+  fi
+}
+
 enable_err_inj
+
+disable_cper_compression
 
 # Since ACA feature is crucial for debugging GPU issue
 # Keep enabling it in the background until successful

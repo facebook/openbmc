@@ -57,7 +57,7 @@
         "manufacturers": {
             "delta": {
                 "registerValues": ["", "RDF040DSS5193E0"],
-                "pumpDutyPercentage": 50,
+                "pumpDutyPercentage": 70,
                 "targetCoolantOutletTempTimesTen": 350
             },
             "quanta": {

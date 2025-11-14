@@ -1,0 +1,3485 @@
+{
+    "name": "ORV3_RPU2",
+    "address_range": [
+        [
+            13,
+            13
+        ]
+    ],
+    "probe_register": 208,
+    "baudrate": 19200,
+    "parity": "NONE",
+    "registers": [
+        {
+            "begin": 37685,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Self_Testing_Result_All"
+                ],
+                [
+                    1,
+                    "Self_Testing_Result_None"
+                ],
+                [
+                    2,
+                    "Self_Testing_Result_AC_power"
+                ],
+                [
+                    3,
+                    "Self_Testing_Result_DC_power"
+                ],
+                [
+                    4,
+                    "Self_Testing_Result_Pressure"
+                ],
+                [
+                    5,
+                    "Self_Testing_Result_Temperature"
+                ],
+                [
+                    6,
+                    "Self_Testing_Result_PH"
+                ],
+                [
+                    7,
+                    "Self_Testing_Result_Conductivity"
+                ],
+                [
+                    9,
+                    "Self_Testing_Result_Leakage"
+                ],
+                [
+                    10,
+                    "Self_Testing_Result_Proportional_Valve"
+                ],
+                [
+                    11,
+                    "Self_Testing_Result_Fan"
+                ],
+                [
+                    12,
+                    "Self_Testing_Result_Pump_Flow"
+                ]
+            ],
+            "name": "Self_Testing_Result"
+        },
+        {
+            "begin": 37970,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Self_Testing_Functions_Voltage_AC_Power"
+                ],
+                [
+                    1,
+                    "Self_Testing_Functions_Voltage_DC_Power"
+                ],
+                [
+                    4,
+                    "Self_Testing_Functions_Sensors_Pressure"
+                ],
+                [
+                    5,
+                    "Self_Testing_Functions_Sensors_Temperature"
+                ],
+                [
+                    6,
+                    "Self_Testing_Functions_Sensors_PH"
+                ],
+                [
+                    7,
+                    "Self_Testing_Functions_Sensors_Conductivity"
+                ],
+                [
+                    9,
+                    "Self_Testing_Functions_Sensors_Leakage"
+                ]
+            ],
+            "name": "Self_Testing_Functions1"
+        },
+        {
+            "begin": 37971,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Self_Testing_Functions_Proportional_Valve"
+                ],
+                [
+                    4,
+                    "Self_Testing_Functions_Fan"
+                ],
+                [
+                    8,
+                    "Self_Testing_Functions_Pump_Flow_Meter"
+                ]
+            ],
+            "name": "Self_Testing_Functions2"
+        },
+        {
+            "begin": 37888,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "HMI_Remote_mode"
+        },
+        {
+            "begin": 37890,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Limit_Reset"
+        },
+        {
+            "begin": 37892,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "UPS_Pump_Rack_Power_Cycle_1"
+        },
+        {
+            "begin": 37893,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "UPS_Fan_Rack_1_Power_Cycle_2"
+        },
+        {
+            "begin": 37894,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "UPS_Fan_Rack_2_Power_Cycle_3"
+        },
+        {
+            "begin": 37895,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "UPS_Turn_Off_Time_Of_Power_Cycle"
+        },
+        {
+            "begin": 37898,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "UPS_Restart_Cancel"
+        },
+        {
+            "begin": 37899,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Clear_Leak_History"
+        },
+        {
+            "begin": 37899,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Clear_Error_Log"
+        },
+        {
+            "begin": 37904,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Manual_On"
+                ],
+                [
+                    1,
+                    "Auto1_On"
+                ],
+                [
+                    2,
+                    "Auto2_On"
+                ],
+                [
+                    3,
+                    "Self_Testing_On"
+                ],
+                [
+                    4,
+                    "Air_Purging_On"
+                ],
+                [
+                    6,
+                    "Manual_Pump_Rack_Pump_Group_Single"
+                ],
+                [
+                    7,
+                    "Manual_Fan_Rack_1_Fan_All_Single"
+                ],
+                [
+                    8,
+                    "Manual_Fan_Rack_2_Fan_All_Single"
+                ],
+                [
+                    15,
+                    "System_Stop"
+                ]
+            ],
+            "name": "Control"
+        },
+        {
+            "begin": 37911,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Manual_Pump_Rack_Group_Pumps_Duty_Set"
+        },
+        {
+            "begin": 37912,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Manual_Fan_Rack_1_All_Fan_Duty_Set"
+        },
+        {
+            "begin": 37913,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Manual_Fan_Rack_2_All_Fan_Duty_Set"
+        },
+        {
+            "begin": 37914,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Auto1_Target_Flow_Set"
+        },
+        {
+            "begin": 37915,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Auto1_Fan_Rack_1_All_Fan_Duty_Set"
+        },
+        {
+            "begin": 37916,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Auto1_Fan_Rack_2_All_Fan_Duty_Set"
+        },
+        {
+            "begin": 37917,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Auto2_Target_Flow_Set"
+        },
+        {
+            "begin": 37918,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Auto2_Target_Temperature_Set"
+        },
+        {
+            "begin": 37919,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Manual_Fan_Rack_1_Proportional_Valve"
+        },
+        {
+            "begin": 37920,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Manual_Fan_Rack_2_Proportional_Valve"
+        },
+        {
+            "begin": 37936,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Manual_Pump_Rack_Pump1_Duty_Set"
+        },
+        {
+            "begin": 37937,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Manual_Pump_Rack_Pump2_Duty_Set"
+        },
+        {
+            "begin": 37938,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Manual_Pump_Rack_Pump3_Duty_Set"
+        },
+        {
+            "begin": 37519,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Sticky_Pump_Rack_Leak1_Status"
+                ],
+                [
+                    1,
+                    "Sticky_Pump_Rack_Leak2_Status"
+                ],
+                [
+                    3,
+                    "Sticky_Fan_Rack_1_Leak1_Status"
+                ],
+                [
+                    4,
+                    "Sticky_Fan_Rack_1_Leak2_Status"
+                ],
+                [
+                    5,
+                    "Sticky_Fan_Rack_1_Leak3_Status"
+                ],
+                [
+                    8,
+                    "Sticky_Fan_Rack_2_Leak1_Status"
+                ],
+                [
+                    9,
+                    "Sticky_Fan_Rack_2_Leak2_Status"
+                ],
+                [
+                    10,
+                    "Sticky_Fan_Rack_2_Leak3_Status"
+                ],
+                [
+                    12,
+                    "Sticky_ITRack_chassis0_leakage"
+                ],
+                [
+                    13,
+                    "Sticky_ITRack_chassis1_leakage"
+                ],
+                [
+                    14,
+                    "Sticky_ITRack_chassis2_leakage"
+                ],
+                [
+                    15,
+                    "Sticky_ITRack_chassis3_leakage"
+                ]
+            ],
+            "name": "Leak_Status"
+        },
+        {
+            "begin": 37520,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Pump_Rack_Coolant_Level_High"
+                ],
+                [
+                    1,
+                    "Pump_Rack_Coolant_Level_Medium_High"
+                ],
+                [
+                    2,
+                    "Pump_Rack_Coolant_Level_Medium_Low"
+                ],
+                [
+                    3,
+                    "Pump_Rack_Coolant_Level_Low"
+                ]
+            ],
+            "name": "Pump_Rack_Coolant_Level_Status"
+        },
+        {
+            "begin": 37521,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Fan_Rack_1_Coolant_Level_High"
+                ],
+                [
+                    1,
+                    "Fan_Rack_1_Coolant_Level_Medium"
+                ],
+                [
+                    2,
+                    "Fan_Rack_1_Coolant_Level_Low"
+                ]
+            ],
+            "name": "Fan_Rack_1_Coolant_Level_Status"
+        },
+        {
+            "begin": 37522,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Fan_Rack_2_Coolant_Level_High"
+                ],
+                [
+                    1,
+                    "Fan_Rack_2_Coolant_Level_Medium"
+                ],
+                [
+                    2,
+                    "Fan_Rack_2_Coolant_Level_Low"
+                ]
+            ],
+            "name": "Fan_Rack_2_Coolant_Level_Status"
+        },
+        {
+            "begin": 37527,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Pump_Rack_Flow"
+        },
+        {
+            "begin": 37528,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_1_Flow"
+        },
+        {
+            "begin": 37529,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_2_Flow"
+        },
+        {
+            "begin": 37530,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Pump_Rack_Flow_Meter_Status"
+                ],
+                [
+                    1,
+                    "Fan_Rack_1_Flow_Meter_Status"
+                ],
+                [
+                    2,
+                    "Fan_Rack_2_Flow_Meter_Status"
+                ]
+            ],
+            "name": "Flow_Meter_Status"
+        },
+        {
+            "begin": 37537,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_1_Proportional_Valve"
+        },
+        {
+            "begin": 37538,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_2_Proportional_Valve"
+        },
+        {
+            "begin": 37539,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Fan_Rack_1_Proportional_Valve_Status"
+                ],
+                [
+                    1,
+                    "Fan_Rack_2_Proportional_Valve_Status"
+                ]
+            ],
+            "name": "Proportional_Valve_Status"
+        },
+        {
+            "begin": 37459,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "Pump_Rack_CRPS_PSU1_Vout",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37460,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "Pump_Rack_CRPS_PSU2_Vout",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37461,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "Pump_Rack_CRPS_PSU1_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37462,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "Pump_Rack_CRPS_PSU2_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37463,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Pump_Rack_CRPS_Warning_Information_1"
+        },
+        {
+            "begin": 37464,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Pump_Rack_CRPS_Warning_Information_2"
+        },
+        {
+            "begin": 37465,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Pump_Rack_CRPS_Warning_Information_3"
+        },
+        {
+            "begin": 37466,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "Pump_Rack_CRPS_PSU1_OCP_Threshold",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37467,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "Pump_Rack_CRPS_PSU2_OCP_Threshold",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37468,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Pump_Rack_CRPS_PSU1_OTP_Hotspot_Threshold",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37469,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Pump_Rack_CRPS_PSU2_OTP_Hotspot_Threshold",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37470,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Pump_Rack_CRPS_PSU1_OTP_Ambient_Threshold",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37471,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Pump_Rack_CRPS_PSU2_OTP_Ambient_Threshold",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37479,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "Fan_Rack_1_CRPS_PSU1_Vout",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37480,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "Fan_Rack_1_CRPS_PSU2_Vout",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37481,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "Fan_Rack_1_CRPS_PSU1_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37482,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "Fan_Rack_1_CRPS_PSU2_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37483,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_1_CRPS_Warning_Information_1"
+        },
+        {
+            "begin": 37484,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_1_CRPS_Warning_Information_2"
+        },
+        {
+            "begin": 37485,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_1_CRPS_Warning_Information_3"
+        },
+        {
+            "begin": 37486,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "Fan_Rack_1_CRPS_PSU1_OCP_Threshold",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37487,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "Fan_Rack_1_CRPS_PSU2_OCP_Threshold",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37488,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Fan_Rack_1_CRPS_PSU1_OTP_Hotspot_Threshold",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37489,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Fan_Rack_1_CRPS_PSU2_OTP_Hotspot_Threshold",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37490,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Fan_Rack_1_CRPS_PSU1_OTP_Ambient_Threshold",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37491,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Fan_Rack_1_CRPS_PSU2_OTP_Ambient_Threshold",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37499,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "Fan_Rack_2_CRPS_PSU1_Vout",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37500,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "Fan_Rack_2_CRPS_PSU2_Vout",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37501,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "Fan_Rack_2_CRPS_PSU1_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37502,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "Fan_Rack_2_CRPS_PSU2_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37503,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_2_CRPS_Warning_Information_1"
+        },
+        {
+            "begin": 37504,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_2_CRPS_Warning_Information_2"
+        },
+        {
+            "begin": 37505,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_2_CRPS_Warning_Information_3"
+        },
+        {
+            "begin": 37506,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "Fan_Rack_2_CRPS_PSU1_OCP_Threshold",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37507,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "Fan_Rack_2_CRPS_PSU2_OCP_Threshold",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37508,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Fan_Rack_2_CRPS_PSU1_OTP_Hotspot_Threshold",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37509,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Fan_Rack_2_CRPS_PSU2_OTP_Hotspot_Threshold",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37510,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Fan_Rack_2_CRPS_PSU1_OTP_Ambient_Threshold",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37511,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Fan_Rack_2_CRPS_PSU2_OTP_Ambient_Threshold",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 36897,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_Fan_PWM_Setting",
+            "unit": "Percent"
+        },
+        {
+            "begin": 36898,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan1_Speed",
+            "unit": "RPMS"
+        },
+        {
+            "begin": 36899,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan2_Speed",
+            "unit": "RPMS"
+        },
+        {
+            "begin": 36900,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan3_Speed",
+            "unit": "RPMS"
+        },
+        {
+            "begin": 36901,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan4_Speed",
+            "unit": "RPMS"
+        },
+        {
+            "begin": 36902,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan5_Speed",
+            "unit": "RPMS"
+        },
+        {
+            "begin": 36903,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan6_Speed",
+            "unit": "RPMS"
+        },
+        {
+            "begin": 36904,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan7_Speed",
+            "unit": "RPMS"
+        },
+        {
+            "begin": 36905,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan8_Speed",
+            "unit": "RPMS"
+        },
+        {
+            "begin": 36906,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan1_Speed",
+            "unit": "RPMS"
+        },
+        {
+            "begin": 36907,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan2_Speed",
+            "unit": "RPMS"
+        },
+        {
+            "begin": 36908,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan3_Speed",
+            "unit": "RPMS"
+        },
+        {
+            "begin": 36909,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan4_Speed",
+            "unit": "RPMS"
+        },
+        {
+            "begin": 36910,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan5_Speed",
+            "unit": "RPMS"
+        },
+        {
+            "begin": 36911,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan6_Speed",
+            "unit": "RPMS"
+        },
+        {
+            "begin": 36912,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan7_Speed",
+            "unit": "RPMS"
+        },
+        {
+            "begin": 36913,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan8_Speed",
+            "unit": "RPMS"
+        },
+        {
+            "begin": 36914,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "sign": true,
+            "name": "Fan_Rack_1_Fan1_Module_Temperature",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 36915,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "sign": true,
+            "name": "Fan_Rack_1_Fan2_Module_Temperature",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 36916,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "sign": true,
+            "name": "Fan_Rack_1_Fan3_Module_Temperature",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 36917,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "sign": true,
+            "name": "Fan_Rack_1_Fan4_Module_Temperature",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 36918,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "sign": true,
+            "name": "Fan_Rack_1_Fan5_Module_Temperature",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 36919,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "sign": true,
+            "name": "Fan_Rack_1_Fan6_Module_Temperature",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 36920,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "sign": true,
+            "name": "Fan_Rack_1_Fan7_Module_Temperature",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 36921,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "sign": true,
+            "name": "Fan_Rack_1_Fan8_Module_Temperature",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 36922,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "sign": true,
+            "name": "Fan_Rack_2_Fan1_Module_Temperature",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 36923,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "sign": true,
+            "name": "Fan_Rack_2_Fan2_Module_Temperature",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 36924,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "sign": true,
+            "name": "Fan_Rack_2_Fan3_Module_Temperature",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 36925,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "sign": true,
+            "name": "Fan_Rack_2_Fan4_Module_Temperature",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 36926,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "sign": true,
+            "name": "Fan_Rack_2_Fan5_Module_Temperature",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 36927,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "sign": true,
+            "name": "Fan_Rack_2_Fan6_Module_Temperature",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 36928,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "sign": true,
+            "name": "Fan_Rack_2_Fan7_Module_Temperature",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 36929,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "sign": true,
+            "name": "Fan_Rack_2_Fan8_Module_Temperature",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 36930,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_1_Fan1_Watt",
+            "unit": "Watts"
+        },
+        {
+            "begin": 36931,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_1_Fan2_Watt",
+            "unit": "Watts"
+        },
+        {
+            "begin": 36932,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_1_Fan3_Watt",
+            "unit": "Watts"
+        },
+        {
+            "begin": 36933,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_1_Fan4_Watt",
+            "unit": "Watts"
+        },
+        {
+            "begin": 36934,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_1_Fan5_Watt",
+            "unit": "Watts"
+        },
+        {
+            "begin": 36935,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_1_Fan6_Watt",
+            "unit": "Watts"
+        },
+        {
+            "begin": 36936,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_1_Fan7_Watt",
+            "unit": "Watts"
+        },
+        {
+            "begin": 36937,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_1_Fan8_Watt",
+            "unit": "Watts"
+        },
+        {
+            "begin": 36938,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_2_Fan1_Watt",
+            "unit": "Watts"
+        },
+        {
+            "begin": 36939,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_2_Fan2_Watt",
+            "unit": "Watts"
+        },
+        {
+            "begin": 36940,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_2_Fan3_Watt",
+            "unit": "Watts"
+        },
+        {
+            "begin": 36941,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_2_Fan4_Watt",
+            "unit": "Watts"
+        },
+        {
+            "begin": 36942,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_2_Fan5_Watt",
+            "unit": "Watts"
+        },
+        {
+            "begin": 36943,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_2_Fan6_Watt",
+            "unit": "Watts"
+        },
+        {
+            "begin": 36944,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_2_Fan7_Watt",
+            "unit": "Watts"
+        },
+        {
+            "begin": 36945,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_2_Fan8_Watt",
+            "unit": "Watts"
+        },
+        {
+            "begin": 36946,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan1_Vin",
+            "unit": "Volts"
+        },
+        {
+            "begin": 36947,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan2_Vin",
+            "unit": "Volts"
+        },
+        {
+            "begin": 36948,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan3_Vin",
+            "unit": "Volts"
+        },
+        {
+            "begin": 36949,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan4_Vin",
+            "unit": "Volts"
+        },
+        {
+            "begin": 36950,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan5_Vin",
+            "unit": "Volts"
+        },
+        {
+            "begin": 36951,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan6_Vin",
+            "unit": "Volts"
+        },
+        {
+            "begin": 36952,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan7_Vin",
+            "unit": "Volts"
+        },
+        {
+            "begin": 36953,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan8_Vin",
+            "unit": "Volts"
+        },
+        {
+            "begin": 36954,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan1_Vin",
+            "unit": "Volts"
+        },
+        {
+            "begin": 36955,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan2_Vin",
+            "unit": "Volts"
+        },
+        {
+            "begin": 36956,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan3_Vin",
+            "unit": "Volts"
+        },
+        {
+            "begin": 36957,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan4_Vin",
+            "unit": "Volts"
+        },
+        {
+            "begin": 36958,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan5_Vin",
+            "unit": "Volts"
+        },
+        {
+            "begin": 36959,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan6_Vin",
+            "unit": "Volts"
+        },
+        {
+            "begin": 36960,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan7_Vin",
+            "unit": "Volts"
+        },
+        {
+            "begin": 36961,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan8_Vin",
+            "unit": "Volts"
+        },
+        {
+            "begin": 36962,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan1_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 36963,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan2_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 36964,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan3_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 36965,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan4_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 36966,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan5_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 36967,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan6_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 36968,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan7_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 36969,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_1_Fan8_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 36970,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan1_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 36971,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan2_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 36972,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan3_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 36973,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan4_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 36974,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan5_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 36975,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan6_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 36976,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan7_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 36977,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "name": "Fan_Rack_2_Fan8_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37010,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_1_Fan1_Warning_Information"
+        },
+        {
+            "begin": 37011,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_1_Fan1_Error_Information"
+        },
+        {
+            "begin": 37012,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_1_Fan2_Warning_Information"
+        },
+        {
+            "begin": 37013,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_1_Fan2_Error_Information"
+        },
+        {
+            "begin": 37014,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_1_Fan3_Warning_Information"
+        },
+        {
+            "begin": 37015,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_1_Fan3_Error_Information"
+        },
+        {
+            "begin": 37016,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_1_Fan4_Warning_Information"
+        },
+        {
+            "begin": 37017,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_1_Fan4_Error_Information"
+        },
+        {
+            "begin": 37018,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_1_Fan5_Warning_Information"
+        },
+        {
+            "begin": 37019,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_1_Fan5_Error_Information"
+        },
+        {
+            "begin": 37020,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_1_Fan6_Warning_Information"
+        },
+        {
+            "begin": 37021,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_1_Fan6_Error_Information"
+        },
+        {
+            "begin": 37022,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_1_Fan7_Warning_Information"
+        },
+        {
+            "begin": 37023,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_1_Fan7_Error_Information"
+        },
+        {
+            "begin": 37024,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_1_Fan8_Warning_Information"
+        },
+        {
+            "begin": 37025,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_1_Fan8_Error_Information"
+        },
+        {
+            "begin": 37026,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_2_Fan1_Warning_Information"
+        },
+        {
+            "begin": 37027,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_2_Fan1_Error_Information"
+        },
+        {
+            "begin": 37028,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_2_Fan2_Warning_Information"
+        },
+        {
+            "begin": 37029,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_2_Fan2_Error_Information"
+        },
+        {
+            "begin": 37030,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_2_Fan3_Warning_Information"
+        },
+        {
+            "begin": 37031,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_2_Fan3_Error_Information"
+        },
+        {
+            "begin": 37032,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_2_Fan4_Warning_Information"
+        },
+        {
+            "begin": 37033,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_2_Fan4_Error_Information"
+        },
+        {
+            "begin": 37034,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_2_Fan5_Warning_Information"
+        },
+        {
+            "begin": 37035,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_2_Fan5_Error_Information"
+        },
+        {
+            "begin": 37036,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_2_Fan6_Warning_Information"
+        },
+        {
+            "begin": 37037,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_2_Fan6_Error_Information"
+        },
+        {
+            "begin": 37038,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_2_Fan7_Warning_Information"
+        },
+        {
+            "begin": 37039,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_2_Fan7_Error_Information"
+        },
+        {
+            "begin": 37040,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_2_Fan8_Warning_Information"
+        },
+        {
+            "begin": 37041,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Fan_Rack_2_Fan8_Error_Information"
+        },
+        {
+            "begin": 208,
+            "length": 4,
+            "format": "STRING",
+            "name": "MFR_Model"
+        },
+        {
+            "begin": 212,
+            "length": 4,
+            "format": "STRING",
+            "name": "MFR_Date"
+        },
+        {
+            "begin": 216,
+            "length": 2,
+            "format": "STRING",
+            "name": "HMI_FW_Revision"
+        },
+        {
+            "begin": 220,
+            "length": 4,
+            "format": "STRING",
+            "name": "Pump_Rack_FW_Revision"
+        },
+        {
+            "begin": 224,
+            "length": 4,
+            "format": "STRING",
+            "name": "Fan_Rack_1_FW_Revision"
+        },
+        {
+            "begin": 228,
+            "length": 4,
+            "format": "STRING",
+            "name": "Fan_Rack_2_FW_Revision"
+        },
+        {
+            "begin": 240,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Pump_Rack_Coolant_Loop_Blocked"
+                ],
+                [
+                    1,
+                    "Pump_Rack_Filter_Unhealthy"
+                ],
+                [
+                    4,
+                    "Fan_Rack_1_Coolant_Loop_Blocked"
+                ],
+                [
+                    5,
+                    "Fan_Rack_1_Filter_Unhealthy"
+                ],
+                [
+                    8,
+                    "Fan_Rack_2_Coolant_Loop_Blocked"
+                ],
+                [
+                    9,
+                    "Fan_Rack_2_Filter_Unhealthy"
+                ]
+            ],
+            "name": "RPU_Status"
+        },
+        {
+            "begin": 241,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Emergency_Button_Triggered"
+        },
+        {
+            "begin": 242,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "RPU_Ready"
+        },
+        {
+            "begin": 243,
+            "length": 4,
+            "format": "INTEGER",
+            "name": "Total_Uptime"
+        },
+        {
+            "begin": 247,
+            "length": 4,
+            "format": "INTEGER",
+            "name": "Time_Since_Last_On"
+        },
+        {
+            "begin": 251,
+            "length": 20,
+            "format": "STRING",
+            "name": "Pump_Rack_FBPN"
+        },
+        {
+            "begin": 271,
+            "length": 20,
+            "format": "STRING",
+            "name": "Pump_Rack_Serial_Number"
+        },
+        {
+            "begin": 291,
+            "length": 20,
+            "format": "STRING",
+            "name": "Fan_Rack_1_FBPN"
+        },
+        {
+            "begin": 311,
+            "length": 20,
+            "format": "STRING",
+            "name": "Fan_Rack_1_Control_Box_FBPN"
+        },
+        {
+            "begin": 331,
+            "length": 20,
+            "format": "STRING",
+            "name": "Fan_Rack_1_Serial_Number"
+        },
+        {
+            "begin": 351,
+            "length": 20,
+            "format": "STRING",
+            "name": "Fan_Rack_2_FBPN"
+        },
+        {
+            "begin": 371,
+            "length": 20,
+            "format": "STRING",
+            "name": "Fan_Rack_2_Control_Box_FBPN"
+        },
+        {
+            "begin": 391,
+            "length": 20,
+            "format": "STRING",
+            "name": "Fan_Rack_2_Serial_Number"
+        },
+        {
+            "begin": 36864,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Pump_Rack_Pump_PWM_Setting",
+            "unit": "Percent"
+        },
+        {
+            "begin": 36865,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Pump_Rack_Pump1_Speed",
+            "unit": "RPMS"
+        },
+        {
+            "begin": 36866,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Pump_Rack_Pump2_Speed",
+            "unit": "RPMS"
+        },
+        {
+            "begin": 36867,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Pump_Rack_Pump3_Speed",
+            "unit": "RPMS"
+        },
+        {
+            "begin": 36868,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "Pump_Rack_Pump1_Vout",
+            "unit": "Volts"
+        },
+        {
+            "begin": 36869,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "Pump_Rack_Pump2_Vout",
+            "unit": "Volts"
+        },
+        {
+            "begin": 36870,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "Pump_Rack_Pump3_Vout",
+            "unit": "Volts"
+        },
+        {
+            "begin": 36871,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Pump_Rack_Pump1_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 36872,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Pump_Rack_Pump2_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 36873,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Pump_Rack_Pump3_Iout",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 36874,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Pump_Rack_Pump1_Wout",
+            "unit": "Watts"
+        },
+        {
+            "begin": 36875,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Pump_Rack_Pump2_Wout",
+            "unit": "Watts"
+        },
+        {
+            "begin": 36876,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Pump_Rack_Pump3_Wout",
+            "unit": "Watts"
+        },
+        {
+            "begin": 36883,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Pump_Rack_Pump1_Warning_Information"
+        },
+        {
+            "begin": 36884,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Pump_Rack_Pump1_Error_Information"
+        },
+        {
+            "begin": 36885,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Pump_Rack_Pump2_Warning_Information"
+        },
+        {
+            "begin": 36886,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Pump_Rack_Pump2_Error_Information"
+        },
+        {
+            "begin": 36887,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Pump_Rack_Pump3_Warning_Information"
+        },
+        {
+            "begin": 36888,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Pump_Rack_Pump3_Error_Information"
+        },
+        {
+            "begin": 37546,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Pump_Rack_pH"
+        },
+        {
+            "begin": 37547,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "Pump_Rack_Conductivity"
+        },
+        {
+            "begin": 37548,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Pump_Rack_Humidity"
+        },
+        {
+            "begin": 37549,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Pump_Rack_Temperature1_Inlet",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37550,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Pump_Rack_Temperature2_Outlet",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37551,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Pump_Rack_Pressure1_Inlet",
+            "unit": "Pascals"
+        },
+        {
+            "begin": 37552,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Pump_Rack_Pressure2_Pump1_In",
+            "unit": "Pascals"
+        },
+        {
+            "begin": 37553,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Pump_Rack_Pressure3_Pump2_In",
+            "unit": "Pascals"
+        },
+        {
+            "begin": 37554,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Pump_Rack_Pressure4_Pump3_In",
+            "unit": "Pascals"
+        },
+        {
+            "begin": 37555,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Pump_Rack_Pressure5_Pump1_Out",
+            "unit": "Pascals"
+        },
+        {
+            "begin": 37556,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Pump_Rack_Pressure6_Pump2_Out",
+            "unit": "Pascals"
+        },
+        {
+            "begin": 37557,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Pump_Rack_Pressure7_Pump3_Out",
+            "unit": "Pascals"
+        },
+        {
+            "begin": 37558,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Pump_Rack_Pressure8_Pre_Filter",
+            "unit": "Pascals"
+        },
+        {
+            "begin": 37559,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Pump_Rack_Pressure9_Outlet",
+            "unit": "Pascals"
+        },
+        {
+            "begin": 37566,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Pump_Rack_pH_Status"
+                ],
+                [
+                    1,
+                    "Pump_Rack_Conductivity_Status"
+                ],
+                [
+                    2,
+                    "Pump_Rack_Humidity_Status"
+                ]
+            ],
+            "name": "Pump_Rack_Status"
+        },
+        {
+            "begin": 37567,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Pump_Rack_Temperature1_Status"
+                ],
+                [
+                    1,
+                    "Pump_Rack_Temperature2_Status"
+                ]
+            ],
+            "name": "Pump_Rack_Temperature_Status"
+        },
+        {
+            "begin": 37568,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Pump_Rack_Pressure1_Inlet_Status"
+                ],
+                [
+                    1,
+                    "Pump_Rack_Pressure2_Pump1_In_Status"
+                ],
+                [
+                    2,
+                    "Pump_Rack_Pressure3_Pump2_In_Status"
+                ],
+                [
+                    3,
+                    "Pump_Rack_Pressure4_Pump3_In_Status"
+                ],
+                [
+                    4,
+                    "Pump_Rack_Pressure5_Pump1_Out_Status"
+                ],
+                [
+                    5,
+                    "Pump_Rack_Pressure6_Pump2_Out_Status"
+                ],
+                [
+                    6,
+                    "Pump_Rack_Pressure7_Pump3_Out_Status"
+                ],
+                [
+                    7,
+                    "Pump_Rack_Pressure8_Pre_Filter_Status"
+                ],
+                [
+                    8,
+                    "Pump_Rack_Pressure9_Outlet_Status"
+                ]
+            ],
+            "name": "Pump_Rack_Pressure_Status"
+        },
+        {
+            "begin": 37575,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_1_Pressure1_Inlet",
+            "unit": "Pascals"
+        },
+        {
+            "begin": 37576,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_1_Pressure2_Pre_Filter",
+            "unit": "Pascals"
+        },
+        {
+            "begin": 37577,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_1_Pressure3_Outlet",
+            "unit": "Pascals"
+        },
+        {
+            "begin": 37578,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_1_Temperature1_Inlet",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37579,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_1_Temperature2_Outlet",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37580,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_1_NTC1_In",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37581,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_1_NTC2_Out",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37588,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Fan_Rack_1_Pressure1_Inlet_Status"
+                ],
+                [
+                    1,
+                    "Fan_Rack_1_Pressure2_Pre_Filter_Status"
+                ],
+                [
+                    2,
+                    "Fan_Rack_1_Pressure3_Outlet_Status"
+                ]
+            ],
+            "name": "Fan_Rack_1_Pressure_Status"
+        },
+        {
+            "begin": 37589,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Fan_Rack_1_Temperature1_Inlet_Status"
+                ],
+                [
+                    1,
+                    "Fan_Rack_1_Temperature2_Outlet_Status"
+                ],
+                [
+                    2,
+                    "Fan_Rack_1_NTC1_In_Status"
+                ],
+                [
+                    3,
+                    "Fan_Rack_1_NTC2_Out_Status"
+                ]
+            ],
+            "name": "Fan_Rack_1_Temperature_Status"
+        },
+        {
+            "begin": 37596,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_2_Pressure1_Inlet",
+            "unit": "Pascals"
+        },
+        {
+            "begin": 37597,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_2_Pressure2_Pre_Filter",
+            "unit": "Pascals"
+        },
+        {
+            "begin": 37598,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_2_Pressure3_Outlet",
+            "unit": "Pascals"
+        },
+        {
+            "begin": 37599,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_2_Temperature1_Inlet",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37600,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_2_Temperature2_Outlet",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37601,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_2_NTC1_In",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37602,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "Fan_Rack_2_NTC2_Out",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37609,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Fan_Rack_2_Pressure1_Inlet_Status"
+                ],
+                [
+                    1,
+                    "Fan_Rack_2_Pressure2_Pre_Filter_Status"
+                ],
+                [
+                    2,
+                    "Fan_Rack_2_Pressure3_Outlet_Status"
+                ]
+            ],
+            "name": "Fan_Rack_2_Pressure_Status"
+        },
+        {
+            "begin": 37610,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Fan_Rack_2_Temperature1_Inlet_Status"
+                ],
+                [
+                    1,
+                    "Fan_Rack_2_Temperature2_Outlet_Status"
+                ],
+                [
+                    2,
+                    "Fan_Rack_2_NTC1_In_Status"
+                ],
+                [
+                    3,
+                    "Fan_Rack_2_NTC2_Out_Status"
+                ]
+            ],
+            "name": "Fan_Rack_2_Temperature_Status"
+        },
+        {
+            "begin": 37648,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Pump_Rack_IT_Rack1_Connected_Status"
+                ],
+                [
+                    1,
+                    "Pump_Rack_IT_Rack2_Connected_Status"
+                ],
+                [
+                    2,
+                    "Pump_Rack_Fan_Rack_1_Connected_Status"
+                ],
+                [
+                    3,
+                    "Pump_Rack_Fan_Rack_2_Connected_Status"
+                ],
+                [
+                    4,
+                    "Pump_Rack_HMI_Connected_Status"
+                ],
+                [
+                    5,
+                    "Pump_Rack_RPU_Connected_Status"
+                ],
+                [
+                    6,
+                    "Fan_Rack_1_RPU_Connected_Status"
+                ],
+                [
+                    7,
+                    "Fan_Rack_2_RPU_Connected_Status"
+                ]
+            ],
+            "name": "Communication_Status"
+        },
+        {
+            "begin": 37267,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Pump_Rack_Voltage_of_A_phase",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37268,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Pump_Rack_Voltage_of_B_phase",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37269,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Pump_Rack_Voltage_of_C_phase",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37270,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "SmartMeter_Pump_Rack_Current_of_A_phase",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37271,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "SmartMeter_Pump_Rack_Current_of_B_phase",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37272,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "SmartMeter_Pump_Rack_Current_of_C_phase",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37273,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Pump_Rack_Power_Frequency"
+        },
+        {
+            "begin": 37274,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Pump_Rack_Voltage_between_AB",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37275,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Pump_Rack_Voltage_between_CB",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37276,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Pump_Rack_Voltage_between_AC",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37277,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "SmartMeter_Pump_Rack_Power_factor_of_A_phase"
+        },
+        {
+            "begin": 37278,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "SmartMeter_Pump_Rack_Power_factor_of_B_phase"
+        },
+        {
+            "begin": 37279,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "SmartMeter_Pump_Rack_Power_factor_of_C_phase"
+        },
+        {
+            "begin": 37280,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "SmartMeter_Pump_Rack_Total_power_factor"
+        },
+        {
+            "begin": 37281,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "SmartMeter_Pump_Rack_THDIa"
+        },
+        {
+            "begin": 37282,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "SmartMeter_Pump_Rack_THDIb"
+        },
+        {
+            "begin": 37283,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "SmartMeter_Pump_Rack_THDIc"
+        },
+        {
+            "begin": 37331,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Fan_Rack_1_Voltage_of_A_phase",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37332,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Fan_Rack_1_Voltage_of_B_phase",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37333,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Fan_Rack_1_Voltage_of_C_phase",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37334,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "SmartMeter_Fan_Rack_1_Current_of_A_phase",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37335,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "SmartMeter_Fan_Rack_1_Current_of_B_phase",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37336,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "SmartMeter_Fan_Rack_1_Current_of_C_phase",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37337,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Fan_Rack_1_Power_Frequency"
+        },
+        {
+            "begin": 37338,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Fan_Rack_1_Voltage_between_AB",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37339,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Fan_Rack_1_Voltage_between_CB",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37340,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Fan_Rack_1_Voltage_between_AC",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37341,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "SmartMeter_Fan_Rack_1_Power_factor_of_A_phase"
+        },
+        {
+            "begin": 37342,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "SmartMeter_Fan_Rack_1_Power_factor_of_B_phase"
+        },
+        {
+            "begin": 37343,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "SmartMeter_Fan_Rack_1_Power_factor_of_C_phase"
+        },
+        {
+            "begin": 37344,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "SmartMeter_Fan_Rack_1_Total_power_factor"
+        },
+        {
+            "begin": 37345,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "SmartMeter_Fan_Rack_1_THDIa"
+        },
+        {
+            "begin": 37346,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "SmartMeter_Fan_Rack_1_THDIb"
+        },
+        {
+            "begin": 37347,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "SmartMeter_Fan_Rack_1_THDIc"
+        },
+        {
+            "begin": 37395,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Fan_Rack_2_Voltage_of_A_phase",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37396,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Fan_Rack_2_Voltage_of_B_phase",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37397,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Fan_Rack_2_Voltage_of_C_phase",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37398,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "SmartMeter_Fan_Rack_2_Current_of_A_phase",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37399,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "SmartMeter_Fan_Rack_2_Current_of_B_phase",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37400,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "SmartMeter_Fan_Rack_2_Current_of_C_phase",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37401,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Fan_Rack_2_Power_Frequency"
+        },
+        {
+            "begin": 37402,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Fan_Rack_2_Voltage_between_AB",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37403,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Fan_Rack_2_Voltage_between_CB",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37404,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "SmartMeter_Fan_Rack_2_Voltage_between_AC",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37405,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "SmartMeter_Fan_Rack_2_Power_factor_of_A_phase"
+        },
+        {
+            "begin": 37406,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "SmartMeter_Fan_Rack_2_Power_factor_of_B_phase"
+        },
+        {
+            "begin": 37407,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "SmartMeter_Fan_Rack_2_Power_factor_of_C_phase"
+        },
+        {
+            "begin": 37408,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.001,
+            "name": "SmartMeter_Fan_Rack_2_Total_power_factor"
+        },
+        {
+            "begin": 37409,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "SmartMeter_Fan_Rack_2_THDIa"
+        },
+        {
+            "begin": 37410,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "SmartMeter_Fan_Rack_2_THDIb"
+        },
+        {
+            "begin": 37411,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.01,
+            "name": "SmartMeter_Fan_Rack_2_THDIc"
+        },
+        {
+            "begin": 37078,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "UPS_Pump_Rack_P_Battery_Voltage",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37079,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Pump_Rack_P_Battery_Discharging_Current",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37080,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Pump_Rack_P_Battery_Charging_Current",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37081,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Pump_Rack_Battery_Capacity",
+            "unit": "AmpereHours"
+        },
+        {
+            "begin": 37082,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Pump_Rack_Battery_Remain_time"
+        },
+        {
+            "begin": 37083,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "UPS_Pump_Rack_N_Battery_Voltage",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37084,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Pump_Rack_N Battery_Discharging_Current",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37085,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Pump_Rack_N_Battery_Charging_Current",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37086,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Pump_Rack_Temperature_PFC",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37087,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Pump_Rack_Temperature_INV",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37088,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Pump_Rack_Temperature_Bypass",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37089,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Pump_Rack_Max_Temperature",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37090,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Pump_Rack_Mode_Information"
+        },
+        {
+            "begin": 37091,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Pump_Rack_Over_Temperature_Fault_Recovery_Value",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37092,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Pump_Rack_Over_Temperature_Warning_Trigger_Value",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37093,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Pump_Rack_Over_Temperature_Warning_Recovery_Value",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37094,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Pump_Rack_Fault_Information"
+        },
+        {
+            "begin": 37095,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Pump_Rack_Battery_Shutdown_Voltage",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37096,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Pump_Rack_Battery_Low_Voltage",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37097,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Pump_Rack_Battery_High_Voltage",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37135,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "UPS_Fan_Rack_1_Warning_Information_1"
+        },
+        {
+            "begin": 37136,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "UPS_Fan_Rack_1_Warning_Information_2"
+        },
+        {
+            "begin": 37137,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "UPS_Fan_Rack_1_Warning_Information_3"
+        },
+        {
+            "begin": 37138,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "UPS_Fan_Rack_1_Warning_Information_4"
+        },
+        {
+            "begin": 37139,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "UPS_Fan_Rack_1_P_Battery_Voltage",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37140,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_1_P_Battery_Discharging_Current",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37141,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_1_P_Battery_Charging_Current",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37142,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_1_Battery_Capacity",
+            "unit": "AmpereHours"
+        },
+        {
+            "begin": 37143,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_1_Battery_Remain_time"
+        },
+        {
+            "begin": 37144,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "UPS_Fan_Rack_1_N_Battery_Voltage",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37145,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_1_N Battery_Discharging_Current",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37146,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_1_N_Battery_Charging_Current",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37147,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_1_Temperature_PFC",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37148,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_1_Temperature_INV",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37149,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_1_Temperature_Bypass",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37150,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_1_Max_Temperature",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37151,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_1_Mode_Information",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37152,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_1_Over_Temperature_Fault_Recovery_Value",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37153,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_1_Over_Temperature_Warning_Trigger_Value",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37154,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_1_Over_Temperature_Warning_Recovery_Value",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37155,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_1_Fault_Information"
+        },
+        {
+            "begin": 37156,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_1_Battery_Shutdown_Voltage",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37157,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_1_Battery_Low_Voltage",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37158,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_1_Battery_High_Voltage",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37201,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "UPS_Fan_Rack_2_Warning_Information_1"
+        },
+        {
+            "begin": 37202,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "UPS_Fan_Rack_2_Warning_Information_2"
+        },
+        {
+            "begin": 37203,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "UPS_Fan_Rack_2_Warning_Information_3"
+        },
+        {
+            "begin": 37204,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "UPS_Fan_Rack_2_Warning_Information_4"
+        },
+        {
+            "begin": 37205,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "UPS_Fan_Rack_2_P_Battery_Voltage",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37206,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_2_P_Battery_Discharging_Current",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37207,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_2_P_Battery_Charging_Current",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37208,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_2_Battery_Capacity",
+            "unit": "AmpereHours"
+        },
+        {
+            "begin": 37209,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_2_Battery_Remain_time"
+        },
+        {
+            "begin": 37210,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 0.1,
+            "name": "UPS_Fan_Rack_2_N_Battery_Voltage",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37211,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_2_N Battery_Discharging_Current",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37212,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_2_N_Battery_Charging_Current",
+            "unit": "Amperes"
+        },
+        {
+            "begin": 37213,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_2_Temperature_PFC",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37214,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_2_Temperature_INV",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37215,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_2_Temperature_Bypass",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37216,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_2_Max_Temperature",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37217,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_2_Mode_Information"
+        },
+        {
+            "begin": 37218,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_2_Over_Temperature_Fault_Recovery_Value",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37219,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_2_Over_Temperature_Warning_Trigger_Value",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37220,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_2_Over_Temperature_Warning_Recovery_Value",
+            "unit": "DegreesC"
+        },
+        {
+            "begin": 37221,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_2_Fault_Information"
+        },
+        {
+            "begin": 37222,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_2_Battery_Shutdown_Voltage",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37223,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_2_Battery_Low_Voltage",
+            "unit": "Volts"
+        },
+        {
+            "begin": 37224,
+            "length": 1,
+            "format": "FLOAT",
+            "precision": 1,
+            "scale": 1.0,
+            "name": "UPS_Fan_Rack_2_Battery_High_Voltage",
+            "unit": "Volts"
+        }
+    ]
+}

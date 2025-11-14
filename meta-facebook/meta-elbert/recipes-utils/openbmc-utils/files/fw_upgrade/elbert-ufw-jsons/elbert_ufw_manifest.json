@@ -1,7 +1,7 @@
 {
     "bios" : {
         "priority" : 1,
-        "upgrade_cmd" : "/usr/local/bin/bios_util.sh write {filename} --init-aconf"
+        "upgrade_cmd" : "/usr/local/bin/bios_util.sh write {filename} --init-aconf",
         "get_version": "/usr/local/bin/bios_ver.sh"
     },
     "scm" : {

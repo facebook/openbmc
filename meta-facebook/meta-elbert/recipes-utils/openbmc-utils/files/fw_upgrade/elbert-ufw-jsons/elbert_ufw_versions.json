@@ -2,7 +2,7 @@
     "bios": {
         "filename": "Aboot-norcal7-7.3.5-cb411-generic-8x1-ENG-43066215.rom",
         "hash": "sha1sum",
-        "hash_value": "006f70fb1ce359f4aa69148f2b9b0ff91ad22a23"
+        "hash_value": "006f70fb1ce359f4aa69148f2b9b0ff91ad22a23",
         "version": "Aboot-norcal7-7.3.5-cb411-generic-8x1-43071231"
     },
     "fan": {

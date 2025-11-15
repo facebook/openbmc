@@ -1,0 +1,31 @@
+From e69818dcc3ee8f9a10af6fcf636803efe5330f2e Mon Sep 17 00:00:00 2001
+From: Leo Yang <Leo-Yang@quantatw.com>
+Date: Fri, 14 Nov 2025 11:03:54 +0800
+Subject: [PATCH] PSUSensor: add MP9945 support
+
+Add device MP9945 reading support for YV5 project.
+
+The driver has been applied:
+[1] https://lore.kernel.org/all/20251009205458.396368-1-chou.cosmo@gmail.com/
+
+Change-Id: I86e25a87a6624e70281cf203b67ca07dd09b402e
+Signed-off-by: Leo Yang <Leo-Yang@quantatw.com>
+---
+ src/psu/PSUSensorMain.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
+index 2303664..7db25fe 100644
+--- a/src/psu/PSUSensorMain.cpp
++++ b/src/psu/PSUSensorMain.cpp
+@@ -128,6 +128,7 @@ static const I2CDeviceTypeMap sensorTypes{
+     {"MP5023", I2CDeviceType{"mp5023", true}},
+     {"MP5990", I2CDeviceType{"mp5990", true}},
+     {"MP5998", I2CDeviceType{"mp5998", true}},
++    {"MP9945", I2CDeviceType{"mp9945", true}},
+     {"MP29612", I2CDeviceType{"mp29612", true}},
+     {"MPQ8785", I2CDeviceType{"mpq8785", true}},
+     {"NCP4200", I2CDeviceType{"ncp4200", true}},
+-- 
+2.47.3
+

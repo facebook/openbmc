@@ -18,6 +18,9 @@ SRC_URI:append = " \
     file://0015-PSUSensor-add-RAA228006-support.patch \
     file://0016-PSUSensor-add-property-to-sensorTable-and-labelMatch.patch \
     file://0017-Add-sensor-reading-events.patch \
+    file://0018-PSUSensor-add-MP5998-support.patch \
+    file://0019-PSUSensor-add-support-for-mp2925-and-mp2929.patch \
+    file://0020-PSUSensor-add-MP9945-support.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \

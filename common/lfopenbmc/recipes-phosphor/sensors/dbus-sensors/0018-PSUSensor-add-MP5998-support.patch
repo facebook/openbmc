@@ -1,7 +1,7 @@
-From 06d1894f3eb6325a26cf3d0264896bc211e6b2e2 Mon Sep 17 00:00:00 2001
+From a3c4b942c17b9d0b10719465380c5c393020e29a Mon Sep 17 00:00:00 2001
 From: Leo Yang <Leo-Yang@quantatw.com>
 Date: Wed, 12 Nov 2025 15:21:13 +0800
-Subject: [PATCH] PSUSensor: add MP5998 support
+Subject: [PATCH 18/20] PSUSensor: add MP5998 support
 
 Add device MP5998 reading support for YV5 project.
 
@@ -22,10 +22,10 @@ curr1_rated_max   in1_crit_alarm    in1_rated_max     power/            power2_l
  1 file changed, 1 insertion(+)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index d91ad76..f3cca00 100644
+index 81de177..1a78773 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -124,6 +124,7 @@ static const I2CDeviceTypeMap sensorTypes{
+@@ -125,6 +125,7 @@ static const I2CDeviceTypeMap sensorTypes{
      {"MP2975", I2CDeviceType{"mp2975", true}},
      {"MP5023", I2CDeviceType{"mp5023", true}},
      {"MP5990", I2CDeviceType{"mp5990", true}},

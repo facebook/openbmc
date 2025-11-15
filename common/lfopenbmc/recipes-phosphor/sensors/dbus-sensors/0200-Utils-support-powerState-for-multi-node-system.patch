@@ -1,4 +1,4 @@
-From 89aa273d8bec7e74e03e1b5ac048b9cb4c864130 Mon Sep 17 00:00:00 2001
+From 85a6e31596b6bf70f2442f9c3d4c283653b3f177 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH 200/203] Utils: support powerState for multi-node system
@@ -957,10 +957,10 @@ index e679dc2..e66f68c 100644
      ~PSUProperty() = default;
  
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 81de177..b4d806f 100644
+index 7db25fe..049b616 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -613,6 +613,7 @@ static void createSensorsCallback(
+@@ -617,6 +617,7 @@ static void createSensorsCallback(
          checkGroupEvent(directory.string(), groupEventPathList);
  
          PowerState readState = getPowerState(*baseConfig);
@@ -968,7 +968,7 @@ index 81de177..b4d806f 100644
  
          /* Check if there are more sensors in the same interface */
          int i = 1;
-@@ -1064,7 +1065,7 @@ static void createSensorsCallback(
+@@ -1068,7 +1069,7 @@ static void createSensorsCallback(
                      readState, findSensorUnit->second, factor,
                      psuProperty.maxReading, psuProperty.minReading,
                      psuProperty.sensorOffset, labelHead, thresholdConfSize,
@@ -977,7 +977,7 @@ index 81de177..b4d806f 100644
                  sensors[sensorName]->setupRead();
                  ++numCreated;
                  lg2::debug("Created '{NUM}' sensors so far", "NUM", numCreated);
-@@ -1239,7 +1240,11 @@ static void powerStateChanged(
+@@ -1243,7 +1244,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {
@@ -991,7 +991,7 @@ index 81de177..b4d806f 100644
          }
      }
 diff --git a/src/sensor.hpp b/src/sensor.hpp
-index b5c922e..2d96ccf 100644
+index fb2bcac..c865703 100644
 --- a/src/sensor.hpp
 +++ b/src/sensor.hpp
 @@ -78,13 +78,13 @@ struct Sensor

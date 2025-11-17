@@ -186,7 +186,7 @@ read_flash_to_file() {
 
     modprobe -r spidev
     modprobe spidev
-    type=$(flash_get_model "$spi_dev")
+    type=$(flash_get_model "$spi_dev" | head -n1)
     flashrom -p linux_spi:dev=/dev/"$spi_dev" -r "$file" -c "$type"
     ret=$?
     if [ "$ret" -ne 0 ]; then
@@ -204,7 +204,7 @@ write_flash_to_file() {
     modprobe -r spidev
     modprobe spidev
     resize_file "$in_file" "$out_file" "$spi_no"
-    type=$(flash_get_model "$spi_dev")
+    type=$(flash_get_model "$spi_dev" | head -n1)
     flashrom -p linux_spi:dev=/dev/"$spi_dev" -w "$out_file" -c "$type"
     ret=$?
     if [ "$ret" -ne 0 ]; then
@@ -219,7 +219,7 @@ erase_flash() {
 
     modprobe -r spidev
     modprobe spidev
-    type=$(flash_get_model "$spi_dev")
+    type=$(flash_get_model "$spi_dev" | head -n1)
     flashrom -p linux_spi:dev=/dev/"$spi_dev" -E -c "$type"
     ret=$?
     if [ "$ret" -ne 0 ]; then

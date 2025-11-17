@@ -1,0 +1,197 @@
+From e25be86dc57d7267d373698a5f6d46570264f2d8 Mon Sep 17 00:00:00 2001
+From: LioraGuo-wiwynn <liora.guo.wiwynn@gmail.com>
+Date: Thu, 30 Oct 2025 10:20:57 +0000
+Subject: [PATCH 1/2] oemcommands: Stabilize motherboard FRU selection on
+ AC-off
+
+Task Description:
+1) On multi-host platforms, when AC is off the entity-manager
+   removes parts of the inventory. As a result, the number of objects
+   under xyz.openbmc_project.Inventory.Item.Board.Motherboard shrinks.
+   Our previous index-based selection then "shifts" (later objects move
+   forward), causing the wrong motherboard FRU to be selected and shown.
+2) Reduces unnecessary DBus traversal
+
+Motivation:
+Index-based selection assumes a stable ordering and a complete list
+of motherboard objects. When inventory entries disappear (AC off),
+indices no longer correspond to the original host positions.
+
+Design:
+1) Replace index-based selection with a predicate-based lookup:
+   - For multi-host platforms with hostPosition > 0, select the path
+     whose name contains the suffix `_<hostPosition>` or
+     `_Slot_<hostPosition>`.
+   - Otherwise default to the first match.
+     This keeps selection stable even when the list shrinks.
+
+2) In getFruData(), if getMotherBoardFruPath() returns a non-empty
+   path, read the Asset decorator properties (e.g., SN/PN) directly
+   from that object and return early.
+
+Test Log:
+```
+Oct 30 04:18:16 bmc ipmid[1444]: [2] Found Motherboard:
+  ..../inventory/system/board/Yosemite_4_Sentinel_Dome_T2_Slot_3
+Oct 30 04:18:16 bmc ipmid[1444]: SN:WX5X434001PN01
+Oct 30 04:18:16 bmc ipmid[1444]: [2] Found Motherboard:
+  ..../inventory/system/board/Yosemite_4_Sentinel_Dome_T2_Slot_3
+Oct 30 04:18:16 bmc ipmid[1444]: PN:B81.10H10.005X
+Oct 30 04:18:16 bmc entity-manager[762]: Inventory Removed:
+  Yosemite 4 Wailua Falls Slot 2
+Oct 30 04:18:16 bmc entity-manager[762]: Inventory Removed:
+  Yosemite 4 Sentinel Dome Slot 2 CPU
+Oct 30 04:18:16 bmc entity-manager[762]: Inventory Removed:
+  Yosemite 4 Sentinel Dome Slot 2 Chassis
+Oct 30 04:18:16 bmc entity-manager[762]: Inventory Removed:
+  Yosemite 4 Sentinel Dome T2 Slot 2Dome_T2_Slot_3
+Oct 30 04:18:21 bmc ipmid[1444]: [2] Found Motherboard:
+  ..../inventory/system/board/Yosemite_4_Sentinel_Dome_T2_Slot_3
+Oct 30 04:18:21 bmc ipmid[1444]: SN:WX5X434001PN01
+Oct 30 04:18:21 bmc ipmid[1444]: [2] Found Motherboard:
+  ..../inventory/system/board/Yosemite_4_Sentinel_Dome_T2_Slot_3
+Oct 30 04:18:21 bmc ipmid[1444]: PN:B81.10H10.005X
+```
+---
+ src/oemcommands.cpp | 88 ++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 71 insertions(+), 17 deletions(-)
+
+diff --git a/src/oemcommands.cpp b/src/oemcommands.cpp
+index f8b1cf4..0f8d0e8 100644
+--- a/src/oemcommands.cpp
++++ b/src/oemcommands.cpp
+@@ -574,6 +574,36 @@ static std::optional<std::string> findFruPathByInterface(
+     return std::nullopt;
+ }
+
++static auto makeMotherboardMatcher(size_t pos)
++{
++    return [pos](const std::string& path) {
++        const auto lastSlash = path.find_last_of('/');
++        const std::string leaf = (lastSlash == std::string::npos)
++                                     ? path
++                                     : path.substr(lastSlash + 1);
++
++        const std::string slotSuffix = "_Slot_" + std::to_string(pos);
++        const std::string indexSuffix = "_" + std::to_string(pos);
++
++        auto endsWith = [](const std::string& str, const std::string& suffix) {
++            return str.size() >= suffix.size() &&
++                   str.compare(str.size() - suffix.size(), suffix.size(),
++                               suffix) == 0;
++        };
++
++        if (endsWith(leaf, slotSuffix))
++        {
++            return true;
++        }
++        if (endsWith(leaf, indexSuffix))
++        {
++            return true;
++        }
++
++        return false;
++    };
++}
++
+ // return "" equals failed
+ std::string getMotherBoardFruPath()
+ {
+@@ -581,9 +611,19 @@ std::string getMotherBoardFruPath()
+
+     bool platform = isMultiHostPlatform();
+     size_t hostPosition = 0;
++    std::function<bool(const std::string&)> candidate = [](const std::string&) {
++        return true;
++    };
+     if (platform)
++    {
+         getSelectorPosition(hostPosition);
+
++        if (hostPosition > 0)
++        {
++            candidate = makeMotherboardMatcher(hostPosition);
++        }
++    }
++
+     if (hostPosition == 0)
+     {
+         if (auto path = findFruPathByInterface(
+@@ -595,15 +635,9 @@ std::string getMotherBoardFruPath()
+         }
+     }
+
+-    size_t targetIndex = (hostPosition > 0 ? hostPosition - 1 : 0);
+-    auto predNth = [targetIndex,
+-                    counter = size_t{0}](const std::string& /*path*/) mutable {
+-        return (counter++ == targetIndex);
+-    };
+-
+     if (auto path = findFruPathByInterface(
+             dbus, "xyz.openbmc_project.Inventory.Item.Board.Motherboard",
+-            predNth))
++            candidate))
+     {
+         lg2::info("[2] Found Motherboard: {PATH}", "PATH", *path);
+         return *path;
+@@ -643,7 +677,35 @@ int8_t getFruData(std::string& data, std::string& name)
+     std::vector<std::string> paths;
+     std::string machinePath;
+     std::string baseBoard = getMotherBoardFruPath();
+-    baseBoard = baseBoard.empty() ? "Baseboard" : baseBoard;
++
++    // If getMotherBoardFruPath() not return "", prefer a direct Asset read on
++    // that object
++    if (!baseBoard.empty())
++    {
++        try
++        {
++            std::shared_ptr<sdbusplus::asio::connection> dbus = getSdBus();
++            std::string service = getService(
++                *dbus, "xyz.openbmc_project.Inventory.Decorator.Asset",
++                baseBoard);
++
++            auto Value = ipmi::getDbusProperty(
++                *dbus, service, baseBoard,
++                "xyz.openbmc_project.Inventory.Decorator.Asset", name);
++
++            data = std::get<std::string>(Value);
++            return 0;
++        }
++        catch (const std::exception& e)
++        {
++            lg2::error("DBus call failed: {ERR}", "ERR", e.what());
++            return -1;
++        }
++    }
++    else
++    {
++        baseBoard = "Baseboard";
++    }
+
+     bool platform = isMultiHostPlatform();
+     if (platform == true)
+@@ -685,19 +747,11 @@ int8_t getFruData(std::string& data, std::string& name)
+     {
+         if (platform == true)
+         {
+-            if (pos == BMC_POS)
+-            {
+-                machinePath = baseBoard;
+-            }
+-            else
++            if (pos != BMC_POS)
+             {
+                 machinePath = "_" + std::to_string(pos);
+             }
+         }
+-        else
+-        {
+-            machinePath = baseBoard;
+-        }
+
+         auto found = path.find(machinePath);
+         if (found == std::string::npos)
+--
+2.25.1
+

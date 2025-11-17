@@ -1,0 +1,47 @@
+From a9c906ad47efc00870b0f0f38241479a98707c21 Mon Sep 17 00:00:00 2001
+From: Liora Guo <liora.guo.wiwynn@gmail.com>
+Date: Thu, 6 Nov 2025 07:34:47 +0000
+Subject: [PATCH 2/2] yosemite4: fb-ipmi-oem: skip FRU read when motherboard
+ path is missing
+
+[Task Description]
+On YosemiteV4 platforms, when the motherboard FRU path cannot be resolved, getFruData() now returns -1 instead of falling back to a
+generic selection. This prevents showing SN/PN from the wrong FRU.
+
+[Root Cause]
+- Related to YV4T1M-480
+- During AC-off, Entity-Manager prunes inventory objects, so getMotherBoardFruPath() can be empty. The previous fallback tried to
+  reconstruct a path by matching "_<pos>", which is unsafe on YV4 because non-motherboard objects can also match (e.g. "BRCM_OCP_NIC_FRU_1").
+  This could silently report FRU data for the wrong object. Failing fast avoids misinformation.
+
+[Solution]
+- In getFruData(), when getMotherBoardFruPath() returns empty, replace:
+    else { baseBoard = "Baseboard"; }
+  with:
+    else { return -1; }
+- No interface or parameter changes. Behavior only changes for the
+  path-missing case.
+
+[Test Plan]
+- Verified on debug card: FRU info renders correctly.
+- Conditional display: Show motherboard FRU SN/PN only if getMotherBoardFruPath() exists; otherwise display "Not Found".
+---
+ src/oemcommands.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/oemcommands.cpp b/src/oemcommands.cpp
+index 0f8d0e8..958e9ec 100644
+--- a/src/oemcommands.cpp
++++ b/src/oemcommands.cpp
+@@ -704,7 +704,7 @@ int8_t getFruData(std::string& data, std::string& name)
+     }
+     else
+     {
+-        baseBoard = "Baseboard";
++        return -1;
+     }
+
+     bool platform = isMultiHostPlatform();
+--
+2.25.1
+

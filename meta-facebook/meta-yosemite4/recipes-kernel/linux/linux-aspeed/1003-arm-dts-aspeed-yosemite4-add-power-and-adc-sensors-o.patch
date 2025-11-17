@@ -1,24 +1,25 @@
-From f4e6f381a1e3700d732f9db58a6c61d0fdc438a3 Mon Sep 17 00:00:00 2001
+From 971ce37bee3b04ea3bfe2102f2d8ff3e848e741b Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Fri, 1 Nov 2024 11:25:35 +0800
-Subject: [PATCH 1003/1016] arm: dts: aspeed: yosemite4: add power and adc
- sensors on Medusa Board
+Subject: [PATCH] arm: dts: aspeed: yosemite4: add power and adc sensors on
+ Medusa Board
 
 1. Add XDP710 for 2nd source 48V HSC devices.
   - Haven't contributed to kernel org.
 2. Add MP5023 for P12V eFuse device.
   - Haven't contributed because there is no binding document on upstream.
-3. Add INA233 and RTQ6065 for ADC monitor
-  - Haven't contributed because there is no drivers for INA233 on upstream.
-  - Couldn't add multiple device in one compatible on upstream.
-4. Add pmbus for P12V Delta Module devices.
+3. Add pmbus for P12V Delta Module devices.
   - Haven't contributed because we couldn't use 'pmbus' in dts on upstream.
+4. Add a property "status" to tmp and set value to "disabled".
+  - The G751 device also uses lm75.c, but its compatible string needs to be 'gmt,g751'.
+5. Add a property "status" to ADC monitor and set value to "disabled".
+  - Since the device rtq6056 gets bound to the ina233 driver, the driver binding is changed to use the entity-manager.
 ---
- .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 42 +++++++++++++++++++
- 1 file changed, 42 insertions(+)
+ .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 45 +++++++++++++++++++
+ 1 file changed, 45 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
-index 57c72b08adab..bdfc81582da2 100644
+index 57c72b08a..fe8471bb1 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
 @@ -904,11 +904,21 @@ power-sensor@10 {
@@ -43,7 +44,7 @@ index 57c72b08adab..bdfc81582da2 100644
  	gpio@20 {
  		compatible = "nxp,pca9555";
  		reg = <0x20>;
-@@ -984,6 +994,18 @@ gpio@23 {
+@@ -984,20 +994,55 @@ gpio@23 {
  				  "HSC7_ALERT2_R_N", "HSC8_ALERT2_R_N";
  	};
  
@@ -57,12 +58,22 @@ index 57c72b08adab..bdfc81582da2 100644
 +		resistor-calibration = /bits/ 16 <0x0a00>;
 +		current-lsb= /bits/ 16 <0x0001>;
 +		reg = <0x41>;
++		status = "disabled";
 +	};
 +
  	temperature-sensor@48 {
  		compatible = "ti,tmp75";
  		reg = <0x48>;
-@@ -998,6 +1020,26 @@ eeprom@54 {
++		status = "disabled";
+ 	};
+ 
+ 	temperature-sensor@49 {
+ 		compatible = "ti,tmp75";
+ 		reg = <0x49>;
++		status = "disabled";
+ 	};
+ 
+ 	eeprom@54 {
  		compatible = "atmel,24c128";
  		reg = <0x54>;
  	};
@@ -90,5 +101,5 @@ index 57c72b08adab..bdfc81582da2 100644
  
  &i2c12 {
 -- 
-2.47.3
+2.43.0
 

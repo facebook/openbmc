@@ -15,8 +15,8 @@ Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
 Change-Id: Ia629a416b1c26895195a4eca0eb379a86355f28f
 ---
  arch/arm/boot/dts/aspeed/aspeed-g6.dtsi | 2 ++
- drivers/iio/adc/aspeed_adc.c | 226 +++++++++++++++++++++++++++++++++--
- 2 file changed, 216 insertions(+), 12 deletions(-)
+ drivers/iio/adc/aspeed_adc.c | 238 +++++++++++++++++++++++++++++++++--
+ 2 file changed, 228 insertions(+), 12 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 index 293808d8c3a2..b888a68fa77e 100644
@@ -43,7 +43,7 @@ diff --git a/drivers/iio/adc/aspeed_adc.c b/drivers/iio/adc/aspeed_adc.c
 index 998e8bcc06e1..ff516a0c8056 100644
 --- a/drivers/iio/adc/aspeed_adc.c
 +++ b/drivers/iio/adc/aspeed_adc.c
-@@ -120,6 +120,26 @@ struct aspeed_adc_data {
+@@ -120,6 +120,27 @@ struct aspeed_adc_data {
  	int			cv;
  	bool			battery_sensing;
  	struct adc_gain		battery_mode_gain;
@@ -52,6 +52,7 @@ index 998e8bcc06e1..ff516a0c8056 100644
 +	u16			*lower_bound;
 +	bool			*upper_en;
 +	bool			*lower_en;
++	u32			retry_count;
 +};
 +
 +static const struct iio_event_spec aspeed_adc_events[] = {
@@ -70,7 +71,7 @@ index 998e8bcc06e1..ff516a0c8056 100644
  };
  
  #define ASPEED_CHAN(_idx, _data_reg_addr) {			\
-@@ -131,6 +151,8 @@ struct aspeed_adc_data {
+@@ -131,6 +152,8 @@ struct aspeed_adc_data {
  	.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SCALE) |	\
  				BIT(IIO_CHAN_INFO_SAMP_FREQ) |	\
  				BIT(IIO_CHAN_INFO_OFFSET),	\
@@ -79,7 +80,7 @@ index 998e8bcc06e1..ff516a0c8056 100644
  }
  
  static const struct iio_chan_spec aspeed_adc_iio_channels[] = {
-@@ -175,18 +197,11 @@ static const struct iio_chan_spec aspeed_adc_iio_bat_channels[] = {
+@@ -175,18 +198,11 @@ static const struct iio_chan_spec aspeed_adc_iio_bat_channels[] = {
  
  static int aspeed_adc_set_trim_data(struct iio_dev *indio_dev)
  {
@@ -99,13 +100,13 @@ index 998e8bcc06e1..ff516a0c8056 100644
  	if (IS_ERR(scu)) {
  		dev_warn(data->dev, "Failed to get syscon regmap\n");
  		return -EOPNOTSUPP;
-@@ -277,6 +292,34 @@ static int aspeed_adc_set_sampling_rate(struct iio_dev *indio_dev, u32 rate)
+@@ -277,6 +293,42 @@ static int aspeed_adc_set_sampling_rate(struct iio_dev *indio_dev, u32 rate)
  	return 0;
  }
  
 +static int aspeed_adc_get_voltage_raw(struct aspeed_adc_data *data, struct iio_chan_spec const *chan)
 +{
-+	int val;
++	int val, i;
 +
 +	val = readw(data->base + chan->address);
 +	dev_dbg(data->dev,
@@ -116,16 +117,24 @@ index 998e8bcc06e1..ff516a0c8056 100644
 +		data->enabled_channels_num);
 +	if (data->upper_en[chan->channel]) {
 +		if (val >= data->upper_bound[chan->channel]) {
-+			ndelay(data->sample_period_ns *
-+			       data->enabled_channels_num);
-+			val = readw(data->base + chan->address);
++			for (i = 0; i < data->retry_count; i++) {
++				ndelay(data->sample_period_ns *
++				       data->enabled_channels_num);
++				val = readw(data->base + chan->address);
++				if (val < data->upper_bound[chan->channel])
++					break;
++			}
 +		}
 +	}
 +	if (data->lower_en[chan->channel]) {
 +		if (val <= data->lower_bound[chan->channel]) {
-+			ndelay(data->sample_period_ns *
-+			       data->enabled_channels_num);
-+			val = readw(data->base + chan->address);
++			for (i = 0; i < data->retry_count; i++) {
++				ndelay(data->sample_period_ns *
++				       data->enabled_channels_num);
++				val = readw(data->base + chan->address);
++				if (val > data->lower_bound[chan->channel])
++					break;
++			}
 +		}
 +	}
 +	return val;
@@ -134,7 +143,7 @@ index 998e8bcc06e1..ff516a0c8056 100644
  static int aspeed_adc_read_raw(struct iio_dev *indio_dev,
  			       struct iio_chan_spec const *chan,
  			       int *val, int *val2, long mask)
-@@ -299,14 +342,15 @@ static int aspeed_adc_read_raw(struct iio_dev *indio_dev,
+@@ -299,14 +351,15 @@ static int aspeed_adc_read_raw(struct iio_dev *indio_dev,
  			 * Experiment result is 1ms.
  			 */
  			mdelay(1);
@@ -153,7 +162,7 @@ index 998e8bcc06e1..ff516a0c8056 100644
  		return IIO_VAL_INT;
  
  	case IIO_CHAN_INFO_OFFSET:
-@@ -369,9 +413,106 @@ static int aspeed_adc_reg_access(struct iio_dev *indio_dev,
+@@ -369,9 +422,106 @@ static int aspeed_adc_reg_access(struct iio_dev *indio_dev,
  	return 0;
  }
  
@@ -260,7 +269,7 @@ index 998e8bcc06e1..ff516a0c8056 100644
  	.debugfs_reg_access = aspeed_adc_reg_access,
  };
  
-@@ -502,6 +643,30 @@ static int aspeed_adc_probe(struct platform_device *pdev)
+@@ -502,6 +652,33 @@ static int aspeed_adc_probe(struct platform_device *pdev)
  	if (IS_ERR(data->base))
  		return PTR_ERR(data->base);
  
@@ -288,10 +297,13 @@ index 998e8bcc06e1..ff516a0c8056 100644
 +				      GFP_KERNEL);
 +	if (!data->lower_en)
 +		return -ENOMEM;
++	data->retry_count = 3;
++	of_property_read_u32(data->dev->of_node, "retry-count", &data->retry_count);
++
  	/* Register ADC clock prescaler with source specified by device tree. */
  	spin_lock_init(&data->clk_lock);
  	snprintf(clk_parent_name, ARRAY_SIZE(clk_parent_name), "%s",
-@@ -632,7 +797,10 @@ static int aspeed_adc_probe(struct platform_device *pdev)
+@@ -632,7 +809,10 @@ static int aspeed_adc_probe(struct platform_device *pdev)
  	adc_engine_control_reg_val |= ASPEED_ADC_CTRL_CHANNEL;
  	writel(adc_engine_control_reg_val,
  	       data->base + ASPEED_REG_ENGINE_CONTROL);
@@ -303,7 +315,7 @@ index 998e8bcc06e1..ff516a0c8056 100644
  	indio_dev->name = data->model_data->model_name;
  	indio_dev->info = &aspeed_adc_iio_info;
  	indio_dev->modes = INDIO_DIRECT_MODE;
-@@ -660,6 +828,16 @@ static const struct aspeed_adc_trim_locate ast2600_adc1_trim = {
+@@ -660,6 +840,16 @@ static const struct aspeed_adc_trim_locate ast2600_adc1_trim = {
  	.field = GENMASK(7, 4),
  };
  
@@ -320,7 +332,7 @@ index 998e8bcc06e1..ff516a0c8056 100644
  static const struct aspeed_adc_model_data ast2400_model_data = {
  	.model_name = "ast2400-adc",
  	.vref_fixed_mv = 2500,
-@@ -704,11 +882,35 @@ static const struct aspeed_adc_model_data ast2600_adc1_model_data = {
+@@ -704,11 +894,35 @@ static const struct aspeed_adc_model_data ast2600_adc1_model_data = {
  	.trim_locate = &ast2600_adc1_trim,
  };
  

@@ -95,7 +95,7 @@ print_bios_verison() {
 
     # Retrieve the version
     tmp_file="/tmp/tmp_bios_version"
-    dd bs=1 skip=61075470 count=16 if="/dev/mtd7" of="$tmp_file"
+    dd bs=1 skip=61075470 count=16 if="/dev/mtd/by-name/bios" of="$tmp_file"
     if [ -s $tmp_file ]; then
         bios_version=$(tr -d '\0' < "$tmp_file")
         #rm "$tmp_file"

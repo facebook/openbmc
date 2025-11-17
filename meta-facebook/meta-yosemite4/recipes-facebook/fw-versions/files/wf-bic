@@ -26,7 +26,7 @@ while [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
     else
         echo "Version is empty, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES)"
         RETRY_COUNT=$((RETRY_COUNT + 1))
-        sleep 5
+        sleep $((5 + RETRY_COUNT * 10))
     fi
 done
 

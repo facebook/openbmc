@@ -1,0 +1,140 @@
+From 4a5f9b84af086cf6c613eeeb628e5cb71ad5fdb9 Mon Sep 17 00:00:00 2001
+From: Bruce Hung <bruce.jy.hung@fii-foxconn.com>
+Date: Thu, 13 Nov 2025 22:41:51 +0800
+Subject: [PATCH] configurations: nvidia: Use external senosr for gb300 IO
+ board
+
+The only way to access all sensors on a CX8 is through PLDM.
+To do so we need to expose them as external sensor in order
+to update the values with those obtained by PLDM command.
+---
+ .../nvidia/nvidia_cx8_mezzanine_module.json   | 96 ++++++++++++++++---
+ 1 file changed, 82 insertions(+), 14 deletions(-)
+
+diff --git a/configurations/nvidia/nvidia_cx8_mezzanine_module.json b/configurations/nvidia/nvidia_cx8_mezzanine_module.json
+index 676441e..a3e30e8 100644
+--- a/configurations/nvidia/nvidia_cx8_mezzanine_module.json
++++ b/configurations/nvidia/nvidia_cx8_mezzanine_module.json
+@@ -7,14 +7,12 @@
+             "Type": "EEPROM"
+         },
+         {
+-            "Address": "0x1f",
+-            "Bus": "$bus + 3",
+-            "Labels": [
+-                "temp2"
+-            ],
+             "Name": "IOB$bus - 29 % 11 NIC0_TEMP_C",
+-            "Name1": "IOB$bus - 29 % 11 NIC0_TEMP_C",
+             "PowerState": "On",
++            "Units": "xyz.openbmc_project.Sensor.Value.Unit.DegreesC",
++            "MaxValue": 255,
++            "MinValue": -255.0,
++            "Timeout": 30.0,
+             "Thresholds": [
+                 {
+                     "Direction": "greater than",
+@@ -31,17 +29,15 @@
+                     "Value": 97
+                 }
+             ],
+-            "Type": "TMP421"
++            "Type": "ExternalSensor"
+         },
+         {
+-            "Address": "0x1f",
+-            "Bus": "$bus + 6",
+-            "Labels": [
+-                "temp2"
+-            ],
+             "Name": "IOB$bus - 29 % 11 NIC1_TEMP_C",
+-            "Name1": "IOB$bus - 29 % 11 NIC1_TEMP_C",
+             "PowerState": "On",
++            "Units": "xyz.openbmc_project.Sensor.Value.Unit.DegreesC",
++            "MaxValue": 255,
++            "MinValue": -255.0,
++            "Timeout": 30.0,
+             "Thresholds": [
+                 {
+                     "Direction": "greater than",
+@@ -58,7 +54,79 @@
+                     "Value": 97
+                 }
+             ],
+-            "Type": "TMP421"
++            "Type": "ExternalSensor"
++        },
++        {
++            "Name": "IOB$bus - 29 % 11 NIC0_PWR_W",
++            "PowerState": "On",
++            "Units": "xyz.openbmc_project.Sensor.Value.Unit.Watts",
++            "MaxValue": 65535,
++            "MinValue": 0,
++            "Timeout": 30.0,
++            "Type": "ExternalSensor"
++        },
++        {
++            "Name": "IOB$bus - 29 % 11 NIC1_PWR_W",
++            "PowerState": "On",
++            "Units": "xyz.openbmc_project.Sensor.Value.Unit.Watts",
++            "MaxValue": 65535,
++            "MinValue": 0,
++            "Timeout": 30.0,
++            "Type": "ExternalSensor"
++        },
++        {
++            "Name": "IOB$bus - 29 % 11 NIC0_OSFP_TEMP_C",
++            "PowerState": "On",
++            "Units": "xyz.openbmc_project.Sensor.Value.Unit.DegreesC",
++            "MaxValue": 255,
++            "MinValue": -255.0,
++            "Timeout": 30.0,
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.4,
++                    "Index": 2,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 70.0
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.1,
++                    "Index": 2,
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 5
++                }
++            ],
++            "Type": "ExternalSensor"
++        },
++        {
++            "Name": "IOB$bus - 29 % 11 NIC1_OSFP_TEMP_C",
++            "PowerState": "On",
++            "Units": "xyz.openbmc_project.Sensor.Value.Unit.DegreesC",
++            "MaxValue": 255,
++            "MinValue": -255.0,
++            "Timeout": 30.0,
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.4,
++                    "Index": 2,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 70.0
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.1,
++                    "Index": 2,
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 5
++                }
++            ],
++            "Type": "ExternalSensor"
+         }
+     ],
+     "Name": "NVIDIA GB300 IO Board $bus - 29 % 11",

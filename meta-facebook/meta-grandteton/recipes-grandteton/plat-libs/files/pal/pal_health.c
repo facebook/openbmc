@@ -22,7 +22,7 @@ pal_get_sensor_health_key(uint8_t fru, char *key) {
       }
       break;
     case FRU_HGX:
-      if (!pal_is_artemis()) {
+      if (!pal_is_artemis() && get_gpu_config() == GPU_CONFIG_HGX) {
         sprintf(key, "gpu_sensor_health");
       } else {
         return -1;
@@ -74,7 +74,7 @@ pal_get_sensor_health_key(uint8_t fru, char *key) {
       }
       break;
     case FRU_UBB:
-      if (!pal_is_artemis()) {
+      if (!pal_is_artemis() && get_gpu_config() == GPU_CONFIG_UBB) {
         sprintf(key, "gpu_sensor_health");
       } else {
         return -1;
@@ -104,6 +104,14 @@ pal_set_sensor_health(uint8_t fru, uint8_t value) {
         value = FRU_STATUS_BAD;
         break;
       }
+    }
+  }
+  else {
+    if (fru == FRU_HGX && get_gpu_config() != GPU_CONFIG_HGX) {
+      value = FRU_STATUS_BAD;
+    }
+    else if (fru == FRU_UBB && get_gpu_config() != GPU_CONFIG_UBB) {
+      value = FRU_STATUS_BAD;
     }
   }
 

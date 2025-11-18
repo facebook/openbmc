@@ -1,4 +1,4 @@
-From 6a43506d18977b8d1e35deaff3832b709da2097d Mon Sep 17 00:00:00 2001
+From ee49a19365d043ce7173a3878276f8d9ddcb5997 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Fri, 24 Nov 2023 15:54:07 +0800
 Subject: [PATCH 309/336] Kernel6v5: Support apml driver
@@ -38,7 +38,7 @@ Link: https://github.com/AMDESE/OpenBMC/blob/master/meta-amd/meta-common/recipes
  create mode 100644 include/uapi/linux/amd-apml.h
 
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 10a0f87d8e80..e7162df826f5 100644
+index 10a0f87d8..e7162df82 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
 @@ -1790,6 +1790,28 @@ config SENSORS_SBRMI
@@ -71,7 +71,7 @@ index 10a0f87d8e80..e7162df826f5 100644
  	tristate "Sensiron humidity and temperature sensors. SHT15 and compat."
  	depends on GPIOLIB || COMPILE_TEST
 diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 1d4246d5a544..353b9de74c0e 100644
+index 1d4246d5a..353b9de74 100644
 --- a/drivers/hwmon/Makefile
 +++ b/drivers/hwmon/Makefile
 @@ -186,6 +186,8 @@ obj-$(CONFIG_SENSORS_PWM_FAN)	+= pwm-fan.o
@@ -85,7 +85,7 @@ index 1d4246d5a544..353b9de74c0e 100644
  obj-$(CONFIG_SENSORS_SCH5636)	+= sch5636.o
 diff --git a/drivers/hwmon/sbrmi-i3c.c b/drivers/hwmon/sbrmi-i3c.c
 new file mode 100644
-index 000000000000..be2ef58803c8
+index 000000000..be2ef5880
 --- /dev/null
 +++ b/drivers/hwmon/sbrmi-i3c.c
 @@ -0,0 +1,363 @@
@@ -454,7 +454,7 @@ index 000000000000..be2ef58803c8
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/hwmon/sbtsi-i3c.c b/drivers/hwmon/sbtsi-i3c.c
 new file mode 100644
-index 000000000000..b7b499aa33ef
+index 000000000..b7b499aa3
 --- /dev/null
 +++ b/drivers/hwmon/sbtsi-i3c.c
 @@ -0,0 +1,272 @@
@@ -731,7 +731,7 @@ index 000000000000..b7b499aa33ef
 +MODULE_DESCRIPTION("Hwmon driver for AMD SB-TSI emulated sensor");
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index cadd4a820c03..499d5baacdbc 100644
+index cadd4a820..499d5baac 100644
 --- a/drivers/misc/Kconfig
 +++ b/drivers/misc/Kconfig
 @@ -562,6 +562,7 @@ config TPS6594_PFSM
@@ -743,7 +743,7 @@ index cadd4a820c03..499d5baacdbc 100644
  source "drivers/misc/eeprom/Kconfig"
  source "drivers/misc/cb710/Kconfig"
 diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index f2a4d1ff65d4..5afe961975d5 100644
+index f2a4d1ff6..5afe96197 100644
 --- a/drivers/misc/Makefile
 +++ b/drivers/misc/Makefile
 @@ -3,6 +3,7 @@
@@ -756,7 +756,7 @@ index f2a4d1ff65d4..5afe961975d5 100644
  obj-$(CONFIG_AD525X_DPOT)	+= ad525x_dpot.o
 diff --git a/drivers/misc/amd-apml/Kconfig b/drivers/misc/amd-apml/Kconfig
 new file mode 100644
-index 000000000000..bc9bd7ece0a8
+index 000000000..bc9bd7ece
 --- /dev/null
 +++ b/drivers/misc/amd-apml/Kconfig
 @@ -0,0 +1,28 @@
@@ -790,7 +790,7 @@ index 000000000000..bc9bd7ece0a8
 +	  be called apml_sbtsi.
 diff --git a/drivers/misc/amd-apml/Makefile b/drivers/misc/amd-apml/Makefile
 new file mode 100644
-index 000000000000..a73ca261f08c
+index 000000000..a73ca261f
 --- /dev/null
 +++ b/drivers/misc/amd-apml/Makefile
 @@ -0,0 +1,9 @@
@@ -805,7 +805,7 @@ index 000000000000..a73ca261f08c
 +obj-$(CONFIG_APML_SBTSI)	+= apml_sbtsi.o
 diff --git a/drivers/misc/amd-apml/apml_sbtsi.c b/drivers/misc/amd-apml/apml_sbtsi.c
 new file mode 100644
-index 000000000000..10bb9ae0ae7c
+index 000000000..10bb9ae0a
 --- /dev/null
 +++ b/drivers/misc/amd-apml/apml_sbtsi.c
 @@ -0,0 +1,433 @@
@@ -1244,7 +1244,7 @@ index 000000000000..10bb9ae0ae7c
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/misc/amd-apml/sbrmi-common.c b/drivers/misc/amd-apml/sbrmi-common.c
 new file mode 100644
-index 000000000000..7527c186adb3
+index 000000000..7527c186a
 --- /dev/null
 +++ b/drivers/misc/amd-apml/sbrmi-common.c
 @@ -0,0 +1,490 @@
@@ -1740,7 +1740,7 @@ index 000000000000..7527c186adb3
 +}
 diff --git a/drivers/misc/amd-apml/sbrmi-common.h b/drivers/misc/amd-apml/sbrmi-common.h
 new file mode 100644
-index 000000000000..6f1aea480509
+index 000000000..6f1aea480
 --- /dev/null
 +++ b/drivers/misc/amd-apml/sbrmi-common.h
 @@ -0,0 +1,38 @@
@@ -1784,7 +1784,7 @@ index 000000000000..6f1aea480509
 +#endif /*_AMD_APML_SBRMI_H_*/
 diff --git a/drivers/misc/amd-apml/sbrmi.c b/drivers/misc/amd-apml/sbrmi.c
 new file mode 100644
-index 000000000000..21cc226ba670
+index 000000000..51cdc296e
 --- /dev/null
 +++ b/drivers/misc/amd-apml/sbrmi.c
 @@ -0,0 +1,885 @@
@@ -1823,7 +1823,7 @@ index 000000000000..21cc226ba670
 +#define SBRMI_REV_BRTH (0x21)
 +
 +#define DIMM_BASE_ID		(0x80)
-+#define MAX_DIMM_COUNT		(12)
++#define MAX_DIMM_COUNT		(16)
 +#define DIMM_POWER_OFFSET	(17)
 +#define DIMM_TEMP_OFFSET	(21)
 +#define DIMM_TEMP_SCALE 	1/4
@@ -2675,7 +2675,7 @@ index 000000000000..21cc226ba670
 +MODULE_LICENSE("GPL");
 diff --git a/include/uapi/linux/amd-apml.h b/include/uapi/linux/amd-apml.h
 new file mode 100644
-index 000000000000..041610925fad
+index 000000000..041610925
 --- /dev/null
 +++ b/include/uapi/linux/amd-apml.h
 @@ -0,0 +1,74 @@

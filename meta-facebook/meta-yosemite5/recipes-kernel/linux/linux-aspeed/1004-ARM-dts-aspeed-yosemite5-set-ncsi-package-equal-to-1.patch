@@ -1,0 +1,28 @@
+From 1a00efb20f1d08cbc985692d1a6b1d7f0c780066 Mon Sep 17 00:00:00 2001
+From: Kevin Tung <kevin.tung.openbmc@gmail.com>
+Date: Tue, 18 Nov 2025 16:03:31 +0800
+Subject: [PATCH] ARM: dts: aspeed: yosemite5: set ncsi package equal
+ to 1
+
+Set ncsi package=1.
+
+Signed-off-by: Kevin Tung <kevin.tung.openbmc@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+index f119c82c4..5857db287 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+@@ -898,6 +898,7 @@ &mac2 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_ncsi3_default>;
+ 	use-ncsi;
++	ncsi-package = <1>;
+ 	status = "okay";
+ };
+ 
+-- 
+2.47.3
+

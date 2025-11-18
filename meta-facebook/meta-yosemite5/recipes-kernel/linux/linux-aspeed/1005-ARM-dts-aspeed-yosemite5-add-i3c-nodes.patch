@@ -1,0 +1,44 @@
+From 2bc05422c0a99d1b26b7f1add6e4234f294cf592 Mon Sep 17 00:00:00 2001
+From: Kevin Tung <kevin.tung.openbmc@gmail.com>
+Date: Tue, 18 Nov 2025 16:20:02 +0800
+Subject: [PATCH] ARM: dts: aspeed: yosemite5: add i3c nodes
+
+Add the I3C nodes to the Yv5 DTS in the Meta tree temporarily.
+These nodes will remain here until the upstream AST2600 I3C support
+patch [1] is merged.
+
+[1]: https://lore.kernel.org/all/20240506105120.3028083-2-dylan_hung@aspeedtech.com/
+
+Signed-off-by: Kevin Tung <kevin.tung.openbmc@gmail.com>
+---
+ .../dts/aspeed/aspeed-bmc-facebook-yosemite5.dts   | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+index 5857db287..115eed7d1 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+@@ -874,6 +874,20 @@ &i2c15 {
+ 	status = "okay";
+ };
+ 
++&i3c0 {
++	status = "okay";
++};
++
++&i3c1 {
++	status = "okay";
++};
++
++&i3c2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i3c3_default>;
++	status = "okay";
++};
++
+ &kcs2 {
+ 	aspeed,lpc-io-reg = <0xca8>;
+ 	status = "okay";
+-- 
+2.47.3
+

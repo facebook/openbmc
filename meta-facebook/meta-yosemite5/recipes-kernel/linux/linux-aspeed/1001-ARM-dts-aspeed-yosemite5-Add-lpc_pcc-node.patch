@@ -1,0 +1,38 @@
+From 26d986a55b18fe3c3e26cff7c3fd04c03211960b Mon Sep 17 00:00:00 2001
+From: Kevin Tung <kevin.tung.openbmc@gmail.com>
+Date: Tue, 18 Nov 2025 15:32:51 +0800
+Subject: [PATCH] ARM: dts: aspeed: yosemite5: Add lpc_pcc node
+
+Add the lpc_pcc device node to enable post code handling on Yv5.
+Since the lpc_pcc driver is not available in the upstream kernel,
+this device tree change is applied only in the Meta tree.
+
+Signed-off-by: Kevin Tung <kevin.tung.openbmc@gmail.com>
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts  | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+index 2486981f3..0d458f6fa 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+@@ -871,6 +871,16 @@ &kcs3 {
+ 	status = "okay";
+ };
+ 
++&lpc_pcc {
++	rec-mode = <0x1>;
++	port-addr = <0x80>;
++	port-addr-hbits-select = <0x1>;
++	port-addr-xbits = <0x3>;
++	dma-mode;
++	A2600-15;
++	status = "okay";
++};
++
+ &mac2 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_ncsi3_default>;
+-- 
+2.47.3
+

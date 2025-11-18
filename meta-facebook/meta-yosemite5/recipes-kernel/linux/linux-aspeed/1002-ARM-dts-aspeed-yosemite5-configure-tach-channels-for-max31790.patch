@@ -1,0 +1,39 @@
+From ea98ff24474b20abeca0444029da892db34fa1a6 Mon Sep 17 00:00:00 2001
+From: Kevin Tung <kevin.tung.openbmc@gmail.com>
+Date: Tue, 18 Nov 2025 15:43:11 +0800
+Subject: [PATCH] ARM: dts: aspeed: yosemite5: configure tach
+ channels for max31790
+
+Configure the TACH sensor channels in the MAX31790 fan controller node.
+This functionality is not supported in the upstream device tree,
+so the change is applied only in the Meta tree.
+
+Signed-off-by: Kevin Tung <kevin.tung.openbmc@gmail.com>
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts  | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+index 0d458f6fa..5cafb6b7d 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+@@ -482,6 +482,16 @@ psu@5c {
+ 	fan-controller@5e{
+ 		compatible = "maxim,max31790";
+ 		reg = <0x5e>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		channel@1 {
++			reg = <1>;
++			sensor-type = "TACH";
++		};
++		channel@2 {
++			reg = <2>;
++			sensor-type = "TACH";
++		};
+ 	};
+ 
+ 	/* I2C MUX for PWRPIC #1, #2, #11, #12 */
+-- 
+2.47.3
+

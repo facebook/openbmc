@@ -1,4 +1,4 @@
-From a3374c2ecf36ff6844821790d2a2c55acb14b5c7 Mon Sep 17 00:00:00 2001
+From 7e1fb94cc0d37557fc81116bac74d0c438374311 Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Thu, 23 Oct 2025 14:34:12 +0800
 Subject: [PATCH 14/15] oem-meta: Add call to the fw-versions-sd-retimer
@@ -63,5 +63,5 @@ index 750765a..748b46e 100644
              PROCHOT_IS_TRIGGERED_DUE_TO_SD_SENSOR_READING_EXCEED_UCR:
          case EventType::FRB2_WDT_HARD_RST:
 -- 
-2.47.3
+2.43.0
 

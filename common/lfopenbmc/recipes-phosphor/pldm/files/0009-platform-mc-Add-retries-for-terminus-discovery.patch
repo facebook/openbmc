@@ -1,4 +1,4 @@
-From 0dab26c3e1a49f2b037ddfd2fde72399479f2fa5 Mon Sep 17 00:00:00 2001
+From 4626fd96c15fea44e25c96fe08b9a4c00a5e5fc3 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 23 Sep 2025 09:47:45 +0000
 Subject: [PATCH 09/15] platform-mc: Add retries for terminus discovery
@@ -69,7 +69,7 @@ index fc80c24..3c2e40f 100644
  option(
      'fw-update-pkg-inotify',
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index 8732826..175b43a 100644
+index 8732826..3287bfe 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
 @@ -186,16 +186,18 @@ TerminiMapper::iterator TerminusManager::findTerminusPtr(
@@ -230,5 +230,5 @@ index 8382201..97a2a9c 100644
  } // namespace platform_mc
  } // namespace pldm
 -- 
-2.47.3
+2.43.0
 

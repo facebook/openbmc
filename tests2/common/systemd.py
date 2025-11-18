@@ -42,6 +42,8 @@ PLATFORM_SETTINGS: Dict[str, ExpectedFailedUnits] = {
     "harma": ExpectedFailedUnits(
         failed_units=[
             "fw-versions-ag-vr@0.service",
+            "host-poweron@0.service",
+            "phosphor-reboot-host@0.service",
             "pldmSoftPowerOff.service",
         ],
     ),

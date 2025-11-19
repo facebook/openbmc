@@ -1,4 +1,4 @@
-From a9c906ad47efc00870b0f0f38241479a98707c21 Mon Sep 17 00:00:00 2001
+From f10d87ef9c63bbcbeb150964a80084e06352b085 Mon Sep 17 00:00:00 2001
 From: Liora Guo <liora.guo.wiwynn@gmail.com>
 Date: Thu, 6 Nov 2025 07:34:47 +0000
 Subject: [PATCH 2/2] yosemite4: fb-ipmi-oem: skip FRU read when motherboard
@@ -40,8 +40,8 @@ index 0f8d0e8..958e9ec 100644
 -        baseBoard = "Baseboard";
 +        return -1;
      }
-
+ 
      bool platform = isMultiHostPlatform();
---
-2.25.1
+-- 
+2.47.3
 

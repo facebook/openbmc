@@ -1,7 +1,7 @@
-From 4eecf5d0df2cce40c150ec16adb354ee65af4cbe Mon Sep 17 00:00:00 2001
+From ec529d3d67689b77a5daeca2fd7061051d99d5e1 Mon Sep 17 00:00:00 2001
 From: Jerry-wiwynn <Jerry_C_Chen@wiwynn.com>
 Date: Wed, 15 May 2024 14:06:23 +0800
-Subject: [PATCH 3/4] mctpd: fix mctpd crash issue
+Subject: [PATCH 502/503] mctpd: fix mctpd crash issue
 
 Add null check in find_peer_by_association() to prevent access violation
 ---
@@ -32,5 +32,5 @@ index ea970a7..acd2172 100644
  
  	return rc;
 -- 
-2.43.0
+2.47.3
 

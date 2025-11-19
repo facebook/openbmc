@@ -1,7 +1,7 @@
-From 42c62d10e56b0140a2701f33ecf9e65767e60c9e Mon Sep 17 00:00:00 2001
+From ffc10e9939eb3e681fed912e7400f43ff3f7c7dc Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Thu, 11 Apr 2024 08:27:09 +0800
-Subject: [PATCH 2/4] Add method for setting up MCTP EID by config path
+Subject: [PATCH 501/503] Add method for setting up MCTP EID by config path
 
 Change:
 - Could apply both mctp-i2c and mctp-i3c config.
@@ -233,5 +233,5 @@ index 40ca7f7..ea970a7 100644
  
  };
 -- 
-2.43.0
+2.47.3
 

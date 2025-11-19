@@ -1,4 +1,4 @@
-From cb6550422f91069e4508c593a558603da4160239 Mon Sep 17 00:00:00 2001
+From e27c65bef5ac55fd18dc1c64e0300907c1c7ab16 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 15 Jul 2025 10:22:29 +0000
 Subject: [PATCH 06/15] pldm: Use std::expected for instance ID allocation
@@ -376,10 +376,10 @@ index 6149050..5f8f8be 100644
          sizeof(pldm_msg_hdr) + PLDM_PLATFORM_EVENT_MESSAGE_MIN_REQ_BYTES +
          eventDataVec.size());
 diff --git a/host-bmc/host_pdr_handler.cpp b/host-bmc/host_pdr_handler.cpp
-index de828ec..60e2ed2 100644
+index 46d4475..b3ffcfb 100644
 --- a/host-bmc/host_pdr_handler.cpp
 +++ b/host-bmc/host_pdr_handler.cpp
-@@ -205,7 +205,13 @@ void HostPDRHandler::getHostPDR(uint32_t nextRecordHandle)
+@@ -209,7 +209,13 @@ void HostPDRHandler::getHostPDR(uint32_t nextRecordHandle)
      {
          recordHandle = nextRecordHandle;
      }
@@ -394,7 +394,7 @@ index de828ec..60e2ed2 100644
  
      auto rc =
          encode_get_pdr_req(instanceId, recordHandle, 0, PLDM_GET_FIRSTPART,
-@@ -404,7 +410,13 @@ void HostPDRHandler::sendPDRRepositoryChgEvent(std::vector<uint8_t>&& pdrTypes,
+@@ -408,7 +414,13 @@ void HostPDRHandler::sendPDRRepositoryChgEvent(std::vector<uint8_t>&& pdrTypes,
              "RC", rc);
          return;
      }
@@ -409,7 +409,7 @@ index de828ec..60e2ed2 100644
      std::vector<uint8_t> requestMsg(
          sizeof(pldm_msg_hdr) + PLDM_PLATFORM_EVENT_MESSAGE_MIN_REQ_BYTES +
          actualSize);
-@@ -731,7 +743,13 @@ void HostPDRHandler::_processFetchPDREvent(
+@@ -735,7 +747,13 @@ void HostPDRHandler::_processFetchPDREvent(
  void HostPDRHandler::setHostFirmwareCondition()
  {
      responseReceived = false;
@@ -424,7 +424,7 @@ index de828ec..60e2ed2 100644
      std::vector<uint8_t> requestMsg(
          sizeof(pldm_msg_hdr) + PLDM_GET_VERSION_REQ_BYTES);
      auto request = new (requestMsg.data()) pldm_msg;
-@@ -803,7 +821,13 @@ void HostPDRHandler::setHostSensorState(const PDRList& stateSensorPDRs)
+@@ -807,7 +825,13 @@ void HostPDRHandler::setHostSensorState(const PDRList& stateSensorPDRs)
                  sensorRearm.byte = 0;
                  uint8_t tid = std::get<0>(terminusInfo);
  
@@ -439,7 +439,7 @@ index de828ec..60e2ed2 100644
                  std::vector<uint8_t> requestMsg(
                      sizeof(pldm_msg_hdr) +
                      PLDM_GET_STATE_SENSOR_READINGS_REQ_BYTES);
-@@ -945,7 +969,13 @@ void HostPDRHandler::setHostSensorState(const PDRList& stateSensorPDRs)
+@@ -949,7 +973,13 @@ void HostPDRHandler::setHostSensorState(const PDRList& stateSensorPDRs)
  void HostPDRHandler::getFRURecordTableMetadataByRemote(
      const PDRList& fruRecordSetPDRs)
  {
@@ -454,7 +454,7 @@ index de828ec..60e2ed2 100644
      std::vector<uint8_t> requestMsg(
          sizeof(pldm_msg_hdr) + PLDM_GET_FRU_RECORD_TABLE_METADATA_REQ_BYTES);
  
-@@ -1023,7 +1053,13 @@ void HostPDRHandler::getFRURecordTableByRemote(const PDRList& fruRecordSetPDRs,
+@@ -1027,7 +1057,13 @@ void HostPDRHandler::getFRURecordTableByRemote(const PDRList& fruRecordSetPDRs,
          return;
      }
  
@@ -521,7 +521,7 @@ index e7485d8..1dda9f2 100644
      std::vector<uint8_t> requestMsg(
          sizeof(pldm_msg_hdr) + sizeof(effecterID) + sizeof(effecterCount) +
 diff --git a/oem/ibm/libpldmresponder/oem_ibm_handler.cpp b/oem/ibm/libpldmresponder/oem_ibm_handler.cpp
-index 86fc0d8..f01162f 100644
+index 2a3b0b7..b8637cc 100644
 --- a/oem/ibm/libpldmresponder/oem_ibm_handler.cpp
 +++ b/oem/ibm/libpldmresponder/oem_ibm_handler.cpp
 @@ -543,7 +543,13 @@ void pldm::responder::oem_ibm_platform::Handler::sendStateSensorEvent(
@@ -773,10 +773,10 @@ index a3c06e5..df6be64 100644
      uint8_t expectedTid = 1;
  
 diff --git a/softoff/softoff.cpp b/softoff/softoff.cpp
-index 71fa9dc..8a177c0 100644
+index e097988..9f8d02a 100644
 --- a/softoff/softoff.cpp
 +++ b/softoff/softoff.cpp
-@@ -272,7 +272,6 @@ int SoftPowerOff::hostSoftOff(sdeventplus::Event& event)
+@@ -275,7 +275,6 @@ int SoftPowerOff::hostSoftOff(sdeventplus::Event& event)
  {
      constexpr uint8_t effecterCount = 1;
      PldmTransport pldmTransport{};
@@ -784,7 +784,7 @@ index 71fa9dc..8a177c0 100644
      uint8_t mctpEID;
  
      mctpEID = pldm::utils::readHostEID();
-@@ -300,7 +299,13 @@ int SoftPowerOff::hostSoftOff(sdeventplus::Event& event)
+@@ -304,7 +303,13 @@ int SoftPowerOff::hostSoftOff(sdeventplus::Event& event)
          requestMsg{};
      auto request = new (requestMsg.data()) pldm_msg;
      set_effecter_state_field stateField{PLDM_REQUEST_SET, effecterState};
@@ -800,5 +800,5 @@ index 71fa9dc..8a177c0 100644
          instanceID, effecterID, effecterCount, &stateField, request);
      if (rc != PLDM_SUCCESS)
 -- 
-2.43.0
+2.47.3
 

@@ -1,4 +1,4 @@
-From 0c54d1a36d55cdfc0f0dd621ea95fbd7c50cf92c Mon Sep 17 00:00:00 2001
+From 5348f9043a51d6f18a880ea641f85e507da5c7cb Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 11 Mar 2025 13:47:42 +0800
 Subject: [PATCH 6/7] entity-manager: Add config-prefix filtering
@@ -11,29 +11,29 @@ performance.
 Change-Id: I94a1030edfd78b966aba44d5818b1da82f107c86
 Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
 ---
- meson.build                          |  5 ++
+ meson.build                          |  4 +-
  meson.options                        |  6 +++
  src/entity_manager/configuration.cpp |  7 ++-
  src/utils.cpp                        | 78 ++++++++++++++++------------
  src/utils.hpp                        | 10 +++-
- 5 files changed, 70 insertions(+), 36 deletions(-)
+ 5 files changed, 68 insertions(+), 37 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index c364a9e..d347e67 100644
+index 4df6652..67d0d6b 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -7,6 +7,11 @@ project(
+@@ -6,8 +6,10 @@ project(
+     version: '0.1',
      meson_version: '>=1.3.0',
  )
- add_project_arguments('-Wno-psabi', language: 'cpp')
 +config_prefix_val = get_option('config-prefix')
-+add_project_arguments(
-+    '-DCONFIG_PREFIX="@0@"'.format(config_prefix_val),
-+    language: 'cpp',
-+)
+ add_project_arguments(
+-    ['-Wno-psabi', '-DJSON_USE_IMPLICIT_CONVERSIONS=0'],
++    ['-Wno-psabi', '-DJSON_USE_IMPLICIT_CONVERSIONS=0',
++     '-DCONFIG_PREFIX="@0@"'.format(config_prefix_val)],
+     language: 'cpp',
+ )
  
- boost_args = [
-     '-DBOOST_ASIO_NO_DEPRECATED',
 diff --git a/meson.options b/meson.options
 index 8cdd903..efbf48c 100644
 --- a/meson.options
@@ -70,7 +70,7 @@ index 99f7f66..240faa5 100644
          for (const auto& configurationDirectory : configurationDirectories)
          {
 diff --git a/src/utils.cpp b/src/utils.cpp
-index b5bac09..a99980f 100644
+index db476f3..6322b8e 100644
 --- a/src/utils.cpp
 +++ b/src/utils.cpp
 @@ -19,8 +19,29 @@
@@ -180,7 +180,7 @@ index b5bac09..a99980f 100644
  
      return !foundPaths.empty();
 diff --git a/src/utils.hpp b/src/utils.hpp
-index 368de5a..241a940 100644
+index b14a620..c616cb1 100644
 --- a/src/utils.hpp
 +++ b/src/utils.hpp
 @@ -23,10 +23,16 @@ using LastIndex = size_t;
@@ -200,8 +200,8 @@ index 368de5a..241a940 100644
 +std::vector<std::string> splitConfigString(
 +    const std::string& input, char delimiter = ',', bool ignoreSpaces = true);
  
- bool getI2cDevicePaths(
-     const std::filesystem::path& dirPath,
+ bool getI2cDevicePaths(const std::filesystem::path& dirPath,
+                        std::flat_map<size_t, std::filesystem::path>& busPaths);
 -- 
 2.47.3
 

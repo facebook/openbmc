@@ -1,7 +1,7 @@
-From 7ff8dc5ab6ddaa328b825ba9aa000213cc760f3c Mon Sep 17 00:00:00 2001
+From 3fef56ad56528235ac1a4b7fdfd144fdd3765e32 Mon Sep 17 00:00:00 2001
 From: EricYang-wiwynn <Eric_Yang@wiwynn.com>
 Date: Mon, 17 Mar 2025 18:54:44 +0800
-Subject: [PATCH 4/4] mctpd: Implement retry mechanism for static EID setup
+Subject: [PATCH 503/503] mctpd: Implement retry mechanism for static EID setup
 
 Added a retry logic to the setup_static_eid function to enhance
 robustness when calling the GetSubTreePaths method.
@@ -68,5 +68,5 @@ index acd2172..859ddb6 100644
  	sd_bus_message_read_strv(message, &object_paths);
  	message = sd_bus_message_unref(message);
 -- 
-2.43.0
+2.47.3
 

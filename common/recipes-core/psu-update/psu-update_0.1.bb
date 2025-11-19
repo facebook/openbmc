@@ -36,6 +36,7 @@ LOCAL_URI = " \
     file://orv3-device-update-mailbox.py \
     file://rpu-update-delta-plc.py \
     file://rpu-update-delta-hex.py \
+    file://rpu-update-coolermaster.py \
     file://delta_key.py \
     file://srec.py \
     file://hexfile.py \

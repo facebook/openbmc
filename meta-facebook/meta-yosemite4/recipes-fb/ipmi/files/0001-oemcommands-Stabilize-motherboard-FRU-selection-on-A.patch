@@ -1,7 +1,8 @@
-From 09d5510df25a2aa2cb9199d90079258e2d2247e2 Mon Sep 17 00:00:00 2001
+From 1242930a68af6fe0f65b735c3a4fefda65db28b8 Mon Sep 17 00:00:00 2001
 From: LioraGuo-wiwynn <liora.guo.wiwynn@gmail.com>
 Date: Thu, 30 Oct 2025 10:20:57 +0000
-Subject: [PATCH] oemcommands: Stabilize motherboard FRU selection on AC-off
+Subject: [PATCH 1/2] oemcommands: Stabilize motherboard FRU selection on
+ AC-off
 
 Task Description:
 1) On multi-host platforms, when AC is off the entity-manager

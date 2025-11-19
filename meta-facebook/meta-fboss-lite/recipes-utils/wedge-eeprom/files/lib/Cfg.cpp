@@ -53,18 +53,14 @@ std::string WeCfg::eFormat(const std::string& ePath) {
   file.read((char*)&header[0], 4);
   file.close();
 
-  if (header[0] == 0xfb && header[1] == 0xfb && header[2] == 0x04) {
-    return META_EEPROM_V4;
-  } else if (header[0] == 0xfb && header[1] == 0xfb && header[2] == 0x05) {
+  if (header[0] == 0xfb && header[1] == 0xfb && header[2] == 0x05) {
     return META_EEPROM_V5;
   } else if (header[0] == 0xfb && header[1] == 0xfb && header[2] == 0x06) {
     return META_EEPROM_V6;
-  } else if (header[0] == 0xfb && header[1] == 0xfb && header[2] == 0x03) {
-    return META_EEPROM_V3;
   } else if (
       (header[0] == '0' && header[1] == '0' && header[2] == '0' &&
-      (header[3] == '2' || header[3] == '3')) || (header[0] == 0 &&
-      header[1] == 0 && header[2] == 0 && header[3] == 3)) {
+       (header[3] == '2' || header[3] == '3')) ||
+      (header[0] == 0 && header[1] == 0 && header[2] == 0 && header[3] == 3)) {
     assert(eepromSysfsSz > 15 * 1024);
     return ARISTA_PREFDL;
   }

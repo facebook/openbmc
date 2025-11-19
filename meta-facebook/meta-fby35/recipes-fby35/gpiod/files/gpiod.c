@@ -30,7 +30,6 @@
 #include <math.h>
 #include <string.h>
 #include <pthread.h>
-#include <limits.h>
 #include <sys/un.h>
 #include <sys/file.h>
 #include <sys/stat.h>
@@ -41,8 +40,6 @@
 #define MAX_NUM_SLOTS       4
 #define DELAY_GPIOD_READ    1000000
 #define GPIO_NOT_SUPPORT    0xFF
-#define FSC_CFG_PATH        "/etc/fsc-config.json"
-#define MRVL_FSC_CFG_PATH   "/etc/FSC_CLASS1_HSM_MRVL_config.json"
 
 
 /* To hold the gpio info and status */
@@ -371,6 +368,27 @@ check_cpu_pwr_fault(uint8_t fru) {
   }
 }
 
+const char* get_2ou_card_type_desc(uint8_t type) {
+  switch (type) {
+    case TYPE_2OU_HSM_MARVELL:
+      return "MARVELL HSM";
+    case TYPE_2OU_HSM_ENTRUST:
+      return "ENTRUST HSM";
+    case TYPE_2OU_DPV2_8:
+      return "DPV2x8";
+    case TYPE_2OU_DPV2_16:
+      return "DPV2x16";
+    case TYPE_2OU_DPV2_8_16:
+      return "DPV2x8 + DPV2x16";
+    case TYPE_2OU_ABSENT:
+      return "ABSENT";
+    case TYPE_2OU_UNKNOWN:
+      return "UNKNOWN";
+    default:
+      return "Undefined";
+  }
+}
+
 /* Monitor the gpio pins */
 static void *
 gpio_monitor_poll(void *ptr) {
@@ -500,37 +518,20 @@ gpio_monitor_poll(void *ptr) {
         bios_post_cmplt[fru-1] = true;
         retry_sec[fru-1] = 0;
 
-        // Dynamic swap fan table for HSM
         if (!strcmp(value, "0")) {
-          uint8_t type2 = TYPE_2OU_UNKNOWN;
-          ret = bic_get_card_type(fru, CARD_TYPE_2OU, &type2);
+          char sys_conf[16] = {0};
 
-          if ((fby35_common_get_slot_type(fru) == SERVER_TYPE_CL_EMR) &&
-              (type2 == TYPE_2OU_HSM_MARVELL)) {
-            char target_buffer[PATH_MAX];
-            ssize_t len;
-
-            len = readlink(FSC_CFG_PATH, target_buffer, sizeof(target_buffer) - 1);
-            if (len == -1) {
-                syslog(LOG_ERR, "FRU: %d, Failed to read fsc-config link.", fru);
-            }
-
-            target_buffer[len] = '\0';
-
-            if (strcmp(target_buffer, MRVL_FSC_CFG_PATH)) {
-              if (remove(FSC_CFG_PATH) == 0) {
-                if (symlink(MRVL_FSC_CFG_PATH, FSC_CFG_PATH) == -1) {
-                  syslog(LOG_ERR, "FRU: %d, Failed to create Marvell HSM fsc-config link.", fru);
-                } else {
-                  ret = run_command("sv restart fscd");
-                  if(ret == 0) {
-                    syslog(LOG_INFO, "FRU: %d, Change Marvell HSM fsc-config and restart fscd.", fru);
-                  } else {
-                    syslog(LOG_ERR, "FRU: %d, Failed to restart fscd.", fru);
-                  }
-                }
+          if (kv_get("sled_system_conf", sys_conf, NULL, KV_FPERSIST) < 0) {
+            syslog(LOG_CRIT, "%s() Failed to read sled_system_conf", __func__);
+          } else {
+            if (strcmp(sys_conf, "Type_HSM") == 0) {
+              uint8_t type2 = TYPE_2OU_UNKNOWN;
+              // Detect 2ou card type in HSM project
+              ret = bic_get_card_type(fru, CARD_TYPE_2OU, &type2);
+              if (ret == 0) {
+                syslog(LOG_CRIT, "FRU: %d, 2ou card type: %s (0x%x)", fru, get_2ou_card_type_desc(type2), type2);
               } else {
-                syslog(LOG_ERR, "FRU: %d, Failed to delete fsc-config link.", fru);
+                syslog(LOG_ERR, "Failed to get 2ou card type. fru: %x, ret: %x", fru, ret);
               }
             }
           }

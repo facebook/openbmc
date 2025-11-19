@@ -22,6 +22,7 @@ max([
   linear_nic(all:nic_nic_temp_c) + pid_nic(all:nic_nic_temp_c),
   linear_e1s_temp(all:slot1_vf_e1s_ssd3_temp_c) + pid_e1s_temp(all:slot1_vf_e1s_ssd3_temp_c),
   linear_power(power_sensor_list) + pid_power(power_sensor_list),
+  linear_hsm(all:slot1_dpv2_2_hsm_soc_temp_c),
   linear_non_fru_sensor(
     max([
       all:slot1_mb_pch_temp_c,

@@ -296,6 +296,16 @@ def sensor_valid_check(board, sname, check_name, attribute):
                         # always check e1s present in HSM project
                         return 1
                     return is_e1s_prsnt(board, num)
+
+                if "hsm_soc" in sname:
+                    # TYPE_2OU_UNKNOWN(0xFF)
+                    type2_val = c_uint8(0xff)
+                    # get 2ou card type in HSM project
+                    lbic_hndl.bic_get_card_type(int(fru_map[board]["slot_num"]), 1, byref(type2_val))
+                    if ("HSM" in system_conf) and (type2_val.value == 0xfe):
+                        # 2ou card is TYPE_2OU_ABSENT(0xFE) in HSM project
+                        return 1
+                    return 0
                 return 1
         return 0
     except SystemExit:

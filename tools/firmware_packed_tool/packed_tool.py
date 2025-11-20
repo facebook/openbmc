@@ -23,8 +23,14 @@ compatibleStrings = {
     "harma-xdpe-vcore1" : "com.meta.Hardware.Harma.VR.XDPE192C3B_vcore1",
     "harma-xdpe-pvdd11" : "com.meta.Hardware.Harma.VR.XDPE19283B_pvdd11",
     "harma-retimer" : "com.meta.Hardware.Harma.Retimer.PT5161L",
-    "minerva-cmm-cpld" : "com.meta.Hardware.Minerva.CPLD.LCMXO3LF_2100C_cmm",
-    "minerva-scm-cpld" : "com.meta.Hardware.Minerva.CPLD.LCMXO3LF_9400HC_scm"
+    "minerva-cmm-cpld" : "com.meta.Hardware.Minerva.CPLD.LCMXO3D_9400HC_cmm",
+    "minerva-scm-cpld" : "com.meta.Hardware.Minerva.CPLD.LCMXO3LF_2100C_scm",
+    "minerva-fan-board1-cpld" : "com.meta.Hardware.Minerva.CPLD.LFMXO5_25_fanboard1",
+    "minerva-fan-board2-cpld" : "com.meta.Hardware.Minerva.CPLD.LFMXO5_25_fanboard2",
+    "minerva-fan-board3-cpld" : "com.meta.Hardware.Minerva.CPLD.LFMXO5_25_fanboard3",
+    "minerva-fan-board4-cpld" : "com.meta.Hardware.Minerva.CPLD.LFMXO5_25_fanboard4",
+    "minerva-fan-board5-cpld" : "com.meta.Hardware.Minerva.CPLD.LFMXO5_25_fanboard5",
+    "minerva-fan-board6-cpld" : "com.meta.Hardware.Minerva.CPLD.LFMXO5_25_fanboard6"
 }
 
 def compatible_strings_helper():

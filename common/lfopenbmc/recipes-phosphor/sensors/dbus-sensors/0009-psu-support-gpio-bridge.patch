@@ -1,7 +1,7 @@
-From ccf572f8e792300230a375963f93e778641f1eb2 Mon Sep 17 00:00:00 2001
+From 9b86f3d0b5cd082e966cc2c271f654bbbe1c1fe3 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Mon, 19 May 2025 15:12:23 +0800
-Subject: [PATCH 09/20] psu: support gpio bridge
+Subject: [PATCH 09/18] psu: support gpio bridge
 
 Support for GPIO bridge is required for certain components that
 need a GPIO to be set before reading, such as battery voltage.
@@ -259,7 +259,7 @@ index c4f3a38..e679dc2 100644
      boost::asio::random_access_file inputDev;
      boost::asio::steady_timer waitTimer;
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 0691ec9..cdca188 100644
+index 9cd7fce..927f56f 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -31,6 +31,7 @@
@@ -286,7 +286,7 @@ index 0691ec9..cdca188 100644
  
  static const I2CDeviceTypeMap sensorTypes{
      {"ADC128D818", I2CDeviceType{"adc128d818", true}},
-@@ -327,6 +330,61 @@ static void checkPWMSensor(
+@@ -329,6 +332,61 @@ static void checkPWMSensor(
          name, pwmPathStr, dbusConnection, objectServer, objPath, "PSU");
  }
  
@@ -348,7 +348,7 @@ index 0691ec9..cdca188 100644
  static void createSensorsCallback(
      boost::asio::io_context& io, sdbusplus::asio::object_server& objectServer,
      std::shared_ptr<sdbusplus::asio::connection>& dbusConnection,
-@@ -724,7 +782,6 @@ static void createSensorsCallback(
+@@ -726,7 +784,6 @@ static void createSensorsCallback(
                      "LABEL", labelHead);
                  continue;
              }
@@ -356,7 +356,7 @@ index 0691ec9..cdca188 100644
              // Protect the hardcoded labelMatch list from changes,
              // by making a copy and modifying that instead.
              // Avoid bleedthrough of one device's customizations to
-@@ -997,13 +1054,16 @@ static void createSensorsCallback(
+@@ -999,13 +1056,16 @@ static void createSensorsCallback(
              }
              else
              {

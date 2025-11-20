@@ -15,12 +15,10 @@ SRC_URI:append = " \
     file://0012-leakdetector-use-new-aserver-constructor.patch \
     file://0013-leakdetector-check-event-before-event_read.patch \
     file://0014-Add-delay-before-leak-event-log-to-prevent-AC-OFF-gl.patch \
-    file://0015-PSUSensor-add-RAA228006-support.patch \
-    file://0016-PSUSensor-add-property-to-sensorTable-and-labelMatch.patch \
-    file://0017-Add-sensor-reading-events.patch \
-    file://0018-PSUSensor-add-MP5998-support.patch \
-    file://0019-PSUSensor-add-support-for-mp2925-and-mp2929.patch \
-    file://0020-PSUSensor-add-MP9945-support.patch \
+    file://0015-PSUSensor-add-property-to-sensorTable-and-labelMatch.patch \
+    file://0016-Add-sensor-reading-events.patch \
+    file://0017-PSUSensor-add-support-for-mp2925-and-mp2929.patch \
+    file://0018-PSUSensor-add-MP9945-support.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \

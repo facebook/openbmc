@@ -1,4 +1,4 @@
-From 37b17d3f153b2c3b7e0e2fc7d61a75faa8e189ce Mon Sep 17 00:00:00 2001
+From f1872ee87bbf4db22157bb8bcb6ea3beae348f7e Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 12:50:55 +0000
 Subject: [PATCH 201/205] Add generation for Vendor registries and a DBus to RF

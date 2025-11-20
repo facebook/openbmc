@@ -1,4 +1,4 @@
-From c2e92b00672d5881e3eba826ff81bda8eaf58808 Mon Sep 17 00:00:00 2001
+From b758a9e6c21b6224fed0684bf6e900947f7d9556 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 15:59:10 +0000
 Subject: [PATCH 204/205] Map DBus event to RF MessageID and parse args
@@ -94,7 +94,7 @@ Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
  .../utils/dbus_registries_map_utils.hpp       |  27 ++++
  .../lib/systems_logservices_dbus_eventlog.hpp |  46 ++++--
  redfish-core/src/dbus_log_watcher.cpp         |  27 +---
- redfish-core/src/event_log.cpp                |  42 ++----
+ redfish-core/src/event_log.cpp                |  63 ++------
  redfish-core/src/filesystem_log_watcher.cpp   |  24 ++-
  redfish-core/src/subscription.cpp             |  10 +-
  .../src/utils/dbus_registries_map_utils.cpp   | 121 +++++++++++++++
@@ -102,7 +102,7 @@ Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
  .../include/dbus_log_watcher_test.cpp         |  39 +++--
  test/redfish-core/include/event_log_test.cpp  |  32 +---
  test/redfish-core/lib/log_services_test.cpp   | 141 ++++++++++++++++++
- 18 files changed, 437 insertions(+), 116 deletions(-)
+ 18 files changed, 437 insertions(+), 137 deletions(-)
  create mode 100644 redfish-core/include/utils/dbus_registries_map_utils.hpp
  create mode 100644 redfish-core/src/utils/dbus_registries_map_utils.cpp
  create mode 100644 test/redfish-core/lib/log_services_test.cpp
@@ -154,7 +154,7 @@ index 79e80c13..36aa17d7 100644
      'redfish-core/src/utils/json_utils.cpp',
      'redfish-core/src/utils/time_utils.cpp',
 diff --git a/meson.options b/meson.options
-index cd89d62f..83e3fd8c 100644
+index 0268c66d..c139d90e 100644
 --- a/meson.options
 +++ b/meson.options
 @@ -324,6 +324,21 @@ option(
@@ -428,7 +428,7 @@ index 4418bb49..37bd4c80 100644
  
  static void dbusEventLogMatchHandlerSingleEntry(
 diff --git a/redfish-core/src/event_log.cpp b/redfish-core/src/event_log.cpp
-index 23af3fea..f617a675 100644
+index 7534bd02..4b5e2a40 100644
 --- a/redfish-core/src/event_log.cpp
 +++ b/redfish-core/src/event_log.cpp
 @@ -3,8 +3,8 @@
@@ -441,15 +441,15 @@ index 23af3fea..f617a675 100644
  #include "str_utility.hpp"
  
  #include <nlohmann/json.hpp>
-@@ -14,7 +14,6 @@
- #include <cstdint>
- #include <ctime>
+@@ -16,7 +16,6 @@
+ #include <format>
  #include <iomanip>
+ #include <optional>
 -#include <span>
  #include <sstream>
  #include <string>
  #include <string_view>
-@@ -109,35 +108,15 @@ int getEventLogParams(const std::string& logEntry, std::string& timestamp,
+@@ -111,51 +110,15 @@ int getEventLogParams(const std::string& logEntry, std::string& timestamp,
      return 0;
  }
  
@@ -463,14 +463,31 @@ index 23af3fea..f617a675 100644
 +                         const std::string& customText,
 +                         nlohmann::json::object_t& logEntryJson)
  {
--    // Get the Message from the MessageRegistry
--    const registries::Message* message = registries::getMessage(messageID);
+-    std::optional<registries::MessageId> msgComponents =
+-        registries::getMessageComponents(messageID);
+-    if (msgComponents == std::nullopt)
+-    {
+-        BMCWEB_LOG_DEBUG("Could not get Message components");
+-        return -1;
+-    }
+-
+-    std::optional<registries::RegistryEntryRef> registry =
+-        registries::getRegistryFromPrefix(msgComponents->registryName);
+-    if (!registry)
+-    {
+-        BMCWEB_LOG_DEBUG("Could not get registry from prefix");
+-        return -1;
+-    }
+-
+-    // Get the Message from the MessageKey and RegistryEntries
+-    const registries::Message* message = registries::getMessageFromRegistry(
+-        msgComponents->messageKey, registry->get().entries);
 -
 -    if (message == nullptr)
 -    {
 -        BMCWEB_LOG_DEBUG(
--            "{}: could not find messageID '{}' for log entry {} in registry",
--            __func__, messageID, logEntryID);
+-            "Could not find MessageKey '{}' for log entry {} in registry",
+-            msgComponents->messageKey, logEntryID);
 -        return -1;
 -    }
 -
@@ -478,8 +495,7 @@ index 23af3fea..f617a675 100644
 -        redfish::registries::fillMessageArgs(messageArgs, message->message);
 -    if (msg.empty())
 -    {
--        BMCWEB_LOG_DEBUG("{}: message is empty after filling fillMessageArgs",
--                         __func__);
+-        BMCWEB_LOG_DEBUG("Message is empty after filling fillMessageArgs");
 -        return -1;
 -    }
 -
@@ -490,13 +506,21 @@ index 23af3fea..f617a675 100644
      std::size_t dot = timestamp.find_first_of('.');
      std::size_t plus = timestamp.find_first_of('+', dot);
      if (dot != std::string::npos && plus != std::string::npos)
-@@ -148,13 +127,12 @@ int formatEventLogEntry(uint64_t eventId, const std::string& logEntryID,
+@@ -163,21 +126,15 @@ int formatEventLogEntry(uint64_t eventId, const std::string& logEntryID,
+         timestamp.erase(dot, plus - dot);
+     }
+ 
+-    const unsigned int& versionMajor = registry->get().header.versionMajor;
+-    const unsigned int& versionMinor = registry->get().header.versionMinor;
+-
      // Fill in the log entry with the gathered data
      logEntryJson["EventId"] = std::to_string(eventId);
  
 -    logEntryJson["Severity"] = message->messageSeverity;
 -    logEntryJson["Message"] = std::move(msg);
--    logEntryJson["MessageId"] = messageID;
+-    logEntryJson["MessageId"] =
+-        std::format("{}.{}.{}.{}", msgComponents->registryName, versionMajor,
+-                    versionMinor, msgComponents->messageKey);
 -    logEntryJson["MessageArgs"] = messageArgs;
 +    logEntryJson["Severity"] = logEntry.severity;
 +    logEntryJson["Message"] = logEntry.message;
@@ -802,7 +826,7 @@ index c2a33dff..48b90236 100644
          {"Id", DbusVariantType(static_cast<uint32_t>(1838))},
          {"Message", DbusVariantType("")},
 diff --git a/test/redfish-core/include/event_log_test.cpp b/test/redfish-core/include/event_log_test.cpp
-index c51eee6e..291c7c14 100644
+index ae773569..338eccf0 100644
 --- a/test/redfish-core/include/event_log_test.cpp
 +++ b/test/redfish-core/include/event_log_test.cpp
 @@ -1,4 +1,5 @@

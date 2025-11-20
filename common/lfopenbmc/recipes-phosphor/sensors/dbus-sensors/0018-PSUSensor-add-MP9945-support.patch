@@ -1,7 +1,7 @@
-From 1cd65f704bd3ced3f1c37976e5f34733e6f07af3 Mon Sep 17 00:00:00 2001
+From 9a869f1491828563aede95eaed48b66f3438df9d Mon Sep 17 00:00:00 2001
 From: Leo Yang <Leo-Yang@quantatw.com>
 Date: Fri, 14 Nov 2025 11:03:54 +0800
-Subject: [PATCH 20/20] PSUSensor: add MP9945 support
+Subject: [PATCH 18/18] PSUSensor: add MP9945 support
 
 Add device MP9945 reading support for YV5 project.
 

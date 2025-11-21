@@ -63,6 +63,7 @@ LOCAL_URI += "\
     file://setup_gpio.service \
     file://dpm_dump.service \
     file://reset_pim_i2c_mux.sh \
+    file://switchToCpu.sh \
     "
 
 OPENBMC_UTILS_FILES += " \
@@ -96,6 +97,7 @@ OPENBMC_UTILS_FILES += " \
     dpeCheck.sh \
     bmc_board_rev.sh \
     reset_pim_i2c_mux.sh \
+    switchToCpu.sh \
     "
 
 DEPENDS:append = " update-rc.d-native"

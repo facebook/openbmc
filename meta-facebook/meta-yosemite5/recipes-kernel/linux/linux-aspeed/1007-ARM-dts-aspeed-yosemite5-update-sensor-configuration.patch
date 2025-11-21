@@ -1,0 +1,47 @@
+From bf08981938df9c9d00572720c85d9388a7fe3417 Mon Sep 17 00:00:00 2001
+From: Kevin Tung <kevin.tung.openbmc@gmail.com>
+Date: Thu, 20 Nov 2025 12:16:26 +0800
+Subject: [PATCH v2 2/4] ARM: dts: aspeed: yosemite5: Update sensor configuration
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <20251120-yv5_revise_dts-v2-2-41e7009eb35a@gmail.com>
+
+Remove sensors 10-0040 and 10-0045 to align with the latest
+hardware design changes.
+
+lore link: https://lore.kernel.org/all/20251120-yv5_revise_dts-v2-2-4d7de701c5be@gmail.com/
+
+Signed-off-by: Kevin Tung <kevin.tung.openbmc@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts | 14 --------------
+ 1 file changed, 14 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+index 7991e9360847532cff9aad4ad4ed57d4c30668a0..45b8ac2e8c65a4f672e64571631b7f6944f26213 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+@@ -674,20 +674,6 @@ gpio-expander@22 {
+ 			"PWRGD_P3V3_AUX","ALERT_TEMP";
+ 	};
+ 
+-	power-sensor@40 {
+-		compatible = "ti,ina233";
+-		reg = <0x40>;
+-		shunt-resistor = <2000>;
+-		ti,maximum-expected-current-microamp = <32768000>;
+-	};
+-
+-	power-sensor@45 {
+-		compatible = "ti,ina233";
+-		reg = <0x45>;
+-		shunt-resistor = <2000>;
+-		ti,maximum-expected-current-microamp = <32768000>;
+-	};
+-
+ 	adc@48 {
+ 		compatible = "ti,ads7830";
+ 		reg = <0x48>;
+
+-- 
+2.51.2

@@ -7,5 +7,9 @@ SRC_URI:append = " \
     file://1003-ARM-dts-aspeed-yosemite5-configure-dimm-ids-for-sbrmi-node.patch \
     file://1004-ARM-dts-aspeed-yosemite5-set-ncsi-package-equal-to-1.patch \
     file://1005-ARM-dts-aspeed-yosemite5-add-i3c-nodes.patch \
+    file://1006-ARM-dts-aspeed-yosemite5-increase-i2c4-i2c12-bus-speed-to-400-khz.patch \
+    file://1007-ARM-dts-aspeed-yosemite5-update-sensor-configuration.patch \
+    file://1008-ARM-dts-aspeed-yosemite5-rename-sgpio-p0_i3c_apml_alert_l.patch \
+    file://1009-ARM-dts-aspeed-yosemite5-add-ipmb-node-for-ocp-debug-card.patch \
     file://yosemite5-local.cfg \
 "

@@ -20,3 +20,6 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/1.5.1:"
 
 SRC_URI += "file://0001-disable-wp-func-in-linux_mtd-to-avoid-warn-msg.patch"
+
+# Skip buildpaths check - debug symbols in static libraries are acceptable
+INSANE_SKIP:${PN}-staticdev += "buildpaths"

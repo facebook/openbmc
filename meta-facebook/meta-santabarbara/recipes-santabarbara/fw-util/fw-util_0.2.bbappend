@@ -22,6 +22,10 @@ PACKAGECONFIG:remove:santabarbara = "fscd"
 LOCAL_URI += " \
     file://plat/meson.build \
     file://bmc.cpp \
+    file://plat_fwupdate.cpp \
     "
+DEPENDS += "libgpiod"
+
+RDEPENDS:${PN} += "flashrom"
 
 CXXFLAGS += " -DCONFIG_TPM2"

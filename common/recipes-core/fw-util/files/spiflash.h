@@ -45,4 +45,23 @@ class GPIOSwitchedSPIMTDComponent : public SPIMTDComponent {
     int dump(const std::string& image) override;
 };
 
+// Upgrade SPI Flash using external programmers
+class ExternalSPIComponent : public Component {
+  private:
+    std::string _programmer_type;
+    std::string _chip_params;
+    
+  public:
+    ExternalSPIComponent(const std::string& fru, 
+                        const std::string& comp,
+                        const std::string& programmer_type = "ft2232_spi",
+                        const std::string& chip_params = "type=2232H,port=B") :
+      Component(fru, comp),
+      _programmer_type(programmer_type),
+      _chip_params(chip_params) {}
+    
+    int update(const std::string& image) override;
+    int dump(const std::string& image) override;
+};
+
 #endif

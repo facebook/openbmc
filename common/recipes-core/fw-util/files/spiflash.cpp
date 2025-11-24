@@ -319,3 +319,59 @@ int GPIOSwitchedSPIMTDComponent::dump(const std::string& image)
   gpio_close(desc);
   return rc;
 }
+
+
+int ExternalSPIComponent::update(const std::string& image)
+{
+  string cmd;
+  const string& comp = this->component();
+  int ret;
+
+  syslog(LOG_CRIT, "Component %s upgrade initiated", comp.c_str());
+  sys().output << "Flashing using external SPI programmer" << endl;
+
+  cmd = "flashrom -p " + _programmer_type;
+  if (!_chip_params.empty()) {
+      cmd += ":" + _chip_params;
+    }
+  
+  cmd += " -w " + image;
+  
+  sys().output << "Command: " << cmd << endl;
+  
+  ret = sys().runcmd(cmd);
+  
+  if (ret == 0) {
+    syslog(LOG_CRIT, "Component %s upgrade completed", comp.c_str());
+    return FW_STATUS_SUCCESS;
+  }
+  
+  return FW_STATUS_FAILURE;
+}
+
+int ExternalSPIComponent::dump(const std::string& image)
+{
+  string cmd;
+  const string& comp = this->component();
+  int ret;
+
+  syslog(LOG_CRIT, "Component %s dump initiated", comp.c_str());
+  sys().output << "Reading flash using external SPI programmer" << endl;
+  cmd = "flashrom -p " + _programmer_type;
+  if (!_chip_params.empty()) {
+    cmd += ":" + _chip_params;
+  }
+  
+  cmd += " -r " + image;
+  
+  sys().output << "Command: " << cmd << endl;
+  
+  ret = sys().runcmd(cmd);
+  
+  if (ret == 0) {
+    syslog(LOG_CRIT, "Component %s dump completed", comp.c_str());
+    return FW_STATUS_SUCCESS;
+  }
+  
+  return FW_STATUS_FAILURE;
+}

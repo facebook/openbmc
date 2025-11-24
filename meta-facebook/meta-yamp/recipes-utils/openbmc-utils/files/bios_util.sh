@@ -3,24 +3,22 @@
 # shellcheck disable=SC1091
 # shellcheck disable=SC2012
 # shellcheck disable=SC2039
-source /usr/local/bin/openbmc-utils.sh
+# shellcheck disable=SC2086
+. /usr/local/bin/openbmc-utils.sh
 
 trap cleanup INT TERM QUIT EXIT
-
-ABOOT_CONF_START=$((0x9FA000))
-FLASH_SIZE=$((0x1000000))
-ABOOT_CONF_SIZE=$((0x5000))
-SECTION_BLOCK_SIZE=$((0x1000))
 
 # Temp files for storing bios file.
 TEMP_BIOS_IMAGE="/tmp/tmp_bios_image"
 # Temp file for storing aboot_conf data
 TEMP_ABOOT_CONF="/tmp/aboot_conf.bin"
-
-DEFAULT_ABOOT_CONF="BOOT_METHOD1=IPV6_PXE,BOOT_METHOD2=LOCAL,BOOT_METHOD3=ARISTA"
+DEFAULT_ABOOT_CONF="$BMC_CONF_FILE"
 
 BIOS_SPIDEV="/dev/spidev2.0"
 BIOS_CHIP="MX25L12835F/MX25L12845E/MX25L12865E"
+
+popts=""
+init_aconf=0
 
 cleanup() {
     disconnect_spi
@@ -30,8 +28,13 @@ cleanup() {
 usage() {
     program=$(basename "$0")
     echo "Usage:"
-    echo "$program <OP> <bios file>"
+    echo "$program <OP> <bios file> [--partition <partition>]"
     echo "      <OP> : read, write, erase, recover"
+    echo "      [<partition>] : partition of layout file; defaults to total (all sections)"
+    echo "                      specify image for Aboot image sections"
+    echo "$program write <bios file> [--init-aconf]"
+    echo "      If --init-aconf is specified, the aboot_conf section will be programmed"
+    echo "      after writing the bios file."
     exit 1
 }
 
@@ -54,63 +57,27 @@ connect_spi() {
 # Arista added a 3rd source, so this function is needed in case we are dealing with the 3rd source
 do_retry(){
   if [ "$1" = "write" ]; then
-    if ! flashrom --layout /etc/yamp_bios.layout --image header --image payload -p linux_spi:dev="$BIOS_SPIDEV" -w "$2"; then
+    if ! flashrom $popts -p linux_spi:dev="$BIOS_SPIDEV" -w "$2"; then
       echo "flashrom without -c failed"
     fi
   elif [ "$1" = "erase" ]; then
     if ! flashrom -p linux_spi:dev="$BIOS_SPIDEV" -E; then
-       echo "flashrom without -c option failed as well"
+      echo "flashrom without -c option failed as well"
     fi
   else # reading
-    if ! flashrom -p linux_spi:dev="$BIOS_SPIDEV" -r "$2"; then
+    if ! flashrom $popts -p linux_spi:dev="$BIOS_SPIDEV" -r "$2"; then
       echo "flashrom without -c option failed"
     fi
   fi
 }
 
-create_bios_image() {
-    start_block="$(($1 / SECTION_BLOCK_SIZE))"
-    num_blocks="$(($2 / SECTION_BLOCK_SIZE))"
-    rm -f "$TEMP_BIOS_IMAGE"
-    dd if="$3" of="$TEMP_BIOS_IMAGE" bs="$SECTION_BLOCK_SIZE" count="$start_block" \
-       2> /dev/null
-    dd if="$4" bs="$SECTION_BLOCK_SIZE" count="$num_blocks" >> "$TEMP_BIOS_IMAGE" \
-       2> /dev/null
-    end_blocks=$(( (FLASH_SIZE / SECTION_BLOCK_SIZE) - start_block - num_blocks ))
-    dd if="$3" bs="$SECTION_BLOCK_SIZE" count="$end_blocks" skip=$((start_block + num_blocks)) \
-       >> "$TEMP_BIOS_IMAGE" 2> /dev/null
-}
-
-create_aboot_conf() {
-    echo "Using Aboot conf: $1"
-
-    nvs="$1,"
-
-    rm -f "$TEMP_ABOOT_CONF"
-    touch "$TEMP_ABOOT_CONF"
-    while [ -n "${nvs%%,*}" ]; do
-        nv="${nvs%%,*}"
-        name="${nv%%=*}"
-        if [ "$name" == "$nv" ]; then
-            echo "Invalid name-value argument $nv" >&2
-            return 1
-        fi
-        echo -n "${nv%%=*}=" >> "$TEMP_ABOOT_CONF"
-        echo -n "${nv#*=}" | base64 >> "$TEMP_ABOOT_CONF"
-        nvs="${nvs#*,}"
-    done
-
-    size="$(ls -l "$TEMP_ABOOT_CONF" | awk '{print $5}')"
-    pad_size="$((ABOOT_CONF_SIZE - size))"
-    dd if=/dev/zero bs=1 count="$pad_size" >> "$TEMP_ABOOT_CONF" 2> /dev/null
-}
-
 aboot_version() {
+    echo "Reading aboot version..."
     grep -a CONFIG_LOCALVERSION "$1" 2> /dev/null | awk -F'"' '{print $2}'
 }
 
 do_erase() {
-    # Layout is not supported in Erase. 
+    # Layout is not supported in Erase.
     # So we need to manually recover pdr (which include idprom) after erase.
     if [ ! -e /mnt/data/header_pdr.data ]; then
       backup_image
@@ -120,16 +87,16 @@ do_erase() {
     echo "Erasing the flash"
     if ! flashrom -p linux_spi:dev=$BIOS_SPIDEV -E -c "$BIOS_CHIP"; then
       echo "flashrom failed. Retrying without -c"
-      do_retry "erase" 
+      do_retry "erase"
     fi
-    
+
     # Recover header and pdr (which includes the idprom)
     do_recover
 }
 
 do_read() {
     echo "Reading flash content..."
-    if ! flashrom -p linux_spi:dev="$BIOS_SPIDEV" -r "$1" -c "$BIOS_CHIP"; then
+    if ! flashrom $popts -p linux_spi:dev="$BIOS_SPIDEV" -r "$1" -c "$BIOS_CHIP"; then
       echo "flashrom failed. Retrying without -c"
       do_retry "read" "$1"
     fi
@@ -143,13 +110,13 @@ backup_image(){
       echo "Running mktemp in backup_image failed"
       exit 1
     fi
-    
+
     # /mnt/data should always exist
     if [ ! -d /mnt/data ]; then
       echo "Partition /mnt/data doesn't exist"
       exit 1
     fi
-    
+
     # Create /mnt/data fixed name which will be used to recover later
     header_pdr_file="/mnt/data/header_pdr.data"
 
@@ -164,8 +131,8 @@ backup_image(){
        echo "Unable to store all the data. Will not erase SPI"
        rm "${tempfile}"
        exit 1
-    fi 
-    
+    fi
+
     # saving header, and pdr.
     # conv option not available in bmc busybox dd (can't do conv=nosync to prevent file from being truncated), so saving header as well.
     # we are backing from 00000000 to 00020fff which is 18 bits total. so we will use 9 bits for bs and 9 bits for count to get to the needed regions.
@@ -173,26 +140,30 @@ backup_image(){
       echo "Running dd in backup_image failed"
       exit 1
     fi
-    
+
     # The full image is no longer needed, so removed it
     rm "${tempfile}"
-
 }
 
 do_write() {
     bios_image="$1"
     if [ -n "$(aboot_version "$bios_image")" ]; then
-        create_aboot_conf "$DEFAULT_ABOOT_CONF" || exit 1
-        create_bios_image "$ABOOT_CONF_START" "$ABOOT_CONF_SIZE" \
-                          "$bios_image" "$TEMP_ABOOT_CONF" || exit 1
+      if [ $init_aconf -eq 1 ]; then
+        create_aboot_conf_image "$DEFAULT_ABOOT_CONF" "$bios_image" "$TEMP_BIOS_IMAGE" || exit 1
         bios_image="$TEMP_BIOS_IMAGE"
+      fi
     fi
 
     if [ ! -e /mnt/data/header_pdr.data ]; then
       backup_image
     fi
-    echo " writing header and payload ... "
-    if ! flashrom --layout /etc/yamp_bios.layout --image header --image payload -p linux_spi:dev="$BIOS_SPIDEV" -w "$bios_image" -c "$BIOS_CHIP"; then
+	 if [ -z "$popts" ]; then
+		popts="-l $LAYOUT_FILE -i header -i payload"
+    	echo " writing header and payload ... "
+    else
+		echo " writing partition(s) ... "
+	 fi
+    if ! flashrom $popts -p linux_spi:dev="$BIOS_SPIDEV" -w "$bios_image" -c "$BIOS_CHIP"; then
       echo "flashrom failed. Retrying without -c"
       do_retry "write" "$bios_image"
     fi
@@ -220,7 +191,8 @@ do_recover() {
   fi
 
   #Recover pdr region which includes the idprom region
-  if ! flashrom --layout /etc/yamp_bios.layout --image header --image pdr -p linux_spi:dev="$BIOS_SPIDEV" -w "${file}" -c "$BIOS_CHIP"; then
+  popts="-l $LAYOUT_FILE -i header -i pdr"
+  if ! flashrom $popts -p linux_spi:dev="$BIOS_SPIDEV" -w "${file}" -c "$BIOS_CHIP"; then
     echo "flashrom failed. Retrying without the -c"
     do_retry "write" "${file}"
   fi
@@ -237,15 +209,62 @@ connect_spi
 
 probe_chips
 
-if [ "$1" == "erase" ]; then
-    do_erase
-elif [ "$1" == "read" ]; then
-    do_read "$2"
-elif [ "$1" == "write" ]; then
-    do_write "$2"
-elif [ "${1}" == "recover" ]; then
-    do_recover
-else
+# Image partitions are non-contiguous so can't be specified by
+# a single partition name.
+IMAGE_PARTITIONS="normal microcode bootblock fallback"
+
+get_partition_opts() {
+  if [ "$1" = "--partition" ]; then
+    if [ -z "$2" ]; then
+      echo "Missing partition argument"
+      usage
+    fi
+    partitions="$2"
+  else
+    return
+  fi
+
+  if [ "$partitions" = "image" ]; then
+    partitions="$IMAGE_PARTITIONS"
+  fi
+
+  popts="-l $LAYOUT_FILE"
+  for partition in $partitions; do
+    popts="$popts -i $partition"
+  done
+}
+
+if [ "$1" = "erase" ]; then
+  do_erase
+elif [ "$1" = "read" ]; then
+  get_partition_opts "$3" "$4"
+  do_read "$2"
+elif [ "$1" = "write" ]; then
+  image_arg="$2"
+  while [ -n "$3" ]; do
+    case $3 in
+      --partition)
+        get_partition_opts "$3" "$4"
+        shift 2
+        ;;
+      --init-aconf)
+        init_aconf=1
+        shift
+        ;;
+      *)
+        echo "Unknown argument $3"
+        usage
+        ;;
+    esac
+  done
+  if [ -n "$popts" ] && [ $init_aconf -eq 1 ]; then
+    echo "--init-aconf and --partition are mutually exclusive"
     usage
+  fi
+  do_write "$image_arg"
+elif [ "$1" = "recover" ]; then
+  do_recover
+else
+  usage
 fi
 

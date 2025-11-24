@@ -23,8 +23,11 @@ PACKAGECONFIG += "disable-watchdog"
 PACKAGECONFIG += "boot-info"
 
 LOCAL_URI += " \
+    file://aconf_util.sh \
     file://bios_util.sh \
+    file://bmc_aboot.conf \
     file://board-utils.sh \
+    file://cpu_aboot.conf \
     file://eth0_mac_fixup.sh \
     file://fpga_util.sh \
     file://fpga_ver.sh \
@@ -37,7 +40,7 @@ LOCAL_URI += " \
     file://pim_enable.sh \
     file://dpm_ver.sh \
     file://dump_pim_serials.sh \
-    file://yamp_bios.layout \
+    file://yamp_flash.layout \
     file://showtech.sh \
     file://seutil \
     file://peutil \
@@ -49,6 +52,7 @@ LOCAL_URI += " \
     "
 
 OPENBMC_UTILS_FILES += " \
+    aconf_util.sh \
     bios_util.sh \
     board-utils.sh \
     fpga_util.sh \
@@ -117,6 +121,9 @@ do_work_sysv() {
 
     install -m 0755 ${UNPACKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
+
+    install -m 0644 ${UNPACKDIR}/bmc_aboot.conf ${D}${sysconfdir}/bmc_aboot.conf
+    install -m 0644 ${UNPACKDIR}/cpu_aboot.conf ${D}${sysconfdir}/cpu_aboot.conf
 }
 
 do_install:append() {
@@ -135,7 +142,7 @@ do_install:append() {
       do_work_sysv
     fi
 
-    install -m 0755 ${UNPACKDIR}/yamp_bios.layout ${D}${sysconfdir}/yamp_bios.layout
+    install -m 0755 ${UNPACKDIR}/yamp_flash.layout ${D}${sysconfdir}/yamp_flash.layout
 }
 
 FILES:${PN} += "${sysconfdir}"

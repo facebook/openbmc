@@ -1,0 +1,9 @@
+00000000:00000fff header
+00001000:00020fff pdr
+00a00000:00fcffff normal
+00fd0000:00feffff microcode
+00ff0000:00ffffff bootblock
+00400000:009effff fallback
+009fa000:009fefff aboot_conf
+00002400:00ffffff payload
+00000000:00ffffff total

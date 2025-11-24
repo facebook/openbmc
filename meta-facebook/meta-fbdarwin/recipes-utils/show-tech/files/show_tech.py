@@ -151,6 +151,12 @@ def gpioDump():
         )
     )
 
+def psOutput():
+    print(
+        "##### CURRENTLY RUNNING PROCESSES #####\n{}".format(
+            runCmd("ps w", echo=True, verbose=True)
+        )
+    )
 
 def showtech(quietLevel=0):
     verbose = not bool(quietLevel)
@@ -180,7 +186,7 @@ def showtech(quietLevel=0):
         i2cDetectDump()
         gpioDump()
         logDump()
-
+        psOutput()
 
 def parseArgs():
     parser = argparse.ArgumentParser(

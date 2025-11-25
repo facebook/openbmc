@@ -19,6 +19,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0013-oem-meta-Add-APML-alert-handler.patch \
     file://0014-oem-meta-Add-call-to-the-fw-versions-sd-retimer-serv.patch \
     file://0015-oem-meta-Add-MCTP-configuration-discovery.patch \
+    file://0016-oem-meta-Add-missing-propertyName-for-sled-cycle.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

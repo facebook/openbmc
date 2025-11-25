@@ -1,7 +1,7 @@
-From e7217457d46e88ac401df143b2ed3120e1636481 Mon Sep 17 00:00:00 2001
+From d3da59a394d24265623961dd7c300a87535348ef Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 2 Oct 2025 08:50:56 +0000
-Subject: [PATCH 08/15] requester: Always re-initialize MCTP info
+Subject: [PATCH 08/16] requester: Always re-initialize MCTP info
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -173,5 +173,5 @@ index 1db6292..a02d74f 100644
  
    private:
 -- 
-2.43.0
+2.47.3
 

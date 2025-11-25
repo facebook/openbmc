@@ -1,7 +1,7 @@
-From 5e2fbd7836bedb36f59bace7d51b0ed783105833 Mon Sep 17 00:00:00 2001
+From 4d92469a71290f69fb2848f9455276aff8e36905 Mon Sep 17 00:00:00 2001
 From: Mandy Hung <mandy.hung.wiwynn@gmail.com>
 Date: Fri, 21 Nov 2025 08:24:37 +0000
-Subject: [PATCH] oem-meta: Add missing propertyName for sled cycle
+Subject: [PATCH 16/16] oem-meta: Add missing propertyName for sled cycle
 
 Add the following in the sled cycle section:
 dbusMapping.propertyName = "RequestedPowerTransition"
@@ -31,5 +31,5 @@ index 32de91d..da8b28b 100644
                  "xyz.openbmc_project.State.Chassis.Transition.PowerCycle";
              break;
 -- 
-2.43.0
+2.47.3
 

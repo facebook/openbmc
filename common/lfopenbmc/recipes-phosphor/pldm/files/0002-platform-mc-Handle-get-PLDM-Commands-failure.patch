@@ -1,7 +1,7 @@
-From 3044224334bb3a9d04be7a395530b2d1e5d41536 Mon Sep 17 00:00:00 2001
+From ae88f24fcbe2aa8c7bee763f7372737e2be10c83 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Fri, 1 Nov 2024 17:44:55 +0800
-Subject: [PATCH 02/15] platform-mc: Handle get PLDM Commands failure
+Subject: [PATCH 02/16] platform-mc: Handle get PLDM Commands failure
 
 Ensure the TID is unmapped and the terminus is erased from termini
 when retrieving PLDM commands fails. This prevents the terminus
@@ -34,5 +34,5 @@ index 5c5ede6..7ac16e1 100644
  
          for (size_t i = 0; i < cmds.size(); i++)
 -- 
-2.43.0
+2.47.3
 

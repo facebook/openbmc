@@ -1,7 +1,7 @@
-From 5519623855ecfcab9a9c0dd433d147b8f1ec7860 Mon Sep 17 00:00:00 2001
+From 918feacacb650cae09d86b42998dc75185eed114 Mon Sep 17 00:00:00 2001
 From: Marc Olberding <molberding@nvidia.com>
 Date: Thu, 20 Nov 2025 15:26:14 -0800
-Subject: [PATCH] entity-manager: fix index bug in perform_scan.cpp
+Subject: [PATCH 8/8] entity-manager: fix index bug in perform_scan.cpp
 
 Previously, matched names were not being replaced
 before they hit dbus. This caused names that depend on index
@@ -89,5 +89,5 @@ index c126c0f..c54b42e 100644
  
          for (auto& keyPair : record)
 -- 
-2.43.0
+2.47.3
 

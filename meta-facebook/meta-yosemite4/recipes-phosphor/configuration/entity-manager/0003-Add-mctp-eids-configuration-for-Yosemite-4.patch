@@ -1,7 +1,7 @@
-From fac458cf53a19204a4ec632944266ccc4d4c0afa Mon Sep 17 00:00:00 2001
+From 4a9e84519b3d35e32db303dd495320b512f89ee5 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 25 Sep 2023 11:10:46 +0800
-Subject: [PATCH 3/7] Add mctp eids configuration for Yosemite 4
+Subject: [PATCH 3/8] Add mctp eids configuration for Yosemite 4
 
 The MCTP specification is defined in DSP0236. As describe in section
 8.17.2, we need a configuration for static EIDs. The `mctpd` from

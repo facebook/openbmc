@@ -1,9 +1,8 @@
 {
     "bios": {
-        "filename": "Aboot-norcal7-7.3.5-cb411-generic-8x1-ENG-43066215.rom",
+        "filename": "Aboot-norcal7-7.3.4-cb411-generic-8x1-42641583.rom",
         "hash": "sha1sum",
-        "hash_value": "006f70fb1ce359f4aa69148f2b9b0ff91ad22a23",
-        "version": "Aboot-norcal7-7.3.5-cb411-generic-8x1-43071231"
+        "hash_value": "81c507027b211ddbc13811eb4722e18397c70229"
     },
     "fan": {
         "filename": "elbert_fan.astp",

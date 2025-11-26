@@ -1,0 +1,11 @@
+[Unit]
+Description=MaxLinear XR21GpioMod
+Before=update-rs485-rules.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/ventura/gpio5_auto_rs485.py
+
+[Install]
+WantedBy=multi-user.target

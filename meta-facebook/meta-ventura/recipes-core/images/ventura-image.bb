@@ -19,3 +19,6 @@ IMAGE_INSTALL:append = " psu-update"
 
 # Service to detect erroring usb-serial
 IMAGE_INSTALL:append = " usb-serial-monitor"
+
+# XR Config
+IMAGE_INSTALL:append = " xr21-gpio-mod"

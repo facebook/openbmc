@@ -1,0 +1,6 @@
+option(
+  'default-chassis',
+  type: 'string',
+  value: '/xyz/openbmc_project/inventory/system/chassis/Yosemite_4_Chassis',
+  description: 'Default chassis path for sensor associations'
+)

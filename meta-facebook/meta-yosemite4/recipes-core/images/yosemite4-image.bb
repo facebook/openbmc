@@ -30,3 +30,4 @@ IMAGE_INSTALL:append = " dimm-util"
 # Add support for collecting CXL coredump via UART
 IMAGE_INSTALL:append = " cxl-coredump-collection"
 IMAGE_INSTALL:append = " cxl-mailbox"
+IMAGE_INSTALL:append = " adhoc-sensor"

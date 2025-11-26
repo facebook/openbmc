@@ -1,0 +1,13 @@
+[Unit]
+Description=Ad-hoc Sensor Service
+After=mapper-wait@-xyz-openbmc_project-sensors.service
+Before=phosphor-host-state-manager@.service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5
+ExecStart=/usr/bin/adhoc-sensor
+
+[Install]
+WantedBy=multi-user.target

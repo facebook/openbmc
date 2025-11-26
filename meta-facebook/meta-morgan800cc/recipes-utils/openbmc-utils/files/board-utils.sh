@@ -41,6 +41,8 @@ SEQ_TIMEOUT=15 # in seconds
 EBUSY_ERR=16       # Device or resource busy
 ETIME_ERR=62       # Timer expired
 
+WEUTIL_CMD="weutil -e"
+
 lock_file_path_configure() {
     local lock_dir="/run/lock"
     local link_path="/var/lock"
@@ -179,13 +181,36 @@ wedge_board_type() {
 }
 
 wedge_board_rev() {
-    local board_ver
+    board_rev=$($WEUTIL_CMD scm_eeprom|grep "Product Production State"|awk '{print $4}')
+    case "$((board_rev))" in
+        1)
+            echo "EVT"
+            ;;
+        2)
+            echo "DVT"
+            ;;
+        3)
+            echo "PVT"
+            ;;
+        4)
+            echo "MP"
+            ;;
+        *)
+            echo "Revision: unknown value [$board_rev]"
+            ;;
+    esac
+}
 
-    board_ver=$(read_i2c_register "$I2C_BOARD_VERSION_REGISTER_ADDR")
-    board_ver=$((board_ver & I2C_BOARD_VER_BIT_MASK))
+wedge_board_type_rev() {
+    board_type=$(wedge_board_type)
+    board_rev=$(wedge_board_rev)
 
-    echo "$board_ver"
-    return 0 #success
+    if [ -z "$board_type" ] || [ -z "$board_rev" ]; then
+        echo "Error: Unable to determine board type or revision!"
+        return 1
+    fi
+
+    echo "${board_type}_${board_rev}"
 }
 
 userver_power_is_on_helper() {

@@ -249,7 +249,7 @@ class RedfishEventHandler(web.Application):
                     logging.info(formerLog)
                     self.sel(formerLog)
 
-                    if len(latterACA) > 1:
+                    if len(latterACA) > 1 and formerACA != latterACA:
                         latterLog = log + latterACA + " AdditionalData: " + data_path
                         logging.info(latterLog)
                         self.sel(latterLog)

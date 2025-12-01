@@ -161,13 +161,19 @@ if [ "$mb_product" != "GTA" ]; then
 
   # SWB NIC
   kv set swb_nic_present 1
-  for i in {8..15}
-  do
+  for i in $(seq 8 15); do
     output=$(i2cget -y -f 32 0x13 $i | tr -d ' \t\n\r')
-    output=${output#0x}
-    pres=$((16#${output} & 0x80 ))
     index=$((i-8))
-    if [ "$pres" == "0" ]; then
+
+    if [[ ! "$output" =~ ^0x[0-9A-Fa-f]{2}$ ]]; then
+      kv set swb_nic${index}_present 1
+      continue
+    fi
+
+    hex=${output#0x}
+    prnt=$(( (16#$hex) & 0x80 ))
+
+    if [ "$prnt" -eq 0 ]; then
       kv set swb_nic_present 0
       kv set swb_nic${index}_present 0
     else

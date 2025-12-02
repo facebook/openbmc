@@ -28,7 +28,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
+	"os"
 	"strings"
 )
 
@@ -550,7 +550,7 @@ func ParseJSONDecoder(decoder *json.Decoder) (*Container, error) {
 // ParseJSONFile - Read a file and convert into a representation of the parsed JSON.
 func ParseJSONFile(path string) (*Container, error) {
 	if len(path) > 0 {
-		cBytes, err := ioutil.ReadFile(path)
+		cBytes, err := os.ReadFile(path)
 		if err != nil {
 			return nil, err
 		}

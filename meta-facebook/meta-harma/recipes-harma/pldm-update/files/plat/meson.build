@@ -1,3 +1,0 @@
-src += [
-  'ag-reactive.cpp',
-]

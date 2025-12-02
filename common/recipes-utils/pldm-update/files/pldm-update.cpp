@@ -220,6 +220,31 @@ active_update(const std::string& pldmdBusName, const std::string& softwareId)
     }
 }
 
+std::string
+getActivationStatus(const std::string& pldmdBusName, const std::string& softwareId)
+{
+    try {
+        auto bus = sdbusplus::bus::new_default();
+        auto swObjPath = std::string(softwareRoot) + "/" + softwareId;
+        auto interface = "xyz.openbmc_project.Software.Activation";
+        auto property = "Activation";
+
+        auto msg = bus.new_method_call(
+            pldmdBusName.c_str(),
+            swObjPath.c_str(),
+            "org.freedesktop.DBus.Properties",
+            "Get");
+        msg.append(interface, property);
+        auto activationState = std::variant<std::string>();
+        auto reply = bus.call(msg);
+        reply.read(activationState);
+        return std::get<std::string>(activationState);
+    } catch (const sdbusplus::exception_t& e) {
+        std::cerr << "Error: " << e.what() << std::endl;
+        return "Failed";
+    }
+}
+
 uint8_t
 get_progress(const std::string& pldmdBusName, const std::string& softwareId)
 {
@@ -326,6 +351,15 @@ pldm_update(const std::string& file)
                           << ": succeeded." << std::endl;
                 break;
             }
+        }
+
+        auto activationState = getActivationStatus(pldmdBusName, softwareId);
+        if (activationState == "xyz.openbmc_project.Software.Activation.Activations.Failed")
+        {
+            std::cout << "\nUpdate of software ID " << softwareId
+                      << ": failed." << std::endl;
+            delete_software_id(pldmdBusName, softwareId);
+            return;
         }
     }
 

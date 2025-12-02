@@ -15,4 +15,5 @@ IMAGE_INSTALL += " \
    apml \
    psb-util \
    crashdump-amd \
+   tcpdump \
    "

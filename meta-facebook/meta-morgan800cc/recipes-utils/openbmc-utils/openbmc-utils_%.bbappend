@@ -23,7 +23,10 @@ LOCAL_URI += "\
     file://setup-gpio.sh \
     file://bios-util.sh \
     file://sys-fs-pstore.mount \
+    file://mount_flash1_data0.sh \
     "
+
+OPENBMC_UTILS_FILES += "mount_flash1_data0.sh"
 
 do_install:append() {
     install -d ${D}/usr/local/bin

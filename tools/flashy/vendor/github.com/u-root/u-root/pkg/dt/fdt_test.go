@@ -6,7 +6,6 @@ package dt
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"reflect"
@@ -20,7 +19,7 @@ func TestRead(t *testing.T) {
 	}
 	defer f.Close()
 
-	jsonData, err := ioutil.ReadFile("testdata/fdt.json")
+	jsonData, err := os.ReadFile("testdata/fdt.json")
 	if err != nil {
 		t.Fatal(err)
 	}

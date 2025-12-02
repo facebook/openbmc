@@ -24,10 +24,10 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  oem/meta/event/oem_event_manager.hpp          |  18 +-
  oem/meta/libpldmresponder/file_io.cpp         |   3 +
  oem/meta/libpldmresponder/file_io_by_type.hpp |   3 +-
- .../file_io_type_event_log.cpp                | 687 ++++++++++++++++++
+ .../file_io_type_event_log.cpp                | 696 ++++++++++++++++++
  .../file_io_type_event_log.hpp                | 118 +++
  oem/meta/libpldmresponder/meson.build         |   1 +
- 7 files changed, 865 insertions(+), 13 deletions(-)
+ 7 files changed, 874 insertions(+), 13 deletions(-)
  create mode 100644 oem/meta/libpldmresponder/file_io_type_event_log.cpp
  create mode 100644 oem/meta/libpldmresponder/file_io_type_event_log.hpp
 
@@ -245,10 +245,10 @@ index 86cb708..6f0ae39 100644
  /**
 diff --git a/oem/meta/libpldmresponder/file_io_type_event_log.cpp b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
 new file mode 100644
-index 0000000..750765a
+index 0000000..7032779
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-@@ -0,0 +1,687 @@
+@@ -0,0 +1,696 @@
 +#include "file_io_type_event_log.hpp"
 +
 +#include <phosphor-logging/commit.hpp>
@@ -487,6 +487,15 @@ index 0000000..750765a
 +     "DeviceOverOperatingTemperatureFault"},
 +    {" MTIA FAULT", 0x52, "MTIA_FM_ATH_PLD_HBM3_CATTRIP",
 +     "/xyz/openbmc_project/inventory/system/board/Minerva_Aegis/ath_pld_hbm3_cattrip",
++     "DeviceOverOperatingTemperatureFault"},
++    {" MTIA FAULT", 0x53, "MTIA_VR_FAULT_CAUSE_POWER_DOWN",
++     "/xyz/openbmc_project/inventory/system/board/Minerva_Aegis/vr_fault_power_down",
++     "PowerRailFault"},
++    {" MTIA FAULT", 0x54, "MTIA_ATH_GPIO_3",
++     "/xyz/openbmc_project/inventory/system/board/Minerva_Aegis/ath_gpio_3",
++     "DeviceOverOperatingTemperatureFault"},
++    {" MTIA FAULT", 0x55, "MTIA_ATH_GPIO_4",
++     "/xyz/openbmc_project/inventory/system/board/Minerva_Aegis/ath_gpio_4",
 +     "DeviceOverOperatingTemperatureFault"},
 +};
 +
@@ -1073,5 +1082,5 @@ index 265f6f3..62fecbc 100644
      'file_io_type_post_code.cpp',
      'file_io_type_power_control.cpp',
 -- 
-2.47.3
+2.43.0
 

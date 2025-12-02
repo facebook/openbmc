@@ -22,7 +22,6 @@ package fileutils
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -52,8 +51,8 @@ var Pagesize = os.Getpagesize()
 var osStat = os.Stat
 var RemoveFile = os.Remove
 var TruncateFile = os.Truncate
-var ReadFile = ioutil.ReadFile
-var WriteFile = ioutil.WriteFile // prefer WriteFileWithTimeout
+var ReadFile = os.ReadFile
+var WriteFile = os.WriteFile // prefer WriteFileWithTimeout
 var RenameFile = os.Rename
 var CreateFile = os.Create
 

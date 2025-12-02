@@ -20,6 +20,8 @@ SRC_URI:append = " \
     file://1007-ARM-dts-aspeed-santabarbara-Add-eeprom-device-node-f.patch \
     file://1008-ARM-dts-aspeed-santabarbara-add-device-nodes-behind-.patch \
     file://1009-ARM-dts-aspeed-sb-configure-dimm-ids-for-sbrmi.patch \
+    file://1010-ARM-dts-aspeed-santabarbara-Add-swb-IO-expander-and-.patch \
+    file://1011-ARM-dts-aspeed-santabarbara-Enable-ipmb-device-for-O.patch \
     file://0202-dt-bindings-i3c-Add-i3c-hub-support.patch \
     file://0203-i3c-Add-driver-for-i3c-hub-device.patch \
     file://santabarbara-local.cfg \

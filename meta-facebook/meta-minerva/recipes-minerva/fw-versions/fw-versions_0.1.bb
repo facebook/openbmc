@@ -16,6 +16,7 @@ FW_TOOLS = "\
     bmc-tpm,minerva-sys-init.service,multi-user.target,multi-user.target,0 \
     fcb-cpld,minerva-sys-init.service,multi-user.target,multi-user.target,${FCB_INSTANCES} \
     ethernet-switch,minerva-sys-init.service,multi-user.target,multi-user.target,0 \
+    clear-duplicate-version,minerva-sys-init.service,multi-user.target,multi-user.target,0 \
 "
 
 LOCAL_URI = " \

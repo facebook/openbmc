@@ -1,0 +1,34 @@
+#!/bin/bash
+# This script removes duplicate version files for specific components
+# in the OpenBMC software settings directory.
+
+want_remove_component=(
+    Minerva_CMM_SCM_bmc
+    Minerva_CMM_SCM_scm_cpld
+    Minerva_CMM_cmm_cpld
+)
+
+RESTART_FLAG=false
+
+for component in "${want_remove_component[@]}"; do
+    file="/var/lib/phosphor-settings-manager/settings/xyz/openbmc_project/software/chassis/${component}__"
+    if [ -f "$file" ]; then
+        echo "Removing duplicate version file for component: ${component}"
+        rm -f "$file"
+        RESTART_FLAG=true
+    else
+        echo "No duplicate version file found for component: ${component}"
+    fi
+done
+
+
+if [ "$RESTART_FLAG" = true ]; then
+    if systemctl is-active --quiet xyz.openbmc_project.Settings.service; then
+        echo "Restarting phosphor-settings-manager service to apply changes."
+        systemctl restart xyz.openbmc_project.Settings.service
+    else
+        echo "phosphor-settings-manager service is not active; skipping restart."
+    fi
+else
+    echo "No changes made; service restart not required."
+fi

@@ -7,8 +7,8 @@
     "fan": {
         "filename": "elbert_fan.astp",
         "hash": "sha1sum",
-        "hash_value": "2606a2de51618c37ddb69fc9be76d4013709b342",
-        "version": "1.11"
+        "hash_value": "38849348646ac9b4ec4425c45e47b0e97caf66c3",
+        "version": "1.15"
     },
     "pim16q": {
         "filename": "elbert_pim16q.abin",

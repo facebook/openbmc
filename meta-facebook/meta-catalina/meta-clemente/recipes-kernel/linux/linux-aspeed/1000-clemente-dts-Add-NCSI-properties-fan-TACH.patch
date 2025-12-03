@@ -1,7 +1,7 @@
-From 657211204ed1d6d321e2ba3486ada13736951801 Mon Sep 17 00:00:00 2001
+From 89f6c1d4c76822a9d166d5e867a6d79413a85b87 Mon Sep 17 00:00:00 2001
 From: Leo Wang <leo.jt.wang@gmail.com>
 Date: Thu, 17 Jul 2025 18:44:46 +0800
-Subject: [PATCH] clemente: dts: Add NCSI properties, fan TACH
+Subject: [PATCH 1/1] clemente: dts: Add NCSI properties, fan TACH
 
 This commit updates Clemente DTS with the following enhancements:
 - Set compatible = "aspeed,ast2600-uart" for uart3.
@@ -9,14 +9,14 @@ This commit updates Clemente DTS with the following enhancements:
 - Define TACH sensor channels (channel@5 and channel@6) for all max31790 fan controller nodes.
 - Enable I2C bus nodes and populate them with additional devices
 ---
- .../aspeed/aspeed-bmc-facebook-clemente.dts   | 56 +++++++++++++++++++
- 1 file changed, 56 insertions(+)
+ .../aspeed/aspeed-bmc-facebook-clemente.dts   | 58 +++++++++++++++++++
+ 1 file changed, 58 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
-index ecef44d89977..561287850f4f 100644
+index dfe8f6d0eeef..fbe803dfc781 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
-@@ -654,24 +654,64 @@ power-monitor@14 {
+@@ -691,24 +691,64 @@ power-monitor@14 {
  	fanctl0: fan-controller@20{
  		compatible = "maxim,max31790";
  		reg = <0x20>;
@@ -81,7 +81,7 @@ index ecef44d89977..561287850f4f 100644
  	};
  
  	// Module 0 Leak Sensor
-@@ -945,6 +985,15 @@ rtc@6f {
+@@ -982,6 +1022,15 @@ rtc@6f {
  
  &i2c7 {
  	status = "okay";
@@ -97,7 +97,7 @@ index ecef44d89977..561287850f4f 100644
  };
  
  &i2c8 {
-@@ -1025,6 +1074,8 @@ &i2c11 {
+@@ -1062,6 +1111,8 @@ &i2c11 {
  	ssif-bmc@10 {
  		compatible = "ssif-bmc";
  		reg = <0x10>;
@@ -106,7 +106,7 @@ index ecef44d89977..561287850f4f 100644
  	};
  };
  
-@@ -1242,6 +1293,8 @@ &mac2 {
+@@ -1279,6 +1330,8 @@ &mac2 {
  	pinctrl-names = "default";
  	pinctrl-0 = <&pinctrl_ncsi3_default>;
  	use-ncsi;
@@ -115,7 +115,7 @@ index ecef44d89977..561287850f4f 100644
  };
  
  &mac3 {
-@@ -1249,6 +1302,8 @@ &mac3 {
+@@ -1286,6 +1339,8 @@ &mac3 {
  	pinctrl-names = "default";
  	pinctrl-0 = <&pinctrl_ncsi4_default>;
  	use-ncsi;
@@ -124,14 +124,17 @@ index ecef44d89977..561287850f4f 100644
  };
  
  &udma {
-@@ -1260,6 +1315,7 @@ &uart1 {
+@@ -1297,7 +1352,10 @@ &uart1 {
  };
  
  &uart3 {
 +	compatible = "aspeed,ast2600-uart";
  	status = "okay";
++	dmas = <&udma 4>, <&udma 5>;
++	dma-names = "tx", "rx";
  };
  
+ &uart4 {
 -- 
-2.47.3
+2.31.1
 

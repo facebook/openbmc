@@ -210,7 +210,7 @@ index 9dd0fcb..2bcdd52 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 13,
-+            "MaxValue": 4294970000.0,
++            "MaxValue": 100000,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU2_ENERGY_J",
 +            "PollRate": 1,
@@ -223,7 +223,7 @@ index 9dd0fcb..2bcdd52 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 13,
-+            "MaxValue": 4294970000.0,
++            "MaxValue": 100000,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU3_ENERGY_J",
 +            "PollRate": 1,

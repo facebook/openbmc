@@ -193,7 +193,7 @@ index f541408..9dd0fcb 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 13,
-+            "MaxValue": 4294970000.0,
++            "MaxValue": 100000,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU0_ENERGY_J",
 +            "PollRate": 1,
@@ -206,7 +206,7 @@ index f541408..9dd0fcb 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 13,
-+            "MaxValue": 4294970000.0,
++            "MaxValue": 100000,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU1_ENERGY_J",
 +            "PollRate": 1,

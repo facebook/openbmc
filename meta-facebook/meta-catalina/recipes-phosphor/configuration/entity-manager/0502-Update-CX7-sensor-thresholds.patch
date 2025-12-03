@@ -4,46 +4,38 @@ Date: Thu, 31 Jul 2025 11:35:27 +0800
 Subject: [PATCH 502/503] Update CX7 sensor thresholds
 
 ---
- configurations/ocp/cx7_ocp.json | 19 ++++++++++++-------
- 1 file changed, 12 insertions(+), 7 deletions(-)
+ configurations/ocp/cx7_ocp.json | 15 +++------------
+ 1 file changed, 3 insertions(+), 12 deletions(-)
 
 diff --git a/configurations/ocp/cx7_ocp.json b/configurations/ocp/cx7_ocp.json
-index e9c46f9..abe8839 100644
+index e9c46f9..b94221e 100644
 --- a/configurations/ocp/cx7_ocp.json
 +++ b/configurations/ocp/cx7_ocp.json
-@@ -14,20 +14,25 @@
+@@ -13,21 +13,12 @@
+             "MaxValue": 255,
              "Timeout": 30.0,
              "Thresholds": [
-                 {
+-                {
 -                    "Direction": "less than",
 -                    "Hysteresis": 0.1,
-+                    "Direction": "greater than",
-                     "Index": 2,
+-                    "Index": 2,
 -                    "Name": "lower critical",
 -                    "Severity": 1,
 -                    "Value": 5
-+                    "Name": "upper non recoverable",
-+                    "Severity": 4,
-+                    "Value": 85
-                 },
+-                },
                  {
                      "Direction": "greater than",
 -                    "Hysteresis": 2.1,
                      "Index": 2,
-                     "Name": "upper critical",
-                     "Severity": 1,
+-                    "Name": "upper critical",
+-                    "Severity": 1,
 -                    "Value": 105
-+                    "Value": 83
-+                },
-+                {
-+                    "Direction": "greater than",
-+                    "Index": 2,
 +                    "Name": "upper non critical",
 +                    "Severity": 0,
-+                    "Value": 80
++                    "Value": 106
                  }
              ],
              "Type": "ExternalSensor"
 -- 
-2.47.3
+2.43.0
 

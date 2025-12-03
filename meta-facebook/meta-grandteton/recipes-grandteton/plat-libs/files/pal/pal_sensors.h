@@ -185,6 +185,8 @@ int get_pldm_sensor(uint8_t bus, uint8_t eid, uint8_t sensor_num, float *value);
 int get_pldm_state_sensor(uint8_t bus, uint8_t eid, uint16_t snr_id, float *value);
 int set_pldm_state_effecter(uint8_t bus, uint8_t eid, uint16_t snr_id, uint16_t effecter);
 int mb_vr_polling_ctrl(bool enable);
+int pal_fan_dead_handle(int fan_num);
+int pal_fan_recovered_handle(int fan_num);
 int read_vr_temp(uint8_t fru, uint8_t sensor_num, float *value);
 int read_vr_vout(uint8_t fru, uint8_t sensor_num, float *value);
 int read_vr_iout(uint8_t fru, uint8_t sensor_num, float *value);

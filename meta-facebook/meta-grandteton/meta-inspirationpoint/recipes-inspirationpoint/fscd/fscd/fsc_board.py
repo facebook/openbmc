@@ -130,9 +130,11 @@ def board_fan_actions(fan, action="None"):
     - handling dead fan
     - handling fan led
     """
-    Logger.warn("%s needs action %s" % (fan.label, str(action)))
+    if action in "dead":
+        lpal_hndl.pal_fan_dead_handle(fan.fan_num)
+    elif action in "recover":
+        lpal_hndl.pal_fan_recovered_handle(fan.fan_num)
     pass
-
 
 def board_host_actions(action="None", cause="None"):
     FRU_MB = 1

@@ -905,12 +905,48 @@ static void fan_state_led_ctrl(uint8_t fru, uint8_t snr_num, bool assert) {
   char blue_led[32] = {0};
   char amber_led[32] = {0};
   uint8_t fan_id = sensor_map[fru].map[snr_num].id/2;
+  uint8_t fan_chip;
+
+  get_comp_source(fru, fru == FRU_FAN_BP1 ? FAN_BP1_LED_SOURCE : FAN_BP2_LED_SOURCE, &fan_chip);
+  if(fan_chip != MAIN_SOURCE) {
+    assert = !assert;
+  }
 
   snprintf(blue_led, sizeof(blue_led), "FAN%d_LED_GOOD", (int)fan_id);
   snprintf(amber_led, sizeof(amber_led), "FAN%d_LED_FAIL", (int)fan_id);
 
   gpio_set_value_by_shadow(amber_led, assert? GPIO_VALUE_HIGH: GPIO_VALUE_LOW);
-  gpio_set_value_by_shadow(blue_led, assert? GPIO_VALUE_LOW: GPIO_VALUE_HIGH);
+  gpio_set_value_by_shadow(blue_led,  assert? GPIO_VALUE_LOW: GPIO_VALUE_HIGH);
+}
+
+int
+pal_fan_dead_handle(int fan_num) {
+  int fru, snr_num;
+
+  if ( fan_num < FAN_PWM_CNT/2 ) {
+    fru = FRU_FAN_BP1;
+  } else {
+    fru = FRU_FAN_BP2;
+  }
+
+  snr_num = FAN_BP1_SNR_FAN0_INLET_SPEED + fan_num;
+  fan_state_led_ctrl(fru, snr_num, true);
+  return 0;
+}
+
+int
+pal_fan_recovered_handle(int fan_num) {
+  int fru, snr_num;
+
+  if ( fan_num < FAN_PWM_CNT/2 ) {
+    fru = FRU_FAN_BP1;
+  } else {
+    fru = FRU_FAN_BP2;
+  }
+
+  snr_num = FAN_BP1_SNR_FAN0_INLET_SPEED + fan_num;
+  fan_state_led_ctrl(fru, snr_num, false);
+  return 0;
 }
 
 void
@@ -950,11 +986,7 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
   } else if (sensor_map[fru].map[snr_num].units == FAN){
       fan_id = sensor_map[fru].map[snr_num].id;
       sprintf(cmd, "FAN%d %s %dRPM - Assert",fan_id ,thresh_name, (int)val);
-      get_comp_source(fru, fru == FRU_FAN_BP1 ? FAN_BP1_LED_SOURCE : FAN_BP2_LED_SOURCE, &fan_id);
-      if(fan_id == MAIN_SOURCE)
-        fan_state_led_ctrl(fru, snr_num, true);
-      else
-        fan_state_led_ctrl(fru, snr_num, false);
+      fan_state_led_ctrl(fru, snr_num, true);
   } else if (sensor_map[fru].map[snr_num].units == POWER) {
       pal_get_sensor_name(fru, snr_num, sensor_name);
       sprintf(cmd, "%s %s %dW - Assert", sensor_name, thresh_name, (int)val);
@@ -1013,12 +1045,7 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
   } else if (sensor_map[fru].map[snr_num].units == FAN){
       fan_id = sensor_map[fru].map[snr_num].id;
       sprintf(cmd, "FAN%d %s %dRPM - Deassert",fan_id ,thresh_name, (int)val);
-
-      get_comp_source(fru, fru == FRU_FAN_BP1 ? FAN_BP1_LED_SOURCE : FAN_BP2_LED_SOURCE, &fan_id);
-      if(fan_id == MAIN_SOURCE)
-        fan_state_led_ctrl(fru, snr_num, false);
-      else
-        fan_state_led_ctrl(fru, snr_num, true);
+      fan_state_led_ctrl(fru, snr_num, false);
   } else if (sensor_map[fru].map[snr_num].units == POWER) {
       pal_get_sensor_name(fru, snr_num, sensor_name);
       sprintf(cmd, "%s %s %dW - Deassert", sensor_name, thresh_name, (int)val);

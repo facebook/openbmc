@@ -1,5 +1,5 @@
 {
-    "version": "inspirationpint_MI350X_v6",
+    "version": "inspirationpoint_MI350X_v6",
     "pwm_transition_value": 100,
     "pwm_boost_value": 100,
     "sample_interval_ms": 3000,

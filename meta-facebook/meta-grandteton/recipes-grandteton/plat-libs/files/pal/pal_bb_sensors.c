@@ -219,10 +219,10 @@ char *max31790_chips[] = {
 int max31790_pwm_map[4] = {1,3,4,6};
 
 char *nct7904_chips[] = {
-  "nct7904-i2c-40-2d",
   "nct7904-i2c-40-2e",
-  "nct7904-i2c-41-2d",
+  "nct7904-i2c-40-2d",
   "nct7904-i2c-41-2e",
+  "nct7904-i2c-41-2d",
 };
 int nct7904_pwm_map[4] = {1,2,3,4};
 
@@ -1075,7 +1075,7 @@ read_fan_speed(uint8_t fru, uint8_t sensor_num, float *value) {
   ret = fan_ctrl_map[dev_id].get_rpm(fru, sensor_num, value);
   if (*value == 0 || ret) {
     retry[tach_id]++;
-    return retry_err_handle(retry[tach_id], 2);
+    return retry_err_handle(retry[tach_id], 2) == READING_NA? 0 : READING_SKIP;
   }
 
   retry[tach_id] = 0;
@@ -1168,7 +1168,6 @@ pal_get_pwm_value(uint8_t tach, uint8_t *value) {
   uint8_t retry = 0;
 
   if (fan >= pal_pwm_cnt || !is_fan_present(fan)) {
-//    syslog(LOG_INFO, "%s: fan number is invalid - %d", __func__, fan);
     return -1;
   }
 
@@ -1194,3 +1193,5 @@ pal_get_pwm_value(uint8_t tach, uint8_t *value) {
 
   return 0;
 }
+
+

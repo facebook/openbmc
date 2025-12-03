@@ -35,6 +35,17 @@ else
     echo "gpioget failed, skipping check"
 fi
 
+get_pldm_object_path() {
+    local eid=$1
+    local compid=$2
+
+    path=$(busctl tree xyz.openbmc_project.PLDM |
+        grep "/xyz/openbmc_project/software/PLDM_Device_Firmware_Device_${eid}_Component_${compid}" |
+        sed 's/^[^\/]*//')
+
+    echo "$path"
+}
+
 version=""
 declare -A found_ids
 
@@ -62,6 +73,16 @@ for ((i=1; i<=max_retry_count; i++)); do
                 "/xyz/openbmc_project/software/chassis/$component_name" \
                 xyz.openbmc_project.Software.Version \
                 Version "s" "$version"
+
+            pldmObjPath=$(get_pldm_object_path "$eid" "$compId")
+            if [ -n "$pldmObjPath" ]; then
+                busctl set-property \
+                    xyz.openbmc_project.PLDM \
+                    "$pldmObjPath" \
+                    xyz.openbmc_project.Software.Version \
+                    Version "s" "$version"
+            fi
+
         done <<< "$output"
 
         for compId in "${!component_names[@]}"; do

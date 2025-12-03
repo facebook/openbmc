@@ -735,6 +735,17 @@ read_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value) {
             return -1;
         }
       }
+      else if (id == SECOND_SOURCE) {
+        switch (hsc_id) {
+          case VPDB_HSC_ID0:
+          case HPDB_HSC_ID1:
+          case HPDB_HSC_ID2:
+            *value = (*value/256/0.15)*56.94/1000;
+            break;
+          default:
+            return -1;
+        }
+      }
       else if (id == THIRD_SOURCE) {
         switch (hsc_id) {
           case HPDB_HSC_ID1:
@@ -754,7 +765,7 @@ read_hsc_pin(uint8_t fru, uint8_t sensor_num, float *value) {
             *value = *value * 0.9904 + 1.6601;
             break;
           default:
-            ret = -1;
+            return -1;
         }
       }
     }

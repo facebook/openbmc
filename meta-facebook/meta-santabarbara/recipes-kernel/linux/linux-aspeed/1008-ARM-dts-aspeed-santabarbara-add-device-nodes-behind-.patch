@@ -1,7 +1,7 @@
-From 43d8c7f9bd7c9ba2ec9cb3a0b4866552c00e1b7d Mon Sep 17 00:00:00 2001
+From 8a7fbb750434323181422c4da8410636496cd04a Mon Sep 17 00:00:00 2001
 From: "Fred.Chen" <Fred.Chen@quantatw.com>
 Date: Tue, 10 Jun 2025 18:29:38 +0800
-Subject: [PATCH 1008/1008] ARM: dts: aspeed: santabarbara: add device nodes
+Subject: [PATCH 1008/1011] ARM: dts: aspeed: santabarbara: add device nodes
  behind the i3c hub
 
 Add device nodes behind the i3c hub. Each hub slave port can be
@@ -13,11 +13,11 @@ driver is merged.
 I3C hub lore link:
 https://lore.kernel.org/all/20250917142055.2806576-2-steven.niu.uj@renesas.com/
 ---
- .../aspeed-bmc-facebook-santabarbara.dts      | 973 ++++++++++++++++++
- 1 file changed, 973 insertions(+)
+ .../aspeed-bmc-facebook-santabarbara.dts      | 965 ++++++++++++++++++
+ 1 file changed, 965 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-index 66d0d28e5216..a893da6b5edd 100644
+index 66d0d28e5216..7b5dff7d743f 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 @@ -39,6 +39,14 @@ aliases {
@@ -35,7 +35,7 @@ index 66d0d28e5216..a893da6b5edd 100644
  		i2c48 = &i2c6mux0ch0;
  		i2c49 = &i2c6mux0ch1;
  		i2c50 = &i2c6mux0ch2;
-@@ -1657,6 +1665,971 @@ &i2c15 {
+@@ -1657,6 +1665,963 @@ &i2c15 {
  	status = "okay";
  };
  
@@ -928,27 +928,19 @@ index 66d0d28e5216..a893da6b5edd 100644
 +	};
 +
 +	gpio@22 {
-+		compatible = "nxp,pca9554";
++		compatible = "nxp,pca9555";
 +		reg = <0x22>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		gpio-line-names =
 +			"TRAY_SLOT_ID0","TRAY_SLOT_ID1",
 +			"TRAY_SLOT_ID2","TRAY_SLOT_ID3",
-+			"TRAY_SLOT_ID4","TRAY_SLOT_PRESENT_N",
-+			"P52V_PDB1_ALERT_N","P52V_SENSE_ALERT_N";
-+	};
-+
-+	gpio@25 {
-+		compatible = "nxp,pca9554";
-+		reg = <0x25>;
-+		gpio-controller;
-+		#gpio-cells = <2>;
-+		gpio-line-names =
++			"TRAY_SLOT_ID4","P52V_PDB1_ALERT_N",
++			"P52V_SENSE_ALERT_N","TRAY_SLOT_PRESENT_N",
 +			"PDB1_REV_ID_0","PDB1_REV_ID_1",
 +			"PDB1_REV_ID_2","PDB1_SKU_ID_1",
-+			"PDB1_SKU_ID_2","PDB1_SKU_ID_3",
-+			"PDB1_SKU_ID_4","PDB1_SKU_ID_5";
++			"PDB1_SKU_ID_5","PDB1_SKU_ID_4",
++			"PDB1_SKU_ID_3","PDB1_SKU_ID_2";
 +	};
 +};
 +

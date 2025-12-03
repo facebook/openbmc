@@ -1,4 +1,4 @@
-From 531630fd7d535bbb2d35567a9136550979cbca32 Mon Sep 17 00:00:00 2001
+From 2901bd87bfb350d73a5937dac24c7d5352ef11df Mon Sep 17 00:00:00 2001
 From: Fred Chen <fredchen.openbmc@gmail.com>
 Date: Tue, 25 Nov 2025 20:59:16 +0800
 Subject: [PATCH 1010/1011] ARM: dts: aspeed: santabarbara: Add swb IO expander
@@ -16,7 +16,7 @@ Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
  1 file changed, 18 insertions(+), 4 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-index f39a0768821a..a43f8ca011ee 100644
+index b480f4ec2e8a..23ee3b4ef9ff 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 @@ -1339,6 +1339,20 @@ eeprom@50 {
@@ -40,7 +40,7 @@ index f39a0768821a..a43f8ca011ee 100644
  	// SWB FRU
  	eeprom@52 {
  		compatible = "atmel,24c64";
-@@ -2744,11 +2758,11 @@ &sgpiom0 {
+@@ -2736,11 +2750,11 @@ &sgpiom0 {
  	"","BIOS_DEBUG_MODE",
  	/*H0-H3 line 112-119*/
  	"FM_IOEXP_U538_INT_N","",

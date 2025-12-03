@@ -1,4 +1,4 @@
-From 56901091dd175bc0cd5dcb8b7c4bf3a9239f3f40 Mon Sep 17 00:00:00 2001
+From a56bbfffe512a80fca5dd0e543814fb35ded1744 Mon Sep 17 00:00:00 2001
 From: Fred Chen <fredchen.openbmc@gmail.com>
 Date: Tue, 25 Nov 2025 21:00:03 +0800
 Subject: [PATCH 1011/1011] ARM: dts: aspeed: santabarbara: Enable ipmb device
@@ -14,7 +14,7 @@ Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
  1 file changed, 7 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-index a43f8ca011ee..409d4dbe52cf 100644
+index 23ee3b4ef9ff..80a075163015 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 @@ -856,7 +856,14 @@ temperature-sensor@49 {

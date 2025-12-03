@@ -1,7 +1,7 @@
-From 5a7e3cab429c59e9b53884d11c85e3932e79e2db Mon Sep 17 00:00:00 2001
+From 7380361229a1c0ffd4580185fd831d51f8f477ec Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Wed, 19 Nov 2025 16:54:10 +0800
-Subject: [PATCH 1009/1009] ARM: dts: aspeed: santabarbara: configure dimm ids
+Subject: [PATCH 1009/1011] ARM: dts: aspeed: santabarbara: configure dimm ids
  for sbrmi node
 
 Configure the DIMM count and DIMM ID mapping in the SBRMI node to
@@ -15,7 +15,7 @@ Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
  1 file changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-index a893da6b5..f39a07688 100644
+index 7b5dff7d743f..b480f4ec2e8a 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 @@ -343,7 +343,10 @@ &i2c3 {
@@ -31,5 +31,5 @@ index a893da6b5..f39a07688 100644
  	sbtsi@4c {
  		compatible = "amd,sbtsi";
 -- 
-2.47.3
+2.49.0
 

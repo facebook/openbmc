@@ -384,12 +384,32 @@ HMCPhase getHMCPhase() {
 TaskStatus getTaskStatus(const std::string& id) {
   std::string url = HMC_TASK_SERVICE + id;
   TaskStatus status;
-  status.resp = hgx.get(url);
-  json resp = json::parse(status.resp);
-  resp.at("TaskState").get_to(status.state);
-  status.status = resp.value("TaskStatus", "Unknown");
-  for (auto& j : resp.at("Messages")) {
-    status.messages.emplace_back(j.at("Message"));
+  int maxRetry = 5;
+  for (int retryCount = 0; retryCount <= maxRetry; ++retryCount) {
+    json resp;
+
+    try {
+      status.resp = hgx.get(url);
+      resp = json::parse(status.resp);
+
+      status.state = resp.value("TaskState", "Unknown");
+      status.status = resp.value("TaskStatus", "Unknown");
+
+      if (resp.contains("Messages") && resp["Messages"].is_array()) {
+        for (auto& j : resp["Messages"]) {
+          status.messages.emplace_back(j.value("Message", ""));
+        }
+      }
+      return status;
+    } catch (const std::exception& e) {
+      if (retryCount >= maxRetry) {
+        status.state  = "Exception";
+        status.status = "Failed";
+        break;
+      }
+      status.messages.emplace_back("task id: " + id + ", exception: " + e.what());
+      std::this_thread::sleep_for(std::chrono::seconds(5));
+    }
   }
   return status;
 }

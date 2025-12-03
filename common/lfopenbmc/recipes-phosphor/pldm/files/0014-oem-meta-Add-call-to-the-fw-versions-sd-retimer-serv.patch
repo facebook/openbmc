@@ -1,7 +1,7 @@
-From e1c505bee8f6200aabfff0c288eafed473092f0e Mon Sep 17 00:00:00 2001
+From e06b9e2855480511e2faaea3e50288311b24789d Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Thu, 23 Oct 2025 14:34:12 +0800
-Subject: [PATCH 14/16] oem-meta: Add call to the fw-versions-sd-retimer
+Subject: [PATCH 14/15] oem-meta: Add call to the fw-versions-sd-retimer
  service
 
 The fw-versions-sd-retimer service is triggered by the POST_COMPLETED

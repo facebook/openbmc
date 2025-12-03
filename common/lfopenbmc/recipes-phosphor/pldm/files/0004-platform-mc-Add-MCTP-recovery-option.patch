@@ -1,7 +1,7 @@
-From e3d87a40549b61fe38edf0b964bbd06135e78af8 Mon Sep 17 00:00:00 2001
+From 6d1d6132aab2c0e12ed182c18b5063fdb75eba1e Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 16:48:20 +0800
-Subject: [PATCH 04/16] platform-mc: Add MCTP recovery option
+Subject: [PATCH 04/15] platform-mc: Add MCTP recovery option
 
 Allow enabling or disabling MCTP 2.0 recovery feature.
 Calls `.Recover` method on timeout to handle communication recovery.
@@ -17,10 +17,10 @@ Upstream-Status: Pending
  4 files changed, 15 insertions(+)
 
 diff --git a/common/utils.cpp b/common/utils.cpp
-index 374037e..e05c92f 100644
+index 3dd6e6e..d54a9f3 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
-@@ -572,6 +572,7 @@ int emitStateSensorEventSignal(uint8_t tid, uint16_t sensorId,
+@@ -576,6 +576,7 @@ int emitStateSensorEventSignal(uint8_t tid, uint16_t sensorId,
  
  void recoverMctpEndpoint(const std::string& endpointObjPath)
  {
@@ -28,7 +28,7 @@ index 374037e..e05c92f 100644
      auto& bus = DBusHandler::getBus();
      try
      {
-@@ -589,6 +590,9 @@ void recoverMctpEndpoint(const std::string& endpointObjPath)
+@@ -593,6 +594,9 @@ void recoverMctpEndpoint(const std::string& endpointObjPath)
              "failed to make a D-Bus call to recover MCTP Endpoint, ERROR {ERR_EXCEP}",
              "ERR_EXCEP", e);
      }
@@ -39,7 +39,7 @@ index 374037e..e05c92f 100644
  
  uint16_t findStateSensorId(const pldm_pdr* pdrRepo, uint8_t tid,
 diff --git a/meson.build b/meson.build
-index d0ec1c1..b23e1d8 100644
+index 5ef9512..b008bbd 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -141,6 +141,7 @@ conf_data.set(

@@ -1,7 +1,7 @@
-From 89b3f5777e057e580053fb58537a90745946256c Mon Sep 17 00:00:00 2001
+From f59970a215418fcd8676e2392ce28d118c1d1bde Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Wed, 17 Sep 2025 16:05:34 +0800
-Subject: [PATCH 15/16] oem-meta: Add MCTP configuration discovery
+Subject: [PATCH 15/15] oem-meta: Add MCTP configuration discovery
 
 Introduces a `ConfigurationDiscoveryHandler` to dynamically discover MCTP
 endpoint configurations from D-Bus. This handler listens for MCTP

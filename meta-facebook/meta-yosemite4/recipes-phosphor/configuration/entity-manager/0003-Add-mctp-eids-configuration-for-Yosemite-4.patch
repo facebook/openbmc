@@ -1,7 +1,7 @@
-From 4a9e84519b3d35e32db303dd495320b512f89ee5 Mon Sep 17 00:00:00 2001
+From 8d2c77efff3f102fe98e4cfc280055d27283c648 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 25 Sep 2023 11:10:46 +0800
-Subject: [PATCH 3/8] Add mctp eids configuration for Yosemite 4
+Subject: [PATCH 3/7] Add mctp eids configuration for Yosemite 4
 
 The MCTP specification is defined in DSP0236. As describe in section
 8.17.2, we need a configuration for static EIDs. The `mctpd` from
@@ -234,7 +234,7 @@ index 89b4599..c994075 100644
              ]
          },
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index cdc4db1..bd8328e 100644
+index 5e4bd15..5a59ecd 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
 @@ -1,6 +1,43 @@
@@ -281,7 +281,7 @@ index cdc4db1..bd8328e 100644
          "ExitAirTempSensor": {
              "description": "implemented in dbus-sensors: ExitAirTempSensor",
              "additionalProperties": false,
-@@ -1188,6 +1225,9 @@
+@@ -1189,6 +1226,9 @@
              "EntityInstance": {
                  "type": "number"
              },
@@ -291,7 +291,7 @@ index cdc4db1..bd8328e 100644
              "GpioPins": {
                  "items": {
                      "type": "number"
-@@ -1197,6 +1237,9 @@
+@@ -1198,6 +1238,9 @@
              "GpioPolarity": {
                  "enum": ["Low"]
              },
@@ -301,7 +301,7 @@ index cdc4db1..bd8328e 100644
              "Index": {
                  "type": "number",
                  "minimum": 0,
-@@ -1217,6 +1260,10 @@
+@@ -1218,6 +1261,10 @@
              "MaxValue": {
                  "type": "number"
              },

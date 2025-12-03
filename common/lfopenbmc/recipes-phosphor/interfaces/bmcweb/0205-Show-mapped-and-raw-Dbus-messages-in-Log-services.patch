@@ -1,4 +1,4 @@
-From f002fc30a2aa5445fe28cb4c529e0a1049102d83 Mon Sep 17 00:00:00 2001
+From e597fdf889d5ba01f852a1dec1adae292fadccdb Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Wed, 26 Mar 2025 16:20:54 +0000
 Subject: [PATCH 205/205] Show mapped and raw Dbus messages in Log services
@@ -55,16 +55,16 @@ Ran it in QEMU, fetched logs and raw and mapped are shown [1].
 Change-Id: I84258ce334e1572d5c4debd65d9bb5ffb89924df
 Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
 ---
- .../lib/systems_logservices_dbus_eventlog.hpp | 25 +++++++++++--------
+ redfish-core/include/utils/eventlog_utils.hpp | 25 +++++++++++--------
  1 file changed, 14 insertions(+), 11 deletions(-)
 
-diff --git a/redfish-core/lib/systems_logservices_dbus_eventlog.hpp b/redfish-core/lib/systems_logservices_dbus_eventlog.hpp
-index a21f5d10..ec90dcb3 100644
---- a/redfish-core/lib/systems_logservices_dbus_eventlog.hpp
-+++ b/redfish-core/lib/systems_logservices_dbus_eventlog.hpp
-@@ -90,26 +90,29 @@ inline std::string translateSeverityDbusToRedfish(const std::string& s)
- inline void fillEventLogLogEntryFromDbusLogEntry(
-     const DbusEventLogEntry& entry, nlohmann::json& objectToFillOut)
+diff --git a/redfish-core/include/utils/eventlog_utils.hpp b/redfish-core/include/utils/eventlog_utils.hpp
+index 95df6aa1..a99447e7 100644
+--- a/redfish-core/include/utils/eventlog_utils.hpp
++++ b/redfish-core/include/utils/eventlog_utils.hpp
+@@ -562,26 +562,29 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
+     const std::string& parentStr, const std::string_view childId,
+     const std::string& logEntryDescriptor)
  {
 +    bool useFallbackMapping = true;
 +

@@ -1,7 +1,7 @@
-From 591fd93d77faa39d2c44a980b1ddb4d1dc725635 Mon Sep 17 00:00:00 2001
+From 3428dcdde4672e9fed48065d48f23dce7542d122 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 15 Jul 2025 10:22:29 +0000
-Subject: [PATCH 06/16] pldm: Use std::expected for instance ID allocation
+Subject: [PATCH 06/15] pldm: Use std::expected for instance ID allocation
 
 Refactor InstanceIdDb::next() to return
 std::expected<uint8_t, InstanceIdError> instead of throwing exceptions.
@@ -521,10 +521,10 @@ index e7485d8..1dda9f2 100644
      std::vector<uint8_t> requestMsg(
          sizeof(pldm_msg_hdr) + sizeof(effecterID) + sizeof(effecterCount) +
 diff --git a/oem/ibm/libpldmresponder/oem_ibm_handler.cpp b/oem/ibm/libpldmresponder/oem_ibm_handler.cpp
-index 2a3b0b7..b8637cc 100644
+index 2424efe..361af1b 100644
 --- a/oem/ibm/libpldmresponder/oem_ibm_handler.cpp
 +++ b/oem/ibm/libpldmresponder/oem_ibm_handler.cpp
-@@ -543,7 +543,13 @@ void pldm::responder::oem_ibm_platform::Handler::sendStateSensorEvent(
+@@ -663,7 +663,13 @@ void pldm::responder::oem_ibm_platform::Handler::sendStateSensorEvent(
      eventClass->sensor_offset = sensorOffset;
      eventClass->event_state = eventState;
      eventClass->previous_event_state = prevEventState;

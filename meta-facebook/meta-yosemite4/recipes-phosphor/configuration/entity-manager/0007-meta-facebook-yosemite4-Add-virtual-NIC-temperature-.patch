@@ -1,7 +1,7 @@
-From 5692d6e9af3517fe12e67073de17b91635c035f2 Mon Sep 17 00:00:00 2001
+From fae861b14a8bf3435928438eecd3988a33515197 Mon Sep 17 00:00:00 2001
 From: Rush Chen <Rush_Chen@wiwynn.com>
 Date: Wed, 4 Jun 2025 17:23:22 +0800
-Subject: [PATCH 7/8] meta-facebook: yosemite4: Add virtual NIC temperature
+Subject: [PATCH 7/7] meta-facebook: yosemite4: Add virtual NIC temperature
  sensors into fan table
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8

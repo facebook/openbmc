@@ -1,4 +1,4 @@
-From 1560f6229516e508a4c8cdb281b18226a749506a Mon Sep 17 00:00:00 2001
+From 7622330a6e941df38a2390137e240361c7d93b29 Mon Sep 17 00:00:00 2001
 From: MandyMCHung <mandy.hung.wiwynn@gmail.com>
 Date: Mon, 3 Mar 2025 10:39:31 +0800
 Subject: [PATCH 201/203] Avoid recreating hwmon temp when blade cycle
@@ -23,9 +23,9 @@ Signed-off-by: Mandy Hung <mandy.hung.wiwynn@gmail.com>
  meson.options                    | 6 ++++++
  src/dbus-sensor_config.h.in      | 2 ++
  src/hwmon-temp/HwmonTempMain.cpp | 9 +++++++++
- src/hwmon-temp/meson.build       | 8 ++++++++
+ src/hwmon-temp/meson.build       | 7 +++++++
  src/meson.build                  | 4 ++++
- 5 files changed, 29 insertions(+)
+ 5 files changed, 28 insertions(+)
 
 diff --git a/meson.options b/meson.options
 index c8a8d34..3eee161 100644
@@ -88,21 +88,20 @@ index a92c940..5d155f8 100644
      {
          createSensors(io, objectServer, sensors, dbusConnection, nullptr, true);
 diff --git a/src/hwmon-temp/meson.build b/src/hwmon-temp/meson.build
-index fe41321..9e5bc88 100644
+index c9d9466..63bae14 100644
 --- a/src/hwmon-temp/meson.build
 +++ b/src/hwmon-temp/meson.build
-@@ -1,3 +1,10 @@
+@@ -1,3 +1,9 @@
 +disable_host_power_monitoring = get_option('disable-host-power-monitoring')
 +
 +hwmon_temp_cpp_args = []
 +if disable_host_power_monitoring
 +    hwmon_temp_cpp_args += ['-DDISABLE_HOST_POWER_MONITORING']
 +endif
-+
- src_inc = include_directories('..')
  
  executable(
-@@ -6,6 +13,7 @@ executable(
+     'hwmontempsensor',
+@@ -5,6 +11,7 @@ executable(
      'HwmonTempSensor.cpp',
      dependencies: [default_deps, devicemgmt_dep, thresholds_dep, utils_dep],
      include_directories: src_inc,
@@ -111,7 +110,7 @@ index fe41321..9e5bc88 100644
      install_dir: '/usr/libexec/dbus-sensors',
  )
 diff --git a/src/meson.build b/src/meson.build
-index ae5087c..45d9c47 100644
+index d478974..b3a25ae 100644
 --- a/src/meson.build
 +++ b/src/meson.build
 @@ -7,6 +7,10 @@ conf_data.set10(

@@ -1,7 +1,7 @@
-From 7a338a440f7123dc34afcf33ff330297b5604bf8 Mon Sep 17 00:00:00 2001
+From 41202cfd92ea65df7da684af13383da5023e2c0d Mon Sep 17 00:00:00 2001
 From: Jason Hsu <Jason-Hsu@quantatw.com>
 Date: Fri, 27 Jun 2025 10:35:17 +0800
-Subject: [PATCH 10/18] meta-facebook: ventura: add SCM sensor offset
+Subject: [PATCH 10/17] meta-facebook: ventura: add SCM sensor offset
 
 Signed-off-by: Jason Hsu <Jason-Hsu@quantatw.com>
 ---

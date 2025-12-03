@@ -3,4 +3,5 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 SRC_URI:append = " \
     file://anacapa-local.cfg \
     file://1000-ARM-dts-aspeed-anacapa-Add-Meta-Anacapa-BMC.patch \
+    file://1001-ARM-dts-aspeed-anacapa-config-ncsi-device.patch \
 "

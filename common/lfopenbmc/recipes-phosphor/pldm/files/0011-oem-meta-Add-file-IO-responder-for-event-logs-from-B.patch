@@ -1,4 +1,4 @@
-From 4a95aa1eeedc07d19331b9d59a2ab0dea9967df1 Mon Sep 17 00:00:00 2001
+From bc617ffcdb21897835cc7dc5f1e22188f97e335d Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Mon, 21 Jul 2025 14:06:38 +0800
 Subject: [PATCH 11/15] oem-meta: Add file IO responder for event logs from BIC
@@ -20,22 +20,22 @@ Signed-off-by: Kay YC Huang <kay.yc.huang.wiwynn@gmail.com>
 Signed-off-by: Sora Su <baxiche@gmail.com>
 Signed-off-by: Peter Yin <peter.yin@quantatw.com>
 ---
- oem/meta/event/oem_event_manager.cpp          |  48 +-
+ oem/meta/event/oem_event_manager.cpp          |  57 +-
  oem/meta/event/oem_event_manager.hpp          |  18 +-
  oem/meta/libpldmresponder/file_io.cpp         |   3 +
  oem/meta/libpldmresponder/file_io_by_type.hpp |   3 +-
  .../file_io_type_event_log.cpp                | 696 ++++++++++++++++++
  .../file_io_type_event_log.hpp                | 118 +++
  oem/meta/libpldmresponder/meson.build         |   1 +
- 7 files changed, 874 insertions(+), 13 deletions(-)
+ 7 files changed, 880 insertions(+), 16 deletions(-)
  create mode 100644 oem/meta/libpldmresponder/file_io_type_event_log.cpp
  create mode 100644 oem/meta/libpldmresponder/file_io_type_event_log.hpp
 
 diff --git a/oem/meta/event/oem_event_manager.cpp b/oem/meta/event/oem_event_manager.cpp
-index 5cdd890..ac7e314 100644
+index 5cdd890..76f8953 100644
 --- a/oem/meta/event/oem_event_manager.cpp
 +++ b/oem/meta/event/oem_event_manager.cpp
-@@ -15,21 +15,26 @@ namespace pldm
+@@ -15,26 +15,36 @@ namespace pldm
  namespace oem_meta
  {
  
@@ -60,11 +60,40 @@ index 5cdd890..ac7e314 100644
          case RecordType::UNIFIED_BIOS_SEL:
          {
 -            handleUnifiedBIOSEvent(eventData, errorLog);
-+            handleUnifiedBIOSEvent(tid, data, errorLog);
++            // PLDM_SUCCESS is returned for retry events that have already been handled.
++            if (handleUnifiedBIOSEvent(tid, data, errorLog) == PLDM_SUCCESS)
++            {
++              return PLDM_SUCCESS;
++            }
              break;
          }
          default:
-@@ -83,7 +88,7 @@ int OemEventManager::handleOemEvent(
+         {
+-            return PLDM_ERROR;
++            lg2::info("oem platform event: unsupported event type");
++            return PLDM_SUCCESS;
+         }
+     }
+ 
+@@ -60,7 +70,7 @@ int OemEventManager::processOemMetaEvent(
+                                             "RAW_EVENT", rawLog));
+     }
+ 
+-    return 0;
++    return PLDM_SUCCESS;
+ }
+ 
+ int OemEventManager::handleOemEvent(
+@@ -75,7 +85,7 @@ int OemEventManager::handleOemEvent(
+         lg2::error("Recieve OEM Meta event from not Meta specific device");
+         return PLDM_ERROR;
+     }
+-    if (!processOemMetaEvent(tid, eventData, eventDataSize))
++    if (processOemMetaEvent(tid, eventData, eventDataSize))
+     {
+         return PLDM_ERROR;
+     }
+@@ -83,7 +93,7 @@ int OemEventManager::handleOemEvent(
      return PLDM_SUCCESS;
  }
  
@@ -73,17 +102,15 @@ index 5cdd890..ac7e314 100644
                                          std::string& errorLog) const
  {
      errorLog = "Standard (0x02), ";
-@@ -227,11 +232,40 @@ void OemEventManager::handleSystemEvent(const uint8_t* eventData,
+@@ -227,9 +237,35 @@ void OemEventManager::handleSystemEvent(const uint8_t* eventData,
      }
  }
  
 -void OemEventManager::handleUnifiedBIOSEvent(const uint8_t* eventData,
 -                                             std::string& errorLog) const
-+void OemEventManager::handleUnifiedBIOSEvent(
++int OemEventManager::handleUnifiedBIOSEvent(
 +    pldm_tid_t tid, const eventMsg& eventData, std::string& errorLog) const
  {
-     errorLog = "Meta Unified SEL (0xFB), ";
- 
 +    if (eventData.size() == eventMsgLengthWithTimestamp)
 +    {
 +        // Check whether the event is a retry event based on the timestamp
@@ -94,29 +121,30 @@ index 5cdd890..ac7e314 100644
 +                                  (eventData[18] << 4) + eventData[19];
 +        std::pair<pldm_tid_t, UnifiedError> eventKey =
 +            std::make_pair(tid, static_cast<UnifiedError>(0xF & eventData[1]));
-+        lg2::info(
-+            "oem event msg: detected retry event, type {TYPE}, timestamp {TIMEST}",
-+            "TYPE", 0xF & eventData[1], "TIMEST", eventTimeStamp);
 +        if (receivedEventMsgTimeStamp.count(eventKey) &&
 +            receivedEventMsgTimeStamp[eventKey] == eventTimeStamp)
 +        {
 +            lg2::info(
-+                "oem event msg: TID {TID}: Event time stamp {EVTT} skip retry event",
-+                "TID", tid, "EVTT", eventTimeStamp);
-+            return;
++                "oem platform event: skip retry event, TID {TID}, event type {EVTT}, event time stamp {TIMEST}",
++                "TID", tid, "EVTT", 0xF & eventData[1], "TIMEST", eventTimeStamp);
++            return PLDM_SUCCESS;
 +        }
 +        receivedEventMsgTimeStamp[eventKey] = eventTimeStamp;
 +    }
 +    else
 +    {
-+        lg2::info("oem event msg: not handle retry event, event len {LEN}",
-+                  "LEN", eventData.size());
++        lg2::info("oem platform event: not handle retry event, event type {EVTT}, event len {LEN}",
++                  "EVTT", 0xF & eventData[1], "LEN", eventData.size());
 +    }
 +
+     errorLog = "Meta Unified SEL (0xFB), ";
+ 
      DimmInfo dimmInfo = {
-         static_cast<uint8_t>((eventData[6] >> 4) & 0x03), // Sled
-         static_cast<uint8_t>(eventData[6] & 0x0F),        // Socket
-@@ -562,7 +596,7 @@ void OemEventManager::handleUnifiedBIOSEvent(const uint8_t* eventData,
+@@ -559,10 +595,11 @@ void OemEventManager::handleUnifiedBIOSEvent(const uint8_t* eventData,
+             break;
+         }
+     }
++    return -1;
  }
  
  void OemEventManager::handleMemoryError(
@@ -125,7 +153,7 @@ index 5cdd890..ac7e314 100644
      uint8_t generalInfo) const
  {
      std::string dimmLocation, dimm;
-@@ -611,7 +645,7 @@ void OemEventManager::handleMemoryError(
+@@ -611,7 +648,7 @@ void OemEventManager::handleMemoryError(
  }
  
  void OemEventManager::handleSystemPostEvent(
@@ -135,7 +163,7 @@ index 5cdd890..ac7e314 100644
      uint8_t certEventIdx = (eventData[10] < certEvent.size())
                                 ? eventData[10]
 diff --git a/oem/meta/event/oem_event_manager.hpp b/oem/meta/event/oem_event_manager.hpp
-index d810e5a..9fe9370 100644
+index d810e5a..ef95efe 100644
 --- a/oem/meta/event/oem_event_manager.hpp
 +++ b/oem/meta/event/oem_event_manager.hpp
 @@ -7,9 +7,13 @@
@@ -177,7 +205,7 @@ index d810e5a..9fe9370 100644
       *  @param[out] message - The resulting event message.
       */
 -    void handleUnifiedBIOSEvent(const uint8_t* eventData,
-+    void handleUnifiedBIOSEvent(pldm_tid_t tid, const eventMsg& eventData,
++    int handleUnifiedBIOSEvent(pldm_tid_t tid, const eventMsg& eventData,
                                  std::string& message) const;
  
      /** @brief Handle a memory error event.
@@ -245,7 +273,7 @@ index 86cb708..6f0ae39 100644
  /**
 diff --git a/oem/meta/libpldmresponder/file_io_type_event_log.cpp b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
 new file mode 100644
-index 0000000..7032779
+index 0000000..b694339
 --- /dev/null
 +++ b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
 @@ -0,0 +1,696 @@
@@ -612,8 +640,8 @@ index 0000000..7032779
 +            receivedEventTimeStamp[eventKey] == eventTimeStamp)
 +        {
 +            lg2::info(
-+                "oem event: TID {TID}: Event time stamp {EVTT} skip retry event",
-+                "TID", tid, "EVTT", eventTimeStamp);
++                "oem event: skip retry event, TID {TID}, event type {EVTT}, event time stamp {TIMEST} ",
++                "TID", tid, "EVTT", eventData[0], "TIMEST", eventTimeStamp);
 +            return PLDM_SUCCESS;
 +        }
 +        receivedEventTimeStamp[eventKey] = eventTimeStamp;

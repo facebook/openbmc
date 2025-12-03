@@ -1,4 +1,4 @@
-From e06b9e2855480511e2faaea3e50288311b24789d Mon Sep 17 00:00:00 2001
+From acc1a6433f72deeb093d8bba5317c40931c25b65 Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Thu, 23 Oct 2025 14:34:12 +0800
 Subject: [PATCH 14/15] oem-meta: Add call to the fw-versions-sd-retimer
@@ -15,10 +15,10 @@ Signed-off-by: Sora Su <baxiche@gmail.com>
  1 file changed, 21 insertions(+), 2 deletions(-)
 
 diff --git a/oem/meta/libpldmresponder/file_io_type_event_log.cpp b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-index 750765a..748b46e 100644
+index b694339..87de971 100644
 --- a/oem/meta/libpldmresponder/file_io_type_event_log.cpp
 +++ b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-@@ -428,6 +428,27 @@ const std::string EventLogHandler::handleEventType(
+@@ -437,6 +437,27 @@ const std::string EventLogHandler::handleEventType(
                      dimm_id[eventData[2]] + pmic_event_type[eventData[3]];
              break;
          }
@@ -46,7 +46,7 @@ index 750765a..748b46e 100644
          case EventType::CPU_THERMAL_TRIP:
          case EventType::HSC_OCP:
          case EventType::P12V_STBY_UV:
-@@ -447,7 +468,6 @@ const std::string EventLogHandler::handleEventType(
+@@ -456,7 +477,6 @@ const std::string EventLogHandler::handleEventType(
          case EventType::HSC_FAULT:
          case EventType::SYS_THROTTLE:
          case EventType::SYSTEM_MANAGEMENT_ERROR:
@@ -54,7 +54,7 @@ index 750765a..748b46e 100644
          case EventType::FAN_ERROR:
          case EventType::HDT_PRSNT_ASSERTION:
          case EventType::PLTRST_ASSERTION:
-@@ -455,7 +475,6 @@ const std::string EventLogHandler::handleEventType(
+@@ -464,7 +484,6 @@ const std::string EventLogHandler::handleEventType(
          case EventType::CXL1_HB:
          case EventType::CXL2_HB:
          case EventType::POST_STARTED:
@@ -63,5 +63,5 @@ index 750765a..748b46e 100644
              PROCHOT_IS_TRIGGERED_DUE_TO_SD_SENSOR_READING_EXCEED_UCR:
          case EventType::FRB2_WDT_HARD_RST:
 -- 
-2.47.3
+2.43.0
 

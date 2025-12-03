@@ -1,4 +1,4 @@
-From 894c08e14dd20c193d8c92b034b857d22c2efad0 Mon Sep 17 00:00:00 2001
+From d7549397d45bf59c5e1ed73ee055e3df85c48b68 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
 Subject: [PATCH 05/15] platform-mc: Add option for discovering FRU data
@@ -19,7 +19,7 @@ Upstream-Status: Pending
  5 files changed, 64 insertions(+), 2 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index b008bbd..2ed8486 100644
+index b23e1d8..4047bce 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -142,6 +142,10 @@ conf_data.set(
@@ -212,5 +212,5 @@ index 147e6e7..87ad0be 100644
      /* @brief Inventory D-Bus object path of the terminus */
      std::string inventoryPath;
 -- 
-2.47.3
+2.43.0
 

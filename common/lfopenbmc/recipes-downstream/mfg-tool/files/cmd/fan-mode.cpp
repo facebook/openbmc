@@ -47,6 +47,8 @@ struct command
 
                 if (arg_manual || arg_auto)
                 {
+                    co_await sdbusplus::async::sleep_for(
+                        ctx, std::chrono::milliseconds(500));
                     co_await mode.manual(arg_manual);
                     result[last_element(path)] = arg_manual ? "manual" : "auto";
                 }

@@ -1,4 +1,4 @@
-From a180388c312c03ed34a095c4dab54db92780fb37 Mon Sep 17 00:00:00 2001
+From a501628670b9e59289a2ec68206485da28823a15 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 2 Oct 2025 08:50:56 +0000
 Subject: [PATCH 08/15] requester: Always re-initialize MCTP info
@@ -85,7 +85,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  2 files changed, 52 insertions(+)
 
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 7d8309b..b3e30ac 100644
+index 187fd86..80972e9 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -297,6 +297,50 @@ void MctpDiscovery::removeFromExistingMctpInfos(MctpInfos& mctpInfos,
@@ -156,10 +156,10 @@ index 7d8309b..b3e30ac 100644
      handleMctpEndpoints(addedInfos);
  }
 diff --git a/requester/mctp_endpoint_discovery.hpp b/requester/mctp_endpoint_discovery.hpp
-index 1db6292..a02d74f 100644
+index 3c37e44..96586a0 100644
 --- a/requester/mctp_endpoint_discovery.hpp
 +++ b/requester/mctp_endpoint_discovery.hpp
-@@ -168,6 +168,12 @@ class MctpDiscovery
+@@ -169,6 +169,12 @@ class MctpDiscovery
      void removeFromExistingMctpInfos(MctpInfos& mctpInfos,
                                       MctpInfos& removedInfos);
  
@@ -173,5 +173,5 @@ index 1db6292..a02d74f 100644
  
    private:
 -- 
-2.43.0
+2.47.3
 

@@ -1,4 +1,4 @@
-From 7ecb1cbf9842b1ba1832532390108052a032c0ef Mon Sep 17 00:00:00 2001
+From ad536c16519af7dd81275664368aab8de5d3cce2 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Wed, 29 Oct 2025 15:30:49 +0800
 Subject: [PATCH 4/4] configuration: harma: set battery polling rate to 86400s
@@ -42,10 +42,10 @@ index 4e10e2a..fb1a42c 100644
                  "in1_Name": "MB_PVDD11_S3_VOLT_V",
                  "in1_PowerState": "On",
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index e24363d..8a2dfe2 100644
+index 614dc64..64e5ee6 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
-@@ -808,6 +808,9 @@
+@@ -809,6 +809,9 @@
                  "(curr|power|iout)(1[0-7]|[1-9])_Scale$": {
                      "$ref": "#/$defs/Types/ScaleValue"
                  },
@@ -55,7 +55,7 @@ index e24363d..8a2dfe2 100644
                  "in(1[0-7]|[0-9])_PowerState$": {
                      "$ref": "#/$defs/Types/PowerState"
                  },
-@@ -1358,6 +1361,7 @@
+@@ -1363,6 +1366,7 @@
                  "type": "number"
              },
              "PollRate": {
@@ -64,5 +64,5 @@ index e24363d..8a2dfe2 100644
                  "exclusiveMinimum": 0
              }
 -- 
-2.43.0
+2.47.3
 

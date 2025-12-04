@@ -1,7 +1,7 @@
-From b20bbc6869e385fbd5fb77544e47f221d3757a11 Mon Sep 17 00:00:00 2001
+From aecf86358f331e4a52e69bfe450bf1464b856814 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Mon, 3 Nov 2025 21:59:51 +0800
-Subject: [PATCH 3/3] configuration: harma: add PDB power monitor calibration
+Subject: [PATCH 3/4] configuration: harma: add PDB power monitor calibration
 
 Add calibration data for the first and second PDB power
 monitor components.
@@ -66,5 +66,5 @@ index 5e4bd15..614dc64 100644
                  }
              },
 -- 
-2.43.0
+2.47.3
 

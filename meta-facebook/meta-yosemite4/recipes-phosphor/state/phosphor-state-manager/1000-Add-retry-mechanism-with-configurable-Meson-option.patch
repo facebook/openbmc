@@ -1,4 +1,4 @@
-From b35e3856cc283eafd97b28fe2cb2d79a725ecf7c Mon Sep 17 00:00:00 2001
+From 3ed13b416317d3bfe2985dd8e655d93fd10ee065 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Wed, 26 Mar 2025 18:30:01 +0800
 Subject: [PATCH] Add retry mechanism with configurable Meson option
@@ -26,12 +26,12 @@ index a8e94be..fbb63a5 100644
  
  if (get_option('warm-reboot').allowed())
 diff --git a/meson.options b/meson.options
-index f7a3efc..7985b17 100644
+index f24d068..4ca8479 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -181,3 +181,10 @@ option(
-     value: true,
-     description: 'run APR when BMC has been rebooted due to software request',
+@@ -188,3 +188,10 @@ option(
+     value: 'enabled',
+     description: 'Link phosphor-bmc-quiesce-reboot.service into obmc-bmc-service-quiesce@0.target.wants to automatically reboot when BMC enters Quiesced',
  )
 +
 +option(

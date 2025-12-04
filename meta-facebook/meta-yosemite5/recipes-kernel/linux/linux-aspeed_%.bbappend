@@ -11,5 +11,6 @@ SRC_URI:append = " \
     file://1007-ARM-dts-aspeed-yosemite5-update-sensor-configuration.patch \
     file://1008-ARM-dts-aspeed-yosemite5-rename-sgpio-p0_i3c_apml_alert_l.patch \
     file://1009-ARM-dts-aspeed-yosemite5-add-ipmb-node-for-ocp-debug-card.patch \
+    file://1010-enable-uart-dma.patch \
     file://yosemite5-local.cfg \
 "

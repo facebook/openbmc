@@ -72,6 +72,16 @@ case $role in
     profile="/etc/fsc-config-rtsw.json"
     ;;
 esac
+
+# Extract datacenter from hostname to determine if we need a strong profile
+for hostname_file in /etc/netwhoami /mnt/data/hostname /etc/hostname; do
+  if [ -f "$hostname_file" ] && /bin/grep -q "nao2" "$hostname_file"; then
+    echo "Datacenter nao2 requires strong thermal profile, overriding to fsc-config-rtsw.json"
+    profile="/etc/fsc-config-rtsw.json"
+    break
+  fi
+done
+
 echo "Setting up the thermal profile for role: $role. Filename: $profile"
 # shellcheck disable=SC2154
 /bin/cp $profile $default_fsc_config

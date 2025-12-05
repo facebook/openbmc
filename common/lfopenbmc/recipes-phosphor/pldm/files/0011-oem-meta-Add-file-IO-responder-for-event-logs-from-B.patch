@@ -1,4 +1,4 @@
-From bc617ffcdb21897835cc7dc5f1e22188f97e335d Mon Sep 17 00:00:00 2001
+From 2b1a42208d8bc9a33a1ec1306d7f3f94000fa407 Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Mon, 21 Jul 2025 14:06:38 +0800
 Subject: [PATCH 11/15] oem-meta: Add file IO responder for event logs from BIC

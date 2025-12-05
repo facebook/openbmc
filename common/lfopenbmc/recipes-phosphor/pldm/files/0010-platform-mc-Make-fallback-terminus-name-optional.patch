@@ -1,4 +1,4 @@
-From 40cd05dd69f9c6f770e1e278c0d25d76cdadf0a9 Mon Sep 17 00:00:00 2001
+From 03b197df7d3902e84ef41f70ecadc41c5c2e1a70 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Mon, 13 Oct 2025 11:10:37 +0000
 Subject: [PATCH 10/15] platform-mc: Make fallback terminus name optional
@@ -45,7 +45,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  3 files changed, 19 insertions(+)
 
 diff --git a/meson.build b/meson.build
-index 330a229..9bd57ad 100644
+index bcff4c5..3b6a7b9 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -150,6 +150,10 @@ conf_data.set(

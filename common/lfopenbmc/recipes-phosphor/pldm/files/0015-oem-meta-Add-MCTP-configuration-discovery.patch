@@ -1,4 +1,4 @@
-From 2c3741fc09ebb1580e67a33011bdcad77eb34eed Mon Sep 17 00:00:00 2001
+From 5e5ecc533f1156f1f13cb8e688697a13e752bb43 Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Wed, 17 Sep 2025 16:05:34 +0800
 Subject: [PATCH 15/15] oem-meta: Add MCTP configuration discovery
@@ -464,7 +464,7 @@ index 0000000..2b69307
 @@ -0,0 +1 @@
 +oem_files += files('configuration_discovery_handler.cpp')
 diff --git a/oem/meta/utils.cpp b/oem/meta/utils.cpp
-index 702cbd3..367e70d 100644
+index 702cbd3..6563a45 100644
 --- a/oem/meta/utils.cpp
 +++ b/oem/meta/utils.cpp
 @@ -2,12 +2,18 @@
@@ -567,7 +567,7 @@ index 702cbd3..367e70d 100644
 +        configurationDiscovery->getConfigurations().find(EID);
 +    if (configurationIter == configurationDiscovery->getConfigurations().end())
 +    {
-+        return std::string{"0"};
++        return tryHardcodeSlotNumberStringByTID();
 +    }
 +
 +    pldm::utils::GetAncestorsResponse response;

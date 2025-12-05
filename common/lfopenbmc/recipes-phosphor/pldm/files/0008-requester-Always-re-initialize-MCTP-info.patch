@@ -1,4 +1,4 @@
-From a501628670b9e59289a2ec68206485da28823a15 Mon Sep 17 00:00:00 2001
+From f750e7581674e26bfe3472e121fa881c5f15078f Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 2 Oct 2025 08:50:56 +0000
 Subject: [PATCH 08/15] requester: Always re-initialize MCTP info
@@ -173,5 +173,5 @@ index 3c37e44..96586a0 100644
  
    private:
 -- 
-2.47.3
+2.43.0
 

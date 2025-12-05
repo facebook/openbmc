@@ -1,4 +1,4 @@
-From a6988e773e30f3360f005ab357411b9e432fbb23 Mon Sep 17 00:00:00 2001
+From afd121cf55356811cf3cdabb87f4bbb22012f5d0 Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Thu, 23 Oct 2025 14:18:22 +0800
 Subject: [PATCH 13/15] oem-meta: Add APML alert handler

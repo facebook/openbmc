@@ -134,6 +134,39 @@
             ]
         },
         {
+            "alias": "openbmc-cit-anacapa-determinator",
+            "args": {
+                "name": "openbmc-cit-anacapa-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-anacapa-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform anacapa"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-anacapa/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-cit-angelslanding-determinator",
             "args": {
                 "name": "openbmc-cit-angelslanding-determinator",

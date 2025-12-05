@@ -12,6 +12,7 @@ import (
 // see flash_procedure/platform_registry.go for platform-specific overrides
 var GeneratedFlashProcedureMappings = map[string]func(step.StepParams) step.StepExitError{
 	"acctonbmc":        flash.FlashCp,
+	"anacapa":          flash.FlashCp,
 	"angelslanding":    flash.FlashCpVboot,
 	"bletchley15":      flash.FlashCp,
 	"bletchley":        flash.FlashCp,

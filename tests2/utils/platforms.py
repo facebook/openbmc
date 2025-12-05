@@ -1,5 +1,6 @@
 PLATFORMS = [
     "acctonbmc",
+    "anacapa",
     "angelslanding",
     "bletchley",
     "bletchley15",

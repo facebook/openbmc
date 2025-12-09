@@ -1,4 +1,4 @@
-From 150ee2d5111871291a2a20a29ac78a488b6955cd Mon Sep 17 00:00:00 2001
+From c5d9fbbfdc88974e635dd4674e710618db99c08d Mon Sep 17 00:00:00 2001
 From: Colin Huang <colin.huang2@amd.com>
 Date: Thu, 13 Nov 2025 01:56:03 +0800
 Subject: [PATCH] fix reset button not working
@@ -120,3 +120,6 @@ index f18f1b5..17e4dfc 100644
              transition = Host::Transition::ForceWarmReboot;
  #else
              transition = Host::Transition::Reboot;
+-- 
+2.47.3
+

@@ -1,4 +1,4 @@
-From fa72de84b0b8d24e3690eb9c502c88b9b2bda4e8 Mon Sep 17 00:00:00 2001
+From 91022edf71b82d4c71e94e47352f9a279c8f989d Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 15:59:10 +0000
 Subject: [PATCH 204/205] Map DBus event to RF MessageID and parse args
@@ -120,7 +120,7 @@ index 172dabab..d5a5e46e 100644
      'redfish-bmc-journal',
      'redfish-cpu-log',
 diff --git a/include/dbus_utility.hpp b/include/dbus_utility.hpp
-index 407909a1..d849c508 100644
+index 17589c49..e64034b6 100644
 --- a/include/dbus_utility.hpp
 +++ b/include/dbus_utility.hpp
 @@ -20,6 +20,7 @@
@@ -131,7 +131,7 @@ index 407909a1..d849c508 100644
  #include <utility>
  #include <variant>
  #include <vector>
-@@ -58,7 +59,8 @@ using DbusVariantType = std::variant<
+@@ -59,7 +60,8 @@ using DbusVariantType = std::variant<
        std::string, std::string, uint64_t>>,
      std::vector<std::pair<sdbusplus::message::object_path, std::string>>,
      std::vector<std::tuple<std::string, uint64_t, std::string, double>>,

@@ -1,4 +1,4 @@
-From f750e7581674e26bfe3472e121fa881c5f15078f Mon Sep 17 00:00:00 2001
+From 0ddb48e3d7a277c3408cd60970984b20f85e8c96 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 2 Oct 2025 08:50:56 +0000
 Subject: [PATCH 08/15] requester: Always re-initialize MCTP info
@@ -85,7 +85,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  2 files changed, 52 insertions(+)
 
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 187fd86..80972e9 100644
+index 789ff09..0876dfa 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -297,6 +297,50 @@ void MctpDiscovery::removeFromExistingMctpInfos(MctpInfos& mctpInfos,
@@ -139,7 +139,7 @@ index 187fd86..80972e9 100644
  void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
  {
      using Interface = std::string;
-@@ -348,6 +392,7 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
+@@ -358,6 +402,7 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
              {
                  if (availability)
                  {
@@ -147,7 +147,7 @@ index 187fd86..80972e9 100644
                      // The endpoint not in existingMctpInfos and is
                      // available Add it to existingMctpInfos
                      info(
-@@ -371,6 +416,7 @@ void MctpDiscovery::discoverEndpoints(sdbusplus::message_t& msg)
+@@ -381,6 +426,7 @@ void MctpDiscovery::discoverEndpoints(sdbusplus::message_t& msg)
  {
      MctpInfos addedInfos;
      getAddedMctpInfos(msg, addedInfos);
@@ -173,5 +173,5 @@ index 3c37e44..96586a0 100644
  
    private:
 -- 
-2.43.0
+2.47.3
 

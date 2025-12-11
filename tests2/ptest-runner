@@ -160,6 +160,8 @@ def main(args):
     base_cmd = [
         "podman",
         "run",
+        "--security-opt",
+        "unmask=/proc",
         "--rm",
         "--systemd",
         "true",

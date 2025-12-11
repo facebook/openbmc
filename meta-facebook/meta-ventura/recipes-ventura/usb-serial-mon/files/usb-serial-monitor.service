@@ -3,7 +3,7 @@ Description=Monitor USB Serial health
 
 [Service]
 Type=oneshot
-ExecStart=/usr/libexec/usb-serial-monitor
+ExecStart=flock /tmp/modbus_dynamo_solitonbeam.lock /usr/libexec/usb-serial-monitor
 
 [Install]
 WantedBy=multi-user.target

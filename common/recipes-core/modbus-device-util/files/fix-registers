@@ -41,7 +41,7 @@ rackmoncli data --latest --json | jq -c '.[]' | while read -r line; do
     else
       echo "$device at $uda has $register set to $registerValue. Will update it to $expectedValue"
 
-      if rackmoncli write "$uda" "$registerAddress" "$expectedValue"; then
+      if flock /tmp/modbus_dynamo_solitonbeam.lock rackmoncli write "$uda" "$registerAddress" "$expectedValue"; then
         echo "Successfully set $register ($registerAddress) of $device at $uda to $expectedValue"
       else
         echo "FAILED to set $register ($registerAddress) of $device at $uda to $expectedValue"

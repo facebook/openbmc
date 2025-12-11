@@ -77,16 +77,32 @@ if ! is_problem_usb; then
 fi
 DONE_FILE=/tmp/usb-serial-issue.txt
 if [ -e $DONE_FILE ]; then
-  # Dont keep doing this. we already discovered its bad.
-  exit 0
+  current_time=$(date +%s)
+  done_file_time=$(stat -c %Y "$DONE_FILE")
+  time_diff=$((current_time - done_file_time))
+
+  if [ "$time_diff" -gt 3600 ]; then
+    # Reboot if we have been broken for an hour
+    echo "Time to hard reboot"
+    reboot
+  elif [ "$time_diff" -lt 1800 ]; then
+    # Don't keep doing this. We already discovered its bad recently.
+    exit 0
+  fi
 fi
 if ! detect_condition; then
-  date > $DONE_FILE
+  just_created_done_file=false
+  if [ ! -e $DONE_FILE ]; then
+    just_created_done_file=true
+    date > $DONE_FILE
+  fi
   if remediate; then
     echo "Auto-remediation successful!"
     rm -f $DONE_FILE
   else
-    echo "Auto-remediation failed!"
-    systemctl start managed-reboot
+    if $just_created_done_file; then
+      echo "Auto-remediation failed!"
+      systemctl start managed-reboot
+    fi
   fi
 fi

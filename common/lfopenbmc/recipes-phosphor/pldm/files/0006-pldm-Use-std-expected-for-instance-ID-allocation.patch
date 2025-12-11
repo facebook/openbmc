@@ -1,7 +1,7 @@
-From 0e4b721921daed6a283c779c7acad4a6722f014a Mon Sep 17 00:00:00 2001
+From eec940a10c9ad44f6276edefd54af5f7c96c8565 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 15 Jul 2025 10:22:29 +0000
-Subject: [PATCH 06/15] pldm: Use std::expected for instance ID allocation
+Subject: [PATCH 06/16] pldm: Use std::expected for instance ID allocation
 
 Refactor InstanceIdDb::next() to return
 std::expected<uint8_t, InstanceIdError> instead of throwing exceptions.
@@ -800,5 +800,5 @@ index e097988..9f8d02a 100644
          instanceID, effecterID, effecterCount, &stateField, request);
      if (rc != PLDM_SUCCESS)
 -- 
-2.43.0
+2.47.3
 

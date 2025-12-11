@@ -1,7 +1,7 @@
-From 7b53863a8343a78325044a15c1576cb6357d1b1c Mon Sep 17 00:00:00 2001
+From 7a97e6b3f48cc89824b0be4a6ab65e43a7ee0d2f Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Fri, 7 Nov 2025 08:25:45 +0000
-Subject: [PATCH] pldm: Increase maximum of dbus-timeout-value
+Subject: [PATCH 16/16] pldm: Increase maximum of dbus-timeout-value
 
 Increase the maximum value of the dbus-timeout-value option from 10 to
 60.
@@ -24,7 +24,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/meson.options b/meson.options
-index f49ffc0..5e55849 100644
+index 8780d88..4337410 100644
 --- a/meson.options
 +++ b/meson.options
 @@ -39,7 +39,7 @@ option(
@@ -37,5 +37,5 @@ index f49ffc0..5e55849 100644
      description: '''The amount of time pldm waits to get a response for a dbus
                      message before timing out''',
 -- 
-2.43.0
+2.47.3
 

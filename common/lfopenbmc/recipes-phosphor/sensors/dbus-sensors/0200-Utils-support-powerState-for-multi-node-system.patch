@@ -1,4 +1,4 @@
-From 2cc12748e6bccff1dc524d8886375655a0180e78 Mon Sep 17 00:00:00 2001
+From a3760575c4a5b987357bb26ead5128f4636abc25 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH 200/203] Utils: support powerState for multi-node system
@@ -885,10 +885,10 @@ index 9f799f5..221645b 100644
  
      void getPath(const std::string& path, const std::string& interface,
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
-index 918c926..2e20133 100644
+index 874fbf0..8038e5b 100644
 --- a/src/hwmon-temp/HwmonTempMain.cpp
 +++ b/src/hwmon-temp/HwmonTempMain.cpp
-@@ -598,7 +598,11 @@ static void powerStateChanged(
+@@ -603,7 +603,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {

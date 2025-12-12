@@ -1,4 +1,4 @@
-From 3d7765c92e26d04522d197066c99f81a91f9349d Mon Sep 17 00:00:00 2001
+From 04e9a0820b90e6d4429f801771fe108833f5020f Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Tue, 29 Jul 2025 21:01:23 -0700
 Subject: [PATCH] Implement valve monitor service
@@ -279,10 +279,10 @@ index b860551..4ba5a9c 100644
  
  } // namespace gpio
 diff --git a/src/meson.build b/src/meson.build
-index d478974..507dd24 100644
+index 79cedad..064ef9b 100644
 --- a/src/meson.build
 +++ b/src/meson.build
-@@ -174,3 +174,7 @@ endif
+@@ -172,3 +172,7 @@ endif
  if get_option('cable-monitor').allowed()
      subdir('cable-monitor')
  endif

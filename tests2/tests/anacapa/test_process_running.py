@@ -17,12 +17,14 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-
 import unittest
 
-import common.base_busybox_syntax_test
+from common.base_process_running_test import BaseProcessRunningTest
 
 
-@unittest.skip("Skip failing test for now, fix later")
-class BusyBoxSyntaxTest(common.base_busybox_syntax_test.BusyBoxSyntaxTest):
-    pass  # just run common tests
+class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
+    def set_processes(self):
+        self.expected_process = [
+            # "sshd",  # Fix after we move from Dropbear to OpenSSH.
+            "rsyslogd",
+        ]

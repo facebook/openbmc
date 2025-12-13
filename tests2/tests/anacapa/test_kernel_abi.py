@@ -17,12 +17,13 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-
 import unittest
 
-import common.base_busybox_syntax_test
+from common.base_kernel_abi_test import BaseKernelABITest
 
 
-@unittest.skip("Skip failing test for now, fix later")
-class BusyBoxSyntaxTest(common.base_busybox_syntax_test.BusyBoxSyntaxTest):
-    pass  # just run common tests
+class KernelABITest(BaseKernelABITest, unittest.TestCase):
+    def set_platform_specific_paths(self):
+        self.platform_dep_list = []
+        self.devfs_dep_list.remove("/dev/mem")
+        pass

@@ -18,6 +18,8 @@ using namespace redfish_client::core;
 
 void installSignalHandlers();
 
+void registerLogMappers();
+
 // Run redfish client till process receives SIGINT or SIGTERM
 void runRedfishClient(const std::string& serviceName,
                       sdbusplus::async::context& ctx,

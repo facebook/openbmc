@@ -68,6 +68,9 @@ srcs = [
     'src/redfish_client.cpp',
     'src/sensor_dbus_object.cpp',
     'src/server_object_intf.cpp',
+    'src/log_entry_mapper_registry.cpp',
+    'src/cper_mapper.cpp',
+    'src/unhandled_mapper.cpp',
 ]
 
 root_inc = include_directories('include')

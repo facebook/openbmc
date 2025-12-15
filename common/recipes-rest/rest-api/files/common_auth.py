@@ -144,6 +144,9 @@ def _extract_identity_from_peercert(request: Request) -> Identity:
             if m and m.group("type") == "host":
                 return Identity(user=None, host=m.group("host"))
 
+            # no FB identity_type prefix found. Assume standard CN ( FQDN )
+            return Identity(user=None, host=value)
+
     raise ValueError("No identity found in request")
 
 

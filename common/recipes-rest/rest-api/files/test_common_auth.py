@@ -45,6 +45,12 @@ EXAMPLE_SVC_CERT = {
     "subject": ((("commonName", "svc:an_example_service"),),),
 }
 
+EXAMPLE_WEBSERVER_CERT = {
+    "notAfter": "Jan  2 00:00:00 2000 GMT",
+    "notBefore": "Jan  1 00:00:00 2000 GMT",
+    "subject": ((("commonName", "a_hostname.example.com"),),),
+}
+
 
 class TestCommonAuth(AioHTTPTestCase):
     def setUp(self):
@@ -85,6 +91,14 @@ class TestCommonAuth(AioHTTPTestCase):
             identity, common_auth.Identity(user="svc:an_example_service", host=None)
         )
 
+    def test_extract_identity_from_peercert_webserver_identity(self):
+        req = self.make_mocked_request_host_cert()
+        identity = common_auth._extract_identity(req)
+
+        self.assertEqual(
+            identity, common_auth.Identity(user=None, host="a_hostname.example.com")
+        )
+
     def test_extract_identity_ipv6(self):
         req = make_mocked_request("GET", "/")
         req.transport.get_extra_info = mock.Mock(
@@ -121,18 +135,6 @@ class TestCommonAuth(AioHTTPTestCase):
             res,
             common_auth.Identity(user=None, host=ipaddress.IPv4Address("192.168.1.1")),
         )
-
-    def test_extract_identity_from_peercert_no_identity(self):
-        req = make_mocked_request("GET", "/")
-        req.transport.get_extra_info = mock.Mock(
-            return_value={
-                **EXAMPLE_USER_CERT,
-                "subject": ((("commonName", "badlyformedcommonname"),),),
-            }
-        )
-
-        res = common_auth._extract_identity(req)
-        self.assertEqual(res, common_auth.NO_IDENTITY)
 
     def test_extract_identity_from_peercert_empty_user(self):
         req = make_mocked_request("GET", "/")
@@ -283,6 +285,13 @@ class TestCommonAuth(AioHTTPTestCase):
         req = make_mocked_request("GET", "/")
         req.transport.get_extra_info = mock.Mock(
             wraps={"peercert": EXAMPLE_SVC_CERT}.get
+        )
+        return req
+
+    def make_mocked_request_webserver_cert(self):
+        req = make_mocked_request("GET", "/")
+        req.transport.get_extra_info = mock.Mock(
+            wraps={"peercert": EXAMPLE_WEBSERVER_CERT}.get
         )
         return req
 

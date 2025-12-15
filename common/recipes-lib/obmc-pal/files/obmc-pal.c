@@ -35,6 +35,7 @@
 #include <openbmc/ipmi.h>
 #include <openbmc/ipmb.h>
 #include <openbmc/snr-tolerance.h>
+#include <inttypes.h>
 #include <math.h>
 #include <pthread.h>
 #ifdef CRASHDUMP_AMD
@@ -2800,7 +2801,7 @@ pal_set_fw_update_ongoing(uint8_t fruid, uint16_t tmout) {
 
   clock_gettime(CLOCK_MONOTONIC, &ts);
   ts.tv_sec += tmout;
-  sprintf(value, "%lld", (uint64_t) ts.tv_sec);
+  sprintf(value, "%" PRIu64, (uint64_t)ts.tv_sec);
 
   if (kv_set(key, value, 0, 0) < 0) {
      return -1;

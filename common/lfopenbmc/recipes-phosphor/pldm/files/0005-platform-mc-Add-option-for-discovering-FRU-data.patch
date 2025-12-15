@@ -1,4 +1,4 @@
-From 950603eb898244fca2722897520144aa7b8438aa Mon Sep 17 00:00:00 2001
+From 695b8a3eb40e219577a3d2376ba36455fc2488d9 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
 Subject: [PATCH 05/16] platform-mc: Add option for discovering FRU data
@@ -19,7 +19,7 @@ Upstream-Status: Pending
  5 files changed, 64 insertions(+), 2 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index b008bbd..2ed8486 100644
+index ed152e9..6b3f89a 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -142,6 +142,10 @@ conf_data.set(
@@ -34,10 +34,10 @@ index b008bbd..2ed8486 100644
  # Firmware update inotify option
  if get_option('fw-update-pkg-inotify').allowed()
 diff --git a/meson.options b/meson.options
-index 4465948..fc80c24 100644
+index 4e78770..2c2d81f 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -240,6 +240,14 @@ option(
+@@ -248,6 +248,14 @@ option(
      value: 'enabled',
  )
  

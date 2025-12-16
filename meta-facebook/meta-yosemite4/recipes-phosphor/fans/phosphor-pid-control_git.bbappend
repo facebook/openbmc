@@ -2,7 +2,6 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += " \
     file://limitcore.conf \
-    file://0001-dbuspassive-Register-signal-before-property-fetch.patch \
 "
 
 EXTRA_OEMESON:append = " \

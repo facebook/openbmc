@@ -41,13 +41,15 @@ typedef struct crashdump_data {
 } crashdump_data_t;
 static crashdump_data_t g_crashdump_data[MAX_NODES];
 
-static uint8_t amdcrd_mac_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_mca_bank_t* pbank);
+#define PRINT_MCA64(fp, label, reg) \
+    fprintf(fp, " %-20s : 0x%08X_%08X\n", label, (reg).hi, (reg).lo)
+
+static uint8_t amdcrd_mac_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const void* pbank);
 static uint8_t amdcrd_virtual_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_virtual_bank_t* pbank);
 static uint8_t amdcrd_virtual_bank_v2_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_virtual_bank_v2_t* pbank);
 static uint8_t amdcrd_header_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_header_bank_t* pbank);
-static uint8_t amdcrd_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const void* pbank);
-static uint8_t amdcrd_milan_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_milan_cpu_wdt_bank_t* pbank);
 static uint8_t amdcrd_genoa_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_genoa_cpu_wdt_bank_t* pbank);
+static uint8_t amdcrd_genoa_extra_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_genoa_extra_cpu_wdt_bank_t* pbank);
 static uint8_t amdcrd_turin_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_turin_cpu_wdt_bank_t* pbank);
 static uint8_t amdcrd_wdt_addr_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_wdt_addr_bank_t* pbank);
 static uint8_t amdcrd_wdt_data_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_wdt_data_bank_t* pbank);
@@ -191,6 +193,7 @@ pal_amdcrd_save_mca_to_file(uint8_t slot, uint8_t* req_data, uint8_t req_len, ui
   char file_path[MAX_CRASHDUMP_FILE_NAME_LENGTH] = "";
   amdcrd_hdr_t* phdr = (amdcrd_hdr_t*)req_data;
   uint8_t* data_ptr = req_data + sizeof(amdcrd_hdr_t);
+  uint8_t payload_len = req_len - sizeof(amdcrd_hdr_t);
 
   /* slot is 0 based, slot_id is 1 based */
   snprintf(file_path, MAX_CRASHDUMP_FILE_NAME_LENGTH, MCA_DECODED_LOG_PATH, slot + 1);
@@ -203,7 +206,21 @@ pal_amdcrd_save_mca_to_file(uint8_t slot, uint8_t* req_data, uint8_t req_len, ui
 
   switch (phdr->bank_hdr.bank_type) {
     case TYPE_MCA_BANK:
-      completion_code = amdcrd_mac_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_mca_bank_t*)data_ptr);
+      if (payload_len == sizeof(amdcrd_mca_bank_genoa_t)) {
+        phdr->bank_hdr.bank_fmt_ver = AMD_CPU_FAMILY_GENOA;
+        completion_code = amdcrd_mac_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_mca_bank_genoa_t*)data_ptr);
+      }
+      else if (payload_len == sizeof(amdcrd_mca_bank_genoa_extra_t)) {
+        phdr->bank_hdr.bank_fmt_ver = AMD_CPU_FAMILY_GENOA_EXTRA;
+        completion_code = amdcrd_mac_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_mca_bank_genoa_extra_t*)data_ptr);
+      }
+      else if (payload_len == sizeof(amdcrd_mca_bank_turin_t)) {
+        phdr->bank_hdr.bank_fmt_ver = AMD_CPU_FAMILY_TURIN;
+        completion_code = amdcrd_mac_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_mca_bank_turin_t*)data_ptr);
+      }
+      else {
+        completion_code = CC_INVALID_LENGTH;
+      }
       break;
 
     case TYPE_VIRTUAL_BANK:
@@ -217,9 +234,19 @@ pal_amdcrd_save_mca_to_file(uint8_t slot, uint8_t* req_data, uint8_t req_len, ui
       break;
 
     case TYPE_CPU_WDT_BANK:
-      completion_code = amdcrd_cpu_wdt_bank_handler(fp, slot, &phdr->bank_hdr, (const void*) data_ptr);
+      if (payload_len == sizeof(amdcrd_genoa_cpu_wdt_bank_t)) {
+        completion_code = amdcrd_genoa_cpu_wdt_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_genoa_cpu_wdt_bank_t*)data_ptr);
+      }
+      else if (payload_len == sizeof(amdcrd_genoa_extra_cpu_wdt_bank_t)) {
+        completion_code = amdcrd_genoa_extra_cpu_wdt_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_genoa_extra_cpu_wdt_bank_t*)data_ptr);
+      }
+      else if (payload_len == sizeof(amdcrd_turin_cpu_wdt_bank_t)) {
+        completion_code = amdcrd_turin_cpu_wdt_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_turin_cpu_wdt_bank_t*)data_ptr);
+      }
+      else {
+        completion_code = CC_INVALID_LENGTH;
+      }
       break;
-
     case TYPE_WDT_ADDR_BANK:
       completion_code = amdcrd_wdt_addr_bank_handler(fp, slot, &phdr->bank_hdr, (amdcrd_wdt_addr_bank_t*)data_ptr);
       break;
@@ -280,64 +307,56 @@ pal_amdcrd_save_mca_to_file(uint8_t slot, uint8_t* req_data, uint8_t req_len, ui
   return completion_code;
 }
 
+static void print_genoa(const amdcrd_mca_bank_genoa_t* g, FILE* fp) {
+  PRINT_MCA64(fp, "MCA_CTRL", g->mca_ctrl);
+  PRINT_MCA64(fp, "MCA_STS", g->mca_sts);
+  PRINT_MCA64(fp, "MCA_ADDR", g->mca_addr);
+  PRINT_MCA64(fp, "MCA_MISC0", g->mca_misc0);
+  PRINT_MCA64(fp, "MCA_CTRL_MASK", g->mca_ctrl_mask);
+  PRINT_MCA64(fp, "MCA_CONFIG", g->mca_config);
+  PRINT_MCA64(fp, "MCA_IPID", g->mca_ipid);
+  PRINT_MCA64(fp, "MCA_SYND", g->mca_synd);
+  PRINT_MCA64(fp, "MCA_DESTAT", g->mca_destat);
+  PRINT_MCA64(fp, "MCA_DEADDR", g->mca_deaddr);
+  PRINT_MCA64(fp, "MCA_MISC1", g->mca_misc1);
+}
+
+static void print_genoa_extra(const amdcrd_mca_bank_genoa_extra_t* gx, FILE* fp) {
+  PRINT_MCA64(fp, "SYNCFLOOD_STATUS", gx->sync_flood);
+  print_genoa(&gx->genoa, fp);
+  PRINT_MCA64(fp, "MCA_SYND1MSR", gx->mca_synd1msr);
+  PRINT_MCA64(fp, "MCA_SYND2MSR", gx->mca_synd2msr);
+}
+
+static void print_turin(const amdcrd_mca_bank_turin_t* t, FILE* fp) {
+  print_genoa_extra(&t->genoa_extra, fp);
+  PRINT_MCA64(fp, "MCA_TRANS_ADDR", t->mca_trans_addr);
+  PRINT_MCA64(fp, "MCA_TRANS_SYND", t->mca_trans_synd);
+  PRINT_MCA64(fp, "MCA_TRANS_STAT", t->mca_trans_stat);
+}
 
 static uint8_t
-amdcrd_mac_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_mca_bank_t* pbank) {
-  uint8_t completion_code = CC_SUCCESS;
-
-  if (amdcrd_set_state(idx, AMDCRD_CTRL_BMC_WAIT_DATA) != AMDCRD_SET_STATE_SUCCESS) {
-    completion_code = CC_NOT_SUPP_IN_CURR_STATE;
-    goto out;
-  }
+amdcrd_mac_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const void* bank) {
+  uint8_t cpu_family = phdr->bank_fmt_ver;
 
   fprintf(fp, " %s : 0x%02X, %s : 0x%02X \n",
-      "Bank ID", phdr->bank_id, "Core ID", phdr->core_id);
-  fprintf(fp, " %-15s : 0x%08X_%08X \n",
-      "SYNCFLOOD_STATUS", pbank->sync_flood_hf, pbank->sync_flood_lf);
-  fprintf(fp, " %-15s : 0x%08X_%08X \n",
-      "MCA_CTRL", pbank->mca_ctrl_hf, pbank->mca_ctrl_lf);
-  fprintf(fp, " %-15s : 0x%08X_%08X \n",
-      "MCA_STATUS", pbank->mca_status_hf, pbank->mca_status_lf);
-  fprintf(fp, " %-15s : 0x%08X_%08X \n",
-      "MCA_ADDR", pbank->mca_addr_hf, pbank->mca_addr_lf);
-  fprintf(fp,  " %-15s : 0x%08X_%08X \n",
-      "MCA_MISC0", pbank->mca_misc0_hf, pbank->mca_misc0_lf);
-  fprintf(fp, " %-15s : 0x%08X_%08X \n",
-      "MCA_CTRL_MASK", pbank->mca_ctrl_mask_hf, pbank->mca_ctrl_mask_lf);
-  fprintf(fp, " %-15s : 0x%08X_%08X \n",
-      "MCA_CONFIG", pbank->mca_config_hf, pbank->mca_config_lf);
-  fprintf(fp, " %-15s : 0x%08X_%08X \n",
-      "MCA_IPID", pbank->mca_ipid_hf, pbank->mca_ipid_lf);
-  fprintf(fp, " %-15s : 0x%08X_%08X \n",
-      "MCA_SYND", pbank->mca_synd_hf, pbank->mca_synd_lf);
-  fprintf(fp, " %-15s : 0x%08X_%08X \n",
-      "MCA_DESTAT", pbank->mca_destat_hf, pbank->mca_destat_lf);
-  fprintf(fp, " %-15s : 0x%08X_%08X \n",
-      "MCA_DEADDR", pbank->mca_deaddr_hf, pbank->mca_deaddr_lf);
-  fprintf(fp, " %-15s : 0x%08X_%08X \n",
-      "MCA_MISC1", pbank->mca_misc1_hf, pbank->mca_misc1_lf);
-  fprintf(fp, " %-15s : 0x%08X_%08X \n",
-      "MCA_SYND1MSR", pbank->mca_synd1msr_hf, pbank->mca_synd1msr_lf);
-  fprintf(fp, " %-15s : 0x%08X_%08X \n",
-      "MCA_SYND2MSR", pbank->mca_synd2msr_hf, pbank->mca_synd2msr_lf);
-  fprintf(fp, " %-15s : 0x%08X_%08X \n",
-      "MCA_TRANSADDR", pbank->mca_transaddr_hf, pbank->mca_transaddr_lf);
-  fprintf(fp, " %-15s : 0x%08X_%08X \n",
-      "MCA_TRANSSYND", pbank->mca_transsynd_hf, pbank->mca_transsynd_lf);
-  fprintf(fp, " %-15s : 0x%08X_%08X \n",
-      "MCA_TRANSSTAT", pbank->mca_transstat_hf, pbank->mca_transstat_lf);
-  fprintf(fp, "\n");
+    "Bank ID", phdr->bank_id, "Core ID", phdr->core_id);
 
-  if (g_recv_list[idx].count < MAX_VAILD_LIST_LENGTH) {
-    g_recv_list[idx].list[g_recv_list[idx].count].bank_id = phdr->bank_id;
-    g_recv_list[idx].list[g_recv_list[idx].count].core_id = phdr->core_id;
-    g_recv_list[idx].count++;
-  } else {
-    syslog(LOG_INFO, "%s(): mca recv count exceed %u", __func__, MAX_VAILD_LIST_LENGTH);
+  switch (cpu_family) {
+    case AMD_CPU_FAMILY_GENOA:
+      print_genoa((const amdcrd_mca_bank_genoa_t*)bank, fp);
+      break;
+    case AMD_CPU_FAMILY_GENOA_EXTRA:
+      print_genoa_extra((const amdcrd_mca_bank_genoa_extra_t*)bank, fp);
+      break;
+    case AMD_CPU_FAMILY_TURIN:
+      print_turin((const amdcrd_mca_bank_turin_t*)bank, fp);
+      break;
+    default:
+      return CC_INVALID_PARAM;
   }
 
-out:
-  return completion_code;
+  return CC_SUCCESS;
 }
 
 static uint8_t
@@ -446,21 +465,7 @@ out:
 }
 
 static uint8_t
-amdcrd_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const void* pbank) {
-  switch (phdr->bank_fmt_ver) {
-    case 2:
-      return amdcrd_milan_cpu_wdt_bank_handler (fp, idx, phdr, (const amdcrd_milan_cpu_wdt_bank_t*)pbank);
-    case 3:
-      return amdcrd_genoa_cpu_wdt_bank_handler (fp, idx, phdr, (const amdcrd_genoa_cpu_wdt_bank_t*)pbank);
-    case 4:
-      return amdcrd_turin_cpu_wdt_bank_handler (fp, idx, phdr, (const amdcrd_turin_cpu_wdt_bank_t*)pbank);
-    default:
-      return CC_INVALID_PARAM;
-  }
-}
-
-static uint8_t
-amdcrd_milan_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_milan_cpu_wdt_bank_t* pbank) {
+amdcrd_genoa_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_genoa_cpu_wdt_bank_t* pbank) {
   uint8_t i;
   uint8_t completion_code = CC_SUCCESS;
 
@@ -485,7 +490,7 @@ out:
 }
 
 static uint8_t
-amdcrd_genoa_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_genoa_cpu_wdt_bank_t* pbank) {
+amdcrd_genoa_extra_cpu_wdt_bank_handler (FILE* fp, const uint8_t idx, const amdcrd_bank_hdr_t* phdr, const amdcrd_genoa_extra_cpu_wdt_bank_t* pbank) {
   uint8_t i;
   uint8_t completion_code = CC_SUCCESS;
 

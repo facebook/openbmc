@@ -79,6 +79,13 @@ enum AMDCRD_CTRL_STATE {
   AMDCRD_CTRL_BMC_PACK       = 0x03,
 };
 
+enum AMDCRD_CPU_FAMILY {
+  AMD_CPU_FAMILY_UNKNOWN     = 0x00,
+  AMD_CPU_FAMILY_GENOA       = 0x01,
+  AMD_CPU_FAMILY_GENOA_EXTRA = 0x02,
+  AMD_CPU_FAMILY_TURIN       = 0x03,
+};
+
 typedef struct {
   uint8_t bank_id;
   uint8_t core_id;
@@ -130,41 +137,37 @@ typedef struct {
 // Type 0x01: MCA Bank
 //==============================================================================
 typedef struct {
-  uint32_t mca_ctrl_lf;
-  uint32_t mca_ctrl_hf;
-  uint32_t mca_status_lf;
-  uint32_t mca_status_hf;
-  uint32_t mca_addr_lf;
-  uint32_t mca_addr_hf;
-  uint32_t mca_misc0_lf;
-  uint32_t mca_misc0_hf;
-  uint32_t mca_ctrl_mask_lf;
-  uint32_t mca_ctrl_mask_hf;
-  uint32_t mca_config_lf;
-  uint32_t mca_config_hf;
-  uint32_t mca_ipid_lf;
-  uint32_t mca_ipid_hf;
-  uint32_t mca_synd_lf;
-  uint32_t mca_synd_hf;
-  uint32_t mca_destat_lf;
-  uint32_t mca_destat_hf;
-  uint32_t mca_deaddr_lf;
-  uint32_t mca_deaddr_hf;
-  uint32_t mca_misc1_lf;
-  uint32_t mca_misc1_hf;
-  uint32_t mca_synd1msr_lf;
-  uint32_t mca_synd1msr_hf;
-  uint32_t mca_synd2msr_lf;
-  uint32_t mca_synd2msr_hf;
-  uint32_t sync_flood_lf;
-  uint32_t sync_flood_hf;
-  uint32_t mca_transaddr_lf;
-  uint32_t mca_transaddr_hf;
-  uint32_t mca_transsynd_lf;
-  uint32_t mca_transsynd_hf;
-  uint32_t mca_transstat_lf;
-  uint32_t mca_transstat_hf;
-} __attribute__((packed)) amdcrd_mca_bank_t;
+  uint32_t lo;
+  uint32_t hi;
+} __attribute__((packed)) mca_reg64_t;
+
+typedef struct {
+  mca_reg64_t mca_ctrl;
+  mca_reg64_t mca_sts;
+  mca_reg64_t mca_addr;
+  mca_reg64_t mca_misc0;
+  mca_reg64_t mca_ctrl_mask;
+  mca_reg64_t mca_config;
+  mca_reg64_t mca_ipid;
+  mca_reg64_t mca_synd;
+  mca_reg64_t mca_destat;
+  mca_reg64_t mca_deaddr;
+  mca_reg64_t mca_misc1;
+} amdcrd_mca_bank_genoa_t;
+
+typedef struct {
+  mca_reg64_t sync_flood;
+  amdcrd_mca_bank_genoa_t genoa;
+  mca_reg64_t mca_synd1msr;
+  mca_reg64_t mca_synd2msr;
+} amdcrd_mca_bank_genoa_extra_t;
+
+typedef struct {
+  amdcrd_mca_bank_genoa_extra_t genoa_extra;
+  mca_reg64_t mca_trans_addr;
+  mca_reg64_t mca_trans_synd;
+  mca_reg64_t mca_trans_stat;
+} amdcrd_mca_bank_turin_t;
 
 //==============================================================================
 // Type 0x02: Virtual/Global Bank
@@ -207,7 +210,7 @@ typedef struct {
   uint32_t rspq_wdt_io_trans_log_low[CPU_WDT_CCM_NUM];
   uint32_t hw_assert_msk_hi[CPU_WDT_CCM_NUM];
   uint32_t hw_assert_msk_low[CPU_WDT_CCM_NUM];
-} __attribute__((packed)) amdcrd_milan_cpu_wdt_bank_t;
+} __attribute__((packed)) amdcrd_genoa_cpu_wdt_bank_t;
 
 typedef struct {
   uint32_t hw_assert_sts_hi[CPU_WDT_CCM_NUM];
@@ -217,7 +220,7 @@ typedef struct {
   uint32_t hw_assert_msk_hi[CPU_WDT_CCM_NUM];
   uint32_t hw_assert_msk_low[CPU_WDT_CCM_NUM];
   uint32_t orig_wdt_addr_log_sts[CPU_WDT_CCM_NUM];
-} __attribute__((packed)) amdcrd_genoa_cpu_wdt_bank_t;
+} __attribute__((packed)) amdcrd_genoa_extra_cpu_wdt_bank_t;
 
 typedef struct {
   uint32_t orig_wdt_addr_log_hi[CPU_WDT_CCM_NUM];

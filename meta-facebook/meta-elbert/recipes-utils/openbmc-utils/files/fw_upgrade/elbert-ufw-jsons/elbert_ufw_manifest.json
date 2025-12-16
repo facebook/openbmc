@@ -5,52 +5,52 @@
         "get_version": "/usr/local/bin/bios_ver.sh"
     },
     "scm" : {
-        "upgrade_cmd" : "fpga_util.sh scm program {filename}",
-        "post_action" : "dpeCheck.sh dpe",
+        "upgrade_cmd" : "/usr/local/bin/fpga_util.sh scm program {filename}",
+        "post_action" : "/usr/local/bin/dpeCheck.sh dpe",
         "priority" : 2
     },
     "smb" : {
-        "get_version" : "fpga_ver.sh | grep SMB_FPGA | cut -f 2 -d ' '",
-        "upgrade_cmd" : "fpga_util.sh smb program {filename}",
+        "get_version" : "/usr/local/bin/fpga_ver.sh | grep SMB_FPGA | cut -f 2 -d ' '",
+        "upgrade_cmd" : "/usr/local/bin/fpga_util.sh smb program {filename}",
         "priority" : 3
     },
     "smb_cpld" : {
-        "get_version" : "fpga_ver.sh | grep SMB_CPLD | cut -f 2 -d ' '",
-        "upgrade_cmd" : "fpga_util.sh smb_cpld program {filename}",
+        "get_version" : "/usr/local/bin/fpga_ver.sh | grep SMB_CPLD | cut -f 2 -d ' '",
+        "upgrade_cmd" : "/usr/local/bin/fpga_util.sh smb_cpld program {filename}",
         "priority" : 4
     },
     "fan" : {
-        "get_version" : "fpga_ver.sh | grep FAN_FPGA | cut -f 2 -d ' '",
-        "upgrade_cmd" : "fpga_util.sh fan program {filename}",
+        "get_version" : "/usr/local/bin/fpga_ver.sh | grep FAN_FPGA | cut -f 2 -d ' '",
+        "upgrade_cmd" : "/usr/local/bin/fpga_util.sh fan program {filename}",
         "priority" : 5
     },
     "th4_qspi" : {
-        "get_version" : "th4_qspi_ver.sh | grep FIRMWARE_STRING_VERSION | cut -f 2 -d ' '",
-        "upgrade_cmd" : "fpga_util.sh th4_qspi program {filename}",
+        "get_version" : "/usr/local/bin/th4_qspi_ver.sh | grep FIRMWARE_STRING_VERSION | cut -f 2 -d ' '",
+        "upgrade_cmd" : "/usr/local/bin/fpga_util.sh th4_qspi program {filename}",
         "post_action" : "/usr/local/bin/wedge_power.sh reset",
         "priority" : 5
     },
     "pim_base" : {
-        "get_version" : "spi_pim_ver.sh | grep 'HEADER_PIM_BASE: [^NOT]' | cut -f 2 -d ' ' | uniq",
-        "upgrade_cmd" : "fpga_util.sh pim_base program {filename}",
+        "get_version" : "/usr/local/bin/spi_pim_ver.sh | grep 'HEADER_PIM_BASE: [^NOT]' | cut -f 2 -d ' ' | uniq",
+        "upgrade_cmd" : "/usr/local/bin/fpga_util.sh pim_base program {filename}",
         "post_action" : "/usr/local/bin/wedge_power.sh pimreset -a",
         "priority" : 5
     },
     "pim16q" : {
-        "get_version" : "spi_pim_ver.sh | grep 'HEADER_PIM16Q: [^NOT]' | cut -f 2 -d ' ' | uniq",
-        "upgrade_cmd" : "fpga_util.sh pim16q program {filename}",
+        "get_version" : "/usr/local/bin/spi_pim_ver.sh | grep 'HEADER_PIM16Q: [^NOT]' | cut -f 2 -d ' ' | uniq",
+        "upgrade_cmd" : "/usr/local/bin/fpga_util.sh pim16q program {filename}",
         "post_action" : "/usr/local/bin/wedge_power.sh pimreset -a; sleep 15;",
         "priority" : 6
     },
     "pim8ddm" : {
-        "get_version" : "spi_pim_ver.sh | grep 'HEADER_PIM8DDM: [^NOT]' | cut -f 2 -d ' ' | uniq",
-        "upgrade_cmd" : "fpga_util.sh pim8ddm program {filename}",
+        "get_version" : "/usr/local/bin/spi_pim_ver.sh | grep 'HEADER_PIM8DDM: [^NOT]' | cut -f 2 -d ' ' | uniq",
+        "upgrade_cmd" : "/usr/local/bin/fpga_util.sh pim8ddm program {filename}",
         "post_action" : "/usr/local/bin/wedge_power.sh pimreset -a; sleep 15;",
         "priority" : 6
     },
     "pim8ddr": {
-        "get_version" : "spi_pim_ver.sh | grep 'HEADER_PIM8DDR: [^NOT]' | cut -f 2 -d ' ' | uniq",
-        "upgrade_cmd" : "fpga_util.sh pim8ddr program {filename}",
+        "get_version" : "/usr/local/bin/spi_pim_ver.sh | grep 'HEADER_PIM8DDR: [^NOT]' | cut -f 2 -d ' ' | uniq",
+        "upgrade_cmd" : "/usr/local/bin/fpga_util.sh pim8ddr program {filename}",
         "post_action" : "/usr/local/bin/wedge_power.sh pimreset -a; sleep 15;",
         "priority" : 6
     }

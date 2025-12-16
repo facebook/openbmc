@@ -1735,20 +1735,20 @@
             "name": "HMI_FW_Revision"
         },
         {
-            "begin": 220,
-            "length": 4,
+            "begin": 415,
+            "length": 8,
             "format": "STRING",
             "name": "Pump_Rack_FW_Revision"
         },
         {
-            "begin": 224,
-            "length": 4,
+            "begin": 423,
+            "length": 8,
             "format": "STRING",
             "name": "Fan_Rack_1_FW_Revision"
         },
         {
-            "begin": 228,
-            "length": 4,
+            "begin": 431,
+            "length": 8,
             "format": "STRING",
             "name": "Fan_Rack_2_FW_Revision"
         },

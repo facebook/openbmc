@@ -8564,6 +8564,38 @@
             "precision": 0,
             "scale": 0.001,
             "name": "Shelf_Output_Power_Factor_L630R"
+        },
+        {
+            "begin": 4225,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "UPS_Buzzer_Alarm"
+                ],
+                [
+                    1,
+                    "UPS_Buzzer_Enabled"
+                ],
+                [
+                    2,
+                    "Output1_Overload"
+                ],
+                [
+                    3,
+                    "Output2_Overload"
+                ],
+                [
+                    4,
+                    "BBU_Communication_Loss"
+                ],
+                [
+                    5,
+                    "INV_Communication_Loss"
+                ]
+            ],
+            "name": "Shelf_System_Alarm"
         }
     ]
 }

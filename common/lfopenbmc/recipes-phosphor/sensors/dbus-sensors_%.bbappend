@@ -18,6 +18,7 @@ SRC_URI:append = " \
     file://0015-PSUSensor-add-property-to-sensorTable-and-labelMatch.patch \
     file://0016-Add-sensor-reading-events.patch \
     file://0017-PSUSensor-add-support-for-mp2925-and-mp2929.patch \
+    file://0018-NVMeBasicContext-Parsing-and-applying-SMBus-PEC.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \

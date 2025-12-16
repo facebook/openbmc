@@ -1,0 +1,260 @@
+From 1e71a26919a54f4b4f5a670cbf65ed47e8c0daa5 Mon Sep 17 00:00:00 2001
+From: Chau Ly <chaul@amperecomputing.com>
+Date: Wed, 10 Sep 2025 09:40:53 +0000
+Subject: [PATCH 1/1] NVMeBasicContext: Parsing and applying SMBus PEC
+
+Sometimes when the PCIe device is being linked up, it's not ready for
+PCI Express Basic Management Command (SMBUS/I2C) but we still read into
+the device file. This results in garbage data in the temperature sensor
+value and can cause threshold events.
+
+Following the NVM Express Management Interface Specification
+document [1], this commit enables Packet-Error-Checking (PEC) in smbus
+driver (An 8 bit CRC calculated over the SMBus address, command code,
+second SMBus address, and returned data) for NVMe sensors to ensure the
+integrity of data transmission. If this check fails, i2c smbus read to
+the device file will return a negative error code and no garbage value
+will be propagated to D-Bus.
+
+This is supported as an Entity-Manager configuration as not all devices
+have their firmwares support PEC. Always enabling this check can cause
+constant PEC failure for PEC-unsupported devices. The property is named
+`EnablePEC` [2] and, if set to true, will mean that driver's SMBus PEC
+generation and verification is enabled. If the property is false or not
+configured, SMBus PEC will not be enabled.
+
+[1]: https://nvmexpress.org/wp-content/uploads/NVMe_Management_-_Technical_Note_on_Basic_Management_Command.pdf
+[2]: https://gerrit.openbmc.org/c/openbmc/entity-manager/+/83675
+
+Change-Id: I52f5ad464d09f68da25f1f105032210545c5eb4b
+Signed-off-by: Chanh Nguyen <chanh@os.amperecomputing.com>
+Signed-off-by: Chau Ly <chaul@amperecomputing.com>
+---
+ src/VariantVisitors.hpp       | 16 ++++++++++++++++
+ src/nvme/NVMeBasicContext.cpp | 35 +++++++++++++++++++++++++----------
+ src/nvme/NVMeSensor.cpp       | 18 ++++++++++--------
+ src/nvme/NVMeSensor.hpp       |  3 ++-
+ src/nvme/NVMeSensorMain.cpp   | 15 ++++++++++++++-
+ 5 files changed, 67 insertions(+), 20 deletions(-)
+
+diff --git a/src/VariantVisitors.hpp b/src/VariantVisitors.hpp
+index d0ebeff..aac49ad 100644
+--- a/src/VariantVisitors.hpp
++++ b/src/VariantVisitors.hpp
+@@ -92,3 +92,19 @@ struct VariantToNumArrayVisitor
+             boost::typeindex::type_id<T>().pretty_name() + " to vector<U>");
+     }
+ };
++
++struct VariantToBoolVisitor
++{
++    template <typename T>
++    bool operator()(const T& t) const
++    {
++        if constexpr (std::is_same_v<T, bool>)
++        {
++            return t;
++        }
++
++        throw std::invalid_argument(
++            "Cannot translate type " +
++            boost::typeindex::type_id<T>().pretty_name() + " to bool");
++    }
++};
+diff --git a/src/nvme/NVMeBasicContext.cpp b/src/nvme/NVMeBasicContext.cpp
+index 509407a..0e42e06 100644
+--- a/src/nvme/NVMeBasicContext.cpp
++++ b/src/nvme/NVMeBasicContext.cpp
+@@ -48,8 +48,8 @@ extern "C"
+  * https://nvmexpress.org/wp-content/uploads/NVMe_Management_-_Technical_Note_on_Basic_Management_Command.pdf
+  */
+ 
+-static std::shared_ptr<std::array<uint8_t, 6>> encodeBasicQuery(
+-    int bus, uint8_t device, uint8_t offset)
++static std::shared_ptr<std::array<uint8_t, 7>> encodeBasicQuery(
++    int bus, uint8_t device, uint8_t offset, bool smbusPEC)
+ {
+     if (bus < 0)
+     {
+@@ -59,16 +59,17 @@ static std::shared_ptr<std::array<uint8_t, 6>> encodeBasicQuery(
+     /* bus + address + command */
+     uint32_t busle = htole32(static_cast<uint32_t>(bus));
+     auto command =
+-        std::make_shared<std::array<uint8_t, sizeof(busle) + 1 + 1>>();
++        std::make_shared<std::array<uint8_t, sizeof(busle) + 1 + 1 + 1>>();
+     memcpy(command->data(), &busle, sizeof(busle));
+     (*command)[sizeof(busle) + 0] = device;
+     (*command)[sizeof(busle) + 1] = offset;
++    (*command)[sizeof(busle) + 2] = static_cast<uint8_t>(smbusPEC);
+ 
+     return command;
+ }
+ 
+-static void decodeBasicQuery(const std::array<uint8_t, 6>& req, int& bus,
+-                             uint8_t& device, uint8_t& offset)
++static void decodeBasicQuery(const std::array<uint8_t, 7>& req, int& bus,
++                             uint8_t& device, uint8_t& offset, bool& smbusPEC)
+ {
+     uint32_t busle = 0;
+ 
+@@ -76,9 +77,10 @@ static void decodeBasicQuery(const std::array<uint8_t, 6>& req, int& bus,
+     bus = le32toh(busle);
+     device = req[sizeof(busle) + 0];
+     offset = req[sizeof(busle) + 1];
++    smbusPEC = (req[sizeof(busle) + 2] != 0U);
+ }
+ 
+-static void execBasicQuery(int bus, uint8_t addr, uint8_t cmd,
++static void execBasicQuery(int bus, uint8_t addr, uint8_t cmd, bool smbusPEC,
+                            std::vector<uint8_t>& resp)
+ {
+     int32_t size = 0;
+@@ -99,6 +101,17 @@ static void execBasicQuery(int bus, uint8_t addr, uint8_t cmd,
+             return;
+         }
+ 
++        if (smbusPEC)
++        {
++            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-vararg)
++            if (::ioctl(fileHandle.handle(), I2C_PEC, 1) < 0)
++            {
++                lg2::warning(
++                    "Could not set PEC to device '{ADDR}' for bus '{BUS}': '{ERRNO}'",
++                    "ADDR", lg2::hex, addr, "BUS", bus, "ERRNO", errno);
++            }
++        }
++
+         resp.resize(UINT8_MAX + 1);
+ 
+         /* Issue the NVMe MI basic command */
+@@ -142,9 +155,10 @@ static ssize_t processBasicQueryStream(FileHandle& in, FileHandle& out)
+         uint8_t offset = 0;
+         uint8_t len = 0;
+         int bus = 0;
++        bool smbusPEC = false;
+ 
+         /* bus + address + command */
+-        std::array<uint8_t, sizeof(uint32_t) + 1 + 1> req{};
++        std::array<uint8_t, sizeof(uint32_t) + 1 + 1 + 1> req{};
+ 
+         /* Read the command parameters */
+         ssize_t rc = ::read(in.handle(), req.data(), req.size());
+@@ -160,10 +174,10 @@ static ssize_t processBasicQueryStream(FileHandle& in, FileHandle& out)
+             return -EIO;
+         }
+ 
+-        decodeBasicQuery(req, bus, device, offset);
++        decodeBasicQuery(req, bus, device, offset, smbusPEC);
+ 
+         /* Execute the query */
+-        execBasicQuery(bus, device, offset, resp);
++        execBasicQuery(bus, device, offset, smbusPEC, resp);
+ 
+         /* Write out the response length */
+         len = resp.size();
+@@ -285,7 +299,8 @@ void NVMeBasicContext::readAndProcessNVMeSensor()
+         return;
+     }
+ 
+-    auto command = encodeBasicQuery(sensor->bus, sensor->address, 0x00);
++    auto command =
++        encodeBasicQuery(sensor->bus, sensor->address, 0x00, sensor->smbusPEC);
+ 
+     /* Issue the request */
+     boost::asio::async_write(
+diff --git a/src/nvme/NVMeSensor.cpp b/src/nvme/NVMeSensor.cpp
+index be12f90..92a7c63 100644
+--- a/src/nvme/NVMeSensor.cpp
++++ b/src/nvme/NVMeSensor.cpp
+@@ -36,17 +36,19 @@
+ static constexpr double maxReading = 127;
+ static constexpr double minReading = 0;
+ 
+-NVMeSensor::NVMeSensor(sdbusplus::asio::object_server& objectServer,
+-                       boost::asio::io_context& /*unused*/,
+-                       std::shared_ptr<sdbusplus::asio::connection>& conn,
+-                       const std::string& sensorName,
+-                       std::vector<thresholds::Threshold>&& thresholdsIn,
+-                       const std::string& sensorConfiguration,
+-                       const int busNumber, const uint8_t slaveAddr) :
++NVMeSensor::NVMeSensor(
++    sdbusplus::asio::object_server& objectServer,
++    boost::asio::io_context& /*unused*/,
++    std::shared_ptr<sdbusplus::asio::connection>& conn,
++    const std::string& sensorName,
++    std::vector<thresholds::Threshold>&& thresholdsIn,
++    const std::string& sensorConfiguration, const int busNumber,
++    const uint8_t slaveAddr, bool smbusPEC) :
+     Sensor(escapeName(sensorName), std::move(thresholdsIn), sensorConfiguration,
+            NVMeSensor::sensorType, false, false, maxReading, minReading, conn,
+            PowerState::on),
+-    bus(busNumber), address(slaveAddr), objServer(objectServer)
++    bus(busNumber), address(slaveAddr), smbusPEC(smbusPEC),
++    objServer(objectServer)
+ {
+     if (bus < 0)
+     {
+diff --git a/src/nvme/NVMeSensor.hpp b/src/nvme/NVMeSensor.hpp
+index 31afbf3..6427e99 100644
+--- a/src/nvme/NVMeSensor.hpp
++++ b/src/nvme/NVMeSensor.hpp
+@@ -23,7 +23,7 @@ class NVMeSensor : public Sensor
+                const std::string& sensorName,
+                std::vector<thresholds::Threshold>&& thresholds,
+                const std::string& sensorConfiguration, int busNumber,
+-               uint8_t slaveAddr);
++               uint8_t slaveAddr, bool smbusPEC);
+     ~NVMeSensor() override;
+ 
+     NVMeSensor& operator=(const NVMeSensor& other) = delete;
+@@ -32,6 +32,7 @@ class NVMeSensor : public Sensor
+ 
+     const int bus;
+     const uint8_t address;
++    const bool smbusPEC;
+ 
+   private:
+     const unsigned int scanDelayTicks = 5 * 60;
+diff --git a/src/nvme/NVMeSensorMain.cpp b/src/nvme/NVMeSensorMain.cpp
+index 0f1d9d5..95bb56c 100644
+--- a/src/nvme/NVMeSensorMain.cpp
++++ b/src/nvme/NVMeSensorMain.cpp
+@@ -100,6 +100,17 @@ static std::optional<std::string> extractSensorName(
+     return std::get<std::string>(findSensorName->second);
+ }
+ 
++static bool extractPECEnabling(const SensorBaseConfigMap& properties)
++{
++    auto findPECEnabling = properties.find("EnablePEC");
++    if (findPECEnabling == properties.end())
++    {
++        return false;
++    }
++
++    return std::visit(VariantToBoolVisitor(), findPECEnabling->second);
++}
++
+ static std::filesystem::path deriveRootBusPath(int busNumber)
+ {
+     return "/sys/bus/i2c/devices/i2c-" + std::to_string(busNumber) +
+@@ -193,6 +204,8 @@ static void handleSensorConfigurations(
+                        *sensorName);
+         }
+ 
++        bool smbusPEC = extractPECEnabling(sensorConfig);
++
+         try
+         {
+             // May throw for an invalid rootBus
+@@ -205,7 +218,7 @@ static void handleSensorConfigurations(
+                 std::make_shared<NVMeSensor>(
+                     objectServer, io, dbusConnection, *sensorName,
+                     std::move(sensorThresholds), interfacePath, *busNumber,
+-                    slaveAddr);
++                    slaveAddr, smbusPEC);
+ 
+             context->addSensor(sensorPtr);
+         }
+-- 
+2.31.1
+

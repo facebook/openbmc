@@ -34,11 +34,13 @@ TIMEOUT = 5000
 
 
 def find_device():
-    dev = usb.core.find(idVendor=VENDOR_ID, idProduct=PRODUCT_ID)
-    if dev is None:
-        print(f"Cannot find device {VENDOR_ID:04x}:{PRODUCT_ID:04x}")
+    devices = list(usb.core.find(find_all=True,
+                                 idVendor=VENDOR_ID,
+                                 idProduct=PRODUCT_ID))
+    if not devices:
+        print(f"Cannot find any devices {VENDOR_ID:04x}:{PRODUCT_ID:04x}")
         sys.exit(1)
-    return dev
+    return devices
 
 
 def write_reg(dev, addr, value):
@@ -80,19 +82,25 @@ def read_reg(dev, addr):
         sys.exit(1)
 
 
+def configure_gpio_mode(dev,  channel, reg_base, value) -> None:
+    reg_addr = reg_base | ((channel * 2) << 8)
+    pre_val = read_reg(dev, reg_addr)
+    print(
+        f"Channel {channel:1d}, Pre-Write  GPIO Reg[0x{reg_addr:02x}] = 0x{pre_val:04x}")
+    write_reg(dev, reg_addr, value)
+    post_val = read_reg(dev, reg_addr)
+    print(
+        f"Channel {channel:1d}, Post-Write GPIO Reg[0x{reg_addr:02x}] = 0x{post_val:04x}")
+
+
 def main():
     print(
         "This utility is intended for XR21B1424 GPIO mode overwrite on Linux platform"
     )
-    dev = find_device()
-    for i in range(4):
-        reg_addr = 0x0C | ((i * 2) << 8)
-        reg_rd_val = read_reg(dev, reg_addr)
-        print(f"Pre-Write GPIO Reg[0x{reg_addr:02x}] = 0x{reg_rd_val:04x}")
-        write_reg(dev, reg_addr, 0x30B)
-        print(f"Channel {i} GPIO_MODE Reg Write Done")
-        reg_rd_val = read_reg(dev, reg_addr)
-        print(f"Post-Write GPIO Reg[0x{reg_addr:02x}] = 0x{reg_rd_val:04x}")
+    devices = find_device()
+    for dev in devices:
+        for channel in range(4):
+            configure_gpio_mode(dev, channel, reg_base=0x0C, value=0x30B)
 
 
 if __name__ == "__main__":

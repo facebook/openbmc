@@ -59,6 +59,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-santabarbara:lf-master
   meta-tahan:lf-master
   meta-ventura:lf-master
+  meta-ventura2:lf-master
   meta-waimeacanyon:lf-master
   meta-wedge100:lf-master
   meta-yosemite4:lf-master

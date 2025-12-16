@@ -1,0 +1,2 @@
+Common targets are:
+    ventura2-image

@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# ARGUMENTS:
+# 1: PSU unique device address
+
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 <psu_uda>
+      psu_uda: The PSU unique device address
+
+      This outputs a json object where the key is the file number and the value holds integers read from the file"
+    exit 1
+fi
+
+set -u
+
+FLOCK="flock /tmp/modbus_dynamo_solitonbeam.lock"
+
+# unique device address
+UDA="$1"
+
+
+deviceType=$(rackmoncli list --json | jq -r ".[] | select(.uniqueDevAddress == $UDA) | .deviceType")
+
+case $deviceType in
+  "ORV3_HPR_PSU")
+    totalRecordsToRead=250
+  ;;
+  *PSU)
+    totalRecordsToRead=149
+  ;;
+  *)
+    echo "Cannot use this script to get blackbox data from $deviceType"
+    exit 1
+  ;;
+esac
+
+for fileNum in {1..4}; do
+  # Reset everything
+  start=0
+  fileDataArray="[]"
+  recordsToRead=$totalRecordsToRead
+  while (( recordsToRead > 0 )); do
+    nextSize=$recordsToRead
+    # Ensure we only read at most 120 registers at a time
+    if (( nextSize > 120)); then
+      nextSize=120
+    fi
+
+    if output=$($FLOCK rackmoncli read_file --json "$UDA" "$fileNum" "$start" "$nextSize") ; then
+      fileDataArray=$(echo "$output" | jq -c --argjson fileDataArray "$fileDataArray" '$fileDataArray + .[0].data')
+    else
+      end=$(( start + nextSize - 1))
+      range="(${start}:${end})"
+      errorMessage="ERROR_ENCOUNTERED $range"
+      fileDataArray=$(jq -c -n --argjson fileDataArray "$fileDataArray" --arg errorMessage "$errorMessage" '$fileDataArray + [$errorMessage]')
+    fi
+
+    start=$(( start + nextSize ))
+    recordsToRead=$(( recordsToRead - nextSize ))
+  done # while
+
+  jq -c -n --arg fileNum "$fileNum" --argjson fileDataArray "$fileDataArray" '{($fileNum): $fileDataArray}'
+done | jq -c -s add   # for

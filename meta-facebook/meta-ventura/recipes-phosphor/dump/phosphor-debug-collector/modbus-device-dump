@@ -1,0 +1,29 @@
+#!/bin/bash
+#
+# config: 2 99
+# @brief: Collect blackbox data from modbus devices.
+#
+
+# The sourced `functions` file is not
+# available during shellcheck linting
+#
+# shellcheck disable=SC1090,SC1091
+. "$DREPORT_INCLUDE/functions"
+
+rackmoncli list --json | jq -er '.[] | "\(.deviceType) \(.uniqueDevAddress)"' | while read -r deviceType uda; do
+  case "$deviceType" in
+    "ORV3_BBU")
+      cmd="/usr/libexec/modbus-device-util/retrieve-orv3-bbu-blackbox $uda"
+      ;;
+    "ORV3_PSU")
+      cmd="/usr/libexec/modbus-device-util/retrieve-orv3-psu-blackbox $uda"
+      ;;
+    *)
+      continue
+      ;;
+  esac
+  file_name="modbus_${deviceType}_${uda}_dump.json"
+  desc="Modbus device type ${deviceType} at unique device address $uda blackbox data"
+
+  add_cmd_output "$cmd" "$file_name" "$desc"
+done

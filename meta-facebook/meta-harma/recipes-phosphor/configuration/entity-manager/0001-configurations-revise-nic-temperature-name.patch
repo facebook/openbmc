@@ -1,4 +1,4 @@
-From 55da89ac4f764672349ee1fb67fd0e3b5383c2dd Mon Sep 17 00:00:00 2001
+From 40f694a00b7a2f76a81eb92ac556eb83e00fd5f8 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 1 Jul 2025 15:23:41 +0800
 Subject: [PATCH 1/4] configurations: revise nic temperature name
@@ -9,15 +9,15 @@ inventory_component_type_unit.
 Change-Id: Ifb063fe93753479fd2352145a4393a533fae040b
 Signed-off-by: Peter Yin <peter.yin@quantatw.com>
 ---
- configurations/broadcomm/brcm_100g_1p_ocp_mezz.json | 4 ++--
- configurations/broadcomm/brcm_200g_1p_ocp_mezz.json | 4 ++--
- configurations/ocp/cx7_ocp.json                     | 4 ++--
+ configurations/broadcomm/100g_1p_ocp_mezz.json | 4 ++--
+ configurations/broadcomm/200g_1p_ocp_mezz.json | 4 ++--
+ configurations/ocp/cx7_ocp.json                | 4 ++--
  3 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/configurations/broadcomm/brcm_100g_1p_ocp_mezz.json b/configurations/broadcomm/brcm_100g_1p_ocp_mezz.json
+diff --git a/configurations/broadcomm/100g_1p_ocp_mezz.json b/configurations/broadcomm/100g_1p_ocp_mezz.json
 index d3cb955..45695d9 100644
---- a/configurations/broadcomm/brcm_100g_1p_ocp_mezz.json
-+++ b/configurations/broadcomm/brcm_100g_1p_ocp_mezz.json
+--- a/configurations/broadcomm/100g_1p_ocp_mezz.json
++++ b/configurations/broadcomm/100g_1p_ocp_mezz.json
 @@ -12,8 +12,8 @@
              "Labels": [
                  "temp2"
@@ -29,10 +29,10 @@ index d3cb955..45695d9 100644
              "Thresholds": [
                  {
                      "Direction": "less than",
-diff --git a/configurations/broadcomm/brcm_200g_1p_ocp_mezz.json b/configurations/broadcomm/brcm_200g_1p_ocp_mezz.json
+diff --git a/configurations/broadcomm/200g_1p_ocp_mezz.json b/configurations/broadcomm/200g_1p_ocp_mezz.json
 index 3f028b7..9e14efc 100644
---- a/configurations/broadcomm/brcm_200g_1p_ocp_mezz.json
-+++ b/configurations/broadcomm/brcm_200g_1p_ocp_mezz.json
+--- a/configurations/broadcomm/200g_1p_ocp_mezz.json
++++ b/configurations/broadcomm/200g_1p_ocp_mezz.json
 @@ -12,8 +12,8 @@
              "Labels": [
                  "temp2"

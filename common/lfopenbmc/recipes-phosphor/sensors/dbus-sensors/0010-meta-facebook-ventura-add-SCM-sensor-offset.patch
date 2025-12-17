@@ -1,7 +1,7 @@
-From 41202cfd92ea65df7da684af13383da5023e2c0d Mon Sep 17 00:00:00 2001
+From cbb6bf3f14b57f9fdd8c0a92b13d8b198ad64d3d Mon Sep 17 00:00:00 2001
 From: Jason Hsu <Jason-Hsu@quantatw.com>
 Date: Fri, 27 Jun 2025 10:35:17 +0800
-Subject: [PATCH 10/17] meta-facebook: ventura: add SCM sensor offset
+Subject: [PATCH 10/18] meta-facebook: ventura: add SCM sensor offset
 
 Signed-off-by: Jason Hsu <Jason-Hsu@quantatw.com>
 ---
@@ -65,7 +65,7 @@ index 618c43f..4f6b9a3 100644
      std::optional<BridgeGpio> bridgeGpio;
      thresholds::ThresholdTimer thresholdTimer;
 diff --git a/src/adc/ADCSensorMain.cpp b/src/adc/ADCSensorMain.cpp
-index ae1efb9..a7861d0 100644
+index 8ce4bb0..948ee86 100644
 --- a/src/adc/ADCSensorMain.cpp
 +++ b/src/adc/ADCSensorMain.cpp
 @@ -255,6 +255,13 @@ void createSensors(

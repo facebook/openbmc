@@ -1,4 +1,4 @@
-From 85775fb04ff84f13d636481e8e8bd07837e925e5 Mon Sep 17 00:00:00 2001
+From cca9a40313b89c99982bfdb22b61dea9cdec301f Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Wed, 8 May 2024 14:29:36 +0800
 Subject: [PATCH 2/7] configurations: Revise the BRCM NIC sensor name
@@ -9,14 +9,14 @@ Subject: [PATCH 2/7] configurations: Revise the BRCM NIC sensor name
 Signed-off-by: Allen Wang <Allen_Wang@quantatw.com>
 Change-Id: Ic38a07cb93daade78e27929fdc77c19f58321df7
 ---
- .../broadcomm/brcm_100g_1p_ocp_mezz.json         | 16 ++++++++--------
- .../broadcomm/brcm_200g_1p_ocp_mezz.json         | 16 ++++++++--------
+ configurations/broadcomm/100g_1p_ocp_mezz.json | 16 ++++++++--------
+ configurations/broadcomm/200g_1p_ocp_mezz.json | 16 ++++++++--------
  2 files changed, 16 insertions(+), 16 deletions(-)
 
-diff --git a/configurations/broadcomm/brcm_100g_1p_ocp_mezz.json b/configurations/broadcomm/brcm_100g_1p_ocp_mezz.json
+diff --git a/configurations/broadcomm/100g_1p_ocp_mezz.json b/configurations/broadcomm/100g_1p_ocp_mezz.json
 index d3cb955..322e2e9 100644
---- a/configurations/broadcomm/brcm_100g_1p_ocp_mezz.json
-+++ b/configurations/broadcomm/brcm_100g_1p_ocp_mezz.json
+--- a/configurations/broadcomm/100g_1p_ocp_mezz.json
++++ b/configurations/broadcomm/100g_1p_ocp_mezz.json
 @@ -3,7 +3,7 @@
          {
              "Address": "$address",
@@ -57,10 +57,10 @@ index d3cb955..322e2e9 100644
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'BRCM 100G 1P.*57504 OCP Mezz'})",
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
-diff --git a/configurations/broadcomm/brcm_200g_1p_ocp_mezz.json b/configurations/broadcomm/brcm_200g_1p_ocp_mezz.json
+diff --git a/configurations/broadcomm/200g_1p_ocp_mezz.json b/configurations/broadcomm/200g_1p_ocp_mezz.json
 index 3f028b7..25e6386 100644
---- a/configurations/broadcomm/brcm_200g_1p_ocp_mezz.json
-+++ b/configurations/broadcomm/brcm_200g_1p_ocp_mezz.json
+--- a/configurations/broadcomm/200g_1p_ocp_mezz.json
++++ b/configurations/broadcomm/200g_1p_ocp_mezz.json
 @@ -3,7 +3,7 @@
          {
              "Address": "$address",

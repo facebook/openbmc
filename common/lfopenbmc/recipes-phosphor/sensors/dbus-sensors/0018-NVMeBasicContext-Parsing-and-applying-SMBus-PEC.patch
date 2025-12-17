@@ -1,7 +1,7 @@
-From 1e71a26919a54f4b4f5a670cbf65ed47e8c0daa5 Mon Sep 17 00:00:00 2001
+From 6629569e2817aded4a51fbcbc91fed382e40bec9 Mon Sep 17 00:00:00 2001
 From: Chau Ly <chaul@amperecomputing.com>
 Date: Wed, 10 Sep 2025 09:40:53 +0000
-Subject: [PATCH 1/1] NVMeBasicContext: Parsing and applying SMBus PEC
+Subject: [PATCH 18/18] NVMeBasicContext: Parsing and applying SMBus PEC
 
 Sometimes when the PCIe device is being linked up, it's not ready for
 PCI Express Basic Management Command (SMBUS/I2C) but we still read into
@@ -216,7 +216,7 @@ index 31afbf3..6427e99 100644
    private:
      const unsigned int scanDelayTicks = 5 * 60;
 diff --git a/src/nvme/NVMeSensorMain.cpp b/src/nvme/NVMeSensorMain.cpp
-index 0f1d9d5..95bb56c 100644
+index 76944cb..47e9c86 100644
 --- a/src/nvme/NVMeSensorMain.cpp
 +++ b/src/nvme/NVMeSensorMain.cpp
 @@ -100,6 +100,17 @@ static std::optional<std::string> extractSensorName(
@@ -256,5 +256,5 @@ index 0f1d9d5..95bb56c 100644
              context->addSensor(sensorPtr);
          }
 -- 
-2.31.1
+2.47.3
 

@@ -1,4 +1,4 @@
-From 6037a7d0b59fac8ca15f55ec75ea1aae3459f6e2 Mon Sep 17 00:00:00 2001
+From bc2b498918b55269a2046797a9ee530467742193 Mon Sep 17 00:00:00 2001
 From: Bruce Hung <bruce.jy.hung@fii-foxconn.com>
 Date: Thu, 13 Nov 2025 22:41:51 +0800
 Subject: [PATCH 503/503] configurations: nvidia: Use external senosr for gb300
@@ -8,13 +8,13 @@ The only way to access all sensors on a CX8 is through PLDM.
 To do so we need to expose them as external sensor in order
 to update the values with those obtained by PLDM command.
 ---
- .../nvidia/nvidia_cx8_mezzanine_module.json   | 96 ++++++++++++++++---
+ .../nvidia/cx8_mezzanine_module.json          | 96 ++++++++++++++++---
  1 file changed, 82 insertions(+), 14 deletions(-)
 
-diff --git a/configurations/nvidia/nvidia_cx8_mezzanine_module.json b/configurations/nvidia/nvidia_cx8_mezzanine_module.json
+diff --git a/configurations/nvidia/cx8_mezzanine_module.json b/configurations/nvidia/cx8_mezzanine_module.json
 index 676441e..a3e30e8 100644
---- a/configurations/nvidia/nvidia_cx8_mezzanine_module.json
-+++ b/configurations/nvidia/nvidia_cx8_mezzanine_module.json
+--- a/configurations/nvidia/cx8_mezzanine_module.json
++++ b/configurations/nvidia/cx8_mezzanine_module.json
 @@ -7,14 +7,12 @@
              "Type": "EEPROM"
          },

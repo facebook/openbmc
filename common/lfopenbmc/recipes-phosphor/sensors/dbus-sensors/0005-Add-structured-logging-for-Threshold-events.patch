@@ -1,7 +1,7 @@
-From 5c30f3547305f16a9d45e3e995df749940472573 Mon Sep 17 00:00:00 2001
+From ea5fa8acde46323912dd7564da1be141a5f162e4 Mon Sep 17 00:00:00 2001
 From: Amithash Prasasd <amithash@meta.com>
 Date: Thu, 21 Nov 2024 21:00:02 -0800
-Subject: [PATCH 05/17] Add structured logging for Threshold events
+Subject: [PATCH 05/18] Add structured logging for Threshold events
 
 Add capability to create structured logs for threshold crossing
 (compatible with Redfish Sensor Events) along with ability to

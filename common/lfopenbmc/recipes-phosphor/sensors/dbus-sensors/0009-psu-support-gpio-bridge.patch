@@ -1,7 +1,7 @@
-From b0803157ce8ac3e5019fe9f0a2b91993c42c122b Mon Sep 17 00:00:00 2001
+From bd09f8966739c4b97187cf0c2a695b1e65196f3c Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Mon, 19 May 2025 15:12:23 +0800
-Subject: [PATCH 09/17] psu: support gpio bridge
+Subject: [PATCH 09/18] psu: support gpio bridge
 
 Support for GPIO bridge is required for certain components that
 need a GPIO to be set before reading, such as battery voltage.
@@ -259,7 +259,7 @@ index c4f3a38..e679dc2 100644
      boost::asio::random_access_file inputDev;
      boost::asio::steady_timer waitTimer;
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 252086f..e83d7ff 100644
+index 77a5e7c..932bc27 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -31,6 +31,7 @@
@@ -375,10 +375,10 @@ index 252086f..e83d7ff 100644
                  ++numCreated;
                  lg2::debug("Created '{NUM}' sensors so far", "NUM", numCreated);
 diff --git a/src/psu/meson.build b/src/psu/meson.build
-index 2406f04..2d3af12 100644
+index abcdfe8..3680cac 100644
 --- a/src/psu/meson.build
 +++ b/src/psu/meson.build
-@@ -10,6 +10,7 @@ executable(
+@@ -13,6 +13,7 @@ executable(
          pwmsensor_dep,
          thresholds_dep,
          utils_dep,

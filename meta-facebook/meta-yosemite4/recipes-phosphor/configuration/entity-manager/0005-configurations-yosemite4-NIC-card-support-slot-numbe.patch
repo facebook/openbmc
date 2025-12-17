@@ -1,19 +1,19 @@
-From 574fcef7d52884a8531895c17de5aba0b7c38c44 Mon Sep 17 00:00:00 2001
+From adffd467142b2711db3c52b02693faff0c5956b3 Mon Sep 17 00:00:00 2001
 From: IngridChen-wiwynn <Ingrid_Chen@wiwynn.com>
 Date: Mon, 12 Aug 2024 11:41:09 +0800
 Subject: [PATCH 5/7] configurations: yosemite4: NIC card support slot number
 
 Support NIC card with slot number.
 ---
- configurations/broadcomm/brcm_200g_1p_ocp_mezz.json | 3 +++
- configurations/meta/terminus_2x100g_nic_tsff.json   | 3 +++
- configurations/ocp/cx7_ocp.json                     | 3 +++
+ configurations/broadcomm/200g_1p_ocp_mezz.json    | 3 +++
+ configurations/meta/terminus_2x100g_nic_tsff.json | 3 +++
+ configurations/ocp/cx7_ocp.json                   | 3 +++
  3 files changed, 9 insertions(+)
 
-diff --git a/configurations/broadcomm/brcm_200g_1p_ocp_mezz.json b/configurations/broadcomm/brcm_200g_1p_ocp_mezz.json
+diff --git a/configurations/broadcomm/200g_1p_ocp_mezz.json b/configurations/broadcomm/200g_1p_ocp_mezz.json
 index 25e6386..ea79791 100644
---- a/configurations/broadcomm/brcm_200g_1p_ocp_mezz.json
-+++ b/configurations/broadcomm/brcm_200g_1p_ocp_mezz.json
+--- a/configurations/broadcomm/200g_1p_ocp_mezz.json
++++ b/configurations/broadcomm/200g_1p_ocp_mezz.json
 @@ -41,5 +41,8 @@
          "Model": "$BOARD_PRODUCT_NAME",
          "PartNumber": "$BOARD_PART_NUMBER",

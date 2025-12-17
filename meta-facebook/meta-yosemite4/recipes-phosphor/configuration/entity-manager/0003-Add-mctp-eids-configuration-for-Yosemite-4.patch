@@ -1,4 +1,4 @@
-From 8d2c77efff3f102fe98e4cfc280055d27283c648 Mon Sep 17 00:00:00 2001
+From a1d978f5fc7d384749b45fe0248dc0ecc0ef495f Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 25 Sep 2023 11:10:46 +0800
 Subject: [PATCH 3/7] Add mctp eids configuration for Yosemite 4
@@ -29,7 +29,7 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  8 files changed, 181 insertions(+), 1 deletion(-)
 
 diff --git a/configurations/meta/yv4/yosemite4_floatingfalls.json b/configurations/meta/yv4/yosemite4_floatingfalls.json
-index 1ee4e91..3fe8702 100644
+index d694ff5..8cc55c3 100644
 --- a/configurations/meta/yv4/yosemite4_floatingfalls.json
 +++ b/configurations/meta/yv4/yosemite4_floatingfalls.json
 @@ -1,5 +1,26 @@
@@ -58,10 +58,10 @@ index 1ee4e91..3fe8702 100644
 +        }
 +    ],
      "Name": "Yosemite 4 Floating Falls Slot $bus % 15",
-     "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Floating Falls', 'PRODUCT_PRODUCT_NAME': 'Yosemite V4'})",
+     "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Floating Falls', 'PRODUCT_PRODUCT_NAME': 'Yosemite V4', 'BOARD_MANUFACTURER': '(Quanta|Wiwynn)'})",
      "Type": "Board",
 diff --git a/configurations/meta/yv4/yosemite4_sentineldome_t1.json b/configurations/meta/yv4/yosemite4_sentineldome_t1.json
-index 3af370e..667b31c 100644
+index e467059..70c1181 100644
 --- a/configurations/meta/yv4/yosemite4_sentineldome_t1.json
 +++ b/configurations/meta/yv4/yosemite4_sentineldome_t1.json
 @@ -1,5 +1,21 @@
@@ -87,7 +87,7 @@ index 3af370e..667b31c 100644
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
 diff --git a/configurations/meta/yv4/yosemite4_sentineldome_t1_retimer.json b/configurations/meta/yv4/yosemite4_sentineldome_t1_retimer.json
-index 10575a2..3941f5a 100644
+index b3fd5a3..06f01d5 100644
 --- a/configurations/meta/yv4/yosemite4_sentineldome_t1_retimer.json
 +++ b/configurations/meta/yv4/yosemite4_sentineldome_t1_retimer.json
 @@ -1,5 +1,21 @@
@@ -113,7 +113,7 @@ index 10575a2..3941f5a 100644
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
 diff --git a/configurations/meta/yv4/yosemite4_sentineldome_t2.json b/configurations/meta/yv4/yosemite4_sentineldome_t2.json
-index ac32603..6ceab38 100644
+index 842eea6..3365a8f 100644
 --- a/configurations/meta/yv4/yosemite4_sentineldome_t2.json
 +++ b/configurations/meta/yv4/yosemite4_sentineldome_t2.json
 @@ -1,5 +1,21 @@
@@ -139,7 +139,7 @@ index ac32603..6ceab38 100644
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
 diff --git a/configurations/meta/yv4/yosemite4_sentineldome_t2_retimer.json b/configurations/meta/yv4/yosemite4_sentineldome_t2_retimer.json
-index e4610c1..d8b564c 100644
+index a325530..ad62913 100644
 --- a/configurations/meta/yv4/yosemite4_sentineldome_t2_retimer.json
 +++ b/configurations/meta/yv4/yosemite4_sentineldome_t2_retimer.json
 @@ -1,5 +1,21 @@
@@ -165,7 +165,7 @@ index e4610c1..d8b564c 100644
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
 diff --git a/configurations/meta/yv4/yosemite4_wailuafalls.json b/configurations/meta/yv4/yosemite4_wailuafalls.json
-index 7a865bf..3260535 100644
+index 99746ef..7a0b36c 100644
 --- a/configurations/meta/yv4/yosemite4_wailuafalls.json
 +++ b/configurations/meta/yv4/yosemite4_wailuafalls.json
 @@ -1,5 +1,50 @@
@@ -234,7 +234,7 @@ index 89b4599..c994075 100644
              ]
          },
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index 5e4bd15..5a59ecd 100644
+index b74856c..7a2182c 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
 @@ -1,6 +1,43 @@
@@ -281,7 +281,7 @@ index 5e4bd15..5a59ecd 100644
          "ExitAirTempSensor": {
              "description": "implemented in dbus-sensors: ExitAirTempSensor",
              "additionalProperties": false,
-@@ -1189,6 +1226,9 @@
+@@ -1197,6 +1234,9 @@
              "EntityInstance": {
                  "type": "number"
              },
@@ -291,7 +291,7 @@ index 5e4bd15..5a59ecd 100644
              "GpioPins": {
                  "items": {
                      "type": "number"
-@@ -1198,6 +1238,9 @@
+@@ -1206,6 +1246,9 @@
              "GpioPolarity": {
                  "enum": ["Low"]
              },
@@ -301,7 +301,7 @@ index 5e4bd15..5a59ecd 100644
              "Index": {
                  "type": "number",
                  "minimum": 0,
-@@ -1218,6 +1261,10 @@
+@@ -1226,6 +1269,10 @@
              "MaxValue": {
                  "type": "number"
              },

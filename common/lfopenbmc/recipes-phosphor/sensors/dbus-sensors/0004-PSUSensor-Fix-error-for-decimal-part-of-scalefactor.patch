@@ -1,7 +1,7 @@
-From c0ace83809f10cada0d89d03e9f03f5743683afe Mon Sep 17 00:00:00 2001
+From a7c650c95b288c30de80861024d8fb2baea06334 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 22 Sep 2023 09:43:49 +0800
-Subject: [PATCH 04/17] PSUSensor: Fix error for decimal part of scalefactor
+Subject: [PATCH 04/18] PSUSensor: Fix error for decimal part of scalefactor
 
 Customized scale factor declaration from schema in entity-manager,
 declared as type "number." If a number is used in PSUSensor, it loses
@@ -93,7 +93,7 @@ index 0aa2c9e..c4f3a38 100644
      double sensorOffset;
  };
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 5d4648d..0d49cf5 100644
+index 133e45f..717e919 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -743,7 +743,7 @@ static void createSensorsCallback(

@@ -1,4 +1,4 @@
-From 91022edf71b82d4c71e94e47352f9a279c8f989d Mon Sep 17 00:00:00 2001
+From a01eed6c7e58b75e9b620d5ef84089c876efb610 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 15:59:10 +0000
 Subject: [PATCH 204/205] Map DBus event to RF MessageID and parse args
@@ -142,10 +142,10 @@ index 17589c49..e64034b6 100644
  
  // clang-format on
 diff --git a/meson.build b/meson.build
-index 79e80c13..36aa17d7 100644
+index 67a07384..7ab332f6 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -427,6 +427,7 @@ srcfiles_bmcweb = files(
+@@ -416,6 +416,7 @@ srcfiles_bmcweb = files(
      'redfish-core/src/subscription.cpp',
      'redfish-core/src/task_messages.cpp',
      'redfish-core/src/update_messages.cpp',

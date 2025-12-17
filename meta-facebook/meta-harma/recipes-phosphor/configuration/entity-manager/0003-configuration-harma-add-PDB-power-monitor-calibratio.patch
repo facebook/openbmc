@@ -1,4 +1,4 @@
-From aecf86358f331e4a52e69bfe450bf1464b856814 Mon Sep 17 00:00:00 2001
+From f2e41a309b7735af3eea60fff64dfc81a8cfbbb3 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Mon, 3 Nov 2025 21:59:51 +0800
 Subject: [PATCH 3/4] configuration: harma: add PDB power monitor calibration
@@ -53,10 +53,10 @@ index bcc648e..9624934 100644
          {
              "Address": "0x49",
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index 5e4bd15..614dc64 100644
+index b74856c..87448b7 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
-@@ -821,7 +821,7 @@
+@@ -829,7 +829,7 @@
                  "power(1[0-7]|[1-9])?_Max$": {
                      "$ref": "#/$defs/Types/MinMaxType"
                  },

@@ -1,4 +1,4 @@
-From 04e9a0820b90e6d4429f801771fe108833f5020f Mon Sep 17 00:00:00 2001
+From 23cccc516d0b241cc5f2cb4c3e3e5ab86e43680c Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Tue, 29 Jul 2025 21:01:23 -0700
 Subject: [PATCH] Implement valve monitor service
@@ -103,7 +103,7 @@ Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
  .../xyz.openbmc_project.valvemonitor.service  |  15 +
  src/GPIOInterface.cpp                         |  52 +++
  src/GPIOInterface.hpp                         |  11 +
- src/meson.build                               |   4 +
+ src/meson.build                               |   1 +
  src/valve-monitor/GPIOValve.cpp               | 299 ++++++++++++++++++
  src/valve-monitor/GPIOValve.hpp               | 104 ++++++
  src/valve-monitor/Readme.md                   |  50 +++
@@ -111,7 +111,7 @@ Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
  src/valve-monitor/ValveEvents.hpp             |  23 ++
  src/valve-monitor/ValveMonitor.cpp            | 102 ++++++
  src/valve-monitor/ValveMonitor.hpp            |  49 +++
- src/valve-monitor/meson.build                 |  20 ++
+ src/valve-monitor/meson.build                 |  23 ++
  14 files changed, 770 insertions(+)
  create mode 100644 service_files/xyz.openbmc_project.valvemonitor.service
  create mode 100644 src/valve-monitor/GPIOValve.cpp
@@ -279,17 +279,14 @@ index b860551..4ba5a9c 100644
  
  } // namespace gpio
 diff --git a/src/meson.build b/src/meson.build
-index 79cedad..064ef9b 100644
+index 8df4d6f..771eb46 100644
 --- a/src/meson.build
 +++ b/src/meson.build
-@@ -172,3 +172,7 @@ endif
- if get_option('cable-monitor').allowed()
-     subdir('cable-monitor')
- endif
-+
-+if get_option('valve-monitor').allowed()
-+    subdir('valve-monitor')
-+endif
+@@ -130,3 +130,4 @@ subdir('nvme')
+ subdir('psu')
+ subdir('smbpbi')
+ subdir('tests')
++subdir('valve-monitor')
 diff --git a/src/valve-monitor/GPIOValve.cpp b/src/valve-monitor/GPIOValve.cpp
 new file mode 100644
 index 0000000..dc088ba
@@ -995,10 +992,13 @@ index 0000000..9d66262
 +} // namespace valve
 diff --git a/src/valve-monitor/meson.build b/src/valve-monitor/meson.build
 new file mode 100644
-index 0000000..c436a62
+index 0000000..cebb86d
 --- /dev/null
 +++ b/src/valve-monitor/meson.build
-@@ -0,0 +1,20 @@
+@@ -0,0 +1,23 @@
++if not get_option('valve-monitor').allowed()
++    subdir_done()
++endif
 +src_inc = include_directories('..')
 +phosphor_dbus_interfaces_dep = dependency('phosphor-dbus-interfaces')
 +

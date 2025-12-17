@@ -1,7 +1,7 @@
-From 9ca4922a96184de1900b9fff2a2d7b0ec43202cd Mon Sep 17 00:00:00 2001
+From 7d1b3a5d8b1ddd7f9cd7da17f72bdac787b3a666 Mon Sep 17 00:00:00 2001
 From: "eldin.lee" <eldin.lee@quantatw.com>
 Date: Wed, 9 Jul 2025 14:42:07 +0800
-Subject: [PATCH 14/17] Add delay before leak event log to prevent AC OFF
+Subject: [PATCH 14/18] Add delay before leak event log to prevent AC OFF
  glitches
 
 Insert a short delay before logging to prevent transient AC power loss from triggering incorrect events.

@@ -1,16 +1,16 @@
-From bd3669de4e39acb52b0d5a7c4cf3bb41562a1b2e Mon Sep 17 00:00:00 2001
+From 33410cd90ed8f9c5e53fa9f3f5ca559033a9f80d Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
 Date: Thu, 31 Jul 2025 17:02:26 +0800
 Subject: [PATCH 501/503] Update nvidia_hmc.json
 
 ---
- configurations/nvidia/nvidia_hmc.json | 318 ++++++++++++++++++++------
+ configurations/nvidia/hmc.json | 318 ++++++++++++++++++++++++++-------
  1 file changed, 250 insertions(+), 68 deletions(-)
 
-diff --git a/configurations/nvidia/nvidia_hmc.json b/configurations/nvidia/nvidia_hmc.json
-index 9dd0fcb..2bcdd52 100644
---- a/configurations/nvidia/nvidia_hmc.json
-+++ b/configurations/nvidia/nvidia_hmc.json
+diff --git a/configurations/nvidia/hmc.json b/configurations/nvidia/hmc.json
+index f1d2e52..d31f90f 100644
+--- a/configurations/nvidia/hmc.json
++++ b/configurations/nvidia/hmc.json
 @@ -23,20 +23,6 @@
              "PowerState": "On",
              "ReadOffset": 25,

@@ -1,7 +1,7 @@
-From 817c3ea420cbabaded72272191c7f25e5a7a8eb6 Mon Sep 17 00:00:00 2001
+From 078df82bf6584711546ce2ac809451496cc0db3c Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 22 Sep 2023 09:49:53 +0800
-Subject: [PATCH 01/17] PSUSensor: add ina233 support
+Subject: [PATCH 01/18] PSUSensor: add ina233 support
 
 add device ina233 pmbus reading support
 
@@ -15,7 +15,7 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index d31c57b..e8cb2a3 100644
+index 9623b94..f0f6f05 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -85,6 +85,7 @@ static const I2CDeviceTypeMap sensorTypes{

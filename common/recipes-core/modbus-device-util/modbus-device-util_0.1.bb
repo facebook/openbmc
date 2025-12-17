@@ -22,6 +22,7 @@ LOCAL_URI = " \
     file://get-firmware-versions \
     file://get-info \
     file://get-sensors \
+    file://retrieve-orv3-bbu-blackbox \
     file://retrieve-orv3-psu-blackbox \
     file://rpu-controller-command \
     file://rpu-ready \
@@ -49,6 +50,7 @@ do_install() {
     install -m 0755 ${UNPACKDIR}/get-info ${D}${libexecdir}/${PN}/get-info
     install -m 0755 ${UNPACKDIR}/get-sensors ${D}${libexecdir}/${PN}/get-sensors
     install -m 0755 ${UNPACKDIR}/start-rpu-service-and-get-logs ${D}${libexecdir}/${PN}/start-rpu-service-and-get-logs
+    install -m 0755 ${UNPACKDIR}/retrieve-orv3-bbu-blackbox ${D}${libexecdir}/${PN}/retrieve-orv3-bbu-blackbox
     install -m 0755 ${UNPACKDIR}/retrieve-orv3-psu-blackbox ${D}${libexecdir}/${PN}/retrieve-orv3-psu-blackbox
     install -m 0755 ${UNPACKDIR}/rpu-controller-command ${D}${libexecdir}/${PN}/rpu-controller-command
     install -m 0755 ${UNPACKDIR}/rpu-ready ${D}${libexecdir}/${PN}/rpu-ready

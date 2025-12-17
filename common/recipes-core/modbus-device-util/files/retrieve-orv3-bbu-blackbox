@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# ARGUMENTS:
+# 1: BBU unique device address
+
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 <bbu_uda>
+      bbu_uda: The BBU unique device address
+
+      This outputs a json object where the key is the file number and the value holds integers read from the file"
+    exit 1
+fi
+
+set -u
+
+FLOCK="flock /tmp/modbus_dynamo_solitonbeam.lock"
+
+# unique device address
+UDA="$1"
+
+
+deviceType=$(rackmoncli list --json | jq -r ".[] | select(.uniqueDevAddress == $UDA) | .deviceType")
+
+if [[ $deviceType != *BBU ]]; then
+    echo "Cannot use this script to get blackbox data from $deviceType"
+    exit 1
+fi
+
+DATA_STATUS_REGISTER=513
+READY_STATUS="0x5555"
+
+
+for fileNum in {1..8}; do
+  error=""
+  if \
+    $FLOCK rackmoncli write "$UDA" 512 "$fileNum" > /dev/null && \
+    ( \
+      (sleep 1 && [[ $($FLOCK rackmoncli read "$UDA" "$DATA_STATUS_REGISTER") != "$READY_STATUS" ]] ) || \
+      (sleep 1 && [[ $($FLOCK rackmoncli read "$UDA" "$DATA_STATUS_REGISTER") != "$READY_STATUS" ]] ) || \
+      (sleep 1 && [[ $($FLOCK rackmoncli read "$UDA" "$DATA_STATUS_REGISTER") != "$READY_STATUS" ]] ) \
+    ) && (( fileNum == $(( $($FLOCK rackmoncli read "$UDA" 512) )) )) ; then
+    # Try reading values and convert to json array of integers
+    if output=$($FLOCK rackmoncli read  "$UDA" 528 --count 53) ; then
+      value=$(echo "$output" | tr -s '[:space:]' '\n' | xargs -I{} printf "%d\n" {} | jq -c -s .)
+    else
+      error="Failed to read registers"
+    fi
+  else
+    error="Failed to prepare record"
+  fi
+
+  if [[ -n "$error" ]]; then
+    jq -c -n --arg fileNum "$fileNum" --arg error "$error" '{($fileNum): $error}'
+  else
+    jq -c -n --arg fileNum "$fileNum" --argjson value "$value" '{($fileNum): $value}'
+  fi
+done | jq -c -s add   # for

@@ -6,7 +6,7 @@ $template RemoteLogFormat," %$YEAR% %TIMESTAMP% %HOSTNAME% %pri-text% __OPENBMC_
 # give up after 10 attempts while retrying every second (20 second timeout).
 # Also keep it at the end if we need to just amend the server name using cfg-util.
 *.* action(type="omfwd" name="remoteLog" template="RemoteLogFormat" target="syslog" port="514" protocol="tcp"
-           queue.type="LinkedList" action.resumeRetryCount="1" action.resumeInterval="60"
-           queue.size="100" queue.workerthreadminimummessages="101" queue.discardseverity="0"
-           queue.timeoutenqueue="0" queue.timeoutshutdown="10" queue.timeoutactioncompletion="100"
-           action.reportSuspension="off" action.reportSuspensionContinuation="off")
+           queue.type="FixedArray" queue.size="10000" queue.discardseverity="8"
+           queue.timeoutenqueue="100" queue.timeoutshutdown="100" queue.timeoutactioncompletion="100"
+           action.resumeRetryCount="1" action.resumeInterval="60"
+           action.reportSuspension="on" action.reportSuspensionContinuation="off")

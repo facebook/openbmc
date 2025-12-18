@@ -24,5 +24,10 @@ SRC_URI:append = " \
     file://1011-ARM-dts-aspeed-santabarbara-Enable-ipmb-device-for-O.patch \
     file://0202-dt-bindings-i3c-Add-i3c-hub-support.patch \
     file://0203-i3c-Add-driver-for-i3c-hub-device.patch \
+    file://0204-i3c-i3c-hub-Fix-SMBus-Agent-tx-timeout-issue.patch \
+    file://0205-i3c-i3c-hub-Fix-SMBus-Agent-Rx-buf-id-mismatch.patch \
+    file://0206-i3c-i3c-hub-Improve-SMBus-Agent-reset-function.patch \
+    file://0207-i3c-i3c-hub-Improve-SMBus-Agent-buf-id-sync.patch \
+    file://0208-i3c-i3c-hub-Check-VIOS-power-good-status.patch \
     file://santabarbara-local.cfg \
 "

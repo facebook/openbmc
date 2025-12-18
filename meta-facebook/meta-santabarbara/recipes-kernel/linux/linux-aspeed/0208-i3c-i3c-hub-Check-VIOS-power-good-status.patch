@@ -1,0 +1,72 @@
+From 9d2b04406e54bc42a88fdbfdef669c92cdd06bb5 Mon Sep 17 00:00:00 2001
+From: Steven Niu <steven.niu.uj@renesas.com>
+Date: Wed, 3 Dec 2025 09:08:37 +0800
+Subject: [PATCH 208/208] i3c:i3c-hub: Check VIOS power good status.
+
+Check the VIOS power good status before initialize the target
+port. If the power is not good, terminate the initialization of
+the target port.
+
+This change is to detect the HW failure or wrong hub settings.
+
+Signed-off-by: Steven Niu <steven.niu.uj@renesas.com>
+---
+v2 LORE: https://lore.kernel.org/all/20250917142055.2806576-2-steven.niu.uj@renesas.com/
+ref: https://github.com/renesas/mid-i3c-linux/tree/i3c-hub/main
+SHA: 9d2b04406e54bc42a88fdbfdef669c92cdd06bb5
+---
+ drivers/i3c/i3c-hub.c | 25 +++++++++++++++++++++++++
+ 1 file changed, 25 insertions(+)
+
+diff --git a/drivers/i3c/i3c-hub.c b/drivers/i3c/i3c-hub.c
+index be81eff8264e..f0df26db7dbc 100644
+--- a/drivers/i3c/i3c-hub.c
++++ b/drivers/i3c/i3c-hub.c
+@@ -2244,6 +2244,7 @@ static int i3c_hub_hw_init(struct i3c_hub *hub)
+ static int i3c_hub_port_init(struct i3c_hub *hub, u32 port_nr)
+ {
+ 	struct i3c_hub_target_port *port;
++	unsigned int val;
+ 	int ret;
+ 
+ 	if (port_nr >= I3C_HUB_TP_MAX_COUNT)
+@@ -2268,12 +2269,36 @@ static int i3c_hub_port_init(struct i3c_hub *hub, u32 port_nr)
+ 			return ret;
+ 	}
+ 
++	/* Check target port VIO Power Good */
++	ret = regmap_read(hub->regmap, HUB_REG_LDO_AND_CPSEL_STS, &val);
++	if (ret)
++		return ret;
++	if (port_nr == 0 || port_nr == 1 || port_nr == 4 || port_nr == 5) {
++		if (!(val & VCCIO0_PWR_GOOD)) {
++			dev_err(&hub->i3cdev->dev, "port[%d], VIOS0 is not good:%02X\n",
++				port_nr, val);
++			return -EIO;
++		}
++	} else {
++		if (!(val & VCCIO1_PWR_GOOD)) {
++			dev_err(&hub->i3cdev->dev, "port[%d], VIOS1 is not good:%02X\n",
++				port_nr, val);
++			return -EIO;
++		}
++	}
++
+ 	switch (port->mode) {
+ 	case PORT_MODE_AGENT:
+ 		ret = i3c_hub_port_init_smbus_agent(hub, port, port_nr);
++		if (ret)
++			dev_warn(&hub->i3cdev->dev, "Failed to init SMBus agent port %d: %d\n",
++				 port_nr, ret);
+ 		break;
+ 	case PORT_MODE_I3C:
+ 		ret = i3c_hub_port_init_i3c_bridge(hub, port, port_nr);
++		if (ret)
++			dev_warn(&hub->i3cdev->dev, "Failed to init I3C bridge port %d: %d\n",
++				 port_nr, ret);
+ 		if (port->bridge)
+ 			ret = i3c_hub_bridge_disconnect(port->bridge);
+ 		break;
+-- 
+2.49.0
+

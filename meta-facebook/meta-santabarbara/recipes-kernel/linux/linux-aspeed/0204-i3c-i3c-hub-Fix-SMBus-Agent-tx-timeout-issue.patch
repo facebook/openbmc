@@ -1,0 +1,87 @@
+From 4c28febd56aed9a01ba2aa3dd67aac44dd3481e1 Mon Sep 17 00:00:00 2001
+From: Steven Niu <steven.niu.uj@renesas.com>
+Date: Thu, 18 Sep 2025 17:53:12 +0800
+Subject: [PATCH 204/208] i3c: i3c-hub: Fix SMBus Agent tx timeout issue
+
+Background:
+Sometimes the SMBus Agent may raise tx timeout issue.
+
+Root Cause:
+The TX_DONE status is cleared in IBI handler. IBI handler works in
+workqueue context and may be disturbed by a new I2C API calling thread.
+This may result in a condition that the new I2C tx API is called before
+last TX_DONE is cleared. In this condition, the new tx action done will
+not trigger an IBI.
+
+Solution:
+Remove the TX_DONE clearing action from IBI handler to the beginning of
+SMBus Agent Tx action.
+
+Signed-off-by: Steven Niu <steven.niu.uj@renesas.com>
+---
+v2 LORE: https://lore.kernel.org/all/20250917142055.2806576-2-steven.niu.uj@renesas.com/
+ref: https://github.com/renesas/mid-i3c-linux/tree/i3c-hub/main
+SHA: 4c28febd56aed9a01ba2aa3dd67aac44dd3481e1
+---
+ drivers/i3c/i3c-hub.c | 37 +++++++++++++++++++++++--------------
+ 1 file changed, 23 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/i3c/i3c-hub.c b/drivers/i3c/i3c-hub.c
+index 3bad867e80f3..beb12b6c826e 100644
+--- a/drivers/i3c/i3c-hub.c
++++ b/drivers/i3c/i3c-hub.c
+@@ -572,13 +572,6 @@ static void i3c_hub_agent_ibi(struct i3c_hub_smbus_agent *agent)
+ 		agent->tx_res = stat;
+ 		complete(&agent->completion);
+ 		spin_unlock_irqrestore(&agent->lock, flags);
+-
+-		ret = regmap_write(hub->regmap,
+-				   HUB_REG_TP_SMBUS_AGNT_STS(agent->port_nr),
+-				   HUB_REG_AGENT_CNTRL_STATUS_FINISH);
+-		if (ret)
+-			dev_warn(&hub->i3cdev->dev,
+-				 "TP[%d] - failed to clear finish status\n", agent->port_nr);
+ 	}
+ 
+ #if IS_ENABLED(CONFIG_I2C_SLAVE)
+@@ -738,14 +731,30 @@ static int i3c_hub_agent_i2c_xfer_one(struct i3c_hub_smbus_agent *agent,
+ 	wait_time = wait_for_completion_timeout(&agent->completion,
+ 						agent->i2c.timeout);
+ 	if (!wait_time) {
+-		i3c_hub_reset_smbus_agent(agent);
+-		dev_err(&hub->i3cdev->dev, "tx timeout!\n");
+-		ret = -ETIMEDOUT;
+-		return ret;
++		/* Re-check status in case IBI has error */
++		ret = regmap_read(hub->regmap, HUB_REG_TP_SMBUS_AGNT_STS(agent->port_nr),
++				  &port_stat);
++		if (!ret && (port_stat & HUB_REG_AGENT_CNTRL_STATUS_FINISH)) {
++			dev_warn(&hub->i3cdev->dev,
++				 "port[%d]: finish status set but no completion! (%d, %02X)\n",
++				 port, ret, port_stat);
++		} else {
++			dev_err(&hub->i3cdev->dev, "port[%d]: tx timeout!\n", port);
++			i3c_hub_reset_smbus_agent(agent);
++			ret = -ETIMEDOUT;
++			return ret;
++		}
++	} else {
++		spin_lock_irqsave(&agent->lock, flags);
++		port_stat = agent->tx_res;
++		spin_unlock_irqrestore(&agent->lock, flags);
+ 	}
+-	spin_lock_irqsave(&agent->lock, flags);
+-	port_stat = agent->tx_res;
+-	spin_unlock_irqrestore(&agent->lock, flags);
++	/* clear finish status */
++	ret = regmap_write(hub->regmap,
++			   HUB_REG_TP_SMBUS_AGNT_STS(agent->port_nr),
++			   HUB_REG_AGENT_CNTRL_STATUS_FINISH);
++	if (ret)
++		dev_warn(dev, "TP[%d] - failed to clear finish status\n", agent->port_nr);
+ 
+ 	txn_stat = port_stat >> HUB_REG_AGENT_CNTRL_STATUS_TXN_SHIFT;
+ 	switch (txn_stat) {
+-- 
+2.49.0
+

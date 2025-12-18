@@ -1,0 +1,78 @@
+From a346461300cce2505d02a67a7e6bb987a5b391cb Mon Sep 17 00:00:00 2001
+From: Steven Niu <steven.niu.uj@renesas.com>
+Date: Thu, 18 Sep 2025 20:33:53 +0800
+Subject: [PATCH 205/208] i3c:i3c-hub: Fix SMBus Agent Rx buf id mismatch
+
+Description:
+Sometime the SMBus Agent may report the received data is not in the
+expected rx buf when SMBus Agent works as slave device.
+
+Root Cause:
+The I3C Hub IBI handler works in greedy mode which handles it all available
+events. At the same time, the I3C Hub handler works in workqueue context
+and can be preempted by another IBI handler. This requires the i3c hub
+event data shall be projected between the mulitple IBI handlers.
+
+Solution:
+Add mutex log to make the IBI handlers run sequentially.
+
+Signed-off-by: Steven Niu <steven.niu.uj@renesas.com>
+---
+v2 LORE: https://lore.kernel.org/all/20250917142055.2806576-2-steven.niu.uj@renesas.com/
+ref: https://github.com/renesas/mid-i3c-linux/tree/i3c-hub/main
+SHA: a346461300cce2505d02a67a7e6bb987a5b391cb
+---
+ drivers/i3c/i3c-hub.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/i3c/i3c-hub.c b/drivers/i3c/i3c-hub.c
+index beb12b6c826e..0f79c49cd563 100644
+--- a/drivers/i3c/i3c-hub.c
++++ b/drivers/i3c/i3c-hub.c
+@@ -369,6 +369,8 @@ struct i3c_hub {
+ 
+ 	/* protects page access */
+ 	struct mutex lock;
++	/* Sequential execution of IBI handler*/
++	struct mutex ibi_lock;
+ 
+ 	struct delayed_work delayed_work;
+ 
+@@ -2217,6 +2219,8 @@ static void i3c_hub_ibi(struct i3c_device *i3c,
+ 	const struct i3c_hub_ibi_payload *p = NULL;
+ 	unsigned int i, dev_stat, target_stat;
+ 
++	mutex_lock(&hub->ibi_lock);
++
+ 	if (payload->len == sizeof(*p))
+ 		p = payload->data;
+ 
+@@ -2232,7 +2236,7 @@ static void i3c_hub_ibi(struct i3c_device *i3c,
+ 
+ 		ret = regmap_bulk_read(hub->regmap, HUB_REG_DEV_AND_PORT_IBI_STS, tmp, 2);
+ 		if (ret)
+-			return;
++			goto exit;
+ 
+ 		dev_stat = tmp[0];
+ 		target_stat = tmp[1];
+@@ -2263,6 +2267,8 @@ static void i3c_hub_ibi(struct i3c_device *i3c,
+ 			i3c_hub_agent_ibi(port->agent);
+ 		}
+ 	}
++exit:
++	mutex_unlock(&hub->ibi_lock);
+ }
+ 
+ static const struct i3c_ibi_setup i3c_hub_ibi_setup = {
+@@ -2340,6 +2346,7 @@ static int i3c_hub_probe(struct i3c_device *i3cdev)
+ 	hub->regmap = regmap;
+ 
+ 	mutex_init(&hub->lock);
++	mutex_init(&hub->ibi_lock);
+ 
+ 	/* Disable all slave ports */
+ 	i3c_hub_unprotect_register(hub);
+-- 
+2.49.0
+

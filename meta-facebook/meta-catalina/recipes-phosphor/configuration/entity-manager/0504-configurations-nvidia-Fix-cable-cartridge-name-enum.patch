@@ -1,0 +1,79 @@
+From 894ee77be1422a1ba08ca2662ca786c9a3715940 Mon Sep 17 00:00:00 2001
+From: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
+Date: Wed, 19 Nov 2025 16:18:23 +0800
+Subject: [PATCH] configurations: nvidia: Fix cable cartridge name enumeration
+ order
+
+Summary:
+In the current naming formula, the cable cartridge name
+enumeration order is from HPM1 to HPM0, while in the NV switch,
+the cable cartridge name enumeration order is from HPM0 to HPM1.
+
+Cartridge NVLINK EEPROM bus and address in HPMs:
+HPM1 I2C12 0x54
+HPM1 I2C12 0x55
+HPM0 I2C13 0x54
+HPM0 I2C13 0x55
+
+Therefore, this commit fixes the FRU device naming formula to
+ensure correct ordering and aligns the order with the NV Switch.
+
+Tested:
+Check if the cable cartridge name enumeration order
+is from HPM0 to HPM1.
+
+root@bmc:~# busctl get-property xyz.openbmc_project.EntityManager \
+/xyz/openbmc_project/inventory/system/board/\
+NVIDIA_Cable_Cartridge_0/NVIDIA_CBC_FRU_0 \
+xyz.openbmc_project.Configuration.EEPROM Bus Address
+t 13
+t 84
+
+root@bmc:~# busctl get-property xyz.openbmc_project.EntityManager \
+/xyz/openbmc_project/inventory/system/board/\
+NVIDIA_Cable_Cartridge_1/NVIDIA_CBC_FRU_1 \
+xyz.openbmc_project.Configuration.EEPROM Bus Address
+t 13
+t 85
+
+root@bmc:~# busctl get-property xyz.openbmc_project.EntityManager \
+/xyz/openbmc_project/inventory/system/board/\
+NVIDIA_Cable_Cartridge_2/NVIDIA_CBC_FRU_2 \
+xyz.openbmc_project.Configuration.EEPROM Bus Address
+t 12
+t 84
+
+root@bmc:~# busctl get-property xyz.openbmc_project.EntityManager \
+/xyz/openbmc_project/inventory/system/board/\
+NVIDIA_Cable_Cartridge_3/NVIDIA_CBC_FRU_3 \
+xyz.openbmc_project.Configuration.EEPROM Bus Address
+t 12
+t 85
+
+Change-Id: Ia163cbfdf0eeeaacc162170662d43a3a75caf5e8
+Signed-off-by: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
+---
+ configurations/nvidia/cable_cartridge.json | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/configurations/nvidia/cable_cartridge.json b/configurations/nvidia/cable_cartridge.json
+index 793bc55..2a0e39b 100644
+--- a/configurations/nvidia/cable_cartridge.json
++++ b/configurations/nvidia/cable_cartridge.json
+@@ -3,11 +3,11 @@
+         {
+             "Address": "$address",
+             "Bus": "$bus",
+-            "Name": "NVIDIA CBC FRU $bus % 2 * 2 + $address % 2",
++            "Name": "NVIDIA CBC FRU $bus + 1 % 2 * 2 + $address % 2",
+             "Type": "EEPROM"
+         }
+     ],
+-    "Name": "NVIDIA Cable Cartridge $bus % 2 * 2 + $address % 2",
++    "Name": "NVIDIA Cable Cartridge $bus + 1 % 2 * 2 + $address % 2",
+     "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': '18x1RU CBL Cartridge', 'BOARD_MANUFACTURER': 'Nvidia'})",
+     "Type": "Board",
+     "xyz.openbmc_project.Inventory.Decorator.Asset": {
+-- 
+2.34.1
+

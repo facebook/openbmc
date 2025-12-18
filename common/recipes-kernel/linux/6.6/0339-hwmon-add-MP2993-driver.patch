@@ -1,0 +1,510 @@
+From fc37348c907ba220b898ad383c0d5134a9a545c1 Mon Sep 17 00:00:00 2001
+From: Noah Wang <noahwang.wang@outlook.com>
+Date: Tue, 11 Jun 2024 18:14:15 +0800
+Subject: [PATCH] hwmon: add MP2993 driver
+
+Add support for MPS VR controller mp2993. This driver exposes
+telemetry and limits value readings and writtings.
+
+Signed-off-by: Noah Wang <noahwang.wang@outlook.com>
+Link: https://lore.kernel.org/r/SEYPR04MB648203DC017A514837DB1204FAC72@SEYPR04MB6482.apcprd04.prod.outlook.com
+Signed-off-by: Guenter Roeck <linux@roeck-us.net>
+---
+ Documentation/hwmon/index.rst  |   1 +
+ Documentation/hwmon/mp2993.rst | 150 +++++++++++++++++++
+ MAINTAINERS                    |   7 +
+ drivers/hwmon/pmbus/Kconfig    |   9 ++
+ drivers/hwmon/pmbus/Makefile   |   1 +
+ drivers/hwmon/pmbus/mp2993.c   | 261 +++++++++++++++++++++++++++++++++
+ 6 files changed, 429 insertions(+)
+ create mode 100644 Documentation/hwmon/mp2993.rst
+ create mode 100644 drivers/hwmon/pmbus/mp2993.c
+
+diff --git a/Documentation/hwmon/index.rst b/Documentation/hwmon/index.rst
+index 6e7b8726b60c..7424cbf36ae1 100644
+--- a/Documentation/hwmon/index.rst
++++ b/Documentation/hwmon/index.rst
+@@ -166,6 +166,7 @@ Hardware Monitoring Kernel Drivers
+    mp2856
+    mp2888
+    mp2975
++   mp2993
+    mp5023
+    mp5990
+    mpq8785
+diff --git a/Documentation/hwmon/mp2993.rst b/Documentation/hwmon/mp2993.rst
+new file mode 100644
+index 000000000000..7a4fe0d946e0
+--- /dev/null
++++ b/Documentation/hwmon/mp2993.rst
+@@ -0,0 +1,150 @@
++.. SPDX-License-Identifier: GPL-2.0
++
++Kernel driver mp2993
++====================
++
++Supported chips:
++
++  * MPS mp2993
++
++    Prefix: 'mp2993'
++
++  * Datasheet
++    https://scnbwymvp-my.sharepoint.com/:f:/g/personal/admin_scnbwy_com/Eth4kX1_J1hMsaASHiOYL4QBHU5a75r-tRfLKbHnJFdKLQ?e=vxj3DF
++
++Author:
++
++	Noah Wang <noahwang.wang@outlook.com>
++
++Description
++-----------
++
++This driver implements support for Monolithic Power Systems, Inc. (MPS)
++MP2993 Dual Loop Digital Multi-phase Controller.
++
++Device compliant with:
++
++- PMBus rev 1.3 interface.
++
++The driver exports the following attributes via the 'sysfs' files
++for input voltage:
++
++**in1_input**
++
++**in1_label**
++
++**in1_crit**
++
++**in1_crit_alarm**
++
++**in1_lcrit**
++
++**in1_lcrit_alarm**
++
++**in1_max**
++
++**in1_max_alarm**
++
++**in1_min**
++
++**in1_min_alarm**
++
++The driver provides the following attributes for output voltage:
++
++**in2_input**
++
++**in2_label**
++
++**in2_crit**
++
++**in2_crit_alarm**
++
++**in2_lcrit**
++
++**in2_lcrit_alarm**
++
++**in3_input**
++
++**in3_label**
++
++**in3_crit**
++
++**in3_crit_alarm**
++
++**in3_lcrit**
++
++**in3_lcrit_alarm**
++
++The driver provides the following attributes for input current:
++
++**curr1_input**
++
++**curr1_label**
++
++**curr1_max**
++
++**curr1_max_alarm**
++
++The driver provides the following attributes for output current:
++
++**curr2_input**
++
++**curr2_label**
++
++**curr2_crit**
++
++**curr2_crit_alarm**
++
++**curr2_max**
++
++**curr2_max_alarm**
++
++**curr3_input**
++
++**curr3_label**
++
++**curr3_crit**
++
++**curr3_crit_alarm**
++
++**curr3_max**
++
++**curr3_max_alarm**
++
++The driver provides the following attributes for input power:
++
++**power1_input**
++
++**power1_label**
++
++The driver provides the following attributes for output power:
++
++**power2_input**
++
++**power2_label**
++
++**power3_input**
++
++**power3_label**
++
++The driver provides the following attributes for temperature:
++
++**temp1_input**
++
++**temp1_crit**
++
++**temp1_crit_alarm**
++
++**temp1_max**
++
++**temp1_max_alarm**
++
++**temp2_input**
++
++**temp2_crit**
++
++**temp2_crit_alarm**
++
++**temp2_max**
++
++**temp2_max_alarm**
+diff --git a/MAINTAINERS b/MAINTAINERS
+index d6c90161c7bf..a1e2f387b706 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -15258,6 +15258,13 @@ S:	Maintained
+ F:	Documentation/devicetree/bindings/leds/backlight/mps,mp3309c.yaml
+ F:	drivers/video/backlight/mp3309c.c
+ 
++MPS MP2993 DRIVER
++M:	Noah Wang <noahwang.wang@outlook.com>
++L:	linux-hwmon@vger.kernel.org
++S:	Maintained
++F:	Documentation/hwmon/mp2993.rst
++F:	drivers/hwmon/pmbus/mp2993.c
++
+ MR800 AVERMEDIA USB FM RADIO DRIVER
+ M:	Alexey Klimov <klimov.linux@gmail.com>
+ L:	linux-media@vger.kernel.org
+diff --git a/drivers/hwmon/pmbus/Kconfig b/drivers/hwmon/pmbus/Kconfig
+index 08e82c457356..d875d31ce84c 100644
+--- a/drivers/hwmon/pmbus/Kconfig
++++ b/drivers/hwmon/pmbus/Kconfig
+@@ -346,6 +346,15 @@ config SENSORS_MP2975
+ 	  This driver can also be built as a module. If so, the module will
+ 	  be called mp2975.
+ 
++config SENSORS_MP2993
++	tristate "MPS MP2993"
++	help
++	  If you say yes here you get hardware monitoring support for MPS
++	  MP2993 Dual Loop Digital Multi-Phase Controller.
++
++	  This driver can also be built as a module. If so, the module will
++	  be called mp2993.
++
+ config SENSORS_MP2975_REGULATOR
+ 	depends on SENSORS_MP2975 && REGULATOR
+ 	bool "Regulator support for MPS MP2975"
+diff --git a/drivers/hwmon/pmbus/Makefile b/drivers/hwmon/pmbus/Makefile
+index 2279b3327bbf..312d3f0c0540 100644
+--- a/drivers/hwmon/pmbus/Makefile
++++ b/drivers/hwmon/pmbus/Makefile
+@@ -37,6 +37,7 @@ obj-$(CONFIG_SENSORS_MAX8688)	+= max8688.o
+ obj-$(CONFIG_SENSORS_MP2856)	+= mp2856.o
+ obj-$(CONFIG_SENSORS_MP2888)	+= mp2888.o
+ obj-$(CONFIG_SENSORS_MP2975)	+= mp2975.o
++obj-$(CONFIG_SENSORS_MP2993)	+= mp2993.o
+ obj-$(CONFIG_SENSORS_MP5023)	+= mp5023.o
+ obj-$(CONFIG_SENSORS_MP5990)	+= mp5990.o
+ obj-$(CONFIG_SENSORS_MPQ7932)	+= mpq7932.o
+diff --git a/drivers/hwmon/pmbus/mp2993.c b/drivers/hwmon/pmbus/mp2993.c
+new file mode 100644
+index 000000000000..944593e13231
+--- /dev/null
++++ b/drivers/hwmon/pmbus/mp2993.c
+@@ -0,0 +1,261 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++/*
++ * Hardware monitoring driver for MPS Multi-phase Digital VR Controllers(MP2993)
++ */
++
++#include <linux/i2c.h>
++#include <linux/module.h>
++#include <linux/of_device.h>
++#include "pmbus.h"
++
++#define MP2993_VOUT_OVUV_UINT	125
++#define MP2993_VOUT_OVUV_DIV	64
++#define MP2993_VIN_LIMIT_UINT	1
++#define MP2993_VIN_LIMIT_DIV	8
++#define MP2993_READ_VIN_UINT	1
++#define MP2993_READ_VIN_DIV	32
++
++#define MP2993_PAGE_NUM	2
++
++#define MP2993_RAIL1_FUNC	(PMBUS_HAVE_VIN | PMBUS_HAVE_VOUT | \
++							PMBUS_HAVE_IOUT | PMBUS_HAVE_POUT | \
++							PMBUS_HAVE_TEMP | PMBUS_HAVE_PIN | \
++							PMBUS_HAVE_IIN | \
++							PMBUS_HAVE_STATUS_VOUT | \
++							PMBUS_HAVE_STATUS_IOUT | \
++							PMBUS_HAVE_STATUS_TEMP | \
++							PMBUS_HAVE_STATUS_INPUT)
++
++#define MP2993_RAIL2_FUNC	(PMBUS_HAVE_VOUT | PMBUS_HAVE_IOUT | \
++							 PMBUS_HAVE_POUT | PMBUS_HAVE_TEMP | \
++							 PMBUS_HAVE_STATUS_VOUT | \
++							 PMBUS_HAVE_STATUS_IOUT | \
++							 PMBUS_HAVE_STATUS_TEMP | \
++							 PMBUS_HAVE_STATUS_INPUT)
++
++/* Converts a linear11 data exponent to a specified value */
++static u16 mp2993_linear11_exponent_transfer(u16 word, u16 expect_exponent)
++{
++	s16 exponent, mantissa, target_exponent;
++
++	exponent = ((s16)word) >> 11;
++	mantissa = ((s16)((word & 0x7ff) << 5)) >> 5;
++	target_exponent = (s16)((expect_exponent & 0x1f) << 11) >> 11;
++
++	if (exponent > target_exponent)
++		mantissa = mantissa << (exponent - target_exponent);
++	else
++		mantissa = mantissa >> (target_exponent - exponent);
++
++	return (mantissa & 0x7ff) | ((expect_exponent << 11) & 0xf800);
++}
++
++static int
++mp2993_set_vout_format(struct i2c_client *client, int page, int format)
++{
++	int ret;
++
++	ret = i2c_smbus_write_byte_data(client, PMBUS_PAGE, page);
++	if (ret < 0)
++		return ret;
++
++	return i2c_smbus_write_byte_data(client, PMBUS_VOUT_MODE, format);
++}
++
++static int mp2993_identify(struct i2c_client *client, struct pmbus_driver_info *info)
++{
++	int ret;
++
++	/* Set vout to direct format for rail1. */
++	ret = mp2993_set_vout_format(client, 0, PB_VOUT_MODE_DIRECT);
++	if (ret < 0)
++		return ret;
++
++	/* Set vout to direct format for rail2. */
++	return mp2993_set_vout_format(client, 1, PB_VOUT_MODE_DIRECT);
++}
++
++static int mp2993_read_word_data(struct i2c_client *client, int page, int phase,
++				 int reg)
++{
++	int ret;
++
++	switch (reg) {
++	case PMBUS_VOUT_OV_FAULT_LIMIT:
++	case PMBUS_VOUT_UV_FAULT_LIMIT:
++		ret = pmbus_read_word_data(client, page, phase, reg);
++		if (ret < 0)
++			return ret;
++
++		ret = DIV_ROUND_CLOSEST(ret * MP2993_VOUT_OVUV_UINT, MP2993_VOUT_OVUV_DIV);
++		break;
++	case PMBUS_OT_FAULT_LIMIT:
++	case PMBUS_OT_WARN_LIMIT:
++		/*
++		 * The MP2993 ot fault limit value and ot warn limit value
++		 * per rail are always the same, so only PMBUS_OT_FAULT_LIMIT
++		 * and PMBUS_OT_WARN_LIMIT register in page 0 are defined to
++		 * indicates the limit value.
++		 */
++		ret = pmbus_read_word_data(client, 0, phase, reg);
++		break;
++	case PMBUS_READ_VIN:
++		/* The MP2993 vin scale is (1/32V)/Lsb */
++		ret = pmbus_read_word_data(client, page, phase, reg);
++		if (ret < 0)
++			return ret;
++
++		ret = DIV_ROUND_CLOSEST((ret & GENMASK(9, 0)) * MP2993_READ_VIN_UINT,
++					MP2993_READ_VIN_DIV);
++		break;
++	case PMBUS_VIN_OV_FAULT_LIMIT:
++	case PMBUS_VIN_OV_WARN_LIMIT:
++	case PMBUS_VIN_UV_WARN_LIMIT:
++	case PMBUS_VIN_UV_FAULT_LIMIT:
++		/* The MP2993 vin limit scale is (1/8V)/Lsb */
++		ret = pmbus_read_word_data(client, page, phase, reg);
++		if (ret < 0)
++			return ret;
++
++		ret = DIV_ROUND_CLOSEST((ret & GENMASK(7, 0)) * MP2993_VIN_LIMIT_UINT,
++					MP2993_VIN_LIMIT_DIV);
++		break;
++	case PMBUS_READ_IOUT:
++	case PMBUS_READ_IIN:
++	case PMBUS_IIN_OC_WARN_LIMIT:
++	case PMBUS_IOUT_OC_FAULT_LIMIT:
++	case PMBUS_IOUT_OC_WARN_LIMIT:
++	case PMBUS_READ_VOUT:
++	case PMBUS_READ_PIN:
++	case PMBUS_READ_POUT:
++	case PMBUS_READ_TEMPERATURE_1:
++		ret = -ENODATA;
++		break;
++	default:
++		ret = -EINVAL;
++		break;
++	}
++
++	return ret;
++}
++
++static int mp2993_write_word_data(struct i2c_client *client, int page, int reg,
++				  u16 word)
++{
++	int ret;
++
++	switch (reg) {
++	case PMBUS_VOUT_OV_FAULT_LIMIT:
++	case PMBUS_VOUT_UV_FAULT_LIMIT:
++		ret = DIV_ROUND_CLOSEST(word * MP2993_VOUT_OVUV_DIV, MP2993_VOUT_OVUV_UINT);
++		ret = pmbus_write_word_data(client, 0, reg, ret);
++		break;
++	case PMBUS_OT_FAULT_LIMIT:
++	case PMBUS_OT_WARN_LIMIT:
++		/*
++		 * The MP2993 ot fault limit value and ot warn limit value
++		 * per rail are always the same, so only PMBUS_OT_FAULT_LIMIT
++		 * and PMBUS_OT_WARN_LIMIT register in page 0 are defined to
++		 * config the ot limit value.
++		 */
++		ret = pmbus_write_word_data(client, 0, reg, word);
++		break;
++	case PMBUS_VIN_OV_FAULT_LIMIT:
++	case PMBUS_VIN_OV_WARN_LIMIT:
++	case PMBUS_VIN_UV_WARN_LIMIT:
++	case PMBUS_VIN_UV_FAULT_LIMIT:
++		/* The MP2993 vin limit scale is (1/8V)/Lsb */
++		ret = pmbus_write_word_data(client, 0, reg,
++					    DIV_ROUND_CLOSEST(word * MP2993_VIN_LIMIT_DIV,
++							      MP2993_VIN_LIMIT_UINT));
++		break;
++	case PMBUS_IIN_OC_WARN_LIMIT:
++		/*
++		 * The PMBUS_IIN_OC_WARN_LIMIT of MP2993 is linear11 format,
++		 * and the exponent is a constant value(5'b00000)， so the
++		 * exponent of word parameter should be converted to 5'b00000.
++		 */
++		ret = pmbus_write_word_data(client, page, reg,
++					    mp2993_linear11_exponent_transfer(word, 0x00));
++		break;
++		//
++	case PMBUS_IOUT_OC_FAULT_LIMIT:
++	case PMBUS_IOUT_OC_WARN_LIMIT:
++		/*
++		 * The PMBUS_IOUT_OC_FAULT_LIMIT and PMBUS_IOUT_OC_WARN_LIMIT
++		 * of MP2993 can be regarded as linear11 format, and the
++		 * exponent is a 5'b00001 or 5'b00000. To ensure a larger
++		 * range of limit value, so the exponent of word parameter
++		 * should be converted to 5'b00001.
++		 */
++		ret = pmbus_write_word_data(client, page, reg,
++					    mp2993_linear11_exponent_transfer(word, 0x01));
++		break;
++	default:
++		ret = -EINVAL;
++		break;
++	}
++
++	return ret;
++}
++
++static struct pmbus_driver_info mp2993_info = {
++	.pages = MP2993_PAGE_NUM,
++	.format[PSC_VOLTAGE_IN] = direct,
++	.format[PSC_CURRENT_IN] = linear,
++	.format[PSC_CURRENT_OUT] = linear,
++	.format[PSC_TEMPERATURE] = direct,
++	.format[PSC_POWER] = linear,
++	.format[PSC_VOLTAGE_OUT] = direct,
++
++	.m[PSC_VOLTAGE_OUT] = 1,
++	.R[PSC_VOLTAGE_OUT] = 3,
++	.b[PSC_VOLTAGE_OUT] = 0,
++
++	.m[PSC_VOLTAGE_IN] = 1,
++	.R[PSC_VOLTAGE_IN] = 0,
++	.b[PSC_VOLTAGE_IN] = 0,
++
++	.m[PSC_TEMPERATURE] = 1,
++	.R[PSC_TEMPERATURE] = 0,
++	.b[PSC_TEMPERATURE] = 0,
++
++	.func[0] = MP2993_RAIL1_FUNC,
++	.func[1] = MP2993_RAIL2_FUNC,
++	.read_word_data = mp2993_read_word_data,
++	.write_word_data = mp2993_write_word_data,
++	.identify = mp2993_identify,
++};
++
++static int mp2993_probe(struct i2c_client *client)
++{
++	return pmbus_do_probe(client, &mp2993_info);
++}
++
++static const struct i2c_device_id mp2993_id[] = {
++	{"mp2993", 0},
++	{}
++};
++MODULE_DEVICE_TABLE(i2c, mp2993_id);
++
++static const struct of_device_id __maybe_unused mp2993_of_match[] = {
++	{.compatible = "mps,mp2993"},
++	{}
++};
++MODULE_DEVICE_TABLE(of, mp2993_of_match);
++
++static struct i2c_driver mp2993_driver = {
++	.driver = {
++		.name = "mp2993",
++		.of_match_table = mp2993_of_match,
++	},
++	.probe = mp2993_probe,
++	.id_table = mp2993_id,
++};
++
++module_i2c_driver(mp2993_driver);
++
++MODULE_AUTHOR("Noah Wang <noahwang.wang@outlook.com>");
++MODULE_DESCRIPTION("PMBus driver for MPS MP2993");
++MODULE_LICENSE("GPL");
++MODULE_IMPORT_NS(PMBUS);
+-- 
+2.34.1
+

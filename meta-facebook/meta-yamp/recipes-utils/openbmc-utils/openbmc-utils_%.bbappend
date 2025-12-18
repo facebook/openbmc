@@ -29,6 +29,9 @@ LOCAL_URI += " \
     file://board-utils.sh \
     file://cpu_aboot.conf \
     file://eth0_mac_fixup.sh \
+    file://eth0_ncsi_fixup.sh \
+    file://run-eth0-ncsi-fixup.sh \
+    file://setup-eth0-ncsi-fixup.sh \
     file://fpga_util.sh \
     file://fpga_ver.sh \
     file://power-on.sh \
@@ -55,6 +58,7 @@ OPENBMC_UTILS_FILES += " \
     aconf_util.sh \
     bios_util.sh \
     board-utils.sh \
+    eth0_ncsi_fixup.sh \
     fpga_util.sh \
     fpga_ver.sh \
     reset_brcm.sh \
@@ -118,6 +122,12 @@ do_work_sysv() {
 
     install -m 755 sup_eeprom.sh ${D}${sysconfdir}/init.d/sup_eeprom.sh
     update-rc.d -r ${D} sup_eeprom.sh start 90 2 3 4 5 .
+
+    # eth0 NCSI fixup runit service - monitors and recovers eth0 if no global IPv6
+    install -d ${D}${sysconfdir}/sv/eth0-ncsi-fixup
+    install -m 755 run-eth0-ncsi-fixup.sh ${D}${sysconfdir}/sv/eth0-ncsi-fixup/run
+    install -m 755 setup-eth0-ncsi-fixup.sh ${D}${sysconfdir}/init.d/setup-eth0-ncsi-fixup.sh
+    update-rc.d -r ${D} setup-eth0-ncsi-fixup.sh start 95 5 .
 
     install -m 0755 ${UNPACKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .

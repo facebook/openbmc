@@ -1,8 +1,8 @@
-From 894ee77be1422a1ba08ca2662ca786c9a3715940 Mon Sep 17 00:00:00 2001
+From 3e1fa0ff27368fc32416ccc6f97ca183f84cbcc6 Mon Sep 17 00:00:00 2001
 From: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
 Date: Wed, 19 Nov 2025 16:18:23 +0800
-Subject: [PATCH] configurations: nvidia: Fix cable cartridge name enumeration
- order
+Subject: [PATCH 504/504] configurations: nvidia: Fix cable cartridge name
+ enumeration order
 
 Summary:
 In the current naming formula, the cable cartridge name
@@ -75,5 +75,5 @@ index 793bc55..2a0e39b 100644
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
 -- 
-2.34.1
+2.47.3
 

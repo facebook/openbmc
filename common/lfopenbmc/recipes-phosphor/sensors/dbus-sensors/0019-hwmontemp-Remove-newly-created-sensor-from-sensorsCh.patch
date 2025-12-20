@@ -1,8 +1,8 @@
-From eaa182e4077a4f21ce3e1de357331ed2f9792b7f Mon Sep 17 00:00:00 2001
+From eabe74b659c3900fbc4b0fbd644cf23f2b3ac405 Mon Sep 17 00:00:00 2001
 From: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
 Date: Thu, 27 Nov 2025 18:31:21 +0800
-Subject: [PATCH] hwmontemp: Remove newly created sensor from sensorsChanged
- during rescan
+Subject: [PATCH 19/20] hwmontemp: Remove newly created sensor from
+ sensorsChanged during rescan
 
 When a sensor is recreated during rescan, the existing sensor object is
 destroyed first, which calls deactivate() and sets the sensor to
@@ -24,10 +24,10 @@ Signed-off-by: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
  1 file changed, 22 insertions(+), 12 deletions(-)
 
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
-index cdd7cdc..f75ff1d 100644
+index e9ddb5c..738efe1 100644
 --- a/src/hwmon-temp/HwmonTempMain.cpp
 +++ b/src/hwmon-temp/HwmonTempMain.cpp
-@@ -402,24 +402,34 @@ void createSensors(
+@@ -408,24 +408,34 @@ void createSensors(
                      std::get<std::string>(findSensorName->second);
                  // on rescans, only update sensors we were signaled by
                  auto findSensor = sensors.find(sensorName);
@@ -75,5 +75,5 @@ index cdd7cdc..f75ff1d 100644
                  }
  
 -- 
-2.34.1
+2.47.3
 

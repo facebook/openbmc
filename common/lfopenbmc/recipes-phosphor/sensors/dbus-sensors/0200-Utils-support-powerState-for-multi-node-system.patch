@@ -1,4 +1,4 @@
-From 64e6c84a5aa7de46a70bab75b7140d35ff1b6f27 Mon Sep 17 00:00:00 2001
+From d4ff528ca31f49f2ce9bc7726b3d083cf601bb34 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH 200/203] Utils: support powerState for multi-node system
@@ -885,10 +885,10 @@ index 9f799f5..221645b 100644
  
      void getPath(const std::string& path, const std::string& interface,
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
-index e9ddb5c..31859c3 100644
+index 738efe1..724732c 100644
 --- a/src/hwmon-temp/HwmonTempMain.cpp
 +++ b/src/hwmon-temp/HwmonTempMain.cpp
-@@ -597,7 +597,11 @@ static void powerStateChanged(
+@@ -607,7 +607,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {
@@ -991,7 +991,7 @@ index 981d0cc..6283d41 100644
          }
      }
 diff --git a/src/sensor.hpp b/src/sensor.hpp
-index fb2bcac..c865703 100644
+index eeb3e23..a3a8513 100644
 --- a/src/sensor.hpp
 +++ b/src/sensor.hpp
 @@ -78,13 +78,13 @@ struct Sensor
@@ -1018,7 +1018,7 @@ index fb2bcac..c865703 100644
      size_t errCount{0};
      std::unique_ptr<SensorInstrumentation> instrumentation;
      std::unordered_map<std::string, bool> invalidReadingLoggedMap;
-@@ -484,7 +485,7 @@ struct Sensor
+@@ -486,7 +487,7 @@ struct Sensor
  
      bool readingStateGood() const
      {

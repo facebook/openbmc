@@ -1,7 +1,7 @@
-From 2d47167a515c497d58f3c3e5ddd76f21925bb721 Mon Sep 17 00:00:00 2001
+From 55723e9f450cb580797e67e339dd4e88dac8ac09 Mon Sep 17 00:00:00 2001
 From: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
 Date: Tue, 30 Sep 2025 11:50:42 +0800
-Subject: [PATCH 16/18] Add sensor reading events
+Subject: [PATCH 16/20] Add sensor reading events
 
 1.
 This modification implements the "Sensors Invalid Reading" and

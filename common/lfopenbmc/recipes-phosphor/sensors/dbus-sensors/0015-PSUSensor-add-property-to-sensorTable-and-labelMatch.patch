@@ -1,7 +1,7 @@
-From b55a212d3ed9f0acb01b373be0b1b77a197053c9 Mon Sep 17 00:00:00 2001
+From 84e99bb20d3132cc1aaa6d152ea872c0eb9408b6 Mon Sep 17 00:00:00 2001
 From: Andy-Hsu-wiwynn <andy.hsu.wiwynn@gmail.com>
 Date: Fri, 15 Aug 2025 15:44:31 +0800
-Subject: [PATCH 15/18] PSUSensor:add property to sensorTable and labelMatch
+Subject: [PATCH 15/20] PSUSensor:add property to sensorTable and labelMatch
 
 Description
 Add "current" to the sensorTable, and add "in_current" and "in_power"

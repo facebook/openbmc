@@ -1,7 +1,7 @@
-From 33410cd90ed8f9c5e53fa9f3f5ca559033a9f80d Mon Sep 17 00:00:00 2001
+From 566e3f2a82981e3b75d66557016328815bc334d4 Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
 Date: Thu, 31 Jul 2025 17:02:26 +0800
-Subject: [PATCH 501/503] Update nvidia_hmc.json
+Subject: [PATCH 501/504] Update nvidia_hmc.json
 
 ---
  configurations/nvidia/hmc.json | 318 ++++++++++++++++++++++++++-------

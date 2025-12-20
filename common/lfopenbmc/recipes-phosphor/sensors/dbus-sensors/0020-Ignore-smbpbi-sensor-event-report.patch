@@ -1,7 +1,7 @@
-From 08f29c3bdbced2f64dcd936e24bab87c92d28dd4 Mon Sep 17 00:00:00 2001
+From b91a23a54016524f938a21f9ef3f3ef773a9fbfe Mon Sep 17 00:00:00 2001
 From: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
 Date: Wed, 17 Dec 2025 16:07:05 +0800
-Subject: [PATCH] Ignore smbpbi sensor event report
+Subject: [PATCH 20/20] Ignore smbpbi sensor event report
 
 During the AC cycle or reboot, after the power state changes to "on",
 we observed numerous event reports from Smbpbi sensors. We will
@@ -11,11 +11,11 @@ the cause of the event reporting.
 Change-Id: I76c7da1db75bd35623ce427b618e7b95d4f18177
 Signed-off-by: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
 ---
- src/sensor.hpp | 3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+ src/sensor.hpp | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/src/sensor.hpp b/src/sensor.hpp
-index fb2bcac..b42e87a 100644
+index fb2bcac..eeb3e23 100644
 --- a/src/sensor.hpp
 +++ b/src/sensor.hpp
 @@ -283,7 +283,9 @@ struct Sensor
@@ -30,5 +30,5 @@ index fb2bcac..b42e87a 100644
                  return 1;
              }
 -- 
-2.43.0
+2.47.3
 

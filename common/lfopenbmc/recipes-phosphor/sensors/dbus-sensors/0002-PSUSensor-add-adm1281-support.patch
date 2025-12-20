@@ -1,7 +1,7 @@
-From 626099c201cb482e6d11d8ec237111f7a1774988 Mon Sep 17 00:00:00 2001
+From 462322462bb1fa4ed76f9aa0616c81cb99055f6b Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Tue, 26 Sep 2023 14:24:08 +0800
-Subject: [PATCH 02/18] PSUSensor: add adm1281 support
+Subject: [PATCH 02/20] PSUSensor: add adm1281 support
 
 add device adm1281 pmbus reading support
 

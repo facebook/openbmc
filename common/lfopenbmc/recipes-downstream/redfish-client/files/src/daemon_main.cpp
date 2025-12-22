@@ -24,7 +24,6 @@ int main(int argc, const char** argv)
                    "directory where persist data can be stored");
     CLI11_PARSE(app, argc, argv);
     installSignalHandlers();
-    registerLogMappers();
     // Create a new scope to ensure the context is destroyed cleanly before
     // http client is destroyed.
     {

@@ -39,20 +39,10 @@ class RedfishClient
 
     auto loadConfig() -> sdbusplus::async::task<>;
 
+    void registerLogMappers();
+
     Config loadCompatibleConfig(const std::string& configDir,
                                 const std::string& compatiblePlatformName);
-
-    static inline auto subtree(sdbusplus::async::context& ctx,
-                               const auto& subpath, const auto& interface,
-                               size_t depth = 0)
-    {
-        using ObjectMapper =
-            sdbusplus::client::xyz::openbmc_project::ObjectMapper<>;
-        auto mapper = ObjectMapper(ctx)
-                          .service(ObjectMapper::default_service)
-                          .path(ObjectMapper::instance_path);
-        return mapper.get_sub_tree(subpath, depth, {interface});
-    }
 
     auto subtree_for_target_interface(
         sdbusplus::async::context& ctx, const std::string& subpath,

@@ -4,6 +4,8 @@
 #include <redfish_client/core/sensor.hpp>
 
 #include <sdbusplus/async.hpp>
+#include <sdbusplus/async/task.hpp>
+#include <sdbusplus/async/context.hpp>
 
 #include <memory>
 #include <optional>
@@ -17,8 +19,6 @@ namespace redfish_client_daemon
 using namespace redfish_client::core;
 
 void installSignalHandlers();
-
-void registerLogMappers();
 
 // Run redfish client till process receives SIGINT or SIGTERM
 void runRedfishClient(const std::string& serviceName,

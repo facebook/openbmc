@@ -19,6 +19,10 @@ void from_json(const nlohmann::json& json, Config& config)
 {
     json.at("host").get_to(config.host);
     json.at("compatible").get_to(config.compatible);
+    if (auto it = json.find("components"); it != json.end())
+    {
+        config.components = it->template get<std::vector<std::string>>();
+    }
     if (auto it = json.find("sensorConfig"); it != json.end())
     {
         config.sensorConfig = it->template get<SensorConfig>();

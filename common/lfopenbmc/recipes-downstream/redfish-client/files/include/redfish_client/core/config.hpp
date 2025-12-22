@@ -58,6 +58,7 @@ struct Config
 {
     std::string host;
     std::string compatible;
+    std::optional<std::vector<std::string>> components;
     std::optional<SensorConfig> sensorConfig;
     std::optional<LogServiceConfig> logServiceConfig;
     std::optional<UpdateServiceConfig> updateServiceConfig;

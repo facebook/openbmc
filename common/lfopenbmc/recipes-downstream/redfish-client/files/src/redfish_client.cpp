@@ -1,5 +1,8 @@
 #include <redfish_client/core/redfish_client.hpp>
 #include <redfish_client/core/update_service_handler.hpp>
+#include <redfish_client/core/log_entry_mapper_registry.hpp>
+#include <redfish_client/core/unhandled_mapper.hpp>
+#include <redfish_client/component_configs/component_registry.hpp>
 
 #include <phosphor-logging/lg2.hpp>
 
@@ -9,6 +12,18 @@ PHOSPHOR_LOG2_USING;
 
 namespace redfish_client::core
 {
+
+static inline auto subtree(sdbusplus::async::context& ctx,
+                           const auto& subpath, const auto& interface,
+                           size_t depth = 0)
+{
+    using ObjectMapper =
+        sdbusplus::client::xyz::openbmc_project::ObjectMapper<>;
+    auto mapper = ObjectMapper(ctx)
+                      .service(ObjectMapper::default_service)
+                      .path(ObjectMapper::instance_path);
+    return mapper.get_sub_tree(subpath, depth, {interface});
+}
 
 RedfishClient::RedfishClient(sdbusplus::async::context& ctx, const std::string& configDir,
               const std::string& persistDir) :
@@ -27,6 +42,9 @@ auto RedfishClient::run() -> sdbusplus::async::task<>
     {
         co_await loadConfig();
     }
+
+    registerLogMappers();
+
     if (config->sensorConfig.has_value())
     {
         const auto& sensorConfig = config->sensorConfig.value();
@@ -206,6 +224,21 @@ auto RedfishClient::loadConfig() -> sdbusplus::async::task<>
     auto compatiblePlatformName = co_await getCompatiblePlatformName();
     config = loadCompatibleConfig(configDir, compatiblePlatformName);
     co_return;
+}
+
+void RedfishClient::registerLogMappers()
+{
+    auto& registry = LogEntryMapperRegistry::instance();
+
+    if (config->components.has_value()) {
+        for (const auto& componentName : config->components.value()) {
+            info("Registering component: {COMPONENT}", "COMPONENT", componentName);
+            component_config::registerComponent(componentName);
+        }
+    }
+
+    registry.registerMapper(std::make_unique<UnhandledMapper>(), 0);
+    info("Mapper registration complete");
 }
 
 Config RedfishClient::loadCompatibleConfig(const std::string& configDir,

@@ -4,15 +4,13 @@
 #include <redfish_client/core/log_service_handler.hpp>
 #include <redfish_client/core/update_service_handler.hpp>
 #include <redfish_client/core/redfish_client.hpp>
-#include <redfish_client/core/log_entry_mapper_registry.hpp>
-#include <redfish_client/core/cper_mapper.hpp>
-#include <redfish_client/core/unhandled_mapper.hpp>
 
+#include <phosphor-logging/lg2.hpp>
 #include <boost/stacktrace.hpp>
 
 #include <csignal>
-#include <fstream>
-#include <streambuf>
+
+PHOSPHOR_LOG2_USING;
 
 namespace redfish_client_daemon
 {
@@ -27,13 +25,6 @@ void installSignalHandlers()
     };
     std::signal(SIGSEGV, printStackTraceOnCrashHandler);
     std::signal(SIGABRT, printStackTraceOnCrashHandler);
-}
-
-void registerLogMappers()
-{
-  auto& registry = redfish_client::core::LogEntryMapperRegistry::instance();
-  registry.registerMapper(std::make_unique<CperMapper>(), 100);
-  registry.registerMapper(std::make_unique<UnhandledMapper>(), 0);
 }
 
 void runRedfishClient(const std::string& serviceName,

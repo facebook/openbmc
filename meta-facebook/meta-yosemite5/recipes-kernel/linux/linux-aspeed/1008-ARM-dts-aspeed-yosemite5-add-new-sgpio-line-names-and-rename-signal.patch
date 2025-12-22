@@ -1,0 +1,78 @@
+From 764bbe2f0baeac3b45650cf6538742906ba43e06 Mon Sep 17 00:00:00 2001
+From: Kevin Tung <kevin.tung.openbmc@gmail.com>
+Date: Fri, 19 Dec 2025 15:36:11 +0800
+Subject: [PATCH v3 3/5] ARM: dts: aspeed: yosemite5: Add new SGPIO line names and rename signal
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <20251219-yv5_revise_dts-v3-3-522174b34d20@gmail.com>
+
+Add new SGPIO line names for user space monitoring and event logging.
+
+Also rename PADDLE_BD_IOEXP_INT to ALERT_IRQ_PMBUS_PWR2_N to match
+hardware naming. The original PADDLE_BD_IOEXP_INT is unused, so this
+change does not affect current system functionality.
+
+Signed-off-by: Kevin Tung <kevin.tung.openbmc@gmail.com>
+---
+ .../dts/aspeed/aspeed-bmc-facebook-yosemite5.dts   | 31 ++++++++++++++++++----
+ 1 file changed, 26 insertions(+), 5 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+index 45b8ac2e8c65a4f672e64571631b7f6944f26213..983aebc394d9159c7e3db2e7c39e963f7b64c855 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+@@ -978,7 +978,7 @@ &sgpiom0 {
+ 	"E1S_0_BD_IOEXP","",
+ 	"E1S_1_BD_IOEXP","",
+ 	/*bit88-bit95*/
+-	"PADDLE_BD_IOEXP_INT","",
++	"ALERT_IRQ_PMBUS_PWR2_N","",
+ 	"FM_BOARD_REV_ID0","",
+ 	"FM_BOARD_REV_ID1","",
+ 	"FM_BOARD_REV_ID2","",
+@@ -991,16 +991,37 @@ &sgpiom0 {
+ 	"PRSNT_BOOT_N_FF","",
+ 	"PRSNT_MCIO1A_N_FF","",
+ 	"NIC_PRSNT_N","",
+-	"","",
++	"FM_CPU_BMC_RST_N","",
+ 	"","",
+ 	"","",
+ 	"","",
+ 	/*bit104-bit111*/
+-	"","","","","","","","","","","","","","","","",
++	"MASTER_PWR_EN","",
++	"MASTER_PWR2_EN","",
++	"PRSNT_MCIO0A_E1S0_N","",
++	"","",
++	"PRSNT_MCIO0A_E1S1_N","",
++	"","",
++	"","",
++	"Fault","",
+ 	/*bit112-bit119*/
+-	"","","","","","","","","","","","","","","","",
++	"FM_CPLD_RSVD_MCIO0A_SB1","",
++	"FM_CPLD_RSVD_MCIO0A_SB2","",
++	"","",
++	"","",
++	"","",
++	"","",
++	"","",
++	"","",
+ 	/*bit120-bit127*/
+-	"","","","","","","","","","","","","","","","";
++	"","",
++	"","",
++	"","",
++	"","",
++	"","",
++	"","",
++	"","",
++	"","";
+ 	status = "okay";
+ };
+ 
+
+-- 
+2.52.0

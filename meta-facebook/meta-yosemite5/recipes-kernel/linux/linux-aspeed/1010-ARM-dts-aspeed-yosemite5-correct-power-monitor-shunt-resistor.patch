@@ -1,0 +1,79 @@
+From 47acc74f11c3398fb55bab19a215268509dca204 Mon Sep 17 00:00:00 2001
+From: Kevin Tung <kevin.tung.openbmc@gmail.com>
+Date: Fri, 19 Dec 2025 15:36:13 +0800
+Subject: [PATCH v3 5/5] ARM: dts: aspeed: yosemite5: Correct power monitor shunt resistor
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <20251219-yv5_revise_dts-v3-5-522174b34d20@gmail.com>
+
+Correct the shunt resistor value in the DTS with the hardware setting
+to ensure accurate power and current measurements.
+
+Signed-off-by: Kevin Tung <kevin.tung.openbmc@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+index 84d3731b17f7c7c87338672bbcc859de2b89b722..524597a81365ef10cd03b67d35eeb88a965cbe0a 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+@@ -415,7 +415,7 @@ power-sensor@42 {
+ 	power-monitor@43 {
+ 		compatible = "lltc,ltc4287";
+ 		reg = <0x43>;
+-		shunt-resistor-micro-ohms = <250>;
++		shunt-resistor-micro-ohms = <100>;
+ 	};
+ 
+ 	power-sensor@44 {
+@@ -461,25 +461,25 @@ eeprom@57 {
+ 	power-monitor@58 {
+ 		compatible = "renesas,isl28022";
+ 		reg = <0x58>;
+-		shunt-resistor-micro-ohms = <1000>;
++		shunt-resistor-micro-ohms = <10000>;
+ 	};
+ 
+ 	power-monitor@59 {
+ 		compatible = "renesas,isl28022";
+ 		reg = <0x59>;
+-		shunt-resistor-micro-ohms = <1000>;
++		shunt-resistor-micro-ohms = <10000>;
+ 	};
+ 
+ 	power-monitor@5a {
+ 		compatible = "renesas,isl28022";
+ 		reg = <0x5a>;
+-		shunt-resistor-micro-ohms = <1000>;
++		shunt-resistor-micro-ohms = <10000>;
+ 	};
+ 
+ 	power-monitor@5b {
+ 		compatible = "renesas,isl28022";
+ 		reg = <0x5b>;
+-		shunt-resistor-micro-ohms = <1000>;
++		shunt-resistor-micro-ohms = <10000>;
+ 	};
+ 
+ 	psu@5c {
+@@ -723,13 +723,13 @@ gpio-expander@21 {
+ 	power-sensor@40 {
+ 		compatible = "ti,ina230";
+ 		reg = <0x40>;
+-		shunt-resistor = <2000>;
++		shunt-resistor = <1000>;
+ 	};
+ 
+ 	power-sensor@41 {
+ 		compatible = "ti,ina230";
+ 		reg = <0x41>;
+-		shunt-resistor = <2000>;
++		shunt-resistor = <1000>;
+ 	};
+ 
+ 	power-sensor@42 {
+
+-- 
+2.52.0

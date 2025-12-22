@@ -1,0 +1,74 @@
+From afeaff679db335dfda2148501d5a57d665aabb78 Mon Sep 17 00:00:00 2001
+From: Kevin Tung <kevin.tung.openbmc@gmail.com>
+Date: Mon, 22 Dec 2025 19:19:17 +0800
+Subject: [PATCH] ARM: dts: aspeed: yosemite5: add x4 E1.S expansion board I2C mux
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <20251222-yv5_add_dvt_e1s_ioexp-v1-1-6e2317435ee2@gmail.com>
+X-Change-ID: 20251222-yv5_add_dvt_e1s_ioexp-14930e048043
+
+The new hardware design adds two additional E1.S devices behind an
+I2C mux at address 0x73 on bus 10. Add support for this mux in the
+DTS device tree.
+
+Signed-off-by: Kevin Tung <kevin.tung.openbmc@gmail.com>
+---
+Summary:
+Revise linux device tree entry related to Meta (Facebook) Yosemite5.
+
+Changes in v1:
+- Add x4 E1.S expansion board I2C mux
+---
+ .../dts/aspeed/aspeed-bmc-facebook-yosemite5.dts   | 23 ++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+index 2486981f3d6bd36f3fe780b21e834b85242f8aa9..87524892322c1388c146b33ac454018a31dad168 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+@@ -31,6 +31,8 @@ aliases {
+ 		i2c33 = &i2c30mux0ch1;
+ 		i2c34 = &i2c30mux0ch2;
+ 		i2c35 = &i2c30mux0ch3;
++		i2c36 = &i2c10mux0ch0;
++		i2c37 = &i2c10mux0ch1;
+ 		serial0 = &uart1;
+ 		serial2 = &uart3;
+ 		serial3 = &uart4;
+@@ -702,6 +704,27 @@ eeprom@54 {
+ 		compatible = "atmel,24c128";
+ 		reg = <0x54>;
+ 	};
++
++	/* I2C MUX on E1S x4 board */
++	i2c-mux@73 {
++		compatible = "nxp,pca9543";
++		reg = <0x73>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		i2c-mux-idle-disconnect;
++
++		i2c10mux0ch0: i2c@0 {
++			reg = <0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c10mux0ch1: i2c@1 {
++			reg = <1>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++	};
+ };
+ 
+ &i2c11 {
+
+---
+base-commit: 9448598b22c50c8a5bb77a9103e2d49f134c9578
+change-id: 20251222-yv5_add_dvt_e1s_ioexp-14930e048043
+
+Best regards,
+-- 
+Kevin Tung <kevin.tung.openbmc@gmail.com>

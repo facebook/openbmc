@@ -43,6 +43,7 @@ var compatibleVersionMapping = map[string]string{
 	"kodiak":     "sandia",
 	"minipack3n": "acctonbmc",
 	"minipack3ba": "acctonbmc",
+	"icecube800bc": "celesticabmc",
 }
 
 var normalizeVersion = func(ver string) string {

@@ -162,6 +162,12 @@ func TestGetNormalizedBuildNameFromVersion(t *testing.T) {
 			wantErr: nil,
 		},
 		{
+			name:    "normalization test (icecube800bc)",
+			ver:     "icecube800bc-v2019.43.1",
+			want:    "celesticabmc",
+			wantErr: nil,
+		},
+		{
 			name:    "ancient example",
 			ver:     "unknown-v52.4",
 			want:    "unknown",
@@ -176,7 +182,7 @@ func TestGetNormalizedBuildNameFromVersion(t *testing.T) {
 		},
 	}
 
-	compatibleVersionMapping = map[string]string{"fby2-gpv2": "fbgp2", "minipack3n": "acctonbmc"}
+	compatibleVersionMapping = map[string]string{"fby2-gpv2": "fbgp2", "minipack3n": "acctonbmc", "icecube800bc": "celesticabmc"}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := getNormalizedBuildNameFromVersion(tc.ver)

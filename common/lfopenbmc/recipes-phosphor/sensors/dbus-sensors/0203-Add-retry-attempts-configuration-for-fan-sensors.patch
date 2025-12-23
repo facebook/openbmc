@@ -1,4 +1,4 @@
-From 06b91e9874398ecd45b6f665cafef0f55a0342dc Mon Sep 17 00:00:00 2001
+From 1a16a5db70f8fcff58b59cfbe737e9416858db30 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Wed, 26 Mar 2025 18:49:46 +0800
 Subject: [PATCH 203/203] Add retry attempts configuration for fan sensors
@@ -61,5 +61,5 @@ index b946f56..142d431 100644
          };
  
 -- 
-2.47.3
+2.43.0
 

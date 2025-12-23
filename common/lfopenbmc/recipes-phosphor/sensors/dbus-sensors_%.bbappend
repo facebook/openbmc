@@ -16,11 +16,9 @@ SRC_URI:append = " \
     file://0013-leakdetector-check-event-before-event_read.patch \
     file://0014-Add-delay-before-leak-event-log-to-prevent-AC-OFF-gl.patch \
     file://0015-PSUSensor-add-property-to-sensorTable-and-labelMatch.patch \
-    file://0016-Add-sensor-reading-events.patch \
-    file://0017-PSUSensor-add-support-for-mp2925-and-mp2929.patch \
-    file://0018-NVMeBasicContext-Parsing-and-applying-SMBus-PEC.patch \
-    file://0019-hwmontemp-Remove-newly-created-sensor-from-sensorsCh.patch \
-    file://0020-Ignore-smbpbi-sensor-event-report.patch \
+    file://0016-PSUSensor-add-support-for-mp2925-and-mp2929.patch \
+    file://0017-NVMeBasicContext-Parsing-and-applying-SMBus-PEC.patch \
+    file://0018-hwmontemp-Remove-newly-created-sensor-from-sensorsCh.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \

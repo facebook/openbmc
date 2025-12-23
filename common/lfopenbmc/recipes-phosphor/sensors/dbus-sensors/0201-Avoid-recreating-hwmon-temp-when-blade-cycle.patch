@@ -1,4 +1,4 @@
-From 0996a5481f0e548be6b672d7048c76bd74c4e6dc Mon Sep 17 00:00:00 2001
+From e3c2b7cdd5409927554033edde25c07d16a33a99 Mon Sep 17 00:00:00 2001
 From: MandyMCHung <mandy.hung.wiwynn@gmail.com>
 Date: Mon, 3 Mar 2025 10:39:31 +0800
 Subject: [PATCH 201/203] Avoid recreating hwmon temp when blade cycle
@@ -129,5 +129,5 @@ index 8df4d6f..9555a2b 100644
      input: 'dbus-sensor_config.h.in',
      output: 'dbus-sensor_config.h',
 -- 
-2.47.3
+2.43.0
 

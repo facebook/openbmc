@@ -1,0 +1,40 @@
+From 697490d803d760d85fb6f8c75d0bbad3b484df56 Mon Sep 17 00:00:00 2001
+From: Cosmo Chou <chou.cosmo@gmail.com>
+Date: Wed, 17 Dec 2025 10:39:38 +0800
+Subject: [PATCH 1005/1006] ARM: dts: aspeed: bletchley: Fix ADC vref property
+ names
+
+Replace non-functional 'vref' with 'aspeed,int-vref-microvolt'
+using the default 2.5V that the driver was already applying.
+
+Signed-off-by: Cosmo Chou <chou.cosmo@gmail.com>
+Signed-off-by: Andrew Jeffery <andrew@codeconstruct.com.au>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
+index 123e2d1891f6..7c27bf6bb51d 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
+@@ -1032,7 +1032,7 @@ &gpio0 {
+ };
+ 
+ &adc0 {
+-	vref = <1800>;
++	aspeed,int-vref-microvolt = <2500000>;
+ 	status = "okay";
+ 
+ 	pinctrl-names = "default";
+@@ -1043,7 +1043,7 @@ &pinctrl_adc4_default &pinctrl_adc5_default
+ };
+ 
+ &adc1 {
+-	vref = <2500>;
++	aspeed,int-vref-microvolt = <2500000>;
+ 	status = "okay";
+ 
+ 	pinctrl-names = "default";
+-- 
+2.43.0
+

@@ -1,22 +1,29 @@
-From e065ca8a1962ac62c50d7292df534bd9b1ee25b4 Mon Sep 17 00:00:00 2001
+From 2abdd345dbbc50d8a9ead25feb4f31437f48c637 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
-Date: Thu, 16 Oct 2025 10:00:52 +0800
-Subject: [PATCH 1002/1002] ARM: dts: aspeed: bletchley: remove WDTRST1
+Date: Sat, 18 Oct 2025 12:33:09 +0800
+Subject: [PATCH 1000/1006] ARM: dts: aspeed: bletchley: remove WDTRST1
  assertion from wdt1
 
 Remove the external signal configuration from wdt1 to prevent the
 WDTRST1 pin from being asserted during watchdog resets.
 
+The WDTRST1 pin was originally configured to reset the TPM during
+watchdog events. However, the pin is incorrectly routed to SRST#
+on the hardware, causing unintended system resets. Since the TPM
+is not currently utilized on this platform, remove the external
+signal configuration to avoid the incorrect reset behavior.
+
 Signed-off-by: Cosmo Chou <chou.cosmo@gmail.com>
+Signed-off-by: Andrew Jeffery <andrew@codeconstruct.com.au>
 ---
  arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts | 6 ------
  1 file changed, 6 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
-index db3227424..74b0a0a0b 100644
+index 24969c82d05e..abdb1562115a 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
-@@ -1100,13 +1100,7 @@ pinctrl_gpiov2_unbiased_default: gpiov2 {
+@@ -1080,11 +1080,5 @@ pinctrl_gpiov2_unbiased_default: gpiov2 {
  
  &wdt1 {
  	status = "okay";
@@ -28,8 +35,6 @@ index db3227424..74b0a0a0b 100644
 -	aspeed,ext-active-high;
 -	aspeed,ext-pulse-duration = <256>;
  };
- 
- &pwm_tach {
 -- 
 2.43.0
 

@@ -1,0 +1,76 @@
+From ccf367c11a45199c8afc8ef62722ac03fa864fe9 Mon Sep 17 00:00:00 2001
+From: Cosmo Chou <chou.cosmo@gmail.com>
+Date: Wed, 17 Dec 2025 10:39:36 +0800
+Subject: [PATCH 1003/1006] ARM: dts: aspeed: bletchley: Remove unused pca9539
+ properties
+
+Remove unused #address-cells and #size-cells properties from
+pca9539 nodes to fix dt-schema warnings.
+
+Signed-off-by: Cosmo Chou <chou.cosmo@gmail.com>
+Signed-off-by: Andrew Jeffery <andrew@codeconstruct.com.au>
+---
+ .../dts/aspeed/aspeed-bmc-facebook-bletchley.dts     | 12 ------------
+ 1 file changed, 12 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
+index 5919a5046078..8df145d2bcfd 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
+@@ -373,8 +373,6 @@ sled1_ioexp41: pca9536@41 {
+ 	sled1_ioexp: pca9539@76 {
+ 		compatible = "nxp,pca9539";
+ 		reg = <0x76>;
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
+ 
+@@ -462,8 +460,6 @@ sled2_ioexp41: pca9536@41 {
+ 	sled2_ioexp: pca9539@76 {
+ 		compatible = "nxp,pca9539";
+ 		reg = <0x76>;
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
+ 
+@@ -551,8 +547,6 @@ sled3_ioexp41: pca9536@41 {
+ 	sled3_ioexp: pca9539@76 {
+ 		compatible = "nxp,pca9539";
+ 		reg = <0x76>;
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
+ 
+@@ -640,8 +634,6 @@ sled4_ioexp41: pca9536@41 {
+ 	sled4_ioexp: pca9539@76 {
+ 		compatible = "nxp,pca9539";
+ 		reg = <0x76>;
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
+ 
+@@ -729,8 +721,6 @@ sled5_ioexp41: pca9536@41 {
+ 	sled5_ioexp: pca9539@76 {
+ 		compatible = "nxp,pca9539";
+ 		reg = <0x76>;
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
+ 
+@@ -818,8 +808,6 @@ sled6_ioexp41: pca9536@41 {
+ 	sled6_ioexp: pca9539@76 {
+ 		compatible = "nxp,pca9539";
+ 		reg = <0x76>;
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
+ 
+-- 
+2.43.0
+

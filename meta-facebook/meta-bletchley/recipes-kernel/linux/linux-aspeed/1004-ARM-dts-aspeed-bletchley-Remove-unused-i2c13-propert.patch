@@ -1,0 +1,30 @@
+From 84b1fe08bfeaff76420fb3e5f31dfd7c54856c3a Mon Sep 17 00:00:00 2001
+From: Cosmo Chou <chou.cosmo@gmail.com>
+Date: Wed, 17 Dec 2025 10:39:37 +0800
+Subject: [PATCH 1004/1006] ARM: dts: aspeed: bletchley: Remove unused i2c13
+ property
+
+Remove 'aspeed,hw-timeout-ms' property which is not supported by
+the driver and causes dt-schema warnings.
+
+Signed-off-by: Cosmo Chou <chou.cosmo@gmail.com>
+Signed-off-by: Andrew Jeffery <andrew@codeconstruct.com.au>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
+index 8df145d2bcfd..123e2d1891f6 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
+@@ -962,7 +962,6 @@ fan_leds: pca9552@67 {
+ 
+ &i2c13 {
+ 	multi-master;
+-	aspeed,hw-timeout-ms = <1000>;
+ 	status = "okay";
+ 
+ 	//USB Debug Connector
+-- 
+2.43.0
+

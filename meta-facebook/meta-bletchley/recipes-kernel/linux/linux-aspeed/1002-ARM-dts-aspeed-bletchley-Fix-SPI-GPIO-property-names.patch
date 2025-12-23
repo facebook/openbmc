@@ -1,0 +1,37 @@
+From d7a199b8251543cdcdd9251d9cceebe7a8316626 Mon Sep 17 00:00:00 2001
+From: Cosmo Chou <chou.cosmo@gmail.com>
+Date: Wed, 17 Dec 2025 10:39:35 +0800
+Subject: [PATCH 1002/1006] ARM: dts: aspeed: bletchley: Fix SPI GPIO property
+ names
+
+Update SPI GPIO properties to use "-gpios" suffix:
+- gpio-sck -> sck-gpios
+- gpio-mosi -> mosi-gpios
+- gpio-miso -> miso-gpios
+
+Signed-off-by: Cosmo Chou <chou.cosmo@gmail.com>
+Signed-off-by: Andrew Jeffery <andrew@codeconstruct.com.au>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
+index 9cb01381e482..5919a5046078 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
+@@ -39,9 +39,9 @@ spi1_gpio: spi {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 
+-		gpio-sck = <&gpio0 ASPEED_GPIO(Z, 3) GPIO_ACTIVE_HIGH>;
+-		gpio-mosi = <&gpio0 ASPEED_GPIO(Z, 4) GPIO_ACTIVE_HIGH>;
+-		gpio-miso = <&gpio0 ASPEED_GPIO(Z, 5) GPIO_ACTIVE_HIGH>;
++		sck-gpios = <&gpio0 ASPEED_GPIO(Z, 3) GPIO_ACTIVE_HIGH>;
++		mosi-gpios = <&gpio0 ASPEED_GPIO(Z, 4) GPIO_ACTIVE_HIGH>;
++		miso-gpios = <&gpio0 ASPEED_GPIO(Z, 5) GPIO_ACTIVE_HIGH>;
+ 		num-chipselects = <1>;
+ 		cs-gpios = <&gpio0 ASPEED_GPIO(Z, 0) GPIO_ACTIVE_LOW>;
+ 
+-- 
+2.43.0
+

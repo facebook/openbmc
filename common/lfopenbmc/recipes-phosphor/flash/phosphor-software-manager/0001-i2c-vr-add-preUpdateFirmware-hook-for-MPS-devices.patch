@@ -1,0 +1,99 @@
+From 867d9955dd60b563b7a28ffcf6e9cdf592e3bde9 Mon Sep 17 00:00:00 2001
+From: cchoux <cosmo.chou@quantatw.com>
+Date: Fri, 14 Nov 2025 00:24:03 +0800
+Subject: [PATCH] i2c-vr: add preUpdateFirmware hook for MPS devices
+
+Add a preUpdateFirmware() virtual function to support device-specific
+preparations before firmware updates. The base VoltageRegulator class
+provides a default no-op implementation.
+
+MPS devices override this to add a 1000ms delay, allowing psusensor
+time to detect the firmware update signal and pause sensor polling,
+preventing PMBus command conflicts during firmware updates [1].
+
+[1] https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/83968
+
+Change-Id: I43736227388e869aa40d1d8aa592ba920de7680e
+Signed-off-by: Cosmo Chou <cosmo.chou@quantatw.com>
+---
+ i2c-vr/i2cvr_device.cpp | 7 +++++++
+ i2c-vr/mps/mps.cpp      | 8 ++++++++
+ i2c-vr/mps/mps.hpp      | 6 ++++++
+ i2c-vr/vr.hpp           | 7 +++++++
+ 4 files changed, 28 insertions(+)
+
+diff --git a/i2c-vr/i2cvr_device.cpp b/i2c-vr/i2cvr_device.cpp
+index b9242cc..acc6dec 100644
+--- a/i2c-vr/i2cvr_device.cpp
++++ b/i2c-vr/i2cvr_device.cpp
+@@ -19,6 +19,13 @@ sdbusplus::async::task<bool> I2CVRDevice::updateDevice(const uint8_t* image,
+         co_return false;
+     }
+ 
++    setUpdateProgress(40);
++
++    if (!(co_await vrInterface->preUpdateFirmware()))
++    {
++        co_return false;
++    }
++
+     setUpdateProgress(50);
+ 
+     // NOLINTBEGIN(clang-analyzer-core.uninitialized.Branch)
+diff --git a/i2c-vr/mps/mps.cpp b/i2c-vr/mps/mps.cpp
+index a82d5a6..861ae10 100644
+--- a/i2c-vr/mps/mps.cpp
++++ b/i2c-vr/mps/mps.cpp
+@@ -183,6 +183,14 @@ sdbusplus::async::task<bool> MPSVoltageRegulator::parseImage(
+     co_return true;
+ }
+ 
++sdbusplus::async::task<bool> MPSVoltageRegulator::preUpdateFirmware()
++{
++    // Wait for psusensor to detect firmware update signal and pause sensor
++    // polling to avoid PMBus command conflicts.
++    co_await sdbusplus::async::sleep_for(ctx, std::chrono::milliseconds(1000));
++    co_return true;
++}
++
+ std::map<uint8_t, std::vector<MPSData>>
+     MPSVoltageRegulator::getGroupedConfigData(uint8_t configMask, uint8_t shift)
+ {
+diff --git a/i2c-vr/mps/mps.hpp b/i2c-vr/mps/mps.hpp
+index 07cac2b..81e1036 100644
+--- a/i2c-vr/mps/mps.hpp
++++ b/i2c-vr/mps/mps.hpp
+@@ -300,6 +300,12 @@ class MPSVoltageRegulator : public VoltageRegulator
+         const uint8_t* image, size_t imageSize,
+         MPSImageType imageType = MPSImageType::typeUnknown);
+ 
++    /**
++     * @brief Performs MPS-specific preparations before firmware update.
++     * @return async task returning true if preparation succeeds
++     */
++    sdbusplus::async::task<bool> preUpdateFirmware() override;
++
+     /**
+      * @brief Group register data by page, optionally masked and shifted.
+      * @param configMask Bitmask to select relevant page bits (default 0xFF)
+diff --git a/i2c-vr/vr.hpp b/i2c-vr/vr.hpp
+index 3c08304..56a131d 100644
+--- a/i2c-vr/vr.hpp
++++ b/i2c-vr/vr.hpp
+@@ -40,6 +40,13 @@ class VoltageRegulator
+     virtual sdbusplus::async::task<bool> verifyImage(const uint8_t* image,
+                                                      size_t imageSize) = 0;
+ 
++    // @brief Performs device-specific preparations before update.
++    // @return sdbusplus::async::task<bool> true indicates success.
++    virtual sdbusplus::async::task<bool> preUpdateFirmware()
++    {
++        co_return true;
++    }
++
+     // @brief Applies update to the voltage regulator
+     // @return sdbusplus::async::task<bool> true indicates success.
+     virtual sdbusplus::async::task<bool> updateFirmware(bool force) = 0;
+-- 
+2.52.0
+

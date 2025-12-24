@@ -19,6 +19,7 @@ SRC_URI:append = " \
     file://0016-PSUSensor-add-support-for-mp2925-and-mp2929.patch \
     file://0017-NVMeBasicContext-Parsing-and-applying-SMBus-PEC.patch \
     file://0018-hwmontemp-Remove-newly-created-sensor-from-sensorsCh.patch \
+    file://0021-psusensor-skip-sensor-reads-during-firmware-updates.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \

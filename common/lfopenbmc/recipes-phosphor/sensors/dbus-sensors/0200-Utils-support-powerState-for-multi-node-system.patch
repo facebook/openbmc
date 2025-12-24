@@ -1,11 +1,11 @@
-From 8d73d02a170aa42e4c3c197cab07d0b2f3bac56c Mon Sep 17 00:00:00 2001
+From 059d7afc55dfbfd257504faf7d4d8dda611e7f08 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH 200/203] Utils: support powerState for multi-node system
 
 The current code of dbus-sensors only get powerState values for Chassis0
 and Host0 which cannot be used for the system with multiple server
-nodes.
+nodes. 
 
 This commit add "slotId" in Sensor class to indicate the index of
 server. When setupPowerMatchCallback is called, code will call
@@ -902,7 +902,7 @@ index 738efe1..724732c 100644
          }
      }
 diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
-index 7f17bf2..c5750e6 100644
+index f2d80e8..747c3f6 100644
 --- a/src/psu/PSUSensor.cpp
 +++ b/src/psu/PSUSensor.cpp
 @@ -53,14 +53,14 @@ PSUSensor::PSUSensor(
@@ -924,7 +924,7 @@ index 7f17bf2..c5750e6 100644
      buffer = std::make_shared<std::array<char, 128>>();
      std::string unitPath = sensor_paths::getPathForUnits(sensorUnits);
 diff --git a/src/psu/PSUSensor.hpp b/src/psu/PSUSensor.hpp
-index e679dc2..e66f68c 100644
+index f01ba69..1713e0e 100644
 --- a/src/psu/PSUSensor.hpp
 +++ b/src/psu/PSUSensor.hpp
 @@ -97,7 +97,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
@@ -936,7 +936,7 @@ index e679dc2..e66f68c 100644
      ~PSUSensor() override;
      void setupRead();
      void activate(const std::string& newPath,
-@@ -135,6 +135,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+@@ -137,6 +137,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
      static constexpr double defaultSensorPoll = 1.0;
      static constexpr unsigned int defaultSensorPollMs =
          static_cast<unsigned int>(defaultSensorPoll * 1000);
@@ -944,7 +944,7 @@ index e679dc2..e66f68c 100644
  };
  
  class PSUProperty
-@@ -142,8 +143,9 @@ class PSUProperty
+@@ -144,8 +145,9 @@ class PSUProperty
    public:
      PSUProperty(std::string name, double max, double min, double factor,
                  double offset) :
@@ -957,10 +957,10 @@ index e679dc2..e66f68c 100644
      ~PSUProperty() = default;
  
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 981d0cc..6283d41 100644
+index 6aa757a..851192d 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -617,6 +617,7 @@ static void createSensorsCallback(
+@@ -775,6 +775,7 @@ static void createSensorsCallback(
          checkGroupEvent(directory.string(), groupEventPathList);
  
          PowerState readState = getPowerState(*baseConfig);
@@ -968,16 +968,16 @@ index 981d0cc..6283d41 100644
  
          /* Check if there are more sensors in the same interface */
          int i = 1;
-@@ -1068,7 +1069,7 @@ static void createSensorsCallback(
+@@ -1240,7 +1241,7 @@ static void createSensorsCallback(
                      readState, findSensorUnit->second, factor,
                      psuProperty.maxReading, psuProperty.minReading,
                      psuProperty.sensorOffset, labelHead, thresholdConfSize,
 -                    pollRate, i2cDev, std::move(bridgeGpio));
 +                    pollRate, i2cDev, std::move(bridgeGpio), readSlot);
-                 sensors[sensorName]->setupRead();
-                 ++numCreated;
-                 lg2::debug("Created '{NUM}' sensors so far", "NUM", numCreated);
-@@ -1243,7 +1244,11 @@ static void powerStateChanged(
+ 
+                 if (fwName != nullptr)
+                 {
+@@ -1429,7 +1430,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {

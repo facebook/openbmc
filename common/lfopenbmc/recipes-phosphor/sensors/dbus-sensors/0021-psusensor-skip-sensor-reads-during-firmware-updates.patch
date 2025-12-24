@@ -1,0 +1,497 @@
+From d3f0a7c113be60a801712e9be46e09371d888a43 Mon Sep 17 00:00:00 2001
+From: cchoux <cosmo.chou@quantatw.com>
+Date: Wed, 24 Sep 2025 11:35:31 +0800
+Subject: [PATCH] psusensor: skip sensor reads during firmware updates
+
+During a VR firmware update, both the update process and sensor
+monitoring may issue conflicting PMBus commands, such as the PAGE
+command. This creates a race condition that can lead to unpredictable
+behavior, update failures, or invalid sensor readings.
+
+This commit introduces a mechanism to pause sensor reads during a
+relevant firmware update:
+- It defines a lookup table of supported firmware types (e.g.,
+  MP2X6XXFirmware, MP297XFirmware, MP5998Firmware) that correspond
+  to configurations used by xyz.openbmc_project.Software.I2CVR.
+- During initialization, it scans entity-manager for these existing
+  firmware configurations and builds a mapping from I2C devices
+  (bus/address) to firmware object names.
+- It monitors D-Bus for firmware activation signals on paths under
+  /xyz/openbmc_project/software.
+- When an update starts, monitoring for all associated sensors and
+  PSU events is paused and then resumed upon completion.
+
+When a sensor is created, if its I2C device (bus/address) matches a
+firmware configuration in entity-manager, it's automatically associated
+with that firmware object. This allows sensors to be paused during
+their corresponding firmware updates without requiring additional
+configuration.
+
+Tested:
+1. Verified psusensor read values correctly during normal operation.
+2. Initiated a firmware update on the target VR device.
+3. Verified sensor monitoring was paused during the update, and the
+   firmware update completed successfully without PMBus conflicts.
+4. Verified sensor monitoring resumed automatically after completion
+   and that new sensor values were being read.
+
+Change-Id: I306506dd0c6e1068dea6fc7afa53d129b1952204
+Signed-off-by: Cosmo Chou <cosmo.chou@quantatw.com>
+---
+ src/psu/PSUEvent.cpp      |  24 ++++-
+ src/psu/PSUEvent.hpp      |  10 +-
+ src/psu/PSUSensor.cpp     |   7 +-
+ src/psu/PSUSensor.hpp     |   2 +
+ src/psu/PSUSensorMain.cpp | 205 +++++++++++++++++++++++++++++++++++++-
+ 5 files changed, 237 insertions(+), 11 deletions(-)
+
+diff --git a/src/psu/PSUEvent.cpp b/src/psu/PSUEvent.cpp
+index bc04523..8fc7035 100644
+--- a/src/psu/PSUEvent.cpp
++++ b/src/psu/PSUEvent.cpp
+@@ -44,7 +44,8 @@ PSUCombineEvent::PSUCombineEvent(
+     boost::asio::io_context& io, const std::string& psuName,
+     const PowerState& powerState, EventPathList& eventPathList,
+     GroupEventPathList& groupEventPathList, const std::string& combineEventName,
+-    double pollRate) : objServer(objectServer)
++    double pollRate, bool skipRead) :
++    objServer(objectServer), skipReading(skipRead)
+ {
+     std::string psuNameEscaped = sensor_paths::escapePathForDbus(psuName);
+     eventInterface = objServer.add_interface(
+@@ -71,7 +72,8 @@ PSUCombineEvent::PSUCombineEvent(
+         {
+             auto p = std::make_shared<PSUSubEvent>(
+                 eventInterface, path, conn, io, powerState, eventName,
+-                eventName, assert, combineEvent, state, psuName, pollRate);
++                eventName, assert, combineEvent, state, psuName, pollRate,
++                skipReading);
+             p->setupRead();
+ 
+             events[eventPSUName].emplace_back(p);
+@@ -93,7 +95,8 @@ PSUCombineEvent::PSUCombineEvent(
+             {
+                 auto p = std::make_shared<PSUSubEvent>(
+                     eventInterface, path, conn, io, powerState, groupEventName,
+-                    eventName, assert, combineEvent, state, psuName, pollRate);
++                    eventName, assert, combineEvent, state, psuName, pollRate,
++                    skipReading);
+                 p->setupRead();
+                 events[eventPSUName].emplace_back(p);
+ 
+@@ -118,6 +121,11 @@ PSUCombineEvent::~PSUCombineEvent()
+     objServer.remove_interface(eventInterface);
+ }
+ 
++void PSUCombineEvent::setSkipRead(bool skip)
++{
++    skipReading = skip;
++}
++
+ static boost::container::flat_map<std::string,
+                                   std::pair<std::string, std::string>>
+     logID = {
+@@ -143,13 +151,14 @@ PSUSubEvent::PSUSubEvent(
+     const std::string& groupEventName, const std::string& eventName,
+     std::shared_ptr<std::set<std::string>> asserts,
+     std::shared_ptr<std::set<std::string>> combineEvent,
+-    std::shared_ptr<bool> state, const std::string& psuName, double pollRate) :
++    std::shared_ptr<bool> state, const std::string& psuName, double pollRate,
++    bool& skipReading) :
+     eventInterface(std::move(eventInterface)), asserts(std::move(asserts)),
+     combineEvent(std::move(combineEvent)), assertState(std::move(state)),
+     path(path), eventName(eventName), readState(powerState),
+     inputDev(io, path, boost::asio::random_access_file::read_only),
+     waitTimer(io), psuName(psuName), groupEventName(groupEventName),
+-    systemBus(conn)
++    systemBus(conn), skipReading(skipReading)
+ {
+     buffer = std::make_shared<std::array<char, 128>>();
+     if (pollRate > 0.0)
+@@ -196,6 +205,11 @@ void PSUSubEvent::setupRead()
+         restartRead();
+         return;
+     }
++    if (skipReading)
++    {
++        restartRead();
++        return;
++    }
+     if (!buffer)
+     {
+         lg2::error("Buffer was invalid?");
+diff --git a/src/psu/PSUEvent.hpp b/src/psu/PSUEvent.hpp
+index 9e17701..7bb0c9f 100644
+--- a/src/psu/PSUEvent.hpp
++++ b/src/psu/PSUEvent.hpp
+@@ -48,7 +48,7 @@ class PSUSubEvent : public std::enable_shared_from_this<PSUSubEvent>
+                 std::shared_ptr<std::set<std::string>> asserts,
+                 std::shared_ptr<std::set<std::string>> combineEvent,
+                 std::shared_ptr<bool> state, const std::string& psuName,
+-                double pollRate);
++                double pollRate, bool& skipReading);
+     ~PSUSubEvent();
+ 
+     std::shared_ptr<sdbusplus::asio::dbus_interface> eventInterface;
+@@ -78,6 +78,7 @@ class PSUSubEvent : public std::enable_shared_from_this<PSUSubEvent>
+     std::string deassertMessage;
+     std::shared_ptr<sdbusplus::asio::connection> systemBus;
+     unsigned int eventPollMs = defaultEventPollMs;
++    bool& skipReading;
+     static constexpr unsigned int defaultEventPollMs = 1000;
+     static constexpr size_t warnAfterErrorCount = 10;
+ };
+@@ -90,8 +91,10 @@ class PSUCombineEvent
+                     boost::asio::io_context& io, const std::string& psuName,
+                     const PowerState& powerState, EventPathList& eventPathList,
+                     GroupEventPathList& groupEventPathList,
+-                    const std::string& combineEventName, double pollRate);
++                    const std::string& combineEventName, double pollRate,
++                    bool skipRead);
+     ~PSUCombineEvent();
++    void setSkipRead(bool skip);
+ 
+     sdbusplus::asio::object_server& objServer;
+     std::shared_ptr<sdbusplus::asio::dbus_interface> eventInterface;
+@@ -100,4 +103,7 @@ class PSUCombineEvent
+         events;
+     std::vector<std::shared_ptr<std::set<std::string>>> asserts;
+     std::vector<std::shared_ptr<bool>> states;
++
++  private:
++    bool skipReading;
+ };
+diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
+index 7f17bf2..f2d80e8 100644
+--- a/src/psu/PSUSensor.cpp
++++ b/src/psu/PSUSensor.cpp
+@@ -147,9 +147,14 @@ void PSUSensor::deactivate()
+     path = "";
+ }
+ 
++void PSUSensor::setSkipRead(bool skip)
++{
++    skipReading = skip;
++}
++
+ void PSUSensor::setupRead()
+ {
+-    if (!readingStateGood())
++    if (!readingStateGood() || skipReading)
+     {
+         markAvailable(false);
+         updateValue(std::numeric_limits<double>::quiet_NaN());
+diff --git a/src/psu/PSUSensor.hpp b/src/psu/PSUSensor.hpp
+index e679dc2..f01ba69 100644
+--- a/src/psu/PSUSensor.hpp
++++ b/src/psu/PSUSensor.hpp
+@@ -104,6 +104,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+                   const std::shared_ptr<I2CDevice>& newI2CDevice);
+     void deactivate();
+     bool isActive();
++    void setSkipRead(bool skip);
+ 
+     std::shared_ptr<I2CDevice> getI2CDevice() const
+     {
+@@ -128,6 +129,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+     void handleResponse(const boost::system::error_code& err, size_t bytesRead);
+     void checkThresholds() override;
+     unsigned int sensorPollMs = defaultSensorPollMs;
++    bool skipReading{false};
+ 
+     static constexpr size_t warnAfterErrorCount = 10;
+ 
+diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
+index 7db25fe..6aa757a 100644
+--- a/src/psu/PSUSensorMain.cpp
++++ b/src/psu/PSUSensorMain.cpp
+@@ -59,6 +59,7 @@
+ #include <stdexcept>
+ #include <string>
+ #include <string_view>
++#include <unordered_set>
+ #include <utility>
+ #include <variant>
+ #include <vector>
+@@ -172,6 +173,21 @@ struct DevParams
+     std::string nameRegEx;
+ };
+ 
++struct FwUpdateEntry
++{
++    std::unordered_set<std::string> sensorNames;
++    std::string psuName;
++    bool activating = false;
++};
++
++static constexpr auto firmwareTypes = std::to_array<const char*>({
++    "MP2X6XXFirmware",
++    "MP292XFirmware",
++    "MP297XFirmware",
++    "MP5998Firmware",
++    "MP994XFirmware",
++});
++
+ static boost::container::flat_map<std::string, std::shared_ptr<PSUSensor>>
+     sensors;
+ static boost::container::flat_map<std::string, std::unique_ptr<PSUCombineEvent>>
+@@ -186,6 +202,18 @@ static EventPathList limitEventMatch;
+ static boost::container::flat_map<size_t, bool> cpuPresence;
+ static boost::container::flat_map<DevTypes, DevParams> devParamMap;
+ 
++static boost::container::flat_map<std::string, FwUpdateEntry>
++    firmwareUpdateStates;
++
++namespace i2c_vr
++{
++const static constexpr char* busname = "xyz.openbmc_project.Software.I2CVR";
++const static constexpr char* interface =
++    "xyz.openbmc_project.Software.Activation";
++const static constexpr char* path = "/xyz/openbmc_project/software";
++const static constexpr char* property = "Activation";
++} // namespace i2c_vr
++
+ // Function CheckEvent will check each attribute from eventMatch table in the
+ // sysfs. If the attributes exists in sysfs, then store the complete path
+ // of the attribute into eventPathList.
+@@ -335,6 +363,101 @@ static void checkPWMSensor(
+         name, pwmPathStr, dbusConnection, objectServer, objPath, "PSU");
+ }
+ 
++static void handleFirmwareUpdate(const std::string& path, bool activating)
++{
++    std::filesystem::path fwPath(path);
++    std::regex fwRegex("_[0-9]+$");
++    std::string fwName =
++        std::regex_replace(fwPath.filename().string(), fwRegex, "");
++    auto& fwUpdateState = firmwareUpdateStates[fwName];
++    if (fwUpdateState.activating == activating)
++    {
++        return;
++    }
++    fwUpdateState.activating = activating;
++
++    for (const auto& sensorName : fwUpdateState.sensorNames)
++    {
++        auto sensorIt = sensors.find(sensorName);
++        if (sensorIt != sensors.end() && sensorIt->second != nullptr)
++        {
++            sensorIt->second->setSkipRead(activating);
++        }
++    }
++
++    if (!fwUpdateState.psuName.empty())
++    {
++        auto eventIt =
++            combineEvents.find(fwUpdateState.psuName + "OperationalStatus");
++        if (eventIt != combineEvents.end() && eventIt->second != nullptr)
++        {
++            eventIt->second->setSkipRead(activating);
++        }
++    }
++}
++
++void setupFirmwareUpdateMatch(
++    const std::shared_ptr<sdbusplus::asio::connection>& conn,
++    std::vector<std::unique_ptr<sdbusplus::bus::match_t>>& matches)
++{
++    matches.emplace_back(std::make_unique<sdbusplus::bus::match_t>(
++        static_cast<sdbusplus::bus_t&>(*conn),
++        "type='signal',member='PropertiesChanged',interface='" +
++            std::string(properties::interface) + "',path_namespace='" +
++            std::string(i2c_vr::path) + "',arg0='" +
++            std::string(i2c_vr::interface) + "',sender='" +
++            std::string(i2c_vr::busname) + "'",
++        [](sdbusplus::message_t& message) {
++            std::string objectName;
++            boost::container::flat_map<std::string, std::variant<std::string>>
++                values;
++            message.read(objectName, values);
++            auto findActivation = values.find(i2c_vr::property);
++            if (findActivation != values.end())
++            {
++                bool status = std::get<std::string>(findActivation->second)
++                                  .ends_with(".Activating");
++                handleFirmwareUpdate(message.get_path(), status);
++            }
++        }));
++}
++
++void checkInitialFwUpdateState(
++    const std::shared_ptr<sdbusplus::asio::connection>& conn)
++{
++    ManagedObjectType fwObjects;
++    try
++    {
++        auto getObjects = conn->new_method_call(
++            i2c_vr::busname, i2c_vr::path, "org.freedesktop.DBus.ObjectManager",
++            "GetManagedObjects");
++        auto resp = conn->call(getObjects);
++        resp.read(fwObjects);
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        lg2::error("Error getting firmware objects: '{ERROR_MESSAGE}'",
++                   "ERROR_MESSAGE", e.what());
++        return;
++    }
++
++    for (const auto& [path, interfaces] : fwObjects)
++    {
++        auto it = interfaces.find(i2c_vr::interface);
++        if (it == interfaces.end())
++        {
++            continue;
++        }
++        auto findActivation = it->second.find(i2c_vr::property);
++        if (findActivation != it->second.end())
++        {
++            bool status = std::get<std::string>(findActivation->second)
++                              .ends_with(".Activating");
++            handleFirmwareUpdate(path.str, status);
++        }
++    }
++}
++
+ std::optional<BridgeGpio> parseBridgeGpioFromConfig(
+     const SensorData& sensorData, const std::string* label)
+ {
+@@ -403,6 +526,41 @@ static void createSensorsCallback(
+ 
+     auto devices = instantiateDevices(sensorConfigs, sensors, sensorTypes);
+ 
++    boost::container::flat_map<std::pair<uint64_t, uint64_t>, std::string>
++        devToFwName;
++    for (const auto& [path, cfgData] : sensorConfigs)
++    {
++        for (const auto& type : firmwareTypes)
++        {
++            auto fwBase = cfgData.find(configInterfaceName(type));
++            if (fwBase != cfgData.end())
++            {
++                const auto& fwProperties = fwBase->second;
++                auto busProp = fwProperties.find("Bus");
++                auto addrProp = fwProperties.find("Address");
++                auto nameProp = fwProperties.find("Name");
++                if (busProp == fwProperties.end() ||
++                    addrProp == fwProperties.end() ||
++                    nameProp == fwProperties.end())
++                {
++                    break;
++                }
++
++                const uint64_t* fwBus = std::get_if<uint64_t>(&busProp->second);
++                const uint64_t* fwAddr =
++                    std::get_if<uint64_t>(&addrProp->second);
++                const std::string* fwNameStr =
++                    std::get_if<std::string>(&nameProp->second);
++                if (fwBus != nullptr && fwAddr != nullptr &&
++                    fwNameStr != nullptr)
++                {
++                    devToFwName[{*fwBus, *fwAddr}] = *fwNameStr;
++                }
++                break;
++            }
++        }
++    }
++
+     std::vector<std::filesystem::path> pmbusPaths;
+     findFiles(std::filesystem::path("/sys/bus/iio/devices"), "name",
+               pmbusPaths);
+@@ -629,6 +787,20 @@ static void createSensorsCallback(
+             findPSUName = baseConfig->find("Name" + std::to_string(i++));
+         } while (findPSUName != baseConfig->end());
+ 
++        bool skipReading = false;
++        const std::string* fwName = nullptr;
++        auto findFwName = devToFwName.find({bus, addr});
++        if (findFwName != devToFwName.end())
++        {
++            fwName = &findFwName->second;
++            auto& fwUpdateState = firmwareUpdateStates[*fwName];
++            fwUpdateState.psuName = *psuName;
++            if (fwUpdateState.activating)
++            {
++                skipReading = true;
++            }
++        }
++
+         std::vector<std::filesystem::path> sensorPaths;
+         if (!findFiles(directory, devParamMap[devType].matchRegEx, sensorPaths,
+                        0))
+@@ -1069,6 +1241,16 @@ static void createSensorsCallback(
+                     psuProperty.maxReading, psuProperty.minReading,
+                     psuProperty.sensorOffset, labelHead, thresholdConfSize,
+                     pollRate, i2cDev, std::move(bridgeGpio));
++
++                if (fwName != nullptr)
++                {
++                    firmwareUpdateStates[*fwName].sensorNames.insert(
++                        sensorName);
++                    if (skipReading)
++                    {
++                        sensors[sensorName]->setSkipRead(true);
++                    }
++                }
+                 sensors[sensorName]->setupRead();
+                 ++numCreated;
+                 lg2::debug("Created '{NUM}' sensors so far", "NUM", numCreated);
+@@ -1083,7 +1265,7 @@ static void createSensorsCallback(
+                 std::make_unique<PSUCombineEvent>(
+                     objectServer, dbusConnection, io, *psuName, readState,
+                     eventPathList, groupEventPathList, "OperationalStatus",
+-                    pollRate);
++                    pollRate, skipReading);
+         }
+     }
+ 
+@@ -1172,11 +1354,15 @@ void createSensors(
+                                   sensorConfigs, sensorsChanged, activateOnly);
+         });
+     std::vector<std::string> types;
+-    types.reserve(sensorTypes.size());
++    types.reserve(sensorTypes.size() + firmwareTypes.size());
+     for (const auto& [type, dt] : sensorTypes)
+     {
+         types.push_back(type);
+     }
++    for (const auto& type : firmwareTypes)
++    {
++        types.emplace_back(type);
++    }
+     getter->getConfiguration(types);
+ }
+ 
+@@ -1356,8 +1542,18 @@ int main()
+             });
+         };
+ 
++    std::vector<const char*> types;
++    types.reserve(sensorTypes.size() + firmwareTypes.size());
++    for (const auto& [type, dt] : sensorTypes)
++    {
++        types.push_back(type.data());
++    }
++    for (const auto& type : firmwareTypes)
++    {
++        types.push_back(type);
++    }
+     std::vector<std::unique_ptr<sdbusplus::bus::match_t>> matches =
+-        setupPropertiesChangedMatches(*systemBus, sensorTypes, eventHandler);
++        setupPropertiesChangedMatches(*systemBus, types, eventHandler);
+ 
+     matches.emplace_back(std::make_unique<sdbusplus::bus::match_t>(
+         static_cast<sdbusplus::bus_t&>(*systemBus),
+@@ -1368,6 +1564,9 @@ int main()
+ 
+     getPresentCpus(systemBus);
+ 
++    setupFirmwareUpdateMatch(systemBus, matches);
++    checkInitialFwUpdateState(systemBus);
++
+     setupManufacturingModeMatch(*systemBus);
+     io.run();
+ }
+-- 
+2.47.3
+

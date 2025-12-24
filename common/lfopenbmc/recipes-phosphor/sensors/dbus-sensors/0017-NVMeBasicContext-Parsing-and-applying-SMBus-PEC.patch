@@ -1,7 +1,7 @@
-From 928340f537f555b4377b216045ba253beeb4077c Mon Sep 17 00:00:00 2001
+From 9f5a6a906ac2aa54090213c5b4731407577a30c1 Mon Sep 17 00:00:00 2001
 From: Chau Ly <chaul@amperecomputing.com>
 Date: Wed, 10 Sep 2025 09:40:53 +0000
-Subject: [PATCH 17/22] NVMeBasicContext: Parsing and applying SMBus PEC
+Subject: [PATCH 17/18] NVMeBasicContext: Parsing and applying SMBus PEC
 
 Sometimes when the PCIe device is being linked up, it's not ready for
 PCI Express Basic Management Command (SMBUS/I2C) but we still read into
@@ -256,5 +256,5 @@ index 76944cb..47e9c86 100644
              context->addSensor(sensorPtr);
          }
 -- 
-2.43.0
+2.47.3
 

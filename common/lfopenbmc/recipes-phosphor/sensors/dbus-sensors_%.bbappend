@@ -12,14 +12,13 @@ SRC_URI:append = " \
     file://0009-psu-support-gpio-bridge.patch \
     file://0010-meta-facebook-ventura-add-SCM-sensor-offset.patch \
     file://0011-PWMSensor-synchronize-hardware-PWM-with-D-Bus-proper.patch \
-    file://0012-leakdetector-use-new-aserver-constructor.patch \
-    file://0013-leakdetector-check-event-before-event_read.patch \
-    file://0014-Add-delay-before-leak-event-log-to-prevent-AC-OFF-gl.patch \
-    file://0015-PSUSensor-add-property-to-sensorTable-and-labelMatch.patch \
-    file://0016-PSUSensor-add-support-for-mp2925-and-mp2929.patch \
-    file://0017-NVMeBasicContext-Parsing-and-applying-SMBus-PEC.patch \
-    file://0018-hwmontemp-Remove-newly-created-sensor-from-sensorsCh.patch \
-    file://0021-psusensor-skip-sensor-reads-during-firmware-updates.patch \
+    file://0012-leakdetector-check-event-before-event_read.patch \
+    file://0013-Add-delay-before-leak-event-log-to-prevent-AC-OFF-gl.patch \
+    file://0014-PSUSensor-add-property-to-sensorTable-and-labelMatch.patch \
+    file://0015-PSUSensor-add-support-for-mp2925-and-mp2929.patch \
+    file://0016-NVMeBasicContext-Parsing-and-applying-SMBus-PEC.patch \
+    file://0017-hwmontemp-Remove-newly-created-sensor-from-sensorsCh.patch \
+    file://0018-psusensor-skip-sensor-reads-during-firmware-updates.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \

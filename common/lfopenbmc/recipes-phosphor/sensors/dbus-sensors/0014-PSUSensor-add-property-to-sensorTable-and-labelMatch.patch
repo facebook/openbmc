@@ -1,7 +1,7 @@
-From 9b3289df118e5fb27da0abbcdf859306b8a4d9a1 Mon Sep 17 00:00:00 2001
+From 6138294397177c462a8a87add25903ca8fbdae73 Mon Sep 17 00:00:00 2001
 From: Andy-Hsu-wiwynn <andy.hsu.wiwynn@gmail.com>
 Date: Fri, 15 Aug 2025 15:44:31 +0800
-Subject: [PATCH 15/18] PSUSensor:add property to sensorTable and labelMatch
+Subject: [PATCH 14/18] PSUSensor:add property to sensorTable and labelMatch
 
 Description
 Add "current" to the sensorTable, and add "in_current" and "in_power"
@@ -21,10 +21,10 @@ Signed-off-by: Andy Hsu <andy.hsu.wiwynn@gmail.com>
  1 file changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 932bc27..1718573 100644
+index 06b9d2a..0614c44 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -1185,12 +1185,14 @@ void propertyInitialize()
+@@ -1186,12 +1186,14 @@ void propertyInitialize()
                     {"temp", sensor_paths::unitDegreesC},
                     {"in", sensor_paths::unitVolts},
                     {"voltage", sensor_paths::unitVolts},
@@ -40,7 +40,7 @@ index 932bc27..1718573 100644
          {"maxpin", PSUProperty("Max Input Power", 3000, 0, 6, 0)},
          {"vin", PSUProperty("Input Voltage", 300, 0, 3, 0)},
          {"maxvin", PSUProperty("Max Input Voltage", 300, 0, 3, 0)},
-@@ -1202,6 +1204,7 @@ void propertyInitialize()
+@@ -1203,6 +1205,7 @@ void propertyInitialize()
          {"iin", PSUProperty("Input Current", 20, 0, 3, 0)},
          {"iout", PSUProperty("Output Current", 255, 0, 3, 0)},
          {"curr", PSUProperty("Output Current", 255, 0, 3, 0)},

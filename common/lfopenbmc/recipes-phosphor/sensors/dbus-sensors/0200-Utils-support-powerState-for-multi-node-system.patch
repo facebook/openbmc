@@ -1,11 +1,11 @@
-From 059d7afc55dfbfd257504faf7d4d8dda611e7f08 Mon Sep 17 00:00:00 2001
+From c30dcdd21c4e024011c6c2b51e4b6c6b858d95c2 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH 200/203] Utils: support powerState for multi-node system
 
 The current code of dbus-sensors only get powerState values for Chassis0
 and Host0 which cannot be used for the system with multiple server
-nodes. 
+nodes.
 
 This commit add "slotId" in Sensor class to indicate the index of
 server. When setupPowerMatchCallback is called, code will call
@@ -957,10 +957,10 @@ index f01ba69..1713e0e 100644
      ~PSUProperty() = default;
  
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 6aa757a..851192d 100644
+index 7c752bb..e5d84d1 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -775,6 +775,7 @@ static void createSensorsCallback(
+@@ -776,6 +776,7 @@ static void createSensorsCallback(
          checkGroupEvent(directory.string(), groupEventPathList);
  
          PowerState readState = getPowerState(*baseConfig);
@@ -968,7 +968,7 @@ index 6aa757a..851192d 100644
  
          /* Check if there are more sensors in the same interface */
          int i = 1;
-@@ -1240,7 +1241,7 @@ static void createSensorsCallback(
+@@ -1241,7 +1242,7 @@ static void createSensorsCallback(
                      readState, findSensorUnit->second, factor,
                      psuProperty.maxReading, psuProperty.minReading,
                      psuProperty.sensorOffset, labelHead, thresholdConfSize,
@@ -977,7 +977,7 @@ index 6aa757a..851192d 100644
  
                  if (fwName != nullptr)
                  {
-@@ -1429,7 +1430,11 @@ static void powerStateChanged(
+@@ -1430,7 +1431,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {
@@ -1028,5 +1028,5 @@ index b5c922e..2d96ccf 100644
  
      void markFunctional(bool isFunctional)
 -- 
-2.43.0
+2.47.3
 

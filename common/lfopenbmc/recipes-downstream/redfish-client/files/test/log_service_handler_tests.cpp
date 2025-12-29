@@ -1,4 +1,7 @@
 #include <redfish_client/core/log_service_handler.hpp>
+#include <redfish_client/core/log_entry_mapper_registry.hpp>
+#include <redfish_client/core/unhandled_mapper.hpp>
+#include <redfish_client/core/cper_mapper.hpp>
 
 #include <nlohmann/json.hpp>
 #include <sdbusplus/server.hpp>
@@ -144,6 +147,9 @@ class LogServiceHandlerTest : public ::testing::Test
   protected:
     void SetUp() override
     {
+        auto& registry = core::LogEntryMapperRegistry::instance();
+        registry.registerMapper(std::make_unique<CperMapper>(), 100);
+        registry.registerMapper(std::make_unique<UnhandledMapper>(), 0);
         logManager.start();
     }
 

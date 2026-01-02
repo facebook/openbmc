@@ -97,7 +97,22 @@ wedge_board_rev() {
 }
 
 wedge_board_type_rev() {
-    wedge_board_rev
+    wedge_board_rev |
+    awk -F ': ' '
+        /Board type/ {
+            split($2, fields, " ")
+            board_type = fields[1]
+        }
+
+        /Revision/ {
+            revision = $2
+        }
+
+        # Output format - Example: Minipack_EVT1
+        END {
+            print board_type "_" revision
+        }
+    '
 }
 
 userver_power_is_on() {

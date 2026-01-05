@@ -44,4 +44,6 @@ IMAGE_INSTALL += " \
   usb-console \
   wedge-eeprom \
   flashrom \
+  dimm-util \
+  cpld-handler \
   "

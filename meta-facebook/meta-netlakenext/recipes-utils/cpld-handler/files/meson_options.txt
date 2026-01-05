@@ -1,0 +1,7 @@
+option(
+    'update-ebr-init',
+    type: 'feature',
+    value: 'disabled',
+    description: '''Support to update EBR_INIT data so BMC could update
+                    Nuvoton MGM CPLD firmware.'''
+)

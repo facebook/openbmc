@@ -47,7 +47,7 @@ enum {
 //               PWRGD_PCH_R_PWROK
 //               FM_THERMTRIP_R_N
 //               FM_BIOS_POST_CMPLT_R_N
-//               FM_CPU_MSMI_CATERR_LVT3_R_N
+//               CPU_ALERT_BMC_N
 //               FM_CPU_PROCHOT_LATCH_LVT3_R_N
 //               BIOS_DEBUG_MSG_DIS_R_N
 //
@@ -69,7 +69,7 @@ enum {
   IRQ_SMI_ACTIVE_R_N,
   FM_BIOS_POST_CMPLT_R_N,
   IRQ_PVCCIN_CPU_VRHOT_LVC3_R_N,
-  FM_CPU_MSMI_CATERR_LVT3_R_N,
+  CPU_ALERT_BMC_N,
   P5V_USB_EN,
   FAULT_LED,
   RST_BTN_N,

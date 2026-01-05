@@ -90,23 +90,18 @@ cpu_thermal_trip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t c
 }
 
 static void
-cat_err_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  uint8_t status = 0;
-  uint8_t fru = 1;
+cpu_alert_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
+  int ret = 0;
+  char str[MAX_VALUE_LEN] = {0};
 
-  sleep (2);
-  if (pal_get_server_power(fru, &status) < 0) {
-    syslog(LOG_ERR, "Fail to get server power when CATERR triggered");
+  ret = kv_get(POST_CMPLT_KV_KEY, str, NULL, 0);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s: Failed to get post complete status in kv.", __func__);
+    return;
   }
 
-  if (status == SERVER_POWER_ON) {
-    if (curr == GPIO_VALUE_LOW) {
-      syslog(LOG_CRIT, "FRU: %d CPU IERR/CATERR %s\n", FRU_SERVER,
-      "Assertion");
-    } else {
-      syslog(LOG_CRIT, "FRU: %d CPU MCERR/CATERR %s\n", FRU_SERVER,
-      "Assertion");
-    }
+  if (strncmp(str, LOW_STR, strlen(LOW_STR)) == 0) {
+    // TODO: AMD ADDC
   }
 }
 
@@ -428,7 +423,7 @@ gpiopoll_config g_gpios[] = {
   {"IRQ_SMI_ACTIVE_R_N",              "GPIOH0",   GPIO_EDGE_FALLING,  smi_handler,               NULL},
   {"FM_BIOS_POST_CMPLT_R_N",          "GPIOH2",   GPIO_EDGE_BOTH,     post_complete_status_handler, post_complete_status_init},
   {"IRQ_PVCCIN_CPU_VRHOT_LVC3_R_N",   "GPIOH3",   GPIO_EDGE_BOTH,     vr_hot_handler,            NULL},
-  {"FM_CPU_MSMI_CATERR_LVT3_R_N",     "GPIOM3",   GPIO_EDGE_FALLING,  cat_err_handler,           NULL},
+  {"CPU_ALERT_BMC_N",                 "GPIOM3",   GPIO_EDGE_FALLING,  cpu_alert_handler,           NULL},
   {"RST_BTN_N",                       "GPIOP2",   GPIO_EDGE_BOTH,     reset_button_handler,      NULL},
   {"PWR_BTN_N",                       "GPIOP4",   GPIO_EDGE_BOTH,     power_button_handler,      NULL},
   {"FM_CPU_PROCHOT_LATCH_LVT3_R_N",   "GPIOV3",   GPIO_EDGE_BOTH,     cpu_throttle_handler,      NULL},

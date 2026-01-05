@@ -1,0 +1,37 @@
+From 66b1da79a8135a412ca0fd7879a5b3e81c9674ad Mon Sep 17 00:00:00 2001
+From: Frank Chen <FrankChen4@quantatw.com>
+Date: Mon, 5 Jan 2026 15:38:53 +0800
+Subject: [PATCH] enable uart dma
+
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts   | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+index 80a075163..d4dfbe531 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+@@ -2854,13 +2854,20 @@ flash@0 {
+ 	};
+ };
+ 
++&udma {
++	status = "okay";
++};
++
+ // HOST BIOS Debug
+ &uart1 {
+ 	status = "okay";
+ };
+ 
+ &uart3 {
++	compatible = "aspeed,ast2600-uart";
+ 	status = "okay";
++	dmas = <&udma 4>, <&udma 5>;
++	dma-names = "tx", "rx";
+ };
+ 
+ &uart4 {
+-- 
+2.43.0
+

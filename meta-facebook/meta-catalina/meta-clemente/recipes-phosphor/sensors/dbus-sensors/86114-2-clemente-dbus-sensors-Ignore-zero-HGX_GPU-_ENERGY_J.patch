@@ -1,0 +1,55 @@
+From 051de1fcb477fc3e948ee55b0d81bfa0a3162efb Mon Sep 17 00:00:00 2001
+From: Alex Wang <alex.ts.wang@fii-foxconn.com>
+Date: Fri, 19 Dec 2025 15:21:42 +0800
+Subject: [PATCH] clemente:dbus-sensors: Ignore zero HGX_GPU*_ENERGY_J readings
+
+Since HGX_GPU*_ENERGY_J is reading from virtual EEPROM through over
+I2C. It's hard to guarantee the data integrity due to lack of
+exclusive access.
+
+As a workaround, do not update the sensor when the read value is 0.
+This prevents spurious zero energy readings from overwriting valid
+data.
+
+ref: NVBUG#5661947
+
+Change-Id: Ie0cf67793a99fc34afa9b64a4d07a89cc77b0cff
+Signed-off-by: Alex Wang <alex.ts.wang@fii-foxconn.com>
+---
+ src/smbpbi/SmbpbiSensor.cpp | 20 ++++++++++++++++++--
+ 1 file changed, 18 insertions(+), 2 deletions(-)
+
+diff --git a/src/smbpbi/SmbpbiSensor.cpp b/src/smbpbi/SmbpbiSensor.cpp
+index d04deae..6f9d7ef 100644
+--- a/src/smbpbi/SmbpbiSensor.cpp
++++ b/src/smbpbi/SmbpbiSensor.cpp
+@@ -351,8 +351,24 @@ void SmbpbiSensor::waitReadCallback(const boost::system::error_code& ec)
+ 
+     if (ret >= 0)
+     {
+-        lg2::debug("Value update to {TEMP}", "TEMP", temp);
+-        updateValue(temp);
++        // Update value when either:
++        // 1) the sensor name is NOT one of the HGX GPU energy sensors (always
++        // update), OR 2) the sensor IS one of the HGX GPU energy sensors AND
++        // the read value (temp) is non-zero.
++        //
++        // Rationale: some HGX GPU energy sensors may return 0 as an
++        // invalid/unreliable reading; we skip updates for those zero readings
++        // but allow updates for non-GPU sensors even if zero.
++        if ((name != "HGX_GPU0_ENERGY_J" && name != "HGX_GPU1_ENERGY_J" &&
++             name != "HGX_GPU2_ENERGY_J" && name != "HGX_GPU3_ENERGY_J") ||
++            (name == "HGX_GPU0_ENERGY_J" && temp != 0) ||
++            (name == "HGX_GPU1_ENERGY_J" && temp != 0) ||
++            (name == "HGX_GPU2_ENERGY_J" && temp != 0) ||
++            (name == "HGX_GPU3_ENERGY_J" && temp != 0))
++        {
++            lg2::debug("Value update to {TEMP}", "TEMP", temp);
++            updateValue(temp);
++        }
+     }
+     else
+     {
+-- 
+2.43.0
+

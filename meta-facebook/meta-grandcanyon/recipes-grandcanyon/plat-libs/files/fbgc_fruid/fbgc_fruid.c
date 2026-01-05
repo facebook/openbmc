@@ -35,7 +35,11 @@ int
 fbgc_get_fruid_name(uint8_t fru, char *name) {
   switch(fru) {
     case FRU_SERVER:
+#ifdef CONFIG_GRANDCANYON2
+      snprintf(name, MAX_FRU_NAME_STR, "Emerald Springs");
+#else
       snprintf(name, MAX_FRU_NAME_STR, "Barton Springs");
+#endif
       break;
     case FRU_BMC:
       snprintf(name, MAX_FRU_NAME_STR, "BMC");

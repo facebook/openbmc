@@ -243,16 +243,219 @@ bic_get_vr_device_id(uint8_t *rbuf, uint8_t *rlen, uint8_t bus, uint8_t addr) {
   return ret;
 }
 
-//Refer "AN001-XDPE122xx-V3.0_XDPE122xx Programming Guide" 9
+#ifdef CONFIG_GRANDCANYON2
 int
-bic_get_ifx_vr_remaining_writes(uint8_t bus, uint8_t addr, uint8_t *writes) {
-// The data residing in bit11~bit6 is the number of the remaining writes. 
-#define REMAINING_TIMES(x) (((x[1] << 8) + x[0]) & 0xFC0) >> 6
+bic_get_ifx_vr_version_mfr(uint8_t bus, uint8_t addr, uint8_t *ver_data) {
   uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
   uint8_t rbuf[MAX_IPMB_BUFFER] = {0};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
   int ret = 0;
+
+  tbuf[0] = (bus << 1) + 1;
+  tbuf[1] = addr;
+
+  // Set Register Pointer (RPTR = 0x10)
+  tbuf[2] = 0x00; // read cnt
+  tbuf[3] = 0x10; // RPTR register
+  tbuf[4] = 0x00; // Initialize data
+  tlen = 5;
+  
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to initialize RPTR", __func__);
+    goto error_exit;
+  }
+
+  // Initialize MFR_FW_COMMAND
+  tbuf[2] = 0x00; // read cnt
+  tbuf[3] = CMD_INF_VR_MFR_EXECUTE; // 0xFE
+  tbuf[4] = 0x00; // Initialize/clear
+  tlen = 5;
+  
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to initialize MFR_FW_COMMAND", __func__);
+    goto error_exit;
+  }
+
+  // Execute GET_CRC command (0x2D)  
+  tbuf[2] = 0x00; // read cnt
+  tbuf[3] = CMD_INF_VR_MFR_EXECUTE; // 0xFE
+  tbuf[4] = INF_VR_CMD_GET_VERSION; // 0x2D (GET_CRC)
+  tlen = 5;
+  
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to execute GET_CRC command", __func__);
+    goto error_exit;
+  }
+
+  // Wait for command execution completion (GET_CRC needs 20ms)
+  usleep(20000); // 20ms
+
+  // Read CRC result
+  tbuf[2] = 0x05; // read cnt
+  tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD (MFR_FW_COMMAND_DATA)
+  tlen = 4;
+  
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to read CRC data", __func__);
+    goto error_exit;
+  }
+
+  // Copy result
+  if (rlen >= 5) {
+    memcpy(ver_data, rbuf, 5);
+    // ver_data[0] = 0x04 (length)
+    // ver_data[1] = 0x5E (CRC byte 0)
+    // ver_data[2] = 0xDA (CRC byte 1)
+    // ver_data[3] = 0xA2 (CRC byte 2)
+    // ver_data[4] = 0x02 (CRC byte 3)
+  } else {
+    syslog(LOG_WARNING, "%s() Invalid response length: %d, expected >= 5", __func__, rlen);
+    ret = -1;
+    goto error_exit;
+  }
+
+  // Cleanup/restore RPTR  
+  tbuf[2] = 0x00; // read cnt
+  tbuf[3] = 0x10; // RPTR register
+  tbuf[4] = 0x80; // Cleanup/reset flag
+  tlen = 5;
+  
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to cleanup RPTR (non-fatal)", __func__);
+    // This error doesn't affect the result, just log warning
+    ret = 0; // Reset to success
+  }
+
+error_exit:
+  return ret;
+}
+
+// Read Infineon VR remaining writes using MFR_SPECIFIC command (for second source)
+int
+bic_get_ifx_vr_remaining_writes_mfr(uint8_t bus, uint8_t addr, uint8_t *writes) {
+  uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  tbuf[0] = (bus << 1) + 1;
+  tbuf[1] = addr;
+
+  // Set Register Pointer (RPTR = 0x10)
+  tbuf[2] = 0x00; // read cnt
+  tbuf[3] = 0x10; // RPTR register
+  tbuf[4] = 0x00; // Initialize data
+  tlen = 5;
+  
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to initialize RPTR", __func__);
+    goto error_exit;
+  }
+
+  // Initialize MFR_FW_COMMAND  
+  tbuf[2] = 0x00; // read cnt
+  tbuf[3] = CMD_INF_VR_MFR_EXECUTE; // 0xFE
+  tbuf[4] = 0x00; // Initialize/clear
+  tlen = 5;
+  
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to initialize MFR_FW_COMMAND", __func__);
+    goto error_exit;
+  }
+
+  // Execute OTP_PARTITION_SIZE_REMAINING command (0x10)  
+  tbuf[2] = 0x00; // read cnt
+  tbuf[3] = CMD_INF_VR_MFR_EXECUTE; // 0xFE
+  tbuf[4] = INF_VR_CMD_GET_REM_WRITES; // 0x10
+  tlen = 5;
+  
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to execute OTP_PARTITION_SIZE_REMAINING", __func__);
+    goto error_exit;
+  }
+
+  // Wait for command execution completion (OTP_PARTITION_SIZE_REMAINING needs 1ms)
+  usleep(1000); // 1ms
+  
+  // Read remaining space result  
+  tbuf[2] = 0x06; // read cnt
+  tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD (MFR_FW_COMMAND_DATA)
+  tlen = 4;
+  
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to read remaining writes data", __func__);
+    goto error_exit;
+  }
+
+  // Extract remaining write count
+  if (rlen >= 6) {
+    // rbuf[0] = 0x04 (length)
+    // rbuf[1] = 0xA0 (d0 = 160)
+    // rbuf[2] = 0x74 (d1 = 116)
+    // rbuf[3] = 0x00 (d2)
+    // rbuf[4] = 0x00 (d3)
+    // rbuf[5] = 0x79 (checksum?)
+    
+    uint16_t remaining_size = rbuf[1] + (rbuf[2] << 8);
+    // remaining_size = 160 + 116*256 = 29,856 bytes
+    
+    // Convert to remaining write count (assuming 100 bytes per write)
+    *writes = (remaining_size > 0) ? (remaining_size / 100) : 0;
+    // writes = 29,856 / 100 = 298 次
+  } else {
+    syslog(LOG_WARNING, "%s() Invalid response length: %d, expected >= 6", __func__, rlen);
+    ret = -1;
+    goto error_exit;
+  }
+
+  // Cleanup/restore RPTR  
+  tbuf[2] = 0x00; // read cnt
+  tbuf[3] = 0x10; // RPTR register
+  tbuf[4] = 0x80; // Cleanup/reset flag
+  tlen = 5;
+  
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to cleanup RPTR (non-fatal)", __func__);
+    // This error doesn't affect the result, just log warning
+    ret = 0; // Reset to success
+  }
+
+error_exit:
+  return ret;
+}
+#endif // CONFIG_GRANDCANYON2
+
+//Refer "AN001-XDPE122xx-V3.0_XDPE122xx Programming Guide" 9
+int
+bic_get_ifx_vr_remaining_writes(uint8_t bus, uint8_t addr, uint8_t *writes) {
+  // The data residing in bit11~bit6 is the number of the remaining writes. 
+  #define REMAINING_TIMES(x) (((x[1] << 8) + x[0]) & 0xFC0) >> 6
+  uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+#ifdef CONFIG_GRANDCANYON2  
+  ret = bic_get_ifx_vr_remaining_writes_mfr(bus, addr, writes);
+  if (ret == 0) {
+    return ret;
+  }
+    
+  syslog(LOG_INFO, "%s() MFR method failed, trying legacy Page method", __func__);
+#endif
 
   tbuf[0] = (bus << 1) + 1;
   tbuf[1] = addr;
@@ -376,11 +579,47 @@ bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
       }
     }
 
-    //get the remaining writes of VRs
+#ifdef CONFIG_GRANDCANYON2  
+    uint8_t ver_data[5] = {0};
+    ret = bic_get_ifx_vr_version_mfr(bus, addr, ver_data);
+    
+    if (ret == 0) {
+      uint8_t byte_count = ver_data[0];      
+      
+      ret = bic_get_ifx_vr_remaining_writes_mfr(bus, addr, &remaining_writes);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s():%d Failed to get remaining writes via MFR method, ret=%d", 
+               __func__, __LINE__, ret);
+        
+        remaining_writes = 0xFF;
+      }      
+      
+      if (byte_count >= 4) {        
+        snprintf(ver_str, MAX_VALUE_LEN, "Infineon %02X%02X%02X%02X, Remaining Writes: %d", 
+                 ver_data[4], ver_data[3], ver_data[2], ver_data[1], 
+                 (remaining_writes == 0xFF) ? 0 : remaining_writes);
+      } else {
+        snprintf(ver_str, MAX_VALUE_LEN, "Infineon (unknown format), Remaining Writes: %d", 
+                 (remaining_writes == 0xFF) ? 0 : remaining_writes);
+      }
+      
+      kv_set(key, ver_str, 0, 0);
+      
+      syslog(LOG_INFO, "%s() Successfully read Infineon VR via MFR method: %s", __func__, ver_str);
+      goto cleanup;
+    }
+
+    syslog(LOG_INFO, "%s() MFR method failed, trying legacy Page method", __func__);
+#endif
+
     ret = bic_get_ifx_vr_remaining_writes(bus, addr, &remaining_writes);
     if (ret < 0) {
       syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr remaining writes. ret=%d", __func__,__LINE__, ret);
+#ifdef CONFIG_GRANDCANYON2      
+      remaining_writes = 0xFF;      
+#else
       goto error_exit;
+#endif
     }
 
     //get the CRC32 of the VR
@@ -393,6 +632,15 @@ bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
     ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
     if (ret < 0) {
       syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
+#ifdef CONFIG_GRANDCANYON2      
+      if (remaining_writes == 0xFF) {
+        snprintf(ver_str, MAX_VALUE_LEN, "Infineon (version unavailable)");
+      } else {
+        snprintf(ver_str, MAX_VALUE_LEN, "Infineon (version unavailable), Remaining Writes: %d", 
+                 remaining_writes);
+      }
+      kv_set(key, ver_str, 0, 0);
+#endif
       goto error_exit;
     }
     
@@ -413,9 +661,24 @@ bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
       syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
       goto error_exit;
     }
-    snprintf(ver_str, MAX_VALUE_LEN, "Infineon %02X%02X%02X%02X, Remaining Writes: %d", rbuf[3], rbuf[2], rbuf[1], rbuf[0], remaining_writes);
+    
+#ifdef CONFIG_GRANDCANYON2    
+    if (remaining_writes == 0xFF) {
+      snprintf(ver_str, MAX_VALUE_LEN, "Infineon %02X%02X%02X%02X", 
+               rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
+    } else {
+      snprintf(ver_str, MAX_VALUE_LEN, "Infineon %02X%02X%02X%02X, Remaining Writes: %d", 
+               rbuf[3], rbuf[2], rbuf[1], rbuf[0], remaining_writes);
+    }
+#else
+    snprintf(ver_str, MAX_VALUE_LEN, "Infineon %02X%02X%02X%02X, Remaining Writes: %d", 
+             rbuf[3], rbuf[2], rbuf[1], rbuf[0], remaining_writes);
+#endif
     kv_set(key, ver_str, 0, 0);
     
+#ifdef CONFIG_GRANDCANYON2
+cleanup:
+#endif
   error_exit:
     ret = flock(fd, LOCK_UN);
     if (ret == -1) {

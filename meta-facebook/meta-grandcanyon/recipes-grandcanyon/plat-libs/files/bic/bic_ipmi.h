@@ -31,6 +31,17 @@ extern "C" {
 #define CMD_INF_VR_SET_PAGE       0x00
 #define CMD_INF_VR_READ_DATA_LOW  0x42
 #define CMD_INF_VR_READ_DATA_HIGH 0x43
+
+#ifdef CONFIG_GRANDCANYON2
+// Infineon VR MFR_SPECIFIC commands for second source
+#define CMD_INF_VR_MFR_WRITE      0xFD
+#define CMD_INF_VR_MFR_EXECUTE    0xFE
+
+// Infineon VR MFR command parameters
+#define INF_VR_CMD_GET_VERSION    0x2D
+#define INF_VR_CMD_GET_REM_WRITES 0x10
+#endif
+
 // command for ISL VR
 #define CMD_ISL_VR_DEVICE_ID      0xAD
 #define CMD_ISL_VR_DMAFIX         0xC5
@@ -64,6 +75,10 @@ int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
 int bic_me_recovery(uint8_t command);
 int bic_get_vr_device_id(uint8_t *rbuf, uint8_t *rlen, uint8_t bus, uint8_t addr);
 int bic_get_ifx_vr_remaining_writes(uint8_t bus, uint8_t addr, uint8_t *writes);
+#ifdef CONFIG_GRANDCANYON2
+int bic_get_ifx_vr_remaining_writes_mfr(uint8_t bus, uint8_t addr, uint8_t *writes);
+int bic_get_ifx_vr_version_mfr(uint8_t bus, uint8_t addr, uint8_t *ver_data);
+#endif
 int bic_get_isl_vr_remaining_writes(uint8_t bus, uint8_t addr, uint8_t *writes);
 int bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str);
 int bic_get_vr_ver_cache(uint8_t bus, uint8_t addr, char *ver_str);

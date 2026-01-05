@@ -4,6 +4,7 @@ SRC_URI += " \
     file://yosemite4.conf \
     file://pldmd-exit-handler.service \
     file://pldmd-exit-handler \
+    file://0001-yosemite4-pldm-remove-firmware-update-entry.patch \
 "
 
 FILES:${PN}:append = " \

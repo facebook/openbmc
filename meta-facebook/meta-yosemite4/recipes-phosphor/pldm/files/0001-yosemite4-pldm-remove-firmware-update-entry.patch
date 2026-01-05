@@ -1,0 +1,43 @@
+From 0d852832deb6dc1daa346b289a04c61ab6206de5 Mon Sep 17 00:00:00 2001
+From: Unive Tien <unive.tien.wiwynn@gmail.com>
+Date: Thu, 27 Nov 2025 08:48:08 +0000
+Subject: [PATCH] yosemite4: pldm: remove firmware update entry
+
+Description:
+Remove the firmware update entry from the inventory manager before the
+feature implementation is complete.
+
+Motivation:
+Related to JIRA ticket YV4T1M-2210, BMC mfg-tool displays excessive and
+unclear system firmware information, which is the new firmware update
+entry preserved for enhanced firmware update features but not yet fully
+implemented. To avoid confusion, we decided to remove this entry for now
+and reintroduce it later when the feature is ready.
+
+Tested:
+Tested on the Yosemite4 platform to ensure that the firmware update entry
+is no longer exposed on D-Bus, and verified that other inventory
+functionalities remain unaffected.
+---
+ fw-update/inventory_manager.cpp | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
+index 062cc4c..edbda01 100644
+--- a/fw-update/inventory_manager.cpp
++++ b/fw-update/inventory_manager.cpp
+@@ -701,11 +701,6 @@ void InventoryManager::getFirmwareParameters(
+         {
+             auto componentName = firmwareDeviceNameMap.at(eid) + "_Component_" +
+                                  std::to_string(compIdentifier);
+-
+-            firmwareInventoryManager.createFirmwareEntry(
+-                SoftwareIdentifier(eid, compIdentifier), componentName,
+-                utils::toString(activeCompVerStr), descriptorMap.at(eid),
+-                componentInfo);
+         }
+         else
+         {
+-- 
+2.43.0
+

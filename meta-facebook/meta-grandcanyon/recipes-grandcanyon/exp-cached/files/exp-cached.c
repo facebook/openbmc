@@ -115,17 +115,26 @@ exp_read_fruid_wrapper(uint8_t fru, char* fru_path) {
 void
 fruid_cache_init(void) {
   int i = 0, ret = 0;
+#ifndef CONFIG_GRANDCANYON2
   uint8_t ver[FW_VERSION_LENS] = {0};
+  char key[MAX_KEY_LEN] = {0};
+#endif
   uint8_t tbuf[MAX_IPMB_BUFFER] = {0x00};
   uint8_t rbuf[MAX_IPMB_BUFFER] = {0x00};
   uint8_t rlen = 0 , tlen = 0;
-  char key[MAX_KEY_LEN] = {0};
 
   // Auto dump SCC and DPB
   for (i = 0; i < ARRAY_SIZE(expander_fruid_list); i++) {
     exp_read_fruid_wrapper(expander_fruid_list[i], COMMON_FRU_PATH);
   }
 
+#ifdef CONFIG_GRANDCANYON2
+  // GC2.0: directly check fan fru status
+  ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_OEM_EXP_GET_FAN_FRU_STATUS, tbuf, tlen, rbuf, &rlen);
+  if ((ret < 0) || (rbuf[0] != EXP_FAN_FRU_READY)) {
+    syslog(LOG_WARNING, "%s(): Checking of FAN FRU is pending until EXP FAN FRU cache is ready.\n", __func__);
+  }
+#else
   // If use new EXP f/w, version > 17 (0x11)
   // Ask EXP about FAN FRU state before dump
   ret = expander_get_fw_ver(ver, sizeof(ver));
@@ -144,6 +153,7 @@ fruid_cache_init(void) {
       kv_set(key, STR_VALUE_1, 0, 0);
     }
   }
+#endif
 
   return;
 }
@@ -171,9 +181,20 @@ sensor_timestamp_init(void) {
 void
 sensor_threshold_init(void) {
   int i = 0, ret = 0;
+#ifndef CONFIG_GRANDCANYON2
   uint8_t ver[FW_VERSION_LENS] = {0};
-
-  // Support to get SCC/DPB threshold with expander f/w version 18
+#endif
+ 
+// Support to get SCC/DPB threshold with expander f/w version 18
+#ifdef CONFIG_GRANDCANYON2
+  // For GC2.0, initialize threshold directly
+  for (i = 0; i < ARRAY_SIZE(expander_fruid_list); i++) {
+    ret = pal_exp_sensor_threshold_init(expander_fruid_list[i]);
+    if (ret < 0) {
+      syslog(LOG_CRIT, "%s() failed to initialize sensors' threshold of FRU:%d \n", __func__, expander_fruid_list[i]);
+    }
+  }
+#else
   ret = expander_get_fw_ver(ver, sizeof(ver));
   if ((ret == 0) && (ver[3] >= 0x12)) {
     // Get sensors' threshold of SCC and DPB
@@ -186,7 +207,7 @@ sensor_threshold_init(void) {
   } else {
     syslog(LOG_CRIT, "%s() Not support to get SCC/DPB sensors' threshold from expander\n", __func__);
   }
-
+#endif
   return;
 }
 

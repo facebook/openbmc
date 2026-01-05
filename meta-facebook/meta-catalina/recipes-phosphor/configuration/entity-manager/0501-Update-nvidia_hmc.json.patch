@@ -371,6 +371,15 @@ index f1d2e52..d31f90f 100644
                  }
              ],
              "Type": "SmbpbiVirtualEeprom",
+@@ -354,7 +536,7 @@
+             "Bus": 13,
+             "MaxValue": 127,
+             "MinValue": -128,
+-            "Name": "HGX_CPU0_INLET0_TEMP_C",
++            "Name": "HGX_PROCESSORMODULE0_INLET0_TEMP_C",
+             "PollRate": 1,
+             "PowerState": "On",
+             "ReadOffset": 320,
 @@ -364,21 +546,21 @@
                      "Hysteresis": 1.1,
                      "Name": "upper non recoverable",
@@ -396,6 +405,15 @@ index f1d2e52..d31f90f 100644
                  }
              ],
              "Type": "SmbpbiVirtualEeprom",
+@@ -390,7 +572,7 @@
+             "Bus": 13,
+             "MaxValue": 127,
+             "MinValue": -128,
+-            "Name": "HGX_CPU0_INLET1_TEMP_C",
++            "Name": "HGX_PROCESSORMODULE0_INLET1_TEMP_C",
+             "PollRate": 1,
+             "PowerState": "On",
+             "ReadOffset": 324,
 @@ -400,21 +582,21 @@
                      "Hysteresis": 1.1,
                      "Name": "upper non recoverable",
@@ -421,6 +439,15 @@ index f1d2e52..d31f90f 100644
                  }
              ],
              "Type": "SmbpbiVirtualEeprom",
+@@ -426,7 +608,7 @@
+             "Bus": 13,
+             "MaxValue": 127,
+             "MinValue": -128,
+-            "Name": "HGX_CPU0_EXHAUST_TEMP_C",
++            "Name": "HGX_PROCESSORMODULE0_EXHAUST_TEMP_C",
+             "PollRate": 1,
+             "PowerState": "On",
+             "ReadOffset": 328,
 @@ -436,21 +618,21 @@
                      "Hysteresis": 1.3,
                      "Name": "upper non recoverable",
@@ -446,6 +473,15 @@ index f1d2e52..d31f90f 100644
                  }
              ],
              "Type": "SmbpbiVirtualEeprom",
+@@ -462,7 +644,7 @@
+             "Bus": 13,
+             "MaxValue": 127,
+             "MinValue": -128,
+-            "Name": "HGX_CPU1_INLET0_TEMP_C",
++            "Name": "HGX_PROCESSORMODULE1_INLET0_TEMP_C",
+             "PollRate": 1,
+             "PowerState": "On",
+             "ReadOffset": 336,
 @@ -472,21 +654,21 @@
                      "Hysteresis": 1.1,
                      "Name": "upper non recoverable",
@@ -471,6 +507,15 @@ index f1d2e52..d31f90f 100644
                  }
              ],
              "Type": "SmbpbiVirtualEeprom",
+@@ -498,7 +680,7 @@
+             "Bus": 13,
+             "MaxValue": 127,
+             "MinValue": -128,
+-            "Name": "HGX_CPU1_INLET1_TEMP_C",
++            "Name": "HGX_PROCESSORMODULE1_INLET1_TEMP_C",
+             "PollRate": 1,
+             "PowerState": "On",
+             "ReadOffset": 340,
 @@ -508,21 +690,21 @@
                      "Hysteresis": 1.1,
                      "Name": "upper non recoverable",
@@ -496,6 +541,15 @@ index f1d2e52..d31f90f 100644
                  }
              ],
              "Type": "SmbpbiVirtualEeprom",
+@@ -534,7 +716,7 @@
+             "Bus": 13,
+             "MaxValue": 127,
+             "MinValue": -128,
+-            "Name": "HGX_CPU1_EXHAUST_TEMP_C",
++            "Name": "HGX_PROCESSORMODULE1_EXHAUST_TEMP_C",
+             "PollRate": 1,
+             "PowerState": "On",
+             "ReadOffset": 344,
 @@ -544,21 +726,21 @@
                      "Hysteresis": 1.3,
                      "Name": "upper non recoverable",

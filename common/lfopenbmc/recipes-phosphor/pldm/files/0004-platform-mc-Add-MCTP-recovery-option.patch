@@ -1,7 +1,7 @@
-From 02e0769801df72be5ef5317c9f146ea57f8d1b9f Mon Sep 17 00:00:00 2001
+From 58a754f53318874229c25a3ee5ccb06bc485da7b Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 16:48:20 +0800
-Subject: [PATCH 04/16] platform-mc: Add MCTP recovery option
+Subject: [PATCH 04/17] platform-mc: Add MCTP recovery option
 
 Allow enabling or disabling MCTP 2.0 recovery feature.
 Calls `.Recover` method on timeout to handle communication recovery.
@@ -90,5 +90,5 @@ index 7ac16e1..0766129 100644
      co_return rc;
  }
 -- 
-2.47.3
+2.43.0
 

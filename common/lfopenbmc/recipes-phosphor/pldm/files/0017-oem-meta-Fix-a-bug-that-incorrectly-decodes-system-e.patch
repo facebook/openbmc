@@ -1,0 +1,90 @@
+From f24f789e2558e33f2ad7d1882427c37f68ccbe7e Mon Sep 17 00:00:00 2001
+From: Sora Su <sora_su@wiwynn.com>
+Date: Mon, 15 Dec 2025 07:41:21 +0000
+Subject: [PATCH 17/17] oem-meta: Fix a bug that incorrectly decodes system
+ events.
+
+The system error event decoder uses an incorrect index when decoding
+Bootable Media SEL.
+
+Add a new enum class, SystemPostError, for future enhancements.
+
+Signed-off-by: Sora Su <sora_su@wiwynn.com>
+---
+ oem/meta/event/oem_event_manager.cpp | 32 +++++++++++++++++-----------
+ oem/meta/event/types.hpp             |  7 +++++-
+ 2 files changed, 25 insertions(+), 14 deletions(-)
+
+diff --git a/oem/meta/event/oem_event_manager.cpp b/oem/meta/event/oem_event_manager.cpp
+index 76f8953..bbddbb4 100644
+--- a/oem/meta/event/oem_event_manager.cpp
++++ b/oem/meta/event/oem_event_manager.cpp
+@@ -142,21 +142,27 @@ void OemEventManager::handleSystemEvent(const eventMsg& eventData,
+         }
+         case SystemError::SYSTEM_POST_ERR:
+         {
+-            errorLog += "POST_ERROR:";
+-            if ((eventData[11] & 0x0F) == 0x0)
+-                errorLog += ", System Firmware Error";
+-
+-            if (((eventData[11] >> 6) & 0x03) == 0x2)
++            switch (auto spe = static_cast<SystemPostError>(eventData[9]); spe)
+             {
+-                errorLog += ", OEM Post Code 0x" +
+-                            to_hex_string(eventData[13]) +
+-                            to_hex_string(eventData[12]);
+-            }
++                case SystemPostError::SYSTEM_FIRMWARE_ERROR:
++                    errorLog += "POST_ERROR:";
++                    if ((eventData[11] & 0x0F) == 0x0)
++                        errorLog += ", System Firmware Error";
+ 
+-            if (((eventData[13] << 8) | eventData[12]) == 0xD9)
+-            {
+-                errorLog +=
+-                    ", Error loading Boot Option (Load image returned error)";
++                    if (((eventData[11] >> 6) & 0x03) == 0x2)
++                    {
++                        errorLog += ", OEM Post Code 0x" +
++                                    to_hex_string(eventData[13]) +
++                                    to_hex_string(eventData[12]);
++                    }
++
++                    if (((eventData[13] << 8) | eventData[12]) == 0xD9)
++                    {
++                        errorLog +=
++                            ", Error loading Boot Option (Load image returned error)";
++                    }
++                default:
++                    break;
+             }
+             break;
+         }
+diff --git a/oem/meta/event/types.hpp b/oem/meta/event/types.hpp
+index 88a875f..d5c247b 100644
+--- a/oem/meta/event/types.hpp
++++ b/oem/meta/event/types.hpp
+@@ -15,7 +15,7 @@ enum class RecordType : uint8_t
+ enum class SystemError : uint8_t
+ {
+     SYSTEM_PROCESSOR_ERR = 0x7,
+-    SYSTEM_POST_ERR = 0x2B,
++    SYSTEM_POST_ERR = 0x1E,
+     SYSTEM_CXL_ERR = 0xC1,
+     SYSTEM_CXL_ERR_2_0 = 0xC2,
+ };
+@@ -37,6 +37,11 @@ enum class ProcessorError : uint8_t
+     MACHINE_CHK_ERR = 0x40,
+ };
+ 
++enum class SystemPostError : uint8_t
++{
++    SYSTEM_FIRMWARE_ERROR = 0x2B,
++};
++
+ enum class ProcessorSeverity : uint8_t
+ {
+     UNCORRECT_SYSTEM_FATAL_ERR = 0xB,
+-- 
+2.43.0
+

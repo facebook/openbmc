@@ -20,6 +20,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0014-oem-meta-Add-call-to-the-fw-versions-sd-retimer-serv.patch \
     file://0015-oem-meta-Add-MCTP-configuration-discovery.patch \
     file://0016-pldm-Increase-maximum-of-dbus-timeout-value.patch \
+    file://0017-oem-meta-Fix-a-bug-that-incorrectly-decodes-system-e.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

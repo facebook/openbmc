@@ -1,7 +1,7 @@
-From a8489c0656f4c0dddbe1d00e8b174741a9e3a94d Mon Sep 17 00:00:00 2001
+From 8744903dae5ec71fd4eab101b0c63527a73461d3 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Mon, 13 Oct 2025 11:10:37 +0000
-Subject: [PATCH 10/16] platform-mc: Make fallback terminus name optional
+Subject: [PATCH 10/17] platform-mc: Make fallback terminus name optional
 
 Previously, since commit `platform-mc: Use a default terminus name if
 empty` [1], a fallback name in the format "Terminus_{tid}" was always
@@ -98,5 +98,5 @@ index 965f557..fd13036 100644
  
      if (createInventoryPath(terminusName))
 -- 
-2.47.3
+2.43.0
 

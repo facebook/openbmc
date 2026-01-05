@@ -342,7 +342,7 @@ class Zone:
                     ctx[v] = sensor.value
                     if re.match(r".*temp_dev", sname) is not None:
                         valid_m2_count = valid_m2_count + 1
-                    if sensor.status in ["ucr"]:
+                    if sensor.status in ["ucr", "unr"]:
                         Logger.warn(
                             "Sensor %s reporting status %s"
                             % (sensor.name, sensor.status)

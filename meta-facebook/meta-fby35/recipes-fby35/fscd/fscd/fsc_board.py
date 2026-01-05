@@ -305,6 +305,9 @@ def sensor_valid_check(board, sname, check_name, attribute):
                     if ("HSM" in system_conf) and (type2_val.value == 0xfe):
                         # 2ou card is TYPE_2OU_ABSENT(0xFE) in HSM project
                         return 1
+                    if ("HSM" in system_conf) and (type2_val.value == 0x00):
+                        # 2ou card is TYPE_2OU_HSM_MARVELL(0x00) in HSM project
+                        return 1
                     return 0
                 return 1
         return 0

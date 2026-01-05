@@ -4226,6 +4226,9 @@ void pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t t
 
   if (fby35_common_get_slot_type(FRU_SLOT1) == SERVER_TYPE_CL_EMR
       && thresh == UNR_THRESH) {
+    int ret = 0;
+    uint8_t board_type = 0;
+
     snprintf(sel_str, sizeof(sel_str), "temp sensor[%x] over UNR. (val = %.3f)", snr_num, val);
     switch (snr_num) {
       case NIC_SENSOR_TEMP:
@@ -4244,6 +4247,38 @@ void pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t t
         break;
       default:
         break;
+    }
+
+    ret = fby35_common_get_2ou_board_type(FRU_SLOT1, &board_type);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Cannot get board_type", __func__);
+    }
+
+    //SERVER_TYPE_CL_EMR + DPV2_X16_BOARD = Type_HSM
+    if ((board_type & DPV2_X16_BOARD) == DPV2_X16_BOARD) {
+      switch (snr_num) {
+        case BMC_SENSOR_OUTLET_TEMP:
+        case BMC_SENSOR_INLET_TEMP:
+        case BMC_SENSOR_HSC_TEMP:
+          syslog(LOG_CRIT, "BMC: %s", sel_str);
+          break;
+        case BIC_SENSOR_INLET_TEMP:
+        case BIC_SENSOR_OUTLET_TEMP:
+        case BIC_SENSOR_VCCIN_VR_TEMP:
+        case BIC_SENSOR_FIVRA_VR_TEMP:
+        case BIC_SENSOR_EHV_VR_TEMP:
+        case BIC_SENSOR_VCCD_VR_TEMP:
+        case BIC_SENSOR_FAON_VR_TEMP:
+        case BIC_SENSOR_HSC_TEMP:
+          syslog(LOG_CRIT, "Slot%d: %s", fru, sel_str);
+          break;
+        case BIC_DPV2_SENSOR_DPV2_2_HSM_SOC_TEMP:
+          syslog(LOG_CRIT, "Turned off 12V power of slot%d due to %s", fru, sel_str);
+          pal_set_server_power(fru, SERVER_12V_OFF);
+          break;
+        default:
+          break;
+      }
     }
   }
 }

@@ -38,11 +38,11 @@
 #define POWER_OFF_STR       "off"
 #define NVME_BIND_PATH "/sys/bus/i2c/drivers/pca954x/bind"
 #define NVME_UNBIND_PATH "/sys/bus/i2c/drivers/pca954x/unbind"
-#define PECI_BIND_PATH "/sys/bus/peci/drivers/intel_peci_client/bind"
-#define PECI_UNBIND_PATH "/sys/bus/peci/drivers/intel_peci_client/unbind"
+#define APML_BIND_PATH "/sys/bus/i2c/devices/1-004c/driver/bind"
+#define APML_UNBIND_PATH "/sys/bus/i2c/devices/1-004c/driver/unbind"
 #define PCA954X_BUS_ADDR_WITH_M2_ABC "7-0071"
 #define PCA954X_BUS_ADDR_WITH_M2_DE "7-0073"
-#define PECI_BUS_ADDR "0-30"
+#define APML_BUS_ADDR "1-004c"
 #define POLL_TIMEOUT        -1 /* Forever */
 
 enum GPIO_DETECT {
@@ -85,7 +85,7 @@ server_power_monitor() {
 
 static void
 cpu_thermal_trip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  syslog(LOG_CRIT, "FRU: %d CPU Thermal Trip Warning %s\n", 
+  syslog(LOG_CRIT, "FRU: %d CPU Thermal Trip Warning %s\n",
          FRU_SERVER, (curr == GPIO_VALUE_LOW) ? "Assertion" : "Deassertion");
 }
 
@@ -300,7 +300,7 @@ power_good_status_init(gpiopoll_pin_t *gp, gpio_value_t value) {
 }
 
 static void
-set_peci_probe_status(gpio_value_t value, uint8_t gpio_change) {
+set_apml_probe_status(gpio_value_t value, uint8_t gpio_change) {
   kv_set(POST_CMPLT_KV_KEY, (value == GPIO_VALUE_HIGH) ? HIGH_STR : LOW_STR, 0, 0);
   FILE *fp;
   int rc = 0;
@@ -310,48 +310,48 @@ set_peci_probe_status(gpio_value_t value, uint8_t gpio_change) {
       syslog(LOG_CRIT, "FRU: %d, Post complete", FRU_SERVER);
     }
 
-    fp = fopen((char*)PECI_BIND_PATH, "w");
+    fp = fopen((char*)APML_BIND_PATH, "w");
     if (fp == NULL) {
       int err = errno;
-      syslog(LOG_INFO, "failed to open device for write %s error: %s", PECI_BIND_PATH, strerror(errno));
+      syslog(LOG_INFO, "failed to open device for write %s error: %s", APML_BIND_PATH, strerror(errno));
       return;
     }
 
-    rc = fputs((char*)PECI_BUS_ADDR, fp);
+    rc = fputs((char*)APML_BUS_ADDR, fp);
     fclose(fp);
 
     if (rc < 0) {
-      syslog(LOG_WARNING, "%s() peci driver bind failed\n", __func__);
+      syslog(LOG_WARNING, "%s() apml driver bind failed\n", __func__);
     }
 
     sensors_reinit();
   } else {
     syslog(LOG_WARNING, "FRU: %d, Post complete gpio de-assert to high", FRU_SERVER);
-    fp = fopen((char*)PECI_UNBIND_PATH, "w");
+    fp = fopen((char*)APML_UNBIND_PATH, "w");
 
     if (fp == NULL) {
       int err = errno;
-      syslog(LOG_INFO, "failed to open device for write %s error: %s", PECI_UNBIND_PATH, strerror(errno));
+      syslog(LOG_INFO, "failed to open device for write %s error: %s", APML_UNBIND_PATH, strerror(errno));
       return;
     }
 
-    rc = fputs((char*)PECI_BUS_ADDR, fp);
+    rc = fputs((char*)APML_BUS_ADDR, fp);
     fclose(fp);
 
     if (rc < 0) {
-      syslog(LOG_WARNING, "%s() peci driver unbind failed\n", __func__);
+      syslog(LOG_WARNING, "%s() apml driver unbind failed\n", __func__);
     }
   }
 }
 
 static void
 post_complete_status_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  set_peci_probe_status(curr, IRQ);
+  set_apml_probe_status(curr, IRQ);
 }
 
 static void
 post_complete_status_init(gpiopoll_pin_t *gp, gpio_value_t value) {
-  set_peci_probe_status(value, INIT);
+  set_apml_probe_status(value, INIT);
 }
 
 // thread for display post code led
@@ -512,3 +512,4 @@ main(int argc, char **argv) {
 
   return 0;
 }
+

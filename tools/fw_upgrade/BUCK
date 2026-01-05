@@ -1,10 +1,10 @@
-# @oss-disable
-# @oss-disable
+# @oss-disable: load("@fbcode_macros//build_defs:python_unittest.bzl", "python_unittest")
+# @oss-disable[end= ]: load("@fbcode_macros//build_defs:python_library.bzl", "python_library")
 
 python_library(
     # libraries can be declared, which allows them to be imported by other targets
     name = "fw_json_upgrader",
-    # @oss-disable
+    # @oss-disable: base_module ="tools.fw_upgrade",
     srcs = [
         "constants.py",
         "entity_upgrader.py",
@@ -15,9 +15,9 @@ python_library(
 )
 
 python_test( # @oss-enable
-# @oss-disable
+# @oss-disable[end= ]: python_unittest(
     name = "test_fw_json_upgrader",
-    # @oss-disable
+    # @oss-disable: base_module ="tools.fw_upgrade",
     srcs = [
         "tests/test_fw_json.py",
         "tests/test_fw_upgrade.py"

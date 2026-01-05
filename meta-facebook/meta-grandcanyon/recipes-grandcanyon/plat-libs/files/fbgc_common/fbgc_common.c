@@ -478,3 +478,12 @@ fbgc_common_dev_id(char *str, uint8_t *dev) {
 
   return 0;
 }
+
+bool
+fbgc_common_is_grandcanyon2() {
+#ifdef CONFIG_GRANDCANYON2
+  return true;
+#else
+  return false;
+#endif
+}

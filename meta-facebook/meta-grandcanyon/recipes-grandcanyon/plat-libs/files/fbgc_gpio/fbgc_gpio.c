@@ -20,8 +20,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <syslog.h>
+#include <stdbool.h>
 #include "fbgc_gpio.h"
 
+
+
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
 /* GPIO Expander gpio table */
 gpio_cfg gpio_expander_gpio_table[] = {
@@ -306,8 +310,106 @@ gpio_cfg bmc_gpio_table[] = {
   {NULL, NULL, GPIO_DIRECTION_INVALID, GPIO_VALUE_INVALID}
 };
 
+
 //BIC GPIO 
-const char *bic_gpio_pin_name[] = {
+const char *bic_gpio_pin_name_es[] = {
+     //GPIOA
+    "FM_BMC_PCH_SCI_LPC_R_N",
+    "FM_BIOS_POST_CMPLT_BMC_N",
+    "FM_SLPS3_PLD_N",
+    "IRQ_BMC_PCH_SMI_LPC_R_N",
+    "IRQ_UV_DETECT_N",
+    "FM_UV_ADR_TRIGGER_EN_R",
+    "IRQ_SMI_ACTIVE_BMC_N",
+    "SMB_E1S_0_RST_R_N",
+
+    //GPIOB
+    "SMB_E1S_0_INA233_ALRT_N",
+    "TP_BIC_R3",
+    "A_P3V_BAT_SCALED_EN_R",         //10
+    "FM_SPI_PCH_MASTER_SEL_R",
+    "FM_PCHHOT_N",
+    "FM_SLPS4_PLD_N",
+    "FM_S3M_CPU0_CD_INIT_ERROR",
+    "PWRGD_SYS_PWROK",
+
+    // GPIOC
+    "FM_HSC_TIMER",
+    "IRQ_SMB_IO_LVC3_STBY_ALRT_N",
+    "IRQ_CPU0_VRHOT_N",
+    "DBP_CPU_PREQ_BIC_N",
+    "FM_CPU_THERMTRIP_LATCH_LVT3_N", //20
+    "FM_CPU_SKTOCC_LVT3_PLD_N",
+    "H_CPU_MEMHOT_OUT_LVC3_N",
+    "RST_PLTRST_PLD_N",
+
+    // GPIOD
+    "PWRBTN_N",
+    "RST_BMC_R_N",
+    "H_BMC_PRDY_BUF_N",
+    "BMC_READY",
+    "BIC_READY",
+    "FM_RMCA_LVT3_N",
+    "HSC_MUX_SWITCH_R",
+    "FM_FORCE_ADR_N_R",              //30
+
+    // GPIOE
+    "PWRGD_CPU_LVC3",
+    "FM_PCH_BMC_THERMTRIP_N",
+    "FM_THROTTLE_R_N",
+    "IRQ_HSC_ALERT2_N",
+    "SMB_SENSOR_LVC3_ALERT_N",
+    "FM_CATERR_LVT3_N",
+    "SYS_PWRBTN_N",
+    "RST_PLTRST_BUF_N",
+
+    "IRQ_BMC_PCH_NMI_R",             //40
+    "IRQ_SML1_PMBUS_ALERT_N",
+    "IRQ_PCH_CPU_NMI_EVENT_N",
+    "FM_BMC_DEBUG_ENABLE_N",
+    "FM_DBP_PRESENT_N",
+    "FM_FAST_PROCHOT_EN_N_R",
+    "FM_SPI_MUX_OE_CTL_PLD_N",
+    "FBRK_N_R",
+
+    // GPIOG
+    "FM_PEHPCPU_INT",
+    "FM_BIOS_MRC_DEBUG_MSG_DIS_R",
+    "FAST_PROCHOT_N",                //50
+    "FM_JTAG_TCK_MUX_SEL_R",
+    "BMC_JTAG_SEL_R",
+    "H_CPU_ERR0_LVC3_N",
+    "H_CPU_ERR1_LVC3_N",
+    "H_CPU_ERR2_LVC3_N",
+
+    // GPIOH
+    "RST_RSMRST_BMC_N",
+    "FM_MP_PS_FAIL_N",
+    "H_CPU_MEMTRIP_LVC3_N",
+    "FM_CPU_BIC_PROCHOT_LVT3_N",
+
+    // GPIOL
+    "SSD0_PRSNT_N",                  //60
+    "SSD1_PRSNT_N",
+    "IRQ_PVCCD_CPU0_VRHOT_LVC3_N",
+    "FM_PVCCIN_CPU0_PWR_IN_ALERT_N",
+    "UART_BIC_EXP_TXD",
+    "UART_BIC_EXP_R_RXD",
+
+    // GPIOM
+    "Reserve_GPIOM1",
+    "FM_THROTTLE_IN_N",
+    "UART_BIC_TXD",
+    "UART_BIC_R_RXD",               //70
+
+    // GPION
+    "SGPIO_BMC_CLK_R",
+    "SGPIO_BMC_LD_R_N",
+    "SGPIO_BMC_DOUT_R",
+    "SGPIO_BMC_DIN",
+};
+
+const char *bic_gpio_pin_name_ti[] = {
     "PWRGD_BMC_PS_PWROK_R",
     "FM_PCH_BMC_THERMTRIP_N",
     "IRQ_HSC_ALERT2_N",
@@ -377,8 +479,11 @@ const char *bic_gpio_pin_name[] = {
     "IRQ_BMC_PCH_SMI_LPC_R_N",
     "FM_BIOS_POST_CMPLT_BMC_N",
 };
-
-const uint8_t bic_gpio_pin_size = sizeof(bic_gpio_pin_name)/sizeof(bic_gpio_pin_name[0]);
+// const uint8_t bic_gpio_pin_size = sizeof(bic_gpio_pin_name)/sizeof(bic_gpio_pin_name[0]);
+static const uint8_t bic_gpio_pin_size_es =
+    ARRAY_SIZE(bic_gpio_pin_name_es);
+static const uint8_t bic_gpio_pin_size_ti =
+    ARRAY_SIZE(bic_gpio_pin_name_ti);
 
 const char *
 fbgc_get_gpio_name(uint8_t gpio) {
@@ -394,14 +499,23 @@ fbgc_get_gpio_name(uint8_t gpio) {
 
 uint8_t
 fbgc_get_bic_gpio_list_size(void) {
-  return bic_gpio_pin_size;
+
+  if (fbgc_is_grandcanyon2()) {
+        return bic_gpio_pin_size_es;
+  }
+    return bic_gpio_pin_size_ti;
 }
 
 const char *
 fbgc_get_bic_gpio_name(uint8_t gpio) {
-  if (gpio > bic_gpio_pin_size) {
+  if (gpio > fbgc_get_bic_gpio_list_size()) {
     syslog(LOG_WARNING, "%s(): Wrong gpio pin %u", __func__, gpio);
     return "";
   }
-  return bic_gpio_pin_name[gpio];
+
+  if (fbgc_is_grandcanyon2()) {
+      return bic_gpio_pin_name_es[gpio];
+  }
+
+  return bic_gpio_pin_name_ti[gpio];
 }

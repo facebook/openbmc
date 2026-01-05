@@ -1175,11 +1175,22 @@ bic_get_one_gpio_status(uint8_t gpio_num, uint8_t *value){
 
 int
 bic_set_gpio(uint8_t gpio_num, uint8_t value) {
-  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00};
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0}; // IANA ID
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t tlen = 6;
   uint8_t rlen = 0;
   int ret = 0;
+
+  // IANA ID
+  if (fbgc_common_is_grandcanyon2()) {
+      tbuf[0] = 0x15;
+      tbuf[1] = 0xA0;
+      tbuf[2] = 0x00;
+  } else {
+      tbuf[0] = 0x9c;
+      tbuf[1] = 0x9c;
+      tbuf[2] = 0x00;
+  }
 
   tbuf[3] = 0x01;
   tbuf[4] = gpio_num;

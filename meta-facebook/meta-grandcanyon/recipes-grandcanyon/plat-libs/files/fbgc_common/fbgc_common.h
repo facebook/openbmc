@@ -258,6 +258,7 @@ int check_image_md5(const char* image_path, int cal_size, uint32_t md5_offset);
 int check_image_signature(const char* image_path, uint32_t sig_offset);
 int get_server_board_revision_id(uint8_t* board_rev_id, uint8_t board_rev_id_len);
 int fbgc_common_dev_id(char *str, uint8_t *dev);
+bool fbgc_common_is_grandcanyon2(void);
 
 #ifdef __cplusplus
 } // extern "C"

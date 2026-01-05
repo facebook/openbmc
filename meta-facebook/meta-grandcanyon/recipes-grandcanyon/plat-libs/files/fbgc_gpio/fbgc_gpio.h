@@ -133,6 +133,15 @@ enum {
   MAX_GPIO_PINS,
 };
 
+static inline bool fbgc_is_grandcanyon2(void)
+{
+#ifdef CONFIG_GRANDCANYON2
+    return true;
+#else
+    return false;
+#endif
+}
+
 extern gpio_cfg gpio_expander_gpio_table[];
 extern gpio_cfg bmc_gpio_table[]; 
 const char * fbgc_get_gpio_name(uint8_t gpio);

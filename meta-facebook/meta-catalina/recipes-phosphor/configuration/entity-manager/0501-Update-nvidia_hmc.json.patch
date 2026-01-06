@@ -1,14 +1,14 @@
-From 566e3f2a82981e3b75d66557016328815bc334d4 Mon Sep 17 00:00:00 2001
+From a1d104fc7d4529d3abe66cdae96a52e27f7e29a7 Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
 Date: Thu, 31 Jul 2025 17:02:26 +0800
 Subject: [PATCH 501/504] Update nvidia_hmc.json
 
 ---
- configurations/nvidia/hmc.json | 318 ++++++++++++++++++++++++++-------
- 1 file changed, 250 insertions(+), 68 deletions(-)
+ configurations/nvidia/hmc.json | 330 +++++++++++++++++++++++++--------
+ 1 file changed, 256 insertions(+), 74 deletions(-)
 
 diff --git a/configurations/nvidia/hmc.json b/configurations/nvidia/hmc.json
-index f1d2e52..d31f90f 100644
+index f1d2e52..c206016 100644
 --- a/configurations/nvidia/hmc.json
 +++ b/configurations/nvidia/hmc.json
 @@ -23,20 +23,6 @@

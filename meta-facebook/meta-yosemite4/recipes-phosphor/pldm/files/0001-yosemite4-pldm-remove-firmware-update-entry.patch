@@ -1,4 +1,4 @@
-From 0d852832deb6dc1daa346b289a04c61ab6206de5 Mon Sep 17 00:00:00 2001
+From 9d17c56dfce8531fdc0536ca10ace09b1c760396 Mon Sep 17 00:00:00 2001
 From: Unive Tien <unive.tien.wiwynn@gmail.com>
 Date: Thu, 27 Nov 2025 08:48:08 +0000
 Subject: [PATCH] yosemite4: pldm: remove firmware update entry
@@ -23,10 +23,10 @@ functionalities remain unaffected.
  1 file changed, 5 deletions(-)
 
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index 062cc4c..edbda01 100644
+index 7975f7a..47ae909 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
-@@ -701,11 +701,6 @@ void InventoryManager::getFirmwareParameters(
+@@ -676,11 +676,6 @@ void InventoryManager::getFirmwareParameters(
          {
              auto componentName = firmwareDeviceNameMap.at(eid) + "_Component_" +
                                   std::to_string(compIdentifier);
@@ -39,5 +39,5 @@ index 062cc4c..edbda01 100644
          else
          {
 -- 
-2.43.0
+2.47.3
 

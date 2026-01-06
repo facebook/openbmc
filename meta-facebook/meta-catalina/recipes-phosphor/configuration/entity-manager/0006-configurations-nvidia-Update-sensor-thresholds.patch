@@ -1,0 +1,49 @@
+From f7bdc02a110730bc2f0bc120ca5c282c1536e090 Mon Sep 17 00:00:00 2001
+From: Alex Wang <alex.ts.wang@fii-foxconn.com>
+Date: Tue, 4 Nov 2025 16:51:33 +0800
+Subject: [PATCH 1/1] configurations: nvidia: Update sensor thresholds
+
+Update nvidia_cx8_mezzanine_module sensor thresholds based on
+the corrections provided by the IGS thermal team
+
+Change-Id: I7e7eea79e23349df98677dae02021404aec9c4c4
+Signed-off-by: Alex Wang <alex.ts.wang@fii-foxconn.com>
+---
+ configurations/nvidia/cx8_mezzanine_module.json | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/configurations/nvidia/cx8_mezzanine_module.json b/configurations/nvidia/cx8_mezzanine_module.json
+index 676441e..316688f 100644
+--- a/configurations/nvidia/cx8_mezzanine_module.json
++++ b/configurations/nvidia/cx8_mezzanine_module.json
+@@ -28,6 +28,13 @@
+                     "Index": 2,
+                     "Name": "upper critical",
+                     "Severity": 1,
++                    "Value": 106
++                },
++                {
++                    "Direction": "greater than",
++                    "Index": 2,
++                    "Name": "upper non critical",
++                    "Severity": 0,
+                     "Value": 97
+                 }
+             ],
+@@ -55,6 +62,13 @@
+                     "Index": 2,
+                     "Name": "upper critical",
+                     "Severity": 1,
++                    "Value": 106
++                },
++                {
++                    "Direction": "greater than",
++                    "Index": 2,
++                    "Name": "upper non critical",
++                    "Severity": 0,
+                     "Value": 97
+                 }
+             ],
+-- 
+2.43.0
+

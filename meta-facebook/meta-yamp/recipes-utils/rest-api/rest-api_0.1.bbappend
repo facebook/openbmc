@@ -16,7 +16,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:${THISDIR}/../openbmc-utils/files/fw_upgrade/yamp-ufw-jsons:"
 
 LOCAL_URI += " \
     file://rest_piminfo.py \
@@ -29,6 +29,7 @@ LOCAL_URI += " \
     file://rest_scdinfo.py \
     file://rest_fw_ver.py \
     file://rest_server.py \
+    file://yamp_ufw_manifest.json \
 "
 
 binfiles1 += " \
@@ -43,3 +44,7 @@ binfiles1 += " \
     rest_fw_ver.py \
     rest_server.py \
 "
+
+do_install:append() {
+    install -m 644 ${UNPACKDIR}/yamp_ufw_manifest.json ${D}${sysconfdir}/ufw_manifest.json
+}

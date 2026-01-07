@@ -18,12 +18,14 @@
 # Boston, MA 02110-1301 USA
 #
 
+import asyncio
 import re
 
 import rest_beacon
 import rest_bmc_board_rev
 import rest_fruid_scm
 import rest_fw_ver
+import rest_fw_versions
 import rest_peutil
 import rest_pim_present
 import rest_piminfo
@@ -203,3 +205,10 @@ class boardApp_Handler:
         return web.json_response(
             rest_bmc_board_rev.get_bmc_board_rev(), dumps=dumps_bytestr
         )
+
+    # Handler for fw_versions resource endpoint
+    async def rest_fw_versions_hdl(self, request):
+        fw_versions = await asyncio.get_event_loop().run_in_executor(
+            None, rest_fw_versions.get_fw_versions
+        )
+        return web.json_response(fw_versions, dumps=dumps_bytestr)

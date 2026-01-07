@@ -36,6 +36,7 @@ def setup_board_routes(app: Application, write_enabed: bool):
     app.router.add_get(board_routes[6], bhandler.rest_presence_hdl)
     app.router.add_get(board_routes[7], bhandler.rest_presence_pem_hdl)
     app.router.add_get(board_routes[8], bhandler.rest_presence_psu_hdl)
+    app.router.add_get(board_routes[9], bhandler.rest_fw_versions_hdl)
 
     # TOR endpoints
     setup_rackmon_routes(app)

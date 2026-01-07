@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:${THISDIR}/../openbmc-utils/files/fw_upgrade/minipack-ufw-jsons:"
 
 SRC_URI += " \
     file://0001-common_setup_routes-rest_fruid_hdl-override.patch \
@@ -36,6 +36,7 @@ LOCAL_URI += " \
     file://rest_fw_ver.py \
     file://rest_system_led_info.py \
     file://test_rest_pim_details.py \
+    file://minipack_ufw_manifest.json \
     "
 
 binfiles1 += " \
@@ -55,3 +56,7 @@ binfiles1 += " \
 "
 
 RDEPENDS:${PN} += "python3-attrs"
+
+do_install:append() {
+    install -m 644 ${UNPACKDIR}/minipack_ufw_manifest.json ${D}${sysconfdir}/ufw_manifest.json
+}

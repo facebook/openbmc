@@ -17,7 +17,7 @@
 
 inherit systemd
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:${THISDIR}/../openbmc-utils/files/fw_upgrade/wedge100-ufw-jsons:"
 
 LOCAL_URI += " \
     file://rest_i2cflush.py \
@@ -30,6 +30,7 @@ LOCAL_URI += " \
     file://restapi.service \
     file://rest_fw_ver.py \
     file://rest_presence.py \
+    file://wedge100_ufw_manifest.json \
     "
 
 binfiles1 += "rest_i2cflush.py \
@@ -40,3 +41,7 @@ binfiles += "board_endpoint.py \
              boardroutes.py \
              board_setup_routes.py \
             "
+
+do_install:append() {
+    install -m 644 ${UNPACKDIR}/wedge100_ufw_manifest.json ${D}${sysconfdir}/ufw_manifest.json
+}

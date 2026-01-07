@@ -74,4 +74,5 @@ board_routes = [
     "/api/sys/improve_aura_pll",
     "/api/sys/improve_aura_pll/program",
     "/api/sys/improve_aura_pll/check",
+    "/api/fw_versions",
 ]

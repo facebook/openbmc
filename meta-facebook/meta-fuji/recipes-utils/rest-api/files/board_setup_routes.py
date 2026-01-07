@@ -81,3 +81,4 @@ def setup_board_routes(app: Application, write_enabled: bool):
     app.router.add_get(board_routes[52], bhandler.rest_improve_aura_pll_hdl)
     app.router.add_post(board_routes[53], bhandler.rest_improve_aura_pll_program_hdl)
     app.router.add_get(board_routes[54], bhandler.rest_improve_aura_pll_check_hdl)
+    app.router.add_get(board_routes[55], bhandler.rest_fw_versions_hdl)

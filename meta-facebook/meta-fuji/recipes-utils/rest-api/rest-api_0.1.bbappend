@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:${THISDIR}/../openbmc-utils/files/fw_upgrade/fuji-ufw-jsons:"
 
 LOCAL_URI += " \
     file://rest_feutil.py \
@@ -30,6 +30,7 @@ LOCAL_URI += " \
     file://rest_system_led_info.py \
     file://rest_smbinfo.py \
     file://rest_improve_aura_pll.py \
+    file://fuji_ufw_manifest.json \
 "
 
 binfiles1 += " \
@@ -46,3 +47,7 @@ binfiles1 += " \
     rest_smbinfo.py \
     rest_improve_aura_pll.py \
 "
+
+do_install:append() {
+    install -m 644 ${UNPACKDIR}/fuji_ufw_manifest.json ${D}${sysconfdir}/ufw_manifest.json
+}

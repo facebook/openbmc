@@ -65,4 +65,5 @@ board_routes = [
     "/api/sys/beacon/off",
     "/api/sys/beacon/status",
     "/api/sys/bmc_board_rev",
+    "/api/fw_versions",
 ]

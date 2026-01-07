@@ -41,4 +41,5 @@ board_routes = [
     "/api/sys/mb/pim6",
     "/api/sys/mb/pim7",
     "/api/sys/mb/pim8",
+    "/api/fw_versions",
 ]

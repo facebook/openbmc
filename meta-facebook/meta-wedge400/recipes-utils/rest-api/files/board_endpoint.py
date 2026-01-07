@@ -18,10 +18,12 @@
 # Boston, MA 02110-1301 USA
 #
 
+import asyncio
 import re
 
 import rest_feutil
 import rest_firmware_info
+import rest_fw_versions
 import rest_gb_freq
 import rest_presence
 import rest_sensors
@@ -200,3 +202,10 @@ class boardApp_Handler:
     # Handler for sys/gb_freq endpoint
     async def rest_get_gb_freq_hdl(self, request):
         return web.json_response(rest_gb_freq.get_gb_freq(), dumps=dumps_bytestr)
+
+    # Handler for fw_versions resource endpoint
+    async def rest_fw_versions_hdl(self, request):
+        fw_versions = await asyncio.get_event_loop().run_in_executor(
+            None, rest_fw_versions.get_fw_versions
+        )
+        return web.json_response(fw_versions, dumps=dumps_bytestr)

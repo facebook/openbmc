@@ -53,4 +53,5 @@ board_routes = [
     "/api/sys/sensors/fan2",
     "/api/sys/sensors/fan3",
     "/api/sys/sensors/fan4",
+    "/api/fw_versions",
 ]

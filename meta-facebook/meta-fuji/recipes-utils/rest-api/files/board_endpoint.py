@@ -22,6 +22,7 @@ import asyncio
 
 import rest_feutil
 import rest_firmware_info
+import rest_fw_versions
 import rest_peutil
 import rest_pim_present
 import rest_piminfo
@@ -329,3 +330,10 @@ class boardApp_Handler:
             None, check_aurora_chip_check
         )
         return web.json_response(result, dumps=dumps_bytestr)
+
+    # Handler for fw_versions resource endpoint
+    async def rest_fw_versions_hdl(self, request):
+        fw_versions = await asyncio.get_event_loop().run_in_executor(
+            None, rest_fw_versions.get_fw_versions
+        )
+        return web.json_response(fw_versions, dumps=dumps_bytestr)

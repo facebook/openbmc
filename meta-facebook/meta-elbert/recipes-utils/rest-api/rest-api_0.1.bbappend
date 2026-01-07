@@ -16,7 +16,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:${THISDIR}/../openbmc-utils/files/fw_upgrade/elbert-ufw-jsons:"
 
 LOCAL_URI += " \
     file://rest_fruid_pim.py \
@@ -32,6 +32,7 @@ LOCAL_URI += " \
     file://rest_sensors.py \
     file://rest_beacon.py \
     file://rest_bmc_board_rev.py \
+    file://elbert_ufw_manifest.json \
 "
 
 binfiles1 += " \
@@ -51,3 +52,7 @@ binfiles1 += " \
 "
 
 RDEPENDS:${PN} += "python3-attrs"
+
+do_install:append() {
+    install -m 644 ${UNPACKDIR}/elbert_ufw_manifest.json ${D}${sysconfdir}/ufw_manifest.json
+}

@@ -61,4 +61,5 @@ def setup_board_routes(app: Application, write_enabed: bool):
     app.router.add_get(board_routes[31], bhandler.rest_sensors_fan2_hdl)
     app.router.add_get(board_routes[32], bhandler.rest_sensors_fan3_hdl)
     app.router.add_get(board_routes[33], bhandler.rest_sensors_fan4_hdl)
+    app.router.add_get(board_routes[34], bhandler.rest_fw_versions_hdl)
     setup_rackmon_routes(app)

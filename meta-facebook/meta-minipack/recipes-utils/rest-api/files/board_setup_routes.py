@@ -15,10 +15,9 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-from board_endpoint import boardApp_Handler
-from boardroutes import *
-
 from aiohttp.web import Application
+from board_endpoint import boardApp_Handler
+from boardroutes import board_routes
 
 
 def setup_board_routes(app: Application, write_enabled: bool):
@@ -45,3 +44,4 @@ def setup_board_routes(app: Application, write_enabled: bool):
     app.router.add_get(board_routes[19], bhandler.rest_firmware_info_all_hdl)
     app.router.add_get(board_routes[20], bhandler.rest_system_led_info_hdl)
     app.router.add_get(board_routes[21], bhandler.rest_pimdetails_hdl)
+    app.router.add_get(board_routes[22], bhandler.rest_fw_versions_hdl)

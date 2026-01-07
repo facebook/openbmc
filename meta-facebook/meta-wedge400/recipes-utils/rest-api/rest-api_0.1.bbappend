@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:${THISDIR}/../openbmc-utils/files/fw_upgrade/wedge400-ufw-jsons:"
 
 LOCAL_URI += " \
     file://rest_feutil.py \
@@ -30,6 +30,7 @@ LOCAL_URI += " \
     file://acl_providers/wedge400_acl_provider.py \
     file://acl_config.py \
     file://run_rest \
+    file://wedge400_ufw_manifest.json \
 "
 
 aclfiles += "wedge400_acl_provider.py"
@@ -46,3 +47,7 @@ binfiles1 += " \
     rest_switch_reset.py \
     rest_vddcore.py \
 "
+
+do_install:append() {
+    install -m 644 ${UNPACKDIR}/wedge400_ufw_manifest.json ${D}${sysconfdir}/ufw_manifest.json
+}

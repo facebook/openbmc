@@ -26,4 +26,5 @@ board_routes = [
     "/api/sys/presence",
     "/api/sys/presence/pem",
     "/api/sys/presence/psu",
+    "/api/fw_versions",
 ]

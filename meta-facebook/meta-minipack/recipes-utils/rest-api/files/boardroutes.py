@@ -38,4 +38,5 @@ board_routes = [
     "/api/sys/firmware_info/all",
     "/api/sys/system_led_info",
     "/api/sys/pimdetails",
+    "/api/fw_versions",
 ]

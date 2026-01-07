@@ -192,6 +192,7 @@ EXTRA_APIS_NETWORK = " \
     file://rest_server.py \
     file://rest_sensors.py \
     file://rest_psu_update.py \
+    file://rest_fw_versions.py \
     file://eeprom_utils.py \
     file://rest_fcpresent.py \
     file://rest_helper.py \

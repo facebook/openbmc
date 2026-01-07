@@ -1,7 +1,7 @@
-From fafa9b3087e4a07caaec3d100396dcaebd981c51 Mon Sep 17 00:00:00 2001
+From 9568768c90fae61e27629c9e1a6a4b7662532885 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Tue, 10 Sep 2024 14:02:38 +0800
-Subject: [PATCH 2/5] configurations: nvidia_io_board: recalculate bus number
+Subject: [PATCH 2/6] configurations: nvidia_io_board: recalculate bus number
 
 Change the bus number calculation to meet sensor naming.
 

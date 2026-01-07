@@ -1,7 +1,7 @@
-From 40f694a00b7a2f76a81eb92ac556eb83e00fd5f8 Mon Sep 17 00:00:00 2001
+From af2b21be4605a72c49e8e2edc908b5a3a22da31f Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 1 Jul 2025 15:23:41 +0800
-Subject: [PATCH 1/4] configurations: revise nic temperature name
+Subject: [PATCH 1/5] configurations: revise nic temperature name
 
 Revise the NIC temperature name to match the naming rule:
 inventory_component_type_unit.

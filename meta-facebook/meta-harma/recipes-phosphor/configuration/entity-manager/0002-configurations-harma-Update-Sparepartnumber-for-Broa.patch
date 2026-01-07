@@ -1,7 +1,7 @@
-From d1406ca986569247cb3afb78c0d77a2ee8ffab34 Mon Sep 17 00:00:00 2001
+From 1b0dfb09be6072a619c203d2763c80e78cec2aa2 Mon Sep 17 00:00:00 2001
 From: Prabha Veerubhotla <vvlprabha@gmail.com>
 Date: Thu, 24 Jul 2025 14:21:12 -0700
-Subject: [PATCH 2/4] configurations: harma: Update Sparepartnumber for
+Subject: [PATCH 2/5] configurations: harma: Update Sparepartnumber for
  Broadcom NIC
 
 Add the SparePartNumber from the internal database. It is unique

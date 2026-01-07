@@ -1,7 +1,7 @@
-From b056847ab5df12970adef332dcfa059c26b5be9a Mon Sep 17 00:00:00 2001
+From 54502e56f46f8b697526c76b4a73e7441410dc18 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Wed, 29 Oct 2025 15:30:49 +0800
-Subject: [PATCH 4/4] configuration: harma: set battery polling rate to 86400s
+Subject: [PATCH 4/5] configuration: harma: set battery polling rate to 86400s
 
 Set the battery polling rate to 86400 seconds (1 day) to reduce
 unnecessary power drain from frequent polling.
@@ -42,7 +42,7 @@ index fab5f88..22b0e7a 100644
                  "in1_Name": "MB_PVDD11_S3_VOLT_V",
                  "in1_PowerState": "On",
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index 87448b7..50d0619 100644
+index f4b1c23..d9d29cb 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
 @@ -817,6 +817,9 @@
@@ -55,7 +55,7 @@ index 87448b7..50d0619 100644
                  "in(1[0-7]|[0-9])_PowerState$": {
                      "$ref": "#/$defs/Types/PowerState"
                  },
-@@ -1371,6 +1374,7 @@
+@@ -1372,6 +1375,7 @@
                  "type": "number"
              },
              "PollRate": {

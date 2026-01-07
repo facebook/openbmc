@@ -1,7 +1,7 @@
-From adecd8240cf5e9c247cad977cb5dc3086e30683e Mon Sep 17 00:00:00 2001
+From ded9d2468a139d6316631df730fce64065537548 Mon Sep 17 00:00:00 2001
 From: Daniel Hsu <Daniel-Hsu@quantatw.com>
 Date: Wed, 7 Jan 2026 15:56:24 +0800
-Subject: [PATCH 1/1] configuration: harma: fix swapped fan table reading and
+Subject: [PATCH 5/5] configuration: harma: fix swapped fan table reading and
  output
 
 The fan table had the reading and output fields reversed.
@@ -15,10 +15,10 @@ Signed-off-by: Daniel Hsu <Daniel-Hsu@quantatw.com>
  2 files changed, 28 insertions(+), 28 deletions(-)
 
 diff --git a/configurations/meta/harma/harma_mb.json b/configurations/meta/harma/harma_mb.json
-index 6fba8d5..2ea7dc4 100644
+index d68dd5b..5f9c0a7 100644
 --- a/configurations/meta/harma/harma_mb.json
 +++ b/configurations/meta/harma/harma_mb.json
-@@ -1680,18 +1680,18 @@
+@@ -1681,18 +1681,18 @@
                  "Name": "Stepwise_Aegis_UBC",
                  "NegativeHysteresis": 2.0,
                  "Output": [
@@ -44,7 +44,7 @@ index 6fba8d5..2ea7dc4 100644
                  "Type": "Stepwise",
                  "Zones": [
                      "Zone 0"
-@@ -1724,18 +1724,18 @@
+@@ -1725,18 +1725,18 @@
                  "Name": "Stepwise_Aegis_VR",
                  "NegativeHysteresis": 2.0,
                  "Output": [
@@ -71,10 +71,10 @@ index 6fba8d5..2ea7dc4 100644
                  "Zones": [
                      "Zone 0"
 diff --git a/configurations/meta/harma/harma_mb_vr_infineon.json b/configurations/meta/harma/harma_mb_vr_infineon.json
-index fab5f88..3b28327 100644
+index 22b0e7a..55f1f01 100644
 --- a/configurations/meta/harma/harma_mb_vr_infineon.json
 +++ b/configurations/meta/harma/harma_mb_vr_infineon.json
-@@ -1678,18 +1678,18 @@
+@@ -1679,18 +1679,18 @@
                  "Name": "Stepwise_Aegis_UBC",
                  "NegativeHysteresis": 2.0,
                  "Output": [
@@ -100,7 +100,7 @@ index fab5f88..3b28327 100644
                  "Type": "Stepwise",
                  "Zones": [
                      "Zone 0"
-@@ -1722,18 +1722,18 @@
+@@ -1723,18 +1723,18 @@
                  "Name": "Stepwise_Aegis_VR",
                  "NegativeHysteresis": 2.0,
                  "Output": [
@@ -127,5 +127,5 @@ index fab5f88..3b28327 100644
                  "Zones": [
                      "Zone 0"
 -- 
-2.43.0
+2.47.3
 

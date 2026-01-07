@@ -1,0 +1,131 @@
+From adecd8240cf5e9c247cad977cb5dc3086e30683e Mon Sep 17 00:00:00 2001
+From: Daniel Hsu <Daniel-Hsu@quantatw.com>
+Date: Wed, 7 Jan 2026 15:56:24 +0800
+Subject: [PATCH 1/1] configuration: harma: fix swapped fan table reading and
+ output
+
+The fan table had the reading and output fields reversed.
+Update the table to correct the mapping.
+
+Change-Id: Ice4114ffbba9fb179c7bbad0dba6b1cc6f0f1319
+Signed-off-by: Daniel Hsu <Daniel-Hsu@quantatw.com>
+---
+ configurations/meta/harma/harma_mb.json       | 28 +++++++++----------
+ .../meta/harma/harma_mb_vr_infineon.json      | 28 +++++++++----------
+ 2 files changed, 28 insertions(+), 28 deletions(-)
+
+diff --git a/configurations/meta/harma/harma_mb.json b/configurations/meta/harma/harma_mb.json
+index 6fba8d5..2ea7dc4 100644
+--- a/configurations/meta/harma/harma_mb.json
++++ b/configurations/meta/harma/harma_mb.json
+@@ -1680,18 +1680,18 @@
+                 "Name": "Stepwise_Aegis_UBC",
+                 "NegativeHysteresis": 2.0,
+                 "Output": [
+-                    85.0,
+-                    90.0,
+-                    95.0,
+-                    100.0
+-                ],
+-                "PositiveHysteresis": 0.0,
+-                "Reading": [
+                     30.0,
+                     35.0,
+                     40.0,
+                     90.0
+                 ],
++                "PositiveHysteresis": 0.0,
++                "Reading": [
++                    85.0,
++                    90.0,
++                    95.0,
++                    100.0
++                ],
+                 "Type": "Stepwise",
+                 "Zones": [
+                     "Zone 0"
+@@ -1724,18 +1724,18 @@
+                 "Name": "Stepwise_Aegis_VR",
+                 "NegativeHysteresis": 2.0,
+                 "Output": [
+-                    70.0,
+-                    80.0,
+-                    90.0,
+-                    100.0
+-                ],
+-                "PositiveHysteresis": 0.0,
+-                "Reading": [
+                     15.0,
+                     20.0,
+                     30.0,
+                     90.0
+                 ],
++                "PositiveHysteresis": 0.0,
++                "Reading": [
++                    70.0,
++                    80.0,
++                    90.0,
++                    100.0
++                ],
+                 "Type": "Stepwise",
+                 "Zones": [
+                     "Zone 0"
+diff --git a/configurations/meta/harma/harma_mb_vr_infineon.json b/configurations/meta/harma/harma_mb_vr_infineon.json
+index fab5f88..3b28327 100644
+--- a/configurations/meta/harma/harma_mb_vr_infineon.json
++++ b/configurations/meta/harma/harma_mb_vr_infineon.json
+@@ -1678,18 +1678,18 @@
+                 "Name": "Stepwise_Aegis_UBC",
+                 "NegativeHysteresis": 2.0,
+                 "Output": [
+-                    85.0,
+-                    90.0,
+-                    95.0,
+-                    100.0
+-                ],
+-                "PositiveHysteresis": 0.0,
+-                "Reading": [
+                     30.0,
+                     35.0,
+                     40.0,
+                     90.0
+                 ],
++                "PositiveHysteresis": 0.0,
++                "Reading": [
++                    85.0,
++                    90.0,
++                    95.0,
++                    100.0
++                ],
+                 "Type": "Stepwise",
+                 "Zones": [
+                     "Zone 0"
+@@ -1722,18 +1722,18 @@
+                 "Name": "Stepwise_Aegis_VR",
+                 "NegativeHysteresis": 2.0,
+                 "Output": [
+-                    70.0,
+-                    80.0,
+-                    90.0,
+-                    100.0
+-                ],
+-                "PositiveHysteresis": 0.0,
+-                "Reading": [
+                     15.0,
+                     20.0,
+                     30.0,
+                     90.0
+                 ],
++                "PositiveHysteresis": 0.0,
++                "Reading": [
++                    70.0,
++                    80.0,
++                    90.0,
++                    100.0
++                ],
+                 "Type": "Stepwise",
+                 "Zones": [
+                     "Zone 0"
+-- 
+2.43.0
+

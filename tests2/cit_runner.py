@@ -61,7 +61,7 @@ class Tests:
         self.platform = platform
         self.tests_set = []
         self.formatted_tests_set = []
-        self.start_dir = start_dir + args.platform + "/"
+        self.start_dir = os.path.join(start_dir, platform)
         self.pattern = pattern
         self.denylist = denylist
 

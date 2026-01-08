@@ -8,10 +8,41 @@
 #define CMD_CODE_NIC_POWER_CONTROL 0x3
 
 // BS FPGA command
+#ifdef CONFIG_GRANDCANYON2
+#define BS_CHECK_BIC_STANDBY_MAX_RETRY        (6)
+
+#define BS_FPGA_SERVER_CHECK_BIC_STBY_PWR_RDY 0x03
+#define BS_FPGA_SERVER_POWER_CTRL 0x22
+#define BS_FPGA_SERVER_POWER_STATUS 0x04
+#define BS_FPGA_E1S0_POWER_CTRL 0x0D
+#define BS_FPGA_E1S1_POWER_CTRL 0x0C
+
+#define BS_FPGA_SERVER_CHECK_BIC_STBY_PWR_RDY_BIT 0x04
+
+// BMC CPLD I2C Configuration
+#define BMC_CPLD_I2C_BUS            3
+#define BMC_CPLD_SLAVE_ADDR         0x0f
+
+// Register Addresses
+#define BMC_CPLD_RESET_REG          0x01    // Reset control register
+
+// Register 0x01 Bit Masks (for reference)
+#define CPLD_BIT_RST_BTN_OUT        0x01    // bit 0: Reset Button Output
+
+// Reset Control Values
+// Note: RST_BMC_RSTBTN_OUT_R_N is active-low
+// bit 0 = 0: Reset asserted (button pressed)
+// bit 0 = 1: Reset deasserted (button released)
+#define BMC_CPLD_RESET_ASSERT       0x32    // Assert reset (bit 0 = 0)
+#define BMC_CPLD_RESET_DEASSERT     0x33    // Deassert reset (bit 0 = 1)
+#define BMC_CPLD_RESET_DELAY        2       // Hold time in seconds
+
+#else
 #define BS_FPGA_SERVER_POWER_CTRL 0x0F
 #define BS_FPGA_SERVER_POWER_STATUS 0x04
 #define BS_FPGA_E1S0_POWER_CTRL 0x0D
 #define BS_FPGA_E1S1_POWER_CTRL 0x0C
+#endif
 
 #define SERVER_POWER_BTN_HIGH 1
 #define SERVER_POWER_BTN_LOW  0

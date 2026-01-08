@@ -623,7 +623,11 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if (status == SERVER_POWER_OFF) {
         return POWER_STATUS_ERR;
       }
-      return bic_server_power_ctrl(SET_HOST_RESET);
+      #ifdef CONFIG_GRANDCANYON2
+        return pal_server_power_ctrl(SET_HOST_RESET);
+      #else
+        return bic_server_power_ctrl(SET_HOST_RESET);
+      #endif
 
     case SERVER_12V_ON:
       if (status != SERVER_12V_OFF) {
@@ -697,16 +701,82 @@ pal_sled_cycle(void) {
 int
 pal_server_power_ctrl(uint8_t action) {
   uint8_t pwr_seq[PWR_CTRL_ACT_CNT] = {SERVER_POWER_BTN_HIGH, SERVER_POWER_BTN_LOW, SERVER_POWER_BTN_HIGH};
+#ifdef CONFIG_GRANDCANYON2
+  uint8_t rst_seq[PWR_CTRL_ACT_CNT] = {BMC_CPLD_RESET_ASSERT, BMC_CPLD_RESET_DEASSERT, BMC_CPLD_RESET_ASSERT};  // 0x33, 0x32, 0x33
+#endif
   int ret = 0, i = 0;
   
-  if ( (action != SET_DC_POWER_OFF) && (action != SET_DC_POWER_ON) && (action != SET_GRACEFUL_POWER_OFF)) {
+  if ( (action != SET_DC_POWER_OFF) && (action != SET_DC_POWER_ON) && (action != SET_GRACEFUL_POWER_OFF) && (action != SET_HOST_RESET)) {
     syslog(LOG_ERR, "%s() invalid action\n", __func__);
     return -1;
   }
-  
+
+#ifdef CONFIG_GRANDCANYON2
+  int i2cfd = 0;
+  i2c_master_rw_command command;
+
+  // Open I2C for reset operation
+  if (action == SET_HOST_RESET) {
+    i2cfd = i2c_cdev_slave_open(BMC_CPLD_I2C_BUS, BMC_CPLD_SLAVE_ADDR, I2C_SLAVE_FORCE_CLAIM);
+    if (i2cfd < 0) {
+      syslog(LOG_ERR, "%s() Failed to open I2C bus %d for reset", __func__, BMC_CPLD_I2C_BUS);
+      return i2cfd;
+    }
+    syslog(LOG_INFO, "%s() Performing OS reset via CPLD", __func__);
+  }
+#endif
+
   for (i = 0; i < PWR_CTRL_ACT_CNT; i++) {
+#ifdef CONFIG_GRANDCANYON2
+    if (action == SET_HOST_RESET) {
+      // Reset via CPLD I2C register
+      memset(&command, 0, sizeof(command));
+      command.offset = BMC_CPLD_RESET_REG;
+      command.val = rst_seq[i];
+
+      ret = i2c_rdwr_msg_transfer(i2cfd, BMC_CPLD_SLAVE_ADDR << 1,
+                                  (uint8_t *)&command, sizeof(command), NULL, 0);
+    } else {
+      // Power control via button
+      ret = pal_set_pwr_btn(pwr_seq[i]);
+    }
+#else
+    // Non-GC2 platforms: only power button control
     ret = pal_set_pwr_btn(pwr_seq[i]);
-    if (pwr_seq[i] == SERVER_POWER_BTN_LOW) {
+#endif
+
+    if (ret < 0) {
+#ifdef CONFIG_GRANDCANYON2
+      syslog(LOG_ERR, "%s() Failed to set %s state to 0x%02X",
+             __func__,
+             (action == SET_HOST_RESET) ? "reset" : "power",
+             (action == SET_HOST_RESET) ? rst_seq[i] : pwr_seq[i]);
+      if (action == SET_HOST_RESET && i2cfd >= 0) {
+        close(i2cfd);
+      }
+#else
+      syslog(LOG_ERR, "%s() Failed to set power state to 0x%02X", __func__, pwr_seq[i]);
+#endif
+      return ret;
+    }
+
+    // Determine if delay is needed based on current state
+    bool need_delay = false;
+#ifdef CONFIG_GRANDCANYON2
+    if (action == SET_HOST_RESET) {
+      // For reset: delay when reset is active (0x33)
+      need_delay = (rst_seq[i] == BMC_CPLD_RESET_DEASSERT);
+    } else {
+      // For power: delay when button is pressed (LOW)
+      need_delay = (pwr_seq[i] == SERVER_POWER_BTN_LOW);
+    }
+#else
+    // Non-GC2: only check power button state
+    need_delay = (pwr_seq[i] == SERVER_POWER_BTN_LOW);
+#endif
+
+    // Apply appropriate delay
+    if (need_delay) {
       switch (action) {
         case SET_DC_POWER_OFF:
           sleep(DELAY_DC_POWER_OFF);
@@ -717,11 +787,23 @@ pal_server_power_ctrl(uint8_t action) {
         case SET_GRACEFUL_POWER_OFF:
           sleep(DELAY_GRACEFUL_SHUTDOWN);
           break;
+#ifdef CONFIG_GRANDCANYON2
+        case SET_HOST_RESET:
+          sleep(BMC_CPLD_RESET_DELAY);
+          break;
+#endif
         default:
           return -1;
       }
     }
   }
+#ifdef CONFIG_GRANDCANYON2
+  // Close I2C after reset operation
+  if (action == SET_HOST_RESET && i2cfd >= 0) {
+    close(i2cfd);
+    syslog(LOG_INFO, "%s() OS reset completed", __func__);
+  }
+#endif
   
   return ret;
 }

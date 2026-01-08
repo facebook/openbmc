@@ -42,14 +42,14 @@ unexport_gpio()
 
 check_duplicate_process()
 {
-    exec 2>$PIDFILE
-    flock -n 2 || (echo "Another process is running" && exit 1)
+    exec 9>$PIDFILE
+    flock -n 9 || (echo "Another process is running" && exit 1)
     ret=$?
     if [ $ret -eq 1 ]; then
       exit 1
     fi
     pid=$$
-    echo $pid 1>&200
+    echo $pid 1>&9
 }
 
 remove_pid_file()
@@ -159,32 +159,37 @@ config_spi1_pin_and_path(){
 }
 
 cleanup_spi(){
-    # COME CPLD: BIOS_FLASH_CS0
-    #                    to ( ) BMC_SPI1_CS1 0x7
-    #                       ( ) BMC_SPI1_CS0 0x5
-    #                       (X) SPI_PCH_CS0 0x4 (default)
-    #                       ( ) SPI_PCH_CS1 0x6
-    gpiocli -s BMC_I2C1_EN set-value 1
-    i2cset -f -y 0 0x1f 0xa 0x4
-    gpiocli -s BMC_I2C1_EN set-value 0
+    EXIT_STATUS=${1:-1}
+    if [ "$EXIT_STATUS" -ne 1 ]; then
+        # COME CPLD: BIOS_FLASH_CS0
+        #                    to ( ) BMC_SPI1_CS1 0x7
+        #                       ( ) BMC_SPI1_CS0 0x5
+        #                       (X) SPI_PCH_CS0 0x4 (default)
+        #                       ( ) SPI_PCH_CS1 0x6
+        gpiocli -s BMC_I2C1_EN set-value 1
+        i2cset -f -y 0 0x1f 0xa 0x4
+        gpiocli -s BMC_I2C1_EN set-value 0
 
-    # select muxing FLASH to normal mode
-    # BMC GPIO: IOB_FLASH 
-    #                    to (X) IOB_FPGA    0
-    #                       ( ) BMC_SPI1    1
-    gpiocli -s BMC_IOB_FLASH_SEL set-value 0
-    # BMC GPIO: BIOS_FLASH 
-    #                    to (X) NetLake CPU 0
-    #                       ( ) BMC_SPI1    1
-    gpiocli -s SPI_MUX_SEL set-value 0
-    # MCBCPLD: IOB_FLASH_WP_L
-    #                    to (X) 0 - Protect
-    #                       ( ) 1 - Not Protect
-    echo 0x0 > "$MCBCPLD_SYSFD_DIR/iob_flash_wp_l"
-
-    rm -rf /tmp/*_spi*_tmp
-    unexport_gpio
-    remove_pid_file
+        # select muxing FLASH to normal mode
+        # BMC GPIO: IOB_FLASH 
+        #                    to (X) IOB_FPGA    0
+        #                       ( ) BMC_SPI1    1
+        gpiocli -s BMC_IOB_FLASH_SEL set-value 0
+        # BMC GPIO: BIOS_FLASH 
+        #                    to (X) NetLake CPU 0
+        #                       ( ) BMC_SPI1    1
+        gpiocli -s SPI_MUX_SEL set-value 0
+        # MCBCPLD: IOB_FLASH_WP_L
+        #                    to (X) 0 - Protect
+        #                       ( ) 1 - Not Protect
+        echo 0x0 > "$MCBCPLD_SYSFD_DIR/iob_flash_wp_l"
+        
+        rm -rf /tmp/*_spi*_tmp
+        unexport_gpio
+        remove_pid_file
+    else
+        echo "Cleanup: Execution failed or interrupted (Status $EXIT_STATUS)"
+    fi
 }
 
 operate_spi1_dev(){
@@ -199,7 +204,7 @@ operate_spi1_dev(){
         "write")
                 if [ ! -f "$file" ]; then
                     echo "$file not exist!!!"
-                    exit 1
+                    exit 2
                 fi
                 write_spi1_dev "$dev" "$file"
         ;;

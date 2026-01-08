@@ -18,9 +18,15 @@
 # Boston, MA 02110-1301 USA
 #
 # shellcheck source=/dev/null
+# shellcheck disable=SC2329
+# shellcheck disable=SC2317
+exit_handler() {
+    EXIT_STATUS=$?
+    cleanup_spi "$EXIT_STATUS"
+}
 . /usr/local/bin/openbmc-utils.sh
 . /usr/local/bin/spi-utils.sh
-trap cleanup_spi INT TERM QUIT EXIT
+trap exit_handler INT TERM QUIT EXIT
 
 ui(){
     op=$1

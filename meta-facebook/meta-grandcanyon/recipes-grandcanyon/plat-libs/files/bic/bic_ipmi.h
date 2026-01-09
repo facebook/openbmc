@@ -72,6 +72,9 @@ typedef union _bic_config_u {
 } bic_config_u;
 
 int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
+#ifdef CONFIG_GRANDCANYON2
+int bic_get_fw_rev_ver(uint8_t slot_id, uint8_t *ver);
+#endif
 int bic_me_recovery(uint8_t command);
 int bic_get_vr_device_id(uint8_t *rbuf, uint8_t *rlen, uint8_t bus, uint8_t addr);
 int bic_get_ifx_vr_remaining_writes(uint8_t bus, uint8_t addr, uint8_t *writes);

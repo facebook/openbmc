@@ -40,11 +40,19 @@
 /*       VR fw update       */                            
 /****************************/
 #define WARNING_REMAINING_WRITES 3
+#ifdef CONFIG_GRANDCANYON2
+#define VR_BUS 0x4
+#else
 #define VR_BUS 0x8
+#endif
 #define VR_DATA_LEN 64
 #define VR_PACKET_DATA_LEN 2048
 #define DEVID_BYTE_CNT 6
+#ifdef CONFIG_GRANDCANYON2
+#define VR_CNT 3
+#else
 #define VR_CNT 4
+#endif
 
 #define MAX_ISL_IMG_BUF 64
 #define MAX_IFX_IMG_BUF 128
@@ -954,12 +962,21 @@ error_exit:
 struct dev_table {
   uint8_t addr;
   char *dev_name;
-} dev_list[] = {
+} 
+#ifdef CONFIG_GRANDCANYON2
+dev_list[] = {
+  {PVCCIN_FIVRA_ADDR,    "PVCCIN_FIVRA"},
+  {PVCCD_HV_ADDR,    "PVCCD_HV"},
+  {PVCCINFAON_ADDR, "PVCCINFAON"},
+};
+#else
+dev_list[] = {
   {VCCIN_ADDR,    "VCCIN/VSA"},
   {VCCIO_ADDR,    "VCCIO"},
   {VDDQ_AB_ADDR, "VDDQ_AB"},
   {VDDQ_DE_ADDR, "VDDQ_DE"},
 };
+#endif
 
 int dev_table_size = (sizeof(dev_list)/sizeof(struct dev_table));
 

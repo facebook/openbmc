@@ -2,9 +2,5 @@
 #
 #
 # GrandCanyon 2.0 Project
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-## Because bb file have UNPACKDIR define, don't need subdir
-LOCAL_URI += " \
-    file://usb-dbg-conf.c \
-    "
 
+CFLAGS:prepend = " -DCONFIG_GRANDCANYON2 "

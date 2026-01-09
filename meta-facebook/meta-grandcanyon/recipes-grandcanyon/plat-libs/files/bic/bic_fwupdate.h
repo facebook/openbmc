@@ -28,6 +28,11 @@ extern "C" {
 #include "bic_xfer.h"
 #include "bic.h"
 
+#ifdef CONFIG_GRANDCANYON2
+#define AST_BIC_IPMB_WRITE_COUNT_MAX 224
+#define PKT_SIZE (64*1024)
+#endif
+
 enum {
   UPDATE_BIOS = 0,
   UPDATE_BIC_BOOTLOADER,

@@ -305,6 +305,65 @@ pal_host_power_on_post_actions() {
   return 0;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+static int
+power_12v_off_pre_actions() {
+  int ret = 0;
+  
+  
+  // Before 12v off set BIC GPIO SRST# to LOW
+  /*
+  ret = gpio_set_value_by_shadow(fbgc_get_gpio_name(GPIO_UIC_COMP_BIC_RST_N), GPIO_VALUE_LOW);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s(): Failed to SET GPIO UIC_COMP_BIC_RST_N to LOW\n", __func__);
+  }
+  
+  */
+  return ret;
+}
+
+static int
+power_12v_off_post_actions() {
+  return 0;
+}
+
+int
+pal_get_bic_standby_pwr_status(uint8_t *status) {
+  int i2cfd = 0;
+  int ret = 0;
+  int retry = 0;
+  i2c_master_rw_command command;
+  memset(&command, 0, sizeof(command));
+  command.offset = BS_FPGA_SERVER_CHECK_BIC_STBY_PWR_RDY;
+  i2cfd = i2c_cdev_slave_open(I2C_BS_FPGA_BUS, BS_FPGA_SLAVE_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_ERR, "Fail to control server power because I2C BUS: %d open failed", I2C_BS_FPGA_BUS);
+    return i2cfd;
+  }
+  while (retry < MAX_RETRY) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, BS_FPGA_SLAVE_ADDR, (uint8_t *)&command.offset, sizeof(command.offset), status, sizeof(*status));
+    if (ret < 0) {
+      retry++;
+      msleep(100);
+    } else {
+      break;
+    }
+  }
+  close(i2cfd);
+
+  if (retry == MAX_RETRY) {
+    syslog(LOG_WARNING, "%s() fail to read SERVER FPGA offset: 0x%02X via i2c", __func__, command.offset);
+    return ret;
+  }
+  return 0;
+}
+
+static int
+power_12v_on_pre_actions() {
+  return 0;
+}
+#endif
+
 static int
 power_12v_on_post_actions() {
   int ret = 0;
@@ -315,7 +374,11 @@ power_12v_on_post_actions() {
     syslog(LOG_WARNING, "%s(): Failed to update Server FPGA version", __func__);
   }
   
+#ifdef CONFIG_GRANDCANYON2
+  return 0;
+#else
   return ret;
+#endif
 }
 
 int
@@ -390,7 +453,9 @@ pal_get_server_12v_power(uint8_t fru, uint8_t *status) {
 
 int
 pal_get_server_power(uint8_t fru, uint8_t *status) {
-  int ret = 0, i2cfd = 0;
+  int ret = 0;
+#ifndef CONFIG_GRANDCANYON2
+  int i2cfd = 0;
   char server_fpga_ver[MAX_VALUE_LEN] = {0};
   char server_fpga_stage[MAX_VALUE_LEN] = {0};
   char server_fpga_ver_num[MAX_VALUE_LEN] = {0};
@@ -398,6 +463,7 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
   i2c_master_rw_command command;
   uint8_t res = 0;
   int rlen = sizeof(res);
+#endif
   
   if (status == NULL) {
     syslog(LOG_WARNING, "%s() NULL pointer: *status", __func__);
@@ -415,6 +481,14 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
     return ret;
   }
   
+#ifdef CONFIG_GRANDCANYON2
+  ret = bic_get_server_power_status(status);
+  if (ret < 0) {
+    // if bic not responding, we reset status to SERVER_12V_ON
+    *status = SERVER_12V_ON;
+    syslog(LOG_WARNING, "%s(): BIC no response, server DC power status is unknown\n", __func__);
+  }
+#else
   ret = pal_get_fpga_ver_cache(I2C_BS_FPGA_BUS, GET_FPGA_VER_ADDR, server_fpga_ver);
   if (ret == 0) {
     snprintf(server_fpga_stage, sizeof(server_fpga_stage), "%c%c", server_fpga_ver[4], server_fpga_ver[5]);
@@ -454,6 +528,7 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
       syslog(LOG_WARNING, "%s(): BIC no response, server DC power status is unknown\n", __func__);
     }
   }
+#endif
 
   return 0;
 }
@@ -463,7 +538,11 @@ int
 pal_set_server_power(uint8_t fru, uint8_t cmd) {
   uint8_t status = 0;
   int ret = 0;
+#ifdef CONFIG_GRANDCANYON2
+  bool is_ctrl_via_bic = false;
+#else
   bool is_ctrl_via_bic = true;
+#endif
   char server_fpga_ver[MAX_VALUE_LEN] = {0};
   char server_fpga_stage[MAX_VALUE_LEN] = {0};
   char server_fpga_ver_num[MAX_VALUE_LEN] = {0};
@@ -634,12 +713,31 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
         return POWER_STATUS_ALREADY_OK;
       }
       
+#ifdef CONFIG_GRANDCANYON2
+      if(power_12v_on_pre_actions() < 0)
+      {
+        return POWER_STATUS_ERR;
+      }
+      if(server_power_12v_on() < 0)
+      {
+        return POWER_STATUS_ERR;
+      }
+      if(power_12v_on_post_actions() < 0)
+      {
+        return POWER_STATUS_ERR;
+      }
+#else
       ret = server_power_12v_on();
       if (ret == 0) {
         power_12v_on_post_actions();
       }
+#endif
       
+#ifndef CONFIG_GRANDCANYON2
       return ret;
+#else
+      break;
+#endif
 
     case SERVER_12V_OFF:
       if (status == SERVER_12V_OFF) {
@@ -648,19 +746,83 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if (pal_host_power_off_pre_actions() < 0 ) {
         return POWER_STATUS_ERR;
       }
+#ifdef CONFIG_GRANDCANYON2
+      if (power_12v_off_pre_actions() < 0)
+      {
+        return POWER_STATUS_ERR;
+      }
+      if (server_power_12v_off() < 0) {
+        return POWER_STATUS_ERR;
+      }
+      if (pal_host_power_off_post_actions() < 0)
+      {
+        return POWER_STATUS_ERR;
+      }
+      if (power_12v_off_post_actions() < 0)
+      {
+        return POWER_STATUS_ERR;
+      }
+#else
       ret = server_power_12v_off();
       if (ret == 0) {
         pal_host_power_off_post_actions();
       }
       return ret;
+#endif
+      break;
 
     case SERVER_12V_CYCLE:
       if (status == SERVER_12V_OFF) {
+#ifdef CONFIG_GRANDCANYON2
+        if(power_12v_on_pre_actions() < 0)
+        {
+          return POWER_STATUS_ERR;
+        }
+        if(server_power_12v_on() < 0)
+        {
+          return POWER_STATUS_ERR;
+        }
+        if(power_12v_on_post_actions() < 0)
+        {
+          return POWER_STATUS_ERR;
+        }
+#else
         return server_power_12v_on();
+#endif
       } else {
         if (pal_host_power_off_pre_actions() < 0 ) {
           return POWER_STATUS_ERR;
         }
+#ifdef CONFIG_GRANDCANYON2
+        if (power_12v_off_pre_actions() < 0)
+        {
+          return POWER_STATUS_ERR;
+        }
+        if (server_power_12v_off() < 0) {
+          return POWER_STATUS_ERR;
+        }
+        if (pal_host_power_off_post_actions() < 0)
+        {
+          return POWER_STATUS_ERR;
+        }
+        if (power_12v_off_post_actions() < 0)
+        {
+          return POWER_STATUS_ERR;
+        }
+        sleep(SERVER_AC_CYCLE_DELAY);
+        if(power_12v_on_pre_actions() < 0)
+        {
+          return POWER_STATUS_ERR;
+        }
+        if(server_power_12v_on() < 0)
+        {
+          return POWER_STATUS_ERR;
+        }
+        if(power_12v_on_post_actions() < 0)
+        {
+          return POWER_STATUS_ERR;
+        }
+#else
         if (server_power_12v_off() < 0) {
           return POWER_STATUS_ERR;
         }
@@ -670,6 +832,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
         } else {
           power_12v_on_post_actions();
         }
+#endif
       }
       break;
 

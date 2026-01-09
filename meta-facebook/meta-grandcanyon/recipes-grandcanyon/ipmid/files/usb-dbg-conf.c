@@ -336,7 +336,24 @@ static dbg_gpio_desc_t gdesc[] = {
   { 0x16, 0, 0, "DEBUG_GPIO_BMC_6" },
   { 0x17, 0, 3, "DEBUG_BMC_UART_SEL_R" },
 };
-
+#ifdef CONFIG_GRANDCANYON2
+// {name, sensor_num, unit, fru, disp_prec}
+static sensor_desc_t cri_sensor[] =
+{
+    {"SYS_HSC_PWR:" , PTB_P48V_AUX_Power         , "W"   , FRU_DPB, 1},
+    {"SYS_HSC_VOL:" , PTB_P48V_AUX               , "V"   , FRU_DPB, 2},
+    {"SYS_HSC_CUR:" , PTB_P48V_AUX_Current       , "A"   , FRU_DPB, 2},
+    {"FAN0_F:"      , FAN_0_FRONT                , "RPM" , FRU_DPB, 0},
+    {"FAN0_R:"      , FAN_0_REAR                 , "RPM" , FRU_DPB, 0},
+    {"FAN1_F:"      , FAN_1_FRONT                , "RPM" , FRU_DPB, 0},
+    {"FAN1_R:"      , FAN_1_REAR                 , "RPM" , FRU_DPB, 0},
+    {"FAN2_F:"      , FAN_2_FRONT                , "RPM" , FRU_DPB, 0},
+    {"FAN2_R:"      , FAN_2_REAR                 , "RPM" , FRU_DPB, 0},
+    {"FAN3_F:"      , FAN_3_FRONT                , "RPM" , FRU_DPB, 0},
+    {"FAN3_R:"      , FAN_3_REAR                 , "RPM" , FRU_DPB, 0},
+    {"NIC Temp:"    , NIC_SENSOR_TEMP            , "C"   , FRU_NIC, 0},
+};
+#else
 // {name, sensor_num, unit, fru, disp_prec}
 static sensor_desc_t cri_sensor[] =
 {
@@ -358,6 +375,8 @@ static sensor_desc_t cri_sensor[] =
     {"FAN3_R:"      , FAN_3_REAR                 , "RPM" , FRU_DPB, 0},
     {"NIC Temp:"    , NIC_SENSOR_TEMP            , "C"   , FRU_NIC, 0},
 };
+#endif
+
 
 // Expander Error Code is in Decimal 1~99, so needs the conversion
 // Expmale: 0x99 Convert to 99 literally

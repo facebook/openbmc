@@ -179,7 +179,7 @@ int BmcFpgaComponent::get_version(json& j) {
 int BmcFpgaComponent::create_update_image(const string& image, string update_image)
 {
   int ret = 0;
-  char buffer[MAX10_RPD_SIZE] = {0};
+  vector<char> buffer(rpd_image_size);
 
   ifstream inFpgaFile(image, ifstream::binary);
   ofstream outFpgaFile(update_image, ofstream::binary);
@@ -188,14 +188,16 @@ int BmcFpgaComponent::create_update_image(const string& image, string update_ima
     goto end;
   }
 
-  inFpgaFile.read(buffer, sizeof(buffer));
+  inFpgaFile.read(buffer.data(), rpd_image_size);
+
   if (inFpgaFile.bad() == true) {
     cout << "Failed to read image: " << image << endl;
     ret = -1;
     goto end;
   }
 
-  outFpgaFile.write(buffer, sizeof(buffer));
+  outFpgaFile.write(buffer.data(), rpd_image_size);
+
   if (outFpgaFile.bad() == true) {
     cout << "Failed to write update image: " << update_image << endl;
     ret = -1;

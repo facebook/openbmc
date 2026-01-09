@@ -37,6 +37,21 @@
 #include <sys/time.h>
 #include <time.h>
 
+#ifdef CONFIG_GRANDCANYON2
+enum {
+  //BIC to BMC
+  USB_INPUT_PORT = 0x3,
+  USB_OUTPUT_PORT = 0x82,
+};
+#else
+#endif
+
+#define TI_VENDOR_ID_SB  0x1CBE
+#define TI_PRODUCT_ID 0x0007
+
+#define AST1030_USB_VENDOR_ID_SB   0x1D6B  
+#define AST1030_USB_PRODUCT_ID_SB  0x0104
+
 #define MAX_FILE_CMD_BUF     1024
 #define MAX_USB_TRANSFER_LEN 64
 #define BIC_SERVER_FRUID     0x0
@@ -554,13 +569,22 @@ out:
 
 int
 bic_comp_init_usb_dev(usb_dev* udev) {
-#define TI_VENDOR_ID_SB  0x1CBE
-#define TI_PRODUCT_ID 0x0007
+  uint16_t BIC_USB_VENDOR_ID_SB;
+  uint16_t BIC_USB_VENDOR_PRODUCT_ID_SB;
+
+#ifdef CONFIG_GRANDCANYON2
+  BIC_USB_VENDOR_ID_SB = AST1030_USB_VENDOR_ID_SB;
+  BIC_USB_VENDOR_PRODUCT_ID_SB = AST1030_USB_PRODUCT_ID_SB;
+#else
+  BIC_USB_VENDOR_ID_SB = TI_VENDOR_ID_SB;
+  BIC_USB_VENDOR_PRODUCT_ID_SB = TI_VENDOR_ID_SB;
+#endif
+
   int ret = 0;
   int index = 0;
   char found = 0;
   ssize_t cnt = 0;
-  uint16_t vendor_id = TI_VENDOR_ID_SB;
+  uint16_t vendor_id = BIC_USB_VENDOR_ID_SB;
   int recheck = MAX_CHECK_USB_DEV_TIME;
 
   if (udev == NULL) {
@@ -596,7 +620,7 @@ bic_comp_init_usb_dev(usb_dev* udev) {
         return -1;
       }
 
-      if( (vendor_id == udev->desc.idVendor) && (TI_PRODUCT_ID == udev->desc.idProduct) ) {
+      if( (vendor_id == udev->desc.idVendor) && (BIC_USB_VENDOR_PRODUCT_ID_SB == udev->desc.idProduct) ) {
         ret = libusb_get_string_descriptor_ascii(udev->handle, udev->desc.iManufacturer, (unsigned char*) udev->manufacturer, sizeof(udev->manufacturer));
         if (ret < 0) {
           printf("Error get Manufacturer string descriptor -- exit\n");
@@ -704,6 +728,86 @@ bic_comp_init_usb_dev(usb_dev* udev) {
   return 0;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+static int
+util_check_usb_port() {
+  uint8_t tbuf[512], rbuf[512] = {0};
+  //uint8_t fw_comp;
+  int i, ret = -1;
+  int transferlen = sizeof(tbuf);
+  int transferred = 0, received = 0;
+  int retries = 3;
+  usb_dev bic_udev;
+  usb_dev *udev = &bic_udev;
+
+  for (i = 0; i < transferlen; ++i) {
+    tbuf[i] = i + 1;
+  }
+
+  udev->handle = NULL;
+  udev->ci = 1;
+  udev->epaddr = USB_INPUT_PORT;
+
+  // init usb device
+  ret = bic_comp_init_usb_dev(udev);
+  if (ret < 0) {
+    return ret;
+  }
+
+  printf("Input test data, USB timeout: 3000ms\n");
+  while (true) {
+    ret = libusb_bulk_transfer(udev->handle, udev->epaddr, tbuf, transferlen, &transferred, 3000);
+    if(((ret != 0) || (transferlen != transferred))) {
+      printf("Error in transferring data! err = %d and transferred = %d(expected data length 64)\n",ret ,transferred);
+      printf("Retry since  %s\n", libusb_error_name(ret));
+      retries--;
+      if (!retries) {
+        ret = -1;
+        break;
+      }
+      msleep(100);
+    } else
+      break;
+  }
+    if (ret != 0) {
+    goto exit;
+  }
+
+  udev->epaddr = USB_OUTPUT_PORT;
+  retries = 3;
+  while (true) {
+    ret = libusb_bulk_transfer(udev->handle, udev->epaddr, rbuf, sizeof(rbuf), &received, 3000);
+    if (ret != 0) {
+      printf("Error in receiving data! err = %d (%s)\n", ret, libusb_error_name(ret));
+      if (!(--retries)) {
+        ret = -1;
+        break;
+      }
+    } else {
+      //printf("Received length: %d\n", received);
+      printf("Received data: ");
+      for (i = 0; i < received; ++i) {
+        printf("%02x ", rbuf[i]);
+      }
+      printf("\n");
+      break;
+    }
+  }
+
+exit:
+
+  if (ret != 0) {
+    printf("Check USB port Failed\n");
+  } else {
+    printf("Check USB port Successful\n");
+  }
+
+  printf("\n"); 
+
+  return ret;
+}
+
+#else
 static int
 util_check_usb_port() {
   int ret = -1;
@@ -748,6 +852,8 @@ util_check_usb_port() {
   printf("\n");
   return ret;
 }
+#endif
+
 
 static int
 util_get_config() {

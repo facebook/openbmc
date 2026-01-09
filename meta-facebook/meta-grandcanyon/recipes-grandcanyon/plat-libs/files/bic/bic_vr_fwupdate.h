@@ -34,10 +34,16 @@ extern "C" {
 #define TI_DEVID_LEN  0x6
 
 // VR ADDR
+#ifdef CONFIG_GRANDCANYON2
+#define PVCCIN_FIVRA_ADDR       0xC0
+#define PVCCD_HV_ADDR           0xC4
+#define PVCCINFAON_ADDR         0xEC
+#else
 #define VCCIN_ADDR    0xC0
 #define VCCIO_ADDR    0xC4
 #define VDDQ_AB_ADDR  0xC8
 #define VDDQ_DE_ADDR  0xCC
+#endif
 
 int update_bic_vr(char *image, uint8_t force);
 

@@ -33,7 +33,40 @@ int BiosComponent::_update(const string& image, uint8_t opt) {
   int retry_count = 0;
 
   try {
+    printf("[%s]Start bic_bios _update...\n", __func__);
     server.ready();
+#ifdef CONFIG_GRANDCANYON2
+    cout << "Shutting down server gracefully..." << endl;
+    pal_set_server_power(FRU_SERVER, SERVER_GRACEFUL_SHUTDOWN);
+
+    //Checking Server Power Status to make sure Server is really Off
+    while (retry_count < MAX_GET_PWR_RETRY) {
+      ret = pal_get_server_power(FRU_SERVER, &status);
+      if ((ret == 0) && (status == SERVER_POWER_OFF)){
+        break;
+      } else {
+        retry_count++;
+        sleep(2);
+      }
+    }
+    if (retry_count == MAX_GET_PWR_RETRY) {
+      cerr << "Failed to Power Off Server. Stopping the update!" << endl;
+      return -1;
+    }
+    if (opt != FORCE_UPDATE) {
+
+
+      ret = bic_me_recovery(RECOVERY_MODE);
+      if (ret < 0) {
+        cerr << "Failed to set ME to recovery mode. Stopping the update!" << endl;
+        ret = FW_STATUS_FAILURE;
+        goto exit;
+      }
+      sleep(3);
+    } else {
+      cout << "Force updating BIOS firmware..." << endl;
+    }
+#else
     if (opt != FORCE_UPDATE) {
       cout << "Shutting down server gracefully..." << endl;
       pal_set_server_power(FRU_SERVER, SERVER_GRACEFUL_SHUTDOWN);
@@ -63,8 +96,13 @@ int BiosComponent::_update(const string& image, uint8_t opt) {
     } else {
       cout << "Force updating BIOS firmware..." << endl;
     }
+#endif
 
+#ifdef CONFIG_GRANDCANYON2
+    // OPENBIC don't need mux bios spi flash by FPGA, it can directly control it.
+#else
     bic_switch_mux_for_bios_spi(MUX_SWITCH_FPGA);
+#endif
     sleep(1);
     if (opt == DUMP_FW) {
       ret = bic_dump_bios_fw((char *)image.c_str());
@@ -73,8 +111,15 @@ int BiosComponent::_update(const string& image, uint8_t opt) {
     }
     if (ret != 0) {
       // recover to original setting
+#ifdef CONFIG_GRANDCANYON2
+      printf("[%s]Before ME recovery...\n", __func__);
+#else
       bic_switch_mux_for_bios_spi(MUX_SWITCH_PCH);
+#endif
       bic_me_recovery(RESTORE_FACTORY_DEFAULT);
+#ifdef CONFIG_GRANDCANYON2
+      printf("[%s]After ME recovery...\n", __func__);
+#endif
     }
   exit:
     sleep(1);

@@ -33,6 +33,9 @@ extern "C" {
 #define SIZE_IANA_ID 3
 
 extern const uint32_t IANA_ID;
+#ifdef CONFIG_GRANDCANYON2
+extern const uint32_t META_IANA_ID;
+#endif
 
 enum NETFN_OEM_38 {
   BIC_CMD_OEM_GET_SET_GPIO      = 0x41,
@@ -63,14 +66,30 @@ enum {
   BIC_GPIO_SET_DIRECTION_STATUS,
 };
 
+#ifdef CONFIG_GRANDCANYON2
+// BIC interface
+enum {
+  NONE_INTF     = 0xff,
+};
+#endif
+
 int i2c_open(uint8_t bus_id, uint8_t addr_7bit);
 int i2c_io(int fd, uint8_t *tbuf, uint8_t tcount, uint8_t *rbuf, uint8_t rcount);
 int is_bic_ready();
+#ifdef CONFIG_GRANDCANYON2
+int bic_data_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen, uint8_t intf);
+int bic_data_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint16_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
+#endif
 int bic_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint16_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
+#ifdef CONFIG_GRANDCANYON2
+int open_and_get_size(char *path, size_t *file_size);
+#else
 int open_and_get_size(char *path, int *file_size);
+#endif
 int send_image_data_via_bic(uint8_t comp, uint32_t offset, uint16_t len, uint32_t image_len, uint8_t *buf);
 int _set_fw_update_ongoing(uint16_t tmout);
 int bic_me_xmit(uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

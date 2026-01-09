@@ -132,6 +132,11 @@ extern "C" {
 
 #define UIC_FPGA_UART_BRIDGING_OFFSET (0x13)
 
+#ifdef CONFIG_GRANDCANYON2
+#define IANA_ID_SIZE 3
+#endif
+
+
 extern const char *board_stage[];
 
 enum {
@@ -244,6 +249,22 @@ typedef struct _platformInformation {
   char uicId[SKU_UIC_ID_SIZE];
   char uicType[SKU_UIC_TYPE_SIZE];
 } platformInformation;
+
+// Card Type
+enum {
+  TYPE_1OU_SI_TEST_CARD = 0x0,
+  TYPE_1OU_EXP_WITH_6_M2,
+  TYPE_1OU_RAINBOW_FALLS,
+  TYPE_1OU_VERNAL_FALLS_WITH_TI,  // TI BIC
+  TYPE_1OU_VERNAL_FALLS_WITH_AST, // AST1030 BIC
+  TYPE_1OU_KAHUNA_FALLS,
+  TYPE_1OU_WAIMANO_FALLS,
+  TYPE_1OU_EXP_WITH_NIC,
+  TYPE_1OU_OLMSTEAD_POINT,
+  TYPE_1OU_NIAGARA_FALLS,
+  TYPE_1OU_ABSENT = 0xFE,
+  TYPE_1OU_UNKNOWN = 0xFF,
+};
 
 int fbgc_common_get_chassis_type(uint8_t *type);
 void msleep(int msec);

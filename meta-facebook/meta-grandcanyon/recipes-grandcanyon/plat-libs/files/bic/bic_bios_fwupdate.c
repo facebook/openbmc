@@ -97,6 +97,46 @@ check_bios_image(int fd, long size) {
   return 0;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+static int
+_update_fw(uint8_t slot_id, uint8_t target, uint32_t offset, uint16_t len, uint8_t *buf) {
+  uint8_t tbuf[256] = {0x00}; // IANA ID
+  uint8_t rbuf[16] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret;
+  int retries = MAX_RETRY;
+  if (!buf) return -1;
+  if (len > AST_BIC_IPMB_WRITE_COUNT_MAX) return -1;   /* 保險再卡一次 */
+  
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&META_IANA_ID, SIZE_IANA_ID);
+  tbuf[3] = target;
+
+  tbuf[4] =  offset        & 0xFF;
+  tbuf[5] = (offset >>  8) & 0xFF;
+  tbuf[6] = (offset >> 16) & 0xFF;
+  tbuf[7] = (offset >> 24) & 0xFF;
+
+  tbuf[8] =  len & 0xFF;
+  tbuf[9] = (len >> 8)  & 0xFF;
+
+  memcpy(&tbuf[10], buf, len);
+
+  tlen = len + 10;
+
+bic_send:
+  ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, NONE_INTF);
+  if ((ret) && (retries--)) {
+    sleep(1);
+    printf("_update_fw: slot: %d, target %d, offset: %u, len: %d retrying..\
+           \n",    slot_id, target, offset, len);
+    goto bic_send;
+  }
+
+  return ret;
+}
+#else
 static int
 _update_fw(uint8_t target, uint32_t offset, uint16_t len, uint8_t *read_buf) {
   uint8_t rbuf[MAX_IPMB_BUFFER] = {0x00};
@@ -150,9 +190,15 @@ _update_fw(uint8_t target, uint32_t offset, uint16_t len, uint8_t *read_buf) {
 
   return ret;
 }
+#endif
 
+#ifdef CONFIG_GRANDCANYON2
+int
+update_bic_bios(uint8_t slot_id, uint8_t comp, char *image, uint8_t force) {
+#else
 int
 update_bic_bios(uint8_t comp, char *image, uint8_t force) {
+#endif
   struct timeval start, end;
   struct stat st;
   int ret = -1, rc = 0;
@@ -172,7 +218,11 @@ update_bic_bios(uint8_t comp, char *image, uint8_t force) {
     goto error_exit;
   }
 
+#ifdef CONFIG_GRANDCANYON2
+  printf("updating fw on server: %d\n", slot_id);
+#else
   printf("updating fw on server:\n");
+#endif
 
   // Open the file exclusively for read
   fd = open(image, O_RDONLY, 0666);
@@ -201,12 +251,12 @@ update_bic_bios(uint8_t comp, char *image, uint8_t force) {
 
   // Set the remain bytes of image to 0xFF
   FILE *image_file = fopen(image, "ab");
-
+  
   if (image_file == NULL) {
     syslog(LOG_ERR, "%s: Update firmware failed because fail to open image, error: %s", __func__, strerror(errno));
     goto error_exit;
   }
-
+  
   initial_buf[0] = INITIAL_BYTE;
   while (remain > 0) {
     if ((fwrite(initial_buf, sizeof(unsigned char), 1, image_file)) != sizeof(unsigned char)) {
@@ -251,7 +301,11 @@ update_bic_bios(uint8_t comp, char *image, uint8_t force) {
       break;
     }
     // Send data to Bridge-IC
+#ifdef CONFIG_GRANDCANYON2
+    rc = _update_fw(slot_id, target, offset, count, read_buf);
+#else
     rc = _update_fw(target, offset, count, read_buf);
+#endif
 
     if (rc < 0) {
       goto error_exit;
@@ -268,10 +322,14 @@ update_bic_bios(uint8_t comp, char *image, uint8_t force) {
   }
   printf("\n");
 
+#ifdef CONFIG_GRANDCANYON2
+  // Remove verify_bios_image() part first
+#else
   _set_fw_update_ongoing(FW_UPDATE_TIMEOUT_2M);
   if (verify_bios_image(fd, st.st_size) < 0 ) {
     goto error_exit;
   }
+#endif
 
   gettimeofday(&end, NULL);
   printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
@@ -291,7 +349,11 @@ error_exit:
 // Read firmware for various components
 static int
 _dump_fw(uint32_t offset, uint8_t len, uint8_t *rbuf, uint8_t *rlen) {
+#ifdef CONFIG_GRANDCANYON2
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x15, 0xA0, 0x00};  // IANA ID
+#else
   uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00};  // IANA ID
+#endif
   int ret;
   int retries = 3;
 
@@ -354,7 +416,11 @@ bic_dump_bios_fw(char *path) {
     }
 
     // Write to file
+#ifdef CONFIG_GRANDCANYON2
+    count = write(fd, &buf[3], rlen);
+#else
     count = write(fd, &buf[3], rlen-3);
+#endif
     if (count <= 0) {
       ret = -1;
       goto error_exit;
@@ -384,3 +450,42 @@ error_exit:
 
   return ret;
 }
+
+#ifdef CONFIG_GRANDCANYON2
+struct bic_get_fw_cksum_sha256_req {
+  uint8_t iana_id[3];
+  uint8_t target;
+  uint32_t offset;
+  uint32_t length;
+} __attribute__((packed));
+
+struct bic_get_fw_cksum_sha256_res {
+  uint8_t iana_id[3];
+  uint8_t cksum[32];
+} __attribute__((packed));
+
+int
+bic_get_fw_cksum_sha256(uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum) {
+  int ret;
+  struct bic_get_fw_cksum_sha256_req req = {
+    .iana_id = {0x15, 0xa0, 0x00},
+    .target = target & 0X7F,
+    .offset = offset,
+    .length = len,
+  };
+  struct bic_get_fw_cksum_sha256_res res = {0};
+  uint8_t rlen = sizeof(res);
+
+  ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, BIC_CMD_OEM_FW_CKSUM_SHA256, (uint8_t *) &req, sizeof(req), (uint8_t *) &res, &rlen);
+  if (ret != 0) {
+    return -1;
+  }
+  if (rlen != sizeof(res)) {
+    return -2;
+  }
+
+  memcpy(cksum, res.cksum, sizeof(res.cksum));
+
+  return 0;
+}
+#endif

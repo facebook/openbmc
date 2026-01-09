@@ -84,6 +84,30 @@ int BicFwComponent::fupdate(const string& image) {
   return update_internal(image, true);
 }
 
+#ifdef CONFIG_GRANDCANYON2
+int BicFwComponent::get_ver_str(string& s) {
+  int ret = 0;
+  uint8_t rbuf[32] = {0};
+
+  ret = bic_get_fw_ver(FRU_SERVER, fw_comp, rbuf);
+  if (!ret) {
+    stringstream ver;
+    size_t len = strlen((char *)rbuf);
+    if (len >= 4) {         // new version format
+      ver << "obgc2-" << string((char *)(rbuf + 4)) << "-v" << hex << setfill('0')
+          << setw(2) << (int)rbuf[0] << setw(2) << (int)rbuf[1] << "."
+          << setw(2) << (int)rbuf[2] << "." << setw(2) << (int)rbuf[3];
+    } else if (len == 2) {  // old version format
+      ver << "v" << hex << (int)rbuf[0] << "." << setfill('0') << setw(2) << (int)rbuf[1];
+    } else {
+      ver << "Format not supported";
+    }
+    s = ver.str();
+  }
+
+  return ret;
+}  
+#else
 int BicFwComponent::get_ver_str(string& s) {
   uint8_t ver[MAX_BIC_VER_STR_LEN] = {0};
   char ver_str[MAX_BIC_VER_STR_LEN] = {0};
@@ -96,6 +120,9 @@ int BicFwComponent::get_ver_str(string& s) {
 
   return ret;
 }
+
+#endif
+
 
 int BicFwComponent::print_version() {
   string ver("");
@@ -224,4 +251,10 @@ int BicFwBlComponent::get_version(json& j) {
 }
 
 BicFwComponent bic_fw1("server", "bic", FW_BIC);
+
+#ifdef CONFIG_GRANDCANYON2
+  // There is no BIC bootloader in Grand Canyon 2.0(AST1030)
+#else
 BicFwBlComponent bicbl_fw1("server", "bicbl", FW_BIC_BOOTLOADER);
+#endif
+

@@ -146,7 +146,11 @@ bic_get_server_power_status(uint8_t *power_status) {
   }
   
   memset(&command, 0, sizeof(command));
+  #ifdef CONFIG_GRANDCANYON2
+  memcpy(&command, (uint8_t *)&META_IANA_ID, ianalen);
+  #else
   memcpy(&command, (uint8_t *)&IANA_ID, ianalen);
+  #endif
   command.gpio_action = BIC_GPIO_GET_OUTPUT_STATUS;
   command.gpio_number = BIC_PWR_STATUS_GPIO_NUM;
   

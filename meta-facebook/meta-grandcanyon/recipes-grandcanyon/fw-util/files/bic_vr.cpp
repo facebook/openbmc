@@ -15,15 +15,30 @@
 #include <openbmc/pal.h>
 using namespace std;
 
+#ifdef CONFIG_GRANDCANYON2
+#define MB_VR_I2C_BUS 0x4
+#else
+#define MB_VR_I2C_BUS 0x8
+#endif
+
+#ifdef CONFIG_GRANDCANYON2
+                           // addr, VR name
+map<uint8_t, string> list = {{0xC0, "PVCCIN_FIVRA"},
+                             {0xC4, "PVCCD_HV"},
+                             {0xEC, "PVCCINFAON"}};
+
+#else
                            // addr, VR name
 map<uint8_t, string> list = {{0xC0, "VCCIN_VSA"},
                              {0xC4, "VCCIO"},
                              {0xC8, "VDDQ_AB"},
                              {0xCC, "VDDQ_DE"}};
+#endif
+
 
 int VrComponent::get_ver_str(uint8_t& addr, string& s) {
   int ret = 0;
-  constexpr auto bus = 0x8;
+  constexpr auto bus = MB_VR_I2C_BUS;
   char ver_str[MAX_VALUE_LEN] = {0};
 
   ret = bic_get_vr_ver_cache(bus, addr, ver_str);

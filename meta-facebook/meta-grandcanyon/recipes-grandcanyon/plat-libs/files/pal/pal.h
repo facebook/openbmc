@@ -156,7 +156,11 @@ extern "C" {
 
 #define E1S_IOCM_SLOT_NUM 2
 
+#ifdef CONFIG_GRANDCANYON2
+#define BIOS_POST_CMPLT   1
+#else
 #define BIOS_POST_CMPLT   67
+#endif
 
 #define ERROR_ID_LOG_LEN  16
 

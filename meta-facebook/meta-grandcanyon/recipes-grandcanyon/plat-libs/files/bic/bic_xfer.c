@@ -42,7 +42,9 @@
 #define I2C_IO_MSG_CNT 2
 
 const uint32_t IANA_ID = 0x009C9C;
-
+#ifdef CONFIG_GRANDCANYON2
+const uint32_t META_IANA_ID = 0x00A015;
+#endif
 
 int
 i2c_open(uint8_t bus_id, uint8_t addr_7bit) {
@@ -197,6 +199,23 @@ bic_ipmb_wrapper(uint8_t netfn, uint8_t cmd,
   return BIC_STATUS_SUCCESS;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+int
+open_and_get_size(char *path, size_t *file_size) {
+  struct stat finfo;
+  int fd;
+
+  fd = open(path, O_RDONLY, 0666);
+  if ( fd < 0 ) {
+    return fd;
+  }
+
+  fstat(fd, &finfo);
+  *file_size = finfo.st_size;
+
+  return fd;
+}
+#else
 int
 open_and_get_size(char *path, int *file_size) {
   struct stat finfo;
@@ -211,6 +230,7 @@ open_and_get_size(char *path, int *file_size) {
 
   return fd;
 }
+#endif
 
 int
 send_image_data_via_bic(uint8_t comp, uint32_t offset, uint16_t len, uint32_t image_len, uint8_t *buf) {
@@ -271,6 +291,69 @@ _set_fw_update_ongoing(uint16_t tmout) {
   return 0;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+int
+bic_me_xmit(uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen) {
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x00};
+  uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
+  uint8_t rlen = 0;
+  uint8_t tlen = 0;
+  int ret = 0;
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&META_IANA_ID, 3);
+
+  // Fill the interface number as ME
+  tbuf[3] = BIC_INTF_ME;
+
+  // Fill the data to be sent
+  memcpy(&tbuf[4], txbuf, txlen);
+
+  // Send data length includes IANA ID and interface number
+  tlen = txlen + 4;
+
+  ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, CMD_OEM_1S_MSG_OUT, tbuf, tlen, rbuf, &rlen);
+  if (ret != 0) {
+    return BIC_STATUS_FAILURE;
+  }
+
+  // Make sure the received interface number is same
+  if (rbuf[3] != tbuf[3]) {
+    return BIC_STATUS_FAILURE;
+  }
+
+  // Copy the received data to caller skipping header
+  memcpy(rxbuf, &rbuf[6], rlen - 6);
+
+  *rxlen = rlen - 6;
+
+  return BIC_STATUS_SUCCESS;
+}
+
+// Follow YV35
+// Repack data according to the interface
+int
+bic_data_send(uint8_t slot_id, uint8_t netfn, uint8_t cmd, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t *rlen, uint8_t intf) {
+  int ret = 0;
+
+  switch(intf) {
+    case NONE_INTF:
+      ret = bic_data_wrapper(slot_id, netfn, cmd, tbuf, tlen, rbuf, rlen);
+      break;
+  }
+  return ret;
+}
+
+int bic_data_wrapper(uint8_t slot_id, uint8_t netfn, uint8_t cmd,
+  uint8_t *txbuf, uint16_t txlen, uint8_t *rxbuf, uint8_t *rxlen) {
+
+  int ret = 0;
+  ret = bic_ipmb_wrapper(netfn, cmd, txbuf, txlen, rxbuf, rxlen);
+  return ret;
+}
+
+#else  // !CONFIG_GRANDCANYON2
+
 int
 bic_me_xmit(uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen) {
   uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x00};
@@ -308,3 +391,4 @@ bic_me_xmit(uint8_t *txbuf, uint8_t txlen, uint8_t *rxbuf, uint8_t *rxlen) {
 
   return BIC_STATUS_SUCCESS;
 }
+#endif  // CONFIG_GRANDCANYON2

@@ -12,7 +12,12 @@
 // Register NIC
 NicExtComponent nic_fw("nic", "nic", "nic_fw_ver", FRU_NIC, 0x00);
 BmcFpgaComponent uic_fpga_fw("uic", "fpga", MAX10_10M25, I2C_UIC_FPGA_BUS, 0x40, UIC_FPGA_LOCATION);
+#ifdef CONFIG_GRANDCANYON2
+BmcFpgaComponent bs_fpga_fw("server", "fpga", MAX10_10M04, I2C_BS_FPGA_BUS, 0x40, BS_FPGA_LOCATION);
+#else
 BmcFpgaComponent bs_fpga_fw("server", "fpga", MAX10_10M25, I2C_BS_FPGA_BUS, 0x40, BS_FPGA_LOCATION);
+#endif
+
 BiosComponent bios_fw("server", "bios", FW_BIOS);
 VrComponent vr_fw("server", "vr");
 ExpanderComponent exp_fw("scc", "exp");

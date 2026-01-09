@@ -9,3 +9,4 @@ SRC_URI += " \
     file://power-on.sh \
     "
 
+CFLAGS:prepend = " -DCONFIG_GRANDCANYON2 "

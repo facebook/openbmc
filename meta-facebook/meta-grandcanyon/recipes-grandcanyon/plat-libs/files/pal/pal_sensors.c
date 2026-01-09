@@ -80,6 +80,291 @@ PAL_SENSOR_MAP uic_sensor_map[] = {
   {"UIC_INLET_TEMP", TEMP_INLET, read_temp, true, {45, 0, 0, 0, 0, 0, 0, 0}, TEMP},
 };
 
+#ifdef CONFIG_GRANDCANYON2
+PAL_SENSOR_MAP dpb_sensor_map[] = {
+  [HDD_SMART_TEMP_00] =
+  {"HDD_SMART_TEMP_00", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_01] =
+  {"HDD_SMART_TEMP_01", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_02] =
+  {"HDD_SMART_TEMP_02", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_03] =
+  {"HDD_SMART_TEMP_03", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_04] =
+  {"HDD_SMART_TEMP_04", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_05] =
+  {"HDD_SMART_TEMP_05", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_06] =
+  {"HDD_SMART_TEMP_06", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_07] =
+  {"HDD_SMART_TEMP_07", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_08] =
+  {"HDD_SMART_TEMP_08", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_09] =
+  {"HDD_SMART_TEMP_09", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_10] =
+  {"HDD_SMART_TEMP_10", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_11] =
+  {"HDD_SMART_TEMP_11", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_12] =
+  {"HDD_SMART_TEMP_12", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_13] =
+  {"HDD_SMART_TEMP_13", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_14] =
+  {"HDD_SMART_TEMP_14", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_15] =
+  {"HDD_SMART_TEMP_15", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_16] =
+  {"HDD_SMART_TEMP_16", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_17] =
+  {"HDD_SMART_TEMP_17", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_18] =
+  {"HDD_SMART_TEMP_18", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_19] =
+  {"HDD_SMART_TEMP_19", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_20] =
+  {"HDD_SMART_TEMP_20", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_21] =
+  {"HDD_SMART_TEMP_21", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_22] =
+  {"HDD_SMART_TEMP_22", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_23] =
+  {"HDD_SMART_TEMP_23", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_24] =
+  {"HDD_SMART_TEMP_24", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_25] =
+  {"HDD_SMART_TEMP_25", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_26] =
+  {"HDD_SMART_TEMP_26", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_27] =
+  {"HDD_SMART_TEMP_27", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_28] =
+  {"HDD_SMART_TEMP_28", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_29] =
+  {"HDD_SMART_TEMP_29", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_30] =
+  {"HDD_SMART_TEMP_30", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_31] =
+  {"HDD_SMART_TEMP_31", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_32] =
+  {"HDD_SMART_TEMP_32", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_33] =
+  {"HDD_SMART_TEMP_33", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_34] =
+  {"HDD_SMART_TEMP_34", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_SMART_TEMP_35] =
+  {"HDD_SMART_TEMP_35", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [HDD_P5V_SENSE_0] =
+  {"HDD_P5V_SENSE_0", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_0] =
+  {"HDD_P12V_SENSE_0", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_1] =
+  {"HDD_P5V_SENSE_1", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_1] =
+  {"HDD_P12V_SENSE_1", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_2] =
+  {"HDD_P5V_SENSE_2", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_2] =
+  {"HDD_P12V_SENSE_2", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_3] =
+  {"HDD_P5V_SENSE_3", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_3] =
+  {"HDD_P12V_SENSE_3", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_4] =
+  {"HDD_P5V_SENSE_4", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_4] =
+  {"HDD_P12V_SENSE_4", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_5] =
+  {"HDD_P5V_SENSE_5", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_5] =
+  {"HDD_P12V_SENSE_5", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_6] =
+  {"HDD_P5V_SENSE_6", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_6] =
+  {"HDD_P12V_SENSE_6", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_7] =
+  {"HDD_P5V_SENSE_7", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_7] =
+  {"HDD_P12V_SENSE_7", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_8] =
+  {"HDD_P5V_SENSE_8", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_8] =
+  {"HDD_P12V_SENSE_8", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_9] =
+  {"HDD_P5V_SENSE_9", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_9] =
+  {"HDD_P12V_SENSE_9", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_10] =
+  {"HDD_P5V_SENSE_10", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_10] =
+  {"HDD_P12V_SENSE_10", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_11] =
+  {"HDD_P5V_SENSE_11", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_11] =
+  {"HDD_P12V_SENSE_11", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_12] =
+  {"HDD_P5V_SENSE_12", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_12] =
+  {"HDD_P12V_SENSE_12", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_13] =
+  {"HDD_P5V_SENSE_13", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_13] =
+  {"HDD_P12V_SENSE_13", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_14] =
+  {"HDD_P5V_SENSE_14", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_14] =
+  {"HDD_P12V_SENSE_14", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_15] =
+  {"HDD_P5V_SENSE_15", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_15] =
+  {"HDD_P12V_SENSE_15", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_16] =
+  {"HDD_P5V_SENSE_16", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_16] =
+  {"HDD_P12V_SENSE_16", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_17] =
+  {"HDD_P5V_SENSE_17", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_17] =
+  {"HDD_P12V_SENSE_17", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_18] =
+  {"HDD_P5V_SENSE_18", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_18] =
+  {"HDD_P12V_SENSE_18", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_19] =
+  {"HDD_P5V_SENSE_19", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_19] =
+  {"HDD_P12V_SENSE_19", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_20] =
+  {"HDD_P5V_SENSE_20", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_20] =
+  {"HDD_P12V_SENSE_20", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_21] =
+  {"HDD_P5V_SENSE_21", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_21] =
+  {"HDD_P12V_SENSE_21", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_22] =
+  {"HDD_P5V_SENSE_22", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_22] =
+  {"HDD_P12V_SENSE_22", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_23] =
+  {"HDD_P5V_SENSE_23", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_23] =
+  {"HDD_P12V_SENSE_23", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_24] =
+  {"HDD_P5V_SENSE_24", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_24] =
+  {"HDD_P12V_SENSE_24", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_25] =
+  {"HDD_P5V_SENSE_25", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_25] =
+  {"HDD_P12V_SENSE_25", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_26] =
+  {"HDD_P5V_SENSE_26", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_26] =
+  {"HDD_P12V_SENSE_26", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_27] =
+  {"HDD_P5V_SENSE_27", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_27] =
+  {"HDD_P12V_SENSE_27", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_28] =
+  {"HDD_P5V_SENSE_28", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_28] =
+  {"HDD_P12V_SENSE_28", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_29] =
+  {"HDD_P5V_SENSE_29", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_29] =
+  {"HDD_P12V_SENSE_29", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_30] =
+  {"HDD_P5V_SENSE_30", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_30] =
+  {"HDD_P12V_SENSE_30", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_31] =
+  {"HDD_P5V_SENSE_31", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_31] =
+  {"HDD_P12V_SENSE_31", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_32] =
+  {"HDD_P5V_SENSE_32", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_32] =
+  {"HDD_P12V_SENSE_32", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_33] =
+  {"HDD_P5V_SENSE_33", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_33] =
+  {"HDD_P12V_SENSE_33", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_34] =
+  {"HDD_P5V_SENSE_34", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_34] =
+  {"HDD_P12V_SENSE_34", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [HDD_P5V_SENSE_35] =
+  {"HDD_P5V_SENSE_35", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [HDD_P12V_SENSE_35] =
+  {"HDD_P12V_SENSE_35", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [DPB_INLET_TEMP_1] =
+  {"DPB_INLET_TEMP_1", EXPANDER, NULL, false, {50, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [DPB_INLET_TEMP_2] =
+  {"DPB_INLET_TEMP_2", EXPANDER, NULL, false, {50, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [DPB_OUTLET_TEMP] =
+  {"DPB_OUTLET_TEMP", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [DPB_HSC_P12V] =
+  {"DPB_HSC_P12V", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [DPB_P3V3_STBY_SENSE] =
+  {"DPB_P3V3_STBY_SENSE", EXPANDER, NULL, false, {3.63, 0, 0, 2.97, 0, 0, 0, 0}, VOLT},
+  [DPB_P3V3_IN_SENSE] =
+  {"DPB_P3V3_IN_SENSE", EXPANDER, NULL, false, {3.63, 0, 0, 2.97, 0, 0, 0, 0}, VOLT},
+  [DPB_P5V_1_SYS_SENSE] =
+  {"DPB_P5V_1_SYS_SENSE", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [DPB_P5V_2_SYS_SENSE] =
+  {"DPB_P5V_2_SYS_SENSE", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [DPB_P5V_3_SYS_SENSE] =
+  {"DPB_P5V_3_SYS_SENSE", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [DPB_P5V_4_SYS_SENSE] =
+  {"DPB_P5V_4_SYS_SENSE", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [DPB_HSC_CUR] =
+  {"DPB_HSC_CUR", EXPANDER, NULL, false, {70, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  [DPB_HSC_PWR] =
+  {"DPB_HSC_PWR", EXPANDER, NULL, false, {875, 0, 0, 0, 0, 0, 0, 0}, POWER},
+  [PTB_P48V_AUX] =
+  {"PTB_P48V_AUX", EXPANDER, NULL, false, {52.8, 0, 0, 36, 0, 0, 0, 0}, VOLT},
+  [PTB_P12V_PU2_DC_MODULE] =
+  {"PTB_P12V_PU2_DC_MODULE", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [PTB_P12V_PU3_DC_MODULE] =
+  {"PTB_P12V_PU3_DC_MODULE", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [PTB_U19_ADC_MONITOR] =
+  {"PTB_U19_ADC_MONITOR", EXPANDER, NULL, false, {48, 0, 0, 36, 0, 0, 0, 0}, VOLT},
+  [PTB_U20_ADC_MONITOR] =
+  {"PTB_U20_ADC_MONITOR", EXPANDER, NULL, false, {48, 0, 0, 36, 0, 0, 0, 0}, VOLT},
+  [PTB_P48V_AUX_Current] =
+  {"PTB_P48V_AUX_Current", EXPANDER, NULL, false, {660, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  [PTB_P12V_PU2_DC_MODULE_Current] =
+  {"PTB_P12V_PU2_DC_MODULE_Current", EXPANDER, NULL, false, {165, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  [PTB_P12V_PU3_DC_MODULE_Current] =
+  {"PTB_P12V_PU3_DC_MODULE_Current", EXPANDER, NULL, false, {165, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  [PTB_P48V_AUX_Power] =
+  {"PTB_P48V_AUX_Power", EXPANDER, NULL, false, {8248, 0, 0, 0, 0, 0, 0, 0}, POWER},
+  [PTB_P12V_PU2_DC_MODULE_Power] =
+  {"PTB_P12V_PU2_DC_MODULE_Power", EXPANDER, NULL, false, {2062, 0, 0, 0, 0, 0, 0, 0}, POWER},
+  [PTB_P12V_PU3_DC_MODULE_Power] =
+  {"PTB_P12V_PU3_DC_MODULE_Power", EXPANDER, NULL, false, {2062, 0, 0, 0, 0, 0, 0, 0}, POWER},
+  [FAN_0_FRONT] =
+  {"FAN_0_FRONT", EXPANDER, NULL, false, {13000, 12700, 0, 800, 700, 0, 0, 0}, FAN},
+  [FAN_0_REAR] =
+  {"FAN_0_REAR", EXPANDER, NULL, false, {13000, 12700, 0, 800, 700, 0, 0, 0}, FAN},
+  [FAN_1_FRONT] =
+  {"FAN_1_FRONT", EXPANDER, NULL, false, {13000, 12700, 0, 800, 700, 0, 0, 0}, FAN},
+  [FAN_1_REAR] =
+  {"FAN_1_REAR", EXPANDER, NULL, false, {13000, 12700, 0, 800, 700, 0, 0, 0}, FAN},
+  [FAN_2_FRONT] =
+  {"FAN_2_FRONT", EXPANDER, NULL, false, {13000, 12700, 0, 800, 700, 0, 0, 0}, FAN},
+  [FAN_2_REAR] =
+  {"FAN_2_REAR", EXPANDER, NULL, false, {13000, 12700, 0, 800, 700, 0, 0, 0}, FAN},
+  [FAN_3_FRONT] =
+  {"FAN_3_FRONT", EXPANDER, NULL, false, {13000, 12700, 0, 800, 700, 0, 0, 0}, FAN},
+  [FAN_3_REAR] =
+  {"FAN_3_REAR", EXPANDER, NULL, false, {13000, 12700, 0, 800, 700, 0, 0, 0}, FAN},
+  [AIRFLOW] =
+  {"AIRFLOW", EXPANDER, NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, FLOW},
+};
+
+#else
 PAL_SENSOR_MAP dpb_sensor_map[] = {
   [HDD_SMART_TEMP_00] =
   {"HDD_SMART_TEMP_00", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
@@ -346,6 +631,8 @@ PAL_SENSOR_MAP dpb_sensor_map[] = {
   [AIRFLOW] =
   {"AIRFLOW", EXPANDER, NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, FLOW},
 };
+#endif
+
 
 PAL_SENSOR_MAP scc_sensor_map[] = {
   [SCC_EXP_TEMP] =
@@ -422,7 +709,60 @@ PAL_SENSOR_MAP iocm_sensor_map[] = {
   [IOCM_IOC_TEMP] =
   {"IOCM_IOC_TEMP", TEMP_IOCM, read_ioc_temp, false, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
 };
-
+#ifdef CONFIG_GRANDCANYON2
+const uint8_t server_sensor_list[] = {
+  ES_INLET_TEMP,
+  ES_PCH_TEMP_C,
+  ES_CPU_TEMP,
+  ES_DIMMA0_TEMP_C,
+  ES_DIMMA2_TEMP_C,
+  ES_DIMMA4_TEMP_C,
+  ES_DIMMA6_TEMP_C,
+  ES_E1S_TEMP_C,
+  ES_HSC_TEMP_C,
+  ES_VR_VCCIN_TEMP_C,
+  ES_VR_FIVRA_TEMP_C,
+  ES_VR_EHV_TEMP_C,
+  ES_VR_VCCD_TEMP_C,
+  ES_VR_FAON_TEMP_C,
+  ES_THERMAL_MARGIN,
+  ES_CPU_TJMAX,
+  ES_P12V_STBY,
+  ES_P3V3_STBY,
+  ES_P1V05_STBY,
+  ES_P3V_BAT,
+  ES_P5V_STBY,
+  ES_P12V_DIMM,
+  ES_P1V2_STBY,
+  ES_P1V8_STBY,
+  ES_HSC_INPUT_VOLT_V,
+  ES_VR_VCCIN_VOLT_V,
+  ES_VR_FIVRA_VOLT_V,
+  ES_VR_EHV_VOLT_V,
+  ES_VR_VCCD_VOLT_V,
+  ES_VR_FAON_VOLT_V,
+  ES_E1S_BOOt_DRIVE_VOLT_V,
+  ES_HSC_OUTPUT_CURR_A,
+  ES_VR_VCCIN_CURR_A,
+  ES_VR_FIVRA_CURR_A,
+  ES_VR_EHV_CURR_A,
+  ES_VR_VCCD_CURR_A,
+  ES_VR_FAON_CURR_A,
+  ES_E1S_BOOt_DRIVE_CURR_A,
+  ES_CPU_PWR_W,
+  ES_HSC_INPUT_PWR_W,
+  ES_VR_VCCIN_PWR_W,
+  ES_VR_FIVRA_PWR_W,
+  ES_VR_EHV_PWR_W,
+  ES_VR_VCCD_PWR_W,
+  ES_VR_FAON_PWR_W,
+  ES_DIMMA0_PWR_W,
+  ES_DIMMA2_PWR_W,
+  ES_DIMMA4_PWR_W,
+  ES_DIMMA6_PWR_W,
+  ES_E1S_BOOt_DRIVE_PWR_W,
+};
+#else
 const uint8_t server_sensor_list[] = {
   BS_INLET_TEMP,
   BS_P12V_STBY,
@@ -466,6 +806,8 @@ const uint8_t server_sensor_list[] = {
   BS_VR_DIMM_DE_VOLT,
   BS_VR_DIMM_DE_PWR,
 };
+#endif
+
 
 const uint8_t uic_sensor_list[] = {
   UIC_ADC_P12V_DPB,
@@ -481,6 +823,151 @@ const uint8_t uic_sensor_list[] = {
   UIC_INLET_TEMP,
 };
 
+#ifdef CONFIG_GRANDCANYON2
+const uint8_t dpb_sensor_list[] = {
+  HDD_SMART_TEMP_00,
+  HDD_SMART_TEMP_01,
+  HDD_SMART_TEMP_02,
+  HDD_SMART_TEMP_03,
+  HDD_SMART_TEMP_04,
+  HDD_SMART_TEMP_05,
+  HDD_SMART_TEMP_06,
+  HDD_SMART_TEMP_07,
+  HDD_SMART_TEMP_08,
+  HDD_SMART_TEMP_09,
+  HDD_SMART_TEMP_10,
+  HDD_SMART_TEMP_11,
+  HDD_SMART_TEMP_12,
+  HDD_SMART_TEMP_13,
+  HDD_SMART_TEMP_14,
+  HDD_SMART_TEMP_15,
+  HDD_SMART_TEMP_16,
+  HDD_SMART_TEMP_17,
+  HDD_SMART_TEMP_18,
+  HDD_SMART_TEMP_19,
+  HDD_SMART_TEMP_20,
+  HDD_SMART_TEMP_21,
+  HDD_SMART_TEMP_22,
+  HDD_SMART_TEMP_23,
+  HDD_SMART_TEMP_24,
+  HDD_SMART_TEMP_25,
+  HDD_SMART_TEMP_26,
+  HDD_SMART_TEMP_27,
+  HDD_SMART_TEMP_28,
+  HDD_SMART_TEMP_29,
+  HDD_SMART_TEMP_30,
+  HDD_SMART_TEMP_31,
+  HDD_SMART_TEMP_32,
+  HDD_SMART_TEMP_33,
+  HDD_SMART_TEMP_34,
+  HDD_SMART_TEMP_35,
+  HDD_P5V_SENSE_0,
+  HDD_P12V_SENSE_0,
+  HDD_P5V_SENSE_1,
+  HDD_P12V_SENSE_1,
+  HDD_P5V_SENSE_2,
+  HDD_P12V_SENSE_2,
+  HDD_P5V_SENSE_3,
+  HDD_P12V_SENSE_3,
+  HDD_P5V_SENSE_4,
+  HDD_P12V_SENSE_4,
+  HDD_P5V_SENSE_5,
+  HDD_P12V_SENSE_5,
+  HDD_P5V_SENSE_6,
+  HDD_P12V_SENSE_6,
+  HDD_P5V_SENSE_7,
+  HDD_P12V_SENSE_7,
+  HDD_P5V_SENSE_8,
+  HDD_P12V_SENSE_8,
+  HDD_P5V_SENSE_9,
+  HDD_P12V_SENSE_9,
+  HDD_P5V_SENSE_10,
+  HDD_P12V_SENSE_10,
+  HDD_P5V_SENSE_11,
+  HDD_P12V_SENSE_11,
+  HDD_P5V_SENSE_12,
+  HDD_P12V_SENSE_12,
+  HDD_P5V_SENSE_13,
+  HDD_P12V_SENSE_13,
+  HDD_P5V_SENSE_14,
+  HDD_P12V_SENSE_14,
+  HDD_P5V_SENSE_15,
+  HDD_P12V_SENSE_15,
+  HDD_P5V_SENSE_16,
+  HDD_P12V_SENSE_16,
+  HDD_P5V_SENSE_17,
+  HDD_P12V_SENSE_17,
+  HDD_P5V_SENSE_18,
+  HDD_P12V_SENSE_18,
+  HDD_P5V_SENSE_19,
+  HDD_P12V_SENSE_19,
+  HDD_P5V_SENSE_20,
+  HDD_P12V_SENSE_20,
+  HDD_P5V_SENSE_21,
+  HDD_P12V_SENSE_21,
+  HDD_P5V_SENSE_22,
+  HDD_P12V_SENSE_22,
+  HDD_P5V_SENSE_23,
+  HDD_P12V_SENSE_23,
+  HDD_P5V_SENSE_24,
+  HDD_P12V_SENSE_24,
+  HDD_P5V_SENSE_25,
+  HDD_P12V_SENSE_25,
+  HDD_P5V_SENSE_26,
+  HDD_P12V_SENSE_26,
+  HDD_P5V_SENSE_27,
+  HDD_P12V_SENSE_27,
+  HDD_P5V_SENSE_28,
+  HDD_P12V_SENSE_28,
+  HDD_P5V_SENSE_29,
+  HDD_P12V_SENSE_29,
+  HDD_P5V_SENSE_30,
+  HDD_P12V_SENSE_30,
+  HDD_P5V_SENSE_31,
+  HDD_P12V_SENSE_31,
+  HDD_P5V_SENSE_32,
+  HDD_P12V_SENSE_32,
+  HDD_P5V_SENSE_33,
+  HDD_P12V_SENSE_33,
+  HDD_P5V_SENSE_34,
+  HDD_P12V_SENSE_34,
+  HDD_P5V_SENSE_35,
+  HDD_P12V_SENSE_35,
+  DPB_INLET_TEMP_1,
+  DPB_INLET_TEMP_2,
+  DPB_OUTLET_TEMP,
+  DPB_HSC_P12V,
+  DPB_P3V3_STBY_SENSE,
+  DPB_P3V3_IN_SENSE,
+  DPB_P5V_1_SYS_SENSE,
+  DPB_P5V_2_SYS_SENSE,
+  DPB_P5V_3_SYS_SENSE,
+  DPB_P5V_4_SYS_SENSE,
+  DPB_HSC_CUR,
+  DPB_HSC_PWR,
+  PTB_P48V_AUX,
+  PTB_P12V_PU2_DC_MODULE,
+  PTB_P12V_PU3_DC_MODULE,
+  PTB_U19_ADC_MONITOR,
+  PTB_U20_ADC_MONITOR,
+  PTB_P48V_AUX_Current,
+  PTB_P12V_PU2_DC_MODULE_Current,
+  PTB_P12V_PU3_DC_MODULE_Current,
+  PTB_P48V_AUX_Power,
+  PTB_P12V_PU2_DC_MODULE_Power,
+  PTB_P12V_PU3_DC_MODULE_Power,
+  FAN_0_FRONT,
+  FAN_0_REAR,
+  FAN_1_FRONT,
+  FAN_1_REAR,
+  FAN_2_FRONT,
+  FAN_2_REAR,
+  FAN_3_FRONT,
+  FAN_3_REAR,
+  AIRFLOW,
+};
+
+#else
 const uint8_t dpb_sensor_list[] = {
   HDD_SMART_TEMP_00,
   HDD_SMART_TEMP_01,
@@ -615,6 +1102,8 @@ const uint8_t dpb_sensor_list[] = {
   FAN_3_REAR,
   AIRFLOW,
 };
+#endif
+
 
 const uint8_t scc_sensor_list[] = {
   SCC_EXP_TEMP,
@@ -2017,12 +2506,15 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value) {
   ipmi_sensor_reading_t sensor = {0};
   sdr_full_t *sdr = NULL;
   int ret = 0;
-
+#ifdef CONFIG_GRANDCANYON2
+#else
   if (access(SERVER_SENSOR_LOCK, F_OK) == 0) { // BIC is updating VR
     if ((sensor_num >= BS_VR_VCCIN_TEMP) && (sensor_num <= BS_VR_DIMM_DE_PWR)) {
       return READING_SKIP;
     }
   }
+#endif
+
 
   ret = bic_get_sensor_reading(sensor_num, &sensor);
   if (ret < 0) {
@@ -2045,11 +2537,20 @@ pal_bic_sensor_read_raw(uint8_t fru, uint8_t sensor_num, float *value) {
   ret = convert_sensor_reading(sdr, sensor.value, value);
 
   // Correct the sensor reading of cpu thermal margin
+#ifdef CONFIG_GRANDCANYON2
+  // Comment Out for not support CPU THERMAL YET 
+  // if ((ret == 0) && (sensor_num == BS_THERMAL_MARGIN)) {
+  //   if ( *value > 0 ) {
+  //       *value = -(*value);
+  //   }
+  // }
+#else
   if ((ret == 0) && (sensor_num == BS_THERMAL_MARGIN)) {
     if ( *value > 0 ) {
         *value = -(*value);
     }
   }
+#endif
 
   return ret;
 }
@@ -2341,11 +2842,18 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       ret = ERR_SENSOR_NA;
     } else {
       ret = pal_bic_sensor_read_raw(fru, sensor_num, (float*)value);
-
+#ifdef CONFIG_GRANDCANYON2
+      // Inlet sensor correction
+      if (sensor_num == ES_INLET_TEMP) {
+        apply_inlet_correction((float *)value, server_ict, server_ict_count);
+      }
+#else
       // Inlet sensor correction
       if (sensor_num == BS_INLET_TEMP) {
         apply_inlet_correction((float *)value, server_ict, server_ict_count);
       }
+
+#endif
     }
     break;
   case FRU_UIC:
@@ -2735,11 +3243,20 @@ int pal_register_sensor_failure_tolerance_policy(uint8_t fru) {
   for (i = 0; i < sensor_cnt; i++) {
     switch (fru) {
       case FRU_SERVER:
-        if ((sensor_list[i] == BS_INLET_TEMP) || (sensor_list[i] == BS_BOOT_DRV_TEMP)) {
+#ifdef CONFIG_GRANDCANYON2
+        if ((sensor_list[i] == ES_INLET_TEMP)) {
           tolerance_time = SERVER_SNR_FAIL_TOL_TIME;
         } else {
           tolerance_time = 0;
         }
+#else
+        if ((sensor_list[i] == BS_INLET_TEMP) || (sensor_list[i] == BS_BOOT_DRV_TEMP)) {
+          tolerance_time = SERVER_SNR_FAIL_TOL_TIME;
+        } 
+        else {
+          tolerance_time = 0;
+        }
+#endif
         break;
       default:
         break;

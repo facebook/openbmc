@@ -1,4 +1,3 @@
-
 /*
  *
  * Copyright 2020-present Facebook. All Rights Reserved.
@@ -97,6 +96,7 @@ static void print_data(const char *name, uint8_t netfn, uint8_t cmd, uint8_t *bu
 }
 #endif
 
+#ifndef CONFIG_GRANDCANYON2
 static uint8_t
 get_bic_fw_checksum(uint8_t *buf, uint8_t len) {
   int i = 0;
@@ -365,11 +365,6 @@ update_bic(int fd, int file_size, bool force) {
   FILE* fp = NULL;
   uint32_t orig_i2c_ctl_reg = 0;
   uint32_t set_i2c_ctl_reg = 0;
-#if 0
-  uint32_t mmap_fd = 0;
-  void *reg_base;
-  void *reg_offset;
-#endif
 
   //step1 -get the bus number and open the dev of i2c
   bus_num = I2C_BIC_BUS;
@@ -389,28 +384,6 @@ update_bic(int fd, int file_size, bool force) {
   printf("stop ipmbd for bus %d..\n", bus_num);
 
   //step3 - adjust the i2c speed to 100k and set properties of mqlim
-// TODO: Use memory mapping here will cause segmentation fault. Use devmem instead as quick workaround. will find out the solution.
-#if 0 
-  mmap_fd = open("/dev/mem", O_RDWR | O_SYNC );
-  if (mmap_fd < 0) {
-    printf("%s(): fail to open /dev/mem\n", __func__);
-    ret = BIC_STATUS_FAILURE;
-    goto exit;
-  }
-
-  reg_base = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmap_fd, I2C_BASE_MAP(bus_num));
-  reg_offset = (char*) reg_base + I2C_CLK_CTRL_REG;
-  orig_i2c_ctl_reg = *(volatile uint32_t*) reg_offset;
-  // 1M: 0xXXXCBXX2 => 100K: 0xXXXFFXX5
-  // Bit [3:0]: base clock divisor
-  // Bit [15:12]: tCKLow
-  // Bit [19:16]: tCKHigh
-  set_i2c_ctl_reg = orig_i2c_ctl_reg & 0xFFF00FF0;
-  set_i2c_ctl_reg |= 0x000FF005;
-  *(volatile uint32_t*) reg_offset = set_i2c_ctl_reg; 
-  munmap(reg_base, PAGE_SIZE);
-#else
-  
   snprintf(cmd, sizeof(cmd), DEVMEM_READ_CMD, I2C_BASE_MAP(bus_num) + I2C_CLK_CTRL_REG);
   if ((fp = popen(cmd, "r")) == NULL) {
     ret = BIC_STATUS_FAILURE;
@@ -443,7 +416,7 @@ update_bic(int fd, int file_size, bool force) {
       ret = BIC_STATUS_FAILURE;
       goto exit;
   }
-#endif
+
   sleep(1);
 
   if (is_bic_ready() < 0) {
@@ -525,21 +498,11 @@ update_bic(int fd, int file_size, bool force) {
 
 exit:
   //step11 - recover the i2c speed to 1M
-#if 0
-  reg_base = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mmap_fd, I2C_BASE_MAP(bus_num));
-  reg_offset = (char*) reg_base + I2C_CLK_CTRL_REG;
-  *(volatile uint32_t*) reg_offset = orig_i2c_ctl_reg;
-  munmap(reg_base, PAGE_SIZE);
-  if (mmap_fd >= 0) {
-      close(mmap_fd);
-  }
-#else
   snprintf(cmd, sizeof(cmd), DEVMEM_WRITE_CMD, I2C_BASE_MAP(bus_num) + I2C_CLK_CTRL_REG, orig_i2c_ctl_reg);
   if (system(cmd) != 0) {
       printf("%s(): command %s failed\n", __func__, cmd);
       ret = BIC_STATUS_FAILURE;
   }
-#endif
 
   msleep(500);
   //step12 - restart the ipmbd
@@ -795,6 +758,7 @@ exit:
 
   return ret;
 }
+#endif  // !CONFIG_GRANDCANYON2
 
 static char*
 get_component_name(uint8_t comp) {
@@ -811,6 +775,288 @@ get_component_name(uint8_t comp) {
       return "Unknown";
   }
 }
+
+#ifdef CONFIG_GRANDCANYON2
+static bool
+end_with (char* str, uint8_t str_len, char* pattern, uint8_t pattern_len) {
+  if ((str == NULL) || (pattern == NULL)) {
+    return false;
+  }
+  return (strncmp(str + (str_len - pattern_len), pattern, pattern_len) == 0);
+}
+
+static int
+recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t force) {
+  int ret = -1;
+  syslog(LOG_INFO, "BIC recovery bypass in current stage, ret: %d\n", ret);
+  return ret;
+}
+
+static int
+update_bic_cpld_altera(uint8_t slot_id, char *path, uint8_t intf, uint8_t force) {
+  int ret = -1;
+  syslog(LOG_INFO, "BIC CPLD Update bypass in current stage, ret: %d\n", ret);
+  return ret;
+}
+
+static int
+is_valid_intf(uint8_t intf) {
+  int ret = BIC_STATUS_FAILURE;
+  switch(intf) {
+    case NONE_INTF:
+      ret = BIC_STATUS_SUCCESS;
+      break;
+  }
+
+  return ret;
+}
+
+// Update firmware for various components
+static int
+_update_fw(uint8_t slot_id, uint8_t target, uint8_t type, uint32_t offset,
+           uint16_t len, uint8_t *buf, uint8_t intf) {
+  uint8_t tbuf[256] = {0x00};
+  uint8_t rbuf[16] = {0x00};
+  uint8_t tlen = 0;
+  uint8_t rlen = sizeof(rbuf);
+  int ret = 0, retry;
+
+  if (buf == NULL) {
+    return -1;
+  }
+
+  // Fill the IANA ID
+  memcpy(tbuf, (uint8_t *)&META_IANA_ID, SIZE_IANA_ID);
+  
+  // Fill the component for which firmware is requested
+  // Target is for update component
+  tbuf[3] = target;
+  memcpy(&tbuf[4], &offset, sizeof(offset));
+  tbuf[8] = len & 0xFF;
+  tbuf[9] = (len >> 8) & 0xFF;
+  memcpy(&tbuf[10], buf, len);
+
+  tlen = len + 10;
+  for (retry = 0; retry < 3; retry++) {
+#ifdef DEBUG
+    print_data(__func__, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen);
+#endif
+    ret = bic_data_send(slot_id, NETFN_OEM_1S_REQ, CMD_OEM_1S_UPDATE_FW, tbuf, tlen, rbuf, &rlen, intf);
+    if (ret == 0) {
+      return ret;
+    }
+
+    sleep(1);
+    printf("_update_fw: slot: %u, target %u, offset: %u, len: %u retrying..\n",
+           slot_id, target, offset, len);
+  }
+
+  return ret;
+}
+
+static int
+update_bic(uint8_t slot_id, int fd, size_t file_size, uint8_t intf) {
+  struct timeval start, end;
+  int update_rc = -1, cmd_rc = 0;
+  uint32_t dsize, last_offset;
+  uint32_t offset, boundary;
+  volatile uint16_t read_count;
+  uint8_t buf[256] = {0};
+  uint8_t target;
+  uint8_t type = TYPE_1OU_VERNAL_FALLS_WITH_AST;
+  ssize_t count;
+
+  printf("updating fw on slot %d:\n", slot_id);
+
+  // Write chunks of binary data in a loop
+  dsize = file_size/100;
+  last_offset = 0;
+  offset = 0;
+  boundary = PKT_SIZE;
+  target = UPDATE_BIC;
+  gettimeofday(&start, NULL);
+  while (1) {
+    // send packets in blocks of 64K
+    if ((offset + AST_BIC_IPMB_WRITE_COUNT_MAX) < boundary) {
+      read_count = AST_BIC_IPMB_WRITE_COUNT_MAX;
+    } else {
+      read_count = boundary - offset;
+    }
+
+    // Read from file
+    count = read(fd, buf, read_count);
+    if ((count < 0) && (errno == EINTR)) {
+      continue;
+    }
+    if (count <= 0 || count > read_count) {
+      break;
+    }
+
+    if ((offset + count) >= file_size) {
+      target |= 0x80;
+    }
+    // Send data to Bridge-IC
+    cmd_rc = _update_fw(slot_id, target, type, offset, count, buf, intf);
+    if (cmd_rc) {
+      goto error_exit;
+    }
+
+    // Update counter
+    offset += count;
+    if (offset >= boundary) {
+      boundary += PKT_SIZE;
+    }
+    if ((last_offset + dsize) <= offset) {
+      _set_fw_update_ongoing(60);
+      printf("\rupdated bic: %u %%", offset/dsize);
+      fflush(stdout);
+      last_offset += dsize;
+    }
+  }
+  printf("\n");
+
+  gettimeofday(&end, NULL);
+  printf("Elapsed time:  %d   sec.\n", (int)(end.tv_sec - start.tv_sec));
+  if (offset >= file_size) {
+    update_rc = 0;
+  }
+
+error_exit:
+
+  printf("\n");
+
+  if ( update_rc == 0 ) {
+    update_rc = cmd_rc;
+  }
+  return update_rc;
+}
+
+static int
+update_bic_runtime_fw(uint8_t slot_id, uint8_t comp __attribute__((unused)), uint8_t intf, char *path, uint8_t force __attribute__((unused))) {
+  int ret = -1;
+  int fd = -1;
+  size_t file_size = 0;
+
+  //check params
+  ret = is_valid_intf(intf);
+  if ( ret < 0 ) {
+    syslog(LOG_WARNING, "%s() invalid intf(val=0x%x) was caught!\n", __func__, intf);
+    goto exit;
+  }
+
+  //get fd and file size
+  fd = open_and_get_size(path, &file_size);
+  if ( fd < 0 ) {
+    syslog(LOG_WARNING, "%s() cannot open the file: %s, fd=%d\n", __func__, path, fd);
+    goto exit;
+  }
+
+  printf("file size = %zu bytes, slot = %u, intf = 0x%x\n", file_size, slot_id, intf);
+
+  //run into the different function based on the interface
+  ret = update_bic(slot_id, fd, file_size, intf);
+  if (ret == 0) {
+    syslog(LOG_INFO, "BIC Update Response Success\n");
+  }
+  else
+  {
+    syslog(LOG_INFO, "BIC Update Response Failed\n");
+  }
+
+exit:
+
+  if ( fd >= 0 ) {
+    close(fd);
+  }
+
+  return ret;
+}
+
+static int
+bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint8_t force) {
+  int ret = BIC_STATUS_SUCCESS;
+  uint8_t intf = 0x0;
+  char ipmb_content[] = "ipmb";
+  char tmp_posfix[] = "-tmp";
+  char* loc = NULL;
+  char fdstr[32] = {0};
+  bool fd_opened = false;
+  size_t origin_len = 0;
+  char origin_path[128] = {0};
+
+  if (path == NULL) {
+    if (fd < 0) {
+      syslog(LOG_ERR, "%s(): Update aborted due to NULL pointer: *path", __func__);
+      return -1;
+    }
+    snprintf(fdstr, sizeof(fdstr) - 1, "<%d>", fd);
+    path = fdstr;
+  } else {
+    fd = open(path, O_RDONLY, 0);
+    if (fd < 0) {
+      syslog(LOG_ERR, "%s(): Unable to open %s: %d", __func__, path, errno);
+      return -1;
+    }
+    fd_opened = true;
+  }
+
+  loc = strstr(path, ipmb_content);
+
+  if (end_with(path, strlen(path), tmp_posfix, strlen(tmp_posfix))) {
+    origin_len = strlen(path) - strlen(tmp_posfix) + 1;
+    if (origin_len > sizeof(origin_path)) {
+      origin_len = sizeof(origin_path);
+    }
+    snprintf(origin_path, origin_len, "%s", path);
+  } else {
+    snprintf(origin_path, sizeof(origin_path), "%s", path);
+  }
+
+  fprintf(stderr, "slot_id: %x, comp: %x, intf: %x, img: %s, force: %x\n", slot_id, comp, intf, origin_path, force);
+  syslog(LOG_CRIT, "Updating %s on slot%d. File: %s", get_component_name(comp), slot_id, origin_path);
+
+  //get the intf
+  intf = NONE_INTF;
+
+  //run cmd
+  switch (comp) {
+    case FW_BIC:
+      ret = update_bic_runtime_fw(slot_id, UPDATE_BIC, intf, path, force);
+      break;
+    case FW_BIC_RECOVERY:
+      ret = recovery_bic_runtime_fw(slot_id, comp, intf, path, force);
+      break;
+    case FW_BS_FPGA:
+      ret = update_bic_cpld_altera(slot_id, path, intf, force);
+      break;
+    case FW_BIOS:
+      if (loc != NULL) {
+        ret = update_bic_bios(slot_id, comp, path, FORCE_UPDATE_SET);
+      } else {
+        ret = update_bic_usb_bios(comp, fd, force);
+      }
+      break;
+    case FW_VR:
+      ret = update_bic_vr(path, force);
+      break;
+    default:
+      syslog(LOG_WARNING, "%s(): component %x not supported", __func__, comp);
+      return -1;
+  }
+
+  syslog(LOG_CRIT, "Updated %s on slot%d. File: %s. Result: %s", get_component_name(comp), slot_id, origin_path, (ret != 0)?"Fail":"Success");
+  if (fd_opened) {
+    close(fd);
+  }
+  return ret;
+}
+
+int
+bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
+  return bic_update_fw_path_or_fd(slot_id, comp, path, -1, force);
+}
+
+#else  // !CONFIG_GRANDCANYON2
 
 int
 bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
@@ -853,3 +1099,4 @@ bic_update_fw(uint8_t slot_id, uint8_t comp, char *path, uint8_t force) {
 
   return ret;
 }
+#endif  // CONFIG_GRANDCANYON2

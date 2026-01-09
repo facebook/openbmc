@@ -1,4 +1,6 @@
-# Copyright 2022-present Facebook. All Rights Reserved.
+#!/bin/sh
+#
+# Copyright 2021-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,7 +17,17 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-# GrandCanyon 2.0 Project
-FILESEXTRAPATHS:prepend := "${THISDIR}/files/bic-util:"
 
-CFLAGS:prepend = " -DCONFIG_GRANDCANYON2 "
+### BEGIN INIT INFO
+# Provides:          setup-fan
+# Required-Start:    board-id
+# Required-Stop:
+# Default-Start:     5
+# Default-Stop:
+# Short-Description: Set fan speed
+### END INIT INFO
+
+echo "Setup fan speed... "
+
+#sh /usr/local/bin/setup-fsc-config.sh &
+/usr/local/bin/fan-util --set 100

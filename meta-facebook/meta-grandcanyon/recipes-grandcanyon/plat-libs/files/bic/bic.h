@@ -85,6 +85,9 @@ enum {
   FW_BIC_BOOTLOADER,
   FW_VR,
   FW_BIOS,
+#ifdef CONFIG_GRANDCANYON2
+  FW_BIC_RECOVERY,
+#endif
 };
 
 // VR vendor

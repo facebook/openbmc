@@ -20,13 +20,5 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-LOCAL_URI += "\
-    file://bic_bios.cpp \
-    file://bic_fw.cpp \
-    file://bic_vr.cpp \
-    file://bmc_fpga.cpp \
-    file://bmc_fpga.h \
-    file://platform.cpp \
-    "
 
-
+CXXFLAGS:prepend = " -DCONFIG_GRANDCANYON2 "

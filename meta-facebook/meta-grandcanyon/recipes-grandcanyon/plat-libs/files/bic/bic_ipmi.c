@@ -74,6 +74,17 @@ typedef struct _bic_get_fw_ver_resp {
   uint8_t ver_response[MAX_BIC_VER_STR_LEN];
 } bic_get_fw_ver_resp;
 
+#ifdef CONFIG_GRANDCANYON2
+typedef struct _bic_get_fw_rev_ver_req {
+  uint8_t IANA[SIZE_IANA_ID];
+} bic_get_fw_rev_ver_req;
+
+typedef struct _bic_get_fw_rev_ver_resp {
+  uint8_t IANA[SIZE_IANA_ID];
+  uint8_t ver_response[MAX_BIC_VER_STR_LEN];
+} bic_get_fw_rev_ver_resp;
+#endif
+
 typedef struct {
   uint8_t IANA[SIZE_IANA_ID];
   uint8_t postcode_response[MAX_POSTCODE_LEN];
@@ -94,6 +105,44 @@ typedef struct {
   uint8_t str_data[SIZE_SYSFW_VER];
 } bic_get_sys_fw_ver_resp;
 
+#ifdef CONFIG_GRANDCANYON2
+int
+bic_get_fw_rev_ver(uint8_t slot_id, uint8_t *ver) {
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0x00};
+  uint8_t rlen = 0;
+  int ret = BIC_STATUS_FAILURE;
+  bic_get_fw_rev_ver_req ver_req;
+  bic_get_fw_rev_ver_resp ver_resp;
+
+  if (ver == NULL) {
+    syslog(LOG_ERR, "%s: pointer is NULL\n", __func__);
+    return BIC_STATUS_FAILURE;
+  }
+
+  memset(&ver_req, 0, sizeof(ver_req));
+  memset(&ver_resp, 0, sizeof(ver_resp));
+
+  // Fill the IANA ID
+  memcpy(&ver_req, (uint8_t *)&META_IANA_ID, SIZE_IANA_ID);
+  // Fill the component for which firmware is requested
+
+  // NETFN: 0x38, CMD: 0x31 => for get fw revision id from openbic 
+  ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, 0x31, (uint8_t *)&ver_req, sizeof(ver_req), rbuf, &rlen);
+
+  // rlen should be greater than or equal to 4 (IANA + Data1 +...+ DataN)
+  if ((ret < 0) || (rlen < 4) || (rlen > (MAX_BIC_VER_STR_LEN + SIZE_IANA_ID))) {
+    syslog(LOG_ERR, "%s: ret: %d, rlen: %d\n", __func__, ret, rlen);
+    ret = BIC_STATUS_FAILURE;
+  } else {
+    memcpy(&ver_resp, rbuf, rlen);
+    //Ignore IANA ID
+    memcpy(ver, &(ver_resp.ver_response), sizeof(ver_resp.ver_response));
+  }
+
+  return ret;
+}
+#endif
+
 int
 bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
   uint8_t rbuf[MAX_IPMB_BUFFER] = {0x00};
@@ -111,7 +160,11 @@ bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver) {
   memset(&ver_resp, 0, sizeof(ver_resp));
 
   // Fill the IANA ID
+#ifdef CONFIG_GRANDCANYON2
+  memcpy(&ver_req, (uint8_t *)&META_IANA_ID, SIZE_IANA_ID);
+#else
   memcpy(&ver_req, (uint8_t *)&IANA_ID, SIZE_IANA_ID);
+#endif
   // Fill the component for which firmware is requested
   ver_req.component = comp;
 
@@ -714,7 +767,11 @@ cleanup:
     //get the CRC32 of the VR
     tbuf[2] = 0x00; //read cnt
     tbuf[3] = CMD_ISL_VR_DMAADDR; //command code
+#ifdef CONFIG_GRANDCANYON2
+    tbuf[4] = 0x94; //reg
+#else
     tbuf[4] = 0x3F; //reg
+#endif
     tbuf[5] = 0x00; //dummy data
     tlen = 6;
     ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
@@ -1086,7 +1143,11 @@ bic_get_80port_record(uint16_t max_len, uint8_t *rbuf, uint8_t *rlen) {
 
   memset(&postcode_resp, 0, sizeof(postcode_resp));
 
+#ifdef CONFIG_GRANDCANYON2
+  ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_BUF, (uint8_t *)&META_IANA_ID, SIZE_IANA_ID, (uint8_t *)&postcode_resp, rlen);
+#else
   ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, CMD_OEM_1S_GET_POST_BUF, (uint8_t *)&IANA_ID, SIZE_IANA_ID, (uint8_t *)&postcode_resp, rlen);
+#endif
 
   if (ret < 0) {
     syslog(LOG_WARNING, "%s Cannot get the postcode buffer from server", __func__);
@@ -1146,7 +1207,11 @@ bic_asd_init(uint8_t cmd) {
   uint8_t tlen = 4;
   uint8_t rlen = 0;
 
+#ifdef CONFIG_GRANDCANYON2
+  memcpy(tbuf, (uint8_t *)&META_IANA_ID, 3);
+#else
   memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+#endif
   tbuf[3] = cmd;
   return bic_ipmb_wrapper(NETFN_OEM_1S_REQ, CMD_OEM_1S_ASD_INIT, tbuf, tlen, rbuf, &rlen);
 }
@@ -1165,7 +1230,11 @@ bic_get_one_gpio_status(uint8_t gpio_num, uint8_t *value){
     return -1;
   }
   // File the IANA ID
+#ifdef CONFIG_GRANDCANYON2
+  memcpy(tbuf, (uint8_t *)&META_IANA_ID, 3);
+#else
   memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+#endif
   tbuf[3] = 0x00;
   tbuf[4] = gpio_num;
   ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, BIC_CMD_OEM_GET_SET_GPIO, tbuf, tlen, rbuf, &rlen);
@@ -1175,7 +1244,11 @@ bic_get_one_gpio_status(uint8_t gpio_num, uint8_t *value){
 
 int
 bic_set_gpio(uint8_t gpio_num, uint8_t value) {
-  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0}; // IANA ID
+#ifdef CONFIG_GRANDCANYON2
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x15, 0xA0, 0x00}; // IANA ID
+#else
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00}; // IANA ID
+#endif
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0};
   uint8_t tlen = 6;
   uint8_t rlen = 0;
@@ -1229,7 +1302,11 @@ bic_reset() {
 
 int
 bic_clear_cmos() {
+#ifdef CONFIG_GRANDCANYON2
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x15, 0xA0, 0x00}; // IANA ID
+#else
   uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00}; // IANA ID
+#endif
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
   uint8_t rlen = 0;
 
@@ -1250,7 +1327,11 @@ bic_get_gpio_config(uint8_t gpio, uint8_t *data) {
     syslog(LOG_ERR, "%s(): data is missing", __func__);
   }
   // File the IANA ID
+#ifdef CONFIG_GRANDCANYON2
+  memcpy(tbuf, (uint8_t *)&META_IANA_ID, 3);
+#else
   memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+#endif
 
   //get the buffer index
   index = (gpio / 8) + 3; //3 is the size of IANA ID
@@ -1277,7 +1358,11 @@ bic_set_gpio_config(uint8_t gpio, uint8_t data) {
   int ret = 0;
 
   // File the IANA ID
+#ifdef CONFIG_GRANDCANYON2
+  memcpy(tbuf, (uint8_t *)&META_IANA_ID, 3);
+#else
   memcpy(tbuf, (uint8_t *)&IANA_ID, 3);
+#endif
 
   //get the buffer index
   index = (gpio / 8) + 3; //3 is the size of IANA ID
@@ -1292,7 +1377,11 @@ bic_set_gpio_config(uint8_t gpio, uint8_t data) {
 // Get all GPIO pin status
 int
 bic_get_gpio(bic_gpio_t *gpio) {
+#ifdef CONFIG_GRANDCANYON2
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x15, 0xA0, 0x00}; // IANA ID
+#else
   uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00}; // IANA ID
+#endif
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
   uint8_t rlen = 0;
   int ret = 0;
@@ -1321,7 +1410,11 @@ bic_get_gpio(bic_gpio_t *gpio) {
 // Get BIC Configuration
 int
 bic_get_config(bic_config_t *cfg) {
+#ifdef CONFIG_GRANDCANYON2
+  uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x15, 0xA0, 0x00}; // IANA ID
+#else
   uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00}; // IANA ID
+#endif
   uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
   uint8_t rlen = 0;
   int ret = 0;

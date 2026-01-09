@@ -60,9 +60,17 @@ typedef struct _update_request {
 int print_configuration(struct libusb_device_handle *hDevice, struct libusb_config_descriptor *config);
 int active_config(struct libusb_device *dev, struct libusb_device_handle *handle);
 int bic_get_fw_cksum(uint8_t target, uint32_t offset, uint32_t len, uint8_t *ver);
+#ifdef CONFIG_GRANDCANYON2
+int bic_get_fw_cksum_sha256(uint8_t target, uint32_t offset, uint32_t len, uint8_t *cksum);
+#endif
 int verify_bios_image(int fd, long size);
+#ifdef CONFIG_GRANDCANYON2
+int update_bic_bios(uint8_t slot_id, uint8_t comp, char *image, uint8_t force);
+int update_bic_usb_bios(uint8_t comp, int fd, uint8_t force);
+#else
 int update_bic_bios(uint8_t comp, char *image, uint8_t force);
 int update_bic_usb_bios(uint8_t comp, char *image);
+#endif
 int bic_dump_bios_fw(char *path);
 
 #ifdef __cplusplus

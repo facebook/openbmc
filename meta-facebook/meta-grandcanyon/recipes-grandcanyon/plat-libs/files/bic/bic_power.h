@@ -31,7 +31,11 @@ extern "C" {
 #define BIC_I2C_FPGA_BUS 2
 #define BIC_I2C_FPGA_ADDR 0x42 // 8 bit
 #define BIC_FPGA_SEVER_PWR_REG 0x0
+#ifdef CONFIG_GRANDCANYON2
+#define BIC_PWR_STATUS_GPIO_NUM 15
+#else
 #define BIC_PWR_STATUS_GPIO_NUM 36
+#endif
 
 int bic_server_power_ctrl(int action);
 int bic_server_power_cycle();

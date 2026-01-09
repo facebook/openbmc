@@ -28,15 +28,7 @@ static const i2c_dev_attr_st scmcpld_attrs[] = {
 	},
 	{
 		"version_id",
-		"Board revision:\n"
-		" 0x00 Pre-EVT & EVT1\n"
-		" 0x01 EVT-2A\n"
-		" 0x02 EVT-2B/C\n"
-		" 0x03 DVT-1A\n"
-		" 0x04 DVT-1B\n"
-		" 0x05 PPVT\n"
-		" 0x06 PVT\n"
-		" 0x07 MP\n",
+		"Board revision",
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,
 		0x0,

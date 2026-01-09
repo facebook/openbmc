@@ -1,4 +1,4 @@
-From a01eed6c7e58b75e9b620d5ef84089c876efb610 Mon Sep 17 00:00:00 2001
+From 2c9bac4da8aabf4cf42e118ffa6f71470a279695 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 15:59:10 +0000
 Subject: [PATCH 204/205] Map DBus event to RF MessageID and parse args
@@ -294,7 +294,7 @@ index 00000000..f028f65c
 +} // namespace dbus_registries_map
 +} // namespace redfish
 diff --git a/redfish-core/include/utils/eventlog_utils.hpp b/redfish-core/include/utils/eventlog_utils.hpp
-index 1cbcc810..95df6aa1 100644
+index ba6369d9..e95a2b9b 100644
 --- a/redfish-core/include/utils/eventlog_utils.hpp
 +++ b/redfish-core/include/utils/eventlog_utils.hpp
 @@ -12,6 +12,7 @@
@@ -305,8 +305,8 @@ index 1cbcc810..95df6aa1 100644
  #include "utils/etag_utils.hpp"
  #include "utils/log_services_utils.hpp"
  #include "utils/query_param.hpp"
-@@ -561,14 +562,45 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
-     const std::string& parentStr, const std::string_view childId,
+@@ -575,14 +576,45 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
+     const std::string& collectionStr, const std::string_view memberId,
      const std::string& logEntryDescriptor)
  {
 +    if constexpr (BMCWEB_REDFISH_ALLOW_DBUS_MESSAGES_MAPPING)
@@ -344,8 +344,8 @@ index 1cbcc810..95df6aa1 100644
      objectToFillOut["@odata.type"] = "#LogEntry.v1_9_0.LogEntry";
      objectToFillOut["@odata.id"] =
          boost::urls::format("/redfish/v1/{}/{}/LogServices/EventLog/Entries/{}",
--                            parentStr, childId, std::to_string(entry.Id));
-+                            parentStr, childId, logEntryID);
+-                            collectionStr, memberId, std::to_string(entry.Id));
++                            collectionStr, memberId, logEntryID);
      objectToFillOut["Name"] =
          std::format("{} Event Log Entry", logEntryDescriptor);
 -    objectToFillOut["Id"] = std::to_string(entry.Id);
@@ -354,7 +354,7 @@ index 1cbcc810..95df6aa1 100644
      objectToFillOut["Resolved"] = entry.Resolved;
      std::optional<bool> notifyAction =
          getProviderNotifyAction(entry.ServiceProviderNotify);
-@@ -576,13 +608,7 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
+@@ -590,13 +622,7 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
      {
          objectToFillOut["ServiceProviderNotified"] = *notifyAction;
      }
@@ -368,12 +368,12 @@ index 1cbcc810..95df6aa1 100644
      objectToFillOut["Created"] =
          redfish::time_utils::getDateTimeUintMs(entry.Timestamp);
      objectToFillOut["Modified"] =
-@@ -591,7 +617,7 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
+@@ -605,7 +631,7 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
      {
          objectToFillOut["AdditionalDataURI"] = boost::urls::format(
              "/redfish/v1/{}/{}/LogServices/EventLog/Entries/{}/attachment",
--            parentStr, childId, std::to_string(entry.Id));
-+            parentStr, childId, logEntryID);
+-            collectionStr, memberId, std::to_string(entry.Id));
++            collectionStr, memberId, logEntryID);
      }
  }
  

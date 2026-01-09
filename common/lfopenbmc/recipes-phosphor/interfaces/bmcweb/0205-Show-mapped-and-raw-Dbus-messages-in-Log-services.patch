@@ -1,4 +1,4 @@
-From e597fdf889d5ba01f852a1dec1adae292fadccdb Mon Sep 17 00:00:00 2001
+From a7bf55375a796047977d5c0854b1d2e7050a00af Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Wed, 26 Mar 2025 16:20:54 +0000
 Subject: [PATCH 205/205] Show mapped and raw Dbus messages in Log services
@@ -59,11 +59,11 @@ Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
  1 file changed, 14 insertions(+), 11 deletions(-)
 
 diff --git a/redfish-core/include/utils/eventlog_utils.hpp b/redfish-core/include/utils/eventlog_utils.hpp
-index 95df6aa1..a99447e7 100644
+index e95a2b9b..0f4b2204 100644
 --- a/redfish-core/include/utils/eventlog_utils.hpp
 +++ b/redfish-core/include/utils/eventlog_utils.hpp
-@@ -562,26 +562,29 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
-     const std::string& parentStr, const std::string_view childId,
+@@ -576,26 +576,29 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
+     const std::string& collectionStr, const std::string_view memberId,
      const std::string& logEntryDescriptor)
  {
 +    bool useFallbackMapping = true;

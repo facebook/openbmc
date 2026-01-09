@@ -1,4 +1,4 @@
-From c9d4a8ce9580ebcfe58306e81a66cc7a599a6175 Mon Sep 17 00:00:00 2001
+From 47b50dbca7578fdfcf4b3ac499c99ca13be33bd2 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 11 Mar 2025 13:47:42 +0800
 Subject: [PATCH 6/7] entity-manager: Add config-prefix filtering
@@ -49,7 +49,7 @@ index 8cdd903..efbf48c 100644
 +    description: 'Comma-separated list of JSON filename prefixes to filter. Default loads all JSON files.',
 +)
 diff --git a/src/entity_manager/configuration.cpp b/src/entity_manager/configuration.cpp
-index 2f989cb..df86791 100644
+index a9c2d7e..697ee80 100644
 --- a/src/entity_manager/configuration.cpp
 +++ b/src/entity_manager/configuration.cpp
 @@ -28,10 +28,15 @@ Configuration::Configuration(
@@ -180,10 +180,10 @@ index db476f3..6322b8e 100644
  
      return !foundPaths.empty();
 diff --git a/src/utils.hpp b/src/utils.hpp
-index b14a620..c616cb1 100644
+index 48d107e..3e04071 100644
 --- a/src/utils.hpp
 +++ b/src/utils.hpp
-@@ -23,10 +23,16 @@ using LastIndex = size_t;
+@@ -24,10 +24,16 @@ using LastIndex = size_t;
  
  bool findFiles(const std::filesystem::path& dirPath,
                 const std::string& matchString,

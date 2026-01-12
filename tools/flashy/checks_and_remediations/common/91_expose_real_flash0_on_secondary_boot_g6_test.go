@@ -154,6 +154,33 @@ func TestExposeRealFlash0OnSecondaryBootAstG6(t *testing.T) {
 
 	})
 
+	t.Run("Should skip if LF OpenBMC", func(t *testing.T) {
+		var buf bytes.Buffer
+		log.SetOutput(&buf)
+
+		GetMachineOrig := utils.GetMachine
+		defer func() { utils.GetMachine = GetMachineOrig }()
+		IsLFOpenBMCOrig := utils.IsLFOpenBMC
+		defer func() { utils.IsLFOpenBMC = IsLFOpenBMCOrig }()
+
+		utils.GetMachine = func() (string, error) { return "armv7l", nil }
+		utils.IsLFOpenBMC = func() bool { return true }
+
+		res := ExposeRealFlash0OnSecondaryBootG6(step.StepParams{})
+
+		if res != nil {
+			t.Errorf("Expected ExposeRealFlash0OnSecondaryBoot() to return nil, got %v", res)
+		}
+
+		re_expected_log_buffer := "" +
+			"^[^\n]+Skipping step for LF OpenBMC"
+
+		if !regexp.MustCompile(re_expected_log_buffer).Match(buf.Bytes()) {
+			t.Errorf("Unexpected log buffer: %v", buf.String())
+		}
+
+	})
+
 	t.Run("Should bail out if not running on AST2600", func(t *testing.T) {
 		var buf bytes.Buffer
 		log.SetOutput(&buf)

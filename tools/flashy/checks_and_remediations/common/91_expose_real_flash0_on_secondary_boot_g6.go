@@ -50,6 +50,12 @@ func ExposeRealFlash0OnSecondaryBootG6(stepParams step.StepParams) step.StepExit
 		return step.ExitSafeToReboot{Err: errors.Errorf("Unable to fetch machine: %v", err)}
 	}
 
+	// T250939868: LF OpenBMC doesn't support this as the overlay partitions are still mounted
+	if utils.IsLFOpenBMC() {
+		log.Printf("Skipping step for LF OpenBMC")
+		return nil
+	}
+
 	// Bail if not running on AST2600
 	if machine != "armv7l" {
 		log.Printf("Remediation handles only AST2600")

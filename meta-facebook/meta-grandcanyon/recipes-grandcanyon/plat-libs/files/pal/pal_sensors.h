@@ -97,16 +97,17 @@ enum {
   POWER,
   FLOW,
 };
+
 #ifdef CONFIG_GRANDCANYON2
 // Sensors under Emerald Springs (ES)
 enum {
   ES_INLET_TEMP = 0x01,
   ES_PCH_TEMP_C = 0x4, 
   ES_CPU_TEMP = 0x5,
-  ES_DIMMA0_TEMP_C = 0x6,
-  ES_DIMMA2_TEMP_C = 0x7,
-  ES_DIMMA4_TEMP_C = 0xA,
-  ES_DIMMA6_TEMP_C = 0xB,
+  ES_DIMMA2_TEMP_C = 0x6,
+  ES_DIMMA3_TEMP_C = 0x7,
+  ES_DIMMA6_TEMP_C = 0xA,
+  ES_DIMMA7_TEMP_C = 0xB,
   ES_E1S_TEMP_C = 0xd, 
   ES_HSC_TEMP_C = 0xe, 
   ES_VR_VCCIN_TEMP_C = 0xf, 
@@ -145,10 +146,10 @@ enum {
   ES_VR_EHV_PWR_W = 0x3d,
   ES_VR_VCCD_PWR_W = 0x3e,
   ES_VR_FAON_PWR_W = 0x3f,
-  ES_DIMMA0_PWR_W = 0x40,
-  ES_DIMMA2_PWR_W = 0x41,
-  ES_DIMMA4_PWR_W = 0x42,
-  ES_DIMMA6_PWR_W = 0x43,
+  ES_DIMMA2_PWR_W = 0x40,
+  ES_DIMMA3_PWR_W = 0x41,
+  ES_DIMMA6_PWR_W = 0x42,
+  ES_DIMMA7_PWR_W = 0x43,
   ES_E1S_BOOt_DRIVE_PWR_W = 0x44,
 };
 #else
@@ -196,9 +197,7 @@ enum {
   BS_VR_DIMM_DE_VOLT = 0x28,
   BS_VR_DIMM_DE_PWR = 0x29,
 };
-
 #endif
-
 // Sensors under User Interface Card (UIC)
 enum {
   UIC_ADC_P12V_DPB = 0x10,

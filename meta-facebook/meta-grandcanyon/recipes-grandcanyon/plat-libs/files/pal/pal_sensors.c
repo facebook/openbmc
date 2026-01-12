@@ -82,78 +82,77 @@ PAL_SENSOR_MAP uic_sensor_map[] = {
 
 #ifdef CONFIG_GRANDCANYON2
 PAL_SENSOR_MAP dpb_sensor_map[] = {
-  [HDD_SMART_TEMP_00] =
-  {"HDD_SMART_TEMP_00", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_00", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_01] =
-  {"HDD_SMART_TEMP_01", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_01", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_02] =
-  {"HDD_SMART_TEMP_02", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_02", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_03] =
-  {"HDD_SMART_TEMP_03", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_03", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_04] =
-  {"HDD_SMART_TEMP_04", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_04", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_05] =
-  {"HDD_SMART_TEMP_05", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_05", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_06] =
-  {"HDD_SMART_TEMP_06", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_06", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_07] =
-  {"HDD_SMART_TEMP_07", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_07", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_08] =
-  {"HDD_SMART_TEMP_08", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_08", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_09] =
-  {"HDD_SMART_TEMP_09", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_09", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_10] =
-  {"HDD_SMART_TEMP_10", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_10", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_11] =
-  {"HDD_SMART_TEMP_11", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_11", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_12] =
-  {"HDD_SMART_TEMP_12", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_12", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_13] =
-  {"HDD_SMART_TEMP_13", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_13", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_14] =
-  {"HDD_SMART_TEMP_14", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_14", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_15] =
-  {"HDD_SMART_TEMP_15", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_15", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_16] =
-  {"HDD_SMART_TEMP_16", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_16", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_17] =
-  {"HDD_SMART_TEMP_17", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_17", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_18] =
-  {"HDD_SMART_TEMP_18", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_18", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_19] =
-  {"HDD_SMART_TEMP_19", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_19", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_20] =
-  {"HDD_SMART_TEMP_20", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_20", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_21] =
-  {"HDD_SMART_TEMP_21", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_21", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_22] =
-  {"HDD_SMART_TEMP_22", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_22", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_23] =
-  {"HDD_SMART_TEMP_23", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_23", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_24] =
-  {"HDD_SMART_TEMP_24", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_24", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_25] =
-  {"HDD_SMART_TEMP_25", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_25", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_26] =
-  {"HDD_SMART_TEMP_26", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_26", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_27] =
-  {"HDD_SMART_TEMP_27", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_27", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_28] =
-  {"HDD_SMART_TEMP_28", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_28", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_29] =
-  {"HDD_SMART_TEMP_29", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_29", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_30] =
-  {"HDD_SMART_TEMP_30", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_30", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_31] =
-  {"HDD_SMART_TEMP_31", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_31", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_32] =
-  {"HDD_SMART_TEMP_32", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_32", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_33] =
-  {"HDD_SMART_TEMP_33", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_33", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_34] =
-  {"HDD_SMART_TEMP_34", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_34", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_35] =
-  {"HDD_SMART_TEMP_35", EXPANDER, NULL, false, {61, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  {"HDD_SMART_TEMP_35", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_P5V_SENSE_0] =
   {"HDD_P5V_SENSE_0", EXPANDER, NULL, false, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
   [HDD_P12V_SENSE_0] =
@@ -323,27 +322,27 @@ PAL_SENSOR_MAP dpb_sensor_map[] = {
   [DPB_HSC_PWR] =
   {"DPB_HSC_PWR", EXPANDER, NULL, false, {875, 0, 0, 0, 0, 0, 0, 0}, POWER},
   [PTB_P48V_AUX] =
-  {"PTB_P48V_AUX", EXPANDER, NULL, false, {52.8, 0, 0, 36, 0, 0, 0, 0}, VOLT},
+  {"PTB_P48V_AUX", EXPANDER, NULL, false, {56.7, 0, 0, 45.6, 0, 0, 0, 0}, VOLT},
   [PTB_P12V_PU2_DC_MODULE] =
-  {"PTB_P12V_PU2_DC_MODULE", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  {"PTB_P12V_PU2_DC_MODULE", EXPANDER, NULL, false, {13, 0, 0, 11.3, 0, 0, 0, 0}, VOLT},
   [PTB_P12V_PU3_DC_MODULE] =
-  {"PTB_P12V_PU3_DC_MODULE", EXPANDER, NULL, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  {"PTB_P12V_PU3_DC_MODULE", EXPANDER, NULL, false, {13, 0, 0, 11.3, 0, 0, 0, 0}, VOLT},
   [PTB_U19_ADC_MONITOR] =
-  {"PTB_U19_ADC_MONITOR", EXPANDER, NULL, false, {48, 0, 0, 36, 0, 0, 0, 0}, VOLT},
+  {"PTB_U19_ADC_MONITOR", EXPANDER, NULL, false, {56.7, 0, 0, 45.6, 0, 0, 0, 0}, VOLT},
   [PTB_U20_ADC_MONITOR] =
-  {"PTB_U20_ADC_MONITOR", EXPANDER, NULL, false, {48, 0, 0, 36, 0, 0, 0, 0}, VOLT},
+  {"PTB_U20_ADC_MONITOR", EXPANDER, NULL, false, {1, 0, 0, -0.13, 0, 0, 0, 0}, VOLT},
   [PTB_P48V_AUX_Current] =
-  {"PTB_P48V_AUX_Current", EXPANDER, NULL, false, {660, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  {"PTB_P48V_AUX_Current", EXPANDER, NULL, false, {48, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [PTB_P12V_PU2_DC_MODULE_Current] =
-  {"PTB_P12V_PU2_DC_MODULE_Current", EXPANDER, NULL, false, {165, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  {"PTB_P12V_PU2_DC_MODULE_Current", EXPANDER, NULL, false, {81.84, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [PTB_P12V_PU3_DC_MODULE_Current] =
-  {"PTB_P12V_PU3_DC_MODULE_Current", EXPANDER, NULL, false, {165, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  {"PTB_P12V_PU3_DC_MODULE_Current", EXPANDER, NULL, false, {81.84, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [PTB_P48V_AUX_Power] =
-  {"PTB_P48V_AUX_Power", EXPANDER, NULL, false, {8248, 0, 0, 0, 0, 0, 0, 0}, POWER},
+  {"PTB_P48V_AUX_Power", EXPANDER, NULL, false, {2721.6, 0, 0, 0, 0, 0, 0, 0}, POWER},
   [PTB_P12V_PU2_DC_MODULE_Power] =
-  {"PTB_P12V_PU2_DC_MODULE_Power", EXPANDER, NULL, false, {2062, 0, 0, 0, 0, 0, 0, 0}, POWER},
+  {"PTB_P12V_PU2_DC_MODULE_Power", EXPANDER, NULL, false, {1063.92, 0, 0, 0, 0, 0, 0, 0}, POWER},
   [PTB_P12V_PU3_DC_MODULE_Power] =
-  {"PTB_P12V_PU3_DC_MODULE_Power", EXPANDER, NULL, false, {2062, 0, 0, 0, 0, 0, 0, 0}, POWER},
+  {"PTB_P12V_PU3_DC_MODULE_Power", EXPANDER, NULL, false, {1063.92, 0, 0, 0, 0, 0, 0, 0}, POWER},
   [FAN_0_FRONT] =
   {"FAN_0_FRONT", EXPANDER, NULL, false, {13000, 12700, 0, 800, 700, 0, 0, 0}, FAN},
   [FAN_0_REAR] =
@@ -633,7 +632,6 @@ PAL_SENSOR_MAP dpb_sensor_map[] = {
 };
 #endif
 
-
 PAL_SENSOR_MAP scc_sensor_map[] = {
   [SCC_EXP_TEMP] =
   {"SCC_EXP_TEMP", EXPANDER, NULL, false, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
@@ -714,10 +712,10 @@ const uint8_t server_sensor_list[] = {
   ES_INLET_TEMP,
   ES_PCH_TEMP_C,
   ES_CPU_TEMP,
-  ES_DIMMA0_TEMP_C,
   ES_DIMMA2_TEMP_C,
-  ES_DIMMA4_TEMP_C,
+  ES_DIMMA3_TEMP_C,
   ES_DIMMA6_TEMP_C,
+  ES_DIMMA7_TEMP_C,
   ES_E1S_TEMP_C,
   ES_HSC_TEMP_C,
   ES_VR_VCCIN_TEMP_C,
@@ -756,10 +754,10 @@ const uint8_t server_sensor_list[] = {
   ES_VR_EHV_PWR_W,
   ES_VR_VCCD_PWR_W,
   ES_VR_FAON_PWR_W,
-  ES_DIMMA0_PWR_W,
   ES_DIMMA2_PWR_W,
-  ES_DIMMA4_PWR_W,
+  ES_DIMMA3_PWR_W,
   ES_DIMMA6_PWR_W,
+  ES_DIMMA7_PWR_W,
   ES_E1S_BOOt_DRIVE_PWR_W,
 };
 #else
@@ -807,7 +805,6 @@ const uint8_t server_sensor_list[] = {
   BS_VR_DIMM_DE_PWR,
 };
 #endif
-
 
 const uint8_t uic_sensor_list[] = {
   UIC_ADC_P12V_DPB,

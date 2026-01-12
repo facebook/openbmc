@@ -24,3 +24,11 @@ SRC_URI:append = "file://1001-ARM-dts-aspeed-elbert-Enable-spi1-controller.patch
                   file://1002-ARM-dts-aspeed-elbert-Enable-jtag1-controller.patch \
                   file://1003-ARM-dts-aspeed-elbert-Enable-mdio0-devices.patch \
 "
+
+#
+# Remove the patch (in common/recipes-kernel/) explicitly to force 8MB
+# data0 partition on elbert.
+# We should delete below patch file from common layer when moving to
+# kernel 6.18, because the official fix has been upstreamed:
+#  - https://lists.ozlabs.org/pipermail/linux-aspeed/2025-July/015932.html
+SRC_URI:remove = "file://0003-ARM-dts-aspeed-Expand-data0-partition-in-facebook-bm.patch"

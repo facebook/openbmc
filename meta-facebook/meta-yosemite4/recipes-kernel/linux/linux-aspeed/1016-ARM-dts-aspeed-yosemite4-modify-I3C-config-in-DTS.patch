@@ -1,0 +1,157 @@
+From bf23d97d88e62eb7a289189d4ab4fef998bb760b Mon Sep 17 00:00:00 2001
+From: Rush Chen <Rush_Chen@wiwynn.com>
+Date: Mon, 3 Nov 2025 14:19:02 +0800
+Subject: [PATCH] ARM: dts: aspeed: yosemite4: modify I3C config in DTS
+
+---
+ .../aspeed/aspeed-bmc-facebook-yosemite4.dts  | 112 ++++++++++++------
+ 1 file changed, 76 insertions(+), 36 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+index b2ceffc3e6b8..0e2ecf08feea 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+@@ -1802,32 +1802,52 @@ &i3c0 {
+ 	mctp-controller;
+ 	hub@0x70 {
+ 		reg = <0x70 0x3c0 0x00700000>;
+-		cp0-ldo-en = "disabled";
+-		cp1-ldo-en = "disabled";
+-		cp0-ldo-volt = "1.2V";
+-		cp1-ldo-volt = "1.2V";
+-		tp0145-ldo-en = "disabled";
+-		tp2367-ldo-en = "disabled";
+-		tp0145-ldo-volt = "1.2V";
+-		tp2367-ldo-volt = "1.2V";
+-		tp0145-pullup = "2k";
+-		tp2367-pullup = "2k";
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		dcr = /bits/ 8 <0xc2>;
++
++		control-port {
++			port-name = "CP0";
++			io-microvolt = <1200000>;
++			vio-source = "external";
++		};
++
++		target-group-0 {
++			io-microvolt = <1200000>;
++			vio-source = "external";
++			io-internal-pullups-ohms = <2000>;
++		};
++
++		target-group-1 {
++			io-microvolt = <1200000>;
++			vio-source = "external";
++			io-internal-pullups-ohms = <2000>;
++		};
+ 
+ 		target-port@0 {
+-			mode = "i3c";
+-			pullup = "enabled";
++			status = "okay";
++			compatible = "i3c-hub-i3c";
++			reg = <0>;
++			io-internal-pullups-enable;
+ 		};
+ 		target-port@1 {
+-			mode = "i3c";
+-			pullup = "enabled";
++			status = "okay";
++			compatible = "i3c-hub-i3c";
++			reg = <1>;
++			io-internal-pullups-enable;
+ 		};
+ 		target-port@2 {
+-			mode = "i3c";
+-			pullup = "enabled";
++			status = "okay";
++			compatible = "i3c-hub-i3c";
++			reg = <2>;
++			io-internal-pullups-enable;
+ 		};
+ 		target-port@3 {
+-			mode = "i3c";
+-			pullup = "enabled";
++			status = "okay";
++			compatible = "i3c-hub-i3c";
++			reg = <3>;
++			io-internal-pullups-enable;
+ 		};
+ 	};
+ };
+@@ -1845,32 +1865,52 @@ &i3c1 {
+ 	mctp-controller;
+ 	hub@0x70 {
+ 		reg = <0x70 0x3c0 0x00700000>;
+-		cp0-ldo-en = "disabled";
+-		cp1-ldo-en = "disabled";
+-		cp0-ldo-volt = "1.2V";
+-		cp1-ldo-volt = "1.2V";
+-		tp0145-ldo-en = "disabled";
+-		tp2367-ldo-en = "disabled";
+-		tp0145-ldo-volt = "1.2V";
+-		tp2367-ldo-volt = "1.2V";
+-		tp0145-pullup = "2k";
+-		tp2367-pullup = "2k";
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		dcr = /bits/ 8 <0xc2>;
++
++		control-port {
++			port-name = "CP0";
++			io-microvolt = <1200000>;
++			vio-source = "external";
++		};
++
++		target-group-0 {
++			io-microvolt = <1200000>;
++			vio-source = "external";
++			io-internal-pullups-ohms = <2000>;
++		};
++
++		target-group-1 {
++			io-microvolt = <1200000>;
++			vio-source = "external";
++			io-internal-pullups-ohms = <2000>;
++		};
+ 
+ 		target-port@0 {
+-			mode = "i3c";
+-			pullup = "enabled";
++			status = "okay";
++			compatible = "i3c-hub-i3c";
++			reg = <0>;
++			io-internal-pullups-enable;
+ 		};
+ 		target-port@1 {
+-			mode = "i3c";
+-			pullup = "enabled";
++			status = "okay";
++			compatible = "i3c-hub-i3c";
++			reg = <1>;
++			io-internal-pullups-enable;
+ 		};
+ 		target-port@2 {
+-			mode = "i3c";
+-			pullup = "enabled";
++			status = "okay";
++			compatible = "i3c-hub-i3c";
++			reg = <2>;
++			io-internal-pullups-enable;
+ 		};
+ 		target-port@3 {
+-			mode = "i3c";
+-			pullup = "enabled";
++			status = "okay";
++			compatible = "i3c-hub-i3c";
++			reg = <3>;
++			io-internal-pullups-enable;
+ 		};
+ 	};
+ };
+-- 
+2.34.1

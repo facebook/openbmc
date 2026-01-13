@@ -1,0 +1,285 @@
+From 80b15c110bc1002083ff4f47e333ea8b4c83ad91 Mon Sep 17 00:00:00 2001
+From: Steven Niu <steven.niu.uj@renesas.com>
+Date: Wed, 17 Sep 2025 22:20:54 +0800
+Subject: [PATCH 202/203] dt-bindings: i3c: Add i3c-hub support.
+
+Add device tree binding documentation for the i3c hub devices which follows
+the Intel I3C hub specification.
+
+Signed-off-by: Steven Niu <steven.niu.uj@renesas.com>
+---
+LORE: https://lore.kernel.org/all/20250917142055.2806576-1-steven.niu.uj@renesas.com/
+---
+ .../devicetree/bindings/i3c/i3c-hub.yaml      | 261 ++++++++++++++++++
+ 1 file changed, 261 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i3c/i3c-hub.yaml
+
+diff --git a/Documentation/devicetree/bindings/i3c/i3c-hub.yaml b/Documentation/devicetree/bindings/i3c/i3c-hub.yaml
+new file mode 100644
+index 000000000000..c5af39b031ef
+--- /dev/null
++++ b/Documentation/devicetree/bindings/i3c/i3c-hub.yaml
+@@ -0,0 +1,261 @@
++# SPDX-License-Identifier: GPL-2.0 OR BSD-2-Clause
++%YAML 1.2
++---
++$id: http://devicetree.org/schemas/i3c/i3c-hub.yaml#
++$schema: http://devicetree.org/meta-schemas/core.yaml#
++
++title: I3C HUB
++
++maintainers:
++  - Zbigniew Lukwinski <zbigniew.lukwinski@linux.intel.com>
++  - Steven Niu <steven.niu.uj@renesas.com>
++
++description: |
++  The I3C Hub is a family of I2C/I3C 2-to-N Hub devices. An I3C Hub device
++  provides connectivity to up to two control ports, and up to eight target
++  ports. By cascading and duplicating the i3c hub, the user can build a hub
++  network to provide connectivity to a number of devices, with extended reach
++  distance, and running with different level of I2C, I3C, and SMBus protocols.
++
++  I3C Hub Spec:
++  https://www.intel.com/content/www/us/en/content-details/823670/i3c-hub-device-specification.html
++
++allOf:
++  - $ref: i3c.yaml#
++
++properties:
++  $nodename:
++    pattern: "^hub@0,0$"
++
++  compatible:
++    enum:
++      - renesas,rg3mxx
++
++  '#address-cells':
++    const: 1
++
++  '#size-cells':
++    const: 0
++
++  id-csel:
++    $ref: /schemas/types.yaml#/definitions/uint32
++    description:
++      The input settings of CSEL pin. This can be used to idendify the i3c hub
++      in a hub network with mulitple i3c hub hardware instance.
++    enum: [0, 1, 3]
++
++  id-cp1:
++    $ref: /schemas/types.yaml#/definitions/uint32
++    description:
++      The input settings of control port 1 SCL & SDA pin. This can be used to
++      idendify the i3c hub in a hub network with mulitple i3c hub hardware
++      instance.
++    enum: [0, 1, 2, 3]
++
++  id-tpx:
++    $ref: /schemas/types.yaml#/definitions/uint32
++    description:
++      The input settings of target port[n] SCL & SDA pin. This can be used to
++      idendify the i3c hub in a hub network with mulitple i3c hub hardware
++      instance.
++    enum: [0, 1, 2, 3]
++
++  control-port:
++    description:
++      Control port configuration.
++    $ref: '#/$defs/control-port'
++
++  target-group-0:
++    description:
++      Target group 0 configuration.
++    $ref: '#/$defs/target-group'
++
++  target-group-1:
++    description:
++      Target group 1 configuration.
++    $ref: '#/$defs/target-group'
++
++patternProperties:
++  "target-port@[0-7]$":
++    type: object
++
++    description:
++      Child nodes used to configure target port.
++
++    properties:
++      compatible:
++        oneOf:
++          - items:
++              - enum:
++                  - i3c-hub-i3c
++                  - i3c-hub-smbus
++                  - i3c-hub-auto
++
++      reg:
++        description:
++          Target port identifier.
++        enum: [0, 7]
++
++      io-internal-pullups-disable:
++        description:
++          Select whether to disable the internl pullups on I3C signals.
++        type:
++          boolean
++
++      idle-disconnect:
++        description: The target port will be disconnected automatically when
++          there is no bus activity.
++        type: boolean
++
++      clock-frequency:
++        description:
++          Select the clock frequency of SMBus Agent Tx function.
++        enum: [100000, 200000, 400000, 1000000]
++
++      device-scan-delay-ms:
++        description:
++          The delay time in milliseconds between target port being enabled and
++          the device scan prodeucre.
++          This attribute is only applicable when the target port is configured
++          as i3c mode.
++
++    additionalProperties: false
++
++required:
++  - dcr
++  - "#address-cells"
++  - "#size-cells"
++
++additionalProperties: false
++
++$defs:
++  control-port:
++    type: object
++    description:
++      Child nodes used to configure control port.
++
++    properties:
++      port-name:
++        description:
++          Name of the control port
++        enum:
++          - CP0
++          - CP1
++
++      io-microvolt:
++        description:
++          Select the i3c signal voltage level for the control port
++        enum: [1000000, 1100000, 1200000, 1800000]
++
++      io-strength-ohms:
++        description:
++          Select the io drive strength for control port
++        enum: [20, 30, 40, 50]
++
++      vio-source:
++        description:
++          Select the source of VIO supply.
++        enum:
++          - external
++          - internal
++
++    required:
++      - port-name
++
++  target-group:
++    type: object
++
++    properties:
++      io-microvolt:
++        description:
++          Select the i3c signal voltage level for the control port
++        enum: [1000000, 1100000, 1200000, 1800000]
++
++      io-strength-ohms:
++        description:
++          Select the io drive strength for control port
++        enum: [20, 30, 40, 50]
++
++      io-internal-pullups-ohms:
++        description:
++          Select the internal pullup resister value if the internal pullups are
++          enabled for the target port.
++        enum: [250, 500, 1000, 2000]
++
++      vio-source:
++        description:
++          Select the source of VIO supply.
++        enum:
++          - external
++          - internal
++
++
++examples:
++  - |
++    #include <dt-bindings/interrupt-controller/arm-gic.h>
++
++    i3c@0 {
++      reg = <0x0d040000 0x1000>;
++      #address-cells = <3>;
++      #size-cells = <0>;
++
++      hub@0,4cc00000000 {
++        #address-cells = <1>;
++        #size-cells = <0>;
++
++        reg = <0x0 0x4cc 0x0>;
++
++        control-port {
++          port-name = "CP0";
++          io-microvolt = <1000000>;
++          io-strength-ohms = <20>;
++          vio-source = "external";
++        };
++
++        target-group-0 {
++          io-microvolt = <1000000>;
++          io-strength-ohms = <20>;
++          io-internal-pullups-ohms = <500>;
++          vio-source = "internal";
++        };
++
++        target-group-1 {
++          io-microvolt = <1800000>;
++          io-strength-ohms = <20>;
++          io-internal-pullups-ohms = <1000>;
++          vio-source = "internal";
++        };
++
++        target-port@0 {
++          compatible = "i3c-hub-i3c";
++          reg = <0>;
++
++          device-scan-delay-ms = <2>;
++        };
++
++        target-port@1 {
++          compatible = "i3c-hub-i3c";
++          reg = <1>;
++          io-internal-pullups-disable;
++          device-scan-delay-ms = <2>;
++          idle-disconnect;
++        };
++
++        target-port@2 {
++          compatible = "i3c-hub-smbus";
++          reg = <2>;
++          #address-cells = <1>;
++          #size-cells = <0>;
++          clock-frequency = <100000>;
++        };
++
++        target-port@3 {
++          compatible = "i3c-hub-smbus";
++          reg = <3>;
++          #address-cells = <1>;
++          #size-cells = <0>;
++          clock-frequency = <400000>;
++        };
++      };
++    };
++...
+--
+2.49.0

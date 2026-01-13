@@ -31,7 +31,7 @@ index 5ffa735..e9c46f9 100644
 -            ],
              "Name": "NIC$bus % 2 TEMP_C",
 -            "Name1": "NIC$bus % 2 TEMP_C",
-+            "Units": "xyz.openbmc_project.Sensor.Value.Unit.DegreesC",
++            "Units": "DegreesC",
 +            "MinValue": -255,
 +            "MaxValue": 255,
 +            "Timeout": 30.0,

@@ -27,7 +27,7 @@ index 316688f..0f1f53f 100644
              "Name": "IOB$bus - 29 % 11 NIC0_TEMP_C",
 -            "Name1": "IOB$bus - 29 % 11 NIC0_TEMP_C",
              "PowerState": "On",
-+            "Units": "xyz.openbmc_project.Sensor.Value.Unit.DegreesC",
++            "Units": "DegreesC",
 +            "MaxValue": 255,
 +            "MinValue": -255.0,
 +            "Timeout": 30.0,
@@ -50,7 +50,7 @@ index 316688f..0f1f53f 100644
              "Name": "IOB$bus - 29 % 11 NIC1_TEMP_C",
 -            "Name1": "IOB$bus - 29 % 11 NIC1_TEMP_C",
              "PowerState": "On",
-+            "Units": "xyz.openbmc_project.Sensor.Value.Unit.DegreesC",
++            "Units": "DegreesC",
 +            "MaxValue": 255,
 +            "MinValue": -255.0,
 +            "Timeout": 30.0,
@@ -67,7 +67,7 @@ index 316688f..0f1f53f 100644
 +        {
 +            "Name": "IOB$bus - 29 % 11 NIC0_PWR_W",
 +            "PowerState": "On",
-+            "Units": "xyz.openbmc_project.Sensor.Value.Unit.Watts",
++            "Units": "Watts",
 +            "MaxValue": 65535,
 +            "MinValue": 0,
 +            "Timeout": 30.0,
@@ -76,7 +76,7 @@ index 316688f..0f1f53f 100644
 +        {
 +            "Name": "IOB$bus - 29 % 11 NIC1_PWR_W",
 +            "PowerState": "On",
-+            "Units": "xyz.openbmc_project.Sensor.Value.Unit.Watts",
++            "Units": "Watts",
 +            "MaxValue": 65535,
 +            "MinValue": 0,
 +            "Timeout": 30.0,
@@ -85,7 +85,7 @@ index 316688f..0f1f53f 100644
 +        {
 +            "Name": "IOB$bus - 29 % 11 NIC0_OSFP_TEMP_C",
 +            "PowerState": "On",
-+            "Units": "xyz.openbmc_project.Sensor.Value.Unit.DegreesC",
++            "Units": "DegreesC",
 +            "MaxValue": 255,
 +            "MinValue": -255.0,
 +            "Timeout": 30.0,
@@ -112,7 +112,7 @@ index 316688f..0f1f53f 100644
 +        {
 +            "Name": "IOB$bus - 29 % 11 NIC1_OSFP_TEMP_C",
 +            "PowerState": "On",
-+            "Units": "xyz.openbmc_project.Sensor.Value.Unit.DegreesC",
++            "Units": "DegreesC",
 +            "MaxValue": 255,
 +            "MinValue": -255.0,
 +            "Timeout": 30.0,

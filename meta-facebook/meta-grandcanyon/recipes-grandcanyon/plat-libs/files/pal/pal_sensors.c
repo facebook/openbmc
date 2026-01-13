@@ -82,6 +82,7 @@ PAL_SENSOR_MAP uic_sensor_map[] = {
 
 #ifdef CONFIG_GRANDCANYON2
 PAL_SENSOR_MAP dpb_sensor_map[] = {
+  [HDD_SMART_TEMP_00] =
   {"HDD_SMART_TEMP_00", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [HDD_SMART_TEMP_01] =
   {"HDD_SMART_TEMP_01", EXPANDER, NULL, false, {60, 0, 0, 0, 0, 0, 0, 0}, TEMP},

@@ -198,6 +198,7 @@ enum {
   BS_VR_DIMM_DE_PWR = 0x29,
 };
 #endif
+
 // Sensors under User Interface Card (UIC)
 enum {
   UIC_ADC_P12V_DPB = 0x10,

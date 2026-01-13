@@ -1,7 +1,7 @@
 From d7a199b8251543cdcdd9251d9cceebe7a8316626 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Wed, 17 Dec 2025 10:39:35 +0800
-Subject: [PATCH 1002/1006] ARM: dts: aspeed: bletchley: Fix SPI GPIO property
+Subject: [PATCH 1002/1007] ARM: dts: aspeed: bletchley: Fix SPI GPIO property
  names
 
 Update SPI GPIO properties to use "-gpios" suffix:

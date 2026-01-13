@@ -1,7 +1,7 @@
 From ccf367c11a45199c8afc8ef62722ac03fa864fe9 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Wed, 17 Dec 2025 10:39:36 +0800
-Subject: [PATCH 1003/1006] ARM: dts: aspeed: bletchley: Remove unused pca9539
+Subject: [PATCH 1003/1007] ARM: dts: aspeed: bletchley: Remove unused pca9539
  properties
 
 Remove unused #address-cells and #size-cells properties from

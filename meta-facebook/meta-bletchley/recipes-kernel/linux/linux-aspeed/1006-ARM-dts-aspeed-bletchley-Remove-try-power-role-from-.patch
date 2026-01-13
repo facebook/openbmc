@@ -1,0 +1,71 @@
+From 94c812520b2fb49addd1fda7adbbc0d37ca53a9e Mon Sep 17 00:00:00 2001
+From: Cosmo Chou <chou.cosmo@gmail.com>
+Date: Fri, 19 Dec 2025 13:32:13 +0800
+Subject: [PATCH 1006/1007] ARM: dts: aspeed: bletchley: Remove try-power-role
+ from connectors
+
+Remove the "try-power-role = sink" property from all USB-C connectors.
+The try mechanism is unnecessary and wastes time during connection.
+Since power-role = "dual" is already configured, standard USB PD
+negotiation is sufficient and more efficient.
+
+Signed-off-by: Cosmo Chou <chou.cosmo@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
+index 7c27bf6bb51d..d1a04b63df9e 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
+@@ -414,7 +414,6 @@ connector {
+ 			label = "USB-C";
+ 			pd-revision = /bits/ 8 <0x2 0x0 0x1 0x20>;
+ 			power-role = "dual";
+-			try-power-role = "sink";
+ 			data-role = "dual";
+ 			source-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
+ 			sink-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
+@@ -501,7 +500,6 @@ connector {
+ 			label = "USB-C";
+ 			pd-revision = /bits/ 8 <0x2 0x0 0x1 0x20>;
+ 			power-role = "dual";
+-			try-power-role = "sink";
+ 			data-role = "dual";
+ 			source-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
+ 			sink-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
+@@ -588,7 +586,6 @@ connector {
+ 			label = "USB-C";
+ 			pd-revision = /bits/ 8 <0x2 0x0 0x1 0x20>;
+ 			power-role = "dual";
+-			try-power-role = "sink";
+ 			data-role = "dual";
+ 			source-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
+ 			sink-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
+@@ -675,7 +672,6 @@ connector {
+ 			label = "USB-C";
+ 			pd-revision = /bits/ 8 <0x2 0x0 0x1 0x20>;
+ 			power-role = "dual";
+-			try-power-role = "sink";
+ 			data-role = "dual";
+ 			source-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
+ 			sink-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
+@@ -762,7 +758,6 @@ connector {
+ 			label = "USB-C";
+ 			pd-revision = /bits/ 8 <0x2 0x0 0x1 0x20>;
+ 			power-role = "dual";
+-			try-power-role = "sink";
+ 			data-role = "dual";
+ 			source-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
+ 			sink-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
+@@ -849,7 +844,6 @@ connector {
+ 			label = "USB-C";
+ 			pd-revision = /bits/ 8 <0x2 0x0 0x1 0x20>;
+ 			power-role = "dual";
+-			try-power-role = "sink";
+ 			data-role = "dual";
+ 			source-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
+ 			sink-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
+-- 
+2.43.0
+

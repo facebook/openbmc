@@ -1,7 +1,7 @@
 From a1c5e674501ba538e8bf54719ca76603a2c53fb8 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 31 Aug 2023 16:55:58 +0800
-Subject: [PATCH 1006/1006] ARM: dts: aspeed: bletchley: enable PWM and TACH
+Subject: [PATCH 1007/1007] ARM: dts: aspeed: bletchley: enable PWM and TACH
  support
 
 Enable pwm and tach support, add pwm-fan for fan controlling.

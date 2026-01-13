@@ -1,7 +1,7 @@
 From eb413223a42534f228835739fdac5d5d2e496688 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Wed, 17 Dec 2025 10:39:34 +0800
-Subject: [PATCH 1001/1006] ARM: dts: aspeed: bletchley: Use generic node names
+Subject: [PATCH 1001/1007] ARM: dts: aspeed: bletchley: Use generic node names
 
 Use generic node names to fix dt-schema warnings:
 - spi1_gpio: rename to generic "spi" node name

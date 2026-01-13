@@ -1,7 +1,7 @@
 From 84b1fe08bfeaff76420fb3e5f31dfd7c54856c3a Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Wed, 17 Dec 2025 10:39:37 +0800
-Subject: [PATCH 1004/1006] ARM: dts: aspeed: bletchley: Remove unused i2c13
+Subject: [PATCH 1004/1007] ARM: dts: aspeed: bletchley: Remove unused i2c13
  property
 
 Remove 'aspeed,hw-timeout-ms' property which is not supported by

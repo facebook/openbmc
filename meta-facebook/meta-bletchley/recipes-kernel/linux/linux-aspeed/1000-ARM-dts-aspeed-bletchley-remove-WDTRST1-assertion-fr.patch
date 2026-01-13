@@ -1,7 +1,7 @@
 From 2abdd345dbbc50d8a9ead25feb4f31437f48c637 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Sat, 18 Oct 2025 12:33:09 +0800
-Subject: [PATCH 1000/1006] ARM: dts: aspeed: bletchley: remove WDTRST1
+Subject: [PATCH 1000/1007] ARM: dts: aspeed: bletchley: remove WDTRST1
  assertion from wdt1
 
 Remove the external signal configuration from wdt1 to prevent the

@@ -6,6 +6,7 @@ SRC_URI += " \
     file://1003-ARM-dts-aspeed-bletchley-Remove-unused-pca9539-prope.patch \
     file://1004-ARM-dts-aspeed-bletchley-Remove-unused-i2c13-propert.patch \
     file://1005-ARM-dts-aspeed-bletchley-Fix-ADC-vref-property-names.patch \
-    file://1006-ARM-dts-aspeed-bletchley-enable-PWM-and-TACH-support.patch \
+    file://1006-ARM-dts-aspeed-bletchley-Remove-try-power-role-from-.patch \
+    file://1007-ARM-dts-aspeed-bletchley-enable-PWM-and-TACH-support.patch \
     file://bletchley-local.cfg \
 "

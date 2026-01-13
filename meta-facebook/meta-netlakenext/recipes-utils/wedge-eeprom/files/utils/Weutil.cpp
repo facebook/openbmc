@@ -34,11 +34,12 @@ static void usage() {
       << "weutil [-h | --help] [-a | --all] [-j | --json] [-f | --format] [-l | --list] [-e <dev-name> | --eeprom <dev-name>]\n";
   std::cout
       << "       [-w <file> | --write <file>] [-m <Type> <Value> | --modify <Type> <Value>] [-d <file> | --dump <file>] [-v | --version]\n";
+  std::cout << "\n";
   std::cout << "   -h | --help : show usage. \n";
   std::cout << "   -a | --all : print all eeprom devices data. \n";
   std::cout << "   -j | --json : print eeprom data in JSON format. \n";
-  std::cout << "   -e | --eeprom : eeprom device name. \n";
-  std::cout << "   -f | --format : eeprom format. \n";
+  std::cout << "   -e | --eeprom : eeprom device name.(dev-name = netlakenext-eeprom) \n";
+  std::cout << "   -f | --format : check eeprom format version. \n";
   std::cout << "   -l | --list : list all eeprom device names. \n";
   std::cout << "   -w | --write : write file data to eeprom. \n";
   std::cout << "   -m | --modify : modify type value to eeprom,rules are at the bottom. \n";
@@ -66,8 +67,10 @@ static void usage() {
   std::cout << "          20    |  META Reserved (MAC Base + MAC Address Size) |      8\n";
   std::cout << "          21    |  RMA (only for FBOSS v6 format)              |      1\n";
   std::cout << "       -------------------------------------------------------------------------\n";
-  std::cout << "          Notice: Type 17~20 need to add - before enter MAC Address Size. \n";
-  std::cout << "          ex. weutil -m 17 11:22:33:44:55:66-258\n";
+  std::cout << "          Notice: \n";
+  std::cout << "          *Type 17~20 need to add - before enter MAC Address Size. \n";
+  std::cout << "           ex. weutil -m 17 11:22:33:44:55:66-258\n";
+  std::cout << "          *Type 21 only can use in Meta FBOSS v6 format ! \n";
   std::cout << "   -d | --dump : dump eeprom as a file.\n";
   std::cout << "        ex. weutil -d aaa.bin or weutil -d /home/aaa.bin\n";
   std::cout << "   -v | --version : show the weutil version.\n";
@@ -522,7 +525,7 @@ int main(int argc, char* argv[]) {
   std::string modifyType;
   std::string modifyValue;
   std::string dumpFileName;
-  const std::string weutil_version = "3.0";
+  const std::string weutil_version = "1.0";
 
   static struct option long_options[] = {
       {"list", no_argument, NULL, 'l'},
@@ -538,7 +541,7 @@ int main(int argc, char* argv[]) {
       {0, 0, 0, 0}};
 
   doPrint = (argc == 1) ? 1 : 0;
-  while ((c = getopt_long(argc, argv, "vahjlf:e:w:m:d:", long_options, &opt_index)) !=
+  while ((c = getopt_long(argc, argv, "vahjlfe:w:m:d:", long_options, &opt_index)) !=
          -1) {
     switch (c) {
       case 'e':
@@ -563,7 +566,7 @@ int main(int argc, char* argv[]) {
         doPrint = 1;
         break;
       case 'v':
-        std::cout << "weutil version is " << weutil_version << " (only for Netlake)" << std::endl;
+        std::cout << "weutil version is " << weutil_version << " (only for Netlakenext)" << std::endl;
         break;
       case 'w':
         writeFileName = optarg;

@@ -18,7 +18,7 @@
 #include <vector>
 #include <optional>
 
-#define DEFAULT_EEPROM_NAME "netlake-eeprom"
+#define DEFAULT_EEPROM_NAME "netlakenext-eeprom"
 #define MIN_TYPE 0
 #define MAX_TYPE_V5 20
 #define MAX_TYPE_V6 21

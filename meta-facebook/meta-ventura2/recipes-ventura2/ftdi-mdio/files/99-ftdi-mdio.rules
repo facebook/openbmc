@@ -1,0 +1,1 @@
+ACTION=="add", SUBSYSTEM=="usb", DEVPATH=="/devices/platform/ahb/1e6a1000.usb/usb1/1-1/1-1.4/1-1.4:1.0", TAG+="systemd", ENV{SYSTEMD_WANTS}+="marvell-switch-init_evt.service"

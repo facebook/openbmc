@@ -1,0 +1,7 @@
+[Unit]
+Description=Marvell switch initialization for EVT bring-up
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/ventura2/marvell-switch-init_evt.sh

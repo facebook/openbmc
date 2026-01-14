@@ -1,5 +1,14 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-aspeed:"
 
+#
+# Use latest i3c hub driver from local folder for now,
+# until DTS is updated in other projects already using it.
+#
+SRC_URI:remove = " \
+    file://0202-dt-bindings-i3c-hub-Add-Renesas-RG3MxxB12A1-I3C-HUB.patch \
+    file://0203-i3c-i3c-hub-Add-Renesas-RG3MxxB12A1-I3C-HUB-driver.patch \
+"
+
 SRC_URI:append = " \
     file://1000-add-meta-yosemite5-bmc-dts.patch \
     file://1001-ARM-dts-aspeed-yosemite5-Add-lpc_pcc-node.patch \
@@ -14,5 +23,7 @@ SRC_URI:append = " \
     file://1010-ARM-dts-aspeed-yosemite5-correct-power-monitor-shunt-resistor.patch \
     file://1011-ARM-dts-aspeed-yosemite5-add-x4-e1-s-expansion-board-i2c-mux.patch \
     file://1012-enable-uart-dma.patch \
+    file://0202-dt-bindings-i3c-Add-i3c-hub-support.patch \
+    file://0203-i3c-Add-driver-for-i3c-hub-device.patch \
     file://yosemite5-local.cfg \
 "

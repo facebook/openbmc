@@ -171,6 +171,7 @@ SRC_URI:append = " \
     file://0338-hwmon-pmbus-Add-support-for-the-MP9945-controllers.patch \
     file://0339-hwmon-add-MP2993-driver.patch \
     file://0340-iio-adc-ltc2309-add-support-for-ltc2305.patch \
+    file://0341-apml-Add-support-for-SP7-platform.patch \
 "
 
 #

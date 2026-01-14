@@ -1,0 +1,722 @@
+From 497e78ba2e6ee61d3a1e4d090870ffe64f578df7 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Fri, 26 Dec 2025 14:35:14 +0800
+Subject: [PATCH 18/18] terminus: replace inventory and sensor configuration
+
+Add fetchEntityManagerConfiguration to retrieve inventory name and
+sensor configuration from EntityManager.
+
+This queries EntityManager via GetManagedObjects using the associated
+inventory path, discovers PLDM sensor mappings, and updates auxiliary
+sensor names based on sensor ID and Name properties.
+
+EM link:https://gerrit.openbmc.org/c/openbmc/entity-manager/+/86156
+
+Change-Id: I326459c75d6dc8b822302eaf7f0b85f13412b0db
+Signed-off-by: Peter Yin <peter.yin@quantatw.com>
+---
+ common/types.hpp                              |   7 +-
+ fw-update/inventory_manager.cpp               |   2 +-
+ .../test/firmware_inventory_manager_test.cpp  |   5 +-
+ platform-mc/terminus.cpp                      | 160 +++++++++++++++++-
+ platform-mc/terminus.hpp                      |  44 +++++
+ platform-mc/terminus_manager.cpp              |   8 +
+ platform-mc/test/event_manager_test.cpp       |  12 +-
+ platform-mc/test/platform_manager_test.cpp    |  24 +--
+ platform-mc/test/terminus_manager_test.cpp    |  32 ++--
+ requester/mctp_endpoint_discovery.cpp         |  16 +-
+ .../test/mctp_endpoint_discovery_test.cpp     |  31 ++--
+ 11 files changed, 284 insertions(+), 57 deletions(-)
+
+diff --git a/common/types.hpp b/common/types.hpp
+index b61184f..57188fb 100644
+--- a/common/types.hpp
++++ b/common/types.hpp
+@@ -38,6 +38,10 @@ using NetworkId = uint32_t;
+  */
+ using MctpInfoName = std::optional<std::string>;
+ 
++/** @brief Type definition of MCTP name association path in string
++ */
++using AssociatedPath = std::optional<std::string>;
++
+ /** @brief Type definition of MCTP interface information between two endpoints.
+  *         eid : Endpoint EID in byte. Defined to match with MCTP D-Bus
+  *               interface
+@@ -46,7 +50,8 @@ using MctpInfoName = std::optional<std::string>;
+  *         NetworkId: MCTP network index
+  *         name: Alias name of the endpoint, e.g. BMC, NIC, etc.
+  */
+-using MctpInfo = std::tuple<eid, UUID, MctpMedium, NetworkId, MctpInfoName>;
++using MctpInfo =
++    std::tuple<eid, UUID, MctpMedium, NetworkId, MctpInfoName, AssociatedPath>;
+ 
+ /** @brief Type definition of MCTP endpoint D-Bus properties in
+  *         xyz.openbmc_project.MCTP.Endpoint D-Bus interface.
+diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
+index 062cc4c..62abb61 100644
+--- a/fw-update/inventory_manager.cpp
++++ b/fw-update/inventory_manager.cpp
+@@ -730,7 +730,7 @@ std::optional<SoftwareName> obtainDeviceNameFromConfigurations(
+     {
+         if (std::get<pldm::eid>(mctpInfo) == eid)
+         {
+-            auto nameOption = std::get<std::optional<std::string>>(mctpInfo);
++            auto nameOption = std::get<4>(mctpInfo);
+             if (nameOption)
+             {
+                 return *nameOption;
+diff --git a/fw-update/test/firmware_inventory_manager_test.cpp b/fw-update/test/firmware_inventory_manager_test.cpp
+index c7effaa..99f8ff2 100644
+--- a/fw-update/test/firmware_inventory_manager_test.cpp
++++ b/fw-update/test/firmware_inventory_manager_test.cpp
+@@ -62,8 +62,9 @@ TEST(GetBoardPath_WithMockHandler, ReturnsExpectedBoardPath)
+     pldm::MctpMedium endpointMedium = "medium";
+     pldm::NetworkId endpointNetId = 0;
+     pldm::MctpInfoName endpointName = "BMC";
+-    pldm::MctpInfo endpointInfo = std::make_tuple(
+-        endpointId, endpointUuid, endpointMedium, endpointNetId, endpointName);
++    pldm::MctpInfo endpointInfo =
++        std::make_tuple(endpointId, endpointUuid, endpointMedium, endpointNetId,
++                        endpointName, std::nullopt);
+     configurations[boardInventoryPath] = endpointInfo;
+ 
+     Event event(sdeventplus::Event::get_default());
+diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
+index fd13036..1a1b82e 100644
+--- a/platform-mc/terminus.cpp
++++ b/platform-mc/terminus.cpp
+@@ -206,6 +206,12 @@ void Terminus::parseTerminusPDRs()
+         }
+     }
+ 
++    auto rc = fetchEntityManagerConfiguration();
++    if (rc != 0)
++    {
++        lg2::info("fetchEntityManagerConfiguration failed with {RC}", "RC", rc);
++    }
++
+     auto tName = findTerminusName();
+     if (tName && !tName.value().empty())
+     {
+@@ -226,7 +232,18 @@ void Terminus::parseTerminusPDRs()
+ #endif
+     }
+ 
+-    if (createInventoryPath(terminusName))
++    auto iName = getInventoryName();
++    std::string inventoryName;
++    if (iName && !iName->empty())
++    {
++        inventoryName = std::string(*iName);
++    }
++    else
++    {
++        inventoryName = terminusName;
++    }
++
++    if (createInventoryPath(inventoryName))
+     {
+         lg2::info("Terminus ID {TID}: Created Inventory path {PATH}.", "TID",
+                   tid, "PATH", inventoryPath);
+@@ -789,5 +806,146 @@ std::vector<std::string> Terminus::getSensorNames(const SensorID& sensorId)
+     return sensorNames;
+ }
+ 
++int Terminus::fetchEntityManagerConfiguration()
++{
++    auto path = getAssociatedPath();
++    if (!path.has_value())
++    {
++        lg2::error("Associated path is empty for terminus {TID}", "TID", tid);
++        return -1;
++    }
++
++    const std::string filterPath(*path);
++
++    auto bus = sdbusplus::bus::new_default();
++    auto method = bus.new_method_call(
++        "xyz.openbmc_project.EntityManager", "/xyz/openbmc_project/inventory",
++        "org.freedesktop.DBus.ObjectManager", "GetManagedObjects");
++
++    pldm::utils::ObjectValueTree objects;
++
++    try
++    {
++        auto reply = bus.call(method);
++        reply.read(objects);
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error("GetManagedObjects failed: {ERR}", "ERR", e);
++        return -1;
++    }
++
++    for (const auto& [objPath, interfaces] : objects)
++    {
++        if (!objPath.str.starts_with(filterPath))
++        {
++            continue;
++        }
++
++        for (const auto& [ifName, props] : interfaces)
++        {
++            // Replace inventory if defined in Entity Manager
++            if (std::find(interfaceFilter.begin(), interfaceFilter.end(),
++                          ifName) != interfaceFilter.end())
++            {
++                lg2::info("Found interface {IF} on path {PATH}", "IF", ifName,
++                          "PATH", objPath.str);
++                auto invIt = props.find("Inventory");
++
++                if (invIt != props.end() &&
++                    std::holds_alternative<std::string>(invIt->second))
++                {
++                    lg2::info(
++                        "Setting inventory name from Entity Manager: {NAME} on {PATH}",
++                        "NAME", std::get<std::string>(invIt->second), "PATH",
++                        objPath.str);
++                    setInventoryName(std::get<std::string>(invIt->second));
++                }
++            }
++
++            // Retrieve sensor names from PLDMSensors interface and update
++            // sensorAuxiliaryNamesTbl
++            bool isSensorInterface = false;
++            for (const auto& filter : interfaceFilter)
++            {
++                if (ifName.starts_with(filter + ".PLDMSensors"))
++                {
++                    isSensorInterface = true;
++                    break;
++                }
++            }
++            if (!isSensorInterface)
++                continue;
++
++            auto nameIt = props.find("Name");
++            auto sidIt = props.find("ID");
++
++            if (nameIt == props.end() || sidIt == props.end())
++            {
++                lg2::warning("SensorsMap missing Name or SensorID on {PATH}",
++                             "PATH", objPath.str);
++                continue;
++            }
++
++            if (!std::holds_alternative<std::string>(nameIt->second) ||
++                !std::holds_alternative<uint64_t>(sidIt->second))
++            {
++                lg2::warning("SensorsMap invalid property type on {PATH}",
++                             "PATH", objPath.str);
++                continue;
++            }
++
++            uint64_t sensorId = std::get<uint64_t>(sidIt->second);
++            if (sensorId > std::numeric_limits<uint16_t>::max())
++            {
++                lg2::warning("SensorID overflow: {SID} on {PATH}", "SID",
++                             sensorId, "PATH", objPath.str);
++                continue;
++            }
++
++            const auto& name = std::get<std::string>(nameIt->second);
++
++            // Try update first
++            bool updated = false;
++            for (auto& aux : sensorAuxiliaryNamesTbl)
++            {
++                auto& storedSid = std::get<0>(*aux);
++                auto& namesVec = std::get<2>(*aux);
++
++                if (storedSid == static_cast<uint16_t>(sensorId))
++                {
++                    // Update existing entry
++                    namesVec.clear();
++                    namesVec.emplace_back(
++                        std::vector<std::pair<NameLanguageTag, SensorName>>{
++                            {"en", name}});
++
++                    lg2::info(
++                        "EM sensor rename updated: SID={SID}, Name={NAME}",
++                        "SID", sensorId, "NAME", name);
++
++                    updated = true;
++                    break;
++                }
++            }
++
++            if (!updated)
++            {
++                sensorAuxiliaryNamesTbl.emplace_back(
++                    std::make_shared<SensorAuxiliaryNames>(
++                        static_cast<uint16_t>(sensorId), 1,
++                        std::vector<std::vector<
++                            std::pair<NameLanguageTag, SensorName>>>{
++                            {{"en", name}}}));
++
++                lg2::info("EM sensor rename applied: SID={SID}, Name={NAME}",
++                          "SID", sensorId, "NAME", name);
++            }
++        }
++    }
++
++    return 0;
++}
++
+ } // namespace platform_mc
+ } // namespace pldm
+diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
+index 87ad0be..4a98b33 100644
+--- a/platform-mc/terminus.hpp
++++ b/platform-mc/terminus.hpp
+@@ -122,6 +122,38 @@ class Terminus
+         return terminusName;
+     }
+ 
++    /** @brief The setter to set inventory name */
++    void setInventoryName(const EntityName& iName)
++    {
++        inventoryName = iName;
++    }
++
++    /** @brief The getter to get inventory name */
++    std::optional<std::string_view> getInventoryName()
++    {
++        if (inventoryName.empty())
++        {
++            return std::nullopt;
++        }
++        return inventoryName;
++    }
++
++    /** @brief The setter to set associated path */
++    void setAssociatedPath(const EntityName& path)
++    {
++        associatedPath = path;
++    }
++
++    /** @brief The getter to get associated path */
++    std::optional<std::string_view> getAssociatedPath()
++    {
++        if (associatedPath.empty())
++        {
++            return std::nullopt;
++        }
++        return associatedPath;
++    }
++
+     /** @brief Parse record data from FRU table
+      *
+      *  @param[in] fruData - pointer to FRU record table
+@@ -176,6 +208,12 @@ class Terminus
+      */
+     std::shared_ptr<NumericSensor> getSensorObject(SensorID id);
+ 
++    /** @brief Fetch sensor names from Entity Manager via D-Bus
++     *
++     *  @return success code
++     */
++    int fetchEntityManagerConfiguration();
++
+   private:
+     /** @brief Find the Terminus Name from the Entity Auxiliary name list
+      *         The Entity Auxiliary name list is entityAuxiliaryNamesTbl.
+@@ -305,6 +343,12 @@ class Terminus
+ #endif
+ 
+ 
++    /** @brief associated path */
++    EntityName associatedPath{};
++
++    /** @brief Inventory name */
++    EntityName inventoryName{};
++
+     /* @brief Inventory D-Bus object path of the terminus */
+     std::string inventoryPath;
+ 
+diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
+index 3287bfe..2d9793e 100644
+--- a/platform-mc/terminus_manager.cpp
++++ b/platform-mc/terminus_manager.cpp
+@@ -496,6 +496,14 @@ exec::task<int> TerminusManager::initMctpTerminus(const MctpInfo& mctpInfo)
+         termini[tid]->setTerminusName(mctpInfoName.value());
+     }
+ 
++    AssociatedPath associatedPath = std::get<5>(mctpInfo);
++    if (associatedPath.has_value())
++    {
++        lg2::info("Terminus {TID} has associated path {PATH}", "PATH",
++                  associatedPath.value(), "TID", tid);
++        termini[tid]->setAssociatedPath(associatedPath.value());
++    }
++
+     co_return PLDM_SUCCESS;
+ }
+ 
+diff --git a/platform-mc/test/event_manager_test.cpp b/platform-mc/test/event_manager_test.cpp
+index 0b64b0c..685f8c0 100644
+--- a/platform-mc/test/event_manager_test.cpp
++++ b/platform-mc/test/event_manager_test.cpp
+@@ -171,8 +171,8 @@ TEST_F(EventManagerTest, processNumericSensorEventTest)
+ TEST_F(EventManagerTest, SetEventReceiverTest)
+ {
+     // Add terminus
+-    auto mappedTid =
+-        terminusManager.mapTid(pldm::MctpInfo(10, "", "", 1, std::nullopt));
++    auto mappedTid = terminusManager.mapTid(
++        pldm::MctpInfo(10, "", "", 1, std::nullopt, std::nullopt));
+     auto tid = mappedTid.value();
+     termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
+         tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
+@@ -364,7 +364,7 @@ TEST_F(EventManagerTest, SetEventReceiverTest)
+     EXPECT_EQ(rc, PLDM_SUCCESS);
+ 
+     terminusManager.updateMctpEndpointAvailability(
+-        pldm::MctpInfo(10, "", "", 1, std::nullopt), true);
++        pldm::MctpInfo(10, "", "", 1, std::nullopt, std::nullopt), true);
+ 
+     // queue SetEventReceiver response
+     const size_t SetEventReceiverLen = 1;
+@@ -402,8 +402,8 @@ TEST_F(EventManagerTest, updateAvailableState)
+ TEST_F(EventManagerTest, pollForPlatformEventTaskMultipartTransferTest)
+ {
+     // Add terminus
+-    auto mappedTid =
+-        terminusManager.mapTid(pldm::MctpInfo(10, "", "", 1, std::nullopt));
++    auto mappedTid = terminusManager.mapTid(
++        pldm::MctpInfo(10, "", "", 1, std::nullopt, std::nullopt));
+     auto tid = mappedTid.value();
+     termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
+         tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
+@@ -495,7 +495,7 @@ TEST_F(EventManagerTest, pollForPlatformEventTaskMultipartTransferTest)
+     EXPECT_EQ(rc, PLDM_SUCCESS);
+ 
+     terminusManager.updateMctpEndpointAvailability(
+-        pldm::MctpInfo(10, "", "", 1, std::nullopt), true);
++        pldm::MctpInfo(10, "", "", 1, std::nullopt, std::nullopt), true);
+ 
+     EXPECT_CALL(eventManager, processCperEvent(_, _, _, _))
+         .Times(1)
+diff --git a/platform-mc/test/platform_manager_test.cpp b/platform-mc/test/platform_manager_test.cpp
+index b1353e7..8e364dd 100644
+--- a/platform-mc/test/platform_manager_test.cpp
++++ b/platform-mc/test/platform_manager_test.cpp
+@@ -35,8 +35,8 @@ class PlatformManagerTest : public testing::Test
+ TEST_F(PlatformManagerTest, initTerminusTest)
+ {
+     // Add terminus
+-    auto mappedTid =
+-        mockTerminusManager.mapTid(pldm::MctpInfo(10, "", "", 1, std::nullopt));
++    auto mappedTid = mockTerminusManager.mapTid(
++        pldm::MctpInfo(10, "", "", 1, std::nullopt, std::nullopt));
+     auto tid = mappedTid.value();
+     termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
+         tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
+@@ -185,7 +185,7 @@ TEST_F(PlatformManagerTest, initTerminusTest)
+     EXPECT_EQ(rc, PLDM_SUCCESS);
+ 
+     mockTerminusManager.updateMctpEndpointAvailability(
+-        pldm::MctpInfo(10, "", "", 1, std::nullopt), true);
++        pldm::MctpInfo(10, "", "", 1, std::nullopt, std::nullopt), true);
+ 
+     stdexec::sync_wait(platformManager.initTerminus());
+     EXPECT_EQ(true, terminus->initialized);
+@@ -201,8 +201,8 @@ TEST_F(PlatformManagerTest, initTerminusTest)
+ TEST_F(PlatformManagerTest, parseTerminusNameTest)
+ {
+     // Add terminus
+-    auto mappedTid =
+-        mockTerminusManager.mapTid(pldm::MctpInfo(10, "", "", 1, std::nullopt));
++    auto mappedTid = mockTerminusManager.mapTid(
++        pldm::MctpInfo(10, "", "", 1, std::nullopt, std::nullopt));
+     auto tid = mappedTid.value();
+     termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
+         tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
+@@ -351,7 +351,7 @@ TEST_F(PlatformManagerTest, parseTerminusNameTest)
+     EXPECT_EQ(rc, PLDM_SUCCESS);
+ 
+     mockTerminusManager.updateMctpEndpointAvailability(
+-        pldm::MctpInfo(10, "", "", 1, std::nullopt), true);
++        pldm::MctpInfo(10, "", "", 1, std::nullopt, std::nullopt), true);
+ 
+     stdexec::sync_wait(platformManager.initTerminus());
+     EXPECT_EQ(true, terminus->initialized);
+@@ -362,8 +362,8 @@ TEST_F(PlatformManagerTest, parseTerminusNameTest)
+ TEST_F(PlatformManagerTest, initTerminusDontSupportGetPDRTest)
+ {
+     // Add terminus
+-    auto mappedTid =
+-        mockTerminusManager.mapTid(pldm::MctpInfo(10, "", "", 1, std::nullopt));
++    auto mappedTid = mockTerminusManager.mapTid(
++        pldm::MctpInfo(10, "", "", 1, std::nullopt, std::nullopt));
+     auto tid = mappedTid.value();
+     termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
+         tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
+@@ -481,8 +481,8 @@ TEST_F(PlatformManagerTest, initTerminusDontSupportGetPDRTest)
+ TEST_F(PlatformManagerTest, negativeInitTerminusTest1)
+ {
+     // terminus doesn't Type2 support
+-    auto mappedTid =
+-        mockTerminusManager.mapTid(pldm::MctpInfo(10, "", "", 1, std::nullopt));
++    auto mappedTid = mockTerminusManager.mapTid(
++        pldm::MctpInfo(10, "", "", 1, std::nullopt, std::nullopt));
+     auto tid = mappedTid.value();
+     termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
+         tid, 1 << PLDM_BASE, event);
+@@ -500,8 +500,8 @@ TEST_F(PlatformManagerTest, negativeInitTerminusTest1)
+ TEST_F(PlatformManagerTest, negativeInitTerminusTest2)
+ {
+     // terminus responses error
+-    auto mappedTid =
+-        mockTerminusManager.mapTid(pldm::MctpInfo(10, "", "", 1, std::nullopt));
++    auto mappedTid = mockTerminusManager.mapTid(
++        pldm::MctpInfo(10, "", "", 1, std::nullopt, std::nullopt));
+     auto tid = mappedTid.value();
+     termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
+         tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
+diff --git a/platform-mc/test/terminus_manager_test.cpp b/platform-mc/test/terminus_manager_test.cpp
+index 85ecb57..3a4ec90 100644
+--- a/platform-mc/test/terminus_manager_test.cpp
++++ b/platform-mc/test/terminus_manager_test.cpp
+@@ -52,7 +52,7 @@ class TerminusManagerTest : public testing::Test
+ 
+ TEST_F(TerminusManagerTest, mapTidTest)
+ {
+-    pldm::MctpInfo mctpInfo1(8, "", "", 0, std::nullopt);
++    pldm::MctpInfo mctpInfo1(8, "", "", 0, std::nullopt, std::nullopt);
+ 
+     auto mappedTid1 = terminusManager.mapTid(mctpInfo1);
+     EXPECT_NE(mappedTid1, std::nullopt);
+@@ -73,38 +73,38 @@ TEST_F(TerminusManagerTest, mapTidTest)
+ TEST_F(TerminusManagerTest, negativeMapTidTest)
+ {
+     // map null EID(0) to TID
+-    pldm::MctpInfo m0(0, "", "", 0, std::nullopt);
++    pldm::MctpInfo m0(0, "", "", 0, std::nullopt, std::nullopt);
+     auto mappedTid = terminusManager.mapTid(m0);
+     EXPECT_EQ(mappedTid, std::nullopt);
+ 
+     // map broadcast EID(0xff) to TID
+-    pldm::MctpInfo m1(0xff, "", "", 0, std::nullopt);
++    pldm::MctpInfo m1(0xff, "", "", 0, std::nullopt, std::nullopt);
+     mappedTid = terminusManager.mapTid(m1);
+     EXPECT_EQ(mappedTid, std::nullopt);
+ 
+     // map EID to tid which has been assigned
+-    pldm::MctpInfo m2(9, "", "", 1, std::nullopt);
+-    pldm::MctpInfo m3(10, "", "", 1, std::nullopt);
++    pldm::MctpInfo m2(9, "", "", 1, std::nullopt, std::nullopt);
++    pldm::MctpInfo m3(10, "", "", 1, std::nullopt, std::nullopt);
+     auto mappedTid2 = terminusManager.mapTid(m2);
+     auto mappedTid3 = terminusManager.storeTerminusInfo(m3, mappedTid2.value());
+     EXPECT_NE(mappedTid2, std::nullopt);
+     EXPECT_EQ(mappedTid3, std::nullopt);
+ 
+     // map two mctpInfo with same EID but different network Id
+-    pldm::MctpInfo m4(12, "", "", 1, std::nullopt);
+-    pldm::MctpInfo m5(12, "", "", 2, std::nullopt);
++    pldm::MctpInfo m4(12, "", "", 1, std::nullopt, std::nullopt);
++    pldm::MctpInfo m5(12, "", "", 2, std::nullopt, std::nullopt);
+     auto mappedTid4 = terminusManager.mapTid(m4);
+     auto mappedTid5 = terminusManager.mapTid(m5);
+     EXPECT_NE(mappedTid4.value(), mappedTid5.value());
+ 
+     // map same mctpInfo twice
+-    pldm::MctpInfo m6(12, "", "", 3, std::nullopt);
++    pldm::MctpInfo m6(12, "", "", 3, std::nullopt, std::nullopt);
+     auto mappedTid6 = terminusManager.mapTid(m6);
+     auto mappedTid6_1 = terminusManager.mapTid(m6);
+     EXPECT_EQ(mappedTid6.value(), mappedTid6_1.value());
+ 
+     // look up an unmapped MctpInfo to TID
+-    pldm::MctpInfo m7(1, "", "", 0, std::nullopt);
++    pldm::MctpInfo m7(1, "", "", 0, std::nullopt, std::nullopt);
+     auto mappedTid7 = terminusManager.toTid(m7);
+     EXPECT_EQ(mappedTid7, std::nullopt);
+ 
+@@ -158,7 +158,8 @@ TEST_F(TerminusManagerTest, discoverMctpTerminusTest)
+     EXPECT_EQ(rc, PLDM_SUCCESS);
+ 
+     pldm::MctpInfos mctpInfos{};
+-    mctpInfos.emplace_back(pldm::MctpInfo(12, "", "", 1, std::nullopt));
++    mctpInfos.emplace_back(
++        pldm::MctpInfo(12, "", "", 1, std::nullopt, std::nullopt));
+     mockTerminusManager.discoverMctpTerminus(mctpInfos);
+     EXPECT_EQ(1, termini.size());
+ 
+@@ -203,7 +204,8 @@ TEST_F(TerminusManagerTest, negativeDiscoverMctpTerminusTest)
+     EXPECT_EQ(rc, PLDM_SUCCESS);
+ 
+     pldm::MctpInfos mctpInfos{};
+-    mctpInfos.emplace_back(pldm::MctpInfo(12, "", "", 1, std::nullopt));
++    mctpInfos.emplace_back(
++        pldm::MctpInfo(12, "", "", 1, std::nullopt, std::nullopt));
+     mockTerminusManager.discoverMctpTerminus(mctpInfos);
+     EXPECT_EQ(0, termini.size());
+ 
+@@ -279,7 +281,8 @@ TEST_F(TerminusManagerTest, doesSupportTypeTest)
+     EXPECT_EQ(rc, PLDM_SUCCESS);
+ 
+     pldm::MctpInfos mctpInfos{};
+-    mctpInfos.emplace_back(pldm::MctpInfo(12, "", "", 1, std::nullopt));
++    mctpInfos.emplace_back(
++        pldm::MctpInfo(12, "", "", 1, std::nullopt, std::nullopt));
+     mockTerminusManager.discoverMctpTerminus(mctpInfos);
+     EXPECT_EQ(1, termini.size());
+ 
+@@ -465,7 +468,8 @@ TEST_F(TerminusManagerTest, doesSupportCommandTest)
+     EXPECT_EQ(rc, PLDM_SUCCESS);
+ 
+     pldm::MctpInfos mctpInfos{};
+-    mctpInfos.emplace_back(pldm::MctpInfo(12, "", "", 1, std::nullopt));
++    mctpInfos.emplace_back(
++        pldm::MctpInfo(12, "", "", 1, std::nullopt, std::nullopt));
+     mockTerminusManager.discoverMctpTerminus(mctpInfos);
+     EXPECT_EQ(1, termini.size());
+     EXPECT_EQ(true, termini.contains(1));
+@@ -544,7 +548,7 @@ TEST_F(TerminusManagerTest, doesSupportCommandTest)
+ TEST_F(TerminusManagerTest, getActiveEidByNameTest)
+ {
+     // Add terminus
+-    pldm::MctpInfo mctpInfo(10, "", "", 1, std::nullopt);
++    pldm::MctpInfo mctpInfo(10, "", "", 1, std::nullopt, std::nullopt);
+     auto mappedTid = mockTerminusManager.mapTid(mctpInfo);
+     auto tid = mappedTid.value();
+     termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
+diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
+index 0876dfa..292c311 100644
+--- a/requester/mctp_endpoint_discovery.cpp
++++ b/requester/mctp_endpoint_discovery.cpp
+@@ -84,9 +84,9 @@ void MctpDiscovery::getMctpInfos(std::map<MctpInfo, Availability>& mctpInfoMap)
+             if (std::find(types.begin(), types.end(), mctpTypePLDM) !=
+                 types.end())
+             {
+-                auto mctpInfo =
+-                    MctpInfo(std::get<eid>(epProps), uuid, "",
+-                             std::get<NetworkId>(epProps), std::nullopt);
++                auto mctpInfo = MctpInfo(std::get<eid>(epProps), uuid, "",
++                                         std::get<NetworkId>(epProps),
++                                         std::nullopt, std::nullopt);
+                 searchConfigurationFor(pldm::utils::DBusHandler(), mctpInfo);
+                 mctpInfoMap[std::move(mctpInfo)] = availability;
+             }
+@@ -240,8 +240,8 @@ void MctpDiscovery::getAddedMctpInfos(sdbusplus::message_t& msg,
+                     info(
+                         "Adding Endpoint networkId '{NETWORK}' and EID '{EID}' UUID '{UUID}'",
+                         "NETWORK", networkId, "EID", eid, "UUID", uuid);
+-                    auto mctpInfo =
+-                        MctpInfo(eid, uuid, "", networkId, std::nullopt);
++                    auto mctpInfo = MctpInfo(eid, uuid, "", networkId,
++                                             std::nullopt, std::nullopt);
+                     searchConfigurationFor(pldm::utils::DBusHandler(),
+                                            mctpInfo);
+                     mctpInfos.emplace_back(std::move(mctpInfo));
+@@ -396,7 +396,8 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
+             const UUID& uuid = getEndpointUUIDProp(service, objPath);
+ 
+             MctpInfo mctpInfo(std::get<eid>(epProps), uuid, "",
+-                              std::get<NetworkId>(epProps), std::nullopt);
++                              std::get<NetworkId>(epProps), std::nullopt,
++                              std::nullopt);
+             searchConfigurationFor(pldm::utils::DBusHandler(), mctpInfo);
+             if (!std::ranges::contains(existingMctpInfos, mctpInfo))
+             {
+@@ -556,8 +557,9 @@ void MctpDiscovery::searchConfigurationFor(
+         auto name = getNameFromProperties(mctpTargetProperties);
+         if (!name.empty())
+         {
+-            std::get<std::optional<std::string>>(mctpInfo) = name;
++            std::get<4>(mctpInfo) = name;
+         }
++        std::get<5>(mctpInfo) = associatedObjPath;
+         configurations.emplace(associatedObjPath, mctpInfo);
+     }
+     catch (const std::exception& e)
+diff --git a/requester/test/mctp_endpoint_discovery_test.cpp b/requester/test/mctp_endpoint_discovery_test.cpp
+index 3647d11..358c8cf 100644
+--- a/requester/test/mctp_endpoint_discovery_test.cpp
++++ b/requester/test/mctp_endpoint_discovery_test.cpp
+@@ -70,8 +70,9 @@ TEST(MctpEndpointDiscoveryTest, goodAddToExistingMctpInfos)
+     auto& bus = pldm::utils::DBusHandler::getBus();
+     pldm::MockManager manager;
+     const pldm::MctpInfos& mctpInfos = {
+-        pldm::MctpInfo(11, pldm::emptyUUID, "", 1, std::nullopt),
+-        pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt)};
++        pldm::MctpInfo(11, pldm::emptyUUID, "", 1, std::nullopt, std::nullopt),
++        pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt,
++                       std::nullopt)};
+ 
+     auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
+         bus, std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager});
+@@ -88,7 +89,7 @@ TEST(MctpEndpointDiscoveryTest, badAddToExistingMctpInfos)
+     auto& bus = pldm::utils::DBusHandler::getBus();
+     pldm::MockManager manager;
+     const pldm::MctpInfos& mctpInfos = {
+-        pldm::MctpInfo(11, pldm::emptyUUID, "", 1, std::nullopt)};
++        pldm::MctpInfo(11, pldm::emptyUUID, "", 1, std::nullopt, std::nullopt)};
+ 
+     auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
+         bus, std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager});
+@@ -101,8 +102,10 @@ TEST(MctpEndpointDiscoveryTest, goodRemoveFromExistingMctpInfos)
+     auto& bus = pldm::utils::DBusHandler::getBus();
+     pldm::MockManager manager;
+     const pldm::MctpInfos& mctpInfos = {
+-        pldm::MctpInfo(11, pldm::emptyUUID, "def", 2, std::nullopt),
+-        pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt)};
++        pldm::MctpInfo(11, pldm::emptyUUID, "def", 2, std::nullopt,
++                       std::nullopt),
++        pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt,
++                       std::nullopt)};
+ 
+     auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
+         bus, std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager});
+@@ -114,8 +117,8 @@ TEST(MctpEndpointDiscoveryTest, goodRemoveFromExistingMctpInfos)
+     EXPECT_EQ(std::get<3>(mctpInfo), 1);
+     pldm::MctpInfos removedInfos;
+     pldm::MctpInfos remainMctpInfos;
+-    remainMctpInfos.emplace_back(
+-        pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt));
++    remainMctpInfos.emplace_back(pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1,
++                                                std::nullopt, std::nullopt));
+ 
+     mctpDiscoveryHandler->removeFromExistingMctpInfos(remainMctpInfos,
+                                                       removedInfos);
+@@ -136,8 +139,10 @@ TEST(MctpEndpointDiscoveryTest, goodRemoveEndpoints)
+     auto& bus = pldm::utils::DBusHandler::getBus();
+     pldm::MockManager manager;
+     const pldm::MctpInfos& mctpInfos = {
+-        pldm::MctpInfo(11, pldm::emptyUUID, "def", 2, std::nullopt),
+-        pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt)};
++        pldm::MctpInfo(11, pldm::emptyUUID, "def", 2, std::nullopt,
++                       std::nullopt),
++        pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt,
++                       std::nullopt)};
+ 
+     auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
+         bus, std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager});
+@@ -160,8 +165,8 @@ TEST(MctpEndpointDiscoveryTest, goodSearchConfigurationFor)
+     MockdBusHandler mockedDbusHandler;
+     auto& bus = mockedDbusHandler.getBus();
+     pldm::MockManager manager;
+-    const pldm::MctpInfos& mctpInfos = {
+-        pldm::MctpInfo(10, pldm::emptyUUID, "abc", 1, std::nullopt)};
++    const pldm::MctpInfos& mctpInfos = {pldm::MctpInfo(
++        10, pldm::emptyUUID, "abc", 1, std::nullopt, std::nullopt)};
+ 
+     constexpr auto mockedDbusPath =
+         "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
+@@ -207,8 +212,8 @@ TEST(MctpEndpointDiscoveryTest, badSearchConfigurationFor)
+     MockdBusHandler mockedDbusHandler;
+     auto& bus = mockedDbusHandler.getBus();
+     pldm::MockManager manager;
+-    const pldm::MctpInfos& mctpInfos = {
+-        pldm::MctpInfo(10, pldm::emptyUUID, "abc", 1, std::nullopt)};
++    const pldm::MctpInfos& mctpInfos = {pldm::MctpInfo(
++        10, pldm::emptyUUID, "abc", 1, std::nullopt, std::nullopt)};
+ 
+     constexpr auto mockedDbusPath =
+         "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
+-- 
+2.43.0
+

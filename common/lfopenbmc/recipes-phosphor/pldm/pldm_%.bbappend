@@ -21,6 +21,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0015-oem-meta-Add-MCTP-configuration-discovery.patch \
     file://0016-pldm-Increase-maximum-of-dbus-timeout-value.patch \
     file://0017-oem-meta-Fix-a-bug-that-incorrectly-decodes-system-e.patch \
+    file://0018-terminus-replace-inventory-and-sensor-configuration.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

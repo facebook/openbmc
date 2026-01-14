@@ -41,6 +41,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-fby3:lf-master
   meta-fuji:lf-master
   meta-grandcanyon:lf-master
+  meta-grandcanyon2:lf-master
   meta-grandteton:lf-master
   meta-greatlakes:lf-master
   meta-gtartemis:lf-master

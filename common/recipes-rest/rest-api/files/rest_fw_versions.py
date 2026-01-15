@@ -21,12 +21,14 @@
 import hashlib
 import json
 import re
+import shutil
 import subprocess
-from typing import Dict
+from typing import Dict, Tuple
 
 from aiohttp.web_exceptions import HTTPNotFound
 from rest_utils import DEFAULT_TIMEOUT_SEC
 
+_BASH_PATH = shutil.which("bash")
 _REGEX_VERSION_PATTERN = r"^[v]?([0-9]*)\.([0-9]*)$"
 _MANIFEST_FILE = "/etc/ufw_manifest.json"
 
@@ -47,13 +49,15 @@ def _normalize_version(version: str) -> str:
     return version
 
 
-def _run_command(cmd: str) -> tuple[str, str]:
+def _run_command(cmd: str) -> Tuple[str, str]:
     """
     Run a shell command and return (stdout, error_message).
     """
     try:
+        if not _BASH_PATH:
+            return "", "bash executable not found"
         proc = subprocess.Popen(
-            ["/usr/bin/bash", "-o", "pipefail", "-c", cmd],
+            [_BASH_PATH, "-o", "pipefail", "-c", cmd],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
         )
@@ -87,7 +91,7 @@ def _check_condition(condition: str, entity: str) -> bool:
     return proc.returncode == 0
 
 
-def _get_firmware_versions() -> tuple[Dict[str, str], Dict[str, str]]:
+def _get_firmware_versions() -> Tuple[Dict[str, str], Dict[str, str]]:
     """
     Get all firmware versions and return as tuple of dicts.
     fw_key: version, fw_key: error (if applicable)

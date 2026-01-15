@@ -21,7 +21,8 @@
 static int read_adc_val(uint8_t id, float *value);
 static int read_battery_val(uint8_t id, float *value);
 static int read_temp(uint8_t id, float *value);
-static int read_peci(uint8_t id, float *value);
+static int read_dimm_temp(uint8_t id, float *value);
+static int read_cpu_temp(uint8_t id, float *value);
 static int read_rpm(uint8_t id, float *value);
 static int read_pmbus(uint8_t id, float *value);
 static int read_hsc(uint8_t id, float *value);
@@ -30,80 +31,67 @@ static int read_ina230_pwr(uint8_t id, float *value);
 static int read_nvme_temp(uint8_t id, float *value);
 static int read_nic_temp(uint8_t id, float *value);
 static int retryDIMM = 0;
+static int retrySensor = 0;
 static int retryFAN[4] = {0, 0, 0, 0};
 
 //{SensorName, ID, FUNCTION, RAEDING AVAILABLE, {UCR, UNC, UNR, LCR, LNC, LNR, Pos, Neg}, unit}
 PAL_SENSOR_MAP server_sensor_map[] = {
   [SERVER_INLET_TEMP] =
-  {"NETLAKE_INLET_TEMP", MB_INLET, read_temp, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  {"NETLAKE2_INLET_TEMP", MB_INLET, read_temp, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [SERVER_OUTLET_TEMP] =
-  {"NETLAKE_OUTLET_TEMP", MB_OUTLET, read_temp, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  {"NETLAKE2_OUTLET_TEMP", MB_OUTLET, read_temp, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [SERVER_SOC_TEMP] =
-  {"SOC_TEMP", SOC_TEMP, read_peci, POST_COMPLT_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  {"SOC_TEMP", SOC_TEMP, read_cpu_temp, POST_COMPLT_READING, {85, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [SERVER_DIMMA_TEMP] =
-  {"DIMMA_TEMP", DIMMA_TEMP, read_peci, POST_COMPLT_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  {"DIMMA_TEMP", DIMMA_TEMP, read_dimm_temp, POST_COMPLT_READING, {85, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [SERVER_DIMMB_TEMP] =
-  {"DIMMB_TEMP", DIMMB_TEMP, read_peci, POST_COMPLT_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
-  [SERVER_A_P12V_STBY_NETLAKE_VOL] =
-  {"A_P12V_STBY_NETLAKE_VOL", CPLD_ADC_P12V_STBY, read_cpld_adc, STBY_READING, {13.3488, 13.2192, 13.4784, 10.7088, 10.8192, 10.5984, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
-  [SERVER_A_P3V3_STBY_NETLAKE_VOL] =
-  {"A_P3V3_STBY_NETLAKE_VOL", CPLD_ADC_P3V3_STBY, read_cpld_adc, STBY_READING, {3.56895, 3.5343, 3.6036, 3.04095, 3.0723, 3.0096, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
-  [SERVER_A_P1V8_STBY_NETLAKE_VOL] =
-  {"A_P1V8_STBY_NETLAKE_VOL", CPLD_ADC_P1V8_STBY, read_cpld_adc, STBY_READING, {1.91889, 1.90026, 1.93752, 1.67616, 1.69344, 1.65888, 0, 0}, VOLT, ONE_HOUR_INVERVAL},
-  [SERVER_A_P5V_STBY_NETLAKE_VOL] =
-  {"A_P5V_STBY_NETLAKE_VOL", CPLD_ADC_P5V_STBY, read_cpld_adc, STBY_READING, {5.4075, 5.355, 5.46, 4.6075, 4.655, 4.56, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
-  [SERVER_A_P1V05_STBY_NETLAKE_VOL] =
-  {"A_P1V05_STBY_VOL", CPLD_ADC_P1V05_STBY, read_cpld_adc, STBY_READING, {1.12167, 1.11078, 1.13256, 0.99813, 1.00842, 0.98784, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
-  [SERVER_A_PVNN_PCH_VOL] =
-  {"A_PVNN_PCH_VOL", CPLD_ADC_PVNN_PCH, read_cpld_adc, STBY_READING, {1.236, 1.224, 1.248, 0.582, 0.588, 0.576, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
-  [SERVER_A_PVCCIN_VOL] =
-  {"A_PVCCIN_VOL", CPLD_ADC_PVCCIN, read_cpld_adc, POWER_ON_READING, {2.06, 2.04, 2.08, 1.455, 1.47, 1.44, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
-  [SERVER_A_PVCCANA_CPU_VOL] =
-  {"A_PVCCANA_CPU_VOL", CPLD_ADC_PVCCANA, read_cpld_adc, POWER_ON_READING, {1.03515, 1.0251, 1.0452, 0.96515, 0.9751, 0.9552, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
-  [SERVER_A_PVDDQ_ABC_CPU_VOL] =
-  {"A_PVDDQ_ABC_CPU_VOL", CPLD_ADC_PVDDQ, read_cpld_adc, POWER_ON_READING, {1.2978, 1.2852, 1.3104, 1.1058, 1.1172, 1.0944, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
-  [SERVER_A_PVPP_ABC_CPU_VOL] =
-  {"A_PVPP_ABC_CPU_VOL", CPLD_ADC_PVPP_CPU, read_cpld_adc, POWER_ON_READING, {2.8325, 2.805, 2.86, 2.30375, 2.3275, 2.28, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
-  [SERVER_A_P3V3_NETLAKE_VOL] =
-  {"A_P3V3_NETLAKE_VOL", CPLD_ADC_P3V3, read_cpld_adc, POWER_ON_READING, {3.56895, 3.5343, 3.6036, 3.04095, 3.0723, 3.0096, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
-  [SERVER_P1V8_STBY_VOL] =
-  {"P1V8_STBY_NETLAKE_VOL", VR_P1V8_STBY_VOL, read_pmbus, STBY_READING, {1.91889, 1.90026, 1.93752, 1.67616, 1.69344, 1.65888, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
-  [SERVER_P1V05_STBY_VOL] =
-  {"P1V05_STBY_VOL", VR_P1V05_STBY_VOL, read_pmbus, STBY_READING, {1.12167, 1.11078, 1.13256, 0.99813, 1.00842, 0.98784, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
-  [SERVER_PVNN_PCH_VOL] =
-  {"PVNN_PCH_VOL", VR_PVNN_PCH_VOL, read_pmbus, STBY_READING, {1.236, 1.224, 1.248, 0.582, 0.588, 0.576, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
-  [SERVER_PVCCIN_VOL] =
-  {"PVCCIN_VOL", VR_PVCCIN_VOL, read_pmbus, POWER_ON_READING, {2.06, 2.04, 2.08, 1.455, 1.47, 1.44, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
-  [SERVER_PVCCANCPU_VOL] =
-  {"PVCCANCPU_VOL", VR_PVCCANCPU_VOL, read_pmbus, POWER_ON_READING, {1.03515, 1.0251, 1.0452, 0.96515, 0.9751, 0.9552, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
-  [SERVER_PVDDQ_ABC_CPU_VOL] =
-  {"PVDDQ_ABC_CPU_VOL", VR_PVDDQ_ABC_CPU_VOL, read_pmbus, POWER_ON_READING, {1.2978, 1.2852, 1.3104, 1.1058, 1.1172, 1.0944, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
-  [SERVER_P1V8_STBY_CUR] =
-  {"P1V8_STBY_NETLAKE_CUR", VR_P1V8_STBY_CUR, read_pmbus, STBY_READING, {2.163, 0, 2.184, 0, 0, 0, 0, 0}, CURR, NORMAL_POLL_INTERVAL},
-  [SERVER_P1V05_STBY_CUR] =
-  {"P1V05_STBY_CUR", VR_P1V05_STBY_CUR, read_pmbus, STBY_READING, {12.051, 0, 12.168, 0, 0, 0, 0, 0}, CURR, NORMAL_POLL_INTERVAL},
-  [SERVER_PVNN_PCH_CUR] =
-  {"PVNN_PCH_CUR", VR_PVNN_PCH_CUR, read_pmbus, STBY_READING, {7.21, 0, 7.28, 0, 0, 0, 0, 0}, CURR, NORMAL_POLL_INTERVAL},
-  [SERVER_PVCCIN_CUR] =
-  {"PVCCIN_CUR", VR_PVCCIN_CUR, read_pmbus, POWER_ON_READING, {63.9, 0, 71, 0, 0, 0, 0, 0}, CURR, NORMAL_POLL_INTERVAL},
-  [SERVER_PVCCANCPU_CUR] =
-  {"PVCCANCPU_CUR", VR_PVCCANCPU_CUR, read_pmbus, POWER_ON_READING, {1.545, 0, 1.56, 0, 0, 0, 0, 0}, CURR, NORMAL_POLL_INTERVAL},
-  [SERVER_PVDDQ_ABC_CPU_CUR] =
-  {"PVDDQ_ABC_CPU_CUR", VR_PVDDQ_ABC_CPU_CUR, read_pmbus, POWER_ON_READING, {17.0671, 0, 17.2328, 0, 0, 0, 0, 0}, CURR, NORMAL_POLL_INTERVAL},
+  {"DIMMB_TEMP", DIMMB_TEMP, read_dimm_temp, POST_COMPLT_READING, {85, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  [SERVER_A_P12V_STBY_NETLAKE2_VOL] =
+  {"A_P12V_STBY_NETLAKE2_VOL", CPLD_ADC_P12V_STBY, read_cpld_adc, STBY_READING, {13.35, 13.22, 13.48, 10.71, 10.82, 10.6, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
+  [SERVER_A_P3V3_STBY_NETLAKE2_VOL] =
+  {"A_P3V3_STBY_NETLAKE2_VOL", CPLD_ADC_P3V3_STBY, read_cpld_adc, STBY_READING, {3.57, 3.53, 3.6, 3.04, 3.07, 3.01, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
+  [SERVER_A_P1V8_STBY_NETLAKE2_VOL] =
+  {"A_P1V8_STBY_NETLAKE2_VOL", CPLD_ADC_P1V8_STBY, read_cpld_adc, STBY_READING, {1.92, 1.9, 1.94, 1.68, 1.69, 1.66, 0, 0}, VOLT, ONE_HOUR_INVERVAL},
+  [SERVER_A_P1V8_AUDIO_NETLAKE2_VOL] =
+  {"A_P1V8_AUDIO_NETLAKE2_VOL", CPLD_ADC_P1V8_AUDIO, read_cpld_adc, STBY_READING, {1.92, 1.9, 1.94, 1.68, 1.69, 1.66, 0, 0}, VOLT, ONE_HOUR_INVERVAL},
+  [SERVER_A_P1V8_NETLAKE2_VOL] =
+  {"A_P1V8_NETLAKE2_VOL", CPLD_ADC_P1V8, read_cpld_adc, POWER_ON_READING, {1.92, 1.9, 1.94, 1.68, 1.69, 1.66, 0, 0}, VOLT, ONE_HOUR_INVERVAL},
+  [SERVER_A_P5V_STBY_NETLAKE2_VOL] =
+  {"A_P5V_STBY_NETLAKE2_VOL", CPLD_ADC_P5V_STBY, read_cpld_adc, STBY_READING, {5.41, 5.36, 5.46, 4.61, 4.66, 4.56, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
+  [SERVER_A_P5V_DIMM_NETLAKE2_VOL] =
+  {"A_P5V_DIMM_NETLAKE2_VOL", CPLD_ADC_P5V_DIMM, read_cpld_adc, POWER_ON_READING, {5.41, 5.36, 5.46, 4.61, 4.66, 4.56, 0, 0}, VOLT, ONE_HOUR_INVERVAL},
+  [SERVER_A_P3V3_NETLAKE2_VOL] =
+  {"A_P3V3_NETLAKE2_VOL", CPLD_ADC_P3V3, read_cpld_adc, POWER_ON_READING, {3.57, 3.53, 3.6, 3.04, 3.07, 3.01, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
+  [SERVER_A_PVDDIO_MEM_S3_VOL] =
+  {"A_PVDDIO_MEM_S3_VOL", CPLD_ADC_PVDDIO_MEM_S3, read_cpld_adc, POWER_ON_READING, {1.20, 1.19, 1.21, 1.03, 1.05, 1.02, 0, 0}, VOLT, ONE_HOUR_INVERVAL},
+  [SERVER_A_PVDD_MISC_S5_VOL] =
+  {"A_PVDD_MISC_S5_VOL", CPLD_ADC_PVDD_MISC_S5, read_cpld_adc, STBY_READING, {0.81, 0.80, 0.82, 0.69, 0.70, 0.68, 0, 0}, VOLT, ONE_HOUR_INVERVAL},
+  [SERVER_PVDDCR_TEMP] =
+  {"PVDDCR_TEMP", VR_PVDDCR_TEMP, read_pmbus, POWER_ON_READING, {100, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  [SERVER_PVDDCR_SOC_TEMP] =
+  {"PVDDCR_SOC_TEMP", VR_PVDDCR_SOC_TEMP, read_pmbus, POWER_ON_READING, {100, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  [SERVER_PVDD_MISC_TEMP] =
+  {"PVDD_MISC_TEMP", VR_PVDD_MISC_TEMP, read_pmbus, POWER_ON_READING, {100, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  [SERVER_PVDDCR_VOL] =
+  {"PVDDCR_VOL", VR_PVDDCR_VOL, read_pmbus, POWER_ON_READING, {1.60, 1.58, 1.61, 0.58, 0.59, 0.58, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
+  [SERVER_PVDDCR_SOC_VOL] =
+  {"PVDDCR_SOC_VOL", VR_PVDDCR_SOC_VOL, read_pmbus, POWER_ON_READING, {1.24, 1.22, 1.25, 0.58, 0.59, 0.58, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
+  [SERVER_PVDD_MISC_VOL] =
+  {"PVDD_MISC_VOL", VR_PVDD_MISC_VOL, read_pmbus, POWER_ON_READING, {1.24, 1.22, 1.25, 0.58, 0.59, 0.58, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
+  [SERVER_PVDDCR_CUR] =
+  {"PVDDCR_CUR", VR_PVDDCR_CUR, read_pmbus, POWER_ON_READING, {164.8, 0, 166.4, 0, 0, 0, 0, 0}, CURR, NORMAL_POLL_INTERVAL},
+  [SERVER_PVDDCR_SOC_CUR] =
+  {"PVDDCR_SOC_CUR", VR_PVDDCR_SOC_CUR, read_pmbus, POWER_ON_READING, {38.625, 0, 39, 0, 0, 0, 0, 0}, CURR, NORMAL_POLL_INTERVAL},
+  [SERVER_PVDD_MISC_CUR] =
+  {"PVDD_MISC_CUR", VR_PVDD_MISC_CUR, read_pmbus, POWER_ON_READING, {30.9, 0, 31.2, 0, 0, 0, 0, 0}, CURR, NORMAL_POLL_INTERVAL},
+  [SERVER_PVDDCR_PWR] =
+  {"PVDDCR_PWR", VR_PVDDCR_PWR, read_pmbus, POWER_ON_READING, {131.84, 0, 133.12, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
+  [SERVER_PVDDCR_SOC_PWR] =
+  {"PVDDCR_SOC_PWR", VR_PVDDCR_SOC_PWR, read_pmbus, POWER_ON_READING, {30.9, 0, 31.2, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
+  [SERVER_PVDD_MISC_PWR] =
+  {"PVDD_MISC_PWR", VR_PVDD_MISC_PWR, read_pmbus, POWER_ON_READING, {24.72, 0, 24.96, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
   [SERVER_P12V_COME_PWR] =
-  {"P12V_COME_PWR", P12V_COME_PWR, read_ina230_pwr, STBY_READING, {117.4645, 0, 119.7565, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
-  [SERVER_P1V8_STBY_PWR] =
-  {"P1V8_STBY_NETLAKE_PWR", VR_P1V8_STBY_PWR, read_pmbus, STBY_READING, {4.15056, 0, 4.23154, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
-  [SERVER_P1V05_STBY_PWR] =
-  {"P1V05_STBY_PWR", VR_P1V05_STBY_PWR, read_pmbus, STBY_READING, {13.0952, 0, 13.3507, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
-  [SERVER_PVNN_PCH_PWR] =
-  {"PVNN_PCH_PWR", VR_PVNN_PCH_PWR, read_pmbus, STBY_READING, {8.91156, 0, 9.08544, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
-  [SERVER_PVCCIN_PWR] =
-  {"PVCCIN_PWR", VR_PVCCIN_PWR, read_pmbus, POWER_ON_READING, {78.9804, 0, 88.608, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
-  [SERVER_PVCCANCPU_PWR] =
-  {"PVCCANCPU_PWR", VR_PVCCANCPU_PWR, read_pmbus, POWER_ON_READING, {1.59931, 0, 1.63051, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
-  [SERVER_PVDDQ_ABC_CPU_PWR] =
-  {"PVDDQ_ABC_CPU_PWR", VR_PVDDQ_ABC_CPU_PWR, read_pmbus, POWER_ON_READING, {22.1497, 0, 22.5819, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
+  {"P12V_COME_PWR", P12V_COME_PWR, read_ina230_pwr, STBY_READING, {117.46455, 0, 119.75648, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
 };
 
 PAL_SENSOR_MAP bmc_sensor_map[] = {
@@ -180,36 +168,29 @@ const uint8_t server_sensor_list[] = {
   SERVER_SOC_TEMP,
   SERVER_DIMMA_TEMP,
   SERVER_DIMMB_TEMP,
-  SERVER_A_P12V_STBY_NETLAKE_VOL,
-  SERVER_A_P3V3_STBY_NETLAKE_VOL,
-  SERVER_A_P1V8_STBY_NETLAKE_VOL,
-  SERVER_A_P5V_STBY_NETLAKE_VOL,
-  SERVER_A_P1V05_STBY_NETLAKE_VOL,
-  SERVER_A_PVNN_PCH_VOL,
-  SERVER_A_PVCCIN_VOL,
-  SERVER_A_PVCCANA_CPU_VOL,
-  SERVER_A_PVDDQ_ABC_CPU_VOL,
-  SERVER_A_PVPP_ABC_CPU_VOL,
-  SERVER_A_P3V3_NETLAKE_VOL,
-  SERVER_P1V8_STBY_VOL,
-  SERVER_P1V05_STBY_VOL,
-  SERVER_PVNN_PCH_VOL,
-  SERVER_PVCCIN_VOL,
-  SERVER_PVCCANCPU_VOL,
-  SERVER_PVDDQ_ABC_CPU_VOL,
-  SERVER_P1V8_STBY_CUR,
-  SERVER_P1V05_STBY_CUR,
-  SERVER_PVNN_PCH_CUR,
-  SERVER_PVCCIN_CUR,
-  SERVER_PVCCANCPU_CUR,
-  SERVER_PVDDQ_ABC_CPU_CUR,
+  SERVER_A_P12V_STBY_NETLAKE2_VOL,
+  SERVER_A_P3V3_STBY_NETLAKE2_VOL,
+  SERVER_A_P1V8_STBY_NETLAKE2_VOL,
+  SERVER_A_P1V8_AUDIO_NETLAKE2_VOL,
+  SERVER_A_P1V8_NETLAKE2_VOL,
+  SERVER_A_P5V_STBY_NETLAKE2_VOL,
+  SERVER_A_P5V_DIMM_NETLAKE2_VOL,
+  SERVER_A_P3V3_NETLAKE2_VOL,
+  SERVER_A_PVDDIO_MEM_S3_VOL,
+  SERVER_A_PVDD_MISC_S5_VOL,
+  SERVER_PVDDCR_TEMP,
+  SERVER_PVDDCR_SOC_TEMP,
+  SERVER_PVDD_MISC_TEMP,
+  SERVER_PVDDCR_VOL,
+  SERVER_PVDDCR_SOC_VOL,
+  SERVER_PVDD_MISC_VOL,
+  SERVER_PVDDCR_CUR,
+  SERVER_PVDDCR_SOC_CUR,
+  SERVER_PVDD_MISC_CUR,
+  SERVER_PVDDCR_PWR,
+  SERVER_PVDDCR_SOC_PWR,
+  SERVER_PVDD_MISC_PWR,
   SERVER_P12V_COME_PWR,
-  SERVER_P1V8_STBY_PWR,
-  SERVER_P1V05_STBY_PWR,
-  SERVER_PVNN_PCH_PWR,
-  SERVER_PVCCIN_PWR,
-  SERVER_PVCCANCPU_PWR,
-  SERVER_PVDDQ_ABC_CPU_PWR,
 };
 
 const uint8_t bmc_sensor_list[] = {
@@ -231,6 +212,11 @@ const uint8_t bmc_sensor_list[] = {
   BMC_M2_D_TEMP,
 };
 
+const uint8_t dimm_addr_list[] = {
+  DIMMA_ADDR,
+  DIMMB_ADDR,
+};
+
 const uint8_t pdb_sensor_list[] = {
   FAN0_TACH,
   FAN1_TACH,
@@ -250,71 +236,56 @@ PAL_DEV_INFO temp_dev_list[] = {
   {"tmp75-i2c-4-48",  "MB_INLET_TEMP"},
   {"tmp75-i2c-4-4a",  "MB_OUTLET_TEMP"},
   {"tmp75-i2c-10-48",  "FIO_INLET_TEMP"},
-  {"peci_cputemp.cpu0-isa-0000", "Die"},
-  {"peci_dimmtemp.cpu0-isa-0000", "DIMM A1"},
-  {"peci_dimmtemp.cpu0-isa-0000", "DIMM B1"},
+  {"sbtsi-i2c-1-4c",  "SOC_TEMP"},
 };
 
 PAL_PMBUS_INFO pmbus_dev_table[] = {
-  [VR_P1V8_STBY_VOL] =
-  {VR_BUS, VR_P1V8_STBY_ADDR, CMD_VOUT, {{XDPE15284D, PAGE1}, {MP2993GU, PAGE1}}},
-  [VR_P1V05_STBY_VOL] =
-  {VR_BUS, VR_P1V05_STBY_ADDR, CMD_VOUT, {{TDA38640, PAGE0}, {MP9941GMJT, PAGE0}}},
-  [VR_PVNN_PCH_VOL] =
-  {VR_BUS, VR_PVNN_PCH_ADDR, CMD_VOUT, {{TDA38640, PAGE0}, {MP9941GMJT, PAGE0}}},
-  [VR_PVCCIN_VOL] =
-  {VR_BUS, VR_PVCCIN_ADDR, CMD_VOUT, {{XDPE15284D, PAGE0}, {MP2993GU, PAGE0}}},
-  [VR_PVCCANCPU_VOL] =
-  {VR_BUS, VR_PVCCANCPU_ADDR, CMD_VOUT, {{TDA38640, PAGE0}, {MP9941GMJT, PAGE0}}},
-  [VR_PVDDQ_ABC_CPU_VOL] =
-  {VR_BUS, VR_PVDDQ_ABC_CPU_ADDR, CMD_VOUT, {{TDA38640, PAGE0}, {MP9941GMJT, PAGE0}}},
-  [VR_P1V8_STBY_CUR] =
-  {VR_BUS, VR_P1V8_STBY_ADDR, CMD_IOUT, {{XDPE15284D, PAGE1}, {MP2993GU, PAGE1}}},
-  [VR_P1V05_STBY_CUR] =
-  {VR_BUS, VR_P1V05_STBY_ADDR, CMD_IOUT, {{TDA38640, PAGE0}, {MP9941GMJT, PAGE0}}},
-  [VR_PVNN_PCH_CUR] =
-  {VR_BUS, VR_PVNN_PCH_ADDR, CMD_IOUT, {{TDA38640, PAGE0}, {MP9941GMJT, PAGE0}}},
-  [VR_PVCCIN_CUR] =
-  {VR_BUS, VR_PVCCIN_ADDR, CMD_IOUT, {{XDPE15284D, PAGE0}, {MP2993GU, PAGE0}}},
-  [VR_PVCCANCPU_CUR] =
-  {VR_BUS, VR_PVCCANCPU_ADDR, CMD_IOUT, {{TDA38640, PAGE0}, {MP9941GMJT, PAGE0}}},
-  [VR_PVDDQ_ABC_CPU_CUR] =
-  {VR_BUS, VR_PVDDQ_ABC_CPU_ADDR, CMD_IOUT, {{TDA38640, PAGE0}, {MP9941GMJT, PAGE0}}},
-  [VR_P1V8_STBY_PWR] =
-  {VR_BUS, VR_P1V8_STBY_ADDR, CMD_POUT, {{XDPE15284D, PAGE1}, {MP2993GU, PAGE1}}},
-  [VR_P1V05_STBY_PWR] =
-  {VR_BUS, VR_P1V05_STBY_ADDR, CMD_POUT, {{TDA38640, PAGE0}, {MP9941GMJT, PAGE0}}},
-  [VR_PVNN_PCH_PWR] =
-  {VR_BUS, VR_PVNN_PCH_ADDR, CMD_POUT, {{TDA38640, PAGE0}, {MP9941GMJT, PAGE0}}},
-  [VR_PVCCIN_PWR] =
-  {VR_BUS, VR_PVCCIN_ADDR, CMD_POUT, {{XDPE15284D, PAGE0}, {MP2993GU, PAGE0}}},
-  [VR_PVCCANCPU_PWR] =
-  {VR_BUS, VR_PVCCANCPU_ADDR, CMD_POUT, {{TDA38640, PAGE0}, {MP9941GMJT, PAGE0}}},
-  [VR_PVDDQ_ABC_CPU_PWR] =
-  {VR_BUS, VR_PVDDQ_ABC_CPU_ADDR, CMD_POUT, {{TDA38640, PAGE0}, {MP9941GMJT, PAGE0}}},
+  [VR_PVDDCR_TEMP] =
+  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608A, PAGE0, CMD_TEMP1}, {XDPE19283D, PAGE0, CMD_TEMP1}}},
+  [VR_PVDDCR_SOC_TEMP] =
+  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608A, PAGE1, CMD_TEMP1}, {XDPE19283D, PAGE1, CMD_TEMP2}}},
+  [VR_PVDD_MISC_TEMP] =
+  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608A, PAGE0, CMD_TEMP1}, {XDPE19283D, PAGE0, CMD_TEMP1}}},
+  [VR_PVDDCR_VOL] =
+  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608A, PAGE0, CMD_VOUT}, {XDPE19283D, PAGE0, CMD_VOUT}}},
+  [VR_PVDDCR_SOC_VOL] =
+  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608A, PAGE1, CMD_VOUT}, {XDPE19283D, PAGE1, CMD_VOUT}}},
+  [VR_PVDD_MISC_VOL] =
+  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608A, PAGE0, CMD_VOUT}, {XDPE19283D, PAGE0, CMD_VOUT}}},
+  [VR_PVDDCR_CUR] =
+  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608A, PAGE0, CMD_IOUT}, {XDPE19283D, PAGE0, CMD_IOUT}}},
+  [VR_PVDDCR_SOC_CUR] =
+  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608A, PAGE1, CMD_IOUT}, {XDPE19283D, PAGE1, CMD_IOUT}}},
+  [VR_PVDD_MISC_CUR] =
+  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608A, PAGE0, CMD_IOUT}, {XDPE19283D, PAGE0, CMD_IOUT}}},
+  [VR_PVDDCR_PWR] =
+  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608A, PAGE0, CMD_POUT}, {XDPE19283D, PAGE0, CMD_POUT}}},
+  [VR_PVDDCR_SOC_PWR] =
+  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608A, PAGE1, CMD_POUT}, {XDPE19283D, PAGE1, CMD_POUT}}},
+  [VR_PVDD_MISC_PWR] =
+  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608A, PAGE0, CMD_POUT}, {XDPE19283D, PAGE0, CMD_POUT}}},
 };
 
 PAL_PMBUS_INFO hsc_dev_table[] = {
-  [HSC_VOUT] = {MTP_HSC_BUS, MTP_HSC_ADDR, CMD_VOUT, {{ADM1278, HSC_NO_SET_PAGE}}},
-  [HSC_IOUT] = {MTP_HSC_BUS, MTP_HSC_ADDR, CMD_IOUT, {{ADM1278, HSC_NO_SET_PAGE}}},
-  [HSC_PIN] = {MTP_HSC_BUS, MTP_HSC_ADDR, CMD_PIN, {{ADM1278, HSC_NO_SET_PAGE}}},
+  [HSC_VOUT] = {MTP_HSC_BUS, MTP_HSC_ADDR, {{ADM1278, HSC_NO_SET_PAGE, CMD_VOUT}}},
+  [HSC_IOUT] = {MTP_HSC_BUS, MTP_HSC_ADDR, {{ADM1278, HSC_NO_SET_PAGE, CMD_IOUT}}},
+  [HSC_PIN] = {MTP_HSC_BUS, MTP_HSC_ADDR, {{ADM1278, HSC_NO_SET_PAGE, CMD_PIN}}},
 };
 
 /*List item: {CPLD-ADC reading low-byte offset, resistor ratio}
 * High-byte offset of reading always be low-byte offset + 1
 */
 PAL_CPLD_ADC_INFO cpld_adc_list[] = {
-  {0x00, 4},
+  {0x00, 7.8},
   {0x04, 1},
   {0x06, 1},
-  {0x02, 1.544},
-  {0x0A, 1},
+  {0x02, 2},
+  {0x0A, 2.8},
   {0x08, 1},
-  {0x14, 1},
   {0x12, 1},
   {0x10, 1},
-  {0x0E, 1},
-  {0x0C, 1},
+  {0x0E, 2},
+  {0x0C, 2.8},
 };
 
 const uint8_t nvme_temp_list[] = {
@@ -325,12 +296,9 @@ const uint8_t nvme_temp_list[] = {
 };
 
 PAL_PMBUS_POWER_TABLE power_cal_list[] = {
-  [VR_P1V8_STBY_PWR] = {VR_P1V8_STBY_VOL, VR_P1V8_STBY_CUR},
-  [VR_P1V05_STBY_PWR] = {VR_P1V05_STBY_VOL, VR_P1V05_STBY_CUR},
-  [VR_PVNN_PCH_PWR] = {VR_PVNN_PCH_VOL, VR_PVNN_PCH_CUR},
-  [VR_PVCCIN_PWR] = {VR_PVCCIN_VOL, VR_PVCCIN_CUR},
-  [VR_PVCCANCPU_PWR] = {VR_PVCCANCPU_VOL, VR_PVCCANCPU_CUR},
-  [VR_PVDDQ_ABC_CPU_PWR] = {VR_PVDDQ_ABC_CPU_VOL, VR_PVDDQ_ABC_CPU_CUR},
+  [VR_PVDDCR_PWR] = {VR_PVDDCR_VOL, VR_PVDDCR_CUR},
+  [VR_PVDDCR_SOC_PWR] = {VR_PVDDCR_SOC_VOL, VR_PVDDCR_SOC_CUR},
+  [VR_PVDD_MISC_PWR] = {VR_PVDD_MISC_VOL, VR_PVDD_MISC_CUR},
 };
 
 size_t server_sensor_cnt = ARRAY_SIZE(server_sensor_list);
@@ -411,7 +379,7 @@ read_temp(uint8_t id, float *value) {
 }
 
 static int
-read_peci(uint8_t id, float *value) {
+read_cpu_temp(uint8_t id, float *value) {
   if (value == NULL) {
     syslog(LOG_ERR, "%s: invalid parameter: value pointer is NULL", __func__);
     return -1;
@@ -423,14 +391,86 @@ read_peci(uint8_t id, float *value) {
 
   int ret = 0;
   ret = sensors_read(temp_dev_list[id].chip, temp_dev_list[id].label, value);
-  if ((ret < 0) && (retryDIMM < SENSOR_RETRY_TIME)) {
+  if ((ret < 0) && (retrySensor < SENSOR_RETRY_TIME)) {
     sensors_reinit();
     sleep(POWER_ON_SENSOR_RETRY_SEC);
     ret = sensors_read(temp_dev_list[id].chip, temp_dev_list[id].label, value);
     if (ret != 0) {
-      retryDIMM++;
+      retrySensor++;
     }
   }
+
+  return ret;
+}
+
+static int
+read_dimm_temp(uint8_t id, float *value) {
+  if (value == NULL) {
+    syslog(LOG_ERR, "%s: invalid parameter: value pointer is NULL", __func__);
+    return -1;
+  }
+
+  int ret = 0, fd = 0;
+  uint8_t retry = SENSOR_RETRY_TIME;
+  uint8_t tbuf = READ_DIMM_SPD_TEMP;
+  uint8_t tlen = sizeof(tbuf);
+  uint8_t rbuf = 0;
+  uint8_t rlen = DIMM_TEMP_LEN;
+  uint8_t low_byte = 0, high_byte = 0;
+
+  fd = i2c_cdev_slave_open(I2C_BUS5, dimm_addr_list[id] >> 1,
+                          I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_ERR, "Failed to open DIMM 0x%x\n", dimm_addr_list[id]);
+    return -1;
+  }
+
+  // get low byte
+  do {
+    ret = i2c_rdwr_msg_transfer(fd, dimm_addr_list[id],
+                                &tbuf, tlen, &rbuf, rlen);
+    if (ret != 0) {
+      usleep(SENSOR_RETRY_INTERVAL_USEC);
+    }
+  } while ((ret < 0) && ((retry--) > 0));
+
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to get lowbyte reading %x-%x", __func__,
+          I2C_BUS5, dimm_addr_list[id]);
+    close(fd);
+    return -1;
+  }
+  low_byte = rbuf;
+
+  // get high byte
+  tbuf += 1;
+  retry = SENSOR_RETRY_TIME;
+  do {
+    ret = i2c_rdwr_msg_transfer(fd, dimm_addr_list[id],
+                                &tbuf, tlen, &rbuf, rlen);
+    if (ret != 0) {
+      usleep(SENSOR_RETRY_INTERVAL_USEC);
+    }
+  } while ((ret < 0) && ((retry--) > 0));
+
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to get highbyte reading %x-%x", __func__,
+          I2C_BUS5, dimm_addr_list[id]);
+    return -1;
+  }
+  high_byte = rbuf;
+
+  //Calculate the temp
+  uint8_t int_temp = ((high_byte & 0x0F) << 4) | ((low_byte & 0xF0) >> 4);
+  float decimal_temp = ((low_byte >> 3) & 0x1) * 0.5f + ((low_byte >> 2) & 0x1) * 0.25f;
+
+  float temp = int_temp + decimal_temp;
+
+  if (high_byte & 0x10) {
+    temp = -temp;
+  }
+
+  *value = temp;
 
   return ret;
 }
@@ -481,8 +521,34 @@ read_pmbus(uint8_t id, float *value) {
 
   int fd = 0, ret = 0;
   char key[MAX_KEY_LEN] = {0};
+  uint8_t bus = pmbus_dev_table[id].bus;
+  uint8_t addr = pmbus_dev_table[id].slv_addr;
+  char val[MAX_VALUE_LEN] = {0};
+  //kvbuf[0]: pmbus page, kvbuf[1]: pmbus offset, kvbuf[2]: read byte, kvbuf[3]: read format
+  uint8_t kvbuf[4] = {0};
+  char* saveptr;
+  int bufcnt = 0;
 
-  if (pmbus_dev_table[id].offset == CMD_POUT) {
+  snprintf(key, MAX_FRU_CMD_STR, "pmbus-sensor%02x%c", id, '\0');
+  ret = kv_get(key, val, NULL, 0);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to get pmbus info, errno=%d", __func__, errno);
+    return -1;
+  }
+
+  char *kv_value;
+  kv_value = strtok_r(val, "-", &saveptr);
+  while( kv_value != NULL )
+  {
+    kvbuf[bufcnt] = atoi(kv_value);
+    bufcnt++;
+    kv_value = strtok_r(NULL, "-", &saveptr);
+  }
+
+  pmbus_i2c_info pmbus_i2c_data;
+  memcpy(&pmbus_i2c_data, &kvbuf, sizeof(pmbus_i2c_data));
+
+  if (pmbus_i2c_data.offset == CMD_POUT) {
     float voltage, current;
 
     ret = read_pmbus(power_cal_list[id].vol_sensor_id, &voltage);
@@ -502,32 +568,6 @@ read_pmbus(uint8_t id, float *value) {
     return 0;
   } else {
     uint8_t retry = SENSOR_RETRY_TIME;
-    uint8_t bus = pmbus_dev_table[id].bus;
-    uint8_t addr = pmbus_dev_table[id].slv_addr;
-    char val[MAX_VALUE_LEN] = {0};
-    //kvbuf[0]: pmbus page, kvbuf[1]: read byte, kvbuf[2]: read format
-    uint8_t kvbuf[3] = {0};
-    char* saveptr;
-    int bufcnt = 0;
-
-    snprintf(key, MAX_FRU_CMD_STR, "pmbus-sensor%02x%c", id, '\0');
-    ret = kv_get(key, val, NULL, 0);
-    if (ret < 0) {
-      syslog(LOG_ERR, "%s() Failed to get pmbus info, errno=%d", __func__, errno);
-      return -1;
-    }
-
-    char *kv_value;
-    kv_value = strtok_r(val, "-", &saveptr);
-    while( kv_value != NULL )
-    {
-      kvbuf[bufcnt] = atoi(kv_value);
-      bufcnt++;
-      kv_value = strtok_r(NULL, "-", &saveptr);
-    }
-
-    pmbus_i2c_info pmbus_i2c_data;
-    memcpy(&pmbus_i2c_data, &kvbuf, sizeof(pmbus_i2c_data));
 
     //Set pmbus page
     uint8_t setpage_data[2];
@@ -559,7 +599,7 @@ read_pmbus(uint8_t id, float *value) {
     }
 
     //Get pmbus reading
-    uint8_t getreading_data = pmbus_dev_table[id].offset;
+    uint8_t getreading_data = pmbus_i2c_data.offset;
     uint8_t rlen_reading = pmbus_i2c_data.read_byte;
     uint8_t rbuf_reading_raw[rlen_reading];
     uint8_t vout_mode_data = VR_VOUT_MODE_REG;
@@ -641,7 +681,7 @@ read_hsc(uint8_t id, float *value) {
   uint8_t addr = hsc_dev_table[id].slv_addr;
   char key[MAX_KEY_LEN] = {0};
   char val[MAX_VALUE_LEN] = {0};
-  uint8_t kvbuf[2] = {0};
+  uint8_t kvbuf[3] = {0};
   char* saveptr;
   int bufcnt = 0;
 
@@ -671,7 +711,7 @@ read_hsc(uint8_t id, float *value) {
   }
 
   //Get HSC reading
-  uint8_t getreading_data = hsc_dev_table[id].offset;
+  uint8_t getreading_data = hsc_i2c_data.offset;
   uint8_t rlen = hsc_dev_list[hsc_i2c_data.hsc_type_cnt].hsc_cmd_list[hsc_i2c_data.hsc_cmd_cnt].read_byte;
   uint8_t rbuf[rlen];
 
@@ -775,33 +815,79 @@ read_ina230_pwr(uint8_t id, float *value) {
     return -1;
   }
 
-  int ret = 0;
-  /* byte 1-3: Intel Manufacturer ID, byte 4: Mode
-     byte 5: Domain ID, byte 6: Policy ID */
-  uint8_t tbuf[] = {0x57, 0x1, 0x0, 0x1, 0x0, 0x0};
-  uint8_t rbuf[NM_GLOBAL_POWER_STATISTICS_LENGTH];
-  uint8_t rlen = 0;
-  uint8_t retry;
+  int ret = 0, fd = 0;
+  uint8_t retry = SENSOR_RETRY_TIME;
+  uint8_t calibration = INA230_CALIBRATION;
+  uint8_t tbuf = INA230_POWER;
+  uint8_t tlen = sizeof(tbuf);
+  uint8_t rbuf[2] = {0};
+  uint8_t rlen = INA230_GET_DATA_LEN;
+  int32_t read_ina230_raw;
 
-  for (retry = SENSOR_RETRY_TIME; retry > 0; retry--) {
-    ret = netlakenext_common_me_ipmb_wrapper(NETFN_NM_REQ,
-                                        CMD_NM_GET_NODE_MANAGER_STATISTICS,
-                                        tbuf, sizeof(tbuf), rbuf, &rlen);
-    if (ret >= 0) {
-      break;
+  fd = i2c_cdev_slave_open(I2C_BUS5, INA230_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_ERR, "Failed to open ina230 0x%x\n", INA230_ADDR);
+    return -1;
+  }
+
+  //default calibration date
+  uint8_t default_calibration_data[3];
+  default_calibration_data[0] = INA230_CALIBRATION;
+  default_calibration_data[1] = MSB_INA230_DEFAULT_CALIBRATION;
+  default_calibration_data[2] = LSB_INA230_DEFAULT_CALIBRATION;
+
+  // Get INA230 Calibration
+  do {
+    ret = i2c_rdwr_msg_transfer(fd, INA230_ADDR, &calibration, sizeof(calibration),
+                                rbuf, rlen);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s: get ina230 calibration failed", __func__);
+      close(fd);
+      return -1;
     }
 
-    usleep(SENSOR_RETRY_INTERVAL_USEC);
-  }
+    if (rbuf == 0) {
+      /* Write the config in the Calibration register */
+      ret = i2c_rdwr_msg_transfer(fd, INA230_ADDR, default_calibration_data,
+                                  sizeof(default_calibration_data), NULL, 0);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s: write ina230 default calibration failed", __func__);
+        close(fd);
+        return -1;
+      }
+      /* Wait for the conversion to finish */
+      msleep(50);
+      retry--;
+    } else {
+      break;
+    }
+  } while(retry);
+
+  retry = SENSOR_RETRY_TIME;
+
+  // Read ina230 power register
+  do {
+    ret = i2c_rdwr_msg_transfer(fd, INA230_ADDR, &tbuf, tlen, rbuf, rlen);
+    if (ret != 0) {
+      usleep(SENSOR_RETRY_INTERVAL_USEC);
+    }
+  } while ((ret < 0) && ((retry--) > 0));
 
   if (ret < 0) {
-    syslog(LOG_ERR, "%s() Failed to get ina230 reading from NM", __func__);
+    syslog(LOG_ERR, "%s() Failed to get ina230 reading %x-%x", __func__,
+          I2C_BUS5, INA230_ADDR);
+    close(fd);
     return -1;
-  } else {
-    //2 bytes for Power Statistics Current Value
-    *value = (float)(rbuf[4] << 8 | rbuf[3]);
+
+
+
   }
 
+  // ina230 pwr
+  read_ina230_raw = (rbuf[0] << 8) | rbuf[1];
+  *value = ((float) read_ina230_raw) / 40;
+
+  close(fd);
   return 0;
 }
 

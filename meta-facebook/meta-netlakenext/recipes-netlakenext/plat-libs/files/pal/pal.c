@@ -1237,11 +1237,12 @@ pal_pmbus_sensor_info_initial(void) {
   for (uint8_t i = 0; i < pmbus_dev_cnt; i++) {
     pmbus_type = pmbus_dev_table[i].sku_pmbus_type[sku].type;
     for (int j = 0; j < MAX_PMBUS_SUP_CMD_CNT; j++) {
-      if (pmbus_dev_table[i].offset == pmbus_dev_list[pmbus_type].pmbus_cmd_list[j].read_cmd) {
+      if (pmbus_dev_table[i].sku_pmbus_type[sku].offset == pmbus_dev_list[pmbus_type].pmbus_cmd_list[j].read_cmd) {
         char key_with_cmd[MAX_KEY_LEN];
         char val[MAX_VALUE_LEN];
         snprintf(key_with_cmd, MAX_KEY_LEN, "pmbus-sensor%02x%c", i, '\0');
-        snprintf(val, MAX_VALUE_LEN, "%02x-%02x-%02x%c", pmbus_dev_table[i].sku_pmbus_type[sku].page,
+        snprintf(val, MAX_VALUE_LEN, "%02x-%02d-%02x-%02x%c", pmbus_dev_table[i].sku_pmbus_type[sku].page,
+                  pmbus_dev_table[i].sku_pmbus_type[sku].offset,
                   pmbus_dev_list[pmbus_type].pmbus_cmd_list[j].read_byte,
                   pmbus_dev_list[pmbus_type].pmbus_cmd_list[j].read_type, '\0');
         ret = kv_set(key_with_cmd, val, 0, 0);
@@ -1304,11 +1305,11 @@ pal_hsc_sensor_info_initial(void) {
   for (uint8_t i = 0; i < hsc_dev_cnt; i++) {
     type = hsc_dev_table[i].sku_pmbus_type[sku].type;
     for (int j = 0; j < MAX_HSC_SUP_CMD_CNT; j++) {
-      if (hsc_dev_table[i].offset == hsc_dev_list[type].hsc_cmd_list[j].read_cmd) {
+      if (hsc_dev_table[i].sku_pmbus_type[sku].offset == hsc_dev_list[type].hsc_cmd_list[j].read_cmd) {
         char key_with_cmd[MAX_KEY_LEN];
         char val[MAX_VALUE_LEN];
         snprintf(key_with_cmd, MAX_KEY_LEN, "hsc-sensor%02x%c", i, '\0');
-        snprintf(val, MAX_VALUE_LEN, "%02x-%02x%c", type, j,'\0');
+        snprintf(val, MAX_VALUE_LEN, "%02d-%02x-%02x%c", hsc_dev_table[i].sku_pmbus_type[sku].offset, type, j,'\0');
 
         ret = kv_set(key_with_cmd, val, 0, 0);
         if (ret < 0) {

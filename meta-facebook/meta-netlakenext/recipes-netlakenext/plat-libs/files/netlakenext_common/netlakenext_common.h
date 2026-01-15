@@ -67,6 +67,10 @@ extern "C" {
 #define VR_PVDDQ_ABC_CPU_ADDR 0x8A
 #define VR_VOUT_MODE_REG 0x20
 
+#define VR_PVDDCR_ADDR 0x40
+#define VR_PVDDCR_SOC_ADDR 0x40
+#define VR_PVDD_MISC_ADDR 0x42
+
 #define MTP_HSC_BUS 9
 #define MTP_HSC_ADDR 0x80
 #define MTP_PMON_CONFIG_ADDR 0xD4
@@ -83,6 +87,18 @@ extern "C" {
 #define CPLD_ADC_REG_BUS 4
 #define CPLD_ADC_REG_ADDR 0x1E
 #define CPLD_GET_REV_RETRY_TIME 3
+
+#define I2C_BUS5 4
+#define DIMMA_ADDR 0xA0
+#define DIMMB_ADDR 0xA2
+#define DIMM_TEMP_LEN 1
+
+#define INA230_ADDR 0x80
+#define INA230_POWER 0x03
+#define INA230_CALIBRATION 0x05
+#define LSB_INA230_DEFAULT_CALIBRATION 0x0A
+#define MSB_INA230_DEFAULT_CALIBRATION 0x00
+#define INA230_GET_DATA_LEN 2
 
 // The following definition is specific to ICE-LAKE-D CPU without BIC.
 // Any future platform that uses Netlake as COMe should consider

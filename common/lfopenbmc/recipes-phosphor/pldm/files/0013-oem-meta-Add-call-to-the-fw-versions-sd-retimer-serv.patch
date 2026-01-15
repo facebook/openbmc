@@ -1,7 +1,7 @@
-From e785c1a9d18dd310c7d0d3f5ef3b1979b1b7ccaf Mon Sep 17 00:00:00 2001
+From ddf555586ee1c7cf5062040dc0942d35431506a4 Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Thu, 23 Oct 2025 14:34:12 +0800
-Subject: [PATCH 14/17] oem-meta: Add call to the fw-versions-sd-retimer
+Subject: [PATCH 13/17] oem-meta: Add call to the fw-versions-sd-retimer
  service
 
 The fw-versions-sd-retimer service is triggered by the POST_COMPLETED
@@ -63,5 +63,5 @@ index b694339..87de971 100644
              PROCHOT_IS_TRIGGERED_DUE_TO_SD_SENSOR_READING_EXCEED_UCR:
          case EventType::FRB2_WDT_HARD_RST:
 -- 
-2.43.0
+2.47.3
 

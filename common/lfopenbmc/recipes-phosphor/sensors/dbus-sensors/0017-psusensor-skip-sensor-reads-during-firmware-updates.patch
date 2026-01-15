@@ -1,7 +1,7 @@
-From 00d48f2790fd7f691c2d90edfcd77be45ea1f5ef Mon Sep 17 00:00:00 2001
+From 84c90a3b8ddc3726bf35d556883980ffb78f4a3f Mon Sep 17 00:00:00 2001
 From: cchoux <cosmo.chou@quantatw.com>
 Date: Wed, 24 Sep 2025 11:35:31 +0800
-Subject: [PATCH 18/18] psusensor: skip sensor reads during firmware updates
+Subject: [PATCH 17/17] psusensor: skip sensor reads during firmware updates
 
 During a VR firmware update, both the update process and sensor
 monitoring may issue conflicting PMBus commands, such as the PAGE

@@ -1,4 +1,4 @@
-From 58a754f53318874229c25a3ee5ccb06bc485da7b Mon Sep 17 00:00:00 2001
+From c0445c116047aeb2f7c85854e7e700ac1d4df686 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 16:48:20 +0800
 Subject: [PATCH 04/17] platform-mc: Add MCTP recovery option
@@ -70,10 +70,10 @@ index 5670b99..4e78770 100644
  option(
      'fw-update-pkg-inotify',
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index 7ac16e1..0766129 100644
+index eee6748..de29d1e 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
-@@ -705,6 +705,7 @@ exec::task<int> TerminusManager::sendRecvPldmMsg(
+@@ -720,6 +720,7 @@ exec::task<int> TerminusManager::sendRecvPldmMsg(
      auto rc = co_await sendRecvPldmMsgOverMctp(eid, request, responseMsg,
                                                 responseLen);
  
@@ -81,7 +81,7 @@ index 7ac16e1..0766129 100644
      if (rc == PLDM_ERROR_NOT_READY)
      {
          // Call Recover() to check enpoint's availability
-@@ -716,6 +717,7 @@ exec::task<int> TerminusManager::sendRecvPldmMsg(
+@@ -731,6 +732,7 @@ exec::task<int> TerminusManager::sendRecvPldmMsg(
          pldm::utils::recoverMctpEndpoint(endpointObjPath);
          updateMctpEndpointAvailability(mctpInfo.value(), false);
      }
@@ -90,5 +90,5 @@ index 7ac16e1..0766129 100644
      co_return rc;
  }
 -- 
-2.43.0
+2.47.3
 

@@ -1,7 +1,7 @@
-From 3e1fa0ff27368fc32416ccc6f97ca183f84cbcc6 Mon Sep 17 00:00:00 2001
+From 144ee63104e37f9fa89836805f7127eadc56c82b Mon Sep 17 00:00:00 2001
 From: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
 Date: Wed, 19 Nov 2025 16:18:23 +0800
-Subject: [PATCH 504/504] configurations: nvidia: Fix cable cartridge name
+Subject: [PATCH 503/503] configurations: nvidia: Fix cable cartridge name
  enumeration order
 
 Summary:

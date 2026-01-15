@@ -9,19 +9,18 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0003-requester-Validate-MCTP-EID-before-removal.patch \
     file://0004-platform-mc-Add-MCTP-recovery-option.patch \
     file://0005-platform-mc-Add-option-for-discovering-FRU-data.patch \
-    file://0006-pldm-Use-std-expected-for-instance-ID-allocation.patch \
-    file://0007-common-Add-blocking-instance-ID-allocation.patch \
-    file://0008-requester-Always-re-initialize-MCTP-info.patch \
-    file://0009-platform-mc-Add-retries-for-terminus-discovery.patch \
-    file://0010-platform-mc-Make-fallback-terminus-name-optional.patch \
-    file://0011-oem-meta-Add-file-IO-responder-for-event-logs-from-B.patch \
-    file://0012-oem-meta-Add-file-IO-responder-for-crashdump-from-BI.patch \
-    file://0013-oem-meta-Add-APML-alert-handler.patch \
-    file://0014-oem-meta-Add-call-to-the-fw-versions-sd-retimer-serv.patch \
-    file://0015-oem-meta-Add-MCTP-configuration-discovery.patch \
-    file://0016-pldm-Increase-maximum-of-dbus-timeout-value.patch \
-    file://0017-oem-meta-Fix-a-bug-that-incorrectly-decodes-system-e.patch \
-    file://0018-terminus-replace-inventory-and-sensor-configuration.patch \
+    file://0006-common-Add-blocking-instance-ID-allocation.patch \
+    file://0007-requester-Always-re-initialize-MCTP-info.patch \
+    file://0008-platform-mc-Add-retries-for-terminus-discovery.patch \
+    file://0009-platform-mc-Make-fallback-terminus-name-optional.patch \
+    file://0010-oem-meta-Add-file-IO-responder-for-event-logs-from-B.patch \
+    file://0011-oem-meta-Add-file-IO-responder-for-crashdump-from-BI.patch \
+    file://0012-oem-meta-Add-APML-alert-handler.patch \
+    file://0013-oem-meta-Add-call-to-the-fw-versions-sd-retimer-serv.patch \
+    file://0014-oem-meta-Add-MCTP-configuration-discovery.patch \
+    file://0015-pldm-Increase-maximum-of-dbus-timeout-value.patch \
+    file://0016-oem-meta-Fix-a-bug-that-incorrectly-decodes-system-e.patch \
+    file://0017-terminus-replace-inventory-and-sensor-configuration.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

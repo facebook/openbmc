@@ -1,7 +1,7 @@
-From 497e78ba2e6ee61d3a1e4d090870ffe64f578df7 Mon Sep 17 00:00:00 2001
+From 4f30f37d74a66ec3367c7c6579973251cef78ba1 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Fri, 26 Dec 2025 14:35:14 +0800
-Subject: [PATCH 18/18] terminus: replace inventory and sensor configuration
+Subject: [PATCH 17/17] terminus: replace inventory and sensor configuration
 
 Add fetchEntityManagerConfiguration to retrieve inventory name and
 sensor configuration from EntityManager.
@@ -54,7 +54,7 @@ index b61184f..57188fb 100644
  /** @brief Type definition of MCTP endpoint D-Bus properties in
   *         xyz.openbmc_project.MCTP.Endpoint D-Bus interface.
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index 062cc4c..62abb61 100644
+index c391d72..542182d 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
 @@ -730,7 +730,7 @@ std::optional<SoftwareName> obtainDeviceNameFromConfigurations(
@@ -336,7 +336,7 @@ index 87ad0be..4a98b33 100644
      std::string inventoryPath;
  
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index 3287bfe..2d9793e 100644
+index dfeea76..622b172 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
 @@ -496,6 +496,14 @@ exec::task<int> TerminusManager::initMctpTerminus(const MctpInfo& mctpInfo)
@@ -718,5 +718,5 @@ index 3647d11..358c8cf 100644
      constexpr auto mockedDbusPath =
          "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
 -- 
-2.43.0
+2.47.3
 

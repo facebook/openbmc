@@ -1,14 +1,14 @@
-From 8062d7a097c3e0f312c4ce3f6b10f9bd582235fe Mon Sep 17 00:00:00 2001
+From ecfd9c81cc2c808ebb8cf333df946051f6f4dd3b Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
 Date: Thu, 31 Jul 2025 11:35:27 +0800
-Subject: [PATCH 502/504] Update CX7 sensor thresholds
+Subject: [PATCH 502/503] Update CX7 sensor thresholds
 
 ---
  configurations/ocp/cx7_ocp.json | 15 +++------------
  1 file changed, 3 insertions(+), 12 deletions(-)
 
 diff --git a/configurations/ocp/cx7_ocp.json b/configurations/ocp/cx7_ocp.json
-index e9c46f9..b94221e 100644
+index 0c16355..78e9d18 100644
 --- a/configurations/ocp/cx7_ocp.json
 +++ b/configurations/ocp/cx7_ocp.json
 @@ -13,21 +13,12 @@

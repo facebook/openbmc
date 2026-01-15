@@ -1,7 +1,7 @@
-From a92df7561da57b12f5896a9f36280636fb27251f Mon Sep 17 00:00:00 2001
+From c7a7509c15dc9aa0d230f75d8a3171e3ee00594f Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Mon, 21 Jul 2025 14:13:32 +0800
-Subject: [PATCH 12/17] oem-meta: Add file IO responder for crashdump from BIC
+Subject: [PATCH 11/17] oem-meta: Add file IO responder for crashdump from BIC
 
 Add a handler for write file IO command with type "crashdump".
 The BIOS will send crashdump data to BIC, and the BIC will send
@@ -1263,5 +1263,5 @@ index 62fecbc..fb5ba14 100644
      'file_io_type_http_boot.cpp',
      'file_io_type_post_code.cpp',
 -- 
-2.43.0
+2.47.3
 

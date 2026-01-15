@@ -1,7 +1,7 @@
-From f24f789e2558e33f2ad7d1882427c37f68ccbe7e Mon Sep 17 00:00:00 2001
+From c928f7975aca316da948e10c27a68f2ac36c6347 Mon Sep 17 00:00:00 2001
 From: Sora Su <sora_su@wiwynn.com>
 Date: Mon, 15 Dec 2025 07:41:21 +0000
-Subject: [PATCH 17/17] oem-meta: Fix a bug that incorrectly decodes system
+Subject: [PATCH 16/17] oem-meta: Fix a bug that incorrectly decodes system
  events.
 
 The system error event decoder uses an incorrect index when decoding
@@ -86,5 +86,5 @@ index 88a875f..d5c247b 100644
  {
      UNCORRECT_SYSTEM_FATAL_ERR = 0xB,
 -- 
-2.43.0
+2.47.3
 

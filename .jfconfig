@@ -764,6 +764,40 @@
             ]
         },
         {
+            "alias": "openbmc-cit-grandcanyon2-determinator",
+            "args": {
+                "name": "openbmc-cit-grandcanyon2-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-grandcanyon2-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform grandcanyon2"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-grandcanyon/meta-grandcanyon2/.*",
+                        "^meta-facebook/meta-grandcanyon/recipes-.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-cit-grandteton-determinator",
             "args": {
                 "name": "openbmc-cit-grandteton-determinator",
@@ -1156,39 +1190,6 @@
                     "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-minipack/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
-            "alias": "openbmc-cit-minipack3n-determinator",
-            "args": {
-                "name": "openbmc-cit-minipack3n-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-cit-minipack3n-determinator",
-                        "shell": "facebook/sandcastle/job.py cit-diff --platform minipack3n"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "some_file_matches_some_regexp",
-                    "value": [
-                        "^meta-facebook/meta-minipack3n/.*"
                     ]
                 }
             ],

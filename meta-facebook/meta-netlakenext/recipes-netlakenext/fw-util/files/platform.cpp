@@ -3,9 +3,8 @@
 #include <syslog.h>
 #include <facebook/netlakenext_common.h>
 #include "nic.h"
-#include <openbmc/cpld.h>
 
-BmcCpldComponent  cpld_server("server", "cpld", MAX10_10M08, 3, 0x40);
+BmcCpldComponent  cpld_server("server", "cpld", "LFMXO5-25", "3", "0x40");
 
 NicComponent  nic("nic", "nic");
 

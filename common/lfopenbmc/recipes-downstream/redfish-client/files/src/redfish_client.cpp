@@ -138,9 +138,8 @@ std::optional<Sensor> RedfishClient::readWithRetries(const SensorMapper& mapper)
         }
         catch (const std::exception& exn)
         {
-            info("Exception while querying url {EXC}", "EXC", exn.what());
-            debug("Exception while querying url: {URL}", "URL",
-                  expandedUrl.c_str());
+            info("Exception while querying url ({URL}): {EXC}", "URL",
+                 expandedUrl.c_str(), "EXC", exn);
         };
 
         try
@@ -149,10 +148,9 @@ std::optional<Sensor> RedfishClient::readWithRetries(const SensorMapper& mapper)
         }
         catch (const std::exception& exn)
         {
-            info("Exception while parsing sensor json: {EXC}", "EXC",
-                 exn.what());
-            debug("Exception while parsing sensor json: {JSON}", "JSON",
-                  sensorJson.c_str());
+            info("Exception while parsing sensor json from ({URL}): {EXC}, {JSON}",
+                 "URL", expandedUrl.c_str(), "EXC", exn, "JSON",
+                 sensorJson.c_str());
         };
 
         std::this_thread::sleep_for(std::chrono::milliseconds(

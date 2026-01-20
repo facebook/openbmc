@@ -43,60 +43,78 @@ TIMER_BASE_1S=0x04
 TIMER_BASE_10S=0x08
 CHASSIS_POWER_CYCLE="${MCBCPLD_SYSFS_DIR}/power_cycle_go"
 
+# New projects need to fill in this PRJ_BOARD_DATA
+# Each board is defined by its ID, with 'name' and 'revs' (revisions) properties. 
+# Revisions are stored as a semicolon-separated string.
+
+declare -A PRJ_BOARD_DATA=(
+    [7,name]="TAHANSB800BC"
+    [7,revs]="EVT1;EVT2A-EVT2D;EVT2E;DVT-1;DVT-2;PVT;MP"
+
+    [8,name]="ICECUBE800BC"
+    [8,revs]="Pre-EVT & EVT-1;EVT-2;EVT-3;DVT-1;DVT-2;PPVT;PVT;MP"
+
+    [9,name]="ICETEA"
+    [9,revs]="Pre-EVT & EVT-1;EVT-2A;EVT-2B/C;DVT-1A;DVT-1B;PPVT;PVT;MP"
+
+    [13,name]="LADAKH800BCLS"
+    [13,revs]="Pre-EVT & EVT-1;EVT-2A;EVT-2B/C;DVT-1A;DVT-1B;PPVT;PVT;MP"
+)
+
 wedge_board_type() {
-    board_id=$(head -n 1 < "$BOARD_ID" 2> /dev/null)
-    case "$((board_id))" in
-        7)
-            echo "TAHANSB800BC"
-            ;;
-        8)
-            echo "ICECUBE800BC"
-            ;;
-        9)
-            echo "ICETEA"
-            ;;
-        13)
-            echo "LADAKH800BCLS"
-            ;;
-        *)
-            echo "unknown value [$board_id]"
-            ;;
-    esac
+    #check if the sysfs exist
+    if [[ ! -f "$BOARD_ID" ]]; then
+        echo "Error: BOARD_ID sysfs missing" >&2
+        return 1
+    fi
+    local board_id_raw
+    board_id_raw=$(head -n 1 < "$BOARD_ID" 2> /dev/null)
+    board_id=$((board_id_raw))
+    #check if a valid number 0--9
+    if ! [[ "$board_id" =~ ^[0-9]+$ ]]; then
+        return 1
+    fi  
+    local prj_name=${PRJ_BOARD_DATA[$board_id,name]}
+    if [[ -z "$prj_name" ]]; then
+        echo "Unknow Board ID [$board_id]"
+        return 1
+    fi
+    echo "${prj_name}"
+    return 0
 }
 
 wedge_board_rev() {
-    version_id=$(head -n 1 < "$VERSION_ID" 2> /dev/null)
+    #check if the sysfs exist
+    if [[ ! -f "$BOARD_ID" || ! -f "$VERSION_ID" ]]; then
+        echo "Error BOARD_ID or VERSION_ID sysfs missing" >&2
+        return 1
+    fi
+    local board_id_raw
+    local version_id_raw
+    board_id_raw=$(head -n 1 < "$BOARD_ID" 2> /dev/null)
+    version_id_raw=$(head -n 1 < "$VERSION_ID" 2> /dev/null)
+    board_id=$((board_id_raw))
+    version_id=$((version_id_raw))
+    #check if a valid number 0--9
+    if ! [[ "$board_id" =~ ^[0-9]+$ && "$version_id" =~ ^[0-9]+$ ]]; then
+        return 1
+    fi 
+    local rev_string=${PRJ_BOARD_DATA[$board_id,revs]}
+    if [[ -z "$rev_string" ]]; then
+        echo "Error: Unknown Board ID [$board_id] or missing revision data" >&2
+        return 1
+    fi
+    # Split the revision string into an array
+    local IFS=';'
+    read -r -a rev_array <<< "$rev_string"
 
-    case "$((version_id))" in
-        0)
-            echo "Pre-EVT & EVT1"
-            ;;
-        1)
-            echo "EVT-2A"
-            ;;
-        2)
-            echo "EVT-2B"
-            ;;
-        3)
-            echo "DVT-1A"
-            ;;
-        4)
-            echo "DVT-1B"
-            ;;
-        5)
-            echo "PPVT"
-            ;;
-        6)
-            echo "PVT"
-            ;;
-        7)
-            echo "MP"
-            ;;
-        *)
-            echo "unknown value [$version_id]"
-            ;;
-    esac
-
+    # Avoid array overflow
+    if (( version_id < 0 || version_id >= ${#rev_array[@]} )); then
+        local prj_name=${PRJ_BOARD_DATA[$board_id,name]}
+        echo "Error: Unknown version ID [$version_id] for board [$prj_name ($board_id)]" >&2
+        return 1
+    fi
+    echo "${rev_array[$version_id]}"
     return 0
 }
 

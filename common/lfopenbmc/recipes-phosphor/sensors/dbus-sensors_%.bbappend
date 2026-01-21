@@ -8,16 +8,15 @@ SRC_URI:append = " \
     file://0005-Add-structured-logging-for-Threshold-events.patch \
     file://0006-psusensor-fixed-not-activate-for-multiple-power-stat.patch \
     file://0007-psusensors-fixed-multiple-power-state-issue.patch \
-    file://0008-pwm-sensor-Align-Target-with-user-intent.patch \
-    file://0009-psu-support-gpio-bridge.patch \
-    file://0010-meta-facebook-ventura-add-SCM-sensor-offset.patch \
-    file://0011-PWMSensor-synchronize-hardware-PWM-with-D-Bus-proper.patch \
-    file://0012-leakdetector-check-event-before-event_read.patch \
-    file://0013-Add-delay-before-leak-event-log-to-prevent-AC-OFF-gl.patch \
-    file://0014-PSUSensor-add-property-to-sensorTable-and-labelMatch.patch \
-    file://0015-PSUSensor-add-support-for-mp2925-and-mp2929.patch \
-    file://0016-hwmontemp-Remove-newly-created-sensor-from-sensorsCh.patch \
-    file://0017-psusensor-skip-sensor-reads-during-firmware-updates.patch \
+    file://0008-psu-support-gpio-bridge.patch \
+    file://0009-meta-facebook-ventura-add-SCM-sensor-offset.patch \
+    file://0010-PWMSensor-synchronize-hardware-PWM-with-D-Bus-proper.patch \
+    file://0011-leakdetector-check-event-before-event_read.patch \
+    file://0012-Add-delay-before-leak-event-log-to-prevent-AC-OFF-gl.patch \
+    file://0013-PSUSensor-add-property-to-sensorTable-and-labelMatch.patch \
+    file://0014-PSUSensor-add-support-for-mp2925-and-mp2929.patch \
+    file://0015-hwmontemp-Remove-newly-created-sensor-from-sensorsCh.patch \
+    file://0016-psusensor-skip-sensor-reads-during-firmware-updates.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \

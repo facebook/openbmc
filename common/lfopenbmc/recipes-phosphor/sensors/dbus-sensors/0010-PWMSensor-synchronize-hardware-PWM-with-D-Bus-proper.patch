@@ -1,7 +1,7 @@
-From 463d67e07648a7732a35dd7747059ca2e665c52a Mon Sep 17 00:00:00 2001
+From ecda3f0fca505e048d8134365d2e8dc92ddc8bf1 Mon Sep 17 00:00:00 2001
 From: Yang Chen <yang.chen@quantatw.com>
 Date: Wed, 23 Jul 2025 14:47:58 +0800
-Subject: [PATCH 11/17] PWMSensor: synchronize hardware PWM with D-Bus property
+Subject: [PATCH 10/16] PWMSensor: synchronize hardware PWM with D-Bus property
 
 The Fan PWM sensor property setter (Value/Target) previously only
 tracked the last set value (resp), but the actual hardware PWM
@@ -130,7 +130,7 @@ Signed-off-by: Yang Chen <yang.chen@quantatw.com>
  1 file changed, 11 insertions(+), 11 deletions(-)
 
 diff --git a/src/PwmSensor.cpp b/src/PwmSensor.cpp
-index 926ca1b..aae90df 100644
+index 3a1396e..84cbb93 100644
 --- a/src/PwmSensor.cpp
 +++ b/src/PwmSensor.cpp
 @@ -82,14 +82,14 @@ PwmSensor::PwmSensor(const std::string& pwmname, const std::string& sysPath,
@@ -151,8 +151,8 @@ index 926ca1b..aae90df 100644
 +                controlInterface->signal_property("Target");
              }
              // Scale Value to match Target unit
-             auto scaledValue =
-@@ -130,17 +130,17 @@ PwmSensor::PwmSensor(const std::string& pwmname, const std::string& sysPath,
+             auto scaledValue = (req / 100.0) * targetIfaceMax;
+@@ -129,17 +129,17 @@ PwmSensor::PwmSensor(const std::string& pwmname, const std::string& sysPath,
                  throw std::runtime_error("Value out of range");
                  return -1;
              }

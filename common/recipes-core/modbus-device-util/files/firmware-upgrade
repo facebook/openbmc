@@ -58,6 +58,16 @@ for uda in $UDAS; do
                     ;;
             esac
             ;;
+        "coolermaster")
+            case "$DEVICE_TYPE" in
+                "rpu2")
+                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/rpu-update-coolermaster.py --addr $uda $FIRMWARE_FILE")
+                    ;;
+                *)
+                    ERRORS+="${DEVICE_TYPE} at address ${uda} has ${manufacturer} without known firmware upgrade process\n"
+                    ;;
+            esac
+            ;;
         "delta")
             case "$DEVICE_TYPE" in
                 "bbu")

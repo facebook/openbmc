@@ -24,6 +24,9 @@ rackmoncli data --latest --json | jq -c '.[]' | while read -r line; do
     "ORV3_RPU")
       device=rpu
       ;;
+    "ORV3_RPU2")
+      device=rpu2
+      ;;
     *)
       device=unknown
       ;;

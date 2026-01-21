@@ -15,8 +15,18 @@ FLOCK="flock /tmp/modbus_dynamo_solitonbeam.lock"
 
 # unique device address
 UDA="$1"
+deviceType=$(rackmoncli list --json | jq -r ".[] | select(.uniqueDevAddress == $UDA) | .deviceType")
 
-aalcStatusAlarmRegister=37377
+if [ "$deviceType" == "ORV3_RPU" ]; then
+    aalcStatusAlarmRegister=37377
+    aalcStatusAlarmRegisterMask=0x0200
+elif [ "$deviceType" == "ORV3_RPU2" ]; then
+    aalcStatusAlarmRegister=242
+    aalcStatusAlarmRegisterMask=0x0001
+else
+    echo "Unsupported device type: $deviceType"
+    exit 1
+fi
 
 if ! output=$($FLOCK rackmoncli read "$UDA" "$aalcStatusAlarmRegister") ; then
   echo "{\"message\": \"Rackmon output: $output\", \"status\": \"error\"}"
@@ -25,7 +35,7 @@ fi
 
 case $output in
   0x*)
-    if (( (output & 0x0200) == 0 )); then
+    if (( (output & aalcStatusAlarmRegisterMask) == 0 )); then
       echo '{"status": "success", "ready": true}'
     else
       echo '{"status": "success", "ready": false}'

@@ -120,19 +120,77 @@ function start_rpu {
     fi
 }
 
-if [ "$COMMAND" == "restart" ]; then
-    # Set RPU_Control flag to restart
-    rackmoncli write "$UDA" 37904 64
-elif [ "$COMMAND" == "stop" ]; then
-    # Set RPU_Control flag to stop
-    rackmoncli write "$UDA" 37904 32
-elif [ "$COMMAND" == "clear-sticky-registers" ]; then
-    clear_sticky_registers
-elif [ "$COMMAND" == "start" ]; then
-    # clear_sticky_registers #TODO add this when tooling is updated
-    start_rpu
+function start_rpu2 {
+    echo "Using $CONFIG_FILE config file"
+    script_dir=$( dirname "${BASH_SOURCE[0]}" )
+    manufacturer=$("$script_dir/get-manufacturer" rpu2 "$UDA" "$CONFIG_FILE")
+
+    if [ -z "$manufacturer" ] || [ "$manufacturer" == "unknown" ]; then
+        echo "Could not identify manufacturer. Exiting!"
+        exit 1
+    fi
+
+    pumpDuty=$(jq -er ".rpu2.manufacturers.${manufacturer}.pumpDutyPercentage" "$CONFIG_FILE")
+    targetFlowRate=$(jq -er ".rpu2.manufacturers.${manufacturer}.targetFlowRateTimesTen" "$CONFIG_FILE")
+
+    if [ "$manufacturer" == "coolermaster" ]; then
+        # Clear sticky registers
+        rackmoncli write "$UDA" 0x940B 0x03
+
+        # HMI_Remote_Mode
+        rackmoncli write "$UDA" 0x9400 0x0001
+
+        # Set Auto1 On mode
+        rackmoncli write "$UDA" 0x9410 0x07c2
+
+        # Set coolant flow rate target (scale is 0.1)
+        rackmoncli write "$UDA" 0x941A "$targetFlowRate"
+
+        # Set Fan rack1 all fans duty
+        rackmoncli write "$UDA" 0x941B "$pumpDuty"
+
+        # Set Fan rack2 all fans duty
+        rackmoncli write "$UDA" 0x941C "$pumpDuty"
+    else
+        echo "Error: unknown start sequence for $manufacturer RPU!"
+        exit 1
+    fi
+}
+
+deviceType=$(rackmoncli list --json | jq -r ".[] | select(.uniqueDevAddress == $UDA) | .deviceType")
+
+if [ "$deviceType" == "ORV3_RPU" ]; then
+    if [ "$COMMAND" == "restart" ]; then
+        # Set RPU_Control flag to restart
+        rackmoncli write "$UDA" 37904 64
+    elif [ "$COMMAND" == "stop" ]; then
+        # Set RPU_Control flag to stop
+        rackmoncli write "$UDA" 37904 32
+    elif [ "$COMMAND" == "clear-sticky-registers" ]; then
+        clear_sticky_registers
+    elif [ "$COMMAND" == "start" ]; then
+        # clear_sticky_registers #TODO add this when tooling is updated
+        start_rpu
+    else
+        echo "Error! '$COMMAND' is unknown!"
+        exit 1
+    fi
+elif [ "$deviceType" == "ORV3_RPU2" ]; then
+    if [ "$COMMAND" == "restart" ]; then
+        echo "Unsupported: AALCv2 does not implement a restart"
+        exit 1
+    elif [ "$COMMAND" == "stop" ]; then
+        rackmoncli write "$UDA" 0x9410 0x8000
+    elif [ "$COMMAND" == "clear-sticky-registers" ]; then
+        rackmoncli write "$UDA" 0x940B 0x03
+    elif [ "$COMMAND" == "start" ]; then
+        start_rpu2
+    else
+        echo "Error! '$COMMAND' is unknown!"
+        exit 1
+    fi
 else
-    echo "Error! '$COMMAND' is unknown!"
+    echo "Error! $deviceType is not an RPU"
     exit 1
 fi
 

@@ -78,5 +78,27 @@
                 "type": "str"
             }
         ]
+    },
+    "rpu2": {
+        "manufacturerDiscriminator": "MFR_Model",
+        "manufacturers": {
+            "coolermaster": {
+                "registerValues": [""],
+                "pumpDutyPercentage": 70,
+                "targetFlowRateTimesTen": 1500
+            }
+        },
+        "firmware": [
+            {
+                "register": "Pump_Rack_FW_Revision",
+                "component": "RPU_FIRMWARE_VERSION",
+                "type": "str"
+            },
+            {
+                "register": "Fan_Rack_1_FW_Revision",
+                "component": "RPU_HEX_FIRMWARE_VERSION",
+                "type": "str"
+            }
+        ]
     }
 }

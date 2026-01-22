@@ -49,6 +49,9 @@ static void print_value_data(const json& j) {
     std::cout << "Device Address: 0x" << std::hex << std::setw(2)
               << std::setfill('0') << int(device["devInfo"]["devAddress"])
               << '\n';
+    std::cout << "Device Unique Address: 0x" << std::hex << std::setw(2)
+              << std::setfill('0') << int(device["devInfo"]["uniqueDevAddress"])
+              << '\n';
     std::cout << "Device Type: " << std::string(device["devInfo"]["deviceType"])
               << '\n';
     std::cout << "CRC Errors: " << std::dec << device["devInfo"]["crcErrors"]

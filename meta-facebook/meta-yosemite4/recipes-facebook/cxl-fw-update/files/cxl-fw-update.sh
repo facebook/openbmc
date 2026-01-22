@@ -29,16 +29,16 @@ CXL1_EID_suffix=4
 CXL2_EID_suffix=5
 
 add_init_sel() {
-	log-create ${TargetDetermined} --json "{\"TARGET_NAME\":\"${WF_CXL_MSG} slot${slot_id} instance_num${instance_num}\", \"IMAGE_DATA\":\"${pldm_image}\"}"
+	log-create ${TargetDetermined} --json "{\"TARGET_NAME\":\"${WF_CXL_MSG} slot${slot_id} instance_num${instance_num}\", \"IMAGE_IDENTIFIER\":\"${pldm_image}\"}"
 }
 
 add_result_sel() {
 	RESULT="$1"
 
 	if [ "${RESULT}" == "${FAILURE_MSG}" ]; then
-		log-create ${ApplyFailed} --json "{\"IMAGE_DATA\":\"${pldm_image}\", \"TARGET_NAME\":\"${WF_CXL_MSG} slot${slot_id} instance_num${instance_num}\"}"
+		log-create ${ApplyFailed} --json "{\"IMAGE_IDENTIFIER\":\"${pldm_image}\", \"TARGET_NAME\":\"${WF_CXL_MSG} slot${slot_id} instance_num${instance_num}\"}"
 	elif [ "${RESULT}" == "${SUCCESS_MSG}" ]; then
-		log-create ${UpdateSuccessful} --json "{\"TARGET_NAME\":\"${WF_CXL_MSG} slot${slot_id} instance_num${instance_num}\", \"IMAGE_DATA\":\"${pldm_image}\"}"
+		log-create ${UpdateSuccessful} --json "{\"TARGET_NAME\":\"${WF_CXL_MSG} slot${slot_id} instance_num${instance_num}\", \"IMAGE_IDENTIFIER\":\"${pldm_image}\"}"
 	fi
 }
 

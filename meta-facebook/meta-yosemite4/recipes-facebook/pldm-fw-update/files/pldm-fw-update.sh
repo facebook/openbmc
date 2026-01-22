@@ -1321,16 +1321,16 @@ retry_firmware_operation() {
 }
 
 add_init_sel() {
-	log-create ${TargetDetermined} --json "{\"TARGET_NAME\":\"${NEW_BIC_NAME} slot${slot_id}\", \"IMAGE_DATA\":\"${pldm_image}\"}"
+	log-create ${TargetDetermined} --json "{\"TARGET_NAME\":\"${NEW_BIC_NAME} slot${slot_id}\", \"IMAGE_IDENTIFIER\":\"${pldm_image}\"}"
 }
 
 add_result_sel() {
 	RESULT="$1"
 
 	if [ "${RESULT}" == "${FAILURE_MSG}" ]; then
-		log-create ${ApplyFailed} --json "{\"IMAGE_DATA\":\"${pldm_image}\", \"TARGET_NAME\":\"${NEW_BIC_NAME} slot${slot_id}\"}"
+		log-create ${ApplyFailed} --json "{\"IMAGE_IDENTIFIER\":\"${pldm_image}\", \"TARGET_NAME\":\"${NEW_BIC_NAME} slot${slot_id}\"}"
 	elif [ "${RESULT}" == "${SUCCESS_MSG}" ]; then
-		log-create ${UpdateSuccessful} --json "{\"TARGET_NAME\":\"${NEW_BIC_NAME} slot${slot_id}\", \"IMAGE_DATA\":\"${pldm_image}\"}"
+		log-create ${UpdateSuccessful} --json "{\"TARGET_NAME\":\"${NEW_BIC_NAME} slot${slot_id}\", \"IMAGE_IDENTIFIER\":\"${pldm_image}\"}"
 	fi
 }
 

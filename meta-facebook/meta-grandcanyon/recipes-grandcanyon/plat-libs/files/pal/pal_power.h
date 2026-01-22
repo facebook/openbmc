@@ -30,12 +30,11 @@
 #define CPLD_BIT_RST_BTN_OUT        0x01    // bit 0: Reset Button Output
 
 // Reset Control Values
-// Note: RST_BMC_RSTBTN_OUT_R_N is active-low
-// bit 0 = 0: Reset asserted (button pressed)
-// bit 0 = 1: Reset deasserted (button released)
-#define BMC_CPLD_RESET_ASSERT       0x32    // Assert reset (bit 0 = 0)
-#define BMC_CPLD_RESET_DEASSERT     0x33    // Deassert reset (bit 0 = 1)
-#define BMC_CPLD_RESET_DELAY        2       // Hold time in seconds
+// bit 0 = 0: Reset low
+// bit 0 = 1: Reset high
+#define BMC_CPLD_RESET_LOW       0x32    // (bit 0 = 0)
+#define BMC_CPLD_RESET_HIGH      0x33    // (bit 0 = 1)
+#define BMC_CPLD_RESET_DELAY        1       // Hold time in seconds
 
 #else
 #define BS_FPGA_SERVER_POWER_CTRL 0x0F

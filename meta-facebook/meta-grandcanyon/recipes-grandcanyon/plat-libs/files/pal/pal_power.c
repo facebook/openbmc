@@ -865,7 +865,7 @@ int
 pal_server_power_ctrl(uint8_t action) {
   uint8_t pwr_seq[PWR_CTRL_ACT_CNT] = {SERVER_POWER_BTN_HIGH, SERVER_POWER_BTN_LOW, SERVER_POWER_BTN_HIGH};
 #ifdef CONFIG_GRANDCANYON2
-  uint8_t rst_seq[PWR_CTRL_ACT_CNT] = {BMC_CPLD_RESET_ASSERT, BMC_CPLD_RESET_DEASSERT, BMC_CPLD_RESET_ASSERT};  // 0x33, 0x32, 0x33
+  uint8_t rst_seq[PWR_CTRL_ACT_CNT] = {BMC_CPLD_RESET_HIGH, BMC_CPLD_RESET_LOW, BMC_CPLD_RESET_HIGH};
 #endif
   int ret = 0, i = 0;
   
@@ -927,8 +927,8 @@ pal_server_power_ctrl(uint8_t action) {
     bool need_delay = false;
 #ifdef CONFIG_GRANDCANYON2
     if (action == SET_HOST_RESET) {
-      // For reset: delay when reset is active (0x33)
-      need_delay = (rst_seq[i] == BMC_CPLD_RESET_DEASSERT);
+      // For reset: delay when reset is low (0x32)
+      need_delay = (rst_seq[i] == BMC_CPLD_RESET_LOW);
     } else {
       // For power: delay when button is pressed (LOW)
       need_delay = (pwr_seq[i] == SERVER_POWER_BTN_LOW);

@@ -14,8 +14,8 @@ FW_TOOLS = "\
     scm-tpm,system-state-init@.service,multi-user.target,multi-user.target,0 \
     nic,network-wait-ipv6-ll@eth0.service,multi-user.target,multi-user.target,0 \
     cb-cpld,system-state-init@.service,multi-user.target,multi-user.target,0 \
-    ag-bic,system-state-init@.service,multi-user.target,multi-user.target,0 \
-    ag-vr,,phosphor-multi-gpio-monitor.service,multi-user.target,0 \
+    ag-bic,xyz.openbmc_project.mctpreactor.service,multi-user.target,multi-user.target,0 \
+    ag-vr,xyz.openbmc_project.mctpreactor.service:fw-versions-ag-bic@0.service,multi-user.target,multi-user.target,0 \
 "
 
 LOCAL_URI = " \
@@ -38,9 +38,9 @@ do_install:append() {
 
     for f in ${FW_TOOLS}; do
         SERVICE=$(echo "$f" | cut -d, -f1)
-        AFTER=$(echo "$f" | cut -d, -f2 | sed 's/_/ /g')
-        BEFORE=$(echo "$f" | cut -d, -f3 | sed 's/_/ /g')
-        WANTEDBY=$(echo "$f" | cut -d, -f4 | sed 's/_/ /g')
+        AFTER=$(echo "$f" | cut -d, -f2 | sed 's/:/ /g')
+        BEFORE=$(echo "$f" | cut -d, -f3 | sed 's/:/ /g')
+        WANTEDBY=$(echo "$f" | cut -d, -f4 | sed 's/:/ /g')
 
         install -m 0755 ${S}/$SERVICE ${D}${libexecdir}/${BPN}/$SERVICE
 

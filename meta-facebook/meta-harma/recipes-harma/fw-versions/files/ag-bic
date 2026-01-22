@@ -1,14 +1,41 @@
 #!/bin/bash
-set -e
 
-eid=10
-max_retry_count=10
-retry_delay_sec=3
+max_retry_count=5
+retry_delay_sec=2
+mmc_eid=""
+service=xyz.openbmc_project.MCTPReactor
+root=/au/com/codeconstruct/mctp1
+DEFAULT_EID="10"
+
+# retry 10 times to get eid
+for attempt in $(seq 1 $max_retry_count); do
+    ret=$(busctl call $service $root org.freedesktop.DBus.ObjectManager GetManagedObjects)
+
+    eid=$(echo "$ret" | tr '"' '\n' | awk '
+    /\/endpoints\// { ep=$0 }
+    /\/MMC/ { if (ep != "") { n=split(ep,a,"/"); print a[n]; ep=""; exit } }')
+
+    if [ -n "$eid" ]; then
+        echo "Found MMC EID: $eid"
+        mmc_eid=$eid
+        break
+    fi
+
+    echo "Attempt $attempt: Failed to get MMC EID, retrying..."
+    [ "$attempt" -lt "$max_retry_count" ] && sleep "$retry_delay_sec"
+
+done
+
+if [ -z "$mmc_eid" ]; then
+    echo "Failed to retrieve MMC EID, using default EID: $DEFAULT_EID"
+    mmc_eid=$DEFAULT_EID
+fi
+
 
 version=""
 for ((i=1; i<=max_retry_count; i++)); do
     version=$(
-        pldmtool fw_update GetFwParams -m $eid |
+        pldmtool fw_update GetFwParams -m "$mmc_eid" -n 5 |
             jq --raw-output \
                 '.ActiveComponentImageSetVersionString'
     )

@@ -1,8 +1,35 @@
 #!/bin/bash
 
-eid=10
-max_retry_count=3
-retry_delay_sec=1
+max_retry_count=5
+retry_delay_sec=2
+mmc_eid=""
+service=xyz.openbmc_project.MCTPReactor
+root=/au/com/codeconstruct/mctp1
+DEFAULT_EID="10"
+
+# retry 10 times to get eid
+for attempt in $(seq 1 $max_retry_count); do
+    ret=$(busctl call $service $root org.freedesktop.DBus.ObjectManager GetManagedObjects)
+
+    eid=$(echo "$ret" | tr '"' '\n' | awk '
+    /\/endpoints\// { ep=$0 }
+    /\/MMC/ { if (ep != "") { n=split(ep,a,"/"); print a[n]; ep=""; exit } }')
+
+    if [ -n "$eid" ]; then
+        echo "Found MMC EID: $eid"
+        mmc_eid=$eid
+        break
+    fi
+
+    echo "Attempt $attempt: Failed to get MMC EID, retrying..."
+    [ "$attempt" -lt "$max_retry_count" ] && sleep "$retry_delay_sec"
+
+done
+
+if [ -z "$mmc_eid" ]; then
+    echo "Failed to retrieve MMC EID, using default EID: $DEFAULT_EID"
+    mmc_eid=$DEFAULT_EID
+fi
 
 pwr_asci_good_gpio_chip="gpiochip2"
 pwr_asci_good_line=92
@@ -49,8 +76,9 @@ get_pldm_object_path() {
 version=""
 declare -A found_ids
 
+# Wait for the MMC to be ready
 for ((i=1; i<=max_retry_count; i++)); do
-    output=$(pldmtool fw_update GetFwParams -m "$eid" |
+    output=$(pldmtool fw_update GetFwParams -m "$mmc_eid" -n 5 |
                 jq --raw-output '.ComponentParameterEntries[] |
                 (.ComponentIdentifier | tostring) + "#" +
                 .ActiveComponentVersionString')
@@ -74,7 +102,7 @@ for ((i=1; i<=max_retry_count; i++)); do
                 xyz.openbmc_project.Software.Version \
                 Version "s" "$version"
 
-            pldmObjPath=$(get_pldm_object_path "$eid" "$compId")
+            pldmObjPath=$(get_pldm_object_path "$mmc_eid" "$compId")
             if [ -n "$pldmObjPath" ]; then
                 busctl set-property \
                     xyz.openbmc_project.PLDM \

@@ -1,4 +1,4 @@
-From 5575e7009050db12ec6d4be6d30b7b8dbd3b9616 Mon Sep 17 00:00:00 2001
+From 329f4fb29b0a09c23d850bf24bb39f0795ae7747 Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Thu, 27 Feb 2025 18:39:58 -0500
 Subject: [PATCH 200/205] registries: generate registries_selector.hpp
@@ -81,10 +81,10 @@ index 6440ca59..71a628db 100644
 +#include "registries/update_message_registry.hpp"
 +// NOLINTEND(misc-include-cleaner)
 diff --git a/scripts/parse_registries.py b/scripts/parse_registries.py
-index 7b315a86..d29459a5 100755
+index 392d69ac..15edfada 100755
 --- a/scripts/parse_registries.py
 +++ b/scripts/parse_registries.py
-@@ -87,7 +87,28 @@ def openbmc_local_getter() -> RegistryInfo:
+@@ -83,7 +83,28 @@ def openbmc_local_getter() -> RegistryInfo:
      return (path, json_file, "openbmc", url)
  
  

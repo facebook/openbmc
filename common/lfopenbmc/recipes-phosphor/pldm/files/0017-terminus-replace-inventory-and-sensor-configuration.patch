@@ -1,4 +1,4 @@
-From 4f30f37d74a66ec3367c7c6579973251cef78ba1 Mon Sep 17 00:00:00 2001
+From 7722e0b4c17e0414a85d03b8af4d0b3472f088cf Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Fri, 26 Dec 2025 14:35:14 +0800
 Subject: [PATCH 17/17] terminus: replace inventory and sensor configuration
@@ -83,7 +83,7 @@ index c7effaa..99f8ff2 100644
  
      Event event(sdeventplus::Event::get_default());
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index fd13036..1a1b82e 100644
+index 71b9b2b..5be4542 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -206,6 +206,12 @@ void Terminus::parseTerminusPDRs()
@@ -119,7 +119,7 @@ index fd13036..1a1b82e 100644
      {
          lg2::info("Terminus ID {TID}: Created Inventory path {PATH}.", "TID",
                    tid, "PATH", inventoryPath);
-@@ -789,5 +806,146 @@ std::vector<std::string> Terminus::getSensorNames(const SensorID& sensorId)
+@@ -811,5 +828,146 @@ std::vector<std::string> Terminus::getSensorNames(const SensorID& sensorId)
      return sensorNames;
  }
  

@@ -1,4 +1,4 @@
-From f1872ee87bbf4db22157bb8bcb6ea3beae348f7e Mon Sep 17 00:00:00 2001
+From db32af3839029deb61e573f04c853a51dd8e8cb3 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 12:50:55 +0000
 Subject: [PATCH 201/205] Add generation for Vendor registries and a DBus to RF
@@ -31,7 +31,7 @@ Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
  1 file changed, 349 insertions(+), 72 deletions(-)
 
 diff --git a/scripts/parse_registries.py b/scripts/parse_registries.py
-index d29459a5..6c267a75 100755
+index 15edfada..0e148983 100755
 --- a/scripts/parse_registries.py
 +++ b/scripts/parse_registries.py
 @@ -4,6 +4,7 @@ import json
@@ -42,7 +42,7 @@ index d29459a5..6c267a75 100755
  
  import requests
  
-@@ -47,14 +48,37 @@ REGISTRY_HEADER: t.Final[str] = f"{COPYRIGHT}{PRAGMA_ONCE}{WARNING}{INCLUDES}"
+@@ -43,14 +44,37 @@ REGISTRY_HEADER: t.Final[str] = f"{COPYRIGHT}{PRAGMA_ONCE}{WARNING}{INCLUDES}"
  SCRIPT_DIR: t.Final[str] = os.path.dirname(os.path.realpath(__file__))
  
  INCLUDE_PATH: t.Final[str] = os.path.realpath(
@@ -82,7 +82,7 @@ index d29459a5..6c267a75 100755
  
  
  def make_getter(
-@@ -64,12 +88,12 @@ def make_getter(
+@@ -60,12 +84,12 @@ def make_getter(
      dmtf = requests.get(url, proxies=PROXIES)
      dmtf.raise_for_status()
      json_file = json.loads(dmtf.text, object_pairs_hook=OrderedDict)
@@ -97,7 +97,7 @@ index d29459a5..6c267a75 100755
      with open(
          os.path.join(
              SCRIPT_DIR,
-@@ -83,22 +107,15 @@ def openbmc_local_getter() -> RegistryInfo:
+@@ -79,22 +103,15 @@ def openbmc_local_getter() -> RegistryInfo:
      ) as json_file_fd:
          json_file = json.load(json_file_fd)
  
@@ -125,7 +125,7 @@ index d29459a5..6c267a75 100755
          selector.write(f"{COPYRIGHT}{PRAGMA_ONCE}")
          selector.write("// NOLINTBEGIN(misc-include-cleaner)\n")
          for file in sorted([os.path.basename(x[0]) for x in files]):
-@@ -106,8 +123,10 @@ def generate_selector(files: t.List[RegistryInfo]) -> None:
+@@ -102,8 +119,10 @@ def generate_selector(files: t.List[RegistryInfo]) -> None:
          selector.write("// NOLINTEND(misc-include-cleaner)\n")
  
  
@@ -138,7 +138,7 @@ index d29459a5..6c267a75 100755
  
      # Remove the old files
      for file, json_dict, namespace, url in files:
-@@ -116,6 +135,7 @@ def update_registries(files: t.List[RegistryInfo]) -> None:
+@@ -112,6 +131,7 @@ def update_registries(files: t.List[RegistryInfo]) -> None:
          except BaseException:
              print("{} not found".format(file))
  
@@ -146,7 +146,7 @@ index d29459a5..6c267a75 100755
          with open(file, "w") as registry:
              version_split = json_dict["RegistryVersion"].split(".")
  
-@@ -138,12 +158,12 @@ def update_registries(files: t.List[RegistryInfo]) -> None:
+@@ -134,12 +154,12 @@ def update_registries(files: t.List[RegistryInfo]) -> None:
                  "}};\n"
                  "\n"
                  "static constexpr const char* url =\n"
@@ -161,7 +161,7 @@ index d29459a5..6c267a75 100755
                      version_split=version_split,
                      description=description,
                  )
-@@ -707,6 +727,247 @@ def to_pascal_case(text: str) -> str:
+@@ -688,6 +708,247 @@ def to_pascal_case(text: str) -> str:
      return "".join(i.capitalize() for i in s1[0:])
  
  
@@ -409,7 +409,7 @@ index d29459a5..6c267a75 100755
  def main() -> None:
      dmtf_registries = OrderedDict(
          [
-@@ -727,7 +988,7 @@ def main() -> None:
+@@ -708,7 +969,7 @@ def main() -> None:
              ("storage_device", "1.2.1"),
              ("task_event", "1.0.3"),
              ("telemetry", "1.0.0"),
@@ -418,7 +418,7 @@ index d29459a5..6c267a75 100755
          ]
      )
  
-@@ -739,63 +1000,79 @@ def main() -> None:
+@@ -720,63 +981,79 @@ def main() -> None:
          + ",".join([dmtf for dmtf in dmtf_registries]),
          help="Comma delimited list of registries to update",
      )

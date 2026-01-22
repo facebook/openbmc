@@ -1,0 +1,38 @@
+From a164869fceaaaf39f0a5205c509f7b154d0cef8c Mon Sep 17 00:00:00 2001
+From: Zane Li <zane.li.wiwynn@gmail.com>
+Date: Wed, 20 Aug 2025 08:25:31 +0000
+Subject: [PATCH] arm: dts: aspeed: yosemite4: Support ramoops
+
+Support ramoops for check kernel panic and record log
+---
+ .../dts/aspeed/aspeed-bmc-facebook-yosemite4.dts   | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+index b2ceffc3e6b8..512685a525e0 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite4.dts
+@@ -49,6 +49,20 @@ memory@80000000 {
+ 		reg = <0x80000000 0x80000000>;
+ 	};
+ 
++    reserved-memory {
++        #address-cells = <1>;
++        #size-cells = <1>;
++        ranges;
++        ramoops@b8dfa000 {
++            compatible = "ramoops";
++            reg = <0xb8dfa000 0x6000>;
++            record-size = <0x2000>;
++            console-size = <0x2000>;
++            pmsg-size = <0x2000>;
++            max-reason = <1>;
++        };
++    };
++
+ 	iio-hwmon {
+ 		compatible = "iio-hwmon";
+ 		io-channels = <&adc0 0>, <&adc0 1>, <&adc0 2>, <&adc0 3>,
+-- 
+2.43.0
+

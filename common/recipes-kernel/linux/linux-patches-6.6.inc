@@ -111,6 +111,8 @@ SRC_URI:append = " \
     file://0204-mctp-Fix-incorrect-tx-flow-invalidation-condition-in.patch \
     file://0205-i3c-dw-Add-err-messages-for-ibi_fifo_clear-handling.patch \
     file://0206-i3c-dw-handle-transfer-abort-errors-distinctly.patch \
+    file://0207-i3c-dw-Handle-unexpected-responses-caused-by-SDA-noi.patch \
+    file://0208-i3c-handle-null-transfers-during-response-processing.patch \
 "
 
 #

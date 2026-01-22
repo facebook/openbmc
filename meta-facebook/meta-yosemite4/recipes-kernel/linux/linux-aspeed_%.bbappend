@@ -23,6 +23,7 @@ SRC_URI += " \
     file://1014-adc128-filter-out-0x1ff.patch \
     file://1015-ncsi-Add-a-apply-mac-stage-for-mellanox-NICs.patch \
     file://1016-ARM-dts-aspeed-yosemite4-modify-I3C-config-in-DTS.patch \
+    file://1017-arm-dts-aspeed-yosemite4-Support-ramoops.patch \
     file://0202-dt-bindings-i3c-Add-i3c-hub-support.patch \
     file://0203-i3c-Add-driver-for-i3c-hub-device.patch \
     file://yosemite4-local.cfg \

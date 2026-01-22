@@ -1,17 +1,17 @@
-From 20401e6fa27f651f072ded11f8b1f6115e00d500 Mon Sep 17 00:00:00 2001
+From e87eef239b80e2e7150a887e3de31cbdd63afd74 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
-Date: Tue, 13 Jan 2026 12:03:09 +0800
+Date: Tue, 20 Jan 2026 10:53:37 +0800
 Subject: [PATCH] meta-facebook-ventura2-Add-aspeed-bmc-facebook-ventura2.dts
 
 Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 ---
  arch/arm/boot/dts/aspeed/Makefile             |    1 +
- .../aspeed/aspeed-bmc-facebook-ventura2.dts   | 2904 +++++++++++++++++
- 2 files changed, 2905 insertions(+)
+ .../aspeed/aspeed-bmc-facebook-ventura2.dts   | 2955 +++++++++++++++++
+ 2 files changed, 2956 insertions(+)
  create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
 
 diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
-index 0f0b5b707..43957ccd4 100644
+index 0f0b5b707654..43957ccd4c3d 100644
 --- a/arch/arm/boot/dts/aspeed/Makefile
 +++ b/arch/arm/boot/dts/aspeed/Makefile
 @@ -31,6 +31,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
@@ -24,10 +24,10 @@ index 0f0b5b707..43957ccd4 100644
  	aspeed-bmc-facebook-wedge100.dtb \
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
 new file mode 100644
-index 000000000..0716f60c7
+index 000000000000..9a3c3e2b172d
 --- /dev/null
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
-@@ -0,0 +1,2904 @@
+@@ -0,0 +1,2955 @@
 +// SPDX-License-Identifier: GPL-2.0
 +// Copyright (c) 2023 Facebook Inc.
 +/dts-v1/;
@@ -330,6 +330,10 @@ index 000000000..0716f60c7
 +	};
 +};
 +
++&peci0 {
++	status = "okay";
++};
++
 +&gpio0 {
 +	gpio-line-names =
 +	/*A0-A7*/	"","","","","","","","",
@@ -411,9 +415,9 @@ index 000000000..0716f60c7
 +			#address-cells = <1>;
 +			#size-cells = <0>;
 +			reg = <2>;
-+			adc@08 {                                                
-+				reg = <0x08>;                                   
-+				compatible = "lltc,ltc2305";                    
++			adc@08 {
++				reg = <0x08>;
++				compatible = "lltc,ltc2305";
 +			};
 +		};
 +
@@ -509,6 +513,14 @@ index 000000000..0716f60c7
 +				reg = <0x20>;
 +				#address-cells = <1>;
 +				#size-cells = <0>;
++				channel@2 {
++					reg = <2>;
++					sensor-type = "TACH";
++				};
++				channel@5 {
++					reg = <5>;
++					sensor-type = "TACH";
++				};
 +			};
 +
 +			fanctl1: fan-controller@23 {
@@ -630,21 +642,21 @@ index 000000000..0716f60c7
 +
 +&i2c2 {
 +	status = "okay";
-+	bus-frequency = <400000>;
++	clock-frequency = <400000>;
 +};
 +
 +&i2c3 {
 +	status = "okay";
-+	bus-frequency = <400000>;
++	clock-frequency = <400000>;
 +
-+	adc@08 {                                                                
-+		reg = <0x08>;                                                   
-+		compatible = "lltc,ltc2305";                                    
-+	};                                                                      
-+                                                                        
-+	adc@09 {                                                                
-+		reg = <0x09>;                                                   
-+		compatible = "lltc,ltc2305";                                    
++	adc@08 {
++		reg = <0x08>;
++		compatible = "lltc,ltc2305";
++	};
++
++	adc@09 {
++		reg = <0x09>;
++		compatible = "lltc,ltc2305";
 +	};
 +
 +	dac@c {
@@ -1662,6 +1674,8 @@ index 000000000..0716f60c7
 +		reg = <0x23>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
++		interrupt-parent = <&io_expander7>;
++		interrupts = <6 IRQ_TYPE_LEVEL_LOW>;
 +
 +		gpio-line-names =
 +		"P24V_EFUSE1_FAULT", "P24V_EFUSE2_FAULT",
@@ -1677,13 +1691,18 @@ index 000000000..0716f60c7
 +
 +&i2c4 {
 +	status = "okay";
++	multi-master;
++	mctp0: mctp@10 {
++		compatible = "mctp-i2c-controller";
++		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++	};
 +
 +	i2c-mux@77 {
 +		compatible = "nxp,pca9548";
 +		reg = <0x77>;
 +		#address-cells = <1>;
 +		#size-cells = <0>;
-+		i2c-mux-idle-disconnect;
++		idle-state = <6>;
 +
 +		i2c4mux0ch0: i2c@0 {
 +			#address-cells = <1>;
@@ -1695,6 +1714,8 @@ index 000000000..0716f60c7
 +				reg = <0x23>;
 +				gpio-controller;
 +				#gpio-cells = <2>;
++				interrupt-parent = <&io_expander7>;
++				interrupts = <3 IRQ_TYPE_LEVEL_LOW>;
 +
 +				gpio-line-names =
 +				"RSVD_GPIO_BMC_A12_R", "RSVD_GPIO_BMC_E14_R",
@@ -1727,18 +1748,32 @@ index 000000000..0716f60c7
 +				compatible = "atmel,24c128";
 +				reg = <0x56>;
 +			};
-+
-+			power-monitor@76 {
-+				compatible = "infineon,xdpe15284";
-+				reg = <0x76>;
-+			};
 +		};
 +
 +		i2c4mux0ch2: i2c@2 {
 +			#address-cells = <1>;
 +			#size-cells = <0>;
 +			reg = <2>;
-+			status = "okay";
++
++			power-monitor@11 {
++				compatible = "infineon,tda38640";
++				reg = <0x11>;
++			};
++
++			power-monitor@22 {
++				compatible = "infineon,tda38640";
++				reg = <0x22>;
++			};
++
++			power-monitor@45 {
++				compatible = "infineon,tda38640";
++				reg = <0x45>;
++			};
++
++			power-monitor@66 {
++				compatible = "infineon,tda38640";
++				reg = <0x66>;
++			};
 +		};
 +
 +		i2c4mux0ch3: i2c@3 {
@@ -1766,7 +1801,7 @@ index 000000000..0716f60c7
 +			#address-cells = <1>;
 +			#size-cells = <0>;
 +			reg = <6>;
-+			status = "okay";
++			mctp-controller;
 +		};
 +
 +		i2c4mux0ch7: i2c@7 {
@@ -1786,6 +1821,8 @@ index 000000000..0716f60c7
 +		reg = <0x22>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
++		interrupt-parent = <&io_expander7>;
++		interrupts = <4 IRQ_TYPE_LEVEL_LOW>;
 +
 +		gpio-line-names =
 +		"R_COME_THERMTRIP_L", "R_PWRGD_PCH_PWROK",
@@ -1803,6 +1840,8 @@ index 000000000..0716f60c7
 +		reg = <0x23>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
++		interrupt-parent = <&io_expander7>;
++		interrupts = <5 IRQ_TYPE_LEVEL_LOW>;
 +
 +		gpio-line-names =
 +		"PWRGD_P5V_AUX_R2", "",
@@ -1926,6 +1965,8 @@ index 000000000..0716f60c7
 +		reg = <0x20>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
++		interrupt-parent = <&io_expander7>;
++		interrupts = <0 IRQ_TYPE_LEVEL_LOW>;
 +
 +		gpio-line-names =
 +		"RST_POE_BMC_N", "POE_DISABLE_BMC_N_R",
@@ -1960,6 +2001,8 @@ index 000000000..0716f60c7
 +		reg = <0x22>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
++		interrupt-parent = <&io_expander7>;
++		interrupts = <2 IRQ_TYPE_LEVEL_LOW>;
 +
 +		gpio-line-names =
 +		"BOARD_ID_0", "BOARD_ID_1",
@@ -1977,6 +2020,10 @@ index 000000000..0716f60c7
 +		reg = <0x23>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
++		interrupt-parent = <&sgpiom0>;
++		interrupts = <32 IRQ_TYPE_LEVEL_LOW>;
 +
 +		gpio-line-names =
 +		"IOEXP1_INT_N", "IOEXP2_INT_N",
@@ -2565,7 +2612,7 @@ index 000000000..0716f60c7
 +
 +&i2c12 {
 +	status = "okay";
-+	bus-frequency = <400000>;
++	clock-frequency = <400000>;
 +};
 +
 +&i2c13 {
@@ -2708,21 +2755,25 @@ index 000000000..0716f60c7
 +	};
 +};
 +
++&lpc_ctrl {
++	status = "okay";
++};
++
 +&kcs3 {
 +	aspeed,lpc-io-reg = <0xca2>;
 +	status = "okay";
 +};
 +
-+&mac0 {                                                                         
-+        status = "okay";                                                        
-+        phy-mode = "rgmii";                                                     
-+        pinctrl-names = "default";                                              
-+        pinctrl-0 = <&pinctrl_rgmii1_default>;                                  
-+                                                                                
-+        fixed-link {                                                            
-+                speed = <1000>;                                                 
-+                full-duplex;                                                    
-+        };                                                                      
++&mac0 {
++	status = "okay";
++	phy-mode = "rgmii";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_rgmii1_default>;
++
++	fixed-link {
++		speed = <1000>;
++		full-duplex;
++	};
 +};
 +
 +&mac2 {
@@ -2900,10 +2951,10 @@ index 000000000..0716f60c7
 +	"","",
 +	"","",
 +	"","",
-+	"","",
-+	"","",
-+	"","",
-+	"","";
++	"","SGPIO_REG_VALID_0",
++	"","SGPIO_REG_VALID_1",
++	"","SGPIO_REG_VALID_2",
++	"","SGPIO_REG_VALID_3";
 +};
 +
 +&spi2 {

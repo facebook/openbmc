@@ -239,6 +239,7 @@ def workaround_force_exit_boot_mode(addr, workarounds):
 
 def update_device(addr, filename, vendor_param):
     workarounds = vendor_param.get("hw_workarounds", [])
+    verification_time = vendor_param.get("verification_time", 10.0)
     print("Parsing Firmware...")
     binimg = load_file(filename)
     print("Unlock Engineering Mode")
@@ -260,7 +261,7 @@ def update_device(addr, filename, vendor_param):
         print("Request Verify Firmware")
         verify_firmware(addr)
         print("Waiting for verification to complete")
-        time.sleep(10.0)
+        time.sleep(verification_time)
         print("check firmware status")
         verify_firmware_status(addr, FIRMWARE_UPGRADE_SUCCESS)
     print("done")

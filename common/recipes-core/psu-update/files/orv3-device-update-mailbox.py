@@ -28,46 +28,46 @@ vendor_params = {
         "block_size": 96,
         "boot_mode": 0xAA55,
         "block_wait": False,
-        "version-reg": "FW_Revision",
+        "version-reg": ["FW_Revision"],
     },
     "delta": {
         "block_size": 64,
         "boot_mode": 0xA5A5,
         "block_wait": True,
-        "version-reg": "FW_Revision",
+        "version-reg": ["FW_Revision"],
     },
     "delta_power_tether": {
         "block_size": 16,
         "boot_mode": 0xAA55,
         "block_wait": True,
         "hw_workarounds": ["WRITE_BLOCK_CRC_EXPECTED"],
-        "version-reg": "PSU_FW_Revision",
+        "version-reg": ["PSU_FW_Revision"],
     },
     "hpr_panasonic": {
         "block_size": 96,
         "boot_mode": 0xAA55,
         "block_wait": False,
-        "version-reg": "FW_Revision",
+        "version-reg": ["FW_Revision"],
         "hw_workarounds": ["FORCE_EXIT_BOOT_MODE", "FORCE_CLEAR_VERIFY"],
     },
     "hpr_pmm_panasonic": {
         "block_size": 68,
         "boot_mode": 0xAA55,
         "block_wait": True,
-        "version-reg": "PMM_FW_Revision",
+        "version-reg": ["PMM_FW_Revision"],
     },
     "hpr_pmm_delta": {
         "block_size": 68,
         "boot_mode": 0xAA55,
         "block_wait": True,
-        "version-reg": "PMM_FW_Revision",
+        "version-reg": ["PMM_FW_Revision"],
         "hw_workarounds": ["FORCE_EXIT_BOOT_MODE"],
     },
     "hpr_pmm_aei": {
         "block_size": 68,
         "boot_mode": 0xAA55,
         "block_wait": True,
-        "version-reg": "PMM_FW_Revision",
+        "version-reg": ["PMM_FW_Revision"],
         "hw_workarounds": ["FORCE_EXIT_BOOT_MODE"],
     },
 }
@@ -267,11 +267,11 @@ def update_device(addr, filename, vendor_param):
 
 
 def print_revision(addr, params):
-    print("Version:", rmd.get(addr, params["version-reg"], True))
+    vers = ", ".join([rmd.get(addr, vers, True) for vers in params["version-reg"]])
+    print("Version: ", vers)
 
 
 def main():
-    global vendor_params
     args = parser.parse_args()
     params = vendor_params[args.vendor]
     if args.block_size is not None:

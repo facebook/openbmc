@@ -36,6 +36,21 @@ vendor_params = {
         "block_wait": True,
         "version-reg": ["FW_Revision"],
     },
+    "delta_miniups": {
+        "block_size": 68,
+        "boot_mode": 0xAA55,
+        "block_wait": True,
+        "version-reg": [
+            "Shelf_Firmware_Version",
+            "Power_Module_1_Firmware_Version",
+            "Power_Module_2_Firmware_Version",
+            "Power_Module_3_Firmware_Version",
+            "Power_Module_4_Firmware_Version",
+            "Power_Module_5_Firmware_Version",
+            "Power_Module_6_Firmware_Version",
+        ],
+        "verification_time": 90.0,
+    },
     "delta_power_tether": {
         "block_size": 16,
         "boot_mode": 0xAA55,

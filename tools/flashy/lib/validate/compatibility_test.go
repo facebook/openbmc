@@ -30,8 +30,8 @@ import (
 )
 
 func TestCompatibleVersionMapping(t *testing.T) {
-	// the values of compatibleVersionMapping cannot have a dash
-	for key, val := range compatibleVersionMapping {
+	// the values of CompatibleVersionMapping cannot have a dash
+	for key, val := range CompatibleVersionMapping {
 		if strings.ContainsAny(val, "-") {
 			t.Errorf("Invalid mapping (%v, %v), value %v cannot contain a dash",
 				key, val, val)
@@ -42,11 +42,11 @@ func TestCompatibleVersionMapping(t *testing.T) {
 func TestCheckImageBuildNameCompatibility(t *testing.T) {
 	getOpenBMCVersionFromIssueFileOrig := utils.GetOpenBMCVersionFromIssueFile
 	getOpenBMCVersionFromImageFileOrig := GetOpenBMCVersionFromImageFile
-	compatibleVersionMappingOrig := compatibleVersionMapping
+	CompatibleVersionMappingOrig := CompatibleVersionMapping
 	defer func() {
 		utils.GetOpenBMCVersionFromIssueFile = getOpenBMCVersionFromIssueFileOrig
 		GetOpenBMCVersionFromImageFile = getOpenBMCVersionFromImageFileOrig
-		compatibleVersionMapping = compatibleVersionMappingOrig
+		CompatibleVersionMapping = CompatibleVersionMappingOrig
 	}()
 
 	cases := []struct {
@@ -105,7 +105,7 @@ func TestCheckImageBuildNameCompatibility(t *testing.T) {
 		},
 	}
 
-	compatibleVersionMapping = map[string]string{"fby2-gpv2": "fbgp2"}
+	CompatibleVersionMapping = map[string]string{"fby2-gpv2": "fbgp2"}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			exampleImageFilePath := "/run/upgrade/mock"
@@ -126,9 +126,9 @@ func TestCheckImageBuildNameCompatibility(t *testing.T) {
 
 // also tests normalizeVersion
 func TestGetNormalizedBuildNameFromVersion(t *testing.T) {
-	compatibleVersionMappingOrig := compatibleVersionMapping
+	CompatibleVersionMappingOrig := CompatibleVersionMapping
 	defer func() {
-		compatibleVersionMapping = compatibleVersionMappingOrig
+		CompatibleVersionMapping = CompatibleVersionMappingOrig
 	}()
 
 	cases := []struct {
@@ -182,7 +182,7 @@ func TestGetNormalizedBuildNameFromVersion(t *testing.T) {
 		},
 	}
 
-	compatibleVersionMapping = map[string]string{"fby2-gpv2": "fbgp2", "minipack3n": "acctonbmc", "icecube800bc": "celesticabmc"}
+	CompatibleVersionMapping = map[string]string{"fby2-gpv2": "fbgp2", "minipack3n": "acctonbmc", "icecube800bc": "celesticabmc"}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			got, err := getNormalizedBuildNameFromVersion(tc.ver)

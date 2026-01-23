@@ -21,9 +21,11 @@ package flash_procedure
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
+	"github.com/facebook/openbmc/tools/flashy/lib/validate"
 )
 
 var procedureOverrides = map[string]func(step.StepParams) step.StepExitError{
@@ -41,6 +43,22 @@ func init() {
 		if _, exists := GeneratedFlashProcedureMappings[platformName]; exists {
 			FlashProcedureMappings[platformName] = overrideFunc
 		}
+	}
+
+	for platformName, compatiblePlatformName := range validate.CompatibleVersionMapping {
+		_, exists := FlashProcedureMappings[platformName]
+		if exists {
+			// prevent overriding existing mappings (eg: in case any override)
+			continue
+		}
+
+		_, exists = FlashProcedureMappings[compatiblePlatformName]
+		if !exists {
+			log.Printf("WARNING: compatible platform name '%s' not present in flash procedure mapping", compatiblePlatformName)
+			continue
+		}
+
+		FlashProcedureMappings[platformName] = FlashProcedureMappings[compatiblePlatformName]
 	}
 }
 

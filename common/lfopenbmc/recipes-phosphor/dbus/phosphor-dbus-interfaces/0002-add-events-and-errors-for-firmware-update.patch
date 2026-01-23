@@ -1,7 +1,7 @@
-From 39f3d975ac933ba6877ed50e71a6774790896129 Mon Sep 17 00:00:00 2001
+From 7fbc87976b4fdfc411cb205c26cdb6e56a3202ac Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Wed, 14 May 2025 00:55:59 -0700
-Subject: [PATCH] add events and errors for firmware update
+Subject: [PATCH 2/2] add events and errors for firmware update
 
 Add various events and errors messages that can be generated during the
 firmware update process. These event definitions are based on [1], [2]
@@ -16,12 +16,17 @@ Tested: meson build passed.
 Change-Id: I00e64a9b9f712ae336f49e2cc50da413b65d5b04
 Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
 ---
+ .../Software/Update/meson.build               |   5 +
+ gen/xyz/openbmc_project/Software/meson.build  |  23 ++++
+ .../Software/Update.events.yaml               | 101 ++++++++++++++++++
+ 3 files changed, 129 insertions(+)
+ create mode 100644 yaml/xyz/openbmc_project/Software/Update.events.yaml
 
 diff --git a/gen/xyz/openbmc_project/Software/Update/meson.build b/gen/xyz/openbmc_project/Software/Update/meson.build
 index 5d195c0..a20ad01 100644
 --- a/gen/xyz/openbmc_project/Software/Update/meson.build
 +++ b/gen/xyz/openbmc_project/Software/Update/meson.build
-@@ -6,11 +6,14 @@
+@@ -6,11 +6,14 @@ generated_sources += custom_target(
      'xyz/openbmc_project/Software/Update__cpp'.underscorify(),
      input: [
          '../../../../../yaml/xyz/openbmc_project/Software/Update.errors.yaml',
@@ -36,20 +41,20 @@ index 5d195c0..a20ad01 100644
          'common.hpp',
          'server.hpp',
          'server.cpp',
-@@ -34,6 +37,8 @@
+@@ -32,6 +35,8 @@ generated_sources += custom_target(
+     ],
+     install: should_generate_cpp,
      install_dir: [
-         false,
-         get_option('includedir') / sdbusplus_current_path,
 +        false,
 +        get_option('includedir') / sdbusplus_current_path,
-         get_option('includedir') / sdbusplus_current_path,
-         get_option('includedir') / sdbusplus_current_path,
          false,
+         get_option('includedir') / sdbusplus_current_path,
+         get_option('includedir') / sdbusplus_current_path,
 diff --git a/gen/xyz/openbmc_project/Software/meson.build b/gen/xyz/openbmc_project/Software/meson.build
 index 1237155..f959fee 100644
 --- a/gen/xyz/openbmc_project/Software/meson.build
 +++ b/gen/xyz/openbmc_project/Software/meson.build
-@@ -331,6 +331,7 @@
+@@ -331,6 +331,7 @@ generated_markdown += custom_target(
      'xyz/openbmc_project/Software/Update__markdown'.underscorify(),
      input: [
          '../../../../yaml/xyz/openbmc_project/Software/Update.errors.yaml',
@@ -57,7 +62,7 @@ index 1237155..f959fee 100644
          '../../../../yaml/xyz/openbmc_project/Software/Update.interface.yaml',
      ],
      output: ['Update.md'],
-@@ -352,6 +353,28 @@
+@@ -352,6 +353,28 @@ generated_markdown += custom_target(
      build_by_default: should_generate_markdown,
  )
  
@@ -193,3 +198,6 @@ index 0000000..b7e9a05
 +            primary: true
 +            description: The type of reset operation to perform.
 +      redfish-mapping: Base.ResetRequired
+-- 
+2.47.3
+

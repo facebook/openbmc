@@ -40,9 +40,12 @@ do_unpack:append () {
 }
 
 do_replace_image_parts_json() {
+    # Only execute when building gc1
+    if [ -f ${S}/grandcanyon.json ] && [ ! -f ${S}/grandcanyon2.json ]; then
         bbnote "replace common image_parts.json with grandcanyon.json"
         mv -vf ${S}/image_parts.json ${S}/image_parts-generic.json
         mv -vf ${S}/grandcanyon.json ${S}/image_parts.json
+    fi
 }
 
 CXXFLAGS += " -DBIC_SUPPORT "

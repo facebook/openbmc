@@ -20,5 +20,22 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
+LOCAL_URI += "\
+    file://grandcanyon2.json \
+    "
+
+do_unpack:append () {
+    bb.build.exec_func('do_replace_image_parts_json', d)
+}
+
+do_replace_image_parts_json() {
+    if [ -f ${S}/grandcanyon2.json ]; then
+        bbnote "replace common image_parts.json with grandcanyon2.json"
+        mv -vf ${S}/image_parts.json ${S}/image_parts-generic.json
+        mv -vf ${S}/grandcanyon2.json ${S}/image_parts.json
+    else
+        bbwarn "grandcanyon2.json not found in ${S}, skipping replacement"
+    fi
+}
 
 CXXFLAGS:prepend = " -DCONFIG_GRANDCANYON2 "

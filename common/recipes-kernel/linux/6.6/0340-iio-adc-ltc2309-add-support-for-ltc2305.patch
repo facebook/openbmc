@@ -104,10 +104,10 @@ index 000000000..c129e4006
 +
 +/* Order matches expected channel address, See datasheet Table 1. */
 +enum ltc2305_channels {
-+	LTC2305_CH0_CH1 = 0,
-+	LTC2305_CH1_CH0,
-+	LTC2305_CH0,
-+	LTC2305_CH1,
++	LTC2305_CH0_CH1 = 0x0,
++	LTC2305_CH1_CH0 = 0x4,
++	LTC2305_CH0     = 0x8,
++	LTC2305_CH1     = 0xc,
 +};
 +
 +enum ltc2309_channels {

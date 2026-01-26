@@ -4,6 +4,7 @@
 00fd0000:00feffff microcode
 00ff0000:00ffffff bootblock
 00400000:009effff fallback
+00400000:00400fff bios_ver
 009fa000:009fefff aboot_conf
 00002400:00ffffff payload
 00000000:00ffffff total

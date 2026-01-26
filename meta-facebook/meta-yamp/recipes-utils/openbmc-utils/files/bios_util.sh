@@ -16,12 +16,17 @@ DEFAULT_ABOOT_CONF="$BMC_CONF_FILE"
 
 BIOS_SPIDEV="/dev/spidev2.0"
 BIOS_CHIP="MX25L12835F/MX25L12845E/MX25L12865E"
+REMOVE_BIOS_VER=0
 
 popts=""
 init_aconf=0
 
 cleanup() {
     disconnect_spi
+    if [ "$REMOVE_BIOS_VER" -eq 1 ]; then
+        echo "Removing bios cache file ..."
+        rm -f "$BIOS_VER_CACHE"
+    fi
     rm -f $TEMP_ABOOT_CONF $TEMP_BIOS_IMAGE
 }
 
@@ -84,6 +89,7 @@ do_erase() {
     fi
 
     # Do the erase
+    REMOVE_BIOS_VER=1
     echo "Erasing the flash"
     if ! flashrom -p linux_spi:dev=$BIOS_SPIDEV -E -c "$BIOS_CHIP"; then
       echo "flashrom failed. Retrying without -c"
@@ -163,6 +169,7 @@ do_write() {
     else
 		echo " writing partition(s) ... "
 	 fi
+    REMOVE_BIOS_VER=1
     if ! flashrom $popts -p linux_spi:dev="$BIOS_SPIDEV" -w "$bios_image" -c "$BIOS_CHIP"; then
       echo "flashrom failed. Retrying without -c"
       do_retry "write" "$bios_image"

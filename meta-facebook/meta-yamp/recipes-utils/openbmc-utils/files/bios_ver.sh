@@ -1,6 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 #
-# Copyright 2018-present Facebook. All Rights Reserved.
+# Copyright 2025-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,20 +16,27 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-### BEGIN INIT INFO
-# Provides:          setup_board.sh
-# Required-Start:
-# Required-Stop:
-# Default-Start:     S
-# Default-Stop:
-# Short-Description: Setup the board
-### END INIT INFO
-
+# shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
-PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
-# Obtain bios version on boot so it is readily available for REST calls
-/usr/local/bin/bios_ver.sh
+trap cleanup INT TERM QUIT EXIT
 
-# TODO: Light up sys led
+cleanup() {
+    rm -f "$TMP_BIOS_FILE"
+}
+
+if [ ! -f "$BIOS_VER_CACHE" ]; then
+    # force read it
+    bios_util.sh read "$TMP_BIOS_FILE" --partition bios_ver > /dev/null 2>&1
+    ver=$(dd if="$TMP_BIOS_FILE" bs="$SECTION_BLOCK_SIZE" count="$BIOS_VER_BLOCKS" \
+          skip="$BIOS_VER_SKIP" 2>/dev/null | grep -a "CONFIG_LOCALVERSION" \
+          | awk -F'[/=/"]' '{print $3}')
+    if [ -z "$ver" ]; then
+        ver="UNKNOWN"
+    fi
+    echo "$ver" > "$BIOS_VER_CACHE"
+fi
+
+cat "$BIOS_VER_CACHE"

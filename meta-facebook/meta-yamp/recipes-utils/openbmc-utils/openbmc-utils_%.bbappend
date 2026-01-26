@@ -25,6 +25,7 @@ PACKAGECONFIG += "boot-info"
 LOCAL_URI += " \
     file://aconf_util.sh \
     file://bios_util.sh \
+    file://bios_ver.sh \
     file://bmc_aboot.conf \
     file://board-utils.sh \
     file://cpu_aboot.conf \
@@ -57,6 +58,7 @@ LOCAL_URI += " \
 OPENBMC_UTILS_FILES += " \
     aconf_util.sh \
     bios_util.sh \
+    bios_ver.sh \
     board-utils.sh \
     eth0_ncsi_fixup.sh \
     fpga_util.sh \

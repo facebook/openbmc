@@ -1,0 +1,73 @@
+From 97287c84545671659c483bacf92d3d58896c5f1a Mon Sep 17 00:00:00 2001
+From: Ernesto Corona <ernesto.corona@intel.com>
+Date: Mon, 13 Apr 2020 15:29:19 -0700
+Subject: [PATCH 108/112] Documentation jtag: Add JTAG core driver ioctl number
+
+JTAG class driver provide infrastructure to support hardware/software
+JTAG platform drivers. It provide user layer API interface for flashing
+and debugging external devices which equipped with JTAG interface
+using standard transactions.
+
+Driver exposes set of IOCTL to user space for:
+- XFER:
+  SIR (Scan Instruction Register, IEEE 1149.1 Data Register scan);
+  SDR (Scan Data Register, IEEE 1149.1 Instruction Register scan);
+- GIOCSTATUS read the current TAPC state of the JTAG controller
+- SIOCSTATE Forces the JTAG TAPC to go into a particular state.
+- SIOCFREQ/GIOCFREQ for setting and reading JTAG frequency.
+- IOCBITBANG for low level control of JTAG signals.
+
+Signed-off-by: Oleksandr Shamray <oleksandrs@mellanox.com>
+Signed-off-by: Ernesto Corona <ernesto.corona@intel.com>
+Acked-by: Philippe Ombredanne <pombredanne@nexb.com>
+Cc: Jonathan Corbet <corbet@lwn.net>
+Cc: Greg Kroah-Hartman <gregkh@linuxfoundation.org>
+Cc: Gustavo Pimentel <gustavo.pimentel@synopsys.com>
+Cc: Lorenzo Pieralisi <lorenzo.pieralisi@arm.com>
+Cc: Kishon Vijay Abraham I <kishon@ti.com>
+Cc: Darrick J. Wong <darrick.wong@oracle.com>
+Cc: Bryant G. Ly <bryantly@linux.vnet.ibm.com>
+Cc: Eric Sandeen <sandeen@redhat.com>
+Cc: Randy Dunlap <rdunlap@infradead.org>
+Cc: Tomohiro Kusumi <kusumi.tomohiro@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>
+Cc: Mauro Carvalho Chehab <mchehab+samsung@kernel.org>
+Cc: Alexandre Belloni <alexandre.belloni@bootlin.com>
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Eric Biggers <ebiggers@google.com>
+Cc: Steven Filary <steven.a.filary@intel.com>
+Cc: Jiri Pirko <jiri@mellanox.com>
+Cc: Vadim Pasternak <vadimp@mellanox.com>
+Cc: Amithash Prasad <amithash@fb.com>
+Cc: Patrick Williams <patrickw3@fb.com>
+Cc: Rgrs <rgrs@protonmail.com>
+
+v28->v29
+Move ioctl number to userspace-api/ioctl/ioctl-number.rst
+
+@fb-note-start
+This is v29 of the patch series and it's not merged to the maintainer's
+tree yet.
+Reviewed By: mikechoi
+Test Plan: booted up linux 5.15 on cmm and elbert successfully.
+@fb-note-end
+---
+ Documentation/userspace-api/ioctl/ioctl-number.rst | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/Documentation/userspace-api/ioctl/ioctl-number.rst b/Documentation/userspace-api/ioctl/ioctl-number.rst
+index 7c527a01d1cf..2af26b100ad4 100644
+--- a/Documentation/userspace-api/ioctl/ioctl-number.rst
++++ b/Documentation/userspace-api/ioctl/ioctl-number.rst
+@@ -385,6 +385,8 @@ Code  Seq#    Include File                                             Comments
+ 0xB8  01-02  uapi/misc/mrvl_cn10k_dpi.h                                Marvell CN10K DPI driver
+ 0xB8  all    uapi/linux/mshv.h                                         Microsoft Hyper-V /dev/mshv driver
+                                                                        <mailto:linux-hyperv@vger.kernel.org>
++0xBF  00-0F  linux/jtag.h                                              JTAG driver
++                                                                       <mailto:oleksandrs@mellanox.com>
+ 0xC0  00-0F  linux/usb/iowarrior.h
+ 0xCA  00-0F  uapi/misc/cxl.h                                           Dead since 6.15
+ 0xCA  10-2F  uapi/misc/ocxl.h
+-- 
+2.47.3
+

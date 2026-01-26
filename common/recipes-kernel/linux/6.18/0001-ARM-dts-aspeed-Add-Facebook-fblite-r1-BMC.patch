@@ -1,0 +1,109 @@
+From fabfd418394eff64040326266c697798074d5800 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Mon, 5 Feb 2024 15:28:46 -0800
+Subject: [PATCH 1/2] ARM: dts: aspeed: Add Facebook fblite-r1 BMC
+
+Add Meta/Facebook FBOSS BMC-Lite Flavor-1 OpenBMC dts. The dts is
+currently being used by Minipack3, Janga and Tahan BMC platforms.
+---
+ arch/arm/boot/dts/aspeed/Makefile             |  1 +
+ .../aspeed/aspeed-bmc-facebook-fblite-r1.dts  | 75 +++++++++++++++++++
+ 2 files changed, 76 insertions(+)
+ create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+
+diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
+index 20e5b64280a5..9fc509770042 100644
+--- a/arch/arm/boot/dts/aspeed/Makefile
++++ b/arch/arm/boot/dts/aspeed/Makefile
+@@ -25,6 +25,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
+ 	aspeed-bmc-facebook-cmm.dtb \
+ 	aspeed-bmc-facebook-darwin.dtb \
+ 	aspeed-bmc-facebook-elbert.dtb \
++	aspeed-bmc-facebook-fblite-r1.dtb \
+ 	aspeed-bmc-facebook-fuji-data64.dtb \
+ 	aspeed-bmc-facebook-fuji.dtb \
+ 	aspeed-bmc-facebook-galaxy100.dtb \
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+new file mode 100644
+index 000000000000..d14c0141533b
+--- /dev/null
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+@@ -0,0 +1,75 @@
++// SPDX-License-Identifier: GPL-2.0+
++// Copyright (c) Meta Platforms, Inc. and affiliates.
++
++/dts-v1/;
++
++#include "ast2600-facebook-netbmc-common.dtsi"
++
++/ {
++	model = "Facebook FBOSS-Lite Flavor-1 BMC";
++	compatible = "facebook,fblite-r1-bmc", "aspeed,ast2600";
++
++	chosen {
++		stdout-path = &uart1;
++	};
++
++	spi_gpio: spi {
++		num-chipselects = <1>;
++		cs-gpios = <&gpio0 ASPEED_GPIO(X, 0) GPIO_ACTIVE_LOW>;
++	};
++};
++
++&fmc {
++	flash@0 {
++		/delete-node/partitions;
++#include "facebook-bmc-flash-layout-128-data64.dtsi"
++	};
++};
++
++&i2c11 {
++	status = "okay";
++};
++
++&lpc_ctrl {
++	status = "okay";
++	flash = <&spi1>;
++};
++
++&kcs1 {
++	status = "okay";
++	aspeed,lpc-io-reg = <0xca0>;
++};
++
++&kcs2 {
++	status = "okay";
++	aspeed,lpc-io-reg = <0xca8>;
++};
++
++&kcs3 {
++	status = "okay";
++	aspeed,lpc-io-reg = <0xca2>;
++};
++
++&peci0 {
++	status = "okay";
++
++	peci-client@30 {
++		compatible = "intel,peci-client";
++		reg = <0x30>;
++	};
++};
++
++&mdio1 {
++	status = "okay";
++};
++
++&mac3 {
++	status = "okay";
++	phy-mode = "rgmii";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_rgmii4_default>;
++	fixed-link {
++		speed = <1000>;
++		full-duplex;
++	};
++};
+-- 
+2.47.3
+

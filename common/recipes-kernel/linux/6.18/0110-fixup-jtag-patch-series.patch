@@ -1,0 +1,41 @@
+From 003d541e8a09c44c5a075e2d47ae6dfccdd698a5 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Thu, 13 Oct 2022 03:38:28 -0700
+Subject: [PATCH 110/112] fixup jtag patch series
+
+Put common file changes in this single diff so it's easier to resolve
+merge conflicts in future upgrade.
+---
+ drivers/Kconfig  | 2 ++
+ drivers/Makefile | 2 ++
+ 2 files changed, 4 insertions(+)
+
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index 4915a63866b0..b7365b6d890a 100644
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -3,6 +3,8 @@ menu "Device Drivers"
+ 
+ # Keep I/O buses first
+ 
++source "drivers/jtag/Kconfig"
++
+ source "drivers/amba/Kconfig"
+ source "drivers/eisa/Kconfig"
+ source "drivers/pci/Kconfig"
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 8e1ffa4358d5..a685aeab0ba6 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -10,6 +10,8 @@ obj-y				+= cache/
+ obj-y				+= irqchip/
+ obj-y				+= bus/
+ 
++obj-$(CONFIG_JTAG)		+= jtag/
++
+ obj-$(CONFIG_GENERIC_PHY)	+= phy/
+ 
+ # GPIO must come after pinctrl as gpios may need to mux pins etc
+-- 
+2.47.3
+

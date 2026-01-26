@@ -16,6 +16,7 @@ class IOCComponent : public Component {
       : Component(fru, comp) {}
     int print_version();
     int get_ver_str(string& s);
+    int get_version(json& j) override;
 };
 
 #endif

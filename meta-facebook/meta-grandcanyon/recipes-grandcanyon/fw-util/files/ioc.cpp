@@ -46,6 +46,20 @@ int IOCComponent :: get_ver_str(string& s) {
   return ret;
 }
 
+int IOCComponent :: get_version(json& j) {
+  string ver("");
+  int ret = get_ver_str(ver);
+
+  if (ret == FW_STATUS_SUCCESS) {
+    j["VERSION"] = ver;
+  } else if (ret == FW_STATUS_NOT_SUPPORTED) {
+    j["VERSION"] = "not_ready";
+  } else {
+    j["VERSION"] = "error_returned";
+  }
+  return FW_STATUS_SUCCESS;
+}
+
 int IOCComponent :: print_version() {
   string ver("");
   string fru_name = fru();

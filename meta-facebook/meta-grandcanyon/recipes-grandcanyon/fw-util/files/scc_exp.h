@@ -16,6 +16,7 @@ class ExpanderComponent : public Component {
     ExpanderComponent(string fru, string comp)
       : Component(fru, comp) {}
     int print_version();
+    int get_version(json& j) override;
 };
 
 #endif

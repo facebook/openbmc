@@ -1,7 +1,7 @@
-From 74cc5d327a5eaedaab4080c346e8243d00430c8a Mon Sep 17 00:00:00 2001
+From 665d9e020d9919243102b76d27b2ffe40261e0d3 Mon Sep 17 00:00:00 2001
 From: Chia-Wei Wang <chiawei_wang@aspeedtech.com>
 Date: Mon, 20 Mar 2023 16:11:31 +0800
-Subject: [PATCH 213/217] dmaengine: aspeed: Add AST2600 UART DMA driver
+Subject: [PATCH 1/1] dmaengine: aspeed: Add AST2600 UART DMA driver
 
 Aspeed AST2600 UART DMA (UDMA) includes 28 channels for the
 DMA transmission and recevie of each UART devices.
@@ -10,8 +10,8 @@ Signed-off-by: Chia-Wei Wang <chiawei_wang@aspeedtech.com>
 ---
  drivers/dma/Kconfig        |   9 +
  drivers/dma/Makefile       |   1 +
- drivers/dma/ast2600-udma.c | 534 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 544 insertions(+)
+ drivers/dma/ast2600-udma.c | 532 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 542 insertions(+)
  create mode 100644 drivers/dma/ast2600-udma.c
 
 diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
@@ -48,10 +48,10 @@ index a54d7688392b..70151aa1ccff 100644
  obj-$(CONFIG_AXI_DMAC) += dma-axi-dmac.o
 diff --git a/drivers/dma/ast2600-udma.c b/drivers/dma/ast2600-udma.c
 new file mode 100644
-index 000000000000..39117b26996d
+index 000000000000..fec3e9354f11
 --- /dev/null
 +++ b/drivers/dma/ast2600-udma.c
-@@ -0,0 +1,534 @@
+@@ -0,0 +1,532 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Copyright (C) ASPEED Technology Inc.
@@ -556,7 +556,7 @@ index 000000000000..39117b26996d
 +	return 0;
 +}
 +
-+static int ast2600_udma_remove(struct platform_device *pdev)
++static void ast2600_udma_remove(struct platform_device *pdev)
 +{
 +	struct device *dev = &pdev->dev;
 +	struct ast2600_udma *udma = platform_get_drvdata(pdev);
@@ -565,8 +565,6 @@ index 000000000000..39117b26996d
 +	dma_async_device_unregister(&udma->ddev);
 +
 +	dev_info(dev, "module removed\n");
-+
-+	return 0;
 +}
 +
 +static const struct of_device_id ast2600_udma_match[] = {
@@ -587,5 +585,5 @@ index 000000000000..39117b26996d
 +MODULE_LICENSE("GPL");
 +MODULE_AUTHOR("Chia-Wei Wang <chiawei_wang@aspeedtech.com");
 -- 
-2.47.3
+2.31.1
 

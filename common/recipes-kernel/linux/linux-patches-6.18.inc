@@ -50,6 +50,7 @@ SRC_URI:append = " \
     file://0215-drivers-misc-Add-Aspeed-OTP-control-register.patch \
     file://0216-soc-aspeed-Add-Post-Code-Control.patch \
     file://0217-i2c-ast2600-support-ssif.patch \
+    file://0218-ARM-dts-aspeed-g6-Add-UDMA-node.patch \
 "
 
 #

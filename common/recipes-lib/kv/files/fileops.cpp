@@ -27,8 +27,10 @@ constexpr auto kv_store    = "./test/persist";
 #endif
 
 static void create_dir(const FileHandle::path& dir) {
-  if (fs::exists(dir)) {
+  if (fs::is_directory(dir)) {
     return;
+  } else if (fs::exists(dir)) {
+    fs::remove(dir);
   }
 
   fs::create_directories(dir);

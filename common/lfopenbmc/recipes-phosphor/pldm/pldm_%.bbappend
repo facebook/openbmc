@@ -21,6 +21,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0015-pldm-Increase-maximum-of-dbus-timeout-value.patch \
     file://0016-oem-meta-Fix-a-bug-that-incorrectly-decodes-system-e.patch \
     file://0017-terminus-replace-inventory-and-sensor-configuration.patch \
+    file://0018-oem-meta-santabarbara-add-handler-for-event-logs-fro.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

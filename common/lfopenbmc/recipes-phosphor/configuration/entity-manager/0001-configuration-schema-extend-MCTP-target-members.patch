@@ -1,0 +1,120 @@
+From a51e479ebfd9c10c7e9731d49d96b418a7dc436d Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Wed, 10 Dec 2025 14:41:23 +0800
+Subject: [PATCH] configuration: schema: extend MCTP target members
+
+Extend the MCTP target schema to support Inventory and
+PLDMSensors properties.
+
+These fields are consumed by pldmd to retrieve inventory
+information and PLDM sensor metadata, allowing PLDM to
+override sensor names or inventory names via configuration.
+
+example:
+{
+    "Address": "0x20",
+    "Bus": "9",
+    "Inventory": "Minerva_Aegis",
+    "Name": "MMC",
+    "PLDMSensors": [
+        {
+            "ID": 300,
+            "Name": "SensorName1"
+        },
+        {
+            "ID": 500,
+            "Name": "SensorName2"
+        }
+    ],
+    "Type": "MCTPI2CTarget"
+}
+
+Change-Id: I657cd383180a227886c4d31ea6e9a29fbf49206b
+Signed-off-by: Peter Yin <peter.yin@quantatw.com>
+---
+gerrit: https://gerrit.openbmc.org/c/openbmc/entity-manager/+/86156 (pending)
+---
+ schemas/mctp.json | 42 ++++++++++++++++++++++++++++++++++++++++--
+ 1 file changed, 40 insertions(+), 2 deletions(-)
+
+diff --git a/schemas/mctp.json b/schemas/mctp.json
+index 7dc1629..9549613 100644
+--- a/schemas/mctp.json
++++ b/schemas/mctp.json
+@@ -11,16 +11,35 @@
+                     "description": "The bus index to which the device is attached",
+                     "type": "string"
+                 },
++                "Inventory": {
++                    "description": "The inventory name associated with this device",
++                    "type": "string"
++                },
+                 "Name": {
+                     "description": "A recognisable name for the device",
+                     "type": "string"
+                 },
++                "PLDMSensors": {
++                    "items": {
++                        "properties": {
++                            "ID": {
++                                "type": "integer"
++                            },
++                            "Name": {
++                                "type": "string"
++                            }
++                        },
++                        "required": ["ID", "Name"],
++                        "type": "object"
++                    },
++                    "type": "array"
++                },
+                 "Type": {
+                     "type": "string",
+                     "enum": ["MCTPI2CTarget"]
+                 }
+             },
+-            "required": ["Address", "Bus", "Name", "Type"],
++            "required": ["Address", "Bus", "Inventory", "Name", "Type"],
+             "type": "object"
+         },
+         "MCTPI3CTarget": {
+@@ -33,16 +52,35 @@
+                     "description": "The bus index to which the device is attached",
+                     "type": "string"
+                 },
++                "Inventory": {
++                    "description": "The inventory name associated with this device",
++                    "type": "string"
++                },
+                 "Name": {
+                     "description": "A recognisable name for the device",
+                     "type": "string"
+                 },
++                "PLDMSensors": {
++                    "items": {
++                        "properties": {
++                            "ID": {
++                                "type": "integer"
++                            },
++                            "Name": {
++                                "type": "string"
++                            }
++                        },
++                        "required": ["ID", "Name"],
++                        "type": "object"
++                    },
++                    "type": "array"
++                },
+                 "Type": {
+                     "type": "string",
+                     "enum": ["MCTPI3CTarget"]
+                 }
+             },
+-            "required": ["Address", "Bus", "Name", "Type"],
++            "required": ["Address", "Bus", "Inventory", "Name", "Type"],
+             "type": "object"
+         }
+     }
+-- 
+2.34.1
+

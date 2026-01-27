@@ -1,0 +1,33 @@
+From deeb5acfbcc4ea187dd9c317c3ae8bed02381b1b Mon Sep 17 00:00:00 2001
+From: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
+Date: Fri, 23 Jan 2026 12:16:45 +0800
+Subject: [PATCH] Ignore smbpbi sensor event report
+
+During the AC cycle or reboot, after the power state changes to "on",
+we observed numerous event reports from Smbpbi sensors. We will
+temporarily ignore the event reporting for smbpbi sensors and track
+the cause of the event reporting.
+
+Signed-off-by: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
+---
+ src/sensor.hpp | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/sensor.hpp b/src/sensor.hpp
+index fb2bcac..eeb3e23 100644
+--- a/src/sensor.hpp
++++ b/src/sensor.hpp
+@@ -283,7 +283,9 @@ struct Sensor
+             // Manager config), these sensors are expected to become invalid,
+             // and we will ignore their sensor event reporting. This helps avoid
+             // seeing redundant sensor events during power operations.
+-            if (!readingStateGood())
++            if (!readingStateGood() ||
++                configInterface ==
++                    "xyz.openbmc_project.Configuration.SmbpbiVirtualEeprom")
+             {
+                 return 1;
+             }
+-- 
+2.43.0
+

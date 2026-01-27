@@ -5,6 +5,10 @@
 
 using namespace std::chrono_literals;
 
+constexpr uint8_t BusyAndCRCmaxRetry = 5;
+constexpr uint8_t BUSY_MASK = 0x01;
+constexpr uint8_t CRC_MASK = 0x02;
+
 constexpr uint8_t busyWaitmaxRetry = 200;
 constexpr uint8_t busyFlagBit = 0x80;
 constexpr uint8_t statusRegBusy = 0x10;
@@ -20,6 +24,7 @@ static constexpr std::string_view TAG_CHECKSUM = "C";
 static constexpr std::string_view TAG_USERCODE = "NOTE User Electronic";
 static constexpr std::string_view TAG_EBR_INIT_DATA = "NOTE EBR_INIT DATA";
 static constexpr std::string_view TAG_END_CONFIG = "NOTE END CONFIG DATA";
+static constexpr std::string_view TAG_END_CFG = "NOTE END OF CFG";
 static constexpr std::string_view TAG_DEV_NAME = "NOTE DEVICE NAME";
 
 constexpr uint8_t isOK = 0;
@@ -41,6 +46,7 @@ enum cpldI2cCmd
     CMD_READ_FW_VERSION = 0xC0,
     CMD_PROGRAM_USER_CODE = 0xC2,
     CMD_READ_DEVICE_ID = 0xE0,
+    CMD_READ_SOFTIP_ID = 0xE6,
     CMD_READ_BUSY_FLAG = 0xF0,
 };
 
@@ -70,27 +76,35 @@ class CpldLatticeManager : public CpldManager
     int fwUpdate(bool legacy) override;
     int fwVerifyOnly(bool legacy) override;
     int jedFileParser();
+    bool CheckSOFTIP();
 
-  private:
-    int indexof(const char* str, const char* ptn);
+  protected:
     int readDeviceId();
     int enableProgramMode();
     int eraseFlash();
     int resetConfigFlash();
+    int readStatusReg(uint8_t& statusReg);
+    int verifyUserCode();
+    int disableConfigInterface();
+    int programDone();
+    uint8_t waitBusyAndVerifyCRC();
+    uint16_t crc16_ccitt(std::span<const uint8_t> cmd);
+    void appendCrc16(std::vector<uint8_t>& cmd);
+
+  private:
+    int indexof(const char* str, const char* ptn);
     int writeProgramPage();
     int programUserCode();
-    int programDone();
     int verifyData();
-    int verifyUserCode();
     int disableusyAndVerify();
-    int disableConfigInterface();
     int readBusyFlag(uint8_t& busyFlag);
-    int readStatusReg(uint8_t& statusReg);
     bool waitBusyAndVerify();
     int readUserCode(uint32_t& userCode);
     int XO2XO3Family_update();
     int XO2XO3Family_verifyOnly();
     int XO5Family_update(bool legacy);
+    int XO5Familyv2_update();
+    int XO5Familyv2_version();
     int programSinglePage(uint16_t page_offset, std::span<const uint8_t> page_data);
     int verifySinglePage(uint16_t page_offset, std::span<const uint8_t> page_data);
     int setPageAddr(uint16_t page_offset);
@@ -189,4 +203,46 @@ class XO5I2CManager : public CpldLatticeManager
     // ==================================================
 
     uint8_t cfgIndex;
+};
+
+class XO5I2CManagerv2 : public CpldLatticeManager
+{
+  public:
+    XO5I2CManagerv2(uint8_t bus, uint8_t addr, const std::string& path,
+                       const std::string& chip, const std::string& interface,
+                       const std::string& target, bool debugMode) :
+        CpldLatticeManager(bus, addr, path, chip, interface, target, debugMode)
+    {}
+
+    bool eraseCfg();
+    bool pre_program();
+    bool programCfg();
+    bool post_program();
+    bool verifyCfg();
+
+  private:
+    enum class Cmd : uint8_t
+    {
+        CMD_RST_CAL_HASH = 0x7C,
+        CMD_READ_FW_HASH = 0xE5,
+        CMD_PROGRAM = 0x82,
+        CMD_NOOP_REG = 0xFF
+    };
+
+    struct Cfg
+    {
+        static constexpr size_t PageSize = 128;
+        static constexpr size_t CRCSize = 2;
+    };
+
+    void updateProgress(size_t page, size_t bytes,
+                        size_t totalBytes) const
+    {
+        std::cout << std::format("Page {:02X} - {:.1f}%  \r",
+                                 page, 100.0f * bytes / totalBytes)
+                  << std::flush;
+    }
+
+    int reset_calculate_hash();
+    int read_fw_hash();
 };

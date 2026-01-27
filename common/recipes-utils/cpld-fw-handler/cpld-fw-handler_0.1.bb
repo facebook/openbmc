@@ -24,4 +24,7 @@ LOCAL_URI = " \
     "
 
 EXTRA_OEMESON:append:npcm8xx = " -Dupdate-ebr-init=enabled"
-DEPENDS += "cli11"
+DEPENDS += " \
+    cli11 \
+    openssl \
+    "

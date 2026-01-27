@@ -26,14 +26,13 @@ int main(int argc, char** argv)
     update->add_option("-p,--path", imagePath, "image file path.")
         ->required()
         ->check(CLI::ExistingFile);
-
     update->add_option("-b,--bus", bus, "i2c bus")->required();
     update->add_option("-a,--addr", addr, "slave address")->required();
     update->add_option("-i,--interface", interface, "i2c")->required();
 
     update
         ->add_option("-c,--chip", chip,
-                     "LCMXO3LF-4300|LCMXO3LF-6900|LCMXO3D-4300|LCMXO3D-9400|LFMXO5-25")
+                     "LCMXO3LF-4300|LCMXO3LF-6900|LCMXO3D-4300|LCMXO3D-9400|LFMXO5-25|LFMXO5-65T")
         ->required();
     update->add_option("-t,--target", target,
                        "used for LCMXO3D series CPLD, CFG0|CFG1");
@@ -52,7 +51,7 @@ int main(int argc, char** argv)
                         "used for LCMXO3D series CPLD, CFG0|CFG1");
     version->add_option(
         "-c,--chip", chip,
-        "LCMXO3LF-4300|LCMXO3LF-6900|LCMXO3D-4300|LCMXO3D-9400|LFMXO5-25");
+        "LCMXO3LF-4300|LCMXO3LF-6900|LCMXO3D-4300|LCMXO3D-9400|LFMXO5-25|LFMXO5-65T");
 
     CLI11_PARSE(app, argc, argv);
 

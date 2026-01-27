@@ -14,6 +14,8 @@ if get_option('update-ebr-init').enabled()
     summary('update-ebr-init', '-DENABLE_UPDATE_EBR_INIT', section: 'Enabled Features')
 endif
 
+openssl_dep = dependency('openssl', required : true)
+
 executable(
     'cpld-fw-handler',
     'cpld-fw-main.cpp',
@@ -21,5 +23,6 @@ executable(
     'cpld-fw-handler.hpp',
     'cpld-lattice.cpp',
     'cpld-lattice.hpp',
+    dependencies : [openssl_dep],
     install: true
 )

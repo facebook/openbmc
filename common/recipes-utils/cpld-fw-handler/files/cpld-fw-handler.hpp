@@ -69,6 +69,7 @@ class CpldManager
     std::string interface;
     std::string target;
     bool isLCMXO3D = false;
+    bool isSOFTIP = false;
     bool debugMode = false;
 
   private:

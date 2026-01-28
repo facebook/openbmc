@@ -47,7 +47,6 @@ setup_gpio_meru_evt() {
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOS7 CPLD_2_BMC_INT
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOV0 SW_SPI_SEL
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOV1 CPU_RST_L
-    gpio_export_by_name  "${ASPEED_GPIO}" GPIOY0 WDT1_RST
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOY2 SCM_TEMP_ALERT
     gpio_export_by_name  "${ASPEED_GPIO}" GPIOZ2 BMC_LITE_L
 }
@@ -70,7 +69,6 @@ gpio_set_direction USB_DONGLE_PRSNT in
 gpio_set_direction CPLD_2_BMC_INT in
 gpio_set_direction SW_SPI_SEL out
 gpio_set_direction CPU_RST_L in
-gpio_set_direction WDT1_RST out
 gpio_set_direction SCM_TEMP_ALERT in
 gpio_set_direction BMC_LITE_L out
 
@@ -83,7 +81,6 @@ gpio_set_value SW_JTAG_SEL 0
 gpio_set_value SW_CPLD_JTAG_SEL 0
 gpio_set_value JTAG_TRST_L 0
 gpio_set_value SW_SPI_SEL 0
-gpio_set_value WDT1_RST 0
 gpio_set_value BMC_LITE_L 0
 
 setup_gpio_cpu_id() {

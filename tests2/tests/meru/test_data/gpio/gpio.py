@@ -131,11 +131,4 @@ GPIOS = {
         "uevent": "",
         "value": "0",
     },
-    "WDT1_RST":{
-        "active_low": "0",
-        "direction": "out",
-        "edge": "none",
-        "uevent": "",
-        "value": "0",
-    }
 }

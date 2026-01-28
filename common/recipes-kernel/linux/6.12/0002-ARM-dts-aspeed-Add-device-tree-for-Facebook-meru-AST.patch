@@ -1,6 +1,6 @@
-From b2519955f0eb78ad6a6f8b1c421f3cb115122be3 Mon Sep 17 00:00:00 2001
-From: Matthew Parker <mparker@arista.com>
-Date: Wed, 25 Oct 2023 13:17:43 -0700
+From c14edc56a1c20a8e713cd2c73eeb5451041c21d8 Mon Sep 17 00:00:00 2001
+From: Adam Calabrigo <adamc@arista.com>
+Date: Mon, 29 Dec 2025 13:59:17 +0000
 Subject: [PATCH 2/4] ARM: dts: aspeed: Add device tree for Facebook meru
  (AST2600) BMC
 
@@ -8,15 +8,15 @@ meru is Facebook's next generation switch platform with an AST2600
 BMC integrated for health monitoring purpose.
 ---
  arch/arm/boot/dts/aspeed/Makefile             |   1 +
- .../dts/aspeed/aspeed-bmc-facebook-meru.dts   | 125 ++++++++++++++++++
- 2 files changed, 126 insertions(+)
+ .../dts/aspeed/aspeed-bmc-facebook-meru.dts   | 132 ++++++++++++++++++
+ 2 files changed, 133 insertions(+)
  create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-meru.dts
 
 diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
-index 1eb8586721ff..b17618f49b5a 100644
+index 9adf9278dc94..dba7f7ab4641 100644
 --- a/arch/arm/boot/dts/aspeed/Makefile
 +++ b/arch/arm/boot/dts/aspeed/Makefile
-@@ -29,6 +29,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
+@@ -28,6 +28,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
  	aspeed-bmc-facebook-galaxy100.dtb \
  	aspeed-bmc-facebook-greatlakes.dtb \
  	aspeed-bmc-facebook-harma.dtb \
@@ -26,10 +26,10 @@ index 1eb8586721ff..b17618f49b5a 100644
  	aspeed-bmc-facebook-santabarbara.dtb \
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-meru.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-meru.dts
 new file mode 100644
-index 000000000000..8fc5ee440a66
+index 000000000000..37d6d817d32d
 --- /dev/null
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-meru.dts
-@@ -0,0 +1,125 @@
+@@ -0,0 +1,132 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +// Copyright (c) 2023 Facebook Inc.
 +
@@ -99,6 +99,13 @@ index 000000000000..8fc5ee440a66
 +
 +&wdt1 {
 +	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_wdtrst1_default>;
++	aspeed,reset-type = "soc";
++	aspeed,external-signal;
++	aspeed,ext-push-pull;
++	aspeed,ext-active-high;
++	aspeed,ext-pulse-duration = <256>;
 +};
 +
 +&mac3 {
@@ -156,5 +163,5 @@ index 000000000000..8fc5ee440a66
 +		&pinctrl_adc14_default &pinctrl_adc15_default>;
 +};
 -- 
-2.47.3
+2.51.0
 

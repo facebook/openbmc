@@ -1,7 +1,7 @@
-From 87e0b6a93721856b69814e6ebfd2074b3c1159ba Mon Sep 17 00:00:00 2001
+From bf0ca44b518cbead78c02310a08764206a086856 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Mon, 13 Oct 2025 11:10:37 +0000
-Subject: [PATCH 09/17] platform-mc: Make fallback terminus name optional
+Subject: [PATCH 09/18] platform-mc: Make fallback terminus name optional
 
 Previously, since commit `platform-mc: Use a default terminus name if
 empty` [1], a fallback name in the format "Terminus_{tid}" was always
@@ -45,7 +45,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  3 files changed, 19 insertions(+)
 
 diff --git a/meson.build b/meson.build
-index 6038435..b911e71 100644
+index abce6b4..d7c0519 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -150,6 +150,10 @@ conf_data.set(
@@ -79,7 +79,7 @@ index 926c710..d9bd868 100644
  option(
      'fw-update-pkg-inotify',
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 965f557..fd13036 100644
+index 24a1dce..71b9b2b 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -216,7 +216,14 @@ void Terminus::parseTerminusPDRs()

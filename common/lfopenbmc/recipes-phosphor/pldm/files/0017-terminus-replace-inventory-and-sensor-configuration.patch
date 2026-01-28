@@ -1,7 +1,7 @@
-From 7722e0b4c17e0414a85d03b8af4d0b3472f088cf Mon Sep 17 00:00:00 2001
+From b8946c28a9fd42c87ca00b8aa2eee4b510e6c6c4 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Fri, 26 Dec 2025 14:35:14 +0800
-Subject: [PATCH 17/17] terminus: replace inventory and sensor configuration
+Subject: [PATCH 17/18] terminus: replace inventory and sensor configuration
 
 Add fetchEntityManagerConfiguration to retrieve inventory name and
 sensor configuration from EntityManager.
@@ -267,7 +267,7 @@ index 71b9b2b..5be4542 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index 87ad0be..4a98b33 100644
+index 39f2fc5..3ea3849 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
 @@ -122,6 +122,38 @@ class Terminus

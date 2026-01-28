@@ -1,4 +1,4 @@
-From a51e479ebfd9c10c7e9731d49d96b418a7dc436d Mon Sep 17 00:00:00 2001
+From bfe7faf9d7082825667b05ba1f516e4fd9a321ff Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Wed, 10 Dec 2025 14:41:23 +0800
 Subject: [PATCH] configuration: schema: extend MCTP target members
@@ -31,8 +31,6 @@ example:
 
 Change-Id: I657cd383180a227886c4d31ea6e9a29fbf49206b
 Signed-off-by: Peter Yin <peter.yin@quantatw.com>
----
-gerrit: https://gerrit.openbmc.org/c/openbmc/entity-manager/+/86156 (pending)
 ---
  schemas/mctp.json | 42 ++++++++++++++++++++++++++++++++++++++++--
  1 file changed, 40 insertions(+), 2 deletions(-)
@@ -116,5 +114,5 @@ index 7dc1629..9549613 100644
          }
      }
 -- 
-2.34.1
+2.47.3
 

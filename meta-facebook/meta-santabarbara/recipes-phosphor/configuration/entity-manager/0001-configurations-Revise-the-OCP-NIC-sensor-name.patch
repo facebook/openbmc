@@ -1,7 +1,7 @@
-From 5a8801c4515f478d80b0058bd083f688268ea6bb Mon Sep 17 00:00:00 2001
+From 1b42dc9a4874a78a247e3d9225c09dca310df21e Mon Sep 17 00:00:00 2001
 From: Fred Chen <Fred.Chen@quantatw.com>
 Date: Fri, 19 Dec 2025 08:56:05 +0800
-Subject: [PATCH] configurations: Revise the OCP NIC sensor name
+Subject: [PATCH 1/2] configurations: Revise the OCP NIC sensor name
 
 Apply a conversion formula to map I2C bus numbers to NIC IDs. The
 formula needs to work with two different I2C bus groups.
@@ -125,5 +125,5 @@ index baa4359..4d9abf8 100644
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
 -- 
-2.49.0
+2.47.3
 

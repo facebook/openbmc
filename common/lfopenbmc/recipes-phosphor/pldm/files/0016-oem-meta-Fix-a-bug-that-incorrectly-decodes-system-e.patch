@@ -1,7 +1,7 @@
-From c928f7975aca316da948e10c27a68f2ac36c6347 Mon Sep 17 00:00:00 2001
+From 1517729b8a1a82b39162dc2b4f6e5e8573508674 Mon Sep 17 00:00:00 2001
 From: Sora Su <sora_su@wiwynn.com>
 Date: Mon, 15 Dec 2025 07:41:21 +0000
-Subject: [PATCH 16/17] oem-meta: Fix a bug that incorrectly decodes system
+Subject: [PATCH 16/18] oem-meta: Fix a bug that incorrectly decodes system
  events.
 
 The system error event decoder uses an incorrect index when decoding

@@ -35,9 +35,16 @@ connect_scm_jtag() {
     gpio_set_value JTAG_TRST_L 1
 }
 
-do_scm() {
+check_revision() {
+    meru800b_cpu_id=5
+    cpu_id=$(wedge_cpu_id)
+    if [ "${cpu_id}" != "${meru800b_cpu_id}" ]; then
+        return
+    fi
+
     # verify the fpga file
-    revision=$(( $(awk '$0 ~ /NOTE.{1,30}A_REVISION/ {print $3}' "$2" |
+    fpga_file="$1"
+    revision=$(( $(awk '$0 ~ /NOTE.{1,30}A_REVISION/ {print $3}' "$fpga_file" |
                    sed 's/[";]//g') ))
 
     if [ "$revision" -lt 3 ]; then
@@ -51,7 +58,10 @@ do_scm() {
             exit 1
         fi
     fi
+}
 
+do_scm() {
+    check_revision "$2"
     connect_scm_jtag
     jam -l/usr/lib/libcpldupdate_dll_ioctl.so -v -a"${1^^}" "$2" \
       --ioctl IOCBITBANG

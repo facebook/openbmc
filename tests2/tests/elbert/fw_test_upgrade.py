@@ -43,31 +43,31 @@ class FwUpgradeTest(unittest.TestCase):
         ],  # priority=1, upgrade_cmd
         "scm": [
             2,
-            "fpga_util.sh scm program {filename}",  # noqa B950
+            "/usr/local/bin/fpga_util.sh scm program {filename}",  # noqa B950
         ],  # priority=2, upgrade_cmd
         "smb": [
             3,
-            "fpga_util.sh smb program {filename}",  # noqa B950
+            "/usr/local/bin/fpga_util.sh smb program {filename}",  # noqa B950
         ],  # priority=3, upgrade_cmd
         "smb_cpld": [
             4,
-            "fpga_util.sh smb_cpld program {filename}",  # noqa B950
+            "/usr/local/bin/fpga_util.sh smb_cpld program {filename}",  # noqa B950
         ],  # priority=4, upgrade_cmd
         "fan": [
             5,
-            "fpga_util.sh fan program {filename}",  # noqa B950
+            "/usr/local/bin/fpga_util.sh fan program {filename}",  # noqa B950
         ],  # priority=5, upgrade_cmd
         "pim_base": [
             5,
-            "fpga_util.sh pim_base program {filename}",  # noqa B950
+            "/usr/local/bin/fpga_util.sh pim_base program {filename}",  # noqa B950
         ],  # priority=5, upgrade_cmd
         "pim16q": [
             6,
-            "fpga_util.sh pim16q program {filename}",  # noqa B950
+            "/usr/local/bin/fpga_util.sh pim16q program {filename}",  # noqa B950
         ],  # priority=6, upgrade_cmd
         "pim8ddm": [
             6,
-            "fpga_util.sh pim8ddm program {filename}",  # noqa B950
+            "/usr/local/bin/fpga_util.sh pim8ddm program {filename}",  # noqa B950
         ],  # priority=6, upgrade_cmd
     }
 

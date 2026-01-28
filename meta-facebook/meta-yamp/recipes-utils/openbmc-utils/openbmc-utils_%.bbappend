@@ -39,6 +39,7 @@ LOCAL_URI += " \
     file://reset_brcm.sh \
     file://setup_board.sh \
     file://setup_i2c.sh \
+    file://switchToCpu.sh \
     file://wedge_power.sh \
     file://wedge_us_mac.sh \
     file://pim_enable.sh \
@@ -71,6 +72,7 @@ OPENBMC_UTILS_FILES += " \
     pim_enable.sh \
     showtech.sh \
     seutil \
+    switchToCpu.sh \
     peutil \
     scdinfo \
     psu_show_tech.py \

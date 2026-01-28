@@ -47,11 +47,5 @@
         "upgrade_cmd" : "/usr/local/bin/fpga_util.sh pim8ddm program {filename}",
         "post_action" : "/usr/local/bin/wedge_power.sh pimreset -a; sleep 15;",
         "priority" : 6
-    },
-    "pim8ddr": {
-        "get_version" : "/usr/local/bin/spi_pim_ver.sh | grep 'HEADER_PIM8DDR: [^NOT]' | cut -f 2 -d ' ' | uniq",
-        "upgrade_cmd" : "/usr/local/bin/fpga_util.sh pim8ddr program {filename}",
-        "post_action" : "/usr/local/bin/wedge_power.sh pimreset -a; sleep 15;",
-        "priority" : 6
     }
 }

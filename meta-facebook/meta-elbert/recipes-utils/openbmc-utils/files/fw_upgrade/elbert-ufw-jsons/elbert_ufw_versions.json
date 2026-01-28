@@ -23,12 +23,6 @@
         "hash_value": "d89be6555fc85828b2a99ed9b0a09e69b5a8aaa4",
         "version": "8.7"
     },
-    "pim8ddr": {
-        "filename": "elbert_pim8ddr.abin",
-        "hash": "sha1sum",
-        "hash_value": "ddbd1d5558d23e30324786d66dd33858fd7b5d67",
-        "version": "1.3"
-    },
     "pim_base": {
         "filename": "elbert_pim_base.abin",
         "hash": "sha1sum",

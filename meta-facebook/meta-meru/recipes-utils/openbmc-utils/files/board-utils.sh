@@ -174,6 +174,9 @@ wedge_power_asic() {
         ICECUBE800BANW)
             echo "$power_state" > "$ASIC_0_ASIC_PCIE_RESET_SYSFS"
             echo "$power_state" > "$ASIC_0_ASIC_SYS_RESET_SYSFS"
+        GLATH05A-64O)
+            echo "$power_state" > "$R3_ASIC_0_ASIC_PCIE_RESET_SYSFS"
+            echo "$power_state" > "$R3_ASIC_0_ASIC_SYS_RESET_SYSFS"
             ;;
         *)
             echo "Error: Unexpected product name detected."
@@ -522,7 +525,7 @@ maybe_fix_dmi_config() {
    fi
 
    product=$(awk -F': ' '/Product Name:/ {print $2}' "$TEMP_WEUTIL_OUTPUT")
-   if ! [[ "${product^^}" =~ "MERU" ]] && ! [[ "${product^^}" =~ "BLACKWOLF" ]] && ! [[ "${product^^}" =~ "ICECUBE" ]]; then
+   if ! [[ "${product^^}" =~ "MERU" ]] && ! [[ "${product^^}" =~ "BLACKWOLF" ]] && ! [[ "${product^^}" =~ "ICECUBE" ]] && ! [[ "${product^^}" =~ "GLA" ]]; then
       echo "Not fixing aboot_conf DMI_BOARD_NAME as weutil product is not valid"
       return
    fi

@@ -20,5 +20,12 @@
 
 
 EXPECTED_PROCS = [
+    "systemd-networkd.service",
     "mTerm_server",
+    "restapi.service",
+    "ipmid",
+    "kcsd",
+    "rsyslogd",
+    "watchdog",
+    "usbmon.sh",
 ]

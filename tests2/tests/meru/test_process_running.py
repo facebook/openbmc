@@ -20,12 +20,9 @@
 import unittest
 
 from common.base_process_running_test import BaseProcessRunningTest
+from tests.montblanc.test_data.process.process import EXPECTED_PROCS
 
 
 class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
     def set_processes(self):
-        self.expected_process = [
-            "mTerm_server",
-            "rsyslogd",
-            "usbmon.sh",
-        ]
+        self.expected_process = EXPECTED_PROCS

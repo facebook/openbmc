@@ -2,7 +2,6 @@
 #include "pldm-update.hpp"
 
 #include <sdbusplus/bus.hpp>
-#include <libpldm/utils.h>
 #include <libpldm/firmware_update.h>
 
 #include <filesystem> // path, copy

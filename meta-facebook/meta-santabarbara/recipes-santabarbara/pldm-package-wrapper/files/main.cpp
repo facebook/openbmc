@@ -1,6 +1,6 @@
 // mmc_pldm_package_rewrapper.cpp
+#include "libpldm/edac.h"
 #include "libpldm/firmware_update.h"
-#include "libpldm/utils.h"
 
 #include <CLI/CLI.hpp>
 

@@ -1,7 +1,7 @@
-From 0e648f369de822c8dafcd38e33cc10233a134f58 Mon Sep 17 00:00:00 2001
+From 72a6ccc4a9f450e928b8164f52bb70aa0758f11d Mon Sep 17 00:00:00 2001
 From: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
 Date: Tue, 30 Sep 2025 11:50:42 +0800
-Subject: [PATCH] Add sensor reading events
+Subject: [PATCH 17/17] Add sensor reading events
 
 1.
 This modification implements the "Sensors Invalid Reading" and
@@ -157,5 +157,5 @@ index b5c922e..fb2bcac 100644
 +    }
  };
 -- 
-2.34.1
+2.47.3
 

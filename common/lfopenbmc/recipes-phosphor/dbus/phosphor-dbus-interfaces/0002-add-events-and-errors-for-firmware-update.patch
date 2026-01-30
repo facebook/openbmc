@@ -1,4 +1,4 @@
-From 7fbc87976b4fdfc411cb205c26cdb6e56a3202ac Mon Sep 17 00:00:00 2001
+From 6febe1cc9407d9f2c9301782ec3739d8eeb37be0 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Wed, 14 May 2025 00:55:59 -0700
 Subject: [PATCH 2/2] add events and errors for firmware update
@@ -51,10 +51,10 @@ index 5d195c0..a20ad01 100644
          get_option('includedir') / sdbusplus_current_path,
          get_option('includedir') / sdbusplus_current_path,
 diff --git a/gen/xyz/openbmc_project/Software/meson.build b/gen/xyz/openbmc_project/Software/meson.build
-index 1237155..f959fee 100644
+index 8db0ef8..7699a15 100644
 --- a/gen/xyz/openbmc_project/Software/meson.build
 +++ b/gen/xyz/openbmc_project/Software/meson.build
-@@ -331,6 +331,7 @@ generated_markdown += custom_target(
+@@ -333,6 +333,7 @@ generated_markdown += custom_target(
      'xyz/openbmc_project/Software/Update__markdown'.underscorify(),
      input: [
          '../../../../yaml/xyz/openbmc_project/Software/Update.errors.yaml',
@@ -62,7 +62,7 @@ index 1237155..f959fee 100644
          '../../../../yaml/xyz/openbmc_project/Software/Update.interface.yaml',
      ],
      output: ['Update.md'],
-@@ -352,6 +353,28 @@ generated_markdown += custom_target(
+@@ -354,6 +355,28 @@ generated_markdown += custom_target(
      build_by_default: should_generate_markdown,
  )
  

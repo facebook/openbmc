@@ -1,4 +1,4 @@
-From eaed9435c21b454fe454e0e4608a730a315ae2fc Mon Sep 17 00:00:00 2001
+From 18eebeeb41306e00a91c42296d3f505e2623524b Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Wed, 5 Mar 2025 16:12:45 -0500
 Subject: [PATCH 1/2] CPER: add generic event for CPER errors
@@ -53,7 +53,7 @@ index 0000000..ef93af1
 +)
 +
 diff --git a/gen/xyz/openbmc_project/State/meson.build b/gen/xyz/openbmc_project/State/meson.build
-index 1d3b4d4..25c93b1 100644
+index a5fc5e5..80ba251 100644
 --- a/gen/xyz/openbmc_project/State/meson.build
 +++ b/gen/xyz/openbmc_project/State/meson.build
 @@ -2,6 +2,7 @@
@@ -64,7 +64,7 @@ index 1d3b4d4..25c93b1 100644
  subdir('Cable')
  subdir('Chassis')
  subdir('Decorator')
-@@ -97,6 +98,50 @@ generated_markdown += custom_target(
+@@ -99,6 +100,50 @@ generated_markdown += custom_target(
      build_by_default: should_generate_markdown,
  )
  
@@ -114,7 +114,7 @@ index 1d3b4d4..25c93b1 100644
 +
  generated_markdown += custom_target(
      'xyz/openbmc_project/State/Cable__markdown'.underscorify(),
-     input: ['../../../../yaml/xyz/openbmc_project/State/Cable.events.yaml'],
+     input: [
 diff --git a/yaml/xyz/openbmc_project/State/CPER.events.yaml b/yaml/xyz/openbmc_project/State/CPER.events.yaml
 new file mode 100644
 index 0000000..3d37809

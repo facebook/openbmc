@@ -4,10 +4,10 @@
 
 #include <libpldm/base.h>
 #include <libpldm/bios.h>
+#include <libpldm/edac.h>
 #include <libpldm/entity.h>
 #include <libpldm/pdr.h>
 #include <libpldm/platform.h>
-#include <libpldm/utils.h>
 #include <string>
 #include <variant>
 #include <vector>

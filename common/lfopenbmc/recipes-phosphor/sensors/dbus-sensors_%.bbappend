@@ -17,6 +17,7 @@ SRC_URI:append = " \
     file://0014-PSUSensor-add-support-for-mp2925-and-mp2929.patch \
     file://0015-hwmontemp-Remove-newly-created-sensor-from-sensorsCh.patch \
     file://0016-psusensor-skip-sensor-reads-during-firmware-updates.patch \
+    file://0017-Add-sensor-reading-events.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \
@@ -27,7 +28,6 @@ SRC_URI:append:fb-compute-multihost = " \
 "
 
 SRC_URI:append:clemente = " \
-    file://3001-clemente-dbus-sensors-Ignore-zero-HGX_GPU-_ENERGY_J.patch \
-    file://3002-Add-sensor-reading-events.patch \
+    file://3002-clemente-dbus-sensors-Ignore-zero-HGX_GPU-_ENERGY_J-.patch \
     file://3003-Ignore-smbpbi-sensor-event-report.patch \
 "

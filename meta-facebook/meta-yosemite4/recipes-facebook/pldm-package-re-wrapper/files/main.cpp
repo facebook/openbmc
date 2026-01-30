@@ -1,5 +1,5 @@
+#include "libpldm/edac.h"
 #include "libpldm/firmware_update.h"
-#include "libpldm/utils.h"
 
 #include <math.h>
 

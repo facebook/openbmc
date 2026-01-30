@@ -3,7 +3,6 @@
 #include "utils.hpp"
 
 #include <libpldm/firmware_update.h>
-#include <libpldm/utils.h>
 
 #include <phosphor-logging/lg2.hpp>
 #include <xyz/openbmc_project/Common/error.hpp>

@@ -1,4 +1,4 @@
-From c30dcdd21c4e024011c6c2b51e4b6c6b858d95c2 Mon Sep 17 00:00:00 2001
+From 991a50bec0aac362d490ffcd8c8bbccb2678e263 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH 200/203] Utils: support powerState for multi-node system
@@ -991,10 +991,10 @@ index 7c752bb..e5d84d1 100644
          }
      }
 diff --git a/src/sensor.hpp b/src/sensor.hpp
-index b5c922e..2d96ccf 100644
+index fb2bcac..c865703 100644
 --- a/src/sensor.hpp
 +++ b/src/sensor.hpp
-@@ -75,13 +75,13 @@ struct Sensor
+@@ -78,13 +78,13 @@ struct Sensor
             const std::string& configurationPath, const std::string& objectType,
             bool isSettable, bool isMutable, const double max, const double min,
             std::shared_ptr<sdbusplus::asio::connection>& conn,
@@ -1010,15 +1010,15 @@ index b5c922e..2d96ccf 100644
          instrumentation(enableInstrumentation
                              ? std::make_unique<SensorInstrumentation>()
                              : nullptr)
-@@ -126,6 +126,7 @@ struct Sensor
+@@ -129,6 +129,7 @@ struct Sensor
      double hysteresisPublish = 1.0;
      std::shared_ptr<sdbusplus::asio::connection> dbusConnection;
      PowerState readState;
 +    size_t slotId;
      size_t errCount{0};
      std::unique_ptr<SensorInstrumentation> instrumentation;
- 
-@@ -456,7 +457,7 @@ struct Sensor
+     std::unordered_map<std::string, bool> invalidReadingLoggedMap;
+@@ -484,7 +485,7 @@ struct Sensor
  
      bool readingStateGood() const
      {

@@ -8,6 +8,10 @@
     {
       "name" : "scm_eeprom",
       "sysfs_path" : "/sys/bus/i2c/devices/i2c-3/3-0056/eeprom"
+    },
+    {
+      "name" : "rackmon_eeprom",
+      "sysfs_path" : "/sys/bus/i2c/devices/i2c-14/14-0053/eeprom"
     }
   ]
 }

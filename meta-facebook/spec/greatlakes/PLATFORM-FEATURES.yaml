@@ -23,3 +23,6 @@ Greatlakes Specific Requirements:
   Terminus NIC Enablement:
     file: terminus-nic-enablement.md
     priority: P3
+  MPS VR Controller FW Update Cycle Counter:
+    file: mps-vr-controller-fw-update-cycle-counter.md
+    priority: P3

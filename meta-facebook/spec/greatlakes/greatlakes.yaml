@@ -28,7 +28,7 @@ status:
     Aspeed AST2620: done
     Nuvoton Arbel: unsupported
   BMC Reset:
-    Reset host side: done
+    Reset via Host: done
     Reset via SSH: done
   Configuration:
     CMOS Restore via Physical Reset: done
@@ -57,7 +57,7 @@ status:
     Expansion BIC Firmware Update Recovery: done
     NIC Firmware Update: done
     VR Firmware Update: done
-    Firmware Update: done
+    Firmware Update via Redfish: done
   Firmware Versions:
     BIC Firmware Version: done
     BIOS Firmware Version: done
@@ -70,8 +70,8 @@ status:
   Front Panel Control:
     FPC Heartbeat LED: done
     FPC Identify LED: done
-    FPC Console Selection Switch: done
-    FPC Debug Card Console: done
+    FPC Selection Switch: done
+    Debug Card Console: done
   FRU Information:
     FRU Read: done
     FRU Update: done
@@ -104,7 +104,7 @@ status:
     GPIO Frame: done
     Post Code Frame: done
     User Settings Frame: done
-    Memory Loop Code: done
+    Memory Loop Frame: done
   Miscellaneous:
     Factory Reset Settings: done
     enclosure-util: unsupported
@@ -167,7 +167,7 @@ status:
     SSH: done
     host2bmc USB: unsupported
   Intel:
-    Scale Debug: done
+    At Scale Debug: done
   Greatlakes Specific Requirements:
     CPLD Board ID Version Info: done
     PRoT Support: unsupported

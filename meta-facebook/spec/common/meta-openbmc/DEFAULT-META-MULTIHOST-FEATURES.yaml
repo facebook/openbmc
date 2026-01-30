@@ -113,16 +113,6 @@ Event Logs:
   Log Events to Persistent Storage:
     file: log-events-to-persistent-storage.md
     priority: P1
-FRU Information:
-  FRU Information:
-    file: fru-information.md
-    priority: P2
-  Read FRU EEPROM:
-    file: fru-read-fru.md
-    priority: P1
-  Update FRU EEPROM:
-    file: fru-update-fru.md
-    priority: P1
 Firmware Signature Checking:
   BIC Binary Signature Check:
     file: bic-binary-signature-check.md
@@ -219,6 +209,15 @@ FRU Information:
     file: fru-read-fru.md
     priority: P1
   FRU Update:
+    file: fru-update-fru.md
+    priority: P1
+  FRU Information:
+    file: fru-information.md
+    priority: P2
+  Read FRU EEPROM:
+    file: fru-read-fru.md
+    priority: P1
+  Update FRU EEPROM:
     file: fru-update-fru.md
     priority: P1
 Health Monitoring:

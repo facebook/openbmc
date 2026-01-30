@@ -1,0 +1,44 @@
+From 58d631594b929530b0eef8190f42289dc9b6ba43 Mon Sep 17 00:00:00 2001
+From: Ken Chen <Ken.Chen@quantatw.com>
+Date: Fri, 30 Jan 2026 09:44:30 +0800
+Subject: [PATCH] ARM: dts: aspeed: yosemite5: Enable i2c slave timeout
+
+Enable the I2C slave timeout property for NIC,CXL,debug card to
+prevent the slave interface from hanging due to incomplete or abnormal
+I2C transactions, such as those occurring during HOST DC cycle but CXL
+is doing i2c transfer.
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+index 73b5e92be..87bcbc86c 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+@@ -235,6 +235,7 @@ sbtsi@4c {
+ 
+ &i2c4 {
+ 	multi-master;
++	i2c-scl-clk-low-timeout-us = <31744>;
+ 	mctp-controller;
+ 	clock-frequency = <400000>;
+ 	status = "okay";
+@@ -371,6 +372,7 @@ i2c6mux0ch3: i2c@3 {
+ /* SCM CPLD I2C */
+ &i2c7 {
+ 	multi-master;
++	i2c-scl-clk-low-timeout-us = <31744>;
+ 	status = "okay";
+ 
+ 	ipmb@10 {
+@@ -811,6 +813,7 @@ adc@4b {
+ /* MCIO 4A I2C */
+ &i2c12 {
+ 	multi-master;
++	i2c-scl-clk-low-timeout-us = <31744>;
+ 	mctp-controller;
+ 	clock-frequency = <400000>;
+ 	status = "okay";
+-- 
+2.47.1
+

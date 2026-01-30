@@ -3,6 +3,7 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 4112,1,,,,,STRING,,,,,,,Shelf_Series,
 4160,10,,,,,STRING,,,,,,,Shelf_Model,
 4170,10,,,,,STRING,,,,,,,Shelf_Model_Sub,
+4180,10,,,,,STRING,,,,,,,Shelf_Serial_Number,
 8192,10,,,,,STRING,,,,,,,Power_Module_1_PM_Serial_Number,
 8202,8,,,,,STRING,,,,,,,Power_Module_1_Firmware_Version,
 8320,10,,,,,STRING,,,,,,,Power_Module_2_PM_Serial_Number,

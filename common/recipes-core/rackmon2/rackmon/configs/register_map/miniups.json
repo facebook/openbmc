@@ -4996,6 +4996,114 @@
             "name": "BBU_Module_6_State_Of_Health_Table_Version"
         },
         {
+            "begin": 13312,
+            "length": 8,
+            "format": "STRING",
+            "name": "BBU_Module_1_Firmware_Version"
+        },
+        {
+            "begin": 13376,
+            "length": 8,
+            "format": "STRING",
+            "name": "BBU_Module_2_Firmware_Version"
+        },
+        {
+            "begin": 13440,
+            "length": 8,
+            "format": "STRING",
+            "name": "BBU_Module_3_Firmware_Version"
+        },
+        {
+            "begin": 13504,
+            "length": 8,
+            "format": "STRING",
+            "name": "BBU_Module_4_Firmware_Version"
+        },
+        {
+            "begin": 13568,
+            "length": 8,
+            "format": "STRING",
+            "name": "BBU_Module_5_Firmware_Version"
+        },
+        {
+            "begin": 13632,
+            "length": 8,
+            "format": "STRING",
+            "name": "BBU_Module_6_Firmware_Version"
+        },
+        {
+            "begin": 13320,
+            "length": 8,
+            "format": "STRING",
+            "name": "BBU_Module_1_Hardware_Version"
+        },
+        {
+            "begin": 13384,
+            "length": 8,
+            "format": "STRING",
+            "name": "BBU_Module_2_Hardware_Version"
+        },
+        {
+            "begin": 13448,
+            "length": 8,
+            "format": "STRING",
+            "name": "BBU_Module_3_Hardware_Version"
+        },
+        {
+            "begin": 13512,
+            "length": 8,
+            "format": "STRING",
+            "name": "BBU_Module_4_Hardware_Version"
+        },
+        {
+            "begin": 13576,
+            "length": 8,
+            "format": "STRING",
+            "name": "BBU_Module_5_Hardware_Version"
+        },
+        {
+            "begin": 13640,
+            "length": 8,
+            "format": "STRING",
+            "name": "BBU_Module_6_Hardware_Version"
+        },
+        {
+            "begin": 13328,
+            "length": 16,
+            "format": "STRING",
+            "name": "BBU_Module_1_Part_Number"
+        },
+        {
+            "begin": 13392,
+            "length": 16,
+            "format": "STRING",
+            "name": "BBU_Module_2_Part_Number"
+        },
+        {
+            "begin": 13456,
+            "length": 16,
+            "format": "STRING",
+            "name": "BBU_Module_3_Part_Number"
+        },
+        {
+            "begin": 13520,
+            "length": 16,
+            "format": "STRING",
+            "name": "BBU_Module_4_Part_Number"
+        },
+        {
+            "begin": 13584,
+            "length": 16,
+            "format": "STRING",
+            "name": "BBU_Module_5_Part_Number"
+        },
+        {
+            "begin": 13648,
+            "length": 16,
+            "format": "STRING",
+            "name": "BBU_Module_6_Part_Number"
+        },
+        {
             "begin": 8238,
             "length": 1,
             "format": "INTEGER",
@@ -7862,6 +7970,12 @@
             "length": 10,
             "format": "STRING",
             "name": "Shelf_Model_Sub"
+        },
+        {
+            "begin": 4180,
+            "length": 10,
+            "format": "STRING",
+            "name": "Shelf_Serial_Number"
         },
         {
             "begin": 8192,

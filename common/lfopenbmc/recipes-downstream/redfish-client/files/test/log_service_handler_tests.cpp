@@ -2,6 +2,7 @@
 #include <redfish_client/core/log_entry_mapper_registry.hpp>
 #include <redfish_client/core/unhandled_mapper.hpp>
 #include <redfish_client/core/cper_mapper.hpp>
+#include <redfish_client/core/hgx_ps_run_pwr_fault_mapper.hpp>
 
 #include <nlohmann/json.hpp>
 #include <sdbusplus/server.hpp>
@@ -148,6 +149,7 @@ class LogServiceHandlerTest : public ::testing::Test
     void SetUp() override
     {
         auto& registry = core::LogEntryMapperRegistry::instance();
+        registry.registerMapper(std::make_unique<HgxPsRunPwrFaultMapper>(), 110);
         registry.registerMapper(std::make_unique<CperMapper>(), 100);
         registry.registerMapper(std::make_unique<UnhandledMapper>(), 0);
         logManager.start();
@@ -302,6 +304,181 @@ TEST_F(LogServiceHandlerTest, OnFilePersistTest)
     restartedLogServiceHandler->commit(logEntryCollection);
     EXPECT_EQ(2, logManager.logs->size());
     std::filesystem::remove_all(tmpdir);
+}
+
+static constexpr const char* kPsRunPwrFaultEntryCollectionJson = R"(
+{
+    "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries",
+    "@odata.type": "#LogEntryCollection.LogEntryCollection",
+    "Members@odata.count": 1,
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries/4308",
+            "@odata.type": "#LogEntry.v1_15_0.LogEntry",
+            "AdditionalDataURI": "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries/4308/attachment",
+            "Created": "2025-12-27T18:17:30+00:00",
+            "EntryType": "Event",
+            "Id": "4308",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0"
+                }
+            },
+            "Message": "The resource property PS_RUN_PWR_FAULT has detected errors of type 'PWR_FAIL_GPU{0x1};PWRSEQ_FAIL_STATE{0xf}'.",
+            "MessageArgs": [
+                "PS_RUN_PWR_FAULT",
+                "PWR_FAIL_GPU{0x1};PWRSEQ_FAIL_STATE{0xf}"
+            ],
+            "MessageId": "ResourceEvent.1.0.ResourceErrorsDetected",
+            "Name": "System Event Log Entry",
+            "Oem": {
+                "Nvidia": {
+                    "@odata.type": "#NvidiaLogEntry.v1_1_0.NvidiaLogEntry",
+                    "Device": "Power_0",
+                    "ErrorId": "PS_RUN_PWR_FAULT-ERROR"
+                }
+            },
+            "Resolution": "AC cycle the system. If problem persists, collect all dumps per troubleshooting guide.",
+            "Resolved": false,
+            "Severity": "Critical"
+        }
+    ]
+}
+)";
+
+TEST_F(LogServiceHandlerTest, PsRunPwrFaultMapperTest)
+{
+    sdbusplus::async::context ctx;
+    auto logServiceHandler =
+        std::make_shared<LogServiceHandler>(ctx, "fake.url");
+
+    auto logEntryCollection =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            kPsRunPwrFaultEntryCollectionJson);
+
+    using namespace std::string_literals;
+
+    logServiceHandler->commit(logEntryCollection);
+
+    // Expect 2 logs: one PowerRailFault for each power state in the message
+    std::vector<std::string> expectedPowerRails = {
+        "/redfish/v1/Systems/HGX_Baseboard_0/NVIDIA_HMC/PWR_FAIL_GPU"s,
+        "/redfish/v1/Systems/HGX_Baseboard_0/NVIDIA_HMC/PWRSEQ_FAIL_STATE"s};
+
+    ASSERT_EQ(expectedPowerRails.size(), logManager.logs->size());
+
+    for (size_t i = 0; i < expectedPowerRails.size(); ++i)
+    {
+        SCOPED_TRACE("Validating log at index " + std::to_string(i));
+
+        Log log = (*logManager.logs)[i];
+        EXPECT_EQ(LoggingLevel::Error, log.severity);
+        EXPECT_EQ("xyz.openbmc_project.State.Power.PowerRailFault"s,
+                  log.message);
+        EXPECT_EQ(expectedPowerRails[i], log.additionalData["POWER_RAIL"]);
+
+        auto failureData =
+            nlohmann::json::parse(log.additionalData["FAILURE_DATA"]);
+
+        EXPECT_EQ("The resource property PS_RUN_PWR_FAULT has detected errors "
+                  "of type 'PWR_FAIL_GPU{0x1};PWRSEQ_FAIL_STATE{0xf}'."s,
+                  failureData.at("Message").get<std::string>());
+        EXPECT_EQ("Critical"s, failureData.at("Severity").get<std::string>());
+        EXPECT_EQ("2025-12-27T18:17:30+00:00"s,
+                  failureData.at("Created").get<std::string>());
+    }
+}
+
+static constexpr const char* kPsRunPwrFaultEmptyMessageArgsJson = R"(
+{
+    "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries",
+    "@odata.type": "#LogEntryCollection.LogEntryCollection",
+    "Members@odata.count": 1,
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries/4309",
+            "@odata.type": "#LogEntry.v1_15_0.LogEntry",
+            "Created": "2025-12-27T18:17:30+00:00",
+            "EntryType": "Event",
+            "Id": "4309",
+            "Message": "The resource property PS_RUN_PWR_FAULT has detected errors.",
+            "MessageArgs": [],
+            "MessageId": "ResourceEvent.1.0.ResourceErrorsDetected",
+            "Name": "System Event Log Entry",
+            "Severity": "Critical"
+        }
+    ]
+}
+)";
+
+TEST_F(LogServiceHandlerTest, PsRunPwrFaultEmptyMessageArgsTest)
+{
+    sdbusplus::async::context ctx;
+    auto logServiceHandler =
+        std::make_shared<LogServiceHandler>(ctx, "fake.url");
+
+    auto logEntryCollection =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            kPsRunPwrFaultEmptyMessageArgsJson);
+
+    using namespace std::string_literals;
+
+    logServiceHandler->commit(logEntryCollection);
+
+    // With empty MessageArgs, HgxPsRunPwrFaultMapper should not handle,
+    // falling through to UnhandledMapper
+    ASSERT_EQ(1, logManager.logs->size());
+
+    Log log = (*logManager.logs)[0];
+    EXPECT_EQ(LoggingLevel::Critical, log.severity);
+    EXPECT_EQ("com.meta.RedfishClient.UnexpectedException"s, log.message);
+}
+
+static constexpr const char* kPsRunPwrFaultInsufficientMessageArgsJson = R"(
+{
+    "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries",
+    "@odata.type": "#LogEntryCollection.LogEntryCollection",
+    "Members@odata.count": 1,
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries/4310",
+            "@odata.type": "#LogEntry.v1_15_0.LogEntry",
+            "Created": "2025-12-27T18:17:30+00:00",
+            "EntryType": "Event",
+            "Id": "4310",
+            "Message": "The resource property PS_RUN_PWR_FAULT has detected errors.",
+            "MessageArgs": [
+                "PS_RUN_PWR_FAULT"
+            ],
+            "MessageId": "ResourceEvent.1.0.ResourceErrorsDetected",
+            "Name": "System Event Log Entry",
+            "Severity": "Critical"
+        }
+    ]
+}
+)";
+
+TEST_F(LogServiceHandlerTest, PsRunPwrFaultInsufficientMessageArgsTest)
+{
+    sdbusplus::async::context ctx;
+    auto logServiceHandler =
+        std::make_shared<LogServiceHandler>(ctx, "fake.url");
+
+    auto logEntryCollection =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            kPsRunPwrFaultInsufficientMessageArgsJson);
+
+    using namespace std::string_literals;
+
+    logServiceHandler->commit(logEntryCollection);
+
+    // With only 1 MessageArg, HgxPsRunPwrFaultMapper should not handle,
+    // falling through to UnhandledMapper
+    ASSERT_EQ(1, logManager.logs->size());
+
+    Log log = (*logManager.logs)[0];
+    EXPECT_EQ(LoggingLevel::Critical, log.severity);
+    EXPECT_EQ("com.meta.RedfishClient.UnexpectedException"s, log.message);
 }
 
 } // namespace redfish_client::core

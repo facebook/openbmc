@@ -183,15 +183,19 @@ def render_features(output: IOBase, machine: argparse.Namespace) -> None:
 
     header = []
     content = []
+    functionality = []
 
     header.append("## Features\n\n")
     header.append("### Feature Overview\n\n")
+
+    functionality.append("### Feature tests\n\n")
 
     for title in features.keys():
         section = hyphenate(title)
 
         header.append(f"#### [{title}](#s-{section})\n\n")
         content.append(f"### {title} {{#s-{section}}}\n\n")
+        functionality.append(f"#### {title}\n\n")
 
         section_file = find_file(f"features/{section}.md", machine)
         if section_file:
@@ -238,11 +242,51 @@ def render_features(output: IOBase, machine: argparse.Namespace) -> None:
                     )
 
                 subtitle_result = (
-                    "- ["
+                    "["
                     + (" " if "status" not in subtitle_data else "x")
                     + "] "
                     + subtitle_result
                 )
+
+                functionality.append(subtitle_result)
+                if subtitle_data.get("no_tests_expected") is True:
+                    functionality.append(" - no tests expected\n")
+                elif "functionality" in subtitle_data:
+                    func_table = {}
+                    for f in subtitle_data["functionality"]:
+                        func_table[f["name"]] = []
+                        if "tests" in f:
+                            for t in f["tests"]:
+                                test_framework = t.get("framework")
+                                if test_framework:
+                                    func_table[f["name"]].append((test_framework, t.get("id", ""), t.get("description", "")))
+
+                    if func_table:
+                        functionality.append(
+                            "\n\n| Functionality | Test info |\n"
+                            "|---|---|\n"
+                        )
+                        for f in func_table.keys():
+                            first_func_row = True
+                            for (test_framework, test_id, description) in func_table[f]:
+                                func_val = " "
+                                if first_func_row:
+                                    first_func_row = False
+                                    func_val = f"**{f}**"
+                                value = test_framework
+                                if test_id:
+                                    value = f"{value}: {test_id}"
+                                if description:
+                                    value = f"{value}<br/>*{description}*"
+                                functionality.append(
+                                    f"| {func_val} | {value} |\n"
+                                )
+                        functionality.append("\n")
+                else:
+                    functionality.append(
+                        " - **no tests found**.\n"
+                    )
+
             elif "unsupported" == subtitle_data["status"]:
                 subtitle_result = (
                     f"- ~~[ ] {subtitle_result}**{subtitle}**~~"
@@ -263,6 +307,9 @@ def render_features(output: IOBase, machine: argparse.Namespace) -> None:
     output.write("\n")
     for c in content:
         output.write(c)
+    output.write("\n")
+    for f in functionality:
+        output.write(f)
 
 
 def write_section(

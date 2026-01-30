@@ -3,32 +3,161 @@ Infrastructure:
     file: yocto.md
     priority: P0
     short: Enable machine in meta-layer.
+    no_tests_expected: true
   U-Boot Porting:
     file: u-boot-porting.md
     priority: P0
     short: Port platform specific U-Boot changes.
+    no_tests_expected: true
   Kernel Porting:
     file: kernel.md
     priority: P0
     short: Port platform specific Kernel changes.
+    no_tests_expected: true
   Flash Layout:
     file: flash-layout.md
     priority: P0
     short: Implement the required flash layout.
+    no_tests_expected: true
   Device Tree:
     file: device-tree.md
     priority: P1
     short: Create Linux device-tree for system.
+    no_tests_expected: true
   QEMU:
     file: qemu.md
     priority: P1
     short: Create QEMU machine config.
+    no_tests_expected: true
 ? BMC Hardware Support
 User Interface:
   Redfish:
     file: redfish.md
     priority: P1
     short: Provide a Redfish interface for all remote-management APIs.
+    functionality:
+      - name: AccountService
+        tests:
+          - framework: Robot
+            id: IPMI_Redfish_User
+            description: A suite that tests Redfish for user management.
+          - framework: Robot
+            id: Redfish_Privilege_Registry
+            description: A suite to test Redfish privilege registry with various users such as test, admin, operator, readonly, patched.
+          - framework: Robot
+            id: User_Account
+            description: Test suite for verifying Redfish admin, readonly operation user accounts.
+          - framework: Robot
+            id: BMC_Connections
+            description: Test suite for Connections and authentication module stability tests.
+          - framework: Robot
+            id: BMC_Expire_Password
+            description: Test suite for testing root user expire password.
+      - name: SessionService
+        tests:
+          - framework: Robot
+            id: Sessions_Management
+            description: Test Redfish SessionService.
+          - framework: Robot
+            id: Service_Root
+            description: Suite to Test Redfish to verify responses for SessionService and Hypermedia.
+      - name: Chassis
+        tests:
+          - framework: Robot
+            id: Thermal_Ambient_Temperatures
+            description: Test suite for verifying getting the systems thermal records for temperature.
+      - name: Chassis/.../Sensors
+        tests:
+          - framework: Robot
+            id: Verify_Redfishtool_Sensor_Commands
+            description: Verify redfishtool's sensor commands.
+          - framework: Robot
+            id: Sensor_Monitoring
+            description: Test suite for verifying Redfish sensor monitoring.
+          - framework: Robot
+            id: BMC_Collect_Sensors
+            description: Test suite for verifying BMC server health, collect sensors.
+      - name: Systems
+        tests:
+          - framework: Robot
+            id: Redfishtool_Local_User
+            description: Suite to test local user management.
+          - framework: Robot
+            id: Verify_Current_Power_Mode_Setting
+            description: Verify the current power mode setting.
+          - framework: Robot
+            id: Verify_Allowable_Power_Mode_Settings
+            description: Check the allowable power modes are set successfully at runtime.
+          - framework: Robot
+            id: Verify_Allowable_Power_Mode_Settings_Switch_At_Runtime
+            description: Check the allowable power modes are set successfully at runtime.
+          - framework: Robot
+            id: Boot_Devices
+            description: The suite test various boot types with boot source.
+          - framework: Robot
+            id: Led_Indicator_Asserted
+            description: Test suite for verifying the indicator LEDs on the system can set the assert
+          - framework: Robot
+            id: Systems_Inventory
+            description: Test suite for verifying inventory of hardware FRUs under redfish.
+      - name: Systems/.../LogServices
+        tests:
+          - framework: Robot
+            id: Event_Logging
+            description: Test suite for verifying Inventory of hardware resources under systems.
+          - framework: Robot
+            id: Post_Codes
+            description: Test suite to verify BIOS POST code log entries.
+          - framework: Robot
+            id: Event_Service
+            description: Test suite for verifying Redfish event service subscription function.
+      - name: Managers/.../LogServices
+        tests:
+          - framework: Robot
+            id: BMC_Dumps
+            description: Test suite for verifying BMC dump functionality of OpenBMC.
+          - framework: Robot
+            id: Test_XIT
+            description: This suite is to run some test at the end of execution. It checks the LogService for any errors.
+      - name: Managers/.../EthernetInterfaces
+        tests:
+          - framework: N/A
+      - name: Managers/.../NetworkProtocol
+        tests:
+          - framework: Robot
+            id: BMC_Network_Protocol
+            description: Test suite for verifying NTP configuration and verification.
+          - framework: Robot
+            id: Verify_Server_Certificate_View_Via_Openssl
+            description: Verify server certificate via openssl command.
+          - framework: Robot
+            id: Install_Server_Certificate_Using_Redfishtool_And_Verify_Via_OpenSSL
+            description: Install server certificate using Redfishtool and verify via OpenSSL.
+      - name: Managers/.../Actions/Manager.Reset
+        tests:
+          - framework: Robot
+            id: Managers_BMC
+            description: Test suite for verifying Test BMC Manager functionality.
+      - name: TaskService
+        tests:
+          - framework: Robot
+            id: Tasks_Service
+            description: Test suite for verifying Test task service and tasks URI functionality of OpenBMC.
+      - name: UpdateService
+        tests:
+          - framework: Robot
+            id: Bmc_Code_Update
+            description: Test suite verifying update the BMC code on a target BMC via Redifsh.
+      - name: UpdateService/FirmwareInventory
+        tests:
+          - framework: Robot
+            id: Firmware_Inventory
+            description: Verify that Redfish software inventory can be collected.
+      - name: BMC time can be managed via Redfish
+        tests:
+          - framework: Robot
+            id: Managers_BMC_Time
+            description: Test suite for verifying BMC manager time functionality.
   Redfish mTLS:
     file: redfish-mtls.md
     priority: P2
@@ -37,6 +166,12 @@ User Interface:
     file: oob-ssh.md
     priority: P0
     short: Provide an auxiliary SSH interface for remote access.
+    functionality:
+      - name: SSH access
+        tests:
+          - framework: Robot
+            id: Test_SSH_Connection
+            description: Try SSH command to verify connection.
 Network:
   IPv4:
     file: ipv4.md
@@ -128,19 +263,56 @@ Time Sync:
     file: ntp-sync.md
     priority: P1
     short: Sync the BMC RTC with the NTP server(s).
+    functionality:
+      - name: BMC uses NTP to sync time
+        tests:
+          - framework: Robot
+            id: BMC_Network_Protocol
+            description: Test suite for verifying NTP configuration and verification.
+      - name: NTP can be enabled and disabled via Redfish
+        tests:
+          - framework: Robot
+            id: Enable_NTP_Protocol_And_Verify
+            description: Enable NTP protocol and verify.
+          - framework: Robot
+            id: Disable_NTP_Protocol_And_Verify
+            description: Disable NTP protocol and verify.
+      - name: BMC uses Meta's NTP servers
+        tests:
+          - framework: N/A
   Time Zone:
     file: time-zone.md
     priority: P1
     short: Always show PST/PDT time.
+    functionality:
+      - name: BMC uses the PST8PDT timezone
+        tests:
+          - framework: N/A
 BMC Reset and Recovery:
   SSH Remote Reset:
     file: ssh-remote-reset.md
     priority: P0
     short: Reset the BMC using the `reboot` command.
+    functionality:
+      - name: BMC can be reset via SSH
+        tests:
+          - framework: N/A
   Redfish Remote Reset:
     file: redfish-remote-reset.md
     priority: P1
     short: Reset the BMC using Redfish APIs.
+    functionality:
+      - name: Managers/.../Actions/Manager.Reset
+        tests:
+          - framework: Robot
+            id: Redfish_BMC_Manager_GracefulRestart_When_Host_Off
+            description: BMC graceful restart when host is powered off.
+          - framework: Robot
+            id: Redfish_BMC_Manager_ForceRestart_When_Host_Off
+            description: BMC force restart when host is powered off.
+          - framework: Robot
+            id: Verify_Redfish_BMC_Manager_ResetActionInfo_Unsupported_Methods
+            description: Verify Unsupported methods of redfish BMC manager reset action info.
 Front Panel Control:
   Front Panel Control:
     file: fpc.md
@@ -195,6 +367,15 @@ BMC Health Monitoring:
     file: health-metrics.md
     priority: P2
     short: Export monitored health metrics over Redfish.
+    functionality:
+      - name: BMC creates log entry and resets if memory usage drops below a safe threshold
+        tests:
+          - framework: N/A
+      - name: BMC creates log entry and resets if CPU usage is above a safe threshold over preiod of time
+        tests:
+          - framework: N/A
+      - name: Automatic BMC reboots can be disabled
+
 Miscellaneous:
   Common Sensor Names:
     file: common-sensor-names.md
@@ -204,6 +385,10 @@ Miscellaneous:
     file: reset-default-factory-settings.md
     priority: P2
     short: Allow a reset of all saved settings.
+    functionality:
+      - name: Managers/.../Actions/Manager.ResetToDefaults
+        tests:
+          - framework: N/A
   openbmc-test-automation:
     file: openbmc-test-automation.md
     priority: P2

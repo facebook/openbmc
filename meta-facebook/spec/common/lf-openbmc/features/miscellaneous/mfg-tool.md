@@ -13,3 +13,4 @@ Example of `/home/root/.mfgtool.json`:
   "timeout": 120,
   "retries": 5
 }
+```

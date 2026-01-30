@@ -1,11 +1,12 @@
-﻿## Sensors {#sensors}
+﻿<div id="sensors"/>
+## Sensors
 
 ### Baseboard
 
 #### Temperature Monitoring
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 | BB_INLET_TEMP_C | 0xED | C | 150 | 45 | NA | NA | NA | NA |
 | BB_OUTLET_TEMP_C | 0xEE | C | 150 | 55 | NA | NA | NA | NA |
 | PDB_VPDB_WW_TEMP_C | 0xB2 | C | 115 | 100 | NA | NA | NA | NA |
@@ -15,7 +16,7 @@
 #### Voltage Monitoring
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 | BB_P5V_VOLT_V | 0xF0 | V | 5.65 | 5.550  | 5.500  | 4.500  | 4.450  | 4.15 |
 | BB_P12V_VOLT_V | 0xF1 | V | 14.333 | 13.320  | 13.200  | 10.800  | 10.680  | 10.091 |
 | BB_P3V3_STBY_VOLT_V | 0xF2 | V | 3.729 | 3.564  | 3.531  | 3.069  | 3.036  | 2.739 |
@@ -37,7 +38,7 @@
 #### Current Monitoring
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 | BB_MEDUSA_CURR_A | 0xD0 | A | 　NA | 62 | NA | NA | NA | NA |
 | PDB_12V_WW_OUTPUT_CURR_A | 0xBB | A | 　NA | 144 | NA | NA | NA | NA |
 | BB_HSC_OUTPUT_CURR_A | 0xFA | A | 45 | 36 | NA | NA | NA | NA |
@@ -47,7 +48,7 @@
 #### Power Monitoring
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 | BB_MEDUSA_PWR_W | 0xD1 | W | 　NA | 1800 | NA | NA | NA | NA |
 | PDB_12V_WW_PWR_W | 0xBC | W | 　NA | 1800 | NA | NA | NA | NA |
 | BB_HSC_INPUT_PWR_W | 0xF9 | W | 562.5 | 450 | NA | NA | NA | NA |
@@ -56,7 +57,7 @@
 #### Fan Monitoring
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 | BB_FAN0_TACH_RPM | 0xE0 | RPM | NA | 16500 | 13500 | NA | 1200 | NA |
 | BB_FAN1_TACH_RPM | 0xE1 | RPM | NA | 16500 | 13500 | NA | 1200 | NA |
 | BB_FAN2_TACH_RPM | 0xE2 | RPM | NA | 16500 | 13500 | NA | 1200 | NA |
@@ -69,7 +70,7 @@
 #### Other
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 | BB_HSC_PEAK_OUTPUT_CURR_A | 0xC8 | A | NA | NA | NA | NA | NA | NA |
 | BB_HSC_PEAK_INPUT_PWR_W | 0xC9 | W | NA | NA | NA | NA | NA | NA |
 | BB_MEDUSA_VDELTA_VOLT_V | 0xCF | V | NA | 0.5 | NA | NA | NA | NA |
@@ -83,7 +84,7 @@
 #### Temperature Monitoring
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 | MB_INLET_TEMP_C | 0x01 | C | 150 | 150 | 60 | NA | NA | NA |
 | MB_OUTLET_TEMP_C | 0x02 | C | 150 | 150 | 80 | NA | NA | NA |
 | FIO_FRONT_TEMP_C | 0x03 | C | 150 | 150 | 40 | NA | NA | NA |
@@ -110,7 +111,7 @@
 #### Voltage Monitoring
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 | MB_ADC_P12V_STBY_VOLT_V | 0x17 | V | 14.333 | 13.3488 | 13.2192 | 10.8192 | 10.7088 | 10.091 |
 | MB_ADC_P3V_BAT_VOLT_V | 0x18 | V | NA | 3.502 | 3.468 | 2.793 | 2.7645 | NA |
 | MB_ADC_P3V3_STBY_VOLT_V | 0x19 | V | 3.828 | 3.56895 | 3.5343 | 3.0723 | 3.04095 | 2.64 |
@@ -132,7 +133,7 @@
 #### Current Monitoring
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 | MB_HSC_OUTPUT_CURR_A | 0x28 | A | 68 | 60.94 | 58.17 | NA | NA | NA |
 | MB_HSC_OUTPUT_CURR_A | 0x29 | A | 84 | 75.02 | 71.61 | NA | NA | NA |
 | MB_VR_VCCIN_CURR_A | 0x2A | A | 306 | 290.4 | 277.2 | NA | NA | NA |
@@ -145,7 +146,7 @@
 #### Power Monitoring
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 | MB_HSC_INPUT_PWR_W | 0x30 | W | 850 | 761.75 | 727.125 | NA | NA | NA |
 | MB_HSC_INPUT_PWR_W | 0x31 | W | 1050 | 937.75 | 895.125 | NA | NA | NA |
 | MB_VR_VCCIN_PWR_W | 0x32 | W | 559.98 | 522.72 | 498.96 | NA | NA | NA |
@@ -168,7 +169,7 @@
 #### Temperature Monitoring
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 | NF_1OU_BOARD_INLET_TEMP_C | 0x50 | C | NA | NA | NA | NA | NA | NA |
 | NF_CXL_CNTR_TEMP_C | 0x51 | C | NA | NA | NA | NA | NA | NA |
 | NF_VR_P0V85_ASIC_TEMP_C | 0x52 | C | NA | NA | NA | NA | NA | NA |
@@ -179,7 +180,7 @@
 #### Voltage Monitoring
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 | NF_ADC_P1V2_STBY_VOLT_V | 0x57 | V | NA | NA | NA | NA | NA | NA |
 | NF_ADC_P1V2_ASIC_VOLT_V | 0x58 | V | NA | NA | NA | NA | NA | NA |
 | NF_ADC_P1V8_ASIC_VOLT_V | 0x59 | V | NA | NA | NA | NA | NA | NA |
@@ -199,7 +200,7 @@
 #### Current Monitoring
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 | NF_INA233_P12V_STBY_CURR_A | 0x65 | A | NA | NA | NA | NA | NA | NA |
 | NF_INA233_P3V3_STBY_CURR_A | 0x66 | A | NA | NA | NA | NA | NA | NA |
 | NF_VR_P0V85_ASIC_CURR_A | 0x67 | A | NA | NA | NA | NA | NA | NA |
@@ -211,7 +212,7 @@
 #### Power Monitoring
 
 | Sensor Name | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+|-----|-----|-----|-----|-----|-----|-----|-----|-----|
 | NF_INA233_P12V_STBY_PWR_W | 0x6B | W | NA | NA | NA | NA | NA | NA |
 | NF_INA233_P3V3_STBY_PWR_W | 0x6C | W | NA | NA | NA | NA | NA | NA |
 | NF_VR_P0V85_ASIC_PWR_W | 0x6D | W | NA | NA | NA | NA | NA | NA |

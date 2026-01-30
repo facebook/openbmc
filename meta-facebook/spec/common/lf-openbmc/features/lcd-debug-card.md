@@ -42,7 +42,7 @@ So, in this new design, we set the first frame for showing uart selection only a
 After the user presses the uart button, CPLD gets the current uart selection and lights up 7-seg LED as below table and then debug card sends ipmb command to get the uart selection description and shows it on the panel.
 
 | 7-seg LED| Uart selection decode from BMC | Message show on debug card |
-|--|--| --|
+|--|--|--|
 | 00 |BMC  |00: BMC  |
 | 01 |slot1  |01: slot1  |
 | 02 |slot2  |02: slot2  |
@@ -57,7 +57,7 @@ After the user presses the uart button, CPLD gets the current uart selection and
 Here is the ipmb command:
 
 | Code | Command | Request, Response Data | Description |
-|--|--| --| --|
+|--|--|--|--|
 | net = 0x3C, cmd = 0x03 | Get uart selection description  |Request: <br/> Byte [0:2] - IANA ID <br/> Byte 3 - uart selection index <br/> Byte 4 - uart selection phase <br/> 01h : phase 1  <br/> 02h : phase 2 <br/> Response: <br/> Byte 0- completion code <br/> Byte [1:3] - IANA ID <br/> Byte 4 - Current uart selection index <br/> Byte 5 - next uart selection index <br/> Byte 6 - uart selection phase <br/> Byte 7 - check if it is the last one post code <br/> 00h: this is not the last one of Post code <br/> 01h: The last one available Post code <br/> Byte 8 - length (n) <br/> Byte 9: (n+1) human readable string (ASCII format) | MCU gets uart selection description from BMC. The selection decode refers to each project define.
 
 
@@ -135,7 +135,7 @@ The message is presented in the following format:
 IO Status Frame displays the status of input pin and power button shown in the table below on platform Crater Lake:
 
 | IO Index| Description | Message | Definition |
-|--|--| --| --|
+|--|--|--|--|
 | 0x10 |RST_BTN_N  |P10: ${value}<br />RST_BTN_N  |Power button|
 | 0x11 |PWR_BTN_N  |P11:${value}<br />PWR_BTN_N    |Power button|
 | 0x12 |SYS_PWROK  |P12:${value}<br />SYS_PWROK  |Input pin only|

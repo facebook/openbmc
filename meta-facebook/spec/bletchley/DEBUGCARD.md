@@ -3,7 +3,7 @@
 ### GPIO Status
 
 | Bit | Net name       | Direction (In the perspective of PCA9555) |
-| --- | -------------- | ----------------------------------------- |
+|-----|----------------|-------------------------------------------|
 | P10 | FM_DBG_RST_BTN | Output                                    |
 | P11 | FM_PWR_BTN     | Output                                    |
 | P12 | SYS_PWROK      | Input                                     |
@@ -16,7 +16,7 @@
 ### Critical Sensor
 
 | Sensor Name        | Messages       |
-| ------------------ | -------------- |
+|--------------------|----------------|
 | Virtual_Inlet_Temp | INLET_TEMP:XXC |
 
 ### Critical SEL

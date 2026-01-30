@@ -1,9 +1,10 @@
-## Sensors {#sensors}
+<div id="sensors"/>
+## Sensors
 
 ### Chassis Board
 
 | Sensor Name                 | Sensor# | Unit | UNR | UCR   | UNC | LNC | LCR   | LNR |
-| --------------------------- | ------- | ---- | --- | ----- | --- | --- | ----- | --- |
+|-----------------------------|---------|------|-----|-------|-----|-----|-------|-----|
 | P12V_AUX_HSC_Output_Voltage |         | V    | NA  | NA    | NA  | NA  | NA    | NA  |
 | P12V_AUX_HSC_Input_Voltage  |         | V    | NA  | NA    | NA  | NA  | NA    | NA  |
 | P12V_AUX_HSC_Output_Current |         | A    | NA  | NA    | NA  | NA  | NA    | NA  |
@@ -34,7 +35,7 @@
 ### Interposer Board (SLED)
 
 | Sensor Name              | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
-| ------------------------ | ------- | ---- | --- | --- | --- | --- | --- | --- |
+|--------------------------|---------|------|-----|-----|-----|-----|-----|-----|
 | SLEDX_HSC_Output_Voltage |         | V    | NA  | NA  | NA  | NA  | NA  | NA  |
 | SLEDX_HSC_Input_Voltage  |         | V    | NA  | NA  | NA  | NA  | NA  | NA  |
 | SLEDX_HSC_Output_Current |         | V    | NA  | NA  | NA  | NA  | NA  | NA  |
@@ -45,14 +46,14 @@
 ### Front Panel Board
 
 | Sensor Name         | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
-| ------------------- | ------- | ---- | --- | --- | --- | --- | --- | --- |
+|---------------------|---------|------|-----|-----|-----|-----|-----|-----|
 | FRONT_PANEL_TEMP    |         | C    | NA  | 40  | 39  | 1   | 0   | NA  |
 | FRONT_PANEL_HUMIDTY |         | %    | NA  | NA  | NA  | NA  | NA  | NA  |
 
 ### Virtual Sensor (Calibrated sensor)
 
 | Sensor Name                      | Sensor# | Unit | UNR | UCR | UNC | LNC | LCR | LNR |
-| -------------------------------- | ------- | ---- | --- | --- | --- | --- | --- | --- |
+|----------------------------------|---------|------|-----|-----|-----|-----|-----|-----|
 | Virtual_CFM_Sensor               |         | CFM  | NA  | NA  | NA  | NA  | NA  | NA  |
 | Virtual_Inlet_Temp               |         | C    | NA  | 40  | NA  | NA  | 0   | NA  |
 | Virtual_P12V_AUX_HSC_Input_Power |         | W    | NA  | NA  | NA  | NA  | NA  | NA  |

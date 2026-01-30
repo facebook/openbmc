@@ -194,7 +194,9 @@ def render_features(output: IOBase, machine: argparse.Namespace) -> None:
         section = hyphenate(title)
 
         header.append(f"#### [{title}](#s-{section})\n\n")
-        content.append(f"### {title} {{#s-{section}}}\n\n")
+        content.append(
+            f"<div id=\"s-{section}\"/>\n"
+            f"### {title}\n\n")
         functionality.append(f"#### {title}\n\n")
 
         section_file = find_file(f"features/{section}.md", machine)
@@ -226,7 +228,8 @@ def render_features(output: IOBase, machine: argparse.Namespace) -> None:
                         subtitle_result + f"**[{subtitle}]{subtitle_anchor}**"
                     )
                     content.append(
-                        f"#### {subtitle} {{#s-{section}-{subsection}}}\n\n"
+                        f"<div id=\"s-{section}-{subsection}\"></div>\n"
+                        f"#### {subtitle}\n\n"
                     )
 
                     with open(subtitle_file, "r") as sf:

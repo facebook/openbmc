@@ -1,0 +1,13 @@
+[Unit]
+Description=Modify MAC4 NCSI strength
+DefaultDependencies=no
+After=local-fs.target
+Before=basic.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/ncsi-strength/ncsi-strength.sh
+
+[Install]
+WantedBy=sysinit.target

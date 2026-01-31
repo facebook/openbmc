@@ -7,6 +7,11 @@ Subject: [PATCH 2/2] configuration: santabarbara: add MCTP I2C target for SWB
 Add SWB_PEX as an MCTP I2C target on bus 94/102 with address 0x62
 to enable die temperature monitoring via PLDM sensor.
 
+Due to I3C hub initialization, the device may appear on either bus 94
+or bus 102. Use different names to create separate inventory objects,
+allowing mctpreactor to attempt connection on both buses and succeed
+on whichever bus the device appears.
+
 Change-Id: I45283deecda1fca687c91b557665098dff0ffcfa
 Signed-off-by: Freddie Jheng <Freddie.Jheng@quantatw.com>
 ---
@@ -24,7 +29,7 @@ index ff52b1b..befebaa 100644
 +        {
 +            "Address": "0x62",
 +            "Bus": "94",
-+            "Name": "SWB_PEX",
++            "Name": "SWB_PEX_94",
 +            "PLDMSensors": [
 +                {
 +                    "ID": 1,
@@ -36,7 +41,7 @@ index ff52b1b..befebaa 100644
 +        {
 +            "Address": "0x62",
 +            "Bus": "102",
-+            "Name": "SWB_PEX",
++            "Name": "SWB_PEX_102",
 +            "PLDMSensors": [
 +                {
 +                    "ID": 1,

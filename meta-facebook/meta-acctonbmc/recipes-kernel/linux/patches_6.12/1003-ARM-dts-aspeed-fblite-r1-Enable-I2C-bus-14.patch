@@ -1,0 +1,35 @@
+From e30936e48a2a40d5be87edb6627c6541ddd188c9 Mon Sep 17 00:00:00 2001
+From: Neal Chen <neal_chen@accton.com>
+Date: Mon, 4 Aug 2025 15:22:55 +0800
+Subject: [PATCH 2/2] ARM: dts: aspeed: fblite-r1: Enable I2C bus 14
+
+Summary:
+
+Enable I2C bus 14 in fblite-r1 device tree
+
+Test Plan:
+
+1) "bitbake minipack3n-image" succeeded.
+2) verified I2C bus 14 is enabled after booting up minipack3n.
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+index ba658f525e9e..8c6f0483d07a 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+@@ -23,6 +23,10 @@ &i2c11 {
+ 	status = "okay";
+ };
+ 
++&i2c14 {
++	status = "okay";
++};
++
+ &lpc_ctrl {
+ 	status = "okay";
+ 	flash = <&spi1>;
+-- 
+2.43.0
+

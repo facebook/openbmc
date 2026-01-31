@@ -1,0 +1,40 @@
+From c2be7e5c34d0f8f668d1fa112cb8309b2585b7fd Mon Sep 17 00:00:00 2001
+From: Neal Chen <neal_chen@accton.com>
+Date: Fri, 4 Jul 2025 17:26:45 +0800
+Subject: [PATCH] ARM: dts: aspeed: fblite-r1: Enable ehci1 and uhci
+
+Summary:
+
+Enable ehci1 and uhci in fblite-r1 device tree for USB host.
+
+Test Plan:
+
+1) "bitbake minipack3n-image" succeeded.
+2) verified USB host is enabled after booting up minipack3n.
+---
+ .../dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts     | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+index c3e9af8ac77b..772e6cc42fd4 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+@@ -103,3 +103,15 @@ flash1@0 {
+ &jtag1 {
+ 	status = "okay";
+ };
++
++/*
++ * Enable both EHCI and UHCI for FT4232, as the chip supports both
++ * high-speed (EHCI) and full-speed (UHCI) modes.
++ */
++&ehci1 {
++	status = "okay";
++};
++
++&uhci {
++	status = "okay";
++};
+-- 
+2.43.0
+

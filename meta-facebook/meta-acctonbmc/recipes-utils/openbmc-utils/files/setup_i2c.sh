@@ -30,3 +30,7 @@ i2c_device_add 12 0x60 mcbcpld
 # FRU IDPROMs
 i2c_device_add 3 0x56 24c64  # SCM IDPROM
 i2c_device_add 6 0x53 24c64  # Chassis EEPROM
+
+if i2cget -y -f 14 0x53 > /dev/null 2>&1; then
+    i2c_device_add 14 0x53 24c02  # Rackmon EEPROM
+fi

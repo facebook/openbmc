@@ -1823,7 +1823,7 @@ index 000000000000..3ea6a63d1ba0
 +#define SBRMI_REV_BRTH (0x21)
 +
 +#define DIMM_BASE_ID		(0x80)
-+#define MAX_DIMM_COUNT		(12)
++#define MAX_DIMM_COUNT		(16)
 +#define DIMM_POWER_OFFSET	(17)
 +#define DIMM_TEMP_OFFSET	(21)
 +#define DIMM_TEMP_SCALE 	1/4
@@ -1878,7 +1878,7 @@ index 000000000000..3ea6a63d1ba0
 +	if (!rmi_dev->regmap) {
 +		ret = configure_regmap(rmi_dev);
 +		if (ret < 0) {
-+			pr_err("regmap configuration failed with return value:%d in sbrmi_read\n", ret);
++			// pr_err("regmap configuration failed with return value:%d in sbrmi_read\n", ret);
 +			return ret;
 +		}
 +	}
@@ -2242,7 +2242,7 @@ index 000000000000..3ea6a63d1ba0
 +		}
 +	} while (probe > 0);
 +
-+	pr_err("I2C SBRMI_REV error code value: %d\n", ret);
++	// pr_err("I2C SBRMI_REV error code value: %d\n", ret);
 +	return ret;
 +}
 +
@@ -2470,13 +2470,13 @@ index 000000000000..3ea6a63d1ba0
 +	if (rmi_dev->i3cdev) {
 +		ret = sbrmi_i3c_identify_reg_addr_size(rmi_dev->i3cdev, &size, &rev);
 +		if (ret < 0) {
-+			pr_err("Reg size identification failed with return value:%d\n", ret);
++			// pr_err("Reg size identification failed with return value:%d\n", ret);
 +			return ret;
 +		}
 +	} else if (rmi_dev->client) {
 +		ret = sbrmi_i2c_identify_reg_addr_size(rmi_dev->client, &size, &rev);
 +		if (ret < 0) {
-+			pr_err("Reg size identification failed with return value:%d\n", ret);
++			// pr_err("Reg size identification failed with return value:%d\n", ret);
 +			return ret;
 +		}
 +	} else {

@@ -23,6 +23,7 @@ SRC_URI:append = " \
     file://1010-ARM-dts-aspeed-santabarbara-Add-swb-IO-expander-and-.patch \
     file://1011-ARM-dts-aspeed-santabarbara-Enable-ipmb-device-for-O.patch \
     file://1012-enable-uart-dma.patch \
+    file://1013-ARM-dts-aspeed-santabarbara-Add-swb-cpld-io-expander.patch \
     file://0202-dt-bindings-i3c-Add-i3c-hub-support.patch \
     file://0203-i3c-Add-driver-for-i3c-hub-device.patch \
     file://0204-i3c-i3c-hub-Fix-SMBus-Agent-tx-timeout-issue.patch \

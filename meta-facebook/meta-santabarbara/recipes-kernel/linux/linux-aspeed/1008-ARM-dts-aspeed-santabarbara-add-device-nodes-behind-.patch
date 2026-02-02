@@ -1,8 +1,8 @@
-From 8a7fbb750434323181422c4da8410636496cd04a Mon Sep 17 00:00:00 2001
+From 1f08ce13213b4921db5750f2c8690b4fc7a31c32 Mon Sep 17 00:00:00 2001
 From: "Fred.Chen" <Fred.Chen@quantatw.com>
 Date: Tue, 10 Jun 2025 18:29:38 +0800
-Subject: [PATCH 1008/1011] ARM: dts: aspeed: santabarbara: add device nodes
- behind the i3c hub
+Subject: [PATCH] ARM: dts: aspeed: santabarbara: add device nodes behind the
+ i3c hub
 
 Add device nodes behind the i3c hub. Each hub slave port can be
 configured to use either SMBus or I3C protocol.
@@ -13,11 +13,11 @@ driver is merged.
 I3C hub lore link:
 https://lore.kernel.org/all/20250917142055.2806576-2-steven.niu.uj@renesas.com/
 ---
- .../aspeed-bmc-facebook-santabarbara.dts      | 965 ++++++++++++++++++
- 1 file changed, 965 insertions(+)
+ .../aspeed-bmc-facebook-santabarbara.dts      | 967 ++++++++++++++++++
+ 1 file changed, 967 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-index 66d0d28e5216..7b5dff7d743f 100644
+index 66d0d28e5216..0dd08e8db2b5 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 @@ -39,6 +39,14 @@ aliases {
@@ -35,7 +35,7 @@ index 66d0d28e5216..7b5dff7d743f 100644
  		i2c48 = &i2c6mux0ch0;
  		i2c49 = &i2c6mux0ch1;
  		i2c50 = &i2c6mux0ch2;
-@@ -1657,6 +1665,963 @@ &i2c15 {
+@@ -1657,6 +1665,965 @@ &i2c15 {
  	status = "okay";
  };
  
@@ -912,7 +912,9 @@ index 66d0d28e5216..7b5dff7d743f 100644
 +			"P12V_FAN2_ADC_ALERT_R1","P12V_FAN3_ADC_ALERT_R1",
 +			"PDB1_EXP_INT","CHASSIS0_LEAK_Q_N_R",
 +			"PDB2_LEAK_DETECT","PRSNT_CHASSIS0_LEAK_CABLE_N",
-+			"","","","","","";
++			"FAN_4_PRSNT_R_N","FAN_5_PRSNT_R_N",
++			"FAN_6_PRSNT_R_N","FAN_7_PRSNT_R_N",
++			"PDB1_SB_CONN_PRSNT_N","U417_INT";
 +	};
 +};
 +
@@ -1000,5 +1002,5 @@ index 66d0d28e5216..7b5dff7d743f 100644
  	aspeed,lpc-io-reg = <0xca8>;
  	status = "okay";
 -- 
-2.49.0
+2.52.0
 

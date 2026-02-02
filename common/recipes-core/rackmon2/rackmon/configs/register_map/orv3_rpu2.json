@@ -1729,28 +1729,46 @@
             "name": "MFR_Date"
         },
         {
-            "begin": 216,
-            "length": 2,
+            "begin": 411,
+            "length": 4,
             "format": "STRING",
             "name": "HMI_FW_Revision"
         },
         {
             "begin": 415,
-            "length": 8,
+            "length": 4,
             "format": "STRING",
-            "name": "Pump_Rack_FW_Revision"
+            "name": "Pump_Rack_RPU_FW_Revision"
+        },
+        {
+            "begin": 419,
+            "length": 4,
+            "format": "STRING",
+            "name": "Pump_Rack_ETH_FW_Revision"
         },
         {
             "begin": 423,
-            "length": 8,
+            "length": 4,
             "format": "STRING",
-            "name": "Fan_Rack_1_FW_Revision"
+            "name": "Fan_Rack_1_RPU_FW_Revision"
+        },
+        {
+            "begin": 427,
+            "length": 4,
+            "format": "STRING",
+            "name": "Fan_Rack_1_ETH_FW_Revision"
         },
         {
             "begin": 431,
-            "length": 8,
+            "length": 4,
             "format": "STRING",
-            "name": "Fan_Rack_2_FW_Revision"
+            "name": "Fan_Rack_2_RPU_FW_Revision"
+        },
+        {
+            "begin": 435,
+            "length": 4,
+            "format": "STRING",
+            "name": "Fan_Rack_2_ETH_FW_Revision"
         },
         {
             "begin": 240,

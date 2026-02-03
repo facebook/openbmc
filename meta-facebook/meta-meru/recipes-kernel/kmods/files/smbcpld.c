@@ -93,6 +93,38 @@ static const i2c_dev_attr_st smbcpld_attr_table[] = {
     0x14, 1, 1,
   },
   {
+    "asic_0_system_reset",
+    "0x1: In reset\n"
+		"0x0: Not in reset",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x74, 0, 1,
+  },
+  {
+    "asic_0_pcie_reset",
+    "0x1: In reset\n"
+		"0x0: Not in reset",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x74, 1, 1,
+  },
+  {
+    "asic_1_system_reset",
+    "0x1: In reset\n"
+		"0x0: Not in reset",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x74, 2, 1,
+  },
+  {
+    "asic_1_pcie_reset",
+    "0x1: In reset\n"
+		"0x0: Not in reset",
+    I2C_DEV_ATTR_SHOW_DEFAULT,
+    I2C_DEV_ATTR_STORE_DEFAULT,
+    0x74, 3, 1,
+  },
+  {
     "ramon3_0_system_reset",
     "0x1: In reset\n"
 		"0x0: Not in reset",

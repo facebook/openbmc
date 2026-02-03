@@ -32,6 +32,10 @@ R3_ASIC_0_ASIC_PCIE_RESET_SYSFS="${SMBCPLD_SYSFS_DIR}/ramon3_0_pcie_reset"
 R3_ASIC_0_ASIC_SYS_RESET_SYSFS="${SMBCPLD_SYSFS_DIR}/ramon3_0_system_reset"
 R3_ASIC_1_ASIC_PCIE_RESET_SYSFS="${SMBCPLD_SYSFS_DIR}/ramon3_1_pcie_reset"
 R3_ASIC_1_ASIC_SYS_RESET_SYSFS="${SMBCPLD_SYSFS_DIR}/ramon3_1_system_reset"
+ASIC_0_ASIC_PCIE_RESET_SYSFS="${SMBCPLD_SYSFS_DIR}/asic_0_pcie_reset"
+ASIC_0_ASIC_SYS_RESET_SYSFS="${SMBCPLD_SYSFS_DIR}/asic_0_system_reset"
+ASIC_1_ASIC_PCIE_RESET_SYSFS="${SMBCPLD_SYSFS_DIR}/asic_1_pcie_reset"
+ASIC_1_ASIC_SYS_RESET_SYSFS="${SMBCPLD_SYSFS_DIR}/asic_1_system_reset"
 
 LAYOUT_FILE="/etc/meru_flash.layout"
 
@@ -124,6 +128,13 @@ wedge_power_asic() {
             echo "$power_state" > "$R3_ASIC_0_ASIC_SYS_RESET_SYSFS"
             echo "$power_state" > "$R3_ASIC_1_ASIC_PCIE_RESET_SYSFS"
             echo "$power_state" > "$R3_ASIC_1_ASIC_SYS_RESET_SYSFS"
+            ;;
+        BLACKWOLF800BANW)
+            echo "$power_state" > "$ASIC_0_ASIC_SYS_RESET_SYSFS"
+            echo "$power_state" > "$ASIC_1_ASIC_SYS_RESET_SYSFS"
+            sleep 1
+            echo "$power_state" > "$ASIC_0_ASIC_PCIE_RESET_SYSFS"
+            echo "$power_state" > "$ASIC_1_ASIC_PCIE_RESET_SYSFS"
             ;;
         *)
             echo "Error: Unexpected product name detected."
@@ -427,7 +438,7 @@ maybe_fix_dmi_config() {
    fi
 
    product=$(awk -F': ' '/Product Name:/ {print $2}' "$TEMP_WEUTIL_OUTPUT")
-   if ! [[ "${product^^}" =~ "MERU" ]]; then
+   if ! [[ "${product^^}" =~ "MERU" ]] && ! [[ "${product^^}" =~ "BLACKWOLF" ]]; then
       echo "Not fixing aboot_conf DMI_BOARD_NAME as weutil product is not valid"
       return
    fi

@@ -3429,6 +3429,11 @@ pal_fan_fail_otp_check(char* reason) {
     if (cable_id == 0xFF) {  // all IDs are 11b
       int exp_prsnt = 0;
       uint8_t prsnt = 0, type = TYPE_1OU_UNKNOWN;
+      char sys_conf[MAX_VALUE_LEN] = {0};
+
+      if (kv_get("sled_system_conf", sys_conf, NULL, KV_FPERSIST) < 0) {
+        syslog(LOG_WARNING, "%s() Failed to read sled_system_conf", __func__);
+      }
 
       if (!fby35_common_is_fru_prsnt(FRU_SLOT1, &prsnt) && (prsnt == SLOT_PRESENT)) {
         if ((exp_prsnt = bic_is_exp_prsnt(FRU_SLOT1)) < 0) {
@@ -3440,7 +3445,8 @@ pal_fan_fail_otp_check(char* reason) {
           }
         }
       }
-      if (type != TYPE_1OU_OLMSTEAD_POINT) {
+      // System with only slot1 should not skip host shutdown
+      if (type != TYPE_1OU_OLMSTEAD_POINT && (strcmp(sys_conf, "Type_HSM") != 0)) {
         return;
       }
     }

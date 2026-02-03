@@ -1,0 +1,43 @@
+From e2d29610c710eaca257590aa0b0180ac7bf0cff5 Mon Sep 17 00:00:00 2001
+From: Kevin Tung <kevin.tung.openbmc@gmail.com>
+Date: Fri, 30 Jan 2026 14:39:49 +0800
+Subject: [PATCH v4 7/7] ARM: dts: aspeed: yosemite5: Add debug card bypass GPIO
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <20260130-yv5_revise_dts-v4-7-9fbe976b3ec3@gmail.com>
+
+On Yv5, the SCM CPLD bypass OCP debug card commands to the BMC.
+These commands share the same I2C bus used by the BMC to access the
+SCM CPLD for firmware updates, which can cause bus conflicts.
+
+To avoid this, the SCM CPLD provides a bypass control GPIO connected
+to GPIOO7. When asserted by the BMC, this GPIO isolates debug card
+commands and prevents conflicts during SCM CPLD access.
+
+Add the DEBUG_CARD_BYPASS GPIO to support this behavior.
+
+lore link: https://lore.kernel.org/all/20260130-yv5_revise_dts-v4-7-4d924455f3a7@gmail.com/
+
+Signed-off-by: Kevin Tung <kevin.tung.openbmc@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+index 48f864b52d1a22b12f8a39ba9703a90349ed930d..61e78d5e712ff45e1a0691979b9b36408404cd2d 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+@@ -166,7 +166,8 @@ &gpio0 {
+ 			"led-postcode-3","led-postcode-4","led-postcode-5",
+ 			"led-postcode-6","led-postcode-7",
+ 	/*O0-O7*/	"RUN_POWER_PG","PWR_BRAKE","CHASSIS_AC_LOSS","BSM_PRSNT_N",
+-			"PSU_SMB_ALERT","FM_TPM_PRSNT_0_N","PSU_FW_UPDATING_N","",
++			"PSU_SMB_ALERT","FM_TPM_PRSNT_0_N",
++			"PSU_FW_UPDATING_N","DEBUG_CARD_BYPASS",
+ 	/*P0-P7*/	"PWR_BTN_BMC_N","IPEX_CABLE_PRSNT","ID_RST_BTN_BMC_N",
+ 			"RST_BMC_RSTBTN_OUT_N","BMC_PWR_LED","RUN_POWER_EN","SHDN_FORCE","",
+ 	/*Q0-Q7*/	"IRQ_PCH_TPM_SPI_LV3_N","USB_OC0_REAR_N","UART_MUX_SEL",
+
+-- 
+2.52.0

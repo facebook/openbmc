@@ -19,6 +19,8 @@
 #define XDPE15284C_CONF_SIZE 1344  // Config(604) + PMBus(504) + SVID(156) + PMBusPartial(80)
 #define XDPE19283B_CONF_SIZE 1416  // Config(728) + PMBus(568) + SVID(120)
 #define REMAINING_TIMES(x, y) (((x[1] << 8) | x[0]) / (y))
+#define REMAINING_SPACE(x) ((x[1] << 8) | x[0])
+#define REMAINING_SPACE_MIN 2048
 
 #define IFX_IC_DEV_ID_LEN 2
 
@@ -29,6 +31,7 @@
 
 #define PRODUCT_ID_XDPE15284 0x8A
 #define PRODUCT_ID_XDPE19283 0x95
+#define PRODUCT_ID_XDPE19283D 0xAE
 
 enum {
   PMBUS_STS_CML       = 0x7E,
@@ -193,6 +196,24 @@ get_xdpe152xx_remaining_wr(uint8_t bus, uint8_t addr, uint8_t *remain) {
 }
 
 static int
+get_xdpe152xx_remaining_space(uint8_t bus, uint8_t addr, uint16_t *remain) {
+  uint8_t tbuf[4] = {0}, rbuf[4] = {0};
+
+  if (remain == NULL) {
+    return -1;
+  }
+
+  if (xdpe152xx_mfr_fw(bus, addr, OTP_PTN_RMNG, tbuf, rbuf) < 0) {
+    syslog(LOG_WARNING, "%s: Failed to get vr remaining space", __func__);
+    return -1;
+  }
+
+  *remain = REMAINING_SPACE(rbuf);
+
+  return 0;
+}
+
+static int
 get_xdpe152xx_crc(uint8_t bus, uint8_t addr, uint32_t *sum) {
   uint8_t tbuf[16] = {0}, rbuf[16];
 
@@ -211,15 +232,12 @@ get_xdpe152xx_crc(uint8_t bus, uint8_t addr, uint32_t *sum) {
 
 static int
 cache_xdpe152xx_crc(uint8_t bus, uint8_t addr, char *key, char *sum_str, uint32_t *sum) {
+  uint8_t devid[2] = {0};
   uint8_t remain;
   uint32_t tmp_sum;
   char tmp_str[MAX_VALUE_LEN] = {0};
 
   if (key == NULL) {
-    return -1;
-  }
-
-  if (get_xdpe152xx_remaining_wr(bus, addr, &remain) < 0) {
     return -1;
   }
 
@@ -233,7 +251,20 @@ cache_xdpe152xx_crc(uint8_t bus, uint8_t addr, char *key, char *sum_str, uint32_
   if (!sum_str) {
     sum_str = tmp_str;
   }
-  snprintf(sum_str, MAX_VALUE_LEN, "Infineon %08X, Remaining Writes: %u", *sum, remain);
+
+  if (xdpe152xx_get_devid(bus, addr, devid) < 0) {
+    syslog(LOG_WARNING, "%s: Failed to get vr ic device id", __func__);
+  }
+
+  if (devid[1] == PRODUCT_ID_XDPE19283D && devid[0] == REV_D) {
+    snprintf(sum_str, MAX_VALUE_LEN, "Infineon %08X", *sum);
+  }
+  else {
+    if (get_xdpe152xx_remaining_wr(bus, addr, &remain) < 0) {
+      return -1;
+    }
+    snprintf(sum_str, MAX_VALUE_LEN, "Infineon %08X, Remaining Writes: %u", *sum, remain);
+  }
   kv_set(key, sum_str, 0, 0);
 
   return 0;
@@ -308,8 +339,9 @@ check_xdpe152xx_image(struct xdpe152xx_config *config) {
 
 static int
 program_xdpe152xx(uint8_t bus, uint8_t addr, struct xdpe152xx_config *config, bool force) {
-  uint8_t tbuf[16], rbuf[16];
+  uint8_t tbuf[16], rbuf[16], devid[2] = {0};
   uint8_t remain = 0;
+  uint16_t remain_space = 0;
   uint32_t sum = 0;
   int i, j, size = 0;
   int prog = 0, ret = 0;
@@ -329,23 +361,43 @@ program_xdpe152xx(uint8_t bus, uint8_t addr, struct xdpe152xx_config *config, bo
     return -1;
   }
 
-  // check remaining writes
-  if (get_xdpe152xx_remaining_wr(bus, addr, &remain) < 0) {
-    return -1;
+  if (xdpe152xx_get_devid(bus, addr, devid) < 0) {
+    syslog(LOG_WARNING, "%s: Failed to get vr ic device id", __func__);
   }
 
-  printf("Remaining writes: %u\n", remain);
-  if (!remain) {
-    syslog(LOG_WARNING, "%s: no remaining writes", __func__);
-    return -1;
-  }
+  if (devid[1] == PRODUCT_ID_XDPE19283D && devid[0] == REV_D) {
+    // check remaining space
+    if (get_xdpe152xx_remaining_space(bus, addr, &remain_space) < 0) {
+      return -1;
+    }
 
-  if (!force && (remain <= VR_WARN_REMAIN_WR)) {
-    printf("WARNING: the remaining writes is below the threshold value %d!\n",
-           VR_WARN_REMAIN_WR);
-    printf("Please use \"--force\" option to try again.\n");
-    syslog(LOG_WARNING, "%s: insufficient remaining writes %u", __func__, remain);
-    return -1;
+    printf("Remaining space: %u\n", remain_space);
+    if (remain_space <= REMAINING_SPACE_MIN) {
+      printf("ERROR: the remaining space is below the threshold value %d!\n",
+            REMAINING_SPACE_MIN);
+      syslog(LOG_ERR, "%s: no remaining space %u", __func__, remain_space);
+      return -1;
+    }
+  }
+  else {
+    // check remaining writes
+    if (get_xdpe152xx_remaining_wr(bus, addr, &remain) < 0) {
+      return -1;
+    }
+
+    printf("Remaining writes: %u\n", remain);
+    if (!remain) {
+      syslog(LOG_WARNING, "%s: no remaining writes", __func__);
+      return -1;
+    }
+
+    if (!force && (remain <= VR_WARN_REMAIN_WR)) {
+      printf("WARNING: the remaining writes is below the threshold value %d!\n",
+            VR_WARN_REMAIN_WR);
+      printf("Please use \"--force\" option to try again.\n");
+      syslog(LOG_WARNING, "%s: insufficient remaining writes %u", __func__, remain);
+      return -1;
+    }
   }
 
   // Added reprogramming of the entire configuration file.
@@ -637,6 +689,7 @@ xdpe152xx_parse_file(struct vr_info *info, const char *path) {
 int
 xdpe152xx_fw_update(struct vr_info *info, void *args) {
   struct xdpe152xx_config *config = (struct xdpe152xx_config *)args;
+  uint8_t devid[2] = {0};
   char ver_key[MAX_KEY_LEN] = {0};
   char value[MAX_VALUE_LEN] = {0};
   uint8_t remain = 0;
@@ -667,12 +720,21 @@ xdpe152xx_fw_update(struct vr_info *info, void *args) {
   if (pal_is_support_vr_delay_activate() && info->private_data) {
     vr_get_fw_avtive_key(info, ver_key);
 
-    if (get_xdpe152xx_remaining_wr(info->bus, info->addr, &remain) < 0) {
-      snprintf(value, sizeof(value), "Infineon %08X, Remaining Writes: Unknown",
-             config->sum_exp);
-    } else {
-      snprintf(value, sizeof(value), "Infineon %08X, Remaining Writes: %u",
-             config->sum_exp, remain);
+    if (xdpe152xx_get_devid(info->bus, info->addr, devid) < 0) {
+      syslog(LOG_WARNING, "%s: Failed to get vr ic device id", __func__);
+    }
+
+    if (devid[1] == PRODUCT_ID_XDPE19283D && devid[0] == REV_D) {
+      snprintf(value, sizeof(value), "Infineon %08X", config->sum_exp);
+    }
+    else {
+      if (get_xdpe152xx_remaining_wr(info->bus, info->addr, &remain) < 0) {
+        snprintf(value, sizeof(value), "Infineon %08X, Remaining Writes: Unknown",
+              config->sum_exp);
+      } else {
+        snprintf(value, sizeof(value), "Infineon %08X, Remaining Writes: %u",
+              config->sum_exp, remain);
+      }
     }
 
     kv_set(ver_key, value, 0, KV_FPERSIST);

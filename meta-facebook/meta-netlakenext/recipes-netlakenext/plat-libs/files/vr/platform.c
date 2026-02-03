@@ -6,25 +6,12 @@
 #include <facebook/netlakenext_common.h>
 #include <openbmc/obmc-i2c.h>
 #include <openbmc/obmc-pal.h>
+#include "mp29608a.h"
 #include "xdpe152xx.h"
-#include "tda38640.h"
-#include "mp2856.h"
-
 
 enum {
-  VR_1V05_STBY = 0,
-  VR_VNN_PCH = 1,
-  VR_VCCIN_1V8_STBY = 2,
-  VR_VCCANA_CPU = 3,
-  VR_VDDQ = 4,
-};
-
-//tda38640's i2c address is different from pmbus address
-enum {
-  TDA38640_VNN_PCH_ADDR = 0x20,
-  TDA38640_P1V05_STBY_ADDR = 0x24,
-  TDA38640_VDDQ_ADDR = 0x2A,
-  TDA38640_VCCANA_CPU_ADDR = 0x2C,
+  VR_VDDCR_VDDCR_SOC = 0,
+  VR_VDD_MISC = 1,
 };
 
 static int
@@ -63,7 +50,15 @@ bmc_vr_polling_waiting(bool enable) {
   }
 }
 
-struct vr_ops ifx_ops = {
+struct vr_ops mp29608a_ops = {
+  .get_fw_ver = get_mp29608a_ver,
+  .parse_file = mp29608a_parse_file,
+  .validate_file = NULL,
+  .fw_update = mp29608a_fw_update,
+  .fw_verify = NULL,
+};
+
+struct vr_ops xpde19283d_ops = {
   .get_fw_ver = get_xdpe152xx_ver,
   .parse_file = xdpe152xx_parse_file,
   .validate_file = NULL,
@@ -71,118 +66,43 @@ struct vr_ops ifx_ops = {
   .fw_verify = NULL,
 };
 
-struct vr_ops iftda_ops = {
-  .get_fw_ver = get_tda38640_ver,
-  .parse_file = tda38640_parse_file,
-  .validate_file = NULL,
-  .fw_update = tda38640_fw_update,
-  .fw_verify = NULL,
-};
-
-struct vr_ops mps_ops = {
-  .get_fw_ver = get_mp2856_ver,
-  .parse_file = mp2856_parse_file,
-  .validate_file = NULL,
-  .fw_update = mp2856_fw_update,
-  .fw_verify = NULL,
-};
-
-struct vr_ops mps2993_ops = {
-  .get_fw_ver = get_mp2993_ver,
-  .parse_file = mp2856_parse_file,
-  .validate_file = NULL,
-  .fw_update = mp2856_fw_update,
-  .fw_verify = NULL,
-};
-
 struct vr_info netlakenext_vr_list[] = {
-  [VR_1V05_STBY] = {
+  [VR_VDDCR_VDDCR_SOC] = {
     .bus = VR_BUS,
-    .addr = TDA38640_P1V05_STBY_ADDR,
-    .dev_name = "VR_1V05_STBY",
-    .ops = &iftda_ops,
+    .addr = VR_PVDDCR_ADDR,
+    .dev_name = "VR_VDDCR/VR_VDDCR_SOC",
+    .ops = &mp29608a_ops,
     .private_data = "server",
     .xfer = &netlakenext_vr_rdwr,
+    .sensor_polling_ctrl = bmc_vr_polling_waiting,
   },
-  [VR_VNN_PCH] = {
+  [VR_VDD_MISC] = {
     .bus = VR_BUS,
-    .addr = TDA38640_VNN_PCH_ADDR,
-    .dev_name = "VR_VNN_PCH",
-    .ops = &iftda_ops,
+    .addr = VR_PVDD_MISC_ADDR,
+    .dev_name = "VR_VDD_MISC",
+    .ops = &mp29608a_ops,
     .private_data = "server",
     .xfer = &netlakenext_vr_rdwr,
-  },
-  [VR_VCCIN_1V8_STBY] = {
-    .bus = VR_BUS,
-    .addr = VR_PVCCIN_ADDR,
-    .dev_name = "VR_VCCIN/VR_1V8_STBY",
-    .ops = &ifx_ops,
-    .private_data = "server",
-    .xfer = &netlakenext_vr_rdwr,
-  },
-  [VR_VCCANA_CPU] = {
-    .bus = VR_BUS,
-    .addr = TDA38640_VCCANA_CPU_ADDR,
-    .dev_name = "VR_VCCANA_CPU",
-    .ops = &iftda_ops,
-    .private_data = "server",
-    .xfer = &netlakenext_vr_rdwr,
-  },
-  [VR_VDDQ] = {
-    .bus = VR_BUS,
-    .addr = TDA38640_VDDQ_ADDR,
-    .dev_name = "VR_VDDQ",
-    .ops = &iftda_ops,
-    .private_data = "server",
-    .xfer = &netlakenext_vr_rdwr,
+    .sensor_polling_ctrl = bmc_vr_polling_waiting,
   },
 };
 
 struct vr_info netlakenext_vr_second_list[] = {
-  [VR_1V05_STBY] = {
+  [VR_VDDCR_VDDCR_SOC] = {
     .bus = VR_BUS,
-    .addr = VR_P1V05_STBY_ADDR,
-    .dev_name = "VR_1V05_STBY",
-    .ops = &mps_ops,
+    .addr = VR_PVDDCR_ADDR,
+    .dev_name = "VR_VDDCR/VR_VDDCR_SOC",
+    .ops = &xpde19283d_ops,
     .private_data = "server",
     .xfer = &netlakenext_vr_rdwr,
-    .sensor_polling_ctrl = bmc_vr_polling_waiting,
   },
-  [VR_VNN_PCH] = {
+  [VR_VDD_MISC] = {
     .bus = VR_BUS,
-    .addr = VR_PVNN_PCH_ADDR,
-    .dev_name = "VR_VNN_PCH",
-    .ops = &mps_ops,
+    .addr = VR_PVDD_MISC_ADDR,
+    .dev_name = "VR_VDD_MISC",
+    .ops = &xpde19283d_ops,
     .private_data = "server",
     .xfer = &netlakenext_vr_rdwr,
-    .sensor_polling_ctrl = bmc_vr_polling_waiting,
-  },
-  [VR_VCCIN_1V8_STBY] = {
-    .bus = VR_BUS,
-    .addr = VR_PVCCIN_ADDR,
-    .dev_name = "VR_VCCIN/VR_1V8_STBY",
-    .ops = &mps2993_ops,
-    .private_data = "server",
-    .xfer = &netlakenext_vr_rdwr,
-    .sensor_polling_ctrl = bmc_vr_polling_waiting,
-  },
-  [VR_VCCANA_CPU] = {
-    .bus = VR_BUS,
-    .addr = VR_PVCCANCPU_ADDR,
-    .dev_name = "VR_VCCANA_CPU",
-    .ops = &mps_ops,
-    .private_data = "server",
-    .xfer = &netlakenext_vr_rdwr,
-    .sensor_polling_ctrl = bmc_vr_polling_waiting,
-  },
-  [VR_VDDQ] = {
-    .bus = VR_BUS,
-    .addr = VR_PVDDQ_ABC_CPU_ADDR,
-    .dev_name = "VR_VDDQ",
-    .ops = &mps_ops,
-    .private_data = "server",
-    .xfer = &netlakenext_vr_rdwr,
-    .sensor_polling_ctrl = bmc_vr_polling_waiting,
   },
 };
 

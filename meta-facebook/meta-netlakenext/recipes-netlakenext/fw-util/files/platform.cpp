@@ -8,9 +8,6 @@ BmcCpldComponent  cpld_server("server", "cpld", "LFMXO5-25", "3", "0x40");
 
 NicComponent  nic("nic", "nic");
 
-VrComponent vr_1v05_stby("server", "vr_1v05_stby", "VR_1V05_STBY");
-VrComponent vr_vnn_pch("server", "vr_vnn_pch", "VR_VNN_PCH");
-VrComponent vr_vccin("server", "vr_vccin", "VR_VCCIN/VR_1V8_STBY");
-VrComponent vr_vccna_cpu("server", "vr_vccna_cpu", "VR_VCCANA_CPU");
-VrComponent vr_vddq("server", "vr_vddq", "VR_VDDQ");
+VrComponent vr_vddcr("server", "vr_vddcr", "VR_VDDCR/VR_VDDCR_SOC");
+VrComponent vr_vdd_misc("server", "vr_vdd_misc", "VR_VDD_MISC");
 

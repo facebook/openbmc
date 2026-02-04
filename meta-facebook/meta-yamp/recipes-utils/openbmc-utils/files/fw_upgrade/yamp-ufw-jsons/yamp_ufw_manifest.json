@@ -1,8 +1,8 @@
 {
     "bios" : {
-        "get_version" : "strings /tmp/fw_upgrade/coreboot-glacier.rom | grep -w glacier",
+        "get_version" : "/usr/local/bin/bios_ver.sh",
         "priority" : 1,
-        "upgrade_cmd" : "/usr/local/bin/bios_util.sh write {filename}"
+        "upgrade_cmd" : "/usr/local/bin/bios_util.sh write {filename} --init-aconf"
     },
     "dawson" : {
         "get_version" : "/usr/local/bin/fpga_ver.sh |grep SUP_FPGA|cut -d ' ' -f 2",

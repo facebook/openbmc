@@ -1,9 +1,9 @@
 {
     "bios" : {
-        "filename"    : "coreboot-glacier.rom",
-        "version" : "",
+        "filename"    : "Aboot-norcal7-7.3.6-cb411-generic-2x4-44270425.rom",
+        "version" : "Aboot-norcal7-7.3.6-cb411-generic-2x4-44270425",
         "hash"    : "sha1sum",
-        "hash_value" : "5bd65442ea3d7eb9b738e9bc7dceaea9fac5eb51"
+        "hash_value" : "d3b35bde447258be47fe1205c0fafa1b4cab1122"
     },
     "dawson" : {
         "filename"    : "dawson.astp",

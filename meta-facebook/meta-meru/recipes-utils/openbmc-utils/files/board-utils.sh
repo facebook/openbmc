@@ -22,6 +22,7 @@
 PWRCPLD_SYSFS_DIR="/sys/bus/i2c/drivers/pwrcpld/12-0043"
 SCM_PWR_IN_RESET_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_in_reset"
 SCM_CPU_READY_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_ready"
+CPU_CONTROL_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_control"
 SMB_EEPROM_SYSFS="/sys/bus/i2c/drivers/at24/9-0052/eeprom"
 
 # SMB CPLD endpoints
@@ -41,13 +42,17 @@ LAYOUT_FILE=""
 
 WEUTIL_CMD='weutil -e'
 
+DS4520_BUS=8
+DS4520_IO0_REG=0xf8
+
+# Board IDs
+BOARD_ID_MERU800B=5
+BOARD_ID_RUGGLES=8
+
 ACONF_SMB_SERIAL_CACHE="/mnt/data/.aconf_smb_serial"
 TEMP_WEUTIL_OUTPUT="/tmp/tmp_weutil_output"
 TEMP_ACONF_OUTPUT="/tmp/tmp_aconf_output"
 ACONFUTIL_CMD='aconf_util.sh'
-
-DS4520_BUS=8
-DS4520_IO0_REG=0xf8
 
 wedge_is_bmc_personality() {
     DEV_ADDR=""
@@ -114,6 +119,16 @@ wedge_board_type() {
     echo 'meru'
 }
 
+wedge_product_eeprom_source() {
+    local cpu_id
+    cpu_id=$(wedge_cpu_id)
+    if [ "$cpu_id" = "$BOARD_ID_RUGGLES" ]; then
+        echo "chassis_eeprom"
+    else
+        echo "scm"
+    fi
+}
+
 wedge_product_name() {
     output=$($WEUTIL_CMD smb 2>&1) || { echo "$output"; return 1; }
     echo "$output" | awk -F': ' '/Product Name:/ {print $2}'
@@ -156,6 +171,10 @@ wedge_power_asic() {
             echo "$power_state" > "$ASIC_0_ASIC_PCIE_RESET_SYSFS"
             echo "$power_state" > "$ASIC_1_ASIC_PCIE_RESET_SYSFS"
             ;;
+        ICECUBE800BANW)
+            echo "$power_state" > "$ASIC_0_ASIC_PCIE_RESET_SYSFS"
+            echo "$power_state" > "$ASIC_0_ASIC_SYS_RESET_SYSFS"
+            ;;
         *)
             echo "Error: Unexpected product name detected."
             return 1
@@ -164,7 +183,9 @@ wedge_power_asic() {
 }
 
 wedge_board_rev() {
-    board_rev=$($WEUTIL_CMD scm|grep "Product Production State"|awk '{print $4}')
+    local eeprom_source
+    eeprom_source=$(wedge_product_eeprom_source)
+    board_rev=$($WEUTIL_CMD "$eeprom_source"|grep "Product Production State"|awk '{print $4}')
     case "$((board_rev))" in
         1)
             echo "EVT"
@@ -216,18 +237,34 @@ userver_power_is_on() {
 }
 
 userver_power_on() {
+    local cpu_id
+    cpu_id=$(wedge_cpu_id)
+
     sync
     sleep 0.5
-    # Power on using the SLG gpio
-    i2cset -f -y 14 0x28 0x2e 0x1
+    if [ "$cpu_id" = "$BOARD_ID_RUGGLES" ]; then
+        # Power on using the cpld
+        echo 1 > "$CPU_CONTROL_SYSFS"
+    else
+        # Power on using the SLG gpio
+        i2cset -f -y 14 0x28 0x2e 0x1
+    fi
     sleep 0.5
     wedge_power_asic 0
     return 0
 }
 
 userver_power_off() {
-    # Power off using the SLG gpio
-    i2cset -f -y 14 0x28 0x2e 0x0
+    local cpu_id
+    cpu_id=$(wedge_cpu_id)
+
+    if [ "$cpu_id" = "$BOARD_ID_RUGGLES" ]; then
+        # Power off using the cpld
+        echo 0 > "$CPU_CONTROL_SYSFS"
+    else
+        # Power off using the SLG gpio
+        i2cset -f -y 14 0x28 0x2e 0x0
+    fi
     # Some delay is needed for "wedge_power reset" reset to take effect
     sleep 10
     return 0
@@ -251,12 +288,19 @@ chassis_power_cycle() {
 }
 
 bmc_mac_addr() {
-    # get the MAC from Meru SCM EEPROM
+    local cpu_id
+    local mac_offset
+
     mac_base=$(userver_mac_addr)
     mac_base_hex=$(echo "$mac_base" |  tr '[:lower:]' '[:upper:]' | tr -d ':')
     mac_dec=$(printf '%d\n' 0x"$mac_base_hex")
-    # Add 2 to SCM MAC base for BMC MAC
-    mac_dec=$((mac_dec + 2))
+    cpu_id=$(wedge_cpu_id)
+    if [ "$cpu_id" = "$BOARD_ID_RUGGLES" ]; then
+        mac_offset=3
+    else
+        mac_offset=2
+    fi
+    mac_dec=$((mac_dec + mac_offset))
     # Convert base to MAC format
     mac_hex=$(printf '%X\n' "$mac_dec")
     mac=$(echo "$mac_hex" | sed 's/../&:/g;s/:$//')
@@ -265,8 +309,10 @@ bmc_mac_addr() {
 
 # shellcheck disable=SC2120
 userver_mac_addr() {
+    local eeprom_source
+    eeprom_source=$(wedge_product_eeprom_source)
     # support v4 or v5 eeprom version
-    $WEUTIL_CMD scm | grep -E '(Extended|CPU) MAC B' | awk -F': ' '{print $2}'
+    $WEUTIL_CMD "$eeprom_source" | grep -E '(Extended|CPU) MAC B' | awk -F': ' '{print $2}'
 }
 
 FWUPGRADE_PIDFILE="/var/run/firmware_upgrade.pid"
@@ -476,7 +522,7 @@ maybe_fix_dmi_config() {
    fi
 
    product=$(awk -F': ' '/Product Name:/ {print $2}' "$TEMP_WEUTIL_OUTPUT")
-   if ! [[ "${product^^}" =~ "MERU" ]] && ! [[ "${product^^}" =~ "BLACKWOLF" ]]; then
+   if ! [[ "${product^^}" =~ "MERU" ]] && ! [[ "${product^^}" =~ "BLACKWOLF" ]] && ! [[ "${product^^}" =~ "ICECUBE" ]]; then
       echo "Not fixing aboot_conf DMI_BOARD_NAME as weutil product is not valid"
       return
    fi

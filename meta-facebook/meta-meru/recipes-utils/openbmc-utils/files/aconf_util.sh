@@ -55,12 +55,15 @@ get_old_product_version() {
 get_product_version() {
     local version
     local sub_version
+    local eeprom_source
 
-    version=$($WEUTIL_CMD scm|grep "Product Version"|awk '{print $3}')
+    eeprom_source=$(wedge_product_eeprom_source)
+
+    version=$($WEUTIL_CMD "$eeprom_source"|grep "Product Version"|awk '{print $3}')
     if [ -z "$version" ]; then
         return
     fi
-    sub_version=$($WEUTIL_CMD scm|grep "Product Sub-Version"|awk '{print $3}')
+    sub_version=$($WEUTIL_CMD "$eeprom_source"|grep "Product Sub-Version"|awk '{print $3}')
     if [ -z "$sub_version" ]; then
         return
     fi

@@ -20,11 +20,11 @@
 package common
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -44,7 +44,7 @@ func checkOtherFlasherRunning(stepParams step.StepParams) step.StepExitError {
 	err := utils.CheckOtherFlasherRunning(flashyStepBaseNames)
 	if err != nil {
 		return step.ExitUnsafeToReboot{
-			Err: errors.Errorf("Another flasher detected: %v. "+
+			Err: fmt.Errorf("Another flasher detected: %v. "+
 				"Use the '--clowntown' flag if you wish to proceed at the risk of "+
 				"bricking the device", err),
 		}

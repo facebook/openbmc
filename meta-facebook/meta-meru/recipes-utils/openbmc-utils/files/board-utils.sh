@@ -37,7 +37,7 @@ ASIC_0_ASIC_SYS_RESET_SYSFS="${SMBCPLD_SYSFS_DIR}/asic_0_system_reset"
 ASIC_1_ASIC_PCIE_RESET_SYSFS="${SMBCPLD_SYSFS_DIR}/asic_1_pcie_reset"
 ASIC_1_ASIC_SYS_RESET_SYSFS="${SMBCPLD_SYSFS_DIR}/asic_1_system_reset"
 
-LAYOUT_FILE="/etc/meru_flash.layout"
+LAYOUT_FILE=""
 
 WEUTIL_CMD='weutil -e'
 
@@ -88,6 +88,26 @@ retry_command() {
         fi
     done
     return 0
+}
+
+wedge_cpu_id() {
+    # Read the CPU ID from the CPU_ID GPIOs
+    cpu_id_0=$(gpiocli get-value --shadow CPU_ID_0 | awk -F= '{print $2}')
+    cpu_id_1=$(gpiocli get-value --shadow CPU_ID_1 | awk -F= '{print $2}')
+    cpu_id_2=$(gpiocli get-value --shadow CPU_ID_2 | awk -F= '{print $2}')
+    cpu_id_3=$(gpiocli get-value --shadow CPU_ID_3 | awk -F= '{print $2}')
+    binary_cpu_id="$cpu_id_3$cpu_id_2$cpu_id_1$cpu_id_0"
+    decimal_cpu_id=$((2#$binary_cpu_id))
+    echo "$decimal_cpu_id"
+}
+
+wedge_cpu_needs_extra_spi_gpios() {
+    cpu_id=$(wedge_cpu_id)
+    if [ "${cpu_id}" == "4" ] || [ "${cpu_id}" == "7" ]; then
+        return 0
+    fi
+
+    return 1
 }
 
 wedge_board_type() {
@@ -301,10 +321,24 @@ unbind_spi_nor_driver() {
     fi
 }
 
+get_layout_file() {
+    if [ -z "${LAYOUT_FILE}" ]; then
+        LAYOUT_FILE="/etc/meru_flash.layout"
+        if wedge_cpu_needs_extra_spi_gpios; then
+            LAYOUT_FILE="/etc/meru_flash_aboot18.layout"
+        fi
+    fi
+
+    echo "${LAYOUT_FILE}"
+}
+
 get_section_start() {
     local name="$1"
     local startstr
-    startstr=$(awk -v name="$name" '$2 == name {print $1}' $LAYOUT_FILE | \
+    local layout_file
+
+    layout_file=$(get_layout_file)
+    startstr=$(awk -v name="$name" '$2 == name {print $1}' "$layout_file" | \
                cut -d ':' -f1)
     echo "0x$startstr"
 }
@@ -314,9 +348,11 @@ get_section_size() {
     local endstr
     local section_start
     local size
+    local layout_file
 
+    layout_file=$(get_layout_file)
     section_start=$(get_section_start "$name")
-    endstr=$(awk -v name="$name" '$2 == name {print $1}' $LAYOUT_FILE | \
+    endstr=$(awk -v name="$name" '$2 == name {print $1}' "$layout_file" | \
              cut -d ':' -f2)
     section_end="0x$endstr"
 
@@ -384,18 +420,20 @@ do_spi_image() {
            ;;
     esac
 
-    echo "Selected partition $PARTITION to $ACTION with layout file $LAYOUT_FILE"
+    local layout_file
+    layout_file=$(get_layout_file)
+    echo "Selected partition $PARTITION to $ACTION with layout file $layout_file"
 
     # If we are reading or erasing, simply do the operation and return
     if [ "$OPERATION" == "-r" ]; then
-        flashrom -p "$DRIVER" --layout "$LAYOUT_FILE" --image "$PARTITION" \
+        flashrom -p "$DRIVER" --layout "$layout_file" --image "$PARTITION" \
            -r "$TARGET_IMAGE" || return 1
         sleep 1
-        flashrom -p "$DRIVER" --layout "$LAYOUT_FILE" --image "$PARTITION" \
+        flashrom -p "$DRIVER" --layout "$layout_file" --image "$PARTITION" \
            -v "$TARGET_IMAGE" || return 1
         return 0
     elif [ "$OPERATION" == "-E" ]; then
-        flashrom -p "$DRIVER" --layout "$LAYOUT_FILE" --image "$PARTITION" \
+        flashrom -p "$DRIVER" --layout "$layout_file" --image "$PARTITION" \
            -E || return 1
         return 0
     fi
@@ -405,8 +443,8 @@ do_spi_image() {
     max=3
     while true; do
         # Program the spi image
-        if flashrom -p "$DRIVER" -N --layout "$LAYOUT_FILE" \
-           --image "$PARTITION" $OPERATION "$TARGET_IMAGE" ; then
+        if flashrom -p "$DRIVER" -N --layout "$layout_file" \
+            --image "$PARTITION" $OPERATION "$TARGET_IMAGE" ; then
             break
         else
             if [ $n -lt $max ]; then

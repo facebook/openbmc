@@ -27,6 +27,7 @@ LOCAL_URI += "\
     file://fpga_util.sh \
     file://fpga_ver.sh \
     file://meru_flash.layout \
+    file://meru_flash_aboot18.layout \
     file://oob-mdio-util.sh \
     file://setup-gpio.sh \
     file://setup_board.sh \
@@ -49,6 +50,7 @@ do_install_bios_layout() {
     install -m 0644 ${UNPACKDIR}/bmc_aboot.conf ${D}${sysconfdir}/bmc_aboot.conf
     install -m 0644 ${UNPACKDIR}/cpu_aboot.conf ${D}${sysconfdir}/cpu_aboot.conf
     install -m 0644 ${UNPACKDIR}/meru_flash.layout ${D}${sysconfdir}/meru_flash.layout
+    install -m 0644 ${UNPACKDIR}/meru_flash_aboot18.layout ${D}${sysconfdir}/meru_flash_aboot18.layout
 }
 
 do_install_vlan4092() {

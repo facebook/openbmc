@@ -85,3 +85,32 @@ gpio_set_value JTAG_TRST_L 0
 gpio_set_value SW_SPI_SEL 0
 gpio_set_value WDT1_RST 0
 gpio_set_value BMC_LITE_L 0
+
+setup_gpio_cpu_id() {
+    # GPIOs for reading CPU board type
+    gpio_export_by_name "${ASPEED_GPIO}" GPIOM0 CPU_ID_0
+    gpio_export_by_name "${ASPEED_GPIO}" GPIOM1 CPU_ID_1
+    gpio_export_by_name "${ASPEED_GPIO}" GPIOM2 CPU_ID_2
+    gpio_export_by_name "${ASPEED_GPIO}" GPIOM3 CPU_ID_3
+
+    gpio_set_direction CPU_ID_0 in
+    gpio_set_direction CPU_ID_1 in
+    gpio_set_direction CPU_ID_2 in
+    gpio_set_direction CPU_ID_3 in
+}
+
+setup_gpio_cpu_id
+
+setup_gpio_spi_extra() {
+    gpio_export_by_name "${ASPEED_GPIO}" GPIOZ6 SW_SPI_WP_L
+    gpio_export_by_name "${ASPEED_GPIO}" GPIOZ7 SW_SPI_HOLD_L
+    gpio_set_direction SW_SPI_WP_L out
+    gpio_set_direction SW_SPI_HOLD_L out
+    gpio_set_value SW_SPI_WP_L 0
+    gpio_set_value SW_SPI_HOLD_L 1
+}
+
+if wedge_cpu_needs_extra_spi_gpios; then
+    setup_gpio_spi_extra
+fi
+

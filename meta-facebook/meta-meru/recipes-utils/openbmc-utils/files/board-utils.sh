@@ -115,6 +115,15 @@ wedge_cpu_needs_extra_spi_gpios() {
     return 1
 }
 
+wedge_oob_mdio_is_safe() {
+    cpu_id=$(wedge_cpu_id)
+    if [ "${cpu_id}" -gt 6 ]; then
+        return 0
+    fi
+
+    return 1
+}
+
 wedge_board_type() {
     echo 'meru'
 }

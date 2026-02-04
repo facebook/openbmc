@@ -17,6 +17,9 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+# shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
+
 # shellcheck disable=SC2039
 usage() {
     echo "Reads/writes Bcm53134 registers"
@@ -320,7 +323,7 @@ handle_read() {
     local addr=$2
     local data_size=$(( size / 8 ))
 
-    if [ "$force" -ne 1 ]; then
+    if ! wedge_oob_mdio_is_safe && [ "$force" -ne 1 ]; then
         echo "disabled due to not-recommended MDIO bus transactions"
         exit 2
     fi
@@ -349,7 +352,7 @@ handle_write() {
     local val=$3
     local data_size=$(( size / 8 ))
 
-    if [ "$force" -ne 1 ]; then
+    if ! wedge_oob_mdio_is_safe && [ "$force" -ne 1 ]; then
         echo "disabled due to not-recommended MDIO bus transactions"
         exit 2
     fi

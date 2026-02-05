@@ -1,0 +1,36 @@
+From 859bbad2364b378b995420ca0eba81e81c9bf07d Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Wed, 7 Jan 2026 16:30:21 +0800
+Subject: [PATCH 4/4] configuration: minerva: add MCTP I2C target for MMC
+
+Add MMC as an MCTP I2C target on bus 9 with address 0x20.
+This enables MCTP communication and inventory association
+for the MMC device.
+
+Change-Id: I3eeefac18bbae077c864b553bb170184b67fd9ee
+Signed-off-by: Peter Yin <peter.yin@quantatw.com>
+---
+ configurations/meta/minerva/minerva_aegis.json | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/configurations/meta/minerva/minerva_aegis.json b/configurations/meta/minerva/minerva_aegis.json
+index 98846d3..501b85d 100644
+--- a/configurations/meta/minerva/minerva_aegis.json
++++ b/configurations/meta/minerva/minerva_aegis.json
+@@ -15,6 +15,13 @@
+             },
+             "Name": "Minerva_Aegis_CPLD",
+             "Type": "LatticeLCMXO3D_9400Firmware"
++        },
++        {
++            "Address": "0x20",
++            "Bus": "9",
++            "Inventory": "Minerva_Aegis",
++            "Name": "MMC",
++            "Type": "MCTPI2CTarget"
+         }
+     ],
+     "Name": "Minerva Aegis",
+-- 
+2.43.0
+

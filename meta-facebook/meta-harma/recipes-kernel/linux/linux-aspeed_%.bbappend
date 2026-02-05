@@ -17,4 +17,5 @@ SRC_URI:append = " \
     file://1011-ARM-dts-aspeed-harma-add-sq52206-power-monitor-devic.patch \
     file://1012-ARM-dts-aspeed-harma-add-retimer-sgpio.patch \
     file://1013-ARM-dts-aspeed-harma-add-mctp-i2c-controller-node.patch \
+    file://1014-ARM-dts-aspeed-harma-add-fanboard-presence-sgpio.patch \
 "

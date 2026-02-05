@@ -35,7 +35,7 @@ int main(int argc, char** argv)
                      "LCMXO3LF-4300|LCMXO3LF-6900|LCMXO3D-4300|LCMXO3D-9400|LFMXO5-25|LFMXO5-65T")
         ->required();
     update->add_option("-t,--target", target,
-                       "used for LCMXO3D series CPLD, CFG0|CFG1");
+                       "used for LCMXO3D|LFMXO5 series CPLD, CFG0|CFG1, SRAM (LFMXO5 only)");
 
     update->add_flag("-v,--verbose", debugMode, "debug mode");
     update->add_flag("-l,--legacy", legacyMode,

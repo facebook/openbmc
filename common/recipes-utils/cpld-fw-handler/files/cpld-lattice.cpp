@@ -1,4 +1,5 @@
 #include "cpld-lattice.hpp"
+#include "xo5/xo5_sram_recover.hpp"
 #include <openssl/sha.h>
 #include <cstdint>
 #include <fstream>
@@ -1421,14 +1422,24 @@ bool XO5I2CManager::verifyCfg()
 
 int CpldLatticeManager::XO5Family_update(bool legacy)
 {
-    XO5I2CManager i2cManager(bus, addr, imagePath, chip, interface, target,
-                             debugMode, legacy);
-
     std::cout << std::format("Starting to update {}\n", chip);
+
     if (target.empty())
     {
         target = "CFG0";
     }
+
+    if (target == "SRAM")
+    {
+        XO5SRAMRecover recover(bus, addr, imagePath, chip, interface, target,
+                               debugMode);
+
+        return recover.fwUpdate(legacy);
+    }
+
+    XO5I2CManager i2cManager(bus, addr, imagePath, chip, interface, target,
+                             debugMode, legacy);
+
     if (target != "CFG0" && target != "CFG1")
     {
         std::cerr << "Error: unknown target.\n";

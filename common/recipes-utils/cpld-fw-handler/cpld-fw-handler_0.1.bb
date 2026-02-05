@@ -19,6 +19,10 @@ LOCAL_URI = " \
     file://cpld-fw-main.cpp\
     file://cpld-lattice.cpp \
     file://cpld-lattice.hpp \
+    file://xo5/xo5_bit_file_frame_parser.cpp \
+    file://xo5/xo5_bit_file_frame_parser.hpp \
+    file://xo5/xo5_sram_recover.cpp \
+    file://xo5/xo5_sram_recover.hpp \
     file://meson.build \
     file://meson_options.txt \
     "

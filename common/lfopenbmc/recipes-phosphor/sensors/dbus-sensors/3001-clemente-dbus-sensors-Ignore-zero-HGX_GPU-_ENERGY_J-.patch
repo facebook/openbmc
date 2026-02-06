@@ -1,8 +1,7 @@
-From fc72a221c0674df9182b75d97284bcb069c6adb3 Mon Sep 17 00:00:00 2001
+From 4c765215f9c8fd2e469e9f26e641e5dfe81869a4 Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
 Date: Fri, 19 Dec 2025 15:21:42 +0800
-Subject: [PATCH 3002/3003] clemente:dbus-sensors: Ignore zero
- HGX_GPU*_ENERGY_J readings
+Subject: [PATCH] clemente:dbus-sensors: Ignore zero HGX_GPU*_ENERGY_J readings
 
 Since HGX_GPU*_ENERGY_J is reading from virtual EEPROM through over
 I2C. It's hard to guarantee the data integrity due to lack of

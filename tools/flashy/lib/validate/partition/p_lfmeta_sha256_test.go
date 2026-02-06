@@ -1,11 +1,11 @@
 package partition
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 func TestLFMetaSha256Partition(t *testing.T) {
@@ -66,7 +66,7 @@ func TestLFMetaSHA256Validate(t *testing.T) {
 		{
 			name:     "validation failed",
 			checksum: "UWU",
-			want: errors.Errorf("'foo' partition SHA256 "+
+			want: fmt.Errorf("'foo' partition SHA256 "+
 				"(%v) does not match expected (UWU)", exampleDataSha256Sum),
 		},
 	}

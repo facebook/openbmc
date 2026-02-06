@@ -20,7 +20,7 @@
 import unittest
 
 from common.base_process_running_test import BaseProcessRunningTest
-from tests.montblanc.test_data.process.process import EXPECTED_PROCS
+from tests.meru.test_data.process.process import EXPECTED_PROCS
 
 
 class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):

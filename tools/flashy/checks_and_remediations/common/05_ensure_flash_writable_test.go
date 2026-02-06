@@ -21,6 +21,7 @@ package common
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -29,7 +30,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func TestEnsureFlashWritable(t *testing.T) {
@@ -117,7 +117,7 @@ func TestEnsureFlashWritable(t *testing.T) {
 			failCheck:       true,
 			failClear:       false,
 			want: step.ExitBadFlashChip{
-				Err: errors.Errorf("U-Boot environment is read only: flash chips swapped? Error code: <nil>, stderr: ")},
+				Err: fmt.Errorf("U-Boot environment is read only: flash chips swapped? Error code: <nil>, stderr: ")},
 		},
 		{
 			name:            "clear _flashy_test fails",
@@ -160,13 +160,13 @@ func TestEnsureFlashWritable(t *testing.T) {
 				} else if cmdArr[0] == "fw_setenv" {
 					if len(cmdArr) <= 2 {
 						if tc.failClear {
-							return 0, errors.Errorf("err1"), "", "err1"
+							return 0, fmt.Errorf("err1"), "", "err1"
 						} else {
 							return 0, nil, "bootargs=foo", ""
 						}
 					} else {
 						if tc.failSet {
-							return 0, errors.Errorf("err2"), "", "err2"
+							return 0, fmt.Errorf("err2"), "", "err2"
 						} else {
 							key = cmdArr[1]
 							value = cmdArr[2]
@@ -174,7 +174,7 @@ func TestEnsureFlashWritable(t *testing.T) {
 						}
 					}
 				}
-				return 0, errors.Errorf("err3"), "", "err3"
+				return 0, fmt.Errorf("err3"), "", "err3"
 			}
 			got := ensureFlashWritable(step.StepParams{})
 			step.CompareTestExitErrors(tc.want, got, t)

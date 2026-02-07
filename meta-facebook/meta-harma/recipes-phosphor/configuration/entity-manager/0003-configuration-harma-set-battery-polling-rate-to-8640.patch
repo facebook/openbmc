@@ -1,7 +1,7 @@
-From 1255e535d9a28d8c94f5d67e52556cde041ddc78 Mon Sep 17 00:00:00 2001
+From 1ff0370ef4e874532db790cb0100c46b00f7e618 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Wed, 29 Oct 2025 15:30:49 +0800
-Subject: [PATCH 3/3] configuration: harma: set battery polling rate to 86400s
+Subject: [PATCH 3/4] configuration: harma: set battery polling rate to 86400s
 
 Set the battery polling rate to 86400 seconds (1 day) to reduce
 unnecessary power drain from frequent polling.

@@ -27,7 +27,6 @@ import (
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 // Deal with images that have changed names, but are otherwise compatible.
@@ -87,7 +86,7 @@ var CheckImageBuildNameCompatibility = func(imageFilePath string) error {
 	// these build names might not match for old versions, as either /etc/isssue
 	// or the image file might not be well-formed
 	if etcIssueBuildName != "unknown" && etcIssueBuildName != imageFileBuildName {
-		err := errors.Errorf("OpenBMC versions from /etc/issue ('%v') and image file ('%v')"+
+		err := fmt.Errorf("OpenBMC versions from /etc/issue ('%v') and image file ('%v')"+
 			" do not match!",
 			etcIssueBuildName, imageFileBuildName)
 		return err
@@ -106,7 +105,7 @@ var getNormalizedBuildNameFromVersion = func(ver string) (string, error) {
 	buildNameRegEx := fmt.Sprintf(`^(?P<%v>\w+)`, rBuildname)
 	verMap, err := utils.GetRegexSubexpMap(buildNameRegEx, nVer)
 	if err != nil {
-		return "", errors.Errorf("Unable to get build name from version '%v' (normalized: '%v'): %v",
+		return "", fmt.Errorf("Unable to get build name from version '%v' (normalized: '%v'): %v",
 			ver, nVer, err)
 	}
 	return verMap[rBuildname], nil
@@ -122,7 +121,7 @@ var GetOpenBMCVersionFromImageFile = func(imageFilePath string) (string, error) 
 		imageFilePath, 0, 1024*1024, syscall.PROT_READ, syscall.MAP_SHARED,
 	)
 	if err != nil {
-		return "", errors.Errorf("Unable to read and mmap image file '%v': %v",
+		return "", fmt.Errorf("Unable to read and mmap image file '%v': %v",
 			imageFilePath, err)
 	}
 	// unmap
@@ -132,7 +131,7 @@ var GetOpenBMCVersionFromImageFile = func(imageFilePath string) (string, error) 
 	ubootVersionRegEx := fmt.Sprintf(`U-Boot \d+\.\d+ (?P<%v>[^\s]+)`, rVersion)
 	imageFileVerMap, err := utils.GetBytesRegexSubexpMap(ubootVersionRegEx, imageFileBuf)
 	if err != nil {
-		return "", errors.Errorf("Unable to find OpenBMC version in image file '%v': %v",
+		return "", fmt.Errorf("Unable to find OpenBMC version in image file '%v': %v",
 			imageFilePath, err)
 	}
 	version := imageFileVerMap[rVersion]

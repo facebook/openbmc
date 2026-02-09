@@ -3,8 +3,7 @@ package partition
 import (
 	"crypto/sha256"
 	"encoding/hex"
-
-	"github.com/pkg/errors"
+	"fmt"
 	"log"
 )
 
@@ -45,7 +44,7 @@ func (p *LFMetaSha256Partition) Validate() error {
 	hashStr := hex.EncodeToString(hash[:])
 
 	if hashStr != p.Checksum {
-		return errors.Errorf("'%v' partition SHA256 (%v) does not match expected (%v)",
+		return fmt.Errorf("'%v' partition SHA256 (%v) does not match expected (%v)",
 			p.Name, hashStr, p.Checksum)
 	}
 

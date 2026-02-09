@@ -21,6 +21,7 @@ package flash
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -30,7 +31,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 func TestFlashFwUtil(t *testing.T) {
@@ -70,10 +70,10 @@ func TestFlashFwUtil(t *testing.T) {
 		},
 		{
 			name:            "fw-util failed",
-			runFwUtilCmdErr: errors.Errorf("RunCommand error"),
+			runFwUtilCmdErr: fmt.Errorf("RunCommand error"),
 			otherFlasherErr: nil,
 			want: step.ExitSafeToReboot{
-				Err: errors.Errorf("RunCommand error"),
+				Err: fmt.Errorf("RunCommand error"),
 			},
 			logContainsSeq: []string{
 				"Flashing using fw-util method",
@@ -83,9 +83,9 @@ func TestFlashFwUtil(t *testing.T) {
 		{
 			name:            "other flasher running",
 			runFwUtilCmdErr: nil,
-			otherFlasherErr: errors.Errorf("Found other flasher!"),
+			otherFlasherErr: fmt.Errorf("Found other flasher!"),
 			want: step.ExitUnsafeToReboot{
-				Err: errors.Errorf("Found other flasher!"),
+				Err: fmt.Errorf("Found other flasher!"),
 			},
 			logContainsSeq: []string{
 				"Flashing succeeded but found another flasher running",
@@ -148,12 +148,12 @@ func TestRunFwUtilCmd(t *testing.T) {
 			imageFilePath: "/run/upgrade/image",
 			cmdRet: cmdRetType{
 				1,
-				errors.Errorf("fw-util failed"),
+				fmt.Errorf("fw-util failed"),
 				"failed (stdout)",
 				"failed (stderr)",
 			},
 			wantCmd: "bash -c fw-util bmc --update bmc /run/upgrade/image > /dev/null",
-			want: errors.Errorf(
+			want: fmt.Errorf(
 				"Flashing failed with exit code %v, error: %v, stdout: '', stderr: ''",
 				1, "fw-util failed",
 			),

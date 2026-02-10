@@ -8,7 +8,7 @@ import shutil
 import subprocess
 import sys
 import time
-
+from pathlib import Path
 
 def openbmc_path():
     curr = os.path.abspath(__file__)
@@ -62,9 +62,14 @@ def recipes_with_ptest():
 
 def update_conf_steps(recipes):
     recipe_arg = " ".join(recipes)
+    file_path = os.path.realpath(__file__)
+    openbmc_parent_dir = Path(file_path).parent.parent.parent
+    # Make the cache dir a sibling of the openbmc repo
+    cache_location = openbmc_parent_dir.joinpath("manifold-cache")
     steps = [
         "sed -i -n '/IMAGE_INSTALL:append/!p' conf/local.conf",
         f'echo IMAGE_INSTALL:append = \\"{recipe_arg}\\" >> conf/local.conf',
+        f'echo export MANIFOLD_CACHE = \\"{cache_location}\\" >> conf/local.conf',
     ]
     return steps
 

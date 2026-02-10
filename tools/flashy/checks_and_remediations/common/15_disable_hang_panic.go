@@ -20,13 +20,14 @@
 package common
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"os"
 	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -45,7 +46,7 @@ func disableHangPanic(stepParams step.StepParams) step.StepExitError {
 		disableHangPanicFilePath, []byte("0"), 0644, 30*time.Second,
 	)
 	if err != nil {
-		errMsg := errors.Errorf("Failed to write to hang_task_panic file '%v': %v", disableHangPanicFilePath, err)
+		errMsg := fmt.Errorf("Failed to write to hang_task_panic file '%v': %v", disableHangPanicFilePath, err)
 		return step.ExitSafeToReboot{Err: errMsg}
 	}
 	return nil

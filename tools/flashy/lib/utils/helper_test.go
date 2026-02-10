@@ -21,13 +21,13 @@ package utils
 
 import (
 	"bytes"
+	"fmt"
 	"math"
 	"reflect"
 	"sort"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 func TestStringFind(t *testing.T) {
@@ -142,7 +142,7 @@ func TestRegexSubexpMapHelper(t *testing.T) {
 			match:       []string{"", "foo"},
 			subexpNames: []string{"", "F", "B"},
 			want:        map[string]string{},
-			wantErr: errors.Errorf("Incomplete match '%#v' for subexpNames '%#v'",
+			wantErr: fmt.Errorf("Incomplete match '%#v' for subexpNames '%#v'",
 				[]string{"", "foo"}, []string{"", "F", "B"}),
 		},
 		{
@@ -159,7 +159,7 @@ func TestRegexSubexpMapHelper(t *testing.T) {
 			want: map[string]string{
 				"f": "foo",
 			},
-			wantErr: errors.Errorf("Duplicate subexpName 'f' found. Make sure " +
+			wantErr: fmt.Errorf("Duplicate subexpName 'f' found. Make sure " +
 				"the regEx capturing group names are unique."),
 		},
 		{
@@ -167,7 +167,7 @@ func TestRegexSubexpMapHelper(t *testing.T) {
 			match:       []string{"", "foo"},
 			subexpNames: []string{"", ""},
 			want:        map[string]string{},
-			wantErr: errors.Errorf("Invalid empty subexpName, subexpNames must have " +
+			wantErr: fmt.Errorf("Invalid empty subexpName, subexpNames must have " +
 				"non-empty strings (except for the 1st entry)"),
 		},
 	}
@@ -206,14 +206,14 @@ func TestGetRegexSubexpMap(t *testing.T) {
 			regEx:   `(?P<type>[a-z]+)`,
 			input:   "123",
 			want:    map[string]string{},
-			wantErr: errors.Errorf("No match for regex '(?P<type>[a-z]+)' for input '123'"),
+			wantErr: fmt.Errorf("No match for regex '(?P<type>[a-z]+)' for input '123'"),
 		},
 		{
 			name:  "multiple groups, no match",
 			regEx: `(?P<type>[a-z]+):(?P<specifier>[0-9]+)`,
 			input: "123mtdabc:abc",
 			want:  map[string]string{},
-			wantErr: errors.Errorf("No match for regex '(?P<type>[a-z]+):(?P<specifier>[0-9]+)' " +
+			wantErr: fmt.Errorf("No match for regex '(?P<type>[a-z]+):(?P<specifier>[0-9]+)' " +
 				"for input '123mtdabc:abc'"),
 		},
 		{
@@ -239,14 +239,14 @@ func TestGetRegexSubexpMap(t *testing.T) {
 			regEx:   `(?P<type>[a-z]+`,
 			input:   "123mtdabc:123abc",
 			want:    map[string]string{},
-			wantErr: errors.Errorf("error parsing regexp: missing closing ): `(?P<type>[a-z]+`"),
+			wantErr: fmt.Errorf("error parsing regexp: missing closing ): `(?P<type>[a-z]+`"),
 		},
 		{
 			name:    "Invalid empty pattern",
 			regEx:   `(?P<type>[a-z]+):(?P<>[0-9]+)`,
 			input:   "123mtdabc:123abc",
 			want:    map[string]string{},
-			wantErr: errors.Errorf("error parsing regexp: invalid named capture: `(?P<>`"),
+			wantErr: fmt.Errorf("error parsing regexp: invalid named capture: `(?P<>`"),
 		},
 		{
 			name:  "Duplicate capturing group name",
@@ -255,7 +255,7 @@ func TestGetRegexSubexpMap(t *testing.T) {
 			want: map[string]string{
 				"type": "mtdabc",
 			},
-			wantErr: errors.Errorf("Duplicate subexpName 'type' found. " +
+			wantErr: fmt.Errorf("Duplicate subexpName 'type' found. " +
 				"Make sure the regEx capturing group names are unique."),
 		},
 		{
@@ -263,7 +263,7 @@ func TestGetRegexSubexpMap(t *testing.T) {
 			regEx: `a(x*)b`,
 			input: "-ab-",
 			want:  map[string]string{},
-			wantErr: errors.Errorf("Invalid empty subexpName, subexpNames must have non-empty strings " +
+			wantErr: fmt.Errorf("Invalid empty subexpName, subexpNames must have non-empty strings " +
 				"(except for the 1st entry)"),
 		},
 	}
@@ -301,14 +301,14 @@ func TestGetBytesRegexSubexpMap(t *testing.T) {
 			regEx:   `(?P<type>[a-z]+)`,
 			input:   "123",
 			want:    map[string]string{},
-			wantErr: errors.Errorf("No match for regex '(?P<type>[a-z]+)' for input"),
+			wantErr: fmt.Errorf("No match for regex '(?P<type>[a-z]+)' for input"),
 		},
 		{
 			name:  "multiple groups, no match",
 			regEx: `(?P<type>[a-z]+):(?P<specifier>[0-9]+)`,
 			input: "123mtdabc:abc",
 			want:  map[string]string{},
-			wantErr: errors.Errorf("No match for regex '(?P<type>[a-z]+):(?P<specifier>[0-9]+)' " +
+			wantErr: fmt.Errorf("No match for regex '(?P<type>[a-z]+):(?P<specifier>[0-9]+)' " +
 				"for input"),
 		},
 		{
@@ -334,14 +334,14 @@ func TestGetBytesRegexSubexpMap(t *testing.T) {
 			regEx:   `(?P<type>[a-z]+`,
 			input:   "123mtdabc:123abc",
 			want:    map[string]string{},
-			wantErr: errors.Errorf("error parsing regexp: missing closing ): `(?P<type>[a-z]+`"),
+			wantErr: fmt.Errorf("error parsing regexp: missing closing ): `(?P<type>[a-z]+`"),
 		},
 		{
 			name:    "Invalid empty pattern",
 			regEx:   `(?P<type>[a-z]+):(?P<>[0-9]+)`,
 			input:   "123mtdabc:123abc",
 			want:    map[string]string{},
-			wantErr: errors.Errorf("error parsing regexp: invalid named capture: `(?P<>`"),
+			wantErr: fmt.Errorf("error parsing regexp: invalid named capture: `(?P<>`"),
 		},
 		{
 			name:  "Duplicate capturing group name",
@@ -350,7 +350,7 @@ func TestGetBytesRegexSubexpMap(t *testing.T) {
 			want: map[string]string{
 				"type": "mtdabc",
 			},
-			wantErr: errors.Errorf("Duplicate subexpName 'type' found. " +
+			wantErr: fmt.Errorf("Duplicate subexpName 'type' found. " +
 				"Make sure the regEx capturing group names are unique."),
 		},
 		{
@@ -358,7 +358,7 @@ func TestGetBytesRegexSubexpMap(t *testing.T) {
 			regEx: `a(x*)b`,
 			input: "-ab-",
 			want:  map[string]string{},
-			wantErr: errors.Errorf("Invalid empty subexpName, subexpNames must have non-empty strings " +
+			wantErr: fmt.Errorf("Invalid empty subexpName, subexpNames must have non-empty strings " +
 				"(except for the 1st entry)"),
 		},
 	}
@@ -427,7 +427,7 @@ func TestGetAllRegexSubexpMap(t *testing.T) {
 			regEx:   `(?P<type>[a-z]+`,
 			input:   `mtd:flash0`,
 			want:    [](map[string]string){},
-			wantErr: errors.Errorf("error parsing regexp: missing closing ): `(?P<type>[a-z]+`"),
+			wantErr: fmt.Errorf("error parsing regexp: missing closing ): `(?P<type>[a-z]+`"),
 		},
 	}
 
@@ -493,14 +493,14 @@ func TestGetWord(t *testing.T) {
 			data:    []byte{0x01, 0x02, 0x03, 0x04},
 			offset:  2,
 			want:    0,
-			wantErr: errors.Errorf("Failed to get bytes for word: Slice end (6) larger than original slice length (4)"),
+			wantErr: fmt.Errorf("Failed to get bytes for word: Slice end (6) larger than original slice length (4)"),
 		},
 		{
 			name:    "overflowed",
 			data:    []byte{0x01, 0x02, 0x03, 0x04},
 			offset:  math.MaxUint32 - 3,
 			want:    0,
-			wantErr: errors.Errorf("Failed to get end of offset: Unsigned integer overflow for (4294967292+4)"),
+			wantErr: fmt.Errorf("Failed to get end of offset: Unsigned integer overflow for (4294967292+4)"),
 		},
 	}
 	for _, tc := range cases {
@@ -537,7 +537,7 @@ func TestSetWord(t *testing.T) {
 			word:   0x12345678,
 			offset: 2,
 			want:   nil,
-			wantErr: errors.Errorf("Required offset %v out of range of data size %v",
+			wantErr: fmt.Errorf("Required offset %v out of range of data size %v",
 				2, 4),
 		},
 		{
@@ -546,7 +546,7 @@ func TestSetWord(t *testing.T) {
 			word:    0x12345678,
 			offset:  math.MaxUint32 - 3,
 			want:    nil,
-			wantErr: errors.Errorf("Failed to get end of offset: Unsigned integer overflow for (4294967292+4)"),
+			wantErr: fmt.Errorf("Failed to get end of offset: Unsigned integer overflow for (4294967292+4)"),
 		},
 	}
 	for _, tc := range cases {
@@ -598,7 +598,7 @@ func TestGetStringKeysFromJSONData(t *testing.T) {
 			name: "gibberish, no JSON",
 			data: []byte("1254yewruifhqreifriqfhru43r4"),
 			want: nil,
-			wantErr: errors.Errorf("Unable to unmarshal JSON: " +
+			wantErr: fmt.Errorf("Unable to unmarshal JSON: " +
 				"invalid character 'y' after top-level value"),
 		},
 	}

@@ -97,5 +97,9 @@ bmc_mac_addr() {
 }
 
 userver_mac_addr() {
-    weutil CHASSIS 2>&1 | grep "MAC Base" | cut -d ' ' -f 4
+    if command -v mdio-us-mac > /dev/null 2>&1; then
+        mdio-us-mac
+    else
+        weutil CHASSIS 2>&1 | grep "MAC Base" | cut -d ' ' -f 4
+    fi
 }

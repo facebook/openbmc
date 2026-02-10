@@ -9,6 +9,7 @@ IMAGE_INSTALL += " \
   serfmon-cache \
   show-tech \
   bmc-eeprom-checker \
+  mdio-us-mac \
   "
 
 #

@@ -27,7 +27,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/lib/validate"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -42,7 +41,7 @@ func getMTD(deviceSpecifier string) (FlashDevice, error) {
 
 	filePath := filepath.Join("/dev", mtdInfo.Dev)
 	if err != nil {
-		return nil, errors.Errorf("Found MTD entry for flash device 'mtd:%v' but got error '%v'",
+		return nil, fmt.Errorf("Found MTD entry for flash device 'mtd:%v' but got error: %w",
 			deviceSpecifier, err)
 	}
 
@@ -97,7 +96,7 @@ func (m *MemoryTechnologyDevice) Munmap(buf []byte) error {
 func (m *MemoryTechnologyDevice) Validate() error {
 	data, err := m.MmapRO()
 	if err != nil {
-		return errors.Errorf("Can't mmap flash device: %v", err)
+		return fmt.Errorf("Can't mmap flash device: %w", err)
 	}
 	defer m.Munmap(data)
 	return validate.Validate(data)
@@ -114,7 +113,7 @@ var GetMTDBlockFilePath = func(filepath string) (string, error) {
 
 	mtdPathMap, err := utils.GetRegexSubexpMap(regEx, filepath)
 	if err != nil {
-		return "", errors.Errorf("Unable to get block file path for '%v': %v",
+		return "", fmt.Errorf("Unable to get block file path for '%v': %w",
 			filepath, err)
 	}
 

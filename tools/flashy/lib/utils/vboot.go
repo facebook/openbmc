@@ -22,11 +22,11 @@ package utils
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"log"
 	"syscall"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
-	"github.com/pkg/errors"
 )
 
 // AST_SRAM_VBS_BASE is the location in SRAM used for verified boot content/flags.
@@ -87,12 +87,12 @@ func (v *Vbs) validate() error {
 
 	dat, err := vCopy.encodeVbs()
 	if err != nil {
-		return errors.Errorf("Error validating vboot content: %v", err)
+		return fmt.Errorf("Error validating vboot content: %w", err)
 	}
 
 	calcCrc16 := CRC16(dat)
 	if crc16 != calcCrc16 {
-		return errors.Errorf("CRC16 of vboot data (%v) does not match reference (%v)",
+		return fmt.Errorf("CRC16 of vboot data (%v) does not match reference (%v)",
 			calcCrc16, crc16)
 	}
 
@@ -114,7 +114,7 @@ func decodeVbs(vbsData []byte) (Vbs, error) {
 	var vbs Vbs
 	err := binary.Read(bytes.NewBuffer(vbsData[:]), binary.LittleEndian, &vbs)
 	if err != nil {
-		return vbs, errors.Errorf("Unable to decode vbs data into struct: %v", err)
+		return vbs, fmt.Errorf("Unable to decode vbs data into struct: %w", err)
 	}
 	err = vbs.validate()
 	if err != nil {
@@ -136,12 +136,12 @@ var GetVbs = func() (Vbs, error) {
 	var baseaddr uint32
 
 	if !vbootPartitionExists() {
-		return vbs, errors.Errorf("Not a Vboot system: vboot partition (rom) does not exist.")
+		return vbs, fmt.Errorf("Not a Vboot system: vboot partition (rom) does not exist.")
 	}
 
 	machine, err := GetMachine()
 	if err != nil {
-		return vbs, errors.Errorf("Unable to fetch utsinfo: %v", err)
+		return vbs, fmt.Errorf("Unable to fetch utsinfo: %w", err)
 	}
 
 	if machine == "armv7l" {
@@ -157,18 +157,18 @@ var GetVbs = func() (Vbs, error) {
 	pageData, err := fileutils.MmapFileRange("/dev/mem", int64(mmapOffset),
 		length, syscall.PROT_READ, syscall.MAP_SHARED)
 	if err != nil {
-		return vbs, errors.Errorf("Unable to mmap /dev/mem: %v", err)
+		return vbs, fmt.Errorf("Unable to mmap /dev/mem: %w", err)
 	}
 	defer fileutils.Munmap(pageData)
 
 	dataOffset := fileutils.GetPageOffsettedOffset(baseaddr)
 	vbsEndOffset, err := AddU32(dataOffset, AST_SRAM_VBS_SIZE)
 	if err != nil {
-		return vbs, errors.Errorf("VBS end offset overflowed: %v", err)
+		return vbs, fmt.Errorf("VBS end offset overflowed: %w", err)
 	}
 	vbsData, err := BytesSliceRange(pageData, dataOffset, vbsEndOffset)
 	if err != nil {
-		return vbs, errors.Errorf("Failed to get vbs data: %v", err)
+		return vbs, fmt.Errorf("Failed to get vbs data: %w", err)
 	}
 
 	return decodeVbs(vbsData)

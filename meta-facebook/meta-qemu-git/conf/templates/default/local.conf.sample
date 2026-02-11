@@ -1,0 +1,21 @@
+#
+# Local configuration file for building QEMU from master branch.
+#
+
+# Machine Selection - qemu-git is based on qemux86-64
+MACHINE ??= "qemu-git"
+
+# Do not build kernel since we are doing a chroot to execute
+# the binaries in the image.
+PREFERRED_PROVIDER_virtual/kernel = "linux-dummy"
+
+# OpenBMC distro settings
+DISTRO ?= "openbmc-fb-lf"
+
+SOC_FAMILY = "aspeed-g5"
+
+# Use qemu-git instead of the stock qemu
+PREFERRED_PROVIDER_qemu = "qemu-git"
+PREFERRED_PROVIDER_qemu-native = "qemu-git-native"
+PREFERRED_PROVIDER_qemu-system-native = "qemu-git-system-native"
+PREFERRED_PROVIDER_nativesdk-qemu = "qemu-git"

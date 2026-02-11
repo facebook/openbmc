@@ -1,0 +1,36 @@
+# Copyright 2018-present Facebook. All Rights Reserved.
+#
+# Image recipe for QEMU git master branch build target
+#
+
+IMAGE_FSTYPES:remove = "cpio.lzma.u-boot"
+IMAGE_FSTYPES += "container"
+
+inherit image_types
+
+require recipes-core/images/fb-openbmc-image.bb
+
+# The offset must match with the offsets defined in
+# dev-spi-cmm.c. Rootfs starts from 4.5M
+FLASH_ROOTFS_OFFSET = "4608"
+
+# Include qemu-git in rootfs
+IMAGE_INSTALL += " \
+  packagegroup-openbmc-base \
+  packagegroup-openbmc-net \
+  packagegroup-openbmc-python3 \
+  packagegroup-openbmc-rest3 \
+  qemu-git-git \
+  "
+
+# Certain image post-process commands tend to depend
+# on the deploy directory being created by some process
+# Since we do not use the standard image generation
+# process, this tends to not be created. So, ensure
+# this is created before the do_image_complete() executes.
+IMAGE_PREPROCESS_COMMAND = " flash_image_generate ; "
+flash_image_generate() {
+  if [ ! -d ${DEPLOY_DIR_IMAGE} ]; then
+    mkdir -p ${DEPLOY_DIR_IMAGE}
+  fi
+}

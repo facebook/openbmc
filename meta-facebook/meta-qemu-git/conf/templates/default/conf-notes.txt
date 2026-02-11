@@ -1,0 +1,5 @@
+Common targets are:
+    qemu-master-image
+    qemu-master
+    qemu-master-native
+    qemu-master-system-native

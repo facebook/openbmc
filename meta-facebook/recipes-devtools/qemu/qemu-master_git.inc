@@ -1,0 +1,303 @@
+# QEMU recipe that builds from git
+# This recipe is based on poky's qemu recipe but uses git
+
+
+# Recipe renamed from qemu-git to qemu-master to avoid pn-overrides QA error
+# (having "git" in PN conflicts with BitBake overrides)
+
+# Point to the qemu-git directory for SRC_URI files
+FILESEXTRAPATHS:prepend := "${THISDIR}/qemu-git:"
+SUMMARY = "Fast open source processor emulator (git master branch)"
+DESCRIPTION = "QEMU is a hosted virtual machine monitor: it emulates the \
+machine's processor through dynamic binary translation and provides a set \
+of different hardware and device models for the machine, enabling it to run \
+a variety of guest operating systems. This recipe builds from git master."
+HOMEPAGE = "http://qemu.org"
+LICENSE = "GPL-2.0-only & LGPL-2.1-only"
+
+DEPENDS += "bison-native meson-native ninja-native"
+
+
+require ${COREBASE}/meta/recipes-devtools/qemu/qemu-targets.inc
+
+inherit pkgconfig update-rc.d systemd python3native
+
+LIC_FILES_CHKSUM = "file://COPYING;md5=a3b50d8b88dcc0eb3d7d39b760b9e821 \
+                    file://COPYING.LIB;endline=24;md5=8a8178c06478747a771588adec965232"
+
+# QEMU reference - commit SHA for reproducible builds
+# To update to latest master, run:
+#   git ls-remote https://github.com/qemu/qemu.git refs/heads/master | cut -f1
+QEMU_REF ?= "65fb9de4888f9bf32bc4f60c880da3dff04c4fd9"
+
+# Use git protocol (required by BitBake QA)
+SRC_URI = "gitsm://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \
+           file://powerpc_rom.bin \
+           file://0001-qemu-Add-addition-environment-space-to-boot-loader-q.patch \
+           file://0002-apic-fixup-fallthrough-to-PIC.patch \
+           file://0004-qemu-Do-not-include-file-if-not-exists.patch \
+           file://0006-qemu-Determinism-fixes.patch \
+           file://0007-tests-meson.build-use-relative-path-to-refer-to-file.patch \
+           file://0008-Define-MAP_SYNC-and-MAP_SHARED_VALIDATE-on-needed-li.patch \
+           file://0010-configure-lookup-meson-exutable-from-PATH.patch \
+           file://0011-qemu-Ensure-pip-and-the-python-venv-aren-t-used-for-.patch \
+           file://qemu-guest-agent.init \
+           file://qemu-guest-agent.udev \
+           "
+
+SRCREV = "${QEMU_REF}"
+
+# Meson wrap subprojects - these are fetched separately since meson wraps
+# are not git submodules. destsuffix puts them in the right location.
+# Note: rust crates are skipped since we do not need them.
+SRC_URI += " \
+    git://gitlab.com/qemu-project/keycodemapdb.git;protocol=https;nobranch=1;destsuffix=git/subprojects/keycodemapdb;name=keycodemapdb \
+    git://gitlab.com/qemu-project/berkeley-softfloat-3.git;protocol=https;nobranch=1;destsuffix=git/subprojects/berkeley-softfloat-3;name=berkeley-softfloat-3 \
+    git://gitlab.com/qemu-project/berkeley-testfloat-3.git;protocol=https;nobranch=1;destsuffix=git/subprojects/berkeley-testfloat-3;name=berkeley-testfloat-3 \
+    git://gitlab.com/qemu-project/dtc.git;protocol=https;nobranch=1;destsuffix=git/subprojects/dtc;name=dtc \
+    git://gitlab.freedesktop.org/slirp/libslirp.git;protocol=https;nobranch=1;destsuffix=git/subprojects/slirp;name=slirp \
+    git://gitlab.com/qemu-project/libvfio-user.git;protocol=https;nobranch=1;destsuffix=git/subprojects/libvfio-user;name=libvfio-user \
+    git://gitlab.com/libblkio/libblkio.git;protocol=https;nobranch=1;destsuffix=git/subprojects/libblkio;name=libblkio \
+    "
+
+# Pin subproject revisions (from .wrap files)
+SRCREV_keycodemapdb = "f5772a62ec52591ff6870b7e8ef32482371f22c6"
+SRCREV_berkeley-softfloat-3 = "b64af41c3276f97f0e181920400ee056b9c88037"
+SRCREV_berkeley-testfloat-3 = "e7af9751d9f9fd3b47911f51a5cfd08af256a9ab"
+SRCREV_dtc = "b6910bec11614980a21e46fbccc35934b671bd81"
+SRCREV_slirp = "26be815b86e8d49add8c9a8b320239b9594ff03d"
+SRCREV_libvfio-user = "0b28d205572c80b568a1003db2c8f37ca333e4d7"
+SRCREV_libblkio = "f84cc963a444e4cb34813b2dcfc5bf8526947dc0"
+
+SRCREV_FORMAT = "default_keycodemapdb_berkeley-softfloat-3_berkeley-testfloat-3_dtc_slirp_libvfio-user_libblkio"
+
+
+# Disable shallow git clone - QEMU repo requires full clone for checkout
+BB_GIT_SHALLOW = "0"
+
+S = "${WORKDIR}/git"
+PV = "${QEMU_REF}+git${SRCPV}"
+
+CVE_STATUS[CVE-2007-0998] = "not-applicable-config: The VNC server can expose host files uder some circumstances. We don't enable it by default."
+
+# https://bugzilla.redhat.com/show_bug.cgi?id=1609015#c11
+CVE_STATUS[CVE-2018-18438] = "disputed: The issues identified by this CVE were determined to not constitute a vulnerability."
+
+# As per https://bugzilla.redhat.com/show_bug.cgi?id=2203387
+CVE_STATUS[CVE-2023-2680] = "not-applicable-platform: RHEL specific issue."
+
+# NVD DB has this CVE as version-less (with "-")
+CVE_STATUS[CVE-2024-6505] = "fixed-version: this CVE is fixed since 9.1.0"
+CVE_STATUS[CVE-2024-8354] = "fixed-version: this CVE is fixed since 10.0.5"
+
+CVE_STATUS[CVE-2023-1386] = "disputed: not an issue as per https://bugzilla.redhat.com/show_bug.cgi?id=2223985"
+
+COMPATIBLE_HOST:mipsarchn32 = "null"
+COMPATIBLE_HOST:mipsarchn64 = "null"
+COMPATIBLE_HOST:riscv32 = "null"
+
+# Per https://lists.nongnu.org/archive/html/qemu-devel/2020-09/msg03873.html
+# upstream states qemu doesn't work without optimization
+DEBUG_BUILD = "0"
+
+do_install:append() {
+    # Prevent QA warnings about installed ${localstatedir}/run
+    if [ -d ${D}${localstatedir}/run ]; then rmdir ${D}${localstatedir}/run; fi
+}
+
+
+# QEMU_TARGETS is overridable variable
+QEMU_TARGETS ?= "arm aarch64 i386 loongarch64 mips mipsel mips64 mips64el ppc ppc64 ppc64le riscv32 riscv64 sh4 x86_64"
+
+EXTRA_OECONF = " \
+    --prefix=${prefix} \
+    --bindir=${bindir} \
+    --includedir=${includedir} \
+    --libdir=${libdir} \
+    --mandir=${mandir} \
+    --datadir=${datadir} \
+    --docdir=${docdir}/${BPN} \
+    --sysconfdir=${sysconfdir} \
+    --libexecdir=${libexecdir} \
+    --localstatedir=${localstatedir} \
+    --with-suffix=${BPN} \
+    --disable-strip \
+    --disable-werror \
+    --extra-cflags='${CFLAGS}' \
+    --extra-ldflags='${LDFLAGS}' \
+    --disable-download \
+    --disable-docs \
+    --host-cc='${BUILD_CC}' \
+    --disable-af-xdp \
+    ${PACKAGECONFIG_CONFARGS} \
+    "
+
+EXTRA_OECONF:append:class-target = " --cross-prefix=${HOST_PREFIX}"
+EXTRA_OECONF:append:class-nativesdk = " --cross-prefix=${HOST_PREFIX}"
+
+B = "${WORKDIR}/build"
+
+do_configure:prepend:class-native() {
+    # Append build host pkg-config paths for native target since the host may provide sdl
+    BHOST_PKGCONFIG_PATH=$(PATH=/usr/bin:/bin pkg-config --variable pc_path pkg-config || echo "")
+    if [ ! -z "$BHOST_PKGCONFIG_PATH" ]; then
+        export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$BHOST_PKGCONFIG_PATH
+    fi
+}
+
+do_configure() {
+    export PKG_CONFIG=pkg-config
+    ${S}/configure ${EXTRA_OECONF}
+}
+do_configure[cleandirs] += "${B}"
+
+do_install () {
+    export STRIP=""
+    oe_runmake 'DESTDIR=${D}' install
+
+    # If we built the guest agent, also install startup/udev rules
+    if [ -e "${D}${bindir}/qemu-ga" ]; then
+        install -d ${D}${sysconfdir}/init.d/
+        install -m 0755 ${UNPACKDIR}/qemu-guest-agent.init ${D}${sysconfdir}/init.d/qemu-guest-agent
+        sed -i 's:@bindir@:${bindir}:' ${D}${sysconfdir}/init.d/qemu-guest-agent
+
+        install -d ${D}${sysconfdir}/udev/rules.d/
+        install -m 0644 ${UNPACKDIR}/qemu-guest-agent.udev ${D}${sysconfdir}/udev/rules.d/60-qemu-guest-agent.rules
+
+        install -d ${D}${systemd_unitdir}/system/
+        install -m 0644 ${S}/contrib/systemd/qemu-guest-agent.service ${D}${systemd_unitdir}/system
+        sed -i -e 's,-/usr/bin/,-${bindir}/,g' ${D}${systemd_unitdir}/system/qemu-guest-agent.service
+    fi
+    # ELF binary /usr/share/qemu/s390-netboot.img has relocations in .text
+    rm ${D}${datadir}/qemu/s390-netboot.img -f
+    # ELF binary /usr/share/qemu/s390-ccw.img has relocations in .text [textrel]
+    rm ${D}${datadir}/qemu/s390-ccw.img -f
+    # We don't support PARISC and these cause strip and SDK relocation errors
+    rm ${D}${datadir}/qemu/hppa* -f
+}
+
+# Disable kvm/virgl/mesa on targets that do not support it
+PACKAGECONFIG:remove:darwin = "kvm virglrenderer epoxy gtk+"
+PACKAGECONFIG:remove:mingw32 = "kvm virglrenderer epoxy gtk+ pie"
+
+PACKAGECONFIG[sdl] = "--enable-sdl,--disable-sdl,virtual/libsdl2"
+PACKAGECONFIG[sdl-image] = "--enable-sdl-image,--disable-sdl-image,libsdl2-image"
+PACKAGECONFIG[png] = "--enable-png,--disable-png,libpng"
+PACKAGECONFIG[virtfs] = "--enable-virtfs --enable-attr --enable-cap-ng,--disable-virtfs,libcap-ng attr,"
+PACKAGECONFIG[aio] = "--enable-linux-aio,--disable-linux-aio,libaio,"
+PACKAGECONFIG[uring] = "--enable-linux-io-uring,--disable-linux-io-uring,liburing"
+PACKAGECONFIG[xen] = "--enable-xen,--disable-xen,xen-tools,xen-tools-libxenstore xen-tools-libxenctrl xen-tools-libxenguest"
+PACKAGECONFIG[vnc-sasl] = "--enable-vnc --enable-vnc-sasl,--disable-vnc-sasl,cyrus-sasl,"
+PACKAGECONFIG[vnc-jpeg] = "--enable-vnc --enable-vnc-jpeg,--disable-vnc-jpeg,jpeg,"
+PACKAGECONFIG[libcurl] = "--enable-curl,--disable-curl,curl,"
+PACKAGECONFIG[nss] = "--enable-smartcard,--disable-smartcard,nss,"
+PACKAGECONFIG[curses] = "--enable-curses,--disable-curses,ncurses,"
+PACKAGECONFIG[pixman] = "--enable-pixman,--disable-pixman,pixman"
+PACKAGECONFIG[gtk+] = "--enable-gtk,--disable-gtk,gtk+3 gettext-native"
+PACKAGECONFIG[vte] = "--enable-vte,--disable-vte,vte gettext-native"
+PACKAGECONFIG[libcap-ng] = "--enable-cap-ng,--disable-cap-ng,libcap-ng,"
+PACKAGECONFIG[ssh] = "--enable-libssh,--disable-libssh,libssh,"
+PACKAGECONFIG[gcrypt] = "--enable-gcrypt,--disable-gcrypt,libgcrypt,"
+PACKAGECONFIG[nettle] = "--enable-nettle,--disable-nettle,nettle"
+PACKAGECONFIG[libusb] = "--enable-libusb,--disable-libusb,libusb1"
+PACKAGECONFIG[fdt] = "--enable-fdt,--disable-fdt,dtc"
+PACKAGECONFIG[alsa] = "--audio-drv-list=default,,alsa-lib"
+PACKAGECONFIG[epoxy] = "--enable-opengl,--disable-opengl,libepoxy"
+PACKAGECONFIG[lzo] = "--enable-lzo,--disable-lzo,lzo"
+PACKAGECONFIG[dax] = "--enable-libdaxctl,--disable-libdaxctl,ndctl"
+PACKAGECONFIG[numa] = "--enable-numa,--disable-numa,numactl"
+PACKAGECONFIG[gnutls] = "--enable-gnutls,--disable-gnutls,gnutls"
+PACKAGECONFIG[bzip2] = "--enable-bzip2,--disable-bzip2,bzip2"
+PACKAGECONFIG[libiscsi] = "--enable-libiscsi,--disable-libiscsi"
+PACKAGECONFIG[kvm] = "--enable-kvm,--disable-kvm"
+PACKAGECONFIG[virglrenderer] = "--enable-virglrenderer,--disable-virglrenderer,virglrenderer"
+# spice will be in meta-networking layer
+PACKAGECONFIG[spice] = "--enable-spice,--disable-spice,spice"
+# usbredir will be in meta-networking layer
+PACKAGECONFIG[dbus-display] = "--enable-dbus-display,--disable-dbus-display,glib-2.0-native,dbus"
+PACKAGECONFIG[usb-redir] = "--enable-usb-redir,--disable-usb-redir,usbredir"
+PACKAGECONFIG[snappy] = "--enable-snappy,--disable-snappy,snappy"
+PACKAGECONFIG[glusterfs] = "--enable-glusterfs,--disable-glusterfs,glusterfs"
+PACKAGECONFIG[xkbcommon] = "--enable-xkbcommon,--disable-xkbcommon,libxkbcommon"
+PACKAGECONFIG[libudev] = "--enable-libudev,--disable-libudev,udev"
+PACKAGECONFIG[attr] = "--enable-attr,--disable-attr,attr,"
+PACKAGECONFIG[rbd] = "--enable-rbd,--disable-rbd,ceph,ceph"
+PACKAGECONFIG[vhost] = "--enable-vhost-net,--disable-vhost-net,,"
+PACKAGECONFIG[ust] = "--enable-trace-backends=ust,,lttng-ust,"
+PACKAGECONFIG[pie] = "--enable-pie,--disable-pie,,"
+PACKAGECONFIG[seccomp] = "--enable-seccomp,--disable-seccomp,libseccomp"
+# libnfs is currently provided by meta-kodi
+PACKAGECONFIG[libnfs] = "--enable-libnfs,--disable-libnfs,libnfs"
+PACKAGECONFIG[pmem] = "--enable-libpmem,--disable-libpmem,pmdk"
+PACKAGECONFIG[pulseaudio] = "--enable-pa,--disable-pa,pulseaudio"
+PACKAGECONFIG[selinux] = "--enable-selinux,--disable-selinux"
+PACKAGECONFIG[bpf] = "--enable-bpf,--disable-bpf,libbpf"
+PACKAGECONFIG[capstone] = "--enable-capstone,--disable-capstone"
+PACKAGECONFIG[rdma] = "--enable-rdma,--disable-rdma"
+PACKAGECONFIG[vde] = "--enable-vde,--disable-vde"
+PACKAGECONFIG[fuse] = "--enable-fuse --enable-fuse-lseek,--disable-fuse --disable-fuse-lseek,fuse3"
+PACKAGECONFIG[slirp] = "--enable-slirp,--disable-slirp,libslirp"
+PACKAGECONFIG[brlapi] = "--enable-brlapi,--disable-brlapi"
+PACKAGECONFIG[jack] = "--enable-jack,--disable-jack,jack,"
+PACKAGECONFIG[debuginfo] = "--enable-libdw,--disable-libdw,elfutils"
+PACKAGECONFIG[pipewire] = "--enable-pipewire,--disable-pipewire,pipewire"
+PACKAGECONFIG[sndio] = "--enable-sndio,--disable-sndio,sndio"
+
+INSANE_SKIP:${PN}-common = "arch"
+
+FILES:${PN} += "${datadir}/icons"
+
+# For user who want to install all arch packages
+PACKAGES =+ "${PN}-common"
+RDEPENDS:${PN} += "${PN}-common"
+
+ALLOW_EMPTY:${PN} = "1"
+FILES:${PN} = ""
+
+FILES:${PN}-common = "${bindir}/* ${includedir}/* ${libexecdir}/* ${datadir}/* ${localstatedir}"
+
+PACKAGES_DYNAMIC += "^${PN}-user-.*  ^${PN}-system-.*"
+
+PACKAGESPLITFUNCS =+ "split_qemu_packages"
+
+python split_qemu_packages () {
+    archdir = d.expand('${bindir}/')
+    subpackages = do_split_packages(d, archdir, r'^qemu-system-(.*)$', '${PN}-system-%s', 'QEMU full system emulation binaries(%s)' , prepend=True, extra_depends='${PN}-common')
+
+    subpackages += do_split_packages(d, archdir, r'^qemu-((?!system|edid|ga|img|io|nbd|pr-helper|storage-daemon).*)$', '${PN}-user-%s', 'QEMU full user emulation binaries(%s)' , prepend=True, extra_depends='${PN}-common')
+    if subpackages:
+        d.appendVar('RDEPENDS:' + d.getVar('PN'), ' ' + ' '.join(subpackages))
+}
+
+# Put the guest agent in a separate package
+PACKAGES =+ "${PN}-guest-agent"
+SUMMARY:${PN}-guest-agent = "QEMU guest agent"
+FILES:${PN}-guest-agent += " \
+    ${bindir}/qemu-ga \
+    ${sysconfdir}/udev/rules.d/60-qemu-guest-agent.rules \
+    ${sysconfdir}/init.d/qemu-guest-agent \
+    ${systemd_unitdir}/system/qemu-guest-agent.service \
+"
+
+INITSCRIPT_PACKAGES = "${PN}-guest-agent"
+INITSCRIPT_NAME:${PN}-guest-agent = "qemu-guest-agent"
+INITSCRIPT_PARAMS:${PN}-guest-agent = "defaults"
+
+SYSTEMD_PACKAGES = "${PN}-guest-agent"
+SYSTEMD_SERVICE:${PN}-guest-agent = "qemu-guest-agent.service"
+
+# Apply meson packagefiles to subprojects
+# QEMU's subprojects/packagefiles/ contains meson.build and patches for each
+# subproject that meson normally applies during download. Since we fetch
+# subprojects via SRC_URI, we need to apply these manually.
+do_apply_packagefiles() {
+    for subdir in ${S}/subprojects/packagefiles/*; do
+        subname=$(basename "$subdir")
+        target="${S}/subprojects/${subname}"
+        if [ -d "$target" ] && [ -d "$subdir" ]; then
+            cp -rf "$subdir"/* "$target"/
+            bbnote "Applied packagefiles to subproject: $subname"
+        fi
+    done
+}
+addtask apply_packagefiles after do_unpack before do_patch

@@ -56,7 +56,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-minipack:lf-master
   meta-montblanc:lf-master
   meta-morgan800cc:lf-master
-  meta-qemu-git:lf-master
+  meta-qemux86-git:lf-master
   meta-qemux86:lf-master
   meta-santabarbara:lf-master
   meta-tahan:lf-master

@@ -14,7 +14,7 @@ BBLAYERS ?= " \
   ##OEROOT##/meta-phosphor \
   ##OEROOT##/../.. \
   ##OEROOT##/../../meta-facebook \
-  ##OEROOT##/../../meta-facebook/meta-qemu-git \
+  ##OEROOT##/../../meta-facebook/meta-qemux86-git \
   ##OEROOT##/../../meta-facebook/meta-python3 \
   ##OEROOT##/../../meta-facebook/meta-backports \
   "

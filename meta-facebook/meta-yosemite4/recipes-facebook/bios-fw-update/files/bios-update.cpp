@@ -14,7 +14,17 @@
 
 #include <variant>
 #include <vector>
+#include <string>
+#include <phosphor-logging/lg2.hpp>
+#include <phosphor-logging/commit.hpp>
+#include <xyz/openbmc_project/Software/Update/event.hpp>
 
+using TargetDetermined = sdbusplus::event::xyz::openbmc_project::software::Update::TargetDetermined;
+using UpdateSuccessful = sdbusplus::event::xyz::openbmc_project::software::Update::UpdateSuccessful;
+using VerificationFailed = sdbusplus::error::xyz::openbmc_project::software::Update::VerificationFailed;
+using ApplyFailed = sdbusplus::error::xyz::openbmc_project::software::Update::ApplyFailed;
+
+constexpr auto BIOS_NAME = "BIOS";
 constexpr auto HOST_STATE_SERVICE = "xyz.openbmc_project.State.Host";
 constexpr auto HOST_STATE_OBJECT = "/xyz/openbmc_project/state/host";
 constexpr auto HOST_STATE_INTERFACE = "xyz.openbmc_project.State.Host";
@@ -26,6 +36,60 @@ enum class POWER : uint8_t
     OFF = 0x00,
     ON = 0x01,
 };
+
+enum class SEL_TYPE
+{
+    TargetDetermined,
+    ApplyFailed,
+    VerificationFailed,
+    UpdateSuccessful,
+};
+
+void addSelBySelType(SEL_TYPE selType, uint8_t slotId, const std::string& imagePath) {
+    auto targetName = sdbusplus::message::object_path(std::string(BIOS_NAME) + " slot" + std::to_string(slotId));
+
+    switch (selType) {
+        case SEL_TYPE::TargetDetermined: {
+            lg2::commit(
+                TargetDetermined(
+                    "TARGET_NAME", targetName,
+                    "IMAGE_IDENTIFIER", imagePath
+                )
+            );
+            break;
+        }
+        case SEL_TYPE::ApplyFailed: {
+            lg2::commit(
+                ApplyFailed(
+                    "IMAGE_IDENTIFIER", imagePath,
+                    "TARGET_NAME", targetName
+                )
+            );
+            break;
+        }
+        case SEL_TYPE::VerificationFailed: {
+            lg2::commit(
+                VerificationFailed(
+                    "IMAGE_IDENTIFIER", imagePath,
+                    "TARGET_NAME", targetName
+                )
+            );
+            break;
+        }
+        case SEL_TYPE::UpdateSuccessful: {
+            lg2::commit(
+                UpdateSuccessful(
+                    "TARGET_NAME", targetName,
+                    "IMAGE_IDENTIFIER", imagePath
+                )
+            );
+            break;
+        }
+        default: {
+            break;
+        }
+    }
+}
 
 uint8_t getSlotAddress(uint8_t slotId)
 {
@@ -294,6 +358,8 @@ int main(int argc, char** argv)
         return -1;
     }
 
+    addSelBySelType(SEL_TYPE::TargetDetermined, slotId, imagePath);
+
     constexpr char expected_sign[16] = {
         0xF0,
         0x18,
@@ -338,9 +404,10 @@ int main(int argc, char** argv)
 
         auto parser = pldm::fw_update::parsePkgHeader(packageHeader);
         if (parser == nullptr) {
-          std::cerr << "Failed to parse package header information"
+            std::cerr << "Failed to parse package header information"
                     << std::endl;
-          return -1;
+            addSelBySelType(SEL_TYPE::VerificationFailed, slotId, imagePath);
+            return -1;
         }
 
         package.seekg(0);
@@ -351,9 +418,10 @@ int main(int argc, char** argv)
         try {
           parser->parse(packageHeader, packageSize);
         } catch (const std::exception& e) {
-          std::cerr << "Failed to parse package header, error: " << e.what()
+            std::cerr << "Failed to parse package header, error: " << e.what()
                     << std::endl;
-          return -1;
+            addSelBySelType(SEL_TYPE::VerificationFailed, slotId, imagePath);
+            return -1;
         }
 
         auto packageDescriptors = std::get<pldm::fw_update::Descriptors>(
@@ -371,17 +439,19 @@ int main(int argc, char** argv)
                 descriptorVec.end(),
                 packageDescriptorVec.begin(),
                 packageDescriptorVec.end())) {
-          std::cerr << "Package descriptors do not match with the "
+            std::cerr << "Package descriptors do not match with the "
                        "provided descriptors"
                     << std::endl;
-          return -1;
+            addSelBySelType(SEL_TYPE::VerificationFailed, slotId, imagePath);
+            return -1;
         }
         auto unpackImagePath = imagePath + ".unpacked";
         std::ofstream unpackImage(unpackImagePath, std::ios::binary);
         if (!unpackImage) {
-          std::cerr << "Failed to open unpacked image file: " << unpackImagePath
+            std::cerr << "Failed to open unpacked image file: " << unpackImagePath
                     << std::endl;
-          return -1;
+            addSelBySelType(SEL_TYPE::ApplyFailed, slotId, imagePath);
+            return -1;
         }
         package.seekg(parser->pkgHeaderSize);
         std::vector<uint8_t> imageData(packageSize - parser->pkgHeaderSize);
@@ -406,6 +476,7 @@ int main(int argc, char** argv)
         if (fd < 0)
         {
             std::cerr << "Unable to open lock file: " << lockFile << std::endl;
+            addSelBySelType(SEL_TYPE::ApplyFailed, slotId, imagePath);
             return 1;
         }
         if (flock(fd, LOCK_EX | LOCK_NB) == 0)
@@ -421,6 +492,7 @@ int main(int argc, char** argv)
         std::cerr << 
             "Failed to acquire lock after multiple attempts, retry time exhausted" << 
             std::endl;
+        addSelBySelType(SEL_TYPE::ApplyFailed, slotId, imagePath);
         close(fd);
         return 1;
     }
@@ -429,10 +501,12 @@ int main(int argc, char** argv)
     if (bios.run())
     {
         std::cerr << "BIOS update: success\n";
+        addSelBySelType(SEL_TYPE::UpdateSuccessful, slotId, imagePath);
     }
     else
     {
         std::cerr << "BIOS update: fail\n";
+        addSelBySelType(SEL_TYPE::ApplyFailed, slotId, imagePath);
     }
 
     std::cout << "Release lock file: " << lockFile << std::endl;

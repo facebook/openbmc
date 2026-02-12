@@ -52,6 +52,9 @@ dep_libs = [
   dependency('boost'),
   dependency('sdbusplus'),
   dependency('libusb-1.0'),
+  dependency('phosphor-logging'),
+  dependency('phosphor-dbus-interfaces'),
+
   libpldmutils,
 ]
 

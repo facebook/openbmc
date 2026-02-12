@@ -19,11 +19,11 @@
 package common
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func TestEnsureEnoughFreeRAM(t *testing.T) {
@@ -56,14 +56,14 @@ func TestEnsureEnoughFreeRAM(t *testing.T) {
 			},
 			memInfoErr: nil,
 			want: step.ExitSafeToReboot{
-				Err: errors.Errorf("Free memory (31457280 B) < minimum memory needed (47185920 B), reboot needed"),
+				Err: fmt.Errorf("Free memory (31457280 B) < minimum memory needed (47185920 B), reboot needed"),
 			},
 		},
 		{
 			name:       "Error in GetMemInfo",
 			memInfo:    nil,
-			memInfoErr: errors.Errorf("MemInfo error"),
-			want:       step.ExitSafeToReboot{Err: errors.Errorf("MemInfo error")},
+			memInfoErr: fmt.Errorf("MemInfo error"),
+			want:       step.ExitSafeToReboot{Err: fmt.Errorf("MemInfo error")},
 		},
 	}
 

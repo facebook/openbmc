@@ -33,6 +33,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
@@ -221,10 +222,20 @@ JTAG_Handler* SoftwareJTAGHandler(uint8_t fru)
 
 STATUS JTAG_clock_cycle(uint8_t fru_id, int number_of_cycles)
 {
-    uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00}; // IANA ID
+    uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x00}; // IANA ID
     uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
     uint8_t rlen = 0;
     uint8_t tlen = 5;
+
+    if (fbgc_common_is_grandcanyon2()) {
+      tbuf[0] = 0x15;
+      tbuf[1] = 0xA0;
+      tbuf[2] = 0x00;
+    } else {
+      tbuf[0] = 0x9c;
+      tbuf[1] = 0x9c;
+      tbuf[2] = 0x00;
+    }
 
 
     if (number_of_cycles > 255)
@@ -684,11 +695,21 @@ STATUS generateTMSbits(JtagStates src, JtagStates dst, uint8_t *length, uint8_t 
 
 STATUS jtag_bic_set_tap_state(JtagStates src_state, JtagStates tap_state)
 {
-    uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00}; // IANA ID
+    uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x00}; // IANA ID
     uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
     uint8_t rlen = 0;
     uint8_t tlen = 5;
     STATUS ret;
+
+    if (fbgc_common_is_grandcanyon2()) {
+      tbuf[0] = 0x15;
+      tbuf[1] = 0xA0;
+      tbuf[2] = 0x00;
+    } else {
+      tbuf[0] = 0x9c;
+      tbuf[1] = 0x9c;
+      tbuf[2] = 0x00;
+    }
 
     // if we're already are requested state,
     if (src_state == tap_state)
@@ -736,11 +757,21 @@ STATUS jtag_bic_shift_wrapper(unsigned int write_bit_length,
                               unsigned char* write_data, unsigned int read_bit_length,
                               unsigned char* read_data, unsigned int last_transaction)
 {
-    uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00}; // IANA ID
+    uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x00}; // IANA ID
     uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
     uint8_t rlen = 0;
     uint8_t tlen = 0;
     STATUS ret = ST_OK;
+
+    if (fbgc_common_is_grandcanyon2()) {
+      tbuf[0] = 0x15;
+      tbuf[1] = 0xA0;
+      tbuf[2] = 0x00;
+    } else {
+      tbuf[0] = 0x9c;
+      tbuf[1] = 0x9c;
+      tbuf[2] = 0x00;
+    }
 
     if (write_data == NULL) {
         syslog(LOG_ERR, "%s(): write data should not be NULL", __func__);
@@ -1097,12 +1128,22 @@ STATUS JTAG_init_passthrough(JTAG_Handler *state, uint8_t jflow, STATUS (*callba
 }
 
 STATUS passthrough_jtag_message(JTAG_Handler *state, struct spi_message *s_message) {
-    uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00}; // IANA ID
+    uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x00}; // IANA ID
     uint8_t rbuf[MAX_IPMB_REQ_LEN] = {0x00};
     uint8_t rlen = 0;
     uint16_t tlen = 3;
     uint8_t slot_id;
     int size = 0;
+
+    if (fbgc_common_is_grandcanyon2()) {
+      tbuf[0] = 0x15;
+      tbuf[1] = 0xA0;
+      tbuf[2] = 0x00;
+    } else {
+      tbuf[0] = 0x9c;
+      tbuf[1] = 0x9c;
+      tbuf[2] = 0x00;
+    }
 
     if (state == NULL) {
         syslog(LOG_ERR, "%s(): state should not be NULL", __func__);

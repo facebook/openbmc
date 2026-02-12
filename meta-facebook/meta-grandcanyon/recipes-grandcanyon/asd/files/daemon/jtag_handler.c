@@ -131,10 +131,21 @@ STATUS jtag_bic_ipmb_wrapper(uint8_t netfn, uint8_t cmd,
 static
 STATUS JTAG_clock_cycle(int number_of_cycles)
 {
-    uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00}; // IANA ID
+    uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x00}; // IANA ID
     uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
     uint8_t rlen = 0;
     uint8_t tlen = 5;
+
+    if (fbgc_common_is_grandcanyon2()) {
+      tbuf[0] = 0x15;
+      tbuf[1] = 0xA0;
+      tbuf[2] = 0x00;
+    } else {
+      tbuf[0] = 0x9c;
+      tbuf[1] = 0x9c;
+      tbuf[2] = 0x00;
+    }
+
 
 
     if (number_of_cycles > 256)
@@ -167,11 +178,21 @@ STATUS JTAG_bic_shift_wrapper(unsigned int write_bit_length,
                               unsigned char* write_data, unsigned int read_bit_length,
                               unsigned char* read_data, unsigned int last_transaction)
 {
-    uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00};
+    uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x00};
     uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
     uint8_t rlen = 0;
     uint8_t tlen = 0;
     STATUS ret = ST_ERR;
+
+    if (fbgc_common_is_grandcanyon2()) {
+      tbuf[0] = 0x15;
+      tbuf[1] = 0xA0;
+      tbuf[2] = 0x00;
+    } else {
+      tbuf[0] = 0x9c;
+      tbuf[1] = 0x9c;
+      tbuf[2] = 0x00;
+    }
 
     //round up to next byte boundary
     uint8_t  write_len_bytes = ((write_bit_length + 7) >> 3);
@@ -780,12 +801,23 @@ STATUS JTAG_tap_reset(JTAG_Handler* state)
 //
 STATUS JTAG_set_tap_state(JTAG_Handler* state, enum jtag_states tap_state)
 {
-    uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00}; // IANA ID
+    uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x00}; // IANA ID
     uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
     uint8_t rlen = 0;
     uint8_t tlen = 5;
     uint8_t slot_id = state->fru;
     STATUS ret = ST_ERR;
+
+    if (fbgc_common_is_grandcanyon2()) {
+      tbuf[0] = 0x15;
+      tbuf[1] = 0xA0;
+      tbuf[2] = 0x00;
+    } else {
+      tbuf[0] = 0x9c;
+      tbuf[1] = 0x9c;
+      tbuf[2] = 0x00;
+    }
+
 
     if (state == NULL) {
         ASD_log(ASD_LogLevel_Error, stream, option,

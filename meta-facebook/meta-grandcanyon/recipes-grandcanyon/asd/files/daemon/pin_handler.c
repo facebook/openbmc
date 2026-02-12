@@ -22,6 +22,13 @@ enum  MONITOR_EVENTS {
   JTAG_EVENT_NUM,
 };
 
+typedef struct {
+  int idx;
+  const char *name;
+  int number;
+  int fd;
+} gpio_map_t;
+
 static pthread_mutex_t triggered_mutex = PTHREAD_MUTEX_INITIALIZER;
 static bool g_gpios_triggered[JTAG_EVENT_NUM] = {false, false, false};
 
@@ -83,7 +90,7 @@ static STATUS handle_preq_event(Target_Control_Handle* state, uint8_t fru) {
   ASD_log(ASD_LogLevel_Debug, stream, option,
           "BreakAll detected PRDY, asserting PREQ");
 
-  bic_set_gpio(FM_BMC_PREQ_N_NODE_R1, 1);
+  bic_set_gpio(state->gpios[BMC_PREQ_N].number, 1);
   if (result != ST_OK)
   {
      ASD_log(ASD_LogLevel_Error, stream, option,
@@ -94,7 +101,7 @@ static STATUS handle_preq_event(Target_Control_Handle* state, uint8_t fru) {
     usleep(10000);
     ASD_log(ASD_LogLevel_Debug, stream, option,
             "CPU_PRDY, de-asserting PREQ");
-    bic_set_gpio(FM_BMC_PREQ_N_NODE_R1, 0);
+    bic_set_gpio(state->gpios[BMC_PREQ_N].number, 0);
     if (result != ST_OK)
     {
       ASD_log(ASD_LogLevel_Error, stream, option,
@@ -115,12 +122,22 @@ STATUS bypass_jtag_message(uint8_t fru, struct asd_message* s_message) {
     };
 
     /* Not ready */
-    uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x9c, 0x9c, 0x00}; // IANA ID
+    uint8_t tbuf[MAX_IPMB_REQ_LEN] = {0x00}; // IANA ID
     uint8_t rbuf[MAX_IPMB_RES_LEN] = {0x00};
     uint8_t rlen = 0;
     uint16_t tlen = 3;
     bool seg_transfer = false;
     int size = 0;
+
+    if (fbgc_common_is_grandcanyon2()) {
+      tbuf[0] = 0x15;
+      tbuf[1] = 0xA0;
+      tbuf[2] = 0x00;
+    } else {
+      tbuf[0] = 0x9c;
+      tbuf[1] = 0x9c;
+      tbuf[2] = 0x00;
+    }
 
     if (s_message == NULL) {
       ASD_log(ASD_LogLevel_Error, stream, option,
@@ -281,17 +298,27 @@ static void *gpio_poll_thread(void *fru) {
         gpio_pin = req_buf[0];
         pthread_mutex_lock(&triggered_mutex);
         switch (gpio_pin) {
-          case RST_PLTRST_BMC_N:
-            ASD_log(ASD_LogLevel_Debug, stream, option,
-                    "ASD_BIC: PLTRST_N event");
-            g_gpios_triggered[JTAG_PLTRST_EVENT] = true;
-            break;
-          case IRQ_BMC_PRDY_NODE_OD_N:
-            g_gpios_triggered[JTAG_PRDY_EVENT] = true;
-            break;
-          case DBP_PRESENT_R2_N:
-            g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] = true;
-            break;
+#ifdef CONFIG_GRANDCANYON2
+        case RST_PLTRST_BUF_N:
+                g_gpios_triggered[JTAG_PLTRST_EVENT] = true;
+                break;
+        case H_BMC_PRDY_BUF_N:
+                g_gpios_triggered[JTAG_PRDY_EVENT] = true;
+                break;
+        case FM_DBP_PRESENT_N:
+                g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] = true;
+                break;
+#else
+        case RST_PLTRST_BMC_N:
+                g_gpios_triggered[JTAG_PLTRST_EVENT] = true;
+                break;
+        case IRQ_BMC_PRDY_NODE_OD_N:
+                g_gpios_triggered[JTAG_PRDY_EVENT] = true;
+                break;
+        case DBP_PRESENT_R2_N:
+                g_gpios_triggered[JTAG_XDP_PRESENT_EVENT] = true;
+                break;
+#endif
           default:
             ASD_log(ASD_LogLevel_Error, stream, option,
                     "ASD BIC: unknown GPIO pin # received, %d", gpio_pin);
@@ -507,6 +534,49 @@ on_power_event(Target_Control_Handle* state, ASD_EVENT* event)
     }
     return result;
 }
+static const gpio_map_t plat_gpio_map[] = {
+
+#ifdef CONFIG_GRANDCANYON2
+  //Index             //Name                    //GPIO number            //fd
+  { BMC_TCK_MUX_SEL,  "FM_JTAG_TCK_MUX_SEL_R",   FM_JTAG_TCK_MUX_SEL_R,   BMC_TCK_MUX_SEL },
+  { BMC_PREQ_N,       "DBP_CPU_PREQ_BIC_N",      DBP_CPU_PREQ_BIC_N,      BMC_PREQ_N },
+  { BMC_PRDY_N,       "H_BMC_PRDY_BUF_N",        H_BMC_PRDY_BUF_N,        BMC_PRDY_N },
+  { BMC_JTAG_SEL_N,   "BMC_JTAG_SEL_R",          BMC_JTAG_SEL_R,          BMC_JTAG_SEL_N },
+  { BMC_CPU_PWRGD,    "PWRGD_CPU_LVC3",          PWRGD_CPU_LVC3,          BMC_CPU_PWRGD },
+  { BMC_PLTRST_B,     "RST_PLTRST_BUF_N",        RST_PLTRST_BUF_N,        BMC_PLTRST_B },
+  { BMC_SYSPWROK,     "PWRGD_SYS_PWROK",         PWRGD_SYS_PWROK,         BMC_SYSPWROK },
+  { BMC_PWR_DEBUG_N,  "FBRK_N_R",                FBRK_N_R,                BMC_PWR_DEBUG_N },
+  { BMC_DEBUG_EN_N,   "FM_BMC_DEBUG_ENABLE_N",   FM_BMC_DEBUG_ENABLE_N,   BMC_DEBUG_EN_N },
+  { BMC_XDP_PRST_IN,  "FM_DBP_PRESENT_N",        FM_DBP_PRESENT_N,        BMC_XDP_PRST_IN },
+#else
+  { BMC_TCK_MUX_SEL,  "FM_JTAG_TCK_MUX_SEL",     FM_JTAG_TCK_MUX_SEL,     BMC_TCK_MUX_SEL },
+  { BMC_PREQ_N,       "FM_BMC_PREQ_N_NODE_R1",   FM_BMC_PREQ_N_NODE_R1,   BMC_PREQ_N },
+  { BMC_PRDY_N,       "IRQ_BMC_PRDY_NODE_OD_N",  IRQ_BMC_PRDY_NODE_OD_N,  BMC_PRDY_N },
+  { BMC_JTAG_SEL_N,   "FM_BIC_JTAG_SEL_N",       BMC_JTAG_SEL,            BMC_JTAG_SEL_N },
+  { BMC_CPU_PWRGD,    "PWRGD_BMC_PS_PWROK_R",    PWRGD_BMC_PS_PWROK_R,    BMC_CPU_PWRGD },
+  { BMC_PLTRST_B,     "RST_PLTRST_BMC_N",        RST_PLTRST_BMC_N,        BMC_PLTRST_B },
+  { BMC_SYSPWROK,     "PWRGD_SYS_PWROK",         PWRGD_SYS_PWROK,         BMC_SYSPWROK },
+  { BMC_PWR_DEBUG_N,  "FM_BMC_CPU_PWR_DEBUG_N",  FM_BMC_CPU_PWR_DEBUG_N,  BMC_PWR_DEBUG_N },
+  { BMC_DEBUG_EN_N,   "FM_BMC_DEBUG_ENABLE_N",   FM_BMC_DEBUG_ENABLE_N,   BMC_DEBUG_EN_N },
+  { BMC_XDP_PRST_IN,  "DBP_PRESENT_R2_N",        DBP_PRESENT_R2_N,        BMC_XDP_PRST_IN },
+#endif
+};
+
+static void apply_gpio_map(Target_Control_Handle *state,
+                           const gpio_map_t *map, size_t map_sz)
+{
+  for (size_t i = 0; i < map_sz; i++) {
+    const gpio_map_t *m = &map[i];
+
+    strcpy_safe(state->gpios[m->idx].name,
+                sizeof(state->gpios[m->idx].name),
+                m->name,
+                strlen(m->name) + 1);
+
+    state->gpios[m->idx].number = m->number;
+    state->gpios[m->idx].fd     = m->fd;
+  }
+}
 
 STATUS pin_hndlr_init_target_gpios_attr(Target_Control_Handle *state) {
     if (state == NULL) {
@@ -522,66 +592,7 @@ STATUS pin_hndlr_init_target_gpios_attr(Target_Control_Handle *state) {
         state->gpios[i].type = PIN_NONE;
     }
 
-    strcpy_safe(state->gpios[BMC_TCK_MUX_SEL].name,
-                sizeof(state->gpios[BMC_TCK_MUX_SEL].name), "FM_JTAG_TCK_MUX_SEL",
-                sizeof("FM_JTAG_TCK_MUX_SEL"));
-    state->gpios[BMC_TCK_MUX_SEL].number = FM_JTAG_TCK_MUX_SEL;
-    state->gpios[BMC_TCK_MUX_SEL].fd = BMC_TCK_MUX_SEL;
-
-
-    strcpy_safe(state->gpios[BMC_PREQ_N].name,
-                sizeof(state->gpios[BMC_PREQ_N].name), "FM_BMC_PREQ_N_NODE_R1",
-                sizeof("FM_BMC_PREQ_N_NODE_R1"));
-    state->gpios[BMC_PREQ_N].number = FM_BMC_PREQ_N_NODE_R1;
-    state->gpios[BMC_PREQ_N].fd = BMC_PREQ_N;
-
-    strcpy_safe(state->gpios[BMC_PRDY_N].name,
-                sizeof(state->gpios[BMC_PRDY_N].name), "IRQ_BMC_PRDY_NODE_OD_N",
-                sizeof("IRQ_BMC_PRDY_NODE_OD_N"));
-    state->gpios[BMC_PRDY_N].number = IRQ_BMC_PRDY_NODE_OD_N;
-    state->gpios[BMC_PRDY_N].fd = BMC_PRDY_N;
-
-    strcpy_safe(state->gpios[BMC_JTAG_SEL_N].name,
-                sizeof(state->gpios[BMC_JTAG_SEL_N].name), "FM_BIC_JTAG_SEL_N",
-                sizeof("BMC_JTAG_SEL_N"));
-    state->gpios[BMC_JTAG_SEL_N].number = BMC_JTAG_SEL;
-    state->gpios[BMC_JTAG_SEL_N].fd = BMC_JTAG_SEL_N;
-
-    strcpy_safe(state->gpios[BMC_CPU_PWRGD].name,
-                sizeof(state->gpios[BMC_CPU_PWRGD].name), "PWRGD_BMC_PS_PWROK_R",
-                sizeof("PWRGD_BMC_PS_PWROK_R"));
-    state->gpios[BMC_CPU_PWRGD].number = PWRGD_BMC_PS_PWROK_R;
-    state->gpios[BMC_CPU_PWRGD].fd = BMC_CPU_PWRGD;
-
-    strcpy_safe(state->gpios[BMC_PLTRST_B].name,
-                sizeof(state->gpios[BMC_PLTRST_B].name), "RST_PLTRST_BMC_N",
-                sizeof("RST_PLTRST_BMC_N"));
-    state->gpios[BMC_PLTRST_B].number = RST_PLTRST_BMC_N;
-    state->gpios[BMC_PLTRST_B].fd = BMC_PLTRST_B;
-
-    strcpy_safe(state->gpios[BMC_SYSPWROK].name,
-                sizeof(state->gpios[BMC_SYSPWROK].name), "PWRGD_SYS_PWROK",
-                sizeof("PWRGD_SYS_PWROK"));
-    state->gpios[BMC_SYSPWROK].number = PWRGD_SYS_PWROK;
-    state->gpios[BMC_SYSPWROK].fd = BMC_SYSPWROK;
-
-    strcpy_safe(state->gpios[BMC_PWR_DEBUG_N].name,
-                sizeof(state->gpios[BMC_PWR_DEBUG_N].name), "FM_BMC_CPU_PWR_DEBUG_N",
-                sizeof("FM_BMC_CPU_PWR_DEBUG_N"));
-    state->gpios[BMC_PWR_DEBUG_N].number = FM_BMC_CPU_PWR_DEBUG_N;
-    state->gpios[BMC_PWR_DEBUG_N].fd = BMC_PWR_DEBUG_N;
-
-    strcpy_safe(state->gpios[BMC_DEBUG_EN_N].name,
-                sizeof(state->gpios[BMC_DEBUG_EN_N].name), "FM_BMC_DEBUG_ENABLE_N",
-                sizeof("FM_BMC_DEBUG_ENABLE_N"));
-    state->gpios[BMC_DEBUG_EN_N].number = FM_BMC_DEBUG_ENABLE_N;
-    state->gpios[BMC_DEBUG_EN_N].fd = BMC_DEBUG_EN_N;
-
-    strcpy_safe(state->gpios[BMC_XDP_PRST_IN].name,
-                sizeof(state->gpios[BMC_XDP_PRST_IN].name), "DBP_PRESENT_R2_N",
-                sizeof("DBP_PRESENT_R2_N"));
-    state->gpios[BMC_XDP_PRST_IN].number = DBP_PRESENT_R2_N;
-    state->gpios[BMC_XDP_PRST_IN].fd = BMC_XDP_PRST_IN;
+    apply_gpio_map(state, plat_gpio_map, sizeof(plat_gpio_map)/sizeof(plat_gpio_map[0]));
 
     state->gpios[BMC_CPU_PWRGD].handler =
         (TargetHandlerEventFunctionPtr)on_power_event;

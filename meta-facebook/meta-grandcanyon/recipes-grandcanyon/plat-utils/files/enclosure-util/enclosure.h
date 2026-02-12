@@ -1,5 +1,107 @@
 // Expander error codes are defined in document "OpenBMC_GrandCanyon_Spec_v0.3 3.3.14.2"
 char *exp_error_code_description[] = {
+#ifdef CONFIG_GRANDCANYON2
+	"No error",                                  // Error Code 0
+	"Expander I2C bus 1 crash",
+	"Expander I2C bus 2 crash",
+	"Expander I2C bus 3 crash",
+	"Expander I2C bus 4 crash",
+	"Expander I2C bus 5 crash",
+	"Expander I2C bus 6 crash",
+	"Expander I2C bus 7 crash",
+	"Expander I2C bus 0 crash",
+	"IOC HeartBeat loss",
+	"SCC voltage critical",                      // Error Code 10
+	"SCC_HSC voltage critical",
+	"DPB voltage critical",
+	"DPB_HSC voltage critical",
+	"PTB_48V_AUX voltage critical",
+	"PTB_P12V_PU2_DC_MODULE voltage critical",
+	"PTB_P12V_PU3_DC_MODULE voltage critical",
+	"PTB_U19_ADC_MONITOR voltage critical",
+	"PTB_U20_ADC_MONITOR voltage critical",
+	"HDD X voltage critical",
+	"SCC current critical",                      // Error Code 20
+	"DPB current critical",
+	"PTB_48V_AUX current critical",
+	"PTB_P12V_PU2_DC_MODULE current critical",
+	"PTB_P12V_PU3_DC_MODULE current critical",
+	"SCC_Expander_Temp critical",
+	"SCC_Temp1 critical",
+	"SCC_Temp2 critical",
+	"DPB_INLET_Temp1 critical",
+	"DPB_INLET_Temp2 critical",
+	"DPB_OUTLET_Temp critical",                  // Error Code 30
+	"HDD X SMART temp. critical",
+	"UIC_Temp critical",
+	"HDD0 fault request",
+	"HDD1 fault request",
+	"HDD2 fault request",
+	"HDD3 fault request",
+	"HDD4 fault request",
+	"HDD5 fault request",
+	"HDD6 fault request",
+	"HDD7 fault request",                        // Error Code 40
+	"HDD8 fault request",
+	"HDD9 fault request",
+	"HDD10 fault request",
+	"HDD11 fault request",
+	"HDD12 fault request",
+	"HDD13 fault request",
+	"HDD14 fault request",
+	"HDD15 fault request",
+	"HDD16 fault request",
+	"HDD17 fault request",                       // Error Code 50
+	"HDD18 fault request",
+	"HDD19 fault request",
+	"HDD20 fault request",
+	"HDD21 fault request",
+	"HDD22 fault request",
+	"HDD23 fault request",
+	"HDD24 fault request",
+	"HDD25 fault request",
+	"HDD26 fault request",
+	"HDD27 fault request",                       // Error Code 60
+	"HDD28 fault request",
+	"HDD29 fault request",
+	"HDD30 fault request",
+	"HDD31 fault request",
+	"HDD32 fault request",
+	"HDD33 fault request",
+	"HDD34 fault request",
+	"HDD35 fault request",
+	"HDD X fault sensed",
+	"Expander Reserved",                         // Error Code 70
+	"Expander Reserved",
+	"Internal Mini-SAS Link Loss",
+	"Internal SAS Link Loss",
+	"SCC I2C device loss",
+	"DPB I2C device loss",
+	"PTB I2C device loss",
+	"UIC I2C device loss",
+	"Expander Reserved",
+	"Fan 0 front fault",
+	"Fan 0 rear fault",                          // Error Code 80
+	"Fan 1 front fault",
+	"Fan 1 rear fault",
+	"Fan 2 front fault",
+	"Fan 2 rear fault",
+	"Fan 3 front fault",
+	"Fan 3 rear fault",
+	"Expander Reserved",
+	"Expander Reserved",
+	"Expander Reserved",
+	"Drawer Pull out",                           // Error Code 90
+	"Peer SCC Plug out",
+	"UICA Plug out",
+	"UICB Plug out",
+	"Fan 0 Plug out",
+	"Fan 1 Plug out",
+	"Fan 2 Plug out",
+	"Fan 3 Plug out",
+	"Expander Reserved",
+	"H/W Configuration/Type Not Match",          // Error Code 99
+#else
 	"No error",                          // Error Code 0
 	"Expander I2C bus 1 crash",
 	"Expander I2C bus 2 crash",
@@ -100,6 +202,7 @@ char *exp_error_code_description[] = {
 	"Expander Reserved",
 	"Expander Reserved",
 	"H/W Configuration/Type Not Match",  // Error Code 99
+#endif
 };
 
 // BMC error codes are defined in document "GrandCanyon_BMC_Feature_List_v0.6 - Events"

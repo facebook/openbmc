@@ -20,11 +20,11 @@
 package common
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/validate"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -41,7 +41,7 @@ func validateImageBuildname(stepParams step.StepParams) step.StepExitError {
 	err := validate.CheckImageBuildNameCompatibility(stepParams.ImageFilePath)
 	if err != nil {
 		return step.ExitSafeToReboot{
-			Err: errors.Errorf("Image build name compatibility check failed: %v. "+
+			Err: fmt.Errorf("Image build name compatibility check failed: %v. "+
 				"Use the '--clowntown' flag if you wish to proceed at the risk of "+
 				"bricking the device", err),
 		}

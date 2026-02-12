@@ -21,12 +21,12 @@ package common
 
 import (
 	"encoding/binary"
+	"fmt"
 	"log"
 	"syscall"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 // From ASPEED AST2600 A3 Datasheet v1.3, p261
@@ -47,7 +47,7 @@ func init() {
 func ExposeRealFlash0OnSecondaryBootG6(stepParams step.StepParams) step.StepExitError {
 	machine, err := utils.GetMachine()
 	if err != nil {
-		return step.ExitSafeToReboot{Err: errors.Errorf("Unable to fetch machine: %v", err)}
+		return step.ExitSafeToReboot{Err: fmt.Errorf("Unable to fetch machine: %v", err)}
 	}
 
 	// T250939868: LF OpenBMC doesn't support this as the overlay partitions are still mounted
@@ -64,7 +64,7 @@ func ExposeRealFlash0OnSecondaryBootG6(stepParams step.StepParams) step.StepExit
 
 	mem, err := MmapDevMemRw()
 	if err != nil {
-		return step.ExitSafeToReboot{Err: errors.Errorf("Unable to mmap /dev/mem: %v", err)}
+		return step.ExitSafeToReboot{Err: fmt.Errorf("Unable to mmap /dev/mem: %v", err)}
 	}
 	defer syscall.Munmap(mem)
 
@@ -100,7 +100,7 @@ var ResetFMC_WDT2 = func(mem []byte) error {
 
 	fmc_wdt2 := ReadFMC_WDT2(mem)
 	if fmc_wdt2&0x10 == 0x10 {
-		return errors.Errorf("Unable to clear WDT2 second boot code flag @ 0x%x, current value = 0x%x", FMC_WDT2, fmc_wdt2)
+		return fmt.Errorf("Unable to clear WDT2 second boot code flag @ 0x%x, current value = 0x%x", FMC_WDT2, fmc_wdt2)
 	}
 
 	return nil

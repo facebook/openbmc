@@ -20,13 +20,13 @@
 package validate
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 func TestCompatibleVersionMapping(t *testing.T) {
@@ -65,7 +65,7 @@ func TestCheckImageBuildNameCompatibility(t *testing.T) {
 			name:         "does not match",
 			etcIssueVer:  "fbtp-v2020.09.1",
 			imageFileVer: "yosemite-v1.2",
-			want:         errors.Errorf("OpenBMC versions from /etc/issue ('fbtp') and image file ('yosemite') do not match!"),
+			want:         fmt.Errorf("OpenBMC versions from /etc/issue ('fbtp') and image file ('yosemite') do not match!"),
 		},
 		{
 			name:         "compatible, uses normalized version",
@@ -77,7 +77,7 @@ func TestCheckImageBuildNameCompatibility(t *testing.T) {
 			name:         "etc issue build name get error",
 			etcIssueVer:  "!@#$",
 			imageFileVer: "yfbgp2-v1234",
-			want: errors.Errorf(
+			want: fmt.Errorf(
 				"Unable to get build name from version '!@#$' (normalized: '!@#$'): " +
 					"No match for regex '^(?P<buildname>\\w+)' for input '!@#$'",
 			),
@@ -86,7 +86,7 @@ func TestCheckImageBuildNameCompatibility(t *testing.T) {
 			name:         "image build name get error",
 			etcIssueVer:  "fby2-gpv2-v2019.43.1",
 			imageFileVer: "!@#$",
-			want: errors.Errorf(
+			want: fmt.Errorf(
 				"Unable to get build name from version '!@#$' (normalized: '!@#$'): " +
 					"No match for regex '^(?P<buildname>\\w+)' for input '!@#$'",
 			),
@@ -177,7 +177,7 @@ func TestGetNormalizedBuildNameFromVersion(t *testing.T) {
 			name: "rubbish version, no match",
 			ver:  "!@#$",
 			want: "",
-			wantErr: errors.Errorf("Unable to get build name from version '%v' (normalized: '%v'): %v",
+			wantErr: fmt.Errorf("Unable to get build name from version '%v' (normalized: '%v'): %v",
 				"!@#$", "!@#$", "No match for regex '^(?P<buildname>\\w+)' for input '!@#$'"),
 		},
 	}
@@ -234,15 +234,15 @@ func TestGetOpenBMCVersionFromImageFile(t *testing.T) {
 			fileBuf: []byte{},
 			mmapErr: nil,
 			want:    "",
-			wantErr: errors.Errorf("Unable to find OpenBMC version in image file 'x': " +
+			wantErr: fmt.Errorf("Unable to find OpenBMC version in image file 'x': " +
 				"No match for regex 'U-Boot \\d+\\.\\d+ (?P<version>[^\\s]+)' for input"),
 		},
 		{
 			name:    "mmap err",
 			fileBuf: []byte{},
-			mmapErr: errors.Errorf("mmap err"),
+			mmapErr: fmt.Errorf("mmap err"),
 			want:    "",
-			wantErr: errors.Errorf("Unable to read and mmap image file 'x': mmap err"),
+			wantErr: fmt.Errorf("Unable to read and mmap image file 'x': mmap err"),
 		},
 	}
 	for _, tc := range cases {

@@ -4451,3 +4451,15 @@ pal_reset_nic() {
   syslog(LOG_CRIT, "FRU: %d Reset NIC successfully\n", FRU_NIC);
   return 0;
 }
+
+#ifdef CONFIG_GRANDCANYON2
+int
+pal_convert_to_dimm_str(uint8_t cpu, uint8_t channel, uint8_t slot, char *str) {
+  if (!str) {
+    return -1;
+  }
+
+  sprintf(str, "A%u", channel);
+  return 0;
+}
+#endif

@@ -20,12 +20,12 @@
 package common
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/lib/validate/image"
-	"github.com/pkg/errors"
 )
 
 func TestValidateImagePartitions(t *testing.T) {
@@ -63,16 +63,16 @@ func TestValidateImagePartitions(t *testing.T) {
 			name:          "validation failed",
 			clowntown:     false,
 			isPfrSystem:   false,
-			validateError: errors.Errorf("validation failed"),
+			validateError: fmt.Errorf("validation failed"),
 			want: step.ExitSafeToReboot{
-				Err: errors.Errorf("validation failed"),
+				Err: fmt.Errorf("validation failed"),
 			},
 		},
 		{
 			name:          "clowntown bypass",
 			clowntown:     true,
 			isPfrSystem:   false,
-			validateError: errors.Errorf("validation failed"),
+			validateError: fmt.Errorf("validation failed"),
 			want:          nil,
 		},
 	}

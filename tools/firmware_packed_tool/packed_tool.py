@@ -12,6 +12,11 @@ pkg_commit = "99e8b983ba4fc03dcb2cb89e8c96fce26e77b304"
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 compatibleStrings = {
+    "anacapa-bios" : "com.meta.Hardware.Anacapa.SPI.Host",
+    "anacapa-scm-cpld" : "com.meta.Hardware.Anacapa.CPLD.LCMXO3D_9400_scm",
+    "anacapa-mb-cpld" : "com.meta.Hardware.Anacapa.CPLD.LFMXO5_15D_mb",
+    "anacapa-t16-bb-cpld" : "com.meta.Hardware.Anacapa.CPLD.LFMXO5_15D_t16_bb",
+    "anacapa-t20-bb-cpld" : "com.meta.Hardware.Anacapa.CPLD.LFMXO5_15D_t20_bb",
     "harma-mb-cpld" : "com.meta.Hardware.Harma.CPLD.LCMXO3LF_4300C_mb",
     "harma-scm-cpld" : "com.meta.Hardware.Harma.CPLD.LCMXO3LF_2100C_scm",
     "harma-aegis-cpld" : "com.meta.Hardware.Harma.CPLD.LCMXO3D_9400HC_aegis",

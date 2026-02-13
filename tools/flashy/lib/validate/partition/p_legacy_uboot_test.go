@@ -22,13 +22,13 @@ package partition
 import (
 	"bytes"
 	"crypto/rand"
+	"fmt"
 	"hash/crc32"
 	"reflect"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 // test basic functionality
@@ -125,30 +125,30 @@ func TestLegacyUBootValidate(t *testing.T) {
 		{
 			name: "too short for header",
 			data: []byte("foo"),
-			want: errors.Errorf("Partition size (%v) smaller than legacy U-Boot header size (%v)",
+			want: fmt.Errorf("Partition size (%v) smaller than legacy U-Boot header size (%v)",
 				3, legacyUbootHeaderSize),
 		},
 		{
 			name: "header checksum does not match",
 			data: utils.SafeAppendBytes(mockHeaderCorruptedHeaderCRC32, mockData),
-			want: errors.Errorf("Calculated header checksum 0x%X does not match checksum in header 0x%X",
+			want: fmt.Errorf("Calculated header checksum 0x%X does not match checksum in header 0x%X",
 				0x06320BB7, 0),
 		},
 		{
 			name: "magic does not match",
 			data: utils.SafeAppendBytes(mockHeaderCorruptedMagic, mockData),
-			want: errors.Errorf("Partition magic 0x%X does not match legacy U-Boot magic 0x%X",
+			want: fmt.Errorf("Partition magic 0x%X does not match legacy U-Boot magic 0x%X",
 				0, legacyUbootMagic),
 		},
 		{
 			name: "data part smaller than specified in header",
 			data: utils.SafeAppendBytes(mockHeader, []byte("x")),
-			want: errors.Errorf("Legacy U-Boot partition incomplete, data part too small."),
+			want: fmt.Errorf("Legacy U-Boot partition incomplete, data part too small."),
 		},
 		{
 			name: "data checksum does not match",
 			data: utils.SafeAppendBytes(mockHeaderCorruptedDataCRC32, mockData),
-			want: errors.Errorf("Calculated legacy U-Boot data checksum 0x%X does not match checksum in header 0x%X",
+			want: fmt.Errorf("Calculated legacy U-Boot data checksum 0x%X does not match checksum in header 0x%X",
 				mockBufCRC32, 0),
 		},
 	}
@@ -223,7 +223,7 @@ func TestLegacyUbootHeader(t *testing.T) {
 
 	// make it an error by giving it data that is too small
 	_, err = decodeLegacyUbootHeader([]byte("foo"))
-	tests.CompareTestErrors(errors.Errorf("Unable to decode legacy uboot header data into struct: unexpected EOF"),
+	tests.CompareTestErrors(fmt.Errorf("Unable to decode legacy uboot header data into struct: unexpected EOF"),
 		err, t)
 
 }

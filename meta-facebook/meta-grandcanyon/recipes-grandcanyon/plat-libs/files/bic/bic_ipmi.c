@@ -55,6 +55,12 @@
 #define GET_SYS_FW_VER_CMD_LEN   4
 #define SYS_FW_VER_PARAM_SEL     0x01
 
+#ifdef CONFIG_GRANDCANYON2
+#define XDPE15284C_CONF_SIZE 1344
+#define XDPE19283B_CONF_SIZE 1416
+#define PRODUCT_ID_XDPE19283 0x95
+#endif
+
 typedef struct _sdr_rec_hdr_t {
   uint16_t rec_id;
   uint8_t ver;
@@ -83,6 +89,13 @@ typedef struct _bic_get_fw_rev_ver_resp {
   uint8_t IANA[SIZE_IANA_ID];
   uint8_t ver_response[MAX_BIC_VER_STR_LEN];
 } bic_get_fw_rev_ver_resp;
+
+enum revision_code{
+  REV_A = 0x00,
+  REV_B,
+  REV_C,
+  REV_D,
+};
 #endif
 
 typedef struct {
@@ -389,6 +402,21 @@ error_exit:
   return ret;
 }
 
+ // Config size decision consistent with xdpe152xx.c
+static int get_xdpe152xx_config_size_by_devid(uint8_t product_id, uint8_t rev_code) {
+  int size = XDPE15284C_CONF_SIZE;
+
+  switch (product_id) {
+    case PRODUCT_ID_XDPE19283:
+      if (rev_code == REV_B) {
+        size = XDPE19283B_CONF_SIZE;
+      }
+      break;
+  }
+
+  return size;
+}
+
 // Read Infineon VR remaining writes using MFR_SPECIFIC command (for second source)
 int
 bic_get_ifx_vr_remaining_writes_mfr(uint8_t bus, uint8_t addr, uint8_t *writes) {
@@ -398,6 +426,22 @@ bic_get_ifx_vr_remaining_writes_mfr(uint8_t bus, uint8_t addr, uint8_t *writes) 
   uint8_t rlen = 0;
   int ret = 0;
 
+  if (!writes) return -1;
+
+  // Read Device ID first to determine config size
+  uint8_t devid[8] = {0};
+  uint8_t dlen = 0;
+  ret = bic_get_vr_device_id(devid, &dlen, bus, addr);
+  if (ret < 0 || dlen < 2) {
+    syslog(LOG_WARNING, "%s() Failed to read device id", __func__);
+    return -1;
+  }
+  uint8_t rev_code = devid[0];
+  uint8_t product_id = devid[1];
+  int conf_size = get_xdpe152xx_config_size_by_devid(product_id, rev_code);
+  if (conf_size <= 0) conf_size = XDPE15284C_CONF_SIZE; // fallback
+
+  // RPTR init
   tbuf[0] = (bus << 1) + 1;
   tbuf[1] = addr;
 
@@ -410,7 +454,7 @@ bic_get_ifx_vr_remaining_writes_mfr(uint8_t bus, uint8_t addr, uint8_t *writes) 
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s() Failed to initialize RPTR", __func__);
-    goto error_exit;
+    return ret;
   }
 
   // Initialize MFR_FW_COMMAND  
@@ -422,7 +466,7 @@ bic_get_ifx_vr_remaining_writes_mfr(uint8_t bus, uint8_t addr, uint8_t *writes) 
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s() Failed to initialize MFR_FW_COMMAND", __func__);
-    goto error_exit;
+    goto out_cleanup_rptr;
   }
 
   // Execute OTP_PARTITION_SIZE_REMAINING command (0x10)  
@@ -434,7 +478,7 @@ bic_get_ifx_vr_remaining_writes_mfr(uint8_t bus, uint8_t addr, uint8_t *writes) 
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s() Failed to execute OTP_PARTITION_SIZE_REMAINING", __func__);
-    goto error_exit;
+    goto out_cleanup_rptr;
   }
 
   // Wait for command execution completion (OTP_PARTITION_SIZE_REMAINING needs 1ms)
@@ -448,45 +492,30 @@ bic_get_ifx_vr_remaining_writes_mfr(uint8_t bus, uint8_t addr, uint8_t *writes) 
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s() Failed to read remaining writes data", __func__);
-    goto error_exit;
+    goto out_cleanup_rptr;
   }
 
-  // Extract remaining write count
-  if (rlen >= 6) {
-    // rbuf[0] = 0x04 (length)
-    // rbuf[1] = 0xA0 (d0 = 160)
-    // rbuf[2] = 0x74 (d1 = 116)
-    // rbuf[3] = 0x00 (d2)
-    // rbuf[4] = 0x00 (d3)
-    // rbuf[5] = 0x79 (checksum?)
-    
-    uint16_t remaining_size = rbuf[1] + (rbuf[2] << 8);
-    // remaining_size = 160 + 116*256 = 29,856 bytes
-    
-    // Convert to remaining write count (assuming 100 bytes per write)
-    *writes = (remaining_size > 0) ? (remaining_size / 100) : 0;
-    // writes = 29,856 / 100 = 298 次
-  } else {
-    syslog(LOG_WARNING, "%s() Invalid response length: %d, expected >= 6", __func__, rlen);
+  if (rlen < 5 || rbuf[0] != 0x04) {
+    syslog(LOG_WARNING, "%s() Invalid block read: rlen=%u, len=%u", __func__, rlen, rbuf[0]);
     ret = -1;
-    goto error_exit;
+    goto out_cleanup_rptr;
   }
 
-  // Cleanup/restore RPTR  
+  // Little-endian 16-bit remaining bytes (match original xdpe: only take lower 16 bits)
+  uint16_t remaining_size = (uint16_t)(rbuf[1] | (rbuf[2] << 8));
+
+  // Convert to "remaining full-program counts"
+  *writes = (uint8_t)(remaining_size / conf_size);
+
+  // RPTR cleanup (optional)
+out_cleanup_rptr:
   tbuf[2] = 0x00; // read cnt
   tbuf[3] = 0x10; // RPTR register
   tbuf[4] = 0x80; // Cleanup/reset flag
   tlen = 5;
-  
-  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to cleanup RPTR (non-fatal)", __func__);
-    // This error doesn't affect the result, just log warning
-    ret = 0; // Reset to success
-  }
+  (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
 
-error_exit:
-  return ret;
+  return (ret < 0) ? ret : 0;
 }
 #endif // CONFIG_GRANDCANYON2
 

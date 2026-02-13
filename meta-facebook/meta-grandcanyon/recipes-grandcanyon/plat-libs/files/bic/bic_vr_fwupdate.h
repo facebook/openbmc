@@ -45,6 +45,38 @@ extern "C" {
 #define VDDQ_DE_ADDR  0xCC
 #endif
 
+#ifdef CONFIG_GRANDCANYON2
+#define VR_XDPE152XX 3
+#define XDPE15254_PRODUCT_ID    0x90
+#define XDPE15284_PRODUCT_ID    0x8A
+#define XDPE152C4_PRODUCT_ID    0x8C
+#define XDPE152XX_DEVID_LEN     2
+#define VR_UNKNOWN              0xFF
+#endif
+
+#ifdef CONFIG_GRANDCANYON2
+#define MAX_SECT_DATA_NUM 200  // up to 200 DWORDs per section
+#define MAX_SECT_NUM      16   // up to 16 sections
+
+struct config_sect {
+  uint8_t type;          // section type (0x04=Config, 0x07=PMBus LoopA, etc.)
+  uint16_t data_cnt;     // number of DWORDs
+  uint32_t data[MAX_SECT_DATA_NUM];  // header + data + CRC
+};
+
+struct xdpe152xx_config {
+  uint8_t addr;          // PMBus address
+  uint8_t sect_cnt;      // number of sections
+  uint16_t total_cnt;    // total number of DWORDs
+  uint32_t sum_exp;      // overall checksum (read from "Checksum :")
+  struct config_sect section[MAX_SECT_NUM];
+  uint32_t row_1D0_dw[4];
+  uint32_t row_210_dw[4];
+  bool     have_revD_rows;
+};
+
+#endif // CONFIG_GRANDCANYON2
+
 int update_bic_vr(char *image, uint8_t force);
 
 #ifdef __cplusplus

@@ -74,6 +74,7 @@ typedef struct {
   uint8_t devid_len;
   int data_cnt;
   vr_data pdata[VR_PACKET_DATA_LEN];
+  uint32_t expected_crc;
 } vr;
 
 static int vr_cnt = 0;
@@ -959,6 +960,788 @@ error_exit:
   return ret;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+
+#define CRC32_POLY 0xEDB88320
+#define SCRATCHPAD_ADDR 0x2005E000
+#define PMBUS_STS_CML   0x7E
+#define MFR_FW_CMD_DATA 0xFD
+#define MFR_FW_CMD      0xFE
+#define RPTR            0xCE
+#define MFR_REG_WRITE   0xDE
+#define REG_LOCK_PASSWORD 0x7F48680C
+#define GET_CRC_CMD 0x2D
+#define FW_RESET_CMD 0x0E
+#define OTP_CONF_STO 0x11
+#define OTP_FILE_INVD 0x12
+
+// ===== Unlock/Lock Functions =====
+static int
+vr_XDPE152XX_unlock_reg(uint8_t addr) {
+  int ret = 0;
+  uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+
+  tbuf[0] = (VR_BUS << 1) + 1;
+  tbuf[1] = addr;
+  tbuf[2] = 0x00;
+  tbuf[3] = 0xCB;  // IFX_MFR_DISABLE_SECURITY_ONCE
+  tbuf[4] = 4;
+  uint32_t password = REG_LOCK_PASSWORD;
+  memcpy(&tbuf[5], (uint8_t *)&password, 4);
+  tlen = 9;
+
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, 
+                         tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "[%s] Failed to unlock registers (0xCB)", __func__);
+    return ret;
+  }
+
+  msleep(10);
+  
+#ifdef DEBUG
+  printf("[XDPE152XX] Registers unlocked\n");
+#endif
+
+  return 0;
+}
+
+static int
+vr_XDPE152XX_lock_reg(uint8_t addr) {
+  int ret = 0;
+  uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+
+  tbuf[0] = (VR_BUS << 1) + 1;
+  tbuf[1] = addr;
+  tbuf[2] = 0x00;
+  tbuf[3] = 0xCB;
+  tbuf[4] = 4;
+  tbuf[5] = 0x01;
+  tbuf[6] = 0x00;
+  tbuf[7] = 0x00;
+  tbuf[8] = 0x00;
+  tlen = 9;
+
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, 
+                         tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "[%s] Failed to lock registers", __func__);
+    return ret;
+  }
+
+#ifdef DEBUG
+  printf("[XDPE152XX] Registers locked\n");
+#endif
+
+  return 0;
+}
+
+// ===== CRC-32 Functions =====
+// CRC32 (reflected/LSB-first) helpers
+static inline uint32_t crc32_init(void) {
+  return 0xFFFFFFFFu;
+}
+
+static inline uint32_t crc32_update_byte(uint32_t crc, uint8_t byte) {
+  crc ^= byte;
+  for (int b = 0; b < 8; ++b) {
+    crc = (crc & 1) ? ((crc >> 1) ^ 0xEDB88320u) : (crc >> 1);
+  }
+  return crc;
+}
+
+static inline uint32_t crc32_final(uint32_t crc) {
+  return ~crc;
+}
+
+static uint32_t crc32_over_dwords_le(const uint32_t *data, int dw_count) {
+  if (!data || dw_count <= 0) return 0;
+  uint32_t crc = crc32_init();
+  for (int i = 0; i < dw_count; ++i) {
+    uint8_t b0 = (uint8_t)((data[i] >>  0) & 0xFF);
+    uint8_t b1 = (uint8_t)((data[i] >>  8) & 0xFF);
+    uint8_t b2 = (uint8_t)((data[i] >> 16) & 0xFF);
+    uint8_t b3 = (uint8_t)((data[i] >> 24) & 0xFF);
+    crc = crc32_update_byte(crc, b0);
+    crc = crc32_update_byte(crc, b1);
+    crc = crc32_update_byte(crc, b2);
+    crc = crc32_update_byte(crc, b3);
+  }
+  return crc32_final(crc);
+}
+
+static int
+check_xdpe152xx_image(struct xdpe152xx_config *config) {
+  if (!config) return -1;
+
+  uint32_t sum = 0;
+
+  for (uint8_t i = 0; i < config->sect_cnt; i++) {
+    struct config_sect *sect = &config->section[i];
+    if (!sect) return -1;
+
+    // A section must have at least: header(1) + size(1) + headerCRC(1) + dataCRC(1)
+    if (sect->data_cnt < 4) {
+      syslog(LOG_WARNING, "%s: Section %u too short (data_cnt=%u)", __func__, i, sect->data_cnt);
+      return -1;
+    }
+
+    // 1) Header CRC (first two DWORDs)
+    uint32_t header_crc_calc = crc32_over_dwords_le(&sect->data[0], 2);
+    uint32_t header_crc_file = sect->data[2];
+    if (header_crc_calc != header_crc_file) {
+      syslog(LOG_WARNING, "%s: Header CRC mismatch in section %u: calc=0x%08X, file=0x%08X",
+             __func__, i, header_crc_calc, header_crc_file);
+      return -1;
+    }
+
+    // 2) Data CRC (data body = excluding header[0..2] and the final dataCRC)
+    int data_body_dw = (int)sect->data_cnt - 4; // data[3..last-1]
+    uint32_t data_crc_calc = 0;
+    if (data_body_dw > 0) {
+      data_crc_calc = crc32_over_dwords_le(&sect->data[3], data_body_dw);
+    } else {
+      // Empty data body; CRC(empty) is 0x00000000
+      uint32_t crc = crc32_init();
+      data_crc_calc = crc32_final(crc);
+    }
+    uint32_t data_crc_file = sect->data[sect->data_cnt - 1];
+    if (data_crc_calc != data_crc_file) {
+      syslog(LOG_WARNING, "%s: Data CRC mismatch in section %u: calc=0x%08X, file=0x%08X",
+             __func__, i, data_crc_calc, data_crc_file);
+      return -1;
+    }
+
+    // 3) File sum: exclude Trim (header code 0x02)
+    if (sect->type != 0x02) {
+      sum += header_crc_file;
+      sum += data_crc_file;
+    }
+  }
+
+  printf("File CRC (sum of non-trim sections): 0x%08X\n", sum);
+  if (sum != config->sum_exp) {
+    syslog(LOG_WARNING, "%s: Checksum mismatched! Expected: 0x%08X, Actual: 0x%08X",
+           __func__, config->sum_exp, sum);
+    return -1;
+  }
+
+  return 0;
+}
+
+// ===== VR Communication Functions =====
+int vr_xdpe152xx_get_crc(uint8_t addr, uint32_t *sum) {
+  uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t tlen = 0, rlen = 0;
+  int ret;
+
+  if (!sum) return -1;
+
+  // (Optional) RPTR initialization, if the platform requires it
+  tbuf[0] = (VR_BUS << 1) + 1;
+  tbuf[1] = addr;
+  tbuf[2] = 0x00;
+  tbuf[3] = 0x10;     // RPTR
+  tbuf[4] = 0x00;
+  tlen = 5;
+  (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+
+  // 0xFD: block write 4 bytes of zeros
+  tbuf[2] = 0x00;
+  tbuf[3] = MFR_FW_CMD_DATA; // 0xFD
+  tbuf[4] = 0x04;            // count
+  tbuf[5] = 0x00;
+  tbuf[6] = 0x00;
+  tbuf[7] = 0x00;
+  tbuf[8] = 0x00;
+  tlen = 9;
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) return ret;
+
+  // 0xFE: execute GET_CRC (0x2D)
+  tbuf[2] = 0x00;
+  tbuf[3] = MFR_FW_CMD;      // 0xFE
+  tbuf[4] = GET_CRC_CMD;     // 0x2D
+  tlen = 5;
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) return ret;
+
+  usleep(20000); // 20ms
+
+  // Read 0xFD result
+  tbuf[2] = 0x05;            // read count: want 1(len)+4(data)
+  tbuf[3] = MFR_FW_CMD_DATA; // 0xFD
+  tlen = 4;
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) return ret;
+
+  if (rlen < 5 || rbuf[0] != 4) {
+    syslog(LOG_WARNING, "%s: invalid block length: rlen=%u, blk=%u", __func__, rlen, rbuf[0]);
+    return -1;
+  }
+  memcpy(sum, &rbuf[1], 4);
+
+  // (Optional) RPTR cleanup
+  tbuf[2] = 0x00;
+  tbuf[3] = 0x10;
+  tbuf[4] = 0x80;
+  tlen = 5;
+  (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+
+  return 0;
+}
+
+// ===== Parser Function =====
+// Helpers for parsing
+static inline uint32_t get_bits(uint32_t v, int start, int width) {
+  if (width <= 0 || start < 0 || start >= 32) return 0;
+  if (width > 32 - start) width = 32 - start;
+  uint32_t mask = (width == 32) ? 0xFFFFFFFFU : ((1U << width) - 1U);
+  return (v >> start) & mask;
+}
+
+static int ws_split(char *line, char *out[], int max_tokens) {
+  int n = 0;
+  char *p = line;
+
+  // trim leading spaces/tabs
+  while (*p == ' ' || *p == '\t') p++;
+
+  while (*p && n < max_tokens) {
+    // start of token
+    out[n++] = p;
+    // advance to next space/tab or end
+    while (*p && *p != ' ' && *p != '\t' && *p != '\r' && *p != '\n') p++;
+    if (!*p) break;
+    // terminate current token
+    *p++ = '\0';
+    // skip subsequent spaces/tabs
+    while (*p == ' ' || *p == '\t') p++;
+  }
+  return n;
+}
+
+// ===== Parser Function (Rev D forced-address only) =====
+static struct xdpe152xx_config*
+vr_XDPE152XX_parse_file(char *image) {
+  #define XDPE_DATA_START_TAG "[Configuration Data]"
+  #define XDPE_DATA_END_TAG   "[End Configuration Data]"
+  #define XDPE_DATA_COMMENT   "//"
+  #define XDPE_CHECKSUM_FIELD "Checksum :"
+  #define XDPE_PART_FIELD     "Part Number :"
+
+  FILE *fp = NULL;
+  char line[512];
+  char *token = NULL;
+  bool in_data = false;
+  bool is_revD = false;     // Only allow XDPE152xx Rev D
+  struct xdpe152xx_config *config = NULL;
+
+  int sect_idx = -1;
+  uint8_t current_type = 0x00;
+
+  if (!image) {
+    printf("ERROR: invalid file path (NULL)!\n");
+    return NULL;
+  }
+
+  fp = fopen(image, "r");
+  if (!fp) {
+    printf("ERROR: invalid file path: %s\n", image);
+    return NULL;
+  }
+
+  config = (struct xdpe152xx_config *)calloc(1, sizeof(struct xdpe152xx_config));
+  if (!config) {
+    printf("ERROR: no space for creating config!\n");
+    fclose(fp);
+    return NULL;
+  }
+
+  while (fgets(line, sizeof(line), fp) != NULL) {
+    // Skip lines that start with // (including //XV0 ...)
+    if (!strncmp(line, XDPE_DATA_COMMENT, strlen(XDPE_DATA_COMMENT))) {
+      continue;
+    }
+
+    // Parse Part Number: only allow XDPE152xx Rev D
+    if ((token = strstr(line, XDPE_PART_FIELD)) != NULL) {
+      // Heuristic: contains "XDPE152" and has a 'D' near the end or around parentheses/whitespace
+      if (strstr(line, "XDPE152") && strchr(line, 'D')) {
+        is_revD = true;
+      }
+      continue;
+    }
+
+    // Parse Checksum (Configuration Checksum or the System Design File CRC32 will have: "Checksum : 0xXXXXXXXX")
+    if ((token = strstr(line, XDPE_CHECKSUM_FIELD)) != NULL) {
+      token = strstr(token, "0x");
+      if (token) {
+        config->sum_exp = (uint32_t)strtoul(token, NULL, 16);
+        printf("Configuration Checksum: 0x%08X\n", config->sum_exp);
+      }
+      continue;
+    }
+
+    // Check [Configuration Data] / [End Configuration Data]
+    if (!strncmp(line, XDPE_DATA_START_TAG, strlen(XDPE_DATA_START_TAG))) {
+      in_data = true;
+      continue;
+    }
+    if (!strncmp(line, XDPE_DATA_END_TAG, strlen(XDPE_DATA_END_TAG))) {
+      break;
+    }
+
+    // Only parse within the data section
+    if (!in_data) {
+      continue;
+    }
+
+    // Remove trailing newline(s)
+    {
+      size_t L = strlen(line);
+      while (L > 0 && (line[L-1] == '\n' || line[L-1] == '\r')) line[--L] = '\0';
+    }
+
+    // Skip empty lines
+    {
+      char *p = line;
+      while (*p == ' ' || *p == '\t') p++;
+      if (*p == '\0') continue;
+    }
+
+    // Tokenize (offset + up to 4 DWORDs)
+    char *tok[8] = {0};
+    int ntok = ws_split(line, tok, 5); // offset + 4 dwords
+    if (ntok <= 0) continue;
+
+    // The first token should be a 3-hex-digit offset (e.g., 000, 010, 1D0)
+    // Use strtol to allow variable length
+    uint16_t offset = (uint16_t)strtol(tok[0], NULL, 16);
+
+    // Parse the DWORDs on this line
+    uint32_t line_dw[4] = {0};
+    for (int i = 1; i < ntok; i++) {
+      line_dw[i-1] = (uint32_t)strtoul(tok[i], NULL, 16);
+    }
+
+    // Detect a new section: offset is 0x000 and at least 1 dword present
+    if (offset == 0x000 && ntok >= 2) {
+      uint32_t hdr = line_dw[0];
+      current_type = (uint8_t)(hdr & 0xFF); // The LSB of the header code is the type
+
+      // Skip storing data for Trim (0x02) sections; still update the section index to keep consistency
+      if ((++sect_idx) >= MAX_SECT_NUM) {
+        syslog(LOG_WARNING, "%s: Exceed max section number", __func__);
+        fclose(fp);
+        free(config);
+        return NULL;
+      }
+      config->section[sect_idx].type = current_type;
+      config->section[sect_idx].data_cnt = 0;
+      config->sect_cnt = sect_idx + 1;
+    }
+
+    // Store this line's DWORDs into the current section (store Trim as well for complete validation later)
+    if (sect_idx >= 0) {
+      for (int i = 1; i < ntok; i++) {
+        if (config->section[sect_idx].data_cnt >= MAX_SECT_DATA_NUM) {
+          syslog(LOG_WARNING, "%s: Exceed max data count", __func__);
+          fclose(fp);
+          free(config);
+          return NULL;
+        }
+        config->section[sect_idx].data[config->section[sect_idx].data_cnt++] = line_dw[i-1];
+        config->total_cnt++;
+      }
+    }
+  } // while fgets
+
+  fclose(fp);
+
+  // Basic field checks
+  if (!config->sum_exp) {
+    printf("ERROR: Configuration Checksum not found!\n");
+    free(config);
+    return NULL;
+  }
+  if (!is_revD) {
+    printf("ERROR: Only XDPE152xx Rev D is supported by current parser address logic.\n");
+    free(config);
+    return NULL;
+  }
+
+  // Find the XV0 Config section (header type 0x04)
+  const struct config_sect *cfg_sect = NULL;
+  for (int s = 0; s < config->sect_cnt; s++) {
+    if (config->section[s].type == 0x04) // Config
+    {
+      cfg_sect = &config->section[s];
+      break;
+    }
+  }
+  if (!cfg_sect) {
+    printf("ERROR: XV0 Config section not found.\n");
+    free(config);
+    return NULL;
+  }
+
+  // Directly index into //XV0 Config to get row 1D0's DW3:
+  // row = 0x1D (=29), DW3 → index = row*4 + 3 = 119
+  const int row = 0x1D;
+  const int dw  = 3;
+  const int idx = row * 4 + dw;
+  if (cfg_sect->data_cnt <= idx) {
+    printf("ERROR: Failed to determine forced PMBus address from image (row 1D0/DW3 missing or invalid). "
+           "Need index %d, but data_cnt=%d\n", idx, cfg_sect->data_cnt);
+    free(config);
+    return NULL;
+  }
+
+  uint32_t dw3 = cfg_sect->data[idx];
+
+  // Extract Addr_base_force_en(bit23) and Addr_base_value(bits[22:16])
+  uint8_t addr_base_force_en = (uint8_t)get_bits(dw3, 23, 1);
+  uint8_t addr_base_value    = (uint8_t)get_bits(dw3, 16, 7);
+
+  if (addr_base_force_en == 0) {
+    printf("ERROR: Addr_base_force_en=0 (not forced). XVcode addressing disabled by policy.\n");
+    free(config);
+    return NULL;
+  }
+
+  // Forced address: 7-bit = addr_base_value; 8-bit write = <<1
+  uint8_t addr7 = (uint8_t)(addr_base_value & 0x7F);
+  config->addr = (uint8_t)(addr7 << 1); // 8-bit write address
+
+  printf("Forced PMBus address (7-bit)=0x%02X, write=0x%02X\n", addr7, config->addr);
+
+  return config;
+}
+
+// ===== Program Function =====
+// Program per section
+static int vr_XDPE152XX_program(uint8_t addr, struct xdpe152xx_config *config, uint8_t force) {
+  if (!config) return -1;
+
+  int ret = 0;
+  int fd = -1;  // lock file fd
+  uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t tlen = 0, rlen = 0;
+
+  uint8_t remain = 0;
+  uint32_t crc_now = 0;
+  int prog_cnt = 0;
+  int upload_total_cnt = 0;
+  int did_global_invalidate = 0;
+
+  // 0) Stop monitor: acquire VR sensor polling lock to prevent polling from changing PAGE
+  fd = open(SERVER_SENSOR_LOCK, O_CREAT | O_RDWR, 0666);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s: open lock file %s failed (%d)", __func__, SERVER_SENSOR_LOCK, errno);
+    return -1;
+  }
+  ret = flock(fd, LOCK_EX | LOCK_NB);
+  if (ret != 0) {
+    if (errno == EWOULDBLOCK) {
+      syslog(LOG_WARNING, "%s: failed to lock VR sensor reading (locked by others)", __func__);
+      // Mimic your ifx example: if lock cannot be obtained, remove the lock file and return
+      remove(SERVER_SENSOR_LOCK);
+      close(fd);
+      return -1;
+    } else {
+      syslog(LOG_WARNING, "%s: flock failed (%d)", __func__, errno);
+      close(fd);
+      return -1;
+    }
+  }
+
+  // Calculate the total number of DWORDs to actually program (skip Trim)
+  for (int i = 0; i < config->sect_cnt; i++) {
+    const struct config_sect *s = &config->section[i];
+    if (!s) continue;
+    uint8_t header_code = (uint8_t)(s->data[0] & 0xFF);
+    if (header_code == 0x02) continue; // Trim
+    upload_total_cnt += s->data_cnt;
+  }
+  if (upload_total_cnt == 0) {
+    printf("Nothing to program (no non-Trim sections)\n");
+    return 0;
+  }
+
+  // 1) Get remaining write count
+  ret = bic_get_ifx_vr_remaining_writes_mfr(VR_BUS, addr, &remain);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: failed to get remaining writes", __func__);
+    goto cleanup_unlock;
+  }
+  ret = vr_remaining_writes_check(remain, force);
+  if (ret < 0) {
+    goto cleanup_unlock;
+  }
+
+  // 2) Unlock registers
+  ret = vr_XDPE152XX_unlock_reg(addr);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: unlock failed", __func__);
+    goto cleanup_unlock;
+  }
+
+  // 3) CRC early exit (unless force)
+  ret = vr_xdpe152xx_get_crc(addr, &crc_now);
+  if (ret >= 0 && !force && (crc_now == config->sum_exp)) {
+    printf("WARNING: Configuration already up-to-date (CRC=0x%08X). Use --force to override.\n", crc_now);
+    ret = 0;
+    goto cleanup_lockback;
+  }
+
+  // 4) Global invalidate (FE/FE/00/00 -> 0x12); if it fails, do per-section surgical invalidate later
+  // Bridge init before 0xFD
+  tbuf[0] = (VR_BUS << 1) + 1; tbuf[1] = addr; tbuf[2] = 0x00;
+  tbuf[3] = 0x10; tbuf[4] = 0x00; tlen = 5;
+  (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+
+  // 0xFD: [FE FE 00 00]
+  tbuf[2] = 0x00; tbuf[3] = MFR_FW_CMD_DATA; tbuf[4] = 0x04;
+  tbuf[5] = 0xFE; tbuf[6] = 0xFE; tbuf[7] = 0x00; tbuf[8] = 0x00; tlen = 9;
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+
+  // Bridge init before 0xFE
+  tbuf[0] = (VR_BUS << 1) + 1; tbuf[1] = addr; tbuf[2] = 0x00;
+  tbuf[3] = 0x10; tbuf[4] = 0x00; tlen = 5;
+  (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+
+  // 0xFE: 0x12
+  if (ret == 0) {
+    tbuf[2] = 0x00; tbuf[3] = MFR_FW_CMD; tbuf[4] = OTP_FILE_INVD; tlen = 5;
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  }
+  if (ret == 0) {
+    did_global_invalidate = 1;
+    msleep(500);
+  } else {
+    syslog(LOG_WARNING, "%s: global invalidate not supported or failed, will invalidate per-section", __func__);
+    did_global_invalidate = 0;
+  }
+
+  // 5) Upload each section
+  for (int i = 0; i < config->sect_cnt; i++) {
+    const struct config_sect *s = &config->section[i];
+    if (!s) { ret = -1; break; }
+
+    uint32_t hdr        = s->data[0];
+    uint8_t  header_code= (uint8_t)(hdr & 0xFF);
+    uint8_t  xvcode     = (uint8_t)((hdr >> 8) & 0xFF);
+    if (header_code == 0x02) { // Trim
+      continue;
+    }
+
+    // Clear STATUS_CML bit0 (consistent with your current logic)
+    tbuf[0] = (VR_BUS << 1) + 1; tbuf[1] = addr;
+    tbuf[2] = 0x00; tbuf[3] = PMBUS_STS_CML; tbuf[4] = 0x01; tlen = 5;
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s: clear STATUS_CML failed", __func__);
+      goto program_fail;
+    }
+
+    // If global invalidate didn't succeed, surgically invalidate this section (header_code + XVcode)
+    if (!did_global_invalidate) {
+      // Bridge init before 0xFD
+      tbuf[0] = (VR_BUS << 1) + 1; tbuf[1] = addr; tbuf[2] = 0x00;
+      tbuf[3] = 0x10; tbuf[4] = 0x00; tlen = 5;
+      (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+
+      // 0xFD: [header_code, xvcode, 0, 0]
+      tbuf[2] = 0x00; tbuf[3] = MFR_FW_CMD_DATA; tbuf[4] = 0x04;
+      tbuf[5] = header_code; tbuf[6] = xvcode; tbuf[7] = 0x00; tbuf[8] = 0x00; tlen = 9;
+      ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s: surgical invalidate data failed (hc=0x%02X xv=%u)", __func__, header_code, xvcode);
+        goto program_fail;
+      }
+
+      // Bridge init before 0xFE
+      tbuf[0] = (VR_BUS << 1) + 1; tbuf[1] = addr; tbuf[2] = 0x00;
+      tbuf[3] = 0x10; tbuf[4] = 0x00; tlen = 5;
+      (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+
+      // 0xFE: 0x12
+      tbuf[2] = 0x00; tbuf[3] = MFR_FW_CMD; tbuf[4] = OTP_FILE_INVD; tlen = 5;
+      ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s: execute OTP_FILE_INVD failed (hc=0x%02X xv=%u)", __func__, header_code, xvcode);
+        goto program_fail;
+      }
+      msleep(10);
+    }
+
+    // At the start of each section: reset scratchpad start address to 0x2005E000
+    tbuf[0] = (VR_BUS << 1) + 1; tbuf[1] = addr; tbuf[2] = 0x00;
+    tbuf[3] = RPTR; tbuf[4] = 0x04;
+    tbuf[5] = 0x00; tbuf[6] = 0xE0; tbuf[7] = 0x05; tbuf[8] = 0x20; tlen = 9;
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s: set scratchpad address failed", __func__);
+      goto program_fail;
+    }
+    msleep(10);
+
+    // Stream all DWORDs of this section to the scratchpad
+    for (int k = 0; k < s->data_cnt; k++) {
+      tbuf[0] = (VR_BUS << 1) + 1;
+      tbuf[1] = addr;
+      tbuf[2] = 0x00;                // read cnt
+      tbuf[3] = MFR_REG_WRITE;       // 0xDE
+      tbuf[4] = 0x04;                // block count
+      memcpy(&tbuf[5], &s->data[k], 4);  // little endian
+      tlen = 9;
+      ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s: write data failed (sec=%d, dword=%d, hc=0x%02X xv=%u)", __func__, i, k, header_code, xvcode);
+        goto program_fail;
+      }
+      msleep(10);  // VR_WRITE_DELAY
+    }
+
+    // Get this section's size (low 16 bits of the second DWORD)
+    uint16_t sec_size = (uint16_t)(s->data[1] & 0xFFFF);
+
+    // Bridge init before 0xFD
+    tbuf[0] = (VR_BUS << 1) + 1; tbuf[1] = addr; tbuf[2] = 0x00;
+    tbuf[3] = 0x10; tbuf[4] = 0x00; tlen = 5;
+    (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+
+    // 0xFD: [size_lo, size_hi, 0, 0]
+    tbuf[2] = 0x00; tbuf[3] = MFR_FW_CMD_DATA; tbuf[4] = 0x04;
+    tbuf[5] = (uint8_t)(sec_size & 0xFF);
+    tbuf[6] = (uint8_t)((sec_size >> 8) & 0xFF);
+    tbuf[7] = 0x00; tbuf[8] = 0x00; tlen = 9;
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s: write section size failed (sec=%d, size=%u)", __func__, i, sec_size);
+      goto program_fail;
+    }
+
+    // Bridge init before 0xFE
+    tbuf[0] = (VR_BUS << 1) + 1; tbuf[1] = addr; tbuf[2] = 0x00;
+    tbuf[3] = 0x10; tbuf[4] = 0x00; tlen = 5;
+    (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+
+    // 0xFE: 0x11 (OTP_CONF_STO to commit this section)
+    tbuf[2] = 0x00; tbuf[3] = MFR_FW_CMD; tbuf[4] = OTP_CONF_STO; tlen = 5;
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s: execute OTP_CONF_STO failed (sec=%d)", __func__, i);
+      goto program_fail;
+    }
+
+    // Soak: based on section size (2 ms/byte, at least 200 ms)
+    {
+      int loops = (sec_size / 50) + 2;
+      for (int sloop = 0; sloop < loops; sloop++) {
+        msleep(100);
+      }
+    }
+
+    // Check STATUS_CML bit0
+    tbuf[0] = (VR_BUS << 1) + 1;
+    tbuf[1] = addr;
+    tbuf[2] = 0x01;                  // read 1 byte
+    tbuf[3] = PMBUS_STS_CML;         // 0x7E
+    tlen = 4;
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s: read STATUS_CML failed after section (sec=%d)", __func__, i);
+      goto program_fail;
+    }
+    if (rbuf[0] & 0x01) {
+      syslog(LOG_WARNING, "%s: CML Other Memory Fault after section (sec=%d, sts=0x%02X)", __func__, i, rbuf[0]);
+      ret = -1;
+      goto program_fail;
+    }
+
+    // Progress
+    prog_cnt += s->data_cnt;
+    printf("\rupdated: %d %%  ", (prog_cnt * 100) / upload_total_cnt);
+    fflush(stdout);
+  }
+
+  printf("\rupdated: 100 %%  \n");
+  ret = 0;
+  goto cleanup_lockback;
+
+program_fail:
+  printf("\n");
+
+cleanup_lockback:
+  // Attempt to re-lock (per your existing flow)
+  vr_XDPE152XX_lock_reg(addr);
+
+cleanup_unlock:
+  // Release monitoring lock
+  if (fd >= 0) {
+    if (flock(fd, LOCK_UN) == -1) {
+      syslog(LOG_WARNING, "%s: failed to unlock %s", __func__, SERVER_SENSOR_LOCK);
+    }
+    close(fd);
+    remove(SERVER_SENSOR_LOCK);
+  }
+
+  return ret;
+}
+
+// ===== Device Detection =====
+static int
+vr_detect_device_type(uint8_t addr, uint8_t *rbuf, uint8_t rlen) {
+  int vendor_type = VR_UNKNOWN;
+  
+  switch (rlen) {
+    case 2: {
+      uint8_t product_id = rbuf[1];
+      uint8_t revision = rbuf[0];
+      
+      switch (product_id) {
+        case XDPE15254_PRODUCT_ID:
+        case XDPE15284_PRODUCT_ID:
+        case XDPE152C4_PRODUCT_ID:
+          vendor_type = VR_XDPE152XX;
+          printf("Detected XDPE152xx (Product ID: 0x%02X, Rev: 0x%02X)\n", 
+                 product_id, revision);
+          break;
+        default:
+          vendor_type = VR_IFX;
+          printf("Detected other Infineon VR (Product ID: 0x%02X)\n", product_id);
+          break;
+      }
+      break;
+    }
+    
+    case 6:
+      vendor_type = VR_TI;
+      printf("Detected TI VR\n");
+      break;
+      
+    case 4:
+    default:
+      vendor_type = VR_ISL;
+      printf("Detected Renesas/ISL VR\n");
+      break;
+  }
+  
+  return vendor_type;
+}
+
+#endif // CONFIG_GRANDCANYON2
+
 struct dev_table {
   uint8_t addr;
   char *dev_name;
@@ -988,9 +1771,13 @@ static struct tool {
   {VR_ISL, vr_ISL_hex_parser, vr_ISL_program},
   {VR_TI , vr_TI_csv_parser , vr_TI_program},
   {VR_IFX, vr_IFX_xsf_parser, vr_IFX_program},
+#ifdef CONFIG_GRANDCANYON2
+  {VR_XDPE152XX, NULL, NULL},
+#endif
 };
 
-static char*
+// ===== Helper Function =====
+static __attribute__((unused)) const char *
 get_vr_name(uint8_t addr) {
   int i = 0;
 
@@ -1003,6 +1790,159 @@ get_vr_name(uint8_t addr) {
   return "Unknown VR component";
 }
 
+#ifdef CONFIG_GRANDCANYON2
+static int addr_in_dev_list(uint8_t addr) {
+  for (int i = 0; i < dev_table_size; i++) {
+    if (dev_list[i].addr == addr) {
+      return 1; // found
+    }
+  }
+  return 0; // not found
+}
+
+int update_bic_vr(char *image, uint8_t force) {
+  int ret = -1;
+  int i = 0;
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t rlen = 0;
+  uint8_t sel_vendor = VR_UNKNOWN;
+
+  if (!image) {
+    printf("Invalid parameter: image is NULL\n");
+    return -1;
+  }
+
+  // Step 1: Read the Device ID from any device in dev_list
+  do {
+    ret = bic_get_vr_device_id(rbuf, &rlen, VR_BUS, dev_list[i].addr);
+    if (ret == 0 && rlen <= TI_DEVID_LEN) { // the longest length of dev id
+      break;
+    }
+  } while (i++ < dev_table_size);
+
+  if (i == dev_table_size) {
+    printf("Couldn't get the devid from VRs\n");
+    goto error_exit;
+  }
+
+  // Use vr_detect_device_type to further distinguish (especially IFX vs XDPE152xx)
+  sel_vendor = vr_detect_device_type(dev_list[i].addr, rbuf, rlen);
+  if (sel_vendor == VR_UNKNOWN) {
+    printf("Unknown VR type at 0x%02X (devid_len=%u)\n", dev_list[i].addr, rlen);
+    goto error_exit;
+  }
+  printf("VR vendor=%s (devid_len=%u) at 0x%02X\n",
+         (sel_vendor == VR_XDPE152XX) ? "XDPE152XX" :
+         (sel_vendor == VR_IFX) ? "IFX" :
+         (sel_vendor == VR_TI) ? "TI" : "ISL",
+         rlen, dev_list[i].addr);
+
+  // Step 2/3/4/5: Branch by vendor
+  if (sel_vendor == VR_XDPE152XX) {
+    // Step 2: XDPE-specific parser
+    struct xdpe152xx_config *xdpe_config = vr_XDPE152XX_parse_file(image);
+    if (!xdpe_config) {
+      printf("Cannot parse the XDPE152xx configuration file!\n");
+      goto error_exit;
+    }
+
+    // Step 3: File integrity validation
+    printf("Validating configuration file...\n");
+    ret = check_xdpe152xx_image(xdpe_config);
+    if (ret < 0) {
+      printf("Configuration file validation failed!\n");
+      free(xdpe_config);
+      goto error_exit;
+    }
+
+    if (xdpe_config->addr == 0) {
+      printf("ERROR: Parsed image does not provide a forced PMBus address.\n");
+      free(xdpe_config);
+      goto error_exit;
+    }
+
+    // Step 4: Ensure the address extracted by the parser is in dev_list (address is 8-bit write)
+    if (!addr_in_dev_list(xdpe_config->addr)) {
+      printf("ERROR: Image PMBus write address 0x%02X not in dev_list\n", xdpe_config->addr);
+      free(xdpe_config);
+      goto error_exit;
+    }
+
+    printf("Updating target %s (addr=0x%02X, XDPE152xx)...\n",
+           get_vr_name(xdpe_config->addr), xdpe_config->addr);
+
+    // Step 5: Update XDPE
+    ret = vr_XDPE152XX_program(xdpe_config->addr, xdpe_config, force);
+    if (ret < 0) {
+      printf("XDPE152xx update failed\n");
+      free(xdpe_config);
+      goto error_exit;
+    }
+
+    printf("Please do power cycle to reset VR to reload configuration\n");
+
+    free(xdpe_config);
+    return 0;
+  }
+
+  // Other vendors (ISL/TI/IFX) use vr_tool's parser/program
+  ret = vr_tool[sel_vendor].parser(image);
+  if (ret < 0) {
+    printf("Cannot parse the file!\n");
+    goto error_exit;
+  }
+
+  // Basic data presence check
+  for (int k = 0; k < vr_cnt + 1; k++) {
+    if (vr_list[k].data_cnt == 0 || vr_list[k].addr == 0 || vr_list[k].devid_len == 0) {
+      printf("data, addr, or devid_len is not caught!\n");
+      ret = -1;
+      goto error_exit;
+    }
+  }
+
+  // Step 4: Ensure the address extracted by the parser appears in dev_list
+  if (!addr_in_dev_list(vr_list[0].addr)) {
+    printf("ERROR: Image VR address (0x%02X) not in dev_list\n", vr_list[0].addr);
+    ret = -1;
+    goto error_exit;
+  }
+
+  // More rigorous: re-read and compare the Device ID on the actual target (the address provided by the parser)
+  {
+    uint8_t abuf[MAX_IPMB_BUFFER] = {0};
+    uint8_t alen = 0;
+    ret = bic_get_vr_device_id(abuf, &alen, VR_BUS, vr_list[0].addr);
+    if (ret < 0 || alen == 0) {
+      printf("Couldn't get the devid from target VR at 0x%02X\n", vr_list[0].addr);
+      goto error_exit;
+    }
+    if (vr_list[0].devid_len != alen || memcmp(vr_list[0].devid, abuf, alen) != 0) {
+      printf("Device ID is not match on target 0x%02X!\n", vr_list[0].addr);
+      printf(" Expected ID: ");
+      for (int j = 0; j < vr_list[0].devid_len; j++) printf("%02X ", vr_list[0].devid[j]);
+      printf("\n Actual ID: ");
+      for (int j = 0; j < alen; j++) printf("%02X ", abuf[j]);
+      printf("\n");
+      ret = -1;
+      goto error_exit;
+    }
+  }
+
+  // Step 5: Perform the update
+  printf("Updating %s (addr=0x%02X)...\n", get_vr_name(vr_list[0].addr), vr_list[0].addr);
+  ret = vr_tool[sel_vendor].program(&vr_list[0], force);
+  if (ret < 0) {
+    printf("Update failed on 0x%02X\n", vr_list[0].addr);
+    goto error_exit;
+  }
+
+  return 0;
+
+error_exit:
+  return ret;
+}
+#else
 int 
 update_bic_vr(char *image, uint8_t force) {
   int ret = 0;
@@ -1076,3 +2016,4 @@ update_bic_vr(char *image, uint8_t force) {
 error_exit:
   return ret;
 }
+#endif

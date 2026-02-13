@@ -1,4 +1,4 @@
-From 49f8b248b19b4c9c3bed468a7fc1289834552627 Mon Sep 17 00:00:00 2001
+From c9b7a7cac38e59b256ad91b60a3dc2274c0240ad Mon Sep 17 00:00:00 2001
 From: Dirk Chen <dirkchen@amd.com>
 Date: Tue, 13 Jan 2026 01:06:34 +0800
 Subject: [PATCH] cpld: Add firmware update support for Lattice XO5-15D
@@ -156,7 +156,7 @@ Signed-off-by: Dirk Chen <dirkchen@amd.com>
  create mode 100644 cpld/lattice/lattice_xo5d_cpld.hpp
 
 diff --git a/cpld/lattice/lattice_base_cpld.hpp b/cpld/lattice/lattice_base_cpld.hpp
-index b51770fbb1d..f020cd51774 100644
+index b51770f..f020cd5 100644
 --- a/cpld/lattice/lattice_base_cpld.hpp
 +++ b/cpld/lattice/lattice_base_cpld.hpp
 @@ -20,6 +20,7 @@ enum class latticeChip
@@ -192,7 +192,7 @@ index b51770fbb1d..f020cd51774 100644
  
  struct cpldI2cInfo
 diff --git a/cpld/lattice/lattice_cpld_factory.cpp b/cpld/lattice/lattice_cpld_factory.cpp
-index 5f5fb5895be..e81ea785d48 100644
+index 5f5fb58..e81ea78 100644
 --- a/cpld/lattice/lattice_cpld_factory.cpp
 +++ b/cpld/lattice/lattice_cpld_factory.cpp
 @@ -2,6 +2,7 @@
@@ -216,7 +216,7 @@ index 5f5fb5895be..e81ea785d48 100644
                         "CHIPMODEL", chipModelStr);
 diff --git a/cpld/lattice/lattice_xo5d_cpld.cpp b/cpld/lattice/lattice_xo5d_cpld.cpp
 new file mode 100644
-index 00000000000..45fe3925cbe
+index 0000000..45fe392
 --- /dev/null
 +++ b/cpld/lattice/lattice_xo5d_cpld.cpp
 @@ -0,0 +1,731 @@
@@ -953,7 +953,7 @@ index 00000000000..45fe3925cbe
 +} // namespace phosphor::software::cpld
 diff --git a/cpld/lattice/lattice_xo5d_cpld.hpp b/cpld/lattice/lattice_xo5d_cpld.hpp
 new file mode 100644
-index 00000000000..9b83457353e
+index 0000000..9b83457
 --- /dev/null
 +++ b/cpld/lattice/lattice_xo5d_cpld.hpp
 @@ -0,0 +1,70 @@
@@ -1028,7 +1028,7 @@ index 00000000000..9b83457353e
 +
 +} // namespace phosphor::software::cpld
 diff --git a/cpld/meson.build b/cpld/meson.build
-index d05a1246131..bdf4692c817 100644
+index d05a124..bdf4692 100644
 --- a/cpld/meson.build
 +++ b/cpld/meson.build
 @@ -5,6 +5,7 @@ cpld_vendor_src = files(
@@ -1040,5 +1040,5 @@ index d05a1246131..bdf4692c817 100644
  
  exe = executable(
 -- 
-2.34.1
+2.47.3
 

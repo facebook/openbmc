@@ -20,6 +20,7 @@
 package common
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -27,7 +28,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -90,6 +90,6 @@ func enableABR(stepParams step.StepParams) step.StepExitError {
 	}
 
 	// Force a reboot to pick up new mtdparts.
-	errMsg := errors.Errorf("Forcing reboot to enable ABR")
+	errMsg := fmt.Errorf("Forcing reboot to enable ABR")
 	return step.ExitMustReboot{Err: errMsg}
 }

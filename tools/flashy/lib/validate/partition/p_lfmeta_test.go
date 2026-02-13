@@ -5,13 +5,13 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log"
 	"reflect"
 	"testing"
 
 	//"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 func TestLFMetaImagePartition(t *testing.T) {
@@ -97,7 +97,7 @@ func TestLFMetaImageValidate(t *testing.T) {
 				Data:   []byte(""),
 				Offset: 0,
 			},
-			want: errors.Errorf("Image/device size too small (0 B) to contain meta partition region"),
+			want: fmt.Errorf("Image/device size too small (0 B) to contain meta partition region"),
 		},
 		{
 			name: "Missing phosphor-image-manifest",
@@ -108,7 +108,7 @@ func TestLFMetaImageValidate(t *testing.T) {
 				}, false),
 				Offset: 0,
 			},
-			want: errors.Errorf("Did not find 'phosphor-image-manifest' keyword."),
+			want: fmt.Errorf("Did not find 'phosphor-image-manifest' keyword."),
 		},
 		{
 			name: "Manifest with bad checksum",
@@ -120,7 +120,7 @@ func TestLFMetaImageValidate(t *testing.T) {
 					false),
 				Offset: 0,
 			},
-			want: errors.Errorf("Validation failed: Partition 'manifest' failed validation: 'manifest' partition SHA256 (382ceed4fa5fccc968adc2bc62823e7539c1b484ad9af1d434abc7dba80a90c5) does not match expected (abcdefg)"),
+			want: fmt.Errorf("Validation failed: Partition 'manifest' failed validation: 'manifest' partition SHA256 (382ceed4fa5fccc968adc2bc62823e7539c1b484ad9af1d434abc7dba80a90c5) does not match expected (abcdefg)"),
 		},
 		{
 			name: "Manifest with good checksum but no partitions",
@@ -129,7 +129,7 @@ func TestLFMetaImageValidate(t *testing.T) {
 				Data:   TestLFMakeManifest(nil, true),
 				Offset: 0,
 			},
-			want: errors.Errorf("Empty partition table found in metadata."),
+			want: fmt.Errorf("Empty partition table found in metadata."),
 		},
 		{
 			name: "Good manifest with just the manifest partition",
@@ -162,7 +162,7 @@ func TestLFMetaImageValidate(t *testing.T) {
 				}, true),
 				Offset: 0,
 			},
-			want: errors.Errorf("Validation failed: Partition 'spl' failed validation: 'spl' partition SHA256 (374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb) does not match expected (1234)"),
+			want: fmt.Errorf("Validation failed: Partition 'spl' failed validation: 'spl' partition SHA256 (374708fff7719dd5979ec875d56cd2286f6d3cf7ec317a3b25632aab28ec37bb) does not match expected (1234)"),
 		},
 		{
 			name: "Good u-boot checksum",
@@ -195,7 +195,7 @@ func TestLFMetaImageValidate(t *testing.T) {
 				}, true),
 				Offset: 0,
 			},
-			want: errors.Errorf("Unknown partition type: 'don't-use--testing-only'"),
+			want: fmt.Errorf("Unknown partition type: 'don't-use--testing-only'"),
 		},
 		{
 			name: "Invalid JSON",
@@ -207,7 +207,7 @@ func TestLFMetaImageValidate(t *testing.T) {
 					return blob
 				}(),
 			},
-			want: errors.Errorf("invalid character 'p' looking for beginning of object key string"),
+			want: fmt.Errorf("invalid character 'p' looking for beginning of object key string"),
 		},
 	}
 

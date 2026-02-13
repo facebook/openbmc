@@ -60,6 +60,31 @@ class BaseSystemdTest(TestCase):
         stdout = output.decode("utf-8")
         self.assertTrue("setup_i2c", command + " returned: " + stdout)
 
+    def test_systemd_not_degraded(self):
+        if not running_systemd():
+            self.skipTest("not using systemd")
+            return
+
+        output = subprocess.run(
+            ["systemctl", "status"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            timeout=60,
+        )
+        stdout = output.stdout.decode("utf-8")
+
+        state_line = ""
+        for line in stdout.splitlines():
+            if "State:" in line:
+                state_line = line.strip()
+                break
+
+        self.assertNotIn(
+            "degraded",
+            state_line,
+            "systemd is in degraded state: " + state_line,
+        )
+
     def test_tmp_no_cleanup(self):
         if not running_systemd():
             self.skipTest("not using systemd")

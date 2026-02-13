@@ -12,4 +12,6 @@ from utils.test_utils import qemu_check
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class TestSystemd(BaseSystemdTest, unittest.TestCase):
-    pass
+    @unittest.skip("test not available on platform")
+    def test_systemd_not_degraded(self):
+        pass

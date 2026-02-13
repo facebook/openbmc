@@ -30,7 +30,6 @@ import (
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 // test basic functionality
@@ -127,16 +126,16 @@ func TestUBootValidate(t *testing.T) {
 				mockFullPartition[:128],
 				mockFullPartition[256:],
 			),
-			want: errors.Errorf(
-				fmt.Sprintf("'u-boot' partition md5sum '%v' unrecognized",
-					"79bdf03034a1524e674125e98bb07530"),
+			want: fmt.Errorf(
+				"'u-boot' partition md5sum '%v' unrecognized",
+				"79bdf03034a1524e674125e98bb07530",
 			),
 		},
 		{
 			name:      "checksums not appended, md5sum not OK",
 			checksums: []string{},
 			data:      mockPartitionData,
-			want: errors.Errorf("'u-boot' partition md5sum '%v' unrecognized",
+			want: fmt.Errorf("'u-boot' partition md5sum '%v' unrecognized",
 				md5_mockPartitionData),
 		},
 		{
@@ -149,7 +148,7 @@ func TestUBootValidate(t *testing.T) {
 			name:      "partition too small to have magic",
 			checksums: []string{},
 			data:      []byte("1"),
-			want:      errors.Errorf("'u-boot' partition too small (1) to contain U-Boot magic"),
+			want:      fmt.Errorf("'u-boot' partition too small (1) to contain U-Boot magic"),
 		},
 		{
 			name:      "partition too small to have appended checksums",
@@ -162,7 +161,7 @@ func TestUBootValidate(t *testing.T) {
 			checksums: []string{},
 			// lose the first byte
 			data: mockFullPartition[1:],
-			want: errors.Errorf("Magic '0x%X' does not match any U-Boot magic", 0xEA78),
+			want: fmt.Errorf("Magic '0x%X' does not match any U-Boot magic", 0xEA78),
 		},
 	}
 	for _, tc := range cases {
@@ -206,7 +205,7 @@ func TestUBootValidateVboot(t *testing.T) {
 		{
 			name:     "not hardware enforce",
 			vbootEnf: utils.VBOOT_NONE,
-			want:     errors.Errorf("'foobar' partition too small (0) to contain U-Boot magic"),
+			want:     fmt.Errorf("'foobar' partition too small (0) to contain U-Boot magic"),
 		},
 	}
 

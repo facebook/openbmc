@@ -20,16 +20,16 @@
 package utils
 
 import (
-	"github.com/pkg/errors"
+	"fmt"
 )
 
 // BytesSliceRange returns s[start:end] but with bounds checks
 func BytesSliceRange(s []byte, start, end uint32) ([]byte, error) {
 	if start > end {
-		return nil, errors.Errorf("Slice start (%v) > end (%v)", start, end)
+		return nil, fmt.Errorf("Slice start (%v) > end (%v)", start, end)
 	}
 	if end > uint32(len(s)) {
-		return nil, errors.Errorf("Slice end (%v) larger than original slice length (%v)", end, len(s))
+		return nil, fmt.Errorf("Slice end (%v) larger than original slice length (%v)", end, len(s))
 	}
 	return s[start:end], nil
 }

@@ -20,11 +20,11 @@
 package remediations_bletchley
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func TestCheckVersion(t *testing.T) {
@@ -44,7 +44,7 @@ func TestCheckVersion(t *testing.T) {
 			version: "bletchley-v2023.02.1",
 			err:     nil,
 			want: step.ExitUnsafeToReboot{
-				errors.Errorf("Cannot upgrade this version: bletchley-v2023.02.1"),
+				fmt.Errorf("Cannot upgrade this version: bletchley-v2023.02.1"),
 			},
 		},
 		{
@@ -70,15 +70,15 @@ func TestCheckVersion(t *testing.T) {
 			version: "garbage",
 			err:     nil,
 			want: step.ExitUnsafeToReboot{
-				errors.Errorf("Unable to parse version info: No match for regex 'bletchley-v(?P<year>[0-9]+).(?P<week>[0-9]+)' for input 'garbage'"),
+				fmt.Errorf("Unable to parse version info: No match for regex 'bletchley-v(?P<year>[0-9]+).(?P<week>[0-9]+)' for input 'garbage'"),
 			},
 		},
 		{
 			name:    "error",
 			version: "",
-			err:     errors.Errorf("fail"),
+			err:     fmt.Errorf("fail"),
 			want: step.ExitUnsafeToReboot{
-				errors.Errorf("Unable to fetch version info: fail"),
+				fmt.Errorf("Unable to fetch version info: fail"),
 			},
 		},
 	}

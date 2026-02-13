@@ -21,7 +21,7 @@ package common
 
 import (
 	"bytes"
-	"github.com/pkg/errors"
+	"fmt"
 	"log"
 	"regexp"
 	"testing"
@@ -71,7 +71,7 @@ func TestExposeRealFlash0OnSecondaryBoot(t *testing.T) {
 		GetMachineOrig := utils.GetMachine
 		defer func() { utils.GetMachine = GetMachineOrig }()
 
-		ResetWDT2StatusReg = func(mem []byte) error { return errors.Errorf("Should not have been called") }
+		ResetWDT2StatusReg = func(mem []byte) error { return fmt.Errorf("Should not have been called") }
 		utils.GetMachine = func() (string, error) { return "armv6l", nil }
 
 		res := ExposeRealFlash0OnSecondaryBoot(step.StepParams{})
@@ -147,7 +147,7 @@ func TestExposeRealFlash0OnSecondaryBoot(t *testing.T) {
 
 		res := ExposeRealFlash0OnSecondaryBoot(step.StepParams{})
 
-		expectedError := step.ExitSafeToReboot{Err: errors.Errorf("Unable to clear WDT2 second boot code flag @ 0x0, current value = 0x102")}
+		expectedError := step.ExitSafeToReboot{Err: fmt.Errorf("Unable to clear WDT2 second boot code flag @ 0x0, current value = 0x102")}
 
 		step.CompareTestExitErrors(expectedError, res, t)
 

@@ -68,11 +68,11 @@ int HscComponent::print_version() {
       server.ready();
     }
     if ( get_ver_str(ver) < 0 ) {
-      throw string("Error in getting the version of HSC");
+      throw std::runtime_error("Error in getting the version of HSC");
     }
     cout << model << " HSC Checksum: " << ver << endl;
-  } catch(string& err) {
-    printf("%s HSC Checksum: NA (%s)\n", model.c_str(),err.c_str());
+  } catch(std::exception& err) {
+    std::cout << model << " HSC Checksum: NA (" << err.what() << ")\n";
   }
 
   return FW_STATUS_SUCCESS;
@@ -85,10 +85,10 @@ int HscComponent::get_version(json& j) {
       server.ready();
     }
     if ( get_ver_str(ver) < 0 ) {
-      throw "Error in getting the version of HSC";
+      throw std::runtime_error("Error in getting the version of HSC");
     }
     j["VERSION"] = ver;
-  } catch(string& err) {
+  } catch(std::exception&) {
     j["VERSION"] = "NA";
   }
   return FW_STATUS_SUCCESS;

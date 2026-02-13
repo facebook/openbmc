@@ -29,7 +29,6 @@ import (
 	"github.com/Jeffail/gabs"
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 func TestGetHealthdConfig(t *testing.T) {
@@ -61,19 +60,19 @@ func TestGetHealthdConfig(t *testing.T) {
 			name:             "Empty healthd config",
 			readFileContents: "",
 			readFileErr:      nil,
-			wantErr:          errors.Errorf("Unable to parse healthd-config.json: unexpected end of JSON input"),
+			wantErr:          fmt.Errorf("Unable to parse healthd-config.json: unexpected end of JSON input"),
 		},
 		{
 			name:             "Corrupt healthd config",
 			readFileContents: "",
 			readFileErr:      nil,
-			wantErr:          errors.Errorf("Unable to parse healthd-config.json: unexpected end of JSON input"),
+			wantErr:          fmt.Errorf("Unable to parse healthd-config.json: unexpected end of JSON input"),
 		},
 		{
 			name:             "Readfile error",
 			readFileContents: "",
-			readFileErr:      errors.Errorf("ReadFile error"),
-			wantErr:          errors.Errorf("Unable to open healthd-config.json: ReadFile error"),
+			readFileErr:      fmt.Errorf("ReadFile error"),
+			wantErr:          fmt.Errorf("Unable to open healthd-config.json: ReadFile error"),
 		},
 	}
 
@@ -81,7 +80,7 @@ func TestGetHealthdConfig(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			fileutils.ReadFile = func(filename string) ([]byte, error) {
 				if filename != healthdConfigFilePath {
-					return []byte{}, errors.Errorf("filename: want '%v' got '%v'", healthdConfigFilePath, filename)
+					return []byte{}, fmt.Errorf("filename: want '%v' got '%v'", healthdConfigFilePath, filename)
 				}
 				return []byte(tc.readFileContents), tc.readFileErr
 			}
@@ -142,7 +141,7 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 			writeConfigCalled: false,
 			writeConfigErr:    nil,
 			restartHealthdErr: nil,
-			wantErr:           errors.Errorf("Can't get 'bmc_mem_utilization.threshold' entry in healthd-config {}"),
+			wantErr:           fmt.Errorf("Can't get 'bmc_mem_utilization.threshold' entry in healthd-config {}"),
 		},
 		{
 			name: "invalid type for bmc_mem_utilization.threshold (not array)",
@@ -154,7 +153,7 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 			wantJSON:          "",
 			writeConfigCalled: false,
 			writeConfigErr:    nil,
-			wantErr: errors.Errorf("Can't get 'bmc_mem_utilization.threshold' entry in healthd-config " +
+			wantErr: fmt.Errorf("Can't get 'bmc_mem_utilization.threshold' entry in healthd-config " +
 				`{"bmc_mem_utilization":{"threshold":42}}`),
 		},
 		{
@@ -172,7 +171,7 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 			writeConfigCalled: false,
 			writeConfigErr:    nil,
 			restartHealthdErr: nil,
-			wantErr: errors.Errorf("Can't get 'action' entry in healthd-config " +
+			wantErr: fmt.Errorf("Can't get 'action' entry in healthd-config " +
 				"{\"bmc_mem_utilization\":{\"threshold\":[{\"action\":42}]}}"),
 		},
 		{
@@ -189,9 +188,9 @@ func TestHealthdRemoveMemUtilRebootEntryIfExists(t *testing.T) {
 			inputJSON:         tests.ExampleMinimalHealthdConfigJSON,
 			wantJSON:          tests.ExampleMinimalHealthdConfigJSONRemovedReboot,
 			writeConfigCalled: true,
-			writeConfigErr:    errors.Errorf("Write config failed"),
+			writeConfigErr:    fmt.Errorf("Write config failed"),
 			restartHealthdErr: nil,
-			wantErr:           errors.Errorf("Unable to write healthd config to file: Write config failed"),
+			wantErr:           fmt.Errorf("Unable to write healthd config to file: Write config failed"),
 		},
 	}
 
@@ -245,8 +244,8 @@ func TestHealthdWriteConfigToFile(t *testing.T) {
 		},
 		{
 			name:         "WriteFile error",
-			writeFileErr: errors.Errorf("WriteFile err"),
-			want:         errors.Errorf("Unable to write healthd config to file: WriteFile err"),
+			writeFileErr: fmt.Errorf("WriteFile err"),
+			want:         fmt.Errorf("Unable to write healthd config to file: WriteFile err"),
 		},
 	}
 
@@ -321,7 +320,7 @@ func TestRestartHealthd(t *testing.T) {
 			supervisor:    "sv",
 			pathExists:    false,
 			runCmdErr:     nil,
-			want:          errors.Errorf("Error restarting healthd: '/etc/sv/healthd' does not exist"),
+			want:          fmt.Errorf("Error restarting healthd: '/etc/sv/healthd' does not exist"),
 			wantSleepTime: 0 * time.Second,
 			statusError:   false,
 		},
@@ -330,8 +329,8 @@ func TestRestartHealthd(t *testing.T) {
 			wait:          true,
 			supervisor:    "systemctl",
 			pathExists:    true,
-			runCmdErr:     errors.Errorf("RunCommand error"),
-			want:          errors.Errorf("RunCommand error"),
+			runCmdErr:     fmt.Errorf("RunCommand error"),
+			want:          fmt.Errorf("RunCommand error"),
 			wantSleepTime: 30 * time.Second,
 			statusError:   false,
 		},
@@ -366,7 +365,7 @@ func TestRestartHealthd(t *testing.T) {
 				gotCmd := strings.Join(cmdArr, " ")
 				if wantCmd3 == gotCmd {
 					if tc.statusError {
-						return 1, errors.Errorf("RunCommand derp"), "", ""
+						return 1, fmt.Errorf("RunCommand derp"), "", ""
 					} else {
 						return 0, nil, "", ""
 					}

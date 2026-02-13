@@ -31,7 +31,6 @@ import (
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 func TestGetMemInfo(t *testing.T) {
@@ -62,21 +61,21 @@ func TestGetMemInfo(t *testing.T) {
  MemTotal: 24`,
 			readFileErr: nil,
 			want:        nil,
-			wantErr:     errors.Errorf("Unable to get MemTotal in /proc/meminfo"),
+			wantErr:     fmt.Errorf("Unable to get MemTotal in /proc/meminfo"),
 		},
 		{
 			name:             "Incomplete meminfo",
 			readFileContents: `MemFree: 123 kB`,
 			readFileErr:      nil,
 			want:             nil,
-			wantErr:          errors.Errorf("Unable to get MemTotal in /proc/meminfo"),
+			wantErr:          fmt.Errorf("Unable to get MemTotal in /proc/meminfo"),
 		},
 		{
 			name:             "ReadFile error",
 			readFileContents: "",
-			readFileErr:      errors.Errorf("ReadFile error"),
+			readFileErr:      fmt.Errorf("ReadFile error"),
 			want:             nil,
-			wantErr:          errors.Errorf("Unable to open /proc/meminfo: ReadFile error"),
+			wantErr:          fmt.Errorf("Unable to open /proc/meminfo: ReadFile error"),
 		},
 	}
 
@@ -84,7 +83,7 @@ func TestGetMemInfo(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			fileutils.ReadFile = func(filename string) ([]byte, error) {
 				if filename != "/proc/meminfo" {
-					return []byte{}, errors.Errorf("filename: want '%v' got '%v'", "/proc/meminfo", filename)
+					return []byte{}, fmt.Errorf("filename: want '%v' got '%v'", "/proc/meminfo", filename)
 				}
 				return []byte(tc.readFileContents), tc.readFileErr
 			}
@@ -177,7 +176,7 @@ func TestRunCommand(t *testing.T) {
 			cmdArr:       []string{"ech0", "openbmc"},
 			timeout:      30 * time.Second,
 			wantExitCode: 1,
-			wantErr:      errors.Errorf("exec: \"ech0\": executable file not found in $PATH"),
+			wantErr:      fmt.Errorf("exec: \"ech0\": executable file not found in $PATH"),
 			wantStdout:   "",
 			wantStderr:   "",
 			logContainsSeq: []string{
@@ -189,7 +188,7 @@ func TestRunCommand(t *testing.T) {
 			cmdArr:       []string{"sleep", "1"},
 			timeout:      10 * time.Millisecond,
 			wantExitCode: -1,
-			wantErr:      errors.Errorf("context deadline exceeded"),
+			wantErr:      fmt.Errorf("context deadline exceeded"),
 			wantStdout:   "",
 			wantStderr:   "",
 			logContainsSeq: []string{
@@ -265,7 +264,7 @@ func TestRunCommand(t *testing.T) {
 			cmdArr:       []string{"sleep", "42"},
 			timeout:      -1 * time.Second,
 			wantExitCode: 1,
-			wantErr:      errors.Errorf("context deadline exceeded"),
+			wantErr:      fmt.Errorf("context deadline exceeded"),
 			wantStdout:   "",
 			wantStderr:   "",
 			logContainsSeq: []string{
@@ -278,7 +277,7 @@ func TestRunCommand(t *testing.T) {
 			cmdArr:         []string{},
 			timeout:        30 * time.Second,
 			wantExitCode:   1,
-			wantErr:        errors.Errorf("Cannot run empty command"),
+			wantErr:        fmt.Errorf("Cannot run empty command"),
 			wantStdout:     "",
 			wantStderr:     "",
 			logContainsSeq: []string{},
@@ -356,7 +355,7 @@ func TestRunCommandWithRetries(t *testing.T) {
 			name:           "Succeed on second try",
 			maxAttempts:    3,
 			interval:       1 * time.Second,
-			runCommandErrs: []error{errors.Errorf("err"), nil},
+			runCommandErrs: []error{fmt.Errorf("err"), nil},
 			wantErr:        nil,
 			wantSleepTimes: []time.Duration{1 * time.Second},
 			logContainsSeq: []string{
@@ -372,7 +371,7 @@ func TestRunCommandWithRetries(t *testing.T) {
 			name:           "Succeed on second try, different timeout",
 			maxAttempts:    3,
 			interval:       42 * time.Second,
-			runCommandErrs: []error{errors.Errorf("err"), nil},
+			runCommandErrs: []error{fmt.Errorf("err"), nil},
 			wantErr:        nil,
 			wantSleepTimes: []time.Duration{42 * time.Second},
 			logContainsSeq: []string{
@@ -388,8 +387,8 @@ func TestRunCommandWithRetries(t *testing.T) {
 			name:           "Fail on all retries",
 			maxAttempts:    3,
 			interval:       1 * time.Second,
-			runCommandErrs: []error{errors.Errorf("err"), errors.Errorf("err"), errors.Errorf("err")},
-			wantErr:        errors.Errorf("err"),
+			runCommandErrs: []error{fmt.Errorf("err"), fmt.Errorf("err"), fmt.Errorf("err")},
+			wantErr:        fmt.Errorf("err"),
 			wantSleepTimes: []time.Duration{1 * time.Second, 1 * time.Second},
 			logContainsSeq: []string{
 				fmt.Sprintf("Attempt %v of %v: Running command '%v' with timeout %vs and retry interval %vs",
@@ -405,7 +404,7 @@ func TestRunCommandWithRetries(t *testing.T) {
 			maxAttempts:    0,
 			interval:       1 * time.Second,
 			runCommandErrs: []error{},
-			wantErr:        errors.Errorf("Command failed to run: maxAttempts must be > 0 (got 0)"),
+			wantErr:        fmt.Errorf("Command failed to run: maxAttempts must be > 0 (got 0)"),
 			wantSleepTimes: []time.Duration{},
 			logContainsSeq: []string{},
 		},
@@ -487,9 +486,9 @@ func TestSystemdAvailable(t *testing.T) {
 			name:             "/proc/1/cmdline exists but ReadFile failed",
 			fileExists:       true,
 			readFileContents: "",
-			readFileErr:      errors.Errorf("ReadFile error"),
+			readFileErr:      fmt.Errorf("ReadFile error"),
 			want:             false,
-			wantErr:          errors.Errorf("/proc/1/cmdline exists but cannot be read: ReadFile error"),
+			wantErr:          fmt.Errorf("/proc/1/cmdline exists but cannot be read: ReadFile error"),
 		},
 	}
 
@@ -503,7 +502,7 @@ func TestSystemdAvailable(t *testing.T) {
 			}
 			fileutils.ReadFile = func(filename string) ([]byte, error) {
 				if filename != "/proc/1/cmdline" {
-					return []byte{}, errors.Errorf("filename: want '%v' got '%v'", "/proc/meminfo", filename)
+					return []byte{}, fmt.Errorf("filename: want '%v' got '%v'", "/proc/meminfo", filename)
 				}
 				return []byte(tc.readFileContents), tc.readFileErr
 			}
@@ -630,30 +629,30 @@ More text here`,
 		{
 			name:             "read error",
 			etcIssueContents: ``,
-			etcIssueReadErr:  errors.Errorf("/etc/issue read error"),
+			etcIssueReadErr:  fmt.Errorf("/etc/issue read error"),
 			want:             "",
-			wantErr:          errors.Errorf("Error reading /etc/issue: /etc/issue read error"),
+			wantErr:          fmt.Errorf("Error reading /etc/issue: /etc/issue read error"),
 		},
 		{
 			name:             "no platform match",
 			etcIssueContents: `Some random content without platform info`,
 			etcIssueReadErr:  nil,
 			want:             "",
-			wantErr:          errors.Errorf("Unable to get platform from /etc/issue: No match for regex '(?i)(?:.*\\s)?(?P<platform>[^\\s-]+)\\s+v[0-9]+' for input 'Some random content without platform info'"),
+			wantErr:          fmt.Errorf("Unable to get platform from /etc/issue: No match for regex '(?i)(?:.*\\s)?(?P<platform>[^\\s-]+)\\s+v[0-9]+' for input 'Some random content without platform info'"),
 		},
 		{
 			name:             "empty platform after regex match",
 			etcIssueContents: `OpenBMC Release -v2020.09.1`,
 			etcIssueReadErr:  nil,
 			want:             "",
-			wantErr:          errors.Errorf("Unable to get platform from /etc/issue: No match for regex '(?i)(?:.*\\s)?(?P<platform>[^\\s-]+)\\s+v[0-9]+' for input 'OpenBMC Release -v2020.09.1'"),
+			wantErr:          fmt.Errorf("Unable to get platform from /etc/issue: No match for regex '(?i)(?:.*\\s)?(?P<platform>[^\\s-]+)\\s+v[0-9]+' for input 'OpenBMC Release -v2020.09.1'"),
 		},
 		{
 			name:             "malformed version format",
 			etcIssueContents: `OpenBMC Release platform-invalid`,
 			etcIssueReadErr:  nil,
 			want:             "",
-			wantErr:          errors.Errorf("Unable to get platform from /etc/issue: No match for regex '(?i)(?:.*\\s)?(?P<platform>[^\\s-]+)\\s+v[0-9]+' for input 'OpenBMC Release platform-invalid'"),
+			wantErr:          fmt.Errorf("Unable to get platform from /etc/issue: No match for regex '(?i)(?:.*\\s)?(?P<platform>[^\\s-]+)\\s+v[0-9]+' for input 'OpenBMC Release platform-invalid'"),
 		},
 	}
 
@@ -661,7 +660,7 @@ More text here`,
 		t.Run(tc.name, func(t *testing.T) {
 			fileutils.ReadFile = func(filename string) ([]byte, error) {
 				if filename != "/etc/issue" {
-					return []byte{}, errors.Errorf("filename: want '%v' got '%v'", "/etc/issue", filename)
+					return []byte{}, fmt.Errorf("filename: want '%v' got '%v'", "/etc/issue", filename)
 				}
 				return []byte(tc.etcIssueContents), tc.etcIssueReadErr
 			}
@@ -731,16 +730,16 @@ func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 		{
 			name:             "read error",
 			etcIssueContents: ``,
-			etcIssueReadErr:  errors.Errorf("/etc/issue read error"),
+			etcIssueReadErr:  fmt.Errorf("/etc/issue read error"),
 			want:             "",
-			wantErr:          errors.Errorf("Error reading /etc/issue: /etc/issue read error"),
+			wantErr:          fmt.Errorf("Error reading /etc/issue: /etc/issue read error"),
 		},
 		{
 			name:             "corrupt /etc/issue",
 			etcIssueContents: `OpenBMC Release`,
 			etcIssueReadErr:  nil,
 			want:             "",
-			wantErr:          errors.Errorf("Unable to get version from /etc/issue: missing version info"),
+			wantErr:          fmt.Errorf("Unable to get version from /etc/issue: missing version info"),
 		},
 		{
 			name:             "openbmc wrong case ",
@@ -769,7 +768,7 @@ func TestGetOpenBMCVersionFromIssueFile(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			fileutils.ReadFile = func(filename string) ([]byte, error) {
 				if filename != "/etc/issue" {
-					return []byte{}, errors.Errorf("filename: want '%v' got '%v'", "/etc/issue", filename)
+					return []byte{}, fmt.Errorf("filename: want '%v' got '%v'", "/etc/issue", filename)
 				}
 				return []byte(tc.etcIssueContents), tc.etcIssueReadErr
 			}
@@ -809,15 +808,15 @@ func TestGetBSMFlashManufacturerFromFile(t *testing.T) {
 			readFileContents: "",
 			readFileError:    nil,
 			want:             "",
-			wantErr: errors.Errorf("'/sys/bus/spi/devices/spi0.0/spi-nor/manufacturer' " +
+			wantErr: fmt.Errorf("'/sys/bus/spi/devices/spi0.0/spi-nor/manufacturer' " +
 				"file is empty"),
 		},
 		{
 			name:             "spi-nor/manufacturer file read error",
 			readFileContents: "",
-			readFileError:    errors.Errorf("file read error"),
+			readFileError:    fmt.Errorf("file read error"),
 			want:             "",
-			wantErr: errors.Errorf("Error reading " +
+			wantErr: fmt.Errorf("Error reading " +
 				"'/sys/bus/spi/devices/spi0.0/spi-nor/manufacturer': " +
 				"file read error"),
 		},
@@ -872,9 +871,9 @@ func TestIsOpenBMC(t *testing.T) {
 		{
 			name:             "/etc/issue file read error",
 			readFileContents: "",
-			readFileError:    errors.Errorf("file read error"),
+			readFileError:    fmt.Errorf("file read error"),
 			want:             false,
-			wantErr: errors.Errorf("Error reading '/etc/issue': " +
+			wantErr: fmt.Errorf("Error reading '/etc/issue': " +
 				"file read error"),
 		},
 	}
@@ -924,7 +923,7 @@ func TestIsLFOpenBMC(t *testing.T) {
 		{
 			name:             "/etc/os-release file read error",
 			readFileContents: "",
-			readFileError:    errors.Errorf("file read error"),
+			readFileError:    fmt.Errorf("file read error"),
 			want:             false,
 		},
 	}
@@ -998,7 +997,7 @@ func TestIsBMCLite(t *testing.T) {
 		{
 			name:             "/etc/issue file read error",
 			readFileContents: "",
-			readFileError:    errors.Errorf("file read error"),
+			readFileError:    fmt.Errorf("file read error"),
 			want:             false,
 		},
 	}...)
@@ -1128,8 +1127,8 @@ func TestCheckOtherFlasherRunning(t *testing.T) {
 		{
 			name:                     "baseName found in cmdline",
 			otherCmdlinesRet:         nil,
-			checkNoBaseNameExistsErr: errors.Errorf("Found another flasher"),
-			want:                     errors.Errorf("Another flasher running: Found another flasher"),
+			checkNoBaseNameExistsErr: fmt.Errorf("Found another flasher"),
+			want:                     fmt.Errorf("Another flasher running: Found another flasher"),
 		},
 	}
 	for _, tc := range cases {
@@ -1222,8 +1221,8 @@ func TestCheckNoBaseNameExistsInProcCmdlinePaths(t *testing.T) {
 		{
 			name: "ignore readfile errors",
 			readFileRet: map[string]interface{}{
-				"/proc/42/cmdline":  ReadFileRetType{[]byte{}, errors.Errorf("!")},
-				"/proc/420/cmdline": ReadFileRetType{[]byte{}, errors.Errorf("!")},
+				"/proc/42/cmdline":  ReadFileRetType{[]byte{}, fmt.Errorf("!")},
+				"/proc/420/cmdline": ReadFileRetType{[]byte{}, fmt.Errorf("!")},
 			},
 			want: nil,
 		},
@@ -1232,7 +1231,7 @@ func TestCheckNoBaseNameExistsInProcCmdlinePaths(t *testing.T) {
 			readFileRet: map[string]interface{}{
 				"/proc/42/cmdline": ReadFileRetType{[]byte("python\x00/tmp/improve_system.py"), nil},
 			},
-			want: errors.Errorf("'improve_system.py' found in cmdline 'python /tmp/improve_system.py'"),
+			want: fmt.Errorf("'improve_system.py' found in cmdline 'python /tmp/improve_system.py'"),
 		},
 		{
 			name: "base name exists (2)",
@@ -1246,7 +1245,7 @@ func TestCheckNoBaseNameExistsInProcCmdlinePaths(t *testing.T) {
 			readFileRet: map[string]interface{}{
 				"/proc/42/cmdline": ReadFileRetType{[]byte("fw-util\x00bmc\x00--update"), nil},
 			},
-			want: errors.Errorf("'fw-util' found in cmdline 'fw-util bmc --update'"),
+			want: fmt.Errorf("'fw-util' found in cmdline 'fw-util bmc --update'"),
 		},
 		{
 			name: "base name exists (4)",
@@ -1255,7 +1254,7 @@ func TestCheckNoBaseNameExistsInProcCmdlinePaths(t *testing.T) {
 					"/run/flashy/checks_and_remediations/common/00_dummy_step\x00-device\x00mtd:flash0",
 				), nil},
 			},
-			want: errors.Errorf("'00_dummy_step' found in cmdline " +
+			want: fmt.Errorf("'00_dummy_step' found in cmdline " +
 				"'/run/flashy/checks_and_remediations/common/00_dummy_step -device mtd:flash0'"),
 		},
 	}
@@ -1304,9 +1303,9 @@ func TestGetMTDInfoFromSpecifier(t *testing.T) {
 			name:            "ReadFile error",
 			specifier:       "flash0",
 			procMtdContents: "",
-			readFileErr:     errors.Errorf("ReadFile error"),
+			readFileErr:     fmt.Errorf("ReadFile error"),
 			want:            MtdInfo{},
-			wantErr:         errors.Errorf("Unable to read from /proc/mtd: ReadFile error"),
+			wantErr:         fmt.Errorf("Unable to read from /proc/mtd: ReadFile error"),
 		},
 		{
 			name:            "MTD not found in /proc/mtd",
@@ -1314,7 +1313,7 @@ func TestGetMTDInfoFromSpecifier(t *testing.T) {
 			procMtdContents: tests.ExampleWedge100ProcMtdFile,
 			readFileErr:     nil,
 			want:            MtdInfo{},
-			wantErr:         errors.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:flash1'"),
+			wantErr:         fmt.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:flash1'"),
 		},
 		{
 			name:            "corrupt /proc/mtd file",
@@ -1322,7 +1321,7 @@ func TestGetMTDInfoFromSpecifier(t *testing.T) {
 			procMtdContents: `mtd0: xxxxxxxx xxxxxxxx "flash1"`,
 			readFileErr:     nil,
 			want:            MtdInfo{},
-			wantErr:         errors.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:flash1'"),
+			wantErr:         fmt.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:flash1'"),
 		},
 	}
 
@@ -1373,9 +1372,9 @@ func TestIsDataPartitionMounted(t *testing.T) {
 		{
 			name:              "file read error",
 			procMountContents: "",
-			procMountReadErr:  errors.Errorf("file read error"),
+			procMountReadErr:  fmt.Errorf("file read error"),
 			want:              false,
-			wantErr:           errors.Errorf("Cannot read /proc/mounts: file read error"),
+			wantErr:           fmt.Errorf("Cannot read /proc/mounts: file read error"),
 		},
 	}
 

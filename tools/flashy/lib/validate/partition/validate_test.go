@@ -21,12 +21,12 @@ package partition
 
 import (
 	"crypto/rand"
+	"fmt"
 	"math"
 	"reflect"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 func TestValidatePartitionsFromPartitionConfigs(t *testing.T) {
@@ -53,16 +53,16 @@ func TestValidatePartitionsFromPartitionConfigs(t *testing.T) {
 		},
 		{
 			name:                  "getAllPartitions error",
-			getAllPartitionsErr:   errors.Errorf("failed to get all partitions"),
+			getAllPartitionsErr:   fmt.Errorf("failed to get all partitions"),
 			validatePartitionsErr: nil,
-			want: errors.Errorf("Unable to get all partitions: " +
+			want: fmt.Errorf("Unable to get all partitions: " +
 				"failed to get all partitions"),
 		},
 		{
 			name:                  "validatePartitions error",
 			getAllPartitionsErr:   nil,
-			validatePartitionsErr: errors.Errorf("Validation failed"),
-			want:                  errors.Errorf("Validation failed: Validation failed"),
+			validatePartitionsErr: fmt.Errorf("Validation failed"),
+			want:                  fmt.Errorf("Validation failed: Validation failed"),
 		},
 	}
 
@@ -125,9 +125,9 @@ func TestValidatePartitions(t *testing.T) {
 		{
 			name: "validation failed",
 			partitions: []Partition{
-				&mockPartition{ValidationErr: errors.Errorf("mock part validation failed")},
+				&mockPartition{ValidationErr: fmt.Errorf("mock part validation failed")},
 			},
-			want: errors.Errorf("Partition 'mock-partition' failed validation: " +
+			want: fmt.Errorf("Partition 'mock-partition' failed validation: " +
 				"mock part validation failed"),
 		},
 	}
@@ -215,7 +215,7 @@ func TestGetAllPartitionsFromPartitionConfigs(t *testing.T) {
 				},
 			},
 			want: nil,
-			wantErr: errors.Errorf("Failed to get '%v' partition: "+
+			wantErr: fmt.Errorf("Failed to get '%v' partition: "+
 				" Unknown partition validator type '%v'",
 				"1", mockConfigTypeUnknown),
 		},
@@ -245,7 +245,7 @@ func TestGetAllPartitionsFromPartitionConfigs(t *testing.T) {
 				},
 			},
 			want: nil,
-			wantErr: errors.Errorf("Wanted start offset (%v) larger than image file size (%v)",
+			wantErr: fmt.Errorf("Wanted start offset (%v) larger than image file size (%v)",
 				20*1024, 4*1024),
 		},
 		{
@@ -259,7 +259,7 @@ func TestGetAllPartitionsFromPartitionConfigs(t *testing.T) {
 				},
 			},
 			want:    nil,
-			wantErr: errors.Errorf("Unable to get offset end: Unsigned integer overflow for (4294966295+1024)"),
+			wantErr: fmt.Errorf("Unable to get offset end: Unsigned integer overflow for (4294966295+1024)"),
 		},
 	}
 	// compare two partitions slices

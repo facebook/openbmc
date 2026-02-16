@@ -183,6 +183,7 @@ wedge_power_asic() {
         ICECUBE800BANW)
             echo "$power_state" > "$ASIC_0_ASIC_PCIE_RESET_SYSFS"
             echo "$power_state" > "$ASIC_0_ASIC_SYS_RESET_SYSFS"
+            ;;
         GLATH05A-64O)
             echo "$power_state" > "$R3_ASIC_0_ASIC_PCIE_RESET_SYSFS"
             echo "$power_state" > "$R3_ASIC_0_ASIC_SYS_RESET_SYSFS"

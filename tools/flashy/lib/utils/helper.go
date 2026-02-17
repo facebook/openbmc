@@ -26,8 +26,6 @@ import (
 	"log"
 	"regexp"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 // StringFind takes a string slice and looks if a given item is in it. If found it will
@@ -93,7 +91,7 @@ func regexSubexpMapHelper(match, subexpNames []string) (map[string]string, error
 	// unmatched, this should not happen if this function
 	// is called with a valid `match`
 	if len(match) != len(subexpNames) {
-		return m, errors.Errorf("Incomplete match '%#v' for subexpNames '%#v'",
+		return m, fmt.Errorf("Incomplete match '%#v' for subexpNames '%#v'",
 			match, subexpNames)
 	}
 
@@ -104,16 +102,14 @@ func regexSubexpMapHelper(match, subexpNames []string) (map[string]string, error
 
 			// invalid subexpName with empty strings
 			if len(name) == 0 {
-				return m, errors.Errorf("Invalid empty subexpName, subexpNames must have " +
+				return m, fmt.Errorf("Invalid empty subexpName, subexpNames must have " +
 					"non-empty strings (except for the 1st entry)")
 			}
 
 			// dupe capturing group name
 			if _, ok := m[name]; ok {
-				return m, errors.Errorf(
-					fmt.Sprintf("Duplicate subexpName '%v' found. Make sure ", name) +
-						"the regEx capturing group names are unique.",
-				)
+				return m, fmt.Errorf("Duplicate subexpName '%v' found. Make sure "+
+					"the regEx capturing group names are unique.", name)
 			}
 
 			m[name] = match[i]
@@ -144,7 +140,7 @@ func GetRegexSubexpMap(regEx, inputString string) (map[string]string, error) {
 
 	match := reg.FindStringSubmatch(inputString)
 	if match == nil {
-		return subexpMap, errors.Errorf("No match for regex '%v' for input '%v'",
+		return subexpMap, fmt.Errorf("No match for regex '%v' for input '%v'",
 			regEx, inputString)
 	}
 
@@ -195,7 +191,7 @@ func GetBytesRegexSubexpMap(regEx string, buf []byte) (map[string]string, error)
 
 	match := reg.FindSubmatch(buf)
 	if match == nil {
-		return subexpMap, errors.Errorf("No match for regex '%v' for input", regEx)
+		return subexpMap, fmt.Errorf("No match for regex '%v' for input", regEx)
 	}
 
 	// convert the matches into string for convenience
@@ -250,11 +246,11 @@ func SafeAppendString(a, b []string) []string {
 func GetWord(data []byte, offset uint32) (uint32, error) {
 	endOffset, err := AddU32(offset, 4)
 	if err != nil {
-		return 0, errors.Errorf("Failed to get end of offset: %v", err)
+		return 0, fmt.Errorf("Failed to get end of offset: %w", err)
 	}
 	wordBytes, err := BytesSliceRange(data, offset, endOffset)
 	if err != nil {
-		return 0, errors.Errorf("Failed to get bytes for word: %v", err)
+		return 0, fmt.Errorf("Failed to get bytes for word: %w", err)
 	}
 	val := binary.BigEndian.Uint32(wordBytes)
 	return val, nil
@@ -267,10 +263,10 @@ func GetWord(data []byte, offset uint32) (uint32, error) {
 func SetWord(data []byte, word, offset uint32) ([]byte, error) {
 	endOffset, err := AddU32(offset, 4)
 	if err != nil {
-		return nil, errors.Errorf("Failed to get end of offset: %v", err)
+		return nil, fmt.Errorf("Failed to get end of offset: %w", err)
 	}
 	if endOffset > uint32(len(data)) {
-		return nil, errors.Errorf("Required offset %v out of range of data size %v",
+		return nil, fmt.Errorf("Required offset %v out of range of data size %v",
 			offset, len(data))
 	}
 	for i := 0; i < 4; i++ {
@@ -287,7 +283,7 @@ func GetStringKeysFromJSONData(data []byte) ([]string, error) {
 
 	err := json.Unmarshal(data, &m)
 	if err != nil {
-		return nil, errors.Errorf("Unable to unmarshal JSON: %v", err)
+		return nil, fmt.Errorf("Unable to unmarshal JSON: %w", err)
 	}
 
 	checksums := GetStringKeys(m)

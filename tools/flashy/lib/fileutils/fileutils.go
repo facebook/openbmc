@@ -28,8 +28,6 @@ import (
 	"runtime"
 	"syscall"
 	"time"
-
-	"github.com/pkg/errors"
 )
 
 // SourceRootDir is the absolute directory of flashy's source code.
@@ -186,7 +184,7 @@ var IsELFFile = func(filename string) bool {
 var MmapFile = func(filename string, prot, flags int) ([]byte, error) {
 	f, err := os.Open(filename)
 	if err != nil {
-		return nil, errors.Errorf("Unable to open '%v': %v",
+		return nil, fmt.Errorf("Unable to open '%v': %v",
 			filename, err)
 	}
 	defer f.Close()
@@ -194,7 +192,7 @@ var MmapFile = func(filename string, prot, flags int) ([]byte, error) {
 	// get size of file
 	fi, err := f.Stat()
 	if err != nil {
-		return nil, errors.Errorf("Unable to get file info of '%v': %v",
+		return nil, fmt.Errorf("Unable to get file info of '%v': %v",
 			filename, err)
 	}
 
@@ -205,7 +203,7 @@ var MmapFile = func(filename string, prot, flags int) ([]byte, error) {
 // Remember to call Munmap to unmap.
 var MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {
 	if offset%int64(os.Getpagesize()) != 0 {
-		return nil, errors.Errorf(
+		return nil, fmt.Errorf(
 			"Unable to mmap file '%v': %v",
 			filename,
 			fmt.Sprintf("Offset must be a multiple of the system's page size (%v), got %v",
@@ -217,14 +215,14 @@ var MmapFileRange = func(filename string, offset int64, length, prot, flags int)
 
 	f, err := os.Open(filename)
 	if err != nil {
-		return nil, errors.Errorf("Unable to open '%v': %v",
+		return nil, fmt.Errorf("Unable to open '%v': %v",
 			filename, err)
 	}
 	defer f.Close()
 
 	fi, err := f.Stat()
 	if err != nil {
-		return nil, errors.Errorf("Unable to get file info of '%v': %v",
+		return nil, fmt.Errorf("Unable to get file info of '%v': %v",
 			filename, err)
 	}
 
@@ -232,7 +230,7 @@ var MmapFileRange = func(filename string, offset int64, length, prot, flags int)
 	// (and using something like ReadAt() to check boundaries can have nasty side-effects if
 	// used on /dev/mem)
 	if fi.Mode().IsRegular() && fi.Size() < offset+int64(length) {
-		return nil, errors.Errorf("mmap on '%v' failed: offset+length (%v) is greater than file size (%v)", filename, offset+int64(length), fi.Size())
+		return nil, fmt.Errorf("mmap on '%v' failed: offset+length (%v) is greater than file size (%v)", filename, offset+int64(length), fi.Size())
 	}
 
 	return Mmap(int(f.Fd()), offset, length, prot, flags)
@@ -246,7 +244,7 @@ var GlobAll = func(patterns []string) ([]string, error) {
 	for _, pattern := range patterns {
 		gotFilePaths, err := Glob(pattern)
 		if err != nil {
-			return nil, errors.Errorf("Unable to resolve pattern '%v': %v", pattern, err)
+			return nil, fmt.Errorf("Unable to resolve pattern '%v': %v", pattern, err)
 		}
 		results = append(results, gotFilePaths...)
 	}
@@ -309,7 +307,7 @@ var WriteFileWithTimeout = func(
 	case res := <-c:
 		return res
 	case <-time.After(timeout):
-		return errors.Errorf("Timed out after '%v'", timeout)
+		return fmt.Errorf("Timed out after '%v'", timeout)
 	}
 }
 

@@ -6,6 +6,10 @@ require elbert-image-layout.inc
 require recipes-core/images/fb-openbmc-image.bb
 
 # Include modules in rootfs
+# Some notes about kcsd:
+#   - if "ipmitool" failed with "/dev/ipmi* not found" error in x86, you
+#     may need to load "ipmi_si" module in x86 with "ports=0xca2,0xca8"
+#     module parameter.
 IMAGE_INSTALL += " \
   packagegroup-openbmc-base \
   packagegroup-openbmc-net \

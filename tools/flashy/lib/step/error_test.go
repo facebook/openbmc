@@ -20,13 +20,13 @@
 package step
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 func TestHandleStepError(t *testing.T) {
@@ -46,26 +46,26 @@ func TestHandleStepError(t *testing.T) {
 	}{
 		{
 			name:                  "unknown error",
-			stepExitError:         ExitUnknownError{errors.Errorf("err")},
+			stepExitError:         ExitUnknownError{fmt.Errorf("err")},
 			ensureSafeToRebootErr: nil,
 			wantExitCode:          FLASHY_ERROR_UNKNOWN,
 		},
 		{
 			name:                  "unsafe to reboot",
-			stepExitError:         ExitUnsafeToReboot{Err: errors.Errorf("err")},
+			stepExitError:         ExitUnsafeToReboot{Err: fmt.Errorf("err")},
 			ensureSafeToRebootErr: nil,
 			wantExitCode:          FLASHY_ERROR_UNSAFE_TO_REBOOT,
 		},
 		{
 			name:                  "safe to reboot, ensured OK",
-			stepExitError:         ExitSafeToReboot{Err: errors.Errorf("err")},
+			stepExitError:         ExitSafeToReboot{Err: fmt.Errorf("err")},
 			ensureSafeToRebootErr: nil,
 			wantExitCode:          FLASHY_ERROR_SAFE_TO_REBOOT,
 		},
 		{
 			name:                  "safe to reboot, but ensure check failed",
-			stepExitError:         ExitSafeToReboot{Err: errors.Errorf("err")},
-			ensureSafeToRebootErr: errors.Errorf("actually unsafe"),
+			stepExitError:         ExitSafeToReboot{Err: fmt.Errorf("err")},
+			ensureSafeToRebootErr: fmt.Errorf("actually unsafe"),
 			wantExitCode:          FLASHY_ERROR_UNSAFE_TO_REBOOT,
 		},
 	}
@@ -118,15 +118,15 @@ func TestEnsureSafeToReboot(t *testing.T) {
 		},
 		{
 			name:                     "other flasher running",
-			otherFlasherRunningErr:   errors.Errorf("Found other flasher running"),
+			otherFlasherRunningErr:   fmt.Errorf("Found other flasher running"),
 			checkFlashDeviceValidErr: nil,
-			want:                     errors.Errorf("Found other flasher running"),
+			want:                     fmt.Errorf("Found other flasher running"),
 		},
 		{
 			name:                     "no flash device valid",
 			otherFlasherRunningErr:   nil,
-			checkFlashDeviceValidErr: errors.Errorf("No flash device is valid"),
-			want:                     errors.Errorf("No flash device is valid"),
+			checkFlashDeviceValidErr: fmt.Errorf("No flash device is valid"),
+			want:                     fmt.Errorf("No flash device is valid"),
 		},
 	}
 

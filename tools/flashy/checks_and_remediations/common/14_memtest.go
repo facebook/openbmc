@@ -20,11 +20,12 @@
 package common
 
 import (
-	"github.com/facebook/openbmc/tools/flashy/lib/step"
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
+	"fmt"
 	"log"
 	"unsafe"
+
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 )
 
 func init() {
@@ -53,7 +54,7 @@ var checkMemtest = func(pattern byte, memtestSize uint64, wordSize uintptr, scra
 	for i := uint64(0); i < memtestSize; i++ {
 		var value = *(*byte)(unsafe.Pointer(uintptr(scratchpadPointer) + (uintptr(i) * wordSize)))
 		if value != pattern {
-			errMsg := errors.Errorf("Wrote pattern 0x%x to index %v of test buffer, read value was 0x%x. Possible memory corruption",
+			errMsg := fmt.Errorf("Wrote pattern 0x%x to index %v of test buffer, read value was 0x%x. Possible memory corruption",
 				pattern, i, value)
 			return step.ExitUnsafeToReboot{Err: errMsg}
 		}

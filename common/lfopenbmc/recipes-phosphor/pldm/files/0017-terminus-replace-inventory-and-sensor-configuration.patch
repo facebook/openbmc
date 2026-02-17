@@ -1,7 +1,7 @@
-From b8946c28a9fd42c87ca00b8aa2eee4b510e6c6c4 Mon Sep 17 00:00:00 2001
+From 0adc8ae1ed8dbec8a716a9dd7619f9207af9eb93 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Fri, 26 Dec 2025 14:35:14 +0800
-Subject: [PATCH 17/18] terminus: replace inventory and sensor configuration
+Subject: [PATCH] terminus: replace inventory and sensor configuration
 
 Add fetchEntityManagerConfiguration to retrieve inventory name and
 sensor configuration from EntityManager.
@@ -18,15 +18,16 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  common/types.hpp                              |   7 +-
  fw-update/inventory_manager.cpp               |   2 +-
  .../test/firmware_inventory_manager_test.cpp  |   5 +-
- platform-mc/terminus.cpp                      | 160 +++++++++++++++++-
- platform-mc/terminus.hpp                      |  44 +++++
- platform-mc/terminus_manager.cpp              |   8 +
+ platform-mc/terminus.cpp                      | 160 +++++++++++++++-
+ platform-mc/terminus.hpp                      |  43 +++++
+ platform-mc/terminus_manager.cpp              |  47 +++++
  platform-mc/test/event_manager_test.cpp       |  12 +-
  platform-mc/test/platform_manager_test.cpp    |  24 +--
  platform-mc/test/terminus_manager_test.cpp    |  32 ++--
- requester/mctp_endpoint_discovery.cpp         |  16 +-
- .../test/mctp_endpoint_discovery_test.cpp     |  31 ++--
- 11 files changed, 284 insertions(+), 57 deletions(-)
+ requester/mctp_endpoint_discovery.cpp         | 178 +++++++++++++-----
+ requester/mctp_endpoint_discovery.hpp         |  11 ++
+ .../test/mctp_endpoint_discovery_test.cpp     |  31 +--
+ 12 files changed, 460 insertions(+), 92 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
 index b61184f..57188fb 100644
@@ -267,7 +268,7 @@ index 71b9b2b..5be4542 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index 39f2fc5..3ea3849 100644
+index 39f2fc5..f510ab2 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
 @@ -122,6 +122,38 @@ class Terminus
@@ -322,24 +323,69 @@ index 39f2fc5..3ea3849 100644
    private:
      /** @brief Find the Terminus Name from the Entity Auxiliary name list
       *         The Entity Auxiliary name list is entityAuxiliaryNamesTbl.
-@@ -305,6 +343,12 @@ class Terminus
+@@ -304,6 +342,11 @@ class Terminus
+     std::unique_ptr<InventoryItemBoardIntf> inventoryItemBoardInft = nullptr;
  #endif
- 
  
 +    /** @brief associated path */
 +    EntityName associatedPath{};
 +
 +    /** @brief Inventory name */
 +    EntityName inventoryName{};
-+
+ 
      /* @brief Inventory D-Bus object path of the terminus */
      std::string inventoryPath;
- 
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index dfeea76..622b172 100644
+index dfeea76..473ceb9 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
-@@ -496,6 +496,14 @@ exec::task<int> TerminusManager::initMctpTerminus(const MctpInfo& mctpInfo)
+@@ -201,6 +201,45 @@ exec::task<int> TerminusManager::discoverMctpTerminusTask()
+         for (const auto& mctpInfo : mctpInfos)
+         {
+             auto it = findTerminusPtr(mctpInfo);
++
++            if (it != termini.end())
++            {
++                auto tid = it->first;
++                auto existingTerminus = it->second;
++
++                // Check for Deferred Association
++                auto newPath = std::get<5>(mctpInfo);
++                auto currentPath = existingTerminus->getAssociatedPath();
++
++                if (newPath.has_value() && (newPath != currentPath))
++                {
++                    lg2::info(
++                        "Deferred Association detected for TID {TID}. Re-initializing...",
++                        "TID", tid);
++
++                    // Remove the old Terminus
++                    this->unmapTid(tid);
++                    auto termIt = termini.find(tid);
++                    if (termIt != termini.end())
++                    {
++                        termini.erase(termIt);
++                    }
++
++                    // Remove from availability table if exists,
++                    // since the terminus is going to be re-initialized with new
++                    // path
++                    if (mctpInfoAvailTable.contains(mctpInfo))
++                    {
++                        mctpInfoAvailTable.erase(mctpInfo);
++                    }
++
++                    // The new MctpInfo with the associated path will be added
++                    // as a new terminus after this block, so we just need to
++                    // clean up the old one here.
++                    it = termini.end();
++                }
++            }
++
+             if (it == termini.end())
+             {
+                 mctpInfoAvailTable[mctpInfo] = true;
+@@ -496,6 +535,14 @@ exec::task<int> TerminusManager::initMctpTerminus(const MctpInfo& mctpInfo)
          termini[tid]->setTerminusName(mctpInfoName.value());
      }
  
@@ -585,7 +631,7 @@ index 85ecb57..3a4ec90 100644
      auto tid = mappedTid.value();
      termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 0876dfa..292c311 100644
+index 0876dfa..6816e8c 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -84,9 +84,9 @@ void MctpDiscovery::getMctpInfos(std::map<MctpInfo, Availability>& mctpInfoMap)
@@ -622,17 +668,230 @@ index 0876dfa..292c311 100644
              searchConfigurationFor(pldm::utils::DBusHandler(), mctpInfo);
              if (!std::ranges::contains(existingMctpInfos, mctpInfo))
              {
-@@ -556,8 +557,9 @@ void MctpDiscovery::searchConfigurationFor(
-         auto name = getNameFromProperties(mctpTargetProperties);
-         if (!name.empty())
+@@ -501,72 +502,165 @@ std::string MctpDiscovery::constructMctpReactorObjectPath(
+            "/endpoints/" + std::to_string(eid) + "/configured_by";
+ }
+ 
+-void MctpDiscovery::searchConfigurationFor(
+-    const pldm::utils::DBusHandler& handler, MctpInfo& mctpInfo)
++bool MctpDiscovery::resolveAssociation(const pldm::utils::DBusHandler& handler,
++                                       MctpInfo& mctpInfo)
+ {
+     const auto mctpReactorObjectPath = constructMctpReactorObjectPath(mctpInfo);
++
+     try
+     {
+-        std::string associatedObjPath;
+-        std::string associatedService;
+-        std::string associatedInterface;
++        // Define the search scope for the association
+         sdbusplus::message::object_path inventorySubtreePath(
+             inventorySubtreePathStr);
++        constexpr auto subTreeDepth = 3;
+ 
+-        //"/{board or chassis type}/{board or chassis}/{device}"
+-        auto constexpr subTreeDepth = 3;
++        // Query the ObjectMapper for associated subtrees
+         auto response = handler.getAssociatedSubTree(
+             mctpReactorObjectPath, inventorySubtreePath, subTreeDepth,
+             interfaceFilter);
++
+         if (response.empty())
+         {
+-            warning("No associated subtree found for path {PATH}", "PATH",
+-                    mctpReactorObjectPath);
+-            return;
++            return false;
+         }
+-        // Assume the first entry is the one we want
++
++        // Parse the response (map<Path, map<Service, vector<Interface>>>)
++        // We take the first result found.
+         auto subTree = response.begin();
+-        associatedObjPath = subTree->first;
++        std::string associatedObjPath = subTree->first;
+         auto associatedServiceProp = subTree->second;
++
+         if (associatedServiceProp.empty())
+         {
+-            warning("No associated service found for path {PATH}", "PATH",
+-                    mctpReactorObjectPath);
+-            return;
++            return false;
+         }
+-        // Assume the first entry is the one we want
++
+         auto entry = associatedServiceProp.begin();
+-        associatedService = entry->first;
++        std::string associatedService = entry->first;
+         auto dBusIntfList = entry->second;
+-        auto associatedInterfaceItr = std::find_if(
++
++        // Check if the service implements any of the interfaces in our filter
++        auto it = std::find_if(
+             dBusIntfList.begin(), dBusIntfList.end(), [](const auto& intf) {
+-                return std::find(interfaceFilter.begin(), interfaceFilter.end(),
+-                                 intf) != interfaceFilter.end();
++                return std::ranges::contains(interfaceFilter, intf);
+             });
+-        if (associatedInterfaceItr == dBusIntfList.end())
++
++        if (it != dBusIntfList.end())
+         {
+-            error("No associated interface found for path {PATH}", "PATH",
+-                  mctpReactorObjectPath);
+-            return;
++            // Retrieve properties to get the name
++            auto mctpTargetProperties = handler.getDbusPropertiesVariant(
++                associatedService.c_str(), associatedObjPath.c_str(),
++                (*it).c_str());
++
++            auto name = getNameFromProperties(mctpTargetProperties);
++            if (!name.empty())
++            {
++                std::get<4>(mctpInfo) = name;
++            }
++            std::get<5>(mctpInfo) = associatedObjPath;
++
++            // Update the internal configuration map with the resolved info
++            configurations.insert_or_assign(associatedObjPath, mctpInfo);
++            return true;
+         }
+-        associatedInterface = *associatedInterfaceItr;
+-        auto mctpTargetProperties = handler.getDbusPropertiesVariant(
+-            associatedService.c_str(), associatedObjPath.c_str(),
+-            associatedInterface.c_str());
+-        auto name = getNameFromProperties(mctpTargetProperties);
+-        if (!name.empty())
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error("Error resolving association for {PATH}: {ERR}", "PATH",
++                   mctpReactorObjectPath, "ERR", e);
++    }
++
++    return false;
++}
++
++void MctpDiscovery::searchConfigurationFor(
++    const pldm::utils::DBusHandler& handler, MctpInfo& mctpInfo)
++{
++    const auto mctpReactorObjectPath = constructMctpReactorObjectPath(mctpInfo);
++
++    // Synchronous attempt: If the association exists, resolve it immediately.
++    if (resolveAssociation(handler, mctpInfo))
++    {
++        // If there was a lingering match rule for this path, clean it up as it
++        // is no longer needed.
++        if (associationMatches.contains(mctpReactorObjectPath))
          {
 -            std::get<std::optional<std::string>>(mctpInfo) = name;
-+            std::get<4>(mctpInfo) = name;
++            associationMatches.erase(mctpReactorObjectPath);
          }
-+        std::get<5>(mctpInfo) = associatedObjPath;
-         configurations.emplace(associatedObjPath, mctpInfo);
+-        configurations.emplace(associatedObjPath, mctpInfo);
++        return;
      }
-     catch (const std::exception& e)
+-    catch (const std::exception& e)
++
++    // If resolution failed, check if we are already monitoring this path.
++    if (associationMatches.contains(mctpReactorObjectPath))
+     {
+-        error(
+-            "Error getting associated subtree for path {PATH}, error - {ERROR}",
+-            "PATH", mctpReactorObjectPath, "ERROR", e);
+         return;
+     }
++
++    // Create an asynchronous D-Bus Match rule to wait for the association.
++    auto networkId = std::get<3>(mctpInfo);
++    auto eid = std::get<0>(mctpInfo);
++
++    // Construct the path that we expect to appear in the 'InterfacesAdded'
++    // signal
++    std::string matchPath =
++        std::string(MCTPPath) + "/networks/" + std::to_string(networkId) +
++        "/endpoints/" + std::to_string(eid);
++
++    try
++    {
++        associationMatches[mctpReactorObjectPath] = std::make_unique<
++            sdbusplus::bus::match_t>(
++            pldm::utils::DBusHandler::getBus(),
++            sdbusplus::bus::match::rules::interfacesAdded() +
++                sdbusplus::bus::match::rules::argNpath(0, matchPath),
++            [this, mctpInfo,
++             mctpReactorObjectPath](sdbusplus::message_t& msg) mutable {
++                sdbusplus::message::object_path objPath;
++                using InterfaceMap = std::map<
++                    std::string,
++                    std::map<std::string, std::variant<std::vector<std::string>,
++                                                       std::string, bool>>>;
++                InterfaceMap interfaces;
++
++                try
++                {
++                    msg.read(objPath, interfaces);
++                }
++                catch (...)
++                {
++                    return;
++                }
++
++                if (interfaces.contains(
++                        "xyz.openbmc_project.Association.Definitions"))
++                {
++                    lg2::info(
++                        "Deferred Association signal received for {PATH}.",
++                        "PATH", mctpReactorObjectPath);
++                    std::unique_ptr<sdbusplus::bus::match_t> lifeExtender;
++                    auto matchIt =
++                        this->associationMatches.find(mctpReactorObjectPath);
++                    if (matchIt != this->associationMatches.end())
++                    {
++                        lifeExtender = std::move(matchIt->second);
++                        this->associationMatches.erase(matchIt);
++                    }
++                    pldm::utils::DBusHandler dhandler;
++                    // Attempt to resolve the association now that the signal
++                    // arrived
++                    if (this->resolveAssociation(dhandler, mctpInfo))
++                    {
++                        this->addToExistingMctpInfos(MctpInfos(1, mctpInfo));
++                        this->handleMctpEndpoints(MctpInfos(1, mctpInfo));
++                    }
++                }
++            });
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error("Failed to create match rule for {PATH}: {ERR}", "PATH",
++                   mctpReactorObjectPath, "ERR", e);
++    }
+ }
+ 
+ void MctpDiscovery::removeConfigs(const MctpInfos& removedInfos)
+diff --git a/requester/mctp_endpoint_discovery.hpp b/requester/mctp_endpoint_discovery.hpp
+index 96586a0..d776b5b 100644
+--- a/requester/mctp_endpoint_discovery.hpp
++++ b/requester/mctp_endpoint_discovery.hpp
+@@ -244,6 +244,17 @@ class MctpDiscovery
+      * information.
+      */
+     Configurations configurations;
++
++    /** @brief Map to store D-Bus match objects for deferred association
++     * discovery */
++    std::map<std::string, std::unique_ptr<sdbusplus::bus::match_t>>
++        associationMatches;
++
++    /** @brief Resolve the association for the MCTP endpoint and update the
++     * internal configuration map if the association is found.
++     */
++    bool resolveAssociation(const pldm::utils::DBusHandler& handler,
++                            MctpInfo& mctpInfo);
+ };
+ 
+ } // namespace pldm
 diff --git a/requester/test/mctp_endpoint_discovery_test.cpp b/requester/test/mctp_endpoint_discovery_test.cpp
 index 3647d11..358c8cf 100644
 --- a/requester/test/mctp_endpoint_discovery_test.cpp
@@ -718,5 +977,5 @@ index 3647d11..358c8cf 100644
      constexpr auto mockedDbusPath =
          "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
 -- 
-2.47.3
+2.43.0
 

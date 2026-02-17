@@ -22,10 +22,10 @@ package partition
 import (
 	"bytes"
 	"crypto/sha256"
+	"fmt"
 	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 	"github.com/u-root/u-root/pkg/dt"
 )
 
@@ -69,7 +69,7 @@ func (p *FitPartition) Validate() error {
 	// and overlaps
 	fdt, err := dt.ReadFDT(r)
 	if err != nil {
-		return errors.Errorf("Unable to read FIT: %v", err)
+		return fmt.Errorf("Unable to read FIT: %w", err)
 	}
 
 	// we recognize two nodes, both of which must exist:
@@ -78,17 +78,17 @@ func (p *FitPartition) Validate() error {
 	// this is ignored.
 	imagesNode, err := getNodeFromChildren(fdt.RootNode.Children, "images")
 	if err != nil {
-		return errors.Errorf("Unable to get 'images' node: %v", err)
+		return fmt.Errorf("Unable to get 'images' node: %w", err)
 	}
 	err = p.validateImagesNode(imagesNode)
 	if err != nil {
-		return errors.Errorf("'images' FIT node failed validation: %v", err)
+		return fmt.Errorf("'images' FIT node failed validation: %w", err)
 	}
 
 	// existence check is sufficient, no validation is done to this node
 	_, err = getNodeFromChildren(fdt.RootNode.Children, "configurations")
 	if err != nil {
-		return errors.Errorf("Unable to get 'configurations' node: %v", err)
+		return fmt.Errorf("Unable to get 'configurations' node: %w", err)
 	}
 
 	log.Printf("FIT partition '%v' passed validation", p.GetName())
@@ -105,7 +105,7 @@ func (p *FitPartition) validateImagesNode(imagesNode *dt.Node) error {
 	for _, imageNode := range imagesNode.Children {
 		err := p.validateImageNode(imageNode)
 		if err != nil {
-			return errors.Errorf("Image node '%v' failed validation: %v",
+			return fmt.Errorf("Image node '%v' failed validation: %w",
 				imageNode.Name, err)
 		}
 		log.Printf("FIT image node '%v' passed validation", imageNode.Name)
@@ -113,7 +113,7 @@ func (p *FitPartition) validateImagesNode(imagesNode *dt.Node) error {
 	}
 	// check that sufficient image nodes are valid
 	if numValidImageNodes < p.FitImageNodes {
-		return errors.Errorf("Not enough image nodes validated: want '%v' got '%v'",
+		return fmt.Errorf("Not enough image nodes validated: want '%v' got '%v'",
 			p.FitImageNodes, numValidImageNodes)
 	}
 	return nil
@@ -129,13 +129,13 @@ func (p *FitPartition) validateImageNode(imageNode *dt.Node) error {
 
 	checksum, err := p.getSHA256ChecksumFromImageNode(imageNode)
 	if err != nil {
-		return errors.Errorf("Error getting sha256 checksum: %v", err)
+		return fmt.Errorf("Error getting sha256 checksum: %w", err)
 	}
 
 	calcChecksumDat := sha256.Sum256(data)
 	calcChecksum := calcChecksumDat[:]
 	if !bytes.Equal(checksum, calcChecksum) {
-		return errors.Errorf("Calculated sha256 (0x%X) does not match that in FIT (0x%X)",
+		return fmt.Errorf("Calculated sha256 (0x%X) does not match that in FIT (0x%X)",
 			calcChecksum, checksum)
 	}
 	return nil
@@ -164,7 +164,7 @@ func (p *FitPartition) getDataFromImageNode(imageNode *dt.Node) ([]byte, error) 
 
 	data, err = p.getDataFromImageNodeViaDataLink(imageNode)
 	if err != nil {
-		return nil, errors.Errorf("Unable to get data: %v. "+
+		return nil, fmt.Errorf("Unable to get data: %w. "+
 			"Attempted using (1) 'data' property and (2) data links.", err)
 	}
 	return data, nil
@@ -180,7 +180,7 @@ func (p *FitPartition) getDataFromImageNodeViaDataProp(imageNode *dt.Node) ([]by
 
 	dataSize := uint32(len(data))
 	if dataSize > p.GetSize() {
-		return nil, errors.Errorf("Partition too small for data size defined " +
+		return nil, fmt.Errorf("Partition too small for data size defined " +
 			"in image FDT")
 	}
 
@@ -211,10 +211,10 @@ func (p *FitPartition) getDataFromImageNodeViaDataLink(imageNode *dt.Node) ([]by
 
 	endOffset, err := utils.AddU32(dataPos, dataSize)
 	if err != nil {
-		return nil, errors.Errorf("End offset overflowed: %v", err)
+		return nil, fmt.Errorf("End offset overflowed: %w", err)
 	}
 	if endOffset > p.GetSize() {
-		return nil, errors.Errorf("End offset required (%v) by 'data-size' (%v) and 'data-position' (%v) "+
+		return nil, fmt.Errorf("End offset required (%v) by 'data-size' (%v) and 'data-position' (%v) "+
 			"too large for partition size (%v)", endOffset, dataSize, dataPos, p.GetSize())
 	}
 
@@ -243,7 +243,7 @@ func (p *FitPartition) getSHA256ChecksumFromImageNode(imageNode *dt.Node) ([]byt
 	if err != nil {
 		return nil, err
 	} else if algo != "sha256" {
-		return nil, errors.Errorf("Algo in image hash node is not sha256, got '%v'",
+		return nil, fmt.Errorf("Algo in image hash node is not sha256, got '%v'",
 			algo)
 	}
 
@@ -253,7 +253,7 @@ func (p *FitPartition) getSHA256ChecksumFromImageNode(imageNode *dt.Node) ([]byt
 	}
 	checksum := checksumProp.Value
 	if len(checksum) != sha256.Size {
-		return nil, errors.Errorf("sha256 checksum size (%v) incorrect (should be %v)",
+		return nil, fmt.Errorf("sha256 checksum size (%v) incorrect (should be %v)",
 			len(checksum), sha256.Size)
 	}
 	return checksum, nil
@@ -269,7 +269,7 @@ func getPropertyFromNode(n *dt.Node, name string) (dt.Property, error) {
 		}
 	}
 	return dt.Property{},
-		errors.Errorf("Property with name '%v' not found in node", name)
+		fmt.Errorf("Property with name '%v' not found in node", name)
 }
 
 // Helper function for dt.
@@ -281,6 +281,6 @@ func getNodeFromChildren(children []*dt.Node, name string) (*dt.Node, error) {
 			return child, nil
 		}
 	}
-	return nil, errors.Errorf("Child node with name '%v' not found in children",
+	return nil, fmt.Errorf("Child node with name '%v' not found in children",
 		name)
 }

@@ -21,13 +21,13 @@ package utils
 
 import (
 	"bytes"
+	"fmt"
 	"math"
 	"reflect"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 // test decodeVbs error
@@ -40,12 +40,12 @@ func TestDecodeVbs(t *testing.T) {
 		{
 			name:    "not enough bytes",
 			data:    []byte{0x00, 0x01},
-			wantErr: errors.Errorf("Unable to decode vbs data into struct: unexpected EOF"),
+			wantErr: fmt.Errorf("Unable to decode vbs data into struct: unexpected EOF"),
 		},
 		{
 			name:    "empty bytes",
 			data:    []byte{},
-			wantErr: errors.Errorf("Unable to decode vbs data into struct: EOF"),
+			wantErr: fmt.Errorf("Unable to decode vbs data into struct: EOF"),
 		},
 		{
 			name: "invalid data",
@@ -53,7 +53,7 @@ func TestDecodeVbs(t *testing.T) {
 				tests.ExampleVbsData[0:AST_SRAM_VBS_SIZE-4],
 				[]byte{0x49, 0x59, 0x69, 0x79},
 			),
-			wantErr: errors.Errorf("CRC16 of vboot data (30049) does not match reference (30425)"),
+			wantErr: fmt.Errorf("CRC16 of vboot data (30049) does not match reference (30425)"),
 		},
 	}
 	for _, tc := range cases {
@@ -187,11 +187,11 @@ func TestGetVbs(t *testing.T) {
 		if offset != AST_SRAM_VBS_BASE {
 			t.Errorf("offset: want '%v' got '%v'", AST_SRAM_VBS_BASE, offset)
 		}
-		return tests.ExampleVbsData, errors.Errorf("failed")
+		return tests.ExampleVbsData, fmt.Errorf("failed")
 	}
 
 	got, err = GetVbs()
-	tests.CompareTestErrors(errors.Errorf("Unable to mmap /dev/mem: failed"), err, t)
+	tests.CompareTestErrors(fmt.Errorf("Unable to mmap /dev/mem: failed"), err, t)
 
 	// test AST2600 path
 	GetMachine = func() (string, error) {
@@ -218,7 +218,7 @@ func TestGetVbs(t *testing.T) {
 	}
 
 	got, err = GetVbs()
-	tests.CompareTestErrors(errors.Errorf("Not a Vboot system: vboot partition (rom) does not exist."),
+	tests.CompareTestErrors(fmt.Errorf("Not a Vboot system: vboot partition (rom) does not exist."),
 		err, t)
 }
 
@@ -241,7 +241,7 @@ func TestGetVbsOverflowed(t *testing.T) {
 	fileutils.GetPageOffsettedOffset = func(addr uint32) uint32 {
 		return math.MaxUint32
 	}
-	wantErr := errors.Errorf("VBS end offset overflowed: Unsigned integer overflow for (4294967295+56)")
+	wantErr := fmt.Errorf("VBS end offset overflowed: Unsigned integer overflow for (4294967295+56)")
 
 	_, err := GetVbs()
 	tests.CompareTestErrors(wantErr, err, t)
@@ -261,7 +261,7 @@ func TestGetVbootEnforcement(t *testing.T) {
 		{
 			name:   "GetVbs failed",
 			vbs:    Vbs{},
-			vbsErr: errors.Errorf("GetVbs failed"),
+			vbsErr: fmt.Errorf("GetVbs failed"),
 			want:   VBOOT_NONE,
 		},
 		{

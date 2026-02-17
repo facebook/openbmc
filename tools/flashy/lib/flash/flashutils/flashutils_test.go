@@ -20,13 +20,13 @@
 package flashutils
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 func TestParseDeviceID(t *testing.T) {
@@ -49,7 +49,7 @@ func TestParseDeviceID(t *testing.T) {
 			deviceID:      "mtd-flash0",
 			wantType:      "",
 			wantSpecifier: "",
-			wantErr: errors.Errorf("Unable to parse device ID 'mtd-flash0': " +
+			wantErr: fmt.Errorf("Unable to parse device ID 'mtd-flash0': " +
 				"No match for regex '^(?P<type>[a-z]+):(?P<specifier>.+)$' for input 'mtd-flash0'"),
 		},
 	}
@@ -86,7 +86,7 @@ func TestGetFlashDevice(t *testing.T) {
 	}
 
 	sampleMtdGetterError := func(specifier string) (devices.FlashDevice, error) {
-		return nil, errors.Errorf("Error getting 'mtd:%v'", specifier)
+		return nil, fmt.Errorf("Error getting 'mtd:%v'", specifier)
 	}
 
 	cases := []struct {
@@ -112,7 +112,7 @@ func TestGetFlashDevice(t *testing.T) {
 				"mtd": sampleMtdGetterSuccess,
 			},
 			want: nil,
-			wantErr: errors.Errorf("Failed to get flash device: " +
+			wantErr: fmt.Errorf("Failed to get flash device: " +
 				"Unable to parse device ID 'mtd-flash0': " +
 				"No match for regex '^(?P<type>[a-z]+):(?P<specifier>.+)$' for input 'mtd-flash0'"),
 		},
@@ -121,7 +121,7 @@ func TestGetFlashDevice(t *testing.T) {
 			deviceID:              "mtd:flash0",
 			flashDeviceFactoryMap: map[string](devices.FlashDeviceFactory){},
 			want:                  nil,
-			wantErr: errors.Errorf("Failed to get flash device: " +
+			wantErr: fmt.Errorf("Failed to get flash device: " +
 				"'mtd' is not a valid registered flash device type"),
 		},
 		{
@@ -131,7 +131,7 @@ func TestGetFlashDevice(t *testing.T) {
 				"mtd": sampleMtdGetterError,
 			},
 			want:    nil,
-			wantErr: errors.Errorf("Error getting 'mtd:flash0'"),
+			wantErr: fmt.Errorf("Error getting 'mtd:flash0'"),
 		},
 	}
 
@@ -200,7 +200,7 @@ func TestCheckAnyFlashDeviceValid(t *testing.T) {
 			},
 			flash1: getFlashDeviceReturnType{
 				&mockValidationFlashDevice{nil},
-				errors.Errorf("Not used"),
+				fmt.Errorf("Not used"),
 			},
 			want: nil,
 		},
@@ -209,7 +209,7 @@ func TestCheckAnyFlashDeviceValid(t *testing.T) {
 			pfrSystem: false,
 			flash0: getFlashDeviceReturnType{
 				&mockValidationFlashDevice{nil},
-				errors.Errorf("Can't get"),
+				fmt.Errorf("Can't get"),
 			},
 			flash1: getFlashDeviceReturnType{
 				&mockValidationFlashDevice{nil},
@@ -221,7 +221,7 @@ func TestCheckAnyFlashDeviceValid(t *testing.T) {
 			name:      "flash0 failed validation but flash1 succeeded",
 			pfrSystem: false,
 			flash0: getFlashDeviceReturnType{
-				&mockValidationFlashDevice{errors.Errorf("flash0 failed validation")},
+				&mockValidationFlashDevice{fmt.Errorf("flash0 failed validation")},
 				nil,
 			},
 			flash1: getFlashDeviceReturnType{
@@ -234,24 +234,24 @@ func TestCheckAnyFlashDeviceValid(t *testing.T) {
 			name:      "both flash devices failed validation",
 			pfrSystem: false,
 			flash0: getFlashDeviceReturnType{
-				&mockValidationFlashDevice{errors.Errorf("flash0 failed validation")},
+				&mockValidationFlashDevice{fmt.Errorf("flash0 failed validation")},
 				nil,
 			},
 			flash1: getFlashDeviceReturnType{
-				&mockValidationFlashDevice{errors.Errorf("flash1 failed validation")},
+				&mockValidationFlashDevice{fmt.Errorf("flash1 failed validation")},
 				nil,
 			},
-			want: errors.Errorf("UNSAFE TO REBOOT: No flash device is valid"),
+			want: fmt.Errorf("UNSAFE TO REBOOT: No flash device is valid"),
 		},
 		{
 			name:      "pfr system, skip validation",
 			pfrSystem: true,
 			flash0: getFlashDeviceReturnType{
-				&mockValidationFlashDevice{errors.Errorf("flash0 failed validation")},
+				&mockValidationFlashDevice{fmt.Errorf("flash0 failed validation")},
 				nil,
 			},
 			flash1: getFlashDeviceReturnType{
-				&mockValidationFlashDevice{errors.Errorf("flash1 failed validation")},
+				&mockValidationFlashDevice{fmt.Errorf("flash1 failed validation")},
 				nil,
 			},
 			want: nil,

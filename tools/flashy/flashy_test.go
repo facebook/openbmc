@@ -34,7 +34,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
 	"github.com/facebook/openbmc/tools/flashy/flash_procedure"
-	"github.com/pkg/errors"
 )
 
 // make sure that test coverage passes minimum coverage required
@@ -71,11 +70,11 @@ func getBuildNames() ([]string, error) {
 	buildNamesPath := filepath.Join(fileutils.SourceRootDir, "../platforms/platform_build_names")
 	buildNamesBuf, err := fileutils.ReadFile(buildNamesPath)
 	if err != nil {
-		return buildNames, errors.Errorf("Failed to read '%v' for build names: %v", buildNamesPath, err)
+		return buildNames, fmt.Errorf("Failed to read '%v' for build names: %v", buildNamesPath, err)
 	}
 	err = json.Unmarshal(buildNamesBuf, &buildNames)
 	if err != nil {
-		return buildNames, errors.Errorf("Failed to read")
+		return buildNames, fmt.Errorf("Failed to read")
 	}
 	return buildNames, nil
 }
@@ -128,14 +127,14 @@ func TestPlatformSpecificFiles(t *testing.T) {
 						// in the list of build names of existing OpenBMC platforms
 						if buildName, ok := regExMap["build_name"]; ok {
 							if utils.StringFind(buildName, openBMCBuildNames) == -1 {
-								return errors.Errorf("'%v' file not allowed: %v is not an existing OpenBMC build name",
+								return fmt.Errorf("'%v' file not allowed: %v is not an existing OpenBMC build name",
 									path, buildName)
 							}
 						}
 						return nil // test passed
 					}
 				}
-				return errors.Errorf("'%v' file not allowed, does not match any of the given patterns: %#v",
+				return fmt.Errorf("'%v' file not allowed, does not match any of the given patterns: %#v",
 					path, patterns)
 			})
 		if err != nil {

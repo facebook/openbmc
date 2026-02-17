@@ -24,8 +24,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
-
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -68,7 +66,7 @@ func (p *FBMetaMD5Partition) Validate() error {
 		errMsg := fmt.Sprintf("'%v' partition MD5Sum (%v) does not match checksum required (%v)",
 			p.Name, calcChecksum, p.Checksum)
 		log.Printf("%v", errMsg)
-		return errors.Errorf(errMsg)
+		return fmt.Errorf("%s", errMsg)
 	}
 
 	log.Printf("'%v' partition MD5Sum (%v) OK", p.Name, calcChecksum)

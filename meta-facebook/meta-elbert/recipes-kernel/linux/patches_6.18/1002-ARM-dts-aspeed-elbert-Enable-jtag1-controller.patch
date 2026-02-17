@@ -1,0 +1,41 @@
+From f8f739348caf75be069c384e5c746f52c164389b Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@fb.com>
+Date: Mon, 9 May 2022 23:06:09 -0700
+Subject: [PATCH] ARM: dts: aspeed: elbert: Enable jtag1 controller
+
+Summary: Enable jtag controller in elbert device tree.
+
+Test Plan:
+1) "bitbake elbert-image" succeeded for kenrel 5.15.
+2) "fpga_ver.sh" prints correct version information in elbert.
+3) "fpga_util.sh" can be used to program scm firmware successfully.
+
+Reviewers: tfang, hya321, joancaneus, binhuang, goldenbug, #openbmc
+
+Reviewed By: goldenbug
+
+Differential Revision: https://phabricator.intern.facebook.com/D37292792
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-elbert.dts | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-elbert.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-elbert.dts
+index 0b6c1b22f2bc..a410649b2ee4 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-elbert.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-elbert.dts
+@@ -262,3 +262,12 @@ spidev@1 {
+ 		reg = <1>;
+ 	};
+ };
++
++&jtag1 {
++	/*
++	 * JTAG programming is done via bit-banging rather than through
++	 * the driver, so prevent the driver from controlling GPIOs.
++	 */
++	status = "okay";
++	pinctrl-0 = <>;
++};
+-- 
+2.43.0
+

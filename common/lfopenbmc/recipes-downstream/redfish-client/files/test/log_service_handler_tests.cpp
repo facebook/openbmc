@@ -143,6 +143,17 @@ class FakeLogManager
     std::unique_ptr<std::thread> serverThread;
 };
 
+void runAsync(sdbusplus::async::context& ctx, sdbusplus::async::task<> task)
+{
+  ctx.spawn(
+      [](sdbusplus::async::task<> task,
+        sdbusplus::async::context& ctx) -> sdbusplus::async::task<> {
+        co_await std::move(task);
+        ctx.request_stop();
+      }(std::move(task), ctx));
+  ctx.run();
+}
+
 class LogServiceHandlerTest : public ::testing::Test
 {
   protected:
@@ -227,7 +238,9 @@ TEST_F(LogServiceHandlerTest, BasicTest)
 
     using namespace std::string_literals;
 
-    logServiceHandler->commit(logEntryCollection);
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+      co_await logServiceHandler->commit(logEntryCollection);
+    }());
     EXPECT_EQ(2, logManager.logs->size());
 
     // Validate record at index 0 (Unexpected Exception).
@@ -268,16 +281,24 @@ TEST_F(LogServiceHandlerTest, InMemoryPersistTest)
         redfish_binding::LogEntryCollection::parseLogEntryCollection(
             kEventlogEntryCollectionJson);
     EXPECT_EQ(0, logManager.logs->size());
-    logServiceHandler->commit(logEntryCollection);
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+      co_await logServiceHandler->commit(logEntryCollection);
+    }());
     EXPECT_EQ(2, logManager.logs->size());
-    logServiceHandler->commit(logEntryCollection);
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+      co_await logServiceHandler->commit(logEntryCollection);
+    }());
     EXPECT_EQ(2, logManager.logs->size());
     // mimic a restart
     auto restartedLogServiceHandler =
         std::make_shared<LogServiceHandler>(ctx, "fake.url");
-    restartedLogServiceHandler->commit(logEntryCollection);
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+      co_await restartedLogServiceHandler->commit(logEntryCollection);
+    }());
     EXPECT_EQ(4, logManager.logs->size());
-    restartedLogServiceHandler->commit(logEntryCollection);
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+      co_await restartedLogServiceHandler->commit(logEntryCollection);
+    }());
     EXPECT_EQ(4, logManager.logs->size());
 }
 
@@ -292,16 +313,24 @@ TEST_F(LogServiceHandlerTest, OnFilePersistTest)
         redfish_binding::LogEntryCollection::parseLogEntryCollection(
             kEventlogEntryCollectionJson);
     EXPECT_EQ(0, logManager.logs->size());
-    logServiceHandler->commit(logEntryCollection);
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+      co_await logServiceHandler->commit(logEntryCollection);
+    }());
     EXPECT_EQ(2, logManager.logs->size());
-    logServiceHandler->commit(logEntryCollection);
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+      co_await logServiceHandler->commit(logEntryCollection);
+    }());
     EXPECT_EQ(2, logManager.logs->size());
     // mimic a restart
     auto restartedLogServiceHandler = std::make_shared<LogServiceHandler>(
         ctx, "https://fake.url/redfish/v1", tmpdir);
-    restartedLogServiceHandler->commit(logEntryCollection);
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+      co_await restartedLogServiceHandler->commit(logEntryCollection);
+    }());
     EXPECT_EQ(2, logManager.logs->size());
-    restartedLogServiceHandler->commit(logEntryCollection);
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+      co_await restartedLogServiceHandler->commit(logEntryCollection);
+    }());
     EXPECT_EQ(2, logManager.logs->size());
     std::filesystem::remove_all(tmpdir);
 }
@@ -358,7 +387,9 @@ TEST_F(LogServiceHandlerTest, PsRunPwrFaultMapperTest)
 
     using namespace std::string_literals;
 
-    logServiceHandler->commit(logEntryCollection);
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+      co_await logServiceHandler->commit(logEntryCollection);
+    }());
 
     // Expect 2 logs: one PowerRailFault for each power state in the message
     std::vector<std::string> expectedPowerRails = {
@@ -423,7 +454,9 @@ TEST_F(LogServiceHandlerTest, PsRunPwrFaultEmptyMessageArgsTest)
 
     using namespace std::string_literals;
 
-    logServiceHandler->commit(logEntryCollection);
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+      co_await logServiceHandler->commit(logEntryCollection);
+    }());
 
     // With empty MessageArgs, HgxPsRunPwrFaultMapper should not handle,
     // falling through to UnhandledMapper
@@ -470,7 +503,9 @@ TEST_F(LogServiceHandlerTest, PsRunPwrFaultInsufficientMessageArgsTest)
 
     using namespace std::string_literals;
 
-    logServiceHandler->commit(logEntryCollection);
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+      co_await logServiceHandler->commit(logEntryCollection);
+    }());
 
     // With only 1 MessageArg, HgxPsRunPwrFaultMapper should not handle,
     // falling through to UnhandledMapper

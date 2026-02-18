@@ -15,7 +15,8 @@
 namespace redfish_client::core
 {
 
-class LogServiceHandler : private sdbusplus::async::context_ref
+class LogServiceHandler : private sdbusplus::async::context_ref,
+                          private sdbusplus::async::details::context_friend
 {
   public:
     LogServiceHandler() = delete;
@@ -29,8 +30,9 @@ class LogServiceHandler : private sdbusplus::async::context_ref
 
     auto runOnce() -> sdbusplus::async::task<>;
 
-    void commit(
-        redfish_binding::LogEntryCollection::LogEntryCollection& collection);
+    auto commit(
+        redfish_binding::LogEntryCollection::LogEntryCollection& collection)
+      -> sdbusplus::async::task<>;
 
   private:
     std::string url;

@@ -43,7 +43,7 @@ auto LogServiceHandler::runOnce() -> sdbusplus::async::task<>
         auto logEntryCollection =
             redfish_binding::LogEntryCollection::parseLogEntryCollection(
                 logEntryJson);
-        commit(logEntryCollection);
+        co_await commit(logEntryCollection);
     }
     catch (const std::exception& exn)
     {
@@ -53,8 +53,9 @@ auto LogServiceHandler::runOnce() -> sdbusplus::async::task<>
     };
 }
 
-void LogServiceHandler::commit(
+auto LogServiceHandler::commit(
     redfish_binding::LogEntryCollection::LogEntryCollection& collection)
+  -> sdbusplus::async::task<>
 {
     auto& maybeMembers = collection.getMembers();
     if (maybeMembers.hasValue())
@@ -62,6 +63,10 @@ void LogServiceHandler::commit(
         for (auto& member : maybeMembers.value())
         {
             commit(member);
+            // Suspend this task so it is rescheduled, giving pending
+            // work (d-bus queries etc) a chance to execute
+            co_await sdbusplus::async::execution::schedule(
+                get_scheduler(ctx));
         }
     }
 }

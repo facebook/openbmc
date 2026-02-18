@@ -183,6 +183,19 @@ if [ -d "yocto/${_distro}/workaround-bin/" ]; then
 fi
 if [ -d "facebook/workaround-bin" ]; then
   PATH="$(realpath facebook/workaround-bin):$PATH"
+elif [ ! -d "facebook" ] && [ "${_distro}" = "lf-dunfell" ]; then
+  # Python 3.12 removed asyncore module required by bitbake's pyinotify.
+  # Only needed for lf-dunfell; lf-master removed asyncore dependency.
+  # Only apply for external builds (no facebook folder).
+  if ! python3 -c "import asyncore" 2>/dev/null; then
+    # Current python3 doesn't have asyncore, try /usr/bin/python3
+    if [ -x /usr/bin/python3 ] && /usr/bin/python3 -c "import asyncore" 2>/dev/null; then
+      export PATH="/usr/bin:$PATH"
+    else
+      echo "WARNING: Python 3.12+ detected but no Python with asyncore found."
+      echo "Please install pyasyncore (pip install pyasyncore) or use Python < 3.12"
+    fi
+  fi
 fi
 
 # Old distros required going into the poky directory to find the poky metas,

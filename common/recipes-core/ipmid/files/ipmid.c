@@ -3630,10 +3630,18 @@ oem_set_fscd(unsigned char *request, unsigned char req_len,
   switch (data)
   {
     case 0x00:
-      sprintf(cmd, "sv force-stop fscd");
+      if (access("/usr/bin/systemctl", X_OK) == 0) {
+        sprintf(cmd, "systemctl stop fscd.service");
+      } else {
+        sprintf(cmd, "sv force-stop fscd");
+      }
       break;
     case 0x01:
-      sprintf(cmd, "sv start fscd");
+      if (access("/usr/bin/systemctl", X_OK) == 0) {
+        sprintf(cmd, "systemctl start fscd.service");
+      } else {
+        sprintf(cmd, "sv start fscd");
+      }
       break;
     default:
       res->cc = CC_INVALID_CMD;

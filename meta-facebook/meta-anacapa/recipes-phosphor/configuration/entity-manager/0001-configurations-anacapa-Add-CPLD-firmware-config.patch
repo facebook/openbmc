@@ -1,0 +1,166 @@
+From aeac50d501a27a03e27e117bfdb9dec32703121e Mon Sep 17 00:00:00 2001
+From: Dirk Chen <dirkchen@amd.com>
+Date: Tue, 20 Jan 2026 19:18:58 +0800
+Subject: [PATCH] configurations: anacapa: Add CPLD firmware config
+
+description:
+Add Lattice LFMXO5 15D firmware config
+
+testd:
+'''
+busctl introspect xyz.openbmc_project.EntityManager /xyz/openbmc_project/inventory/system/board/MB/Anacapa_MB_CPLD
+
+NAME                                                                     TYPE      SIGNATURE RESULT/VALUE                             FLAGS
+org.freedesktop.DBus.Introspectable                                      interface -         -                                        -
+.Introspect                                                              method    -         s                                        -
+org.freedesktop.DBus.Peer                                                interface -         -                                        -
+.GetMachineId                                                            method    -         s                                        -
+.Ping                                                                    method    -         -                                        -
+org.freedesktop.DBus.Properties                                          interface -         -                                        -
+.Get                                                                     method    ss        v                                        -
+.GetAll                                                                  method    s         a{sv}                                    -
+.Set                                                                     method    ssv       -                                        -
+.PropertiesChanged                                                       signal    sa{sv}as  -                                        -
+xyz.openbmc_project.Configuration.LatticeLFMXO5_15DFirmware              interface -         -                                        -
+.Address                                                                 property  t         113                                      emits-change
+.Bus                                                                     property  t         6                                        emits-change
+.Name                                                                    property  s         "Anacapa_MB_CPLD"                        emits-change
+.Type                                                                    property  s         "LatticeLFMXO5_15DFirmware"              emits-change
+xyz.openbmc_project.Configuration.LatticeLFMXO5_15DFirmware.FirmwareInfo interface -         -                                        -
+.CompatibleHardware                                                      property  s         "com.meta.Hardware.Anacapa.CPLD.LFMXO... emits-change
+.VendorIANA                                                              property  t         40981                                    emits-change
+'''
+
+Change-Id: Id616285a426051eb52a9da85280f40ab7ebb2585
+Signed-off-by: Dirk Chen <dirkchen@amd.com>
+---
+ configurations/meta/anacapa/anacapa_bridge_l_t16.json | 10 ++++++++++
+ configurations/meta/anacapa/anacapa_bridge_l_t20.json | 10 ++++++++++
+ configurations/meta/anacapa/anacapa_bridge_r_t16.json | 10 ++++++++++
+ configurations/meta/anacapa/anacapa_bridge_r_t20.json | 10 ++++++++++
+ configurations/meta/anacapa/anacapa_mb.json           | 10 ++++++++++
+ schemas/cpld.json                                     |  3 ++-
+ 6 files changed, 52 insertions(+), 1 deletion(-)
+
+diff --git a/configurations/meta/anacapa/anacapa_bridge_l_t16.json b/configurations/meta/anacapa/anacapa_bridge_l_t16.json
+index 70461c40103..11075a38600 100644
+--- a/configurations/meta/anacapa/anacapa_bridge_l_t16.json
++++ b/configurations/meta/anacapa/anacapa_bridge_l_t16.json
+@@ -6,6 +6,16 @@
+             "Name": "BRB_L FRU",
+             "Type": "EEPROM"
+         },
++        {
++            "Address": "0x71",
++            "Bus": 18,
++            "FirmwareInfo": {
++                "CompatibleHardware": "com.meta.Hardware.Anacapa.CPLD.LFMXO5_15D_t16_bb",
++                "VendorIANA": 40981
++            },
++            "Name": "Anacapa_LBB_CPLD",
++            "Type": "LatticeLFMXO5_15DFirmware"
++        },
+         {
+             "Address": "0x60",
+             "Bus": "$bus + 2",
+diff --git a/configurations/meta/anacapa/anacapa_bridge_l_t20.json b/configurations/meta/anacapa/anacapa_bridge_l_t20.json
+index 23e070456f8..8168d7a504c 100644
+--- a/configurations/meta/anacapa/anacapa_bridge_l_t20.json
++++ b/configurations/meta/anacapa/anacapa_bridge_l_t20.json
+@@ -6,6 +6,16 @@
+             "Name": "BRB_L FRU",
+             "Type": "EEPROM"
+         },
++        {
++            "Address": "0x71",
++            "Bus": 0,
++            "FirmwareInfo": {
++                "CompatibleHardware": "com.meta.Hardware.Anacapa.CPLD.LFMXO5_15D_t20_bb",
++                "VendorIANA": 40981
++            },
++            "Name": "Anacapa_LBB_CPLD",
++            "Type": "LatticeLFMXO5_15DFirmware"
++        },
+         {
+             "Address": "0x20",
+             "Bus": "$bus + 1",
+diff --git a/configurations/meta/anacapa/anacapa_bridge_r_t16.json b/configurations/meta/anacapa/anacapa_bridge_r_t16.json
+index 70edc1955ff..a34b06f22d8 100644
+--- a/configurations/meta/anacapa/anacapa_bridge_r_t16.json
++++ b/configurations/meta/anacapa/anacapa_bridge_r_t16.json
+@@ -6,6 +6,16 @@
+             "Name": "BRB_R FRU",
+             "Type": "EEPROM"
+         },
++        {
++            "Address": "0x71",
++            "Bus": 22,
++            "FirmwareInfo": {
++                "CompatibleHardware": "com.meta.Hardware.Anacapa.CPLD.LFMXO5_15D_t16_bb",
++                "VendorIANA": 40981
++            },
++            "Name": "Anacapa_RBB_CPLD",
++            "Type": "LatticeLFMXO5_15DFirmware"
++        },
+         {
+             "Address": "0x60",
+             "Bus": "$bus + 2",
+diff --git a/configurations/meta/anacapa/anacapa_bridge_r_t20.json b/configurations/meta/anacapa/anacapa_bridge_r_t20.json
+index 2015c1f7813..e463299671e 100644
+--- a/configurations/meta/anacapa/anacapa_bridge_r_t20.json
++++ b/configurations/meta/anacapa/anacapa_bridge_r_t20.json
+@@ -6,6 +6,16 @@
+             "Name": "BRB_R FRU",
+             "Type": "EEPROM"
+         },
++        {
++            "Address": "0x71",
++            "Bus": 1,
++            "FirmwareInfo": {
++                "CompatibleHardware": "com.meta.Hardware.Anacapa.CPLD.LFMXO5_15D_t20_bb",
++                "VendorIANA": 40981
++            },
++            "Name": "Anacapa_RBB_CPLD",
++            "Type": "LatticeLFMXO5_15DFirmware"
++        },
+         {
+             "Address": "0x20",
+             "Bus": "$bus + 1",
+diff --git a/configurations/meta/anacapa/anacapa_mb.json b/configurations/meta/anacapa/anacapa_mb.json
+index 2eb92da5733..63b7bf3acde 100644
+--- a/configurations/meta/anacapa/anacapa_mb.json
++++ b/configurations/meta/anacapa/anacapa_mb.json
+@@ -154,6 +154,16 @@
+             "Name": "MB FRU",
+             "Type": "EEPROM"
+         },
++        {
++            "Address": "0x71",
++            "Bus": 6,
++            "FirmwareInfo": {
++                "CompatibleHardware": "com.meta.Hardware.Anacapa.CPLD.LFMXO5_15D_mb",
++                "VendorIANA": 40981
++            },
++            "Name": "Anacapa_MB_CPLD",
++            "Type": "LatticeLFMXO5_15DFirmware"
++        },
+         {
+             "Address": "0x60",
+             "Bus": 58,
+diff --git a/schemas/cpld.json b/schemas/cpld.json
+index 198a7b1c59f..dbae584e262 100644
+--- a/schemas/cpld.json
++++ b/schemas/cpld.json
+@@ -27,7 +27,8 @@
+                         "LatticeLCMXO3D_9400Firmware",
+                         "LatticeLCMXO3LF_2100CFirmware",
+                         "LatticeLCMXO3LF_4300CFirmware",
+-                        "LatticeLFMXO5_25Firmware"
++                        "LatticeLFMXO5_25Firmware",
++                        "LatticeLFMXO5_15DFirmware"
+                     ]
+                 },
+                 "MuxOutputs": {
+-- 
+2.34.1
+

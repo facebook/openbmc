@@ -22,11 +22,11 @@ package partition
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"hash/crc32"
 	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -86,7 +86,7 @@ func (p *LegacyUbootPartition) Validate() error {
 
 	// make sure Data larger than header size
 	if p.GetSize() < legacyUbootHeaderSize {
-		return errors.Errorf("Partition size (%v) smaller than legacy U-Boot header size (%v)",
+		return fmt.Errorf("Partition size (%v) smaller than legacy U-Boot header size (%v)",
 			p.GetSize(), legacyUbootHeaderSize)
 	}
 	p.header, err = decodeLegacyUbootHeader(p.Data[:legacyUbootHeaderSize])
@@ -115,7 +115,7 @@ func (p *LegacyUbootPartition) GetType() PartitionConfigType {
 // checkMagic verifies that the magic in the header matches legacyMagic
 func (p *LegacyUbootPartition) checkMagic() error {
 	if p.header.Ih_magic != legacyUbootMagic {
-		return errors.Errorf("Partition magic 0x%X does not match legacy U-Boot magic 0x%X",
+		return fmt.Errorf("Partition magic 0x%X does not match legacy U-Boot magic 0x%X",
 			p.header.Ih_magic, legacyUbootMagic)
 	}
 	return nil
@@ -129,7 +129,7 @@ func (p *LegacyUbootPartition) checkData() error {
 		return err
 	}
 	if imageDataEnd > uint32(len(p.Data)) {
-		return errors.Errorf("Legacy U-Boot partition incomplete, data part too small.")
+		return fmt.Errorf("Legacy U-Boot partition incomplete, data part too small.")
 	}
 
 	imageDataWithoutUbootHeader, err := utils.BytesSliceRange(p.Data, legacyUbootHeaderSize, imageDataEnd)
@@ -139,7 +139,7 @@ func (p *LegacyUbootPartition) checkData() error {
 
 	calcDataChecksum := crc32.ChecksumIEEE(imageDataWithoutUbootHeader)
 	if calcDataChecksum != p.header.Ih_dcrc {
-		return errors.Errorf("Calculated legacy U-Boot data checksum 0x%X does not match checksum in header 0x%X",
+		return fmt.Errorf("Calculated legacy U-Boot data checksum 0x%X does not match checksum in header 0x%X",
 			calcDataChecksum, p.header.Ih_dcrc)
 	}
 
@@ -152,7 +152,7 @@ func decodeLegacyUbootHeader(data []byte) (legacyUbootHeader, error) {
 	var header legacyUbootHeader
 	err := binary.Read(bytes.NewBuffer(data[:]), binary.BigEndian, &header)
 	if err != nil {
-		return header, errors.Errorf("Unable to decode legacy uboot header data into struct: %v",
+		return header, fmt.Errorf("Unable to decode legacy uboot header data into struct: %v",
 			err)
 	}
 
@@ -189,7 +189,7 @@ func (h *legacyUbootHeader) validate() error {
 
 	calcHeaderChecksum := crc32.ChecksumIEEE(headerData)
 	if calcHeaderChecksum != headerChecksum {
-		return errors.Errorf("Calculated header checksum 0x%X does not match checksum in header 0x%X",
+		return fmt.Errorf("Calculated header checksum 0x%X does not match checksum in header 0x%X",
 			calcHeaderChecksum, headerChecksum)
 	}
 

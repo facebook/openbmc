@@ -20,11 +20,12 @@
 package common
 
 import (
-	"github.com/facebook/openbmc/tools/flashy/lib/step"
-	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
+	"fmt"
 	"testing"
 	"unsafe"
+
+	"github.com/facebook/openbmc/tools/flashy/lib/step"
+	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 )
 
 var mockMemInfo = &utils.MemInfo{
@@ -61,7 +62,7 @@ func TestMemtestBadHW(t *testing.T) {
 	}
 
 	got := runMemtestSuite(step.StepParams{})
-	wantMsg := errors.Errorf("Wrote pattern 0x0 to index 1234 of test buffer, read value was 0xbb. Possible memory corruption")
+	wantMsg := fmt.Errorf("Wrote pattern 0x0 to index 1234 of test buffer, read value was 0xbb. Possible memory corruption")
 	want := step.ExitUnsafeToReboot{Err: wantMsg}
 	step.CompareTestExitErrors(want, got, t)
 
@@ -85,7 +86,7 @@ func TestMemtestBadHWOnLastLoop(t *testing.T) {
 	}
 
 	got := runMemtestSuite(step.StepParams{})
-	wantMsg := errors.Errorf("Wrote pattern 0xa5 to index 1234 of test buffer, read value was 0xbb. Possible memory corruption")
+	wantMsg := fmt.Errorf("Wrote pattern 0xa5 to index 1234 of test buffer, read value was 0xbb. Possible memory corruption")
 	want := step.ExitUnsafeToReboot{Err: wantMsg}
 	step.CompareTestExitErrors(want, got, t)
 

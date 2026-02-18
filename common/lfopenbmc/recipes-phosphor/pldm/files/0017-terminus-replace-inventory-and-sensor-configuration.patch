@@ -1,7 +1,7 @@
-From 0adc8ae1ed8dbec8a716a9dd7619f9207af9eb93 Mon Sep 17 00:00:00 2001
+From 5ca5435860e6a3e556b723e295f25c9b75489155 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Fri, 26 Dec 2025 14:35:14 +0800
-Subject: [PATCH] terminus: replace inventory and sensor configuration
+Subject: [PATCH 17/18] terminus: replace inventory and sensor configuration
 
 Add fetchEntityManagerConfiguration to retrieve inventory name and
 sensor configuration from EntityManager.
@@ -977,5 +977,5 @@ index 3647d11..358c8cf 100644
      constexpr auto mockedDbusPath =
          "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
 -- 
-2.43.0
+2.47.3
 

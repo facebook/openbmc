@@ -52,7 +52,7 @@ void UARTDevice::open() {
   try {
     ioctl(TIOCSRS485, &rs485Conf);
   } catch (std::exception& ex) {
-    logWarn << "Optional Enable RS385 RTS_AFTER_SEND and RX_DURING_TX failed: "
+    logWarn << "Optional Enable RS485 RTS_AFTER_SEND and RX_DURING_TX failed: "
             << ex.what() << std::endl;
   }
 }

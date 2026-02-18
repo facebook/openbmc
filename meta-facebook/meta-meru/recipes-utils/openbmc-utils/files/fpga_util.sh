@@ -26,6 +26,7 @@ cleanup() {
 
 disconnect_program_paths() {
     gpio_set_value BMC_LITE_L 0
+    gpio_set_value SW_JTAG_SEL 1
     gpio_set_value JTAG_TRST_L 0
 }
 

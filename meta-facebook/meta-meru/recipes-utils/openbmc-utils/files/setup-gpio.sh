@@ -77,7 +77,7 @@ gpio_set_direction BMC_LITE_L out
 
 gpio_set_value ABOOT_GRAB 0
 gpio_set_value BMC_ALIVE 1
-gpio_set_value SW_JTAG_SEL 0
+gpio_set_value SW_JTAG_SEL 1
 gpio_set_value SW_CPLD_JTAG_SEL 0
 gpio_set_value JTAG_TRST_L 0
 gpio_set_value SW_SPI_SEL 0

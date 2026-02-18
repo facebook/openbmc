@@ -108,9 +108,9 @@ GPIOS = {
         "direction": "out",
         "edge": "none",
         "uevent": "",
-        "value": "0",
+        "value": "1",
     },
-    "SW_CPLD_JTAG_SEL":{
+    "SW_CPLD_JTAG_SEL": {
         "active_low": "0",
         "direction": "out",
         "edge": "none",
@@ -124,7 +124,7 @@ GPIOS = {
         "uevent": "",
         "value": "0",
     },
-    "USB_DONGLE_PRSNT":{
+    "USB_DONGLE_PRSNT": {
         "active_low": "0",
         "direction": "in",
         "edge": "none",

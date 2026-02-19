@@ -2974,6 +2974,30 @@
             "name": "SmartMeter_Fan_Rack_2_THDIc"
         },
         {
+            "begin": 37074,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "UPS_Pump_Rack_Warning_Information_1"
+        },
+        {
+            "begin": 37075,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "UPS_Pump_Rack_Warning_Information_2"
+        },
+        {
+            "begin": 37076,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "UPS_Pump_Rack_Warning_Information_3"
+        },
+        {
+            "begin": 37077,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "UPS_Pump_Rack_Warning_Information_4"
+        },
+        {
             "begin": 37078,
             "length": 1,
             "format": "FLOAT",

@@ -20,13 +20,13 @@
 package remediations_bletchley
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -36,7 +36,7 @@ func init() {
 func checkVersion(stepParams step.StepParams) step.StepExitError {
 	version, err := utils.GetOpenBMCVersionFromIssueFile()
 	if err != nil {
-		errMsg := errors.Errorf("Unable to fetch version info: %v", err)
+		errMsg := fmt.Errorf("Unable to fetch version info: %v", err)
 		return step.ExitUnsafeToReboot{Err: errMsg}
 	}
 
@@ -47,25 +47,25 @@ func checkVersion(stepParams step.StepParams) step.StepExitError {
 			log.Printf("Upgrading from dirty version. Skipping year check")
 			return nil
 		} else {
-			errMsg := errors.Errorf("Unable to parse version info: %v", err)
+			errMsg := fmt.Errorf("Unable to parse version info: %v", err)
 			return step.ExitUnsafeToReboot{Err: errMsg}
 		}
 	}
 
 	year, err := strconv.Atoi(versionMap["year"])
 	if err != nil {
-		errMsg := errors.Errorf("Unable to parse version info: %v", err)
+		errMsg := fmt.Errorf("Unable to parse version info: %v", err)
 		return step.ExitUnsafeToReboot{Err: errMsg}
 	}
 
 	week, err := strconv.Atoi(versionMap["week"])
 	if err != nil {
-		errMsg := errors.Errorf("Unable to parse version info: %v", err)
+		errMsg := fmt.Errorf("Unable to parse version info: %v", err)
 		return step.ExitUnsafeToReboot{Err: errMsg}
 	}
 
 	if year < 2023 || (year == 2023 && week < 07) {
-		errMsg := errors.Errorf("Cannot upgrade this version: %v", version)
+		errMsg := fmt.Errorf("Cannot upgrade this version: %v", version)
 		return step.ExitUnsafeToReboot{Err: errMsg}
 	}
 

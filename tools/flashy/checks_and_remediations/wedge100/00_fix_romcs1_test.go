@@ -20,13 +20,13 @@
 package remediations_wedge100
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func TestFixROMCS1(t *testing.T) {
@@ -47,9 +47,9 @@ func TestFixROMCS1(t *testing.T) {
 		},
 		{
 			name:      "run command failed",
-			runCmdErr: errors.Errorf("command failed"),
+			runCmdErr: fmt.Errorf("command failed"),
 			want: step.ExitSafeToReboot{
-				errors.Errorf("Failed to run ROMCS1# fix: command failed"),
+				fmt.Errorf("Failed to run ROMCS1# fix: command failed"),
 			},
 		},
 	}

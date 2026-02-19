@@ -20,6 +20,7 @@
 package remediations_yamp
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -29,7 +30,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 type mockFlashDevice struct {
@@ -79,7 +79,7 @@ func TestEraseDataPartition(t *testing.T) {
 		},
 		{
 			name:              "No 'data0' partition found",
-			getFlashDeviceErr: errors.Errorf("not found"),
+			getFlashDeviceErr: fmt.Errorf("not found"),
 			eraseSize:         0x00001000,
 			dataPartMounted:   false,
 			dataPartErr:       nil,
@@ -104,9 +104,9 @@ func TestEraseDataPartition(t *testing.T) {
 			dataPartMounted:   false,
 			dataPartErr:       nil,
 			wantCmds:          []string{"flash_eraseall -j /dev/mock"},
-			cmdErr:            errors.Errorf("flash_eraseall failed"),
+			cmdErr:            fmt.Errorf("flash_eraseall failed"),
 			want: step.ExitSafeToReboot{
-				errors.Errorf("Failed to erase data0 partition: flash_eraseall failed"),
+				fmt.Errorf("Failed to erase data0 partition: flash_eraseall failed"),
 			},
 		},
 		{
@@ -114,11 +114,11 @@ func TestEraseDataPartition(t *testing.T) {
 			getFlashDeviceErr: nil,
 			eraseSize:         0x00010000,
 			dataPartMounted:   false,
-			dataPartErr:       errors.Errorf("check failed"),
+			dataPartErr:       fmt.Errorf("check failed"),
 			wantCmds:          []string{},
 			cmdErr:            nil,
 			want: step.ExitSafeToReboot{
-				errors.Errorf("Failed to check if /mnt/data is mounted: check failed"),
+				fmt.Errorf("Failed to check if /mnt/data is mounted: check failed"),
 			},
 		},
 		{
@@ -130,7 +130,7 @@ func TestEraseDataPartition(t *testing.T) {
 			wantCmds:          []string{},
 			cmdErr:            nil,
 			want: step.ExitSafeToReboot{
-				errors.Errorf("/mnt/data is still mounted, this may mean that the " +
+				fmt.Errorf("/mnt/data is still mounted, this may mean that the " +
 					"unmount data partition step fell back to remounting RO. This current step " +
 					"needs /mnt/data to be completely unmounted!"),
 			},

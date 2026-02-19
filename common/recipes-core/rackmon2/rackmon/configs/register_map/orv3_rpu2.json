@@ -1875,6 +1875,60 @@
             "name": "Fan_Rack_2_Serial_Number"
         },
         {
+            "begin": 439,
+            "length": 10,
+            "format": "STRING",
+            "name": "UPS_Pump_Rack_PFC_FW_Version"
+        },
+        {
+            "begin": 449,
+            "length": 10,
+            "format": "STRING",
+            "name": "UPS_Pump_Rack_INV_FW_Version"
+        },
+        {
+            "begin": 459,
+            "length": 10,
+            "format": "STRING",
+            "name": "UPS_Pump_Rack_COM_FW_Version"
+        },
+        {
+            "begin": 479,
+            "length": 10,
+            "format": "STRING",
+            "name": "UPS_Fan_Rack_1_PFC_FW_Version"
+        },
+        {
+            "begin": 489,
+            "length": 10,
+            "format": "STRING",
+            "name": "UPS_Fan_Rack_1_INV_FW_Version"
+        },
+        {
+            "begin": 499,
+            "length": 10,
+            "format": "STRING",
+            "name": "UPS_Fan_Rack_1_COM_FW_Version"
+        },
+        {
+            "begin": 519,
+            "length": 10,
+            "format": "STRING",
+            "name": "UPS_Fan_Rack_2_PFC_FW_Version"
+        },
+        {
+            "begin": 529,
+            "length": 10,
+            "format": "STRING",
+            "name": "UPS_Fan_Rack_2_INV_FW_Version"
+        },
+        {
+            "begin": 539,
+            "length": 10,
+            "format": "STRING",
+            "name": "UPS_Fan_Rack_2_COM_FW_Version"
+        },
+        {
             "begin": 36864,
             "length": 1,
             "format": "FLOAT",

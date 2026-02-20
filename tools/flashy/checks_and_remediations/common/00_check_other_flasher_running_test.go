@@ -20,12 +20,12 @@
 package common
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func TestCheckOtherFlasherRunning(t *testing.T) {
@@ -53,9 +53,9 @@ func TestCheckOtherFlasherRunning(t *testing.T) {
 		{
 			name:                        "another flasher running",
 			clowntown:                   false,
-			checkOtherFlasherRunningErr: errors.Errorf("pypartition"),
+			checkOtherFlasherRunningErr: fmt.Errorf("pypartition"),
 			want: step.ExitUnsafeToReboot{
-				Err: errors.Errorf("Another flasher detected: %v. "+
+				Err: fmt.Errorf("Another flasher detected: %v. "+
 					"Use the '--clowntown' flag if you wish to proceed at the risk of "+
 					"bricking the device", "pypartition"),
 			},
@@ -63,7 +63,7 @@ func TestCheckOtherFlasherRunning(t *testing.T) {
 		{
 			name:                        "clowntown bypass",
 			clowntown:                   true,
-			checkOtherFlasherRunningErr: errors.Errorf("pypartition"),
+			checkOtherFlasherRunningErr: fmt.Errorf("pypartition"),
 			want:                        nil,
 		},
 	}

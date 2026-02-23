@@ -139,7 +139,7 @@ std::vector<DeviceLocation> Rackmon::inspectDormant() {
 void Rackmon::recoverDormant() {
   const std::vector<DeviceLocation> dormant = inspectDormant();
   for (const auto& key : dormant) {
-    std::unique_lock lock(devicesMutex_);
+    std::shared_lock lock(devicesMutex_);
     devices_.at(key)->setActive();
   }
 }

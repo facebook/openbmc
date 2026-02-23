@@ -162,6 +162,7 @@ class ModbusDevice {
   void reloadAllRegisters();
 
   bool isActive() const {
+    std::shared_lock lk(infoMutex_);
     return info_.mode == ModbusDeviceMode::ACTIVE;
   }
 

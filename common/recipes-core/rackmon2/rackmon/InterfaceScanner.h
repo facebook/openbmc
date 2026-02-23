@@ -1,0 +1,87 @@
+// Copyright 2021-present Facebook. All Rights Reserved.
+#pragma once
+#include <atomic>
+#include "DeviceLocationIterator.h"
+#include "ModbusDeviceInventory.h"
+#include "PollThread.h"
+#include "Register.h"
+
+namespace rackmon {
+class InterfaceScanner {
+ protected:
+  static constexpr int kScanNumRetry = 3;
+  static constexpr ModbusTime kProbeTimeout = std::chrono::milliseconds(70);
+
+  // TODO: at the end, this becomes a single interface
+  const std::vector<std::unique_ptr<Modbus>>& interfaces_;
+
+  ModbusDeviceInventory& deviceInventory_;
+  const RegisterMapDatabase& registerMapDB_;
+  std::unique_ptr<DeviceLocationIterator> nextDeviceToProbe_;
+
+  virtual time_t getTime() {
+    return std::time(nullptr);
+  }
+
+ private:
+  PollThread<InterfaceScanner> deviceScanner_;
+  // As an optimization, devices are normally scanned one by one
+  // This allows someone to initiate a forced full scan.
+  // This mimicks a restart of rackmond.
+  std::atomic<bool> reqForceScan_ = true;
+
+ public:
+  InterfaceScanner(
+      const std::vector<std::unique_ptr<Modbus>>& interfaces,
+      ModbusDeviceInventory& deviceInventory,
+      const RegisterMapDatabase& registerMapDB,
+      PollThreadTime interval)
+      : interfaces_(interfaces),
+        deviceInventory_(deviceInventory),
+        registerMapDB_(registerMapDB),
+        nextDeviceToProbe_(
+            std::make_unique<DeviceLocationIterator>(
+                registerMapDB,
+                interfaces)),
+        deviceScanner_(
+            PollThread<InterfaceScanner>(
+                &InterfaceScanner::scan,
+                this,
+                interval)) {
+    deviceScanner_.start();
+  }
+
+  virtual ~InterfaceScanner() {
+    deviceScanner_.stop();
+  }
+
+  // If there is a forced scan ongoing this will end it before it continues
+  // to the next item
+  void endForceScan() {
+    reqForceScan_ = false;
+  }
+
+  // Scan all possible devices. Skips active/dormant devices.
+  void fullScan();
+
+  // Probe an interface for the presence of the address.
+  bool probe(const DeviceLocation&);
+
+  void runDeviceScanner(bool nonBlocking, bool forceScan) {
+    if (forceScan) {
+      reqForceScan_ = true;
+    }
+    deviceScanner_.tick(nonBlocking);
+  }
+
+  // Scan loop. Blocks forever as long as req_stop is true.
+  void scan();
+
+  // Explicitly disabling copying and moving
+  InterfaceScanner(const InterfaceScanner&) = delete;
+  InterfaceScanner& operator=(const InterfaceScanner&) = delete;
+  InterfaceScanner(InterfaceScanner&&) = delete;
+  InterfaceScanner& operator=(InterfaceScanner&&) = delete;
+};
+
+} // namespace rackmon

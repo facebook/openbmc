@@ -90,19 +90,51 @@ class Mock3Modbus : public Modbus {
   FakeModbus fake_;
 };
 
-class MockRackmon : public Rackmon {
+class MockInterfaceScanner : public InterfaceScanner {
  public:
-  MockRackmon() : Rackmon() {}
-  MOCK_METHOD0(makeInterface, std::unique_ptr<Modbus>());
+  MockInterfaceScanner(
+      const std::vector<std::unique_ptr<Modbus>>& interfaces,
+      ModbusDeviceInventory& deviceInventory,
+      const RegisterMapDatabase& registerMapDB,
+      PollThreadTime interval)
+      : InterfaceScanner(interfaces, deviceInventory, registerMapDB, interval) {
+    ON_CALL(*this, getTime()).WillByDefault(Return(std::time(nullptr)));
+  }
   MOCK_METHOD0(getTime, time_t());
+};
+
+class MockRackmon : public Rackmon {
+ private:
+  std::vector<MockInterfaceScanner*> mockScanners_;
+
+ public:
+  explicit MockRackmon() : Rackmon() {}
+  MOCK_METHOD0(makeInterface, std::unique_ptr<Modbus>());
   const RegisterMapDatabase& getMap() {
     return getRegisterMapDatabase();
   }
   void scanTick() {
-    getScanThread().tick();
+    triggerScanThreads();
   }
   void monitorTick() {
     getMonitorThread().tick();
+  }
+
+  std::unique_ptr<InterfaceScanner> createInterfaceScanner(
+      const std::vector<std::unique_ptr<Modbus>>& interfaces,
+      PollThreadTime interval) override {
+    auto res = std::make_unique<MockInterfaceScanner>(
+        interfaces, deviceInventory_, registerMapDB_, interval);
+    mockScanners_.push_back(res.get());
+    return res;
+  }
+
+  void setTimeForDormantRecovery() {
+    for (auto& scanner : mockScanners_) {
+      EXPECT_CALL(*scanner, getTime())
+          .WillOnce(Return(std::time(nullptr) + 200))
+          .WillOnce(Return(std::time(nullptr) + 400));
+    }
   }
 };
 
@@ -459,9 +491,7 @@ TEST_F(RackmonTest, DormantRecovery) {
   EXPECT_EQ(devs.size(), 1);
   EXPECT_EQ(devs[0].mode, ModbusDeviceMode::DORMANT);
   commandTimeout = false;
-  EXPECT_CALL(mon, getTime())
-      .WillOnce(Return(std::time(nullptr) + 200))
-      .WillOnce(Return(std::time(nullptr) + 400));
+  mon.setTimeForDormantRecovery();
   // First time, we are only 200s past last time.
   mon.scanTick();
   devs = mon.listDevices();

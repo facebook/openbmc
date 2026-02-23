@@ -6,6 +6,7 @@
 #include <thread>
 #include "DeviceLocationFilter.h"
 #include "DeviceLocationIterator.h"
+#include "InterfaceScanner.h"
 #include "Modbus.h"
 #include "ModbusDevice.h"
 #include "ModbusDeviceInventory.h"
@@ -20,61 +21,38 @@ struct ModbusDeviceFilter {
 };
 
 class Rackmon {
-  static constexpr int kScanNumRetry = 3;
-  static constexpr ModbusTime kProbeTimeout = std::chrono::milliseconds(70);
   std::shared_mutex threadMutex_{};
   std::shared_ptr<PollThread<Rackmon>> monitorThread_;
-  std::shared_ptr<PollThread<Rackmon>> scanThread_;
+  std::vector<std::unique_ptr<InterfaceScanner>> scanners_;
   // Has to be before defining active or dormant devices
   // to ensure users get destroyed before the interface.
   std::vector<std::unique_ptr<Modbus>> interfaces_{};
-  RegisterMapDatabase registerMapDB_{};
-
-  std::unique_ptr<DeviceLocationIterator> nextDeviceToProbe_ = nullptr;
-
-  // As an optimization, devices are normally scanned one by one
-  // This allows someone to initiate a forced full scan.
-  // This mimicks a restart of rackmond.
-  std::atomic<bool> reqForceScan_ = true;
 
   // Interval at which we will monitor all the discovered
   // devices.
   PollThreadTime monitorInterval_ = std::chrono::minutes(3);
 
   void assertNotStarted(const std::string& error) const {
-    if (scanThread_ != nullptr || monitorThread_ != nullptr) {
+    if (!scanners_.empty() || monitorThread_ != nullptr) {
       throw std::runtime_error(error);
     }
   }
 
-  // Probe an interface for the presence of the address.
-  bool probe(DeviceLocation);
-
   // --------- Private Methods --------
-
-  virtual time_t getTime() {
-    return std::time(nullptr);
-  }
 
   // Monitor loop. Blocks forever as long as req_stop is true.
   void monitor() {
     deviceInventory_.monitor();
   }
 
-  // Scan all possible devices. Skips active/dormant devices.
-  void fullScan();
-
-  // Scan loop. Blocks forever as long as req_stop is true.
-  void scan();
-
  protected:
+  RegisterMapDatabase registerMapDB_{};
   ModbusDeviceInventory deviceInventory_;
 
-  PollThread<Rackmon>& getScanThread() {
-    if (!scanThread_) {
-      throw std::runtime_error("Invalid scanThread state");
+  void triggerScanThreads() const {
+    for (const auto& st : scanners_) {
+      st->runDeviceScanner(false, false);
     }
-    return *scanThread_;
   }
 
   PollThread<Rackmon>& getMonitorThread() {
@@ -180,6 +158,13 @@ class Rackmon {
     if (monitorThread_) {
       monitorThread_->tick(true);
     }
+  }
+
+  virtual std::unique_ptr<InterfaceScanner> createInterfaceScanner(
+      const std::vector<std::unique_ptr<Modbus>>& interfaces,
+      PollThreadTime interval) {
+    return std::make_unique<InterfaceScanner>(
+        interfaces, deviceInventory_, registerMapDB_, interval);
   }
 };
 

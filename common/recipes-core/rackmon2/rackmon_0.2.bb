@@ -44,6 +44,8 @@ LOCAL_URI = " \
     file://Device.h \
     file://DeviceLocationFilter.h \
     file://DeviceLocationIterator.h \
+    file://InterfaceScanner.cpp \
+    file://InterfaceScanner.h \
     file://ModbusError.h \
     file://ModbusCmds.cpp \
     file://ModbusCmds.h \

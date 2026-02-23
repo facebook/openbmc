@@ -19,6 +19,7 @@ common = files(
     'UARTDevice.cpp',
 )
 svc_common = common + files(
+    'InterfaceScanner.cpp',
     'ModbusDevice.cpp',
     'ModbusDeviceInventory.cpp',
     'Rackmon.cpp',

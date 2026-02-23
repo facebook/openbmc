@@ -57,6 +57,8 @@ LOCAL_URI = " \
     file://Register.h \
     file://ModbusDevice.cpp \
     file://ModbusDevice.h \
+    file://ModbusDeviceInventory.cpp \
+    file://ModbusDeviceInventory.h \
     file://Rackmon.cpp \
     file://Rackmon.h \
     file://PollThread.h \

@@ -8,6 +8,7 @@
 #include "DeviceLocationIterator.h"
 #include "Modbus.h"
 #include "ModbusDevice.h"
+#include "ModbusDeviceInventory.h"
 #include "PollThread.h"
 
 namespace rackmon {
@@ -20,7 +21,6 @@ struct ModbusDeviceFilter {
 
 class Rackmon {
   static constexpr int kScanNumRetry = 3;
-  static constexpr time_t kDormantMinInactiveTime = 300;
   static constexpr ModbusTime kProbeTimeout = std::chrono::milliseconds(70);
   std::shared_mutex threadMutex_{};
   std::shared_ptr<PollThread<Rackmon>> monitorThread_;
@@ -29,11 +29,6 @@ class Rackmon {
   // to ensure users get destroyed before the interface.
   std::vector<std::unique_ptr<Modbus>> interfaces_{};
   RegisterMapDatabase registerMapDB_{};
-
-  mutable std::shared_mutex devicesMutex_{};
-
-  // These devices discovered on actively monitored buses
-  std::map<DeviceLocation, std::shared_ptr<ModbusDevice>> devices_{};
 
   std::unique_ptr<DeviceLocationIterator> nextDeviceToProbe_ = nullptr;
 
@@ -57,19 +52,14 @@ class Rackmon {
 
   // --------- Private Methods --------
 
-  // probe dormant devices and return recovered devices.
-  std::vector<DeviceLocation> inspectDormant(time_t curr) const;
-  // Try and recover dormant devices.
-  void recoverDormant();
-
   virtual time_t getTime() {
     return std::time(nullptr);
   }
 
-  bool isDeviceKnown(DeviceLocation);
-
   // Monitor loop. Blocks forever as long as req_stop is true.
-  void monitor();
+  void monitor() {
+    deviceInventory_.monitor();
+  }
 
   // Scan all possible devices. Skips active/dormant devices.
   void fullScan();
@@ -78,10 +68,7 @@ class Rackmon {
   void scan();
 
  protected:
-  // Return the device given location and optional port.
-  std::shared_ptr<ModbusDevice> getModbusDevice(
-      uint8_t addr,
-      std::optional<uint8_t> port);
+  ModbusDeviceInventory deviceInventory_;
 
   PollThread<Rackmon>& getScanThread() {
     if (!scanThread_) {

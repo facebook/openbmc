@@ -33,7 +33,7 @@ class Rackmon {
   mutable std::shared_mutex devicesMutex_{};
 
   // These devices discovered on actively monitored buses
-  std::map<DeviceLocation, std::unique_ptr<ModbusDevice>> devices_{};
+  std::map<DeviceLocation, std::shared_ptr<ModbusDevice>> devices_{};
 
   std::unique_ptr<DeviceLocationIterator> nextDeviceToProbe_ = nullptr;
 
@@ -79,7 +79,9 @@ class Rackmon {
 
  protected:
   // Return the device given location and optional port.
-  ModbusDevice& getModbusDevice(uint8_t addr, std::optional<uint8_t> port);
+  std::shared_ptr<ModbusDevice> getModbusDevice(
+      uint8_t addr,
+      std::optional<uint8_t> port);
 
   PollThread<Rackmon>& getScanThread() {
     if (!scanThread_) {

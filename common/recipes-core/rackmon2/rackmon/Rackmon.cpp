@@ -99,7 +99,7 @@ bool Rackmon::probe(DeviceLocation key) {
       {
         std::unique_lock lock(devicesMutex_);
         devices_[key] =
-            std::make_unique<ModbusDevice>(key.interface, key.addr, rmap);
+            std::make_shared<ModbusDevice>(key.interface, key.addr, rmap);
       }
       logInfo << std::setw(2) << std::setfill('0') << "Found " << key << " on "
               << key.interface.name() << std::endl;
@@ -159,10 +159,10 @@ bool Rackmon::isDeviceKnown(DeviceLocation key) {
   return devices_.find(key) != devices_.end();
 }
 
-ModbusDevice& Rackmon::getModbusDevice(
+std::shared_ptr<ModbusDevice> Rackmon::getModbusDevice(
     uint8_t addr,
     std::optional<uint8_t> port) {
-  ModbusDevice* d = nullptr;
+  std::shared_ptr<ModbusDevice> d = nullptr;
   std::stringstream err;
   std::stringstream ss;
   ss << "0x" << std::hex << +addr << " port: ";
@@ -180,7 +180,7 @@ ModbusDevice& Rackmon::getModbusDevice(
       // Addresses match and either the ports match or (for backwards
       // compatibility) no port is specified
       if (d == nullptr) {
-        d = device->second.get();
+        d = device->second;
       } else {
         err << "Multiple devices found at " << location
             << " during probe sequence";
@@ -194,7 +194,7 @@ ModbusDevice& Rackmon::getModbusDevice(
       err << "Device at " << location << " is not active";
       throw std::runtime_error(err.str());
     }
-    return *d;
+    return d;
   }
 
   err << "No device found at " << location << " during probe sequence";
@@ -323,7 +323,7 @@ void Rackmon::rawCmd(
   RACKMON_PROFILE_SCOPE(raw_cmd, "rawcmd::" + std::to_string(int(req.addr)));
   std::shared_lock lock(devicesMutex_);
 
-  getModbusDevice(addr, port).command(req, resp, timeout);
+  getModbusDevice(addr, port)->command(req, resp, timeout);
   // Add back the CRC removed by validate.
   resp.len += 2;
 }
@@ -339,7 +339,7 @@ void Rackmon::readHoldingRegisters(
   std::shared_lock lock(devicesMutex_);
 
   getModbusDevice(deviceAddress, port)
-      .readHoldingRegisters(registerOffset, registerContents, timeout);
+      ->readHoldingRegisters(registerOffset, registerContents, timeout);
 }
 
 void Rackmon::writeSingleRegister(
@@ -353,7 +353,7 @@ void Rackmon::writeSingleRegister(
   std::shared_lock lock(devicesMutex_);
 
   getModbusDevice(deviceAddress, port)
-      .writeSingleRegister(registerOffset, value, timeout);
+      ->writeSingleRegister(registerOffset, value, timeout);
 }
 
 void Rackmon::writeMultipleRegisters(
@@ -367,7 +367,7 @@ void Rackmon::writeMultipleRegisters(
   std::shared_lock lock(devicesMutex_);
 
   getModbusDevice(deviceAddress, port)
-      .writeMultipleRegisters(registerOffset, values, timeout);
+      ->writeMultipleRegisters(registerOffset, values, timeout);
 }
 
 void Rackmon::readFileRecord(
@@ -378,7 +378,7 @@ void Rackmon::readFileRecord(
   RACKMON_PROFILE_SCOPE(
       raw_cmd, "ReadFile::" + std::to_string(int(deviceAddress)));
   std::shared_lock lock(devicesMutex_);
-  getModbusDevice(deviceAddress, port).readFileRecord(records, timeout);
+  getModbusDevice(deviceAddress, port)->readFileRecord(records, timeout);
 }
 
 std::vector<ModbusDeviceInfo> Rackmon::listDevices() const {

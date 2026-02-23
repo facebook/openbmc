@@ -46,6 +46,12 @@ class Rackmon {
   // devices.
   PollThreadTime monitorInterval_ = std::chrono::minutes(3);
 
+  void assertNotStarted(const std::string& error) const {
+    if (scanThread_ != nullptr || monitorThread_ != nullptr) {
+      throw std::runtime_error(error);
+    }
+  }
+
   // Probe an interface for the presence of the address.
   bool probe(DeviceLocation);
 

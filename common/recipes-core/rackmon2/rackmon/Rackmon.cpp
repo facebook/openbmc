@@ -41,9 +41,8 @@ bool ModbusDeviceFilter::contains(const ModbusDevice& dev) const {
 
 void Rackmon::loadInterface(const nlohmann::json& config) {
   std::shared_lock lk(threadMutex_);
-  if (scanThread_ != nullptr || monitorThread_ != nullptr) {
-    throw std::runtime_error("Cannot load configuration when started");
-  }
+  assertNotStarted("Cannot load configuration when started");
+
   if (!interfaces_.empty()) {
     throw std::runtime_error("Interfaces already loaded");
   }
@@ -55,9 +54,8 @@ void Rackmon::loadInterface(const nlohmann::json& config) {
 
 void Rackmon::loadRegisterMap(const nlohmann::json& config) {
   std::shared_lock lk(threadMutex_);
-  if (scanThread_ != nullptr || monitorThread_ != nullptr) {
-    throw std::runtime_error("Cannot load configuration when started");
-  }
+  assertNotStarted("Cannot load configuration when started");
+
   registerMapDB_.load(config);
   nextDeviceToProbe_ =
       std::make_unique<DeviceLocationIterator>(registerMapDB_, interfaces_);
@@ -272,9 +270,8 @@ std::shared_ptr<PollThread<Rackmon>> Rackmon::makeThread(
 void Rackmon::start(PollThreadTime interval) {
   std::unique_lock lk(threadMutex_);
   logInfo << "Start was requested" << std::endl;
-  if (scanThread_ != nullptr || monitorThread_ != nullptr) {
-    throw std::runtime_error("Already running");
-  }
+  assertNotStarted("Already running");
+
   for (auto& dev_it : devices_) {
     dev_it.second->setExclusiveMode(false);
   }

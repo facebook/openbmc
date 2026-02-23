@@ -1,0 +1,38 @@
+From fc15de4e4293d581896dcdb44cea375c0e43396d Mon Sep 17 00:00:00 2001
+From: Kevin Tung <kevin.tung.openbmc@gmail.com>
+Date: Mon, 9 Feb 2026 11:02:57 +0800
+Subject: [PATCH] configurations: enable CX7 NIC automatic EID assignment
+
+Add MCTPI2CTarget configuration to allow MCTPReactor to automatically
+assign an EID to the CX7 NIC over I2C.
+
+This removes the need for manual EID configuration.
+
+Tested on Yv5: EID is correctly assigned and the version object is
+properly exposed.
+
+Signed-off-by: Kevin Tung <kevin.tung.openbmc@gmail.com>
+---
+ configurations/ocp/cx7_ocp.json | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/configurations/ocp/cx7_ocp.json b/configurations/ocp/cx7_ocp.json
+index 3f11519..3d3369f 100644
+--- a/configurations/ocp/cx7_ocp.json
++++ b/configurations/ocp/cx7_ocp.json
+@@ -6,6 +6,12 @@
+             "Name": "OCP CX7 NIC FRU $bus",
+             "Type": "EEPROM"
+         },
++        {
++            "Address": "0x32",
++            "Bus": "$bus",
++            "Name": "NIC",
++            "Type": "MCTPI2CTarget"
++        },
+         {
+             "Address": "0x1f",
+             "Bus": "$bus",
+-- 
+2.52.0
+

@@ -20,6 +20,7 @@
 package common
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -29,7 +30,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/logger"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -54,7 +54,7 @@ func unmountDataPartition(stepParams step.StepParams) step.StepExitError {
 	dataMounted, err := utils.IsDataPartitionMounted()
 	if err != nil {
 		return step.ExitSafeToReboot{
-			Err: errors.Errorf("Unable to determine whether /mnt/data is mounted: %v",
+			Err: fmt.Errorf("Unable to determine whether /mnt/data is mounted: %v",
 				err),
 		}
 	}
@@ -80,7 +80,7 @@ func unmountDataPartition(stepParams step.StepParams) step.StepExitError {
 			if err != nil {
 				log.Printf("/mnt/data remount failed: %v", err)
 				return step.ExitSafeToReboot{
-					Err: errors.Errorf("Failed to unmount or remount /mnt/data"),
+					Err: fmt.Errorf("Failed to unmount or remount /mnt/data"),
 				}
 			}
 		}
@@ -89,7 +89,7 @@ func unmountDataPartition(stepParams step.StepParams) step.StepExitError {
 		err = validateSshdConfig()
 		if err != nil {
 			return step.ExitUnsafeToReboot{
-				Err: errors.Errorf("Validate sshd config failed: %v", err),
+				Err: fmt.Errorf("Validate sshd config failed: %v", err),
 			}
 		}
 	} else {
@@ -106,7 +106,7 @@ var runDataPartitionUnmountProcess = func() error {
 	cmd := []string{"mkdir", "-p", "/tmp/mnt"}
 	_, err, _, stderr := utils.RunCommand(cmd, 30*time.Second)
 	if err != nil {
-		return errors.Errorf("'%v' failed: %v, stderr: %v",
+		return fmt.Errorf("'%v' failed: %v, stderr: %v",
 			strings.Join(cmd, " "), err, stderr)
 	}
 
@@ -115,7 +115,7 @@ var runDataPartitionUnmountProcess = func() error {
 	log.Printf("Bind mount /mnt to /tmp/mnt")
 	err = mount("/mnt", "/tmp/mnt", "", syscall.MS_BIND, "")
 	if err != nil {
-		return errors.Errorf("Bind mount /mnt to /tmp/mnt failed: %v", err)
+		return fmt.Errorf("Bind mount /mnt to /tmp/mnt failed: %v", err)
 	}
 
 	// mkdir -p /tmp/mnt/data/etc
@@ -123,7 +123,7 @@ var runDataPartitionUnmountProcess = func() error {
 	cmd = []string{"mkdir", "-p", "/tmp/mnt/data/etc"}
 	_, err, _, stderr = utils.RunCommand(cmd, 30*time.Second)
 	if err != nil {
-		return errors.Errorf("'%v' failed: %v, stderr: %v",
+		return fmt.Errorf("'%v' failed: %v, stderr: %v",
 			strings.Join(cmd, " "), err, stderr)
 	}
 
@@ -133,7 +133,7 @@ var runDataPartitionUnmountProcess = func() error {
 	cmd = []string{"cp", "-r", "/mnt/data/etc/ssh", "/tmp/mnt/data/etc"}
 	_, err, _, stderr = utils.RunCommand(cmd, 2*time.Minute)
 	if err != nil {
-		return errors.Errorf("Copying /mnt/data/etc/ssh to /tmp/mnt/data/etc failed: "+
+		return fmt.Errorf("Copying /mnt/data/etc/ssh to /tmp/mnt/data/etc failed: "+
 			"%v, stderr: %v", err, stderr)
 	}
 
@@ -144,7 +144,7 @@ var runDataPartitionUnmountProcess = func() error {
 	cmd = []string{"cp", "-r", "/mnt/data/kv_store", "/tmp/mnt/data/kv_store"}
 	_, err, _, stderr = utils.RunCommand(cmd, 2*time.Minute)
 	if err != nil && !strings.Contains(stderr, "No such file or directory") {
-		return errors.Errorf("Copying /mnt/data/kv_store to /tmp/mnt/data/kv_store failed: "+
+		return fmt.Errorf("Copying /mnt/data/kv_store to /tmp/mnt/data/kv_store failed: "+
 			"%v, stderr: %v", err, stderr)
 	}
 
@@ -178,7 +178,7 @@ var validateSshdConfig = func() error {
 	cmd := []string{"bash", "-c", "sshd -T 1> /dev/null"} // silence stdout (too verbose)
 	_, err, _, stderr := utils.RunCommand(cmd, 30*time.Second)
 	if err != nil {
-		return errors.Errorf("'%v' failed: %v, stderr: %v",
+		return fmt.Errorf("'%v' failed: %v, stderr: %v",
 			strings.Join(cmd, " "), err, stderr)
 	}
 	return nil
@@ -210,7 +210,7 @@ var remountRODataPartition = func() error {
 	cmd := []string{"mount", "-o", "remount,ro", "/mnt/data"}
 	_, err, _, stderr := utils.RunCommand(cmd, 30*time.Second)
 	if err != nil {
-		return errors.Errorf("'%v' failed: %v, stderr: %v",
+		return fmt.Errorf("'%v' failed: %v, stderr: %v",
 			strings.Join(cmd, " "), err, stderr)
 	}
 	return nil

@@ -45,9 +45,9 @@ TEST(DeviceLocationIteratorTest, Basic) {
     "port": 123
   })"_json;
 
-  std::vector<std::unique_ptr<Modbus>> interfaces;
+  std::vector<std::shared_ptr<Modbus>> interfaces;
   EXPECT_THROW(*DeviceLocationIterator(db, interfaces), runtime_error);
-  interfaces.push_back(std::make_unique<Modbus>());
+  interfaces.push_back(std::make_shared<Modbus>());
   interfaces.back()->initialize(exp);
   EXPECT_EQ(interfaces.back().get()->getPort().value(), 123);
 
@@ -76,7 +76,7 @@ TEST(DeviceLocationIteratorTest, Basic) {
         "device_path": "/tmp/blah",
         "baudrate": 19200
       })"_json;
-  interfaces.push_back(std::make_unique<Modbus>());
+  interfaces.push_back(std::make_shared<Modbus>());
   interfaces.back()->initialize(exp_no_port);
   EXPECT_FALSE(interfaces.back().get()->getPort().has_value());
 

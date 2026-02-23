@@ -26,7 +26,7 @@ class Rackmon {
   std::vector<std::unique_ptr<InterfaceScanner>> scanners_;
   // Has to be before defining active or dormant devices
   // to ensure users get destroyed before the interface.
-  std::vector<std::unique_ptr<Modbus>> interfaces_{};
+  std::vector<std::shared_ptr<Modbus>> interfaces_{};
 
   // Interval at which we will monitor all the discovered
   // devices.
@@ -161,10 +161,10 @@ class Rackmon {
   }
 
   virtual std::unique_ptr<InterfaceScanner> createInterfaceScanner(
-      const std::vector<std::unique_ptr<Modbus>>& interfaces,
+      std::shared_ptr<Modbus> interface,
       PollThreadTime interval) {
     return std::make_unique<InterfaceScanner>(
-        interfaces, deviceInventory_, registerMapDB_, interval);
+        interface, deviceInventory_, registerMapDB_, interval);
   }
 };
 

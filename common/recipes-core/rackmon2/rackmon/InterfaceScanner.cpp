@@ -51,7 +51,8 @@ void InterfaceScanner::fullScan() {
       }
     }
   }
-  logInfo << "Finished scan of all devices" << std::endl;
+  logInfo << "Finished scan of all devices on "
+          << interfaces_.front().get()->name() << std::endl;
   // When scan is complete, request for a monitor.
   if (atLeastOne) {
     // TODO:  FIX THIS LATER

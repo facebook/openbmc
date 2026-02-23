@@ -32,7 +32,7 @@ class DeviceLocationIterator {
 
  private:
   const std::vector<std::unique_ptr<RegisterMap>>& regmaps;
-  const std::vector<std::unique_ptr<Modbus>>& interfaces;
+  const std::vector<std::shared_ptr<Modbus>>& interfaces;
   size_t regMapIndex = 0;
   size_t rangeIndex = 0;
   uint8_t rangeCounter = 0;
@@ -40,7 +40,7 @@ class DeviceLocationIterator {
 
   DeviceLocationIterator(
       const std::vector<std::unique_ptr<RegisterMap>>& regmaps,
-      const std::vector<std::unique_ptr<Modbus>>& interfaces,
+      const std::vector<std::shared_ptr<Modbus>>& interfaces,
       size_t regMapIndex)
       : regmaps(regmaps), interfaces(interfaces), regMapIndex(regMapIndex) {}
 
@@ -49,7 +49,7 @@ class DeviceLocationIterator {
 
   DeviceLocationIterator(
       const RegisterMapDatabase& registerMapDb,
-      const std::vector<std::unique_ptr<Modbus>>& interfaces)
+      const std::vector<std::shared_ptr<Modbus>>& interfaces)
       : regmaps(registerMapDb.regmaps), interfaces(interfaces) {
     if (regmaps.empty()) {
       throw std::runtime_error("Empty register map is not allowed");

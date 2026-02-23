@@ -92,7 +92,13 @@ void Rackmon::start(PollThreadTime interval) {
   assertNotStarted("Already running");
 
   deviceInventory_.setExclusiveModeForAll(false);
-  scanners_.push_back(createInterfaceScanner(interfaces_, interval));
+  std::transform(
+      interfaces_.begin(),
+      interfaces_.end(),
+      std::back_inserter(scanners_),
+      [this, interval](const auto& interface) {
+        return this->createInterfaceScanner(interface, interval);
+      });
   monitorThread_ = makeThread(&Rackmon::monitor, monitorInterval_);
   monitorThread_->start();
 }

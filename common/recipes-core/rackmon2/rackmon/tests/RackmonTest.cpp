@@ -93,11 +93,11 @@ class Mock3Modbus : public Modbus {
 class MockInterfaceScanner : public InterfaceScanner {
  public:
   MockInterfaceScanner(
-      const std::vector<std::unique_ptr<Modbus>>& interfaces,
+      std::shared_ptr<Modbus> interface,
       ModbusDeviceInventory& deviceInventory,
       const RegisterMapDatabase& registerMapDB,
       PollThreadTime interval)
-      : InterfaceScanner(interfaces, deviceInventory, registerMapDB, interval) {
+      : InterfaceScanner(interface, deviceInventory, registerMapDB, interval) {
     ON_CALL(*this, getTime()).WillByDefault(Return(std::time(nullptr)));
   }
   MOCK_METHOD0(getTime, time_t());
@@ -121,10 +121,10 @@ class MockRackmon : public Rackmon {
   }
 
   std::unique_ptr<InterfaceScanner> createInterfaceScanner(
-      const std::vector<std::unique_ptr<Modbus>>& interfaces,
+      std::shared_ptr<Modbus> interface,
       PollThreadTime interval) override {
     auto res = std::make_unique<MockInterfaceScanner>(
-        interfaces, deviceInventory_, registerMapDB_, interval);
+        interface, deviceInventory_, registerMapDB_, interval);
     mockScanners_.push_back(res.get());
     return res;
   }

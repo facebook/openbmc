@@ -1,0 +1,45 @@
+From ff1e52d68f4221af9fb09f2146cc6420052d4d91 Mon Sep 17 00:00:00 2001
+From: Kevin Tung <kevin.tung.openbmc@gmail.com>
+Date: Mon, 23 Feb 2026 18:45:11 +0800
+Subject: [PATCH v5 8/8] ARM: dts: aspeed: yosemite5: Fix host0-ready and add POST end GPIO
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <20260223-yv5_revise_dts-v5-8-e5070af67ca1@gmail.com>
+
+Rename the unused PWRGD_CPU_PWROK_2 line to host0-ready and move the
+previous host0-ready GPIO to FM_BIOS_POST_CMPLT_N.
+
+The "host0-ready" line name is used by OpenBMC phosphor-state-manager
+to determine whether the host firmware is running. The previous DTS
+incorrectly mapped host0-ready to the POST end signal, causing
+incorrect host firmware detection.
+
+Map host0-ready to the correct power-good signal and use
+FM_BIOS_POST_CMPLT_N as the POST end indicator.
+
+lore link: https://lore.kernel.org/all/20260223-yv5_revise_dts-v5-8-fc913e902488@gmail.com/
+
+Signed-off-by: Kevin Tung <kevin.tung.openbmc@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+index f590ec6e00c48afe4ade1fb98011780ac0570e7c..beb971eadbe53b5d9fa49252a41bf7484a8e32da 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+@@ -929,8 +929,8 @@ &sgpiom0 {
+ 	/*bit0-bit7*/
+ 	"PWRGD_CPU_PWROK","SGPIO_RSTBTN_OUT",
+ 	"PWRGD_CPU_PWROK_1","SGPIO_BMC_READY",
+-	"PWRGD_CPU_PWROK_2","IBB_BMC_SRST",
+-	"host0-ready","FM_I3C_SPD_AH_SEL_R",
++	"host0-ready","IBB_BMC_SRST",
++	"FM_BIOS_POST_CMPLT_N","FM_I3C_SPD_AH_SEL_R",
+ 	"PCIe_HP_BOOT","FM_I3C_SPD_IP_SEL_R",
+ 	"PCIe_HP_DATA","FM_JTAG_BMC_MUX_S0_R",
+ 	"PCIe_HP_NIC","FM_JTAG_BMC_MUX_S1_R",
+
+-- 
+2.53.0

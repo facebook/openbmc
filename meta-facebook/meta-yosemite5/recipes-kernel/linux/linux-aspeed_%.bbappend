@@ -22,8 +22,9 @@ SRC_URI:append = " \
     file://1009-ARM-dts-aspeed-yosemite5-add-ipmb-node-for-ocp-debug-card.patch \
     file://1010-ARM-dts-aspeed-yosemite5-correct-power-monitor-shunt-resistor.patch \
     file://1011-ARM-dts-aspeed-yosemite5-add-x4-e1-s-expansion-board-i2c-mux.patch \
-    file://1012-ARM-dts-aspeed-yosemite5-add-pdb-io-expander.patch \
+    file://1012-ARM-dts-aspeed-yosemite5-add-power-distribution-board-io-expanders.patch \
     file://1013-ARM-dts-aspeed-yosemite5-add-debug-card-bypass-gpio.patch \
+    file://1014-ARM-dts-aspeed-yosemite5-fix-host0-ready-and-add-post-end-gpio.patch \
     file://0202-dt-bindings-i3c-Add-i3c-hub-support.patch \
     file://0203-i3c-Add-driver-for-i3c-hub-device.patch \
     file://0204-enable-i2c-slave-timeout.patch \

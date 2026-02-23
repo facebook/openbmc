@@ -1,0 +1,91 @@
+From 3b62bff2a740b10cbc161cf588fa272d771276bf Mon Sep 17 00:00:00 2001
+From: Kevin Tung <kevin.tung.openbmc@gmail.com>
+Date: Mon, 23 Feb 2026 18:45:09 +0800
+Subject: [PATCH v5 6/8] ARM: dts: aspeed: yosemite5: Add power distribution board IO expanders
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <20260223-yv5_revise_dts-v5-6-e5070af67ca1@gmail.com>
+
+Add device tree nodes for the two IO expanders on the power
+distribution board (PDB) in Yosemite5.
+
+The updated hardware design introduces these IO expanders to support
+fan presence detection, hot swap controller (HSC) fault monitoring,
+and PDB CPLD update status monitoring.
+
+Connect the IO expander interrupt to SGPIO92. This pin was previously
+named ALERT_PADDLE2_SMB_N and was unused by the system. Repurpose and
+rename it to FM_IOE_ALT_N to reflect its function as the PDB IO
+expander interrupt.
+
+lore link: https://lore.kernel.org/all/20260223-yv5_revise_dts-v5-6-fc913e902488@gmail.com/
+
+Signed-off-by: Kevin Tung <kevin.tung.openbmc@gmail.com>
+---
+ .../dts/aspeed/aspeed-bmc-facebook-yosemite5.dts   | 42 +++++++++++++++++++++-
+ 1 file changed, 41 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+index 524597a81365ef10cd03b67d35eeb88a965cbe0a..30fb41fdaeb7a2276cdfe98654696a16cf1de5fc 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+@@ -389,6 +389,46 @@ adc@1d {
+ 		ti,mode = /bits/ 8 <1>;
+ 	};
+ 
++	/* PDB IOEXP0 */
++	pdb_io_expander0: gpio-expander@24 {
++		compatible = "nxp,pca9555";
++		reg = <0x24>;
++		interrupt-parent = <&sgpiom0>;
++		interrupts = <92 IRQ_TYPE_LEVEL_LOW>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++			"FM_P52V_AUX_FLT_N","FM_P12V_AUX_ALERT_N",
++			"FM_SLOT1_HSC_FAULT","FM_SLOT2_HSC_FAULT",
++			"FM_SLOT3_HSC_FAULT","FM_SLOT4_HSC_FAULT",
++			"FM_SLOT5_HSC_FAULT","FM_SLOT6_HSC_FAULT",
++			"PRSNT_FAN0","PRSNT_FAN1",
++			"PRSNT_FAN2","PRSNT_FAN3",
++			"","",
++			"","INT_SLOT";
++	};
++
++	/* PDB IOEXP1 */
++	gpio-expander@25 {
++		compatible = "nxp,pca9555";
++		reg = <0x25>;
++		interrupt-parent = <&pdb_io_expander0>;
++		interrupts = <15 IRQ_TYPE_LEVEL_LOW>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++			"SLOT1_CM_UPDATE","SLOT2_CM_UPDATE",
++			"SLOT3_CM_UPDATE","SLOT4_CM_UPDATE",
++			"SLOT5_CM_UPDATE","SLOT6_CM_UPDATE",
++			"","",
++			"","",
++			"","",
++			"","",
++			"","";
++	};
++
+ 	power-sensor@40 {
+ 		compatible = "ti,ina238";
+ 		reg = <0x40>;
+@@ -937,7 +977,7 @@ &sgpiom0 {
+ 	"ALERT_OC_PADDLE2_N","",
+ 	"ALERT_OC_PWR2_N","",
+ 	"ALERT_OC_PWR11_N","",
+-	"ALERT_PADDLE2_SMB_N","",
++	"FM_IOE_ALT_N","",
+ 	"ALERT_PWR14_SB2_LEAK_DETECT_N","",
+ 	/*bit48-bit55*/
+ 	"ALERT_PWR14_SB3_LEAK_DETECT_N","",
+
+-- 
+2.53.0

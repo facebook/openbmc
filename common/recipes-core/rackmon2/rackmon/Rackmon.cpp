@@ -173,6 +173,7 @@ std::shared_ptr<ModbusDevice> Rackmon::getModbusDevice(
   }
   std::string location = ss.str();
   const DeviceLocationFilter filter({{port, addr}});
+  std::shared_lock lock(devicesMutex_);
   for (auto device = devices_.begin(); device != devices_.end(); ++device) {
     const DeviceLocation& devLocation = device->first;
 
@@ -321,7 +322,6 @@ void Rackmon::rawCmd(
     }
   }
   RACKMON_PROFILE_SCOPE(raw_cmd, "rawcmd::" + std::to_string(int(req.addr)));
-  std::shared_lock lock(devicesMutex_);
 
   getModbusDevice(addr, port)->command(req, resp, timeout);
   // Add back the CRC removed by validate.
@@ -336,7 +336,6 @@ void Rackmon::readHoldingRegisters(
     ModbusTime timeout) {
   RACKMON_PROFILE_SCOPE(
       raw_cmd, "readRegs::" + std::to_string(int(deviceAddress)));
-  std::shared_lock lock(devicesMutex_);
 
   getModbusDevice(deviceAddress, port)
       ->readHoldingRegisters(registerOffset, registerContents, timeout);
@@ -350,7 +349,6 @@ void Rackmon::writeSingleRegister(
     ModbusTime timeout) {
   RACKMON_PROFILE_SCOPE(
       raw_cmd, "writeReg::" + std::to_string(int(deviceAddress)));
-  std::shared_lock lock(devicesMutex_);
 
   getModbusDevice(deviceAddress, port)
       ->writeSingleRegister(registerOffset, value, timeout);
@@ -364,7 +362,6 @@ void Rackmon::writeMultipleRegisters(
     ModbusTime timeout) {
   RACKMON_PROFILE_SCOPE(
       raw_cmd, "writeRegs::" + std::to_string(int(deviceAddress)));
-  std::shared_lock lock(devicesMutex_);
 
   getModbusDevice(deviceAddress, port)
       ->writeMultipleRegisters(registerOffset, values, timeout);
@@ -377,7 +374,6 @@ void Rackmon::readFileRecord(
     ModbusTime timeout) {
   RACKMON_PROFILE_SCOPE(
       raw_cmd, "ReadFile::" + std::to_string(int(deviceAddress)));
-  std::shared_lock lock(devicesMutex_);
   getModbusDevice(deviceAddress, port)->readFileRecord(records, timeout);
 }
 

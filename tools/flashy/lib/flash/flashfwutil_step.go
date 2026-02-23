@@ -27,7 +27,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/kballard/go-shellquote"
-	"github.com/pkg/errors"
 )
 
 // FlashFwUtil is a step function that runs the fw-util flash procedure.
@@ -71,7 +70,7 @@ var runFwUtilCmd = func(imageFilePath string) error {
 			"Flashing failed with exit code %v, error: %v, stdout: '%v', stderr: '%v'",
 			exitCode, err, stdout, stderr,
 		)
-		return errors.Errorf(errMsg)
+		return fmt.Errorf("%s", errMsg)
 	}
 	log.Printf("fw-util succeeded")
 

@@ -22,29 +22,18 @@ struct ModbusDeviceFilter {
 
 class Rackmon {
   std::shared_mutex threadMutex_{};
-  std::shared_ptr<PollThread<Rackmon>> monitorThread_;
   std::vector<std::unique_ptr<InterfaceScanner>> scanners_;
   // Has to be before defining active or dormant devices
   // to ensure users get destroyed before the interface.
   std::vector<std::shared_ptr<Modbus>> interfaces_{};
 
-  // Interval at which we will monitor all the discovered
-  // devices.
-  PollThreadTime monitorInterval_ = std::chrono::minutes(3);
-
   void assertNotStarted(const std::string& error) const {
-    if (!scanners_.empty() || monitorThread_ != nullptr) {
+    if (!scanners_.empty()) {
       throw std::runtime_error(error);
     }
   }
 
   // --------- Private Methods --------
-
-  // Monitor loop. Blocks forever as long as req_stop is true.
-  void monitor() {
-    deviceInventory_.monitor();
-  }
-
  protected:
   RegisterMapDatabase registerMapDB_{};
   ModbusDeviceInventory deviceInventory_;
@@ -53,13 +42,6 @@ class Rackmon {
     for (const auto& st : scanners_) {
       st->runDeviceScanner(false, false);
     }
-  }
-
-  PollThread<Rackmon>& getMonitorThread() {
-    if (!monitorThread_) {
-      throw std::runtime_error("Invalid monitorThread state");
-    }
-    return *monitorThread_;
   }
 
   virtual std::unique_ptr<Modbus> makeInterface() {
@@ -83,11 +65,6 @@ class Rackmon {
   // Load configuration, preferable before starting, but can be
   // done at any time, but this is a one time only.
   void load(const std::string& confPath, const std::string& regmapDir);
-
-  // Create a worker thread
-  virtual std::shared_ptr<PollThread<Rackmon>> makeThread(
-      std::function<void(Rackmon*)> func,
-      PollThreadTime interval);
 
   // Start the monitoring/scanning loops
   void start(PollThreadTime interval = std::chrono::minutes(3));
@@ -153,10 +130,10 @@ class Rackmon {
       const ModbusRegisterFilter& regFilter);
 
   // For interface-specific scanning and monitoring
-  void triggerMonitorThread() {
+  void triggerMonitorThreads() {
     std::shared_lock lk(threadMutex_);
-    if (monitorThread_) {
-      monitorThread_->tick(true);
+    for (const auto& st : scanners_) {
+      st->runRegisterMonitor();
     }
   }
 

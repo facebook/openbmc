@@ -43,16 +43,6 @@ void ModbusDeviceInventory::recoverDormant(time_t now) {
   }
 }
 
-void ModbusDeviceInventory::monitor() {
-  std::shared_lock lock(devicesMutex_);
-  for (const auto& dev_it : devices_) {
-    if (!dev_it.second->isActive()) {
-      continue;
-    }
-    dev_it.second->reloadAllRegisters();
-  }
-}
-
 bool ModbusDeviceInventory::isDeviceKnown(DeviceLocation key) {
   std::shared_lock lk(devicesMutex_);
   return devices_.find(key) != devices_.end();

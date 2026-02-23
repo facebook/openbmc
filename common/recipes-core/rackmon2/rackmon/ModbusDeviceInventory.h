@@ -34,9 +34,6 @@ class ModbusDeviceInventory {
 
   bool isDeviceKnown(DeviceLocation);
 
-  // Monitor loop. Blocks forever as long as req_stop is true.
-  void monitor();
-
   void setExclusiveModeForAll(bool enable);
 };
 } // namespace rackmon

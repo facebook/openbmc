@@ -56,7 +56,6 @@ void Rackmon::loadRegisterMap(const nlohmann::json& config) {
   assertNotStarted("Cannot load configuration when started");
 
   registerMapDB_.load(config);
-  monitorInterval_ = std::chrono::seconds(registerMapDB_.minMonitorInterval());
 }
 
 void Rackmon::load(const std::string& confPath, const std::string& regmapDir) {
@@ -80,12 +79,6 @@ void Rackmon::load(const std::string& confPath, const std::string& regmapDir) {
   }
 }
 
-std::shared_ptr<PollThread<Rackmon>> Rackmon::makeThread(
-    std::function<void(Rackmon*)> func,
-    PollThreadTime interval) {
-  return std::make_shared<PollThread<Rackmon>>(func, this, interval);
-}
-
 void Rackmon::start(PollThreadTime interval) {
   std::unique_lock lk(threadMutex_);
   logInfo << "Start was requested" << std::endl;
@@ -99,8 +92,6 @@ void Rackmon::start(PollThreadTime interval) {
       [this, interval](const auto& interface) {
         return this->createInterfaceScanner(interface, interval);
       });
-  monitorThread_ = makeThread(&Rackmon::monitor, monitorInterval_);
-  monitorThread_->start();
 }
 
 void Rackmon::stop(bool forceStop) {
@@ -115,10 +106,6 @@ void Rackmon::stop(bool forceStop) {
   }
   // TODO We probably need a timer to ensure we
   // are not waiting here forever.
-  if (monitorThread_ != nullptr) {
-    monitorThread_->stop();
-    monitorThread_ = nullptr;
-  }
   scanners_.clear();
 }
 

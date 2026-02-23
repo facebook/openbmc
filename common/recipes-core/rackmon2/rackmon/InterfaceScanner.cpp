@@ -56,8 +56,7 @@ void InterfaceScanner::fullScan() {
           << std::endl;
   // When scan is complete, request for a monitor.
   if (atLeastOne) {
-    // TODO:  FIX THIS LATER
-    // triggerMonitorThread();
+    registerMonitor_.tick(true);
   }
   reqForceScan_ = false;
 }
@@ -72,8 +71,7 @@ void InterfaceScanner::scan() {
   // Probe for the address only if we already dont know it.
   if (!deviceInventory_.isDeviceKnown(**nextDeviceToProbe_)) {
     if (probe(**nextDeviceToProbe_)) {
-      // TODO:  FIX THIS LATER
-      // triggerMonitorThread();
+      registerMonitor_.tick(true);
     }
   }
 

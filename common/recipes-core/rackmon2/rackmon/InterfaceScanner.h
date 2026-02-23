@@ -23,7 +23,12 @@ class InterfaceScanner {
   }
 
  private:
+  // Thread that periodically scans the interface for new devices
+  // and recovers dormant ones.
   PollThread<InterfaceScanner> deviceScanner_;
+
+  // Thread that updates the registers of all active devices on the interface
+  PollThread<InterfaceScanner> registerMonitor_;
   // As an optimization, devices are normally scanned one by one
   // This allows someone to initiate a forced full scan.
   // This mimicks a restart of rackmond.
@@ -46,11 +51,18 @@ class InterfaceScanner {
             PollThread<InterfaceScanner>(
                 &InterfaceScanner::scan,
                 this,
-                interval)) {
+                interval)),
+        registerMonitor_(
+            PollThread<InterfaceScanner>(
+                &InterfaceScanner::updateDeviceRegisters,
+                this,
+                std::chrono::seconds(registerMapDB_.minMonitorInterval()))) {
     deviceScanner_.start();
+    registerMonitor_.start();
   }
 
   virtual ~InterfaceScanner() {
+    registerMonitor_.stop();
     deviceScanner_.stop();
   }
 
@@ -76,11 +88,27 @@ class InterfaceScanner {
   // Scan loop. Blocks forever as long as req_stop is true.
   void scan();
 
+  // Iterates over all devices on this interface and updates registers of active
+  // devices
+  void updateDeviceRegisters() {
+    auto allDevices = deviceInventory_.getAllModbusDevices();
+    for (const auto& device : allDevices) {
+      if (&device->getInterface() == interface_.get() && device->isActive()) {
+        device->reloadAllRegisters();
+      }
+    }
+  }
+
   // Explicitly disabling copying and moving
   InterfaceScanner(const InterfaceScanner&) = delete;
   InterfaceScanner& operator=(const InterfaceScanner&) = delete;
   InterfaceScanner(InterfaceScanner&&) = delete;
   InterfaceScanner& operator=(InterfaceScanner&&) = delete;
+
+  // Exposed for testing - asynchronously updates registers of active devices
+  void runRegisterMonitor() {
+    registerMonitor_.tick();
+  }
 };
 
 } // namespace rackmon

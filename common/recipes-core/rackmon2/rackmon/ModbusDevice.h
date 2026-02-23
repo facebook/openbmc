@@ -126,6 +126,10 @@ class ModbusDevice {
   virtual void
   command(Msg& req, Msg& resp, ModbusTime timeout = ModbusTime::zero());
 
+  Modbus& getInterface() const {
+    return interface_;
+  }
+
   uint8_t getDeviceAddress() const {
     return info_.deviceAddress;
   }

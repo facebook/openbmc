@@ -117,7 +117,7 @@ class MockRackmon : public Rackmon {
     triggerScanThreads();
   }
   void monitorTick() {
-    getMonitorThread().tick();
+    triggerMonitorThreads();
   }
 
   std::unique_ptr<InterfaceScanner> createInterfaceScanner(

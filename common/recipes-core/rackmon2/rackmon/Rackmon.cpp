@@ -111,14 +111,13 @@ bool Rackmon::probe(DeviceLocation key) {
   return false;
 }
 
-std::vector<DeviceLocation> Rackmon::inspectDormant() {
+std::vector<DeviceLocation> Rackmon::inspectDormant(time_t curr) const {
   std::vector<DeviceLocation> ret{};
   std::shared_lock lock(devicesMutex_);
   for (const auto& it : devices_) {
     if (it.second->isActive()) {
       continue;
     }
-    time_t curr = getTime();
     // If its more than 300s since last activity, start probing it.
     // change to something larger if required.
     if ((it.second->lastActive() + kDormantMinInactiveTime) < curr) {
@@ -137,7 +136,7 @@ std::vector<DeviceLocation> Rackmon::inspectDormant() {
 }
 
 void Rackmon::recoverDormant() {
-  const std::vector<DeviceLocation> dormant = inspectDormant();
+  const std::vector<DeviceLocation> dormant = inspectDormant(getTime());
   for (const auto& key : dormant) {
     std::shared_lock lock(devicesMutex_);
     devices_.at(key)->setActive();

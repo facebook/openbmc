@@ -58,7 +58,7 @@ class Rackmon {
   // --------- Private Methods --------
 
   // probe dormant devices and return recovered devices.
-  std::vector<DeviceLocation> inspectDormant();
+  std::vector<DeviceLocation> inspectDormant(time_t curr) const;
   // Try and recover dormant devices.
   void recoverDormant();
 

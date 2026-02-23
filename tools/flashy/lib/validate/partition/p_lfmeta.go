@@ -3,10 +3,11 @@ package partition
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 type LFMetaLocations struct {
@@ -112,7 +113,7 @@ func (p *LFMetaImagePartition) CheckLocation(location LFMetaLocations) error {
 
 	offsetEnd := location.Offset + location.Size
 	if offsetEnd > p.GetSize() {
-		return errors.Errorf("Image/device size too small (%v B) to contain meta partition region",
+		return fmt.Errorf("Image/device size too small (%v B) to contain meta partition region",
 			p.GetSize())
 	}
 
@@ -123,7 +124,7 @@ func (p *LFMetaImagePartition) CheckLocation(location LFMetaLocations) error {
 	}
 
 	if len(metaInfo.Parts) == 0 {
-		return errors.Errorf("Empty partition table found in metadata.")
+		return fmt.Errorf("Empty partition table found in metadata.")
 	}
 
 	// Transform the partitions into a PartitionConfigInfo for further
@@ -221,6 +222,6 @@ func (p *LFMetaImagePartition) ConvertPartType(part LFMetaManifestPart) (Partiti
 	case LF_PART_JSON:
 		return IGNORE, nil
 	default:
-		return IGNORE, errors.Errorf("Unknown partition type: '%v'", part.Type)
+		return IGNORE, fmt.Errorf("Unknown partition type: '%v'", part.Type)
 	}
 }

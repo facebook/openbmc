@@ -32,30 +32,28 @@ class DeviceLocationIterator {
 
  private:
   const std::vector<std::unique_ptr<RegisterMap>>& regmaps;
-  const std::vector<std::shared_ptr<Modbus>>& interfaces;
+  std::shared_ptr<Modbus> interface;
   size_t regMapIndex = 0;
   size_t rangeIndex = 0;
   uint8_t rangeCounter = 0;
-  size_t interfacesIndex = 0;
 
   DeviceLocationIterator(
       const std::vector<std::unique_ptr<RegisterMap>>& regmaps,
-      const std::vector<std::shared_ptr<Modbus>>& interfaces,
+      std::shared_ptr<Modbus> interface,
       size_t regMapIndex)
-      : regmaps(regmaps), interfaces(interfaces), regMapIndex(regMapIndex) {}
+      : regmaps(regmaps),
+        interface(std::move(interface)),
+        regMapIndex(regMapIndex) {}
 
  public:
   DeviceLocationIterator() = delete;
 
   DeviceLocationIterator(
       const RegisterMapDatabase& registerMapDb,
-      const std::vector<std::shared_ptr<Modbus>>& interfaces)
-      : regmaps(registerMapDb.regmaps), interfaces(interfaces) {
+      std::shared_ptr<Modbus> interface)
+      : regmaps(registerMapDb.regmaps), interface(interface) {
     if (regmaps.empty()) {
       throw std::runtime_error("Empty register map is not allowed");
-    }
-    if (interfaces.empty()) {
-      throw std::runtime_error("Empty interface list is not allowed");
     }
   }
 
@@ -66,11 +64,11 @@ class DeviceLocationIterator {
                 ->applicableAddresses.range.at(rangeIndex)
                 .first +
             rangeCounter),
-        *(interfaces.at(interfacesIndex).get())};
+        *(interface.get())};
   }
 
   DeviceLocationIterator end() const {
-    return DeviceLocationIterator(regmaps, interfaces, regmaps.size());
+    return DeviceLocationIterator(regmaps, interface, regmaps.size());
   }
 
   DeviceLocationIterator& operator++() {
@@ -78,30 +76,25 @@ class DeviceLocationIterator {
       throw std::out_of_range("There are no more device locations");
     }
 
-    if (++interfacesIndex == interfaces.size()) {
-      interfacesIndex = 0;
+    auto curRange = regmaps.at(regMapIndex)->applicableAddresses.range;
+    uint8_t start = curRange.at(rangeIndex).first;
+    uint8_t finish = curRange.at(rangeIndex).second;
+    if (++rangeCounter + start > finish) {
+      rangeCounter = 0;
 
-      auto curRange = regmaps.at(regMapIndex)->applicableAddresses.range;
-      uint8_t start = curRange.at(rangeIndex).first;
-      uint8_t finish = curRange.at(rangeIndex).second;
-      if (++rangeCounter + start > finish) {
-        rangeCounter = 0;
+      if (++rangeIndex >= curRange.size()) {
+        rangeIndex = 0;
 
-        if (++rangeIndex >= curRange.size()) {
-          rangeIndex = 0;
-
-          ++regMapIndex;
-        }
+        ++regMapIndex;
       }
     }
     return *this;
   }
 
   bool operator==(const DeviceLocationIterator& other) const {
-    return &regmaps == &other.regmaps && &interfaces == &other.interfaces &&
+    return &regmaps == &other.regmaps && interface == other.interface &&
         regMapIndex == other.regMapIndex && rangeIndex == other.rangeIndex &&
-        rangeCounter == other.rangeCounter &&
-        interfacesIndex == other.interfacesIndex;
+        rangeCounter == other.rangeCounter;
   }
 
   bool operator!=(const DeviceLocationIterator& other) const {

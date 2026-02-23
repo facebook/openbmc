@@ -45,14 +45,12 @@ TEST(DeviceLocationIteratorTest, Basic) {
     "port": 123
   })"_json;
 
-  std::vector<std::shared_ptr<Modbus>> interfaces;
-  EXPECT_THROW(*DeviceLocationIterator(db, interfaces), runtime_error);
-  interfaces.push_back(std::make_shared<Modbus>());
-  interfaces.back()->initialize(exp);
-  EXPECT_EQ(interfaces.back().get()->getPort().value(), 123);
+  std::shared_ptr<Modbus> interface = std::make_shared<Modbus>();
+  interface->initialize(exp);
+  EXPECT_EQ(interface.get()->getPort().value(), 123);
 
   {
-    DeviceLocationIterator iterator(db, interfaces);
+    DeviceLocationIterator iterator(db, interface);
     EXPECT_EQ((*iterator).addr, 160);
     EXPECT_EQ((*iterator).interface.getPort(), optional<uint8_t>(123));
     ++iterator;
@@ -76,23 +74,15 @@ TEST(DeviceLocationIteratorTest, Basic) {
         "device_path": "/tmp/blah",
         "baudrate": 19200
       })"_json;
-  interfaces.push_back(std::make_shared<Modbus>());
-  interfaces.back()->initialize(exp_no_port);
-  EXPECT_FALSE(interfaces.back().get()->getPort().has_value());
+  interface = std::make_shared<Modbus>();
+  interface->initialize(exp_no_port);
+  EXPECT_FALSE(interface.get()->getPort().has_value());
 
   {
-    DeviceLocationIterator iterator(db, interfaces);
-
-    EXPECT_EQ((*iterator).addr, 160);
-    EXPECT_EQ((*iterator).interface.getPort(), optional<uint8_t>(123));
-    ++iterator;
+    DeviceLocationIterator iterator(db, interface);
 
     EXPECT_EQ((*iterator).addr, 160);
     EXPECT_EQ((*iterator).interface.getPort(), std::nullopt);
-    ++iterator;
-
-    EXPECT_EQ((*iterator).addr, 161);
-    EXPECT_EQ((*iterator).interface.getPort(), optional<uint8_t>(123));
     ++iterator;
 
     EXPECT_EQ((*iterator).addr, 161);
@@ -100,15 +90,7 @@ TEST(DeviceLocationIteratorTest, Basic) {
     ++iterator;
 
     EXPECT_EQ((*iterator).addr, 162);
-    EXPECT_EQ((*iterator).interface.getPort(), optional<uint8_t>(123));
-    ++iterator;
-
-    EXPECT_EQ((*iterator).addr, 162);
     EXPECT_EQ((*iterator).interface.getPort(), std::nullopt);
-    ++iterator;
-
-    EXPECT_EQ((*iterator).addr, 10);
-    EXPECT_EQ((*iterator).interface.getPort(), optional<uint8_t>(123));
     ++iterator;
 
     EXPECT_EQ((*iterator).addr, 10);
@@ -137,18 +119,10 @@ TEST(DeviceLocationIteratorTest, Basic) {
   db.load(nlohmann::json::parse(json2));
 
   {
-    DeviceLocationIterator iterator(db, interfaces);
-
-    EXPECT_EQ((*iterator).addr, 160);
-    EXPECT_EQ((*iterator).interface.getPort(), optional<uint8_t>(123));
-    ++iterator;
+    DeviceLocationIterator iterator(db, interface);
 
     EXPECT_EQ((*iterator).addr, 160);
     EXPECT_EQ((*iterator).interface.getPort(), std::nullopt);
-    ++iterator;
-
-    EXPECT_EQ((*iterator).addr, 161);
-    EXPECT_EQ((*iterator).interface.getPort(), optional<uint8_t>(123));
     ++iterator;
 
     EXPECT_EQ((*iterator).addr, 161);
@@ -156,15 +130,7 @@ TEST(DeviceLocationIteratorTest, Basic) {
     ++iterator;
 
     EXPECT_EQ((*iterator).addr, 162);
-    EXPECT_EQ((*iterator).interface.getPort(), optional<uint8_t>(123));
-    ++iterator;
-
-    EXPECT_EQ((*iterator).addr, 162);
     EXPECT_EQ((*iterator).interface.getPort(), std::nullopt);
-    ++iterator;
-
-    EXPECT_EQ((*iterator).addr, 10);
-    EXPECT_EQ((*iterator).interface.getPort(), optional<uint8_t>(123));
     ++iterator;
 
     EXPECT_EQ((*iterator).addr, 10);
@@ -172,15 +138,7 @@ TEST(DeviceLocationIteratorTest, Basic) {
     ++iterator;
 
     EXPECT_EQ((*iterator).addr, 1);
-    EXPECT_EQ((*iterator).interface.getPort(), optional<uint8_t>(123));
-    ++iterator;
-
-    EXPECT_EQ((*iterator).addr, 1);
     EXPECT_EQ((*iterator).interface.getPort(), std::nullopt);
-    ++iterator;
-
-    EXPECT_EQ((*iterator).addr, 2);
-    EXPECT_EQ((*iterator).interface.getPort(), optional<uint8_t>(123));
     ++iterator;
 
     EXPECT_EQ((*iterator).addr, 2);
@@ -188,15 +146,7 @@ TEST(DeviceLocationIteratorTest, Basic) {
     ++iterator;
 
     EXPECT_EQ((*iterator).addr, 3);
-    EXPECT_EQ((*iterator).interface.getPort(), optional<uint8_t>(123));
-    ++iterator;
-
-    EXPECT_EQ((*iterator).addr, 3);
     EXPECT_EQ((*iterator).interface.getPort(), std::nullopt);
-    ++iterator;
-
-    EXPECT_EQ((*iterator).addr, 4);
-    EXPECT_EQ((*iterator).interface.getPort(), optional<uint8_t>(123));
     ++iterator;
 
     EXPECT_EQ((*iterator).addr, 4);
@@ -205,18 +155,6 @@ TEST(DeviceLocationIteratorTest, Basic) {
 
     EXPECT_THROW(*iterator, out_of_range);
     EXPECT_EQ(iterator, iterator.end());
-  }
-
-  {
-    DeviceLocationIterator iterator(db, interfaces);
-    int count = 0;
-    while (iterator != iterator.end()) {
-      EXPECT_NO_THROW(*iterator);
-      ++iterator;
-      count++;
-    }
-    EXPECT_EQ(count, 16);
-    EXPECT_THROW(*iterator, out_of_range);
     EXPECT_THROW(++iterator, out_of_range);
   }
 }

@@ -30,12 +30,13 @@ bool InterfaceScanner::probe(const DeviceLocation& key) {
 }
 
 void InterfaceScanner::fullScan() {
-  logInfo << "Starting scan of all devices" << std::endl;
+  logInfo << "Starting scan of all devices on " << interface_.get()->name()
+          << std::endl;
   bool atLeastOne = false;
   // Retry the scan loop to ensure we discover any flaky
   // devices which might have missed the first loop.
   for (int i = 0; i < kScanNumRetry; i++) {
-    DeviceLocationIterator locationIterator(registerMapDB_, interfaces_);
+    DeviceLocationIterator locationIterator(registerMapDB_, interface_);
     while (locationIterator != locationIterator.end()) {
       DeviceLocation key = *locationIterator;
       ++locationIterator;
@@ -51,8 +52,8 @@ void InterfaceScanner::fullScan() {
       }
     }
   }
-  logInfo << "Finished scan of all devices on "
-          << interfaces_.front().get()->name() << std::endl;
+  logInfo << "Finished scan of all devices on " << interface_.get()->name()
+          << std::endl;
   // When scan is complete, request for a monitor.
   if (atLeastOne) {
     // TODO:  FIX THIS LATER
@@ -81,7 +82,7 @@ void InterfaceScanner::scan() {
   ++(*nextDeviceToProbe_);
   if (*nextDeviceToProbe_ == nextDeviceToProbe_->end()) {
     nextDeviceToProbe_ =
-        std::make_unique<DeviceLocationIterator>(registerMapDB_, interfaces_);
+        std::make_unique<DeviceLocationIterator>(registerMapDB_, interface_);
   }
 }
 

@@ -12,8 +12,7 @@ class InterfaceScanner {
   static constexpr int kScanNumRetry = 3;
   static constexpr ModbusTime kProbeTimeout = std::chrono::milliseconds(70);
 
-  // TODO: at the end, this becomes a single interface
-  std::vector<std::shared_ptr<Modbus>> interfaces_{};
+  std::shared_ptr<Modbus> interface_;
 
   ModbusDeviceInventory& deviceInventory_;
   const RegisterMapDatabase& registerMapDB_;
@@ -36,16 +35,18 @@ class InterfaceScanner {
       ModbusDeviceInventory& deviceInventory,
       const RegisterMapDatabase& registerMapDB,
       PollThreadTime interval)
-      : deviceInventory_(deviceInventory),
+      : interface_(std::move(interface)),
+        deviceInventory_(deviceInventory),
         registerMapDB_(registerMapDB),
+        nextDeviceToProbe_(
+            std::make_unique<DeviceLocationIterator>(
+                registerMapDB,
+                interface_)),
         deviceScanner_(
             PollThread<InterfaceScanner>(
                 &InterfaceScanner::scan,
                 this,
                 interval)) {
-    interfaces_.push_back(interface);
-    nextDeviceToProbe_ =
-        std::make_unique<DeviceLocationIterator>(registerMapDB, interfaces_);
     deviceScanner_.start();
   }
 

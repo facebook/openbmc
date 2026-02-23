@@ -10,14 +10,14 @@ void ModbusDeviceInventory::addDevice(
   devices_[key] = std::make_shared<ModbusDevice>(key.interface, key.addr, rmap);
 }
 
-std::vector<DeviceLocation> ModbusDeviceInventory::inspectDormant(
-    time_t curr) const {
+std::vector<DeviceLocation> ModbusDeviceInventory::inspectDormant() const {
   std::vector<DeviceLocation> ret{};
   std::shared_lock lock(devicesMutex_);
   for (const auto& it : devices_) {
     if (it.second->isActive()) {
       continue;
     }
+    time_t curr = getTime();
     // If its more than 300s since last activity, start probing it.
     // change to something larger if required.
     if ((it.second->lastActive() + kDormantMinInactiveTime) < curr) {
@@ -35,8 +35,8 @@ std::vector<DeviceLocation> ModbusDeviceInventory::inspectDormant(
   return ret;
 }
 
-void ModbusDeviceInventory::recoverDormant(time_t now) {
-  const std::vector<DeviceLocation> dormant = inspectDormant(now);
+void ModbusDeviceInventory::recoverDormant() {
+  const std::vector<DeviceLocation> dormant = inspectDormant();
   for (const auto& key : dormant) {
     std::shared_lock lock(devicesMutex_);
     devices_.at(key)->setActive();

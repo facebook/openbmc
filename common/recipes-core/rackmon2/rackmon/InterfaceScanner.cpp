@@ -76,7 +76,7 @@ void InterfaceScanner::scan() {
   }
 
   // Try and recover dormant devices
-  deviceInventory_.recoverDormant(getTime());
+  deviceInventory_.recoverDormant();
   ++(*nextDeviceToProbe_);
   if (*nextDeviceToProbe_ == nextDeviceToProbe_->end()) {
     nextDeviceToProbe_ =

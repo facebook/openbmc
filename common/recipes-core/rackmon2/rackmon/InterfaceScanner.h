@@ -18,10 +18,6 @@ class InterfaceScanner {
   const RegisterMapDatabase& registerMapDB_;
   std::unique_ptr<DeviceLocationIterator> nextDeviceToProbe_;
 
-  virtual time_t getTime() {
-    return std::time(nullptr);
-  }
-
  private:
   // Thread that periodically scans the interface for new devices
   // and recovers dormant ones.

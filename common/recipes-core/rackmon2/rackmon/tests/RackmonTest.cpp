@@ -90,25 +90,19 @@ class Mock3Modbus : public Modbus {
   FakeModbus fake_;
 };
 
-class MockInterfaceScanner : public InterfaceScanner {
+class MockModbusDeviceInventory : public ModbusDeviceInventory {
  public:
-  MockInterfaceScanner(
-      std::shared_ptr<Modbus> interface,
-      ModbusDeviceInventory& deviceInventory,
-      const RegisterMapDatabase& registerMapDB,
-      PollThreadTime interval)
-      : InterfaceScanner(interface, deviceInventory, registerMapDB, interval) {
+  MockModbusDeviceInventory() : ModbusDeviceInventory() {
     ON_CALL(*this, getTime()).WillByDefault(Return(std::time(nullptr)));
   }
-  MOCK_METHOD0(getTime, time_t());
+  MOCK_METHOD(time_t, getTime, (), (const, override));
 };
 
 class MockRackmon : public Rackmon {
- private:
-  std::vector<MockInterfaceScanner*> mockScanners_;
-
  public:
-  explicit MockRackmon() : Rackmon() {}
+  explicit MockRackmon() : Rackmon() {
+    deviceInventory_ = std::make_unique<MockModbusDeviceInventory>();
+  }
   MOCK_METHOD0(makeInterface, std::unique_ptr<Modbus>());
   const RegisterMapDatabase& getMap() {
     return getRegisterMapDatabase();
@@ -120,21 +114,14 @@ class MockRackmon : public Rackmon {
     triggerMonitorThreads();
   }
 
-  std::unique_ptr<InterfaceScanner> createInterfaceScanner(
-      std::shared_ptr<Modbus> interface,
-      PollThreadTime interval) override {
-    auto res = std::make_unique<MockInterfaceScanner>(
-        interface, deviceInventory_, registerMapDB_, interval);
-    mockScanners_.push_back(res.get());
-    return res;
+  MockModbusDeviceInventory& getMockInventory() {
+    return static_cast<MockModbusDeviceInventory&>(*deviceInventory_);
   }
 
   void setTimeForDormantRecovery() {
-    for (auto& scanner : mockScanners_) {
-      EXPECT_CALL(*scanner, getTime())
-          .WillOnce(Return(std::time(nullptr) + 200))
-          .WillOnce(Return(std::time(nullptr) + 400));
-    }
+    EXPECT_CALL(getMockInventory(), getTime())
+        .WillOnce(Return(std::time(nullptr) + 200))
+        .WillOnce(Return(std::time(nullptr) + 400));
   }
 };
 

@@ -1,6 +1,7 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
 #pragma once
 #include <atomic>
+#include <memory>
 #include <set>
 #include <shared_mutex>
 #include <thread>
@@ -36,7 +37,8 @@ class Rackmon {
   // --------- Private Methods --------
  protected:
   RegisterMapDatabase registerMapDB_{};
-  ModbusDeviceInventory deviceInventory_;
+  std::unique_ptr<ModbusDeviceInventory> deviceInventory_ =
+      std::make_unique<ModbusDeviceInventory>();
 
   void triggerScanThreads() const {
     for (const auto& st : scanners_) {
@@ -135,13 +137,6 @@ class Rackmon {
     for (const auto& st : scanners_) {
       st->runRegisterMonitor();
     }
-  }
-
-  virtual std::unique_ptr<InterfaceScanner> createInterfaceScanner(
-      std::shared_ptr<Modbus> interface,
-      PollThreadTime interval) {
-    return std::make_unique<InterfaceScanner>(
-        interface, deviceInventory_, registerMapDB_, interval);
   }
 };
 

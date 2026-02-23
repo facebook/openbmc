@@ -84,20 +84,21 @@ void Rackmon::start(PollThreadTime interval) {
   logInfo << "Start was requested" << std::endl;
   assertNotStarted("Already running");
 
-  deviceInventory_.setExclusiveModeForAll(false);
+  deviceInventory_->setExclusiveModeForAll(false);
   std::transform(
       interfaces_.begin(),
       interfaces_.end(),
       std::back_inserter(scanners_),
       [this, interval](const auto& interface) {
-        return this->createInterfaceScanner(interface, interval);
+        return std::make_unique<InterfaceScanner>(
+            interface, *this->deviceInventory_, this->registerMapDB_, interval);
       });
 }
 
 void Rackmon::stop(bool forceStop) {
   std::unique_lock lk(threadMutex_);
   logInfo << "Stop was requested" << std::endl;
-  deviceInventory_.setExclusiveModeForAll(true);
+  deviceInventory_->setExclusiveModeForAll(true);
 
   if (forceStop) {
     for (const auto& st : scanners_) {
@@ -135,7 +136,7 @@ void Rackmon::rawCmd(
   }
   RACKMON_PROFILE_SCOPE(raw_cmd, "rawcmd::" + std::to_string(int(req.addr)));
 
-  deviceInventory_.getModbusDevice(addr, port)->command(req, resp, timeout);
+  deviceInventory_->getModbusDevice(addr, port)->command(req, resp, timeout);
   // Add back the CRC removed by validate.
   resp.len += 2;
 }
@@ -149,7 +150,7 @@ void Rackmon::readHoldingRegisters(
   RACKMON_PROFILE_SCOPE(
       raw_cmd, "readRegs::" + std::to_string(int(deviceAddress)));
 
-  deviceInventory_.getModbusDevice(deviceAddress, port)
+  deviceInventory_->getModbusDevice(deviceAddress, port)
       ->readHoldingRegisters(registerOffset, registerContents, timeout);
 }
 
@@ -162,7 +163,7 @@ void Rackmon::writeSingleRegister(
   RACKMON_PROFILE_SCOPE(
       raw_cmd, "writeReg::" + std::to_string(int(deviceAddress)));
 
-  deviceInventory_.getModbusDevice(deviceAddress, port)
+  deviceInventory_->getModbusDevice(deviceAddress, port)
       ->writeSingleRegister(registerOffset, value, timeout);
 }
 
@@ -175,7 +176,7 @@ void Rackmon::writeMultipleRegisters(
   RACKMON_PROFILE_SCOPE(
       raw_cmd, "writeRegs::" + std::to_string(int(deviceAddress)));
 
-  deviceInventory_.getModbusDevice(deviceAddress, port)
+  deviceInventory_->getModbusDevice(deviceAddress, port)
       ->writeMultipleRegisters(registerOffset, values, timeout);
 }
 
@@ -186,12 +187,12 @@ void Rackmon::readFileRecord(
     ModbusTime timeout) {
   RACKMON_PROFILE_SCOPE(
       raw_cmd, "ReadFile::" + std::to_string(int(deviceAddress)));
-  deviceInventory_.getModbusDevice(deviceAddress, port)
+  deviceInventory_->getModbusDevice(deviceAddress, port)
       ->readFileRecord(records, timeout);
 }
 
 std::vector<ModbusDeviceInfo> Rackmon::listDevices() const {
-  auto allDevices = deviceInventory_.getAllModbusDevices();
+  auto allDevices = deviceInventory_->getAllModbusDevices();
   std::vector<ModbusDeviceInfo> devices;
   std::transform(
       allDevices.begin(),
@@ -203,7 +204,7 @@ std::vector<ModbusDeviceInfo> Rackmon::listDevices() const {
 
 void Rackmon::getRawData(std::vector<ModbusDeviceRawData>& data) const {
   data.clear();
-  auto allDevices = deviceInventory_.getAllModbusDevices();
+  auto allDevices = deviceInventory_->getAllModbusDevices();
   std::transform(
       allDevices.begin(),
       allDevices.end(),
@@ -217,7 +218,7 @@ void Rackmon::getValueData(
     const ModbusRegisterFilter& regFilter,
     bool latestValueOnly) const {
   data.clear();
-  auto allDevices = deviceInventory_.getAllModbusDevices();
+  auto allDevices = deviceInventory_->getAllModbusDevices();
   for (const auto& kv : allDevices) {
     const ModbusDevice& dev = *kv;
     if (devFilter.contains(dev)) {
@@ -229,7 +230,7 @@ void Rackmon::getValueData(
 void Rackmon::reload(
     const ModbusDeviceFilter& devFilter,
     const ModbusRegisterFilter& regFilter) {
-  auto allDevices = deviceInventory_.getAllModbusDevices();
+  auto allDevices = deviceInventory_->getAllModbusDevices();
   for (const auto& kv : allDevices) {
     ModbusDevice& dev = *kv;
     if (devFilter.contains(dev)) {

@@ -13,12 +13,16 @@ class ModbusDeviceInventory {
   static constexpr time_t kDormantMinInactiveTime = 300;
 
   // probe dormant devices and return recovered devices.
-  std::vector<DeviceLocation> inspectDormant(time_t curr) const;
+  std::vector<DeviceLocation> inspectDormant() const;
 
   mutable std::shared_mutex devicesMutex_{};
 
   // These devices discovered on actively monitored buses
   std::map<DeviceLocation, std::shared_ptr<ModbusDevice>> devices_{};
+
+  virtual time_t getTime() const {
+    return std::time(nullptr);
+  }
 
  public:
   void addDevice(DeviceLocation key, const RegisterMap& rmap);
@@ -30,10 +34,12 @@ class ModbusDeviceInventory {
       std::optional<uint8_t> port);
 
   // Try and recover dormant devices.
-  void recoverDormant(time_t now);
+  void recoverDormant();
 
   bool isDeviceKnown(DeviceLocation);
 
   void setExclusiveModeForAll(bool enable);
+
+  virtual ~ModbusDeviceInventory() = default;
 };
 } // namespace rackmon

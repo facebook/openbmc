@@ -20,15 +20,14 @@
 package utils
 
 import (
+	"fmt"
 	"math"
-
-	"github.com/pkg/errors"
 )
 
 // AddU32 returns an error if the result overflowed Uint32 bounds.
 func AddU32(x, y uint32) (uint32, error) {
 	if x > math.MaxUint32-y {
-		return 0, errors.Errorf("Unsigned integer overflow for (%v+%v)", x, y)
+		return 0, fmt.Errorf("Unsigned integer overflow for (%v+%v)", x, y)
 	}
 	return x + y, nil
 }

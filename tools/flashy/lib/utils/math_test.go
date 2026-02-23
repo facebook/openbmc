@@ -20,11 +20,11 @@
 package utils
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 func TestAddU32(t *testing.T) {
@@ -47,7 +47,7 @@ func TestAddU32(t *testing.T) {
 			x:       math.MaxUint32 - 1,
 			y:       2,
 			want:    0,
-			wantErr: errors.Errorf("Unsigned integer overflow for (4294967294+2)"),
+			wantErr: fmt.Errorf("Unsigned integer overflow for (4294967294+2)"),
 		},
 	}
 	for _, tc := range cases {

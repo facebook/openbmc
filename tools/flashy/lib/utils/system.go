@@ -36,7 +36,6 @@ import (
 	"unsafe"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
-	"github.com/pkg/errors"
 	"github.com/vtolstov/go-ioctl"
 )
 
@@ -84,7 +83,7 @@ var ownCmdlines = []string{
 var GetMemInfo = func() (*MemInfo, error) {
 	buf, err := fileutils.ReadFile("/proc/meminfo")
 	if err != nil {
-		return nil, errors.Errorf("Unable to open /proc/meminfo: %v", err)
+		return nil, fmt.Errorf("Unable to open /proc/meminfo: %v", err)
 	}
 
 	memInfoStr := string(buf)
@@ -94,14 +93,14 @@ var GetMemInfo = func() (*MemInfo, error) {
 
 	memFreeMatch := memFreeRegex.FindStringSubmatch(memInfoStr)
 	if len(memFreeMatch) < 2 {
-		return nil, errors.Errorf("Unable to get MemFree in /proc/meminfo")
+		return nil, fmt.Errorf("Unable to get MemFree in /proc/meminfo")
 	}
 	memFree, _ := strconv.ParseUint(memFreeMatch[1], 10, 64)
 	memFree *= 1024 // convert to B
 
 	memTotalMatch := memTotalRegex.FindStringSubmatch(memInfoStr)
 	if len(memTotalMatch) < 2 {
-		return nil, errors.Errorf("Unable to get MemTotal in /proc/meminfo")
+		return nil, fmt.Errorf("Unable to get MemTotal in /proc/meminfo")
 	}
 	memTotal, _ := strconv.ParseUint(memTotalMatch[1], 10, 64)
 	memTotal *= 1024 // convert to B
@@ -171,7 +170,7 @@ var RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, strin
 
 	// make sure cmdArr has at least 1 item
 	if len(cmdArr) == 0 {
-		return 1, errors.Errorf("Cannot run empty command"), "", ""
+		return 1, fmt.Errorf("Cannot run empty command"), "", ""
 	}
 
 	fullCmdStr := strings.Join(cmdArr[:], " ")
@@ -181,11 +180,11 @@ var RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, strin
 	var stdoutStr, stderrStr string
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return 1, errors.Errorf("Unable to open stdout pipe: %v", err), "", ""
+		return 1, fmt.Errorf("Unable to open stdout pipe: %v", err), "", ""
 	}
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
-		return 1, errors.Errorf("Unable to open stderr pipe: %v", err), "", ""
+		return 1, fmt.Errorf("Unable to open stderr pipe: %v", err), "", ""
 	}
 	stdoutScanner := bufio.NewScanner(stdout)
 	stderrScanner := bufio.NewScanner(stderr)
@@ -238,10 +237,10 @@ var RunCommand = func(cmdArr []string, timeout time.Duration) (int, error, strin
 // Between attempts, an interval is applied.
 // Returns the results from the first succeeding run or last tried run.
 var RunCommandWithRetries = func(cmdArr []string, timeout time.Duration, maxAttempts int, interval time.Duration) (int, error, string, string) {
-	exitCode, err, stdoutStr, stderrStr := 1, errors.Errorf("Command failed to run"), "", ""
+	exitCode, err, stdoutStr, stderrStr := 1, fmt.Errorf("Command failed to run"), "", ""
 
 	if maxAttempts < 1 {
-		err = errors.Errorf("Command failed to run: maxAttempts must be > 0 (got %v)", maxAttempts)
+		err = fmt.Errorf("Command failed to run: maxAttempts must be > 0 (got %v)", maxAttempts)
 		return exitCode, err, stdoutStr, stderrStr
 	}
 
@@ -274,7 +273,7 @@ var SystemdAvailable = func() (bool, error) {
 	if fileutils.FileExists(cmdlinePath) {
 		buf, err := fileutils.ReadFile(cmdlinePath)
 		if err != nil {
-			return false, errors.Errorf("%v exists but cannot be read: %v",
+			return false, fmt.Errorf("%v exists but cannot be read: %v",
 				cmdlinePath, err)
 		}
 
@@ -297,7 +296,7 @@ var GetOpenBMCPlatformFromIssueFile = func() (string, error) {
 
 	etcIssueBuf, err := fileutils.ReadFile(etcIssueFilePath)
 	if err != nil {
-		return "", errors.Errorf("Error reading %v: %v",
+		return "", fmt.Errorf("Error reading %v: %v",
 			etcIssueFilePath, err)
 	}
 	etcIssueStr := string(etcIssueBuf)
@@ -328,14 +327,14 @@ var GetOpenBMCPlatformFromIssueFile = func() (string, error) {
 		}
 
 		if err != nil {
-			return "", errors.Errorf("Unable to get platform from %v: %v",
+			return "", fmt.Errorf("Unable to get platform from %v: %v",
 				etcIssueFilePath, err)
 		}
 	}
 
 	platform := etcIssueMap[rPlatform]
 	if platform == "" {
-		return "", errors.Errorf("Unable to get platform from %v: missing platform info",
+		return "", fmt.Errorf("Unable to get platform from %v: missing platform info",
 			etcIssueFilePath)
 	}
 
@@ -354,7 +353,7 @@ var GetOpenBMCVersionFromIssueFile = func() (string, error) {
 
 	etcIssueBuf, err := fileutils.ReadFile(etcIssueFilePath)
 	if err != nil {
-		return "", errors.Errorf("Error reading %v: %v",
+		return "", fmt.Errorf("Error reading %v: %v",
 			etcIssueFilePath, err)
 	}
 	etcIssueStr := strings.ToLower(string(etcIssueBuf))
@@ -370,7 +369,7 @@ var GetOpenBMCVersionFromIssueFile = func() (string, error) {
 	if err != nil {
 		// does not match regex
 		return "",
-			errors.Errorf("Unable to get version from %v: %v",
+			fmt.Errorf("Unable to get version from %v: %v",
 				etcIssueFilePath, err)
 	}
 
@@ -379,7 +378,7 @@ var GetOpenBMCVersionFromIssueFile = func() (string, error) {
 	if version == "release" {
 		// does not match regex
 		return "",
-			errors.Errorf("Unable to get version from %v: missing version info",
+			fmt.Errorf("Unable to get version from %v: missing version info",
 				etcIssueFilePath)
 	}
 
@@ -398,7 +397,7 @@ var IsOpenBMC = func() (bool, error) {
 
 	etcIssueBuf, err := fileutils.ReadFile(etcIssueFilePath)
 	if err != nil {
-		return false, errors.Errorf("Error reading '%v': %v",
+		return false, fmt.Errorf("Error reading '%v': %v",
 			etcIssueFilePath, err)
 	}
 
@@ -428,11 +427,11 @@ var IsLFOpenBMC = func() bool {
 var GetBSMFlashManufacturerFromFile = func() (string, error) {
 	spiManufacturerBuf, err := fileutils.ReadFile(spiManufacturerPath)
 	if err != nil {
-		return "", errors.Errorf("Error reading '%v': %v",
+		return "", fmt.Errorf("Error reading '%v': %v",
 			spiManufacturerPath, err)
 	}
 	if len(spiManufacturerBuf) == 0 {
-		return "", errors.Errorf("'%v' file is empty", spiManufacturerPath)
+		return "", fmt.Errorf("'%v' file is empty", spiManufacturerPath)
 	}
 	return strings.TrimSpace(string(spiManufacturerBuf)), nil
 }
@@ -464,7 +463,7 @@ var CheckOtherFlasherRunning = func(flashyStepBaseNames []string) error {
 	err := checkNoBaseNameExistsInProcCmdlinePaths(allFlasherBaseNames,
 		otherProcCmdlinePaths)
 	if err != nil {
-		return errors.Errorf("Another flasher running: %v", err)
+		return fmt.Errorf("Another flasher running: %v", err)
 	}
 	return nil
 }
@@ -531,7 +530,7 @@ var checkNoBaseNameExistsInProcCmdlinePaths = func(baseNames, procCmdlinePaths [
 		for _, param := range params {
 			baseName := path.Base(param)
 			if StringFind(baseName, baseNames) >= 0 && refineBaseNameMatch(baseName, params) {
-				return errors.Errorf("'%v' found in cmdline '%v'",
+				return fmt.Errorf("'%v' found in cmdline '%v'",
 					baseName, strings.Join(params, " "))
 			}
 		}
@@ -546,7 +545,7 @@ var GetMTDInfoFromSpecifier = func(deviceSpecifier string) (MtdInfo, error) {
 	// read from /proc/mtd
 	procMTDBuf, err := fileutils.ReadFile(ProcMtdFilePath)
 	if err != nil {
-		return mtdInfo, errors.Errorf("Unable to read from /proc/mtd: %v", err)
+		return mtdInfo, fmt.Errorf("Unable to read from /proc/mtd: %v", err)
 	}
 	procMTD := string(procMTDBuf)
 
@@ -559,17 +558,17 @@ var GetMTDInfoFromSpecifier = func(deviceSpecifier string) (MtdInfo, error) {
 
 	mtdMap, err := GetRegexSubexpMap(regEx, procMTD)
 	if err != nil {
-		return mtdInfo, errors.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:%v'",
+		return mtdInfo, fmt.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:%v'",
 			deviceSpecifier)
 	}
 
 	size, err := strconv.ParseUint(mtdMap[rSize], 16, 32)
 	if err != nil {
-		return mtdInfo, errors.Errorf("Failed to parse size: %v", err)
+		return mtdInfo, fmt.Errorf("Failed to parse size: %v", err)
 	}
 	erasesize, err := strconv.ParseUint(mtdMap[rErasesize], 16, 32)
 	if err != nil {
-		return mtdInfo, errors.Errorf("Failed to parse erasesize: %v", err)
+		return mtdInfo, fmt.Errorf("Failed to parse erasesize: %v", err)
 	}
 	return MtdInfo{
 		Dev:       mtdMap[rDev],
@@ -582,13 +581,13 @@ var GetMTDInfoFromSpecifier = func(deviceSpecifier string) (MtdInfo, error) {
 var IsDataPartitionMounted = func() (bool, error) {
 	procMountsDat, err := fileutils.ReadFile(procMountsPath)
 	if err != nil {
-		return false, errors.Errorf("Cannot read /proc/mounts: %v", err)
+		return false, fmt.Errorf("Cannot read /proc/mounts: %v", err)
 	}
 
 	regEx := `(?m)^[^ ]+ /mnt/data [^ ]+ [^ ]+ [0-9]+ [0-9]+$`
 	regExMap, err := GetAllRegexSubexpMap(regEx, string(procMountsDat))
 	if err != nil {
-		return false, errors.Errorf("regex error: %v", err)
+		return false, fmt.Errorf("regex error: %v", err)
 	}
 
 	return len(regExMap) != 0, nil

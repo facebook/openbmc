@@ -184,6 +184,14 @@ class Rackmon {
   void reload(
       const ModbusDeviceFilter& devFilter,
       const ModbusRegisterFilter& regFilter);
+
+  // For interface-specific scanning and monitoring
+  void triggerMonitorThread() {
+    std::shared_lock lk(threadMutex_);
+    if (monitorThread_) {
+      monitorThread_->tick(true);
+    }
+  }
 };
 
 } // namespace rackmon

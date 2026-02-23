@@ -226,10 +226,7 @@ void Rackmon::fullScan() {
   logInfo << "Finished scan of all devices" << std::endl;
   // When scan is complete, request for a monitor.
   if (atLeastOne) {
-    std::shared_lock lk(threadMutex_);
-    if (monitorThread_) {
-      monitorThread_->tick(true);
-    }
+    triggerMonitorThread();
   }
   reqForceScan_ = false;
 }
@@ -244,10 +241,7 @@ void Rackmon::scan() {
   // Probe for the address only if we already dont know it.
   if (!isDeviceKnown(**nextDeviceToProbe_)) {
     if (probe(**nextDeviceToProbe_)) {
-      std::shared_lock lk(threadMutex_);
-      if (monitorThread_) {
-        monitorThread_->tick(true);
-      }
+      triggerMonitorThread();
     }
   }
 
@@ -257,7 +251,6 @@ void Rackmon::scan() {
   if (*nextDeviceToProbe_ == nextDeviceToProbe_->end()) {
     nextDeviceToProbe_ =
         std::make_unique<DeviceLocationIterator>(registerMapDB_, interfaces_);
-    ;
   }
 }
 

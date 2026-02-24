@@ -20,13 +20,13 @@
 package common
 
 import (
+	"fmt"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
-	"github.com/pkg/errors"
 )
 
 func TestDropCaches(t *testing.T) {
@@ -48,9 +48,9 @@ func TestDropCaches(t *testing.T) {
 		},
 		{
 			name:         "WriteFile failed",
-			writeFileErr: errors.Errorf("WriteFile failed"),
+			writeFileErr: fmt.Errorf("WriteFile failed"),
 			want: step.ExitSafeToReboot{
-				Err: errors.Errorf(
+				Err: fmt.Errorf(
 					"Failed to write to drop_caches file '/proc/sys/vm/drop_caches': WriteFile failed",
 				),
 			},
@@ -64,10 +64,10 @@ func TestDropCaches(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			fileutils.WriteFileWithTimeout = func(filename string, data []byte, perm os.FileMode, timeout time.Duration) error {
 				if filename != wantFilename {
-					return errors.Errorf("filename: want %v got %v", wantFilename, filename)
+					return fmt.Errorf("filename: want %v got %v", wantFilename, filename)
 				}
 				if string(data) != wantDataString {
-					return errors.Errorf("data: want %v got %v", wantDataString, string(data))
+					return fmt.Errorf("data: want %v got %v", wantDataString, string(data))
 				}
 				return tc.writeFileErr
 			}

@@ -20,13 +20,13 @@
 package image
 
 import (
+	"fmt"
 	"log"
 	"syscall"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/validate"
-	"github.com/pkg/errors"
 )
 
 // validateImageFileSie ensures that the image file size is smaller than the size of the
@@ -35,17 +35,17 @@ import (
 var validateImageFileSize = func(imageFilePath string, deviceID string) error {
 	imageSize, err := fileutils.GetFileSize(imageFilePath)
 	if err != nil {
-		return errors.Errorf("Unable to get size of image file '%v': %v",
+		return fmt.Errorf("Unable to get size of image file '%v': %w",
 			imageFilePath, err)
 	}
 	flashDevice, err := flashutils.GetFlashDevice(deviceID)
 	if err != nil {
-		return errors.Errorf("Unable to get flash device from deviceID '%v': %v",
+		return fmt.Errorf("Unable to get flash device from deviceID '%v': %w",
 			deviceID, err)
 	}
 	flashDeviceSize := flashDevice.GetFileSize()
 	if uint64(imageSize) > flashDeviceSize {
-		return errors.Errorf("Image size (%vB) larger than flash device size (%vB)",
+		return fmt.Errorf("Image size (%vB) larger than flash device size (%vB)",
 			imageSize, flashDeviceSize)
 	}
 	return nil
@@ -62,13 +62,13 @@ var ValidateImageFile = func(imageFilePath string, maybeDeviceID string) error {
 	} else {
 		err := validateImageFileSize(imageFilePath, maybeDeviceID)
 		if err != nil {
-			return errors.Errorf("Image file size check failed: %v", err)
+			return fmt.Errorf("Image file size check failed: %w", err)
 		}
 	}
 	imageData, err := fileutils.MmapFile(imageFilePath,
 		syscall.PROT_READ, syscall.MAP_SHARED)
 	if err != nil {
-		return errors.Errorf("Unable to read image file '%v': %v",
+		return fmt.Errorf("Unable to read image file '%v': %w",
 			imageFilePath, err)
 	}
 	defer fileutils.Munmap(imageData)

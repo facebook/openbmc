@@ -21,6 +21,7 @@ package flash
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"reflect"
@@ -33,7 +34,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 type mockFlashDevice struct {
@@ -97,11 +97,11 @@ func TestFlashCp(t *testing.T) {
 		},
 		{
 			name:                  "failed to get flash device",
-			getFlashDeviceErr:     errors.Errorf("GetFlashDevice error"),
+			getFlashDeviceErr:     fmt.Errorf("GetFlashDevice error"),
 			flashCpAndValidateErr: nil,
 			otherFlasherErr:       nil,
 			want: step.ExitSafeToReboot{
-				Err: errors.Errorf("GetFlashDevice error"),
+				Err: fmt.Errorf("GetFlashDevice error"),
 			},
 			logContainsSeq: []string{
 				"Flashing using flashcp method",
@@ -112,10 +112,10 @@ func TestFlashCp(t *testing.T) {
 		{
 			name:                  "flashcp and validate failed",
 			getFlashDeviceErr:     nil,
-			flashCpAndValidateErr: errors.Errorf("RunCommand error"),
+			flashCpAndValidateErr: fmt.Errorf("RunCommand error"),
 			otherFlasherErr:       nil,
 			want: step.ExitUnsafeToReboot{
-				Err: errors.Errorf("RunCommand error"),
+				Err: fmt.Errorf("RunCommand error"),
 			},
 			logContainsSeq: []string{
 				"Flashing using flashcp method",
@@ -127,9 +127,9 @@ func TestFlashCp(t *testing.T) {
 			name:                  "other flasher running",
 			getFlashDeviceErr:     nil,
 			flashCpAndValidateErr: nil,
-			otherFlasherErr:       errors.Errorf("Found other flasher!"),
+			otherFlasherErr:       fmt.Errorf("Found other flasher!"),
 			want: step.ExitUnsafeToReboot{
-				Err: errors.Errorf("Found other flasher!"),
+				Err: fmt.Errorf("Found other flasher!"),
 			},
 			logContainsSeq: []string{
 				"Flashing succeeded but found another flasher running",
@@ -196,14 +196,14 @@ func TestFlashCpAndValidate(t *testing.T) {
 		},
 		{
 			name:       "flashCpErr error",
-			flashCpErr: errors.Errorf("flashing failed"),
+			flashCpErr: fmt.Errorf("flashing failed"),
 			removeErr:  nil,
-			want:       errors.Errorf("flashing failed"),
+			want:       fmt.Errorf("flashing failed"),
 		},
 		{
 			name:       "succeeded, with remove failure",
 			flashCpErr: nil,
-			removeErr:  errors.Errorf("aw nuts"),
+			removeErr:  fmt.Errorf("aw nuts"),
 			want:       nil,
 		},
 	}

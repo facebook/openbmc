@@ -52,7 +52,7 @@ new file mode 100644
 index 000000000000..e5ba0047499f
 --- /dev/null
 +++ b/drivers/soc/aspeed/aspeed-lpc-pcc.c
-@@ -0,0 +1,469 @@
+@@ -0,0 +1,467 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Copyright (C) ASPEED Technology Inc.
@@ -491,15 +491,13 @@ index 000000000000..e5ba0047499f
 +	return rc;
 +}
 +
-+static int aspeed_pcc_remove(struct platform_device *pdev)
++static void aspeed_pcc_remove(struct platform_device *pdev)
 +{
 +	struct device *dev = &pdev->dev;
 +	struct aspeed_pcc *pcc = dev_get_drvdata(dev);
 +
 +	kfifo_free(&pcc->fifo);
 +	misc_deregister(&pcc->misc_dev);
-+
-+	return 0;
 +}
 +
 +static const struct of_device_id aspeed_pcc_table[] = {

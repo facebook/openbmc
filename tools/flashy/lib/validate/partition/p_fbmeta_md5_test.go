@@ -20,11 +20,11 @@
 package partition
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 // basic tests
@@ -86,7 +86,7 @@ func TestFBMetaMD5Validate(t *testing.T) {
 		{
 			name:     "validation failed",
 			checksum: "UWU",
-			want: errors.Errorf("'foo' partition MD5Sum " +
+			want: fmt.Errorf("'foo' partition MD5Sum " +
 				"(e2fc714c4727ee9395f324cd2e7f331f) does not match checksum required (UWU)"),
 		},
 	}

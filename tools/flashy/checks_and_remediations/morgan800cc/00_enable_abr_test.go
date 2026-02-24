@@ -21,6 +21,7 @@ package common
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -29,7 +30,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func TestEnableABR(t *testing.T) {
@@ -63,7 +63,7 @@ func TestEnableABR(t *testing.T) {
 			versionError:  nil,
 			callFwSetEnv:  true,
 			ubootVars:     "bootcmd=bootm 20100000",
-			want:          step.ExitMustReboot{Err: errors.Errorf("Forcing reboot to enable ABR")},
+			want:          step.ExitMustReboot{Err: fmt.Errorf("Forcing reboot to enable ABR")},
 		},
 		{
 			name:          "factory image, bootcmd already set",
@@ -105,7 +105,7 @@ func TestEnableABR(t *testing.T) {
 			name:          "failure to parse /etc/issue",
 			otpCmdExists:  false,
 			versionString: "unknown-v1",
-			versionError:  errors.Errorf("uwot"),
+			versionError:  fmt.Errorf("uwot"),
 			callFwSetEnv:  false,
 			ubootVars:     "bootcmd=bootm 20100000",
 			want:          nil,
@@ -125,7 +125,7 @@ func TestEnableABR(t *testing.T) {
 				} else if cmdArr[0] == "fw_printenv" {
 					return 0, nil, tc.ubootVars, ""
 				}
-				return 0, errors.Errorf("err3"), "", "err3"
+				return 0, fmt.Errorf("err3"), "", "err3"
 			}
 			utils.GetOpenBMCVersionFromIssueFile = func() (string, error) {
 				return tc.versionString, tc.versionError

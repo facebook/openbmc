@@ -20,13 +20,13 @@ package devices
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/validate"
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 // generic tests for MTD
@@ -86,9 +86,9 @@ func TestGetMTD(t *testing.T) {
 			name:            "ReadFile error",
 			specifier:       "flash0",
 			procMtdContents: "",
-			readFileErr:     errors.Errorf("ReadFile error"),
+			readFileErr:     fmt.Errorf("ReadFile error"),
 			want:            nil,
-			wantErr:         errors.Errorf("Unable to read from /proc/mtd: ReadFile error"),
+			wantErr:         fmt.Errorf("Unable to read from /proc/mtd: ReadFile error"),
 		},
 		{
 			name:            "MTD not found in /proc/mtd",
@@ -96,7 +96,7 @@ func TestGetMTD(t *testing.T) {
 			procMtdContents: tests.ExampleWedge100ProcMtdFile,
 			readFileErr:     nil,
 			want:            nil,
-			wantErr:         errors.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:flash1'"),
+			wantErr:         fmt.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:flash1'"),
 		},
 		{
 			name:            "size parse error",
@@ -104,7 +104,7 @@ func TestGetMTD(t *testing.T) {
 			procMtdContents: `mtd0: 10000000000000000 00100000 "flash1"`, // larger than 64-bits
 			readFileErr:     nil,
 			want:            nil,
-			wantErr:         errors.Errorf("Failed to parse size: strconv.ParseUint: parsing \"10000000000000000\": value out of range"),
+			wantErr:         fmt.Errorf("Failed to parse size: strconv.ParseUint: parsing \"10000000000000000\": value out of range"),
 		},
 		{
 			name:            "corrupt /proc/mtd file",
@@ -112,7 +112,7 @@ func TestGetMTD(t *testing.T) {
 			procMtdContents: `mtd0: xxxxxxxx xxxxxxxx "flash1"`,
 			readFileErr:     nil,
 			want:            nil,
-			wantErr:         errors.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:flash1'"),
+			wantErr:         fmt.Errorf("Error finding MTD entry in /proc/mtd for flash device 'mtd:flash1'"),
 		},
 	}
 
@@ -162,7 +162,7 @@ func TestMmapRO(t *testing.T) {
 			mmapRet:     []byte{},
 			mmapErr:     nil,
 			want:        []byte{},
-			wantErr: errors.Errorf("Unable to get block file path for '/dev/mtdx': " +
+			wantErr: fmt.Errorf("Unable to get block file path for '/dev/mtdx': " +
 				"No match for regex '^(?P<devmtdpath>/dev/mtd)(?P<mtdnum>[0-9]+)$' for " +
 				"input '/dev/mtdx'"),
 		},
@@ -170,9 +170,9 @@ func TestMmapRO(t *testing.T) {
 			name:        "mmap error",
 			mtdFilePath: "/dev/mtd5",
 			mmapRet:     []byte{},
-			mmapErr:     errors.Errorf("mmap error"),
+			mmapErr:     fmt.Errorf("mmap error"),
 			want:        []byte{},
-			wantErr:     errors.Errorf("mmap error"),
+			wantErr:     fmt.Errorf("mmap error"),
 		},
 	}
 
@@ -219,7 +219,7 @@ func TestGetMTDBlockFilePath(t *testing.T) {
 			name:        "invalid mtd file path",
 			mtdFilePath: "/dev/mtddddd",
 			want:        "",
-			wantErr: errors.Errorf("Unable to get block file path for '/dev/mtddddd': " +
+			wantErr: fmt.Errorf("Unable to get block file path for '/dev/mtddddd': " +
 				"No match for regex '^(?P<devmtdpath>/dev/mtd)(?P<mtdnum>[0-9]+)$' for input '/dev/mtddddd'"),
 		},
 	}
@@ -259,15 +259,15 @@ func TestValidate(t *testing.T) {
 		},
 		{
 			name:        "mmap failed",
-			mmapErr:     errors.Errorf("mmap failed"),
+			mmapErr:     fmt.Errorf("mmap failed"),
 			validateErr: nil,
-			want:        errors.Errorf("Can't mmap flash device: mmap failed"),
+			want:        fmt.Errorf("Can't mmap flash device: mmap failed"),
 		},
 		{
 			name:        "validation failed",
 			mmapErr:     nil,
-			validateErr: errors.Errorf("Validation failed"),
-			want:        errors.Errorf("Validation failed"),
+			validateErr: fmt.Errorf("Validation failed"),
+			want:        fmt.Errorf("Validation failed"),
 		},
 	}
 

@@ -21,13 +21,13 @@ package fileutils
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 func TestPathExists(t *testing.T) {
@@ -61,7 +61,7 @@ func TestPathExists(t *testing.T) {
 		},
 		{
 			name:      "ambiguous, log and default to false",
-			osStatErr: errors.Errorf("12345"),
+			osStatErr: fmt.Errorf("12345"),
 			logContainsSeq: []string{
 				"Existence check of path 'x' returned error '12345', defaulting to false",
 			},
@@ -134,7 +134,7 @@ func TestFileExists(t *testing.T) {
 		{
 			name:      "ambiguous, log and default to false",
 			isDir:     false,
-			osStatErr: errors.Errorf("12345"),
+			osStatErr: fmt.Errorf("12345"),
 			logContainsSeq: []string{
 				"Existence check of path 'x' returned error '12345', defaulting to false",
 			},
@@ -198,7 +198,7 @@ func TestDirExists(t *testing.T) {
 		{
 			name:      "ambiguous, log and default to false",
 			isDir:     false,
-			osStatErr: errors.Errorf("12345"),
+			osStatErr: fmt.Errorf("12345"),
 			logContainsSeq: []string{
 				"Existence check of path 'x' returned error '12345', defaulting to false",
 			},
@@ -250,7 +250,7 @@ func TestIsELFFile(t *testing.T) {
 		{
 			name:    "mmap error",
 			mmapRet: nil,
-			mmapErr: errors.Errorf("mmap error"),
+			mmapErr: fmt.Errorf("mmap error"),
 			want:    false,
 		},
 	}
@@ -293,7 +293,7 @@ func TestGlobAll(t *testing.T) {
 		{
 			name:     "Invalid pattern",
 			patterns: []string{"["},
-			want:     errors.Errorf("Unable to resolve pattern '[': syntax error in pattern"),
+			want:     fmt.Errorf("Unable to resolve pattern '[': syntax error in pattern"),
 		},
 	}
 	for _, tc := range cases {
@@ -327,17 +327,17 @@ func TestWriteFileWIthTimeout(t *testing.T) {
 		},
 		{
 			name:      "within timeout but write errored",
-			writeErr:  errors.Errorf("write error"),
+			writeErr:  fmt.Errorf("write error"),
 			writeTime: 1 * time.Millisecond,
 			timeout:   1 * time.Second,
-			want:      errors.Errorf("write error"),
+			want:      fmt.Errorf("write error"),
 		},
 		{
 			name:      "timeout exceeded",
 			writeErr:  nil,
 			writeTime: 1 * time.Second,
 			timeout:   1 * time.Millisecond,
-			want:      errors.Errorf("Timed out after '1ms'"),
+			want:      fmt.Errorf("Timed out after '1ms'"),
 		},
 	}
 

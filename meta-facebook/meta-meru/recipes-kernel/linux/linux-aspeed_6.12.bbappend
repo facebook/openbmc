@@ -24,3 +24,11 @@ SRC_URI:append = " \
     file://1001-mtd-spi-nor-issi-add-support-for-IS25LP512MG.patch \
     file://1002-mtd-spi-nor-gigadevice-add-support-for-GD25B512.patch \
 "
+
+#
+# Remove the patch (in common/recipes-kernel/) explicitly to force 8MB
+# data0 partition on meru800bia and meru800bfa.
+# We should delete below patch file from common layer when moving to
+# kernel 6.18, because the official fix has been upstreamed:
+#  - https://lists.ozlabs.org/pipermail/linux-aspeed/2025-July/015932.html
+SRC_URI:remove = "file://0003-ARM-dts-aspeed-Expand-data0-partition-in-facebook-bm.patch"

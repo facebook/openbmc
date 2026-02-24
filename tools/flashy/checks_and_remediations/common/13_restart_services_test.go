@@ -20,6 +20,7 @@
 package common
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -27,7 +28,6 @@ import (
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func TestRestartServices(t *testing.T) {
@@ -73,17 +73,17 @@ func TestRestartServices(t *testing.T) {
 		{
 			name:              "systemd check error",
 			systemdAvail:      false,
-			systemdAvailErr:   errors.Errorf("Systemd check error"),
+			systemdAvailErr:   fmt.Errorf("Systemd check error"),
 			runCmdErr:         nil,
 			restartHealthdErr: nil,
-			want:              step.ExitSafeToReboot{Err: errors.Errorf("Error checking systemd availability: Systemd check error")},
+			want:              step.ExitSafeToReboot{Err: fmt.Errorf("Error checking systemd availability: Systemd check error")},
 			wantCmds:          []string{},
 		},
 		{
 			name:              "Restapi restart error",
 			systemdAvail:      true,
 			systemdAvailErr:   nil,
-			runCmdErr:         errors.Errorf("Restapi restart error"),
+			runCmdErr:         fmt.Errorf("Restapi restart error"),
 			restartHealthdErr: nil,
 			want:              nil,
 			wantCmds:          []string{"systemctl restart restapi"},
@@ -93,8 +93,8 @@ func TestRestartServices(t *testing.T) {
 			systemdAvail:      true,
 			systemdAvailErr:   nil,
 			runCmdErr:         nil,
-			restartHealthdErr: errors.Errorf("Healthd restart error"),
-			want:              step.ExitSafeToReboot{Err: errors.Errorf("Healthd restart error")},
+			restartHealthdErr: fmt.Errorf("Healthd restart error"),
+			want:              step.ExitSafeToReboot{Err: fmt.Errorf("Healthd restart error")},
 			wantCmds:          []string{"systemctl restart restapi"},
 		},
 	}

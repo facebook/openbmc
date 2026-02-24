@@ -20,6 +20,7 @@
 package common
 
 import (
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -28,7 +29,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 func TestAlertUpgradeMode(t *testing.T) {
@@ -40,10 +40,10 @@ func TestAlertUpgradeMode(t *testing.T) {
 		updateMOTD = updateMOTDOrig
 	}()
 	wallAlert = func() error {
-		return errors.Errorf("Should be ignored")
+		return fmt.Errorf("Should be ignored")
 	}
 	updateMOTD = func() error {
-		return errors.Errorf("Should be ignored")
+		return fmt.Errorf("Should be ignored")
 	}
 
 	got := alertUpgradeMode(step.StepParams{})
@@ -68,8 +68,8 @@ func TestWallAlert(t *testing.T) {
 		},
 		{
 			name:      "run command failed",
-			runCmdErr: errors.Errorf("command failed"),
-			want:      errors.Errorf("Warning: `wall` alert failed: command failed"),
+			runCmdErr: fmt.Errorf("command failed"),
+			want:      fmt.Errorf("Warning: `wall` alert failed: command failed"),
 		},
 	}
 
@@ -114,8 +114,8 @@ func TestUpdateMOTD(t *testing.T) {
 		},
 		{
 			name:         "WriteFile failed",
-			writeFileErr: errors.Errorf("WriteFile failed"),
-			want:         errors.Errorf("Warning: MOTD update failed: WriteFile failed"),
+			writeFileErr: fmt.Errorf("WriteFile failed"),
+			want:         fmt.Errorf("Warning: MOTD update failed: WriteFile failed"),
 		},
 	}
 

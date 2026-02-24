@@ -258,7 +258,7 @@ new file mode 100644
 index 000000000000..35c1461ae4d7
 --- /dev/null
 +++ b/drivers/i2c/busses/i2c-ast2600.c
-@@ -0,0 +1,1741 @@
+@@ -0,0 +1,1745 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
 + * ASPEED AST2600 new register set I2C controller driver
@@ -1047,6 +1047,10 @@ index 000000000000..35c1461ae4d7
 +
 +	if (cmd)
 +		writel(cmd, i2c_bus->reg_base + AST2600_I2CS_CMD_STS);
++
++	if (sts & AST2600_I2CS_ABNOR_STOP)
++		i2c_bus->slave_operate = 0;
++
 +	writel(AST2600_I2CS_PKT_DONE, i2c_bus->reg_base + AST2600_I2CS_ISR);
 +	readl(i2c_bus->reg_base + AST2600_I2CS_ISR);
 +

@@ -11,7 +11,7 @@ diff --git a/drivers/i2c/busses/i2c-ast2600.c b/drivers/i2c/busses/i2c-ast2600.c
 index 35c1461ae4d7..83aa57faa7b1 100644
 --- a/drivers/i2c/busses/i2c-ast2600.c
 +++ b/drivers/i2c/busses/i2c-ast2600.c
-@@ -797,16 +797,28 @@ static void ast2600_i2c_slave_byte_irq(struct ast2600_i2c_bus *i2c_bus, u32 sts)
+@@ -801,16 +801,28 @@ static void ast2600_i2c_slave_byte_irq(struct ast2600_i2c_bus *i2c_bus, u32 sts)
  {
  	u32 i2c_buff = readl(i2c_bus->reg_base + AST2600_I2CC_STS_AND_BUFF);
  	u32 cmd = AST2600_I2CS_ACTIVE_ALL;
@@ -42,7 +42,7 @@ index 35c1461ae4d7..83aa57faa7b1 100644
  		byte_data = AST2600_I2CC_GET_RX_BUFF(i2c_buff);
  		i2c_slave_event(i2c_bus->slave, I2C_SLAVE_WRITE_RECEIVED, &byte_data);
  		break;
-@@ -821,14 +833,12 @@ static void ast2600_i2c_slave_byte_irq(struct ast2600_i2c_bus *i2c_bus, u32 sts)
+@@ -825,14 +837,12 @@ static void ast2600_i2c_slave_byte_irq(struct ast2600_i2c_bus *i2c_bus, u32 sts)
  		i2c_slave_event(i2c_bus->slave, I2C_SLAVE_READ_PROCESSED, &byte_data);
  		writel(byte_data, i2c_bus->reg_base + AST2600_I2CC_STS_AND_BUFF);
  		break;

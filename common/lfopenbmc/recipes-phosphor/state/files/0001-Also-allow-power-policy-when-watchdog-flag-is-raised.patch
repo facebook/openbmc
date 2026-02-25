@@ -1,4 +1,4 @@
-From aa737061648b765ef5f6f1e7c162824e2e738abd Mon Sep 17 00:00:00 2001
+From 6eeca42dc16fae06ea921984b445dfc715e90f1f Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 3 Apr 2024 15:13:25 +0800
 Subject: [PATCH 1/2] Also allow power policy when watchdog flag is raised
@@ -9,10 +9,10 @@ Change-Id: I333abc0313a6560ce509c9481e9b92e592f5ad80
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/discover_system_state.cpp b/discover_system_state.cpp
-index 3be8733..75a882a 100644
+index 7bfba82..eb870b2 100644
 --- a/discover_system_state.cpp
 +++ b/discover_system_state.cpp
-@@ -117,8 +117,7 @@ int main(int argc, char** argv)
+@@ -129,8 +129,7 @@ int main(int argc, char** argv)
      if (bmcRebootCause == BMC::RebootCause::Software)
      {
          info(

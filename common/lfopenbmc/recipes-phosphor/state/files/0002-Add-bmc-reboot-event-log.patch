@@ -1,4 +1,4 @@
-From 691b51714631f4e198580eb8f289f1ebc33e1ff5 Mon Sep 17 00:00:00 2001
+From b23d6623e19fed46d48692895c8861f2a6ae5c3d Mon Sep 17 00:00:00 2001
 From: Patrick NC Lin <patrick.nc.lin.wiwynn@gmail.com>
 Date: Fri, 14 Mar 2025 14:25:05 +0800
 Subject: [PATCH 2/2] Add bmc reboot event log
@@ -47,10 +47,10 @@ Change-Id: Iea03d771cc06bf632826f07d71b5c9f55460d887
  1 file changed, 24 insertions(+), 6 deletions(-)
 
 diff --git a/bmc_state_manager.cpp b/bmc_state_manager.cpp
-index e6b52dd..01aa6ff 100644
+index 9a5ea17..282a24b 100644
 --- a/bmc_state_manager.cpp
 +++ b/bmc_state_manager.cpp
-@@ -265,9 +265,32 @@ BMC::BMCState BMC::currentBMCState(BMCState value)
+@@ -267,9 +267,32 @@ BMC::BMCState BMC::currentBMCState(BMCState value)
  
  BMC::RebootCause BMC::lastRebootCause(RebootCause value)
  {
@@ -83,7 +83,7 @@ index e6b52dd..01aa6ff 100644
      return server::BMC::lastRebootCause(value);
  }
  
-@@ -335,15 +358,10 @@ void BMC::discoverLastRebootCause()
+@@ -342,15 +365,10 @@ void BMC::discoverLastRebootCause()
      // A 0 indicates a pinhole reset occurred
      if (0 == gpioval)
      {

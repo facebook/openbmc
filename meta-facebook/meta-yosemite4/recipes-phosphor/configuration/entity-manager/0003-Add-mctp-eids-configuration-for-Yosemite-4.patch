@@ -1,4 +1,4 @@
-From 91b8cfdae636a72e40b8695e06d4d94e50e92e86 Mon Sep 17 00:00:00 2001
+From 40d21895f867809774393d39feebbddb75887437 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 25 Sep 2023 11:10:46 +0800
 Subject: [PATCH 3/7] Add mctp eids configuration for Yosemite 4
@@ -234,7 +234,7 @@ index 89b4599..c994075 100644
              ]
          },
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index 2f4ab38..252bf18 100644
+index 181ca93..c3e4d81 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
 @@ -1,6 +1,43 @@
@@ -281,7 +281,7 @@ index 2f4ab38..252bf18 100644
          "ExitAirTempSensor": {
              "description": "implemented in dbus-sensors: ExitAirTempSensor",
              "additionalProperties": false,
-@@ -1205,6 +1242,9 @@
+@@ -1206,6 +1243,9 @@
              "EntityInstance": {
                  "type": "number"
              },
@@ -291,7 +291,7 @@ index 2f4ab38..252bf18 100644
              "GpioPins": {
                  "items": {
                      "type": "number"
-@@ -1214,6 +1254,9 @@
+@@ -1215,6 +1255,9 @@
              "GpioPolarity": {
                  "enum": ["Low"]
              },
@@ -301,7 +301,7 @@ index 2f4ab38..252bf18 100644
              "Index": {
                  "type": "number",
                  "minimum": 0,
-@@ -1234,6 +1277,10 @@
+@@ -1235,6 +1278,10 @@
              "MaxValue": {
                  "type": "number"
              },

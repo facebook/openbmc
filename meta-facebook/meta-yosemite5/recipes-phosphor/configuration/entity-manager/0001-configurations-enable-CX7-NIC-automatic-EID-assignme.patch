@@ -1,4 +1,4 @@
-From fc15de4e4293d581896dcdb44cea375c0e43396d Mon Sep 17 00:00:00 2001
+From 54e74e6fdfe2e510befb00c0a509bd790cd51ef9 Mon Sep 17 00:00:00 2001
 From: Kevin Tung <kevin.tung.openbmc@gmail.com>
 Date: Mon, 9 Feb 2026 11:02:57 +0800
 Subject: [PATCH] configurations: enable CX7 NIC automatic EID assignment
@@ -34,5 +34,5 @@ index 3f11519..3d3369f 100644
              "Address": "0x1f",
              "Bus": "$bus",
 -- 
-2.52.0
+2.47.3
 

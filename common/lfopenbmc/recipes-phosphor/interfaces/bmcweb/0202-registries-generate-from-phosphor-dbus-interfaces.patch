@@ -1,4 +1,4 @@
-From f1a1c003617860bc3a09b76a7f59a2022b9cdb91 Mon Sep 17 00:00:00 2001
+From 6dbbcd802e415f4c4ff748f0c8f5841dde66f950 Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Thu, 27 Feb 2025 22:13:03 -0500
 Subject: [PATCH 202/205] registries: generate from phosphor-dbus-interfaces
@@ -32,7 +32,7 @@ Change-Id: I069d3086954d4d439759f4acfdddc84466237012
  create mode 100644 subprojects/phosphor-dbus-interfaces.wrap
 
 diff --git a/meson.build b/meson.build
-index f2c34c1d..67a07384 100644
+index 2a8b36eb..0debfe77 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -248,9 +248,25 @@ if not nghttp2.found()
@@ -92,7 +92,7 @@ index f2c34c1d..67a07384 100644
  srcfiles_bmcweb = files(
      'http/mutual_tls.cpp',
      'http/routing/sserule.cpp',
-@@ -396,7 +435,10 @@ bmcweblib = static_library(
+@@ -397,7 +436,10 @@ bmcweblib = static_library(
      'bmcweblib',
      srcfiles_bmcweb,
      include_directories: incdir,

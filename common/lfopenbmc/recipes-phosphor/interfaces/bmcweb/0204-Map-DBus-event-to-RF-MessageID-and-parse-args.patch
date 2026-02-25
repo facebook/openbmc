@@ -1,4 +1,4 @@
-From 02c56874eb8d3eb6d785b6d9c59311b69ebddf57 Mon Sep 17 00:00:00 2001
+From ebccd6497f26be31c50fb0f919add65fade0fb6f Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 15:59:10 +0000
 Subject: [PATCH 204/205] Map DBus event to RF MessageID and parse args
@@ -108,7 +108,7 @@ Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
  create mode 100644 test/redfish-core/lib/log_services_test.cpp
 
 diff --git a/config/meson.build b/config/meson.build
-index 172dabab..d5a5e46e 100644
+index b37b3d7c..df0aeb24 100644
 --- a/config/meson.build
 +++ b/config/meson.build
 @@ -26,6 +26,7 @@ feature_options = [
@@ -116,9 +116,9 @@ index 172dabab..d5a5e46e 100644
      'redfish-allow-deprecated-indicatorled',
      'redfish-allow-deprecated-power-thermal',
 +    'redfish-allow-dbus-messages-mapping',
+     'redfish-allow-rotational-fans',
      'redfish-allow-simple-update',
      'redfish-bmc-journal',
-     'redfish-cpu-log',
 diff --git a/include/dbus_utility.hpp b/include/dbus_utility.hpp
 index 17589c49..e64034b6 100644
 --- a/include/dbus_utility.hpp
@@ -142,10 +142,10 @@ index 17589c49..e64034b6 100644
  
  // clang-format on
 diff --git a/meson.build b/meson.build
-index 67a07384..7ab332f6 100644
+index 0debfe77..2f3635ba 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -416,6 +416,7 @@ srcfiles_bmcweb = files(
+@@ -417,6 +417,7 @@ srcfiles_bmcweb = files(
      'redfish-core/src/subscription.cpp',
      'redfish-core/src/task_messages.cpp',
      'redfish-core/src/update_messages.cpp',
@@ -154,10 +154,10 @@ index 67a07384..7ab332f6 100644
      'redfish-core/src/utils/json_utils.cpp',
      'redfish-core/src/utils/time_utils.cpp',
 diff --git a/meson.options b/meson.options
-index fc559ab5..7e28fe1c 100644
+index 50568666..fb4e3216 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -337,6 +337,21 @@ option(
+@@ -349,6 +349,21 @@ option(
                      This option will be removed June 2026.''',
  )
  
@@ -176,9 +176,9 @@ index fc559ab5..7e28fe1c 100644
 +    ''',
 +)
 +
- # BMCWEB_REDFISH_OEM_MANAGER_FAN_DATA
+ # BMCWEB_REDFISH_ALLOW_ROTATIONAL_FANS
  option(
-     'redfish-oem-manager-fan-data',
+     'redfish-allow-rotational-fans',
 diff --git a/redfish-core/include/event_log.hpp b/redfish-core/include/event_log.hpp
 index c902a09d..bda08858 100644
 --- a/redfish-core/include/event_log.hpp
@@ -738,10 +738,10 @@ index 00000000..5f036526
 +} // namespace dbus_registries_map
 +} // namespace redfish
 diff --git a/test/meson.build b/test/meson.build
-index 81cff84f..cd1fad11 100644
+index 2318ef6a..05b18909 100644
 --- a/test/meson.build
 +++ b/test/meson.build
-@@ -47,6 +47,7 @@ srcfiles_unittest = files(
+@@ -49,6 +49,7 @@ srcfiles_unittest = files(
      'redfish-core/lib/chassis_test.cpp',
      'redfish-core/lib/ethernet_test.cpp',
      'redfish-core/lib/log_services_dump_test.cpp',

@@ -1,4 +1,4 @@
-From 1ff0370ef4e874532db790cb0100c46b00f7e618 Mon Sep 17 00:00:00 2001
+From cb4efa931cd6ba77a3c643cca3d5d9db590f31ef Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Wed, 29 Oct 2025 15:30:49 +0800
 Subject: [PATCH 3/4] configuration: harma: set battery polling rate to 86400s
@@ -18,7 +18,7 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  3 files changed, 6 insertions(+)
 
 diff --git a/configurations/meta/harma/harma_mb.json b/configurations/meta/harma/harma_mb.json
-index 2ea7dc4..5f9c0a7 100644
+index 0a4eb49..24fe9d5 100644
 --- a/configurations/meta/harma/harma_mb.json
 +++ b/configurations/meta/harma/harma_mb.json
 @@ -121,6 +121,7 @@
@@ -30,7 +30,7 @@ index 2ea7dc4..5f9c0a7 100644
                  "in1_Name": "MB_PVDD11_S3_VOLT_V",
                  "in1_PowerState": "On",
 diff --git a/configurations/meta/harma/harma_mb_vr_infineon.json b/configurations/meta/harma/harma_mb_vr_infineon.json
-index 3b28327..55f1f01 100644
+index dfb7435..b10da42 100644
 --- a/configurations/meta/harma/harma_mb_vr_infineon.json
 +++ b/configurations/meta/harma/harma_mb_vr_infineon.json
 @@ -121,6 +121,7 @@
@@ -42,7 +42,7 @@ index 3b28327..55f1f01 100644
                  "in1_Name": "MB_PVDD11_S3_VOLT_V",
                  "in1_PowerState": "On",
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index 2f4ab38..3187d23 100644
+index 181ca93..79e8154 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
 @@ -817,6 +817,9 @@
@@ -55,7 +55,7 @@ index 2f4ab38..3187d23 100644
                  "in(1[0-7]|[0-9])_PowerState$": {
                      "$ref": "#/$defs/Types/PowerState"
                  },
-@@ -1379,6 +1382,7 @@
+@@ -1380,6 +1383,7 @@
                  "type": "number"
              },
              "PollRate": {

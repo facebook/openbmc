@@ -20,11 +20,11 @@
 package remediations_wedge100
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -42,7 +42,7 @@ func fixROMCS1(stepParams step.StepParams) step.StepExitError {
 	_, err, _, _ := utils.RunCommand([]string{gpioUtilPath, "config", "ROMCS1#"},
 		60*time.Second)
 	if err != nil {
-		errMsg := errors.Errorf("Failed to run ROMCS1# fix: %v", err)
+		errMsg := fmt.Errorf("Failed to run ROMCS1# fix: %w", err)
 		return step.ExitSafeToReboot{Err: errMsg}
 	}
 	return nil

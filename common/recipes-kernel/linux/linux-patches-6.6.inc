@@ -113,6 +113,7 @@ SRC_URI:append = " \
     file://0206-i3c-dw-handle-transfer-abort-errors-distinctly.patch \
     file://0207-i3c-dw-Handle-unexpected-responses-caused-by-SDA-noi.patch \
     file://0208-i3c-handle-null-transfers-during-response-processing.patch \
+    file://0209-i3c-master-ast2600-Fix-missing-of_node-for-virtual-I.patch \
 "
 
 #

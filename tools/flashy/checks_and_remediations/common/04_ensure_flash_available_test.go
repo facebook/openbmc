@@ -21,6 +21,7 @@ package common
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -29,7 +30,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func TestEnsureFlashAvailable(t *testing.T) {
@@ -110,7 +110,7 @@ func TestEnsureFlashAvailable(t *testing.T) {
 			lsOutput:        "/dev/mtd1",
 			printOutput:     "bootargs=console=ttyS2,9600n8 root=/dev/ram rw",
 			grepOutput:      "",
-			want:            step.ExitMustReboot{Err: errors.Errorf("Forcing reboot for new bootargs to take effect")},
+			want:            step.ExitMustReboot{Err: fmt.Errorf("Forcing reboot for new bootargs to take effect")},
 		},
 		{
 			name:            "missing flash",
@@ -123,7 +123,7 @@ func TestEnsureFlashAvailable(t *testing.T) {
 			lsOutput:        "Cannot access MTD device /dev/mtd1: No such file or directory",
 			printOutput:     "",
 			grepOutput:      "",
-			want:            step.ExitMissingMtd{Err: errors.Errorf("Broken flash chip? Cannot see MTD chips on device. Error code: err1, stderr: Cannot access MTD device /dev/mtd1: No such file or directory")},
+			want:            step.ExitMissingMtd{Err: fmt.Errorf("Broken flash chip? Cannot see MTD chips on device. Error code: err1, stderr: Cannot access MTD device /dev/mtd1: No such file or directory")},
 		},
 		{
 			name:            "fw_printenv broken",
@@ -136,7 +136,7 @@ func TestEnsureFlashAvailable(t *testing.T) {
 			lsOutput:        "/dev/mtd1",
 			printOutput:     "Cannot access MTD device /dev/mtd1: No such file or directory",
 			grepOutput:      "",
-			want:            step.ExitBadFlashChip{Err: errors.Errorf("Broken flash chip? U-Boot environment is inaccessible. Error code: err1, stderr: Cannot access MTD device /dev/mtd1: No such file or directory")},
+			want:            step.ExitBadFlashChip{Err: fmt.Errorf("Broken flash chip? U-Boot environment is inaccessible. Error code: err1, stderr: Cannot access MTD device /dev/mtd1: No such file or directory")},
 		},
 		{
 			name:            "fw_setenv broken",
@@ -167,24 +167,24 @@ func TestEnsureFlashAvailable(t *testing.T) {
 					}
 				} else if cmdArr[0] == "sh" {
 					if tc.failLs {
-						return 1, errors.Errorf("err1"), "", tc.lsOutput
+						return 1, fmt.Errorf("err1"), "", tc.lsOutput
 					} else {
 						return 0, nil, "", tc.lsOutput
 					}
 				} else if cmdArr[0] == "fw_printenv" {
 					if tc.failPrint {
-						return 1, errors.Errorf("err1"), "", tc.printOutput
+						return 1, fmt.Errorf("err1"), "", tc.printOutput
 					} else {
 						return 0, nil, "", tc.printOutput
 					}
 				} else if cmdArr[0] == "fw_setenv" {
 					if tc.failSet {
-						return 0, errors.Errorf("err2"), "", "err2"
+						return 0, fmt.Errorf("err2"), "", "err2"
 					} else {
 						return 0, nil, "", ""
 					}
 				}
-				return 0, errors.Errorf("err3"), "", "err3"
+				return 0, fmt.Errorf("err3"), "", "err3"
 			}
 			utils.IsLFOpenBMC = func() bool {
 				return tc.lfOpenBMC

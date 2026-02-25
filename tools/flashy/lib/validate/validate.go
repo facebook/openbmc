@@ -20,10 +20,10 @@
 package validate
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/validate/partition"
-	"github.com/pkg/errors"
 )
 
 // Validate tries to validate partitions according to all configs defined in
@@ -53,5 +53,5 @@ var Validate = func(data []byte) error {
 
 	errMsg := "*** FAILED: Validation failed ***"
 	log.Print(errMsg)
-	return errors.Errorf(errMsg)
+	return fmt.Errorf(errMsg)
 }

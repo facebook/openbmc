@@ -1,7 +1,7 @@
-From 84dd71d34909bf8b1bf194784bf6d1a468c6efac Mon Sep 17 00:00:00 2001
+From e09ec316574dbd6b57db737bc90ea0e95dab8f78 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 22 Sep 2023 09:43:49 +0800
-Subject: [PATCH 04/16] PSUSensor: Fix error for decimal part of scalefactor
+Subject: [PATCH 03/15] PSUSensor: Fix error for decimal part of scalefactor
 
 Customized scale factor declaration from schema in entity-manager,
 declared as type "number." If a number is used in PSUSensor, it loses
@@ -93,10 +93,10 @@ index 0aa2c9e..c4f3a38 100644
      double sensorOffset;
  };
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 5d8fff0..7b1d110 100644
+index c031f8d..e181efe 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -744,7 +744,7 @@ static void createSensorsCallback(
+@@ -745,7 +745,7 @@ static void createSensorsCallback(
                  try
                  {
                      psuProperty.sensorScaleFactor = std::visit(
@@ -105,7 +105,7 @@ index 5d8fff0..7b1d110 100644
                  }
                  catch (const std::invalid_argument&)
                  {
-@@ -753,7 +753,8 @@ static void createSensorsCallback(
+@@ -754,7 +754,8 @@ static void createSensorsCallback(
                  }
  
                  // Avoid later division by zero
@@ -115,7 +115,7 @@ index 5d8fff0..7b1d110 100644
                  {
                      customizedScale = true;
                  }
-@@ -875,7 +876,7 @@ static void createSensorsCallback(
+@@ -876,7 +877,7 @@ static void createSensorsCallback(
              // Similarly, if sensor scaling factor is being customized,
              // then the below power-of-10 constraint becomes unnecessary,
              // as config should be able to specify an arbitrary divisor.
@@ -124,7 +124,7 @@ index 5d8fff0..7b1d110 100644
              if (!customizedScale)
              {
                  // Preserve existing usage of hardcoded labelMatch table below
-@@ -892,8 +893,12 @@ static void createSensorsCallback(
+@@ -893,8 +894,12 @@ static void createSensorsCallback(
                  auto findScaleFactor = baseConfig->find(strScaleFactor);
                  if (findScaleFactor != baseConfig->end())
                  {

@@ -1,7 +1,7 @@
-From 50801ae2e3ce955809c2f2495fc3694a283d6f70 Mon Sep 17 00:00:00 2001
+From 845313bce75c85fe6a7c03eaae8638aeca7b46be Mon Sep 17 00:00:00 2001
 From: Amithash Prasasd <amithash@meta.com>
 Date: Thu, 21 Nov 2024 21:00:02 -0800
-Subject: [PATCH 05/16] Add structured logging for Threshold events
+Subject: [PATCH 04/15] Add structured logging for Threshold events
 
 Add capability to create structured logs for threshold crossing
 (compatible with Redfish Sensor Events) along with ability to
@@ -64,7 +64,7 @@ index 0110986..c7f6996 100644
      sdbusplus,
      uring,
 diff --git a/src/Thresholds.cpp b/src/Thresholds.cpp
-index f46fd46..df6e8fb 100644
+index 9a14b53..4865b8b 100644
 --- a/src/Thresholds.cpp
 +++ b/src/Thresholds.cpp
 @@ -8,18 +8,28 @@

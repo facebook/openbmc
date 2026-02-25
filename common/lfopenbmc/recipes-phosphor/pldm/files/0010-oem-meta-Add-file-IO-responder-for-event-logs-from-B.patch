@@ -1,4 +1,4 @@
-From 2f2b9bfc881e27802b93204b9979ae2267f25c40 Mon Sep 17 00:00:00 2001
+From 4882d14979ef231deda03f17ce4796e0e95e2bda Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Mon, 21 Jul 2025 14:06:38 +0800
 Subject: [PATCH 10/18] oem-meta: Add file IO responder for event logs from BIC
@@ -32,7 +32,7 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  create mode 100644 oem/meta/libpldmresponder/file_io_type_event_log.hpp
 
 diff --git a/oem/meta/event/oem_event_manager.cpp b/oem/meta/event/oem_event_manager.cpp
-index df9482a..f8f0efd 100644
+index af8d437..f4a63a2 100644
 --- a/oem/meta/event/oem_event_manager.cpp
 +++ b/oem/meta/event/oem_event_manager.cpp
 @@ -15,26 +15,36 @@ namespace pldm
@@ -137,7 +137,7 @@ index df9482a..f8f0efd 100644
 +                  "EVTT", 0xF & eventData[1], "LEN", eventData.size());
 +    }
 +
-     errorLog = "Meta Unified SEL (0xFB), ";
+     errorLog = "Facebook Unified SEL (0xFB), ";
  
      DimmInfo dimmInfo = {
 @@ -559,10 +595,11 @@ void OemEventManager::handleUnifiedBIOSEvent(const uint8_t* eventData,

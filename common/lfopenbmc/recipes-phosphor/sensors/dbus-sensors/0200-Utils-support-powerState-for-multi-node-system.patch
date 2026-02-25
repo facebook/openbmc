@@ -1,4 +1,4 @@
-From 5afc1b1601d104170c42b5d5e69f8249bf066014 Mon Sep 17 00:00:00 2001
+From a6b95aac89a370ad81a69a57e97a15e7eef9f7b7 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH 200/203] Utils: support powerState for multi-node system
@@ -885,7 +885,7 @@ index 9f799f5..221645b 100644
  
      void getPath(const std::string& path, const std::string& interface,
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
-index 738efe1..724732c 100644
+index b4a2199..112d9bd 100644
 --- a/src/hwmon-temp/HwmonTempMain.cpp
 +++ b/src/hwmon-temp/HwmonTempMain.cpp
 @@ -607,7 +607,11 @@ static void powerStateChanged(
@@ -957,10 +957,10 @@ index f01ba69..1713e0e 100644
      ~PSUProperty() = default;
  
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 7c752bb..e5d84d1 100644
+index 34732b4..47e35c6 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -776,6 +776,7 @@ static void createSensorsCallback(
+@@ -777,6 +777,7 @@ static void createSensorsCallback(
          checkGroupEvent(directory.string(), groupEventPathList);
  
          PowerState readState = getPowerState(*baseConfig);
@@ -968,7 +968,7 @@ index 7c752bb..e5d84d1 100644
  
          /* Check if there are more sensors in the same interface */
          int i = 1;
-@@ -1241,7 +1242,7 @@ static void createSensorsCallback(
+@@ -1242,7 +1243,7 @@ static void createSensorsCallback(
                      readState, findSensorUnit->second, factor,
                      psuProperty.maxReading, psuProperty.minReading,
                      psuProperty.sensorOffset, labelHead, thresholdConfSize,
@@ -977,7 +977,7 @@ index 7c752bb..e5d84d1 100644
  
                  if (fwName != nullptr)
                  {
-@@ -1430,7 +1431,11 @@ static void powerStateChanged(
+@@ -1431,7 +1432,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {

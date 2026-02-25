@@ -23,11 +23,11 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 	"github.com/u-root/u-root/pkg/dt"
 )
 
@@ -149,7 +149,7 @@ func TestFitValidate(t *testing.T) {
 			// will not be tested here
 			name: "FDT parse error (empty bytes)",
 			data: []byte{},
-			want: errors.Errorf("Unable to read FIT: EOF"),
+			want: fmt.Errorf("Unable to read FIT: EOF"),
 		},
 		{
 			name: "no images node",
@@ -163,7 +163,7 @@ func TestFitValidate(t *testing.T) {
 					Properties: exampleRootProperties,
 				},
 			}),
-			want: errors.Errorf("Unable to get 'images' node: " +
+			want: fmt.Errorf("Unable to get 'images' node: " +
 				"Child node with name 'images' not found in children"),
 		},
 		{
@@ -178,7 +178,7 @@ func TestFitValidate(t *testing.T) {
 					Properties: exampleRootProperties,
 				},
 			}),
-			want: errors.Errorf("Unable to get 'configurations' node: " +
+			want: fmt.Errorf("Unable to get 'configurations' node: " +
 				"Child node with name 'configurations' not found in children"),
 		},
 		{
@@ -210,7 +210,7 @@ func TestFitValidate(t *testing.T) {
 					// no 'data' and 'data-size' property
 				},
 			})),
-			want: errors.Errorf("'images' FIT node failed validation: " +
+			want: fmt.Errorf("'images' FIT node failed validation: " +
 				"Image node 'imageNode1' failed validation: " +
 				"Unable to get data: " +
 				"Property with name 'data-size' not found in node. " +
@@ -296,7 +296,7 @@ func TestValidateImagesNode(t *testing.T) {
 					exampleInvalidImageNode,
 				},
 			},
-			want: errors.Errorf("Image node 'invalidImageNode' failed validation: " +
+			want: fmt.Errorf("Image node 'invalidImageNode' failed validation: " +
 				"Unable to get data: Property with name 'data-size' not found in node. " +
 				"Attempted using (1) 'data' property and (2) data links."),
 		},
@@ -309,7 +309,7 @@ func TestValidateImagesNode(t *testing.T) {
 					exampleValidImageNode,
 				},
 			},
-			want: errors.Errorf("Not enough image nodes validated: want '2' got '1'"),
+			want: fmt.Errorf("Not enough image nodes validated: want '2' got '1'"),
 		},
 	}
 
@@ -378,7 +378,7 @@ func TestValidateImageNode(t *testing.T) {
 				Name:       "imageNode1",
 				Properties: []dt.Property{},
 			},
-			want: errors.Errorf("Unable to get data: Property with name 'data-size' " +
+			want: fmt.Errorf("Unable to get data: Property with name 'data-size' " +
 				"not found in node. Attempted using (1) 'data' property and (2) data links."),
 		},
 		{
@@ -393,7 +393,7 @@ func TestValidateImageNode(t *testing.T) {
 				},
 				Children: []*dt.Node{},
 			},
-			want: errors.Errorf("Error getting sha256 checksum: " +
+			want: fmt.Errorf("Error getting sha256 checksum: " +
 				"Child node with name 'hash-1' not found in children"),
 		},
 		{
@@ -422,7 +422,7 @@ func TestValidateImageNode(t *testing.T) {
 					},
 				},
 			},
-			want: errors.Errorf("Calculated sha256 "+
+			want: fmt.Errorf("Calculated sha256 "+
 				"(0x%X) "+
 				"does not match that in FIT "+
 				"(0x6162636461626364616263646162636461626364616263646162636461626364)",
@@ -498,7 +498,7 @@ func TestGetDataFromImageNode(t *testing.T) {
 				Properties: []dt.Property{},
 			},
 			want: nil,
-			wantErr: errors.Errorf("Unable to get data: " +
+			wantErr: fmt.Errorf("Unable to get data: " +
 				"Property with name 'data-size' not found in node. " +
 				"Attempted using (1) 'data' property and (2) data links."),
 		},
@@ -551,7 +551,7 @@ func TestGetDataFromImageNodeViaDataProp(t *testing.T) {
 				Properties: []dt.Property{},
 			},
 			want:    nil,
-			wantErr: errors.Errorf("Property with name 'data' not found in node"),
+			wantErr: fmt.Errorf("Property with name 'data' not found in node"),
 		},
 		{
 			name: "data longer than partition data",
@@ -566,7 +566,7 @@ func TestGetDataFromImageNodeViaDataProp(t *testing.T) {
 				},
 			},
 			want:    nil,
-			wantErr: errors.Errorf("Partition too small for data size defined in image FDT"),
+			wantErr: fmt.Errorf("Partition too small for data size defined in image FDT"),
 		},
 	}
 
@@ -627,7 +627,7 @@ func TestGetDataFromImageNodeViaDataLink(t *testing.T) {
 				},
 			},
 			want:    nil,
-			wantErr: errors.Errorf("Property with name 'data-size' not found in node"),
+			wantErr: fmt.Errorf("Property with name 'data-size' not found in node"),
 		},
 		{
 			name: "no 'data-position' prop",
@@ -641,7 +641,7 @@ func TestGetDataFromImageNodeViaDataLink(t *testing.T) {
 				},
 			},
 			want:    nil,
-			wantErr: errors.Errorf("Property with name 'data-position' not found in node"),
+			wantErr: fmt.Errorf("Property with name 'data-position' not found in node"),
 		},
 		{
 			name: "data-size can't be casted to uint32 type",
@@ -659,7 +659,7 @@ func TestGetDataFromImageNodeViaDataLink(t *testing.T) {
 				},
 			},
 			want:    nil,
-			wantErr: errors.Errorf("property \"data-size\" is not <u32>"),
+			wantErr: fmt.Errorf("property \"data-size\" is not <u32>"),
 		},
 		{
 			name: "data-position can't be casted to uint32 type",
@@ -677,7 +677,7 @@ func TestGetDataFromImageNodeViaDataLink(t *testing.T) {
 				},
 			},
 			want:    nil,
-			wantErr: errors.Errorf("property \"data-position\" is not <u32>"),
+			wantErr: fmt.Errorf("property \"data-position\" is not <u32>"),
 		},
 		{
 			name: "end offset too large",
@@ -695,7 +695,7 @@ func TestGetDataFromImageNodeViaDataLink(t *testing.T) {
 				},
 			},
 			want: nil,
-			wantErr: errors.Errorf("End offset required (67108868) by 'data-size' " +
+			wantErr: fmt.Errorf("End offset required (67108868) by 'data-size' " +
 				"(67108864) and 'data-position' (4) too large for partition size (1024)"),
 		},
 		{
@@ -714,7 +714,7 @@ func TestGetDataFromImageNodeViaDataLink(t *testing.T) {
 				},
 			},
 			want:    nil,
-			wantErr: errors.Errorf("End offset overflowed: Unsigned integer overflow for (4+4294967295)"),
+			wantErr: fmt.Errorf("End offset overflowed: Unsigned integer overflow for (4+4294967295)"),
 		},
 	}
 
@@ -764,7 +764,7 @@ func TestFitGetSHA256ChecksumFromImageNode(t *testing.T) {
 				Children: []*dt.Node{},
 			},
 			want:    nil,
-			wantErr: errors.Errorf("Child node with name 'hash-1' not found in children"),
+			wantErr: fmt.Errorf("Child node with name 'hash-1' not found in children"),
 		},
 		{
 			name: "successfully gotten (hash-1)",
@@ -804,7 +804,7 @@ func TestFitGetSHA256ChecksumFromImageNode(t *testing.T) {
 				},
 			},
 			want:    nil,
-			wantErr: errors.Errorf("Property with name 'algo' not found in node"),
+			wantErr: fmt.Errorf("Property with name 'algo' not found in node"),
 		},
 		{
 			name: "no value node",
@@ -822,7 +822,7 @@ func TestFitGetSHA256ChecksumFromImageNode(t *testing.T) {
 				},
 			},
 			want:    nil,
-			wantErr: errors.Errorf("Property with name 'value' not found in node"),
+			wantErr: fmt.Errorf("Property with name 'value' not found in node"),
 		},
 		{
 			name: "wrong algo",
@@ -840,7 +840,7 @@ func TestFitGetSHA256ChecksumFromImageNode(t *testing.T) {
 				},
 			},
 			want:    nil,
-			wantErr: errors.Errorf("Algo in image hash node is not sha256, got 'crc32'"),
+			wantErr: fmt.Errorf("Algo in image hash node is not sha256, got 'crc32'"),
 		},
 		{
 			name: "wrong algo, can't get as string",
@@ -858,7 +858,7 @@ func TestFitGetSHA256ChecksumFromImageNode(t *testing.T) {
 				},
 			},
 			want:    nil,
-			wantErr: errors.Errorf("property \"algo\" is not <string>"),
+			wantErr: fmt.Errorf("property \"algo\" is not <string>"),
 		},
 		{
 			name: "checksum size incorrect",
@@ -880,7 +880,7 @@ func TestFitGetSHA256ChecksumFromImageNode(t *testing.T) {
 				},
 			},
 			want:    nil,
-			wantErr: errors.Errorf("sha256 checksum size (9) incorrect (should be 32)"),
+			wantErr: fmt.Errorf("sha256 checksum size (9) incorrect (should be 32)"),
 		},
 	}
 
@@ -910,7 +910,7 @@ func TestGetPropertyFromNode(t *testing.T) {
 
 	_, err = getPropertyFromNode(node, "b")
 	tests.CompareTestErrors(
-		errors.Errorf("Property with name '%v' not found in node", "b"),
+		fmt.Errorf("Property with name '%v' not found in node", "b"),
 		err,
 		t,
 	)
@@ -928,7 +928,7 @@ func TestGetNodeFromChildren(t *testing.T) {
 
 	_, err = getNodeFromChildren(children, "b")
 	tests.CompareTestErrors(
-		errors.Errorf("Child node with name '%v' not found in children", "b"),
+		fmt.Errorf("Child node with name '%v' not found in children", "b"),
 		err,
 		t,
 	)

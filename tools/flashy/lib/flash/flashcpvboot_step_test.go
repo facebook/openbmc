@@ -21,6 +21,7 @@ package flash
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"reflect"
@@ -31,7 +32,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 func TestVbootRomxExists(t *testing.T) {
@@ -139,12 +139,12 @@ func TestFlashCpVboot(t *testing.T) {
 		},
 		{
 			name:                  "failed to get flash device",
-			getFlashDeviceErr:     errors.Errorf("GetFlashDevice error"),
+			getFlashDeviceErr:     fmt.Errorf("GetFlashDevice error"),
 			flashCpAndValidateErr: nil,
 			vbootSkipNeeded:       false,
 			otherFlasherErr:       nil,
 			want: step.ExitSafeToReboot{
-				Err: errors.Errorf("GetFlashDevice error"),
+				Err: fmt.Errorf("GetFlashDevice error"),
 			},
 			logContainsSeq: []string{
 				"Flashing using flashcp vboot method",
@@ -155,11 +155,11 @@ func TestFlashCpVboot(t *testing.T) {
 		{
 			name:                  "flashcp and validate failed",
 			getFlashDeviceErr:     nil,
-			flashCpAndValidateErr: errors.Errorf("RunCommand error"),
+			flashCpAndValidateErr: fmt.Errorf("RunCommand error"),
 			vbootSkipNeeded:       false,
 			otherFlasherErr:       nil,
 			want: step.ExitSafeToReboot{
-				Err: errors.Errorf("RunCommand error"),
+				Err: fmt.Errorf("RunCommand error"),
 			},
 			logContainsSeq: []string{
 				"Flashing using flashcp vboot method",
@@ -172,9 +172,9 @@ func TestFlashCpVboot(t *testing.T) {
 			getFlashDeviceErr:     nil,
 			flashCpAndValidateErr: nil,
 			vbootSkipNeeded:       false,
-			otherFlasherErr:       errors.Errorf("Found other flasher!"),
+			otherFlasherErr:       fmt.Errorf("Found other flasher!"),
 			want: step.ExitUnsafeToReboot{
-				Err: errors.Errorf("Found other flasher!"),
+				Err: fmt.Errorf("Found other flasher!"),
 			},
 			logContainsSeq: []string{
 				"Flashing succeeded but found another flasher running",

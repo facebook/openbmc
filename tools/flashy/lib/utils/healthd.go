@@ -20,12 +20,12 @@
 package utils
 
 import (
+	"fmt"
 	"log"
 	"time"
 
 	"github.com/Jeffail/gabs"
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
-	"github.com/pkg/errors"
 )
 
 const healthdConfigFilePath = "/etc/healthd-config.json"
@@ -64,11 +64,11 @@ var HealthdExists = func() bool {
 var GetHealthdConfig = func() (*gabs.Container, error) {
 	buf, err := fileutils.ReadFile(healthdConfigFilePath)
 	if err != nil {
-		return nil, errors.Errorf("Unable to open healthd-config.json: %v", err)
+		return nil, fmt.Errorf("Unable to open healthd-config.json: %w", err)
 	}
 	healthdConfig, err := gabs.ParseJSON(buf)
 	if err != nil {
-		return nil, errors.Errorf("Unable to parse healthd-config.json: %v", err)
+		return nil, fmt.Errorf("Unable to parse healthd-config.json: %w", err)
 	}
 	return healthdConfig, nil
 }
@@ -80,13 +80,13 @@ func HealthdRemoveMemUtilRebootEntryIfExists(h *gabs.Container) error {
 	rebootExists := false
 	thresholds, err := h.Path("bmc_mem_utilization.threshold").Children()
 	if err != nil {
-		return errors.Errorf("Can't get 'bmc_mem_utilization.threshold' entry in healthd-config %v",
+		return fmt.Errorf("Can't get 'bmc_mem_utilization.threshold' entry in healthd-config %v",
 			h.String())
 	}
 	for _, threshold := range thresholds {
 		actions, err := threshold.Path("action").Children()
 		if err != nil {
-			return errors.Errorf("Can't get 'action' entry in healthd-config %v", h.String())
+			return fmt.Errorf("Can't get 'action' entry in healthd-config %v", h.String())
 		}
 		for i, action := range actions {
 			if action.Data().(string) == "reboot" {
@@ -112,7 +112,7 @@ func HealthdWriteConfigToFile(h *gabs.Container) error {
 
 	err := fileutils.WriteFileWithTimeout(healthdConfigFilePath, buf, 0644, 10*time.Second)
 	if err != nil {
-		return errors.Errorf("Unable to write healthd config to file: %v",
+		return fmt.Errorf("Unable to write healthd config to file: %w",
 			err)
 	}
 
@@ -122,7 +122,7 @@ func HealthdWriteConfigToFile(h *gabs.Container) error {
 // RestartHealthd restarts the healthd process.
 var RestartHealthd = func(wait bool, supervisor string) error {
 	if !fileutils.PathExists("/etc/sv/healthd") {
-		return errors.Errorf("Error restarting healthd: '/etc/sv/healthd' does not exist")
+		return fmt.Errorf("Error restarting healthd: '/etc/sv/healthd' does not exist")
 	}
 
 	// ignore healthd not running (seen on fby3-v2020.33.1)

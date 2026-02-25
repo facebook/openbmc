@@ -1,0 +1,75 @@
+From 55cb5905037ac7c6830d848cc61e77f280c9eddf Mon Sep 17 00:00:00 2001
+From: Cosmo Chou <cosmo.chou@quantatw.com>
+Date: Mon, 9 Feb 2026 11:02:57 +0800
+Subject: [PATCH] configurations: revise CX7 NIC configuration
+
+Add MCTPI2CTarget entry to allow MCTPReactor to automatically
+assign an EID to the CX7 NIC over I2C, removing the need for manual
+EID configuration.
+
+Revise the CX7 NIC temperature sensor name.
+
+Tested on Yv5:
+EID is correctly assigned, the version object is properly exposed.
+Temperature sensor is exposed as NIC0_TEMP_C.
+
+Signed-off-by: Cosmo Chou <cosmo.chou@quantatw.com>
+---
+ configurations/ocp/cx7_ocp.json | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/configurations/ocp/cx7_ocp.json b/configurations/ocp/cx7_ocp.json
+index 3f11519..480d37c 100644
+--- a/configurations/ocp/cx7_ocp.json
++++ b/configurations/ocp/cx7_ocp.json
+@@ -3,20 +3,27 @@
+         {
+             "Address": "$address",
+             "Bus": "$bus",
+-            "Name": "OCP CX7 NIC FRU $bus",
++            "Name": "OCP CX7 NIC FRU $bus % 2",
+             "Type": "EEPROM"
+         },
++        {
++            "Address": "0x32",
++            "Bus": "$bus",
++            "Name": "NIC",
++            "Type": "MCTPI2CTarget"
++        },
+         {
+             "Address": "0x1f",
+             "Bus": "$bus",
+             "Labels": [
+                 "temp2"
+             ],
+-            "Name": "NIC Temp $bus",
+-            "Name1": "NIC Temp $bus",
++            "Name": "NIC$bus % 2 TEMP_C",
++            "Name1": "NIC$bus % 2 TEMP_C",
+             "Thresholds": [
+                 {
+                     "Direction": "less than",
++                    "Hysteresis": 0.1,
+                     "Index": 2,
+                     "Name": "lower critical",
+                     "Severity": 1,
+@@ -24,6 +31,7 @@
+                 },
+                 {
+                     "Direction": "greater than",
++                    "Hysteresis": 2.1,
+                     "Index": 2,
+                     "Name": "upper critical",
+                     "Severity": 1,
+@@ -33,7 +41,7 @@
+             "Type": "TMP421"
+         }
+     ],
+-    "Name": "OCP CX7 NIC $bus",
++    "Name": "OCP CX7 NIC $bus % 2",
+     "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Nvidia ConnectX-7 OCP3.0'})",
+     "Type": "Board",
+     "xyz.openbmc_project.Inventory.Decorator.Asset": {
+-- 
+2.43.0
+

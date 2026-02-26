@@ -22,14 +22,6 @@ import unittest
 from common.base_kv_test import BaseKvTest
 from utils.test_utils import qemu_check
 
-# We should only expect to have kv in python env on BMC
-# ignore import error for devserver / Sandcastle / QEMU
-try:
-    from kv import FPERSIST, kv_get
-except ModuleNotFoundError:
-    if not qemu_check():
-        raise
-
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class KvTest(BaseKvTest, unittest.TestCase):
@@ -71,6 +63,10 @@ class KvTest(BaseKvTest, unittest.TestCase):
         ]
 
     def test_kv_get_key(self):
+        # We should only expect to have kv in python env on BMC, but we can't put
+        # these imports at the top level as they'd break test discovery (P2206870769)
+        from kv import FPERSIST, kv_get
+
         self.set_kv_keys()
         self.assertNotEqual(self.kv_keys, None, "Expected set of kv keys not set")
 

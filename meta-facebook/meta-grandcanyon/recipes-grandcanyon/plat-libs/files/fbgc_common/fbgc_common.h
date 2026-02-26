@@ -44,11 +44,18 @@ extern "C" {
 #define NIC_FRU_ADDR  0x50
 #define IOCM_FRU_ADDR 0x50
 
+
 //UIC FPGA slave address (8-bit)
 #define UIC_FPGA_SLAVE_ADDR 0x1e
+#define UIC_FPGA_SLAVE_AC_POWER_OFFSET 0x00 //GC2
 
 //BS FPGA slave address (8-bit)
 #define BS_FPGA_SLAVE_ADDR 0x1e
+
+//ES FPGA slave address (7-bit)
+#define I2C_ES_FPGA_BUS 3
+#define ES_FPGA_SLAVE_ADDR 0x0f
+#define ES_FPGA_SLAVE_DC_POWER_OFFSET 0x22 //GC2
 
 // Expander slave address (7-bit)
 #define EXPANDER_SLAVE_ADDR    0x71
@@ -266,6 +273,12 @@ enum {
   TYPE_1OU_UNKNOWN = 0xFF,
 };
 
+typedef enum {
+  SV_STOP = 0,
+  SV_START,
+  SV_STATUS,
+} svc_mode_t;
+
 int fbgc_common_get_chassis_type(uint8_t *type);
 void msleep(int msec);
 int fbgc_common_server_stby_pwr_sts(uint8_t *val);
@@ -280,6 +293,7 @@ int check_image_signature(const char* image_path, uint32_t sig_offset);
 int get_server_board_revision_id(uint8_t* board_rev_id, uint8_t board_rev_id_len);
 int fbgc_common_dev_id(char *str, uint8_t *dev);
 bool fbgc_common_is_grandcanyon2(void);
+int sv_control(const char *service, svc_mode_t mode);
 
 #ifdef __cplusplus
 } // extern "C"

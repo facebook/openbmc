@@ -29,6 +29,35 @@ class BicFwComponent : public Component {
     int get_version(json& j) override;
 };
 
+class BicFwRecoveryComponent : public Component {
+  uint8_t fw_comp = 0;
+
+  int update_internal(const std::string& image, bool force) {
+    int ret = bic_update_fw(FRU_SERVER, fw_comp,
+                            const_cast<char*>(image.c_str()),
+                            force ? FORCE_UPDATE_SET : FORCE_UPDATE_UNSET);
+
+    if (ret != BIC_FW_UPDATE_SUCCESS) {
+      cerr << this->alias_component() << ": recovery failed (ret: " << ret << ")" << endl;
+      return FW_STATUS_FAILURE;
+    }
+    return FW_STATUS_SUCCESS;
+  }
+
+ public:
+  BicFwRecoveryComponent(const std::string& fru, const std::string& comp, uint8_t _fw_comp)
+    : Component(fru, comp), fw_comp(_fw_comp) {}
+
+  int update(const std::string& image) override { return update_internal(image, false); }
+  int fupdate(const std::string& image) override { return update_internal(image, true); }
+
+  int print_version() override { return FW_STATUS_SUCCESS; }
+  int get_version(json& j) override {
+    j["VERSION"] = "not_supported";
+    return FW_STATUS_SUCCESS;
+  }
+};
+
 class BicFwBlComponent : public Component {
   uint8_t fw_comp = 0;
   Server server;
@@ -254,6 +283,7 @@ BicFwComponent bic_fw1("server", "bic", FW_BIC);
 
 #ifdef CONFIG_GRANDCANYON2
   // There is no BIC bootloader in Grand Canyon 2.0(AST1030)
+BicFwRecoveryComponent bic_rcvy1("server", "bic_rcvy", FW_BIC_RECOVERY);
 #else
 BicFwBlComponent bicbl_fw1("server", "bicbl", FW_BIC_BOOTLOADER);
 #endif

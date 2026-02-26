@@ -487,3 +487,89 @@ fbgc_common_is_grandcanyon2() {
   return false;
 #endif
 }
+
+#define RETRY_CNT  5
+#define RETRY_DELAY_SEC 1
+
+static int
+sv_status(const char *service) {
+  char cmd[MAX_SYS_CMD_REQ_LEN] = {0};
+  char buf[MAX_SYS_CMD_RESP_LEN] = {0};
+  FILE *fp = NULL;
+
+  snprintf(cmd, sizeof(cmd), "sv status %s 2>/dev/null", service);
+
+  fp = popen(cmd, "r");
+  if (!fp) {
+    syslog(LOG_WARNING, "%s() popen failed for %s", __func__, service);
+    return -1;
+  }
+
+  if (!fgets(buf, sizeof(buf), fp)) {
+    pclose(fp);
+    syslog(LOG_WARNING, "%s() no output for %s", __func__, service);
+    return -1;
+  }
+
+  pclose(fp);
+
+  if (strncmp(buf, "run:", 4) == 0) {
+    return 1;   // service is running
+  }
+  if (strncmp(buf, "down:", 5) == 0) {
+    return 0;   // service is stopped
+  }
+
+  syslog(LOG_WARNING, "%s() unknown status %s", __func__, service);
+  return -1;
+}
+
+int
+sv_control(const char *service, svc_mode_t mode) {
+  char cmd[MAX_SYS_CMD_REQ_LEN] = {0};
+  int ret, retry;
+
+  if (!service) {
+    return -1;
+  }
+
+  switch (mode) {
+  case SV_STOP:
+    snprintf(cmd, sizeof(cmd), "sv stop %s", service);
+    if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "%s() %s failed", __func__, cmd);
+    }
+
+    for (retry = 0; retry < RETRY_CNT; retry++) {
+      sleep(RETRY_DELAY_SEC);
+      ret = sv_status(service);
+      if (ret == 0) {
+        return SV_STOP;
+      }
+    }
+    syslog(LOG_ERR, "service %s failed to stop", service);
+    return -1;
+
+  case SV_START:
+    snprintf(cmd, sizeof(cmd), "sv start %s", service);
+    if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "%s() %s failed", __func__, cmd);
+    }
+
+    for (retry = 0; retry < RETRY_CNT; retry++) {
+      sleep(RETRY_DELAY_SEC);
+      ret = sv_status(service);
+      if (ret == 1) {
+        return SV_START; // running
+      }
+    }
+    syslog(LOG_ERR, "service %s failed to start", service);
+    return -1;
+
+  case SV_STATUS:
+    return sv_status(service);
+
+  default:
+    return -1;
+  }
+}

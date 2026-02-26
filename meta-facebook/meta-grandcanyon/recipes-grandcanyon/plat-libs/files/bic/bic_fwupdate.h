@@ -31,6 +31,8 @@ extern "C" {
 #ifdef CONFIG_GRANDCANYON2
 #define AST_BIC_IPMB_WRITE_COUNT_MAX 224
 #define PKT_SIZE (64*1024)
+int fpga_read_u8(uint8_t bus, uint8_t addr, uint8_t reg, uint8_t *val);
+int fpga_write_u8(uint8_t bus, uint8_t addr, uint8_t reg, uint8_t val);
 #endif
 
 enum {

@@ -34,6 +34,12 @@
 #include "bic_fwupdate.h"
 #include "bic_bios_fwupdate.h"
 #include "bic_vr_fwupdate.h"
+#ifdef CONFIG_GRANDCANYON2
+#include <linux/i2c-dev.h>
+#include <linux/i2c.h>
+#include <sys/ioctl.h>
+#include <facebook/fbgc_gpio.h>
+#endif
 //#define DEBUG
 
 /****************************/
@@ -75,7 +81,6 @@
 
 #define DEVMEM_READ_CMD  "/sbin/devmem 0x%08x | cut -c 3-" // skip "0x"
 #define DEVMEM_WRITE_CMD "/sbin/devmem 0x%08x w 0x%08x"
-
 
 // I2C frequncy
 enum {
@@ -767,6 +772,10 @@ get_component_name(uint8_t comp) {
       return "Bridge-IC";
     case FW_BIC_BOOTLOADER:
       return "Bridge-IC Bootloader";
+#ifdef CONFIG_GRANDCANYON2
+    case FW_BIC_RECOVERY:
+      return "Bridge-IC(Recovery)";
+#endif
     case FW_VR:
       return "VR";
     case FW_BIOS:
@@ -777,19 +786,130 @@ get_component_name(uint8_t comp) {
 }
 
 #ifdef CONFIG_GRANDCANYON2
+#define ES_FPGA_BIC_FWSPICK_MASK_SET    ((1U << 2) | (1U << 3))    // bit[2:3]= BIC_FWSPICK_CPLD:BIC_FWSPICK_BUS
+#define BIC_UART_DEV                    "/dev/ttyS7"
+#define MTERM_BIC_SERVICE               "mTerm-bic"
+#define BIC_RESET_GPIO_SHADOW           "UIC_COMP_BIC_RST_N"
+#define BAUD_115200  115200
+#define BAUD_57600 57600
+
+int fpga_read_u8(uint8_t bus,
+                    uint8_t addr,
+                    uint8_t reg,
+                    uint8_t *val)
+{
+  int fd;
+  char dev[32];
+  struct i2c_rdwr_ioctl_data ioctl_data;
+  struct i2c_msg msgs[2];
+  uint8_t reg_buf = reg;
+  uint8_t data_buf = 0;
+
+  if (val == NULL) {
+    return -EINVAL;
+  }
+
+  snprintf(dev, sizeof(dev), "/dev/i2c-%u", bus);
+
+  fd = open(dev, O_RDWR);
+  if (fd < 0) {
+    syslog(LOG_ERR, "fpga_read_u8: open %s failed: %s",
+           dev, strerror(errno));
+    return -errno;
+  }
+
+  /*
+   * msg[0]: write reg offset
+   * msg[1]: read 1 byte
+   */
+  msgs[0].addr  = addr;
+  msgs[0].flags = 0;               // write
+  msgs[0].len   = 1;
+  msgs[0].buf   = &reg_buf;
+
+  msgs[1].addr  = addr;
+  msgs[1].flags = I2C_M_RD;        // read
+  msgs[1].len   = 1;
+  msgs[1].buf   = &data_buf;
+
+  ioctl_data.msgs  = msgs;
+  ioctl_data.nmsgs = 2;
+
+  if (ioctl(fd, I2C_RDWR, &ioctl_data) < 0) {
+    syslog(LOG_ERR,
+           "fpga_read_u8: I2C_RDWR failed (bus=%u addr=0x%02x reg=0x%02x): %s",
+           bus, addr, reg, strerror(errno));
+    close(fd);
+    return -errno;
+  }
+
+  close(fd);
+  *val = data_buf;
+
+  syslog(LOG_DEBUG,
+         "fpga_read_u8: bus=%u addr=0x%02x reg=0x%02x val=0x%02x",
+         bus, addr, reg, *val);
+
+  return 0;
+}
+
+int fpga_write_u8(uint8_t bus,
+                     uint8_t addr,
+                     uint8_t reg,
+                     uint8_t val)
+{
+  int fd;
+  char dev[32];
+  struct i2c_rdwr_ioctl_data ioctl_data;
+  struct i2c_msg msg;
+  uint8_t buf[2];
+
+  snprintf(dev, sizeof(dev), "/dev/i2c-%u", bus);
+
+  fd = open(dev, O_RDWR);
+  if (fd < 0) {
+    syslog(LOG_ERR, "fpga_write_u8: open %s failed: %s",
+           dev, strerror(errno));
+    return -errno;
+  }
+
+  /*
+   * write: <reg> <val>
+   */
+  buf[0] = reg;
+  buf[1] = val;
+
+  msg.addr  = addr;
+  msg.flags = 0;     // write
+  msg.len   = 2;
+  msg.buf   = buf;
+
+  ioctl_data.msgs  = &msg;
+  ioctl_data.nmsgs = 1;
+
+  if (ioctl(fd, I2C_RDWR, &ioctl_data) < 0) {
+    syslog(LOG_ERR,
+           "fpga_write_u8: I2C_RDWR failed (bus=%u addr=0x%02x reg=0x%02x val=0x%02x): %s",
+           bus, addr, reg, val, strerror(errno));
+    close(fd);
+    return -errno;
+  }
+
+  close(fd);
+
+  syslog(LOG_DEBUG,
+         "fpga_write_u8: bus=%u addr=0x%02x reg=0x%02x val=0x%02x",
+         bus, addr, reg, val);
+
+  return 0;
+}
+
 static bool
 end_with (char* str, uint8_t str_len, char* pattern, uint8_t pattern_len) {
   if ((str == NULL) || (pattern == NULL)) {
     return false;
   }
   return (strncmp(str + (str_len - pattern_len), pattern, pattern_len) == 0);
-}
-
-static int
-recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t force) {
-  int ret = -1;
-  syslog(LOG_INFO, "BIC recovery bypass in current stage, ret: %d\n", ret);
-  return ret;
 }
 
 static int
@@ -968,6 +1088,199 @@ exit:
   if ( fd >= 0 ) {
     close(fd);
   }
+
+  return ret;
+}
+
+static int
+recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t force){
+  int ret = BIC_STATUS_FAILURE;
+  int fd = -1, ttyfd = -1;
+  size_t file_size = 0;
+  char cmd[MAX_SYS_CMD_REQ_LEN] = {0};
+  size_t cmd_size = sizeof(cmd);
+  bool mterm_stopped = false, strap_set = false;
+  uint8_t initial_value = 0, rcvy_mode_value = 0;
+  uint8_t buf[256] = {0};
+
+  fd = open_and_get_size(path, &file_size);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s() cannot open the file: %s, fd = %d\n", __func__, path, fd);
+    return -1;
+  }
+  printf("file size = %zu bytes, slot=%u, comp=%u, intf=0x%x\n", file_size, slot_id, comp, intf);
+
+  if (sv_control(MTERM_BIC_SERVICE, SV_STOP) == SV_STOP) {
+    mterm_stopped = true;
+  } else {
+    syslog(LOG_WARNING, "%s() Failed to stop %s", __func__, MTERM_BIC_SERVICE);
+    goto cleanup;
+  }
+
+  //set CPLD_BIC_FWSPICK (bit2) and CPLD_BIC_FWSPICK_BUS (bit3) to high
+  printf("Setting BIC boot from UART\n");
+  if (fpga_read_u8(I2C_ES_FPGA_BUS, ES_FPGA_SLAVE_ADDR, 0x01, &initial_value) != 0) {
+    goto cleanup;
+  }
+  rcvy_mode_value = initial_value | ES_FPGA_BIC_FWSPICK_MASK_SET;
+  if (fpga_write_u8(I2C_ES_FPGA_BUS, ES_FPGA_SLAVE_ADDR, 0x01, rcvy_mode_value) != 0) {
+    goto cleanup;
+  }
+  strap_set = true;
+  msleep(100);
+
+  //set UIC_COMP_BIC_RST_N to low trigger BIC_RESET_N
+  snprintf(cmd, cmd_size, "/usr/bin/gpiocli -s \"%s\" set-value %d", BIC_RESET_GPIO_SHADOW, GPIO_VALUE_LOW);
+  if (system(cmd) != 0) {
+    syslog(LOG_WARNING, "%s() %s failed", __func__, cmd);
+    goto cleanup;
+  }
+  sleep(1);
+
+  snprintf(cmd, cmd_size, "/usr/bin/gpiocli -s \"%s\" set-value %d", BIC_RESET_GPIO_SHADOW, GPIO_VALUE_HIGH);
+  if (system(cmd) != 0) {
+    syslog(LOG_WARNING, "%s() %s failed", __func__, cmd);
+    goto cleanup;
+  }
+  msleep(20);
+
+  //Check if bic enter recovery mode
+  if (is_bic_ready() == STATUS_BIC_NOT_READY) {
+    printf("Successfully entered BIC recovery mode\n");
+  } else {
+    printf("Failed to enter BIC recovery mode\n");
+    goto cleanup;
+  }
+
+  snprintf(cmd, sizeof(cmd), "/bin/stty -F %s %d", BIC_UART_DEV, BAUD_115200);
+  if (system(cmd) != 0) {
+    syslog(LOG_WARNING, "%s() %s failed", __func__, cmd);
+    goto cleanup;
+  }
+  msleep(20);
+
+  ttyfd = open(BIC_UART_DEV, O_RDWR | O_NOCTTY);
+  if (ttyfd < 0) {
+    syslog(LOG_ERR, "%s() Cannot open %s", __func__, BIC_UART_DEV);
+    goto cleanup;
+  }
+
+  printf("Doing the recovery update...\n");
+  size_t r_b = 0;
+  uint32_t fsz = (uint32_t)file_size;
+  if (write(ttyfd, &fsz, sizeof(fsz)) != (ssize_t)sizeof(fsz)) {
+    syslog(LOG_ERR, "%s() write file size failed", __func__);
+    goto cleanup;
+  }
+
+  size_t dsize = (file_size >= 100) ? (file_size / 100) : 1;
+  size_t last_offset = 0;
+  while (r_b < file_size) {
+    int rc = read(fd, buf, sizeof(buf));
+    if (rc <= 0) {
+      if (rc < 0 && errno == EINTR) {
+        continue;
+      }
+      syslog(LOG_ERR, "%s() read image failed rc=%d", __func__, rc);
+      goto cleanup;
+    }
+
+    int w_b = 0;
+    while (w_b < rc) {
+      int wc = write(ttyfd, &buf[w_b], rc - w_b);
+      if (wc > 0) {
+        w_b += wc;
+      } else {
+        if (wc < 0 && errno == EINTR) {
+          continue;
+        }
+        syslog(LOG_ERR, "%s() write tty failed wc=%d", __func__, wc);
+        goto cleanup;
+      }
+    }
+
+    r_b += rc;
+
+    if ((last_offset + dsize) <= r_b) {
+      _set_fw_update_ongoing(60);
+      printf("\ruploaded bic: %zu %%", r_b / dsize);
+      fflush(stdout);
+      last_offset += dsize;
+    }
+  }
+  printf("\n");
+
+  if (r_b != file_size) {
+    syslog(LOG_ERR, "%s() uploaded bic failed (%zu/%zu)", __func__, r_b, file_size);
+    goto cleanup;
+  }
+  sleep(5);
+
+  //update bic
+  ret = update_bic_runtime_fw(slot_id, comp, intf, path, force);
+  sleep(5);
+
+cleanup:
+  //set UART back to 57600
+  snprintf(cmd, sizeof(cmd), "/bin/stty -F %s %d", BIC_UART_DEV, BAUD_57600);
+  if (system(cmd) != 0) {
+    syslog(LOG_WARNING, "[%s] %s failed", __func__, cmd);
+  }
+
+  if (strap_set) {
+    //set CPLD_BIC_FWSPICK (bit2) and CPLD_BIC_FWSPICK_BUS (bit3) back to low
+    fpga_write_u8(I2C_ES_FPGA_BUS, ES_FPGA_SLAVE_ADDR, 0x01, initial_value);
+
+    //set UIC_COMP_BIC_RST_N to low trigger BIC_RESET_N
+    snprintf(cmd, cmd_size, "/usr/bin/gpiocli -s \"%s\" set-value %d", BIC_RESET_GPIO_SHADOW, GPIO_VALUE_LOW);
+    if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "[%s] %s failed", __func__, cmd);
+    }
+    sleep(1);
+    snprintf(cmd, cmd_size, "/usr/bin/gpiocli -s \"%s\" set-value %d", BIC_RESET_GPIO_SHADOW, GPIO_VALUE_HIGH);
+    if (system(cmd) != 0) {
+      syslog(LOG_WARNING, "[%s] %s failed", __func__, cmd);
+    }
+  }
+
+  //restart mTerm-bic service
+  if (mterm_stopped) {
+    if (sv_control(MTERM_BIC_SERVICE, SV_START) == SV_START) {
+      mterm_stopped = false;
+    } else {
+      syslog(LOG_ERR, "Failed to start %s", MTERM_BIC_SERVICE);
+    }
+  }
+
+  if (ret == BIC_STATUS_SUCCESS) {
+    printf("Power-cycling the server...\n");
+    //12v off
+    if(fpga_write_u8(I2C_UIC_FPGA_BUS, UIC_FPGA_SLAVE_ADDR >> 1, UIC_FPGA_SLAVE_AC_POWER_OFFSET, STAT_AC_OFF ) != 0)
+    {
+      printf("Failed to 12V off, please manual do 12V cycle..\n");
+    }
+    sleep(1);
+    //12v on
+    if( fpga_write_u8(I2C_UIC_FPGA_BUS, UIC_FPGA_SLAVE_ADDR >> 1, UIC_FPGA_SLAVE_AC_POWER_OFFSET, STAT_AC_ON ) != 0)
+    {
+      printf("Failed to 12V on, please manual do 12V cycle..\n");
+    }
+    sleep(5);
+
+    //DC on
+    if( fpga_write_u8(I2C_ES_FPGA_BUS, ES_FPGA_SLAVE_ADDR, ES_FPGA_SLAVE_DC_POWER_OFFSET, STAT_DC_OFF ) != 0)
+    {
+      printf("Failed to server power off, please manual do power cycle..\n");
+    }
+    sleep(DELAY_DC_POWER_ON);
+    if( fpga_write_u8(I2C_ES_FPGA_BUS, ES_FPGA_SLAVE_ADDR, ES_FPGA_SLAVE_DC_POWER_OFFSET, STAT_DC_ON ) != 0)
+    {
+      printf("Failed to server power on, please manual do power cycle..\n");
+    }
+  }
+
+  if (ttyfd >= 0) close(ttyfd);
+  if (fd >= 0) close(fd);
 
   return ret;
 }

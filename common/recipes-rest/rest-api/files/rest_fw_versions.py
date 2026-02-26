@@ -18,17 +18,17 @@
 # Boston, MA 02110-1301 USA
 #
 
+import asyncio
 import hashlib
 import json
 import re
-import shutil
-import subprocess
-from typing import Dict, Tuple
+import shlex
+from typing import Dict, Optional, Tuple
 
 from aiohttp.web_exceptions import HTTPNotFound
+from common_utils import async_exec
 from rest_utils import DEFAULT_TIMEOUT_SEC
 
-_BASH_PATH = shutil.which("bash")
 _REGEX_VERSION_PATTERN = r"^[v]?([0-9]*)\.([0-9]*)$"
 _MANIFEST_FILE = "/etc/ufw_manifest.json"
 
@@ -49,93 +49,134 @@ def _normalize_version(version: str) -> str:
     return version
 
 
-def _run_command(cmd: str) -> Tuple[str, str]:
+async def _run_command(cmd: str) -> Tuple[str, str]:
     """
     Run a shell command and return (stdout, error_message).
     """
     try:
-        if not _BASH_PATH:
-            return "", "bash executable not found"
-        proc = subprocess.Popen(
-            [_BASH_PATH, "-o", "pipefail", "-c", cmd],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-        )
-        stdout, stderr = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
-        stdout_str = stdout.decode().strip()
-        stderr_str = stderr.decode().strip()
+        returncode, stdout, stderr = await async_exec(cmd, shell=True)
+        stdout = stdout.strip()
+        stderr = stderr.strip()
 
-        if proc.returncode != 0:
-            error_msg = f"Command failed with exit code {proc.returncode}: {cmd}"
-            if stderr_str:
-                error_msg += f" - stderr: {stderr_str}"
-            return stdout_str, error_msg
+        if returncode != 0:
+            error_msg = f"Command failed with exit code {returncode}: {cmd}"
+            if stderr:
+                error_msg += f" - stderr: {stderr}"
+            return stdout, error_msg
 
-        return stdout_str, ""
-    except subprocess.TimeoutExpired:
-        return "", f"Command timed out after {DEFAULT_TIMEOUT_SEC}s: {cmd}"
+        return stdout, ""
     except Exception as e:
         return "", f"Command exception: {cmd} - {repr(e)}"
 
 
-def _check_condition(condition: str, entity: str) -> bool:
+async def _check_condition(condition: str, entity: str) -> bool:
     """Check if a conditional firmware component should be queried."""
     cmd = condition.replace("{entity}", entity)
-    proc = subprocess.Popen(
-        cmd,
-        shell=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
-    return proc.returncode == 0
+    returncode, _, _ = await async_exec(cmd, shell=True)
+    return returncode == 0
 
 
-def _get_firmware_versions() -> Tuple[Dict[str, str], Dict[str, str]]:
+async def _fetch_group_versions(
+    base_cmd: str, filter_cmds: Dict[str, Optional[str]]
+) -> Dict[str, Tuple[str, str]]:
     """
-    Get all firmware versions and return as tuple of dicts.
-    fw_key: version, fw_key: error (if applicable)
+    Run base_cmd once, then apply each filter_cmd to extract individual versions.
+    Returns {fw_key: (version, error)}.
     """
-    fw_data = {}
-    errors = {}
-    fw_manifest = _load_manifest()
+    try:
+        stdout, error = await _run_command(base_cmd)
+        if error:
+            return {fw_key: ("", error) for fw_key in filter_cmds}
 
-    # Example UFW Manifest structure: https://fburl.com/code/0279atrc
+        results = {}
+        for fw_key, filter_cmd in filter_cmds.items():
+            if filter_cmd is None:
+                results[fw_key] = (stdout, "")
+            else:
+                cmd = f"printf '%s\\n' {shlex.quote(stdout)} | {filter_cmd}"
+                results[fw_key] = await _run_command(cmd)
+
+        return results
+    except Exception as e:
+        return {fw_key: ("", repr(e)) for fw_key in filter_cmds}
+
+
+async def _build_groups(
+    fw_manifest: Dict,
+) -> Dict[str, Dict[str, Optional[str]]]:
+    """
+    Build {base_cmd: {fw_key: filter_cmd_or_none}} from the manifest.
+    Commands sharing the same base (before the first "|") are grouped so the
+    expensive hardware query runs only once per unique base command.
+    """
+    groups: Dict[str, Dict[str, Optional[str]]] = {}
     for fw_name, fw_config in fw_manifest.items():
         get_version_cmd = fw_config.get("get_version")
         if not get_version_cmd:
             continue
 
-        entities = fw_config.get("entities", [None])
+        entities = fw_config.get("entities")
         condition = fw_config.get("condition")
 
-        for entity in entities:
-            if condition and entity:
-                if not _check_condition(condition, entity):
+        if entities:
+            for entity in entities:
+                if condition and not await _check_condition(condition, entity):
                     continue
 
-            if entity:
                 cmd = get_version_cmd.replace("{entity}", entity)
                 fw_key = f"{fw_name}-{entity}"
-            else:
-                cmd = get_version_cmd
-                fw_key = fw_name
 
-            version, error = _run_command(cmd)
+                parts = cmd.split("|", 1)
+                base_cmd = parts[0].strip()
+                filter_cmd = parts[1].strip() if len(parts) == 2 else None
+                groups.setdefault(base_cmd, {})[fw_key] = filter_cmd
+        else:
+            parts = get_version_cmd.split("|", 1)
+            base_cmd = parts[0].strip()
+            filter_cmd = parts[1].strip() if len(parts) == 2 else None
+            groups.setdefault(base_cmd, {})[fw_name] = filter_cmd
+
+    return groups
+
+
+async def _get_firmware_versions() -> Tuple[Dict[str, str], Dict[str, str]]:
+    """
+    Get all firmware versions, deduplicating shared base commands.
+    """
+    groups = await _build_groups(_load_manifest())
+
+    group_results = await asyncio.gather(
+        *[
+            asyncio.wait_for(
+                _fetch_group_versions(base_cmd, filter_cmds),
+                timeout=DEFAULT_TIMEOUT_SEC,
+            )
+            for base_cmd, filter_cmds in groups.items()
+        ],
+        return_exceptions=True,
+    )
+
+    fw_data: Dict[str, str] = {}
+    errors: Dict[str, str] = {}
+    for filter_cmds, result in zip(groups.values(), group_results):
+        if isinstance(result, Exception):
+            for fw_key in filter_cmds:
+                fw_data[fw_key] = ""
+                errors[fw_key] = repr(result)
+            continue
+        for fw_key, (version, error) in result.items():
+            fw_data[fw_key] = _normalize_version(version)
             if error:
                 errors[fw_key] = error
-
-            version = _normalize_version(version)
-            fw_data[fw_key] = version
 
     return dict(sorted(fw_data.items())), dict(sorted(errors.items()))
 
 
-def get_fw_versions() -> Dict:
+async def get_fw_versions() -> Dict:
     """
     Returns a dict with firmware version information and a hash of all versions.
     """
-    fw_versions, errors = _get_firmware_versions()
+    fw_versions, errors = await _get_firmware_versions()
     fw_concat = ",".join(["{}:{}".format(key, val) for key, val in fw_versions.items()])
 
     fw_hash = hashlib.blake2s(fw_concat.encode(), digest_size=6).hexdigest()

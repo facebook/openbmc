@@ -144,7 +144,5 @@ class boardApp_Handler:
         return pim_details
 
     async def rest_fw_versions_hdl(self, request):
-        fw_versions = await asyncio.get_event_loop().run_in_executor(
-            None, rest_fw_versions.get_fw_versions
-        )
+        fw_versions = await rest_fw_versions.get_fw_versions()
         return web.json_response(fw_versions, dumps=dumps_bytestr)

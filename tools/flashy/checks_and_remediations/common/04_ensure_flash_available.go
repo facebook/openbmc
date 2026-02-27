@@ -20,6 +20,7 @@
 package common
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -27,7 +28,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -78,7 +78,7 @@ func ensureFlashAvailable(stepParams step.StepParams) step.StepExitError {
 	cmd = []string{"sh", "-c", "ls /dev/mtd*"}
 	_, err, stdout, stderr = utils.RunCommand(cmd, 30*time.Second)
 	if err != nil {
-		errMsg := errors.Errorf(
+		errMsg := fmt.Errorf(
 			"Broken flash chip? Cannot see MTD chips on device."+
 				" Error code: %v, stderr: %v", err, stderr)
 		return step.ExitMissingMtd{Err: errMsg}
@@ -88,7 +88,7 @@ func ensureFlashAvailable(stepParams step.StepParams) step.StepExitError {
 	cmd = []string{"fw_printenv", "bootargs"}
 	_, err, stdout, stderr = utils.RunCommand(cmd, 30*time.Second)
 	if err != nil {
-		errMsg := errors.Errorf(
+		errMsg := fmt.Errorf(
 			"Broken flash chip? U-Boot environment is inaccessible."+
 				" Error code: %v, stderr: %v", err, stderr)
 		return step.ExitBadFlashChip{Err: errMsg}
@@ -107,6 +107,6 @@ func ensureFlashAvailable(stepParams step.StepParams) step.StepExitError {
 	log.Printf("New bootargs: [%v]", bootargs)
 
 	// Force a reboot to pick up new mtdparts.
-	errMsg := errors.Errorf("Forcing reboot for new bootargs to take effect")
+	errMsg := fmt.Errorf("Forcing reboot for new bootargs to take effect")
 	return step.ExitMustReboot{Err: errMsg}
 }

@@ -20,10 +20,10 @@
 package partition
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 // ValidatePartitionsFromPartitionConfigs gets all the partitions based on the partitionConfigs
@@ -37,12 +37,12 @@ var ValidatePartitionsFromPartitionConfigs = func(
 		partitionConfigs,
 	)
 	if err != nil {
-		return errors.Errorf("Unable to get all partitions: %v",
+		return fmt.Errorf("Unable to get all partitions: %w",
 			err)
 	}
 	err = validatePartitions(partitions)
 	if err != nil {
-		return errors.Errorf("Validation failed: %v", err)
+		return fmt.Errorf("Validation failed: %w", err)
 	}
 	return nil
 }
@@ -55,7 +55,7 @@ var validatePartitions = func(partitions []Partition) error {
 			p.GetName(), p.GetType())
 		err := p.Validate()
 		if err != nil {
-			return errors.Errorf("Partition '%v' failed validation: %v",
+			return fmt.Errorf("Partition '%v' failed validation: %w",
 				p.GetName(), err)
 		}
 	}
@@ -75,7 +75,7 @@ var getAllPartitionsFromPartitionConfigs = func(
 		// partitions of the IGNORE format can be not present in the image, and
 		// that is ok.
 		if pInfo.Offset > uint32(len(data)) && pInfo.Type != IGNORE {
-			return nil, errors.Errorf("Wanted start offset (%v) larger than image file size (%v)",
+			return nil, fmt.Errorf("Wanted start offset (%v) larger than image file size (%v)",
 				pInfo.Offset, len(data))
 		}
 
@@ -90,7 +90,7 @@ var getAllPartitionsFromPartitionConfigs = func(
 		if uint32(len(data)) > pInfo.Offset {
 			pOffsetEnd, err := utils.AddU32(pInfo.Size, pInfo.Offset)
 			if err != nil {
-				return nil, errors.Errorf("Unable to get offset end: %v", err)
+				return nil, fmt.Errorf("Unable to get offset end: %w", err)
 			}
 
 			if uint32(len(data)) < pOffsetEnd {
@@ -102,7 +102,7 @@ var getAllPartitionsFromPartitionConfigs = func(
 			// only pass in region of data defined as the partition
 			pData, err = utils.BytesSliceRange(data, pInfo.Offset, pOffsetEnd)
 			if err != nil {
-				return nil, errors.Errorf("Unable to extract partition data: %v", err)
+				return nil, fmt.Errorf("Unable to extract partition data: %w", err)
 			}
 		}
 		args := PartitionFactoryArgs{
@@ -114,7 +114,7 @@ var getAllPartitionsFromPartitionConfigs = func(
 			p := factory(args)
 			partitions = append(partitions, p)
 		} else {
-			return nil, errors.Errorf("Failed to get '%v' partition: "+
+			return nil, fmt.Errorf("Failed to get '%v' partition: "+
 				" Unknown partition validator type '%v'",
 				pInfo.Name, pInfo.Type)
 		}

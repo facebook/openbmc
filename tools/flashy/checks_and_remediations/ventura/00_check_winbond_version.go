@@ -20,13 +20,13 @@
 package remediations_ventura
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -39,7 +39,7 @@ func checkWinbondVersion(stepParams step.StepParams) step.StepExitError {
 	// First check if Winbond manufacturer
 	manufacturer, err := utils.GetBSMFlashManufacturerFromFile()
 	if err != nil {
-		errMsg := errors.Errorf("Unable to fetch SPI Manufacturer info: %v", err)
+		errMsg := fmt.Errorf("Unable to fetch SPI Manufacturer info: %v", err)
 		return step.ExitUnsafeToReboot{Err: errMsg}
 	}
 	if manufacturer != "winbond" {
@@ -49,7 +49,7 @@ func checkWinbondVersion(stepParams step.StepParams) step.StepExitError {
 
 	version, err := utils.GetOpenBMCVersionFromIssueFile()
 	if err != nil {
-		errMsg := errors.Errorf("Unable to fetch version info: %v", err)
+		errMsg := fmt.Errorf("Unable to fetch version info: %v", err)
 		return step.ExitUnsafeToReboot{Err: errMsg}
 	}
 
@@ -61,7 +61,7 @@ func checkWinbondVersion(stepParams step.StepParams) step.StepExitError {
 			log.Printf("Upgrading from dirty version. Skipping year check")
 			return nil
 		} else {
-			errMsg := errors.Errorf("Unable to parse version info: %v", err)
+			errMsg := fmt.Errorf("Unable to parse version info: %v", err)
 			return step.ExitUnsafeToReboot{Err: errMsg}
 		}
 	}
@@ -72,7 +72,7 @@ func checkWinbondVersion(stepParams step.StepParams) step.StepExitError {
 
 	// Fix is applied from 2025.02.02 =>
 	if year < 2025 || (year == 2025 && (week < 2 || week == 2 && revision < 2)) {
-		errMsg := errors.Errorf("Cannot upgrade this version (%v) due to S483584", version)
+		errMsg := fmt.Errorf("Cannot upgrade this version (%v) due to S483584", version)
 		return step.ExitUnsafeToReboot{Err: errMsg}
 	}
 

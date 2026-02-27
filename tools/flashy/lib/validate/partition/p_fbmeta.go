@@ -24,10 +24,10 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -143,13 +143,13 @@ func (p *FBMetaImagePartition) getMetaInfo() (FBMetaInfo, error) {
 	var metaInfo FBMetaInfo
 	offsetEnd := uint32(fbmetaImageMetaPartitionSize + fbmetaImageMetaPartitionOffset)
 	if offsetEnd > p.GetSize() {
-		return metaInfo, errors.Errorf("Image/device size too small (%v B) to contain meta partition region",
+		return metaInfo, fmt.Errorf("Image/device size too small (%v B) to contain meta partition region",
 			p.GetSize())
 	}
 
 	metaPartitionData, err := utils.BytesSliceRange(p.Data, fbmetaImageMetaPartitionOffset, offsetEnd)
 	if err != nil {
-		return metaInfo, errors.Errorf("Unable to get meta partition data: %v", err)
+		return metaInfo, fmt.Errorf("Unable to get meta partition data: %v", err)
 	}
 
 	return parseAndValidateFBImageMetaJSON(metaPartitionData)
@@ -167,7 +167,7 @@ var parseAndValidateFBImageMetaJSON = func(data []byte) (FBMetaInfo, error) {
 	splitData := bytes.Split(data, []byte{'\n'})
 	// must have at least 3 elements
 	if len(splitData) < 3 {
-		return metaInfo, errors.Errorf("Meta partition incomplete: cannot find two lines of " +
+		return metaInfo, fmt.Errorf("Meta partition incomplete: cannot find two lines of " +
 			"JSON")
 	}
 
@@ -177,7 +177,7 @@ var parseAndValidateFBImageMetaJSON = func(data []byte) (FBMetaInfo, error) {
 	// get the checksums first
 	err := json.Unmarshal(imageMetaChecksumJSONData, &metaChecksum)
 	if err != nil {
-		return metaInfo, errors.Errorf("Unable to unmarshal image-meta checksum JSON: %v",
+		return metaInfo, fmt.Errorf("Unable to unmarshal image-meta checksum JSON: %v",
 			err)
 	}
 	checksum := metaChecksum.Checksum
@@ -187,14 +187,14 @@ var parseAndValidateFBImageMetaJSON = func(data []byte) (FBMetaInfo, error) {
 	calcChecksum := hex.EncodeToString(hash[:])
 
 	if calcChecksum != checksum {
-		return metaInfo, errors.Errorf("'image-meta' checksum (%v) does not match checksums supplied (%v)",
+		return metaInfo, fmt.Errorf("'image-meta' checksum (%v) does not match checksums supplied (%v)",
 			calcChecksum, checksum)
 	}
 
 	// get metaInfo
 	err = json.Unmarshal(imageMetaJSONData, &metaInfo)
 	if err != nil {
-		return metaInfo, errors.Errorf("Unable to unmarshal image-meta JSON: %v",
+		return metaInfo, fmt.Errorf("Unable to unmarshal image-meta JSON: %v",
 			err)
 	}
 
@@ -253,6 +253,6 @@ var getPartitionConfigTypeFromFBMetaPartInfoType = func(t FBMetaPartInfoType, vb
 		FBMETA_DATA:
 		return IGNORE, nil
 	default:
-		return IGNORE, errors.Errorf("Unknown partition type in image-meta: '%v'", t)
+		return IGNORE, fmt.Errorf("Unknown partition type in image-meta: '%v'", t)
 	}
 }

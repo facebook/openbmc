@@ -21,13 +21,13 @@ package step
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 // any other exit codes are programming errors
@@ -159,7 +159,7 @@ func HandleStepError(err StepExitError) {
 			// wrap the original error and convert
 			log.Printf("UNSAFE TO REBOOT: %v", ensureSafeToRebootErr)
 			newErr := ExitUnsafeToReboot{
-				errors.Errorf("Original error: %v.\n"+
+				fmt.Errorf("Original error: %v.\n"+
 					"Error converted to Unsafe to Reboot because of: %v",
 					err.GetError(), ensureSafeToRebootErr),
 			}

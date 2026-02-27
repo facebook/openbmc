@@ -20,11 +20,11 @@
 package remediations_catalina
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func TestCheckWinbondVersion(t *testing.T) {
@@ -52,7 +52,7 @@ func TestCheckWinbondVersion(t *testing.T) {
 			version:      "catalina-v2024.46.1-QuantaRelease",
 			v_err:        nil,
 			want: step.ExitUnsafeToReboot{
-				errors.Errorf("Cannot upgrade this version (catalina-v2024.46.1-QuantaRelease) due to S483584"),
+				fmt.Errorf("Cannot upgrade this version (catalina-v2024.46.1-QuantaRelease) due to S483584"),
 			},
 		},
 		{
@@ -62,7 +62,7 @@ func TestCheckWinbondVersion(t *testing.T) {
 			version:      "catalina-v2025.03.3",
 			v_err:        nil,
 			want: step.ExitUnsafeToReboot{
-				errors.Errorf("Cannot upgrade this version (catalina-v2025.03.3) due to S483584"),
+				fmt.Errorf("Cannot upgrade this version (catalina-v2025.03.3) due to S483584"),
 			},
 		},
 		{
@@ -92,11 +92,11 @@ func TestCheckWinbondVersion(t *testing.T) {
 		{
 			name:         "Manufacturer read file err",
 			manufacturer: "derp",
-			m_err:        errors.Errorf("fail"),
+			m_err:        fmt.Errorf("fail"),
 			version:      "catalina-v2025.02.1",
 			v_err:        nil,
 			want: step.ExitUnsafeToReboot{
-				errors.Errorf("Unable to fetch SPI Manufacturer info: fail"),
+				fmt.Errorf("Unable to fetch SPI Manufacturer info: fail"),
 			},
 		},
 		{
@@ -104,9 +104,9 @@ func TestCheckWinbondVersion(t *testing.T) {
 			manufacturer: "winbond",
 			m_err:        nil,
 			version:      "",
-			v_err:        errors.Errorf("fail"),
+			v_err:        fmt.Errorf("fail"),
 			want: step.ExitUnsafeToReboot{
-				errors.Errorf("Unable to fetch version info: fail"),
+				fmt.Errorf("Unable to fetch version info: fail"),
 			},
 		},
 	}

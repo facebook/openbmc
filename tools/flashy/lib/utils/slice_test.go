@@ -21,10 +21,10 @@ package utils
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 func TestByteSliceRange(t *testing.T) {
@@ -51,7 +51,7 @@ func TestByteSliceRange(t *testing.T) {
 			start:   3,
 			end:     1,
 			want:    nil,
-			wantErr: errors.Errorf("Slice start (3) > end (1)"),
+			wantErr: fmt.Errorf("Slice start (3) > end (1)"),
 		},
 		{
 			name:    "end too large",
@@ -59,7 +59,7 @@ func TestByteSliceRange(t *testing.T) {
 			start:   3,
 			end:     10000,
 			want:    nil,
-			wantErr: errors.Errorf("Slice end (10000) larger than original slice length (7)"),
+			wantErr: fmt.Errorf("Slice end (10000) larger than original slice length (7)"),
 		},
 	}
 	for _, tc := range cases {

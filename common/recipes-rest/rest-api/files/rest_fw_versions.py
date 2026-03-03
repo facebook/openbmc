@@ -159,15 +159,17 @@ async def _get_firmware_versions() -> Tuple[Dict[str, str], Dict[str, str]]:
     fw_data: Dict[str, str] = {}
     errors: Dict[str, str] = {}
     for filter_cmds, result in zip(groups.values(), group_results):
-        if isinstance(result, Exception):
+        if isinstance(result, BaseException):
             for fw_key in filter_cmds:
                 fw_data[fw_key] = ""
                 errors[fw_key] = repr(result)
-            continue
-        for fw_key, (version, error) in result.items():
-            fw_data[fw_key] = _normalize_version(version)
-            if error:
-                errors[fw_key] = error
+        elif isinstance(result, Exception):
+            pass
+        else:
+            for fw_key, (version, error) in result.items():
+                fw_data[fw_key] = _normalize_version(version)
+                if error:
+                    errors[fw_key] = error
 
     return dict(sorted(fw_data.items())), dict(sorted(errors.items()))
 

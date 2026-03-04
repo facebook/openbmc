@@ -280,26 +280,31 @@ TEST_F(LogServiceHandlerTest, InMemoryPersistTest)
     auto logEntryCollection =
         redfish_binding::LogEntryCollection::parseLogEntryCollection(
             kEventlogEntryCollectionJson);
-    EXPECT_EQ(0, logManager.logs->size());
+
+    size_t numInitial = 0, numAfterFirstCall = 0,
+           numAfterDuplication = 0, numAfterRestart = 0,
+           numAfterRestartDuplication = 0;
+
     runAsync(ctx, [&]() -> sdbusplus::async::task<> {
-      co_await logServiceHandler->commit(logEntryCollection);
+        numInitial = logManager.logs->size();
+        co_await logServiceHandler->commit(logEntryCollection);
+        numAfterFirstCall = logManager.logs->size();
+        co_await logServiceHandler->commit(logEntryCollection);
+        numAfterDuplication = logManager.logs->size();
+        // mimic a restart
+        auto restartedLogServiceHandler =
+            std::make_shared<LogServiceHandler>(ctx, "fake.url");
+        co_await restartedLogServiceHandler->commit(logEntryCollection);
+        numAfterRestart = logManager.logs->size();
+        co_await restartedLogServiceHandler->commit(logEntryCollection);
+        numAfterRestartDuplication = logManager.logs->size();
     }());
-    EXPECT_EQ(2, logManager.logs->size());
-    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
-      co_await logServiceHandler->commit(logEntryCollection);
-    }());
-    EXPECT_EQ(2, logManager.logs->size());
-    // mimic a restart
-    auto restartedLogServiceHandler =
-        std::make_shared<LogServiceHandler>(ctx, "fake.url");
-    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
-      co_await restartedLogServiceHandler->commit(logEntryCollection);
-    }());
-    EXPECT_EQ(4, logManager.logs->size());
-    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
-      co_await restartedLogServiceHandler->commit(logEntryCollection);
-    }());
-    EXPECT_EQ(4, logManager.logs->size());
+
+    EXPECT_EQ(0, numInitial);
+    EXPECT_EQ(2, numAfterFirstCall);
+    EXPECT_EQ(2, numAfterDuplication);
+    EXPECT_EQ(4, numAfterRestart);
+    EXPECT_EQ(4, numAfterRestartDuplication);
 }
 
 TEST_F(LogServiceHandlerTest, OnFilePersistTest)
@@ -312,26 +317,31 @@ TEST_F(LogServiceHandlerTest, OnFilePersistTest)
     auto logEntryCollection =
         redfish_binding::LogEntryCollection::parseLogEntryCollection(
             kEventlogEntryCollectionJson);
-    EXPECT_EQ(0, logManager.logs->size());
+
+    size_t numInitial = 0, numAfterFirstCall = 0,
+           numAfterDuplication = 0, numAfterRestart = 0,
+           numAfterRestartDuplication = 0;
+
     runAsync(ctx, [&]() -> sdbusplus::async::task<> {
-      co_await logServiceHandler->commit(logEntryCollection);
+        numInitial = logManager.logs->size();
+        co_await logServiceHandler->commit(logEntryCollection);
+        numAfterFirstCall = logManager.logs->size();
+        co_await logServiceHandler->commit(logEntryCollection);
+        numAfterDuplication = logManager.logs->size();
+        // mimic a restart
+        auto restartedLogServiceHandler = std::make_shared<LogServiceHandler>(
+            ctx, "https://fake.url/redfish/v1", tmpdir);
+        co_await restartedLogServiceHandler->commit(logEntryCollection);
+        numAfterRestart = logManager.logs->size();
+        co_await restartedLogServiceHandler->commit(logEntryCollection);
+        numAfterRestartDuplication = logManager.logs->size();
     }());
-    EXPECT_EQ(2, logManager.logs->size());
-    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
-      co_await logServiceHandler->commit(logEntryCollection);
-    }());
-    EXPECT_EQ(2, logManager.logs->size());
-    // mimic a restart
-    auto restartedLogServiceHandler = std::make_shared<LogServiceHandler>(
-        ctx, "https://fake.url/redfish/v1", tmpdir);
-    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
-      co_await restartedLogServiceHandler->commit(logEntryCollection);
-    }());
-    EXPECT_EQ(2, logManager.logs->size());
-    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
-      co_await restartedLogServiceHandler->commit(logEntryCollection);
-    }());
-    EXPECT_EQ(2, logManager.logs->size());
+
+    EXPECT_EQ(0, numInitial);
+    EXPECT_EQ(2, numAfterFirstCall);
+    EXPECT_EQ(2, numAfterDuplication);
+    EXPECT_EQ(2, numAfterRestart);
+    EXPECT_EQ(2, numAfterRestartDuplication);
     std::filesystem::remove_all(tmpdir);
 }
 

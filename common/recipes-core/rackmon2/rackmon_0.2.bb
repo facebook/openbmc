@@ -77,6 +77,7 @@ LOCAL_URI += " \
     file://configs/interface/usb_ft232.conf \
     file://configs/interface/usb_ft4232.conf \
     file://configs/interface/ventura.conf \
+    file://configs/interface/ventura2.conf \
     file://configs/register_map/orv2_psu.json \
     file://configs/register_map/orv3_psu.json \
     file://configs/register_map/orv3_bbu.json \
@@ -145,6 +146,7 @@ install_wrapper() {
 
 INTERFACE_CONFIG ?= "/usr/share/rackmon/interface/aspeed_uart.conf"
 INTERFACE_CONFIG:ventura = "/usr/share/rackmon/interface/ventura.conf"
+INTERFACE_CONFIG:ventura2 = "/usr/share/rackmon/interface/ventura2.conf"
 
 SERVICE_AFTER ?= ""
 SERVICE_AFTER:openbmc-fb ?= "After=setup_i2c.service openbmc_gpio_setup.service"

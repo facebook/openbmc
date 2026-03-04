@@ -1,0 +1,38 @@
+From 2b3c30b03fffeb80da2af5bea997c02916dd42f7 Mon Sep 17 00:00:00 2001
+From: Eric Yang <eric.yang.wiwynn@gmail.com>
+Date: Thu, 26 Feb 2026 09:32:39 +0000
+Subject: [PATCH 1/1] transport: af-mctp: Fix TID lookup with MCTP_NET_ANY
+
+The pldm_transport_af_mctp_map_tid() API stores mappings with
+tid_map[tid].net = MCTP_NET_ANY (0), but get_tid() requires exact match
+(tid_map[i].net == network). When MCTP messages arrive with non-zero
+network ID, the lookup fails, causing pldmd to crash with "free():
+invalid pointer" errors.
+
+Allow MCTP_NET_ANY in stored mappings to act as a wildcard matching any
+incoming network ID, while still supporting exact matches for explicitly
+stored network values.
+
+Change-Id: Iaf9a0e09681dbfd202af747688b160dba1558692
+Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
+---
+ src/transport/af-mctp.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/transport/af-mctp.c b/src/transport/af-mctp.c
+index 84d5211..9d3b487 100644
+--- a/src/transport/af-mctp.c
++++ b/src/transport/af-mctp.c
+@@ -88,7 +88,9 @@ static int pldm_transport_af_mctp_get_tid(struct pldm_transport_af_mctp *ctx,
+ {
+ 	if (network != 0 && eid != 0) {
+ 		for (int i = 0; i < PLDM_MAX_TIDS; i++) {
+-			if (ctx->tid_map[i].net == network &&
++			/* Allow MCTP_NET_ANY (0) to match any network for backward compatibility */
++			if ((ctx->tid_map[i].net == MCTP_NET_ANY ||
++			     ctx->tid_map[i].net == network) &&
+ 			    ctx->tid_map[i].eid == eid) {
+ 				*tid = i;
+ 				return 0;
+-- 
+2.31.1

@@ -12,6 +12,24 @@
 # for more details.
 #
 
+enable_AFID () {
+  retry=5
+
+  while [ $retry -gt 0 ];
+  do
+    response=$(curl -k http://192.168.31.1/redfish/v1/Chassis/UBB | grep -i "ShowAMDFieldIdentifiers")
+    if echo "$response" | grep -i "Enabled"; then
+      logger -p user.info "UBB started with ShowAMDFieldIdentifiers enabled"
+      return
+    else
+      curl -k http://192.168.31.1/redfish/v1/Chassis/UBB -X PATCH -d '{"Oem" : {"ShowAMDFieldIdentifiers": "Enabled"}}'
+      retry=$((retry - 1))
+      sleep 1
+    fi
+  done
+  logger -p user.warning "UBB failed with ShowAMDFieldIdentifiers enabled."
+}
+
 enable_ACA () {
   # Check ACA
   response=$(curl -k http://192.168.31.1/redfish/v1/Chassis/UBB | grep -i "ShowACAErrData")
@@ -71,12 +89,12 @@ disable_cper_compression() {
 }
 
 enable_err_inj
-
+enable_AFID
 disable_cper_compression
 
 # Since ACA feature is crucial for debugging GPU issue
 # Keep enabling it in the background until successful
-while [ 1 ]; 
+while true;
 do
   enable_ACA
   sleep 60

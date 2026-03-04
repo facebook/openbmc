@@ -207,6 +207,15 @@ class RedfishEventHandler(web.Application):
             else:
                 decodedList[0] = self.FormatACA(event['Oem']['ErrDataArr'][0])
                 decodedList[1] = self.FormatACA(event['Oem']['ErrDataArr'][-1])
+
+            oem_field = event.get("Oem", {}).get("AMDFieldIdentifiers") or []
+            if isinstance(oem_field, list):
+                for entry in oem_field:
+                    if isinstance(entry, dict):
+                        afid = entry.get("AFID")
+                        if afid is not None:
+                            decodedList[0] += f"AFID: {afid};"
+
         except Exception as e:
             logging.warning(f"Error processing ErrDataArr: {e}")
             return decodedList
@@ -236,7 +245,6 @@ class RedfishEventHandler(web.Application):
             if data_type == "CPER":
                 formerACA = ""
                 latterACA = ""
-                prefix_log = log
                 cper_path = "/mnt/data/cper/"
                 if not os.path.exists(cper_path):
                     os.makedirs(cper_path)

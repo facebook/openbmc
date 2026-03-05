@@ -30,7 +30,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -102,7 +101,7 @@ func ensureFlashWritable(stepParams step.StepParams) step.StepExitError {
 	cmd = []string{"fw_printenv", key}
 	_, err, stdout, stderr = utils.RunCommand(cmd, 30*time.Second)
 	if err != nil || !strings.Contains(stdout, value) {
-		errMsg := errors.Errorf(
+		errMsg := fmt.Errorf(
 			"U-Boot environment is read only: flash chips swapped?"+
 				" Error code: %v, stderr: %v", err, stderr)
 		errRet = step.ExitBadFlashChip{Err: errMsg}

@@ -1,5 +1,10 @@
 #!/bin/bash
 
+is_rcvy=false
+if [[ ($# -eq 5 || $# -eq 4) && "$2" == "--rcvy" ]]; then
+    is_rcvy=true
+fi
+
 # shellcheck source=meta-facebook/meta-yosemite4/recipes-yosemite4/plat-tool/files/yosemite4-common-functions
 source /usr/libexec/yosemite4-common-functions
 
@@ -212,7 +217,6 @@ check_power_on() {
 
 	power_status=$(gpioget "$(basename /sys/bus/i2c/devices/"$i2c_bus"-0023/*gpiochip*)" 16)
 	if [ "$power_status" != "1" ]; then
-	    add_result_sel "${FAILURE_MSG}"
 		echo "Check Power : Off"
 		echo "Power on before WF PLDM component update"
 		exit 255
@@ -1193,7 +1197,6 @@ handle_firmware_operations () {
 			systemctl start pldmd
 			sleep 60
 			echo "Failed to Recovery BIC. Exiting with error code: $ret"
-			add_result_sel "${FAILURE_MSG}"
 			exit "$ret"
 		fi
 
@@ -1321,16 +1324,20 @@ retry_firmware_operation() {
 }
 
 add_init_sel() {
-	log-create ${TargetDetermined} --json "{\"TARGET_NAME\":\"${NEW_BIC_NAME} slot${slot_id}\", \"IMAGE_IDENTIFIER\":\"${pldm_image}\"}"
+	if [ "$is_rcvy" != true ]; then
+		log-create ${TargetDetermined} --json "{\"TARGET_NAME\":\"${NEW_BIC_NAME} slot${slot_id}\", \"IMAGE_IDENTIFIER\":\"${pldm_image}\"}"
+	fi
 }
 
 add_result_sel() {
 	RESULT="$1"
 
-	if [ "${RESULT}" == "${FAILURE_MSG}" ]; then
-		log-create ${ApplyFailed} --json "{\"IMAGE_IDENTIFIER\":\"${pldm_image}\", \"TARGET_NAME\":\"${NEW_BIC_NAME} slot${slot_id}\"}"
-	elif [ "${RESULT}" == "${SUCCESS_MSG}" ]; then
-		log-create ${UpdateSuccessful} --json "{\"TARGET_NAME\":\"${NEW_BIC_NAME} slot${slot_id}\", \"IMAGE_IDENTIFIER\":\"${pldm_image}\"}"
+	if [ "$is_rcvy" != true ]; then
+	    if [ "${RESULT}" == "${FAILURE_MSG}" ]; then
+		    log-create ${ApplyFailed} --json "{\"IMAGE_IDENTIFIER\":\"${pldm_image}\", \"TARGET_NAME\":\"${NEW_BIC_NAME} slot${slot_id}\"}"
+	    elif [ "${RESULT}" == "${SUCCESS_MSG}" ]; then
+		    log-create ${UpdateSuccessful} --json "{\"TARGET_NAME\":\"${NEW_BIC_NAME} slot${slot_id}\", \"IMAGE_IDENTIFIER\":\"${pldm_image}\"}"
+	    fi
 	fi
 }
 
@@ -1369,7 +1376,6 @@ get_vr_type() {
 # Check for minimum required arguments
 [ $# -lt 2 ] && error_and_exit "PLDM"
 
-is_rcvy=false
 slot_id=
 bic_name=$1
 pldm_image=$2
@@ -1384,7 +1390,6 @@ if [ $# -eq 5 ] && [ "$2" == "--rcvy" ]; then
 		  	pldm-fw-update.sh [sd|wf] --rcvy <slot_id> <bic image>"
 	if [ "$bic_name" == "sd_vr" ] || [ "$bic_name" == "wf_vr" ]; then
 		echo "VR device can't be updated in recovery mode"
-		add_result_sel "${FAILURE_MSG}"
 		exit 255
 	elif [ "$bic_name" == "sd" ]; then
 		echo "Initiate SD BIC recovery"
@@ -1392,7 +1397,6 @@ if [ $# -eq 5 ] && [ "$2" == "--rcvy" ]; then
 		echo "Initiate WF BIC recovery"
 	fi
 
-	is_rcvy=true
 	slot_id=$3
 	uart_image=$4
 	[ ! -f "$uart_image" ] && error_and_exit "UART"
@@ -1400,14 +1404,12 @@ if [ $# -eq 5 ] && [ "$2" == "--rcvy" ]; then
 	pldm_fw_identify "$bic_name" "$pldm_image"
 	ident_result=$?
 	if [ $ident_result -eq $PLDM_FW_IDENT_FAIL ]; then
-		add_result_sel "${FAILURE_MSG}"
 		exit 255
 	fi
 	retry_firmware_operation
 elif [ $# -eq 4 ] && [ "$2" == "--rcvy" ]; then
     if [ "$bic_name" == "sd_vr" ] || [ "$bic_name" == "wf_vr" ]; then
 		echo "VR device can't be updated in recovery mode"
-		add_result_sel "${FAILURE_MSG}"
 		exit 255
 	elif [ "$bic_name" == "sd" ]; then
 		echo "Initiate SD BIC recovery"
@@ -1415,7 +1417,7 @@ elif [ $# -eq 4 ] && [ "$2" == "--rcvy" ]; then
 		echo "Initiate WF BIC recovery"
 	fi
 	use_uart_update=true
-	is_rcvy=true
+
 	slot_id=$3
 	bic_image=$4
 
@@ -1446,6 +1448,7 @@ elif [ $# -eq 3 ] && [[ "$2" =~ ^[1-8]+$ ]]; then
 	pldm_fw_identify "$bic_name" "$pldm_image" "$slot_id"
 	ident_result=$?
 	if [ $ident_result -eq $PLDM_FW_IDENT_FAIL ]; then
+		add_result_sel "${FAILURE_MSG}"
 		exit 255
 	fi
 
@@ -1525,6 +1528,8 @@ else
 	for i in {1..8}; do
 		slot_id=$i
 		pldm_image=$2
+		add_init_sel
+
 		pldm-package-re-wrapper bic -s "$slot_id" -f "$pldm_image"
 		pldm_image="${pldm_image}_re_wrapped"
 		retry_firmware_operation

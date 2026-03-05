@@ -5,12 +5,11 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/linux-aspeed:"
 # until DTS is updated in other projects already using it.
 #
 SRC_URI:remove = " \
-    file://0202-dt-bindings-i3c-hub-Add-Renesas-RG3MxxB12A1-I3C-HUB.patch \
-    file://0203-i3c-i3c-hub-Add-Renesas-RG3MxxB12A1-I3C-HUB-driver.patch \
+    file://0209-dt-bindings-i3c-hub-Add-Renesas-RG3MxxB12A1-I3C-HUB.patch \
+    file://0210-i3c-i3c-hub-Add-Renesas-RG3MxxB12A1-I3C-HUB-driver.patch \
 "
 
 SRC_URI:append = " \
-    file://1000-add-meta-yosemite5-bmc-dts.patch \
     file://1001-ARM-dts-aspeed-yosemite5-Add-lpc_pcc-node.patch \
     file://1002-ARM-dts-aspeed-yosemite5-configure-tach-channels-for-max31790.patch \
     file://1003-ARM-dts-aspeed-yosemite5-configure-dimm-ids-for-sbrmi-node.patch \

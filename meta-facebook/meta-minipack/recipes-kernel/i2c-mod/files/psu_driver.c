@@ -579,16 +579,25 @@ static int psu_probe(struct i2c_client *client,
                          const struct i2c_device_id *id)
 #endif
 {
+  int ret;
   i2c_dev_data_st *data;
 
   data = devm_kzalloc(&client->dev, sizeof(*data), GFP_KERNEL);
-  if (!data)
+  if (!data) {
+    dev_err(&client->dev, "Failed to allocate memory for psu_driver\n");
     return -ENOMEM;
+  }
 
   i2c_set_clientdata(client, data);
 
-  return devm_i2c_dev_sysfs_init(client, data, psu_attr_table,
-                                 ARRAY_SIZE(psu_attr_table));
+  ret = devm_i2c_dev_sysfs_init(client, data, psu_attr_table,
+                                ARRAY_SIZE(psu_attr_table));
+  if (ret) {
+    dev_err(&client->dev, "Failed to initialize sysfs: %d\n", ret);
+    return ret;
+  }
+
+  return 0;
 }
 
 static struct i2c_driver psu_driver = {

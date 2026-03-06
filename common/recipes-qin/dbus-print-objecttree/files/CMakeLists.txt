@@ -1,5 +1,5 @@
 # Copyright 2017-present Facebook. All Rights Reserved.
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.8)
 project(dbus-print-objecttree)
 
 include(CheckCXXCompilerFlag)

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.10 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.8.0 FATAL_ERROR)
 project(at-scale-debug C)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
@@ -18,7 +18,7 @@ else()
     #target_link_libraries(asd-test -lm -lpal)
     #install (TARGETS asd-test DESTINATION bin)
 
-    add_executable(asd asd_main.c ext_network.c authenticate.c pin_handler.c 
+    add_executable(asd asd_main.c ext_network.c authenticate.c pin_handler.c
             session.c logging.c config.c jtag_handler.c asd_msg.c ext_tcp.c
             auth_none.c target_handler.c i2c_msg_builder.c i2c_handler.c mem_helper.c)
     target_link_libraries(asd -lm -lpthread -lpal)

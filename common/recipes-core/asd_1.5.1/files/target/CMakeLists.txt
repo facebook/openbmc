@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.10 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.8.0 FATAL_ERROR)
 project(at-scale-debug-target C)
 
 find_package (PkgConfig REQUIRED)
@@ -35,7 +35,7 @@ if(${I3C_STUB})
 endif(${I3C_STUB})
 
 #if(NOT ${BUILD_UT})
-    add_library(asd_target STATIC asd_msg.c jtag_handler.c 
+    add_library(asd_target STATIC asd_msg.c jtag_handler.c
             target_handler.c ${I2C_MSG_BUILDER} ${I2C_HANDLER}
             ${I3C_HANDLER} vprobe_handler.c
             asd_target_api.c asd_server_interface.c)

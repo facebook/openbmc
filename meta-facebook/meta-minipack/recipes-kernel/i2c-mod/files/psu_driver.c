@@ -56,8 +56,6 @@ typedef enum {
   UNKNOWN
 } model_name;
 
-model_name model;
-
 enum {
   LINEAR_11,
   LINEAR_16
@@ -110,7 +108,45 @@ static int linear_convert(int type, int value, int n)
   return value_x;
 }
 
-static int psu_convert(struct device *dev, struct device_attribute *attr)
+static model_name psu_detect_model(struct i2c_client *client)
+{
+  int ret;
+  u8 length, model_chr;
+
+  ret = i2c_smbus_read_word_data(client, PMBUS_MFR_MODEL);
+  if (ret < 0) {
+    PSU_DEBUG("Failed to read Manufacturer Model\n");
+    return UNKNOWN;
+  }
+
+  length = ret & 0xff;
+  if (length > 32) {
+    PSU_DEBUG("Invalid model length: %d\n", length);
+    return UNKNOWN;
+  }
+
+  model_chr = (ret >> 8) & 0xff;
+  if (length == 11 && model_chr == 'E') {
+    /* PSU model name: ECD55020006 */
+    return DELTA_1500;
+  } else if (length == 10 && model_chr == 'P') {
+    /* PSU model name: PS-2152-5L */
+    return LITEON_1500;
+  } else if (length == 16 && model_chr == 'P') {
+    /* PSU model name: PFE1100-12-054NA */
+    return BELPOWER_1100_NA;
+  } else if ((length == 17 || length == 21) && model_chr == 'P') {
+    /* PSU model name: PFE1500-12-054NACS457 */
+    return BELPOWER_1500_NAC;
+  } else if ((length == 22 || length == 25) && model_chr == 'D') {
+    /* PSU model name: D1U54P-W-1500-12-HC4TC-AF */
+    return MURATA_1500;
+  }
+  return UNKNOWN;
+}
+
+static int psu_convert(struct device *dev, struct device_attribute *attr,
+                       model_name *model_out)
 {
   struct i2c_client *client = to_i2c_client(dev);
   i2c_dev_data_st *data = i2c_get_clientdata(client);
@@ -118,22 +154,13 @@ static int psu_convert(struct device *dev, struct device_attribute *attr)
   const i2c_dev_attr_st *dev_attr = i2c_attr->isa_i2c_attr;
   int value = -1;
   int count = 10;
-  int ret = -1;
-  u8 length, model_chr;
+  model_name model;
 
   mutex_lock(&data->idd_lock);
 
-  /*
-   * If read block length byte > 32, it will cause kernel panic.
-   * Using read word to replace read block to identifer PSU model.
-   */
-  ret = i2c_smbus_read_word_data(client, PMBUS_MFR_MODEL);
-  length = ret & 0xff;
-
-  if (ret < 0 || length > 32) {
-    PSU_DEBUG("Failed to read Manufacturer Model\n");
-  } else {
-    while((value < 0 || value == 0xffff) && count--) {
+  model = psu_detect_model(client);
+  if (model != UNKNOWN) {
+    while ((value < 0 || value == 0xffff) && count--) {
       value = i2c_smbus_read_word_data(client, (dev_attr->ida_reg));
     }
   }
@@ -141,31 +168,11 @@ static int psu_convert(struct device *dev, struct device_attribute *attr)
   mutex_unlock(&data->idd_lock);
 
   if (value < 0) {
-    /* error case */
     PSU_DEBUG("I2C read error, value: %d\n", value);
     return -1;
   }
 
-  model_chr = (ret >> 8) & 0xff;
-  if (length == 11 && model_chr == 'E') {
-    /* PSU model name: ECD55020006 */
-    model = DELTA_1500;
-  } else if (length == 10 && model_chr == 'P') {
-    /* PSU model name: PS-2152-5L */
-    model = LITEON_1500;
-  } else if (length == 16 && model_chr == 'P') {
-    /* PSU model name: PFE1100-12-054NA */
-    model = BELPOWER_1100_NA;
-  } else if ((length == 17 || length == 21) && model_chr == 'P') {
-    /* PSU model name: PFE1500-12-054NACS457 */
-    model = BELPOWER_1500_NAC;
-  } else if ((length == 22 || length == 25) && model_chr == 'D') {
-    /* PSU model name: D1U54P-W-1500-12-HC4TC-AF */
-    model = MURATA_1500;
-  } else {
-    model = UNKNOWN;
-  }
-
+  *model_out = model;
   return value;
 }
 
@@ -173,10 +180,10 @@ static ssize_t psu_vin_show(struct device *dev,
                                 struct device_attribute *attr,
                                 char *buf)
 {
-  int result = psu_convert(dev, attr);
+  model_name model;
+  int result = psu_convert(dev, attr, &model);
 
   if (result < 0) {
-    /* error case */
     return -1;
   }
 
@@ -191,7 +198,7 @@ static ssize_t psu_vin_show(struct device *dev,
       result = linear_convert(LINEAR_11, result, -1);
       break;
     default:
-      break;
+      return -ENODEV;
   }
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
@@ -201,10 +208,10 @@ static ssize_t psu_iin_show(struct device *dev,
                                 struct device_attribute *attr,
                                 char *buf)
 {
-  int result = psu_convert(dev, attr);
+  model_name model;
+  int result = psu_convert(dev, attr, &model);
 
   if (result < 0) {
-    /* error case */
     return -1;
   }
 
@@ -221,7 +228,7 @@ static ssize_t psu_iin_show(struct device *dev,
       result = linear_convert(LINEAR_11, result, -5);
       break;
     default:
-      break;
+      return -ENODEV;
   }
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
@@ -231,10 +238,10 @@ static ssize_t psu_vout_show(struct device *dev,
                                  struct device_attribute *attr,
                                  char *buf)
 {
-  int result = psu_convert(dev, attr);
+  model_name model;
+  int result = psu_convert(dev, attr, &model);
 
   if (result < 0) {
-    /* error case */
     return -1;
   }
 
@@ -249,7 +256,7 @@ static ssize_t psu_vout_show(struct device *dev,
       result = linear_convert(LINEAR_11, result, -6);
       break;
     default:
-    break;
+      return -ENODEV;
   }
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
@@ -259,10 +266,10 @@ static ssize_t psu_iout_show(struct device *dev,
                                  struct device_attribute *attr,
                                  char *buf)
 {
-  int result = psu_convert(dev, attr);
+  model_name model;
+  int result = psu_convert(dev, attr, &model);
 
   if (result < 0) {
-    /* error case */
     return -1;
   }
 
@@ -279,7 +286,7 @@ static ssize_t psu_iout_show(struct device *dev,
       result = linear_convert(LINEAR_11, result, -2);
       break;
     default:
-      break;
+      return -ENODEV;
   }
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
@@ -289,27 +296,25 @@ static ssize_t psu_temp_show(struct device *dev,
                                  struct device_attribute *attr,
                                  char *buf)
 {
-  int result = psu_convert(dev, attr);
+  model_name model;
+  int result = psu_convert(dev, attr, &model);
 
   if (result < 0) {
-    /* error case */
     return -1;
   }
 
   switch (model) {
     case DELTA_1500:
     case LITEON_1500:
+    case MURATA_1500:
       result = linear_convert(LINEAR_11, result, 0);
       break;
     case BELPOWER_1100_NA:
     case BELPOWER_1500_NAC:
       result = linear_convert(LINEAR_11, result, -3);
       break;
-    case MURATA_1500:
-      result = linear_convert(LINEAR_11, result, 0);
-      break;
     default:
-      break;
+      return -ENODEV;
   }
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
@@ -319,10 +324,10 @@ static ssize_t psu_fan_show(struct device *dev,
                                 struct device_attribute *attr,
                                 char *buf)
 {
-  int result = psu_convert(dev, attr);
+  model_name model;
+  int result = psu_convert(dev, attr, &model);
 
   if (result < 0) {
-    /* error case */
     return -1;
   }
 
@@ -337,7 +342,7 @@ static ssize_t psu_fan_show(struct device *dev,
       result = linear_convert(LINEAR_11, result, 5) / 1000;
       break;
     default:
-      break;
+      return -ENODEV;
   }
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
@@ -347,10 +352,10 @@ static ssize_t psu_power_show(struct device *dev,
                                   struct device_attribute *attr,
                                   char *buf)
 {
-  int result = psu_convert(dev, attr);
+  model_name model;
+  int result = psu_convert(dev, attr, &model);
 
   if (result < 0) {
-    /* error case */
     return -1;
   }
 
@@ -365,7 +370,7 @@ static ssize_t psu_power_show(struct device *dev,
       result = linear_convert(LINEAR_11, result, 1);
       break;
     default:
-      break;
+      return -ENODEV;
   }
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
@@ -375,10 +380,10 @@ static ssize_t psu_vstby_show(struct device *dev,
                                  struct device_attribute *attr,
                                  char *buf)
 {
-  int result = psu_convert(dev, attr);
+  model_name model;
+  int result = psu_convert(dev, attr, &model);
 
   if (result < 0) {
-    /* error case */
     return -1;
   }
 
@@ -395,7 +400,7 @@ static ssize_t psu_vstby_show(struct device *dev,
       result = linear_convert(LINEAR_11, result, -7);
       break;
     default:
-      break;
+      return -ENODEV;
   }
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
@@ -405,10 +410,10 @@ static ssize_t psu_istby_show(struct device *dev,
                                  struct device_attribute *attr,
                                  char *buf)
 {
-  int result = psu_convert(dev, attr);
+  model_name model;
+  int result = psu_convert(dev, attr, &model);
 
   if (result < 0) {
-    /* error case */
     return -1;
   }
 
@@ -427,7 +432,7 @@ static ssize_t psu_istby_show(struct device *dev,
       result = linear_convert(LINEAR_11, result, -7);
       break;
     default:
-      break;
+      return -ENODEV;
   }
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);
@@ -437,10 +442,10 @@ static ssize_t psu_pstby_show(struct device *dev,
                                   struct device_attribute *attr,
                                   char *buf)
 {
-  int result = psu_convert(dev, attr);
+  model_name model;
+  int result = psu_convert(dev, attr, &model);
 
   if (result < 0) {
-    /* error case */
     return -1;
   }
 
@@ -457,7 +462,7 @@ static ssize_t psu_pstby_show(struct device *dev,
       result = linear_convert(LINEAR_11, result, -5);
       break;
     default:
-      break;
+      return -ENODEV;
   }
 
   return scnprintf(buf, PAGE_SIZE, "%d\n", result);

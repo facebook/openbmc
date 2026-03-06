@@ -180,7 +180,7 @@ process_command (int peci_fd, int argc, char **argv) {
       retry_interval = strtoul(optarg, NULL, 0);
       break;
     case 'f':
-      strncpy(file_path, optarg, 256);
+      snprintf(file_path, sizeof(file_path), "%s", optarg);
       return process_file(peci_fd, file_path);
     case 'v':
       verbose = 1;

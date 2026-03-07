@@ -21,9 +21,7 @@ SECTION = "dev"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://hr_nanosleep.h;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI += " \
     file://hr_nanosleep.h \
     "
@@ -31,7 +29,7 @@ LOCAL_URI += " \
 do_install() {
   # common lib and include files
   install -d ${D}${includedir}/openbmc
-  install -m 0644 hr_nanosleep.h ${D}${includedir}/openbmc/hr_nanosleep.h
+  install -m 0644 ${UNPACKDIR}/hr_nanosleep.h ${D}${includedir}/openbmc/hr_nanosleep.h
 }
 
 FILES:${PN}-dev = "${includedir}/openbmc/hr_nanosleep.h"

@@ -6,9 +6,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://lan-util.c;beginline=4;endline=16;md5=68b001f6d78951b122f3e673f833a332"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://Makefile \
     file://if_parser.c \

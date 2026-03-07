@@ -12,6 +12,6 @@ SRC_URI = "https://pypi.python.org/packages/source/p/${SRCNAME}/${SRCNAME}-${PV}
 SRC_URI[md5sum] = "94726411496c52c87c2b9429b12d5c50"
 SRC_URI[sha256sum] = "e7d1bdff026beb159c9942f7a17e102c375638d9478a7ecd4cc0c76afd8de0b8"
 
-S = "${WORKDIR}/${SRCNAME}-${PV}"
+S = "${UNPACKDIR}/${SRCNAME}-${PV}"
 
 inherit setuptools3

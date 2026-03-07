@@ -12,7 +12,7 @@ SRC_URI = "file://fbal_fruid \
 DEPENDS += "libipmi libipmb"
 LDFLAGS += "-lipmb"
 
-S = "${WORKDIR}/fbal_fruid"
+S = "${UNPACKDIR}/fbal_fruid"
 
 do_install() {
   install -d ${D}${libdir}

@@ -25,9 +25,7 @@ LIC_FILES_CHKSUM = "file://wdtcli.c;beginline=7;endline=19;md5=da35978751a9d71b7
 inherit meson pkgconfig
 inherit legacy-packages
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://meson.build \
     file://wdtcli.c \

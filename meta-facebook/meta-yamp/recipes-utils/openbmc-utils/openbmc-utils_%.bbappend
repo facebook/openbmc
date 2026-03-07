@@ -86,15 +86,15 @@ do_work_systemd() {
     install -d ${D}/usr/local/bin
     install -d ${D}${systemd_system_unitdir}
 
-    install -m 0755 setup_i2c.sh ${D}/usr/local/bin/setup_i2c.sh
+    install -m 0755 ${UNPACKDIR}/setup_i2c.sh ${D}/usr/local/bin/setup_i2c.sh
 
     # networking is done after rcS, any start level within rcS
     # for mac fixup should work
-    install -m 755 eth0_mac_fixup.sh ${D}/usr/local/bin/eth0_mac_fixup.sh
+    install -m 755 ${UNPACKDIR}/eth0_mac_fixup.sh ${D}/usr/local/bin/eth0_mac_fixup.sh
 
-    install -m 755 setup_board.sh ${D}/usr/local/bin/setup_board.sh
+    install -m 755 ${UNPACKDIR}/setup_board.sh ${D}/usr/local/bin/setup_board.sh
 
-    install -m 755 power-on.sh ${D}/usr/local/bin/power-on.sh
+    install -m 755 ${UNPACKDIR}/power-on.sh ${D}/usr/local/bin/power-on.sh
 }
 
 do_work_sysv() {
@@ -105,32 +105,32 @@ do_work_sysv() {
     install -m 0755 ${UNPACKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
     update-rc.d -r ${D} rc.early start 04 S .
 
-    install -m 755 dpm_dump.sh ${D}${sysconfdir}/init.d/dpm_dump.sh
+    install -m 755 ${UNPACKDIR}/dpm_dump.sh ${D}${sysconfdir}/init.d/dpm_dump.sh
     update-rc.d -r ${D} dpm_dump.sh start 50 S .
 
-    install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
+    install -m 755 ${UNPACKDIR}/setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
     update-rc.d -r ${D} setup_i2c.sh start 60 S .
 
     # "eth0_mac_fixup.sh" needs to be executed after "networking start"
     # (runlevel 5, order #1), but before "setup-dhc6.sh" (runlevel 5,
     # order #3): this is to make sure ipv6 link-local address can be
     # derivied from the correct MAC address.
-    install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
+    install -m 755 ${UNPACKDIR}/eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
     update-rc.d -r ${D} eth0_mac_fixup.sh start 2 2 3 4 5 .
 
-    install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
+    install -m 755 ${UNPACKDIR}/setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
     update-rc.d -r ${D} setup_board.sh start 80 S .
 
-    install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
+    install -m 755 ${UNPACKDIR}/power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
     update-rc.d -r ${D} power-on.sh start 85 S .
 
-    install -m 755 sup_eeprom.sh ${D}${sysconfdir}/init.d/sup_eeprom.sh
+    install -m 755 ${UNPACKDIR}/sup_eeprom.sh ${D}${sysconfdir}/init.d/sup_eeprom.sh
     update-rc.d -r ${D} sup_eeprom.sh start 90 2 3 4 5 .
 
     # eth0 NCSI fixup runit service - monitors and recovers eth0 if no global IPv6
     install -d ${D}${sysconfdir}/sv/eth0-ncsi-fixup
-    install -m 755 run-eth0-ncsi-fixup.sh ${D}${sysconfdir}/sv/eth0-ncsi-fixup/run
-    install -m 755 setup-eth0-ncsi-fixup.sh ${D}${sysconfdir}/init.d/setup-eth0-ncsi-fixup.sh
+    install -m 755 ${UNPACKDIR}/run-eth0-ncsi-fixup.sh ${D}${sysconfdir}/sv/eth0-ncsi-fixup/run
+    install -m 755 ${UNPACKDIR}/setup-eth0-ncsi-fixup.sh ${D}${sysconfdir}/init.d/setup-eth0-ncsi-fixup.sh
     update-rc.d -r ${D} setup-eth0-ncsi-fixup.sh start 95 5 .
 
     install -m 0755 ${UNPACKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local

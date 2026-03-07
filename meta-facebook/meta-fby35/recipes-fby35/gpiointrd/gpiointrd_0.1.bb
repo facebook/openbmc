@@ -22,9 +22,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://gpiointrd.c;beginline=4;endline=16;md5=b395943ba8a0717a83e62ca123a8d238"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://meson.build \
     file://gpiointrd.c \
@@ -52,7 +50,6 @@ DEPENDS += "\
 "
 RDEPENDS:${PN} += "bash"
 CFLAGS += " -DCONFIG_FBY3 "
-
 
 do_install:append() {
   install -d ${D}${sysconfdir}/sv

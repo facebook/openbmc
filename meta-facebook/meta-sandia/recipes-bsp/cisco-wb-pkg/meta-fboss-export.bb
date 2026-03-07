@@ -3,7 +3,7 @@
 #
 SUMMARY = "cisco-open/meta-fboss-export"
 LICENSE = "GPL-2.0-only"
-LIC_FILES_CHKSUM = "file://${UNPACKDIR}/LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57"
+LIC_FILES_CHKSUM = "file://LICENSE;md5=3b83ef96387f14655fc854ddc3c6bd57"
 
 PR = "r0"
 PV = "0.16-1"
@@ -29,8 +29,6 @@ DEPENDS += " \
     nlohmann-json \
     zlib \
 "
-
-S = "${WORKDIR}/git"
 
 do_patch() {
     rm -f git/cmake/rackmon.cmake

@@ -23,9 +23,7 @@ LIC_FILES_CHKSUM = "file://usbcons.sh;beginline=5;endline=18;md5=0b1ee7d6f844d47
 
 DEPENDS:append = " update-rc.d-native"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://usbcons.sh \
     file://usbmon.sh \
@@ -39,19 +37,19 @@ sysv_install() {
     install -d ${D}${sysconfdir}/rcS.d
     install -d ${D}${sysconfdir}/init.d
     install -d ${D}${sysconfdir}/rcS.d
-    install -m 755 usbcons.sh ${D}${sysconfdir}/init.d/usbcons.sh
+    install -m 755 ${S}/usbcons.sh ${D}${sysconfdir}/init.d/usbcons.sh
     update-rc.d -r ${D} usbcons.sh start 90 S .
 }
 
 systemd_install() {
     install -d "${D}${systemd_system_unitdir}"
-    install -m 0644 usbcons.service ${D}${systemd_system_unitdir}/usbcons.service
+    install -m 0644 ${S}/usbcons.service ${D}${systemd_system_unitdir}/usbcons.service
 }
 
 do_install() {
   localbindir="${D}/usr/local/bin"
   install -d ${localbindir}
-  install -m 755 usbmon.sh ${localbindir}/usbmon.sh
+  install -m 755 ${S}/usbmon.sh ${localbindir}/usbmon.sh
 
   if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false',  d)}; then
       systemd_install

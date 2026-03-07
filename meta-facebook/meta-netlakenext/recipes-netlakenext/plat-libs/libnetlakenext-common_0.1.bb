@@ -14,6 +14,6 @@ SRC_URI = "file://netlakenext_common \
 DEPENDS += " python3-setuptools libobmc-i2c libgpio-ctrl libkv libipmi libipmb openssl "
 RDEPENDS_${PN} += "libobmc-i2c libgpio-ctrl libkv libipmi libipmb openssl "
 
-S = "${WORKDIR}/netlakenext_common"
+S = "${UNPACKDIR}/netlakenext_common"
 
 BBCLASSEXTEND = "native nativesdk"

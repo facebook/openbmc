@@ -7,9 +7,6 @@ PR = "r1"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
 HOST_INSTANCES = "${@d.getVar('OBMC_HOST_INSTANCES', True).replace(" ", ":")}"
 NIC_INSTANCES = "${@d.getVar('OBMC_NIC_INSTANCES', True).replace(" ", ":")}"
 
@@ -28,6 +25,7 @@ FW_TOOLS = "\
     bios,host-poweron@%i.service_host-powercycle@%i.service,obmc-host-start@%i.target_obmc-host-reboot@%i.target,obmc-host-start@%i.target_obmc-host-reboot@%i.target,${HOST_INSTANCES} \
 "
 
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://fw-versions@.service \
     ${@ ' '.join([ f"file://" + x.split(',')[0] for x in d.getVar('FW_TOOLS', True).split() ])} \

@@ -9,9 +9,7 @@ LIC_FILES_CHKSUM = "file://bic-cached.c;beginline=5;endline=17;md5=da35978751a9d
 
 DEPENDS:append = " libfby2-common libbic libpal update-rc.d-native"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://Makefile \
     file://setup-bic-cached.sh \

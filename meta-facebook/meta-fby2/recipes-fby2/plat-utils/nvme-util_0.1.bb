@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://nvme-util.c;beginline=4;endline=16;md5=302e73da84735a
 SRC_URI = "file://nvme-util \
           "
 
-S = "${WORKDIR}/nvme-util"
+S = "${UNPACKDIR}/nvme-util"
 
 do_install() {
     install -d ${D}${bindir}

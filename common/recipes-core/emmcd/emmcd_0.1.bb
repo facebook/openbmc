@@ -25,12 +25,10 @@ LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://emmcd.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
 inherit meson pkgconfig
+S = "${UNPACKDIR}"
 
 RDEPENDS:${PN} += "liblog libmisc-utils"
 DEPENDS:append = " update-rc.d-native liblog libmisc-utils"
-
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://emmcd.c \

@@ -53,7 +53,7 @@ RDEPENDS:${PN} = "openssl  \
                   libpal \
                  "
 
-S = "${WORKDIR}/daemon"
+S = "${UNPACKDIR}/daemon"
 
 inherit cmake pkgconfig
 

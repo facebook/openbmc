@@ -21,9 +21,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://obmc-dump.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://obmc-dump.py \
     file://plat_dump.py \
@@ -38,8 +36,8 @@ do_install() {
   install -d $dst
   localbindir="${D}/usr/local/bin"
   install -d ${localbindir}
-  install -m 755 obmc-dump.py ${dst}/obmc-dump
-  install -m 755 plat_dump.py ${dst}/plat_dump.py
+  install -m 755 ${UNPACKDIR}/obmc-dump.py ${dst}/obmc-dump
+  install -m 755 ${UNPACKDIR}/plat_dump.py ${dst}/plat_dump.py
   ln -s ../fbpackages/${pkgdir}/obmc-dump ${localbindir}/obmc-dump
 }
 

@@ -11,7 +11,9 @@ SRC_URI = "git://github.com/openbmc/libpldm;branch=main;protocol=https \
           "
 SRCREV = "64764fd6debc749fd2025f2ea6e7c98c6758ccdd"
 
-S = "${WORKDIR}/git"
+S:openbmc-fb-dunfell = "${UNPACKDIR}/git"
+S:openbmc-fb-kirkstone = "${UNPACKDIR}/git"
+S:openbmc-fb-rocko = "${UNPACKDIR}/git"
 
 EXTRA_OEMESON = " \
         -Dtests=disabled \

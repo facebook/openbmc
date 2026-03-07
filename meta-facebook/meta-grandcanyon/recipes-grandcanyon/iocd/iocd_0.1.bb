@@ -8,9 +8,7 @@ LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://iocd.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
 inherit meson pkgconfig
-
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 LOCAL_URI = " \
     file://meson.build \
@@ -36,3 +34,4 @@ do_install:append() {
   update-rc.d -r ${D} setup-iocd.sh start 95 5 .
 }
 
+S = "${UNPACKDIR}"

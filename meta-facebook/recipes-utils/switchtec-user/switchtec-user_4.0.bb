@@ -13,7 +13,7 @@ SRC_URI[sha256sum] = "e2850a8e39ff17a2de3956ab50ef34ba639c535da9e2cab79d31ef43cc
 # This package is pretty old and doesn't use git.  Ignore the QA warning.
 ERROR_QA:remove = "src-uri-bad"
 
-S = "${WORKDIR}/switchtec-user-${PV}"
+S = "${UNPACKDIR}/switchtec-user-${PV}"
 
 DEPENDS += " openssl"
 RDEPENDS:${PN} += " openssl"

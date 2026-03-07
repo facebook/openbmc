@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://minilaketb-sensors.c;beginline=4;endline=16;md5=b3959
 SRC_URI = "file://minilaketb-sensors \
           "
 
-S = "${WORKDIR}/minilaketb-sensors"
+S = "${UNPACKDIR}/minilaketb-sensors"
 
 do_install() {
 	  install -d ${D}${bindir}

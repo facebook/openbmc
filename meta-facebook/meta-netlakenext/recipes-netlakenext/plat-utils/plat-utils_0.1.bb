@@ -31,7 +31,7 @@ SRC_URI = "file://COPYING \
 
 pkgdir = "utils"
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 # the tools for BMC will be installed in the image
 binfiles = " sol-util sync_date.sh power-on.sh"

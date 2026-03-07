@@ -23,12 +23,10 @@ LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://pldmd.cpp;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
 inherit meson pkgconfig
+S = "${UNPACKDIR}"
 
 RDEPENDS:${PN} = " libpldm libpldm-oem glog"
 DEPENDS = " libpldm libpldm-oem cli11 update-rc.d-native glog"
-
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://meson.build \

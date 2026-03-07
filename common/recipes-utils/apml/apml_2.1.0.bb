@@ -16,8 +16,9 @@ SRC_URI = "git://github.com/amd/esmi_oob_library.git;branch=master;protocol=http
 PV = "2.1.0"
 SRCREV = "00cc0fb0265af1d240a0aff5ed96f90a73ff8c51"
 
-S = "${WORKDIR}/git"
-
+S:openbmc-fb-dunfell = "${UNPACKDIR}/git"
+S:openbmc-fb-kirkstone = "${UNPACKDIR}/git"
+S:openbmc-fb-rocko = "${UNPACKDIR}/git"
 
 inherit pkgconfig cmake
 

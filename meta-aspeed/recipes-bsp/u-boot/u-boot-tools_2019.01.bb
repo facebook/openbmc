@@ -17,12 +17,9 @@ SRC_URI = "git://github.com/facebook/openbmc-uboot.git;branch=${SRCBRANCH};proto
            file://fw_env.config \
           "
 
-S = "${WORKDIR}/git"
-
 include common/recipes-bsp/u-boot-fbobmc/use-intree-shipit.inc
 # Improve code quality.
 EXTRA_OEMAKE += 'KCFLAGS="-Werror"'
-
 
 SUMMARY = "U-Boot bootloader tools"
 DEPENDS += "openssl"

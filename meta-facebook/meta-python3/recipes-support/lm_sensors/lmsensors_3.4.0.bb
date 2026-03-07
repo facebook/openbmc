@@ -24,7 +24,7 @@ INITSCRIPT_PACKAGES = "${PN}-fancontrol"
 INITSCRIPT_NAME:${PN}-fancontrol = "fancontrol"
 INITSCRIPT_PARAMS:${PN}-fancontrol = "defaults 66"
 
-S = "${WORKDIR}/lm-sensors-3-4-0"
+S = "${UNPACKDIR}/lm-sensors-3-4-0"
 
 EXTRA_OEMAKE = 'EXLDFLAGS="${LDFLAGS}" \
         MACHINE=${TARGET_ARCH} PREFIX=${prefix} MANDIR=${mandir} \

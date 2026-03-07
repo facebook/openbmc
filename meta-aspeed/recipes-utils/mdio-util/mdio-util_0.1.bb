@@ -22,8 +22,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://Makefile;md5=1b3b4c5b1c1f50c5f0d53f9972cbc936"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${UNPACKDIR}"
 
 LOCAL_URI = " \
     file://Makefile \

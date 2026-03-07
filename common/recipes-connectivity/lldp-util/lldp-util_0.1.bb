@@ -9,6 +9,6 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=cc7ed73f378cc0ea228aebab24237853 \
                     file://PATENTS;md5=aed2575e5dba9ba3aea25cfeddb8f1d2 "
 
 SRC_URI = "file://src"
-S = "${WORKDIR}/src"
+S = "${UNPACKDIR}/src"
 
 inherit meson pkgconfig

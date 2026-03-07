@@ -23,9 +23,7 @@ LIC_FILES_CHKSUM = "file://dhcp-id;beginline=5;endline=18;md5=0b1ee7d6f844d472fa
 
 RDEPENDS:${PN} += " bash wedge-eeprom "
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://dhcp-id \
     file://enterprise-num \
@@ -34,8 +32,8 @@ LOCAL_URI = " \
 do_install() {
   localbindir="${D}/usr/local/bin"
   install -d ${localbindir}
-  install -m 755 dhcp-id ${localbindir}/dhcp-id
-  install -m 755 enterprise-num ${localbindir}/enterprise-num
+  install -m 755 ${S}/dhcp-id ${localbindir}/dhcp-id
+  install -m 755 ${S}/enterprise-num ${localbindir}/enterprise-num
 }
 
 FILES:${PN} = " ${sysconfdir} /usr/local"

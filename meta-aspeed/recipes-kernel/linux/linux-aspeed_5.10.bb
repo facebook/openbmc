@@ -16,9 +16,7 @@ require recipes-kernel/linux/linux-yocto.inc
 LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 
 do_kernel_configme[depends] += "${VIRTUAL_CROSS_CC}:do_populate_sysroot"
-KCONFIG_MODE="--alldefconfig"
-
-S = "${WORKDIR}/git"
+KCONFIG_MODE = "--alldefconfig"
 
 #
 # Note: below fixup is needed to bitbake linux kernel 5.2 or higher kernel

@@ -59,24 +59,24 @@ do_work_sysv() {
     update-rc.d -r ${D} rc.early start 04 S .
 
     # Launch board specific configurations
-    install -m 0755 setup_board.sh ${D}${sysconfdir}/init.d/
+    install -m 0755 ${UNPACKDIR}/setup_board.sh ${D}${sysconfdir}/init.d/
     update-rc.d -r ${D} setup_board.sh start 10 S .
 
     # Export GPIO pins and set initial directions/values.
-    install -m 0755 setup-gpio.sh ${D}${sysconfdir}/init.d/
+    install -m 0755 ${UNPACKDIR}/setup-gpio.sh ${D}${sysconfdir}/init.d/
     update-rc.d -r ${D} setup-gpio.sh start 59 S .
 
-    install -m 0755 setup-gpio.sh ${D}${sysconfdir}/init.d/
+    install -m 0755 ${UNPACKDIR}/setup-gpio.sh ${D}${sysconfdir}/init.d/
     update-rc.d -r ${D} setup_i2c.sh start 59 S .
 
     # networking is done after rcS, any start level within rcS for
     # mac fixup should work
-    install -m 0755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/
+    install -m 0755 ${UNPACKDIR}/eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/
     update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
 
     # create VLAN intf automatically
     install -d ${D}/${sysconfdir}/network/if-up.d
-    install -m 0755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/
+    install -m 0755 ${UNPACKDIR}/create_vlan_intf ${D}${sysconfdir}/network/if-up.d/
 
     install -m 0755 ${UNPACKDIR}/rc.local ${D}${sysconfdir}/init.d/
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
@@ -87,11 +87,11 @@ do_work_systemd() {
     install -d ${D}${systemd_system_unitdir}
 
     for svc in setup_board.service setup_gpio.service setup_i2c.service; do
-        install -m 0644 ${svc} ${D}${systemd_system_unitdir}
+        install -m 0644 ${UNPACKDIR}/${svc} ${D}${systemd_system_unitdir}
     done
 
     if ! echo ${MACHINE_FEATURES} | awk "/emmc/ {exit 1}"; then
-        install -m 0644 mount_data1.service ${D}${systemd_system_unitdir}
+        install -m 0644 ${UNPACKDIR}/mount_data1.service ${D}${systemd_system_unitdir}
     fi
 }
 

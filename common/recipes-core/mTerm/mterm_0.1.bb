@@ -25,9 +25,7 @@ LIC_FILES_CHKSUM = "file://mTerm_server.c;beginline=4;endline=16;md5=da35978751a
 
 inherit systemd
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://mTerm_server.c \
     file://mTerm_client.c \

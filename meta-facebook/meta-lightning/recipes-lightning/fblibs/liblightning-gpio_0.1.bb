@@ -6,12 +6,11 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://lightning_gpio.c;beginline=8;endline=20;md5=8ad57a98e852734170b0b3b1dbf2ac85"
 
-
 SRC_URI = "file://lightning_gpio \
           "
 DEPENDS += " liblightning-common libgpio"
 
-S = "${WORKDIR}/lightning_gpio"
+S = "${UNPACKDIR}/lightning_gpio"
 
 do_install() {
 	  install -d ${D}${libdir}

@@ -16,10 +16,10 @@ FILES:${PN} += "${systemd_system_unitdir} /usr/local/bin"
 do_install:append() {
     install -d ${D}${systemd_system_unitdir}
     install -d ${D}/usr/local/bin
-    install -m 0644 fetch-backports.service ${D}${systemd_system_unitdir}
-    install -m 0644 setup_i2c.service ${D}${systemd_system_unitdir}
-    install -m 0644 setup_board.service ${D}${systemd_system_unitdir}
-    install -m 0644 power-on.service ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/fetch-backports.service ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/setup_i2c.service ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/setup_board.service ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/power-on.service ${D}${systemd_system_unitdir}
     install -m 0644 ${UNPACKDIR}/enable_watchdog_ext_signal.service ${D}${systemd_system_unitdir}
 }
 

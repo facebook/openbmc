@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://yosemite-sensors.c;beginline=4;endline=16;md5=b395943
 SRC_URI = "file://yosemite-sensors \
           "
 
-S = "${WORKDIR}/yosemite-sensors"
+S = "${UNPACKDIR}/yosemite-sensors"
 
 do_install() {
 	  install -d ${D}${bindir}

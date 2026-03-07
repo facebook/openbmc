@@ -1,8 +1,6 @@
 inherit cargo
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://Cargo.toml \
     file://src \

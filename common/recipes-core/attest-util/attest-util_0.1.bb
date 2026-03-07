@@ -10,9 +10,7 @@ LIC_FILES_CHKSUM = "file://main.cpp;beginline=5;endline=17;md5=da35978751a9d71b7
 inherit meson pkgconfig
 inherit ptest-meson
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://main.cpp \
     file://meson.build \

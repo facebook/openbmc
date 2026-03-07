@@ -65,28 +65,28 @@ do_install:append() {
     install -m 0755 ${UNPACKDIR}/setup_persist_log.sh ${D}${sysconfdir}/init.d/setup_persist_log.sh
     update-rc.d -r ${D} setup_persist_log.sh start 05 S .
 
-    install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
+    install -m 755 ${UNPACKDIR}/setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
     update-rc.d -r ${D} setup_i2c.sh start 80  S .
 
     # EEPROM is loaded in setup_i2c.sh
-    install -m 755 fix_fru_eeprom.py ${D}${sysconfdir}/init.d/fix_fru_eeprom.py
+    install -m 755 ${UNPACKDIR}/fix_fru_eeprom.py ${D}${sysconfdir}/init.d/fix_fru_eeprom.py
     update-rc.d -r ${D} fix_fru_eeprom.py start 81 S .
 
     # networking is started after rcS, any start level within rcS after loading
     # EEPROM should work
-    install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
+    install -m 755 ${UNPACKDIR}/eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
     update-rc.d -r ${D} eth0_mac_fixup.sh start 99 S .
 
-    install -m 755 setup_adc.sh ${D}${sysconfdir}/init.d/setup_adc.sh
+    install -m 755 ${UNPACKDIR}/setup_adc.sh ${D}${sysconfdir}/init.d/setup_adc.sh
     update-rc.d -r ${D} setup_adc.sh start 80 2 3 5 .
 
-    install -m 755 setup_gpio.sh ${D}${sysconfdir}/init.d/setup_gpio.sh
+    install -m 755 ${UNPACKDIR}/setup_gpio.sh ${D}${sysconfdir}/init.d/setup_gpio.sh
     update-rc.d -r ${D} setup_gpio.sh start 80 2 3 5 .
 
     # create VLAN intf automatically
     install -d ${D}/${sysconfdir}/network/if-up.d
-    install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
+    install -m 755 ${UNPACKDIR}/create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
 
-    install -m 755 setup_system_monitor.sh ${D}${sysconfdir}/init.d/setup_system_monitor.sh
+    install -m 755 ${UNPACKDIR}/setup_system_monitor.sh ${D}${sysconfdir}/init.d/setup_system_monitor.sh
     update-rc.d -r ${D} setup_system_monitor.sh start 98 2 3 5 .
 }

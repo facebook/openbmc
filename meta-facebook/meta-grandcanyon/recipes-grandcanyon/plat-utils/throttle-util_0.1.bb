@@ -10,7 +10,7 @@ inherit meson pkgconfig
 
 SRC_URI = "file://throttle-util \
           "
-S = "${WORKDIR}/throttle-util"
+S = "${UNPACKDIR}/throttle-util"
 
 DEPENDS += " libbic libpal libfbgc-common libobmc-i2c "
 

@@ -6,9 +6,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://hal_fruid.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://meson.build \
     file://hal_fruid.c \
@@ -17,6 +15,5 @@ LOCAL_URI = " \
 
 DEPENDS += "libipmi libpldm-oem"
 LDFLAGS += "-lpldm_oem"
-
 
 inherit meson pkgconfig

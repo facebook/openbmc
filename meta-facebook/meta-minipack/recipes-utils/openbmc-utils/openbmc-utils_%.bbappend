@@ -91,27 +91,27 @@ inherit systemd
 install_sysv2() {
     # create VLAN intf automatically
     install -d ${D}/${sysconfdir}/network/if-up.d
-    install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
+    install -m 755 ${UNPACKDIR}/create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
     # init
     install -d ${D}${sysconfdir}/init.d
     install -d ${D}${sysconfdir}/rcS.d
 
-    install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
+    install -m 755 ${UNPACKDIR}/setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
     update-rc.d -r ${D} setup_i2c.sh start 60 S .
 
     # the script to setup lm-sensors conf
-    install -m 755 setup_sensors_conf.sh ${D}${sysconfdir}/init.d/setup_sensors_conf.sh
+    install -m 755 ${UNPACKDIR}/setup_sensors_conf.sh ${D}${sysconfdir}/init.d/setup_sensors_conf.sh
     update-rc.d -r ${D} setup_sensors_conf.sh start 61 S .
 
     # networking is done after rcS, any start level within rcS
     # for mac fixup should work
-    install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
+    install -m 755 ${UNPACKDIR}/eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
     update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
 
-    install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
+    install -m 755 ${UNPACKDIR}/setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
     update-rc.d -r ${D} setup_board.sh start 80 S .
 
-    install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
+    install -m 755 ${UNPACKDIR}/power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
     update-rc.d -r ${D} power-on.sh start 85 S .
 
     install -m 0755 ${UNPACKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
@@ -123,18 +123,18 @@ install_systemd2() {
   install -d ${D}/usr/local/bin
   install -d ${D}${systemd_system_unitdir}
 
-  install -m 755 setup_i2c.sh ${D}/usr/local/bin/setup_i2c.sh
+  install -m 755 ${UNPACKDIR}/setup_i2c.sh ${D}/usr/local/bin/setup_i2c.sh
 
-  install -m 755 setup_sensors_conf.sh ${D}/usr/local/bin/setup_sensors_conf.sh
-  install -m 755 setup_sensors_conf.service ${D}${systemd_system_unitdir}
+  install -m 755 ${UNPACKDIR}/setup_sensors_conf.sh ${D}/usr/local/bin/setup_sensors_conf.sh
+  install -m 755 ${UNPACKDIR}/setup_sensors_conf.service ${D}${systemd_system_unitdir}
 
-  install -m 755 eth0_mac_fixup.sh ${D}/usr/local/bin/eth0_mac_fixup.sh
+  install -m 755 ${UNPACKDIR}/eth0_mac_fixup.sh ${D}/usr/local/bin/eth0_mac_fixup.sh
 
-  install -m 755 setup_board.sh ${D}/usr/local/bin/setup_board.sh
+  install -m 755 ${UNPACKDIR}/setup_board.sh ${D}/usr/local/bin/setup_board.sh
 
-  install -m 755 power-on.sh ${D}/usr/local/bin/power-on.sh
+  install -m 755 ${UNPACKDIR}/power-on.sh ${D}/usr/local/bin/power-on.sh
 
-  install -m 0644 mount_data1.service ${D}${systemd_system_unitdir}
+  install -m 0644 ${UNPACKDIR}/mount_data1.service ${D}${systemd_system_unitdir}
 }
 
 do_install_board() {

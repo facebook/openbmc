@@ -25,12 +25,10 @@ inherit systemd
 
 DEPENDS:append = " update-rc.d-native"
 
+S = "${UNPACKDIR}"
 SRC_URI = "file://sensor-setup.sh \
     file://sensor-setup.service \
     "
-
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
 
 install_sysv() {
   install -d ${D}${sysconfdir}/init.d

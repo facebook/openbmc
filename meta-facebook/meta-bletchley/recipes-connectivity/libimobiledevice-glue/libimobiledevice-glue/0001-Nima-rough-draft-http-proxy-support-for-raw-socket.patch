@@ -1,4 +1,4 @@
-From b078f4aaa6c155d0cd89012f2158e3128adefe99 Mon Sep 17 00:00:00 2001
+From 0665cac3b21db71f5f2ba62487265fdcf6c78b69 Mon Sep 17 00:00:00 2001
 From: Nima <v.nima2007@gmail.com>
 Date: Fri, 3 Mar 2023 16:26:13 -0800
 Subject: [PATCH] Nima rough draft http proxy support for raw socket
@@ -16,18 +16,18 @@ Instructions:
  1 file changed, 193 insertions(+)
 
 diff --git a/src/socket.c b/src/socket.c
-index 6e65c42..8432a9f 100644
+index 2dfaa6f..aab75a6 100644
 --- a/src/socket.c
 +++ b/src/socket.c
-@@ -82,6 +82,7 @@ static int wsa_init = 0;
+@@ -83,6 +83,7 @@
  #ifndef ETIMEDOUT
  #define ETIMEDOUT 138
  #endif
 +#include <ctype.h>
  
- static int verbose = 0;
- 
-@@ -1155,8 +1156,200 @@ int socket_connect_addr(struct sockaddr* addr, uint16_t port)
+ #ifndef AI_NUMERICSERV
+ #define AI_NUMERICSERV 0
+@@ -1177,8 +1178,200 @@ int socket_connect_addr(struct sockaddr* addr, uint16_t port)
  	return sfd;
  }
  
@@ -228,6 +228,3 @@ index 6e65c42..8432a9f 100644
  	int sfd = -1;
  	int yes = 1;
  	int bufsize = 0x20000;
--- 
-2.44.2
-

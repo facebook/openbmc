@@ -29,8 +29,9 @@ FSC_CONFIG += "fsc-config-gta-8-retimer.json \
                fsc-config-gta-8-retimer-dis-vpdb.json \
 	          "
 
-FSC_ZONE_CONFIG +="zone-fsc-gta-8-retimer.fsc \
-                   zone-fsc-gta-8-retimer-dis-vpdb.fsc \
-	              "
+FSC_ZONE_CONFIG += " \
+    zone-fsc-gta-8-retimer.fsc \
+    zone-fsc-gta-8-retimer-dis-vpdb.fsc \
+	"
 
 RDEPENDS:${PN} += "bash"

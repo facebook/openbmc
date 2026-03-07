@@ -12,14 +12,12 @@ FILES:${PN} += " \
     ${systemd_system_unitdir} \
     "
 
+S = "${UNPACKDIR}"
 SRC_URI = "file://ncsi-strength.c \
            file://meson.build \
            file://ncsi-strength.sh \
            file://ncsi-strength.service \
           "
-
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
 
 SYSTEMD_SERVICE:${PN} = " \
     ncsi-strength.service \

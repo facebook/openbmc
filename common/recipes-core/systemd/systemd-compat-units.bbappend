@@ -22,6 +22,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 inherit systemd
 
+S = "${UNPACKDIR}"
 SRC_URI += " \
         file://hostname.service \
         file://hostname.sh \

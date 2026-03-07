@@ -31,8 +31,7 @@ CFLAGS += "-Wall -Werror"
 SRC_URI = "file://utils  \
            file://lib/WeutilInterface.h "
 
-
-S = "${WORKDIR}/utils"
+S = "${UNPACKDIR}/utils"
 
 do_install() {
 	  install -d ${D}${bindir}

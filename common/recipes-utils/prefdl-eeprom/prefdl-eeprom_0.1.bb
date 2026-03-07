@@ -20,12 +20,12 @@ LIC_FILES_CHKSUM = "file://prefdl_weutil.c;beginline=4;endline=16;md5=da35978751
 SRC_URI += " \
           file://utils \
           "
-S = "${WORKDIR}/utils"
+S = "${UNPACKDIR}/utils"
 
 do_install() {
     install -d ${D}${bindir}
-    install -m 0755 weutil_prefdl ${D}${bindir}/weutil_prefdl
-    install -m 0755 weutil-compat-wrapper.sh ${D}${bindir}/weutil
+    install -m 0755 ${S}/weutil_prefdl ${D}${bindir}/weutil_prefdl
+    install -m 0755 ${S}/weutil-compat-wrapper.sh ${D}${bindir}/weutil
 }
 
 RDEPENDS:${PN} += "bash"

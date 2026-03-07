@@ -10,7 +10,7 @@ SRC_URI = "file://bic-util \
           "
 inherit meson pkgconfig
 
-S = "${WORKDIR}/bic-util"
+S = "${UNPACKDIR}/bic-util"
 
 DEPENDS += "libbic libpal libfbgc-common libfbgc-gpio"
 

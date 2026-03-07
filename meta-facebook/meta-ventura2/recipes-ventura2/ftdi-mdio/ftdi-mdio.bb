@@ -13,6 +13,7 @@ FILES:${PN} += " \
     ${systemd_system_unitdir} \
     "
 
+S = "${UNPACKDIR}"
 SRC_URI = "file://ftdi_mdio.c \
            file://meson.build \
            file://marvell-switch-init_evt.sh \
@@ -20,9 +21,6 @@ SRC_URI = "file://ftdi_mdio.c \
            file://99-ftdi-mdio.rules \
            file://systemd-networkd.service.d/after-marvell-switch-init_evt.conf \
           "
-
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
 
 SYSTEMD_SERVICE:${PN} = " \
     marvell-switch-init_evt.service \

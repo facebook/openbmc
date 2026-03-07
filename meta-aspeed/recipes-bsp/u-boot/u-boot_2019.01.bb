@@ -34,7 +34,6 @@ SRC_URI = "git://github.com/facebook/openbmc-uboot.git;branch=${SRCBRANCH};proto
           "
 
 DEFAULT_PREFERENCE = "-1"
-S = "${WORKDIR}/git"
 PV = "v2019.01+git${SRCPV}"
 include common/recipes-bsp/u-boot-fbobmc/use-intree-shipit.inc
 
@@ -230,7 +229,6 @@ do_deploy () {
             ln -sf ${UBOOT_ELF_IMAGE} ${DEPLOYDIR}/${UBOOT_ELF_SYMLINK}
         fi
     fi
-
 
      if [ "x${SPL_BINARY}" != "x" ]
      then

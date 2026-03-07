@@ -14,6 +14,6 @@ SRC_URI = "file://netlakenext_fruid \
 DEPENDS += "libnetlakenext-common"
 RDEPENDS_${PN} += "libnetlakenext-common"
 
-S = "${WORKDIR}/netlakenext_fruid"
+S = "${UNPACKDIR}/netlakenext_fruid"
 
 BBCLASSEXTEND = "native nativesdk"

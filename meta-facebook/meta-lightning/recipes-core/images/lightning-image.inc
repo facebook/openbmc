@@ -6,7 +6,6 @@ require recipes-core/images/fb-openbmc-image.bb
 
 FLASH_ROOTFS_OFFSET = "4608"
 
-
 NTP_PKGS = " \
   ntp \
   ntpq \

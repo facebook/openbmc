@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://hsvc-util.c;beginline=4;endline=16;md5=b395943ba8a071
 SRC_URI = "file://hsvc-util \
           "
 
-S = "${WORKDIR}/hsvc-util"
+S = "${UNPACKDIR}/hsvc-util"
 
 do_install() {
 	  install -d ${D}${bindir}

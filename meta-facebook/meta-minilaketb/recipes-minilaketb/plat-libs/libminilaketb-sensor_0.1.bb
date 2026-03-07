@@ -6,13 +6,12 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://minilaketb_sensor.c;beginline=8;endline=20;md5=da35978751a9d71b73679307c4d296ec"
 
-
 SRC_URI = "file://minilaketb_sensor \
           "
 LDFLAGS += "-lobmc-i2c"
 DEPENDS =+ " libipmi libipmb libbic libminilaketb-common plat-utils libobmc-i2c libnvme-mi obmc-pal "
 
-S = "${WORKDIR}/minilaketb_sensor"
+S = "${UNPACKDIR}/minilaketb_sensor"
 
 do_install() {
 	  install -d ${D}${libdir}

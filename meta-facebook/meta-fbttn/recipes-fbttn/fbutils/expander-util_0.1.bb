@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://expander-util.c;beginline=4;endline=16;md5=302e73da84
 SRC_URI = "file://expander-util \
           "
 
-S = "${WORKDIR}/expander-util"
+S = "${UNPACKDIR}/expander-util"
 
 do_install() {
     install -d ${D}${bindir}

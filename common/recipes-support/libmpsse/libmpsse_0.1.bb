@@ -21,6 +21,6 @@ def libftdi_option(d):
 DEPENDS += " libusb1 libftdi "
 RDEPENDS:${PN} += " libusb1 libftdi "
 
-S = "${WORKDIR}/libmpsse"
+S = "${UNPACKDIR}/libmpsse"
 
 EXTRA_OEMESON = "${@libftdi_option(d)}"

@@ -13,7 +13,7 @@ SRC_URI = "file://daemon \
 DEPENDS += "libasd-jtagintf libpal"
 RDEPENDS:${PN} += "libasd-jtagintf libpal"
 
-S = "${WORKDIR}/daemon"
+S = "${UNPACKDIR}/daemon"
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

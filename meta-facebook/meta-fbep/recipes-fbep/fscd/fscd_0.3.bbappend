@@ -48,15 +48,16 @@ FSC_CONFIG += "fsc-config_AMD_vicor_brcm.json \
                fsc-config_NVIDIA_infineon_micp.json \
 	      "
 
-FSC_ZONE_CONFIG +="zone1_AMD_vicor_brcm.fsc \
-                   zone1_AMD_vicor_micp.fsc \
-                   zone1_AMD_infineon_brcm.fsc \
-                   zone1_AMD_infineon_micp.fsc \
-                   zone1_NVIDIA_vicor_brcm.fsc \
-                   zone1_NVIDIA_vicor_micp.fsc \
-                   zone1_NVIDIA_infineon_brcm.fsc \
-                   zone1_NVIDIA_infineon_micp.fsc \
-                  "
+FSC_ZONE_CONFIG += " \
+    zone1_AMD_vicor_brcm.fsc \
+    zone1_AMD_vicor_micp.fsc \
+    zone1_AMD_infineon_brcm.fsc \
+    zone1_AMD_infineon_micp.fsc \
+    zone1_NVIDIA_vicor_brcm.fsc \
+    zone1_NVIDIA_vicor_micp.fsc \
+    zone1_NVIDIA_infineon_brcm.fsc \
+    zone1_NVIDIA_infineon_micp.fsc \
+    "
 
 FSC_INIT_FILE += "setup-fan.sh"
 

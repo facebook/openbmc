@@ -29,6 +29,6 @@ FSC_BIN_FILES += "init_pwm.sh"
 
 FSC_CONFIG += "fsc-config.json"
 
-FSC_ZONE_CONFIG +="zone1.fsc"
+FSC_ZONE_CONFIG += "zone1.fsc"
 
 FSC_INIT_FILE += "setup-fan.sh"

@@ -15,7 +15,6 @@ SRC_URI = "git://github.com/google/vbootrom;protocol=https;branch=master${@local
 PV = "1.0+git${SRCPV}"
 SRCREV = "1287b6e42e839ba2ab0f06268c5b53ae60df3537"
 
-S = "${WORKDIR}/git"
 B = "${S}/npcm8xx"
 
 export CROSS_COMPILE="${TARGET_PREFIX}"

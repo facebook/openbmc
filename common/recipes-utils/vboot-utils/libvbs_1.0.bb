@@ -7,7 +7,7 @@ LIC_FILES_CHKSUM = "file://vbs.c;beginline=4;endline=16;md5=da35978751a9d71b7367
 inherit meson pkgconfig
 
 SRC_URI += "file://vbs"
-S = "${WORKDIR}/vbs"
+S = "${UNPACKDIR}/vbs"
 
 def get_vbs_base_addr(soc_family):
   ret = "-DAST_SRAM_VBS_BASE="
@@ -22,6 +22,5 @@ def get_vbs_base_addr(soc_family):
     ret = ""
 
   return ret
-
 
 CFLAGS += "${@ get_vbs_base_addr('${SOC_FAMILY}') }"

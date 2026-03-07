@@ -20,6 +20,7 @@ SECTION = "base"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://COPYING \
     file://board_gpio_table.py \
@@ -34,9 +35,6 @@ LOCAL_URI = " \
     file://soc_gpio_table.py \
     file://setup_board.py \
     "
-
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
 
 OPENBMC_GPIO_UTILS = " \
     openbmc_gpio_util.py \

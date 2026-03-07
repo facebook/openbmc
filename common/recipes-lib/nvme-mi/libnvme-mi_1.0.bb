@@ -22,7 +22,7 @@ LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://nvme-mi.c;beginline=4;endline=16;md5=7783b537a8ff52cf362d3cdb4bb0f6e2"
 
 SRC_URI = "file://src"
-S = "${WORKDIR}/src"
+S = "${UNPACKDIR}/src"
 
 inherit meson pkgconfig
 

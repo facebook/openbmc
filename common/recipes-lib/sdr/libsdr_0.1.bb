@@ -9,9 +9,7 @@ LIC_FILES_CHKSUM = "file://sdr.c;beginline=8;endline=20;md5=da35978751a9d71b7367
 
 BBCLASSEXTEND = "native"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://meson.build\
     file://sdr.c \

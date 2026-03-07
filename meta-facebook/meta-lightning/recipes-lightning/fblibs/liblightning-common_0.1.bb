@@ -12,7 +12,7 @@ RDEPENDS:${PN} += "libkv"
 SRC_URI = "file://lightning_common \
           "
 
-S = "${WORKDIR}/lightning_common"
+S = "${UNPACKDIR}/lightning_common"
 
 do_install() {
 	  install -d ${D}${libdir}

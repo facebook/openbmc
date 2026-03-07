@@ -64,22 +64,22 @@ do_work_sysv() {
     install -m 0755 ${UNPACKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
     update-rc.d -r ${D} rc.early start 04 S .
 
-    install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
+    install -m 755 ${UNPACKDIR}/setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
     update-rc.d -r ${D} setup_i2c.sh start 60 S .
 
     # networking is done after rcS, any start level within rcS
     # for mac fixup should work
-    install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
+    install -m 755 ${UNPACKDIR}/eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
     update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
 
     # create VLAN intf automatically
     install -d ${D}/${sysconfdir}/network/if-up.d
-    install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
+    install -m 755 ${UNPACKDIR}/create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
 
-    install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
+    install -m 755 ${UNPACKDIR}/setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
     update-rc.d -r ${D} setup_board.sh start 80 S .
 
-    install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
+    install -m 755 ${UNPACKDIR}/power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
     update-rc.d -r ${D} power-on.sh start 85 S .
 
     install -m 0755 ${UNPACKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
@@ -94,15 +94,15 @@ do_work_systemd() {
     install -d ${D}/usr/local/bin
     install -d ${D}${systemd_system_unitdir}
 
-    install -m 0755 setup_i2c.sh ${D}/usr/local/bin/setup_i2c.sh
+    install -m 0755 ${UNPACKDIR}/setup_i2c.sh ${D}/usr/local/bin/setup_i2c.sh
 
     # networking is done after rcS, any start level within rcS
     # for mac fixup should work
-    install -m 755 eth0_mac_fixup.sh ${D}/usr/local/bin/eth0_mac_fixup.sh
+    install -m 755 ${UNPACKDIR}/eth0_mac_fixup.sh ${D}/usr/local/bin/eth0_mac_fixup.sh
 
-    install -m 755 setup_board.sh ${D}/usr/local/bin/setup_board.sh
+    install -m 755 ${UNPACKDIR}/setup_board.sh ${D}/usr/local/bin/setup_board.sh
 
-    install -m 755 power-on.sh ${D}/usr/local/bin/power-on.sh
+    install -m 755 ${UNPACKDIR}/power-on.sh ${D}/usr/local/bin/power-on.sh
 
     install -m 0755 ${UNPACKDIR}/enable_watchdog_ext_signal.sh ${D}/usr/local/bin/enable_watchdog_ext_signal.sh
 }

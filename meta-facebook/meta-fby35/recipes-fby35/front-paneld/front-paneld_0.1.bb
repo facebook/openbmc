@@ -9,9 +9,7 @@ LIC_FILES_CHKSUM = "file://front-paneld.c;beginline=5;endline=17;md5=da35978751a
 
 DEPENDS += "libfby35-common libpal libkv update-rc.d-native"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://meson.build \
     file://setup-front-paneld.sh \

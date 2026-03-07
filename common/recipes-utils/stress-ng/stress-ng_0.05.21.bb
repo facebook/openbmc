@@ -13,7 +13,7 @@ SRC_URI = "http://kernel.ubuntu.com/~cking/tarballs/stress-ng/stress-ng-${PV}.ta
 SRC_URI[md5sum] = "aa22bcc892d9318c986be8525e2fbb8c"
 SRC_URI[sha256sum] = "d8ac85cff80f12829130d0e48ff9833d7469c6736bb73295ab6d25ef9ae9a793"
 
-S = "${WORKDIR}/stress-ng-${PV}"
+S = "${UNPACKDIR}/stress-ng-${PV}"
 
 do_install:append() {
     install -d ${D}${bindir}

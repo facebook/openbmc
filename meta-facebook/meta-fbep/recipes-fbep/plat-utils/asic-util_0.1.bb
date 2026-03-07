@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://asic-util.cpp;beginline=4;endline=16;md5=94a0865391a6
 SRC_URI = "file://asic-util \
           "
 
-S = "${WORKDIR}/asic-util"
+S = "${UNPACKDIR}/asic-util"
 
 do_install() {
     install -d ${D}${bindir}

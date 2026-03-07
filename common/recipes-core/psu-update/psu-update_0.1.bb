@@ -23,9 +23,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 RDEPENDS:${PN} = "python3-core bash rackmon"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://modbus_update_helper.py \
     file://psu-update-delta.py \
@@ -51,7 +49,7 @@ do_install() {
     install -d $bin
     for f in ${LOCAL_URI}; do
         f=${f#file://}
-        install -m 755 $f ${dst}/$f
+        install -m 755 ${UNPACKDIR}/$f ${dst}/$f
         ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
     done
 }

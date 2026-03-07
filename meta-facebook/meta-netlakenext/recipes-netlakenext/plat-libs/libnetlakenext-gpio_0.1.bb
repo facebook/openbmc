@@ -30,6 +30,6 @@ SRC_URI = "file://netlakenext_gpio \
 DEPENDS += " libgpio-ctrl "
 RDEPENDS_${PN} += " libgpio-ctrl "
 
-S = "${WORKDIR}/netlakenext_gpio"
+S = "${UNPACKDIR}/netlakenext_gpio"
 
 BBCLASSEXTEND = "native nativesdk"

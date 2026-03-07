@@ -30,8 +30,7 @@ FSC_CONFIG += " \
             fsc-config-700w.json \
             "
 
-FSC_ZONE_CONFIG +="zone.fsc \
-                  "
+FSC_ZONE_CONFIG += "zone.fsc"
 
 FSC_INIT_FILE += "setup-fan.sh"
 RDEPENDS:${PN} += "bash"

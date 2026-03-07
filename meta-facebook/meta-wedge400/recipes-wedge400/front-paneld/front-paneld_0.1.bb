@@ -29,9 +29,7 @@ LIC_FILES_CHKSUM = "file://front-paneld.c;beginline=5;endline=17;md5=da35978751a
 DEPENDS:append = "liblog libpal libmisc-utils update-rc.d-native"
 LDFLAGS = "-llog"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://Makefile \
     file://setup-front-paneld.sh \

@@ -37,6 +37,6 @@ FSC_CONFIG += "FSC-PWM-32-config.json \
                FSC-PWM-64-config.json \
               "
 
-FSC_ZONE_CONFIG +="zone1.fsc"
+FSC_ZONE_CONFIG += "zone1.fsc"
 
 FSC_INIT_FILE += "setup-fan.sh"

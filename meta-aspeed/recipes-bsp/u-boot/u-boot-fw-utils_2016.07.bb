@@ -12,7 +12,6 @@ SRC_URI = "git://github.com/facebook/openbmc-uboot.git;branch=${SRCBRANCH};proto
           "
 
 PV = "v2016.07+git${SRCPV}"
-S = "${WORKDIR}/git"
 include common/recipes-bsp/u-boot-fbobmc/use-intree-shipit.inc
 
 INSANE_SKIP:${PN} = "already-stripped"

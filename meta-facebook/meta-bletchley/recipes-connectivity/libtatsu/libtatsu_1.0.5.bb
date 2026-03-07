@@ -10,5 +10,4 @@ DEPENDS = "libplist curl"
 SRCREV = "42329cb756682535c7c0f087987b78d1dd5b16c8"
 SRC_URI = "git://github.com/libimobiledevice/libtatsu;protocol=https;branch=master"
 
-S = "${WORKDIR}/git"
 inherit autotools pkgconfig

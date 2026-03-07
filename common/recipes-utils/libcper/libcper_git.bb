@@ -12,7 +12,9 @@ SRCREV = "fa6c53aeb782fc047bdd88be3c0d72dc89e3da02"
 
 SRC_URI = "git://github.com/openbmc/libcper.git;protocol=https;branch=main"
 
-S = "${WORKDIR}/git"
+S:openbmc-fb-dunfell = "${UNPACKDIR}/git"
+S:openbmc-fb-kirkstone = "${UNPACKDIR}/git"
+S:openbmc-fb-rocko = "${UNPACKDIR}/git"
 
 inherit pkgconfig meson ptest
 

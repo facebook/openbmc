@@ -19,9 +19,7 @@ SUMMARY = "Utilities for BCM5396"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://COPYING \
     file://bcm5396_py3.py \
@@ -33,7 +31,6 @@ SCRIPTS = " \
     bcm5396_util_py3.py \
     "
 
-
 do_install() {
     pkgdir="/usr/local/packages/utils"
     dstdir="${D}${pkgdir}"
@@ -41,7 +38,7 @@ do_install() {
     localbindir="${D}/usr/local/bin"
     install -d ${localbindir}
     for f in ${SCRIPTS}; do
-        install -m 755 $f ${dstdir}/${f}
+        install -m 755 ${UNPACKDIR}/$f ${dstdir}/${f}
         ln -s ${pkgdir}/${f} ${localbindir}
     done
 }

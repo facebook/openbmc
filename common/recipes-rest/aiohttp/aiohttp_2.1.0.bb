@@ -9,14 +9,13 @@ SRC_URI = "https://pypi.python.org/packages/cf/4a/bec3705f07294d9a4057fe5abd93ca
 SRC_URI[md5sum] = "52c94bf1735485d9e02fd097ff7d7db9"
 SRC_URI[sha256sum] = "3e80d944e9295b1360e422d89746b99e23a99118420f826f990a632d284e21df"
 
-S = "${WORKDIR}/${BPN}-${PV}"
+S = "${UNPACKDIR}/${BPN}-${PV}"
 
 inherit python3-dir
 
 dst = "${PYTHON_SITEPACKAGES_DIR}/aiohttp.egg-info"
 dst1 = "${PYTHON_SITEPACKAGES_DIR}/aiohttp"
 
-	
 RDEPENDS:${PN}:append = "\
   async-timeout \
   chardet \

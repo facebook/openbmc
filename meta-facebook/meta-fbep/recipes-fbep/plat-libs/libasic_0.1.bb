@@ -6,13 +6,12 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://asic.c;beginline=8;endline=20;md5=df671c5f3a78585c16168736d9c3fc15"
 
-
 SRC_URI = "file://asic \
           "
 LDFLAGS += "-lobmc-i2c -lgpio-ctrl "
 DEPENDS += "libobmc-i2c libgpio-ctrl "
 
-S = "${WORKDIR}/asic"
+S = "${UNPACKDIR}/asic"
 
 do_install() {
     install -d ${D}${libdir}

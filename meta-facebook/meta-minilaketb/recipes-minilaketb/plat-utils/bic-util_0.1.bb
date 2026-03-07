@@ -9,10 +9,9 @@ LIC_FILES_CHKSUM = "file://bic-util.c;beginline=4;endline=16;md5=b395943ba8a0717
 SRC_URI = "file://bic-util \
           "
 
-S = "${WORKDIR}/bic-util"
+S = "${UNPACKDIR}/bic-util"
 
 CFLAGS += " -Wall -Werror  -lbic -lminilaketb_gpio"
-
 
 do_install() {
 	  install -d ${D}${bindir}
@@ -20,6 +19,5 @@ do_install() {
 }
 DEPENDS += "libbic libminilaketb-gpio libminilaketb-sensor"
 RDEPENDS:${PN} += "libbic libminilaketb-gpio libminilaketb-sensor "
-
 
 FILES:${PN} = "${bindir}"

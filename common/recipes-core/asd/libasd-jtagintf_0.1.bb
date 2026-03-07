@@ -15,7 +15,7 @@ SRC_URI = "file://interface/SoftwareJTAGHandler.c \
            file://interface/Makefile \
            "
 
-S = "${WORKDIR}/interface"
+S = "${UNPACKDIR}/interface"
 
 do_install() {
   install -d ${D}${includedir}/asd

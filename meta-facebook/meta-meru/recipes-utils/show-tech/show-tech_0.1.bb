@@ -22,9 +22,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://show_tech.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://dump_gpios.sh \
     file://meta_info.sh \
@@ -44,7 +42,7 @@ do_install() {
     install -d ${localbindir}
 
     for f in ${SHOWTECH_UTILS_FILES}; do
-        install -m 755 $f ${localbindir}/${f}
+        install -m 755 ${S}/$f ${localbindir}/${f}
     done
 }
 

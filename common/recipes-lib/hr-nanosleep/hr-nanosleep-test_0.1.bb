@@ -25,7 +25,7 @@ SRC_URI += "file://test/hr_nanosleep_test.c \
             file://test/CMakeLists.txt \
            "
 
-S = "${WORKDIR}/test"
+S = "${UNPACKDIR}/test"
 
 CFLAGS += '-Wall -Werror'
 

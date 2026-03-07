@@ -110,34 +110,34 @@ do_work_sysv() {
     install -m 0755 ${UNPACKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
     update-rc.d -r ${D} rc.early start 04 S .
 
-    install -m 755 dpm_dump.sh ${D}${sysconfdir}/init.d/dpm_dump.sh
+    install -m 755 ${UNPACKDIR}/dpm_dump.sh ${D}${sysconfdir}/init.d/dpm_dump.sh
     update-rc.d -r ${D} dpm_dump.sh start 50 S .
 
     # Export GPIO pins and set initial directions/values.
-    install -m 755 setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
+    install -m 755 ${UNPACKDIR}/setup-gpio.sh ${D}${sysconfdir}/init.d/setup-gpio.sh
     update-rc.d -r ${D} setup-gpio.sh start 59 S .
 
-    install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
+    install -m 755 ${UNPACKDIR}/setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
     update-rc.d -r ${D} setup_i2c.sh start 60 S .
 
     # networking is done after rcS, any start level within rcS for
     # mac fixup should work
-    install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
+    install -m 755 ${UNPACKDIR}/eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
     update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
 
     # Fixes the speed on the BCM53134. This can be done in any start level
     # within rcS.
-    install -m 755 setup_bcm53134.sh ${D}${sysconfdir}/init.d/setup_bcm53134.sh
+    install -m 755 ${UNPACKDIR}/setup_bcm53134.sh ${D}${sysconfdir}/init.d/setup_bcm53134.sh
     update-rc.d -r ${D} setup_bcm53134.sh start 75 S .
 
-    install -m 755 setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
+    install -m 755 ${UNPACKDIR}/setup_board.sh ${D}${sysconfdir}/init.d/setup_board.sh
     update-rc.d -r ${D} setup_board.sh start 80 S .
 
     # create VLAN intf automatically
     install -d ${D}/${sysconfdir}/network/if-up.d
-    install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
+    install -m 755 ${UNPACKDIR}/create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
 
-    install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
+    install -m 755 ${UNPACKDIR}/power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
     update-rc.d -r ${D} power-on.sh start 85 S .
 
     install -m 0755 ${UNPACKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
@@ -151,29 +151,29 @@ do_work_systemd() {
   install -d ${D}/usr/local/bin
   install -d ${D}${systemd_system_unitdir}
 
-  install -m 755 dpm_dump.sh ${D}/usr/local/bin/dpm_dump.sh
+  install -m 755 ${UNPACKDIR}/dpm_dump.sh ${D}/usr/local/bin/dpm_dump.sh
 
-  install -m 755 setup-gpio.sh ${D}/usr/local/bin/setup-gpio.sh
+  install -m 755 ${UNPACKDIR}/setup-gpio.sh ${D}/usr/local/bin/setup-gpio.sh
 
-  install -m 755 setup_i2c.sh ${D}/usr/local/bin/setup_i2c.sh
+  install -m 755 ${UNPACKDIR}/setup_i2c.sh ${D}/usr/local/bin/setup_i2c.sh
 
   # networking is done after rcS, any start level within rcS
   # for mac fixup should work
-  install -m 755 eth0_mac_fixup.sh ${D}/usr/local/bin/eth0_mac_fixup.sh
+  install -m 755 ${UNPACKDIR}/eth0_mac_fixup.sh ${D}/usr/local/bin/eth0_mac_fixup.sh
 
-  install -m 755 setup_bcm53134.sh ${D}/usr/local/bin/setup_bcm53134.sh
+  install -m 755 ${UNPACKDIR}/setup_bcm53134.sh ${D}/usr/local/bin/setup_bcm53134.sh
 
-  install -m 755 setup_board.sh ${D}/usr/local/bin/setup_board.sh
+  install -m 755 ${UNPACKDIR}/setup_board.sh ${D}/usr/local/bin/setup_board.sh
 
-  install -m 755 power-on.sh ${D}/usr/local/bin/power-on.sh
+  install -m 755 ${UNPACKDIR}/power-on.sh ${D}/usr/local/bin/power-on.sh
 
-  install -m 0755 elbert_pim.layout ${D}/usr/local/bin/elbert_pim.layout
+  install -m 0755 ${UNPACKDIR}/elbert_pim.layout ${D}/usr/local/bin/elbert_pim.layout
 
-  install -m 0644 mount_data1.service ${D}${systemd_system_unitdir}
+  install -m 0644 ${UNPACKDIR}/mount_data1.service ${D}${systemd_system_unitdir}
 
-  install -m 0644 setup_gpio.service ${D}${systemd_system_unitdir}
+  install -m 0644 ${UNPACKDIR}/setup_gpio.service ${D}${systemd_system_unitdir}
 
-  install -m 0644 dpm_dump.service ${D}${systemd_system_unitdir}
+  install -m 0644 ${UNPACKDIR}/dpm_dump.service ${D}${systemd_system_unitdir}
 
 }
 

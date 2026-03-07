@@ -30,7 +30,7 @@ CFLAGS += "-Wall -Werror"
 
 SRC_URI = "file://utils"
 
-S = "${WORKDIR}/utils"
+S = "${UNPACKDIR}/utils"
 
 do_install() {
 	install -d ${D}${bindir}

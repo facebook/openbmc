@@ -28,7 +28,7 @@ LDFLAGS += "-llog -lobmc-i2c"
 DEPENDS += "liblog libobmc-i2c"
 RDEPENDS:${PN} = "liblog libobmc-i2c"
 
-S = "${WORKDIR}/lib"
+S = "${UNPACKDIR}/lib"
 
 do_install() {
 	  install -d ${D}${libdir}

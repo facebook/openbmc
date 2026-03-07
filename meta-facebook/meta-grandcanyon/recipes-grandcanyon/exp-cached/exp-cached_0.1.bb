@@ -7,13 +7,10 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://exp-cached.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
-
 DEPENDS:append = "libpal libexp update-rc.d-native"
 
 inherit meson pkgconfig
-
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 LOCAL_URI = " \
     file://meson.build \

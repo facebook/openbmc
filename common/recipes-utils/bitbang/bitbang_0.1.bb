@@ -28,7 +28,7 @@ LDFLAGS += " -llog "
 DEPENDS += "openbmc-utils libgpio liblog"
 RDEPENDS:${PN} = "libgpio liblog"
 
-S = "${WORKDIR}/src"
+S = "${UNPACKDIR}/src"
 
 do_install() {
   install -d ${D}${bindir}

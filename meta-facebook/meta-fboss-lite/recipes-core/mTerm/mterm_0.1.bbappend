@@ -22,8 +22,6 @@ SRC_URI += "file://mTerm_server.service \
             file://sol.sh \
            "
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
 
 MTERM_CONSOLES ?= "115200;ttyS1"
 

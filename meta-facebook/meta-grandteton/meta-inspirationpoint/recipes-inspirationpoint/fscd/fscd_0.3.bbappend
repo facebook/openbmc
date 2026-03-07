@@ -43,11 +43,12 @@ FSC_CONFIG += "fsc-config-evt.json \
                fsc-config-8-retimer-ubb-mi355.json \
 	      "
 
-FSC_ZONE_CONFIG +="zone-evt.fsc \
-                   zone-2-retimer.fsc \
-                   zone-8-retimer.fsc \
-                   zone-8-retimer-ubb.fsc \
-                   zone-8-retimer-gt15.fsc \
-                   zone-8-retimer-ubb-mi355.fsc \
-	          "
+FSC_ZONE_CONFIG += " \
+    zone-evt.fsc \
+    zone-2-retimer.fsc \
+    zone-8-retimer.fsc \
+    zone-8-retimer-ubb.fsc \
+    zone-8-retimer-gt15.fsc \
+    zone-8-retimer-ubb-mi355.fsc \
+	"
 RDEPENDS:${PN} += "bash"

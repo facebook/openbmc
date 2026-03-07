@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://fby2-sensors.c;beginline=4;endline=16;md5=b395943ba8a
 SRC_URI = "file://fby2-sensors \
           "
 
-S = "${WORKDIR}/fby2-sensors"
+S = "${UNPACKDIR}/fby2-sensors"
 
 do_install() {
 	  install -d ${D}${bindir}

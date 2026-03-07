@@ -94,10 +94,7 @@ SRC_URI += "file://patches/0111-drivers-jtag-Add-JTAG-core-driver.patch \
 SRC_URI += "file://patches/0141-spi-add-user-mode-aspeed-spi-driver.patch"
 
 do_kernel_configme[depends] += "${VIRTUAL_CROSS_CC}:do_populate_sysroot"
-KCONFIG_MODE="--alldefconfig"
-
-S = "${WORKDIR}/git"
-
+KCONFIG_MODE = "--alldefconfig"
 #
 # Note: below fixup is needed to bitbake linux kernel 5.2 or higher kernel
 # versions using yocto-rocko. It's usually needed by ast2400 BMC platforms

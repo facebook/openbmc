@@ -35,7 +35,6 @@ FSC_BIN_FILES += "get_fan_speed.sh \
 FSC_CONFIG += "fsc-config.json \
               "
 
-FSC_ZONE_CONFIG +="zone.fsc \
-                  "
+FSC_ZONE_CONFIG += "zone.fsc"
 
 FSC_INIT_FILE += "setup-fan.sh"

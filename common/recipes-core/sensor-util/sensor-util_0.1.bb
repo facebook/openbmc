@@ -9,9 +9,7 @@ LIC_FILES_CHKSUM = "file://sensor-util.cpp;beginline=4;endline=16;md5=b395943ba8
 inherit meson pkgconfig
 inherit ptest-meson
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://meson.build \
     file://sensor-util.cpp \
@@ -30,5 +28,4 @@ pkgdir = "sensor-util"
 DEPENDS =+ " libsdr libpal libaggregate-sensor jansson"
 RDEPENDS:${PN} =+ "libsdr libpal libaggregate-sensor jansson python3-core"
 FILES:${PN} += "${prefix}/local/bin/sensor-util"
-
 

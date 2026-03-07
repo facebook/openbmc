@@ -13,7 +13,9 @@ SRC_URI = "git://github.com/openbmc/libpeci;branch=master;protocol=https \
 PV = "0.1+git${SRCPV}"
 SRCREV = "6a00e9aa72f75d66eb8b9572c7fd3894f91c6bba"
 
-S = "${WORKDIR}/git"
+S:openbmc-fb-dunfell = "${UNPACKDIR}/git"
+S:openbmc-fb-kirkstone = "${UNPACKDIR}/git"
+S:openbmc-fb-rocko = "${UNPACKDIR}/git"
 
 do_install() {
   install -d ${D}${libdir}

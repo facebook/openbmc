@@ -8,9 +8,7 @@ LIC_FILES_CHKSUM = "file://snr-tolerance.h;beginline=4;endline=16;md5=da35978751
 BBCLASSEXTEND = "native"
 
 inherit meson pkgconfig
-
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 LOCAL_URI = " \
     file://snr-tolerance.h \

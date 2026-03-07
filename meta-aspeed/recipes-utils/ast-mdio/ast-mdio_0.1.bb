@@ -19,8 +19,7 @@ SUMMARY = "AST MDIO Utility"
 LICENSE = "GPL-2.0-only"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-S="${WORKDIR}/sources"
-UNPACKDIR="${S}"
+S = "${UNPACKDIR}"
 
 LOCAL_URI = " \
     file://COPYING \
@@ -30,7 +29,6 @@ LOCAL_URI = " \
 SCRIPTS = " \
     ast-mdio.py \
     "
-
 
 do_install() {
     pkgdir="/usr/local/packages/utils"

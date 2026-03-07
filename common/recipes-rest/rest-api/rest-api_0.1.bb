@@ -63,9 +63,7 @@ RDEPENDS:${PN} += " \
     sensors-py \
 "
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://setup-rest-api.sh \
     file://rest.py \
@@ -144,8 +142,6 @@ LOCAL_URI = " \
     file://.flake8 \
     "
 
-
-
 aclfiles = "__init__.py \
             cached_acl_provider.py \
             common_acl_provider_base.py \
@@ -207,12 +203,10 @@ LOCAL_URI:append:mf-fb-compute = " ${EXTRA_APIS_COMPUTE}"
 
 pkgdir = "rest-api"
 
-
 install_systemd() {
     install -d ${D}${systemd_system_unitdir}
     install -m 0644 ${UNPACKDIR}/restapi.service ${D}${systemd_system_unitdir}
 }
-
 
 install_sysv() {
     install -d ${D}${sysconfdir}/sv

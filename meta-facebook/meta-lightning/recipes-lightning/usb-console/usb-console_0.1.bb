@@ -24,9 +24,7 @@ LIC_FILES_CHKSUM = "file://usbcons.sh;beginline=5;endline=18;md5=0b1ee7d6f844d47
 CFLAGS += " -Wall -Werror "
 DEPENDS:append = " update-rc.d-native"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://usbcons.sh \
     file://usbmon.sh \

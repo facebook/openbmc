@@ -8,9 +8,7 @@ inherit systemd
 
 LICENSE = "GPL-2.0-or-later"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://10-eth0.network \
     file://30-usb0.network \
@@ -23,12 +21,12 @@ LOCAL_URI = " \
 do_install() {
     install -d ${D}${sysconfdir}/systemd/network
     install -d ${D}${systemd_system_unitdir}
-    install -m 0644 10-eth0.network ${D}${sysconfdir}/systemd/network
-    install -m 0644 20-eth0.4088.network ${D}${sysconfdir}/systemd/network
-    install -m 0644 20-eth0.4088.netdev ${D}${sysconfdir}/systemd/network
-    install -m 0644 30-usb0.network ${D}${sysconfdir}/systemd/network
-    install -m 0644 eth0_mac_fixup.service ${D}${systemd_system_unitdir}
-    install -m 0644 configure-eth0.service ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/10-eth0.network ${D}${sysconfdir}/systemd/network
+    install -m 0644 ${UNPACKDIR}/20-eth0.4088.network ${D}${sysconfdir}/systemd/network
+    install -m 0644 ${UNPACKDIR}/20-eth0.4088.netdev ${D}${sysconfdir}/systemd/network
+    install -m 0644 ${UNPACKDIR}/30-usb0.network ${D}${sysconfdir}/systemd/network
+    install -m 0644 ${UNPACKDIR}/eth0_mac_fixup.service ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/configure-eth0.service ${D}${systemd_system_unitdir}
 }
 
 FILES:${PN} = "${sysconfdir} "

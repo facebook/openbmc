@@ -7,7 +7,7 @@ SRC_URI = "https://files.pythonhosted.org/packages/2a/51/603c3cedc789617556248b5
 SRC_URI[md5sum] = "b757c635dc55cf02371c01552c6068f5"
 SRC_URI[sha256sum] = "ee187c9a80936cbf1259f73573973450fc24b84a4fb54e53eb0dcff86ea1e759"
 BPN = "JSON-log-formatter"
-S = "${WORKDIR}/${BPN}-${PV}"
+S = "${UNPACKDIR}/${BPN}-${PV}"
 
 inherit python3-dir
 dst = "${PYTHON_SITEPACKAGES_DIR}/json_log_formatter"
@@ -16,7 +16,6 @@ do_install() {
   mkdir -p ${D}/${dst}
   install json_log_formatter/__init__.py ${D}/${dst}
 }
-
 
 FILES:${PN} = "${dst}"
 BBCLASSEXTEND += "native nativesdk"

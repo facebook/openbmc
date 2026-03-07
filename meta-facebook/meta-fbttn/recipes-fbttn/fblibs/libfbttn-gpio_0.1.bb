@@ -22,13 +22,12 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://fbttn_gpio.c;beginline=6;endline=18;md5=da35978751a9d71b73679307c4d296ec"
 
-
 SRC_URI = "file://fbttn_gpio \
           "
 
 DEPENDS += "libbic libfbttn-common "
 
-S = "${WORKDIR}/fbttn_gpio"
+S = "${UNPACKDIR}/fbttn_gpio"
 
 do_install() {
 	  install -d ${D}${libdir}

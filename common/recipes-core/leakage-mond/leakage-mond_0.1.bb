@@ -26,9 +26,7 @@ LIC_FILES_CHKSUM = "file://leakage-mond.c;beginline=4;endline=16;md5=c0c4d931761
 
 LDFLAGS = "-llog -lmisc-utils"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://meson.build \
     file://leakage-mond.c \

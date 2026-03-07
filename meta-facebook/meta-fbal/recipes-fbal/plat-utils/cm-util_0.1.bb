@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://cm-util.cpp;beginline=4;endline=16;md5=b395943ba8a071
 SRC_URI = "file://cm-util \
           "
 
-S = "${WORKDIR}/cm-util"
+S = "${UNPACKDIR}/cm-util"
 
 do_install() {
     install -d ${D}${bindir}

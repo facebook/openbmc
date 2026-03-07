@@ -36,6 +36,4 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=6bc538ed5bd9a7fc9398086aedcd7e46"
 SRC_URI += "file://defconfig-6.18/${SOC_MODEL}/defconfig"
 
 do_kernel_configme[depends] += "${VIRTUAL_CROSS_CC}:do_populate_sysroot"
-KCONFIG_MODE="--alldefconfig"
-
-S = "${WORKDIR}/git"
+KCONFIG_MODE = "--alldefconfig"

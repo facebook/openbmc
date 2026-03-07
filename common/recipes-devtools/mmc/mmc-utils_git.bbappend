@@ -3,3 +3,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc-utils.git;branch=${SRCBRANCH} \
            file://0001-enable-CMD25-as-optional-for-FFU.patch \
           "
+
+S:openbmc-fb-dunfell = "${UNPACKDIR}/git"
+S:openbmc-fb-kirkstone = "${UNPACKDIR}/git"
+S:openbmc-fb-rocko = "${UNPACKDIR}/git"

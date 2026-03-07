@@ -15,7 +15,7 @@ SRC_URI = "file://meson.build \
            file://run-gpiod.sh \
           "
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 DEPENDS += " libpal update-rc.d-native libgpio-ctrl libobmc-sensors"
 RDEPENDS:${PN} += " libpal libgpio-ctrl libobmc-sensors"

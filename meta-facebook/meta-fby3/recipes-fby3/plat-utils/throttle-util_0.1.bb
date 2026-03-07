@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://throttle-util.c;beginline=4;endline=16;md5=b395943ba8
 SRC_URI = "file://throttle-util \
           "
 
-S = "${WORKDIR}/throttle-util"
+S = "${UNPACKDIR}/throttle-util"
 
 CFLAGS += "-Wall -Werror -lbic -D_XOPEN_SOURCE"
 LDFLAGS = " -lobmc-i2c -lbic -lpal -lfby3_common -lfby3_gpio "

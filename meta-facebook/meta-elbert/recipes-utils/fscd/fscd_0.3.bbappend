@@ -26,6 +26,6 @@ FSC_CONFIG += "FSC-8-PIM16Q-config.json \
                FSC-8-PIM8DDM-config.json \
               "
 
-FSC_ZONE_CONFIG +="zone1.fsc"
+FSC_ZONE_CONFIG += "zone1.fsc"
 
 FSC_INIT_FILE += "setup-fan.sh"

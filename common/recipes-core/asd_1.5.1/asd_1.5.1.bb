@@ -5,6 +5,7 @@ PR = "r1"
 LICENSE = "BSD-3-Clause"
 LIC_FILES_CHKSUM = "file://LICENSE;beginline=4;endline=25;md5=8861f37222b237b82044f06478647f8b"
 
+S = "${UNPACKDIR}"
 SRC_URI = " file://include \
             file://jtag_test \
             file://server \
@@ -38,9 +39,6 @@ SRC_URI = " file://include \
 DEPENDS += "safec libasd-jtagintf libpal"
 RDEPENDS:${PN} += "safec libasd-jtagintf libpal"
 EXTRA_OECMAKE += "-DCMAKE_SKIP_RPATH=TRUE"
-
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
 
 inherit cmake pkgconfig
 

@@ -6,14 +6,13 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://bic.c;beginline=8;endline=20;md5=da35978751a9d71b73679307c4d296ec"
 
-
 SRC_URI = "file://bic \
           "
 LDFLAGS += "-lobmc-i2c"
 DEPENDS += "libminilaketb-common libipmi libipmb libkv plat-utils libobmc-i2c "
 RDEPENDS:${PN} += "libobmc-i2c"
 
-S = "${WORKDIR}/bic"
+S = "${UNPACKDIR}/bic"
 
 do_install() {
 	  install -d ${D}${libdir}

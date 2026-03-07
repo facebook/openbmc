@@ -21,9 +21,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://crashdump_amd.sh;beginline=5;endline=17;md5=9d28bbe221522c21c36c389af8c94a4c"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://crashdump_amd.sh \
     "

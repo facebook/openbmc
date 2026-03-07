@@ -9,9 +9,7 @@ inherit systemd
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 SRC_URI += " \
     file://serfmon_emitter \
     file://serfmon_emitter.service \

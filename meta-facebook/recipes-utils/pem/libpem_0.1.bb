@@ -15,7 +15,6 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-
 SUMMARY = "Common PEMs Library"
 DESCRIPTION = "library for PEMs"
 SECTION = "base"
@@ -23,9 +22,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://pem.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://pem.c \
     file://pem.h \
@@ -38,7 +35,6 @@ LDFLAGS = "-lfruid -lpal -lobmc-i2c -lobmc-pmbus -lwedge_eeprom"
 
 DEPENDS += "libfruid libpal libobmc-i2c libobmc-pmbus libwedge-eeprom"
 RDEPENDS:${PN} += "libfruid libpal libobmc-i2c libobmc-pmbus libwedge-eeprom"
-
 
 do_install() {
     install -d ${D}${libdir}

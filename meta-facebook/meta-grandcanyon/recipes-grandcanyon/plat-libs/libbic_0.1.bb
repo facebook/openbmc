@@ -13,6 +13,6 @@ SRC_URI = "file://bic \
 
 DEPENDS += " python3-setuptools libobmc-i2c libgpio-ctrl libkv libipmb libfbgc-common libusb1 openssl"
 
-S = "${WORKDIR}/bic"
+S = "${UNPACKDIR}/bic"
 
 BBCLASSEXTEND = "native nativesdk"

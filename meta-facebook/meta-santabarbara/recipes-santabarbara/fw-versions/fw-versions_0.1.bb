@@ -7,9 +7,6 @@ PR = "r1"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
 FW_TOOLS = "\
     mb-cpld,,multi-user.target,multi-user.target,0 \
     nic,pldmd.service,multi-user.target,multi-user.target,0:1:2:3:4 \
@@ -17,6 +14,7 @@ FW_TOOLS = "\
     pcie-switch,pldmd.service,multi-user.target,multi-user.target,0 \
 "
 
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://fw-versions@.service \
     ${@ ' '.join([ f"file://" + x.split(',')[0] for x in d.getVar('FW_TOOLS', True).split() ])} \

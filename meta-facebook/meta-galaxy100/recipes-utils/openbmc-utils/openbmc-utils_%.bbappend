@@ -49,7 +49,7 @@ inherit systemd
 install_board_sysv() {
     # create VLAN intf automatically
     install -d ${D}/${sysconfdir}/network/if-up.d
-    install -m 755 create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
+    install -m 755 ${UNPACKDIR}/create_vlan_intf ${D}${sysconfdir}/network/if-up.d/create_vlan_intf
 
     # init
     install -d ${D}${sysconfdir}/init.d
@@ -64,21 +64,21 @@ install_board_sysv() {
     install -m 0755 ${UNPACKDIR}/rc.early ${D}${sysconfdir}/init.d/rc.early
     update-rc.d -r ${D} rc.early start 04 S .
 
-    install -m 755 setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
+    install -m 755 ${UNPACKDIR}/setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
     update-rc.d -r ${D} setup_i2c.sh start 60 S .
 
-    install -m 755 fix_fru_eeprom.py ${D}${sysconfdir}/init.d/fix_fru_eeprom.py
+    install -m 755 ${UNPACKDIR}/fix_fru_eeprom.py ${D}${sysconfdir}/init.d/fix_fru_eeprom.py
     update-rc.d -r ${D} fix_fru_eeprom.py start 61 S .
 
     # networking is done after rcS, any start level within rcS
     # for mac fixup should work
-    install -m 755 eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
+    install -m 755 ${UNPACKDIR}/eth0_mac_fixup.sh ${D}${sysconfdir}/init.d/eth0_mac_fixup.sh
     update-rc.d -r ${D} eth0_mac_fixup.sh start 70 S .
 
-    install -m 755 start_us_monitor.sh ${D}${sysconfdir}/init.d/start_us_monitor.sh
+    install -m 755 ${UNPACKDIR}/start_us_monitor.sh ${D}${sysconfdir}/init.d/start_us_monitor.sh
     update-rc.d -r ${D} start_us_monitor.sh start 84 S .
 
-    install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
+    install -m 755 ${UNPACKDIR}/power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
     update-rc.d -r ${D} power-on.sh start 85 S .
 
     # rc.[2345]
@@ -86,17 +86,17 @@ install_board_sysv() {
     install -m 0755 ${UNPACKDIR}/rc.local ${D}${sysconfdir}/init.d/rc.local
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 
-    install -m 755 sensors_config_fix.sh ${D}${sysconfdir}/init.d/sensors_config_fix.sh
+    install -m 755 ${UNPACKDIR}/sensors_config_fix.sh ${D}${sysconfdir}/init.d/sensors_config_fix.sh
     update-rc.d -r ${D} sensors_config_fix.sh start 100 2 3 4 5 .
 }
 
 install_board_systemd() {
     install -d ${D}${systemd_system_unitdir}
-    install -m 644 us_monitor.service ${D}${systemd_system_unitdir}
-    install -m 644 fix_fru_eeprom.service ${D}${systemd_system_unitdir}
-    install -m 644 sensors_config_fix.service ${D}${systemd_system_unitdir}
-    install -m 755 eth0_mac_fixup.sh ${D}${localbindir}
-    install -m 755 setup_i2c.sh ${D}${localbindir}
+    install -m 644 ${UNPACKDIR}/us_monitor.service ${D}${systemd_system_unitdir}
+    install -m 644 ${UNPACKDIR}/fix_fru_eeprom.service ${D}${systemd_system_unitdir}
+    install -m 644 ${UNPACKDIR}/sensors_config_fix.service ${D}${systemd_system_unitdir}
+    install -m 755 ${UNPACKDIR}/eth0_mac_fixup.sh ${D}${localbindir}
+    install -m 755 ${UNPACKDIR}/setup_i2c.sh ${D}${localbindir}
     # This one comes from the wedge layer but we don't want it on galaxy
     systemctl --root=${D} mask setup_board.service
 }
@@ -111,19 +111,19 @@ do_install_board() {
     install -d ${D}${bindir}
     ln -s "/usr/local/bin/openbmc-utils.sh" "${D}${olddir}/ast-functions"
 
-    install -m 0755 bios_flash.sh ${D}${localbindir}/bios_flash.sh
-    install -m 0755 bcm5389.sh ${D}${localbindir}/bcm5389.sh
-    install -m 0755 at93cx6_util.sh ${D}${localbindir}/at93cx6_util.sh
-    install -m 0755 lsb_release ${D}${localbindir}/lsb_release
-    install -m 0755 cpldupgrade ${D}${localbindir}/cpldupgrade
-    install -m 0755 us_refresh.sh ${D}${localbindir}/us_refresh.sh
-    install -m 0755 repeater_verify.sh ${D}${localbindir}/repeater_verify.sh
-    install -m 0755 seutil ${D}${bindir}/seutil
-    install -m 0755 version_dump ${D}${bindir}/version_dump
-    install -m 0755 qsfp_cpld_ver.sh ${D}${localbindir}/qsfp_cpld_ver.sh
-    install -m 0755 ceutil.py ${D}${localbindir}/ceutil
-    install -m 0755 scm_cpld_rev.sh ${D}${localbindir}/scm_cpld_rev.sh
-    install -m 0755 ec_version.sh ${D}${localbindir}/ec_version.sh
+    install -m 0755 ${UNPACKDIR}/bios_flash.sh ${D}${localbindir}/bios_flash.sh
+    install -m 0755 ${UNPACKDIR}/bcm5389.sh ${D}${localbindir}/bcm5389.sh
+    install -m 0755 ${UNPACKDIR}/at93cx6_util.sh ${D}${localbindir}/at93cx6_util.sh
+    install -m 0755 ${UNPACKDIR}/lsb_release ${D}${localbindir}/lsb_release
+    install -m 0755 ${UNPACKDIR}/cpldupgrade ${D}${localbindir}/cpldupgrade
+    install -m 0755 ${UNPACKDIR}/us_refresh.sh ${D}${localbindir}/us_refresh.sh
+    install -m 0755 ${UNPACKDIR}/repeater_verify.sh ${D}${localbindir}/repeater_verify.sh
+    install -m 0755 ${UNPACKDIR}/seutil ${D}${bindir}/seutil
+    install -m 0755 ${UNPACKDIR}/version_dump ${D}${bindir}/version_dump
+    install -m 0755 ${UNPACKDIR}/qsfp_cpld_ver.sh ${D}${localbindir}/qsfp_cpld_ver.sh
+    install -m 0755 ${UNPACKDIR}/ceutil.py ${D}${localbindir}/ceutil
+    install -m 0755 ${UNPACKDIR}/scm_cpld_rev.sh ${D}${localbindir}/scm_cpld_rev.sh
+    install -m 0755 ${UNPACKDIR}/ec_version.sh ${D}${localbindir}/ec_version.sh
 
     if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
         install_board_systemd

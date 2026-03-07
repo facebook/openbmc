@@ -34,7 +34,7 @@ LDFLAGS += "-llog -lobmc-i2c"
 DEPENDS += "nlohmann-json python3-setuptools liblog libobmc-i2c"
 RDEPENDS:${PN} = "python3-core bash liblog libobmc-i2c"
 
-S = "${WORKDIR}/lib"
+S = "${UNPACKDIR}/lib"
 
 do_install() {
 	  install -d ${D}${libdir}

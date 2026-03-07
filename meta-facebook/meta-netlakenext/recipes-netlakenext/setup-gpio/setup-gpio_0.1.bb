@@ -12,7 +12,7 @@ SRC_URI = "file://setup-gpio.c \
            file://meson.build \
            file://setup-gpio.sh \
           "
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 binfiles = "setup-gpio \
            "

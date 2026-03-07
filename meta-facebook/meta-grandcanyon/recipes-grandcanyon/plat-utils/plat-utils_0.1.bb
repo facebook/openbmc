@@ -19,8 +19,9 @@ DESCRIPTION = "Various utilities"
 SECTION = "base"
 PR = "r1"
 LICENSE = "GPL-2.0-or-later"
-LIC_FILES_CHKSUM = "file://${UNPACKDIR}/COPYING;md5=eb723b61539feef013de476e68b5c50a"
+LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://sol-util \
     file://COPYING \
@@ -36,7 +37,6 @@ LOCAL_URI = " \
     "
 
 pkgdir = "utils"
-
 
 # the tools for BMC will be installed in the image
 binfiles = " sol-util power-on.sh check_pal_sku.sh sync_date.sh check_bmc_ready.sh check_2nd_source.sh "

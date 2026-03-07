@@ -30,7 +30,7 @@ LDFLAGS = "-lfruid -lpal -lobmc-i2c -llog"
 DEPENDS += "libfruid libpal libobmc-i2c liblog"
 RDEPENDS:${PN} += "libfruid libpal libobmc-i2c liblog"
 
-S = "${WORKDIR}/minipack_psu"
+S = "${UNPACKDIR}/minipack_psu"
 
 do_install() {
 	  install -d ${D}${libdir}

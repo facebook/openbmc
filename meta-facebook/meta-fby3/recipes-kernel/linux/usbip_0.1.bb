@@ -18,7 +18,7 @@ deltask do_populate_sysroot
 
 DEPENDS = " udev tcp-wrappers "
 RDEPENDS:${PN} = " tcp-wrappers udev hwdata "
-S = "${WORKDIR}/src"
+S = "${UNPACKDIR}/src"
 
 # configure the source code
 do_configure:prepend () {

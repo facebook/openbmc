@@ -12,6 +12,6 @@ SRC_URI = "file://exp \
           "
 DEPENDS += " libipmi libipmb libfbgc-common "
 
-S = "${WORKDIR}/exp"
+S = "${UNPACKDIR}/exp"
 
 BBCLASSEXTEND = "native nativesdk"

@@ -3,11 +3,9 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 inherit allarch systemd
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
 RDEPENDS:${PN} += "bash"
 
+S = "${UNPACKDIR}"
 SRC_URI += " \
     file://nic-reset@.service \
     file://nic-reset.sh \

@@ -34,7 +34,7 @@ do_install:append() {
 }
 
 do_work_systemd:append() {
-    install -m 0644 sys-fs-pstore.mount ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/sys-fs-pstore.mount ${D}${systemd_system_unitdir}
 }
 
 SYSTEMD_SERVICE:${PN} += "sys-fs-pstore.mount"

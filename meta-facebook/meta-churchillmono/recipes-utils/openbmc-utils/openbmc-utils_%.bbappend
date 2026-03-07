@@ -62,7 +62,7 @@ do_work_systemd() {
   install -m 755 ${UNPACKDIR}/eth0_mac_fixup.sh ${D}/usr/local/bin/eth0_mac_fixup.sh
 
   # power-on script that will be used by power-on service
-  install -m 755 power-on.sh ${D}/usr/local/bin/power-on.sh
+  install -m 755 ${UNPACKDIR}/power-on.sh ${D}/usr/local/bin/power-on.sh
 
 }
 

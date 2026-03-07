@@ -14,7 +14,6 @@ RDEPENDS:${PN}:append = " \
     "
 
 S = "${UNPACKDIR}"
-
 LOCAL_URI = " \
     file://fw-versions.service \
     file://rmc-all-versions \

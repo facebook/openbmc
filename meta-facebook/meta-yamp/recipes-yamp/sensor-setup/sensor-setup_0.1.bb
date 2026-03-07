@@ -23,9 +23,7 @@ LIC_FILES_CHKSUM = "file://sensor-setup.sh;beginline=5;endline=18;md5=0b1ee7d6f8
 
 DEPENDS:append = " update-rc.d-native"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://sensor-setup.sh \
     "
@@ -33,7 +31,7 @@ LOCAL_URI = " \
 do_install() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
-  install -m 755 sensor-setup.sh ${D}${sysconfdir}/init.d/sensor-setup.sh
+  install -m 755 ${UNPACKDIR}/sensor-setup.sh ${D}${sysconfdir}/init.d/sensor-setup.sh
   update-rc.d -r ${D} sensor-setup.sh start 90 S .
 }
 

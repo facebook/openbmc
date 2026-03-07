@@ -9,9 +9,7 @@ LIC_FILES_CHKSUM = "file://me-util.c;beginline=4;endline=16;md5=b66b777f08237042
 inherit meson pkgconfig
 inherit legacy-packages
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 pkgdir = "me-util"
 LOCAL_URI = " \
     file://me-util.c \

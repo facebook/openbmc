@@ -10,7 +10,7 @@ SRC_URI = "https://github.com/Microsemi/switchtec-user/archive/v${PV}.tar.gz"
 SRC_URI[md5sum] = "a0748c19552a082342fb665db20e00a0"
 SRC_URI[sha256sum] = "cabce7e83c3470546285d275a2586d95a9c74463fa6b498e89a30423713786d2"
 
-S = "${WORKDIR}/switchtec-user-${PV}"
+S = "${UNPACKDIR}/switchtec-user-${PV}"
 
 DEPENDS += " openssl"
 RDEPENDS:${PN} += " openssl"

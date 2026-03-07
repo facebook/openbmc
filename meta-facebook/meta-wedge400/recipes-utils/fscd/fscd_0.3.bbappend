@@ -37,8 +37,9 @@ FSC_CONFIG += "FSC-W400-config.json \
                FSC-W400C-config.json \
               "
 
-FSC_ZONE_CONFIG +="zone-w400.fsc \
-                   zone-w400c.fsc \
-                  "
+FSC_ZONE_CONFIG += " \
+    zone-w400.fsc \
+    zone-w400c.fsc \
+    "
 
 FSC_INIT_FILE += "setup-fan.sh"

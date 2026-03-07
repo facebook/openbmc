@@ -23,9 +23,7 @@ def release_patches(d):
     return ""
 SRC_URI += '${@release_patches(d)}'
 
-
 PV = "v2016.07+git${SRCPV}"
-S = "${WORKDIR}/git"
 include common/recipes-bsp/u-boot-fbobmc/use-intree-shipit.inc
 
 FILES:${PN} = "${sysconfdir}"
@@ -244,7 +242,6 @@ do_deploy () {
             ln -sf ${UBOOT_ELF_IMAGE} ${DEPLOYDIR}/${UBOOT_ELF_SYMLINK}
         fi
     fi
-
 
      if [ "x${SPL_BINARY}" != "x" ]
      then

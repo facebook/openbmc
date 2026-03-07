@@ -21,9 +21,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI += "\
             file://crashdump_p0_coreid \
             file://crashdump_p0_msr \
@@ -61,5 +59,4 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 FILES:${PN} += "${sysconfdir} ${prefix}/local/bin ${FBPACKAGEDIR}/${pkgdir}"
 DEPENDS:append = "update-rc.d-native"
 RDEPENDS:${PN} = "bash"
-
 

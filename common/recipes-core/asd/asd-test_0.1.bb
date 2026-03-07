@@ -10,7 +10,7 @@ SRC_URI = "file://test \
           "
 DEPENDS += " libasd-jtagintf libpal"
 
-S = "${WORKDIR}/test"
+S = "${UNPACKDIR}/test"
 
 do_install() {
 	  install -d ${D}${bindir}

@@ -42,7 +42,7 @@ SRC_URI = " file://daemon/asd_common.h \
 DEPENDS += "safec libasd-jtagintf libpal"
 RDEPENDS:${PN} += "safec libasd-jtagintf libpal"
 
-S = "${WORKDIR}/daemon"
+S = "${UNPACKDIR}/daemon"
 
 inherit cmake pkgconfig
 

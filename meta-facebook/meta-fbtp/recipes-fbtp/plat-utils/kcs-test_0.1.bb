@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://kcs-test.c;beginline=4;endline=16;md5=b395943ba8a0717
 SRC_URI = "file://kcs-test \
           "
 
-S = "${WORKDIR}/kcs-test"
+S = "${UNPACKDIR}/kcs-test"
 
 do_install() {
 	  install -d ${D}${bindir}

@@ -11,9 +11,7 @@ LIC_FILES_CHKSUM = "file://led-controld.c;beginline=5;endline=17;md5=da35978751a
 
 DEPENDS:append = "libpal update-rc.d-native"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://Makefile \
     file://setup-led-controld.sh \

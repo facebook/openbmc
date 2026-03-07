@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://enclosure-util.c;beginline=4;endline=16;md5=302e73da8
 SRC_URI = "file://enclosure-util \
          "
 
-S = "${WORKDIR}/enclosure-util"
+S = "${UNPACKDIR}/enclosure-util"
 
 inherit meson pkgconfig
 

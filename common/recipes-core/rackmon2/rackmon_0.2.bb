@@ -30,9 +30,7 @@ def get_orv3_support(d):
   return "true"
 EXTRA_OEMESON += "-Dorv3=${@get_orv3_support(d)}"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://meson.build \
     file://meson_options.txt \
@@ -71,7 +69,6 @@ LOCAL_URI = " \
     file://ModbusUtil.cpp \
     "
 # Configuration files
-UNPACKDIR = "${S}"
 LOCAL_URI += " \
     file://configs/interface/aspeed_uart.conf \
     file://configs/interface/usb_ft232.conf \
@@ -94,7 +91,6 @@ LOCAL_URI += " \
     "
 
 # Schemas
-UNPACKDIR = "${S}"
 LOCAL_URI += " \
     file://schemas/RegisterMapConfigSchema.json \
     file://schemas/InterfaceConfigSchema.json \
@@ -106,7 +102,6 @@ LOCAL_URI += " \
     file://schemas/registermap/special_handlers.json \
     "
 #scripts
-UNPACKDIR = "${S}"
 LOCAL_URI += " \
     file://scripts/schema_validator.py \
     file://scripts/address_validator.py \
@@ -115,7 +110,6 @@ LOCAL_URI += " \
     "
 
 # Test sources
-UNPACKDIR = "${S}"
 LOCAL_URI += " \
     file://tests/Main.cpp \
     file://tests/MsgTest.cpp \
@@ -192,7 +186,6 @@ do_install:append() {
     install -d ${D}${PYTHON_SITEPACKAGES_DIR}
     install -m 644 ${UNPACKDIR}/scripts/pyrmd.py ${D}${PYTHON_SITEPACKAGES_DIR}/
 }
-
 
 FILES:${PN} = "${prefix}/local/bin ${sysconfdir} "
 FILES:${PN} += "/usr/share/rackmon /usr/share/rackmon/interface /usr/share/rackmon/registermap "

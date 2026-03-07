@@ -5,10 +5,9 @@ HOMEPAGE = "https://github.com/facebook/openbmc"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=86d3f3a95c324c9479bd8986968f4327"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
 SYSTEMD_SERVICE:${PN} += "xyz.openbmc_project.SatelliteRelay.service"
+
+S = "${UNPACKDIR}"
 SRC_URI = " \
 	file://Cargo.toml \
 	file://Cargo.lock \

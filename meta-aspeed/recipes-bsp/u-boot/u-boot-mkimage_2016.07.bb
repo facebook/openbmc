@@ -13,7 +13,6 @@ SRC_URI = "git://github.com/facebook/openbmc-uboot.git;branch=${SRCBRANCH};proto
           "
 
 PV = "v2016.07+git${SRCPV}"
-S = "${WORKDIR}/git"
 include common/recipes-bsp/u-boot-fbobmc/use-intree-shipit.inc
 
 EXTRA_OEMAKE:class-target = 'CROSS_COMPILE="${TARGET_PREFIX}" CC="${CC} ${CFLAGS} ${LDFLAGS}" HOSTCC="${BUILD_CC} ${BUILD_CFLAGS} ${BUILD_LDFLAGS}" STRIP=true V=1'

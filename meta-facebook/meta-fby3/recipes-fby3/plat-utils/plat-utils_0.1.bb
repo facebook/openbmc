@@ -21,9 +21,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://ast-functions \
     file://setup-gpio.sh \
@@ -40,7 +38,6 @@ LOCAL_URI = " \
     "
 
 pkgdir = "utils"
-
 
 # the tools for BMC will be installed in the image
 binfiles = " sync_date.sh sol-util usb-util.sh recovery-bic-util "

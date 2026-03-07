@@ -7,7 +7,9 @@ SRC_URI = " \
     "
 SRCREV = "b782bd26539a3d1a8edcb6d8a3493b111f8fac66"
 
-S = "${WORKDIR}/git"
+S:openbmc-fb-dunfell = "${UNPACKDIR}/git"
+S:openbmc-fb-kirkstone = "${UNPACKDIR}/git"
+S:openbmc-fb-rocko = "${UNPACKDIR}/git"
 
 PV = "0.5.2"
 PR = "r1"

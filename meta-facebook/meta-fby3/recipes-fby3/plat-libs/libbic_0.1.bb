@@ -14,4 +14,4 @@ SRC_URI = "file://bic \
 DEPENDS += "libipmi libipmb libobmc-i2c libgpio-ctrl libfby3-common libkv libusb1 libfby3-common openssl"
 RDEPENDS:${PN} += "libfby3-common"
 
-S = "${WORKDIR}/bic"
+S = "${UNPACKDIR}/bic"

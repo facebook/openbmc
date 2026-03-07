@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/GPL-2.0-or-lat
 inherit meson pkgconfig
 
 SRC_URI = "file://bic"
-S = "${WORKDIR}/bic"
+S = "${UNPACKDIR}/bic"
 
 DEPENDS += " \
     libfby35-common \

@@ -20,9 +20,11 @@ SRCREV = "21dc38e911a27af2e914f834b2e2b775f7dad520"
 SRC_URI[md5sum] = "1c7db87fb8fa946b03d91fff08b0825a"
 SRC_URI[sha256sum] = "f7d36674d1e72d216fe60d804fc55ba5284162e8ec6a79e6ef2e067d3aee7675"
 
-inherit pkgconfig cmake
+S:openbmc-fb-dunfell = "${UNPACKDIR}/git"
+S:openbmc-fb-kirkstone = "${UNPACKDIR}/git"
+S:openbmc-fb-rocko = "${UNPACKDIR}/git"
 
-S = "${WORKDIR}/git"
+inherit pkgconfig cmake
 
 do_configure:append() {
   cd ${S}

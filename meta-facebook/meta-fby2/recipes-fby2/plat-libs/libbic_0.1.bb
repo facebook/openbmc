@@ -15,7 +15,7 @@ def lic_file_name(d):
     return "GPL-2.0-or-later;md5=fed54355545ffd980b814dab4a3b312c"
 
 SRC_URI = "file://bic"
-S = "${WORKDIR}/bic"
+S = "${UNPACKDIR}/bic"
 
 #LDFLAGS += " -lmisc-utils -lobmc-i2c -lgpio-ctrl -lcrypto -lfby2_common"
 

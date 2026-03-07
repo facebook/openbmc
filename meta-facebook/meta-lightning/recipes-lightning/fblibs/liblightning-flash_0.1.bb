@@ -22,7 +22,6 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://lightning_flash.c;beginline=3;endline=15;md5=da35978751a9d71b73679307c4d296ec"
 
-
 SRC_URI = "file://lightning_flash \
           "
 
@@ -30,7 +29,7 @@ LDFLAGS += "-lobmc-i2c"
 DEPENDS += " liblightning-common libobmc-i2c"
 RDEPENDS:${PN} += "libobmc-i2c"
 
-S = "${WORKDIR}/lightning_flash"
+S = "${UNPACKDIR}/lightning_flash"
 
 do_install() {
 	  install -d ${D}${libdir}

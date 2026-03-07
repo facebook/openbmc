@@ -6,6 +6,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://healthd.c;beginline=4;endline=16;md5=b395943ba8a0717a83e62ca123a8d238"
 
+S = "${UNPACKDIR}"
 # find -type f | sed 's#^\.#    file:/#' | sed 's#$# \\#' | sort     
 LOCAL_URI = " \
     file://healthd.c \
@@ -18,9 +19,6 @@ LOCAL_URI = " \
     file://run-healthd.sh \
     file://setup-healthd.sh \
 "
-
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
 
 inherit meson pkgconfig
 inherit legacy-packages

@@ -25,9 +25,7 @@ inherit pkgconfig
 
 RDEPENDS:${PN} += "bash"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://autodump_amd.sh \
     "

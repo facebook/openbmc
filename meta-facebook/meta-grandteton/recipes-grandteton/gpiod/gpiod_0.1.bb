@@ -22,9 +22,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://gpiod.cpp;beginline=4;endline=16;md5=3598c23c3531e1f059568c83d4174cc0"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://meson.build \
     file://gpiod.cpp \
@@ -34,8 +32,6 @@ LOCAL_URI = " \
     file://run-gpiod.sh \
     file://dump-nv-reg.sh \
     "
-
-
 
 inherit meson pkgconfig
 inherit legacy-packages

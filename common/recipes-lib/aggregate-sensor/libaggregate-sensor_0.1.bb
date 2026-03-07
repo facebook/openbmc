@@ -8,9 +8,7 @@ LIC_FILES_CHKSUM = "file://aggregate-sensor.c;beginline=5;endline=17;md5=da35978
 
 inherit meson pkgconfig ptest-meson
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://meson.build \
     file://aggregate-sensor.h \

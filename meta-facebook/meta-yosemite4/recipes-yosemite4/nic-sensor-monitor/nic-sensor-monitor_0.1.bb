@@ -3,11 +3,9 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 inherit allarch systemd obmc-phosphor-systemd
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
 RDEPENDS:${PN} += "bash expect"
 
+S = "${UNPACKDIR}"
 SRC_URI += " \
     file://nic-sensor-monitor.timer \
     file://nic-sensor-monitor.service \

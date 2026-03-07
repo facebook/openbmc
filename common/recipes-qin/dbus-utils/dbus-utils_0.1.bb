@@ -25,7 +25,7 @@ LIC_FILES_CHKSUM = "file://DBus.h;beginline=4;endline=16;md5=da35978751a9d71b736
 SRC_URI = "file://src \
           "
 
-S = "${WORKDIR}/src"
+S = "${UNPACKDIR}/src"
 
 export SINC = "${STAGING_INCDIR}"
 export SLIB = "${STAGING_LIBDIR}"

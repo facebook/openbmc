@@ -22,13 +22,12 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://lightning_fruid.c;beginline=6;endline=18;md5=da35978751a9d71b73679307c4d296ec"
 
-
 SRC_URI = "file://lightning_fruid \
           "
 
 DEPENDS += " liblightning-common "
 
-S = "${WORKDIR}/lightning_fruid"
+S = "${UNPACKDIR}/lightning_fruid"
 
 do_install() {
 	  install -d ${D}${libdir}

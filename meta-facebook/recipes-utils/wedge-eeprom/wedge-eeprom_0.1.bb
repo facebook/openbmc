@@ -24,7 +24,7 @@ LIC_FILES_CHKSUM = "file://weutil.c;beginline=4;endline=16;md5=da35978751a9d71b7
 SRC_URI = "file://utils \
           "
 
-S = "${WORKDIR}/utils"
+S = "${UNPACKDIR}/utils"
 
 do_install() {
 	  install -d ${D}${bindir}

@@ -20,13 +20,12 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://src/watchdog.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://meson.build \
     file://src/meson.build \
     file://src/watchdog.c \
     file://src/watchdog.h \
     "
-
 
 inherit meson pkgconfig

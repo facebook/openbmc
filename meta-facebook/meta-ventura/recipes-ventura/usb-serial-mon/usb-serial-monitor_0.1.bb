@@ -3,11 +3,9 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 inherit allarch systemd obmc-phosphor-systemd
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
 RDEPENDS:${PN} += "bash managed-reboot"
 
+S = "${UNPACKDIR}"
 SRC_URI += " \
     file://usb-serial-monitor.sh \
     file://usb-serial-monitor.service \

@@ -1,7 +1,6 @@
 # QEMU recipe that builds from git
 # This recipe is based on poky's qemu recipe but uses git
 
-
 # Recipe renamed from qemu-git to qemu-master to avoid pn-overrides QA error
 # (having "git" in PN conflicts with BitBake overrides)
 
@@ -16,7 +15,6 @@ HOMEPAGE = "http://qemu.org"
 LICENSE = "GPL-2.0-only & LGPL-2.1-only"
 
 DEPENDS += "bison-native meson-native ninja-native"
-
 
 require ${COREBASE}/meta/recipes-devtools/qemu/qemu-targets.inc
 
@@ -71,11 +69,9 @@ SRCREV_libblkio = "f84cc963a444e4cb34813b2dcfc5bf8526947dc0"
 
 SRCREV_FORMAT = "default_keycodemapdb_berkeley-softfloat-3_berkeley-testfloat-3_dtc_slirp_libvfio-user_libblkio"
 
-
 # Disable shallow git clone - QEMU repo requires full clone for checkout
 BB_GIT_SHALLOW = "0"
 
-S = "${WORKDIR}/git"
 PV = "${QEMU_REF}+git${SRCPV}"
 
 CVE_STATUS[CVE-2007-0998] = "not-applicable-config: The VNC server can expose host files uder some circumstances. We don't enable it by default."
@@ -104,7 +100,6 @@ do_install:append() {
     # Prevent QA warnings about installed ${localstatedir}/run
     if [ -d ${D}${localstatedir}/run ]; then rmdir ${D}${localstatedir}/run; fi
 }
-
 
 # QEMU_TARGETS is overridable variable
 QEMU_TARGETS ?= "arm aarch64 i386 loongarch64 mips mipsel mips64 mips64el ppc ppc64 ppc64le riscv32 riscv64 sh4 x86_64"

@@ -12,7 +12,7 @@ SRC_URI[md5sum] = "8adc0ae6c2698a61ab086606cc7cf562"
 SRC_URI[sha256sum] = "e643119f1d629a77605f02096cc3ac211922d48e3db12249b06a3db810dd8756"
 
 # Yes the tar file really has this messed up top level directory name
-S = "${WORKDIR}/yaml-cpp-yaml-cpp-${PV}"
+S = "${UNPACKDIR}/yaml-cpp-yaml-cpp-${PV}"
 
 inherit cmake
 

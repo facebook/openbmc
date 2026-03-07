@@ -33,9 +33,10 @@ FSC_CONFIG += "fsc-config2s.json \
                fsc-config_Slave.json \
               " 
 
-FSC_ZONE_CONFIG +="zone1_4s_M.fsc \
-                   zone1_2s.fsc \
-                   zone1_Slave.fsc \
-                  "
+FSC_ZONE_CONFIG += " \
+    zone1_4s_M.fsc \
+    zone1_2s.fsc \
+    zone1_Slave.fsc \
+    "
 
 FSC_INIT_FILE += "setup-fan.sh"

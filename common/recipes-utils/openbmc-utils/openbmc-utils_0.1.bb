@@ -28,9 +28,7 @@ PACKAGECONFIG[disable-watchdog] = ""
 # boot_info.sh script is not installed by default
 PACKAGECONFIG[boot-info] = ""
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://COPYING \
     file://mount_data0.sh \
@@ -95,7 +93,6 @@ OPENBMC_UTILS_FILES = " \
 OPENBMC_PYTHON_LIBS = " \
     cpu_monitor.py \
   "
-
 
 inherit systemd
 inherit python3-dir
@@ -223,7 +220,7 @@ do_install:append:mf-mtd-ubifs() {
 do_install:append() {
 
     for f in ${OPENBMC_UTILS_FILES}; do
-        install -m 755 $f ${dstdir}/${f}
+        install -m 755 ${UNPACKDIR}/$f ${dstdir}/${f}
         ln -s ${pkgdir}/${f} ${localbindir}
     done
 

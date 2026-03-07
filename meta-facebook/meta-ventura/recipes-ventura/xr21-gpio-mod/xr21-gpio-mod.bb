@@ -5,9 +5,6 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 inherit systemd
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
 RDEPENDS:${PN} += "python3-pyusb python3-misc"
 
 FILES:${PN} += " \
@@ -15,6 +12,7 @@ FILES:${PN} += " \
     ${systemd_system_unitdir} \
     "
 
+S = "${UNPACKDIR}"
 SRC_URI = " \
     file://gpio5_auto_rs485.py \
     file://xr21-gpio-mod.service \

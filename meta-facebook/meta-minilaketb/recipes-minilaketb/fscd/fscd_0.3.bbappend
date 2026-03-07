@@ -27,11 +27,9 @@ LOCAL_URI += " \
 
 FSC_BIN_FILES += "init_pwm.sh"
 
-FSC_CONFIG += "FSC_MINILAKETB_DVT.json \
-              "
+FSC_CONFIG += "FSC_MINILAKETB_DVT.json"
 
-FSC_ZONE_CONFIG +="FSC_MINILAKETB_DVT.fsc \
-                  "
+FSC_ZONE_CONFIG += "FSC_MINILAKETB_DVT.fsc"
 
 do_install:append() {
   install -d ${D}${sysconfdir}/init.d

@@ -11,7 +11,7 @@ inherit meson pkgconfig
 SRC_URI = "file://enclosure-util \
           "
 
-S = "${WORKDIR}/enclosure-util"
+S = "${UNPACKDIR}/enclosure-util"
 
 DEPENDS += " libfbgc-common libipmb libexp libpal "
 

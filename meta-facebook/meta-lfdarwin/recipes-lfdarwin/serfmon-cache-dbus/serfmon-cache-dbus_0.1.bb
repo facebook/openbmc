@@ -15,7 +15,6 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-
 SUMMARY = "Serial Number Provider"
 DESCRIPTION = "Provide a custom DBUS interface for the x86 Serial Number"
 SECTION = "base"
@@ -23,12 +22,9 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://server.cpp;beginline=3;endline=14;md5=d5c79db633b2cf2b9915f42487fbf620"
 
-
 inherit meson pkgconfig systemd
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 SRC_URI = " \
     file://server.cpp \
     file://meson.build \

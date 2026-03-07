@@ -23,9 +23,7 @@ LIC_FILES_CHKSUM = "file://fboss-board-revision.sh;beginline=5;endline=18;md5=0b
 
 RDEPENDS:${PN} += " bash"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://fboss-board-revision.sh \
     "

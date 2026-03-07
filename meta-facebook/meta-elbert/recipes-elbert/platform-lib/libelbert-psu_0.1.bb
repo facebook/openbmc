@@ -30,7 +30,7 @@ LDFLAGS = "-lfruid -lpal -lobmc-i2c -llog"
 DEPENDS += "libfruid libpal libobmc-i2c liblog"
 RDEPENDS:${PN} += "libfruid libpal libobmc-i2c liblog"
 
-S = "${WORKDIR}/elbert_psu"
+S = "${UNPACKDIR}/elbert_psu"
 
 do_install() {
 	  install -d ${D}${libdir}

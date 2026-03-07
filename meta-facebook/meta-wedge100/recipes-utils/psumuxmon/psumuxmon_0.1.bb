@@ -25,9 +25,7 @@ DEPENDS:append = " update-rc.d-native"
 
 inherit systemd
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://psumuxmon.py \
     file://psumuxmon_service \
@@ -38,15 +36,15 @@ do_install() {
     if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
       install -d ${D}${systemd_system_unitdir}
       install -d ${D}/usr/local/bin
-      install -m 755 psumuxmon.py ${D}/usr/local/bin
-      install -m 644 psumuxmon.service ${D}${systemd_system_unitdir}/psumuxmon.service
+      install -m 755 ${UNPACKDIR}/psumuxmon.py ${D}/usr/local/bin
+      install -m 644 ${UNPACKDIR}/psumuxmon.service ${D}${systemd_system_unitdir}/psumuxmon.service
     else
       install -d ${D}${sysconfdir}/init.d
       install -d ${D}${sysconfdir}/rcS.d
       install -d ${D}${sysconfdir}/sv
       install -d ${D}${sysconfdir}/sv/psumuxmon
-      install -m 755 psumuxmon.py ${D}${sysconfdir}/sv/psumuxmon/run
-      install -m 755 psumuxmon_service ${D}${sysconfdir}/init.d/psumuxmon
+      install -m 755 ${UNPACKDIR}/psumuxmon.py ${D}${sysconfdir}/sv/psumuxmon/run
+      install -m 755 ${UNPACKDIR}/psumuxmon_service ${D}${sysconfdir}/init.d/psumuxmon
       update-rc.d -r ${D} psumuxmon start 95 2 3 4 5  .
     fi
 }

@@ -11,7 +11,7 @@ SRC_URI = "https://github.com/HowardHinnant/date/archive/refs/tags/v${PV}.tar.gz
 SRC_URI[md5sum] = "78902f47f7931a3ae8a320e0dea1f20a"
 SRC_URI[sha256sum] = "7a390f200f0ccd207e8cff6757e04817c1a0aec3e327b006b7eb451c57ee3538"
 
-S = "${WORKDIR}/date-${PV}"
+S = "${UNPACKDIR}/date-${PV}"
 
 FILES:${PN}-dev := " \
     ${includedir} \

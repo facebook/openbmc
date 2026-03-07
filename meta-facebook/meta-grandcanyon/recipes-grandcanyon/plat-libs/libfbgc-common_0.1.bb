@@ -14,6 +14,6 @@ SRC_URI = "file://fbgc_common \
 DEPENDS += " python3-setuptools libobmc-i2c libgpio-ctrl libkv libfbgc-gpio libipmi openssl "
 RDEPENDS:${PN} += "openssl "
 
-S = "${WORKDIR}/fbgc_common"
+S = "${UNPACKDIR}/fbgc_common"
 
 BBCLASSEXTEND = "native nativesdk"

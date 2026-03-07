@@ -29,6 +29,6 @@ SRC_URI = "file://fbgc_gpio \
 
 DEPENDS += " libgpio-ctrl "
 
-S = "${WORKDIR}/fbgc_gpio"
+S = "${UNPACKDIR}/fbgc_gpio"
 
 BBCLASSEXTEND = "native nativesdk"

@@ -22,5 +22,3 @@ SRC_URI += " file://mTerm_server.service"
 
 MTERM_SYSTEMD_SERVICES = "mTerm_server.service"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"

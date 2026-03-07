@@ -13,6 +13,6 @@ SRC_URI = "file://fbwc_fruid \
 
 DEPENDS += "libfbwc-common libfruid libbic libexp"
 
-S = "${WORKDIR}/fbwc_fruid"
+S = "${UNPACKDIR}/fbwc_fruid"
 
 BBCLASSEXTEND = "native nativesdk"

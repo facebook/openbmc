@@ -23,20 +23,18 @@ LIC_FILES_CHKSUM = "file://passwd-util;beginline=5;endline=18;md5=0b1ee7d6f844d4
 
 DEPENDS:append = " update-rc.d-native"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://passwd-util \
     "
 
 do_install() {
   install -d ${D}${bindir}
-  install -m 0755 passwd-util ${D}${bindir}/passwd-util
+  install -m 0755 ${UNPACKDIR}/passwd-util ${D}${bindir}/passwd-util
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -d ${D}${sysconfdir}/default
-  install -m 755 passwd-util ${D}${sysconfdir}/init.d/passwd-util
+  install -m 755 ${UNPACKDIR}/passwd-util ${D}${sysconfdir}/init.d/passwd-util
   update-rc.d -r ${D} passwd-util start 05 S 5 .
 }
 

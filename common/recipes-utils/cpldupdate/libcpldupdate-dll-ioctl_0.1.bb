@@ -25,7 +25,7 @@ LIC_FILES_CHKSUM = "file://cpldupdate_dll_ioctl.c;beginline=4;endline=16;md5=da3
 SRC_URI += "file://lib/ioctl \
            "
 
-S = "${WORKDIR}/lib/ioctl"
+S = "${UNPACKDIR}/lib/ioctl"
 
 inherit cmake
 

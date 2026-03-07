@@ -30,8 +30,9 @@ FSC_CONFIG += "fsc-config_MICRON.json \
                fsc-config_BRCM.json \
               "
 
-FSC_ZONE_CONFIG +="zone1_MICRON.fsc \
-                   zone1_BRCM.fsc \
-                  "
+FSC_ZONE_CONFIG += " \
+    zone1_MICRON.fsc \
+    zone1_BRCM.fsc \
+    "
 
 FSC_INIT_FILE += "setup-fan.sh"

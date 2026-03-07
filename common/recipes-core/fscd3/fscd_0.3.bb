@@ -22,9 +22,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://fscd.py;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://fscd.py \
     file://fsc_bmcmachine.py \
@@ -119,7 +117,6 @@ do_install_ptest() {
   install -d ${D}${libdir}/fscd/ptest
   cp -r ${S}/fscd_test/* ${D}${libdir}/fscd/ptest/
 }
-
 
 FILES:${PN} += "${prefix}/local/bin ${sysconfdir} "
 

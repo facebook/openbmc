@@ -23,9 +23,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://po-eeprom.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://po-eeprom.c \
 	file://Makefile \
@@ -33,7 +31,7 @@ LOCAL_URI = " \
 
 do_install() {
 	install -d ${D}${bindir}
-	install -m 0755 po-eeprom ${D}${bindir}/po-eeprom
+	install -m 0755 ${UNPACKDIR}/po-eeprom ${D}${bindir}/po-eeprom
 }
 
 FILES:${PN} = "${bindir}"

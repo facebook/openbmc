@@ -14,6 +14,6 @@ SRC_URI = "file://netlakemtp_fruid \
 DEPENDS += "libnetlakemtp-common"
 RDEPENDS_${PN} += "libnetlakemtp-common"
 
-S = "${WORKDIR}/netlakemtp_fruid"
+S = "${UNPACKDIR}/netlakemtp_fruid"
 
 BBCLASSEXTEND = "native nativesdk"

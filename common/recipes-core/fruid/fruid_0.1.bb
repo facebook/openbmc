@@ -26,9 +26,7 @@ LDFLAGS = " -lfruid -lpal -ljansson"
 DEPENDS = "libfruid libpal jansson"
 RDEPENDS:${PN} = "libfruid libpal jansson"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://Makefile \
     file://fruid-util.c \

@@ -62,13 +62,14 @@ FSC_CONFIG += "FSC_FBY2_MP_4TL_config.json \
                FSC_NORTHDOME_4ND_config.json \
               "
 
-FSC_ZONE_CONFIG +="FSC_FBY2_MP_4TL_zone1.fsc \
-                   FSC_FBY2_PVT_2GP_2TL_zone1.fsc \
-                   FSC_FBY2_PVT_2CF_2TL_zone1.fsc \
-                   FSC_FBGPV2_DVT_zone1.fsc \
-                   FSC_FBYV250_DVT_zone1.fsc \
-                   FSC_NORTHDOME_4ND_zone1.fsc \
-                  "
+FSC_ZONE_CONFIG += " \
+    FSC_FBY2_MP_4TL_zone1.fsc \
+    FSC_FBY2_PVT_2GP_2TL_zone1.fsc \
+    FSC_FBY2_PVT_2CF_2TL_zone1.fsc \
+    FSC_FBGPV2_DVT_zone1.fsc \
+    FSC_FBYV250_DVT_zone1.fsc \
+    FSC_NORTHDOME_4ND_zone1.fsc \
+    "
 
 do_install:append() {
   install -d ${D}${sysconfdir}/init.d

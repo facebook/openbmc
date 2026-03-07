@@ -28,9 +28,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://Makefile;beginline=4;endline=17;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://Makefile \
     file://cmd-bitbang.c \
@@ -44,7 +42,6 @@ LOCAL_URI = " \
 RDEPENDS:${PN} += "libusb1 libftdi"
 DEPENDS:append = "libusb1 libftdi"
 LDFLAGS += "-L . -l usb-1.0 -l ftdi1 "
-
 
 binfiles = "ftdi_bitbang ftdi_control"
 

@@ -36,6 +36,6 @@ RDEPENDS:${PN} += "bash"
 FSC_CONFIG += "fsc-config-rtsw.json"
 FSC_CONFIG += "fsc-config-non-rtsw.json"
 
-FSC_ZONE_CONFIG +="zone.fsc"
+FSC_ZONE_CONFIG += "zone.fsc"
 
 FSC_INIT_FILE += "setup-fan.sh"

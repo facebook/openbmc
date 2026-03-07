@@ -22,7 +22,7 @@ LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://main.cpp;beginline=5;endline=18;md5=ff9a2ba58fa5b39d3d3dcb7c42e26496"
 
 SRC_URI = "file://log-util"
-S = "${WORKDIR}/log-util"
+S = "${UNPACKDIR}/log-util"
 
 inherit meson pkgconfig
 inherit ptest-meson

@@ -16,8 +16,6 @@ SRC_URI = " \
     git://git@github.com:/cisco-open/cisco-8000-kernel-modules.git;branch=main;rev=731909818130375cae729987a9ae44dfa13bfdcb;protocol=https \
 "
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
 MODULES_MODULE_SYMVERS_LOCATION = "git/drivers"
 
 KERNEL_MODULE_AUTOLOAD += " \

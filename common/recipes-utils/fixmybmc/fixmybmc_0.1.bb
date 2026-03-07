@@ -19,13 +19,12 @@ SUMMARY = "FixMyBMC CLI Utility"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://fixmybmc/ \
     file://setup.py \
     file://fixmybmc.sh \
     "
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
 
 inherit setuptools3
 
@@ -36,6 +35,5 @@ do_install:append() {
     install -d ${D}${bindir}
     install -m 0755 ${UNPACKDIR}/fixmybmc.sh ${D}${bindir}/fixmybmc
 }
-
 
 RDEPENDS:${PN} += "python3-core bash"

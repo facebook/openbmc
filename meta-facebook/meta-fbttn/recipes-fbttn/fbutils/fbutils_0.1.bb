@@ -21,9 +21,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://ast-functions \
     file://sol-util \
@@ -42,7 +40,6 @@ LOCAL_URI = " \
     "
 
 pkgdir = "utils"
-
 
 binfiles = "sol-util power_led.sh post_led.sh \
   mdio.py setup_rov.sh power_util.py \

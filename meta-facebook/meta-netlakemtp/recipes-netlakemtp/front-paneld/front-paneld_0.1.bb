@@ -7,7 +7,6 @@ PR = "r1"
 LICENSE = "GPLv2"
 LIC_FILES_CHKSUM = "file://front-paneld.c;beginline=5;endline=17;md5=da35978751a9d71b73679307c4d296ec"
 
-
 DEPENDS:append = "libnetlakemtp-common libpal libkv update-rc.d-native"
 
 SRC_URI = "file://Makefile \
@@ -16,7 +15,7 @@ SRC_URI = "file://Makefile \
            file://run-front-paneld.sh \
           "
 
-S = "${WORKDIR}"
+S = "${UNPACKDIR}"
 
 binfiles = "front-paneld"
 
@@ -43,7 +42,6 @@ FBPACKAGEDIR = "${prefix}/local/fbpackages"
 
 FILES:${PN} = "${FBPACKAGEDIR}/front-paneld ${prefix}/local/bin ${sysconfdir} "
 RDEPENDS:${PN} += "libnetlakemtp-common libpal libkv"
-
 
 # Inhibit complaints about .debug directories:
 

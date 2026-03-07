@@ -25,9 +25,7 @@ LIC_FILES_CHKSUM = "file://gpio.c;beginline=4;endline=16;md5=da35978751a9d71b736
 inherit meson pkgconfig python3-dir
 inherit ptest-meson
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://meson.build \
     file://gpio.c \

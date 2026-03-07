@@ -28,7 +28,7 @@ LDFLAGS += "-llog -lobmc-i2c -lwedge_eeprom"
 DEPENDS += "liblog libobmc-i2c libwedge-eeprom"
 RDEPENDS:${PN} = "liblog libobmc-i2c libwedge-eeprom"
 
-S = "${WORKDIR}/lib"
+S = "${UNPACKDIR}/lib"
 
 do_install() {
 	  install -d ${D}${libdir}

@@ -21,9 +21,7 @@ PR = "r0"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://spi-utils.sh;beginline=5;endline=18;md5=0b1ee7d6f844d472fa306b2fee2167e0"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://host-recovery.rules \
     file://spi-utils.sh \

@@ -2,8 +2,7 @@ FILESEXTRAPATHS:prepend:openbmc-fb := "${THISDIR}/files:"
 
 FILES:${PN}:append:openbmc-fb = " ${systemd_system_unitdir}/*.service"
 
-S:openbmc-fb = "${WORKDIR}/sources"
-UNPACKDIR:openbmc-fb = "${S}"
+S:openbmc-fb = "${UNPACKDIR}"
 SRC_URI:openbmc-fb = "file://serial-getty@.service"
 SERIAL_TERM:openbmc-fb ?= "linux"
 

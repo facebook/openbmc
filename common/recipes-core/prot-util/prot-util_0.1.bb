@@ -9,7 +9,7 @@ LIC_FILES_CHKSUM = "file://prot-util.cpp;beginline=6;endline=18;md5=da35978751a9
 SRC_URI = " \
     file://prot-util \
     "
-S = "${WORKDIR}/prot-util"
+S = "${UNPACKDIR}/prot-util"
 
 inherit meson pkgconfig
 

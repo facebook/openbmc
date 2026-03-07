@@ -21,10 +21,9 @@ DEPENDS += " \
     ${@bb.utils.contains('PTEST_ENABLED', '1', 'gtest', '', d)} \
 "
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
 SYSTEMD_SERVICE:${PN} += "xyz.openbmc_project.RedfishClient.service"
+
+S = "${UNPACKDIR}"
 SRC_URI = " \
     file://LICENSE \
     file://meson.build \

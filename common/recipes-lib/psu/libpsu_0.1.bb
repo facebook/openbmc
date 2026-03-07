@@ -22,9 +22,7 @@ PR = "r1"
 LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://psu.c;beginline=4;endline=16;md5=da35978751a9d71b73679307c4d296ec"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://psu.c \
     file://psu.h \
@@ -37,7 +35,6 @@ LDFLAGS = "-lfruid -lpal -lobmc-i2c -llog -lwedge_eeprom"
 
 DEPENDS += "libfruid libpal libobmc-i2c liblog libwedge-eeprom"
 RDEPENDS:${PN} += "libfruid libpal libobmc-i2c liblog libwedge-eeprom"
-
 
 do_install() {
     install -d ${D}${libdir}

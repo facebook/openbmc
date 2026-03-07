@@ -12,7 +12,6 @@ PE = "1"
 
 SRC_URI = "git://github.com/facebook/openbmc-uboot.git;branch=${SRCBRANCH};protocol=https"
 SRCREV = "AUTOINC"
-S = "${WORKDIR}/git"
 
 # u-boot v2020.01, which is used in Dunfell and above, has different settings
 # than earlier u-boot versions.  Set these variables so that we can use older

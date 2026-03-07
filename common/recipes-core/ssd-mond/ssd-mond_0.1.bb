@@ -26,9 +26,7 @@ LIC_FILES_CHKSUM = "file://ssd-mond.c;beginline=4;endline=16;md5=c0c4d931761f4e2
 
 LDFLAGS = "-llog -lipmi -lmisc-utils"
 
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
-
+S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://meson.build \
     file://ssd-mond.c \

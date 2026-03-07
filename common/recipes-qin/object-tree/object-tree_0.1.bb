@@ -25,7 +25,7 @@ LIC_FILES_CHKSUM = "file://Attribute.h;beginline=4;endline=16;md5=da35978751a9d7
 SRC_URI = "file://src \
           "
 
-S = "${WORKDIR}/src"
+S = "${UNPACKDIR}/src"
 
 inherit cmake
 

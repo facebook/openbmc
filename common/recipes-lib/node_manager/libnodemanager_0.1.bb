@@ -22,9 +22,7 @@ LICENSE = "LGPL-2.1-or-later"
 LIC_FILES_CHKSUM = "file://nm.c;beginline=8;endline=20;md5=da58bc07a669261cb7ccf2838db71124"
 
 inherit meson pkgconfig
-
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
+S = "${UNPACKDIR}"
 
 LOCAL_URI = " \
     file://meson.build \

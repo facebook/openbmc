@@ -22,11 +22,9 @@ LICENSE = "GPL-2.0-or-later"
 LIC_FILES_CHKSUM = "file://COPYING;md5=eb723b61539feef013de476e68b5c50a"
 
 inherit meson pkgconfig
+S = "${UNPACKDIR}"
 
 RDEPENDS:${PN} += "bash"
-
-S = "${WORKDIR}/sources"
-UNPACKDIR = "${S}"
 
 LOCAL_URI = " \
     file://dump.sh \

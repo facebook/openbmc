@@ -113,7 +113,13 @@ def running_systemd():
 
 
 def tests_dir():
+    # First, try to detect based on this file's location
+    this_file = os.path.abspath(__file__)
+    tests2_root = os.path.dirname(os.path.dirname(this_file))
+    detected_tests_dir = os.path.join(tests2_root, "tests")
+    if os.path.exists(detected_tests_dir):
+        return detected_tests_dir + "/"
+    # Fall back to legacy paths
     if os.path.exists(run_test_dir):
         return "{}/tests/".format(run_test_dir)
-    else:
-        return "{}/tests/".format(usr_test_dir)
+    return "{}/tests/".format(usr_test_dir)

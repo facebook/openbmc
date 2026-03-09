@@ -457,19 +457,8 @@ static struct i2c_driver scmcpld_driver = {
   .address_list = normal_i2c,
 };
 
-static int __init scmcpld_mod_init(void)
-{
-  return i2c_add_driver(&scmcpld_driver);
-}
-
-static void __exit scmcpld_mod_exit(void)
-{
-  i2c_del_driver(&scmcpld_driver);
-}
-
 MODULE_AUTHOR("Dean Kalla");
 MODULE_DESCRIPTION("ELBERT SCM CPLD Driver");
 MODULE_LICENSE("GPL");
 
-module_init(scmcpld_mod_init);
-module_exit(scmcpld_mod_exit);
+module_i2c_driver(scmcpld_driver);

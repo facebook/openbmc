@@ -39,8 +39,6 @@ enum {
 };
 
 // BMC GPIO pins
-// Please note that not all pins here are needed for
-// ICE-LAKE D. Many are for MTP's own use.
 // Essential Pins for talking to x86 CPU includes : 
 // PCH related pins : PWRGD_PCH_R_PWROK
 // CPU itself  :

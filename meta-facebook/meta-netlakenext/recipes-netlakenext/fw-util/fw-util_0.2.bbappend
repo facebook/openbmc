@@ -24,7 +24,6 @@ LOCAL_URI += " \
     file://bmc_bios.cpp \
     file://bmc_cpld.cpp \
     file://bmc_cpld.h \
-    file://me.cpp \
     file://platform.cpp \
     file://vr_fw.cpp \
     file://vr_fw.h \

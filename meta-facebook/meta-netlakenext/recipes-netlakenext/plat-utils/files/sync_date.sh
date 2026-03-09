@@ -37,17 +37,5 @@ logger -s -p user.info -t sync-date "Syncing up BMC time from NTP failed because
 
 echo Syncing up BMC time with server...
 
-# Use standard IPMI command 'get-sel-time' to read RTC time
-time=$(/usr/local/bin/me-util 0x28 0x48)
-ret=$?
-if [ $ret = "0" ] ; then
-  date -s @$((16#$(echo "$time" | awk '{print $4$3$2$1}')))
-  ret=$?
-  if [ $ret = "0" ]; then
-      logger -s -p user.crit -t sync-date "Syncing up BMC time from Host(ME)"
-      exit 0
-  fi
-fi
-
 ##### sync time from default time
 logger -s -p user.crit -t sync-date "Syncing up BMC time from Default(OpenBMC build time)"

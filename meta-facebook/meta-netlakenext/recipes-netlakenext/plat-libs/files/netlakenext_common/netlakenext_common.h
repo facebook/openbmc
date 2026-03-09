@@ -59,14 +59,7 @@ extern "C" {
 
 //In Netlake codebase, all definition used 0 base bus, 8 bit address
 #define VR_BUS  0
-#define VR_P1V8_STBY_ADDR 0xEC
-#define VR_P1V05_STBY_ADDR 0x44
-#define VR_PVNN_PCH_ADDR 0x22
-#define VR_PVCCIN_ADDR 0xEC
-#define VR_PVCCANCPU_ADDR 0xCC
-#define VR_PVDDQ_ABC_CPU_ADDR 0x8A
 #define VR_VOUT_MODE_REG 0x20
-
 #define VR_PVDDCR_ADDR 0x40
 #define VR_PVDDCR_SOC_ADDR 0x40
 #define VR_PVDD_MISC_ADDR 0x42
@@ -99,12 +92,6 @@ extern "C" {
 #define LSB_INA230_DEFAULT_CALIBRATION 0x0A
 #define MSB_INA230_DEFAULT_CALIBRATION 0x00
 #define INA230_GET_DATA_LEN 2
-
-// The following definition is specific to ICE-LAKE-D CPU without BIC.
-// Any future platform that uses Netlake as COMe should consider
-// using similar definition as below.
-#define ME_BUS 1
-#define NM_GLOBAL_POWER_STATISTICS_LENGTH 20
 
 #define NVME_A_BUS 22
 #define NVME_B_BUS 23
@@ -185,9 +172,6 @@ int netlakenext_common_get_img_ver(const char* image_path, char* ver);
 int netlakenext_common_get_board_rev(uint8_t* rev_id);
 int netlakenext_common_linear11_convert(uint8_t *value_raw, float *value_linear11);
 int netlakenext_common_linear16_convert(uint8_t *value_raw, uint8_t mode, float *value_linear16);
-int netlakenext_common_me_ipmb_wrapper(uint8_t netfn, uint8_t cmd, uint8_t *txbuf, uint8_t txlen,
-                                      uint8_t *rxbuf, uint8_t *rxlen);
-int netlakenext_common_me_get_fw_ver(ipmi_dev_id_t *dev_id);
 
 #ifdef __cplusplus
 } // extern "C"

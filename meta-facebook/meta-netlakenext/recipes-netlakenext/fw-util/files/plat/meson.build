@@ -3,7 +3,6 @@ srcs += [
     'platform.cpp',
     'bios.cpp',
     'bmc_bios.cpp',
-    'me.cpp',
     'vr_fw.cpp',
 ]
 

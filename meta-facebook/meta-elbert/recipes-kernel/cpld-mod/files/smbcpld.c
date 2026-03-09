@@ -915,19 +915,8 @@ static struct i2c_driver smbcpld_driver = {
   .address_list = normal_i2c,
 };
 
-static int __init smbcpld_mod_init(void)
-{
-  return i2c_add_driver(&smbcpld_driver);
-}
-
-static void __exit smbcpld_mod_exit(void)
-{
-  i2c_del_driver(&smbcpld_driver);
-}
-
 MODULE_AUTHOR("Dean Kalla");
 MODULE_DESCRIPTION("ELBERT SMB CPLD Driver");
 MODULE_LICENSE("GPL");
 
-module_init(smbcpld_mod_init);
-module_exit(smbcpld_mod_exit);
+module_i2c_driver(smbcpld_driver);

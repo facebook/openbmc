@@ -175,6 +175,7 @@ SRC_URI:append = " \
     file://0339-hwmon-add-MP2993-driver.patch \
     file://0340-iio-adc-ltc2309-add-support-for-ltc2305.patch \
     file://0341-apml-Add-support-for-SP7-platform.patch \
+    file://0342-hwmon-pmbus-tda38640-Add-identification-for-vout_mode.patch \
 "
 
 #

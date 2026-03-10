@@ -1,7 +1,7 @@
-From 1a1489788a6f950c8141042a00c7288660730453 Mon Sep 17 00:00:00 2001
+From 0a676394666c4157792018a552b80e838211f27a Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Wed, 17 Sep 2025 16:05:34 +0800
-Subject: [PATCH 14/18] oem-meta: Add MCTP configuration discovery
+Subject: [PATCH 14/17] oem-meta: Add MCTP configuration discovery
 
 Introduces a `ConfigurationDiscoveryHandler` to dynamically discover MCTP
 endpoint configurations from D-Bus. This handler listens for MCTP
@@ -78,7 +78,7 @@ index 4446ba1..3a5de19 100644
      pldm::responder::platform::Handler* platformHandler)
  {
 diff --git a/oem/meta/oem_meta.hpp b/oem/meta/oem_meta.hpp
-index 7f0d35d..969a99b 100644
+index be216a0..14f7d6d 100644
 --- a/oem/meta/oem_meta.hpp
 +++ b/oem/meta/oem_meta.hpp
 @@ -4,6 +4,7 @@

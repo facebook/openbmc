@@ -1,4 +1,4 @@
-From a6b95aac89a370ad81a69a57e97a15e7eef9f7b7 Mon Sep 17 00:00:00 2001
+From ef4e833874a3ad25fddc3d88c39e09365b486f7e Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH 200/203] Utils: support powerState for multi-node system
@@ -117,13 +117,13 @@ Change-Id: I49ede1e6276acdbee2f8a9807c738be7970beaf9
  src/Utils.hpp                    |  41 ++-
  src/hwmon-temp/HwmonTempMain.cpp |   6 +-
  src/psu/PSUSensor.cpp            |   6 +-
- src/psu/PSUSensor.hpp            |   8 +-
+ src/psu/PSUSensor.hpp            |   3 +-
  src/psu/PSUSensorMain.cpp        |   9 +-
  src/sensor.hpp                   |   7 +-
- 7 files changed, 413 insertions(+), 174 deletions(-)
+ 7 files changed, 410 insertions(+), 172 deletions(-)
 
 diff --git a/src/Utils.cpp b/src/Utils.cpp
-index 52f9394..93375b1 100644
+index eaff0d7..ede18a6 100644
 --- a/src/Utils.cpp
 +++ b/src/Utils.cpp
 @@ -41,6 +41,7 @@
@@ -776,7 +776,7 @@ index 52f9394..93375b1 100644
  
  void setupPowerMatch(const std::shared_ptr<sdbusplus::asio::connection>& conn)
 diff --git a/src/Utils.hpp b/src/Utils.hpp
-index 9f799f5..221645b 100644
+index 6fef998..3051160 100644
 --- a/src/Utils.hpp
 +++ b/src/Utils.hpp
 @@ -56,6 +56,7 @@ using ManagedObjectType =
@@ -885,10 +885,10 @@ index 9f799f5..221645b 100644
  
      void getPath(const std::string& path, const std::string& interface,
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
-index b4a2199..112d9bd 100644
+index 3b1d6af..48308e1 100644
 --- a/src/hwmon-temp/HwmonTempMain.cpp
 +++ b/src/hwmon-temp/HwmonTempMain.cpp
-@@ -607,7 +607,11 @@ static void powerStateChanged(
+@@ -610,7 +610,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {
@@ -902,13 +902,13 @@ index b4a2199..112d9bd 100644
          }
      }
 diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
-index f2d80e8..747c3f6 100644
+index 203d7c6..25ed894 100644
 --- a/src/psu/PSUSensor.cpp
 +++ b/src/psu/PSUSensor.cpp
-@@ -53,14 +53,14 @@ PSUSensor::PSUSensor(
-     const std::string& sensorUnits, double factor, double max, double min,
-     double offset, const std::string& label, size_t tSize, double pollRate,
-     const std::shared_ptr<I2CDevice>& i2cDevice,
+@@ -54,14 +54,14 @@ PSUSensor::PSUSensor(
+     const std::string_view sensorUnits, double factor, double max,
+     double min, double offset, const std::string& label, size_t tSize,
+     double pollRate, const std::shared_ptr<I2CDevice>& i2cDevice,
 -    std::optional<BridgeGpio>&& bridgeGpio) :
 +    std::optional<BridgeGpio>&& bridgeGpio, const size_t& slotId) :
      Sensor(escapeName(sensorName), std::move(thresholdsIn), sensorConfiguration,
@@ -924,7 +924,7 @@ index f2d80e8..747c3f6 100644
      buffer = std::make_shared<std::array<char, 128>>();
      std::string unitPath = sensor_paths::getPathForUnits(sensorUnits);
 diff --git a/src/psu/PSUSensor.hpp b/src/psu/PSUSensor.hpp
-index f01ba69..1713e0e 100644
+index a28e50f..ce3d186 100644
 --- a/src/psu/PSUSensor.hpp
 +++ b/src/psu/PSUSensor.hpp
 @@ -97,7 +97,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
@@ -943,24 +943,12 @@ index f01ba69..1713e0e 100644
 +    size_t slotId;
  };
  
- class PSUProperty
-@@ -144,8 +145,9 @@ class PSUProperty
-   public:
-     PSUProperty(std::string name, double max, double min, double factor,
-                 double offset) :
--        labelTypeName(std::move(name)), maxReading(max), minReading(min),
--        sensorScaleFactor(factor), sensorOffset(offset)
-+        labelTypeName(std::move(name)),
-+        maxReading(max), minReading(min), sensorScaleFactor(factor),
-+        sensorOffset(offset)
-     {}
-     ~PSUProperty() = default;
- 
+ struct PSUProperty
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 34732b4..47e35c6 100644
+index ba6f7f6..47046a4 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -777,6 +777,7 @@ static void createSensorsCallback(
+@@ -831,6 +831,7 @@ static void createSensorsCallback(
          checkGroupEvent(directory.string(), groupEventPathList);
  
          PowerState readState = getPowerState(*baseConfig);
@@ -968,16 +956,16 @@ index 34732b4..47e35c6 100644
  
          /* Check if there are more sensors in the same interface */
          int i = 1;
-@@ -1242,7 +1243,7 @@ static void createSensorsCallback(
-                     readState, findSensorUnit->second, factor,
-                     psuProperty.maxReading, psuProperty.minReading,
-                     psuProperty.sensorOffset, labelHead, thresholdConfSize,
+@@ -1336,7 +1337,7 @@ static void createSensorsCallback(
+                     sensorName, std::move(sensorThresholds), *interfacePath,
+                     readState, findSensorUnit->units, factor, maxReading,
+                     minReading, sensorOffset, labelHead, thresholdConfSize,
 -                    pollRate, i2cDev, std::move(bridgeGpio));
 +                    pollRate, i2cDev, std::move(bridgeGpio), readSlot);
  
                  if (fwName != nullptr)
                  {
-@@ -1431,7 +1432,11 @@ static void powerStateChanged(
+@@ -1479,7 +1480,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {
@@ -991,11 +979,11 @@ index 34732b4..47e35c6 100644
          }
      }
 diff --git a/src/sensor.hpp b/src/sensor.hpp
-index b5c922e..2d96ccf 100644
+index fe87065..4f38606 100644
 --- a/src/sensor.hpp
 +++ b/src/sensor.hpp
 @@ -75,13 +75,13 @@ struct Sensor
-            const std::string& configurationPath, const std::string& objectType,
+            const std::string& configurationPath, std::string_view objectType,
             bool isSettable, bool isMutable, const double max, const double min,
             std::shared_ptr<sdbusplus::asio::connection>& conn,
 -           PowerState readState = PowerState::always) :
@@ -1028,5 +1016,5 @@ index b5c922e..2d96ccf 100644
  
      void markFunctional(bool isFunctional)
 -- 
-2.47.3
+2.52.0
 

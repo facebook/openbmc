@@ -1,4 +1,4 @@
-From e5fb8658f4fc2343ea17ac6a4d796827be9eaca8 Mon Sep 17 00:00:00 2001
+From a7ef281f5e9e8a12a939cea21e58e201e89afce6 Mon Sep 17 00:00:00 2001
 From: cchoux <cosmo.chou@quantatw.com>
 Date: Wed, 24 Sep 2025 11:35:31 +0800
 Subject: [PATCH 15/15] psusensor: skip sensor reads during firmware updates
@@ -162,10 +162,10 @@ index 9e17701..7bb0c9f 100644
 +    bool skipReading;
  };
 diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
-index 7f17bf2..f2d80e8 100644
+index 85089c2..203d7c6 100644
 --- a/src/psu/PSUSensor.cpp
 +++ b/src/psu/PSUSensor.cpp
-@@ -147,9 +147,14 @@ void PSUSensor::deactivate()
+@@ -148,9 +148,14 @@ void PSUSensor::deactivate()
      path = "";
  }
  
@@ -182,7 +182,7 @@ index 7f17bf2..f2d80e8 100644
          markAvailable(false);
          updateValue(std::numeric_limits<double>::quiet_NaN());
 diff --git a/src/psu/PSUSensor.hpp b/src/psu/PSUSensor.hpp
-index e679dc2..f01ba69 100644
+index de8f7b7..a28e50f 100644
 --- a/src/psu/PSUSensor.hpp
 +++ b/src/psu/PSUSensor.hpp
 @@ -104,6 +104,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
@@ -202,10 +202,10 @@ index e679dc2..f01ba69 100644
      static constexpr size_t warnAfterErrorCount = 10;
  
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index f432ef0..34732b4 100644
+index a2d3968..ba6f7f6 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -59,6 +59,7 @@
+@@ -61,6 +61,7 @@
  #include <stdexcept>
  #include <string>
  #include <string_view>
@@ -213,8 +213,8 @@ index f432ef0..34732b4 100644
  #include <utility>
  #include <variant>
  #include <vector>
-@@ -174,6 +175,21 @@ struct DevParams
-     std::string nameRegEx;
+@@ -177,6 +178,21 @@ struct DevParams
+     std::string_view nameRegEx;
  };
  
 +struct FwUpdateEntry
@@ -235,9 +235,9 @@ index f432ef0..34732b4 100644
  static boost::container::flat_map<std::string, std::shared_ptr<PSUSensor>>
      sensors;
  static boost::container::flat_map<std::string, std::unique_ptr<PSUCombineEvent>>
-@@ -188,6 +204,18 @@ static EventPathList limitEventMatch;
- static boost::container::flat_map<size_t, bool> cpuPresence;
- static boost::container::flat_map<DevTypes, DevParams> devParamMap;
+@@ -239,6 +255,18 @@ constexpr static auto devParamMap =
+          {DevTypes::IIO,
+           {2, R"(\w+_(raw|input)$)", "^(in|out)_([A-Za-z]+)[0-9]*_"}}});
  
 +static boost::container::flat_map<std::string, FwUpdateEntry>
 +    firmwareUpdateStates;
@@ -254,7 +254,7 @@ index f432ef0..34732b4 100644
  // Function CheckEvent will check each attribute from eventMatch table in the
  // sysfs. If the attributes exists in sysfs, then store the complete path
  // of the attribute into eventPathList.
-@@ -337,6 +365,101 @@ static void checkPWMSensor(
+@@ -388,6 +416,101 @@ static void checkPWMSensor(
          name, pwmPathStr, dbusConnection, objectServer, objPath, "PSU");
  }
  
@@ -356,7 +356,7 @@ index f432ef0..34732b4 100644
  std::optional<BridgeGpio> parseBridgeGpioFromConfig(
      const SensorData& sensorData, const std::string* label)
  {
-@@ -405,6 +528,41 @@ static void createSensorsCallback(
+@@ -456,6 +579,41 @@ static void createSensorsCallback(
  
      auto devices = instantiateDevices(sensorConfigs, sensors, sensorTypes);
  
@@ -398,7 +398,7 @@ index f432ef0..34732b4 100644
      std::vector<std::filesystem::path> pmbusPaths;
      findFiles(std::filesystem::path("/sys/bus/iio/devices"), "name",
                pmbusPaths);
-@@ -631,6 +789,20 @@ static void createSensorsCallback(
+@@ -685,6 +843,20 @@ static void createSensorsCallback(
              findPSUName = baseConfig->find("Name" + std::to_string(i++));
          } while (findPSUName != baseConfig->end());
  
@@ -417,11 +417,11 @@ index f432ef0..34732b4 100644
 +        }
 +
          std::vector<std::filesystem::path> sensorPaths;
-         if (!findFiles(directory, devParamMap[devType].matchRegEx, sensorPaths,
-                        0))
-@@ -1071,6 +1243,16 @@ static void createSensorsCallback(
-                     psuProperty.maxReading, psuProperty.minReading,
-                     psuProperty.sensorOffset, labelHead, thresholdConfSize,
+         const auto* param = std::find_if(
+             devParamMap.begin(), devParamMap.end(),
+@@ -1165,6 +1337,16 @@ static void createSensorsCallback(
+                     readState, findSensorUnit->units, factor, maxReading,
+                     minReading, sensorOffset, labelHead, thresholdConfSize,
                      pollRate, i2cDev, std::move(bridgeGpio));
 +
 +                if (fwName != nullptr)
@@ -436,7 +436,7 @@ index f432ef0..34732b4 100644
                  sensors[sensorName]->setupRead();
                  ++numCreated;
                  lg2::debug("Created '{NUM}' sensors so far", "NUM", numCreated);
-@@ -1085,7 +1267,7 @@ static void createSensorsCallback(
+@@ -1179,7 +1361,7 @@ static void createSensorsCallback(
                  std::make_unique<PSUCombineEvent>(
                      objectServer, dbusConnection, io, *psuName, readState,
                      eventPathList, groupEventPathList, "OperationalStatus",
@@ -445,15 +445,15 @@ index f432ef0..34732b4 100644
          }
      }
  
-@@ -1174,11 +1356,15 @@ void createSensors(
+@@ -1268,11 +1450,15 @@ void createSensors(
                                    sensorConfigs, sensorsChanged, activateOnly);
          });
-     std::vector<std::string> types;
+     std::vector<std::string_view> types;
 -    types.reserve(sensorTypes.size());
 +    types.reserve(sensorTypes.size() + firmwareTypes.size());
      for (const auto& [type, dt] : sensorTypes)
      {
-         types.push_back(type);
+         types.emplace_back(type);
      }
 +    for (const auto& type : firmwareTypes)
 +    {
@@ -462,15 +462,15 @@ index f432ef0..34732b4 100644
      getter->getConfiguration(types);
  }
  
-@@ -1353,8 +1539,18 @@ int main()
+@@ -1399,8 +1585,18 @@ int main()
              });
          };
  
-+    std::vector<const char*> types;
++    std::vector<std::string_view> types;
 +    types.reserve(sensorTypes.size() + firmwareTypes.size());
 +    for (const auto& [type, dt] : sensorTypes)
 +    {
-+        types.push_back(type.data());
++        types.push_back(type);
 +    }
 +    for (const auto& type : firmwareTypes)
 +    {
@@ -482,7 +482,7 @@ index f432ef0..34732b4 100644
  
      matches.emplace_back(std::make_unique<sdbusplus::bus::match_t>(
          static_cast<sdbusplus::bus_t&>(*systemBus),
-@@ -1365,6 +1561,9 @@ int main()
+@@ -1411,6 +1607,9 @@ int main()
  
      getPresentCpus(systemBus);
  
@@ -493,5 +493,5 @@ index f432ef0..34732b4 100644
      io.run();
  }
 -- 
-2.47.3
+2.52.0
 

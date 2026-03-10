@@ -1,4 +1,4 @@
-From 754c10743191ab57126cc86a5b55d92a4fa493ec Mon Sep 17 00:00:00 2001
+From 7cdea507a57613124fc93becbca6c5f924951a70 Mon Sep 17 00:00:00 2001
 From: Jason Hsu <Jason-Hsu@quantatw.com>
 Date: Fri, 27 Jun 2025 10:35:17 +0800
 Subject: [PATCH 08/15] meta-facebook: ventura: add SCM sensor offset
@@ -65,10 +65,10 @@ index 618c43f..4f6b9a3 100644
      std::optional<BridgeGpio> bridgeGpio;
      thresholds::ThresholdTimer thresholdTimer;
 diff --git a/src/adc/ADCSensorMain.cpp b/src/adc/ADCSensorMain.cpp
-index 8ce4bb0..948ee86 100644
+index 18db231..dfc769f 100644
 --- a/src/adc/ADCSensorMain.cpp
 +++ b/src/adc/ADCSensorMain.cpp
-@@ -255,6 +255,13 @@ void createSensors(
+@@ -256,6 +256,13 @@ void createSensors(
                      }
                  }
  
@@ -82,7 +82,7 @@ index 8ce4bb0..948ee86 100644
                  float pollRate =
                      getPollRate(baseConfiguration->second, pollRateDefault);
                  PowerState readState = getPowerState(baseConfiguration->second);
-@@ -303,7 +310,7 @@ void createSensors(
+@@ -304,7 +311,7 @@ void createSensors(
  
                  sensor = std::make_shared<ADCSensor>(
                      path.string(), objectServer, dbusConnection, io, sensorName,
@@ -92,5 +92,5 @@ index 8ce4bb0..948ee86 100644
                  sensor->setupRead();
              }
 -- 
-2.47.3
+2.52.0
 

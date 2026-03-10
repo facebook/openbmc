@@ -1,7 +1,7 @@
-From 4882d14979ef231deda03f17ce4796e0e95e2bda Mon Sep 17 00:00:00 2001
+From 2497711d528684147b6430720c22a55aacc4b409 Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Mon, 21 Jul 2025 14:06:38 +0800
-Subject: [PATCH 10/18] oem-meta: Add file IO responder for event logs from BIC
+Subject: [PATCH 10/17] oem-meta: Add file IO responder for event logs from BIC
 
 Add handler for write-file command "EVENT_LOG", which is sent
 when host events are triggered, parse event type from a list and
@@ -32,7 +32,7 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  create mode 100644 oem/meta/libpldmresponder/file_io_type_event_log.hpp
 
 diff --git a/oem/meta/event/oem_event_manager.cpp b/oem/meta/event/oem_event_manager.cpp
-index af8d437..f4a63a2 100644
+index 2b311fa..7580d5c 100644
 --- a/oem/meta/event/oem_event_manager.cpp
 +++ b/oem/meta/event/oem_event_manager.cpp
 @@ -15,26 +15,36 @@ namespace pldm
@@ -102,7 +102,7 @@ index af8d437..f4a63a2 100644
                                          std::string& errorLog) const
  {
      errorLog = "Standard (0x02), ";
-@@ -227,9 +237,35 @@ void OemEventManager::handleSystemEvent(const uint8_t* eventData,
+@@ -234,9 +244,35 @@ void OemEventManager::handleSystemEvent(const uint8_t* eventData,
      }
  }
  
@@ -140,7 +140,7 @@ index af8d437..f4a63a2 100644
      errorLog = "Facebook Unified SEL (0xFB), ";
  
      DimmInfo dimmInfo = {
-@@ -559,10 +595,11 @@ void OemEventManager::handleUnifiedBIOSEvent(const uint8_t* eventData,
+@@ -566,10 +602,11 @@ void OemEventManager::handleUnifiedBIOSEvent(const uint8_t* eventData,
              break;
          }
      }
@@ -153,7 +153,7 @@ index af8d437..f4a63a2 100644
      uint8_t generalInfo) const
  {
      std::string dimmLocation, dimm;
-@@ -611,7 +648,7 @@ void OemEventManager::handleMemoryError(
+@@ -618,7 +655,7 @@ void OemEventManager::handleMemoryError(
  }
  
  void OemEventManager::handleSystemPostEvent(

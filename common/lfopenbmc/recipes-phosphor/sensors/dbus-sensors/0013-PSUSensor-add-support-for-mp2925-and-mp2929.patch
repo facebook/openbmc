@@ -1,4 +1,4 @@
-From b891d0f89f5b30bb8df9d0a85a0c0a82764f4e35 Mon Sep 17 00:00:00 2001
+From a5e7aaf089fbf2f989f285cad13431dad25c2f7f Mon Sep 17 00:00:00 2001
 From: Kevin Tung <kevin.tung@quantatw.com>
 Date: Thu, 13 Nov 2025 19:11:44 +0800
 Subject: [PATCH 13/15] PSUSensor: add support for mp2925 and mp2929
@@ -15,10 +15,10 @@ Signed-off-by: Kevin Tung <kevin.wtmh@gmail.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 98f81f1..f432ef0 100644
+index aa8daf0..a2d3968 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -120,6 +120,8 @@ static const I2CDeviceTypeMap sensorTypes{
+@@ -123,6 +123,8 @@ static constexpr auto sensorTypes = std::to_array<
      {"MP2856", I2CDeviceType{"mp2856", true}},
      {"MP2857", I2CDeviceType{"mp2857", true}},
      {"MP2869", I2CDeviceType{"mp2869", true}},
@@ -28,5 +28,5 @@ index 98f81f1..f432ef0 100644
      {"MP2973", I2CDeviceType{"mp2973", true}},
      {"MP2975", I2CDeviceType{"mp2975", true}},
 -- 
-2.47.3
+2.52.0
 

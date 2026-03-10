@@ -1,7 +1,7 @@
-From 2b3c30b03fffeb80da2af5bea997c02916dd42f7 Mon Sep 17 00:00:00 2001
+From abf6b6ae7a905f994febe00edde0948a3455af8b Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 26 Feb 2026 09:32:39 +0000
-Subject: [PATCH 1/1] transport: af-mctp: Fix TID lookup with MCTP_NET_ANY
+Subject: [PATCH] transport: af-mctp: Fix TID lookup with MCTP_NET_ANY
 
 The pldm_transport_af_mctp_map_tid() API stores mappings with
 tid_map[tid].net = MCTP_NET_ANY (0), but get_tid() requires exact match
@@ -35,4 +35,5 @@ index 84d5211..9d3b487 100644
  				*tid = i;
  				return 0;
 -- 
-2.31.1
+2.47.3
+

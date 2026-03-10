@@ -1,4 +1,4 @@
-From 40b37d8e39884ae175de4a98214e8e659cca8782 Mon Sep 17 00:00:00 2001
+From b523adfbd028a67726cec528f37e0fc8f7cba48c Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <cosmo.chou@quantatw.com>
 Date: Tue, 31 Dec 2024 14:39:48 +0800
 Subject: [PATCH 02/15] DeviceMgmt: fix device not found
@@ -171,10 +171,10 @@ Signed-off-by: Potin Lai <potin.lai@quantatw.com>
  1 file changed, 3 insertions(+), 18 deletions(-)
 
 diff --git a/src/DeviceMgmt.hpp b/src/DeviceMgmt.hpp
-index 09644ab..98f6a1f 100644
+index 60c68fe..3b8d162 100644
 --- a/src/DeviceMgmt.hpp
 +++ b/src/DeviceMgmt.hpp
-@@ -110,26 +110,10 @@ boost::container::flat_map<std::string,
+@@ -101,26 +101,10 @@ boost::container::flat_map<std::string,
                  continue;
              }
  
@@ -202,7 +202,7 @@ index 09644ab..98f6a1f 100644
                  {
                      findSensor = sensor.second;
                      break;
-@@ -140,7 +124,7 @@ boost::container::flat_map<std::string,
+@@ -131,7 +115,7 @@ boost::container::flat_map<std::string,
                  devices.emplace(
                      path.str,
                      std::make_pair(findSensor->getI2CDevice(), false));
@@ -211,7 +211,7 @@ index 09644ab..98f6a1f 100644
              }
  
              std::optional<I2CDeviceParams> params =
-@@ -168,6 +152,7 @@ boost::container::flat_map<std::string,
+@@ -159,6 +143,7 @@ boost::container::flat_map<std::string,
                          path.str,
                          std::make_pair(std::make_shared<I2CDevice>(*params),
                                         true));
@@ -220,5 +220,5 @@ index 09644ab..98f6a1f 100644
                  catch (std::runtime_error&)
                  {
 -- 
-2.47.3
+2.52.0
 

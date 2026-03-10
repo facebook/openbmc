@@ -1,4 +1,4 @@
-From 6385ced13589cb3f91fe8d020df4fe4e67c27314 Mon Sep 17 00:00:00 2001
+From 327b9db8eabc9d5bee964fab351612f04d762f85 Mon Sep 17 00:00:00 2001
 From: MandyMCHung <mandy.hung.wiwynn@gmail.com>
 Date: Mon, 3 Mar 2025 10:39:31 +0800
 Subject: [PATCH 201/203] Avoid recreating hwmon temp when blade cycle
@@ -54,7 +54,7 @@ index 8045676..6d97aa1 100644
  // clang-format on
 \ No newline at end of file
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
-index 724732c..fcb0bce 100644
+index 48308e1..19dbb80 100644
 --- a/src/hwmon-temp/HwmonTempMain.cpp
 +++ b/src/hwmon-temp/HwmonTempMain.cpp
 @@ -14,6 +14,8 @@
@@ -74,7 +74,7 @@ index 724732c..fcb0bce 100644
  #include <memory>
  #include <optional>
  #include <regex>
-@@ -597,6 +600,12 @@ static void powerStateChanged(
+@@ -600,6 +603,12 @@ static void powerStateChanged(
      boost::asio::io_context& io, sdbusplus::asio::object_server& objectServer,
      std::shared_ptr<sdbusplus::asio::connection>& dbusConnection)
  {
@@ -129,5 +129,5 @@ index 8df4d6f..9555a2b 100644
      input: 'dbus-sensor_config.h.in',
      output: 'dbus-sensor_config.h',
 -- 
-2.47.3
+2.52.0
 

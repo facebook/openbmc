@@ -1,4 +1,4 @@
-From aeac50d501a27a03e27e117bfdb9dec32703121e Mon Sep 17 00:00:00 2001
+From efad6d571bfadbc45997b37b113a3b3b2ab9827f Mon Sep 17 00:00:00 2001
 From: Dirk Chen <dirkchen@amd.com>
 Date: Tue, 20 Jan 2026 19:18:58 +0800
 Subject: [PATCH] configurations: anacapa: Add CPLD firmware config
@@ -43,7 +43,7 @@ Signed-off-by: Dirk Chen <dirkchen@amd.com>
  6 files changed, 52 insertions(+), 1 deletion(-)
 
 diff --git a/configurations/meta/anacapa/anacapa_bridge_l_t16.json b/configurations/meta/anacapa/anacapa_bridge_l_t16.json
-index 70461c40103..11075a38600 100644
+index 34594bc..a937c0b 100644
 --- a/configurations/meta/anacapa/anacapa_bridge_l_t16.json
 +++ b/configurations/meta/anacapa/anacapa_bridge_l_t16.json
 @@ -6,6 +6,16 @@
@@ -64,7 +64,7 @@ index 70461c40103..11075a38600 100644
              "Address": "0x60",
              "Bus": "$bus + 2",
 diff --git a/configurations/meta/anacapa/anacapa_bridge_l_t20.json b/configurations/meta/anacapa/anacapa_bridge_l_t20.json
-index 23e070456f8..8168d7a504c 100644
+index 2eea30d..c954790 100644
 --- a/configurations/meta/anacapa/anacapa_bridge_l_t20.json
 +++ b/configurations/meta/anacapa/anacapa_bridge_l_t20.json
 @@ -6,6 +6,16 @@
@@ -85,7 +85,7 @@ index 23e070456f8..8168d7a504c 100644
              "Address": "0x20",
              "Bus": "$bus + 1",
 diff --git a/configurations/meta/anacapa/anacapa_bridge_r_t16.json b/configurations/meta/anacapa/anacapa_bridge_r_t16.json
-index 70edc1955ff..a34b06f22d8 100644
+index 3fed73d..6fd935f 100644
 --- a/configurations/meta/anacapa/anacapa_bridge_r_t16.json
 +++ b/configurations/meta/anacapa/anacapa_bridge_r_t16.json
 @@ -6,6 +6,16 @@
@@ -106,7 +106,7 @@ index 70edc1955ff..a34b06f22d8 100644
              "Address": "0x60",
              "Bus": "$bus + 2",
 diff --git a/configurations/meta/anacapa/anacapa_bridge_r_t20.json b/configurations/meta/anacapa/anacapa_bridge_r_t20.json
-index 2015c1f7813..e463299671e 100644
+index 86cf70f..5eeba7a 100644
 --- a/configurations/meta/anacapa/anacapa_bridge_r_t20.json
 +++ b/configurations/meta/anacapa/anacapa_bridge_r_t20.json
 @@ -6,6 +6,16 @@
@@ -127,10 +127,10 @@ index 2015c1f7813..e463299671e 100644
              "Address": "0x20",
              "Bus": "$bus + 1",
 diff --git a/configurations/meta/anacapa/anacapa_mb.json b/configurations/meta/anacapa/anacapa_mb.json
-index 2eb92da5733..63b7bf3acde 100644
+index d93c8af..ce7eca5 100644
 --- a/configurations/meta/anacapa/anacapa_mb.json
 +++ b/configurations/meta/anacapa/anacapa_mb.json
-@@ -154,6 +154,16 @@
+@@ -322,6 +322,16 @@
              "Name": "MB FRU",
              "Type": "EEPROM"
          },
@@ -148,7 +148,7 @@ index 2eb92da5733..63b7bf3acde 100644
              "Address": "0x60",
              "Bus": 58,
 diff --git a/schemas/cpld.json b/schemas/cpld.json
-index 198a7b1c59f..dbae584e262 100644
+index 198a7b1..dbae584 100644
 --- a/schemas/cpld.json
 +++ b/schemas/cpld.json
 @@ -27,7 +27,8 @@
@@ -162,5 +162,5 @@ index 198a7b1c59f..dbae584e262 100644
                  },
                  "MuxOutputs": {
 -- 
-2.34.1
+2.47.3
 

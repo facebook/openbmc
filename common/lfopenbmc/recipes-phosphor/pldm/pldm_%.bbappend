@@ -19,9 +19,8 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0013-oem-meta-Add-call-to-the-fw-versions-sd-retimer-serv.patch \
     file://0014-oem-meta-Add-MCTP-configuration-discovery.patch \
     file://0015-pldm-Increase-maximum-of-dbus-timeout-value.patch \
-    file://0016-oem-meta-Fix-a-bug-that-incorrectly-decodes-system-e.patch \
-    file://0017-terminus-replace-inventory-and-sensor-configuration.patch \
-    file://0018-oem-meta-santabarbara-add-handler-for-event-logs-fro.patch \
+    file://0016-terminus-replace-inventory-and-sensor-configuration.patch \
+    file://0017-oem-meta-santabarbara-add-handler-for-event-logs-fro.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

@@ -1,7 +1,7 @@
-From 1954a7137a332bc133cac2dc745624002e2abef5 Mon Sep 17 00:00:00 2001
+From 404dbbe07b44fe2ea98078c3ebf48b676879ccff Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Fri, 7 Nov 2025 08:25:45 +0000
-Subject: [PATCH 15/18] pldm: Increase maximum of dbus-timeout-value
+Subject: [PATCH 15/17] pldm: Increase maximum of dbus-timeout-value
 
 Increase the maximum value of the dbus-timeout-value option from 10 to
 60.

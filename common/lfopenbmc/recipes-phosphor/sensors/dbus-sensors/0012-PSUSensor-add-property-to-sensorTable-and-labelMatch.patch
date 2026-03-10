@@ -1,4 +1,4 @@
-From d4f3a95fdf62169e437748b2ae506e2190b0c909 Mon Sep 17 00:00:00 2001
+From d2cdd333af359d8cee6e70874aaab708758057a1 Mon Sep 17 00:00:00 2001
 From: Andy-Hsu-wiwynn <andy.hsu.wiwynn@gmail.com>
 Date: Fri, 15 Aug 2025 15:44:31 +0800
 Subject: [PATCH 12/15] PSUSensor:add property to sensorTable and labelMatch
@@ -17,37 +17,38 @@ Confirmed expected sensors appeared on dbus
 Change-Id: I4767352847d2e43ad356ebb57f61b5a0d9f6180d
 Signed-off-by: Andy Hsu <andy.hsu.wiwynn@gmail.com>
 ---
- src/psu/PSUSensorMain.cpp | 5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
+ src/psu/PSUSensorMain.cpp | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 542034a..98f81f1 100644
+index b568695..aa8daf0 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -1187,12 +1187,14 @@ void propertyInitialize()
-                    {"temp", sensor_paths::unitDegreesC},
-                    {"in", sensor_paths::unitVolts},
-                    {"voltage", sensor_paths::unitVolts},
--                   {"fan", sensor_paths::unitRPMs}};
-+                   {"fan", sensor_paths::unitRPMs},
-+                   {"current", sensor_paths::unitAmperes}};
+@@ -189,8 +189,9 @@ struct SensorUnit
+     auto operator<=>(const SensorUnit&) const = default;
+ };
  
-     labelMatch = {
-         {"pin", PSUProperty("Input Power", 3000, 0, 6, 0)},
-         {"pout", PSUProperty("Output Power", 3000, 0, 6, 0)},
-         {"power", PSUProperty("Output Power", 3000, 0, 6, 0)},
-+        {"in_power", PSUProperty("Output Power", 3000, 0, 6, 0)},
-         {"maxpin", PSUProperty("Max Input Power", 3000, 0, 6, 0)},
-         {"vin", PSUProperty("Input Voltage", 300, 0, 3, 0)},
-         {"maxvin", PSUProperty("Max Input Voltage", 300, 0, 3, 0)},
-@@ -1204,6 +1206,7 @@ void propertyInitialize()
-         {"iin", PSUProperty("Input Current", 20, 0, 3, 0)},
-         {"iout", PSUProperty("Output Current", 255, 0, 3, 0)},
-         {"curr", PSUProperty("Output Current", 255, 0, 3, 0)},
-+        {"in_current", PSUProperty("Output Current", 255, 0, 3, 0)},
-         {"maxiout", PSUProperty("Max Output Current", 255, 0, 3, 0)},
-         {"temp", PSUProperty("Temperature", 127, -128, 3, 0)},
-         {"maxtemp", PSUProperty("Max Temperature", 127, -128, 3, 0)},
+-static constexpr const std::array<SensorUnit, 6> sensorTable{{
++static constexpr const std::array<SensorUnit, 7> sensorTable{{
+     {"curr", sensor_paths::unitAmperes},
++    {"current", sensor_paths::unitAmperes},
+     {"fan", sensor_paths::unitRPMs},
+     {"in", sensor_paths::unitVolts},
+     {"power", sensor_paths::unitWatts},
+@@ -198,10 +199,12 @@ static constexpr const std::array<SensorUnit, 6> sensorTable{{
+     {"voltage", sensor_paths::unitVolts},
+ }};
+ 
+-static constexpr std::array<PSUProperty, 20> labelMatch{{
++static constexpr std::array<PSUProperty, 22> labelMatch{{
+     {"curr", "Output Current", 255, 0, 3, 0},
+     {"fan", "Fan Speed ", 30000, 0, 0, 0},
+     {"iin", "Input Current", 20, 0, 3, 0},
++    {"in_current", "Output Current", 255, 0, 3, 0},
++    {"in_power", "Output Power", 3000, 0, 6, 0},
+     {"in_voltage", "Output Voltage", 255, 0, 3, 0},
+     {"in", "Output Voltage", 255, 0, 3, 0},
+     {"iout", "Output Current", 255, 0, 3, 0},
 -- 
-2.47.3
+2.52.0
 

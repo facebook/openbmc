@@ -1,4 +1,4 @@
-From 845313bce75c85fe6a7c03eaae8638aeca7b46be Mon Sep 17 00:00:00 2001
+From d8ac52970e7b3e560f3d383ce822ef791b19fbe2 Mon Sep 17 00:00:00 2001
 From: Amithash Prasasd <amithash@meta.com>
 Date: Thu, 21 Nov 2024 21:00:02 -0800
 Subject: [PATCH 04/15] Add structured logging for Threshold events
@@ -306,7 +306,7 @@ index 17c2649..e220b38 100644
  {
      bool used;
 diff --git a/src/sensor.hpp b/src/sensor.hpp
-index b21df1e..b5c922e 100644
+index 2bc03c6..fe87065 100644
 --- a/src/sensor.hpp
 +++ b/src/sensor.hpp
 @@ -10,6 +10,8 @@
@@ -341,7 +341,7 @@ index b21df1e..b5c922e 100644
              setupPowerMatch(dbusConnection);
          }
  
-+        auto unitOpt = sdbusplus::message::convert_from_string<Unit>(unit);
++        auto unitOpt = sdbusplus::message::convert_from_string<Unit>(std::string(unit));
 +        if (!unitOpt.has_value())
 +        {
 +            lg2::error("Invalid unit {UNIT} for sensor {NAME}", "UNIT", unit,
@@ -351,7 +351,7 @@ index b21df1e..b5c922e 100644
 +        units = unitOpt.value();
          createAssociation(association, configurationPath);
  
-         sensorInterface->register_property("Unit", unit);
+         sensorInterface->register_property("Unit", std::string(unit));
 -- 
-2.47.3
+2.52.0
 

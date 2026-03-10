@@ -1,4 +1,4 @@
-From 49b7dab3aee4d8aceecae157ce0169858800c6d5 Mon Sep 17 00:00:00 2001
+From 09ebc04af8044de1d0c5fe7ba18d6c52e1bdce08 Mon Sep 17 00:00:00 2001
 From: "eldin.lee" <eldin.lee@quantatw.com>
 Date: Wed, 9 Jul 2025 14:42:07 +0800
 Subject: [PATCH 11/15] Add delay before leak event log to prevent AC OFF
@@ -23,5 +23,5 @@ index e3755a7..8cf8062 100644
      if (state == DetectorStateIntf::DetectorState::Normal)
      {
 -- 
-2.47.3
+2.52.0
 

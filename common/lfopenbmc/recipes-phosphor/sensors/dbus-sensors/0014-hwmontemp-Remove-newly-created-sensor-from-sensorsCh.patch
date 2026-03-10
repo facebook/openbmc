@@ -1,4 +1,4 @@
-From 45fef08073670c7036bf7a6229d4fa6ac8b612fd Mon Sep 17 00:00:00 2001
+From 713db7090fb698be72f589ee359e20de6df2c0c7 Mon Sep 17 00:00:00 2001
 From: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
 Date: Thu, 27 Nov 2025 18:31:21 +0800
 Subject: [PATCH 14/15] hwmontemp: Remove newly created sensor from
@@ -24,10 +24,10 @@ Signed-off-by: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
  1 file changed, 22 insertions(+), 12 deletions(-)
 
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
-index 6af01e2..b4a2199 100644
+index 7059c84..3b1d6af 100644
 --- a/src/hwmon-temp/HwmonTempMain.cpp
 +++ b/src/hwmon-temp/HwmonTempMain.cpp
-@@ -408,24 +408,34 @@ void createSensors(
+@@ -411,24 +411,34 @@ void createSensors(
                      std::get<std::string>(findSensorName->second);
                  // on rescans, only update sensors we were signaled by
                  auto findSensor = sensors.find(sensorName);
@@ -75,5 +75,5 @@ index 6af01e2..b4a2199 100644
                  }
  
 -- 
-2.47.3
+2.52.0
 

@@ -1,4 +1,4 @@
-From 40d21895f867809774393d39feebbddb75887437 Mon Sep 17 00:00:00 2001
+From 3b6ef7fa51034cc0c88630f874fed89271945993 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 25 Sep 2023 11:10:46 +0800
 Subject: [PATCH 3/7] Add mctp eids configuration for Yosemite 4
@@ -61,7 +61,7 @@ index d694ff5..8cc55c3 100644
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Floating Falls', 'PRODUCT_PRODUCT_NAME': 'Yosemite V4', 'BOARD_MANUFACTURER': '(Quanta|Wiwynn)'})",
      "Type": "Board",
 diff --git a/configurations/meta/yv4/yosemite4_sentineldome_t1.json b/configurations/meta/yv4/yosemite4_sentineldome_t1.json
-index db40704..5017073 100644
+index d4fe965..871ac4d 100644
 --- a/configurations/meta/yv4/yosemite4_sentineldome_t1.json
 +++ b/configurations/meta/yv4/yosemite4_sentineldome_t1.json
 @@ -1,5 +1,21 @@
@@ -87,7 +87,7 @@ index db40704..5017073 100644
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
 diff --git a/configurations/meta/yv4/yosemite4_sentineldome_t1_retimer.json b/configurations/meta/yv4/yosemite4_sentineldome_t1_retimer.json
-index abf37d6..c5dde58 100644
+index ccbb947..fe9ded4 100644
 --- a/configurations/meta/yv4/yosemite4_sentineldome_t1_retimer.json
 +++ b/configurations/meta/yv4/yosemite4_sentineldome_t1_retimer.json
 @@ -1,5 +1,21 @@
@@ -113,7 +113,7 @@ index abf37d6..c5dde58 100644
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
 diff --git a/configurations/meta/yv4/yosemite4_sentineldome_t2.json b/configurations/meta/yv4/yosemite4_sentineldome_t2.json
-index d1682d7..fc0dcbd 100644
+index d5fc11f..11b7846 100644
 --- a/configurations/meta/yv4/yosemite4_sentineldome_t2.json
 +++ b/configurations/meta/yv4/yosemite4_sentineldome_t2.json
 @@ -1,5 +1,21 @@
@@ -139,7 +139,7 @@ index d1682d7..fc0dcbd 100644
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
 diff --git a/configurations/meta/yv4/yosemite4_sentineldome_t2_retimer.json b/configurations/meta/yv4/yosemite4_sentineldome_t2_retimer.json
-index 495f834..9d5edee 100644
+index 0bc1a83..1b6c918 100644
 --- a/configurations/meta/yv4/yosemite4_sentineldome_t2_retimer.json
 +++ b/configurations/meta/yv4/yosemite4_sentineldome_t2_retimer.json
 @@ -1,5 +1,21 @@
@@ -234,7 +234,7 @@ index 89b4599..c994075 100644
              ]
          },
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index 181ca93..c3e4d81 100644
+index 740f97a..856c5f4 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
 @@ -1,6 +1,43 @@
@@ -281,7 +281,7 @@ index 181ca93..c3e4d81 100644
          "ExitAirTempSensor": {
              "description": "implemented in dbus-sensors: ExitAirTempSensor",
              "additionalProperties": false,
-@@ -1206,6 +1243,9 @@
+@@ -1216,6 +1253,9 @@
              "EntityInstance": {
                  "type": "number"
              },
@@ -291,7 +291,7 @@ index 181ca93..c3e4d81 100644
              "GpioPins": {
                  "items": {
                      "type": "number"
-@@ -1215,6 +1255,9 @@
+@@ -1225,6 +1265,9 @@
              "GpioPolarity": {
                  "enum": ["Low"]
              },
@@ -301,7 +301,7 @@ index 181ca93..c3e4d81 100644
              "Index": {
                  "type": "number",
                  "minimum": 0,
-@@ -1235,6 +1278,10 @@
+@@ -1245,6 +1288,10 @@
              "MaxValue": {
                  "type": "number"
              },

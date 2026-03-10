@@ -1,4 +1,4 @@
-From 4c765215f9c8fd2e469e9f26e641e5dfe81869a4 Mon Sep 17 00:00:00 2001
+From 4c0163c62d5fcd411df218cf29923288feaf290e Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
 Date: Fri, 19 Dec 2025 15:21:42 +0800
 Subject: [PATCH] clemente:dbus-sensors: Ignore zero HGX_GPU*_ENERGY_J readings
@@ -51,5 +51,5 @@ index d04deae..6f9d7ef 100644
      else
      {
 -- 
-2.47.3
+2.52.0
 

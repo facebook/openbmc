@@ -1,4 +1,4 @@
-From b6d7436fbe45324395b70bb7a6c04d1df002b144 Mon Sep 17 00:00:00 2001
+From 42a8dd83ae26f6f2f1041eb4c9d9001ccf5686e6 Mon Sep 17 00:00:00 2001
 From: Freddie Jheng <Freddie.Jheng@quantatw.com>
 Date: Wed, 7 Jan 2026 16:30:21 +0800
 Subject: [PATCH 2/2] configuration: santabarbara: add MCTP I2C target for SWB
@@ -19,10 +19,10 @@ Signed-off-by: Freddie Jheng <Freddie.Jheng@quantatw.com>
  1 file changed, 24 insertions(+)
 
 diff --git a/configurations/meta/santabarbara/santabarbara_pcie_switch_board.json b/configurations/meta/santabarbara/santabarbara_pcie_switch_board.json
-index ff52b1b..befebaa 100644
+index 9e744aa..967bcec 100644
 --- a/configurations/meta/santabarbara/santabarbara_pcie_switch_board.json
 +++ b/configurations/meta/santabarbara/santabarbara_pcie_switch_board.json
-@@ -365,6 +365,30 @@
+@@ -425,6 +425,30 @@
              "Name": "Santabarbara_SWB_CPLD",
              "Type": "LatticeLCMXO3D_9400Firmware"
          },

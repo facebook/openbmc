@@ -425,19 +425,8 @@ static struct i2c_driver psu_driver = {
   .address_list = normal_i2c,
 };
 
-static int __init psu_mod_init(void)
-{
-  return i2c_add_driver(&psu_driver);
-}
-
-static void __exit psu_mod_exit(void)
-{
-  i2c_del_driver(&psu_driver);
-}
-
 MODULE_AUTHOR("Adam Calabrigo");
 MODULE_DESCRIPTION("PSU Driver");
 MODULE_LICENSE("GPL");
 
-module_init(psu_mod_init);
-module_exit(psu_mod_exit);
+module_i2c_driver(psu_driver);

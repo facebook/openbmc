@@ -376,19 +376,8 @@ static struct i2c_driver com_e_driver = {
   .address_list = normal_i2c,
 };
 
-static int __init com_e_mod_init(void)
-{
-  return i2c_add_driver(&com_e_driver);
-}
-
-static void __exit com_e_mod_exit(void)
-{
-  i2c_del_driver(&com_e_driver);
-}
-
 MODULE_AUTHOR("Vineela Kukkadapu <vineelak@fb.com>");
 MODULE_DESCRIPTION("COM_E Driver");
 MODULE_LICENSE("GPL");
 
-module_init(com_e_mod_init);
-module_exit(com_e_mod_exit);
+module_i2c_driver(com_e_driver);

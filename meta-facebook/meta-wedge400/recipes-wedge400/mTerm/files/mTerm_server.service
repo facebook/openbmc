@@ -1,4 +1,5 @@
-# Copyright 2019-present Facebook. All Rights Reserved.
+#
+# Copyright 2020-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,10 +15,15 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
+[Unit]
+Description=mTerm server monitoring
+After=openbmc_gpio_setup.service setup_i2c.service
+Wants=setup_i2c.service
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+[Service]
+ExecStartPre=/usr/local/bin/us_console.sh connect
+ExecStart=/usr/local/bin/mTerm_server wedge /dev/ttyS4
 
-LOCAL_URI += " \
-    file://mTerm/run \
-    file://mTerm_server.service \
-    "
+[Install]
+WantedBy=multi-user.target

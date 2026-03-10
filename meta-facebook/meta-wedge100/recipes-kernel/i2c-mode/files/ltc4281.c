@@ -1011,19 +1011,8 @@ static struct i2c_driver ltc4281_driver = {
   .address_list = normal_i2c,
 };
 
-static int __init ltc4281_mod_init(void)
-{
-  return i2c_add_driver(&ltc4281_driver);
-}
-
-static void __exit ltc4281_mod_exit(void)
-{
-  i2c_del_driver(&ltc4281_driver);
-}
-
 MODULE_AUTHOR("Mickey Zhan");
 MODULE_DESCRIPTION("LTC4281 Driver");
 MODULE_LICENSE("GPL");
 
-module_init(ltc4281_mod_init);
-module_exit(ltc4281_mod_exit);
+module_i2c_driver(ltc4281_driver);

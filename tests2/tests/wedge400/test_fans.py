@@ -22,7 +22,7 @@ import unittest
 
 from common.base_fans_test import CommonShellBasedFansTest
 from utils.cit_logger import Logger
-from utils.test_utils import qemu_check
+from utils.test_utils import qemu_check, running_systemd
 
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
@@ -31,14 +31,21 @@ class FansTest(CommonShellBasedFansTest, unittest.TestCase):
         Logger.start(name=self._testMethodName)
         self.read_fans_cmd = "/usr/local/bin/get_fan_speed.sh"
         self.write_fans_cmd = "/usr/local/bin/set_fan_speed.sh"
-        self.kill_fan_ctrl_cmd = [
-            # sv stop fscd may timeout, because Popen() will block sys.exit() if they run at the same time.
-            # the Popen() is used by fscd to read the real-time sensor temperature for fan speed control. In order not to introduce other new issues, the Popen() is not modified.
-            # Stopping the fscd service is not an operation for normal product operation, so it is more appropriate and safe to modify the test case(add a retry mechanism).
-            "for i in {1..3}; do /usr/bin/sv -w 20 force-stop fscd && { echo successfully stopped fscd; break; } || { echo Failed to stop fscd with return code $?, retrying..; sleep 5; }; done;",
-            "/usr/local/bin/wdtcli stop",
-        ]
-        self.start_fan_ctrl_cmd = ["/usr/bin/sv start fscd"]
+        if running_systemd():
+            self.kill_fan_ctrl_cmd = [
+                "/usr/bin/systemctl stop fscd",
+                "/usr/local/bin/wdtcli stop",
+            ]
+            self.start_fan_ctrl_cmd = ["/usr/bin/systemctl start fscd"]
+        else:
+            self.kill_fan_ctrl_cmd = [
+                # sv stop fscd may timeout, because Popen() will block sys.exit() if they run at the same time.
+                # the Popen() is used by fscd to read the real-time sensor temperature for fan speed control. In order not to introduce other new issues, the Popen() is not modified.
+                # Stopping the fscd service is not an operation for normal product operation, so it is more appropriate and safe to modify the test case(add a retry mechanism).
+                "for i in {1..3}; do /usr/bin/sv -w 20 force-stop fscd && { echo successfully stopped fscd; break; } || { echo Failed to stop fscd with return code $?, retrying..; sleep 5; }; done;",
+                "/usr/local/bin/wdtcli stop",
+            ]
+            self.start_fan_ctrl_cmd = ["/usr/bin/sv start fscd"]
 
     def tearDown(self):
         Logger.info("Finished logging for {}".format(self._testMethodName))

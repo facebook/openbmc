@@ -661,19 +661,8 @@ static struct i2c_driver syscpld_driver = {
   .address_list = normal_i2c,
 };
 
-static int __init syscpld_mod_init(void)
-{
-  return i2c_add_driver(&syscpld_driver);
-}
-
-static void __exit syscpld_mod_exit(void)
-{
-  i2c_del_driver(&syscpld_driver);
-}
-
 MODULE_AUTHOR("Tian Fang <tfang@fb.com>");
 MODULE_DESCRIPTION("SYSCPLD Driver");
 MODULE_LICENSE("GPL");
 
-module_init(syscpld_mod_init);
-module_exit(syscpld_mod_exit);
+module_i2c_driver(syscpld_driver);

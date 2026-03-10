@@ -28,25 +28,17 @@ DEPENDS:append = " libwedge-eeprom libpal libipmi libfruid libobmc-i2c liblog li
 RDEPENDS:${PN} += " libwedge-eeprom libpal libipmi libfruid libobmc-i2c liblog libgpio libbic bash"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-
 LOCAL_URI += " \
     file://fruid.c \
     file://setup-ipmid.sh \
     file://run-ipmid.sh \
     file://usb-dbg-conf.c \
     "
-
 binfiles = "ipmid"
 
 pkgdir = "ipmid"
 
-do_install() {
-  dst="${D}/usr/local/fbpackages/${pkgdir}"
-  bin="${D}/usr/local/bin"
-  install -d $dst
-  install -d $bin
-  install -m 755 ipmid ${dst}/ipmid
-  ln -snf ../fbpackages/${pkgdir}/ipmid ${bin}/ipmid
+install_sysv() {
   install -d ${D}${sysconfdir}/init.d
   install -d ${D}${sysconfdir}/rcS.d
   install -d ${D}${sysconfdir}/sv
@@ -55,6 +47,25 @@ do_install() {
   install -m 755 setup-ipmid.sh ${D}${sysconfdir}/init.d/setup-ipmid.sh
   install -m 755 run-ipmid.sh ${D}${sysconfdir}/sv/ipmid/run
   update-rc.d -r ${D} setup-ipmid.sh start 64 5 .
+}
+
+install_systemd() {
+  install -d ${D}${systemd_system_unitdir}
+  install -m 644 ipmid.service ${D}${systemd_system_unitdir}
+}
+
+do_install() {
+  dst="${D}/usr/local/fbpackages/${pkgdir}"
+  bin="${D}/usr/local/bin"
+  install -d $dst
+  install -d $bin
+  install -m 755 ipmid ${dst}/ipmid
+  ln -snf ../fbpackages/${pkgdir}/ipmid ${bin}/ipmid
+  if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+    install_systemd
+  else
+    install_sysv
+  fi
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

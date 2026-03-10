@@ -24,6 +24,8 @@ After=setup_i2c.service
 Type=oneshot
 RemainAfterExit=yes
 ExecStart=/usr/local/bin/setup-bic-cache.sh
+Restart=on-failure
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target

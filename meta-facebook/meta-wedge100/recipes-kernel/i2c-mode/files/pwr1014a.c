@@ -93,19 +93,8 @@ static struct i2c_driver pwr1014a_driver = {
   .address_list = normal_i2c,
 };
 
-static int __init pwr1014a_mod_init(void)
-{
-  return i2c_add_driver(&pwr1014a_driver);
-}
-
-static void __exit pwr1014a_mod_exit(void)
-{
-  i2c_del_driver(&pwr1014a_driver);
-}
-
 MODULE_AUTHOR("Mickey Zhan");
 MODULE_DESCRIPTION("PWR1014A Driver for Wedge100");
 MODULE_LICENSE("GPL");
 
-module_init(pwr1014a_mod_init);
-module_exit(pwr1014a_mod_exit);
+module_i2c_driver(pwr1014a_driver);

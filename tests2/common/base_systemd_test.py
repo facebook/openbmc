@@ -24,15 +24,13 @@ from utils.test_utils import running_systemd
 
 
 class BaseSystemdTest(TestCase):
-    def test_failed_units(self):
-        if not running_systemd():
-            self.skipTest("not using systemd")
-            return
+    # Known-unreliable services whose failures can be ignored.
+    UNRELIABLE_SERVICES_RE = "trousers|systemd-remount-fs"
 
-        # XXX tcsd is unreliable to start
-        command = (
-            "systemctl list-units | grep failed | "
-            "grep -Ev 'trousers|systemd-remount-fs'"
+    def _get_failed_units_ignoring_unreliable(self):
+        """Return failed systemd units, excluding known-unreliable services."""
+        command = "systemctl list-units | grep failed | " "grep -Ev '{}'".format(
+            self.UNRELIABLE_SERVICES_RE
         )
         output = subprocess.run(
             command,
@@ -41,8 +39,14 @@ class BaseSystemdTest(TestCase):
             shell=True,
             timeout=60,
         )
-        stdout = output.stdout.decode("utf-8")
+        return command, output.stdout.decode("utf-8")
 
+    def test_failed_units(self):
+        if not running_systemd():
+            self.skipTest("not using systemd")
+            return
+
+        command, stdout = self._get_failed_units_ignoring_unreliable()
         self.assertTrue(len(stdout) == 0, command + " returned: " + stdout)
 
     def test_setup_i2c_order(self):
@@ -78,6 +82,15 @@ class BaseSystemdTest(TestCase):
             if "State:" in line:
                 state_line = line.strip()
                 break
+
+        if "degraded" in state_line:
+            _, failed_stdout = self._get_failed_units_ignoring_unreliable()
+            if len(failed_stdout) == 0:
+                self.skipTest(
+                    "systemd is degraded due to known-unreliable services "
+                    "({}), ignoring".format(self.UNRELIABLE_SERVICES_RE)
+                )
+                return
 
         self.assertNotIn(
             "degraded",

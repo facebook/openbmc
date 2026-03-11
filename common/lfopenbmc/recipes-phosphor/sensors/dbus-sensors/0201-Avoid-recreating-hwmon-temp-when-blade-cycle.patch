@@ -1,7 +1,7 @@
-From 327b9db8eabc9d5bee964fab351612f04d762f85 Mon Sep 17 00:00:00 2001
+From 37e8a30b9b185f6a6e65eb5a940a73468ba0de40 Mon Sep 17 00:00:00 2001
 From: MandyMCHung <mandy.hung.wiwynn@gmail.com>
 Date: Mon, 3 Mar 2025 10:39:31 +0800
-Subject: [PATCH 201/203] Avoid recreating hwmon temp when blade cycle
+Subject: [PATCH] Avoid recreating hwmon temp when blade cycle
 
 Problem:
 AC/DC cycles cause all hwmon temperature sensors to become unavailable.
@@ -28,12 +28,12 @@ Signed-off-by: Mandy Hung <mandy.hung.wiwynn@gmail.com>
  5 files changed, 30 insertions(+)
 
 diff --git a/meson.options b/meson.options
-index c8a8d34..3eee161 100644
+index 8553d5e..d04fca0 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -107,3 +107,9 @@ option(
+@@ -119,3 +119,9 @@ option(
      value: 'enabled',
-     description: 'Enable Cable monitor.',
+     description: 'Enable valve monitor.',
  )
 +option(
 +    'disable-host-power-monitoring',
@@ -114,7 +114,7 @@ index 4e4f550..271f38c 100644
      install_dir: '/usr/libexec/dbus-sensors',
  )
 diff --git a/src/meson.build b/src/meson.build
-index 8df4d6f..9555a2b 100644
+index 771eb46..a6a4d81 100644
 --- a/src/meson.build
 +++ b/src/meson.build
 @@ -7,6 +7,10 @@ conf_data.set10(
@@ -128,6 +128,3 @@ index 8df4d6f..9555a2b 100644
  configure_file(
      input: 'dbus-sensor_config.h.in',
      output: 'dbus-sensor_config.h',
--- 
-2.52.0
-

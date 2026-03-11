@@ -1,4 +1,4 @@
-From 23cccc516d0b241cc5f2cb4c3e3e5ab86e43680c Mon Sep 17 00:00:00 2001
+From 6d5c99c8093b7c40ea8fc63f5da1a1ede8455637 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Tue, 29 Jul 2025 21:01:23 -0700
 Subject: [PATCH] Implement valve monitor service
@@ -124,12 +124,12 @@ Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
  create mode 100644 src/valve-monitor/meson.build
 
 diff --git a/meson.options b/meson.options
-index c8a8d34..315534e 100644
+index b87ed5f..8553d5e 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -107,3 +107,9 @@ option(
-     value: 'enabled',
-     description: 'Enable Cable monitor.',
+@@ -113,3 +113,9 @@ option(
+     value: 'false',
+     description: 'Disable in2_alarm event.',
  )
 +option(
 +    'valve-monitor',
@@ -171,10 +171,10 @@ index 0000000..713e372
 +[Install]
 +WantedBy=multi-user.target
 diff --git a/src/GPIOInterface.cpp b/src/GPIOInterface.cpp
-index 0bd0f4c..6e04bab 100644
+index 81a93d3..c892eda 100644
 --- a/src/GPIOInterface.cpp
 +++ b/src/GPIOInterface.cpp
-@@ -52,8 +52,38 @@ GPIOInterface::GPIOInterface(sdbusplus::async::context& ctx,
+@@ -53,8 +53,38 @@ GPIOInterface::GPIOInterface(sdbusplus::async::context& ctx,
      fdioInstance = std::make_unique<sdbusplus::async::fdio>(ctx, lineFd);
  }
  
@@ -213,7 +213,7 @@ index 0bd0f4c..6e04bab 100644
      // Start the async read for the GPIO line
      ctx.spawn(readGPIOAsyncEvent());
  
-@@ -61,6 +91,28 @@ auto GPIOInterface::start() -> sdbusplus::async::task<>
+@@ -62,6 +92,28 @@ auto GPIOInterface::start() -> sdbusplus::async::task<>
      co_await readGPIOAsync();
  }
  
@@ -1019,6 +1019,3 @@ index 0000000..cebb86d
 +    install: true,
 +    install_dir: '/usr/libexec/dbus-sensors',
 +)
--- 
-2.47.3
-

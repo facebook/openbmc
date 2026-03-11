@@ -1,7 +1,7 @@
-From 8cc0bbb9007f62b0a9d8ae87f06177600f13a3b5 Mon Sep 17 00:00:00 2001
+From d54e752105951f89446f056bab05c9a0f23bdaea Mon Sep 17 00:00:00 2001
 From: KayYCHuang-wiwynn <kay.yc.huang.wiwynn@gmail.com>
 Date: Mon, 17 Mar 2025 02:25:46 +0000
-Subject: [PATCH 202/203] meta-facebook: yosemite4: Disable in2_alarm event
+Subject: [PATCH] meta-facebook: yosemite4: Disable in2_alarm event
 
 ---
  meson.build               | 4 ++++
@@ -25,12 +25,12 @@ index c7f6996..1b30ce6 100644
  # i2c-tools doesn't ship a pkg-config file for libi2c
  i2c = meson.get_compiler('cpp').find_library('i2c')
 diff --git a/meson.options b/meson.options
-index 3eee161..ca4a0c3 100644
+index c8a8d34..b87ed5f 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -113,3 +113,9 @@ option(
-     value: false,
-     description: 'Disable host power monitoring for hwmon-temp.',
+@@ -107,3 +107,9 @@ option(
+     value: 'enabled',
+     description: 'Enable Cable monitor.',
  )
 +option(
 +    'disable-in2-alarm-event',
@@ -39,7 +39,7 @@ index 3eee161..ca4a0c3 100644
 +    description: 'Disable in2_alarm event.',
 +)
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index cb1f546..6340f8b 100644
+index eebded6..c08b6c3 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -240,7 +240,9 @@ static constexpr std::array<PSUProperty, 22> labelMatch{{
@@ -52,6 +52,3 @@ index cb1f546..6340f8b 100644
                                        {"ACLost", {"in1_beep"}},
                                        {"ConfigureError", {"in1_fault"}}};
  const static EventPathList limitEventMatch{
--- 
-2.47.3
-

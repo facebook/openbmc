@@ -15,15 +15,22 @@ SRC_URI:append = " \
     file://0012-PSUSensor-add-support-for-mp2925-and-mp2929.patch \
     file://0013-hwmontemp-Remove-newly-created-sensor-from-sensorsCh.patch \
     file://0014-psusensor-skip-sensor-reads-during-firmware-updates.patch \
+    file://0015-meta-facebook-yosemite4-Disable-in2_alarm-event.patch \
+    file://0016-Implement-valve-monitor-service.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \
     file://0200-Utils-support-powerState-for-multi-node-system.patch \
     file://0201-Avoid-recreating-hwmon-temp-when-blade-cycle.patch \
-    file://0202-meta-facebook-yosemite4-Disable-in2_alarm-event.patch \
-    file://0203-Add-retry-attempts-configuration-for-fan-sensors.patch \
+    file://0202-Add-retry-attempts-configuration-for-fan-sensors.patch \
 "
 
 SRC_URI:append:clemente = " \
     file://3001-clemente-dbus-sensors-Ignore-zero-HGX_GPU-_ENERGY_J-.patch \
 "
+
+PACKAGECONFIG[valvemonitor] = "-Dvalve-monitor=enabled, -Dvalve-monitor=disabled"
+
+SYSTEMD_SERVICE:${PN} += "${@bb.utils.contains('PACKAGECONFIG', 'valvemonitor', \
+                                               'xyz.openbmc_project.valvemonitor.service', \
+                                               '', d)}"

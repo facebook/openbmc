@@ -1,7 +1,7 @@
-From 10761c6547ec8a9ccd30dbff40c52eabd8dfdbe8 Mon Sep 17 00:00:00 2001
+From 8a8284eb909b6c2e83d48bb4eba8d696549391e6 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Wed, 17 Sep 2025 15:12:11 -0700
-Subject: [PATCH 09/14] leakdetector: check event before event_read()
+Subject: [PATCH] leakdetector: check event before event_read()
 
 The event_read() does not clear the EPOLLIN flag immediately; it is
 cleared during the subsequent epoll check. This may cause issue for a
@@ -49,6 +49,3 @@ index 0bd0f4c..81a93d3 100644
          line.event_read();
          auto lineValue = line.get_value();
  
--- 
-2.47.3
-

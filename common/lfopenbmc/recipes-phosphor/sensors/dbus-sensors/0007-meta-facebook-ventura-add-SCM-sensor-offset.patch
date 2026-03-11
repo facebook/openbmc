@@ -1,7 +1,7 @@
-From 4747e2a53d4a85700d20e641da1151416db69707 Mon Sep 17 00:00:00 2001
+From 9aa301f9bcdcd308f55e1289218f001ec9d47652 Mon Sep 17 00:00:00 2001
 From: Jason Hsu <Jason-Hsu@quantatw.com>
 Date: Fri, 27 Jun 2025 10:35:17 +0800
-Subject: [PATCH 07/14] meta-facebook: ventura: add SCM sensor offset
+Subject: [PATCH] meta-facebook: ventura: add SCM sensor offset
 
 Signed-off-by: Jason Hsu <Jason-Hsu@quantatw.com>
 ---
@@ -91,6 +91,3 @@ index 18db231..dfc769f 100644
                      readState, *interfacePath, std::move(bridgeGpio));
                  sensor->setupRead();
              }
--- 
-2.47.3
-

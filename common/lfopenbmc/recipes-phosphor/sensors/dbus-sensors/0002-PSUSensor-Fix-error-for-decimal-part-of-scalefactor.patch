@@ -1,7 +1,7 @@
-From 0d9dc45f00fb3e421bc90d541e78f00583e3ed8b Mon Sep 17 00:00:00 2001
+From c6851be4514cadf53436952f82b6d1a4e5bf08bf Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 22 Sep 2023 09:43:49 +0800
-Subject: [PATCH 02/14] PSUSensor: Fix error for decimal part of scalefactor
+Subject: [PATCH] PSUSensor: Fix error for decimal part of scalefactor
 
 Customized scale factor declaration from schema in entity-manager,
 declared as type "number." If a number is used in PSUSensor, it loses
@@ -130,6 +130,3 @@ index bcba555..0db53ec 100644
                  }
  
                  lg2::debug(
--- 
-2.47.3
-

@@ -217,7 +217,7 @@ int mdio_read_c22(uint8_t phyid, uint8_t phyreg, volatile uint8_t* value) {
   data = (buf[6] << 8) | buf[7];
   log_print(LOG_INFO, "read phy 0x%04x [%04x]=%04x\n", phyid, phyreg, data);
 
-  printf("0x%04X", data);
+  printf("0x%04X\n", data);
   return 0;
 }
 
@@ -355,7 +355,7 @@ int mdio_read_c45(
   data = (buf[14] << 8) | buf[15];
   log_print(LOG_INFO, "read [%04x]=%04x\n", phyreg, data);
 
-  printf("0x%04X", data);
+  printf("0x%04X\n", data);
   return 0;
 }
 

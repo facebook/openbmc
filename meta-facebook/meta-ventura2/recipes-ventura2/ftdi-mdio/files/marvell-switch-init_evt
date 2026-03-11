@@ -1,0 +1,240 @@
+#!/bin/bash
+
+# shellcheck source=meta-facebook/recipes-fb/obmc_functions/files/fb-common-functions
+source /usr/libexec/fb-common-functions
+
+get_devnum_by_udev_id_path() {
+    for d in /sys/bus/usb/devices/*; do
+        [[ -f "$d/devnum" ]] || continue
+        udevadm info -p "$d" | grep -qx "E: ID_PATH=$1" || continue
+        cat "$d/devnum"
+    done
+}
+ID_PATH="platform-1e6a1000.usb-usb-0:1.4"
+USB_DEV_NUM=$(get_devnum_by_udev_id_path "$ID_PATH")
+FTDI_CH=1
+
+mdio_read() {
+    local dev_addr=$1 dev_reg=$2 val fail=""
+    out=$(
+        ftdi-mdio read -d "$USB_DEV_NUM" -i "$FTDI_CH" \
+            -p "$dev_addr" -r "$dev_reg" 2>&1
+    )
+
+    if echo "$out" | grep -qiE "error|failed|unable"; then
+        fail=" FAILED"
+    fi
+
+    printf "mdio_read p%d [%d]=0x%04X%s\n" "$dev_addr" "$dev_reg" "$val" "$fail" >&2
+    if [[ -n "$fail" ]]; then
+        echo "$out" >&2
+        return 1
+    else
+        echo "$out" | tail -n 1
+    fi
+}
+
+mdio_write() {
+    local dev_addr=$1 dev_reg=$2 val=$3 fail=""
+
+    out=$(
+        ftdi-mdio write -d "$USB_DEV_NUM" -i "$FTDI_CH" \
+            -p "$dev_addr" -r "$dev_reg" -v "$val" 2>&1
+    )
+
+    if echo "$out" | grep -qiE "error|failed|unable"; then
+        fail=" FAILED"
+    fi
+
+    printf "mdio_write p%d [%d]=0x%04X%s\n" "$dev_addr" "$dev_reg" "$val" "$fail" >&2
+    if [[ -n "$fail" ]]; then
+        echo "$out" >&2
+        return 1
+    fi
+}
+
+SMI_PHY_SMIBusy=$((0x01 << 15))
+SMI_PHY_SMIMode_C22=$((0x01 << 12))
+SMI_PHY_SMIOp_C22_Write=$((0x01 << 10))
+SMI_PHY_SMIOp_C22_Read=$((0x02 << 10))
+SMI_PHY_SMIMode_C45=$((0x00 << 12))
+SMI_PHY_SMIOp_C45_WriteAddr=$((0x00 << 10))
+SMI_PHY_SMIOp_C45_WriteData=$((0x01 << 10))
+SMI_PHY_SMIOp_C45_ReadData=$((0x03 << 10))
+
+smi_phy_read_reg_c45() {
+    local phy_ex=$1 phy_addr=$2 phy_dev=$3 phy_reg=$4 phy_reg_val
+    local cmd_base=$((SMI_PHY_SMIBusy | SMI_PHY_SMIMode_C45 | phy_ex << 13 | phy_addr << 5 | phy_dev))
+    local phy_type
+    local fail=""
+
+    {
+        mdio_write 0x1C 0x19 "$phy_reg" &&
+        mdio_write 0x1C 0x18 $((cmd_base | SMI_PHY_SMIOp_C45_WriteAddr)) &&
+        mdio_write 0x1C 0x19 0x00 &&
+        mdio_write 0x1C 0x18 $((cmd_base | SMI_PHY_SMIOp_C45_ReadData)) &&
+        phy_reg_val=$(mdio_read 0x1C 0x19)
+    } || fail=" FAILED"
+
+    phy_type=$( ((phy_ex)) && echo "ex_phy" || echo "in_phy")
+    printf "smi_phy_read_c45 %s %d device %d [0x%04X]=0x%04X%s\n" \
+        "$phy_type" "$phy_addr" "$phy_dev" "$phy_reg" "$phy_reg_val" "$fail" >&2
+    printf "0x%04X\n" "$phy_reg_val"
+
+    if [[ -n "$fail" ]]; then
+        return 1
+    fi
+}
+
+smi_phy_write_reg_c45() {
+    local phy_ex=$1 phy_addr=$2 phy_dev=$3 phy_reg=$4 phy_reg_val=$5
+    local cmd_base=$((SMI_PHY_SMIBusy | SMI_PHY_SMIMode_C45 | phy_ex << 13 | phy_addr << 5 | phy_dev))
+    local phy_type
+    local fail=""
+
+    {
+        mdio_write 0x1C 0x19 "$phy_reg" &&
+        mdio_write 0x1C 0x18 $((cmd_base | SMI_PHY_SMIOp_C45_WriteAddr)) &&
+        mdio_write 0x1C 0x19 "$phy_reg_val" &&
+        mdio_write 0x1C 0x18 $((cmd_base | SMI_PHY_SMIOp_C45_WriteData))
+    } || fail=" FAILED"
+
+    phy_type=$( ((phy_ex)) && echo "ex_phy" || echo "in_phy")
+    printf "smi_phy_write_c45 %s %d device %d [0x%04X]=0x%04X%s\n" \
+        "$phy_type" "$phy_addr" "$phy_dev" "$phy_reg" "$phy_reg_val" "$fail" >&2
+
+    if [[ -n "$fail" ]]; then
+        return 1
+    fi
+}
+
+smi_phy_read_paged_reg() {
+    local phy_ex=$1 phy_addr=$2 phy_page=$3 phy_reg=$4
+    local cmd_base=$((SMI_PHY_SMIBusy | SMI_PHY_SMIMode_C22 | phy_ex << 13 | phy_addr << 5))
+    local phy_reg_val phy_type
+    local fail=""
+
+    {
+        mdio_write 0x1C 0x19 "$phy_page" &&
+        mdio_write 0x1C 0x18 $((cmd_base | SMI_PHY_SMIOp_C22_Write | 22)) &&
+        mdio_write 0x1C 0x19 0x00 &&
+        mdio_write 0x1C 0x18 $((cmd_base | SMI_PHY_SMIOp_C22_Read | phy_reg)) &&
+        phy_reg_val=$(mdio_read 0x1C 0x19)
+    } || fail=" FAILED"
+
+    phy_type=$( ((phy_ex)) && echo "ex_phy" || echo "in_phy")
+    printf "smi_phy_read %s %d [%d_%d]=0x%04X%s\n" \
+        "$phy_type" "$phy_addr" "$phy_reg" "$phy_page" "$phy_reg_val" "$fail" >&2
+    echo "$phy_reg_val"
+
+    if [[ -n "$fail" ]]; then
+        return 1
+    fi
+}
+
+smi_phy_write_paged_reg() {
+    local phy_ex=$1 phy_addr=$2 phy_page=$3 phy_reg=$4 phy_reg_val=$5
+    local cmd_base=$((SMI_PHY_SMIBusy | SMI_PHY_SMIMode_C22 | phy_ex << 13 | phy_addr << 5))
+    local phy_type
+    local fail=""
+
+    {
+        mdio_write 0x1C 0x19 "$phy_page" &&
+        mdio_write 0x1C 0x18 $((cmd_base | SMI_PHY_SMIOp_C22_Write | 22)) &&
+        mdio_write 0x1C 0x19 "$phy_reg_val" &&
+        mdio_write 0x1C 0x18 $((cmd_base | SMI_PHY_SMIOp_C22_Write | phy_reg))
+    } || fail=" FAILED"
+
+    phy_type=$( ((phy_ex)) && echo "ex_phy" || echo "in_phy")
+    printf "smi_phy_write %s %d [%d_%d]=0x%04X%s\n" \
+        "$phy_type" "$phy_addr" "$phy_reg" "$phy_page" "$phy_reg_val" "$fail" >&2
+
+    if [[ -n "$fail" ]]; then
+        return 1
+    fi
+}
+
+marvell_switch_init() {
+    {
+        echo "Quick check to determine whether this board is an EVT board" >&2
+        val=$(mdio 1* 0 0 2>/dev/null)
+        echo "Read p0 [0]=${val:-null} via BMC MDIO interface"
+        if [[ -n "$val" && "$val" != "0xffff" ]]; then
+            echo "Since MDIO already returns a valid response, we do not need to use ftdi-mdio for the Marvell switch initialization flow."
+            return 0
+        fi
+    }
+
+    {
+        echo "Drive PWRGD signals high to release the reset pin of the Marvell 88E6393X" >&2
+        set_gpio FPGA_PWRGD_P1V05_AUX_R 1
+        set_gpio FPGA_PWRGD_P5V_AUX_R2 1
+        set_gpio FPGA_PWRGD_P12V_AUX_R2 1
+        set_gpio FPGA_PWRGD_P1V5_AUX_R 1
+    }
+
+    {
+        echo "Toggle reset pin for Marvell 88E6393X" >&2
+        set_gpio FPGA_PWRGD_P1V5_AUX_R 0
+        set_gpio FPGA_PWRGD_P1V5_AUX_R 1
+    }
+
+    {
+        echo "Toggle reset pin for Marvell 88E1512" >&2
+        set_gpio FPGA_RST_88E1512_PLD 0
+        set_gpio FPGA_RST_88E1512_PLD 1
+    }
+
+    echo "Clear PHY detect on Port 0" >&2
+    mdio_write 0x00 0x00 0x04
+
+    {
+        echo "Disable Port 9 and Port 10 before configuring PHY Mode" >&2
+        mdio_write 0x09 0x04 0x7C
+        mdio_write 0x0a 0x04 0x7C
+    }
+
+    {
+        echo "Configure external PHY on Port 9 and Port 10 to SGMII mode" >&2
+        smi_phy_write_paged_reg 1 0x00 18 20 0x8001 2>&1 | tail -n 1
+        smi_phy_write_paged_reg 1 0x01 18 20 0x8001 2>&1 | tail -n 1
+    }
+
+    {
+        echo "Configure switch Port 9 and Port 10 to SGMII mode" >&2
+        mdio_write 0x09 0x00 0x0a
+        mdio_write 0x0a 0x00 0x0a
+    }
+
+    {
+        echo "Enable Port 9 and Port 10" >&2
+        mdio_write 0x09 0x04 0x7F
+        mdio_write 0x0a 0x04 0x7F
+    }
+
+    # ERRATA 4.7: When changing C_Mode on SERDES port from any mode to 1000BASE-X mode the link may not come up due to invalid 1000BASE-X advertisement
+    local val_4_2000
+    {
+        echo "Apply ERRTA 4.7 for Port 9" >&2
+        smi_phy_write_reg_c45 0 9 4 0x2004 0x20 2>&1 | tail -n 1
+        val_4_2000=$( smi_phy_read_reg_c45 0 9 4 0x2000  2> >(tail -n 1 >&2) )
+        smi_phy_write_reg_c45 0 9 4 0x2000 $(( val_4_2000 | 1<<15 )) 2>&1 | tail -n 1
+        echo "Apply ERRTA 4.7 for Port 10" >&2
+        smi_phy_write_reg_c45 0 10 4 0x2004 0x20 2>&1 | tail -n 1
+        val_4_2000=$( smi_phy_read_reg_c45 0 10 4 0x2000  2> >(tail -n 1 >&2) )
+        smi_phy_write_reg_c45 0 10 4 0x2000 $(( val_4_2000 | 1<<15 )) 2>&1 | tail -n 1
+    }
+
+    # ERRATA 4.8: Link may not come up after hardware reset or software reset in 1000BASE-X or SGMII mode
+    local val_4_F074
+    {
+        echo "Apply ERRTA 4.8 for Port 9" >&2
+        val_4_F074=$( smi_phy_read_reg_c45 0 9 4 0xF074 2> >(tail -n 1 >&2) )
+        smi_phy_write_reg_c45 0 9 4 0xF074 $(( val_4_F074 | 1<<14 )) 2>&1 | tail -n 1
+        echo "Apply ERRTA 4.8 for Port 10" >&2
+        val_4_F074=$( smi_phy_read_reg_c45 0 10 4 0xF074 2> >(tail -n 1 >&2) )
+        smi_phy_write_reg_c45 0 10 4 0xF074 $(( val_4_F074 | 1<<14 )) 2>&1 | tail -n 1
+    }
+}
+
+marvell_switch_init

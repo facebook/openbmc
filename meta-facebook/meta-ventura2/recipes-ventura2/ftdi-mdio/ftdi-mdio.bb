@@ -9,14 +9,13 @@ inherit meson pkgconfig systemd
 DEPENDS = "libusb1 libftdi"
 
 FILES:${PN} += " \
-    ${libexecdir}/ventura2 \
     ${systemd_system_unitdir} \
     "
 
 S = "${UNPACKDIR}"
 SRC_URI = "file://ftdi_mdio.c \
            file://meson.build \
-           file://marvell-switch-init_evt.sh \
+           file://marvell-switch-init_evt \
            file://marvell-switch-init_evt.service \
            file://99-ftdi-mdio.rules \
            file://systemd-networkd.service.d/after-marvell-switch-init_evt.conf \
@@ -29,15 +28,15 @@ SYSTEMD_SERVICE:${PN} = " \
 RDEPENDS:${PN} += "bash"
 
 do_install:append() {
-    VENTURA2_LIBEXECDIR="${D}${libexecdir}/ventura2"
-    install -d ${VENTURA2_LIBEXECDIR}
-    install -m 0755 ${UNPACKDIR}/marvell-switch-init_evt.sh ${VENTURA2_LIBEXECDIR}
-
-    install -d ${D}${systemd_system_unitdir}
-    install -m 0644 ${UNPACKDIR}/marvell-switch-init_evt.service ${D}${systemd_system_unitdir}
+    LIBEXECDIR_PN="${D}${libexecdir}/${PN}"
+    install -d ${LIBEXECDIR_PN}
+    install -m 0755 ${UNPACKDIR}/marvell-switch-init_evt ${LIBEXECDIR_PN}
 
     install -d ${D}${sysconfdir}/udev/rules.d
     install -m 0644 ${UNPACKDIR}/99-ftdi-mdio.rules ${D}${sysconfdir}/udev/rules.d
+
+    install -d ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/marvell-switch-init_evt.service ${D}${systemd_system_unitdir}
 
     install -d ${D}${systemd_system_unitdir}/systemd-networkd.service.d
     install -m 0644 ${UNPACKDIR}/systemd-networkd.service.d/after-marvell-switch-init_evt.conf \

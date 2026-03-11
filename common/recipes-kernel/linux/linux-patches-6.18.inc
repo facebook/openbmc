@@ -53,6 +53,7 @@ SRC_URI:append = " \
     file://0218-ARM-dts-aspeed-g6-Add-UDMA-node.patch \
     file://0219-net-ftgmac100-reset-MAC-by-SCU-on-RMII.patch \
     file://0220-net-ncsi-check-for-netlink-driven-responses-before-r.patch \
+    file://0221-i3c-ast2600-Validate-AST2600-I3C-for-MCTP-over-I3C.patch \
 "
 
 #

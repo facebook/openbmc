@@ -1,0 +1,56 @@
+From 19a20bea7b086e458bedbe5487c8e2f85c38433e Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Tue, 30 Sep 2025 16:48:35 +0800
+Subject: [PATCH] i3c: handle null transfers during response processing
+
+Fixes a null transfer scenario by adding error handling for responses
+when no transfer is active. Logs detailed errors for invalid responses
+and exits halt state for critical errors to avoid potential deadlocks.
+This condition has appeared when SDA experienced multiple glitches, and
+the root cause has not been identified at this time. Therefore, the patch
+is used to mitigate this uncertain issue and prevent an interrupt storm
+caused by the response queue not draining in the IRQ handler.
+
+Change-Id: I062a14dd1ff4cf2726cfc695038bcdc94884172c
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+---
+ drivers/i3c/master/dw-i3c-master.c | 20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
+index 55e0bb28d1d2..aa4b4c36e70a 100644
+--- a/drivers/i3c/master/dw-i3c-master.c
++++ b/drivers/i3c/master/dw-i3c-master.c
+@@ -557,12 +557,26 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
+ 	int i, ret = 0;
+ 	u32 nresp;
+ 
+-	if (!xfer)
+-		return;
+-
+ 	nresp = readl(master->regs + QUEUE_STATUS_LEVEL);
+ 	nresp = QUEUE_STATUS_LEVEL_RESP(nresp);
+ 
++	if (!xfer) {
++		u32 err_resp;
++		u8 error;
++
++		dev_err(&master->base.dev, "Handle %d response when xfer is NULL\n", nresp);
++		for (i = 0; i < nresp; i++) {
++			err_resp = readl(master->regs + RESPONSE_QUEUE_PORT);
++			error = RESPONSE_PORT_ERR_STATUS(err_resp);
++			dev_err(&master->base.dev, "err_resp: %x xfer error: %x\n",
++				err_resp, error);
++			if (error != RESPONSE_NO_ERROR && error != RESPONSE_ERROR_TRANSF_ABORT) {
++				dw_i3c_master_exit_halt(master);
++			}
++		}
++		return;
++	}
++
+ 	for (i = 0; i < nresp; i++) {
+ 		struct dw_i3c_cmd *cmd;
+ 		u32 resp;
+-- 
+2.52.0
+

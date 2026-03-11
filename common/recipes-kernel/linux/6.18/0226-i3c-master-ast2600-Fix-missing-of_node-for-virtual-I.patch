@@ -1,0 +1,34 @@
+From f775f9be84a04b6d9ba7d7fe32350a7b805b580a Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Wed, 25 Feb 2026 15:19:35 +0800
+Subject: [PATCH] i3c: master: ast2600: Fix missing of_node for virtual I2C
+ adapter
+
+The ASPEED AST2600 I3C master driver creates a virtual I2C adapter to
+provide backward compatibility with I2C devices. However, the current
+implementation does not associate this virtual adapter with any
+Device Tree node.
+
+This patch propagates the of_node from the I3C master platform device
+to the virtual I2C adapter's device structure. This ensures that
+standard I2C aliases are correctly resolved and bus numbering remains
+consistent across reboots.
+---
+ drivers/i3c/master/ast2600-i3c-master.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/i3c/master/ast2600-i3c-master.c b/drivers/i3c/master/ast2600-i3c-master.c
+index 0665773cd57d..8250da40a60b 100644
+--- a/drivers/i3c/master/ast2600-i3c-master.c
++++ b/drivers/i3c/master/ast2600-i3c-master.c
+@@ -293,6 +293,7 @@ static int ast2600_i3c_probe(struct platform_device *pdev)
+ 			i3c->sda_pullup);
+ 
+ 	i3c->dw.platform_ops = &ast2600_i3c_ops;
++	i3c->dw.base.i2c.dev.of_node = np;
+ 	return dw_i3c_common_probe(&i3c->dw, pdev);
+ }
+ 
+-- 
+2.52.0
+

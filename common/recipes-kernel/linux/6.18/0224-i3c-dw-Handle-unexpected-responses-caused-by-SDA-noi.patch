@@ -1,0 +1,90 @@
+From 8313ea15a01edc957c1cf6e37b4451ba7c044495 Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Fri, 21 Nov 2025 18:32:59 +0800
+Subject: [PATCH] i3c: dw: Handle unexpected responses caused by SDA noise
+
+Currently, if an IBI address appears in the DAT (including the 0x2 hot-join
+address) and is marked for rejection, the controller will NACK the IBI and
+automatically issue a DISCE CCC command to the device.
+After performing stress tests under this condition, we observed that the
+response queue may contain unexpected data.
+This unexpected response always uses TID 0, so this patch reserves TID 0
+and prevents it from being used for normal transactions in order to
+reliably detect and handle this corner case.
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+Change-Id: I6d66b30ea02fcb3f9bc0c6514d62989ab26c65fb
+---
+ drivers/i3c/master/dw-i3c-master.c | 21 ++++++++++++++-------
+ 1 file changed, 14 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
+index 707ec08df490..55e0bb28d1d2 100644
+--- a/drivers/i3c/master/dw-i3c-master.c
++++ b/drivers/i3c/master/dw-i3c-master.c
+@@ -568,8 +568,12 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
+ 		u32 resp;
+ 
+ 		resp = readl(master->regs + RESPONSE_QUEUE_PORT);
+-
+-		cmd = &xfer->cmds[RESPONSE_PORT_TID(resp)];
++		if (RESPONSE_PORT_TID(resp) == 0) {
++			dev_err(&master->base.dev,
++				"Invalid TID in response: %x\n", resp);
++			continue;
++		}
++		cmd = &xfer->cmds[RESPONSE_PORT_TID(resp) - 1];
+ 		cmd->rx_len = RESPONSE_PORT_DATA_LEN(resp);
+ 		cmd->error = RESPONSE_PORT_ERR_STATUS(resp);
+ 		if (cmd->rx_len && !cmd->error)
+@@ -897,7 +901,8 @@ static int dw_i3c_ccc_set(struct dw_i3c_master *master,
+ 		      COMMAND_PORT_DEV_INDEX(pos) |
+ 		      COMMAND_PORT_CMD(ccc->id) |
+ 		      COMMAND_PORT_TOC |
+-		      COMMAND_PORT_ROC;
++		      COMMAND_PORT_ROC |
++			  COMMAND_PORT_TID(1);
+ 
+ 	sda_lvl_pre = FIELD_GET(SDA_LINE_SIGNAL_LEVEL,
+ 				readl(master->regs + PRESENT_STATE));
+@@ -951,7 +956,8 @@ static int dw_i3c_ccc_get(struct dw_i3c_master *master, struct i3c_ccc_cmd *ccc)
+ 		      COMMAND_PORT_DEV_INDEX(pos) |
+ 		      COMMAND_PORT_CMD(ccc->id) |
+ 		      COMMAND_PORT_TOC |
+-		      COMMAND_PORT_ROC;
++		      COMMAND_PORT_ROC |
++			  COMMAND_PORT_TID(1);
+ 
+ 	sda_lvl_pre = FIELD_GET(SDA_LINE_SIGNAL_LEVEL,
+ 				readl(master->regs + PRESENT_STATE));
+@@ -1077,7 +1083,8 @@ static int dw_i3c_master_daa(struct i3c_master_controller *m)
+ 		      COMMAND_PORT_CMD(I3C_CCC_ENTDAA) |
+ 		      COMMAND_PORT_ADDR_ASSGN_CMD |
+ 		      COMMAND_PORT_TOC |
+-		      COMMAND_PORT_ROC;
++		      COMMAND_PORT_ROC |
++			  COMMAND_PORT_TID(1);
+ 
+ 	sda_lvl_pre = FIELD_GET(SDA_LINE_SIGNAL_LEVEL,
+ 				readl(master->regs + PRESENT_STATE));
+@@ -1180,7 +1187,7 @@ static int dw_i3c_master_priv_xfers(struct i3c_dev_desc *dev,
+ 				COMMAND_PORT_SPEED(dev->info.max_write_ds);
+ 		}
+ 
+-		cmd->cmd_lo |= COMMAND_PORT_TID(i) |
++		cmd->cmd_lo |= COMMAND_PORT_TID(i + 1) |
+ 			       COMMAND_PORT_DEV_INDEX(data->index) |
+ 			       COMMAND_PORT_ROC;
+ 
+@@ -1346,7 +1353,7 @@ static int dw_i3c_master_i2c_xfers(struct i2c_dev_desc *dev,
+ 		cmd->cmd_hi = COMMAND_PORT_ARG_DATA_LEN(i2c_xfers[i].len) |
+ 			COMMAND_PORT_TRANSFER_ARG;
+ 
+-		cmd->cmd_lo = COMMAND_PORT_TID(i) |
++		cmd->cmd_lo = COMMAND_PORT_TID(i + 1) |
+ 			      COMMAND_PORT_DEV_INDEX(data->index) |
+ 			      COMMAND_PORT_ROC;
+ 
+-- 
+2.52.0
+

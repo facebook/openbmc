@@ -54,6 +54,11 @@ SRC_URI:append = " \
     file://0219-net-ftgmac100-reset-MAC-by-SCU-on-RMII.patch \
     file://0220-net-ncsi-check-for-netlink-driven-responses-before-r.patch \
     file://0221-i3c-ast2600-Validate-AST2600-I3C-for-MCTP-over-I3C.patch \
+    file://0222-i3c-dw-Add-err-messages-for-ibi_fifo_clear-handling.patch \
+    file://0223-i3c-dw-handle-transfer-abort-errors-distinctly.patch \
+    file://0224-i3c-dw-Handle-unexpected-responses-caused-by-SDA-noi.patch \
+    file://0225-i3c-handle-null-transfers-during-response-processing.patch \
+    file://0226-i3c-master-ast2600-Fix-missing-of_node-for-virtual-I.patch \
 "
 
 #

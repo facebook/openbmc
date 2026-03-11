@@ -1,0 +1,86 @@
+From 5f30ed8d3a18a73d0d0075a05478982035ee1ec5 Mon Sep 17 00:00:00 2001
+From: Zoey Chung <zoey_yj_chung@wiwynn.com>
+Date: Mon, 18 Aug 2025 18:20:47 +0800
+Subject: [PATCH] i3c: dw: Add err messages for ibi_fifo_clear handling
+
+Description:
+- Add err messages and return code logging for `dw_i3c_master_enter_halt`,
+  `dw_i3c_master_dequeue_xfer_locked`, and `ibi_fifo_clear`.
+
+Motivation:
+- Add dev_err to print out the i3c controller state with key registers
+  for more info when clearing the IBI FIFO fails unexpectedly.
+
+Test Plan:
+- Build code: pass
+- QE 700+ cycles: no issue found
+---
+ drivers/i3c/master/dw-i3c-master.c | 21 +++++++++++++++++----
+ 1 file changed, 17 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
+index 9f6ee41a42d7..af3721714332 100644
+--- a/drivers/i3c/master/dw-i3c-master.c
++++ b/drivers/i3c/master/dw-i3c-master.c
+@@ -392,9 +392,11 @@ static int dw_i3c_master_enter_halt(struct dw_i3c_master *master, bool by_sw)
+ 	u32 halt_state = CM_TFR_STS_MASTER_HALT;
+ 	int ret;
+ 
+-	if (by_sw)
++	if (by_sw) {
++		dev_err(&master->base.dev, "%s: by software.\n", __func__);
+ 		writel(readl(master->regs + DEVICE_CTRL) | DEV_CTRL_ABORT,
+ 		       master->regs + DEVICE_CTRL);
++	}
+ 
+ 	ret = readl_poll_timeout_atomic(master->regs + PRESENT_STATE, status,
+ 					FIELD_GET(CM_TFR_STS, status) == halt_state,
+@@ -517,6 +519,7 @@ static void dw_i3c_master_dequeue_xfer_locked(struct dw_i3c_master *master,
+ {
+ 	if (master->xferqueue.cur == xfer) {
+ 		u32 status;
++		int ret;
+ 
+ 		master->xferqueue.cur = NULL;
+ 
+@@ -524,8 +527,15 @@ static void dw_i3c_master_dequeue_xfer_locked(struct dw_i3c_master *master,
+ 		       RESET_CTRL_RESP_QUEUE | RESET_CTRL_CMD_QUEUE,
+ 		       master->regs + RESET_CTRL);
+ 
+-		readl_poll_timeout_atomic(master->regs + RESET_CTRL, status,
++		ret = readl_poll_timeout_atomic(master->regs + RESET_CTRL, status,
+ 					  !status, 10, 1000000);
++
++		if (ret)
++			dev_err(&master->base.dev,
++				"Xfer dequeue failed: %d %#x %#x %#x\n", ret,
++				readl(master->regs + PRESENT_STATE),
++				readl(master->regs + QUEUE_STATUS_LEVEL),
++				readl(master->regs + RESET_CTRL));
+ 	} else {
+ 		list_del_init(&xfer->node);
+ 	}
+@@ -1704,7 +1714,7 @@ static void dw_i3c_master_irq_handle_ibis(struct dw_i3c_master *master)
+ 		reg = readl(master->regs + IBI_QUEUE_STATUS);
+ 
+ 		if (reg & IBI_QUEUE_STATUS_RSP_NACK) {
+-			dev_dbg_ratelimited(&master->base.dev,
++			dev_err(&master->base.dev,
+ 					    "Nacked IBI from non-requested dev addr %02lx\n",
+ 					    IBI_QUEUE_IBI_ADDR(reg));
+ 			goto ibi_fifo_clear;
+@@ -1732,7 +1742,10 @@ static void dw_i3c_master_irq_handle_ibis(struct dw_i3c_master *master)
+ 					10, 1000000);
+ 	if (ret)
+ 		dev_err(&master->base.dev,
+-			"Timeout waiting for IBI FIFO reset\n");
++			"Timeout waiting for IBI FIFO reset: %d %#x %#x %#x\n", ret,
++			readl(master->regs + PRESENT_STATE),
++			readl(master->regs + QUEUE_STATUS_LEVEL),
++			readl(master->regs + RESET_CTRL));
+ 
+ 	dw_i3c_master_exit_halt(master);
+ }
+-- 
+2.52.0
+

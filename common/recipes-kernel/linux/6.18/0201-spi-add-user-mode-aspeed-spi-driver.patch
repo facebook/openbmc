@@ -1,7 +1,7 @@
-From 168f3f9d83e5d7f39485cac8a22f098efbb0e61b Mon Sep 17 00:00:00 2001
+From a695dcaf147cc7d284d8aa83b94227a648d73d55 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Mon, 9 May 2022 22:55:21 -0700
-Subject: [PATCH 201/217] spi: add user-mode aspeed spi driver
+Subject: [PATCH 201/218] spi: add user-mode aspeed spi driver
 
 Summary:
 The driver was copied from linux-aspeed-5.15, and it is used to access
@@ -29,7 +29,7 @@ Differential Revision: https://phabricator.intern.facebook.com/D37292798
  create mode 100644 drivers/spi/spi-aspeed-user.c
 
 diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
-index 1872f9d54a5c..8b1a14950d39 100644
+index fa7836f5e6d2..9a4af2ba8a23 100644
 --- a/drivers/spi/Kconfig
 +++ b/drivers/spi/Kconfig
 @@ -162,6 +162,13 @@ config SPI_ASPEED_SMC
@@ -47,7 +47,7 @@ index 1872f9d54a5c..8b1a14950d39 100644
  	tristate "Atmel SPI Controller"
  	depends on ARCH_MICROCHIP || COMPILE_TEST
 diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
-index 1f7c06a3091d..232c74ef1e59 100644
+index 0cfc33a005e3..3290fd3be968 100644
 --- a/drivers/spi/Makefile
 +++ b/drivers/spi/Makefile
 @@ -26,6 +26,7 @@ obj-$(CONFIG_SPI_APPLE)			+= spi-apple.o

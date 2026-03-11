@@ -1,7 +1,7 @@
-From 44d09f028c70ab1f7720a11cc7addd4bd217167c Mon Sep 17 00:00:00 2001
+From b67146dd4cef5805fb1e82e81911966348c20649 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Wed, 21 Apr 2021 16:20:34 -0700
-Subject: [PATCH 204/217] i2c: aspeed: update ast2400 timing settings
+Subject: [PATCH 204/218] i2c: aspeed: update ast2400 timing settings
 
 Summary:
 We have seen consistent I2C transaction failures in wedge100 i2c-3/4/9

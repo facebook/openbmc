@@ -1,7 +1,7 @@
-From ca03c60abf27bf1e556362e2cccd352be2ad17ee Mon Sep 17 00:00:00 2001
+From 4c6e8d4d0410dda057538045a9005a8795fcee6a Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Thu, 7 Dec 2023 13:04:19 +0800
-Subject: [PATCH 216/217] soc: aspeed: Add Post Code Control
+Subject: [PATCH 216/218] soc: aspeed: Add Post Code Control
 
 Add Aspeed Post Code Capture (PCC) module support.
 PCC can be used to snoop the debug code sent by the
@@ -12,8 +12,8 @@ Link: https://github.com/AspeedTech-BMC/linux/blob/aspeed-master-v5.15/drivers/s
 ---
  drivers/soc/aspeed/Kconfig          |   8 +
  drivers/soc/aspeed/Makefile         |   1 +
- drivers/soc/aspeed/aspeed-lpc-pcc.c | 469 ++++++++++++++++++++++++++++
- 3 files changed, 478 insertions(+)
+ drivers/soc/aspeed/aspeed-lpc-pcc.c | 467 ++++++++++++++++++++++++++++
+ 3 files changed, 476 insertions(+)
  create mode 100644 drivers/soc/aspeed/aspeed-lpc-pcc.c
 
 diff --git a/drivers/soc/aspeed/Kconfig b/drivers/soc/aspeed/Kconfig
@@ -49,7 +49,7 @@ index ba0e84055287..d5db3446ff6c 100644
  obj-$(CONFIG_ASPEED_P2A_CTRL)		+= aspeed-p2a-ctrl.o
 diff --git a/drivers/soc/aspeed/aspeed-lpc-pcc.c b/drivers/soc/aspeed/aspeed-lpc-pcc.c
 new file mode 100644
-index 000000000000..e5ba0047499f
+index 000000000000..ee45884085cb
 --- /dev/null
 +++ b/drivers/soc/aspeed/aspeed-lpc-pcc.c
 @@ -0,0 +1,467 @@

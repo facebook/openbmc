@@ -1,7 +1,7 @@
-From 05bbe158cee0067d5585a158d30106125e0732ad Mon Sep 17 00:00:00 2001
+From 785e94ab79f0fb437d7cd3b0c09144ee0ff2de63 Mon Sep 17 00:00:00 2001
 From: Ernesto Corona <ernesto.corona@intel.com>
 Date: Mon, 13 Apr 2020 15:29:15 -0700
-Subject: [PATCH] drivers: jtag: Add JTAG core driver
+Subject: [PATCH 100/112] drivers: jtag: Add JTAG core driver
 
 JTAG class driver provide infrastructure to support hardware/software
 JTAG platform drivers. It provide user layer API interface for flashing

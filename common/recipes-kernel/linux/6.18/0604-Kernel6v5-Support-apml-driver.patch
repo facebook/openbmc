@@ -1,4 +1,4 @@
-From 1f416ccc1b743aea266cc3c9f2335cf399215ce2 Mon Sep 17 00:00:00 2001
+From 7e9813a8f7cda3c6ac43690b74a37aa04ffde44e Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Fri, 24 Nov 2023 15:54:07 +0800
 Subject: [PATCH 604/604] Kernel6v5: Support apml driver
@@ -1784,7 +1784,7 @@ index 000000000000..6f1aea480509
 +#endif /*_AMD_APML_SBRMI_H_*/
 diff --git a/drivers/misc/amd-apml/sbrmi.c b/drivers/misc/amd-apml/sbrmi.c
 new file mode 100644
-index 000000000000..3ea6a63d1ba0
+index 000000000000..51cdc296e898
 --- /dev/null
 +++ b/drivers/misc/amd-apml/sbrmi.c
 @@ -0,0 +1,885 @@

@@ -1,7 +1,7 @@
-From cf3617d77caf6cc15c5c248bdb876ea08774ddb9 Mon Sep 17 00:00:00 2001
+From 18db3f05adb65d499334f2826d36bf5be98a196d Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Tue, 29 Oct 2024 09:43:50 +0800
-Subject: [PATCH 207/217] Add ASPEED AST2600 I2Cv2 controller driver
+Subject: [PATCH 207/218] Add ASPEED AST2600 I2Cv2 controller driver
 
 Add AST2600 i2cv2 new register set driver.
 
@@ -11,8 +11,8 @@ https://lore.kernel.org/lkml/20241007035235.2254138-1-ryan_chen@aspeedtech.com/
  arch/arm/boot/dts/aspeed/aspeed-g6.dtsi |   85 +-
  drivers/i2c/busses/Kconfig              |   11 +
  drivers/i2c/busses/Makefile             |    1 +
- drivers/i2c/busses/i2c-ast2600.c        | 1741 +++++++++++++++++++++++
- 4 files changed, 1806 insertions(+), 32 deletions(-)
+ drivers/i2c/busses/i2c-ast2600.c        | 1745 +++++++++++++++++++++++
+ 4 files changed, 1810 insertions(+), 32 deletions(-)
  create mode 100644 drivers/i2c/busses/i2c-ast2600.c
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
@@ -255,7 +255,7 @@ index fb985769f5ff..f58bcecc69cc 100644
  i2c-at91-$(CONFIG_I2C_AT91_SLAVE_EXPERIMENTAL)	+= i2c-at91-slave.o
 diff --git a/drivers/i2c/busses/i2c-ast2600.c b/drivers/i2c/busses/i2c-ast2600.c
 new file mode 100644
-index 000000000000..35c1461ae4d7
+index 000000000000..04caf28634f0
 --- /dev/null
 +++ b/drivers/i2c/busses/i2c-ast2600.c
 @@ -0,0 +1,1745 @@

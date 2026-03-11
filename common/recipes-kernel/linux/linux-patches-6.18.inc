@@ -52,6 +52,7 @@ SRC_URI:append = " \
     file://0217-i2c-ast2600-support-ssif.patch \
     file://0218-ARM-dts-aspeed-g6-Add-UDMA-node.patch \
     file://0219-net-ftgmac100-reset-MAC-by-SCU-on-RMII.patch \
+    file://0220-net-ncsi-check-for-netlink-driven-responses-before-r.patch \
 "
 
 #

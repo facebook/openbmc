@@ -1,0 +1,54 @@
+From db4101fe29055dcc0a7ba9b9013f18fff55f1c36 Mon Sep 17 00:00:00 2001
+From: Jacky Chou <jacky_chou@aspeedtech.com>
+Date: Tue, 29 Apr 2025 18:27:38 +0800
+Subject: [PATCH] net: ftgmac100: reset MAC by SCU on RMII
+
+Because MAC SW reset cannot reset RMII interface, use scu reset to fully
+reset MAC and RMII.
+
+Upstream-Status: Pending upstream by Aspeed.
+Signed-off-by: Jacky Chou <jacky_chou@aspeedtech.com>
+Change-Id: I130487c2dcfb3890b7629ff2946f68f0feb808a7
+---
+ arch/arm/boot/dts/aspeed/aspeed-g6.dtsi | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
+index d56715df1922..ed6a2824da0a 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
++++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
+@@ -250,6 +250,7 @@ mac0: ethernet@1e660000 {
+ 			reg = <0x1e660000 0x180>;
+ 			interrupts = <GIC_SPI 2 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&syscon ASPEED_CLK_GATE_MAC1CLK>;
++			resets = <&syscon ASPEED_RESET_MAC1>;
+ 			status = "disabled";
+ 		};
+ 
+@@ -258,6 +259,7 @@ mac1: ethernet@1e680000 {
+ 			reg = <0x1e680000 0x180>;
+ 			interrupts = <GIC_SPI 3 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&syscon ASPEED_CLK_GATE_MAC2CLK>;
++			resets = <&syscon ASPEED_RESET_MAC2>;
+ 			status = "disabled";
+ 		};
+ 
+@@ -266,6 +268,7 @@ mac2: ethernet@1e670000 {
+ 			reg = <0x1e670000 0x180>;
+ 			interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&syscon ASPEED_CLK_GATE_MAC3CLK>;
++			resets = <&syscon ASPEED_RESET_MAC3>;
+ 			status = "disabled";
+ 		};
+ 
+@@ -274,6 +277,7 @@ mac3: ethernet@1e690000 {
+ 			reg = <0x1e690000 0x180>;
+ 			interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&syscon ASPEED_CLK_GATE_MAC4CLK>;
++			resets = <&syscon ASPEED_RESET_MAC4>;
+ 			status = "disabled";
+ 		};
+ 
+-- 
+2.52.0
+

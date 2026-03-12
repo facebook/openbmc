@@ -19,6 +19,7 @@
 #
 
 
+import re
 import unittest
 from abc import abstractmethod
 
@@ -41,13 +42,28 @@ class BaseKernelVersionTest(object):
     def set_kernel_version(self):
         pass
 
+    @staticmethod
+    def _parse_version(version_str):
+        """Parse version string into a comparable tuple.
+
+        Examples:
+            '6.18.6-fbdarwin-xxx' -> (6, 18, 6)
+            '6.12' -> (6, 12)
+        """
+        match = re.match(r"(\d+(?:\.\d+)*)", version_str)
+        if not match:
+            return ()
+        return tuple(int(x) for x in match.group(1).split("."))
+
     def test_kernel_version(self):
         self.set_kernel_version()
         self.assertNotEqual(self.kernel_version, None, "Kernel version not set")
         Logger.info("Executing cmd={}".format(self.kernel_version_cmd))
-        info = run_shell_cmd(cmd=self.kernel_version_cmd)
-        self.assertTrue(
-            self.kernel_version in info,
-            f"Kernel version mismatch. Expected: {self.kernel_version}, "
-            f"Actual: {info.strip()}"
+        info = run_shell_cmd(cmd=self.kernel_version_cmd).strip()
+        actual = self._parse_version(info)
+        minimum = self._parse_version(self.kernel_version)
+        self.assertGreaterEqual(
+            actual,
+            minimum,
+            f"Kernel version too old. Minimum: {self.kernel_version}, Actual: {info}",
         )

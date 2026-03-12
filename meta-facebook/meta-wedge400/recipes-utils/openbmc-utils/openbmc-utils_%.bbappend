@@ -50,6 +50,9 @@ LOCAL_URI += " \
     file://us_console.sh \
     file://wedge_power.sh \
     file://wedge_us_mac.sh \
+    file://setup_default_gpio.service \
+    file://setup_avs.service \
+    file://mount_data1.service \
     "
 
 OPENBMC_UTILS_FILES += " \
@@ -82,16 +85,7 @@ OPENBMC_UTILS_FILES += " \
 
 DEPENDS:append = " update-rc.d-native"
 
-do_install_board() {
-    # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
-    olddir="/usr/local/fbpackages/utils"
-    install -d ${D}${olddir}
-    ln -s "/usr/local/bin/openbmc-utils.sh" "${D}${olddir}/ast-functions"
-
-    # init
-    install -d ${D}${sysconfdir}/init.d
-    install -d ${D}${sysconfdir}/rcS.d
-
+install_sysv:append() {
     install -m 755 ${UNPACKDIR}/power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
     update-rc.d -r ${D} power-on.sh start 85 S .
 
@@ -101,7 +95,7 @@ do_install_board() {
     install -m 755 ${UNPACKDIR}/setup_i2c.sh ${D}${sysconfdir}/init.d/setup_i2c.sh
     update-rc.d -r ${D} setup_i2c.sh start 59 S .
 
-    # AVS voltage setup on Wegde400 units, this should be after power-on.sh
+    # AVS voltage setup on Wedge400 units, this should be after power-on.sh
     install -m 755 ${UNPACKDIR}/setup_avs.sh ${D}${sysconfdir}/init.d/setup_avs.sh
     update-rc.d -r ${D} setup_avs.sh start 86 S .
 
@@ -121,10 +115,32 @@ do_install_board() {
     update-rc.d -r ${D} rc.local start 99 2 3 4 5 .
 }
 
+install_systemd:append() {
+    # Scripts to /usr/local/bin (wedge400-specific)
+    install -m 0755 ${UNPACKDIR}/setup_i2c.sh ${D}/usr/local/bin/setup_i2c.sh
+    install -m 0755 ${UNPACKDIR}/setup_default_gpio.sh ${D}/usr/local/bin/setup_default_gpio.sh
+    install -m 755 ${UNPACKDIR}/eth0_mac_fixup.sh ${D}/usr/local/bin/eth0_mac_fixup.sh
+    install -m 0755 ${UNPACKDIR}/setup_board.sh ${D}/usr/local/bin/setup_board.sh
+    install -m 0755 ${UNPACKDIR}/power-on.sh ${D}/usr/local/bin/power-on.sh
+    install -m 0755 ${UNPACKDIR}/setup_avs.sh ${D}/usr/local/bin/setup_avs.sh
+
+    install -m 0644 ${UNPACKDIR}/setup_default_gpio.service ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/setup_avs.service ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/mount_data1.service ${D}${systemd_system_unitdir}
+}
+
 do_install:append() {
-  do_install_board
+    # for backward compatible, create /usr/local/fbpackages/utils/ast-functions
+    olddir="/usr/local/fbpackages/utils"
+    install -d ${D}${olddir}
+    ln -s "/usr/local/bin/openbmc-utils.sh" "${D}${olddir}/ast-functions"
 }
 
 FILES:${PN} += "${sysconfdir}"
 
-SYSTEMD_SERVICE:${PN} += "setup_i2c.service"
+
+SYSTEMD_SERVICE:${PN} += " \
+    setup_default_gpio.service \
+    setup_avs.service \
+    mount_data1.service \
+    "

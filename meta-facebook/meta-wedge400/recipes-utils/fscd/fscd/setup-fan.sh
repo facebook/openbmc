@@ -86,8 +86,12 @@ fi
 if [ $fcm_compatible -eq 0 ]; then
     echo "Running fan at the fixed speed."
     /usr/local/bin/wdtcli stop
+    exit 1 # Tell systemd to not start fscd
 else
     echo "Starting fscd..."
-    runsv /etc/sv/fscd > /dev/null 2>&1 &
+    # On sysv, run fscd directly. On systemd, just exit with a 0 status for systemd to run it
+    if ! command -v systemctl > /dev/null; then
+      runsv /etc/sv/fscd > /dev/null 2>&1 &
+    fi
 fi
 echo "done."

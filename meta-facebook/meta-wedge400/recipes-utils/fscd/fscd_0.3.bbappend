@@ -28,10 +28,13 @@ LOCAL_URI += " \
     file://FSC-W400C-config.json \
     file://zone-w400.fsc \
     file://zone-w400c.fsc \
+    file://fscd.service \
     "
 
 FSC_BIN_FILES += "get_fan_speed.sh \
-                  set_fan_speed.sh "
+                  set_fan_speed.sh \
+                  setup-fan.sh \
+                 "
 
 FSC_CONFIG += "FSC-W400-config.json \
                FSC-W400C-config.json \

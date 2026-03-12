@@ -1,7 +1,7 @@
-From d2cdd333af359d8cee6e70874aaab708758057a1 Mon Sep 17 00:00:00 2001
+From 5a317a2e2cf9b12183b6e944e414d406b28f5bd9 Mon Sep 17 00:00:00 2001
 From: Andy-Hsu-wiwynn <andy.hsu.wiwynn@gmail.com>
 Date: Fri, 15 Aug 2025 15:44:31 +0800
-Subject: [PATCH 12/15] PSUSensor:add property to sensorTable and labelMatch
+Subject: [PATCH] PSUSensor:add property to sensorTable and labelMatch
 
 Description
 Add "current" to the sensorTable, and add "in_current" and "in_power"
@@ -21,10 +21,10 @@ Signed-off-by: Andy Hsu <andy.hsu.wiwynn@gmail.com>
  1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index b568695..aa8daf0 100644
+index 70bacf0..291031c 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -189,8 +189,9 @@ struct SensorUnit
+@@ -188,8 +188,9 @@ struct SensorUnit
      auto operator<=>(const SensorUnit&) const = default;
  };
  
@@ -35,7 +35,7 @@ index b568695..aa8daf0 100644
      {"fan", sensor_paths::unitRPMs},
      {"in", sensor_paths::unitVolts},
      {"power", sensor_paths::unitWatts},
-@@ -198,10 +199,12 @@ static constexpr const std::array<SensorUnit, 6> sensorTable{{
+@@ -197,10 +198,12 @@ static constexpr const std::array<SensorUnit, 6> sensorTable{{
      {"voltage", sensor_paths::unitVolts},
  }};
  
@@ -49,6 +49,3 @@ index b568695..aa8daf0 100644
      {"in_voltage", "Output Voltage", 255, 0, 3, 0},
      {"in", "Output Voltage", 255, 0, 3, 0},
      {"iout", "Output Current", 255, 0, 3, 0},
--- 
-2.52.0
-

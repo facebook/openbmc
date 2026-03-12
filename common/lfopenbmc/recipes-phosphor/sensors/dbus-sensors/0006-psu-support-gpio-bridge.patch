@@ -1,7 +1,7 @@
-From 71c9c82ee41168a0b485c24e64585159d9b4e3e9 Mon Sep 17 00:00:00 2001
+From 936fdbb74ea60570d3851dfc688e64ce1ebd661a Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Mon, 19 May 2025 15:12:23 +0800
-Subject: [PATCH 07/15] psu: support gpio bridge
+Subject: [PATCH] psu: support gpio bridge
 
 Support for GPIO bridge is required for certain components that
 need a GPIO to be set before reading, such as battery voltage.
@@ -259,7 +259,7 @@ index 8a43ef1..de8f7b7 100644
      boost::asio::random_access_file inputDev;
      boost::asio::steady_timer waitTimer;
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index f3e9149..b568695 100644
+index 34b0ceb..70bacf0 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -31,6 +31,7 @@
@@ -286,7 +286,7 @@ index f3e9149..b568695 100644
  
  static constexpr auto sensorTypes = std::to_array<
      std::pair<std::string_view, I2CDeviceType>>({
-@@ -380,6 +383,61 @@ static void checkPWMSensor(
+@@ -379,6 +382,61 @@ static void checkPWMSensor(
          name, pwmPathStr, dbusConnection, objectServer, objPath, "PSU");
  }
  
@@ -348,7 +348,7 @@ index f3e9149..b568695 100644
  static void createSensorsCallback(
      boost::asio::io_context& io, sdbusplus::asio::object_server& objectServer,
      std::shared_ptr<sdbusplus::asio::connection>& dbusConnection,
-@@ -811,7 +869,6 @@ static void createSensorsCallback(
+@@ -810,7 +868,6 @@ static void createSensorsCallback(
                      "LABEL", labelHead);
                  continue;
              }
@@ -356,7 +356,7 @@ index f3e9149..b568695 100644
              // Protect the hardcoded labelMatch list from changes,
              // by making a copy and modifying that instead.
              // Avoid bleedthrough of one device's customizations to
-@@ -1094,12 +1151,15 @@ static void createSensorsCallback(
+@@ -1093,12 +1150,15 @@ static void createSensorsCallback(
              }
              else
              {
@@ -385,6 +385,3 @@ index abcdfe8..3680cac 100644
      ],
      include_directories: src_inc,
      install: true,
--- 
-2.52.0
-

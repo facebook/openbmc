@@ -1,7 +1,7 @@
-From a5e7aaf089fbf2f989f285cad13431dad25c2f7f Mon Sep 17 00:00:00 2001
+From 021a0a8de01c9b8ed67f957ade71ce9663eb73b5 Mon Sep 17 00:00:00 2001
 From: Kevin Tung <kevin.tung@quantatw.com>
 Date: Thu, 13 Nov 2025 19:11:44 +0800
-Subject: [PATCH 13/15] PSUSensor: add support for mp2925 and mp2929
+Subject: [PATCH] PSUSensor: add support for mp2925 and mp2929
 
 Add support for the MPS MP2925 and MP2929 voltage regulator.
 The corresponding driver is available in linux-staging.git [1].
@@ -15,10 +15,10 @@ Signed-off-by: Kevin Tung <kevin.wtmh@gmail.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index aa8daf0..a2d3968 100644
+index 291031c..3ec8c04 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -123,6 +123,8 @@ static constexpr auto sensorTypes = std::to_array<
+@@ -122,6 +122,8 @@ static constexpr auto sensorTypes = std::to_array<
      {"MP2856", I2CDeviceType{"mp2856", true}},
      {"MP2857", I2CDeviceType{"mp2857", true}},
      {"MP2869", I2CDeviceType{"mp2869", true}},
@@ -27,6 +27,3 @@ index aa8daf0..a2d3968 100644
      {"MP2971", I2CDeviceType{"mp2971", true}},
      {"MP2973", I2CDeviceType{"mp2973", true}},
      {"MP2975", I2CDeviceType{"mp2975", true}},
--- 
-2.52.0
-

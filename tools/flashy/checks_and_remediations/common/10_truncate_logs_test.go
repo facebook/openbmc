@@ -20,13 +20,13 @@
 package common
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 type GlobAllReturnType struct {
@@ -79,7 +79,7 @@ func TestTruncateLogs(t *testing.T) {
 			resolvedFilePatterns: []GlobAllReturnType{
 				{
 					nil,
-					errors.Errorf("resolveFilePatterns Error"),
+					fmt.Errorf("resolveFilePatterns Error"),
 				},
 				{
 					[]string{"/tmp/test"},
@@ -88,7 +88,7 @@ func TestTruncateLogs(t *testing.T) {
 			},
 			removeFileErr:   nil,
 			truncateFileErr: nil,
-			want:            step.ExitSafeToReboot{Err: errors.Errorf("Unable to resolve file patterns '%v': resolveFilePatterns Error", deleteLogFilePatterns)},
+			want:            step.ExitSafeToReboot{Err: fmt.Errorf("Unable to resolve file patterns '%v': resolveFilePatterns Error", deleteLogFilePatterns)},
 		},
 		{
 			name: "Resolve file patterns error (2)",
@@ -99,12 +99,12 @@ func TestTruncateLogs(t *testing.T) {
 				},
 				{
 					nil,
-					errors.Errorf("resolveFilePatterns Error"),
+					fmt.Errorf("resolveFilePatterns Error"),
 				},
 			},
 			removeFileErr:   nil,
 			truncateFileErr: nil,
-			want:            step.ExitSafeToReboot{Err: errors.Errorf("Unable to resolve file patterns '%v': resolveFilePatterns Error", deleteLogFilePatterns)},
+			want:            step.ExitSafeToReboot{Err: fmt.Errorf("Unable to resolve file patterns '%v': resolveFilePatterns Error", deleteLogFilePatterns)},
 		},
 	}
 

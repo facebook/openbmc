@@ -31,4 +31,4 @@ class FlashData0Test(BaseFlashData0Test, unittest.TestCase):
         self.data0_dev = "/dev/ubi0_0"
         self.data0_mountpoint = "/mnt/data"
         self.data0_fs_type = "ubifs"
-        self.data0_size_mb = 64
+        self.data0_size_mb = 8

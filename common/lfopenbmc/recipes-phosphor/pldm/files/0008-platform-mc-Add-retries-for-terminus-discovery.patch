@@ -1,4 +1,4 @@
-From 0357f07769a3b14e25d07d497a473d55ab004adf Mon Sep 17 00:00:00 2001
+From e8c3007029d530d768fad7fa86d3c03494ef4b47 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 23 Sep 2025 09:47:45 +0000
 Subject: [PATCH 08/17] platform-mc: Add retries for terminus discovery
@@ -33,10 +33,10 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  4 files changed, 93 insertions(+), 6 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index a27524c..abce6b4 100644
+index b2db3be..6f1e421 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -146,6 +146,10 @@ conf_data.set(
+@@ -141,6 +141,10 @@ conf_data.set(
      'DISCOVERY_FRU_DATA',
      get_option('discovery-fru-data-from-terminus').allowed(),
  )
@@ -230,5 +230,5 @@ index 8382201..97a2a9c 100644
  } // namespace platform_mc
  } // namespace pldm
 -- 
-2.47.3
+2.52.0
 

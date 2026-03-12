@@ -1,4 +1,4 @@
-From f622637affc0dcfb6765bf3f7ded37f134e211c8 Mon Sep 17 00:00:00 2001
+From dc6f4720c1739eabbd9a51c078f1877a52cebce6 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
 Subject: [PATCH 05/17] platform-mc: Add option for discovering FRU data
@@ -19,10 +19,10 @@ Upstream-Status: Pending
  5 files changed, 64 insertions(+), 2 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index 0daba77..a27524c 100644
+index 465a4ff..b2db3be 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -142,6 +142,10 @@ conf_data.set(
+@@ -137,6 +137,10 @@ conf_data.set(
  conf_data.set('SENSOR_POLLING_TIME', get_option('sensor-polling-time'))
  conf_data.set('UPDATE_TIMEOUT_SECONDS', get_option('update-timeout-seconds'))
  conf_data.set('MCTP_RECOVERY', get_option('mctp-recovery').allowed())
@@ -212,5 +212,5 @@ index d9223d1..39f2fc5 100644
      /* @brief Inventory D-Bus object path of the terminus */
      std::string inventoryPath;
 -- 
-2.47.3
+2.52.0
 

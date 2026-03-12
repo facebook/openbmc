@@ -1,4 +1,4 @@
-From 635db3b9e3f4e473bf53d7b3bd7790e1846e235c Mon Sep 17 00:00:00 2001
+From 5782cc285657338e68d5fb2936edc3eecb77b9fa Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Mon, 13 Oct 2025 11:10:37 +0000
 Subject: [PATCH 09/17] platform-mc: Make fallback terminus name optional
@@ -45,10 +45,10 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  3 files changed, 19 insertions(+)
 
 diff --git a/meson.build b/meson.build
-index abce6b4..d7c0519 100644
+index 6f1e421..db5cf94 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -150,6 +150,10 @@ conf_data.set(
+@@ -145,6 +145,10 @@ conf_data.set(
      'TERMINUS_DISCOVERY_RETRY_COUNT',
      get_option('terminus-discovery-retry-count'),
  )
@@ -98,5 +98,5 @@ index 24a1dce..71b9b2b 100644
  
      if (createInventoryPath(terminusName))
 -- 
-2.47.3
+2.52.0
 

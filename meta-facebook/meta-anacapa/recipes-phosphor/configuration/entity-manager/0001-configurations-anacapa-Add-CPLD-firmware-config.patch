@@ -1,4 +1,4 @@
-From efad6d571bfadbc45997b37b113a3b3b2ab9827f Mon Sep 17 00:00:00 2001
+From 8befd47be34885e74a747b0f1eade3e072b98ca2 Mon Sep 17 00:00:00 2001
 From: Dirk Chen <dirkchen@amd.com>
 Date: Tue, 20 Jan 2026 19:18:58 +0800
 Subject: [PATCH] configurations: anacapa: Add CPLD firmware config
@@ -64,7 +64,7 @@ index 34594bc..a937c0b 100644
              "Address": "0x60",
              "Bus": "$bus + 2",
 diff --git a/configurations/meta/anacapa/anacapa_bridge_l_t20.json b/configurations/meta/anacapa/anacapa_bridge_l_t20.json
-index 2eea30d..c954790 100644
+index 55f089b..3aba566 100644
 --- a/configurations/meta/anacapa/anacapa_bridge_l_t20.json
 +++ b/configurations/meta/anacapa/anacapa_bridge_l_t20.json
 @@ -6,6 +6,16 @@
@@ -82,8 +82,8 @@ index 2eea30d..c954790 100644
 +            "Type": "LatticeLFMXO5_15DFirmware"
 +        },
          {
-             "Address": "0x20",
-             "Bus": "$bus + 1",
+             "Address": "0x50",
+             "Bus": 0,
 diff --git a/configurations/meta/anacapa/anacapa_bridge_r_t16.json b/configurations/meta/anacapa/anacapa_bridge_r_t16.json
 index 3fed73d..6fd935f 100644
 --- a/configurations/meta/anacapa/anacapa_bridge_r_t16.json
@@ -106,7 +106,7 @@ index 3fed73d..6fd935f 100644
              "Address": "0x60",
              "Bus": "$bus + 2",
 diff --git a/configurations/meta/anacapa/anacapa_bridge_r_t20.json b/configurations/meta/anacapa/anacapa_bridge_r_t20.json
-index 86cf70f..5eeba7a 100644
+index 904d119..8406c47 100644
 --- a/configurations/meta/anacapa/anacapa_bridge_r_t20.json
 +++ b/configurations/meta/anacapa/anacapa_bridge_r_t20.json
 @@ -6,6 +6,16 @@
@@ -124,8 +124,8 @@ index 86cf70f..5eeba7a 100644
 +            "Type": "LatticeLFMXO5_15DFirmware"
 +        },
          {
-             "Address": "0x20",
-             "Bus": "$bus + 1",
+             "Address": "0x50",
+             "Bus": 1,
 diff --git a/configurations/meta/anacapa/anacapa_mb.json b/configurations/meta/anacapa/anacapa_mb.json
 index d93c8af..ce7eca5 100644
 --- a/configurations/meta/anacapa/anacapa_mb.json
@@ -162,5 +162,5 @@ index 198a7b1..dbae584 100644
                  },
                  "MuxOutputs": {
 -- 
-2.47.3
+2.52.0
 

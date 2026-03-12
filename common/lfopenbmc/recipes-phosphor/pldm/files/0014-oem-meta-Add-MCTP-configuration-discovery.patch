@@ -1,4 +1,4 @@
-From 0a676394666c4157792018a552b80e838211f27a Mon Sep 17 00:00:00 2001
+From 0d29a4ac1da6a2d53dd3256f6f96cc2f465b1d37 Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Wed, 17 Sep 2025 16:05:34 +0800
 Subject: [PATCH 14/17] oem-meta: Add MCTP configuration discovery
@@ -650,22 +650,22 @@ index b8674e9..28f63ed 100644
   * @brief Check the IANA of the MCTP endpoint device that sent the OEM message.
   *
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 184e430..fa5df44 100644
+index 8918c42..c11d273 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -368,7 +368,12 @@ int main(int argc, char** argv)
-     std::unique_ptr<MctpDiscovery> mctpDiscoveryHandler =
-         std::make_unique<MctpDiscovery>(
-             bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
+@@ -353,7 +353,12 @@ int main(int argc, char** argv)
+                                              instanceIdDb);
+     MctpDiscovery mctpDiscoveryHandler(
+         bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
 +#ifdef OEM_META
-+                     fwManager.get(), platformManager.get(),
-+                     oemMETA.getMctpConfigurationHandler()});
++                 fwManager.get(), platformManager.get(),
++                 oemMETA.getMctpConfigurationHandler()});
 +#else
-                      fwManager.get(), platformManager.get()});
+                  fwManager.get(), platformManager.get()});
 +#endif
      auto callback = [verbose, &invoker, &reqHandler, &fwManager, &pldmTransport,
                       TID](IO& io, int fd, uint32_t revents) mutable {
          if (revents & (POLLHUP | POLLERR))
 -- 
-2.47.3
+2.52.0
 

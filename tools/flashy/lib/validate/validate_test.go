@@ -20,12 +20,12 @@
 package validate
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/validate/partition"
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 func TestValidate(t *testing.T) {
@@ -66,7 +66,7 @@ func TestValidate(t *testing.T) {
 					PartitionConfigs: []partition.PartitionConfigInfo{},
 				},
 			},
-			validatePartitionsErrs: []error{errors.Errorf("'1' failed"), nil},
+			validatePartitionsErrs: []error{fmt.Errorf("'1' failed"), nil},
 			want:                   nil,
 		},
 		{
@@ -81,8 +81,8 @@ func TestValidate(t *testing.T) {
 					PartitionConfigs: []partition.PartitionConfigInfo{},
 				},
 			},
-			validatePartitionsErrs: []error{errors.Errorf("'1' failed"), errors.Errorf("'2' failed")},
-			want:                   errors.Errorf("*** FAILED: Validation failed ***"),
+			validatePartitionsErrs: []error{fmt.Errorf("'1' failed"), fmt.Errorf("'2' failed")},
+			want:                   fmt.Errorf("*** FAILED: Validation failed ***"),
 		},
 	}
 

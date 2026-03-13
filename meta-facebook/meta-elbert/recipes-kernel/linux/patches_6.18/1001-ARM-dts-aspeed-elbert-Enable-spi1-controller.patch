@@ -1,7 +1,7 @@
-From 78010ce3b444fb9308eaffc4d56b2190b3855cac Mon Sep 17 00:00:00 2001
+From 7beefd76283252601e9d7103f7ec23d5181f2b00 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Mon, 9 May 2022 23:08:05 -0700
-Subject: [PATCH] ARM: dts: aspeed: elbert: Enable spi1 controller
+Subject: [PATCH 1001/1003] ARM: dts: aspeed: elbert: Enable spi1 controller
 
 Summary: Enable spi1 controller in elbert dts.
 
@@ -19,10 +19,10 @@ Differential Revision: https://phabricator.intern.facebook.com/D37292795
  1 file changed, 18 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-elbert.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-elbert.dts
-index d9faa02c0e35..0b6c1b22f2bc 100644
+index ff1009ea1c49..bc975bd3b4ec 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-elbert.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-elbert.dts
-@@ -244,3 +244,21 @@ &emmc {
+@@ -213,3 +213,21 @@ &emmc {
  	max-frequency = <25000000>;
  	bus-width = <4>;
  };
@@ -45,5 +45,5 @@ index d9faa02c0e35..0b6c1b22f2bc 100644
 +	};
 +};
 -- 
-2.43.0
+2.52.0
 

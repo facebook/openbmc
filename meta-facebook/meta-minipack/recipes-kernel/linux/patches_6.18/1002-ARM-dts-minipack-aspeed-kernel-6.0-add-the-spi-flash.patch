@@ -1,15 +1,15 @@
-From 9aba0f04d1b8d9f4ddee3a5a70e8bbb947f111f0 Mon Sep 17 00:00:00 2001
+From cd20a350024d7ce3bd74c6bbb368ba0800c110b8 Mon Sep 17 00:00:00 2001
 From: Yiang Han <hya321@meta.com>
 Date: Wed, 30 Nov 2022 10:56:20 -0800
-Subject: [PATCH] ARM: dts: minipack: aspeed: kernel 6.0: add the spi flash
- device desc.
+Subject: [PATCH 1002/1002] ARM: dts: minipack: aspeed: kernel 6.0: add the spi
+ flash device desc.
 
 ---
- .../boot/dts/aspeed-bmc-facebook-minipack.dts | 41 +++++++++++++++++++
+ .../aspeed/aspeed-bmc-facebook-minipack.dts   | 41 +++++++++++++++++++
  1 file changed, 41 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minipack.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minipack.dts
-index 53fc314e0ffc..a242b5c81229 100644
+index 4234042b3c5e..4901aeea5e3a 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minipack.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-minipack.dts
 @@ -226,6 +226,9 @@ aliases {
@@ -67,3 +67,6 @@ index 53fc314e0ffc..a242b5c81229 100644
  &uart1 {
  	pinctrl-0 = <&pinctrl_txd1_default
  		     &pinctrl_rxd1_default
+-- 
+2.52.0
+

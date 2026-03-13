@@ -17,6 +17,7 @@ SRC_URI:append = " \
     file://0014-psusensor-skip-sensor-reads-during-firmware-updates.patch \
     file://0015-meta-facebook-yosemite4-Disable-in2_alarm-event.patch \
     file://0016-Implement-valve-monitor-service.patch \
+    file://0017-PSUSensor-fix-hwmon-name-mismatch.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \

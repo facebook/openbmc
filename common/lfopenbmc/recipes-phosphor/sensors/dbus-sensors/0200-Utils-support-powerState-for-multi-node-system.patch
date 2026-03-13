@@ -1,4 +1,4 @@
-From 7dccdaa0b219c2cc18d822cf85129c5ae5772f85 Mon Sep 17 00:00:00 2001
+From a497a064c4725433843afc8be09bba94af191391 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH] Utils: support powerState for multi-node system
@@ -945,7 +945,7 @@ index a28e50f..ce3d186 100644
  
  struct PSUProperty
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index c08b6c3..6340f8b 100644
+index 1a58712..96187d3 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -832,6 +832,7 @@ static void createSensorsCallback(

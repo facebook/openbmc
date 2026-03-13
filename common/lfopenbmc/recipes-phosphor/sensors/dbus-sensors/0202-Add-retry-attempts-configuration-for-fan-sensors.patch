@@ -1,4 +1,4 @@
-From e0aba4bcea741889993d08bdcbc134177feb8fef Mon Sep 17 00:00:00 2001
+From 4a1b293ed32375c4c4d6b689470d28f9906cf7a7 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Wed, 26 Mar 2025 18:49:46 +0800
 Subject: [PATCH] Add retry attempts configuration for fan sensors

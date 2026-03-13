@@ -1,4 +1,4 @@
-From 37e8a30b9b185f6a6e65eb5a940a73468ba0de40 Mon Sep 17 00:00:00 2001
+From 0ab3ce76f1069f97344e4e63bb9348faffd7472e Mon Sep 17 00:00:00 2001
 From: MandyMCHung <mandy.hung.wiwynn@gmail.com>
 Date: Mon, 3 Mar 2025 10:39:31 +0800
 Subject: [PATCH] Avoid recreating hwmon temp when blade cycle

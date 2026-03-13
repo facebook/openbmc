@@ -27,7 +27,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 // const PS1Line = `
@@ -79,7 +78,7 @@ var wallAlert = func() error {
 	wallCmd := []string{"bash", "-c", fmt.Sprintf("echo -en \"%v\" | wall", escapedMsg)}
 	_, err, _, _ := utils.RunCommand(wallCmd, 30*time.Second)
 	if err != nil {
-		return errors.Errorf("Warning: `wall` alert failed: %v", err)
+		return fmt.Errorf("Warning: `wall` alert failed: %v", err)
 	}
 	return nil
 }
@@ -89,7 +88,7 @@ var updateMOTD = func() error {
 		"/etc/motd", []byte(motdContents), 0644, 5*time.Second,
 	)
 	if err != nil {
-		return errors.Errorf("Warning: MOTD update failed: %v", err)
+		return fmt.Errorf("Warning: MOTD update failed: %v", err)
 	}
 	return nil
 }

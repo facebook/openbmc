@@ -1,7 +1,8 @@
-From 68b51e1537043d94d07e27edb714a3219ebe7dc1 Mon Sep 17 00:00:00 2001
+From 2bd04e3697f4fcb05cd360ad7579fb56cee70b6f Mon Sep 17 00:00:00 2001
 From: "eldin.lee" <eldin.lee@quantatw.com>
 Date: Wed, 9 Jul 2025 14:42:07 +0800
-Subject: [PATCH] Add delay before leak event log to prevent AC OFF glitches
+Subject: [PATCH 10/14] Add delay before leak event log to prevent AC OFF
+ glitches
 
 Insert a short delay before logging to prevent transient AC power loss from triggering incorrect events.
 ---
@@ -21,3 +22,6 @@ index e3755a7..8cf8062 100644
      // NOLINTNEXTLINE(clang-analyzer-core.uninitialized.Branch)
      if (state == DetectorStateIntf::DetectorState::Normal)
      {
+-- 
+2.47.3
+

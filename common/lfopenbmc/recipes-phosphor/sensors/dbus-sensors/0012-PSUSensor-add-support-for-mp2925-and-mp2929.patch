@@ -1,7 +1,7 @@
-From 021a0a8de01c9b8ed67f957ade71ce9663eb73b5 Mon Sep 17 00:00:00 2001
+From 945782dbe42d62d6b7ef57ba1774cf42b9636341 Mon Sep 17 00:00:00 2001
 From: Kevin Tung <kevin.tung@quantatw.com>
 Date: Thu, 13 Nov 2025 19:11:44 +0800
-Subject: [PATCH] PSUSensor: add support for mp2925 and mp2929
+Subject: [PATCH 12/14] PSUSensor: add support for mp2925 and mp2929
 
 Add support for the MPS MP2925 and MP2929 voltage regulator.
 The corresponding driver is available in linux-staging.git [1].
@@ -27,3 +27,6 @@ index 291031c..3ec8c04 100644
      {"MP2971", I2CDeviceType{"mp2971", true}},
      {"MP2973", I2CDeviceType{"mp2973", true}},
      {"MP2975", I2CDeviceType{"mp2975", true}},
+-- 
+2.47.3
+

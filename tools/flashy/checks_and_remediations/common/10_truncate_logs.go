@@ -20,13 +20,13 @@
 package common
 
 import (
+	"fmt"
 	"log"
 	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -61,7 +61,7 @@ func truncateLogs(stepParams step.StepParams) step.StepExitError {
 
 	logFilesToDelete, err := fileutils.GlobAll(deleteLogFilePatterns)
 	if err != nil {
-		errMsg := errors.Errorf("Unable to resolve file patterns '%v': %v", deleteLogFilePatterns, err)
+		errMsg := fmt.Errorf("Unable to resolve file patterns '%v': %v", deleteLogFilePatterns, err)
 		return step.ExitSafeToReboot{Err: errMsg}
 	}
 
@@ -73,7 +73,7 @@ func truncateLogs(stepParams step.StepParams) step.StepExitError {
 
 	logFilesToTruncate, err := fileutils.GlobAll(truncateLogFilePatterns)
 	if err != nil {
-		errMsg := errors.Errorf("Unable to resolve file patterns '%v': %v", deleteLogFilePatterns, err)
+		errMsg := fmt.Errorf("Unable to resolve file patterns '%v': %v", deleteLogFilePatterns, err)
 		return step.ExitSafeToReboot{Err: errMsg}
 	}
 

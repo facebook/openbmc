@@ -20,5 +20,6 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/patches_6.18:"
 #
 # Include patches from machine layer.
 #
-SRC_URI:append = "file://1001-ARM-dts-aspeed-wedge100-Enable-spi1-devices.patch \
+SRC_URI:append = " \
+    file://1001-ARM-dts-aspeed-wedge100-Enable-spi1-devices.patch \
 "

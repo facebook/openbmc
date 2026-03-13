@@ -20,7 +20,8 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/patches_6.18:"
 #
 # Include patches from elbert machine layer.
 #
-SRC_URI:append = "file://1001-ARM-dts-aspeed-elbert-Enable-spi1-controller.patch \
-                  file://1002-ARM-dts-aspeed-elbert-Enable-jtag1-controller.patch \
-                  file://1003-ARM-dts-aspeed-elbert-Enable-mdio0-devices.patch \
+SRC_URI:append = " \
+    file://1001-ARM-dts-aspeed-elbert-Enable-spi1-controller.patch \
+    file://1002-ARM-dts-aspeed-elbert-Enable-jtag1-controller.patch \
+    file://1003-ARM-dts-aspeed-elbert-Enable-mdio0-devices.patch \
 "

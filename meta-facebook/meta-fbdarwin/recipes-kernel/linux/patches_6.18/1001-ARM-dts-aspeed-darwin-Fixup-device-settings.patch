@@ -1,4 +1,4 @@
-From e4727287ae5ca792f11d14af528e062651ab54a7 Mon Sep 17 00:00:00 2001
+From 2660de9ceaeed0c09a45eae4a3a3c1e96c0ae5df Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Tue, 23 Sep 2025 22:30:15 -0700
 Subject: [PATCH 1001/1003] ARM: dts: aspeed: darwin: Fixup device settings
@@ -112,5 +112,5 @@ index 58c107a1b6cf..1698726ee6e5 100644
 +	};
 +};
 -- 
-2.47.3
+2.52.0
 

@@ -1,4 +1,4 @@
-From 4bff6c23dc6ed1bf3b191aaeb1690e58e5a50ce8 Mon Sep 17 00:00:00 2001
+From 30ee7af5fcfa1cbd1ab267356f9d1a0acb178ede Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Wed, 27 Apr 2022 10:56:49 -0700
 Subject: [PATCH 1002/1003] misc: eeprom_93xx46: Add 93C76/93C86 support
@@ -22,11 +22,11 @@ Differential Revision: https://phabricator.intern.facebook.com/D35292211
 
 Tags: accept2ship
 ---
- drivers/misc/eeprom/eeprom_93xx46.c | 38 ++++++++++++++++++++++++++---
- 1 file changed, 34 insertions(+), 4 deletions(-)
+ drivers/misc/eeprom/eeprom_93xx46.c | 40 +++++++++++++++++++++++++++--
+ 1 file changed, 38 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/misc/eeprom/eeprom_93xx46.c b/drivers/misc/eeprom/eeprom_93xx46.c
-index 9cae6f530679..85af380db604 100644
+index 5230e910a1d1..59212f420ab2 100644
 --- a/drivers/misc/eeprom/eeprom_93xx46.c
 +++ b/drivers/misc/eeprom/eeprom_93xx46.c
 @@ -30,6 +30,7 @@ struct eeprom_93xx46_platform_data {
@@ -46,7 +46,7 @@ index 9cae6f530679..85af380db604 100644
  
  	struct gpio_desc *select;
  };
-@@ -66,6 +69,11 @@ static const struct eeprom_93xx46_devtype_data at93c66_data = {
+@@ -67,6 +70,11 @@ static const struct eeprom_93xx46_devtype_data at93c66_data = {
  	.flags = EE_SIZE4K,
  };
  
@@ -58,7 +58,7 @@ index 9cae6f530679..85af380db604 100644
  static const struct eeprom_93xx46_devtype_data atmel_at93c46d_data = {
  	.flags = EE_SIZE1K,
  	.quirks = EEPROM_93XX46_QUIRK_SINGLE_WORD_READ |
-@@ -102,6 +110,11 @@ static inline bool has_quirk_extra_read_cycle(struct eeprom_93xx46_dev *edev)
+@@ -103,6 +111,11 @@ static inline bool has_quirk_extra_read_cycle(struct eeprom_93xx46_dev *edev)
  	return edev->pdata->quirks & EEPROM_93XX46_QUIRK_EXTRA_READ_CYCLE;
  }
  
@@ -70,7 +70,7 @@ index 9cae6f530679..85af380db604 100644
  static int eeprom_93xx46_read(void *priv, unsigned int off,
  			      void *val, size_t count)
  {
-@@ -186,15 +199,22 @@ static int eeprom_93xx46_ew(struct eeprom_93xx46_dev *edev, int is_on)
+@@ -187,12 +200,22 @@ static int eeprom_93xx46_ew(struct eeprom_93xx46_dev *edev, int is_on)
  	struct spi_transfer t = {};
  	int bits, ret;
  	u16 cmd_addr;
@@ -86,16 +86,15 @@ index 9cae6f530679..85af380db604 100644
 +		instruction_addr |= (is_on ? ADDR_EWEN : ADDR_EWDS);
 +
  	cmd_addr = OP_START << edev->addrlen;
- 	if (edev->pdata->flags & EE_ADDR8)
--		cmd_addr |= (is_on ? ADDR_EWEN : ADDR_EWDS) << 1;
+-	cmd_addr |= (is_on ? ADDR_EWEN : ADDR_EWDS) << (edev->addrlen - 6);
++	if (edev->pdata->flags & EE_ADDR8)
 +		cmd_addr |= instruction_addr << 1;
- 	else
--		cmd_addr |= (is_on ? ADDR_EWEN : ADDR_EWDS);
++	else
 +		cmd_addr |= instruction_addr;
  
  	if (has_quirk_instruction_length(edev)) {
  		cmd_addr <<= 2;
-@@ -323,15 +343,22 @@ static int eeprom_93xx46_eral(struct eeprom_93xx46_dev *edev)
+@@ -321,12 +344,22 @@ static int eeprom_93xx46_eral(struct eeprom_93xx46_dev *edev)
  	struct spi_transfer t = {};
  	int bits, ret;
  	u16 cmd_addr;
@@ -111,16 +110,15 @@ index 9cae6f530679..85af380db604 100644
  	bits = edev->addrlen + 3;
  
  	cmd_addr = OP_START << edev->addrlen;
- 	if (edev->pdata->flags & EE_ADDR8)
--		cmd_addr |= ADDR_ERAL << 1;
+-	cmd_addr |= ADDR_ERAL << (edev->addrlen - 6);
++	if (edev->pdata->flags & EE_ADDR8)
 +		cmd_addr |= instruction_addr << 1;
- 	else
--		cmd_addr |= ADDR_ERAL;
++	else
 +		cmd_addr |= instruction_addr;
  
  	if (has_quirk_instruction_length(edev)) {
  		cmd_addr <<= 2;
-@@ -394,6 +421,7 @@ static const struct of_device_id eeprom_93xx46_of_table[] = {
+@@ -389,6 +422,7 @@ static const struct of_device_id eeprom_93xx46_of_table[] = {
  	{ .compatible = "atmel,at93c46d", .data = &atmel_at93c46d_data, },
  	{ .compatible = "atmel,at93c56", .data = &at93c56_data, },
  	{ .compatible = "atmel,at93c66", .data = &at93c66_data, },
@@ -128,7 +126,7 @@ index 9cae6f530679..85af380db604 100644
  	{ .compatible = "microchip,93lc46b", .data = &microchip_93lc46b_data, },
  	{}
  };
-@@ -488,6 +516,8 @@ static int eeprom_93xx46_probe(struct spi_device *spi)
+@@ -483,6 +517,8 @@ static int eeprom_93xx46_probe(struct spi_device *spi)
  		edev->size = 256;
  	else if (pd->flags & EE_SIZE4K)
  		edev->size = 512;
@@ -138,5 +136,5 @@ index 9cae6f530679..85af380db604 100644
  		dev_err(&spi->dev, "unspecified size\n");
  		return -EINVAL;
 -- 
-2.47.3
+2.52.0
 

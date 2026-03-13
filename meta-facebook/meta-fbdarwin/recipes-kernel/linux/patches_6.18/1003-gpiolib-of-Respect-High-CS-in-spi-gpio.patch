@@ -1,4 +1,4 @@
-From 6fcbe86ffd950a613425bc6e4e3b0776ae2d4972 Mon Sep 17 00:00:00 2001
+From b2eed44bcc7284b9965370de1268d606aa6790d1 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Wed, 27 Apr 2022 10:56:56 -0700
 Subject: [PATCH 1003/1003] gpiolib-of: Respect High CS in spi-gpio
@@ -44,5 +44,5 @@ index fad4edf9cc5c..1f1c2e223fb6 100644
  		u32 cs;
  		int ret;
 -- 
-2.47.3
+2.52.0
 

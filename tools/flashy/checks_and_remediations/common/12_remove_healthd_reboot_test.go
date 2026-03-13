@@ -21,6 +21,7 @@ package common
 
 import (
 	"bytes"
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -30,7 +31,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 func TestRemoveHealthdReboot(t *testing.T) {
@@ -101,7 +101,7 @@ func TestRemoveHealthdReboot(t *testing.T) {
 			wantConfig:        "",
 			logContainsSeq:    []string{},
 			want: step.ExitSafeToReboot{
-				Err: errors.Errorf("Unable to parse healthd-config.json: " +
+				Err: fmt.Errorf("Unable to parse healthd-config.json: " +
 					"invalid character 'F' looking for beginning of object key string"),
 			},
 		},
@@ -113,7 +113,7 @@ func TestRemoveHealthdReboot(t *testing.T) {
 			wantConfig:        "",
 			logContainsSeq:    []string{},
 			want: step.ExitSafeToReboot{
-				Err: errors.Errorf("Can't get 'bmc_mem_utilization.threshold' entry in healthd-config " +
+				Err: fmt.Errorf("Can't get 'bmc_mem_utilization.threshold' entry in healthd-config " +
 					"{\"foo\":\"foo\"}"),
 			},
 		},

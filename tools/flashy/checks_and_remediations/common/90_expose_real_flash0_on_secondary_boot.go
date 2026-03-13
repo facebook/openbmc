@@ -21,13 +21,13 @@ package common
 
 import (
 	"encoding/binary"
+	"fmt"
 	"log"
 	"os"
 	"syscall"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 // From ASPEED AST2400/AST1250 A1 Datasheet – V1.3, p524
@@ -51,7 +51,7 @@ func init() {
 func ExposeRealFlash0OnSecondaryBoot(stepParams step.StepParams) step.StepExitError {
 	machine, err := utils.GetMachine()
 	if err != nil {
-		return step.ExitSafeToReboot{Err: errors.Errorf("Unable to fetch machine: %v", err)}
+		return step.ExitSafeToReboot{Err: fmt.Errorf("Unable to fetch machine: %w", err)}
 	}
 
 	// Bail if not running on AST2400 (armv5tejl) nor AST2500 (armv6l)
@@ -62,7 +62,7 @@ func ExposeRealFlash0OnSecondaryBoot(stepParams step.StepParams) step.StepExitEr
 
 	mem, err := MmapDevMemRw()
 	if err != nil {
-		return step.ExitSafeToReboot{Err: errors.Errorf("Unable to mmap /dev/mem: %v", err)}
+		return step.ExitSafeToReboot{Err: fmt.Errorf("Unable to mmap /dev/mem: %w", err)}
 	}
 	defer Munmap(mem)
 
@@ -98,7 +98,7 @@ var ResetWDT2StatusReg = func(mem []byte) error {
 
 	wdt2_status_reg := ReadWDT2StatusReg(mem)
 	if wdt2_status_reg&0b10 == 0b10 {
-		return errors.Errorf("Unable to clear WDT2 second boot code flag @ 0x%x, current value = 0x%x", WDT2_STATUS_REG_ADDR, wdt2_status_reg)
+		return fmt.Errorf("Unable to clear WDT2 second boot code flag @ 0x%x, current value = 0x%x", WDT2_STATUS_REG_ADDR, wdt2_status_reg)
 	}
 
 	return nil

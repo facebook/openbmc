@@ -20,11 +20,11 @@
 package common
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -45,7 +45,7 @@ func ensureEnoughFreeRAM(stepParams step.StepParams) step.StepExitError {
 	log.Printf("Minimum memory needed for update is %v B", minMemoryNeeded)
 
 	if memInfo.MemFree < minMemoryNeeded {
-		errMsg := errors.Errorf("Free memory (%v B) < minimum memory needed (%v B), reboot needed",
+		errMsg := fmt.Errorf("Free memory (%v B) < minimum memory needed (%v B), reboot needed",
 			memInfo.MemFree, minMemoryNeeded)
 		return step.ExitSafeToReboot{Err: errMsg}
 	}

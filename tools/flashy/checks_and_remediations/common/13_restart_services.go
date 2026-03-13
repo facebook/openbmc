@@ -20,12 +20,12 @@
 package common
 
 import (
+	"fmt"
 	"log"
 	"time"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -37,7 +37,7 @@ func restartServices(stepParams step.StepParams) step.StepExitError {
 
 	systemdAvail, err := utils.SystemdAvailable()
 	if err != nil {
-		errMsg := errors.Errorf("Error checking systemd availability: %v", err)
+		errMsg := fmt.Errorf("Error checking systemd availability: %v", err)
 		return step.ExitSafeToReboot{Err: errMsg}
 	}
 

@@ -34,13 +34,20 @@ class RackmonClient : public UnixClient {
   return 0;
 }
 
-static std::string to_string(const json& v) {
-  if (v.is_number())
-    return std::to_string(int(v));
-  else if (v.is_boolean())
+static std::string to_string(const json& v, bool intAsHex = false) {
+  if (v.is_number()) {
+    if (!intAsHex) {
+      return std::to_string(int(v));
+    } else {
+      std::stringstream stream;
+      stream << "0x" << std::hex << int(v);
+      return stream.str();
+    }
+  } else if (v.is_boolean()) {
     return std::to_string(bool(v));
-  else if (v.is_string())
+  } else if (v.is_string()) {
     return v;
+  }
   return v.dump();
 }
 
@@ -108,7 +115,8 @@ static void print_table(const json& j) {
             << std::endl;
   for (const auto& row : j) {
     for (const auto& key : keys) {
-      std::string val = row.contains(key) ? to_string(row[key]) : "null";
+      bool asHex = key == "uniqueDevAddress" || key == "devAddress";
+      std::string val = row.contains(key) ? to_string(row[key], asHex) : "null";
       std::cout << std::setfill(' ') << std::setw(col_width) << val << col_sep;
     }
     std::cout << "\n";

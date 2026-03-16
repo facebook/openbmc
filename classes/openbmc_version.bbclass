@@ -4,7 +4,8 @@ def get_openbmc_version(d):
     import os
     import oe.utils
     machine = d.getVar('MACHINE', True)
-    version = '%s-v0.0' % machine
+    version_suffix = d.getVar('OPENBMC_VERSION_SUFFIX', True) or ''
+    version = '%s%s-v0.0' % (machine, version_suffix)
     cur = os.path.realpath(d.getVar('COREBASE', True))
     is_openbmc_root = lambda cur: \
         os.path.isdir(os.path.join(cur, '.git')) and \
@@ -27,13 +28,18 @@ def get_openbmc_version(d):
             tags = output.splitlines()
             for tag in reversed(tags):
                 if fmtstr in tag:
-                    version = tag
+                    # Insert version suffix between machine name and version
+                    # e.g. "yosemite-v2024.13.0" -> "yosemite_s-v2024.13.0"
+                    if version_suffix:
+                        version = tag.replace(fmtstr, '%s%s-v' % (machine, version_suffix), 1)
+                    else:
+                        version = tag
                     break
         if version == '':
             cmd = git_cmd + ['rev-parse', '--short', 'HEAD']
             exitstatus, output = oe.utils.getstatusoutput(' '.join(cmd))
             if exitstatus == 0:
-                version = '%s-%s' % (machine, output)
+                version = '%s%s-%s' % (machine, version_suffix, output)
         cmd = git_cmd + ['status', '--short']
         exitstatus, output = oe.utils.getstatusoutput(' '.join(cmd))
         if exitstatus == 0 and output.strip() != "":

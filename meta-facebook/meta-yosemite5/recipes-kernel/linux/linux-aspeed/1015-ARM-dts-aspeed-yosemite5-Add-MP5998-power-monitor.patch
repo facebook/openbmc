@@ -1,0 +1,35 @@
+From aa804bb64d3111219a302cc5b453a3cd687aa911 Mon Sep 17 00:00:00 2001
+From: Daniel Hsu <Daniel-Hsu@quantatw.com>
+Date: Thu, 5 Mar 2026 17:06:10 +0800
+Subject: [PATCH] ARM: dts: aspeed: yosemite5: Add MP5998 power monitor
+
+Add the MP5998 power monitor device on I2C bus with address 0x46
+for the Yosemite5 platform.
+
+This allows the hwmon driver to probe the device and expose the
+power monitoring telemetry to userspace.
+
+lore link: https://lore.kernel.org/all/20260305084650.24511-1-Daniel-Hsu@quantatw.com/T/#u
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+index 753bd309c..6d14d5f97 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+@@ -481,6 +481,11 @@ power-sensor@45 {
+ 		shunt-resistor = <1000>;
+ 	};
+
++	power-monitor@46 {
++		compatible = "mps,mp5998";
++		reg = <0x46>;
++	};
++
+ 	power-monitor@47 {
+ 		compatible = "ti,tps25990";
+ 		reg = <0x47>;
+--
+2.43.0
+

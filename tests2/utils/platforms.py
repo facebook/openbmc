@@ -38,6 +38,7 @@ PLATFORMS = [
     "santabarbara",
     "tahan",
     "ventura",
+    "ventura2",
     "wedge100",
     "wedge400",
     "yamp",

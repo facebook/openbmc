@@ -1399,6 +1399,39 @@
             ]
         },
         {
+            "alias": "openbmc-cit-ventura2-determinator",
+            "args": {
+                "name": "openbmc-cit-ventura2-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-ventura2-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform ventura2"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-ventura2/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-cit-wedge100-determinator",
             "args": {
                 "name": "openbmc-cit-wedge100-determinator",

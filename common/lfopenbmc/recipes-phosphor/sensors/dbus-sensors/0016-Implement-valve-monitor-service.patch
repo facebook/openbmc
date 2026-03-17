@@ -1,7 +1,7 @@
-From 6d5c99c8093b7c40ea8fc63f5da1a1ede8455637 Mon Sep 17 00:00:00 2001
+From de1ea476c23d89a8abd1fb68a4bf3ac79916a1fd Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Tue, 29 Jul 2025 21:01:23 -0700
-Subject: [PATCH] Implement valve monitor service
+Subject: [PATCH 16/17] Implement valve monitor service
 
 The purpose of the valve monitor service is to monitor the water valves
 in liquid cooling setups and raise an event if the valve open/close
@@ -1019,3 +1019,6 @@ index 0000000..cebb86d
 +    install: true,
 +    install_dir: '/usr/libexec/dbus-sensors',
 +)
+-- 
+2.47.3
+

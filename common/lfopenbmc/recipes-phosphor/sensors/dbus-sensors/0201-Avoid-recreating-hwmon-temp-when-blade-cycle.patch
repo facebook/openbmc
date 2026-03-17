@@ -1,7 +1,7 @@
-From 0ab3ce76f1069f97344e4e63bb9348faffd7472e Mon Sep 17 00:00:00 2001
+From 1800505da150bed25f32c62e840c300c69039695 Mon Sep 17 00:00:00 2001
 From: MandyMCHung <mandy.hung.wiwynn@gmail.com>
 Date: Mon, 3 Mar 2025 10:39:31 +0800
-Subject: [PATCH] Avoid recreating hwmon temp when blade cycle
+Subject: [PATCH 201/202] Avoid recreating hwmon temp when blade cycle
 
 Problem:
 AC/DC cycles cause all hwmon temperature sensors to become unavailable.
@@ -128,3 +128,6 @@ index 771eb46..a6a4d81 100644
  configure_file(
      input: 'dbus-sensor_config.h.in',
      output: 'dbus-sensor_config.h',
+-- 
+2.47.3
+

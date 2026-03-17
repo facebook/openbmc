@@ -1,7 +1,7 @@
-From 7655240497b3808fd6cc18f2777e1e9bba6ccbcb Mon Sep 17 00:00:00 2001
+From 75ed7688ae1681ba9f2f9a2eb3fe08533e5b4142 Mon Sep 17 00:00:00 2001
 From: Steven Niu <steven.niu.uj@renesas.com>
 Date: Sat, 17 Feb 2024 21:14:11 +0800
-Subject: [PATCH 209/218] dt-bindings: i3c-hub: Add Renesas RG3MxxB12A1 I3C HUB
+Subject: [PATCH 209/226] dt-bindings: i3c-hub: Add Renesas RG3MxxB12A1 I3C HUB
 
 Document the Renesas RG3MxxB12A1 I3C HUB.
 Lore link: https://patchwork.kernel.org/project/linux-i3c/patch/20240217131412.4145506-1-steven.niu.uj@renesas.com/

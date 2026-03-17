@@ -1,7 +1,7 @@
-From 18db3f05adb65d499334f2826d36bf5be98a196d Mon Sep 17 00:00:00 2001
+From 9c70126f85e84caba0cf5eca6144209bbf813ec7 Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Tue, 29 Oct 2024 09:43:50 +0800
-Subject: [PATCH 207/218] Add ASPEED AST2600 I2Cv2 controller driver
+Subject: [PATCH 207/226] Add ASPEED AST2600 I2Cv2 controller driver
 
 Add AST2600 i2cv2 new register set driver.
 

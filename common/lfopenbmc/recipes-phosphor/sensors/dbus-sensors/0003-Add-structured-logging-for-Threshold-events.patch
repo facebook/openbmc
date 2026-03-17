@@ -1,7 +1,7 @@
-From 26d3c439cdf12faf11bc2467b38435e6cf71eaef Mon Sep 17 00:00:00 2001
+From 1d1961586ea1b0919124d300eb9bb369707ca12f Mon Sep 17 00:00:00 2001
 From: Amithash Prasasd <amithash@meta.com>
 Date: Thu, 21 Nov 2024 21:00:02 -0800
-Subject: [PATCH] Add structured logging for Threshold events
+Subject: [PATCH 03/17] Add structured logging for Threshold events
 
 Add capability to create structured logs for threshold crossing
 (compatible with Redfish Sensor Events) along with ability to
@@ -352,3 +352,6 @@ index 2bc03c6..216c4d6 100644
          createAssociation(association, configurationPath);
  
          sensorInterface->register_property("Unit", std::string(unit));
+-- 
+2.47.3
+

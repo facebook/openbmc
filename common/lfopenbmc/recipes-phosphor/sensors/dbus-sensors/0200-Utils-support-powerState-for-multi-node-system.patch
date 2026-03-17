@@ -1,7 +1,7 @@
-From a497a064c4725433843afc8be09bba94af191391 Mon Sep 17 00:00:00 2001
+From 8bb340a90ccd92a41fe61d1af796846f08341cf4 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
-Subject: [PATCH] Utils: support powerState for multi-node system
+Subject: [PATCH 200/202] Utils: support powerState for multi-node system
 
 The current code of dbus-sensors only get powerState values for Chassis0
 and Host0 which cannot be used for the system with multiple server
@@ -1015,3 +1015,6 @@ index 216c4d6..5bdbacc 100644
      }
  
      void markFunctional(bool isFunctional)
+-- 
+2.47.3
+

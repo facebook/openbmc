@@ -1,7 +1,7 @@
-From 4a1b293ed32375c4c4d6b689470d28f9906cf7a7 Mon Sep 17 00:00:00 2001
+From 907bffc068837ae7eeb5d63a2da86b448daad501 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Wed, 26 Mar 2025 18:49:46 +0800
-Subject: [PATCH] Add retry attempts configuration for fan sensors
+Subject: [PATCH 202/202] Add retry attempts configuration for fan sensors
 
 Added a Meson option and updated FanMain.cpp to allow configuring the
 number of retry attempts for fan sensor operations.
@@ -59,3 +59,6 @@ index c55af56..0602710 100644
              });
          };
  
+-- 
+2.47.3
+

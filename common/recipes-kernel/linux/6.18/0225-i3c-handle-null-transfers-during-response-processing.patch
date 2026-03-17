@@ -1,7 +1,7 @@
-From 19a20bea7b086e458bedbe5487c8e2f85c38433e Mon Sep 17 00:00:00 2001
+From 57f1305861ad7f2d631a88cff947748d82ba1f39 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Tue, 30 Sep 2025 16:48:35 +0800
-Subject: [PATCH] i3c: handle null transfers during response processing
+Subject: [PATCH 225/226] i3c: handle null transfers during response processing
 
 Fixes a null transfer scenario by adding error handling for responses
 when no transfer is active. Logs detailed errors for invalid responses
@@ -18,7 +18,7 @@ Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
  1 file changed, 17 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
-index 55e0bb28d1d2..aa4b4c36e70a 100644
+index 40a013121b32..f422b5222d09 100644
 --- a/drivers/i3c/master/dw-i3c-master.c
 +++ b/drivers/i3c/master/dw-i3c-master.c
 @@ -557,12 +557,26 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
@@ -52,5 +52,5 @@ index 55e0bb28d1d2..aa4b4c36e70a 100644
  		struct dw_i3c_cmd *cmd;
  		u32 resp;
 -- 
-2.52.0
+2.47.3
 

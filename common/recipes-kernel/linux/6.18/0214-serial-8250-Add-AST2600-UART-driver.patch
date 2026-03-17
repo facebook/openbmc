@@ -1,7 +1,7 @@
-From 08797d2941bc5d4004fbe6152172d9bde27419eb Mon Sep 17 00:00:00 2001
+From 0eef50be5841508875f1231c16ea05e25ad1919c Mon Sep 17 00:00:00 2001
 From: Chia-Wei Wang <chiawei_wang@aspeedtech.com>
 Date: Mon, 20 Mar 2023 16:11:32 +0800
-Subject: [PATCH 214/218] serial: 8250: Add AST2600 UART driver
+Subject: [PATCH 214/226] serial: 8250: Add AST2600 UART driver
 
 Add new UART driver with DMA support for Aspeed AST2600 SoCs.
 The drivers mainly prepare the dma instance based on the 8250_dma

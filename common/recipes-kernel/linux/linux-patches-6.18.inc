@@ -78,6 +78,8 @@ SRC_URI:append = " \
     file://0602-hwmon-pmbus-Add-xdpe132g5c-driver.patch \
     file://0603-hwmon-Add-net_brcm-driver.patch \
     file://0604-Kernel6v5-Support-apml-driver.patch \
+    file://0605-apml-Add-support-for-SP7-platform.patch \
+    file://0606-hwmon-pmbus-tda38640-Add-identification-for-vout_mode.patch \
 "
 
 #

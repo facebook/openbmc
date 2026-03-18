@@ -1,0 +1,68 @@
+From 3308388d548c1a123dfc0f14be4144f1878a7ee1 Mon Sep 17 00:00:00 2001
+From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
+Date: Wed, 4 Feb 2026 15:05:26 +0800
+Subject: [PATCH] hwmon: pmbus: tda38640: Add identification for
+ PMBUS_VOUT_MODE
+
+Add support for detecting the PMBUS_VOUT_MODE for tda38640. Both
+linear and direct modes are now handled. Previously, only linear
+mode was assumed, which could trigger "Failed to identify chip
+capabilities" for chips in direct mode.
+
+lore link: https://lore.kernel.org/all/20260204-tda38640_direct_mode-v1-1-72511cd87b41@gmail.com/
+
+Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
+---
+ drivers/hwmon/pmbus/tda38640.c | 26 +++++++++++++++++++++++++-
+ 1 file changed, 25 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/hwmon/pmbus/tda38640.c b/drivers/hwmon/pmbus/tda38640.c
+index 450b0273f..4c0024cd9 100644
+--- a/drivers/hwmon/pmbus/tda38640.c
++++ b/drivers/hwmon/pmbus/tda38640.c
+@@ -18,10 +18,33 @@ static const struct regulator_desc __maybe_unused tda38640_reg_desc[] = {
+ 	PMBUS_REGULATOR("vout", 0),
+ };
+ 
++static int tda38640_identify(struct i2c_client *client,
++			     struct pmbus_driver_info *info)
++{
++	int vout_mode;
++
++	vout_mode = pmbus_read_byte_data(client, 0, PMBUS_VOUT_MODE);
++	if (vout_mode < 0 || vout_mode == 0xff)
++		return vout_mode < 0 ? vout_mode : -ENODEV;
++	switch (vout_mode >> 5) {
++	case 0: /* Linear */
++		info->format[PSC_VOLTAGE_OUT] = linear;
++		break;
++	case 2: /* Direct */
++		info->format[PSC_VOLTAGE_OUT] = direct;
++		info->m[PSC_VOLTAGE_OUT] = 1;
++		info->b[PSC_VOLTAGE_OUT] = 0;
++		info->R[PSC_VOLTAGE_OUT] = 3;
++		break;
++	default:
++		return -ENODEV;
++	}
++	return 0;
++}
++
+ static struct pmbus_driver_info tda38640_info = {
+ 	.pages = 1,
+ 	.format[PSC_VOLTAGE_IN] = linear,
+-	.format[PSC_VOLTAGE_OUT] = linear,
+ 	.format[PSC_CURRENT_OUT] = linear,
+ 	.format[PSC_CURRENT_IN] = linear,
+ 	.format[PSC_POWER] = linear,
+@@ -33,6 +56,7 @@ static struct pmbus_driver_info tda38640_info = {
+ 	    | PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT
+ 	    | PMBUS_HAVE_IOUT | PMBUS_HAVE_STATUS_IOUT
+ 	    | PMBUS_HAVE_POUT | PMBUS_HAVE_PIN,
++	.identify = tda38640_identify,
+ #if IS_ENABLED(CONFIG_SENSORS_TDA38640_REGULATOR)
+ 	.num_regulators = 1,
+ 	.reg_desc = tda38640_reg_desc,
+-- 
+2.34.1
+

@@ -1,0 +1,82 @@
+From eca7d8ec3cdb76e5b5763553e43438e2f081b9b7 Mon Sep 17 00:00:00 2001
+From: Andy Chung <Andy.Chung@amd.com>
+Date: Wed, 10 Dec 2025 17:05:01 +0800
+Subject: [PATCH] apml: Add support for SP7 platform
+
+Extend I3C PID table to support SP7 platform.
+Link: https://github.com/AMDESE/linux-aspeed/commit/387d564e2a06289e4ff6d8202cb95570f0c8cea6
+---
+ drivers/i3c/device.c               | 4 +++-
+ drivers/misc/amd-apml/apml_sbtsi.c | 4 +++-
+ drivers/misc/amd-apml/sbrmi.c      | 4 +++-
+ 3 files changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/i3c/device.c b/drivers/i3c/device.c
+index 1a6a8703d..4d3d895e0 100644
+--- a/drivers/i3c/device.c
++++ b/drivers/i3c/device.c
+@@ -221,7 +221,7 @@ i3c_device_match_id(struct i3c_device *i3cdev,
+ {
+ 	struct i3c_device_info devinfo;
+ 	const struct i3c_device_id *id;
+-	u16 manuf, part, ext_info;
++	u16 manuf, part, ext_info, inst;
+ 	bool rndpid;
+ 
+ 	i3c_device_get_info(i3cdev, &devinfo);
+@@ -229,6 +229,8 @@ i3c_device_match_id(struct i3c_device *i3cdev,
+ 	manuf = I3C_PID_MANUF_ID(devinfo.pid);
+ 	part = I3C_PID_PART_ID(devinfo.pid);
+ 	ext_info = I3C_PID_EXTRA_INFO(devinfo.pid);
++	inst = I3C_PID_INSTANCE_ID(devinfo.pid);
++	ext_info = ext_info | (inst << 12);
+ 	rndpid = I3C_PID_RND_LOWER_32BITS(devinfo.pid);
+ 
+ 	for (id = id_table; id->match_flags != 0; id++) {
+diff --git a/drivers/misc/amd-apml/apml_sbtsi.c b/drivers/misc/amd-apml/apml_sbtsi.c
+index 10bb9ae0a..bdd01b0f5 100644
+--- a/drivers/misc/amd-apml/apml_sbtsi.c
++++ b/drivers/misc/amd-apml/apml_sbtsi.c
+@@ -314,7 +314,7 @@ static int sbtsi_i3c_probe(struct i3c_device *i3cdev)
+ 	mutex_init(&tsi_dev->lock);
+ 
+ 	dev_set_drvdata(dev, (void *)tsi_dev);
+-	hwmon_dev = devm_hwmon_device_register_with_info(dev, "sbtsi_i3c", tsi_dev,
++	hwmon_dev = devm_hwmon_device_register_with_info(dev, "sbtsi", tsi_dev,
+ 							 &sbtsi_chip_info, NULL);
+ 
+ 	if (!hwmon_dev)
+@@ -387,6 +387,8 @@ static void sbtsi_i2c_remove(struct i2c_client *client)
+ }
+ 
+ static const struct i3c_device_id sbtsi_i3c_id[] = {
++	I3C_DEVICE_EXTRA_INFO(0x112, 0, 0x118, NULL),
++	I3C_DEVICE_EXTRA_INFO(0, 0x0, 0x118, NULL),
+ 	I3C_DEVICE_EXTRA_INFO(0x112, 0, 0x1, NULL),
+ 	{}
+ };
+diff --git a/drivers/misc/amd-apml/sbrmi.c b/drivers/misc/amd-apml/sbrmi.c
+index 51cdc296e..f7d858f3a 100644
+--- a/drivers/misc/amd-apml/sbrmi.c
++++ b/drivers/misc/amd-apml/sbrmi.c
+@@ -750,7 +750,7 @@ static int sbrmi_i3c_probe(struct i3c_device *i3cdev)
+ 	if (ret)
+ 		return ret;
+ 
+-	hwmon_dev = devm_hwmon_device_register_with_info(dev, "sbrmi_i3c", rmi_dev,
++	hwmon_dev = devm_hwmon_device_register_with_info(dev, "sbrmi", rmi_dev,
+ 							 &sbrmi_chip_info, NULL);
+ 
+ 	if (!hwmon_dev)
+@@ -852,6 +852,8 @@ static const struct of_device_id __maybe_unused sbrmi_of_match[] = {
+ MODULE_DEVICE_TABLE(of, sbrmi_of_match);
+ 
+ static const struct i3c_device_id sbrmi_i3c_id[] = {
++	I3C_DEVICE_EXTRA_INFO(0x112, 0x0, 0x1118, NULL),
++	I3C_DEVICE_EXTRA_INFO(0, 0x0, 0x1118, NULL),
+ 	I3C_DEVICE_EXTRA_INFO(0x112, 0x0, 0x2, NULL),
+ 	{}
+ };
+-- 
+2.34.1
+

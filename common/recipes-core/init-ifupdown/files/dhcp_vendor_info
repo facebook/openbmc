@@ -27,6 +27,7 @@ DHCP4_OPTION_NAME="vendor-class-identifier"
 DHCP6_VENDOR_OPTS_CODE=17  # https://tools.ietf.org/html/rfc3315#page-86
 DHCP6_VENDOR_SUB_OPT=1
 
+
 # This script should
 # - Output a key2=value1:key2=value[...:keyN=valueN] formatted string to stdout.
 #   For example: model=GALAXY-LC:serial=AA1234567:side=LEFT

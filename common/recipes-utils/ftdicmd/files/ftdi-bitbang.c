@@ -177,7 +177,11 @@ int ftdi_bitbang_read_low(struct ftdi_bitbang_context *dev)
 {
     if (dev->state.mode == BITMODE_MPSSE) {
         uint8_t buf[1] = { 0x81 };
+#if (LIBFTDI_VERSION_MAJOR > 1) || (LIBFTDI_VERSION_MAJOR == 1 && LIBFTDI_VERSION_MINOR >= 5)
+        ftdi_tciflush(dev->ftdi);
+#else
         ftdi_usb_purge_rx_buffer(dev->ftdi);
+#endif
         if (ftdi_write_data(dev->ftdi, &buf[0], 1) != 1) {
             return -1;
         }
@@ -208,7 +212,11 @@ int ftdi_bitbang_read_high(struct ftdi_bitbang_context *dev)
     }
 
     uint8_t buf[1] = { 0x83 };
-    ftdi_usb_purge_rx_buffer(dev->ftdi);
+#if (LIBFTDI_VERSION_MAJOR > 1) || (LIBFTDI_VERSION_MAJOR == 1 && LIBFTDI_VERSION_MINOR >= 5)
+    ftdi_tciflush(dev->ftdi);
+#else
+        ftdi_usb_purge_rx_buffer(dev->ftdi);
+#endif
     if (ftdi_write_data(dev->ftdi, &buf[0], 1) != 1) {
         return -1;
     }

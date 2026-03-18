@@ -40,12 +40,20 @@ LOCAL_URI = " \
     "
 
 RDEPENDS:${PN} += "libusb1 libftdi"
-DEPENDS:append = "libusb1 libftdi"
+DEPENDS:append = "libusb1 libftdi pkgconfig-native"
 LDFLAGS += "-L . -l usb-1.0 -l ftdi1 "
 
 binfiles = "ftdi_bitbang ftdi_control"
 
 pkgdir = "ftdicmd"
+
+do_compile:prepend() {
+    LIBFTDI_VER=$(pkg-config --modversion libftdi1)
+    LIBFTDI_MAJOR=$(echo $LIBFTDI_VER | cut -d. -f1)
+    LIBFTDI_MINOR=$(echo $LIBFTDI_VER | cut -d. -f2)
+
+    export CFLAGS="${CFLAGS} -DLIBFTDI_VERSION_MAJOR=$LIBFTDI_MAJOR -DLIBFTDI_VERSION_MINOR=$LIBFTDI_MINOR"
+}
 
 do_install() {
   dst="${D}/usr/local/fbpackages/${pkgdir}"

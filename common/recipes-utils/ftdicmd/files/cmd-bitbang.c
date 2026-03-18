@@ -88,7 +88,7 @@ void p_help()
 
 int p_options(int c, char *optarg)
 {
-    int i;
+    int i = 0;
     switch (c) {
     case 'm':
         if (strcmp("bitbang", optarg) == 0) {

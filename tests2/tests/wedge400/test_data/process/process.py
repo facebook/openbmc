@@ -19,11 +19,22 @@
 #
 
 
+from utils.test_utils import running_systemd
+
+SYSV_PROCS = [
+    "/var/run/dhclient.eth0.pid",
+    "/var/run/dhclient6.eth0.pid",
+]
+
+SYSTEMD_PROCS = [
+    "systemd-networkd.service",
+]
+
 EXPECTED_PROCS = [
     "fscd",
     "rackmond",
-    "/var/run/dhclient.eth0.pid",
-    "/var/run/dhclient6.eth0.pid",
     "rest.py",
     "mTerm_server",
 ]
+
+EXPECTED_PROCS.extend(SYSTEMD_PROCS if running_systemd() else SYSV_PROCS)

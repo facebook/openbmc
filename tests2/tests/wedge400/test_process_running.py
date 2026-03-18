@@ -20,17 +20,13 @@
 import unittest
 
 from common.base_process_running_test import BaseProcessRunningTest
-from tests.wedge400.helper.libpal import (
-    pal_detect_power_supply_present,
-    BoardRevision,
-)
+from tests.wedge400.helper.libpal import BoardRevision, pal_detect_power_supply_present
+from utils.test_utils import running_systemd
 
 
 class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
     def set_processes(self):
         self.expected_process = [
-            "dhclient -6 -d -D LL",
-            "dhclient -pf /var/run/dhclient.eth0.pid eth0",
             "front-paneld",
             "bicmond",
             "ipmbd",
@@ -42,6 +38,20 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
             "sensord",
             "usbmon.sh",
         ]
+        SYSV_PROCESSES = [
+            "dhclient -6 -d -D LL",
+            "dhclient -pf /var/run/dhclient.eth0.pid eth0",
+        ]
+        SYSTEMD_PROCESSES = [
+            "systemd-journald",
+            "systemd-udevd",
+            "systemd-resolved",
+            "systemd-timesyncd",
+            "systemd-networkd",
+        ]
+        self.expected_process.extend(
+            SYSTEMD_PROCESSES if running_systemd() else SYSV_PROCESSES
+        )
         # If pem is present, then add pemd process in list
         if (
             pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM1) == "pem1"

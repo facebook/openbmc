@@ -1,7 +1,7 @@
-From 6923e2827d58ff0927ce8912fda65c837af090c7 Mon Sep 17 00:00:00 2001
+From 0e90dedf24a0973bd06ef0c8b107886f8cf72a17 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Fri, 10 Oct 2025 04:54:58 +0800
-Subject: [PATCH 1/1] hwmon: (pmbus) add driver for MPS MP9945
+Subject: [PATCH 701/701] hwmon: (pmbus) add driver for MPS MP9945
 
 Add support for mp9945 device from Monolithic Power Systems, Inc.
 (MPS) vendor. This is a single phase digital step down converter.
@@ -21,11 +21,11 @@ Signed-off-by: Guenter Roeck <linux@roeck-us.net>
  create mode 100644 drivers/hwmon/pmbus/mp9945.c
 
 diff --git a/Documentation/hwmon/index.rst b/Documentation/hwmon/index.rst
-index bebe0e731be7..45a26927e64f 100644
+index 960f9166ae8e..bd3394b8fed6 100644
 --- a/Documentation/hwmon/index.rst
 +++ b/Documentation/hwmon/index.rst
 @@ -186,6 +186,7 @@ Hardware Monitoring Kernel Drivers
-    mp5920
+    mp5926
     mp5990
     mp9941
 +   mp9945
@@ -156,10 +156,10 @@ index 000000000000..f406f96efcf9
 +
 +**temp1_max_alarm**
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 953bf1d29a81..4a6e00df8a38 100644
+index 03bb824eaab6..fcf039423194 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -17499,6 +17499,13 @@ S:	Maintained
+@@ -17547,6 +17547,13 @@ S:	Maintained
  F:	Documentation/hwmon/mp9941.rst
  F:	drivers/hwmon/pmbus/mp9941.c
  
@@ -174,10 +174,10 @@ index 953bf1d29a81..4a6e00df8a38 100644
  M:	Alexey Klimov <alexey.klimov@linaro.org>
  L:	linux-media@vger.kernel.org
 diff --git a/drivers/hwmon/pmbus/Kconfig b/drivers/hwmon/pmbus/Kconfig
-index fdcef5dfa5a8..f3fb94cebf1a 100644
+index a7432773507e..fc5729abbbe0 100644
 --- a/drivers/hwmon/pmbus/Kconfig
 +++ b/drivers/hwmon/pmbus/Kconfig
-@@ -490,6 +490,15 @@ config SENSORS_MP9941
+@@ -489,6 +489,15 @@ config SENSORS_MP9941
  	  This driver can also be built as a module. If so, the module will
  	  be called mp9941.
  
@@ -194,11 +194,11 @@ index fdcef5dfa5a8..f3fb94cebf1a 100644
  	bool "Regulator support for MPQ7932"
  	depends on SENSORS_MPQ7932 && REGULATOR
 diff --git a/drivers/hwmon/pmbus/Makefile b/drivers/hwmon/pmbus/Makefile
-index 43fbc546fb5d..349a89b6d92e 100644
+index 81b27bff1c66..5045d7fdbfe7 100644
 --- a/drivers/hwmon/pmbus/Makefile
 +++ b/drivers/hwmon/pmbus/Makefile
-@@ -49,6 +49,7 @@ obj-$(CONFIG_SENSORS_MP5023)	+= mp5023.o
- obj-$(CONFIG_SENSORS_MP5920)	+= mp5920.o
+@@ -49,6 +49,7 @@ obj-$(CONFIG_SENSORS_MP5920)	+= mp5920.o
+ obj-$(CONFIG_SENSORS_MP5926)	+= mp5926.o
  obj-$(CONFIG_SENSORS_MP5990)	+= mp5990.o
  obj-$(CONFIG_SENSORS_MP9941)	+= mp9941.o
 +obj-$(CONFIG_SENSORS_MP9945)	+= mp9945.o

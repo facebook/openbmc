@@ -1,7 +1,7 @@
-From 7e9813a8f7cda3c6ac43690b74a37aa04ffde44e Mon Sep 17 00:00:00 2001
+From 5969576d16f3e79abee31148ab8ad8f7aa5dc040 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Fri, 24 Nov 2023 15:54:07 +0800
-Subject: [PATCH 604/604] Kernel6v5: Support apml driver
+Subject: [PATCH 604/606] Kernel6v5: Support apml driver
 
 https://github.com/AMDESE/OpenBMC/blob/master/meta-amd/meta-common/recipes-kernel/linux/linux-aspeed/0057-apml_sbrmi-Add-support-to-identify-register-address-.patch
 
@@ -38,7 +38,7 @@ Link: https://github.com/AMDESE/OpenBMC/blob/master/meta-amd/meta-common/recipes
  create mode 100644 include/uapi/linux/amd-apml.h
 
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 211443320ee5..8970ee1b2fe7 100644
+index 48d935cdca6e..a456a6f57462 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
 @@ -1955,6 +1955,28 @@ config SENSORS_SBTSI
@@ -2754,5 +2754,5 @@ index 000000000000..041610925fad
 +
 +#endif /*_AMD_APML_H_*/
 -- 
-2.47.3
+2.52.0
 

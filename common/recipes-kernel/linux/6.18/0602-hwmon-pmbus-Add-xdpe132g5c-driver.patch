@@ -1,7 +1,7 @@
-From 150a95f2b2d1bbb350a672045079bea8ae5d9a85 Mon Sep 17 00:00:00 2001
+From abb6c7b062d568fb78aef8ddf7ae623801ae5cb7 Mon Sep 17 00:00:00 2001
 From: "karthik.gengan" <gengankarthik@gmail.com>
 Date: Fri, 4 Nov 2022 06:31:37 +0000
-Subject: [PATCH 602/604] hwmon: (pmbus) Add xdpe132g5c driver
+Subject: [PATCH 602/606] hwmon: (pmbus) Add xdpe132g5c driver
 
 Below 2 commits are squashed into the single patch:
 
@@ -257,5 +257,5 @@ index 000000000000..c982405b092b
 +MODULE_LICENSE("GPL");
 +MODULE_IMPORT_NS(PMBUS);
 -- 
-2.47.3
+2.52.0
 

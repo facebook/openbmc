@@ -1,7 +1,7 @@
-From 3308388d548c1a123dfc0f14be4144f1878a7ee1 Mon Sep 17 00:00:00 2001
+From 67d7b06c2672cc78cc2fb0c54653a8306319a946 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Wed, 4 Feb 2026 15:05:26 +0800
-Subject: [PATCH] hwmon: pmbus: tda38640: Add identification for
+Subject: [PATCH 606/606] hwmon: pmbus: tda38640: Add identification for
  PMBUS_VOUT_MODE
 
 Add support for detecting the PMBUS_VOUT_MODE for tda38640. Both
@@ -17,12 +17,12 @@ Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
  1 file changed, 25 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/hwmon/pmbus/tda38640.c b/drivers/hwmon/pmbus/tda38640.c
-index 450b0273f..4c0024cd9 100644
+index d902d39f4..3d0c174ea 100644
 --- a/drivers/hwmon/pmbus/tda38640.c
 +++ b/drivers/hwmon/pmbus/tda38640.c
-@@ -18,10 +18,33 @@ static const struct regulator_desc __maybe_unused tda38640_reg_desc[] = {
- 	PMBUS_REGULATOR("vout", 0),
- };
+@@ -139,10 +139,33 @@ static int svid_mode(struct i2c_client *client, struct tda38640_data *data)
+ 	return svid;
+ }
  
 +static int tda38640_identify(struct i2c_client *client,
 +			     struct pmbus_driver_info *info)
@@ -55,7 +55,7 @@ index 450b0273f..4c0024cd9 100644
  	.format[PSC_CURRENT_OUT] = linear,
  	.format[PSC_CURRENT_IN] = linear,
  	.format[PSC_POWER] = linear,
-@@ -33,6 +56,7 @@ static struct pmbus_driver_info tda38640_info = {
+@@ -153,6 +176,7 @@ static struct pmbus_driver_info tda38640_info = {
  	    | PMBUS_HAVE_VOUT | PMBUS_HAVE_STATUS_VOUT
  	    | PMBUS_HAVE_IOUT | PMBUS_HAVE_STATUS_IOUT
  	    | PMBUS_HAVE_POUT | PMBUS_HAVE_PIN,
@@ -64,5 +64,5 @@ index 450b0273f..4c0024cd9 100644
  	.num_regulators = 1,
  	.reg_desc = tda38640_reg_desc,
 -- 
-2.34.1
+2.52.0
 

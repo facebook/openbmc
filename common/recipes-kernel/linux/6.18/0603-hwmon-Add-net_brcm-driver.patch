@@ -1,7 +1,7 @@
-From 867a4261b015399d32d169f69dd1bf90080da69f Mon Sep 17 00:00:00 2001
+From 242eb0cd57ff15f93502fc69d2d8d418734f6c84 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Thu, 8 Apr 2021 15:23:48 -0700
-Subject: [PATCH 603/604] hwmon: Add net_brcm driver
+Subject: [PATCH 603/606] hwmon: Add net_brcm driver
 
 Summary:
 
@@ -30,7 +30,7 @@ Signature: 27585349:1617733366:5443ecb847967f7725c2d8d6416b357b37ac4f28
  create mode 100644 drivers/hwmon/net_brcm.c
 
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 2760feb9f83b..211443320ee5 100644
+index 2a71b6e834b0..48d935cdca6e 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
 @@ -1797,6 +1797,16 @@ config SENSORS_NCT7904
@@ -297,5 +297,5 @@ index 000000000000..638a4ab7d7cf
 +MODULE_DESCRIPTION("NET_BRCM Driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.47.3
+2.52.0
 

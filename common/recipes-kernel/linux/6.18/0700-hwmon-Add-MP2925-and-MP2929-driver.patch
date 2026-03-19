@@ -1,7 +1,7 @@
-From a79472e30be48e6693f83d298836880b56afc5a7 Mon Sep 17 00:00:00 2001
+From 621329d1bf843c639e9116b23ce6db671101965a Mon Sep 17 00:00:00 2001
 From: Wensheng Wang <wenswang@yeah.net>
 Date: Sun, 28 Sep 2025 17:28:45 +0800
-Subject: [PATCH 1/1] hwmon: Add MP2925 and MP2929 driver
+Subject: [PATCH 700/701] hwmon: Add MP2925 and MP2929 driver
 
 Add support for MPS VR mp2925 and mp2929 controller. This driver exposes
 telemetry and limit value readings and writtings.
@@ -21,7 +21,7 @@ Signed-off-by: Guenter Roeck <linux@roeck-us.net>
  create mode 100644 drivers/hwmon/pmbus/mp2925.c
 
 diff --git a/Documentation/hwmon/index.rst b/Documentation/hwmon/index.rst
-index 51a5bdf75b08..cb3e61ddd311 100644
+index 2be07966fed6..960f9166ae8e 100644
 --- a/Documentation/hwmon/index.rst
 +++ b/Documentation/hwmon/index.rst
 @@ -177,6 +177,7 @@ Hardware Monitoring Kernel Drivers
@@ -190,10 +190,10 @@ index 000000000000..63eda215b6cb
 +
 +**temp2_max_alarm**
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 46126ce2f968..cb6e7e8322e8 100644
+index 9b181438d07d..03bb824eaab6 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -17462,6 +17462,13 @@ S:	Maintained
+@@ -17512,6 +17512,13 @@ S:	Maintained
  F:	Documentation/hwmon/mp2891.rst
  F:	drivers/hwmon/pmbus/mp2891.c
  
@@ -208,7 +208,7 @@ index 46126ce2f968..cb6e7e8322e8 100644
  M:	Wensheng Wang <wenswang@yeah.net>
  L:	linux-hwmon@vger.kernel.org
 diff --git a/drivers/hwmon/pmbus/Kconfig b/drivers/hwmon/pmbus/Kconfig
-index da04ff6df28b..e03b6271d487 100644
+index ced45c1a1203..a7432773507e 100644
 --- a/drivers/hwmon/pmbus/Kconfig
 +++ b/drivers/hwmon/pmbus/Kconfig
 @@ -401,6 +401,15 @@ config SENSORS_MP2891
@@ -228,7 +228,7 @@ index da04ff6df28b..e03b6271d487 100644
  	tristate "MPS MP29502"
  	help
 diff --git a/drivers/hwmon/pmbus/Makefile b/drivers/hwmon/pmbus/Makefile
-index 4c5ff3f32c5e..8f8f305b4d4d 100644
+index 808a6d4c2145..81b27bff1c66 100644
 --- a/drivers/hwmon/pmbus/Makefile
 +++ b/drivers/hwmon/pmbus/Makefile
 @@ -40,6 +40,7 @@ obj-$(CONFIG_SENSORS_MP2856)	+= mp2856.o

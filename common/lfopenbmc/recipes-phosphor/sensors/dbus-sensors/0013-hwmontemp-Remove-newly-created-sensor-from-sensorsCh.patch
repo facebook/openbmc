@@ -1,7 +1,7 @@
-From eb2c29bd527d2dda2b029643047c7459fd49fd81 Mon Sep 17 00:00:00 2001
+From ff423801348223ede90121c11915ae6b422af8d4 Mon Sep 17 00:00:00 2001
 From: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
 Date: Thu, 27 Nov 2025 18:31:21 +0800
-Subject: [PATCH 13/17] hwmontemp: Remove newly created sensor from
+Subject: [PATCH 13/18] hwmontemp: Remove newly created sensor from
  sensorsChanged during rescan
 
 When a sensor is recreated during rescan, the existing sensor object is
@@ -75,5 +75,5 @@ index 7059c84..3b1d6af 100644
                  }
  
 -- 
-2.47.3
+2.52.0
 

@@ -1,7 +1,7 @@
-From 934516bcd24436867cdb4724fb9bef66af07ac7f Mon Sep 17 00:00:00 2001
+From c1314a269e17f355bec8fa6ef735039db4d97b31 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 23 Jan 2025 14:27:45 +0800
-Subject: [PATCH 05/17] psusensors: fixed multiple power state issue
+Subject: [PATCH 05/18] psusensors: fixed multiple power state issue
 
 Link:https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/77391
 
@@ -32,5 +32,5 @@ index 2de3315..34b0ceb 100644
              {
                  lg2::error("Min must be less than Max");
 -- 
-2.47.3
+2.52.0
 

@@ -1,7 +1,7 @@
-From bc927836534eb64bd4bfdec0dffd5384e6d7fe6f Mon Sep 17 00:00:00 2001
+From 222da38a3cbc2756fc1b24e3faaea56d2c38cb2e Mon Sep 17 00:00:00 2001
 From: Yang Chen <yang.chen@quantatw.com>
 Date: Wed, 23 Jul 2025 14:47:58 +0800
-Subject: [PATCH 08/17] PWMSensor: synchronize hardware PWM with D-Bus property
+Subject: [PATCH 08/18] PWMSensor: synchronize hardware PWM with D-Bus property
 
 The Fan PWM sensor property setter (Value/Target) previously only
 tracked the last set value (resp), but the actual hardware PWM
@@ -178,5 +178,5 @@ index 3a1396e..84cbb93 100644
          },
          [this](uint64_t& curVal) {
 -- 
-2.47.3
+2.52.0
 

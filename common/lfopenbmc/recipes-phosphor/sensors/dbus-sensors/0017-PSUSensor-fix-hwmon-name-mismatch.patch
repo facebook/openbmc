@@ -1,7 +1,7 @@
-From 1daa23737b0c1d3a7f0e100c057538adfefe21a6 Mon Sep 17 00:00:00 2001
+From 20d49d82d5f3ce2ee91fdb1156c9a34181fe03c1 Mon Sep 17 00:00:00 2001
 From: Haiyue Wang <haiyuewa@163.com>
 Date: Wed, 11 Mar 2026 03:20:52 +0800
-Subject: [PATCH 17/17] PSUSensor: fix hwmon name mismatch
+Subject: [PATCH 17/18] PSUSensor: fix hwmon name mismatch
 
 The commit [1] "Move datastructures to init before main" breaks the
 hwmon name comparison.
@@ -36,5 +36,5 @@ index c08b6c3..1a58712 100644
          {
              // To avoid this error message, add your driver name to
 -- 
-2.47.3
+2.52.0
 

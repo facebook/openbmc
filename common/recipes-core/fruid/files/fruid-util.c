@@ -802,9 +802,6 @@ int do_print_fru(int argc, char * argv[], unsigned char print_format)
 
   if (fru != FRU_ALL) {
     ret = print_fru(fru, device, false, print_format,fru_array);
-    if (ret < 0) {
-      return ret;
-    }
   } else {
     ret = 0;
     for (fru = 1; fru <= MAX_NUM_FRUS; fru++) {

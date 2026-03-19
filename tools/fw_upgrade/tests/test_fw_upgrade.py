@@ -10,6 +10,9 @@ import os
 import sys
 cmd_folder = (
     os.path.realpath(
+        # pyre-fixme[6]: For 1st argument expected `Union[(...) -> Any, Type[Any],
+        #  CodeType, FrameType, FunctionType, MethodType, ModuleType, TracebackType]`
+        #  but got `Optional[FrameType]`.
         os.path.abspath(os.path.split(inspect.getfile(inspect.currentframe()))[0])
     )
 ).rstrip("_test")

@@ -3,6 +3,7 @@ import collections
 import glob
 import json
 import logging
+# pyre-fixme[21]: Could not find module `exceptions`.
 from exceptions import (
     FwJsonExceptionMismatchEntities,
     FwJsonExceptionMissingFiles,
@@ -10,6 +11,7 @@ from exceptions import (
 )
 from typing import Dict, List
 
+# pyre-fixme[21]: Could not find module `constants`.
 from constants import (
     DEFAULT_UPGRADABLE_ENTITIES,
     UFW_ENTITY_INSTANCE,

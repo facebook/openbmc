@@ -5,8 +5,11 @@ import os
 import sys
 import tarfile
 
+# pyre-fixme[21]: Could not find module `constants`.
 from constants import DEFAULT_UPGRADABLE_ENTITIES, ResetMode
+# pyre-fixme[21]: Could not find module `entity_upgrader`.
 from entity_upgrader import FwUpgrader
+# pyre-fixme[21]: Could not find module `fw_json`.
 from fw_json import FwJson
 
 

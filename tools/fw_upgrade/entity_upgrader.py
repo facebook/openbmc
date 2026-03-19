@@ -6,6 +6,7 @@ import os
 import re
 import subprocess
 import time
+# pyre-fixme[21]: Could not find module `exceptions`.
 from exceptions import (
     FwUpgraderFailedUpgrade,
     FwUpgraderMissingFileHash,
@@ -15,6 +16,7 @@ from exceptions import (
 )
 from typing import Any, Dict, Iterable, List, Optional
 
+# pyre-fixme[21]: Could not find module `constants`.
 from constants import (
     HashType,
     ResetMode,
@@ -70,6 +72,7 @@ class FwEntityUpgrader(object):
 
     # Step 1
     def _get_entities_list(
+        # pyre-fixme[9]: entities has type `Iterable[str]`; used as `None`.
         self, entities: Iterable[str] = None
     ) -> Iterable[Optional[str]]:
         """
@@ -202,6 +205,8 @@ class FwEntityUpgrader(object):
         """
         need_to_upgrade = False
         entities = self._get_entity_list_string_in_json()
+        # pyre-fixme[6]: For 1st argument expected `Iterable[str]` but got
+        #  `Optional[List[str]]`.
         instance_list = self._get_entities_list(entities)
 
         for instance in instance_list:
@@ -275,6 +280,7 @@ class FwEntityUpgrader(object):
         return return_code, instance_successful
 
     # Step 5
+    # pyre-fixme[11]: Annotation `UpgradeState` is not defined as a type.
     def _run_post_upgrade_action(self, item_successful: UpgradeState):
         """
         Inputs:
@@ -339,6 +345,8 @@ class FwEntityUpgrader(object):
                 self._fw_entity, str(item_priority)
             )
         )
+        # pyre-fixme[6]: For 1st argument expected `Iterable[str]` but got
+        #  `Optional[List[str]]`.
         instance_list = self._get_entities_list(self._get_entity_list_string_in_json())
         filename = os.path.join(self._cwd, self._fw_info[UFW_NAME])
         self._verify_item_binary(filename)
@@ -456,6 +464,7 @@ class FwUpgrader(object):
         stop_on_error: bool = False,
         dryrun: bool = False,
         forced_upgrade: bool = False,
+        # pyre-fixme[11]: Annotation `ResetMode` is not defined as a type.
         reset: ResetMode = ResetMode.NO_RESET,
     ):
         self._ordered_json = json  # type: Dict

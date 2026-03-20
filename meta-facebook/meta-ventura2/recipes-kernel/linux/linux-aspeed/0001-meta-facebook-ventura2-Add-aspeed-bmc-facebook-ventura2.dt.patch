@@ -1,13 +1,13 @@
-From e87eef239b80e2e7150a887e3de31cbdd63afd74 Mon Sep 17 00:00:00 2001
+From 70d3b860c2d080c877a8921619fee479196ec0b0 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
-Date: Tue, 20 Jan 2026 10:53:37 +0800
+Date: Fri, 30 Jan 2026 08:58:27 +0800
 Subject: [PATCH] meta-facebook-ventura2-Add-aspeed-bmc-facebook-ventura2.dts
 
 Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 ---
  arch/arm/boot/dts/aspeed/Makefile             |    1 +
- .../aspeed/aspeed-bmc-facebook-ventura2.dts   | 2955 +++++++++++++++++
- 2 files changed, 2956 insertions(+)
+ .../aspeed/aspeed-bmc-facebook-ventura2.dts   | 2977 +++++++++++++++++
+ 2 files changed, 2978 insertions(+)
  create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
 
 diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
@@ -24,10 +24,10 @@ index 0f0b5b707654..43957ccd4c3d 100644
  	aspeed-bmc-facebook-wedge100.dtb \
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
 new file mode 100644
-index 000000000000..9a3c3e2b172d
+index 000000000000..0d075c7410c0
 --- /dev/null
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
-@@ -0,0 +1,2955 @@
+@@ -0,0 +1,2977 @@
 +// SPDX-License-Identifier: GPL-2.0
 +// Copyright (c) 2023 Facebook Inc.
 +/dts-v1/;
@@ -40,6 +40,7 @@ index 000000000000..9a3c3e2b172d
 +	model = "Facebook ventura2 RMC";
 +	compatible = "facebook,ventura2-rmc", "aspeed,ast2600";
 +	aliases {
++		serial2 = &uart3;
 +		serial4 = &uart5;
 +
 +		/*
@@ -360,7 +361,7 @@ index 000000000000..9a3c3e2b172d
 +				"PWR_LED","","","BMC_HEARTBEAT_N",
 +	/*Q0-Q7*/	"","","","","","","","",
 +	/*R0-R7*/	"","","","","","","","",
-+	/*S0-S7*/	"","","","","","","","",
++	/*S0-S7*/	"","","SYS_BMC_PWRBTN_R_N","","","","","",
 +	/*T0-T7*/	"","","","","","","","",
 +	/*U0-U7*/	"","","","","","","","",
 +	/*V0-V7*/	"","","","","","","","",
@@ -415,9 +416,10 @@ index 000000000000..9a3c3e2b172d
 +			#address-cells = <1>;
 +			#size-cells = <0>;
 +			reg = <2>;
-+			adc@08 {
++			adc_press: adc@08 {
 +				reg = <0x08>;
 +				compatible = "lltc,ltc2305";
++				#io-channel-cells = <1>;
 +			};
 +		};
 +
@@ -649,14 +651,16 @@ index 000000000000..9a3c3e2b172d
 +	status = "okay";
 +	clock-frequency = <400000>;
 +
-+	adc@08 {
++	adc_op_fb1: adc@08 {
 +		reg = <0x08>;
 +		compatible = "lltc,ltc2305";
++		#io-channel-cells = <1>;
 +	};
 +
-+	adc@09 {
++	adc_op_fb2: adc@09 {
 +		reg = <0x09>;
 +		compatible = "lltc,ltc2305";
++		#io-channel-cells = <1>;
 +	};
 +
 +	dac@c {
@@ -677,9 +681,9 @@ index 000000000000..9a3c3e2b172d
 +		vcc-supply = <&p5v_dac_aux>;
 +	};
 +
-+	prsnt_io_expander0: gpio@30 {
++	prsnt_io_expander0: gpio@40 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x30>;
++		reg = <0x40>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -708,9 +712,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	prsnt_io_expander1: gpio@31 {
++	prsnt_io_expander1: gpio@41 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x31>;
++		reg = <0x41>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -739,9 +743,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	prsnt_io_expander2: gpio@32 {
++	prsnt_io_expander2: gpio@42 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x32>;
++		reg = <0x42>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -770,9 +774,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	prsnt_io_expander3: gpio@33 {
++	prsnt_io_expander3: gpio@43 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x33>;
++		reg = <0x43>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -801,9 +805,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	prsnt_io_expander4: gpio@34 {
++	prsnt_io_expander4: gpio@44 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x34>;
++		reg = <0x44>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -832,9 +836,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	prsnt_io_expander5: gpio@35 {
++	prsnt_io_expander5: gpio@45 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x35>;
++		reg = <0x45>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -863,9 +867,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	prsnt_io_expander6: gpio@36 {
++	prsnt_io_expander6: gpio@46 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x36>;
++		reg = <0x46>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -894,9 +898,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	prsnt_io_expander7: gpio@37 {
++	prsnt_io_expander7: gpio@47 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x37>;
++		reg = <0x47>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -925,9 +929,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	pwrgd_io_expander0: gpio@38 {
++	pwrgd_io_expander0: gpio@48 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x38>;
++		reg = <0x48>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -956,9 +960,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	pwrgd_io_expander1: gpio@39 {
++	pwrgd_io_expander1: gpio@49 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x39>;
++		reg = <0x49>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -987,9 +991,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	pwrgd_io_expander2: gpio@3a {
++	pwrgd_io_expander2: gpio@4a {
 +		compatible = "nxp,pca9698";
-+		reg = <0x3a>;
++		reg = <0x4a>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1018,9 +1022,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	pwrgd_io_expander3: gpio@3b {
++	pwrgd_io_expander3: gpio@4b {
 +		compatible = "nxp,pca9698";
-+		reg = <0x3b>;
++		reg = <0x4b>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1049,9 +1053,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	pwrgd_io_expander4: gpio@3c {
++	pwrgd_io_expander4: gpio@4c {
 +		compatible = "nxp,pca9698";
-+		reg = <0x3c>;
++		reg = <0x4c>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1080,9 +1084,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	pwrgd_io_expander5: gpio@3d {
++	pwrgd_io_expander5: gpio@4d {
 +		compatible = "nxp,pca9698";
-+		reg = <0x3d>;
++		reg = <0x4d>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1111,9 +1115,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	pwrgd_io_expander6: gpio@3e {
++	pwrgd_io_expander6: gpio@4e {
 +		compatible = "nxp,pca9698";
-+		reg = <0x3e>;
++		reg = <0x4e>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1142,9 +1146,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	pwrgd_io_expander7: gpio@3f {
++	pwrgd_io_expander7: gpio@4f {
 +		compatible = "nxp,pca9698";
-+		reg = <0x3f>;
++		reg = <0x4f>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1173,9 +1177,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	large_leak_io_expander0: gpio@40 {
++	large_leak_io_expander0: gpio@50 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x40>;
++		reg = <0x50>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1204,9 +1208,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	large_leak_io_expander1: gpio@41 {
++	large_leak_io_expander1: gpio@51 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x41>;
++		reg = <0x51>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1235,9 +1239,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	large_leak_io_expander2: gpio@42 {
++	large_leak_io_expander2: gpio@52 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x42>;
++		reg = <0x52>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1266,9 +1270,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	large_leak_io_expander3: gpio@43 {
++	large_leak_io_expander3: gpio@53 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x43>;
++		reg = <0x53>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1297,9 +1301,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	large_leak_io_expander4: gpio@44 {
++	large_leak_io_expander4: gpio@54 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x44>;
++		reg = <0x54>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1328,9 +1332,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	large_leak_io_expander5: gpio@45 {
++	large_leak_io_expander5: gpio@55 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x45>;
++		reg = <0x55>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1359,9 +1363,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	large_leak_io_expander6: gpio@46 {
++	large_leak_io_expander6: gpio@56 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x46>;
++		reg = <0x56>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1390,9 +1394,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	large_leak_io_expander7: gpio@47 {
++	large_leak_io_expander7: gpio@57 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x47>;
++		reg = <0x57>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1421,9 +1425,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	small_leak_io_expander0: gpio@48 {
++	small_leak_io_expander0: gpio@58 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x48>;
++		reg = <0x58>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1452,9 +1456,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	small_leak_io_expander1: gpio@49 {
++	small_leak_io_expander1: gpio@59 {
 +		compatible = "nxp,pca9698";
-+		reg = <0x49>;
++		reg = <0x59>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1483,9 +1487,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	small_leak_io_expander2: gpio@4a {
++	small_leak_io_expander2: gpio@5a {
 +		compatible = "nxp,pca9698";
-+		reg = <0x4a>;
++		reg = <0x5a>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1514,9 +1518,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	small_leak_io_expander3: gpio@4b {
++	small_leak_io_expander3: gpio@5b {
 +		compatible = "nxp,pca9698";
-+		reg = <0x4b>;
++		reg = <0x5b>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1545,9 +1549,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	small_leak_io_expander4: gpio@4c {
++	small_leak_io_expander4: gpio@5c {
 +		compatible = "nxp,pca9698";
-+		reg = <0x4c>;
++		reg = <0x5c>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1576,9 +1580,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	small_leak_io_expander5: gpio@4d {
++	small_leak_io_expander5: gpio@5d {
 +		compatible = "nxp,pca9698";
-+		reg = <0x4d>;
++		reg = <0x5d>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1607,9 +1611,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	small_leak_io_expander6: gpio@4e {
++	small_leak_io_expander6: gpio@5e {
 +		compatible = "nxp,pca9698";
-+		reg = <0x4e>;
++		reg = <0x5e>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1638,9 +1642,9 @@ index 000000000000..9a3c3e2b172d
 +		"", "";
 +	};
 +
-+	small_leak_io_expander7: gpio@4f {
++	small_leak_io_expander7: gpio@5f {
 +		compatible = "nxp,pca9698";
-+		reg = <0x4f>;
++		reg = <0x5f>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
 +		interrupt-parent = <&sgpiom0>;
@@ -1692,6 +1696,7 @@ index 000000000000..9a3c3e2b172d
 +&i2c4 {
 +	status = "okay";
 +	multi-master;
++	mctp-controller;
 +	mctp0: mctp@10 {
 +		compatible = "mctp-i2c-controller";
 +		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
@@ -1702,7 +1707,6 @@ index 000000000000..9a3c3e2b172d
 +		reg = <0x77>;
 +		#address-cells = <1>;
 +		#size-cells = <0>;
-+		idle-state = <6>;
 +
 +		i2c4mux0ch0: i2c@0 {
 +			#address-cells = <1>;
@@ -1954,6 +1958,36 @@ index 000000000000..9a3c3e2b172d
 +&i2c6 {
 +	status = "okay";
 +
++	adc@08 {
++		reg = <0x08>;
++		compatible = "lltc,ltc2305";
++		#io-channel-cells = <1>;
++	};
++
++	adc@09 {
++		reg = <0x09>;
++		compatible = "lltc,ltc2305";
++		#io-channel-cells = <1>;
++	};
++
++	dac@0c {
++		reg = <0x0c>;
++		compatible = "adi,ad5612";
++		vcc-supply = <&p5v_dac_aux>;
++	};
++
++	dac@0e {
++		reg = <0x0e>;
++		compatible = "adi,ad5612";
++		vcc-supply = <&p5v_dac_aux>;
++	};
++
++	dac@0f {
++		reg = <0x0f>;
++		compatible = "adi,ad5612";
++		vcc-supply = <&p5v_dac_aux>;
++	};
++
 +	// Marvell 88E6393X EEPROM
 +	eeprom@50 {
 +		compatible = "atmel,24c64";
@@ -1984,6 +2018,8 @@ index 000000000000..9a3c3e2b172d
 +		reg = <0x21>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
++		interrupt-parent = <&io_expander7>;
++		interrupts = <1 IRQ_TYPE_LEVEL_LOW>;
 +
 +		gpio-line-names =
 +		"PWRGD_CPU_LVC3_BMC", "R_FM_BIOS_POST_CMPLT_BMC",
@@ -2156,22 +2192,10 @@ index 000000000000..9a3c3e2b172d
 +		shunt-resistor = <20000>;
 +	};
 +
-+	power-sensor@42 {
-+		compatible = "ti,ina238";
-+		reg = <0x42>;
-+		shunt-resistor = <1000>;
-+	};
-+
 +	power-sensor@43 {
 +		compatible = "ti,ina238";
 +		reg = <0x43>;
 +		shunt-resistor = <20000>;
-+	};
-+
-+	power-sensor@46 {
-+		compatible = "ti,ina238";
-+		reg = <0x46>;
-+		shunt-resistor = <1000>;
 +	};
 +
 +	adc@35 {
@@ -2764,18 +2788,6 @@ index 000000000000..9a3c3e2b172d
 +	status = "okay";
 +};
 +
-+&mac0 {
-+	status = "okay";
-+	phy-mode = "rgmii";
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_rgmii1_default>;
-+
-+	fixed-link {
-+		speed = <1000>;
-+		full-duplex;
-+	};
-+};
-+
 +&mac2 {
 +	status = "okay";
 +	phy-mode = "rmii";
@@ -2799,6 +2811,12 @@ index 000000000000..9a3c3e2b172d
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&pinctrl_rmii4_default>;
 +	use-ncsi;
++	ncsi-ctrl,start-redo-probe;
++	ncsi-package = <1>;
++};
++
++&mdio0 {
++	status = "okay";
 +};
 +
 +&peci0 {
@@ -2813,7 +2831,7 @@ index 000000000000..9a3c3e2b172d
 +	/*"input pin","output pin"*/
 +	/*A0 - A7*/
 +	"power-chassis-good","FM_PLD_HEARTBEAT_LVC3_R",
-+	"host0-ready","",
++	"host0-ready","R_BMC_PTH_RST_BTN_L",
 +	"CONTROL_VT2_SUPPLY1_CLOSE","FM_MDIO_SW_SEL_PLD",
 +	"CONTROL_VT2_SUPPLY2_CLOSE","FM_88E6393X_BIN_UPDATE_EN_N",
 +	"CONTROL_VT2_SUPPLY3_CLOSE","Sequence_TransFR_Alert",
@@ -2970,6 +2988,10 @@ index 000000000000..9a3c3e2b172d
 +		spi-tx-bus-width = <2>;
 +		spi-rx-bus-width = <2>;
 +	};
++};
++
++&uart3 {
++	status = "okay";
 +};
 +
 +&wdt1 {

@@ -62,4 +62,5 @@ IMAGE_INSTALL += " \
   mctp-util \
   modprobe \
   tpm-factory-upd \
+  dimm-util \
   "

@@ -49,6 +49,15 @@ enum NETFN_OEM_38 {
   BIC_CMD_OEM_INFORM_SLED_CYCLE = 0x66,
   BIC_CMD_OEM_GET_BOARD_ID      = 0xA0,
   BIC_CMD_OEM_SET_AMBER_LED     = 0xA1,
+  BIC_CMD_OEM_READ_WRITE_DIMM   = 0xB1,
+  BIC_CMD_OEM_GET_I3C_MUX       = 0xB2,
+};
+
+// For dimm-util
+enum {
+  DIMM_SPD = 0x0,
+  DIMM_SPD_NVM,
+  DIMM_PMIC,
 };
 
 enum {
@@ -71,6 +80,7 @@ enum {
 enum {
   NONE_INTF     = 0xff,
 };
+
 #endif
 
 int i2c_open(uint8_t bus_id, uint8_t addr_7bit);

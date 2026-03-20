@@ -1,0 +1,74 @@
+From 4fd3cb5ba06c919a8bf4349ec244bd107c53356a Mon Sep 17 00:00:00 2001
+From: Kevin Tung <kevin.tung.openbmc@gmail.com>
+Date: Tue, 17 Mar 2026 12:01:37 -0700
+Subject: [PATCH] configurations: revise 200G BRCM NIC configuration
+
+Add an MCTPI2CTarget entry to allow MCTPReactor to automatically
+assign an EID to the BRCM NIC over I2C, removing the need for manual
+EID configuration.
+
+Update the BRCM NIC temperature sensor naming.
+
+Tested on Yv5:
+- EID is correctly assigned
+- Version object is properly exposed
+- Temperature sensor is exposed as NIC0_TEMP_C
+---
+ configurations/broadcomm/200g_1p_ocp_mezz.json | 16 ++++++++++++----
+ 1 file changed, 12 insertions(+), 4 deletions(-)
+
+diff --git a/configurations/broadcomm/200g_1p_ocp_mezz.json b/configurations/broadcomm/200g_1p_ocp_mezz.json
+index 3f028b7..205941a 100644
+--- a/configurations/broadcomm/200g_1p_ocp_mezz.json
++++ b/configurations/broadcomm/200g_1p_ocp_mezz.json
+@@ -3,20 +3,27 @@
+         {
+             "Address": "$address",
+             "Bus": "$bus",
+-            "Name": "BRCM OCP NIC FRU $bus",
++            "Name": "BRCM OCP NIC FRU $bus % 2",
+             "Type": "EEPROM"
+         },
++        {
++            "Address": "0x32",
++            "Bus": "$bus",
++            "Name": "NIC",
++            "Type": "MCTPI2CTarget"
++        },
+         {
+             "Address": "0x1f",
+             "Bus": "$bus",
+             "Labels": [
+                 "temp2"
+             ],
+-            "Name": "NIC Temp $bus",
+-            "Name1": "NIC Temp $bus",
++            "Name": "NIC$bus % 2 TEMP_C",
++            "Name1": "NIC$bus % 2 TEMP_C",
+             "Thresholds": [
+                 {
+                     "Direction": "less than",
++                    "Hysteresis": 0.1,
+                     "Index": 2,
+                     "Name": "lower critical",
+                     "Severity": 1,
+@@ -24,6 +31,7 @@
+                 },
+                 {
+                     "Direction": "greater than",
++                    "Hysteresis": 2.1,
+                     "Index": 2,
+                     "Name": "upper critical",
+                     "Severity": 1,
+@@ -33,7 +41,7 @@
+             "Type": "TMP421"
+         }
+     ],
+-    "Name": "BRCM OCP NIC FRU $bus",
++    "Name": "BRCM OCP NIC $bus % 2",
+     "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'BRCM 200G 1P.*57508 OCP Mezz'})",
+     "Type": "Board",
+     "xyz.openbmc_project.Inventory.Decorator.Asset": {
+-- 
+2.45.1.windows.1
+

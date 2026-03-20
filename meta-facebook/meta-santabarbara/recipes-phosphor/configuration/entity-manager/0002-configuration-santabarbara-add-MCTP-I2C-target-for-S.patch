@@ -1,8 +1,8 @@
-From 303e8c8e7cd4fb4354283b554d12bda6ac4a4fdc Mon Sep 17 00:00:00 2001
+From e98b774e647c74f42380086e555404c2ba5e71f5 Mon Sep 17 00:00:00 2001
 From: Freddie Jheng <Freddie.Jheng@quantatw.com>
 Date: Wed, 7 Jan 2026 16:30:21 +0800
-Subject: [PATCH 2/2] configuration: santabarbara: add MCTP I2C target for SWB
- die temp
+Subject: [PATCH] configuration: santabarbara: add MCTP I2C target for SWB die
+ temp
 
 Add SWB_PEX as an MCTP I2C target on bus 94/102 with address 0x62
 to enable die temperature monitoring via PLDM sensor.
@@ -15,33 +15,21 @@ on whichever bus the device appears.
 Change-Id: I45283deecda1fca687c91b557665098dff0ffcfa
 Signed-off-by: Freddie Jheng <Freddie.Jheng@quantatw.com>
 ---
- .../santabarbara_pcie_switch_board_brcm.json  | 24 +++++++++++++++++++
- 1 file changed, 24 insertions(+)
+ .../santabarbara_pcie_switch_board_brcm.json         | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
 
 diff --git a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json
-index f7580ba..ea8b446 100644
+index f7580ba..f654a4d 100644
 --- a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json
 +++ b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json
-@@ -425,6 +425,30 @@
+@@ -425,6 +425,18 @@
              "Name": "Santabarbara_SWB_CPLD",
              "Type": "LatticeLCMXO3D_9400Firmware"
          },
 +        {
 +            "Address": "0x62",
-+            "Bus": "94",
-+            "Name": "SWB_PEX_94",
-+            "PLDMSensors": [
-+                {
-+                    "ID": 1,
-+                    "Name": "TEMP_C"
-+                }
-+            ],
-+            "Type": "MCTPI2CTarget"
-+        },
-+        {
-+            "Address": "0x62",
-+            "Bus": "102",
-+            "Name": "SWB_PEX_102",
++            "Bus": "114",
++            "Name": "SWB_PEX",
 +            "PLDMSensors": [
 +                {
 +                    "ID": 1,

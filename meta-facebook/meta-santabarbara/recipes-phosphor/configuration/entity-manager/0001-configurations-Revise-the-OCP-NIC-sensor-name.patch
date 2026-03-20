@@ -1,7 +1,7 @@
-From 1b42dc9a4874a78a247e3d9225c09dca310df21e Mon Sep 17 00:00:00 2001
+From 2744626dcaf07edac68303d959db922f8b760e43 Mon Sep 17 00:00:00 2001
 From: Fred Chen <Fred.Chen@quantatw.com>
 Date: Fri, 19 Dec 2025 08:56:05 +0800
-Subject: [PATCH 1/2] configurations: Revise the OCP NIC sensor name
+Subject: [PATCH] configurations: Revise the OCP NIC sensor name
 
 Apply a conversion formula to map I2C bus numbers to NIC IDs. The
 formula needs to work with two different I2C bus groups.
@@ -26,7 +26,7 @@ Change-Id: I6c95ecebe8011d2c01c72886931e3aac147c019c
  3 files changed, 12 insertions(+), 12 deletions(-)
 
 diff --git a/configurations/broadcomm/400g_1p_ocp3.json b/configurations/broadcomm/400g_1p_ocp3.json
-index 127f0bb..f0e6d04 100644
+index 127f0bb..53074c6 100644
 --- a/configurations/broadcomm/400g_1p_ocp3.json
 +++ b/configurations/broadcomm/400g_1p_ocp3.json
 @@ -3,7 +3,7 @@
@@ -34,7 +34,7 @@ index 127f0bb..f0e6d04 100644
              "Address": "$address",
              "Bus": "$bus",
 -            "Name": "BRCM OCP NIC FRU $bus",
-+            "Name": "BRCM OCP NIC FRU $bus % 80 % 18 % 10 * 3 / 4",
++            "Name": "BRCM OCP NIC FRU $bus % 109 % 11",
              "Type": "EEPROM"
          },
          {
@@ -44,8 +44,8 @@ index 127f0bb..f0e6d04 100644
              ],
 -            "Name": "NIC Temp $bus",
 -            "Name1": "NIC Temp $bus",
-+            "Name": "NIC$bus % 80 % 18 % 10 * 3 / 4 TEMP_C",
-+            "Name1": "NIC$bus % 80 % 18 % 10 * 3 / 4 TEMP_C",
++            "Name": "NIC$bus % 109 % 11 TEMP_C",
++            "Name1": "NIC$bus % 109 % 11 TEMP_C",
              "Thresholds": [
                  {
                      "Direction": "less than",
@@ -54,12 +54,12 @@ index 127f0bb..f0e6d04 100644
          }
      ],
 -    "Name": "BRCM OCP NIC FRU $bus",
-+    "Name": "BRCM OCP NIC FRU $bus % 80 % 18 % 10 * 3 / 4",
++    "Name": "BRCM OCP NIC FRU $bus % 109 % 11",
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'BRCM 400G 1P.*57608 OCP3', 'BOARD_MANUFACTURER': 'Broadcom'})",
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
 diff --git a/configurations/ocp/cx7_ocp.json b/configurations/ocp/cx7_ocp.json
-index 3f11519..f9f14f3 100644
+index 3f11519..f9c1965 100644
 --- a/configurations/ocp/cx7_ocp.json
 +++ b/configurations/ocp/cx7_ocp.json
 @@ -3,7 +3,7 @@
@@ -67,7 +67,7 @@ index 3f11519..f9f14f3 100644
              "Address": "$address",
              "Bus": "$bus",
 -            "Name": "OCP CX7 NIC FRU $bus",
-+            "Name": "OCP CX7 NIC FRU $bus % 80 % 18 % 10 * 3 / 4",
++            "Name": "OCP CX7 NIC FRU $bus % 109 % 11",
              "Type": "EEPROM"
          },
          {
@@ -77,8 +77,8 @@ index 3f11519..f9f14f3 100644
              ],
 -            "Name": "NIC Temp $bus",
 -            "Name1": "NIC Temp $bus",
-+            "Name": "NIC$bus % 80 % 18 % 10 * 3 / 4 TEMP_C",
-+            "Name1": "NIC$bus % 80 % 18 % 10 * 3 / 4 TEMP_C",
++            "Name": "NIC$bus % 109 % 11 TEMP_C",
++            "Name1": "NIC$bus % 109 % 11 TEMP_C",
              "Thresholds": [
                  {
                      "Direction": "less than",
@@ -87,12 +87,12 @@ index 3f11519..f9f14f3 100644
          }
      ],
 -    "Name": "OCP CX7 NIC $bus",
-+    "Name": "OCP CX7 NIC $bus % 80 % 18 % 10 * 3 / 4",
++    "Name": "OCP CX7 NIC $bus % 109 % 11",
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Nvidia ConnectX-7 OCP3.0'})",
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
 diff --git a/configurations/ocp/cx8_ocp.json b/configurations/ocp/cx8_ocp.json
-index baa4359..4d9abf8 100644
+index baa4359..f858767 100644
 --- a/configurations/ocp/cx8_ocp.json
 +++ b/configurations/ocp/cx8_ocp.json
 @@ -3,7 +3,7 @@
@@ -100,7 +100,7 @@ index baa4359..4d9abf8 100644
              "Address": "$address",
              "Bus": "$bus",
 -            "Name": "OCP CX8 NIC FRU $bus",
-+            "Name": "OCP CX8 NIC FRU $bus % 80 % 18 % 10 * 3 / 4",
++            "Name": "OCP CX8 NIC FRU $bus % 109 % 11",
              "Type": "EEPROM"
          },
          {
@@ -110,8 +110,8 @@ index baa4359..4d9abf8 100644
              ],
 -            "Name": "NIC Temp $bus",
 -            "Name1": "NIC Temp $bus",
-+            "Name": "NIC$bus % 80 % 18 % 10 * 3 / 4 TEMP_C",
-+            "Name1": "NIC$bus % 80 % 18 % 10 * 3 / 4 TEMP_C",
++            "Name": "NIC$bus % 109 % 11 TEMP_C",
++            "Name1": "NIC$bus % 109 % 11 TEMP_C",
              "Thresholds": [
                  {
                      "Direction": "less than",
@@ -120,7 +120,7 @@ index baa4359..4d9abf8 100644
          }
      ],
 -    "Name": "OCP CX8 NIC $bus",
-+    "Name": "OCP CX8 NIC $bus % 80 % 18 % 10 * 3 / 4",
++    "Name": "OCP CX8 NIC $bus % 109 % 11",
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Nvidia ConnectX-8 OCP3.0'})",
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {

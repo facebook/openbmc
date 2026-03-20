@@ -1,4 +1,4 @@
-From 61627f895e2caa1c83da64cefa6a189fd5a69064 Mon Sep 17 00:00:00 2001
+From dfcd1d1e30a6e838ba9fbde2bad083eac64eb532 Mon Sep 17 00:00:00 2001
 From: "Fred.Chen" <Fred.Chen@quantatw.com>
 Date: Tue, 10 Jun 2025 18:29:38 +0800
 Subject: [PATCH] ARM: dts: aspeed: santabarbara: add device nodes behind the
@@ -13,11 +13,11 @@ driver is merged.
 I3C hub lore link:
 https://lore.kernel.org/all/20250917142055.2806576-2-steven.niu.uj@renesas.com/
 ---
- .../aspeed-bmc-facebook-santabarbara.dts      | 968 ++++++++++++++++++
- 1 file changed, 968 insertions(+)
+ .../aspeed-bmc-facebook-santabarbara.dts      | 979 ++++++++++++++++++
+ 1 file changed, 979 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-index 66d0d28e5..c70abd3af 100644
+index 66d0d28e5..8938626ed 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 @@ -39,6 +39,14 @@ aliases {
@@ -35,7 +35,25 @@ index 66d0d28e5..c70abd3af 100644
  		i2c48 = &i2c6mux0ch0;
  		i2c49 = &i2c6mux0ch1;
  		i2c50 = &i2c6mux0ch2;
-@@ -1657,6 +1665,966 @@ &i2c15 {
+@@ -71,6 +79,17 @@ aliases {
+ 		i2c77 = &i2c13mux1ch1;
+ 		i2c78 = &i2c13mux1ch2;
+ 		i2c79 = &i2c13mux1ch3;
++		i2c102 = &i3chub0target0;
++		i2c103 = &i3chub0target4;
++		i2c104 = &i3chub0target1;
++		i2c105 = &i3chub0target5;
++		i2c106 = &i3chub0target2;
++		i2c107 = &i3chub0target3;
++		i2c110 = &i3chub2target0;
++		i2c111 = &i3chub2target4;
++		i2c112 = &i3chub2target1;
++		i2c113 = &i3chub2target5;
++		i2c114 = &i3chub2target2;
+ 	};
+ 
+ 	chosen {
+@@ -1657,6 +1676,966 @@ &i2c15 {
  	status = "okay";
  };
  
@@ -75,7 +93,7 @@ index 66d0d28e5..c70abd3af 100644
 +			io-strength-ohms = <40>;
 +		};
 +
-+		target-port@0 {
++		i3chub0target0: target-port@0 {
 +			compatible = "i3c-hub-smbus";
 +			reg = <0>;
 +			#address-cells = <1>;
@@ -92,7 +110,7 @@ index 66d0d28e5..c70abd3af 100644
 +			};
 +		};
 +
-+		target-port@1 {
++		i3chub0target1: target-port@1 {
 +			compatible = "i3c-hub-smbus";
 +			reg = <1>;
 +			#address-cells = <1>;
@@ -109,7 +127,7 @@ index 66d0d28e5..c70abd3af 100644
 +			};
 +		};
 +
-+		target-port@2 {
++		i3chub0target2: target-port@2 {
 +			compatible = "i3c-hub-smbus";
 +			reg = <2>;
 +
@@ -153,7 +171,7 @@ index 66d0d28e5..c70abd3af 100644
 +			};
 +		};
 +
-+		target-port@3 {
++		i3chub0target3: target-port@3 {
 +			compatible = "i3c-hub-smbus";
 +			reg = <3>;
 +
@@ -200,7 +218,7 @@ index 66d0d28e5..c70abd3af 100644
 +			};
 +		};
 +
-+		target-port@4 {
++		i3chub0target4: target-port@4 {
 +			compatible = "i3c-hub-smbus";
 +			reg = <4>;
 +			#address-cells = <1>;
@@ -217,7 +235,7 @@ index 66d0d28e5..c70abd3af 100644
 +			};
 +		};
 +
-+		target-port@5 {
++		i3chub0target5: target-port@5 {
 +			compatible = "i3c-hub-smbus";
 +			reg = <5>;
 +			#address-cells = <1>;
@@ -637,7 +655,7 @@ index 66d0d28e5..c70abd3af 100644
 +			io-strength-ohms = <40>;
 +		};
 +
-+		target-port@0 {
++		i3chub2target0: target-port@0 {
 +			compatible = "i3c-hub-smbus";
 +			reg = <0>;
 +			#address-cells = <1>;
@@ -665,7 +683,7 @@ index 66d0d28e5..c70abd3af 100644
 +			};
 +		};
 +
-+		target-port@1 {
++		i3chub2target1: target-port@1 {
 +			compatible = "i3c-hub-smbus";
 +			reg = <1>;
 +			#address-cells = <1>;
@@ -693,7 +711,7 @@ index 66d0d28e5..c70abd3af 100644
 +			};
 +		};
 +
-+		target-port@2 {
++		i3chub2target2: target-port@2 {
 +			compatible = "i3c-hub-smbus";
 +			reg = <2>;
 +			#address-cells = <1>;
@@ -710,7 +728,7 @@ index 66d0d28e5..c70abd3af 100644
 +			};
 +		};
 +
-+		target-port@4 {
++		i3chub2target4: target-port@4 {
 +			compatible = "i3c-hub-smbus";
 +			reg = <4>;
 +			#address-cells = <1>;
@@ -738,7 +756,7 @@ index 66d0d28e5..c70abd3af 100644
 +			};
 +		};
 +
-+		target-port@5 {
++		i3chub2target5: target-port@5 {
 +			compatible = "i3c-hub-smbus";
 +			reg = <5>;
 +			#address-cells = <1>;
@@ -1003,5 +1021,5 @@ index 66d0d28e5..c70abd3af 100644
  	aspeed,lpc-io-reg = <0xca8>;
  	status = "okay";
 -- 
-2.34.1
+2.47.3
 

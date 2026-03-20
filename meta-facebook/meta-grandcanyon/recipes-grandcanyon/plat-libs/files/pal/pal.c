@@ -3609,6 +3609,8 @@ pal_is_bic_ready(uint8_t fru, uint8_t *status) {
   return PAL_EOK;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+#else
 bool
 pal_is_bic_heartbeat_ok(uint8_t fru) {
   uint8_t power_status = 0, server_present = 0;
@@ -3636,6 +3638,7 @@ pal_is_bic_heartbeat_ok(uint8_t fru) {
 
   return atoi(val);
 }
+#endif
 
 int
 pal_bic_hw_reset(void) {

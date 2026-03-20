@@ -1,0 +1,46 @@
+From aae0184102b7e82df97170a17ba0db679d488048 Mon Sep 17 00:00:00 2001
+From: Henry Wu <Henry_Wu@quantatw.com>
+Date: Thu, 19 Mar 2026 16:20:37 +0800
+Subject: [PATCH] configuration: schema: mctp target add powerstate property
+
+Some devices do not provide valid data until the system reaches
+the power-ready state.
+
+This commit adds a description property to indicate the required
+power state for the device to be considered ready.
+
+This link from gerrit:
+https://gerrit.openbmc.org/c/openbmc/entity-manager/+/88396
+
+Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
+---
+ schemas/mctp.json | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/schemas/mctp.json b/schemas/mctp.json
+index 9549613..1daf4d7 100644
+--- a/schemas/mctp.json
++++ b/schemas/mctp.json
+@@ -34,6 +34,9 @@
+                     },
+                     "type": "array"
+                 },
++                "PowerState": {
++                    "$ref": "legacy.json#/$defs/Types/PowerState"
++                },
+                 "Type": {
+                     "type": "string",
+                     "enum": ["MCTPI2CTarget"]
+@@ -75,6 +78,9 @@
+                     },
+                     "type": "array"
+                 },
++                "PowerState": {
++                    "$ref": "legacy.json#/$defs/Types/PowerState"
++                },
+                 "Type": {
+                     "type": "string",
+                     "enum": ["MCTPI3CTarget"]
+-- 
+2.47.3
+

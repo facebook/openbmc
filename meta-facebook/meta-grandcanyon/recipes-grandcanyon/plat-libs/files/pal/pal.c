@@ -2477,7 +2477,8 @@ pal_bic_sel_handler(uint8_t snr_num, uint8_t *event_data) {
     case PWR_ERR:
       is_err_server_sel = true;
       break;
-    case BIC_SENSOR_SYSTEM_STATUS:
+    case GC_SENSOR_SYSTEM_STATUS:
+    case GC2_SENSOR_SYSTEM_STATUS:
       if (event_data1 == SYS_EVENT_HOST_STALL) {
         pal_host_stall_handler(FRU_SERVER);
       }
@@ -2662,7 +2663,7 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
   memset(key, 0, sizeof(key));
   memset(val, 0, sizeof(val));
 
-  switch (fru) {
+  switch(fru) {
     case FRU_SERVER:
       snprintf(key, sizeof(key), "server_sensor_health");
       break;
@@ -3031,14 +3032,28 @@ pal_get_custom_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   switch(fru) {
     case FRU_SERVER:
       switch(sensor_num) {
-        case BIC_SENSOR_VRHOT:
+        case GC_SENSOR_VRHOT:
+        case GC2_SENSOR_VRHOT:
           snprintf(name, MAX_SNR_NAME, "VR_HOT");
           break;
-        case BIC_SENSOR_SYSTEM_STATUS:
+        case GC_SENSOR_SYSTEM_STATUS:
+        case GC2_SENSOR_SYSTEM_STATUS:
           snprintf(name, MAX_SNR_NAME, "SYSTEM_STATUS");
           break;
         case BIC_SENSOR_PROC_FAIL:
           snprintf(name, MAX_SNR_NAME, "PROC_FAIL");
+          break;
+        case BIC_SENSOR_POWER_ERROR:
+          snprintf(name, MAX_SNR_NAME, "POWER_ERROR");
+          break;
+        case BIC_SENSOR_CPUDIMM_HOT:
+          snprintf(name, MAX_SNR_NAME, "CPUDIMM_HOT");
+          break;
+        case BIC_SENSOR_NMI:
+          snprintf(name, MAX_SNR_NAME, "NMI");
+          break;
+        case BIC_SENSOR_CATERR:
+          snprintf(name, MAX_SNR_NAME, "CATERR");
           break;
         default:
           snprintf(name, MAX_SNR_NAME, "Unknown");
@@ -3077,7 +3092,7 @@ pal_parse_proc_fail(uint8_t *event_data, char *error_log) {
     return -1;
   }
 
-  switch(event_data[0]) {
+  switch(event_data[SEL_EVENT_DATA1_INDEX] & SEL_EVENT_DATA_FULL_MASK) {
     case FRB3:
       strcat(error_log, "FRB3, ");
       break;
@@ -3091,6 +3106,9 @@ pal_parse_proc_fail(uint8_t *event_data, char *error_log) {
 
 int
 pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
+  uint8_t snr_type = 0;
+  uint8_t snr_num = 0;
+
   if (sel == NULL) {
     syslog(LOG_ERR, "%s() SEL content is missing", __func__);
     return -1;
@@ -3100,20 +3118,49 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
     return -1;
   }
 
-  uint8_t snr_type = sel[SEL_SNR_TYPE];
-  uint8_t snr_num = sel[SEL_SNR_NUM];
+  snr_type = sel[SEL_SNR_TYPE];
+  snr_num = sel[SEL_SNR_NUM];
 
   switch (snr_type) {
+    case IPMI_OEM_SENSOR_TYPE_SYS_STA:
+      snprintf(name, MAX_SNR_NAME, "SYSTEM_STATUS");
+      return PAL_EOK;
+    case IPMI_OEM_SENSOR_TYPE_OEM_C3:
+      snprintf(name, MAX_SNR_NAME, "POWER_ERROR");
+      return PAL_EOK;
+    case IPMI_OEM_SENSOR_TYPE_CPU_DIMM_VR_HOT:
+      snprintf(name, MAX_SNR_NAME, "VR_HOT");
+      return PAL_EOK;
+    case IPMI_OEM_SENSOR_TYPE_CPU_DIMM_HOT:
+      snprintf(name, MAX_SNR_NAME, "CPUDIMM_HOT");
+      return PAL_EOK;
+    case IPMI_SENSOR_TYPE_CRITICAL_INTERRUPT:
+      if (snr_num == BIC_SENSOR_NMI) {
+        snprintf(name, MAX_SNR_NAME, "NMI");
+        return PAL_EOK;
+      }
+      break;
+    case IPMI_SENSOR_TYPE_PROCESSOR:
+      if (snr_num == BIC_SENSOR_PROC_FAIL) {
+        snprintf(name, MAX_SNR_NAME, "PROC_FAIL");
+        return PAL_EOK;
+      }
+      if (snr_num == BIC_SENSOR_CATERR) {
+        snprintf(name, MAX_SNR_NAME, "CATERR");
+        return PAL_EOK;
+      }
+      break;
     // If SNR_TYPE is OS_BOOT, sensor name is OS
     case OS_BOOT:
       // OS_BOOT used by OS
       snprintf(name, MAX_SNR_NAME, "OS");
       return PAL_EOK;
     default:
-      if (pal_get_custom_event_sensor_name(fru, snr_num, name) == PAL_EOK ) {
-        return PAL_EOK;
-      }
       break;
+  }
+
+  if (pal_get_custom_event_sensor_name(fru, snr_num, name) == PAL_EOK) {
+    return PAL_EOK;
   }
 
   // Otherwise, translate it based on snr_num
@@ -3122,12 +3169,10 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
 
 static int
 pal_parse_vr_event(uint8_t *event_data, char *error_log) {
-  if (event_data == NULL) {
-    syslog(LOG_ERR, "%s() event data is missing", __func__);
-    return -1;
-  }
-  if (error_log == NULL) {
-    syslog(LOG_ERR, "%s() event log is missing", __func__);
+  uint8_t event = 0;
+
+  if (event_data == NULL || error_log == NULL) {
+    syslog(LOG_ERR, "%s() NULL parameter", __func__);
     return -1;
   }
 
@@ -3137,7 +3182,8 @@ pal_parse_vr_event(uint8_t *event_data, char *error_log) {
     DIMM_AB_VRHOT = 0x02,
     DIMM_DE_VRHOT = 0x03,
   };
-  uint8_t event = event_data[0];
+
+  event = event_data[SEL_EVENT_DATA1_INDEX] & SEL_EVENT_DATA_FULL_MASK;
 
   switch (event) {
     case VCCIN_VRHOT:
@@ -3161,18 +3207,16 @@ pal_parse_vr_event(uint8_t *event_data, char *error_log) {
 }
 
 static int
-pal_parse_sys_sts_event(uint8_t *event_data, char *error_log) {
-  if (event_data == NULL) {
-    syslog(LOG_ERR, "%s() event data is missing", __func__);
-    return -1;
-  }
-  if (error_log == NULL) {
-    syslog(LOG_ERR, "%s() event log is missing", __func__);
+pal_parse_gc_sys_sts_event(uint8_t *event_data, char *error_log) {
+  uint8_t event = 0;
+  char event_str[MAX_EVENT_STR] = {0};
+
+  if (event_data == NULL || error_log == NULL) {
+    syslog(LOG_ERR, "%s(): NULL parameter", __func__);
     return -1;
   }
 
-  uint8_t event = event_data[0];
-  char event_str[MAX_EVENT_STR] = {0};
+  event = event_data[SEL_EVENT_DATA1_INDEX] & SEL_EVENT_DATA_FULL_MASK;
 
   switch (event) {
     case SYS_THERM_TRIP:
@@ -3181,7 +3225,7 @@ pal_parse_sys_sts_event(uint8_t *event_data, char *error_log) {
     case SYS_FIVR_FAULT:
       strcat(error_log, "System FIVR fault");
       break;
-    case SYS_SURGE_CURR:
+    case GC_SYS_SURGE_CURR:
       strcat(error_log, "Surge Current Warning");
       break;
     case SYS_PCH_PROCHOT:
@@ -3190,32 +3234,33 @@ pal_parse_sys_sts_event(uint8_t *event_data, char *error_log) {
     case SYS_UV_DETECT:
       strcat(error_log, "Under Voltage Warning");
       break;
-    case SYS_OC_DETECT:
+    case GC_SYS_OC_DETECT:
       strcat(error_log, "OC Warning");
       break;
-    case SYS_OCP_FAULT_WARN:
+    case GC_SYS_OCP_FAULT_WARN:
       strcat(error_log, "OCP Fault Warning");
       break;
     case SYS_FW_TRIGGER:
       strcat(error_log, "Firmware");
       break;
-    case SYS_HSC_FAULT:
+    case GC_SYS_HSC_FAULT:
       strcat(error_log, "HSC fault");
       break;
     case SYS_VR_WDT_TIMEOUT:
       strcat(error_log, "VR WDT");
       break;
-    case SYS_M2_VPP:
-      snprintf(event_str, sizeof(event_str), "E1.S device %d VPP Power Control", event_data[2]);
+    case GC_SYS_M2_VPP:
+      snprintf(event_str, sizeof(event_str),
+               "E1.S device %d VPP Power Control", event_data[2]);
       strcat(error_log, event_str);
       break;
-    case SYS_VCCIO_FAULT:
+    case GC_SYS_VCCIO_FAULT:
       strcat(error_log, "VCCIO fault");
       break;
     case SYS_SMI_STUCK_LOW:
       strcat(error_log, "SMI stuck low over 90s");
       break;
-    case SYS_OV_DETECT:
+    case GC_SYS_OV_DETECT:
       strcat(error_log, "VCCIO Over Voltage Fault");
       break;
     case SYS_EVENT_HOST_STALL:
@@ -3229,9 +3274,175 @@ pal_parse_sys_sts_event(uint8_t *event_data, char *error_log) {
   return PAL_EOK;
 }
 
+static int
+pal_parse_gc2_sys_sts_event(uint8_t *event_data, char *error_log) {
+  uint8_t event = 0;
+
+  if (event_data == NULL || error_log == NULL) {
+    syslog(LOG_ERR, "%s(): NULL parameter", __func__);
+    return -1;
+  }
+
+  event = event_data[SEL_EVENT_DATA1_INDEX] & SEL_EVENT_DATA_FULL_MASK;
+
+  switch (event) {
+    case SYS_THERM_TRIP:
+      strcat(error_log, "System thermal trip");
+      break;
+    case SYS_FIVR_FAULT:
+      strcat(error_log, "System FIVR fault");
+      break;
+    case GC2_SYS_THROTTLE:
+      strcat(error_log, "SYS_THROTTLE");
+      break;
+    case SYS_PCH_PROCHOT:
+      strcat(error_log, "SYS_PCH_PROCHOT");
+      break;
+    case SYS_UV_DETECT:
+      strcat(error_log, "Under Voltage Warning");
+      break;
+    case GC2_SYS_PMBUSALERT:
+      strcat(error_log, "SYS_PMBUSALERT");
+      break;
+    case GC2_SYS_HSCTIMER:
+      strcat(error_log, "SYS_HSCTIMER");
+      break;
+    case SYS_FW_TRIGGER:
+      strcat(error_log, "SYS_FIRMWAREASSERT");
+      break;
+    case SYS_VR_WDT_TIMEOUT:
+      strcat(error_log, "SYS_VRWATCHDOG");
+      break;
+    case GC2_SYS_FMTHROTTLE:
+      strcat(error_log, "FM Throttle");
+      break;
+    case GC2_SYS_MEMORY_THERMALTRIP:
+      strcat(error_log, "Memory thermal trip");
+      break;
+    case SYS_EVENT_HOST_STALL:
+      strcat(error_log, "BIOS stalled");
+      break;
+    default:
+      strcat(error_log, "Undefined system event");
+      break;
+  }
+
+  return PAL_EOK;
+}
+
+static int
+pal_parse_sys_sts_event(uint8_t snr_num, uint8_t *event_data, char *error_log) {
+  if (event_data == NULL || error_log == NULL) {
+    syslog(LOG_ERR, "%s(): NULL parameter", __func__);
+    return -1;
+  }
+
+  if (snr_num == GC_SENSOR_SYSTEM_STATUS) {
+    return pal_parse_gc_sys_sts_event(event_data, error_log);
+  }
+
+  if (snr_num == GC2_SENSOR_SYSTEM_STATUS) {
+    return pal_parse_gc2_sys_sts_event(event_data, error_log);
+  }
+
+  strcat(error_log, "Undefined system event");
+  return PAL_EOK;
+}
+
+static int pal_parse_cpudimm_hot_event(uint8_t *event_data, char *error_log) {
+  if (event_data == NULL || error_log == NULL) {
+    syslog(LOG_WARNING, "%s(): NULL parameter", __func__);
+    return -1;
+  }
+
+  switch (event_data[SEL_EVENT_DATA1_INDEX] & SEL_EVENT_DATA_FULL_MASK) {
+    case CPU_HOT:
+      strcat(error_log, "CPU_HOT");
+      break;
+    case DIMM_HOT:
+      strcat(error_log, "DIMM_HOT");
+      break;
+    default:
+      strcat(error_log, "CPUDIMM_HOT");
+      break;
+  }
+  return PAL_EOK;
+}
+
+static int pal_parse_caterr_event(uint8_t *event_data, char *error_log) {
+  if (event_data == NULL || error_log == NULL) {
+    syslog(LOG_WARNING, "%s(): NULL parameter", __func__);
+    return -1;
+  }
+
+  switch (event_data[SEL_EVENT_DATA1_INDEX] & SEL_EVENT_DATA_FULL_MASK) {
+    case IERR:
+      strcat(error_log, "IERR");
+      break;
+    case MCERR:
+      strcat(error_log, "MCERR");
+      break;
+    case MEM_RMCA:
+      strcat(error_log, "MEM_RMCA");
+      break;
+    default:
+      strcat(error_log, "CATERR");
+      break;
+  }
+  return PAL_EOK;
+}
+
+static int pal_parse_nmi_event(uint8_t *event_data, char *error_log) {
+  if (event_data == NULL || error_log == NULL) {
+    syslog(LOG_WARNING, "%s(): NULL parameter", __func__);
+    return -1;
+  }
+
+  switch (event_data[SEL_EVENT_DATA1_INDEX] & SEL_EVENT_DATA_FULL_MASK){
+    case FP_NMI:
+      strcat(error_log, "FP_NMI");
+      break;
+    default:
+      strcat(error_log, "NMI");
+      break;
+  }
+  return PAL_EOK;
+}
+
+static int
+pal_parse_power_error_event(uint8_t *event_data, char *error_log) {
+  uint8_t event = 0;
+
+  if (event_data == NULL || error_log == NULL) {
+    syslog(LOG_WARNING, "%s(): NULL parameter", __func__);
+    return -1;
+  }
+
+  event = event_data[SEL_EVENT_DATA1_INDEX] & SEL_EVENT_DATA_FULL_MASK;
+
+  switch (event) {
+    case SYS_PWROK_FAIL:
+      strcat(error_log, "SYS PWROK Failure");
+      break;
+    case PCH_PWROK_FAIL:
+      strcat(error_log, "PCH PWROK Failure");
+      break;
+    default:
+      strcat(error_log, "Undefined power error event");
+      break;
+  }
+
+  return PAL_EOK;
+}
+
 int
 pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
   bool is_parsed = false;
+  uint8_t snr_type = 0;
+  uint8_t snr_num = 0;
+  uint8_t event_dir = 0;
+  uint8_t event_type = 0;
+  uint8_t *event_data = NULL;
 
   if (sel == NULL) {
     syslog(LOG_ERR, "%s() SEL is missing", __func__);
@@ -3242,39 +3453,98 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
     return -1;
   }
 
-  enum {
-    EVENT_TYPE_NOTIF = 0x77, /*IPMI-Table 42-1, Event/Reading Type Code Ranges - OEM specific*/
-  };
-  uint8_t snr_type = sel[SEL_SNR_TYPE];
-  uint8_t snr_num = sel[SEL_SNR_NUM];
-  uint8_t event_dir = sel[SEL_EVENT_TYPE] & 0x80;
-  uint8_t event_type = sel[SEL_EVENT_TYPE] & 0x7f;
-  uint8_t *event_data = &sel[SEL_EVENT_DATA];
+  snr_type = sel[SEL_SNR_TYPE];
+  snr_num = sel[SEL_SNR_NUM];
+  event_dir = sel[SEL_EVENT_TYPE] & SEL_EVENT_DIR_MASK;
+  event_type = sel[SEL_EVENT_TYPE] & SEL_EVENT_TYPE_MASK;
+  event_data = &sel[SEL_EVENT_DATA];
 
   error_log[0] = '\0';
+
   switch (fru) {
     case FRU_SERVER:
-      switch (snr_num) {
-        case BIC_SENSOR_VRHOT:
-          pal_parse_vr_event(event_data, error_log);
-          is_parsed = true;
-          break;
-        case BIC_SENSOR_SYSTEM_STATUS:
-          pal_parse_sys_sts_event(event_data, error_log);
-          is_parsed = true;
-          break;
-        case BIC_SENSOR_PROC_FAIL:
-          pal_parse_proc_fail(event_data, error_log);
-          is_parsed = true;
-          break;
-        default:
-          break;
+      if (event_type == SENSOR_SPECIFIC) {
+        switch (snr_type) {
+          case IPMI_OEM_SENSOR_TYPE_SYS_STA:
+            pal_parse_sys_sts_event(snr_num, event_data, error_log);
+            is_parsed = true;
+            break;
+          case IPMI_OEM_SENSOR_TYPE_OEM_C3:
+            pal_parse_power_error_event(event_data, error_log);
+            is_parsed = true;
+            break;
+          case IPMI_OEM_SENSOR_TYPE_CPU_DIMM_VR_HOT:
+            pal_parse_vr_event(event_data, error_log);
+            is_parsed = true;
+            break;
+          case IPMI_OEM_SENSOR_TYPE_CPU_DIMM_HOT:
+            pal_parse_cpudimm_hot_event(event_data, error_log);
+            is_parsed = true;
+            break;
+          case IPMI_SENSOR_TYPE_PROCESSOR:
+            if (snr_num == BIC_SENSOR_PROC_FAIL) {
+              pal_parse_proc_fail(event_data, error_log);
+              is_parsed = true;
+            } else if (snr_num == BIC_SENSOR_CATERR) {
+              pal_parse_caterr_event(event_data, error_log);
+              is_parsed = true;
+            }
+            break;
+          case IPMI_SENSOR_TYPE_CRITICAL_INTERRUPT:
+            if (snr_num == BIC_SENSOR_NMI) {
+              pal_parse_nmi_event(event_data, error_log);
+              is_parsed = true;
+            }
+            break;
+          default:
+            break;
+        }
       }
+
+      if (is_parsed == false) {
+        switch (snr_num) {
+          case GC_SENSOR_VRHOT:
+          case GC2_SENSOR_VRHOT:
+            pal_parse_vr_event(event_data, error_log);
+            is_parsed = true;
+            break;
+          case GC_SENSOR_SYSTEM_STATUS:
+          case GC2_SENSOR_SYSTEM_STATUS:
+            pal_parse_sys_sts_event(snr_num, event_data, error_log);
+            is_parsed = true;
+            break;
+          case BIC_SENSOR_PROC_FAIL:
+            pal_parse_proc_fail(event_data, error_log);
+            is_parsed = true;
+            break;
+          case BIC_SENSOR_POWER_ERROR:
+            pal_parse_power_error_event(event_data, error_log);
+            is_parsed = true;
+            break;
+          case BIC_SENSOR_CPUDIMM_HOT:
+            pal_parse_cpudimm_hot_event(event_data, error_log);
+            is_parsed = true;
+            break;
+          case BIC_SENSOR_CATERR:
+            pal_parse_caterr_event(event_data, error_log);
+            is_parsed = true;
+            break;
+          case BIC_SENSOR_NMI:
+            pal_parse_nmi_event(event_data, error_log);
+            is_parsed = true;
+            break;
+          default:
+            break;
+        }
+      }
+
       if (is_parsed == true) {
-        if (event_type == EVENT_TYPE_NOTIF) {
-          strcat(error_log, " Triggered");
+        if (event_type == EVENT_READING_TYPE_OEM_NOTIF) {
+          strcat(error_log, SEL_LOG_SUFFIX_TRIGGERED);
         } else {
-          strcat(error_log, ((event_dir & 0x80) == 0)?" Assertion":" Deassertion");
+          strcat(error_log,
+                 ((event_dir & SEL_EVENT_DIR_MASK) == SEL_EVENT_DIR_ASSERT) ?
+                 SEL_LOG_SUFFIX_ASSERT : SEL_LOG_SUFFIX_DEASSERT);
         }
       }
       break;
@@ -3284,11 +3554,11 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
         case SENSOR_SPECIFIC:
           switch (snr_type) {
             case PHYSICAL_SECURITY:
-              switch (event_data[0] & 0x0F) {
+              switch (event_data[0] & SEL_EVENT_OFFSET_LOW_NIBBLE_MASK) {
                 //Sensor Type Code: Physical Security 0x5h, SENSOR_SPECIFIC Offset 0x0h, General Chassis Intrusion: 0x0h
                 case GENERAL_CHASSIS_INTRUSION:
                   is_parsed = true;
-                  if (event_dir == 0) {
+                  if ((event_dir & SEL_EVENT_DIR_MASK) == SEL_EVENT_DIR_ASSERT) {
                     strcat(error_log, "Drawer be Pulled Out");
                   } else {
                     strcat(error_log, "Drawer be Pushed Back");
@@ -3302,9 +3572,10 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
               break;
           }
           break;
+
         case GENERIC:
           is_parsed = true;
-          if ((event_data[0] & 0x0F) == 0x00) {
+          if ((event_data[0] & SEL_EVENT_OFFSET_LOW_NIBBLE_MASK) == GENERIC_ASSERT_OFFSET) {
             strcat(error_log, "ASSERT, Limit Exceeded");
           } else {
             strcat(error_log, "DEASSERT, Limit Not Exceeded");
@@ -3324,6 +3595,7 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
 
   return PAL_EOK;
 }
+
 
 int
 pal_bic_self_test(uint8_t fru) {

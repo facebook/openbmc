@@ -170,6 +170,11 @@ extern "C" {
 #define NIC_P12V_STATUS_STR     "nic_p12v_status"
 #define NIC_P12V_TIMESTAMP_STR  "nic_p12v_lcr_deassert_timestamp"
 
+// Log suffix strings
+#define SEL_LOG_SUFFIX_TRIGGERED   " Triggered"
+#define SEL_LOG_SUFFIX_ASSERT      " Assertion"
+#define SEL_LOG_SUFFIX_DEASSERT    " Deassertion"
+
 typedef enum {
   STATUS_LED_OFF,
   STATUS_LED_YELLOW,
@@ -213,13 +218,6 @@ enum {
   PCIE_CONFIG_TYPE7    = 0x8,
 };
 
-//Server board Discrete/SEL Sensors
-enum {
-  BIC_SENSOR_VRHOT = 0xB4,
-  BIC_SENSOR_SYSTEM_STATUS = 0x46,
-  BIC_SENSOR_PROC_FAIL = 0x65,
-};
-
 enum {
   SCC_DRAWER = 0x00,
 };
@@ -240,6 +238,14 @@ enum {
 //Sensor Type Codes
 enum {
   PHYSICAL_SECURITY = 0x05,
+
+  IPMI_SENSOR_TYPE_PROCESSOR            = 0x07,
+  IPMI_SENSOR_TYPE_CRITICAL_INTERRUPT   = 0x13,
+
+  IPMI_OEM_SENSOR_TYPE_OEM_C3           = 0xC3, // POWER_ERROR
+  IPMI_OEM_SENSOR_TYPE_CPU_DIMM_VR_HOT  = 0xC6,
+  IPMI_OEM_SENSOR_TYPE_CPU_DIMM_HOT     = 0xC7,
+  IPMI_OEM_SENSOR_TYPE_SYS_STA          = 0xC9, // SYSTEM_STATUS
 };
 
 //Sensor-specific Offset of Physical Security
@@ -247,25 +253,85 @@ enum {
   GENERAL_CHASSIS_INTRUSION = 0x00,
 };
 
+// POWER_ERROR offsets
+enum {
+  SYS_PWROK_FAIL = 0x01,
+  PCH_PWROK_FAIL = 0x02,
+};
+
+// CPU/DIMM HOT offsets
+enum {
+  CPU_HOT  = 0x00,
+  DIMM_HOT = 0x01,
+};
+
+// CATERR offsets
+enum {
+  IERR     = 0x00,
+  MCERR    = 0x0B,
+  MEM_RMCA = 0x0D,
+};
+
+// NMI offsets
+enum {
+  FP_NMI = 0x00,
+};
+
 //System status event
 enum {
   SYS_THERM_TRIP     = 0x00,
   SYS_FIVR_FAULT     = 0x01,
-  SYS_SURGE_CURR     = 0x02,
   SYS_PCH_PROCHOT    = 0x03,
   SYS_UV_DETECT      = 0x04,
-  SYS_OC_DETECT      = 0x05,
-  SYS_OCP_FAULT_WARN = 0x06,
   SYS_FW_TRIGGER     = 0x07,
-  SYS_HSC_FAULT      = 0x08,
-  SYS_RSVD           = 0x09,
   SYS_VR_WDT_TIMEOUT = 0x0A,
-  SYS_M2_VPP         = 0x0B,
-  SYS_M2_PGOOD       = 0x0C,
-  SYS_VCCIO_FAULT    = 0x0D,
   SYS_SMI_STUCK_LOW  = 0x0E,
-  SYS_OV_DETECT      = 0x0F,
   SYS_EVENT_HOST_STALL = 0x20,
+};
+
+// Server board Discrete/SEL Sensors
+enum {
+  GC2_SENSOR_SYSTEM_STATUS = 0x10,
+  GC_SENSOR_SYSTEM_STATUS  = 0x46,
+  GC2_SENSOR_VRHOT         = 0xB2,
+  GC_SENSOR_VRHOT          = 0xB4,
+
+  BIC_SENSOR_POWER_ERROR   = 0x56,
+  BIC_SENSOR_PROC_FAIL     = 0x65,
+  BIC_SENSOR_CPUDIMM_HOT   = 0xB3,
+  BIC_SENSOR_NMI           = 0xEA,
+  BIC_SENSOR_CATERR        = 0xEB,
+};
+
+enum {
+  SEL_EVENT_DIR_MASK               = 0x80,
+  SEL_EVENT_TYPE_MASK              = 0x7F,
+  SEL_EVENT_DIR_ASSERT             = 0x00,
+  SEL_EVENT_DATA1_INDEX            = 0,
+  SEL_EVENT_OFFSET_LOW_NIBBLE_MASK = 0x0F,
+  SEL_EVENT_DATA_FULL_MASK         = 0xFF,
+  EVENT_READING_TYPE_OEM_NOTIF     = 0x77,
+  GENERIC_ASSERT_OFFSET            = 0x00,
+};
+
+// grandcanyon only
+enum {
+  GC_SYS_SURGE_CURR     = 0x02,
+  GC_SYS_OC_DETECT      = 0x05,
+  GC_SYS_OCP_FAULT_WARN = 0x06,
+  GC_SYS_HSC_FAULT      = 0x08,
+  GC_SYS_M2_VPP         = 0x0B,
+  GC_SYS_VCCIO_FAULT    = 0x0D,
+  GC_SYS_OV_DETECT      = 0x0F,
+};
+
+// grandcanyon2 only
+enum {
+  GC2_SYS_THROTTLE            = 0x02,
+  GC2_SYS_PMBUSALERT          = 0x05,
+  GC2_SYS_HSCTIMER            = 0x06,
+  GC2_SYS_FMTHROTTLE          = 0x10,
+  GC2_SYS_MEMORY_THERMALTRIP  = 0x11,
 };
 
 enum {

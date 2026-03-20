@@ -362,8 +362,6 @@ server_power_monitor() {
       if (server_present == FRU_PRESENT) {
         ret = pal_get_server_power(FRU_SERVER, &server_cur_pwr_status);
         if (ret == 0) {
-          //*****Store server post code
-          if (server_cur_pwr_status == SERVER_POWER_ON) {
 
           //*****Server power from on change to off
           if ((server_pre_pwr_status == SERVER_POWER_ON)
@@ -385,7 +383,6 @@ server_power_monitor() {
   } // while loop end
 
   pthread_exit(NULL);
-  }
 }
 static void*
 scc_stby_power_monitor() {

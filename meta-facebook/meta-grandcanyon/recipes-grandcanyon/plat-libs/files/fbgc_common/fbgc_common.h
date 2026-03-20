@@ -136,6 +136,7 @@ extern "C" {
 #define MAX_RETRY        (3)
 
 #define BS_FPGA_BOARD_REV_ID_OFFSET (0x07)
+#define ES_FPGA_BOARD_REV_ID_OFFSET (0x08)
 
 #define UIC_FPGA_UART_BRIDGING_OFFSET (0x13)
 
@@ -143,8 +144,41 @@ extern "C" {
 #define IANA_ID_SIZE 3
 #endif
 
+#define GRANDCANYON2 "Grand Canyon V2.0"
+#define GRANDCANYON  "Grand Canyon"
+#define MD5_OFFSET                (0x0)
+#define MD5_SIZE                  (16)
+#define PLAT_SIG_SIZE             (16)
+#define FW_VER_SIZE               (13)
+#define ERR_PROOF_SIZE            (3)
+#define SUR_SIZE           (MD5_SIZE + PLAT_SIG_SIZE + FW_VER_SIZE + ERR_PROOF_SIZE)
+#define SUR_TOTAL_SIZE     (SUR_SIZE+MD5_SIZE)
+#define SUR_SIG_OFFSET     (MD5_OFFSET + MD5_SIZE)
+#define SUR_FW_VER_OFFSET  (SUR_SIG_OFFSET + PLAT_SIG_SIZE)
+#define SUR_ERR_OFFSET     (SUR_FW_VER_OFFSET + FW_VER_SIZE)
+#define SUR_MD5_2_OFFSET   (SUR_ERR_OFFSET + ERR_PROOF_SIZE)
+
+#define BIOS_SUR_OFFSET        0x02FEF000
+#define BIOS_SUR_END           0x02FEFFFF
+#define BIOS_MD5_SKIP_SIZE     0x1000
 
 extern const char *board_stage[];
+
+enum {
+  FW_BIC_FPGA = 1,
+  FW_BIC,
+  FW_ME,
+  FW_BIC_BOOTLOADER,
+  FW_VR,
+  FW_BIOS,
+  FW_BIC_RECOVERY,
+  FW_BMC_FPGA
+};
+
+enum {
+  NOT_MASKED= 0,
+  MASKED = 1,
+};
 
 enum {
   FRU_ALL = 0,
@@ -231,6 +265,14 @@ enum {
   UIC_STAGE_MP
 };
 
+// GC2 board ID stage
+enum {
+  ES_STAGE_POC = 0,
+  ES_STAGE_DVT = 2,
+  ES_STAGE_PVT = 3,
+  ES_STAGE_MP  = 4
+};
+
 enum {
   DEV_ID0_E1S = 0x1,
   DEV_ID1_E1S = 0x2,
@@ -279,6 +321,32 @@ typedef enum {
   SV_STATUS,
 } svc_mode_t;
 
+enum board_id {
+  BOARD_ID_SB = 1,
+  BOARD_ID_UIC = 2,
+};
+
+enum component_id {
+  COMP_CPLD = 1,
+  COMP_BIC  = 2,
+  COMP_BIOS = 3,
+};
+
+typedef struct {
+  uint32_t version;
+  uint8_t board_id;
+  uint8_t fru_stage;
+  uint8_t comp_id;
+} sur_error_proof_info_t;
+
+typedef struct __attribute__((packed)) {
+  uint8_t md5_1[MD5_SIZE];
+  char    plat_sig[PLAT_SIG_SIZE];
+  uint8_t version[FW_VER_SIZE];
+  uint8_t err_proof[ERR_PROOF_SIZE];
+  uint8_t md5_2[MD5_SIZE];
+} sur_signed_info_t;
+
 int fbgc_common_get_chassis_type(uint8_t *type);
 void msleep(int msec);
 int fbgc_common_server_stby_pwr_sts(uint8_t *val);
@@ -294,7 +362,9 @@ int get_server_board_revision_id(uint8_t* board_rev_id, uint8_t board_rev_id_len
 int fbgc_common_dev_id(char *str, uint8_t *dev);
 bool fbgc_common_is_grandcanyon2(void);
 int sv_control(const char *service, svc_mode_t mode);
-
+int check_image_md5_at_offset(const char* image_path, off_t start_offs, int cal_size, uint32_t md5_offset, uint8_t is_masked);
+int fbgc_common_get_img_sur_info(const char *img_path, uint8_t comp, sur_error_proof_info_t *img_info);
+int fbgc_common_validate_img(const char *img_path, uint8_t comp, uint8_t expected_board_id, uint8_t board_rev_id);
 #ifdef __cplusplus
 } // extern "C"
 #endif

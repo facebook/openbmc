@@ -78,18 +78,6 @@ enum {
   RESTORE_FACTORY_DEFAULT,
 };
 
-enum {
-  FW_BS_FPGA = 1,
-  FW_BIC,
-  FW_ME,
-  FW_BIC_BOOTLOADER,
-  FW_VR,
-  FW_BIOS,
-#ifdef CONFIG_GRANDCANYON2
-  FW_BIC_RECOVERY,
-#endif
-};
-
 // VR vendor
 enum {
   VR_ISL = 0x0,

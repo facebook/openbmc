@@ -27,9 +27,6 @@ using namespace std;
 #define BS_FPGA_ID                       (0x01)
 #define UIC_FPGA_ID                      (0x02)
 
-#define MAX10_RPD_SIZE                   (0x5C000)
-#define MD5_OFFSET                       (0x0)
-#define SIGNATURE_OFFSET                 (0x10)
 #define IDENTIFY_OFFSET                  (0x20)
 
 enum {
@@ -42,7 +39,7 @@ enum {
 // indicate the FPGA fw location
 enum {
   UIC_FPGA_LOCATION = 0,
-  BS_FPGA_LOCATION = 1,
+  BIC_FPGA_LOCATION = 1,
 };
 
 class BmcFpgaComponent : public Component {

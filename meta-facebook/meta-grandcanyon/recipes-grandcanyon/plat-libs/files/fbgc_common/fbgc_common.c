@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <math.h>
 #include <fcntl.h>
@@ -38,9 +39,14 @@
 #include "fbgc_common.h"
 #include <openbmc/kv.h>
 
+
+#ifdef CONFIG_GRANDCANYON2
+// Platform signature of image: GrandCanyon V2.0
+const char platform_signature[PLAT_SIG_SIZE] = {0x47, 0x72, 0x61, 0x6e, 0x64, 0x43, 0x61, 0x6e, 0x79, 0x6f, 0x6e, 0x20, 0x56, 0x32, 0x2e, 0x30};
+#else
 // Platform signature of image: Grand Canyon
 const char platform_signature[PLAT_SIG_SIZE] = {0x47, 0x72, 0x61, 0x6e, 0x64, 0x20, 0x43, 0x61, 0x6e, 0x79, 0x6f, 0x6e, 0x20, 0x20, 0x20, 0x20};
-
+#endif
 const char* board_stage[] = {"Pre EVT", "EVT", "DVT", "PVT", "MP"};
 
 static int
@@ -281,11 +287,14 @@ fbgc_common_get_system_stage(uint8_t *stage) {
 }
 
 int
-check_image_md5(const char* image_path, int cal_size, uint32_t md5_offset) {
-  int fd = 0, sum = 0, byte_num = 0 , ret = 0, read_bytes = 0;
+check_image_md5_at_offset(const char* image_path, off_t start_offs,
+                          int cal_size, uint32_t md5_offset, uint8_t is_masked)
+{
+  int fd = 0, sum = 0, byte_num = 0, ret = 0, read_bytes = 0, clear_size = 0, padding = 0;
   unsigned char read_buf[MD5_READ_BYTES] = {0};
   unsigned char md5_digest[MD5_DIGEST_LENGTH] = {0};
   EVP_MD_CTX *context = NULL;
+  uint64_t sur_size = SUR_TOTAL_SIZE;
 
   if (image_path == NULL) {
     syslog(LOG_WARNING, "%s(): failed to calculate MD5 due to NULL parameters.", __func__);
@@ -304,7 +313,11 @@ check_image_md5(const char* image_path, int cal_size, uint32_t md5_offset) {
     return -1;
   }
 
-  lseek(fd, 0, SEEK_SET);
+  if (lseek(fd, start_offs, SEEK_SET) != start_offs) {
+    syslog(LOG_WARNING, "%s(): failed to seek %s to %lld.", __func__, image_path, (long long)start_offs);
+    ret = -1;
+    goto exit;
+  }
 
   context = EVP_MD_CTX_create();
   if (!context) {
@@ -326,6 +339,41 @@ check_image_md5(const char* image_path, int cal_size, uint32_t md5_offset) {
     }
 
     byte_num = read(fd, read_buf, read_bytes);
+
+    if (byte_num <= 0) {
+      syslog(LOG_WARNING, "%s(): failed to read %s while calculating MD5.", __func__, image_path);
+      ret = -1;
+      goto exit;
+    }
+
+    /* Mask SUR region with 0xFF when calculating BIOS payload MD5 */
+    if(is_masked){
+      off_t cur_offs = start_offs + sum;
+
+      /* Case 1: The current buffer starts before SUR but overlaps its beginning */
+      if(cur_offs <= BIOS_SUR_OFFSET && (cur_offs+byte_num) > BIOS_SUR_OFFSET){
+
+        padding = BIOS_SUR_OFFSET - cur_offs;
+
+        if ((byte_num - padding) > sur_size){
+          clear_size = sur_size;
+        }else{
+          clear_size = byte_num- padding;
+        }
+
+        memset(read_buf+padding, 0xFF, clear_size);
+      /* Case 2: The current buffer is already inside SUR */
+      }else if(cur_offs > BIOS_SUR_OFFSET && cur_offs < (BIOS_SUR_OFFSET+ sur_size)){
+
+          clear_size = BIOS_SUR_OFFSET + sur_size - cur_offs;
+          if(clear_size> byte_num){
+            clear_size = byte_num;
+          }
+
+          memset(read_buf, 0xFF, clear_size);
+      }
+    }
+
     if (!EVP_DigestUpdate(context, read_buf, byte_num)) {
       syslog(LOG_WARNING, "%s(): failed to update context to calculate MD5 of %s.", __func__, image_path);
       ret = -1;
@@ -340,12 +388,20 @@ check_image_md5(const char* image_path, int cal_size, uint32_t md5_offset) {
     goto exit;
   }
 
+  // read expected MD5 from image
   memset(read_buf, 0, sizeof(read_buf));
-  lseek(fd, md5_offset, SEEK_SET);
+
+  if (lseek(fd, md5_offset, SEEK_SET) != (off_t)md5_offset) {
+    syslog(LOG_WARNING, "%s(): failed to seek expected MD5 at offset 0x%x of %s.",
+           __func__, md5_offset, image_path);
+    ret = -1;
+    goto exit;
+  }
+
   byte_num = read(fd, read_buf, MD5_DIGEST_LENGTH);
 
   if (byte_num != MD5_DIGEST_LENGTH) {
-    syslog(LOG_WARNING, "%s(): failed to read the signature of %s.", __func__, image_path);
+    syslog(LOG_WARNING, "%s(): failed to read the signature of  %s.", __func__, image_path);
     ret = -1;
     goto exit;
   }
@@ -359,6 +415,11 @@ exit:
   EVP_MD_CTX_destroy(context);
   close(fd);
   return ret;
+}
+
+int check_image_md5(const char* image_path, int cal_size, uint32_t md5_offset)
+{
+  return check_image_md5_at_offset(image_path, 0, cal_size, md5_offset, 0);
 }
 
 int
@@ -403,8 +464,6 @@ get_server_board_revision_id(uint8_t* board_rev_id, uint8_t board_rev_id_len) {
   int i2cfd = 0, ret = 0, retry = 0;
   uint8_t tbuf[1] = {0};
   uint8_t tlen = 0;
-  FILE* fp = NULL;
-  char buf[MAX_SYS_CMD_RESP_LEN] = {0};
 
   if (board_rev_id == NULL) {
     syslog(LOG_WARNING, "%s(): fail to get board revision id due to NULL parameter", __func__);
@@ -417,7 +476,12 @@ get_server_board_revision_id(uint8_t* board_rev_id, uint8_t board_rev_id_len) {
     return i2cfd;
   }
 
-  tbuf[0] = BS_FPGA_BOARD_REV_ID_OFFSET;
+  if (fbgc_common_is_grandcanyon2()){
+    tbuf[0] = ES_FPGA_BOARD_REV_ID_OFFSET;
+  }else{
+    tbuf[0] = BS_FPGA_BOARD_REV_ID_OFFSET;
+  }
+
   tlen = sizeof(tbuf);
 
   while (retry < MAX_RETRY) {
@@ -431,12 +495,20 @@ get_server_board_revision_id(uint8_t* board_rev_id, uint8_t board_rev_id_len) {
     }
   }
 
+  if (fbgc_common_is_grandcanyon2()){
+    *board_rev_id = (*board_rev_id >> 3) & 0x0F; //Bit[6:3]
+  }
+
+
   if (retry == MAX_RETRY) {
-    syslog(LOG_WARNING, "%s(): fail to read server FPGA offset: 0x%02X via i2c\n", __func__, BS_FPGA_BOARD_REV_ID_OFFSET);
+    syslog(LOG_WARNING, "%s(): fail to read server FPGA offset: 0x%02X via i2c\n", __func__, tbuf[0]);
     ret = -1;
     goto exit;
   }
 
+#ifndef CONFIG_GRANDCANYON2
+  FILE* fp = NULL;
+  char buf[MAX_SYS_CMD_RESP_LEN] = {0};
   // Add this workaround to handle the wrong BS Rev ID on PVT Barton Springs.
   if (*board_rev_id == (STAGE_DVT + 1)) {
     if ((fp = popen("/usr/local/bin/fruid-util server | grep 'Product Version' | grep 'PVT'", "r")) == NULL) {
@@ -453,6 +525,7 @@ get_server_board_revision_id(uint8_t* board_rev_id, uint8_t board_rev_id_len) {
     pclose(fp);
   }
 
+#endif
 exit:
   close(i2cfd);
   return ret;
@@ -572,4 +645,189 @@ sv_control(const char *service, svc_mode_t mode) {
   default:
     return -1;
   }
+}
+
+int
+fbgc_common_get_img_sur_info(const char *img_path, uint8_t comp,
+                             sur_error_proof_info_t *img_error_proof_info)
+{
+  FILE *fp = NULL;
+  off_t sur_offset;
+  struct stat file_info;
+  sur_signed_info_t signed_info;
+  int cal_size;
+  size_t sur_size = SUR_TOTAL_SIZE;
+  const char *platform = fbgc_common_is_grandcanyon2() ? GRANDCANYON2 : GRANDCANYON;
+
+  if ((img_path == NULL) || (img_error_proof_info == NULL)) {
+    return -1;
+  }
+
+  memset(img_error_proof_info, 0, sizeof(*img_error_proof_info));
+  memset(&signed_info, 0, sizeof(signed_info));
+
+  if (stat(img_path, &file_info) < 0) {
+    printf("%s: failed to stat %s\n", __func__, img_path);
+    return -1;
+  }
+
+  switch (comp) {
+    case FW_BIOS:
+      cal_size = file_info.st_size;
+      sur_offset = BIOS_SUR_OFFSET;
+      break;
+    default:
+      cal_size = file_info.st_size - sur_size;
+      sur_offset = cal_size + MD5_OFFSET;
+      break;
+  }
+
+  if ((size_t)file_info.st_size < (size_t)(sur_offset + sur_size)) {
+    printf("%s: invalid file size\n", __func__);
+    return -1;
+  }
+
+  fp = fopen(img_path, "rb");
+  if (fp == NULL) {
+    printf("Failed to open image: %s\n", img_path);
+    return -1;
+  }
+
+  if (fseeko(fp, sur_offset, SEEK_SET) != 0) {
+    printf("Failed to seek SUR offset\n");
+    fclose(fp);
+    return -1;
+  }
+
+  if (fread(&signed_info, 1, sur_size, fp) != sur_size) {
+    printf("Failed to read Secure Update Region info\n");
+    fclose(fp);
+    return -1;
+  }
+
+  fclose(fp);
+
+  if (comp == FW_BIOS){
+      if (check_image_md5_at_offset(img_path,
+                                    0,
+                                    cal_size,
+                                    sur_offset, MASKED) < 0) {
+        printf("[%d]Image file has corrupted\n", __LINE__);
+        return -1;
+      }
+  }else {
+      if (check_image_md5(img_path, cal_size, sur_offset) < 0) {
+        printf("Image file has corrupted\n");
+        return -1;
+      }
+  }
+
+  //MD5-2 check
+  if (check_image_md5_at_offset(img_path,
+                                sur_offset,
+                                SUR_SIZE,
+                                sur_offset+SUR_SIZE, NOT_MASKED) < 0) {
+    printf("Image file has corrupted (MD5-2 check failed)\n");
+    return -1;
+  }
+
+  if (check_image_signature(img_path, sur_offset + MD5_SIZE) < 0) {
+    printf("The image is not for %s\n", platform);
+    return -1;
+  }
+
+  uint32_t err = signed_info.err_proof[0] | (signed_info.err_proof[1] << 8) | (signed_info.err_proof[2] << 16);
+
+  img_error_proof_info->board_id   = err & 0x1F;            //[4:0]
+  img_error_proof_info->fru_stage  = (err >> 5) & 0x07;     //[7:5]
+  img_error_proof_info->comp_id  = (err >> 8) & 0x07;  //[10:8]
+
+  return 0;
+}
+
+int
+fbgc_common_validate_img(const char *img_path, uint8_t comp, uint8_t expected_board_id, uint8_t board_rev_id)
+{
+  sur_error_proof_info_t sur;
+
+  int board_rev_is_invalid = 0;
+  int expected_comp = 0;
+  const char *component[] = {"Unknown", "CPLD", "BIC", "BIOS"};
+  const char *rev_sb[] = {"POC", "EVT", "DVT", "PVT", "MP"};
+  const char *rev_bb[] = {"Pre-EVT", "EVT", "DVT", "DVT3", "PVT", "MP"};
+  const char **stage = NULL;
+
+  switch (comp) {
+    case FW_BIC_FPGA:
+      expected_comp = COMP_CPLD;
+      stage = rev_sb;
+      break;
+    case FW_BIC_RECOVERY:
+    case FW_BIC:
+      expected_comp = COMP_BIC;
+      stage = rev_sb;
+      break;
+    case FW_BIOS:
+      expected_comp = COMP_BIOS;
+      stage = rev_sb;
+      break;
+    case FW_BMC_FPGA:
+      expected_comp = COMP_CPLD;
+      stage = rev_bb;
+      break;
+    default:
+      syslog(LOG_WARNING, "%s(): Unknown component %d\n", __func__, comp);
+      return -1;
+  }
+
+
+  if (fbgc_common_get_img_sur_info(img_path, comp, &sur) < 0) {
+    return -1;
+  }
+
+  if (sur.comp_id >= ARRAY_SIZE(component)) {
+    printf("Invalid component id: %u\n", sur.comp_id);
+    return -1;
+  }
+
+  if (sur.comp_id != expected_comp) {
+    printf("Not a valid %s firmware image\n", component[expected_comp]);
+    return -1;
+  }
+
+  if (sur.board_id != expected_board_id) {
+    printf("Unknown board id: %u \n", sur.board_id);
+    return -1;
+  }
+
+  if (sur.fru_stage > STAGE_MP) {
+    printf("Wrong f/w REV ID: %u", sur.fru_stage);
+    return -1;
+  }
+
+  if (board_rev_id > STAGE_MP) {
+    printf("Wrong board REV ID: %u\n", board_rev_id);
+    return -1;
+  }
+
+  if (board_rev_id < STAGE_PVT) {
+    if (sur.fru_stage != board_rev_id) {
+      if(sur.fru_stage == STAGE_EVT && board_rev_id == ES_STAGE_POC){
+        board_rev_is_invalid = 0;
+      }else{
+        board_rev_is_invalid = 1;
+      }
+    }
+  } else {
+    if (sur.fru_stage < STAGE_PVT) {
+      board_rev_is_invalid = 1;
+    }
+  }
+
+  if (board_rev_is_invalid) {
+    printf("If you want to update the %s f/w on the %s system, please use force update.\n", stage[sur.fru_stage], stage[board_rev_id]);
+    return -1;
+  }
+
+  return 0;
 }

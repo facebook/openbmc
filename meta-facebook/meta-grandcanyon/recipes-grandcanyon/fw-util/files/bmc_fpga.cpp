@@ -23,13 +23,14 @@ bool BmcFpgaComponent::is_valid_image(string image, bool force) {
 #define COMPONENT_ID(x) (x & 0x0f)
 
   char read_buffer[1] = {0};
-  char identity = 0;
-  int size = 0;
+  uint8_t identity = 0;
+  int size = 0, comp = 0;
   bool ret = false;
   bool board_rev_is_invalid = false;
   ifstream fpgaFile;
   uint8_t fpga_id_table[2] = {UIC_FPGA_ID, BS_FPGA_ID};
-  uint8_t fw_rev_id = 0xff, board_rev_id = 0xff;
+  uint8_t fw_rev_id = 0xff, board_rev_id = 0xff, expected_board_id = 0xff;
+  bool is_gc2 = fbgc_common_is_grandcanyon2();
 
   fpgaFile.open(image, ios::in | ios::binary | ios::ate);
 
@@ -42,46 +43,49 @@ bool BmcFpgaComponent::is_valid_image(string image, bool force) {
     ret = true;
     goto end;
   }
+  if (is_gc2 == false) {
+    size = fpgaFile.tellg();
+    if (size != (MAX10M25_RPD_SIZE + IDENTIFY_OFFSET + 1)) {
+      cout << "Invalid image size: " << size << endl;
+      cout << "If you are updating with old version firmware, please use force update."  <<endl;
+      goto end;
+    }
 
-  size = fpgaFile.tellg();
-  if (size != (MAX10_RPD_SIZE + IDENTIFY_OFFSET + 1)) {
-    cout << "Invalid image size: " << size << endl;
-    cout << "If you are updating with old version firmware, please use force update."  <<endl;
-    goto end;
+    // Compare MD5 of image
+    if (check_image_md5(image.c_str(), MAX10M25_RPD_SIZE , (MAX10M25_RPD_SIZE  + MD5_OFFSET)) < 0) {
+      cout << "Image file is corrupted"<< endl;
+      goto end;
+    }
+
+    // Compare signature of image
+    if (check_image_signature(image.c_str(), (MAX10M25_RPD_SIZE  + SUR_SIG_OFFSET)) < 0) {
+      cout << "The image is not for Grand Canyon"<< endl;
+      goto end;
+    }
+
+    // Check ID of image
+    fpgaFile.seekg((MAX10M25_RPD_SIZE + IDENTIFY_OFFSET), ios::beg);
+    fpgaFile.read(read_buffer, sizeof(read_buffer));
+
+    if (fpgaFile.gcount() != sizeof(read_buffer)) {
+      cout << "Failed to read image file" << image << endl;
+      goto end;
+    }
+
+    identity = COMPONENT_ID(read_buffer[0]);
+    if (identity != fpga_id_table[location]) {
+      cout << "Invalid id:" << (int)identity << endl;
+      goto end;
+    }
+
+    // Check f/w and board stage
+    fw_rev_id = REVISION_ID(read_buffer[0]);
   }
-
-  // Compare MD5 of image
-  if (check_image_md5(image.c_str(), MAX10_RPD_SIZE, (MAX10_RPD_SIZE + MD5_OFFSET)) < 0) {
-    cout << "Image file has corrupted"<< endl;
-    goto end;
-  }
-
-  // Compare signature of image
-  if (check_image_signature(image.c_str(), (MAX10_RPD_SIZE + SIGNATURE_OFFSET)) < 0) {
-    cout << "The image is not for Grand Canyon"<< endl;
-    goto end;
-  }
-
-  // Check ID of image
-  fpgaFile.seekg((MAX10_RPD_SIZE + IDENTIFY_OFFSET), ios::beg);
-  fpgaFile.read(read_buffer, sizeof(read_buffer));
-
-  if (fpgaFile.gcount() != sizeof(read_buffer)) {
-    cout << "Failed to read image file" << image << endl;
-    goto end;
-  }
-
-  identity = COMPONENT_ID(read_buffer[0]);
-  if (identity != fpga_id_table[location]) {
-    cout << "Invalid id:" << (int)identity << endl;
-    goto end;
-  }
-
-  // Check f/w and board stage
-  fw_rev_id = REVISION_ID(read_buffer[0]);
 
   switch (location) {
     case UIC_FPGA_LOCATION:
+      comp = FW_BMC_FPGA;
+      expected_board_id = BOARD_ID_UIC;
       if (fbgc_common_get_system_stage(&board_rev_id) < 0) {
         cout << "Failed to get stage of UIC" << endl;
         goto end;
@@ -96,17 +100,26 @@ bool BmcFpgaComponent::is_valid_image(string image, bool force) {
         board_rev_id = STAGE_MP;
       }
       break;
-    case BS_FPGA_LOCATION:
+    case BIC_FPGA_LOCATION:
+      comp = FW_BIC_FPGA;
+      expected_board_id = BOARD_ID_SB;
       if (get_server_board_revision_id(&board_rev_id, sizeof(board_rev_id)) < 0) {
         cout << "Failed to get stage of Barton Springs" << endl;
         goto end;
       }
-      if (board_rev_id > 0) {
+      if (board_rev_id > 0 && is_gc2 == false) {
         board_rev_id--;
       }
       break;
     default:
       goto end;
+  }
+
+  if(is_gc2){
+    if (fbgc_common_validate_img(image.c_str(), comp, expected_board_id, board_rev_id) < 0) {
+      return false;
+    }
+    return true;
   }
 
   if ((fw_rev_id > STAGE_MP) || (board_rev_id > STAGE_MP)) {

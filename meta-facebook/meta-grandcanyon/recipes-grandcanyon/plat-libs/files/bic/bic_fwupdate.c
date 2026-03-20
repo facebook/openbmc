@@ -1052,10 +1052,11 @@ error_exit:
 }
 
 static int
-update_bic_runtime_fw(uint8_t slot_id, uint8_t comp __attribute__((unused)), uint8_t intf, char *path, uint8_t force __attribute__((unused))) {
+update_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, uint8_t force) {
   int ret = -1;
   int fd = -1;
   size_t file_size = 0;
+  uint8_t board_rev_id = 0xFF;
 
   //check params
   ret = is_valid_intf(intf);
@@ -1072,6 +1073,19 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp __attribute__((unused)), uin
   }
 
   printf("file size = %zu bytes, slot = %u, intf = 0x%x\n", file_size, slot_id, intf);
+
+  if (force == 0) {
+    if (get_server_board_revision_id(&board_rev_id, sizeof(board_rev_id)) < 0) {
+      syslog(LOG_WARNING, "%s() failed to get server board revision id", __func__);
+      goto exit;
+    }
+
+    ret = fbgc_common_validate_img(path, comp, BOARD_ID_SB, board_rev_id);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() image validation failed: %s", __func__, path);
+      goto exit;
+    }
+  }
 
   //run into the different function based on the interface
   ret = update_bic(slot_id, fd, file_size, intf);
@@ -1339,7 +1353,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     case FW_BIC_RECOVERY:
       ret = recovery_bic_runtime_fw(slot_id, comp, intf, path, force);
       break;
-    case FW_BS_FPGA:
+    case FW_BIC_FPGA:
       ret = update_bic_cpld_altera(slot_id, path, intf, force);
       break;
     case FW_BIOS:

@@ -36,6 +36,12 @@ int BiosComponent::_update(const string& image, uint8_t opt) {
     printf("[%s]Start bic_bios _update...\n", __func__);
     server.ready();
 #ifdef CONFIG_GRANDCANYON2
+    if (opt == FORCE_UPDATE_UNSET) {
+      if (is_valid_image(image) == false) {
+        cerr << "Invalid bios image. Stopping the update!" << endl;
+        return -1;
+      }
+    }
     cout << "Shutting down server gracefully..." << endl;
     pal_set_server_power(FRU_SERVER, SERVER_GRACEFUL_SHUTDOWN);
 
@@ -205,4 +211,18 @@ int BiosComponent::get_version(json& j) {
   return FW_STATUS_SUCCESS;
 }
 
+bool BiosComponent::is_valid_image(const std::string& image) {
+  uint8_t board_rev_id = 0xFF;
+  bool ret = false;
+
+  if (get_server_board_revision_id(&board_rev_id, sizeof(board_rev_id)) < 0) {
+    syslog(LOG_WARNING, "%s() failed to get server board revision id", __func__);
+    return false;
+  }
+
+  if (fbgc_common_validate_img(image.c_str(), FW_BIOS, BOARD_ID_SB, board_rev_id) == 0) {
+    ret = true;
+  }
+  return ret;
+}
 #endif

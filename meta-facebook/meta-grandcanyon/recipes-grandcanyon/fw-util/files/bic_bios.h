@@ -13,6 +13,7 @@ class BiosComponent : public Component {
   private:
     int get_ver_str(std::string& s);
     int _update(const std::string& image, uint8_t opt);
+    bool is_valid_image(const std::string& image);
   public:
     BiosComponent(const std::string& fru, const std::string& comp, uint8_t _fw_comp)
       : Component(fru, comp), fw_comp(_fw_comp), server(FRU_SERVER, fru) {}

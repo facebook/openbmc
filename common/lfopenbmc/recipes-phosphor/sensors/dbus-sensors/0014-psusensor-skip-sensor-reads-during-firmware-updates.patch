@@ -1,4 +1,4 @@
-From 5bf7e9e01af34049273cfa6bf392eb3beb9c5e2b Mon Sep 17 00:00:00 2001
+From 79230747d92aaed78fb3ac92dabd9352a4fc186c Mon Sep 17 00:00:00 2001
 From: cchoux <cosmo.chou@quantatw.com>
 Date: Wed, 24 Sep 2025 11:35:31 +0800
 Subject: [PATCH 14/18] psusensor: skip sensor reads during firmware updates
@@ -42,11 +42,11 @@ Signed-off-by: Cosmo Chou <cosmo.chou@quantatw.com>
  src/psu/PSUEvent.hpp      |  10 +-
  src/psu/PSUSensor.cpp     |   7 +-
  src/psu/PSUSensor.hpp     |   2 +
- src/psu/PSUSensorMain.cpp | 205 +++++++++++++++++++++++++++++++++++++-
- 5 files changed, 237 insertions(+), 11 deletions(-)
+ src/psu/PSUSensorMain.cpp | 211 +++++++++++++++++++++++++++++++++++++-
+ 5 files changed, 243 insertions(+), 11 deletions(-)
 
 diff --git a/src/psu/PSUEvent.cpp b/src/psu/PSUEvent.cpp
-index bc04523..8fc7035 100644
+index bc04523..da4057b 100644
 --- a/src/psu/PSUEvent.cpp
 +++ b/src/psu/PSUEvent.cpp
 @@ -44,7 +44,8 @@ PSUCombineEvent::PSUCombineEvent(
@@ -55,7 +55,7 @@ index bc04523..8fc7035 100644
      GroupEventPathList& groupEventPathList, const std::string& combineEventName,
 -    double pollRate) : objServer(objectServer)
 +    double pollRate, bool skipRead) :
-+    objServer(objectServer), skipReading(skipRead)
++    objServer(objectServer), skipReading(std::make_shared<bool>(skipRead))
  {
      std::string psuNameEscaped = sensor_paths::escapePathForDbus(psuName);
      eventInterface = objServer.add_interface(
@@ -85,7 +85,7 @@ index bc04523..8fc7035 100644
  
 +void PSUCombineEvent::setSkipRead(bool skip)
 +{
-+    skipReading = skip;
++    *skipReading = skip;
 +}
 +
  static boost::container::flat_map<std::string,
@@ -97,14 +97,14 @@ index bc04523..8fc7035 100644
      std::shared_ptr<std::set<std::string>> combineEvent,
 -    std::shared_ptr<bool> state, const std::string& psuName, double pollRate) :
 +    std::shared_ptr<bool> state, const std::string& psuName, double pollRate,
-+    bool& skipReading) :
++    std::shared_ptr<bool> skipReading) :
      eventInterface(std::move(eventInterface)), asserts(std::move(asserts)),
      combineEvent(std::move(combineEvent)), assertState(std::move(state)),
      path(path), eventName(eventName), readState(powerState),
      inputDev(io, path, boost::asio::random_access_file::read_only),
      waitTimer(io), psuName(psuName), groupEventName(groupEventName),
 -    systemBus(conn)
-+    systemBus(conn), skipReading(skipReading)
++    systemBus(conn), skipReading(std::move(skipReading))
  {
      buffer = std::make_shared<std::array<char, 128>>();
      if (pollRate > 0.0)
@@ -112,7 +112,7 @@ index bc04523..8fc7035 100644
          restartRead();
          return;
      }
-+    if (skipReading)
++    if (*skipReading)
 +    {
 +        restartRead();
 +        return;
@@ -121,7 +121,7 @@ index bc04523..8fc7035 100644
      {
          lg2::error("Buffer was invalid?");
 diff --git a/src/psu/PSUEvent.hpp b/src/psu/PSUEvent.hpp
-index 9e17701..7bb0c9f 100644
+index 9e17701..397c654 100644
 --- a/src/psu/PSUEvent.hpp
 +++ b/src/psu/PSUEvent.hpp
 @@ -48,7 +48,7 @@ class PSUSubEvent : public std::enable_shared_from_this<PSUSubEvent>
@@ -129,7 +129,7 @@ index 9e17701..7bb0c9f 100644
                  std::shared_ptr<std::set<std::string>> combineEvent,
                  std::shared_ptr<bool> state, const std::string& psuName,
 -                double pollRate);
-+                double pollRate, bool& skipReading);
++                double pollRate, std::shared_ptr<bool> skipReading);
      ~PSUSubEvent();
  
      std::shared_ptr<sdbusplus::asio::dbus_interface> eventInterface;
@@ -137,7 +137,7 @@ index 9e17701..7bb0c9f 100644
      std::string deassertMessage;
      std::shared_ptr<sdbusplus::asio::connection> systemBus;
      unsigned int eventPollMs = defaultEventPollMs;
-+    bool& skipReading;
++    std::shared_ptr<bool> skipReading;
      static constexpr unsigned int defaultEventPollMs = 1000;
      static constexpr size_t warnAfterErrorCount = 10;
  };
@@ -159,7 +159,7 @@ index 9e17701..7bb0c9f 100644
      std::vector<std::shared_ptr<bool>> states;
 +
 +  private:
-+    bool skipReading;
++    std::shared_ptr<bool> skipReading;
  };
 diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
 index 85089c2..203d7c6 100644
@@ -202,7 +202,7 @@ index de8f7b7..a28e50f 100644
      static constexpr size_t warnAfterErrorCount = 10;
  
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 3ec8c04..eebded6 100644
+index 3ec8c04..d6a31ca 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -61,6 +61,7 @@
@@ -224,7 +224,7 @@ index 3ec8c04..eebded6 100644
 +    bool activating = false;
 +};
 +
-+static constexpr auto firmwareTypes = std::to_array<const char*>({
++static constexpr auto firmwareTypes = std::to_array<std::string_view>({
 +    "MP2X6XXFirmware",
 +    "MP292XFirmware",
 +    "MP297XFirmware",
@@ -254,11 +254,11 @@ index 3ec8c04..eebded6 100644
  // Function CheckEvent will check each attribute from eventMatch table in the
  // sysfs. If the attributes exists in sysfs, then store the complete path
  // of the attribute into eventPathList.
-@@ -387,6 +415,101 @@ static void checkPWMSensor(
+@@ -387,6 +415,107 @@ static void checkPWMSensor(
          name, pwmPathStr, dbusConnection, objectServer, objPath, "PSU");
  }
  
-+static void handleFirmwareUpdate(const std::string& path, bool activating)
++static void handleFirmwareUpdate(std::string_view path, bool activating)
 +{
 +    std::filesystem::path fwPath(path);
 +    std::regex fwRegex("_[0-9]+$");
@@ -304,15 +304,18 @@ index 3ec8c04..eebded6 100644
 +            std::string(i2c_vr::busname) + "'",
 +        [](sdbusplus::message_t& message) {
 +            std::string objectName;
-+            boost::container::flat_map<std::string, std::variant<std::string>>
-+                values;
++            boost::container::flat_map<std::string, BasicVariantType> values;
 +            message.read(objectName, values);
++
 +            auto findActivation = values.find(i2c_vr::property);
 +            if (findActivation != values.end())
 +            {
-+                bool status = std::get<std::string>(findActivation->second)
-+                                  .ends_with(".Activating");
-+                handleFirmwareUpdate(message.get_path(), status);
++                if (const auto* activation =
++                        std::get_if<std::string>(&findActivation->second))
++                {
++                    handleFirmwareUpdate(message.get_path(),
++                                         activation->ends_with(".Activating"));
++                }
 +            }
 +        }));
 +}
@@ -346,9 +349,12 @@ index 3ec8c04..eebded6 100644
 +        auto findActivation = it->second.find(i2c_vr::property);
 +        if (findActivation != it->second.end())
 +        {
-+            bool status = std::get<std::string>(findActivation->second)
-+                              .ends_with(".Activating");
-+            handleFirmwareUpdate(path.str, status);
++            if (const auto* activation =
++                    std::get_if<std::string>(&findActivation->second))
++            {
++                handleFirmwareUpdate(path.str,
++                                     activation->ends_with(".Activating"));
++            }
 +        }
 +    }
 +}
@@ -356,7 +362,7 @@ index 3ec8c04..eebded6 100644
  std::optional<BridgeGpio> parseBridgeGpioFromConfig(
      const SensorData& sensorData, const std::string* label)
  {
-@@ -455,6 +578,41 @@ static void createSensorsCallback(
+@@ -455,6 +584,41 @@ static void createSensorsCallback(
  
      auto devices = instantiateDevices(sensorConfigs, sensors, sensorTypes);
  
@@ -398,7 +404,7 @@ index 3ec8c04..eebded6 100644
      std::vector<std::filesystem::path> pmbusPaths;
      findFiles(std::filesystem::path("/sys/bus/iio/devices"), "name",
                pmbusPaths);
-@@ -684,6 +842,20 @@ static void createSensorsCallback(
+@@ -684,6 +848,20 @@ static void createSensorsCallback(
              findPSUName = baseConfig->find("Name" + std::to_string(i++));
          } while (findPSUName != baseConfig->end());
  
@@ -419,7 +425,7 @@ index 3ec8c04..eebded6 100644
          std::vector<std::filesystem::path> sensorPaths;
          const auto* param = std::find_if(
              devParamMap.begin(), devParamMap.end(),
-@@ -1164,6 +1336,16 @@ static void createSensorsCallback(
+@@ -1164,6 +1342,16 @@ static void createSensorsCallback(
                      readState, findSensorUnit->units, factor, maxReading,
                      minReading, sensorOffset, labelHead, thresholdConfSize,
                      pollRate, i2cDev, std::move(bridgeGpio));
@@ -436,7 +442,7 @@ index 3ec8c04..eebded6 100644
                  sensors[sensorName]->setupRead();
                  ++numCreated;
                  lg2::debug("Created '{NUM}' sensors so far", "NUM", numCreated);
-@@ -1178,7 +1360,7 @@ static void createSensorsCallback(
+@@ -1178,7 +1366,7 @@ static void createSensorsCallback(
                  std::make_unique<PSUCombineEvent>(
                      objectServer, dbusConnection, io, *psuName, readState,
                      eventPathList, groupEventPathList, "OperationalStatus",
@@ -445,7 +451,7 @@ index 3ec8c04..eebded6 100644
          }
      }
  
-@@ -1267,11 +1449,15 @@ void createSensors(
+@@ -1267,11 +1455,15 @@ void createSensors(
                                    sensorConfigs, sensorsChanged, activateOnly);
          });
      std::vector<std::string_view> types;
@@ -462,7 +468,7 @@ index 3ec8c04..eebded6 100644
      getter->getConfiguration(types);
  }
  
-@@ -1398,8 +1584,18 @@ int main()
+@@ -1398,8 +1590,18 @@ int main()
              });
          };
  
@@ -482,7 +488,7 @@ index 3ec8c04..eebded6 100644
  
      matches.emplace_back(std::make_unique<sdbusplus::bus::match_t>(
          static_cast<sdbusplus::bus_t&>(*systemBus),
-@@ -1410,6 +1606,9 @@ int main()
+@@ -1410,6 +1612,9 @@ int main()
  
      getPresentCpus(systemBus);
  
@@ -493,5 +499,5 @@ index 3ec8c04..eebded6 100644
      io.run();
  }
 -- 
-2.52.0
+2.53.0
 

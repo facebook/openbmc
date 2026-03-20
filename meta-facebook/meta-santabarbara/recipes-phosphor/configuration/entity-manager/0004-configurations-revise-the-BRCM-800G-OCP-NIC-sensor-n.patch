@@ -1,0 +1,41 @@
+From f6d7c728faea3b73c00f0f050c5a2439c59def62 Mon Sep 17 00:00:00 2001
+From: Freddie Jheng <Freddie.Jheng@quantatw.com>
+Date: Mon, 2 Mar 2026 11:00:50 +0800
+Subject: [PATCH] configurations: revise the BRCM 800G OCP NIC sensor name
+
+Apply the same I2C bus-to-NIC-ID conversion formula to the
+BRCM 800G 1P OCP NIC configuration for consistent sensor naming.
+
+Change-Id: I1b288c76b1a400d6be19c60c5bb4f878223804df
+Signed-off-by: Freddie Jheng <Freddie.Jheng@quantatw.com>
+---
+ configurations/broadcomm/800g_1p_ocp.json | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/configurations/broadcomm/800g_1p_ocp.json b/configurations/broadcomm/800g_1p_ocp.json
+index 2ab1c56..6586d8a 100644
+--- a/configurations/broadcomm/800g_1p_ocp.json
++++ b/configurations/broadcomm/800g_1p_ocp.json
+@@ -3,7 +3,7 @@
+         {
+             "Address": "$address",
+             "Bus": "$bus",
+-            "Name": "BRCM OCP NIC FRU $bus",
++            "Name": "BRCM OCP NIC FRU $bus % 80 % 18 % 10 * 3 / 4",
+             "Type": "EEPROM"
+         },
+         {
+@@ -12,8 +12,8 @@
+             "Labels": [
+                 "temp2"
+             ],
+-            "Name": "NIC Temp $bus",
+-            "Name1": "NIC Temp $bus",
++            "Name": "NIC$bus % 80 % 18 % 10 * 3 / 4 TEMP_C",
++            "Name1": "NIC$bus % 80 % 18 % 10 * 3 / 4 TEMP_C",
+             "Thresholds": [
+                 {
+                     "Direction": "less than",
+-- 
+2.34.1
+

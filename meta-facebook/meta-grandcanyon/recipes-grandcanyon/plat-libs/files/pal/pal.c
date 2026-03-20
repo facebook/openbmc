@@ -67,6 +67,7 @@
 #define PWM_ZONE            0
 
 #define CHECK_NIC_P12V_RETRY_TIME_S 15
+#define PCIE_DPC_TRIGGER_ERR_ID     0x53
 #define PCIE_LINK_DROP_ERR_ID       0x5A
 
 const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, e1s_iocm";
@@ -2608,9 +2609,11 @@ pal_oem_unified_sel_handler(uint8_t fru, uint8_t general_info, uint8_t *sel) {
     check_nic_p12v_enable = atoi(val);
   }
 
+
   // Use nic_is_resetting to prevent recreating the thread when NIC power off
   if ((check_nic_p12v_enable) && (error_type == UNIFIED_PCIE_ERR) && (!nic_is_resetting)) {
-    if ((err_id1 == PCIE_LINK_DROP_ERR_ID) || (err_id2 == PCIE_LINK_DROP_ERR_ID)) {
+    if ((err_id1 == PCIE_LINK_DROP_ERR_ID) || (err_id2 == PCIE_LINK_DROP_ERR_ID) ||
+        (err_id1 == PCIE_DPC_TRIGGER_ERR_ID) || (err_id2 == PCIE_DPC_TRIGGER_ERR_ID)) {
       // Create thread to check NIC P12V status
       pthread_create(&tid_check_nic_p12V, NULL, check_nic_p12v_status, NULL);
     }

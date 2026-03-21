@@ -1,8 +1,8 @@
-From c32ec2955a96fcde523973442ab5e9cee944f91f Mon Sep 17 00:00:00 2001
+From 99f627de27563a3674cabe6ba99511d68a908778 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 17:16:49 +0800
-Subject: [PATCH] requester: refresh MCTP endpoints after host reaches running
- state
+Subject: [PATCH 18/18] requester: refresh MCTP endpoints after host reaches
+ running state
 
 Some MCTP endpoints associated with MCTPI2CTarget or MCTPI3CTarget
 do not expose complete object information until BIOS POST.

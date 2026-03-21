@@ -1,7 +1,7 @@
-From 0d29a4ac1da6a2d53dd3256f6f96cc2f465b1d37 Mon Sep 17 00:00:00 2001
+From e25df1579b0fea8d273054ea5c1a7a4e4b9a91d3 Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Wed, 17 Sep 2025 16:05:34 +0800
-Subject: [PATCH 14/17] oem-meta: Add MCTP configuration discovery
+Subject: [PATCH 14/18] oem-meta: Add MCTP configuration discovery
 
 Introduces a `ConfigurationDiscoveryHandler` to dynamically discover MCTP
 endpoint configurations from D-Bus. This handler listens for MCTP
@@ -650,7 +650,7 @@ index b8674e9..28f63ed 100644
   * @brief Check the IANA of the MCTP endpoint device that sent the OEM message.
   *
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index 8918c42..c11d273 100644
+index a7c90c9..f81c3fe 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -353,7 +353,12 @@ int main(int argc, char** argv)
@@ -667,5 +667,5 @@ index 8918c42..c11d273 100644
                       TID](IO& io, int fd, uint32_t revents) mutable {
          if (revents & (POLLHUP | POLLERR))
 -- 
-2.52.0
+2.47.3
 

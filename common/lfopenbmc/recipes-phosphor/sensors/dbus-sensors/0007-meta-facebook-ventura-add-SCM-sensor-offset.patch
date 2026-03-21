@@ -1,7 +1,7 @@
-From e07c5b9eae0f585d6f65565b1e34082594eb4200 Mon Sep 17 00:00:00 2001
+From 986a3cee6c0709af5a21d6a9f1479a5e578ec406 Mon Sep 17 00:00:00 2001
 From: Jason Hsu <Jason-Hsu@quantatw.com>
 Date: Fri, 27 Jun 2025 10:35:17 +0800
-Subject: [PATCH 07/18] meta-facebook: ventura: add SCM sensor offset
+Subject: [PATCH 07/15] meta-facebook: ventura: add SCM sensor offset
 
 Signed-off-by: Jason Hsu <Jason-Hsu@quantatw.com>
 ---
@@ -11,7 +11,7 @@ Signed-off-by: Jason Hsu <Jason-Hsu@quantatw.com>
  3 files changed, 17 insertions(+), 3 deletions(-)
 
 diff --git a/src/adc/ADCSensor.cpp b/src/adc/ADCSensor.cpp
-index cbf7132..eea550f 100644
+index ce3415c..7feeeb7 100644
 --- a/src/adc/ADCSensor.cpp
 +++ b/src/adc/ADCSensor.cpp
 @@ -54,7 +54,7 @@ ADCSensor::ADCSensor(
@@ -92,5 +92,5 @@ index 18db231..dfc769f 100644
                  sensor->setupRead();
              }
 -- 
-2.52.0
+2.47.3
 

@@ -1,7 +1,7 @@
-From 1e6e3c36332a970d7158e8dce8b77f901b45babe Mon Sep 17 00:00:00 2001
+From e9511c0b28b0dd05eb7e38a383deea77fb645e4a Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 22 Sep 2023 09:43:49 +0800
-Subject: [PATCH 02/18] PSUSensor: Fix error for decimal part of scalefactor
+Subject: [PATCH 02/15] PSUSensor: Fix error for decimal part of scalefactor
 
 Customized scale factor declaration from schema in entity-manager,
 declared as type "number." If a number is used in PSUSensor, it loses
@@ -41,7 +41,7 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  3 files changed, 14 insertions(+), 9 deletions(-)
 
 diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
-index b3ee416..597e889 100644
+index 9408ab3..e1f7065 100644
 --- a/src/psu/PSUSensor.cpp
 +++ b/src/psu/PSUSensor.cpp
 @@ -50,7 +50,7 @@ PSUSensor::PSUSensor(
@@ -84,10 +84,10 @@ index 3411833..8a43ef1 100644
      double sensorOffset;
  };
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index bcba555..0db53ec 100644
+index 6e04cf8..a22da43 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -832,7 +832,7 @@ static void createSensorsCallback(
+@@ -834,7 +834,7 @@ static void createSensorsCallback(
                  try
                  {
                      sensorScaleFactor = std::visit(
@@ -96,7 +96,7 @@ index bcba555..0db53ec 100644
                  }
                  catch (const std::invalid_argument&)
                  {
-@@ -841,7 +841,8 @@ static void createSensorsCallback(
+@@ -843,7 +843,8 @@ static void createSensorsCallback(
                  }
  
                  // Avoid later division by zero
@@ -106,7 +106,7 @@ index bcba555..0db53ec 100644
                  {
                      customizedScale = true;
                  }
-@@ -963,7 +964,7 @@ static void createSensorsCallback(
+@@ -965,7 +966,7 @@ static void createSensorsCallback(
              // Similarly, if sensor scaling factor is being customized,
              // then the below power-of-10 constraint becomes unnecessary,
              // as config should be able to specify an arbitrary divisor.
@@ -115,7 +115,7 @@ index bcba555..0db53ec 100644
              if (!customizedScale)
              {
                  // Preserve existing usage of hardcoded labelMatch table below
-@@ -980,8 +981,12 @@ static void createSensorsCallback(
+@@ -982,8 +983,12 @@ static void createSensorsCallback(
                  auto findScaleFactor = baseConfig->find(strScaleFactor);
                  if (findScaleFactor != baseConfig->end())
                  {
@@ -131,5 +131,5 @@ index bcba555..0db53ec 100644
  
                  lg2::debug(
 -- 
-2.52.0
+2.47.3
 

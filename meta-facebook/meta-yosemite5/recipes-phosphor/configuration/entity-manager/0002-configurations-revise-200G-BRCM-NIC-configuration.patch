@@ -1,7 +1,7 @@
-From 4fd3cb5ba06c919a8bf4349ec244bd107c53356a Mon Sep 17 00:00:00 2001
+From 7b28b3145f0347e554e551d7ca0f088bc5642a5f Mon Sep 17 00:00:00 2001
 From: Kevin Tung <kevin.tung.openbmc@gmail.com>
 Date: Tue, 17 Mar 2026 12:01:37 -0700
-Subject: [PATCH] configurations: revise 200G BRCM NIC configuration
+Subject: [PATCH 2/2] configurations: revise 200G BRCM NIC configuration
 
 Add an MCTPI2CTarget entry to allow MCTPReactor to automatically
 assign an EID to the BRCM NIC over I2C, removing the need for manual
@@ -70,5 +70,5 @@ index 3f028b7..205941a 100644
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
 -- 
-2.45.1.windows.1
+2.47.3
 

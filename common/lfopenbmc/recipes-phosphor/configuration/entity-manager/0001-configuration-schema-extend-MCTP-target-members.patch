@@ -1,7 +1,7 @@
-From bfe7faf9d7082825667b05ba1f516e4fd9a321ff Mon Sep 17 00:00:00 2001
+From bfee3280cbe83a6bafa13d72e20fadfc09891e8f Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Wed, 10 Dec 2025 14:41:23 +0800
-Subject: [PATCH] configuration: schema: extend MCTP target members
+Subject: [PATCH 1/2] configuration: schema: extend MCTP target members
 
 Extend the MCTP target schema to support Inventory and
 PLDMSensors properties.

@@ -1,7 +1,7 @@
-From fcb8d9e76691b4de05531ec44226aaf77989662d Mon Sep 17 00:00:00 2001
+From 4f67c414c960d54bcb5e0a650d334dae339a5fdd Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Mon, 19 May 2025 15:12:23 +0800
-Subject: [PATCH 06/18] psu: support gpio bridge
+Subject: [PATCH 06/15] psu: support gpio bridge
 
 Support for GPIO bridge is required for certain components that
 need a GPIO to be set before reading, such as battery voltage.
@@ -48,7 +48,7 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  4 files changed, 186 insertions(+), 21 deletions(-)
 
 diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
-index 597e889..85089c2 100644
+index e1f7065..4aa1109 100644
 --- a/src/psu/PSUSensor.cpp
 +++ b/src/psu/PSUSensor.cpp
 @@ -35,6 +35,7 @@
@@ -141,7 +141,7 @@ index 597e889..85089c2 100644
  }
  
  void PSUSensor::restartRead()
-@@ -239,6 +270,11 @@ void PSUSensor::handleResponse(const boost::system::error_code& err,
+@@ -240,6 +271,11 @@ void PSUSensor::handleResponse(const boost::system::error_code& err,
          incrementError();
      }
  
@@ -259,7 +259,7 @@ index 8a43ef1..de8f7b7 100644
      boost::asio::random_access_file inputDev;
      boost::asio::steady_timer waitTimer;
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 34b0ceb..70bacf0 100644
+index b48f235..40f87c7 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -31,6 +31,7 @@
@@ -286,7 +286,7 @@ index 34b0ceb..70bacf0 100644
  
  static constexpr auto sensorTypes = std::to_array<
      std::pair<std::string_view, I2CDeviceType>>({
-@@ -379,6 +382,61 @@ static void checkPWMSensor(
+@@ -381,6 +384,61 @@ static void checkPWMSensor(
          name, pwmPathStr, dbusConnection, objectServer, objPath, "PSU");
  }
  
@@ -348,7 +348,7 @@ index 34b0ceb..70bacf0 100644
  static void createSensorsCallback(
      boost::asio::io_context& io, sdbusplus::asio::object_server& objectServer,
      std::shared_ptr<sdbusplus::asio::connection>& dbusConnection,
-@@ -810,7 +868,6 @@ static void createSensorsCallback(
+@@ -812,7 +870,6 @@ static void createSensorsCallback(
                      "LABEL", labelHead);
                  continue;
              }
@@ -356,7 +356,7 @@ index 34b0ceb..70bacf0 100644
              // Protect the hardcoded labelMatch list from changes,
              // by making a copy and modifying that instead.
              // Avoid bleedthrough of one device's customizations to
-@@ -1093,12 +1150,15 @@ static void createSensorsCallback(
+@@ -1095,12 +1152,15 @@ static void createSensorsCallback(
              }
              else
              {
@@ -386,5 +386,5 @@ index abcdfe8..3680cac 100644
      include_directories: src_inc,
      install: true,
 -- 
-2.52.0
+2.47.3
 

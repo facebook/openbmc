@@ -1,7 +1,8 @@
-From aae0184102b7e82df97170a17ba0db679d488048 Mon Sep 17 00:00:00 2001
+From 22234106191acd46f1a57227ee712146dc714195 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 16:20:37 +0800
-Subject: [PATCH] configuration: schema: mctp target add powerstate property
+Subject: [PATCH 2/2] configuration: schema: mctp target add powerstate
+ property
 
 Some devices do not provide valid data until the system reaches
 the power-ready state.

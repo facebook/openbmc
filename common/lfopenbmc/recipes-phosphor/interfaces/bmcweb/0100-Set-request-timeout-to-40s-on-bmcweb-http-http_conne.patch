@@ -1,4 +1,4 @@
-From a6056ad40fae34239d7fbf563fdcf783718115e4 Mon Sep 17 00:00:00 2001
+From 8c62d57d9f1e60557e63facc7fa9eee9c3d2f502 Mon Sep 17 00:00:00 2001
 From: Marco Kawajiri <kawajiri@meta.com>
 Date: Wed, 5 Feb 2025 09:42:22 -0800
 Subject: [PATCH 100/101] Set request timeout to 40s on
@@ -10,10 +10,10 @@ Change-Id: Ieb9c9569a141cbb194fa362ac0426a9e8127becf
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/http/http_connection.hpp b/http/http_connection.hpp
-index fcda2bf5..d87a8bb3 100644
+index cc5accf8..99e70f58 100644
 --- a/http/http_connection.hpp
 +++ b/http/http_connection.hpp
-@@ -923,7 +923,7 @@ class Connection :
+@@ -927,7 +927,7 @@ class Connection :
              return;
          }
  

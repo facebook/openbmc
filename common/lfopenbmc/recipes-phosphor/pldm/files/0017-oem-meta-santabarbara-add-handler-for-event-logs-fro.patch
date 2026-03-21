@@ -1,7 +1,7 @@
-From f1f2731dabf69484d36557f72633b8a2aceb02f3 Mon Sep 17 00:00:00 2001
+From 7ad5ac13a8d5c3389103d5ffcb58297a4e61dbb8 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Mon, 26 Jan 2026 21:25:18 +0800
-Subject: [PATCH 17/17] oem-meta: santabarbara: add handler for event logs from
+Subject: [PATCH 17/18] oem-meta: santabarbara: add handler for event logs from
  rainbow MMC
 
 Add support for decoding the event logs emitted by the Rainbow MMC. To

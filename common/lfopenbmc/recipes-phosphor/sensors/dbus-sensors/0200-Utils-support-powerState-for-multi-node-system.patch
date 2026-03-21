@@ -1,4 +1,4 @@
-From 003282be7324edd33c8829710358f02c3892e18d Mon Sep 17 00:00:00 2001
+From 24358280b680c228e2132a2e0ae6f934fbd21cb7 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH 200/202] Utils: support powerState for multi-node system
@@ -902,7 +902,7 @@ index c5785ee..9377ae9 100644
          }
      }
 diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
-index 203d7c6..25ed894 100644
+index 1df0c48..1877f1d 100644
 --- a/src/psu/PSUSensor.cpp
 +++ b/src/psu/PSUSensor.cpp
 @@ -54,14 +54,14 @@ PSUSensor::PSUSensor(
@@ -945,10 +945,10 @@ index a28e50f..ce3d186 100644
  
  struct PSUProperty
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 1a58712..96187d3 100644
+index e0c92e5..906860d 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -832,6 +832,7 @@ static void createSensorsCallback(
+@@ -838,6 +838,7 @@ static void createSensorsCallback(
          checkGroupEvent(directory.string(), groupEventPathList);
  
          PowerState readState = getPowerState(*baseConfig);
@@ -956,7 +956,7 @@ index 1a58712..96187d3 100644
  
          /* Check if there are more sensors in the same interface */
          int i = 1;
-@@ -1337,7 +1338,7 @@ static void createSensorsCallback(
+@@ -1343,7 +1344,7 @@ static void createSensorsCallback(
                      sensorName, std::move(sensorThresholds), *interfacePath,
                      readState, findSensorUnit->units, factor, maxReading,
                      minReading, sensorOffset, labelHead, thresholdConfSize,
@@ -965,7 +965,7 @@ index 1a58712..96187d3 100644
  
                  if (fwName != nullptr)
                  {
-@@ -1480,7 +1481,11 @@ static void powerStateChanged(
+@@ -1486,7 +1487,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {
@@ -1016,5 +1016,5 @@ index 216c4d6..5bdbacc 100644
  
      void markFunctional(bool isFunctional)
 -- 
-2.52.0
+2.47.3
 

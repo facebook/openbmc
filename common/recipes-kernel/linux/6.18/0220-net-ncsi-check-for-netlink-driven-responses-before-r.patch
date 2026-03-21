@@ -1,4 +1,4 @@
-From 953420dcda198b79413206ccf7559e0ae99174d5 Mon Sep 17 00:00:00 2001
+From 4389596d75cfc1c980eef3d2c8712ade27a34e56 Mon Sep 17 00:00:00 2001
 From: Jeremy Kerr <jk@codeconstruct.com.au>
 Date: Thu, 12 Sep 2024 14:23:57 +0800
 Subject: [PATCH 220/226] net: ncsi: check for netlink-driven responses before
@@ -18,27 +18,28 @@ kernel-driven command.
 
 Signed-off-by: Jeremy Kerr <jk@codeconstruct.com.au>
 ---
- net/ncsi/ncsi-rsp.c | 59 +++++++++++++++++++--------------------------
- 1 file changed, 25 insertions(+), 34 deletions(-)
+ net/ncsi/ncsi-rsp.c | 60 +++++++++++++++++++--------------------------
+ 1 file changed, 25 insertions(+), 35 deletions(-)
 
 diff --git a/net/ncsi/ncsi-rsp.c b/net/ncsi/ncsi-rsp.c
-index 271ec6c3929e..8a7e934d0d96 100644
+index fbd84bc8026a..5b5ee2eead2d 100644
 --- a/net/ncsi/ncsi-rsp.c
 +++ b/net/ncsi/ncsi-rsp.c
-@@ -1196,12 +1196,6 @@ int ncsi_rcv_rsp(struct sk_buff *skb, struct net_device *dev,
+@@ -1198,13 +1198,6 @@ int ncsi_rcv_rsp(struct sk_buff *skb, struct net_device *dev,
  		}
  	}
  
 -	if (!nrh) {
 -		netdev_err(nd->dev, "Received unrecognized packet (0x%x)\n",
 -			   hdr->type);
--		return -ENOENT;
+-		ret = -ENOENT;
+-		goto err_free_skb;
 -	}
 -
  	/* Associate with the request */
  	spin_lock_irqsave(&ndp->lock, flags);
  	nr = &ndp->requests[hdr->id];
-@@ -1219,43 +1213,40 @@ int ncsi_rcv_rsp(struct sk_buff *skb, struct net_device *dev,
+@@ -1223,43 +1216,40 @@ int ncsi_rcv_rsp(struct sk_buff *skb, struct net_device *dev,
  
  	/* Validate the packet */
  	spin_unlock_irqrestore(&ndp->lock, flags);
@@ -108,5 +109,5 @@ index 271ec6c3929e..8a7e934d0d96 100644
  
  out:
 -- 
-2.47.3
+2.52.0
 

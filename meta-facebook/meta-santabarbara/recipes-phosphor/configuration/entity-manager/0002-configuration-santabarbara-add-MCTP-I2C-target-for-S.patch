@@ -1,8 +1,8 @@
-From e98b774e647c74f42380086e555404c2ba5e71f5 Mon Sep 17 00:00:00 2001
+From 996122375c11677a9707f709999a69d8d376f441 Mon Sep 17 00:00:00 2001
 From: Freddie Jheng <Freddie.Jheng@quantatw.com>
 Date: Wed, 7 Jan 2026 16:30:21 +0800
-Subject: [PATCH] configuration: santabarbara: add MCTP I2C target for SWB die
- temp
+Subject: [PATCH 2/3] configuration: santabarbara: add MCTP I2C target for SWB
+ die temp
 
 Add SWB_PEX as an MCTP I2C target on bus 94/102 with address 0x62
 to enable die temperature monitoring via PLDM sensor.

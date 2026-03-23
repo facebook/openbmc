@@ -29,6 +29,13 @@ Global config attributes:
   "sensor_fail": true/false
     This label is for specifing fail_sensor_type is used or not.
     The detail of fail_sensor_type is shown below.
+  "sensor_missing_as_fail": true/false
+    This label is for determining whether to treat missing sensors as sensor
+    failures. When enabled, if a sensor is not found in the sensor list
+    (e.g., the corresponding FRU is absent), it will be treated the same as
+    a sensor read failure, triggering boost mode and creating a sensor fail
+    record. When the missing sensor reappears, the sensor fail record will
+    be cleared automatically.
   "progressive": true/false
     This label is for specifing if fans should progressively change PWM.
     fan_dead_boost is used here. The detail of fan_dead_boost is shown below.

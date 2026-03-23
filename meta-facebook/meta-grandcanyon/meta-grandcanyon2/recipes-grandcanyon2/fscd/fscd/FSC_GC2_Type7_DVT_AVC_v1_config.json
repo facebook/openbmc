@@ -1,46 +1,38 @@
 {
-  "version": "fbgc-type5-pvt-avc-v1",
-  "pwm_transition_value": 70,
-  "pwm_boost_value": 80,
-  "fan_limit_upper_pwm": 90,
+  "version": "fbgc2-type7-dvt-avc-v1",
+  "pwm_transition_value": 100,
+  "pwm_boost_value": 100,
+  "fan_limit_upper_pwm": 100,
   "sample_interval_ms": 3000,
   "boost": {
     "fan_fail": true,
     "sensor_fail": true,
-    "progressive": true
+    "sensor_missing_as_fail": true
   },
-  "fan_dead_boost": {
-    "data": [
-      [1,10],
-      [2,10]
-    ]
+  "multi_fan_fail": {
+      "data": [
+        [2, 0]
+      ],
+      "host_action": ["shutdown", 2]
   },
   "sensor_valid_check": {
-    "BS": {
+    "SCC_IOC_TEMP": {
+      "attribute": {
+        "type" : "host_power_status",
+        "fru" : "server"
+      }
+    },
+    "MB": {
       "attribute": {
         "type" : "host_power_status",
         "fru" : "server",
         "bic_ready_pin" : "BIC_READY_IN"
       }
-    },
-    "E1S_(.*)0_TEMP": {
-      "attribute": {
-        "type" : "E1S_status",
-        "gpio_present_pin" : "E1S_1_PRSNT_N",
-        "e1s_i2c_enable" : "E1S_1_P3V3_PG_R"
-      }
-    },
-    "E1S_(.*)1_TEMP": {
-      "attribute": {
-        "type" : "E1S_status",
-        "gpio_present_pin" : "E1S_2_PRSNT_N",
-        "e1s_i2c_enable" : "E1S_2_P3V3_PG_R"
-      }
     }
   },
   "watchdog": false,
-  "chassis_intrusion": false,
-  "min_rpm": 400,
+  "chassis_intrusion": true,
+  "min_rpm": 700,
   "profiles": {
     "linear_soc_therm_margin": {
       "read_source" : {
@@ -50,7 +42,7 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 2,
       "data": [
-        [ -76, 18 ],
+        [ -75, 18 ],
         [ -16, 18 ],
         [ -15, 20 ],
         [ -14, 22 ],
@@ -72,7 +64,7 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": -9,
+      "setpoint": -11,
       "negative_hysteresis": 3,
       "positive_hysteresis": 0,
       "kp": -1.5,
@@ -165,49 +157,6 @@
       "ki": -0.1,
       "kd": 0
     },
-    "linear_e1s_sensor_temp": {
-      "read_source" : {
-        "util" : "/usr/local/bin/sensor-util"
-      },
-      "type": "linear",
-      "positive_hysteresis": 0,
-      "negative_hysteresis": 2,
-      "data": [
-        [ 0, 18 ],
-        [ 55, 18 ],
-        [ 56, 19 ],
-        [ 57, 20 ],
-        [ 58, 21 ],
-        [ 59, 22 ],
-        [ 60, 23 ],
-        [ 61, 24 ],
-        [ 62, 25 ],
-        [ 63, 26 ],
-        [ 64, 27 ],
-        [ 65, 28 ],
-        [ 66, 30 ],
-        [ 67, 32 ],
-        [ 68, 34 ],
-        [ 69, 36 ],
-        [ 70, 38 ],
-        [ 71, 40 ],
-        [ 72, 42 ],
-        [ 73, 44 ],
-        [ 74, 46 ]
-      ]
-    },
-    "pid_e1s_sensor_temp": {
-      "read_source" : {
-        "util" : "/usr/local/bin/sensor-util"
-      },
-      "type": "pid",
-      "setpoint": 65,
-      "negative_hysteresis": 2,
-      "positive_hysteresis": 0,
-      "kp": -1.5,
-      "ki": -0.02,
-      "kd": 0
-    },
     "linear_boot_drv_temp": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
@@ -244,7 +193,7 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": 66,
+      "setpoint": 65,
       "negative_hysteresis": 2,
       "positive_hysteresis": 0,
       "kp": -1.5,
@@ -259,7 +208,8 @@
       "positive_hysteresis": 0,
       "negative_hysteresis": 0,
       "data": [
-        [ 0, 23 ],
+        [ 0, 18 ],
+        [ 20, 18 ],
         [ 25, 23 ],
         [ 26, 24 ],
         [ 27, 25 ],
@@ -282,6 +232,105 @@
         [ 44, 51 ],
         [ 45, 53 ]
       ]
+    },
+    "linear_mb_inlet_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 0, 0 ]
+      ]
+    },
+     "linear_mb_pch_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 0, 0 ]
+      ]
+    },
+     "linear_mb_dimm_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 0, 0 ]
+      ]
+    },
+     "linear_mb_hsc_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 0, 0 ]
+      ]
+    },
+     "linear_mb_vr_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 0, 0 ]
+      ]
+    },
+     "linear_dpb_inlet_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 0, 0 ]
+      ]
+    },
+     "linear_dpb_outlet_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 0, 0 ]
+      ]
+    },
+     "linear_scc_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 0, 0 ]
+      ]
+    },
+     "linear_ptb_dc_module_temp": {
+      "read_source" : {
+        "util" : "/usr/local/bin/sensor-util"
+      },
+      "type": "linear",
+      "positive_hysteresis": 0,
+      "negative_hysteresis": 0,
+      "data": [
+        [ 0, 0 ]
+      ]
     }
   },
   "fans": {
@@ -295,52 +344,28 @@
       }
     },
     "1": {
-      "label" : "0 Rear",
+      "label" : "1 Front",
       "read_source" : {
         "util" : "/usr/local/bin/fan-util --get 1"
       }
     },
     "2": {
-      "label" : "1 Front",
+      "label" : "2 Front",
       "read_source" : {
         "util" : "/usr/local/bin/fan-util --get 2"
       }
     },
     "3": {
-      "label" : "1 Rear",
-      "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 3"
-      }
-    },
-    "4": {
-      "label" : "2 Front",
-      "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 4"
-      }
-    },
-    "5": {
-      "label" : "2 Rear",
-      "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 5"
-      }
-    },
-    "6": {
       "label" : "3 Front",
       "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 6"
-      }
-    },
-    "7": {
-      "label" : "3 Rear",
-      "read_source" : {
-        "util" : "/usr/local/bin/fan-util --get 7"
+        "util" : "/usr/local/bin/fan-util --get 3"
       }
     }
   },
   "zones": {
     "zone_0": {
       "pwm_output": [0],
-      "expr_file": "FSC_GC_Type5_PVT_v1_zone0.fsc"
+      "expr_file": "FSC_GC2_Type7_DVT_v1_zone0.fsc"
     }
   }
 }

@@ -1,11 +1,11 @@
 import json
 import os.path
 
-DEFAULT_FSC_VERSION = "fbgc-pvt-default-v1"
-DEFAULT_FSC_FILE = "FSC_GC_PVT_default_zone0.fsc"
+DEFAULT_FSC_VERSION = "fbgc2-dvt-default-v1"
+DEFAULT_FSC_FILE = "FSC_GC2_DVT_default_zone0.fsc"
 
-DEFAULT_FAN_TABLE = "/etc/FSC_GC_PVT_default_config.json"
-TYPE5_FAN_TABLE = "/etc/FSC_GC_Type5_PVT_DELTA_v1_config.json"
+DEFAULT_FAN_TABLE = "/etc/FSC_GC2_DVT_default_config.json"
+TYPE5_FAN_TABLE = "/etc/FSC_GC2_Type5_DVT_DELTA_v1_config.json"
 
 if os.path.isfile(TYPE5_FAN_TABLE):
     with open(TYPE5_FAN_TABLE, "r") as f:

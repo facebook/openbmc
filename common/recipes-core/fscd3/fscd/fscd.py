@@ -157,6 +157,7 @@ class Fscd(object):
         self.transitional = self.DEFAULT_TRANSITIONAL
         self.ramp_rate = self.DEFAULT_RAMP_RATE
         self.sensor_fail = None
+        self.sensor_missing_as_fail = None
         self.ssd_progressive_algorithm = None
         self.sensor_valid_check = None
         self.fail_sensor_type = None
@@ -219,6 +220,7 @@ class Fscd(object):
                     self.ssd_progressive_algorithm = self.fsc_config[
                         "ssd_progressive_algorithm"
                     ]
+            self.sensor_missing_as_fail = self.fsc_config["boost"]["sensor_missing_as_fail"]
         if "sensor_valid_check" in self.fsc_config:
             self.sensor_valid_check = self.fsc_config["sensor_valid_check"]
         self.watchdog = self.fsc_config["watchdog"]
@@ -294,6 +296,7 @@ class Fscd(object):
                     counter,
                     self.boost,
                     self.sensor_fail,
+                    self.sensor_missing_as_fail,
                     self.sensor_valid_check,
                     self.fail_sensor_type,
                     self.ssd_progressive_algorithm,

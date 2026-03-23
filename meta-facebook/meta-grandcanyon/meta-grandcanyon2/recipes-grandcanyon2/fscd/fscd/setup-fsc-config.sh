@@ -87,13 +87,13 @@ check_fan_source()
 set_default_fan_table="/usr/local/bin/set_default_fan_table.py"
 
 default_fsc_config_path="/etc/fsc-config.json"
-fsc_type5_default_config_path="/etc/FSC_GC_PVT_default_config.json"
-fsc_type5_avc_config_path="/etc/FSC_GC_Type5_PVT_AVC_v1_config.json"
-fsc_type5_delta_config_path="/etc/FSC_GC_Type5_PVT_DELTA_v1_config.json"
-fsc_type7_avc_config_path="/etc/FSC_GC_Type7_PVT_AVC_v1_config.json"
-fsc_type7_delta_config_path="/etc/FSC_GC_Type7_PVT_DELTA_v1_config.json"
+fsc_type5_default_config_path="/etc/FSC_GC2_DVT_default_config.json"
+fsc_type5_avc_config_path="/etc/FSC_GC2_Type5_DVT_AVC_v1_config.json"
+fsc_type5_delta_config_path="/etc/FSC_GC2_Type5_DVT_DELTA_v1_config.json"
+fsc_type7_avc_config_path="/etc/FSC_GC2_Type7_DVT_AVC_v1_config.json"
+fsc_type7_delta_config_path="/etc/FSC_GC2_Type7_DVT_DELTA_v1_config.json"
 
-fsc_type5_zone_config_path="/etc/fsc/FSC_GC_Type5_PVT_v1_zone0.fsc"
+fsc_type5_zone_config_path="/etc/fsc/FSC_GC2_Type5_DVT_v1_zone0.fsc"
 
 get_uic_location
 uic_location=$?

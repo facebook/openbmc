@@ -1208,6 +1208,53 @@ static int ads1015_pga_setting[] = {
   4096, 2048, 2048, 1024
 };
 
+#ifdef CONFIG_GRANDCANYON2
+static inlet_corr_t server_ict[] = {
+  //airflow, offset value
+  { 0,  8 },    // airflow: 0-44
+  { 45, 5 },    // airflow: 45-63
+  { 64, 4 },    // airflow: 64-74
+  { 75, 3.5 },  // airflow: 75-96
+  { 97, 3 },    // airflow: 97-109
+  { 110, 2.5 }, // airflow: 110-140
+  { 141, 2 },   // airflow: 141-295
+  { 296, 1.5 }, // airflow: 296-369
+};
+
+static inlet_corr_t uic_t5_ict[] = {
+  //airflow, offset value
+  { 0, 7.27 },   // airflow: 0-48
+  { 49, 5.91 },  // airflow: 49-61
+  { 62, 4.79 },  // airflow: 62-69
+  { 70, 3.8 },   // airflow: 70-81
+  { 82, 3.33 },  // airflow: 82-94
+  { 95, 3.03 },  // airflow: 95-106
+  { 107, 2.79 }, // airflow: 107-118
+  { 119, 2.67 }, // airflow: 119-143
+  { 144, 2.36 }, // airflow: 144-183
+  { 184, 2 },    // airflow: 184-223
+  { 224, 1.68 }, // airflow: 224-305
+  { 306, 1.33 }, // airflow: 306-381
+  { 382, 1.3 },  // airflow: 382-
+};
+
+static inlet_corr_t uic_t7_ict[] = {
+  //airflow, offset value
+  { 0, 9.5 },    // airflow: 0-53
+  { 54, 7.41 },  // airflow: 54-63
+  { 64, 6.79 },  // airflow: 64-69
+  { 70, 5 },     // airflow: 70-79
+  { 80, 4 },     // airflow: 80-89
+  { 90, 3.03 },  // airflow: 90-98
+  { 99, 2.79 },  // airflow: 99-108
+  { 109, 2.67 }, // airflow: 109-128
+  { 129, 2.36 }, // airflow: 129-161
+  { 162, 2 },    // airflow: 162-194
+  { 195, 1.68 }, // airflow: 195-264
+  { 265, 1.33 }, // airflow: 265-332
+  { 333, 1.3 },  // airflow: 333-
+};
+#else
 static inlet_corr_t server_ict[] = {
   //airflow, offset value
   { 0,  8 },    // airflow: 0-44
@@ -1253,6 +1300,7 @@ static inlet_corr_t uic_t7_ict[] = {
   { 287, 1.33 }, // airflow: 287-367
   { 368, 1.3 },  // airflow: 368-
 };
+#endif
 
 static size_t server_ict_count = ARRAY_SIZE(server_ict);
 static size_t uic_t5_ict_count = ARRAY_SIZE(uic_t5_ict);
@@ -3273,6 +3321,23 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
 {
   char key[MAX_KEY_LEN] = {0};
 
+#ifdef CONFIG_GRANDCANYON2
+  if ((fru == FRU_SERVER) && (snr_num == ES_THERMAL_MARGIN) && (thresh == UNR_THRESH)) {
+    uint8_t server_power_status = 0;
+    if (pal_get_server_power(fru, &server_power_status) < 0) {
+      syslog(LOG_WARNING, "%s: Fail to get server power status", __func__);
+      return;
+    }
+    if (server_power_status == SERVER_POWER_ON) {
+      if (pal_set_server_power(fru, SERVER_POWER_OFF) < 0) {
+        syslog(LOG_ERR, "%s: Fail to send host power off command", __func__);
+      } else {
+        syslog(LOG_CRIT, "SERVER_POWER_OFF due to CPU temperature is over UNR");
+      }
+    }
+  }
+#endif
+
   if ((fru == FRU_NIC) && (snr_num == NIC_SENSOR_P12V) && (thresh == LCR_THRESH)) {
     // Set NIC P12V status is dropped.
     snprintf(key, sizeof(key), NIC_P12V_STATUS_STR);
@@ -3305,6 +3370,44 @@ pal_sensor_deassert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thre
     snprintf(tstr, sizeof(tstr), "%lld", ts.tv_sec);
     if (pal_set_cached_value(key, tstr) < 0) {
       syslog(LOG_WARNING, "%s() Failed to set NIC P12V LCR deassert timestamp", __func__);
+    }
+  }
+
+  return;
+}
+
+int
+pal_sensor_threshold_flag(uint8_t fru, uint8_t snr_num, uint16_t *flag)
+{
+#ifdef CONFIG_GRANDCANYON2
+  switch(fru) {
+    case FRU_SERVER:
+        if (snr_num == ES_THERMAL_MARGIN) {
+          *flag = SETBIT(*flag, UNR_THRESH);
+        }
+      break;
+    default:
+      break;
+  }
+#endif
+
+  return 0;
+}
+
+void
+pal_fan_fail_otp_check(char* reason)
+{
+  // need to turn off server since fan fail
+  uint8_t server_power_status = 0;
+  if (pal_get_server_power(FRU_SERVER, &server_power_status) < 0) {
+    syslog(LOG_WARNING, "%s: Fail to get server power status", __func__);
+    return;
+  }
+  if (server_power_status == SERVER_POWER_ON) {
+    if (pal_set_server_power(FRU_SERVER, SERVER_POWER_OFF) < 0) {
+      syslog(LOG_ERR, "%s: Fail to send host power off command", __func__);
+    } else {
+      syslog(LOG_CRIT, "SERVER_POWER_OFF due to %s", reason);
     }
   }
 

@@ -20,25 +20,30 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 LOCAL_URI += " \
     file://setup-fan.sh \
     file://setup-fsc-config.sh \
-    file://FSC_GC_PVT_default_zone0.fsc \
-    file://FSC_GC_Type5_PVT_v1_zone0.fsc \
-    file://FSC_GC_Type5_PVT_AVC_v1_config.json \
-    file://FSC_GC_Type5_PVT_DELTA_v1_config.json \
-    file://FSC_GC_Type7_PVT_v1_zone0.fsc \
-    file://FSC_GC_Type7_PVT_AVC_v1_config.json \
-    file://FSC_GC_Type7_PVT_DELTA_v1_config.json \
+    file://FSC_GC2_DVT_default_zone0.fsc \
+    file://FSC_GC2_Type5_DVT_v1_zone0.fsc \
+    file://FSC_GC2_Type5_DVT_AVC_v1_config.json \
+    file://FSC_GC2_Type5_DVT_DELTA_v1_config.json \
+    file://FSC_GC2_Type7_DVT_v1_zone0.fsc \
+    file://FSC_GC2_Type7_DVT_AVC_v1_config.json \
+    file://FSC_GC2_Type7_DVT_DELTA_v1_config.json \
     file://fsc_board.py \
     file://set_default_fan_table.py \
     "
 
-FSC_CONFIG += "FSC_GC_Type5_PVT_AVC_v1_config.json \
-               FSC_GC_Type5_PVT_DELTA_v1_config.json \
-               FSC_GC_Type7_PVT_AVC_v1_config.json \
-               FSC_GC_Type7_PVT_DELTA_v1_config.json \
+FSC_CONFIG += "FSC_GC2_Type5_DVT_AVC_v1_config.json \
+               FSC_GC2_Type5_DVT_DELTA_v1_config.json \
+               FSC_GC2_Type7_DVT_AVC_v1_config.json \
+               FSC_GC2_Type7_DVT_DELTA_v1_config.json \
               "
 
-FSC_ZONE_CONFIG += "FSC_GC_PVT_default_zone0.fsc \
-                    FSC_GC_Type5_PVT_v1_zone0.fsc \
-                    FSC_GC_Type7_PVT_v1_zone0.fsc \
+FSC_ZONE_CONFIG += "FSC_GC2_DVT_default_zone0.fsc \
+                    FSC_GC2_Type5_DVT_v1_zone0.fsc \
+                    FSC_GC2_Type7_DVT_v1_zone0.fsc \
                    "
 
+FSC_BIN_FILES += "setup-fsc-config.sh \
+                  set_default_fan_table.py \
+                 "
+
+FSC_INIT_FILE += "setup-fan.sh"

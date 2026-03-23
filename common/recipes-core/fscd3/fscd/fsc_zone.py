@@ -189,6 +189,7 @@ class Zone:
         counter,
         boost,
         sensor_fail,
+        sensor_missing_as_fail,
         sensor_valid_check,
         fail_sensor_type,
         ssd_progressive_algorithm,
@@ -205,6 +206,7 @@ class Zone:
         self.counter = counter
         self.boost = boost
         self.sensor_fail = sensor_fail
+        self.sensor_missing_as_fail = sensor_missing_as_fail
         self.sensor_valid_check = sensor_valid_check
         self.fail_sensor_type = fail_sensor_type
         self.ssd_progressive_algorithm = ssd_progressive_algorithm
@@ -338,6 +340,11 @@ class Zone:
                         )
                         self.missing_sensor_assert_flag[sensor_index] = False
 
+                        if self.sensor_fail == True and self.sensor_missing_as_fail == True:
+                            sensor_fail_record_path = SENSOR_FAIL_RECORD_DIR + v
+                            if os.path.isfile(sensor_fail_record_path):
+                                os.remove(sensor_fail_record_path)
+
                     sensor = sensors[board][sname]
                     ctx[v] = sensor.value
                     if re.match(r".*temp_dev", sname) is not None:
@@ -421,6 +428,42 @@ class Zone:
                             "ASSERT: Zone%d Missing sensors: %s" % (self.counter, v)
                         )
                         self.missing_sensor_assert_flag[sensor_index] = True
+
+                        if self.sensor_fail == True and self.sensor_missing_as_fail == True:
+                            sensor_fail_record_path = SENSOR_FAIL_RECORD_DIR + v
+                            if not os.path.isdir(SENSOR_FAIL_RECORD_DIR):
+                                os.mkdir(SENSOR_FAIL_RECORD_DIR)
+                            if not os.path.isfile(sensor_fail_record_path):
+                                sensor_fail_record = open(sensor_fail_record_path, "w")
+                                sensor_fail_record.close()
+                            if self.board_fan_mode.is_scenario_supported("sensor_fail"):
+                                (
+                                    set_fan_mode,
+                                    set_fan_pwm,
+                                ) = self.board_fan_mode.get_board_fan_mode("sensor_fail")
+                                outmin = max(outmin, set_fan_pwm)
+                                mode = set_fan_mode
+                                cause_boost_count += 1
+                            else:
+                                outmin = max(outmin, self.boost)
+                                mode = fan_mode["boost_mode"]
+                                cause_boost_count += 1
+
+                    elif self.missing_sensor_assert_flag[sensor_index]:
+                        if self.sensor_fail == True and self.sensor_missing_as_fail == True:
+                            if self.board_fan_mode.is_scenario_supported("sensor_fail"):
+                                (
+                                    set_fan_mode,
+                                    set_fan_pwm,
+                                ) = self.board_fan_mode.get_board_fan_mode("sensor_fail")
+                                outmin = max(outmin, set_fan_pwm)
+                                mode = set_fan_mode
+                                cause_boost_count += 1
+                            else:
+                                outmin = max(outmin, self.boost)
+                                mode = fan_mode["boost_mode"]
+                                cause_boost_count += 1
+
                     if self.missing_sensor_assert_retry[sensor_index] < 2:
                         self.missing_sensor_assert_retry[sensor_index] += 1
                     # evaluation tries to ignore the effects of None values

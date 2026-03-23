@@ -29,5 +29,4 @@
 
 echo "Setup fan speed... "
 
-#sh /usr/local/bin/setup-fsc-config.sh &
-/usr/local/bin/fan-util --set 100
+sh /usr/local/bin/setup-fsc-config.sh &

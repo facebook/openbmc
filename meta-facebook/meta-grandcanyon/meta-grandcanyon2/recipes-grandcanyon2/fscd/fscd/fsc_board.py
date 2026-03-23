@@ -48,7 +48,20 @@ def board_host_actions(action="None", cause="None"):
     - handling host power off
     - alarming/syslogging critical
     """
+    if "host_shutdown" in action:
+        if "Bad fan count exceeded threshold" in cause:
+            lpal_hndl.pal_fan_fail_otp_check(b"failed fan over threshold")
     pass
+
+def bmc_read_power():
+    cmd = "/usr/local/bin/power-util server status"
+    data = ""
+    data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+    result = data.split(": ")
+    if match(r"ON", result[1]) is not None:
+        return 1
+    else:
+        return 0
 
 def board_callout(callout="None", **kwargs):
     if "init_fans" in callout:
@@ -56,6 +69,15 @@ def board_callout(callout="None", **kwargs):
         if "boost" in kwargs:
             boost = kwargs["boost"]
         return set_all_pwm(boost)
+    elif "chassis_intrusion" in callout:
+        tray_pull_out = c_uint(0)
+        if lpal_hndl.pal_get_fan_latch(pointer(tray_pull_out)) < 0:
+            Logger.warn("Get chassis status in/out failed.")
+            return 0
+        Logger.debug("board_callout: chassis_intrusion %d" % tray_pull_out.value)
+        return tray_pull_out.value
+    elif "read_power" in callout:
+        return bmc_read_power()
     else:
         Logger.warn("Callout %s not handled" % callout)
 
@@ -94,17 +116,20 @@ def sensor_valid_check(board, sname, check_name, attribute):
             data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
             result = data.split(": ")
             if match(r"ON", result[1]) is not None:
-                cmd = "/usr/local/bin/gpiocli -c aspeed-gpio -s %s get-value" % attribute["bic_ready_pin"]
-                data = ""
-                data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
-                bic_ready = data.split("=")
-                if int(bic_ready[1]) == is_ready:
-                    if os.path.isfile(SDR_BIN_PATH):
-                        return 1
+                if "bic_ready_pin" in attribute and attribute["bic_ready_pin"]:
+                    cmd = "/usr/local/bin/gpiocli -c aspeed-gpio -s %s get-value" % attribute["bic_ready_pin"]
+                    data = ""
+                    data = Popen(cmd, shell=True, stdout=PIPE).stdout.read().decode()
+                    bic_ready = data.split("=")
+                    if int(bic_ready[1]) == is_ready:
+                        if os.path.isfile(SDR_BIN_PATH):
+                            return 1
+                        else:
+                            return 0
                     else:
                         return 0
                 else:
-                    return 0
+                    return 1
             else:
                 return 0
         elif attribute["type"] == "E1S_status":

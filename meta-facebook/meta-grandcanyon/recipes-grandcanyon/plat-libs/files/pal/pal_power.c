@@ -1093,7 +1093,58 @@ pal_set_device_power(uint8_t slot_id, uint8_t dev_id, uint8_t cmd) {
   
   return ret;
 }
+#ifdef CONFIG_GRANDCANYON2
+int
+pal_set_dev_power_status(uint8_t dev_id, uint8_t cmd) {
+  int i2cfd, ret = 0;
+  i2c_master_rw_command command;
+  uint8_t offset, cur_val;
 
+  memset(&command, 0, sizeof(command));
+
+  if (dev_id == DEV_ID0_E1S) {
+    offset = BS_FPGA_E1S0_POWER_CTRL;
+  } else if (dev_id == DEV_ID1_E1S) {
+    offset = BS_FPGA_E1S1_POWER_CTRL;
+  } else {
+    syslog(LOG_ERR, "Fail to control E1.S power due to wrong device id: %d", dev_id);
+    return -1;
+  }
+
+  i2cfd = i2c_cdev_slave_open(I2C_BS_FPGA_BUS, BS_FPGA_SLAVE_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_ERR, "Fail to control E1.S power due to I2C BUS: %d open failed", I2C_BS_FPGA_BUS);
+    return i2cfd;
+  }
+
+  // Step 1: Read current value from offset
+  ret = i2c_rdwr_msg_transfer(i2cfd, BS_FPGA_SLAVE_ADDR, &offset, sizeof(offset), &cur_val, sizeof(cur_val));
+  if (ret < 0) {
+    syslog(LOG_ERR, "Fail to read E1.S power status from offset: 0x%02X", offset);
+    close(i2cfd);
+    return ret;
+  }
+
+  // Step 2: Modify only bit 4
+  if (cmd == DEVICE_POWER_ON) {
+    cur_val &= ~(1 << 4);  // Bit 4 = 0 (LOW) : Enable E1.S power
+  } else if (cmd == DEVICE_POWER_OFF) {
+    cur_val |= (1 << 4);   // Bit 4 = 1 (HIGH) : Disable E1.S power
+  } else {
+    syslog(LOG_ERR, "Fail to control E1.S power due to wrong action: %d", cmd);
+    close(i2cfd);
+    return -1;
+  }
+
+  // Step 3: Write back modified value
+  command.offset = offset;
+  command.val = cur_val;
+  ret = i2c_rdwr_msg_transfer(i2cfd, BS_FPGA_SLAVE_ADDR, (uint8_t *)&command, sizeof(command), NULL, 0);
+  close(i2cfd);
+  return ret;
+}
+
+#else
 int
 pal_set_dev_power_status(uint8_t dev_id, uint8_t cmd) {
   int i2cfd, ret = 0;
@@ -1129,6 +1180,8 @@ pal_set_dev_power_status(uint8_t dev_id, uint8_t cmd) {
   close(i2cfd);
   return ret;
 }
+
+#endif
 
 int
 pal_check_server_power_change_correct(uint8_t action) {

@@ -17,6 +17,9 @@
 #define BS_FPGA_E1S0_POWER_CTRL 0x0D
 #define BS_FPGA_E1S1_POWER_CTRL 0x0C
 
+#define E1S_POWER_ADD       0x00  // bit 4
+#define E1S_POWER_REMOVE    0x10  // bit 4
+
 #define BS_FPGA_SERVER_CHECK_BIC_STBY_PWR_RDY_BIT 0x04
 
 // BMC CPLD I2C Configuration
@@ -41,13 +44,15 @@
 #define BS_FPGA_SERVER_POWER_STATUS 0x04
 #define BS_FPGA_E1S0_POWER_CTRL 0x0D
 #define BS_FPGA_E1S1_POWER_CTRL 0x0C
+#define E1S_POWER_ADD       0x00
+#define E1S_POWER_REMOVE    0x01
+
 #endif
 
 #define SERVER_POWER_BTN_HIGH 1
 #define SERVER_POWER_BTN_LOW  0
 
-#define E1S_POWER_ADD       0x00
-#define E1S_POWER_REMOVE    0x01
+
 
 enum {
   POWER_STATUS_ALREADY_OK = 1,

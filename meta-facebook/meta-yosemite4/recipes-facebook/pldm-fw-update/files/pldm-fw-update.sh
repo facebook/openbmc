@@ -470,7 +470,7 @@ pldm_fw_identify() {
 	((offset+=1))
 	component_string=$(hexdump -v -n "$component_string_len" -s "$offset" -e '1/1 "%c"' "$pldm_image")
 	((offset+=component_string_len+4))
-	signature=$(hexdump -v -n 4 -s "$offset" -e '1/1 "%c"' "$pldm_image")
+	signature=$(hexdump -C -v -n 4 -s "$offset" "$pldm_image" | head -n1 | cut -d'|' -f2)
 	
 	if [ "$instance_type" == "sd_retimer" ]; then
 		package_source=$(retimer_get_package_source "$signature")

@@ -17,15 +17,12 @@
 #
 
 [Unit]
-Description=Persistent hook to be run after the network starts
-After=nss-lookup.target hostname.service sshdgenkeys.service
-Wants=nss-lookup.target
-Before=restapi.service
-ConditionFileIsExecutable=/mnt/data/etc/rc.local
+Description=Runs /mnt/data/etc/rc.local
+ConditionPathExists=/mnt/data/etc/rc.local
 
 [Service]
 Type=oneshot
-ExecStart=/mnt/data/etc/rc.local
+ExecStart=/bin/bash -x /mnt/data/etc/rc.local
 TimeoutStartUSec=180s
 TimeoutStopUSec=infinity
 RemainAfterExit=yes

@@ -1,7 +1,7 @@
-From f6d7c728faea3b73c00f0f050c5a2439c59def62 Mon Sep 17 00:00:00 2001
+From 28ba22a73298712e73aead886c53f1a53e73c9eb Mon Sep 17 00:00:00 2001
 From: Freddie Jheng <Freddie.Jheng@quantatw.com>
 Date: Mon, 2 Mar 2026 11:00:50 +0800
-Subject: [PATCH] configurations: revise the BRCM 800G OCP NIC sensor name
+Subject: [PATCH 4/4] configurations: revise the BRCM 800G OCP NIC sensor name
 
 Apply the same I2C bus-to-NIC-ID conversion formula to the
 BRCM 800G 1P OCP NIC configuration for consistent sensor naming.
@@ -37,5 +37,5 @@ index 2ab1c56..6586d8a 100644
                  {
                      "Direction": "less than",
 -- 
-2.34.1
+2.47.3
 

@@ -1,7 +1,7 @@
-From 0e90dedf24a0973bd06ef0c8b107886f8cf72a17 Mon Sep 17 00:00:00 2001
+From 10ade3d8871a84fd1367c41dd4c65ca31ab389f1 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Fri, 10 Oct 2025 04:54:58 +0800
-Subject: [PATCH 701/701] hwmon: (pmbus) add driver for MPS MP9945
+Subject: [PATCH 701/702] hwmon: (pmbus) add driver for MPS MP9945
 
 Add support for mp9945 device from Monolithic Power Systems, Inc.
 (MPS) vendor. This is a single phase digital step down converter.
@@ -455,5 +455,5 @@ index 000000000000..34822e0de812
 +MODULE_LICENSE("GPL");
 +MODULE_IMPORT_NS("PMBUS");
 -- 
-2.52.0
+2.47.3
 

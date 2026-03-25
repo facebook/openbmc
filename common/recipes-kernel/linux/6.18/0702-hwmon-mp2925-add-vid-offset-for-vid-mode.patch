@@ -1,8 +1,7 @@
-Subject: [PATCH] hwmon: mp2925: add vid offset for vid mode
-Date: Tue,  6 Jan 2026 14:13:48 +0800
-Message-Id: <20260106061348.170509-1-wenswang@yeah.net>
-
+From b93bd806a7f69476aaa232b362072983e13240c8 Mon Sep 17 00:00:00 2001
 From: Wensheng Wang <wenswang@yeah.net>
+Date: Tue, 6 Jan 2026 14:13:48 +0800
+Subject: [PATCH 702/702] hwmon: mp2925: add vid offset for vid mode
 
 In vid mode, the mp2925 vout telemetry has 49 vid step offset, add
 vid offset for this.
@@ -67,4 +66,5 @@ index 6bebd6023021..ad094842cf2d 100644
  
  	return 0;
 -- 
-2.25.1
+2.47.3
+

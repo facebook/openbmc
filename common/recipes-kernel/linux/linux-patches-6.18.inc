@@ -88,7 +88,7 @@ SRC_URI:append = " \
 SRC_URI:append = " \
     file://0700-hwmon-Add-MP2925-and-MP2929-driver.patch \
     file://0701-hwmon-pmbus-add-driver-for-MPS-MP9945.patch \
-    file://0702-hwmon_mp2925_add_vid_offset_for_vid_mode.patch \
+    file://0702-hwmon-mp2925-add-vid-offset-for-vid-mode.patch \
 "
 
 #

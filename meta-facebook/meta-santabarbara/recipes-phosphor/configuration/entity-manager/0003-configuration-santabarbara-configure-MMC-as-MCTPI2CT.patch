@@ -1,7 +1,7 @@
-From eb866567fa5c18ae4105fd9829c9f09ddc88556f Mon Sep 17 00:00:00 2001
+From a7e2dddedbc7232612837ebde055eca3ecb6abae Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 16:31:12 +0800
-Subject: [PATCH 3/3] configuration: santabarbara: configure MMC as
+Subject: [PATCH 3/4] configuration: santabarbara: configure MMC as
  MCTPI2CTarget in BiosPost
 
 Mark MMC devices as MCTPI2CTarget and set PowerState to BiosPost,

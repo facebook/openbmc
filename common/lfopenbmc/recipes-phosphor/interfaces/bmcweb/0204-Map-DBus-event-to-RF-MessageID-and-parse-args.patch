@@ -1,4 +1,4 @@
-From 5c32ec5c681a544e98dd5fa450c55ca096428469 Mon Sep 17 00:00:00 2001
+From 02c382fdceca25a2b394ac58f37ad796beaae5cc Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 15:59:10 +0000
 Subject: [PATCH 204/205] Map DBus event to RF MessageID and parse args
@@ -294,7 +294,7 @@ index 00000000..f028f65c
 +} // namespace dbus_registries_map
 +} // namespace redfish
 diff --git a/redfish-core/include/utils/eventlog_utils.hpp b/redfish-core/include/utils/eventlog_utils.hpp
-index 207f4b59..5d9cff93 100644
+index 13b6cf53..ee349342 100644
 --- a/redfish-core/include/utils/eventlog_utils.hpp
 +++ b/redfish-core/include/utils/eventlog_utils.hpp
 @@ -12,6 +12,7 @@
@@ -305,7 +305,7 @@ index 207f4b59..5d9cff93 100644
  #include "utils/etag_utils.hpp"
  #include "utils/log_services_utils.hpp"
  #include "utils/query_param.hpp"
-@@ -575,14 +576,45 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
+@@ -576,14 +577,45 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
      const std::string& collectionStr, const std::string_view memberId,
      const std::string& logEntryDescriptor)
  {
@@ -354,7 +354,7 @@ index 207f4b59..5d9cff93 100644
      objectToFillOut["Resolved"] = entry.Resolved;
      std::optional<bool> notifyAction =
          getProviderNotifyAction(entry.ServiceProviderNotify);
-@@ -590,13 +622,7 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
+@@ -591,13 +623,7 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
      {
          objectToFillOut["ServiceProviderNotified"] = *notifyAction;
      }
@@ -368,7 +368,7 @@ index 207f4b59..5d9cff93 100644
      objectToFillOut["Created"] =
          redfish::time_utils::getDateTimeUintMs(entry.Timestamp);
      objectToFillOut["Modified"] =
-@@ -605,7 +631,7 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
+@@ -606,7 +632,7 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
      {
          objectToFillOut["AdditionalDataURI"] = boost::urls::format(
              "/redfish/v1/{}/{}/LogServices/EventLog/Entries/{}/attachment",
@@ -583,7 +583,7 @@ index 41f2c6a4..a58bfa0c 100644
  
      if (eventRecords.empty())
 diff --git a/redfish-core/src/subscription.cpp b/redfish-core/src/subscription.cpp
-index 465a46fb..8e4b280f 100644
+index 79d936bf..51ae105d 100644
 --- a/redfish-core/src/subscription.cpp
 +++ b/redfish-core/src/subscription.cpp
 @@ -33,7 +33,6 @@
@@ -594,7 +594,7 @@ index 465a46fb..8e4b280f 100644
  #include <string>
  #include <string_view>
  #include <utility>
-@@ -209,13 +208,8 @@ void Subscription::filterAndSendEventLogs(
+@@ -211,13 +210,8 @@ void Subscription::filterAndSendEventLogs(
  
          nlohmann::json::object_t bmcLogEntry;
          uint64_t memberId = 0;

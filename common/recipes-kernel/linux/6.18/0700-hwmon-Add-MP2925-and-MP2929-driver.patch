@@ -1,7 +1,7 @@
-From 621329d1bf843c639e9116b23ce6db671101965a Mon Sep 17 00:00:00 2001
+From 6cccd4c821e83cb90b42721eee681e7b537c255b Mon Sep 17 00:00:00 2001
 From: Wensheng Wang <wenswang@yeah.net>
 Date: Sun, 28 Sep 2025 17:28:45 +0800
-Subject: [PATCH 700/701] hwmon: Add MP2925 and MP2929 driver
+Subject: [PATCH 700/702] hwmon: Add MP2925 and MP2929 driver
 
 Add support for MPS VR mp2925 and mp2929 controller. This driver exposes
 telemetry and limit value readings and writtings.
@@ -562,5 +562,5 @@ index 000000000000..6bebd6023021
 +MODULE_LICENSE("GPL");
 +MODULE_IMPORT_NS("PMBUS");
 -- 
-2.52.0
+2.47.3
 

@@ -1,4 +1,4 @@
-From c9b7a7cac38e59b256ad91b60a3dc2274c0240ad Mon Sep 17 00:00:00 2001
+From dad6b6b8c69af6f0fbd6457ede3dec9e6eec8339 Mon Sep 17 00:00:00 2001
 From: Dirk Chen <dirkchen@amd.com>
 Date: Tue, 13 Jan 2026 01:06:34 +0800
 Subject: [PATCH] cpld: Add firmware update support for Lattice XO5-15D
@@ -148,15 +148,15 @@ Signed-off-by: Dirk Chen <dirkchen@amd.com>
 ---
  cpld/lattice/lattice_base_cpld.hpp    |   4 +
  cpld/lattice/lattice_cpld_factory.cpp |   5 +
- cpld/lattice/lattice_xo5d_cpld.cpp    | 731 ++++++++++++++++++++++++++
- cpld/lattice/lattice_xo5d_cpld.hpp    |  70 +++
+ cpld/lattice/lattice_xo5d_cpld.cpp    | 737 ++++++++++++++++++++++++++
+ cpld/lattice/lattice_xo5d_cpld.hpp    |  71 +++
  cpld/meson.build                      |   1 +
- 5 files changed, 811 insertions(+)
+ 5 files changed, 818 insertions(+)
  create mode 100644 cpld/lattice/lattice_xo5d_cpld.cpp
  create mode 100644 cpld/lattice/lattice_xo5d_cpld.hpp
 
 diff --git a/cpld/lattice/lattice_base_cpld.hpp b/cpld/lattice/lattice_base_cpld.hpp
-index b51770f..f020cd5 100644
+index eeb91bd..1ee88ef 100644
 --- a/cpld/lattice/lattice_base_cpld.hpp
 +++ b/cpld/lattice/lattice_base_cpld.hpp
 @@ -20,6 +20,7 @@ enum class latticeChip
@@ -216,10 +216,10 @@ index 5f5fb58..e81ea78 100644
                         "CHIPMODEL", chipModelStr);
 diff --git a/cpld/lattice/lattice_xo5d_cpld.cpp b/cpld/lattice/lattice_xo5d_cpld.cpp
 new file mode 100644
-index 0000000..45fe392
+index 0000000..259ca6a
 --- /dev/null
 +++ b/cpld/lattice/lattice_xo5d_cpld.cpp
-@@ -0,0 +1,731 @@
+@@ -0,0 +1,737 @@
 +#include "lattice_xo5d_cpld.hpp"
 +
 +#include <phosphor-logging/lg2.hpp>
@@ -882,6 +882,12 @@ index 0000000..45fe392
 +    co_return true;
 +}
 +
++sdbusplus::async::task<bool> LatticeXO5DCPLD::doErase()
++{
++    // XO5D handles erase as part of doUpdate() via eraseNonActiveImage()
++    co_return true;
++}
++
 +sdbusplus::async::task<bool> LatticeXO5DCPLD::prepareUpdate(
 +    const uint8_t* image, size_t imageSize)
 +{
@@ -953,10 +959,10 @@ index 0000000..45fe392
 +} // namespace phosphor::software::cpld
 diff --git a/cpld/lattice/lattice_xo5d_cpld.hpp b/cpld/lattice/lattice_xo5d_cpld.hpp
 new file mode 100644
-index 0000000..9b83457
+index 0000000..647c2b6
 --- /dev/null
 +++ b/cpld/lattice/lattice_xo5d_cpld.hpp
-@@ -0,0 +1,70 @@
+@@ -0,0 +1,71 @@
 +#include "lattice_base_cpld.hpp"
 +
 +namespace phosphor::software::cpld
@@ -999,6 +1005,7 @@ index 0000000..9b83457
 +  protected:
 +    sdbusplus::async::task<bool> prepareUpdate(const uint8_t* image,
 +                                               size_t imageSize) override;
++    sdbusplus::async::task<bool> doErase() override;
 +    sdbusplus::async::task<bool> doUpdate() override;
 +    sdbusplus::async::task<bool> finishUpdate() override;
 +    sdbusplus::async::task<bool> readUserCode(uint32_t& userCode) override;
@@ -1040,5 +1047,5 @@ index d05a124..bdf4692 100644
  
  exe = executable(
 -- 
-2.47.3
+2.52.0
 

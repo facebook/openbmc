@@ -47,7 +47,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 	"github.com/vtolstov/go-ioctl"
 )
 
@@ -107,20 +106,20 @@ var FlashCp = func(imageFilePath, deviceFilePath string, roOffset uint32) error 
 	// open flash device
 	deviceFile, err := openFlashDeviceFile(deviceFilePath)
 	if err != nil {
-		return errors.Errorf("Unable to open flash device file '%v': %v",
+		return fmt.Errorf("Unable to open flash device file '%v': %v",
 			deviceFilePath, err)
 	}
 	// get mtd_info_user
 	m, err := getMtdInfoUser(deviceFile.Fd())
 	if err != nil {
-		return errors.Errorf("Can't get mtd_info_user for '%v', "+
+		return fmt.Errorf("Can't get mtd_info_user for '%v', "+
 			"this may not be a MTD flash device: %v",
 			deviceFilePath, err)
 	}
 	// close device file here explicitly
 	err = closeFlashDeviceFile(deviceFile)
 	if err != nil {
-		return errors.Errorf("Unable to close flash device file '%v': %v",
+		return fmt.Errorf("Unable to close flash device file '%v': %v",
 			deviceFilePath, err)
 	}
 
@@ -134,7 +133,7 @@ var FlashCp = func(imageFilePath, deviceFilePath string, roOffset uint32) error 
 		imageFilePath, syscall.PROT_READ, syscall.MAP_SHARED,
 	)
 	if err != nil {
-		return errors.Errorf("Can't mmap image file '%v': %v",
+		return fmt.Errorf("Can't mmap image file '%v': %v",
 			imageFilePath, err)
 	}
 	defer fileutils.Munmap(imageData)
@@ -168,7 +167,7 @@ var runFlashProcess = func(
 
 	deviceFile, err := openFlashDeviceFile(deviceFilePath)
 	if err != nil {
-		return errors.Errorf("Unable to open flash device file '%v': %v",
+		return fmt.Errorf("Unable to open flash device file '%v': %v",
 			deviceFilePath, err)
 	}
 
@@ -190,7 +189,7 @@ var runFlashProcess = func(
 	// make sure non-block device is closed before using block device
 	err = closeFlashDeviceFile(deviceFile)
 	if err != nil {
-		return errors.Errorf("Unable to close flash device file '%v': %v",
+		return fmt.Errorf("Unable to close flash device file '%v': %v",
 			deviceFilePath, err)
 	}
 
@@ -207,7 +206,7 @@ var getMtdInfoUser = func(fd uintptr) (mtd_info_user, error) {
 
 	err := IOCTL(fd, MEMGETINFO, uintptr(unsafe.Pointer(&m)))
 	if err != nil {
-		return m, errors.Errorf("Can't get mtd_info_user: %v", err)
+		return m, fmt.Errorf("Can't get mtd_info_user: %v", err)
 	}
 	log.Printf("Got mtd_info_user: %#v", m)
 
@@ -225,17 +224,17 @@ var healthCheck = func(
 	regEx := regexp.MustCompile(mtdFilePathRegEx)
 	matched := regEx.MatchString(deviceFile.Name())
 	if !matched {
-		return errors.Errorf("Device file path '%v' does not match required pattern '%v'",
+		return fmt.Errorf("Device file path '%v' does not match required pattern '%v'",
 			deviceFile.Name(), mtdFilePathRegEx)
 	}
 
 	if uint32(len(imFile.data)) > m.size {
-		return errors.Errorf("Image size (%vB) larger than flash device size (%vB)",
+		return fmt.Errorf("Image size (%vB) larger than flash device size (%vB)",
 			len(imFile.data), m.size)
 	}
 
 	if uint32(len(imFile.data)) < roOffset {
-		return errors.Errorf("Image size (%vB) smaller than RO offset %v",
+		return fmt.Errorf("Image size (%vB) smaller than RO offset %v",
 			len(imFile.data), roOffset)
 	}
 
@@ -259,7 +258,7 @@ var eraseFlashDevice = func(
 
 	if m.erasesize == 0 {
 		// make sure first m.erasesize != 0
-		return errors.Errorf("invalid mtd device erasesize: 0")
+		return fmt.Errorf("invalid mtd device erasesize: 0")
 	}
 
 	// make sure we erase from a complete erasesize block
@@ -271,7 +270,7 @@ var eraseFlashDevice = func(
 	// check for overflow
 	imageAndEraseSize, err := utils.AddU32(imageSize, m.erasesize)
 	if err != nil {
-		return errors.Errorf("Failed to get erase length: %v", err)
+		return fmt.Errorf("Failed to get erase length: %v", err)
 	}
 	// length if erasesize is 0 (won't over/under-flow here due to m.erasesize > 0)
 	eraseEnd := uint32((imageAndEraseSize-1)/m.erasesize) * m.erasesize
@@ -293,7 +292,7 @@ var eraseFlashDevice = func(
 			errMsg := fmt.Sprintf("Flash device '%v' erase failed: %v",
 				deviceFile.Name(), err)
 			log.Print(errMsg)
-			return errors.Errorf("%v", errMsg)
+			return fmt.Errorf("%v", errMsg)
 		}
 
 		// For every chunkSize bytes of work done, sleep for 1/4s to
@@ -325,7 +324,7 @@ var flashImage = func(
 	log.Printf("Flashing image '%v' on to flash device '%v'", imFile.name, deviceFile.Name())
 
 	if roOffset >= fileSize {
-		return errors.Errorf("roOffset (%v) >= file size (%v)", roOffset, fileSize)
+		return fmt.Errorf("roOffset (%v) >= file size (%v)", roOffset, fileSize)
 	}
 
 	// flash the device in many large chunks rather than attempting to
@@ -340,14 +339,14 @@ var flashImage = func(
 
 		activeImageData, err := utils.BytesSliceRange(imFile.data, off, off+size)
 		if err != nil {
-			return errors.Errorf("Unable to get image data after roOffset (%v): %v", roOffset, err)
+			return fmt.Errorf("Unable to get image data after roOffset (%v): %v", roOffset, err)
 		}
 
 		log.Printf("Flashing image data for offset: %v, size: %v", off, size)
 		// use Pwrite, WriteAt may call Pwrite multiple times under the hood
 		n, err := fileutils.Pwrite(int(deviceFile.Fd()), activeImageData, int64(off))
 		if err != nil {
-			return errors.Errorf("Failed to flash image '%v' on to flash device '%v': "+
+			return fmt.Errorf("Failed to flash image '%v' on to flash device '%v': "+
 				"%vB flashed: %v",
 				imFile.name, deviceFile.Name(), n, err,
 			)
@@ -386,19 +385,19 @@ var verifyFlash = func(
 		mtdBlockFilePath, 0, int(imageSize), syscall.PROT_READ, syscall.MAP_SHARED,
 	)
 	if err != nil {
-		return errors.Errorf("Unable to mmap flash device '%v': %v",
+		return fmt.Errorf("Unable to mmap flash device '%v': %v",
 			deviceFilePath, err)
 	}
 	defer fileutils.Munmap(flashData)
 
 	activeImageData, err := utils.BytesSliceRange(imFile.data, roOffset, uint32(len(imFile.data)))
 	if err != nil {
-		return errors.Errorf("Unable to get image data after roOffset (%v): %v", roOffset, err)
+		return fmt.Errorf("Unable to get image data after roOffset (%v): %v", roOffset, err)
 	}
 
 	activeFlashData, err := utils.BytesSliceRange(flashData, roOffset, uint32(len(flashData)))
 	if err != nil {
-		return errors.Errorf("Unable to get flash data after roOffset (%v): %v", roOffset, err)
+		return fmt.Errorf("Unable to get flash data after roOffset (%v): %v", roOffset, err)
 	}
 
 	if !bytes.Equal(activeFlashData, activeImageData) {
@@ -413,7 +412,7 @@ var verifyFlash = func(
 		errMsg := fmt.Sprintf("Verification failed: flash and image data "+
 			"mismatch beginning at offset %v + roOffset %v.", off, roOffset)
 		log.Print(errMsg)
-		return errors.Errorf("%v", errMsg)
+		return fmt.Errorf("%v", errMsg)
 	}
 
 	log.Printf("Finished verifying copy on flash device '%v' with image file '%v'",

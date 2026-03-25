@@ -48,7 +48,7 @@ SRC_URI:append = " \
     file://0213-dmaengine-aspeed-Add-AST2600-UART-DMA-driver.patch \
     file://0214-serial-8250-Add-AST2600-UART-driver.patch \
     file://0215-drivers-misc-Add-Aspeed-OTP-control-register.patch \
-    file://0216-soc-aspeed-Add-Post-Code-Control.patch \
+    file://0216-soc-aspeed-lpc-pcc-Add-PCC-controller-support.patch \
     file://0217-i2c-ast2600-support-ssif.patch \
     file://0218-ARM-dts-aspeed-g6-Add-UDMA-node.patch \
     file://0219-net-ftgmac100-reset-MAC-by-SCU-on-RMII.patch \

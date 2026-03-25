@@ -1818,7 +1818,6 @@ bool XO5I2CManagerv2::programCfg()
             CRCandBusyCheck = waitBusyAndVerifyCRC();
             if ((ret != 0) || (readData.size() != resSize) || (readData[0] & 0x01) == 0 || (CRCandBusyCheck & CRC_MASK))
             {
-                std::this_thread::sleep_for(1000ms);
                 ++retry;
                 if (debugMode)
                 {
@@ -1832,7 +1831,6 @@ bool XO5I2CManagerv2::programCfg()
             {
                 while ((CRCandBusyCheck & BUSY_MASK))
                 {
-                    std::this_thread::sleep_for(5ms);
                     CRCandBusyCheck = waitBusyAndVerifyCRC();
                 }
                 if (debugMode)

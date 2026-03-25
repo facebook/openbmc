@@ -122,8 +122,8 @@ int main(int argc, char** argv)
         auto stop = high_resolution_clock::now();
         auto duration = duration_cast<seconds>(stop - start);
 
-        std::cout << "Execution time: " << duration.count() << " seconds"
-                  << std::endl;
+        std::cout << "Execution time: " << std::dec << duration.count()
+                  << " seconds" << std::endl;
 
         std::cout << "Release lock file: " << lockFile << std::endl;
         // Release the lock

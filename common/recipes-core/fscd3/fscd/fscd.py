@@ -220,7 +220,7 @@ class Fscd(object):
                     self.ssd_progressive_algorithm = self.fsc_config[
                         "ssd_progressive_algorithm"
                     ]
-            self.sensor_missing_as_fail = self.fsc_config["boost"]["sensor_missing_as_fail"]
+            self.sensor_missing_as_fail = self.fsc_config["boost"].get("sensor_missing_as_fail", False)
         if "sensor_valid_check" in self.fsc_config:
             self.sensor_valid_check = self.fsc_config["sensor_valid_check"]
         self.watchdog = self.fsc_config["watchdog"]

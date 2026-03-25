@@ -1,6 +1,6 @@
 #!/bin/bash
 
-lockfile="/tmp/pldm-fw-upate.lock"
+lockfile="/tmp/pldm-fw-update.lock"
 
 FAIL_TO_UPDATE_WF_CXL_PLDM_SERVICE_NOT_RUNING=16
 # FAIL_TO_UPDATE_WF_CXL_EID_DOES_NOT_EXIST=17

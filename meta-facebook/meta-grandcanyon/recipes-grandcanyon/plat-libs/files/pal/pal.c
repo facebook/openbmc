@@ -3031,6 +3031,12 @@ pal_get_custom_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   }
   switch(fru) {
     case FRU_SERVER:
+#ifdef CONFIG_GRANDCANYON2
+      if (sensor_num == BIC_SENSOR_PMIC_ERROR) {
+        snprintf(name, MAX_SNR_NAME, "PMIC_ERROR");
+        break;
+      }
+#endif
       switch(sensor_num) {
         case GC_SENSOR_VRHOT:
         case GC2_SENSOR_VRHOT:
@@ -3149,6 +3155,12 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
         snprintf(name, MAX_SNR_NAME, "CATERR");
         return PAL_EOK;
       }
+#ifdef CONFIG_GRANDCANYON2
+      if (snr_num == BIC_SENSOR_PMIC_ERROR) {
+        snprintf(name, MAX_SNR_NAME, "PMIC_ERROR");
+        return PAL_EOK;
+      }
+#endif
       break;
     // If SNR_TYPE is OS_BOOT, sensor name is OS
     case OS_BOOT:
@@ -3158,6 +3170,12 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
     default:
       break;
   }
+#ifdef CONFIG_GRANDCANYON2
+  if (fru == FRU_SERVER && snr_num == BIC_SENSOR_PMIC_ERROR) {
+    snprintf(name, MAX_SNR_NAME, "PMIC_ERROR");
+    return PAL_EOK;
+  }
+#endif
 
   if (pal_get_custom_event_sensor_name(fru, snr_num, name) == PAL_EOK) {
     return PAL_EOK;
@@ -3330,6 +3348,62 @@ pal_parse_gc2_sys_sts_event(uint8_t *event_data, char *error_log) {
   return PAL_EOK;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+static int
+pal_parse_pmic_error_event(uint8_t *event_data, char *error_log) {
+  static const char *dimm_label[] = {
+    "A0", "A2", "A3", "A4", "A6", "A7"
+  };
+
+  static const char *pmic_err_name[] = {
+    "SWAOUT_OV",
+    "SWBOUT_OV",
+    "SWCOUT_OV",
+    "SWDOUT_OV",
+    "VIN_BULK_OV",
+    "VIN_MGMT_OV",
+    "SWAOUT_UV",
+    "SWBOUT_UV",
+    "SWCOUT_UV",
+    "SWDOUT_UV",
+    "VIN_BULK_UV",
+    "VIN_MGMT_TO_VIN_BUCK_SWITCHOVER",
+    "HIGH_TEMP_WARNING",
+    "VOUT_1V8_PG",
+    "HIGH_CURRENT_WARNING",
+    "CURRENT_LIMIT_WARNING",
+    "CURRENT_TEMP_SHUTDOWN",
+  };
+
+  uint8_t dimm_id = 0;
+  uint8_t err_index = 0;
+
+  if (event_data == NULL || error_log == NULL) {
+    syslog(LOG_WARNING, "%s(): NULL parameter", __func__);
+    return -1;
+  }
+
+  dimm_id = event_data[0];
+  err_index = event_data[1];
+
+  strcat(error_log, "PMIC_ERROR DIMM ");
+  if (dimm_id < (sizeof(dimm_label) / sizeof(dimm_label[0]))) {
+    strcat(error_log, dimm_label[dimm_id]);
+  } else {
+    strcat(error_log, "UNKNOWN");
+  }
+
+  strcat(error_log, " ");
+  if (err_index < (sizeof(pmic_err_name) / sizeof(pmic_err_name[0]))) {
+    strcat(error_log, pmic_err_name[err_index]);
+  } else {
+    strcat(error_log, "UNKNOWN_ERROR_TYPE");
+  }
+
+  return PAL_EOK;
+}
+#endif
+
 static int
 pal_parse_sys_sts_event(uint8_t snr_num, uint8_t *event_data, char *error_log) {
   if (event_data == NULL || error_log == NULL) {
@@ -3488,6 +3562,11 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
             } else if (snr_num == BIC_SENSOR_CATERR) {
               pal_parse_caterr_event(event_data, error_log);
               is_parsed = true;
+#ifdef CONFIG_GRANDCANYON2
+            } else if (snr_num == BIC_SENSOR_PMIC_ERROR) {
+              pal_parse_pmic_error_event(event_data, error_log);
+              is_parsed = true;
+#endif
             }
             break;
           case IPMI_SENSOR_TYPE_CRITICAL_INTERRUPT:
@@ -3502,7 +3581,13 @@ pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log) {
       }
 
       if (is_parsed == false) {
-        switch (snr_num) {
+#ifdef CONFIG_GRANDCANYON2
+        if (snr_num == BIC_SENSOR_PMIC_ERROR) {
+          pal_parse_pmic_error_event(event_data, error_log);
+          is_parsed = true;
+        }else
+#endif
+          switch (snr_num) {      
           case GC_SENSOR_VRHOT:
           case GC2_SENSOR_VRHOT:
             pal_parse_vr_event(event_data, error_log);

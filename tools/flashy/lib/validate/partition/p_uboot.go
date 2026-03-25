@@ -28,7 +28,6 @@ import (
 	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 func init() {
@@ -269,14 +268,14 @@ func (p *UBootPartition) Validate() error {
 	// calculate the actual checksum without the checksum region
 	calcChecksum, err := p.getChecksum()
 	if err != nil {
-		return errors.Errorf("Failed to calculate checksum: %v", err)
+		return fmt.Errorf("Failed to calculate checksum: %w", err)
 	}
 
 	if utils.StringFind(calcChecksum, p.checksums) == -1 {
 		errMsg := fmt.Sprintf("'%v' partition md5sum '%v' unrecognized",
 			p.Name, calcChecksum)
 		log.Printf("%v", errMsg)
-		return errors.Errorf(errMsg)
+		return fmt.Errorf("%s", errMsg)
 	}
 	log.Printf("'%v' partition md5sum '%v' OK",
 		p.Name, calcChecksum)
@@ -293,13 +292,13 @@ func (p *UBootPartition) GetType() PartitionConfigType {
 func (p *UBootPartition) checkMagic() error {
 	// check that p.Data is larger than 4 bytes
 	if len(p.Data) < ubootMagicSize {
-		return errors.Errorf("'%v' partition too small (%v) to contain U-Boot magic",
+		return fmt.Errorf("'%v' partition too small (%v) to contain U-Boot magic",
 			p.Name, len(p.Data))
 	}
 
 	magic := binary.BigEndian.Uint32(p.Data[:ubootMagicSize])
 	if utils.Uint32Find(magic, ubootMagics) == -1 {
-		return errors.Errorf("Magic '0x%X' does not match any U-Boot magic", magic)
+		return fmt.Errorf("Magic '0x%X' does not match any U-Boot magic", magic)
 	}
 	return nil
 }
@@ -314,13 +313,13 @@ func (p *UBootPartition) tryGetAppendedChecksums() {
 
 	// check that image is large enough to contain appended checksums
 	if len(p.Data) < ubootChecksumsPartitionSize {
-		logNotAppended(errors.Errorf("Too small (%v) to contain "+
+		logNotAppended(fmt.Errorf("Too small (%v) to contain "+
 			"appended checksums", len(p.Data)))
 		return
 	}
 	checksumsDatRegionPadded, err := utils.BytesSliceRange(p.Data, uint32(len(p.Data)-ubootChecksumsPartitionSize), uint32(len(p.Data)))
 	if err != nil {
-		logNotAppended(errors.Errorf("Unable to get checksums region: %v", err))
+		logNotAppended(fmt.Errorf("Unable to get checksums region: %w", err))
 		return
 	}
 
@@ -349,7 +348,7 @@ func (p *UBootPartition) getChecksum() (string, error) {
 	if p.areChecksumsAppended {
 		dataWithoutChecksumRegion, err := utils.BytesSliceRange(p.Data, 0, uint32(len(p.Data)-ubootChecksumsPartitionSize))
 		if err != nil {
-			return "", errors.Errorf("Unable to calculate checksums: %v", err)
+			return "", fmt.Errorf("Unable to calculate checksums: %w", err)
 		}
 		hash := md5.Sum(dataWithoutChecksumRegion)
 		checksum = hex.EncodeToString(hash[:])

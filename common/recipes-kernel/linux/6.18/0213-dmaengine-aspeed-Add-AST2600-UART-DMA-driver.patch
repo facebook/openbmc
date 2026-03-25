@@ -1,4 +1,4 @@
-From 3633b4e33a509884852e818d440100d8b6a1547b Mon Sep 17 00:00:00 2001
+From a06c53bddc54435c45bed66b6d03de1ec94a0ac1 Mon Sep 17 00:00:00 2001
 From: Chia-Wei Wang <chiawei_wang@aspeedtech.com>
 Date: Mon, 20 Mar 2023 16:11:31 +0800
 Subject: [PATCH 213/226] dmaengine: aspeed: Add AST2600 UART DMA driver
@@ -10,12 +10,12 @@ Signed-off-by: Chia-Wei Wang <chiawei_wang@aspeedtech.com>
 ---
  drivers/dma/Kconfig        |   9 +
  drivers/dma/Makefile       |   1 +
- drivers/dma/ast2600-udma.c | 532 +++++++++++++++++++++++++++++++++++++
- 3 files changed, 542 insertions(+)
+ drivers/dma/ast2600-udma.c | 545 +++++++++++++++++++++++++++++++++++++
+ 3 files changed, 555 insertions(+)
  create mode 100644 drivers/dma/ast2600-udma.c
 
 diff --git a/drivers/dma/Kconfig b/drivers/dma/Kconfig
-index b8a74b1798ba..875868f0bb78 100644
+index b8a74b179..875868f0b 100644
 --- a/drivers/dma/Kconfig
 +++ b/drivers/dma/Kconfig
 @@ -100,6 +100,15 @@ config ARM_DMA350
@@ -35,7 +35,7 @@ index b8a74b1798ba..875868f0bb78 100644
  	tristate "Atmel AHB DMA support"
  	depends on ARCH_AT91
 diff --git a/drivers/dma/Makefile b/drivers/dma/Makefile
-index a54d7688392b..70151aa1ccff 100644
+index a54d76883..70151aa1c 100644
 --- a/drivers/dma/Makefile
 +++ b/drivers/dma/Makefile
 @@ -18,6 +18,7 @@ obj-$(CONFIG_AMBA_PL08X) += amba-pl08x.o
@@ -48,10 +48,10 @@ index a54d7688392b..70151aa1ccff 100644
  obj-$(CONFIG_AXI_DMAC) += dma-axi-dmac.o
 diff --git a/drivers/dma/ast2600-udma.c b/drivers/dma/ast2600-udma.c
 new file mode 100644
-index 000000000000..fec3e9354f11
+index 000000000..acacc5581
 --- /dev/null
 +++ b/drivers/dma/ast2600-udma.c
-@@ -0,0 +1,532 @@
+@@ -0,0 +1,545 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Copyright (C) ASPEED Technology Inc.
@@ -86,6 +86,7 @@ index 000000000000..fec3e9354f11
 +#define UDMA_CH_WPTR(x)		(0x044 + UDMA_CH_OFFS(x))
 +#define UDMA_CH_ADDR(x)		(0x048 + UDMA_CH_OFFS(x))
 +#define UDMA_CH_CTRL(x)		(0x04c + UDMA_CH_OFFS(x))
++#define   UDMA_CH_CTRL_ADDRH	GENMASK(10, 8)
 +#define   UDMA_CH_CTRL_BUFSZ	GENMASK(1, 0)
 +
 +#define UDMA_MAX_BUFSZ	(0x10000)
@@ -230,8 +231,8 @@ index 000000000000..fec3e9354f11
 +	uint32_t r_pr, r_is, r_ie, r_en, reg;
 +	uint32_t ch_id = chan->chan_id;
 +	uint32_t ch_bit = ch_id / 2;
++	uint32_t ctrl;
 +	dma_addr_t rx_addr;
-+	uint32_t rx_size;
 +	struct ast2600_udma_chan *uc = to_ast2600_udma_chan(chan);
 +	struct ast2600_udma_desc *ud = &uc->ud;
 +	struct ast2600_udma *udma = uc->udma;
@@ -259,9 +260,12 @@ index 000000000000..fec3e9354f11
 +
 +	/* set transfer address & size */
 +	if (uc->is_tx) {
-+		writel(ud->addr, udma->regs + UDMA_CH_ADDR(ch_id));
++		ctrl = UDMA_BUFSZ_64KB |
++		       FIELD_PREP(UDMA_CH_CTRL_ADDRH, upper_32_bits(ud->addr));
++
++		writel(lower_32_bits(ud->addr), udma->regs + UDMA_CH_ADDR(ch_id));
 +		writel(ud->size, udma->regs + UDMA_CH_WPTR(ch_id));
-+		writel(UDMA_BUFSZ_64KB, udma->regs + UDMA_CH_CTRL(ch_id));
++		writel(ctrl, udma->regs + UDMA_CH_CTRL(ch_id));
 +	} else {
 +		/*
 +		 * UDMA is limited to 4B-aligned addresses.
@@ -270,9 +274,11 @@ index 000000000000..fec3e9354f11
 +		 * after then.
 +		 */
 +		rx_addr = (ud->addr & 0x3) ? uc->buf_addr : ud->addr;
-+		rx_size = FIELD_GET(UDMA_CH_CTRL_BUFSZ, ud->size);
-+		writel(rx_addr, udma->regs + UDMA_CH_ADDR(ch_id));
-+		writel(rx_size, udma->regs + UDMA_CH_CTRL(ch_id));
++		ctrl = FIELD_GET(UDMA_CH_CTRL_BUFSZ, ud->size) |
++		       FIELD_PREP(UDMA_CH_CTRL_ADDRH, upper_32_bits(rx_addr));
++
++		writel(lower_32_bits(rx_addr), udma->regs + UDMA_CH_ADDR(ch_id));
++		writel(ctrl, udma->regs + UDMA_CH_CTRL(ch_id));
 +	}
 +
 +	/* enable interrupt */
@@ -471,6 +477,12 @@ index 000000000000..fec3e9354f11
 +	if (!udma)
 +		return -ENOMEM;
 +
++	rc = dma_set_mask_and_coherent(dev, DMA_BIT_MASK(64));
++	if (rc) {
++		dev_err(dev, "cannot set 64-bits DMA mask\n");
++		return rc;
++	}
++
 +	dma_cap_set(DMA_SLAVE, udma->ddev.cap_mask);
 +	udma->ddev.device_alloc_chan_resources = ast2600_udma_alloc_chan_resources;
 +	udma->ddev.device_prep_slave_sg = ast2600_udma_prep_slave_sg;
@@ -569,6 +581,7 @@ index 000000000000..fec3e9354f11
 +
 +static const struct of_device_id ast2600_udma_match[] = {
 +	{ .compatible = "aspeed,ast2600-udma" },
++	{ .compatible = "aspeed,ast2700-udma" },
 +	{ },
 +};
 +
@@ -585,5 +598,5 @@ index 000000000000..fec3e9354f11
 +MODULE_LICENSE("GPL");
 +MODULE_AUTHOR("Chia-Wei Wang <chiawei_wang@aspeedtech.com");
 -- 
-2.47.3
+2.53.0
 

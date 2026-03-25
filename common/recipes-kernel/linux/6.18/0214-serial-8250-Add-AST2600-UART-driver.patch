@@ -1,4 +1,4 @@
-From 0eef50be5841508875f1231c16ea05e25ad1919c Mon Sep 17 00:00:00 2001
+From 02ba6e36db953b5fa8ac2759caec7b3436ec1457 Mon Sep 17 00:00:00 2001
 From: Chia-Wei Wang <chiawei_wang@aspeedtech.com>
 Date: Mon, 20 Mar 2023 16:11:32 +0800
 Subject: [PATCH 214/226] serial: 8250: Add AST2600 UART driver
@@ -9,18 +9,18 @@ implementation to leverage the AST2600 UART DMA (UDMA) engine.
 
 Signed-off-by: Chia-Wei Wang <chiawei_wang@aspeedtech.com>
 ---
- drivers/tty/serial/8250/8250_aspeed.c | 222 ++++++++++++++++++++++++++
+ drivers/tty/serial/8250/8250_aspeed.c | 229 ++++++++++++++++++++++++++
  drivers/tty/serial/8250/Kconfig       |   8 +
  drivers/tty/serial/8250/Makefile      |   1 +
- 3 files changed, 231 insertions(+)
+ 3 files changed, 238 insertions(+)
  create mode 100644 drivers/tty/serial/8250/8250_aspeed.c
 
 diff --git a/drivers/tty/serial/8250/8250_aspeed.c b/drivers/tty/serial/8250/8250_aspeed.c
 new file mode 100644
-index 000000000000..b1ed5781f47e
+index 000000000..da68b5d56
 --- /dev/null
 +++ b/drivers/tty/serial/8250/8250_aspeed.c
-@@ -0,0 +1,222 @@
+@@ -0,0 +1,229 @@
 +// SPDX-License-Identifier: GPL-2.0
 +/*
 + * Copyright (C) ASPEED Technology Inc.
@@ -204,6 +204,12 @@ index 000000000000..b1ed5781f47e
 +	data->dma.rxconf.src_maxburst = UART_XMIT_SIZE;
 +	data->dma.txconf.dst_maxburst = UART_XMIT_SIZE;
 +	uart.dma = &data->dma;
++
++	rc = dma_set_mask_and_coherent(dev, DMA_BIT_MASK(64));
++	if (rc) {
++		dev_err(dev, "cannot set 64-bits DMA mask\n");
++		return rc;
++	}
 +#endif
 +
 +	data->line = serial8250_register_8250_port(&uart);
@@ -226,6 +232,7 @@ index 000000000000..b1ed5781f47e
 +
 +static const struct of_device_id ast8250_of_match[] = {
 +	{ .compatible = "aspeed,ast2600-uart" },
++	{ .compatible = "aspeed,ast2700-uart" },
 +	{ },
 +};
 +
@@ -244,7 +251,7 @@ index 000000000000..b1ed5781f47e
 +MODULE_LICENSE("GPL");
 +MODULE_DESCRIPTION("Aspeed 8250 UART Driver with DMA support");
 diff --git a/drivers/tty/serial/8250/Kconfig b/drivers/tty/serial/8250/Kconfig
-index f64ef0819cd4..229ce59f7c54 100644
+index f64ef0819..229ce59f7 100644
 --- a/drivers/tty/serial/8250/Kconfig
 +++ b/drivers/tty/serial/8250/Kconfig
 @@ -257,6 +257,14 @@ config SERIAL_8250_ACCENT
@@ -263,7 +270,7 @@ index f64ef0819cd4..229ce59f7c54 100644
  	tristate "Aspeed Virtual UART"
  	depends on SERIAL_8250
 diff --git a/drivers/tty/serial/8250/Makefile b/drivers/tty/serial/8250/Makefile
-index 9ec4d5fe64de..a2684ab619cf 100644
+index 9ec4d5fe6..a2684ab61 100644
 --- a/drivers/tty/serial/8250/Makefile
 +++ b/drivers/tty/serial/8250/Makefile
 @@ -21,6 +21,7 @@ obj-$(CONFIG_SERIAL_8250_CONSOLE)	+= 8250_early.o
@@ -275,5 +282,5 @@ index 9ec4d5fe64de..a2684ab619cf 100644
  obj-$(CONFIG_SERIAL_8250_BCM7271)	+= 8250_bcm7271.o
  obj-$(CONFIG_SERIAL_8250_BOCA)		+= 8250_boca.o
 -- 
-2.47.3
+2.53.0
 

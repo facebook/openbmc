@@ -139,7 +139,7 @@ extern "C" {
 
 #define SERVER_CRASHDUMP_PID_PATH        "/var/run/autodump.pid"
 #define SERVER_CRASHDUMP_KV_KEY          "server_crashdump"
-#define CRASHDUMP_BIN       "/usr/bin/crashdump/autodump.sh"
+#define CRASHDUMP_BIN       "/usr/bin/autodump.sh"
 
 #define STR_VALUE_0  "0"
 #define STR_VALUE_1  "1"

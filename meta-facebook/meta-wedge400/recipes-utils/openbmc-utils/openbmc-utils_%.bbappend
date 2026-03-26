@@ -139,6 +139,9 @@ do_install:append() {
 FILES:${PN} += "${sysconfdir}"
 
 
+# wedge400 does not implement enable_watchdog_ext_signal.sh — disable the service
+SYSTEMD_SERVICE:${PN}:remove = "enable_watchdog_ext_signal.service"
+
 SYSTEMD_SERVICE:${PN} += " \
     setup_default_gpio.service \
     setup_avs.service \

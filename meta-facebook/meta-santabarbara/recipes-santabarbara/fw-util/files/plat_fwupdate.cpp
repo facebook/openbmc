@@ -30,7 +30,7 @@ class SWBFlashComponent : public ExternalSPIComponent {
         const std::string& comp,
         const std::vector<GpioConfig>& configs,
         const std::string& programmerType = "ft2232_spi",
-        const std::string& chipParams = "type=2232H,port=B")
+        const std::string& chipParams = "type=2232H,port=B,divisor=4")
         : ExternalSPIComponent(fru, comp, programmerType, chipParams),
           gpioConfigs(configs) {}
     

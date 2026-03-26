@@ -1,4 +1,4 @@
-From 28ba22a73298712e73aead886c53f1a53e73c9eb Mon Sep 17 00:00:00 2001
+From 658f5b677c053ae1f1cfdec1175066716b282db1 Mon Sep 17 00:00:00 2001
 From: Freddie Jheng <Freddie.Jheng@quantatw.com>
 Date: Mon, 2 Mar 2026 11:00:50 +0800
 Subject: [PATCH 4/4] configurations: revise the BRCM 800G OCP NIC sensor name
@@ -9,11 +9,11 @@ BRCM 800G 1P OCP NIC configuration for consistent sensor naming.
 Change-Id: I1b288c76b1a400d6be19c60c5bb4f878223804df
 Signed-off-by: Freddie Jheng <Freddie.Jheng@quantatw.com>
 ---
- configurations/broadcomm/800g_1p_ocp.json | 6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ configurations/broadcomm/800g_1p_ocp.json | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/configurations/broadcomm/800g_1p_ocp.json b/configurations/broadcomm/800g_1p_ocp.json
-index 2ab1c56..6586d8a 100644
+index 2ab1c56..767a2a5 100644
 --- a/configurations/broadcomm/800g_1p_ocp.json
 +++ b/configurations/broadcomm/800g_1p_ocp.json
 @@ -3,7 +3,7 @@
@@ -21,7 +21,7 @@ index 2ab1c56..6586d8a 100644
              "Address": "$address",
              "Bus": "$bus",
 -            "Name": "BRCM OCP NIC FRU $bus",
-+            "Name": "BRCM OCP NIC FRU $bus % 80 % 18 % 10 * 3 / 4",
++            "Name": "BRCM OCP NIC FRU $bus % 109 % 11",
              "Type": "EEPROM"
          },
          {
@@ -31,11 +31,20 @@ index 2ab1c56..6586d8a 100644
              ],
 -            "Name": "NIC Temp $bus",
 -            "Name1": "NIC Temp $bus",
-+            "Name": "NIC$bus % 80 % 18 % 10 * 3 / 4 TEMP_C",
-+            "Name1": "NIC$bus % 80 % 18 % 10 * 3 / 4 TEMP_C",
++            "Name": "NIC$bus % 109 % 11 TEMP_C",
++            "Name1": "NIC$bus % 109 % 11 TEMP_C",
              "Thresholds": [
                  {
                      "Direction": "less than",
+@@ -33,7 +33,7 @@
+             "Type": "TMP421"
+         }
+     ],
+-    "Name": "BRCM OCP NIC FRU $bus",
++    "Name": "BRCM OCP NIC FRU $bus % 109 % 11",
+     "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Broadcom BCM957708 1x800G OCP', 'BOARD_MANUFACTURER': 'Broadcom'})",
+     "Type": "Board",
+     "xyz.openbmc_project.Inventory.Decorator.Asset": {
 -- 
 2.47.3
 

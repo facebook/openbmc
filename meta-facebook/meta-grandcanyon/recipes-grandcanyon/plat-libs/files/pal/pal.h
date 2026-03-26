@@ -287,6 +287,7 @@ enum {
   SYS_VR_WDT_TIMEOUT = 0x0A,
   SYS_SMI_STUCK_LOW  = 0x0E,
   SYS_EVENT_HOST_STALL = 0x20,
+  SYS_E1S0_ALERT = 0x21,
 };
 
 // Server board Discrete/SEL Sensors

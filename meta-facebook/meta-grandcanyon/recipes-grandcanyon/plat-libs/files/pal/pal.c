@@ -3340,6 +3340,12 @@ pal_parse_gc2_sys_sts_event(uint8_t *event_data, char *error_log) {
     case SYS_EVENT_HOST_STALL:
       strcat(error_log, "BIOS stalled");
       break;
+    case SYS_E1S0_ALERT:
+      strcat(error_log, "E1S INA233");
+      break;
+    case SYS_SMI_STUCK_LOW:
+      strcat(error_log, "SMI stuck low over 90s");
+      break;
     default:
       strcat(error_log, "Undefined system event");
       break;

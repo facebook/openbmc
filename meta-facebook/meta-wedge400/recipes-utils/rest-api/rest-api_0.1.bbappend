@@ -51,3 +51,5 @@ binfiles1 += " \
 do_install:append() {
     install -m 644 ${UNPACKDIR}/wedge400_ufw_manifest.json ${D}${sysconfdir}/ufw_manifest.json
 }
+
+RDEPENDS:${PN} += "python3-attrs"

@@ -22,7 +22,13 @@ BUS=$1
 
 . /usr/local/bin/openbmc-utils.sh
 
+# Remove stale device if present from a previous run
 if [ -e /sys/bus/i2c/devices/${BUS}-1010 ]; then
     i2c_device_delete ${BUS} 0x1010
 fi
-i2c_device_add ${BUS} 0x1010 slave-mqueue
+
+# Create the slave-mqueue device
+if ! i2c_device_add ${BUS} 0x1010 slave-mqueue; then
+    echo "Failed to add slave-mqueue for bus ${BUS}"
+    exit 1
+fi

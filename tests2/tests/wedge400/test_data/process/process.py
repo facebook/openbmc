@@ -22,8 +22,7 @@
 from utils.test_utils import running_systemd
 
 SYSV_PROCS = [
-    "/var/run/dhclient.eth0.pid",
-    "/var/run/dhclient6.eth0.pid",
+    "dhcpcd: eth0 [ip4] [ip6]",
 ]
 
 SYSTEMD_PROCS = [

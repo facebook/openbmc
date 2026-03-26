@@ -39,8 +39,7 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
             "usbmon.sh",
         ]
         SYSV_PROCESSES = [
-            "dhclient -6 -d -D LL",
-            "dhclient -pf /var/run/dhclient.eth0.pid eth0",
+            "dhcpcd: eth0 [ip4] [ip6]",
         ]
         SYSTEMD_PROCESSES = [
             "systemd-journald",

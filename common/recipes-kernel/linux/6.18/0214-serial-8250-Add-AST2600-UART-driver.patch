@@ -1,4 +1,4 @@
-From 02ba6e36db953b5fa8ac2759caec7b3436ec1457 Mon Sep 17 00:00:00 2001
+From fb4fb62bb9e63cc22dd7f0b05bc5b8e16c690689 Mon Sep 17 00:00:00 2001
 From: Chia-Wei Wang <chiawei_wang@aspeedtech.com>
 Date: Mon, 20 Mar 2023 16:11:32 +0800
 Subject: [PATCH 214/226] serial: 8250: Add AST2600 UART driver
@@ -17,7 +17,7 @@ Signed-off-by: Chia-Wei Wang <chiawei_wang@aspeedtech.com>
 
 diff --git a/drivers/tty/serial/8250/8250_aspeed.c b/drivers/tty/serial/8250/8250_aspeed.c
 new file mode 100644
-index 000000000..da68b5d56
+index 000000000000..da68b5d560f9
 --- /dev/null
 +++ b/drivers/tty/serial/8250/8250_aspeed.c
 @@ -0,0 +1,229 @@
@@ -251,7 +251,7 @@ index 000000000..da68b5d56
 +MODULE_LICENSE("GPL");
 +MODULE_DESCRIPTION("Aspeed 8250 UART Driver with DMA support");
 diff --git a/drivers/tty/serial/8250/Kconfig b/drivers/tty/serial/8250/Kconfig
-index f64ef0819..229ce59f7 100644
+index f64ef0819cd4..229ce59f7c54 100644
 --- a/drivers/tty/serial/8250/Kconfig
 +++ b/drivers/tty/serial/8250/Kconfig
 @@ -257,6 +257,14 @@ config SERIAL_8250_ACCENT
@@ -270,7 +270,7 @@ index f64ef0819..229ce59f7 100644
  	tristate "Aspeed Virtual UART"
  	depends on SERIAL_8250
 diff --git a/drivers/tty/serial/8250/Makefile b/drivers/tty/serial/8250/Makefile
-index 9ec4d5fe6..a2684ab61 100644
+index 9ec4d5fe64de..a2684ab619cf 100644
 --- a/drivers/tty/serial/8250/Makefile
 +++ b/drivers/tty/serial/8250/Makefile
 @@ -21,6 +21,7 @@ obj-$(CONFIG_SERIAL_8250_CONSOLE)	+= 8250_early.o
@@ -282,5 +282,5 @@ index 9ec4d5fe6..a2684ab61 100644
  obj-$(CONFIG_SERIAL_8250_BCM7271)	+= 8250_bcm7271.o
  obj-$(CONFIG_SERIAL_8250_BOCA)		+= 8250_boca.o
 -- 
-2.53.0
+2.47.3
 

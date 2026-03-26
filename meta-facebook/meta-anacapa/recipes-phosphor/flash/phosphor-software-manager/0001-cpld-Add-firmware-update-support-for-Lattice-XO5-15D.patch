@@ -1,4 +1,4 @@
-From dad6b6b8c69af6f0fbd6457ede3dec9e6eec8339 Mon Sep 17 00:00:00 2001
+From c992974d5c555a6173f3f050f07e0b1f0b96e70f Mon Sep 17 00:00:00 2001
 From: Dirk Chen <dirkchen@amd.com>
 Date: Tue, 13 Jan 2026 01:06:34 +0800
 Subject: [PATCH] cpld: Add firmware update support for Lattice XO5-15D
@@ -192,7 +192,7 @@ index eeb91bd..1ee88ef 100644
  
  struct cpldI2cInfo
 diff --git a/cpld/lattice/lattice_cpld_factory.cpp b/cpld/lattice/lattice_cpld_factory.cpp
-index 5f5fb58..e81ea78 100644
+index 0436e09..56b946c 100644
 --- a/cpld/lattice/lattice_cpld_factory.cpp
 +++ b/cpld/lattice/lattice_cpld_factory.cpp
 @@ -2,6 +2,7 @@
@@ -203,14 +203,14 @@ index 5f5fb58..e81ea78 100644
  
  #include <phosphor-logging/lg2.hpp>
  
-@@ -32,6 +33,10 @@ std::unique_ptr<LatticeBaseCPLD> LatticeCPLDFactory::getLatticeCPLD()
+@@ -33,6 +34,10 @@ std::unique_ptr<LatticeBaseCPLD> LatticeCPLDFactory::getLatticeCPLD(
              return std::make_unique<LatticeXO5CPLD>(
                  CPLDInterface::ctx, CPLDInterface::bus, CPLDInterface::address,
-                 chipModelStr, "CFG0", false);
+                 chipModelStr, target, false);
 +        case latticeChipFamily::XO5D:
 +            return std::make_unique<LatticeXO5DCPLD>(
 +                CPLDInterface::ctx, CPLDInterface::bus, CPLDInterface::address,
-+                chipModelStr, "", false);
++                chipModelStr, target, false);
          default:
              lg2::error("Unsupported Lattice CPLD chip family: {CHIPMODEL}",
                         "CHIPMODEL", chipModelStr);

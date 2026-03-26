@@ -19,6 +19,7 @@
 package common
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"syscall"
@@ -29,7 +30,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 func TestUnmountDataPartition(t *testing.T) {
@@ -84,12 +84,12 @@ func TestUnmountDataPartition(t *testing.T) {
 			name:           "data part check failed",
 			isLFOpenBMC:    false,
 			dataPartExists: false,
-			dataPartErr:    errors.Errorf("check failed"),
+			dataPartErr:    fmt.Errorf("check failed"),
 			unmountErr:     nil,
 			remountErr:     nil,
 			sshdConfigErr:  nil,
 			want: step.ExitSafeToReboot{
-				Err: errors.Errorf("Unable to determine whether /mnt/data is mounted: check failed"),
+				Err: fmt.Errorf("Unable to determine whether /mnt/data is mounted: check failed"),
 			},
 		},
 		{
@@ -97,7 +97,7 @@ func TestUnmountDataPartition(t *testing.T) {
 			isLFOpenBMC:    false,
 			dataPartExists: true,
 			dataPartErr:    nil,
-			unmountErr:     errors.Errorf("unmount failed"),
+			unmountErr:     fmt.Errorf("unmount failed"),
 			remountErr:     nil,
 			sshdConfigErr:  nil,
 			want:           nil,
@@ -107,11 +107,11 @@ func TestUnmountDataPartition(t *testing.T) {
 			isLFOpenBMC:    false,
 			dataPartExists: true,
 			dataPartErr:    nil,
-			unmountErr:     errors.Errorf("unmount failed"),
-			remountErr:     errors.Errorf("remount failed"),
+			unmountErr:     fmt.Errorf("unmount failed"),
+			remountErr:     fmt.Errorf("remount failed"),
 			sshdConfigErr:  nil,
 			want: step.ExitSafeToReboot{
-				Err: errors.Errorf("Failed to unmount or remount /mnt/data"),
+				Err: fmt.Errorf("Failed to unmount or remount /mnt/data"),
 			},
 		},
 		{
@@ -121,9 +121,9 @@ func TestUnmountDataPartition(t *testing.T) {
 			dataPartErr:    nil,
 			unmountErr:     nil,
 			remountErr:     nil,
-			sshdConfigErr:  errors.Errorf("sshd config corrupt"),
+			sshdConfigErr:  fmt.Errorf("sshd config corrupt"),
 			want: step.ExitUnsafeToReboot{
-				Err: errors.Errorf("Validate sshd config failed: %v",
+				Err: fmt.Errorf("Validate sshd config failed: %v",
 					"sshd config corrupt"),
 			},
 		},
@@ -218,7 +218,7 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 		{
 			name: "umount error",
 			cmdErrs: map[string]error{
-				"umount /mnt/data": errors.Errorf("umount failed"),
+				"umount /mnt/data": fmt.Errorf("umount failed"),
 			},
 			stderr:   "",
 			mountErr: nil,
@@ -238,12 +238,12 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 				"umount /mnt/data",
 				"umount /mnt/data",
 			},
-			want: errors.Errorf("umount failed"),
+			want: fmt.Errorf("umount failed"),
 		},
 		{
 			name: "cp ssh error",
 			cmdErrs: map[string]error{
-				"cp -r /mnt/data/etc/ssh /tmp/mnt/data/etc": errors.Errorf("cp failed"),
+				"cp -r /mnt/data/etc/ssh /tmp/mnt/data/etc": fmt.Errorf("cp failed"),
 			},
 			stderr:   "",
 			mountErr: nil,
@@ -252,12 +252,12 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 				"mkdir -p /tmp/mnt/data/etc",
 				"cp -r /mnt/data/etc/ssh /tmp/mnt/data/etc",
 			},
-			want: errors.Errorf("Copying /mnt/data/etc/ssh to /tmp/mnt/data/etc failed: cp failed, stderr: "),
+			want: fmt.Errorf("Copying /mnt/data/etc/ssh to /tmp/mnt/data/etc failed: cp failed, stderr: "),
 		},
 		{
 			name: "cp kv_store error",
 			cmdErrs: map[string]error{
-				"cp -r /mnt/data/kv_store /tmp/mnt/data/kv_store": errors.Errorf("cp failed"),
+				"cp -r /mnt/data/kv_store /tmp/mnt/data/kv_store": fmt.Errorf("cp failed"),
 			},
 			stderr:   "oops",
 			mountErr: nil,
@@ -267,12 +267,12 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 				"cp -r /mnt/data/etc/ssh /tmp/mnt/data/etc",
 				"cp -r /mnt/data/kv_store /tmp/mnt/data/kv_store",
 			},
-			want: errors.Errorf("Copying /mnt/data/kv_store to /tmp/mnt/data/kv_store failed: cp failed, stderr: oops"),
+			want: fmt.Errorf("Copying /mnt/data/kv_store to /tmp/mnt/data/kv_store failed: cp failed, stderr: oops"),
 		},
 		{
 			name: "cp kv_store allowable error",
 			cmdErrs: map[string]error{
-				"cp -r /mnt/data/kv_store /tmp/mnt/data/kv_store": errors.Errorf("cp failed"),
+				"cp -r /mnt/data/kv_store /tmp/mnt/data/kv_store": fmt.Errorf("cp failed"),
 			},
 			stderr:   "Error: No such file or directory",
 			mountErr: nil,
@@ -288,24 +288,24 @@ func TestRunDataPartitionUnmountProcess(t *testing.T) {
 		{
 			name: "mkdir error",
 			cmdErrs: map[string]error{
-				"mkdir -p /tmp/mnt": errors.Errorf("mkdir failed"),
+				"mkdir -p /tmp/mnt": fmt.Errorf("mkdir failed"),
 			},
 			stderr:   "",
 			mountErr: nil,
 			wantCmds: []string{
 				"mkdir -p /tmp/mnt",
 			},
-			want: errors.Errorf("'mkdir -p /tmp/mnt' failed: mkdir failed, stderr: "),
+			want: fmt.Errorf("'mkdir -p /tmp/mnt' failed: mkdir failed, stderr: "),
 		},
 		{
 			name:     "mount error",
 			cmdErrs:  map[string]error{},
 			stderr:   "",
-			mountErr: errors.Errorf("Bind mount failed"),
+			mountErr: fmt.Errorf("Bind mount failed"),
 			wantCmds: []string{
 				"mkdir -p /tmp/mnt",
 			},
-			want: errors.Errorf("Bind mount /mnt to /tmp/mnt failed: %v",
+			want: fmt.Errorf("Bind mount /mnt to /tmp/mnt failed: %v",
 				"Bind mount failed"),
 		},
 	}
@@ -373,8 +373,8 @@ func TestValidateSshdConfig(t *testing.T) {
 		},
 		{
 			name:   "failed",
-			cmdErr: errors.Errorf("command failed"),
-			want:   errors.Errorf("'%v' failed: command failed, stderr: ", sshdCmd),
+			cmdErr: fmt.Errorf("command failed"),
+			want:   fmt.Errorf("'%v' failed: command failed, stderr: ", sshdCmd),
 		},
 	}
 
@@ -413,7 +413,7 @@ func TestKillDataPartitionProcesses(t *testing.T) {
 		},
 		{
 			name:   "failed",
-			cmdErr: errors.Errorf("command failed"),
+			cmdErr: fmt.Errorf("command failed"),
 		},
 	}
 
@@ -468,8 +468,8 @@ func TestRemountRODataPartition(t *testing.T) {
 		},
 		{
 			name:   "failed",
-			cmdErr: errors.Errorf("command failed"),
-			want:   errors.Errorf("'%v' failed: command failed, stderr: ", remountCmd),
+			cmdErr: fmt.Errorf("command failed"),
+			want:   fmt.Errorf("'%v' failed: command failed, stderr: ", remountCmd),
 		},
 	}
 

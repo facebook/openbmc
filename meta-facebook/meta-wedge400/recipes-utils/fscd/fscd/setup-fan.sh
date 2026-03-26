@@ -42,12 +42,14 @@ fcm_min=$((FCM_CPLD_SUB_VER))
 
 echo -n "Setup fan speed... "
 
-if [ $(wedge_board_type) -eq 0 ]; then
-    echo "Run FSC Wedge400 Config"
-    cp /etc/FSC-W400-config.json ${default_fsc_config}
-elif [ $(wedge_board_type) -eq 1 ]; then
-    echo "Run FSC Wedge400C Config"
-    cp /etc/FSC-W400C-config.json ${default_fsc_config}
+if [ ! -e ${default_fsc_config} ]; then
+  if [ $(wedge_board_type) -eq 0 ]; then
+      echo "Run FSC Wedge400 Config"
+      cp /etc/FSC-W400-config.json ${default_fsc_config}
+  elif [ $(wedge_board_type) -eq 1 ]; then
+      echo "Run FSC Wedge400C Config"
+      cp /etc/FSC-W400C-config.json ${default_fsc_config}
+  fi
 fi
 echo "Setting fan speed to 50%..."
 /usr/local/bin/set_fan_speed.sh 50

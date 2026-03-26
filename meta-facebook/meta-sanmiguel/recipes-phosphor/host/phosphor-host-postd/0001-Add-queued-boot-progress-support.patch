@@ -1,0 +1,2670 @@
+From 1812c7a4fec121eaac61610164b13a0703d9087d Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Mon, 26 Jan 2026 10:54:39 +0800
+Subject: [PATCH 1/1] Add queued-boot-progress support
+
+[1] https://github.com/NVIDIA/phosphor-host-postd/tree/1a5bc5ea36e57d00e87d11584a419b737b665167
+
+Change-Id: Idc0f7545fc6cbd045e87193d8487f5f1fd8e8e14
+---
+ meson.build                                   |  49 ++-
+ meson.options                                 |  32 ++
+ .../BootProgressApplication.cpp               | 264 +++++++++++++
+ .../BootProgressApplication.hpp               |  86 +++++
+ queued-boot-progress/BootProgressMain.cpp     |  70 ++++
+ queued-boot-progress/BootProgressManager.cpp  | 194 ++++++++++
+ queued-boot-progress/BootProgressManager.hpp  |  77 ++++
+ queued-boot-progress/BootProgressPoller.cpp   | 281 ++++++++++++++
+ queued-boot-progress/BootProgressPoller.hpp   |  78 ++++
+ .../BootProgressPublisher.cpp                 | 349 ++++++++++++++++++
+ .../BootProgressPublisher.hpp                 |  59 +++
+ queued-boot-progress/BootProgressTypes.hpp    |   9 +
+ queued-boot-progress/ConfigReader.hpp         | 193 ++++++++++
+ queued-boot-progress/I2CPollingDevice.cpp     | 194 ++++++++++
+ queued-boot-progress/PollingDevice.cpp        | 114 ++++++
+ queued-boot-progress/PollingDevice.hpp        | 171 +++++++++
+ queued-boot-progress/USBPollingDevice.cpp     | 276 ++++++++++++++
+ 17 files changed, 2490 insertions(+), 6 deletions(-)
+ create mode 100644 queued-boot-progress/BootProgressApplication.cpp
+ create mode 100644 queued-boot-progress/BootProgressApplication.hpp
+ create mode 100644 queued-boot-progress/BootProgressMain.cpp
+ create mode 100644 queued-boot-progress/BootProgressManager.cpp
+ create mode 100644 queued-boot-progress/BootProgressManager.hpp
+ create mode 100644 queued-boot-progress/BootProgressPoller.cpp
+ create mode 100644 queued-boot-progress/BootProgressPoller.hpp
+ create mode 100644 queued-boot-progress/BootProgressPublisher.cpp
+ create mode 100644 queued-boot-progress/BootProgressPublisher.hpp
+ create mode 100644 queued-boot-progress/BootProgressTypes.hpp
+ create mode 100644 queued-boot-progress/ConfigReader.hpp
+ create mode 100644 queued-boot-progress/I2CPollingDevice.cpp
+ create mode 100644 queued-boot-progress/PollingDevice.cpp
+ create mode 100644 queued-boot-progress/PollingDevice.hpp
+ create mode 100644 queued-boot-progress/USBPollingDevice.cpp
+
+diff --git a/meson.build b/meson.build
+index 0d9878a..11743ed 100644
+--- a/meson.build
++++ b/meson.build
+@@ -15,7 +15,9 @@ phosphor_dbus_interfaces = dependency('phosphor-dbus-interfaces')
+ sdbusplus = dependency('sdbusplus')
+ sdeventplus = dependency('sdeventplus')
+ systemd = dependency('systemd')
++phosphor_logging = dependency('phosphor-logging')
+ libgpiodcxx = dependency('libgpiodcxx')
++libusb = dependency('libusb-1.0')
+ 
+ conf_data = configuration_data()
+ conf_data.set('bindir', get_option('prefix') / get_option('bindir'))
+@@ -34,6 +36,34 @@ elif get_option('snoop-device') != ''
+     if rate_limit > 0
+         snoopd_args += ' --rate-limit=' + rate_limit.to_string()
+     endif
++elif get_option('queued-boot-progress').allowed()
++    snoopd_src = []
++    snoopd_src += 'queued-boot-progress/PollingDevice.cpp'
++    snoopd_src += 'queued-boot-progress/I2CPollingDevice.cpp'
++    snoopd_src += 'queued-boot-progress/USBPollingDevice.cpp'
++    snoopd_src += 'queued-boot-progress/BootProgressPublisher.cpp'
++    snoopd_src += 'queued-boot-progress/BootProgressPoller.cpp'
++    snoopd_src += 'queued-boot-progress/BootProgressMain.cpp'
++    snoopd_src += 'queued-boot-progress/BootProgressManager.cpp'
++    snoopd_src += 'queued-boot-progress/BootProgressApplication.cpp'
++
++    transport = get_option('transport-interface')
++    snoopd_args += '-i ' + transport
++    if transport == 'i2c'
++        buses = get_option('device-bus')
++        addrs = get_option('device-address')
++        if buses.length() != addrs.length()
++            error('device-bus and device-address counts must match')
++        endif
++        foreach idx : range(buses.length())
++            snoopd_args += ' -b ' + buses[idx]
++            snoopd_args += ' -a ' + addrs[idx]
++        endforeach
++    endif
++    poll_interval = get_option('poll-interval')
++    if poll_interval > 0
++        snoopd_args += ' -p ' + poll_interval.to_string()
++    endif
+ endif
+ 
+ conf_data.set('SNOOPD_ARGS', snoopd_args)
+@@ -46,15 +76,22 @@ configure_file(
+     install_dir: systemd.get_variable('systemd_system_unit_dir'),
+ )
+ 
++snoopd_deps = [
++    sdbusplus,
++    sdeventplus,
++    phosphor_dbus_interfaces,
++    libgpiodcxx,
++    phosphor_logging,
++]
++
++if get_option('queued-boot-progress').allowed()
++    snoopd_deps += libusb
++endif
++
+ executable(
+     'snoopd',
+     snoopd_src,
+-    dependencies: [
+-        sdbusplus,
+-        sdeventplus,
+-        phosphor_dbus_interfaces,
+-        libgpiodcxx,
+-    ],
++    dependencies: snoopd_deps,
+     install: true,
+ )
+ 
+diff --git a/meson.options b/meson.options
+index 4f37868..3fa8a34 100644
+--- a/meson.options
++++ b/meson.options
+@@ -35,3 +35,35 @@ option(
+     min: 0,
+     value: 1000,
+ )
++option(
++    'queued-boot-progress',
++    type: 'feature',
++    value: 'disabled',
++    description: 'Feature to read boot progress in a polling manner',
++)
++option(
++    'poll-interval',
++    type: 'integer',
++    min: 1,
++    value: 100,
++    description: 'Polling interval for reading boot progress from devices',
++)
++option(
++    'transport-interface',
++    type: 'combo',
++    choices: ['i2c', 'usb'],
++    value: 'i2c',
++    description: 'Transport interface to get Boot Progress (valid: i2c, usb).',
++)
++option(
++    'device-bus',
++    type: 'array',
++    value: [],
++    description: 'Path to the device bus (default: /dev/i2c-0)',
++)
++option(
++    'device-address',
++    type: 'array',
++    value: [],
++    description: 'Address where the device is located',
++)
+\ No newline at end of file
+diff --git a/queued-boot-progress/BootProgressApplication.cpp b/queued-boot-progress/BootProgressApplication.cpp
+new file mode 100644
+index 0000000..d69d3b6
+--- /dev/null
++++ b/queued-boot-progress/BootProgressApplication.cpp
+@@ -0,0 +1,264 @@
++/*
++ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION &
++ * AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "BootProgressApplication.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++#include <sdbusplus/bus/match.hpp>
++
++#include <variant>
++
++namespace rulesInterface = sdbusplus::bus::match::rules;
++
++sdbusplus::async::task<void> Application::getInitialOsState()
++{
++    try
++    {
++        auto osStateProxy = sdbusplus::async::proxy()
++                                .service(dbusHostStateService)
++                                .path(dbusHostStatePath)
++                                .interface(dbusOSStatusInterface);
++        currentOSState = co_await osStateProxy.get_property<std::string>(
++            ctx, "OperatingSystemState");
++        lg2::info("Initial OS state: {STATE}", "STATE", currentOSState);
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error("Error getting initial OS state: {ERROR}", "ERROR",
++                   e.what());
++    }
++}
++
++sdbusplus::async::task<void> Application::monitorOSState()
++{
++    auto osStateMatch = sdbusplus::async::match(
++        ctx, rulesInterface::propertiesChanged(dbusHostStatePath,
++                                               dbusOSStatusInterface));
++    while (!ctx.stop_requested())
++    {
++        try
++        {
++            auto [iface, changed, invalidated] = co_await osStateMatch.next<
++                std::string,
++                std::map<std::string,
++                         std::variant<std::string, int32_t, uint32_t, bool>>,
++                std::vector<std::string>>();
++            auto it = changed.find("OperatingSystemState");
++            if (it != changed.end())
++            {
++                currentOSState = std::get<std::string>(it->second);
++                lg2::info("OS state changed to: {STATE}", "STATE",
++                          currentOSState);
++                onOSStateChange();
++            }
++        }
++        catch (const std::exception& e)
++        {
++            lg2::error("Error monitoring OS state: {ERROR}", "ERROR", e.what());
++        }
++    }
++}
++
++sdbusplus::async::task<void> Application::getInitialHostPowerState()
++{
++    try
++    {
++        auto hostStateProxy = sdbusplus::async::proxy()
++                                  .service(dbusHostStateService)
++                                  .path(dbusHostStatePath)
++                                  .interface(dbusHostStateInterface);
++        currentHostPowerState =
++            co_await hostStateProxy.get_property<std::string>(
++                ctx, "CurrentHostState");
++        lg2::info("Initial host power state: {STATE}", "STATE",
++                  currentHostPowerState);
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error("Error getting initial host power state: {ERROR}", "ERROR",
++                   e.what());
++        currentHostPowerState = std::string(hostPowerStateRunning);
++        lg2::warning("Defaulting to RUNNING state due to error");
++    }
++}
++
++sdbusplus::async::task<void> Application::monitorHostPowerState()
++{
++    auto powerStateMatch = sdbusplus::async::match(
++        ctx, rulesInterface::propertiesChanged(dbusHostStatePath,
++                                               dbusHostStateInterface));
++    while (!ctx.stop_requested())
++    {
++        try
++        {
++            auto [iface, changed, invalidated] = co_await powerStateMatch.next<
++                std::string,
++                std::map<std::string,
++                         std::variant<std::string, int32_t, uint32_t, bool>>,
++                std::vector<std::string>>();
++            auto it = changed.find("CurrentHostState");
++            if (it != changed.end())
++            {
++                currentHostPowerState = std::get<std::string>(it->second);
++                lg2::info("Host power state changed to: {STATE}", "STATE",
++                          currentHostPowerState);
++                onHostPowerStateChange();
++            }
++        }
++        catch (const std::exception& e)
++        {
++            lg2::error("Error monitoring host power state: {ERROR}", "ERROR",
++                       e.what());
++        }
++    }
++}
++
++void Application::onOSStateChange()
++{
++    updatePollInterval();
++}
++
++sdbusplus::async::task<void> Application::monitorBootProgress()
++{
++    auto bootProgressMatch = sdbusplus::async::match(
++        ctx, rulesInterface::propertiesChanged(dbusHostStatePath,
++                                               dbusBootProgressInterface));
++    while (!ctx.stop_requested())
++    {
++        try
++        {
++            auto [iface, changed, invalidated] =
++                co_await bootProgressMatch.next<
++                    std::string,
++                    std::map<std::string, std::variant<std::string, int32_t,
++                                                       uint32_t, bool>>,
++                    std::vector<std::string>>();
++            auto it = changed.find("BootProgress");
++            if (it != changed.end())
++            {
++                currentBootProgress = std::get<std::string>(it->second);
++                onBootProgressChange();
++            }
++        }
++        catch (const std::exception& e)
++        {
++            lg2::error("Error monitoring BootProgress: {ERROR}", "ERROR",
++                       e.what());
++        }
++    }
++}
++
++sdbusplus::async::task<void> Application::getInitialBootProgress()
++{
++    try
++    {
++        auto bootProgressProxy = sdbusplus::async::proxy()
++                                     .service(dbusHostStateService)
++                                     .path(dbusHostStatePath)
++                                     .interface(dbusBootProgressInterface);
++        currentBootProgress =
++            co_await bootProgressProxy.get_property<std::string>(
++                ctx, "BootProgress");
++        lg2::info("Initial BootProgress: {BOOT_PROGRESS}", "BOOT_PROGRESS",
++                  currentBootProgress);
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error("Error getting initial BootProgress: {ERROR}", "ERROR",
++                   e.what());
++        currentBootProgress.clear();
++    }
++}
++
++void Application::onBootProgressChange()
++{
++    updatePollInterval();
++}
++
++void Application::updatePollInterval()
++{
++    const auto baseInterval = config.pollInterval;
++    std::chrono::milliseconds calculatedInterval = baseInterval;
++
++    if (isHostPowerStateOff())
++    {
++        lg2::info("Host is off - disabling boot progress polling");
++        constexpr int disabledCheckMultiplier = 10;
++        calculatedInterval = baseInterval * disabledCheckMultiplier;
++        lg2::debug(
++            "Setting polling interval to {INTERVAL}ms (host off, base * {MULT})",
++            "INTERVAL", calculatedInterval.count(), "MULT",
++            disabledCheckMultiplier);
++        bootProgressManager->updatePollInterval(calculatedInterval);
++        bootProgressManager->updatePollStatus(false);
++        return;
++    }
++    if (currentOSState == osStateBootComplete &&
++        currentHostPowerState == hostPowerStateRunning &&
++        currentBootProgress == bootProgressOsRunningStage)
++    {
++        constexpr int bootCompleteMultiplier = 100;
++        constexpr std::chrono::milliseconds maxPollInterval{3600000};
++        calculatedInterval =
++            std::min(baseInterval * bootCompleteMultiplier, maxPollInterval);
++    }
++
++    lg2::debug("Setting polling interval to {INTERVAL}ms", "INTERVAL",
++               calculatedInterval.count());
++    bootProgressManager->updatePollInterval(calculatedInterval);
++    bootProgressManager->updatePollStatus(true);
++}
++
++void Application::onHostPowerStateChange()
++{
++    if (isHostPowerStateOff())
++    {
++        bootProgressManager->initIndices();
++        bootProgressManager->resetPublisherCachedState();
++    }
++    else if (currentHostPowerState == hostPowerStateRunning)
++    {
++        lg2::info("Host is on - enabling boot progress polling");
++    }
++    updatePollInterval();
++}
++
++Application::Application(
++    sdbusplus::async::context& ctx, const Configuration& configuration,
++    std::shared_ptr<BootProgressManager> bootProgressManager) :
++    ctx(ctx), config(configuration), bootProgressManager(bootProgressManager)
++{}
++
++sdbusplus::async::task<void> Application::initialize()
++{
++    co_await getInitialOsState();
++    co_await getInitialHostPowerState();
++    co_await getInitialBootProgress();
++    ctx.spawn(monitorOSState());
++    ctx.spawn(monitorHostPowerState());
++    ctx.spawn(monitorBootProgress());
++    updatePollInterval();
++    co_return;
++}
++
++bool Application::isHostPowerStateOff() const
++{
++    return (currentHostPowerState == hostPowerStateOff ||
++            currentHostPowerState == hostPowerStateQuiesced ||
++            currentHostPowerState == hostPowerStateTransition ||
++            currentHostPowerState.empty());
++}
+diff --git a/queued-boot-progress/BootProgressApplication.hpp b/queued-boot-progress/BootProgressApplication.hpp
+new file mode 100644
+index 0000000..b578dce
+--- /dev/null
++++ b/queued-boot-progress/BootProgressApplication.hpp
+@@ -0,0 +1,86 @@
++/*
++ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION &
++ * AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#pragma once
++
++#include "BootProgressManager.hpp"
++#include "BootProgressPoller.hpp"
++#include "BootProgressPublisher.hpp"
++#include "ConfigReader.hpp"
++
++#include <sdbusplus/async.hpp>
++
++#include <chrono>
++#include <memory>
++#include <string_view>
++
++constexpr std::string_view osStateBootComplete =
++    "xyz.openbmc_project.State.OperatingSystem.Status.OSStatus.Standby";
++constexpr std::string_view osStateInactive =
++    "xyz.openbmc_project.State.OperatingSystem.Status.OSStatus.Inactive";
++
++constexpr std::string_view hostPowerStateRunning =
++    "xyz.openbmc_project.State.Host.HostState.Running";
++constexpr std::string_view hostPowerStateOff =
++    "xyz.openbmc_project.State.Host.HostState.Off";
++constexpr std::string_view hostPowerStateQuiesced =
++    "xyz.openbmc_project.State.Host.HostState.Quiesced";
++constexpr std::string_view hostPowerStateTransition =
++    "xyz.openbmc_project.State.Host.HostState.TransitioningToOff";
++
++constexpr std::string_view bootProgressOsRunningStage =
++    "xyz.openbmc_project.State.Boot.Progress.ProgressStages.OSRunning";
++
++constexpr std::string_view dbusHostStateService =
++    "xyz.openbmc_project.State.Host";
++constexpr std::string_view dbusHostStatePath =
++    "/xyz/openbmc_project/state/host0";
++constexpr std::string_view dbusOSStatusInterface =
++    "xyz.openbmc_project.State.OperatingSystem.Status";
++constexpr std::string_view dbusHostStateInterface =
++    "xyz.openbmc_project.State.Host";
++constexpr std::string_view dbusBootProgressInterface =
++    "xyz.openbmc_project.State.Boot.Progress";
++
++class Application
++{
++  public:
++    Application(sdbusplus::async::context& ctx, const Configuration& config,
++                std::shared_ptr<BootProgressManager> bootProgressManager);
++
++    sdbusplus::async::task<void> initialize();
++
++  private:
++    sdbusplus::async::task<void> monitorOSState();
++    sdbusplus::async::task<void> getInitialOsState();
++    sdbusplus::async::task<void> monitorHostPowerState();
++    sdbusplus::async::task<void> getInitialHostPowerState();
++    sdbusplus::async::task<void> monitorBootProgress();
++    sdbusplus::async::task<void> getInitialBootProgress();
++    void onHostPowerStateChange();
++    void onOSStateChange();
++    void onBootProgressChange();
++    void updatePollInterval();
++    bool isHostPowerStateOff() const;
++
++    sdbusplus::async::context& ctx;
++    Configuration config;
++    std::string currentOSState;
++    std::string currentHostPowerState;
++    std::string currentBootProgress;
++    std::shared_ptr<BootProgressManager> bootProgressManager;
++};
+diff --git a/queued-boot-progress/BootProgressMain.cpp b/queued-boot-progress/BootProgressMain.cpp
+new file mode 100644
+index 0000000..001a6f1
+--- /dev/null
++++ b/queued-boot-progress/BootProgressMain.cpp
+@@ -0,0 +1,70 @@
++/*
++ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION &
++ * AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "BootProgressApplication.hpp"
++#include "BootProgressManager.hpp"
++#include "ConfigReader.hpp"
++#include "PollingDevice.hpp"
++#include "lpcsnoop/snoop.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++int main(int argc, char* argv[])
++{
++    sdbusplus::async::context ctx;
++    Configuration config;
++    if (!ConfigReader::readConfig(argc, argv, config))
++    {
++        lg2::error("Failed to read configuration");
++        return EXIT_FAILURE;
++    }
++
++    auto publisher = std::make_shared<BootProgressPublisher>(
++        ctx, std::string(snoopDbus), std::string(snoopObject));
++    auto bootProgressManager = std::make_shared<BootProgressManager>(
++        ctx, publisher, config.pollInterval);
++
++    std::shared_ptr<PollingDeviceEnumerator> deviceEnumerator = nullptr;
++    if (config.transportInterface == TransportInterface::I2C)
++    {
++        initializeI2CDevices(bootProgressManager, config.i2cInterfaceConfigMap);
++    }
++    else
++    {
++        // USB needs enumerator for hotplug support
++        deviceEnumerator = getPollingDeviceEnumerator(
++            ctx, bootProgressManager, config.transportInterface,
++            config.usbVendorId, config.usbProductId, config.usbRescanInterval);
++        if (!deviceEnumerator)
++        {
++            lg2::error("Failed to get polling device enumerator");
++            return EXIT_FAILURE;
++        }
++    }
++
++    if (deviceEnumerator)
++    {
++        ctx.spawn(deviceEnumerator->run());
++    }
++
++    Application application(ctx, config, bootProgressManager);
++    ctx.spawn(application.initialize());
++
++    ctx.run();
++
++    return EXIT_SUCCESS;
++}
+diff --git a/queued-boot-progress/BootProgressManager.cpp b/queued-boot-progress/BootProgressManager.cpp
+new file mode 100644
+index 0000000..8b880bb
+--- /dev/null
++++ b/queued-boot-progress/BootProgressManager.cpp
+@@ -0,0 +1,194 @@
++/*
++ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION &
++ * AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "BootProgressManager.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <algorithm>
++
++BootProgressManager::BootProgressManager(
++    sdbusplus::async::context& ctx,
++    std::shared_ptr<BootProgressPublisher> publisher,
++    std::chrono::milliseconds pollInterval) :
++    ctx(ctx), publisher(publisher), pollInterval(pollInterval)
++{
++    ctx.spawn(periodicPublishCheck());
++}
++
++void BootProgressManager::onBootProgressData(
++    int socketId,
++    std::vector<std::pair<uint32_t, uint32_t>> bootProgressEntries)
++{
++    if (bootProgressEntries.empty() || socketDataMap.empty())
++    {
++        lg2::info("onBootProgressData queues on socket {SOCKET_ID} empty",
++                  "SOCKET_ID", socketId);
++        return;
++    }
++    auto it = socketDataMap.find(socketId);
++    if (it == socketDataMap.end())
++    {
++        lg2::warning("Socket ID {SOCKET_ID} not found in socketDataMap",
++                     "SOCKET_ID", socketId);
++        return;
++    }
++    it->second.buffer.insert(it->second.buffer.end(),
++                             bootProgressEntries.begin(),
++                             bootProgressEntries.end());
++    if (publisher && isAllSocketDataReady())
++    {
++        tryPublish();
++    }
++}
++
++void BootProgressManager::onDeviceAdded(TransportInterface transportInterface,
++                                        const uint8_t& bus,
++                                        const uint8_t& address, int socketId)
++{
++    // Check if poller already exists for this socketId
++    auto existingIt = socketDataMap.find(socketId);
++    if (existingIt != socketDataMap.end())
++    {
++        lg2::warning(
++            "Poller already exists for socketId {SOCKET_ID}, skipping device addition",
++            "SOCKET_ID", socketId);
++        existingIt->second.poller->updatePollStatus(true);
++        return;
++    }
++
++    auto device = getPollingDevice(transportInterface, bus, address);
++    if (!device)
++    {
++        lg2::error("Failed to get polling device");
++        return;
++    }
++    auto poller = std::make_shared<BootProgressPoller>(
++        ctx, device, pollInterval, socketId,
++        std::bind(&BootProgressManager::onBootProgressData, this,
++                  std::placeholders::_1, std::placeholders::_2));
++    socketDataMap.emplace(socketId, SocketData(poller));
++    lg2::info(
++        "Device added: transportInterface {TRANSPORT_INTERFACE}, bus {BUS}, address {ADDRESS}, socketId {SOCKET_ID}",
++        "TRANSPORT_INTERFACE", static_cast<int>(transportInterface), "BUS", bus,
++        "ADDRESS", address, "SOCKET_ID", socketId);
++}
++
++void BootProgressManager::onDeviceRemoved(TransportInterface transportInterface,
++                                          const uint8_t& bus,
++                                          const uint8_t& address, int socketId)
++{
++    auto it = socketDataMap.find(socketId);
++    if (it == socketDataMap.end())
++    {
++        lg2::error("Socket data not found for socketId {SOCKET_ID}",
++                   "SOCKET_ID", socketId);
++        return;
++    }
++    it->second.poller->updatePollStatus(false);
++    lg2::info(
++        "Device removed: transportInterface {TRANSPORT_INTERFACE}, bus {BUS}, address {ADDRESS}, socketId {SOCKET_ID}",
++        "TRANSPORT_INTERFACE", static_cast<int>(transportInterface), "BUS", bus,
++        "ADDRESS", address, "SOCKET_ID", socketId);
++}
++
++void BootProgressManager::updatePollInterval(
++    std::chrono::milliseconds newPollInterval)
++{
++    pollInterval = newPollInterval;
++    for (const auto& [socketId, socketData] : socketDataMap)
++    {
++        socketData.poller->updatePollInterval(pollInterval);
++    }
++}
++
++void BootProgressManager::updatePollStatus(bool enable)
++{
++    for (const auto& [socketId, socketData] : socketDataMap)
++    {
++        socketData.poller->updatePollStatus(enable);
++    }
++}
++
++void BootProgressManager::initIndices()
++{
++    for (const auto& [socketId, socketData] : socketDataMap)
++    {
++        socketData.poller->initIndices();
++    }
++}
++
++bool BootProgressManager::isAllSocketDataReady()
++{
++    return std::all_of(socketDataMap.begin(), socketDataMap.end(),
++                       [](const auto& pair) {
++                           // Consider socket data ready if:
++                           // 1. Buffer has data
++                           // 2. Poller is not actively polling (device removed)
++                           return !pair.second.buffer.empty() ||
++                                  !pair.second.poller->isPolling();
++                       });
++}
++
++void BootProgressManager::aggregateAndSortAllSocketData()
++{
++    allSocketProgressEntries.clear();
++    for (auto& [socketId, socketData] : socketDataMap)
++    {
++        allSocketProgressEntries.insert(allSocketProgressEntries.end(),
++                                        socketData.buffer.begin(),
++                                        socketData.buffer.end());
++        socketData.buffer.clear();
++    }
++    std::stable_sort(
++        allSocketProgressEntries.begin(), allSocketProgressEntries.end(),
++        [](const auto& a, const auto& b) { return a.first < b.first; });
++}
++
++void BootProgressManager::tryPublish()
++{
++    aggregateAndSortAllSocketData();
++    if (!publisher || allSocketProgressEntries.empty())
++    {
++        lg2::debug(
++            "tryPublish: publisher or allSocketProgressEntries is empty");
++        return;
++    }
++    ctx.spawn(publisher->update(allSocketProgressEntries));
++}
++
++sdbusplus::async::task<void> BootProgressManager::periodicPublishCheck()
++{
++    const auto publishInterval = std::chrono::seconds(10);
++    while (!ctx.stop_requested())
++    {
++        co_await sdbusplus::async::sleep_for(ctx, publishInterval);
++        if (publisher)
++        {
++            tryPublish();
++        }
++    }
++    co_return;
++}
++
++void BootProgressManager::resetPublisherCachedState()
++{
++    if (publisher)
++    {
++        publisher->resetCachedState();
++    }
++}
+diff --git a/queued-boot-progress/BootProgressManager.hpp b/queued-boot-progress/BootProgressManager.hpp
+new file mode 100644
+index 0000000..f4d4c79
+--- /dev/null
++++ b/queued-boot-progress/BootProgressManager.hpp
+@@ -0,0 +1,77 @@
++/*
++ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION &
++ * AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#pragma once
++
++#include "BootProgressPoller.hpp"
++#include "BootProgressPublisher.hpp"
++#include "BootProgressTypes.hpp"
++#include "PollingDevice.hpp"
++
++#include <sdbusplus/async.hpp>
++
++#include <chrono>
++#include <unordered_map>
++#include <vector>
++
++struct SocketData
++{
++    std::shared_ptr<BootProgressPoller> poller;
++    std::vector<std::pair<uint32_t, uint32_t>> buffer;
++    SocketData() = default;
++    SocketData(std::shared_ptr<BootProgressPoller> poller) : poller(poller) {}
++};
++
++class BootProgressManager
++{
++  public:
++    BootProgressManager(sdbusplus::async::context& ctx,
++                        std::shared_ptr<BootProgressPublisher> publisher,
++                        std::chrono::milliseconds pollInterval);
++
++    void onBootProgressData(
++        int socketId,
++        std::vector<std::pair<uint32_t, uint32_t>> bootProgressEntries);
++
++    void onDeviceAdded(TransportInterface transportInterface,
++                       const uint8_t& bus, const uint8_t& address,
++                       int socketId);
++
++    void onDeviceRemoved(TransportInterface transportInterface,
++                         const uint8_t& bus, const uint8_t& address,
++                         int socketId);
++
++    void updatePollInterval(std::chrono::milliseconds newPollInterval);
++
++    void updatePollStatus(bool enablePolling);
++
++    void initIndices();
++
++    void resetPublisherCachedState();
++
++  private:
++    sdbusplus::async::context& ctx;
++    std::shared_ptr<BootProgressPublisher> publisher;
++    std::chrono::milliseconds pollInterval;
++    std::unordered_map<int, SocketData> socketDataMap;
++    std::vector<std::pair<uint32_t, uint32_t>> allSocketProgressEntries;
++
++    bool isAllSocketDataReady();
++    void aggregateAndSortAllSocketData();
++    sdbusplus::async::task<void> periodicPublishCheck();
++    void tryPublish();
++};
+diff --git a/queued-boot-progress/BootProgressPoller.cpp b/queued-boot-progress/BootProgressPoller.cpp
+new file mode 100644
+index 0000000..d4647da
+--- /dev/null
++++ b/queued-boot-progress/BootProgressPoller.cpp
+@@ -0,0 +1,281 @@
++/*
++ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION &
++ * AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "BootProgressPoller.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <format>
++
++BootProgressPoller::BootProgressPoller(
++    sdbusplus::async::context& ctx, std::shared_ptr<PollingDevice> device,
++    std::chrono::milliseconds pollInterval, int socketId,
++    onBootProgressDataCallback onBootProgressDataCb) :
++    ctx(ctx), device(std::move(device)), pollInterval(pollInterval),
++    socketId(socketId), processBootProgressData(onBootProgressDataCb)
++{
++    initIndices();
++    pollStatus = true;
++    ctx.spawn(pollQueues());
++}
++
++void BootProgressPoller::initIndices()
++{
++    readIdx.fill(0);
++    prevStart.fill(0);
++}
++
++sdbusplus::async::task<std::optional<uint32_t>>
++    BootProgressPoller::readRegister(uint32_t regAddr)
++{
++    uint32_t regValue = 0;
++    if (!device->readRegisterValue(regAddr, regValue))
++    {
++        lg2::debug("Failed to read register {REG_ADDR}", "REG_ADDR",
++                   std::format("0x{:08X}", regAddr));
++        co_return std::nullopt;
++    }
++    co_return regValue;
++}
++
++void BootProgressPoller::parseQueueIndices(uint32_t regVal, uint32_t& start,
++                                           uint32_t& end, uint32_t& size)
++{
++    end = (regVal & 0x3FF);
++    start = ((regVal >> 10) & 0x3FF);
++    size = ((regVal >> 20) & 0x7FF);
++}
++
++sdbusplus::async::task<std::optional<uint32_t>> BootProgressPoller::getQbaseIdx(
++    int qnum)
++{
++    if (qnum == 0)
++    {
++        co_return 0;
++    }
++
++    auto regResult = co_await readRegister(queueIndexStart.at(0));
++    if (!regResult.has_value())
++    {
++        lg2::debug("Failed to read queue base index for qnum {QNUM}", "QNUM",
++                   qnum);
++        co_return std::nullopt;
++    }
++
++    uint32_t currStart = 0, currEnd = 0, size = 0;
++    parseQueueIndices(regResult.value(), currStart, currEnd, size);
++    co_return size;
++}
++
++sdbusplus::async::task<
++    std::optional<std::vector<std::pair<uint32_t, uint32_t>>>>
++    BootProgressPoller::processQueue(int queueNumber)
++{
++    std::vector<std::pair<uint32_t, uint32_t>> bootProgressEntries;
++    uint32_t currStart = 0, currEnd = 0, queueSize = 0;
++
++    auto regResult = co_await readRegister(queueIndexStart[queueNumber]);
++    if (!regResult.has_value())
++    {
++        lg2::debug(
++            "Failed to read queue index for queue {QUEUE_NUMBER} on socket {SOCKET_ID}",
++            "QUEUE_NUMBER", queueNumber, "SOCKET_ID", socketId);
++        co_return std::nullopt;
++    }
++
++    parseQueueIndices(regResult.value(), currStart, currEnd, queueSize);
++
++    if (queueSize == 0)
++    {
++        lg2::debug("Queue {QUEUE_NUMBER} on socket {SOCKET_ID} size is zero",
++                   "QUEUE_NUMBER", queueNumber, "SOCKET_ID", socketId);
++        co_return std::nullopt;
++    }
++
++    auto qbase = co_await getQbaseIdx(queueNumber);
++    if (!qbase.has_value())
++    {
++        co_return std::nullopt;
++    }
++
++    const uint32_t qbaseIdx = qbase.value();
++    uint32_t& idx = readIdx[queueNumber];
++    uint32_t& lastStart = prevStart[queueNumber];
++
++    if (idx == 0 && lastStart == 0)
++    {
++        idx = currStart;
++        lastStart = currStart;
++        lg2::debug(
++            "Initialising queue {QUEUE_NUMBER} on socket {SOCKET_ID}: start={START}, end={END}",
++            "QUEUE_NUMBER", queueNumber, "SOCKET_ID", socketId, "START",
++            currStart, "END", currEnd);
++    }
++
++    if (idx == currEnd)
++    {
++        lg2::debug(
++            "No new entries for queue {QUEUE_NUMBER} on socket {SOCKET_ID}: idx={IDX}, end={END}",
++            "QUEUE_NUMBER", queueNumber, "SOCKET_ID", socketId, "IDX", idx,
++            "END", currEnd);
++        co_return bootProgressEntries;
++    }
++
++    uint32_t iterations = 0;
++    const uint32_t maxIterations = queueSize;
++
++    while (idx != currEnd)
++    {
++        if (currStart != lastStart)
++        {
++            idx = currStart;
++            lastStart = currStart;
++            bootProgressEntries.emplace_back(
++                std::make_pair(0xFFFFFFFF, 0xFFFFFFFF));
++            lg2::info(
++                "Queue {QUEUE_NUMBER} on socket {SOCKET_ID} overflow detected: new start={START}",
++                "QUEUE_NUMBER", queueNumber, "SOCKET_ID", socketId, "START",
++                currStart);
++        }
++
++        const uint32_t tsAddr = scratchRamGroup0 + (8 * idx);
++        const uint32_t codeAddr = tsAddr + 4;
++
++        auto tsResult = co_await readRegister(tsAddr);
++        if (!tsResult.has_value())
++        {
++            lg2::debug(
++                "Failed to read timestamp at {TS_ADDR} for socket {SOCKET_ID} queue {QUEUE_NUMBER}",
++                "TS_ADDR", std::format("0x{:08X}", tsAddr), "SOCKET_ID",
++                socketId, "QUEUE_NUMBER", queueNumber);
++            co_return std::nullopt;
++        }
++
++        auto codeResult = co_await readRegister(codeAddr);
++        if (!codeResult.has_value())
++        {
++            lg2::debug(
++                "Failed to read progress code at {CODE_ADDR} for socket {SOCKET_ID} queue {QUEUE_NUMBER}",
++                "CODE_ADDR", std::format("0x{:08X}", codeAddr), "SOCKET_ID",
++                socketId, "QUEUE_NUMBER", queueNumber);
++            co_return std::nullopt;
++        }
++        std::string tsResultStr = std::format("0x{:08X}", tsResult.value());
++        std::string codeResultStr = std::format("0x{:08X}", codeResult.value());
++        lg2::debug(
++            "Read timestamp {TS_RESULT} and code {CODE_RESULT} on socket {SOCKET_ID}, queue {QUEUE_NUMBER}",
++            "TS_RESULT", tsResultStr, "CODE_RESULT", codeResultStr, "SOCKET_ID",
++            socketId, "QUEUE_NUMBER", queueNumber);
++        if (codeResult.value() != 0x00000000)
++        {
++            bootProgressEntries.emplace_back(
++                std::make_pair(tsResult.value(), codeResult.value()));
++        }
++
++        idx = ((idx - qbaseIdx + 1) % queueSize) + qbaseIdx;
++        ++iterations;
++
++        if (iterations > maxIterations)
++        {
++            lg2::error(
++                "Queue {QUEUE_NUMBER} on socket {SOCKET_ID} exceeded expected iterations: idx={IDX}, end={END}, iterations={ITER}, size={SIZE}",
++                "QUEUE_NUMBER", queueNumber, "SOCKET_ID", socketId, "IDX", idx,
++                "END", currEnd, "ITER", iterations, "SIZE", queueSize);
++            break;
++        }
++    }
++    lastStart = currStart;
++    co_return bootProgressEntries;
++}
++
++sdbusplus::async::task<void> BootProgressPoller::pollQueues()
++{
++    while (!ctx.stop_requested())
++    {
++        if (pollStatus)
++        {
++            bool anyReadSucceeded = false;
++            std::vector<std::pair<uint32_t, uint32_t>> entries;
++
++            for (int qnum = 0; qnum < numberOfQueues; ++qnum)
++            {
++                auto queueResults = co_await processQueue(qnum);
++                if (queueResults.has_value())
++                {
++                    anyReadSucceeded = true;
++                    entries.insert(entries.end(), queueResults.value().begin(),
++                                   queueResults.value().end());
++                }
++            }
++            consecutiveFailures =
++                anyReadSucceeded ? 0 : (consecutiveFailures + 1);
++
++            if (!entries.empty())
++            {
++                processBootProgressData(socketId, entries);
++            }
++            co_await sdbusplus::async::sleep_for(ctx, calculateSleepDuration());
++        }
++        else
++        {
++            co_await sdbusplus::async::sleep_for(ctx, pollInterval);
++        }
++    }
++    co_return;
++}
++
++void BootProgressPoller::updatePollInterval(
++    std::chrono::milliseconds newInterval)
++{
++    if (pollInterval != newInterval)
++    {
++        lg2::debug(
++            "Polling interval changed for socket {SOCKET_ID}: {OLD}ms -> {NEW}ms",
++            "SOCKET_ID", socketId, "OLD", pollInterval.count(), "NEW",
++            newInterval.count());
++    }
++    pollInterval = newInterval;
++}
++
++void BootProgressPoller::updatePollStatus(bool newPollStatus)
++{
++    pollStatus = newPollStatus;
++    consecutiveFailures = 0;
++}
++
++bool BootProgressPoller::isPolling() const
++{
++    return pollStatus;
++}
++
++std::chrono::milliseconds BootProgressPoller::calculateSleepDuration() const
++{
++    constexpr int backoffThreshold = 10;
++    if (consecutiveFailures >= backoffThreshold)
++    {
++        // When device is not present, use exponential backoff with seconds as
++        // base Exponential backoff: baseSeconds * 2^(failures - threshold)
++        // (capped)
++        constexpr int baseSeconds = 2;
++        constexpr int maxBackoffMultiplier = 10;
++        int backoffFailures = consecutiveFailures - backoffThreshold;
++        int multiplier = 1 << std::min(backoffFailures, maxBackoffMultiplier);
++        int sleepSeconds = baseSeconds * multiplier;
++        return std::chrono::milliseconds(sleepSeconds * 1000);
++    }
++    return pollInterval;
++}
+diff --git a/queued-boot-progress/BootProgressPoller.hpp b/queued-boot-progress/BootProgressPoller.hpp
+new file mode 100644
+index 0000000..5ebf3d4
+--- /dev/null
++++ b/queued-boot-progress/BootProgressPoller.hpp
+@@ -0,0 +1,78 @@
++/*
++ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION &
++ * AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#pragma once
++#include "BootProgressTypes.hpp"
++#include "PollingDevice.hpp"
++
++#include <sdbusplus/async.hpp>
++
++#include <array>
++#include <chrono>
++#include <map>
++#include <memory>
++#include <optional>
++#include <vector>
++
++class BootProgressPoller
++{
++  public:
++    BootProgressPoller(sdbusplus::async::context& ctx,
++                       std::shared_ptr<PollingDevice> device,
++                       std::chrono::milliseconds pollInterval, int socketId,
++                       onBootProgressDataCallback processBootProgressData);
++
++    void initIndices();
++
++    void updatePollInterval(std::chrono::milliseconds newInterval);
++
++    void updatePollStatus(bool pollStatus);
++
++    bool isPolling() const;
++
++  private:
++    sdbusplus::async::context& ctx;
++    std::shared_ptr<PollingDevice> device;
++    std::chrono::milliseconds pollInterval;
++    int socketId;
++    onBootProgressDataCallback processBootProgressData = nullptr;
++    bool pollStatus;
++    uint32_t consecutiveFailures = 0;
++
++    static constexpr int numberOfQueues = 2;
++
++    std::array<uint32_t, numberOfQueues> readIdx{};
++    std::array<uint32_t, numberOfQueues> prevStart{};
++
++    static constexpr uint32_t scratchRamGroup0 = 0x8000;
++    static constexpr uint32_t queue0IndexRegister = 0x2000;
++    static constexpr uint32_t queue1IndexRegister = 0x2004;
++
++    static constexpr std::array<uint32_t, numberOfQueues> queueIndexStart = {
++        queue0IndexRegister, queue1IndexRegister};
++
++    sdbusplus::async::task<void> pollQueues();
++    sdbusplus::async::task<std::optional<uint32_t>> readRegister(
++        uint32_t regAddr);
++    sdbusplus::async::task<
++        std::optional<std::vector<std::pair<uint32_t, uint32_t>>>>
++        processQueue(int queueNumber);
++    sdbusplus::async::task<std::optional<uint32_t>> getQbaseIdx(int qnum);
++    void parseQueueIndices(uint32_t regVal, uint32_t& start, uint32_t& end,
++                           uint32_t& size);
++    std::chrono::milliseconds calculateSleepDuration() const;
++};
+diff --git a/queued-boot-progress/BootProgressPublisher.cpp b/queued-boot-progress/BootProgressPublisher.cpp
+new file mode 100644
+index 0000000..7d1974d
+--- /dev/null
++++ b/queued-boot-progress/BootProgressPublisher.cpp
+@@ -0,0 +1,349 @@
++/*
++ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION &
++ * AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "BootProgressPublisher.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <format>
++
++constexpr auto bootProgressOem = "OEM";
++constexpr auto bootProgressOsRunning = "OSRunning";
++constexpr auto bootProgressOsStart = "OSStart";
++constexpr auto bootProgressPciInit = "PCIInit";
++constexpr auto bootProgressSystemInitComplete = "SystemInitComplete";
++constexpr auto bootProgressSystemSetup = "SystemSetup";
++
++// EFI_STATUS_CODE_TYPE
++constexpr auto efiProgressCode = 0x01;
++
++// EFI_STATUS_CODE_CLASS
++constexpr auto efiIoBus = 0x02;
++constexpr auto efiSoftware = 0x03;
++
++// EFI_STATUS_CODE_SUBCLASS
++constexpr auto efiIoBusPci = 0x01;
++constexpr auto efiSoftwareDxeCore = 0x04;
++constexpr auto efiSoftwareDxeBsDriver = 0x05;
++constexpr auto efiSoftwareEfiBootService = 0x10;
++
++// EFI_STATUS_CODE_OPERATION
++constexpr auto efiIoBusPciResAlloc = 0x0110;
++constexpr auto efiSwDxeCorePcHandoffToNext = 0x1001;
++constexpr auto efiSwPcUserSetup = 0x0007;
++constexpr auto efiSwOsLoaderStart = 0x8000;
++constexpr auto efiSwBsPcExitBootServices = 0x1019;
++
++constexpr auto bootProgressService = "xyz.openbmc_project.State.Host";
++constexpr auto bootProgressObject = "/xyz/openbmc_project/state/host0";
++constexpr auto bootProgressInf = "xyz.openbmc_project.State.Boot.Progress";
++
++BootProgressPublisher::BootProgressPublisher(sdbusplus::async::context& ctx,
++                                             const std::string& snoopDbus,
++                                             const std::string& snoopObject) :
++    PostObject(ctx.get_bus(), snoopObject.c_str()), ctx(ctx)
++{
++    this->emit_object_added();
++    ctx.get_bus().request_name(snoopDbus.c_str());
++}
++
++std::vector<uint8_t> bytesToVector(uint32_t value)
++{
++    return {static_cast<uint8_t>((value >> 24) & 0xFF),
++            static_cast<uint8_t>((value >> 16) & 0xFF),
++            static_cast<uint8_t>((value >> 8) & 0xFF),
++            static_cast<uint8_t>(value & 0xFF)};
++}
++
++sdbusplus::async::task<void> BootProgressPublisher::update(
++    const std::vector<std::pair<uint32_t, uint32_t>> progressCodeData)
++{
++    try
++    {
++        if (progressCodeData.empty())
++        {
++            co_return;
++        }
++        /* Initialize with last published stage to preserve OSRunning state
++         * (OSRunning is final and should never be overwritten) */
++        std::string latestStage = lastPublishedStage;
++        std::string latestOem;
++        for (const auto& [offset, progressCode] : progressCodeData)
++        {
++            auto code = bytesToVector(progressCode);
++            auto timeStampOffset = bytesToVector(offset);
++            code[0] = ~code[0];
++            this->value(std::make_tuple(code, timeStampOffset), true);
++            code[0] = ~code[0];
++            this->value(std::make_tuple(code, timeStampOffset));
++
++            latestOem = std::format("0x{:08X}", progressCode);
++
++            /* Stage arbitration logic:
++             * - Non-OEM stages (PCIInit, SystemInitComplete, etc.) take
++             * precedence
++             * - OEM codes only set the stage if no valid stage has been
++             * detected yet
++             * - Once OSRunning is reached, it becomes immutable (final state)
++             */
++            std::string detectedStage = getSbmrBootProgressStage(progressCode);
++            if (latestStage != bootProgressOsRunning)
++            {
++                if (detectedStage != bootProgressOem)
++                {
++                    /* Non-OEM stage: always update (overwrites OEM or previous
++                     * stage) */
++                    latestStage = detectedStage;
++                }
++                else if (latestStage.empty())
++                {
++                    /* OEM code and no stage set yet: use OEM as initial stage
++                     * This ensures BootProgress property gets updated from
++                     * "None" to "OEM" at boot start when only OEM codes are
++                     * present */
++                    latestStage = bootProgressOem;
++                }
++            }
++        }
++
++        lg2::debug("Processed {COUNT} codes, latest: Stage={STAGE}, OEM={OEM}",
++                   "COUNT", progressCodeData.size(), "STAGE", latestStage,
++                   "OEM", latestOem);
++
++        /* Flush decision logic:
++         * 1. Non-OEM stage changes are always flushed immediately (unless
++         * OSRunning already published)
++         * 2. OEM codes are throttled to reduce D-Bus traffic (flushed
++         * periodically or on first update) */
++        auto now = std::chrono::steady_clock::now();
++        bool isNonOemStage =
++            (!latestStage.empty() && latestStage != bootProgressOem &&
++             latestStage != lastPublishedStage);
++
++        /* Immediate flush for non-OEM stage changes (unless OSRunning is
++         * already published) */
++        bool shouldFlush =
++            (isNonOemStage && lastPublishedStage != bootProgressOsRunning);
++
++        /* For OEM codes: flush if throttling interval elapsed, first update, or
++         * first OEM code */
++        if (!shouldFlush && !latestOem.empty())
++        {
++            auto timeSinceLastUpdate =
++                std::chrono::duration_cast<std::chrono::milliseconds>(
++                    now - lastDbusUpdateTime);
++
++            shouldFlush =
++                (timeSinceLastUpdate.count() >= dbusUpdateIntervalMs ||
++                 lastDbusUpdateTime ==
++                     std::chrono::steady_clock::time_point{} ||
++                 lastPublishedOem.empty());
++        }
++
++        if (shouldFlush)
++        {
++            co_await flushPendingUpdates(latestStage, latestOem);
++            lastDbusUpdateTime = now;
++        }
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error("Failed to update D-Bus properties: {ERROR}", "ERROR",
++                   e.what());
++    }
++    co_return;
++}
++
++std::string BootProgressPublisher::getSbmrBootProgressStage(
++    const uint32_t& progressCode)
++{
++    const uint8_t typeClassByte = (progressCode >> 24) & 0xFF;
++    const uint8_t codeType = (typeClassByte >> 6) & 0x03;
++    const uint8_t codeClass = typeClassByte & 0x3F;
++    const uint8_t codeSubClass = (progressCode >> 16) & 0xFF;
++    const uint16_t codeOperation = progressCode & 0xFFFF;
++
++    std::string progressCodeStr = std::format("0x{:08X}", progressCode);
++    lg2::debug(
++        "DEBUG: Progress Code: {PROGRESS_CODE}, Code Type: {CODE_TYPE}, Code Class: {CODE_CLASS}, Code SubClass: {CODE_SUB_CLASS}, Code Operation: {CODE_OPERATION}",
++        "PROGRESS_CODE", progressCodeStr, "CODE_TYPE", codeType, "CODE_CLASS",
++        codeClass, "CODE_SUB_CLASS", codeSubClass, "CODE_OPERATION",
++        codeOperation);
++    // Return OEM if code type is unexpected
++    if (codeType != efiProgressCode)
++    {
++        return bootProgressOem;
++    }
++
++    // Code Class Software
++    if (codeClass == efiSoftware)
++    {
++        if (codeSubClass == efiSoftwareDxeCore &&
++            codeOperation == efiSwDxeCorePcHandoffToNext)
++        {
++            return bootProgressSystemInitComplete;
++        }
++        else if (codeSubClass == efiSoftwareDxeBsDriver &&
++                 codeOperation == efiSwPcUserSetup)
++        {
++            return bootProgressSystemSetup;
++        }
++        else if (codeSubClass == efiSoftwareDxeBsDriver &&
++                 codeOperation == efiSwOsLoaderStart)
++        {
++            return bootProgressOsStart;
++        }
++        else if (codeSubClass == efiSoftwareEfiBootService &&
++                 codeOperation == efiSwBsPcExitBootServices)
++        {
++            return bootProgressOsRunning;
++        }
++    }
++    // Code Class IO Bus
++    else if (codeClass == efiIoBus)
++    {
++        if (codeSubClass == efiIoBusPci && codeOperation == efiIoBusPciResAlloc)
++        {
++            return bootProgressPciInit;
++        }
++    }
++    // Fallback to OEM if no conditions met
++    return bootProgressOem;
++}
++
++sdbusplus::async::task<void> BootProgressPublisher::updateBootProgressProperty(
++    const std::string& progressStage)
++{
++    std::string stage =
++        "xyz.openbmc_project.State.Boot.Progress.ProgressStages." +
++        progressStage;
++    auto bootProgressProxy = sdbusplus::async::proxy()
++                                 .service(bootProgressService)
++                                 .path(bootProgressObject)
++                                 .interface(bootProgressInf);
++
++    try
++    {
++        co_await bootProgressProxy.set_property(ctx, "BootProgress", stage);
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error(
++            "D-Bus Call failed to set BootProgress property to '{STAGE}': {ERROR}",
++            "STAGE", progressStage, "ERROR", e.what());
++    }
++    co_return;
++}
++
++sdbusplus::async::task<void>
++    BootProgressPublisher::updateBootProgressLastUpdateProperty(
++        uint64_t bootProgressLastUpdate)
++{
++    auto bootProgressProxy = sdbusplus::async::proxy()
++                                 .service(bootProgressService)
++                                 .path(bootProgressObject)
++                                 .interface(bootProgressInf);
++
++    try
++    {
++        co_await bootProgressProxy.set_property(ctx, "BootProgressLastUpdate",
++                                                bootProgressLastUpdate);
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error(
++            "D-Bus Call failed to set BootProgressLastUpdate property to {TS}: {ERROR}",
++            "TS", bootProgressLastUpdate, "ERROR", e.what());
++    }
++    co_return;
++}
++
++sdbusplus::async::task<void>
++    BootProgressPublisher::updateBootProgressOemProperty(
++        const std::string& oemLastState)
++{
++    auto bootProgressProxy = sdbusplus::async::proxy()
++                                 .service(bootProgressService)
++                                 .path(bootProgressObject)
++                                 .interface(bootProgressInf);
++
++    try
++    {
++        co_await bootProgressProxy.set_property(ctx, "BootProgressOem",
++                                                oemLastState);
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error(
++            "D-Bus Call failed to set BootProgressOem property to '{OEM}': {ERROR}",
++            "OEM", oemLastState, "ERROR", e.what());
++    }
++    co_return;
++}
++
++sdbusplus::async::task<void> BootProgressPublisher::flushPendingUpdates(
++    const std::string& stage, const std::string& oem)
++{
++    /* BootProgress update rules:
++     * - Non-empty stage required, OSRunning is final (immutable once published)
++     * - Non-OEM stages: update on change or first publish
++     * - OEM stage: update only on first publish (initial state) */
++    bool isFirstPublish = lastPublishedStage.empty();
++    bool isOemStage = (stage == bootProgressOem);
++    bool isStageChanged = (stage != lastPublishedStage);
++
++    /* Update BootProgress if:
++     * - Stage is non-empty AND
++     * - OSRunning not already published AND
++     * - (First publish OR (non-OEM stage changed)) */
++    bool updateStage = !stage.empty() &&
++                       lastPublishedStage != bootProgressOsRunning &&
++                       (isFirstPublish || (!isOemStage && isStageChanged));
++
++    if (updateStage)
++    {
++        co_await updateBootProgressProperty(stage);
++        lastPublishedStage = stage;
++    }
++
++    /* BootProgressOem property: update whenever OEM code changes or on first
++     * update */
++    if (!oem.empty() && (oem != lastPublishedOem || lastPublishedOem.empty()))
++    {
++        co_await updateBootProgressOemProperty(oem);
++        lastPublishedOem = oem;
++    }
++
++    uint64_t currentTimestamp =
++        std::chrono::duration_cast<std::chrono::microseconds>(
++            std::chrono::system_clock::now().time_since_epoch())
++            .count();
++    if (currentTimestamp != lastPublishedTimestamp)
++    {
++        co_await updateBootProgressLastUpdateProperty(currentTimestamp);
++        lastPublishedTimestamp = currentTimestamp;
++    }
++}
++
++void BootProgressPublisher::resetCachedState()
++{
++    lg2::debug("Reset cached BootProgress state");
++    lastPublishedStage.clear();
++    lastPublishedOem.clear();
++    lastPublishedTimestamp = 0;
++    lastDbusUpdateTime = std::chrono::steady_clock::time_point{};
++}
+diff --git a/queued-boot-progress/BootProgressPublisher.hpp b/queued-boot-progress/BootProgressPublisher.hpp
+new file mode 100644
+index 0000000..66438c2
+--- /dev/null
++++ b/queued-boot-progress/BootProgressPublisher.hpp
+@@ -0,0 +1,59 @@
++/*
++ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION &
++ * AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++#pragma once
++
++#include "lpcsnoop/snoop.hpp"
++
++#include <sdbusplus/async.hpp>
++
++#include <chrono>
++#include <string>
++#include <vector>
++
++class BootProgressPublisher : public PostObject
++{
++  public:
++    BootProgressPublisher(sdbusplus::async::context& ctx,
++                          const std::string& snoopDbus,
++                          const std::string& snoopObject);
++
++    sdbusplus::async::task<void> update(
++        const std::vector<std::pair<uint32_t, uint32_t>> progressCodeData);
++
++    void resetCachedState();
++
++  private:
++    sdbusplus::async::context& ctx;
++    // Cache last published values to avoid redundant D-Bus updates
++    std::string lastPublishedStage;
++    std::string lastPublishedOem;
++    uint64_t lastPublishedTimestamp = 0;
++    // Batching state for reducing D-Bus update frequency
++    std::chrono::steady_clock::time_point lastDbusUpdateTime;
++    // Minimum interval between D-Bus property updates (milliseconds)
++    static constexpr uint32_t dbusUpdateIntervalMs = 100;
++
++    sdbusplus::async::task<void> updateBootProgressProperty(
++        const std::string& progressStage);
++    sdbusplus::async::task<void> updateBootProgressLastUpdateProperty(
++        uint64_t bootProgressLastUpdate);
++    sdbusplus::async::task<void> updateBootProgressOemProperty(
++        const std::string& oemLastState);
++    std::string getSbmrBootProgressStage(const uint32_t& progressCode);
++    sdbusplus::async::task<void> flushPendingUpdates(const std::string& stage,
++                                                     const std::string& oem);
++};
+diff --git a/queued-boot-progress/BootProgressTypes.hpp b/queued-boot-progress/BootProgressTypes.hpp
+new file mode 100644
+index 0000000..35b5e0c
+--- /dev/null
++++ b/queued-boot-progress/BootProgressTypes.hpp
+@@ -0,0 +1,9 @@
++#pragma once
++#include <cstdint>
++#include <functional>
++#include <vector>
++
++// Generic callback type for delivering poller data
++using onBootProgressDataCallback = std::function<void(
++    int socketId, std::vector<std::pair<uint32_t /*timestamp*/,
++                                        uint32_t /*progresscodes*/>>)>;
+diff --git a/queued-boot-progress/ConfigReader.hpp b/queued-boot-progress/ConfigReader.hpp
+new file mode 100644
+index 0000000..54054bc
+--- /dev/null
++++ b/queued-boot-progress/ConfigReader.hpp
+@@ -0,0 +1,193 @@
++/*
++ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION &
++ * AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++#pragma once
++#include "PollingDevice.hpp"
++
++#include <getopt.h>
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <chrono>
++#include <cstdint>
++#include <cstdlib>
++#include <string>
++#include <utility>
++#include <vector>
++
++struct Configuration
++{
++    std::chrono::milliseconds pollInterval;
++    TransportInterface transportInterface;
++    std::vector<std::pair<uint8_t /*bus*/, uint8_t /*address*/>>
++        i2cInterfaceConfigMap;
++    uint16_t usbVendorId = 0x0955;
++    uint16_t usbProductId = 0x7410;
++    std::chrono::seconds usbRescanInterval = std::chrono::seconds(100);
++};
++
++class ConfigReader
++{
++  public:
++    ConfigReader() = default;
++    static bool readConfig(int argc, char* argv[], Configuration& config)
++    {
++        int opt;
++        static const struct option long_options[] = {
++            {"poll-interval", required_argument, nullptr, 'p'},
++            {"transport-interface", required_argument, nullptr, 'i'},
++            {"i2c-bus", required_argument, nullptr, 'b'},
++            {"i2c-address", required_argument, nullptr, 'a'},
++            {nullptr, 0, nullptr, 0}};
++        std::vector<int> busList;
++        std::vector<int> addrList;
++        while ((opt = getopt_long(argc, argv, "p:i:b:a:", long_options,
++                                  nullptr)) != -1)
++        {
++            switch (opt)
++            {
++                case 'p':
++                    try
++                    {
++                        config.pollInterval =
++                            std::chrono::milliseconds(std::stoi(optarg));
++                        if (config.pollInterval.count() < 1)
++                        {
++                            lg2::error("Invalid poll interval: {INTERVAL}",
++                                       "INTERVAL", optarg);
++                            return false;
++                        }
++                    }
++                    catch (const std::exception& e)
++                    {
++                        lg2::error("Invalid poll interval: {INTERVAL}",
++                                   "INTERVAL", optarg);
++                        return false;
++                    }
++                    break;
++                case 'i':
++                    if (std::string(optarg) == "i2c")
++                    {
++                        config.transportInterface = TransportInterface::I2C;
++                    }
++                    else if (std::string(optarg) == "usb")
++                    {
++                        config.transportInterface = TransportInterface::USB;
++                    }
++                    else
++                    {
++                        lg2::error("Invalid transport interface: {INTERFACE}",
++                                   "INTERFACE", optarg);
++                        return false;
++                    }
++                    break;
++                case 'b':
++                    try
++                    {
++                        auto busId = std::stoi(optarg);
++                        if (busId < 0 || busId > 255)
++                        {
++                            lg2::error("Invalid i2c bus: {BUS}", "BUS", optarg);
++                            return false;
++                        }
++                        busList.push_back(busId);
++                    }
++                    catch (const std::exception& e)
++                    {
++                        lg2::error("Invalid i2c bus: {BUS}", "BUS", optarg);
++                        return false;
++                    }
++                    break;
++                case 'a':
++                    try
++                    {
++                        auto addrId = std::stoi(optarg);
++                        if (addrId < 0 || addrId > 255)
++                        {
++                            lg2::error("Invalid i2c address: {ADDRESS}",
++                                       "ADDRESS", optarg);
++                            return false;
++                        }
++                        addrList.push_back(addrId);
++                    }
++                    catch (const std::exception& e)
++                    {
++                        lg2::error("Invalid i2c address: {ADDRESS}", "ADDRESS",
++                                   optarg);
++                        return false;
++                    }
++                    break;
++                default:
++                    lg2::error("Invalid option: {OPTION}", "OPTION", opt);
++                    return false;
++            }
++        }
++        if (busList.size() != addrList.size())
++        {
++            lg2::error("Invalid i2c bus and address sizes: {BUS} {ADDRESS}",
++                       "BUS", busList.size(), "ADDRESS", addrList.size());
++            return false;
++        }
++        for (size_t i = 0; i < busList.size(); ++i)
++        {
++            config.i2cInterfaceConfigMap.emplace_back(
++                static_cast<uint8_t>(busList[i]),
++                static_cast<uint8_t>(addrList[i]));
++        }
++        if (!validateTransportConfiguration(config))
++        {
++            return false;
++        }
++        return true;
++    }
++
++  private:
++    static bool validateTransportConfiguration(const Configuration& config)
++    {
++        switch (config.transportInterface)
++        {
++            case TransportInterface::I2C:
++            {
++                if (config.i2cInterfaceConfigMap.empty())
++                {
++                    lg2::error(
++                        "I2C transport selected but no I2C devices configured");
++                    return false;
++                }
++                return true;
++            }
++            case TransportInterface::USB:
++            {
++                if (config.usbVendorId == 0 || config.usbProductId == 0)
++                {
++                    lg2::error(
++                        "USB transport selected but invalid vendor/product IDs: vendor={VENDOR_ID}, product={PRODUCT_ID}",
++                        "VENDOR_ID", config.usbVendorId, "PRODUCT_ID",
++                        config.usbProductId);
++                    return false;
++                }
++                return true;
++            }
++            default:
++            {
++                lg2::error("Unsupported transport interface: {INTERFACE}",
++                           "INTERFACE",
++                           static_cast<int>(config.transportInterface));
++                return false;
++            }
++        }
++    }
++};
+diff --git a/queued-boot-progress/I2CPollingDevice.cpp b/queued-boot-progress/I2CPollingDevice.cpp
+new file mode 100644
+index 0000000..483dc5f
+--- /dev/null
++++ b/queued-boot-progress/I2CPollingDevice.cpp
+@@ -0,0 +1,194 @@
++/*
++ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION &
++ * AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "BootProgressManager.hpp"
++#include "PollingDevice.hpp"
++
++#include <fcntl.h>
++#include <linux/i2c-dev.h>
++#include <linux/i2c.h>
++#include <sys/ioctl.h>
++#include <unistd.h>
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <cerrno>
++#include <format>
++
++I2CPollingDevice::I2CPollingDevice(const uint8_t& i2cBus,
++                                   const uint8_t& address) :
++    busPath(std::format("/dev/i2c-{}", i2cBus)), deviceAddress(address)
++{
++    openDevice();
++}
++
++I2CPollingDevice::~I2CPollingDevice()
++{
++    closeDevice();
++}
++
++bool I2CPollingDevice::openDevice()
++{
++    if (i2cFileDescriptor >= 0)
++    {
++        return true;
++    }
++
++    i2cFileDescriptor = ::open(busPath.c_str(), O_RDWR | O_CLOEXEC);
++    if (i2cFileDescriptor < 0)
++    {
++        lg2::debug("Failed to open i2c bus: {BUS_PATH}, errno: {ERRNO}",
++                   "BUS_PATH", busPath, "ERRNO", errno);
++        return false;
++    }
++
++    if (::ioctl(i2cFileDescriptor, I2C_SLAVE, deviceAddress) < 0)
++    {
++        lg2::debug(
++            "Failed to set I2C slave address: {BUS_PATH}, errno: {ERRNO}",
++            "BUS_PATH", busPath, "ERRNO", errno);
++        closeDevice();
++        return false;
++    }
++    return true;
++}
++
++void I2CPollingDevice::closeDevice()
++{
++    if (i2cFileDescriptor >= 0)
++    {
++        ::close(i2cFileDescriptor);
++        i2cFileDescriptor = -1;
++    }
++}
++
++bool I2CPollingDevice::readRegisterValue(uint32_t regAddr, uint32_t& regValue)
++{
++    static constexpr uint8_t readLength = 4;
++    static constexpr uint8_t blockRead = 0xf3;
++    static constexpr uint8_t setReadAddress = 0xf1;
++
++    std::string regAddrStr = std::format("0x{:08X}", regAddr);
++    std::vector<uint8_t> writeData = {
++        setReadAddress,
++        readLength + 1,
++        static_cast<uint8_t>(regAddr & 0xFF),
++        static_cast<uint8_t>((regAddr >> 8) & 0xFF),
++        static_cast<uint8_t>((regAddr >> 16) & 0xFF),
++        static_cast<uint8_t>((regAddr >> 24) & 0xFF),
++        readLength};
++    std::vector<uint8_t> dummyRead;
++    if (!i2cWriteRead(writeData, dummyRead))
++    {
++        lg2::debug("SET_READ_ADDR failed for register {REG_ADDR}", "REG_ADDR",
++                   regAddrStr);
++        return false;
++    }
++    std::vector<uint8_t> blockReadCmd = {blockRead};
++    std::vector<uint8_t> readBuf(5);
++    if (!i2cWriteRead(blockReadCmd, readBuf))
++    {
++        lg2::debug("BLOCK_READ failed for register {REG_ADDR}", "REG_ADDR",
++                   regAddrStr);
++        return false;
++    }
++    if (readBuf.size() < 5)
++    {
++        lg2::debug("Too few bytes returned: {BYTES}", "BYTES",
++                   static_cast<int>(readBuf[0]));
++        return false;
++    }
++
++    regValue = (static_cast<uint32_t>(readBuf[4]) << 24) |
++               (static_cast<uint32_t>(readBuf[3]) << 16) |
++               (static_cast<uint32_t>(readBuf[2]) << 8) |
++               static_cast<uint32_t>(readBuf[1]);
++    return true;
++}
++
++bool I2CPollingDevice::performIoctlWithRetry(i2c_rdwr_ioctl_data& msgReadWrite)
++{
++    if (!openDevice())
++    {
++        lg2::debug("Failed to open I2C device: {BUS_PATH}", "BUS_PATH",
++                   busPath);
++        return false;
++    }
++
++    int ret = ::ioctl(i2cFileDescriptor, I2C_RDWR, &msgReadWrite);
++    if (ret >= 0)
++    {
++        return true;
++    }
++    closeDevice();
++    lg2::debug(
++        "I2C ioctl failed (errno: {ERRNO}), closed fd to release kernel reference: {BUS_PATH}",
++        "ERRNO", errno, "BUS_PATH", busPath);
++    return false;
++}
++
++bool I2CPollingDevice::i2cWriteRead(std::vector<uint8_t> writeData,
++                                    std::vector<uint8_t>& readBuf)
++{
++    const size_t writeCount = writeData.size();
++    const size_t readCount = readBuf.size();
++    int msgCount = 0;
++    i2c_msg i2cmsg[2] = {};
++    if (writeCount)
++    {
++        i2cmsg[msgCount].addr = deviceAddress;
++        i2cmsg[msgCount].flags = 0x00;
++        i2cmsg[msgCount].len = writeCount;
++        i2cmsg[msgCount].buf = writeData.data();
++        msgCount++;
++    }
++
++    if (readCount)
++    {
++        i2cmsg[msgCount].addr = deviceAddress;
++        i2cmsg[msgCount].flags = I2C_M_RD;
++        i2cmsg[msgCount].len = readCount;
++        i2cmsg[msgCount].buf = readBuf.data();
++        msgCount++;
++    }
++
++    i2c_rdwr_ioctl_data msgReadWrite = {};
++    msgReadWrite.msgs = i2cmsg;
++    msgReadWrite.nmsgs = msgCount;
++
++    if (!performIoctlWithRetry(msgReadWrite))
++    {
++        return false;
++    }
++    if (readCount && msgCount > 0)
++    {
++        readBuf.resize(msgReadWrite.msgs[msgCount - 1].len);
++    }
++    return true;
++}
++
++void initializeI2CDevices(std::shared_ptr<BootProgressManager> mgr,
++                          const I2CDeviceList& deviceList)
++{
++    int socketId = 0;
++    for (const auto& device : deviceList)
++    {
++        mgr->onDeviceAdded(TransportInterface::I2C, device.first, device.second,
++                           socketId);
++        socketId++;
++    }
++}
+diff --git a/queued-boot-progress/PollingDevice.cpp b/queued-boot-progress/PollingDevice.cpp
+new file mode 100644
+index 0000000..9036526
+--- /dev/null
++++ b/queued-boot-progress/PollingDevice.cpp
+@@ -0,0 +1,114 @@
++/*
++ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION &
++ * AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "PollingDevice.hpp"
++
++#include "BootProgressManager.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++PollingDeviceEnumerator::PollingDeviceEnumerator(
++    sdbusplus::async::context& ctx, std::shared_ptr<BootProgressManager> mgr) :
++    ctx(ctx), manager(mgr)
++{}
++
++int PollingDeviceEnumerator::addDeviceAndGetSocketId(uint8_t bus,
++                                                     uint8_t address)
++{
++    int socketId = nextSocketId++;
++    deviceToSocketMap[std::make_pair(bus, address)] = socketId;
++    lg2::debug(
++        "Added device mapping: bus {BUS} address {ADDRESS} -> socket {SOCKET_ID}",
++        "BUS", static_cast<int>(bus), "ADDRESS", static_cast<int>(address),
++        "SOCKET_ID", socketId);
++    return socketId;
++}
++
++int PollingDeviceEnumerator::removeDeviceAndGetSocketId(uint8_t bus,
++                                                        uint8_t address)
++{
++    auto deviceKey = std::make_pair(bus, address);
++    auto it = deviceToSocketMap.find(deviceKey);
++
++    if (it == deviceToSocketMap.end())
++    {
++        lg2::warning(
++            "Device mapping not found for removal: bus {BUS} address {ADDRESS}",
++            "BUS", static_cast<int>(bus), "ADDRESS", static_cast<int>(address));
++        return -1;
++    }
++
++    int socketId = it->second;
++    lg2::debug(
++        "Removed device mapping: bus {BUS} address {ADDRESS} -> socket {SOCKET_ID}",
++        "BUS", static_cast<int>(bus), "ADDRESS", static_cast<int>(address),
++        "SOCKET_ID", socketId);
++    deviceToSocketMap.erase(it);
++    return socketId;
++}
++
++std::shared_ptr<PollingDevice> getPollingDevice(
++    TransportInterface transportInterface, const uint8_t& bus,
++    const uint8_t& address)
++{
++    switch (transportInterface)
++    {
++        case TransportInterface::I2C:
++        {
++            lg2::info(
++                "Creating I2CPollingDevice for bus {BUS} and address {ADDRESS}",
++                "BUS", static_cast<int>(bus), "ADDRESS",
++                static_cast<int>(address));
++            return std::make_shared<I2CPollingDevice>(bus, address);
++        }
++        case TransportInterface::USB:
++        {
++            lg2::info(
++                "Creating USBPollingDevice for bus {BUS} and address {ADDRESS}",
++                "BUS", static_cast<int>(bus), "ADDRESS",
++                static_cast<int>(address));
++            return std::make_shared<USBPollingDevice>(bus, address);
++        }
++        default:
++        {
++            lg2::error("Unsupported transport interface: {INTERFACE}",
++                       "INTERFACE", static_cast<int>(transportInterface));
++            return nullptr;
++        }
++    }
++}
++
++std::shared_ptr<PollingDeviceEnumerator> getPollingDeviceEnumerator(
++    sdbusplus::async::context& ctx, std::shared_ptr<BootProgressManager> mgr,
++    TransportInterface transportInterface, uint16_t vendorId,
++    uint16_t productId, std::chrono::seconds rescanInterval)
++{
++    switch (transportInterface)
++    {
++        case TransportInterface::USB:
++        {
++            return std::make_shared<USBDeviceEnumerator>(
++                ctx, mgr, vendorId, productId, rescanInterval);
++        }
++        default:
++        {
++            lg2::error("Unsupported transport interface: {INTERFACE}",
++                       "INTERFACE", static_cast<int>(transportInterface));
++            return nullptr;
++        }
++    }
++}
+diff --git a/queued-boot-progress/PollingDevice.hpp b/queued-boot-progress/PollingDevice.hpp
+new file mode 100644
+index 0000000..3c7c757
+--- /dev/null
++++ b/queued-boot-progress/PollingDevice.hpp
+@@ -0,0 +1,171 @@
++/*
++ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION &
++ * AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#pragma once
++
++#include <libusb-1.0/libusb.h>
++#include <linux/i2c-dev.h>
++#include <linux/i2c.h>
++
++#include <sdbusplus/async.hpp>
++
++#include <chrono>
++#include <cstdint>
++#include <memory>
++#include <string>
++#include <unordered_map>
++#include <vector>
++
++enum class TransportInterface
++{
++    I2C,
++    USB
++};
++
++struct PairHash
++{
++    std::size_t operator()(const std::pair<uint8_t, uint8_t>& p) const noexcept
++    {
++        return static_cast<std::size_t>(p.first) << 8 |
++               static_cast<std::size_t>(p.second);
++    }
++};
++
++class PollingDevice
++{
++  public:
++    virtual ~PollingDevice() = default;
++
++    virtual bool readRegisterValue(uint32_t regAddr, uint32_t& regValue) = 0;
++};
++
++class I2CPollingDevice : public PollingDevice
++{
++  public:
++    I2CPollingDevice(const uint8_t& i2cBus, const uint8_t& deviceAddress);
++    ~I2CPollingDevice() override;
++
++    I2CPollingDevice(const I2CPollingDevice&) = delete;
++    I2CPollingDevice& operator=(const I2CPollingDevice&) = delete;
++    I2CPollingDevice(I2CPollingDevice&&) = delete;
++    I2CPollingDevice& operator=(I2CPollingDevice&&) = delete;
++
++    bool readRegisterValue(uint32_t regAddr, uint32_t& regValue) override;
++
++  private:
++    std::string busPath;
++    uint8_t deviceAddress;
++    int i2cFileDescriptor = -1;
++
++    bool openDevice();
++    void closeDevice();
++    bool performIoctlWithRetry(i2c_rdwr_ioctl_data& msgReadWrite);
++    bool i2cWriteRead(std::vector<uint8_t> writeData,
++                      std::vector<uint8_t>& readBuf);
++};
++
++class USBPollingDevice : public PollingDevice
++{
++  public:
++    USBPollingDevice(const uint8_t& bus, const uint8_t& deviceAddress);
++    ~USBPollingDevice() override;
++
++    USBPollingDevice(const USBPollingDevice&) = delete;
++    USBPollingDevice& operator=(const USBPollingDevice&) = delete;
++    USBPollingDevice(USBPollingDevice&&) = delete;
++    USBPollingDevice& operator=(USBPollingDevice&&) = delete;
++
++    bool readRegisterValue(uint32_t regAddr, uint32_t& regValue) override;
++
++  private:
++    uint8_t bus;
++    uint8_t deviceAddress;
++
++    libusb_context* ctx = nullptr;
++    libusb_device_handle* devHandle = nullptr;
++};
++
++class BootProgressManager;
++
++class PollingDeviceEnumerator
++{
++  public:
++    virtual ~PollingDeviceEnumerator() = default;
++    virtual sdbusplus::async::task<void> run() = 0;
++
++  protected:
++    PollingDeviceEnumerator(sdbusplus::async::context& ctx,
++                            std::shared_ptr<BootProgressManager> mgr);
++
++    sdbusplus::async::context& ctx;
++    std::shared_ptr<BootProgressManager> manager;
++    std::unordered_map<std::pair<uint8_t /* bus */, uint8_t /* address */>, int,
++                       PairHash>
++        deviceToSocketMap;
++    int nextSocketId = 0;
++    int addDeviceAndGetSocketId(uint8_t bus, uint8_t address);
++    int removeDeviceAndGetSocketId(uint8_t bus, uint8_t address);
++};
++
++class USBDeviceEnumerator : public PollingDeviceEnumerator
++{
++  public:
++    USBDeviceEnumerator(sdbusplus::async::context& ctx,
++                        std::shared_ptr<BootProgressManager> mgr,
++                        uint16_t vendorId, uint16_t productId,
++                        std::chrono::seconds rescanInterval);
++    ~USBDeviceEnumerator() override;
++
++    USBDeviceEnumerator(const USBDeviceEnumerator&) = delete;
++    USBDeviceEnumerator& operator=(const USBDeviceEnumerator&) = delete;
++    USBDeviceEnumerator(USBDeviceEnumerator&&) = delete;
++    USBDeviceEnumerator& operator=(USBDeviceEnumerator&&) = delete;
++
++    sdbusplus::async::task<void> run() override;
++
++  private:
++    uint16_t vendorId;
++    uint16_t productId;
++    std::chrono::seconds rescanInterval;
++
++    libusb_context* usbCtx = nullptr;
++    libusb_hotplug_callback_handle cbHandle = 0;
++    bool hotplugSupported = false;
++
++    static int LIBUSB_CALL hotplugCallback(
++        libusb_context* ctx, libusb_device* dev, libusb_hotplug_event event,
++        void* userData);
++
++    void handleHotplug(libusb_device* dev, libusb_hotplug_event event);
++
++    void scanDeviceList();
++};
++
++std::shared_ptr<PollingDevice> getPollingDevice(
++    TransportInterface transportInterface, const uint8_t& bus,
++    const uint8_t& address);
++
++using I2CDeviceList =
++    std::vector<std::pair<uint8_t /* bus */, uint8_t /* address */>>;
++
++std::shared_ptr<PollingDeviceEnumerator> getPollingDeviceEnumerator(
++    sdbusplus::async::context& ctx, std::shared_ptr<BootProgressManager> mgr,
++    TransportInterface transportInterface, uint16_t vendorId,
++    uint16_t productId, std::chrono::seconds rescanInterval);
++
++void initializeI2CDevices(std::shared_ptr<BootProgressManager> mgr,
++                          const I2CDeviceList& deviceList);
+diff --git a/queued-boot-progress/USBPollingDevice.cpp b/queued-boot-progress/USBPollingDevice.cpp
+new file mode 100644
+index 0000000..7158652
+--- /dev/null
++++ b/queued-boot-progress/USBPollingDevice.cpp
+@@ -0,0 +1,276 @@
++/*
++ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION &
++ * AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "BootProgressManager.hpp"
++#include "PollingDevice.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <format>
++
++USBPollingDevice::USBPollingDevice(const uint8_t& bus,
++                                   const uint8_t& deviceAddress) :
++    bus(bus), deviceAddress(deviceAddress), ctx(nullptr), devHandle(nullptr)
++{
++    if (libusb_init(&ctx) < 0)
++    {
++        lg2::error("USBPollingDevice: Failed to initialize libusb");
++        ctx = nullptr;
++        return;
++    }
++    libusb_device** deviceList = nullptr;
++    ssize_t count = libusb_get_device_list(ctx, &deviceList);
++    if (count < 0)
++    {
++        lg2::error("USBPollingDevice: Failed to get USB device list");
++        libusb_exit(ctx);
++        ctx = nullptr;
++        return;
++    }
++    libusb_device* device = nullptr;
++    bool found = false;
++    for (ssize_t i = 0; i < count; ++i)
++    {
++        device = deviceList[i];
++        libusb_device_descriptor desc;
++        if (libusb_get_device_descriptor(device, &desc) == 0 &&
++            libusb_get_bus_number(device) == bus &&
++            libusb_get_device_address(device) == deviceAddress)
++        {
++            found = true;
++            break;
++        }
++    }
++    if (!found)
++    {
++        lg2::error(
++            "USBPollingDevice: No USB device found with bus {BUS} and address {ADDRESS}",
++            "BUS", this->bus, "ADDRESS", this->deviceAddress);
++        libusb_free_device_list(deviceList, 1);
++        libusb_exit(ctx);
++        ctx = nullptr;
++        return;
++    }
++    if (libusb_open(device, &devHandle) < 0)
++    {
++        lg2::error("USBPollingDevice: Failed to open USB device");
++        libusb_free_device_list(deviceList, 1);
++        libusb_exit(ctx);
++        ctx = nullptr;
++        return;
++    }
++    libusb_free_device_list(deviceList, 1);
++}
++
++USBPollingDevice::~USBPollingDevice()
++{
++    if (devHandle)
++    {
++        libusb_close(devHandle);
++    }
++    if (ctx)
++    {
++        libusb_exit(ctx);
++        ctx = nullptr;
++    }
++}
++
++bool USBPollingDevice::readRegisterValue(uint32_t regAddr, uint32_t& regValue)
++{
++    if (!devHandle)
++    {
++        lg2::debug("USB device not opened");
++        return false;
++    }
++    static constexpr uint8_t readLength = 4;
++    std::string regAddrStr = std::format("0x{:08X}", regAddr);
++    std::array<uint8_t, readLength> readData{};
++    constexpr uint8_t bmRequestType = 0xC0;
++    constexpr uint8_t bRequest = 0x00;
++    uint16_t wValue = static_cast<uint16_t>((regAddr >> 16) & 0xFFFF);
++    uint16_t wIndex = static_cast<uint16_t>(regAddr & 0xFFFF);
++    constexpr unsigned int timeoutMs = 1000;
++    int transferLength =
++        libusb_control_transfer(devHandle, bmRequestType, bRequest, wValue,
++                                wIndex, readData.data(), readLength, timeoutMs);
++    if (transferLength < 0)
++    {
++        lg2::debug("Failed to read register {REG_ADDR}: {ERROR}", "REG_ADDR",
++                   regAddrStr, "ERROR", transferLength);
++        return false;
++    }
++    if (transferLength != readLength)
++    {
++        lg2::debug("Failed to read register {REG_ADDR}: {ERROR}", "REG_ADDR",
++                   regAddrStr, "ERROR", transferLength);
++        return false;
++    }
++    regValue = (static_cast<uint32_t>(readData[3]) << 24) |
++               (static_cast<uint32_t>(readData[2]) << 16) |
++               (static_cast<uint32_t>(readData[1]) << 8) |
++               static_cast<uint32_t>(readData[0]);
++    return true;
++}
++
++USBDeviceEnumerator::USBDeviceEnumerator(
++    sdbusplus::async::context& ctx, std::shared_ptr<BootProgressManager> mgr,
++    uint16_t vendorId, uint16_t productId,
++    std::chrono::seconds rescanInterval) :
++    PollingDeviceEnumerator(ctx, mgr), vendorId(vendorId), productId(productId),
++    rescanInterval(rescanInterval)
++{
++    if (libusb_init(&usbCtx) < 0)
++    {
++        lg2::debug("USBDeviceEnumerator: failed to init libusb");
++        usbCtx = nullptr;
++    }
++    if (!libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG))
++    {
++        lg2::debug("USBDeviceEnumerator: hotplug not supported");
++        hotplugSupported = false;
++        return;
++    }
++    hotplugSupported = true;
++    int rc = libusb_hotplug_register_callback(
++        usbCtx,
++        (libusb_hotplug_event)(LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED |
++                               LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT),
++        (libusb_hotplug_flag)0, vendorId, productId, LIBUSB_HOTPLUG_MATCH_ANY,
++        hotplugCallback, this, &cbHandle);
++    if (rc != LIBUSB_SUCCESS)
++    {
++        lg2::error("USBDeviceEnumerator: failed to register hotplug callback");
++        return;
++    }
++}
++
++USBDeviceEnumerator::~USBDeviceEnumerator()
++{
++    if (cbHandle)
++    {
++        libusb_hotplug_deregister_callback(usbCtx, cbHandle);
++    }
++    if (usbCtx)
++    {
++        libusb_exit(usbCtx);
++    }
++}
++
++int LIBUSB_CALL USBDeviceEnumerator::hotplugCallback(
++    libusb_context*, libusb_device* dev, libusb_hotplug_event event,
++    void* userData)
++{
++    auto* self = static_cast<USBDeviceEnumerator*>(userData);
++    self->handleHotplug(dev, event);
++    return 0;
++}
++
++void USBDeviceEnumerator::handleHotplug(libusb_device* dev,
++                                        libusb_hotplug_event event)
++{
++    libusb_device_descriptor desc{};
++    if (libusb_get_device_descriptor(dev, &desc) != 0)
++    {
++        lg2::error("USBEnumerator: failed to get device descriptor");
++        return;
++    }
++
++    if (desc.idVendor != vendorId || desc.idProduct != productId)
++    {
++        return;
++    }
++
++    uint8_t bus = libusb_get_bus_number(dev);
++    uint8_t addr = libusb_get_device_address(dev);
++
++    if (event == LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED)
++    {
++        lg2::info("USB device arrived: bus {BUS}, addr {ADDR}", "BUS",
++                  static_cast<int>(bus), "ADDR", static_cast<int>(addr));
++        int socketId = addDeviceAndGetSocketId(bus, addr);
++        manager->onDeviceAdded(TransportInterface::USB, bus, addr, socketId);
++    }
++    else if (event == LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT)
++    {
++        lg2::info("USB device removed: bus {BUS}, addr {ADDR}", "BUS",
++                  static_cast<int>(bus), "ADDR", static_cast<int>(addr));
++        int socketId = removeDeviceAndGetSocketId(bus, addr);
++        if (socketId == -1)
++        {
++            lg2::warning(
++                "USB device bus {BUS} address {ADDRESS} not found in device mapping",
++                "BUS", static_cast<int>(bus), "ADDRESS",
++                static_cast<int>(addr));
++            return;
++        }
++        manager->onDeviceRemoved(TransportInterface::USB, bus, addr, socketId);
++    }
++}
++
++void USBDeviceEnumerator::scanDeviceList()
++{
++    libusb_device** devs = nullptr;
++    ssize_t cnt = libusb_get_device_list(usbCtx, &devs);
++    if (cnt < 0)
++    {
++        lg2::error("USBDeviceEnumerator: libusb_get_device_list failed");
++        return;
++    }
++
++    for (ssize_t i = 0; i < cnt; ++i)
++    {
++        libusb_device* dev = devs[i];
++        libusb_device_descriptor desc{};
++        if (libusb_get_device_descriptor(dev, &desc) != 0)
++        {
++            lg2::error("USBDeviceEnumerator: failed to get device descriptor");
++            continue;
++        }
++        if (desc.idVendor == vendorId && desc.idProduct == productId)
++        {
++            uint8_t bus = libusb_get_bus_number(dev);
++            uint8_t addr = libusb_get_device_address(dev);
++            int socketId = addDeviceAndGetSocketId(bus, addr);
++            manager->onDeviceAdded(TransportInterface::USB, bus, addr,
++                                   socketId);
++        }
++    }
++    libusb_free_device_list(devs, 1);
++}
++
++sdbusplus::async::task<void> USBDeviceEnumerator::run()
++{
++    if (!usbCtx)
++    {
++        lg2::error("USBDeviceEnumerator: libusb context not initialized");
++        co_return;
++    }
++    while (!ctx.stop_requested())
++    {
++        if (hotplugSupported)
++        {
++            libusb_handle_events(usbCtx);
++        }
++        else
++        {
++            scanDeviceList();
++        }
++
++        co_await sdbusplus::async::sleep_for(ctx, rescanInterval);
++    }
++    co_return;
++}
+-- 
+2.31.1
+

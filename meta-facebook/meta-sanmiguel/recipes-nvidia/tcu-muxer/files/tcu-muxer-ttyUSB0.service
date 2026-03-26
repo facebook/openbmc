@@ -1,0 +1,18 @@
+[Unit]
+Description=Tegra Combined UART(TCU) Muxer for ttyUSB0 Service
+Requires=dev-ttyUSB0.device
+After=dev-ttyUSB0.device
+Requires=platform-sys-init
+After=platform-sys-init
+StartLimitIntervalSec=1
+
+[Service]
+Restart=always
+ExecStartPre=mkdir -p /var/log/tcu-muxer
+ExecStartPre=mkdir -p /var/log/console_cpu0
+ExecStartPre=mkdir -p /dev/tcu-muxer/cpu0
+ExecStart=/bin/sh -c '/usr/bin/tcu_muxer -d /dev/ttyUSB0 | tee /var/log/tcu-muxer/output-cpu0'
+SyslogIdentifier=tcu-muxer-ttyUSB0
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,496 @@
+From 87aecd62fb9b46018b7cef39cedbcae3ab6c50b3 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Wed, 11 Mar 2026 13:28:31 +0800
+Subject: [PATCH 1/1] ARM: dts: aspeed: sanmiguel: Add CP2112 and downstream
+ IOEXP nodes
+
+Add CP2112 and its downstream IOEXP nodes. CP2112 fwnode support is
+still under review upstream [1], so these nodes rely on downstream
+properties for now.
+
+This patch can be dropped once upstream support is available.
+
+[1] https://lore.kernel.org/all/20260127-cp2112-dt-v13-0-6448ddd4bf22@plexus.com/
+
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+---
+ .../aspeed/aspeed-bmc-facebook-sanmiguel.dts  | 449 ++++++++++++++++++
+ 1 file changed, 449 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
+index facc6be016eb..12cb02481ab8 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
+@@ -24,6 +24,13 @@ aliases {
+ 		i2c17	= &imux17;
+ 		i2c18	= &imux18;
+ 		i2c19	= &imux19;
++		i2c70   = &i2c70;
++		i2c71   = &i2c71;
++		i2c72   = &i2c72;
++		i2c73   = &i2c73;
++		i2c74   = &i2c74;
++		i2c75   = &i2c75;
++		i2c76   = &i2c76;
+ 	};
+ 
+ 	chosen {
+@@ -113,6 +120,181 @@ &pinctrl_adc4_default &pinctrl_adc5_default
+ 	status = "okay";
+ };
+ 
++&ehci1 {
++	status = "okay";
++
++	hub@1 {
++		reg = <1>;
++		hub@1 {
++			reg = <1>;
++			hub@4 {
++				reg = <4>;
++				cp2112g: device@2 {
++					reg = <2>;
++					gpio-controller;
++					#gpio-cells = <2>;
++					interrupt-controller;
++					#interrupt-cells = <2>;
++
++					gpio-line-names =
++						"BF4_USB_MCU_RECOVERY_L",
++						"BF4_USB_MCU_RST_L",
++						"BF4_USB_FORCE_FNP_L",
++						"BF4_GLOBAL_WP",
++						"BF4_FORCE_POR_L",
++						"BF4_BMC_EROT_RST_L",
++						"BF4_BMC_EROT_RECOVERY_L",
++						"BF4_THERM_SHUTDOWN";
++
++					i2c72: i2c {
++						#address-cells = <1>;
++						#size-cells = <0>;
++					};
++				};
++			};
++		};
++		hub@2 {
++			reg = <2>;
++			hub@1 {
++				reg = <1>;
++				device@1 {
++					reg = <1>;
++					cp2112a: interface@1 {
++						reg = <1 1>;
++						gpio-controller;
++						#gpio-cells = <2>;
++						interrupt-controller;
++						#interrupt-cells = <2>;
++
++						i2c70: i2c {
++							#address-cells = <1>;
++							#size-cells = <0>;
++						};
++					};
++				};
++				hub@3 {
++					reg = <3>;
++					cp2112c: device@2 {
++						reg = <2>;
++						gpio-controller;
++						#gpio-cells = <2>;
++						interrupt-controller;
++						#interrupt-cells = <2>;
++
++						gpio-line-names =
++							"IOB1_MCP_P0_2-B",
++							"IOB1_MCU_RST_L-O",
++							"IOB1_MCU_RECOVERY_L-O",
++							"IOB1_GLOBAL_WP-O",
++							"IOB1_GLOBAL_ADDR_L_R-O",
++							"IOB1_GLOBAL_ADDR_U_D-O",
++							"IOB1_PWR_EN-O",
++							"IOB1_MCU_READY_STATUS-I";
++
++						i2c74: i2c {
++							#address-cells = <1>;
++							#size-cells = <0>;
++						};
++					};
++				};
++				hub@4 {
++					reg = <4>;
++					cp2112d: device@2 {
++						reg = <2>;
++						gpio-controller;
++						#gpio-cells = <2>;
++						interrupt-controller;
++						#interrupt-cells = <2>;
++
++						gpio-line-names =
++							"IOB0_MCP_P0_2-B",
++							"IOB0_MCU_RST_L-O",
++							"IOB0_MCU_RECOVERY_L-O",
++							"IOB0_GLOBAL_WP-O",
++							"IOB0_GLOBAL_ADDR_L_R-O",
++							"IOB0_GLOBAL_ADDR_U_D-O",
++							"IOB0_PWR_EN-O",
++							"IOB0_MCU_READY_STATUS-I";
++
++						i2c73: i2c {
++							#address-cells = <1>;
++							#size-cells = <0>;
++						};
++					};
++				};
++			};
++			hub@2 {
++				reg = <2>;
++				device@1 {
++					reg = <1>;
++					cp2112b: interface@1 {
++						reg = <1 1>;
++						gpio-controller;
++						#gpio-cells = <2>;
++						interrupt-controller;
++						#interrupt-cells = <2>;
++
++						i2c71: i2c {
++							#address-cells = <1>;
++							#size-cells = <0>;
++						};
++					};
++				};
++				hub@3 {
++					reg = <3>;
++					cp2112e: device@2 {
++						reg = <2>;
++						gpio-controller;
++						#gpio-cells = <2>;
++						interrupt-controller;
++						#interrupt-cells = <2>;
++
++						gpio-line-names =
++							"IOB2_MCP_P0_2-B",
++							"IOB2_MCU_RST_L-O",
++							"IOB2_MCU_RECOVERY_L-O",
++							"IOB2_GLOBAL_WP-O",
++							"IOB2_GLOBAL_ADDR_L_R-O",
++							"IOB2_GLOBAL_ADDR_U_D-O",
++							"IOB2_PWR_EN-O",
++							"IOB2_MCU_READY_STATUS-I";
++
++						i2c75: i2c {
++							#address-cells = <1>;
++							#size-cells = <0>;
++						};
++					};
++				};
++				hub@4 {
++					reg = <4>;
++					cp2112f: device@2 {
++						reg = <2>;
++						gpio-controller;
++						#gpio-cells = <2>;
++						interrupt-controller;
++						#interrupt-cells = <2>;
++
++						gpio-line-names =
++							"IOB3_MCP_P0_2-B",
++							"IOB3_MCU_RST_L-O",
++							"IOB3_MCU_RECOVERY_L-O",
++							"IOB3_GLOBAL_WP-O",
++							"IOB3_GLOBAL_ADDR_L_R-O",
++							"IOB3_GLOBAL_ADDR_U_D-O",
++							"IOB3_PWR_EN-O",
++							"IOB3_MCU_READY_STATUS-I";
++
++						i2c76: i2c {
++							#address-cells = <1>;
++							#size-cells = <0>;
++						};
++					};
++				};
++			};
++		};
++	};
++};
++
+ &fmc {
+ 	status = "okay";
+ 
+@@ -605,6 +787,273 @@ &i2c15 {
+ 	status = "okay";
+ };
+ 
++&i2c70 {
++	hpm0_sma_ioexp_50: gpio@50 {
++		compatible = "nxp,pca9555";
++		reg = <0x50>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		interrupt-parent = <&cp2112a>;
++		interrupts = <0 IRQ_TYPE_LEVEL_LOW>;
++
++		gpio-line-names =
++			"B0_CPU0_IROT_RECOVERY_L_3V3-I",
++			"B0_CPU0_IROT_FATAL_ERR_L_3V3-I",
++			"B0_CPU0_OVERT_L-I",
++			"B0_C0_THERM_WARN_N-I",
++			"B0_C0_SOC_THERM_OVERT_N-I",
++			"B0_CPU0_CHIPTHROT_L-I",
++			"B0_C0_SOCAMM_0_ID_PRSNT_N-I",
++			"B0_C0_SOCAMM_1_ID_PRSNT_N-I",
++			"B0_C0_SOCAMM_2_ID_PRSNT_N-I",
++			"B0_C0_SOCAMM_3_ID_PRSNT_N-I",
++			"B0_C0_SOCAMM_4_ID_PRSNT_N-I",
++			"B0_C0_SOCAMM_5_ID_PRSNT_N-I",
++			"B0_C0_SOCAMM_6_ID_PRSNT_N-I",
++			"B0_C0_SOCAMM_7_ID_PRSNT_N-I",
++			"B0_JTAG_BYPASS_CPU0_S_DIE-O",
++			"B0_JTAG_BYPASS_CPU0_C_DIE-O";
++	};
++	hpm0_sma_ioexp_51: gpio@51 {
++		compatible = "nxp,pca9555";
++		reg = <0x51>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		interrupt-parent = <&cp2112a>;
++		interrupts = <1 IRQ_TYPE_LEVEL_LOW>;
++
++		gpio-line-names =
++			"B0_C0_UPHY0_PRSNT0_L-I",
++			"B0_C0_UPHY0_PRSNT2_L-I",
++			"B0_C0_UPHY_PRSNT1_L-I",
++			"B0_C0_UPHY2_PRSNT0_L-I",
++			"B0_C0_UPHY2_PRSNT2_L-I",
++			"B0_C0_UPHY3_PRSNT0_L-I",
++			"B0_C0_UPHY3_PRSNT1_L-I",
++			"B0_GPU_THERM_WARN_N-I",
++			"B0_JTAG_BYPASS_GPU1-O",
++			"B0_JTAG_BYPASS_GPU2-O",
++			"B0_C0_ALL_SOCAMM_PGOOD-I",
++			"B0_DDR_VDDQ_PGOOD-I",
++			"B0_CPU0_OOB_CS1_L-O",
++			"B0_CPU0_OOB_CS0_L-O",
++			"B0_LEAK_SELF_TEST_L-I",
++			"B0_TRAY_FAST_SHDN_L-I";
++	};
++	hpm0_sma_ioexp_52: gpio@52 {
++		compatible = "nxp,pca9555";
++		reg = <0x52>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		interrupt-parent = <&cp2112a>;
++		interrupts = <2 IRQ_TYPE_LEVEL_LOW>;
++
++		gpio-line-names =
++			"B0_C0_WAKE_L-I",
++			"B0_MCU_THERM_OVERT_N-I",
++			"B0_MCU_THERM_WARN_N-I",
++			"B0_PRIMARY_NODE_L-I",
++			"B0_GLOBAL_WP-I",
++			"B0_PCIE_CLKBUF_LOS-I",
++			"B0_LEAK_DETECT_L-I",
++			"B0_vLeakDetect1Status0-I",
++			"B0_vLeakDetect1Status1-I",
++			"B0_vLeakDetect2Status0-I",
++			"B0_vLeakDetect2Status1-I",
++			"B0_BMC_IOX_INT_L-I",
++			"B0_MCU_BMC_ALERT_L-I",
++			"B0_MCU_HMC_ALERT_L-I",
++			"B0_MCU_USER_STRAP-I",
++			"B0_HPM_MCU_OK-I";
++	};
++	hpm0_sma_ioexp_53: gpio@53 {
++		compatible = "nxp,pca9555";
++		reg = <0x53>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		#interrupt-cells = <2>;
++		interrupt-parent = <&cp2112a>;
++		interrupts = <3 IRQ_TYPE_LEVEL_LOW>;
++
++		gpio-line-names =
++			"B0_CPLD_RESET_L-I",
++			"B0_CPLD_PSEQ_FAULT-I",
++			"B0_CPLD_READY-I",
++			"B0_CPLD_PROGRAM-I",
++			"B0_MCU_12V_HSCC_PGOOD-I",
++			"B0_RUN_PWR_EN-I",
++			"B0_MODULE_PWR_GOOD-I",
++			"B0_VDD_1V8_PGOOD-I",
++			"B0_VDD_3V3_PGOOD-I",
++			"B0_C0_CVDD_PGOOD-I",
++			"B0_C0_5V_SOCAMM_PGOOD-I",
++			"B0_OOB_MUX_CTRL1-O",
++			"B0_OOB_MUX_CTRL0-O",
++			"B0_C2CVDD_PGOOD-I",
++			"B0_SLOT_PWR_BRAKE_EN_L-I",
++			"B0_MCU_I2C_RTC_ALERT_L-I";
++	};
++	hpm0_sma_ioexp_54: gpio@54 {
++		compatible = "nxp,pca9555";
++		reg = <0x54>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		interrupt-parent = <&cp2112a>;
++		interrupts = <4 IRQ_TYPE_LEVEL_LOW>;
++
++		gpio-line-names =
++			"B0_JTAG_SEL_MCU-O",
++			"B0_JTAG_TCK_MCU-O",
++			"B0_JTAG_TMS_MCU-O",
++			"B0_JTAG_TDO_MCU-I",
++			"B0_JTAG_TDI_MCU-O",
++			"B0_JTAG_TRST_L_MCU-O",
++			"B0_CPU0_SSIF_ALERT_L_3V3-O",
++			"B0_USB_HMC_TO_CPU_FORCE_EN-O",
++			"B0_MCU_RECOVERY_L-I",
++			"B0_v_BUS_BAR_OVERT-I",
++			"B0_v_CPLD_AUTH_FAIL-I",
++			"",
++			"",
++			"",
++			"",
++			"";
++	};
++};
++
++&i2c71 {
++	hpm1_sma_ioexp_50: gpio@50 {
++		compatible = "nxp,pca9555";
++		reg = <0x50>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		interrupt-parent = <&cp2112b>;
++		interrupts = <0 IRQ_TYPE_LEVEL_LOW>;
++
++		gpio-line-names =
++			"B1_CPU0_IROT_RECOVERY_L_3V3-I",
++			"B1_CPU0_IROT_FATAL_ERR_L_3V3-I",
++			"B1_CPU0_OVERT_L-I",
++			"B1_C0_THERM_WARN_N-I",
++			"B1_C0_SOC_THERM_OVERT_N-I",
++			"B1_CPU0_CHIPTHROT_L-I",
++			"B1_C0_SOCAMM_0_ID_PRSNT_N-I",
++			"B1_C0_SOCAMM_1_ID_PRSNT_N-I",
++			"B1_C0_SOCAMM_2_ID_PRSNT_N-I",
++			"B1_C0_SOCAMM_3_ID_PRSNT_N-I",
++			"B1_C0_SOCAMM_4_ID_PRSNT_N-I",
++			"B1_C0_SOCAMM_5_ID_PRSNT_N-I",
++			"B1_C0_SOCAMM_6_ID_PRSNT_N-I",
++			"B1_C0_SOCAMM_7_ID_PRSNT_N-I",
++			"B1_JTAG_BYPASS_CPU0_S_DIE-O",
++			"B1_JTAG_BYPASS_CPU0_C_DIE-O";
++	};
++	hpm1_sma_ioexp_51: gpio@51 {
++		compatible = "nxp,pca9555";
++		reg = <0x51>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		interrupt-parent = <&cp2112b>;
++		interrupts = <1 IRQ_TYPE_LEVEL_LOW>;
++
++		gpio-line-names =
++			"B1_C0_UPHY0_PRSNT0_L-I",
++			"B1_C0_UPHY0_PRSNT2_L-I",
++			"B1_C0_UPHY_PRSNT1_L-I",
++			"B1_C0_UPHY2_PRSNT0_L-I",
++			"B1_C0_UPHY2_PRSNT2_L-I",
++			"B1_C0_UPHY3_PRSNT0_L-I",
++			"B1_C0_UPHY3_PRSNT1_L-I",
++			"B1_GPU_THERM_WARN_N-I",
++			"B1_JTAG_BYPASS_GPU1-O",
++			"B1_JTAG_BYPASS_GPU2-O",
++			"B1_C0_ALL_SOCAMM_PGOOD-I",
++			"B1_DDR_VDDQ_PGOOD-I",
++			"B1_CPU0_OOB_CS1_L-O",
++			"B1_CPU0_OOB_CS0_L-O",
++			"B1_LEAK_SELF_TEST_L-I",
++			"B1_TRAY_FAST_SHDN_L-I";
++	};
++	hpm1_sma_ioexp_52: gpio@52 {
++		compatible = "nxp,pca9555";
++		reg = <0x52>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		interrupt-parent = <&cp2112b>;
++		interrupts = <2 IRQ_TYPE_LEVEL_LOW>;
++
++		gpio-line-names =
++			"B1_C0_WAKE_L-I",
++			"B1_MCU_THERM_OVERT_N-I",
++			"B1_MCU_THERM_WARN_N-I",
++			"B1_PRIMARY_NODE_L-I",
++			"B1_GLOBAL_WP-I",
++			"B1_PCIE_CLKBUF_LOS-I",
++			"B1_LEAK_DETECT_L-I",
++			"B1_vLeakDetect1Status0-I",
++			"B1_vLeakDetect1Status1-I",
++			"B1_vLeakDetect2Status0-I",
++			"B1_vLeakDetect2Status1-I",
++			"B1_BMC_IOX_INT_L-I",
++			"B1_MCU_BMC_ALERT_L-I",
++			"B1_MCU_HMC_ALERT_L-I",
++			"B1_MCU_USER_STRAP-I",
++			"B1_HPM_MCU_OK-I";
++	};
++	hpm1_sma_ioexp_53: gpio@53 {
++		compatible = "nxp,pca9555";
++		reg = <0x53>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		interrupt-parent = <&cp2112b>;
++		interrupts = <3 IRQ_TYPE_LEVEL_LOW>;
++
++		gpio-line-names =
++			"B1_CPLD_RESET_L-I",
++			"B1_CPLD_PSEQ_FAULT-I",
++			"B1_CPLD_READY-I",
++			"B1_CPLD_PROGRAM-I",
++			"B1_MCU_12V_HSCC_PGOOD-I",
++			"B1_RUN_PWR_EN-I",
++			"B1_MODULE_PWR_GOOD-I",
++			"B1_VDD_1V8_PGOOD-I",
++			"B1_VDD_3V3_PGOOD-I",
++			"B1_C0_CVDD_PGOOD-I",
++			"B1_C0_5V_SOCAMM_PGOOD-I",
++			"B1_OOB_MUX_CTRL1-O",
++			"B1_OOB_MUX_CTRL0-O",
++			"B1_C2CVDD_PGOOD-I",
++			"B1_SLOT_PWR_BRAKE_EN_L-I",
++			"B1_MCU_I2C_RTC_ALERT_L-I";
++	};
++	hpm1_sma_ioexp_54: gpio@54 {
++		compatible = "nxp,pca9555";
++		reg = <0x54>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		interrupt-parent = <&cp2112b>;
++		interrupts = <4 IRQ_TYPE_LEVEL_LOW>;
++
++		gpio-line-names =
++			"B1_JTAG_SEL_MCU-O",
++			"B1_JTAG_TCK_MCU-O",
++			"B1_JTAG_TMS_MCU-O",
++			"B1_JTAG_TDO_MCU-I",
++			"B1_JTAG_TDI_MCU-O",
++			"B1_JTAG_TRST_L_MCU-O",
++			"B1_CPU0_SSIF_ALERT_L_3V3-O",
++			"B1_USB_HMC_TO_CPU_FORCE_EN-O",
++			"B1_MCU_RECOVERY_L-I",
++			"B1_v_BUS_BAR_OVERT-I",
++			"B1_v_CPLD_AUTH_FAIL-I",
++			"",
++			"",
++			"",
++			"",
++			"";
++	};
++};
++
+ &mdio0 {
+ 	status = "okay";
+ 
+-- 
+2.31.1
+

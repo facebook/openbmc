@@ -1,0 +1,40 @@
+From 6f4322b52d34e5f271c87ec29fd9001dfe16daeb Mon Sep 17 00:00:00 2001
+From: Danny Kaehn <danny.kaehn@plexus.com>
+Date: Tue, 27 Jan 2026 08:47:50 -0600
+Subject: [PATCH 2/2] HID: cp2112: Configure I2C Bus Speed from Firmware
+
+Now that the I2C adapter on the CP2112 can have an associated firmware
+node, set the bus speed based on firmware configuration
+
+[1] LORE: https://lore.kernel.org/all/20260127-cp2112-dt-v13-3-6448ddd4bf22@plexus.com/
+
+Signed-off-by: Danny Kaehn <danny.kaehn@plexus.com>
+---
+ drivers/hid/hid-cp2112.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/hid/hid-cp2112.c b/drivers/hid/hid-cp2112.c
+index ea19b5cb58f9..4c5957e0a5cc 100644
+--- a/drivers/hid/hid-cp2112.c
++++ b/drivers/hid/hid-cp2112.c
+@@ -1220,6 +1220,7 @@ static int cp2112_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	struct cp2112_smbus_config_report config;
+ 	struct fwnode_handle *child;
+ 	struct gpio_irq_chip *girq;
++	struct i2c_timings timings;
+ 	u32 addr;
+ 	int ret;
+ 
+@@ -1304,6 +1305,9 @@ static int cp2112_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 		goto err_power_normal;
+ 	}
+ 
++	i2c_parse_fw_timings(&dev->adap.dev, &timings, true);
++
++	config.clock_speed = cpu_to_be32(timings.bus_freq_hz);
+ 	config.retry_time = cpu_to_be16(1);
+ 
+ 	ret = cp2112_hid_output(hdev, (u8 *)&config, sizeof(config),
+-- 
+2.31.1
+

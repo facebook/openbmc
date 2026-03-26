@@ -1,0 +1,53 @@
+#!/bin/bash
+
+BASE_ID=0
+TCU_MUXER_LOG="/var/log/tcu-muxer/output-${1}"
+TCU_MUXER_DEV_DIR="/dev/tcu-muxer"
+
+create_tcu_muxer_dev_from_log()
+{
+    local tcu_muxer_log="$1"
+    local tcu_muxer_dev_dir="$2"
+    local vser_id="$3"
+    local console_name="$4"
+    local pts_dev
+
+    pts_dev="$(grep "/dev/pts/[0-9]" "$tcu_muxer_log" | grep -E "[[:space:]]${console_name}$" | awk '{print $1}')"
+    if [ -n "$pts_dev" ]; then
+        printf "%-15s: found %s, create link %s\n" "$console_name" "$pts_dev" "$tcu_muxer_dev_dir/VSER$vser_id"
+        ln -s "$pts_dev" "$tcu_muxer_dev_dir/VSER$vser_id"
+        systemctl start obmc-console@VSER"${vser_id}".service
+    else
+        echo "$console_name: not found"
+    fi
+}
+
+if [ "${1}" == "cpu1" ]; then
+    BASE_ID=16
+fi
+
+echo "Create ${1} Virtual Serial device link "
+
+for i in $(seq 0 15)
+do
+    if [ -L "${TCU_MUXER_DEV_DIR}/VSER$((BASE_ID+i))" ]; then
+        rm "${TCU_MUXER_DEV_DIR}/VSER$((BASE_ID+i))"
+    fi
+done
+
+create_tcu_muxer_dev_from_log "$TCU_MUXER_LOG" "$TCU_MUXER_DEV_DIR" "$((BASE_ID+0))" "PSCFW"
+create_tcu_muxer_dev_from_log "$TCU_MUXER_LOG" "$TCU_MUXER_DEV_DIR" "$((BASE_ID+1))" "BPMP"
+create_tcu_muxer_dev_from_log "$TCU_MUXER_LOG" "$TCU_MUXER_DEV_DIR" "$((BASE_ID+2))" "OOBHUBFW"
+create_tcu_muxer_dev_from_log "$TCU_MUXER_LOG" "$TCU_MUXER_DEV_DIR" "$((BASE_ID+3))" "SatMCFW"
+create_tcu_muxer_dev_from_log "$TCU_MUXER_LOG" "$TCU_MUXER_DEV_DIR" "$((BASE_ID+4))" "RASFW"
+create_tcu_muxer_dev_from_log "$TCU_MUXER_LOG" "$TCU_MUXER_DEV_DIR" "$((BASE_ID+5))" "CCPLEX-ROOT"
+create_tcu_muxer_dev_from_log "$TCU_MUXER_LOG" "$TCU_MUXER_DEV_DIR" "$((BASE_ID+6))" "TZ"
+create_tcu_muxer_dev_from_log "$TCU_MUXER_LOG" "$TCU_MUXER_DEV_DIR" "$((BASE_ID+7))" "CCPLEX-REALM"
+create_tcu_muxer_dev_from_log "$TCU_MUXER_LOG" "$TCU_MUXER_DEV_DIR" "$((BASE_ID+8))" "MSEQFW"
+create_tcu_muxer_dev_from_log "$TCU_MUXER_LOG" "$TCU_MUXER_DEV_DIR" "$((BASE_ID+9))" "PCOREFW"
+create_tcu_muxer_dev_from_log "$TCU_MUXER_LOG" "$TCU_MUXER_DEV_DIR" "$((BASE_ID+10))" "C2CFW"
+create_tcu_muxer_dev_from_log "$TCU_MUXER_LOG" "$TCU_MUXER_DEV_DIR" "$((BASE_ID+11))" "DBG2"
+create_tcu_muxer_dev_from_log "$TCU_MUXER_LOG" "$TCU_MUXER_DEV_DIR" "$((BASE_ID+12))" "NCORE"
+create_tcu_muxer_dev_from_log "$TCU_MUXER_LOG" "$TCU_MUXER_DEV_DIR" "$((BASE_ID+13))" "NPXIR"
+create_tcu_muxer_dev_from_log "$TCU_MUXER_LOG" "$TCU_MUXER_DEV_DIR" "$((BASE_ID+14))" "CCPLEX"
+create_tcu_muxer_dev_from_log "$TCU_MUXER_LOG" "$TCU_MUXER_DEV_DIR" "$((BASE_ID+15))" "RAW"

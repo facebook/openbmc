@@ -1,0 +1,289 @@
+From e195dd7389f91a0e4c8b36655e792e1574b19f3e Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Mon, 23 Mar 2026 12:45:06 +0800
+Subject: [PATCH 1/1] mctpd: add AssignBridgeStatic method
+
+Add AssignBridgeStatic method to assign static EID with bridge pool allocation.
+
+[1] https://github.com/CodeConstruct/mctp/pull/148
+
+Tested:
+```
+root@bmc:~# busctl call au.com.codeconstruct.MCTP1 /au/com/codeconstruct/mctp1/interfaces/mcu1u2u1u4u1 au.com.codeconstruct.MCTP.BusOwner1 AssignBridgeStatic ayyyy 0 30 5 31
+yisb 30 1 "/au/com/codeconstruct/mctp1/networks/1/endpoints/30" true
+root@bmc:~# busctl introspect au.com.codeconstruct.MCTP1 /au/com/codeconstruct/mctp1/networks/1/endpoints/30
+NAME                                TYPE      SIGNATURE RESULT/VALUE                           FLAGS
+au.com.codeconstruct.MCTP.Bridge1   interface -         -                                      -
+.PoolEnd                            property  y         35                                     const
+.PoolStart                          property  y         31                                     const
+au.com.codeconstruct.MCTP.Endpoint1 interface -         -                                      -
+.Recover                            method    -         -                                      -
+.Remove                             method    -         -                                      -
+.SetMTU                             method    u         -                                      -
+.Connectivity                       property  s         "Available"                            emits-change
+org.freedesktop.DBus.Introspectable interface -         -                                      -
+.Introspect                         method    -         s                                      -
+org.freedesktop.DBus.Peer           interface -         -                                      -
+.GetMachineId                       method    -         s                                      -
+.Ping                               method    -         -                                      -
+org.freedesktop.DBus.Properties     interface -         -                                      -
+.Get                                method    ss        v                                      -
+.GetAll                             method    s         a{sv}                                  -
+.Set                                method    ssv       -                                      -
+.PropertiesChanged                  signal    sa{sv}as  -                                      -
+xyz.openbmc_project.Common.UUID     interface -         -                                      -
+.UUID                               property  s         "8b7e3d86-5fa5-298c-a9d6-a2d5d4baa6fa" const
+xyz.openbmc_project.MCTP.Endpoint   interface -         -                                      -
+.EID                                property  y         30                                     const
+.NetworkId                          property  u         1                                      const
+.SupportedMessageTypes              property  ay        4 1 5 126 127                          const
+.VendorDefinedMessageTypes          property  a(yvq)    0                                      const
+```
+
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+---
+ docs/mctpd.md |  15 ++++
+ src/mctpd.c   | 187 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 202 insertions(+)
+
+diff --git a/docs/mctpd.md b/docs/mctpd.md
+index 62448e3a58..f6261f2aa9 100644
+--- a/docs/mctpd.md
++++ b/docs/mctpd.md
+@@ -173,6 +173,21 @@ This call will fail if the endpoint already has an EID, and that EID is
+ different from `static-EID`, or if `static-EID` is already assigned to another
+ endpoint.
+ 
++#### `.AssignBridgeStatic`: `ayy` → `yisb`
++
++Similar to AssignEndpointStatic, but takes an additional pool-size and
++pool-start-EID argument:
++
++```
++AssignBridgeStatic <hwaddr> <static-EID> <pool-size> <pool-start-EID>
++```
++
++`<pool-size>`: The number of EIDs to be allocated to the bridge's EID pool.
++
++`<pool-start-EID>`: The starting EID for the range of EIDs being allocated.
++
++This method performs a static assignment with bridge EID pool allocation.
++
+ #### `.LearnEndpoint`: `ay` → `yisb`
+ 
+ Like SetupEndpoint but will not assign EIDs, will only query endpoints for a
+diff --git a/src/mctpd.c b/src/mctpd.c
+index 859ddb646f..796a9a29c3 100644
+--- a/src/mctpd.c
++++ b/src/mctpd.c
+@@ -2233,6 +2233,92 @@ static int endpoint_assign_eid(struct ctx *ctx, sd_bus_error *berr,
+ 	return 0;
+ }
+ 
++static int
++endpoint_assign_bridge_static_eid(struct ctx *ctx, sd_bus_error *berr,
++				  const dest_phys *dest, struct peer **ret_peer,
++				  mctp_eid_t static_eid, mctp_eid_t pool_start,
++				  uint8_t pool_size)
++{
++	struct net *n = NULL;
++	struct peer *peer = NULL;
++	uint8_t req_pool_size;
++	uint32_t net;
++	int rc;
++
++	net = mctp_nl_net_byindex(ctx->nl, dest->ifindex);
++	if (!net) {
++		bug_warn("No net known for ifindex %d", dest->ifindex);
++		return -EPROTO;
++	}
++
++	n = lookup_net(ctx, net);
++	if (!n) {
++		bug_warn("Unknown net %d", net);
++		return -EPROTO;
++	}
++
++	rc = add_peer(ctx, dest, static_eid, net, NULL, &peer, false);
++	if (rc < 0)
++		return rc;
++
++	peer->pool_size = pool_size;
++	if (peer->pool_size)
++		peer->pool_start = pool_start;
++
++	add_peer_route(peer);
++
++	rc = endpoint_send_set_endpoint_id(peer, &static_eid, &req_pool_size);
++	if (rc == -ECONNREFUSED)
++		sd_bus_error_setf(
++			berr, SD_BUS_ERROR_FAILED,
++			"Endpoint returned failure to Set Endpoint ID");
++
++	if (rc < 0) {
++		// we have not yet created the pool route, reset here so that
++		// remove_peer() does not attempt to remove it
++		peer->pool_size = 0;
++		peer->pool_start = 0;
++		remove_peer(peer);
++		return rc;
++	}
++
++	if (req_pool_size > peer->pool_size) {
++		warnx("EID %d: requested pool size (%d) > pool size available (%d), limiting.",
++		      peer->eid, req_pool_size, peer->pool_size);
++	} else {
++		// peer will likely have requested less than the available range
++		peer->pool_size = req_pool_size;
++	}
++
++	if (!peer->pool_size)
++		peer->pool_start = 0;
++
++	if (static_eid != peer->eid) {
++		// avoid allocation for any different EID in response
++		warnx("Mismatch of requested from received EID, resetting the pool");
++		peer->pool_size = 0;
++		peer->pool_start = 0;
++		rc = change_peer_eid(peer, static_eid);
++		if (rc == -EEXIST) {
++			sd_bus_error_setf(
++				berr, SD_BUS_ERROR_FAILED,
++				"Endpoint requested EID %d instead of assigned %d, already used",
++				static_eid, peer->eid);
++		}
++		if (rc < 0) {
++			remove_peer(peer);
++			return rc;
++		}
++	}
++
++	rc = setup_added_peer(peer);
++	if (rc < 0)
++		return rc;
++	*ret_peer = peer;
++
++	return 0;
++}
++
+ /* Populates a sd_bus_error based on mctpd's convention for error codes.
+  * Does nothing if berr is already set.
+  */
+@@ -3035,6 +3121,93 @@ err:
+ 	return rc;
+ }
+ 
++static int method_assign_bridge_static(sd_bus_message *call, void *data,
++				       sd_bus_error *berr)
++{
++	dest_phys desti, *dest = &desti;
++	const char *peer_path = NULL;
++	struct peer *peer = NULL;
++	struct link *link = data;
++	struct ctx *ctx = link->ctx;
++	uint8_t eid;
++	uint8_t pool_size;
++	uint8_t pool_start;
++	int rc;
++
++	dest->ifindex = link->ifindex;
++	if (dest->ifindex <= 0)
++		return sd_bus_error_setf(berr, SD_BUS_ERROR_INVALID_ARGS,
++					 "Unknown MCTP interface");
++
++	rc = message_read_hwaddr(call, dest);
++	if (rc < 0)
++		goto err;
++
++	rc = sd_bus_message_read(call, "y", &eid);
++	if (rc < 0)
++		goto err;
++
++	rc = sd_bus_message_read(call, "y", &pool_size);
++	if (rc < 0)
++		goto err;
++
++	rc = sd_bus_message_read(call, "y", &pool_start);
++	if (rc < 0)
++		goto err;
++
++	rc = validate_dest_phys(ctx, dest);
++	if (rc < 0)
++		return sd_bus_error_setf(berr, SD_BUS_ERROR_INVALID_ARGS,
++					 "Bad physaddr");
++
++	peer = find_peer_by_phys(ctx, dest);
++	if (peer) {
++		if (peer->eid != eid) {
++			return sd_bus_error_setf(
++				berr, SD_BUS_ERROR_INVALID_ARGS,
++				"Already assigned a different EID");
++		}
++
++		// Return existing record.
++		peer_path = path_from_peer(peer);
++		if (!peer_path)
++			goto err;
++
++		return sd_bus_reply_method_return(call, "yisb", peer->eid,
++						  peer->net, peer_path, 0);
++	} else {
++		uint32_t netid;
++
++		// is the requested EID already in use? if so, reject
++		netid = mctp_nl_net_byindex(ctx->nl, dest->ifindex);
++		peer = find_peer_by_addr(ctx, eid, netid);
++		if (peer) {
++			return sd_bus_error_setf(berr,
++						 SD_BUS_ERROR_INVALID_ARGS,
++						 "Address in use");
++		}
++	}
++
++	rc = endpoint_assign_bridge_static_eid(ctx, berr, dest, &peer, eid,
++					       pool_start, pool_size);
++	if (rc < 0) {
++		goto err;
++	}
++
++	peer_path = path_from_peer(peer);
++	if (!peer_path)
++		goto err;
++
++	if (peer->pool_size > 0)
++		endpoint_allocate_eids(peer);
++
++	return sd_bus_reply_method_return(call, "yisb", peer->eid, peer->net,
++					  peer_path, 1);
++err:
++	set_berr(ctx, rc, berr);
++	return rc;
++}
++
+ static int method_learn_endpoint(sd_bus_message *call, void *data,
+ 				 sd_bus_error *berr)
+ {
+@@ -4015,6 +4188,20 @@ static const sd_bus_vtable bus_link_owner_vtable[] = {
+ 		method_assign_endpoint_static,
+ 		0),
+ 
++	SD_BUS_METHOD_WITH_NAMES("AssignBridgeStatic",
++		"ayyyy",
++		SD_BUS_PARAM(physaddr)
++		SD_BUS_PARAM(eid)
++		SD_BUS_PARAM(poolsize)
++		SD_BUS_PARAM(poolstart),
++		"yisb",
++		SD_BUS_PARAM(eid)
++		SD_BUS_PARAM(net)
++		SD_BUS_PARAM(path)
++		SD_BUS_PARAM(new),
++		method_assign_bridge_static,
++		0),
++
+ 	SD_BUS_METHOD_WITH_NAMES("LearnEndpoint",
+ 		"ay",
+ 		SD_BUS_PARAM(physaddr),
+-- 
+2.31.1
+

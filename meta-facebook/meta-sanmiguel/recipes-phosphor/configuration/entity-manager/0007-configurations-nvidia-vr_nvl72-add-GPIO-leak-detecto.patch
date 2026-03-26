@@ -1,0 +1,68 @@
+From 462b973f15a3e7cb78736e671c105a778e6a6b6d Mon Sep 17 00:00:00 2001
+From: Mike Hsieh <mike_hsieh@quantatw.com>
+Date: Tue, 24 Mar 2026 18:08:32 +0800
+Subject: [PATCH 7/9] configurations: nvidia: vr_nvl72: add GPIO leak detector
+
+Add GPIO leak detector configuration for SanMiguel platform.
+
+[1] Gerrit: https://gerrit.openbmc.org/c/openbmc/entity-manager/+/88602
+
+Change-Id: Idff5e08ba24afcddc744cc64dad582891b9c34d3
+Signed-off-by: Mike Hsieh <mike_hsieh@quantatw.com>
+---
+ configurations/nvidia/vr_nvl72.json | 32 +++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+
+diff --git a/configurations/nvidia/vr_nvl72.json b/configurations/nvidia/vr_nvl72.json
+index 1eb8751..9b3aadd 100644
+--- a/configurations/nvidia/vr_nvl72.json
++++ b/configurations/nvidia/vr_nvl72.json
+@@ -6,6 +6,22 @@
+                 "Bus": "$bus",
+                 "Name": "NVIDIA VR NVL72 0 FRU",
+                 "Type": "EEPROM_24C02"
++            },
++            {
++                "Level": "Critical",
++                "Name": "Hpm0LeakDetector",
++                "PinName": "B0_vLeakDetect1Status0-I",
++                "Polarity": "High",
++                "SubType": "LeakSensingCable",
++                "Type": "GPIOLeakDetector"
++            },
++            {
++                "Level": "Critical",
++                "Name": "Hpm0LeakDetectorFault",
++                "PinName": "B0_vLeakDetect1Status1-I",
++                "Polarity": "High",
++                "SubType": "LeakSensingCable",
++                "Type": "GPIOLeakDetector"
+             }
+         ],
+         "Name": "NVIDIA VR NVL72 0",
+@@ -32,6 +48,22 @@
+                 "Bus": "$bus",
+                 "Name": "NVIDIA VR NVL72 1 FRU",
+                 "Type": "EEPROM_24C02"
++            },
++            {
++                "Level": "Critical",
++                "Name": "Hpm1LeakDetector",
++                "PinName": "B1_vLeakDetect1Status0-I",
++                "Polarity": "High",
++                "SubType": "LeakSensingCable",
++                "Type": "GPIOLeakDetector"
++            },
++            {
++                "Level": "Critical",
++                "Name": "Hpm1LeakDetectorFault",
++                "PinName": "B1_vLeakDetect1Status1-I",
++                "Polarity": "High",
++                "SubType": "LeakSensingCable",
++                "Type": "GPIOLeakDetector"
+             }
+         ],
+         "Name": "NVIDIA VR NVL72 1",
+-- 
+2.31.1
+

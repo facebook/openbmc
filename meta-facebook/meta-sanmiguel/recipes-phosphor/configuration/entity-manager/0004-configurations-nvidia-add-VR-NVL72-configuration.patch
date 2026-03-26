@@ -1,0 +1,104 @@
+From 7a350cfc0158d5ec9a539c67dd331cb93e722286 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Thu, 5 Mar 2026 19:09:36 +0800
+Subject: [PATCH 4/9] configurations: nvidia: add VR NVL72 configuration
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add the configuration file for the VR NVL72 HPM module.
+
+Tested:
+```
+root@bmc:~# busctl tree xyz.openbmc_project.EntityManager | grep -e "NVIDIA_VR_NVL72_[0,1]"
+          ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_0
+          │ └─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_0/NVIDIA_VR_NVL72_0_FRU
+          ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_1
+          │ └─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_1/NVIDIA_VR_NVL72_1_FRU
+```
+
+[1] Gerrit: https://gerrit.openbmc.org/c/openbmc/entity-manager/+/88080
+
+Change-Id: I71618c7631bd974611509addb215e97d5863181c
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+---
+ configurations/meson.build          |  1 +
+ configurations/nvidia/vr_nvl72.json | 54 +++++++++++++++++++++++++++++
+ 2 files changed, 55 insertions(+)
+ create mode 100644 configurations/nvidia/vr_nvl72.json
+
+diff --git a/configurations/meson.build b/configurations/meson.build
+index ee734a8..42e6f3a 100644
+--- a/configurations/meson.build
++++ b/configurations/meson.build
+@@ -289,6 +289,7 @@ configs = [
+     'nvidia/p3809-hmc.json',
+     'nvidia/p4764-hmc.json',
+     'nvidia/rtx6000_pro.json',
++    'nvidia/vr_nvl72.json',
+     'ocp/cx7_ocp.json',
+     'ocp/cx8_ocp.json',
+     'solum/pssf132202a.json',
+diff --git a/configurations/nvidia/vr_nvl72.json b/configurations/nvidia/vr_nvl72.json
+new file mode 100644
+index 0000000..1eb8751
+--- /dev/null
++++ b/configurations/nvidia/vr_nvl72.json
+@@ -0,0 +1,54 @@
++[
++    {
++        "Exposes": [
++            {
++                "Address": "$address",
++                "Bus": "$bus",
++                "Name": "NVIDIA VR NVL72 0 FRU",
++                "Type": "EEPROM_24C02"
++            }
++        ],
++        "Name": "NVIDIA VR NVL72 0",
++        "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'PG558', 'BOARD_MANUFACTURER': 'NVIDIA', 'PRODUCT_PRODUCT_NAME': 'Vera Rubin NVL72 1CPU:2GPU', 'BUS': 1, 'ADDRESS': 81})",
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Decorator.Asset": {
++            "BuildDate": "$BOARD_MANUFACTURE_DATE",
++            "Manufacturer": "$BOARD_MANUFACTURER",
++            "Model": "$BOARD_PRODUCT_NAME",
++            "PartNumber": "$BOARD_PART_NUMBER",
++            "SerialNumber": "$BOARD_SERIAL_NUMBER"
++        },
++        "xyz.openbmc_project.Inventory.Decorator.AssetTag": {
++            "AssetTag": "$PRODUCT_ASSET_TAG"
++        },
++        "xyz.openbmc_project.Inventory.Decorator.Revision": {
++            "Version": "$PRODUCT_VERSION"
++        }
++    },
++    {
++        "Exposes": [
++            {
++                "Address": "$address",
++                "Bus": "$bus",
++                "Name": "NVIDIA VR NVL72 1 FRU",
++                "Type": "EEPROM_24C02"
++            }
++        ],
++        "Name": "NVIDIA VR NVL72 1",
++        "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'PG558', 'BOARD_MANUFACTURER': 'NVIDIA', 'PRODUCT_PRODUCT_NAME': 'Vera Rubin NVL72 1CPU:2GPU', 'BUS': 3, 'ADDRESS': 81})",
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Decorator.Asset": {
++            "BuildDate": "$BOARD_MANUFACTURE_DATE",
++            "Manufacturer": "$BOARD_MANUFACTURER",
++            "Model": "$BOARD_PRODUCT_NAME",
++            "PartNumber": "$BOARD_PART_NUMBER",
++            "SerialNumber": "$BOARD_SERIAL_NUMBER"
++        },
++        "xyz.openbmc_project.Inventory.Decorator.AssetTag": {
++            "AssetTag": "$PRODUCT_ASSET_TAG"
++        },
++        "xyz.openbmc_project.Inventory.Decorator.Revision": {
++            "Version": "$PRODUCT_VERSION"
++        }
++    }
++]
+-- 
+2.31.1
+

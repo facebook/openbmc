@@ -1,0 +1,76 @@
+From 060b85b9e3b8be8b1bd711c46f762e31f90c3b4d Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Thu, 5 Mar 2026 19:07:57 +0800
+Subject: [PATCH 5/9] configurations: nvidia: add Clover CX9 module
+ configuration
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add the configuration file for the NVIDIA Clover CX9 module
+used in VR NVL72 systems.
+
+Tested:
+```
+root@bmc:~# busctl tree xyz.openbmc_project.EntityManager | grep Clover
+          ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_Clover
+          │ └─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_Clover/NVIDIA_VR_NVL72_Clover_FRU
+```
+
+[1] Gerrit: https://gerrit.openbmc.org/c/openbmc/entity-manager/+/88081
+
+Change-Id: I7cbea03d98cacb4bab14dd8eb8f073081ed7b978
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+---
+ configurations/meson.build            |  1 +
+ configurations/nvidia/clover_cx9.json | 26 ++++++++++++++++++++++++++
+ 2 files changed, 27 insertions(+)
+ create mode 100644 configurations/nvidia/clover_cx9.json
+
+diff --git a/configurations/meson.build b/configurations/meson.build
+index 42e6f3a..a54f9c6 100644
+--- a/configurations/meson.build
++++ b/configurations/meson.build
+@@ -281,6 +281,7 @@ configs = [
+     'nuvoton/npcm8xx_evb.json',
+     'nvidia/bmc_p3809.json',
+     'nvidia/cable_cartridge.json',
++    'nvidia/clover_cx9.json',
+     'nvidia/cx7_mezzanine_module.json',
+     'nvidia/cx8_mezzanine_module.json',
+     'nvidia/gb200.json',
+diff --git a/configurations/nvidia/clover_cx9.json b/configurations/nvidia/clover_cx9.json
+new file mode 100644
+index 0000000..1129750
+--- /dev/null
++++ b/configurations/nvidia/clover_cx9.json
+@@ -0,0 +1,26 @@
++{
++    "Exposes": [
++        {
++            "Address": "$address",
++            "Bus": "$bus",
++            "Name": "NVIDIA VR NVL72 Clover FRU",
++            "Type": "EEPROM"
++        }
++    ],
++    "Name": "NVIDIA VR NVL72 Clover",
++    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'ConnectX-9 800GE 1P NIC', 'BOARD_MANUFACTURER': '(Nvidia|NVIDIA)'})",
++    "Type": "Board",
++    "xyz.openbmc_project.Inventory.Decorator.Asset": {
++        "BuildDate": "$BOARD_MANUFACTURE_DATE",
++        "Manufacturer": "$BOARD_MANUFACTURER",
++        "Model": "$BOARD_PRODUCT_NAME",
++        "PartNumber": "$BOARD_PART_NUMBER",
++        "SerialNumber": "$BOARD_SERIAL_NUMBER"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.AssetTag": {
++        "AssetTag": "$PRODUCT_ASSET_TAG"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.Revision": {
++        "Version": "$PRODUCT_VERSION"
++    }
++}
+-- 
+2.31.1
+

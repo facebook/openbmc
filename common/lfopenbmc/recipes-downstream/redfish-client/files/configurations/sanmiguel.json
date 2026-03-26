@@ -1,0 +1,126 @@
+{
+  "host": "172.31.13.251",
+  "compatible": "com.meta.Hardware.BMC.Model.SanMiguel",
+  "sensorConfig": {
+    "associationPath": "/xyz/openbmc_project/inventory/system/board/NVIDIA_HMC",
+    "intervalMilliseconds": 2000,
+    "maxRetries": 3,
+    "retryIntervalMilliseconds": 200,
+    "mappers": [
+      {
+        "fromUrl": "/redfish/v1/Chassis/HGX_GPU_0/Sensors/HGX_GPU_0_Voltage_0",
+        "toNamespace": "voltage",
+        "toId": "HGX_GPU0_VOLT_V"
+      },
+      {
+        "fromUrl": "/redfish/v1/Chassis/HGX_GPU_1/Sensors/HGX_GPU_1_Voltage_0",
+        "toNamespace": "voltage",
+        "toId": "HGX_GPU1_VOLT_V"
+      },
+      {
+        "fromUrl": "/redfish/v1/Chassis/HGX_GPU_2/Sensors/HGX_GPU_2_Voltage_0",
+        "toNamespace": "voltage",
+        "toId": "HGX_GPU2_VOLT_V"
+      },
+      {
+        "fromUrl": "/redfish/v1/Chassis/HGX_GPU_3/Sensors/HGX_GPU_3_Voltage_0",
+        "toNamespace": "voltage",
+        "toId": "HGX_GPU3_VOLT_V"
+      }
+    ]
+  },
+  "logServiceConfig": {
+    "urls": [
+      "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries"
+    ],
+    "intervalMilliseconds": 2000
+  },
+  "updateServiceConfig": {
+    "intervalMilliseconds": 30000,
+    "softwareMappers": [],
+    "firmwareMappers": [
+      {
+        "fromId": "HGX_FW_BMC_0",
+        "toId": "HGX_bmc",
+        "updateParametersTargetsOverride": []
+      },
+      {
+        "fromId": "HGX_FW_CPLD_0",
+        "toId": "HGX_cpld_0"
+      },
+      {
+        "fromId": "HGX_FW_CPLD_1",
+        "toId": "HGX_cpld_1"
+      },
+      {
+        "fromId": "HGX_FW_ERoT_BMC_0",
+        "toId": "HGX_erot_bmc"
+      },
+      {
+        "fromId": "HGX_FW_GPU_0",
+        "toId": "HGX_gpu_0"
+      },
+      {
+        "fromId": "HGX_FW_GPU_1",
+        "toId": "HGX_gpu_1"
+      },
+      {
+        "fromId": "HGX_FW_GPU_2",
+        "toId": "HGX_gpu_2"
+      },
+      {
+        "fromId": "HGX_FW_GPU_3",
+        "toId": "HGX_gpu_3"
+      },
+      {
+        "fromId": "HGX_FW_GPU_SMA_0",
+        "toId": "HGX_gpu_sma_0"
+      },
+      {
+        "fromId": "HGX_FW_GPU_SMA_1",
+        "toId": "HGX_gpu_sma_1"
+      },
+      {
+        "fromId": "HGX_FW_ProcessorModule_SMA_0",
+        "toId": "HGX_processormodule_sma_0"
+      },
+      {
+        "fromId": "HGX_FW_ProcessorModule_SMA_1",
+        "toId": "HGX_processormodule_sma_1"
+      },
+
+      {
+        "fromId": "HGX_InfoROM_GPU_0",
+        "toId": "HGX_inforom_gpu_0"
+      },
+      {
+        "fromId": "HGX_InfoROM_GPU_1",
+        "toId": "HGX_inforom_gpu_1"
+      },
+      {
+        "fromId": "HGX_InfoROM_GPU_2",
+        "toId": "HGX_inforom_gpu_2"
+      },
+      {
+        "fromId": "HGX_InfoROM_GPU_3",
+        "toId": "HGX_inforom_gpu_3"
+      },
+      {
+        "fromId": "HGX_SBIOS_FMC_0",
+        "toId": "HGX_sbios_fmc_0"
+      },
+      {
+        "fromId": "HGX_SBIOS_FMC_1",
+        "toId": "HGX_sbios_fmc_1"
+      },
+      {
+        "fromId": "HGX_SBIOS_FW_0",
+        "toId": "HGX_sbios_fw_0"
+      },
+      {
+        "fromId": "HGX_SBIOS_FW_1",
+        "toId": "HGX_sbios_fw_1"
+      }
+    ]
+  }
+}

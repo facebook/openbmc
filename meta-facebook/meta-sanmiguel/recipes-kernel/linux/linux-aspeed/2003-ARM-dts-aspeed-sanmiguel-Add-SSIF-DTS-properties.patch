@@ -1,0 +1,36 @@
+From 3bff0a4d1bdc2b4af22c8b4c87e7392aa8867562 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Wed, 11 Mar 2026 13:20:57 +0800
+Subject: [PATCH 2/3] ARM: dts: aspeed: sanmiguel: Add SSIF DTS properties
+
+Add SSIF-related DTS properties that are not yet supported upstream.
+
+This downstream patch can be dropped once upstream support for these
+properties is available.
+
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
+index 74c8c1772109..facc6be016eb 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
+@@ -190,10 +190,13 @@ &gpio1 {
+ 
+ &i2c0 {
+ 	status = "okay";
++	aspeed,enable-byte;
+ 
+ 	ssif-bmc@10 {
+ 		compatible = "ssif-bmc";
+ 		reg = <0x10>;
++		alert-gpios = <&gpio1 ASPEED_GPIO(D, 7) GPIO_ACTIVE_LOW>;
++		timeout-ms = <5000>;
+ 	};
+ };
+ 
+-- 
+2.31.1
+

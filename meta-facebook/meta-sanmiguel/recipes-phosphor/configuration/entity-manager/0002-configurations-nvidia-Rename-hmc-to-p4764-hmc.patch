@@ -1,0 +1,41 @@
+From 788e7f413eef9dada49b30e5209923a8b791eb08 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Fri, 6 Mar 2026 08:28:12 +0800
+Subject: [PATCH 2/9] configurations: nvidia: Rename hmc to p4764-hmc
+
+A new HMC board (P3809) has been introduced. Rename hmc.json to
+p4764-hmc.json to distinguish the configuration file for the P4764 HMC
+board.
+
+[1] Gerrit: https://gerrit.openbmc.org/c/openbmc/entity-manager/+/88077
+
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+Change-Id: I8855b9adf482338416b1750c11feb0b8b0529043
+---
+ configurations/meson.build                         | 2 +-
+ configurations/nvidia/{hmc.json => p4764-hmc.json} | 0
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+ rename configurations/nvidia/{hmc.json => p4764-hmc.json} (100%)
+
+diff --git a/configurations/meson.build b/configurations/meson.build
+index 6a66eda..ee734a8 100644
+--- a/configurations/meson.build
++++ b/configurations/meson.build
+@@ -285,9 +285,9 @@ configs = [
+     'nvidia/cx8_mezzanine_module.json',
+     'nvidia/gb200.json',
+     'nvidia/gb300.json',
+-    'nvidia/hmc.json',
+     'nvidia/imgx_connectx8_supernic_switch.json',
+     'nvidia/p3809-hmc.json',
++    'nvidia/p4764-hmc.json',
+     'nvidia/rtx6000_pro.json',
+     'ocp/cx7_ocp.json',
+     'ocp/cx8_ocp.json',
+diff --git a/configurations/nvidia/hmc.json b/configurations/nvidia/p4764-hmc.json
+similarity index 100%
+rename from configurations/nvidia/hmc.json
+rename to configurations/nvidia/p4764-hmc.json
+-- 
+2.31.1
+

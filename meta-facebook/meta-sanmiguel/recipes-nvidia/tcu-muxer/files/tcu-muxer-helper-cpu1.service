@@ -1,0 +1,14 @@
+[Unit]
+Description=TCU Muxer Helper for CPU1
+After=tcu-muxer-ttyUSB4.service
+Requires=tcu-muxer-ttyUSB4.service
+PartOf=tcu-muxer-ttyUSB4.service
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/bin/sleep 3
+ExecStart=/usr/bin/tcu-muxer-helper "cpu1"
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

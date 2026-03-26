@@ -1,0 +1,71 @@
+From 1f3ed12dbdff9ec434f6d46744f38d8c3daef452 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Mon, 23 Feb 2026 10:31:58 +0800
+Subject: [PATCH 1/9] configurations: nvidia: Add HMC P3809 support
+
+Add Nvidia HMC P3809 board support.
+
+[1] Gerrit: https://gerrit.openbmc.org/c/openbmc/entity-manager/+/88053
+
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+Change-Id: I2939dd98b8ffbe0a72102c14bccc2caef7c83c8c
+---
+ configurations/meson.build           |  1 +
+ configurations/nvidia/p3809-hmc.json | 33 ++++++++++++++++++++++++++++
+ 2 files changed, 34 insertions(+)
+ create mode 100644 configurations/nvidia/p3809-hmc.json
+
+diff --git a/configurations/meson.build b/configurations/meson.build
+index 5b7330c..6a66eda 100644
+--- a/configurations/meson.build
++++ b/configurations/meson.build
+@@ -287,6 +287,7 @@ configs = [
+     'nvidia/gb300.json',
+     'nvidia/hmc.json',
+     'nvidia/imgx_connectx8_supernic_switch.json',
++    'nvidia/p3809-hmc.json',
+     'nvidia/rtx6000_pro.json',
+     'ocp/cx7_ocp.json',
+     'ocp/cx8_ocp.json',
+diff --git a/configurations/nvidia/p3809-hmc.json b/configurations/nvidia/p3809-hmc.json
+new file mode 100644
+index 0000000..613a79a
+--- /dev/null
++++ b/configurations/nvidia/p3809-hmc.json
+@@ -0,0 +1,33 @@
++{
++    "Exposes": [
++        {
++            "Address": "$address",
++            "Bus": "$bus",
++            "Name": "NVIDIA HMC FRU",
++            "Type": "EEPROM_24C02"
++        },
++        {
++            "AuthType": "None",
++            "Hostname": "172.31.13.251",
++            "Name": "HMC",
++            "Port": 80,
++            "Type": "SatelliteController"
++        }
++    ],
++    "Name": "NVIDIA HMC",
++    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'P3809', 'BOARD_MANUFACTURER': 'NVIDIA', 'PRODUCT_PRODUCT_NAME': 'P3809-HMC'})",
++    "Type": "Board",
++    "xyz.openbmc_project.Inventory.Decorator.Asset": {
++        "BuildDate": "$BOARD_MANUFACTURE_DATE",
++        "Manufacturer": "$BOARD_MANUFACTURER",
++        "Model": "$BOARD_PRODUCT_NAME",
++        "PartNumber": "$BOARD_PART_NUMBER",
++        "SerialNumber": "$BOARD_SERIAL_NUMBER"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.AssetTag": {
++        "AssetTag": "$PRODUCT_ASSET_TAG"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.Revision": {
++        "Version": "$PRODUCT_VERSION"
++    }
++}
+-- 
+2.31.1
+

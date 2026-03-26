@@ -17,11 +17,12 @@
 #
 [Unit]
 Description=IPMBD daemon to receive/transmit messages
-Wants=setup_i2c.service
-After=setup_i2c.service
+Requires=setup_i2c.service
+After=setup_i2c.service ipmid.service
 PartOf=ipmbd.target
 
 [Service]
-ExecStart=/usr/local/bin/run-ipmbd.sh %i
+ExecStartPre=/usr/local/bin/run-ipmbd.sh %i
+ExecStart=/usr/local/bin/ipmbd %i 1
 Restart=always
 RestartSec=5

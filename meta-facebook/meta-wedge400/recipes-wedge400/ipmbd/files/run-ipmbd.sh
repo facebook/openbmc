@@ -26,5 +26,3 @@ if [ -e /sys/bus/i2c/devices/${BUS}-1010 ]; then
     i2c_device_delete ${BUS} 0x1010
 fi
 i2c_device_add ${BUS} 0x1010 slave-mqueue
-
-exec /usr/local/bin/ipmbd ${BUS} 1

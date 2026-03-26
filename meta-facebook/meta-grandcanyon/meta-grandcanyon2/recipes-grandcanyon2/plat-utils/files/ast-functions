@@ -42,6 +42,7 @@ SERVER_STATUS_DC_OFF=0
 GPIO_VALUE_LOW=0
 GPIO_VALUE_HIGH=1
 
+# Default Hack naming; DVT overridden by resolve_server_prsnt_pin()
 SERVER_PRSNT_PIN="COMP_PRSNT_N"
 SERVER_STANDBY_PG_PIN="COMP_STBY_PG_IN"
 
@@ -184,11 +185,35 @@ is_bmc_por() {
   fi
 }
 
+resolve_server_prsnt_pin() {
+  local stage uic_side pin val alt
+
+  # Default Hack name
+  # --- Fallback: probe COMP_PRSNT_N / COMP_A_PRSNT_N / COMP_B_PRSNT_N ---
+  pin="COMP_PRSNT_N"
+  for alt in COMP_PRSNT_N COMP_A_PRSNT_N COMP_B_PRSNT_N; do
+    val=$($GPIOCLI_CMD get-value --shadow "$alt" 2>/dev/null | awk -F= '{print $2}')
+    if [ -n "$val" ]; then
+      pin="$alt"
+      logger -s -p user.warn -t ast-functions "resolve_server_prsnt_pin fallback to $pin"
+      break
+    fi
+  done
+
+  echo "$pin"
+}
+
 # Check to see if server is present or not
 is_server_prsnt() {
-  prsnt=$(gpio_get "$SERVER_PRSNT_PIN")
+  local pin prsnt
+
+  pin=$(resolve_server_prsnt_pin)
+  prsnt=$(gpio_get "$pin")
+
+  logger -s -p user.info -t ast-functions "is_server_prsnt: pin=$pin val=$prsnt"
+
   if [ "$prsnt" = "$GPIO_VALUE_LOW" ]; then
-    # Server is prsent
+    # Server is present
     echo $SERVER_PRESENT
   else                                       
     echo $SERVER_ABSENT

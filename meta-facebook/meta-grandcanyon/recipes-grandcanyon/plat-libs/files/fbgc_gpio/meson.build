@@ -6,8 +6,13 @@ project('libfbgc_gpio', 'c',
 
 install_headers('fbgc_gpio.h', subdir: 'facebook')
 
+fbgc_gpio_deps = [
+    dependency('libgpio-ctrl'),
+]
+
 # FBGC gpio library.
 fbgc_gpio_lib = shared_library('fbgc_gpio', 'fbgc_gpio.c',
+    dependencies: fbgc_gpio_deps,
     version: meson.project_version(),
     install: true)
 

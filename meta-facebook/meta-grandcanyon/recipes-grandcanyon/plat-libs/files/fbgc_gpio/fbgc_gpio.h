@@ -19,6 +19,10 @@
 #ifndef __FBGC_GPIO_H__
 #define __FBGC_GPIO_H__
 
+#ifdef CONFIG_GRANDCANYON2
+#define BOARD_ID_PIN_NUM 3
+#endif
+
 #include <stdint.h>
 #include <openbmc/libgpio.h>
 
@@ -61,12 +65,41 @@ enum {
   GPIO_UIC_COMP_BIC_RST_N,
   GPIO_E1S_1_3V3EFUSE_PGOOD,
   GPIO_E1S_2_3V3EFUSE_PGOOD,
+#ifdef CONFIG_GRANDCANYON2
+  GPIO_P12V_NIC_STATUS_N,   /* hack: NIC 12V fault_n (active-low) */
+  GPIO_P3V3_NIC_STATUS_N,   /* hack: NIC 3V3 fault_n (active-low) */
+#else
   GPIO_P12V_NIC_FAULT_N,
   GPIO_P3V3_NIC_FAULT_N,
+#endif
   GPIO_SCC_POR_RST_N,
   GPIO_IOC_T7_SYS_PGOOD,
   GPIO_BMC_COMP_BLED,
   GPIO_BMC_COMP_YLED,
+
+#ifdef CONFIG_GRANDCANYON2
+  /* DVT additions (bus11 U58/U59; U126 on FDPB/RDPB; names differ by A/B side only) */
+  GPIO_E1S_1_12VEFUSE_PGOOD,   /* A: E1SA_1_12VEFUSE_PGOOD / B: E1SB_1_12VEFUSE_PGOOD */
+  GPIO_FM_BMC_RST_R_RTCRST,    /* A: FM_BMC_RST_A_R_RTCRST / B: FM_BMC_RST_B_R_RTCRST */
+  GPIO_SMB_NIC_INA233_ALRT_N,  /* A: SMB_NIC_A_INA233_ALRT_N / B: SMB_NIC_B_INA233_ALRT_N */
+  GPIO_E1S_1_12VEFUSE_FLT_R_N, /* A: E1SA_1_12VEFUSE_FLT_R_N / B: E1SB_1_12VEFUSE_FLT_R_N */
+  GPIO_E1S_1_3V3EFUSE_FLT_R_N, /* A: E1SA_1_3V3EFUSE_FLT_R_N / B: E1SB_1_3V3EFUSE_FLT_R_N */
+  GPIO_E1S_2_12VEFUSE_FLT_R_N, /* A: E1SA_2_12VEFUSE_FLT_R_N / B: E1SB_2_12VEFUSE_FLT_R_N */
+  GPIO_E1S_2_3V3EFUSE_FLT_R_N, /* A: E1SA_2_3V3EFUSE_FLT_R_N / B: E1SB_2_3V3EFUSE_FLT_R_N */
+  GPIO_E1S_2_12VEFUSE_PGOOD,   /* A: E1SA_2_12VEFUSE_PGOOD / B: E1SB_2_12VEFUSE_PGOOD */
+
+  /* U126 A/B (FDPB/RDPB): common logical names, side-specific shadows */
+  GPIO_ALRT_P12V_STBY_SCC_N,   /* same name on A/B */
+  GPIO_P3V3_STBY_PG_R,         /* A: P3V3_STBY_A_PG_R / B: P3V3_STBY_B_PG_R */
+  GPIO_P5V_1_PG,               /* A: P5V_A_1_PG / B: P5V_B_1_PG */
+  GPIO_P5V_2_PG,               /* A: P5V_A_2_PG / B: P5V_B_2_PG */
+  GPIO_P5V_3_PG,               /* A: P5V_A_3_PG / B: P5V_B_3_PG */
+  GPIO_P5V_4_PG,               /* A: P5V_A_4_PG / B: P5V_B_4_PG */
+  GPIO_EMPTY,
+  GPIO_FM_HSC_FAULT_N,         /* same name on A/B */
+#endif /* CONFIG_GRANDCANYON2 */
+
+  /* upper bound for expander enum */
   MAX_GPIO_EXPANDER_GPIO_PINS,
 };
 
@@ -142,9 +175,29 @@ static inline bool fbgc_is_grandcanyon2(void)
 #endif
 }
 
+/* ---------------------------
+ * Tables and active selection
+ * --------------------------- */
+#ifdef CONFIG_GRANDCANYON2
+extern gpio_cfg gpio_expander_gpio_table_hack[];
+extern gpio_cfg gpio_expander_gpio_table_dvt_a[];
+extern gpio_cfg gpio_expander_gpio_table_dvt_b[];
+
+extern gpio_cfg *gpio_expander_gpio_table;      /* active expander table pointer */
+extern size_t    gpio_expander_gpio_table_size; /* active expander table size */
+
+/* Initialize and select active expander table (hack/DVT-A/DVT-B) */
+int fbgc_gpio_init(void);
+#else
 extern gpio_cfg gpio_expander_gpio_table[];
-extern gpio_cfg bmc_gpio_table[]; 
+#endif /* CONFIG_GRANDCANYON2 */
+
+extern gpio_cfg bmc_gpio_table[];
+
+/* Get shadow name for given logical GPIO ID ("" if not mapped) */
 const char * fbgc_get_gpio_name(uint8_t gpio);
+
+/* BIC GPIO helpers (unchanged external API) */
 uint8_t fbgc_get_bic_gpio_list_size(void);
 const char * fbgc_get_bic_gpio_name(uint8_t gpio);
 

@@ -21,12 +21,256 @@
 #include <stdlib.h>
 #include <syslog.h>
 #include <stdbool.h>
+#ifdef CONFIG_GRANDCANYON2
+#include <openbmc/obmc-i2c.h>
+#endif
 #include "fbgc_gpio.h"
 
-
+#ifdef CONFIG_GRANDCANYON2
+#define UIC_SIDEA 1
+#define UIC_SIDEB 2
+#endif
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
 
+/* GPIO Expander gpio table */
+#ifdef CONFIG_GRANDCANYON2
+/* ---------------------------
+ * hack stage table (common enum indices)
+ * --------------------------- */
+gpio_cfg gpio_expander_gpio_table_hack[MAX_GPIO_EXPANDER_GPIO_PINS + 1] = {
+  /* shadow_name, pin_name, direction, value */
+
+  // COMP_PRSNT_N: P00 (748)
+  [GPIO_COMP_PRSNT_N] =
+  {"COMP_PRSNT_N", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // FAN_0_INS_N: P01 (749)
+  [GPIO_FAN_0_INS_N] =
+  {"FAN_0_INS_N", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // FAN_1_INS_N: P02 (750)
+  [GPIO_FAN_1_INS_N] =
+  {"FAN_1_INS_N", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // FAN_2_INS_N: P03 (751)
+  [GPIO_FAN_2_INS_N] =
+  {"FAN_2_INS_N", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // FAN_3_INS_N: P04 (752)
+  [GPIO_FAN_3_INS_N] =
+  {"FAN_3_INS_N", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // UIC_RMT_INS_N: P05 (753)
+  [GPIO_UIC_RMT_INS_N] =
+  {"UIC_RMT_INS_N", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // SCC_LOC_INS_N: P06 (754)
+  [GPIO_SCC_LOC_INS_N] =
+  {"SCC_LOC_INS_N", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // SCC_RMT_INS_N: P07 (755)
+  [GPIO_SCC_RMT_INS_N] =
+  {"SCC_RMT_INS_N", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // SCC_LOC_TYPE_0: P10 (756)
+  [GPIO_SCC_LOC_TYPE_0] =
+  {"SCC_LOC_TYPE_0", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // SCC_RMT_TYPE_0: P11 (757)
+  [GPIO_SCC_RMT_TYPE_0] =
+  {"SCC_RMT_TYPE_0", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // SCC_STBY_PGOOD: P12 (758)
+  [GPIO_SCC_STBY_PGOOD] =
+  {"SCC_STBY_PGOOD", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // SCC_FULL_PGOOD: P13 (759)
+  [GPIO_SCC_FULL_PGOOD] =
+  {"SCC_FULL_PGOOD", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // COMP_PGOOD: P14 (760)
+  [GPIO_COMP_PGOOD] =
+  {"COMP_PGOOD", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // DRAWER_CLOSED_N: P15 (761)
+  [GPIO_DRAWER_CLOSED_N] =
+  {"DRAWER_CLOSED_N", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // E1S_1_PRSNT_N: P16 (762)
+  [GPIO_E1S_1_PRSNT_N] =
+  {"E1S_1_PRSNT_N", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // E1S_2_PRSNT_N: P17 (763)
+  [GPIO_E1S_2_PRSNT_N] =
+  {"E1S_2_PRSNT_N", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // I2C_E1S_1_RST_N: P00 (764)
+  [GPIO_I2C_E1S_1_RST_N] =
+  {"I2C_E1S_1_RST_N", NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  // I2C_E1S_2_RST_N: P01 (765)
+  [GPIO_I2C_E1S_2_RST_N] =
+  {"I2C_E1S_2_RST_N", NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  // E1S_1_LED_ACT: P02 (766)
+  [GPIO_E1S_1_LED_ACT] =
+  {"E1S_1_LED_ACT", NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
+  // E1S_2_LED_ACT: P03 (767)
+  [GPIO_E1S_2_LED_ACT] =
+  {"E1S_2_LED_ACT", NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
+  // SCC_STBY_PWR_EN: P04 (768)
+  [GPIO_SCC_STBY_PWR_EN] =
+  {"SCC_STBY_PWR_EN", NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  // SCC_FULL_PWR_EN: P05 (769)
+  [GPIO_SCC_FULL_PWR_EN] =
+  {"SCC_FULL_PWR_EN", NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  // BMC_EXP_SOFT_RST_N: P06 (770)
+  [GPIO_BMC_EXP_SOFT_RST_N] =
+  {"BMC_EXP_SOFT_RST_N", NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  // UIC_COMP_BIC_RST_N: P07 (771)
+  [GPIO_UIC_COMP_BIC_RST_N] =
+  {"UIC_COMP_BIC_RST_N", NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  // E1S_1_3V3EFUSE_PGOOD: P10 (772)
+  [GPIO_E1S_1_3V3EFUSE_PGOOD] =
+  {"E1S_1_3V3EFUSE_PGOOD", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // E1S_2_3V3EFUSE_PGOOD: P11 (773)
+  [GPIO_E1S_2_3V3EFUSE_PGOOD] =
+  {"E1S_2_3V3EFUSE_PGOOD", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // P12V_NIC_FAULT_N: P12 (774)
+  [GPIO_P12V_NIC_STATUS_N] =
+  {"P12V_NIC_FAULT_N", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // P3V3_NIC_FAULT_N: P13 (775)
+  [GPIO_P3V3_NIC_STATUS_N] =
+  {"P3V3_NIC_FAULT_N", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // SCC_POR_RST_N: P14 (776)
+  [GPIO_SCC_POR_RST_N] =
+  {"SCC_POR_RST_N", NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  // IOC_T7_SYS_PGOOD: P15 (777)
+  [GPIO_IOC_T7_SYS_PGOOD] =
+  {"IOC_T7_SYS_PGOOD", NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  // BMC_COMP_BLED: P16 (778)
+  [GPIO_BMC_COMP_BLED] =
+  {"BMC_COMP_BLED", NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
+  // BMC_COMP_YLED: P17 (779)
+  [GPIO_BMC_COMP_YLED] =
+  {"BMC_COMP_YLED", NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
+  // LAST
+  [MAX_GPIO_EXPANDER_GPIO_PINS] = 
+  {NULL, NULL, GPIO_DIRECTION_INVALID, GPIO_VALUE_INVALID}
+};
+
+/* ---------------------------
+ * DVT stage A side (common enum indices; A-side shadow names)
+ * --------------------------- */
+gpio_cfg gpio_expander_gpio_table_dvt_a[MAX_GPIO_EXPANDER_GPIO_PINS + 1] = {
+  /* bus9 U14 (A) */
+  [GPIO_COMP_PRSNT_N]         = {"COMP_A_PRSNT_N",         NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_FAN_0_INS_N]          = {"FAN_0_INS_N",            NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_FAN_1_INS_N]          = {"FAN_1_INS_N",            NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_FAN_2_INS_N]          = {"FAN_2_INS_N",            NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_FAN_3_INS_N]          = {"FAN_3_INS_N",            NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_UIC_RMT_INS_N]        = {"UIC_RMT_INS_N",            NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_SCC_LOC_INS_N]        = {"SCC_LOC_INS_N",            NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_SCC_RMT_INS_N]        = {"SCC_RMT_INS_N",            NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_SCC_LOC_TYPE_0]       = {"SCC_LOC_TYPE_0",           NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_SCC_RMT_TYPE_0]       = {"SCC_RMT_TYPE_0",           NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_SCC_STBY_PGOOD]       = {"SCC_A_STBY_PGOOD",       NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_SCC_FULL_PGOOD]       = {"SCC_A_FULL_PGOOD",       NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_COMP_PGOOD]           = {"COMP_A_PGOOD",           NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_DRAWER_CLOSED_N]      = {"DRAWER_CLOSED_N",        NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_E1S_1_PRSNT_N]        = {"E1SA_1_PRSNT_N",         NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_E1S_2_PRSNT_N]        = {"E1SA_2_PRSNT_N",         NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+
+  /* bus9 U15 (A) */
+  [GPIO_I2C_E1S_1_RST_N]      = {"I2C_E1SA_1_RST_N",       NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  [GPIO_I2C_E1S_2_RST_N]      = {"I2C_E1SA_2_RST_N",       NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  [GPIO_E1S_1_LED_ACT]        = {"E1SA_1_LED_ACT",         NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
+  [GPIO_E1S_2_LED_ACT]        = {"E1SA_2_LED_ACT",         NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
+  [GPIO_SCC_STBY_PWR_EN]      = {"SCC_A_STBY_PWR_EN",      NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  [GPIO_SCC_FULL_PWR_EN]      = {"SCC_A_FULL_PWR_EN",      NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  [GPIO_BMC_EXP_SOFT_RST_N]   = {"BMC_A_EXP_A_SOFT_RST_N", NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  [GPIO_UIC_COMP_BIC_RST_N]   = {"UIC_A_COMP_A_BIC_RST_N", NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  [GPIO_E1S_1_3V3EFUSE_PGOOD] = {"E1SA_1_3V3EFUSE_PGOOD",  NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_E1S_2_3V3EFUSE_PGOOD] = {"E1SA_2_3V3EFUSE_PGOOD",  NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  /* In DVT: NIC signals use PWRGD */
+  [GPIO_P12V_NIC_STATUS_N] = {"PWRGD_P12V_NIC_A", NULL, GPIO_DIRECTION_IN, GPIO_VALUE_INVALID},
+  [GPIO_P3V3_NIC_STATUS_N] = {"PWRGD_P3V3_NIC_A", NULL, GPIO_DIRECTION_IN, GPIO_VALUE_INVALID},
+  [GPIO_SCC_POR_RST_N]        = {"SCC_A_POR_RST_N",        NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  [GPIO_IOC_T7_SYS_PGOOD]     = {"IOC_T7_SYS_PGOOD",       NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_BMC_COMP_BLED]        = {"BMC_A_COMP_A_BLED",      NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
+  [GPIO_BMC_COMP_YLED]        = {"BMC_A_COMP_A_YLED",      NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
+
+  /* bus11 U58 (A) */
+  [GPIO_E1S_1_12VEFUSE_PGOOD] = {"E1SA_1_12VEFUSE_PGOOD",  NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_FM_BMC_RST_R_RTCRST]  = {"FM_BMC_RST_A_R_RTCRST",  NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
+  [GPIO_SMB_NIC_INA233_ALRT_N]= {"SMB_NIC_A_INA233_ALRT_N",NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_E1S_1_12VEFUSE_FLT_R_N]= {"E1SA_1_12VEFUSE_FLT_R_N",NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_E1S_1_3V3EFUSE_FLT_R_N]= {"E1SA_1_3V3EFUSE_FLT_R_N",NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_E1S_2_12VEFUSE_FLT_R_N]= {"E1SA_2_12VEFUSE_FLT_R_N",NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_E1S_2_3V3EFUSE_FLT_R_N]= {"E1SA_2_3V3EFUSE_FLT_R_N",NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_E1S_2_12VEFUSE_PGOOD] = {"E1SA_2_12VEFUSE_PGOOD",  NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+
+  /* bus11 U126 (A) */
+  [GPIO_ALRT_P12V_STBY_SCC_N] = {"ALRT_P12V_STBY_SCC_N",   NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_P3V3_STBY_PG_R]       = {"P3V3_STBY_A_PG_R",       NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_P5V_1_PG]             = {"P5V_A_1_PG",             NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_P5V_2_PG]             = {"P5V_A_2_PG",             NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_P5V_3_PG]             = {"P5V_A_3_PG",             NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_P5V_4_PG]             = {"P5V_A_4_PG",             NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_FM_HSC_FAULT_N]       = {"FM_HSC_FAULT_N",         NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+
+  [MAX_GPIO_EXPANDER_GPIO_PINS] = {NULL, NULL, GPIO_DIRECTION_INVALID, GPIO_VALUE_INVALID},
+};
+
+/* ---------------------------
+ * DVT stage B side (common enum indices; B-side shadow names)
+ * --------------------------- */
+gpio_cfg gpio_expander_gpio_table_dvt_b[MAX_GPIO_EXPANDER_GPIO_PINS + 1] = {
+  /* bus9 U17 (B) */
+  [GPIO_COMP_PRSNT_N]         = {"COMP_B_PRSNT_N",         NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_FAN_0_INS_N]          = {"FAN_0_INS_N",            NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_FAN_1_INS_N]          = {"FAN_1_INS_N",            NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_FAN_2_INS_N]          = {"FAN_2_INS_N",            NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_FAN_3_INS_N]          = {"FAN_3_INS_N",            NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_UIC_RMT_INS_N]        = {"UIC_RMT_INS_N",            NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_SCC_LOC_INS_N]        = {"SCC_LOC_INS_N",            NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_SCC_RMT_INS_N]        = {"SCC_RMT_INS_N",            NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_SCC_LOC_TYPE_0]       = {"SCC_LOC_TYPE_0",           NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_SCC_RMT_TYPE_0]       = {"SCC_RMT_TYPE_0",           NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_SCC_STBY_PGOOD]       = {"SCC_B_STBY_PGOOD",       NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_SCC_FULL_PGOOD]       = {"SCC_B_FULL_PGOOD",       NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_COMP_PGOOD]           = {"COMP_B_PGOOD",           NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_DRAWER_CLOSED_N]      = {"DRAWER_CLOSED_N",        NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_E1S_1_PRSNT_N]        = {"E1SB_1_PRSNT_N",         NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_E1S_2_PRSNT_N]        = {"E1SB_2_PRSNT_N",         NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+
+  /* bus9 U18 */
+  [GPIO_I2C_E1S_1_RST_N]      = {"I2C_E1SB_1_RST_N",       NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  [GPIO_I2C_E1S_2_RST_N]      = {"I2C_E1SB_2_RST_N",       NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  [GPIO_E1S_1_LED_ACT]        = {"E1SB_1_LED_ACT",         NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
+  [GPIO_E1S_2_LED_ACT]        = {"E1SB_2_LED_ACT",         NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
+  [GPIO_SCC_STBY_PWR_EN]      = {"SCC_B_STBY_PWR_EN",      NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  [GPIO_SCC_FULL_PWR_EN]      = {"SCC_B_FULL_PWR_EN",      NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  [GPIO_BMC_EXP_SOFT_RST_N]   = {"BMC_B_EXP_B_SOFT_RST_N", NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  [GPIO_UIC_COMP_BIC_RST_N]   = {"UIC_B_COMP_B_BIC_RST_N", NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  [GPIO_E1S_1_3V3EFUSE_PGOOD] = {"E1SB_1_3V3EFUSE_PGOOD",  NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_E1S_2_3V3EFUSE_PGOOD] = {"E1SB_2_3V3EFUSE_PGOOD",  NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  /* DVT: NIC uses PWRGD */
+  [GPIO_P12V_NIC_STATUS_N] = {"PWRGD_P12V_NIC_B", NULL, GPIO_DIRECTION_IN, GPIO_VALUE_INVALID},
+  [GPIO_P3V3_NIC_STATUS_N] = {"PWRGD_P3V3_NIC_B", NULL, GPIO_DIRECTION_IN, GPIO_VALUE_INVALID},
+  [GPIO_SCC_POR_RST_N]        = {"SCC_B_POR_RST_N",        NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_HIGH},
+  
+  /* B-side U18 P15 is empty → IOC_T7_SYS_PGOOD not present on B side */
+  [GPIO_IOC_T7_SYS_PGOOD]     = {NULL, NULL, GPIO_DIRECTION_INVALID, GPIO_VALUE_INVALID},
+
+  [GPIO_BMC_COMP_BLED]        = {"BMC_B_COMP_B_BLED",      NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
+  [GPIO_BMC_COMP_YLED]        = {"BMC_B_COMP_B_YLED",      NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
+
+  /* bus11 U59 (B) */
+  [GPIO_E1S_1_12VEFUSE_PGOOD] = {"E1SB_1_12VEFUSE_PGOOD",  NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_FM_BMC_RST_R_RTCRST]  = {"FM_BMC_RST_B_R_RTCRST",  NULL, GPIO_DIRECTION_OUT, GPIO_VALUE_LOW},
+  [GPIO_SMB_NIC_INA233_ALRT_N]= {"SMB_NIC_B_INA233_ALRT_N",NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_E1S_1_12VEFUSE_FLT_R_N]= {"E1SB_1_12VEFUSE_FLT_R_N",NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_E1S_1_3V3EFUSE_FLT_R_N]= {"E1SB_1_3V3EFUSE_FLT_R_N",NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_E1S_2_12VEFUSE_FLT_R_N]= {"E1SB_2_12VEFUSE_FLT_R_N",NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_E1S_2_3V3EFUSE_FLT_R_N]= {"E1SB_2_3V3EFUSE_FLT_R_N",NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_E1S_2_12VEFUSE_PGOOD] = {"E1SB_2_12VEFUSE_PGOOD",  NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+
+  /* U126 (B) — on RDPB */
+  [GPIO_ALRT_P12V_STBY_SCC_N] = {"ALRT_P12V_STBY_SCC_N",   NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_P3V3_STBY_PG_R]       = {"P3V3_STBY_B_PG_R",       NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_P5V_1_PG]             = {"P5V_B_1_PG",             NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_P5V_2_PG]             = {"P5V_B_2_PG",             NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_P5V_3_PG]             = {"P5V_B_3_PG",             NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_P5V_4_PG]             = {"P5V_B_4_PG",             NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+  [GPIO_FM_HSC_FAULT_N]       = {"FM_HSC_FAULT_N",         NULL, GPIO_DIRECTION_IN,  GPIO_VALUE_INVALID},
+
+  [MAX_GPIO_EXPANDER_GPIO_PINS] = {NULL, NULL, GPIO_DIRECTION_INVALID, GPIO_VALUE_INVALID},
+};
+#else
 /* GPIO Expander gpio table */
 gpio_cfg gpio_expander_gpio_table[] = {
   /* shadow_name, pin_name, direction, value */
@@ -130,8 +374,8 @@ gpio_cfg gpio_expander_gpio_table[] = {
   // LAST
   {NULL, NULL, GPIO_DIRECTION_INVALID, GPIO_VALUE_INVALID}
 };
+#endif /* CONFIG_GRANDCANYON2 */
 
-/* BMC gpio table */
 gpio_cfg bmc_gpio_table[] = {
   /* shadow_name, pin_name, direction, value */
 
@@ -479,14 +723,213 @@ const char *bic_gpio_pin_name_ti[] = {
     "IRQ_BMC_PCH_SMI_LPC_R_N",
     "FM_BIOS_POST_CMPLT_BMC_N",
 };
-// const uint8_t bic_gpio_pin_size = sizeof(bic_gpio_pin_name)/sizeof(bic_gpio_pin_name[0]);
 static const uint8_t bic_gpio_pin_size_es =
     ARRAY_SIZE(bic_gpio_pin_name_es);
 static const uint8_t bic_gpio_pin_size_ti =
     ARRAY_SIZE(bic_gpio_pin_name_ti);
 
-const char *
-fbgc_get_gpio_name(uint8_t gpio) {
+#ifdef CONFIG_GRANDCANYON2
+gpio_cfg *gpio_expander_gpio_table      = NULL;
+size_t    gpio_expander_gpio_table_size = 0;
+
+static const bool board_id_invert[BOARD_ID_PIN_NUM] = { false, false, false };
+
+/* GPIOH2/H1/H0 raw value: MP=6, others=DVT */
+#define STAGE_MP 6
+
+/* Returns 0 on success, sets *is_mp = true if MP stage */
+static int fbgc_local_get_system_stage(bool *is_mp) {
+  static int cached = -1;
+  const char *pins[BOARD_ID_PIN_NUM] = { "GPIOH2", "GPIOH1", "GPIOH0" };
+  uint8_t s = 0;
+  int bits[BOARD_ID_PIN_NUM] = { 0 };
+
+  if (!is_mp) {
+    syslog(LOG_WARNING, "%s(): is_mp is NULL", __func__);
+    return -1;
+  }
+
+  if (cached >= 0) {
+    *is_mp = (cached == STAGE_MP);
+    return 0;
+  }
+
+  for (int i = 0; i < BOARD_ID_PIN_NUM; i++) {
+    gpio_desc_t *g = gpio_open_by_name(GPIO_CHIP_ASPEED, pins[i]);
+    if (!g) {
+      syslog(LOG_WARNING, "%s(): open %s failed: %m", __func__, pins[i]);
+      return -1;
+    }
+
+    gpio_value_t v;
+    if (gpio_get_value(g, &v) != 0) {
+      syslog(LOG_WARNING, "%s(): get %s value failed: %m", __func__, pins[i]);
+      gpio_close(g);
+      return -1;
+    }
+    gpio_close(g);
+
+    bits[i] = (v == GPIO_VALUE_HIGH) ? 1 : 0;
+    if (board_id_invert[i]) bits[i] ^= 1;
+    s = (s << 1) | (uint8_t)bits[i];  /* H2=MSB, H0=LSB */
+  }
+
+  cached = (int)s;
+  *is_mp = (s == STAGE_MP);
+
+  syslog(LOG_INFO,
+         "%s(): GPIOH2=%d GPIOH1=%d GPIOH0=%d -> raw=0x%02x (%s)",
+         __func__,
+         bits[0], bits[1], bits[2],
+         s, *is_mp ? "MP" : "DVT");
+  return 0;
+}
+
+static int fbgc_fallback_read_uic_location(uint8_t *loc) {
+  if (!loc) return -1;
+
+  int retry = 0;
+  while (retry < 5) {
+    gpio_desc_t *g = gpio_open_by_name(GPIO_CHIP_ASPEED, "GPIOY3");
+    if (!g) {
+      syslog(LOG_WARNING, "%s(): open GPIOY3 failed, retry %d/5: %m",
+             __func__, retry + 1);
+      retry++;
+      sleep(1);
+      continue;
+    }
+
+    gpio_value_t v;
+    if (gpio_get_value(g, &v) != 0) {
+      syslog(LOG_WARNING, "%s(): get GPIOY3 value failed, retry %d/5: %m",
+             __func__, retry + 1);
+      gpio_close(g);
+      retry++;
+      sleep(1);
+      continue;
+    }
+    gpio_close(g);
+
+    /* LOW (0) → A side, HIGH (1) → B side */
+    *loc = (v == GPIO_VALUE_HIGH) ? UIC_SIDEB : UIC_SIDEA;
+    syslog(LOG_INFO, "%s(): GPIOY3=%d → %s",
+           __func__, v, (*loc == UIC_SIDEB) ? "SIDE-B" : "SIDE-A");
+    return 0;
+  }
+
+  syslog(LOG_WARNING, "%s(): failed after 5 retries", __func__);
+  return -1;
+}
+
+static const char *fbgc_detect_active_table(void) {
+  if (gpio_is_exported("COMP_A_PRSNT_N")) return "dvt_a";
+  if (gpio_is_exported("COMP_B_PRSNT_N")) return "dvt_b";
+  if (gpio_is_exported("COMP_PRSNT_N"))   return "hack";
+  return NULL;
+}
+
+int fbgc_gpio_init(void) {
+  uint8_t uic_loc = UIC_SIDEA;
+  bool    is_mp   = false;
+  int     got_stage;
+
+  /* Step 0: shadow has been exported → use directly */
+  const char *detected = fbgc_detect_active_table();
+  if (detected != NULL) {
+    if (strcmp(detected, "dvt_a") == 0) {
+      gpio_expander_gpio_table      = gpio_expander_gpio_table_dvt_a;
+      gpio_expander_gpio_table_size = MAX_GPIO_EXPANDER_GPIO_PINS;
+      syslog(LOG_INFO, "fbgc_gpio_init: detected exported shadow → DVT-A");
+      return 0;
+    } else if (strcmp(detected, "dvt_b") == 0) {
+      gpio_expander_gpio_table      = gpio_expander_gpio_table_dvt_b;
+      gpio_expander_gpio_table_size = MAX_GPIO_EXPANDER_GPIO_PINS;
+      syslog(LOG_INFO, "fbgc_gpio_init: detected exported shadow → DVT-B");
+      return 0;
+    } else if (strcmp(detected, "hack") == 0) {
+      gpio_expander_gpio_table      = gpio_expander_gpio_table_hack;
+      gpio_expander_gpio_table_size = MAX_GPIO_EXPANDER_GPIO_PINS;
+      syslog(LOG_INFO, "fbgc_gpio_init: detected exported shadow → HACK");
+      return 0;
+    }
+  }
+
+  /* Step 1: Read GPIOH2/H1/H0, retry 3 times */
+  got_stage = -1;
+  for (int retry = 0; retry < 3; retry++) {
+    got_stage = fbgc_local_get_system_stage(&is_mp);
+    if (got_stage == 0) {
+      break;
+    }
+    syslog(LOG_WARNING,
+           "fbgc_gpio_init: GPIO stage read failed, retry %d/3", retry + 1);
+    usleep(10000);
+  }
+
+  /* Step 2: Read GPIOY3 to determine the A/B side */
+  uint8_t uic_loc_for_log = UIC_SIDEA;
+  if (fbgc_fallback_read_uic_location(&uic_loc_for_log) < 0) {
+    syslog(LOG_WARNING, "fbgc_gpio_init: GPIOY3 read failed, side unknown");
+  }
+
+  if (got_stage < 0) {
+    gpio_expander_gpio_table      = gpio_expander_gpio_table_hack;
+    gpio_expander_gpio_table_size = MAX_GPIO_EXPANDER_GPIO_PINS;
+    syslog(LOG_WARNING,
+           "fbgc_gpio_init: GPIO stage read failed → HACK (side=%s)",
+           (uic_loc_for_log == UIC_SIDEB) ? "B" : "A");
+    return 0;
+  }
+
+  /* Step 3: MP → HACK, Others → DVT A/B */
+  uic_loc = uic_loc_for_log;
+
+  if (is_mp) {
+    gpio_expander_gpio_table      = gpio_expander_gpio_table_hack;
+    gpio_expander_gpio_table_size = MAX_GPIO_EXPANDER_GPIO_PINS;
+    syslog(LOG_INFO, "fbgc_gpio_init: stage=MP side=%s → HACK",
+           (uic_loc == UIC_SIDEB) ? "B" : "A");
+  } else {
+    if (uic_loc == UIC_SIDEB) {
+      gpio_expander_gpio_table = gpio_expander_gpio_table_dvt_b;
+      syslog(LOG_INFO, "fbgc_gpio_init: stage=DVT side=B → DVT-B");
+    } else {
+      gpio_expander_gpio_table = gpio_expander_gpio_table_dvt_a;
+      syslog(LOG_INFO, "fbgc_gpio_init: stage=DVT side=A → DVT-A");
+    }
+  }
+
+  gpio_expander_gpio_table_size = MAX_GPIO_EXPANDER_GPIO_PINS;
+  return 0;
+}
+
+static inline void ensure_expander_table_selected(void) {
+  if (gpio_expander_gpio_table == NULL) {
+    (void)fbgc_gpio_init();
+  }
+}
+#endif /* CONFIG_GRANDCANYON2 */
+
+const char *fbgc_get_gpio_name(uint8_t gpio) {
+#ifdef CONFIG_GRANDCANYON2
+  if (gpio < MAX_GPIO_EXPANDER_GPIO_PINS) {
+    ensure_expander_table_selected();
+    if (gpio < gpio_expander_gpio_table_size) {
+      const char *name = gpio_expander_gpio_table[gpio].shadow_name;
+      if (name) return name;
+      syslog(LOG_WARNING, "%s() expander gpio %u not mapped on this side/stage",
+             __func__, gpio);
+      return "";
+    }
+    syslog(LOG_WARNING, "%s() expander index out of range: %u", __func__, gpio);
+    return "";
+  } else if (gpio < MAX_GPIO_PINS) {
+    return bmc_gpio_table[gpio].shadow_name;
+  } else {
+    syslog(LOG_WARNING, "%s() Invalid gpio number: %u\n", __func__, gpio);
+    return "";
+  }
+#else
   if (gpio < MAX_GPIO_EXPANDER_GPIO_PINS) {
     return gpio_expander_gpio_table[gpio].shadow_name;
   } else if (gpio < MAX_GPIO_PINS) {
@@ -495,6 +938,7 @@ fbgc_get_gpio_name(uint8_t gpio) {
     syslog(LOG_WARNING, "%s() Invalid gpio number: %u\n", __func__, gpio);
     return "";
   }
+#endif /* CONFIG_GRANDCANYON2 */
 }
 
 uint8_t

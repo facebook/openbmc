@@ -7,8 +7,129 @@
 #include <sys/file.h>
 #include <fcntl.h>
 #include <cstdio>
+#include <string>
+#include <phosphor-logging/lg2.hpp>
+#include <phosphor-logging/commit.hpp>
+#include <xyz/openbmc_project/Software/Update/event.hpp>
 
 #include <chrono>
+
+using TargetDetermined = sdbusplus::event::xyz::openbmc_project::software::Update::TargetDetermined;
+using UpdateSuccessful = sdbusplus::event::xyz::openbmc_project::software::Update::UpdateSuccessful;
+using ApplyFailed = sdbusplus::error::xyz::openbmc_project::software::Update::ApplyFailed;
+using VerificationFailed = sdbusplus::error::xyz::openbmc_project::software::Update::VerificationFailed;
+
+enum class SEL_TYPE
+{
+    TargetDetermined,
+    ApplyFailed,
+    UpdateSuccessful,
+    VerificationFailed,
+};
+
+enum class CpldType
+{
+    SD,
+    MGM,
+    SPD,
+    OTHER,
+};
+
+inline std::string to_string(CpldType type)
+{
+    switch (type) {
+        case CpldType::SD:  return "SD CPLD";
+        case CpldType::MGM: return "MGM CPLD";
+        case CpldType::SPD: return "SPD CPLD";
+        default:            return "CPLD";
+    }
+}
+
+static bool isAllowSel(const std::string& imagePath, const std::string& chip)
+{
+    return !imagePath.empty() && !chip.empty();
+}
+
+void addSelBySelType(SEL_TYPE selType,
+                     const std::string& imagePath,
+                     const std::string& chip,
+                     const std::string& deviceType,
+                     const std::string& info)
+{
+    if (!isAllowSel(imagePath, chip))
+    {
+        return;
+    }
+
+    auto targetName = sdbusplus::message::object_path(deviceType + " " + info);
+
+    switch (selType)
+    {
+        case SEL_TYPE::TargetDetermined:
+        {
+            lg2::commit(
+                TargetDetermined(
+                    "TARGET_NAME", targetName,
+                    "IMAGE_IDENTIFIER", imagePath
+                )
+            );
+            break;
+        }
+        case SEL_TYPE::ApplyFailed:
+        {
+            lg2::commit(
+                ApplyFailed(
+                    "IMAGE_IDENTIFIER", imagePath,
+                    "TARGET_NAME", targetName
+                )
+            );
+            break;
+        }
+        case SEL_TYPE::UpdateSuccessful:
+        {
+            lg2::commit(
+                UpdateSuccessful(
+                    "TARGET_NAME", targetName,
+                    "IMAGE_IDENTIFIER", imagePath
+                )
+            );
+            break;
+        }
+        case SEL_TYPE::VerificationFailed:
+        {
+            lg2::commit(
+                VerificationFailed(
+                    "IMAGE_IDENTIFIER", imagePath,
+                    "TARGET_NAME", targetName
+                )
+            );
+            break;
+        }
+        default:
+        {
+            break;
+        }
+    }
+}
+
+static std::string getCpldType(std::string_view cpldName)
+{
+    if (cpldName == "LCMXO3LF-6900") return to_string(CpldType::SD);
+    else if (cpldName == "LCMXO3D-4300") return to_string(CpldType::MGM);
+    else if (cpldName == "LCMXO3D-9400") return to_string(CpldType::SPD);
+
+    return to_string(CpldType::OTHER);
+}
+
+static std::string getInfo(std::string_view cpldType, uint8_t bus)
+{
+    if (cpldType == to_string(CpldType::SD))
+    {
+        return "slot" + std::to_string(bus + 1); // shift one to match the slot number
+    }
+
+    return "bus" + std::to_string(bus);
+}
 
 int main(int argc, char** argv)
 {
@@ -55,14 +176,20 @@ int main(int argc, char** argv)
 
     CLI11_PARSE(app, argc, argv);
 
+    auto cpldType = getCpldType(chip);
+    auto info = getInfo(cpldType, bus);
+
     auto cpldManager = CpldLatticeManager(bus, addr, imagePath, chip, interface,
                                           target, debugMode);
+    
+    addSelBySelType(SEL_TYPE::TargetDetermined, imagePath, chip, cpldType, info);
 
     if (version->parsed())
     {
         if (cpldManager.getVersion() < 0)
         {
             std::cerr << "Failed to get CPLD version" << std::endl;
+            addSelBySelType(SEL_TYPE::ApplyFailed, imagePath, chip, cpldType, info);
             return -1;
         }
     }
@@ -80,6 +207,7 @@ int main(int argc, char** argv)
             if (fd < 0)
             {
                 std::cerr << "Unable to open lock file: " << lockFile << std::endl;
+                addSelBySelType(SEL_TYPE::ApplyFailed, imagePath, chip, cpldType, info);
                 return 1;
             }
             if (flock(fd, LOCK_EX | LOCK_NB) == 0)
@@ -95,6 +223,7 @@ int main(int argc, char** argv)
             std::cerr << 
                 "Failed to acquire lock after multiple attempts, retry time exhausted" << 
                 std::endl;
+            addSelBySelType(SEL_TYPE::ApplyFailed, imagePath, chip, cpldType, info);
             close(fd);
             return 1;
         }
@@ -107,6 +236,7 @@ int main(int argc, char** argv)
             if  (cpldManager.fwVerifyOnly(legacyMode) < 0)
             {
                 std::cerr << "CPLD verify failed" << std::endl;
+                addSelBySelType(SEL_TYPE::VerificationFailed, imagePath, chip, cpldType, info);
                 return -1;
             }
         }
@@ -115,6 +245,7 @@ int main(int argc, char** argv)
             if (cpldManager.fwUpdate(legacyMode) < 0)
             {
                 std::cerr << "CPLD update failed" << std::endl;
+                addSelBySelType(SEL_TYPE::ApplyFailed, imagePath, chip, cpldType, info);
                 return -1;
             }
         }
@@ -124,6 +255,7 @@ int main(int argc, char** argv)
 
         std::cout << "Execution time: " << std::dec << duration.count()
                   << " seconds" << std::endl;
+        addSelBySelType(SEL_TYPE::UpdateSuccessful, imagePath, chip, cpldType, info);
 
         std::cout << "Release lock file: " << lockFile << std::endl;
         // Release the lock

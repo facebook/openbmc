@@ -26,4 +26,5 @@ EXTRA_OEMESON:append:npcm8xx = " -Dupdate-ebr-init=enabled"
 DEPENDS += " \
     cli11 \
     openssl \
+    phosphor-logging \
     "

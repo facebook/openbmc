@@ -61,6 +61,20 @@
 #define STR_MAIN_SOURCE              "1"
 #define STR_SECOND_SOURCE            "2"
 
+#ifdef CONFIG_GRANDCANYON2
+
+#define NIC_PMON_CAL_VALUE            2560    // 0.00512 / (0.001 * 0.002) = 2560 = 0x0A00
+#define NIC_PMON_CAL_REG              0xD4    // MFR_CALIBRATION
+#define NIC_PMON_CURRENT_LSB          0.001
+#define NIC_PMON_BUS                  9
+#define NIC_PMON_ADDR                 (0x8A)
+
+#define PMBUS_READ_VIN  0x88  // Input voltage
+#define PMBUS_READ_IIN  0x89  // Input current
+#define PMBUS_READ_PIN  0x97  // Input power
+
+#endif
+
 enum {
   UNKNOWN_SOURCE = 0,
   MAIN_SOURCE,  // default
@@ -230,11 +244,28 @@ enum {
   SCC_HSC_P12V = 0x4B,
   SCC_HSC_CUR = 0x4C,
   SCC_HSC_PWR = 0x4D,
+  SCC_HSC_12V_TEMP_C = 0x4E,
 };
 
 #ifdef CONFIG_GRANDCANYON2
 // Sensors under Drive Plane Board (DPB)
 enum {
+  DPB_FAN_EFUSE0_12V_TEMP_C = 0x50,
+  DPB_FAN_EFUSE1_12V_TEMP_C = 0x51,
+  DPB_FAN_EFUSE2_12V_TEMP_C = 0x52,
+  DPB_FAN_EFUSE3_12V_TEMP_C = 0x53,
+  DPB_FAN_EFUSE0_12V_VOLT_V = 0x54,
+  DPB_FAN_EFUSE1_12V_VOLT_V = 0x55,
+  DPB_FAN_EFUSE2_12V_VOLT_V = 0x56,
+  DPB_FAN_EFUSE3_12V_VOLT_V = 0x57,
+  DPB_FAN_EFUSE0_12V_CURR_A = 0x58,
+  DPB_FAN_EFUSE1_12V_CURR_A = 0x59,
+  DPB_FAN_EFUSE2_12V_CURR_A = 0x5A,
+  DPB_FAN_EFUSE3_12V_CURR_A = 0x5B,
+  DPB_FAN_EFUSE0_12V_PWR_W = 0x5C,
+  DPB_FAN_EFUSE1_12V_PWR_W = 0x5D,
+  DPB_FAN_EFUSE2_12V_PWR_W = 0x5E,
+  DPB_FAN_EFUSE3_12V_PWR_W = 0x5F,
   HDD_SMART_TEMP_00 = 0x60,
   HDD_SMART_TEMP_01 = 0x61,
   HDD_SMART_TEMP_02 = 0x62,
@@ -343,6 +374,7 @@ enum {
   HDD_P12V_SENSE_34 = 0xC9,
   HDD_P5V_SENSE_35  = 0xCA,
   HDD_P12V_SENSE_35 = 0xCB,
+  DPB_HSC_12V_TEMP_C = 0xCF,
   DPB_INLET_TEMP_1 = 0xD0,
   DPB_INLET_TEMP_2 = 0xD1,
   DPB_OUTLET_TEMP = 0xD2,
@@ -366,6 +398,10 @@ enum {
   PTB_P48V_AUX_Power = 0xE4,
   PTB_P12V_PU2_DC_MODULE_Power = 0xE5,
   PTB_P12V_PU3_DC_MODULE_Power = 0xE6,
+  PTB_P12V_PU2_DC_MODULE_TEMP = 0xE7,
+  PTB_P12V_PU3_DC_MODULE_TEMP = 0xE8,
+  PTB_U34_ADC_MONITOR_V = 0xE9,
+  PTB_U35_ADC_MONITOR_V = 0xEA,
   FAN_0_FRONT = 0xF0,
   FAN_0_REAR = 0xF1,
   FAN_1_FRONT = 0xF2,
@@ -520,6 +556,9 @@ enum {
   NIC_SENSOR_TEMP = 0x82,
   NIC_SENSOR_P12V = 0x83,
   NIC_SENSOR_CUR = 0x84,
+  NIC_PMON_VOLT_V = 0x85,
+  NIC_PMON_CURR_A = 0x86,
+  NIC_PMON_PWR_W = 0x87,
 
   // PLDM numeric sensors
   NIC_SOC_TEMP = PLDM_NUMERIC_SENSOR_START,
@@ -590,6 +629,14 @@ enum {
 enum {
   NIC = 0,
 };
+
+// NIC_PMON INFO
+enum {
+  NIC_PMON_VOLT = 0,
+  NIC_PMON_CURR = 1,
+  NIC_PMON_PWR = 2,
+};
+
 
 // EXPANDER
 enum {

@@ -1241,7 +1241,8 @@ pal_pmbus_sensor_info_initial(void) {
         char key_with_cmd[MAX_KEY_LEN];
         char val[MAX_VALUE_LEN];
         snprintf(key_with_cmd, MAX_KEY_LEN, "pmbus-sensor%02x%c", i, '\0');
-        snprintf(val, MAX_VALUE_LEN, "%02x-%02d-%02x-%02x%c", pmbus_dev_table[i].sku_pmbus_type[sku].page,
+        snprintf(val, MAX_VALUE_LEN, "%02d-%02x-%02d-%02x-%02x%c", pmbus_dev_table[i].sku_pmbus_type[sku].type,
+                  pmbus_dev_table[i].sku_pmbus_type[sku].page,
                   pmbus_dev_table[i].sku_pmbus_type[sku].offset,
                   pmbus_dev_list[pmbus_type].pmbus_cmd_list[j].read_byte,
                   pmbus_dev_list[pmbus_type].pmbus_cmd_list[j].read_type, '\0');
@@ -1489,21 +1490,12 @@ pal_set_uart_routing(uint8_t routing) {
     raw_board_id[2] = ((gpio_get_value_by_shadow("MTP_BOARD_REV_ID2") == GPIO_VALUE_LOW) ? 0 : 1);
     board_id = ((raw_board_id[0] & 0x1) << 2) + ((raw_board_id[1] & 0x1) << 1) + ((raw_board_id[2] & 0x1));
 
-    if ((board_id == EVT) || (board_id == POC)) {
-      // Route UART1 to UART3 for SoL purpose
-      ctrl |= (UART1_TO_UART3 << 22);
+    // Route UART3 to UART4 for SoL purpose
+    ctrl |= (UART3_TO_UART4 << 25);
 
-      // Route UART3 to UART1 for SoL purpose
-      ctrl |= (UART3_TO_UART1 << 16);
-    }
-    else {
+    // Route UART4 to UART3 for SoL purpose
+    ctrl |= (UART4_TO_UART3 << 22);
 
-      // Route UART3 to UART4 for SoL purpose
-      ctrl |= (UART3_TO_UART4 << 25);
-
-      // Route UART4 to UART3 for SoL purpose
-      ctrl |= (UART4_TO_UART3 << 22);
-    }
   }
 
   *(volatile uint32_t*) lpc_hicr = ctrl;

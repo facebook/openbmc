@@ -327,6 +327,7 @@ static hsc_dev_info hsc_dev_list[] = {
 };
 
 typedef struct {
+  uint8_t type;
   uint8_t page;
   uint8_t offset;
   uint8_t read_byte;

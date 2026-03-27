@@ -60,6 +60,7 @@ extern "C" {
 //In Netlake codebase, all definition used 0 base bus, 8 bit address
 #define VR_BUS  0
 #define VR_VOUT_MODE_REG 0x20
+#define VR_MFR_VOUT_SCALE_LOOP_REG 0x29
 #define VR_PVDDCR_ADDR 0x40
 #define VR_PVDDCR_SOC_ADDR 0x40
 #define VR_PVDD_MISC_ADDR 0x42
@@ -89,7 +90,7 @@ extern "C" {
 #define INA230_ADDR 0x80
 #define INA230_POWER 0x03
 #define INA230_CALIBRATION 0x05
-#define LSB_INA230_DEFAULT_CALIBRATION 0x0A
+#define LSB_INA230_DEFAULT_CALIBRATION 0x14
 #define MSB_INA230_DEFAULT_CALIBRATION 0x00
 #define INA230_GET_DATA_LEN 2
 

@@ -514,6 +514,43 @@ fail:
 }
 
 static int
+mp29608a_vid_convert(uint8_t *value_raw, uint8_t vid_step_raw, float *value) {
+  uint16_t raw = (value_raw[1] << 8) | value_raw[0];
+  float vid_step = 0.0;
+  switch (vid_step_raw) {
+    case 0b000:
+      vid_step = 6.25 / 1000;
+      break;
+    case 0b001:
+      vid_step = 5.0 / 1000;
+      break;
+    case 0b010:
+      vid_step = 2.5 / 1000;
+      break;
+    case 0b011:
+      vid_step = 2.0 / 1000;
+      break;
+    case 0b100:
+      vid_step = 1.0 / 1000;
+      break;
+    case 0b101:
+      vid_step = (1000 / 256) / 1000;
+      break;
+    case 0b110:
+      vid_step = (1000 / 512) / 1000;
+      break;
+    case 0b111:
+      vid_step = (1000 / 1024) / 1000;
+      break;
+    default:
+      syslog(LOG_ERR, "%s: invalid parameter: vid_step_raw %02x", __func__, vid_step_raw);
+      return -1;
+  }
+  *value = (float)raw * vid_step;
+  return 0;
+}
+
+static int
 read_pmbus(uint8_t id, float *value) {
   if (id >= ARRAY_SIZE(pmbus_dev_table)) {
     return ERR_SENSOR_NA;
@@ -525,7 +562,7 @@ read_pmbus(uint8_t id, float *value) {
   uint8_t addr = pmbus_dev_table[id].slv_addr;
   char val[MAX_VALUE_LEN] = {0};
   //kvbuf[0]: pmbus page, kvbuf[1]: pmbus offset, kvbuf[2]: read byte, kvbuf[3]: read format
-  uint8_t kvbuf[4] = {0};
+  uint8_t kvbuf[5] = {0};
   char* saveptr;
   int bufcnt = 0;
 
@@ -640,21 +677,50 @@ read_pmbus(uint8_t id, float *value) {
               __func__, bus, addr);
         return -1;
       }
-      // VOUT_MODE bit[7-5] is used for deciding VOUT format
-      if ((rbuf_vout_mode & 0xe0) == 0) {
-        ret = netlakenext_common_linear16_convert(rbuf_reading_raw, rbuf_vout_mode, value);
+      if (pmbus_i2c_data.type == MP29608A) {
+        uint8_t rlen_vid_reading = READ_WORD;
+        uint8_t rbuf_vid_reading_raw[rlen_vid_reading];
+        uint8_t vid_step_reg = VR_MFR_VOUT_SCALE_LOOP_REG;
+        
+        retry = SENSOR_RETRY_TIME;
+        do {
+          ret = i2c_rdwr_msg_transfer(fd, addr, &vid_step_reg,
+                                      sizeof(vid_step_reg),
+                                      rbuf_vid_reading_raw, rlen_vid_reading);
+          usleep(SENSOR_RETRY_INTERVAL_USEC);
+        } while ((ret < 0) && ((retry--) > 0));
+
+        if (ret < 0) {
+          close(fd);
+          syslog(LOG_ERR, "%s() Failed to get reading %d-%d %x\n", __func__, bus, addr, vid_step_reg);
+          return -1;
+        }
+        ret = mp29608a_vid_convert(rbuf_reading_raw, (rbuf_vid_reading_raw[1] & 0x1c) >> 2, value);
         if (ret < 0) {
           *value = 0;
-          syslog(LOG_ERR, "%s() Failed to get reading by linear-16 format %d-%d\n",
+          syslog(LOG_ERR, "%s() Failed to get reading by mp29608a vid format %d-%d\n",
               __func__, bus, addr);
         }
-      } else if ((rbuf_vout_mode == 0x40)) {
-        // MP9941/MP2993 direct mode
-        *value = (float)((rbuf_reading_raw[1] * 256) + rbuf_reading_raw[0]) * 0.001;
-      } else {
+      }
+      else if (pmbus_i2c_data.type == XDPE19283D) {
+        if (((rbuf_vout_mode >> 5) & 0x03) == 0) {
+          ret = netlakenext_common_linear16_convert(rbuf_reading_raw, rbuf_vout_mode, value);
+          if (ret < 0) {
+            *value = 0;
+            syslog(LOG_ERR, "%s() Failed to get reading by linear-16 format %d-%d\n",
+                __func__, bus, addr);
+          }
+        } else if (((rbuf_vout_mode >> 5) & 0x03) == 0x01) {
+          *value = (float)((rbuf_reading_raw[1] * 256) + rbuf_reading_raw[0]) * 0.005;
+        } else {
+          *value = 0;
+          syslog(LOG_ERR, "%s() VOUT_MODE is not supported for device %d-%d\n",
+                __func__, bus, addr);
+        }
+      }
+      else {
         *value = 0;
-        syslog(LOG_ERR, "%s() VOUT_MODE is not supported for device %d-%d\n",
-              __func__, bus, addr);
+        syslog(LOG_ERR, "%s() vr type is invalid %d-%d %d\n", __func__, bus, addr, pmbus_i2c_data.type);
       }
       break;
     default:
@@ -833,8 +899,8 @@ read_ina230_pwr(uint8_t id, float *value) {
   //default calibration date
   uint8_t default_calibration_data[3];
   default_calibration_data[0] = INA230_CALIBRATION;
-  default_calibration_data[1] = MSB_INA230_DEFAULT_CALIBRATION;
-  default_calibration_data[2] = LSB_INA230_DEFAULT_CALIBRATION;
+  default_calibration_data[1] = LSB_INA230_DEFAULT_CALIBRATION;
+  default_calibration_data[2] = MSB_INA230_DEFAULT_CALIBRATION;
 
   // Get INA230 Calibration
   do {
@@ -846,7 +912,7 @@ read_ina230_pwr(uint8_t id, float *value) {
       return -1;
     }
 
-    if (rbuf == 0) {
+    if (rbuf[0] == 0x00 && rbuf[1] == 0x00) {
       /* Write the config in the Calibration register */
       ret = i2c_rdwr_msg_transfer(fd, INA230_ADDR, default_calibration_data,
                                   sizeof(default_calibration_data), NULL, 0);

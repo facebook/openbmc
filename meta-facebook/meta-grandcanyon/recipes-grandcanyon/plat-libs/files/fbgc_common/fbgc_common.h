@@ -347,6 +347,44 @@ typedef struct __attribute__((packed)) {
   uint8_t md5_2[MD5_SIZE];
 } sur_signed_info_t;
 
+typedef enum {
+  GPIO_NAME_TYPE_UNKNOWN = -1,
+  GPIO_NAME_TYPE_HACK = 0,
+  GPIO_NAME_TYPE_UIC_A,
+  GPIO_NAME_TYPE_UIC_B,
+} gpio_name_type_t;
+
+typedef struct {
+  const char *hack_name;
+  const char *uic_a_name;
+  const char *uic_b_name;
+} gpio_shadow_name_map_t;
+
+typedef enum {
+  GPIO_SHADOW_ID_COMP_PRSNT_N = 0,
+  GPIO_SHADOW_ID_SCC_STBY_PGOOD,
+  GPIO_SHADOW_ID_SCC_FULL_PGOOD,
+  GPIO_SHADOW_ID_COMP_PGOOD,
+  GPIO_SHADOW_ID_E1S_1_PRSNT_N,
+  GPIO_SHADOW_ID_E1S_2_PRSNT_N,
+  GPIO_SHADOW_ID_I2C_E1S_1_RST_N,
+  GPIO_SHADOW_ID_I2C_E1S_2_RST_N,
+  GPIO_SHADOW_ID_E1S_1_LED_ACT,
+  GPIO_SHADOW_ID_E1S_2_LED_ACT,
+  GPIO_SHADOW_ID_SCC_STBY_PWR_EN,
+  GPIO_SHADOW_ID_SCC_FULL_PWR_EN,
+  GPIO_SHADOW_ID_BMC_EXP_SOFT_RST_N,
+  GPIO_SHADOW_ID_UIC_COMP_BIC_RST_N,
+  GPIO_SHADOW_ID_E1S_1_3V3EFUSE_PGOOD,
+  GPIO_SHADOW_ID_E1S_2_3V3EFUSE_PGOOD,
+  GPIO_SHADOW_ID_P12V_NIC_STATUS_N,
+  GPIO_SHADOW_ID_P3V3_NIC_STATUS_N,
+  GPIO_SHADOW_ID_SCC_POR_RST_N,
+  GPIO_SHADOW_ID_BMC_COMP_BLED,
+  GPIO_SHADOW_ID_MAX,
+
+} gpio_shadow_id_t;
+
 int fbgc_common_get_chassis_type(uint8_t *type);
 void msleep(int msec);
 int fbgc_common_server_stby_pwr_sts(uint8_t *val);
@@ -365,6 +403,8 @@ int sv_control(const char *service, svc_mode_t mode);
 int check_image_md5_at_offset(const char* image_path, off_t start_offs, int cal_size, uint32_t md5_offset, uint8_t is_masked);
 int fbgc_common_get_img_sur_info(const char *img_path, uint8_t comp, sur_error_proof_info_t *img_info);
 int fbgc_common_validate_img(const char *img_path, uint8_t comp, uint8_t expected_board_id, uint8_t board_rev_id);
+int fbgc_common_get_gpio_name_type(gpio_name_type_t *type);
+const char *fbgc_common_get_gpio_shadow_name(gpio_shadow_id_t id);
 #ifdef __cplusplus
 } // extern "C"
 #endif

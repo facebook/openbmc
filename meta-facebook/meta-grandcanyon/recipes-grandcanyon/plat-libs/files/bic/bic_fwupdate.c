@@ -789,7 +789,6 @@ get_component_name(uint8_t comp) {
 #define ES_FPGA_BIC_FWSPICK_MASK_SET    ((1U << 2) | (1U << 3))    // bit[2:3]= BIC_FWSPICK_CPLD:BIC_FWSPICK_BUS
 #define BIC_UART_DEV                    "/dev/ttyS7"
 #define MTERM_BIC_SERVICE               "mTerm-bic"
-#define BIC_RESET_GPIO_SHADOW           "UIC_COMP_BIC_RST_N"
 #define BAUD_115200  115200
 #define BAUD_57600 57600
 
@@ -1117,6 +1116,13 @@ recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path,
   uint8_t initial_value = 0, rcvy_mode_value = 0;
   uint8_t buf[256] = {0};
 
+  const char *bic_reset_gpio_shadow = fbgc_common_get_gpio_shadow_name(GPIO_SHADOW_ID_UIC_COMP_BIC_RST_N);
+
+  if (bic_reset_gpio_shadow == NULL) {
+    syslog(LOG_WARNING, "%s(): invalid gpio name", __func__);
+    return -1;;
+  }
+
   fd = open_and_get_size(path, &file_size);
   if (fd < 0) {
     syslog(LOG_WARNING, "%s() cannot open the file: %s, fd = %d\n", __func__, path, fd);
@@ -1144,14 +1150,14 @@ recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path,
   msleep(100);
 
   //set UIC_COMP_BIC_RST_N to low trigger BIC_RESET_N
-  snprintf(cmd, cmd_size, "/usr/bin/gpiocli -s \"%s\" set-value %d", BIC_RESET_GPIO_SHADOW, GPIO_VALUE_LOW);
+  snprintf(cmd, cmd_size, "/usr/bin/gpiocli -s \"%s\" set-value %d", bic_reset_gpio_shadow, GPIO_VALUE_LOW);
   if (system(cmd) != 0) {
     syslog(LOG_WARNING, "%s() %s failed", __func__, cmd);
     goto cleanup;
   }
   sleep(1);
 
-  snprintf(cmd, cmd_size, "/usr/bin/gpiocli -s \"%s\" set-value %d", BIC_RESET_GPIO_SHADOW, GPIO_VALUE_HIGH);
+  snprintf(cmd, cmd_size, "/usr/bin/gpiocli -s \"%s\" set-value %d", bic_reset_gpio_shadow, GPIO_VALUE_HIGH);
   if (system(cmd) != 0) {
     syslog(LOG_WARNING, "%s() %s failed", __func__, cmd);
     goto cleanup;
@@ -1246,12 +1252,12 @@ cleanup:
     fpga_write_u8(I2C_ES_FPGA_BUS, ES_FPGA_SLAVE_ADDR, 0x01, initial_value);
 
     //set UIC_COMP_BIC_RST_N to low trigger BIC_RESET_N
-    snprintf(cmd, cmd_size, "/usr/bin/gpiocli -s \"%s\" set-value %d", BIC_RESET_GPIO_SHADOW, GPIO_VALUE_LOW);
+    snprintf(cmd, cmd_size, "/usr/bin/gpiocli -s \"%s\" set-value %d", bic_reset_gpio_shadow, GPIO_VALUE_LOW);
     if (system(cmd) != 0) {
       syslog(LOG_WARNING, "[%s] %s failed", __func__, cmd);
     }
     sleep(1);
-    snprintf(cmd, cmd_size, "/usr/bin/gpiocli -s \"%s\" set-value %d", BIC_RESET_GPIO_SHADOW, GPIO_VALUE_HIGH);
+    snprintf(cmd, cmd_size, "/usr/bin/gpiocli -s \"%s\" set-value %d", bic_reset_gpio_shadow, GPIO_VALUE_HIGH);
     if (system(cmd) != 0) {
       syslog(LOG_WARNING, "[%s] %s failed", __func__, cmd);
     }

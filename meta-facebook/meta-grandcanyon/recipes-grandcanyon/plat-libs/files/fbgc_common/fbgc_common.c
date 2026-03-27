@@ -831,3 +831,322 @@ fbgc_common_validate_img(const char *img_path, uint8_t comp, uint8_t expected_bo
 
   return 0;
 }
+
+#define GPIO_NAME_TYPE_KV_KEY "gpio_name_type"
+/* Raw board-ID value that indicates MP stage */
+#define GPIO_NAME_TYPE_STAGE_MP_RAW 6
+
+/* UIC location values */
+#define GPIO_NAME_TYPE_UIC_SIDEA 1
+#define GPIO_NAME_TYPE_UIC_SIDEB 2
+
+/* Internal: read GPIOH2/H1/H0 to determine board stage.
+ * Returns 0 on success and sets *is_mp. */
+static int
+gpio_name_type_read_stage(bool *is_mp) {
+  const char *pins[BOARD_ID_PIN_NUM] = {"GPIOH2", "GPIOH1", "GPIOH0"};
+  uint8_t raw = 0;
+  int i = 0;
+
+  if (is_mp == NULL) {
+    return -1;
+  }
+
+  for (i = 0; i < BOARD_ID_PIN_NUM; i++) {
+    gpio_desc_t *g = gpio_open_by_name(GPIO_CHIP_ASPEED, pins[i]);
+    if (!g) {
+      syslog(LOG_WARNING, "%s(): open %s failed: %m", __func__, pins[i]);
+      return -1;
+    }
+
+    gpio_value_t v;
+    if (gpio_get_value(g, &v) != 0) {
+      syslog(LOG_WARNING, "%s(): get %s value failed: %m", __func__, pins[i]);
+      gpio_close(g);
+      return -1;
+    }
+    gpio_close(g);
+
+    raw = (raw << 1) | ((v == GPIO_VALUE_HIGH) ? 1 : 0);
+  }
+
+  *is_mp = (raw == GPIO_NAME_TYPE_STAGE_MP_RAW);
+  return 0;
+}
+
+// * Internal: read GPIOY3 to determine A/B side.
+// * Returns 0 on success, sets *loc to UIC_SIDEA or UIC_SIDEB. */
+static int
+gpio_name_type_read_uic_location(uint8_t *loc) {
+  int retry = 0;
+
+  if (loc == NULL) {
+    return -1;
+  }
+
+  while (retry < 5) {
+    gpio_desc_t *g = gpio_open_by_name(GPIO_CHIP_ASPEED, "GPIOY3");
+    if (!g) {
+      syslog(LOG_WARNING, "%s(): open GPIOY3 failed, retry %d/5: %m",
+             __func__, retry + 1);
+      retry++;
+      sleep(1);
+      continue;
+    }
+
+    gpio_value_t v;
+    if (gpio_get_value(g, &v) != 0) {
+      syslog(LOG_WARNING, "%s(): get GPIOY3 value failed, retry %d/5: %m",
+             __func__, retry + 1);
+      gpio_close(g);
+      retry++;
+      sleep(1);
+      continue;
+    }
+    gpio_close(g);
+
+    /* LOW (0) → A side, HIGH (1) → B side */
+    *loc = (v == GPIO_VALUE_HIGH) ? GPIO_NAME_TYPE_UIC_SIDEB
+                                  : GPIO_NAME_TYPE_UIC_SIDEA;
+    return 0;
+  }
+
+  syslog(LOG_WARNING, "%s(): failed after 5 retries", __func__);
+  return -1;
+}
+
+int
+fbgc_common_get_gpio_name_type(gpio_name_type_t *type) {
+  static gpio_name_type_t cached_type = GPIO_NAME_TYPE_UNKNOWN;
+  static bool cached_valid = false;
+  char kv_val[MAX_VALUE_LEN] = {0};
+
+  if (type == NULL) {
+    syslog(LOG_WARNING, "%s(): NULL parameter", __func__);
+    return -1;
+  }
+
+  /*first return from process-local cache */
+  if (cached_valid) {
+    *type = cached_type;
+    return 0;
+  }
+
+  /* Second path: check kv_store persistent cache */
+  if (kv_get(GPIO_NAME_TYPE_KV_KEY, kv_val, NULL, 0) == 0) {
+    int val = atoi(kv_val);
+    if (val >= GPIO_NAME_TYPE_HACK && val <= GPIO_NAME_TYPE_UIC_B) {
+      cached_type = (gpio_name_type_t)val;
+      cached_valid = true;
+      *type = cached_type;
+      syslog(LOG_INFO, "%s(): loaded from kv cache: %d", __func__, val);
+      return 0;
+    }
+  }
+
+  bool is_mp = false;
+  int stage_ret = -1;
+  int retry = 0;
+
+  for (retry = 0; retry < 3; retry++) {
+    stage_ret = gpio_name_type_read_stage(&is_mp);
+    if (stage_ret == 0) {
+      break;
+    }
+    syslog(LOG_WARNING, "%s(): GPIO stage read failed, retry %d/3",
+           __func__, retry + 1);
+    usleep(10000);
+  }
+
+  if (stage_ret < 0) {
+    /* Cannot determine stage → default to HACK for safety */
+    syslog(LOG_WARNING, "%s(): GPIO stage read failed → default HACK", __func__);
+    cached_type = GPIO_NAME_TYPE_HACK;
+    cached_valid = true;
+    *type = cached_type;
+    snprintf(kv_val, sizeof(kv_val), "%d", (int)cached_type);
+    kv_set(GPIO_NAME_TYPE_KV_KEY, kv_val, 0, 0);
+    return 0;
+  }
+
+  if (is_mp) {
+    /* MP stage → use HACK (old shadow names) */
+    cached_type = GPIO_NAME_TYPE_HACK;
+    syslog(LOG_INFO, "%s(): stage=MP → HACK", __func__);
+  } else {
+    /* DVT/EVT/PVT (non-MP) → determine A/B side */
+    uint8_t uic_loc = GPIO_NAME_TYPE_UIC_SIDEA;
+    if (gpio_name_type_read_uic_location(&uic_loc) < 0) {
+      syslog(LOG_WARNING, "%s(): GPIOY3 read failed → default UIC-A", __func__);
+      uic_loc = GPIO_NAME_TYPE_UIC_SIDEA;
+    }
+
+    if (uic_loc == GPIO_NAME_TYPE_UIC_SIDEB) {
+      cached_type = GPIO_NAME_TYPE_UIC_B;
+      syslog(LOG_INFO, "%s():side=B → UIC-B", __func__);
+    } else {
+      cached_type = GPIO_NAME_TYPE_UIC_A;
+      syslog(LOG_INFO, "%s():side=A → UIC-A", __func__);
+    }
+  }
+
+  cached_valid = true;
+  *type = cached_type;
+  snprintf(kv_val, sizeof(kv_val), "%d", (int)cached_type);
+  kv_set(GPIO_NAME_TYPE_KV_KEY, kv_val, 0, 0);
+  return 0;
+}
+
+static const gpio_shadow_name_map_t gpio_shadow_name_map[GPIO_SHADOW_ID_MAX] = {
+  [GPIO_SHADOW_ID_COMP_PRSNT_N] = {
+    .hack_name  = "COMP_PRSNT_N",
+    .uic_a_name = "COMP_A_PRSNT_N",
+    .uic_b_name = "COMP_B_PRSNT_N",
+  },
+
+  [GPIO_SHADOW_ID_SCC_STBY_PGOOD] = {
+    .hack_name  = "SCC_STBY_PGOOD",
+    .uic_a_name = "SCC_A_STBY_PGOOD",
+    .uic_b_name = "SCC_B_STBY_PGOOD",
+  },
+
+  [GPIO_SHADOW_ID_SCC_FULL_PGOOD] = {
+    .hack_name  = "SCC_FULL_PGOOD",
+    .uic_a_name = "SCC_A_FULL_PGOOD",
+    .uic_b_name = "SCC_B_FULL_PGOOD",
+  },
+
+  [GPIO_SHADOW_ID_COMP_PGOOD] = {
+    .hack_name  = "COMP_PGOOD",
+    .uic_a_name = "COMP_A_PGOOD",
+    .uic_b_name = "COMP_B_PGOOD",
+  },
+
+  [GPIO_SHADOW_ID_E1S_1_PRSNT_N] = {
+    .hack_name  = "E1S_1_PRSNT_N",
+    .uic_a_name = "E1SA_1_PRSNT_N",
+    .uic_b_name = "E1SB_1_PRSNT_N",
+  },
+
+  [GPIO_SHADOW_ID_E1S_2_PRSNT_N] = {
+    .hack_name  = "E1S_2_PRSNT_N",
+    .uic_a_name = "E1SA_2_PRSNT_N",
+    .uic_b_name = "E1SB_2_PRSNT_N",
+  },
+
+  [GPIO_SHADOW_ID_I2C_E1S_1_RST_N] = {
+    .hack_name  = "I2C_E1S_1_RST_N",
+    .uic_a_name = "I2C_E1SA_1_RST_N",
+    .uic_b_name = "I2C_E1SB_1_RST_N",
+  },
+
+  [GPIO_SHADOW_ID_I2C_E1S_2_RST_N] = {
+    .hack_name  = "I2C_E1S_2_RST_N",
+    .uic_a_name = "I2C_E1SA_2_RST_N",
+    .uic_b_name = "I2C_E1SB_2_RST_N",
+  },
+
+  [GPIO_SHADOW_ID_E1S_1_LED_ACT] = {
+    .hack_name  = "E1S_1_LED_ACT",
+    .uic_a_name = "E1SA_1_LED_ACT",
+    .uic_b_name = "E1SB_1_LED_ACT",
+  },
+
+  [GPIO_SHADOW_ID_E1S_2_LED_ACT] = {
+    .hack_name  = "E1S_2_LED_ACT",
+    .uic_a_name = "E1SA_2_LED_ACT",
+    .uic_b_name = "E1SB_2_LED_ACT",
+  },
+
+  [GPIO_SHADOW_ID_SCC_STBY_PWR_EN] = {
+    .hack_name  = "SCC_STBY_PWR_EN",
+    .uic_a_name = "SCC_A_STBY_PWR_EN",
+    .uic_b_name = "SCC_B_STBY_PWR_EN",
+  },
+
+  [GPIO_SHADOW_ID_SCC_FULL_PWR_EN] = {
+    .hack_name  = "SCC_FULL_PWR_EN",
+    .uic_a_name = "SCC_A_FULL_PWR_EN",
+    .uic_b_name = "SCC_B_FULL_PWR_EN",
+  },
+
+  [GPIO_SHADOW_ID_BMC_EXP_SOFT_RST_N] = {
+    .hack_name  = "BMC_EXP_SOFT_RST_N",
+    .uic_a_name = "BMC_A_EXP_A_SOFT_RST_N",
+    .uic_b_name = "BMC_B_EXP_B_SOFT_RST_N",
+  },
+
+  [GPIO_SHADOW_ID_UIC_COMP_BIC_RST_N] = {
+    .hack_name  = "UIC_COMP_BIC_RST_N",
+    .uic_a_name = "UIC_A_COMP_A_BIC_RST_N",
+    .uic_b_name = "UIC_B_COMP_B_BIC_RST_N",
+  },
+
+  [GPIO_SHADOW_ID_E1S_1_3V3EFUSE_PGOOD] = {
+    .hack_name  = "E1S_1_3V3EFUSE_PGOOD",
+    .uic_a_name = "E1SA_1_3V3EFUSE_PGOOD",
+    .uic_b_name = "E1SB_1_3V3EFUSE_PGOOD",
+  },
+
+  [GPIO_SHADOW_ID_E1S_2_3V3EFUSE_PGOOD] = {
+    .hack_name  = "E1S_2_3V3EFUSE_PGOOD",
+    .uic_a_name = "E1SA_2_3V3EFUSE_PGOOD",
+    .uic_b_name = "E1SB_2_3V3EFUSE_PGOOD",
+  },
+
+  [GPIO_SHADOW_ID_P12V_NIC_STATUS_N] = {
+    .hack_name  = "P12V_NIC_FAULT_N",
+    .uic_a_name = "PWRGD_P12V_NIC_A",
+    .uic_b_name = "PWRGD_P12V_NIC_B",
+  },
+
+  [GPIO_SHADOW_ID_P3V3_NIC_STATUS_N] = {
+    .hack_name  = "P3V3_NIC_FAULT_N",
+    .uic_a_name = "PWRGD_P3V3_NIC_A",
+    .uic_b_name = "PWRGD_P3V3_NIC_B",
+  },
+
+  [GPIO_SHADOW_ID_SCC_POR_RST_N] = {
+    .hack_name  = "SCC_POR_RST_N",
+    .uic_a_name = "SCC_A_POR_RST_N",
+    .uic_b_name = "SCC_B_POR_RST_N",
+  },
+
+  [GPIO_SHADOW_ID_BMC_COMP_BLED] = {
+    .hack_name  = "BMC_COMP_BLED",
+    .uic_a_name = "BMC_A_COMP_A_BLED",
+    .uic_b_name = "BMC_B_COMP_B_BLED",
+  },
+};
+
+const char *
+fbgc_common_get_gpio_shadow_name(gpio_shadow_id_t id) {
+  gpio_name_type_t name_type = GPIO_NAME_TYPE_HACK;
+  const gpio_shadow_name_map_t *map;
+
+  if (id >= GPIO_SHADOW_ID_MAX) {
+    return NULL;
+  }
+
+  map = &gpio_shadow_name_map[id];
+
+  if (map->hack_name == NULL ||
+      map->uic_a_name == NULL ||
+      map->uic_b_name == NULL) {
+    return NULL;
+  }
+
+  if (fbgc_common_get_gpio_name_type(&name_type) < 0) {
+    return map->hack_name;
+  }
+
+  switch (name_type) {
+    case GPIO_NAME_TYPE_UIC_A:
+      return map->uic_a_name;
+    case GPIO_NAME_TYPE_UIC_B:
+      return map->uic_b_name;
+    case GPIO_NAME_TYPE_HACK:
+    default:
+      return map->hack_name;
+  }
+}

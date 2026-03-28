@@ -39,15 +39,22 @@ else
     mac=$(weutil  | grep '^Local MAC' | cut -d' ' -f3)
 fi
 
+if [ -n "$mac" ]; then
+    logger -p user.info "eth0_mac_fixup: Read MAC $mac from EEPROM"
+fi
+
 # get the MAC from u-boot environment
 ethaddr=$(fw_printenv | grep "^ethaddr=" | cut -d'=' -f2)
 
 if [ -z "$mac" ]; then
+    logger -p user.err "eth0_mac_fixup: Failed to read MAC from EEPROM (empty or unavailable)"
     if [ -n "$ethaddr" ]; then
         # no MAC from EEPROM, use the one from u-boot environment
+        logger -p user.info "eth0_mac_fixup: Falling back to U-Boot env MAC: $ethaddr"
         echo "No MAC address from EEPROM: use $ethaddr from uboot-env"
         mac="$ethaddr"
     else
+        logger -p user.err "eth0_mac_fixup: Failed to read MAC from both EEPROM and U-Boot env"
         echo "Error: unable to read MAC address from EEPROM or uboot-env!"
         exit 1
     fi
@@ -59,7 +66,21 @@ if [ "$ethaddr" != "$mac" ]; then
     fw_setenv "ethaddr" "$mac"
 fi
 
+# Compare current MAC with desired MAC
+current_mac=$(cat /sys/class/net/eth0/address)
+logger -p user.info "eth0_mac_fixup: Current eth0 MAC: $current_mac, desired MAC: $mac"
+
+if [ "$(echo "$current_mac" | tr 'A-F' 'a-f')" = "$(echo "$mac" | tr 'A-F' 'a-f')" ]; then
+    logger -p user.info "eth0_mac_fixup: eth0 MAC already matches desired MAC, skipping update"
+    exit 0
+fi
+
 #ifconfig eth0 hw ether $macifconfig
 echo "Update BMC eth0 MAC address to $mac"
-ip link set dev eth0 address "$mac"
-exit $?
+if ip link set dev eth0 address "$mac"; then
+    logger -p user.info "eth0_mac_fixup: Successfully set eth0 MAC to $mac"
+else
+    logger -p user.err "eth0_mac_fixup: Failed to set eth0 MAC address to $mac"
+    exit 1
+fi
+exit 0

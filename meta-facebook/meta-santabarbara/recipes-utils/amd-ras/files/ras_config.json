@@ -1,0 +1,144 @@
+{
+    "Configuration": [
+        {
+            "ApmlRetries": {
+                "Description": "Number of APML retry count",
+                "Value": 10,
+                "MaxBoundLimit": 50
+            }
+        },
+        {
+            "SystemRecoveryMode": {
+                "Description": "System recovery mode",
+                "Value": "WARM_RESET",
+                "ValidOptions": ["COLD_RESET", "WARM_RESET", "NO_RESET"]
+            }
+        },
+        {
+            "ResetSignalType": {
+                "Description": "Reset Signal Type",
+                "Value": "SYS_RST",
+                "ValidOptions": ["SYS_RST", "RSMRST"]
+            }
+        },
+        {
+            "HarvestMicrocode": {
+                "Description": "Harvest microcode version",
+                "Value": true
+            }
+        },
+        {
+            "HarvestPPIN": {
+                "Description": "Harvest Protected Processor Identification Number",
+                "Value": true
+            }
+        },
+        {
+            "SigIdOffset": {
+                "Description": "List of Signature ID offsets",
+                "Value": [
+                    "0x30",
+                    "0x34",
+                    "0x28",
+                    "0x2c",
+                    "0x08",
+                    "0x0c",
+                    "null",
+                    "null"
+                ]
+            }
+        },
+        {
+            "AifsArmed": {
+                "Description": "If this field is true, AIFS flow is triggered",
+                "Value": false
+            }
+        },
+        {
+            "AifsSignatureIdList": {
+                "Description": "List of signature Id which has AIFS flow enabled",
+                "Value": {
+                    "EX-WDT": "0xaea0000000000108000500b020009a00000000004d000000"
+                }
+            }
+        },
+        {
+            "DisableAifsResetOnSyncfloodCounter": {
+                "Description": "Disable AIFS Reset on syncflood counter",
+                "Value": true
+            }
+        },
+        {
+            "DramCeccPollingEn": {
+                "Description": "If this field is true, Dynamic Random Access Memory Error Correction Code (DRAM ECC) correctable errors will be polled",
+                "Value": false
+            }
+        },
+        {
+            "DramCeccThresholdEn": {
+                "Description": "If this field is true, error thresholding for DRAM ECC correctable errors will be enabled",
+                "Value": false
+            }
+        },
+        {
+            "DramCeccPollingPeriod": {
+                "Description": "Polling interval in seconds for DRAM ECC correctable errors",
+                "Value": 5
+            }
+        },
+        {
+            "DramCeccErrThresholdCnt": {
+                "Description": "Error threshold count for DRAM ECC correctable errors",
+                "Value": 1
+            }
+        },
+        {
+            "McaPollingEn": {
+                "Description": "If this field is true, Machine Check Architecture (MCA) correctable errors will be polled",
+                "Value": true
+            }
+        },
+        {
+            "McaThresholdEn": {
+                "Description": "If this field is true, error thresholding for MCA errors will be enabled",
+                "Value": false
+            }
+        },
+        {
+            "McaPollingPeriod": {
+                "Description": "Polling interval in seconds for MCA errors",
+                "Value": 3
+            }
+        },
+        {
+            "McaErrThresholdCnt": {
+                "Description": "Error threshold count for MCA errors",
+                "Value": 1
+            }
+        },
+        {
+            "PcieAerPollingEn": {
+                "Description": "If this field is true, PCI Express Advanced Error Reporting (PCIE AER) correctable errors will be polled",
+                "Value": false
+            }
+        },
+        {
+            "PcieAerThresholdEn": {
+                "Description": "If this field is true, error thresholding for PCIE AER errors will be enabled",
+                "Value": false
+            }
+        },
+        {
+            "PcieAerPollingPeriod": {
+                "Description": "Polling interval in seconds for PCIE AER errors",
+                "Value": 7
+            }
+        },
+        {
+            "PcieAerErrThresholdCnt": {
+                "Description": "Error threshold count for PCIE AER errors",
+                "Value": 1
+            }
+        }
+    ]
+}

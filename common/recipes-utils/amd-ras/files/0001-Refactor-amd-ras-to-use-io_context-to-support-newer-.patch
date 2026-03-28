@@ -1,0 +1,26 @@
+From b68109e6cec595cd4b24d6060cccbd9d1d1726d0 Mon Sep 17 00:00:00 2001
+From: Fred Chen <Fred.Chen@quantatw.com>
+Date: Tue, 9 Dec 2025 15:49:07 +0800
+Subject: [PATCH 1/2] Refactor amd-ras to use io_context to support newer Boost
+ version
+
+---
+ src/main.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/main.cpp b/src/main.cpp
+index 14dd720..ac590e6 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -23,7 +23,7 @@ int main(int argc, char* argv[])
+     lg2::info("Start amd ras service for host : {NODE}", "NODE", node);
+ 
+     // Setup connection to D-Bus
+-    boost::asio::io_service io;
++    boost::asio::io_context io;
+ 
+     // Create a shared connection to the system bus
+     auto systemBus = std::make_shared<sdbusplus::asio::connection>(io);
+-- 
+2.49.0
+

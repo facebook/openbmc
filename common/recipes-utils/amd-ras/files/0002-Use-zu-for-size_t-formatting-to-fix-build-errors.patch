@@ -1,0 +1,27 @@
+From d374451a1cf288ef702ca9a895c256d6efbcd958 Mon Sep 17 00:00:00 2001
+From: Fred Chen <Fred.Chen@quantatw.com>
+Date: Tue, 9 Dec 2025 19:26:29 +0800
+Subject: [PATCH 2/2] Use %zu for size_t formatting to fix build errors
+
+%lu is not portable for size_t and results in compiler errors with
+Werror. Replace it with %zu.
+---
+ src/utils/cper.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/utils/cper.cpp b/src/utils/cper.cpp
+index f3bbed8..250ebbf 100644
+--- a/src/utils/cper.cpp
++++ b/src/utils/cper.cpp
+@@ -780,7 +780,7 @@ void createFile(const std::shared_ptr<PtrType>& data,
+     file = fopen(indexFile.c_str(), "w");
+     if (file != nullptr)
+     {
+-        fprintf(file, "%lu", errCount);
++        fprintf(file, "%zu", errCount);
+         fclose(file);
+     }
+ 
+-- 
+2.49.0
+

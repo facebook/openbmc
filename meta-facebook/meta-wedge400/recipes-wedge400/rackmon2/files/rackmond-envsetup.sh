@@ -4,9 +4,26 @@
 . /usr/local/bin/openbmc-utils.sh
 brd_type=$(wedge_full_board_type)
 
+if [ $((brd_type)) -ge $((0x2)) ] && ! [ -e /run/rackmond.env ]; then
+    # workaround on Respin SKU2 USB mux default isn't BMC
+    # need force it to select BMC <--> RACK
+    echo 1 > $SMBCPLD_SYSFS_DIR/cpld_usb_mux2_sel
+    sleep 5
+fi
+
+BMC_PSU_TTY="/dev/ttyUSB0"
+if ! [ -e "$BMC_PSU_TTY" ]; then
+    echo "rackmond not started: $BMC_PSU_TTY does not exist!"
+    exit 1
+fi
+
+# Set a default config.
+INTERFACE_CONFIG_FILE="/usr/share/rackmon/interface/usb_ft232.conf"
+echo "INTERFACE_CONFIG_FILE=$INTERFACE_CONFIG_FILE" > /run/rackmond.env
+
 # Wedge400 MP Respin or newer, change to use FT4232 for rackmon uart
 if [ $((brd_type)) -ge $((0x2)) ]; then
-    
+
     # Detect FTDI chip
     /usr/local/bin/ftdi_control -L
     ftdi_detected=$?
@@ -40,5 +57,5 @@ else
 fi
 
 
-exec /usr/local/bin/rackmond "$INTERFACE_CONFIG_FILE" /usr/share/rackmon/registermap
+echo "INTERFACE_CONFIG_FILE=$INTERFACE_CONFIG_FILE" > /run/rackmond.env
 

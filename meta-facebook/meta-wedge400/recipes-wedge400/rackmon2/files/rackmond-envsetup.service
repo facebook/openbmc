@@ -1,0 +1,12 @@
+[Unit]
+Description=Setup Rackmon Env
+Wants=openbmc_gpio_setup.service setup_board.service
+After=setup_i2c.service openbmc_gpio_setup.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/rackmond/rackmond-envsetup
+
+[Install]
+WantedBy=multi-user.target

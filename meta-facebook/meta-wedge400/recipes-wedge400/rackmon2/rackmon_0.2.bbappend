@@ -18,6 +18,21 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LOCAL_URI += " \
-    file://run-rackmond.sh \
-    file://setup-rackmond.sh \
+    file://rackmond-envsetup.sh \
+    file://rackmond-envsetup.service \
+    file://rackmond.conf \
     "
+
+do_install:append() {
+    bin="${D}/usr/libexec/rackmond"
+    install -d ${bin}
+    install -m 755 ${UNPACKDIR}/rackmond-envsetup.sh ${bin}/rackmond-envsetup
+    install -m 0644 ${UNPACKDIR}/rackmond-envsetup.service ${D}${systemd_system_unitdir}/rackmond-envsetup.service
+
+    fixups="${D}${sysconfdir}/systemd/system/rackmond.service.d"
+    install -d ${fixups}
+    install -m 0644 ${UNPACKDIR}/rackmond.conf ${fixups}/rackmond.conf
+}
+
+FILES:${PN} += "/usr/libexec/rackmond"
+SYSTEMD_SERVICE:${PN} += "rackmond-envsetup.service"

@@ -1,0 +1,1 @@
+CFLAGS:prepend = "-DCONFIG_GRANDCANYON2"

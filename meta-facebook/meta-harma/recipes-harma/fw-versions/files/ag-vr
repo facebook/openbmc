@@ -67,7 +67,7 @@ get_pldm_object_path() {
     local compid=$2
 
     path=$(busctl tree xyz.openbmc_project.PLDM |
-        grep "/xyz/openbmc_project/software/PLDM_Device_Firmware_Device_${eid}_Component_${compid}" |
+        grep -E "/xyz/openbmc_project/software/(PLDM_Device_Firmware_Device_${eid}_Component_${compid}|Minerva_Aegis_MMC_Component_${compid}_[0-9]+)" |
         sed 's/^[^\/]*//')
 
     echo "$path"

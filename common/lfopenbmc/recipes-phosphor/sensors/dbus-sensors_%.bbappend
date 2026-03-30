@@ -17,6 +17,7 @@ SRC_URI:append = " \
     file://0014-meta-facebook-yosemite4-Disable-in2_alarm-event.patch \
     file://0015-Implement-valve-monitor-service.patch \
     file://0016-psusensor-Add-support-for-per-sensor-PollRate-config.patch \
+    file://0017-SmbpbiSensor-Fix-invalid-data-check-size-for-tempera.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \

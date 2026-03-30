@@ -1,7 +1,7 @@
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
-inherit allarch systemd obmc-phosphor-systemd
+inherit allarch systemd
 
 RDEPENDS:${PN} += "bash"
 
@@ -24,3 +24,5 @@ do_install() {
     install -d ${D}${libexecdir}
     install -m 0755 ${UNPACKDIR}/pldm-monitor.sh ${D}${libexecdir}/pldm-monitor
 }
+
+FILES:${PN} += "${systemd_system_unitdir}"

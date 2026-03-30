@@ -1,7 +1,7 @@
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
-inherit allarch systemd obmc-phosphor-systemd
+inherit allarch systemd
 
 RDEPENDS:${PN} += "bash managed-reboot"
 
@@ -9,6 +9,7 @@ S = "${UNPACKDIR}"
 SRC_URI += " \
     file://usb-serial-monitor.sh \
     file://usb-serial-monitor.service \
+    file://usb-serial-monitor.timer \
     "
 
 SYSTEMD_SERVICE:${PN}:append = " \
@@ -23,3 +24,5 @@ do_install() {
     install -d ${D}${libexecdir}
     install -m 0755 ${UNPACKDIR}/usb-serial-monitor.sh ${D}${libexecdir}/usb-serial-monitor
 }
+
+FILES:${PN} += "${systemd_system_unitdir}"

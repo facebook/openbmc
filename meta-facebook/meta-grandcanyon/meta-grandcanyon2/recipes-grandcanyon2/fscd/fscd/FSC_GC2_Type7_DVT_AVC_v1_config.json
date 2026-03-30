@@ -266,7 +266,7 @@
         [ 0, 0 ]
       ]
     },
-     "linear_mb_hsc_temp": {
+     "linear_mb_efuse_temp": {
       "read_source" : {
         "util" : "/usr/local/bin/sensor-util"
       },

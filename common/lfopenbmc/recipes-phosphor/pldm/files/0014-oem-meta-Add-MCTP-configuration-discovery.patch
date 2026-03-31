@@ -1,4 +1,4 @@
-From e25df1579b0fea8d273054ea5c1a7a4e4b9a91d3 Mon Sep 17 00:00:00 2001
+From b4214601b5016925fb45f06fb2125af9aa9ab669 Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Wed, 17 Sep 2025 16:05:34 +0800
 Subject: [PATCH 14/18] oem-meta: Add MCTP configuration discovery
@@ -667,5 +667,5 @@ index a7c90c9..f81c3fe 100644
                       TID](IO& io, int fd, uint32_t revents) mutable {
          if (revents & (POLLHUP | POLLERR))
 -- 
-2.47.3
+2.52.0
 

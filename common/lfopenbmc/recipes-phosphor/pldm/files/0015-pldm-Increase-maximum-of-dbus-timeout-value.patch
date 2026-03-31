@@ -1,4 +1,4 @@
-From e60ae946f8135294fcbdf94ec483c9f459890ce7 Mon Sep 17 00:00:00 2001
+From 873a7da5724ebfd63c71dcba33a861c0d84fa1bd Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Fri, 7 Nov 2025 08:25:45 +0000
 Subject: [PATCH 15/18] pldm: Increase maximum of dbus-timeout-value
@@ -37,5 +37,5 @@ index d9bd868..95d1833 100644
      description: '''The amount of time pldm waits to get a response for a dbus
                      message before timing out''',
 -- 
-2.47.3
+2.52.0
 

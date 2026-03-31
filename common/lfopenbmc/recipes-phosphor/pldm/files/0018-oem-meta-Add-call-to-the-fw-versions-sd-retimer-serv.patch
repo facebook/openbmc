@@ -1,7 +1,7 @@
-From 5222c3a9c255e7bc32aa9fc5e494fc29348abf2d Mon Sep 17 00:00:00 2001
+From 69f634212fccebb8e622e77d6ed435186a5f1797 Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Thu, 23 Oct 2025 14:34:12 +0800
-Subject: [PATCH 13/18] oem-meta: Add call to the fw-versions-sd-retimer
+Subject: [PATCH 18/18] oem-meta: Add call to the fw-versions-sd-retimer
  service
 
 The fw-versions-sd-retimer service is triggered by the POST_COMPLETED
@@ -10,15 +10,16 @@ the service is not supported upstream.
 
 Change-Id: Iffcf7ac3473689785fcd44b38081f52533dac552
 Signed-off-by: Sora Su <baxiche@gmail.com>
+Upstream-Status: Inappropriate
 ---
  .../file_io_type_event_log.cpp                | 23 +++++++++++++++++--
  1 file changed, 21 insertions(+), 2 deletions(-)
 
 diff --git a/oem/meta/libpldmresponder/file_io_type_event_log.cpp b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-index b694339..87de971 100644
+index e3b5886..81cb723 100644
 --- a/oem/meta/libpldmresponder/file_io_type_event_log.cpp
 +++ b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-@@ -437,6 +437,27 @@ const std::string EventLogHandler::handleEventType(
+@@ -591,6 +591,27 @@ const std::string EventLogHandler::handleEventType(
                      dimm_id[eventData[2]] + pmic_event_type[eventData[3]];
              break;
          }
@@ -46,7 +47,7 @@ index b694339..87de971 100644
          case EventType::CPU_THERMAL_TRIP:
          case EventType::HSC_OCP:
          case EventType::P12V_STBY_UV:
-@@ -456,7 +477,6 @@ const std::string EventLogHandler::handleEventType(
+@@ -610,7 +631,6 @@ const std::string EventLogHandler::handleEventType(
          case EventType::HSC_FAULT:
          case EventType::SYS_THROTTLE:
          case EventType::SYSTEM_MANAGEMENT_ERROR:
@@ -54,7 +55,7 @@ index b694339..87de971 100644
          case EventType::FAN_ERROR:
          case EventType::HDT_PRSNT_ASSERTION:
          case EventType::PLTRST_ASSERTION:
-@@ -464,7 +484,6 @@ const std::string EventLogHandler::handleEventType(
+@@ -618,7 +638,6 @@ const std::string EventLogHandler::handleEventType(
          case EventType::CXL1_HB:
          case EventType::CXL2_HB:
          case EventType::POST_STARTED:
@@ -63,5 +64,5 @@ index b694339..87de971 100644
              PROCHOT_IS_TRIGGERED_DUE_TO_SD_SENSOR_READING_EXCEED_UCR:
          case EventType::FRB2_WDT_HARD_RST:
 -- 
-2.47.3
+2.52.0
 

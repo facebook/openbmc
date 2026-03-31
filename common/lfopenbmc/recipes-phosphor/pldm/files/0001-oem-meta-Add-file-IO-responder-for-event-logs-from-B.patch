@@ -1,7 +1,7 @@
-From cc82a2c72da48430554ce08a6a74eca2c1392a88 Mon Sep 17 00:00:00 2001
+From c6ee54cb71cbd8e417d5fd83a2489799008a5bd0 Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Mon, 21 Jul 2025 14:06:38 +0800
-Subject: [PATCH 10/18] oem-meta: Add file IO responder for event logs from BIC
+Subject: [PATCH 01/18] oem-meta: Add file IO responder for event logs from BIC
 
 Add handler for write-file command "EVENT_LOG", which is sent
 when host events are triggered, parse event type from a list and
@@ -1110,5 +1110,5 @@ index 265f6f3..62fecbc 100644
      'file_io_type_post_code.cpp',
      'file_io_type_power_control.cpp',
 -- 
-2.47.3
+2.52.0
 

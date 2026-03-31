@@ -1,7 +1,7 @@
-From 7ad5ac13a8d5c3389103d5ffcb58297a4e61dbb8 Mon Sep 17 00:00:00 2001
+From 65ad22f242ed4ca4c8b21f986391c5223d82e484 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Mon, 26 Jan 2026 21:25:18 +0800
-Subject: [PATCH 17/18] oem-meta: santabarbara: add handler for event logs from
+Subject: [PATCH 02/18] oem-meta: santabarbara: add handler for event logs from
  rainbow MMC
 
 Add support for decoding the event logs emitted by the Rainbow MMC. To
@@ -75,7 +75,7 @@ Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
  2 files changed, 223 insertions(+), 7 deletions(-)
 
 diff --git a/oem/meta/libpldmresponder/file_io_type_event_log.cpp b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-index 87de971..81cb723 100644
+index b694339..e3b5886 100644
 --- a/oem/meta/libpldmresponder/file_io_type_event_log.cpp
 +++ b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
 @@ -59,6 +59,7 @@ static constexpr auto eventList = std::to_array({
@@ -275,7 +275,7 @@ index 87de971..81cb723 100644
              return PLDM_SUCCESS;
          }
          receivedEventTimeStamp[eventKey] = eventTimeStamp;
-@@ -495,6 +649,7 @@ const std::string EventLogHandler::handleEventType(
+@@ -476,6 +630,7 @@ const std::string EventLogHandler::handleEventType(
          case EventType::OS_LOAD_WDT_PWR_CYCLE:
          case EventType::MTIA_FAULT:
          case EventType::POST_TIMEOUTED:
@@ -283,7 +283,7 @@ index 87de971..81cb723 100644
          {
              event = eventList[static_cast<int>(eventType)];
              break;
-@@ -661,7 +816,7 @@ void EventLogHandler::addSystemEventLogAndJournal(
+@@ -642,7 +797,7 @@ void EventLogHandler::addSystemEventLogAndJournal(
          {
              EventAssert eventStatus = static_cast<EventAssert>(eventData[1]);
              const auto index = eventData[2];
@@ -292,7 +292,7 @@ index 87de971..81cb723 100644
              if (!faultEvent)
              {
                  error("Invalid MTIA fault source 0x{SOURCE:X}", "SOURCE",
-@@ -673,6 +828,66 @@ void EventLogHandler::addSystemEventLogAndJournal(
+@@ -654,6 +809,66 @@ void EventLogHandler::addSystemEventLogAndJournal(
              recordEventLog(*faultEvent, eventStatus, data);
              break;
          }
@@ -372,5 +372,5 @@ index f02271b..34c8b5a 100644
  
  enum class EventAssert : uint8_t
 -- 
-2.47.3
+2.52.0
 

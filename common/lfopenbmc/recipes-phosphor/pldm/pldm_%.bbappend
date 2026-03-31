@@ -22,6 +22,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0016-terminus-replace-inventory-and-sensor-configuration.patch \
     file://0017-requester-refresh-MCTP-endpoints-after-host-reaches-.patch \
     file://0018-oem-meta-Add-call-to-the-fw-versions-sd-retimer-serv.patch \
+    file://0019-oem-meta-add-getSlotNumberStringByTID-mapping-for-Sa.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

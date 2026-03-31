@@ -1,7 +1,7 @@
-From cdb58b7508d8e71e8a19a3ecbcc6936703fc8da2 Mon Sep 17 00:00:00 2001
+From cb82a433427d486ef2dbc006347f57d6d8fc0e33 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <delphine_cc_chiu@wiwynn.com>
 Date: Tue, 25 Jun 2024 14:51:37 +0800
-Subject: [PATCH 03/18] pldm: Revise image path for update
+Subject: [PATCH 03/19] pldm: Revise image path for update
 
 Revise image path from /tmp/images to /tmp/pldm_images to prevent image
 been removed by SoftwareManager due to both service are watching the

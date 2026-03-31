@@ -1,7 +1,7 @@
-From a9bb54fad31bbc448ec7a62759ca9a7ec9e04b8a Mon Sep 17 00:00:00 2001
+From 2d0cb1511a12b9a1da76b3afc379d7e125767f47 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 17:16:49 +0800
-Subject: [PATCH 17/18] requester: refresh MCTP endpoints after host reaches
+Subject: [PATCH 17/19] requester: refresh MCTP endpoints after host reaches
  running state
 
 Some MCTP endpoints associated with MCTPI2CTarget or MCTPI3CTarget

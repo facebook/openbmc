@@ -129,13 +129,7 @@ wedge_board_type() {
 }
 
 wedge_product_eeprom_source() {
-    local cpu_id
-    cpu_id=$(wedge_cpu_id)
-    if [ "$cpu_id" = "$BOARD_ID_RUGGLES" ]; then
-        echo "chassis_eeprom"
-    else
-        echo "scm"
-    fi
+    echo "scm"
 }
 
 wedge_product_name() {

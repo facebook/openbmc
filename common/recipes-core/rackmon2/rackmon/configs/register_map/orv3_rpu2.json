@@ -224,7 +224,7 @@
             "begin": 37911,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Manual_Pump_Rack_Group_Pumps_Duty_Set"
         },
@@ -232,7 +232,7 @@
             "begin": 37912,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Manual_Fan_Rack_1_All_Fan_Duty_Set"
         },
@@ -240,7 +240,7 @@
             "begin": 37913,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Manual_Fan_Rack_2_All_Fan_Duty_Set"
         },
@@ -248,7 +248,7 @@
             "begin": 37914,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Auto1_Target_Flow_Set"
         },
@@ -256,7 +256,7 @@
             "begin": 37915,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Auto1_Fan_Rack_1_All_Fan_Duty_Set"
         },
@@ -264,7 +264,7 @@
             "begin": 37916,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Auto1_Fan_Rack_2_All_Fan_Duty_Set"
         },
@@ -272,7 +272,7 @@
             "begin": 37917,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Auto2_Target_Flow_Set"
         },
@@ -280,7 +280,7 @@
             "begin": 37918,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Auto2_Target_Temperature_Set"
         },
@@ -288,7 +288,7 @@
             "begin": 37919,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Manual_Fan_Rack_1_Proportional_Valve"
         },
@@ -296,7 +296,7 @@
             "begin": 37920,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Manual_Fan_Rack_2_Proportional_Valve"
         },
@@ -304,7 +304,7 @@
             "begin": 37936,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Manual_Pump_Rack_Pump1_Duty_Set"
         },
@@ -312,7 +312,7 @@
             "begin": 37937,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Manual_Pump_Rack_Pump2_Duty_Set"
         },
@@ -320,7 +320,7 @@
             "begin": 37938,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Manual_Pump_Rack_Pump3_Duty_Set"
         },
@@ -448,7 +448,7 @@
             "begin": 37527,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Pump_Rack_Flow"
         },
@@ -456,7 +456,7 @@
             "begin": 37528,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_1_Flow"
         },
@@ -464,7 +464,7 @@
             "begin": 37529,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_2_Flow"
         },
@@ -492,7 +492,7 @@
             "begin": 37537,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_1_Proportional_Valve"
         },
@@ -500,7 +500,7 @@
             "begin": 37538,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_2_Proportional_Valve"
         },
@@ -524,7 +524,7 @@
             "begin": 37459,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "Pump_Rack_CRPS_PSU1_Vout",
             "unit": "Volts"
@@ -533,7 +533,7 @@
             "begin": 37460,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "Pump_Rack_CRPS_PSU2_Vout",
             "unit": "Volts"
@@ -542,7 +542,7 @@
             "begin": 37461,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "Pump_Rack_CRPS_PSU1_Iout",
             "unit": "Amperes"
@@ -551,7 +551,7 @@
             "begin": 37462,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "Pump_Rack_CRPS_PSU2_Iout",
             "unit": "Amperes"
@@ -578,7 +578,7 @@
             "begin": 37466,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "Pump_Rack_CRPS_PSU1_OCP_Threshold",
             "unit": "Amperes"
@@ -587,7 +587,7 @@
             "begin": 37467,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "Pump_Rack_CRPS_PSU2_OCP_Threshold",
             "unit": "Amperes"
@@ -596,7 +596,7 @@
             "begin": 37468,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Pump_Rack_CRPS_PSU1_OTP_Hotspot_Threshold",
             "unit": "DegreesC"
@@ -605,7 +605,7 @@
             "begin": 37469,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Pump_Rack_CRPS_PSU2_OTP_Hotspot_Threshold",
             "unit": "DegreesC"
@@ -614,7 +614,7 @@
             "begin": 37470,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Pump_Rack_CRPS_PSU1_OTP_Ambient_Threshold",
             "unit": "DegreesC"
@@ -623,7 +623,7 @@
             "begin": 37471,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Pump_Rack_CRPS_PSU2_OTP_Ambient_Threshold",
             "unit": "DegreesC"
@@ -632,7 +632,7 @@
             "begin": 37479,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "Fan_Rack_1_CRPS_PSU1_Vout",
             "unit": "Volts"
@@ -641,7 +641,7 @@
             "begin": 37480,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "Fan_Rack_1_CRPS_PSU2_Vout",
             "unit": "Volts"
@@ -650,7 +650,7 @@
             "begin": 37481,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "Fan_Rack_1_CRPS_PSU1_Iout",
             "unit": "Amperes"
@@ -659,7 +659,7 @@
             "begin": 37482,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "Fan_Rack_1_CRPS_PSU2_Iout",
             "unit": "Amperes"
@@ -686,7 +686,7 @@
             "begin": 37486,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "Fan_Rack_1_CRPS_PSU1_OCP_Threshold",
             "unit": "Amperes"
@@ -695,7 +695,7 @@
             "begin": 37487,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "Fan_Rack_1_CRPS_PSU2_OCP_Threshold",
             "unit": "Amperes"
@@ -704,7 +704,7 @@
             "begin": 37488,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Fan_Rack_1_CRPS_PSU1_OTP_Hotspot_Threshold",
             "unit": "DegreesC"
@@ -713,7 +713,7 @@
             "begin": 37489,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Fan_Rack_1_CRPS_PSU2_OTP_Hotspot_Threshold",
             "unit": "DegreesC"
@@ -722,7 +722,7 @@
             "begin": 37490,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Fan_Rack_1_CRPS_PSU1_OTP_Ambient_Threshold",
             "unit": "DegreesC"
@@ -731,7 +731,7 @@
             "begin": 37491,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Fan_Rack_1_CRPS_PSU2_OTP_Ambient_Threshold",
             "unit": "DegreesC"
@@ -740,7 +740,7 @@
             "begin": 37499,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "Fan_Rack_2_CRPS_PSU1_Vout",
             "unit": "Volts"
@@ -749,7 +749,7 @@
             "begin": 37500,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "Fan_Rack_2_CRPS_PSU2_Vout",
             "unit": "Volts"
@@ -758,7 +758,7 @@
             "begin": 37501,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "Fan_Rack_2_CRPS_PSU1_Iout",
             "unit": "Amperes"
@@ -767,7 +767,7 @@
             "begin": 37502,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "Fan_Rack_2_CRPS_PSU2_Iout",
             "unit": "Amperes"
@@ -794,7 +794,7 @@
             "begin": 37506,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "Fan_Rack_2_CRPS_PSU1_OCP_Threshold",
             "unit": "Amperes"
@@ -803,7 +803,7 @@
             "begin": 37507,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "Fan_Rack_2_CRPS_PSU2_OCP_Threshold",
             "unit": "Amperes"
@@ -812,7 +812,7 @@
             "begin": 37508,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Fan_Rack_2_CRPS_PSU1_OTP_Hotspot_Threshold",
             "unit": "DegreesC"
@@ -821,7 +821,7 @@
             "begin": 37509,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Fan_Rack_2_CRPS_PSU2_OTP_Hotspot_Threshold",
             "unit": "DegreesC"
@@ -830,7 +830,7 @@
             "begin": 37510,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Fan_Rack_2_CRPS_PSU1_OTP_Ambient_Threshold",
             "unit": "DegreesC"
@@ -839,7 +839,7 @@
             "begin": 37511,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Fan_Rack_2_CRPS_PSU2_OTP_Ambient_Threshold",
             "unit": "DegreesC"
@@ -848,7 +848,7 @@
             "begin": 36897,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_Fan_PWM_Setting",
             "unit": "Percent"
         },
@@ -856,7 +856,7 @@
             "begin": 36898,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan1_Speed",
             "unit": "RPMS"
         },
@@ -864,7 +864,7 @@
             "begin": 36899,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan2_Speed",
             "unit": "RPMS"
         },
@@ -872,7 +872,7 @@
             "begin": 36900,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan3_Speed",
             "unit": "RPMS"
         },
@@ -880,7 +880,7 @@
             "begin": 36901,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan4_Speed",
             "unit": "RPMS"
         },
@@ -888,7 +888,7 @@
             "begin": 36902,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan5_Speed",
             "unit": "RPMS"
         },
@@ -896,7 +896,7 @@
             "begin": 36903,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan6_Speed",
             "unit": "RPMS"
         },
@@ -904,7 +904,7 @@
             "begin": 36904,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan7_Speed",
             "unit": "RPMS"
         },
@@ -912,7 +912,7 @@
             "begin": 36905,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan8_Speed",
             "unit": "RPMS"
         },
@@ -920,7 +920,7 @@
             "begin": 36906,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan1_Speed",
             "unit": "RPMS"
         },
@@ -928,7 +928,7 @@
             "begin": 36907,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan2_Speed",
             "unit": "RPMS"
         },
@@ -936,7 +936,7 @@
             "begin": 36908,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan3_Speed",
             "unit": "RPMS"
         },
@@ -944,7 +944,7 @@
             "begin": 36909,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan4_Speed",
             "unit": "RPMS"
         },
@@ -952,7 +952,7 @@
             "begin": 36910,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan5_Speed",
             "unit": "RPMS"
         },
@@ -960,7 +960,7 @@
             "begin": 36911,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan6_Speed",
             "unit": "RPMS"
         },
@@ -968,7 +968,7 @@
             "begin": 36912,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan7_Speed",
             "unit": "RPMS"
         },
@@ -976,7 +976,7 @@
             "begin": 36913,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan8_Speed",
             "unit": "RPMS"
         },
@@ -984,7 +984,7 @@
             "begin": 36914,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "sign": true,
             "name": "Fan_Rack_1_Fan1_Module_Temperature",
             "unit": "DegreesC"
@@ -993,7 +993,7 @@
             "begin": 36915,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "sign": true,
             "name": "Fan_Rack_1_Fan2_Module_Temperature",
             "unit": "DegreesC"
@@ -1002,7 +1002,7 @@
             "begin": 36916,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "sign": true,
             "name": "Fan_Rack_1_Fan3_Module_Temperature",
             "unit": "DegreesC"
@@ -1011,7 +1011,7 @@
             "begin": 36917,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "sign": true,
             "name": "Fan_Rack_1_Fan4_Module_Temperature",
             "unit": "DegreesC"
@@ -1020,7 +1020,7 @@
             "begin": 36918,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "sign": true,
             "name": "Fan_Rack_1_Fan5_Module_Temperature",
             "unit": "DegreesC"
@@ -1029,7 +1029,7 @@
             "begin": 36919,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "sign": true,
             "name": "Fan_Rack_1_Fan6_Module_Temperature",
             "unit": "DegreesC"
@@ -1038,7 +1038,7 @@
             "begin": 36920,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "sign": true,
             "name": "Fan_Rack_1_Fan7_Module_Temperature",
             "unit": "DegreesC"
@@ -1047,7 +1047,7 @@
             "begin": 36921,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "sign": true,
             "name": "Fan_Rack_1_Fan8_Module_Temperature",
             "unit": "DegreesC"
@@ -1056,7 +1056,7 @@
             "begin": 36922,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "sign": true,
             "name": "Fan_Rack_2_Fan1_Module_Temperature",
             "unit": "DegreesC"
@@ -1065,7 +1065,7 @@
             "begin": 36923,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "sign": true,
             "name": "Fan_Rack_2_Fan2_Module_Temperature",
             "unit": "DegreesC"
@@ -1074,7 +1074,7 @@
             "begin": 36924,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "sign": true,
             "name": "Fan_Rack_2_Fan3_Module_Temperature",
             "unit": "DegreesC"
@@ -1083,7 +1083,7 @@
             "begin": 36925,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "sign": true,
             "name": "Fan_Rack_2_Fan4_Module_Temperature",
             "unit": "DegreesC"
@@ -1092,7 +1092,7 @@
             "begin": 36926,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "sign": true,
             "name": "Fan_Rack_2_Fan5_Module_Temperature",
             "unit": "DegreesC"
@@ -1101,7 +1101,7 @@
             "begin": 36927,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "sign": true,
             "name": "Fan_Rack_2_Fan6_Module_Temperature",
             "unit": "DegreesC"
@@ -1110,7 +1110,7 @@
             "begin": 36928,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "sign": true,
             "name": "Fan_Rack_2_Fan7_Module_Temperature",
             "unit": "DegreesC"
@@ -1119,7 +1119,7 @@
             "begin": 36929,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "sign": true,
             "name": "Fan_Rack_2_Fan8_Module_Temperature",
             "unit": "DegreesC"
@@ -1128,7 +1128,7 @@
             "begin": 36930,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_1_Fan1_Watt",
             "unit": "Watts"
@@ -1137,7 +1137,7 @@
             "begin": 36931,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_1_Fan2_Watt",
             "unit": "Watts"
@@ -1146,7 +1146,7 @@
             "begin": 36932,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_1_Fan3_Watt",
             "unit": "Watts"
@@ -1155,7 +1155,7 @@
             "begin": 36933,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_1_Fan4_Watt",
             "unit": "Watts"
@@ -1164,7 +1164,7 @@
             "begin": 36934,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_1_Fan5_Watt",
             "unit": "Watts"
@@ -1173,7 +1173,7 @@
             "begin": 36935,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_1_Fan6_Watt",
             "unit": "Watts"
@@ -1182,7 +1182,7 @@
             "begin": 36936,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_1_Fan7_Watt",
             "unit": "Watts"
@@ -1191,7 +1191,7 @@
             "begin": 36937,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_1_Fan8_Watt",
             "unit": "Watts"
@@ -1200,7 +1200,7 @@
             "begin": 36938,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_2_Fan1_Watt",
             "unit": "Watts"
@@ -1209,7 +1209,7 @@
             "begin": 36939,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_2_Fan2_Watt",
             "unit": "Watts"
@@ -1218,7 +1218,7 @@
             "begin": 36940,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_2_Fan3_Watt",
             "unit": "Watts"
@@ -1227,7 +1227,7 @@
             "begin": 36941,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_2_Fan4_Watt",
             "unit": "Watts"
@@ -1236,7 +1236,7 @@
             "begin": 36942,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_2_Fan5_Watt",
             "unit": "Watts"
@@ -1245,7 +1245,7 @@
             "begin": 36943,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_2_Fan6_Watt",
             "unit": "Watts"
@@ -1254,7 +1254,7 @@
             "begin": 36944,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_2_Fan7_Watt",
             "unit": "Watts"
@@ -1263,7 +1263,7 @@
             "begin": 36945,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_2_Fan8_Watt",
             "unit": "Watts"
@@ -1272,7 +1272,7 @@
             "begin": 36946,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan1_Vin",
             "unit": "Volts"
         },
@@ -1280,7 +1280,7 @@
             "begin": 36947,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan2_Vin",
             "unit": "Volts"
         },
@@ -1288,7 +1288,7 @@
             "begin": 36948,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan3_Vin",
             "unit": "Volts"
         },
@@ -1296,7 +1296,7 @@
             "begin": 36949,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan4_Vin",
             "unit": "Volts"
         },
@@ -1304,7 +1304,7 @@
             "begin": 36950,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan5_Vin",
             "unit": "Volts"
         },
@@ -1312,7 +1312,7 @@
             "begin": 36951,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan6_Vin",
             "unit": "Volts"
         },
@@ -1320,7 +1320,7 @@
             "begin": 36952,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan7_Vin",
             "unit": "Volts"
         },
@@ -1328,7 +1328,7 @@
             "begin": 36953,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan8_Vin",
             "unit": "Volts"
         },
@@ -1336,7 +1336,7 @@
             "begin": 36954,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan1_Vin",
             "unit": "Volts"
         },
@@ -1344,7 +1344,7 @@
             "begin": 36955,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan2_Vin",
             "unit": "Volts"
         },
@@ -1352,7 +1352,7 @@
             "begin": 36956,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan3_Vin",
             "unit": "Volts"
         },
@@ -1360,7 +1360,7 @@
             "begin": 36957,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan4_Vin",
             "unit": "Volts"
         },
@@ -1368,7 +1368,7 @@
             "begin": 36958,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan5_Vin",
             "unit": "Volts"
         },
@@ -1376,7 +1376,7 @@
             "begin": 36959,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan6_Vin",
             "unit": "Volts"
         },
@@ -1384,7 +1384,7 @@
             "begin": 36960,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan7_Vin",
             "unit": "Volts"
         },
@@ -1392,7 +1392,7 @@
             "begin": 36961,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan8_Vin",
             "unit": "Volts"
         },
@@ -1400,7 +1400,7 @@
             "begin": 36962,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan1_Iout",
             "unit": "Amperes"
         },
@@ -1408,7 +1408,7 @@
             "begin": 36963,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan2_Iout",
             "unit": "Amperes"
         },
@@ -1416,7 +1416,7 @@
             "begin": 36964,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan3_Iout",
             "unit": "Amperes"
         },
@@ -1424,7 +1424,7 @@
             "begin": 36965,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan4_Iout",
             "unit": "Amperes"
         },
@@ -1432,7 +1432,7 @@
             "begin": 36966,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan5_Iout",
             "unit": "Amperes"
         },
@@ -1440,7 +1440,7 @@
             "begin": 36967,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan6_Iout",
             "unit": "Amperes"
         },
@@ -1448,7 +1448,7 @@
             "begin": 36968,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan7_Iout",
             "unit": "Amperes"
         },
@@ -1456,7 +1456,7 @@
             "begin": 36969,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_1_Fan8_Iout",
             "unit": "Amperes"
         },
@@ -1464,7 +1464,7 @@
             "begin": 36970,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan1_Iout",
             "unit": "Amperes"
         },
@@ -1472,7 +1472,7 @@
             "begin": 36971,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan2_Iout",
             "unit": "Amperes"
         },
@@ -1480,7 +1480,7 @@
             "begin": 36972,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan3_Iout",
             "unit": "Amperes"
         },
@@ -1488,7 +1488,7 @@
             "begin": 36973,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan4_Iout",
             "unit": "Amperes"
         },
@@ -1496,7 +1496,7 @@
             "begin": 36974,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan5_Iout",
             "unit": "Amperes"
         },
@@ -1504,7 +1504,7 @@
             "begin": 36975,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan6_Iout",
             "unit": "Amperes"
         },
@@ -1512,7 +1512,7 @@
             "begin": 36976,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan7_Iout",
             "unit": "Amperes"
         },
@@ -1520,7 +1520,7 @@
             "begin": 36977,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "name": "Fan_Rack_2_Fan8_Iout",
             "unit": "Amperes"
         },
@@ -1932,7 +1932,7 @@
             "begin": 36864,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Pump_Rack_Pump_PWM_Setting",
             "unit": "Percent"
@@ -1941,7 +1941,7 @@
             "begin": 36865,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Pump_Rack_Pump1_Speed",
             "unit": "RPMS"
@@ -1950,7 +1950,7 @@
             "begin": 36866,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Pump_Rack_Pump2_Speed",
             "unit": "RPMS"
@@ -1959,7 +1959,7 @@
             "begin": 36867,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Pump_Rack_Pump3_Speed",
             "unit": "RPMS"
@@ -1968,7 +1968,7 @@
             "begin": 36868,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "Pump_Rack_Pump1_Vout",
             "unit": "Volts"
@@ -1977,7 +1977,7 @@
             "begin": 36869,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "Pump_Rack_Pump2_Vout",
             "unit": "Volts"
@@ -1986,7 +1986,7 @@
             "begin": 36870,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "Pump_Rack_Pump3_Vout",
             "unit": "Volts"
@@ -1995,7 +1995,7 @@
             "begin": 36871,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Pump_Rack_Pump1_Iout",
             "unit": "Amperes"
@@ -2004,7 +2004,7 @@
             "begin": 36872,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Pump_Rack_Pump2_Iout",
             "unit": "Amperes"
@@ -2013,7 +2013,7 @@
             "begin": 36873,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Pump_Rack_Pump3_Iout",
             "unit": "Amperes"
@@ -2022,7 +2022,7 @@
             "begin": 36874,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Pump_Rack_Pump1_Wout",
             "unit": "Watts"
@@ -2031,7 +2031,7 @@
             "begin": 36875,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Pump_Rack_Pump2_Wout",
             "unit": "Watts"
@@ -2040,7 +2040,7 @@
             "begin": 36876,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Pump_Rack_Pump3_Wout",
             "unit": "Watts"
@@ -2085,7 +2085,7 @@
             "begin": 37546,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Pump_Rack_pH"
         },
@@ -2093,7 +2093,7 @@
             "begin": 37547,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "Pump_Rack_Conductivity"
         },
@@ -2101,7 +2101,7 @@
             "begin": 37548,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Pump_Rack_Humidity"
         },
@@ -2109,7 +2109,7 @@
             "begin": 37549,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Pump_Rack_Temperature1_Inlet",
             "unit": "DegreesC"
@@ -2118,7 +2118,7 @@
             "begin": 37550,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Pump_Rack_Temperature2_Outlet",
             "unit": "DegreesC"
@@ -2127,7 +2127,7 @@
             "begin": 37551,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Pump_Rack_Pressure1_Inlet",
             "unit": "Pascals"
@@ -2136,7 +2136,7 @@
             "begin": 37552,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Pump_Rack_Pressure2_Pump1_In",
             "unit": "Pascals"
@@ -2145,7 +2145,7 @@
             "begin": 37553,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Pump_Rack_Pressure3_Pump2_In",
             "unit": "Pascals"
@@ -2154,7 +2154,7 @@
             "begin": 37554,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Pump_Rack_Pressure4_Pump3_In",
             "unit": "Pascals"
@@ -2163,7 +2163,7 @@
             "begin": 37555,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Pump_Rack_Pressure5_Pump1_Out",
             "unit": "Pascals"
@@ -2172,7 +2172,7 @@
             "begin": 37556,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Pump_Rack_Pressure6_Pump2_Out",
             "unit": "Pascals"
@@ -2181,7 +2181,7 @@
             "begin": 37557,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Pump_Rack_Pressure7_Pump3_Out",
             "unit": "Pascals"
@@ -2190,7 +2190,7 @@
             "begin": 37558,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Pump_Rack_Pressure8_Pre_Filter",
             "unit": "Pascals"
@@ -2199,7 +2199,7 @@
             "begin": 37559,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Pump_Rack_Pressure9_Outlet",
             "unit": "Pascals"
@@ -2288,7 +2288,7 @@
             "begin": 37575,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_1_Pressure1_Inlet",
             "unit": "Pascals"
@@ -2297,7 +2297,7 @@
             "begin": 37576,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_1_Pressure2_Pre_Filter",
             "unit": "Pascals"
@@ -2306,7 +2306,7 @@
             "begin": 37577,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_1_Pressure3_Outlet",
             "unit": "Pascals"
@@ -2315,7 +2315,7 @@
             "begin": 37578,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_1_Temperature1_Inlet",
             "unit": "DegreesC"
@@ -2324,7 +2324,7 @@
             "begin": 37579,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_1_Temperature2_Outlet",
             "unit": "DegreesC"
@@ -2333,7 +2333,7 @@
             "begin": 37580,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_1_NTC1_In",
             "unit": "DegreesC"
@@ -2342,7 +2342,7 @@
             "begin": 37581,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_1_NTC2_Out",
             "unit": "DegreesC"
@@ -2395,7 +2395,7 @@
             "begin": 37596,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_2_Pressure1_Inlet",
             "unit": "Pascals"
@@ -2404,7 +2404,7 @@
             "begin": 37597,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_2_Pressure2_Pre_Filter",
             "unit": "Pascals"
@@ -2413,7 +2413,7 @@
             "begin": 37598,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_2_Pressure3_Outlet",
             "unit": "Pascals"
@@ -2422,7 +2422,7 @@
             "begin": 37599,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_2_Temperature1_Inlet",
             "unit": "DegreesC"
@@ -2431,7 +2431,7 @@
             "begin": 37600,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_2_Temperature2_Outlet",
             "unit": "DegreesC"
@@ -2440,7 +2440,7 @@
             "begin": 37601,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_2_NTC1_In",
             "unit": "DegreesC"
@@ -2449,7 +2449,7 @@
             "begin": 37602,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "Fan_Rack_2_NTC2_Out",
             "unit": "DegreesC"
@@ -2542,7 +2542,7 @@
             "begin": 37267,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Pump_Rack_Voltage_of_A_phase",
             "unit": "Volts"
@@ -2551,7 +2551,7 @@
             "begin": 37268,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Pump_Rack_Voltage_of_B_phase",
             "unit": "Volts"
@@ -2560,7 +2560,7 @@
             "begin": 37269,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Pump_Rack_Voltage_of_C_phase",
             "unit": "Volts"
@@ -2569,7 +2569,7 @@
             "begin": 37270,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "SmartMeter_Pump_Rack_Current_of_A_phase",
             "unit": "Amperes"
@@ -2578,7 +2578,7 @@
             "begin": 37271,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "SmartMeter_Pump_Rack_Current_of_B_phase",
             "unit": "Amperes"
@@ -2587,7 +2587,7 @@
             "begin": 37272,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "SmartMeter_Pump_Rack_Current_of_C_phase",
             "unit": "Amperes"
@@ -2596,7 +2596,7 @@
             "begin": 37273,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Pump_Rack_Power_Frequency"
         },
@@ -2604,7 +2604,7 @@
             "begin": 37274,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Pump_Rack_Voltage_between_AB",
             "unit": "Volts"
@@ -2613,7 +2613,7 @@
             "begin": 37275,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Pump_Rack_Voltage_between_CB",
             "unit": "Volts"
@@ -2622,7 +2622,7 @@
             "begin": 37276,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Pump_Rack_Voltage_between_AC",
             "unit": "Volts"
@@ -2631,7 +2631,7 @@
             "begin": 37277,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "SmartMeter_Pump_Rack_Power_factor_of_A_phase"
         },
@@ -2639,7 +2639,7 @@
             "begin": 37278,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "SmartMeter_Pump_Rack_Power_factor_of_B_phase"
         },
@@ -2647,7 +2647,7 @@
             "begin": 37279,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "SmartMeter_Pump_Rack_Power_factor_of_C_phase"
         },
@@ -2655,7 +2655,7 @@
             "begin": 37280,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "SmartMeter_Pump_Rack_Total_power_factor"
         },
@@ -2663,7 +2663,7 @@
             "begin": 37281,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "SmartMeter_Pump_Rack_THDIa"
         },
@@ -2671,7 +2671,7 @@
             "begin": 37282,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "SmartMeter_Pump_Rack_THDIb"
         },
@@ -2679,7 +2679,7 @@
             "begin": 37283,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "SmartMeter_Pump_Rack_THDIc"
         },
@@ -2687,7 +2687,7 @@
             "begin": 37331,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Fan_Rack_1_Voltage_of_A_phase",
             "unit": "Volts"
@@ -2696,7 +2696,7 @@
             "begin": 37332,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Fan_Rack_1_Voltage_of_B_phase",
             "unit": "Volts"
@@ -2705,7 +2705,7 @@
             "begin": 37333,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Fan_Rack_1_Voltage_of_C_phase",
             "unit": "Volts"
@@ -2714,7 +2714,7 @@
             "begin": 37334,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "SmartMeter_Fan_Rack_1_Current_of_A_phase",
             "unit": "Amperes"
@@ -2723,7 +2723,7 @@
             "begin": 37335,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "SmartMeter_Fan_Rack_1_Current_of_B_phase",
             "unit": "Amperes"
@@ -2732,7 +2732,7 @@
             "begin": 37336,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "SmartMeter_Fan_Rack_1_Current_of_C_phase",
             "unit": "Amperes"
@@ -2741,7 +2741,7 @@
             "begin": 37337,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Fan_Rack_1_Power_Frequency"
         },
@@ -2749,7 +2749,7 @@
             "begin": 37338,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Fan_Rack_1_Voltage_between_AB",
             "unit": "Volts"
@@ -2758,7 +2758,7 @@
             "begin": 37339,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Fan_Rack_1_Voltage_between_CB",
             "unit": "Volts"
@@ -2767,7 +2767,7 @@
             "begin": 37340,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Fan_Rack_1_Voltage_between_AC",
             "unit": "Volts"
@@ -2776,7 +2776,7 @@
             "begin": 37341,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "SmartMeter_Fan_Rack_1_Power_factor_of_A_phase"
         },
@@ -2784,7 +2784,7 @@
             "begin": 37342,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "SmartMeter_Fan_Rack_1_Power_factor_of_B_phase"
         },
@@ -2792,7 +2792,7 @@
             "begin": 37343,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "SmartMeter_Fan_Rack_1_Power_factor_of_C_phase"
         },
@@ -2800,7 +2800,7 @@
             "begin": 37344,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "SmartMeter_Fan_Rack_1_Total_power_factor"
         },
@@ -2808,7 +2808,7 @@
             "begin": 37345,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "SmartMeter_Fan_Rack_1_THDIa"
         },
@@ -2816,7 +2816,7 @@
             "begin": 37346,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "SmartMeter_Fan_Rack_1_THDIb"
         },
@@ -2824,7 +2824,7 @@
             "begin": 37347,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "SmartMeter_Fan_Rack_1_THDIc"
         },
@@ -2832,7 +2832,7 @@
             "begin": 37395,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Fan_Rack_2_Voltage_of_A_phase",
             "unit": "Volts"
@@ -2841,7 +2841,7 @@
             "begin": 37396,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Fan_Rack_2_Voltage_of_B_phase",
             "unit": "Volts"
@@ -2850,7 +2850,7 @@
             "begin": 37397,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Fan_Rack_2_Voltage_of_C_phase",
             "unit": "Volts"
@@ -2859,7 +2859,7 @@
             "begin": 37398,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "SmartMeter_Fan_Rack_2_Current_of_A_phase",
             "unit": "Amperes"
@@ -2868,7 +2868,7 @@
             "begin": 37399,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "SmartMeter_Fan_Rack_2_Current_of_B_phase",
             "unit": "Amperes"
@@ -2877,7 +2877,7 @@
             "begin": 37400,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "SmartMeter_Fan_Rack_2_Current_of_C_phase",
             "unit": "Amperes"
@@ -2886,7 +2886,7 @@
             "begin": 37401,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Fan_Rack_2_Power_Frequency"
         },
@@ -2894,7 +2894,7 @@
             "begin": 37402,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Fan_Rack_2_Voltage_between_AB",
             "unit": "Volts"
@@ -2903,7 +2903,7 @@
             "begin": 37403,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Fan_Rack_2_Voltage_between_CB",
             "unit": "Volts"
@@ -2912,7 +2912,7 @@
             "begin": 37404,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "SmartMeter_Fan_Rack_2_Voltage_between_AC",
             "unit": "Volts"
@@ -2921,7 +2921,7 @@
             "begin": 37405,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "SmartMeter_Fan_Rack_2_Power_factor_of_A_phase"
         },
@@ -2929,7 +2929,7 @@
             "begin": 37406,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "SmartMeter_Fan_Rack_2_Power_factor_of_B_phase"
         },
@@ -2937,7 +2937,7 @@
             "begin": 37407,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "SmartMeter_Fan_Rack_2_Power_factor_of_C_phase"
         },
@@ -2945,7 +2945,7 @@
             "begin": 37408,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.001,
             "name": "SmartMeter_Fan_Rack_2_Total_power_factor"
         },
@@ -2953,7 +2953,7 @@
             "begin": 37409,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "SmartMeter_Fan_Rack_2_THDIa"
         },
@@ -2961,7 +2961,7 @@
             "begin": 37410,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "SmartMeter_Fan_Rack_2_THDIb"
         },
@@ -2969,7 +2969,7 @@
             "begin": 37411,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.01,
             "name": "SmartMeter_Fan_Rack_2_THDIc"
         },
@@ -3001,7 +3001,7 @@
             "begin": 37078,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "UPS_Pump_Rack_P_Battery_Voltage",
             "unit": "Volts"
@@ -3010,7 +3010,7 @@
             "begin": 37079,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Pump_Rack_P_Battery_Discharging_Current",
             "unit": "Amperes"
@@ -3019,7 +3019,7 @@
             "begin": 37080,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Pump_Rack_P_Battery_Charging_Current",
             "unit": "Amperes"
@@ -3028,7 +3028,7 @@
             "begin": 37081,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Pump_Rack_Battery_Capacity",
             "unit": "AmpereHours"
@@ -3037,7 +3037,7 @@
             "begin": 37082,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Pump_Rack_Battery_Remain_time"
         },
@@ -3045,7 +3045,7 @@
             "begin": 37083,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "UPS_Pump_Rack_N_Battery_Voltage",
             "unit": "Volts"
@@ -3054,7 +3054,7 @@
             "begin": 37084,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Pump_Rack_N Battery_Discharging_Current",
             "unit": "Amperes"
@@ -3063,7 +3063,7 @@
             "begin": 37085,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Pump_Rack_N_Battery_Charging_Current",
             "unit": "Amperes"
@@ -3072,7 +3072,7 @@
             "begin": 37086,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Pump_Rack_Temperature_PFC",
             "unit": "DegreesC"
@@ -3081,7 +3081,7 @@
             "begin": 37087,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Pump_Rack_Temperature_INV",
             "unit": "DegreesC"
@@ -3090,7 +3090,7 @@
             "begin": 37088,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Pump_Rack_Temperature_Bypass",
             "unit": "DegreesC"
@@ -3099,7 +3099,7 @@
             "begin": 37089,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Pump_Rack_Max_Temperature",
             "unit": "DegreesC"
@@ -3108,7 +3108,7 @@
             "begin": 37090,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Pump_Rack_Mode_Information"
         },
@@ -3116,7 +3116,7 @@
             "begin": 37091,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Pump_Rack_Over_Temperature_Fault_Recovery_Value",
             "unit": "DegreesC"
@@ -3125,7 +3125,7 @@
             "begin": 37092,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Pump_Rack_Over_Temperature_Warning_Trigger_Value",
             "unit": "DegreesC"
@@ -3134,7 +3134,7 @@
             "begin": 37093,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Pump_Rack_Over_Temperature_Warning_Recovery_Value",
             "unit": "DegreesC"
@@ -3143,7 +3143,7 @@
             "begin": 37094,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Pump_Rack_Fault_Information"
         },
@@ -3151,7 +3151,7 @@
             "begin": 37095,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Pump_Rack_Battery_Shutdown_Voltage",
             "unit": "Volts"
@@ -3160,7 +3160,7 @@
             "begin": 37096,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Pump_Rack_Battery_Low_Voltage",
             "unit": "Volts"
@@ -3169,7 +3169,7 @@
             "begin": 37097,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Pump_Rack_Battery_High_Voltage",
             "unit": "Volts"
@@ -3202,7 +3202,7 @@
             "begin": 37139,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "UPS_Fan_Rack_1_P_Battery_Voltage",
             "unit": "Volts"
@@ -3211,7 +3211,7 @@
             "begin": 37140,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_1_P_Battery_Discharging_Current",
             "unit": "Amperes"
@@ -3220,7 +3220,7 @@
             "begin": 37141,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_1_P_Battery_Charging_Current",
             "unit": "Amperes"
@@ -3229,7 +3229,7 @@
             "begin": 37142,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_1_Battery_Capacity",
             "unit": "AmpereHours"
@@ -3238,7 +3238,7 @@
             "begin": 37143,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_1_Battery_Remain_time"
         },
@@ -3246,7 +3246,7 @@
             "begin": 37144,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "UPS_Fan_Rack_1_N_Battery_Voltage",
             "unit": "Volts"
@@ -3255,7 +3255,7 @@
             "begin": 37145,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_1_N Battery_Discharging_Current",
             "unit": "Amperes"
@@ -3264,7 +3264,7 @@
             "begin": 37146,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_1_N_Battery_Charging_Current",
             "unit": "Amperes"
@@ -3273,7 +3273,7 @@
             "begin": 37147,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_1_Temperature_PFC",
             "unit": "DegreesC"
@@ -3282,7 +3282,7 @@
             "begin": 37148,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_1_Temperature_INV",
             "unit": "DegreesC"
@@ -3291,7 +3291,7 @@
             "begin": 37149,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_1_Temperature_Bypass",
             "unit": "DegreesC"
@@ -3300,7 +3300,7 @@
             "begin": 37150,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_1_Max_Temperature",
             "unit": "DegreesC"
@@ -3309,7 +3309,7 @@
             "begin": 37151,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_1_Mode_Information",
             "unit": "DegreesC"
@@ -3318,7 +3318,7 @@
             "begin": 37152,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_1_Over_Temperature_Fault_Recovery_Value",
             "unit": "DegreesC"
@@ -3327,7 +3327,7 @@
             "begin": 37153,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_1_Over_Temperature_Warning_Trigger_Value",
             "unit": "DegreesC"
@@ -3336,7 +3336,7 @@
             "begin": 37154,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_1_Over_Temperature_Warning_Recovery_Value",
             "unit": "DegreesC"
@@ -3345,7 +3345,7 @@
             "begin": 37155,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_1_Fault_Information"
         },
@@ -3353,7 +3353,7 @@
             "begin": 37156,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_1_Battery_Shutdown_Voltage",
             "unit": "Volts"
@@ -3362,7 +3362,7 @@
             "begin": 37157,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_1_Battery_Low_Voltage",
             "unit": "Volts"
@@ -3371,7 +3371,7 @@
             "begin": 37158,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_1_Battery_High_Voltage",
             "unit": "Volts"
@@ -3404,7 +3404,7 @@
             "begin": 37205,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "UPS_Fan_Rack_2_P_Battery_Voltage",
             "unit": "Volts"
@@ -3413,7 +3413,7 @@
             "begin": 37206,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_2_P_Battery_Discharging_Current",
             "unit": "Amperes"
@@ -3422,7 +3422,7 @@
             "begin": 37207,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_2_P_Battery_Charging_Current",
             "unit": "Amperes"
@@ -3431,7 +3431,7 @@
             "begin": 37208,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_2_Battery_Capacity",
             "unit": "AmpereHours"
@@ -3440,7 +3440,7 @@
             "begin": 37209,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_2_Battery_Remain_time"
         },
@@ -3448,7 +3448,7 @@
             "begin": 37210,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 0.1,
             "name": "UPS_Fan_Rack_2_N_Battery_Voltage",
             "unit": "Volts"
@@ -3457,7 +3457,7 @@
             "begin": 37211,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_2_N Battery_Discharging_Current",
             "unit": "Amperes"
@@ -3466,7 +3466,7 @@
             "begin": 37212,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_2_N_Battery_Charging_Current",
             "unit": "Amperes"
@@ -3475,7 +3475,7 @@
             "begin": 37213,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_2_Temperature_PFC",
             "unit": "DegreesC"
@@ -3484,7 +3484,7 @@
             "begin": 37214,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_2_Temperature_INV",
             "unit": "DegreesC"
@@ -3493,7 +3493,7 @@
             "begin": 37215,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_2_Temperature_Bypass",
             "unit": "DegreesC"
@@ -3502,7 +3502,7 @@
             "begin": 37216,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_2_Max_Temperature",
             "unit": "DegreesC"
@@ -3511,7 +3511,7 @@
             "begin": 37217,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_2_Mode_Information"
         },
@@ -3519,7 +3519,7 @@
             "begin": 37218,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_2_Over_Temperature_Fault_Recovery_Value",
             "unit": "DegreesC"
@@ -3528,7 +3528,7 @@
             "begin": 37219,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_2_Over_Temperature_Warning_Trigger_Value",
             "unit": "DegreesC"
@@ -3537,7 +3537,7 @@
             "begin": 37220,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_2_Over_Temperature_Warning_Recovery_Value",
             "unit": "DegreesC"
@@ -3546,7 +3546,7 @@
             "begin": 37221,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_2_Fault_Information"
         },
@@ -3554,7 +3554,7 @@
             "begin": 37222,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_2_Battery_Shutdown_Voltage",
             "unit": "Volts"
@@ -3563,7 +3563,7 @@
             "begin": 37223,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_2_Battery_Low_Voltage",
             "unit": "Volts"
@@ -3572,7 +3572,7 @@
             "begin": 37224,
             "length": 1,
             "format": "FLOAT",
-            "precision": 1,
+            "precision": 0,
             "scale": 1.0,
             "name": "UPS_Fan_Rack_2_Battery_High_Voltage",
             "unit": "Volts"

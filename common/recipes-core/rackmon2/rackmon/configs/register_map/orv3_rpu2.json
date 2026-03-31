@@ -67,75 +67,19 @@
             "name": "Self_Testing_Result"
         },
         {
-            "begin": 37970,
-            "length": 1,
-            "format": "FLAGS",
-            "flags": [
-                [
-                    0,
-                    "Self_Testing_Functions_Voltage_AC_Power"
-                ],
-                [
-                    1,
-                    "Self_Testing_Functions_Voltage_DC_Power"
-                ],
-                [
-                    4,
-                    "Self_Testing_Functions_Sensors_Pressure"
-                ],
-                [
-                    5,
-                    "Self_Testing_Functions_Sensors_Temperature"
-                ],
-                [
-                    6,
-                    "Self_Testing_Functions_Sensors_PH"
-                ],
-                [
-                    7,
-                    "Self_Testing_Functions_Sensors_Conductivity"
-                ],
-                [
-                    9,
-                    "Self_Testing_Functions_Sensors_Leakage"
-                ]
-            ],
-            "name": "Self_Testing_Functions1"
-        },
-        {
-            "begin": 37971,
-            "length": 1,
-            "format": "FLAGS",
-            "flags": [
-                [
-                    0,
-                    "Self_Testing_Functions_Proportional_Valve"
-                ],
-                [
-                    4,
-                    "Self_Testing_Functions_Fan"
-                ],
-                [
-                    8,
-                    "Self_Testing_Functions_Pump_Flow_Meter"
-                ]
-            ],
-            "name": "Self_Testing_Functions2"
-        },
-        {
             "begin": 37888,
             "length": 1,
             "format": "INTEGER",
             "name": "HMI_Remote_mode"
         },
         {
-            "begin": 37890,
+            "begin": 37889,
             "length": 1,
             "format": "INTEGER",
             "name": "Limit_Reset"
         },
         {
-            "begin": 37892,
+            "begin": 37891,
             "length": 1,
             "format": "INTEGER",
             "name": "UPS_Pump_Rack_Power_Cycle_1"
@@ -147,13 +91,13 @@
             "name": "UPS_Fan_Rack_1_Power_Cycle_2"
         },
         {
-            "begin": 37894,
+            "begin": 37895,
             "length": 1,
             "format": "INTEGER",
             "name": "UPS_Fan_Rack_2_Power_Cycle_3"
         },
         {
-            "begin": 37895,
+            "begin": 37897,
             "length": 1,
             "format": "INTEGER",
             "name": "UPS_Turn_Off_Time_Of_Power_Cycle"
@@ -1717,8 +1661,8 @@
             "name": "Fan_Rack_2_Fan8_Error_Information"
         },
         {
-            "begin": 208,
-            "length": 4,
+            "begin": 192,
+            "length": 20,
             "format": "STRING",
             "name": "MFR_Model"
         },

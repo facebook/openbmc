@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,25 +16,20 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-#
 
-### BEGIN INIT INFO
-# Provides:          gpio-setup
-# Required-Start:
-# Required-Stop:
-# Default-Start:     S
-# Default-Stop:
-# Short-Description:  Set up GPIO pins as appropriate
-### END INIT INFO
+# Detect ttyUSB devices
+if [ ! -e "/dev/ttyUSB1" ] && [ ! -e "/dev/ttyUSB2" ] && [ ! -e "/dev/ttyUSB3" ]; then
+    echo "check-rackmon-module.sh : cannot detect ttyUSB devices"
+    exit 1
+fi
 
-# shellcheck disable=SC1091
-. /usr/local/bin/openbmc-utils.sh
+# Detect FTDI chip
+/usr/local/bin/ftdi_control -L 2&> /dev/null
+ftdi_detected=$?
+# exit when can't detect FTDI Chip
+if [ $((ftdi_detected)) -ne 0 ]; then
+    echo "check-rackmon-module.sh : cannot detect FTDI chip"
+    exit 1
+fi
 
-# BMC ready event to COME
-setup_gpio FM_BMC_READY_R_L                 GPIOP0 out 0
-
-# COME platform reset signal
-setup_gpio RST_PLTRST_L                     GPION2 in
-
-# Enable I2C buffer for Rackmon module
-setup_gpio BMC_RACKMON_I2C15_BUF_EN         GPIOM1 out 1
+exit 0

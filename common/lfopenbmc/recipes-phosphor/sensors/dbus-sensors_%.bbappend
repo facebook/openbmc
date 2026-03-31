@@ -26,10 +26,6 @@ SRC_URI:append:fb-compute-multihost = " \
     file://0202-Add-retry-attempts-configuration-for-fan-sensors.patch \
 "
 
-SRC_URI:append:clemente = " \
-    file://3001-clemente-dbus-sensors-Ignore-zero-HGX_GPU-_ENERGY_J-.patch \
-"
-
 PACKAGECONFIG[valvemonitor] = "-Dvalve-monitor=enabled, -Dvalve-monitor=disabled"
 
 SYSTEMD_SERVICE:${PN} += "${@bb.utils.contains('PACKAGECONFIG', 'valvemonitor', \

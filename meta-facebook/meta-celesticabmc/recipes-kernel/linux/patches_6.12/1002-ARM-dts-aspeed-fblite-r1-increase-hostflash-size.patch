@@ -1,0 +1,34 @@
+From 5996135a329c30af8cb3e48ba43d42ae552a0b02 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Thu, 19 Mar 2026 21:11:11 +0800
+Subject: [PATCH] ARM-dts-aspeed-fblite-r1-increase-hostflash-size
+
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+index 751e807b4..4db3c8647 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+@@ -92,7 +92,7 @@ &spi1 {
+ 	status = "okay";
+ 
+ 	reg = < 0x1e630000 0xc4
+-		0x30000000 0x2000000 >;
++		0x30000000 0x4000000 >;
+ 
+ 	flash@0 {
+ 		status = "okay";
+@@ -107,7 +107,7 @@ partitions {
+ 			#size-cells = <1>;
+ 
+ 			flash1@0 {
+-				reg = <0x0 0x2000000>;
++				reg = <0x0 0x4000000>;
+ 				label = "host-flash";
+ 			};
+ 		};
+-- 
+2.43.0
+

@@ -28,10 +28,46 @@ exit_handler() {
 . /usr/local/bin/spi-utils.sh
 trap exit_handler INT TERM QUIT EXIT
 
+check_flash_file_size() {
+    _file_path=$1
+    if [ ! -f "$_file_path" ]; then
+        echo "Error: File not found." >&2
+        exit 1
+    fi
+    _file_size=$(wc -c < "$_file_path" | tr -d ' ')
+    if [ -z "$_file_size" ]; then
+        echo "Error: Could not determine size of file '$_file_path'." >&2
+        exit 1
+    fi
+    size_64m=$((64 * 1024 * 1024))
+    size_32m=$((32 * 1024 * 1024))
+    netlake_identify
+    netlake_type=$?
+    case "$netlake_type" in
+        1) # Netlake 2.0
+            if [ "$_file_size" -lt "$size_64m" ]; then
+                echo "Error: File size ($_file_size bytes) is less than 64MB for Netlake 2.0." >&2
+                exit 1
+            fi
+            ;;
+        0) # Netlake 1.0
+            if [ "$_file_size" -eq 0 ] || [ "$_file_size" -gt "$size_32m" ]; then
+                echo "Error: File size for Netlake 1.0 must be between 1 byte and 32MB." >&2
+                exit 1
+            fi
+            ;;
+        *)
+            echo "Error: Failed to identify Netlake version. Exit code: $netlake_type" >&2
+            exit 1
+            ;;
+    esac    
+    echo "Flash file size:$_file_size"
+}
+
 ui(){
     op=$1
     file=$2
-
+    check_flash_file_size "$file"
     export_gpio
     config_spi1_pin_and_path "COME_BIOS"
     operate_spi1_dev "$op" "COME_BIOS" "$file"

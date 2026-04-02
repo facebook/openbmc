@@ -33,7 +33,7 @@ from common_utils import dumps_bytestr
 # class variable name (also a different class)
 def board_force_async(func):
     async def func_wrapper(self, *args, **kwargs):
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         # As we separated *arts into (self, *args) pair, we need to
         # write "self" again, as the first argument before *args
         result = await loop.run_in_executor(

@@ -60,9 +60,6 @@ logging.config.dictConfig(get_logger_config(config))
 rest_debug.install_sigusr_stack_logger()
 
 
-servers = []
-
-
 app = WebApp.instance()
 app["ratelimiter"] = AsyncRateLimiter(
     slidewindow_size=int(config["ratelimit_window"]), limit=int(config["max_requests"])
@@ -70,75 +67,71 @@ app["ratelimiter"] = AsyncRateLimiter(
 setup_plat_routes(app, config)
 
 
-loop = asyncio.get_event_loop()
-handler = app.make_handler(
-    access_log=access_logger, access_log_format=ACCESS_LOG_FORMAT
-)
-
-servers.extend([loop.create_server(handler, "*", port) for port in config["ports"]])
-
-if config["ssl_certificate"] and os.path.isfile(config["ssl_certificate"]):
-    ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-    # Disable insecure < TLS1.2 ciphers
-    ssl_context.options |= (
-        ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
+async def main() -> None:
+    loop = asyncio.get_running_loop()
+    handler = app.make_handler(
+        access_log=access_logger, access_log_format=ACCESS_LOG_FORMAT
     )
-    # Only allow list ciphers that use Diffie-Hellman key exchange algorithm
-    ciphers = [
-        "ECDHE-ECDSA-AES128-GCM-SHA256",
-        "ECDHE-ECDSA-AES256-GCM-SHA384",
-        "ECDHE-RSA-AES128-GCM-SHA256",
-        "ECDHE-RSA-AES256-GCM-SHA384",
-        "ECDHE-RSA-AES128-SHA256",
-        "ECDHE-RSA-AES256-SHA384",
-        "ECDHE-RSA-AES128-SHA256",
-        "ECDHE-RSA-AES256-SHA384",
-        "DHE-RSA-AES128-GCM-SHA256",
-        "DHE-RSA-AES256-GCM-SHA384",
-        "DHE-RSA-AES128-SHA",
-        "DHE-RSA-AES256-SHA",
-        "DHE-RSA-AES128-SHA256",
-        "DHE-RSA-AES256-SHA256",
-        "ECDHE-ECDSA-CHACHA20-POLY1305",
-        "ECDHE-RSA-CHACHA20-POLY1305",
-    ]
-    ciphers_str = ":".join(ciphers)
-    ssl_context.set_ciphers(ciphers_str)
-    if config["ssl_ca_certificate"]:
-        # Set up mutual TLS authentication if config has ssl_ca_certificate
-        ssl_context.load_verify_locations(config["ssl_ca_certificate"])
-        ssl_context.verify_mode = ssl.CERT_OPTIONAL
-    ssl_context.load_cert_chain(
-        certfile=config["ssl_certificate"], keyfile=config["ssl_key"]  # May be None
-    )
-    servers.extend(
-        [
-            loop.create_server(handler, "*", port, ssl=ssl_context)
-            for port in config["ssl_ports"]
+
+    server_coros = [loop.create_server(handler, "*", port) for port in config["ports"]]
+
+    if config["ssl_certificate"] and os.path.isfile(config["ssl_certificate"]):
+        ssl_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+        # Disable insecure < TLS1.2 ciphers
+        ssl_context.options |= (
+            ssl.OP_NO_SSLv2 | ssl.OP_NO_SSLv3 | ssl.OP_NO_TLSv1 | ssl.OP_NO_TLSv1_1
+        )
+        # Only allow list ciphers that use Diffie-Hellman key exchange algorithm
+        ciphers = [
+            "ECDHE-ECDSA-AES128-GCM-SHA256",
+            "ECDHE-ECDSA-AES256-GCM-SHA384",
+            "ECDHE-RSA-AES128-GCM-SHA256",
+            "ECDHE-RSA-AES256-GCM-SHA384",
+            "ECDHE-RSA-AES128-SHA256",
+            "ECDHE-RSA-AES256-SHA384",
+            "ECDHE-RSA-AES128-SHA256",
+            "ECDHE-RSA-AES256-SHA384",
+            "DHE-RSA-AES128-GCM-SHA256",
+            "DHE-RSA-AES256-GCM-SHA384",
+            "DHE-RSA-AES128-SHA",
+            "DHE-RSA-AES256-SHA",
+            "DHE-RSA-AES128-SHA256",
+            "DHE-RSA-AES256-SHA256",
+            "ECDHE-ECDSA-CHACHA20-POLY1305",
+            "ECDHE-RSA-CHACHA20-POLY1305",
         ]
-    )
+        ciphers_str = ":".join(ciphers)
+        ssl_context.set_ciphers(ciphers_str)
+        if config["ssl_ca_certificate"]:
+            # Set up mutual TLS authentication if config has ssl_ca_certificate
+            ssl_context.load_verify_locations(config["ssl_ca_certificate"])
+            ssl_context.verify_mode = ssl.CERT_OPTIONAL
+        ssl_context.load_cert_chain(
+            certfile=config["ssl_certificate"], keyfile=config["ssl_key"]  # May be None
+        )
+        server_coros.extend(
+            [
+                loop.create_server(handler, "*", port, ssl=ssl_context)
+                for port in config["ssl_ports"]
+            ]
+        )
+
+    app["acl_provider"] = load_acl_provider(config)
+
+    srv = await asyncio.gather(*server_coros)
+    try:
+        await asyncio.Event().wait()
+    except asyncio.CancelledError:
+        pass
+    finally:
+        server_closures = []
+        for s in srv:
+            s.close()
+            server_closures.append(s.wait_closed())
+        await asyncio.gather(*server_closures)
+        await app.shutdown()
+        await handler.shutdown(60.0)
+        await app.cleanup()
 
 
-app["acl_provider"] = load_acl_provider(config)
-
-if sys.version_info >= (3, 10):
-    srv = loop.run_until_complete(asyncio.gather(*servers))
-else:
-    srv = loop.run_until_complete(asyncio.gather(*servers, loop=loop))
-try:
-    loop.run_forever()
-except KeyboardInterrupt:
-    pass
-finally:
-    server_closures = []
-    for s in srv:
-        s.close()
-        server_closures.append(s.wait_closed())
-    if sys.version_info >= (3, 10):
-        loop.run_until_complete(asyncio.gather(*server_closures))
-    else:
-        loop.run_until_complete(asyncio.gather(*server_closures, loop=loop))
-    loop.run_until_complete(app.shutdown())
-    loop.run_until_complete(handler.shutdown(60.0))
-    loop.run_until_complete(app.cleanup())
-loop.close()
+asyncio.run(main())

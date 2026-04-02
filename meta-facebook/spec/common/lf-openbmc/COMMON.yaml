@@ -186,14 +186,41 @@ Network:
     priority: P0
     short: Obtain IP address using DHCPv6 protocol.
 Power Control:
+  Server Power Control:
+    file: server-power-control.md
+    priority: P0
+    short: Control server power state (on/off/reboot).
+    functionality:
+      - name: Power on/off/reboot via Redfish
+        tests:
+          - framework: Robot
+            id: Power_Operations
+            description: Tests verify power on, graceful shutdown, force power off, and graceful restart via Redfish APIs.
+      - name: Power on/off/reboot via SSH (mfg-tool power-control)
+        tests:
+          - framework: N/A
   Sled Cycle:
     file: sled-cycle.md
     priority: P0
     short: Power cycle the entire sled.
+    functionality:
+      - name: Sled cycle via SSH (mfg-tool power-control --action sled-cycle)
+        tests:
+          - framework: N/A
   Power Fault Detection:
     file: power-fault.md
     priority: P2
     short: Detect and log all power faults.
+  Boot Source Override:
+    file: boot-source-override.md
+    priority: P1
+    short: Override boot source device for next or persistent boots.
+    functionality:
+      - name: Set boot source override via Redfish
+        tests:
+          - framework: Robot
+            id: Boot_Devices
+            description: Test suite for various boot types with boot source including HDD, PXE, CD, Diags, BiosSetup.
 FRU Information:
   Entity Manager:
     file: entity-manager.md
@@ -207,11 +234,55 @@ FRU Information:
     file: fru-update.md
     priority: P1
     short: Raw FRU EEPROM write / programming.
+    functionality:
+      - name: Read hardware inventory via SSH (mfg-tool inventory)
+        tests:
+          - framework: N/A
+  Processor Inventory:
+    file: processor-inventory.md
+    priority: P1
+    short: Enumerate processor information via Redfish.
+    functionality:
+      - name: Get processor inventory
+        tests:
+          - framework: Robot
+            id: Systems_Inventory
+            description: Test suite verifying CPU and core count via Redfish.
+  Memory Inventory:
+    file: memory-inventory.md
+    priority: P1
+    short: Enumerate memory DIMM information via Redfish.
+    functionality:
+      - name: Get memory/DIMM inventory via Redfish
+        tests:
+          - framework: Robot
+            id: Systems_Inventory
+            description: Test suite verifying DIMM inventory and memory summary via Redfish.
+  PCIe Inventory:
+    file: pcie-inventory.md
+    priority: P2
+    short: Enumerate PCIe devices via Redfish.
+    functionality:
+      - name: Get PCIe device inventory
+        tests:
+          - framework: N/A
 Sensor Information:
   Sensor Read:
     file: sensor-read.md
     priority: P0
     short: Read the current values and thresholds of all sensors.
+    functionality:
+      - name: Read sensor values via Redfish
+        tests:
+          - framework: Robot
+            id: Sensor_Monitoring
+            description: Test suite for verifying comprehensive sensor reading validation.
+      - name: Read sensor values via SSH (mfg-tool sensor-display)
+        tests:
+          - framework: N/A
+      - name: Read rack monitor sensor data via SSH (rackmoncli)
+        tests:
+          - framework: N/A
   Sensor History:
     file: sensor-history.md
     priority: P4
@@ -233,6 +304,10 @@ Thermal Management:
     file: fan-control--manual-.md
     priority: P0
     short: Allow manual fan speed setting.
+    functionality:
+      - name: Set fan speed via SSH
+        tests:
+          - framework: N/A
   Automatic Fan Control:
     file: fan-control--automatic-.md
     priority: P1
@@ -242,6 +317,12 @@ Firmware Update:
     file: openbmc.md
     priority: P1
     short: Update the BMC.
+    functionality:
+      - name: BMC firmware update via Redfish
+        tests:
+          - framework: Robot
+            id: Bmc_Code_Update
+            description: Test suite verifying BMC code update via Redfish.
   Flashy:
     file: flashy.md
     priority: P2
@@ -331,9 +412,19 @@ Serial-Over-Lan:
   Host SOL Access:
     file: host-sol-access.md
     priority: P0
+    functionality:
+      - name: SOL configuration
+        tests:
+          - framework: Robot
+            id: IPMI_SOL
+            description: Test suite for SOL enable/disable and privilege configuration.
   SOL Console History:
     file: sol-console-history.md
     priority: P1
+    functionality:
+      - name: Retrieve console history via SSH (obmc-console log)
+        tests:
+          - framework: N/A
   SOL Host Log Streaming:
     file: remote-console.md
     priority: P1
@@ -375,7 +466,58 @@ BMC Health Monitoring:
         tests:
           - framework: N/A
       - name: Automatic BMC reboots can be disabled
-
+        tests:
+          - framework: N/A
+  Crash Dump Collection:
+    file: crash-dump-collection.md
+    priority: P2
+    short: Collect, list, and download BMC diagnostic crash dumps.
+    functionality:
+      - name: Collect and download BMC dumps via Redfish
+        tests:
+          - framework: Robot
+            id: BMC_Dump
+            description: Test suite for verifying BMC dump creation, listing, and download functionality.
+System Logging:
+  Event Log Management:
+    file: event-log-management.md
+    priority: P1
+    short: Read and clear system event logs via Redfish and CLI.
+    functionality:
+      - name: Read system event logs via Redfish
+        tests:
+          - framework: Robot
+            id: Event_Logging
+            description: Test suite for verifying event log creation, retrieval, and timestamp validation.
+      - name: Clear system event logs via Redfish
+        tests:
+          - framework: Robot
+            id: Event_Logging
+            description: Test suite verifying deletion and purging of event log entries.
+      - name: Read system event logs via SSH (mfg-tool log-display)
+        tests:
+          - framework: N/A
+      - name: Clear system event logs via SSH (mfg-tool log-clear)
+        tests:
+          - framework: N/A
+  POST Codes:
+    file: post-codes.md
+    priority: P1
+    short: Retrieve and display BIOS POST code log entries.
+    functionality:
+      - name: Read POST codes via Redfish
+        tests:
+          - framework: Robot
+            id: Post_Codes
+            description: Test suite to verify BIOS POST code log entries during boot and reboot.
+      - name: Clear POST codes via Redfish
+        tests:
+          - framework: Robot
+            id: Post_Codes
+            description: Test suite verifying clear POST code log action.
+      - name: Read POST codes via SSH (mfg-tool postcode-display)
+        tests:
+          - framework: N/A
 Miscellaneous:
   Common Sensor Names:
     file: common-sensor-names.md
@@ -386,13 +528,42 @@ Miscellaneous:
     priority: P2
     short: Allow a reset of all saved settings.
     functionality:
-      - name: Managers/.../Actions/Manager.ResetToDefaults
+      - name: Factory reset via Redfish (Managers/.../Actions/Manager.ResetToDefaults)
+        tests:
+          - framework: N/A
+      - name: Factory reset via SSH
         tests:
           - framework: N/A
   openbmc-test-automation:
     file: openbmc-test-automation.md
     priority: P2
     short: Enable testing with upstream openbmc-test-automation package.
+  Identify LED:
+    file: identify-led.md
+    priority: P1
+    short: Control the system identify LED for physical location.
+    functionality:
+      - name: Control identify LED via Redfish
+        tests:
+          - framework: Robot
+            id: Led_Indicator_Asserted
+            description: Test suite for verifying the indicator LEDs can be set and asserted.
+  CMOS Reset:
+    file: cmos-reset.md
+    priority: P2
+    short: Reset CMOS settings to defaults via GPIO control.
+    functionality:
+      - name: CMOS reset via SSH (gpioset/gpiofind)
+        tests:
+          - framework: N/A
+  Diagnostic Commands:
+    file: diagnostic-commands.md
+    priority: P2
+    short: Run predefined diagnostic commands for system troubleshooting.
+    functionality:
+      - name: Predefined diagnostic commands via SSH (mfg-tool)
+        tests:
+          - framework: N/A
   Manufacturing Tool:
     file: mfg-tool.md
     priority: P2

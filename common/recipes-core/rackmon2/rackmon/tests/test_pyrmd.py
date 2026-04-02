@@ -23,8 +23,9 @@ except ImportError:
 class PyrmdSyncTest(unittest.TestCase):
     def setUp(self):
         super().setUp()
-        # asyncio.set_event_loop(asyncio.new_event_loop())
-        self.loop = asyncio.get_event_loop()
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+        self.addCleanup(self.loop.close)
 
     def do_cmd(
         self,

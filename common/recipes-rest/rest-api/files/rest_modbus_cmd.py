@@ -273,7 +273,7 @@ class SolitonBeamFlock:
         self.lock_file = self._open_lock_file()
 
         # Call flock inside thread executor so we don't hold the event loop
-        await asyncio.get_event_loop().run_in_executor(
+        await asyncio.get_running_loop().run_in_executor(
             None, fcntl.flock, self.lock_file.fileno(), fcntl.LOCK_EX
         )
 

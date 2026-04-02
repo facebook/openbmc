@@ -14,12 +14,17 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
+[Unit]
+Description=Identify COMe type
+After=openbmc_gpio_setup.service setup_i2c.service power-on.service
+Wants=setup_i2c.service
+DefaultDependencies=no
 
-require recipes-core/images/fboss-lite-image.inc
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/come_identify.sh
 
-IMAGE_INSTALL += " \
-    host-recovery \
-    ssd-mond \
-    leakage-mond \
-    apml  \
-    "
+[Install]
+WantedBy=multi-user.target

@@ -28,6 +28,8 @@ LOCAL_URI += "\
     file://wedge_power.sh \
     file://wedge_us_mac.sh \
     file://eth0_mac_fixup.sh \
+    file://come_identify.service \
+    file://come_identify.sh \
     "
 
 OPENBMC_UTILS_FILES += " \
@@ -40,6 +42,7 @@ OPENBMC_UTILS_FILES += " \
     wedge_power.sh \
     wedge_us_mac.sh \
     eth0_mac_fixup.sh \
+    come_identify.sh \
     "
 
 PACKAGECONFIG += "disable-watchdog"
@@ -86,7 +89,7 @@ do_work_systemd() {
     install -d ${D}/usr/local/bin
     install -d ${D}${systemd_system_unitdir}
 
-    for svc in setup_board.service setup_gpio.service setup_i2c.service; do
+    for svc in setup_board.service setup_gpio.service setup_i2c.service come_identify.service; do
         install -m 0644 ${UNPACKDIR}/${svc} ${D}${systemd_system_unitdir}
     done
 
@@ -108,6 +111,7 @@ FILES:${PN} += "${sysconfdir}"
 SYSTEMD_SERVICE:${PN} += "setup_board.service"
 SYSTEMD_SERVICE:${PN} += "setup_gpio.service"
 SYSTEMD_SERVICE:${PN} += "setup_i2c.service"
+SYSTEMD_SERVICE:${PN} += "come_identify.service"
 SYSTEMD_SERVICE:${PN} += "\
     ${@bb.utils.contains('MACHINE_FEATURES', 'emmc', 'mount_data1.service', '', d)} \
 "

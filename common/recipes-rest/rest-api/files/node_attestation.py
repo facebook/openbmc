@@ -124,7 +124,7 @@ class NodeSystemInfo(node):
                 raise Exception("You are allowed to specify only algo")
             algo = param["algo"]
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
 
         # If we can't get the lock for the cached information in 30s, raise
         # a timeout error to the requester.

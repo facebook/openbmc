@@ -17,7 +17,7 @@ def _log_stacks():
     # Log task stacks
     try:
         f = io.StringIO()
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         for task in asyncio.all_tasks(loop):
             f.write("=== Stack for task: " + repr(task) + " ===")
             task.print_stack(file=f)

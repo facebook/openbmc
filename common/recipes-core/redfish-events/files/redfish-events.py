@@ -114,7 +114,7 @@ class RedfishEventHandler(web.Application):
     async def startup(self):
         logging.info("Event service started")
         self.resubscribe()
-        self.task = asyncio.get_event_loop().create_task(self.monitorTarget())
+        self.task = asyncio.get_running_loop().create_task(self.monitorTarget())
 
     def getSubscriptions(self) -> List[str]:
         url = self.target_url + "/redfish/v1/EventService/Subscriptions"

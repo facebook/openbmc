@@ -22,7 +22,7 @@ def common_force_async(func):
     # REST handler, and vice versa
     async def func_wrapper(*args, **kwargs):
         # Convert the possibly blocking helper function into async
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         result = await loop.run_in_executor(common_executor, func, *args, **kwargs)
         return result
 

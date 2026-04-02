@@ -101,15 +101,27 @@ disable_jtag_chain(){
 
 cpld_update_sw_mode(){
     n=1
+    netlake_identify
+    netlake_type=$?
     while [ "${n}" -le 5 ]; do
         echo "Program $CPLD_TYPE $n times"
 
         if [ "$CPLD_TYPE" = "SCM" ]; then
             expect=1
             ispvm -f 1000 dll $DLL_PATH "${UPDATE_IMG}"
-        elif [ "$CPLD_TYPE" = "COME" ]; then
-            expect=0
-            jbi -aPROGRAM -ddo_real_time_isp=1 -W "${UPDATE_IMG}"
+        elif [ "$CPLD_TYPE" = "COME" ]; then            
+            if [ "$netlake_type" -eq 0 ]; then
+                echo 'This is Netlake 1.0, use jbi for COMe CPLD update'
+                expect=0
+                jbi -aPROGRAM -ddo_real_time_isp=1 -W "${UPDATE_IMG}"
+            # Netlake2.0 FPGA is using vme format
+            elif [ "$netlake_type" -eq 1 ]; then
+                echo 'This is Netlake 2.0, use ispvm for COMe CPLD update'
+                expect=1
+                ispvm -f 1000 dll $DLL_PATH "${UPDATE_IMG}"                
+            else
+                echo 'failed to identify COMe type: Netlake 1.0 or 2.0'
+            fi
         else
             echo "CPLD_TYPE is wrong"
             exit 1

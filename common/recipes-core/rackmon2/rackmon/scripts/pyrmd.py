@@ -307,7 +307,7 @@ class RackmonInterface:
 class RackmonAsyncInterface(RackmonInterface):
     @classmethod
     async def _execute(cls, cmd, decodeJson=True):
-        return await asyncio.get_event_loop().run_in_executor(
+        return await asyncio.get_running_loop().run_in_executor(
             None, RackmonInterface._execute, cmd, decodeJson
         )
 

@@ -1,7 +1,7 @@
-From 462b973f15a3e7cb78736e671c105a778e6a6b6d Mon Sep 17 00:00:00 2001
+From daf71290ac3f7b1b0849e58a0cd9761bd74f979b Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Tue, 24 Mar 2026 18:08:32 +0800
-Subject: [PATCH 7/9] configurations: nvidia: vr_nvl72: add GPIO leak detector
+Subject: [PATCH 1/1] configurations: nvidia: vr_nvl72: add GPIO leak detector
 
 Add GPIO leak detector configuration for SanMiguel platform.
 
@@ -14,13 +14,13 @@ Signed-off-by: Mike Hsieh <mike_hsieh@quantatw.com>
  1 file changed, 32 insertions(+)
 
 diff --git a/configurations/nvidia/vr_nvl72.json b/configurations/nvidia/vr_nvl72.json
-index 1eb8751..9b3aadd 100644
+index 9f4c652..482409f 100644
 --- a/configurations/nvidia/vr_nvl72.json
 +++ b/configurations/nvidia/vr_nvl72.json
 @@ -6,6 +6,22 @@
                  "Bus": "$bus",
                  "Name": "NVIDIA VR NVL72 0 FRU",
-                 "Type": "EEPROM_24C02"
+                 "Type": "EEPROM_24C64"
 +            },
 +            {
 +                "Level": "Critical",
@@ -43,7 +43,7 @@ index 1eb8751..9b3aadd 100644
 @@ -32,6 +48,22 @@
                  "Bus": "$bus",
                  "Name": "NVIDIA VR NVL72 1 FRU",
-                 "Type": "EEPROM_24C02"
+                 "Type": "EEPROM_24C64"
 +            },
 +            {
 +                "Level": "Critical",

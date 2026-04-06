@@ -22,4 +22,5 @@ IMAGE_INSTALL += " \
     ssd-mond \
     leakage-mond \
     apml  \
+    postcode-mond \
     "

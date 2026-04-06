@@ -1,4 +1,5 @@
-# Copyright 2020-present Facebook. All Rights Reserved.
+#
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,14 +15,17 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-
-FILESEXTRAPATHS:prepend := "${THISDIR}/patches_6.12:"
-
 #
-# Include patches from elbert machine layer.
-#
-SRC_URI:append = " \
-    file://1001-ARM-dts-aspeed-fblite-r1-fixup-device-settings.patch \
-    file://1002-ARM-dts-aspeed-fblite-r1-increase-hostflash-size.patch \
-    file://1003-ARM-dts-aspeed-fblite-r1-enable-snoop-device.patch \
-"
+[Unit]
+Description=Run postcode-mond in OpenBMC
+After=setup_i2c.service setup_gpio.service
+Wants=setup_i2c.service setup_gpio.service
+
+# Please replace ExecStart with the following path:
+# /usr/local/bin/postcode-mond -I <INPUT_PATH>
+[Service]
+ExecStart=/usr/local/bin/postcode-mond -I /dev/aspeed-lpc-snoop0
+ExecReload=/bin/kill -HUP $MAINPID
+
+[Install]
+WantedBy=multi-user.target

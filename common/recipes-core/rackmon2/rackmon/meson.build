@@ -14,16 +14,16 @@ add_project_arguments('-Wno-psabi', language: 'cpp')
 common = files(
     'Device.cpp',
     'Modbus.cpp',
+    'Register.cpp',
+    'ModbusDevice.cpp',
     'ModbusCmds.cpp',
     'Msg.cpp',
     'UARTDevice.cpp',
+    'InterfaceScanner.cpp',
+    'ModbusDeviceInventory.cpp',
 )
 svc_common = common + files(
-    'InterfaceScanner.cpp',
-    'ModbusDevice.cpp',
-    'ModbusDeviceInventory.cpp',
     'Rackmon.cpp',
-    'Register.cpp',
     'UnixSock.cpp',
 )
 srcs = svc_common + files('RackmonSvcUnix.cpp')

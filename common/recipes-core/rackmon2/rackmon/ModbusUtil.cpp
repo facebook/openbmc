@@ -2,9 +2,12 @@
 #include <CLI/CLI.hpp>
 #include <sys/file.h>
 #include <unistd.h>
+#include <filesystem>
 #include <iostream>
+#include "InterfaceScanner.h"
 #include "Log.h"
 #include "Modbus.h"
+#include "ModbusDevice.h"
 #include "Msg.h"
 
 using nlohmann::json;
@@ -31,55 +34,21 @@ struct RackmondLock {
   }
 };
 
-int main(int argc, char* argv[]) {
-  ::google::InitGoogleLogging(argv[0]);
-  RackmondLock lock;
-  std::map<std::string, rackmon::Parity> parityMap = {
-      {"ODD", rackmon::Parity::ODD},
-      {"EVEN", rackmon::Parity::EVEN},
-      {"NONE", rackmon::Parity::NONE},
-  };
-
-  CLI::App app("Modbus Raw Interface");
-
-  std::string tty{};
-  app.add_option("--tty", tty, "TTY Interface to use")->required();
-  std::string parityStr = "EVEN";
-  app.add_option("--parity", parityStr, "Parity")
-      ->check(CLI::IsMember({"ODD", "EVEN", "NONE"}))
-      ->capture_default_str();
-  int baudrate = 19200;
-  app.add_option("--baudrate", baudrate, "Baudrate")->capture_default_str();
-  int minDelay = 2;
-  size_t respLen = 0;
-  app.add_option(
-         "-x,--expected-bytes",
-         respLen,
-         "Expected response length (including 2b CRC)")
-      ->required();
-  app.add_option(
-         "--min-delay", minDelay, "Minimum delay (ms) between transactions")
-      ->capture_default_str();
-  int timeout = 0;
-  app.add_option("-t,--timeout", timeout, "Transaction Timeout (ms)")
-      ->capture_default_str();
-  std::string cmd{};
-  app.add_option("command", cmd, "Command to send (hex)")->required();
-
-  CLI11_PARSE(app, argc, argv);
-
-  json intf;
-  intf["device_path"] = tty;
-  intf["baudrate"] = baudrate;
-  intf["min_delay"] = minDelay;
-  rackmon::Parity parity = parityMap.at(parityStr);
-  rackmon::Modbus dev;
+static void devInitialize(rackmon::Modbus& dev, const json& intf) {
   dev.initialize(intf);
   if (!dev.isPresent()) {
-    std::cerr << "Device creation failed!" << std::endl;
-    return -1;
+    throw std::runtime_error("Device creation failed!");
   }
-  std::stringstream ss;
+}
+
+void rawCommand(
+    const json& intf,
+    const std::string& cmd,
+    size_t respLen,
+    rackmon::Parity parity,
+    int timeout) {
+  rackmon::Modbus dev;
+  devInitialize(dev, intf);
   rackmon::Msg req;
   rackmon::Msg resp;
   resp.len = respLen;
@@ -91,12 +60,119 @@ int main(int argc, char* argv[]) {
     dev.command(req, resp, 0, rackmon::ModbusTime(timeout), parity);
   } catch (std::exception& e) {
     std::cerr << "ERROR: " << e.what() << std::endl;
-    return -1;
+    return;
   }
   // command would strip out CRC, include it to our output so
   // we have everything to debug in case we are debugging CRC
   // issues.
   resp.len += 2;
   std::cout << resp << std::endl;
+}
+
+json getJSON(const std::string& fileName) {
+  std::ifstream ifs(fileName);
+  json contents;
+  try {
+    ifs >> contents;
+  } catch (const nlohmann::json::parse_error& ex) {
+    logError << "Error loading: " << fileName << " byte: " << ex.byte
+             << std::endl;
+    throw;
+  }
+  ifs.close();
+  return contents;
+};
+
+rackmon::RegisterMapDatabase loadDatabase(const std::string& regMapPath) {
+  rackmon::RegisterMapDatabase db;
+  if (std::filesystem::is_directory(regMapPath)) {
+    for (auto const& dir_entry :
+         std::filesystem::directory_iterator{regMapPath}) {
+      db.load(getJSON(dir_entry.path().string()));
+    }
+  } else {
+    db.load(getJSON(regMapPath));
+  }
+  return db;
+}
+
+void dataCommand(const json& intf, const std::string& regMapPath) {
+  auto dev = std::make_shared<rackmon::Modbus>();
+  devInitialize(*dev, intf);
+  rackmon::RegisterMapDatabase db = loadDatabase(regMapPath);
+
+  rackmon::ModbusDeviceInventory devices;
+  rackmon::InterfaceScanner scanner(
+      dev, devices, db, rackmon::PollThreadTime(0), true);
+  scanner.fullScan();
+  scanner.updateDeviceRegisters();
+  std::vector<rackmon::ModbusDeviceValueData> data;
+  for (const auto& device : devices.getAllModbusDevices()) {
+    auto valueData = device->getValueData();
+    data.push_back(valueData);
+  }
+  json jdata = data;
+  std::string sdata = jdata.dump(4);
+  std::cout << sdata << std::endl;
+}
+
+int main(int argc, char* argv[]) {
+  ::google::InitGoogleLogging(argv[0]);
+  std::map<std::string, rackmon::Parity> parityMap = {
+      {"ODD", rackmon::Parity::ODD},
+      {"EVEN", rackmon::Parity::EVEN},
+      {"NONE", rackmon::Parity::NONE},
+  };
+
+  CLI::App app("Modbus Raw Interface");
+
+  std::string tty{};
+  app.add_option("--tty", tty, "TTY Interface to use")->required();
+  int minDelay = 2;
+  app.add_option(
+         "--min-delay", minDelay, "Minimum delay (ms) between transactions")
+      ->capture_default_str();
+  CLI::App* raw =
+      app.add_subcommand("raw", "Execute a Raw command like 0d0300000001");
+  std::string cmd{};
+  raw->add_option("command", cmd, "Command to send (hex)")->required();
+  size_t respLen = 0;
+  raw->add_option(
+         "-x,--expected-bytes",
+         respLen,
+         "Expected response length (including 2b CRC)")
+      ->required();
+  std::string parityStr = "EVEN";
+  raw->add_option("--parity", parityStr, "Parity")
+      ->check(CLI::IsMember({"ODD", "EVEN", "NONE"}))
+      ->capture_default_str();
+  int baudrate = 19200;
+  raw->add_option("--baudrate", baudrate, "Baudrate")->capture_default_str();
+  int timeout = 0;
+  raw->add_option("-t,--timeout", timeout, "Transaction Timeout (ms)")
+      ->capture_default_str();
+
+  CLI::App* data = app.add_subcommand("data", "Get Data from device");
+  std::string regMapPath{};
+  data->add_option("-r,--regmap", regMapPath, "Register Map JSON")->required();
+
+  CLI11_PARSE(app, argc, argv);
+  RackmondLock lock;
+
+  json intf;
+  intf["device_path"] = tty;
+  if (*raw) {
+    intf["baudrate"] = baudrate;
+    intf["min_delay"] = minDelay;
+    rackmon::Parity parity = parityMap.at(parityStr);
+    rawCommand(intf, cmd, respLen, parity, timeout);
+    return 0;
+  }
+  if (*data) {
+    intf["baudrate"] = 19200;
+    intf["min_delay"] = 3;
+    dataCommand(intf, regMapPath);
+  }
+
   return 0;
 }

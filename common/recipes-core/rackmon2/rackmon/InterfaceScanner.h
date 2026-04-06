@@ -35,7 +35,8 @@ class InterfaceScanner {
       std::shared_ptr<Modbus> interface,
       ModbusDeviceInventory& deviceInventory,
       const RegisterMapDatabase& registerMapDB,
-      PollThreadTime interval)
+      PollThreadTime interval,
+      bool deferredStart = false)
       : interface_(std::move(interface)),
         deviceInventory_(deviceInventory),
         registerMapDB_(registerMapDB),
@@ -53,8 +54,10 @@ class InterfaceScanner {
                 &InterfaceScanner::updateDeviceRegisters,
                 this,
                 std::chrono::seconds(registerMapDB_.minMonitorInterval()))) {
-    deviceScanner_.start();
-    registerMonitor_.start();
+    if (!deferredStart) {
+      deviceScanner_.start();
+      registerMonitor_.start();
+    }
   }
 
   virtual ~InterfaceScanner() {

@@ -5302,6 +5302,12 @@
             "name": "Power_Module_1_FAN_Speed"
         },
         {
+            "begin": 8272,
+            "length": 10,
+            "format": "STRING",
+            "name": "Power_Module_1_Model_Number"
+        },
+        {
             "begin": 8366,
             "length": 1,
             "format": "INTEGER",
@@ -5498,6 +5504,12 @@
             "length": 1,
             "format": "INTEGER",
             "name": "Power_Module_2_FAN_Speed"
+        },
+        {
+            "begin": 8400,
+            "length": 10,
+            "format": "STRING",
+            "name": "Power_Module_2_Model_Number"
         },
         {
             "begin": 8494,
@@ -5698,6 +5710,12 @@
             "name": "Power_Module_3_FAN_Speed"
         },
         {
+            "begin": 8528,
+            "length": 10,
+            "format": "STRING",
+            "name": "Power_Module_3_Model_Number"
+        },
+        {
             "begin": 8622,
             "length": 1,
             "format": "INTEGER",
@@ -5894,6 +5912,12 @@
             "length": 1,
             "format": "INTEGER",
             "name": "Power_Module_4_FAN_Speed"
+        },
+        {
+            "begin": 8656,
+            "length": 10,
+            "format": "STRING",
+            "name": "Power_Module_4_Model_Number"
         },
         {
             "begin": 8750,
@@ -6094,6 +6118,12 @@
             "name": "Power_Module_5_FAN_Speed"
         },
         {
+            "begin": 8784,
+            "length": 10,
+            "format": "STRING",
+            "name": "Power_Module_5_Model_Number"
+        },
+        {
             "begin": 8878,
             "length": 1,
             "format": "INTEGER",
@@ -6290,6 +6320,12 @@
             "length": 1,
             "format": "INTEGER",
             "name": "Power_Module_6_FAN_Speed"
+        },
+        {
+            "begin": 8912,
+            "length": 10,
+            "format": "STRING",
+            "name": "Power_Module_6_Model_Number"
         },
         {
             "begin": 8210,

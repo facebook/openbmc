@@ -39,8 +39,10 @@ LOCAL_URI = " \
     file://ftdi-bitbang.h \
     "
 
+inherit pkgconfig
+
 RDEPENDS:${PN} += "libusb1 libftdi"
-DEPENDS:append = "libusb1 libftdi pkgconfig-native"
+DEPENDS:append = " libusb1 libftdi"
 LDFLAGS += "-L . -l usb-1.0 -l ftdi1 "
 
 binfiles = "ftdi_bitbang ftdi_control"

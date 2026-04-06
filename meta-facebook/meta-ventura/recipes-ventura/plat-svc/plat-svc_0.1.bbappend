@@ -10,4 +10,7 @@ SYSTEMD_SERVICE:${PN}:append = " \
 
 do_install:append() {
     install -m 0755 ${UNPACKDIR}/ventura-adc-upper-bound ${VENTURA_LIBEXECDIR}
+
+    install -d ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/ventura-adc-upper-bound.service ${D}${systemd_system_unitdir}
 }

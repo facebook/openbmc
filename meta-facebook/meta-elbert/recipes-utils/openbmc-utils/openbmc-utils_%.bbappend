@@ -202,6 +202,8 @@ do_install_board() {
 do_install:append() {
   do_install_bios_layout
   do_install_board
+
+  ln -s show_tech.py ${D}/usr/local/bin/showtech
 }
 
 FILES:${PN} += "${sysconfdir}"

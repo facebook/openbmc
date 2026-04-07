@@ -157,6 +157,8 @@ do_install:append() {
     fi
 
     install -m 0755 ${UNPACKDIR}/yamp_flash.layout ${D}${sysconfdir}/yamp_flash.layout
+
+    ln -s show_tech.py ${D}/usr/local/bin/showtech
 }
 
 FILES:${PN} += "${sysconfdir}"

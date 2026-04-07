@@ -18,6 +18,8 @@ PACKAGECONFIG:openbmc-fb = " \
 PACKAGECONFIG:remove = "cryptsetup cryptsetup-plugins"
 
 EXTRA_OEMESON += "-Ddns-servers=''"
+# Disable 'storage target mode' for size savings.
+EXTRA_OEMESON:append:openbmc-fb-master = " -Dstoragetm=false"
 
 ALTERNATIVE:${PN} += "init"
 ALTERNATIVE_TARGET[init] = "${rootlibexecdir}/systemd/systemd"
@@ -67,6 +69,11 @@ do_install:append:openbmc-fb() {
     done
     for f in 60-cdrom_id.rules 70-memory.rules 60-fido-id.rules 90-iocost.rules 60-persistent-v4l.rules; do
         rm ${D}${libdir}/udev/rules.d/${f}
+    done
+
+    # Delete a few executables we don't need in order to make more room in the image.
+    for f in systemd-growfs systemd-sleep; do
+        rm ${D}${libdir}/systemd/$f
     done
 
 }

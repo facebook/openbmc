@@ -21,12 +21,12 @@ package partition
 
 import (
 	"bytes"
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 // basic tests
@@ -118,24 +118,24 @@ func TestFBMetaValidate(t *testing.T) {
 		},
 		{
 			name:                               "parsing error",
-			parseAndValidateFBImageMetaJSONErr: errors.Errorf("parsing error"),
+			parseAndValidateFBImageMetaJSONErr: fmt.Errorf("parsing error"),
 			getPartitionConfigsFromFBMetaPartInfosErr: nil,
 			validatePartitionsFromPartitionConfigsErr: nil,
-			want: errors.Errorf("parsing error"),
+			want: fmt.Errorf("parsing error"),
 		},
 		{
 			name:                               "getPartitionsConfigs error",
 			parseAndValidateFBImageMetaJSONErr: nil,
-			getPartitionConfigsFromFBMetaPartInfosErr: errors.Errorf("getPartitionsConfigs error"),
+			getPartitionConfigsFromFBMetaPartInfosErr: fmt.Errorf("getPartitionsConfigs error"),
 			validatePartitionsFromPartitionConfigsErr: nil,
-			want: errors.Errorf("getPartitionsConfigs error"),
+			want: fmt.Errorf("getPartitionsConfigs error"),
 		},
 		{
 			name:                               "validatePartitions error",
 			parseAndValidateFBImageMetaJSONErr: nil,
 			getPartitionConfigsFromFBMetaPartInfosErr: nil,
-			validatePartitionsFromPartitionConfigsErr: errors.Errorf("validatePartitions error"),
-			want: errors.Errorf("validatePartitions error"),
+			validatePartitionsFromPartitionConfigsErr: fmt.Errorf("validatePartitions error"),
+			want: fmt.Errorf("validatePartitions error"),
 		},
 	}
 
@@ -261,25 +261,25 @@ func TestParseAndValidateFBImageMetaJSON(t *testing.T) {
 		{
 			name: "cannot find two lines",
 			data: []byte("42\n420"),
-			wantErr: errors.Errorf("Meta partition incomplete: cannot find two lines of " +
+			wantErr: fmt.Errorf("Meta partition incomplete: cannot find two lines of " +
 				"JSON"),
 		},
 		{
 			name: "can't get checksums",
 			data: []byte("42\nUWU\n\x00"),
-			wantErr: errors.Errorf("Unable to unmarshal image-meta checksum JSON: %v",
+			wantErr: fmt.Errorf("Unable to unmarshal image-meta checksum JSON: %v",
 				"invalid character 'U' looking for beginning of value"),
 		},
 		{
 			name: "checksums don't match",
 			data: []byte("42\n{\"meta_md5\":\"42\"}\n\x00"),
-			wantErr: errors.Errorf("'image-meta' checksum (%v) does not match checksums supplied (%v)",
+			wantErr: fmt.Errorf("'image-meta' checksum (%v) does not match checksums supplied (%v)",
 				"a1d0c6e83f027327d8461063f4ac58a6", "42"),
 		},
 		{
 			name: "checksum matched, can't get metaInfo",
 			data: []byte("UWU\n{\"meta_md5\":\"3f705474ba25e72419d16ea64bcf0723\"}\n\x00"),
-			wantErr: errors.Errorf("Unable to unmarshal image-meta JSON: %v",
+			wantErr: fmt.Errorf("Unable to unmarshal image-meta JSON: %v",
 				"invalid character 'U' looking for beginning of value"),
 		},
 	}
@@ -379,7 +379,7 @@ func TestGetPartitionConfigsFromFBMetaPartInfos(t *testing.T) {
 			},
 			vbootEnforcement: utils.VBOOT_NONE,
 			want:             nil,
-			wantErr: errors.Errorf("Unknown partition type in image-meta: " +
+			wantErr: fmt.Errorf("Unknown partition type in image-meta: " +
 				"'the quick brown fox jumps over the lazy dog'"),
 		},
 	}
@@ -454,7 +454,7 @@ func TestGetPartitionConfigFromFBMetaPartInfo(t *testing.T) {
 			metaPartInfoType: "foobar",
 			vbootEnforcement: utils.VBOOT_NONE,
 			wantType:         IGNORE, // not applicable
-			wantErr: errors.Errorf("Unknown partition type in image-meta: %v",
+			wantErr: fmt.Errorf("Unknown partition type in image-meta: %v",
 				"'foobar'"),
 		},
 	}

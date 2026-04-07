@@ -44,6 +44,8 @@ do_install() {
     for f in ${SHOWTECH_UTILS_FILES}; do
         install -m 755 ${S}/$f ${localbindir}/${f}
     done
+
+    ln -s show_tech.py ${localbindir}/showtech
 }
 
 RDEPENDS:${PN} += "bash"

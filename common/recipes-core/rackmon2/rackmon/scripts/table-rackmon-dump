@@ -1,0 +1,9 @@
+#!/bin/bash
+
+jq -r '.[] | .devInfo.devAddress as $addr | .regList[] | .name as $reg |
+  .history[-1] as $h |
+  if $h.type == "FLAGS" then
+    ($h.value.flagsValue[] | [$addr, ($reg + "." + .name), .value])
+  else
+    [$addr, $reg, ($h.value | to_entries[0].value)]
+  end | @tsv'

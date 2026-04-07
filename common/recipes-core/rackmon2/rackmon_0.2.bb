@@ -107,6 +107,8 @@ LOCAL_URI += " \
     file://scripts/address_validator.py \
     file://scripts/pyrmd.py \
     file://scripts/rackmon-stress.py \
+    file://scripts/table-rackmon-dump \
+    file://scripts/table-rackmon-list \
     "
 
 # Test sources
@@ -186,6 +188,9 @@ do_install:append() {
 
     install -d ${D}${PYTHON_SITEPACKAGES_DIR}
     install -m 644 ${UNPACKDIR}/scripts/pyrmd.py ${D}${PYTHON_SITEPACKAGES_DIR}/
+
+    install -m 755 ${UNPACKDIR}/scripts/table-rackmon-dump ${bin}/table-rackmon-dump
+    install -m 755 ${UNPACKDIR}/scripts/table-rackmon-list ${bin}/table-rackmon-list
 }
 
 FILES:${PN} = "${prefix}/local/bin ${sysconfdir} "

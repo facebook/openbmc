@@ -1,0 +1,5 @@
+#!/bin/bash
+
+jq --raw-output '["address","type","mode","baudrate","crcErrors","timeouts","miscErrors"],
+  (.[].devInfo |
+    [.devAddress, .deviceType, .mode, .baudrate, .crcErrors, .timeouts, .miscErrors]) | @tsv'

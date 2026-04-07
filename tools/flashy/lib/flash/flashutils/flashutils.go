@@ -20,12 +20,12 @@
 package flashutils
 
 import (
+	"errors"
 	"fmt"
 	"log"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashutils/devices"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
-	"github.com/pkg/errors"
 )
 
 // parseDeviceID parses a given device ID and returns (type, specifier, nil).
@@ -42,7 +42,7 @@ var parseDeviceID = func(deviceID string) (string, string, error) {
 
 	flashDeviceMap, err := utils.GetRegexSubexpMap(regEx, deviceID)
 	if err != nil {
-		return "", "", errors.Errorf("Unable to parse device ID '%v': %v",
+		return "", "", fmt.Errorf("Unable to parse device ID '%v': %w",
 			deviceID, err)
 	}
 
@@ -53,12 +53,12 @@ var parseDeviceID = func(deviceID string) (string, string, error) {
 var GetFlashDevice = func(deviceID string) (devices.FlashDevice, error) {
 	deviceType, deviceSpecifier, err := parseDeviceID(deviceID)
 	if err != nil {
-		return nil, errors.Errorf("Failed to get flash device: %v", err)
+		return nil, fmt.Errorf("Failed to get flash device: %w", err)
 	}
 
 	if factory, ok := devices.FlashDeviceFactoryMap[deviceType]; !ok {
 		errMsg := fmt.Sprintf("'%v' is not a valid registered flash device type", deviceType)
-		return nil, errors.Errorf("Failed to get flash device: %v", errMsg)
+		return nil, fmt.Errorf("Failed to get flash device: %v", errMsg)
 	} else {
 		return factory(deviceSpecifier)
 	}
@@ -69,12 +69,12 @@ var GetFlashDevice = func(deviceID string) (devices.FlashDevice, error) {
 var CheckFlashDeviceValid = func(deviceID string) error {
 	flashDevice, err := GetFlashDevice(deviceID)
 	if err != nil {
-		return errors.Errorf("Unable to get flash device '%v': %v",
+		return fmt.Errorf("Unable to get flash device '%v': %w",
 			deviceID, err)
 	}
 	err = flashDevice.Validate()
 	if err != nil {
-		return errors.Errorf("Flash device '%v' failed validation: %v",
+		return fmt.Errorf("Flash device '%v' failed validation: %w",
 			deviceID, err)
 	}
 	// passed
@@ -119,5 +119,5 @@ var CheckAnyFlashDeviceValid = func() error {
 		}
 	}
 
-	return errors.Errorf("UNSAFE TO REBOOT: No flash device is valid")
+	return errors.New("UNSAFE TO REBOOT: No flash device is valid")
 }

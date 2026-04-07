@@ -21,6 +21,7 @@ package flashcp
 
 import (
 	"bytes"
+	"fmt"
 	"math"
 	"testing"
 	"time"
@@ -29,7 +30,6 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 	"github.com/facebook/openbmc/tools/flashy/tests"
-	"github.com/pkg/errors"
 )
 
 type mockFlashDeviceFile struct {
@@ -95,23 +95,23 @@ func TestFlashCp(t *testing.T) {
 		{
 			name:               "open file failed",
 			roOffset:           0,
-			openFileErr:        errors.Errorf("open file failed"),
+			openFileErr:        fmt.Errorf("open file failed"),
 			closeFileErr:       nil,
 			getMtdInfoError:    nil,
 			mmapFileErr:        nil,
 			runFlashProcessErr: nil,
-			want: errors.Errorf("Unable to open flash device file " +
+			want: fmt.Errorf("Unable to open flash device file " +
 				"'/dev/mtd42': open file failed"),
 		},
 		{
 			name:               "close file failed",
 			roOffset:           0,
 			openFileErr:        nil,
-			closeFileErr:       errors.Errorf("close file failed"),
+			closeFileErr:       fmt.Errorf("close file failed"),
 			getMtdInfoError:    nil,
 			mmapFileErr:        nil,
 			runFlashProcessErr: nil,
-			want: errors.Errorf("Unable to close flash device file " +
+			want: fmt.Errorf("Unable to close flash device file " +
 				"'/dev/mtd42': close file failed"),
 		},
 		{
@@ -119,10 +119,10 @@ func TestFlashCp(t *testing.T) {
 			roOffset:           0,
 			openFileErr:        nil,
 			closeFileErr:       nil,
-			getMtdInfoError:    errors.Errorf("get mtd info failed"),
+			getMtdInfoError:    fmt.Errorf("get mtd info failed"),
 			mmapFileErr:        nil,
 			runFlashProcessErr: nil,
-			want: errors.Errorf("Can't get mtd_info_user for '/dev/mtd42', " +
+			want: fmt.Errorf("Can't get mtd_info_user for '/dev/mtd42', " +
 				"this may not be a MTD flash device: get mtd info failed"),
 		},
 		{
@@ -131,9 +131,9 @@ func TestFlashCp(t *testing.T) {
 			openFileErr:        nil,
 			closeFileErr:       nil,
 			getMtdInfoError:    nil,
-			mmapFileErr:        errors.Errorf("mmap failed"),
+			mmapFileErr:        fmt.Errorf("mmap failed"),
 			runFlashProcessErr: nil,
-			want: errors.Errorf("Can't mmap image file " +
+			want: fmt.Errorf("Can't mmap image file " +
 				"'/run/upgrade/image': mmap failed"),
 		},
 		{
@@ -143,8 +143,8 @@ func TestFlashCp(t *testing.T) {
 			closeFileErr:       nil,
 			getMtdInfoError:    nil,
 			mmapFileErr:        nil,
-			runFlashProcessErr: errors.Errorf("flash process failed"),
-			want:               errors.Errorf("flash process failed"),
+			runFlashProcessErr: fmt.Errorf("flash process failed"),
+			want:               fmt.Errorf("flash process failed"),
 		},
 		{
 			name:               "non-zero roOffset",
@@ -259,34 +259,34 @@ func TestRunFlashProcess(t *testing.T) {
 		},
 		{
 			name: "openFlashDeviceFile error",
-			oErr: errors.Errorf("openFlashDeviceFile error"),
-			want: errors.Errorf("Unable to open flash device file '/dev/mtd42': " +
+			oErr: fmt.Errorf("openFlashDeviceFile error"),
+			want: fmt.Errorf("Unable to open flash device file '/dev/mtd42': " +
 				"openFlashDeviceFile error"),
 		},
 		{
 			name: "healthCheck error",
-			hErr: errors.Errorf("healthCheck error"),
-			want: errors.Errorf("healthCheck error"),
+			hErr: fmt.Errorf("healthCheck error"),
+			want: fmt.Errorf("healthCheck error"),
 		},
 		{
 			name: "eraseFlash error",
-			eErr: errors.Errorf("eraseFlash error"),
-			want: errors.Errorf("eraseFlash error"),
+			eErr: fmt.Errorf("eraseFlash error"),
+			want: fmt.Errorf("eraseFlash error"),
 		},
 		{
 			name: "flashImage error",
-			fErr: errors.Errorf("flashImage error"),
-			want: errors.Errorf("flashImage error"),
+			fErr: fmt.Errorf("flashImage error"),
+			want: fmt.Errorf("flashImage error"),
 		},
 		{
 			name: "verifyFlash error",
-			vErr: errors.Errorf("verifyFlash error"),
-			want: errors.Errorf("verifyFlash error"),
+			vErr: fmt.Errorf("verifyFlash error"),
+			want: fmt.Errorf("verifyFlash error"),
 		},
 		{
 			name: "closeFlashDevice error",
-			cErr: errors.Errorf("closeFlashDevice error"),
-			want: errors.Errorf("Unable to close flash device file '/dev/mtd42': " +
+			cErr: fmt.Errorf("closeFlashDevice error"),
+			want: fmt.Errorf("Unable to close flash device file '/dev/mtd42': " +
 				"closeFlashDevice error"),
 		},
 	}
@@ -358,8 +358,8 @@ func TestGetMtdInfoUser(t *testing.T) {
 		},
 		{
 			name:     "failed",
-			ioctlErr: errors.Errorf("ioctl failed"),
-			wantErr: errors.Errorf("Can't get mtd_info_user: %v",
+			ioctlErr: fmt.Errorf("ioctl failed"),
+			wantErr: fmt.Errorf("Can't get mtd_info_user: %v",
 				"ioctl failed"),
 		},
 	}
@@ -406,7 +406,7 @@ func TestHealthCheck(t *testing.T) {
 			deviceFilePath: "/dev/mtd42a",
 			deviceFileSize: 42,
 			roOffset:       0,
-			want: errors.Errorf("Device file path '/dev/mtd42a' does not " +
+			want: fmt.Errorf("Device file path '/dev/mtd42a' does not " +
 				"match required pattern '^/dev/mtd[0-9]+$'"),
 		},
 		{
@@ -414,7 +414,7 @@ func TestHealthCheck(t *testing.T) {
 			deviceFilePath: "/dev/mtd42",
 			deviceFileSize: 1,
 			roOffset:       0,
-			want:           errors.Errorf("Image size (6B) larger than flash device size (1B)"),
+			want:           fmt.Errorf("Image size (6B) larger than flash device size (1B)"),
 		},
 		{
 			name:           "non-zero roOffset OK",
@@ -428,7 +428,7 @@ func TestHealthCheck(t *testing.T) {
 			deviceFilePath: "/dev/mtd42",
 			deviceFileSize: 42,
 			roOffset:       8,
-			want:           errors.Errorf("Image size (6B) smaller than RO offset 8"),
+			want:           fmt.Errorf("Image size (6B) smaller than RO offset 8"),
 		},
 	}
 
@@ -486,7 +486,7 @@ func TestEraseFlashDevice(t *testing.T) {
 			wantEraseStart: 0,
 			wantEraseLen:   0,
 			ioctlErr:       nil,
-			want:           errors.Errorf("invalid mtd device erasesize: 0"),
+			want:           fmt.Errorf("invalid mtd device erasesize: 0"),
 		},
 		{
 			name:           "erase failed",
@@ -494,8 +494,8 @@ func TestEraseFlashDevice(t *testing.T) {
 			mtdErasesize:   4,
 			wantEraseStart: 0,
 			wantEraseLen:   4,
-			ioctlErr:       errors.Errorf("erase failed"),
-			want:           errors.Errorf("Flash device '/dev/mtd5' erase failed: erase failed"),
+			ioctlErr:       fmt.Errorf("erase failed"),
+			want:           fmt.Errorf("Flash device '/dev/mtd5' erase failed: erase failed"),
 		},
 		{
 			name:           "non-zero roOffset",
@@ -531,7 +531,7 @@ func TestEraseFlashDevice(t *testing.T) {
 			wantEraseStart: 0,
 			wantEraseLen:   math.MaxUint32 - 4,
 			ioctlErr:       nil,
-			want:           errors.Errorf("Failed to get erase length: Unsigned integer overflow for (6+4294967291)"),
+			want:           fmt.Errorf("Failed to get erase length: Unsigned integer overflow for (6+4294967291)"),
 		},
 	}
 
@@ -605,8 +605,8 @@ func TestFlashImage(t *testing.T) {
 		{
 			name:     "write failed",
 			roOffset: 0,
-			writeErr: errors.Errorf("write failed"),
-			want: errors.Errorf("Failed to flash image '/run/upgrade/image' " +
+			writeErr: fmt.Errorf("write failed"),
+			want: fmt.Errorf("Failed to flash image '/run/upgrade/image' " +
 				"on to flash device '/dev/mtd5': 0B flashed: write failed"),
 		},
 		{
@@ -619,7 +619,7 @@ func TestFlashImage(t *testing.T) {
 			name:     "roOffset too large",
 			roOffset: 100,
 			writeErr: nil,
-			want:     errors.Errorf("roOffset (100) >= file size (6)"),
+			want:     fmt.Errorf("roOffset (100) >= file size (6)"),
 		},
 	}
 
@@ -699,7 +699,7 @@ func TestVerifyFlash(t *testing.T) {
 			deviceFileName: "/dev/mtd42a",
 			deviceData:     imData,
 			mmapErr:        nil,
-			want: errors.Errorf("Unable to get block file path for '/dev/mtd42a': " +
+			want: fmt.Errorf("Unable to get block file path for '/dev/mtd42a': " +
 				"No match for regex '^(?P<devmtdpath>/dev/mtd)(?P<mtdnum>[0-9]+)$' " +
 				"for input '/dev/mtd42a'"),
 		},
@@ -708,8 +708,8 @@ func TestVerifyFlash(t *testing.T) {
 			roOffset:       0,
 			deviceFileName: "/dev/mtd42",
 			deviceData:     imData,
-			mmapErr:        errors.Errorf("mmap failed"),
-			want:           errors.Errorf("Unable to mmap flash device '/dev/mtd42': mmap failed"),
+			mmapErr:        fmt.Errorf("mmap failed"),
+			want:           fmt.Errorf("Unable to mmap flash device '/dev/mtd42': mmap failed"),
 		},
 		{
 			name:           "device data does not match",
@@ -717,7 +717,7 @@ func TestVerifyFlash(t *testing.T) {
 			deviceFileName: "/dev/mtd42",
 			deviceData:     []byte("foobrr"),
 			mmapErr:        nil,
-			want:           errors.Errorf("Verification failed: flash and image data mismatch beginning at offset 4 + roOffset 0."),
+			want:           fmt.Errorf("Verification failed: flash and image data mismatch beginning at offset 4 + roOffset 0."),
 		},
 		{
 			name:           "nonzero roOffset matched",
@@ -733,7 +733,7 @@ func TestVerifyFlash(t *testing.T) {
 			deviceFileName: "/dev/mtd42",
 			deviceData:     imData,
 			mmapErr:        nil,
-			want:           errors.Errorf("Unable to get image data after roOffset (100): Slice start (100) > end (6)"),
+			want:           fmt.Errorf("Unable to get image data after roOffset (100): Slice start (100) > end (6)"),
 		},
 	}
 

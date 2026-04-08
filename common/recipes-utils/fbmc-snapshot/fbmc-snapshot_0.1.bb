@@ -43,10 +43,11 @@ do_install() {
     install -d ${showtech_rules_dir}
 
     install -m 755 showtech.sh ${localbindir}/showtech.sh
+    ln -s showtech.sh ${localbindir}/showtech
     for f in ${SHOWTECH_RULES_FILES}; do
         install -m 755 $f ${showtech_rules_dir}/${f}
     done
 }
 
 RDEPENDS:${PN} += "bash"
-FILES:${PN} = "/usr/local/bin/showtech.sh /etc/showtech/rules/"
+FILES:${PN} = "/usr/local/bin/showtech.sh /usr/local/bin/showtech /etc/showtech/rules/"

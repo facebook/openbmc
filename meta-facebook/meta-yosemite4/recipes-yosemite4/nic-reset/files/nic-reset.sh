@@ -29,3 +29,13 @@ sleep 5
 
 # Run the same commands we do when a nic is first inserted
 restart_nic_services FALLING
+
+# Recover NIC console service if it entered a failed state due to the USB
+# serial device disappearing during the power cycle.
+NIC_CONSOLE=$((NIC + 1))
+CONSOLE_SVC="obmc-console@ctrlcpnic${NIC_CONSOLE}.service"
+if systemctl is-failed "$CONSOLE_SVC" > /dev/null 2>&1; then
+    echo "Recovering $CONSOLE_SVC from failed state"
+    systemctl reset-failed "$CONSOLE_SVC"
+    systemctl restart "$CONSOLE_SVC"
+fi

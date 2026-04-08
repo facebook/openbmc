@@ -14,7 +14,7 @@ SRC_URI += " \
     file://0510-hw-i2c-aspeed-Add-bus-ID-to-all-trace-events.patch \
     file://0511-hw-i2c-aspeed-Add-slave-event-traces.patch \
     file://0512-hw-i2c-aspeed-Fix-bus-derivation-for-slave-events.patch \
-    file://0513-tests-Rename-aspeed_i2c-test-to-i2c-netdev2-test.patch \
+    \
     file://0514-hw-i2c-aspeed-Fix-interrupt-status-flag-names.patch \
     file://0515-tests-Create-qtest-for-Aspeed-I2C-controller.patch \
     file://0516-scripts-Add-redact-util.patch \
@@ -24,7 +24,7 @@ SRC_URI += " \
     file://0520-hw-misc-aspeed-Add-intel-me.patch \
     file://0521-hw-misc-aspeed-Add-fby35-server-board-bridge-IC.patch \
     file://0522-hw-arm-aspeed-Switch-fby35-grandcanyon-to-n25q00.patch \
-    file://0523-fby35-Add-CPLD-and-BIC-as-I2C-devices.patch \
+    \
     file://0524-fby35-Setup-I2C-devices-and-GPIO-s.patch \
     file://0525-fby35-Add-motherboard-fru-EEPROM-to-BIC.patch \
     file://0526-qemu-Add-i2c-devices-to-oby35-cl.patch \

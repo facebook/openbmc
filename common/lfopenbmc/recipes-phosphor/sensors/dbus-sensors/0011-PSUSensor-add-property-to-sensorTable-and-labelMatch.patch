@@ -1,7 +1,7 @@
-From 5558c3da801dc26b546fd98a433012f54cc7655d Mon Sep 17 00:00:00 2001
+From 5d7dc75f859fcbc0b3e9dd664da07765f31bbf25 Mon Sep 17 00:00:00 2001
 From: Andy-Hsu-wiwynn <andy.hsu.wiwynn@gmail.com>
 Date: Fri, 15 Aug 2025 15:44:31 +0800
-Subject: [PATCH 11/15] PSUSensor:add property to sensorTable and labelMatch
+Subject: [PATCH 11/17] PSUSensor:add property to sensorTable and labelMatch
 
 Description
 Add "current" to the sensorTable, and add "in_current" and "in_power"
@@ -50,5 +50,5 @@ index 40f87c7..777f54c 100644
      {"in", "Output Voltage", 255, 0, 3, 0},
      {"iout", "Output Current", 255, 0, 3, 0},
 -- 
-2.47.3
+2.52.0
 

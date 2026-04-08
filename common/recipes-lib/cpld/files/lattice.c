@@ -138,7 +138,7 @@ struct cpld_dev_info lattice_dev_list[] = {
 static int
 indexof(const char *str, const char *c)
 {
-  char *ptr = strstr(str, c);
+  const char *ptr = strstr(str, c);
   int  index = 0;
 
   if ( ptr )

@@ -1,9 +1,22 @@
---- a/flashchips.c	2025-08-19 13:22:40.290563557 +0000
-+++ b/flashchips.c	2025-08-19 16:16:56.516271941 +0000
-@@ -6881,6 +6881,43 @@
+From ae1ebef8eeae58d60ec0a0338394a58699edd4d2 Mon Sep 17 00:00:00 2001
+From: James Athappilly <jamesatha@meta.com>
+Date: Mon, 6 Apr 2026 11:06:28 -0700
+Subject: [PATCH] flashrom GD25LQ256D
+
+---
+ flashchips/gigadevice.c | 37 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
+
+diff --git a/flashchips/gigadevice.c b/flashchips/gigadevice.c
+index 12b24b08..3321cd3f 100644
+--- a/flashchips/gigadevice.c
++++ b/flashchips/gigadevice.c
+@@ -268,6 +268,43 @@
+ 		.decode_range	= DECODE_RANGE_SPI25,
+ 	},
  
- 	{
- 		.vendor		= "GigaDevice",
++	{
++		.vendor		= "GigaDevice",
 +		.name		= "GD25LQ256D",
 +		.bustype	= BUS_SPI,
 +		.manufacture_id	= GIGADEVICE_ID,
@@ -39,8 +52,9 @@
 +		.decode_range	= DECODE_RANGE_SPI25,
 +	},
 +
-+	{
-+		.vendor		= "GigaDevice",
+ 	{
+ 		.vendor		= "GigaDevice",
  		.name		= "GD25LQ255E",
- 		.bustype	= BUS_SPI,
- 		.manufacture_id	= GIGADEVICE_ID,
+-- 
+2.52.0
+

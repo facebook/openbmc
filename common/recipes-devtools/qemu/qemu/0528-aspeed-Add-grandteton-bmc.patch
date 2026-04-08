@@ -1,21 +1,21 @@
-From b287962fe88503eb5d943eb62be954c75a6b50aa Mon Sep 17 00:00:00 2001
+From 35b8272c4f9f5fb096e33bf99cb7b6897c9b243a Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Fri, 15 Jul 2022 14:34:49 -0700
-Subject: [PATCH 528/532] aspeed: Add grandteton-bmc
+Subject: [PATCH] aspeed: Add grandteton-bmc
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 Signed-off-by: Peter Delevoryas <pdel@fb.com>
 ---
- hw/arm/aspeed.c | 11 +++++++++++
+ hw/arm/aspeed_ast2600_evb.c | 11 +++++++++++
  1 file changed, 11 insertions(+)
 
-diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index f22ef88cdc..953e010932 100644
---- a/hw/arm/aspeed.c
-+++ b/hw/arm/aspeed.c
-@@ -2140,6 +2140,17 @@ static const struct FBMachineData fb_machines[] = {
+diff --git a/hw/arm/aspeed_ast2600_evb.c b/hw/arm/aspeed_ast2600_evb.c
+index 5258fd3bbe..bafc54845f 100644
+--- a/hw/arm/aspeed_ast2600_evb.c
++++ b/hw/arm/aspeed_ast2600_evb.c
+@@ -89,6 +89,17 @@ static const struct FBMachineData fb_machines[] = {
          .stdout_path = ASPEED_DEV_UART5,
-         .ram_size    = 1 * GiB,
+         .ram_size    = FUJI_BMC_RAM_SIZE,
      },
 +    {
 +        .name        = "grandteton-bmc",
@@ -29,8 +29,8 @@ index f22ef88cdc..953e010932 100644
 +        .ram_size    = FUJI_BMC_RAM_SIZE,
 +    },
      {
-         .parent      = MACHINE_TYPE_NAME("ast1030-evb"),
-         .name        = "oby35-cl",
+         .name        = "elbert-bmc",
+         .desc        = "Facebook Elbert BMC (Cortex-A7)",
 -- 
-2.49.1
+2.52.0
 

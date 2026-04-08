@@ -1,7 +1,7 @@
-From e4d49e9d2393865971967c1fcf09049949369ee8 Mon Sep 17 00:00:00 2001
+From a8d98902af41bcd30bdd4c0011edb8e2dc66b9d6 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 15 Jun 2022 13:42:47 -0700
-Subject: [PATCH 516/532] scripts: Add redact-util
+Subject: [PATCH] scripts: Add redact-util
 
 This single-file, no-dependencies C++ program can be compiled with
 `g++ -std=c++2a redact-util.cpp` and used with IPMI FRU eeprom binary files
@@ -113,5 +113,5 @@ index 0000000000..b58b2d07ac
 +    fclose(f);
 +}
 -- 
-2.49.1
+2.52.0
 

@@ -1,7 +1,7 @@
-From 2fb57044c9967beac8953347d77d7f8c1f71f01c Mon Sep 17 00:00:00 2001
+From 981a02830b775db7be27963676c784d07c052b6d Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Fri, 26 Aug 2022 07:10:35 -0700
-Subject: [PATCH 514/532] hw/i2c/aspeed: Fix interrupt status flag names
+Subject: [PATCH] hw/i2c/aspeed: Fix interrupt status flag names
 
 It's pretty difficult to read the interrupt status flag names when
 they're different from the register field name. This makes them the
@@ -13,7 +13,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index f4cb847b05..0326f8a7e4 100644
+index 27c399ba0d..5ecd9db49b 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
 @@ -49,13 +49,13 @@ static inline void aspeed_i2c_bus_raise_interrupt(AspeedI2CBus *bus)
@@ -35,5 +35,5 @@ index f4cb847b05..0326f8a7e4 100644
                                                 "slave-match|" : "",
                 SHARED_ARRAY_FIELD_EX32(bus->regs, reg_intr_sts, NORMAL_STOP) ?
 -- 
-2.49.1
+2.52.0
 

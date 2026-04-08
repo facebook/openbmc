@@ -1,7 +1,7 @@
-From bcf817702af26e5f323a004d4396f6bd584be5d9 Mon Sep 17 00:00:00 2001
+From 45dce28033d1c943ea54bfd298ec338e4df791a4 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Fri, 26 Aug 2022 07:12:09 -0700
-Subject: [PATCH 515/532] tests: Create qtest for Aspeed I2C controller
+Subject: [PATCH] tests: Create qtest for Aspeed I2C controller
 
 Initial commit for a qtest for the Aspeed I2C controller. It uses an
 i2c-echo device and tests echoing some bytes back to itself.
@@ -12,15 +12,16 @@ mode used in the Zephyr driver.
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 ---
- tests/qtest/aspeed_i2c-test.c | 135 ++++++++++++++++++++++++++++++++++
- 1 file changed, 135 insertions(+)
- create mode 100644 tests/qtest/aspeed_i2c-test.c
+ tests/qtest/aspeed_i2c-echo-test.c | 135 +++++++++++++++++++++++++++++
+ tests/qtest/meson.build            |   1 +
+ 2 files changed, 136 insertions(+)
+ create mode 100644 tests/qtest/aspeed_i2c-echo-test.c
 
-diff --git a/tests/qtest/aspeed_i2c-test.c b/tests/qtest/aspeed_i2c-test.c
+diff --git a/tests/qtest/aspeed_i2c-echo-test.c b/tests/qtest/aspeed_i2c-echo-test.c
 new file mode 100644
 index 0000000000..1db23222f0
 --- /dev/null
-+++ b/tests/qtest/aspeed_i2c-test.c
++++ b/tests/qtest/aspeed_i2c-echo-test.c
 @@ -0,0 +1,135 @@
 +/*
 + * Aspeed I2C Controller Tests
@@ -157,6 +158,18 @@ index 0000000000..1db23222f0
 +                        test_old_reg_byte_mode);
 +    return g_test_run();
 +}
+diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
+index 6b7a4dc04f..0ab1425488 100644
+--- a/tests/qtest/meson.build
++++ b/tests/qtest/meson.build
+@@ -216,6 +216,7 @@ qtests_npcm8xx = \
+ qtests_aspeed = \
+   ['aspeed_gpio-test',
+    'aspeed_i2c-test',
++   'aspeed_i2c-echo-test',
+    'aspeed_hace-test',
+    'aspeed_scu-test',
+    'aspeed_smc-test']
 -- 
-2.49.1
+2.52.0
 

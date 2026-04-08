@@ -1,4 +1,4 @@
-From 8fab1f763b803e97a56f0bab6c49bef50b629fc9 Mon Sep 17 00:00:00 2001
+From e007973ef18f9a28ad9bd841f75092a6db8976a0 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 27 Apr 2022 16:23:48 -0700
 Subject: [PATCH 503/532] hw/misc: Add i2c-netdev device
@@ -288,10 +288,10 @@ index 0000000000..3153946b70
 +
 +type_init(register_types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 6d47de482c..ce7105f4f9 100644
+index b1d8d8e5d2..af36752c56 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -145,6 +145,7 @@ system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
+@@ -149,6 +149,7 @@ system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
  system_ss.add(when: 'CONFIG_GRLIB', if_true: files('grlib_ahb_apb_pnp.c'))
  
  system_ss.add(when: 'CONFIG_I2C_ECHO', if_true: files('i2c-echo.c'))
@@ -300,5 +300,5 @@ index 6d47de482c..ce7105f4f9 100644
  specific_ss.add(when: 'CONFIG_AVR_POWER', if_true: files('avr_power.c'))
  
 -- 
-2.49.1
+2.52.0
 

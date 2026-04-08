@@ -1,8 +1,8 @@
-From aeae7f7a2f4b4581f5973aba2ba4c131d9ac442f Mon Sep 17 00:00:00 2001
+From d0aeeb2d86b436d5e8bc471aa55f978c6d0be363 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Fri, 20 Mar 2026 13:29:18 +0800
-Subject: [PATCH 1/1] SmbpbiSensor: Fix invalid data check size for temperature
- sensor
+Subject: [PATCH 17/17] SmbpbiSensor: Fix invalid data check size for
+ temperature sensor
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -52,5 +52,5 @@ index c6c44f1..299400d 100644
          data = std::numeric_limits<double>::quiet_NaN();
          return 0;
 -- 
-2.31.1
+2.52.0
 

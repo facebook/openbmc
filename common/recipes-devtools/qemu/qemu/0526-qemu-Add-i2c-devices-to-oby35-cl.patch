@@ -1,23 +1,23 @@
-From a48917da127b2843baf688339f6e1c55f540fbd9 Mon Sep 17 00:00:00 2001
+From 572ae1949704d56082cb7da4afd7a1ccd986e4bb Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Fri, 26 Aug 2022 02:03:46 -0700
-Subject: [PATCH 526/532] qemu: Add i2c devices to oby35-cl
+Subject: [PATCH 526/526] qemu: Add i2c devices to oby35-cl
 
 Already had these from -machine fby35, so this commit just makes
 fby35_cl_bic_i2c_init public and uses it in aspeed.c and fby35.c
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 ---
- hw/arm/aspeed.c | 13 +------------
- hw/arm/fby35.c  |  2 +-
- hw/arm/fby35.h  |  1 +
+ hw/arm/aspeed_ast2600_fuji.c | 13 +------------
+ hw/arm/fby35.c               |  2 +-
+ include/hw/arm/fby35.h       |  1 +
  3 files changed, 3 insertions(+), 13 deletions(-)
 
-diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 97e4ed1a3e..dd275d7cc6 100644
---- a/hw/arm/aspeed.c
-+++ b/hw/arm/aspeed.c
-@@ -1109,18 +1109,7 @@ static void create_unimplemented_i2c_device(I2CBus *bus, uint8_t addr)
+diff --git a/hw/arm/aspeed_ast2600_fuji.c b/hw/arm/aspeed_ast2600_fuji.c
+index a68e51c89d..877fe1b0b6 100644
+--- a/hw/arm/aspeed_ast2600_fuji.c
++++ b/hw/arm/aspeed_ast2600_fuji.c
+@@ -137,18 +137,7 @@ static void create_unimplemented_i2c_device(I2CBus *bus, uint8_t addr)
  static void oby35_cl_i2c_init(AspeedMachineState *bmc)
  {
      AspeedSoCState *soc = bmc->soc;
@@ -38,10 +38,10 @@ index 97e4ed1a3e..dd275d7cc6 100644
  
  static void oby35_bb_i2c_init(AspeedMachineState *bmc)
 diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
-index 12f7542661..2ad8fa322d 100644
+index afaa1f13b8..aaf1ce6dd1 100644
 --- a/hw/arm/fby35.c
 +++ b/hw/arm/fby35.c
-@@ -45,7 +45,7 @@ struct Fby35State {
+@@ -46,7 +46,7 @@ struct Fby35State {
  #define FBY35_BMC_RAM_SIZE (2 * GiB)
  #define FBY35_BMC_FIRMWARE_ADDR 0x0
  
@@ -50,10 +50,10 @@ index 12f7542661..2ad8fa322d 100644
  {
      I2CBus *i2c[14];
      I2CBus *ssd[8];
-diff --git a/hw/arm/fby35.h b/hw/arm/fby35.h
+diff --git a/include/hw/arm/fby35.h b/include/hw/arm/fby35.h
 index 87cb1a10c2..0f8369f0fa 100644
---- a/hw/arm/fby35.h
-+++ b/hw/arm/fby35.h
+--- a/include/hw/arm/fby35.h
++++ b/include/hw/arm/fby35.h
 @@ -146,5 +146,6 @@ typedef struct AspeedSoCState AspeedSoCState;
  
  void fby35_bmc_i2c_init(AspeedSoCState *s);
@@ -62,5 +62,5 @@ index 87cb1a10c2..0f8369f0fa 100644
  
  #endif
 -- 
-2.49.1
+2.52.0
 

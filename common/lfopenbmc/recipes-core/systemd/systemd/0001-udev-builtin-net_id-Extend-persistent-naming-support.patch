@@ -1,6 +1,6 @@
-From 4f82f97ea8057cb85f08436633c6304d5eb5ad4c Mon Sep 17 00:00:00 2001
-From: Bruce Hung <bruce.jy.hung@fii-foxconn.com>
-Date: Thu, 4 Dec 2025 15:53:22 +0800
+From 838a03440002ca39be91bd557e64628c1f25218f Mon Sep 17 00:00:00 2001
+From: Jeremy Kerr <jk@codeconstruct.com.au>
+Date: Fri, 11 Jul 2025 09:34:05 +0800
 Subject: [PATCH] udev-builtin-net_id: Extend persistent naming support to MCTP
  interfaces
 
@@ -9,21 +9,16 @@ available over USB, it would be helpful to apply udev's persistent
 naming rules to MCTP interfaces, to follow the USB hub/port topology.
 
 Enable persistent naming for ARPHRD_MCTP-type devices, using a "mc" name
-prefix.
-
-- This is a rebased version of upstream systemd PR #39989
-- Original author: Jeremy Kerr <jk@codeconstruct.com.au>
-
-link: https://github.com/systemd/systemd/pull/39989
+prefix, and add appropriate definitions for the v260 naming sheme.
 ---
  man/systemd.net-naming-scheme.xml | 14 ++++++++++++++
  src/shared/netif-naming-scheme.c  |  1 +
  src/shared/netif-naming-scheme.h  |  2 ++
- src/udev/udev-builtin-net_id.c    |  8 +++++++-
- 4 files changed, 24 insertions(+), 1 deletion(-)
+ src/udev/udev-builtin-net_id.c    |  9 ++++++++-
+ 4 files changed, 25 insertions(+), 1 deletion(-)
 
 diff --git a/man/systemd.net-naming-scheme.xml b/man/systemd.net-naming-scheme.xml
-index 19967af..a540cba 100644
+index 9211e25aa1..1a024a0c30 100644
 --- a/man/systemd.net-naming-scheme.xml
 +++ b/man/systemd.net-naming-scheme.xml
 @@ -90,6 +90,10 @@
@@ -32,21 +27,21 @@ index 19967af..a540cba 100644
            </row>
 +          <row>
 +            <entry><constant>mc</constant></entry>
-+            <entry>Mangement component Transport Protocol (MCTP)</entry>
++            <entry>Management Component Transport Protocol (MCTP)</entry>
 +          </row>
          </tbody>
        </tgroup>
      </table>
-@@ -540,6 +544,16 @@
-           <xi:include href="version-info.xml" xpointer="v257"/>
+@@ -561,6 +565,16 @@
+           <xi:include href="version-info.xml" xpointer="v259"/>
            </listitem>
          </varlistentry>
 +
 +        <varlistentry>
 +          <term><constant>v260</constant></term>
 +
-+	  <listitem><para>MCTP interfaces are now assigned persistent names, using a <constant>mc</constant>
-+	  prefix.</para>
++          <listitem><para>MCTP interfaces are now assigned persistent names, using a <constant>mc</constant>
++          prefix.</para>
 +
 +          <xi:include href="version-info.xml" xpointer="v260"/>
 +          </listitem>
@@ -55,42 +50,42 @@ index 19967af..a540cba 100644
  
      <para>Note that <constant>latest</constant> may be used to denote the latest scheme known (to this
 diff --git a/src/shared/netif-naming-scheme.c b/src/shared/netif-naming-scheme.c
-index 67b7eb4..2ed0571 100644
+index df16e69fb6..607094eecf 100644
 --- a/src/shared/netif-naming-scheme.c
 +++ b/src/shared/netif-naming-scheme.c
-@@ -25,6 +25,7 @@ static const NamingScheme naming_schemes[] = {
-         { "v254", NAMING_V254 },
-         { "v255", NAMING_V255 },
+@@ -30,6 +30,7 @@ static const NamingScheme naming_schemes[] = {
          { "v257", NAMING_V257 },
+         { "v258", NAMING_V258 },
+         { "v259", NAMING_V259 },
 +        { "v260", NAMING_V260 },
          /* … add more schemes here, as the logic to name devices is updated … */
  
          EXTRA_NET_NAMING_MAP
 diff --git a/src/shared/netif-naming-scheme.h b/src/shared/netif-naming-scheme.h
-index 3ab1d75..b038edb 100644
+index 8448c4e957..a25b707b1c 100644
 --- a/src/shared/netif-naming-scheme.h
 +++ b/src/shared/netif-naming-scheme.h
-@@ -45,6 +45,7 @@ typedef enum NamingSchemeFlags {
-         NAMING_SR_IOV_R                  = 1 << 17, /* Use "r" suffix for SR-IOV VF representors */
-         NAMING_FIRMWARE_NODE_SUN         = 1 << 18, /* Use firmware_node/sun to get PCI slot number */
+@@ -43,6 +43,7 @@ typedef enum NamingSchemeFlags {
          NAMING_DEVICETREE_PORT_ALIASES   = 1 << 19, /* Include aliases of OF nodes of a netdev itself, not just its parent. See PR #33958. */
+         NAMING_USE_INTERFACE_PROPERTY    = 1 << 20, /* Use INTERFACE udev property, rather than sysname, when no renaming is requested. */
+         NAMING_DEVICETREE_ALIASES_WLAN   = 1 << 21, /* Generate names from devicetree aliases for WLAN devices */
 +        NAMING_MCTP                      = 1 << 22, /* Use "mc" prefix for MCTP devices */
  
          /* And now the masks that combine the features above */
          NAMING_V238 = 0,
 @@ -65,6 +66,7 @@ typedef enum NamingSchemeFlags {
-                                                        * systemd version 255, naming scheme "v255". */
-         NAMING_V255 = NAMING_V254 & ~NAMING_BRIDGE_MULTIFUNCTION_SLOT,
          NAMING_V257 = NAMING_V255 | NAMING_FIRMWARE_NODE_SUN | NAMING_DEVICETREE_PORT_ALIASES,
-+        NAMING_V260 = NAMING_V257 | NAMING_MCTP,
+         NAMING_V258 = NAMING_V257 | NAMING_USE_INTERFACE_PROPERTY,
+         NAMING_V259 = NAMING_V258 | NAMING_DEVICETREE_ALIASES_WLAN,
++        NAMING_V260 = NAMING_V259 | NAMING_MCTP,
  
          EXTRA_NET_NAMING_SCHEMES
  
 diff --git a/src/udev/udev-builtin-net_id.c b/src/udev/udev-builtin-net_id.c
-index 09c04b9..67b0c17 100644
+index 92993d0b55..4e962d54de 100644
 --- a/src/udev/udev-builtin-net_id.c
 +++ b/src/udev/udev-builtin-net_id.c
-@@ -1322,7 +1322,7 @@ static int get_ifname_prefix(sd_device *dev, const char **ret) {
+@@ -1321,7 +1321,7 @@ static int get_ifname_prefix(sd_device *dev, const char **ret) {
          if (r < 0)
                  return r;
  
@@ -98,20 +93,21 @@ index 09c04b9..67b0c17 100644
 +        /* handle only ARPHRD_ETHER, ARPHRD_SLIP, ARPHRD_INFINIBAND, and ARPHDR_MCTP devices */
          switch (iftype) {
          case ARPHRD_ETHER: {
-                 if (device_is_devtype(dev, "wlan"))
-@@ -1343,6 +1343,12 @@ static int get_ifname_prefix(sd_device *dev, const char **ret) {
-         case ARPHRD_SLIP:
+                 if (device_is_devtype(dev, "wlan") > 0)
+@@ -1343,6 +1343,13 @@ static int get_ifname_prefix(sd_device *dev, const char **ret) {
                  *ret = "sl";
                  return 0;
+ 
 +        case ARPHRD_MCTP:
 +                if (!naming_scheme_has(NAMING_MCTP))
 +                        return -EOPNOTSUPP;
 +
 +                *ret = "mc";
 +                return 0;
- 
++
          default:
                  return -EOPNOTSUPP;
+         }
 -- 
-2.43.0
+2.52.0
 

@@ -1,4 +1,4 @@
-From 5969576d16f3e79abee31148ab8ad8f7aa5dc040 Mon Sep 17 00:00:00 2001
+From 0ebe74d734dbdb08441fa3f488bfc844f54f0e00 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Fri, 24 Nov 2023 15:54:07 +0800
 Subject: [PATCH 604/606] Kernel6v5: Support apml driver
@@ -731,10 +731,10 @@ index 000000000000..b7b499aa33ef
 +MODULE_DESCRIPTION("Hwmon driver for AMD SB-TSI emulated sensor");
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index b9c11f67315f..2f8feb0b0f30 100644
+index a2045ba8eab5..1eb778f6b598 100644
 --- a/drivers/misc/Kconfig
 +++ b/drivers/misc/Kconfig
-@@ -644,6 +644,7 @@ config MCHP_LAN966X_PCI
+@@ -654,6 +654,7 @@ config MCHP_LAN966X_PCI
  	    - lan966x-miim (MDIO_MSCC_MIIM)
  	    - lan966x-switch (LAN966X_SWITCH)
  
@@ -743,7 +743,7 @@ index b9c11f67315f..2f8feb0b0f30 100644
  source "drivers/misc/eeprom/Kconfig"
  source "drivers/misc/cb710/Kconfig"
 diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index b32a2597d246..34a5ceacdd36 100644
+index 87dbf02ab2f9..f27a042e7251 100644
 --- a/drivers/misc/Makefile
 +++ b/drivers/misc/Makefile
 @@ -3,6 +3,7 @@

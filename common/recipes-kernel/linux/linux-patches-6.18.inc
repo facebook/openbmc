@@ -83,15 +83,6 @@ SRC_URI:append = " \
 "
 
 #
-# hwmon drivers that are already in next linux RC
-#
-SRC_URI:append = " \
-    file://0700-hwmon-Add-MP2925-and-MP2929-driver.patch \
-    file://0701-hwmon-pmbus-add-driver-for-MPS-MP9945.patch \
-    file://0702-hwmon-mp2925-add-vid-offset-for-vid-mode.patch \
-"
-
-#
 # Hacks and workarounds
 #
 SRC_URI:append = " \

@@ -1,4 +1,4 @@
-From 7709549300b46f98698fc045c1ab9e12944c08a2 Mon Sep 17 00:00:00 2001
+From 9a69902c51af6f7074a0394f51d3282abc4cf374 Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
 Date: Fri, 19 Dec 2025 15:21:42 +0800
 Subject: [PATCH] clemente:dbus-sensors: Ignore zero HGX_GPU*_ENERGY_J readings
@@ -20,10 +20,10 @@ Signed-off-by: Alex Wang <alex.ts.wang@fii-foxconn.com>
  1 file changed, 18 insertions(+), 2 deletions(-)
 
 diff --git a/src/smbpbi/SmbpbiSensor.cpp b/src/smbpbi/SmbpbiSensor.cpp
-index c6c44f1..80f12c1 100644
+index 299400d..8d335a8 100644
 --- a/src/smbpbi/SmbpbiSensor.cpp
 +++ b/src/smbpbi/SmbpbiSensor.cpp
-@@ -376,8 +376,24 @@ void SmbpbiSensor::waitReadCallback(const boost::system::error_code& ec)
+@@ -380,8 +380,24 @@ void SmbpbiSensor::waitReadCallback(const boost::system::error_code& ec)
      }
      else
      {

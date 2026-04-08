@@ -1,4 +1,4 @@
-From 201fd0609fbfc5b03b440b57f7dae8fd4e5d8be4 Mon Sep 17 00:00:00 2001
+From d78e566cc7f0d1be750fdae5baa3681c569eb7c2 Mon Sep 17 00:00:00 2001
 From: Kevin Chen <kevin_chen@aspeedtech.com>
 Date: Fri, 14 Mar 2025 19:21:13 +0800
 Subject: [PATCH 216/226] soc: aspeed: lpc-pcc: Add PCC controller support
@@ -8,7 +8,6 @@ Add LPC PCC controller driver to support POST code capture.
 Signed-off-by: Kevin Chen <kevin_chen@aspeedtech.com>
 Link: https://lore.kernel.org/all/20250314112113.953238-4-kevin_chen@aspeedtech.com/
 ---
-
  drivers/misc/Kconfig          |  10 +
  drivers/misc/Makefile         |   1 +
  drivers/misc/aspeed-lpc-pcc.c | 445 ++++++++++++++++++++++++++++++++++
@@ -16,7 +15,7 @@ Link: https://lore.kernel.org/all/20250314112113.953238-4-kevin_chen@aspeedtech.
  create mode 100644 drivers/misc/aspeed-lpc-pcc.c
 
 diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 2f8feb0b0..1eb778f6b 100644
+index b9c11f67315f..a2045ba8eab5 100644
 --- a/drivers/misc/Kconfig
 +++ b/drivers/misc/Kconfig
 @@ -50,6 +50,16 @@ config AD525X_DPOT_SPI
@@ -37,10 +36,10 @@ index 2f8feb0b0..1eb778f6b 100644
  	tristate "Dummy IRQ handler"
  	help
 diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 34a5ceacd..f27a042e7 100644
+index b32a2597d246..87dbf02ab2f9 100644
 --- a/drivers/misc/Makefile
 +++ b/drivers/misc/Makefile
-@@ -9,6 +9,7 @@ obj-$(CONFIG_IBMVMC)		+= ibmvmc.o
+@@ -8,6 +8,7 @@ obj-$(CONFIG_IBMVMC)		+= ibmvmc.o
  obj-$(CONFIG_AD525X_DPOT)	+= ad525x_dpot.o
  obj-$(CONFIG_AD525X_DPOT_I2C)	+= ad525x_dpot-i2c.o
  obj-$(CONFIG_AD525X_DPOT_SPI)	+= ad525x_dpot-spi.o
@@ -50,7 +49,7 @@ index 34a5ceacd..f27a042e7 100644
  obj-$(CONFIG_ICS932S401)	+= ics932s401.o
 diff --git a/drivers/misc/aspeed-lpc-pcc.c b/drivers/misc/aspeed-lpc-pcc.c
 new file mode 100644
-index 000000000..852dcf20f
+index 000000000000..852dcf20f7e3
 --- /dev/null
 +++ b/drivers/misc/aspeed-lpc-pcc.c
 @@ -0,0 +1,445 @@
@@ -500,5 +499,5 @@ index 000000000..852dcf20f
 +MODULE_LICENSE("GPL");
 +MODULE_DESCRIPTION("Driver for Aspeed Post Code Capture");
 -- 
-2.53.0
+2.52.0
 

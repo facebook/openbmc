@@ -16,8 +16,9 @@ do_unpack[noexec] = "1"
 do_patch[noexec] = "1"
 deltask do_populate_sysroot
 
-DEPENDS = " udev tcp-wrappers "
-RDEPENDS:${PN} = " tcp-wrappers udev hwdata "
+DEPENDS = " udev "
+RDEPENDS:${PN} = " udev hwdata "
+EXTRA_OECONF = " --with-tcp-wrappers=no "
 S = "${UNPACKDIR}/src"
 
 # configure the source code

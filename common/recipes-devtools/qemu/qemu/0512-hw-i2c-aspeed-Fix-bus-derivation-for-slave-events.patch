@@ -1,7 +1,7 @@
-From 3c6f260bfc6d1b62e0d64bff50e300c7769b9540 Mon Sep 17 00:00:00 2001
+From 7f876a2c283421edcca1f0c638979ed941957da3 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 24 Aug 2022 01:55:12 -0700
-Subject: [PATCH 512/532] hw/i2c/aspeed: Fix bus derivation for slave events
+Subject: [PATCH] hw/i2c/aspeed: Fix bus derivation for slave events
 
 The existing code assumes there's one AspeedI2CBus attached to each
 I2CBus. That's not the case in a multi-SoC system where two
@@ -14,7 +14,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  2 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index 3c781bd6a1..f4cb847b05 100644
+index 9414f1a41e..27c399ba0d 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
 @@ -1351,8 +1351,7 @@ static int aspeed_i2c_bus_new_slave_event(AspeedI2CBus *bus,
@@ -37,7 +37,7 @@ index 3c781bd6a1..f4cb847b05 100644
      uint32_t reg_intr_sts = aspeed_i2c_bus_intr_sts_offset(bus);
      uint32_t reg_byte_buf = aspeed_i2c_bus_byte_buf_offset(bus);
  
-@@ -1470,6 +1468,7 @@ static void aspeed_i2c_bus_realize(DeviceState *dev, Error **errp)
+@@ -1471,6 +1469,7 @@ static void aspeed_i2c_bus_realize(DeviceState *dev, Error **errp)
      s->bus = i2c_init_bus(dev, name);
      s->slave = i2c_slave_create_simple(s->bus, TYPE_ASPEED_I2C_BUS_SLAVE,
                                         0xff);
@@ -46,10 +46,10 @@ index 3c781bd6a1..f4cb847b05 100644
      memory_region_init_io(&s->mr, OBJECT(s), &aspeed_i2c_bus_ops,
                            s, name, aic->reg_size);
 diff --git a/include/hw/i2c/aspeed_i2c.h b/include/hw/i2c/aspeed_i2c.h
-index 1622490024..15f52055ab 100644
+index b81e5731cc..67eae8d794 100644
 --- a/include/hw/i2c/aspeed_i2c.h
 +++ b/include/hw/i2c/aspeed_i2c.h
-@@ -283,6 +283,7 @@ struct AspeedI2CState {
+@@ -282,6 +282,7 @@ struct AspeedI2CState {
  OBJECT_DECLARE_SIMPLE_TYPE(AspeedI2CBusSlave, ASPEED_I2C_BUS_SLAVE)
  struct AspeedI2CBusSlave {
      I2CSlave i2c;
@@ -58,5 +58,5 @@ index 1622490024..15f52055ab 100644
  
  struct AspeedI2CClass {
 -- 
-2.49.1
+2.52.0
 

@@ -508,7 +508,7 @@ reverse_bit(uint8_t b) {
 /*search the index of char in string*/
 static int
 indexof(const char *str, const char *c) {
-  char *ptr = strstr(str, c);
+  const char *ptr = strstr(str, c);
   int  index = 0;
 
   if ( ptr )

@@ -1,7 +1,7 @@
-From 6ac8e1b887067b24ac28194fabb2077f7fab9244 Mon Sep 17 00:00:00 2001
+From ea656c402b990b2eed175fbe015faf6bd8884bf8 Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Wed, 11 Oct 2023 14:31:47 +0800
-Subject: [PATCH 500/503] Support get static eid config from entity manager
+Subject: [PATCH 500/504] Support get static eid config from entity manager
 
 The mctpd will try to find the configuration interface
 "xyz.openbmc_project.Configuration.MCTPEndpoint" and parse the data.
@@ -32,11 +32,11 @@ root@bmc:~# pldmtool base GetTID -m 60
 
 Signed-off-by: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 ---
- src/mctpd.c | 625 +++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 615 insertions(+), 10 deletions(-)
+ src/mctpd.c | 578 +++++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 567 insertions(+), 11 deletions(-)
 
 diff --git a/src/mctpd.c b/src/mctpd.c
-index 36a2372..40ca7f7 100644
+index a7036ad..c2f5b2b 100644
 --- a/src/mctpd.c
 +++ b/src/mctpd.c
 @@ -53,6 +53,12 @@
@@ -52,7 +52,7 @@ index 36a2372..40ca7f7 100644
  
  // an arbitrary constant for use with sd_id128_get_machine_app_specific()
  static const char *mctpd_appid = "67369c05-4b97-4b7e-be72-65cfd8639f10";
-@@ -64,6 +70,7 @@ static const mctp_eid_t eid_alloc_max = 0xfe;
+@@ -68,6 +74,7 @@ static const uint8_t MCTP_TYPE_VENDOR_IANA = 0x7f;
  
  // arbitrary sanity
  static size_t MAX_PEER_SIZE = 1000000;
@@ -60,7 +60,7 @@ index 36a2372..40ca7f7 100644
  
  struct dest_phys {
  	int ifindex;
-@@ -138,6 +145,13 @@ struct link {
+@@ -148,6 +155,13 @@ struct link {
  	struct ctx *ctx;
  };
  
@@ -74,7 +74,7 @@ index 36a2372..40ca7f7 100644
  struct peer {
  	uint32_t net;
  	mctp_eid_t eid;
-@@ -162,6 +176,7 @@ struct peer {
+@@ -172,6 +186,7 @@ struct peer {
  	sd_bus_slot *slot_cc_endpoint;
  	sd_bus_slot *slot_bridge;
  	sd_bus_slot *slot_uuid;
@@ -82,7 +82,7 @@ index 36a2372..40ca7f7 100644
  	char *path;
  
  	bool have_neigh;
-@@ -182,6 +197,9 @@ struct peer {
+@@ -192,6 +207,9 @@ struct peer {
  	// From Get Endpoint UUID. A malloced 16 bytes */
  	uint8_t *uuid;
  
@@ -92,7 +92,7 @@ index 36a2372..40ca7f7 100644
  	// Stuff the ctx pointer into peer for tidier parameter passing
  	struct ctx *ctx;
  
-@@ -257,7 +275,7 @@ static int emit_interface_removed(struct link *link);
+@@ -293,7 +311,7 @@ static int emit_interface_removed(struct link *link);
  static int emit_net_added(struct ctx *ctx, struct net *net);
  static int emit_net_removed(struct ctx *ctx, struct net *net);
  static int add_peer(struct ctx *ctx, const dest_phys *dest, mctp_eid_t eid,
@@ -101,7 +101,7 @@ index 36a2372..40ca7f7 100644
  static int add_peer_from_addr(struct ctx *ctx,
  			      const struct sockaddr_mctp_ext *addr,
  			      struct peer **ret_peer);
-@@ -285,6 +303,7 @@ static const sd_bus_vtable bus_endpoint_obmc_vtable[];
+@@ -322,6 +340,7 @@ static const sd_bus_vtable bus_endpoint_obmc_vtable[];
  static const sd_bus_vtable bus_endpoint_cc_vtable[];
  static const sd_bus_vtable bus_endpoint_bridge[];
  static const sd_bus_vtable bus_endpoint_uuid_vtable[];
@@ -109,7 +109,7 @@ index 36a2372..40ca7f7 100644
  
  __attribute__((format(printf, 1, 2))) static void bug_warn(const char *fmt, ...)
  {
-@@ -376,6 +395,18 @@ static int find_local_eids_by_net(struct net *net, size_t *local_eid_cnt,
+@@ -413,6 +432,18 @@ static int find_local_eids_by_net(struct net *net, size_t *local_eid_cnt,
  	return 0;
  }
  
@@ -128,7 +128,7 @@ index 36a2372..40ca7f7 100644
  /* Returns a deferred free pointer */
  static const char *dest_phys_tostr(const dest_phys *dest)
  {
-@@ -1782,7 +1813,7 @@ static bool is_eid_in_bridge_pool(const struct net *n, const struct ctx *ctx,
+@@ -1909,7 +1940,7 @@ static bool is_eid_in_bridge_pool(const struct net *n, const struct ctx *ctx,
   * Error is -EEXISTS if it exists
   */
  static int add_peer(struct ctx *ctx, const dest_phys *dest, mctp_eid_t eid,
@@ -137,7 +137,7 @@ index 36a2372..40ca7f7 100644
  {
  	struct peer *peer, **tmp;
  	struct net *n;
-@@ -1833,6 +1864,14 @@ static int add_peer(struct ctx *ctx, const dest_phys *dest, mctp_eid_t eid,
+@@ -1960,6 +1991,14 @@ static int add_peer(struct ctx *ctx, const dest_phys *dest, mctp_eid_t eid,
  	// Update network eid map
  	n->peers[eid] = peer;
  
@@ -152,7 +152,7 @@ index 36a2372..40ca7f7 100644
  	*ret_peer = peer;
  	return 0;
  }
-@@ -1848,7 +1887,7 @@ static int add_peer_from_addr(struct ctx *ctx,
+@@ -1975,7 +2014,7 @@ static int add_peer_from_addr(struct ctx *ctx,
  	phys.hwaddr_len = addr->smctp_halen;
  
  	return add_peer(ctx, &phys, addr->smctp_base.smctp_addr.s_addr,
@@ -161,7 +161,7 @@ index 36a2372..40ca7f7 100644
  }
  
  static int check_peer_struct(const struct peer *peer, const struct net *n)
-@@ -1904,6 +1943,12 @@ static int remove_peer(struct peer *peer)
+@@ -2086,6 +2125,12 @@ static int remove_peer(struct peer *peer)
  	n->peers[peer->eid] = NULL;
  	free(peer->message_types);
  	free(peer->uuid);
@@ -174,7 +174,7 @@ index 36a2372..40ca7f7 100644
  
  	for (idx = 0; idx < ctx->num_peers; idx++) {
  		if (ctx->peers[idx] == peer)
-@@ -1951,6 +1996,7 @@ static void free_peers(struct ctx *ctx)
+@@ -2134,6 +2179,7 @@ static void free_peers(struct ctx *ctx)
  		sd_bus_slot_unref(peer->slot_cc_endpoint);
  		sd_bus_slot_unref(peer->slot_bridge);
  		sd_bus_slot_unref(peer->slot_uuid);
@@ -182,7 +182,7 @@ index 36a2372..40ca7f7 100644
  		free(peer);
  	}
  
-@@ -2098,7 +2144,7 @@ static int endpoint_assign_eid(struct ctx *ctx, sd_bus_error *berr,
+@@ -2281,7 +2327,7 @@ static int endpoint_assign_eid(struct ctx *ctx, sd_bus_error *berr,
  	}
  
  	if (static_eid) {
@@ -191,7 +191,7 @@ index 36a2372..40ca7f7 100644
  		if (rc < 0)
  			return rc;
  
-@@ -2121,7 +2167,7 @@ static int endpoint_assign_eid(struct ctx *ctx, sd_bus_error *berr,
+@@ -2304,7 +2350,7 @@ static int endpoint_assign_eid(struct ctx *ctx, sd_bus_error *berr,
  
  		new_eid = alloc.start;
  
@@ -200,7 +200,7 @@ index 36a2372..40ca7f7 100644
  		if (rc < 0)
  			return rc;
  
-@@ -2335,8 +2381,12 @@ static int get_endpoint_peer(struct ctx *ctx, sd_bus_error *berr,
+@@ -2518,8 +2564,12 @@ static int get_endpoint_peer(struct ctx *ctx, sd_bus_error *berr,
  			return 0;
  		}
  		/* New endpoint */
@@ -215,7 +215,7 @@ index 36a2372..40ca7f7 100644
  			return rc;
  	}
  
-@@ -2527,6 +2577,190 @@ static int message_read_hwaddr(sd_bus_message *call, dest_phys *dest)
+@@ -2710,6 +2760,190 @@ static int message_read_hwaddr(sd_bus_message *call, dest_phys *dest)
  	return 0;
  }
  
@@ -406,7 +406,7 @@ index 36a2372..40ca7f7 100644
  /* SetupEndpoint method tries the following in order:
    - request Get Endpoint ID to add to the known table, return that
    - request Set Endpoint ID, return that */
-@@ -2611,7 +2845,7 @@ static int method_setup_endpoint(sd_bus_message *call, void *data,
+@@ -2794,7 +3028,7 @@ static int method_setup_endpoint(sd_bus_message *call, void *data,
  
  	/* simple allocation: try to use existing EID */
  	if (eid && !is_bridge) {
@@ -415,7 +415,7 @@ index 36a2372..40ca7f7 100644
  		if (rc == -EEXIST) {
  			/* proposed EID already present on a different peer,
  			 * fall back to assigning */
-@@ -2830,6 +3064,21 @@ err:
+@@ -3013,6 +3247,21 @@ err:
  	return rc;
  }
  
@@ -437,7 +437,7 @@ index 36a2372..40ca7f7 100644
  // Query various properties of a peer.
  // To be called when a new peer is discovered/assigned, once an EID is known
  // and routable.
-@@ -3033,6 +3282,15 @@ static int publish_peer(struct peer *peer)
+@@ -3252,6 +3501,15 @@ static int publish_peer(struct peer *peer)
  					 bus_endpoint_uuid_vtable, peer);
  	}
  
@@ -453,7 +453,7 @@ index 36a2372..40ca7f7 100644
  	rc = emit_endpoint_added(peer);
  	if (rc > 0)
  		rc = 0;
-@@ -3081,6 +3339,8 @@ static int unpublish_peer(struct peer *peer)
+@@ -3300,6 +3558,8 @@ static int unpublish_peer(struct peer *peer)
  		peer->slot_bridge = NULL;
  		sd_bus_slot_unref(peer->slot_uuid);
  		peer->slot_uuid = NULL;
@@ -462,7 +462,7 @@ index 36a2372..40ca7f7 100644
  		peer->published = false;
  		free(peer->path);
  	}
-@@ -3362,7 +3622,7 @@ static int method_net_learn_endpoint(sd_bus_message *call, void *data,
+@@ -3581,7 +3841,7 @@ static int method_net_learn_endpoint(sd_bus_message *call, void *data,
  		return sd_bus_reply_method_return(call, "sb",
  						  path_from_peer(peer), false);
  
@@ -471,7 +471,7 @@ index 36a2372..40ca7f7 100644
  	if (rc) {
  		warnx("can't add peer: %s", strerror(-rc));
  		goto err;
-@@ -3553,6 +3813,11 @@ static const sd_bus_vtable bus_link_owner_vtable[] = {
+@@ -3918,6 +4178,11 @@ static const sd_bus_vtable bus_link_owner_vtable[] = {
  		SD_BUS_PARAM(found),
  		method_learn_endpoint,
  		0),
@@ -483,7 +483,7 @@ index 36a2372..40ca7f7 100644
  	SD_BUS_VTABLE_END,
  
  };
-@@ -3580,6 +3845,10 @@ static int bus_endpoint_get_prop(sd_bus *bus, const char *path,
+@@ -3945,6 +4210,10 @@ static int bus_endpoint_get_prop(sd_bus *bus, const char *path,
  	} else if (strcmp(property, "Connectivity") == 0) {
  		rc = sd_bus_message_append(
  			reply, "s", peer->degraded ? "Degraded" : "Available");
@@ -494,7 +494,7 @@ index 36a2372..40ca7f7 100644
  	} else {
  		warnx("Unknown property '%s' for %s iface %s", property, path,
  		      interface);
-@@ -3825,6 +4094,16 @@ static const sd_bus_vtable bus_endpoint_bridge[] = {
+@@ -4190,6 +4459,16 @@ static const sd_bus_vtable bus_endpoint_bridge[] = {
  	SD_BUS_VTABLE_END
  };
  
@@ -511,63 +511,7 @@ index 36a2372..40ca7f7 100644
  static const sd_bus_vtable bus_link_vtable[] = {
  	SD_BUS_VTABLE_START(0),
  	SD_BUS_WRITABLE_PROPERTY("Role",
-@@ -3889,6 +4168,55 @@ static int emit_endpoint_added(const struct peer *peer)
- 	return rc;
- }
- 
-+static int peer_from_path(struct ctx *ctx, const char* path, struct peer **ret_peer)
-+{
-+	char *netstr = NULL, *eidstr = NULL;
-+	uint32_t tmp, net;
-+	mctp_eid_t eid;
-+	int rc;
-+
-+	*ret_peer = NULL;
-+	rc = sd_bus_path_decode_many(path,
-+				     MCTP_DBUS_PATH "/networks/%/endpoints/%",
-+				     &netstr, &eidstr);
-+	if (rc == 0)
-+		return -ENOENT;
-+	if (rc < 0)
-+		return rc;
-+	dfree(netstr);
-+	dfree(eidstr);
-+
-+	if (parse_uint32(eidstr, &tmp) < 0 || tmp > 0xff)
-+		return -EINVAL;
-+	eid = tmp & 0xff;
-+
-+	if (parse_uint32(netstr, &net) < 0)
-+		return -EINVAL;
-+
-+	*ret_peer = find_peer_by_addr(ctx, eid, net);
-+	if (!*ret_peer)
-+		return -ENOENT;
-+	return 0;
-+}
-+
-+/* Association.Definitions interface is only added for peers that get EID
-+   configuration from entity-manager */
-+static int bus_endpoint_find_association(sd_bus *bus, const char *path,
-+	const char *interface, void *userdata, void **ret_found,
-+	sd_bus_error *ret_error)
-+{
-+	struct ctx *ctx = userdata;
-+	struct peer *peer = NULL;
-+	int rc;
-+
-+	rc = peer_from_path(ctx, path, &peer);
-+	if (rc >= 0 && peer->published && peer->association) {
-+		*ret_found = peer;
-+		return 1;
-+	}
-+	return 0;
-+}
-+
- static int emit_endpoint_removed(const struct peer *peer)
- {
- 	const char *path = NULL;
-@@ -3964,6 +4292,251 @@ static int emit_interface_removed(struct link *link)
+@@ -4336,6 +4615,251 @@ static int emit_interface_removed(struct link *link)
  	return rc;
  }
  
@@ -819,7 +763,7 @@ index 36a2372..40ca7f7 100644
  static int setup_bus(struct ctx *ctx)
  {
  	sigset_t sigset;
-@@ -4026,6 +4599,36 @@ static int setup_bus(struct ctx *ctx)
+@@ -4398,6 +4922,36 @@ static int setup_bus(struct ctx *ctx)
  		goto out;
  	}
  
@@ -856,7 +800,7 @@ index 36a2372..40ca7f7 100644
  	rc = 0;
  out:
  	return rc;
-@@ -4342,7 +4945,7 @@ static int add_local_eid(struct ctx *ctx, uint32_t net, int eid)
+@@ -4714,7 +5268,7 @@ static int add_local_eid(struct ctx *ctx, uint32_t net, int eid)
  		}
  	}
  
@@ -865,7 +809,16 @@ index 36a2372..40ca7f7 100644
  	if (rc < 0) {
  		bug_warn("Error adding local eid %d net %d", eid, net);
  		return rc;
-@@ -5060,6 +5663,8 @@ int main(int argc, char **argv)
+@@ -5441,7 +5995,7 @@ static int peer_endpoint_poll(sd_event_source *s, uint64_t usec, void *userdata)
+ 	peer = n->peers[ep];
+ 	if (!peer) {
+ 		rc = add_peer(bridge->ctx, &(bridge->phys), ep, bridge->net,
+-			      &peer, true);
++			      NULL, &peer, true);
+ 		if (rc < 0)
+ 			goto exit;
+ 	}
+@@ -5631,6 +6185,8 @@ int main(int argc, char **argv)
  	if (rc < 0)
  		return 1;
  
@@ -875,5 +828,5 @@ index 36a2372..40ca7f7 100644
  	rc = listen_control_msg(ctx, MCTP_NET_ANY);
  	if (rc < 0) {
 -- 
-2.47.3
+2.52.0
 

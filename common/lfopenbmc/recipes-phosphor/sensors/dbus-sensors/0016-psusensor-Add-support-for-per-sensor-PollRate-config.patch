@@ -1,7 +1,7 @@
-From 516df4280fd0714e018d474a31319a3c337d3b9c Mon Sep 17 00:00:00 2001
+From 517ed7612564726c55eb4f7986b7b7ef05f75c74 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 2 Sep 2025 10:07:42 +0800
-Subject: [PATCH 16/16] psusensor: Add support for per-sensor PollRate config
+Subject: [PATCH 16/17] psusensor: Add support for per-sensor PollRate config
 
 Previously, all sensors used a global PollRate. This commit adds
 support for a per-sensor PollRate (e.g., ADC Channel 1/2/3 PollRate),
@@ -23,10 +23,10 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  1 file changed, 13 insertions(+)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 308460e..9cf5900 100644
+index e0c92e5..5e0b6af 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -825,6 +825,7 @@ static void createSensorsCallback(
+@@ -1072,6 +1072,7 @@ static void createSensorsCallback(
              std::string keyMax = labelHead + "_Max";
              std::string keyOffset = labelHead + "_Offset";
              std::string keyPowerState = labelHead + "_PowerState";
@@ -34,7 +34,7 @@ index 308460e..9cf5900 100644
  
              bool customizedName = false;
              auto findCustomName = baseConfig->find(keyName);
-@@ -937,6 +938,18 @@ static void createSensorsCallback(
+@@ -1185,6 +1186,18 @@ static void createSensorsCallback(
                  continue;
              }
  
@@ -54,5 +54,5 @@ index 308460e..9cf5900 100644
              // then prefix/suffix composition becomes not necessary,
              // and in fact not wanted, because it gets in the way.
 -- 
-2.43.0
+2.52.0
 

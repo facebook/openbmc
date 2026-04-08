@@ -1,7 +1,7 @@
-From 58fb09ff8db2af9c29a3f78f7d92dcf275634a19 Mon Sep 17 00:00:00 2001
+From c960ea6e69bb9bcfd98c172efb8861a5f9b0f905 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Tue, 16 Aug 2022 00:32:54 -0700
-Subject: [PATCH 509/532] fbttn: Add I2C SCL timeout property
+Subject: [PATCH] fbttn: Add I2C SCL timeout property
 
 This lets us inject errors using QOM:
 
@@ -17,19 +17,30 @@ within the IRQ handler), then a crash or deadlock is possible.
 
 Signed-off-by: Peter Delevoryas <pdel@fb.com>
 ---
- hw/arm/aspeed.c             |  7 ++++++
+ hw/arm/aspeed.c             |  2 --
+ hw/arm/aspeed_ast2500_evb.c |  7 ++++++
  hw/i2c/aspeed_i2c.c         | 43 +++++++++++++++++++++++++++++++++++++
  hw/i2c/trace-events         |  1 +
  include/hw/i2c/aspeed_i2c.h |  1 +
- 4 files changed, 52 insertions(+)
+ 5 files changed, 52 insertions(+), 2 deletions(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 372093f061..481a6f76dc 100644
+index 6d21d66489..3a5071a384 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -1074,6 +1074,12 @@ static void fby35_i2c_init(AspeedMachineState *bmc)
-      */
- }
+@@ -432,5 +432,3 @@ static const TypeInfo aspeed_machine_types[] = {
+ };
+ 
+ DEFINE_TYPES(aspeed_machine_types)
+-
+-
+diff --git a/hw/arm/aspeed_ast2500_evb.c b/hw/arm/aspeed_ast2500_evb.c
+index 6fcafc7212..86e15b68eb 100644
+--- a/hw/arm/aspeed_ast2500_evb.c
++++ b/hw/arm/aspeed_ast2500_evb.c
+@@ -55,6 +55,12 @@ static void aspeed_machine_ast2500_evb_class_init(ObjectClass *oc,
+     aspeed_machine_class_init_cpus_defaults(mc);
+ };
  
 +static void fbttn_i2c_init(AspeedMachineState *bmc)
 +{
@@ -37,10 +48,10 @@ index 372093f061..481a6f76dc 100644
 +    i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 12), "tmp421", 0x1f);
 +}
 +
- static void qcom_dc_scm_bmc_i2c_init(AspeedMachineState *bmc)
- {
-     AspeedSoCState *soc = bmc->soc;
-@@ -2037,6 +2043,7 @@ static const struct FBMachineData fb_machines[] = {
+ static const TypeInfo aspeed_ast2500_evb_types[] = {
+     {
+         .name          = MACHINE_TYPE_NAME("ast2500-evb"),
+@@ -110,6 +116,7 @@ static const struct FBMachineData fb_machines[] = {
          .macs_mask   = ASPEED_MAC0_ON,
          .stdout_path = ASPEED_DEV_UART5,
          .ram_size    = 1 * GiB,
@@ -49,7 +60,7 @@ index 372093f061..481a6f76dc 100644
      {
          .name        = "fbtp-bmc",
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index a8fbb9f44a..c92878bbcb 100644
+index 83fb906bdc..08fa58d694 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
 @@ -26,6 +26,7 @@
@@ -98,7 +109,7 @@ index a8fbb9f44a..c92878bbcb 100644
          aspeed_i2c_set_state(bus, state);
  
          addr = aspeed_i2c_get_addr(bus);
-@@ -1451,6 +1471,24 @@ static const Property aspeed_i2c_bus_properties[] = {
+@@ -1452,6 +1472,24 @@ static const Property aspeed_i2c_bus_properties[] = {
                       AspeedI2CState *),
  };
  
@@ -120,10 +131,10 @@ index a8fbb9f44a..c92878bbcb 100644
 +    visit_type_bool(v, name, &s->scl_timeout, errp);
 +}
 +
- static void aspeed_i2c_bus_class_init(ObjectClass *klass, void *data)
+ static void aspeed_i2c_bus_class_init(ObjectClass *klass, const void *data)
  {
      DeviceClass *dc = DEVICE_CLASS(klass);
-@@ -1459,6 +1497,11 @@ static void aspeed_i2c_bus_class_init(ObjectClass *klass, void *data)
+@@ -1460,6 +1498,11 @@ static void aspeed_i2c_bus_class_init(ObjectClass *klass, const void *data)
      dc->realize = aspeed_i2c_bus_realize;
      device_class_set_legacy_reset(dc, aspeed_i2c_bus_reset);
      device_class_set_props(dc, aspeed_i2c_bus_properties);
@@ -148,10 +159,10 @@ index 1ad0e95c0e..5337e922b5 100644
  # mpc_i2c.c
  
 diff --git a/include/hw/i2c/aspeed_i2c.h b/include/hw/i2c/aspeed_i2c.h
-index 2c4c81bd20..1622490024 100644
+index 2daacc10ce..b81e5731cc 100644
 --- a/include/hw/i2c/aspeed_i2c.h
 +++ b/include/hw/i2c/aspeed_i2c.h
-@@ -255,6 +255,7 @@ struct AspeedI2CBus {
+@@ -254,6 +254,7 @@ struct AspeedI2CBus {
      I2CBus *bus;
      uint8_t id;
      qemu_irq irq;
@@ -160,5 +171,5 @@ index 2c4c81bd20..1622490024 100644
      uint32_t regs[ASPEED_I2C_NEW_NUM_REG];
      uint8_t pool[ASPEED_I2C_BUS_POOL_SIZE];
 -- 
-2.49.1
+2.52.0
 

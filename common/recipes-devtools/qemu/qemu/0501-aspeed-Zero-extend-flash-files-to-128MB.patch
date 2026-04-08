@@ -1,4 +1,4 @@
-From e6a8d6bf265b5997e6a9494d0daa11e4ecbecb43 Mon Sep 17 00:00:00 2001
+From 2ffd8f020431200fc78e78ecd2b99f2f150c1e2f Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Fri, 17 Jun 2022 12:21:22 -0700
 Subject: [PATCH 501/532] aspeed: Zero extend flash files to 128MB
@@ -35,15 +35,15 @@ For example, if your image is 256MB, it won't truncate to 128MB.
 
 Signed-off-by: Peter Delevoryas <pdel@fb.com>
 ---
- hw/arm/aspeed.c  | 15 ++++++++++++++-
- hw/block/block.c |  2 +-
+ hw/arm/aspeed_soc_common.c | 15 ++++++++++++++-
+ hw/block/block.c           |  2 +-
  2 files changed, 15 insertions(+), 2 deletions(-)
 
-diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 82f42582fa..89190089c1 100644
---- a/hw/arm/aspeed.c
-+++ b/hw/arm/aspeed.c
-@@ -315,12 +315,25 @@ void aspeed_board_init_flashes(AspeedSMCState *s, const char *flashtype,
+diff --git a/hw/arm/aspeed_soc_common.c b/hw/arm/aspeed_soc_common.c
+index 78b6ae18f8..5c0eded9d4 100644
+--- a/hw/arm/aspeed_soc_common.c
++++ b/hw/arm/aspeed_soc_common.c
+@@ -125,12 +125,25 @@ void aspeed_board_init_flashes(AspeedSMCState *s, const char *flashtype,
      }
  
      for (i = 0; i < count; ++i) {
@@ -71,7 +71,7 @@ index 82f42582fa..89190089c1 100644
          qdev_prop_set_uint8(dev, "cs", i);
          qdev_realize_and_unref(dev, BUS(s->spi), &error_fatal);
 diff --git a/hw/block/block.c b/hw/block/block.c
-index 2e10611d95..c39d18a71f 100644
+index f187fa025d..24fb43c228 100644
 --- a/hw/block/block.c
 +++ b/hw/block/block.c
 @@ -77,7 +77,7 @@ bool blk_check_size_and_read_all(BlockBackend *blk, DeviceState *dev,
@@ -84,5 +84,5 @@ index 2e10611d95..c39d18a71f 100644
          error_setg(errp, "%s device '%s' requires %" HWADDR_PRIu
                     " bytes, %s block backend provides %" PRIu64 " bytes",
 -- 
-2.49.1
+2.52.0
 

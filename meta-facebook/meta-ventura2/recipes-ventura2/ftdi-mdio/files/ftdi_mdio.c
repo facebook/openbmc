@@ -16,7 +16,7 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/socket.h>
-#include <termio.h>
+#include <termios.h>
 #include <unistd.h>
 
 typedef enum { LOG_ERROR = 0, LOG_WARN, LOG_INFO, LOG_DEBUG } LOG_LEVEL;

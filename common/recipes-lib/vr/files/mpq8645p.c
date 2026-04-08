@@ -428,7 +428,7 @@ int mpq8645p_fw_verify(struct vr_info *info, void *configs)
 
 int mpq8645p_validate_file(struct vr_info *info, const char *file)
 {
-  char *p = strrchr(file, '.');
+  const char *p = strrchr(file, '.');
   if (strcmp(p, ".csv")) {
     printf("Only support .csv format\n");
     return -1;

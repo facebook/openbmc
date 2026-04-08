@@ -1,4 +1,4 @@
-From 02c382fdceca25a2b394ac58f37ad796beaae5cc Mon Sep 17 00:00:00 2001
+From 60e9e573a4950d8c6d47f95a43169bb3b4d44024 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 15:59:10 +0000
 Subject: [PATCH 204/205] Map DBus event to RF MessageID and parse args
@@ -101,8 +101,8 @@ Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
  test/meson.build                              |   1 +
  .../include/dbus_log_watcher_test.cpp         |  39 +++--
  test/redfish-core/include/event_log_test.cpp  |  32 +---
- test/redfish-core/lib/log_services_test.cpp   | 141 ++++++++++++++++++
- 18 files changed, 437 insertions(+), 137 deletions(-)
+ test/redfish-core/lib/log_services_test.cpp   | 146 ++++++++++++++++++
+ 18 files changed, 442 insertions(+), 137 deletions(-)
  create mode 100644 redfish-core/include/utils/dbus_registries_map_utils.hpp
  create mode 100644 redfish-core/src/utils/dbus_registries_map_utils.cpp
  create mode 100644 test/redfish-core/lib/log_services_test.cpp
@@ -827,7 +827,7 @@ index c2a33dff..48b90236 100644
          {"Id", DbusVariantType(static_cast<uint32_t>(1838))},
          {"Message", DbusVariantType("")},
 diff --git a/test/redfish-core/include/event_log_test.cpp b/test/redfish-core/include/event_log_test.cpp
-index ae773569..338eccf0 100644
+index a5b14ce1..4c5fb122 100644
 --- a/test/redfish-core/include/event_log_test.cpp
 +++ b/test/redfish-core/include/event_log_test.cpp
 @@ -1,4 +1,5 @@
@@ -844,7 +844,7 @@ index ae773569..338eccf0 100644
  #include <vector>
  
  #include <gmock/gmock.h>
-@@ -126,19 +126,19 @@ TEST(RedfishEventLog, GetEventLogParamsFailNoComma)
+@@ -128,19 +128,19 @@ TEST(RedfishEventLog, GetEventLogParamsFailNoComma)
  
  TEST(RedfishEventLog, FormatEventLogEntrySuccess)
  {
@@ -870,7 +870,7 @@ index ae773569..338eccf0 100644
  
      ASSERT_TRUE(logEntryJson.contains("EventId"));
      ASSERT_EQ(logEntryJson["EventId"], "0");
-@@ -162,23 +162,5 @@ TEST(RedfishEventLog, FormatEventLogEntrySuccess)
+@@ -164,23 +164,5 @@ TEST(RedfishEventLog, FormatEventLogEntrySuccess)
      ASSERT_TRUE(logEntryJson.contains("Context"));
      ASSERT_EQ(logEntryJson["Context"], "customText");
  }
@@ -896,20 +896,22 @@ index ae773569..338eccf0 100644
  } // namespace redfish::event_log
 diff --git a/test/redfish-core/lib/log_services_test.cpp b/test/redfish-core/lib/log_services_test.cpp
 new file mode 100644
-index 00000000..7c5277c6
+index 00000000..3c8bd2e2
 --- /dev/null
 +++ b/test/redfish-core/lib/log_services_test.cpp
-@@ -0,0 +1,141 @@
+@@ -0,0 +1,146 @@
 +#include "bmcweb_config.h"
 +
 +#include "async_resp.hpp"
 +#include "dbus_utility.hpp"
 +#include "redfish-core/lib/log_services.hpp"
++#include "utils/dbus_event_log_entry.hpp"
 +
 +#include <nlohmann/json.hpp>
 +
 +#include <cstdint>
 +#include <memory>
++#include <optional>
 +#include <string>
 +#include <unordered_map>
 +
@@ -918,6 +920,7 @@ index 00000000..7c5277c6
 +namespace redfish
 +{
 +using namespace dbus::utility;
++using namespace eventlog_utils;
 +TEST(LogServices, fillEventLogLogEntryFromPropertyMapSuccess)
 +{
 +    if constexpr (BMCWEB_REDFISH_ALLOW_DBUS_MESSAGES_MAPPING)
@@ -947,11 +950,13 @@ index 00000000..7c5277c6
 +             DbusVariantType(static_cast<uint64_t>(1638312099123))},
 +        };
 +
-+        auto asyncResp = std::make_shared<bmcweb::AsyncResp>();
-+        nlohmann::json objectToFillOut;
++        std::optional<DbusEventLogEntry> optEntry =
++            fillDbusEventLogEntryFromPropertyMap(propMapStub);
++        ASSERT_TRUE(optEntry.has_value());
 +
-+        fillEventLogLogEntryFromPropertyMap(asyncResp, propMapStub,
-+                                            objectToFillOut);
++        nlohmann::json objectToFillOut;
++        fillEventLogLogEntryFromDbusLogEntry(
++            *optEntry, objectToFillOut, "Systems", "system", "System");
 +
 +        auto logEntryID = std::to_string(1838);
 +        EXPECT_EQ(objectToFillOut["@odata.type"], "#LogEntry.v1_9_0.LogEntry");
@@ -960,7 +965,6 @@ index 00000000..7c5277c6
 +            "/redfish/v1/Systems/system/LogServices/EventLog/Entries/1838");
 +        EXPECT_EQ(objectToFillOut["Name"], "System Event Log Entry");
 +        EXPECT_EQ(objectToFillOut["Id"], logEntryID.c_str());
-+        EXPECT_EQ(objectToFillOut["EntryType"], "Event");
 +        EXPECT_TRUE(objectToFillOut["Resolved"]);
 +        EXPECT_EQ(objectToFillOut["Created"], "2021-11-30T22:41:35.123+00:00");
 +        EXPECT_EQ(objectToFillOut["Modified"], "2021-11-30T22:41:39.123+00:00");
@@ -1012,11 +1016,13 @@ index 00000000..7c5277c6
 +             DbusVariantType(static_cast<uint64_t>(1638312099123))},
 +        };
 +
-+        auto asyncResp = std::make_shared<bmcweb::AsyncResp>();
-+        nlohmann::json objectToFillOut;
++        std::optional<DbusEventLogEntry> optEntry =
++            fillDbusEventLogEntryFromPropertyMap(propMapStub);
++        ASSERT_TRUE(optEntry.has_value());
 +
-+        fillEventLogLogEntryFromPropertyMap(asyncResp, propMapStub,
-+                                            objectToFillOut);
++        nlohmann::json objectToFillOut;
++        fillEventLogLogEntryFromDbusLogEntry(
++            *optEntry, objectToFillOut, "Systems", "system", "System");
 +
 +        auto logEntryID = std::to_string(1838);
 +        EXPECT_EQ(objectToFillOut["@odata.type"], "#LogEntry.v1_9_0.LogEntry");
@@ -1025,7 +1031,6 @@ index 00000000..7c5277c6
 +            "/redfish/v1/Systems/system/LogServices/EventLog/Entries/1838");
 +        EXPECT_EQ(objectToFillOut["Name"], "System Event Log Entry");
 +        EXPECT_EQ(objectToFillOut["Id"], logEntryID.c_str());
-+        EXPECT_EQ(objectToFillOut["EntryType"], "Event");
 +        EXPECT_FALSE(objectToFillOut["Resolved"]);
 +        EXPECT_FALSE(objectToFillOut.contains("ServiceProviderNotified"));
 +        EXPECT_EQ(objectToFillOut["Created"], "2021-11-30T22:41:35.123+00:00");
@@ -1042,5 +1047,5 @@ index 00000000..7c5277c6
 +}
 +} // namespace redfish
 -- 
-2.47.3
+2.52.0
 

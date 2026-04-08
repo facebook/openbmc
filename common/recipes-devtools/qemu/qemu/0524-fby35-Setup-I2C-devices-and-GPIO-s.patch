@@ -1,20 +1,29 @@
-From 87e21414ef31c2851219bb442d4c7e90f4e305d9 Mon Sep 17 00:00:00 2001
+From fb9e4062b424ebd8f9988c97f094aa051e769c87 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 23 Aug 2022 23:24:36 -0700
-Subject: [PATCH 524/532] fby35: Setup I2C devices and GPIO's
+Subject: [PATCH 524/526] fby35: Setup I2C devices and GPIO's
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 ---
- hw/arm/aspeed.c | 29 +++------------
- hw/arm/fby35.c  | 95 +++++++++++++++++++++++++++++++++++++++++++++++++
- hw/arm/fby35.h  |  5 +++
- 3 files changed, 104 insertions(+), 25 deletions(-)
+ hw/arm/aspeed_ast2600_fby35.c | 44 ++---------------
+ hw/arm/fby35.c                | 93 +++++++++++++++++++++++++++++++++++
+ include/hw/arm/aspeed.h       |  2 +-
+ include/hw/arm/fby35.h        |  5 ++
+ 4 files changed, 103 insertions(+), 41 deletions(-)
 
-diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index f6cbbb3df0..97e4ed1a3e 100644
---- a/hw/arm/aspeed.c
-+++ b/hw/arm/aspeed.c
-@@ -1046,35 +1046,13 @@ static void bletchley_bmc_i2c_init(AspeedMachineState *bmc)
+diff --git a/hw/arm/aspeed_ast2600_fby35.c b/hw/arm/aspeed_ast2600_fby35.c
+index 4e5f8000c6..7faf537505 100644
+--- a/hw/arm/aspeed_ast2600_fby35.c
++++ b/hw/arm/aspeed_ast2600_fby35.c
+@@ -11,6 +11,7 @@
+ #include "hw/arm/machines-qom.h"
+ #include "hw/arm/aspeed.h"
+ #include "hw/arm/aspeed_soc.h"
++#include "hw/arm/fby35.h"
+ #include "hw/nvram/eeprom_at24c.h"
+ #include "hw/sensor/tmp105.h"
+ #include "system/reset.h"
+@@ -96,59 +97,22 @@ static const size_t fby35_bmc_fruid_len = sizeof(fby35_bmc_fruid);
  static void fby35_i2c_init(AspeedMachineState *bmc)
  {
      AspeedSoCState *soc = bmc->soc;
@@ -46,13 +55,9 @@ index f6cbbb3df0..97e4ed1a3e 100644
       * buses 0, 1, 2, 3, and 9. Source address 0x10, target address 0x20 on
       * each.
       */
--    i2c_slave_create_simple(i2c[0], "fby35-sb-bic", 0x20);
--    i2c_slave_create_simple(i2c[4], "fby35-sb-cpld", 0x0f);
 +    i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 0), "fby35-sb-bic", 0x20);
  }
  
- static void fbttn_i2c_init(AspeedMachineState *bmc)
-@@ -1619,7 +1597,6 @@ static void aspeed_machine_bletchley_class_init(ObjectClass *oc, void *data)
  static void fby35_reset(MachineState *state, ResetType type)
  {
      AspeedMachineState *bmc = ASPEED_MACHINE(state);
@@ -60,17 +65,29 @@ index f6cbbb3df0..97e4ed1a3e 100644
  
      qemu_devices_reset(type);
  
-@@ -1640,6 +1617,8 @@ static void fby35_reset(MachineState *state, ResetType type)
-     object_property_set_bool(OBJECT(gpio), "gpioB3", false, &error_fatal);
-     object_property_set_bool(OBJECT(gpio), "gpioB4", false, &error_fatal);
-     object_property_set_bool(OBJECT(gpio), "gpioB5", false, &error_fatal);
-+
+-    /* Board ID: 7 (Class-1, 4 slots) */
+-    object_property_set_bool(OBJECT(gpio), "gpioV4", true, &error_fatal);
+-    object_property_set_bool(OBJECT(gpio), "gpioV5", true, &error_fatal);
+-    object_property_set_bool(OBJECT(gpio), "gpioV6", true, &error_fatal);
+-    object_property_set_bool(OBJECT(gpio), "gpioV7", false, &error_fatal);
+-
+-    /* Slot presence pins, inverse polarity. (False means present) */
+-    object_property_set_bool(OBJECT(gpio), "gpioH4", false, &error_fatal);
+-    object_property_set_bool(OBJECT(gpio), "gpioH5", true, &error_fatal);
+-    object_property_set_bool(OBJECT(gpio), "gpioH6", true, &error_fatal);
+-    object_property_set_bool(OBJECT(gpio), "gpioH7", true, &error_fatal);
+-
+-    /* Slot 12v power pins, normal polarity. (True means powered-on) */
+-    object_property_set_bool(OBJECT(gpio), "gpioB2", true, &error_fatal);
+-    object_property_set_bool(OBJECT(gpio), "gpioB3", false, &error_fatal);
+-    object_property_set_bool(OBJECT(gpio), "gpioB4", false, &error_fatal);
+-    object_property_set_bool(OBJECT(gpio), "gpioB5", false, &error_fatal);
 +    fby35_bmc_reset_gpios(bmc->soc);
  }
  
- static void aspeed_machine_fby35_class_init(ObjectClass *oc, void *data)
+ static void aspeed_machine_fby35_class_init(ObjectClass *oc, const void *data)
 diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
-index 1e043924f6..593730617f 100644
+index 9313ec2698..afaed48278 100644
 --- a/hw/arm/fby35.c
 +++ b/hw/arm/fby35.c
 @@ -9,6 +9,7 @@
@@ -81,19 +98,19 @@ index 1e043924f6..593730617f 100644
  #include "system/block-backend.h"
  #include "hw/boards.h"
  #include "hw/qdev-clock.h"
-@@ -17,6 +18,11 @@
+@@ -18,6 +19,11 @@
  #include "hw/arm/fby35.h"
  #include "hw/i2c/i2c.h"
  #include "hw/i2c/i2c_mux_pca954x.h"
 +#include "hw/sensor/tmp105.h"
 +#include "hw/nvram/eeprom_at24c.h"
-+#include "hw/arm/aspeed_eeprom.h"
 +
 +#define TYPE_LM75 TYPE_TMP105
++#define TYPE_TMP421 "tmp421"
  
  #define TYPE_FBY35 MACHINE_TYPE_NAME("fby35")
  OBJECT_DECLARE_SIMPLE_TYPE(Fby35State, FBY35);
-@@ -39,6 +45,32 @@ struct Fby35State {
+@@ -40,6 +46,32 @@ struct Fby35State {
  #define FBY35_BMC_RAM_SIZE (2 * GiB)
  #define FBY35_BMC_FIRMWARE_ADDR 0x0
  
@@ -126,7 +143,7 @@ index 1e043924f6..593730617f 100644
  static void fby35_bmc_write_boot_rom(DriveInfo *dinfo, MemoryRegion *mr,
                                       hwaddr offset, size_t rom_size,
                                       Error **errp)
-@@ -71,6 +103,34 @@ static void fby35_bmc_write_boot_rom(DriveInfo *dinfo, MemoryRegion *mr,
+@@ -72,6 +104,33 @@ static void fby35_bmc_write_boot_rom(DriveInfo *dinfo, MemoryRegion *mr,
      memcpy(memory_region_get_ram_ptr(mr) + offset, storage, rom_size);
  }
  
@@ -139,7 +156,7 @@ index 1e043924f6..593730617f 100644
 +    }
 +
 +    i2c_slave_create_simple(i2c[2], TYPE_LM75, 0x4f);
-+    i2c_slave_create_simple(i2c[8], "tmp421", 0x1f);
++    i2c_slave_create_simple(i2c[8], TYPE_TMP421, 0x1f);
 +    /* Hotswap controller is actually supposed to be mp5920 or ltc4282. */
 +    i2c_slave_create_simple(i2c[11], "adm1272", 0x44);
 +    i2c_slave_create_simple(i2c[12], TYPE_LM75, 0x4e);
@@ -147,13 +164,12 @@ index 1e043924f6..593730617f 100644
 +
 +    at24c_eeprom_init(i2c[4], 0x51, 128 * KiB);
 +    at24c_eeprom_init(i2c[6], 0x51, 128 * KiB);
-+
-+    at24c_eeprom_init_rom(i2c[8], 0x50, 32 * KiB, fby35_nic_fruid,
-+                          fby35_nic_fruid_len);
-+    at24c_eeprom_init_rom(i2c[11], 0x51, 128 * KiB, fby35_bb_fruid,
-+                          fby35_bb_fruid_len);
-+    at24c_eeprom_init_rom(i2c[11], 0x54, 128 * KiB, fby35_bmc_fruid,
-+                          fby35_bmc_fruid_len);
++    at24c_eeprom_init_rom(i2c[8], 0x50, 32 * KiB, fby35_fruid_nic,
++                          sizeof(fby35_fruid_nic));
++    at24c_eeprom_init_rom(i2c[11], 0x51, 128 * KiB, fby35_fruid_bb,
++                          sizeof(fby35_fruid_bb));
++    at24c_eeprom_init_rom(i2c[11], 0x54, 128 * KiB, fby35_fruid_bmc,
++                          sizeof(fby35_fruid_bmc));
 +
 +    i2c_slave_create_simple(i2c[4], "fby35-sb-cpld", 0x0f);
 +}
@@ -161,16 +177,15 @@ index 1e043924f6..593730617f 100644
  static void fby35_bmc_init(Fby35State *s)
  {
      AspeedSoCState *soc;
-@@ -115,6 +175,8 @@ static void fby35_bmc_init(Fby35State *s)
+@@ -120,6 +179,7 @@ static void fby35_bmc_init(Fby35State *s)
                                       rom_size, &error_abort);
          }
      }
-+
 +    fby35_bmc_i2c_init(soc);
  }
  
  static void fby35_bic_init(Fby35State *s)
-@@ -139,6 +201,8 @@ static void fby35_bic_init(Fby35State *s)
+@@ -147,6 +207,8 @@ static void fby35_bic_init(Fby35State *s)
      aspeed_board_init_flashes(&soc->fmc, "sst25vf032b", 2, 2);
      aspeed_board_init_flashes(&soc->spi[0], "sst25vf032b", 2, 4);
      aspeed_board_init_flashes(&soc->spi[1], "sst25vf032b", 2, 6);
@@ -179,7 +194,7 @@ index 1e043924f6..593730617f 100644
  }
  
  static void fby35_init(MachineState *machine)
-@@ -159,6 +223,36 @@ static void fby35_init(MachineState *machine)
+@@ -167,6 +229,36 @@ static void fby35_init(MachineState *machine)
      fby35_bic_init(s);
  }
  
@@ -216,7 +231,7 @@ index 1e043924f6..593730617f 100644
  
  static bool fby35_get_mmio_exec(Object *obj, Error **errp)
  {
-@@ -185,6 +279,7 @@ static void fby35_class_init(ObjectClass *oc, void *data)
+@@ -194,6 +286,7 @@ static void fby35_class_init(ObjectClass *oc, const void *data)
      mc->no_cdrom = 1;
      mc->auto_create_sdcard = true;
      mc->min_cpus = mc->max_cpus = mc->default_cpus = 3;
@@ -224,10 +239,23 @@ index 1e043924f6..593730617f 100644
  
      object_class_property_add_bool(oc, "execute-in-place",
                                     fby35_get_mmio_exec,
-diff --git a/hw/arm/fby35.h b/hw/arm/fby35.h
+diff --git a/include/hw/arm/aspeed.h b/include/hw/arm/aspeed.h
+index cf22ab1c05..d1bfd33b4e 100644
+--- a/include/hw/arm/aspeed.h
++++ b/include/hw/arm/aspeed.h
+@@ -141,7 +141,7 @@ struct FBMachineData {
+ };
+ 
+ #define DEFINE_FB_MACHINES()                                                \
+-static void fb_machine_class_init(ObjectClass *oc, void *data)              \
++static void fb_machine_class_init(ObjectClass *oc, const void *data)        \
+ {                                                                           \
+     MachineClass *mc = MACHINE_CLASS(oc);                                   \
+     AspeedMachineClass *amc = ASPEED_MACHINE_CLASS(oc);                     \
+diff --git a/include/hw/arm/fby35.h b/include/hw/arm/fby35.h
 index 20bd43fbae..87cb1a10c2 100644
---- a/hw/arm/fby35.h
-+++ b/hw/arm/fby35.h
+--- a/include/hw/arm/fby35.h
++++ b/include/hw/arm/fby35.h
 @@ -142,4 +142,9 @@ static const uint8_t fby35_fruid_slot[] = {
      0x29, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x98, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
  };
@@ -239,5 +267,5 @@ index 20bd43fbae..87cb1a10c2 100644
 +
  #endif
 -- 
-2.49.1
+2.52.0
 

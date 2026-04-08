@@ -1,7 +1,7 @@
-From 11b5e9140f7e892de61eabe2543528dc21e2f329 Mon Sep 17 00:00:00 2001
+From 95a823dc1dba279e6a281275fad53eca7699842a Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@meta.com>
 Date: Sun, 18 Dec 2022 14:41:31 -0800
-Subject: [PATCH 527/532] hw/arm/aspeed: Don't initialize fby35-bmc GPIO's
+Subject: [PATCH] hw/arm/aspeed: Don't initialize fby35-bmc GPIO's
 
 Initializing the GPIO's triggers slot sensor cache initialization in the
 boot sequence, which is extremely slow and annoying and doesn't succeed.
@@ -11,38 +11,38 @@ better to just not initialize these GPIO's.
 
 Signed-off-by: Peter Delevoryas <pdel@meta.com>
 ---
- hw/arm/aspeed.c | 4 +++-
+ hw/arm/aspeed_ast2600_fby35.c | 4 +++-
  1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index dd275d7cc6..f22ef88cdc 100644
---- a/hw/arm/aspeed.c
-+++ b/hw/arm/aspeed.c
-@@ -1583,6 +1583,7 @@ static void aspeed_machine_bletchley_class_init(ObjectClass *oc, void *data)
-     aspeed_machine_class_init_cpus_defaults(mc);
+diff --git a/hw/arm/aspeed_ast2600_fby35.c b/hw/arm/aspeed_ast2600_fby35.c
+index 7faf537505..07348ff403 100644
+--- a/hw/arm/aspeed_ast2600_fby35.c
++++ b/hw/arm/aspeed_ast2600_fby35.c
+@@ -106,6 +106,7 @@ static void fby35_i2c_init(AspeedMachineState *bmc)
+     i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 0), "fby35-sb-bic", 0x20);
  }
  
 +#if 0
  static void fby35_reset(MachineState *state, ResetType type)
  {
      AspeedMachineState *bmc = ASPEED_MACHINE(state);
-@@ -1609,6 +1610,7 @@ static void fby35_reset(MachineState *state, ResetType type)
+@@ -114,6 +115,7 @@ static void fby35_reset(MachineState *state, ResetType type)
  
      fby35_bmc_reset_gpios(bmc->soc);
  }
 +#endif
  
- static void aspeed_machine_fby35_class_init(ObjectClass *oc, void *data)
+ static void aspeed_machine_fby35_class_init(ObjectClass *oc, const void *data)
  {
-@@ -1616,7 +1618,7 @@ static void aspeed_machine_fby35_class_init(ObjectClass *oc, void *data)
+@@ -121,7 +123,7 @@ static void aspeed_machine_fby35_class_init(ObjectClass *oc, const void *data)
      AspeedMachineClass *amc = ASPEED_MACHINE_CLASS(oc);
  
      mc->desc       = "Facebook fby35 BMC (Cortex-A7)";
 -    mc->reset      = fby35_reset;
-+    //mc->reset      = fby35_reset;
++    // mc->reset      = fby35_reset;
      amc->fmc_model = "n25q00";
      amc->num_cs    = 2;
      amc->macs_mask = ASPEED_MAC3_ON;
 -- 
-2.49.1
+2.52.0
 

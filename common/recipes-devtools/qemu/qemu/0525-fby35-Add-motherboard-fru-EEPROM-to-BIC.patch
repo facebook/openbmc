@@ -1,7 +1,7 @@
-From ec336d8c94dc4a9557243cad82ee2942faade769 Mon Sep 17 00:00:00 2001
+From 802739f3327e6d402908ac2b60a4398edf783ac2 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 24 Aug 2022 17:51:06 -0700
-Subject: [PATCH 525/532] fby35: Add motherboard fru EEPROM to BIC
+Subject: [PATCH 525/526] fby35: Add motherboard fru EEPROM to BIC
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 ---
@@ -9,10 +9,10 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  1 file changed, 3 insertions(+)
 
 diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
-index 593730617f..12f7542661 100644
+index afaed48278..afaa1f13b8 100644
 --- a/hw/arm/fby35.c
 +++ b/hw/arm/fby35.c
-@@ -65,6 +65,9 @@ static void fby35_cl_bic_i2c_init(AspeedSoCState *s)
+@@ -66,6 +66,9 @@ static void fby35_cl_bic_i2c_init(AspeedSoCState *s)
      i2c_slave_create_simple(i2c[1], "tmp105", 0x4a);
      i2c_slave_create_simple(i2c[1], "adm1272", 0x40);
      i2c_slave_create_simple(i2c[1], "tmp421", 0x4c);
@@ -23,5 +23,5 @@ index 593730617f..12f7542661 100644
      i2c_slave_create_simple(i2c[4], "isl69259", 0x76);
      i2c_slave_create_simple(i2c[4], "isl69259", 0x62);
 -- 
-2.49.1
+2.52.0
 

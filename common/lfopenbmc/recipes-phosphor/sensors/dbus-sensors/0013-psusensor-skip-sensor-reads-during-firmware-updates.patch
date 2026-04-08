@@ -1,4 +1,4 @@
-From 24ff08ba5f4d508df24a8c0150fc17f1cfea1f3f Mon Sep 17 00:00:00 2001
+From bc9c250720cecfb1a94f1f074c70de7d38711463 Mon Sep 17 00:00:00 2001
 From: cchoux <cosmo.chou@quantatw.com>
 Date: Wed, 24 Sep 2025 11:35:31 +0800
 Subject: [PATCH 13/17] psusensor: skip sensor reads during firmware updates
@@ -46,10 +46,10 @@ Signed-off-by: Cosmo Chou <cosmo.chou@quantatw.com>
  5 files changed, 243 insertions(+), 11 deletions(-)
 
 diff --git a/src/psu/PSUEvent.cpp b/src/psu/PSUEvent.cpp
-index bc04523..da4057b 100644
+index 210ab78..0cf2be1 100644
 --- a/src/psu/PSUEvent.cpp
 +++ b/src/psu/PSUEvent.cpp
-@@ -44,7 +44,8 @@ PSUCombineEvent::PSUCombineEvent(
+@@ -46,7 +46,8 @@ PSUCombineEvent::PSUCombineEvent(
      boost::asio::io_context& io, const std::string& psuName,
      const PowerState& powerState, EventPathList& eventPathList,
      GroupEventPathList& groupEventPathList, const std::string& combineEventName,
@@ -59,7 +59,7 @@ index bc04523..da4057b 100644
  {
      std::string psuNameEscaped = sensor_paths::escapePathForDbus(psuName);
      eventInterface = objServer.add_interface(
-@@ -71,7 +72,8 @@ PSUCombineEvent::PSUCombineEvent(
+@@ -73,7 +74,8 @@ PSUCombineEvent::PSUCombineEvent(
          {
              auto p = std::make_shared<PSUSubEvent>(
                  eventInterface, path, conn, io, powerState, eventName,
@@ -69,7 +69,7 @@ index bc04523..da4057b 100644
              p->setupRead();
  
              events[eventPSUName].emplace_back(p);
-@@ -93,7 +95,8 @@ PSUCombineEvent::PSUCombineEvent(
+@@ -95,7 +97,8 @@ PSUCombineEvent::PSUCombineEvent(
              {
                  auto p = std::make_shared<PSUSubEvent>(
                      eventInterface, path, conn, io, powerState, groupEventName,
@@ -79,7 +79,7 @@ index bc04523..da4057b 100644
                  p->setupRead();
                  events[eventPSUName].emplace_back(p);
  
-@@ -118,6 +121,11 @@ PSUCombineEvent::~PSUCombineEvent()
+@@ -120,6 +123,11 @@ PSUCombineEvent::~PSUCombineEvent()
      objServer.remove_interface(eventInterface);
  }
  
@@ -91,7 +91,7 @@ index bc04523..da4057b 100644
  static boost::container::flat_map<std::string,
                                    std::pair<std::string, std::string>>
      logID = {
-@@ -143,13 +151,14 @@ PSUSubEvent::PSUSubEvent(
+@@ -145,13 +153,14 @@ PSUSubEvent::PSUSubEvent(
      const std::string& groupEventName, const std::string& eventName,
      std::shared_ptr<std::set<std::string>> asserts,
      std::shared_ptr<std::set<std::string>> combineEvent,
@@ -106,9 +106,9 @@ index bc04523..da4057b 100644
 -    systemBus(conn)
 +    systemBus(conn), skipReading(std::move(skipReading))
  {
-     buffer = std::make_shared<std::array<char, 128>>();
      if (pollRate > 0.0)
-@@ -196,6 +205,11 @@ void PSUSubEvent::setupRead()
+     {
+@@ -197,6 +206,11 @@ void PSUSubEvent::setupRead()
          restartRead();
          return;
      }
@@ -117,11 +117,11 @@ index bc04523..da4057b 100644
 +        restartRead();
 +        return;
 +    }
-     if (!buffer)
-     {
-         lg2::error("Buffer was invalid?");
+ 
+     inputDev.async_read_some_at(
+         0, boost::asio::buffer(buffer),
 diff --git a/src/psu/PSUEvent.hpp b/src/psu/PSUEvent.hpp
-index 9e17701..397c654 100644
+index 12be365..243053f 100644
 --- a/src/psu/PSUEvent.hpp
 +++ b/src/psu/PSUEvent.hpp
 @@ -48,7 +48,7 @@ class PSUSubEvent : public std::enable_shared_from_this<PSUSubEvent>
@@ -131,9 +131,9 @@ index 9e17701..397c654 100644
 -                double pollRate);
 +                double pollRate, std::shared_ptr<bool> skipReading);
      ~PSUSubEvent();
- 
-     std::shared_ptr<sdbusplus::asio::dbus_interface> eventInterface;
-@@ -78,6 +78,7 @@ class PSUSubEvent : public std::enable_shared_from_this<PSUSubEvent>
+     PSUSubEvent(const PSUSubEvent&) = delete;
+     PSUSubEvent(PSUSubEvent&&) = delete;
+@@ -91,6 +91,7 @@ class PSUSubEvent : public std::enable_shared_from_this<PSUSubEvent>
      std::string deassertMessage;
      std::shared_ptr<sdbusplus::asio::connection> systemBus;
      unsigned int eventPollMs = defaultEventPollMs;
@@ -141,7 +141,7 @@ index 9e17701..397c654 100644
      static constexpr unsigned int defaultEventPollMs = 1000;
      static constexpr size_t warnAfterErrorCount = 10;
  };
-@@ -90,8 +91,10 @@ class PSUCombineEvent
+@@ -103,8 +104,10 @@ class PSUCombineEvent
                      boost::asio::io_context& io, const std::string& psuName,
                      const PowerState& powerState, EventPathList& eventPathList,
                      GroupEventPathList& groupEventPathList,
@@ -153,7 +153,7 @@ index 9e17701..397c654 100644
  
      sdbusplus::asio::object_server& objServer;
      std::shared_ptr<sdbusplus::asio::dbus_interface> eventInterface;
-@@ -100,4 +103,7 @@ class PSUCombineEvent
+@@ -113,4 +116,7 @@ class PSUCombineEvent
          events;
      std::vector<std::shared_ptr<std::set<std::string>>> asserts;
      std::vector<std::shared_ptr<bool>> states;
@@ -162,11 +162,11 @@ index 9e17701..397c654 100644
 +    std::shared_ptr<bool> skipReading;
  };
 diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
-index 4aa1109..1df0c48 100644
+index 5ec743d..8aa499d 100644
 --- a/src/psu/PSUSensor.cpp
 +++ b/src/psu/PSUSensor.cpp
-@@ -148,9 +148,14 @@ void PSUSensor::deactivate()
-     path = "";
+@@ -162,9 +162,14 @@ void PSUSensor::handleResponseStatic(const std::weak_ptr<PSUSensor>& weak,
+     self->handleResponse(ec, bytesRead);
  }
  
 +void PSUSensor::setSkipRead(bool skip)
@@ -182,10 +182,10 @@ index 4aa1109..1df0c48 100644
          markAvailable(false);
          updateValue(std::numeric_limits<double>::quiet_NaN());
 diff --git a/src/psu/PSUSensor.hpp b/src/psu/PSUSensor.hpp
-index de8f7b7..a28e50f 100644
+index f758470..43fc8b3 100644
 --- a/src/psu/PSUSensor.hpp
 +++ b/src/psu/PSUSensor.hpp
-@@ -104,6 +104,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+@@ -108,6 +108,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
                    const std::shared_ptr<I2CDevice>& newI2CDevice);
      void deactivate();
      bool isActive();
@@ -193,7 +193,7 @@ index de8f7b7..a28e50f 100644
  
      std::shared_ptr<I2CDevice> getI2CDevice() const
      {
-@@ -128,6 +129,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+@@ -135,6 +136,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
      void handleResponse(const boost::system::error_code& err, size_t bytesRead);
      void checkThresholds() override;
      unsigned int sensorPollMs = defaultSensorPollMs;

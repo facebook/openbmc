@@ -1,4 +1,4 @@
-From 6dbbcd802e415f4c4ff748f0c8f5841dde66f950 Mon Sep 17 00:00:00 2001
+From 0d1ca8aa19cede7c8a469df2f9ac4cdf4777a919 Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Thu, 27 Feb 2025 22:13:03 -0500
 Subject: [PATCH 202/205] registries: generate from phosphor-dbus-interfaces
@@ -32,10 +32,10 @@ Change-Id: I069d3086954d4d439759f4acfdddc84466237012
  create mode 100644 subprojects/phosphor-dbus-interfaces.wrap
 
 diff --git a/meson.build b/meson.build
-index 2a8b36eb..0debfe77 100644
+index 81a83f4e..61ecf7fe 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -248,9 +248,25 @@ if not nghttp2.found()
+@@ -233,9 +233,25 @@ if not nghttp2.found()
  endif
  bmcweb_dependencies += nghttp2
  
@@ -59,10 +59,10 @@ index 2a8b36eb..0debfe77 100644
 +endif
 +bmcweb_dependencies += pdi_dep
 +
- cli11 = dependency('CLI11', required: false, include_type: 'system')
- if not cli11.found()
-     cli11_proj = subproject('cli11', required: true)
-@@ -358,6 +374,29 @@ subdir('features')
+ cli11 = dependency('CLI11', include_type: 'system')
+ bmcweb_dependencies += cli11
+ 
+@@ -333,6 +349,29 @@ subdir('features')
  # Source files
  fs = import('fs')
  
@@ -92,7 +92,7 @@ index 2a8b36eb..0debfe77 100644
  srcfiles_bmcweb = files(
      'http/mutual_tls.cpp',
      'http/routing/sserule.cpp',
-@@ -397,7 +436,10 @@ bmcweblib = static_library(
+@@ -373,7 +412,10 @@ bmcweblib = static_library(
      'bmcweblib',
      srcfiles_bmcweb,
      include_directories: incdir,
@@ -126,5 +126,5 @@ index 00000000..935a8b25
 +url = https://github.com/openbmc/phosphor-dbus-interfaces.git
 +revision = HEAD
 -- 
-2.47.3
+2.52.0
 

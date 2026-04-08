@@ -1,7 +1,7 @@
-From f235d7344bda8fb8e554b278f85c0727617e037a Mon Sep 17 00:00:00 2001
+From a20d99089569f270a19d247d9da88cd918966439 Mon Sep 17 00:00:00 2001
 From: Freddie Jheng <Freddie.Jheng@quantatw.com>
 Date: Wed, 7 Jan 2026 16:30:21 +0800
-Subject: [PATCH 2/4] configuration: santabarbara: add MCTP I2C target for SWB
+Subject: [PATCH 2/5] configuration: santabarbara: add MCTP I2C target for SWB
  die temp
 
 Add SWB_PEX as an MCTP I2C target on bus 94/102 with address 0x62
@@ -42,5 +42,5 @@ index f7580ba..f654a4d 100644
              "Address": "0x42",
              "Bus": "33",
 -- 
-2.47.3
+2.52.0
 

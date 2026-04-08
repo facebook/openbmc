@@ -1,7 +1,7 @@
-From a7e2dddedbc7232612837ebde055eca3ecb6abae Mon Sep 17 00:00:00 2001
+From 93ef90b0a92e19ae9b5f6f828cf02a5e790db59b Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 16:31:12 +0800
-Subject: [PATCH 3/4] configuration: santabarbara: configure MMC as
+Subject: [PATCH 3/5] configuration: santabarbara: configure MMC as
  MCTPI2CTarget in BiosPost
 
 Mark MMC devices as MCTPI2CTarget and set PowerState to BiosPost,
@@ -35,5 +35,5 @@ index 26e8318..ad5476a 100644
      ],
      "Name": "Santa Barbara Rainbow module $bus / 2 + 2 * 3 % 5 * 3 + 1 / 4",
 -- 
-2.47.3
+2.52.0
 

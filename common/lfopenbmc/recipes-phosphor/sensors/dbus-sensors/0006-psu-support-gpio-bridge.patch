@@ -1,4 +1,4 @@
-From 83a236796830aa1896c094e0acdf2959431f55f0 Mon Sep 17 00:00:00 2001
+From 0b00fe7ad14544fade609e71be3b3c6784344a04 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Mon, 19 May 2025 15:12:23 +0800
 Subject: [PATCH 06/17] psu: support gpio bridge
@@ -41,25 +41,25 @@ NAME      TYPE      SIGNATURE RESULT/VALUE
 Change-Id: I7cb220cc973644f9e6494fe087749cd15885db5c
 Signed-off-by: Peter Yin <peter.yin@quantatw.com>
 ---
- src/psu/PSUSensor.cpp     | 72 +++++++++++++++++++++++++++++----------
- src/psu/PSUSensor.hpp     | 70 ++++++++++++++++++++++++++++++++++++-
- src/psu/PSUSensorMain.cpp | 64 ++++++++++++++++++++++++++++++++--
+ src/psu/PSUSensor.cpp     | 43 +++++++++++++++++++++---
+ src/psu/PSUSensor.hpp     | 70 ++++++++++++++++++++++++++++++++++++++-
+ src/psu/PSUSensorMain.cpp | 64 +++++++++++++++++++++++++++++++++--
  src/psu/meson.build       |  1 +
- 4 files changed, 186 insertions(+), 21 deletions(-)
+ 4 files changed, 170 insertions(+), 8 deletions(-)
 
 diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
-index e1f7065..4aa1109 100644
+index 89541ad..5ec743d 100644
 --- a/src/psu/PSUSensor.cpp
 +++ b/src/psu/PSUSensor.cpp
-@@ -35,6 +35,7 @@
- #include <cstddef>
+@@ -37,6 +37,7 @@
+ #include <functional>
  #include <limits>
  #include <memory>
 +#include <optional>
- #include <stdexcept>
  #include <string>
  #include <string_view>
-@@ -52,10 +53,12 @@ PSUSensor::PSUSensor(
+ #include <system_error>
+@@ -54,10 +55,12 @@ PSUSensor::PSUSensor(
      const std::string& sensorConfiguration, const PowerState& powerState,
      const std::string_view sensorUnits, double factor, double max,
      double min, double offset, const std::string& label, size_t tSize,
@@ -74,26 +74,13 @@ index e1f7065..4aa1109 100644
      inputDev(io, path, boost::asio::random_access_file::read_only),
      waitTimer(io), path(path), sensorFactor(factor), sensorOffset(offset),
      thresholdTimer(io)
-@@ -162,22 +165,50 @@ void PSUSensor::setupRead()
+@@ -170,9 +173,34 @@ void PSUSensor::setupRead()
      }
  
      std::weak_ptr<PSUSensor> weak = weak_from_this();
--    // Note, we are building a asio buffer that is one char smaller than
--    // the actual data structure, so that we can always append the null
--    // terminator.  This can go away once std::from_chars<double> is available
--    // in the standard
 -    inputDev.async_read_some_at(
--        0, boost::asio::buffer(buffer->data(), buffer->size() - 1),
--        [weak, buffer{buffer}](const boost::system::error_code& ec,
--                               size_t bytesRead) {
--            std::shared_ptr<PSUSensor> self = weak.lock();
--            if (!self)
--            {
--                return;
--            }
--
--            self->handleResponse(ec, bytesRead);
--        });
+-        0, boost::asio::buffer(buffer),
+-        std::bind_front(&PSUSensor::handleResponseStatic, weak_from_this()));
 +
 +    if (bridgeGpio.has_value())
 +    {
@@ -102,7 +89,7 @@ index e1f7065..4aa1109 100644
 +        waitTimer.expires_after(
 +            std::chrono::milliseconds(bridgeGpio->setupTimeMs));
 +        waitTimer.async_wait(
-+            [weak, buffer{buffer}](const boost::system::error_code& ec) {
++            [weak](const boost::system::error_code& ec) {
 +                std::shared_ptr<PSUSensor> self = weak.lock();
 +                if (!self || ec == boost::asio::error::operation_aborted)
 +                {
@@ -110,39 +97,23 @@ index e1f7065..4aa1109 100644
 +                }
 +
 +                self->inputDev.async_read_some_at(
-+                    0, boost::asio::buffer(buffer->data(), buffer->size() - 1),
-+                    [weak, buffer](const boost::system::error_code& ec,
-+                                   size_t bytesRead) {
-+                        std::shared_ptr<PSUSensor> self = weak.lock();
-+                        if (!self)
-+                        {
-+                            return;
-+                        }
-+
-+                        self->handleResponse(ec, bytesRead);
-+                    });
++                    0, boost::asio::buffer(self->buffer),
++                    std::bind_front(&PSUSensor::handleResponseStatic,
++                                    self->weak_from_this()));
 +            });
 +    }
 +    else
 +    {
 +        inputDev.async_read_some_at(
-+            0, boost::asio::buffer(buffer->data(), buffer->size() - 1),
-+            [weak, buffer{buffer}](const boost::system::error_code& ec,
-+                                   size_t bytesRead) {
-+                std::shared_ptr<PSUSensor> self = weak.lock();
-+                if (!self)
-+                {
-+                    return;
-+                }
-+
-+                self->handleResponse(ec, bytesRead);
-+            });
++            0, boost::asio::buffer(buffer),
++            std::bind_front(&PSUSensor::handleResponseStatic,
++                            weak_from_this()));
 +    }
  }
  
  void PSUSensor::restartRead()
-@@ -240,6 +271,11 @@ void PSUSensor::handleResponse(const boost::system::error_code& err,
-         incrementError();
+@@ -234,6 +262,11 @@ void PSUSensor::handleResponse(const boost::system::error_code& err,
+         updateValue((rawValue / sensorFactor) + sensorOffset);
      }
  
 +    if (bridgeGpio)
@@ -154,7 +125,7 @@ index e1f7065..4aa1109 100644
  }
  
 diff --git a/src/psu/PSUSensor.hpp b/src/psu/PSUSensor.hpp
-index 8a43ef1..de8f7b7 100644
+index b84e1ee..f758470 100644
 --- a/src/psu/PSUSensor.hpp
 +++ b/src/psu/PSUSensor.hpp
 @@ -8,16 +8,82 @@
@@ -248,11 +219,11 @@ index 8a43ef1..de8f7b7 100644
 +              const std::shared_ptr<I2CDevice>& i2cDevice,
 +              std::optional<BridgeGpio>&& bridgeGpio);
      ~PSUSensor() override;
-     void setupRead();
-     void activate(const std::string& newPath,
-@@ -49,6 +116,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
-     // while in the middle of a read operation
-     std::shared_ptr<std::array<char, 128>> buffer;
+     PSUSensor(const PSUSensor&) = delete;
+     PSUSensor(PSUSensor&&) = delete;
+@@ -53,6 +120,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+     // destructed.
+     std::array<char, 128> buffer{};
      std::shared_ptr<I2CDevice> i2cDevice;
 +    std::optional<BridgeGpio> bridgeGpio;
      sdbusplus::asio::object_server& objServer;

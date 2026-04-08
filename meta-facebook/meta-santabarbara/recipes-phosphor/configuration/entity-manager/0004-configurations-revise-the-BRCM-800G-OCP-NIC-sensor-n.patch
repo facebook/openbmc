@@ -1,7 +1,7 @@
-From 658f5b677c053ae1f1cfdec1175066716b282db1 Mon Sep 17 00:00:00 2001
+From fbc41f4925df4d9bca739cd1230c57b75b806a5f Mon Sep 17 00:00:00 2001
 From: Freddie Jheng <Freddie.Jheng@quantatw.com>
 Date: Mon, 2 Mar 2026 11:00:50 +0800
-Subject: [PATCH 4/4] configurations: revise the BRCM 800G OCP NIC sensor name
+Subject: [PATCH 4/5] configurations: revise the BRCM 800G OCP NIC sensor name
 
 Apply the same I2C bus-to-NIC-ID conversion formula to the
 BRCM 800G 1P OCP NIC configuration for consistent sensor naming.
@@ -46,5 +46,5 @@ index 2ab1c56..767a2a5 100644
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
 -- 
-2.47.3
+2.52.0
 

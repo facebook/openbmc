@@ -1,4 +1,4 @@
-From 5c1daa487be3c9b6c8ddd828c9a0a01d8bb8ce89 Mon Sep 17 00:00:00 2001
+From 0ee8cc049c341f5b84a32c9861420369ffb2b08c Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH 200/202] Utils: support powerState for multi-node system
@@ -902,10 +902,10 @@ index c5785ee..9377ae9 100644
          }
      }
 diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
-index 1df0c48..1877f1d 100644
+index 8aa499d..628d7bc 100644
 --- a/src/psu/PSUSensor.cpp
 +++ b/src/psu/PSUSensor.cpp
-@@ -54,14 +54,14 @@ PSUSensor::PSUSensor(
+@@ -56,14 +56,14 @@ PSUSensor::PSUSensor(
      const std::string_view sensorUnits, double factor, double max,
      double min, double offset, const std::string& label, size_t tSize,
      double pollRate, const std::shared_ptr<I2CDevice>& i2cDevice,
@@ -921,10 +921,10 @@ index 1df0c48..1877f1d 100644
 -    thresholdTimer(io)
 +    thresholdTimer(io), slotId(slotId)
  {
-     buffer = std::make_shared<std::array<char, 128>>();
      std::string unitPath = sensor_paths::getPathForUnits(sensorUnits);
+     lg2::debug(
 diff --git a/src/psu/PSUSensor.hpp b/src/psu/PSUSensor.hpp
-index a28e50f..ce3d186 100644
+index 43fc8b3..130e458 100644
 --- a/src/psu/PSUSensor.hpp
 +++ b/src/psu/PSUSensor.hpp
 @@ -97,7 +97,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
@@ -934,9 +934,9 @@ index a28e50f..ce3d186 100644
 -              std::optional<BridgeGpio>&& bridgeGpio);
 +              std::optional<BridgeGpio>&& bridgeGpio, const size_t& slotId);
      ~PSUSensor() override;
-     void setupRead();
-     void activate(const std::string& newPath,
-@@ -137,6 +137,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+     PSUSensor(const PSUSensor&) = delete;
+     PSUSensor(PSUSensor&&) = delete;
+@@ -144,6 +144,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
      static constexpr double defaultSensorPoll = 1.0;
      static constexpr unsigned int defaultSensorPollMs =
          static_cast<unsigned int>(defaultSensorPoll * 1000);

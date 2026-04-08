@@ -1,4 +1,4 @@
-From 48d542762438d07b7fec533f03e0223980759c87 Mon Sep 17 00:00:00 2001
+From d698b3a3161d880bf61a5e23844a249f4829d067 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Fri, 22 Sep 2023 09:43:49 +0800
 Subject: [PATCH 02/17] PSUSensor: Fix error for decimal part of scalefactor
@@ -41,10 +41,10 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  3 files changed, 14 insertions(+), 9 deletions(-)
 
 diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
-index 9408ab3..e1f7065 100644
+index 10ebba6..89541ad 100644
 --- a/src/psu/PSUSensor.cpp
 +++ b/src/psu/PSUSensor.cpp
-@@ -50,7 +50,7 @@ PSUSensor::PSUSensor(
+@@ -52,7 +52,7 @@ PSUSensor::PSUSensor(
      boost::asio::io_context& io, const std::string& sensorName,
      std::vector<thresholds::Threshold>&& thresholdsIn,
      const std::string& sensorConfiguration, const PowerState& powerState,
@@ -54,7 +54,7 @@ index 9408ab3..e1f7065 100644
      double pollRate, const std::shared_ptr<I2CDevice>& i2cDevice) :
      Sensor(escapeName(sensorName), std::move(thresholdsIn), sensorConfiguration,
 diff --git a/src/psu/PSUSensor.hpp b/src/psu/PSUSensor.hpp
-index 3411833..8a43ef1 100644
+index 73deef1..b84e1ee 100644
 --- a/src/psu/PSUSensor.hpp
 +++ b/src/psu/PSUSensor.hpp
 @@ -28,7 +28,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
@@ -66,7 +66,7 @@ index 3411833..8a43ef1 100644
                const std::string& label, size_t tSize, double pollRate,
                const std::shared_ptr<I2CDevice>& i2cDevice);
      ~PSUSensor() override;
-@@ -53,7 +53,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+@@ -57,7 +57,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
      boost::asio::random_access_file inputDev;
      boost::asio::steady_timer waitTimer;
      std::string path;
@@ -75,7 +75,7 @@ index 3411833..8a43ef1 100644
      double sensorOffset;
      thresholds::ThresholdTimer thresholdTimer;
      void restartRead();
-@@ -75,6 +75,6 @@ struct PSUProperty
+@@ -82,6 +82,6 @@ struct PSUProperty
      std::string_view labelTypeName;
      double maxReading;
      double minReading;

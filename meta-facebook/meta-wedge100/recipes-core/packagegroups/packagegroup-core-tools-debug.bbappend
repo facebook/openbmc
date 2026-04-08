@@ -1,1 +1,1 @@
-RDEPENDS:${PN}:remove = "gdb"
+RDEPENDS:${PN}:remove = "gdb gdbserver"

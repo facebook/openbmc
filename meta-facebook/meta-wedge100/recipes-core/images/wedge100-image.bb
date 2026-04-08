@@ -34,6 +34,11 @@ IMAGE_INSTALL += " \
   udev-rules \
   "
 
+remove_python_config_dir() {
+    rm -rf ${IMAGE_ROOTFS}${libdir}/python*/config-*
+}
+ROOTFS_POSTPROCESS_COMMAND:append = " remove_python_config_dir;"
+
 #
 # kcsd and ipmid are not installed because IPMI is not enabled in uServer
 # BIOS.

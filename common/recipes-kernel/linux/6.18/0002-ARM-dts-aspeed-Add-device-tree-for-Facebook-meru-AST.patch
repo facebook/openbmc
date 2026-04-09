@@ -1,4 +1,4 @@
-From 3a55491d81b6c4f2b10094cd18fb52560164e55d Mon Sep 17 00:00:00 2001
+From f104bae616284927bdc359d4a9ce77291ae612bd Mon Sep 17 00:00:00 2001
 From: Adam Calabrigo <adamc@arista.com>
 Date: Fri, 13 Mar 2026 14:15:41 +0000
 Subject: [PATCH 2/2] ARM: dts: aspeed: Add device tree for Facebook meru
@@ -13,10 +13,10 @@ BMC integrated for health monitoring purpose.
  create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-meru.dts
 
 diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
-index 20e5b64280a5..a8bcc4a344d4 100644
+index a66cafb4f822..f972b4532af7 100644
 --- a/arch/arm/boot/dts/aspeed/Makefile
 +++ b/arch/arm/boot/dts/aspeed/Makefile
-@@ -30,6 +30,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
+@@ -33,6 +33,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
  	aspeed-bmc-facebook-galaxy100.dtb \
  	aspeed-bmc-facebook-greatlakes.dtb \
  	aspeed-bmc-facebook-harma.dtb \
@@ -163,5 +163,5 @@ index 000000000000..37d6d817d32d
 +		&pinctrl_adc14_default &pinctrl_adc15_default>;
 +};
 -- 
-2.51.0
+2.52.0
 

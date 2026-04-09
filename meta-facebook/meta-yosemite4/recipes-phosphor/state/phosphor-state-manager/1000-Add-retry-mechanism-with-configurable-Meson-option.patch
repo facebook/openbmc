@@ -1,4 +1,4 @@
-From 3ed13b416317d3bfe2985dd8e655d93fd10ee065 Mon Sep 17 00:00:00 2001
+From ed03d405c8079bb65d49e80e11c0784463fff57f Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Wed, 26 Mar 2025 18:30:01 +0800
 Subject: [PATCH] Add retry mechanism with configurable Meson option
@@ -13,18 +13,18 @@ the number of retries to be configured via a Meson option.
  4 files changed, 52 insertions(+), 24 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index a8e94be..fbb63a5 100644
+index 090babb..8fdc98d 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -73,6 +73,8 @@ conf.set(
-     get_option('check-fwupdate-before-do-transition').allowed(),
+@@ -82,6 +82,8 @@ conf.set10(
+     get_option('apply-power-policy-bmc-ready').allowed(),
  )
  
 +conf.set('RETRY_ATTEMPTS', get_option('retry_attempts'))
 +
  configure_file(output: 'config.h', configuration: conf)
  
- if (get_option('warm-reboot').allowed())
+ nlohmann_json_dep = dependency('nlohmann_json', include_type: 'system')
 diff --git a/meson.options b/meson.options
 index f24d068..4ca8479 100644
 --- a/meson.options
@@ -165,5 +165,5 @@ index 5f721b8..13d2755 100644
  
  } // namespace settings
 -- 
-2.47.3
+2.52.0
 

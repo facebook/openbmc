@@ -20,6 +20,10 @@ SRC_URI:append = " \
     file://0017-SmbpbiSensor-Fix-invalid-data-check-size-for-tempera.patch \
 "
 
+SRC_URI:append:ventura2 = " \
+    file://0100-implement-analog-valve-control-for-VT2-inventory.patch \
+"
+
 SRC_URI:append:fb-compute-multihost = " \
     file://0200-Utils-support-powerState-for-multi-node-system.patch \
     file://0201-Avoid-recreating-hwmon-temp-when-blade-cycle.patch \

@@ -8086,6 +8086,24 @@
             "name": "Power_Module_6_Firmware_Version"
         },
         {
+            "begin": 4096,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Module_ID"
+        },
+        {
+            "begin": 4097,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "Vendor_ID"
+        },
+        {
+            "begin": 1792,
+            "length": 8,
+            "format": "STRING",
+            "name": "SNMP_Firmware_Version"
+        },
+        {
             "begin": 4112,
             "length": 1,
             "format": "INTEGER",

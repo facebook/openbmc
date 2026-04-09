@@ -17,6 +17,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+. /usr/local/bin/gpio-utils.sh
+
 wedge_board_type() {
     echo 'nexthopbmc'
 }
@@ -27,28 +29,34 @@ wedge_board_rev() {
 }
 
 userver_power_is_on() {
-    echo "FIXME: feature not implemented!!"
-    return 1
+    local val
+    val=$(gpio_get_value CPE_CTRL)
+    if [ "$val" = "1" ]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 userver_power_on() {
-    echo "FIXME: feature not implemented!!"
-    return 1
+    gpio_set_value CPE_CTRL 1
 }
 
 userver_power_off() {
-    echo "FIXME: feature not implemented!!"
-    return 1
+    gpio_set_value CPE_CTRL 0
 }
 
 userver_reset() {
-    return 1
-    echo "FIXME: feature not implemented!!"
+    userver_power_off
+
+    sleep 5
+
+    userver_power_on
+    return 0
 }
 
 chassis_power_cycle() {
-    echo "FIXME: feature not implemented!!"
-    return 1
+    gpio_set_value BMC_PWR_CYC_REQ 1
 }
 
 bmc_mac_addr() {

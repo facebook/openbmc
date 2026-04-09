@@ -30,6 +30,11 @@
 
 # shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
+
+# COME Power on
+# Note, don't actually set a value here, let it keep the value it has
+gpio_export_by_name "${ASPEED_GPIO}" GPIOR2 CPE_CTRL
+
 # Write protect for EEPROM
 setup_gpio EEPROM_WP  GPIOQ0 out 0
 # Alert from CPU
@@ -50,8 +55,6 @@ setup_gpio BMC_GPIO_3  GPIOQ7 in
 setup_gpio SVI_VR_ALERT_L  GPIOR0 in 
 # BMC Mode Latch
 setup_gpio BMC_MODE_LATCH  GPIOR1 in 
-# COME Power on
-setup_gpio CPE_CTRL  GPIOR2 out 0
 # BMC FPAG Prog
 setup_gpio BMC_FPGA_PROG  GPIOR3 out 0
 # COME Boot Okay

@@ -21,10 +21,13 @@ class LogServiceHandler : private sdbusplus::async::context_ref,
   public:
     LogServiceHandler() = delete;
 
-    explicit LogServiceHandler(sdbusplus::async::context& ctx,
-                               const std::string& url,
-                               const std::string& persistDir = "") :
+    explicit LogServiceHandler(
+        sdbusplus::async::context& ctx, const std::string& url,
+        std::optional<size_t> skipHistoricalEntriesThresholdSeconds,
+        const std::string& persistDir = "") :
         sdbusplus::async::context_ref(ctx), url(url),
+        skipHistoricalEntriesThresholdSeconds(
+            skipHistoricalEntriesThresholdSeconds),
         committedEntries(getPersistPath(url, persistDir)),
         httpHandle(std::make_unique<AsyncHttpHandle>(url)) {};
 
@@ -32,14 +35,16 @@ class LogServiceHandler : private sdbusplus::async::context_ref,
 
     auto commit(
         redfish_binding::LogEntryCollection::LogEntryCollection& collection)
-      -> sdbusplus::async::task<>;
+        -> sdbusplus::async::task<>;
 
   private:
     std::string url;
+    std::optional<size_t> skipHistoricalEntriesThresholdSeconds;
     PersistMap committedEntries;
     std::unique_ptr<AsyncHttpHandle> httpHandle;
 
-    void commit(redfish_binding::LogEntry::LogEntry& entry);
+    void commit(redfish_binding::LogEntry::LogEntry& entry,
+                std::optional<size_t> historicalThresholdSeconds);
 
     static std::string getPersistPath(const std::string& url,
                                       const std::string& persistDir);

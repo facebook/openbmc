@@ -15,6 +15,25 @@ void from_json(const nlohmann::json& json, UpdateServiceMapper& mapper)
     }
 }
 
+
+void from_json(const nlohmann::json& json, LogServiceConfig& config)
+{
+    json.at("urls").get_to(config.urls);
+    json.at("intervalMilliseconds").get_to(config.intervalMilliseconds);
+    if (auto it = json.find("skipHistoricalEntriesThresholdSeconds");
+        it != json.end())
+    {
+        if (it->is_null())
+        {
+            config.skipHistoricalEntriesThresholdSeconds = std::nullopt;
+        }
+        else
+        {
+            it->get_to(config.skipHistoricalEntriesThresholdSeconds.emplace());
+        }
+    }
+}
+
 void from_json(const nlohmann::json& json, Config& config)
 {
     json.at("host").get_to(config.host);

@@ -29,25 +29,34 @@ bool PersistMap::update(const std::string& key, const std::string& value)
     return true;
 }
 
-void PersistMap::load()
+bool PersistMap::isLoaded() const
 {
+    return loaded;
+}
+
+bool PersistMap::load()
+{
+    loaded = true;
     if (path.empty())
     {
-        return;
+        return false;
     }
-    if (auto file = std::ifstream(path); file.is_open())
+    auto file = std::ifstream(path);
+    if (!file.is_open())
     {
-        try
-        {
-            nlohmann::json::parse(file).get_to(map);
-        }
-        catch (const std::exception& e)
-        {
-            warning("Error parsing persist map from {PATH}: {EX}", "PATH", path,
-                    "EX", e.what());
-        }
-        file.close();
+        return false;
     }
+    try
+    {
+        nlohmann::json::parse(file).get_to(map);
+    }
+    catch (const std::exception& e)
+    {
+        warning("Error parsing persist map from {PATH}: {EX}", "PATH", path,
+                "EX", e.what());
+        return false;
+    }
+    return true;
 }
 
 void PersistMap::flush()

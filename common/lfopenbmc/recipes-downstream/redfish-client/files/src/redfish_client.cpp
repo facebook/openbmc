@@ -80,8 +80,10 @@ auto RedfishClient::run() -> sdbusplus::async::task<>
             info("persistDir = {PERSIST_DIR}", "PERSIST_DIR", persistDir);
 
             logServiceHandlers.push_back(
-                std::make_shared<LogServiceHandler>(ctx, expandedUrl,
-                                                    persistDir));
+                std::make_shared<LogServiceHandler>(
+                    ctx, expandedUrl,
+                    logServiceConfig.skipHistoricalEntriesThresholdSeconds,
+                    persistDir));
         }
         ctx.spawn(runEventPollingLoop());
     }

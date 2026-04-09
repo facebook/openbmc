@@ -6,11 +6,13 @@
 #include <phosphor-logging/lg2.hpp>
 #include <xyz/openbmc_project/State/CPER/event.hpp>
 
+#include <chrono>
 #include <exception>
 #include <filesystem>
 #include <format>
 #include <optional>
 #include <regex>
+#include <sstream>
 
 PHOSPHOR_LOG2_USING;
 
@@ -55,14 +57,19 @@ auto LogServiceHandler::runOnce() -> sdbusplus::async::task<>
 
 auto LogServiceHandler::commit(
     redfish_binding::LogEntryCollection::LogEntryCollection& collection)
-  -> sdbusplus::async::task<>
+    -> sdbusplus::async::task<>
 {
+    std::optional<size_t> historicalThresholdSeconds;
+    if (!committedEntries.isLoaded() && !committedEntries.load())
+    {
+        historicalThresholdSeconds = skipHistoricalEntriesThresholdSeconds;
+    }
     auto& maybeMembers = collection.getMembers();
     if (maybeMembers.hasValue())
     {
         for (auto& member : maybeMembers.value())
         {
-            commit(member);
+            commit(member, historicalThresholdSeconds);
             // Suspend this task so it is rescheduled, giving pending
             // work (d-bus queries etc) a chance to execute
             co_await sdbusplus::async::execution::schedule(
@@ -71,7 +78,8 @@ auto LogServiceHandler::commit(
     }
 }
 
-void LogServiceHandler::commit(redfish_binding::LogEntry::LogEntry& entry)
+void LogServiceHandler::commit(redfish_binding::LogEntry::LogEntry& entry,
+                               std::optional<size_t> historicalThresholdSeconds)
 {
     namespace CPER = sdbusplus::error::xyz::openbmc_project::state::CPER;
 
@@ -85,7 +93,28 @@ void LogServiceHandler::commit(redfish_binding::LogEntry::LogEntry& entry)
         return;
     }
     const auto& timestamp = entry.getCreated().value();
-    if (!committedEntries.update(entryId, timestamp))
+    bool shouldSkip = false;
+    if (historicalThresholdSeconds.has_value())
+    {
+        std::istringstream ss(timestamp);
+        std::chrono::system_clock::time_point tp;
+        // Parse ISO 8601 timestamp (e.g., "2025-01-01T12:00:00+00:00")
+        // %F=date, %T=time, %Ez=colon-separated UTC offset
+        ss >> std::chrono::parse("%FT%T%Ez", tp);
+        if (ss.fail())
+        {
+            warning(
+                "Failed to parse timestamp for log entry {ENTRY_ID}: {TIMESTAMP}",
+                "ENTRY_ID", entryId, "TIMESTAMP", timestamp);
+            shouldSkip = true;
+        }
+        else if (std::chrono::system_clock::now() - tp >
+                 std::chrono::seconds(*historicalThresholdSeconds))
+        {
+            shouldSkip = true;
+        }
+    }
+    if (!committedEntries.update(entryId, timestamp) || shouldSkip)
     {
         return;
     }

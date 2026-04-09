@@ -13,10 +13,14 @@ class PersistMap
     PersistMap() = default;
 
     // persist to file if path is not empty, otherwise persist in memory
-    explicit PersistMap(const std::string& path) : path(path)
-    {
-        load();
-    };
+    explicit PersistMap(const std::string& path) : path(path) {};
+
+    // load persist map from file, return true if a pre-existing file was found
+    // no-op if already loaded
+    bool load();
+
+    // return true if load() has been called
+    bool isLoaded() const;
 
     // no-op and return false if key exists and value matches, otherwise update
     // the map with given key and value and return true
@@ -24,9 +28,8 @@ class PersistMap
 
   private:
     std::string path;
+    bool loaded = false;
     std::unordered_map<std::string, std::string> map;
-
-    void load();
 
     void flush();
 };

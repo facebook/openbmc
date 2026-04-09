@@ -22,10 +22,12 @@ TEST(PersistMapTest, OnFileTest)
 {
     std::string tmpf = std::tmpnam(nullptr);
     PersistMap map(tmpf);
+    EXPECT_EQ(map.load(), false);
     EXPECT_EQ(map.update("k1", "v1"), true);
     EXPECT_EQ(map.update("k1", "v1"), false);
 
     PersistMap recoveryMap(tmpf);
+    EXPECT_EQ(recoveryMap.load(), true);
     EXPECT_EQ(recoveryMap.update("k1", "v1"), false);
     std::remove(tmpf.c_str());
 }
@@ -34,6 +36,7 @@ TEST(PersistMapTest, CorruptedFileTest)
 {
     std::string tmpf = std::tmpnam(nullptr);
     PersistMap map(tmpf);
+    map.load();
     EXPECT_EQ(map.update("k1", "v1"), true);
     EXPECT_EQ(map.update("k1", "v1"), false);
     std::ofstream file(tmpf);
@@ -41,6 +44,7 @@ TEST(PersistMapTest, CorruptedFileTest)
     file.close();
 
     PersistMap recoveryMap(tmpf);
+    EXPECT_EQ(recoveryMap.load(), false);
     EXPECT_EQ(recoveryMap.update("k1", "v1"), true);
     std::remove(tmpf.c_str());
 }

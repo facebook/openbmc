@@ -32,7 +32,8 @@ TEST(Config, FullConfig)
     "urls": [
       "/redfish/v1/Systems/system_0/LogServices/EventLog/Entries"
     ],
-    "intervalMilliseconds": 5000
+    "intervalMilliseconds": 5000,
+    "skipHistoricalEntriesThresholdSeconds": 60
   },
   "updateServiceConfig": {
     "intervalMilliseconds": 100000,
@@ -79,6 +80,13 @@ TEST(Config, FullConfig)
     EXPECT_EQ(config.logServiceConfig->urls[0],
               "/redfish/v1/Systems/system_0/LogServices/EventLog/Entries");
     EXPECT_EQ(config.logServiceConfig->intervalMilliseconds, 5000);
+    EXPECT_EQ(
+        config.logServiceConfig->skipHistoricalEntriesThresholdSeconds
+            .has_value(),
+        true);
+    EXPECT_EQ(
+        config.logServiceConfig->skipHistoricalEntriesThresholdSeconds.value(),
+        60);
     EXPECT_EQ(config.updateServiceConfig->intervalMilliseconds, 100000);
     EXPECT_EQ(config.updateServiceConfig->firmwareMappers.size(), 2);
     EXPECT_EQ(config.updateServiceConfig->firmwareMappers[0].fromId, "FW1");
@@ -128,6 +136,36 @@ TEST(Config, PartialConfig)
     EXPECT_EQ(config.logServiceConfig->urls[0],
               "/redfish/v1/Systems/system_0/LogServices/EventLog/Entries");
     EXPECT_EQ(config.logServiceConfig->intervalMilliseconds, 5000);
+    // When not specified in JSON, should use default value of 600
+    EXPECT_EQ(config.logServiceConfig->skipHistoricalEntriesThresholdSeconds
+                  .has_value(),
+              true);
+    EXPECT_EQ(
+        config.logServiceConfig->skipHistoricalEntriesThresholdSeconds.value(),
+        600);
+}
+
+TEST(Config, DisableHistoricalFilterConfig)
+{
+    std::string configJson = R"(
+{
+  "host": "0.0.0.1",
+  "compatible": "com.meta.Hardware.BMC.TEST",
+  "logServiceConfig": {
+    "urls": [
+      "/redfish/v1/Systems/system_0/LogServices/EventLog/Entries"
+    ],
+    "intervalMilliseconds": 5000,
+    "skipHistoricalEntriesThresholdSeconds": null
+  }
+}
+)";
+    auto config = Config::parse(configJson);
+    EXPECT_EQ(config.logServiceConfig.has_value(), true);
+    EXPECT_EQ(
+        config.logServiceConfig->skipHistoricalEntriesThresholdSeconds
+            .has_value(),
+        false);
 }
 
 TEST(Config, InvalidConfig)

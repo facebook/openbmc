@@ -33,8 +33,15 @@ struct LogServiceConfig
 {
     std::vector<std::string> urls;
     size_t intervalMilliseconds;
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(LogServiceConfig, urls, intervalMilliseconds)
+    // Historical log entries are skipped when no persist file is found
+    // (e.g. after BMC factory reset) to avoid re-committing pre-existing
+    // logs from the SMC. The value is the threshold in seconds.
+    // Defaults to 600s (10min) to account for BMC factory reset time.
+    // Can be set to null in JSON to disable filtering.
+    std::optional<size_t> skipHistoricalEntriesThresholdSeconds = 600;
 };
+
+void from_json(const nlohmann::json& json, LogServiceConfig& config);
 
 struct UpdateServiceMapper
 {

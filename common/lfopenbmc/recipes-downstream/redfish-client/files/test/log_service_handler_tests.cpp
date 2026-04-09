@@ -11,8 +11,11 @@
 #include <xyz/openbmc_project/Logging/Create/server.hpp>
 #include <xyz/openbmc_project/Logging/event.hpp>
 
+#include <chrono>
 #include <condition_variable>
 #include <filesystem>
+#include <fstream>
+#include <format>
 #include <mutex>
 #include <thread>
 
@@ -164,14 +167,18 @@ class LogServiceHandlerTest : public ::testing::Test
         registry.registerMapper(std::make_unique<CperMapper>(), 100);
         registry.registerMapper(std::make_unique<UnhandledMapper>(), 0);
         logManager.start();
+        tmpdir = std::tmpnam(nullptr);
+        std::filesystem::create_directory(tmpdir);
     }
 
     void TearDown() override
     {
         logManager.stop();
+        std::filesystem::remove_all(tmpdir);
     }
 
     FakeLogManager logManager;
+    std::string tmpdir;
 };
 
 static constexpr const char* kEventlogEntryCollectionJson = R"(
@@ -230,7 +237,7 @@ TEST_F(LogServiceHandlerTest, BasicTest)
 {
     sdbusplus::async::context ctx;
     auto logServiceHandler =
-        std::make_shared<LogServiceHandler>(ctx, "fake.url");
+        std::make_shared<LogServiceHandler>(ctx, "fake.url", std::nullopt);
 
     auto logEntryCollection =
         redfish_binding::LogEntryCollection::parseLogEntryCollection(
@@ -276,7 +283,7 @@ TEST_F(LogServiceHandlerTest, InMemoryPersistTest)
 {
     sdbusplus::async::context ctx;
     auto logServiceHandler =
-        std::make_shared<LogServiceHandler>(ctx, "fake.url");
+        std::make_shared<LogServiceHandler>(ctx, "fake.url", std::nullopt);
     auto logEntryCollection =
         redfish_binding::LogEntryCollection::parseLogEntryCollection(
             kEventlogEntryCollectionJson);
@@ -293,7 +300,7 @@ TEST_F(LogServiceHandlerTest, InMemoryPersistTest)
         numAfterDuplication = logManager.logs->size();
         // mimic a restart
         auto restartedLogServiceHandler =
-            std::make_shared<LogServiceHandler>(ctx, "fake.url");
+            std::make_shared<LogServiceHandler>(ctx, "fake.url", std::nullopt);
         co_await restartedLogServiceHandler->commit(logEntryCollection);
         numAfterRestart = logManager.logs->size();
         co_await restartedLogServiceHandler->commit(logEntryCollection);
@@ -310,10 +317,8 @@ TEST_F(LogServiceHandlerTest, InMemoryPersistTest)
 TEST_F(LogServiceHandlerTest, OnFilePersistTest)
 {
     sdbusplus::async::context ctx;
-    std::string tmpdir = std::tmpnam(nullptr);
-    std::filesystem::create_directory(tmpdir);
     auto logServiceHandler = std::make_shared<LogServiceHandler>(
-        ctx, "https://fake.url/redfish/v1", tmpdir);
+        ctx, "https://fake.url/redfish/v1", std::nullopt, tmpdir);
     auto logEntryCollection =
         redfish_binding::LogEntryCollection::parseLogEntryCollection(
             kEventlogEntryCollectionJson);
@@ -330,7 +335,7 @@ TEST_F(LogServiceHandlerTest, OnFilePersistTest)
         numAfterDuplication = logManager.logs->size();
         // mimic a restart
         auto restartedLogServiceHandler = std::make_shared<LogServiceHandler>(
-            ctx, "https://fake.url/redfish/v1", tmpdir);
+            ctx, "https://fake.url/redfish/v1", std::nullopt, tmpdir);
         co_await restartedLogServiceHandler->commit(logEntryCollection);
         numAfterRestart = logManager.logs->size();
         co_await restartedLogServiceHandler->commit(logEntryCollection);
@@ -342,7 +347,244 @@ TEST_F(LogServiceHandlerTest, OnFilePersistTest)
     EXPECT_EQ(2, numAfterDuplication);
     EXPECT_EQ(2, numAfterRestart);
     EXPECT_EQ(2, numAfterRestartDuplication);
-    std::filesystem::remove_all(tmpdir);
+}
+
+// Helper to generate a log entry collection JSON from a list of {id, timestamp}
+// pairs, simulating incremental Redfish log entry responses.
+static std::string makeLogEntryCollectionJson(
+    const std::vector<std::pair<std::string, std::string>>& entries)
+{
+    nlohmann::json members = nlohmann::json::array();
+    for (const auto& [id, timestamp] : entries)
+    {
+        members.push_back({
+            {"@odata.id",
+             "/redfish/v1/Systems/System0/LogServices/EventLog/Entries/" + id},
+            {"@odata.type", "#LogEntry.v1_15_0.LogEntry"},
+            {"Created", timestamp},
+            {"EntryType", "Event"},
+            {"Id", id},
+            {"Message", "Test message"},
+            {"MessageArgs", nlohmann::json::array()},
+            {"MessageId", "OpenBMC.0.4.TestMessage"},
+            {"Name", "System Event Log Entry"},
+            {"Severity", "Warning"},
+        });
+    }
+    nlohmann::json collection = {
+        {"@odata.id",
+         "/redfish/v1/Systems/System0/LogServices/EventLog/Entries"},
+        {"@odata.type", "#LogEntryCollection.LogEntryCollection"},
+        {"Members@odata.count", members.size()},
+        {"Members", members},
+    };
+    return collection.dump();
+}
+
+TEST_F(LogServiceHandlerTest, SkipHistoricalEntriesNoPersistFileTest)
+{
+    // No persist file + threshold configured → old entries should be skipped
+    sdbusplus::async::context ctx;
+    auto logServiceHandler = std::make_shared<LogServiceHandler>(
+        ctx, "https://fake.url/redfish/v1", 60, tmpdir);
+
+    auto oldTimestamp = std::format("{:%FT%T%Ez}",
+        std::chrono::system_clock::now() - std::chrono::seconds(120));
+
+    // First poll: two old entries
+    auto logEntryCollection1 =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            makeLogEntryCollectionJson({{"201", oldTimestamp},
+                                        {"202", oldTimestamp}}));
+
+    // Second poll: same old entries (dedup test)
+    auto logEntryCollection2 =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            makeLogEntryCollectionJson({{"201", oldTimestamp},
+                                        {"202", oldTimestamp}}));
+
+    // Third poll: same old entries plus a new entry with old timestamp
+    auto logEntryCollection3 =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            makeLogEntryCollectionJson({{"201", oldTimestamp},
+                                        {"202", oldTimestamp},
+                                        {"203", oldTimestamp}}));
+
+    size_t numAfterFirstCommit = 0, numAfterSecondCommit = 0,
+           numAfterThirdCommit = 0;
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+        co_await logServiceHandler->commit(logEntryCollection1);
+        numAfterFirstCommit = logManager.logs->size();
+        // Simulate next polling cycle with the same old entries
+        co_await logServiceHandler->commit(logEntryCollection2);
+        numAfterSecondCommit = logManager.logs->size();
+        // Simulate a new entry arriving in a later polling cycle —
+        // historical filtering only applies on the first commit, so new
+        // entries should be committed regardless of their timestamp
+        co_await logServiceHandler->commit(logEntryCollection3);
+        numAfterThirdCommit = logManager.logs->size();
+    }());
+
+    // Old entries should be skipped on first commit
+    EXPECT_EQ(0, numAfterFirstCommit);
+    // Old entries should not reappear on subsequent commits (deduped via
+    // persist map)
+    EXPECT_EQ(0, numAfterSecondCommit);
+    // New entry (203) in later polling cycle should be committed regardless of
+    // timestamp; existing entries (201, 202) deduped
+    EXPECT_EQ(1, numAfterThirdCommit);
+}
+
+TEST_F(LogServiceHandlerTest, AllowRecentEntriesNoPersistFileTest)
+{
+    // No persist file + threshold configured → recent entries should be
+    // committed
+    sdbusplus::async::context ctx;
+    auto logServiceHandler = std::make_shared<LogServiceHandler>(
+        ctx, "https://fake.url/redfish/v1", 60, tmpdir);
+
+    auto recentTimestamp = std::format("{:%FT%T%Ez}",
+        std::chrono::system_clock::now() - std::chrono::seconds(10));
+
+    auto logEntryCollection1 =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            makeLogEntryCollectionJson({{"201", recentTimestamp}}));
+
+    size_t numAfterCommit = 0;
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+        co_await logServiceHandler->commit(logEntryCollection1);
+        numAfterCommit = logManager.logs->size();
+    }());
+
+    // Recent entry should be committed
+    EXPECT_EQ(1, numAfterCommit);
+}
+
+TEST_F(LogServiceHandlerTest, NoFilteringWhenPersistFileExistsTest)
+{
+    // Persist file exists + threshold configured → no filtering, normal dedup
+    sdbusplus::async::context ctx;
+
+    auto oldTimestamp = std::format("{:%FT%T%Ez}",
+        std::chrono::system_clock::now() - std::chrono::seconds(120));
+
+    // First handler: no persist file, threshold configured → old entries
+    // skipped but still recorded in persist map
+    auto logServiceHandler = std::make_shared<LogServiceHandler>(
+        ctx, "https://fake.url/redfish/v1", 60, tmpdir);
+    auto logEntryCollection1 =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            makeLogEntryCollectionJson({{"201", oldTimestamp}}));
+
+    // Same entries for the restarted handler
+    auto logEntryCollection2 =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            makeLogEntryCollectionJson({{"201", oldTimestamp}}));
+
+    size_t numAfterFirstHandler = 0, numAfterRestart = 0;
+
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+        co_await logServiceHandler->commit(logEntryCollection1);
+        numAfterFirstHandler = logManager.logs->size();
+
+        // Restart with threshold configured — persist file now exists
+        auto restartedHandler = std::make_shared<LogServiceHandler>(
+            ctx, "https://fake.url/redfish/v1", 60, tmpdir);
+        co_await restartedHandler->commit(logEntryCollection2);
+        numAfterRestart = logManager.logs->size();
+    }());
+
+    // First handler: no persist file, entries are old → skipped
+    EXPECT_EQ(0, numAfterFirstHandler);
+    // Restarted handler: persist file exists → no filtering, entries already in
+    // map → deduped
+    EXPECT_EQ(0, numAfterRestart);
+}
+
+TEST_F(LogServiceHandlerTest, NoFilteringWhenThresholdDisabledTest)
+{
+    // No persist file + threshold explicitly disabled (nullopt) → all entries
+    // should be committed regardless of age
+    sdbusplus::async::context ctx;
+    auto logServiceHandler = std::make_shared<LogServiceHandler>(
+        ctx, "https://fake.url/redfish/v1", std::nullopt, tmpdir);
+
+    auto oldTimestamp = std::format("{:%FT%T%Ez}",
+        std::chrono::system_clock::now() - std::chrono::seconds(120));
+
+    auto logEntryCollection1 =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            makeLogEntryCollectionJson({{"201", oldTimestamp},
+                                        {"202", oldTimestamp}}));
+
+    size_t numAfterCommit = 0;
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+        co_await logServiceHandler->commit(logEntryCollection1);
+        numAfterCommit = logManager.logs->size();
+    }());
+
+    // Threshold disabled, all entries should be committed
+    EXPECT_EQ(2, numAfterCommit);
+}
+
+TEST_F(LogServiceHandlerTest, CorruptedPersistFileTest)
+{
+    // Corrupted persist file + threshold configured → treated as no persist
+    // file, so historical filtering should apply
+    sdbusplus::async::context ctx;
+
+    auto oldTimestamp = std::format("{:%FT%T%Ez}",
+        std::chrono::system_clock::now() - std::chrono::seconds(120));
+
+    // Write a corrupted persist file
+    auto handler = std::make_shared<LogServiceHandler>(
+        ctx, "https://fake.url/redfish/v1", 60, tmpdir);
+    auto persistPath = tmpdir + "/https___fake_url_redfish_v1";
+    std::ofstream file(persistPath);
+    file << "corrupted";
+    file.close();
+
+    auto logEntryCollection =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            makeLogEntryCollectionJson({{"201", oldTimestamp}}));
+
+    size_t numAfterCommit = 0;
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+        co_await handler->commit(logEntryCollection);
+        numAfterCommit = logManager.logs->size();
+    }());
+
+    // Corrupted file treated as no persist file → old entries skipped
+    EXPECT_EQ(0, numAfterCommit);
+}
+
+TEST_F(LogServiceHandlerTest, MixedOldAndRecentEntriesTest)
+{
+    // No persist file + threshold configured + mix of old and recent entries
+    // → only recent entries should be committed on the first commit
+    sdbusplus::async::context ctx;
+    auto logServiceHandler = std::make_shared<LogServiceHandler>(
+        ctx, "https://fake.url/redfish/v1", 60, tmpdir);
+
+    auto oldTimestamp = std::format("{:%FT%T%Ez}",
+        std::chrono::system_clock::now() - std::chrono::seconds(120));
+    auto recentTimestamp = std::format("{:%FT%T%Ez}",
+        std::chrono::system_clock::now() - std::chrono::seconds(10));
+
+    auto logEntryCollection1 =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            makeLogEntryCollectionJson({{"201", oldTimestamp},
+                                        {"202", recentTimestamp},
+                                        {"203", oldTimestamp}}));
+
+    size_t numAfterCommit = 0;
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+        co_await logServiceHandler->commit(logEntryCollection1);
+        numAfterCommit = logManager.logs->size();
+    }());
+
+    // Only the recent entry (202) should be committed; old entries skipped
+    EXPECT_EQ(1, numAfterCommit);
 }
 
 static constexpr const char* kPsRunPwrFaultEntryCollectionJson = R"(
@@ -389,7 +631,7 @@ TEST_F(LogServiceHandlerTest, PsRunPwrFaultMapperTest)
 {
     sdbusplus::async::context ctx;
     auto logServiceHandler =
-        std::make_shared<LogServiceHandler>(ctx, "fake.url");
+        std::make_shared<LogServiceHandler>(ctx, "fake.url", std::nullopt);
 
     auto logEntryCollection =
         redfish_binding::LogEntryCollection::parseLogEntryCollection(
@@ -456,7 +698,7 @@ TEST_F(LogServiceHandlerTest, PsRunPwrFaultEmptyMessageArgsTest)
 {
     sdbusplus::async::context ctx;
     auto logServiceHandler =
-        std::make_shared<LogServiceHandler>(ctx, "fake.url");
+        std::make_shared<LogServiceHandler>(ctx, "fake.url", std::nullopt);
 
     auto logEntryCollection =
         redfish_binding::LogEntryCollection::parseLogEntryCollection(
@@ -505,7 +747,7 @@ TEST_F(LogServiceHandlerTest, PsRunPwrFaultInsufficientMessageArgsTest)
 {
     sdbusplus::async::context ctx;
     auto logServiceHandler =
-        std::make_shared<LogServiceHandler>(ctx, "fake.url");
+        std::make_shared<LogServiceHandler>(ctx, "fake.url", std::nullopt);
 
     auto logEntryCollection =
         redfish_binding::LogEntryCollection::parseLogEntryCollection(

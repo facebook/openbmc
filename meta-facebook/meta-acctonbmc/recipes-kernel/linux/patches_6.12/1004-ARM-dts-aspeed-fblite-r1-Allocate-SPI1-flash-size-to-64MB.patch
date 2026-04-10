@@ -1,0 +1,25 @@
+From 53b79fabb0dd434b3f85f65f1f777a4664ac7e3a Mon Sep 17 00:00:00 2001
+From: Neal Chen <neal_chen@accton.com>
+Date: Fri, 16 Jan 2026 18:36:02 +0800
+Subject: [PATCH 2/2] ARM: dts: aspeed: fblite-r1: Allocate SPI1 flash size to 64MB
+
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+index 456052f91546..b502df1ac846 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+@@ -97,7 +97,7 @@ partitions {
+ 			#size-cells = <1>;
+ 
+ 			flash1@0 {
+-				reg = <0x0 0x2000000>;
++				reg = <0x0 0x4000000>;
+ 				label = "host-flash";
+ 			};
+ 		};
+-- 
+2.43.0
+

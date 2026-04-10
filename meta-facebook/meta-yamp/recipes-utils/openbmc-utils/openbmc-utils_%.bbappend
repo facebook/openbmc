@@ -46,7 +46,6 @@ LOCAL_URI += " \
     file://dpm_ver.sh \
     file://dump_pim_serials.sh \
     file://yamp_flash.layout \
-    file://showtech.sh \
     file://seutil \
     file://peutil \
     file://scdinfo \
@@ -70,7 +69,6 @@ OPENBMC_UTILS_FILES += " \
     dpm_ver.sh \
     dump_pim_serials.sh \
     pim_enable.sh \
-    showtech.sh \
     seutil \
     switchToCpu.sh \
     peutil \

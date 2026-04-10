@@ -183,6 +183,21 @@ select_bios_flash() {
     i2cset -f -y "$COMECPLD_I2C_BUS" "$COMECPLD_I2C_ADDR" 0xa 0x5
 }
 
+cpu_power_off() {
+    echo "Power off CPU.."
+
+    val=$(i2cget -f -y "$SCMCPLD_I2C_BUS" "$SCMCPLD_I2C_ADDR" 0x15)
+    val=$((val & ~(0x1 << 1)))
+    i2cset -f -y "$SCMCPLD_I2C_BUS" "$SCMCPLD_I2C_ADDR" 0x15 "$val"
+
+    # Hold power button pin low for 6 seconds to trigger CPU power-off.
+    sleep 6
+
+    val=$(i2cget -f -y "$SCMCPLD_I2C_BUS" "$SCMCPLD_I2C_ADDR" 0x15)
+    val=$((val | (0x1 << 1)))
+    i2cset -f -y "$SCMCPLD_I2C_BUS" "$SCMCPLD_I2C_ADDR" 0x15 "$val"
+}
+
 probe_flashes() {
     echo "Probe flashes.."
 
@@ -255,6 +270,7 @@ do_flash_io() {
         ;;
 
         "COME_BIOS")
+            cpu_power_off
             select_bios_flash
             mtd_label="${BIOS_MTD_LABEL}"
         ;;

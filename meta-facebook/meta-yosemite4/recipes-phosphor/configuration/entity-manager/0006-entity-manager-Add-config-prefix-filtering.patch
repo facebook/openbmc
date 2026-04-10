@@ -1,4 +1,4 @@
-From 47b50dbca7578fdfcf4b3ac499c99ca13be33bd2 Mon Sep 17 00:00:00 2001
+From c7d11898c3b902a36dd997499da9a3c60552ed70 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 11 Mar 2025 13:47:42 +0800
 Subject: [PATCH 6/7] entity-manager: Add config-prefix filtering
@@ -49,10 +49,10 @@ index 8cdd903..efbf48c 100644
 +    description: 'Comma-separated list of JSON filename prefixes to filter. Default loads all JSON files.',
 +)
 diff --git a/src/entity_manager/configuration.cpp b/src/entity_manager/configuration.cpp
-index a9c2d7e..697ee80 100644
+index 4840589..a0026cf 100644
 --- a/src/entity_manager/configuration.cpp
 +++ b/src/entity_manager/configuration.cpp
-@@ -28,10 +28,15 @@ Configuration::Configuration(
+@@ -63,10 +63,15 @@ void Configuration::loadSingleConfigFile(const std::filesystem::path& jsonPath,
  void Configuration::loadConfigurations()
  {
      const auto start = std::chrono::steady_clock::now();
@@ -180,7 +180,7 @@ index db476f3..6322b8e 100644
  
      return !foundPaths.empty();
 diff --git a/src/utils.hpp b/src/utils.hpp
-index 48d107e..3e04071 100644
+index 35825f4..001e752 100644
 --- a/src/utils.hpp
 +++ b/src/utils.hpp
 @@ -24,10 +24,16 @@ using LastIndex = size_t;
@@ -203,5 +203,5 @@ index 48d107e..3e04071 100644
  bool getI2cDevicePaths(const std::filesystem::path& dirPath,
                         std::flat_map<size_t, std::filesystem::path>& busPaths);
 -- 
-2.47.3
+2.52.0
 

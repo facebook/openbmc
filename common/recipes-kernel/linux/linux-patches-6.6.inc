@@ -179,6 +179,7 @@ SRC_URI:append = " \
     file://0341-apml-Add-support-for-SP7-platform.patch \
     file://0342-hwmon-pmbus-tda38640-Add-identification-for-vout_mode.patch \
     file://0343-hwmon_mp2925_add_vid_offset_for_vid_mode.patch \
+    file://0344-hwmon-pmbus-Add-Delta-Q54SN120A1-Q54SW120A7-chip.patch \
 "
 
 #

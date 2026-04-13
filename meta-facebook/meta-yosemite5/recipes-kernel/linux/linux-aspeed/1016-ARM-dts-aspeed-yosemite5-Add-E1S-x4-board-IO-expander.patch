@@ -1,0 +1,112 @@
+From 84baad3bfcc5d367ed0ace29592364d249fe018e Mon Sep 17 00:00:00 2001
+From: Kevin Tung <kevin.tung.openbmc@gmail.com>
+Date: Tue, 31 Mar 2026 20:06:36 +0800
+Subject: [PATCH] ARM: dts: aspeed: yosemite5: Add E1.S x4 board IO expander
+ nodes
+
+Add device tree nodes for IO expanders on the E1.S x4 expansion board.
+---
+ .../aspeed/aspeed-bmc-facebook-yosemite5.dts  | 80 ++++++++++++++++++-
+ 1 file changed, 79 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+index 6d14d5f97..9e6287b2b 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+@@ -744,6 +744,84 @@ gpio-expander@22 {
+ 			"PWRGD_P3V3_AUX","ALERT_TEMP";
+ 	};
+ 
++	/* E1S X4 EB IOEXP0 */
++	gpio-expander@23 {
++		compatible = "nxp,pca9535";
++		interrupt-parent = <&e1s_io_expander3>;
++		interrupts = <10 IRQ_TYPE_LEVEL_LOW>;
++		reg = <0x23>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++			"RST_SMB_E1S0_N","LED_ACTIVE_E1S0",
++			"E1S0_PRSNT_N","RST_PCIE_E1S0_PERST_N",
++			"E1S0_PWRDIS","ALERT_INA_0_N",
++			"","",
++			"RST_SMB_E1S1_N","LED_ACTIVE_E1S1",
++			"E1S1_PRSNT_N","RST_PCIE_E1S1_PERST_N",
++			"E1S1_PWRDIS","ALERT_INA_1_N",
++			"","";
++	};
++
++	/* E1S X4 EB IOEXP1 */
++	gpio-expander@24 {
++		compatible = "nxp,pca9535";
++		interrupt-parent = <&e1s_io_expander3>;
++		interrupts = <11 IRQ_TYPE_LEVEL_LOW>;
++		reg = <0x24>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++			"P12V_E1S0_EN","PWRGD_P12V_E1S0",
++			"P12V_E1S0_FLTB","PWRGD_P3V3_E1S0",
++			"FM_P3V3_E1S0_FAULT_N","P12V_E1S1_EN",
++			"PWRGD_P12V_E1S1","P12V_E1S1_FLTB",
++			"PWRGD_P3V3_E1S1","FM_P3V3_E1S1_FAULT_N",
++			"","",
++			"","",
++			"PWRGD_P3V3_AUX","ALERT_TEMP_N";
++	};
++
++	/* E1S X4 EB IOEXP2 */
++	gpio-expander@25 {
++		compatible = "nxp,pca9535";
++		interrupt-parent = <&e1s_io_expander3>;
++		interrupts = <12 IRQ_TYPE_LEVEL_LOW>;
++		reg = <0x25>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++			"RST_SMB_E1S2_N","LED_ACTIVE_E1S2",
++			"E1S2_PRSNT_N","RST_PCIE_E1S2_PERST_N",
++			"E1S2_PWRDIS","ALERT_INA_2_N",
++			"","",
++			"RST_SMB_E1S3_N","LED_ACTIVE_E1S3",
++			"E1S3_PRSNT_N","RST_PCIE_E1S3_PERST_N",
++			"E1S3_PWRDIS","ALERT_INA_3_N",
++			"","";
++	};
++
++	/* E1S X4 EB IOEXP3 */
++	e1s_io_expander3: gpio-expander@26 {
++		compatible = "nxp,pca9535";
++		interrupt-parent = <&sgpiom0>;
++		interrupts = <220 IRQ_TYPE_LEVEL_LOW>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
++		reg = <0x26>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++			"P12V_E1S2_EN","PWRGD_P12V_E1S2",
++			"P12V_E1S2_FLTB","PWRGD_P3V3_E1S2",
++			"FM_P3V3_E1S2_FAULT_N","P12V_E1S3_EN",
++			"PWRGD_P12V_E1S3","P12V_E1S3_FLTB",
++			"PWRGD_P3V3_E1S3","FM_P3V3_E1S3_FAULT_N",
++			"INT_IOEX0_N","INT_IOEX1_N",
++			"INT_IOEX2_N","",
++			"","";
++	};
++
+ 	adc@48 {
+ 		compatible = "ti,ads7830";
+ 		reg = <0x48>;
+@@ -1119,7 +1197,7 @@ &sgpiom0 {
+ 	"","",
+ 	"PRSNT_MCIO0A_E1S1_N","",
+ 	"","",
+-	"","",
++	"INT_IOEX3_N","",
+ 	"Fault","",
+ 	/*bit112-bit119*/
+ 	"FM_CPLD_RSVD_MCIO0A_SB1","",
+-- 
+2.47.3
+

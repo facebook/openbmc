@@ -175,6 +175,28 @@ extern "C" {
 #define SEL_LOG_SUFFIX_ASSERT      " Assertion"
 #define SEL_LOG_SUFFIX_DEASSERT    " Deassertion"
 
+#define BIT_MASK(x) (1U << (x))
+
+#define SCC_STBY_BUS    2
+#define SCC_STBY_ADDR   0x80
+
+#define EXPANDER_NETFN      0x06
+#define EXPANDER_CMD        0x52
+
+#define UV_MASK BIT_MASK(3)
+#define INPUT_FAULT_BIT BIT_MASK(13)
+#define MPS_OTHER_FAULT_MASK \
+  (BIT_MASK(2)  |  /* OT */ \
+   BIT_MASK(4)  |  /* IOUT_OC_FAULT */ \
+   BIT_MASK(13)  |  /* INPUT_FAULT */ \
+   BIT_MASK(14))   /* IOUT_POUT */
+
+#define TI_OTHER_FAULT_MASK \
+  (BIT_MASK(2)  |  /* STATUS_TEMP */ \
+   BIT_MASK(14) |  /* IOUT_STATUS */ \
+   BIT_MASK(13)  |  /* INPUT_FAULT */ \
+   BIT_MASK(15))   /* OUT_STATUS */
+
 typedef enum {
   STATUS_LED_OFF,
   STATUS_LED_YELLOW,
@@ -522,6 +544,52 @@ enum NIC_P12V_STATUS {
   NIC_P12V_IS_DROPPED,
 };
 
+// PMBus control
+enum {
+  WRITE_BYTE = 0x00,
+  BLOCK_READ_1BYTE,
+  BLOCK_READ_2BYTE,
+  BLOCK_READ_3BYTE,
+  BLOCK_READ_4BYTE,
+};
+
+// PMBus register
+enum {
+  PMBUS_CLEAR_FAULTS        = 0x03,
+  PMBUS_STATUS_BYTE         = 0x78,
+  PMBUS_STATUS_WORD         = 0x79,
+  PMBUS_STATUS_VOUT         = 0x7A,
+  PMBUS_STATUS_IOUT         = 0x7B,
+  PMBUS_STATUS_INPUT        = 0x7C,
+  PMBUS_STATUS_TEMPERATURE  = 0x7D,
+  PMBUS_STATUS_CML          = 0x7E,
+  PMBUS_STATUS_MFR_SPECIFIC = 0x80, //MPS: STATUS_FET
+  PMBUS_MFR_ID              = 0x99,
+  STATUS_MFR_SPECIFIC_2     = 0xF3,
+};
+
+//Efuse source
+typedef enum {
+  MFR_UNKNOWN = 0,
+  MFR_TI,
+  MFR_MPS,
+} mfr_id_t;
+
+typedef struct {
+  mfr_id_t mfr;
+  const char *name;
+  uint16_t uv_mask;
+  uint16_t other_fault_mask;
+} efuse_profile_t;
+
+typedef enum {
+  FAULT_NONE = 0,
+  FAULT_OTHER_ONLY,
+  FAULT_UV_ONLY,
+  FAULT_UV_AND_OTHER,
+  FAULT_INVALID,
+} fault_type_t;
+
 int pal_set_id_led(uint8_t slot, enum LED_HIGH_ACTIVE status);
 int pal_set_status_led(uint8_t fru, status_led_color color);
 int pal_set_e1s_led(uint8_t fru, e1s_led_id id, enum LED_HIGH_ACTIVE status);
@@ -573,7 +641,8 @@ int pal_get_sysfw_ver_from_bic(uint8_t slot, uint8_t *ver);
 int pal_nic_poweroff_action();
 int pal_nic_poweron_action();
 int pal_reset_nic();
-
+mfr_id_t pal_detect_efuse_mfr_id(uint8_t bus, uint8_t addr);
+const char *pal_get_mfr_name(mfr_id_t mfr);
 #ifdef __cplusplus
 } // extern "C"
 #endif

@@ -35,10 +35,15 @@
 #include <openbmc/pal_sensors.h>
 #include <openbmc/kv.h>
 #include <facebook/fbgc_gpio.h>
+#include <facebook/exp.h>
+#include <facebook/fbgc_common.h>
 
 #define MONITOR_FRUS_PRESENT_STATUS_INTERVAL    1  // seconds
 #define MONITOR_SERVER_POWER_STATUS_INTERVAL    1  // seconds
 #define MONITOR_SCC_STBY_POWER_INTERVAL         1  // seconds
+#define MONITOR_SCC_STARTUP_UV_FAULT_INTERVAL   3  // seconds
+#define SCC_STARTUP_DELAY_S                     5  // seconds
+#define IPMI_RETRY_DELAY_MS                     100  // ms
 
 static void
 e1s_iocm_remove_event(int e1s_iocm_slot_id, uint8_t *present_status) {
@@ -384,6 +389,30 @@ server_power_monitor() {
 
   pthread_exit(NULL);
 }
+
+static pthread_mutex_t scc_startup_flag_mutex = PTHREAD_MUTEX_INITIALIZER;
+static volatile bool scc_startup_clear_done = false;
+
+static int
+scc_flag_lock(const char *caller)
+{
+  int ret = pthread_mutex_lock(&scc_startup_flag_mutex);
+  if (ret != 0) {
+    syslog(LOG_ERR, "%s: pthread_mutex_lock failed: %s", caller, strerror(ret));
+  }
+  return ret;
+}
+
+static int
+scc_flag_unlock(const char *caller)
+{
+  int ret = pthread_mutex_unlock(&scc_startup_flag_mutex);
+  if (ret != 0) {
+    syslog(LOG_ERR, "%s: pthread_mutex_unlock failed: %s", caller, strerror(ret));
+  }
+  return ret;
+}
+
 static void*
 scc_stby_power_monitor() {
   gpio_value_t scc_stby_pg_value = GPIO_VALUE_INVALID;
@@ -408,10 +437,285 @@ scc_stby_power_monitor() {
         syslog(LOG_WARNING, "%s(): Failed to set GPIO_SCC_I2C_EN_R.\n", __func__);
       }
     }
+
+    if (scc_stby_pg_value == GPIO_VALUE_LOW) {
+      if (scc_flag_lock(__func__) == 0) {
+        scc_startup_clear_done = false;
+        scc_flag_unlock(__func__);
+      }
+    }
+
     sleep(MONITOR_SCC_STBY_POWER_INTERVAL);
   }
 
   pthread_exit(NULL);
+  return NULL;
+}
+
+const efuse_profile_t efuse_mfr_fault_configs[] = {
+  {
+    .mfr = MFR_MPS,
+    .name = "MPS",
+    .uv_mask = UV_MASK,
+    .other_fault_mask = MPS_OTHER_FAULT_MASK,
+  },
+  {
+    .mfr = MFR_TI,
+    .name = "TI",
+    .uv_mask = UV_MASK,
+    .other_fault_mask = TI_OTHER_FAULT_MASK,
+  },
+};
+
+const efuse_profile_t *
+get_efuse_mfr_fault_config(mfr_id_t mfr)
+{
+  size_t i;
+
+  for (i = 0; i < (sizeof(efuse_mfr_fault_configs) / sizeof(efuse_mfr_fault_configs[0])); i++) {
+    if (efuse_mfr_fault_configs[i].mfr == mfr) {
+      return &efuse_mfr_fault_configs[i];
+    }
+  }
+
+  return NULL;
+}
+
+static int
+read_status_word(uint8_t bus, uint8_t addr, uint16_t *status_word)
+{
+  uint8_t txbuf[4] = {0};
+  uint8_t rxbuf[4] = {0};
+  uint8_t rxlen = 0;
+  uint8_t bus_sel = bus * 2 + 1;
+  int ret;
+  int retry;
+
+  if (status_word == NULL) {
+    return -1;
+  }
+
+  txbuf[0] = bus_sel;
+  txbuf[1] = addr;
+  txbuf[2] = BLOCK_READ_2BYTE;
+  txbuf[3] = PMBUS_STATUS_WORD;
+
+  for (retry = 0; retry < MAX_RETRY; retry++) {
+
+    rxlen = 0;
+    ret = expander_ipmb_wrapper(EXPANDER_NETFN, EXPANDER_CMD,
+                                txbuf, sizeof(txbuf),
+                                rxbuf, &rxlen);
+
+    if (ret == 0 && rxlen >= 2) {
+      *status_word = (uint16_t)rxbuf[0] | ((uint16_t)rxbuf[1] << 8);
+      return 0;
+    }
+
+    syslog(LOG_WARNING, "%s: read STATUS_WORD retry %d failed (ret=%d len=%u), bus=[%u] addr=0x%02X", __func__, retry + 1, ret, rxlen, bus, addr);
+
+    msleep(IPMI_RETRY_DELAY_MS);
+  }
+
+  syslog(LOG_WARNING, "%s: read STATUS_WORD failed after %d retries, bus=exp[%u] addr=0x%02X", __func__, MAX_RETRY, bus, addr);
+
+  return -1;
+}
+
+static int
+clear_faults(uint8_t bus, uint8_t addr)
+{
+  uint8_t txbuf[4] = {0};
+  uint8_t rxbuf[4] = {0};
+  uint8_t rxlen = 0;
+  uint8_t bus_sel = bus * 2 + 1;
+  int ret;
+  int retry;
+
+  txbuf[0] = bus_sel;
+  txbuf[1] = addr;
+  txbuf[2] = WRITE_BYTE;
+  txbuf[3] = PMBUS_CLEAR_FAULTS;
+
+  for (retry = 0; retry < MAX_RETRY; retry++) {
+
+    rxlen = 0;
+    ret = expander_ipmb_wrapper(EXPANDER_NETFN, EXPANDER_CMD,
+                                txbuf, sizeof(txbuf),
+                                rxbuf, &rxlen);
+
+    if (ret == 0) {
+      return 0;
+    }
+
+    syslog(LOG_WARNING, "%s: CLEAR_FAULTS retry %d failed (ret=%d), bus=exp[%u] addr=0x%02X", __func__, retry + 1, ret, bus, addr);
+
+    msleep(IPMI_RETRY_DELAY_MS);
+  }
+
+  syslog(LOG_WARNING, "%s: CLEAR_FAULTS failed after %d retries, bus=exp[%u] addr=0x%02X", __func__, MAX_RETRY, bus, addr);
+
+  return -1;
+}
+
+static inline fault_type_t
+classify_fault(uint16_t status, const efuse_profile_t *fault_config)
+{
+  bool has_uv, has_other, has_input;
+
+  if (fault_config == NULL) {
+    return FAULT_INVALID;
+  }
+
+  has_uv = !!(status & fault_config->uv_mask);
+  has_other = !!(status & fault_config->other_fault_mask);
+  has_input = !!(status & fault_config->other_fault_mask & INPUT_FAULT_BIT);
+
+  if (!has_uv && !has_other)
+    return FAULT_NONE;
+
+  if (has_uv && !has_other)
+    return FAULT_UV_ONLY;
+
+  if (!has_uv && has_other)
+    return FAULT_OTHER_ONLY;
+
+  if (has_uv && has_other){
+    if(!has_input) {
+      return FAULT_UV_AND_OTHER;
+    }
+    return FAULT_UV_ONLY;
+  }
+
+  return FAULT_INVALID;
+}
+
+static void
+scc_stby_uv_fault_check(void)
+{
+  mfr_id_t mfr;
+  const efuse_profile_t *fault_config;
+  uint16_t status_word = 0;
+  uint16_t status_after = 0;
+  const char *comp = "P12V_STBY_SCC";
+  fault_type_t fault_type;
+  int ret;
+
+  sleep(SCC_STARTUP_DELAY_S);
+
+  mfr = pal_detect_efuse_mfr_id(SCC_STBY_BUS, SCC_STBY_ADDR);
+  fault_config = get_efuse_mfr_fault_config(mfr);
+  if (fault_config == NULL) {
+    syslog(LOG_WARNING, "%s: %s unknown MFR_ID (%s), bus=%u addr=0x%02X",
+           __func__, comp, pal_get_mfr_name(mfr), SCC_STBY_BUS, SCC_STBY_ADDR);
+    return;
+  }
+
+  ret = read_status_word(SCC_STBY_BUS, SCC_STBY_ADDR, &status_word);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: %s read STATUS_WORD(79h) failed", __func__, comp);
+    return;
+  }
+
+  fault_type = classify_fault(status_word, fault_config);
+
+  switch (fault_type) {
+    case FAULT_NONE:
+      syslog(LOG_INFO, "%s: %s: no UV fault detected, STATUS_WORD(79h): 0x%04X, skip clear fault on startup", __func__, comp, status_word);
+      return;
+    case FAULT_OTHER_ONLY:
+    case FAULT_UV_ONLY:
+    case FAULT_UV_AND_OTHER:
+      //Go ahead and clear the fault.
+      break;
+    default:
+      syslog(LOG_WARNING, "%s: %s invalid fault classification, STATUS_WORD(79h): 0x%04X", __func__, comp, status_word);
+      return;
+  }
+
+  /* Step 4: clear UV fault */
+  ret = clear_faults(SCC_STBY_BUS, SCC_STBY_ADDR);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: %s CLEAR_FAULTS failed, STATUS_WORD(79h): 0x%04X", __func__, comp, status_word);
+    return;
+  }
+
+  ret = read_status_word(SCC_STBY_BUS, SCC_STBY_ADDR, &status_after);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: %s CLEAR_FAULTS done but readback failed, STATUS_WORD(79h): 0x%04X", __func__, comp, status_word);
+    return;
+  }
+
+  switch (fault_type) {
+    case FAULT_UV_AND_OTHER:
+      syslog(LOG_CRIT, "%s: %s: UV fault and other fault detected, cleared STATUS_WORD(79h): 0x%04X -> 0x%04X",
+             __func__, comp, status_word, status_after);
+      break;
+    case FAULT_OTHER_ONLY:
+      syslog(LOG_CRIT, "%s: %s: Other fault detected, cleared STATUS_WORD(79h): 0x%04X -> 0x%04X",
+             __func__, comp, status_word, status_after);
+      break;
+    case FAULT_UV_ONLY:
+    default:
+      syslog(LOG_INFO, "%s: %s: UV fault detected, cleared STATUS_WORD(79h): 0x%04X -> 0x%04X",
+             __func__, comp, status_word, status_after);
+      break;
+  }
+}
+
+static void *
+scc_stby_uv_fault_monitor(void *arg)
+{
+  gpio_value_t scc_stby_pg_value = GPIO_VALUE_INVALID;
+  bool local_clear_done = false;
+  const char *str_scc_stby_pgood = fbgc_get_gpio_name(GPIO_SCC_STBY_PGOOD);
+
+  if (str_scc_stby_pgood == NULL) {
+    syslog(LOG_ERR, "%s: failed to start, GPIO name mapping error", __func__);
+    pthread_exit(NULL);
+  }
+
+  /* initial state */
+  kv_set("flag_gpiod_scc_fault", STR_VALUE_1, 0, 0);
+
+  while (1) {
+    scc_stby_pg_value = gpio_get_value_by_shadow(str_scc_stby_pgood);
+    if (scc_stby_pg_value == GPIO_VALUE_INVALID) {
+      syslog(LOG_WARNING, "%s: failed to read %s", __func__, str_scc_stby_pgood);
+      sleep(MONITOR_SCC_STARTUP_UV_FAULT_INTERVAL);
+      continue;
+    }
+
+    /* LOW -> HIGH : real SCC startup */
+   if (scc_stby_pg_value == GPIO_VALUE_HIGH) {
+      if (scc_flag_lock(__func__) == 0) {
+        local_clear_done = scc_startup_clear_done;
+        scc_flag_unlock(__func__);
+      } else {
+        sleep(MONITOR_SCC_STARTUP_UV_FAULT_INTERVAL);
+        continue;
+      }
+
+      if (!local_clear_done) {
+        scc_stby_uv_fault_check();
+
+        if (scc_flag_lock(__func__) == 0) {
+          scc_startup_clear_done = true;
+          scc_flag_unlock(__func__);
+        }
+      }
+    }
+
+    if (scc_stby_pg_value == GPIO_VALUE_LOW) {
+      if (scc_flag_lock(__func__) == 0) {
+        scc_startup_clear_done = false;
+        scc_flag_unlock(__func__);
+      }
+    }
+    sleep(MONITOR_SCC_STARTUP_UV_FAULT_INTERVAL);
+  }
+
+  return NULL;
 }
 
 static void
@@ -424,8 +728,11 @@ run_gpiod(int argc, char **argv) {
   pthread_t tid_fru_missing_monitor;
   pthread_t tid_server_power_monitor;
   pthread_t tid_scc_stby_power_monitor;
-  int ret_fru_missing = 0, ret_server_power = 0, ret_scc_stby_power = 0;
+  pthread_t tid_scc_stby_uv_fault_monitor;
+  uint8_t board_rev_id = 0xff;
   
+  int ret_fru_missing = 0, ret_server_power = 0, ret_scc_stby_power = 0,  ret_scc_stby_uv_fault = 0;
+
   if (argv == NULL) {
     syslog(LOG_ERR, "fail to execute gpiod because NULL parameter: **argv\n");
     exit(EXIT_FAILURE);
@@ -449,6 +756,22 @@ run_gpiod(int argc, char **argv) {
     ret_scc_stby_power = -1;
   }
 
+  if (fbgc_common_get_system_stage(&board_rev_id) < 0) {
+    syslog(LOG_WARNING, "%s: get stage failed", __func__);
+    return;
+  } else {
+    if (board_rev_id == UIC_STAGE_MP) {
+      syslog(LOG_INFO, "%s: Hack stage, skip", __func__);
+      ret_scc_stby_uv_fault = -1;
+    } else {
+      // Monitor scc standby start up uv fault
+      if (pthread_create(&tid_scc_stby_uv_fault_monitor, NULL, scc_stby_uv_fault_monitor, NULL) < 0) {
+        syslog(LOG_ERR, "fail to creat thread for scc standby start up uv fault monitor\n");
+        ret_scc_stby_uv_fault = -1;
+      }
+    }
+  }
+
   if (ret_fru_missing == 0) {
     pthread_join(tid_fru_missing_monitor, NULL);
   }
@@ -459,6 +782,10 @@ run_gpiod(int argc, char **argv) {
 
   if (ret_scc_stby_power == 0) {
     pthread_join(tid_scc_stby_power_monitor, NULL);
+  }
+
+  if (ret_scc_stby_uv_fault == 0) {
+    pthread_join(tid_scc_stby_uv_fault_monitor, NULL);
   }
 }
  

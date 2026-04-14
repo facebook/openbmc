@@ -4837,3 +4837,73 @@ pal_convert_to_dimm_str(uint8_t cpu, uint8_t channel, uint8_t slot, char *str) {
   return 0;
 }
 #endif
+
+
+const char *
+pal_get_mfr_name(mfr_id_t mfr)
+{
+  switch (mfr) {
+    case MFR_MPS:
+      return "MPS";
+    case MFR_TI:
+      return "TI";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+int
+pal_exp_get_mfr_id(uint8_t bus, uint8_t addr, uint8_t *buf, uint8_t *len)
+{
+  uint8_t txbuf[4] = {0};
+  uint8_t bus_sel = bus * 2 + 1;
+  int ret;
+  int retry = 0;
+
+  if (buf == NULL || len == NULL) {
+    return -1;
+  }
+
+  txbuf[0] = bus_sel;
+  txbuf[1] = addr;
+  txbuf[2] = BLOCK_READ_4BYTE;
+  txbuf[3] = PMBUS_MFR_ID;
+
+  while (retry < MAX_RETRY) {
+    ret = expander_ipmb_wrapper(EXPANDER_NETFN, EXPANDER_CMD, txbuf, sizeof(txbuf), buf, len);
+    if (ret == 0) {
+      return 0;
+    }
+    retry++;
+    msleep(100);
+  }
+
+  syslog(LOG_WARNING, "%s: read MFR_ID failed after %d retries, len=%u data=%02X %02X %02X %02X",
+         __func__, MAX_RETRY, *len, buf[0], buf[1], buf[2], buf[3]);
+  return -1;
+}
+
+mfr_id_t
+pal_detect_efuse_mfr_id(uint8_t bus, uint8_t addr)
+{
+  uint8_t buf[4] = {0};
+  uint8_t len = 0;
+  int ret;
+
+  ret = pal_exp_get_mfr_id(bus, addr, buf, &len);
+  if (ret < 0) {
+    return MFR_UNKNOWN;
+  }
+
+if (buf[0] == 3 && memcmp(&buf[1], "SPM", 3) == 0){
+    return MFR_MPS;
+  }
+
+if (buf[0] == 2 && memcmp(&buf[1], "IT", 2) == 0) {
+    return MFR_TI;
+  }
+  syslog(LOG_WARNING, "%s: Unknown MFR_ID len=%u data=%02X %02X %02X %02X",
+         __func__, len, buf[0], buf[1], buf[2], buf[3]);
+
+  return MFR_UNKNOWN;
+}

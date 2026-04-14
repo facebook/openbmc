@@ -142,6 +142,10 @@ TEST(SensorTests, SuccessWithMissingMinMax)
     auto sensor = maybeSensor.value();
     EXPECT_EQ(31.125, sensor.getReading());
     EXPECT_EQ("Cel", sensor.getSensorUnitText());
-    EXPECT_FALSE(sensor.getMinValue().has_value());
-    EXPECT_FALSE(sensor.getMaxValue().has_value());
+
+    EXPECT_TRUE(sensor.getMinValue().has_value());
+    EXPECT_EQ(-128.0, sensor.getMinValue().value());
+
+    EXPECT_TRUE(sensor.getMaxValue().has_value());
+    EXPECT_EQ(127.0, sensor.getMaxValue().value());
 }

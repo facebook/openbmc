@@ -17,6 +17,16 @@ std::optional<double> toMaybeDouble(redfish_binding::Property<double>& property)
     return std::nullopt;
 }
 
+double toDoubleWithDefault(redfish_binding::Property<double>& property,
+                           double defaultValue)
+{
+    if (property.hasValue())
+    {
+        return property.value();
+    }
+    return defaultValue;
+}
+
 } // namespace
 
 std::optional<Sensor> Sensor::parseSensor(const std::string& sensorJson)
@@ -37,8 +47,27 @@ std::optional<Sensor> Sensor::parseSensor(const std::string& sensorJson)
     Sensor sensor;
     sensor.reading = maybeReading.value();
     sensor.sensorUnit = parsed.getReadingUnits().value();
-    sensor.minValue = toMaybeDouble(parsed.getReadingRangeMin());
-    sensor.maxValue = toMaybeDouble(parsed.getReadingRangeMax());
+
+    static const std::unordered_map<std::string, std::pair<double, double>>
+        unitDefaults = {{"V", {0.0, 255.0}},      {"A", {0.0, 255.0}},
+                        {"W", {0.0, 3000.0}},     {"J", {0.0, 100000.0}},
+                        {"Cel", {-128.0, 127.0}}, {"Pa", {30000.0, 120000.0}},
+                        {"%", {0.0, 100.0}}};
+
+    auto it = unitDefaults.find(sensor.sensorUnit);
+    if (it != unitDefaults.end())
+    {
+        sensor.minValue =
+            toDoubleWithDefault(parsed.getReadingRangeMin(), it->second.first);
+        sensor.maxValue =
+            toDoubleWithDefault(parsed.getReadingRangeMax(), it->second.second);
+    }
+    else
+    {
+        sensor.minValue = toMaybeDouble(parsed.getReadingRangeMin());
+        sensor.maxValue = toMaybeDouble(parsed.getReadingRangeMax());
+    }
+
     return sensor;
 }
 

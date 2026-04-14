@@ -18,6 +18,7 @@ SRC_URI:append = " \
     file://0015-Implement-valve-monitor-service.patch \
     file://0016-psusensor-Add-support-for-per-sensor-PollRate-config.patch \
     file://0017-SmbpbiSensor-Fix-invalid-data-check-size-for-tempera.patch \
+    file://0018-mctpreactor-Support-configuration-for-USB-MCTP-devic.patch \
 "
 
 SRC_URI:append:ventura2 = " \

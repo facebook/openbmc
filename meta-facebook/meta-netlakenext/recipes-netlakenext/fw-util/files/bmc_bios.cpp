@@ -28,6 +28,8 @@ class BmcBiosComponent : public BiosComponent {
 };
 
 int BmcBiosComponent::setMeRecovery(uint8_t retry) {
+  spiMuxSelCPLD(SPI_MUX_SEL_BMC);
+
   return 0;
 }
 

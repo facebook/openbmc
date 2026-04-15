@@ -72,17 +72,35 @@ static int mp29608a_set_page(uint8_t bus, uint8_t addr, uint8_t page)
 static int mp29608a_get_product_id(uint8_t bus, uint8_t addr, uint8_t *product_id)
 {
 	uint8_t tbuf[1] = { VR_CMD_IC_DEVICE_ID };
-	uint8_t rbuf[MAX_PRODUCT_ID_LEN] = { 0x8a, 0x60, 0x00, 0x00 };
+	uint8_t rbuf[MAX_PRODUCT_ID_LEN + 1] = { 0 };
 	if (mp29608a_set_page(bus, addr, VR_PAGE_0)) {
 		return VR_STATUS_FAILURE;
 	}
-	if (vr_xfer(bus, addr, tbuf, 1, rbuf, MAX_PRODUCT_ID_LEN)) {
+	if (vr_xfer(bus, addr, tbuf, 1, rbuf, MAX_PRODUCT_ID_LEN + 1)) {
 		syslog(LOG_WARNING, "%s: read 0x%02X failed", __func__, tbuf[0]);
 		return VR_STATUS_FAILURE;
 	}
-	printf("%s: %02x%02x%02x%02x\n", __func__, rbuf[3], rbuf[2], rbuf[1], rbuf[0]);
-	memcpy(product_id, rbuf, MAX_PRODUCT_ID_LEN);
+	memcpy(product_id, rbuf + 1, MAX_PRODUCT_ID_LEN);
 	return VR_STATUS_SUCCESS;
+}
+
+static int mp29608a_check_product_id(uint8_t bus, uint8_t addr, uint32_t product_id_exp)
+{
+	uint8_t product_id[4];
+	if (mp29608a_get_product_id(bus, addr, product_id)) {
+		return VR_STATUS_FAILURE;
+	}
+	if (product_id[0] == (product_id_exp & 0xFF) &&
+	    product_id[1] == ((product_id_exp >> 8) & 0xFF) &&
+	    product_id[2] == ((product_id_exp >> 16) & 0xFF) &&
+	    product_id[3] == ((product_id_exp >> 24) & 0xFF)) {
+		return VR_STATUS_SUCCESS;
+	}
+	else {
+		printf("%s: check product id failed, reg: %02x%02x%02x%02x, expect: %08x\n", __func__, 
+			product_id[3], product_id[2], product_id[1], product_id[0], product_id_exp);
+		return VR_STATUS_FAILURE;
+	}
 }
 
 static int mp29608a_unlock_write_protect_mode(uint8_t bus, uint8_t addr)
@@ -102,7 +120,7 @@ static int mp29608a_unlock_write_protect_mode(uint8_t bus, uint8_t addr)
 static int mp29608a_check_pmbus_revision(uint8_t bus, uint8_t addr)
 {
 	uint8_t tbuf[1] = { VP_CMD_PMBUS_REVISION };
-	uint8_t rbuf[MAX_PMBUS_REVISION_LEN] = { 0x33 };
+	uint8_t rbuf[MAX_PMBUS_REVISION_LEN] = { 0 };
 	if (mp29608a_set_page(bus, addr, VR_PAGE_0)) {
 		return VR_STATUS_FAILURE;
 	}
@@ -115,27 +133,27 @@ static int mp29608a_check_pmbus_revision(uint8_t bus, uint8_t addr)
 			return VR_STATUS_SUCCESS;
 		}
 	}
-	printf("%s: check pmbus revision failed, reg: %02x, expect: %02x", __func__, rbuf[0], VR_VALUE_PMBUS_REVISION);
+	printf("%s: check pmbus revision failed, reg: %02x, expect: %02x\n", __func__, rbuf[0], VR_VALUE_PMBUS_REVISION);
 	return VR_STATUS_FAILURE;
 }
 
 static int mp29608a_check_mfr_id(uint8_t bus, uint8_t addr)
 {
 	uint8_t tbuf[1] = { VR_CMD_MFR_ID };
-	uint8_t rbuf[MAX_MFR_ID_LEN] = { 0 };
+	uint8_t rbuf[MAX_MFR_ID_LEN + 1] = { 0 };
 	if (mp29608a_set_page(bus, addr, VR_PAGE_0)) {
 		return VR_STATUS_FAILURE;
 	}
-	if (vr_xfer(bus, addr, tbuf, 1, rbuf, MAX_MFR_ID_LEN)) {
+	if (vr_xfer(bus, addr, tbuf, 1, rbuf, MAX_MFR_ID_LEN + 1)) {
 		syslog(LOG_WARNING, "%s: read 0x%02X failed", __func__, tbuf[0]);
 		return VR_STATUS_FAILURE;
 	}
-	if (rbuf[0] == (VR_VALUE_MFR_ID & 0xFF) &&
-	    rbuf[1] == ((VR_VALUE_MFR_ID >> 8) & 0xFF) &&
-	    rbuf[2] == ((VR_VALUE_MFR_ID >> 16) & 0xFF)) {
+	if (rbuf[1] == (VR_VALUE_MFR_ID & 0xFF) &&
+	    rbuf[2] == ((VR_VALUE_MFR_ID >> 8) & 0xFF) &&
+	    rbuf[3] == ((VR_VALUE_MFR_ID >> 16) & 0xFF)) {
 		return VR_STATUS_SUCCESS;
 	} else {
-		printf("%s: check mfr id failed, reg: %02x%02x%02x, expect: %06x\n", __func__, rbuf[2], rbuf[1], rbuf[0], VR_VALUE_MFR_ID);
+		printf("%s: check mfr id failed, reg: %02x%02x%02x, expect: %06x\n", __func__, rbuf[3], rbuf[2], rbuf[1], VR_VALUE_MFR_ID);
 		return VR_STATUS_FAILURE;
 	}
 }
@@ -167,21 +185,37 @@ static int mp29608a_check_crc(uint8_t bus, uint8_t addr, uint8_t *crc)
 		syslog(LOG_WARNING, "%s: get CRC failed", __func__);
 		return VR_STATUS_FAILURE;
 	}
-	if (((crc_get & 0xFF) != crc[0]) || (((crc_get >> 8) & 0xFF) != crc[1])) {
-		syslog(LOG_WARNING, "%s: check CRC failed, reg: %04x, ATE: %02x%02x", __func__,
-		       crc_get, crc[1], crc[0]);
+	if (((crc_get & 0xFF) == crc[0]) && (((crc_get >> 8) & 0xFF) == crc[1])) {
+		return VR_STATUS_SUCCESS;
+	}
+	else {
+		printf("%s: check crc failed, reg: %04x, expect: %02x%02x\n", __func__, crc_get, crc[1], crc[0]);
 		return VR_STATUS_FAILURE;
 	}
-	return VR_STATUS_SUCCESS;
 }
 
-int program_mp29608a(uint8_t bus, uint8_t addr, struct mp29608a_config *config)
+int program_mp29608a(uint8_t bus, uint8_t addr, struct mp29608a_config *config, bool force)
 {
 	uint8_t tbuf[16], rbuf[16];
 	uint8_t txlen = 0;
 	uint8_t page_current = 0;
 	int i = 0;
 	struct mp29608a_data *data;
+
+	uint16_t crc_get;
+	if (mp29608a_get_crc(bus, addr, &crc_get)) {
+		syslog(LOG_WARNING, "%s: get CRC failed", __func__);
+		return VR_STATUS_FAILURE;
+	}
+
+	if (!force && 
+		(((crc_get & 0xFF) == config->crc_code[0]) && (((crc_get >> 8) & 0xFF) == config->crc_code[1]))) {
+		printf("the checksum is the same as the current firmware %02x%02x!\n", 
+			config->crc_code[1], config->crc_code[0]);
+		printf("Please use \"--force\" option to try again.\n");
+		syslog(LOG_WARNING, "%s: redundant programming", __func__);
+		return VR_STATUS_FAILURE;
+	}
 
 	if (mp29608a_unlock_write_protect_mode(bus, addr)) {
 		syslog(LOG_WARNING, "%s: unlock write protect failed", __func__);
@@ -191,6 +225,7 @@ int program_mp29608a(uint8_t bus, uint8_t addr, struct mp29608a_config *config)
 	if (mp29608a_set_page(bus, addr, VR_PAGE_0)) {
 		return VR_STATUS_FAILURE;
 	}
+	printf("write data start\n");
 
 	for (i = 0; i < config->wr_cnt; i++) {
 		data = &config->pdata[i];
@@ -296,7 +331,7 @@ static int cache_mp29608a_crc(uint8_t bus, uint8_t addr, char *key, char *ver_st
 		return VR_STATUS_FAILURE;
 	}
 
-	snprintf(ver_str, MAX_VALUE_LEN, "MPS %08X", crc);
+	snprintf(ver_str, MAX_VALUE_LEN, "MPS %04X", crc);
 	kv_set(key, ver_str, 0, 0);
 
 	return VR_STATUS_SUCCESS;
@@ -304,7 +339,6 @@ static int cache_mp29608a_crc(uint8_t bus, uint8_t addr, char *key, char *ver_st
 
 int mp29608a_fw_update(struct vr_info *info, void *args)
 {
-	uint8_t product_id[4];
 	struct mp29608a_config *config = (struct mp29608a_config *)args;
 
 	if (info == NULL || config == NULL) {
@@ -320,22 +354,17 @@ int mp29608a_fw_update(struct vr_info *info, void *args)
 	// pmbus addr match?
 	// page0@99h with 3 bytes read == 0x4d5053?,	VR_CMD_MFR_ID
 	if (mp29608a_check_mfr_id(info->bus, info->addr)) {
+		syslog(LOG_WARNING, "%s: check mfr id failed", __func__);
 		return VR_STATUS_FAILURE;
 	}
 	// page0@adh with 4 bytes read,					VR_CMD_IC_DEVICE_ID
-	if (mp29608a_get_product_id(info->bus, info->addr, product_id)) {
-		return VR_STATUS_FAILURE;
-	}
-	if (product_id[0] != (config->product_id_exp & 0xFF) ||
-	    product_id[1] != ((config->product_id_exp >> 8) & 0xFF) ||
-	    product_id[2] != ((config->product_id_exp >> 16) & 0xFF) ||
-	    product_id[3] != ((config->product_id_exp >> 16) & 0xFF)) {
-		syslog(LOG_WARNING, "%s: compare product_id failed", __func__);
+	if (mp29608a_check_product_id(info->bus, info->addr, config->product_id_exp)) {
+		syslog(LOG_WARNING, "%s: check product id failed", __func__);
 		return VR_STATUS_FAILURE;
 	}
 	// page0@9eh with 2 bytes read,					VR_CMD_MFR_CONFIG_ID
 
-	if (program_mp29608a(info->bus, info->addr, config)) {
+	if (program_mp29608a(info->bus, info->addr, config, info->force)) {
 		syslog(LOG_WARNING, "%s: program failed", __func__);
 		return VR_STATUS_FAILURE;
 	}
@@ -452,8 +481,10 @@ void *mp29608a_parse_file(struct vr_info *info, const char *path)
 							config->crc_code[len - 1 - i] =
 								(uint8_t)strtol(buf, NULL, 16);
 						}
+#if DEBUG == 1
 						printf("CRC: %02x %02x\n", config->crc_code[1],
 						       config->crc_code[0]);
+#endif
 						break;
 					default:
 						break;
@@ -469,7 +500,9 @@ void *mp29608a_parse_file(struct vr_info *info, const char *path)
 			} else {
 				config->product_id_exp = UNKNOWN_DEVICE_ID;
 			}
+#if DEBUG == 1
 			printf("Product: %08x\n", config->product_id_exp);
+#endif
 		} else if (!strncmp(line, "I2C Address:", 12)) {
 			// I2C Address:	63	99
 			str = strtok(line, "\t");
@@ -477,7 +510,9 @@ void *mp29608a_parse_file(struct vr_info *info, const char *path)
 			config->bus = strtol(str, NULL, 16);
 			str = strtok(NULL, "\t");
 			config->addr = strtol(str, NULL, 16);
+#if DEBUG == 1
 			printf("Bus: %02x, Addr: %02x\n", config->bus, config->addr);
+#endif
 		}
 	}
 

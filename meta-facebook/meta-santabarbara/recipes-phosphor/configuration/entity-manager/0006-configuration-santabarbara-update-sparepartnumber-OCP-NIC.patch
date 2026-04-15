@@ -1,0 +1,28 @@
+From 11aede28f1f15b6e75b633db22e275b8a10cff51 Mon Sep 17 00:00:00 2001
+From: Prabha Veerubhotla <vvlprabha@gmail.com>
+Date: Mon, 13 Apr 2026 19:36:23 -0700
+Subject: [PATCH] meta-facebook:santabarbara: update spare part number for OCP
+ NIC
+
+Change-Id: I01a41672e4c9129795fbad8d2ec0c958adf582a7
+Signed-off-by: Prabha Veerubhotla <vvlprabha@gmail.com>
+---
+ configurations/ocp/cx7_ocp.json | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/configurations/ocp/cx7_ocp.json b/configurations/ocp/cx7_ocp.json
+index 3f11519..55eeefb 100644
+--- a/configurations/ocp/cx7_ocp.json
++++ b/configurations/ocp/cx7_ocp.json
+@@ -41,7 +41,7 @@
+         "Model": "$BOARD_PRODUCT_NAME",
+         "PartNumber": "$BOARD_PART_NUMBER",
+         "SerialNumber": "$BOARD_SERIAL_NUMBER",
+-        "SparePartNumber": "$BOARD_INFO_AM1"
++        "SparePartNumber": "19-100843"
+     },
+     "xyz.openbmc_project.Inventory.Decorator.AssetTag": {
+         "AssetTag": "$PRODUCT_ASSET_TAG"
+-- 
+2.52.0
+

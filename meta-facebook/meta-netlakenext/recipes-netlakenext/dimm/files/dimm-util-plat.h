@@ -22,13 +22,14 @@
 #define __DIMM_UTIL_PLAT_H__
 
 #define NUM_CPU_NETLAKE2      1
-#define MAX_DIMM_NUM_NETLAKE2  4
+#define MAX_DIMM_NUM_NETLAKE2  2
 
 #define NUM_FRU_NETLAKE2  1
 #define FRU_ID_MIN_NETLAKE2 1
 #define FRU_ID_MAX_NETLAKE2 1
 #define FRU_ID_ALL_NETLAKE2 1
 
+// 8-bits address
 #define DIMMA_SPD_ADDR 0xa0
 #define DIMMB_SPD_ADDR 0xa2
 

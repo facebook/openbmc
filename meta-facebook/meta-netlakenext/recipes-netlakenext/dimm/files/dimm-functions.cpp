@@ -42,7 +42,7 @@ static uint8_t netlake2_pmic_addr[MAX_DIMM_PER_CPU/2] = {
 
 // dimm location constant strings, matching silk screen
 static const char *netlake2_dimm_label[NUM_CPU_NETLAKE2][MAX_DIMM_PER_CPU] = {
-  { "A0", "A1", },
+  { "A", "B", },
 };
 
 static uint8_t netlake2_dimm_cache_id[NUM_CPU_NETLAKE2][MAX_DIMM_PER_CPU] = {

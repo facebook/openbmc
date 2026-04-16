@@ -707,6 +707,20 @@ fbgc_common_get_img_sur_info(const char *img_path, uint8_t comp,
 
   fclose(fp);
 
+  //MD5-2 check
+  if (check_image_md5_at_offset(img_path,
+                                sur_offset,
+                                SUR_SIZE,
+                                sur_offset+SUR_SIZE, NOT_MASKED) < 0) {
+    printf("Image does not contain a valid signed SUR\n");
+    return -1;
+  }
+
+  if (check_image_signature(img_path, sur_offset + MD5_SIZE) < 0) {
+    printf("The image is not for %s\n", platform);
+    return -1;
+  }
+
   if (comp == FW_BIOS){
       if (check_image_md5_at_offset(img_path,
                                     0,
@@ -722,25 +736,11 @@ fbgc_common_get_img_sur_info(const char *img_path, uint8_t comp,
       }
   }
 
-  //MD5-2 check
-  if (check_image_md5_at_offset(img_path,
-                                sur_offset,
-                                SUR_SIZE,
-                                sur_offset+SUR_SIZE, NOT_MASKED) < 0) {
-    printf("Image file has corrupted (MD5-2 check failed)\n");
-    return -1;
-  }
-
-  if (check_image_signature(img_path, sur_offset + MD5_SIZE) < 0) {
-    printf("The image is not for %s\n", platform);
-    return -1;
-  }
-
   uint32_t err = signed_info.err_proof[0] | (signed_info.err_proof[1] << 8) | (signed_info.err_proof[2] << 16);
 
   img_error_proof_info->board_id   = err & 0x1F;            //[4:0]
   img_error_proof_info->fru_stage  = (err >> 5) & 0x07;     //[7:5]
-  img_error_proof_info->comp_id  = (err >> 8) & 0x07;  //[10:8]
+  img_error_proof_info->comp_id  = (err >> 8) & 0x07;       //[10:8]
 
   return 0;
 }

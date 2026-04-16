@@ -37,5 +37,5 @@ if ! out=$(/usr/local/bin/spi_util.sh read spi2 OOB_SWITCH_EEPROM "$EEPROM_FILE"
     exit 1
 fi
 
-sha256sum < "$EEPROM_FILE" | head -c 64
+sha256sum < "$EEPROM_FILE" | awk '{print $1}'
 exit_code=$?

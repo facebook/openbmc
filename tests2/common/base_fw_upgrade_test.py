@@ -529,7 +529,7 @@ class BaseFwUpgradeTest(object):
                     return False
             return True
         except Exception as e:
-            Logger.info("Exception {} occured when running command".format(e))
+            Logger.info("Exception {} occurred when running command".format(e))
             return False
 
     def checking_components_version(self, components=None, logging=False):

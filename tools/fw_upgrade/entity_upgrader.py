@@ -248,7 +248,7 @@ class FwEntityUpgrader(object):
             subprocess.check_call(cmd_to_execute, shell=True, stderr=subprocess.STDOUT)
             return 0
         except subprocess.CalledProcessError as e:
-            logging.info("Exception {} occured when running command".format(e))
+            logging.info("Exception {} occurred when running command".format(e))
             return e.returncode
 
     # Step 4
@@ -275,7 +275,7 @@ class FwEntityUpgrader(object):
         instance_successful = return_code == 0
         if not instance_successful:
             logging.info(
-                "=== Error occured with return code : {}".format(str(return_code))
+                "=== Error occurred with return code : {}".format(str(return_code))
             )
         return return_code, instance_successful
 
@@ -381,7 +381,7 @@ class FwEntityUpgrader(object):
                         # Otherwise, check if continue_on_error field is set in JSON
                         if self._is_continue_on_error_set_in_json():
                             logging.info(
-                                "=== Error occured with return code : {}".format(
+                                "=== Error occurred with return code : {}".format(
                                     str(return_code)
                                 )
                             )
@@ -432,7 +432,7 @@ class FwEntityUpgrader(object):
             subprocess.check_output(cmd_to_execute, shell=True)  # noqa p204
             return True
         except subprocess.CalledProcessError as e:
-            logging.info("Exception {} occured when running command".format(e))
+            logging.info("Exception {} occurred when running command".format(e))
             return False
 
     def _is_continue_on_error_set_in_json(self) -> bool:

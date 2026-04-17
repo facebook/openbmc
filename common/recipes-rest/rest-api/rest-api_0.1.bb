@@ -59,6 +59,7 @@ RDEPENDS:${PN} += " \
     libpal \
     libsdr \
     python3-core \
+    python3-html \
     python3-psutil\
     sensors-py \
 "

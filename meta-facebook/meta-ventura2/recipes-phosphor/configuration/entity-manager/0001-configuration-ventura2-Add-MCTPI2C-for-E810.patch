@@ -1,0 +1,38 @@
+From b056f3d17606f5d87eea0b6ba14c8116fb6070c7 Mon Sep 17 00:00:00 2001
+From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
+Date: Thu, 16 Apr 2026 12:38:46 +0800
+Subject: [PATCH] configuration: ventura2: Add MCTPI2C for E810
+
+Change-Id: I374119da2b253f52879dd5a0c3480e35a08fb703
+Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
+---
+ configurations/meta/ventura2/ventura2_rmcv2_mb.json | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/configurations/meta/ventura2/ventura2_rmcv2_mb.json b/configurations/meta/ventura2/ventura2_rmcv2_mb.json
+index 24bfd3a..c5c45ea 100644
+--- a/configurations/meta/ventura2/ventura2_rmcv2_mb.json
++++ b/configurations/meta/ventura2/ventura2_rmcv2_mb.json
+@@ -622,6 +622,19 @@
+                 "vin_Name": "RMC_BRICK_INPUT_VOLT_V",
+                 "vout1_Max": 18,
+                 "vout1_Name": "RMC_BRICK_OUTPUT_VOLT_V"
++            },
++			{
++                "Address": "0x32",
++                "Bus": "38",
++                "Inventory": "Ventura2",
++                "Name": "E810",
++                "PLDMSensors": [
++					{
++                        "ID": 300,
++                        "Name": "TEMP_C"
++                    }
++                ],
++                "Type": "MCTPI2CTarget"
+             }
+         ],
+         "Name": "Ventura2 RMC",
+-- 
+2.34.1
+

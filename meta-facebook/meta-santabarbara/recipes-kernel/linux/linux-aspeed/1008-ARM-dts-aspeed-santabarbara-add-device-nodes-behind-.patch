@@ -1,4 +1,4 @@
-From 99c1ac21850c1da73a0b635d8b31d9a3956c367f Mon Sep 17 00:00:00 2001
+From 0c09bef981870006c93e4144d54db034465be55a Mon Sep 17 00:00:00 2001
 From: "Fred.Chen" <Fred.Chen@quantatw.com>
 Date: Tue, 10 Jun 2025 18:29:38 +0800
 Subject: [PATCH] ARM: dts: aspeed: santabarbara: add device nodes behind the
@@ -17,7 +17,7 @@ https://lore.kernel.org/all/20250917142055.2806576-2-steven.niu.uj@renesas.com/
  1 file changed, 988 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-index 66d0d28e5..4b175c90d 100644
+index 66d0d28e5..caa3b9c8a 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 @@ -39,6 +39,14 @@ aliases {
@@ -98,7 +98,7 @@ index 66d0d28e5..4b175c90d 100644
 +			reg = <0>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			clock-frequency = <100000>;
++			clock-frequency = <400000>;
 +			io-internal-pullups-disable;
 +			multi-master;
 +			mctp-controller;
@@ -115,7 +115,7 @@ index 66d0d28e5..4b175c90d 100644
 +			reg = <1>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			clock-frequency = <100000>;
++			clock-frequency = <400000>;
 +			io-internal-pullups-disable;
 +			multi-master;
 +			mctp-controller;
@@ -230,7 +230,7 @@ index 66d0d28e5..4b175c90d 100644
 +			reg = <4>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			clock-frequency = <100000>;
++			clock-frequency = <400000>;
 +			io-internal-pullups-disable;
 +			multi-master;
 +			mctp-controller;
@@ -247,7 +247,7 @@ index 66d0d28e5..4b175c90d 100644
 +			reg = <5>;
 +			#address-cells = <1>;
 +			#size-cells = <0>;
-+			clock-frequency = <100000>;
++			clock-frequency = <400000>;
 +			io-internal-pullups-disable;
 +			multi-master;
 +			mctp-controller;
@@ -1030,5 +1030,5 @@ index 66d0d28e5..4b175c90d 100644
  	aspeed,lpc-io-reg = <0xca8>;
  	status = "okay";
 -- 
-2.34.1
+2.47.3
 

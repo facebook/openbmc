@@ -21,14 +21,13 @@ import unittest
 
 from common.base_process_running_test import BaseProcessRunningTest
 from tests.wedge400.helper.libpal import BoardRevision, pal_detect_power_supply_present
-from utils.test_utils import running_systemd
+from utils.test_utils import qemu_check, running_systemd
 
 
 class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
     def set_processes(self):
         self.expected_process = [
             "front-paneld",
-            "bicmond",
             "ipmbd",
             "ipmid",
             "mTerm_server",
@@ -51,7 +50,9 @@ class ProcessRunningTest(BaseProcessRunningTest, unittest.TestCase):
         self.expected_process.extend(
             SYSTEMD_PROCESSES if running_systemd() else SYSV_PROCESSES
         )
-        # If pem is present, then add pemd process in list
+        if not qemu_check():
+            self.expected_process.append("bicmond")
+        # If pem is present
         if (
             pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM1) == "pem1"
             or pal_detect_power_supply_present(BoardRevision.POWER_MODULE_PEM2)

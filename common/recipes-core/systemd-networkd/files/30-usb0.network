@@ -22,3 +22,4 @@ Name=usb0
 [Network]
 DHCP=no
 Address=fe80::1/64
+ConfigureWithoutCarrier=yes

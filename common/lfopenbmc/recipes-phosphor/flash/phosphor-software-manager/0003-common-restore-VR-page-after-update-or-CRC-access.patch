@@ -1,0 +1,167 @@
+From 64d811f4608e646a8e17245d3bef228c57a395bb Mon Sep 17 00:00:00 2001
+From: Henry Wu <Henry_Wu@quantatw.com>
+Date: Wed, 8 Apr 2026 18:35:20 +0800
+Subject: [PATCH] common: restore VR page after update or CRC access
+
+Some VR devices have multiple pages, and sensor polling may access
+data that is not on the same page as the version information. If the
+page is switched during a CRC read or VR update, sensor polling may
+read incorrect values.
+
+Save the current page before starting the CRC read or VR update, and
+restore it after the operation completes. This prevents sensor polling
+from reading data from the wrong page.
+
+The corresponding change is under review in Gerrit [1].
+It works together with sensor read pause handling in [2].
+
+[1] https://gerrit.openbmc.org/c/openbmc/phosphor-bmc-code-mgmt/+/88986
+[2] https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/83968
+
+Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
+---
+ common/include/pmbus.hpp          | 28 +++++++++++++++++++++++
+ common/meson.build                |  1 +
+ common/src/pmbus.cpp              | 37 +++++++++++++++++++++++++++++++
+ i2c-vr/i2cvr_software_manager.cpp |  3 +--
+ i2c-vr/mps/mp297x.cpp             |  4 ++++
+ 5 files changed, 71 insertions(+), 2 deletions(-)
+ create mode 100644 common/src/pmbus.cpp
+
+diff --git a/common/include/pmbus.hpp b/common/include/pmbus.hpp
+index f241245..c885135 100644
+--- a/common/include/pmbus.hpp
++++ b/common/include/pmbus.hpp
+@@ -1,6 +1,9 @@
+ #pragma once
+ 
++#include "common/include/i2c/i2c.hpp"
++
+ #include <cstdint>
++#include <optional>
+ 
+ enum class PMBusCmd : uint8_t
+ {
+@@ -14,3 +17,28 @@ enum class PMBusCmd : uint8_t
+     mfrSerial = 0x9E,
+     icDeviceId = 0xAD,
+ };
++
++class PageGuard
++{
++  public:
++    PageGuard() = delete;
++    PageGuard(const PageGuard&) = delete;
++    PageGuard(PageGuard&&) = delete;
++    PageGuard& operator=(PageGuard&&) = delete;
++    PageGuard& operator=(const PageGuard&) = delete;
++
++    /** @brief Constructor - Attempts to read and save the current page
++     * @param[in] i2c - I2C interface to the device
++     */
++    explicit PageGuard(phosphor::i2c::I2C& i2cInterface);
++
++    /** @brief Destructor - Restores the saved page if capture was successful */
++    ~PageGuard();
++
++  private:
++    /** @brief Reference to the I2C interface */
++    phosphor::i2c::I2C& i2cInterface;
++
++    /** @brief The saved page value, nullopt if the initial read failed */
++    std::optional<uint8_t> originalPage;
++};
+diff --git a/common/meson.build b/common/meson.build
+index 9d393e9..24a45c4 100644
+--- a/common/meson.build
++++ b/common/meson.build
+@@ -27,6 +27,7 @@ software_common_lib = static_library(
+     'src/software_update.cpp',
+     'src/host_power.cpp',
+     'src/utils.cpp',
++    'src/pmbus.cpp',
+     include_directories: ['.', 'include/', common_include],
+     dependencies: [
+         pdi_dep,
+diff --git a/common/src/pmbus.cpp b/common/src/pmbus.cpp
+new file mode 100644
+index 0000000..47b1a8f
+--- /dev/null
++++ b/common/src/pmbus.cpp
+@@ -0,0 +1,37 @@
++#include "pmbus.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <vector>
++
++PageGuard::PageGuard(phosphor::i2c::I2C& i2cInterface) :
++    i2cInterface(i2cInterface), originalPage(std::nullopt)
++{
++    std::vector<uint8_t> tbuf = {static_cast<uint8_t>(PMBusCmd::page)};
++    std::vector<uint8_t> rbuf(1);
++    if (i2cInterface.sendReceive(tbuf, rbuf))
++    {
++        originalPage = rbuf[0];
++    }
++    else
++    {
++        lg2::error(
++            "PageGuard: Failed to read current page, restoration disabled");
++    }
++}
++
++PageGuard::~PageGuard()
++{
++    if (originalPage.has_value())
++    {
++        std::vector<uint8_t> tbuf = {static_cast<uint8_t>(PMBusCmd::page),
++                                     *originalPage};
++        std::vector<uint8_t> rbuf;
++
++        if (!i2cInterface.sendReceive(tbuf, rbuf))
++        {
++            lg2::error("PageGuard: Failed to restore page {PAGE}", "PAGE",
++                       lg2::hex, *originalPage);
++        }
++    }
++}
+diff --git a/i2c-vr/i2cvr_software_manager.cpp b/i2c-vr/i2cvr_software_manager.cpp
+index e8e411d..04b02a4 100644
+--- a/i2c-vr/i2cvr_software_manager.cpp
++++ b/i2c-vr/i2cvr_software_manager.cpp
+@@ -89,8 +89,7 @@ sdbusplus::async::task<bool> I2CVRSoftwareManager::initDevice(
+ 
+     // Wait for PSUSensor to detect the activation signal so it can skip
+     // readings from this sensor while retrieving the CRC from this device.
+-    co_await sdbusplus::async::sleep_for(ctx, std::chrono::milliseconds(1000));
+-
++    co_await sdbusplus::async::sleep_for(ctx, std::chrono::milliseconds(10000));
+     uint32_t sum;
+     if (!(co_await i2cDevice->getVersion(&sum)))
+     {
+diff --git a/i2c-vr/mps/mp297x.cpp b/i2c-vr/mps/mp297x.cpp
+index 87b20a5..1a1648c 100644
+--- a/i2c-vr/mps/mp297x.cpp
++++ b/i2c-vr/mps/mp297x.cpp
+@@ -384,6 +384,8 @@ sdbusplus::async::task<bool> MP297X::getCRC(uint32_t* checksum)
+         co_return false;
+     }
+ 
++    PageGuard guard(i2cInterface);
++
+     constexpr size_t crcLength = 2;
+ 
+     std::vector<uint8_t> tbuf;
+@@ -465,6 +467,8 @@ bool MP297X::forcedUpdateAllowed()
+ 
+ sdbusplus::async::task<bool> MP297X::updateFirmware(bool force)
+ {
++    PageGuard guard(i2cInterface);
++
+     (void)force;
+ 
+     auto groupedConfigData = getGroupedConfigData();
+-- 
+2.47.3
+

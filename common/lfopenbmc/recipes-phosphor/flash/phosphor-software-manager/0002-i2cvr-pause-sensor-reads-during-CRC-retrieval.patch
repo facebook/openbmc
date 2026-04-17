@@ -1,0 +1,53 @@
+From 77a1023fb531c9ce0ba9ee06a10187b5ca22f25c Mon Sep 17 00:00:00 2001
+From: Kevin Tung <kevin.tung@quantatw.com>
+Date: Wed, 8 Oct 2025 13:52:45 +0800
+Subject: [PATCH] i2cvr: pause sensor reads during CRC retrieval
+
+Pause sensor reads while retrieving the CRC to update the version.
+During CRC retrieval, both the CRC process and PSU sensor monitoring
+may issue overlapping PMBus commands, such as the PAGE command,
+which can lead to command conflicts.
+
+The corresponding change is under review in Gerrit [1].
+It works together with sensor read pause handling in [2].
+
+[1] https://gerrit.openbmc.org/c/openbmc/phosphor-bmc-code-mgmt/+/88985
+[2] https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/83968
+
+Change-Id: I3f6bb6119a30acdeb983715e1ed38556263e9d0f
+Signed-off-by: Kevin Tung <kevin.tung.openbmc@gmail.com>
+---
+ i2c-vr/i2cvr_software_manager.cpp | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/i2c-vr/i2cvr_software_manager.cpp b/i2c-vr/i2cvr_software_manager.cpp
+index 93ffe1d..e8e411d 100644
+--- a/i2c-vr/i2cvr_software_manager.cpp
++++ b/i2c-vr/i2cvr_software_manager.cpp
+@@ -84,6 +84,13 @@ sdbusplus::async::task<bool> I2CVRSoftwareManager::initDevice(
+     std::unique_ptr<SoftwareInf::Software> software =
+         std::make_unique<SoftwareInf::Software>(ctx, *i2cDevice);
+ 
++    software->setActivation(ActivationInterface::Activations::Activating);
++    error("Set software ID {SWID} to Activating.", "SWID", software->swid);
++
++    // Wait for PSUSensor to detect the activation signal so it can skip
++    // readings from this sensor while retrieving the CRC from this device.
++    co_await sdbusplus::async::sleep_for(ctx, std::chrono::milliseconds(1000));
++
+     uint32_t sum;
+     if (!(co_await i2cDevice->getVersion(&sum)))
+     {
+@@ -91,6 +98,9 @@ sdbusplus::async::task<bool> I2CVRSoftwareManager::initDevice(
+         co_return false;
+     }
+ 
++    software->setActivation(ActivationInterface::Activations::Active);
++    error("Set software ID {SWID} to Active.", "SWID", software->swid);
++
+     software->setVersion(std::format("{:X}", sum),
+                          SoftwareInf::SoftwareVersion::VersionPurpose::Other);
+ 
+-- 
+2.47.3
+

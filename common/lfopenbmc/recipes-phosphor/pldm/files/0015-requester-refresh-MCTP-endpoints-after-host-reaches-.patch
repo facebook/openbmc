@@ -1,8 +1,8 @@
-From d57397653166e8628bc6e4ba29522493c54ab7c0 Mon Sep 17 00:00:00 2001
+From b4112da3fa87068aabb1d121a90a0a4bb77511b1 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 17:16:49 +0800
-Subject: [PATCH 15/17] requester: refresh MCTP endpoints after host reaches
- running state
+Subject: [PATCH] requester: refresh MCTP endpoints after host reaches running
+ state
 
 Some MCTP endpoints associated with MCTPI2CTarget or MCTPI3CTarget
 do not expose complete object information until BIOS POST.
@@ -24,40 +24,43 @@ https://gerrit.openbmc.org/c/openbmc/pldm/+/88403
 
 Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
 ---
- requester/mctp_endpoint_discovery.cpp | 129 ++++++++++++++++++++++++++
+ requester/mctp_endpoint_discovery.cpp | 132 ++++++++++++++++++++++++++
  requester/mctp_endpoint_discovery.hpp |  14 +++
- 2 files changed, 143 insertions(+)
+ 2 files changed, 146 insertions(+)
 
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 6816e8c..4b64e7e 100644
+index 6816e8c..90d3979 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
-@@ -36,6 +36,11 @@ MctpDiscovery::MctpDiscovery(
+@@ -36,6 +36,12 @@ MctpDiscovery::MctpDiscovery(
      mctpEndpointPropChangedSignal(
          bus, propertiesChangedNamespace(MCTPPath, MCTPInterfaceCC),
          [this](sdbusplus::message_t& msg) { this->propertiesChangedCb(msg); }),
 +    mctpTargetHostStateChangedSignal(
 +        bus,
-+        propertiesChangedNamespace("/xyz/openbmc_project/state/host0",
-+                                   "xyz.openbmc_project.State.Host"),
++        propertiesChangedNamespace(
++            "/xyz/openbmc_project/state/host0",
++            "xyz.openbmc_project.State.OperatingSystem.Status"),
 +        [this](sdbusplus::message_t& msg) { this->hostStateChangedCb(msg); }),
      handlers(list)
  {
      std::map<MctpInfo, Availability> currentMctpInfoMap;
-@@ -423,6 +428,130 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
+@@ -423,6 +429,132 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
      }
  }
  
-+bool MctpDiscovery::isHostRunning(const dbus::Value& value) const
++bool MctpDiscovery::isOsStandby(const dbus::Value& value) const
 +{
 +    const std::string* state = std::get_if<std::string>(&value);
 +    if (state == nullptr)
 +    {
-+        error("CurrentHostState type is invalid");
++        error("OperatingSystemState type is invalid");
 +        return false;
 +    }
 +
-+    return (*state == "xyz.openbmc_project.State.Host.HostState.Running");
++    return (
++        *state ==
++        "xyz.openbmc_project.State.OperatingSystem.Status.OSStatus.Standby");
 +}
 +
 +bool MctpDiscovery::isMctpTargetInBiosPost(const std::string& objPath) const
@@ -148,13 +151,13 @@ index 6816e8c..4b64e7e 100644
 +        return;
 +    }
 +
-+    auto it = changedProps.find("CurrentHostState");
++    auto it = changedProps.find("OperatingSystemState");
 +    if (it == changedProps.end())
 +    {
 +        return;
 +    }
 +
-+    if (!isHostRunning(it->second))
++    if (!isOsStandby(it->second))
 +    {
 +        return;
 +    }
@@ -166,7 +169,7 @@ index 6816e8c..4b64e7e 100644
 +        return;
 +    }
 +
-+    info("Re-handling {COUNT} matched MCTP endpoints after host power on",
++    info("Re-handling {COUNT} matched MCTP endpoints after postcode end",
 +         "COUNT", matchedInfos.size());
 +
 +    handleMctpEndpoints(matchedInfos);
@@ -176,7 +179,7 @@ index 6816e8c..4b64e7e 100644
  {
      MctpInfos addedInfos;
 diff --git a/requester/mctp_endpoint_discovery.hpp b/requester/mctp_endpoint_discovery.hpp
-index d776b5b..0801113 100644
+index d776b5b..f20743a 100644
 --- a/requester/mctp_endpoint_discovery.hpp
 +++ b/requester/mctp_endpoint_discovery.hpp
 @@ -90,6 +90,9 @@ class MctpDiscovery
@@ -193,7 +196,7 @@ index d776b5b..0801113 100644
       */
      void propertiesChangedCb(sdbusplus::message_t& msg);
  
-+    bool isHostRunning(const dbus::Value& value) const;
++    bool isOsStandby(const dbus::Value& value) const;
 +    bool isMctpTargetInBiosPost(const std::string& objPath) const;
 +    MctpInfos getMatchedMctpInfosInBiosPost() const;
 +
@@ -208,5 +211,5 @@ index d776b5b..0801113 100644
       * D-Bus signal raised.
       *
 -- 
-2.52.0
+2.47.3
 

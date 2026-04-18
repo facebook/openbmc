@@ -568,3 +568,8 @@ Miscellaneous:
     file: mfg-tool.md
     priority: P2
     short: Support a manufacturing tool for BMC.
+Diagnostics:
+  CPU Debug:
+    file: cpu-debug.md
+    priority: P2
+    short: Debug CPU using in-system interfaces (JTAG/CXL).

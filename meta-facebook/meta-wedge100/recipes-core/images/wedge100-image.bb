@@ -5,6 +5,9 @@ inherit kernel_fitimage
 
 require recipes-core/images/fb-openbmc-image.bb
 
+# Remove debug tools (strace, mtrace) to save flash space on 16MB wedge100
+IMAGE_FEATURES:remove = "tools-debug"
+
 # Include modules in rootfs
 IMAGE_INSTALL += " \
   packagegroup-openbmc-base \

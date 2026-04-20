@@ -36,7 +36,7 @@ EXTRA_USERS_PARAMS += " \
 OPENBMC_FB_DEFAULT_FEATURE = "ext2 ipv6 largefile usbgadget usbhost nfs zeroconf package-management ipv4 ptest"
 OPENBMC_BOARD_FEATURE ?= ""
 DISTRO_FEATURES = "${DISTRO_FEATURES_LIBC} ${OPENBMC_FB_DEFAULT_FEATURE} ${OPENBMC_BOARD_FEATURE}"
-DISTRO_FEATURES_BACKFILL_CONSIDERED = "\
+DISTRO_FEATURES_OPTED_OUT = "\
     pulseaudio bluez5 gobject-introspection-data ldconfig"
 
 # CONF_VERSION is increased each time build/conf/ changes incompatibly and is used to

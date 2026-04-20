@@ -39,6 +39,8 @@ SRC_URI = "gitsm://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \
            file://0008-Define-MAP_SYNC-and-MAP_SHARED_VALIDATE-on-needed-li.patch \
            file://0010-configure-lookup-meson-exutable-from-PATH.patch \
            file://0011-qemu-Ensure-pip-and-the-python-venv-aren-t-used-for-.patch \
+           file://0012-add-anacapa-machine-model.patch \
+           file://0013-add-meta-bmc-machines-to-build.patch \
            file://qemu-guest-agent.init \
            file://qemu-guest-agent.udev \
            "

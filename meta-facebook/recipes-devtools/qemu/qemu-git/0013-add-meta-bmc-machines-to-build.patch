@@ -1,0 +1,17 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: OpenBMC <openbmc@meta.com>
+Date: Tue, 31 Mar 2026 06:55:47 -0700
+Subject: [PATCH] hw/arm/aspeed: Add BMC machine to build
+
+---
+diff --git a/hw/arm/meson.build b/hw/arm/meson.build
+--- a/hw/arm/meson.build
++++ b/hw/arm/meson.build
+@@ -57,6 +57,7 @@
+   'aspeed_ast2500_witherspoon.c',
+   'aspeed_ast2500_yosemitev2.c',
+   'aspeed_ast2600.c',
++  'aspeed_ast2600_anacapa.c',
+   'aspeed_ast2600_bletchley.c',
+   'aspeed_ast2600_catalina.c',
+   'aspeed_ast2600_evb.c',

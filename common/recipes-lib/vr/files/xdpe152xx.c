@@ -48,6 +48,7 @@ enum {
   OTP_CONF_STO  = 0x11,
   OTP_FILE_INVD = 0x12,
   GET_CRC       = 0x2D,
+  GET_FW_ADDRESS= 0x2E,
 };
 
 enum revision_code{
@@ -338,9 +339,8 @@ check_xdpe152xx_image(struct xdpe152xx_config *config) {
 }
 
 static int
-program_xdpe152xx(uint8_t bus, uint8_t addr, struct xdpe152xx_config *config, bool force) {
-  uint8_t tbuf[16], rbuf[16], devid[2] = {0};
-  uint8_t remain = 0;
+program_xdpe19283d(uint8_t bus, uint8_t addr, struct xdpe152xx_config *config, bool force) {
+  uint8_t tbuf[16], rbuf[16];
   uint16_t remain_space = 0;
   uint32_t sum = 0;
   int i, j, size = 0;
@@ -361,43 +361,209 @@ program_xdpe152xx(uint8_t bus, uint8_t addr, struct xdpe152xx_config *config, bo
     return -1;
   }
 
-  if (xdpe152xx_get_devid(bus, addr, devid) < 0) {
-    syslog(LOG_WARNING, "%s: Failed to get vr ic device id", __func__);
+  // check remaining space
+  if (get_xdpe152xx_remaining_space(bus, addr, &remain_space) < 0) {
+    return -1;
   }
 
-  if (devid[1] == PRODUCT_ID_XDPE19283D && devid[0] == REV_D) {
-    // check remaining space
-    if (get_xdpe152xx_remaining_space(bus, addr, &remain_space) < 0) {
-      return -1;
-    }
-
-    printf("Remaining space: %u\n", remain_space);
-    if (remain_space <= REMAINING_SPACE_MIN) {
-      printf("ERROR: the remaining space is below the threshold value %d!\n",
-            REMAINING_SPACE_MIN);
-      syslog(LOG_ERR, "%s: no remaining space %u", __func__, remain_space);
-      return -1;
-    }
+  printf("Remaining space: %u\n", remain_space);
+  if (remain_space <= REMAINING_SPACE_MIN) {
+    printf("ERROR: the remaining space is below the threshold value %d!\n",
+          REMAINING_SPACE_MIN);
+    syslog(LOG_ERR, "%s: no remaining space %u", __func__, remain_space);
+    return -1;
   }
-  else {
-    // check remaining writes
-    if (get_xdpe152xx_remaining_wr(bus, addr, &remain) < 0) {
-      return -1;
+
+  tbuf[0] = 2;
+  tbuf[1] = 0;
+  tbuf[2] = 0;
+  tbuf[3] = 0;
+  if ((ret = xdpe152xx_mfr_fw(bus, addr, GET_FW_ADDRESS, tbuf, rbuf)) < 0) {
+    syslog(LOG_WARNING, "%s: Failed to reprogram entire configuration file", __func__);
+    return -1;
+  }
+
+  // Added reprogramming of the entire configuration file.
+  // Except for the trim section, all other data will be replaced.
+  // If the old sections are not invalidated in OTP, they can affect the CRC calculation
+
+  tbuf[0] = 0xfe;
+  tbuf[1] = 0xfe;
+  tbuf[2] = 0x00;
+  tbuf[3] = 0x00;
+  if ((ret = xdpe152xx_mfr_fw(bus, addr, OTP_FILE_INVD, tbuf, NULL)) < 0) {
+    syslog(LOG_WARNING, "%s: Failed to reprogram entire configuration file", __func__);
+    return -1;
+  }
+  msleep(500);
+
+  for (i = 0; i < config->sect_cnt; i++) {
+    struct config_sect *sect = &config->section[i];
+    if (sect == NULL) {
+      ret = -1;
+      break;
     }
 
-    printf("Remaining writes: %u\n", remain);
-    if (!remain) {
-      syslog(LOG_WARNING, "%s: no remaining writes", __func__);
-      return -1;
+    if ((i <= 0) || (sect->type != config->section[i-1].type)) {
+      // invalidate existing data
+      tbuf[0] = sect->type;  // section type
+      tbuf[1] = 0x00;        // xv0
+      tbuf[2] = 0x00;
+      tbuf[3] = 0x00;
+      if ((ret = xdpe152xx_mfr_fw(bus, addr, OTP_FILE_INVD, tbuf, NULL)) < 0) {
+        syslog(LOG_WARNING, "%s: Failed to invalidate %02X", __func__, sect->type);
+        break;
+      }
+      msleep(VR_WRITE_DELAY);
+
+      tbuf[0] = 2;
+      tbuf[1] = 0;
+      tbuf[2] = 0;
+      tbuf[3] = 0;
+      if ((ret = xdpe152xx_mfr_fw(bus, addr, GET_FW_ADDRESS, tbuf, rbuf)) < 0) {
+        syslog(LOG_WARNING, "%s: Failed to reprogram entire configuration file", __func__);
+        return -1;
+      }
+
+      // set scratchpad addr
+      tbuf[0] = IFX_MFR_AHB_ADDR;
+      tbuf[1] = 4;
+      tbuf[2] = rbuf[0];
+      tbuf[3] = rbuf[1];
+      tbuf[4] = rbuf[2];
+      tbuf[5] = rbuf[3];
+      if ((ret = vr_xfer(bus, addr, tbuf, 6, rbuf, 0)) < 0) {
+        syslog(LOG_WARNING, "%s: Failed to set scratchpad addr", __func__);
+        break;
+      }
+      msleep(VR_WRITE_DELAY);
+      size = 0;
     }
 
-    if (!force && (remain <= VR_WARN_REMAIN_WR)) {
-      printf("WARNING: the remaining writes is below the threshold value %d!\n",
-            VR_WARN_REMAIN_WR);
-      printf("Please use \"--force\" option to try again.\n");
-      syslog(LOG_WARNING, "%s: insufficient remaining writes %u", __func__, remain);
-      return -1;
+    // program data into scratch
+    for (j = 0; j < sect->data_cnt; j++) {
+      tbuf[0] = IFX_MFR_REG_WRITE;
+      tbuf[1] = 4;
+      memcpy(&tbuf[2], &sect->data[j], 4);
+      if ((ret = vr_xfer(bus, addr, tbuf, 6, rbuf, 0)) < 0) {
+        syslog(LOG_WARNING, "%s: Failed to write data %08X", __func__, sect->data[j]);
+        break;
+      }
+      msleep(VR_WRITE_DELAY);
     }
+    if (ret) {
+      break;
+    }
+
+    size += sect->data_cnt * 4;
+    if ((i+1 >= config->sect_cnt) || (sect->type != config->section[i+1].type)) {
+      tbuf[0] = 0;
+      tbuf[1] = 0;
+      if (vr_xfer(bus, addr, tbuf, 2, rbuf, 0) < 0) {
+        syslog(LOG_WARNING, "%s: set page 0x%02X failed", __func__, tbuf[1]);
+        return -1;
+      }
+
+      tbuf[0] = 0x03;
+      if (vr_xfer(bus, addr, tbuf, 1, rbuf, 0) < 0) {
+        syslog(LOG_WARNING, "%s: clear page 0x%02X fault failed", __func__, tbuf[1]);
+        return -1;
+      }
+
+      tbuf[0] = 0;
+      tbuf[1] = 1;
+      if (vr_xfer(bus, addr, tbuf, 2, rbuf, 0) < 0) {
+        syslog(LOG_WARNING, "%s: set page 0x%02X failed", __func__, tbuf[1]);
+        return -1;
+      }
+
+      tbuf[0] = 0x03;
+      if (vr_xfer(bus, addr, tbuf, 1, rbuf, 0) < 0) {
+        syslog(LOG_WARNING, "%s: clear page 0x%02X fault failed", __func__, tbuf[1]);
+        return -1;
+      }
+
+      // upload scratchpad to OTP
+      memcpy(tbuf, &size, 2);
+      tbuf[2] = 0x00;
+      tbuf[3] = 0x00;
+      if ((ret = xdpe152xx_mfr_fw(bus, addr, OTP_CONF_STO, tbuf, NULL)) < 0) {
+        syslog(LOG_WARNING, "%s: Failed to upload data to OTP", __func__);
+        break;
+      }
+
+      // wait for programming soak (2ms/byte, at least 200ms)
+      // ex: Config (604 bytes): (604 / 50) + 2 = 14 (1400 ms)
+      size = (size / 50) + 2;
+      for (j = 0; j < size; j++) {
+        msleep(100);
+      }
+
+      tbuf[0] = PMBUS_STS_CML;
+      if ((ret = vr_xfer(bus, addr, tbuf, 1, rbuf, 1)) < 0) {
+        syslog(LOG_WARNING, "%s: Failed to read PMBUS_STS_CML", __func__);
+        break;
+      }
+      if (rbuf[0] & 0x01) {
+        syslog(LOG_WARNING, "%s: CML Other Memory Fault: %02X (%02X)",
+               __func__, rbuf[0], sect->type);
+        ret = -1;
+        break;
+      }
+    }
+
+    prog += sect->data_cnt;
+    printf("\rupdated: %d %%  ", (prog*100)/config->total_cnt);
+    fflush(stdout);
+  }
+  printf("\n");
+  if (ret) {
+    return -1;
+  }
+
+  return 0;
+}
+
+static int
+program_xdpe152xx(uint8_t bus, uint8_t addr, struct xdpe152xx_config *config, bool force) {
+  uint8_t tbuf[16], rbuf[16];
+  uint8_t remain = 0;
+  uint32_t sum = 0;
+  int i, j, size = 0;
+  int prog = 0, ret = 0;
+
+  if (config == NULL) {
+    return -1;
+  }
+
+  if (get_xdpe152xx_crc(bus, addr, &sum) < 0) {
+    return -1;
+  }
+
+  if (!force && (sum == config->sum_exp)) {
+    printf("WARNING: the Checksum is the same as used now %08X!\n", sum);
+    printf("Please use \"--force\" option to try again.\n");
+    syslog(LOG_WARNING, "%s: redundant programming", __func__);
+    return -1;
+  }
+
+  // check remaining writes
+  if (get_xdpe152xx_remaining_wr(bus, addr, &remain) < 0) {
+    return -1;
+  }
+
+  printf("Remaining writes: %u\n", remain);
+  if (!remain) {
+    syslog(LOG_WARNING, "%s: no remaining writes", __func__);
+    return -1;
+  }
+
+  if (!force && (remain <= VR_WARN_REMAIN_WR)) {
+    printf("WARNING: the remaining writes is below the threshold value %d!\n",
+          VR_WARN_REMAIN_WR);
+    printf("Please use \"--force\" option to try again.\n");
+    syslog(LOG_WARNING, "%s: insufficient remaining writes %u", __func__, remain);
+    return -1;
   }
 
   // Added reprogramming of the entire configuration file.
@@ -674,6 +840,14 @@ xdpe152xx_parse_file(struct vr_info *info, const char *path) {
   }
   fclose(fp);
 
+  for (i = 0; i < config->sect_cnt; i++) {
+    struct config_sect *sect = &config->section[i];
+    uint16_t sect_size = (sect->data[1] >> 16) & 0xFFFF;
+    if(sect->data_cnt * 4 != sect_size){
+        syslog(LOG_WARNING, "%s: sect data size mismatch", __func__);
+    }
+  }
+
   if (!config->addr) {  // for *.mic file that PMBus Address is not included in
     config->addr = info->addr;
   }
@@ -713,16 +887,23 @@ xdpe152xx_fw_update(struct vr_info *info, void *args) {
     vr_xfer = &vr_rdwr;
   }
 
-  if (program_xdpe152xx(info->bus, info->addr, config, info->force)) {
-    return VR_STATUS_FAILURE;
+  if (xdpe152xx_get_devid(info->bus, info->addr, devid) < 0) {
+    syslog(LOG_WARNING, "%s: Failed to get vr ic device id", __func__);
+  }
+
+  if (devid[1] == PRODUCT_ID_XDPE19283D && devid[0] == REV_D) {
+    if (program_xdpe19283d(info->bus, info->addr, config, info->force)) {
+      return VR_STATUS_FAILURE;
+    }
+  }
+  else{
+    if (program_xdpe152xx(info->bus, info->addr, config, info->force)) {
+      return VR_STATUS_FAILURE;
+    }
   }
 
   if (pal_is_support_vr_delay_activate() && info->private_data) {
     vr_get_fw_avtive_key(info, ver_key);
-
-    if (xdpe152xx_get_devid(info->bus, info->addr, devid) < 0) {
-      syslog(LOG_WARNING, "%s: Failed to get vr ic device id", __func__);
-    }
 
     if (devid[1] == PRODUCT_ID_XDPE19283D && devid[0] == REV_D) {
       snprintf(value, sizeof(value), "Infineon %08X", config->sum_exp);

@@ -5,7 +5,7 @@
 
 #include "vr.h"
 
-#define MAX_SECT_DATA_NUM 200
+#define MAX_SECT_DATA_NUM 512
 #define MAX_SECT_NUM      16
 
 struct config_sect {

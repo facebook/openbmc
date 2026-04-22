@@ -112,3 +112,5 @@ If you are a board vendor, you can contribute your board specific configurations
 OpenBMC is Apache licensed, as found in the [LICENSE][l] file.
 
 [l]: https://github.com/facebook/openbmc/blob/main/LICENSE
+
+inconsequential change

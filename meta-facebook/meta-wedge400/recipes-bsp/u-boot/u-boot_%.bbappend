@@ -20,4 +20,8 @@ do_configure:prepend:mf-mtd-ubifs() {
     # append "ubi.mtd=data0" to bootargs if "mtd-ubifs" is enabled.
     #
     sed -i '/CONFIG_BOOTARGS/ s/"\s*$/ ubi.mtd=data0"/' ${S}/include/configs/fbwedge400.h
+    #
+    # disable debug mode
+    #    
+    sed -i '/CONFIG_BOOTARGS/ s/debug //' ${S}/include/configs/fbwedge400.h
 }

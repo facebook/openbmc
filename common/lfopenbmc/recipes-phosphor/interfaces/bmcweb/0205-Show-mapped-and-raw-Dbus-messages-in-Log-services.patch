@@ -1,4 +1,4 @@
-From 8b7cc13748c84b742cd2015b898c838d9fbc4156 Mon Sep 17 00:00:00 2001
+From b4be75bd39973b0a27b2cc6cce89db9966108019 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Wed, 26 Mar 2025 16:20:54 +0000
 Subject: [PATCH 205/205] Show mapped and raw Dbus messages in Log services
@@ -55,14 +55,14 @@ Ran it in QEMU, fetched logs and raw and mapped are shown [1].
 Change-Id: I84258ce334e1572d5c4debd65d9bb5ffb89924df
 Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
 ---
- redfish-core/include/utils/eventlog_utils.hpp | 25 +++++++++++--------
- 1 file changed, 14 insertions(+), 11 deletions(-)
+ redfish-core/include/utils/eventlog_utils.hpp | 27 ++++++++++---------
+ 1 file changed, 15 insertions(+), 12 deletions(-)
 
 diff --git a/redfish-core/include/utils/eventlog_utils.hpp b/redfish-core/include/utils/eventlog_utils.hpp
-index ee349342..da794bf9 100644
+index db4f4b39..8076fce8 100644
 --- a/redfish-core/include/utils/eventlog_utils.hpp
 +++ b/redfish-core/include/utils/eventlog_utils.hpp
-@@ -577,26 +577,29 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
+@@ -535,26 +535,29 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
      const std::string& collectionStr, const std::string_view memberId,
      const std::string& logEntryDescriptor)
  {
@@ -97,12 +97,13 @@ index ee349342..da794bf9 100644
 -        objectToFillOut["Resolution"] =
 -            std::move(eventLogObjectsType.resolution);
 -        objectToFillOut["Severity"] = std::move(eventLogObjectsType.severity);
-     }
+-    }
 -    else
++    }
 +    if (useFallbackMapping)
      {
          objectToFillOut["Message"] = entry.Message;
          if ((entry.Resolution != nullptr) && !entry.Resolution->empty())
 -- 
-2.47.3
+2.52.0
 

@@ -1,7 +1,7 @@
-From bc9c250720cecfb1a94f1f074c70de7d38711463 Mon Sep 17 00:00:00 2001
+From 4fbdec5414415dfff9c8f8aaae38d9ea197bad0e Mon Sep 17 00:00:00 2001
 From: cchoux <cosmo.chou@quantatw.com>
 Date: Wed, 24 Sep 2025 11:35:31 +0800
-Subject: [PATCH 13/17] psusensor: skip sensor reads during firmware updates
+Subject: [PATCH 13/18] psusensor: skip sensor reads during firmware updates
 
 During a VR firmware update, both the update process and sensor
 monitoring may issue conflicting PMBus commands, such as the PAGE
@@ -42,8 +42,8 @@ Signed-off-by: Cosmo Chou <cosmo.chou@quantatw.com>
  src/psu/PSUEvent.hpp      |  10 +-
  src/psu/PSUSensor.cpp     |   7 +-
  src/psu/PSUSensor.hpp     |   2 +
- src/psu/PSUSensorMain.cpp | 211 +++++++++++++++++++++++++++++++++++++-
- 5 files changed, 243 insertions(+), 11 deletions(-)
+ src/psu/PSUSensorMain.cpp | 212 +++++++++++++++++++++++++++++++++++++-
+ 5 files changed, 244 insertions(+), 11 deletions(-)
 
 diff --git a/src/psu/PSUEvent.cpp b/src/psu/PSUEvent.cpp
 index 210ab78..0cf2be1 100644
@@ -202,7 +202,7 @@ index f758470..43fc8b3 100644
      static constexpr size_t warnAfterErrorCount = 10;
  
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 777f54c..e6de8aa 100644
+index e7f711a..853dcfa 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -61,6 +61,7 @@
@@ -425,10 +425,10 @@ index 777f54c..e6de8aa 100644
          std::vector<std::filesystem::path> sensorPaths;
          const auto* param = std::find_if(
              devParamMap.begin(), devParamMap.end(),
-@@ -1164,6 +1342,16 @@ static void createSensorsCallback(
-                     readState, findSensorUnit->units, factor, maxReading,
-                     minReading, sensorOffset, labelHead, thresholdConfSize,
-                     pollRate, i2cDev, std::move(bridgeGpio));
+@@ -1210,6 +1388,17 @@ static void createSensorsCallback(
+                     readState, sensorUnits, factor, maxReading, minReading,
+                     sensorOffset, labelHead, thresholdConfSize, pollRate,
+                     i2cDev, std::move(bridgeGpio));
 +
 +                if (fwName != nullptr)
 +                {
@@ -439,10 +439,11 @@ index 777f54c..e6de8aa 100644
 +                        sensors[sensorName]->setSkipRead(true);
 +                    }
 +                }
++
                  sensors[sensorName]->setupRead();
                  ++numCreated;
                  lg2::debug("Created '{NUM}' sensors so far", "NUM", numCreated);
-@@ -1178,7 +1366,7 @@ static void createSensorsCallback(
+@@ -1224,7 +1413,7 @@ static void createSensorsCallback(
                  std::make_unique<PSUCombineEvent>(
                      objectServer, dbusConnection, io, *psuName, readState,
                      eventPathList, groupEventPathList, "OperationalStatus",
@@ -451,7 +452,7 @@ index 777f54c..e6de8aa 100644
          }
      }
  
-@@ -1267,11 +1455,15 @@ void createSensors(
+@@ -1313,11 +1502,15 @@ void createSensors(
                                    sensorConfigs, sensorsChanged, activateOnly);
          });
      std::vector<std::string_view> types;
@@ -468,7 +469,7 @@ index 777f54c..e6de8aa 100644
      getter->getConfiguration(types);
  }
  
-@@ -1398,8 +1590,18 @@ int main()
+@@ -1444,8 +1637,18 @@ int main()
              });
          };
  
@@ -488,7 +489,7 @@ index 777f54c..e6de8aa 100644
  
      matches.emplace_back(std::make_unique<sdbusplus::bus::match_t>(
          static_cast<sdbusplus::bus_t&>(*systemBus),
-@@ -1410,6 +1612,9 @@ int main()
+@@ -1456,6 +1659,9 @@ int main()
  
      getPresentCpus(systemBus);
  

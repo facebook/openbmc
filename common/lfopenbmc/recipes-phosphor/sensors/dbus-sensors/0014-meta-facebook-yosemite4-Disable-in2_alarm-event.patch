@@ -1,7 +1,7 @@
-From 373f517a42a9980e91d3224469ef4f0e494dc925 Mon Sep 17 00:00:00 2001
+From efedaf3ffa02d9ac1ad8cb484b2d870b18b0aa37 Mon Sep 17 00:00:00 2001
 From: KayYCHuang-wiwynn <kay.yc.huang.wiwynn@gmail.com>
 Date: Mon, 17 Mar 2025 02:25:46 +0000
-Subject: [PATCH 14/17] meta-facebook: yosemite4: Disable in2_alarm event
+Subject: [PATCH 14/18] meta-facebook: yosemite4: Disable in2_alarm event
 
 ---
  meson.build               | 4 ++++
@@ -39,7 +39,7 @@ index c8a8d34..b87ed5f 100644
 +    description: 'Disable in2_alarm event.',
 +)
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index e6de8aa..e0c92e5 100644
+index 853dcfa..64b4743 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -240,7 +240,9 @@ static constexpr std::array<PSUProperty, 22> labelMatch{{

@@ -1,7 +1,7 @@
-From 96eefe34e33ea660666096ab9caaa914d91c4edc Mon Sep 17 00:00:00 2001
+From 460c709f6132de8d24c4d244ab10ee58bc01b9c3 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Tue, 29 Jul 2025 21:01:23 -0700
-Subject: [PATCH 15/17] Implement valve monitor service
+Subject: [PATCH 15/18] Implement valve monitor service
 
 The purpose of the valve monitor service is to monitor the water valves
 in liquid cooling setups and raise an event if the valve open/close
@@ -279,7 +279,7 @@ index b860551..4ba5a9c 100644
  
  } // namespace gpio
 diff --git a/src/meson.build b/src/meson.build
-index 8df4d6f..771eb46 100644
+index 9e6da9e..3ecf709 100644
 --- a/src/meson.build
 +++ b/src/meson.build
 @@ -130,3 +130,4 @@ subdir('nvme')

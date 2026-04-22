@@ -1,4 +1,4 @@
-From d1ebcc1af4082c2d1ab7fde8e1ff833fdadecc44 Mon Sep 17 00:00:00 2001
+From 5d78a17505299e63935635b2a84585c79fb96288 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
 Subject: [PATCH 05/17] platform-mc: Add option for discovering FRU data
@@ -19,12 +19,12 @@ Upstream-Status: Pending
  5 files changed, 64 insertions(+), 2 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index 465a4ff..b2db3be 100644
+index 50ff5b8..4c622e2 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -137,6 +137,10 @@ conf_data.set(
- conf_data.set('SENSOR_POLLING_TIME', get_option('sensor-polling-time'))
- conf_data.set('UPDATE_TIMEOUT_SECONDS', get_option('update-timeout-seconds'))
+@@ -119,6 +119,10 @@ elif get_option('transport-implementation') == 'af-mctp'
+ endif
+ 
  conf_data.set('MCTP_RECOVERY', get_option('mctp-recovery').allowed())
 +conf_data.set(
 +    'DISCOVERY_FRU_DATA',
@@ -34,10 +34,10 @@ index 465a4ff..b2db3be 100644
  # Firmware update inotify option
  if get_option('fw-update-pkg-inotify').allowed()
 diff --git a/meson.options b/meson.options
-index 4e78770..2c2d81f 100644
+index 4c8234f..2555022 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -248,6 +248,14 @@ option(
+@@ -133,6 +133,14 @@ option(
      value: 'enabled',
  )
  
@@ -53,10 +53,10 @@ index 4e78770..2c2d81f 100644
  option(
      'fw-update-pkg-inotify',
 diff --git a/platform-mc/platform_manager.cpp b/platform-mc/platform_manager.cpp
-index ae3a421..caf1f61 100644
+index 85e790c..3657531 100644
 --- a/platform-mc/platform_manager.cpp
 +++ b/platform-mc/platform_manager.cpp
-@@ -618,6 +618,7 @@ exec::task<int> PlatformManager::eventMessageSupported(
+@@ -619,6 +619,7 @@ exec::task<int> PlatformManager::eventMessageSupported(
  exec::task<int> PlatformManager::getFRURecordTableMetadata(pldm_tid_t tid,
                                                             uint16_t* total)
  {
@@ -64,7 +64,7 @@ index ae3a421..caf1f61 100644
      Request request(
          sizeof(pldm_msg_hdr) + PLDM_GET_FRU_RECORD_TABLE_METADATA_REQ_BYTES);
      auto requestMsg = new (request.data()) pldm_msg;
-@@ -680,6 +681,11 @@ exec::task<int> PlatformManager::getFRURecordTableMetadata(pldm_tid_t tid,
+@@ -681,6 +682,11 @@ exec::task<int> PlatformManager::getFRURecordTableMetadata(pldm_tid_t tid,
      }
  
      co_return rc;
@@ -76,7 +76,7 @@ index ae3a421..caf1f61 100644
  }
  
  exec::task<int> PlatformManager::getFRURecordTable(
-@@ -688,6 +694,7 @@ exec::task<int> PlatformManager::getFRURecordTable(
+@@ -689,6 +695,7 @@ exec::task<int> PlatformManager::getFRURecordTable(
      uint8_t* transferFlag, size_t* responseCnt,
      std::vector<uint8_t>& recordData)
  {
@@ -84,7 +84,7 @@ index ae3a421..caf1f61 100644
      Request request(sizeof(pldm_msg_hdr) + PLDM_GET_FRU_RECORD_TABLE_REQ_BYTES);
      auto requestMsg = new (request.data()) pldm_msg;
  
-@@ -745,11 +752,22 @@ exec::task<int> PlatformManager::getFRURecordTable(
+@@ -746,11 +753,22 @@ exec::task<int> PlatformManager::getFRURecordTable(
      }
  
      co_return rc;
@@ -107,7 +107,7 @@ index ae3a421..caf1f61 100644
      if (tid == PLDM_TID_RESERVED || !termini.contains(tid) || !termini[tid])
      {
          lg2::error("Invalid terminus {TID}", "TID", tid);
-@@ -757,12 +775,19 @@ void PlatformManager::updateInventoryWithFru(
+@@ -758,12 +776,19 @@ void PlatformManager::updateInventoryWithFru(
      }
  
      termini[tid]->updateInventoryWithFru(fruData, fruLen);
@@ -127,7 +127,7 @@ index ae3a421..caf1f61 100644
      if (!totalTableRecords)
      {
          lg2::info("Fru record table has 0 records");
-@@ -818,6 +843,12 @@ exec::task<int> PlatformManager::getFRURecordTables(
+@@ -819,6 +844,12 @@ exec::task<int> PlatformManager::getFRURecordTables(
      fruData = receivedFru;
  
      co_return PLDM_SUCCESS;

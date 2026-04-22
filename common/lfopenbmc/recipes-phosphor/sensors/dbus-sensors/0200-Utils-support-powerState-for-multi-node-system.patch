@@ -1,4 +1,4 @@
-From 0ee8cc049c341f5b84a32c9861420369ffb2b08c Mon Sep 17 00:00:00 2001
+From a95f4bca91531e9c0e5c1f024dd7c0620e3ead3f Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH 200/202] Utils: support powerState for multi-node system
@@ -123,7 +123,7 @@ Change-Id: I49ede1e6276acdbee2f8a9807c738be7970beaf9
  7 files changed, 410 insertions(+), 172 deletions(-)
 
 diff --git a/src/Utils.cpp b/src/Utils.cpp
-index eaff0d7..ede18a6 100644
+index b3d9ed9..90c9843 100644
 --- a/src/Utils.cpp
 +++ b/src/Utils.cpp
 @@ -41,6 +41,7 @@
@@ -776,7 +776,7 @@ index eaff0d7..ede18a6 100644
  
  void setupPowerMatch(const std::shared_ptr<sdbusplus::asio::connection>& conn)
 diff --git a/src/Utils.hpp b/src/Utils.hpp
-index 6fef998..3051160 100644
+index 914c260..f9ea9ce 100644
 --- a/src/Utils.hpp
 +++ b/src/Utils.hpp
 @@ -56,6 +56,7 @@ using ManagedObjectType =
@@ -885,7 +885,7 @@ index 6fef998..3051160 100644
  
      void getPath(const std::string& path, const std::string& interface,
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
-index c5785ee..9377ae9 100644
+index e666730..cb6ead8 100644
 --- a/src/hwmon-temp/HwmonTempMain.cpp
 +++ b/src/hwmon-temp/HwmonTempMain.cpp
 @@ -600,7 +600,11 @@ static void powerStateChanged(
@@ -945,7 +945,7 @@ index 43fc8b3..130e458 100644
  
  struct PSUProperty
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 5e0b6af..177f290 100644
+index 9a4ee10..8bdec1f 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -838,6 +838,7 @@ static void createSensorsCallback(
@@ -956,16 +956,16 @@ index 5e0b6af..177f290 100644
  
          /* Check if there are more sensors in the same interface */
          int i = 1;
-@@ -1356,7 +1357,7 @@ static void createSensorsCallback(
+@@ -1402,7 +1403,7 @@ static void createSensorsCallback(
                      sensorName, std::move(sensorThresholds), *interfacePath,
-                     readState, findSensorUnit->units, factor, maxReading,
-                     minReading, sensorOffset, labelHead, thresholdConfSize,
--                    pollRate, i2cDev, std::move(bridgeGpio));
-+                    pollRate, i2cDev, std::move(bridgeGpio), readSlot);
+                     readState, sensorUnits, factor, maxReading, minReading,
+                     sensorOffset, labelHead, thresholdConfSize, pollRate,
+-                    i2cDev, std::move(bridgeGpio));
++                    i2cDev, std::move(bridgeGpio), readSlot);
  
                  if (fwName != nullptr)
                  {
-@@ -1499,7 +1500,11 @@ static void powerStateChanged(
+@@ -1546,7 +1547,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {

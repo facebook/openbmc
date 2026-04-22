@@ -1,7 +1,7 @@
-From f31acc97f5ef9d6e4c63d932d1f0420573bf2721 Mon Sep 17 00:00:00 2001
+From ebdd29190a75fb1beae99a8e0f7708b86145d428 Mon Sep 17 00:00:00 2001
 From: "eldin.lee" <eldin.lee@quantatw.com>
 Date: Wed, 9 Jul 2025 14:42:07 +0800
-Subject: [PATCH 10/17] Add delay before leak event log to prevent AC OFF
+Subject: [PATCH 10/18] Add delay before leak event log to prevent AC OFF
  glitches
 
 Insert a short delay before logging to prevent transient AC power loss from triggering incorrect events.
@@ -10,10 +10,10 @@ Insert a short delay before logging to prevent transient AC power loss from trig
  1 file changed, 2 insertions(+)
 
 diff --git a/src/leakdetector/LeakEvents.cpp b/src/leakdetector/LeakEvents.cpp
-index e3755a7..8cf8062 100644
+index 290e972..4539f4d 100644
 --- a/src/leakdetector/LeakEvents.cpp
 +++ b/src/leakdetector/LeakEvents.cpp
-@@ -22,6 +22,8 @@ auto Events::generateLeakEvent(sdbusplus::message::object_path detectorPath,
+@@ -22,6 +22,8 @@ auto Events::generateLeakEvent(sdbusplus::object_path detectorPath,
  {
      auto eventName = std::make_tuple(detectorPath.str, level);
  

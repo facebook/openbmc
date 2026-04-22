@@ -1,4 +1,4 @@
-From 671602e567de9a241d37a89bfa6ea8195cf76a8d Mon Sep 17 00:00:00 2001
+From 33cee800c754e0931f622c5491a536e2fd9a6d60 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Mon, 13 Oct 2025 11:10:37 +0000
 Subject: [PATCH 09/17] platform-mc: Make fallback terminus name optional
@@ -45,10 +45,10 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  3 files changed, 19 insertions(+)
 
 diff --git a/meson.build b/meson.build
-index 6f1e421..db5cf94 100644
+index ae33bdb..bf5e2b3 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -145,6 +145,10 @@ conf_data.set(
+@@ -127,6 +127,10 @@ conf_data.set(
      'TERMINUS_DISCOVERY_RETRY_COUNT',
      get_option('terminus-discovery-retry-count'),
  )
@@ -60,10 +60,10 @@ index 6f1e421..db5cf94 100644
  # Firmware update inotify option
  if get_option('fw-update-pkg-inotify').allowed()
 diff --git a/meson.options b/meson.options
-index 926c710..d9bd868 100644
+index 8a0ed9e..d08fc13 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -266,6 +266,14 @@ option(
+@@ -151,6 +151,14 @@ option(
      description: 'Per-endpoint retry attempts for terminus discovery on failures. Initial attempt not counted; 0 disables retries.',
  )
  

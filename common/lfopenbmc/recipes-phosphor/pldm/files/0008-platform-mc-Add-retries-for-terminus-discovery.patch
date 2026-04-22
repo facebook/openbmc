@@ -1,4 +1,4 @@
-From 5a4cde290e5aa041d2b65fa9b9fd3bf9a3d0713e Mon Sep 17 00:00:00 2001
+From c2ea18d5665615055295672655bd4090ad6a6c3c Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 23 Sep 2025 09:47:45 +0000
 Subject: [PATCH 08/17] platform-mc: Add retries for terminus discovery
@@ -33,10 +33,10 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  4 files changed, 93 insertions(+), 6 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index b2db3be..6f1e421 100644
+index 4c622e2..ae33bdb 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -141,6 +141,10 @@ conf_data.set(
+@@ -123,6 +123,10 @@ conf_data.set(
      'DISCOVERY_FRU_DATA',
      get_option('discovery-fru-data-from-terminus').allowed(),
  )
@@ -48,10 +48,10 @@ index b2db3be..6f1e421 100644
  # Firmware update inotify option
  if get_option('fw-update-pkg-inotify').allowed()
 diff --git a/meson.options b/meson.options
-index 2c2d81f..926c710 100644
+index 2555022..8a0ed9e 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -256,6 +256,16 @@ option(
+@@ -141,6 +141,16 @@ option(
      value: 'enabled',
  )
  

@@ -1,4 +1,4 @@
-From 762a327f5a76ae5327059304ecde6ea476cd22b7 Mon Sep 17 00:00:00 2001
+From 1697ba92d1b7d1ad0a8d6129faead2a31c6016f0 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 25 Sep 2023 11:10:46 +0800
 Subject: [PATCH 3/7] Add mctp eids configuration for Yosemite 4
@@ -220,10 +220,10 @@ index 99746ef..7a0b36c 100644
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
 diff --git a/schemas/exposes_record.json b/schemas/exposes_record.json
-index 89b4599..c994075 100644
+index 5edaeb5..c60900c 100644
 --- a/schemas/exposes_record.json
 +++ b/schemas/exposes_record.json
-@@ -176,6 +176,9 @@
+@@ -182,6 +182,9 @@
                  },
                  {
                      "$ref": "modbus.json#/$defs/ModbusRTUDevice"
@@ -234,7 +234,7 @@ index 89b4599..c994075 100644
              ]
          },
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index ee627e6..38cdfd7 100644
+index 0ee4b88..bb9b2b5 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
 @@ -1,6 +1,43 @@
@@ -281,7 +281,7 @@ index ee627e6..38cdfd7 100644
          "ExitAirTempSensor": {
              "description": "implemented in dbus-sensors: ExitAirTempSensor",
              "additionalProperties": false,
-@@ -1227,6 +1264,9 @@
+@@ -1265,6 +1302,9 @@
              "EntityInstance": {
                  "type": "number"
              },
@@ -291,7 +291,7 @@ index ee627e6..38cdfd7 100644
              "GpioPins": {
                  "items": {
                      "type": "number"
-@@ -1236,6 +1276,9 @@
+@@ -1274,6 +1314,9 @@
              "GpioPolarity": {
                  "enum": ["Low"]
              },
@@ -301,7 +301,7 @@ index ee627e6..38cdfd7 100644
              "Index": {
                  "type": "number",
                  "minimum": 0,
-@@ -1256,6 +1299,10 @@
+@@ -1294,6 +1337,10 @@
              "MaxValue": {
                  "type": "number"
              },

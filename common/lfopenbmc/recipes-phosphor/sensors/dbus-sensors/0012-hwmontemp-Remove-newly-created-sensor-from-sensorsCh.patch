@@ -1,7 +1,7 @@
-From ff113bd2c94699ebde7cb31b31074d9365fc8101 Mon Sep 17 00:00:00 2001
+From 7291862260c611d97fda4de272741329bde55a31 Mon Sep 17 00:00:00 2001
 From: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
 Date: Thu, 27 Nov 2025 18:31:21 +0800
-Subject: [PATCH 12/17] hwmontemp: Remove newly created sensor from
+Subject: [PATCH 12/18] hwmontemp: Remove newly created sensor from
  sensorsChanged during rescan
 
 When a sensor is recreated during rescan, the existing sensor object is
@@ -24,7 +24,7 @@ Signed-off-by: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
  1 file changed, 22 insertions(+), 12 deletions(-)
 
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
-index dc4dc54..c5785ee 100644
+index 616d0f8..e666730 100644
 --- a/src/hwmon-temp/HwmonTempMain.cpp
 +++ b/src/hwmon-temp/HwmonTempMain.cpp
 @@ -401,24 +401,34 @@ void createSensors(

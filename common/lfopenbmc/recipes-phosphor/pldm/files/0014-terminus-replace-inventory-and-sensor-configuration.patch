@@ -1,4 +1,4 @@
-From a0e370c15a5a8672b15c228edeb3c735aec4c09b Mon Sep 17 00:00:00 2001
+From 205bb7da52ab457066eb05183ccd8c3ce27918f4 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Fri, 26 Dec 2025 14:35:14 +0800
 Subject: [PATCH 14/17] terminus: replace inventory and sensor configuration
@@ -30,7 +30,7 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  12 files changed, 460 insertions(+), 92 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
-index b61184f..57188fb 100644
+index 51ab41e..7bdfb09 100644
 --- a/common/types.hpp
 +++ b/common/types.hpp
 @@ -38,6 +38,10 @@ using NetworkId = uint32_t;
@@ -631,7 +631,7 @@ index 85ecb57..3a4ec90 100644
      auto tid = mappedTid.value();
      termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 0876dfa..6816e8c 100644
+index 40ef062..3215300 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -84,9 +84,9 @@ void MctpDiscovery::getMctpInfos(std::map<MctpInfo, Availability>& mctpInfoMap)
@@ -668,7 +668,7 @@ index 0876dfa..6816e8c 100644
              searchConfigurationFor(pldm::utils::DBusHandler(), mctpInfo);
              if (!std::ranges::contains(existingMctpInfos, mctpInfo))
              {
-@@ -501,72 +502,165 @@ std::string MctpDiscovery::constructMctpReactorObjectPath(
+@@ -501,71 +502,164 @@ std::string MctpDiscovery::constructMctpReactorObjectPath(
             "/endpoints/" + std::to_string(eid) + "/configured_by";
  }
  
@@ -685,8 +685,7 @@ index 0876dfa..6816e8c 100644
 -        std::string associatedService;
 -        std::string associatedInterface;
 +        // Define the search scope for the association
-         sdbusplus::message::object_path inventorySubtreePath(
-             inventorySubtreePathStr);
+         sdbusplus::object_path inventorySubtreePath(inventorySubtreePathStr);
 +        constexpr auto subTreeDepth = 3;
  
 -        //"/{board or chassis type}/{board or chassis}/{device}"

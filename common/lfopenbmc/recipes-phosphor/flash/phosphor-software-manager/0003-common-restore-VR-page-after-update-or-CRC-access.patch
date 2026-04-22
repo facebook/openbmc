@@ -1,7 +1,7 @@
-From 64d811f4608e646a8e17245d3bef228c57a395bb Mon Sep 17 00:00:00 2001
+From f14c2b88a1c71d2446269f650dbc34629f151d1d Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Wed, 8 Apr 2026 18:35:20 +0800
-Subject: [PATCH] common: restore VR page after update or CRC access
+Subject: [PATCH 3/3] common: restore VR page after update or CRC access
 
 Some VR devices have multiple pages, and sensor polling may access
 data that is not on the same page as the version information. If the
@@ -163,5 +163,5 @@ index 87b20a5..1a1648c 100644
  
      auto groupedConfigData = getGroupedConfigData();
 -- 
-2.47.3
+2.52.0
 

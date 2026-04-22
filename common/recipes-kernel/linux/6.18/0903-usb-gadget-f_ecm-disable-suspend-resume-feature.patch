@@ -1,4 +1,4 @@
-From d578df0cd721e8bcd5d1f1030efc276b61b639ed Mon Sep 17 00:00:00 2001
+From e474dc29bd210310dc9e0ac689759f3f7ee76cbe Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Tue, 23 Sep 2025 17:50:53 -0700
 Subject: [PATCH 903/903] usb: gadget: f_ecm: disable suspend/resume feature
@@ -19,10 +19,10 @@ x86 reboots.
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/usb/gadget/function/f_ecm.c b/drivers/usb/gadget/function/f_ecm.c
-index 675d2bc538a4..da129788c6b0 100644
+index e315f18b7f9f..54dc2237637f 100644
 --- a/drivers/usb/gadget/function/f_ecm.c
 +++ b/drivers/usb/gadget/function/f_ecm.c
-@@ -864,6 +864,7 @@ static struct usb_function_instance *ecm_alloc_inst(void)
+@@ -868,6 +868,7 @@ static struct usb_function_instance *ecm_alloc_inst(void)
  	return &opts->func_inst;
  }
  
@@ -30,7 +30,7 @@ index 675d2bc538a4..da129788c6b0 100644
  static void ecm_suspend(struct usb_function *f)
  {
  	struct f_ecm *ecm = func_to_ecm(f);
-@@ -883,6 +884,7 @@ static void ecm_resume(struct usb_function *f)
+@@ -887,6 +888,7 @@ static void ecm_resume(struct usb_function *f)
  
  	gether_resume(&ecm->port);
  }
@@ -38,7 +38,7 @@ index 675d2bc538a4..da129788c6b0 100644
  
  static int ecm_get_status(struct usb_function *f)
  {
-@@ -957,9 +959,7 @@ static struct usb_function *ecm_alloc(struct usb_function_instance *fi)
+@@ -968,9 +970,7 @@ static struct usb_function *ecm_alloc(struct usb_function_instance *fi)
  	ecm->port.func.setup = ecm_setup;
  	ecm->port.func.disable = ecm_disable;
  	ecm->port.func.free_func = ecm_free;
@@ -49,5 +49,5 @@ index 675d2bc538a4..da129788c6b0 100644
  	return &ecm->port.func;
  }
 -- 
-2.47.3
+2.52.0
 

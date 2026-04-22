@@ -1,0 +1,67 @@
+From 8ff4a312dffb9e8d49b0c942f07b44870dd0b246 Mon Sep 17 00:00:00 2001
+From: James Athappilly <jamesatha@meta.com>
+Date: Wed, 22 Apr 2026 09:25:29 -0700
+Subject: [PATCH 20/20] Add back instance id expiration interval
+
+YV4 requires this to build.
+
+Change-Id: I4487f5f7ec10735163452f3a0bddcdaedf55a7a7
+Signed-off-by: James Athappilly <jamesatha@gmail.com>
+---
+ meson.build           | 4 ++++
+ meson.options         | 9 +++++++++
+ requester/handler.hpp | 3 ++-
+ 3 files changed, 15 insertions(+), 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index cdd5fca..0a22cc8 100644
+--- a/meson.build
++++ b/meson.build
+@@ -106,6 +106,10 @@ if get_option('oem-ibm').allowed()
+     )
+     add_project_arguments('-DOEM_IBM', language: 'cpp')
+ endif
++conf_data.set(
++    'INSTANCE_ID_EXPIRATION_INTERVAL',
++    get_option('instance-id-expiration-interval'),
++)
+ conf_data.set('RESPONSE_TIME_OUT', get_option('response-time-out'))
+ conf_data.set(
+     'FLIGHT_RECORDER_MAX_ENTRIES',
+diff --git a/meson.options b/meson.options
+index d9e8340..e69a496 100644
+--- a/meson.options
++++ b/meson.options
+@@ -56,6 +56,15 @@ option(
+                     recorder, this feature will be disabled if it is set to 0''',
+ )
+ 
++option(
++    'instance-id-expiration-interval',
++    type: 'integer',
++    min: 5,
++    max: 6,
++    value: 5,
++    description: 'Instance ID expiration interval in seconds',
++)
++
+ # Default response-time-out set to 2 seconds to facilitate a minimum retry of
+ # the request of 2.
+ option(
+diff --git a/requester/handler.hpp b/requester/handler.hpp
+index bc62d7e..4e5f91d 100644
+--- a/requester/handler.hpp
++++ b/requester/handler.hpp
+@@ -141,7 +141,8 @@ class Handler
+     explicit Handler(
+         PldmTransport* pldmTransport, sdeventplus::Event& event,
+         pldm::InstanceIdDb& instanceIdDb, bool verbose,
+-        std::chrono::seconds instanceIdExpiryInterval = std::chrono::seconds(5),
++        std::chrono::seconds instanceIdExpiryInterval =
++            std::chrono::seconds(INSTANCE_ID_EXPIRATION_INTERVAL),
+         uint8_t numRetries = 2,
+         std::chrono::milliseconds responseTimeOut =
+             std::chrono::milliseconds(RESPONSE_TIME_OUT)) :
+-- 
+2.52.0
+

@@ -1,0 +1,68 @@
+From 686b175ccf71df6ca8a075bb0060af2286a18fbf Mon Sep 17 00:00:00 2001
+From: James Athappilly <jamesatha@meta.com>
+Date: Tue, 21 Apr 2026 23:45:07 -0700
+Subject: [PATCH 19/19] Add back maximum transfer size configuration
+
+When syncing the latest upstream changes, multiple
+Facebook platforms that used this option [1] failed
+to build. This gets us back to building again.
+
+[1] https://github.com/search?q=repo%3Afacebook%2Fopenbmc+Dmaximum-transfer-size
+
+Change-Id: I67797d070feedff07fec797aa4dcfc192dd60442
+Signed-off-by: James Athappilly <jamesatha@gmail.com>
+---
+ fw-update/update_manager.cpp |  1 -
+ meson.build                  |  1 +
+ meson.options                | 11 +++++++++++
+ 3 files changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/fw-update/update_manager.cpp b/fw-update/update_manager.cpp
+index fe16948..9250962 100644
+--- a/fw-update/update_manager.cpp
++++ b/fw-update/update_manager.cpp
+@@ -183,7 +183,6 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
+     const auto& fwDeviceIDRecords = parser->getFwDeviceIDRecords();
+     const auto& compImageInfos = parser->getComponentImageInfos();
+ 
+-    static constexpr uint32_t MAXIMUM_TRANSFER_SIZE = 4096;
+     for (const auto& deviceUpdaterInfo : deviceUpdaterInfos)
+     {
+         const auto& fwDeviceIDRecord =
+diff --git a/meson.build b/meson.build
+index 59537db..cdd5fca 100644
+--- a/meson.build
++++ b/meson.build
+@@ -112,6 +112,7 @@ conf_data.set(
+     get_option('flightrecorder-max-entries'),
+ )
+ conf_data.set_quoted('HOST_EID_PATH', join_paths(package_datadir, 'host_eid'))
++conf_data.set('MAXIMUM_TRANSFER_SIZE', get_option('maximum-transfer-size'))
+ if get_option('transport-implementation') == 'mctp-demux'
+     conf_data.set('PLDM_TRANSPORT_WITH_MCTP_DEMUX', 1)
+ elif get_option('transport-implementation') == 'af-mctp'
+diff --git a/meson.options b/meson.options
+index 6d1685b..d9e8340 100644
+--- a/meson.options
++++ b/meson.options
+@@ -68,6 +68,17 @@ option(
+                     message in milliseconds''',
+ )
+ 
++# Firmware update configuration parameters
++option(
++    'maximum-transfer-size',
++    type: 'integer',
++    min: 16,
++    max: 4294967295,
++    value: 4096,
++    description: '''Maximum size in bytes of the variable payload allowed to be
++                    requested by the FD, via RequestFirmwareData command''',
++)
++
+ # Bios Attributes option
+ option(
+     'system-specific-bios-json',
+-- 
+2.52.0
+

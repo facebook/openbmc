@@ -1,4 +1,4 @@
-From 97a163ed246596d20dcca69358ba0da80a6fdccb Mon Sep 17 00:00:00 2001
+From f455756c4141e4ba749a505fc24255427cfb0c73 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 16:48:20 +0800
 Subject: [PATCH 04/17] platform-mc: Add MCTP recovery option
@@ -11,13 +11,13 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
 Upstream-Status: Pending
 ---
  common/utils.cpp                 | 4 ++++
- meson.build                      | 1 +
+ meson.build                      | 2 ++
  meson.options                    | 8 ++++++++
  platform-mc/terminus_manager.cpp | 2 ++
- 4 files changed, 15 insertions(+)
+ 4 files changed, 16 insertions(+)
 
 diff --git a/common/utils.cpp b/common/utils.cpp
-index 3dd6e6e..d54a9f3 100644
+index a73d2df..f0c59a5 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
 @@ -576,6 +576,7 @@ int emitStateSensorEventSignal(uint8_t tid, uint16_t sensorId,
@@ -39,23 +39,24 @@ index 3dd6e6e..d54a9f3 100644
  
  uint16_t findStateSensorId(const pldm_pdr* pdrRepo, uint8_t tid,
 diff --git a/meson.build b/meson.build
-index 89824a1..465a4ff 100644
+index c68bcf5..50ff5b8 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -136,6 +136,7 @@ conf_data.set(
- )
- conf_data.set('SENSOR_POLLING_TIME', get_option('sensor-polling-time'))
- conf_data.set('UPDATE_TIMEOUT_SECONDS', get_option('update-timeout-seconds'))
-+conf_data.set('MCTP_RECOVERY', get_option('mctp-recovery').allowed())
+@@ -118,6 +118,8 @@ elif get_option('transport-implementation') == 'af-mctp'
+     conf_data.set('PLDM_TRANSPORT_WITH_AF_MCTP', 1)
+ endif
  
++conf_data.set('MCTP_RECOVERY', get_option('mctp-recovery').allowed())
++
  # Firmware update inotify option
  if get_option('fw-update-pkg-inotify').allowed()
+     conf_data.set('FW_UPDATE_INOTIFY_ENABLED', 1)
 diff --git a/meson.options b/meson.options
-index 5670b99..4e78770 100644
+index ca8920f..4c8234f 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -240,6 +240,14 @@ option(
-     value: 249,
+@@ -125,6 +125,14 @@ option(
+     value: 'enabled',
  )
  
 +## MCTP Recovery Option

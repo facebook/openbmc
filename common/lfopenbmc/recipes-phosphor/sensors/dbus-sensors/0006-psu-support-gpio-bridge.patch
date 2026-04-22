@@ -1,7 +1,7 @@
-From 0b00fe7ad14544fade609e71be3b3c6784344a04 Mon Sep 17 00:00:00 2001
+From ccf75c2c6afe0e8750a894d93e60fa7ccca915a9 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Mon, 19 May 2025 15:12:23 +0800
-Subject: [PATCH 06/17] psu: support gpio bridge
+Subject: [PATCH 06/18] psu: support gpio bridge
 
 Support for GPIO bridge is required for certain components that
 need a GPIO to be set before reading, such as battery voltage.
@@ -230,7 +230,7 @@ index b84e1ee..f758470 100644
      boost::asio::random_access_file inputDev;
      boost::asio::steady_timer waitTimer;
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index b48f235..40f87c7 100644
+index 3359259..d1a03fb 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -31,6 +31,7 @@
@@ -327,7 +327,7 @@ index b48f235..40f87c7 100644
              // Protect the hardcoded labelMatch list from changes,
              // by making a copy and modifying that instead.
              // Avoid bleedthrough of one device's customizations to
-@@ -1095,12 +1152,15 @@ static void createSensorsCallback(
+@@ -1141,12 +1198,15 @@ static void createSensorsCallback(
              }
              else
              {
@@ -337,10 +337,10 @@ index b48f235..40f87c7 100644
                  sensors[sensorName] = std::make_shared<PSUSensor>(
                      sensorPathStr, sensorType, objectServer, dbusConnection, io,
                      sensorName, std::move(sensorThresholds), *interfacePath,
-                     readState, findSensorUnit->units, factor, maxReading,
-                     minReading, sensorOffset, labelHead, thresholdConfSize,
--                    pollRate, i2cDev);
-+                    pollRate, i2cDev, std::move(bridgeGpio));
+                     readState, sensorUnits, factor, maxReading, minReading,
+                     sensorOffset, labelHead, thresholdConfSize, pollRate,
+-                    i2cDev);
++                    i2cDev, std::move(bridgeGpio));
                  sensors[sensorName]->setupRead();
                  ++numCreated;
                  lg2::debug("Created '{NUM}' sensors so far", "NUM", numCreated);

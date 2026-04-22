@@ -1,7 +1,7 @@
-From b7d17cafdc4772fa6f4ccaa06ed9c4c3af7d1074 Mon Sep 17 00:00:00 2001
+From 48894303f6dae080406cf49ffed48beb42c36920 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 23 Jan 2025 14:27:45 +0800
-Subject: [PATCH 05/17] psusensors: fixed multiple power state issue
+Subject: [PATCH 05/18] psusensors: fixed multiple power state issue
 
 Link:https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/77391
 
@@ -17,10 +17,10 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  1 file changed, 4 insertions(+)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 48c3d07..b48f235 100644
+index 6bcece7..3359259 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -935,6 +935,10 @@ static void createSensorsCallback(
+@@ -936,6 +936,10 @@ static void createSensorsCallback(
                                                      findPowerState->second);
                  setReadState(powerState, readState);
              }

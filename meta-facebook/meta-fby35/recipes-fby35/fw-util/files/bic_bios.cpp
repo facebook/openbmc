@@ -390,7 +390,7 @@ int BiosComponent::get_version(json& j) {
   try {
     server.ready();
     if ( get_ver_str(ver) < 0 ) {
-      throw "Error in getting the version of BIOS";
+      throw string("Error in getting the version of BIOS");
     }
     j["VERSION"] = ver;
   } catch(string& err) {

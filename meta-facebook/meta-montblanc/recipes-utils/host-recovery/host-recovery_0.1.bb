@@ -45,6 +45,7 @@ RDEPENDS:${PN} += " \
     bash \
     udev-rules \
     jbi \
+    cpldupdate \
 "
 
 FILES:${PN} += "/usr/local/bin"

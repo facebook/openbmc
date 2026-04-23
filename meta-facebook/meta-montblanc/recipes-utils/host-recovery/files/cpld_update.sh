@@ -27,6 +27,7 @@ CPLD_TYPE="$2"
 UPDATE_IMG="$4"
 MODE="$5"
 
+DLL_PATH=/usr/lib/libcpldupdate_dll_ast_jtag.so
 
 usage() {
     echo "Usage: $prog -s <CPLD_TYPE> -f <img_file> <hw|sw>"
@@ -78,26 +79,55 @@ disable_jtag_chain(){
 }
 
 cpld_update_sw_mode(){
+    update_cmd=''
+    expect=''
+
+    netlake_identify
+    ret="$?"
+
+    if [ "$ret" -eq 1 ]; then
+        # NL2 system (bit 7 is 1), use ispvm
+        if [ ! "${UPDATE_IMG##*.}" = "vme" ]; then
+            echo "Error: NL2 system requires a .vme file, but got ${UPDATE_IMG##*/}"
+            return 1
+        fi
+        echo "This is Netlake 2.0, using ispvm for .vme file."
+        update_cmd="ispvm -f 1000 dll \"$DLL_PATH\" \"${UPDATE_IMG}\""
+        expect=1
+    elif [ "$ret" -eq 0 ]; then
+        # NL1 system (bit 7 is 0), use jbi
+        if [ ! "${UPDATE_IMG##*.}" = "jbc" ]; then
+            echo "Error: NL1 system requires a .jbc file, but got ${UPDATE_IMG##*/}"
+            return 1
+        fi
+        echo "This is Netlake 1.0, using jbi for .jbc file."
+        update_cmd="jbi -aPROGRAM -ddo_real_time_isp=1 -W \"${UPDATE_IMG}\""
+        expect=0
+    else
+        # Cannot determine system type. Abort.
+        echo "Error: Failed to read COMe CPLD to identify COMe type. Aborting update."
+        return 1
+    fi
+
     n=1
     while [ "${n}" -le 5 ]; do
         echo "Program $CPLD_TYPE $n times"
 
-        expect=0
-        jbi -aPROGRAM -ddo_real_time_isp=1 -W "${UPDATE_IMG}"
+        eval "$update_cmd"
 
-        result=$?
-        if [ $result -eq $expect ]; then
-                break
+        if [ "$?" -eq "$expect" ]; then
+            return 0
         fi
         n=$((n + 1))
     done
+
+    echo "Update command failed after 5 retries."
+    return 1
 }
 
 trap 'rm -rf /tmp/cpld_update && disable_jtag_chain' INT TERM QUIT EXIT
 
 echo 1 > /tmp/cpld_update
-
-expect=0
 
 if [ ! -e "$UPDATE_IMG" ];then
     echo 'argument '"$UPDATE_IMG"' not exist'
@@ -115,23 +145,25 @@ else
     exit 1
 fi
 
+update_status=1
 case "$MODE" in
     hw)
         echo 'HW mode not support'
         ;;
     sw)
         cpld_update_sw_mode
+        update_status=$?
         ;;
     *)
         # default: sw mode
         cpld_update_sw_mode
+        update_status=$?
         ;;
 esac
 
 disable_jtag_chain
 
-# 0 is returned upon upgrade success
-if [ $((result)) -eq $((expect)) ]; then
+if [ "$update_status" -eq 0 ]; then
     echo "Upgrade successful."
     exit 0
 fi

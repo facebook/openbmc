@@ -1,7 +1,7 @@
-From e991cabc099f505b3f03a2877c76c7c0ccd2abe6 Mon Sep 17 00:00:00 2001
+From 6d96974ab01950e3c34f2ac25210ad560755ac56 Mon Sep 17 00:00:00 2001
 From: Steven Niu <steven.niu.uj@renesas.com>
 Date: Wed, 3 Dec 2025 08:59:41 +0800
-Subject: [PATCH 207/208] i3c:i3c-hub: Improve SMBus Agent buf id sync
+Subject: [PATCH] i3c:i3c-hub: Improve SMBus Agent buf id sync
 
 This modification is to handle the condition when bus to SMBus
 Agent is not in ready state when doing hub initialization.
@@ -14,7 +14,7 @@ In this way, the agent is still available and workable once the
 bus condition is recovered.
 
 Signed-off-by: Steven Niu <steven.niu.uj@renesas.com>
----
+
 v2 LORE: https://lore.kernel.org/all/20250917142055.2806576-2-steven.niu.uj@renesas.com/
 ref: https://github.com/renesas/mid-i3c-linux/tree/i3c-hub/main
 SHA: e991cabc099f505b3f03a2877c76c7c0ccd2abe6
@@ -23,7 +23,7 @@ SHA: e991cabc099f505b3f03a2877c76c7c0ccd2abe6
  1 file changed, 30 insertions(+), 28 deletions(-)
 
 diff --git a/drivers/i3c/i3c-hub.c b/drivers/i3c/i3c-hub.c
-index 91343517e9a1..be81eff8264e 100644
+index db337029db6b..be8c2f189d17 100644
 --- a/drivers/i3c/i3c-hub.c
 +++ b/drivers/i3c/i3c-hub.c
 @@ -1031,66 +1031,68 @@ static int smbus_agent_sync_next_buf_idx(struct i3c_hub_smbus_agent *agent, u32
@@ -132,5 +132,5 @@ index 91343517e9a1..be81eff8264e 100644
  	}
  
 -- 
-2.49.0
+2.52.0
 

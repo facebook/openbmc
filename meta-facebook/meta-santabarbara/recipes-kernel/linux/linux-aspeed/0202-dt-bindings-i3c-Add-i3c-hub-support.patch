@@ -1,13 +1,13 @@
-From 80b15c110bc1002083ff4f47e333ea8b4c83ad91 Mon Sep 17 00:00:00 2001
+From 2c6523d808f0272e05bc0e1545b3e635eeebe49d Mon Sep 17 00:00:00 2001
 From: Steven Niu <steven.niu.uj@renesas.com>
 Date: Wed, 17 Sep 2025 22:20:54 +0800
-Subject: [PATCH 202/203] dt-bindings: i3c: Add i3c-hub support.
+Subject: [PATCH] dt-bindings: i3c: Add i3c-hub support.
 
 Add device tree binding documentation for the i3c hub devices which follows
 the Intel I3C hub specification.
 
 Signed-off-by: Steven Niu <steven.niu.uj@renesas.com>
----
+
 LORE: https://lore.kernel.org/all/20250917142055.2806576-1-steven.niu.uj@renesas.com/
 ---
  .../devicetree/bindings/i3c/i3c-hub.yaml      | 261 ++++++++++++++++++
@@ -282,5 +282,5 @@ index 000000000000..c5af39b031ef
 +    };
 +...
 -- 
-2.49.0
+2.52.0
 

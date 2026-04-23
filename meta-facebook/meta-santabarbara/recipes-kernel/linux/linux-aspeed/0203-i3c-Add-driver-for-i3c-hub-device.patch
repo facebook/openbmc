@@ -1,7 +1,7 @@
-From 210dd06ef8e72db5282069964c37a39737274144 Mon Sep 17 00:00:00 2001
+From a77c64ef5099c3de861bfefb0a6496baf1028b3a Mon Sep 17 00:00:00 2001
 From: Steven Niu <steven.niu.uj@renesas.com>
 Date: Wed, 17 Sep 2025 22:20:55 +0800
-Subject: [PATCH 203/203] i3c: Add driver for i3c-hub device
+Subject: [PATCH] i3c: Add driver for i3c-hub device
 
 This driver supports the following i3c-hub functionability:
 * Enable voltage compatibility across I3C Controller and Target devices.
@@ -12,7 +12,7 @@ This driver supports the following i3c-hub functionability:
   mode.
 
 Signed-off-by: Steven Niu <steven.niu.uj@renesas.com>
----
+
 LORE: https://lore.kernel.org/all/20250917142055.2806576-2-steven.niu.uj@renesas.com/
 ---
  drivers/i3c/Kconfig        |   34 +
@@ -76,7 +76,7 @@ index 11982efbc6d9..ca298faaee9a 100644
 +obj-$(CONFIG_I3C_HUB)	+= i3c-hub.o
 diff --git a/drivers/i3c/i3c-hub.c b/drivers/i3c/i3c-hub.c
 new file mode 100644
-index 000000000000..3bad867e80f3
+index 000000000000..bca25e2ecf68
 --- /dev/null
 +++ b/drivers/i3c/i3c-hub.c
 @@ -0,0 +1,2435 @@
@@ -1361,7 +1361,7 @@ index 000000000000..3bad867e80f3
 +}
 +
 +static int i3c_hub_i2c_xfers(struct i2c_dev_desc *dev,
-+			     const struct i2c_msg *xfers, int nxfers)
++			     struct i2c_msg *xfers, int nxfers)
 +{
 +	struct i3c_master_controller *parent = parent_controller_from_i2c_desc(dev);
 +	struct i3c_hub_bridge *bridge = bus_from_i2c_desc(dev);
@@ -2516,7 +2516,7 @@ index 000000000000..3bad867e80f3
 +MODULE_DESCRIPTION("I3C HUB driver");
 +MODULE_LICENSE("GPL");
 diff --git a/include/linux/i3c/device.h b/include/linux/i3c/device.h
-index ef6217da8253..362867d17663 100644
+index 7f136de4b73e..74a36837bfbe 100644
 --- a/include/linux/i3c/device.h
 +++ b/include/linux/i3c/device.h
 @@ -74,9 +74,11 @@ struct i3c_priv_xfer {
@@ -2532,5 +2532,5 @@ index ef6217da8253..362867d17663 100644
  
  #define I3C_PID_MANUF_ID(pid)		(((pid) & GENMASK_ULL(47, 33)) >> 33)
 -- 
-2.49.0
+2.52.0
 

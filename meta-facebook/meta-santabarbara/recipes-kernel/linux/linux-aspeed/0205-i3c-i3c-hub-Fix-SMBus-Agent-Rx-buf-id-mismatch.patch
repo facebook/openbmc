@@ -1,7 +1,7 @@
-From a346461300cce2505d02a67a7e6bb987a5b391cb Mon Sep 17 00:00:00 2001
+From 8c547cb4d3d9eab8992f70f0ef9f1c9574026da8 Mon Sep 17 00:00:00 2001
 From: Steven Niu <steven.niu.uj@renesas.com>
 Date: Thu, 18 Sep 2025 20:33:53 +0800
-Subject: [PATCH 205/208] i3c:i3c-hub: Fix SMBus Agent Rx buf id mismatch
+Subject: [PATCH] i3c:i3c-hub: Fix SMBus Agent Rx buf id mismatch
 
 Description:
 Sometime the SMBus Agent may report the received data is not in the
@@ -17,7 +17,7 @@ Solution:
 Add mutex log to make the IBI handlers run sequentially.
 
 Signed-off-by: Steven Niu <steven.niu.uj@renesas.com>
----
+
 v2 LORE: https://lore.kernel.org/all/20250917142055.2806576-2-steven.niu.uj@renesas.com/
 ref: https://github.com/renesas/mid-i3c-linux/tree/i3c-hub/main
 SHA: a346461300cce2505d02a67a7e6bb987a5b391cb
@@ -26,7 +26,7 @@ SHA: a346461300cce2505d02a67a7e6bb987a5b391cb
  1 file changed, 8 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/i3c/i3c-hub.c b/drivers/i3c/i3c-hub.c
-index beb12b6c826e..0f79c49cd563 100644
+index c276066a8786..941e6c7b39de 100644
 --- a/drivers/i3c/i3c-hub.c
 +++ b/drivers/i3c/i3c-hub.c
 @@ -369,6 +369,8 @@ struct i3c_hub {
@@ -74,5 +74,5 @@ index beb12b6c826e..0f79c49cd563 100644
  	/* Disable all slave ports */
  	i3c_hub_unprotect_register(hub);
 -- 
-2.49.0
+2.52.0
 

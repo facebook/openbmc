@@ -1,7 +1,7 @@
-From 4c28febd56aed9a01ba2aa3dd67aac44dd3481e1 Mon Sep 17 00:00:00 2001
+From a93f917a847206cb616a777e39d81fbca71b4284 Mon Sep 17 00:00:00 2001
 From: Steven Niu <steven.niu.uj@renesas.com>
 Date: Thu, 18 Sep 2025 17:53:12 +0800
-Subject: [PATCH 204/208] i3c: i3c-hub: Fix SMBus Agent tx timeout issue
+Subject: [PATCH] i3c: i3c-hub: Fix SMBus Agent tx timeout issue
 
 Background:
 Sometimes the SMBus Agent may raise tx timeout issue.
@@ -18,7 +18,7 @@ Remove the TX_DONE clearing action from IBI handler to the beginning of
 SMBus Agent Tx action.
 
 Signed-off-by: Steven Niu <steven.niu.uj@renesas.com>
----
+
 v2 LORE: https://lore.kernel.org/all/20250917142055.2806576-2-steven.niu.uj@renesas.com/
 ref: https://github.com/renesas/mid-i3c-linux/tree/i3c-hub/main
 SHA: 4c28febd56aed9a01ba2aa3dd67aac44dd3481e1
@@ -27,7 +27,7 @@ SHA: 4c28febd56aed9a01ba2aa3dd67aac44dd3481e1
  1 file changed, 23 insertions(+), 14 deletions(-)
 
 diff --git a/drivers/i3c/i3c-hub.c b/drivers/i3c/i3c-hub.c
-index 3bad867e80f3..beb12b6c826e 100644
+index bca25e2ecf68..c276066a8786 100644
 --- a/drivers/i3c/i3c-hub.c
 +++ b/drivers/i3c/i3c-hub.c
 @@ -572,13 +572,6 @@ static void i3c_hub_agent_ibi(struct i3c_hub_smbus_agent *agent)
@@ -83,5 +83,5 @@ index 3bad867e80f3..beb12b6c826e 100644
  	txn_stat = port_stat >> HUB_REG_AGENT_CNTRL_STATUS_TXN_SHIFT;
  	switch (txn_stat) {
 -- 
-2.49.0
+2.52.0
 

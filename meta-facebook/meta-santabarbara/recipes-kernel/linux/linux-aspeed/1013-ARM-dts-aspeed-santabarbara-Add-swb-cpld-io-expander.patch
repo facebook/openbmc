@@ -1,4 +1,4 @@
-From 03c2760a6bc8b6a6a46f2bd48285e493e1563009 Mon Sep 17 00:00:00 2001
+From adf2bf34c02f5b37985904cef2a423a24a4ac6cd Mon Sep 17 00:00:00 2001
 From: Fred Chen <fredchen.openbmc@gmail.com>
 Date: Thu, 29 Jan 2026 14:52:42 +0800
 Subject: [PATCH] ARM: dts: aspeed: santabarbara: Add swb cpld io expander
@@ -15,10 +15,10 @@ Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
  1 file changed, 48 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-index 3e2ccfd197c5..2009226b820d 100644
+index 9d60d18019b8..9dd9233384f4 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-@@ -1346,6 +1346,39 @@ eeprom@50 {
+@@ -1357,6 +1357,39 @@ eeprom@50 {
  &i2c12 {
  	status = "okay";
  
@@ -58,7 +58,7 @@ index 3e2ccfd197c5..2009226b820d 100644
  	gpio@27 {
  		compatible = "nxp,pca9555";
  		reg = <0x27>;
-@@ -1360,6 +1393,21 @@ gpio@27 {
+@@ -1371,6 +1404,21 @@ gpio@27 {
  			"SPI_MUX_SEL","","","";
  	};
  

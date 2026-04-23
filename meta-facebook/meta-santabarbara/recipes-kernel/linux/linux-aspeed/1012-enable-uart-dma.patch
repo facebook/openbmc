@@ -1,4 +1,4 @@
-From 66b1da79a8135a412ca0fd7879a5b3e81c9674ad Mon Sep 17 00:00:00 2001
+From cbc3c1327eec6f5aba4311ce1bf9421e56b1c79b Mon Sep 17 00:00:00 2001
 From: Frank Chen <FrankChen4@quantatw.com>
 Date: Mon, 5 Jan 2026 15:38:53 +0800
 Subject: [PATCH] enable uart dma
@@ -8,10 +8,10 @@ Subject: [PATCH] enable uart dma
  1 file changed, 7 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-index 80a075163..d4dfbe531 100644
+index cfc08d63aec3..9d60d18019b8 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-@@ -2854,13 +2854,20 @@ flash@0 {
+@@ -2877,13 +2877,20 @@ flash@0 {
  	};
  };
  
@@ -33,5 +33,5 @@ index 80a075163..d4dfbe531 100644
  
  &uart4 {
 -- 
-2.43.0
+2.52.0
 

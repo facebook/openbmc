@@ -1,7 +1,7 @@
-From 58df6bf5b23320bd5e1d8e3de533e961d2b67c50 Mon Sep 17 00:00:00 2001
+From 7c09fde71af5aacb42a62b8acee7fc932a5fce58 Mon Sep 17 00:00:00 2001
 From: Steven Niu <steven.niu.uj@renesas.com>
 Date: Wed, 3 Dec 2025 08:34:14 +0800
-Subject: [PATCH 206/208] i3c:i3c-hub: Improve SMBus Agent reset function
+Subject: [PATCH] i3c:i3c-hub: Improve SMBus Agent reset function
 
 SMBus Agent reset is to restore the SMBus Agent when it meet some
 error. The reset function is improved in the following aspect:
@@ -15,7 +15,7 @@ error. The reset function is improved in the following aspect:
    initialization process.
 
 Signed-off-by: Steven Niu <steven.niu.uj@renesas.com>
----
+
 v2 LORE: https://lore.kernel.org/all/20250917142055.2806576-2-steven.niu.uj@renesas.com/
 ref: https://github.com/renesas/mid-i3c-linux/tree/i3c-hub/main
 SHA: 58df6bf5b23320bd5e1d8e3de533e961d2b67c50
@@ -24,7 +24,7 @@ SHA: 58df6bf5b23320bd5e1d8e3de533e961d2b67c50
  1 file changed, 135 insertions(+), 24 deletions(-)
 
 diff --git a/drivers/i3c/i3c-hub.c b/drivers/i3c/i3c-hub.c
-index 0f79c49cd563..91343517e9a1 100644
+index 941e6c7b39de..db337029db6b 100644
 --- a/drivers/i3c/i3c-hub.c
 +++ b/drivers/i3c/i3c-hub.c
 @@ -393,14 +393,23 @@ static inline int i3c_hub_port_disable(struct i3c_hub *hub, unsigned int port_nr
@@ -294,5 +294,5 @@ index 0f79c49cd563..91343517e9a1 100644
  #ifndef CONFIG_I3C_HUB_POLLING_MODE
  	ret = i3c_device_request_ibi(hub->i3cdev, &i3c_hub_ibi_setup);
 -- 
-2.49.0
+2.52.0
 

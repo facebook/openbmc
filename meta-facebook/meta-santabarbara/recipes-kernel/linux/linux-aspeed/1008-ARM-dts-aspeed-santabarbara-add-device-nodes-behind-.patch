@@ -1,4 +1,4 @@
-From 0c09bef981870006c93e4144d54db034465be55a Mon Sep 17 00:00:00 2001
+From 8e1ab031391abbded9311dd157eafeef7db7bd75 Mon Sep 17 00:00:00 2001
 From: "Fred.Chen" <Fred.Chen@quantatw.com>
 Date: Tue, 10 Jun 2025 18:29:38 +0800
 Subject: [PATCH] ARM: dts: aspeed: santabarbara: add device nodes behind the
@@ -17,7 +17,7 @@ https://lore.kernel.org/all/20250917142055.2806576-2-steven.niu.uj@renesas.com/
  1 file changed, 988 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-index 66d0d28e5..caa3b9c8a 100644
+index d4dcd8b537d5..11df069011e3 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 @@ -39,6 +39,14 @@ aliases {
@@ -53,7 +53,7 @@ index 66d0d28e5..caa3b9c8a 100644
  	};
  
  	chosen {
-@@ -1657,6 +1676,975 @@ &i2c15 {
+@@ -1678,6 +1697,975 @@ &i2c15 {
  	status = "okay";
  };
  
@@ -1030,5 +1030,5 @@ index 66d0d28e5..caa3b9c8a 100644
  	aspeed,lpc-io-reg = <0xca8>;
  	status = "okay";
 -- 
-2.47.3
+2.52.0
 

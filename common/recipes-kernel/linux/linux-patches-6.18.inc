@@ -59,6 +59,8 @@ SRC_URI:append = " \
     file://0224-i3c-dw-Handle-unexpected-responses-caused-by-SDA-noi.patch \
     file://0225-i3c-handle-null-transfers-during-response-processing.patch \
     file://0226-i3c-master-ast2600-Fix-missing-of_node-for-virtual-I.patch \
+    file://0227-i3c-dw-Improve-IBI-queue-handling-when-encountering-.patch \
+    file://0228-i3c-master-dw-i3c-master-Fix-race-condition-in-halt-.patch \
 "
 
 #

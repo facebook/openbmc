@@ -1,0 +1,76 @@
+From c1a13d2e93ac9e964043bf1937577fa6467eebcd Mon Sep 17 00:00:00 2001
+From: Zoey Chung <zoey_yj_chung@wiwynn.com>
+Date: Tue, 10 Mar 2026 14:22:37 +0800
+Subject: [PATCH 228/228] i3c: master: dw-i3c-master: Fix race condition in
+ halt/resume sequences
+
+The controller may immediately start a transfer and enter the halt state
+again after resuming from a previous halt (e.g., due to a pending error).
+Polling the transfer status in PRESENT_STATE to detect the exit from
+halt mode is therefore unreliable, as the CPU might miss the brief
+window where the controller was not in the halt state.
+
+Similarly, when software initiates a halt via the abort bit, we should
+wait for the command bit to be cleared by hardware to ensure the
+transition is acknowledged and complete.
+
+Update dw_i3c_master_exit_halt() and dw_i3c_master_enter_halt() to poll
+the command bits in DEVICE_CTRL instead of the status bits in
+PRESENT_STATE for software-initiated transitions. This ensures robust
+synchronization between the CPU and the I3C controller.
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+Change-Id: Icc1deee3e0cd258d8b7ea21985a11be406f3f267
+
+Signed-off-by: Zoey Chung <zoey_yj_chung@wiwynn.com>
+---
+ drivers/i3c/master/dw-i3c-master.c | 19 ++++++++++++-------
+ 1 file changed, 12 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
+index d3426583f8d4..1147b6c16e19 100644
+--- a/drivers/i3c/master/dw-i3c-master.c
++++ b/drivers/i3c/master/dw-i3c-master.c
+@@ -368,14 +368,14 @@ static void dw_i3c_master_enable(struct dw_i3c_master *master)
+ static int dw_i3c_master_exit_halt(struct dw_i3c_master *master)
+ {
+ 	u32 status;
+-	u32 halt_state = CM_TFR_STS_MASTER_HALT;
++
+ 	int ret;
+ 
+ 	writel(readl(master->regs + DEVICE_CTRL) | DEV_CTRL_RESUME,
+ 	       master->regs + DEVICE_CTRL);
+ 
+-	ret = readl_poll_timeout_atomic(master->regs + PRESENT_STATE, status,
+-					FIELD_GET(CM_TFR_STS, status) != halt_state,
++	ret = readl_poll_timeout_atomic(master->regs + DEVICE_CTRL, status,
++					!(status & DEV_CTRL_RESUME),
+ 					10, 1000000);
+ 
+ 	if (ret)
+@@ -398,12 +398,17 @@ static int dw_i3c_master_enter_halt(struct dw_i3c_master *master, bool by_sw)
+ 	u32 halt_state = CM_TFR_STS_MASTER_HALT;
+ 	int ret;
+ 
+-	if (by_sw)
++	if (by_sw) {
+ 		dw_i3c_master_abort(master);
+ 
+-	ret = readl_poll_timeout_atomic(master->regs + PRESENT_STATE, status,
+-					FIELD_GET(CM_TFR_STS, status) == halt_state,
+-					10, 1000000);
++		ret = readl_poll_timeout_atomic(master->regs + DEVICE_CTRL, status,
++						!(status & DEV_CTRL_ABORT),
++						10, 1000000);
++	} else {
++		ret = readl_poll_timeout_atomic(master->regs + PRESENT_STATE, status,
++						FIELD_GET(CM_TFR_STS, status) == halt_state,
++						10, 1000000);
++	}
+ 
+ 	if (ret)
+ 		dev_err(&master->base.dev,
+-- 
+2.52.0
+

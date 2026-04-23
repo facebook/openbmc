@@ -1,0 +1,206 @@
+From 6c31632a0fe41d9dd216757385cbf98f5aa4e4cd Mon Sep 17 00:00:00 2001
+From: Zoey Chung <zoey_yj_chung@wiwynn.com>
+Date: Tue, 10 Mar 2026 14:16:35 +0800
+Subject: [PATCH 227/228] i3c: dw: Improve IBI queue handling when encountering
+ infinite IBI data reads
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+This patch bundles the IBI-status read operation together with draining
+all remaining IBI data. The hardware behaves as follows:
+- Each read from the IBI data port returns one IBI status followed by N
+  IBI data bytes.
+- If the controller transitions into the “IBI data read” state and the
+IBI queue is reset at that moment, the controller may remain stuck in
+that state.
+- A subsequent read from the IBI data port will then trigger a bus hang.
+
+This update refactors IBI-queue draining into a helper function to ensure
+stale data is always cleared when re-enabling the controller.
+It also improves the SIR handler to abort, recover, and resume the
+controller when an unexpected transfer state is detected, returning an
+error status to prevent further processing.
+Additionally, handling is added to clean up dummy data after recovery.
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+Change-Id: I601ae330c83bb9c588dbb710266cdfec7a28452f
+
+Adapted and modified from original patch:
+https://github.com/AspeedTech-BMC/linux/commit/31bdf2656c7ee3105154a3d48836c65fe86244ee
+
+Signed-off-by: Zoey Chung <zoey_yj_chung@wiwynn.com>
+---
+ drivers/i3c/master/ast2600-i3c-master.c | 42 ++++++++++++++++++++-----
+ drivers/i3c/master/dw-i3c-master.c      | 31 ++++++++++++------
+ 2 files changed, 55 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/i3c/master/ast2600-i3c-master.c b/drivers/i3c/master/ast2600-i3c-master.c
+index 8250da40a60b..1d003eacf83c 100644
+--- a/drivers/i3c/master/ast2600-i3c-master.c
++++ b/drivers/i3c/master/ast2600-i3c-master.c
+@@ -49,6 +49,10 @@
+ 
+ /* dw-i3c registers */
+ #define IBI_QUEUE_STATUS			0x18
++#define IBI_QUEUE_STATUS_DATA_LEN(x)	((x) & GENMASK(7, 0))
++
++#define QUEUE_STATUS_LEVEL		0x4c
++#define QUEUE_STATUS_IBI_STATUS_CNT(x) (((x) & GENMASK(28, 24)) >> 24)
+ 
+ #define PRESENT_STATE				0x54
+ #define   CM_TFR_STS				GENMASK(13, 8)
+@@ -211,6 +215,20 @@ static void ast2600_i3c_gen_target_reset_pattern(struct dw_i3c_master *dw)
+ 			  SDA_IN_SW_MODE_EN | SCL_IN_SW_MODE_EN, 0);
+ }
+ 
++static void aspeed_i3c_drain_ibi_queue(struct dw_i3c_master *dw)
++{
++	/*
++	 * Clear the IBI queue to avoid any stale IBI data when
++	 * re-enabling the controller.
++	 */
++	u32 ibi_status = readl(dw->regs + IBI_QUEUE_STATUS);
++	u8 length = IBI_QUEUE_STATUS_DATA_LEN(ibi_status);
++	int i, nwords = (length + 3) >> 2;
++
++	for (i = 0; i < nwords; i++)
++		readl(dw->regs + IBI_QUEUE_STATUS);
++}
++
+ static bool ast2600_i3c_fsm_exit_serv_ibi(struct dw_i3c_master *dw)
+ {
+ 	u32 state;
+@@ -219,7 +237,7 @@ static bool ast2600_i3c_fsm_exit_serv_ibi(struct dw_i3c_master *dw)
+ 	 * Clear the IBI queue to enable the hardware to generate SCL and
+ 	 * begin detecting the T-bit low to stop reading IBI data.
+ 	 */
+-	readl(dw->regs + IBI_QUEUE_STATUS);
++	aspeed_i3c_drain_ibi_queue(dw);
+ 	state = FIELD_GET(CM_TFR_STS, readl(dw->regs + PRESENT_STATE));
+ 	if (state == CM_TFR_STS_MASTER_SERV_IBI)
+ 		return false;
+@@ -230,7 +248,8 @@ static bool ast2600_i3c_fsm_exit_serv_ibi(struct dw_i3c_master *dw)
+ static void ast2600_i3c_gen_tbits_in(struct dw_i3c_master *dw)
+ {
+ 	struct ast2600_i3c *i3c = to_ast2600_i3c(dw);
+-	bool is_idle;
++	bool is_halted;
++	u32 nibi, i;
+ 	int ret;
+ 
+ 	regmap_write_bits(i3c->global_regs, AST2600_I3CG_REG1(i3c->global_idx),
+@@ -241,14 +260,21 @@ static void ast2600_i3c_gen_tbits_in(struct dw_i3c_master *dw)
+ 	regmap_write_bits(i3c->global_regs, AST2600_I3CG_REG1(i3c->global_idx),
+ 			  SDA_IN_SW_MODE_VAL, 0);
+ 	ret = readx_poll_timeout_atomic(ast2600_i3c_fsm_exit_serv_ibi, dw,
+-					is_idle, is_idle, 0, 2000000);
++					is_halted, is_halted, 0, 2000000);
+ 	regmap_write_bits(i3c->global_regs, AST2600_I3CG_REG1(i3c->global_idx),
+ 			  SDA_IN_SW_MODE_EN, 0);
+-	if (ret)
+-		dev_err(&dw->base.dev,
+-			"Failed to exit the I3C fsm from %lx(MASTER_SERV_IBI): %d",
+-			FIELD_GET(CM_TFR_STS, readl(dw->regs + PRESENT_STATE)),
+-			ret);
++	if (ret) {
++ 		dev_err(&dw->base.dev,
++ 			"Failed to exit the I3C fsm from %lx(MASTER_SERV_IBI): %d",
++ 			FIELD_GET(CM_TFR_STS, readl(dw->regs + PRESENT_STATE)),
++ 			ret);
++	} else {
++		/* Clear the dummy data generated in this recovery process */
++		nibi = readl(dw->regs + QUEUE_STATUS_LEVEL);
++		nibi = QUEUE_STATUS_IBI_STATUS_CNT(nibi);
++		for (i = 0; i < nibi; i++)
++			aspeed_i3c_drain_ibi_queue(dw);
++	}
+ }
+ 
+ static const struct dw_i3c_platform_ops ast2600_i3c_ops = {
+diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
+index 8d74ae1105e1..d3426583f8d4 100644
+--- a/drivers/i3c/master/dw-i3c-master.c
++++ b/drivers/i3c/master/dw-i3c-master.c
+@@ -386,17 +386,20 @@ static int dw_i3c_master_exit_halt(struct dw_i3c_master *master)
+ 	return ret;
+ }
+ 
++static inline void dw_i3c_master_abort(struct dw_i3c_master *master)
++{
++	writel(readl(master->regs + DEVICE_CTRL) | DEV_CTRL_ABORT,
++	       master->regs + DEVICE_CTRL);
++}
++
+ static int dw_i3c_master_enter_halt(struct dw_i3c_master *master, bool by_sw)
+ {
+ 	u32 status;
+ 	u32 halt_state = CM_TFR_STS_MASTER_HALT;
+ 	int ret;
+ 
+-	if (by_sw) {
+-		dev_err(&master->base.dev, "%s: by software.\n", __func__);
+-		writel(readl(master->regs + DEVICE_CTRL) | DEV_CTRL_ABORT,
+-		       master->regs + DEVICE_CTRL);
+-	}
++	if (by_sw)
++		dw_i3c_master_abort(master);
+ 
+ 	ret = readl_poll_timeout_atomic(master->regs + PRESENT_STATE, status,
+ 					FIELD_GET(CM_TFR_STS, status) == halt_state,
+@@ -1636,8 +1639,8 @@ static void dw_i3c_master_drain_ibi_queue(struct dw_i3c_master *master,
+ 		readl(master->regs + IBI_QUEUE_STATUS);
+ }
+ 
+-static void dw_i3c_master_handle_ibi_sir(struct dw_i3c_master *master,
+-					 u32 status)
++static int dw_i3c_master_handle_ibi_sir(struct dw_i3c_master *master,
++					u32 status)
+ {
+ 	struct dw_i3c_i2c_dev_data *data;
+ 	struct i3c_ibi_slot *slot;
+@@ -1647,6 +1650,7 @@ static void dw_i3c_master_handle_ibi_sir(struct dw_i3c_master *master,
+ 	u8 addr, len;
+ 	int idx;
+ 	bool terminate_ibi = false;
++	int ret = 0;
+ 
+ 	addr = IBI_QUEUE_IBI_ADDR(status);
+ 	len = IBI_QUEUE_STATUS_DATA_LEN(status);
+@@ -1701,15 +1705,21 @@ static void dw_i3c_master_handle_ibi_sir(struct dw_i3c_master *master,
+ 
+ 	spin_unlock_irqrestore(&master->devs_lock, flags);
+ 
+-	return;
++	return ret;
+ 
+ err_drain:
+ 	dw_i3c_master_drain_ibi_queue(master, len);
+ 	state = FIELD_GET(CM_TFR_STS, readl(master->regs + PRESENT_STATE));
+-	if (terminate_ibi && state == CM_TFR_STS_MASTER_SERV_IBI)
++	if (terminate_ibi && state == CM_TFR_STS_MASTER_SERV_IBI) {
++		dw_i3c_master_abort(master);
+ 		master->platform_ops->gen_tbits_in(master);
++		dw_i3c_master_exit_halt(master);
++		ret = -EIO;
++	}
+ 
+ 	spin_unlock_irqrestore(&master->devs_lock, flags);
++
++	return ret;
+ }
+ 
+ /* "ibis": referring to In-Band Interrupts, and not
+@@ -1745,7 +1755,8 @@ static void dw_i3c_master_irq_handle_ibis(struct dw_i3c_master *master)
+ 		}
+ 
+ 		if (IBI_TYPE_SIRQ(reg)) {
+-			dw_i3c_master_handle_ibi_sir(master, reg);
++			if (dw_i3c_master_handle_ibi_sir(master, reg))
++				break;
+ 		} else if (IBI_TYPE_HJ(reg)) {
+ 			queue_work(master->base.wq, &master->hj_work);
+ 		} else {
+-- 
+2.52.0
+

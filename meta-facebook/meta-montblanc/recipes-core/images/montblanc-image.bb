@@ -25,4 +25,5 @@ IMAGE_INSTALL += " \
     show-tech \
     fbmc-snapshot \
     host-recovery \
+    apml \
     "

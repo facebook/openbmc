@@ -1,7 +1,7 @@
-From 67d7b06c2672cc78cc2fb0c54653a8306319a946 Mon Sep 17 00:00:00 2001
+From 2fa8e1738fe27c8a116f81c2b77ac8b12226be94 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Wed, 4 Feb 2026 15:05:26 +0800
-Subject: [PATCH 606/606] hwmon: pmbus: tda38640: Add identification for
+Subject: [PATCH 606/607] hwmon: pmbus: tda38640: Add identification for
  PMBUS_VOUT_MODE
 
 Add support for detecting the PMBUS_VOUT_MODE for tda38640. Both
@@ -17,7 +17,7 @@ Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
  1 file changed, 25 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/hwmon/pmbus/tda38640.c b/drivers/hwmon/pmbus/tda38640.c
-index d902d39f4..3d0c174ea 100644
+index d902d39f49f4..3d0c174ea20b 100644
 --- a/drivers/hwmon/pmbus/tda38640.c
 +++ b/drivers/hwmon/pmbus/tda38640.c
 @@ -139,10 +139,33 @@ static int svid_mode(struct i2c_client *client, struct tda38640_data *data)

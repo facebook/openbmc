@@ -1,7 +1,7 @@
-From 4389596d75cfc1c980eef3d2c8712ade27a34e56 Mon Sep 17 00:00:00 2001
+From dad6d0b6b4122b6ad608487f8534dc3f7c7e19da Mon Sep 17 00:00:00 2001
 From: Jeremy Kerr <jk@codeconstruct.com.au>
 Date: Thu, 12 Sep 2024 14:23:57 +0800
-Subject: [PATCH 220/226] net: ncsi: check for netlink-driven responses before
+Subject: [PATCH 220/228] net: ncsi: check for netlink-driven responses before
  requiring a handler
 
 Lore link:

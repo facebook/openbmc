@@ -1,7 +1,7 @@
-From f740bb9e1f22b0a212be4a06b20b920f75dc2522 Mon Sep 17 00:00:00 2001
+From 6680f62957a49cb80371fc9ccea0c5b8b47e21e4 Mon Sep 17 00:00:00 2001
 From: Chia-Wei Wang <chiawei_wang@aspeedtech.com>
 Date: Mon, 20 Mar 2023 16:11:31 +0800
-Subject: [PATCH 213/226] dmaengine: aspeed: Add AST2600 UART DMA driver
+Subject: [PATCH 213/228] dmaengine: aspeed: Add AST2600 UART DMA driver
 
 Aspeed AST2600 UART DMA (UDMA) includes 28 channels for the
 DMA transmission and recevie of each UART devices.
@@ -598,5 +598,5 @@ index 000000000000..acacc5581bbc
 +MODULE_LICENSE("GPL");
 +MODULE_AUTHOR("Chia-Wei Wang <chiawei_wang@aspeedtech.com");
 -- 
-2.47.3
+2.52.0
 

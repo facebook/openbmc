@@ -1,7 +1,7 @@
-From fc97dc8895d9217348a29aaeb355dda92cb694c6 Mon Sep 17 00:00:00 2001
+From 3d3183c9d54036c3b7c9b80c7c59bce7cfe74b42 Mon Sep 17 00:00:00 2001
 From: dhineskumareswaran <dhineskumar.eswaran@celestica.com>
 Date: Mon, 5 Dec 2022 12:17:20 +0000
-Subject: [PATCH 200/226] spi: aspeed: add shutdown path for AST25XX SPI
+Subject: [PATCH 200/228] spi: aspeed: add shutdown path for AST25XX SPI
  controller
 
 Summary:
@@ -101,5 +101,5 @@ index 62a11142bd63..84595bb8453d 100644
  		.name		= DEVICE_NAME,
  		.of_match_table = aspeed_spi_matches,
 -- 
-2.47.3
+2.52.0
 

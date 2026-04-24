@@ -1,7 +1,7 @@
-From b6bc167155402be2b52b2e9bacf85035430efbc7 Mon Sep 17 00:00:00 2001
+From 9218f588905502ca1d82f0c32e6e51bdac68db48 Mon Sep 17 00:00:00 2001
 From: Chia-Wei Wang <chiawei_wang@aspeedtech.com>
 Date: Mon, 20 Mar 2023 16:11:33 +0800
-Subject: [PATCH 218/226] ARM: dts: aspeed-g6: Add UDMA node
+Subject: [PATCH 218/228] ARM: dts: aspeed-g6: Add UDMA node
 
 Add the device tree node for the UART DMA (UDMA) controller.
 
@@ -31,5 +31,5 @@ index e4edb45c2bfc..d56715df1922 100644
  
  		i3c: bus@1e7a0000 {
 -- 
-2.47.3
+2.52.0
 

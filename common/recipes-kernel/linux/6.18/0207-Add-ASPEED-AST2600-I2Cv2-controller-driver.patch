@@ -1,7 +1,7 @@
-From 9c70126f85e84caba0cf5eca6144209bbf813ec7 Mon Sep 17 00:00:00 2001
+From b3bdde8e78a217f5e1ec7c10dbbd92c9b29af4be Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Tue, 29 Oct 2024 09:43:50 +0800
-Subject: [PATCH 207/226] Add ASPEED AST2600 I2Cv2 controller driver
+Subject: [PATCH 207/228] Add ASPEED AST2600 I2Cv2 controller driver
 
 Add AST2600 i2cv2 new register set driver.
 
@@ -220,7 +220,7 @@ index 0ac0d40f4bb8..1edc1311c882 100644
  		resets = <&syscon ASPEED_RESET_I2C>;
  		interrupts = <GIC_SPI 125 IRQ_TYPE_LEVEL_HIGH>;
 diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
-index fd81e49638aa..305c17648c5f 100644
+index 4515ded4338c..4cc3ded96cf1 100644
 --- a/drivers/i2c/busses/Kconfig
 +++ b/drivers/i2c/busses/Kconfig
 @@ -413,6 +413,17 @@ config I2C_ASPEED
@@ -2005,5 +2005,5 @@ index 000000000000..04caf28634f0
 +MODULE_DESCRIPTION("ASPEED AST2600 I2C Controller Driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.47.3
+2.52.0
 

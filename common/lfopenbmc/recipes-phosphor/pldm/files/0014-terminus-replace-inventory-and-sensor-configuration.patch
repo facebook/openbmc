@@ -1,7 +1,7 @@
-From 205bb7da52ab457066eb05183ccd8c3ce27918f4 Mon Sep 17 00:00:00 2001
+From 46f044271ad4edbb8dcfbd1442c55bbc9c7207c0 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Fri, 26 Dec 2025 14:35:14 +0800
-Subject: [PATCH 14/17] terminus: replace inventory and sensor configuration
+Subject: [PATCH 14/20] terminus: replace inventory and sensor configuration
 
 Add fetchEntityManagerConfiguration to retrieve inventory name and
 sensor configuration from EntityManager.

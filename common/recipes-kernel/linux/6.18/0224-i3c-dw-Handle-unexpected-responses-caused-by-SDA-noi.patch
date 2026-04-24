@@ -1,7 +1,7 @@
-From 024d0b86d791921f5471d9f88a4c975e99915fd3 Mon Sep 17 00:00:00 2001
+From 626cf471c5398fa292c8340d06101a3d70824d06 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Fri, 21 Nov 2025 18:32:59 +0800
-Subject: [PATCH 224/226] i3c: dw: Handle unexpected responses caused by SDA
+Subject: [PATCH 224/228] i3c: dw: Handle unexpected responses caused by SDA
  noise
 
 Currently, if an IBI address appears in the DAT (including the 0x2 hot-join
@@ -20,7 +20,7 @@ Change-Id: I6d66b30ea02fcb3f9bc0c6514d62989ab26c65fb
  1 file changed, 14 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
-index 2cebcd480c77..40a013121b32 100644
+index 5984003716f3..c38c746f3fd4 100644
 --- a/drivers/i3c/master/dw-i3c-master.c
 +++ b/drivers/i3c/master/dw-i3c-master.c
 @@ -568,8 +568,12 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
@@ -87,5 +87,5 @@ index 2cebcd480c77..40a013121b32 100644
  			      COMMAND_PORT_ROC;
  
 -- 
-2.47.3
+2.52.0
 

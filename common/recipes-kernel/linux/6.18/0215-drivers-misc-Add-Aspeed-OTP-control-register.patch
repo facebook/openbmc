@@ -1,7 +1,7 @@
-From b87a845000828a6fbdf4f565a6c6f9637d665176 Mon Sep 17 00:00:00 2001
+From 8418958c174f8af5f9b9f5dcd63f29c26e3919c3 Mon Sep 17 00:00:00 2001
 From: Johnny Huang <johnny_huang@aspeedtech.com>
 Date: Mon, 26 Dec 2022 10:04:48 +0800
-Subject: [PATCH 215/226] drivers/misc: Add Aspeed OTP control register
+Subject: [PATCH 215/228] drivers/misc: Add Aspeed OTP control register
 
 AST2600 built-in 64Kbit one time programmable (OTP) memory for
 configuration, strap, key storage, patch and user data. Each memory
@@ -37,7 +37,7 @@ index c5c1964fda6d..e4edb45c2bfc 100644
  
  		i3c: bus@1e7a0000 {
 diff --git a/drivers/soc/aspeed/Kconfig b/drivers/soc/aspeed/Kconfig
-index 084c91eb301d..685ba709c177 100644
+index 11e4db998c06..6f6d80901970 100644
 --- a/drivers/soc/aspeed/Kconfig
 +++ b/drivers/soc/aspeed/Kconfig
 @@ -34,6 +34,10 @@ config ASPEED_UART_ROUTING
@@ -741,5 +741,5 @@ index 000000000000..3293555c312c
 +#endif /* _UAPI_LINUX_ASPEED_JTAG_H */
 \ No newline at end of file
 -- 
-2.47.3
+2.52.0
 

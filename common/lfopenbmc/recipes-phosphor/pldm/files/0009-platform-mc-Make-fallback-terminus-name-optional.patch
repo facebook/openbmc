@@ -1,7 +1,7 @@
-From 33cee800c754e0931f622c5491a536e2fd9a6d60 Mon Sep 17 00:00:00 2001
+From 89599b603de88a10e2c996a5d9800fe09569a2bc Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Mon, 13 Oct 2025 11:10:37 +0000
-Subject: [PATCH 09/17] platform-mc: Make fallback terminus name optional
+Subject: [PATCH 09/20] platform-mc: Make fallback terminus name optional
 
 Previously, since commit `platform-mc: Use a default terminus name if
 empty` [1], a fallback name in the format "Terminus_{tid}" was always

@@ -1,7 +1,7 @@
-From 1105c264f060438f712563a289ec87075f7e47cc Mon Sep 17 00:00:00 2001
+From 7d698ab5c35de0d0095262a9dfb6eb3965ad8219 Mon Sep 17 00:00:00 2001
 From: Jacky Chou <jacky_chou@aspeedtech.com>
 Date: Tue, 29 Apr 2025 18:27:38 +0800
-Subject: [PATCH 219/226] net: ftgmac100: reset MAC by SCU on RMII
+Subject: [PATCH 219/228] net: ftgmac100: reset MAC by SCU on RMII
 
 Because MAC SW reset cannot reset RMII interface, use scu reset to fully
 reset MAC and RMII.
@@ -50,5 +50,5 @@ index d56715df1922..ed6a2824da0a 100644
  		};
  
 -- 
-2.47.3
+2.52.0
 

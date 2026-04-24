@@ -1,7 +1,7 @@
-From caab585e2405c125a4dbfb031161dfe9a8239936 Mon Sep 17 00:00:00 2001
+From 2eff815c99dfae34ea2be27eb32a1b5fda991913 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 2 Oct 2025 08:50:56 +0000
-Subject: [PATCH 07/17] requester: Always re-initialize MCTP info
+Subject: [PATCH 07/20] requester: Always re-initialize MCTP info
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -85,7 +85,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  2 files changed, 52 insertions(+)
 
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 789ff09..0876dfa 100644
+index a00ca78..40ef062 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -297,6 +297,50 @@ void MctpDiscovery::removeFromExistingMctpInfos(MctpInfos& mctpInfos,

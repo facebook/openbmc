@@ -1,7 +1,7 @@
-From 713f2aa934359e15d4e90a7f110ad5178b72d9df Mon Sep 17 00:00:00 2001
+From be3be09f1a0d1eb9ce1c153f2558dda79b6eb897 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Sun, 8 Jun 2025 20:24:14 +0800
-Subject: [PATCH 217/226] i2c-ast2600: support ssif
+Subject: [PATCH 217/228] i2c-ast2600: support ssif
 
 ---
  drivers/i2c/busses/i2c-ast2600.c | 22 ++++++++++++++++------
@@ -60,5 +60,5 @@ index 04caf28634f0..c8656d6ff455 100644
  	writel(sts, i2c_bus->reg_base + AST2600_I2CS_ISR);
  	readl(i2c_bus->reg_base + AST2600_I2CS_ISR);
 -- 
-2.47.3
+2.52.0
 

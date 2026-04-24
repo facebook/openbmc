@@ -1,7 +1,7 @@
-From 4804f0258a3bec37183f7ae36bcb514a2981d46d Mon Sep 17 00:00:00 2001
+From ebd0872bc81bd6259238c6a342f393324510b0ea Mon Sep 17 00:00:00 2001
 From: Zoey Chung <zoey_yj_chung@wiwynn.com>
 Date: Mon, 18 Aug 2025 18:20:47 +0800
-Subject: [PATCH 222/226] i3c: dw: Add err messages for ibi_fifo_clear handling
+Subject: [PATCH 222/228] i3c: dw: Add err messages for ibi_fifo_clear handling
 
 Description:
 - Add err messages and return code logging for `dw_i3c_master_enter_halt`,
@@ -19,7 +19,7 @@ Test Plan:
  1 file changed, 17 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
-index 4e4ea64519c8..997d1362c0a3 100644
+index 54034be7be24..e690f3030d2f 100644
 --- a/drivers/i3c/master/dw-i3c-master.c
 +++ b/drivers/i3c/master/dw-i3c-master.c
 @@ -392,9 +392,11 @@ static int dw_i3c_master_enter_halt(struct dw_i3c_master *master, bool by_sw)
@@ -82,5 +82,5 @@ index 4e4ea64519c8..997d1362c0a3 100644
  	dw_i3c_master_exit_halt(master);
  }
 -- 
-2.47.3
+2.52.0
 

@@ -121,3 +121,7 @@ tools/fboss-lite/pyvenv.cfg
 tools/fboss-lite/bin
 tools/fboss-lite/lib
 tools/fboss-lite/lib64
+
+# ai slop garbage
+*.profraw
+*.profdata

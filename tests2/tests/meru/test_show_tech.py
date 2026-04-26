@@ -51,6 +51,12 @@ class ShowTechTest(unittest.TestCase):
         self.assertTrue(status_match, "Userver is not powered on")
 
     def test_smb_powergood_status(self):
+        cpu_id_match = re.search(
+            r"##### WEDGE CPU ID #####\s*8",
+            self.show_tech_output,
+        )
+        if cpu_id_match:
+            return
         powergood_status = "0x1"
         status_match = re.search(
             rf"##### SWITCHCARD POWERGOOD STATUS #####\s*{powergood_status}",

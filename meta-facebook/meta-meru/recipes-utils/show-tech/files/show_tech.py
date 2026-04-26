@@ -175,17 +175,28 @@ def showtech(quietLevel=0):
     print("##### SHOWTECH VERSION {} #####".format(VERSION))
     print("################################\n")
 
+    cpu_id = 0
+    for i in range(4):
+        out = runCmd(f"gpiocli get-value --shadow CPU_ID_{i}")
+        if out.rstrip()[-1] == "1":
+            cpu_id |= 1 << i
+    print(
+        "##### WEDGE CPU ID #####\n{}\n".format(cpu_id)
+    )
+
     print(
         "##### USER PWR STATUS #####\n{}".format(
             runCmd("/usr/local/bin/wedge_power.sh status", verbose=True)
         )
     )
 
-    print(
-        "##### SWITCHCARD POWERGOOD STATUS #####\n{}".format(
-            runCmd("head -n 1 {}".format(SC_POWERGOOD))
+    if cpu_id != 8: # Not Ruggles
+        print(
+            "##### SWITCHCARD POWERGOOD STATUS #####\n{}".format(
+                runCmd("head -n 1 {}".format(SC_POWERGOOD))
+            )
         )
-    )
+
     print("##### BMC SYSTEM TIME #####\n{}".format(runCmd("date")))
     print("##### BMC HOSTNAME #####\n{}".format(runCmd("hostname")))
     print(

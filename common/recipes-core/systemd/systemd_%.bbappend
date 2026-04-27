@@ -21,6 +21,10 @@ EXTRA_OEMESON += "-Ddns-servers=''"
 # Disable 'storage target mode' for size savings.
 EXTRA_OEMESON:append:openbmc-fb-master = " -Dstoragetm=false"
 
+# Disable systemd shell profile drop-ins (including the OSC context script) 
+# to prevent terminal garbage on serial consoles.
+EXTRA_OEMESON += "-Dshellprofiledir=no"
+
 ALTERNATIVE:${PN} += "init"
 ALTERNATIVE_TARGET[init] = "${rootlibexecdir}/systemd/systemd"
 ALTERNATIVE_LINK_NAME[init] = "${base_sbindir}/init"

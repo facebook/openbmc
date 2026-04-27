@@ -145,10 +145,10 @@ static void do_set_power_limit(std::string pwrLimit) {
   std::cout << "All done. It takes a minute to take effect." << std::endl;
 }
 
-static void do_get_power_limit(bool json_fmt) {
+static void do_get_power_limit(bool json_fmt, bool maxAllowed) {
   nlohmann::json json_data;
   for (int i = 1; i <= MAX_NUM_GPUs; i++) {
-    std::optional<long> current_gpu_power_limit = hgx::getPowerLimit(i);
+    std::optional<long> current_gpu_power_limit = hgx::getPowerLimit(i, maxAllowed);
     if (current_gpu_power_limit.has_value()) {
       if (json_fmt) {
         json_data["GPU" + std::to_string(i)][VALUE_JSON_KEY] =
@@ -382,7 +382,11 @@ int main(int argc, char* argv[]) {
 
   auto getPwrLimit =
       app.add_subcommand("get-pwr-limit", "Get power limit from GPU");
-  getPwrLimit->callback([&]() { do_get_power_limit(json_fmt); });
+  getPwrLimit->callback([&]() { do_get_power_limit(json_fmt, false); });
+
+  auto getMaxPwrLimit =
+      app.add_subcommand("get-max-pwr-limit", "Get max allowed power limit from GPU");
+  getMaxPwrLimit->callback([&]() { do_get_power_limit(json_fmt, true); });
 
   auto vNIC_health = app.add_subcommand("vNIC_health", "Get vNIC health");
   vNIC_health->add_option("FRU", fru, "ubb")->required();

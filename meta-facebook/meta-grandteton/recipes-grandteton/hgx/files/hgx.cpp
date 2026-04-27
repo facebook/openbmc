@@ -767,11 +767,24 @@ std::string setPowerLimit(int gpuID, std::string pwrLimit) {
   return hgx.patch(url, patchJson.dump());
 }
 
-std::optional<long> getPowerLimit(int gpuID) {
-  long pwrLimitDec = 0;
-  int low = 0, mid = 0, high = 0;
-  std::string pwrLimitLow, pwrLimitMid, pwrLimitHigh;
+std::optional<long> getParameter(std::vector<std::string>::iterator b, std::vector<std::string>::iterator e)
+{
+  if (std::all_of(b, e, [](auto& s){ return s == "0xff" or s == "0xFF"; })) {
+    return std::nullopt;
+  }
+  long val = 0;
+  size_t off = 0;
+  for (auto it = b; it != e; it++) {
+    long byte = std::stoi(*it, nullptr, 16);
+    val |= (byte << off);
+    off += 8;
+  }
+  return val / 1000;
+}
 
+
+
+std::optional<long> getPowerLimit(int gpuID, bool maxAllowed) {
   std::string url = HMC_URL +
   "Managers/HGX_BMC_0/Actions/Oem/NvidiaManager.AsyncOOBRawCommand";
 
@@ -786,20 +799,13 @@ std::optional<long> getPowerLimit(int gpuID) {
   json jresp = json::parse(hgx.post(url, jsonObject.dump(), false));
 
   if (jresp.contains("AsyncDataOut") && jresp["AsyncDataOut"].is_array()) {
-    json asyncDataOut = jresp["AsyncDataOut"];
+    std::vector<std::string> asyncDataOut = jresp["AsyncDataOut"];
     if (asyncDataOut.size() == 16) {
-      pwrLimitLow =  asyncDataOut[8];
-      pwrLimitMid = asyncDataOut[9];
-      pwrLimitHigh =  asyncDataOut[10];
-      pwrLimitLow.erase(0, 2);
-      pwrLimitMid.erase(0, 2);
-      pwrLimitHigh.erase(0, 2);
-
-      low = std::stoi(pwrLimitLow, nullptr, 16);
-      mid = std::stoi(pwrLimitMid, nullptr, 16);
-      high = std::stoi(pwrLimitHigh, nullptr, 16);
-      pwrLimitDec = ((high << 16) | (mid << 8) | low)/1000;
-      return pwrLimitDec;
+      if (maxAllowed) {
+        return getParameter(asyncDataOut.begin() + 4, asyncDataOut.begin() + 8); // 7
+      } else {
+        return getParameter(asyncDataOut.begin() + 8, asyncDataOut.begin() + 12); // 11
+      }
     }
   }
   return std::nullopt; // We did not get a valid response

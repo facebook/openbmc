@@ -130,8 +130,8 @@ std::string getMeasurement(const std::string& comp);
 // Set power limit
 std::string setPowerLimit(int gpuID, std::string pwrLimit);
 
-// Get power limit
-std::optional<long> getPowerLimit(int gpuID);
+// Get power limit. Optionally allow returning the maximum allowed.
+std::optional<long> getPowerLimit(int gpuID, bool maxAllowed = false);
 
 // Request for the value of the sensor, but return all the JSON output
 std::string sensorRaw(const std::string& component, const std::string& name);

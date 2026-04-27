@@ -76,6 +76,20 @@ BIOS_MTD_LABEL="host-flash"
 
 PID_FILE="/var/run/spi_util.pid"
 
+probe_flashes() {
+    echo "Probe flashes.."
+
+    echo "$SPI1_MASTER" > "${ASPEED_SMC_DRIVER_DIR}/unbind"
+    sleep 1
+
+    echo "$SPI1_MASTER" > "${ASPEED_SMC_DRIVER_DIR}/bind"
+    sleep 1
+}
+
+mtd_driver_unbind_spi() {
+    echo "$SPI1_MASTER" > "${ASPEED_SMC_DRIVER_DIR}/unbind"
+}
+
 cleanup_spi() {
     echo "Restore environment.."
     # select muxing FLASH to normal mode
@@ -92,10 +106,14 @@ cleanup_spi() {
     #                  ( ) BMC_SPI1_CS0 0x5
     #                  (X) SPI_PCH_CS0 0x4
     #                  ( ) SPI_PCH_CS1 0x6
+    gpiocli -s BMC_I2C1_EN set-value 1
     i2cset -f -y "$COMECPLD_I2C_BUS" "$COMECPLD_I2C_ADDR" 0xa 0x4
+    gpiocli -s BMC_I2C1_EN set-value 0
 
     rm -rf /tmp/.spi_util*
     rm -f "$PID_FILE"
+
+    mtd_driver_unbind_spi
 }
 
 check_duplicate_process() {
@@ -106,13 +124,6 @@ check_duplicate_process() {
     fi
 }
 
-enable_cpld_access() {
-    echo "Enable access of COME and SCM CPLDs.."
-
-    gpiocli -s BMC_I2C1_EN set-value 1
-    gpiocli -s BMC_I2C2_EN set-value 1
-}
-
 select_iob_flash() {
     echo "Select IOB_FPGA flash.."
 
@@ -120,7 +131,9 @@ select_iob_flash() {
     #              to (X) IOB_FPGA   0
     #                 ( ) COME_BIOS  1
     #                 ( ) PRoT       2
+    gpiocli -s BMC_I2C2_EN set-value 1
     i2cset -f -y "$SCMCPLD_I2C_BUS" "$SCMCPLD_I2C_ADDR" 0x34 0x0
+    gpiocli -s BMC_I2C2_EN set-value 0
 
     # BMC GPIO: IOB_FLASH
     #              to ( ) IOB_FPGA 0
@@ -135,7 +148,9 @@ select_bios_flash() {
     #              to ( ) IOB_FPGA   0
     #                 (X) COME_BIOS  1
     #                 ( ) PRoT       2
+    gpiocli -s BMC_I2C2_EN set-value 1
     i2cset -f -y "$SCMCPLD_I2C_BUS" "$SCMCPLD_I2C_ADDR" 0x34 0x1
+    gpiocli -s BMC_I2C2_EN set-value 0
 
     # BMC GPIO: BIOS_FLASH
     #              to ( ) NetLake CPU 0
@@ -147,17 +162,9 @@ select_bios_flash() {
     #                  (X) BMC_SPI1_CS0 0x5
     #                  ( ) SPI_PCH_CS0 0x4
     #                  ( ) SPI_PCH_CS1 0x6
+    gpiocli -s BMC_I2C1_EN set-value 1
     i2cset -f -y "$COMECPLD_I2C_BUS" "$COMECPLD_I2C_ADDR" 0xa 0x5
-}
-
-probe_flashes() {
-    echo "Probe flashes.."
-
-    echo "$SPI1_MASTER" > "${ASPEED_SMC_DRIVER_DIR}/unbind"
-    sleep 1
-
-    echo "$SPI1_MASTER" > "${ASPEED_SMC_DRIVER_DIR}/bind"
-    sleep 1
+    gpiocli -s BMC_I2C1_EN set-value 0
 }
 
 flash_mtd_read() {
@@ -165,14 +172,14 @@ flash_mtd_read() {
     file="$2"
 
     echo "Read /dev/mtd${mtd_idx} to $file..."
-    flashrom -p linux_mtd:dev="$mtd_idx" -r "$file"
+    flashrom -p linux_mtd:dev="$mtd_idx" -r "$file" 2>&1
 }
 
 flash_mtd_erase() {
     mtd_idx="$1"
 
     echo "Erase /dev/mtd$mtd_idx.."
-    flashrom -p linux_mtd:dev="$mtd_idx" -E
+    flashrom -p linux_mtd:dev="$mtd_idx" -E 2>&1
 }
 
 expand_image_file() {
@@ -202,7 +209,43 @@ flash_mtd_write() {
     expand_image_file "$mtd_idx" "$tmpfile"
 
     echo "Write $tmpfile to /dev/mtd$mtd_idx.."
-    flashrom -p linux_mtd:dev="$mtd_idx" -w "$tmpfile"
+    flashrom -p linux_mtd:dev="$mtd_idx" -w "$tmpfile" 2>&1
+}
+
+check_flash_file_size() {
+    _file_path=$1
+    if [ ! -f "$_file_path" ]; then
+        echo "Error: File not found." >&2
+        exit 1
+    fi
+    _file_size=$(wc -c < "$_file_path" | tr -d ' ')
+    if [ -z "$_file_size" ]; then
+        echo "Error: Could not determine size of file '$_file_path'." >&2
+        exit 1
+    fi
+    size_64m=$((64 * 1024 * 1024))
+    size_32m=$((32 * 1024 * 1024))
+    netlake_identify
+    netlake_type=$?
+    case "$netlake_type" in
+        1) # Netlake 2.0
+            if [ "$_file_size" -lt "$size_64m" ]; then
+                echo "Error: File size ($_file_size bytes) is less than 64MB for Netlake 2.0." 2>&1
+                exit 1
+            fi
+            ;;
+        0) # Netlake 1.0
+            if [ "$_file_size" -eq 0 ] || [ "$_file_size" -gt "$size_32m" ]; then
+                echo "Error: File size for Netlake 1.0 must be between 1 byte and 32MB." 2>&1
+                exit 1
+            fi
+            ;;
+        *)
+            echo "Error: Failed to identify Netlake version. Exit code: $netlake_type" 2>&1
+            exit 1
+            ;;
+    esac
+    echo "Flash file size:$_file_size"
 }
 
 do_flash_io() {
@@ -210,8 +253,6 @@ do_flash_io() {
     device=$2
     file=$3
     mtd_label=""
-
-    enable_cpld_access
 
     # Select the right flash chip
     case "$device" in
@@ -223,6 +264,9 @@ do_flash_io() {
         "COME_BIOS")
             select_bios_flash
             mtd_label="${BIOS_MTD_LABEL}"
+            if [ "$action" = "write" ]; then
+                check_flash_file_size "$file"
+            fi
         ;;
 
         *)

@@ -760,7 +760,7 @@
             "name": "BBU_Module_2_BMS_Data_CRC"
         },
         {
-            "begin": 12367,
+            "begin": 12368,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -768,7 +768,7 @@
             "name": "BBU_Module_2_DC_Bus_Voltage"
         },
         {
-            "begin": 12368,
+            "begin": 12369,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -776,7 +776,7 @@
             "name": "BBU_Module_2_Battery_Pack_Voltage"
         },
         {
-            "begin": 12369,
+            "begin": 12370,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -784,7 +784,7 @@
             "name": "BBU_Module_2_Current"
         },
         {
-            "begin": 12370,
+            "begin": 12371,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -792,7 +792,7 @@
             "name": "BBU_Module_2_Battery_Pack_Temperature"
         },
         {
-            "begin": 12371,
+            "begin": 12372,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -800,7 +800,7 @@
             "name": "BBU_Module_2_Remaining_Capacity"
         },
         {
-            "begin": 12372,
+            "begin": 12373,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -808,13 +808,13 @@
             "name": "BBU_Module_2_Full_Charge_Capacity"
         },
         {
-            "begin": 12373,
+            "begin": 12374,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_2_SOC"
         },
         {
-            "begin": 12374,
+            "begin": 12375,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -886,7 +886,7 @@
             "name": "BBU_Module_2_Battery_Status1"
         },
         {
-            "begin": 12375,
+            "begin": 12376,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -914,7 +914,7 @@
             "name": "BBU_Module_2_Battery_Status2"
         },
         {
-            "begin": 12376,
+            "begin": 12377,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -978,7 +978,7 @@
             "name": "BBU_Module_2_Battery_Status3"
         },
         {
-            "begin": 12377,
+            "begin": 12378,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -1038,7 +1038,7 @@
             "name": "BBU_Module_2_Battery_Status4"
         },
         {
-            "begin": 12378,
+            "begin": 12379,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -1078,7 +1078,7 @@
             "name": "BBU_Module_2_Battery_Status5"
         },
         {
-            "begin": 12379,
+            "begin": 12380,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -1118,18 +1118,10 @@
             "name": "BBU_Module_2_Battery_Status6"
         },
         {
-            "begin": 12380,
+            "begin": 12381,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_2_State_Machine"
-        },
-        {
-            "begin": 12381,
-            "length": 1,
-            "format": "FLOAT",
-            "precision": 0,
-            "scale": 0.001,
-            "name": "BBU_Module_2_Cell_Maximum_Voltage"
         },
         {
             "begin": 12382,
@@ -1137,15 +1129,15 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_2_Cell_Minimum_Voltage"
+            "name": "BBU_Module_2_Cell_Maximum_Voltage"
         },
         {
             "begin": 12383,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
-            "scale": 0.1,
-            "name": "BBU_Module_2_Cell_Maximum_Temperature"
+            "scale": 0.001,
+            "name": "BBU_Module_2_Cell_Minimum_Voltage"
         },
         {
             "begin": 12384,
@@ -1153,15 +1145,15 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_2_Cell_Minimum_Temperature"
+            "name": "BBU_Module_2_Cell_Maximum_Temperature"
         },
         {
             "begin": 12385,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
-            "scale": 0.001,
-            "name": "BBU_Module_2_Cell_Voltage_1"
+            "scale": 0.1,
+            "name": "BBU_Module_2_Cell_Minimum_Temperature"
         },
         {
             "begin": 12386,
@@ -1169,7 +1161,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_2_Cell_Voltage_2"
+            "name": "BBU_Module_2_Cell_Voltage_1"
         },
         {
             "begin": 12387,
@@ -1177,7 +1169,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_2_Cell_Voltage_3"
+            "name": "BBU_Module_2_Cell_Voltage_2"
         },
         {
             "begin": 12388,
@@ -1185,7 +1177,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_2_Cell_Voltage_4"
+            "name": "BBU_Module_2_Cell_Voltage_3"
         },
         {
             "begin": 12389,
@@ -1193,7 +1185,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_2_Cell_Voltage_5"
+            "name": "BBU_Module_2_Cell_Voltage_4"
         },
         {
             "begin": 12390,
@@ -1201,7 +1193,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_2_Cell_Voltage_6"
+            "name": "BBU_Module_2_Cell_Voltage_5"
         },
         {
             "begin": 12391,
@@ -1209,7 +1201,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_2_Cell_Voltage_7"
+            "name": "BBU_Module_2_Cell_Voltage_6"
         },
         {
             "begin": 12392,
@@ -1217,7 +1209,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_2_Cell_Voltage_8"
+            "name": "BBU_Module_2_Cell_Voltage_7"
         },
         {
             "begin": 12393,
@@ -1225,7 +1217,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_2_Cell_Voltage_9"
+            "name": "BBU_Module_2_Cell_Voltage_8"
         },
         {
             "begin": 12394,
@@ -1233,7 +1225,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_2_Cell_Voltage_10"
+            "name": "BBU_Module_2_Cell_Voltage_9"
         },
         {
             "begin": 12395,
@@ -1241,7 +1233,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_2_Cell_Voltage_11"
+            "name": "BBU_Module_2_Cell_Voltage_10"
         },
         {
             "begin": 12396,
@@ -1249,7 +1241,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_2_Cell_Voltage_12"
+            "name": "BBU_Module_2_Cell_Voltage_11"
         },
         {
             "begin": 12397,
@@ -1257,7 +1249,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_2_Cell_Voltage_13"
+            "name": "BBU_Module_2_Cell_Voltage_12"
         },
         {
             "begin": 12398,
@@ -1265,15 +1257,15 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_2_Cell_Voltage_14"
+            "name": "BBU_Module_2_Cell_Voltage_13"
         },
         {
             "begin": 12399,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
-            "scale": 0.1,
-            "name": "BBU_Module_2_Cell_Temperature_1"
+            "scale": 0.001,
+            "name": "BBU_Module_2_Cell_Voltage_14"
         },
         {
             "begin": 12400,
@@ -1281,7 +1273,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_2_Cell_Temperature_2"
+            "name": "BBU_Module_2_Cell_Temperature_1"
         },
         {
             "begin": 12401,
@@ -1289,7 +1281,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_2_Cell_Temperature_3"
+            "name": "BBU_Module_2_Cell_Temperature_2"
         },
         {
             "begin": 12402,
@@ -1297,7 +1289,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_2_Cell_Temperature_4"
+            "name": "BBU_Module_2_Cell_Temperature_3"
         },
         {
             "begin": 12403,
@@ -1305,7 +1297,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_2_DMOSFET_Temperature"
+            "name": "BBU_Module_2_Cell_Temperature_4"
         },
         {
             "begin": 12404,
@@ -1313,34 +1305,42 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_2_CMOSFET_Temperature"
+            "name": "BBU_Module_2_DMOSFET_Temperature"
         },
         {
             "begin": 12405,
             "length": 1,
-            "format": "INTEGER",
-            "name": "BBU_Module_2_SOH_test_phase"
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "BBU_Module_2_CMOSFET_Temperature"
         },
         {
             "begin": 12406,
             "length": 1,
             "format": "INTEGER",
-            "name": "BBU_Module_2_SOH_test_result"
+            "name": "BBU_Module_2_SOH_test_phase"
         },
         {
             "begin": 12407,
             "length": 1,
             "format": "INTEGER",
-            "name": "BBU_Module_2_SOH"
+            "name": "BBU_Module_2_SOH_test_result"
         },
         {
             "begin": 12408,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "BBU_Module_2_SOH"
+        },
+        {
+            "begin": 12409,
             "length": 2,
             "format": "INTEGER",
             "name": "BBU_Module_2_SOH_Test_Unix_Time"
         },
         {
-            "begin": 12410,
+            "begin": 12411,
             "length": 2,
             "format": "INTEGER",
             "name": "BBU_Module_2_SOH_BMS_Unix_Time"
@@ -1428,7 +1428,7 @@
             "name": "BBU_Module_3_BMS_Data_CRC"
         },
         {
-            "begin": 12431,
+            "begin": 12432,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -1436,7 +1436,7 @@
             "name": "BBU_Module_3_DC_Bus_Voltage"
         },
         {
-            "begin": 12432,
+            "begin": 12433,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -1444,7 +1444,7 @@
             "name": "BBU_Module_3_Battery_Pack_Voltage"
         },
         {
-            "begin": 12433,
+            "begin": 12434,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -1452,7 +1452,7 @@
             "name": "BBU_Module_3_Current"
         },
         {
-            "begin": 12434,
+            "begin": 12435,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -1460,7 +1460,7 @@
             "name": "BBU_Module_3_Battery_Pack_Temperature"
         },
         {
-            "begin": 12435,
+            "begin": 12436,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -1468,7 +1468,7 @@
             "name": "BBU_Module_3_Remaining_Capacity"
         },
         {
-            "begin": 12436,
+            "begin": 12437,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -1476,13 +1476,13 @@
             "name": "BBU_Module_3_Full_Charge_Capacity"
         },
         {
-            "begin": 12437,
+            "begin": 12438,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_3_SOC"
         },
         {
-            "begin": 12438,
+            "begin": 12439,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -1554,7 +1554,7 @@
             "name": "BBU_Module_3_Battery_Status1"
         },
         {
-            "begin": 12439,
+            "begin": 12440,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -1582,7 +1582,7 @@
             "name": "BBU_Module_3_Battery_Status2"
         },
         {
-            "begin": 12440,
+            "begin": 12441,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -1646,7 +1646,7 @@
             "name": "BBU_Module_3_Battery_Status3"
         },
         {
-            "begin": 12441,
+            "begin": 12442,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -1706,7 +1706,7 @@
             "name": "BBU_Module_3_Battery_Status4"
         },
         {
-            "begin": 12442,
+            "begin": 12443,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -1746,7 +1746,7 @@
             "name": "BBU_Module_3_Battery_Status5"
         },
         {
-            "begin": 12443,
+            "begin": 12444,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -1786,18 +1786,10 @@
             "name": "BBU_Module_3_Battery_Status6"
         },
         {
-            "begin": 12444,
+            "begin": 12445,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_3_State_Machine"
-        },
-        {
-            "begin": 12445,
-            "length": 1,
-            "format": "FLOAT",
-            "precision": 0,
-            "scale": 0.001,
-            "name": "BBU_Module_3_Cell_Maximum_Voltage"
         },
         {
             "begin": 12446,
@@ -1805,15 +1797,15 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_3_Cell_Minimum_Voltage"
+            "name": "BBU_Module_3_Cell_Maximum_Voltage"
         },
         {
             "begin": 12447,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
-            "scale": 0.1,
-            "name": "BBU_Module_3_Cell_Maximum_Temperature"
+            "scale": 0.001,
+            "name": "BBU_Module_3_Cell_Minimum_Voltage"
         },
         {
             "begin": 12448,
@@ -1821,15 +1813,15 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_3_Cell_Minimum_Temperature"
+            "name": "BBU_Module_3_Cell_Maximum_Temperature"
         },
         {
             "begin": 12449,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
-            "scale": 0.001,
-            "name": "BBU_Module_3_Cell_Voltage_1"
+            "scale": 0.1,
+            "name": "BBU_Module_3_Cell_Minimum_Temperature"
         },
         {
             "begin": 12450,
@@ -1837,7 +1829,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_3_Cell_Voltage_2"
+            "name": "BBU_Module_3_Cell_Voltage_1"
         },
         {
             "begin": 12451,
@@ -1845,7 +1837,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_3_Cell_Voltage_3"
+            "name": "BBU_Module_3_Cell_Voltage_2"
         },
         {
             "begin": 12452,
@@ -1853,7 +1845,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_3_Cell_Voltage_4"
+            "name": "BBU_Module_3_Cell_Voltage_3"
         },
         {
             "begin": 12453,
@@ -1861,7 +1853,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_3_Cell_Voltage_5"
+            "name": "BBU_Module_3_Cell_Voltage_4"
         },
         {
             "begin": 12454,
@@ -1869,7 +1861,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_3_Cell_Voltage_6"
+            "name": "BBU_Module_3_Cell_Voltage_5"
         },
         {
             "begin": 12455,
@@ -1877,7 +1869,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_3_Cell_Voltage_7"
+            "name": "BBU_Module_3_Cell_Voltage_6"
         },
         {
             "begin": 12456,
@@ -1885,7 +1877,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_3_Cell_Voltage_8"
+            "name": "BBU_Module_3_Cell_Voltage_7"
         },
         {
             "begin": 12457,
@@ -1893,7 +1885,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_3_Cell_Voltage_9"
+            "name": "BBU_Module_3_Cell_Voltage_8"
         },
         {
             "begin": 12458,
@@ -1901,7 +1893,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_3_Cell_Voltage_10"
+            "name": "BBU_Module_3_Cell_Voltage_9"
         },
         {
             "begin": 12459,
@@ -1909,7 +1901,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_3_Cell_Voltage_11"
+            "name": "BBU_Module_3_Cell_Voltage_10"
         },
         {
             "begin": 12460,
@@ -1917,7 +1909,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_3_Cell_Voltage_12"
+            "name": "BBU_Module_3_Cell_Voltage_11"
         },
         {
             "begin": 12461,
@@ -1925,7 +1917,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_3_Cell_Voltage_13"
+            "name": "BBU_Module_3_Cell_Voltage_12"
         },
         {
             "begin": 12462,
@@ -1933,15 +1925,15 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_3_Cell_Voltage_14"
+            "name": "BBU_Module_3_Cell_Voltage_13"
         },
         {
             "begin": 12463,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
-            "scale": 0.1,
-            "name": "BBU_Module_3_Cell_Temperature_1"
+            "scale": 0.001,
+            "name": "BBU_Module_3_Cell_Voltage_14"
         },
         {
             "begin": 12464,
@@ -1949,7 +1941,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_3_Cell_Temperature_2"
+            "name": "BBU_Module_3_Cell_Temperature_1"
         },
         {
             "begin": 12465,
@@ -1957,7 +1949,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_3_Cell_Temperature_3"
+            "name": "BBU_Module_3_Cell_Temperature_2"
         },
         {
             "begin": 12466,
@@ -1965,7 +1957,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_3_Cell_Temperature_4"
+            "name": "BBU_Module_3_Cell_Temperature_3"
         },
         {
             "begin": 12467,
@@ -1973,7 +1965,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_3_DMOSFET_Temperature"
+            "name": "BBU_Module_3_Cell_Temperature_4"
         },
         {
             "begin": 12468,
@@ -1981,34 +1973,42 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_3_CMOSFET_Temperature"
+            "name": "BBU_Module_3_DMOSFET_Temperature"
         },
         {
             "begin": 12469,
             "length": 1,
-            "format": "INTEGER",
-            "name": "BBU_Module_3_SOH_test_phase"
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "BBU_Module_3_CMOSFET_Temperature"
         },
         {
             "begin": 12470,
             "length": 1,
             "format": "INTEGER",
-            "name": "BBU_Module_3_SOH_test_result"
+            "name": "BBU_Module_3_SOH_test_phase"
         },
         {
             "begin": 12471,
             "length": 1,
             "format": "INTEGER",
-            "name": "BBU_Module_3_SOH"
+            "name": "BBU_Module_3_SOH_test_result"
         },
         {
             "begin": 12472,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "BBU_Module_3_SOH"
+        },
+        {
+            "begin": 12473,
             "length": 2,
             "format": "INTEGER",
             "name": "BBU_Module_3_SOH_Test_Unix_Time"
         },
         {
-            "begin": 12474,
+            "begin": 12475,
             "length": 2,
             "format": "INTEGER",
             "name": "BBU_Module_3_SOH_BMS_Unix_Time"
@@ -2096,7 +2096,7 @@
             "name": "BBU_Module_4_BMS_Data_CRC"
         },
         {
-            "begin": 12495,
+            "begin": 12496,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -2104,7 +2104,7 @@
             "name": "BBU_Module_4_DC_Bus_Voltage"
         },
         {
-            "begin": 12496,
+            "begin": 12497,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -2112,7 +2112,7 @@
             "name": "BBU_Module_4_Battery_Pack_Voltage"
         },
         {
-            "begin": 12497,
+            "begin": 12498,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -2120,7 +2120,7 @@
             "name": "BBU_Module_4_Current"
         },
         {
-            "begin": 12498,
+            "begin": 12499,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -2128,7 +2128,7 @@
             "name": "BBU_Module_4_Battery_Pack_Temperature"
         },
         {
-            "begin": 12499,
+            "begin": 12500,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -2136,7 +2136,7 @@
             "name": "BBU_Module_4_Remaining_Capacity"
         },
         {
-            "begin": 12500,
+            "begin": 12501,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -2144,13 +2144,13 @@
             "name": "BBU_Module_4_Full_Charge_Capacity"
         },
         {
-            "begin": 12501,
+            "begin": 12502,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_4_SOC"
         },
         {
-            "begin": 12502,
+            "begin": 12503,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -2222,7 +2222,7 @@
             "name": "BBU_Module_4_Battery_Status1"
         },
         {
-            "begin": 12503,
+            "begin": 12504,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -2250,7 +2250,7 @@
             "name": "BBU_Module_4_Battery_Status2"
         },
         {
-            "begin": 12504,
+            "begin": 12505,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -2314,7 +2314,7 @@
             "name": "BBU_Module_4_Battery_Status3"
         },
         {
-            "begin": 12505,
+            "begin": 12506,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -2374,7 +2374,7 @@
             "name": "BBU_Module_4_Battery_Status4"
         },
         {
-            "begin": 12506,
+            "begin": 12507,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -2414,7 +2414,7 @@
             "name": "BBU_Module_4_Battery_Status5"
         },
         {
-            "begin": 12507,
+            "begin": 12508,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -2454,18 +2454,10 @@
             "name": "BBU_Module_4_Battery_Status6"
         },
         {
-            "begin": 12508,
+            "begin": 12509,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_4_State_Machine"
-        },
-        {
-            "begin": 12509,
-            "length": 1,
-            "format": "FLOAT",
-            "precision": 0,
-            "scale": 0.001,
-            "name": "BBU_Module_4_Cell_Maximum_Voltage"
         },
         {
             "begin": 12510,
@@ -2473,15 +2465,15 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_4_Cell_Minimum_Voltage"
+            "name": "BBU_Module_4_Cell_Maximum_Voltage"
         },
         {
             "begin": 12511,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
-            "scale": 0.1,
-            "name": "BBU_Module_4_Cell_Maximum_Temperature"
+            "scale": 0.001,
+            "name": "BBU_Module_4_Cell_Minimum_Voltage"
         },
         {
             "begin": 12512,
@@ -2489,15 +2481,15 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_4_Cell_Minimum_Temperature"
+            "name": "BBU_Module_4_Cell_Maximum_Temperature"
         },
         {
             "begin": 12513,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
-            "scale": 0.001,
-            "name": "BBU_Module_4_Cell_Voltage_1"
+            "scale": 0.1,
+            "name": "BBU_Module_4_Cell_Minimum_Temperature"
         },
         {
             "begin": 12514,
@@ -2505,7 +2497,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_4_Cell_Voltage_2"
+            "name": "BBU_Module_4_Cell_Voltage_1"
         },
         {
             "begin": 12515,
@@ -2513,7 +2505,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_4_Cell_Voltage_3"
+            "name": "BBU_Module_4_Cell_Voltage_2"
         },
         {
             "begin": 12516,
@@ -2521,7 +2513,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_4_Cell_Voltage_4"
+            "name": "BBU_Module_4_Cell_Voltage_3"
         },
         {
             "begin": 12517,
@@ -2529,7 +2521,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_4_Cell_Voltage_5"
+            "name": "BBU_Module_4_Cell_Voltage_4"
         },
         {
             "begin": 12518,
@@ -2537,7 +2529,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_4_Cell_Voltage_6"
+            "name": "BBU_Module_4_Cell_Voltage_5"
         },
         {
             "begin": 12519,
@@ -2545,7 +2537,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_4_Cell_Voltage_7"
+            "name": "BBU_Module_4_Cell_Voltage_6"
         },
         {
             "begin": 12520,
@@ -2553,7 +2545,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_4_Cell_Voltage_8"
+            "name": "BBU_Module_4_Cell_Voltage_7"
         },
         {
             "begin": 12521,
@@ -2561,7 +2553,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_4_Cell_Voltage_9"
+            "name": "BBU_Module_4_Cell_Voltage_8"
         },
         {
             "begin": 12522,
@@ -2569,7 +2561,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_4_Cell_Voltage_10"
+            "name": "BBU_Module_4_Cell_Voltage_9"
         },
         {
             "begin": 12523,
@@ -2577,7 +2569,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_4_Cell_Voltage_11"
+            "name": "BBU_Module_4_Cell_Voltage_10"
         },
         {
             "begin": 12524,
@@ -2585,7 +2577,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_4_Cell_Voltage_12"
+            "name": "BBU_Module_4_Cell_Voltage_11"
         },
         {
             "begin": 12525,
@@ -2593,7 +2585,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_4_Cell_Voltage_13"
+            "name": "BBU_Module_4_Cell_Voltage_12"
         },
         {
             "begin": 12526,
@@ -2601,15 +2593,15 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_4_Cell_Voltage_14"
+            "name": "BBU_Module_4_Cell_Voltage_13"
         },
         {
             "begin": 12527,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
-            "scale": 0.1,
-            "name": "BBU_Module_4_Cell_Temperature_1"
+            "scale": 0.001,
+            "name": "BBU_Module_4_Cell_Voltage_14"
         },
         {
             "begin": 12528,
@@ -2617,7 +2609,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_4_Cell_Temperature_2"
+            "name": "BBU_Module_4_Cell_Temperature_1"
         },
         {
             "begin": 12529,
@@ -2625,7 +2617,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_4_Cell_Temperature_3"
+            "name": "BBU_Module_4_Cell_Temperature_2"
         },
         {
             "begin": 12530,
@@ -2633,7 +2625,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_4_Cell_Temperature_4"
+            "name": "BBU_Module_4_Cell_Temperature_3"
         },
         {
             "begin": 12531,
@@ -2641,7 +2633,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_4_DMOSFET_Temperature"
+            "name": "BBU_Module_4_Cell_Temperature_4"
         },
         {
             "begin": 12532,
@@ -2649,34 +2641,42 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_4_CMOSFET_Temperature"
+            "name": "BBU_Module_4_DMOSFET_Temperature"
         },
         {
             "begin": 12533,
             "length": 1,
-            "format": "INTEGER",
-            "name": "BBU_Module_4_SOH_test_phase"
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "BBU_Module_4_CMOSFET_Temperature"
         },
         {
             "begin": 12534,
             "length": 1,
             "format": "INTEGER",
-            "name": "BBU_Module_4_SOH_test_result"
+            "name": "BBU_Module_4_SOH_test_phase"
         },
         {
             "begin": 12535,
             "length": 1,
             "format": "INTEGER",
-            "name": "BBU_Module_4_SOH"
+            "name": "BBU_Module_4_SOH_test_result"
         },
         {
             "begin": 12536,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "BBU_Module_4_SOH"
+        },
+        {
+            "begin": 12537,
             "length": 2,
             "format": "INTEGER",
             "name": "BBU_Module_4_SOH_Test_Unix_Time"
         },
         {
-            "begin": 12538,
+            "begin": 12539,
             "length": 2,
             "format": "INTEGER",
             "name": "BBU_Module_4_SOH_BMS_Unix_Time"
@@ -2764,7 +2764,7 @@
             "name": "BBU_Module_5_BMS_Data_CRC"
         },
         {
-            "begin": 12559,
+            "begin": 12560,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -2772,7 +2772,7 @@
             "name": "BBU_Module_5_DC_Bus_Voltage"
         },
         {
-            "begin": 12560,
+            "begin": 12561,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -2780,7 +2780,7 @@
             "name": "BBU_Module_5_Battery_Pack_Voltage"
         },
         {
-            "begin": 12561,
+            "begin": 12562,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -2788,7 +2788,7 @@
             "name": "BBU_Module_5_Current"
         },
         {
-            "begin": 12562,
+            "begin": 12563,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -2796,7 +2796,7 @@
             "name": "BBU_Module_5_Battery_Pack_Temperature"
         },
         {
-            "begin": 12563,
+            "begin": 12564,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -2804,7 +2804,7 @@
             "name": "BBU_Module_5_Remaining_Capacity"
         },
         {
-            "begin": 12564,
+            "begin": 12565,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -2812,13 +2812,13 @@
             "name": "BBU_Module_5_Full_Charge_Capacity"
         },
         {
-            "begin": 12565,
+            "begin": 12566,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_5_SOC"
         },
         {
-            "begin": 12566,
+            "begin": 12567,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -2890,7 +2890,7 @@
             "name": "BBU_Module_5_Battery_Status1"
         },
         {
-            "begin": 12567,
+            "begin": 12568,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -2918,7 +2918,7 @@
             "name": "BBU_Module_5_Battery_Status2"
         },
         {
-            "begin": 12568,
+            "begin": 12569,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -2982,7 +2982,7 @@
             "name": "BBU_Module_5_Battery_Status3"
         },
         {
-            "begin": 12569,
+            "begin": 12570,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -3042,7 +3042,7 @@
             "name": "BBU_Module_5_Battery_Status4"
         },
         {
-            "begin": 12570,
+            "begin": 12571,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -3082,7 +3082,7 @@
             "name": "BBU_Module_5_Battery_Status5"
         },
         {
-            "begin": 12571,
+            "begin": 12572,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -3122,18 +3122,10 @@
             "name": "BBU_Module_5_Battery_Status6"
         },
         {
-            "begin": 12572,
+            "begin": 12573,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_5_State_Machine"
-        },
-        {
-            "begin": 12573,
-            "length": 1,
-            "format": "FLOAT",
-            "precision": 0,
-            "scale": 0.001,
-            "name": "BBU_Module_5_Cell_Maximum_Voltage"
         },
         {
             "begin": 12574,
@@ -3141,15 +3133,15 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_5_Cell_Minimum_Voltage"
+            "name": "BBU_Module_5_Cell_Maximum_Voltage"
         },
         {
             "begin": 12575,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
-            "scale": 0.1,
-            "name": "BBU_Module_5_Cell_Maximum_Temperature"
+            "scale": 0.001,
+            "name": "BBU_Module_5_Cell_Minimum_Voltage"
         },
         {
             "begin": 12576,
@@ -3157,15 +3149,15 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_5_Cell_Minimum_Temperature"
+            "name": "BBU_Module_5_Cell_Maximum_Temperature"
         },
         {
             "begin": 12577,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
-            "scale": 0.001,
-            "name": "BBU_Module_5_Cell_Voltage_1"
+            "scale": 0.1,
+            "name": "BBU_Module_5_Cell_Minimum_Temperature"
         },
         {
             "begin": 12578,
@@ -3173,7 +3165,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_5_Cell_Voltage_2"
+            "name": "BBU_Module_5_Cell_Voltage_1"
         },
         {
             "begin": 12579,
@@ -3181,7 +3173,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_5_Cell_Voltage_3"
+            "name": "BBU_Module_5_Cell_Voltage_2"
         },
         {
             "begin": 12580,
@@ -3189,7 +3181,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_5_Cell_Voltage_4"
+            "name": "BBU_Module_5_Cell_Voltage_3"
         },
         {
             "begin": 12581,
@@ -3197,7 +3189,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_5_Cell_Voltage_5"
+            "name": "BBU_Module_5_Cell_Voltage_4"
         },
         {
             "begin": 12582,
@@ -3205,7 +3197,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_5_Cell_Voltage_6"
+            "name": "BBU_Module_5_Cell_Voltage_5"
         },
         {
             "begin": 12583,
@@ -3213,7 +3205,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_5_Cell_Voltage_7"
+            "name": "BBU_Module_5_Cell_Voltage_6"
         },
         {
             "begin": 12584,
@@ -3221,7 +3213,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_5_Cell_Voltage_8"
+            "name": "BBU_Module_5_Cell_Voltage_7"
         },
         {
             "begin": 12585,
@@ -3229,7 +3221,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_5_Cell_Voltage_9"
+            "name": "BBU_Module_5_Cell_Voltage_8"
         },
         {
             "begin": 12586,
@@ -3237,7 +3229,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_5_Cell_Voltage_10"
+            "name": "BBU_Module_5_Cell_Voltage_9"
         },
         {
             "begin": 12587,
@@ -3245,7 +3237,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_5_Cell_Voltage_11"
+            "name": "BBU_Module_5_Cell_Voltage_10"
         },
         {
             "begin": 12588,
@@ -3253,7 +3245,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_5_Cell_Voltage_12"
+            "name": "BBU_Module_5_Cell_Voltage_11"
         },
         {
             "begin": 12589,
@@ -3261,7 +3253,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_5_Cell_Voltage_13"
+            "name": "BBU_Module_5_Cell_Voltage_12"
         },
         {
             "begin": 12590,
@@ -3269,15 +3261,15 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_5_Cell_Voltage_14"
+            "name": "BBU_Module_5_Cell_Voltage_13"
         },
         {
             "begin": 12591,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
-            "scale": 0.1,
-            "name": "BBU_Module_5_Cell_Temperature_1"
+            "scale": 0.001,
+            "name": "BBU_Module_5_Cell_Voltage_14"
         },
         {
             "begin": 12592,
@@ -3285,7 +3277,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_5_Cell_Temperature_2"
+            "name": "BBU_Module_5_Cell_Temperature_1"
         },
         {
             "begin": 12593,
@@ -3293,7 +3285,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_5_Cell_Temperature_3"
+            "name": "BBU_Module_5_Cell_Temperature_2"
         },
         {
             "begin": 12594,
@@ -3301,7 +3293,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_5_Cell_Temperature_4"
+            "name": "BBU_Module_5_Cell_Temperature_3"
         },
         {
             "begin": 12595,
@@ -3309,7 +3301,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_5_DMOSFET_Temperature"
+            "name": "BBU_Module_5_Cell_Temperature_4"
         },
         {
             "begin": 12596,
@@ -3317,34 +3309,42 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_5_CMOSFET_Temperature"
+            "name": "BBU_Module_5_DMOSFET_Temperature"
         },
         {
             "begin": 12597,
             "length": 1,
-            "format": "INTEGER",
-            "name": "BBU_Module_5_SOH_test_phase"
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "BBU_Module_5_CMOSFET_Temperature"
         },
         {
             "begin": 12598,
             "length": 1,
             "format": "INTEGER",
-            "name": "BBU_Module_5_SOH_test_result"
+            "name": "BBU_Module_5_SOH_test_phase"
         },
         {
             "begin": 12599,
             "length": 1,
             "format": "INTEGER",
-            "name": "BBU_Module_5_SOH"
+            "name": "BBU_Module_5_SOH_test_result"
         },
         {
             "begin": 12600,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "BBU_Module_5_SOH"
+        },
+        {
+            "begin": 12601,
             "length": 2,
             "format": "INTEGER",
             "name": "BBU_Module_5_SOH_Test_Unix_Time"
         },
         {
-            "begin": 12602,
+            "begin": 12603,
             "length": 2,
             "format": "INTEGER",
             "name": "BBU_Module_5_SOH_BMS_Unix_Time"
@@ -3432,7 +3432,7 @@
             "name": "BBU_Module_6_BMS_Data_CRC"
         },
         {
-            "begin": 12623,
+            "begin": 12624,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -3440,7 +3440,7 @@
             "name": "BBU_Module_6_DC_Bus_Voltage"
         },
         {
-            "begin": 12624,
+            "begin": 12625,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -3448,7 +3448,7 @@
             "name": "BBU_Module_6_Battery_Pack_Voltage"
         },
         {
-            "begin": 12625,
+            "begin": 12626,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -3456,7 +3456,7 @@
             "name": "BBU_Module_6_Current"
         },
         {
-            "begin": 12626,
+            "begin": 12627,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -3464,7 +3464,7 @@
             "name": "BBU_Module_6_Battery_Pack_Temperature"
         },
         {
-            "begin": 12627,
+            "begin": 12628,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -3472,7 +3472,7 @@
             "name": "BBU_Module_6_Remaining_Capacity"
         },
         {
-            "begin": 12628,
+            "begin": 12629,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -3480,13 +3480,13 @@
             "name": "BBU_Module_6_Full_Charge_Capacity"
         },
         {
-            "begin": 12629,
+            "begin": 12630,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_6_SOC"
         },
         {
-            "begin": 12630,
+            "begin": 12631,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -3558,7 +3558,7 @@
             "name": "BBU_Module_6_Battery_Status1"
         },
         {
-            "begin": 12631,
+            "begin": 12632,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -3586,7 +3586,7 @@
             "name": "BBU_Module_6_Battery_Status2"
         },
         {
-            "begin": 12632,
+            "begin": 12633,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -3650,7 +3650,7 @@
             "name": "BBU_Module_6_Battery_Status3"
         },
         {
-            "begin": 12633,
+            "begin": 12634,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -3710,7 +3710,7 @@
             "name": "BBU_Module_6_Battery_Status4"
         },
         {
-            "begin": 12634,
+            "begin": 12635,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -3750,7 +3750,7 @@
             "name": "BBU_Module_6_Battery_Status5"
         },
         {
-            "begin": 12635,
+            "begin": 12636,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -3790,18 +3790,10 @@
             "name": "BBU_Module_6_Battery_Status6"
         },
         {
-            "begin": 12636,
+            "begin": 12637,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_6_State_Machine"
-        },
-        {
-            "begin": 12637,
-            "length": 1,
-            "format": "FLOAT",
-            "precision": 0,
-            "scale": 0.001,
-            "name": "BBU_Module_6_Cell_Maximum_Voltage"
         },
         {
             "begin": 12638,
@@ -3809,15 +3801,15 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_6_Cell_Minimum_Voltage"
+            "name": "BBU_Module_6_Cell_Maximum_Voltage"
         },
         {
             "begin": 12639,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
-            "scale": 0.1,
-            "name": "BBU_Module_6_Cell_Maximum_Temperature"
+            "scale": 0.001,
+            "name": "BBU_Module_6_Cell_Minimum_Voltage"
         },
         {
             "begin": 12640,
@@ -3825,15 +3817,15 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_6_Cell_Minimum_Temperature"
+            "name": "BBU_Module_6_Cell_Maximum_Temperature"
         },
         {
             "begin": 12641,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
-            "scale": 0.001,
-            "name": "BBU_Module_6_Cell_Voltage_1"
+            "scale": 0.1,
+            "name": "BBU_Module_6_Cell_Minimum_Temperature"
         },
         {
             "begin": 12642,
@@ -3841,7 +3833,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_6_Cell_Voltage_2"
+            "name": "BBU_Module_6_Cell_Voltage_1"
         },
         {
             "begin": 12643,
@@ -3849,7 +3841,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_6_Cell_Voltage_3"
+            "name": "BBU_Module_6_Cell_Voltage_2"
         },
         {
             "begin": 12644,
@@ -3857,7 +3849,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_6_Cell_Voltage_4"
+            "name": "BBU_Module_6_Cell_Voltage_3"
         },
         {
             "begin": 12645,
@@ -3865,7 +3857,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_6_Cell_Voltage_5"
+            "name": "BBU_Module_6_Cell_Voltage_4"
         },
         {
             "begin": 12646,
@@ -3873,7 +3865,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_6_Cell_Voltage_6"
+            "name": "BBU_Module_6_Cell_Voltage_5"
         },
         {
             "begin": 12647,
@@ -3881,7 +3873,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_6_Cell_Voltage_7"
+            "name": "BBU_Module_6_Cell_Voltage_6"
         },
         {
             "begin": 12648,
@@ -3889,7 +3881,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_6_Cell_Voltage_8"
+            "name": "BBU_Module_6_Cell_Voltage_7"
         },
         {
             "begin": 12649,
@@ -3897,7 +3889,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_6_Cell_Voltage_9"
+            "name": "BBU_Module_6_Cell_Voltage_8"
         },
         {
             "begin": 12650,
@@ -3905,7 +3897,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_6_Cell_Voltage_10"
+            "name": "BBU_Module_6_Cell_Voltage_9"
         },
         {
             "begin": 12651,
@@ -3913,7 +3905,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_6_Cell_Voltage_11"
+            "name": "BBU_Module_6_Cell_Voltage_10"
         },
         {
             "begin": 12652,
@@ -3921,7 +3913,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_6_Cell_Voltage_12"
+            "name": "BBU_Module_6_Cell_Voltage_11"
         },
         {
             "begin": 12653,
@@ -3929,7 +3921,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_6_Cell_Voltage_13"
+            "name": "BBU_Module_6_Cell_Voltage_12"
         },
         {
             "begin": 12654,
@@ -3937,15 +3929,15 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.001,
-            "name": "BBU_Module_6_Cell_Voltage_14"
+            "name": "BBU_Module_6_Cell_Voltage_13"
         },
         {
             "begin": 12655,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
-            "scale": 0.1,
-            "name": "BBU_Module_6_Cell_Temperature_1"
+            "scale": 0.001,
+            "name": "BBU_Module_6_Cell_Voltage_14"
         },
         {
             "begin": 12656,
@@ -3953,7 +3945,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_6_Cell_Temperature_2"
+            "name": "BBU_Module_6_Cell_Temperature_1"
         },
         {
             "begin": 12657,
@@ -3961,7 +3953,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_6_Cell_Temperature_3"
+            "name": "BBU_Module_6_Cell_Temperature_2"
         },
         {
             "begin": 12658,
@@ -3969,7 +3961,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_6_Cell_Temperature_4"
+            "name": "BBU_Module_6_Cell_Temperature_3"
         },
         {
             "begin": 12659,
@@ -3977,7 +3969,7 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_6_DMOSFET_Temperature"
+            "name": "BBU_Module_6_Cell_Temperature_4"
         },
         {
             "begin": 12660,
@@ -3985,34 +3977,42 @@
             "format": "FLOAT",
             "precision": 0,
             "scale": 0.1,
-            "name": "BBU_Module_6_CMOSFET_Temperature"
+            "name": "BBU_Module_6_DMOSFET_Temperature"
         },
         {
             "begin": 12661,
             "length": 1,
-            "format": "INTEGER",
-            "name": "BBU_Module_6_SOH_test_phase"
+            "format": "FLOAT",
+            "precision": 0,
+            "scale": 0.1,
+            "name": "BBU_Module_6_CMOSFET_Temperature"
         },
         {
             "begin": 12662,
             "length": 1,
             "format": "INTEGER",
-            "name": "BBU_Module_6_SOH_test_result"
+            "name": "BBU_Module_6_SOH_test_phase"
         },
         {
             "begin": 12663,
             "length": 1,
             "format": "INTEGER",
-            "name": "BBU_Module_6_SOH"
+            "name": "BBU_Module_6_SOH_test_result"
         },
         {
             "begin": 12664,
+            "length": 1,
+            "format": "INTEGER",
+            "name": "BBU_Module_6_SOH"
+        },
+        {
+            "begin": 12665,
             "length": 2,
             "format": "INTEGER",
             "name": "BBU_Module_6_SOH_Test_Unix_Time"
         },
         {
-            "begin": 12666,
+            "begin": 12667,
             "length": 2,
             "format": "INTEGER",
             "name": "BBU_Module_6_SOH_BMS_Unix_Time"
@@ -4181,7 +4181,7 @@
             "name": "BBU_Module_1_State_Of_Health_Table_Version"
         },
         {
-            "begin": 12308,
+            "begin": 14400,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -4189,7 +4189,7 @@
             "name": "BBU_Module_2_AtRate"
         },
         {
-            "begin": 12309,
+            "begin": 14401,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -4197,27 +4197,27 @@
             "name": "BBU_Module_2_AtRate_Time_To_Full"
         },
         {
-            "begin": 12310,
+            "begin": 14402,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
             "name": "BBU_Module_2_AtRate_Time_To_Empty"
         },
         {
-            "begin": 12311,
+            "begin": 14403,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_2_AtRateOK"
         },
         {
-            "begin": 12312,
+            "begin": 14404,
             "length": 1,
             "format": "INTEGER",
             "sign": true,
             "name": "BBU_Module_2_DischargeRate"
         },
         {
-            "begin": 12313,
+            "begin": 14405,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -4225,7 +4225,7 @@
             "name": "BBU_Module_2_Runtime_To_Empty"
         },
         {
-            "begin": 12314,
+            "begin": 14406,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -4233,14 +4233,14 @@
             "name": "BBU_Module_2_Average_Time_To_Empty"
         },
         {
-            "begin": 12315,
+            "begin": 14407,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
             "name": "BBU_Module_2_Average_Time_To_Full"
         },
         {
-            "begin": 12316,
+            "begin": 14408,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -4248,7 +4248,7 @@
             "name": "BBU_Module_2_Design_Capacity"
         },
         {
-            "begin": 12317,
+            "begin": 14409,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -4256,31 +4256,31 @@
             "name": "BBU_Module_2_Design_Voltage"
         },
         {
-            "begin": 12318,
+            "begin": 14410,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_2_Absolute_State_Of_Charge"
         },
         {
-            "begin": 12319,
+            "begin": 14411,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_2_Cycle_Count"
         },
         {
-            "begin": 12320,
+            "begin": 14412,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_2_Manufacture_Date"
         },
         {
-            "begin": 12321,
+            "begin": 14413,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_2_Serial_Number"
         },
         {
-            "begin": 12322,
+            "begin": 14414,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -4320,31 +4320,31 @@
             "name": "BBU_Module_2_Battery_Status"
         },
         {
-            "begin": 12323,
+            "begin": 14415,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_2_Full_Rate_Time"
         },
         {
-            "begin": 12324,
+            "begin": 14416,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_2_EOL"
         },
         {
-            "begin": 12325,
+            "begin": 14417,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_2_State_Of_Health"
         },
         {
-            "begin": 12326,
+            "begin": 14418,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_2_State_Of_Health_Table_Version"
         },
         {
-            "begin": 12327,
+            "begin": 14464,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -4352,7 +4352,7 @@
             "name": "BBU_Module_3_AtRate"
         },
         {
-            "begin": 12328,
+            "begin": 14465,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -4360,27 +4360,27 @@
             "name": "BBU_Module_3_AtRate_Time_To_Full"
         },
         {
-            "begin": 12329,
+            "begin": 14466,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
             "name": "BBU_Module_3_AtRate_Time_To_Empty"
         },
         {
-            "begin": 12330,
+            "begin": 14467,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_3_AtRateOK"
         },
         {
-            "begin": 12331,
+            "begin": 14468,
             "length": 1,
             "format": "INTEGER",
             "sign": true,
             "name": "BBU_Module_3_DischargeRate"
         },
         {
-            "begin": 12332,
+            "begin": 14469,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -4388,7 +4388,7 @@
             "name": "BBU_Module_3_Runtime_To_Empty"
         },
         {
-            "begin": 12333,
+            "begin": 14470,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -4396,14 +4396,14 @@
             "name": "BBU_Module_3_Average_Time_To_Empty"
         },
         {
-            "begin": 12334,
+            "begin": 14471,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
             "name": "BBU_Module_3_Average_Time_To_Full"
         },
         {
-            "begin": 12335,
+            "begin": 14472,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -4411,7 +4411,7 @@
             "name": "BBU_Module_3_Design_Capacity"
         },
         {
-            "begin": 12336,
+            "begin": 14473,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -4419,31 +4419,31 @@
             "name": "BBU_Module_3_Design_Voltage"
         },
         {
-            "begin": 12337,
+            "begin": 14474,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_3_Absolute_State_Of_Charge"
         },
         {
-            "begin": 12338,
+            "begin": 14475,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_3_Cycle_Count"
         },
         {
-            "begin": 12339,
+            "begin": 14476,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_3_Manufacture_Date"
         },
         {
-            "begin": 12340,
+            "begin": 14477,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_3_Serial_Number"
         },
         {
-            "begin": 12341,
+            "begin": 14478,
             "length": 1,
             "format": "FLAGS",
             "flags": [
@@ -4483,31 +4483,31 @@
             "name": "BBU_Module_3_Battery_Status"
         },
         {
-            "begin": 12342,
+            "begin": 14479,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_3_Full_Rate_Time"
         },
         {
-            "begin": 12343,
+            "begin": 14480,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_3_EOL"
         },
         {
-            "begin": 12344,
+            "begin": 14481,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_3_State_Of_Health"
         },
         {
-            "begin": 12345,
+            "begin": 14482,
             "length": 1,
             "format": "INTEGER",
             "name": "BBU_Module_3_State_Of_Health_Table_Version"
         },
         {
-            "begin": 12346,
+            "begin": 14528,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -4515,7 +4515,7 @@
             "name": "BBU_Module_4_AtRate"
         },
         {
-            "begin": 12347,
+            "begin": 14529,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,
@@ -4523,7 +4523,7 @@
             "name": "BBU_Module_4_AtRate_Time_To_Full"
         },
         {
-            "begin": 12348,
+            "begin": 14530,
             "length": 1,
             "format": "FLOAT",
             "precision": 0,

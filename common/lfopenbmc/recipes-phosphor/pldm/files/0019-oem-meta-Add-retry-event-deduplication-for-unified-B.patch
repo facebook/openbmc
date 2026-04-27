@@ -1,0 +1,238 @@
+From 6ad73ef3805e8212677669b14940b9a5f96ca6d0 Mon Sep 17 00:00:00 2001
+From: Sora Su <sora_su@wiwynn.com>
+Date: Fri, 13 Mar 2026 13:02:16 +0800
+Subject: [PATCH 19/19] oem-meta: Add retry event deduplication for unified
+ BIOS events
+
+Refactor event handler signatures from raw pointers to std::span
+(eventMsg) for safer bounds-checked access.
+
+Add timestamp-based deduplication in handleUnifiedBIOSEvent to
+skip retry events already processed, keyed by TID and event type.
+
+Also fix an inverted return-value check in handleOemEvent and
+replace bare 0 returns with PLDM_SUCCESS for clarity.
+
+Change-Id: I957cc6375443e40ab586c4e654468a5a1f7107e2
+Signed-off-by: Sora Su <sora_su@wiwynn.com>
+---
+ oem/meta/event/oem_event_manager.cpp | 63 +++++++++++++++++++++++-----
+ oem/meta/event/oem_event_manager.hpp | 20 ++++++---
+ 2 files changed, 67 insertions(+), 16 deletions(-)
+
+diff --git a/oem/meta/event/oem_event_manager.cpp b/oem/meta/event/oem_event_manager.cpp
+index 2b311fa..d3f3b8c 100644
+--- a/oem/meta/event/oem_event_manager.cpp
++++ b/oem/meta/event/oem_event_manager.cpp
+@@ -15,26 +15,37 @@ namespace pldm
+ namespace oem_meta
+ {
+ 
++std::map<std::pair<pldm_tid_t, UnifiedError>, uint32_t>
++    receivedEventMsgTimeStamp;
++
+ int OemEventManager::processOemMetaEvent(
+     pldm_tid_t tid, const uint8_t* eventData, size_t eventDataSize) const
+ {
++    auto data = std::span(eventData, eventDataSize);
++
+     RecordType recordType = static_cast<RecordType>(eventData[0]);
+     std::string errorLog;
+     switch (recordType)
+     {
+         case RecordType::SYSTEM_EVENT_RECORD:
+         {
+-            handleSystemEvent(eventData, errorLog);
++            handleSystemEvent(data, errorLog);
+             break;
+         }
+         case RecordType::UNIFIED_BIOS_SEL:
+         {
+-            handleUnifiedBIOSEvent(eventData, errorLog);
++            // PLDM_SUCCESS is returned for retry events that have already been
++            // handled.
++            if (handleUnifiedBIOSEvent(tid, data, errorLog) == PLDM_SUCCESS)
++            {
++                return PLDM_SUCCESS;
++            }
+             break;
+         }
+         default:
+         {
+-            return PLDM_ERROR;
++            lg2::info("oem platform event: unsupported event type");
++            return PLDM_SUCCESS;
+         }
+     }
+ 
+@@ -60,7 +71,7 @@ int OemEventManager::processOemMetaEvent(
+                                             "RAW_EVENT", rawLog));
+     }
+ 
+-    return 0;
++    return PLDM_SUCCESS;
+ }
+ 
+ int OemEventManager::handleOemEvent(
+@@ -75,7 +86,7 @@ int OemEventManager::handleOemEvent(
+         lg2::error("Receive OEM Meta event from not Meta specific device");
+         return PLDM_ERROR;
+     }
+-    if (!processOemMetaEvent(tid, eventData, eventDataSize))
++    if (processOemMetaEvent(tid, eventData, eventDataSize))
+     {
+         return PLDM_ERROR;
+     }
+@@ -83,7 +94,7 @@ int OemEventManager::handleOemEvent(
+     return PLDM_SUCCESS;
+ }
+ 
+-void OemEventManager::handleSystemEvent(const uint8_t* eventData,
++void OemEventManager::handleSystemEvent(const eventMsg& eventData,
+                                         std::string& errorLog) const
+ {
+     errorLog = "Standard (0x02), ";
+@@ -234,9 +245,40 @@ void OemEventManager::handleSystemEvent(const uint8_t* eventData,
+     }
+ }
+ 
+-void OemEventManager::handleUnifiedBIOSEvent(const uint8_t* eventData,
+-                                             std::string& errorLog) const
++int OemEventManager::handleUnifiedBIOSEvent(
++    pldm_tid_t tid, const eventMsg& eventData, std::string& errorLog) const
+ {
++    if (eventData.size() == eventMsgLengthWithTimestamp)
++    {
++        // Check whether the event is a retry event based on the timestamp
++        // recorded by the BIC. This works as long as each event type is sent by
++        // only one thread on the BIC, i.e., no race condition occurs for the
++        // same event type.
++        uint32_t eventTimeStamp = (eventData[16] << 12) + (eventData[17] << 8) +
++                                  (eventData[18] << 4) + eventData[19];
++        std::pair<pldm_tid_t, UnifiedError> eventKey =
++            std::make_pair(tid, static_cast<UnifiedError>(0xF & eventData[1]));
++        lg2::info(
++            "oem event msg: detected retry event, type {TYPE}, timestamp {TIMEST}",
++            "TYPE", 0xF & eventData[1], "TIMEST", eventTimeStamp);
++        if (receivedEventMsgTimeStamp.count(eventKey) &&
++            receivedEventMsgTimeStamp[eventKey] == eventTimeStamp)
++        {
++            lg2::info(
++                "oem platform event: skip retry event, TID {TID}, event type {EVTT}, event time stamp {TIMEST}",
++                "TID", tid, "EVTT", 0xF & eventData[1], "TIMEST",
++                eventTimeStamp);
++            return PLDM_SUCCESS;
++        }
++        receivedEventMsgTimeStamp[eventKey] = eventTimeStamp;
++    }
++    else
++    {
++        lg2::info(
++            "oem platform event: not handle retry event, event type {EVTT}, event len {LEN}",
++            "EVTT", 0xF & eventData[1], "LEN", eventData.size());
++    }
++
+     errorLog = "Facebook Unified SEL (0xFB), ";
+ 
+     DimmInfo dimmInfo = {
+@@ -566,10 +608,11 @@ void OemEventManager::handleUnifiedBIOSEvent(const uint8_t* eventData,
+             break;
+         }
+     }
++    return -1;
+ }
+ 
+ void OemEventManager::handleMemoryError(
+-    const uint8_t* eventData, std::string& errorLog, const DimmInfo& dimmInfo,
++    const eventMsg& eventData, std::string& errorLog, const DimmInfo& dimmInfo,
+     uint8_t generalInfo) const
+ {
+     std::string dimmLocation, dimm;
+@@ -618,7 +661,7 @@ void OemEventManager::handleMemoryError(
+ }
+ 
+ void OemEventManager::handleSystemPostEvent(
+-    const uint8_t* eventData, std::string& errorLog, uint8_t generalInfo) const
++    const eventMsg& eventData, std::string& errorLog, uint8_t generalInfo) const
+ {
+     uint8_t certEventIdx = (eventData[10] < certEvent.size())
+                                ? eventData[10]
+diff --git a/oem/meta/event/oem_event_manager.hpp b/oem/meta/event/oem_event_manager.hpp
+index b989dc3..355bcb6 100644
+--- a/oem/meta/event/oem_event_manager.hpp
++++ b/oem/meta/event/oem_event_manager.hpp
+@@ -7,9 +7,13 @@
+ 
+ #include <libpldm/base.h>
+ 
++#include <span>
++
+ namespace pldm::oem_meta
+ {
+ 
++using eventMsg = std::span<const uint8_t>;
++
+ class OemEventManager
+ {
+   public:
+@@ -36,6 +40,9 @@ class OemEventManager
+                        size_t eventDataOffset) const;
+ 
+   private:
++    // @brief The event message length with timestamp.
++    size_t eventMsgLengthWithTimestamp = 20;
++
+     /** @brief Process an OEM Meta event.
+      *
+      *  @param[in] tid - The PLDM terminal ID.
+@@ -52,16 +59,17 @@ class OemEventManager
+      *  @param[in] eventData - A pointer to the event data.
+      *  @param[out] message - The resulting event message.
+      */
+-    void handleSystemEvent(const uint8_t* eventData,
++    void handleSystemEvent(const eventMsg& eventData,
+                            std::string& message) const;
+ 
+     /** @brief Handle a unified BIOS event.
+      *
++     *  @param[in] tid - The PLDM terminal ID.
+      *  @param[in] eventData - A pointer to the event data.
+      *  @param[out] message - The resulting event message.
+      */
+-    void handleUnifiedBIOSEvent(const uint8_t* eventData,
+-                                std::string& message) const;
++    int handleUnifiedBIOSEvent(pldm_tid_t tid, const eventMsg& eventData,
++                               std::string& message) const;
+ 
+     /** @brief Handle a memory error event.
+      *
+@@ -70,7 +78,7 @@ class OemEventManager
+      *  @param[in] dimmInfo - Information about the DIMM.
+      *  @param[in] generalInfo - General information about the event.
+      */
+-    void handleMemoryError(const uint8_t* eventData, std::string& message,
++    void handleMemoryError(const eventMsg& eventData, std::string& message,
+                            const DimmInfo& dimmInfo, uint8_t generalInfo) const;
+ 
+     /** @brief Handle a system POST event.
+@@ -79,7 +87,7 @@ class OemEventManager
+      *  @param[out] message - The resulting event message.
+      *  @param[in] generalInfo - General information about the event.
+      */
+-    void handleSystemPostEvent(const uint8_t* eventData, std::string& message,
++    void handleSystemPostEvent(const eventMsg& eventData, std::string& message,
+                                uint8_t generalInfo) const;
+ 
+     /** @brief Get the DIMM device name.
+@@ -89,7 +97,7 @@ class OemEventManager
+      *
+      *  @return The DIMM device name.
+      */
+-    std::string getDimmDeviceName(const uint8_t* eventData, int bdfIdx) const
++    std::string getDimmDeviceName(const eventMsg& eventData, int bdfIdx) const
+     {
+         std::string dimmDevName = "";
+         for (size_t i = 0; i < cxlBdfMap.size(); i++)
+-- 
+2.43.0
+

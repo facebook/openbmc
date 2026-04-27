@@ -14,7 +14,7 @@ SRC_URI:append = " \
     file://1008-ARM-dts-aspeed-santabarbara-add-device-nodes-behind-.patch \
     file://1009-ARM-dts-aspeed-santabarbara-configure-dimm-ids-for-s.patch \
     file://1012-enable-uart-dma.patch \
-    file://1013-ARM-dts-aspeed-santabarbara-Add-swb-cpld-io-expander.patch \
+    file://1013-ARM-dts-aspeed-santabarbara-Add-system-monitoring-GP.patch \
 "
 
 SRC_URI:append = " \

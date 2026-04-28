@@ -207,6 +207,22 @@ marvell_switch_init() {
     }
 
     {
+        echo "Configure LED on Port 9 and Port 10" >&2
+        # LED0 Gb Link (off = no link, on = Gb link)
+        # LED1 On - Link, Blink - Activity, Off - No Link
+        local MASK=0xFF00
+        local LED_CONFIG=0x0017
+        for p in {0..1};
+        do
+            # Read default register value
+            DATA=$(smi_phy_read_paged_reg 1 "$p" 3 16)
+            VAL=$(( (DATA & MASK) | LED_CONFIG ))
+            # Write LED Config into register
+            smi_phy_write_paged_reg 1 "$p" 3 16 "$VAL"
+        done
+    }
+
+    {
         echo "Enable Port 9 and Port 10" >&2
         mdio_write 0x09 0x04 0x7F
         mdio_write 0x0a 0x04 0x7F
@@ -234,6 +250,14 @@ marvell_switch_init() {
         echo "Apply ERRTA 4.8 for Port 10" >&2
         val_4_F074=$( smi_phy_read_reg_c45 0 10 4 0xF074 2> >(tail -n 1 >&2) )
         smi_phy_write_reg_c45 0 10 4 0xF074 $(( val_4_F074 | 1<<14 )) 2>&1 | tail -n 1
+    }
+
+    {
+        echo "Configure LED on Port 1 through Port 8" >&2
+        for p in {1..8};
+        do
+            mdio_write "$p" 22 0x8033
+        done
     }
 }
 

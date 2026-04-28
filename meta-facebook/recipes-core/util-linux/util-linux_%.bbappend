@@ -22,3 +22,7 @@ PACKAGES += "util-linux-blkdiscard"
 FILES:util-linux-blkdiscard = "${sbindir}/blkdiscard"
 RDEPENDS:util-linux-runuser += "libpam"
 RRECOMMENDS:${PN} += "util-linux-blkdiscard"
+
+# Break circular dependency: systemd.bbclass adds systemd-systemctl-native to
+# DEPENDS, but systemd-systemctl-native itself depends on util-linux-native.
+DEPENDS:remove:class-native = "systemd-systemctl-native"

@@ -37,7 +37,7 @@ OPENBMC_FB_DEFAULT_FEATURE = "ext2 ipv6 largefile usbgadget usbhost nfs zeroconf
 OPENBMC_BOARD_FEATURE ?= ""
 DISTRO_FEATURES = "${DISTRO_FEATURES_LIBC} ${OPENBMC_FB_DEFAULT_FEATURE} ${OPENBMC_BOARD_FEATURE}"
 DISTRO_FEATURES_OPTED_OUT = "\
-    pulseaudio bluez5 gobject-introspection-data ldconfig"
+    pulseaudio bluez5 gobject-introspection-data ldconfig seccomp vulkan"
 
 # CONF_VERSION is increased each time build/conf/ changes incompatibly and is used to
 # track the version of this file when it was generated. This can safely be ignored if
@@ -53,6 +53,8 @@ INIT_MANAGER ?= "sysvinit"
 
 require conf/distro/include/yocto-uninative.inc
 INHERIT += "uninative"
+
+INHERIT_DISTRO:remove = "create-spdx"
 
 require conf/distro/include/no-static-libs.inc
 require conf/distro/include/security_flags.inc

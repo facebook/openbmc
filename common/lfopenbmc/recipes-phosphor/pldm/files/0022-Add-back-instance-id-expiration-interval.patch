@@ -1,7 +1,7 @@
-From 8ff4a312dffb9e8d49b0c942f07b44870dd0b246 Mon Sep 17 00:00:00 2001
+From 197376f83a88c0cfae49b304a8db3b4567163f9a Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Wed, 22 Apr 2026 09:25:29 -0700
-Subject: [PATCH] Add back instance id expiration interval
+Subject: [PATCH 22/22] Add back instance id expiration interval
 
 YV4 requires this to build.
 
@@ -14,7 +14,7 @@ Signed-off-by: James Athappilly <jamesatha@gmail.com>
  3 files changed, 15 insertions(+), 1 deletion(-)
 
 diff --git a/meson.build b/meson.build
-index cdd5fca..0a22cc8 100644
+index 8e7cae0..6a16a00 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -106,6 +106,10 @@ if get_option('oem-ibm').allowed()
@@ -29,13 +29,13 @@ index cdd5fca..0a22cc8 100644
  conf_data.set(
      'FLIGHT_RECORDER_MAX_ENTRIES',
 diff --git a/meson.options b/meson.options
-index d9e8340..e69a496 100644
+index 164b113..c4d9b97 100644
 --- a/meson.options
 +++ b/meson.options
 @@ -56,6 +56,15 @@ option(
                      recorder, this feature will be disabled if it is set to 0''',
  )
-
+ 
 +option(
 +    'instance-id-expiration-interval',
 +    type: 'integer',
@@ -62,6 +62,6 @@ index bc62d7e..4e5f91d 100644
          uint8_t numRetries = 2,
          std::chrono::milliseconds responseTimeOut =
              std::chrono::milliseconds(RESPONSE_TIME_OUT)) :
---
+-- 
 2.52.0
 

@@ -1,7 +1,7 @@
-From bd5e9b742c043a215cf6056349d60246a9aef8e9 Mon Sep 17 00:00:00 2001
+From 8416d6b7f4cd296e38cbed705887a91ccd4022a6 Mon Sep 17 00:00:00 2001
 From: Sora Su <sora_su@wiwynn.com>
 Date: Thu, 2 Apr 2026 09:56:55 +0800
-Subject: [PATCH 18/19] oem-meta: Implement special event handling
+Subject: [PATCH 18/22] oem-meta: Implement special event handling
 
 Certain events must be recorded by directly invoking phosphor-logging.
 In particular, the CXL HB requires controlling the event severity
@@ -120,5 +120,5 @@ index 45902cb..261b627 100644
       {report::prochotSdSensor, nullptr}},
      {EventType::MTIA_FAULT, {report::mtiaFault, nullptr}},
 -- 
-2.43.0
+2.52.0
 

@@ -1,7 +1,7 @@
-From 23379710c75b1341e2fb513acbba3ab6d43412a3 Mon Sep 17 00:00:00 2001
+From 00259ee74a9a05672276a9a3617d9d80b764c532 Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Tue, 21 Apr 2026 21:24:06 -0700
-Subject: [PATCH] Add back sensor polling time configuration
+Subject: [PATCH 20/22] Add back sensor polling time configuration
 
 When syncing the latest upstream changes, multiple
 Facebook platforms that used this option [1] failed
@@ -25,7 +25,7 @@ index bf5e2b3..833b863 100644
 @@ -132,6 +132,8 @@ conf_data.set(
      get_option('enable-fallback-terminus-name').enabled(),
  )
-
+ 
 +conf_data.set('SENSOR_POLLING_TIME', get_option('sensor-polling-time'))
 +
  # Firmware update inotify option
@@ -38,7 +38,7 @@ index cb0e866..0f63a71 100644
 @@ -159,6 +159,23 @@ option(
      description: 'Enable fallback terminus name "Terminus_{tid}" when no terminus name is found.',
  )
-
+ 
 +## Sensor Polling Options
 +option(
 +    'sensor-polling-time',
@@ -64,9 +64,9 @@ index 637d0a2..6ccd4ba 100644
 --- a/platform-mc/sensor_manager.hpp
 +++ b/platform-mc/sensor_manager.hpp
 @@ -21,8 +21,6 @@ namespace platform_mc
-
+ 
  using namespace pldm::pdr;
-
+ 
 -inline constexpr uint64_t SENSOR_POLLING_TIME = 249;
 -
  /**
@@ -85,6 +85,6 @@ index e4bb2ab..91d3fe8 100644
              t0 = t1;
          });
      EXPECT_CALL(sensorManager, doSensorPolling(tid))
---
+-- 
 2.52.0
 

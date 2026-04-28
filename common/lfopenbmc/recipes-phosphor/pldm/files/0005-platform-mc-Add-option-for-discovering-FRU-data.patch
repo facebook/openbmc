@@ -1,7 +1,7 @@
-From e490cb63474c9f7ea0d790493c8849d6463263d3 Mon Sep 17 00:00:00 2001
+From 76c57a1f0e6fb74fc72cdb7ef0d2f24edae2619a Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
-Subject: [PATCH 05/20] platform-mc: Add option for discovering FRU data
+Subject: [PATCH 05/22] platform-mc: Add option for discovering FRU data
 
 Allow enabling or disabling the discovery of FRU data from terminus.
 Supports retrieving FRU data during the terminus discovery phase and

@@ -21,7 +21,7 @@ MCB_FPGA_I2C_BUS_NUM=12 # i2c-12 for Main Control Board FPGA
 MCB_FPGA_I2C_BUS_OFFSET=0x72 # Address offset in the bus for Main Control Board FPGA
 
 # Divide the register address value on FPGA spec by 4 to get the actual address
-I2C_BOARD_VERSION_REGISTER_ADDR=0x8
+# I2C_BOARD_VERSION_REGISTER_ADDR=0x8
 I2C_PWR_CTRL_REGISTER_ADDR=0xc
 I2C_PWR_FAULT_STATUS_REGISTER_ADDR=0xe
 I2C_PWR_GOOD_STATUS_REGISTER_ADDR=0xf
@@ -29,10 +29,10 @@ I2C_PWR_GOOD_STATUS_REGISTER_ADDR=0xf
 I2C_SEQ_IN_PROGRESS_BIT_MASK=0x80        # bit 7 (seq_inprog)
 I2C_PWR_FAULT_FOR_CPU_DP_BIT_MASK=0x1c   # bit 2,3,4 (zone2b_fault,zone3a_fault,zone3b_fault)
 I2C_PWR_GOOD_FOR_CPU_DP_BIT_MASK=0x1c    # bit 2,3,4 (zone2b_pwrgood,zone3a_pwrgood,zone3b_pwrgood)
-I2C_BOARD_VER_BIT_MASK=0xf               # bit 0~3 (brd_ver)
+# I2C_BOARD_VER_BIT_MASK=0xf               # bit 0~3 (brd_ver)
 
 I2C_CPU_DP_PWR_OFF_VALUE=0x0     # 0b00000000, set 0 on bit cpu_datapath_pwr
-I2C_CPU_DP_PWR_ON_VALUE=0x1      # 0b00000001, set 1 on bit cpu_datapath_pwr
+I2C_CPU_DP_PWR_ON_VALUE=0x3      # 0b00000011, set 3 on bit cpu_datapath_pwr and cpu_pwr
 I2C_CHASSIS_PWR_CYCLE_VALUE=0x4  # 0b00000100, set 1 on bit chassis_pwr_cycle
 
 SEQ_TIMEOUT=15 # in seconds

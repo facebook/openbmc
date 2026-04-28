@@ -3,6 +3,7 @@
 #include <array>
 #include <optional>
 #include <sys/wait.h>  // for WIFEXITED, WEXITSTATUS, etc.
+#include <syslog.h>
 #include "bmc_cpld.h"
 
 int BmcCpldComponent::run_command(const std::string& cmd, std::string* output = nullptr) const
@@ -94,8 +95,16 @@ int BmcCpldComponent::get_version(json& ver_json)
 
 int BmcCpldComponent::update(const std::string& image)
 {
+  syslog(LOG_CRIT, "Updating CPLD on baseboard. File: %s", image.c_str());
+
   std::string cmd = "cpld-handler update -b " + this->bus + " -a " + this->address + " -i i2c -c " + this->cpld_type + " -p " + image;
   int rc = run_command(cmd);
+
+  if (rc != 0) {
+    syslog(LOG_CRIT, "Updated CPLD on baseboard. File: %s. Result: Fail", image.c_str());
+  } else {
+    syslog(LOG_CRIT, "Updated CPLD on baseboard. File: %s. Result: Success", image.c_str());
+  }
 
   return rc;
 }

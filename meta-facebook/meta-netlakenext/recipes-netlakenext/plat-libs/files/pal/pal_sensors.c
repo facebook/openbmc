@@ -869,7 +869,7 @@ read_cpld_adc(uint8_t id, float *value) {
   }
 
   //Calculate from divided voltage
-  *value = ((float)sensor_read_raw / 4096) * 3.3 * cpld_adc_list[id].resistor_ratio;
+  *value = ((float)sensor_read_raw / 4096) * 1.8 * cpld_adc_list[id].resistor_ratio;
 
   return ret;
 }

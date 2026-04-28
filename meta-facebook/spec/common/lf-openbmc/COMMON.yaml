@@ -299,6 +299,14 @@ Sensor Information:
     file: airflow-sensor.md
     priority: P1
     short: Calculate airflow based on fan speeds and hardware presence.
+  System Level Sensor:
+    file: system-level-sensor.md
+    priority: P3
+    short: Report total power consumption as a single sensor.
+  Sensor Naming:
+    file: sensor-naming.md
+    priority: P2
+    short: Follow Meta's sensor naming scheme.
 Thermal Management:
   Manual Fan Control:
     file: fan-control--manual-.md
@@ -519,10 +527,6 @@ System Logging:
         tests:
           - framework: N/A
 Miscellaneous:
-  Common Sensor Names:
-    file: common-sensor-names.md
-    priority: P2
-    short: Use the common Meta sensor naming scheme for Redfish.
   Factory Reset:
     file: reset-default-factory-settings.md
     priority: P2

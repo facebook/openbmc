@@ -1,0 +1,41 @@
+From ea0363574e8d854ca0a2522be1c2fb887f97da33 Mon Sep 17 00:00:00 2001
+From: Jagpal Singh Gill <paligill@gmail.com>
+Date: Thu, 26 Mar 2026 15:18:45 -0700
+Subject: [PATCH] valve: add ValveUnableToReachSetPoint event
+
+Add ValveUnableToReachSetPoint event for valve to report an issue when
+required setpoint couldn't be set. This event already exist in the
+Redfish Message Registry Specification [1].
+
+[1] https://github.com/DMTF/Redfish-Publications/blob/main/registries/Environmental.1.4.0.json#L2577
+
+Change-Id: Ia476dc95be5a67d84be33ace0db5c7c7edb9f450
+Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
+---
+ yaml/xyz/openbmc_project/State/Valve.events.yaml | 13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff --git a/yaml/xyz/openbmc_project/State/Valve.events.yaml b/yaml/xyz/openbmc_project/State/Valve.events.yaml
+index d9e975b..26e7a8d 100644
+--- a/yaml/xyz/openbmc_project/State/Valve.events.yaml
++++ b/yaml/xyz/openbmc_project/State/Valve.events.yaml
+@@ -1,4 +1,15 @@
+-version: 1.0.0
++version: 1.1.0
++
++errors:
++    - name: ValveUnableToReachSetPoint
++      severity: warning
++      errno: EFAULT
++      metadata:
++          - name: ValveName
++            type: object_path
++            primary: true
++            description: The name or identifier of the valve.
++      redfish-mapping: Environmental.ValveUnableToReachSetPoint
+ 
+ events:
+     - name: ValveOpen
+-- 
+2.34.1
+

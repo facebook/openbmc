@@ -15,6 +15,7 @@ SRC_URI:append = " \
     file://0012-hwmontemp-Remove-newly-created-sensor-from-sensorsCh.patch \
     file://0013-psusensor-skip-sensor-reads-during-firmware-updates.patch \
     file://0014-meta-facebook-yosemite4-Disable-in2_alarm-event.patch \
+    file://0014-valve-monitor-request-for-directory.patch \
     file://0015-Implement-valve-monitor-service.patch \
     file://0016-psusensor-Add-support-for-per-sensor-PollRate-config.patch \
     file://0017-SmbpbiSensor-Fix-invalid-data-check-size-for-tempera.patch \
@@ -22,7 +23,8 @@ SRC_URI:append = " \
 "
 
 SRC_URI:append:ventura2 = " \
-    file://0100-implement-analog-valve-control-for-VT2-inventory.patch \
+    file://0101-valve-monitor-add-analog-valve-support.patch \
+    file://0102-valve-monitor-switch-to-percentage-tolerance-and-iio.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \

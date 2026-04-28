@@ -1,0 +1,8 @@
+[Unit]
+Description=Valve Open Handler for %i
+After=xyz.openbmc_project.valve-monitor.service
+StartLimitIntervalSec=0
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/dbus-sensors/valve-event-handler open %i

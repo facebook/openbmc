@@ -1,0 +1,46 @@
+#!/bin/bash
+
+# shellcheck source=meta-facebook/recipes-fb/obmc_functions/files/fb-common-functions
+source /usr/libexec/fb-common-functions
+
+if [[ $# -ne 2 ]]; then
+    echo "Usage: $0 <open|close> <valve_name>" >&2
+    exit 1
+fi
+
+ACTION=$1
+VALVE_NAME=$2
+
+declare -A VALVE_GPIO_MAP=(
+    ["SupplyValve2_1"]="REPORT_VT2_SUPPLY1_CLOSE"
+    ["SupplyValve2_2"]="REPORT_VT2_SUPPLY2_CLOSE"
+    ["SupplyValve2_3"]="REPORT_VT2_SUPPLY3_CLOSE"
+)
+
+GPIO_NAME="${VALVE_GPIO_MAP[$VALVE_NAME]}"
+
+if [[ -z "$GPIO_NAME" ]]; then
+    echo "Unknown valve: $VALVE_NAME" >&2
+    exit 1
+fi
+
+case "$ACTION" in
+    open)
+        echo "Handling open event for $VALVE_NAME"
+        if ! set_gpio "$GPIO_NAME" 0; then
+            echo "Failed to set GPIO $GPIO_NAME" >&2
+            exit 1
+        fi
+        ;;
+    close)
+        echo "Handling close event for $VALVE_NAME"
+        if ! set_gpio "$GPIO_NAME" 1; then
+            echo "Failed to set GPIO $GPIO_NAME" >&2
+            exit 1
+        fi
+        ;;
+    *)
+        echo "Unknown action: $ACTION" >&2
+        exit 1
+        ;;
+esac

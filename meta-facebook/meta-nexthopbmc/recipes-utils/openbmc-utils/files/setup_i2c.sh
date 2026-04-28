@@ -26,3 +26,10 @@
 
 # FRU IDPROMS
 i2c_device_add 4 0x50 24c512  # Chassis EEPROM
+
+# APML
+i2c_device_add 6 0x4c sbtsi
+i2c_device_add 6 0x3c sbrmi
+
+modprobe apml_sbrmi
+modprobe apml_sbtsi

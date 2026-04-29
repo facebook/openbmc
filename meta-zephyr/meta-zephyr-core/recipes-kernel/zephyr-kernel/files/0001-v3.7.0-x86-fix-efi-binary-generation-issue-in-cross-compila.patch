@@ -1,0 +1,106 @@
+From 90d5e7c9c6037a030d5c0bfa4ae298da66eaf35e Mon Sep 17 00:00:00 2001
+From: Naveen Saini <naveen.kumar.saini@intel.com>
+Date: Thu, 12 Sep 2024 21:05:09 +0800
+Subject: [PATCH] x86: fix efi binary generation issue in cross compilation env
+
+Set root directory for headers.
+
+Upstream-Status: Inappropriate [Cross-compilation specific]
+
+Signed-off-by: Naveen Saini <naveen.kumar.saini@intel.com>
+---
+ arch/x86/zefi/zefi.py                                       | 5 ++++-
+ boards/intel/adl/CMakeLists.txt                             | 1 +
+ boards/intel/ehl/CMakeLists.txt                             | 1 +
+ boards/intel/rpl/CMakeLists.txt                             | 1 +
+ boards/up-bridge-the-gap/up_squared/CMakeLists.txt          | 1 +
+ boards/up-bridge-the-gap/up_squared_pro_7000/CMakeLists.txt | 1 +
+ 6 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/arch/x86/zefi/zefi.py b/arch/x86/zefi/zefi.py
+index 99c188ecd08..1cd86a21cd4 100755
+--- a/arch/x86/zefi/zefi.py
++++ b/arch/x86/zefi/zefi.py
+@@ -109,8 +109,10 @@ def build_elf(elf_file, include_dirs):
+     includes = []
+     for include_dir in include_dirs:
+         includes.extend(["-I", include_dir])
++    #  Pass --sysroot path for cross compilation
++    sysrootarg = "--sysroot=" + args.sysroot
+     cmd = ([args.compiler, "-shared", "-Wall", "-Werror", "-I."] + includes +
+-           ["-fno-stack-protector", "-fpic", "-mno-red-zone", "-fshort-wchar",
++           ["-fno-stack-protector", "-fpic", "-mno-red-zone", "-fshort-wchar", sysrootarg,
+             "-Wl,-nostdlib", "-T", ldscript, "-o", "zefi.elf", cfile])
+     verbose(" ".join(cmd))
+     subprocess.run(cmd, check = True)
+@@ -150,6 +152,7 @@ def parse_args():
+     parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
+     parser.add_argument("-i", "--includes", required=True, nargs="+",
+                         help="Zephyr base include directories")
++    parser.add_argument("-s", "--sysroot", required=True, help="Cross compilation --sysroot=path")
+ 
+     return parser.parse_args()
+ 
+diff --git a/boards/intel/adl/CMakeLists.txt b/boards/intel/adl/CMakeLists.txt
+index 36ddcdf9d13..4cb244a777d 100644
+--- a/boards/intel/adl/CMakeLists.txt
++++ b/boards/intel/adl/CMakeLists.txt
+@@ -8,6 +8,7 @@ set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
+   -o ${CMAKE_OBJCOPY}
+   -i ${ZEPHYR_BASE}/include
+   -f ${PROJECT_BINARY_DIR}/${CONFIG_KERNEL_BIN_NAME}.elf
++  -s ${SYSROOT_DIR}
+   $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:--verbose>
+   WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+ )
+diff --git a/boards/intel/ehl/CMakeLists.txt b/boards/intel/ehl/CMakeLists.txt
+index 36ddcdf9d13..4cb244a777d 100644
+--- a/boards/intel/ehl/CMakeLists.txt
++++ b/boards/intel/ehl/CMakeLists.txt
+@@ -8,6 +8,7 @@ set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
+   -o ${CMAKE_OBJCOPY}
+   -i ${ZEPHYR_BASE}/include
+   -f ${PROJECT_BINARY_DIR}/${CONFIG_KERNEL_BIN_NAME}.elf
++  -s ${SYSROOT_DIR}
+   $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:--verbose>
+   WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+ )
+diff --git a/boards/intel/rpl/CMakeLists.txt b/boards/intel/rpl/CMakeLists.txt
+index 36ddcdf9d13..4cb244a777d 100644
+--- a/boards/intel/rpl/CMakeLists.txt
++++ b/boards/intel/rpl/CMakeLists.txt
+@@ -8,6 +8,7 @@ set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
+   -o ${CMAKE_OBJCOPY}
+   -i ${ZEPHYR_BASE}/include
+   -f ${PROJECT_BINARY_DIR}/${CONFIG_KERNEL_BIN_NAME}.elf
++  -s ${SYSROOT_DIR}
+   $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:--verbose>
+   WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+ )
+diff --git a/boards/up-bridge-the-gap/up_squared/CMakeLists.txt b/boards/up-bridge-the-gap/up_squared/CMakeLists.txt
+index ddfd93807ff..8dfe7aa9cec 100644
+--- a/boards/up-bridge-the-gap/up_squared/CMakeLists.txt
++++ b/boards/up-bridge-the-gap/up_squared/CMakeLists.txt
+@@ -11,6 +11,7 @@ set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
+   -o ${CMAKE_OBJCOPY}
+   -i ${ZEPHYR_BASE}/include
+   -f ${PROJECT_BINARY_DIR}/${CONFIG_KERNEL_BIN_NAME}.elf
++  -s ${SYSROOT_DIR}
+   $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:--verbose>
+   WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+ )
+diff --git a/boards/up-bridge-the-gap/up_squared_pro_7000/CMakeLists.txt b/boards/up-bridge-the-gap/up_squared_pro_7000/CMakeLists.txt
+index 36ddcdf9d13..4cb244a777d 100644
+--- a/boards/up-bridge-the-gap/up_squared_pro_7000/CMakeLists.txt
++++ b/boards/up-bridge-the-gap/up_squared_pro_7000/CMakeLists.txt
+@@ -8,6 +8,7 @@ set_property(GLOBAL APPEND PROPERTY extra_post_build_commands
+   -o ${CMAKE_OBJCOPY}
+   -i ${ZEPHYR_BASE}/include
+   -f ${PROJECT_BINARY_DIR}/${CONFIG_KERNEL_BIN_NAME}.elf
++  -s ${SYSROOT_DIR}
+   $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:--verbose>
+   WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+ )
+-- 
+2.37.3
+

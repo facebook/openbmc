@@ -1,0 +1,34 @@
+# Auto-generated from zephyr-kernel-src.inc.jinja
+{%- set short_version = '.'.join(version.split('.')[0:2]) %}
+
+SRCREV_FORMAT = "default"
+
+SRCREV_default = "{{ ('v' ~ version) | resolve_revision(zephyr_url) }}"
+{% for project in projects -%}
+SRCREV_{{ project.name }} = "{{ project.revision | resolve_revision(project.url) }}"
+{% endfor %}
+SRC_URI_ZEPHYR ?= "{{ zephyr_url | git_url_to_bitbake }}"
+{%- for project in projects %}
+SRC_URI_ZEPHYR_{{ project.name | bitbake_var }} ?= "{{ project.url | git_url_to_bitbake }}"
+{%- endfor %}
+
+SRC_URI_PATCHES ?= "\
+    file://0001-v{{ version }}-x86-fix-efi-binary-generation-issue-in-cross-compila.patch;patchdir=zephyr \
+"
+
+SRC_URI = "\
+    ${SRC_URI_ZEPHYR};branch=${ZEPHYR_BRANCH};name=default;destsuffix=${P}/zephyr \
+{%- for project in projects %}
+    ${SRC_URI_ZEPHYR_{{ project.name | bitbake_var }}};name={{ project.name }};nobranch=1;destsuffix=${P}/{{ project.path }} \
+{%- endfor %}
+    ${SRC_URI_PATCHES} \
+"
+
+ZEPHYR_MODULES = "\{% for project in projects %}
+${S}/{{ project.path }}\;\
+{%- endfor %}
+"
+
+ZEPHYR_BRANCH = "v{{ short_version }}-branch"
+PV = "{{ version }}+git${SRCPV}"
+

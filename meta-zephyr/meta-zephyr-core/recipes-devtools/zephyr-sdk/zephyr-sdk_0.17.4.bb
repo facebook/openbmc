@@ -1,0 +1,4 @@
+require zephyr-sdk.inc
+
+SRC_URI[x86_64.sha256sum] = "83f2f327dba2d6cf2440f22f2f501041544d7f34ef8b878ecd83f4513d1116b6"
+SRC_URI[aarch64.sha256sum] = "14ed90e95a74316685c01d3ed7023646d99d69311e198a8e6930bc0ceacb8db9"

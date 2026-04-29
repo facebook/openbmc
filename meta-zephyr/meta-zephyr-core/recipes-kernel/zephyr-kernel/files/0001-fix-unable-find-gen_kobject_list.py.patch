@@ -1,0 +1,30 @@
+From 0a9f8fedd237c4783ca3bf5c5721a1c940988984 Mon Sep 17 00:00:00 2001
+From: Lee Chee Yang <chee.yang.lee@intel.com>
+Date: Wed, 17 Dec 2025 12:27:39 +0800
+Subject: [PATCH] fix unable find gen_kobject_list.py
+
+| Run Build Command(s): ninja -v -j 22 all
+| ninja: error: 'zephyr/GEN_KOBJECT_LIST-NOTFOUND', needed by 'zephyr/include/generated/zephyr/driver-validation.h', missing and no known rule to make it
+
+Upstream-Status: Inappropriate [Cross-compilation specific]
+
+Signed-off-by: Lee Chee Yang <chee.yang.lee@intel.com>
+---
+ cmake/kobj.cmake | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/cmake/kobj.cmake b/cmake/kobj.cmake
+index 6ccb85245fc..fa757509cfa 100644
+--- a/cmake/kobj.cmake
++++ b/cmake/kobj.cmake
+@@ -1,6 +1,6 @@
+ # SPDX-License-Identifier: Apache-2.0
+ 
+-find_program(GEN_KOBJECT_LIST NAMES gen_kobject_list gen_kobject_list.py PATHS ${ZEPHYR_BASE}/scripts/build)
++find_program(GEN_KOBJECT_LIST NAMES gen_kobject_list gen_kobject_list.py PATHS ${ZEPHYR_BASE}/scripts/build NO_CMAKE_FIND_ROOT_PATH)
+ message(STATUS "Found gen_kobject_list: ${GEN_KOBJECT_LIST}")
+ if(GEN_KOBJECT_LIST MATCHES "\.py$")
+   set(GEN_KOBJECT_LIST_INTERPRETER ${PYTHON_EXECUTABLE})
+-- 
+2.43.0
+

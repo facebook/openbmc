@@ -1,0 +1,132 @@
+# Licensed under the Apache-2.0 license
+
+[manifest_config]
+version = 1
+flags = 0
+security_version = 1
+
+[vendor_fw_key_config]
+ecc_pub_key = "vnd-fw-ecc-pubk.pem"
+ecc_priv_key = "vnd-fw-ecc-prvk.pem"
+# lms_pub_key = "vnd-fw-lms-pubk.pem"
+# lms_priv_key = "vnd-fw-lms-prvk.pem"
+
+[vendor_man_key_config]
+ecc_pub_key = "vnd-man-ecc-pubk.pem"
+ecc_priv_key = "vnd-man-ecc-prvk.pem"
+# lms_pub_key = "vnd-man-lms-pubk.pem"
+# lms_priv_key = "vnd-man-lms-prvk.pem"
+
+[owner_fw_key_config]
+ecc_pub_key = "own-fw-ecc-pubk.pem"
+ecc_priv_key = "own-fw-ecc-prvk.pem"
+# lms_pub_key = "own-fw-lms-pubk.pem"
+# lms_priv_key = "own-fw-lms-prvk.pem"
+
+[owner_man_key_config]
+ecc_pub_key = "own-man-ecc-pubk.pem"
+ecc_priv_key = "own-man-ecc-prvk.pem"
+# lms_pub_key = "own-man-lms-pubk.pem"
+# lms_priv_key = "own-man-lms-prvk.pem"
+
+[image_runtime_list]
+caliptra_file = "caliptra-fw.bin"
+mcu_file = "zephyr-aspeed-bootmcu.bin"
+
+[[image_metadata_list]]
+file = "zephyr-aspeed-bootmcu.bin"
+source = 1
+fw_id = 1
+ignore_auth_check = false
+load_stage = 0
+
+[[image_metadata_list]]
+file = "ddr4_pmu_train_imem.bin"
+source = 1
+fw_id = 2
+ignore_auth_check = false
+load_stage = 0
+
+[[image_metadata_list]]
+file = "ddr4_pmu_train_dmem.bin"
+source = 1
+fw_id = 3
+ignore_auth_check = false
+load_stage = 0
+
+[[image_metadata_list]]
+file = "ddr4_2d_pmu_train_imem.bin"
+source = 1
+fw_id = 4
+ignore_auth_check = false
+load_stage = 0
+
+[[image_metadata_list]]
+file = "ddr4_2d_pmu_train_dmem.bin"
+source = 1
+fw_id = 5
+ignore_auth_check = false
+load_stage = 0
+
+[[image_metadata_list]]
+file = "ddr5_pmu_train_imem.bin"
+source = 1
+fw_id = 6
+ignore_auth_check = false
+load_stage = 0
+
+[[image_metadata_list]]
+file = "ddr5_pmu_train_dmem.bin"
+source = 1
+fw_id = 7
+ignore_auth_check = false
+load_stage = 0
+
+[[image_metadata_list]]
+file = "dp_fw.bin"
+source = 1
+fw_id = 8
+ignore_auth_check = false
+load_stage = 0
+
+[[image_metadata_list]]
+file = "uefi_ast2700.bin"
+source = 1
+fw_id = 9
+ignore_auth_check = false
+load_stage = 0
+
+[[image_metadata_list]]
+file = "trusted-firmware-a/bl31.bin"
+source = 1
+fw_id = 10
+ignore_auth_check = false
+load_stage = 1
+
+[[image_metadata_list]]
+file = "optee/tee-raw.bin"
+source = 1
+fw_id = 11
+ignore_auth_check = false
+load_stage = 1
+
+[[image_metadata_list]]
+file = "u-boot.bin"
+source = 1
+fw_id = 12
+ignore_auth_check = false
+load_stage = 1
+
+[[image_metadata_list]]
+file = ""
+source = 1
+fw_id = 13
+ignore_auth_check = false
+load_stage = 0
+
+[[image_metadata_list]]
+file = ""
+source = 1
+fw_id = 14
+ignore_auth_check = false
+load_stage = 0

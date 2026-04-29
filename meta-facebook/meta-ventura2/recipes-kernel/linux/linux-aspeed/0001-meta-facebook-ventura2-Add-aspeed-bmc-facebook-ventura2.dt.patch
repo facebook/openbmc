@@ -1,13 +1,15 @@
-From 70d3b860c2d080c877a8921619fee479196ec0b0 Mon Sep 17 00:00:00 2001
+From 242ef992b5dd173231048579c87f46afbab89f25 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Fri, 30 Jan 2026 08:58:27 +0800
 Subject: [PATCH] meta-facebook-ventura2-Add-aspeed-bmc-facebook-ventura2.dts
 
+lore: https://lore.kernel.org/all/20260424-ventura2_initial_dts-v4-0-806b00ea4314@gmail.com/
+
 Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 ---
  arch/arm/boot/dts/aspeed/Makefile             |    1 +
- .../aspeed/aspeed-bmc-facebook-ventura2.dts   | 2977 +++++++++++++++++
- 2 files changed, 2978 insertions(+)
+ .../aspeed/aspeed-bmc-facebook-ventura2.dts   | 3005 +++++++++++++++++
+ 2 files changed, 3006 insertions(+)
  create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
 
 diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
@@ -24,10 +26,10 @@ index 0f0b5b707654..43957ccd4c3d 100644
  	aspeed-bmc-facebook-wedge100.dtb \
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
 new file mode 100644
-index 000000000000..0d075c7410c0
+index 000000000000..1a9edf01e1d9
 --- /dev/null
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
-@@ -0,0 +1,2977 @@
+@@ -0,0 +1,3005 @@
 +// SPDX-License-Identifier: GPL-2.0
 +// Copyright (c) 2023 Facebook Inc.
 +/dts-v1/;
@@ -208,7 +210,8 @@ index 000000000000..0d075c7410c0
 +		compatible = "iio-hwmon";
 +		io-channels = <&adc0 0>, <&adc0 1>, <&adc0 2>, <&adc0 3>,
 +		<&adc0 4>, <&adc0 5>, <&adc0 6>, <&adc0 7>,
-+		<&adc1 2>;
++		<&adc1 2>, <&adc_op_fb1 0>, <&adc_op_fb1 1>, <&adc_op_fb2 0>,
++		<&adc_op_fb1_evt 0>, <&adc_op_fb1_evt 1>, <&adc_op_fb2_evt 0>;
 +	};
 +
 +	leds {
@@ -1958,13 +1961,13 @@ index 000000000000..0d075c7410c0
 +&i2c6 {
 +	status = "okay";
 +
-+	adc@08 {
++	adc_op_fb1_evt:adc@08 {
 +		reg = <0x08>;
 +		compatible = "lltc,ltc2305";
 +		#io-channel-cells = <1>;
 +	};
 +
-+	adc@09 {
++	adc_op_fb2_evt:adc@09 {
 +		reg = <0x09>;
 +		compatible = "lltc,ltc2305";
 +		#io-channel-cells = <1>;
@@ -2071,6 +2074,26 @@ index 000000000000..0d075c7410c0
 +		"", "",
 +		"", "";
 +	};
++
++	io_expander8: gpio@24 {
++		compatible = "nxp,pca9555";
++		reg = <0x24>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		interrupt-parent = <&io_expander7>;
++		interrupts = <0 IRQ_TYPE_LEVEL_LOW>;
++
++		gpio-line-names =
++		"PRSNT_MGMT_J54_N", "PRSNT_RACKMON_J47_N",
++		"PRSNT_MGMT_DEBUG_J53_N", "PRSNT_MINISAS_TOP_J49_N",
++		"PRSNT_MINISAS_TOP_J50_N", "PRSNT_MINISAS_BOT_J51_N",
++		"PRSNT_MINISAS_BOT_J52_N", "JTAG_PLD_JTAGEN",
++		"PU_PLD_CONFIG_N", "",
++		"", "",
++		"FM_PVCCIN_CPU_PWR_IN_ALERT_L", "IRQ_PVCCIN_CPU_VRHOT_LVC3_L",
++		"PROT_BYPASS_ISO_L", "PROT_SPARE58_ISO";
++};
++
 +
 +	rtc@51 {
 +		compatible = "nxp,pcf8563";
@@ -2211,6 +2234,7 @@ index 000000000000..0d075c7410c0
 +	power-monitor@44 {
 +		compatible = "lltc,ltc4287";
 +		reg = <0x44>;
++		shunt-resistor-micro-ohms = <500>;
 +	};
 +
 +	power-monitor@40 {
@@ -2222,6 +2246,12 @@ index 000000000000..0d075c7410c0
 +	power-monitor@45 {
 +		compatible = "ti,ina230";
 +		reg = <0x45>;
++		shunt-resistor = <1000>;
++	};
++
++	power-monitor@4f {
++		compatible = "ti,ina230";
++		reg = <0x4f>;
 +		shunt-resistor = <1000>;
 +	};
 +
@@ -2826,7 +2856,7 @@ index 000000000000..0d075c7410c0
 +&sgpiom0 {
 +	status = "okay";
 +	ngpios = <128>;
-+	bus-frequency = <2000000>;
++	bus-frequency = <200000>;
 +	gpio-line-names =
 +	/*"input pin","output pin"*/
 +	/*A0 - A7*/

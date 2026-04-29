@@ -1,7 +1,7 @@
-From 8588c7ca5078e17dc8d0dffd2140ac6a4d868ca2 Mon Sep 17 00:00:00 2001
+From 07ca25edfb608c78e22b9de9ba48ddd7983a06f0 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <jagpalgill@fb.com>
 Date: Wed, 1 Apr 2026 00:27:58 -0700
-Subject: [PATCH] valve-monitor: add analog valve support
+Subject: [PATCH 101/102] valve-monitor: add analog valve support
 
 Add AnalogValve implementation for monitoring analog valves in liquid
 cooling systems. This includes:
@@ -2039,5 +2039,5 @@ index d00cefa..0f6a388 100644
      include_directories: src_inc,
      install: true,
 -- 
-2.34.1
+2.52.0
 

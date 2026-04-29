@@ -1,8 +1,8 @@
-From 2228555ec8e4f5a0ae45c94859a027c6372ced93 Mon Sep 17 00:00:00 2001
+From b1683bad43d8482b3184018a0cce988eeb1e86f0 Mon Sep 17 00:00:00 2001
 From: Eldin Lee <eldin.lee@quantatw.com>
 Date: Mon, 27 Apr 2026 17:11:11 +0800
-Subject: [PATCH] valve-monitor: switch to percentage tolerance and iio-hwmon
- ADC
+Subject: [PATCH 102/102] valve-monitor: switch to percentage tolerance and
+ iio-hwmon ADC
 
 Use percentage-based tolerance check instead of absolute difference.
 Update ADC probing to use iio-hwmon sysfs via glob.
@@ -95,5 +95,5 @@ index e354c64..b8f1560 100644
  
      error("Failed to find IIO ADC channel for index {IDX}", "IDX",
 -- 
-2.34.1
+2.52.0
 

@@ -1,7 +1,7 @@
-From 26b150f92c5166e9a86b17dc4ce56de1710fe49c Mon Sep 17 00:00:00 2001
+From b0c6f3b4b19c86ff1ee8f9de2204694c5ba5af24 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Fri, 19 Dec 2025 05:41:23 -0800
-Subject: [PATCH] valve-monitor: request for directory
+Subject: [PATCH 15/19] valve-monitor: request for directory
 
 Request the directory for valve-monitor. The purpose of the valve
 monitor service is to monitor the water valves in liquid cooling setups.
@@ -13,12 +13,19 @@ Tested: Build passes with meson option enabled.
 Change-Id: I79febb610f02684e8cf53ae4c2dcb53c65371e2d
 Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
 ---
+ meson.options                 |  6 +++++
+ src/meson.build               |  1 +
+ src/valve-monitor/OWNERS      | 41 +++++++++++++++++++++++++++++++++++
+ src/valve-monitor/meson.build |  3 +++
+ 4 files changed, 51 insertions(+)
+ create mode 100644 src/valve-monitor/OWNERS
+ create mode 100644 src/valve-monitor/meson.build
 
 diff --git a/meson.options b/meson.options
-index c8a8d34..315534e 100644
+index b87ed5f..8553d5e 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -113,3 +113,9 @@
+@@ -113,3 +113,9 @@ option(
      value: 'false',
      description: 'Disable in2_alarm event.',
  )
@@ -29,10 +36,10 @@ index c8a8d34..315534e 100644
 +    description: 'Enable valve monitor.',
 +)
 diff --git a/src/meson.build b/src/meson.build
-index 8df4d6f..771eb46 100644
+index 9e6da9e..3ecf709 100644
 --- a/src/meson.build
 +++ b/src/meson.build
-@@ -130,3 +130,4 @@
+@@ -130,3 +130,4 @@ subdir('nvme')
  subdir('psu')
  subdir('smbpbi')
  subdir('tests')
@@ -93,3 +100,6 @@ index 0000000..d881ba8
 +if not get_option('valve-monitor').allowed()
 +    subdir_done()
 +endif
+-- 
+2.52.0
+

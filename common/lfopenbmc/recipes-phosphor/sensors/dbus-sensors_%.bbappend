@@ -15,11 +15,11 @@ SRC_URI:append = " \
     file://0012-hwmontemp-Remove-newly-created-sensor-from-sensorsCh.patch \
     file://0013-psusensor-skip-sensor-reads-during-firmware-updates.patch \
     file://0014-meta-facebook-yosemite4-Disable-in2_alarm-event.patch \
-    file://0014-valve-monitor-request-for-directory.patch \
-    file://0015-Implement-valve-monitor-service.patch \
-    file://0016-psusensor-Add-support-for-per-sensor-PollRate-config.patch \
-    file://0017-SmbpbiSensor-Fix-invalid-data-check-size-for-tempera.patch \
-    file://0018-mctpreactor-Support-configuration-for-USB-MCTP-devic.patch \
+    file://0015-valve-monitor-request-for-directory.patch \
+    file://0016-Implement-valve-monitor-service.patch \
+    file://0017-psusensor-Add-support-for-per-sensor-PollRate-config.patch \
+    file://0018-SmbpbiSensor-Fix-invalid-data-check-size-for-tempera.patch \
+    file://0019-mctpreactor-Support-configuration-for-USB-MCTP-devic.patch \
 "
 
 SRC_URI:append:ventura2 = " \

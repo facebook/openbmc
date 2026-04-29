@@ -1,7 +1,7 @@
-From 2fab0912b3e62fd3c51a65029d832394e8e75121 Mon Sep 17 00:00:00 2001
+From 5eb3b273d978e350ff7fecb7179c0095e479e7bb Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Tue, 31 Mar 2026 19:45:25 -0700
-Subject: [PATCH] configuration: add AnalogValve D-Bus interface
+Subject: [PATCH 102/102] configuration: add AnalogValve D-Bus interface
 
 Add D-Bus interface definitions for analog valve configuration used in
 liquid cooling systems. This includes:
@@ -403,5 +403,5 @@ index 0000000..bf65391
 +      flags:
 +          - readonly
 -- 
-2.34.1
+2.52.0
 

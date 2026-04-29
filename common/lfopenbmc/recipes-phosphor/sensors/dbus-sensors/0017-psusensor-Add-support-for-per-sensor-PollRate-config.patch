@@ -1,7 +1,7 @@
-From b027855c762c5d06abceb5ef58e09ce3a335d179 Mon Sep 17 00:00:00 2001
+From 26fb13490316c914c9b524780a624388d9013eae Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 2 Sep 2025 10:07:42 +0800
-Subject: [PATCH 16/18] psusensor: Add support for per-sensor PollRate config
+Subject: [PATCH 17/19] psusensor: Add support for per-sensor PollRate config
 
 Previously, all sensors used a global PollRate. This commit adds
 support for a per-sensor PollRate (e.g., ADC Channel 1/2/3 PollRate),

@@ -1,7 +1,7 @@
-From 7088855949b812ccc4169fbf824e968b0f33802f Mon Sep 17 00:00:00 2001
+From c6fd86a3122e02d85ebcde7e90b37c2296bb0238 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Tue, 29 Jul 2025 21:01:23 -0700
-Subject: [PATCH] Implement valve monitor service
+Subject: [PATCH 16/19] Implement valve monitor service
 
 The purpose of the valve monitor service is to monitor the water valves
 in liquid cooling setups and raise an event if the valve open/close
@@ -98,11 +98,44 @@ Apr 03 13:49:55 ventura valvemonitor[4371]: OPENBMC_MESSAGE_ID={"xyz.openbmc_pro
 Change-Id: I1ccec2b43d02605e8f2e7df90fb534174eecc34e
 Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
 ---
+ service_files/meson.build                     |   1 +
+ .../xyz.openbmc_project.valvemonitor.service  |  15 +
+ src/{GPIOInterface.cpp => GPIInterface.cpp}   |  40 +--
+ src/GPIInterface.hpp                          |  44 +++
+ src/GPIOInterface.hpp                         |  42 ---
+ src/GPOInterface.cpp                          |  51 +++
+ src/GPOInterface.hpp                          |  28 ++
+ src/leakdetector/LeakGPIODetector.cpp         |   8 +-
+ src/leakdetector/LeakGPIODetector.hpp         |   4 +-
+ src/leakdetector/meson.build                  |   2 +-
+ src/meson.build                               |  22 +-
+ src/valve-monitor/GPIOValve.cpp               | 299 ++++++++++++++++++
+ src/valve-monitor/GPIOValve.hpp               | 105 ++++++
+ src/valve-monitor/Readme.md                   |  50 +++
+ src/valve-monitor/ValveEvents.cpp             |  34 ++
+ src/valve-monitor/ValveEvents.hpp             |  23 ++
+ src/valve-monitor/ValveMonitor.cpp            | 102 ++++++
+ src/valve-monitor/ValveMonitor.hpp            |  49 +++
+ src/valve-monitor/meson.build                 |  22 ++
+ 19 files changed, 862 insertions(+), 79 deletions(-)
+ create mode 100644 service_files/xyz.openbmc_project.valvemonitor.service
+ rename src/{GPIOInterface.cpp => GPIInterface.cpp} (55%)
+ create mode 100644 src/GPIInterface.hpp
+ delete mode 100644 src/GPIOInterface.hpp
+ create mode 100644 src/GPOInterface.cpp
+ create mode 100644 src/GPOInterface.hpp
+ create mode 100644 src/valve-monitor/GPIOValve.cpp
+ create mode 100644 src/valve-monitor/GPIOValve.hpp
+ create mode 100644 src/valve-monitor/Readme.md
+ create mode 100644 src/valve-monitor/ValveEvents.cpp
+ create mode 100644 src/valve-monitor/ValveEvents.hpp
+ create mode 100644 src/valve-monitor/ValveMonitor.cpp
+ create mode 100644 src/valve-monitor/ValveMonitor.hpp
 
-Index: dbus-sensors-0.1+git/service_files/meson.build
-===================================================================
---- dbus-sensors-0.1+git.orig/service_files/meson.build
-+++ dbus-sensors-0.1+git/service_files/meson.build
+diff --git a/service_files/meson.build b/service_files/meson.build
+index 5b949a2..4a7c776 100644
+--- a/service_files/meson.build
++++ b/service_files/meson.build
 @@ -21,6 +21,7 @@ unit_files = [
      ['nvme', 'xyz.openbmc_project.nvmesensor.service'],
      ['psu', 'xyz.openbmc_project.psusensor.service'],
@@ -111,10 +144,11 @@ Index: dbus-sensors-0.1+git/service_files/meson.build
  ]
  
  fs = import('fs')
-Index: dbus-sensors-0.1+git/service_files/xyz.openbmc_project.valvemonitor.service
-===================================================================
+diff --git a/service_files/xyz.openbmc_project.valvemonitor.service b/service_files/xyz.openbmc_project.valvemonitor.service
+new file mode 100644
+index 0000000..713e372
 --- /dev/null
-+++ dbus-sensors-0.1+git/service_files/xyz.openbmc_project.valvemonitor.service
++++ b/service_files/xyz.openbmc_project.valvemonitor.service
 @@ -0,0 +1,15 @@
 +
 +[Unit]
@@ -131,109 +165,114 @@ Index: dbus-sensors-0.1+git/service_files/xyz.openbmc_project.valvemonitor.servi
 +
 +[Install]
 +WantedBy=multi-user.target
-Index: dbus-sensors-0.1+git/src/GPIInterface.cpp
-===================================================================
---- /dev/null
-+++ dbus-sensors-0.1+git/src/GPIInterface.cpp
-@@ -0,0 +1,94 @@
+diff --git a/src/GPIOInterface.cpp b/src/GPIInterface.cpp
+similarity index 55%
+rename from src/GPIOInterface.cpp
+rename to src/GPIInterface.cpp
+index 81a93d3..b023c37 100644
+--- a/src/GPIOInterface.cpp
++++ b/src/GPIInterface.cpp
+@@ -1,10 +1,9 @@
+-#include "GPIOInterface.hpp"
 +#include "GPIInterface.hpp"
-+
-+#include <gpiod.hpp>
-+#include <phosphor-logging/lg2.hpp>
-+#include <sdbusplus/async.hpp>
-+
-+#include <exception>
-+#include <memory>
-+#include <stdexcept>
-+#include <string>
-+#include <utility>
-+
-+namespace gpio
-+{
-+
-+PHOSPHOR_LOG2_USING;
-+
+ 
+ #include <gpiod.hpp>
+ #include <phosphor-logging/lg2.hpp>
+ #include <sdbusplus/async.hpp>
+ 
+-#include <chrono>
+ #include <exception>
+ #include <memory>
+ #include <stdexcept>
+@@ -16,10 +15,10 @@ namespace gpio
+ 
+ PHOSPHOR_LOG2_USING;
+ 
+-GPIOInterface::GPIOInterface(sdbusplus::async::context& ctx,
+-                             const std::string& consumerName,
+-                             const std::string& pinName, bool activeLow,
+-                             Callback_t updateStateCallback) :
 +GPIInterface::GPIInterface(sdbusplus::async::context& ctx,
 +                           const std::string& consumerName,
 +                           const std::string& pinName, bool activeLow,
 +                           Callback_t updateStateCallback) :
-+    ctx(ctx), pinName(pinName),
-+    updateStateCallback(std::move(updateStateCallback))
-+{
-+    if (!this->updateStateCallback)
-+    {
-+        throw std::runtime_error("updateStateCallback is not set");
-+    }
-+    line = gpiod::find_line(pinName);
-+    if (!line)
-+    {
+     ctx(ctx), pinName(pinName),
+     updateStateCallback(std::move(updateStateCallback))
+ {
+@@ -30,7 +29,7 @@ GPIOInterface::GPIOInterface(sdbusplus::async::context& ctx,
+     line = gpiod::find_line(pinName);
+     if (!line)
+     {
+-        throw std::runtime_error("Failed to find GPIO line for " + pinName);
 +        throw std::runtime_error("Failed to find GPI line for " + pinName);
-+    }
-+    try
-+    {
-+        line.request({consumerName, gpiod::line_request::EVENT_BOTH_EDGES,
-+                      activeLow ? gpiod::line_request::FLAG_ACTIVE_LOW : 0});
-+    }
-+    catch (std::exception& e)
-+    {
-+        throw std::runtime_error("Failed to request line for " + pinName +
-+                                 " with error " + e.what());
-+    }
-+
-+    int lineFd = line.event_get_fd();
-+    if (lineFd < 0)
-+    {
-+        throw std::runtime_error(
+     }
+     try
+     {
+@@ -47,27 +46,27 @@ GPIOInterface::GPIOInterface(sdbusplus::async::context& ctx,
+     if (lineFd < 0)
+     {
+         throw std::runtime_error(
+-            "Failed to get event fd for GPIO line " + pinName);
 +            "Failed to get event fd for GPI line " + pinName);
-+    }
-+
-+    fdioInstance = std::make_unique<sdbusplus::async::fdio>(ctx, lineFd);
-+}
-+
+     }
+ 
+     fdioInstance = std::make_unique<sdbusplus::async::fdio>(ctx, lineFd);
+ }
+ 
+-auto GPIOInterface::start() -> sdbusplus::async::task<>
 +auto GPIInterface::start() -> sdbusplus::async::task<>
-+{
+ {
+-    // Start the async read for the GPIO line
+-    ctx.spawn(readGPIOAsyncEvent());
 +    // Start the async read for the GPI line
 +    ctx.spawn(readGPIAsyncEvent());
-+
+ 
+-    // Read the initial GPIO value
+-    co_await readGPIOAsync();
 +    // Read the initial GPI value
 +    co_await readGPIAsync();
-+}
-+
+ }
+ 
+-auto GPIOInterface::readGPIOAsync() -> sdbusplus::async::task<>
 +auto GPIInterface::readGPIAsync() -> sdbusplus::async::task<>
-+{
-+    auto lineValue = line.get_value();
-+    if (lineValue < 0)
-+    {
+ {
+     auto lineValue = line.get_value();
+     if (lineValue < 0)
+     {
+-        error("Failed to read GPIO line {LINENAME}", "LINENAME", pinName);
 +        error("Failed to read GPI line {LINENAME}", "LINENAME", pinName);
-+        co_return;
-+    }
-+    co_await updateStateCallback(lineValue == gpiod::line_event::RISING_EDGE);
-+
-+    co_return;
-+}
-+
+         co_return;
+     }
+     co_await updateStateCallback(lineValue == gpiod::line_event::RISING_EDGE);
+@@ -75,22 +74,13 @@ auto GPIOInterface::readGPIOAsync() -> sdbusplus::async::task<>
+     co_return;
+ }
+ 
+-auto GPIOInterface::readGPIOAsyncEvent() -> sdbusplus::async::task<>
 +auto GPIInterface::readGPIAsyncEvent() -> sdbusplus::async::task<>
-+{
-+    while (!ctx.stop_requested())
-+    {
-+        // Wait for the fd event for the line to change
-+        co_await fdioInstance->next();
-+
-+        line.event_read();
-+        auto lineValue = line.get_value();
-+
-+        co_await updateStateCallback(
-+            lineValue == gpiod::line_event::RISING_EDGE);
-+    }
-+
-+    co_return;
-+}
-+
-+} // namespace gpio
-Index: dbus-sensors-0.1+git/src/GPIInterface.hpp
-===================================================================
+ {
+     while (!ctx.stop_requested())
+     {
+         // Wait for the fd event for the line to change
+         co_await fdioInstance->next();
+ 
+-        // event_read() does not clear the EPOLLIN flag immediately; it is
+-        // cleared during the subsequent epoll check. Therefore, call event_wait
+-        // with a zero timeout to ensure that event_read() is only invoked when
+-        // an event is available, preventing it from blocking.
+-        if (!line.event_wait(std::chrono::milliseconds(0)))
+-        {
+-            continue;
+-        }
+-
+         line.event_read();
+         auto lineValue = line.get_value();
+ 
+diff --git a/src/GPIInterface.hpp b/src/GPIInterface.hpp
+new file mode 100644
+index 0000000..c12f6b6
 --- /dev/null
-+++ dbus-sensors-0.1+git/src/GPIInterface.hpp
++++ b/src/GPIInterface.hpp
 @@ -0,0 +1,44 @@
 +#pragma once
 +
@@ -279,118 +318,10 @@ Index: dbus-sensors-0.1+git/src/GPIInterface.hpp
 +};
 +
 +} // namespace gpio
-Index: dbus-sensors-0.1+git/src/GPIOInterface.cpp
-===================================================================
---- dbus-sensors-0.1+git.orig/src/GPIOInterface.cpp
-+++ /dev/null
-@@ -1,104 +0,0 @@
--#include "GPIOInterface.hpp"
--
--#include <gpiod.hpp>
--#include <phosphor-logging/lg2.hpp>
--#include <sdbusplus/async.hpp>
--
--#include <chrono>
--#include <exception>
--#include <memory>
--#include <stdexcept>
--#include <string>
--#include <utility>
--
--namespace gpio
--{
--
--PHOSPHOR_LOG2_USING;
--
--GPIOInterface::GPIOInterface(sdbusplus::async::context& ctx,
--                             const std::string& consumerName,
--                             const std::string& pinName, bool activeLow,
--                             Callback_t updateStateCallback) :
--    ctx(ctx), pinName(pinName),
--    updateStateCallback(std::move(updateStateCallback))
--{
--    if (!this->updateStateCallback)
--    {
--        throw std::runtime_error("updateStateCallback is not set");
--    }
--    line = gpiod::find_line(pinName);
--    if (!line)
--    {
--        throw std::runtime_error("Failed to find GPIO line for " + pinName);
--    }
--    try
--    {
--        line.request({consumerName, gpiod::line_request::EVENT_BOTH_EDGES,
--                      activeLow ? gpiod::line_request::FLAG_ACTIVE_LOW : 0});
--    }
--    catch (std::exception& e)
--    {
--        throw std::runtime_error("Failed to request line for " + pinName +
--                                 " with error " + e.what());
--    }
--
--    int lineFd = line.event_get_fd();
--    if (lineFd < 0)
--    {
--        throw std::runtime_error(
--            "Failed to get event fd for GPIO line " + pinName);
--    }
--
--    fdioInstance = std::make_unique<sdbusplus::async::fdio>(ctx, lineFd);
--}
--
--auto GPIOInterface::start() -> sdbusplus::async::task<>
--{
--    // Start the async read for the GPIO line
--    ctx.spawn(readGPIOAsyncEvent());
--
--    // Read the initial GPIO value
--    co_await readGPIOAsync();
--}
--
--auto GPIOInterface::readGPIOAsync() -> sdbusplus::async::task<>
--{
--    auto lineValue = line.get_value();
--    if (lineValue < 0)
--    {
--        error("Failed to read GPIO line {LINENAME}", "LINENAME", pinName);
--        co_return;
--    }
--    co_await updateStateCallback(lineValue == gpiod::line_event::RISING_EDGE);
--
--    co_return;
--}
--
--auto GPIOInterface::readGPIOAsyncEvent() -> sdbusplus::async::task<>
--{
--    while (!ctx.stop_requested())
--    {
--        // Wait for the fd event for the line to change
--        co_await fdioInstance->next();
--
--        // event_read() does not clear the EPOLLIN flag immediately; it is
--        // cleared during the subsequent epoll check. Therefore, call event_wait
--        // with a zero timeout to ensure that event_read() is only invoked when
--        // an event is available, preventing it from blocking.
--        if (!line.event_wait(std::chrono::milliseconds(0)))
--        {
--            continue;
--        }
--
--        line.event_read();
--        auto lineValue = line.get_value();
--
--        co_await updateStateCallback(
--            lineValue == gpiod::line_event::RISING_EDGE);
--    }
--
--    co_return;
--}
--
--} // namespace gpio
-Index: dbus-sensors-0.1+git/src/GPIOInterface.hpp
-===================================================================
---- dbus-sensors-0.1+git.orig/src/GPIOInterface.hpp
+diff --git a/src/GPIOInterface.hpp b/src/GPIOInterface.hpp
+deleted file mode 100644
+index b860551..0000000
+--- a/src/GPIOInterface.hpp
 +++ /dev/null
 @@ -1,42 +0,0 @@
 -#pragma once
@@ -435,10 +366,11 @@ Index: dbus-sensors-0.1+git/src/GPIOInterface.hpp
 -};
 -
 -} // namespace gpio
-Index: dbus-sensors-0.1+git/src/GPOInterface.cpp
-===================================================================
+diff --git a/src/GPOInterface.cpp b/src/GPOInterface.cpp
+new file mode 100644
+index 0000000..ed61f5c
 --- /dev/null
-+++ dbus-sensors-0.1+git/src/GPOInterface.cpp
++++ b/src/GPOInterface.cpp
 @@ -0,0 +1,51 @@
 +#include "GPOInterface.hpp"
 +
@@ -491,10 +423,11 @@ Index: dbus-sensors-0.1+git/src/GPOInterface.cpp
 +}
 +
 +} // namespace gpio
-Index: dbus-sensors-0.1+git/src/GPOInterface.hpp
-===================================================================
+diff --git a/src/GPOInterface.hpp b/src/GPOInterface.hpp
+new file mode 100644
+index 0000000..22ff9ed
 --- /dev/null
-+++ dbus-sensors-0.1+git/src/GPOInterface.hpp
++++ b/src/GPOInterface.hpp
 @@ -0,0 +1,28 @@
 +#pragma once
 +
@@ -524,11 +457,11 @@ Index: dbus-sensors-0.1+git/src/GPOInterface.hpp
 +};
 +
 +} // namespace gpio
-Index: dbus-sensors-0.1+git/src/leakdetector/LeakGPIODetector.cpp
-===================================================================
---- dbus-sensors-0.1+git.orig/src/leakdetector/LeakGPIODetector.cpp
-+++ dbus-sensors-0.1+git/src/leakdetector/LeakGPIODetector.cpp
-@@ -50,15 +50,15 @@ GPIODetector::GPIODetector(sdbusplus::as
+diff --git a/src/leakdetector/LeakGPIODetector.cpp b/src/leakdetector/LeakGPIODetector.cpp
+index 976716f..f77c3e4 100644
+--- a/src/leakdetector/LeakGPIODetector.cpp
++++ b/src/leakdetector/LeakGPIODetector.cpp
+@@ -49,15 +49,15 @@ GPIODetector::GPIODetector(sdbusplus::async::context& ctx, Events& leakEvents,
                   DetectorIntf::Detector::properties_t{
                       config.name, DetectorState::Normal, config.type}),
      ctx(ctx), leakEvents(leakEvents), config(config),
@@ -548,10 +481,10 @@ Index: dbus-sensors-0.1+git/src/leakdetector/LeakGPIODetector.cpp
  
      debug("Created leak detector {NAME}", "NAME", config.name);
  }
-Index: dbus-sensors-0.1+git/src/leakdetector/LeakGPIODetector.hpp
-===================================================================
---- dbus-sensors-0.1+git.orig/src/leakdetector/LeakGPIODetector.hpp
-+++ dbus-sensors-0.1+git/src/leakdetector/LeakGPIODetector.hpp
+diff --git a/src/leakdetector/LeakGPIODetector.hpp b/src/leakdetector/LeakGPIODetector.hpp
+index e841374..34554ac 100644
+--- a/src/leakdetector/LeakGPIODetector.hpp
++++ b/src/leakdetector/LeakGPIODetector.hpp
 @@ -1,6 +1,6 @@
  #pragma once
  
@@ -569,10 +502,10 @@ Index: dbus-sensors-0.1+git/src/leakdetector/LeakGPIODetector.hpp
  };
  
  } // namespace leak
-Index: dbus-sensors-0.1+git/src/leakdetector/meson.build
-===================================================================
---- dbus-sensors-0.1+git.orig/src/leakdetector/meson.build
-+++ dbus-sensors-0.1+git/src/leakdetector/meson.build
+diff --git a/src/leakdetector/meson.build b/src/leakdetector/meson.build
+index d2fdfaa..4d0fe04 100644
+--- a/src/leakdetector/meson.build
++++ b/src/leakdetector/meson.build
 @@ -14,7 +14,7 @@ executable(
          utils_dep,
          phosphor_dbus_interfaces_dep,
@@ -582,10 +515,10 @@ Index: dbus-sensors-0.1+git/src/leakdetector/meson.build
          entitymanagerinterface_dep,
      ],
      include_directories: src_inc,
-Index: dbus-sensors-0.1+git/src/meson.build
-===================================================================
---- dbus-sensors-0.1+git.orig/src/meson.build
-+++ dbus-sensors-0.1+git/src/meson.build
+diff --git a/src/meson.build b/src/meson.build
+index 3ecf709..2e7d82e 100644
+--- a/src/meson.build
++++ b/src/meson.build
 @@ -63,15 +63,27 @@ pwmsensor_dep = declare_dependency(
  
  systemdinterface_src = files('SystemdInterface.cpp')
@@ -619,10 +552,11 @@ Index: dbus-sensors-0.1+git/src/meson.build
      dependencies: default_deps,
  )
  
-Index: dbus-sensors-0.1+git/src/valve-monitor/GPIOValve.cpp
-===================================================================
+diff --git a/src/valve-monitor/GPIOValve.cpp b/src/valve-monitor/GPIOValve.cpp
+new file mode 100644
+index 0000000..e40efb8
 --- /dev/null
-+++ dbus-sensors-0.1+git/src/valve-monitor/GPIOValve.cpp
++++ b/src/valve-monitor/GPIOValve.cpp
 @@ -0,0 +1,299 @@
 +#include "GPIOValve.hpp"
 +
@@ -923,10 +857,11 @@ Index: dbus-sensors-0.1+git/src/valve-monitor/GPIOValve.cpp
 +}
 +
 +} // namespace valve
-Index: dbus-sensors-0.1+git/src/valve-monitor/GPIOValve.hpp
-===================================================================
+diff --git a/src/valve-monitor/GPIOValve.hpp b/src/valve-monitor/GPIOValve.hpp
+new file mode 100644
+index 0000000..725197e
 --- /dev/null
-+++ dbus-sensors-0.1+git/src/valve-monitor/GPIOValve.hpp
++++ b/src/valve-monitor/GPIOValve.hpp
 @@ -0,0 +1,105 @@
 +#pragma once
 +
@@ -1033,10 +968,11 @@ Index: dbus-sensors-0.1+git/src/valve-monitor/GPIOValve.hpp
 +};
 +
 +} // namespace valve
-Index: dbus-sensors-0.1+git/src/valve-monitor/Readme.md
-===================================================================
+diff --git a/src/valve-monitor/Readme.md b/src/valve-monitor/Readme.md
+new file mode 100644
+index 0000000..fb849e5
 --- /dev/null
-+++ dbus-sensors-0.1+git/src/valve-monitor/Readme.md
++++ b/src/valve-monitor/Readme.md
 @@ -0,0 +1,50 @@
 +# Valve Monitor
 +
@@ -1088,10 +1024,11 @@ Index: dbus-sensors-0.1+git/src/valve-monitor/Readme.md
 +
 +  where \<ValveName\> corresponds to the valve name specified in the EM
 +  Configuration.
-Index: dbus-sensors-0.1+git/src/valve-monitor/ValveEvents.cpp
-===================================================================
+diff --git a/src/valve-monitor/ValveEvents.cpp b/src/valve-monitor/ValveEvents.cpp
+new file mode 100644
+index 0000000..9543d2d
 --- /dev/null
-+++ dbus-sensors-0.1+git/src/valve-monitor/ValveEvents.cpp
++++ b/src/valve-monitor/ValveEvents.cpp
 @@ -0,0 +1,34 @@
 +#include "ValveEvents.hpp"
 +
@@ -1127,10 +1064,11 @@ Index: dbus-sensors-0.1+git/src/valve-monitor/ValveEvents.cpp
 +}
 +
 +} // namespace valve
-Index: dbus-sensors-0.1+git/src/valve-monitor/ValveEvents.hpp
-===================================================================
+diff --git a/src/valve-monitor/ValveEvents.hpp b/src/valve-monitor/ValveEvents.hpp
+new file mode 100644
+index 0000000..3f9ce8f
 --- /dev/null
-+++ dbus-sensors-0.1+git/src/valve-monitor/ValveEvents.hpp
++++ b/src/valve-monitor/ValveEvents.hpp
 @@ -0,0 +1,23 @@
 +#pragma once
 +
@@ -1155,10 +1093,11 @@ Index: dbus-sensors-0.1+git/src/valve-monitor/ValveEvents.hpp
 +};
 +
 +} // namespace valve
-Index: dbus-sensors-0.1+git/src/valve-monitor/ValveMonitor.cpp
-===================================================================
+diff --git a/src/valve-monitor/ValveMonitor.cpp b/src/valve-monitor/ValveMonitor.cpp
+new file mode 100644
+index 0000000..f38c021
 --- /dev/null
-+++ dbus-sensors-0.1+git/src/valve-monitor/ValveMonitor.cpp
++++ b/src/valve-monitor/ValveMonitor.cpp
 @@ -0,0 +1,102 @@
 +#include "ValveMonitor.hpp"
 +
@@ -1262,10 +1201,11 @@ Index: dbus-sensors-0.1+git/src/valve-monitor/ValveMonitor.cpp
 +    ctx.run();
 +    return 0;
 +}
-Index: dbus-sensors-0.1+git/src/valve-monitor/ValveMonitor.hpp
-===================================================================
+diff --git a/src/valve-monitor/ValveMonitor.hpp b/src/valve-monitor/ValveMonitor.hpp
+new file mode 100644
+index 0000000..9d66262
 --- /dev/null
-+++ dbus-sensors-0.1+git/src/valve-monitor/ValveMonitor.hpp
++++ b/src/valve-monitor/ValveMonitor.hpp
 @@ -0,0 +1,49 @@
 +#include "EntityManagerInterface.hpp"
 +#include "GPIOValve.hpp"
@@ -1316,10 +1256,10 @@ Index: dbus-sensors-0.1+git/src/valve-monitor/ValveMonitor.hpp
 +    valve_map_t valves;
 +};
 +} // namespace valve
-Index: dbus-sensors-0.1+git/src/valve-monitor/meson.build
-===================================================================
---- dbus-sensors-0.1+git.orig/src/valve-monitor/meson.build
-+++ dbus-sensors-0.1+git/src/valve-monitor/meson.build
+diff --git a/src/valve-monitor/meson.build b/src/valve-monitor/meson.build
+index d881ba8..d00cefa 100644
+--- a/src/valve-monitor/meson.build
++++ b/src/valve-monitor/meson.build
 @@ -1,3 +1,25 @@
  if not get_option('valve-monitor').allowed()
      subdir_done()
@@ -1346,3 +1286,6 @@ Index: dbus-sensors-0.1+git/src/valve-monitor/meson.build
 +    install: true,
 +    install_dir: '/usr/libexec/dbus-sensors',
 +)
+-- 
+2.52.0
+

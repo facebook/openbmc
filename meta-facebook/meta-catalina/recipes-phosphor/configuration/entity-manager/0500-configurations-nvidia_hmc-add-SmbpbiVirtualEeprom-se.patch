@@ -95,7 +95,7 @@ index f541408..f1d2e52 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 13,
-+            "MaxValue": 1023,
++            "MaxValue": 1400,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU0_PWR_W",
 +            "PollRate": 1,
@@ -108,7 +108,7 @@ index f541408..f1d2e52 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 13,
-+            "MaxValue": 1023,
++            "MaxValue": 1400,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU1_PWR_W",
 +            "PollRate": 1,
@@ -601,7 +601,7 @@ index f541408..f1d2e52 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 13,
-+            "MaxValue": 100,
++            "MaxValue": 300,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU0_VR_CPU_PWR_W",
 +            "PollRate": 1,
@@ -614,7 +614,7 @@ index f541408..f1d2e52 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 13,
-+            "MaxValue": 10,
++            "MaxValue": 300,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU0_VR_SOC_PWR_W",
 +            "PollRate": 1,
@@ -737,7 +737,7 @@ index f541408..f1d2e52 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 13,
-+            "MaxValue": 100,
++            "MaxValue": 300,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU1_VR_CPU_PWR_W",
 +            "PollRate": 1,
@@ -750,7 +750,7 @@ index f541408..f1d2e52 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 13,
-+            "MaxValue": 10,
++            "MaxValue": 300,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU1_VR_SOC_PWR_W",
 +            "PollRate": 1,

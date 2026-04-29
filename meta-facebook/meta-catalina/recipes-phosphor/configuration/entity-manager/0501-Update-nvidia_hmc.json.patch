@@ -98,7 +98,7 @@ index f1d2e52..c206016 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 13,
-+            "MaxValue": 1023,
++            "MaxValue": 1400,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU2_PWR_W",
 +            "PollRate": 1,
@@ -111,7 +111,7 @@ index f1d2e52..c206016 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 13,
-+            "MaxValue": 1023,
++            "MaxValue": 1400,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU3_PWR_W",
 +            "PollRate": 1,

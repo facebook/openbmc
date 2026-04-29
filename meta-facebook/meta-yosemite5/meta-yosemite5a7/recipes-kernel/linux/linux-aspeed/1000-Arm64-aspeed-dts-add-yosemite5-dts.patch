@@ -1,0 +1,1394 @@
+From 14477a0e5ef525f79d503cc4893e59c5177be43b Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Thu, 2 Oct 2025 11:13:35 +0800
+Subject: [PATCH] Arm64: aspeed: dts: add yosemite5 dts
+
+Add yosemite5 ast2700 dts.
+---
+ arch/arm64/boot/dts/aspeed/Makefile           |    1 +
+ .../aspeed-bmc-facebook-yosemite5a7.dts       | 1363 +++++++++++++++++
+ 2 files changed, 1364 insertions(+)
+ create mode 100644 arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
+
+diff --git a/arch/arm64/boot/dts/aspeed/Makefile b/arch/arm64/boot/dts/aspeed/Makefile
+index ffe7e1501..f19cb564f 100644
+--- a/arch/arm64/boot/dts/aspeed/Makefile
++++ b/arch/arm64/boot/dts/aspeed/Makefile
+@@ -1,4 +1,5 @@
+ # SPDX-License-Identifier: GPL-2.0
+ 
+ dtb-$(CONFIG_ARCH_ASPEED) += \
++	aspeed-bmc-facebook-yosemite5a7.dtb \
+ 	ast2700-evb.dtb
+diff --git a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
+new file mode 100644
+index 000000000..bf0aa27e4
+--- /dev/null
++++ b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
+@@ -0,0 +1,1363 @@
++// SPDX-License-Identifier: GPL-2.0+
++// Copyright (c) 2025 Facebook Inc.
++
++/dts-v1/;
++#include "aspeed-g7-a35.dtsi"
++#include <dt-bindings/gpio/aspeed-gpio.h>
++#include <dt-bindings/i2c/i2c.h>
++
++/ {
++	model = "Facebook Yosemite 5 BMC";
++	compatible = "facebook,yosemite5a7-bmc", "aspeed,ast2700";
++
++	aliases {
++		serial0 = &uart0;
++		serial1 = &uart1;
++		serial2 = &uart9;
++		serial3 = &uart10;
++		serial4 = &uart12;
++		i2c0 = &i2c12;
++		i2c1 = &i2c13;
++		i2c2 = &i2c14;
++		i2c3 = &i2c15;
++		i2c4 = &i2c0;
++		i2c5 = &i2c1;
++		i2c6 = &i2c2;
++		i2c7 = &i2c3;
++		i2c8 = &i2c4;
++		i2c9 = &i2c5;
++		i2c10 = &i2c6;
++		i2c11 = &i2c7;
++		i2c12 = &i2c8;
++		i2c13 = &i2c9;
++		i2c14 = &i2c10;
++		i2c15 = &i2c11;
++		i2c16 = &i2c5mux0ch0;
++		i2c17 = &i2c5mux0ch1;
++		i2c18 = &i2c5mux0ch2;
++		i2c19 = &i2c5mux0ch3;
++		i2c20 = &i2c5mux1ch0;
++		i2c21 = &i2c5mux1ch1;
++		i2c22 = &i2c5mux1ch2;
++		i2c23 = &i2c5mux1ch3;
++		i2c24 = &i2c6mux0ch0;
++		i2c25 = &i2c6mux0ch1;
++		i2c26 = &i2c6mux0ch2;
++		i2c27 = &i2c6mux0ch3;
++		i2c28 = &i2c8mux0ch0;
++		i2c29 = &i2c8mux0ch1;
++		i2c30 = &i2c8mux0ch2;
++		i2c31 = &i2c8mux0ch3;
++		i2c32 = &i2c30mux0ch0;
++		i2c33 = &i2c30mux0ch1;
++		i2c34 = &i2c30mux0ch2;
++		i2c35 = &i2c30mux0ch3;
++		i2c36 = &i2c10mux0ch0;
++		i2c37 = &i2c10mux0ch1;
++	};
++
++	chosen {
++		stdout-path = "serial4:57600n8";
++	};
++
++	iio-hwmon {
++		compatible = "iio-hwmon";
++		io-channels = <&adc0 0>, <&adc0 1>, <&adc0 2>, <&adc0 3>,
++			      <&adc0 4>, <&adc0 5>, <&adc0 6>, <&adc0 7>,
++			      <&adc1 0>, <&adc1 1>, <&adc1 2>, <&adc1 3>;
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		led-0 {
++			label = "bmc_heartbeat_amber";
++			gpios = <&gpio1 ASPEED_GPIO(AA, 2) GPIO_ACTIVE_LOW>;
++			linux,default-trigger = "heartbeat";
++		};
++
++		led-1 {
++			label = "fp_id_amber";
++			default-state = "off";
++			gpios = <&gpio1 ASPEED_GPIO(D, 1) GPIO_ACTIVE_HIGH>;
++		};
++
++		led-2 {
++			label = "power_fault_amber";
++			default-state = "off";
++			gpios = <&gpio0 ASPEED_GPIO(A, 5) GPIO_ACTIVE_HIGH>;
++		};
++	};
++
++	memory@400000000 {
++		device_type = "memory";
++		reg = <0x4 0x00000000 0x0 0x80000000>;
++	};
++
++	reserved-memory {
++		#address-cells = <2>;
++		#size-cells = <2>;
++		ranges;
++
++		ssp_memory: ssp-memory@42c000000 {
++			reg = <0x4 0x2c000000 0x0 0x2000000>;
++			no-map;
++		};
++
++		tsp_memory: tsp-memory@42e000000 {
++			reg = <0x4 0x2e000000 0x0 0x2000000>;
++			no-map;
++		};
++
++		ipc_ssp_share: ipc-ssp-share@431080000 {
++			reg = <0x4 0x31080000 0x0 0x800000>;
++			no-map;
++		};
++
++		ipc_bootmcu_share: ipc-bootmcu-share@431880000 {
++			reg = <0x4 0x31880000 0x0 0x2b0000>;
++			no-map;
++		};
++
++		vbios_base0: vbios-base0@431bb0000 {
++			reg = <0x4 0x31bb0000 0x0 0x10000>;
++			no-map;
++		};
++
++		vbios_base1: vbios-base1@431bc0000 {
++			reg = <0x4 0x31bc0000 0x0 0x10000>;
++			no-map;
++		};
++	};
++
++	spi_gpio: spi {
++		compatible = "spi-gpio";
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		sck-gpios = <&gpio1 ASPEED_GPIO(P, 1) GPIO_ACTIVE_HIGH>;
++		mosi-gpios = <&gpio1 ASPEED_GPIO(P, 2) GPIO_ACTIVE_HIGH>;
++		miso-gpios = <&gpio1 ASPEED_GPIO(P, 3) GPIO_ACTIVE_HIGH>;
++		cs-gpios = <&gpio1 ASPEED_GPIO(P, 0) GPIO_ACTIVE_LOW>;
++		num-chipselects = <1>;
++		status = "okay";
++
++		tpm@0 {
++			compatible = "infineon,slb9670", "tcg,tpm_tis-spi";
++			spi-max-frequency = <33000000>;
++			reg = <0>;
++		};
++	};
++};
++
++&adc0 {
++	aspeed,int-vref-microvolt = <2500000>;
++	status = "okay";
++
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_adc0_default &pinctrl_adc1_default
++		&pinctrl_adc2_default &pinctrl_adc3_default
++		&pinctrl_adc4_default &pinctrl_adc5_default
++		&pinctrl_adc6_default &pinctrl_adc7_default>;
++};
++
++&adc1 {
++	aspeed,int-vref-microvolt = <2500000>;
++	status = "okay";
++
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_adc8_default &pinctrl_adc9_default
++		&pinctrl_adc10_default &pinctrl_adc11_default>;
++};
++
++/*
++&ehci0 {
++	status = "okay";
++};
++
++&ehci1 {
++	status = "okay";
++};
++*/
++
++&fmc {
++	status = "okay";
++
++	flash@0 {
++		status = "okay";
++		m25p,fast-read;
++		label = "bmc";
++		spi-max-frequency = <50000000>;
++
++		partitions {
++			compatible = "fixed-partitions";
++			#address-cells = <1>;
++			#size-cells = <1>;
++
++			u-boot@0 {
++				reg = <0x0 0x400000>; // 4MB
++				label = "u-boot";
++			};
++
++			u-boot-env@400000 {
++				reg = <0x400000 0x20000>; // 128KB
++				label = "u-boot-env";
++			};
++
++			kernel@420000 {
++				reg = <0x420000 0x900000>; // 9MB
++				label = "kernel";
++			};
++
++			rofs@d20000 {
++				reg = <0xd20000 0x52E0000>; // 82.875MB
++				label = "rofs";
++			};
++
++			rwfs@6000000 {
++				reg = <0x6000000 0x2000000>; // 32MB
++				label = "rwfs";
++			};
++		};
++	};
++
++	flash@1 {
++		status = "okay";
++		m25p,fast-read;
++		label = "alt-bmc";
++		spi-max-frequency = <50000000>;
++	};
++};
++
++&gpio1 {
++	gpio-line-names =
++		/*A0-A7*/ "FM_BMC_MUX1_SEL","FM_DEBUG_PORT_PRSNT_N","FM_BMC_DBP_PRESENT_N","L2_RST_REQ_OUT","L0L1_RST_REQ_OUT","BMC_ID_BEEP_SEL","BMC_I2C0_FPGA_ALERT","BMC_JTAG_MUX_SEL",
++		/*B0-B7*/ "IRQ_PCH_TPM_SPI_LV3_N","USB_OC0_REAR_N","UART_MUX_SEL","I2C_MUX_RESET","RSVD_NV_PLT_DETECT","SPI_TPM_INT","CPU_JTAG_MUX_SELECT","THERM_BB_OVERT",
++		/*C0-C7*/ "THERM_BB_WARN","SPI_BMC_FPGA_INT","CPU_BOOT_DONE","PMBUS_GNT","CHASSIS_PWR_BRK","PCIE_WAKE","PDB_THERM_OVERT","SHDN_REQ",
++		/*D0-D7*/ "SPI_BMC_BIOS_ROM_IRQ0_N","FM_ID_LED","SMB_BMC_TMP_ALERT","PWR_LED_N","FM_BMC_PROT_LS_EN","AC_PWR_BMC_BTN_N","PSU_FW_UPDATING_N","DEBUG_CARD_BYPASS",
++		/*E0-E7*/ "PCIE_EP_RST_EN","BMC_FRU_WP","SCM_HPM_STBY_RST_N","SCM_HPM_STBY_EN","STBY_POWER_PG_3V3","TH500_SHDN_OK","","",
++		/*F0-F7*/ "LED_POSTCODE_0","LED_POSTCODE_1","LED_POSTCODE_2","LED_POSTCODE_3","LED_POSTCODE_4","LED_POSTCODE_5","LED_POSTCODE_6","LED_POSTCODE_7",
++		/*G0-G7*/ "RUN_POWER_PG","PWR_BRAKE","","RST_BMC_SELF_HW_R1","PSU_SMB_ALERT","FM_TPM_PRSNT_0_N","BMC_I2C1_FPGA_ALERT","BMC_READY",
++		/*H0-H7*/ "FLASH_WP_STATUS","BMC_EMMC_UFS_SEL","FM_FLASH_LATCH_N","","","","","",
++		/*I0-I7*/ "","","","","","","","",
++		/*J0-J7*/ "","","","","","","","",
++		/*K0-K7*/ "","","","","","","","",
++		/*L0-L7*/ "PWR_BTN_BMC_N","IPEX_CABLE_PRSNT","ID_RST_BTN_BMC_N","RST_BMC_RSTBTN_OUT_N","BMC_PWR_LED","RUN_POWER_EN","SHDN_FORCE","EMMC_PRSNT_N",
++		/*M0-M7*/ "","","","","","","","",
++		/*N0-N7*/ "","","","","","SPI_BMC_OOB_0_CS2_N","FM_DBP_CPU_PREQ_GF_N","SYS_RST_OUT",
++		/*O0-O7*/ "","","","","SYS_BMC_PWRBTN_N","FM_TPM_PRSNT_1_N","CHASSIS_AC_LOSS","BSM_PRSNT_N",
++		/*P0-P7*/ "","","","","","BATTERY_DETECT","IRQ_TPM_SPI_N","",
++		/*Q0-Q7*/ "","","","","","","","BMC_EMMC_RST_N",
++		/*R0-R7*/ "","BMC_I2C_SSIF_ALERT","","","","","","",
++		/*S0-S7*/ "","","PMBUS_REQ_N","PSU_FW_UPDATE_REQ_N","","","","",
++		/*T0-T7*/ "","","","","","","","",
++		/*U0-U7*/ "","","","","FM_BMC_DEBUG_SW_N","UID_LED_N","FM_DBP_BMC_PRDY_N","",
++		/*V0-V7*/ "","","","","","","","",
++		/*W0-W7*/ "","","","","","","","",
++		/*X0-X7*/ "","","","","","","","",
++		/*Y0-Y7*/ "","","","","","","","",
++		/*Z0-Z7*/ "","","","","IOEXP_INT_3V3","FM_BOARD_BMC_REV_ID0","FM_BOARD_BMC_REV_ID1","FM_BOARD_BMC_REV_ID2",
++		/*AA0-AA7*/ "","","","","","","SYS_FAULT_LED_N","RUN_POWER_FAULT";
++};
++
++&i2c0 {
++	multi-master;
++	i2c-scl-clk-low-timeout-us = <31744>;
++	mctp-controller;
++	clock-frequency = <400000>;
++	status = "okay";
++
++	mctp@10 {
++		compatible = "mctp-i2c-controller";
++		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++	};
++
++	/* OCP NIC TEMP */
++	temperature-sensor@1f {
++		compatible = "ti,tmp421";
++		reg = <0x1f>;
++	};
++
++	/* OCP NIC FRU EEPROM */
++	eeprom@50 {
++		compatible = "atmel,24c64";
++		reg = <0x50>;
++	};
++};
++
++&i2c1 {
++	status = "okay";
++
++	/* I2C MUX for MCIO 1A */
++	i2c-mux@70 {
++		compatible = "nxp,pca9546";
++		reg = <0x70>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		i2c-mux-idle-disconnect;
++
++		i2c5mux0ch0: i2c@0 {
++			reg = <0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c5mux0ch1: i2c@1 {
++			reg = <1>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c5mux0ch2: i2c@2 {
++			reg = <2>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c5mux0ch3: i2c@3 {
++			reg = <3>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++	};
++
++	/* I2C MUX for MCIO 0A */
++	i2c-mux@77 {
++		compatible = "nxp,pca9546";
++		reg = <0x77>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		i2c-mux-idle-disconnect;
++
++		i2c5mux1ch0: i2c@0 {
++			reg = <0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c5mux1ch1: i2c@1 {
++			reg = <1>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c5mux1ch2: i2c@2 {
++			reg = <2>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c5mux1ch3: i2c@3 {
++			reg = <3>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++	};
++};
++
++&i2c2 {
++	status = "okay";
++
++	/* I2C MUX for PWRPIC #13 ~ #16 */
++	i2c-mux@77 {
++		compatible = "nxp,pca9546";
++		reg = <0x77>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		i2c-mux-idle-disconnect;
++
++		/* PWRPIC #13 */
++		i2c6mux0ch0: i2c@0 {
++			reg = <0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		/* PWRPIC #14 */
++		i2c6mux0ch1: i2c@1 {
++			reg = <1>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		/* PWRPIC #16 */
++		i2c6mux0ch2: i2c@2 {
++			reg = <2>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		/* PWRPIC #15 */
++		i2c6mux0ch3: i2c@3 {
++			reg = <3>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++	};
++};
++
++/* SCM CPLD I2C */
++&i2c3 {
++	multi-master;
++	i2c-scl-clk-low-timeout-us = <31744>;
++	status = "okay";
++
++	ipmb@10 {
++		compatible = "ipmb-dev";
++		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++		i2c-protocol;
++	};
++};
++
++&i2c4 {
++	status = "okay";
++
++	power-monitor@14 {
++		compatible = "infineon,xdp710";
++		reg = <0x14>;
++	};
++
++	adc@1d {
++		compatible = "ti,adc128d818";
++		reg = <0x1d>;
++		ti,mode = /bits/ 8 <1>;
++	};
++
++	/* PDB IOEXP0 */
++	pdb_io_expander0: gpio-expander@24 {
++		compatible = "nxp,pca9555";
++		reg = <0x24>;
++		interrupt-parent = <&sgpiom0>;
++		interrupts = <92 IRQ_TYPE_LEVEL_LOW>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++			"FM_P52V_AUX_FLT_N","FM_P12V_AUX_ALERT_N",
++			"FM_SLOT1_HSC_FAULT","FM_SLOT2_HSC_FAULT",
++			"FM_SLOT3_HSC_FAULT","FM_SLOT4_HSC_FAULT",
++			"FM_SLOT5_HSC_FAULT","FM_SLOT6_HSC_FAULT",
++			"PRSNT_FAN0","PRSNT_FAN1",
++			"PRSNT_FAN2","PRSNT_FAN3",
++			"","",
++			"","INT_SLOT";
++	};
++
++	/* PDB IOEXP1 */
++	gpio-expander@25 {
++		compatible = "nxp,pca9555";
++		reg = <0x25>;
++		interrupt-parent = <&pdb_io_expander0>;
++		interrupts = <15 IRQ_TYPE_LEVEL_LOW>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++			"SLOT1_CM_UPDATE","SLOT2_CM_UPDATE",
++			"SLOT3_CM_UPDATE","SLOT4_CM_UPDATE",
++			"SLOT5_CM_UPDATE","SLOT6_CM_UPDATE",
++			"","",
++			"","",
++			"","",
++			"","",
++			"","";
++	};
++
++	power-sensor@40 {
++		compatible = "ti,ina238";
++		reg = <0x40>;
++		shunt-resistor = <1000>;
++	};
++
++	/* PADDLE BD IOEXP */
++	gpio-expander@41 {
++		compatible = "nxp,pca9536";
++		reg = <0x41>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++			"HSC_OC_GPIO0", "HSC_OC_GPIO1",
++			"HSC_OC_GPIO2", "HSC_OC_GPIO3";
++	};
++
++	power-sensor@42 {
++		compatible = "ti,ina238";
++		reg = <0x42>;
++		shunt-resistor = <1000>;
++	};
++
++	power-monitor@43 {
++		compatible = "lltc,ltc4287";
++		reg = <0x43>;
++		shunt-resistor-micro-ohms = <100>;
++	};
++
++	power-sensor@44 {
++		compatible = "ti,ina238";
++		reg = <0x44>;
++		shunt-resistor = <1000>;
++	};
++
++	power-sensor@45 {
++		compatible = "ti,ina238";
++		reg = <0x45>;
++		shunt-resistor = <1000>;
++	};
++
++	power-monitor@46 {
++		compatible = "mps,mp5998";
++		reg = <0x46>;
++	};
++
++	power-monitor@47 {
++		compatible = "ti,tps25990";
++		reg = <0x47>;
++		ti,rimon-micro-ohms = <430000000>;
++	};
++
++	temperature-sensor@48 {
++		compatible = "ti,tmp75";
++		reg = <0x48>;
++	};
++
++	temperature-sensor@49 {
++		compatible = "ti,tmp75";
++		reg = <0x49>;
++	};
++
++	/* PDB FRU */
++	eeprom@56 {
++		compatible = "atmel,24c128";
++		reg = <0x56>;
++	};
++
++	/* Paddle BD FRU */
++	eeprom@57 {
++		compatible = "atmel,24c128";
++		reg = <0x57>;
++	};
++
++	power-monitor@58 {
++		compatible = "renesas,isl28022";
++		reg = <0x58>;
++		shunt-resistor-micro-ohms = <10000>;
++	};
++
++	power-monitor@59 {
++		compatible = "renesas,isl28022";
++		reg = <0x59>;
++		shunt-resistor-micro-ohms = <10000>;
++	};
++
++	power-monitor@5a {
++		compatible = "renesas,isl28022";
++		reg = <0x5a>;
++		shunt-resistor-micro-ohms = <10000>;
++	};
++
++	power-monitor@5b {
++		compatible = "renesas,isl28022";
++		reg = <0x5b>;
++		shunt-resistor-micro-ohms = <10000>;
++	};
++
++	psu@5c {
++		compatible = "renesas,raa228006";
++		reg = <0x5c>;
++	};
++
++	fan-controller@5e {
++		compatible = "maxim,max31790";
++		reg = <0x5e>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		channel@1 {
++			reg = <1>;
++			sensor-type = "TACH";
++		};
++		channel@2 {
++			reg = <2>;
++			sensor-type = "TACH";
++		};
++	};
++
++	/* I2C MUX for PWRPIC #1, #2, #11, #12 */
++	i2c-mux@77 {
++		compatible = "nxp,pca9546";
++		reg = <0x77>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		i2c-mux-idle-disconnect;
++
++		/* PWRPIC #1 */
++		i2c8mux0ch0: i2c@0 {
++			reg = <0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		/* PWRPIC #2 */
++		i2c8mux0ch1: i2c@1 {
++			reg = <1>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		/* PWRPIC #12 (Connector to CXL BD) */
++		i2c8mux0ch2: i2c@2 {
++			reg = <2>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++
++			i2c-mux@70 {
++				compatible = "nxp,pca9546";
++				reg = <0x70>;
++				#address-cells = <1>;
++				#size-cells = <0>;
++				i2c-mux-idle-disconnect;
++
++				i2c30mux0ch0: i2c@0 {
++					reg = <0>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++				};
++
++				i2c30mux0ch1: i2c@1 {
++					reg = <1>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++				};
++
++				i2c30mux0ch2: i2c@2 {
++					reg = <2>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++
++					adc@1e {
++						compatible = "ti,adc128d818";
++						reg = <0x1e>;
++						ti,mode = /bits/ 8 <1>;
++					};
++
++					adc@1f {
++						compatible = "ti,adc128d818";
++						reg = <0x1f>;
++						ti,mode = /bits/ 8 <1>;
++					};
++
++					/* CXL BD IOEXP */
++					gpio-expander@27 {
++						compatible = "nxp,pca9535";
++						reg = <0x27>;
++						gpio-controller;
++						#gpio-cells = <2>;
++						gpio-line-names =
++						"IRQ_TEMP_0_ALERT_N","IRQ_TEMP_1_ALERT_N",
++						"ALERT_PMBUS_0_N","ALERT_PMBUS_1_N",
++						"ALERT_PMBUS_2_N","IRQ_INA230_12V_ALERT_N",
++						"RST_IOX_CXL_N","DEBUG_UART_SEL_0",
++						"DEBUG_UART_SEL_1","BMC_REMOTEJTAG_EN_N",
++						"JTAG_BMC_3V3_CTL_CLR_N","DDR_CH02_I2C_MUX_SEL",
++						"DDR_CH13_I2C_MUX_SEL","SYS_OK",
++						"CXL_VRHOT_ALERT_R1_N","";
++					};
++
++					temperature-sensor@4a {
++						compatible = "ti,tmp75";
++						reg = <0x4a>;
++					};
++
++					power-sensor@4d {
++						compatible = "ti,ina230";
++						reg = <0x4d>;
++						shunt-resistor = <2000>;
++					};
++
++					temperature-sensor@4e {
++						compatible = "ti,tmp75";
++						reg = <0x4e>;
++					};
++
++					/* CXL FRU */
++					eeprom@50 {
++						compatible = "atmel,24c64";
++						reg = <0x50>;
++					};
++				};
++
++				i2c30mux0ch3: i2c@3 {
++					reg = <3>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++				};
++			};
++		};
++
++		/* PWRPIC #11 */
++		i2c8mux0ch3: i2c@3 {
++			#address-cells = <1>;
++			#size-cells = <0>;
++			reg = <3>;
++		};
++	};
++};
++
++&i2c5 {
++	status = "okay";
++
++	temperature-sensor@4b {
++		compatible = "ti,tmp75";
++		reg = <0x4b>;
++	};
++
++	/* SCM FRU */
++	eeprom@50 {
++		compatible = "atmel,24c128";
++		reg = <0x50>;
++	};
++
++	/* BSM FRU */
++	eeprom@56 {
++		compatible = "atmel,24c64";
++		reg = <0x56>;
++	};
++};
++
++/* MCIO 0A I2C */
++&i2c6 {
++	status = "okay";
++
++	/* E1S EB IOEXP0 */
++	gpio-expander@21 {
++		compatible = "nxp,pca9535";
++		interrupt-parent = <&sgpiom0>;
++		interrupts = <172 IRQ_TYPE_LEVEL_LOW>;
++		reg = <0x21>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++			"RST_SMB_E1S_0","LED_ACTIVE_E1S_0",
++			"E1S_0_PRSNT_N","RST_PCIE_E1S_0_PERST",
++			"E1S_0_PWRDIS","ALERT_INA_0",
++			"","",
++			"RST_SMB_E1S_1","LED_ACTIVE_E1S_1",
++			"E1S_1_PRSNT_N","RST_PCIE_E1S_1_PERST",
++			"E1S_1_PWRDIS","ALERT_INA_1",
++			"","";
++	};
++
++	/* E1S EB IOEXP1 */
++	gpio-expander@22 {
++		compatible = "nxp,pca9535";
++		interrupt-parent = <&sgpiom0>;
++		interrupts = <174 IRQ_TYPE_LEVEL_LOW>;
++		reg = <0x22>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++			"P12V_E1S_EN_0","PWRGD_P12V_E1S_0",
++			"P12V_E1S_FLTB_0","PWRGD_P3V3_E1S_0",
++			"FM_P3V3_E1S_0_FAULT","P12V_E1S_EN_1",
++			"PWRGD_P12V_E1S_1","P12V_E1S_FLTB_1",
++			"PWRGD_P3V3_E1S_1","FM_P3V3_E1S_1_FAULT",
++			"","",
++			"","",
++			"PWRGD_P3V3_AUX","ALERT_TEMP";
++	};
++
++	/* E1S X4 EB IOEXP0 */
++	gpio-expander@23 {
++		compatible = "nxp,pca9535";
++		interrupt-parent = <&e1s_io_expander3>;
++		interrupts = <10 IRQ_TYPE_LEVEL_LOW>;
++		reg = <0x23>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++			"RST_SMB_E1S0_N","LED_ACTIVE_E1S0",
++			"E1S0_PRSNT_N","RST_PCIE_E1S0_PERST_N",
++			"E1S0_PWRDIS","ALERT_INA_0_N",
++			"","",
++			"RST_SMB_E1S1_N","LED_ACTIVE_E1S1",
++			"E1S1_PRSNT_N","RST_PCIE_E1S1_PERST_N",
++			"E1S1_PWRDIS","ALERT_INA_1_N",
++			"","";
++	};
++
++	/* E1S X4 EB IOEXP1 */
++	gpio-expander@24 {
++		compatible = "nxp,pca9535";
++		interrupt-parent = <&e1s_io_expander3>;
++		interrupts = <11 IRQ_TYPE_LEVEL_LOW>;
++		reg = <0x24>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++			"P12V_E1S0_EN","PWRGD_P12V_E1S0",
++			"P12V_E1S0_FLTB","PWRGD_P3V3_E1S0",
++			"FM_P3V3_E1S0_FAULT_N","P12V_E1S1_EN",
++			"PWRGD_P12V_E1S1","P12V_E1S1_FLTB",
++			"PWRGD_P3V3_E1S1","FM_P3V3_E1S1_FAULT_N",
++			"","",
++			"","",
++			"PWRGD_P3V3_AUX","ALERT_TEMP_N";
++	};
++
++	/* E1S X4 EB IOEXP2 */
++	gpio-expander@25 {
++		compatible = "nxp,pca9535";
++		interrupt-parent = <&e1s_io_expander3>;
++		interrupts = <12 IRQ_TYPE_LEVEL_LOW>;
++		reg = <0x25>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++			"RST_SMB_E1S2_N","LED_ACTIVE_E1S2",
++			"E1S2_PRSNT_N","RST_PCIE_E1S2_PERST_N",
++			"E1S2_PWRDIS","ALERT_INA_2_N",
++			"","",
++			"RST_SMB_E1S3_N","LED_ACTIVE_E1S3",
++			"E1S3_PRSNT_N","RST_PCIE_E1S3_PERST_N",
++			"E1S3_PWRDIS","ALERT_INA_3_N",
++			"","";
++	};
++
++	/* E1S X4 EB IOEXP3 */
++	e1s_io_expander3: gpio-expander@26 {
++		compatible = "nxp,pca9535";
++		interrupt-parent = <&sgpiom0>;
++		interrupts = <220 IRQ_TYPE_LEVEL_LOW>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
++		reg = <0x26>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++			"P12V_E1S2_EN","PWRGD_P12V_E1S2",
++			"P12V_E1S2_FLTB","PWRGD_P3V3_E1S2",
++			"FM_P3V3_E1S2_FAULT_N","P12V_E1S3_EN",
++			"PWRGD_P12V_E1S3","P12V_E1S3_FLTB",
++			"PWRGD_P3V3_E1S3","FM_P3V3_E1S3_FAULT_N",
++			"INT_IOEX0_N","INT_IOEX1_N",
++			"INT_IOEX2_N","",
++			"","";
++	};
++
++	adc@48 {
++		compatible = "ti,ads7830";
++		reg = <0x48>;
++	};
++
++	temperature-sensor@49 {
++		compatible = "ti,tmp75";
++		reg = <0x49>;
++	};
++
++	/* E1S EB FRU */
++	eeprom@54 {
++		compatible = "atmel,24c128";
++		reg = <0x54>;
++	};
++
++	/* I2C MUX on E1S x4 board */
++	i2c-mux@73 {
++		compatible = "nxp,pca9543";
++		reg = <0x73>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		i2c-mux-idle-disconnect;
++
++		i2c10mux0ch0: i2c@0 {
++			reg = <0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c10mux0ch1: i2c@1 {
++			reg = <1>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++	};
++};
++
++&i2c7 {
++	status = "okay";
++
++	/* MB IOEXP */
++	gpio-expander@21 {
++		compatible = "nxp,pca9535";
++		interrupt-parent = <&sgpiom0>;
++		interrupts = <170 IRQ_TYPE_LEVEL_LOW>;
++		reg = <0x21>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++			"ALERT_CLKMUX_0_LOSS_N","ALERT_CLKMUX_1_LOSS_N",
++			"ALERT_CLKMUX_2_LOSS_N","ALERT_CLKMUX_3_LOSS_N",
++			"FM_CLKMUX_0_SEL","FM_CLKMUX_1_SEL",
++			"FM_CLKMUX_2_SEL","FM_CLKMUX_3_SEL",
++			"RST_USB_HUB_0_N","FM_CLKGEN_GPIO2",
++			"","FM_BMC_RTC_RST",
++			"FM_P3V_BAT_SCALED_EN","",
++			"FM_CLKGEN_GPIO4","RST_USB_HUB_1_N";
++	};
++
++	power-sensor@40 {
++		compatible = "ti,ina230";
++		reg = <0x40>;
++		shunt-resistor = <1000>;
++	};
++
++	power-sensor@41 {
++		compatible = "ti,ina230";
++		reg = <0x41>;
++		shunt-resistor = <1000>;
++	};
++
++	power-sensor@42 {
++		compatible = "ti,ina230";
++		reg = <0x42>;
++		shunt-resistor = <2000>;
++	};
++
++	power-sensor@43 {
++		compatible = "ti,ina230";
++		reg = <0x43>;
++		shunt-resistor = <2000>;
++	};
++
++	power-sensor@44 {
++		compatible = "ti,ina230";
++		reg = <0x44>;
++		shunt-resistor = <2000>;
++	};
++
++	power-sensor@45 {
++		compatible = "ti,ina230";
++		reg = <0x45>;
++		shunt-resistor = <2000>;
++	};
++
++	adc@48 {
++		compatible = "ti,ads7830";
++		reg = <0x48>;
++	};
++
++	adc@49 {
++		compatible = "ti,ads7830";
++		reg = <0x49>;
++	};
++
++	adc@4b {
++		compatible = "ti,ads7830";
++		reg = <0x4b>;
++	};
++};
++
++/* MCIO 4A I2C */
++&i2c8 {
++	multi-master;
++	i2c-scl-clk-low-timeout-us = <31744>;
++	mctp-controller;
++	clock-frequency = <400000>;
++	status = "okay";
++
++	mctp@10 {
++		compatible = "mctp-i2c-controller";
++		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++	};
++};
++
++&i2c9 {
++	status = "okay";
++
++	power-sensor@40 {
++		compatible = "ti,ina230";
++		reg = <0x40>;
++		shunt-resistor = <2000>;
++	};
++
++	power-sensor@41 {
++		compatible = "ti,ina230";
++		reg = <0x41>;
++		shunt-resistor = <2000>;
++	};
++
++	power-sensor@44 {
++		compatible = "ti,ina230";
++		reg = <0x44>;
++		shunt-resistor = <2000>;
++	};
++
++	power-sensor@45 {
++		compatible = "ti,ina230";
++		reg = <0x45>;
++		shunt-resistor = <2000>;
++	};
++
++	temperature-sensor@48 {
++		compatible = "national,lm75b";
++		reg = <0x48>;
++	};
++
++	temperature-sensor@49 {
++		compatible = "national,lm75b";
++		reg = <0x49>;
++	};
++
++	/* MB FRU */
++	eeprom@51 {
++		compatible = "atmel,24c128";
++		reg = <0x51>;
++	};
++
++	/* CPU FRU */
++	eeprom@53 {
++		compatible = "atmel,24c128";
++		reg = <0x53>;
++	};
++
++	rtc@68 {
++		compatible = "dallas,ds1339";
++		reg = <0x68>;
++	};
++};
++
++/* PROT reserve */
++&i2c10 {
++	status = "okay";
++};
++
++/* MCIO 3A I2C */
++&i2c11 {
++	status = "okay";
++};
++
++/* MB CPLD I2C */
++&i2c12 {
++	status = "okay";
++	pinctrl-0 = <&pinctrl_di2c12_default>;
++};
++
++/* CPU I2C */
++&i2c13 {
++	status = "okay";
++	pinctrl-0 = <&pinctrl_di2c13_default>;
++};
++
++/* MCIO 2A I2C */
++&i2c14 {
++	status = "okay";
++	pinctrl-0 = <&pinctrl_di2c14_default>;
++};
++
++&i2c15 {
++	status = "okay";
++	pinctrl-0 = <&pinctrl_di2c15_default>;
++
++	/* Socket 0 SBRMI */
++	sbrmi@3c {
++		compatible = "amd,sbrmi";
++		reg = <0x3c>;
++		dimm-count = <16>;
++		dimm-ids = <0x80 0x81 0x82 0x83 0x84 0x85 0x86 0x87
++				0x88 0x89 0x8a 0x8b 0x8c 0x8d 0x8e 0x8f>;
++	};
++
++	/* Socket 0 SBTSI */
++	sbtsi@4c {
++		compatible = "amd,sbtsi";
++		reg = <0x4c>;
++	};
++};
++
++/*
++&jtag1 {
++	status = "okay";
++};
++*/
++
++&lpc0_kcs2 {
++	aspeed,lpc-io-reg = <0xca2>;
++	status = "okay";
++};
++
++&lpc0_pcc {
++	port-addr = <0x80>;
++	status = "okay";
++};
++
++&mac0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_rmii0_default>;
++	use-ncsi;
++	ncsi-package = <1>;
++	phy-mode = "rmii";
++	status = "okay";
++};
++
++/*
++&mdio0 {
++	status = "okay";
++	#address-cells = <1>;
++	#size-cells = <0>;
++
++	ethphy0: ethernet-phy@0 {
++		compatible = "ethernet-phy-ieee802.3-c22";
++		reg = <0>;
++	};
++};
++
++&sgmii {
++	status = "okay";
++};
++
++&mac2 {
++	status = "okay";
++	phy-mode = "sgmii";
++	phy-handle = <&ethphy0>;
++};
++*/
++
++&sgpiom0 {
++	status = "okay";
++	ngpios = <128>;
++	bus-frequency = <2000000>;
++	gpio-line-names =
++	/*"input pin","output pin"*/
++	/*bit0-bit7*/
++	"PWRGD_CPU_PWROK","SGPIO_RSTBTN_OUT",
++	"PWRGD_CPU_PWROK_1","SGPIO_BMC_READY",
++	"host0-ready","IBB_BMC_SRST",
++	"FM_BIOS_POST_CMPLT_N","FM_I3C_SPD_AH_SEL_R",
++	"PCIe_HP_BOOT","FM_I3C_SPD_IP_SEL_R",
++	"PCIe_HP_DATA","FM_JTAG_BMC_MUX_S0_R",
++	"PCIe_HP_NIC","FM_JTAG_BMC_MUX_S1_R",
++	"","FM_JTAG_BMC_OE_1_R_N",
++	/*bit8-bit15*/
++	"PWRGD_PVDDCR_CPU0_P0","FM_JTAG_BMC_OE_R_N",
++	"PWRGD_PVDDCR_SOC_P0","FM_REMOTEJTAG_EN_R_N",
++	"PWRGD_PVDDCR_CPU1_P0","FM_CPU_FORCE_SELFREFRESH_R",
++	"PWRGD_P3V3_STBY","FM_CPU_NMI_SYNC_FLOOD_R_N",
++	"PWRGD_PVDD33_S5","FM_CPU_TRIGGERTSC_OE_R_N",
++	"PWRGD_PVDD18_S5_P0","FM_PASSWORD_CLEAR_R_N",
++	"PWRGD_PVDDIO_P0","FM_BIOS_USB_RECOVERY_N",
++	"PWRGD_PVDDIO_MEM_S3_P0","FM_USB_MUX_OE_R_N",
++	/*bit16-bit23*/
++	"PWRGD_P1V8_STBY","FM_USB_MUX_SEL_R",
++	"PWRGD_P1V0_STBY","RST_SMB_BOOT_R_N",
++	"PWRGD_P1V2_STBY","RST_SMB_MCIO0A_R_N",
++	"IBB_BMC_SRST","RST_SMB_NIC_R_N",
++	"PWRGD_P12V_E1S_0","FM_PPS_NIC_IN_BUF_OE_R_N",
++	"PWRGD_P12V_E1S_1","FM_PPS_NIC_IN_EN_R",
++	"RST_PCIE_BOOT_PERST_N","FM_PPS_NIC_IN_OE_R_N",
++	"PWRGD_P12V_NIC","FM_PPS_NIC_IN_S0_R",
++	/*bit24-bit31*/
++	"PWRGD_P12V_SCM","FM_PPS_NIC_IN_S1_R",
++	"PWRGD_P12V_DIMM","FM_PPS_NIC_OUT_BUF_OE_R_N",
++	"PWRGD_CPU_DIMM0_AH","FM_PPS_NIC_OUT_CPU_OE_R_N",
++	"PWRGD_CPU_DIMM1_IP","FM_PPS_NIC_OUT_EN_R",
++	"PWRGD_NIC_CPLD","JTAG_CPLD_DBREQ_R_N",
++	"ALERT_INA230_DIMM_0_N","HDT_HDR_RESET_R_N",
++	"ALERT_INA230_DIMM_1_N","FM_SMB_AUTH_MUX_OE_R_N",
++	"ALERT_INA230_E1S_0_N","FM_SCM_LED_R_N",
++	/*bit32-bit39*/
++	"ALERT_INA230_E1S_1_N","",
++	"ALERT_INA230_FAN0_N","",
++	"ALERT_INA230_FAN1_N","",
++	"ALERT_INA230_FAN2_N","",
++	"ALERT_INA230_FAN3_N","",
++	"ALERT_INA230_NIC_N","",
++	"ALERT_INA230_SCM_N","",
++	"ALERT_IRQ_PMBUS_PWR11_N","",
++	/*bit40-bit47*/
++	"ALERT_MCIO2A_LEAK_DETECT_N","",
++	"ALERT_MCIO3A_LEAK_DETECT_N","",
++	"ALERT_MCIO4A_LEAK_DETECT_N","",
++	"ALERT_OC_PADDLE2_N","",
++	"ALERT_OC_PWR2_N","",
++	"ALERT_OC_PWR11_N","",
++	"FM_IOE_ALT_N","",
++	"ALERT_PWR14_SB2_LEAK_DETECT_N","",
++	/*bit48-bit55*/
++	"ALERT_PWR14_SB3_LEAK_DETECT_N","",
++	"ALERT_PWR15_SB2_LEAK_DETECT_N","",
++	"ALERT_PWR15_SB3_LEAK_DETECT_N","",
++	"ALERT_SMB_MCIO0A_N","",
++	"ALERT_SMB_MCIO1A_N","",
++	"ALERT_SMB_MCIO2A_N","",
++	"ALERT_SMB_MCIO2B_N","",
++	"ALERT_SMB_MCIO3A_N","",
++	/*bit56-bit63*/
++	"ALERT_SMB_MCIO3B_N","",
++	"ALERT_SMB_MCIO4A_N","",
++	"ALERT_SMB_MCIO4B_N","",
++	"ALERT_THERMALTRIP_MCIO1A_N","",
++	"ALERT_THERMALTRIP_MCIO2A_N","",
++	"ALERT_THERMALTRIP_MCIO3A_N","",
++	"ALERT_THERMALTRIP_MCIO4A_N","",
++	"ALERT_UV_PADDLE2_N","",
++	/*bit64-bit71*/
++	"ALERT_UV_PWR2_N","",
++	"ALERT_UV_PWR11_N","",
++	"ALERT_VR_SMB_N","",
++	"FAULT_FAN_0_N","",
++	"FAULT_FAN_1_N","",
++	"FAULT_FAN_2_N","",
++	"FAULT_FAN_3_N","",
++	"FAULT_P3V3_E1S_0_N","",
++	/*bit72-bit79*/
++	"FAULT_P3V3_E1S_1_N","",
++	"FAULT_P3V3_NIC_N","",
++	"FAULT_P12V_NIC_N","",
++	"FAULT_P12V_SCM_N","",
++	"P0_I3C_APML_ALERT_L","",
++	"ALERT_INLET_TEMP_N","",
++	"FM_CPU_PROCHOT_R_N","",
++	"FM_CPU_THERMTRIP_N","",
++	/*bit80-bit87*/
++	"ALERT_OUTLET_TEMP_N","",
++	"ALERT_RTC_N","",
++	"PVDDCR_CPU0_P0_OCP_N","",
++	"PVDDCR_CPU1_P0_OCP_N","",
++	"PVDDCR_SOC_P0_OCP_N","",
++	"MB_IOEXP_INT","",
++	"E1S_0_BD_IOEXP","",
++	"E1S_1_BD_IOEXP","",
++	/*bit88-bit95*/
++	"ALERT_IRQ_PMBUS_PWR2_N","",
++	"FM_BOARD_REV_ID0","",
++	"FM_BOARD_REV_ID1","",
++	"FM_BOARD_REV_ID2","",
++	"FM_VR_TYPE_ID0","",
++	"FM_VR_TYPE_ID1","",
++	"PRSNT_BOOT_N_IOEXP","",
++	"PRSNT_DATA_N_IOEXP","",
++	/*bit96-bit103*/
++	"PRSNT_NIC_N_IOEXP","",
++	"PRSNT_BOOT_N_FF","",
++	"PRSNT_MCIO1A_N_FF","",
++	"NIC_PRSNT_N","",
++	"FM_CPU_BMC_RST_N","",
++	"","",
++	"","",
++	"","",
++	/*bit104-bit111*/
++	"MASTER_PWR_EN","",
++	"MASTER_PWR2_EN","",
++	"PRSNT_MCIO0A_E1S0_N","",
++	"","",
++	"PRSNT_MCIO0A_E1S1_N","",
++	"","",
++	"INT_IOEX3_N","",
++	"Fault","",
++	/*bit112-bit119*/
++	"FM_CPLD_RSVD_MCIO0A_SB1","",
++	"FM_CPLD_RSVD_MCIO0A_SB2","",
++	"","",
++	"","",
++	"","",
++	"","",
++	"","",
++	"","",
++	/*bit120-bit127*/
++	"","",
++	"","",
++	"","",
++	"","",
++	"","",
++	"","",
++	"","",
++	"","";
++};
++
++/* BIOS Flash */
++&spi0 {
++	status = "okay";
++	pinctrl-0 = <&pinctrl_spi0_default>;
++	pinctrl-names = "default";
++
++	flash@0 {
++		status = "okay";
++		m25p,fast-read;
++		label = "pnor";
++		spi-max-frequency = <12000000>;
++		spi-tx-bus-width = <2>;
++		spi-rx-bus-width = <2>;
++	};
++};
++
++&udma {
++	status = "okay";
++};
++
++/* Host Console */
++&uart0 {
++	status = "okay";
++};
++
++&uart1 {
++	status = "okay";
++	/delete-property/ pinctrl-0;
++};
++
++&uart9 {
++	compatible = "aspeed,ast2700-uart";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart9_default>;
++	status = "okay";
++	dmas = <&udma 16>, <&udma 17>;
++	dma-names = "tx", "rx";
++};
++
++&uart10 {
++	compatible = "aspeed,ast2700-uart";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart10_default>;
++	status = "okay";
++	dmas = <&udma 18>, <&udma 19>;
++	dma-names = "tx", "rx";
++};
++
++&uart12 {
++	status = "okay";
++};
++
++&lpc0_uart_routing {
++	status = "okay";
++};
++
++/*
++&ufs_controller {
++	status = "okay";
++};
++
++&ufs {
++	status = "okay";
++	lanes-per-direction = <2>;
++	ref-clk-freq = <26000000>;
++};
++*/
++
++&wdt0 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_wdtrst0n_default>;
++	aspeed,reset-type = "soc";
++	aspeed,external-signal;
++	aspeed,ext-push-pull;
++	aspeed,ext-active-high;
++	aspeed,ext-pulse-duration = <256>;
++	status = "okay";
++};
++
++&otp {
++	status = "okay";
++};
++
++&pinctrl1 {
++	pinctrl_rgmii0_driving: rgmii0-driving {
++		groups = "RMII0";
++		drive-strength = <3>;
++	};
++};
+-- 
+2.53.0
+

@@ -1,7 +1,7 @@
-From 8416d6b7f4cd296e38cbed705887a91ccd4022a6 Mon Sep 17 00:00:00 2001
+From c8568459522c58a817167e0b3ed4b972a910e73e Mon Sep 17 00:00:00 2001
 From: Sora Su <sora_su@wiwynn.com>
 Date: Thu, 2 Apr 2026 09:56:55 +0800
-Subject: [PATCH 18/22] oem-meta: Implement special event handling
+Subject: [PATCH 17/22] oem-meta: Implement special event handling
 
 Certain events must be recorded by directly invoking phosphor-logging.
 In particular, the CXL HB requires controlling the event severity
@@ -17,7 +17,7 @@ Signed-off-by: Sora Su <sora_su@wiwynn.com>
  1 file changed, 80 insertions(+), 5 deletions(-)
 
 diff --git a/oem/meta/libpldmresponder/file_io_type_event_log.cpp b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-index 45902cb..261b627 100644
+index 9414edd..6655744 100644
 --- a/oem/meta/libpldmresponder/file_io_type_event_log.cpp
 +++ b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
 @@ -724,6 +724,81 @@ static void rainbowFault(const message& eventData, const std::string&,
@@ -102,7 +102,7 @@ index 45902cb..261b627 100644
  static void reportError(const message&, const std::string& event,
                          const std::string&)
  {
-@@ -805,11 +880,11 @@ static const std::map<EventType, EventDescriptor> eventHandlers = {
+@@ -786,11 +861,11 @@ static const std::map<EventType, EventDescriptor> eventHandlers = {
      {EventType::POWER_ON_SEQUENCE_FAILURE, {report::powerRailFault, nullptr}},
      {EventType::DIMM_PMIC_ERROR,
       {report::powerRailFault, format::dimmPmicError}},
@@ -120,5 +120,5 @@ index 45902cb..261b627 100644
       {report::prochotSdSensor, nullptr}},
      {EventType::MTIA_FAULT, {report::mtiaFault, nullptr}},
 -- 
-2.52.0
+2.43.0
 

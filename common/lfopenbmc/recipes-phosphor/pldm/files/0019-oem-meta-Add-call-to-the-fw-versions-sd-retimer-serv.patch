@@ -1,7 +1,7 @@
-From 0a6435723c4244d302a7e204a1e6cb4ed37c018b Mon Sep 17 00:00:00 2001
+From ae3fd6af7166bffccdc8f790a17b0e6b82d24867 Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Thu, 23 Oct 2025 14:34:12 +0800
-Subject: [PATCH 16/22] oem-meta: Add call to the fw-versions-sd-retimer
+Subject: [PATCH 19/22] oem-meta: Add call to the fw-versions-sd-retimer
  service
 
 The fw-versions-sd-retimer service is triggered by the POST_COMPLETED
@@ -10,16 +10,17 @@ the service is not supported upstream.
 
 Change-Id: Iffcf7ac3473689785fcd44b38081f52533dac552
 Signed-off-by: Sora Su <baxiche@gmail.com>
+Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
 Upstream-Status: Inappropriate
 ---
- .../file_io_type_event_log.cpp                | 22 ++++++++++++++++++-
- 1 file changed, 21 insertions(+), 1 deletion(-)
+ .../file_io_type_event_log.cpp                | 26 +++++++++++++++++++
+ 1 file changed, 26 insertions(+)
 
 diff --git a/oem/meta/libpldmresponder/file_io_type_event_log.cpp b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-index 9414edd..45902cb 100644
+index 6655744..321450c 100644
 --- a/oem/meta/libpldmresponder/file_io_type_event_log.cpp
 +++ b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-@@ -729,6 +729,25 @@ static void reportError(const message&, const std::string& event,
+@@ -804,6 +804,25 @@ static void reportError(const message&, const std::string& event,
  {
      pldm::utils::reportError(event.c_str());
  }
@@ -45,23 +46,20 @@ index 9414edd..45902cb 100644
  } // namespace report
  
  namespace format
-@@ -815,7 +834,7 @@ static const std::map<EventType, EventDescriptor> eventHandlers = {
-     {EventType::SYS_THROTTLE, {report::reportError, nullptr}},
-     {EventType::VR_FAULT, {report::reportError, format::vrFault}},
-     {EventType::SYSTEM_MANAGEMENT_ERROR, {report::reportError, nullptr}},
--    {EventType::POST_COMPLETED, {report::reportError, nullptr}},
-+    {EventType::POST_COMPLETED, {report::updateRetimerFwVersion, nullptr}},
-     {EventType::FAN_ERROR, {report::reportError, nullptr}},
-     {EventType::HDT_PRSNT_ASSERTION, {report::reportError, nullptr}},
-     {EventType::APML_ALERT_ASSERTION, {report::reportError, nullptr}},
-@@ -827,6 +846,7 @@ static const std::map<EventType, EventDescriptor> eventHandlers = {
-     {EventType::OS_LOAD_WDT_PWR_DOWN, {report::reportError, nullptr}},
-     {EventType::OS_LOAD_WDT_PWR_CYCLE, {report::reportError, nullptr}},
-     {EventType::POST_TIMEOUTED, {report::reportError, nullptr}},
-+    {EventType::POST_ENDED, {report::updateRetimerFwVersion, nullptr}},
- };
+@@ -967,6 +986,13 @@ static void addSystemEventLogAndJournal(const message& eventData,
+     {
+         lg2::error("Unexpected error: {ERROR}", "ERROR", event);
+     }
++
++    // Trigger retimer fw version update on POST_ENDED and POST_COMPLETED
++    if (eventType == EventType::POST_ENDED ||
++        eventType == EventType::POST_COMPLETED)
++    {
++        report::updateRetimerFwVersion(eventData, event, slotNum);
++    }
+ }
  
- static void checkEventAssert(const message& eventData, std::string& event,
+ int EventLogHandler::write(const message& eventData)
 -- 
-2.52.0
+2.43.0
 

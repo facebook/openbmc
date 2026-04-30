@@ -1,7 +1,7 @@
-From 879ed7978d7f0ad92218fffde21656e0800928b7 Mon Sep 17 00:00:00 2001
+From 72f0e11b2794bd1b1fe2ee5ffb5941d4f4912d85 Mon Sep 17 00:00:00 2001
 From: Sora Su <sora_su@wiwynn.com>
 Date: Fri, 13 Mar 2026 13:02:16 +0800
-Subject: [PATCH 19/22] oem-meta: Add retry event deduplication for unified
+Subject: [PATCH 18/22] oem-meta: Add retry event deduplication for unified
  BIOS events
 
 Refactor event handler signatures from raw pointers to std::span
@@ -234,5 +234,5 @@ index b989dc3..355bcb6 100644
          std::string dimmDevName = "";
          for (size_t i = 0; i < cxlBdfMap.size(); i++)
 -- 
-2.52.0
+2.43.0
 

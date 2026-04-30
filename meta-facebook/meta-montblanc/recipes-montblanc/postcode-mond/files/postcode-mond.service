@@ -1,3 +1,4 @@
+#
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -14,17 +15,17 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
+[Unit]
+Description=Run postcode-mond in OpenBMC
+After=setup_i2c.service setup_gpio.service
+Wants=setup_i2c.service setup_gpio.service
 
-require recipes-core/images/fboss-lite-image.inc
+# Please replace ExecStart with the following path:
+# /usr/local/bin/postcode-mond -I <INPUT_PATH>
+[Service]
+ExecStart=/usr/local/bin/postcode-mond -I /dev/aspeed-lpc-snoop0
+ExecReload=/bin/kill -HUP $MAINPID
 
-IMAGE_INSTALL += " \
-    ipmbd \
-    ipmb-util \
-    jbi \
-    libcpldupdate-dll-ast-jtag \
-    show-tech \
-    fbmc-snapshot \
-    host-recovery \
-    apml \
-    postcode-mond \
-    "
+[Install]
+WantedBy=multi-user.target

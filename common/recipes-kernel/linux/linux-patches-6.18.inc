@@ -83,7 +83,8 @@ SRC_URI:append = " \
     file://0605-apml-Add-support-for-SP7-platform.patch \
     file://0606-hwmon-pmbus-tda38640-Add-identification-for-PMBUS_VO.patch \
     file://0607-hwmon-pmbus-Add-Delta-Q54SN120A1-Q54SW120A7-chip.patch \
-    file://0608-iio-adc-ltc2309-add-support-for-ltc2305.patch \
+    file://0608-iio-adc-ltc2309-explicitly-assign-hex-values-to-chan.patch \
+    file://0609-iio-adc-ltc2309-add-support-for-ltc2305.patch \
 "
 
 #

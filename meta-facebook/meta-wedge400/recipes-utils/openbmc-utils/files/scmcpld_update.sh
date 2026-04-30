@@ -117,7 +117,7 @@ disable_jtag_chain
 if [ $result -eq $expect ]; then
     echo "Upgrade successful."
     echo "Re-start fscd service."
-    sv start fscd
+    wedge_on_firmware_update_success
     exit 0
 else
     echo "Upgrade failure. Return code from utility : $result"

@@ -63,8 +63,6 @@ wedge_is_us_on() {
     else
         return 1
     fi
-
-    return 0
 }
 
 wedge_board_type_rev(){
@@ -270,7 +268,11 @@ wedge_prepare_firmware_update() {
     # Stress testing, it was found that "sv stop fscd" at times experiences a timeout,
     # rendering wdtcli incapable of stopping watchdog.
     # This leads to BMC reboots while updating firmware on devices, including CPLD, BIOS, and BIC.
-    sv force-stop fscd
+    if ! command -v systemctl > /dev/null; then
+        sv force-stop fscd
+    else
+        systemctl stop --force fscd.service
+    fi
     
     # Add fuser to check /dev/watchdog ready to used after fscd release it.
     /usr/bin/fuser /dev/watchdog &> /dev/null
@@ -287,6 +289,14 @@ wedge_prepare_firmware_update() {
     set_fan_speed.sh 40
     
     return 0
+}
+
+wedge_on_firmware_update_success() {
+    if ! command -v systemctl > /dev/null; then
+        sv start fscd
+    else
+        systemctl start fscd
+    fi
 }
 
 wedge_power_supply_type() {

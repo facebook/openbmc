@@ -1,4 +1,4 @@
-From 8418958c174f8af5f9b9f5dcd63f29c26e3919c3 Mon Sep 17 00:00:00 2001
+From b1e11464c3226205ccffdf50345428abaa3d8752 Mon Sep 17 00:00:00 2001
 From: Johnny Huang <johnny_huang@aspeedtech.com>
 Date: Mon, 26 Dec 2022 10:04:48 +0800
 Subject: [PATCH 215/228] drivers/misc: Add Aspeed OTP control register
@@ -24,7 +24,7 @@ Change-Id: Ic2e8c2bf829dbde4d4e437c97edcc0a4591bcb46
  create mode 100644 include/uapi/linux/otp_ast2700.h
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-index c5c1964fd..e4edb45c2 100644
+index c5c1964fda6d..e4edb45c2bfc 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 +++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 @@ -920,6 +920,12 @@ fsim1: fsi@1e79b100 {
@@ -41,7 +41,7 @@ index c5c1964fd..e4edb45c2 100644
  
  		i3c: bus@1e7a0000 {
 diff --git a/drivers/soc/aspeed/Kconfig b/drivers/soc/aspeed/Kconfig
-index 11e4db998c06..6f6d80901970 100644
+index 11e4db998c06..a4eaad8aa9f2 100644
 --- a/drivers/soc/aspeed/Kconfig
 +++ b/drivers/soc/aspeed/Kconfig
 @@ -34,6 +34,12 @@ config ASPEED_UART_ROUTING
@@ -57,7 +57,7 @@ index 11e4db998c06..6f6d80901970 100644
  config ASPEED_P2A_CTRL
  	tristate "ASPEED P2A (VGA MMIO to BMC) bridge control"
  	select REGMAP
-@@ -70,6 +76,12 @@ config ASPEED_XDMA
+@@ -69,6 +75,12 @@ config ASPEED_XDMA
  	  and a host processor. The driver provides ioctl() interface to reset
  	  and initialize engine.
  
@@ -71,7 +71,7 @@ index 11e4db998c06..6f6d80901970 100644
  
  endif
 diff --git a/drivers/soc/aspeed/Makefile b/drivers/soc/aspeed/Makefile
-index 5f61bb4cc..58c1c2bea 100644
+index 5f61bb4cc36c..58c1c2beae94 100644
 --- a/drivers/soc/aspeed/Makefile
 +++ b/drivers/soc/aspeed/Makefile
 @@ -2,7 +2,9 @@
@@ -86,7 +86,7 @@ index 5f61bb4cc..58c1c2bea 100644
 +obj-$(CONFIG_AST2700_OTP)		+= ast2700-otp.o
 diff --git a/drivers/soc/aspeed/ast2600-otp.c b/drivers/soc/aspeed/ast2600-otp.c
 new file mode 100644
-index 000000000..90e1c4f65
+index 000000000000..90e1c4f65ea6
 --- /dev/null
 +++ b/drivers/soc/aspeed/ast2600-otp.c
 @@ -0,0 +1,625 @@
@@ -717,7 +717,7 @@ index 000000000..90e1c4f65
 +MODULE_DESCRIPTION("ASPEED OTP Driver");
 diff --git a/drivers/soc/aspeed/ast2700-otp.c b/drivers/soc/aspeed/ast2700-otp.c
 new file mode 100644
-index 000000000..5c424afe8
+index 000000000000..5c424afe82a9
 --- /dev/null
 +++ b/drivers/soc/aspeed/ast2700-otp.c
 @@ -0,0 +1,565 @@
@@ -1288,7 +1288,7 @@ index 000000000..5c424afe8
 +MODULE_DESCRIPTION("ASPEED OTP Driver");
 diff --git a/include/uapi/linux/otp_ast2600.h b/include/uapi/linux/otp_ast2600.h
 new file mode 100644
-index 000000000..835fd5083
+index 000000000000..835fd5083925
 --- /dev/null
 +++ b/include/uapi/linux/otp_ast2600.h
 @@ -0,0 +1,39 @@
@@ -1333,7 +1333,7 @@ index 000000000..835fd5083
 +#endif /* _UAPI_LINUX_OTP_AST2600_H */
 diff --git a/include/uapi/linux/otp_ast2700.h b/include/uapi/linux/otp_ast2700.h
 new file mode 100644
-index 000000000..769b13aab
+index 000000000000..769b13aaba45
 --- /dev/null
 +++ b/include/uapi/linux/otp_ast2700.h
 @@ -0,0 +1,47 @@

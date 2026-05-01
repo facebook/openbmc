@@ -1,0 +1,18 @@
+name: Anacapa
+tags:
+  - anacapa
+  - amd
+  - mi455x
+  - venice
+  - dc-scm
+  - ocp-nic
+  - compute
+  - lf-openbmc
+sections:
+  - overview
+  - features
+feature_list:
+  - common
+  - compute
+  - aspeed
+status: {}

@@ -1,0 +1,17 @@
+name: Yosemite5
+tags:
+  - yosemite5
+  - bigdome
+  - ocp-nic
+  - amd
+  - compute
+  - dc-scm
+  - lf-openbmc
+sections:
+  - overview
+  - features
+feature_list:
+  - common
+  - compute
+  - aspeed
+status: {}

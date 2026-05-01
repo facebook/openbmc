@@ -1,0 +1,18 @@
+name: Santabarbara
+tags:
+  - santabarbara
+  - channel-islands
+  - amd
+  - venice
+  - mtia
+  - iris
+  - compute
+  - lf-openbmc
+sections:
+  - overview
+  - features
+feature_list:
+  - common
+  - aspeed
+  - compute
+status: {}

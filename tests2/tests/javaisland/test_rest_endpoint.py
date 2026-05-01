@@ -25,7 +25,6 @@ from tests.javaisland.test_data.restendpoints.restendpoints import REST_END_POIN
 from utils.test_utils import qemu_check
 
 
-@unittest.skipIf(qemu_check(), "restapi crashes on QEMU, skipped")
 class RestEndpointTest(BaseRestEndpointTest, unittest.TestCase):
     """
     Input data to the test needs to be a list like below.

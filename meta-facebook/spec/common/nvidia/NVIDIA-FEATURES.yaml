@@ -11,3 +11,18 @@ Nvidia:
   CPU crash dump:
     priority: P3
     file: cpu-crashdump.md
+  HMC Event Log Forwarding:
+    priority: P1
+    file: hmc-event-log-forwarding.md
+  HMC Power Rail Fault Detection:
+    priority: P1
+    file: hmc-power-rail-fault.md
+  HMC GPU Sensor Polling:
+    priority: P1
+    file: hmc-gpu-sensor-polling.md
+  HMC Firmware Version Tracking:
+    priority: P2
+    file: hmc-firmware-versions.md
+  HMC Firmware Update:
+    priority: P2
+    file: hmc-firmware-update.md

@@ -1,0 +1,20 @@
+name: Catalina
+tags:
+  - catalina
+  - gb200
+  - nvl72
+  - blackwell
+  - grace
+  - nvidia
+  - nvidia-hmc
+  - hmc
+  - dc-scm
+  - lf-openbmc
+sections:
+  - overview
+  - features
+feature_list:
+  - common
+  - aspeed
+  - nvidia-features
+status: {}

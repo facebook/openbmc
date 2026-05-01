@@ -26,3 +26,9 @@ Nvidia:
   HMC Firmware Update:
     priority: P2
     file: hmc-firmware-update.md
+  HMC sensors:
+    priority: P2
+    file: hmc-sensors.md
+  HMC events:
+    priority: P2
+    file: hmc-events.md

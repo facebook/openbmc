@@ -320,6 +320,10 @@ Thermal Management:
     file: fan-control--automatic-.md
     priority: P1
     short: Implement automatic fan control algorithm.
+  Failsafe Mode:
+    file: fan-failsafe-mode.md
+    priority: P2
+    short: Enable fans enter failsafe mode with event logging.
 Firmware Update:
   BMC Update:
     file: openbmc.md
@@ -343,6 +347,14 @@ Firmware Update:
     file: vr-update.md
     priority: P2
     short: Update the VRs.
+  GPU Accelerator Update:
+    file: gpu-accel-update.md
+    priority: P2
+    short: Update the GPUs and AI Accelerators.
+  FW Update Event Logging:
+    file: fw-update-logging.md
+    priority: P3
+    short: Log FW upgrade events.
 Time Sync:
   Local RTC:
     file: rtc.md
@@ -572,6 +584,10 @@ Miscellaneous:
     file: mfg-tool.md
     priority: P2
     short: Support a manufacturing tool for BMC.
+  Session Management:
+    file: session-management.md
+    priority: P1
+    short: Support secure protocols with default user configuration.
 Diagnostics:
   CPU Debug:
     file: cpu-debug.md

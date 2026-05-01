@@ -1,2 +1,2 @@
-BMC FW shall support reporting system level information via single sensors.
-Ex: Power consumption of the entire system can be reported via single (virtual) sensor if the HW provides the required sensors (eg: HSC) to be summed up.
+Where required by the platform, BMC FW shall support reporting system-level information via single (virtual) sensors that aggregate the underlying hardware sensors. Whether a given platform exposes a system-level sensor is a per-platform decision driven by use case (e.g., total system power reporting).
+Ex: Total system power can be reported via a single virtual sensor that sums the HSC outputs when the platform supports it.

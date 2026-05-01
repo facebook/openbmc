@@ -207,7 +207,20 @@ class bmcNode(node):
         else:
             self.actions = actions
 
-        asyncio.ensure_future(self._fill_tpm_ver_info_loop())
+        # Py3.14 compat: asyncio.ensure_future used to auto-create an event
+        # loop in the main thread when called from synchronous code. That
+        # auto-create was deprecated in Py3.10 and removed in Py3.12+; on
+        # Py3.14 it raises RuntimeError. bmcNode is instantiated from
+        # rest.py at module-load time, before rest.py creates the loop, so
+        # the bare ensure_future call crashes restapi at startup before it
+        # can bind port 8080. Get-or-create the loop explicitly; rest.py's
+        # later asyncio.get_event_loop() picks up the same loop and runs it.
+        try:
+            loop = asyncio.get_event_loop()
+        except RuntimeError:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+        loop.create_task(self._fill_tpm_ver_info_loop())
 
     async def getUbootVer(self):
         UBOOT_VER_KV_KEY = "u-boot-ver"

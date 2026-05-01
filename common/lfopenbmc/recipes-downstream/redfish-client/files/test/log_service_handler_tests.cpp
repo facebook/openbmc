@@ -645,8 +645,8 @@ TEST_F(LogServiceHandlerTest, PsRunPwrFaultMapperTest)
 
     // Expect 2 logs: one PowerRailFault for each power state in the message
     std::vector<std::string> expectedPowerRails = {
-        "/redfish/v1/Systems/HGX_Baseboard_0/NVIDIA_HMC/PWR_FAIL_GPU"s,
-        "/redfish/v1/Systems/HGX_Baseboard_0/NVIDIA_HMC/PWRSEQ_FAIL_STATE"s};
+        "/xyz/openbmc_project/inventory/system/board/NVIDIA_HMC/PWR_FAIL_GPU"s,
+        "/xyz/openbmc_project/inventory/system/board/NVIDIA_HMC/PWRSEQ_FAIL_STATE"s};
 
     ASSERT_EQ(expectedPowerRails.size(), logManager.logs->size());
 

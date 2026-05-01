@@ -69,6 +69,7 @@ srcs = [
     'src/sensor_dbus_object.cpp',
     'src/server_object_intf.cpp',
     'src/log_entry_mapper_registry.cpp',
+    'src/log_entry_mapper_utils.cpp',
     'src/cper_mapper.cpp',
     'src/hgx_ps_run_pwr_fault_mapper.cpp',
     'src/unhandled_mapper.cpp',

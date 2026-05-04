@@ -1,0 +1,98 @@
+From 043ceffc1e193e84b7fc0db72deb8075e265e26c Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Tue, 7 Jan 2025 13:35:34 +0800
+Subject: [PATCH] iio: adc: aspeed: Disable the last channel by default
+
+When the controller supports battery sensing, the driver will default to
+disabling the last channel. This modification is necessary because the
+last channel of the Aspeed ADC controller uses a different circuit design
+and sensing behavior to minimize current leakage. If the controller always
+enables the last channel, it could reduce the efficiency of all the other
+channels. Therefore, this patch ensures that the last channel is only
+enabled when the user specifically needs to retrieve its value.
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+Change-Id: Ic7bf980bdbabf4cc749c1f2a1231aaf61ad54933
+---
+ drivers/iio/adc/aspeed_adc.c | 42 ++++++++++++++++++++++--------------
+ 1 file changed, 26 insertions(+), 16 deletions(-)
+
+diff --git a/drivers/iio/adc/aspeed_adc.c b/drivers/iio/adc/aspeed_adc.c
+index bf2bfd6bd..5d2fddc13 100644
+--- a/drivers/iio/adc/aspeed_adc.c
++++ b/drivers/iio/adc/aspeed_adc.c
+@@ -72,6 +72,8 @@
+ #define ASPEED_ADC_BAT_SENSING_ENABLE		BIT(13)
+ #define ASPEED_ADC_CTRL_CHANNEL			GENMASK(31, 16)
+ #define ASPEED_ADC_CTRL_CHANNEL_ENABLE(ch)	FIELD_PREP(ASPEED_ADC_CTRL_CHANNEL, BIT(ch))
++#define ADC_MASK(n)				((n) < 16 ? ((1U << (n)) - 1) : 0xFFFF)
++#define ASPEED_ADC_CTRL_CHANNELS_ENABLE(chs)	FIELD_PREP(ASPEED_ADC_CTRL_CHANNEL, ADC_MASK(chs))
+ 
+ #define ASPEED_ADC_INIT_POLLING_TIME	500
+ #define ASPEED_ADC_INIT_TIMEOUT		500000
+@@ -281,28 +283,31 @@ static int aspeed_adc_read_raw(struct iio_dev *indio_dev,
+ 			       int *val, int *val2, long mask)
+ {
+ 	struct aspeed_adc_data *data = iio_priv(indio_dev);
+-	u32 adc_engine_control_reg_val;
++	u32 engine_ctrl_tmp_val, reg_val;
+ 
+ 	switch (mask) {
+ 	case IIO_CHAN_INFO_RAW:
+-		if (data->battery_sensing && chan->channel == 7) {
+-			adc_engine_control_reg_val =
+-				readl(data->base + ASPEED_REG_ENGINE_CONTROL);
+-			writel(adc_engine_control_reg_val |
+-				       FIELD_PREP(ASPEED_ADC_CH7_MODE,
+-						  ASPEED_ADC_CH7_BAT) |
+-				       ASPEED_ADC_BAT_SENSING_ENABLE,
+-			       data->base + ASPEED_REG_ENGINE_CONTROL);
++		if (data->model_data->bat_sense_sup &&
++		    chan->channel == data->model_data->num_channels - 1) {
++			engine_ctrl_tmp_val = readl(data->base + ASPEED_REG_ENGINE_CONTROL);
++			reg_val = engine_ctrl_tmp_val &
++				  ~ASPEED_ADC_CTRL_CHANNELS_ENABLE(data->model_data->num_channels);
++			reg_val |= ASPEED_ADC_CTRL_CHANNEL_ENABLE(chan->channel);
++			if (data->battery_sensing)
++				reg_val |= FIELD_PREP(ASPEED_ADC_CH7_MODE, ASPEED_ADC_CH7_BAT) |
++					   ASPEED_ADC_BAT_SENSING_ENABLE;
++			writel(reg_val, data->base + ASPEED_REG_ENGINE_CONTROL);
+ 			/*
+ 			 * After enable battery sensing mode need to wait some time for adc stable
+ 			 * Experiment result is 1ms.
+ 			 */
+-			mdelay(1);
++			usleep_range(1000, 1100);
+ 			*val = readw(data->base + chan->address);
+-			*val = (*val * data->battery_mode_gain.mult) /
+-			       data->battery_mode_gain.div;
++			if (data->battery_sensing)
++				*val = (*val * data->battery_mode_gain.mult) /
++				       data->battery_mode_gain.div;
+ 			/* Restore control register value */
+-			writel(adc_engine_control_reg_val,
++			writel(engine_ctrl_tmp_val,
+ 			       data->base + ASPEED_REG_ENGINE_CONTROL);
+ 		} else
+ 			*val = readw(data->base + chan->address);
+@@ -612,9 +617,14 @@ static int aspeed_adc_probe(struct platform_device *pdev)
+ 
+ 	aspeed_adc_compensation(indio_dev);
+ 	/* Start all channels in normal mode. */
+-	adc_engine_control_reg_val =
+-		readl(data->base + ASPEED_REG_ENGINE_CONTROL);
+-	adc_engine_control_reg_val |= ASPEED_ADC_CTRL_CHANNEL;
++	adc_engine_control_reg_val = readl(data->base + ASPEED_REG_ENGINE_CONTROL);
++	/* Disable the last channel when the controller supports battery sensing */
++	if (data->model_data->bat_sense_sup)
++		adc_engine_control_reg_val |=
++			ASPEED_ADC_CTRL_CHANNELS_ENABLE(data->model_data->num_channels - 1);
++	else
++		adc_engine_control_reg_val |=
++			ASPEED_ADC_CTRL_CHANNELS_ENABLE(data->model_data->num_channels);
+ 	writel(adc_engine_control_reg_val,
+ 	       data->base + ASPEED_REG_ENGINE_CONTROL);
+ 
+-- 
+2.53.0
+

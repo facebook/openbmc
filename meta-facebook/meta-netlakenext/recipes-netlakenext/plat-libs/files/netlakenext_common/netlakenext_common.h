@@ -94,9 +94,8 @@ extern "C" {
 #define MSB_INA230_DEFAULT_CALIBRATION 0x00
 #define INA230_GET_DATA_LEN 2
 
-#define NVME_A_BUS 22
 #define NVME_B_BUS 23
-#define NVME_C_BUS 24
+#define NVME_E1S_BUS 24
 #define NVME_D_BUS 25
 #define NVME_ADDR 0xD4
 #define NVME_GET_STATUS_CMD 0x00

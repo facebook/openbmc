@@ -106,10 +106,9 @@ enum {
   BMC_P12V_NIC_MTP_CURR = 0x39,
   BMC_P3V3_NIC_MTP_CURR = 0x3A,
   BMC_HSC_INPUT_PWR = 0x3B,
-  BMC_M2_A_TEMP = 0x3C,
-  BMC_M2_B_TEMP = 0x3D,
-  BMC_M2_C_TEMP = 0x3E,
-  BMC_M2_D_TEMP = 0x3F,
+  BMC_M2_B_TEMP = 0x3C,
+  BMC_M2_D_TEMP = 0x3D,
+  BMC_E1S_TEMP = 0x3E,
   BMC_OCP_NIC_TEMP = 0x40,
 };
 
@@ -132,7 +131,10 @@ enum {
   MB_OUTLET,
   FIO_INLET,
   SOC_TEMP,
-  DIMMA_TEMP,
+};
+
+enum {
+  DIMMA_TEMP = 0,
   DIMMB_TEMP,
 };
 
@@ -193,10 +195,9 @@ enum {
 
 // NVME
 enum {
-  NVME_A_TEMP = 0,
-  NVME_B_TEMP,
-  NVME_C_TEMP,
+  NVME_B_TEMP = 0,
   NVME_D_TEMP,
+  NVME_E1S_TEMP,
 };
 
 //OCP NIC

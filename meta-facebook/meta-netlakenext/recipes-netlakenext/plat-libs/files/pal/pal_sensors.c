@@ -51,21 +51,21 @@ PAL_SENSOR_MAP server_sensor_map[] = {
   [SERVER_A_P3V3_STBY_NETLAKE2_VOL] =
   {"A_P3V3_STBY_NETLAKE2_VOL", CPLD_ADC_P3V3_STBY, read_cpld_adc, STBY_READING, {3.57, 3.53, 3.6, 3.04, 3.07, 3.01, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [SERVER_A_P1V8_STBY_NETLAKE2_VOL] =
-  {"A_P1V8_STBY_NETLAKE2_VOL", CPLD_ADC_P1V8_STBY, read_cpld_adc, STBY_READING, {1.92, 1.9, 1.94, 1.68, 1.69, 1.66, 0, 0}, VOLT, ONE_HOUR_INVERVAL},
+  {"A_P1V8_STBY_NETLAKE2_VOL", CPLD_ADC_P1V8_STBY, read_cpld_adc, STBY_READING, {1.92, 1.9, 1.94, 1.68, 1.69, 1.66, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [SERVER_A_P1V8_AUDIO_NETLAKE2_VOL] =
-  {"A_P1V8_AUDIO_NETLAKE2_VOL", CPLD_ADC_P1V8_AUDIO, read_cpld_adc, STBY_READING, {1.92, 1.9, 1.94, 1.68, 1.69, 1.66, 0, 0}, VOLT, ONE_HOUR_INVERVAL},
+  {"A_P1V8_AUDIO_NETLAKE2_VOL", CPLD_ADC_P1V8_AUDIO, read_cpld_adc, STBY_READING, {1.92, 1.9, 1.94, 1.68, 1.69, 1.66, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [SERVER_A_P1V8_NETLAKE2_VOL] =
-  {"A_P1V8_NETLAKE2_VOL", CPLD_ADC_P1V8, read_cpld_adc, POWER_ON_READING, {1.92, 1.9, 1.94, 1.68, 1.69, 1.66, 0, 0}, VOLT, ONE_HOUR_INVERVAL},
+  {"A_P1V8_NETLAKE2_VOL", CPLD_ADC_P1V8, read_cpld_adc, POWER_ON_READING, {1.92, 1.9, 1.94, 1.68, 1.69, 1.66, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [SERVER_A_P5V_STBY_NETLAKE2_VOL] =
   {"A_P5V_STBY_NETLAKE2_VOL", CPLD_ADC_P5V_STBY, read_cpld_adc, STBY_READING, {5.41, 5.36, 5.46, 4.61, 4.66, 4.56, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [SERVER_A_P5V_DIMM_NETLAKE2_VOL] =
-  {"A_P5V_DIMM_NETLAKE2_VOL", CPLD_ADC_P5V_DIMM, read_cpld_adc, POWER_ON_READING, {5.41, 5.36, 5.46, 4.61, 4.66, 4.56, 0, 0}, VOLT, ONE_HOUR_INVERVAL},
+  {"A_P5V_DIMM_NETLAKE2_VOL", CPLD_ADC_P5V_DIMM, read_cpld_adc, POWER_ON_READING, {5.41, 5.36, 5.46, 4.61, 4.66, 4.56, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [SERVER_A_P3V3_NETLAKE2_VOL] =
   {"A_P3V3_NETLAKE2_VOL", CPLD_ADC_P3V3, read_cpld_adc, POWER_ON_READING, {3.57, 3.53, 3.6, 3.04, 3.07, 3.01, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [SERVER_A_PVDDIO_MEM_S3_VOL] =
-  {"A_PVDDIO_MEM_S3_VOL", CPLD_ADC_PVDDIO_MEM_S3, read_cpld_adc, POWER_ON_READING, {1.20, 1.19, 1.21, 1.03, 1.05, 1.02, 0, 0}, VOLT, ONE_HOUR_INVERVAL},
+  {"A_PVDDIO_MEM_S3_VOL", CPLD_ADC_PVDDIO_MEM_S3, read_cpld_adc, POWER_ON_READING, {1.20, 1.19, 1.21, 1.03, 1.05, 1.02, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [SERVER_A_PVDD_MISC_S5_VOL] =
-  {"A_PVDD_MISC_S5_VOL", CPLD_ADC_PVDD_MISC_S5, read_cpld_adc, STBY_READING, {0.81, 0.80, 0.82, 0.69, 0.70, 0.68, 0, 0}, VOLT, ONE_HOUR_INVERVAL},
+  {"A_PVDD_MISC_S5_VOL", CPLD_ADC_PVDD_MISC_S5, read_cpld_adc, STBY_READING, {0.81, 0.80, 0.82, 0.69, 0.70, 0.68, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [SERVER_PVDDCR_TEMP] =
   {"PVDDCR_TEMP", VR_PVDDCR_TEMP, read_pmbus, POWER_ON_READING, {100, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [SERVER_PVDDCR_SOC_TEMP] =
@@ -119,14 +119,12 @@ PAL_SENSOR_MAP bmc_sensor_map[] = {
   {"HSC_OUTPUT_CUR", HSC_IOUT, read_hsc, STBY_READING, {20, 0, 0, 0, 0, 0, 0, 0}, CURR, NORMAL_POLL_INTERVAL},
   [BMC_HSC_INPUT_PWR] =
   {"HSC_INPUT_PWR", HSC_PIN, read_hsc, STBY_READING, {200, 0, 0, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
-  [BMC_M2_A_TEMP] =
-  {"M.2_A_TEMP", NVME_A_TEMP, read_nvme_temp, POWER_ON_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [BMC_M2_B_TEMP] =
   {"M.2_B_TEMP", NVME_B_TEMP, read_nvme_temp, POWER_ON_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
-  [BMC_M2_C_TEMP] =
-  {"M.2_C_TEMP", NVME_C_TEMP, read_nvme_temp, POWER_ON_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [BMC_M2_D_TEMP] =
   {"M.2_D_TEMP", NVME_D_TEMP, read_nvme_temp, POWER_ON_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  [BMC_E1S_TEMP] =
+  {"E1.S_TEMP", NVME_E1S_TEMP, read_nvme_temp, POWER_ON_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
 };
 
 PAL_SENSOR_MAP fio_sensor_map[] = {
@@ -206,10 +204,9 @@ const uint8_t bmc_sensor_list[] = {
   BMC_HSC_OUTPUT_VOL,
   BMC_HSC_OUTPUT_CUR,
   BMC_HSC_INPUT_PWR,
-  BMC_M2_A_TEMP,
   BMC_M2_B_TEMP,
-  BMC_M2_C_TEMP,
   BMC_M2_D_TEMP,
+  BMC_E1S_TEMP,
 };
 
 const uint8_t dimm_addr_list[] = {
@@ -289,10 +286,9 @@ PAL_CPLD_ADC_INFO cpld_adc_list[] = {
 };
 
 const uint8_t nvme_temp_list[] = {
-  [NVME_A_TEMP] = NVME_A_BUS,
   [NVME_B_TEMP] = NVME_B_BUS,
-  [NVME_C_TEMP] = NVME_C_BUS,
   [NVME_D_TEMP] = NVME_D_BUS,
+  [NVME_E1S_TEMP] = NVME_E1S_BUS,
 };
 
 PAL_PMBUS_POWER_TABLE power_cal_list[] = {
@@ -456,6 +452,7 @@ read_dimm_temp(uint8_t id, float *value) {
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Failed to get highbyte reading %x-%x", __func__,
           I2C_BUS5, dimm_addr_list[id]);
+    close(fd);
     return -1;
   }
   high_byte = rbuf;
@@ -471,7 +468,7 @@ read_dimm_temp(uint8_t id, float *value) {
   }
 
   *value = temp;
-
+  close(fd);
   return ret;
 }
 
@@ -869,7 +866,7 @@ read_cpld_adc(uint8_t id, float *value) {
   }
 
   //Calculate from divided voltage
-  *value = ((float)sensor_read_raw / 4096) * 1.8 * cpld_adc_list[id].resistor_ratio;
+  *value = ((float)sensor_read_raw / 4096) * 1.825 * cpld_adc_list[id].resistor_ratio;
 
   return ret;
 }

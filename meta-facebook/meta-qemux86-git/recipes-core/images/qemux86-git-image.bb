@@ -20,6 +20,7 @@ IMAGE_INSTALL += " \
   packagegroup-openbmc-net \
   packagegroup-openbmc-python3 \
   packagegroup-openbmc-rest3 \
+  qemu-master \
   "
 
 # Certain image post-process commands tend to depend

@@ -346,6 +346,12 @@ int mp29608a_fw_update(struct vr_info *info, void *args)
 	}
 
 	printf("Update VR: %s\n", info->dev_name);
+	if ((info->addr >> 1) != config->addr) {
+		printf("ERROR: The 7-bit address in the FW file is 0x%02x, but the device address is 0x%02x\n",
+			info->addr >> 1, config->addr);
+		syslog(LOG_WARNING, "%s: address mismatch; please use the correct FW file", __func__);
+		return VR_STATUS_FAILURE;
+	}
 
 	if (info->xfer) {
 		vr_xfer = info->xfer;
@@ -373,6 +379,12 @@ int mp29608a_fw_update(struct vr_info *info, void *args)
 
 void *mp29608a_parse_file(struct vr_info *info, const char *path)
 {
+	if (mp29608a_check_mfr_id(info->bus, info->addr)) {
+		printf("%s: the VR on bus %d, addr 0x%02x is not an MPS device\n",
+			__func__, info->bus, info->addr);
+		syslog(LOG_WARNING, "%s: check mfr id failed", __func__);
+		return NULL;
+	}
 	char line[120], *str;
 	char buf[10] = { 0 };
 	FILE *fp = NULL;
@@ -507,11 +519,10 @@ void *mp29608a_parse_file(struct vr_info *info, const char *path)
 			// I2C Address:	63	99
 			str = strtok(line, "\t");
 			str = strtok(NULL, "\t");
-			config->bus = strtol(str, NULL, 16);
-			str = strtok(NULL, "\t");
+			config->bus = 0;
 			config->addr = strtol(str, NULL, 16);
 #if DEBUG == 1
-			printf("Bus: %02x, Addr: %02x\n", config->bus, config->addr);
+			printf("Bus: %d, Addr: 0x%02x\n", config->bus, config->addr);
 #endif
 		}
 	}

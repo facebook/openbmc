@@ -873,6 +873,9 @@ xdpe152xx_fw_update(struct vr_info *info, void *args) {
   }
 
   if (info->addr != config->addr) {
+    printf("ERROR: The 7-bit address in the FW file is 0x%02x, but the device address is 0x%02x\n",
+			info->addr, config->addr);
+		syslog(LOG_WARNING, "%s: address mismatch; please use the correct FW file", __func__);
     return VR_STATUS_SKIP;
   }
 

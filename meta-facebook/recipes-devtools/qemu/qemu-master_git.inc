@@ -29,7 +29,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=a3b50d8b88dcc0eb3d7d39b760b9e821 \
 QEMU_REF ?= "65fb9de4888f9bf32bc4f60c880da3dff04c4fd9"
 
 # Use git protocol (required by BitBake QA)
-SRC_URI = "gitsm://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \
+SRC_URI = "git://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \
            file://powerpc_rom.bin \
            file://0001-qemu-Add-addition-environment-space-to-boot-loader-q.patch \
            file://0002-apic-fixup-fallthrough-to-PIC.patch \
@@ -51,13 +51,13 @@ SRCREV = "${QEMU_REF}"
 # are not git submodules. destsuffix puts them in the right location.
 # Note: rust crates are skipped since we do not need them.
 SRC_URI += " \
-    git://gitlab.com/qemu-project/keycodemapdb.git;protocol=https;nobranch=1;destsuffix=git/subprojects/keycodemapdb;name=keycodemapdb \
-    git://gitlab.com/qemu-project/berkeley-softfloat-3.git;protocol=https;nobranch=1;destsuffix=git/subprojects/berkeley-softfloat-3;name=berkeley-softfloat-3 \
-    git://gitlab.com/qemu-project/berkeley-testfloat-3.git;protocol=https;nobranch=1;destsuffix=git/subprojects/berkeley-testfloat-3;name=berkeley-testfloat-3 \
-    git://gitlab.com/qemu-project/dtc.git;protocol=https;nobranch=1;destsuffix=git/subprojects/dtc;name=dtc \
-    git://gitlab.freedesktop.org/slirp/libslirp.git;protocol=https;nobranch=1;destsuffix=git/subprojects/slirp;name=slirp \
-    git://gitlab.com/qemu-project/libvfio-user.git;protocol=https;nobranch=1;destsuffix=git/subprojects/libvfio-user;name=libvfio-user \
-    git://gitlab.com/libblkio/libblkio.git;protocol=https;nobranch=1;destsuffix=git/subprojects/libblkio;name=libblkio \
+    git://gitlab.com/qemu-project/keycodemapdb.git;protocol=https;nobranch=1;destsuffix=${BP}/subprojects/keycodemapdb;name=keycodemapdb \
+    git://gitlab.com/qemu-project/berkeley-softfloat-3.git;protocol=https;nobranch=1;destsuffix=${BP}/subprojects/berkeley-softfloat-3;name=berkeley-softfloat-3 \
+    git://gitlab.com/qemu-project/berkeley-testfloat-3.git;protocol=https;nobranch=1;destsuffix=${BP}/subprojects/berkeley-testfloat-3;name=berkeley-testfloat-3 \
+    git://gitlab.com/qemu-project/dtc.git;protocol=https;nobranch=1;destsuffix=${BP}/subprojects/dtc;name=dtc \
+    git://gitlab.freedesktop.org/slirp/libslirp.git;protocol=https;nobranch=1;destsuffix=${BP}/subprojects/slirp;name=slirp \
+    git://gitlab.com/qemu-project/libvfio-user.git;protocol=https;nobranch=1;destsuffix=${BP}/subprojects/libvfio-user;name=libvfio-user \
+    git://gitlab.com/libblkio/libblkio.git;protocol=https;nobranch=1;destsuffix=${BP}/subprojects/libblkio;name=libblkio \
     "
 
 # Pin subproject revisions (from .wrap files)
@@ -89,6 +89,8 @@ CVE_STATUS[CVE-2024-6505] = "fixed-version: this CVE is fixed since 9.1.0"
 CVE_STATUS[CVE-2024-8354] = "fixed-version: this CVE is fixed since 10.0.5"
 
 CVE_STATUS[CVE-2023-1386] = "disputed: not an issue as per https://bugzilla.redhat.com/show_bug.cgi?id=2223985"
+
+DISABLE_STATIC = ""
 
 COMPATIBLE_HOST:mipsarchn32 = "null"
 COMPATIBLE_HOST:mipsarchn64 = "null"

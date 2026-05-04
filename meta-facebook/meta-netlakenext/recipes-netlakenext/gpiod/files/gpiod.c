@@ -142,8 +142,12 @@ dimm_hot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
 
 static void
 vr_hot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  syslog(LOG_CRIT, "FRU: %d VR Hot Warning %s\n",
-         FRU_SERVER, (curr == GPIO_VALUE_LOW) ? "Assertion" : "Deassertion");
+  if (last == GPIO_VALUE_LOW && curr == GPIO_VALUE_HIGH) {
+    syslog(LOG_INFO, "FRU: %d VR Hot Warning Deassertion\n", FRU_SERVER);
+  }
+  else if (last == GPIO_VALUE_HIGH && curr == GPIO_VALUE_LOW) {
+    syslog(LOG_INFO, "FRU: %d VR Hot Warning Assertion\n", FRU_SERVER);
+  }
 }
 
 static void

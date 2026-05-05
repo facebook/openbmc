@@ -18,6 +18,6 @@
 # Boston,MA 02110-1301 USA
 #
 plat_i2c_tree = {
-    "3-0050": {"name": "24c64", "driver": "at24"},
-    "6-0050": {"name": "24c64", "driver": "at24"},
+    "3-0050": {"name": "24c32", "driver": "at24"},
+    "6-0050": {"name": "24c32", "driver": "at24"},
 }

@@ -21,6 +21,6 @@
 source /usr/local/bin/openbmc-utils.sh
 
 # Bus 6
-i2c_device_add 6 0x50 24c64 # Chassis EEPROM
+i2c_device_add 6 0x50 24c32 # Chassis EEPROM
 # Bus 3
-i2c_device_add 3 0x50 24c64 # SCM EEPROM
+i2c_device_add 3 0x50 24c32 # SCM EEPROM

@@ -18,7 +18,8 @@
 # Boston, MA 02110-1301 USA
 #
 
-# aiohttp has access logs and error logs enabled by default. So, only the configuration file is needed to get the desired log output.
+# aiohttp has access logs and error logs enabled by default. So, only the
+# configuration file is needed to get the desired log output.
 
 import asyncio
 import getopt
@@ -29,13 +30,32 @@ import ssl
 import sys
 
 import rest_debug
-
 from aiohttp.log import access_logger
 from async_ratelimiter import AsyncRateLimiter
 from common_logging import ACCESS_LOG_FORMAT, get_logger_config
 from common_webapp import WebApp
 from rest_config import load_acl_provider, parse_config
 from setup_plat_routes import setup_plat_routes
+
+
+# Py3.5/3.6 compat shim: backfill asyncio.run() and asyncio.get_running_loop()
+# AI-codemod migrations to these Py3.7+ APIs would otherwise crash on BMCs still
+# on older Python (e.g. fby2 @ Py3.5.3). Backfilling here once means every
+# module that calls asyncio.run / asyncio.get_running_loop transparently works.
+def _asyncio_run_compat(coro):
+    loop = asyncio.new_event_loop()
+    try:
+        asyncio.set_event_loop(loop)
+        return loop.run_until_complete(coro)
+    finally:
+        loop.close()
+
+
+if not hasattr(asyncio, "get_running_loop"):
+    asyncio.get_running_loop = asyncio.get_event_loop  # type: ignore[assignment]
+if not hasattr(asyncio, "run"):
+    asyncio.run = _asyncio_run_compat  # type: ignore[assignment]
+
 
 configpath = "/etc/rest.cfg"
 

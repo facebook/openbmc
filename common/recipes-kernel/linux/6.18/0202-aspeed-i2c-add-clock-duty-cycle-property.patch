@@ -1,7 +1,7 @@
-From b2e11eeb5a508070dc03b314b13399123ce875e5 Mon Sep 17 00:00:00 2001
+From a9ebf36fdda151c41b4940646b1297c99794b02a Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Mon, 23 May 2022 11:56:36 +0800
-Subject: [PATCH 202/228] aspeed: i2c: add clock duty cycle property
+Subject: [PATCH 202/238] aspeed: i2c: add clock duty cycle property
 
 Introduce i2c-clk-high-min-percent property for setting a minimum clock
 high percentage.

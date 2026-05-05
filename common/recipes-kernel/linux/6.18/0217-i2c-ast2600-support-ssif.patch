@@ -1,14 +1,14 @@
-From be3be09f1a0d1eb9ce1c153f2558dda79b6eb897 Mon Sep 17 00:00:00 2001
+From f177649a649d24ffea0b7ae6cbf7796e79bd9802 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Sun, 8 Jun 2025 20:24:14 +0800
-Subject: [PATCH 217/228] i2c-ast2600: support ssif
+Subject: [PATCH 217/238] i2c-ast2600: support ssif
 
 ---
  drivers/i2c/busses/i2c-ast2600.c | 21 +++++++++++++++------
  1 file changed, 15 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/i2c/busses/i2c-ast2600.c b/drivers/i2c/busses/i2c-ast2600.c
-index e28c66858..553a3284f 100644
+index e28c66858b68..553a3284fe16 100644
 --- a/drivers/i2c/busses/i2c-ast2600.c
 +++ b/drivers/i2c/busses/i2c-ast2600.c
 @@ -1397,6 +1397,7 @@ static void ast2600_i2c_target_byte_irq(struct ast2600_i2c_bus *i2c_bus, u32 sts

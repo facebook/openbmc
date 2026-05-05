@@ -1,7 +1,7 @@
-From 78cbbd83fddb95550f13698f8ad23eedc7af689e Mon Sep 17 00:00:00 2001
+From 4433951718936b6609c7495ce978589a793cecbe Mon Sep 17 00:00:00 2001
 From: Ryan Chen <ryan_chen@aspeedtech.com>
 Date: Tue, 7 Apr 2026 11:08:05 +0800
-Subject: [PATCH] irqchip/ast2700-intc: Add AST2700-A2 support
+Subject: [PATCH 2703/2706] irqchip/ast2700-intc: Add AST2700-A2 support
 
 The AST2700 interrupt fabric is shared by multiple integrated processors
 (PSP/SSP/TSP/BootMCU), each with its own interrupt controller and its own
@@ -33,7 +33,7 @@ Signed-off-by: Ryan Chen <ryan_chen@aspeedtech.com>
  create mode 100644 drivers/irqchip/irq-ast2700.h
 
 diff --git a/drivers/irqchip/Kconfig b/drivers/irqchip/Kconfig
-index a61c6dc63..01466a274 100644
+index a61c6dc63c29..01466a274d48 100644
 --- a/drivers/irqchip/Kconfig
 +++ b/drivers/irqchip/Kconfig
 @@ -111,6 +111,18 @@ config AL_FIC
@@ -56,7 +56,7 @@ index a61c6dc63..01466a274 100644
  	bool
  	select GENERIC_IRQ_CHIP
 diff --git a/drivers/irqchip/Makefile b/drivers/irqchip/Makefile
-index 3de083f54..be750596f 100644
+index 3de083f5484c..be750596f6b6 100644
 --- a/drivers/irqchip/Makefile
 +++ b/drivers/irqchip/Makefile
 @@ -89,6 +89,7 @@ obj-$(CONFIG_MVEBU_PIC)			+= irq-mvebu-pic.o
@@ -69,7 +69,7 @@ index 3de083f54..be750596f 100644
  obj-$(CONFIG_STM32MP_EXTI)		+= irq-stm32mp-exti.o
 diff --git a/drivers/irqchip/irq-ast2700-intc0.c b/drivers/irqchip/irq-ast2700-intc0.c
 new file mode 100644
-index 000000000..65e17b2dc
+index 000000000000..65e17b2dc6fa
 --- /dev/null
 +++ b/drivers/irqchip/irq-ast2700-intc0.c
 @@ -0,0 +1,581 @@
@@ -656,7 +656,7 @@ index 000000000..65e17b2dc
 +IRQCHIP_PLATFORM_DRIVER_END(ast2700_intc0)
 diff --git a/drivers/irqchip/irq-ast2700-intc1.c b/drivers/irqchip/irq-ast2700-intc1.c
 new file mode 100644
-index 000000000..59e8f0d5d
+index 000000000000..59e8f0d5ddcd
 --- /dev/null
 +++ b/drivers/irqchip/irq-ast2700-intc1.c
 @@ -0,0 +1,280 @@
@@ -942,7 +942,7 @@ index 000000000..59e8f0d5d
 +IRQCHIP_PLATFORM_DRIVER_END(ast2700_intc1)
 diff --git a/drivers/irqchip/irq-ast2700.c b/drivers/irqchip/irq-ast2700.c
 new file mode 100644
-index 000000000..1e4c4a624
+index 000000000000..1e4c4a624dbf
 --- /dev/null
 +++ b/drivers/irqchip/irq-ast2700.c
 @@ -0,0 +1,107 @@
@@ -1055,7 +1055,7 @@ index 000000000..1e4c4a624
 +}
 diff --git a/drivers/irqchip/irq-ast2700.h b/drivers/irqchip/irq-ast2700.h
 new file mode 100644
-index 000000000..318296638
+index 000000000000..318296638445
 --- /dev/null
 +++ b/drivers/irqchip/irq-ast2700.h
 @@ -0,0 +1,48 @@
@@ -1108,5 +1108,5 @@ index 000000000..318296638
 +
 +#endif
 -- 
-2.53.0
+2.52.0
 

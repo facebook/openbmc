@@ -1,7 +1,8 @@
-From ccb49121c16cccea2d7019edf0f5122d120e2ca0 Mon Sep 17 00:00:00 2001
+From b331ea3c0fb5a7520433aa39a9dfa080edd9e0c4 Mon Sep 17 00:00:00 2001
 From: Ryan Chen <ryan_chen@aspeedtech.com>
 Date: Thu, 12 Jun 2025 15:23:35 +0800
-Subject: [PATCH] arm64: dts: aspeed: Add initial AST27xx SoC device tree
+Subject: [PATCH 2702/2706] arm64: dts: aspeed: Add initial AST27xx SoC device
+ tree
 
 Add initial device tree support for the ASPEED AST27xx family, the
 8th-generation Baseboard Management Controller (BMC) SoCs.
@@ -38,7 +39,7 @@ Signed-off-by: Ryan Chen <ryan_chen@aspeedtech.com>
  create mode 100644 arch/arm64/boot/dts/aspeed/ast2700-evb.dts
 
 diff --git a/arch/arm64/boot/dts/Makefile b/arch/arm64/boot/dts/Makefile
-index b0844404e..5b8fbf5b1 100644
+index b0844404eda1..5b8fbf5b1061 100644
 --- a/arch/arm64/boot/dts/Makefile
 +++ b/arch/arm64/boot/dts/Makefile
 @@ -9,6 +9,7 @@ subdir-y += amlogic
@@ -51,7 +52,7 @@ index b0844404e..5b8fbf5b1 100644
  subdir-y += blaize
 diff --git a/arch/arm64/boot/dts/aspeed/Makefile b/arch/arm64/boot/dts/aspeed/Makefile
 new file mode 100644
-index 000000000..ffe7e1501
+index 000000000000..ffe7e15017cc
 --- /dev/null
 +++ b/arch/arm64/boot/dts/aspeed/Makefile
 @@ -0,0 +1,4 @@
@@ -61,7 +62,7 @@ index 000000000..ffe7e1501
 +	ast2700-evb.dtb
 diff --git a/arch/arm64/boot/dts/aspeed/aspeed-g7-a35.dtsi b/arch/arm64/boot/dts/aspeed/aspeed-g7-a35.dtsi
 new file mode 100644
-index 000000000..15ba0ff69
+index 000000000000..15ba0ff697ac
 --- /dev/null
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-g7-a35.dtsi
 @@ -0,0 +1,183 @@
@@ -250,7 +251,7 @@ index 000000000..15ba0ff69
 +#include "aspeed-g7-common.dtsi"
 diff --git a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
 new file mode 100644
-index 000000000..147a86176
+index 000000000000..147a8617619d
 --- /dev/null
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
 @@ -0,0 +1,326 @@
@@ -582,7 +583,7 @@ index 000000000..147a86176
 +};
 diff --git a/arch/arm64/boot/dts/aspeed/ast2700-evb.dts b/arch/arm64/boot/dts/aspeed/ast2700-evb.dts
 new file mode 100644
-index 000000000..4a584d475
+index 000000000000..4a584d475e69
 --- /dev/null
 +++ b/arch/arm64/boot/dts/aspeed/ast2700-evb.dts
 @@ -0,0 +1,31 @@
@@ -618,5 +619,5 @@ index 000000000..4a584d475
 +	status = "okay";
 +};
 -- 
-2.53.0
+2.52.0
 

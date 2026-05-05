@@ -1,7 +1,7 @@
-From 7505fd3986fd48315277f1276bdd6ca9da381409 Mon Sep 17 00:00:00 2001
+From b6bc4b02c80213802c0438f0c424aa7c3825f927 Mon Sep 17 00:00:00 2001
 From: Ryan Chen <ryan_chen@aspeedtech.com>
 Date: Wed, 24 Dec 2025 13:37:24 +0800
-Subject: [PATCH] clk: aspeed: add AST2700 clock driver
+Subject: [PATCH 2700/2706] clk: aspeed: add AST2700 clock driver
 
 Add AST2700 clock controller driver and also use axiliary
 device framework register the reset controller driver.
@@ -18,7 +18,7 @@ Signed-off-by: Stephen Boyd <sboyd@kernel.org>
  create mode 100644 drivers/clk/clk-ast2700.c
 
 diff --git a/drivers/clk/Kconfig b/drivers/clk/Kconfig
-index 3a1611008..22768eb51 100644
+index 3a1611008e48..22768eb5132f 100644
 --- a/drivers/clk/Kconfig
 +++ b/drivers/clk/Kconfig
 @@ -296,6 +296,14 @@ config COMMON_CLK_ASPEED
@@ -37,7 +37,7 @@ index 3a1611008..22768eb51 100644
  	tristate "Clock driver for S2MPS1X/S5M8767 MFD"
  	depends on MFD_SEC_CORE || COMPILE_TEST
 diff --git a/drivers/clk/Makefile b/drivers/clk/Makefile
-index 61ec08404..d7de171a0 100644
+index 61ec08404442..d7de171a0eca 100644
 --- a/drivers/clk/Makefile
 +++ b/drivers/clk/Makefile
 @@ -64,6 +64,7 @@ obj-$(CONFIG_COMMON_CLK_FSL_SAI)	+= clk-fsl-sai.o
@@ -50,7 +50,7 @@ index 61ec08404..d7de171a0 100644
  obj-$(CONFIG_COMMON_CLK_K210)		+= clk-k210.o
 diff --git a/drivers/clk/clk-ast2700.c b/drivers/clk/clk-ast2700.c
 new file mode 100644
-index 000000000..bbb2b571e
+index 000000000000..bbb2b571eb72
 --- /dev/null
 +++ b/drivers/clk/clk-ast2700.c
 @@ -0,0 +1,1055 @@
@@ -1110,5 +1110,5 @@ index 000000000..bbb2b571e
 +
 +module_platform_driver(ast2700_scu_driver);
 -- 
-2.53.0
+2.52.0
 

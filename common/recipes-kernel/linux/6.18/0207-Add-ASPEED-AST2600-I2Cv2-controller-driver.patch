@@ -1,7 +1,7 @@
-From b3bdde8e78a217f5e1ec7c10dbbd92c9b29af4be Mon Sep 17 00:00:00 2001
+From 016c48ecb9a22c2955253e52a7a4df0b159b88a8 Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Tue, 29 Oct 2024 09:43:50 +0800
-Subject: [PATCH 207/228] Add ASPEED AST2600 I2Cv2 controller driver
+Subject: [PATCH 207/238] Add ASPEED AST2600 I2Cv2 controller driver
 
 Add AST2600 i2cv2 new register set driver.
 
@@ -16,7 +16,7 @@ https://lore.kernel.org/lkml/20241007035235.2254138-1-ryan_chen@aspeedtech.com/
  create mode 100644 drivers/i2c/busses/i2c-ast2600.c
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-index 0ac0d40f4..1edc1311c 100644
+index 0ac0d40f4bb8..1edc1311c882 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 +++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 @@ -905,11 +905,17 @@ fsim1: fsi@1e79b100 {
@@ -242,7 +242,7 @@ index 4515ded4338c..4cc3ded96cf1 100644
  	tristate "Atmel AT91 I2C Two-Wire interface (TWI)"
  	depends on ARCH_MICROCHIP || COMPILE_TEST
 diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
-index fb985769f..f58bcecc6 100644
+index fb985769f5ff..f58bcecc69cc 100644
 --- a/drivers/i2c/busses/Makefile
 +++ b/drivers/i2c/busses/Makefile
 @@ -38,6 +38,7 @@ obj-$(CONFIG_I2C_ALTERA)	+= i2c-altera.o
@@ -255,7 +255,7 @@ index fb985769f..f58bcecc6 100644
  i2c-at91-$(CONFIG_I2C_AT91_SLAVE_EXPERIMENTAL)	+= i2c-at91-slave.o
 diff --git a/drivers/i2c/busses/i2c-ast2600.c b/drivers/i2c/busses/i2c-ast2600.c
 new file mode 100644
-index 000000000..e28c66858
+index 000000000000..e28c66858b68
 --- /dev/null
 +++ b/drivers/i2c/busses/i2c-ast2600.c
 @@ -0,0 +1,2469 @@

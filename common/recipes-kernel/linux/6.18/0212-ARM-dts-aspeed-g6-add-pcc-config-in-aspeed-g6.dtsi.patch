@@ -1,7 +1,7 @@
-From 27f4515794d1456bbe96e94d560a628baf4cd042 Mon Sep 17 00:00:00 2001
+From fba751933793e63a28312fc6945f1aaf131f3cbc Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Wed, 13 Mar 2024 09:19:06 +0800
-Subject: [PATCH 212/228] ARM: dts: aspeed-g6: add pcc config in aspeed-g6.dtsi
+Subject: [PATCH 212/238] ARM: dts: aspeed-g6: add pcc config in aspeed-g6.dtsi
 
 Add PCC config in aspeed-g6.dtsi
 ---

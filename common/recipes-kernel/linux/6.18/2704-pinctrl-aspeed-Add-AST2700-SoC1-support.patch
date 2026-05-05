@@ -1,7 +1,7 @@
-From 6f98aff7cb5b34e491c4e7d49a733d2ca6274267 Mon Sep 17 00:00:00 2001
+From d6a249ba9629722fe15b53411500724f368a9157 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Mon, 2 Mar 2026 15:09:10 +0800
-Subject: [PATCH] pinctrl: aspeed: Add AST2700 SoC1 support
+Subject: [PATCH 2704/2706] pinctrl: aspeed: Add AST2700 SoC1 support
 
 Implement pin multiplexing (and pin configuration where applicable)
 for the AST2700 SoC1 SCU pinctrl block using static SoC data tables.
@@ -24,7 +24,7 @@ Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
  create mode 100644 drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c
 
 diff --git a/drivers/pinctrl/aspeed/Kconfig b/drivers/pinctrl/aspeed/Kconfig
-index 1a4e5b9ed..2cf78e969 100644
+index 1a4e5b9ed471..2cf78e969bd6 100644
 --- a/drivers/pinctrl/aspeed/Kconfig
 +++ b/drivers/pinctrl/aspeed/Kconfig
 @@ -31,3 +31,16 @@ config PINCTRL_ASPEED_G6
@@ -45,7 +45,7 @@ index 1a4e5b9ed..2cf78e969 100644
 +	  Say Y here to enable pin controller support for SoC1 in Aspeed's
 +	  7th generation SoCs. GPIO is provided by a separate GPIO driver.
 diff --git a/drivers/pinctrl/aspeed/Makefile b/drivers/pinctrl/aspeed/Makefile
-index db2a7600a..a4f2ed97a 100644
+index db2a7600ae2b..a4f2ed97a891 100644
 --- a/drivers/pinctrl/aspeed/Makefile
 +++ b/drivers/pinctrl/aspeed/Makefile
 @@ -6,3 +6,4 @@ obj-$(CONFIG_PINCTRL_ASPEED)	+= pinctrl-aspeed.o pinmux-aspeed.o
@@ -55,7 +55,7 @@ index db2a7600a..a4f2ed97a 100644
 +obj-$(CONFIG_PINCTRL_ASPEED_G7_SOC1)	+= pinctrl-aspeed-g7-soc1.o
 diff --git a/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c b/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c
 new file mode 100644
-index 000000000..d09123e24
+index 000000000000..d09123e24ef7
 --- /dev/null
 +++ b/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c
 @@ -0,0 +1,1733 @@
@@ -1793,5 +1793,5 @@ index 000000000..d09123e24
 +}
 +arch_initcall(aspeed_g7_soc1_pinctrl_init);
 -- 
-2.53.0
+2.52.0
 

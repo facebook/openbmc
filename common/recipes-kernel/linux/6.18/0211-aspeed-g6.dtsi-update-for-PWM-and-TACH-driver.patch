@@ -1,7 +1,7 @@
-From 7c3ea566d95b690b98b1f917a3395d850d9d3b44 Mon Sep 17 00:00:00 2001
+From eb48a9f7605dce52718fab179d516346717cc0b0 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 31 Aug 2023 16:49:57 +0800
-Subject: [PATCH 211/228] aspeed-g6.dtsi update for PWM and TACH driver
+Subject: [PATCH 211/238] aspeed-g6.dtsi update for PWM and TACH driver
 
 Signed-off-by: Potin Lai <potin.lai@quantatw.com>
 ---

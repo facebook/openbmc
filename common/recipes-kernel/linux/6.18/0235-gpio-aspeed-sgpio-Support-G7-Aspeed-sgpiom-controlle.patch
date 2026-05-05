@@ -1,7 +1,8 @@
-From e0344eb3ae0aeeb88bed204d18c82f1bbac2f5c8 Mon Sep 17 00:00:00 2001
+From dd1aac5140e146bdecf3af4a00e525ffb55fef67 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Fri, 23 Jan 2026 17:26:31 +0800
-Subject: [PATCH] gpio: aspeed-sgpio: Support G7 Aspeed sgpiom controller
+Subject: [PATCH 235/238] gpio: aspeed-sgpio: Support G7 Aspeed sgpiom
+ controller
 
 In the 7th generation of the SoC from Aspeed, the control logic of the
 SGPIO controller has been updated to support per-pin control. Each pin now
@@ -17,7 +18,7 @@ Signed-off-by: Bartosz Golaszewski <bartosz.golaszewski@oss.qualcomm.com>
  1 file changed, 112 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/gpio/gpio-aspeed-sgpio.c b/drivers/gpio/gpio-aspeed-sgpio.c
-index bf83e19a1..bf828b072 100644
+index bf83e19a1bf0..bf828b0727df 100644
 --- a/drivers/gpio/gpio-aspeed-sgpio.c
 +++ b/drivers/gpio/gpio-aspeed-sgpio.c
 @@ -19,7 +19,35 @@
@@ -183,5 +184,5 @@ index bf83e19a1..bf828b072 100644
  	raw_spin_lock_init(&gpio->lock);
  
 -- 
-2.53.0
+2.52.0
 

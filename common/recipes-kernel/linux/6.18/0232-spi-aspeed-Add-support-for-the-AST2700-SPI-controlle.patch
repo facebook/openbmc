@@ -1,7 +1,8 @@
-From 187eac804ef95026e240d5157e062d07e1614db6 Mon Sep 17 00:00:00 2001
+From b09d88bc01bbead3da2bb26a654d8f75b8cc6d55 Mon Sep 17 00:00:00 2001
 From: Chin-Ting Kuo <chin-ting_kuo@aspeedtech.com>
 Date: Fri, 14 Nov 2025 18:10:42 +0800
-Subject: [PATCH] spi: aspeed: Add support for the AST2700 SPI controller
+Subject: [PATCH 232/238] spi: aspeed: Add support for the AST2700 SPI
+ controller
 
 Extend the driver to support the AST2700 SPI controller. Compared to
 AST2600, AST2700 has the following characteristics:
@@ -24,7 +25,7 @@ Signed-off-by: Mark Brown <broonie@kernel.org>
  1 file changed, 102 insertions(+)
 
 diff --git a/drivers/spi/spi-aspeed-smc.c b/drivers/spi/spi-aspeed-smc.c
-index 7c10de67e..0f11022e2 100644
+index 7c10de67ed2c..0f11022e2eec 100644
 --- a/drivers/spi/spi-aspeed-smc.c
 +++ b/drivers/spi/spi-aspeed-smc.c
 @@ -49,6 +49,12 @@
@@ -179,5 +180,5 @@ index 7c10de67e..0f11022e2 100644
  };
  MODULE_DEVICE_TABLE(of, aspeed_spi_matches);
 -- 
-2.53.0
+2.52.0
 

@@ -1,8 +1,8 @@
-From 1abade382bdec694f44916e68732882e604d24be Mon Sep 17 00:00:00 2001
+From 477ef7c688f459ac1ce9f1877d33934cdd76710d Mon Sep 17 00:00:00 2001
 From: Chin-Ting Kuo <chin-ting_kuo@aspeedtech.com>
 Date: Fri, 14 Nov 2025 18:10:41 +0800
-Subject: [PATCH] spi: aspeed: Use phys_addr_t for bus addresses to support
- 64-bit platforms
+Subject: [PATCH 231/238] spi: aspeed: Use phys_addr_t for bus addresses to
+ support 64-bit platforms
 
 Update bus address types from u32 to phys_addr_t to support systems with
 64-bit memory address space. This change ensures compatibility with
@@ -17,7 +17,7 @@ Signed-off-by: Mark Brown <broonie@kernel.org>
  1 file changed, 26 insertions(+), 22 deletions(-)
 
 diff --git a/drivers/spi/spi-aspeed-smc.c b/drivers/spi/spi-aspeed-smc.c
-index 84595bb84..7c10de67e 100644
+index 84595bb8453d..7c10de67ed2c 100644
 --- a/drivers/spi/spi-aspeed-smc.c
 +++ b/drivers/spi/spi-aspeed-smc.c
 @@ -81,9 +81,10 @@ struct aspeed_spi_data {
@@ -151,5 +151,5 @@ index 84595bb84..7c10de67e 100644
  	/* disable zero size segments */
  	if (start == end)
 -- 
-2.53.0
+2.52.0
 

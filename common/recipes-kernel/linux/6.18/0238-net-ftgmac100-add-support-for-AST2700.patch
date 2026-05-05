@@ -1,7 +1,7 @@
-From 0d22b2979ec72d13227b45280b26325507526fc9 Mon Sep 17 00:00:00 2001
+From a46869a282d42bd4a30ccd5cc7bde2498f984a7b Mon Sep 17 00:00:00 2001
 From: Jacky Chou <jacky_chou@aspeedtech.com>
 Date: Wed, 1 Oct 2025 18:42:40 +0800
-Subject: [PATCH] net: ftgmac100: add support for AST2700
+Subject: [PATCH 238/238] net: ftgmac100: add support for AST2700
 
 Add support for AST2700 on kernel v6.12.
 
@@ -14,7 +14,7 @@ Change-Id: I88afb89fc7084c12d84c3eb9b77e342d9702531d
  3 files changed, 109 insertions(+), 21 deletions(-)
 
 diff --git a/drivers/net/ethernet/faraday/Kconfig b/drivers/net/ethernet/faraday/Kconfig
-index 474073c7f..9acc2d260 100644
+index 474073c7f94d..9acc2d260c1f 100644
 --- a/drivers/net/ethernet/faraday/Kconfig
 +++ b/drivers/net/ethernet/faraday/Kconfig
 @@ -6,7 +6,7 @@
@@ -41,7 +41,7 @@ index 474073c7f..9acc2d260 100644
  	help
  	  This driver supports the FTGMAC100 Gigabit Ethernet controller
 diff --git a/drivers/net/ethernet/faraday/ftgmac100.c b/drivers/net/ethernet/faraday/ftgmac100.c
-index a863f7841..5ade167d7 100644
+index 06ee7af7fdb9..c9b113cb360b 100644
 --- a/drivers/net/ethernet/faraday/ftgmac100.c
 +++ b/drivers/net/ethernet/faraday/ftgmac100.c
 @@ -20,6 +20,7 @@
@@ -165,7 +165,7 @@ index a863f7841..5ade167d7 100644
  
  		if (!skb)
  			continue;
-@@ -1006,7 +1030,9 @@ static void ftgmac100_init_rings(struct ftgmac100 *priv)
+@@ -1026,7 +1050,9 @@ static void ftgmac100_init_rings(struct ftgmac100 *priv)
  	for (i = 0; i < priv->rx_q_entries; i++) {
  		rxdes = &priv->rxdes[i];
  		rxdes->rxdes0 = 0;
@@ -176,7 +176,7 @@ index a863f7841..5ade167d7 100644
  	}
  	/* Mark the end of the ring */
  	rxdes->rxdes0 |= cpu_to_le32(priv->rxdes0_edorr_mask);
-@@ -1752,15 +1778,19 @@ static void ftgmac100_phy_disconnect(struct net_device *netdev)
+@@ -1772,15 +1798,19 @@ static void ftgmac100_phy_disconnect(struct net_device *netdev)
  	struct ftgmac100 *priv = netdev_priv(netdev);
  	struct phy_device *phydev = netdev->phydev;
  
@@ -203,7 +203,7 @@ index a863f7841..5ade167d7 100644
  }
  
  static void ftgmac100_destroy_mdio(struct net_device *netdev)
-@@ -1903,7 +1933,8 @@ static int ftgmac100_probe(struct platform_device *pdev)
+@@ -1923,7 +1953,8 @@ static int ftgmac100_probe(struct platform_device *pdev)
  	np = pdev->dev.of_node;
  	if (np && (of_device_is_compatible(np, "aspeed,ast2400-mac") ||
  		   of_device_is_compatible(np, "aspeed,ast2500-mac") ||
@@ -213,7 +213,7 @@ index a863f7841..5ade167d7 100644
  		priv->rxdes0_edorr_mask = BIT(30);
  		priv->txdes0_edotr_mask = BIT(30);
  		priv->is_aspeed = true;
-@@ -2004,6 +2035,48 @@ static int ftgmac100_probe(struct platform_device *pdev)
+@@ -2024,6 +2055,48 @@ static int ftgmac100_probe(struct platform_device *pdev)
  		if (of_device_is_compatible(np, "aspeed,ast2600-mac"))
  			iowrite32(FTGMAC100_TM_DEFAULT,
  				  priv->base + FTGMAC100_OFFSET_TM);
@@ -262,7 +262,7 @@ index a863f7841..5ade167d7 100644
  	}
  
  	/* Default ring sizes */
-@@ -2030,6 +2103,12 @@ static int ftgmac100_probe(struct platform_device *pdev)
+@@ -2050,6 +2123,12 @@ static int ftgmac100_probe(struct platform_device *pdev)
  		netdev->hw_features &= ~(NETIF_F_HW_CSUM | NETIF_F_RXCSUM);
  	netdev->features |= netdev->hw_features;
  
@@ -276,7 +276,7 @@ index a863f7841..5ade167d7 100644
  	err = register_netdev(netdev);
  	if (err) {
 diff --git a/drivers/net/ethernet/faraday/ftgmac100.h b/drivers/net/ethernet/faraday/ftgmac100.h
-index 4968f6f0b..f8c30a09d 100644
+index 4968f6f0bdbc..f8c30a09ddca 100644
 --- a/drivers/net/ethernet/faraday/ftgmac100.h
 +++ b/drivers/net/ethernet/faraday/ftgmac100.h
 @@ -57,6 +57,13 @@
@@ -316,5 +316,5 @@ index 4968f6f0b..f8c30a09d 100644
 +#define FTGMAC100_RXDES2_RXBUF_BADR_HI	GENMASK(18, 16)
  #endif /* __FTGMAC100_H */
 -- 
-2.53.0
+2.52.0
 

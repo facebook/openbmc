@@ -1,7 +1,7 @@
-From d825f9b3c34c48f2a5911c138f6e2bf803c0d83e Mon Sep 17 00:00:00 2001
+From 6ce7b6c94847b7e72abc86a2b0f4399bbd0ea3ef Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Mon, 3 Nov 2025 18:52:17 +0800
-Subject: [PATCH] iio: adc: aspeed: Add AST2700 ADC support
+Subject: [PATCH 236/238] iio: adc: aspeed: Add AST2700 ADC support
 
 This patch adds support for the ADCs found on the Aspeed AST2700 SoC,
 which includes two instances: "ast2700-adc0" and "ast2700-adc1". While
@@ -16,10 +16,10 @@ Signed-off-by: Jonathan Cameron <Jonathan.Cameron@huawei.com>
  1 file changed, 34 insertions(+)
 
 diff --git a/drivers/iio/adc/aspeed_adc.c b/drivers/iio/adc/aspeed_adc.c
-index 1d5fd5f53..bf2bfd6bd 100644
+index 8ab29948214a..9df6e7f68f19 100644
 --- a/drivers/iio/adc/aspeed_adc.c
 +++ b/drivers/iio/adc/aspeed_adc.c
-@@ -645,6 +645,16 @@ static const struct aspeed_adc_trim_locate ast2600_adc1_trim = {
+@@ -646,6 +646,16 @@ static const struct aspeed_adc_trim_locate ast2600_adc1_trim = {
  	.field = GENMASK(7, 4),
  };
  
@@ -36,7 +36,7 @@ index 1d5fd5f53..bf2bfd6bd 100644
  static const struct aspeed_adc_model_data ast2400_model_data = {
  	.model_name = "ast2400-adc",
  	.vref_fixed_mv = 2500,
-@@ -689,11 +699,35 @@ static const struct aspeed_adc_model_data ast2600_adc1_model_data = {
+@@ -690,11 +700,35 @@ static const struct aspeed_adc_model_data ast2600_adc1_model_data = {
  	.trim_locate = &ast2600_adc1_trim,
  };
  
@@ -73,5 +73,5 @@ index 1d5fd5f53..bf2bfd6bd 100644
  };
  MODULE_DEVICE_TABLE(of, aspeed_adc_matches);
 -- 
-2.53.0
+2.52.0
 

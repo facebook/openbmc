@@ -1,7 +1,7 @@
-From 5f06e88825e6cd7a3503c1117e3a078dbbd74093 Mon Sep 17 00:00:00 2001
+From 20723ebd4cd2220e417ab5df23a4fe1259a23e16 Mon Sep 17 00:00:00 2001
 From: Kevin Chen <kevin_chen@aspeedtech.com>
 Date: Fri, 14 Mar 2025 19:21:13 +0800
-Subject: [PATCH 216/228] soc: aspeed: lpc-pcc: Add PCC controller support
+Subject: [PATCH 216/238] soc: aspeed: lpc-pcc: Add PCC controller support
 
 Add LPC PCC controller driver to support POST code capture.
 

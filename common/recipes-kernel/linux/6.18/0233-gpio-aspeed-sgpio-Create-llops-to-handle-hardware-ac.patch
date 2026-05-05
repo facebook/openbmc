@@ -1,7 +1,8 @@
-From 8f99e56d6bd547bc25e1abbe2dec0eb03f3c4e1a Mon Sep 17 00:00:00 2001
+From 73f7ffed46f1f3a0890e67e51dd06c99bbf4f209 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Fri, 23 Jan 2026 17:26:28 +0800
-Subject: [PATCH] gpio: aspeed-sgpio: Create llops to handle hardware access
+Subject: [PATCH 233/238] gpio: aspeed-sgpio: Create llops to handle hardware
+ access
 
 Add low-level operations (llops) to abstract the register access for SGPIO
 registers. With this abstraction layer, the driver can separate the
@@ -35,7 +36,7 @@ Signed-off-by: Bartosz Golaszewski <bartosz.golaszewski@oss.qualcomm.com>
  1 file changed, 104 insertions(+), 118 deletions(-)
 
 diff --git a/drivers/gpio/gpio-aspeed-sgpio.c b/drivers/gpio/gpio-aspeed-sgpio.c
-index 318cd0e39..04ac47819 100644
+index 318cd0e39741..04ac47819b5a 100644
 --- a/drivers/gpio/gpio-aspeed-sgpio.c
 +++ b/drivers/gpio/gpio-aspeed-sgpio.c
 @@ -27,6 +27,7 @@
@@ -427,5 +428,5 @@ index 318cd0e39..04ac47819 100644
  	if (rc < 0) {
  		dev_err(&pdev->dev, "Could not read ngpios property\n");
 -- 
-2.53.0
+2.52.0
 

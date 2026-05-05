@@ -1,7 +1,7 @@
-From c1a13d2e93ac9e964043bf1937577fa6467eebcd Mon Sep 17 00:00:00 2001
+From 31512780e10b3bd6c6716ab36b5aa1c9313bdf36 Mon Sep 17 00:00:00 2001
 From: Zoey Chung <zoey_yj_chung@wiwynn.com>
 Date: Tue, 10 Mar 2026 14:22:37 +0800
-Subject: [PATCH 228/228] i3c: master: dw-i3c-master: Fix race condition in
+Subject: [PATCH 228/238] i3c: master: dw-i3c-master: Fix race condition in
  halt/resume sequences
 
 The controller may immediately start a transfer and enter the halt state

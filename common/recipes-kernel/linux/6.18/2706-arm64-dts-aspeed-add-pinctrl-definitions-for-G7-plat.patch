@@ -1,7 +1,8 @@
-From 78260c16e13716aec4421780ff0d5cd44eb9aafe Mon Sep 17 00:00:00 2001
+From acb1b544a824f3a2de39e76a6c605297c49b5b89 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Wed, 11 Mar 2026 09:47:41 +0800
-Subject: [PATCH] arm64: dts: aspeed: add pinctrl definitions for G7 platforms
+Subject: [PATCH 2706/2706] arm64: dts: aspeed: add pinctrl definitions for G7
+ platforms
 
 Introduce pinctrl nodes and include pinctrl state definitions for
 various peripherals in G7 platform device trees to support pin
@@ -16,7 +17,7 @@ Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
  create mode 100644 arch/arm64/boot/dts/aspeed/aspeed-g7-pinctrl.dtsi
 
 diff --git a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
-index 147a86176..2a6f80a25 100644
+index 147a8617619d..2a6f80a255aa 100644
 --- a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
 @@ -75,6 +75,11 @@ scu_ic1: interrupt-controller@1e0 {
@@ -51,7 +52,7 @@ index 147a86176..2a6f80a25 100644
 +#include "aspeed-g7-pinctrl.dtsi"
 diff --git a/arch/arm64/boot/dts/aspeed/aspeed-g7-pinctrl.dtsi b/arch/arm64/boot/dts/aspeed/aspeed-g7-pinctrl.dtsi
 new file mode 100644
-index 000000000..219fdd9e9
+index 000000000000..219fdd9e9885
 --- /dev/null
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-g7-pinctrl.dtsi
 @@ -0,0 +1,1337 @@
@@ -1393,5 +1394,5 @@ index 000000000..219fdd9e9
 +	};
 +};
 -- 
-2.53.0
+2.52.0
 

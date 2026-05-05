@@ -1,7 +1,8 @@
-From 991da8182839174ba950569be16e47c4bf7356ac Mon Sep 17 00:00:00 2001
+From 0a2b80c8d720a03db9de347ba7ceac0406563892 Mon Sep 17 00:00:00 2001
 From: Ryan Chen <ryan_chen@aspeedtech.com>
 Date: Thu, 12 Jun 2025 14:49:24 +0800
-Subject: [PATCH] arm64: Kconfig: Add ASPEED SoC family Kconfig support
+Subject: [PATCH 2701/2706] arm64: Kconfig: Add ASPEED SoC family Kconfig
+ support
 
 Add support for ASPEED SoC family like ast27XX 8th
 generation ASPEED BMCs.
@@ -12,7 +13,7 @@ Signed-off-by: Ryan Chen <ryan_chen@aspeedtech.com>
  1 file changed, 6 insertions(+)
 
 diff --git a/arch/arm64/Kconfig.platforms b/arch/arm64/Kconfig.platforms
-index 13173795c..ac304048a 100644
+index 13173795c43d..ac304048a84e 100644
 --- a/arch/arm64/Kconfig.platforms
 +++ b/arch/arm64/Kconfig.platforms
 @@ -47,6 +47,12 @@ config ARCH_ARTPEC
@@ -29,5 +30,5 @@ index 13173795c..ac304048a 100644
  	bool "Axiado SoC Family"
  	select GPIOLIB
 -- 
-2.53.0
+2.52.0
 

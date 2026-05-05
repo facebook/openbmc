@@ -1,7 +1,7 @@
-From dc06038a6caf40ae8d4f26bfadb5fee17439c9fc Mon Sep 17 00:00:00 2001
+From 7d4776a676b3abf633b95763088fe496b094e0e3 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Tue, 20 Jan 2026 19:43:07 +0800
-Subject: [PATCH] pinctrl: aspeed: Add AST2700 SoC0 support
+Subject: [PATCH 2705/2706] pinctrl: aspeed: Add AST2700 SoC0 support
 
 Add pinctrl support for the SoC0 instance of the ASPEED AST2700.
 
@@ -21,7 +21,7 @@ Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
  create mode 100644 drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc0.c
 
 diff --git a/drivers/pinctrl/aspeed/Kconfig b/drivers/pinctrl/aspeed/Kconfig
-index 2cf78e969..680483f7e 100644
+index 2cf78e969bd6..680483f7eb92 100644
 --- a/drivers/pinctrl/aspeed/Kconfig
 +++ b/drivers/pinctrl/aspeed/Kconfig
 @@ -32,6 +32,15 @@ config PINCTRL_ASPEED_G6
@@ -41,7 +41,7 @@ index 2cf78e969..680483f7e 100644
  	bool "ASPEED G7 SoC1 pinctrl driver"
  	depends on (ARCH_ASPEED || COMPILE_TEST) && OF
 diff --git a/drivers/pinctrl/aspeed/Makefile b/drivers/pinctrl/aspeed/Makefile
-index a4f2ed97a..7a41ca45c 100644
+index a4f2ed97a891..7a41ca45c6ba 100644
 --- a/drivers/pinctrl/aspeed/Makefile
 +++ b/drivers/pinctrl/aspeed/Makefile
 @@ -6,4 +6,5 @@ obj-$(CONFIG_PINCTRL_ASPEED)	+= pinctrl-aspeed.o pinmux-aspeed.o
@@ -52,7 +52,7 @@ index a4f2ed97a..7a41ca45c 100644
  obj-$(CONFIG_PINCTRL_ASPEED_G7_SOC1)	+= pinctrl-aspeed-g7-soc1.o
 diff --git a/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc0.c b/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc0.c
 new file mode 100644
-index 000000000..35a28b677
+index 000000000000..35a28b677318
 --- /dev/null
 +++ b/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc0.c
 @@ -0,0 +1,749 @@
@@ -806,5 +806,5 @@ index 000000000..35a28b677
 +}
 +arch_initcall(aspeed_g7_soc0_pinctrl_init);
 -- 
-2.53.0
+2.52.0
 

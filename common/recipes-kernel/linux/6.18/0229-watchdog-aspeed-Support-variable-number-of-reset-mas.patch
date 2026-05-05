@@ -1,8 +1,8 @@
-From aa920bf716718964afa39f7bf4697f5e3124b9a3 Mon Sep 17 00:00:00 2001
+From 691df705619297d59cbf5802a121d944e1074d65 Mon Sep 17 00:00:00 2001
 From: Chin-Ting Kuo <chin-ting_kuo@aspeedtech.com>
 Date: Fri, 10 Oct 2025 16:03:14 +0800
-Subject: [PATCH] watchdog: aspeed: Support variable number of reset mask
- registers
+Subject: [PATCH 229/238] watchdog: aspeed: Support variable number of reset
+ mask registers
 
 Starting from the AST2600 platform, the SoC design has become more
 complex, with an increased number of reset mask registers.
@@ -20,7 +20,7 @@ Signed-off-by: Wim Van Sebroeck <wim@linux-watchdog.org>
  1 file changed, 8 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/watchdog/aspeed_wdt.c b/drivers/watchdog/aspeed_wdt.c
-index 837e15701..d23e565f3 100644
+index 837e15701c0e..d23e565f30a8 100644
 --- a/drivers/watchdog/aspeed_wdt.c
 +++ b/drivers/watchdog/aspeed_wdt.c
 @@ -35,6 +35,7 @@ struct aspeed_wdt_config {
@@ -75,5 +75,5 @@ index 837e15701..d23e565f3 100644
  	}
  
 -- 
-2.53.0
+2.52.0
 

@@ -1,4 +1,4 @@
-From 50daf56cdc31b7e482af405f081c273dee4c4bdb Mon Sep 17 00:00:00 2001
+From 011b2d5d6be334c4ab935aaaa24eb7a0a8d35ae4 Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Mon, 21 Jul 2025 14:13:32 +0800
 Subject: [PATCH 10/22] oem-meta: Add file IO responder for crashdump from BIC
@@ -28,7 +28,7 @@ Signed-off-by: Sora Su <baxiche@gmail.com>
  create mode 100644 oem/meta/libpldmresponder/file_io_type_crash_dump.hpp
 
 diff --git a/oem/meta/libpldmresponder/file_io.cpp b/oem/meta/libpldmresponder/file_io.cpp
-index 8949674..1ae1185 100644
+index 8c762b6..f41743f 100644
 --- a/oem/meta/libpldmresponder/file_io.cpp
 +++ b/oem/meta/libpldmresponder/file_io.cpp
 @@ -1,6 +1,7 @@
@@ -39,7 +39,7 @@ index 8949674..1ae1185 100644
  #include "file_io_type_event_log.hpp"
  #include "file_io_type_http_boot.hpp"
  #include "file_io_type_post_code.hpp"
-@@ -29,6 +30,8 @@ std::unique_ptr<FileHandler> FileIOHandler::getHandlerByType(
+@@ -28,6 +29,8 @@ std::unique_ptr<FileHandler> FileIOHandler::getHandlerByType(
              return std::make_unique<HttpBootHandler>();
          case FileIOType::EVENT_LOG:
              return std::make_unique<EventLogHandler>(messageTid);

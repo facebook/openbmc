@@ -1,4 +1,4 @@
-From c8568459522c58a817167e0b3ed4b972a910e73e Mon Sep 17 00:00:00 2001
+From fb99770307c516e89f7379d954ae8140d00928b8 Mon Sep 17 00:00:00 2001
 From: Sora Su <sora_su@wiwynn.com>
 Date: Thu, 2 Apr 2026 09:56:55 +0800
 Subject: [PATCH 17/22] oem-meta: Implement special event handling
@@ -17,10 +17,10 @@ Signed-off-by: Sora Su <sora_su@wiwynn.com>
  1 file changed, 80 insertions(+), 5 deletions(-)
 
 diff --git a/oem/meta/libpldmresponder/file_io_type_event_log.cpp b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-index 9414edd..6655744 100644
+index 600aa7a..35338ce 100644
 --- a/oem/meta/libpldmresponder/file_io_type_event_log.cpp
 +++ b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-@@ -724,6 +724,81 @@ static void rainbowFault(const message& eventData, const std::string&,
+@@ -726,6 +726,81 @@ static void rainbowFault(const message& eventData, const std::string&,
      recordEventLog(updatedFault, eventStatus, eventData[3], eventData[4]);
  }
  
@@ -102,7 +102,7 @@ index 9414edd..6655744 100644
  static void reportError(const message&, const std::string& event,
                          const std::string&)
  {
-@@ -786,11 +861,11 @@ static const std::map<EventType, EventDescriptor> eventHandlers = {
+@@ -788,11 +863,11 @@ static const std::map<EventType, EventDescriptor> eventHandlers = {
      {EventType::POWER_ON_SEQUENCE_FAILURE, {report::powerRailFault, nullptr}},
      {EventType::DIMM_PMIC_ERROR,
       {report::powerRailFault, format::dimmPmicError}},
@@ -120,5 +120,5 @@ index 9414edd..6655744 100644
       {report::prochotSdSensor, nullptr}},
      {EventType::MTIA_FAULT, {report::mtiaFault, nullptr}},
 -- 
-2.43.0
+2.52.0
 

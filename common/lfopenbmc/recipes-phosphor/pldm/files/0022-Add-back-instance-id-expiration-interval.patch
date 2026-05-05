@@ -1,4 +1,4 @@
-From 197376f83a88c0cfae49b304a8db3b4567163f9a Mon Sep 17 00:00:00 2001
+From ae8c6f094c82e10c4d62881ab731a4fecbc900a1 Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Wed, 22 Apr 2026 09:25:29 -0700
 Subject: [PATCH 22/22] Add back instance id expiration interval
@@ -49,10 +49,10 @@ index 164b113..c4d9b97 100644
  # the request of 2.
  option(
 diff --git a/requester/handler.hpp b/requester/handler.hpp
-index bc62d7e..4e5f91d 100644
+index 5b3f26d..1a007ed 100644
 --- a/requester/handler.hpp
 +++ b/requester/handler.hpp
-@@ -141,7 +141,8 @@ class Handler
+@@ -139,7 +139,8 @@ class Handler
      explicit Handler(
          PldmTransport* pldmTransport, sdeventplus::Event& event,
          pldm::InstanceIdDb& instanceIdDb, bool verbose,

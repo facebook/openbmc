@@ -1,4 +1,4 @@
-From c8ac54863b8bab67a77a448eec34b922f0b959f5 Mon Sep 17 00:00:00 2001
+From 814b339a905d249c1f70dd5b1c74c017e305d3ab Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Thu, 23 Oct 2025 14:18:22 +0800
 Subject: [PATCH 11/22] oem-meta: Add APML alert handler
@@ -18,7 +18,7 @@ Signed-off-by: Sora Su <baxiche@gmail.com>
  create mode 100644 oem/meta/libpldmresponder/file_io_type_apml_alert.hpp
 
 diff --git a/oem/meta/libpldmresponder/file_io.cpp b/oem/meta/libpldmresponder/file_io.cpp
-index 1ae1185..3836413 100644
+index f41743f..a3249fb 100644
 --- a/oem/meta/libpldmresponder/file_io.cpp
 +++ b/oem/meta/libpldmresponder/file_io.cpp
 @@ -1,5 +1,6 @@
@@ -28,7 +28,7 @@ index 1ae1185..3836413 100644
  #include "file_io_type_bios_version.hpp"
  #include "file_io_type_crash_dump.hpp"
  #include "file_io_type_event_log.hpp"
-@@ -28,6 +29,8 @@ std::unique_ptr<FileHandler> FileIOHandler::getHandlerByType(
+@@ -27,6 +28,8 @@ std::unique_ptr<FileHandler> FileIOHandler::getHandlerByType(
                                                           dBusHandler);
          case FileIOType::HTTP_BOOT:
              return std::make_unique<HttpBootHandler>();

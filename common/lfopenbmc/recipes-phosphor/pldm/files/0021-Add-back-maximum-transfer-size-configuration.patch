@@ -1,4 +1,4 @@
-From 6e6b649c1d4e3285ea9db40e74d781cee98a22b2 Mon Sep 17 00:00:00 2001
+From 95bae7eee252adaa2a6f888936ac175c0ac3ad92 Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Tue, 21 Apr 2026 23:45:07 -0700
 Subject: [PATCH 21/22] Add back maximum transfer size configuration
@@ -18,10 +18,10 @@ Signed-off-by: James Athappilly <jamesatha@gmail.com>
  3 files changed, 12 insertions(+), 1 deletion(-)
 
 diff --git a/fw-update/update_manager.cpp b/fw-update/update_manager.cpp
-index fe16948..9250962 100644
+index 3cf5fde..c465134 100644
 --- a/fw-update/update_manager.cpp
 +++ b/fw-update/update_manager.cpp
-@@ -183,7 +183,6 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
+@@ -182,7 +182,6 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
      const auto& fwDeviceIDRecords = parser->getFwDeviceIDRecords();
      const auto& compImageInfos = parser->getComponentImageInfos();
  

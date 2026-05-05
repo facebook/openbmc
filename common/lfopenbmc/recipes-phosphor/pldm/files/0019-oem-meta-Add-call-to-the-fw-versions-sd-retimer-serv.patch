@@ -1,4 +1,4 @@
-From ae3fd6af7166bffccdc8f790a17b0e6b82d24867 Mon Sep 17 00:00:00 2001
+From cd5b753d41bb48e75c446c89c11fa282180b569b Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Thu, 23 Oct 2025 14:34:12 +0800
 Subject: [PATCH 19/22] oem-meta: Add call to the fw-versions-sd-retimer
@@ -17,10 +17,10 @@ Upstream-Status: Inappropriate
  1 file changed, 26 insertions(+)
 
 diff --git a/oem/meta/libpldmresponder/file_io_type_event_log.cpp b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-index 6655744..321450c 100644
+index 35338ce..9982267 100644
 --- a/oem/meta/libpldmresponder/file_io_type_event_log.cpp
 +++ b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-@@ -804,6 +804,25 @@ static void reportError(const message&, const std::string& event,
+@@ -806,6 +806,25 @@ static void reportError(const message&, const std::string& event,
  {
      pldm::utils::reportError(event.c_str());
  }
@@ -46,7 +46,7 @@ index 6655744..321450c 100644
  } // namespace report
  
  namespace format
-@@ -967,6 +986,13 @@ static void addSystemEventLogAndJournal(const message& eventData,
+@@ -969,6 +988,13 @@ static void addSystemEventLogAndJournal(const message& eventData,
      {
          lg2::error("Unexpected error: {ERROR}", "ERROR", event);
      }
@@ -61,5 +61,5 @@ index 6655744..321450c 100644
  
  int EventLogHandler::write(const message& eventData)
 -- 
-2.43.0
+2.52.0
 

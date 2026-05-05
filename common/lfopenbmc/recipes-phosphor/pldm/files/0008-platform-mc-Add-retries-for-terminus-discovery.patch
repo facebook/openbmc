@@ -1,4 +1,4 @@
-From aa76f567eeeb9550ba2ca8dc5e078ce6cb38322b Mon Sep 17 00:00:00 2001
+From de8c54d4632fdbc5cfc6c5c7f0133b4fe1bf8e73 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 23 Sep 2025 09:47:45 +0000
 Subject: [PATCH 08/22] platform-mc: Add retries for terminus discovery
@@ -187,10 +187,10 @@ index de29d1e..dfeea76 100644
  }
  
 diff --git a/platform-mc/terminus_manager.hpp b/platform-mc/terminus_manager.hpp
-index 8382201..97a2a9c 100644
+index 7f85124..55cd390 100644
 --- a/platform-mc/terminus_manager.hpp
 +++ b/platform-mc/terminus_manager.hpp
-@@ -194,6 +194,24 @@ class TerminusManager
+@@ -191,6 +191,24 @@ class TerminusManager
       */
      exec::task<int> discoverMctpTerminusTask();
  
@@ -215,7 +215,7 @@ index 8382201..97a2a9c 100644
      /** @brief Initialize terminus and then instantiate terminus object to keeps
       *         the data fetched from terminus
       *
-@@ -293,6 +311,13 @@ class TerminusManager
+@@ -290,6 +308,13 @@ class TerminusManager
       *  work
       */
      sdeventplus::Event& event;

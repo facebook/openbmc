@@ -1,4 +1,4 @@
-From 72f0e11b2794bd1b1fe2ee5ffb5941d4f4912d85 Mon Sep 17 00:00:00 2001
+From 5f03da931e1bbed200a0d1e62355a43a3e3e531d Mon Sep 17 00:00:00 2001
 From: Sora Su <sora_su@wiwynn.com>
 Date: Fri, 13 Mar 2026 13:02:16 +0800
 Subject: [PATCH 18/22] oem-meta: Add retry event deduplication for unified
@@ -17,8 +17,8 @@ Change-Id: I957cc6375443e40ab586c4e654468a5a1f7107e2
 Signed-off-by: Sora Su <sora_su@wiwynn.com>
 ---
  oem/meta/event/oem_event_manager.cpp | 63 +++++++++++++++++++++++-----
- oem/meta/event/oem_event_manager.hpp | 20 ++++++---
- 2 files changed, 67 insertions(+), 16 deletions(-)
+ oem/meta/event/oem_event_manager.hpp | 19 ++++++---
+ 2 files changed, 66 insertions(+), 16 deletions(-)
 
 diff --git a/oem/meta/event/oem_event_manager.cpp b/oem/meta/event/oem_event_manager.cpp
 index 2b311fa..d3f3b8c 100644
@@ -158,15 +158,16 @@ index 2b311fa..d3f3b8c 100644
      uint8_t certEventIdx = (eventData[10] < certEvent.size())
                                 ? eventData[10]
 diff --git a/oem/meta/event/oem_event_manager.hpp b/oem/meta/event/oem_event_manager.hpp
-index b989dc3..355bcb6 100644
+index d36e6af..222458d 100644
 --- a/oem/meta/event/oem_event_manager.hpp
 +++ b/oem/meta/event/oem_event_manager.hpp
-@@ -7,9 +7,13 @@
- 
+@@ -7,11 +7,14 @@
  #include <libpldm/base.h>
  
+ #include <format>
 +#include <span>
-+
+ #include <string>
+ 
  namespace pldm::oem_meta
  {
  
@@ -175,7 +176,7 @@ index b989dc3..355bcb6 100644
  class OemEventManager
  {
    public:
-@@ -36,6 +40,9 @@ class OemEventManager
+@@ -38,6 +41,9 @@ class OemEventManager
                         size_t eventDataOffset) const;
  
    private:
@@ -185,7 +186,7 @@ index b989dc3..355bcb6 100644
      /** @brief Process an OEM Meta event.
       *
       *  @param[in] tid - The PLDM terminal ID.
-@@ -52,16 +59,17 @@ class OemEventManager
+@@ -54,16 +60,17 @@ class OemEventManager
       *  @param[in] eventData - A pointer to the event data.
       *  @param[out] message - The resulting event message.
       */
@@ -206,7 +207,7 @@ index b989dc3..355bcb6 100644
  
      /** @brief Handle a memory error event.
       *
-@@ -70,7 +78,7 @@ class OemEventManager
+@@ -72,7 +79,7 @@ class OemEventManager
       *  @param[in] dimmInfo - Information about the DIMM.
       *  @param[in] generalInfo - General information about the event.
       */
@@ -215,7 +216,7 @@ index b989dc3..355bcb6 100644
                             const DimmInfo& dimmInfo, uint8_t generalInfo) const;
  
      /** @brief Handle a system POST event.
-@@ -79,7 +87,7 @@ class OemEventManager
+@@ -81,7 +88,7 @@ class OemEventManager
       *  @param[out] message - The resulting event message.
       *  @param[in] generalInfo - General information about the event.
       */
@@ -224,7 +225,7 @@ index b989dc3..355bcb6 100644
                                 uint8_t generalInfo) const;
  
      /** @brief Get the DIMM device name.
-@@ -89,7 +97,7 @@ class OemEventManager
+@@ -91,7 +98,7 @@ class OemEventManager
       *
       *  @return The DIMM device name.
       */
@@ -234,5 +235,5 @@ index b989dc3..355bcb6 100644
          std::string dimmDevName = "";
          for (size_t i = 0; i < cxlBdfMap.size(); i++)
 -- 
-2.43.0
+2.52.0
 

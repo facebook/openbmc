@@ -1,4 +1,4 @@
-From c0b1c7cb9e57546c0d559c1cba28c8501b81122e Mon Sep 17 00:00:00 2001
+From 3823946c2fccf33278f2906433597386c047d3cf Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Mon, 13 Oct 2025 11:10:37 +0000
 Subject: [PATCH 09/22] platform-mc: Make fallback terminus name optional
@@ -79,10 +79,10 @@ index 8a0ed9e..d08fc13 100644
  option(
      'fw-update-pkg-inotify',
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 24a1dce..71b9b2b 100644
+index 8ce4ff4..0a16e6f 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
-@@ -216,7 +216,14 @@ void Terminus::parseTerminusPDRs()
+@@ -215,7 +215,14 @@ void Terminus::parseTerminusPDRs()
  
      if (terminusName.empty())
      {

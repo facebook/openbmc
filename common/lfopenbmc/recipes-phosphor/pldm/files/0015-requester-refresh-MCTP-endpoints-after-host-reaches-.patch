@@ -1,4 +1,4 @@
-From c387649e8a3eb16df62f6d78fbb359a9746739fc Mon Sep 17 00:00:00 2001
+From 7a2829c786d8efe8056154c15577918dff45a112 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 17:16:49 +0800
 Subject: [PATCH 15/22] requester: refresh MCTP endpoints after host reaches
@@ -29,10 +29,10 @@ Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
  2 files changed, 146 insertions(+)
 
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 3215300..d4a98e1 100644
+index bfeaccf..e6fda1e 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
-@@ -36,6 +36,12 @@ MctpDiscovery::MctpDiscovery(
+@@ -32,6 +32,12 @@ MctpDiscovery::MctpDiscovery(
      mctpEndpointPropChangedSignal(
          bus, propertiesChangedNamespace(MCTPPath, MCTPInterfaceCC),
          [this](sdbusplus::message_t& msg) { this->propertiesChangedCb(msg); }),
@@ -45,7 +45,7 @@ index 3215300..d4a98e1 100644
      handlers(list)
  {
      std::map<MctpInfo, Availability> currentMctpInfoMap;
-@@ -423,6 +429,132 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
+@@ -419,6 +425,132 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
      }
  }
  
@@ -179,10 +179,10 @@ index 3215300..d4a98e1 100644
  {
      MctpInfos addedInfos;
 diff --git a/requester/mctp_endpoint_discovery.hpp b/requester/mctp_endpoint_discovery.hpp
-index d776b5b..f20743a 100644
+index 20f9c5c..d1cb527 100644
 --- a/requester/mctp_endpoint_discovery.hpp
 +++ b/requester/mctp_endpoint_discovery.hpp
-@@ -90,6 +90,9 @@ class MctpDiscovery
+@@ -89,6 +89,9 @@ class MctpDiscovery
      /** @brief Used to watch for new MCTP endpoints */
      sdbusplus::bus::match_t mctpEndpointPropChangedSignal;
  
@@ -192,7 +192,7 @@ index d776b5b..f20743a 100644
      /** @brief List of handlers need to notify when new MCTP
       * Endpoint is Added/Removed */
      std::vector<MctpDiscoveryHandlerIntf*> handlers;
-@@ -104,6 +107,17 @@ class MctpDiscovery
+@@ -103,6 +106,17 @@ class MctpDiscovery
       */
      void propertiesChangedCb(sdbusplus::message_t& msg);
  

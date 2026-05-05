@@ -1,0 +1,30 @@
+From a3d93269978b44141aa434cf8163c9eeaba40c16 Mon Sep 17 00:00:00 2001
+From: Jackson Liu <Jackson.Liu@quantatw.com>
+Date: Wed, 8 Apr 2026 16:47:46 +0800
+Subject: [PATCH] ARM: dts: aspeed: yosemite5: add power fault led node
+
+Add the device tree node for power fault led
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+index 2486981f3..ed752222c 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+@@ -68,6 +68,12 @@ led-2 {
+ 			default-state = "off";
+ 			gpios = <&gpio0 ASPEED_GPIO(P, 4) GPIO_ACTIVE_HIGH>;
+ 		};
++
++		led-3 {
++			label = "power_fault_amber";
++			default-state = "off";
++			gpios = <&gpio0 ASPEED_GPIO(V, 2) GPIO_ACTIVE_HIGH>;
++		};
+ 	};
+ 
+ 	memory@80000000 {
+-- 
+2.43.0
+

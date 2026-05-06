@@ -1,4 +1,4 @@
-From 1697ba92d1b7d1ad0a8d6129faead2a31c6016f0 Mon Sep 17 00:00:00 2001
+From 5e5bf63a9db772940ee9330a13c072d20900c427 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 25 Sep 2023 11:10:46 +0800
 Subject: [PATCH 3/7] Add mctp eids configuration for Yosemite 4
@@ -220,10 +220,10 @@ index 99746ef..7a0b36c 100644
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
 diff --git a/schemas/exposes_record.json b/schemas/exposes_record.json
-index 5edaeb5..c60900c 100644
+index 49657fd..87c9d00 100644
 --- a/schemas/exposes_record.json
 +++ b/schemas/exposes_record.json
-@@ -182,6 +182,9 @@
+@@ -179,6 +179,9 @@
                  },
                  {
                      "$ref": "modbus.json#/$defs/ModbusRTUDevice"

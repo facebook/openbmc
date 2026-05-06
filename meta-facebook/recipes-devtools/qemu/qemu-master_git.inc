@@ -45,7 +45,9 @@ SRC_URI = "git://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \
            file://qemu-guest-agent.udev \
            "
 
-S = "${WORKDIR}/git"
+S:openbmc-fb-dunfell = "${UNPACKDIR}/git"
+S:openbmc-fb-kirkstone = "${UNPACKDIR}/git"
+S:openbmc-fb-rocko = "${UNPACKDIR}/git"
 
 SRCREV = "${QEMU_REF}"
 

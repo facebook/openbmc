@@ -1,4 +1,4 @@
-From 016c48ecb9a22c2955253e52a7a4df0b159b88a8 Mon Sep 17 00:00:00 2001
+From 1ddab9395ed73fe5ae3dedc61f8f3b2be99c9dff Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Tue, 29 Oct 2024 09:43:50 +0800
 Subject: [PATCH 207/238] Add ASPEED AST2600 I2Cv2 controller driver
@@ -11,8 +11,8 @@ https://lore.kernel.org/lkml/20241007035235.2254138-1-ryan_chen@aspeedtech.com/
  arch/arm/boot/dts/aspeed/aspeed-g6.dtsi |   85 +-
  drivers/i2c/busses/Kconfig              |   11 +
  drivers/i2c/busses/Makefile             |    1 +
- drivers/i2c/busses/i2c-ast2600.c        | 2469 +++++++++++++++++++++++
- 4 files changed, 2534 insertions(+), 32 deletions(-)
+ drivers/i2c/busses/i2c-ast2600.c        | 2474 +++++++++++++++++++++++
+ 4 files changed, 2539 insertions(+), 32 deletions(-)
  create mode 100644 drivers/i2c/busses/i2c-ast2600.c
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
@@ -258,7 +258,7 @@ new file mode 100644
 index 000000000000..e28c66858b68
 --- /dev/null
 +++ b/drivers/i2c/busses/i2c-ast2600.c
-@@ -0,0 +1,2469 @@
+@@ -0,0 +1,2474 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
 + * ASPEED AST2600 new register set I2C controller driver
@@ -2084,8 +2084,13 @@ index 000000000000..e28c66858b68
 +		}
 +
 +		if (msg->flags & I2C_M_RECV_LEN) {
-+			u32 recv_len = AST2600_I2CC_GET_RX_BUFF(readl(i2c_bus->reg_base
-+						       + AST2600_I2CC_STS_AND_BUFF));
++			u32 recv_len;
++			if (i2c_bus->mode == DMA_MODE)
++				recv_len = msg->buf[0];
++			else
++				recv_len = AST2600_I2CC_GET_RX_BUFF(
++					readl(i2c_bus->reg_base +
++					      AST2600_I2CC_STS_AND_BUFF));
 +
 +			msg->len = min_t(unsigned int, recv_len, I2C_SMBUS_BLOCK_MAX);
 +			msg->len += ((msg->flags & I2C_CLIENT_PEC) ? 2 : 1);

@@ -18,6 +18,7 @@ BBLAYERS ?= " \
   ##OEROOT##/meta-aspeed \
   ##OEROOT##/meta-facebook \
   ##OEROOT##/meta-facebook/meta-yosemite5 \
+  ##OEROOT##/meta-facebook/meta-yosemite5/meta-rainiera6 \
   ##OEROOT##/../.. \
   ##OEROOT##/../../meta-facebook \
   ##OEROOT##/../../meta-facebook/meta-yosemite5 \

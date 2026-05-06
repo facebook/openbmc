@@ -1,0 +1,336 @@
+#!/bin/bash
+# Populate DIMM inventory on D-Bus from dimm-util SPD data.
+# Runs per-slot during host-start/reboot targets.
+set -e
+
+slot=$1
+if [ -z "$slot" ]; then
+    echo "Usage: $0 <slot>" >&2
+    exit 1
+fi
+
+log() {
+    echo "Slot${slot}: $*"
+}
+
+log_dimm() {
+    local label=$1; shift
+    echo "Slot${slot} ${label}: $*"
+}
+
+BOARD_BASE="/xyz/openbmc_project/inventory/system/board"
+DIMM_INV_BASE="$BOARD_BASE"
+SETTINGS_SVC="xyz.openbmc_project.Settings"
+ASSET_INTF="xyz.openbmc_project.Inventory.Decorator.Asset"
+DIMM_INTF="xyz.openbmc_project.Inventory.Item.Dimm"
+ASSOC_INTF="xyz.openbmc_project.Association.Definitions"
+SYSTEM_INTF="xyz.openbmc_project.Inventory.Item.System"
+MAPPER_SVC="xyz.openbmc_project.ObjectMapper"
+MAPPER_PATH="/xyz/openbmc_project/object_mapper"
+MAPPER_INTF="xyz.openbmc_project.ObjectMapper"
+
+# Map dimm-util label to settings object path.
+# Host DIMMs (A0-A11) are on Sentinel Dome; CXL DIMMs (MCIO*) on Wailua Falls.
+# Object names mirror EM sensor naming for easy correlation:
+#   Sentinel_Dome_Slot_N_DIMM_A0  ↔  SENTINEL_DOME_SLOT_N_DIMM_A0_TEMP_C
+#   Wailua_Falls_Slot_N_WF_MCIO4_DIMM_A1  ↔  WAILUA_FALLS_SLOT_N_WF_MCIO4_DIMM_A1_TEMP_C
+get_dimm_obj_path() {
+    local s=$1 label=$2
+    case "$label" in
+        A[0-9]|A1[0-1])
+            echo "${DIMM_INV_BASE}/Sentinel_Dome_Slot_${s}_DIMM_${label}" ;;
+        MCIO[34]-DIMM_*)
+            local wf_name="WF_${label//-/_}"
+            echo "${DIMM_INV_BASE}/Wailua_Falls_Slot_${s}_${wf_name}" ;;
+    esac
+}
+
+# All possible SD board names per slot (T1, T1 Retimer, T2, T2 Retimer)
+SD_CANDIDATES=(
+    "Yosemite_4_Sentinel_Dome_T1_Slot_${slot}"
+    "Yosemite_4_Sentinel_Dome_T1_with_Retimer_Slot_${slot}"
+    "Yosemite_4_Sentinel_Dome_T2_Slot_${slot}"
+    "Yosemite_4_Sentinel_Dome_T2_with_Retimer_Slot_${slot}"
+)
+
+# Step 1: Find which SD board type is present for this slot
+MAX_RETRIES_EM=6
+board_path=""
+for ((retry = 0; retry < MAX_RETRIES_EM; retry++)); do
+    for candidate in "${SD_CANDIDATES[@]}"; do
+        if busctl call "$MAPPER_SVC" "$MAPPER_PATH" "$MAPPER_INTF" \
+            GetObject sas "${BOARD_BASE}/${candidate}" 1 \
+            "$SYSTEM_INTF" &>/dev/null; then
+            board_path="${BOARD_BASE}/${candidate}"
+            break 2
+        fi
+    done
+    log "SD board not found, retrying ($((retry + 1))/$MAX_RETRIES_EM)..."
+    sleep 5
+done
+
+if [ -z "$board_path" ]; then
+    log "no SD board found in ObjectMapper, exit"
+    exit 1
+fi
+
+board_name=${board_path##*/}
+log "found board: $board_name"
+
+# Step 2-4: Wait for POST, read dimm-util, populate D-Bus.
+# Combined in one retry loop following the bios fw-version pattern:
+#   POST not ready -> retry
+#   dimm-util fails -> retry
+#   any busctl write fails -> retry whole batch
+# dimm-util reads SPD through BIC -> ME -> SMBus. ME must be ready,
+# and configured speed is only valid after memory training (POST).
+eid=$((10 * slot))
+MAX_RETRIES_FW=240
+RETRY_COUNT=0
+declare -A done_dimms   # track successfully populated DIMMs across retries
+
+while [ "$RETRY_COUNT" -lt "$MAX_RETRIES_FW" ]; do
+    # Step 2: check POST complete (same pldmtool command as fw-versions/bios)
+    present_state=$(
+        pldmtool platform GetStateEffecterStates -m "$eid" -i 0xff22 |
+            jq --raw-output '."presentState[1]"'
+    ) || present_state=""
+
+    if [ -z "$present_state" ]; then
+        log "pldmtool EID=$eid failed, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES_FW)"
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        sleep 5
+        continue
+    fi
+
+    if [ "$present_state" != "1" ]; then
+        log "POST not complete (state=$present_state), retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES_FW)"
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        sleep 5
+        continue
+    fi
+
+    # Step 3: Read DIMM config via dimm-util
+    config_json=$(dimm-util "slot${slot}" --config --json --force 2>/dev/null) || config_json=""
+
+    if [ -z "$config_json" ] || [ "$config_json" = "null" ]; then
+        log "dimm-util slot${slot} returned no data, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES_FW)"
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        sleep 5
+        continue
+    fi
+
+    num_dimms=$(echo "$config_json" | jq 'length') || num_dimms=0
+    log "POST complete, dimm-util returned $num_dimms DIMMs"
+
+    # Step 4: Parse JSON and populate D-Bus for each DIMM
+    write_failed=0
+    stale_count=0
+    for ((i = 0; i < num_dimms; i++)); do
+        dimm_label=$(echo "$config_json" | jq -r ".[$i].DIMM") || continue
+
+        # Skip DIMMs already populated in a previous retry
+        if [[ -n "${done_dimms[$dimm_label]+x}" ]]; then
+            continue
+        fi
+
+        obj_path=$(get_dimm_obj_path "$slot" "$dimm_label")
+        if [ -z "$obj_path" ]; then
+            continue
+        fi
+
+        # Check if settings object exists
+        if ! busctl introspect "$SETTINGS_SVC" "$obj_path" --timeout=120 &>/dev/null; then
+            log_dimm "$dimm_label" "settings object not found at $obj_path, skipping"
+            continue
+        fi
+
+        # Extract fields from config JSON
+        config_keys=$(echo "$config_json" | jq -r ".[$i].config | keys[]" 2>/dev/null) || config_keys=""
+
+        # Skip if config is empty (DIMM not present)
+        if [ -z "$config_keys" ]; then
+            log_dimm "$dimm_label" "not present (empty config)"
+            continue
+        fi
+
+        manufacturer=$(echo "$config_json" | jq -r ".[$i].config.Manufacturer // empty" | sed 's/[[:space:]]*$//')
+        mfg_date=$(echo "$config_json" | jq -r ".[$i].config[\"Manufacturing Date\"] // empty" | sed 's/[[:space:]]*$//')
+        part_number=$(echo "$config_json" | jq -r ".[$i].config[\"Part Number\"] // empty" | sed 's/[[:space:]]*$//')
+        serial_number=$(echo "$config_json" | jq -r ".[$i].config[\"Serial Number\"] // empty" | sed 's/[[:space:]]*$//')
+        dimm_size=$(echo "$config_json" | jq -r ".[$i].config.Size // empty" | sed 's/[[:space:]]*$//')
+        dimm_speed=$(echo "$config_json" | jq -r ".[$i].config.Speed // empty" | sed 's/[[:space:]]*$//')
+        dimm_type=$(echo "$config_json" | jq -r ".[$i].config.Type // empty" | sed 's/[[:space:]]*$//')
+
+        # Skip if all important fields are empty or "Unknown"
+        has_valid_data=0
+        for field in "$manufacturer" "$part_number" "$serial_number"; do
+            if [ -n "$field" ] && [ "$field" != "Unknown" ] && [ "$field" != "" ]; then
+                has_valid_data=1
+                break
+            fi
+        done
+        if [ "$has_valid_data" -eq 0 ]; then
+            log_dimm "$dimm_label" "no valid SPD data, skipping"
+            stale_count=$((stale_count + 1))
+            continue
+        fi
+
+        # Convert manufacturing date from "20XX WeekNN" to ISO 8601
+        # dimm-util format: "2024 Week31" -> "20240729T000000Z"
+        build_date=""
+        if [ -n "$mfg_date" ] && [ "$mfg_date" != "Unknown" ]; then
+            year=$(echo "$mfg_date" | sed -n 's/^\([0-9]\{4\}\).*/\1/p')
+            week=$(echo "$mfg_date" | sed -n 's/.*Week\([0-9]\{1,2\}\).*/\1/p')
+            if [ -n "$year" ] && [ -n "$week" ]; then
+                jan1_epoch=$(date -d "${year}-01-01 00:00:00" +%s 2>/dev/null) || true
+                if [ -n "$jan1_epoch" ]; then
+                    jan1_dow=$(date -d "@${jan1_epoch}" +%u 2>/dev/null) || true
+                    if [ -n "$jan1_dow" ]; then
+                        if [ "$jan1_dow" -le 4 ]; then
+                            w1_offset=$((1 - jan1_dow))
+                        else
+                            w1_offset=$((8 - jan1_dow))
+                        fi
+                        target_epoch=$((jan1_epoch + (w1_offset + (week - 1) * 7) * 86400))
+                        iso_date=$(date -d "@${target_epoch}" +%Y%m%dT000000Z 2>/dev/null) || true
+                        if [ -n "$iso_date" ]; then
+                            build_date="$iso_date"
+                        fi
+                    fi
+                fi
+            fi
+        fi
+
+        # Convert dimm size string to KB (e.g., "16 GB" -> 16777216)
+        size_kb=0
+        if [ -n "$dimm_size" ] && [ "$dimm_size" != "Unknown" ]; then
+            size_val=$(echo "$dimm_size" | sed -n 's/^\([0-9]*\).*/\1/p')
+            if echo "$dimm_size" | grep -qi "GB"; then
+                size_kb=$((size_val * 1024 * 1024))
+            elif echo "$dimm_size" | grep -qi "MB"; then
+                size_kb=$((size_val * 1024))
+            fi
+        fi
+
+        # Parse speed: "4800 MT/s" -> 4800
+        speed_mts=0
+        if [ -n "$dimm_speed" ] && [ "$dimm_speed" != "Unknown" ]; then
+            speed_mts=$(echo "$dimm_speed" | sed -n 's/^\([0-9]*\).*/\1/p')
+        fi
+
+        # Map dimm-util type string to D-Bus DeviceType enum.
+        prefix="xyz.openbmc_project.Inventory.Item.Dimm.DeviceType"
+        dbus_mem_type=""
+        case "$dimm_type" in
+            "LPDDR5 SDRAM")       dbus_mem_type="${prefix}.LPDDR5_SDRAM" ;;
+            "LPDDR4X SDRAM")      dbus_mem_type="${prefix}.LPDDR4_SDRAM" ;;
+            "LPDDR4 SDRAM")       dbus_mem_type="${prefix}.LPDDR4_SDRAM" ;;
+            "LPDDR3 SDRAM")       dbus_mem_type="${prefix}.LPDDR3_SDRAM" ;;
+            "DDR5 NVDIMM-P")      dbus_mem_type="${prefix}.DDR5" ;;
+            "DDR5 SDRAM")          dbus_mem_type="${prefix}.DDR5" ;;
+            "DDR4E SDRAM")         dbus_mem_type="${prefix}.DDR4E_SDRAM" ;;
+            "DDR4 SDRAM")          dbus_mem_type="${prefix}.DDR4" ;;
+            "DDR3 SDRAM")          dbus_mem_type="${prefix}.DDR3" ;;
+            "DDR2 SDRAM FB_DIMM"*) dbus_mem_type="${prefix}.DDR2_SDRAM_FB_DIMM" ;;
+            "DDR2 SDRAM")          dbus_mem_type="${prefix}.DDR2" ;;
+            "DDR SGRAM")           dbus_mem_type="${prefix}.DDR_SGRAM" ;;
+            "DDR SDRAM")           dbus_mem_type="${prefix}.DDR" ;;
+            "SDRAM")               dbus_mem_type="${prefix}.SDRAM" ;;
+        esac
+
+        log_dimm "$dimm_label" "${manufacturer:-N/A}, ${part_number:-N/A}, ${serial_number:-N/A}, ${dimm_type:-N/A}, ${dimm_speed:-N/A}, ${dimm_size:-N/A}, date=${mfg_date:-N/A}"
+
+        # Write asset properties to D-Bus (--timeout=120 matches wf-misc pattern)
+        ok=1
+        for prop_pair in \
+            "Manufacturer:${manufacturer}" \
+            "PartNumber:${part_number}" \
+            "SerialNumber:${serial_number}"; do
+            prop_name="${prop_pair%%:*}"
+            prop_val="${prop_pair#*:}"
+            if [ -n "$prop_val" ] && [ "$prop_val" != "Unknown" ]; then
+                if ! busctl set-property "$SETTINGS_SVC" "$obj_path" "$ASSET_INTF" \
+                    "$prop_name" "s" "$prop_val" --timeout=120 2>/dev/null; then
+                    log_dimm "$dimm_label" "failed to set $prop_name"
+                    ok=0
+                fi
+            fi
+        done
+        if [ -n "$build_date" ]; then
+            if ! busctl set-property "$SETTINGS_SVC" "$obj_path" "$ASSET_INTF" \
+                BuildDate "s" "$build_date" --timeout=120 2>/dev/null; then
+                log_dimm "$dimm_label" "failed to set BuildDate"
+                ok=0
+            fi
+        fi
+        if [ "$size_kb" -gt 0 ]; then
+            if ! busctl set-property "$SETTINGS_SVC" "$obj_path" "$DIMM_INTF" \
+                MemorySizeInKB "u" "$size_kb" --timeout=120 2>/dev/null; then
+                log_dimm "$dimm_label" "failed to set MemorySizeInKB"
+                ok=0
+            fi
+        fi
+        if [ "$speed_mts" -gt 0 ]; then
+            if ! busctl set-property "$SETTINGS_SVC" "$obj_path" "$DIMM_INTF" \
+                MemoryConfiguredSpeedInMhz "q" "$speed_mts" --timeout=120 2>/dev/null; then
+                log_dimm "$dimm_label" "failed to set MemoryConfiguredSpeedInMhz"
+                ok=0
+            fi
+        fi
+        if [ -n "$dbus_mem_type" ]; then
+            if ! busctl set-property "$SETTINGS_SVC" "$obj_path" "$DIMM_INTF" \
+                MemoryType "s" "$dbus_mem_type" --timeout=120 2>/dev/null; then
+                log_dimm "$dimm_label" "failed to set MemoryType"
+                ok=0
+            fi
+        fi
+
+        # Write association: this DIMM is contained_by the System board
+        if ! busctl set-property "$SETTINGS_SVC" "$obj_path" "$ASSOC_INTF" \
+            Associations "a(sss)" 1 \
+            "contained_by" "containing" "$board_path" --timeout=120 2>/dev/null; then
+            log_dimm "$dimm_label" "failed to set Association"
+            ok=0
+        fi
+
+        if [ "$ok" -eq 1 ]; then
+            done_dimms[$dimm_label]=1
+        else
+            write_failed=1
+            log_dimm "$dimm_label" "partially failed"
+        fi
+    done
+
+    populated=${#done_dimms[@]}
+
+    # Success: no failures this round and we have populated DIMMs
+    if [ "$write_failed" -eq 0 ] && [ "$stale_count" -eq 0 ] && [ "$populated" -gt 0 ]; then
+        break
+    fi
+
+    # Determine retry reason
+    if [ "$populated" -eq 0 ] && [ "$num_dimms" -gt 0 ]; then
+        log "all $num_dimms DIMMs returned empty SPD, host may not be ready, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES_FW)"
+    elif [ "$stale_count" -gt 0 ]; then
+        log "$stale_count DIMMs had no valid SPD data ($populated ok so far), retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES_FW)"
+    elif [ "$write_failed" -ne 0 ]; then
+        log "D-Bus write failures ($populated ok so far), retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES_FW)"
+    fi
+
+    RETRY_COUNT=$((RETRY_COUNT + 1))
+    sleep 5
+done
+
+populated=${#done_dimms[@]}
+
+if [ "$RETRY_COUNT" -ge "$MAX_RETRIES_FW" ]; then
+    if [ "$populated" -gt 0 ]; then
+        log "reached max retries but populated $populated DIMMs (some may be missing)"
+    else
+        log "failed to populate DIMM inventory after $MAX_RETRIES_FW retries"
+        exit 2
+    fi
+fi
+
+log "done, populated $populated DIMMs"

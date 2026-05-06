@@ -1,0 +1,12 @@
+[Unit]
+Description=DIMM Inventory Population for Slot %i
+After=xyz.openbmc_project.Settings.service
+After=host-poweron@%i.service host-powercycle@%i.service
+Before=obmc-host-start@%i.target obmc-host-reboot@%i.target
+
+[Service]
+Type=simple
+ExecStart=/usr/libexec/dimm-inventory/dimm-inventory %i
+
+[Install]
+WantedBy=obmc-host-start@%i.target obmc-host-reboot@%i.target

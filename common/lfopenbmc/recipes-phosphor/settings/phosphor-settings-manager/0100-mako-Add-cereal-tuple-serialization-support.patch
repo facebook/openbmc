@@ -1,0 +1,43 @@
+From 4af51a7756929059f9b2d865e4d2950c7a76d93d Mon Sep 17 00:00:00 2001
+From: Eric Yang <eric.yang.wiwynn@gmail.com>
+Date: Thu, 30 Apr 2026 08:20:08 +0000
+Subject: [PATCH] mako: Add cereal tuple serialization support
+
+The settings manager can host any D-Bus interface defined in
+phosphor-dbus-interfaces. Some interfaces have properties whose C++ type
+contains std::tuple. For example,
+xyz.openbmc_project.Association.Definitions has property type
+array[struct[string,string,string]] [1], which sdbus++ maps to
+std::vector<std::tuple<std::string, std::string, std::string>>.
+
+Cereal requires an explicit include for each STL container type it
+serializes. The tuple header was never added, so any settings YAML that
+includes an interface with a struct-typed property fails to compile.
+
+Add cereal/types/tuple.hpp so that interfaces like
+Association.Definitions can be used in settings YAML files.
+
+Reference:
+[1] https://github.com/openbmc/phosphor-dbus-interfaces/blob/master/yaml/xyz/openbmc_project/Association/Definitions.interface.yaml#L7
+
+Change-Id: Ic69d796ef80fc187ce6093d6320214cdf8c9c41a
+Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
+---
+ settings_manager.hpp.mako | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/settings_manager.hpp.mako b/settings_manager.hpp.mako
+index 3570119..30eea71 100644
+--- a/settings_manager.hpp.mako
++++ b/settings_manager.hpp.mako
+@@ -61,6 +61,7 @@ def get_default_value(object, interface, prop):
+     % endfor
+ % endfor
+ #include <cereal/archives/json.hpp>
++#include <cereal/types/tuple.hpp>
+ #include <cereal/types/vector.hpp>
+ #include <fstream>
+ #include <utility>
+-- 
+2.43.0
+

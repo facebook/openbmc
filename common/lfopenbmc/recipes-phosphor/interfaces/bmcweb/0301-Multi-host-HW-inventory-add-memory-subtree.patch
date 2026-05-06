@@ -1,0 +1,401 @@
+From bbffed1aac595222b59fa63d58a5399484cf65ae Mon Sep 17 00:00:00 2001
+From: Christopher Meis <christopher.meis@9elements.com>
+Date: Tue, 23 Sep 2025 10:24:36 +0200
+Subject: [PATCH] Multi-host/HW-inventory: add memory subtree
+
+This implements the memory subtree for multi-host system.
+Requires a containing/contained_by association implemented in EM config
+between Inventory.Item.System interface and Inventory.Item.Dimm.
+
+The association does not require any addition in PDI, because PDI
+describes the containing/contained_by association between multiple
+Inventory.Item already as System and Dimm are of type Inventory.Item.
+
+Tested on qemu/yosemite4 with custom EEProms and a custom config to
+create DIMM associations.
+
+Altered configs:
+`yosemite4_sentineldome_t1.json`:
+```
+{
+    "Exposes": [
+        ...
+        {
+            "Name": "CPU $bus % 15 Port",
+            "Type": "Port",
+            "PortType": "containing"
+        }
+    ],
+    "Name": "Yosemite 4 Sentinel Dome T1 Slot $bus % 15",
+    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Sentinel Dome without Retimer', 'PRODUCT_PRODUCT_NAME': 'Yosemite V4', 'PRODUCT_INFO_AM2': 'Yosemite V4 T1'})",
+    "Type": "Board",
+    "xyz.openbmc_project.Inventory.Decorator.Asset": {
+        "BuildDate": "$BOARD_MANUFACTURE_DATE",
+        "Manufacturer": "$BOARD_MANUFACTURER",
+        "Model": "$BOARD_PRODUCT_NAME",
+        "PartNumber": "$BOARD_PART_NUMBER",
+        "SerialNumber": "$BOARD_SERIAL_NUMBER",
+        "SparePartNumber": "$BOARD_INFO_AM1"
+    },
+    "xyz.openbmc_project.Inventory.Decorator.Revision": {
+        "Version": "$PRODUCT_VERSION"
+    },
+    "xyz.openbmc_project.Inventory.Decorator.Slot": {
+        "SlotNumber": "$bus % 15"
+    },
+    "xyz.openbmc_project.Inventory.Decorator.ManagedHost": {
+        "HostIndex": "$bus % 15"
+    },
+    "xyz.openbmc_project.Inventory.Item.Board.Motherboard": {},
+    "xyz.openbmc_project.Inventory.Item.System": {}
+}
+```
+
+`yosemite4_dimm.json` (created just for this change to have data)
+```
+{
+    "Exposes": [
+        {
+            "Name": "DIMM $bus % 15 Port",
+            "PortType": "contained_by",
+            "Type": "Port"
+        }
+    ],
+    "Name": "Yosemite 4 Sentinel Dome Slot $bus % 15 DIMM",
+    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Sentinel Dome', 'PRODUCT_PRODUCT_NAME': 'Yosemite V4'})",
+    "Type": "Dimm",
+    "xyz.openbmc_project.Inventory.Item.Dimm": {
+    }
+}
+```
+
+busctl calls to see if the association is there:
+```
+busctl call xyz.openbmc_project.ObjectMapper /xyz/openbmc_project/object_mapper xyz.openbmc_project.ObjectMapper GetAssociatedSubTreePathsById ssassas Yosemite_4_Sentinel_Dome_T1_Slot_1 /xyz/openbmc_project/inventory/system 1 xyz.openbmc_project.Inventory.Item.System "containing" 1 xyz.openbmc_project.Inventory.Item.Dimm
+as 1 "/xyz/openbmc_project/inventory/system/dimm/Yosemite_4_Sentinel_Dome_Slot_1_DIMM"
+
+busctl get-property xyz.openbmc_project.EntityManager /xyz/openbmc_project/inventory/system/dimm/Yosemite_4_Sentinel_Dome_Slot_1_DIMM xyz.openbmc_project.Association.Definitions Associations
+a(sss) 1 "contained_by" "containing" "/xyz/openbmc_project/inventory/system/board/Yosemite_4_Sentinel_Dome_T1_Slot_1"
+```
+
+```
+curl --insecure --user root:0penBmc https://127.0.0.1:4443/redfish/v1/Systems/Yosemite_4_Sentinel_Dome_T1_Slot_1/Memory
+{
+  "@odata.id": "/redfish/v1/Systems/Yosemite_4_Sentinel_Dome_T1_Slot_1/Memory",
+  "@odata.type": "#MemoryCollection.MemoryCollection",
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/Systems/Yosemite_4_Sentinel_Dome_T1_Slot_1/Memory/Yosemite_4_Sentinel_Dome_Slot_1_DIMM"
+    }
+  ],
+  "Members@odata.count": 1,
+  "Name": "Memory Module Collection"
+}
+
+curl --insecure --user root:0penBmc https://127.0.0.1:4443/redfish/v1/Systems/Yosemite_4_Sentinel_Dome_T1_Slot_2/Memory
+{
+  "@odata.id": "/redfish/v1/Systems/Yosemite_4_Sentinel_Dome_T1_Slot_2/Memory",
+  "@odata.type": "#MemoryCollection.MemoryCollection",
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/Systems/Yosemite_4_Sentinel_Dome_T1_Slot_2/Memory/Yosemite_4_Sentinel_Dome_Slot_2_DIMM"
+    }
+  ],
+  "Members@odata.count": 1,
+  "Name": "Memory Module Collection"
+}
+```
+
+```
+curl --insecure --user root:0penBmc https://127.0.0.1:4443/redfish/v1/Systems/Yosemite_4_Sentinel_Dome_T1_Slot_1/Memory/Yosemite_4_Sentinel_Dome_Slot_1_DIMMM
+{
+  "@odata.id": "/redfish/v1/Systems/Yosemite_4_Sentinel_Dome_T1_Slot_1/Memory/Yosemite_4_Sentinel_Dome_Slot_1_DIMM",
+  "@odata.type": "#Memory.v1_11_0.Memory",
+  "Id": "Yosemite_4_Sentinel_Dome_Slot_1_DIMM",
+  "Name": "DIMM Slot",
+  "Status": {
+    "Health": "OK",
+    "State": "Enabled"
+  }
+}
+
+curl --insecure --user root:0penBmc https://127.0.0.1:4443/redfish/v1/Systems/Yosemite_4_Sentinel_Dome_T1_Slot_1/Memory/Yosemite_4_Sentinel_Dome_Slot_2_DIMM
+{
+  "error": {
+    "@Message.ExtendedInfo": [
+      {
+        "@odata.type": "#Message.v1_1_1.Message",
+        "Message": "The requested resource of type Memory named 'Yosemite_4_Sentinel_Dome_Slot_2_DIMM' was not found.",
+        "MessageArgs": [
+          "Memory",
+          "Yosemite_4_Sentinel_Dome_Slot_2_DIMM"
+        ],
+        "MessageId": "Base.1.19.ResourceNotFound",
+        "MessageSeverity": "Critical",
+        "Resolution": "Provide a valid resource identifier and resubmit the request."
+      }
+    ],
+    "code": "Base.1.19.ResourceNotFound",
+    "message": "The requested resource of type Memory named 'Yosemite_4_Sentinel_Dome_Slot_2_DIMM' was not found."
+```
+
+Redfish_Validator run for this change:
+Single host enabled:
+```
+>>payload: ['Tree', '/redfish/v1/Systems/system/Memory']
+Results Summary:
+Pass: 81, Fail: 0, Warning: 0
+Validation has succeeded.
+```
+
+Multi host enabled:
+```
+>>payload: ['Tree', '/redfish/v1/Systems/Yosemite_4_Sentinel_Dome_T1_Slot_1/Memory']
+
+Results Summary:
+Pass: 6, Fail: 0, Warning: 0
+Validation has succeeded.
+```
+
+Change-Id: Id1a98296466c8a139d8789d55d1086b500f1b790
+Signed-off-by: Christopher Meis <christopher.meis@9elements.com>
+---
+ redfish-core/lib/memory.hpp  | 133 ++++++++++++++++++++++++++---------
+ redfish-core/lib/systems.hpp |   4 +-
+ 2 files changed, 103 insertions(+), 34 deletions(-)
+
+diff --git a/redfish-core/lib/memory.hpp b/redfish-core/lib/memory.hpp
+index ec57105c..637146f4 100644
+--- a/redfish-core/lib/memory.hpp
++++ b/redfish-core/lib/memory.hpp
+@@ -20,6 +20,7 @@
+ #include "utils/dbus_utils.hpp"
+ #include "utils/hex_utils.hpp"
+ #include "utils/json_utils.hpp"
++#include "utils/systems_utils.hpp"
+ #include "utils/time_utils.hpp"
+ 
+ #include <asm-generic/errno.h>
+@@ -45,6 +46,10 @@
+ namespace redfish
+ {
+ 
++constexpr std::array<std::string_view, 1> systemInterfaces = {
++    "xyz.openbmc_project.Inventory.Item.System",
++};
++
+ inline std::string translateMemoryTypeToRedfish(const std::string& memoryType)
+ {
+     if (memoryType == "xyz.openbmc_project.Inventory.Item.Dimm.DeviceType.DDR")
+@@ -736,7 +741,8 @@ inline void getDimmPartitionData(std::shared_ptr<bmcweb::AsyncResp> asyncResp,
+ 
+ inline void afterGetDimmData(
+     const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
+-    const std::string& dimmId, const boost::system::error_code& ec,
++    const std::string& systemName, const std::string& dimmId,
++    const boost::system::error_code& ec,
+     const dbus::utility::MapperGetSubTreeResponse& subtree)
+ {
+     if (ec)
+@@ -813,25 +819,57 @@ inline void afterGetDimmData(
+     }
+     // Set @odata only if object is found
+     asyncResp->res.jsonValue["@odata.type"] = "#Memory.v1_23_0.Memory";
+-    asyncResp->res.jsonValue["@odata.id"] =
+-        boost::urls::format("/redfish/v1/Systems/{}/Memory/{}",
+-                            BMCWEB_REDFISH_SYSTEM_URI_NAME, dimmId);
++    asyncResp->res.jsonValue["@odata.id"] = boost::urls::format(
++        "/redfish/v1/Systems/{}/Memory/{}", systemName, dimmId);
++}
++
++inline void multiHostGetDimmData(
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const std::string& systemName, const std::string& dimmId,
++    const std::optional<std::string>& systemPath)
++{
++    if (!systemPath.has_value())
++    {
++        messages::resourceNotFound(asyncResp->res, "ComputerSystem",
++                                   systemName);
++        return;
++    }
++
++    constexpr std::array<std::string_view, 2> memoryInterfaces = {
++        "xyz.openbmc_project.Inventory.Item.Dimm",
++        "xyz.openbmc_project.Inventory.Item.PersistentMemory.Partition"};
++    dbus::utility::getAssociatedSubTreeById(
++        systemName, "/xyz/openbmc_project/inventory", systemInterfaces,
++        "containing", memoryInterfaces,
++        [asyncResp, systemName,
++         dimmId](const boost::system::error_code& ec,
++                 const dbus::utility::MapperGetSubTreeResponse& subtree) {
++            afterGetDimmData(asyncResp, systemName, dimmId, ec, subtree);
++        });
+ }
+ 
+ inline void getDimmData(const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++                        const std::string& systemName,
+                         const std::string& dimmId)
+ {
+-    BMCWEB_LOG_DEBUG("Get dimm path for {}", dimmId);
+-    constexpr std::array<std::string_view, 2> interfaces = {
++    BMCWEB_LOG_DEBUG("Get dimm path for {} on system {}", dimmId, systemName);
++    if constexpr (BMCWEB_EXPERIMENTAL_REDFISH_MULTI_COMPUTER_SYSTEM)
++    {
++        systems_utils::getValidSystemsPath(
++            asyncResp, systemName,
++            std::bind_front(multiHostGetDimmData, asyncResp, systemName,
++                            dimmId));
++        return;
++    }
++    constexpr std::array<std::string_view, 2> memoryInterfaces = {
+         "xyz.openbmc_project.Inventory.Item.Dimm",
+         "xyz.openbmc_project.Inventory.Item.PersistentMemory.Partition"};
+-
+     dbus::utility::getSubTree(
+-        "/xyz/openbmc_project/inventory", 0, interfaces,
+-        [asyncResp,
++        "/xyz/openbmc_project/inventory", 0, memoryInterfaces,
++        [asyncResp, systemName,
+          dimmId](const boost::system::error_code& ec,
+                  const dbus::utility::MapperGetSubTreeResponse& subtree) {
+-            afterGetDimmData(asyncResp, dimmId, ec, subtree);
++            afterGetDimmData(asyncResp, systemName, dimmId, ec, subtree);
+         });
+ }
+ 
+@@ -949,22 +987,47 @@ inline void handleMemoryGet(App& app, const crow::Request& req,
+         return;
+     }
+ 
+-    if constexpr (BMCWEB_EXPERIMENTAL_REDFISH_MULTI_COMPUTER_SYSTEM)
++    if constexpr (!BMCWEB_EXPERIMENTAL_REDFISH_MULTI_COMPUTER_SYSTEM)
+     {
+-        // Option currently returns no systems.  TBD
+-        messages::resourceNotFound(asyncResp->res, "ComputerSystem",
+-                                   systemName);
+-        return;
++        if (systemName != BMCWEB_REDFISH_SYSTEM_URI_NAME)
++        {
++            messages::resourceNotFound(asyncResp->res, "ComputerSystem",
++                                       systemName);
++            return;
++        }
+     }
+ 
+-    if (systemName != BMCWEB_REDFISH_SYSTEM_URI_NAME)
++    getDimmData(asyncResp, systemName, dimmId);
++}
++
++inline void multiHostMemoryCollectionGet(
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const std::string& systemName, const std::optional<std::string>& systemPath)
++{
++    if (!systemPath.has_value())
+     {
+         messages::resourceNotFound(asyncResp->res, "ComputerSystem",
+                                    systemName);
+         return;
+     }
+ 
+-    getDimmData(asyncResp, dimmId);
++    asyncResp->res.jsonValue["@odata.id"] =
++        boost::urls::format("/redfish/v1/Systems/{}/Memory", systemName);
++
++    constexpr std::array<std::string_view, 1> systemInterface{
++        "xyz.openbmc_project.Inventory.Item.System",
++    };
++
++    constexpr std::array<std::string_view, 1> dimmInterface = {
++        "xyz.openbmc_project.Inventory.Item.Dimm"};
++
++    dbus::utility::getAssociatedSubTreePathsById(
++        systemName, "/xyz/openbmc_project/inventory", systemInterface,
++        "containing", dimmInterface,
++        std::bind_front(
++            collection_util::handleCollectionMembers, asyncResp,
++            boost::urls::format("/redfish/v1/Systems/{}/Memory", systemName),
++            nlohmann::json::json_pointer("/Members")));
+ }
+ 
+ inline void handleMemoryCollectionGet(
+@@ -976,33 +1039,39 @@ inline void handleMemoryCollectionGet(
+     {
+         return;
+     }
+-    if constexpr (BMCWEB_EXPERIMENTAL_REDFISH_MULTI_COMPUTER_SYSTEM)
+-    {
+-        // Option currently returns no systems.  TBD
+-        messages::resourceNotFound(asyncResp->res, "ComputerSystem",
+-                                   systemName);
+-        return;
+-    }
+-    if (systemName != BMCWEB_REDFISH_SYSTEM_URI_NAME)
++
++    if constexpr (!BMCWEB_EXPERIMENTAL_REDFISH_MULTI_COMPUTER_SYSTEM)
+     {
+-        messages::resourceNotFound(asyncResp->res, "ComputerSystem",
+-                                   systemName);
+-        return;
++        if (systemName != BMCWEB_REDFISH_SYSTEM_URI_NAME)
++        {
++            messages::resourceNotFound(asyncResp->res, "ComputerSystem",
++                                       systemName);
++            return;
++        }
+     }
+ 
+     asyncResp->res.jsonValue["@odata.type"] =
+         "#MemoryCollection.MemoryCollection";
+     asyncResp->res.jsonValue["Name"] = "Memory Module Collection";
++
++    if constexpr (BMCWEB_EXPERIMENTAL_REDFISH_MULTI_COMPUTER_SYSTEM)
++    {
++        systems_utils::getValidSystemsPath(
++            asyncResp, systemName,
++            std::bind_front(multiHostMemoryCollectionGet, asyncResp,
++                            systemName));
++        return;
++    }
++    constexpr std::array<std::string_view, 1> dimmInterface = {
++        "xyz.openbmc_project.Inventory.Item.Dimm",
++    };
+     asyncResp->res.jsonValue["@odata.id"] = boost::urls::format(
+         "/redfish/v1/Systems/{}/Memory", BMCWEB_REDFISH_SYSTEM_URI_NAME);
+-
+-    constexpr std::array<std::string_view, 1> interfaces{
+-        "xyz.openbmc_project.Inventory.Item.Dimm"};
+     collection_util::getCollectionMembers(
+         asyncResp,
+         boost::urls::format("/redfish/v1/Systems/{}/Memory",
+                             BMCWEB_REDFISH_SYSTEM_URI_NAME),
+-        interfaces, "/xyz/openbmc_project/inventory");
++        dimmInterface, "/xyz/openbmc_project/inventory");
+ }
+ 
+ inline void requestRoutesMemory(App& app)
+diff --git a/redfish-core/lib/systems.hpp b/redfish-core/lib/systems.hpp
+index 805342a9..a6f3589a 100644
+--- a/redfish-core/lib/systems.hpp
++++ b/redfish-core/lib/systems.hpp
+@@ -3059,8 +3059,6 @@ inline void processComputerSystemGet(
+     {
+         asyncResp->res.jsonValue["Bios"]["@odata.id"] =
+             boost::urls::format("/redfish/v1/Systems/{}/Bios", systemName);
+-        asyncResp->res.jsonValue["Memory"]["@odata.id"] =
+-            boost::urls::format("/redfish/v1/Systems/{}/Memory", systemName);
+         asyncResp->res.jsonValue["Storage"]["@odata.id"] =
+             boost::urls::format("/redfish/v1/Systems/{}/Storage", systemName);
+         asyncResp->res.jsonValue["FabricAdapters"]["@odata.id"] =
+@@ -3068,6 +3066,8 @@ inline void processComputerSystemGet(
+                                 systemName);
+     }
+ 
++    asyncResp->res.jsonValue["Memory"]["@odata.id"] =
++        boost::urls::format("/redfish/v1/Systems/{}/Memory", systemName);
+     asyncResp->res.jsonValue["Processors"]["@odata.id"] =
+         boost::urls::format("/redfish/v1/Systems/{}/Processors", systemName);
+ 
+-- 
+2.43.0
+

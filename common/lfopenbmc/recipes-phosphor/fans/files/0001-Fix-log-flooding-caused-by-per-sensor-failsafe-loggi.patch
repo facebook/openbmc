@@ -1,0 +1,374 @@
+From 001ae687381e624711707f8cc77a7645ea531c7e Mon Sep 17 00:00:00 2001
+From: Eric Yang <eric.yang.wiwynn@gmail.com>
+Date: Fri, 27 Mar 2026 06:38:52 +0000
+Subject: [PATCH] Fix log flooding caused by per-sensor failsafe logging
+
+Remove failsafe logging from getFailed(), keeping only the zone-level
+log points in markSensorMissing() and the recovery branch of
+processSensorInputs(). These pass the actual zone failsafe state
+(getFailSafeMode()), so the deduplication set is only cleared on real
+zone state transitions. Healthy sensors that were never in the fail set
+produce no log output at all, because the recovery branch checks
+_failSafeSensors membership first.
+
+Include the sensor fail reason in the missing-sensor log message so the
+specific cause is still captured. Remove the duplicate timeout log since
+markSensorMissing already logs it. Remove the now-unused
+outputFailsafeLogWithSensor() function and the sensor-to-zone topology
+map that only served it. Move failsafe_logger.cpp from #include to a
+proper meson.build compilation unit.
+
+After this fix, each failed sensor is logged once when it enters the
+fail set, and once when it recovers. No output is produced while the
+state is unchanged:
+
+  Zone 0 is in failsafe mode.   (A: Sensor reading bad)
+  Zone 0 is in failsafe mode.   (B: Sensor reading bad)
+    (silence -- no repeated output on subsequent cycles)
+  Zone 0 is in failsafe mode.   (A: recovered)
+  Zone 0 leaves failsafe mode.  (B: recovered, last failed)
+
+Motivation:
+The failsafe logger was triggered inside per-sensor status checks
+(getFailed()), which run once per sensor per control loop cycle.
+Each sensor passed its own fail status as the zone-level failsafe state.
+When sensors were iterated in order, each healthy sensor passed false to
+the zone logger while each failed sensor passed true, causing the logger
+to see the zone flip-flopping between failsafe and normal on every
+sensor boundary. Each false-to-true and true-to-false transition cleared
+the deduplication set, so all log entries repeated every cycle. Both "is
+in failsafe mode" and spurious "leaves failsafe mode" lines appeared for
+every interleaved healthy sensor:
+
+  Zone 0 is in failsafe mode.   (A bad readings, getFailed)
+  Zone 0 is in failsafe mode.   (A, markSensorMissing)
+  Zone 0 leaves failsafe mode.  (B healthy, getFailed)
+  Zone 0 is in failsafe mode.   (C bad readings, getFailed)
+  Zone 0 is in failsafe mode.   (C, markSensorMissing)
+  Zone 0 leaves failsafe mode.  (D healthy, getFailed)
+    (...repeated every cycle...)
+
+Change-Id: I8fcb97d60dd3cfb54d7469e17fe597c1dacac072
+Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
+---
+ dbus/dbuspassive.cpp                        | 28 +++++++--------------
+ failsafeloggers/builder.cpp                 | 17 -------------
+ failsafeloggers/failsafe_logger_utility.cpp |  5 ----
+ failsafeloggers/failsafe_logger_utility.hpp | 22 ----------------
+ meson.build                                 |  1 +
+ pid/zone.cpp                                |  6 ++---
+ pid/zone.hpp                                |  3 ---
+ sensors/host.cpp                            |  8 +++---
+ sensors/host.hpp                            |  1 +
+ 9 files changed, 19 insertions(+), 72 deletions(-)
+
+diff --git a/dbus/dbuspassive.cpp b/dbus/dbuspassive.cpp
+index 016f069..2835632 100644
+--- a/dbus/dbuspassive.cpp
++++ b/dbus/dbuspassive.cpp
+@@ -9,7 +9,6 @@
+ #include "dbushelper_interface.hpp"
+ #include "dbuspassiveredundancy.hpp"
+ #include "dbusutil.hpp"
+-#include "failsafeloggers/failsafe_logger_utility.hpp"
+ #include "interfaces.hpp"
+ #include "util.hpp"
+ 
+@@ -27,6 +26,7 @@
+ #include <cmath>
+ #include <cstdint>
+ #include <exception>
++#include <iostream>
+ #include <limits>
+ #include <map>
+ #include <memory>
+@@ -36,8 +36,6 @@
+ #include <utility>
+ #include <variant>
+ 
+-#include "failsafeloggers/failsafe_logger.cpp"
+-
+ using SensorValue = sdbusplus::common::xyz::openbmc_project::sensor::Value;
+ using SensorThresholdWarning =
+     sdbusplus::common::xyz::openbmc_project::sensor::threshold::Warning;
+@@ -198,8 +196,6 @@ bool DbusPassive::getFailed(void) const
+         const std::set<std::string>& failures = redundancy->getFailed();
+         if (failures.find(path) != failures.end())
+         {
+-            outputFailsafeLogWithSensor(_id, true, _id,
+-                                        "The sensor path is marked redundant.");
+             return true;
+         }
+     }
+@@ -211,8 +207,6 @@ bool DbusPassive::getFailed(void) const
+      */
+     if (_objectMissing)
+     {
+-        outputFailsafeLogWithSensor(_id, true, _id,
+-                                    "The sensor D-Bus object is missing.");
+         return true;
+     }
+ 
+@@ -237,8 +231,6 @@ bool DbusPassive::getFailed(void) const
+     // which is set and cleared by other causes.
+     if (_badReading)
+     {
+-        outputFailsafeLogWithSensor(_id, true, _id,
+-                                    "The sensor has bad readings.");
+         return true;
+     }
+ 
+@@ -248,39 +240,37 @@ bool DbusPassive::getFailed(void) const
+     // they are not cooling the system, enable failsafe mode also.
+     if (_marginHot)
+     {
+-        outputFailsafeLogWithSensor(_id, true, _id,
+-                                    "The sensor has no thermal margin left.");
+         return true;
+     }
+ 
+     if (_failed)
+     {
+-        outputFailsafeLogWithSensor(
+-            _id, true, _id, "The sensor has failed with a critical issue.");
+         return true;
+     }
+ 
+     if (!_available)
+     {
+-        outputFailsafeLogWithSensor(_id, true, _id,
+-                                    "The sensor is unavailable.");
+         return true;
+     }
+ 
+     if (!_functional)
+     {
+-        outputFailsafeLogWithSensor(_id, true, _id,
+-                                    "The sensor is not functional.");
+         return true;
+     }
+ 
+-    outputFailsafeLogWithSensor(_id, false, _id, "The sensor has recovered.");
+-
+     return false;
+ }
+ 
+ std::string DbusPassive::getFailReason(void) const
+ {
++    if (redundancy)
++    {
++        const std::set<std::string>& failures = redundancy->getFailed();
++        if (failures.find(path) != failures.end())
++        {
++            return "Sensor path marked redundant";
++        }
++    }
+     if (_objectMissing)
+     {
+         return "Sensor D-Bus object missing";
+diff --git a/failsafeloggers/builder.cpp b/failsafeloggers/builder.cpp
+index b632142..9118ee9 100644
+--- a/failsafeloggers/builder.cpp
++++ b/failsafeloggers/builder.cpp
+@@ -6,14 +6,11 @@
+ #include "failsafeloggers/failsafe_logger.hpp"
+ #include "failsafeloggers/failsafe_logger_utility.hpp"
+ 
+-#include <algorithm>
+ #include <cstddef>
+ #include <cstdint>
+ #include <iostream>
+ #include <memory>
+-#include <string>
+ #include <unordered_map>
+-#include <vector>
+ 
+ namespace pid_control
+ {
+@@ -25,26 +22,12 @@ void buildFailsafeLoggers(
+     zoneIdToFailsafeLogger =
+         std::unordered_map<int64_t,
+                            std::shared_ptr<pid_control::FailsafeLogger>>();
+-    sensorNameToZoneId =
+-        std::unordered_map<std::string, std::vector<int64_t>>();
+     for (const auto& zoneIdToZone : zones)
+     {
+         int64_t zoneId = zoneIdToZone.first;
+         // Create a failsafe logger for each zone.
+         zoneIdToFailsafeLogger[zoneId] = std::make_shared<FailsafeLogger>(
+             logMaxCountPerSecond, zoneIdToZone.second->getFailSafeMode());
+-        // Build the sensor-zone topology map.
+-        std::vector<std::string> sensorNames =
+-            zoneIdToZone.second->getSensorNames();
+-        for (const std::string& sensorName : sensorNames)
+-        {
+-            if (std::find(sensorNameToZoneId[sensorName].begin(),
+-                          sensorNameToZoneId[sensorName].end(), zoneId) ==
+-                sensorNameToZoneId[sensorName].end())
+-            {
+-                sensorNameToZoneId[sensorName].push_back(zoneId);
+-            }
+-        }
+         std::cerr << "Build failsafe logger for Zone " << zoneId
+                   << " with initial "
+                   << "failsafe mode: " << zoneIdToZone.second->getFailSafeMode()
+diff --git a/failsafeloggers/failsafe_logger_utility.cpp b/failsafeloggers/failsafe_logger_utility.cpp
+index 569d69a..f89fffe 100644
+--- a/failsafeloggers/failsafe_logger_utility.cpp
++++ b/failsafeloggers/failsafe_logger_utility.cpp
+@@ -4,14 +4,9 @@
+ 
+ #include <cstdint>
+ #include <memory>
+-#include <string>
+ #include <unordered_map>
+-#include <vector>
+ 
+ std::unordered_map<int64_t, std::shared_ptr<pid_control::FailsafeLogger>>
+     zoneIdToFailsafeLogger =
+         std::unordered_map<int64_t,
+                            std::shared_ptr<pid_control::FailsafeLogger>>();
+-
+-std::unordered_map<std::string, std::vector<int64_t>> sensorNameToZoneId =
+-    std::unordered_map<std::string, std::vector<int64_t>>();
+diff --git a/failsafeloggers/failsafe_logger_utility.hpp b/failsafeloggers/failsafe_logger_utility.hpp
+index 8d377a0..edce96d 100644
+--- a/failsafeloggers/failsafe_logger_utility.hpp
++++ b/failsafeloggers/failsafe_logger_utility.hpp
+@@ -6,37 +6,15 @@
+ #include <memory>
+ #include <string>
+ #include <unordered_map>
+-#include <vector>
+ 
+ /** Map of the zone ID to its failsafe logger.
+  */
+ extern std::unordered_map<int64_t, std::shared_ptr<pid_control::FailsafeLogger>>
+     zoneIdToFailsafeLogger;
+ 
+-/** Map of the sensor name/ID to its corresponding zone IDs.
+- */
+-extern std::unordered_map<std::string, std::vector<int64_t>> sensorNameToZoneId;
+-
+ namespace pid_control
+ {
+ 
+-/** Given a sensor name, attempt to output entering/leaving-failsafe-mode
+- * logs for its corresponding zones.
+- */
+-inline void outputFailsafeLogWithSensor(
+-    const std::string& sensorName, const bool newFailsafeState,
+-    const std::string& location, const std::string& reason)
+-{
+-    for (const int64_t zoneId : sensorNameToZoneId[sensorName])
+-    {
+-        if (zoneIdToFailsafeLogger.count(zoneId))
+-        {
+-            zoneIdToFailsafeLogger[zoneId]->outputFailsafeLog(
+-                zoneId, newFailsafeState, location, reason);
+-        }
+-    }
+-}
+-
+ /** Given a zone ID, attempt to output entering/leaving-failsafe-mode
+  * logs for its corresponding zones.
+  */
+diff --git a/meson.build b/meson.build
+index 0a99d2e..47285eb 100644
+--- a/meson.build
++++ b/meson.build
+@@ -133,6 +133,7 @@ libswampd_sources = [
+     'dbus/dbuspassive.cpp',
+     'dbus/dbuswrite.cpp',
+     'failsafeloggers/builder.cpp',
++    'failsafeloggers/failsafe_logger.cpp',
+     'failsafeloggers/failsafe_logger_utility.cpp',
+     'sysfs/sysfsread.cpp',
+     'sysfs/sysfswrite.cpp',
+diff --git a/pid/zone.cpp b/pid/zone.cpp
+index bfcbe3b..b40abec 100644
+--- a/pid/zone.cpp
++++ b/pid/zone.cpp
+@@ -116,7 +116,7 @@ void DbusPidZone::markSensorMissing(const std::string& name,
+     }
+ 
+     outputFailsafeLogWithZone(_zoneId, this->getFailSafeMode(), name,
+-                              "The sensor is missing.");
++                              "The sensor is missing: " + failReason + ".");
+ 
+     if (debugEnabled)
+     {
+@@ -510,7 +510,7 @@ void DbusPidZone::initializeCache(void)
+         _cachedFanOutputs[f] = {nan, nan};
+ 
+         // Start all fans in fail-safe mode.
+-        markSensorMissing(f, "");
++        markSensorMissing(f, "Initialization");
+     }
+ 
+     for (const auto& t : _thermalInputs)
+@@ -518,7 +518,7 @@ void DbusPidZone::initializeCache(void)
+         _cachedValuesByName[t] = {nan, nan};
+ 
+         // Start all sensors in fail-safe mode.
+-        markSensorMissing(t, "");
++        markSensorMissing(t, "Initialization");
+     }
+ }
+ 
+diff --git a/pid/zone.hpp b/pid/zone.hpp
+index d81cd53..d430799 100644
+--- a/pid/zone.hpp
++++ b/pid/zone.hpp
+@@ -197,9 +197,6 @@ class DbusPidZone : public ZoneInterface, public ModeObject
+                 {
+                     std::cerr << sensorInput << " sensor timeout\n";
+                 }
+-                outputFailsafeLogWithZone(_zoneId, this->getFailSafeMode(),
+-                                          sensorInput,
+-                                          "The sensor has timed out.");
+             }
+             else
+             {
+diff --git a/sensors/host.cpp b/sensors/host.cpp
+index c32dc52..0e27a83 100644
+--- a/sensors/host.cpp
++++ b/sensors/host.cpp
+@@ -3,7 +3,6 @@
+ 
+ #include "host.hpp"
+ 
+-#include "failsafeloggers/failsafe_logger_utility.hpp"
+ #include "hoststatemonitor.hpp"
+ #include "interfaces.hpp"
+ #include "sensor.hpp"
+@@ -89,9 +88,12 @@ bool HostSensor::getFailed(void)
+         }
+     }
+ 
+-    outputFailsafeLogWithSensor(getName(), true, getName(),
+-                                "The sensor has invalid readings.");
+     return true;
+ }
+ 
++std::string HostSensor::getFailReason(void)
++{
++    return "Invalid readings";
++}
++
+ } // namespace pid_control
+diff --git a/sensors/host.hpp b/sensors/host.hpp
+index 6a99246..60cce28 100644
+--- a/sensors/host.hpp
++++ b/sensors/host.hpp
+@@ -47,6 +47,7 @@ class HostSensor : public Sensor, public ValueObject
+     ReadReturn read(void) override;
+     void write(double value) override;
+     bool getFailed(void) override;
++    std::string getFailReason(void) override;
+ 
+   private:
+     /*
+-- 
+2.43.0
+

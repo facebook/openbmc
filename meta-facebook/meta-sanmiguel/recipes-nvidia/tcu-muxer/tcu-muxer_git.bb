@@ -16,7 +16,7 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
 SRC_URI = "git://github.com/NVIDIA/tcu_muxer;protocol=https;branch=develop"
-SRCREV = "eceba41c7ba16540f83ac7c13405c41eda7f4ea4"
+SRCREV = "5fe0d0048e584d01c3ab0ca0d732f4681d79cde6"
 
 inherit pkgconfig gettext
 

@@ -288,10 +288,19 @@ bic_get_vr_device_id(uint8_t *rbuf, uint8_t *rlen, uint8_t bus, uint8_t addr) {
   tbuf[4] = 0x01;
   tlen = 5;
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, rlen);
+#ifdef CONFIG_GRANDCANYON2
+  if (ret < 0) {
+    syslog(LOG_WARNING,
+           "%s():%d Page set failed for addr=0x%02X, "
+           "still trying to read device ID. ret=%d",
+           __func__, __LINE__, addr, ret);
+  }
+#else
   if (ret < 0) {
     syslog(LOG_WARNING, "%s():%d Failed to send command code to switch VR page. ret=%d", __func__,__LINE__, ret);
     return ret;
   }
+#endif
 
   tbuf[0] = (bus << 1) + 1;
   tbuf[1] = addr;
@@ -781,7 +790,11 @@ cleanup:
       return ret;
     }
     
+#ifdef CONFIG_GRANDCANYON2
+    snprintf(ver_str, MAX_VALUE_LEN, "Texas Instruments %02X%02X, Remaining Writes: Not support", rbuf[1], rbuf[0]);
+#else
     snprintf(ver_str, MAX_VALUE_LEN, "Texas Instruments %02X%02X", rbuf[1], rbuf[0]);
+#endif
     kv_set(key, ver_str, 0, 0);
   } else {
     //ISL

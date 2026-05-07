@@ -455,7 +455,11 @@ vr_TI_csv_parser(char *image) {
 #define IC_DEVICE_ID "IC_DEVICE_ID"
 #define BLOCK_READ "BlockRead"
 #define BLOCK_WRITE "BlockWrite"
+#ifdef CONFIG_GRANDCANYON2
+#define DEVID_STR_LEN 1024
+#else
 #define DEVID_STR_LEN 128
+#endif
   int ret = 0;
   FILE *fp = NULL;
   char *token = NULL;
@@ -501,6 +505,9 @@ vr_TI_csv_parser(char *image) {
       }
     } else if ( (token = strstr(tmp_buf, BLOCK_WRITE)) != NULL ) { //get block write
       token = strstr(token, ",");
+      if (token == NULL) {
+        continue;
+      }
       byte_ret = string_2_byte(&token[8]);
       if (byte_ret < 0) {
         ret = -1;
@@ -570,13 +577,18 @@ vr_TI_program(vr *dev, uint8_t force) {
 #define TI_NVM_INDEX_00     0x00
 #define TI_NVM_DATA_BYTE_TLEN 0x21
 #define TI_NVM_DATA_BYTE_RLEN 0x20
+
+#define TI_CMD_RESTORE_USER   0x16  // RESTORE_USER_ALL
+#define TI_BLOCK0_BYPASS_LEN  9     // bytes[0..8]: ID(6)+REV(2)+addr(1)
   int i = 0;
   int ret = 0;
   uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
   uint8_t rbuf[MAX_IPMB_BUFFER] = {0};
   uint8_t tlen = 0;
   uint8_t rlen = 0;
+#ifndef CONFIG_GRANDCANYON2
   int check_cnt = 0;
+#endif
   uint8_t addr = dev->addr;
   int len = dev->data_cnt;
   vr_data *list = dev->pdata;
@@ -602,6 +614,19 @@ vr_TI_program(vr *dev, uint8_t force) {
     tbuf[3] = list[i].command ; //command code
     tbuf[4] = list[i].data_len; //counts
     memcpy(&tbuf[5], list[i].data, list[i].data_len);
+
+#ifdef CONFIG_GRANDCANYON2
+    if (i == 0) {
+      // TI Datasheet 7.9.6 Step 4:
+      // Replace Block 0 bytes[0..8] with 0xFF to bypass device validation:
+      //   bytes[0..5] = IC_DEVICE_ID
+      //   bytes[6..7] = IC_DEVICE_REV (file may differ from silicon rev)
+      //   bytes[8]    = PMBus address
+      // Verification is done via NVM_CHECKSUM (0xF4) after programming.
+      memset(&tbuf[5], 0xFF, TI_BLOCK0_BYPASS_LEN);
+    }
+#endif
+
     tlen = 5 + list[i].data_len;
 
     // send it
@@ -613,6 +638,79 @@ vr_TI_program(vr *dev, uint8_t force) {
     msleep(50);
   }
 
+#ifdef CONFIG_GRANDCANYON2
+  //step 3 (GC2) - verify via NVM_CHECKSUM (0xF4)
+  // CSV declares "Perform_Read_Back_Validation: False":
+  //   block readback is unreliable because bytes[0..8] were written as FF
+  //   and device may auto-update fields after NVM store.
+  // Expected CRC16: Block 0 data[9]=CRC_lo, data[10]=CRC_hi.
+  msleep(300); // wait for NVM store (Datasheet 7.9.6 Step 13: 100ms min)
+
+  // CSV declares "Reset_Device_When_Done: True"
+  // Issue RESTORE_USER_ALL per Datasheet 7.9.6 Step 15
+  memset(&tbuf[2], 0, sizeof(tbuf) - 2);
+  tbuf[2] = 0x00;
+  tbuf[3] = TI_CMD_RESTORE_USER;
+  tlen = 4;
+  rlen = 0;
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    // non-fatal: device may have auto-restored after NVM store
+    syslog(LOG_WARNING, "[%s] RESTORE_USER_ALL failed (non-fatal)", __func__);
+  }
+  msleep(100);
+
+  memset(&tbuf[2], 0, sizeof(tbuf) - 2);
+  tbuf[2] = 0x04; // read 4 bytes to detect format
+  tbuf[3] = CMD_TI_VR_NVM_CHECKSUM;
+  tlen = 4;
+  rlen = 0;
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "[%s] Failed to read NVM_CHECKSUM", __func__);
+    goto error_exit;
+  }
+
+#ifdef DEBUG
+  printf("[TI VR 0x%02X] NVM_CHECKSUM raw: rlen=%d, %02X %02X %02X %02X\n",
+         addr, rlen, rbuf[0], rbuf[1], rbuf[2], rbuf[3]);
+  printf("[TI VR 0x%02X] Expected CRC: lo=0x%02X hi=0x%02X (0x%02X%02X)\n",
+         addr, list[0].data[9], list[0].data[10],
+         list[0].data[10], list[0].data[9]);
+#endif
+
+  {
+    uint8_t exp_lo = list[0].data[9];
+    uint8_t exp_hi = list[0].data[10];
+    uint8_t dev_lo, dev_hi;
+
+    // Detect response format:
+    //   BlockRead: rbuf[0]=count(0x02), rbuf[1]=CRC_lo, rbuf[2]=CRC_hi
+    //   Direct:    rbuf[0]=CRC_lo,      rbuf[1]=CRC_hi
+    if (rlen == 3 && rbuf[0] == 0x02) {
+      dev_lo = rbuf[1];
+      dev_hi = rbuf[2];
+    } else {
+      dev_lo = rbuf[0];
+      dev_hi = rbuf[1];
+    }
+
+#ifdef DEBUG
+    printf("[TI VR 0x%02X] CRC16: expected=0x%02X%02X, device=0x%02X%02X  %s\n",
+           addr, exp_hi, exp_lo, dev_hi, dev_lo,
+           (dev_lo == exp_lo && dev_hi == exp_hi) ? "MATCH" : "MISMATCH");
+#endif
+
+    if (dev_lo != exp_lo || dev_hi != exp_hi) {
+      syslog(LOG_WARNING, "[%s] NVM CRC16 mismatch! expected=0x%02X%02X device=0x%02X%02X",
+             __func__, exp_hi, exp_lo, dev_hi, dev_lo);
+      ret = -1;
+      goto error_exit;
+    }
+    ret = 0;
+  }
+
+#else  // !CONFIG_GRANDCANYON2
   //step 3 - verify data
   tbuf[3] = TI_USER_NVM_INDEX;
   tbuf[4] = TI_NVM_INDEX_00;
@@ -651,6 +749,7 @@ vr_TI_program(vr *dev, uint8_t force) {
   if (check_cnt != len) {
     ret = -1;
   }
+#endif // CONFIG_GRANDCANYON2
 
 error_exit:
   return ret;

@@ -72,7 +72,14 @@ int VrComponent::get_version(json& j) {
         start = str.rfind(' ');
         end = str.size();
       } else {
+#ifdef CONFIG_GRANDCANYON2
+        // TI VR vendor name contains spaces (e.g. "Texas Instruments")
+        // Use rfind to locate the last space before the version field,
+        // instead of find which only finds the first space after vendor_token1.
+        start = str.rfind(' ', end - 1);
+#else
         start = str.find(' ');
+#endif
       }
 
       tmp_str = str.substr(0, start);

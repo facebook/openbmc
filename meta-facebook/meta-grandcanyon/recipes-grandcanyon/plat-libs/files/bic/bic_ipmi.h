@@ -48,7 +48,11 @@ extern "C" {
 #define CMD_ISL_VR_DMAADDR        0xC7
 #define ISL_MFR_CODE              "49"
 // command for TI VR
+#ifdef CONFIG_GRANDCANYON2
+#define CMD_TI_VR_NVM_CHECKSUM    0xF4
+#else
 #define CMD_TI_VR_NVM_CHECKSUM    0xF0
+#endif
 
 #define MAX_IPMB_BUFFER           256
 

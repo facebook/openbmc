@@ -1,0 +1,38 @@
+From fa3cfe76536cf16065100631776d6d36e377bcdf Mon Sep 17 00:00:00 2001
+From: Andy Chung <Andy.Chung@amd.com>
+Date: Thu, 23 Apr 2026 06:30:02 +0800
+Subject: [PATCH] configurations: revise OPC NIC sensor name
+
+Summary:
+To follow the naming of platform silk screen.
+---
+ configurations/broadcomm/800g_1p_ocp.json | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/configurations/broadcomm/800g_1p_ocp.json b/configurations/broadcomm/800g_1p_ocp.json
+index 2ab1c56..c80209c 100644
+--- a/configurations/broadcomm/800g_1p_ocp.json
++++ b/configurations/broadcomm/800g_1p_ocp.json
+@@ -12,8 +12,8 @@
+             "Labels": [
+                 "temp2"
+             ],
+-            "Name": "NIC Temp $bus",
+-            "Name1": "NIC Temp $bus",
++            "Name": "BRB_L_FE_NIC0_TEMP_C",
++            "Name1": "BRB_L_FE_NIC0_TEMP_C",
+             "Thresholds": [
+                 {
+                     "Direction": "less than",
+@@ -33,7 +33,7 @@
+             "Type": "TMP421"
+         }
+     ],
+-    "Name": "BRCM OCP NIC FRU $bus",
++    "Name": "BRCM OCP NIC",
+     "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Broadcom BCM957708 1x800G OCP', 'BOARD_MANUFACTURER': 'Broadcom'})",
+     "Type": "Board",
+     "xyz.openbmc_project.Inventory.Decorator.Asset": {
+-- 
+2.34.1
+

@@ -107,6 +107,10 @@ SRC_URI:append = " \
     file://0903-usb-gadget-f_ecm-disable-suspend-resume-feature.patch \
 "
 
+#
+# AST2700 Patches at various stages of upstream. Since they are waiting
+# for basic SOC to be merged they dont yet have LORE Links
+#
 SRC_URI:append = " \
     file://2700-clk-aspeed-add-AST2700-clock-driver.patch \
     file://2701-arm64-Kconfig-Add-ASPEED-SoC-family-Kconfig-support.patch \
@@ -115,4 +119,5 @@ SRC_URI:append = " \
     file://2704-pinctrl-aspeed-Add-AST2700-SoC1-support.patch \
     file://2705-pinctrl-aspeed-Add-AST2700-SoC0-support.patch \
     file://2706-arm64-dts-aspeed-add-pinctrl-definitions-for-G7-plat.patch \
+    file://2707-arm64-dts-aspeed-add-peripheral-nodes-for-G7-platfor.patch \
 "

@@ -57,6 +57,9 @@ static bool dpb_thresh_init = false;
 #ifdef CONFIG_GRANDCANYON2
 static int read_nic_pmon(uint8_t nic_pmon_id, float *value);
 static bool is_mp   = false;
+
+static int read_sq52205(uint8_t nic_pmon_id, float *value);
+static uint8_t nic_pmon_source_info = UNKNOWN_SOURCE;
 #endif
 
 //{SensorName, ID, FUNCTION, STBY_READ, {UCR, UNC, UNR, LCR, LNC, LNR, Pos, Neg}, unit}
@@ -1109,6 +1112,21 @@ PAL_SENSOR_MAP dvt_nic_sensor_map[] = {
   {"NIC_PMON_CURR_A", NIC_PMON_CURR, read_nic_pmon, false, {2.31, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [NIC_PMON_PWR_W] =
   {"NIC_PMON_PWR_W", NIC_PMON_PWR , read_nic_pmon, false, {28.182, 0, 0, 0, 0, 0, 0, 0}, POWER},
+};
+
+PAL_SENSOR_MAP dvt_2nd_nic_sensor_map[] = {
+  [NIC_SENSOR_TEMP] =
+  {"NIC_SENSOR_TEMP_C", NIC, read_nic_temp, true, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+  [NIC_SENSOR_P12V] =
+  {"NIC_SENSOR_P12V_VOLT_V", ADC128_IN6, read_voltage_nic, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
+  [NIC_SENSOR_CUR] =
+  {"NIC_SENSOR_CURR_A", ADC128_IN7, read_voltage_nic, false, {1.837, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  [NIC_PMON_VOLT_V] =
+  {"NIC_PMON_VOLT_V", NIC_PMON_VOLT , read_sq52205, false, {13.42, 0, 0, 10.98, 0, 0, 0, 0}, VOLT},
+  [NIC_PMON_CURR_A] =
+  {"NIC_PMON_CURR_A", NIC_PMON_CURR, read_sq52205, false, {2.31, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  [NIC_PMON_PWR_W] =
+  {"NIC_PMON_PWR_W", NIC_PMON_PWR , read_sq52205, false, {28.182, 0, 0, 0, 0, 0, 0, 0}, POWER},
 };
 
 #else
@@ -2489,6 +2507,201 @@ read_voltage_nic(uint8_t id, float *value) {
 }
 
 #ifdef CONFIG_GRANDCANYON2
+static void
+sq52205_init() {
+  int fd = 0, ret = -1;
+  uint8_t retry = MAX_RETRY;
+  uint8_t tbuf[16] = {0};
+  uint8_t bus = 0, addr = 0;
+  uint16_t config = SQ52205_CONFIG_VALUE;
+  uint16_t calibration = 0;
+
+  bus  = nic_pmon_info_list[0].bus;
+  addr = nic_pmon_info_list[0].slv_addr;
+  while (ret < 0 && retry-- > 0) {
+    fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  }
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s() Failed to open I2C bus %d\n", __func__, bus);
+    return;
+  }
+
+  // --- Write Config Register (00h) ---
+  tbuf[0] = SQ52205_CONFIG_REG;
+  tbuf[1] = (config >> 8) & 0xFF;
+  tbuf[2] =  config & 0xFF;
+
+  ret = -1; retry = MAX_RETRY;
+  while (ret < 0 && retry-- > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 3, NULL, 0);
+  }
+
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to write config register\n", __func__);
+    close(fd);
+    return;
+  }
+
+  // --- Write Calibration Register (05h) ---
+  calibration = (uint16_t)(((2048 * SQ52205_SHUNT_LSB) /
+                (SQ52205_CURRENT_LSB * SQ52205_R_SHUNT)) + 0.5);
+
+  memset(tbuf, 0, sizeof(tbuf));
+  tbuf[0] = SQ52205_CAL_REG;
+  tbuf[1] = (calibration >> 8) & 0xFF;
+  tbuf[2] =  calibration & 0xFF;
+
+  ret = -1; retry = MAX_RETRY;
+  while (ret < 0 && retry-- > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, 3, NULL, 0);
+  }
+
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to write calibration register\n", __func__);
+  }
+
+  close(fd);
+}
+
+static void
+detect_nic_pmon_module() {
+  int fd = 0, ret = -1;
+  uint8_t retry = MAX_RETRY, tlen = 1, rlen = 8;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t bus = 0, addr = 0;
+  char model_str[7] = {0};
+
+  bus  = nic_pmon_info_list[0].bus;
+  addr = nic_pmon_info_list[0].slv_addr;
+
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s() Failed to open I2C bus %d\n", __func__, bus);
+    nic_pmon_source_info = UNKNOWN_SOURCE;
+    return;
+  }
+
+  /* --- Step 1: Check INA233 via PMBUS_MFR_MODEL (0x9A) --- */
+  tbuf[0] = PMBUS_MFR_MODEL;
+  while (ret < 0 && retry-- > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  }
+
+  if (ret == 0) {
+    memcpy(model_str, &rbuf[1], 6);
+    if (strncmp(model_str, "INA233", 6) == 0) {
+      close(fd);
+      nic_pmon_source_info = MAIN_SOURCE;
+      return;
+    }
+  }
+
+  /* --- Step 2: Check SQ52205 via 0x0D, MID field D6-D2 --- */
+  memset(tbuf, 0, sizeof(tbuf));
+  memset(rbuf, 0, sizeof(rbuf));
+  tbuf[0] = 0x0D;
+  rlen = 2;
+  ret = -1;
+  retry = MAX_RETRY;
+
+  while (ret < 0 && retry-- > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  }
+
+  close(fd);
+
+  if (ret == 0 && (rbuf[1] & 0x7C) == 0x4C) {
+    nic_pmon_source_info = SECOND_SOURCE;
+    sq52205_init();
+  }
+  else {
+    syslog(LOG_WARNING, "%s() Unknown NIC PMON module\n", __func__);
+    nic_pmon_source_info = UNKNOWN_SOURCE;
+  }
+}
+
+static int
+read_sq52205(uint8_t nic_pmon_id, float *value) {
+  int fd = 0, ret = -1;
+  uint8_t retry = MAX_RETRY, tlen = 1, rlen = 2;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t bus = 0, addr = 0;
+
+  if (nic_pmon_source_info != SECOND_SOURCE) {
+    return ERR_SENSOR_NA;
+  }
+
+  if (nic_pmon_id >= ARRAY_SIZE(nic_pmon_info_list)) {
+    return ERR_SENSOR_NA;
+  }
+
+  bus  = nic_pmon_info_list[nic_pmon_id].bus;
+  addr = nic_pmon_info_list[nic_pmon_id].slv_addr;
+
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s() Failed to open I2C bus %d\n", __func__, bus);
+    return ERR_SENSOR_NA;
+  }
+
+  switch (nic_pmon_id) {
+    case NIC_PMON_VOLT:
+      tbuf[0] = SQ52205_VOLT_REG;
+      break;
+    case NIC_PMON_CURR:
+      tbuf[0] = SQ52205_CURR_REG;
+      break;
+    case NIC_PMON_PWR:
+      tbuf[0] = SQ52205_PWR_REG;
+      break;
+    default:
+      close(fd);
+      return ERR_SENSOR_NA;
+  }
+
+  while (ret < 0 && retry-- > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  }
+
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to read nic_pmon_id=%d reg=0x%02X\n",
+           __func__, nic_pmon_id, tbuf[0]);
+    close(fd);
+    return ERR_SENSOR_NA;
+  }
+
+  uint16_t raw = ((uint16_t)rbuf[0] << 8) | rbuf[1];
+
+  switch (nic_pmon_id) {
+    case NIC_PMON_VOLT:
+      // 1.25 mV/LSB
+      *value = (float)raw * 1.25f / 1000.0f;
+      break;
+
+    case NIC_PMON_CURR:
+      if (rbuf[0] & 0x80) {
+        *value = 0;
+      } else {
+        *value = (float)raw * SQ52205_CURRENT_LSB;
+      }
+      break;
+
+    case NIC_PMON_PWR:
+      // Power LSB = 25 * current_lsb
+      *value = (float)raw * (SQ52205_CURRENT_LSB * 25);
+      break;
+
+    default:
+      close(fd);
+      return ERR_SENSOR_NA;
+  }
+
+  close(fd);
+  return 0;
+}
+
 static int
 nic_pmon_set_calibration(int fd, uint8_t addr) {
   int ret = -1;
@@ -2541,7 +2754,6 @@ read_nic_pmon(uint8_t nic_pmon_id, float *value) {
     return ERR_SENSOR_NA;
   }
 
-  // 根據 sensor 選對應 register
   switch (nic_pmon_id) {
     case NIC_PMON_VOLT:
       tbuf[0] = PMBUS_READ_VIN;
@@ -3849,9 +4061,16 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   case FRU_NIC:
     get_current_source(KEY_DPB_SOURCE_INFO, &dpb_source_info);
   #ifdef CONFIG_GRANDCANYON2
+    detect_nic_pmon_module();
     if (!is_mp) {
-      id = dvt_nic_sensor_map[sensor_num].id;
-      ret = dvt_nic_sensor_map[sensor_num].read_sensor(id, (float*) value);
+      if (nic_pmon_source_info == MAIN_SOURCE) {
+        id = dvt_nic_sensor_map[sensor_num].id;
+        ret = dvt_nic_sensor_map[sensor_num].read_sensor(id, (float*) value);
+      } else {
+        id = dvt_2nd_nic_sensor_map[sensor_num].id;
+        ret = dvt_2nd_nic_sensor_map[sensor_num].read_sensor(id, (float*) value);
+      }
+
     } else
   #endif
     {
@@ -3938,7 +4157,11 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
   case FRU_NIC:
   #ifdef CONFIG_GRANDCANYON2
     if (!is_mp) {
-      snprintf(name, MAX_SENSOR_NAME_SIZE, "%s", dvt_nic_sensor_map[sensor_num].snr_name);
+      if (nic_pmon_source_info == MAIN_SOURCE) {
+        snprintf(name, MAX_SENSOR_NAME_SIZE, "%s", dvt_nic_sensor_map[sensor_num].snr_name);
+      } else {
+        snprintf(name, MAX_SENSOR_NAME_SIZE, "%s", dvt_2nd_nic_sensor_map[sensor_num].snr_name);
+      }
     } else
   #endif
   {
@@ -4020,7 +4243,12 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
     sensor_map = nic_sensor_map;
   #ifdef CONFIG_GRANDCANYON2
   if (!is_mp) {
-    sensor_map = dvt_nic_sensor_map;
+    if (nic_pmon_source_info == MAIN_SOURCE) {
+      sensor_map = dvt_nic_sensor_map;
+    } else {
+      sensor_map = dvt_2nd_nic_sensor_map;
+    }
+
   }
   #endif
     break;
@@ -4115,7 +4343,11 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
     sensor_units = nic_sensor_map[sensor_num].units;
   #ifdef CONFIG_GRANDCANYON2
     if (!is_mp) {
-      sensor_units = dvt_nic_sensor_map[sensor_num].units;
+      if (nic_pmon_source_info == MAIN_SOURCE) {
+        sensor_units = dvt_nic_sensor_map[sensor_num].units;
+      } else {
+        sensor_units = dvt_2nd_nic_sensor_map[sensor_num].units;
+      }
     }
   #endif
     break;

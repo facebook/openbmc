@@ -72,6 +72,20 @@
 #define PMBUS_READ_VIN  0x88  // Input voltage
 #define PMBUS_READ_IIN  0x89  // Input current
 #define PMBUS_READ_PIN  0x97  // Input power
+#define PMBUS_MFR_MODEL 0x9A  // MFR_MODEL
+
+// SQ52205 Register Map (hardcoded)
+#define SQ52205_CONFIG_REG      0x00
+#define SQ52205_VOLT_REG        0x02  // Bus Voltage Register (02h)
+#define SQ52205_PWR_REG         0x03  // Power Register (03h)
+#define SQ52205_CURR_REG        0x04  // Current Register (04h)
+#define SQ52205_CAL_REG         0x05
+
+// SQ52205 Init Parameters (from init_args[0])
+#define SQ52205_CONFIG_VALUE    0x0727  // RST=0, AVG=011, VBUSCT=100, VSHCT=100, MODE=111
+#define SQ52205_CURRENT_LSB     0.001   // 1mA/LSB
+#define SQ52205_R_SHUNT         0.002   // 2mΩ
+#define SQ52205_SHUNT_LSB       0.0000025f  // 2.5uV
 
 #endif
 

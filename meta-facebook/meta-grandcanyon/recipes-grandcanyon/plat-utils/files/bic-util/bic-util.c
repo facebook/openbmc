@@ -70,12 +70,18 @@ static const char *option_list[] = {
   "--get_sdr",
   "--read_sensor",
   "--perf_test [loop_count] (0 to run forever)",
+#ifndef CONFIG_GRANDCANYON2
   "--clear_cmos",
+#endif
   "--file [path]",
   "--check_usb_port",
+#ifndef CONFIG_GRANDCANYON2
   "--get_config",
+#endif
   "--read_fruid",
+#ifndef CONFIG_GRANDCANYON2
   "--get_sel",
+#endif
 };
 
 static void
@@ -524,6 +530,7 @@ util_get_postcode() {
   return ret;
 }
 
+#ifndef CONFIG_GRANDCANYON2
 static int
 util_bic_clear_cmos() {
   int ret = 0;
@@ -566,6 +573,7 @@ util_bic_clear_cmos() {
 out:
   return ret;
 }
+#endif
 
 int
 bic_comp_init_usb_dev(usb_dev* udev) {
@@ -855,6 +863,7 @@ util_check_usb_port() {
 #endif
 
 
+#ifndef CONFIG_GRANDCANYON2
 static int
 util_get_config() {
   int ret = 0;
@@ -874,6 +883,7 @@ util_get_config() {
 
   return 0;
 }
+#endif
 
 static int
 util_read_fruid(uint8_t fru_id) {
@@ -895,6 +905,7 @@ util_read_fruid(uint8_t fru_id) {
   return 0;
 }
 
+#ifndef CONFIG_GRANDCANYON2
 static int
 util_get_sel() {
   int ret = 0;
@@ -946,6 +957,7 @@ util_get_sel() {
 
   return 0;
 }
+#endif
 
 int
 main(int argc, char **argv) {
@@ -1006,12 +1018,16 @@ main(int argc, char **argv) {
       } else{
         return util_perf_test(atoi(argv[3]));
       }
-    } else if (!strcmp(argv[2], "--clear_cmos")) {
+    }
+#ifndef CONFIG_GRANDCANYON2
+    else if (!strcmp(argv[2], "--clear_cmos")) {
       if (argc != 3) {
         goto err_exit;
       }
       return util_bic_clear_cmos();
-    } else if (strcmp(argv[2], "--file") == 0) {
+    }
+#endif
+     else if (strcmp(argv[2], "--file") == 0) {
       if ( argc != 4 ) {
         goto err_exit;
       }
@@ -1021,13 +1037,21 @@ main(int argc, char **argv) {
         goto err_exit;
       }
       return util_check_usb_port();
-    } else if (strcmp(argv[2], "--get_config") == 0) {
+    }
+#ifndef CONFIG_GRANDCANYON2
+     else if (strcmp(argv[2], "--get_config") == 0) {
       return util_get_config();
-    } else if (strcmp(argv[2], "--read_fruid") == 0) {
+    }
+#endif
+     else if (strcmp(argv[2], "--read_fruid") == 0) {
       return util_read_fruid(BIC_SERVER_FRUID);
-    } else if(strcmp(argv[2], "--get_sel") == 0) {
+    }
+#ifndef CONFIG_GRANDCANYON2
+     else if(strcmp(argv[2], "--get_sel") == 0) {
       return util_get_sel();
-    } else {
+    }
+#endif
+     else {
       printf("Invalid option: %s\n", argv[2]);
       goto err_exit;
     }

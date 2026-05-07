@@ -131,8 +131,13 @@ vr_ISL_polling_status(uint8_t addr) {
   tbuf[1] = addr;
   tbuf[2] = 0x00; //read cnt
   tbuf[3] = CMD_ISL_VR_DMAADDR; //command code
+#ifdef CONFIG_GRANDCANYON2
+  tbuf[4] = 0x7E;               // isl69260 Gen3
+  tbuf[5] = 0x00;
+#else
   tbuf[4] = 0x07; //data0
   tbuf[5] = 0x07; //data1
+#endif
   tlen = 6;
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
@@ -148,6 +153,16 @@ vr_ISL_polling_status(uint8_t addr) {
     syslog(LOG_WARNING, "[%s] Failed to get PROGRAMMER_STATUS", __func__);
     goto error_exit;
   }
+
+#ifdef CONFIG_GRANDCANYON2
+  // bit5=1 fail(OTP consumed), bit4=1 CRC fail OTP
+  // bit3=1 CRC mismatch, bit2=1 too many configs
+  // bit1=1 fail, bit0=1 complete
+  if (rbuf[0] & 0x26) {
+    syslog(LOG_WARNING, "[%s] PROGRAMMER_STATUS failure: 0x%02X", __func__, rbuf[0]);
+    return -1;
+  }
+#endif
 
   //bit1 is held to 1, it means the action is successful.
   return rbuf[0] & 0x1;

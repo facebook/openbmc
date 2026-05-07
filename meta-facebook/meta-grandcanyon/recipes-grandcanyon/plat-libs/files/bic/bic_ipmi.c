@@ -588,7 +588,11 @@ bic_get_isl_vr_remaining_writes(uint8_t bus, uint8_t addr, uint8_t *writes) {
   tbuf[1] = addr;
   tbuf[2] = 0x00; //read cnt
   tbuf[3] = CMD_ISL_VR_DMAADDR; //command code
+#ifdef CONFIG_GRANDCANYON2
+  tbuf[4] = 0x35;
+#else
   tbuf[4] = 0xC2; //data1
+#endif
   tbuf[5] = 0x00; //data2
   tlen = 6;
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);

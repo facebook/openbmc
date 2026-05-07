@@ -1,0 +1,61 @@
+#!/bin/bash
+#
+# config: 1234 99
+# @brief: Collect NC-SI debug information.
+#
+
+# The sourced `functions` file is not
+# available during shellcheck linting
+#
+# shellcheck disable=SC1090,SC1091
+. "$DREPORT_INCLUDE/functions"
+
+NCSI_IF=2
+PKG=0
+
+# On the Anacapa platform, only the NCSI LAN is enabled by default.
+# Due to development environment limitations, the dedicated LAN may need to be enabled occasionally.
+#   - If both NCSI and dedicated LAN are enabled: eth0 is dedicated LAN, and eth1 is NCSI.
+#   - If only NCSI is enabled: eth0 serves as the NCSI interface.
+if ip link show eth1 >/dev/null 2>&1 ; then
+    NCSI_IF=3
+elif ip link show eth0 >/dev/null 2>&1 ; then
+    NCSI_IF=2
+else
+    echo "No interface eth1 / eth0 exists"
+fi
+
+# Get Thor2 Temperature (Bus 44 / address 0x1f TMP421)
+cmd="i2ctransfer -y -f 44  w1@0x1f 0x01 r1"
+file_name="ncsi-thor2-temperature.log"
+desc="Thor2 Temperature"
+add_cmd_output "$cmd" "$file_name" "$desc"
+
+# ncsi-cmd discover 
+cmd="ncsi-cmd -i $NCSI_IF discover"
+file_name="ncsi-cmd-discover.log"
+desc="ncsi discover"
+add_cmd_output "$cmd" "$file_name" "$desc"
+
+# ncsi-netlink --info 
+cmd="LG2_FORCE_STDERR=1 ncsi-netlink -x $NCSI_IF -p $PKG -i 2>&1"
+file_name="ncsi-netlink-info.log"
+desc="ncsi info"
+add_cmd_output "$cmd" "$file_name" "$desc"
+
+# Issue NC-SI Get Link Status command 
+cmd="ncsi-cmd -v -i $NCSI_IF -p $PKG -c 0 raw 0x0a"
+file_name="ncsi-cmd-gls.log"
+desc="Get Link Status"
+add_cmd_output "$cmd" "$file_name" "$desc"
+
+# Generate NC-SI core dump (binary)
+if [ -f /tmp/ncsi-core-dump-request ]; then
+    rm /tmp/ncsi-core-dump-request
+    ncsi-cmd -i $NCSI_IF -p $PKG -c 0x1f core-dump /tmp/ncsi-core-dump.bin > /dev/null
+    if [ -f /tmp/ncsi-core-dump.bin ]; then
+        tar -czf /tmp/ncsi-core-dump.bin.tar.gz -C /tmp ncsi-core-dump.bin
+        add_copy_file "/tmp/ncsi-core-dump.bin.tar.gz" "ncsi core dump binary"
+        rm /tmp/ncsi-core-dump.bin*
+    fi
+fi

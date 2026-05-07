@@ -1,0 +1,101 @@
+#!/bin/bash
+#
+# config: 1234 99
+# @brief: Collect Anacapa debug information.
+#
+
+# The sourced `functions` file is not
+# available during shellcheck linting
+#
+# shellcheck disable=SC1090,SC1091
+. "$DREPORT_INCLUDE/functions"
+
+function busctl_fru_device()
+{
+    service="xyz.openbmc_project.FruDevice"
+    allobjs=$(busctl tree --list $service)
+    for obj in $allobjs
+    do
+        cmdinstr="busctl introspect $service $obj"
+        echo -e "\n\n\n"
+        echo "$cmdinstr"
+        $cmdinstr
+    done
+    cmdtree="busctl tree $service"
+    echo -e "\n\n\n\n$cmdtree"
+    $cmdtree
+}
+
+function anacapa_info()
+{
+    echo "=================================="
+    echo "====== mfg-tool power-state ======"
+    echo "=================================="
+    mfg-tool power-state 2>/dev/null
+
+    echo "==============================="
+    echo "====== HPM CPLD I2C dump ======"
+    echo "==============================="
+    echo ""
+    i2cdump -y -f 6 0x20 b
+
+    echo "==============================="
+    echo "====== LBB CPLD I2C dump ======"
+    echo "==============================="
+    echo ""
+    i2cdump -y -f 18 0x20 b
+
+    echo "==============================="
+    echo "====== RBB CPLD I2C dump ======"
+    echo "==============================="
+    echo ""
+    i2cdump -y -f 22 0x20 b
+    echo ""
+
+    echo "================================================"
+    echo "====== Left Bridge Board(LBB) PCIe switch ======"
+    echo "================================================"
+    echo "  the first two bytes are the version."
+    echo ""
+    i2ctransfer -f -y 17 w8@0x6a 0x3 0xFC 0x3C 0x40 0xFF 0xF0 0 0x08
+    i2ctransfer -f -y 17 w8@0x6a 0x3 0xFC 0x3C 0x42 0 0 0 0x02
+    i2ctransfer -f -y 17 w4@0x6a 0x7 0xFC 0x3C 0x41 r4
+    echo ""
+
+    echo "================================================="
+    echo "====== Right Bridge Board(RBB) PCIe switch ======"
+    echo "================================================="
+    echo "  the first two bytes are the version."
+    echo ""
+    i2ctransfer -f -y 21 w8@0x6a 0x3 0xFC 0x3C 0x40 0xFF 0xF0 0 0x08
+    i2ctransfer -f -y 21 w8@0x6a 0x3 0xFC 0x3C 0x42 0 0 0 0x02
+    i2ctransfer -f -y 21 w4@0x6a 0x7 0xFC 0x3C 0x41 r4
+    echo ""
+
+    echo "======================================"
+    echo "====== mfg-tool version-display ======"
+    echo "======================================"
+    mfg-tool version-display 2>/dev/null
+
+    echo "================================"
+    echo "====== mfg-tool inventory ======"
+    echo "================================"
+    mfg-tool inventory 2>/dev/null
+
+    echo "================================"
+    echo "====== mfg-tool bmc-state ======"
+    echo "================================"
+    mfg-tool bmc-state 2>/dev/null
+
+    echo "================================="
+    echo "====== FruDevice dbus info ======"
+    echo "================================="
+    busctl_fru_device
+
+}
+
+# Generate anacapa info
+anacapa_info > /tmp/anacapa-info.log 2>&1
+add_copy_file "/tmp/anacapa-info.log" "Anacapa info"
+rm /tmp/anacapa-info.log
+

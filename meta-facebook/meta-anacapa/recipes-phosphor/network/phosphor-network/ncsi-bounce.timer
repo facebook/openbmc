@@ -1,0 +1,11 @@
+[Unit]
+Description=Run NCSI bounce every 15 seconds
+
+[Timer]
+OnBootSec=10s
+OnUnitActiveSec=15s
+AccuracySec=1s
+Unit=ncsi-bounce.service
+
+[Install]
+WantedBy=multi-user.target

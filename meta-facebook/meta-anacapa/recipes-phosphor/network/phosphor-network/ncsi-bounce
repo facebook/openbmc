@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# create bmc debug dump
+create_bmc_dump() {
+    busctl call xyz.openbmc_project.Dump.Manager \
+                /xyz/openbmc_project/dump/bmc \
+                xyz.openbmc_project.Dump.Create \
+                CreateDump 'a{sv}' 0
+}
+
+# Get device index
+get_ncsi_dev_idx() {
+    ip link show "$1" | awk -F':' 'NR==1 {print $1}'
+}
+
+# Bring the interface down and up using 'ip link set "$IFACE" down/up'
+# to force the NCSI driver to redo the probe.
+# The NCSI driver should support this operation.
+check_and_bounce() {
+    local IFACE=$1
+    local DEV_IDX
+    local verbose=0
+
+    ((verbose)) && echo "Checking $IFACE ..."
+
+    DEV_IDX=$(get_ncsi_dev_idx "$IFACE")
+
+    ncsi-netlink -x "$DEV_IDX" -p 0 -i  > /dev/null 2>&1
+    ret=$?
+
+    if [ $ret -eq 1 ]; then
+        echo "NCSI error detected on $IFACE (ret=$ret) → bounce..."
+        ip link set "$IFACE" down
+        sleep 1
+        ip link set "$IFACE" up
+        if ((verbose)); then
+            sleep 5
+            ip addr || true
+        fi || true
+    else
+        ((verbose)) && echo "$IFACE NCSI OK (ret=$ret)"
+
+        ((verbose)) && echo "Checking NCSI dirty state"
+        if [ ! -f /tmp/ncsi_dirty ]; then
+            echo "" > /tmp/ncsi_dirty
+        fi
+
+        dirty_pre=$(cat /tmp/ncsi_dirty)
+        dirty=$(dmesg|grep "NCSI: channel.*marked dirty" | tail -n1)
+        echo "$dirty" > /tmp/ncsi_dirty
+
+        if [ "$dirty_pre" != "$dirty" ];then
+            echo "NCSI dirty state detected"
+
+            # request to collect ncsi core-dump file.
+            # this file will remove during dump log create.
+            touch /tmp/ncsi-core-dump-request
+
+            # Create bmc dump log
+            arg=$(create_bmc_dump | awk -F '"' '{print $2}')
+            arg=$(echo "$arg" | sed 's/xyz\/openbmc_project\/dump\/bmc\/entry/redfish\/v1\/Managers\/bmc\/LogServices\/Dump\/Entries/g')
+
+            # Create redfish event log
+            busctl call xyz.openbmc_project.Logging \
+                      /xyz/openbmc_project/logging \
+                      xyz.openbmc_project.Logging.Create   Create 'ssa{ss}' \
+                      "NCSI dirty state detected. CreateDump: $arg" \
+                      "xyz.openbmc_project.Logging.Entry.Level.Warning" 0
+
+            # Clear all the settings on the interface to recovery 
+            ncsi-netlink -x "$DEV_IDX" -p 0 -r
+        fi
+    fi
+}
+
+# On the Anacapa platform, only the NCSI LAN is enabled by default.
+# Due to development environment limitations, the dedicated LAN may need to be enabled occasionally.
+#   - If both NCSI and dedicated LAN are enabled: eth0 is dedicated LAN, and eth1 is NCSI.
+#   - If only NCSI is enabled: eth0 serves as the NCSI interface.
+if ip link show eth1 >/dev/null 2>&1 ; then
+    check_and_bounce eth1
+elif ip link show eth0 >/dev/null 2>&1 ; then
+    check_and_bounce eth0
+else
+    echo "No interface eth1 / eth0 exists"
+fi
+

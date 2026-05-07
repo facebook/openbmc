@@ -1,0 +1,14 @@
+[Unit]
+Description=NCSI link bounce service
+After=network.target
+StartLimitIntervalSec=0
+StartLimitBurst=0
+
+[Service]
+Type=oneshot
+SyslogIdentifier=ncsi-bounce
+ExecStart=/usr/libexec/phosphor-network/ncsi-bounce
+LogLevelMax=warning
+
+[Install]
+WantedBy=multi-user.target

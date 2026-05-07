@@ -14,4 +14,5 @@ SRC_URI:append = " \
     file://1009-ARM-dts-aspeed-anacapa-evt2-config-ncsi-device.patch \
     file://1010-ARM-dts-aspeed-anacapa-evt2-enable-APML-I3C-bus.patch \
     file://1011-Enable-NIC-MCTP-over-I2C.patch \
+    file://1012-net-ncsi-promote-debug-messages-to-info-for-runtime-.patch \
 "

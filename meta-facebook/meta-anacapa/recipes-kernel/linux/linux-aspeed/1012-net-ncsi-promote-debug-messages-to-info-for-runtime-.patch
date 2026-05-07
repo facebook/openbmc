@@ -1,0 +1,258 @@
+From 5773877df9fa4c06be2b4f4f8034fb0f338fb6da Mon Sep 17 00:00:00 2001
+From: Colin Huang <colin.huang2@amd.com>
+Date: Mon, 20 Apr 2026 10:19:14 +0800
+Subject: [PATCH] net: ncsi: promote debug messages to info for runtime
+ diagnostics
+
+Several NCSI state transitions and error conditions are currently only
+visible via netdev_dbg(), which makes runtime debugging difficult on
+production systems where dynamic debug is not enabled.
+
+Promote selected NCSI messages from netdev_dbg() to netdev_info() so
+that important channel, configuration, and response status information
+is visible without requiring additional debug configuration.
+
+These messages cover:
+- Channel link state changes and configuration progress
+- Channel kicking and dirty reconfiguration paths
+- VLAN add/remove handling
+- Netlink channel selection and masking
+- Response validation failures
+- AEN notifications (LSC, CR, HNCDSC)
+
+In addition, add a temporary module parameter to trigger and observe
+dirty-channel handling behavior during runtime debugging.
+
+Signed-off-by: Colin Huang <colin.huang2@amd.com>
+---
+ net/ncsi/ncsi-aen.c     |  6 ++++--
+ net/ncsi/ncsi-manage.c  | 35 +++++++++++++++++++++++------------
+ net/ncsi/ncsi-netlink.c |  4 ++--
+ net/ncsi/ncsi-rsp.c     |  8 ++++----
+ 4 files changed, 33 insertions(+), 20 deletions(-)
+
+diff --git a/net/ncsi/ncsi-aen.c b/net/ncsi/ncsi-aen.c
+index 62fb1031763d..3b314509c5e3 100644
+--- a/net/ncsi/ncsi-aen.c
++++ b/net/ncsi/ncsi-aen.c
+@@ -74,7 +74,7 @@ static int ncsi_aen_handler_lsc(struct ncsi_dev_priv *ndp,
+ 	had_link = !!(old_data & 0x1);
+ 	has_link = !!(data & 0x1);
+ 
+-	netdev_dbg(ndp->ndev.dev, "NCSI: LSC AEN - channel %u state %s\n",
++	netdev_info(ndp->ndev.dev, "NCSI: LSC AEN - channel %u state %s\n",
+ 		   nc->id, data & 0x1 ? "up" : "down");
+ 
+ 	chained = !list_empty(&nc->link);
+@@ -148,6 +148,8 @@ static int ncsi_aen_handler_cr(struct ncsi_dev_priv *ndp,
+ 	if (!nc)
+ 		return -ENODEV;
+ 
++	netdev_info(ndp->ndev.dev,
++			"NCSI: Configuration required on channel %u\n", nc->id);
+ 	spin_lock_irqsave(&nc->lock, flags);
+ 	if (!list_empty(&nc->link) ||
+ 	    nc->state != NCSI_CHANNEL_ACTIVE) {
+@@ -188,7 +190,7 @@ static int ncsi_aen_handler_hncdsc(struct ncsi_dev_priv *ndp,
+ 	hncdsc = (struct ncsi_aen_hncdsc_pkt *)h;
+ 	ncm->data[3] = ntohl(hncdsc->status);
+ 	spin_unlock_irqrestore(&nc->lock, flags);
+-	netdev_dbg(ndp->ndev.dev,
++	netdev_info(ndp->ndev.dev,
+ 		   "NCSI: host driver %srunning on channel %u\n",
+ 		   ncm->data[3] & 0x1 ? "" : "not ", nc->id);
+ 
+diff --git a/net/ncsi/ncsi-manage.c b/net/ncsi/ncsi-manage.c
+index 82285ac83678..e874f9a9048c 100644
+--- a/net/ncsi/ncsi-manage.c
++++ b/net/ncsi/ncsi-manage.c
+@@ -25,6 +25,9 @@
+ LIST_HEAD(ncsi_dev_list);
+ DEFINE_SPINLOCK(ncsi_dev_lock);
+ 
++static int enable_dirty = 0;
++module_param(enable_dirty, int, 0644);
++
+ bool ncsi_channel_has_link(struct ncsi_channel *channel)
+ {
+ 	return !!(channel->modes[NCSI_MODE_LINK].data[2] & 0x1);
+@@ -105,6 +108,14 @@ static void ncsi_channel_monitor(struct timer_list *t)
+ 	monitor_state = nc->monitor.state;
+ 	spin_unlock_irqrestore(&nc->lock, flags);
+ 
++	if (enable_dirty) {
++		netdev_info(ndp->ndev.dev,
++			"NCSI: enable_dirty set\n");
++		netdev_info(ndp->ndev.dev,
++			"NCSI: channel %p marked dirty\n", nc);
++		enable_dirty = 0;
++	}
++
+ 	if (!enabled)
+ 		return;		/* expected race disabling timer */
+ 	if (WARN_ON_ONCE(chained))
+@@ -1174,7 +1185,7 @@ static void ncsi_configure_channel(struct ncsi_dev_priv *ndp)
+ 		}
+ 		break;
+ 	case ncsi_dev_state_config_done:
+-		netdev_dbg(ndp->ndev.dev, "NCSI: channel %u config done\n",
++		netdev_info(ndp->ndev.dev, "NCSI: channel %u config done\n",
+ 			   nc->id);
+ 		spin_lock_irqsave(&nc->lock, flags);
+ 		nc->state = NCSI_CHANNEL_ACTIVE;
+@@ -1200,7 +1211,7 @@ static void ncsi_configure_channel(struct ncsi_dev_priv *ndp)
+ 			list_add_tail_rcu(&nc->link, &ndp->channel_queue);
+ 			spin_unlock_irqrestore(&ndp->lock, flags);
+ 
+-			netdev_dbg(dev, "Dirty NCSI channel state reset\n");
++			netdev_info(dev, "Dirty NCSI channel state reset\n");
+ 			ncsi_process_next_channel(ndp);
+ 			break;
+ 		}
+@@ -1209,7 +1220,7 @@ static void ncsi_configure_channel(struct ncsi_dev_priv *ndp)
+ 			hot_nc = nc;
+ 		} else {
+ 			hot_nc = NULL;
+-			netdev_dbg(ndp->ndev.dev,
++			netdev_info(ndp->ndev.dev,
+ 				   "NCSI: channel %u link down after config\n",
+ 				   nc->id);
+ 		}
+@@ -1291,7 +1302,7 @@ static int ncsi_choose_active_channel(struct ncsi_dev_priv *ndp)
+ 						  &ndp->channel_queue);
+ 				spin_unlock_irqrestore(&ndp->lock, flags);
+ 
+-				netdev_dbg(ndp->ndev.dev,
++				netdev_info(ndp->ndev.dev,
+ 					   "NCSI: Channel %u added to queue (link %s)\n",
+ 					   nc->id,
+ 					   ncm->data[2] & 0x1 ? "up" : "down");
+@@ -1582,13 +1593,13 @@ int ncsi_process_next_channel(struct ncsi_dev_priv *ndp)
+ 	switch (old_state) {
+ 	case NCSI_CHANNEL_INACTIVE:
+ 		ndp->ndev.state = ncsi_dev_state_config;
+-		netdev_dbg(ndp->ndev.dev, "NCSI: configuring channel %u\n",
++		netdev_info(ndp->ndev.dev, "NCSI: configuring channel %u\n",
+ 	                   nc->id);
+ 		ncsi_configure_channel(ndp);
+ 		break;
+ 	case NCSI_CHANNEL_ACTIVE:
+ 		ndp->ndev.state = ncsi_dev_state_suspend;
+-		netdev_dbg(ndp->ndev.dev, "NCSI: suspending channel %u\n",
++		netdev_info(ndp->ndev.dev, "NCSI: suspending channel %u\n",
+ 			   nc->id);
+ 		ncsi_suspend_channel(ndp);
+ 		break;
+@@ -1635,7 +1646,7 @@ static int ncsi_kick_channels(struct ncsi_dev_priv *ndp)
+ 				if ((ndp->ndev.state & 0xff00) ==
+ 						ncsi_dev_state_config ||
+ 						!list_empty(&nc->link)) {
+-					netdev_dbg(nd->dev,
++					netdev_info(nd->dev,
+ 						   "NCSI: channel %p marked dirty\n",
+ 						   nc);
+ 					nc->reconfigure_needed = true;
+@@ -1655,7 +1666,7 @@ static int ncsi_kick_channels(struct ncsi_dev_priv *ndp)
+ 			list_add_tail_rcu(&nc->link, &ndp->channel_queue);
+ 			spin_unlock_irqrestore(&ndp->lock, flags);
+ 
+-			netdev_dbg(nd->dev, "NCSI: kicked channel %p\n", nc);
++			netdev_info(nd->dev, "NCSI: kicked channel %p\n", nc);
+ 			n++;
+ 		}
+ 	}
+@@ -1686,7 +1697,7 @@ int ncsi_vlan_rx_add_vid(struct net_device *dev, __be16 proto, u16 vid)
+ 	list_for_each_entry_rcu(vlan, &ndp->vlan_vids, list) {
+ 		n_vids++;
+ 		if (vlan->vid == vid) {
+-			netdev_dbg(dev, "NCSI: vid %u already registered\n",
++			netdev_info(dev, "NCSI: vid %u already registered\n",
+ 				   vid);
+ 			return 0;
+ 		}
+@@ -1706,7 +1717,7 @@ int ncsi_vlan_rx_add_vid(struct net_device *dev, __be16 proto, u16 vid)
+ 	vlan->vid = vid;
+ 	list_add_rcu(&vlan->list, &ndp->vlan_vids);
+ 
+-	netdev_dbg(dev, "NCSI: Added new vid %u\n", vid);
++	netdev_info(dev, "NCSI: Added new vid %u\n", vid);
+ 
+ 	found = ncsi_kick_channels(ndp) != 0;
+ 
+@@ -1735,7 +1746,7 @@ int ncsi_vlan_rx_kill_vid(struct net_device *dev, __be16 proto, u16 vid)
+ 	/* Remove the VLAN id from our internal list */
+ 	list_for_each_entry_safe(vlan, tmp, &ndp->vlan_vids, list)
+ 		if (vlan->vid == vid) {
+-			netdev_dbg(dev, "NCSI: vid %u found, removing\n", vid);
++			netdev_info(dev, "NCSI: vid %u found, removing\n", vid);
+ 			list_del_rcu(&vlan->list);
+ 			found = true;
+ 			kfree(vlan);
+@@ -1890,7 +1901,7 @@ void ncsi_stop_dev(struct ncsi_dev *nd)
+ 		}
+ 	}
+ 
+-	netdev_dbg(ndp->ndev.dev, "NCSI: Stopping device\n");
++	netdev_info(ndp->ndev.dev, "NCSI: Stopping device\n");
+ 	ncsi_report_link(ndp, true);
+ }
+ EXPORT_SYMBOL_GPL(ncsi_stop_dev);
+diff --git a/net/ncsi/ncsi-netlink.c b/net/ncsi/ncsi-netlink.c
+index 2f872d064396..b0d5e5613b96 100644
+--- a/net/ncsi/ncsi-netlink.c
++++ b/net/ncsi/ncsi-netlink.c
+@@ -688,7 +688,7 @@ static int ncsi_set_channel_mask_nl(struct sk_buff *msg,
+ 			spin_unlock_irqrestore(&package->lock, flags);
+ 			return -ERANGE;
+ 		}
+-		netdev_dbg(ndp->ndev.dev,
++		netdev_info(ndp->ndev.dev,
+ 			   "NCSI: Channel %u set as preferred channel\n",
+ 			   channel->id);
+ 	}
+@@ -696,7 +696,7 @@ static int ncsi_set_channel_mask_nl(struct sk_buff *msg,
+ 	package->channel_whitelist =
+ 		nla_get_u32(info->attrs[NCSI_ATTR_CHANNEL_MASK]);
+ 	if (package->channel_whitelist == 0)
+-		netdev_dbg(ndp->ndev.dev,
++		netdev_info(ndp->ndev.dev,
+ 			   "NCSI: Package %u set to all channels disabled\n",
+ 			   package->id);
+ 
+diff --git a/net/ncsi/ncsi-rsp.c b/net/ncsi/ncsi-rsp.c
+index fc6a4f961e12..aad6fd37c8d9 100644
+--- a/net/ncsi/ncsi-rsp.c
++++ b/net/ncsi/ncsi-rsp.c
+@@ -46,12 +46,12 @@ static int ncsi_validate_rsp_pkt(struct ncsi_request *nr,
+ 	h = (struct ncsi_rsp_pkt_hdr *)skb_network_header(nr->rsp);
+ 
+ 	if (h->common.revision != NCSI_PKT_REVISION) {
+-		netdev_dbg(nr->ndp->ndev.dev,
++		netdev_info(nr->ndp->ndev.dev,
+ 			   "NCSI: unsupported header revision\n");
+ 		return -EINVAL;
+ 	}
+ 	if (ntohs(h->common.length) != payload) {
+-		netdev_dbg(nr->ndp->ndev.dev,
++		netdev_info(nr->ndp->ndev.dev,
+ 			   "NCSI: payload length mismatched\n");
+ 		return -EINVAL;
+ 	}
+@@ -59,7 +59,7 @@ static int ncsi_validate_rsp_pkt(struct ncsi_request *nr,
+ 	/* Check on code and reason */
+ 	if (ntohs(h->code) != NCSI_PKT_RSP_C_COMPLETED ||
+ 	    ntohs(h->reason) != NCSI_PKT_RSP_R_NO_ERROR) {
+-		netdev_dbg(nr->ndp->ndev.dev,
++		netdev_info(nr->ndp->ndev.dev,
+ 			   "NCSI: non zero response/reason code %04xh, %04xh\n",
+ 			    ntohs(h->code), ntohs(h->reason));
+ 		return -EPERM;
+@@ -77,7 +77,7 @@ static int ncsi_validate_rsp_pkt(struct ncsi_request *nr,
+ 					   sizeof(*h) + payload - 4);
+ 
+ 	if (*pchecksum != htonl(checksum)) {
+-		netdev_dbg(nr->ndp->ndev.dev,
++		netdev_info(nr->ndp->ndev.dev,
+ 			   "NCSI: checksum mismatched; recd: %08x calc: %08x\n",
+ 			   *pchecksum, htonl(checksum));
+ 		return -EINVAL;

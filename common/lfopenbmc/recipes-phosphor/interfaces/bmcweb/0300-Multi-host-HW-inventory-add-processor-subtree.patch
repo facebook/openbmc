@@ -1,7 +1,7 @@
-From 152c1b0d3f9382b78b2aff346b831c1c68180e4f Mon Sep 17 00:00:00 2001
+From 79bbf2d7d9e12b9cde15c92f776c77fcddd83b99 Mon Sep 17 00:00:00 2001
 From: Christopher Meis <christopher.meis@9elements.com>
 Date: Wed, 17 Sep 2025 09:07:06 +0200
-Subject: [PATCH] Multi-host/HW-inventory: add processor subtree
+Subject: [PATCH 300/301] Multi-host/HW-inventory: add processor subtree
 
 This implements the processor subtree for multi-host system.
 Requires a containing/contained_by association implemented in EM config
@@ -423,5 +423,5 @@ index b1fa85ab..805342a9 100644
          boost::urls::format(
              "/redfish/v1/Systems/{}/Actions/ComputerSystem.Reset", systemName);
 -- 
-2.43.0
+2.52.0
 

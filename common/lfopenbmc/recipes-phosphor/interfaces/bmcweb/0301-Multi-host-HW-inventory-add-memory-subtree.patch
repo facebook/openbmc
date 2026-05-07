@@ -1,7 +1,7 @@
-From bbffed1aac595222b59fa63d58a5399484cf65ae Mon Sep 17 00:00:00 2001
+From e9dd1eb0802ad08b73a48f79f585652bc93bebde Mon Sep 17 00:00:00 2001
 From: Christopher Meis <christopher.meis@9elements.com>
 Date: Tue, 23 Sep 2025 10:24:36 +0200
-Subject: [PATCH] Multi-host/HW-inventory: add memory subtree
+Subject: [PATCH 301/301] Multi-host/HW-inventory: add memory subtree
 
 This implements the memory subtree for multi-host system.
 Requires a containing/contained_by association implemented in EM config
@@ -397,5 +397,5 @@ index 805342a9..a6f3589a 100644
          boost::urls::format("/redfish/v1/Systems/{}/Processors", systemName);
  
 -- 
-2.43.0
+2.52.0
 

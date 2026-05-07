@@ -1,4 +1,4 @@
-From 1ddab9395ed73fe5ae3dedc61f8f3b2be99c9dff Mon Sep 17 00:00:00 2001
+From caf0cbf343ffc0e11c09c7965f94a9b18c49776b Mon Sep 17 00:00:00 2001
 From: YikaiTsai-wiwynn <yikai_tsai@wiwynn.com>
 Date: Tue, 29 Oct 2024 09:43:50 +0800
 Subject: [PATCH 207/238] Add ASPEED AST2600 I2Cv2 controller driver
@@ -255,7 +255,7 @@ index fb985769f5ff..f58bcecc69cc 100644
  i2c-at91-$(CONFIG_I2C_AT91_SLAVE_EXPERIMENTAL)	+= i2c-at91-slave.o
 diff --git a/drivers/i2c/busses/i2c-ast2600.c b/drivers/i2c/busses/i2c-ast2600.c
 new file mode 100644
-index 000000000000..e28c66858b68
+index 000000000000..50f372701ea2
 --- /dev/null
 +++ b/drivers/i2c/busses/i2c-ast2600.c
 @@ -0,0 +1,2474 @@

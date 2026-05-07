@@ -4899,11 +4899,45 @@ if (buf[0] == 3 && memcmp(&buf[1], "SPM", 3) == 0){
     return MFR_MPS;
   }
 
-if (buf[0] == 2 && memcmp(&buf[1], "IT", 2) == 0) {
+if (buf[0] == 2 && memcmp(&buf[1], "TI", 2) == 0) {
     return MFR_TI;
   }
   syslog(LOG_WARNING, "%s: Unknown MFR_ID len=%u data=%02X %02X %02X %02X",
          __func__, len, buf[0], buf[1], buf[2], buf[3]);
 
   return MFR_UNKNOWN;
+}
+
+int
+pal_read_pmbus_byte_from_exp(uint8_t bus, uint8_t addr, uint8_t cmd, uint8_t rlen, uint8_t *data)
+{
+  uint8_t txbuf[4] = {0};
+  uint8_t rxbuf[4] = {0};
+  uint8_t rxlen = 0;
+  uint8_t bus_sel = bus * 2 + 1;
+  int ret;
+  int retry;
+
+  if (data == NULL) {
+    return -1;
+  }
+
+  txbuf[0] = bus_sel;
+  txbuf[1] = addr;
+  txbuf[2] = rlen;
+  txbuf[3] = cmd;
+
+  for (retry = 0; retry < MAX_RETRY; retry++) {
+    rxlen = 0;
+    ret = expander_ipmb_wrapper(EXPANDER_NETFN, EXPANDER_CMD, txbuf, sizeof(txbuf), rxbuf, &rxlen);
+
+    if (ret == 0 && rxlen >= 1) {
+      *data = rxbuf[0];
+      return 0;
+    }
+
+    msleep(100);
+  }
+
+  return -1;
 }

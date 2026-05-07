@@ -8,11 +8,13 @@ EXPANDER_NETFN=0x06
 EXPANDER_CMD=0x52
 CLEAR_FAULT_CMD=0x03
 STATUS_WORD_CMD=0x79
+STATUS_VOUT_CMD=0x7A
 PMBUS_MFR_ID_CMD=0x99
 
 READ_WORD_TYPE=2
 SEND_BYTE_TYPE=0
 BLOCK_READ_4BYTE_TYPE=4
+BLOCK_READ_1BYTE_TYPE=1
 
 # STATUS_WORD bit masks (16-bit)
 # UV            = BIT(3)  = 0x0008
@@ -28,6 +30,9 @@ MPS_OTHER_FAULT_MASK=0x6014   # BIT(2)|BIT(4)|BIT(13)|BIT(14)
 TI_OTHER_FAULT_MASK=0xE004    # BIT(2)|BIT(13)|BIT(14)|BIT(15)
 UV_OTHER_FAULT=3
 OTHER_FAULT_ONLY=1
+
+OUT_STATUS_BIT=0x8000
+STATUS_OUT_VOUT_UV_WARN=0x20
 
 RETRY_MAX=3
 RETRY_INTERVAL=1
@@ -62,6 +67,11 @@ calc_bus_sel_hex() {
 read_status_word() {
   expander-util "$EXPANDER_NETFN" "$EXPANDER_CMD" \
     "$1" "$2" "$READ_WORD_TYPE" "$STATUS_WORD_CMD"
+}
+
+read_status_vout() {
+  expander-util "$EXPANDER_NETFN" "$EXPANDER_CMD" \
+    "$1" "$2" "$BLOCK_READ_1BYTE_TYPE" "$STATUS_VOUT_CMD"
 }
 
 clear_fault() {
@@ -140,6 +150,7 @@ check_uv_only_fault() {
   addr="$2"
   uv_mask="$3"
   other_mask="$4"
+  mfr="$5"
 
   bus_sel_hex=$(calc_bus_sel_hex "$bus")
 
@@ -163,6 +174,21 @@ EOF
 
   STATUS_WORD_HEX=$(printf "0x%04X" "$status16")
 
+  status_vout_val=0
+
+  if [ "$mfr" = "TI" ] && [ $((status16 & OUT_STATUS_BIT)) -ne 0 ]; then
+    if ! status_vout_raw=$(read_status_vout "$bus_sel_hex" "$addr" 2>&1); then
+      STATUS_WORD_HEX="$STATUS_WORD_HEX, STATUS_VOUT(7Ah) read failed: $status_vout_raw"
+      return 4
+    fi
+
+    read -r status_vout_b0 _ <<EOF
+$status_vout_raw
+EOF
+
+    status_vout_val=$(printf '%d' "0x${status_vout_b0:-00}")
+  fi
+
   uv_val=$((uv_mask))
   other_val=$((other_mask))
   input_bit=$((INPUT_FAULT_BIT))
@@ -175,6 +201,13 @@ EOF
     other_check=$((other_val & (0xFFFF ^ input_bit)))
   else
     other_check=$other_val
+  fi
+
+  if [ "$mfr" = "TI" ] && [ $((status16 & OUT_STATUS_BIT)) -ne 0 ]; then
+    if [ $((status_vout_val & STATUS_OUT_VOUT_UV_WARN)) -ne 0 ]; then
+      has_uv=1
+      other_check=$((other_check & (0xFFFF ^ OUT_STATUS_BIT)))
+    fi
   fi
 
   [ $((status16 & other_check)) -ne 0 ] && has_other=1
@@ -197,7 +230,7 @@ run_clear_fault() {
   mfr=$(detect_mfr_id "$bus" "$addr")
 
   get_mfr_fault_masks "$mfr"
-  check_uv_only_fault "$bus" "$addr" "$UV_MASK" "$MFR_OTHER_FAULT_MASK"
+  check_uv_only_fault "$bus" "$addr" "$UV_MASK" "$MFR_OTHER_FAULT_MASK" "$mfr"
   uv_rc=$?
 
   case "$uv_rc" in
@@ -217,7 +250,7 @@ run_clear_fault() {
       status_before="$STATUS_WORD_HEX"
       ;;
     4)
-      log "$comp: read STATUS_WORD(79h) failed (data=$STATUS_WORD_HEX)"
+      log "$comp: read  fault status failed (data=$STATUS_WORD_HEX)"
       return 1
       ;;
   esac

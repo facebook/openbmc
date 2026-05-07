@@ -559,7 +559,7 @@ clear_faults(uint8_t bus, uint8_t addr)
 }
 
 static inline fault_type_t
-classify_fault(uint16_t status, const efuse_profile_t *fault_config)
+classify_fault(uint16_t status_word, int status_out, const efuse_profile_t *fault_config)
 {
   bool has_uv, has_other, has_input;
 
@@ -567,9 +567,20 @@ classify_fault(uint16_t status, const efuse_profile_t *fault_config)
     return FAULT_INVALID;
   }
 
-  has_uv = !!(status & fault_config->uv_mask);
-  has_other = !!(status & fault_config->other_fault_mask);
-  has_input = !!(status & fault_config->other_fault_mask & INPUT_FAULT_BIT);
+  has_uv = !!(status_word & fault_config->uv_mask);
+  has_other = !!(status_word & fault_config->other_fault_mask);
+  has_input = !!(status_word & fault_config->other_fault_mask & INPUT_FAULT_BIT);
+
+  /*
+   * TI: STATUS_WORD bit15 only means STATUS_VOUT(7Ah) has active bits.
+   * If 7Ah bit5 VOUT_UV_WARN is set during startup, treat it as UV-only.
+   */
+  if (fault_config->mfr == MFR_TI && (status_word & OUT_STATUS_BIT)) {
+    if (status_out & STATUS_OUT_VOUT_UV_WARN) {
+      has_uv = true;
+      has_other = !!(status_word & (fault_config->other_fault_mask & ~OUT_STATUS_BIT));
+    }
+  }
 
   if (!has_uv && !has_other)
     return FAULT_NONE;
@@ -597,6 +608,7 @@ scc_stby_uv_fault_check(void)
   const efuse_profile_t *fault_config;
   uint16_t status_word = 0;
   uint16_t status_after = 0;
+  uint8_t status_out = 0;
   const char *comp = "P12V_STBY_SCC";
   fault_type_t fault_type;
   int ret;
@@ -617,7 +629,16 @@ scc_stby_uv_fault_check(void)
     return;
   }
 
-  fault_type = classify_fault(status_word, fault_config);
+  if (mfr == MFR_TI && (status_word & OUT_STATUS_BIT)) {
+    ret = pal_read_pmbus_byte_from_exp(SCC_STBY_BUS, SCC_STBY_ADDR,
+                          PMBUS_STATUS_VOUT, BLOCK_READ_1BYTE, &status_out);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s: %s read STATUS_OUT(7Ah) failed", __func__, comp);
+      return;
+    }
+  }
+
+  fault_type = classify_fault(status_word, status_out, fault_config);
 
   switch (fault_type) {
     case FAULT_NONE:

@@ -185,6 +185,8 @@ extern "C" {
 
 #define UV_MASK BIT_MASK(3)
 #define INPUT_FAULT_BIT BIT_MASK(13)
+#define OUT_STATUS_BIT BIT_MASK(15)
+#define STATUS_OUT_VOUT_UV_WARN BIT_MASK(5)
 #define MPS_OTHER_FAULT_MASK \
   (BIT_MASK(2)  |  /* OT */ \
    BIT_MASK(4)  |  /* IOUT_OC_FAULT */ \
@@ -643,6 +645,7 @@ int pal_nic_poweron_action();
 int pal_reset_nic();
 mfr_id_t pal_detect_efuse_mfr_id(uint8_t bus, uint8_t addr);
 const char *pal_get_mfr_name(mfr_id_t mfr);
+int pal_read_pmbus_byte_from_exp(uint8_t bus, uint8_t addr, uint8_t cmd, uint8_t rlen, uint8_t *data);
 #ifdef __cplusplus
 } // extern "C"
 #endif

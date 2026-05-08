@@ -1,0 +1,53 @@
+From 502e4dcd8defd33b401cbbf387256baddc8c7ad7 Mon Sep 17 00:00:00 2001
+From: Rex Fu <Rex.Fu@amd.com>
+Date: Thu, 7 May 2026 10:36:47 +0800
+Subject: [PATCH] common: log update result events
+
+Emit structured UpdateSuccessful and ApplyFailed events from the
+generic device update flow so Redfish EventLog can report the final
+firmware update result.
+
+Tested:
+- Verified successful update creates Update.1.2.UpdateSuccessful.
+- Verified failed update creates Update.1.2.ApplyFailed.
+
+Signed-off-by: Rex Fu <Rex.Fu@amd.com>
+---
+ common/src/device.cpp | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/common/src/device.cpp b/common/src/device.cpp
+index 7e39e0a..5604efa 100644
+--- a/common/src/device.cpp
++++ b/common/src/device.cpp
+@@ -5,6 +5,8 @@
+ #include "software_manager.hpp"
+ 
+ #include <phosphor-logging/lg2.hpp>
++#include <phosphor-logging/commit.hpp>
++#include <xyz/openbmc_project/Software/Update/event.hpp>
+ #include <sdbusplus/asio/object_server.hpp>
+ #include <sdbusplus/async/context.hpp>
+ #include <sdbusplus/bus.hpp>
+@@ -188,6 +190,18 @@ sdbusplus::async::task<bool> Device::continueUpdateWithMappedPackage(
+     {
+         softwarePending->setActivation(
+             ActivationInterface::Activations::Active);
++
++        lg2::commit(
++            sdbusplus::event::xyz::openbmc_project::software::Update::UpdateSuccessful(
++            "TARGET_NAME", config.configName,
++            "IMAGE_IDENTIFIER", componentVersion));
++    }
++    else
++    {
++        lg2::commit(
++            sdbusplus::error::xyz::openbmc_project::software::Update::ApplyFailed(
++            "IMAGE_IDENTIFIER", componentVersion,
++            "TARGET_NAME", config.configName));
+     }
+ 
+     softwarePending->setActivationBlocksTransition(false);
+-- 
+2.43.0
+

@@ -1,7 +1,7 @@
-From 7a2829c786d8efe8056154c15577918dff45a112 Mon Sep 17 00:00:00 2001
+From 2570da0a3146566a175ce18aae54a2d80109f1fa Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 17:16:49 +0800
-Subject: [PATCH 15/22] requester: refresh MCTP endpoints after host reaches
+Subject: [PATCH 16/23] requester: refresh MCTP endpoints after host reaches
  running state
 
 Some MCTP endpoints associated with MCTPI2CTarget or MCTPI3CTarget
@@ -24,12 +24,12 @@ https://gerrit.openbmc.org/c/openbmc/pldm/+/88403
 
 Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
 ---
- requester/mctp_endpoint_discovery.cpp | 132 ++++++++++++++++++++++++++
+ requester/mctp_endpoint_discovery.cpp | 144 ++++++++++++++++++++++++++
  requester/mctp_endpoint_discovery.hpp |  14 +++
- 2 files changed, 146 insertions(+)
+ 2 files changed, 158 insertions(+)
 
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index bfeaccf..e6fda1e 100644
+index 3062bc0..fe69b77 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -32,6 +32,12 @@ MctpDiscovery::MctpDiscovery(
@@ -45,7 +45,7 @@ index bfeaccf..e6fda1e 100644
      handlers(list)
  {
      std::map<MctpInfo, Availability> currentMctpInfoMap;
-@@ -419,6 +425,132 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
+@@ -419,6 +425,144 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
      }
  }
  
@@ -169,20 +169,32 @@ index bfeaccf..e6fda1e 100644
 +        return;
 +    }
 +
-+    info("Re-handling {COUNT} matched MCTP endpoints after postcode end",
-+         "COUNT", matchedInfos.size());
++    std::string rehandleEids;
++    for (const auto& mctpInfo : matchedInfos)
++    {
++        if (!rehandleEids.empty())
++        {
++            rehandleEids += ", ";
++        }
 +
-+    handleMctpEndpoints(matchedInfos);
++    rehandleEids +=
++        std::to_string(static_cast<unsigned>(std::get<0>(mctpInfo)));
++    }
++
++    refreshFirmwareParameters(matchedInfos);
++
++    info("hostStateChangedCb finished, refreshed EIDs: {EIDS}", "EIDS",
++        rehandleEids);
 +}
 +
  void MctpDiscovery::discoverEndpoints(sdbusplus::message_t& msg)
  {
      MctpInfos addedInfos;
 diff --git a/requester/mctp_endpoint_discovery.hpp b/requester/mctp_endpoint_discovery.hpp
-index 20f9c5c..d1cb527 100644
+index 96a35e9..dd0ba18 100644
 --- a/requester/mctp_endpoint_discovery.hpp
 +++ b/requester/mctp_endpoint_discovery.hpp
-@@ -89,6 +89,9 @@ class MctpDiscovery
+@@ -90,6 +90,9 @@ class MctpDiscovery
      /** @brief Used to watch for new MCTP endpoints */
      sdbusplus::bus::match_t mctpEndpointPropChangedSignal;
  
@@ -192,7 +204,7 @@ index 20f9c5c..d1cb527 100644
      /** @brief List of handlers need to notify when new MCTP
       * Endpoint is Added/Removed */
      std::vector<MctpDiscoveryHandlerIntf*> handlers;
-@@ -103,6 +106,17 @@ class MctpDiscovery
+@@ -104,6 +107,17 @@ class MctpDiscovery
       */
      void propertiesChangedCb(sdbusplus::message_t& msg);
  
@@ -211,5 +223,5 @@ index 20f9c5c..d1cb527 100644
       * D-Bus signal raised.
       *
 -- 
-2.52.0
+2.47.3
 

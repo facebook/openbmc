@@ -33,10 +33,10 @@ class ChassisEepromTest(EepromV5Test, unittest.TestCase):
 
     def set_product_name(self):
         platform_to_product_name_map = {
-            BoardRevision.BRD_TYPE_TAHANSB800BC: ["TAHANSB800BC"],
-            BoardRevision.BRD_TYPE_ICECUBE: ["ICECUBE"],
-            BoardRevision.BRD_TYPE_ICETEA: ["ICETEA"],
-            BoardRevision.BRD_TYPE_LADAKH800BCLS: ["LADAKH800BCLS"],
+            BoardRevision.BRD_TYPE_TAHANSB800BC: ["TAHANSB800BC", "TAHANSB800BCM"],
+            BoardRevision.BRD_TYPE_ICECUBE: ["ICECUBE", "ICECUBEM"],
+            BoardRevision.BRD_TYPE_ICETEA: ["ICETEA", "ICETEAM"],
+            BoardRevision.BRD_TYPE_LADAKH800BCLS: ["LADAKH800BCLS", "LADAKH800BCLSM"],
         }
         self.product_name = platform_to_product_name_map.get(get_platform_id())
         if self.product_name is None:

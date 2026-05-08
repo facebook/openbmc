@@ -1,0 +1,161 @@
+From cfdac443c2d60c1c9b1426557336e9172f276137 Mon Sep 17 00:00:00 2001
+From: Fred Chen <Fred.Chen@quantatw.com>
+Date: Wed, 6 May 2026 22:21:39 +0800
+Subject: [PATCH] Thresholds: Add option to log thresholds on second hit
+
+Introduce "LogOnSecondHit" to filter transient spikes and spurious
+readings. When enabled, a threshold event is only asserted and logged
+after two consecutive readings exceed the limit.
+
+This prevents unnecessary alerts caused by momentary fluctuations.
+The state resets immediately if a reading returns to the normal range.
+
+Avoid maintenance issues caused by frequent Entity Manager changes. This
+patch moves the logic into dbus-sensors and hardcodes it to enable for
+sensors with names starting with 'PDB'.
+
+Gerrit: https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/89990
+
+Change-Id: Ic68c88c55d8e7382e7d7fbb8fd6fa6732d69933d
+Signed-off-by: Fred Chen <Fred.Chen@quantatw.com>
+---
+ src/Thresholds.cpp | 46 +++++++++++++++++++++++++++++++++++++++++++---
+ src/Thresholds.hpp |  6 ++++--
+ 2 files changed, 47 insertions(+), 5 deletions(-)
+
+diff --git a/src/Thresholds.cpp b/src/Thresholds.cpp
+index 4865b8b..f0b66cf 100644
+--- a/src/Thresholds.cpp
++++ b/src/Thresholds.cpp
+@@ -63,13 +63,33 @@ Direction findThresholdDirection(const std::string& direct)
+     return Direction::ERROR;
+ }
+ 
++// static std::optional<std::string> extractLogOnSecondHit(
++//     const SensorBaseConfigMap& properties)
++// {
++//     auto findLogOnSecondHit = properties.find("LogOnSecondHit");
++//     if (findLogOnSecondHit == properties.end())
++//     {
++//         return std::nullopt;
++//     }
++//     return std::visit(VariantToStringVisitor(), findLogOnSecondHit->second);
++// }
++
+ bool parseThresholdsFromConfig(
+     const SensorData& sensorData,
+     std::vector<thresholds::Threshold>& thresholdVector,
+     const std::string* matchLabel, const int* sensorIndex)
+ {
++    std::string baseSensorName;
+     for (const auto& [intf, cfg] : sensorData)
+     {
++        if (baseSensorName.empty())
++        {
++            auto nameFind = cfg.find("Name");
++            if (nameFind != cfg.end())
++            {
++                baseSensorName = std::visit(VariantToStringVisitor(), nameFind->second);
++            }
++        }
+         if (intf.find("Thresholds") == std::string::npos)
+         {
+             continue;
+@@ -140,7 +160,9 @@ bool parseThresholdsFromConfig(
+         }
+         double val = std::visit(VariantToDoubleVisitor(), valueFind->second);
+ 
+-        thresholdVector.emplace_back(level, direction, val, hysteresis);
++        bool logOnSecondHit = baseSensorName.starts_with("PDB");
++        thresholdVector.emplace_back(level, direction, val, hysteresis,
++                                     logOnSecondHit);
+     }
+     return true;
+ }
+@@ -281,7 +303,14 @@ static std::vector<ChangeParam> checkThresholds(Sensor* sensor, double value)
+         {
+             if (value >= threshold.value)
+             {
+-                thresholdChanges.emplace_back(threshold, true, value);
++                if (!threshold.logOnSecondHit || threshold.assertPending)
++                {
++                    thresholdChanges.emplace_back(threshold, true, value);
++                }
++                else
++                {
++                    threshold.assertPending = true;
++                }
+                 if (++cHiTrue < assertLogCount)
+                 {
+                     lg2::info(
+@@ -293,11 +322,13 @@ static std::vector<ChangeParam> checkThresholds(Sensor* sensor, double value)
+             }
+             else if (value < (threshold.value - threshold.hysteresis))
+             {
++                threshold.assertPending = false;
+                 thresholdChanges.emplace_back(threshold, false, value);
+                 ++cHiFalse;
+             }
+             else
+             {
++                threshold.assertPending = false;
+                 ++cHiMidstate;
+             }
+         }
+@@ -305,7 +336,14 @@ static std::vector<ChangeParam> checkThresholds(Sensor* sensor, double value)
+         {
+             if (value <= threshold.value)
+             {
+-                thresholdChanges.emplace_back(threshold, true, value);
++                if (!threshold.logOnSecondHit || threshold.assertPending)
++                {
++                    thresholdChanges.emplace_back(threshold, true, value);
++                }
++                else
++                {
++                    threshold.assertPending = true;
++                }
+                 if (++cLoTrue < assertLogCount)
+                 {
+                     lg2::info(
+@@ -317,11 +355,13 @@ static std::vector<ChangeParam> checkThresholds(Sensor* sensor, double value)
+             }
+             else if (value > (threshold.value + threshold.hysteresis))
+             {
++                threshold.assertPending = false;
+                 thresholdChanges.emplace_back(threshold, false, value);
+                 ++cLoFalse;
+             }
+             else
+             {
++                threshold.assertPending = false;
+                 ++cLoMidstate;
+             }
+         }
+diff --git a/src/Thresholds.hpp b/src/Thresholds.hpp
+index e220b38..63501c9 100644
+--- a/src/Thresholds.hpp
++++ b/src/Thresholds.hpp
+@@ -41,15 +41,17 @@ struct Threshold
+     Threshold(
+         const Level& lev, const Direction& dir, const double& val,
+         const double hysteresis = std::numeric_limits<double>::quiet_NaN(),
+-        bool write = true) :
++        bool logOnSecondHit = false, bool write = true) :
+         level(lev), direction(dir), value(val), hysteresis(hysteresis),
+-        writeable(write)
++        logOnSecondHit(logOnSecondHit), writeable(write)
+     {}
+     Level level;
+     Direction direction;
+     double value;
+     double hysteresis;
++    bool logOnSecondHit;
+     bool writeable;
++    bool assertPending = false;
+     std::optional<sdbusplus::message::object_path> assertedLog;
+ 
+     bool operator==(const Threshold& rhs) const
+-- 
+2.39.3
+

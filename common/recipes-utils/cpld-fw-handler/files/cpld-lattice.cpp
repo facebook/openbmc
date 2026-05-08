@@ -1494,6 +1494,15 @@ int CpldLatticeManager::XO5Familyv2_update()
     {
         target = "CFG0";
     }
+
+    if (target == "SRAM")
+    {
+        XO5SRAMRecover recover(bus, addr, imagePath, chip, interface, target,
+                               debugMode);
+
+        return recover.fwUpdate(false);
+    }
+
     if (target != "CFG0" && target != "CFG1")
     {
         std::cerr << "Error: unknown target.\n";

@@ -15,4 +15,8 @@ SRC_URI:append = " \
     file://1010-ARM-dts-aspeed-anacapa-evt2-enable-APML-I3C-bus.patch \
     file://1011-Enable-NIC-MCTP-over-I2C.patch \
     file://1012-net-ncsi-promote-debug-messages-to-info-for-runtime-.patch \
+    file://1013-arm-dts-anacapa-Enable-JTAG1.patch \
+    file://1014-jtag-jtag-aspeed-Bring-changes-for-Aspeed-26XX.patch \
+    file://1015-jtag-jtag-aspeed-Increase-the-wait-iteration-to-300.patch \
+    file://1016-arm-dts-anacapa-Modify-the-RMI-TSI-device-IDs.patch \
 "

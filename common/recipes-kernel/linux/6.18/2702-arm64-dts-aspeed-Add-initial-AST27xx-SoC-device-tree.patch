@@ -1,7 +1,7 @@
-From b331ea3c0fb5a7520433aa39a9dfa080edd9e0c4 Mon Sep 17 00:00:00 2001
+From e623c2818cdcf7ab53e69b283e3386b5f481ad62 Mon Sep 17 00:00:00 2001
 From: Ryan Chen <ryan_chen@aspeedtech.com>
 Date: Thu, 12 Jun 2025 15:23:35 +0800
-Subject: [PATCH 2702/2706] arm64: dts: aspeed: Add initial AST27xx SoC device
+Subject: [PATCH 2702/2707] arm64: dts: aspeed: Add initial AST27xx SoC device
  tree
 
 Add initial device tree support for the ASPEED AST27xx family, the

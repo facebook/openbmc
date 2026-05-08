@@ -1,7 +1,7 @@
-From c808d5e0f5432a9296b485ec5eacdaf3d84eda96 Mon Sep 17 00:00:00 2001
+From 3a69cd0e90e6a0a19fff3cd9719ad417e58bbf40 Mon Sep 17 00:00:00 2001
 From: Colin Huang <u8813345@gmail.com>
 Date: Mon, 16 Mar 2026 16:39:34 +0800
-Subject: [PATCH 607/609] hwmon: (pmbus) Add Delta Q54SN120A1 Q54SW120A7 chip
+Subject: [PATCH 607/610] hwmon: (pmbus) Add Delta Q54SN120A1 Q54SW120A7 chip
 
 Add the DELTA chips Q54SN120A1, Q54SW120A7 in q54sj108a2,
 1/4 Brick DC/DC Regulated Power Module with PMBus support

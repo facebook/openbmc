@@ -1,7 +1,7 @@
-From c4946a89960ba6179709eabe71224c7ded63eb6d Mon Sep 17 00:00:00 2001
+From 105d0239e7f425c6cc916d8e1455fca9ba45054c Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 7 May 2026 21:56:34 +0800
-Subject: [PATCH] terminus: add refreshFirmwareParameters method
+Subject: [PATCH 15/23] terminus: add refreshFirmwareParameters method
 
 Add `refreshFirmwareParameters` to query firmware parameters without
 running `handleMctpEndpoints`.
@@ -36,7 +36,7 @@ Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
  5 files changed, 159 insertions(+), 1 deletion(-)
 
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index d78b2db..cfe5158 100644
+index d78b2db..25b4765 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
 @@ -12,6 +12,11 @@ namespace pldm
@@ -252,7 +252,7 @@ index 1ff5e64..d939280 100644
       *         the updated EM configurations
       *
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index bfeaccf..3062bc0 100644
+index 7e915e9..f5e6e5f 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -478,6 +478,18 @@ void MctpDiscovery::updateMctpEndpointAvailability(const MctpInfo& mctpInfo,
@@ -301,5 +301,5 @@ index 20f9c5c..96a35e9 100644
       *
       *  @param[in] mctpInfoMap - information of discovered MCTP endpoints
 -- 
-2.47.3
+2.53.0-Meta
 

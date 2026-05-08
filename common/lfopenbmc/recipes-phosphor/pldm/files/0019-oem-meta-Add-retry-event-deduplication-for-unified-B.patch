@@ -1,4 +1,4 @@
-From 6938584e1b98df627587cba10b63556a2c63f5e2 Mon Sep 17 00:00:00 2001
+From 526fc7430dd41991c50587291427ec9ac82d3ac1 Mon Sep 17 00:00:00 2001
 From: Sora Su <sora_su@wiwynn.com>
 Date: Fri, 13 Mar 2026 13:02:16 +0800
 Subject: [PATCH 19/23] oem-meta: Add retry event deduplication for unified
@@ -158,16 +158,18 @@ index 2b311fa..d3f3b8c 100644
      uint8_t certEventIdx = (eventData[10] < certEvent.size())
                                 ? eventData[10]
 diff --git a/oem/meta/event/oem_event_manager.hpp b/oem/meta/event/oem_event_manager.hpp
-index d36e6af..222458d 100644
+index 30d478c..aefef2f 100644
 --- a/oem/meta/event/oem_event_manager.hpp
 +++ b/oem/meta/event/oem_event_manager.hpp
-@@ -7,11 +7,14 @@
+@@ -5,6 +5,7 @@
  #include <libpldm/base.h>
  
  #include <format>
 +#include <span>
  #include <string>
  
+ constexpr uint8_t PLDM_OEM_EVENT_CLASS_0xFB = 0xFB;
+@@ -12,6 +13,8 @@ constexpr uint8_t PLDM_OEM_EVENT_CLASS_0xFB = 0xFB;
  namespace pldm::oem_meta
  {
  
@@ -235,5 +237,5 @@ index d36e6af..222458d 100644
          std::string dimmDevName = "";
          for (size_t i = 0; i < cxlBdfMap.size(); i++)
 -- 
-2.47.3
+2.53.0-Meta
 

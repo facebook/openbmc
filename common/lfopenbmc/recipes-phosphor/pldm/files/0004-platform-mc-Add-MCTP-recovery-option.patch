@@ -1,7 +1,7 @@
-From 911c07536ba243468fda5a4356e2c33c58ad7f56 Mon Sep 17 00:00:00 2001
+From f477d8a0e4a28c5d430b6441bbbab88bd14b76e8 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 16:48:20 +0800
-Subject: [PATCH 04/22] platform-mc: Add MCTP recovery option
+Subject: [PATCH 04/23] platform-mc: Add MCTP recovery option
 
 Allow enabling or disabling MCTP 2.0 recovery feature.
 Calls `.Recover` method on timeout to handle communication recovery.
@@ -39,7 +39,7 @@ index a81beba..1305781 100644
  
  uint16_t findStateSensorId(const pldm_pdr* pdrRepo, uint8_t tid,
 diff --git a/meson.build b/meson.build
-index c68bcf5..50ff5b8 100644
+index dfd41c3..75094bc 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -118,6 +118,8 @@ elif get_option('transport-implementation') == 'af-mctp'
@@ -91,5 +91,5 @@ index eee6748..de29d1e 100644
      co_return rc;
  }
 -- 
-2.52.0
+2.53.0-Meta
 

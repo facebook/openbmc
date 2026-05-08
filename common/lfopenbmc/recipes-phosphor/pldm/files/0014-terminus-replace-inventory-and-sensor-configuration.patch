@@ -1,7 +1,7 @@
-From f7a2cb1d50f8e75ff637e020840522304b5a4a04 Mon Sep 17 00:00:00 2001
+From fcd341521ef83d066b850dba25909dd5e55c351a Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Fri, 26 Dec 2025 14:35:14 +0800
-Subject: [PATCH 14/22] terminus: replace inventory and sensor configuration
+Subject: [PATCH 14/23] terminus: replace inventory and sensor configuration
 
 Add fetchEntityManagerConfiguration to retrieve inventory name and
 sensor configuration from EntityManager.
@@ -19,7 +19,7 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  fw-update/inventory_manager.cpp               |   2 +-
  .../test/firmware_inventory_manager_test.cpp  |   5 +-
  platform-mc/terminus.cpp                      | 161 +++++++++++++++-
- platform-mc/terminus.hpp                      |  43 +++++
+ platform-mc/terminus.hpp                      |  44 +++++
  platform-mc/terminus_manager.cpp              |  47 +++++
  platform-mc/test/event_manager_test.cpp       |  12 +-
  platform-mc/test/platform_manager_test.cpp    |  24 +--
@@ -27,10 +27,10 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  requester/mctp_endpoint_discovery.cpp         | 178 +++++++++++++-----
  requester/mctp_endpoint_discovery.hpp         |  11 ++
  .../test/mctp_endpoint_discovery_test.cpp     |  31 +--
- 12 files changed, 461 insertions(+), 92 deletions(-)
+ 12 files changed, 462 insertions(+), 92 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
-index fe10784..0942e92 100644
+index 5cc260d..8a5cb95 100644
 --- a/common/types.hpp
 +++ b/common/types.hpp
 @@ -37,6 +37,10 @@ using NetworkId = uint32_t;
@@ -84,7 +84,7 @@ index c7effaa..99f8ff2 100644
  
      Event event(sdeventplus::Event::get_default());
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 0a16e6f..27ae92a 100644
+index 76d50f6..8b2068d 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -1,6 +1,7 @@
@@ -95,7 +95,7 @@ index 0a16e6f..27ae92a 100644
  
  #include <libpldm/platform.h>
  
-@@ -205,6 +206,12 @@ void Terminus::parseTerminusPDRs()
+@@ -228,6 +229,12 @@ void Terminus::parseTerminusPDRs()
          }
      }
  
@@ -108,11 +108,11 @@ index 0a16e6f..27ae92a 100644
      auto tName = findTerminusName();
      if (tName && !tName.value().empty())
      {
-@@ -225,7 +232,18 @@ void Terminus::parseTerminusPDRs()
+@@ -248,7 +255,18 @@ void Terminus::parseTerminusPDRs()
  #endif
      }
  
--    if (createInventoryPath(terminusName))
+-    if (createInventoryPath(terminusName, findTerminusEntityType()))
 +    auto iName = getInventoryName();
 +    std::string inventoryName;
 +    if (iName && !iName->empty())
@@ -124,11 +124,11 @@ index 0a16e6f..27ae92a 100644
 +        inventoryName = terminusName;
 +    }
 +
-+    if (createInventoryPath(inventoryName))
++    if (createInventoryPath(inventoryName, findTerminusEntityType()))
      {
          lg2::info("Terminus ID {TID}: Created Inventory path {PATH}.", "TID",
                    tid, "PATH", inventoryPath);
-@@ -810,5 +828,146 @@ std::vector<std::string> Terminus::getSensorNames(const SensorID& sensorId)
+@@ -834,5 +852,146 @@ std::vector<std::string> Terminus::getSensorNames(const SensorID& sensorId)
      return sensorNames;
  }
  
@@ -276,7 +276,7 @@ index 0a16e6f..27ae92a 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index e67e7ea..bef9d59 100644
+index 4627737..d5b8648 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
 @@ -119,6 +119,38 @@ class Terminus
@@ -331,18 +331,19 @@ index e67e7ea..bef9d59 100644
    private:
      /** @brief Find the Terminus Name from the Entity Auxiliary name list
       *         The Entity Auxiliary name list is entityAuxiliaryNamesTbl.
-@@ -301,6 +339,11 @@ class Terminus
-     std::unique_ptr<InventoryItemBoardIntf> inventoryItemBoardInft = nullptr;
- #endif
+@@ -304,6 +342,12 @@ class Terminus
+     /* @brief The pointer of inventory D-Bus interface for the terminus */
+     std::unique_ptr<pldm::dbus_api::PldmEntityBase> inventoryItemInft = nullptr;
  
 +    /** @brief associated path */
 +    EntityName associatedPath{};
 +
 +    /** @brief Inventory name */
 +    EntityName inventoryName{};
- 
++
      /* @brief Inventory D-Bus object path of the terminus */
      std::string inventoryPath;
+ 
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
 index dfeea76..473ceb9 100644
 --- a/platform-mc/terminus_manager.cpp
@@ -409,7 +410,7 @@ index dfeea76..473ceb9 100644
  }
  
 diff --git a/platform-mc/test/event_manager_test.cpp b/platform-mc/test/event_manager_test.cpp
-index 9cd49d2..9701698 100644
+index 790c3c3..a32fb7b 100644
 --- a/platform-mc/test/event_manager_test.cpp
 +++ b/platform-mc/test/event_manager_test.cpp
 @@ -170,8 +170,8 @@ TEST_F(EventManagerTest, processNumericSensorEventTest)
@@ -639,7 +640,7 @@ index 8db58f1..ca1b3ef 100644
      auto tid = mappedTid.value();
      termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 62ccaec..bfeaccf 100644
+index 0141817..7e915e9 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -80,9 +80,9 @@ void MctpDiscovery::getMctpInfos(std::map<MctpInfo, Availability>& mctpInfoMap)
@@ -984,5 +985,5 @@ index 3eb57cf..71ce9c4 100644
      constexpr auto mockedDbusPath =
          "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
 -- 
-2.52.0
+2.53.0-Meta
 

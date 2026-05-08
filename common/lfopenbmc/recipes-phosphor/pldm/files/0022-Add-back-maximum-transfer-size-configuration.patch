@@ -1,4 +1,4 @@
-From 8800d04513a3c70e7aba0d8ed206a97ec9f7f1f0 Mon Sep 17 00:00:00 2001
+From cd91edb81bf755179acbd2aa8c2eac6c6bf98149 Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Tue, 21 Apr 2026 23:45:07 -0700
 Subject: [PATCH 22/23] Add back maximum transfer size configuration
@@ -30,7 +30,7 @@ index 3cf5fde..c465134 100644
      {
          const auto& fwDeviceIDRecord =
 diff --git a/meson.build b/meson.build
-index 833b863..8e7cae0 100644
+index 5f7a97f..163f2a9 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -112,6 +112,7 @@ conf_data.set(
@@ -64,5 +64,5 @@ index 0f63a71..164b113 100644
  option(
      'system-specific-bios-json',
 -- 
-2.47.3
+2.53.0-Meta
 

@@ -1,7 +1,8 @@
-From 4ec7dfa5342ed3408b49a8a09ef46b54374b845e Mon Sep 17 00:00:00 2001
+From 05312c03b68c5da2fef8f7166eea264399811dd0 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <cosmo.chou@quantatw.com>
 Date: Thu, 16 Apr 2026 09:49:37 +0800
-Subject: [PATCH] arm64: dts: aspeed: add peripheral nodes for G7 platforms
+Subject: [PATCH 2707/2707] arm64: dts: aspeed: add peripheral nodes for G7
+ platforms
 
 Add device tree nodes for peripherals in AST2700, including SGPIOM,
 I2C, OTP, UDMA, FMC/SPI, MAC, ADC, LPC, and WDT.
@@ -12,7 +13,7 @@ Signed-off-by: Cosmo Chou <cosmo.chou@quantatw.com>
  1 file changed, 564 insertions(+)
 
 diff --git a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
-index 2a6f80a25..85cab0b51 100644
+index 2a6f80a255aa..2eb8b692d339 100644
 --- a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
 @@ -165,6 +165,22 @@ gpio1: gpio@14c0b000 {
@@ -601,5 +602,5 @@ index 2a6f80a25..85cab0b51 100644
 +	};
 +};
 -- 
-2.53.0
+2.52.0
 

@@ -1,7 +1,7 @@
-From 1466f6def812771c46d7fdcd773976a535f0e9e0 Mon Sep 17 00:00:00 2001
+From 2274ce4762880feca0bc9c33a2efc81179133673 Mon Sep 17 00:00:00 2001
 From: Kevin Tung <kevin.tung.openbmc@gmail.com>
 Date: Thu, 7 May 2026 15:56:51 +0800
-Subject: [PATCH] amd-apml: sbrmi: update SBRMI revision for Venice
+Subject: [PATCH 610/610] amd-apml: sbrmi: update SBRMI revision for Venice
 
 Update the SBRMI revision to 0x31 for Venice CPU.
 
@@ -15,7 +15,7 @@ lore link: https://lore.kernel.org/all/20260318112711.2757467-1-Akshay.Gupta@amd
  2 files changed, 6 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/misc/amd-apml/sbrmi-common.c b/drivers/misc/amd-apml/sbrmi-common.c
-index 7527c186a..09ccea55d 100644
+index 7527c186adb3..09ccea55da72 100644
 --- a/drivers/misc/amd-apml/sbrmi-common.c
 +++ b/drivers/misc/amd-apml/sbrmi-common.c
 @@ -241,6 +241,7 @@ int rmi_mca_msr_read(struct apml_sbrmi_device *rmi_dev,
@@ -35,7 +35,7 @@ index 7527c186a..09ccea55d 100644
  		if (ret < 0)
  			goto exit_unlock;
 diff --git a/drivers/misc/amd-apml/sbrmi.c b/drivers/misc/amd-apml/sbrmi.c
-index f7d858f3a..27e1f420a 100644
+index f7d858f3a2ec..27e1f420aa1c 100644
 --- a/drivers/misc/amd-apml/sbrmi.c
 +++ b/drivers/misc/amd-apml/sbrmi.c
 @@ -406,7 +406,7 @@ static int sbrmi_i2c_identify_reg_addr_size(struct i2c_client *i2cdev, u32 *size
@@ -75,5 +75,5 @@ index f7d858f3a..27e1f420a 100644
  			else
  				*size = SBRMI_REG_ADDR_SIZE_DEF;
 -- 
-2.47.3
+2.52.0
 

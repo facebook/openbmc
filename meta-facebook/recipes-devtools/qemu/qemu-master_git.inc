@@ -26,21 +26,22 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=a3b50d8b88dcc0eb3d7d39b760b9e821 \
 # QEMU reference - commit SHA for reproducible builds
 # To update to latest master, run:
 #   git ls-remote https://github.com/qemu/qemu.git refs/heads/master | cut -f1
-QEMU_REF ?= "65fb9de4888f9bf32bc4f60c880da3dff04c4fd9"
+# v11.0.0
+QEMU_REF ?= "98b060da3a4f92b2a994ead5b16a87e783baf77c"
 
 # Use git protocol (required by BitBake QA)
 SRC_URI = "git://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \
            file://powerpc_rom.bin \
            file://0001-qemu-Add-addition-environment-space-to-boot-loader-q.patch \
            file://0002-apic-fixup-fallthrough-to-PIC.patch \
-           file://0004-qemu-Do-not-include-file-if-not-exists.patch \
-           file://0006-qemu-Determinism-fixes.patch \
-           file://0007-tests-meson.build-use-relative-path-to-refer-to-file.patch \
-           file://0008-Define-MAP_SYNC-and-MAP_SHARED_VALIDATE-on-needed-li.patch \
-           file://0010-configure-lookup-meson-exutable-from-PATH.patch \
-           file://0011-qemu-Ensure-pip-and-the-python-venv-aren-t-used-for-.patch \
-           file://0012-add-anacapa-machine-model.patch \
-           file://0013-add-meta-bmc-machines-to-build.patch \
+           file://0003-qemu-Do-not-include-file-if-not-exists.patch \
+           file://0004-qemu-Determinism-fixes.patch \
+           file://0005-tests-meson.build-use-relative-path-to-refer-to-file.patch \
+           file://0006-Define-MAP_SYNC-and-MAP_SHARED_VALIDATE-on-needed-li.patch \
+           file://0007-Subject-PATCH-configure-lookup-meson-exutable-from-P.patch \
+           file://0008-qemu-Ensure-pip-and-the-python-venv-aren-t-used-for-.patch \
+           file://0009-hw-arm-aspeed-Add-Facebook-Anacapa-BMC-machine.patch \
+           file://0010-hw-arm-aspeed-Add-BMC-machine-to-build.patch \
            file://qemu-guest-agent.init \
            file://qemu-guest-agent.udev \
            "

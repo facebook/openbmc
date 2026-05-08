@@ -1,9 +1,16 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From 15dda70e400a58997fe77e05fea943aba232e6bf Mon Sep 17 00:00:00 2001
 From: OpenBMC <openbmc@meta.com>
 Date: Tue, 31 Mar 2026 06:51:44 -0700
-Subject: [PATCH] hw/arm/aspeed: Add Facebook Anacapa BMC machine
+Subject: [PATCH 09/10] hw/arm/aspeed: Add Facebook Anacapa BMC machine
 
 ---
+ hw/arm/aspeed_ast2600_anacapa.c | 381 ++++++++++++++++++++++++++++++++
+ 1 file changed, 381 insertions(+)
+ create mode 100644 hw/arm/aspeed_ast2600_anacapa.c
+
+diff --git a/hw/arm/aspeed_ast2600_anacapa.c b/hw/arm/aspeed_ast2600_anacapa.c
+new file mode 100644
+index 0000000000..7b47a6a851
 --- /dev/null
 +++ b/hw/arm/aspeed_ast2600_anacapa.c
 @@ -0,0 +1,381 @@
@@ -388,4 +395,6 @@ Subject: [PATCH] hw/arm/aspeed: Add Facebook Anacapa BMC machine
 +};
 +
 +DEFINE_TYPES(aspeed_ast2600_anacapa_types)
-DEFINE_TYPES(aspeed_ast2600_anacapa_types)
+-- 
+2.52.0
+

@@ -1,7 +1,7 @@
-From 40c6b8af36558367acf2c9d19787d9692474adcb Mon Sep 17 00:00:00 2001
+From 90f7f316dd113ce74d79950ef1b5df862305a28d Mon Sep 17 00:00:00 2001
 From: Jason Wessel <jason.wessel@windriver.com>
 Date: Fri, 28 Mar 2014 17:42:43 +0800
-Subject: [PATCH] qemu: Add addition environment space to boot loader
+Subject: [PATCH 01/10] qemu: Add addition environment space to boot loader
  qemu-system-mips
 
 Upstream-Status: Inappropriate - OE uses deep paths
@@ -30,3 +30,6 @@ index 812ff64d83..daf9299433 100644
  
  /* Hardware addresses */
  #define FLASH_ADDRESS       0x1e000000ULL
+-- 
+2.52.0
+

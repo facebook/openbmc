@@ -1,7 +1,8 @@
-From 8c0ef37932eca38cefdfc31c5eaa9c9fed403fab Mon Sep 17 00:00:00 2001
+From f0b2762eaf37f4cc10309f23c2dfe2702e9aeb94 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 2 Feb 2026 07:47:26 -0800
-Subject: [PATCH] Subject: [PATCH] configure: lookup meson exutable from PATH
+Subject: [PATCH 07/10] Subject: [PATCH] configure: lookup meson exutable from
+ PATH
 
 Upstream-Status: Inappropriate [workaround, would need a real fix for upstream]
 ---
@@ -9,10 +10,10 @@ Upstream-Status: Inappropriate [workaround, would need a real fix for upstream]
  1 file changed, 1 insertion(+), 10 deletions(-)
 
 diff --git a/configure b/configure
-index 4b61fd3bbf..27f3e1e0a6 100755
+index eea9030672..92a4bf4150 100755
 --- a/configure
 +++ b/configure
-@@ -968,12 +968,6 @@ mkvenv="$python ${source_path}/python/scripts/mkvenv.py"
+@@ -967,12 +967,6 @@ mkvenv="$python ${source_path}/python/scripts/mkvenv.py"
  $mkvenv ensuregroup --dir "${source_path}/python/wheels" \
       ${source_path}/pythondeps.toml meson || exit 1
  
@@ -25,7 +26,7 @@ index 4b61fd3bbf..27f3e1e0a6 100755
  get_pwd() {
      if pwd -W >/dev/null 2>&1; then
          pwd -W
-@@ -982,10 +976,7 @@ get_pwd() {
+@@ -981,10 +975,7 @@ get_pwd() {
      fi
  }
  
@@ -37,3 +38,6 @@ index 4b61fd3bbf..27f3e1e0a6 100755
  
  # On Haiku, meson might show up in a "non-packaged" subfolder instead, see
  # https://github.com/haiku/haiku/blob/r1beta5/docs/user/storage/storageintro.dox
+-- 
+2.52.0
+

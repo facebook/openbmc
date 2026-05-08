@@ -1,7 +1,7 @@
-From 5305fac76d6a614d6ec01866a399894a6ed337f8 Mon Sep 17 00:00:00 2001
+From 228e921ce0bb83e14be4dfe85753d7722e5e1f7f Mon Sep 17 00:00:00 2001
 From: Richard Purdie <richard.purdie@linuxfoundation.org>
 Date: Mon, 1 Mar 2021 13:00:47 +0000
-Subject: [PATCH] qemu: Determinism fixes
+Subject: [PATCH 04/10] qemu: Determinism fixes
 
 When sources are included within debug information, a couple of areas of the
 qemu build are not reproducible due to either full buildpaths or timestamps.
@@ -28,3 +28,6 @@ index f992472b73..2e4218b146 100644
          f = open(filename, 'rt', encoding='utf-8')
          parse_file(f, toppat)
          f.close()
+-- 
+2.52.0
+

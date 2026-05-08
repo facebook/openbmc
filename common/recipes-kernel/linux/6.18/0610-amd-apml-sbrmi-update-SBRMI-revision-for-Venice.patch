@@ -1,0 +1,79 @@
+From 1466f6def812771c46d7fdcd773976a535f0e9e0 Mon Sep 17 00:00:00 2001
+From: Kevin Tung <kevin.tung.openbmc@gmail.com>
+Date: Thu, 7 May 2026 15:56:51 +0800
+Subject: [PATCH] amd-apml: sbrmi: update SBRMI revision for Venice
+
+Update the SBRMI revision to 0x31 for Venice CPU.
+
+The SBRMI revision is used to determine the protocol for CPUID and
+MCAMSR reads, and to identify the SBRMI register address size.
+
+lore link: https://lore.kernel.org/all/20260318112711.2757467-1-Akshay.Gupta@amd.com/
+---
+ drivers/misc/amd-apml/sbrmi-common.c | 2 ++
+ drivers/misc/amd-apml/sbrmi.c        | 8 ++++----
+ 2 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/misc/amd-apml/sbrmi-common.c b/drivers/misc/amd-apml/sbrmi-common.c
+index 7527c186a..09ccea55d 100644
+--- a/drivers/misc/amd-apml/sbrmi-common.c
++++ b/drivers/misc/amd-apml/sbrmi-common.c
+@@ -241,6 +241,7 @@ int rmi_mca_msr_read(struct apml_sbrmi_device *rmi_dev,
+ 
+ 		break;
+ 	case 0x21:
++	case 0x31:
+ 		ret = msr_datain_v21(rmi_dev, msg);
+ 		if (ret < 0)
+ 			goto exit_unlock;
+@@ -351,6 +352,7 @@ int rmi_cpuid_read(struct apml_sbrmi_device *rmi_dev,
+ 			goto exit_unlock;
+ 		break;
+ 	case 0x21:
++	case 0x31:
+ 		ret = cpuid_datain_v21(rmi_dev, msg);
+ 		if (ret < 0)
+ 			goto exit_unlock;
+diff --git a/drivers/misc/amd-apml/sbrmi.c b/drivers/misc/amd-apml/sbrmi.c
+index f7d858f3a..27e1f420a 100644
+--- a/drivers/misc/amd-apml/sbrmi.c
++++ b/drivers/misc/amd-apml/sbrmi.c
+@@ -406,7 +406,7 @@ static int sbrmi_i2c_identify_reg_addr_size(struct i2c_client *i2cdev, u32 *size
+ 		if (ret >= 0)
+ 		{
+ 			pr_err("I2C SBRMI_REV command returned value: %d\n", *rev);
+-			if(*rev == SBRMI_REV_BRTH)
++			if (*rev == 0x21 || *rev == 0x31)
+ 				*size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
+ 			else
+ 				*size = SBRMI_REG_ADDR_SIZE_DEF;
+@@ -438,7 +438,7 @@ static int sbrmi_i2c_identify_reg_addr_size(struct i2c_client *i2cdev, u32 *size
+ 		if (ret >= 0)
+ 		{
+ 			pr_err("I2C SBRMI_REV command returned value: %d\n", *rev);
+-			if(*rev == SBRMI_REV_BRTH)
++			if (*rev == 0x21 || *rev == 0x31)
+ 				*size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
+ 			else
+ 				*size = SBRMI_REG_ADDR_SIZE_DEF;
+@@ -584,7 +584,7 @@ static int sbrmi_i3c_identify_reg_addr_size(struct i3c_device *i3cdev, u32 *size
+ 		if (ret >= 0)
+ 		{
+ 			pr_err("I3C SBRMI_REV command returned value: %d\n", *rev);
+-			if(*rev == SBRMI_REV_BRTH)
++			if (*rev == 0x21 || *rev == 0x31)
+ 				*size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
+ 			else
+ 				*size = SBRMI_REG_ADDR_SIZE_DEF;
+@@ -615,7 +615,7 @@ static int sbrmi_i3c_identify_reg_addr_size(struct i3c_device *i3cdev, u32 *size
+ 		if (ret >= 0)
+ 		{
+ 			pr_err("I3C SBRMI_REV command returned value: %d\n", *rev);
+-			if(*rev == SBRMI_REV_BRTH)
++			if (*rev == 0x21 || *rev == 0x31)
+ 				*size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
+ 			else
+ 				*size = SBRMI_REG_ADDR_SIZE_DEF;
+-- 
+2.47.3
+

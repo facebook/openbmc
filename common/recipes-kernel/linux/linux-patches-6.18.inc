@@ -95,6 +95,7 @@ SRC_URI:append = " \
     file://0607-hwmon-pmbus-Add-Delta-Q54SN120A1-Q54SW120A7-chip.patch \
     file://0608-iio-adc-ltc2309-explicitly-assign-hex-values-to-chan.patch \
     file://0609-iio-adc-ltc2309-add-support-for-ltc2305.patch \
+    file://0610-amd-apml-sbrmi-update-SBRMI-revision-for-Venice.patch \
 "
 
 #

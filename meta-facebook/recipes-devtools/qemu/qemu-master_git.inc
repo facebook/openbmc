@@ -45,9 +45,14 @@ SRC_URI = "git://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \
            file://qemu-guest-agent.udev \
            "
 
-S:openbmc-fb-dunfell = "${UNPACKDIR}/git"
-S:openbmc-fb-kirkstone = "${UNPACKDIR}/git"
-S:openbmc-fb-rocko = "${UNPACKDIR}/git"
+QEMU_CHECKOUT_DIR = "${BPN}-${PV}"
+QEMU_CHECKOUT_DIR:openbmc-fb-dunfell = "git"
+QEMU_CHECKOUT_DIR:openbmc-fb-kirkstone = "git"
+QEMU_CHECKOUT_DIR:openbmc-fb-rocko = "git"
+
+S:openbmc-fb-dunfell = "${UNPACKDIR}/${QEMU_CHECKOUT_DIR}"
+S:openbmc-fb-kirkstone = "${UNPACKDIR}/${QEMU_CHECKOUT_DIR}"
+S:openbmc-fb-rocko = "${UNPACKDIR}/${QEMU_CHECKOUT_DIR}"
 
 SRCREV = "${QEMU_REF}"
 
@@ -55,13 +60,13 @@ SRCREV = "${QEMU_REF}"
 # are not git submodules. destsuffix puts them in the right location.
 # Note: rust crates are skipped since we do not need them.
 SRC_URI += " \
-    git://gitlab.com/qemu-project/keycodemapdb.git;protocol=https;nobranch=1;destsuffix=git/subprojects/keycodemapdb;name=keycodemapdb \
-    git://gitlab.com/qemu-project/berkeley-softfloat-3.git;protocol=https;nobranch=1;destsuffix=git/subprojects/berkeley-softfloat-3;name=berkeley-softfloat-3 \
-    git://gitlab.com/qemu-project/berkeley-testfloat-3.git;protocol=https;nobranch=1;destsuffix=git/subprojects/berkeley-testfloat-3;name=berkeley-testfloat-3 \
-    git://gitlab.com/qemu-project/dtc.git;protocol=https;nobranch=1;destsuffix=git/subprojects/dtc;name=dtc \
-    git://gitlab.freedesktop.org/slirp/libslirp.git;protocol=https;nobranch=1;destsuffix=git/subprojects/slirp;name=slirp \
-    git://gitlab.com/qemu-project/libvfio-user.git;protocol=https;nobranch=1;destsuffix=git/subprojects/libvfio-user;name=libvfio-user \
-    git://gitlab.com/libblkio/libblkio.git;protocol=https;nobranch=1;destsuffix=git/subprojects/libblkio;name=libblkio \
+    git://gitlab.com/qemu-project/keycodemapdb.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/keycodemapdb;name=keycodemapdb \
+    git://gitlab.com/qemu-project/berkeley-softfloat-3.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/berkeley-softfloat-3;name=berkeley-softfloat-3 \
+    git://gitlab.com/qemu-project/berkeley-testfloat-3.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/berkeley-testfloat-3;name=berkeley-testfloat-3 \
+    git://gitlab.com/qemu-project/dtc.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/dtc;name=dtc \
+    git://gitlab.freedesktop.org/slirp/libslirp.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/slirp;name=slirp \
+    git://gitlab.com/qemu-project/libvfio-user.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/libvfio-user;name=libvfio-user \
+    git://gitlab.com/libblkio/libblkio.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/libblkio;name=libblkio \
     "
 
 # Pin subproject revisions (from .wrap files)

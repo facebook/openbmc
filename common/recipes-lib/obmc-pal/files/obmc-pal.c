@@ -185,7 +185,8 @@ static int pal_lpc_snoop_read(uint8_t *buf, size_t max_len, size_t *rlen)
 
 // This function will read out driver FIFO,
 // should avoid calling this function by multiple threads
-static int pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
+int __attribute__((weak))
+pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
 {
   const char *dev_path = "/dev/aspeed-lpc-pcc";
   int fd, offs;

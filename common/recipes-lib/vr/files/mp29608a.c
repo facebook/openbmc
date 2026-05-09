@@ -32,6 +32,9 @@
 #define MP2869A_DEVICE_ID 0x0000869A
 #define MP29612A_DEVICE_ID 0x0000612A
 #define MP29608A_DEVICE_ID 0x0000608A
+#define MP2869B_DEVICE_ID 0x0000869B
+#define MP29612B_DEVICE_ID 0x0000612B
+#define MP29608B_DEVICE_ID 0x0000608B
 #define UNKNOWN_DEVICE_ID 0xFFFFFFFF
 
 #define VR_VALUE_DISABLE_WRITE_PROTECT 0x00
@@ -348,7 +351,7 @@ int mp29608a_fw_update(struct vr_info *info, void *args)
 	printf("Update VR: %s\n", info->dev_name);
 	if ((info->addr >> 1) != config->addr) {
 		printf("ERROR: The 7-bit address in the FW file is 0x%02x, but the device address is 0x%02x\n",
-			info->addr >> 1, config->addr);
+			config->addr, info->addr >> 1);
 		syslog(LOG_WARNING, "%s: address mismatch; please use the correct FW file", __func__);
 		return VR_STATUS_FAILURE;
 	}
@@ -357,7 +360,6 @@ int mp29608a_fw_update(struct vr_info *info, void *args)
 		vr_xfer = info->xfer;
 	}
 
-	// pmbus addr match?
 	// page0@99h with 3 bytes read == 0x4d5053?,	VR_CMD_MFR_ID
 	if (mp29608a_check_mfr_id(info->bus, info->addr)) {
 		syslog(LOG_WARNING, "%s: check mfr id failed", __func__);
@@ -509,6 +511,8 @@ void *mp29608a_parse_file(struct vr_info *info, const char *path)
 			str = strtok(NULL, "\t");
 			if (!strncmp(str, "MP29608-A", 9)) {
 				config->product_id_exp = MP29608A_DEVICE_ID;
+			} else if (!strncmp(str, "MP29608-B", 9)) {
+				config->product_id_exp = MP29608B_DEVICE_ID;
 			} else {
 				config->product_id_exp = UNKNOWN_DEVICE_ID;
 			}

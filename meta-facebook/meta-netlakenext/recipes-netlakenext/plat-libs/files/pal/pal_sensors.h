@@ -219,7 +219,7 @@ enum {
 };
 
 enum pmbus_dev_type{
-  MP29608A = 0,
+  MP29608B = 0,
   XDPE19283D,
 };
 
@@ -262,7 +262,7 @@ typedef struct {
 } pmbus_dev_info;
 
 static pmbus_dev_info pmbus_dev_list[] = {
-  [MP29608A] = {
+  [MP29608B] = {
   {{CMD_TEMP1, READ_WORD, LINEAR11},
   {CMD_TEMP2, READ_WORD, LINEAR11},
   {CMD_VOUT, READ_WORD, VOUT_MODE},

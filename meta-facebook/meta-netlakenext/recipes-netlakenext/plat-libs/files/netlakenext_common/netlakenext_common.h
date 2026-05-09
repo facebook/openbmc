@@ -48,17 +48,11 @@ extern "C" {
 #define BMC_FRU_ADDR 0x56
 #define NIC_FRU_ADDR 0x50
 
-#define CPLD_BUS 2
-#define CPLD_ADDR 0x1E
-#define CPLD_VER_REG 0x28002000
-#define CPLD_REV_ID_REG 0x01
-#define CPLD_REV_ID_BYTE 1
-#define CPLD_SPI_MUX_BUS 4
-#define CPLD_SPI_MUX_ADDR 0x3E
-#define CPLD_SPI_MUX_REG 0x0A
-
 //In Netlake codebase, all definition used 0 base bus, 8 bit address
 #define VR_BUS  0
+#define VR_PVDDCR_BUS 20
+#define VR_PVDDCR_SOC_BUS 20
+#define VR_PVDD_MISC_BUS 21
 #define VR_VOUT_MODE_REG 0x20
 #define VR_MFR_VOUT_SCALE_LOOP_REG 0x29
 #define VR_PVDDCR_ADDR 0x40
@@ -86,6 +80,8 @@ extern "C" {
 #define DIMMA_ADDR 0xA0
 #define DIMMB_ADDR 0xA2
 #define DIMM_TEMP_LEN 1
+#define DIMM_SPD_PAGE_CMD 0x0b
+#define DIMM_SPD_2BYTE_MODE 0x08
 
 #define INA230_ADDR 0x80
 #define INA230_POWER 0x03
@@ -151,6 +147,16 @@ enum fw_rev {
   FW_REV_DVT,
   FW_REV_PVT,
   FW_REV_MP ,
+};
+
+enum board_rev {
+  EVT = 0,
+  EVT2 = 1,
+  EVT3 = 2,
+  PreDVT = 3,
+  DVT = 4,
+  PVT = 5,
+  MP = 6,
 };
 
 enum {

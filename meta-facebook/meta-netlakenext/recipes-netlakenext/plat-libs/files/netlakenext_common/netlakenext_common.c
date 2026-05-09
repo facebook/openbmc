@@ -255,14 +255,14 @@ netlakenext_common_get_board_rev(uint8_t* rev_id) {
     return -1;
   }
 
-  i2cfd = i2c_cdev_slave_open(CPLD_BUS, CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  i2cfd = i2c_cdev_slave_open(CPLD_REV_ID_BUS, CPLD_REV_ID_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
   if ( i2cfd < 0 ) {
     syslog(LOG_ERR, "Failed to open CPLD, fd=%x\n", i2cfd);
     return -1;
   }
 
   while (retry < CPLD_GET_REV_RETRY_TIME) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDR,
+    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_REV_ID_ADDR,
 				&rev_id_reg, tlen, rbuf, rlen);
     if ( ret < 0 ) {
       retry++;

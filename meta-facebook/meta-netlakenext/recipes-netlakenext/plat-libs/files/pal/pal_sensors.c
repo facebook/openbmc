@@ -230,7 +230,7 @@ const uint8_t nic_sensor_list[] = {
 };
 
 PAL_DEV_INFO temp_dev_list[] = {
-  {"tmp75-i2c-4-48",  "MB_INLET_TEMP"},
+  {"tmp75-i2c-4-4c",  "MB_INLET_TEMP"},
   {"tmp75-i2c-4-4a",  "MB_OUTLET_TEMP"},
   {"tmp75-i2c-10-48",  "FIO_INLET_TEMP"},
   {"sbtsi-i2c-1-4c",  "SOC_TEMP"},
@@ -238,29 +238,29 @@ PAL_DEV_INFO temp_dev_list[] = {
 
 PAL_PMBUS_INFO pmbus_dev_table[] = {
   [VR_PVDDCR_TEMP] =
-  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608A, PAGE0, CMD_TEMP1}, {XDPE19283D, PAGE0, CMD_TEMP1}}},
+  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_TEMP1}, {XDPE19283D, PAGE0, CMD_TEMP1}}},
   [VR_PVDDCR_SOC_TEMP] =
-  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608A, PAGE1, CMD_TEMP1}, {XDPE19283D, PAGE1, CMD_TEMP2}}},
+  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_TEMP1}, {XDPE19283D, PAGE1, CMD_TEMP2}}},
   [VR_PVDD_MISC_TEMP] =
-  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608A, PAGE0, CMD_TEMP1}, {XDPE19283D, PAGE0, CMD_TEMP1}}},
+  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_TEMP1}, {XDPE19283D, PAGE0, CMD_TEMP1}}},
   [VR_PVDDCR_VOL] =
-  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608A, PAGE0, CMD_VOUT}, {XDPE19283D, PAGE0, CMD_VOUT}}},
+  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_VOUT}, {XDPE19283D, PAGE0, CMD_VOUT}}},
   [VR_PVDDCR_SOC_VOL] =
-  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608A, PAGE1, CMD_VOUT}, {XDPE19283D, PAGE1, CMD_VOUT}}},
+  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_VOUT}, {XDPE19283D, PAGE1, CMD_VOUT}}},
   [VR_PVDD_MISC_VOL] =
-  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608A, PAGE0, CMD_VOUT}, {XDPE19283D, PAGE0, CMD_VOUT}}},
+  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_VOUT}, {XDPE19283D, PAGE0, CMD_VOUT}}},
   [VR_PVDDCR_CUR] =
-  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608A, PAGE0, CMD_IOUT}, {XDPE19283D, PAGE0, CMD_IOUT}}},
+  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_IOUT}, {XDPE19283D, PAGE0, CMD_IOUT}}},
   [VR_PVDDCR_SOC_CUR] =
-  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608A, PAGE1, CMD_IOUT}, {XDPE19283D, PAGE1, CMD_IOUT}}},
+  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_IOUT}, {XDPE19283D, PAGE1, CMD_IOUT}}},
   [VR_PVDD_MISC_CUR] =
-  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608A, PAGE0, CMD_IOUT}, {XDPE19283D, PAGE0, CMD_IOUT}}},
+  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_IOUT}, {XDPE19283D, PAGE0, CMD_IOUT}}},
   [VR_PVDDCR_PWR] =
-  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608A, PAGE0, CMD_POUT}, {XDPE19283D, PAGE0, CMD_POUT}}},
+  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_POUT}, {XDPE19283D, PAGE0, CMD_POUT}}},
   [VR_PVDDCR_SOC_PWR] =
-  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608A, PAGE1, CMD_POUT}, {XDPE19283D, PAGE1, CMD_POUT}}},
+  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_POUT}, {XDPE19283D, PAGE1, CMD_POUT}}},
   [VR_PVDD_MISC_PWR] =
-  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608A, PAGE0, CMD_POUT}, {XDPE19283D, PAGE0, CMD_POUT}}},
+  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_POUT}, {XDPE19283D, PAGE0, CMD_POUT}}},
 };
 
 PAL_PMBUS_INFO hsc_dev_table[] = {
@@ -273,16 +273,16 @@ PAL_PMBUS_INFO hsc_dev_table[] = {
 * High-byte offset of reading always be low-byte offset + 1
 */
 PAL_CPLD_ADC_INFO cpld_adc_list[] = {
-  {0x00, 7.8},
-  {0x04, 1},
-  {0x06, 1},
-  {0x02, 2},
-  {0x0A, 2.8},
-  {0x08, 1},
+  {0x00, 15.70588},
+  {0x04, 2},
+  {0x06, 2},
+  {0x02, 3.61111},
+  {0x0A, 5.7},
+  {0x08, 2},
   {0x12, 1},
-  {0x10, 1},
-  {0x0E, 2},
-  {0x0C, 2.8},
+  {0x10, 1.21277},
+  {0x0E, 3.61111},
+  {0x0C, 5.7},
 };
 
 const uint8_t nvme_temp_list[] = {
@@ -511,7 +511,7 @@ fail:
 }
 
 static int
-mp29608a_vid_convert(uint8_t *value_raw, uint8_t vid_step_raw, float *value) {
+mp29608b_vid_convert(uint8_t *value_raw, uint8_t vid_step_raw, float *value) {
   uint16_t raw = (value_raw[1] << 8) | value_raw[0];
   float vid_step = 0.0;
   switch (vid_step_raw) {
@@ -674,7 +674,7 @@ read_pmbus(uint8_t id, float *value) {
               __func__, bus, addr);
         return -1;
       }
-      if (pmbus_i2c_data.type == MP29608A) {
+      if (pmbus_i2c_data.type == MP29608B) {
         uint8_t rlen_vid_reading = READ_WORD;
         uint8_t rbuf_vid_reading_raw[rlen_vid_reading];
         uint8_t vid_step_reg = VR_MFR_VOUT_SCALE_LOOP_REG;
@@ -692,10 +692,10 @@ read_pmbus(uint8_t id, float *value) {
           syslog(LOG_ERR, "%s() Failed to get reading %d-%d %x\n", __func__, bus, addr, vid_step_reg);
           return -1;
         }
-        ret = mp29608a_vid_convert(rbuf_reading_raw, (rbuf_vid_reading_raw[1] & 0x1c) >> 2, value);
+        ret = mp29608b_vid_convert(rbuf_reading_raw, (rbuf_vid_reading_raw[1] & 0x1c) >> 2, value);
         if (ret < 0) {
           *value = 0;
-          syslog(LOG_ERR, "%s() Failed to get reading by mp29608a vid format %d-%d\n",
+          syslog(LOG_ERR, "%s() Failed to get reading by mp29608b vid format %d-%d\n",
               __func__, bus, addr);
         }
       }

@@ -46,6 +46,11 @@
 #define KEY_SERVER_CPLD_VER "server_cpld_ver"
 #define MAX_NUM_GPIO_LED_POSTCODE 8
 
+#define PCC_PORT1_ABORT (0xC0)
+#define PCC_PORT2_ABORT (0xC1)
+#define PCC_PORT3_ABORT (0xC2)
+#define PCC_PORT4_ABORT (0xC3)
+
 const char pal_fru_list[] = "all, server, bmc, pdb, fio, nic";
 
 // export to sensor-util
@@ -1231,11 +1236,23 @@ pal_pmbus_sensor_info_initial(void) {
   }
 
   int sku = ((int)rev_id & 0x08) >> 3;
+  enum board_rev stage = (enum board_rev)(rev_id & 0x07);
   extern PAL_PMBUS_INFO pmbus_dev_table[];
   extern size_t pmbus_dev_cnt;
 
   for (uint8_t i = 0; i < pmbus_dev_cnt; i++) {
     pmbus_type = pmbus_dev_table[i].sku_pmbus_type[sku].type;
+    if (stage >= EVT2) {
+      if (pmbus_dev_table[i].slv_addr == VR_PVDDCR_ADDR) {
+        pmbus_dev_table[i].bus = VR_PVDDCR_BUS;
+      }
+      else if (pmbus_dev_table[i].slv_addr == VR_PVDDCR_SOC_ADDR) {
+        pmbus_dev_table[i].bus = VR_PVDDCR_SOC_BUS;
+      }
+      else if (pmbus_dev_table[i].slv_addr == VR_PVDD_MISC_ADDR) {
+        pmbus_dev_table[i].bus = VR_PVDD_MISC_BUS;
+      }
+    }
     for (int j = 0; j < MAX_PMBUS_SUP_CMD_CNT; j++) {
       if (pmbus_dev_table[i].sku_pmbus_type[sku].offset == pmbus_dev_list[pmbus_type].pmbus_cmd_list[j].read_cmd) {
         char key_with_cmd[MAX_KEY_LEN];
@@ -1414,6 +1431,48 @@ pal_max31790_init(void) {
 }
 
 int
+pal_get_80port_record(uint8_t slot, uint8_t *buf, size_t max_len, size_t *len) {
+  if (!pal_is_slot_server(slot)) {
+    syslog(LOG_WARNING, "pal_get_80port_record: slot %d is not supported", slot);
+    return PAL_ENOTSUP;
+  }
+
+  return pal_get_lpc_pcc_record(slot, buf, max_len, len);
+}
+
+int
+pal_get_80port_page_record(uint8_t slot, uint8_t page_num, uint8_t *res_data, size_t max_len, size_t *res_len) {
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+  size_t len = 0;
+
+  if ((res_data == NULL) || (res_len == NULL)) {
+    return -1;
+  }
+
+  if (!pal_is_slot_server(slot)) {
+    return PAL_ENOTSUP;
+  }
+
+  snprintf(key, sizeof(key), "pcc_postcode_%u", page_num);
+  if (kv_get(key, value, &len, 0) != 0) {
+    *res_len = 0;
+    return 0;
+  }
+
+  if (len > max_len) {
+    len = max_len;
+  }
+
+  if (len > 0) {
+    memcpy(res_data, value, len);
+  }
+  *res_len = len;
+
+  return 0;
+}
+
+int
 pal_sensor_monitor_initial(void) {
   int ret = 0;
 
@@ -1530,4 +1589,182 @@ void pal_update_ts_sled() {
   if (ret < 0) {
     syslog(LOG_ERR, "%s(): failed to set key: %s value: %s", __func__, key, timestamp_str);
   }
+}
+
+int pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
+{
+  const char *dev_path = "/dev/aspeed-lpc-pcc";
+  int fd, offs;
+  char key[MAX_KEY_LEN];
+  char value[MAX_VALUE_LEN];
+  bool new_data = false;
+  size_t len, half1, half2;
+  uint8_t page, port, index = 0;
+  uint16_t one_code;
+  uint32_t post_code = 0;
+  static uint32_t post_fifo[PCC_FIFO_SIZE] = {0};
+  static int data_in = 0, data_out = 0;
+  static bool init_fifo = true;
+
+  if (init_fifo) {
+    init_fifo = false;
+    // initialize fifo from existing cache store
+    for (page = 1; page <= PCC_PAGE; ++page) {
+      snprintf(key, sizeof(key), "pcc_postcode_%u", page);
+      if (kv_get(key, value, &len, 0) != 0) {
+        break;
+      }
+      if (len > sizeof(value)) {
+        syslog(LOG_WARNING, "%s: unexpected len %zu", __func__, len);
+        break;
+      }
+      memcpy(&post_fifo[data_in], value, len);
+      data_in += (len / sizeof(uint32_t));
+    }
+  }
+
+  fd = open(dev_path, O_RDONLY | O_NONBLOCK);
+  if (fd < 0) {
+    return PAL_ENOTREADY;
+  }
+
+  // read postcodes from the FIFO of lpc-pcc driver, and put in cache store
+  while (read(fd, &one_code, sizeof(one_code)) == sizeof(one_code)) {
+    port = one_code >> 8;
+    if ((index == 0 && port == PCC_PORT1_ABORT) ||
+        (index == 1 && port == PCC_PORT2_ABORT) ||
+        (index == 2 && port == PCC_PORT3_ABORT) ||
+        (index == 3 && port == PCC_PORT4_ABORT)) {
+      post_code |= (one_code & 0xFF) << (index * 8);
+    } else {
+      // discard incomplete remnants
+      index = 0;
+      post_code = 0;
+      continue;
+    }
+
+    if (index == 3) {
+      // use a simple FIFO (ring buffer) for easier drop old postcodes
+      post_fifo[data_in] = post_code;
+      data_in = (data_in + 1) % PCC_FIFO_SIZE;
+      if (data_in == data_out) {
+        data_out = (data_out + 1) % PCC_FIFO_SIZE;
+      }
+      pal_check_psb_error(post_code);
+      pal_check_abl_error(post_code);
+      pal_mrc_warning_detect(0, post_code);
+      index = 0;
+      post_code = 0;
+      new_data = true;
+    } else {
+      index++;
+    }
+  }
+  close(fd);
+
+  if (new_data) {
+    // store up to 64 postcodes per page (kv)
+    for (page = 1, offs = data_out; page <= PCC_PAGE;
+         ++page, offs = (offs + PCC_SIZE)%PCC_FIFO_SIZE) {
+      snprintf(key, sizeof(key), "pcc_postcode_%u", page);
+      if ((offs + PCC_SIZE) <= data_in) {
+        len = PCC_SIZE * sizeof(uint32_t);
+        memcpy(value, &post_fifo[offs], len);
+      } else {
+        if (offs <= data_in) {
+          len = (data_in - offs) * sizeof(uint32_t);
+          memcpy(value, &post_fifo[offs], len);
+        } else {
+          len = (data_in < data_out) ? (PCC_SIZE * sizeof(uint32_t)) : 0;
+          if (len == 0) {  // no more data
+            break;
+          }
+          half1 = (PCC_FIFO_SIZE - offs) * sizeof(uint32_t);
+          if (half1 > len) {
+            half1 = len;
+          }
+          half2 = len - half1;
+          memcpy(value, &post_fifo[offs], half1);
+          if (half2 > 0) {
+            memcpy(&value[half1], &post_fifo[0], half2);
+          }
+        }
+      }
+      kv_set(key, value, len, 0);
+      if (len < (PCC_SIZE * sizeof(uint32_t))) {  // no more data
+        break;
+      }
+    }
+  }
+
+  // reply the latest postcodes to caller's buffer
+  len = (data_in + PCC_FIFO_SIZE - data_out)%PCC_FIFO_SIZE;
+  max_len /= sizeof(uint32_t);  // truncate if max_len is not multiple of 4 bytes
+  if (len > max_len) {
+    len = max_len;
+  }
+  if (len > 0) {
+    offs = (data_in + PCC_FIFO_SIZE - len)%PCC_FIFO_SIZE;
+    len *= sizeof(uint32_t);
+    if ((offs + len/sizeof(uint32_t)) <= data_in) {
+      memcpy(buf, &post_fifo[offs], len);
+    } else {
+      half1 = (PCC_FIFO_SIZE - offs) * sizeof(uint32_t);
+      if (half1 > len) {
+        half1 = len;
+      }
+      half2 = len - half1;
+      memcpy(buf, &post_fifo[offs], half1);
+      if (half2 > 0) {
+        memcpy(&buf[half1], &post_fifo[0], half2);
+      }
+    }
+  }
+  *rlen = len;
+
+  return PAL_EOK;
+}
+
+int pal_dimm_page_init()
+{
+  int ret = 0, fd = 0;
+  uint8_t retry = SENSOR_RETRY_TIME;
+  const uint8_t dimm_addr_list[] = {
+    DIMMA_ADDR,
+    DIMMB_ADDR,
+  };
+  uint8_t rbuf = 0;
+  uint8_t rlen = DIMM_TEMP_LEN;
+
+  for (int id = 0; id < sizeof(dimm_addr_list); id++) {
+    fd = i2c_cdev_slave_open(I2C_BUS5, dimm_addr_list[id] >> 1,
+                            I2C_SLAVE_FORCE_CLAIM);
+    if (fd < 0) {
+      syslog(LOG_ERR, "Failed to open DIMM 0x%x\n", dimm_addr_list[id]);
+      return -1;
+    }
+
+    // set 2-byte mode
+    uint8_t setpage_data[2];
+    setpage_data[0] = DIMM_SPD_PAGE_CMD;
+    setpage_data[1] = DIMM_SPD_2BYTE_MODE;
+    do {
+      ret = i2c_rdwr_msg_transfer(fd, dimm_addr_list[id],
+                                  setpage_data, sizeof(setpage_data), &rbuf, rlen);
+      if (ret != 0) {
+        usleep(SENSOR_RETRY_INTERVAL_USEC);
+      }
+    } while ((ret < 0) && ((retry--) > 0));
+
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Failed to set 2-byte mode %x-%x", __func__,
+            I2C_BUS5, dimm_addr_list[id]);
+      close(fd);
+      return -1;
+    }
+    retry = SENSOR_RETRY_TIME;
+  }
+
+  close(fd);
+  return 0;
 }

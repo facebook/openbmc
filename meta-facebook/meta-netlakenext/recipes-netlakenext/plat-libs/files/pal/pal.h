@@ -102,15 +102,6 @@ enum {
   DEBUG_CARD_ABSENT,
 };
 
-enum {
-  EVT = 0,
-  EVT2 = 1,
-  DVT = 2,
-  PVT = 3,
-  MP = 4,
-  POC = 7,
-};
-
 int pal_check_gpio_prsnt(uint8_t gpio, int presnt_expect);
 int pal_copy_eeprom_to_bin(const char *eeprom_file, const char *bin_file);
 int pal_check_fru_is_valid(const char* fruid_path);
@@ -126,6 +117,7 @@ int8_t pal_set_uart_routing(uint8_t routing);
 
 int pal_get_sensor_util_timeout(uint8_t fru);
 int pal_hwmon_probe(char *path, char *dev);
+int pal_dimm_page_init(void);
 
 #ifdef __cplusplus
 } // extern "C"

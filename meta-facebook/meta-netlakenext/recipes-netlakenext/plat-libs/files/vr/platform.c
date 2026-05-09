@@ -50,7 +50,7 @@ bmc_vr_polling_waiting(bool enable) {
   }
 }
 
-struct vr_ops mp29608a_ops = {
+struct vr_ops mp29608b_ops = {
   .get_fw_ver = get_mp29608a_ver,
   .parse_file = mp29608a_parse_file,
   .validate_file = NULL,
@@ -71,7 +71,7 @@ struct vr_info netlakenext_vr_list[] = {
     .bus = VR_BUS,
     .addr = VR_PVDDCR_ADDR,
     .dev_name = "VR_VDDCR/VR_VDDCR_SOC",
-    .ops = &mp29608a_ops,
+    .ops = &mp29608b_ops,
     .private_data = "server",
     .xfer = &netlakenext_vr_rdwr,
     .sensor_polling_ctrl = bmc_vr_polling_waiting,
@@ -80,7 +80,7 @@ struct vr_info netlakenext_vr_list[] = {
     .bus = VR_BUS,
     .addr = VR_PVDD_MISC_ADDR,
     .dev_name = "VR_VDD_MISC",
-    .ops = &mp29608a_ops,
+    .ops = &mp29608b_ops,
     .private_data = "server",
     .xfer = &netlakenext_vr_rdwr,
     .sensor_polling_ctrl = bmc_vr_polling_waiting,
@@ -106,6 +106,22 @@ struct vr_info netlakenext_vr_second_list[] = {
   },
 };
 
+void vr_change_bus(struct vr_info *vr_list, int vr_cnt, enum board_rev stage) {
+  if (stage >= EVT2) {
+    for (int i = 0; i < vr_cnt; i++) {
+      if (vr_list[i].addr == VR_PVDDCR_ADDR) {
+        vr_list[i].bus = VR_PVDDCR_BUS;
+      }
+      else if (vr_list[i].addr == VR_PVDDCR_SOC_ADDR) {
+        vr_list[i].bus = VR_PVDDCR_SOC_BUS;
+      }
+      else if (vr_list[i].addr == VR_PVDD_MISC_ADDR) {
+        vr_list[i].bus = VR_PVDD_MISC_BUS;
+      }
+    }
+  }
+}
+
 int plat_vr_init(void) {
   int ret;
   int i2cfd = 0;
@@ -114,13 +130,13 @@ int plat_vr_init(void) {
   uint8_t rev_id_reg = CPLD_REV_ID_REG;
   int vr_cnt;
 
-  i2cfd = i2c_cdev_slave_open(CPLD_BUS, CPLD_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  i2cfd = i2c_cdev_slave_open(CPLD_REV_ID_BUS, CPLD_REV_ID_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
   if ( i2cfd < 0 ) {
     syslog(LOG_ERR, "Failed to open CPLD, fd=%x\n", i2cfd);
     return -1;
   }
 
-  ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_ADDR, &rev_id_reg, tlen, &rev_id, sizeof(rev_id));
+  ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_REV_ID_ADDR, &rev_id_reg, tlen, &rev_id, sizeof(rev_id));
   close(i2cfd);
   if (ret < 0) {
     syslog(LOG_ERR, "Failed to get board revision form fpga\n");
@@ -128,11 +144,14 @@ int plat_vr_init(void) {
   }
 
   int sku = ((int)rev_id & 0x08) >> 3;
+  enum board_rev stage = (enum board_rev)(rev_id & 0x07);
   if (sku == 0) {
     vr_cnt = sizeof(netlakenext_vr_list)/sizeof(netlakenext_vr_list[0]);
+    vr_change_bus(netlakenext_vr_list, vr_cnt, stage);
     ret = vr_device_register(netlakenext_vr_list, vr_cnt );
   } else if (sku == 1) {
     vr_cnt = sizeof(netlakenext_vr_second_list)/sizeof(netlakenext_vr_second_list[0]);
+    vr_change_bus(netlakenext_vr_second_list, vr_cnt, stage);
     ret = vr_device_register(netlakenext_vr_second_list, vr_cnt );
   } else {
     syslog(LOG_ERR, "Invalid board revision got from fpga.");

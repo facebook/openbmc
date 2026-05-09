@@ -14,6 +14,8 @@ if get_option('update-ebr-init').enabled()
     summary('update-ebr-init', '-DENABLE_UPDATE_EBR_INIT', section: 'Enabled Features')
 endif
 
+netlakenext_common_dep = dependency('libnetlakenext_common')
+
 executable(
     'cpld-handler',
     'cpld-main.cpp',
@@ -21,5 +23,8 @@ executable(
     'cpld-handler.hpp',
     'cpld-lattice.cpp',
     'cpld-lattice.hpp',
+    dependencies: [
+        netlakenext_common_dep,
+    ],
     install: true
 )

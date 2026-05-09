@@ -8,6 +8,12 @@
 #include <sstream>
 #include <iomanip>
 #include <cstring>
+#include <algorithm> // For std::search
+#include <iterator> // For std::distance
+
+extern "C" {
+#include <facebook/netlakenext_common.h> 
+}
 
 static uint8_t reverse_bit(uint8_t b)
 {
@@ -23,6 +29,53 @@ const std::map<std::string, std::vector<uint8_t>> chipToDeviceIdMappingTable = {
     {"LCMXO3D-4300", {0x01, 0x2e, 0x20, 0x43}},
     {"LCMXO3D-9400", {0x21, 0x2e, 0x30, 0x43}},
 };
+
+int XO5I2CManager::extractFwVersion()
+{
+    // Search pattern: 11111111 11111111 11111111 11000010 10000000 00000000 00000000
+    const std::vector<uint8_t> searchPattern = {0xFF, 0xFF, 0xFF, 0xC2,
+                                                0x80, 0x00, 0x00};
+
+    auto it = std::search(fwInfo.cfgData.begin(), fwInfo.cfgData.end(),
+                          searchPattern.begin(), searchPattern.end());
+
+    if (it != fwInfo.cfgData.end())
+    {
+        // Check whether there are still enough 4 bytes available to read after the pattern is found
+        size_t patternSize = searchPattern.size();
+        if (static_cast<size_t>(std::distance(it, fwInfo.cfgData.end())) >= patternSize + 4)
+        {
+            // Extract the following 4 bytes
+            uint8_t byte1 = *(it + patternSize);
+            uint8_t byte2 = *(it + patternSize + 1);
+            uint8_t byte3 = *(it + patternSize + 2);
+            uint8_t byte4 = *(it + patternSize + 3);
+
+            this->cpldFwVersion = (static_cast<uint32_t>(byte1) << 24) |
+                                 (static_cast<uint32_t>(byte2) << 16) |
+                                 (static_cast<uint32_t>(byte3) << 8) |
+                                 (static_cast<uint32_t>(byte4));
+
+            std::cout << "Extracted .jed FW version: 0x" << std::hex
+                      << std::setfill('0') << std::setw(8) << this->cpldFwVersion
+                      << std::endl;
+
+            return 0;
+        }
+        else
+        {
+            std::cerr << "Pattern found, but not enough data afterwards to extract version.\n";
+            return -1;
+        }
+    }
+    else
+    {
+        std::cout << "The specific FW version pattern was not found.\n";
+        return -1;
+    }
+
+    return 0;
+}
 
 int CpldLatticeManager::jedFileParser()
 {
@@ -1187,10 +1240,38 @@ int CpldLatticeManager::XO5Family_update(bool legacy)
         return -1;
     }
 
+    if (i2cManager.extractFwVersion() < 0)
+    {
+        std::cerr << "Error: Extract fw version fail\n";
+        return -1;
+    }
+
     if (!legacy && !i2cManager.ready())
     {
         std::cerr << "Error: Device not ready.\n";
         return -1;
+    }
+
+    if (netlakenext_common_get_board_rev(&i2cManager.boardId) < 0)
+    {
+        std::cerr << "Error: Unable to obtain boardId.\n";
+        return -1;
+    }
+    i2cManager.boardId &= 0x7; // These three bits can display the product development phase
+
+    if (i2cManager.boardId == XO5I2CManager::getEvt1BoardId())
+    {
+        if (i2cManager.cpldFwVersion != XO5I2CManager::getEvt1CpldFwVer())
+        {
+            std::cerr << "Error: The EVT1 board cannot be updated using this CPLD firmware.\n";
+            return -1;
+        }
+    } else {
+        if (i2cManager.cpldFwVersion == XO5I2CManager::getEvt1CpldFwVer())
+        {
+            std::cerr << "Error: This firmware update cannot be used on boards that are not EVT1.\n";
+            return -1;
+        }
     }
 
     std::cout << "Erasing " << target << " ...\n";

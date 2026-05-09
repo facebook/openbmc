@@ -116,6 +116,18 @@ class XO5I2CManager : public CpldLatticeManager
     bool eraseCfg();
     bool programCfg();
     bool verifyCfg();
+    int extractFwVersion();
+    static constexpr uint8_t getEvt1BoardId()
+    {
+        return EVT1_BOARD_ID;
+    }
+    static constexpr uint32_t getEvt1CpldFwVer()
+    {
+        return EVT1_CPLD_FW_VER;
+    }
+
+    uint8_t boardId;
+    uint32_t cpldFwVersion;
 
   private:
     enum class Cmd : uint8_t
@@ -185,6 +197,9 @@ class XO5I2CManager : public CpldLatticeManager
 
     const bool legacyMode;
     // ==================================================
+
+    static constexpr uint8_t EVT1_BOARD_ID = 0;
+    static constexpr uint32_t EVT1_CPLD_FW_VER = 65793; // 0x00010101
 
     uint8_t cfgIndex;
 };

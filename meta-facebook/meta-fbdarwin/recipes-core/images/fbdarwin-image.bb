@@ -12,6 +12,15 @@ IMAGE_INSTALL += " \
   mdio-us-mac \
   "
 
+remove_systemd_osc_context() {
+  rm -f ${IMAGE_ROOTFS}${sysconfdir}/profile.d/80-systemd-osc-context.sh
+  rm -f ${IMAGE_ROOTFS}${libdir}/systemd/profile.d/80-systemd-osc-context.sh
+  # This prevents systemd from recreating the symlink at runtime
+  rm -f ${IMAGE_ROOTFS}${libdir}/tmpfiles.d/20-systemd-osc-context.conf
+}
+
+ROOTFS_POSTPROCESS_COMMAND += "remove_systemd_osc_context; "
+
 #
 # IPMI is Not supported in fbdarwin.
 #

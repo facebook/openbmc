@@ -32,6 +32,24 @@ QEMU_REF ?= "98b060da3a4f92b2a994ead5b16a87e783baf77c"
 # Use git protocol (required by BitBake QA)
 SRC_URI = "git://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \
            file://powerpc_rom.bin \
+           file://qemu-guest-agent.init \
+           file://qemu-guest-agent.udev \
+           "
+
+SRC_URI += " \
+           file://0500-net-slirp-Add-mfr-id-and-oob-eth-addr-parameters.patch \
+           file://0501-aspeed-Zero-extend-flash-files-to-128MB.patch \
+           file://0502-hw-aspeed_vic-Add-heartbeat-LED-registers.patch \
+           file://0505-hw-intc-Add-a-property-to-allow-GIC-to-reset-into-no.patch \
+           file://0506-hw-m25p80-Add-BP-and-TB-bits-to-n25q00.patch \
+           file://0507-hw-i2c-pca954x-Add-method-to-get-channels.patch \
+           file://0512-hw-i2c-aspeed-Fix-bus-derivation-for-slave-events.patch \
+           \
+           file://0514-hw-i2c-aspeed-Fix-interrupt-status-flag-names.patch \
+           file://0516-scripts-Add-redact-util.patch \
+           "
+
+SRC_URI += " \
            file://0001-qemu-Add-addition-environment-space-to-boot-loader-q.patch \
            file://0002-apic-fixup-fallthrough-to-PIC.patch \
            file://0003-qemu-Do-not-include-file-if-not-exists.patch \
@@ -42,8 +60,6 @@ SRC_URI = "git://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \
            file://0008-qemu-Ensure-pip-and-the-python-venv-aren-t-used-for-.patch \
            file://0009-hw-arm-aspeed-Add-Facebook-Anacapa-BMC-machine.patch \
            file://0010-hw-arm-aspeed-Add-BMC-machine-to-build.patch \
-           file://qemu-guest-agent.init \
-           file://qemu-guest-agent.udev \
            "
 
 QEMU_CHECKOUT_DIR = "${BPN}-${PV}"

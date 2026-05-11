@@ -1300,6 +1300,40 @@
             ]
         },
         {
+            "alias": "openbmc-cit-rainiera6-determinator",
+            "args": {
+                "name": "openbmc-cit-rainiera6-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-rainiera6-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform rainiera6"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-yosemite5/meta-rainiera6/.*",
+                        "^meta-facebook/meta-yosemite5/recipes-.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-cit-santabarbara-determinator",
             "args": {
                 "name": "openbmc-cit-santabarbara-determinator",

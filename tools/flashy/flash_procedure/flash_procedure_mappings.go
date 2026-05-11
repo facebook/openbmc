@@ -47,6 +47,7 @@ var GeneratedFlashProcedureMappings = map[string]func(step.StepParams) step.Step
 	"montblanc":        flash.FlashCp,
 	"morgan800cc":      flash.FlashCp,
 	"northdome":        flash.FlashCpVboot,
+	"rainiera6":        flash.FlashCp,
 	"santabarbara":     flash.FlashCp,
 	"tahan":            flash.FlashCp,
 	"ventura2":         flash.FlashCp,

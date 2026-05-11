@@ -124,6 +124,9 @@ enum {
   PERCENT,
   POWER,
   FLOW,
+#ifdef CONFIG_GRANDCANYON2
+  mV,
+#endif
 };
 
 #ifdef CONFIG_GRANDCANYON2

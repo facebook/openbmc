@@ -681,9 +681,9 @@ PAL_SENSOR_MAP dvt_dpb_sensor_map[] = {
   [PTB_P12V_PU3_DC_MODULE] =
   {"PTB_DCMODULE1_12V_VOLT_V", EXPANDER, NULL, false, {13, 0, 0, 11.3, 0, 0, 0, 0}, VOLT},
   [PTB_U19_ADC_MONITOR] =
-  {"PTB_VSENSE_48V_VOLT_V", EXPANDER, NULL, false, {56.7, 0, 0, 45.6, 0, 0, 0, 0}, VOLT},
+  {"PTB_VSENSE_48V_VOLT_V", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
   [PTB_U20_ADC_MONITOR] =
-  {"PTB_VSENSE_GND_VOLT_V", EXPANDER, NULL, false, {1, 0, 0, -0.13, 0, 0, 0, 0}, VOLT},
+  {"PTB_VSENSE_GND_VOLT_V", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
   [PTB_P48V_AUX_Current] =
   {"PTB_HSC_48V_AUX_CURR_A", EXPANDER, NULL, false, {48, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [PTB_P12V_PU2_DC_MODULE_Current] =
@@ -701,9 +701,9 @@ PAL_SENSOR_MAP dvt_dpb_sensor_map[] = {
   [PTB_P12V_PU3_DC_MODULE_TEMP] =
   {"PTB_DCMODULE1_12V_TEMP_C", EXPANDER, NULL, false, {113, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [PTB_U34_ADC_MONITOR_V] =
-  {"PTB_TSENSE_48V_VOLT_V", EXPANDER, NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},
+  {"PTB_TSENSE_48V_VOLT_V", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
   [PTB_U35_ADC_MONITOR_V] =
-  {"PTB_TSENSE_GND_VOLT_V", EXPANDER, NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, VOLT},
+  {"PTB_TSENSE_GND_VOLT_V", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
   [FAN_0_FRONT] =
   {"DPB_FAN0_FRONT_TACH_RPM", EXPANDER, NULL, false, {13000, 12700, 0, 700, 800, 0, 0, 0}, FAN},
   [FAN_0_REAR] =
@@ -3106,7 +3106,16 @@ exp_read_sensor_thresh_wrapper(uint8_t fru, uint8_t *sensor_list, thresh_sensor_
       high_warn = (((p_thres_data[i].high_warn_1 << 8) + p_thres_data[i].high_warn_2));
       low_crit = (((p_thres_data[i].low_crit_1 << 8) + p_thres_data[i].low_crit_2));
       low_warn = (((p_thres_data[i].low_warn_1 << 8) + p_thres_data[i].low_warn_2));
-    } else {
+    }
+#ifdef CONFIG_GRANDCANYON2
+    else if (strncmp(snr_thresh[snr_num].units, "mV", sizeof(snr_thresh[snr_num].units)) == 0) {
+      high_crit = (int16_t)(((p_thres_data[i].high_crit_1 << 8) + p_thres_data[i].high_crit_2)) * 10;
+      high_warn = (int16_t)(((p_thres_data[i].high_warn_1 << 8) + p_thres_data[i].high_warn_2)) * 10;
+      low_crit  = (int16_t)(((p_thres_data[i].low_crit_1  << 8) + p_thres_data[i].low_crit_2))  * 10;
+      low_warn  = (int16_t)(((p_thres_data[i].low_warn_1  << 8) + p_thres_data[i].low_warn_2))  * 10;
+    }
+#endif
+    else {
       high_crit = (float)((int16_t)((p_thres_data[i].high_crit_1 << 8) + p_thres_data[i].high_crit_2)) / 100;
       high_warn = (float)((int16_t)((p_thres_data[i].high_warn_1 << 8) + p_thres_data[i].high_warn_2)) / 100;
       low_crit = (float)((int16_t)((p_thres_data[i].low_crit_1 << 8) + p_thres_data[i].low_crit_2)) / 100;
@@ -3358,11 +3367,21 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
       else if (strncmp(units, "Watts", sizeof(units)) == 0) {
         value = (((p_sensor_data[i].raw_data_1 << 8) + p_sensor_data[i].raw_data_2));
       }
+#ifdef CONFIG_GRANDCANYON2
+      else if (strncmp(units, "mV", sizeof(units)) == 0) {
+        value = (((p_sensor_data[i].raw_data_1 << 8) + p_sensor_data[i].raw_data_2));
+        value /= 1000;
+      }
+#endif
       else {
         value = (((p_sensor_data[i].raw_data_1 << 8) + p_sensor_data[i].raw_data_2));
         value /= 100;
       }
+#ifdef CONFIG_GRANDCANYON2
+      snprintf(str, sizeof(str), "%.3f",(float)value);
+#else
       snprintf(str, sizeof(str), "%.2f",(float)value);
+#endif
     }
 
     //cache sensor reading
@@ -4395,6 +4414,11 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   case FLOW:
     sprintf(units, "CFM");
     break;
+#ifdef CONFIG_GRANDCANYON2
+  case mV:
+    sprintf(units, "mV");
+    break;
+#endif
   default:
     syslog(LOG_WARNING, "%s() unit not found, sensor number: %x, unit: %u\n", __func__, sensor_num, sensor_units);
     break;

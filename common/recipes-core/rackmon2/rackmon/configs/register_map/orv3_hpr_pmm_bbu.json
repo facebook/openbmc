@@ -3,7 +3,7 @@
     "address_range": [
         [
             16,
-            23
+            27
         ]
     ],
     "probe_register": 0,

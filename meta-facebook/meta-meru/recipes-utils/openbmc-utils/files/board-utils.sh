@@ -192,18 +192,18 @@ wedge_power_asic() {
 wedge_board_rev() {
     local eeprom_source
     eeprom_source=$(wedge_product_eeprom_source)
-    board_rev=$($WEUTIL_CMD "$eeprom_source"|grep "Product Production State"|awk '{print $4}')
-    case "$((board_rev))" in
-        1)
+    board_rev=$($WEUTIL_CMD "$eeprom_source"|grep "Production State"|awk -F':' '{print $2}'|xargs)
+    case "$board_rev" in
+        1|"EVT")
             echo "EVT"
             ;;
-        2)
+        2|"DVT")
             echo "DVT"
             ;;
-        3)
+        3|"PVT")
             echo "PVT"
             ;;
-        4)
+        4|"MP")
             echo "MP"
             ;;
         *)

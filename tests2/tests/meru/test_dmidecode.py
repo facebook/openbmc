@@ -68,7 +68,7 @@ class Dmidecode(unittest.TestCase):
             raise AssertionError(f"Timed out waiting for power status {exp_status}")
 
     def test_dmidecode_initial(self):
-        output = run_shell_cmd("weutil -e smb")
+        output = run_shell_cmd("weutil -e chassis_eeprom")
         product_name = [x for x in output.splitlines() if "Product Name:" in x][
             0
         ].split()[2]

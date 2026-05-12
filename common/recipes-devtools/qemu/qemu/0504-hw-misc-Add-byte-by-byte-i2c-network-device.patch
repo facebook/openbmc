@@ -252,7 +252,7 @@ index 0000000000..44c68f953a
 +    DEFINE_NIC_PROPERTIES(I2CNetdev2, nic_conf),
 +};
 +
-+static void i2c_netdev2_class_init(ObjectClass *cls, void *data)
++static void i2c_netdev2_class_init(ObjectClass *cls, const void *data)
 +{
 +    DeviceClass *dc = DEVICE_CLASS(cls);
 +    I2CSlaveClass *sc = I2C_SLAVE_CLASS(cls);

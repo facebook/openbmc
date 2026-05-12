@@ -1,0 +1,80 @@
+From d9bcc3a0cf42575266787fb4cf61ec307d3680ca Mon Sep 17 00:00:00 2001
+From: Rick Yazwinski <rickyaz@meta.com>
+Date: Tue, 12 May 2026 06:43:37 -0700
+Subject: [PATCH] parsing: add parseTrustedStringAsJson for internal payloads
+
+parseStringAsJson() routes through BmcwebSaxParse, which hard-caps a
+payload at 500 total JSON values to defend against malicious external
+HTTP request bodies. Several call sites were using it on trusted,
+internal data that can legitimately exceed that cap.
+
+The most visible symptom is that bmcweb silently loses every persisted
+session across a restart once ~50 sessions accumulate (each persisted
+session is ~11 JSON values, so the file trips the cap and is treated as
+malformed). Other suspect callers: redfish_aggregator (satellite BMC
+responses), update_service (firmware update manifests) and dbus_monitor
+(internal monitor payloads); those are not changed in this commit.
+
+Add a sibling helper, parseTrustedStringAsJson(), that parses directly
+with nlohmann::json::parse() (exceptions disabled) and returns the same
+std::optional<nlohmann::json> as parseStringAsJson(). Switch the
+persistent_data file reader to use it. parseStringAsJson() and
+parseRequestAsJson() are unchanged so the SAX cap continues to apply to
+attacker-controlled input.
+
+Tested: on minerva in QEMU, created 65 sessions, restarted bmcweb, and
+the post-restart login still succeeds. Pre-patch the same workload
+loses all sessions.
+---
+ http/parsing.hpp            | 19 +++++++++++++++++++
+ include/persistent_data.hpp |  7 +++++--
+ 2 files changed, 24 insertions(+), 2 deletions(-)
+
+diff --git a/http/parsing.hpp b/http/parsing.hpp
+index 8756f47..5a012bd 100644
+--- a/http/parsing.hpp
++++ b/http/parsing.hpp
+@@ -210,6 +210,25 @@ inline std::optional<nlohmann::json> parseStringAsJson(std::string_view body)
+     return jsonOut;
+ }
+ 
++// Parse JSON from a trusted, internal source (e.g. on-disk persistent state,
++// responses from sibling BMCs, firmware update manifests). Skips the SAX
++// depth/value caps in parseStringAsJson(), which exist to defend against
++// malicious external HTTP request bodies and can erroneously reject large
++// but well-formed internal payloads (e.g. >~45 persisted sessions).
++// Use parseStringAsJson()/parseRequestAsJson() for any attacker-controlled
++// input.
++inline std::optional<nlohmann::json> parseTrustedStringAsJson(
++    std::string_view body)
++{
++    nlohmann::json jsonOut = nlohmann::json::parse(body, nullptr, false);
++    if (jsonOut.is_discarded())
++    {
++        BMCWEB_LOG_ERROR("Failed to parse trusted json payload");
++        return std::nullopt;
++    }
++    return jsonOut;
++}
++
+ inline JsonParseResult parseRequestAsJson(const crow::Request& req,
+                                           nlohmann::json& jsonOut)
+ {
+diff --git a/include/persistent_data.hpp b/include/persistent_data.hpp
+index 51b7746..a9d4517 100644
+--- a/include/persistent_data.hpp
++++ b/include/persistent_data.hpp
+@@ -96,8 +96,11 @@ class ConfigFile
+                 BMCWEB_LOG_CRITICAL("Failed to read file {}", file);
+                 return;
+             }
+-            // call with exceptions disabled
+-            std::optional<nlohmann::json> data = parseStringAsJson(str);
++            // Persistent data is trusted internal state -- use the trusted
++            // parser to bypass the SAX value cap that would reject ~50+
++            // persisted sessions and silently lose every session across a
++            // bmcweb restart.
++            std::optional<nlohmann::json> data = parseTrustedStringAsJson(str);
+             if (!data)
+             {
+                 BMCWEB_LOG_ERROR("Error parsing persistent data in json file.");

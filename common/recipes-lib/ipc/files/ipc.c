@@ -106,7 +106,7 @@ int ipc_send_req(const char *endpoint, uint8_t *req, size_t req_len,
   set_sock_timeout(sockfd, timeout);
 
   remote.sun_family = AF_UNIX;
-  sprintf(remote.sun_path, "/tmp/%s", endpoint);
+  snprintf(remote.sun_path, sizeof(remote.sun_path), "/tmp/%s", endpoint);
   len = strlen(remote.sun_path) + sizeof(remote.sun_family);
 
   if (connect(sockfd, (struct sockaddr *)&remote, len) == -1) {
@@ -256,7 +256,7 @@ static void *svc_thread(void *param)
   }
 
   local.sun_family = AF_UNIX;
-  sprintf(local.sun_path, "/tmp/%s", base_cli->endpoint);
+  snprintf(local.sun_path, sizeof(local.sun_path), "/tmp/%s", base_cli->endpoint);
   unlink(local.sun_path);
   len = strlen(local.sun_path) + sizeof(local.sun_family);
   if (bind(sock, (struct sockaddr *)&local, len) == -1) {
@@ -326,7 +326,7 @@ int ipc_start_svc(const char *endpoint, ipc_handle_req_t handle_req, int max_act
     return -1;
   }
 
-  strcpy(svc->base_cli.endpoint, endpoint);
+  snprintf(svc->base_cli.endpoint, MAX_ENDPOINT_LEN, "%s", endpoint);
   svc->base_cli.svc_cookie = svc_cookie;
   svc->base_cli.fd = -1;
   svc->handle_req = handle_req;

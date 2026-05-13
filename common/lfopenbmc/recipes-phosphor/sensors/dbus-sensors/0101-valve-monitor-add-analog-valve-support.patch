@@ -1,7 +1,7 @@
-From 07ca25edfb608c78e22b9de9ba48ddd7983a06f0 Mon Sep 17 00:00:00 2001
+From 60952c2cf34df43489adc9a1a0c2e36b6f4aa89a Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <jagpalgill@fb.com>
-Date: Wed, 1 Apr 2026 00:27:58 -0700
-Subject: [PATCH 101/102] valve-monitor: add analog valve support
+Date: Wed, 01 Apr 2026 00:27:58 -0700
+Subject: [PATCH] valve-monitor: add analog valve support
 
 Add AnalogValve implementation for monitoring analog valves in liquid
 cooling systems. This includes:
@@ -121,40 +121,13 @@ Mar 13 08:42:31 ventura valvemonitor[4477]: OPENBMC_MESSAGE_ID={"xyz.openbmc_pro
 Change-Id: I56a186a38208e541a9e512fafc9b769342000734
 Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
 ---
- src/valve-monitor/AnalogValve.cpp  | 470 +++++++++++++++++++++++++++++
- src/valve-monitor/AnalogValve.hpp  | 116 +++++++
- src/valve-monitor/BaseValve.cpp    | 176 +++++++++++
- src/valve-monitor/BaseValve.hpp    | 100 ++++++
- src/valve-monitor/GPIOValve.cpp    | 185 ++----------
- src/valve-monitor/GPIOValve.hpp    |  54 +---
- src/valve-monitor/LocalConfig.cpp  | 132 ++++++++
- src/valve-monitor/LocalConfig.hpp  |  44 +++
- src/valve-monitor/Readme.md        |  24 ++
- src/valve-monitor/ValveConfig.hpp  |  45 +++
- src/valve-monitor/ValveEvents.cpp  |  28 ++
- src/valve-monitor/ValveEvents.hpp  |  10 +
- src/valve-monitor/ValveFactory.cpp |  73 +++++
- src/valve-monitor/ValveFactory.hpp |  31 ++
- src/valve-monitor/ValveMonitor.cpp |  41 ++-
- src/valve-monitor/ValveMonitor.hpp |  10 +-
- src/valve-monitor/meson.build      |   6 +
- 17 files changed, 1316 insertions(+), 229 deletions(-)
- create mode 100644 src/valve-monitor/AnalogValve.cpp
- create mode 100644 src/valve-monitor/AnalogValve.hpp
- create mode 100644 src/valve-monitor/BaseValve.cpp
- create mode 100644 src/valve-monitor/BaseValve.hpp
- create mode 100644 src/valve-monitor/LocalConfig.cpp
- create mode 100644 src/valve-monitor/LocalConfig.hpp
- create mode 100644 src/valve-monitor/ValveConfig.hpp
- create mode 100644 src/valve-monitor/ValveFactory.cpp
- create mode 100644 src/valve-monitor/ValveFactory.hpp
 
 diff --git a/src/valve-monitor/AnalogValve.cpp b/src/valve-monitor/AnalogValve.cpp
 new file mode 100644
-index 0000000..e354c64
+index 0000000..85b3f55
 --- /dev/null
 +++ b/src/valve-monitor/AnalogValve.cpp
-@@ -0,0 +1,470 @@
+@@ -0,0 +1,503 @@
 +#include "AnalogValve.hpp"
 +
 +#include "BaseValve.hpp"
@@ -162,6 +135,8 @@ index 0000000..e354c64
 +#include "LocalConfig.hpp"
 +#include "SystemdInterface.hpp"
 +#include "ValveEvents.hpp"
++
++#include <glob.h>
 +
 +#include <phosphor-logging/lg2.hpp>
 +#include <sdbusplus/async.hpp>
@@ -171,6 +146,7 @@ index 0000000..e354c64
 +#include <array>
 +#include <chrono>
 +#include <cmath>
++#include <cstddef>
 +#include <exception>
 +#include <filesystem>
 +#include <format>
@@ -217,7 +193,9 @@ index 0000000..e354c64
 +        co_return std::nullopt;
 +    }
 +
-+    if (config.setPointVoltageRange.size() != 2)
++    // SetPointVoltageRange must have exactly min and max voltage
++    static constexpr size_t expectedVoltageRangeSize = 2;
++    if (config.setPointVoltageRange.size() != expectedVoltageRangeSize)
 +    {
 +        error("Invalid SetPointVoltageRange size for {NAME}", "NAME",
 +              config.name);
@@ -286,6 +264,9 @@ index 0000000..e354c64
 +namespace fs = std::filesystem;
 +
 +static constexpr auto pollIntervalMs = 1000;
++
++// iio-hwmon sysfs nodes (in*_input) report values in millivolts
++static constexpr double hwmonMillivoltScale = 1000.0;
 +
 +AnalogValve::AnalogValve(sdbusplus::async::context& ctx,
 +                         sdbusplus::message::object_path& objectPath,
@@ -377,7 +358,26 @@ index 0000000..e354c64
 +auto AnalogValve::handleStateChange(double voltage) -> sdbusplus::async::task<>
 +{
 +    bool wasOpen = isOpen;
-+    isOpen = (voltage > analogConfig.openThreshold);
++
++    // Apply hysteresis on the open transition to prevent oscillation
++    // when voltage fluctuates near the threshold.
++    // Operating range is 2-10V, so voltage won't drop below 2V.
++    double hysteresis =
++        analogConfig.openThreshold * (analogConfig.tolerance / 100.0);
++    if (isOpen)
++    {
++        // Valve is currently open. Close when voltage drops to or
++        // below the threshold. No hysteresis needed here as the
++        // valve is essentially shut at this voltage.
++        isOpen = (voltage > analogConfig.openThreshold);
++    }
++    else
++    {
++        // Valve is currently closed. Only mark as open when voltage
++        // rises above (threshold + hysteresis) to confirm the valve
++        // is truly opening and not just noise around the threshold.
++        isOpen = (voltage > analogConfig.openThreshold + hysteresis);
++    }
 +
 +    if (wasOpen == isOpen)
 +    {
@@ -426,8 +426,16 @@ index 0000000..e354c64
 +        co_return;
 +    }
 +
-+    bool outOfTolerance =
-+        std::abs(voltage - currentSetPointVoltage) > analogConfig.tolerance;
++    double percentError = std::abs(voltage - currentSetPointVoltage) /
++                          std::abs(currentSetPointVoltage);
++    bool outOfTolerance = percentError > analogConfig.tolerance / 100.0;
++
++    debug(
++        "Valve tolerance: voltage={VOLTAGE}, setpoint={SETPOINT}, "
++        "percentError={PERCENT_ERROR}%, percentTolerance={PERCENT_TOLERANCE}%",
++        "VOLTAGE", voltage, "SETPOINT", currentSetPointVoltage, "PERCENT_ERROR",
++        percentError * 100.0, "PERCENT_TOLERANCE", analogConfig.tolerance);
++
 +    co_await events.handleValveSetPointWarning(inventoryPath, outOfTolerance);
 +}
 +
@@ -530,8 +538,9 @@ index 0000000..e354c64
 +            return std::nullopt;
 +        }
 +
-+        // Convert raw ADC value to voltage: voltage = raw * scaleFactor
-+        double voltage = rawValue * analogConfig.adc.scaleFactor;
++        // Convert millivolt reading to voltage, then apply EM scale factor
++        double voltage =
++            (rawValue / hwmonMillivoltScale) / analogConfig.adc.scaleFactor;
 +
 +        debug("Read ADC raw={RAW} (voltage={VOLTAGE}) for {VALVE}", "RAW",
 +              rawValue, "VOLTAGE", voltage, "VALVE", baseConfig.name);
@@ -594,33 +603,30 @@ index 0000000..e354c64
 +
 +auto AnalogValve::findADCSysfsPath() -> std::optional<std::string>
 +{
-+    // ADC is a platform IIO device, look for
-+    // /sys/bus/iio/devices/iio:device*/in_voltage<index>_raw
-+    std::string iioBasePath = "/sys/bus/iio/devices";
-+
-+    if (!fs::exists(iioBasePath))
++    std::string pattern = "/sys/class/hwmon/hwmon*/in" +
++                          std::to_string(analogConfig.adc.index) + "_input";
++    glob_t result{};
++    if (glob(pattern.c_str(), GLOB_NOSORT, nullptr, &result) != 0 ||
++        result.gl_pathc == 0)
 +    {
-+        error("IIO devices path {PATH} does not exist", "PATH", iioBasePath);
++        globfree(&result);
++        error("Failed to find IIO ADC channel for index {IDX}", "IDX",
++              analogConfig.adc.index);
 +        return std::nullopt;
 +    }
 +
-+    for (const auto& entry : fs::directory_iterator(iioBasePath))
++    std::string path = result.gl_pathv[0];
++    globfree(&result);
++
++    std::ifstream ifs(path);
++    std::string val;
++    if (std::getline(ifs, val) && !val.empty())
 +    {
-+        auto dirName = entry.path().filename().string();
-+        if (dirName.starts_with("iio:device"))
-+        {
-+            auto inPath =
-+                std::format("{}/in_voltage{}_raw", entry.path().string(),
-+                            analogConfig.adc.index);
-+            if (fs::exists(inPath))
-+            {
-+                return inPath;
-+            }
-+        }
++        debug("ADC iio-hwmon sysfs node probe OK: path={PATH}", "PATH", path);
++        return fs::canonical(path).string();
 +    }
 +
-+    error("Failed to find IIO ADC channel for index {IDX}", "IDX",
-+          analogConfig.adc.index);
++    error("Failed to read ADC iio-hwmon sysfs node: {PATH}", "PATH", path);
 +    return std::nullopt;
 +}
 +
@@ -1070,7 +1076,7 @@ index e40efb8..75b4a6a 100644
  
  namespace valve
  {
-@@ -39,15 +32,15 @@ static constexpr std::array<std::pair<std::string_view, PinPolarity>, 2>
+@@ -39,15 +32,15 @@
  
  auto getConfig(sdbusplus::async::context& ctx,
                 sdbusplus::message::object_path objectPath)
@@ -1090,7 +1096,7 @@ index e40efb8..75b4a6a 100644
                  .service(entity_manager::EntityManagerInterface::serviceName)
                  .path(objectPath.str)
                  .properties();
-@@ -91,78 +84,27 @@ auto getConfig(sdbusplus::async::context& ctx,
+@@ -91,78 +84,27 @@
  
  } // namespace config
  
@@ -1144,16 +1150,16 @@ index e40efb8..75b4a6a 100644
 -    Valve::emit_added();
 -
 -    info("Created valve {VALVE}", "VALVE", config.name);
--}
--
--GPIOValve::~GPIOValve()
--{
--    available(false);
  }
  
--auto GPIOValve::createAssociations() -> sdbusplus::async::task<>
+-GPIOValve::~GPIOValve()
 +auto GPIOValve::getState() const -> State
  {
+-    available(false);
+-}
+-
+-auto GPIOValve::createAssociations() -> sdbusplus::async::task<>
+-{
 -    co_await createSensorAssociations();
 -
 -    createControlAssociations();
@@ -1176,7 +1182,7 @@ index e40efb8..75b4a6a 100644
            convertStateToString(state));
  
      if ((value() == 0 && state == State::Close) ||
-@@ -175,25 +117,27 @@ auto GPIOValve::set_property(state_t /*unused*/, auto state) -> bool
+@@ -175,25 +117,27 @@
  
      try
      {
@@ -1212,7 +1218,7 @@ index e40efb8..75b4a6a 100644
            convertStateToString(state));
  
      return false;
-@@ -205,7 +149,7 @@ auto GPIOValve::updateGPIOStateAsync(bool gpioState) -> sdbusplus::async::task<>
+@@ -205,7 +149,7 @@
  
      if (newValue != value())
      {
@@ -1221,7 +1227,7 @@ index e40efb8..75b4a6a 100644
                "VALUE", newValue);
          value(newValue);
  
-@@ -215,85 +159,4 @@ auto GPIOValve::updateGPIOStateAsync(bool gpioState) -> sdbusplus::async::task<>
+@@ -215,85 +159,4 @@
      co_return;
  }
  
@@ -1355,7 +1361,7 @@ index 725197e..e26efbf 100644
  namespace config
  {
  
-@@ -47,9 +29,8 @@ enum class PinPolarity
+@@ -47,9 +29,8 @@
      unknown
  };
  
@@ -1366,7 +1372,7 @@ index 725197e..e26efbf 100644
      std::string openPinName = Defaults::pinName;
      PinPolarity openPolarity = PinPolarity::unknown;
      std::string openControlPinName = Defaults::pinName;
-@@ -59,7 +40,6 @@ struct ValveConfig
+@@ -59,7 +40,6 @@
  
      struct Defaults
      {
@@ -1374,7 +1380,7 @@ index 725197e..e26efbf 100644
          static constexpr auto pinName = "unknown";
      };
  };
-@@ -67,38 +47,26 @@ struct ValveConfig
+@@ -67,38 +47,26 @@
  /** @brief Get the valve configuration from the Entity Manager */
  auto getConfig(sdbusplus::async::context& ctx,
                 sdbusplus::message::object_path objectPath)
@@ -1390,11 +1396,11 @@ index 725197e..e26efbf 100644
      explicit GPIOValve(sdbusplus::async::context& ctx,
                         sdbusplus::message::object_path& objectPath,
 -                       Events& events, const config::ValveConfig& config);
--
--    ~GPIOValve();
 +                       Events& events, const LocalConfig& localConfig,
 +                       const config::GPIOConfig& config);
  
+-    ~GPIOValve();
+-
 -    auto createAssociations() -> sdbusplus::async::task<>;
 -
 -    // NOLINTNEXTLINE(readability-identifier-naming)
@@ -1613,7 +1619,7 @@ diff --git a/src/valve-monitor/Readme.md b/src/valve-monitor/Readme.md
 index fb849e5..248c100 100644
 --- a/src/valve-monitor/Readme.md
 +++ b/src/valve-monitor/Readme.md
-@@ -24,6 +24,30 @@ For the GPIO hardware interface, the valve's open status is indicated as a
+@@ -24,6 +24,30 @@
  percentage, with 100% representing fully open and 0% representing fully closed,
  based on the GPIO signal state and its polarity.
  
@@ -1699,7 +1705,7 @@ diff --git a/src/valve-monitor/ValveEvents.cpp b/src/valve-monitor/ValveEvents.c
 index 9543d2d..56ec12e 100644
 --- a/src/valve-monitor/ValveEvents.cpp
 +++ b/src/valve-monitor/ValveEvents.cpp
-@@ -31,4 +31,32 @@ auto Events::generateValveEvent(sdbusplus::message::object_path valvePath,
+@@ -31,4 +31,32 @@
            valvePath, "STATUS", open);
  }
  
@@ -1746,7 +1752,7 @@ index 3f9ce8f..cebd637 100644
  namespace valve
  {
  
-@@ -16,8 +19,15 @@ class Events
+@@ -16,8 +19,15 @@
      auto generateValveEvent(sdbusplus::message::object_path valvePath,
                              bool open) -> sdbusplus::async::task<>;
  
@@ -1898,7 +1904,7 @@ index f38c021..48b487b 100644
  #include <string>
  #include <utility>
  
-@@ -19,22 +18,23 @@ namespace valve
+@@ -19,22 +18,23 @@
  {
  
  ValveMonitor::ValveMonitor(sdbusplus::async::context& ctx) :
@@ -1926,7 +1932,7 @@ index f38c021..48b487b 100644
  }
  
  auto ValveMonitor::processInventoryRemoved(
-@@ -50,34 +50,31 @@ auto ValveMonitor::processInventoryRemoved(
+@@ -50,34 +50,31 @@
  }
  
  auto ValveMonitor::processConfigAddedAsync(
@@ -1988,7 +1994,7 @@ index 9d66262..a2fde53 100644
  
  #include <sdbusplus/async.hpp>
  #include <sdbusplus/message/native_types.hpp>
-@@ -25,7 +27,7 @@ class ValveMonitor
+@@ -25,7 +27,7 @@
  
    private:
      using valve_map_t =
@@ -1997,7 +2003,7 @@ index 9d66262..a2fde53 100644
  
      /** @brief  Process new interfaces added to inventory */
      auto processInventoryAdded(
-@@ -38,11 +40,13 @@ class ValveMonitor
+@@ -38,11 +40,13 @@
          const std::string& interfaceName) -> void;
  
      /** @brief Process the config add asynchronously */
@@ -2016,7 +2022,7 @@ diff --git a/src/valve-monitor/meson.build b/src/valve-monitor/meson.build
 index d00cefa..0f6a388 100644
 --- a/src/valve-monitor/meson.build
 +++ b/src/valve-monitor/meson.build
-@@ -8,8 +8,13 @@ phosphor_dbus_interfaces_dep = dependency('phosphor-dbus-interfaces')
+@@ -8,8 +8,13 @@
  executable(
      'valvemonitor',
      'ValveMonitor.cpp',
@@ -2030,7 +2036,7 @@ index d00cefa..0f6a388 100644
      dependencies: [
          default_deps,
          utils_dep,
-@@ -18,6 +23,7 @@ executable(
+@@ -18,6 +23,7 @@
          gpiinterface_dep,
          gpointerface_dep,
          entitymanagerinterface_dep,
@@ -2038,6 +2044,3 @@ index d00cefa..0f6a388 100644
      ],
      include_directories: src_inc,
      install: true,
--- 
-2.52.0
-

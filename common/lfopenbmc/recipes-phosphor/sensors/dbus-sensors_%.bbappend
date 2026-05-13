@@ -24,7 +24,6 @@ SRC_URI:append = " \
 
 SRC_URI:append:ventura2 = " \
     file://0101-valve-monitor-add-analog-valve-support.patch \
-    file://0102-valve-monitor-switch-to-percentage-tolerance-and-iio.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \

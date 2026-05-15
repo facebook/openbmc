@@ -1,4 +1,4 @@
-From 5ce98313802db9c75f3428f28143c45b4217c8fa Mon Sep 17 00:00:00 2001
+From fce5858b6220e9a896ef3a5c1bf4157644c6d175 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 17:16:49 +0800
 Subject: [PATCH 16/23] requester: refresh MCTP endpoints after host reaches
@@ -223,5 +223,5 @@ index 96a35e9..dd0ba18 100644
       * D-Bus signal raised.
       *
 -- 
-2.53.0-Meta
+2.52.0
 

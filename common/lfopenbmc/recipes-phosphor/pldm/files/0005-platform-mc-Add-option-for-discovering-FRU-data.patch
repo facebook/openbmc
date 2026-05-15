@@ -1,4 +1,4 @@
-From 9967294d62618294cfa514c6cb8b7f35ddd2ad68 Mon Sep 17 00:00:00 2001
+From d4a9963fdde84eea84d1e0a0f6dab29b0f388704 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
 Subject: [PATCH 05/23] platform-mc: Add option for discovering FRU data
@@ -200,5 +200,5 @@ index 2afbbc7..35751d7 100644
  
  std::vector<std::string> Terminus::getSensorNames(const SensorID& sensorId)
 -- 
-2.53.0-Meta
+2.52.0
 

@@ -1,7 +1,7 @@
-From 502e4dcd8defd33b401cbbf387256baddc8c7ad7 Mon Sep 17 00:00:00 2001
+From 165f8822f46c7fbaaf9b1a30f3a50fc9a1e8129b Mon Sep 17 00:00:00 2001
 From: Rex Fu <Rex.Fu@amd.com>
 Date: Thu, 7 May 2026 10:36:47 +0800
-Subject: [PATCH] common: log update result events
+Subject: [PATCH 2/2] common: log update result events
 
 Emit structured UpdateSuccessful and ApplyFailed events from the
 generic device update flow so Redfish EventLog can report the final
@@ -17,7 +17,7 @@ Signed-off-by: Rex Fu <Rex.Fu@amd.com>
  1 file changed, 14 insertions(+)
 
 diff --git a/common/src/device.cpp b/common/src/device.cpp
-index 7e39e0a..5604efa 100644
+index 78df16e..5d14b5f 100644
 --- a/common/src/device.cpp
 +++ b/common/src/device.cpp
 @@ -5,6 +5,8 @@
@@ -29,7 +29,7 @@ index 7e39e0a..5604efa 100644
  #include <sdbusplus/asio/object_server.hpp>
  #include <sdbusplus/async/context.hpp>
  #include <sdbusplus/bus.hpp>
-@@ -188,6 +190,18 @@ sdbusplus::async::task<bool> Device::continueUpdateWithMappedPackage(
+@@ -189,6 +191,18 @@ sdbusplus::async::task<bool> Device::continueUpdateWithMappedPackage(
      {
          softwarePending->setActivation(
              ActivationInterface::Activations::Active);
@@ -49,5 +49,5 @@ index 7e39e0a..5604efa 100644
  
      softwarePending->setActivationBlocksTransition(false);
 -- 
-2.43.0
+2.52.0
 

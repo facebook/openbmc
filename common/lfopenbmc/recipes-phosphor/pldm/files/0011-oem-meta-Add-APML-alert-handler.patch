@@ -1,4 +1,4 @@
-From b8676aa81930172a46ccad741302bfe4e7a9bed6 Mon Sep 17 00:00:00 2001
+From 1b6e3900788c6217c8916dda1d7d9fccd5cd3f95 Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Thu, 23 Oct 2025 14:18:22 +0800
 Subject: [PATCH 11/23] oem-meta: Add APML alert handler
@@ -183,5 +183,5 @@ index fb5ba14..cff4ca7 100644
      'file_io_type_crash_dump.cpp',
      'file_io_type_event_log.cpp',
 -- 
-2.53.0-Meta
+2.52.0
 

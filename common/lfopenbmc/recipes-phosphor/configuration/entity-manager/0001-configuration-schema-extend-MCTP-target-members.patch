@@ -1,4 +1,4 @@
-From bfee3280cbe83a6bafa13d72e20fadfc09891e8f Mon Sep 17 00:00:00 2001
+From 07a9af0026d7b9976648c467e8b906c54a4f0a88 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Wed, 10 Dec 2025 14:41:23 +0800
 Subject: [PATCH 1/2] configuration: schema: extend MCTP target members
@@ -36,12 +36,12 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  1 file changed, 40 insertions(+), 2 deletions(-)
 
 diff --git a/schemas/mctp.json b/schemas/mctp.json
-index 7dc1629..9549613 100644
+index e213e8d..76d1b04 100644
 --- a/schemas/mctp.json
 +++ b/schemas/mctp.json
 @@ -11,16 +11,35 @@
                      "description": "The bus index to which the device is attached",
-                     "type": "string"
+                     "type": ["string", "number"]
                  },
 +                "Inventory": {
 +                    "description": "The inventory name associated with this device",
@@ -78,7 +78,7 @@ index 7dc1629..9549613 100644
          "MCTPI3CTarget": {
 @@ -33,16 +52,35 @@
                      "description": "The bus index to which the device is attached",
-                     "type": "string"
+                     "type": ["string", "number"]
                  },
 +                "Inventory": {
 +                    "description": "The inventory name associated with this device",
@@ -114,5 +114,5 @@ index 7dc1629..9549613 100644
          }
      }
 -- 
-2.47.3
+2.52.0
 

@@ -1,4 +1,4 @@
-From 4800b03a4a8b0e562e6b7df9338f7529d066f53d Mon Sep 17 00:00:00 2001
+From 9546321813833bdece1ee705891f960f3b87c6aa Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <delphine_cc_chiu@wiwynn.com>
 Date: Tue, 25 Jun 2024 14:51:37 +0800
 Subject: [PATCH 01/23] pldm: Revise image path for update
@@ -46,5 +46,5 @@ index cd2e571..59b11b1 100644
          }
  
 -- 
-2.53.0-Meta
+2.52.0
 

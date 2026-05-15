@@ -1,4 +1,4 @@
-From 788e7f413eef9dada49b30e5209923a8b791eb08 Mon Sep 17 00:00:00 2001
+From da9798ca0ad03efc01462153714824552eb9dca4 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Fri, 6 Mar 2026 08:28:12 +0800
 Subject: [PATCH 2/9] configurations: nvidia: Rename hmc to p4764-hmc
@@ -18,10 +18,10 @@ Change-Id: I8855b9adf482338416b1750c11feb0b8b0529043
  rename configurations/nvidia/{hmc.json => p4764-hmc.json} (100%)
 
 diff --git a/configurations/meson.build b/configurations/meson.build
-index 6a66eda..ee734a8 100644
+index 1e8f630..4ef92e3 100644
 --- a/configurations/meson.build
 +++ b/configurations/meson.build
-@@ -285,9 +285,9 @@ configs = [
+@@ -296,9 +296,9 @@ configs = [
      'nvidia/cx8_mezzanine_module.json',
      'nvidia/gb200.json',
      'nvidia/gb300.json',
@@ -37,5 +37,5 @@ similarity index 100%
 rename from configurations/nvidia/hmc.json
 rename to configurations/nvidia/p4764-hmc.json
 -- 
-2.31.1
+2.52.0
 

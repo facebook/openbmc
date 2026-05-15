@@ -1,4 +1,4 @@
-From 4d32461c20320a2e893da96d8afe636521afa8b9 Mon Sep 17 00:00:00 2001
+From 6e0eda31780ca63b889e72be005136b47dbee806 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Thu, 16 Apr 2026 12:38:46 +0800
 Subject: [PATCH] configuration: ventura2: Add MCTPI2C for E810
@@ -10,10 +10,10 @@ Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
  1 file changed, 13 insertions(+)
 
 diff --git a/configurations/meta/ventura2/ventura2_rmcv2_mb.json b/configurations/meta/ventura2/ventura2_rmcv2_mb.json
-index 5b2f11e..7faa180 100644
+index c7dcaee..4ef9e29 100644
 --- a/configurations/meta/ventura2/ventura2_rmcv2_mb.json
 +++ b/configurations/meta/ventura2/ventura2_rmcv2_mb.json
-@@ -632,6 +632,19 @@
+@@ -639,6 +639,19 @@
                  "vin_Name": "RMC_BRICK_INPUT_VOLT_V",
                  "vout1_Max": 18,
                  "vout1_Name": "RMC_BRICK_OUTPUT_VOLT_V"

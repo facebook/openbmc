@@ -1,4 +1,4 @@
-From fcd341521ef83d066b850dba25909dd5e55c351a Mon Sep 17 00:00:00 2001
+From 9f72a23067a7f6e68666237f3709ef2c84bcd8f4 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Fri, 26 Dec 2025 14:35:14 +0800
 Subject: [PATCH 14/23] terminus: replace inventory and sensor configuration
@@ -985,5 +985,5 @@ index 3eb57cf..71ce9c4 100644
      constexpr auto mockedDbusPath =
          "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
 -- 
-2.53.0-Meta
+2.52.0
 

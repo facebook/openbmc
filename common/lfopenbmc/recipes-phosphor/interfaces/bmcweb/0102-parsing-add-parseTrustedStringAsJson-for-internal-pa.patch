@@ -1,7 +1,8 @@
-From d9bcc3a0cf42575266787fb4cf61ec307d3680ca Mon Sep 17 00:00:00 2001
+From 7464344e5b3fd3b9e98fad61b11cb28cda713460 Mon Sep 17 00:00:00 2001
 From: Rick Yazwinski <rickyaz@meta.com>
 Date: Tue, 12 May 2026 06:43:37 -0700
-Subject: [PATCH] parsing: add parseTrustedStringAsJson for internal payloads
+Subject: [PATCH 102/102] parsing: add parseTrustedStringAsJson for internal
+ payloads
 
 parseStringAsJson() routes through BmcwebSaxParse, which hard-caps a
 payload at 500 total JSON values to defend against malicious external
@@ -31,7 +32,7 @@ loses all sessions.
  2 files changed, 24 insertions(+), 2 deletions(-)
 
 diff --git a/http/parsing.hpp b/http/parsing.hpp
-index 8756f47..5a012bd 100644
+index 8756f47b..5a012bd3 100644
 --- a/http/parsing.hpp
 +++ b/http/parsing.hpp
 @@ -210,6 +210,25 @@ inline std::optional<nlohmann::json> parseStringAsJson(std::string_view body)
@@ -61,7 +62,7 @@ index 8756f47..5a012bd 100644
                                            nlohmann::json& jsonOut)
  {
 diff --git a/include/persistent_data.hpp b/include/persistent_data.hpp
-index 51b7746..a9d4517 100644
+index 51b77465..16420c1e 100644
 --- a/include/persistent_data.hpp
 +++ b/include/persistent_data.hpp
 @@ -96,8 +96,11 @@ class ConfigFile
@@ -78,3 +79,6 @@ index 51b7746..a9d4517 100644
              if (!data)
              {
                  BMCWEB_LOG_ERROR("Error parsing persistent data in json file.");
+-- 
+2.52.0
+

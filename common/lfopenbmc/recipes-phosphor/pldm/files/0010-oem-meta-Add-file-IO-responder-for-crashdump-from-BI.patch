@@ -1,4 +1,4 @@
-From 87925935a09024bc97aa7f77b4fc52df38842787 Mon Sep 17 00:00:00 2001
+From 9bf2cb41afc13b413067de206f5ab7245cd02cf2 Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Mon, 21 Jul 2025 14:13:32 +0800
 Subject: [PATCH 10/23] oem-meta: Add file IO responder for crashdump from BIC
@@ -1263,5 +1263,5 @@ index 62fecbc..fb5ba14 100644
      'file_io_type_http_boot.cpp',
      'file_io_type_post_code.cpp',
 -- 
-2.53.0-Meta
+2.52.0
 

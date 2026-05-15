@@ -1,4 +1,4 @@
-From 9ef9185bc36fdd067d8d4ad2aa3368b6a8c4e715 Mon Sep 17 00:00:00 2001
+From cfd3327ec2052e7db7908256310221d64906b173 Mon Sep 17 00:00:00 2001
 From: Sora Su <sora_su@wiwynn.com>
 Date: Thu, 2 Apr 2026 09:56:55 +0800
 Subject: [PATCH 18/23] oem-meta: Implement special event handling
@@ -120,5 +120,5 @@ index 600aa7a..35338ce 100644
       {report::prochotSdSensor, nullptr}},
      {EventType::MTIA_FAULT, {report::mtiaFault, nullptr}},
 -- 
-2.53.0-Meta
+2.52.0
 

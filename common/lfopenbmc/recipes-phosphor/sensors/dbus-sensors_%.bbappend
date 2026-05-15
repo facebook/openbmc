@@ -32,6 +32,10 @@ SRC_URI:append:fb-compute-multihost = " \
     file://0202-Add-retry-attempts-configuration-for-fan-sensors.patch \
 "
 
+SRC_URI:append:santabarbara = " \
+    file://0301-Thresholds-Add-option-to-log-thresholds-on-second-hi.patch \
+"
+
 PACKAGECONFIG[valvemonitor] = "-Dvalve-monitor=enabled, -Dvalve-monitor=disabled"
 
 SYSTEMD_SERVICE:${PN} += "${@bb.utils.contains('PACKAGECONFIG', 'valvemonitor', \

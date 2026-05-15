@@ -1,7 +1,7 @@
-From 105d0239e7f425c6cc916d8e1455fca9ba45054c Mon Sep 17 00:00:00 2001
+From b5e8ac929e5d6421304a1bff3cf5b3d77bc70845 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 7 May 2026 21:56:34 +0800
-Subject: [PATCH 15/23] terminus: add refreshFirmwareParameters method
+Subject: [PATCH] terminus: add refreshFirmwareParameters method
 
 Add `refreshFirmwareParameters` to query firmware parameters without
 running `handleMctpEndpoints`.
@@ -36,7 +36,7 @@ Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
  5 files changed, 159 insertions(+), 1 deletion(-)
 
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index d78b2db..25b4765 100644
+index d78b2db..b884ecc 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
 @@ -12,6 +12,11 @@ namespace pldm
@@ -153,7 +153,7 @@ index d78b2db..25b4765 100644
              "No response received for get firmware parameters for endpoint ID {EID}",
              "EID", eid);
 -        descriptorMap.erase(eid);
-+        descriptorMap.erase(eid);        if (retryRefreshFirmwareParameters(eid, "GetFirmwareParameters"))
++        if (retryRefreshFirmwareParameters(eid, "GetFirmwareParameters"))
 +        {
 +            return;
 +        }
@@ -301,5 +301,5 @@ index 20f9c5c..96a35e9 100644
       *
       *  @param[in] mctpInfoMap - information of discovered MCTP endpoints
 -- 
-2.53.0-Meta
+2.47.3
 

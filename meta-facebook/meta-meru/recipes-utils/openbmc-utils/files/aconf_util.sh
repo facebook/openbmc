@@ -19,6 +19,8 @@ usage() {
     echo "      bmc: program using conf-file $BMC_CONF_FILE"
     echo "      cpu: program using conf-file $CPU_CONF_FILE"
     echo "      By default, the bmc conf-file is used"
+    echo "$program clear"
+    echo "      Clears the configuration"
 }
 
 ABOOT_CONF_START=$(get_section_start aboot_conf)
@@ -93,6 +95,10 @@ create_aboot_conf_image() {
         product_name=$(get_old_product_name)
     fi
 
+    if [ -z "$product_name" ]; then
+        product_name=$(wedge_product_name)
+    fi
+
     if [ -z "$product_version" ]; then
         echo "Warning: could not find product version in weutil" >&2
         echo "         Using original product version if available" >&2
@@ -117,7 +123,7 @@ create_aboot_conf_image() {
         echo -n "${BOARD_NAME_VAR}=" >> "$TEMP_BIOS_IMAGE"
         echo -n "${product_name}" | base64 >> "$TEMP_BIOS_IMAGE"
     else
-        echo "Warning: no product name encoded" >&2
+        echo "Warning: could not determine product name" >&2
     fi
 
     if [ -n "$product_version" ]; then
@@ -135,6 +141,13 @@ create_aboot_conf_image() {
     pad_blocks="$((pad_size / SECTION_BLOCK_SIZE))"
     dd if=/dev/zero bs="$SECTION_BLOCK_SIZE" count="$pad_blocks" \
        >> "$TEMP_BIOS_IMAGE" 2> /dev/null
+}
+
+create_empty_aboot_conf_image() {
+    rm -f "$TEMP_BIOS_IMAGE"
+    num_blocks="$((FLASH_SIZE / SECTION_BLOCK_SIZE))"
+    dd if=/dev/zero of="$TEMP_BIOS_IMAGE" bs="$SECTION_BLOCK_SIZE" \
+       count="$num_blocks" 2> /dev/null
 }
 
 parse_aboot_conf() {
@@ -206,8 +219,13 @@ case "${1^^}" in
         create_aboot_conf_image "$conf_file" "$product_name" || exit 1
         bios_util.sh write "$TEMP_BIOS_IMAGE" --partition aboot_conf
         ;;
+    CLEAR)
+        create_empty_aboot_conf_image || exit 1
+        bios_util.sh write "$TEMP_BIOS_IMAGE" --partition aboot_conf
+        ;;
     *)
         echo "Unknown action: $1"
         usage
+        exit 1
         ;;
 esac

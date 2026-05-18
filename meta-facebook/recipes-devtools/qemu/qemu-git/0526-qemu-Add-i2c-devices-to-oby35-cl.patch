@@ -1,4 +1,4 @@
-From b301bd7da08c54fe9d618fdb2d374e6d7cd0e038 Mon Sep 17 00:00:00 2001
+From 9f391e9ac41e30733ed8249cd435e2378913dcbe Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Fri, 26 Aug 2022 02:03:46 -0700
 Subject: [PATCH 526/532] qemu: Add i2c devices to oby35-cl
@@ -14,10 +14,10 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  3 files changed, 4 insertions(+), 13 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_fuji.c b/hw/arm/aspeed_ast2600_fuji.c
-index a68e51c89d..877fe1b0b6 100644
+index a68e51c89d..00d78bf803 100644
 --- a/hw/arm/aspeed_ast2600_fuji.c
 +++ b/hw/arm/aspeed_ast2600_fuji.c
-@@ -8,6 +8,7 @@
+@@ -11,6 +11,7 @@
  #include "hw/arm/machines-qom.h"
  #include "hw/arm/aspeed.h"
  #include "hw/arm/aspeed_soc.h"

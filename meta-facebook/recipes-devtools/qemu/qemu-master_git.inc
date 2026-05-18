@@ -27,7 +27,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=a3b50d8b88dcc0eb3d7d39b760b9e821 \
 # To update to latest master, run:
 #   git ls-remote https://github.com/qemu/qemu.git refs/heads/master | cut -f1
 # v11.0.0
-QEMU_REF ?= "98b060da3a4f92b2a994ead5b16a87e783baf77c"
+QEMU_REF ?= "d34dbb95494da56cddf4584b31a0773e552b0b44"
 
 # Use git protocol (required by BitBake QA)
 SRC_URI = "git://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \

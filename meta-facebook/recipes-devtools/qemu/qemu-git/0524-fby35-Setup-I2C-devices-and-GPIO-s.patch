@@ -1,17 +1,17 @@
-From 6e3f8d617877537dbbc8f44ad805c872e9c94a7e Mon Sep 17 00:00:00 2001
+From 253141a957637f11dbd33d2c09ef5810787929ef Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 23 Aug 2022 23:24:36 -0700
 Subject: [PATCH 524/532] fby35: Setup I2C devices and GPIO's
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 ---
- hw/arm/aspeed_ast2600_fby35.c | 119 +-----------------------------------
- hw/arm/fby35.c                |  93 +++++++++++++++++++++++++++++++++++
+ hw/arm/aspeed_ast2600_fby35.c | 119 ++--------------------------------
+ hw/arm/fby35.c                |  93 ++++++++++++++++++++++++++
  include/hw/arm/fby35.h        |   5 ++
- 3 files changed, 101 insertions(+), 116 deletions(-)
+ 3 files changed, 102 insertions(+), 115 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_fby35.c b/hw/arm/aspeed_ast2600_fby35.c
-index 4e5f8000c6..7faf537505 100644
+index 4e5f8000c6..eaf37c48e4 100644
 --- a/hw/arm/aspeed_ast2600_fby35.c
 +++ b/hw/arm/aspeed_ast2600_fby35.c
 @@ -11,6 +11,7 @@

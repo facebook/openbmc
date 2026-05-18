@@ -1,4 +1,4 @@
-From 13dfae70c2d8bea0e5fb2ab8e879e57e9b3581cb Mon Sep 17 00:00:00 2001
+From 8247fda9600f8a3202fb78a3ff2b2fa757d040b8 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Thu, 5 Jan 2023 01:13:45 -0800
 Subject: [PATCH 504/512] hw/misc: Add byte-by-byte i2c network device
@@ -15,7 +15,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 
 diff --git a/hw/misc/i2c-netdev2.c b/hw/misc/i2c-netdev2.c
 new file mode 100644
-index 0000000000..44c68f953a
+index 0000000000..732cebd822
 --- /dev/null
 +++ b/hw/misc/i2c-netdev2.c
 @@ -0,0 +1,259 @@
@@ -541,7 +541,7 @@ index 0000000000..aaf8c85427
 +    return ret;
 +}
 diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
-index be4fa627b5..b616821c3f 100644
+index b735f55fc4..68fc4f2cfb 100644
 --- a/tests/qtest/meson.build
 +++ b/tests/qtest/meson.build
 @@ -214,6 +214,7 @@ qtests_npcm8xx = \

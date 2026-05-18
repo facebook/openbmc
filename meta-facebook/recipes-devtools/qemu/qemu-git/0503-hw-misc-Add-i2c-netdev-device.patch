@@ -1,4 +1,4 @@
-From e39e0ca396bd6c362544e2de97fc2dd8ff04bab3 Mon Sep 17 00:00:00 2001
+From d448dda7f4ed657c861f34841391e25336393ee0 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 27 Apr 2022 16:23:48 -0700
 Subject: [PATCH 503/512] hw/misc: Add i2c-netdev device
@@ -67,7 +67,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
 
 diff --git a/hw/misc/i2c-netdev.c b/hw/misc/i2c-netdev.c
 new file mode 100644
-index 0000000000..3153946b70
+index 0000000000..f9064a9679
 --- /dev/null
 +++ b/hw/misc/i2c-netdev.c
 @@ -0,0 +1,216 @@

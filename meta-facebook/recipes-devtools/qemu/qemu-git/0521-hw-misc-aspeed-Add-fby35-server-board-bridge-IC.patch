@@ -1,4 +1,4 @@
-From 452652a885e3b0f599155dc8e728e63b9022288e Mon Sep 17 00:00:00 2001
+From a455407d101fec04aa41af11d6e40e19d5981fde Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 23 Aug 2022 16:57:35 -0700
 Subject: [PATCH 521/522] hw/misc/aspeed: Add fby35 server board bridge IC
@@ -14,7 +14,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 
 diff --git a/hw/misc/fby35_sb_bic.c b/hw/misc/fby35_sb_bic.c
 new file mode 100644
-index 0000000000..245fd2df5a
+index 0000000000..c7b1d420e2
 --- /dev/null
 +++ b/hw/misc/fby35_sb_bic.c
 @@ -0,0 +1,342 @@

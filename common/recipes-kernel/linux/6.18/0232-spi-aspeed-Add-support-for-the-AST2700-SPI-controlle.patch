@@ -1,4 +1,4 @@
-From b09d88bc01bbead3da2bb26a654d8f75b8cc6d55 Mon Sep 17 00:00:00 2001
+From 891d663dec5b5926368f81be75f32abd6c97d5bd Mon Sep 17 00:00:00 2001
 From: Chin-Ting Kuo <chin-ting_kuo@aspeedtech.com>
 Date: Fri, 14 Nov 2025 18:10:42 +0800
 Subject: [PATCH 232/238] spi: aspeed: Add support for the AST2700 SPI
@@ -25,7 +25,7 @@ Signed-off-by: Mark Brown <broonie@kernel.org>
  1 file changed, 102 insertions(+)
 
 diff --git a/drivers/spi/spi-aspeed-smc.c b/drivers/spi/spi-aspeed-smc.c
-index 7c10de67ed2c..0f11022e2eec 100644
+index 8e53b7d72fe4..4ec97350fa60 100644
 --- a/drivers/spi/spi-aspeed-smc.c
 +++ b/drivers/spi/spi-aspeed-smc.c
 @@ -49,6 +49,12 @@
@@ -70,7 +70,7 @@ index 7c10de67ed2c..0f11022e2eec 100644
  	/* Restore defaults */
  	if (addr_mode != addr_mode_backup)
  		writel(addr_mode_backup, aspi->regs + CE_CTRL_REG);
-@@ -856,6 +870,41 @@ static u32 aspeed_spi_segment_ast2600_reg(struct aspeed_spi *aspi,
+@@ -859,6 +873,41 @@ static u32 aspeed_spi_segment_ast2600_reg(struct aspeed_spi *aspi,
  		((end - 1) & AST2600_SEG_ADDR_MASK);
  }
  
@@ -112,7 +112,7 @@ index 7c10de67ed2c..0f11022e2eec 100644
  /*
   * Read timing compensation sequences
   */
-@@ -1200,6 +1249,57 @@ static const struct aspeed_spi_data ast2600_spi_data = {
+@@ -1203,6 +1252,57 @@ static const struct aspeed_spi_data ast2600_spi_data = {
  	.segment_reg   = aspeed_spi_segment_ast2600_reg,
  };
  
@@ -170,7 +170,7 @@ index 7c10de67ed2c..0f11022e2eec 100644
  static const struct of_device_id aspeed_spi_matches[] = {
  	{ .compatible = "aspeed,ast2400-fmc", .data = &ast2400_fmc_data },
  	{ .compatible = "aspeed,ast2400-spi", .data = &ast2400_spi_data },
-@@ -1207,6 +1307,8 @@ static const struct of_device_id aspeed_spi_matches[] = {
+@@ -1210,6 +1310,8 @@ static const struct of_device_id aspeed_spi_matches[] = {
  	{ .compatible = "aspeed,ast2500-spi", .data = &ast2500_spi_data },
  	{ .compatible = "aspeed,ast2600-fmc", .data = &ast2600_fmc_data },
  	{ .compatible = "aspeed,ast2600-spi", .data = &ast2600_spi_data },

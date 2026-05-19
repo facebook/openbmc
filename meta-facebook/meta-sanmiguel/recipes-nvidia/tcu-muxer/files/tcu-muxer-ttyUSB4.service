@@ -11,7 +11,7 @@ Restart=always
 ExecStartPre=mkdir -p /var/log/tcu-muxer
 ExecStartPre=mkdir -p /var/log/console_cpu1
 ExecStartPre=mkdir -p /dev/tcu-muxer/cpu1
-ExecStart=/bin/sh -c '/usr/bin/tcu_muxer -d /dev/ttyUSB4 | tee /var/log/tcu-muxer/output-cpu1'
+ExecStart=/bin/sh -c '/usr/bin/tcu_muxer -d /dev/ttyUSB4 -r 57600 | tee /var/log/tcu-muxer/output-cpu1'
 SyslogIdentifier=tcu-muxer-ttyUSB4
 
 [Install]

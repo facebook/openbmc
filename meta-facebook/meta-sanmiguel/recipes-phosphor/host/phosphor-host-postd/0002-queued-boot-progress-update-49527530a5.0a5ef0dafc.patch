@@ -1,0 +1,1948 @@
+From 0b4c5f7bc62495c6eb171a0257ee6944fae86982 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Fri, 13 Feb 2026 18:21:43 +0530
+Subject: [PATCH 1/1] queued-boot-progress: update 49527530a5..0a5ef0dafc
+
+Sync queued-boot-progress related changes in Core-26.01-2_br [1] from Nvidia phosphor-host-postd repo.
+
+Curtis Chuang (1):
+      queued-boot-progress: fix queue overflow flooding post-code log
+
+Prithvi Pai (6):
+      Performance Issue with registering USB devices
+      Add CAK initialization state tracking via POST code filtering
+      Refactor USB hotplug handling
+      queued-boot-progress: Vera I2C recovery after incomplete F1
+      queued-boot-progress: improve debugability logging
+      reopen I2C before discard after F1 failure
+
+[1] https://github.com/NVIDIA/phosphor-host-postd/commit/0a5ef0dafc8f4c09fa386a4276be8822739204eb
+---
+ meson.build                                   |   3 +
+ meson.options                                 |   9 +-
+ .../BootProgressApplication.cpp               |  18 +-
+ queued-boot-progress/BootProgressMain.cpp     |  20 +-
+ queued-boot-progress/BootProgressManager.cpp  |  67 ++---
+ queued-boot-progress/BootProgressManager.hpp  |  29 +-
+ queued-boot-progress/BootProgressPoller.cpp   |  77 +++--
+ queued-boot-progress/BootProgressPoller.hpp   |  14 +-
+ .../BootProgressPublisher.cpp                 |  25 +-
+ .../BootProgressPublisher.hpp                 |  13 +-
+ .../CakBootProgressPublisher.cpp              | 153 ++++++++++
+ .../CakBootProgressPublisher.hpp              |  65 +++++
+ queued-boot-progress/ConfigReader.hpp         |  24 +-
+ queued-boot-progress/I2CPollingDevice.cpp     |  75 ++++-
+ queued-boot-progress/I2CPollingDevice.hpp     |  65 +++++
+ queued-boot-progress/PollingDevice.cpp        |  96 +------
+ queued-boot-progress/PollingDevice.hpp        | 124 ++------
+ queued-boot-progress/USBPollingDevice.cpp     | 268 +++++++++++-------
+ queued-boot-progress/USBPollingDevice.hpp     | 106 +++++++
+ 19 files changed, 852 insertions(+), 399 deletions(-)
+ create mode 100644 queued-boot-progress/CakBootProgressPublisher.cpp
+ create mode 100644 queued-boot-progress/CakBootProgressPublisher.hpp
+ create mode 100644 queued-boot-progress/I2CPollingDevice.hpp
+ create mode 100644 queued-boot-progress/USBPollingDevice.hpp
+
+diff --git a/meson.build b/meson.build
+index 11743ed..6522246 100644
+--- a/meson.build
++++ b/meson.build
+@@ -41,6 +41,7 @@ elif get_option('queued-boot-progress').allowed()
+     snoopd_src += 'queued-boot-progress/PollingDevice.cpp'
+     snoopd_src += 'queued-boot-progress/I2CPollingDevice.cpp'
+     snoopd_src += 'queued-boot-progress/USBPollingDevice.cpp'
++    snoopd_src += 'queued-boot-progress/CakBootProgressPublisher.cpp'
+     snoopd_src += 'queued-boot-progress/BootProgressPublisher.cpp'
+     snoopd_src += 'queued-boot-progress/BootProgressPoller.cpp'
+     snoopd_src += 'queued-boot-progress/BootProgressMain.cpp'
+@@ -64,6 +65,8 @@ elif get_option('queued-boot-progress').allowed()
+     if poll_interval > 0
+         snoopd_args += ' -p ' + poll_interval.to_string()
+     endif
++    cak_cpu_count = get_option('cak-cpu-count')
++    snoopd_args += ' -c ' + cak_cpu_count
+ endif
+ 
+ conf_data.set('SNOOPD_ARGS', snoopd_args)
+diff --git a/meson.options b/meson.options
+index 3fa8a34..1f8506a 100644
+--- a/meson.options
++++ b/meson.options
+@@ -66,4 +66,11 @@ option(
+     type: 'array',
+     value: [],
+     description: 'Address where the device is located',
+-)
+\ No newline at end of file
++)
++option(
++    'cak-cpu-count',
++    type: 'combo',
++    choices: ['0', '1', '2'],
++    value: '0',
++    description: 'Number of CPUs emitting CAK post codes',
++)
+diff --git a/queued-boot-progress/BootProgressApplication.cpp b/queued-boot-progress/BootProgressApplication.cpp
+index d69d3b6..bf40b8e 100644
+--- a/queued-boot-progress/BootProgressApplication.cpp
++++ b/queued-boot-progress/BootProgressApplication.cpp
+@@ -196,13 +196,11 @@ void Application::updatePollInterval()
+ 
+     if (isHostPowerStateOff())
+     {
+-        lg2::info("Host is off - disabling boot progress polling");
+         constexpr int disabledCheckMultiplier = 10;
+         calculatedInterval = baseInterval * disabledCheckMultiplier;
+-        lg2::debug(
+-            "Setting polling interval to {INTERVAL}ms (host off, base * {MULT})",
+-            "INTERVAL", calculatedInterval.count(), "MULT",
+-            disabledCheckMultiplier);
++        lg2::info(
++            "Host off: boot progress polling disabled, update poll interval to {INTERVAL} ms",
++            "INTERVAL", calculatedInterval.count());
+         bootProgressManager->updatePollInterval(calculatedInterval);
+         bootProgressManager->updatePollStatus(false);
+         return;
+@@ -215,10 +213,14 @@ void Application::updatePollInterval()
+         constexpr std::chrono::milliseconds maxPollInterval{3600000};
+         calculatedInterval =
+             std::min(baseInterval * bootCompleteMultiplier, maxPollInterval);
++        lg2::info("Boot complete - update poll interval to {INTERVAL}ms",
++                  "INTERVAL", calculatedInterval.count());
++    }
++    else
++    {
++        lg2::info("Host on - polling at base interval {INTERVAL}ms", "INTERVAL",
++                  calculatedInterval.count());
+     }
+-
+-    lg2::debug("Setting polling interval to {INTERVAL}ms", "INTERVAL",
+-               calculatedInterval.count());
+     bootProgressManager->updatePollInterval(calculatedInterval);
+     bootProgressManager->updatePollStatus(true);
+ }
+diff --git a/queued-boot-progress/BootProgressMain.cpp b/queued-boot-progress/BootProgressMain.cpp
+index 001a6f1..f2090e7 100644
+--- a/queued-boot-progress/BootProgressMain.cpp
++++ b/queued-boot-progress/BootProgressMain.cpp
+@@ -17,8 +17,11 @@
+ 
+ #include "BootProgressApplication.hpp"
+ #include "BootProgressManager.hpp"
++#include "CakBootProgressPublisher.hpp"
+ #include "ConfigReader.hpp"
++#include "I2CPollingDevice.hpp"
+ #include "PollingDevice.hpp"
++#include "USBPollingDevice.hpp"
+ #include "lpcsnoop/snoop.hpp"
+ 
+ #include <phosphor-logging/lg2.hpp>
+@@ -33,8 +36,15 @@ int main(int argc, char* argv[])
+         return EXIT_FAILURE;
+     }
+ 
++    std::shared_ptr<CakBootProgressPublisher> cakPublisher = nullptr;
++    if (config.cakCpuCount)
++    {
++        cakPublisher =
++            std::make_shared<CakBootProgressPublisher>(ctx, config.cakCpuCount);
++    }
++
+     auto publisher = std::make_shared<BootProgressPublisher>(
+-        ctx, std::string(snoopDbus), std::string(snoopObject));
++        ctx, std::string(snoopDbus), std::string(snoopObject), cakPublisher);
+     auto bootProgressManager = std::make_shared<BootProgressManager>(
+         ctx, publisher, config.pollInterval);
+ 
+@@ -46,12 +56,12 @@ int main(int argc, char* argv[])
+     else
+     {
+         // USB needs enumerator for hotplug support
+-        deviceEnumerator = getPollingDeviceEnumerator(
+-            ctx, bootProgressManager, config.transportInterface,
+-            config.usbVendorId, config.usbProductId, config.usbRescanInterval);
++        deviceEnumerator = std::make_shared<USBDeviceEnumerator>(
++            ctx, bootProgressManager, config.usbVendorId, config.usbProductId,
++            config.usbRescanInterval);
+         if (!deviceEnumerator)
+         {
+-            lg2::error("Failed to get polling device enumerator");
++            lg2::error("Failed to create USB device enumerator");
+             return EXIT_FAILURE;
+         }
+     }
+diff --git a/queued-boot-progress/BootProgressManager.cpp b/queued-boot-progress/BootProgressManager.cpp
+index 8b880bb..ebe29cd 100644
+--- a/queued-boot-progress/BootProgressManager.cpp
++++ b/queued-boot-progress/BootProgressManager.cpp
+@@ -50,38 +50,30 @@ void BootProgressManager::onBootProgressData(
+     it->second.buffer.insert(it->second.buffer.end(),
+                              bootProgressEntries.begin(),
+                              bootProgressEntries.end());
+-    if (publisher && isAllSocketDataReady())
++    if (publisher)
+     {
+         tryPublish();
+     }
+ }
+ 
+-void BootProgressManager::onDeviceAdded(TransportInterface transportInterface,
++void BootProgressManager::onDeviceAdded(std::shared_ptr<PollingDevice> device,
++                                        TransportInterface transportInterface,
+                                         const uint8_t& bus,
+-                                        const uint8_t& address, int socketId)
++                                        const uint8_t& address)
+ {
+-    // Check if poller already exists for this socketId
+-    auto existingIt = socketDataMap.find(socketId);
+-    if (existingIt != socketDataMap.end())
+-    {
+-        lg2::warning(
+-            "Poller already exists for socketId {SOCKET_ID}, skipping device addition",
+-            "SOCKET_ID", socketId);
+-        existingIt->second.poller->updatePollStatus(true);
+-        return;
+-    }
+-
+-    auto device = getPollingDevice(transportInterface, bus, address);
++    DeviceIdentity identity{transportInterface, bus, address};
+     if (!device)
+     {
+-        lg2::error("Failed to get polling device");
++        lg2::error("onDeviceAdded: device is null");
+         return;
+     }
++
++    int socketId = nextSocketId++;
+     auto poller = std::make_shared<BootProgressPoller>(
+-        ctx, device, pollInterval, socketId,
++        ctx, std::move(device), pollInterval, socketId,
+         std::bind(&BootProgressManager::onBootProgressData, this,
+                   std::placeholders::_1, std::placeholders::_2));
+-    socketDataMap.emplace(socketId, SocketData(poller));
++    socketDataMap.emplace(socketId, SocketData(identity, poller));
+     lg2::info(
+         "Device added: transportInterface {TRANSPORT_INTERFACE}, bus {BUS}, address {ADDRESS}, socketId {SOCKET_ID}",
+         "TRANSPORT_INTERFACE", static_cast<int>(transportInterface), "BUS", bus,
+@@ -90,20 +82,33 @@ void BootProgressManager::onDeviceAdded(TransportInterface transportInterface,
+ 
+ void BootProgressManager::onDeviceRemoved(TransportInterface transportInterface,
+                                           const uint8_t& bus,
+-                                          const uint8_t& address, int socketId)
++                                          const uint8_t& address)
+ {
+-    auto it = socketDataMap.find(socketId);
+-    if (it == socketDataMap.end())
++    DeviceIdentity identity{transportInterface, bus, address};
++    auto dataIt = std::find_if(socketDataMap.begin(), socketDataMap.end(),
++                               [&identity](const auto& pair) {
++                                   return pair.second.identity == identity;
++                               });
++    if (dataIt == socketDataMap.end())
+     {
+-        lg2::error("Socket data not found for socketId {SOCKET_ID}",
+-                   "SOCKET_ID", socketId);
++        lg2::warning(
++            "Device not found for removal: transport {TRANSPORT}, bus {BUS}, address {ADDRESS}",
++            "TRANSPORT", static_cast<int>(transportInterface), "BUS", bus,
++            "ADDRESS", address);
+         return;
+     }
+-    it->second.poller->updatePollStatus(false);
+     lg2::info(
+         "Device removed: transportInterface {TRANSPORT_INTERFACE}, bus {BUS}, address {ADDRESS}, socketId {SOCKET_ID}",
+         "TRANSPORT_INTERFACE", static_cast<int>(transportInterface), "BUS", bus,
+-        "ADDRESS", address, "SOCKET_ID", socketId);
++        "ADDRESS", address, "SOCKET_ID", dataIt->first);
++
++    dataIt->second.poller->stop();
++    socketDataMap.erase(dataIt);
++
++    if (transportInterface == TransportInterface::USB && socketDataMap.empty())
++    {
++        resetPublisherCachedState();
++    }
+ }
+ 
+ void BootProgressManager::updatePollInterval(
+@@ -132,18 +137,6 @@ void BootProgressManager::initIndices()
+     }
+ }
+ 
+-bool BootProgressManager::isAllSocketDataReady()
+-{
+-    return std::all_of(socketDataMap.begin(), socketDataMap.end(),
+-                       [](const auto& pair) {
+-                           // Consider socket data ready if:
+-                           // 1. Buffer has data
+-                           // 2. Poller is not actively polling (device removed)
+-                           return !pair.second.buffer.empty() ||
+-                                  !pair.second.poller->isPolling();
+-                       });
+-}
+-
+ void BootProgressManager::aggregateAndSortAllSocketData()
+ {
+     allSocketProgressEntries.clear();
+diff --git a/queued-boot-progress/BootProgressManager.hpp b/queued-boot-progress/BootProgressManager.hpp
+index f4d4c79..b0f3acc 100644
+--- a/queued-boot-progress/BootProgressManager.hpp
++++ b/queued-boot-progress/BootProgressManager.hpp
+@@ -28,12 +28,28 @@
+ #include <unordered_map>
+ #include <vector>
+ 
++struct DeviceIdentity
++{
++    TransportInterface transport;
++    uint8_t bus;
++    uint8_t address;
++    bool operator==(const DeviceIdentity& other) const
++    {
++        return transport == other.transport && bus == other.bus &&
++               address == other.address;
++    }
++};
++
+ struct SocketData
+ {
++    DeviceIdentity identity;
+     std::shared_ptr<BootProgressPoller> poller;
+     std::vector<std::pair<uint32_t, uint32_t>> buffer;
+     SocketData() = default;
+-    SocketData(std::shared_ptr<BootProgressPoller> poller) : poller(poller) {}
++    SocketData(DeviceIdentity identity,
++               std::shared_ptr<BootProgressPoller> poller) :
++        identity(identity), poller(poller)
++    {}
+ };
+ 
+ class BootProgressManager
+@@ -47,13 +63,12 @@ class BootProgressManager
+         int socketId,
+         std::vector<std::pair<uint32_t, uint32_t>> bootProgressEntries);
+ 
+-    void onDeviceAdded(TransportInterface transportInterface,
+-                       const uint8_t& bus, const uint8_t& address,
+-                       int socketId);
++    void onDeviceAdded(std::shared_ptr<PollingDevice> device,
++                       TransportInterface transportInterface,
++                       const uint8_t& bus, const uint8_t& address);
+ 
+     void onDeviceRemoved(TransportInterface transportInterface,
+-                         const uint8_t& bus, const uint8_t& address,
+-                         int socketId);
++                         const uint8_t& bus, const uint8_t& address);
+ 
+     void updatePollInterval(std::chrono::milliseconds newPollInterval);
+ 
+@@ -68,9 +83,9 @@ class BootProgressManager
+     std::shared_ptr<BootProgressPublisher> publisher;
+     std::chrono::milliseconds pollInterval;
+     std::unordered_map<int, SocketData> socketDataMap;
++    int nextSocketId = 0;
+     std::vector<std::pair<uint32_t, uint32_t>> allSocketProgressEntries;
+ 
+-    bool isAllSocketDataReady();
+     void aggregateAndSortAllSocketData();
+     sdbusplus::async::task<void> periodicPublishCheck();
+     void tryPublish();
+diff --git a/queued-boot-progress/BootProgressPoller.cpp b/queued-boot-progress/BootProgressPoller.cpp
+index d4647da..c97e286 100644
+--- a/queued-boot-progress/BootProgressPoller.cpp
++++ b/queued-boot-progress/BootProgressPoller.cpp
+@@ -40,10 +40,11 @@ void BootProgressPoller::initIndices()
+ }
+ 
+ sdbusplus::async::task<std::optional<uint32_t>>
+-    BootProgressPoller::readRegister(uint32_t regAddr)
++    BootProgressPoller::readRegister(uint32_t regAddr,
++                                     const std::shared_ptr<PollingDevice>& dev)
+ {
+     uint32_t regValue = 0;
+-    if (!device->readRegisterValue(regAddr, regValue))
++    if (!dev->readRegisterValue(regAddr, regValue))
+     {
+         lg2::debug("Failed to read register {REG_ADDR}", "REG_ADDR",
+                    std::format("0x{:08X}", regAddr));
+@@ -61,14 +62,14 @@ void BootProgressPoller::parseQueueIndices(uint32_t regVal, uint32_t& start,
+ }
+ 
+ sdbusplus::async::task<std::optional<uint32_t>> BootProgressPoller::getQbaseIdx(
+-    int qnum)
++    int qnum, const std::shared_ptr<PollingDevice>& dev)
+ {
+     if (qnum == 0)
+     {
+         co_return 0;
+     }
+ 
+-    auto regResult = co_await readRegister(queueIndexStart.at(0));
++    auto regResult = co_await readRegister(queueIndexStart.at(0), dev);
+     if (!regResult.has_value())
+     {
+         lg2::debug("Failed to read queue base index for qnum {QNUM}", "QNUM",
+@@ -83,12 +84,13 @@ sdbusplus::async::task<std::optional<uint32_t>> BootProgressPoller::getQbaseIdx(
+ 
+ sdbusplus::async::task<
+     std::optional<std::vector<std::pair<uint32_t, uint32_t>>>>
+-    BootProgressPoller::processQueue(int queueNumber)
++    BootProgressPoller::processQueue(int queueNumber,
++                                     const std::shared_ptr<PollingDevice>& dev)
+ {
+     std::vector<std::pair<uint32_t, uint32_t>> bootProgressEntries;
+     uint32_t currStart = 0, currEnd = 0, queueSize = 0;
+ 
+-    auto regResult = co_await readRegister(queueIndexStart[queueNumber]);
++    auto regResult = co_await readRegister(queueIndexStart[queueNumber], dev);
+     if (!regResult.has_value())
+     {
+         lg2::debug(
+@@ -106,7 +108,7 @@ sdbusplus::async::task<
+         co_return std::nullopt;
+     }
+ 
+-    auto qbase = co_await getQbaseIdx(queueNumber);
++    auto qbase = co_await getQbaseIdx(queueNumber, dev);
+     if (!qbase.has_value())
+     {
+         co_return std::nullopt;
+@@ -142,20 +144,26 @@ sdbusplus::async::task<
+     {
+         if (currStart != lastStart)
+         {
+-            idx = currStart;
+             lastStart = currStart;
+-            bootProgressEntries.emplace_back(
+-                std::make_pair(0xFFFFFFFF, 0xFFFFFFFF));
+-            lg2::info(
+-                "Queue {QUEUE_NUMBER} on socket {SOCKET_ID} overflow detected: new start={START}",
+-                "QUEUE_NUMBER", queueNumber, "SOCKET_ID", socketId, "START",
+-                currStart);
++            uint32_t entriesInQueue =
++                (currEnd - currStart + queueSize) % queueSize;
++            uint32_t distToEnd = (currEnd - idx + queueSize) % queueSize;
++            if (distToEnd > entriesInQueue)
++            {
++                idx = currStart;
++                bootProgressEntries.emplace_back(
++                    std::make_pair(0xFFFFFFFF, 0xFFFFFFFF));
++                lg2::info(
++                    "Queue {QUEUE_NUMBER} on socket {SOCKET_ID} overflow detected: new start={START}",
++                    "QUEUE_NUMBER", queueNumber, "SOCKET_ID", socketId, "START",
++                    currStart);
++            }
+         }
+ 
+         const uint32_t tsAddr = scratchRamGroup0 + (8 * idx);
+         const uint32_t codeAddr = tsAddr + 4;
+ 
+-        auto tsResult = co_await readRegister(tsAddr);
++        auto tsResult = co_await readRegister(tsAddr, dev);
+         if (!tsResult.has_value())
+         {
+             lg2::debug(
+@@ -165,7 +173,7 @@ sdbusplus::async::task<
+             co_return std::nullopt;
+         }
+ 
+-        auto codeResult = co_await readRegister(codeAddr);
++        auto codeResult = co_await readRegister(codeAddr, dev);
+         if (!codeResult.has_value())
+         {
+             lg2::debug(
+@@ -202,18 +210,26 @@ sdbusplus::async::task<
+     co_return bootProgressEntries;
+ }
+ 
++void BootProgressPoller::stop()
++{
++    stopped = true;
++    device = nullptr;
++}
++
+ sdbusplus::async::task<void> BootProgressPoller::pollQueues()
+ {
+-    while (!ctx.stop_requested())
++    auto self = shared_from_this();
++    while (!ctx.stop_requested() && !stopped)
+     {
+         if (pollStatus)
+         {
++            auto currentDevice = device;
+             bool anyReadSucceeded = false;
+             std::vector<std::pair<uint32_t, uint32_t>> entries;
+ 
+             for (int qnum = 0; qnum < numberOfQueues; ++qnum)
+             {
+-                auto queueResults = co_await processQueue(qnum);
++                auto queueResults = co_await processQueue(qnum, currentDevice);
+                 if (queueResults.has_value())
+                 {
+                     anyReadSucceeded = true;
+@@ -221,9 +237,24 @@ sdbusplus::async::task<void> BootProgressPoller::pollQueues()
+                                    queueResults.value().end());
+                 }
+             }
++
++            const int prevFailures = consecutiveFailures;
+             consecutiveFailures =
+                 anyReadSucceeded ? 0 : (consecutiveFailures + 1);
+ 
++            if (anyReadSucceeded && prevFailures > 0)
++            {
++                lg2::info(
++                    "Socket {SOCKET_ID}: I2C polling recovered after {FAILURES} consecutive failures",
++                    "SOCKET_ID", socketId, "FAILURES", prevFailures);
++            }
++            else if (!anyReadSucceeded && prevFailures == 0)
++            {
++                lg2::error(
++                    "Socket {SOCKET_ID}: I2C polling failed (first failure)",
++                    "SOCKET_ID", socketId);
++            }
++
+             if (!entries.empty())
+             {
+                 processBootProgressData(socketId, entries);
+@@ -253,15 +284,15 @@ void BootProgressPoller::updatePollInterval(
+ 
+ void BootProgressPoller::updatePollStatus(bool newPollStatus)
+ {
++    if (pollStatus != newPollStatus)
++    {
++        lg2::info("Socket {SOCKET_ID}: polling {STATUS}", "SOCKET_ID", socketId,
++                  "STATUS", newPollStatus ? "enabled" : "disabled");
++    }
+     pollStatus = newPollStatus;
+     consecutiveFailures = 0;
+ }
+ 
+-bool BootProgressPoller::isPolling() const
+-{
+-    return pollStatus;
+-}
+-
+ std::chrono::milliseconds BootProgressPoller::calculateSleepDuration() const
+ {
+     constexpr int backoffThreshold = 10;
+diff --git a/queued-boot-progress/BootProgressPoller.hpp b/queued-boot-progress/BootProgressPoller.hpp
+index 5ebf3d4..a6beabb 100644
+--- a/queued-boot-progress/BootProgressPoller.hpp
++++ b/queued-boot-progress/BootProgressPoller.hpp
+@@ -28,7 +28,8 @@
+ #include <optional>
+ #include <vector>
+ 
+-class BootProgressPoller
++class BootProgressPoller :
++    public std::enable_shared_from_this<BootProgressPoller>
+ {
+   public:
+     BootProgressPoller(sdbusplus::async::context& ctx,
+@@ -42,7 +43,7 @@ class BootProgressPoller
+ 
+     void updatePollStatus(bool pollStatus);
+ 
+-    bool isPolling() const;
++    void stop();
+ 
+   private:
+     sdbusplus::async::context& ctx;
+@@ -51,6 +52,7 @@ class BootProgressPoller
+     int socketId;
+     onBootProgressDataCallback processBootProgressData = nullptr;
+     bool pollStatus;
++    bool stopped = false;
+     uint32_t consecutiveFailures = 0;
+ 
+     static constexpr int numberOfQueues = 2;
+@@ -67,11 +69,13 @@ class BootProgressPoller
+ 
+     sdbusplus::async::task<void> pollQueues();
+     sdbusplus::async::task<std::optional<uint32_t>> readRegister(
+-        uint32_t regAddr);
++        uint32_t regAddr, const std::shared_ptr<PollingDevice>& dev);
+     sdbusplus::async::task<
+         std::optional<std::vector<std::pair<uint32_t, uint32_t>>>>
+-        processQueue(int queueNumber);
+-    sdbusplus::async::task<std::optional<uint32_t>> getQbaseIdx(int qnum);
++        processQueue(int queueNumber,
++                     const std::shared_ptr<PollingDevice>& dev);
++    sdbusplus::async::task<std::optional<uint32_t>> getQbaseIdx(
++        int qnum, const std::shared_ptr<PollingDevice>& dev);
+     void parseQueueIndices(uint32_t regVal, uint32_t& start, uint32_t& end,
+                            uint32_t& size);
+     std::chrono::milliseconds calculateSleepDuration() const;
+diff --git a/queued-boot-progress/BootProgressPublisher.cpp b/queued-boot-progress/BootProgressPublisher.cpp
+index 7d1974d..26c1dc9 100644
+--- a/queued-boot-progress/BootProgressPublisher.cpp
++++ b/queued-boot-progress/BootProgressPublisher.cpp
+@@ -52,10 +52,12 @@ constexpr auto bootProgressService = "xyz.openbmc_project.State.Host";
+ constexpr auto bootProgressObject = "/xyz/openbmc_project/state/host0";
+ constexpr auto bootProgressInf = "xyz.openbmc_project.State.Boot.Progress";
+ 
+-BootProgressPublisher::BootProgressPublisher(sdbusplus::async::context& ctx,
+-                                             const std::string& snoopDbus,
+-                                             const std::string& snoopObject) :
+-    PostObject(ctx.get_bus(), snoopObject.c_str()), ctx(ctx)
++BootProgressPublisher::BootProgressPublisher(
++    sdbusplus::async::context& ctx, const std::string& snoopDbus,
++    const std::string& snoopObject,
++    std::shared_ptr<CakBootProgressPublisher> cakPublisher) :
++    PostObject(ctx.get_bus(), snoopObject.c_str()), ctx(ctx),
++    cakBootProgressPublisher(std::move(cakPublisher))
+ {
+     this->emit_object_added();
+     ctx.get_bus().request_name(snoopDbus.c_str());
+@@ -93,6 +95,11 @@ sdbusplus::async::task<void> BootProgressPublisher::update(
+ 
+             latestOem = std::format("0x{:08X}", progressCode);
+ 
++            if (cakBootProgressPublisher)
++            {
++                cakBootProgressPublisher->onProgressCode(progressCode);
++            }
++
+             /* Stage arbitration logic:
+              * - Non-OEM stages (PCIInit, SystemInitComplete, etc.) take
+              * precedence
+@@ -265,7 +272,7 @@ sdbusplus::async::task<void>
+     }
+     catch (const std::exception& e)
+     {
+-        lg2::error(
++        lg2::debug(
+             "D-Bus Call failed to set BootProgressLastUpdate property to {TS}: {ERROR}",
+             "TS", bootProgressLastUpdate, "ERROR", e.what());
+     }
+@@ -316,6 +323,9 @@ sdbusplus::async::task<void> BootProgressPublisher::flushPendingUpdates(
+ 
+     if (updateStage)
+     {
++        lg2::info("BootProgress stage: {OLD} -> {NEW}", "OLD",
++                  lastPublishedStage.empty() ? "(none)" : lastPublishedStage,
++                  "NEW", stage);
+         co_await updateBootProgressProperty(stage);
+         lastPublishedStage = stage;
+     }
+@@ -346,4 +356,9 @@ void BootProgressPublisher::resetCachedState()
+     lastPublishedOem.clear();
+     lastPublishedTimestamp = 0;
+     lastDbusUpdateTime = std::chrono::steady_clock::time_point{};
++
++    if (cakBootProgressPublisher)
++    {
++        cakBootProgressPublisher->resetCachedState();
++    }
+ }
+diff --git a/queued-boot-progress/BootProgressPublisher.hpp b/queued-boot-progress/BootProgressPublisher.hpp
+index 66438c2..401f9be 100644
+--- a/queued-boot-progress/BootProgressPublisher.hpp
++++ b/queued-boot-progress/BootProgressPublisher.hpp
+@@ -16,20 +16,25 @@
+  */
+ #pragma once
+ 
++#include "CakBootProgressPublisher.hpp"
+ #include "lpcsnoop/snoop.hpp"
+ 
+ #include <sdbusplus/async.hpp>
++#include <xyz/openbmc_project/State/Boot/Progress/server.hpp>
+ 
+ #include <chrono>
++#include <cstddef>
++#include <memory>
+ #include <string>
+ #include <vector>
+ 
+ class BootProgressPublisher : public PostObject
+ {
+   public:
+-    BootProgressPublisher(sdbusplus::async::context& ctx,
+-                          const std::string& snoopDbus,
+-                          const std::string& snoopObject);
++    BootProgressPublisher(
++        sdbusplus::async::context& ctx, const std::string& snoopDbus,
++        const std::string& snoopObject,
++        std::shared_ptr<CakBootProgressPublisher> cakPublisher = nullptr);
+ 
+     sdbusplus::async::task<void> update(
+         const std::vector<std::pair<uint32_t, uint32_t>> progressCodeData);
+@@ -47,6 +52,8 @@ class BootProgressPublisher : public PostObject
+     // Minimum interval between D-Bus property updates (milliseconds)
+     static constexpr uint32_t dbusUpdateIntervalMs = 100;
+ 
++    std::shared_ptr<CakBootProgressPublisher> cakBootProgressPublisher;
++
+     sdbusplus::async::task<void> updateBootProgressProperty(
+         const std::string& progressStage);
+     sdbusplus::async::task<void> updateBootProgressLastUpdateProperty(
+diff --git a/queued-boot-progress/CakBootProgressPublisher.cpp b/queued-boot-progress/CakBootProgressPublisher.cpp
+new file mode 100644
+index 0000000..1628b10
+--- /dev/null
++++ b/queued-boot-progress/CakBootProgressPublisher.cpp
+@@ -0,0 +1,153 @@
++/*
++ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION &
++ * AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#include "CakBootProgressPublisher.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++static constexpr auto cakBootProgressObject =
++    "/xyz/openbmc_project/state/boot/cak0";
++
++// CAK-specific progress codes
++static constexpr uint32_t cpu0BootStart = 0x70C0C001;
++static constexpr uint32_t cpu1BootStart = 0x71C0C001;
++static constexpr uint32_t cpu0CakEnter = 0x70C1C08A;
++static constexpr uint32_t cpu1CakEnter = 0x71C1C08A;
++static constexpr uint32_t cpu0CakExit = 0x70C1C089;
++static constexpr uint32_t cpu1CakExit = 0x71C1C089;
++
++CakBootProgressPublisher::CakBootProgressPublisher(
++    sdbusplus::async::context& ctx, size_t cakCpuCount) :
++    ctx(ctx), cakCpuCount(cakCpuCount)
++{
++    if (cakCpuCount == 0)
++    {
++        return;
++    }
++    bootProgressObj = std::make_unique<BootProgressObject>(
++        ctx.get_bus(), cakBootProgressObject,
++        BootProgressObject::action::emit_object_added);
++    bootProgressObj->bootProgress(BootProgressInterface::ProgressStages::OEM);
++    cakCpuStages.assign(cakCpuCount, CakStage::EarlyBoot);
++    cakEnterSeen = false;
++    publishCakStageIfChanged("EarlyBoot");
++}
++
++void CakBootProgressPublisher::onProgressCode(uint32_t progressCode)
++{
++    if (cakCpuCount == 0)
++    {
++        return;
++    }
++    updateCakState(progressCode);
++}
++
++void CakBootProgressPublisher::resetCachedState()
++{
++    if (cakCpuCount == 0)
++    {
++        return;
++    }
++    lg2::debug("Reset cached CAK BootProgress state");
++    cakCpuStages.assign(cakCpuCount, CakStage::EarlyBoot);
++    lastPublishedStage.clear();
++    cakEnterSeen = false;
++    publishCakStageIfChanged("EarlyBoot");
++}
++
++void CakBootProgressPublisher::publishCakStageFromStates()
++{
++    bool allComplete = true;
++    bool allWaiting = true;
++    for (CakStage s : cakCpuStages)
++    {
++        allComplete = allComplete && (s == CakStage::Complete);
++        allWaiting = allWaiting && (s == CakStage::Waiting);
++        if (!allComplete && !allWaiting)
++        {
++            break;
++        }
++    }
++    publishCakStageIfChanged(allComplete  ? "Complete"
++                             : allWaiting ? "Waiting"
++                                          : "EarlyBoot");
++}
++
++void CakBootProgressPublisher::updateCakState(uint32_t progressCode)
++{
++    if (progressCode == cpu0BootStart || progressCode == cpu1BootStart)
++    {
++        const size_t cpuIndex = (progressCode == cpu0BootStart) ? 0U : 1U;
++        if (cpuIndex < cakCpuStages.size())
++        {
++            cakCpuStages[cpuIndex] = CakStage::EarlyBoot;
++        }
++        publishCakStageFromStates();
++        return;
++    }
++
++    size_t cpuIndex;
++    CakStage newStage;
++    if (progressCode == cpu0CakEnter)
++    {
++        cpuIndex = 0;
++        newStage = CakStage::Waiting;
++        cakEnterSeen = true;
++    }
++    else if (progressCode == cpu0CakExit)
++    {
++        cpuIndex = 0;
++        newStage = CakStage::Complete;
++    }
++    else if (progressCode == cpu1CakEnter)
++    {
++        cpuIndex = 1;
++        newStage = CakStage::Waiting;
++        cakEnterSeen = true;
++    }
++    else if (progressCode == cpu1CakExit)
++    {
++        cpuIndex = 1;
++        newStage = CakStage::Complete;
++    }
++    else
++    {
++        return;
++    }
++
++    if (cpuIndex >= cakCpuStages.size())
++    {
++        return;
++    }
++
++    cakCpuStages[cpuIndex] = newStage;
++    publishCakStageFromStates();
++}
++
++void CakBootProgressPublisher::publishCakStageIfChanged(
++    const std::string& stage)
++{
++    if (!bootProgressObj || stage == lastPublishedStage)
++    {
++        return;
++    }
++    lg2::info("CAK BootProgress stage: {OLD} -> {NEW}", "OLD",
++              lastPublishedStage.empty() ? "(none)" : lastPublishedStage, "NEW",
++              stage);
++    bootProgressObj->bootProgress(BootProgressInterface::ProgressStages::OEM);
++    lastPublishedStage = stage;
++}
+diff --git a/queued-boot-progress/CakBootProgressPublisher.hpp b/queued-boot-progress/CakBootProgressPublisher.hpp
+new file mode 100644
+index 0000000..8f6da37
+--- /dev/null
++++ b/queued-boot-progress/CakBootProgressPublisher.hpp
+@@ -0,0 +1,65 @@
++/*
++ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION &
++ * AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++#pragma once
++
++#include <sdbusplus/async.hpp>
++#include <sdbusplus/server/object.hpp>
++#include <xyz/openbmc_project/State/Boot/Progress/server.hpp>
++
++#include <cstddef>
++#include <memory>
++#include <string>
++#include <vector>
++
++/**
++ * Publishes CAK (CPU Authentication Key) boot progress to a dedicated D-Bus
++ * object. Tracks CAK-specific progress codes and aggregates per-CPU state into
++ * a single published stage (EarlyBoot, Waiting, Complete).
++ */
++class CakBootProgressPublisher
++{
++  public:
++    CakBootProgressPublisher(sdbusplus::async::context& ctx,
++                             size_t cakCpuCount);
++
++    void onProgressCode(uint32_t progressCode);
++    void resetCachedState();
++
++  private:
++    enum class CakStage
++    {
++        EarlyBoot,
++        Waiting,
++        Complete,
++    };
++
++    using BootProgressInterface =
++        sdbusplus::xyz::openbmc_project::State::Boot::server::Progress;
++    using BootProgressObject =
++        sdbusplus::server::object_t<BootProgressInterface>;
++
++    sdbusplus::async::context& ctx;
++    const size_t cakCpuCount;
++    std::unique_ptr<BootProgressObject> bootProgressObj;
++    std::vector<CakStage> cakCpuStages;
++    std::string lastPublishedStage;
++    bool cakEnterSeen = false;
++
++    void updateCakState(uint32_t progressCode);
++    void publishCakStageIfChanged(const std::string& stage);
++    void publishCakStageFromStates();
++};
+diff --git a/queued-boot-progress/ConfigReader.hpp b/queued-boot-progress/ConfigReader.hpp
+index 54054bc..3bb9bc0 100644
+--- a/queued-boot-progress/ConfigReader.hpp
++++ b/queued-boot-progress/ConfigReader.hpp
+@@ -22,6 +22,7 @@
+ #include <phosphor-logging/lg2.hpp>
+ 
+ #include <chrono>
++#include <cstddef>
+ #include <cstdint>
+ #include <cstdlib>
+ #include <string>
+@@ -37,6 +38,7 @@ struct Configuration
+     uint16_t usbVendorId = 0x0955;
+     uint16_t usbProductId = 0x7410;
+     std::chrono::seconds usbRescanInterval = std::chrono::seconds(100);
++    size_t cakCpuCount = 0;
+ };
+ 
+ class ConfigReader
+@@ -51,10 +53,11 @@ class ConfigReader
+             {"transport-interface", required_argument, nullptr, 'i'},
+             {"i2c-bus", required_argument, nullptr, 'b'},
+             {"i2c-address", required_argument, nullptr, 'a'},
++            {"cak-cpu-count", required_argument, nullptr, 'c'},
+             {nullptr, 0, nullptr, 0}};
+         std::vector<int> busList;
+         std::vector<int> addrList;
+-        while ((opt = getopt_long(argc, argv, "p:i:b:a:", long_options,
++        while ((opt = getopt_long(argc, argv, "p:i:b:a:c:", long_options,
+                                   nullptr)) != -1)
+         {
+             switch (opt)
+@@ -130,6 +133,25 @@ class ConfigReader
+                         return false;
+                     }
+                     break;
++                case 'c':
++                    try
++                    {
++                        auto count = std::stoul(optarg);
++                        if (count > 2)
++                        {
++                            lg2::error("Invalid cak-cpu-count: {COUNT}",
++                                       "COUNT", optarg);
++                            return false;
++                        }
++                        config.cakCpuCount = count;
++                    }
++                    catch (const std::exception& e)
++                    {
++                        lg2::error("Invalid cak-cpu-count: {COUNT}", "COUNT",
++                                   optarg);
++                        return false;
++                    }
++                    break;
+                 default:
+                     lg2::error("Invalid option: {OPTION}", "OPTION", opt);
+                     return false;
+diff --git a/queued-boot-progress/I2CPollingDevice.cpp b/queued-boot-progress/I2CPollingDevice.cpp
+index 483dc5f..00235df 100644
+--- a/queued-boot-progress/I2CPollingDevice.cpp
++++ b/queued-boot-progress/I2CPollingDevice.cpp
+@@ -15,8 +15,9 @@
+  * limitations under the License.
+  */
+ 
++#include "I2CPollingDevice.hpp"
++
+ #include "BootProgressManager.hpp"
+-#include "PollingDevice.hpp"
+ 
+ #include <fcntl.h>
+ #include <linux/i2c-dev.h>
+@@ -33,7 +34,11 @@ I2CPollingDevice::I2CPollingDevice(const uint8_t& i2cBus,
+                                    const uint8_t& address) :
+     busPath(std::format("/dev/i2c-{}", i2cBus)), deviceAddress(address)
+ {
+-    openDevice();
++    discardStaleBlockReadIfAny();
++    if (i2cFileDescriptor < 0)
++    {
++        openDevice();
++    }
+ }
+ 
+ I2CPollingDevice::~I2CPollingDevice()
+@@ -94,9 +99,14 @@ bool I2CPollingDevice::readRegisterValue(uint32_t regAddr, uint32_t& regValue)
+     std::vector<uint8_t> dummyRead;
+     if (!i2cWriteRead(writeData, dummyRead))
+     {
+-        lg2::debug("SET_READ_ADDR failed for register {REG_ADDR}", "REG_ADDR",
+-                   regAddrStr);
+-        return false;
++        discardStaleBlockReadIfAny();
++        openDevice();
++        if (!i2cWriteRead(writeData, dummyRead))
++        {
++            lg2::debug("SET_READ_ADDR failed for register {REG_ADDR}",
++                       "REG_ADDR", regAddrStr);
++            return false;
++        }
+     }
+     std::vector<uint8_t> blockReadCmd = {blockRead};
+     std::vector<uint8_t> readBuf(5);
+@@ -117,6 +127,11 @@ bool I2CPollingDevice::readRegisterValue(uint32_t regAddr, uint32_t& regValue)
+                (static_cast<uint32_t>(readBuf[3]) << 16) |
+                (static_cast<uint32_t>(readBuf[2]) << 8) |
+                static_cast<uint32_t>(readBuf[1]);
++    if (!deviceHealthy)
++    {
++        lg2::info("I2C device {BUS_PATH} recovered", "BUS_PATH", busPath);
++        deviceHealthy = true;
++    }
+     return true;
+ }
+ 
+@@ -124,8 +139,12 @@ bool I2CPollingDevice::performIoctlWithRetry(i2c_rdwr_ioctl_data& msgReadWrite)
+ {
+     if (!openDevice())
+     {
+-        lg2::debug("Failed to open I2C device: {BUS_PATH}", "BUS_PATH",
+-                   busPath);
++        if (deviceHealthy)
++        {
++            lg2::error("Failed to open I2C device: {BUS_PATH}", "BUS_PATH",
++                       busPath);
++            deviceHealthy = false;
++        }
+         return false;
+     }
+ 
+@@ -135,9 +154,13 @@ bool I2CPollingDevice::performIoctlWithRetry(i2c_rdwr_ioctl_data& msgReadWrite)
+         return true;
+     }
+     closeDevice();
+-    lg2::debug(
+-        "I2C ioctl failed (errno: {ERRNO}), closed fd to release kernel reference: {BUS_PATH}",
+-        "ERRNO", errno, "BUS_PATH", busPath);
++    if (deviceHealthy)
++    {
++        lg2::error(
++            "I2C ioctl failed (errno: {ERRNO}), closed fd to release kernel reference: {BUS_PATH}",
++            "ERRNO", errno, "BUS_PATH", busPath);
++        deviceHealthy = false;
++    }
+     return false;
+ }
+ 
+@@ -181,14 +204,36 @@ bool I2CPollingDevice::i2cWriteRead(std::vector<uint8_t> writeData,
+     return true;
+ }
+ 
++void I2CPollingDevice::discardStaleBlockReadIfAny()
++{
++    static constexpr uint8_t blockRead = 0xf3;
++    static constexpr size_t blockReadPayloadLen = 5;
++
++    openDevice();
++    if (i2cFileDescriptor < 0)
++    {
++        return;
++    }
++
++    std::vector<uint8_t> blockReadCmd = {blockRead};
++    std::vector<uint8_t> readBuf(blockReadPayloadLen);
++    i2cWriteRead(blockReadCmd, readBuf);
++}
++
+ void initializeI2CDevices(std::shared_ptr<BootProgressManager> mgr,
+                           const I2CDeviceList& deviceList)
+ {
+-    int socketId = 0;
+-    for (const auto& device : deviceList)
++    for (const auto& [bus, address] : deviceList)
+     {
+-        mgr->onDeviceAdded(TransportInterface::I2C, device.first, device.second,
+-                           socketId);
+-        socketId++;
++        auto device = std::make_shared<I2CPollingDevice>(bus, address);
++        if (!device)
++        {
++            lg2::error(
++                "Failed to create I2C polling device for bus {BUS}, address {ADDRESS}",
++                "BUS", bus, "ADDRESS", address);
++            continue;
++        }
++        mgr->onDeviceAdded(std::move(device), TransportInterface::I2C, bus,
++                           address);
+     }
+ }
+diff --git a/queued-boot-progress/I2CPollingDevice.hpp b/queued-boot-progress/I2CPollingDevice.hpp
+new file mode 100644
+index 0000000..89af542
+--- /dev/null
++++ b/queued-boot-progress/I2CPollingDevice.hpp
+@@ -0,0 +1,65 @@
++/*
++ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION &
++ * AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#pragma once
++
++#include "PollingDevice.hpp"
++
++#include <linux/i2c-dev.h>
++#include <linux/i2c.h>
++
++#include <cstdint>
++#include <memory>
++#include <string>
++#include <utility>
++#include <vector>
++
++class BootProgressManager;
++
++using I2CDeviceList =
++    std::vector<std::pair<uint8_t /* bus */, uint8_t /* address */>>;
++
++void initializeI2CDevices(std::shared_ptr<BootProgressManager> mgr,
++                          const I2CDeviceList& deviceList);
++
++class I2CPollingDevice : public PollingDevice
++{
++  public:
++    I2CPollingDevice(const uint8_t& i2cBus, const uint8_t& deviceAddress);
++    ~I2CPollingDevice() override;
++
++    I2CPollingDevice(const I2CPollingDevice&) = delete;
++    I2CPollingDevice& operator=(const I2CPollingDevice&) = delete;
++    I2CPollingDevice(I2CPollingDevice&&) = delete;
++    I2CPollingDevice& operator=(I2CPollingDevice&&) = delete;
++
++    bool readRegisterValue(uint32_t regAddr, uint32_t& regValue) override;
++
++  private:
++    std::string busPath;
++    uint8_t deviceAddress;
++    int i2cFileDescriptor = -1;
++
++    bool openDevice();
++    void closeDevice();
++    /** 0xF3 block read only; does not retry F1. Ctor + readRegisterValue on F1
++     * failure. */
++    void discardStaleBlockReadIfAny();
++    bool performIoctlWithRetry(i2c_rdwr_ioctl_data& msgReadWrite);
++    bool i2cWriteRead(std::vector<uint8_t> writeData,
++                      std::vector<uint8_t>& readBuf);
++};
+diff --git a/queued-boot-progress/PollingDevice.cpp b/queued-boot-progress/PollingDevice.cpp
+index 9036526..a9ca0fe 100644
+--- a/queued-boot-progress/PollingDevice.cpp
++++ b/queued-boot-progress/PollingDevice.cpp
+@@ -17,98 +17,28 @@
+ 
+ #include "PollingDevice.hpp"
+ 
+-#include "BootProgressManager.hpp"
+-
+-#include <phosphor-logging/lg2.hpp>
+-
+ PollingDeviceEnumerator::PollingDeviceEnumerator(
+-    sdbusplus::async::context& ctx, std::shared_ptr<BootProgressManager> mgr) :
+-    ctx(ctx), manager(mgr)
++    sdbusplus::async::context& ctx, OnDeviceAddedCallback onAdded,
++    OnDeviceRemovedCallback onRemoved) :
++    ctx(ctx), onDeviceAdded(std::move(onAdded)),
++    onDeviceRemoved(std::move(onRemoved))
+ {}
+ 
+-int PollingDeviceEnumerator::addDeviceAndGetSocketId(uint8_t bus,
+-                                                     uint8_t address)
+-{
+-    int socketId = nextSocketId++;
+-    deviceToSocketMap[std::make_pair(bus, address)] = socketId;
+-    lg2::debug(
+-        "Added device mapping: bus {BUS} address {ADDRESS} -> socket {SOCKET_ID}",
+-        "BUS", static_cast<int>(bus), "ADDRESS", static_cast<int>(address),
+-        "SOCKET_ID", socketId);
+-    return socketId;
+-}
+-
+-int PollingDeviceEnumerator::removeDeviceAndGetSocketId(uint8_t bus,
+-                                                        uint8_t address)
+-{
+-    auto deviceKey = std::make_pair(bus, address);
+-    auto it = deviceToSocketMap.find(deviceKey);
+-
+-    if (it == deviceToSocketMap.end())
+-    {
+-        lg2::warning(
+-            "Device mapping not found for removal: bus {BUS} address {ADDRESS}",
+-            "BUS", static_cast<int>(bus), "ADDRESS", static_cast<int>(address));
+-        return -1;
+-    }
+-
+-    int socketId = it->second;
+-    lg2::debug(
+-        "Removed device mapping: bus {BUS} address {ADDRESS} -> socket {SOCKET_ID}",
+-        "BUS", static_cast<int>(bus), "ADDRESS", static_cast<int>(address),
+-        "SOCKET_ID", socketId);
+-    deviceToSocketMap.erase(it);
+-    return socketId;
+-}
+-
+-std::shared_ptr<PollingDevice> getPollingDevice(
+-    TransportInterface transportInterface, const uint8_t& bus,
+-    const uint8_t& address)
++void PollingDeviceEnumerator::notifyDeviceAdded(
++    std::shared_ptr<PollingDevice> device, TransportInterface transport,
++    uint8_t bus, uint8_t address)
+ {
+-    switch (transportInterface)
++    if (onDeviceAdded)
+     {
+-        case TransportInterface::I2C:
+-        {
+-            lg2::info(
+-                "Creating I2CPollingDevice for bus {BUS} and address {ADDRESS}",
+-                "BUS", static_cast<int>(bus), "ADDRESS",
+-                static_cast<int>(address));
+-            return std::make_shared<I2CPollingDevice>(bus, address);
+-        }
+-        case TransportInterface::USB:
+-        {
+-            lg2::info(
+-                "Creating USBPollingDevice for bus {BUS} and address {ADDRESS}",
+-                "BUS", static_cast<int>(bus), "ADDRESS",
+-                static_cast<int>(address));
+-            return std::make_shared<USBPollingDevice>(bus, address);
+-        }
+-        default:
+-        {
+-            lg2::error("Unsupported transport interface: {INTERFACE}",
+-                       "INTERFACE", static_cast<int>(transportInterface));
+-            return nullptr;
+-        }
++        onDeviceAdded(std::move(device), transport, bus, address);
+     }
+ }
+ 
+-std::shared_ptr<PollingDeviceEnumerator> getPollingDeviceEnumerator(
+-    sdbusplus::async::context& ctx, std::shared_ptr<BootProgressManager> mgr,
+-    TransportInterface transportInterface, uint16_t vendorId,
+-    uint16_t productId, std::chrono::seconds rescanInterval)
++void PollingDeviceEnumerator::notifyDeviceRemoved(TransportInterface transport,
++                                                  uint8_t bus, uint8_t address)
+ {
+-    switch (transportInterface)
++    if (onDeviceRemoved)
+     {
+-        case TransportInterface::USB:
+-        {
+-            return std::make_shared<USBDeviceEnumerator>(
+-                ctx, mgr, vendorId, productId, rescanInterval);
+-        }
+-        default:
+-        {
+-            lg2::error("Unsupported transport interface: {INTERFACE}",
+-                       "INTERFACE", static_cast<int>(transportInterface));
+-            return nullptr;
+-        }
++        onDeviceRemoved(transport, bus, address);
+     }
+ }
+diff --git a/queued-boot-progress/PollingDevice.hpp b/queued-boot-progress/PollingDevice.hpp
+index 3c7c757..feb0ef1 100644
+--- a/queued-boot-progress/PollingDevice.hpp
++++ b/queued-boot-progress/PollingDevice.hpp
+@@ -17,14 +17,11 @@
+ 
+ #pragma once
+ 
+-#include <libusb-1.0/libusb.h>
+-#include <linux/i2c-dev.h>
+-#include <linux/i2c.h>
+-
+ #include <sdbusplus/async.hpp>
+ 
+ #include <chrono>
+ #include <cstdint>
++#include <functional>
+ #include <memory>
+ #include <string>
+ #include <unordered_map>
+@@ -51,55 +48,15 @@ class PollingDevice
+     virtual ~PollingDevice() = default;
+ 
+     virtual bool readRegisterValue(uint32_t regAddr, uint32_t& regValue) = 0;
+-};
+-
+-class I2CPollingDevice : public PollingDevice
+-{
+-  public:
+-    I2CPollingDevice(const uint8_t& i2cBus, const uint8_t& deviceAddress);
+-    ~I2CPollingDevice() override;
+ 
+-    I2CPollingDevice(const I2CPollingDevice&) = delete;
+-    I2CPollingDevice& operator=(const I2CPollingDevice&) = delete;
+-    I2CPollingDevice(I2CPollingDevice&&) = delete;
+-    I2CPollingDevice& operator=(I2CPollingDevice&&) = delete;
+-
+-    bool readRegisterValue(uint32_t regAddr, uint32_t& regValue) override;
+-
+-  private:
+-    std::string busPath;
+-    uint8_t deviceAddress;
+-    int i2cFileDescriptor = -1;
+-
+-    bool openDevice();
+-    void closeDevice();
+-    bool performIoctlWithRetry(i2c_rdwr_ioctl_data& msgReadWrite);
+-    bool i2cWriteRead(std::vector<uint8_t> writeData,
+-                      std::vector<uint8_t>& readBuf);
+-};
+-
+-class USBPollingDevice : public PollingDevice
+-{
+-  public:
+-    USBPollingDevice(const uint8_t& bus, const uint8_t& deviceAddress);
+-    ~USBPollingDevice() override;
+-
+-    USBPollingDevice(const USBPollingDevice&) = delete;
+-    USBPollingDevice& operator=(const USBPollingDevice&) = delete;
+-    USBPollingDevice(USBPollingDevice&&) = delete;
+-    USBPollingDevice& operator=(USBPollingDevice&&) = delete;
+-
+-    bool readRegisterValue(uint32_t regAddr, uint32_t& regValue) override;
+-
+-  private:
+-    uint8_t bus;
+-    uint8_t deviceAddress;
+-
+-    libusb_context* ctx = nullptr;
+-    libusb_device_handle* devHandle = nullptr;
++  protected:
++    bool deviceHealthy = true;
+ };
+ 
+-class BootProgressManager;
++using OnDeviceAddedCallback = std::function<void(
++    std::shared_ptr<PollingDevice>, TransportInterface, uint8_t, uint8_t)>;
++using OnDeviceRemovedCallback =
++    std::function<void(TransportInterface, uint8_t, uint8_t)>;
+ 
+ class PollingDeviceEnumerator
+ {
+@@ -109,63 +66,16 @@ class PollingDeviceEnumerator
+ 
+   protected:
+     PollingDeviceEnumerator(sdbusplus::async::context& ctx,
+-                            std::shared_ptr<BootProgressManager> mgr);
++                            OnDeviceAddedCallback onAdded,
++                            OnDeviceRemovedCallback onRemoved);
+ 
+-    sdbusplus::async::context& ctx;
+-    std::shared_ptr<BootProgressManager> manager;
+-    std::unordered_map<std::pair<uint8_t /* bus */, uint8_t /* address */>, int,
+-                       PairHash>
+-        deviceToSocketMap;
+-    int nextSocketId = 0;
+-    int addDeviceAndGetSocketId(uint8_t bus, uint8_t address);
+-    int removeDeviceAndGetSocketId(uint8_t bus, uint8_t address);
+-};
+-
+-class USBDeviceEnumerator : public PollingDeviceEnumerator
+-{
+-  public:
+-    USBDeviceEnumerator(sdbusplus::async::context& ctx,
+-                        std::shared_ptr<BootProgressManager> mgr,
+-                        uint16_t vendorId, uint16_t productId,
+-                        std::chrono::seconds rescanInterval);
+-    ~USBDeviceEnumerator() override;
+-
+-    USBDeviceEnumerator(const USBDeviceEnumerator&) = delete;
+-    USBDeviceEnumerator& operator=(const USBDeviceEnumerator&) = delete;
+-    USBDeviceEnumerator(USBDeviceEnumerator&&) = delete;
+-    USBDeviceEnumerator& operator=(USBDeviceEnumerator&&) = delete;
+-
+-    sdbusplus::async::task<void> run() override;
+-
+-  private:
+-    uint16_t vendorId;
+-    uint16_t productId;
+-    std::chrono::seconds rescanInterval;
++    void notifyDeviceAdded(std::shared_ptr<PollingDevice> device,
++                           TransportInterface transport, uint8_t bus,
++                           uint8_t address);
++    void notifyDeviceRemoved(TransportInterface transport, uint8_t bus,
++                             uint8_t address);
+ 
+-    libusb_context* usbCtx = nullptr;
+-    libusb_hotplug_callback_handle cbHandle = 0;
+-    bool hotplugSupported = false;
+-
+-    static int LIBUSB_CALL hotplugCallback(
+-        libusb_context* ctx, libusb_device* dev, libusb_hotplug_event event,
+-        void* userData);
+-
+-    void handleHotplug(libusb_device* dev, libusb_hotplug_event event);
+-
+-    void scanDeviceList();
++    sdbusplus::async::context& ctx;
++    OnDeviceAddedCallback onDeviceAdded;
++    OnDeviceRemovedCallback onDeviceRemoved;
+ };
+-
+-std::shared_ptr<PollingDevice> getPollingDevice(
+-    TransportInterface transportInterface, const uint8_t& bus,
+-    const uint8_t& address);
+-
+-using I2CDeviceList =
+-    std::vector<std::pair<uint8_t /* bus */, uint8_t /* address */>>;
+-
+-std::shared_ptr<PollingDeviceEnumerator> getPollingDeviceEnumerator(
+-    sdbusplus::async::context& ctx, std::shared_ptr<BootProgressManager> mgr,
+-    TransportInterface transportInterface, uint16_t vendorId,
+-    uint16_t productId, std::chrono::seconds rescanInterval);
+-
+-void initializeI2CDevices(std::shared_ptr<BootProgressManager> mgr,
+-                          const I2CDeviceList& deviceList);
+diff --git a/queued-boot-progress/USBPollingDevice.cpp b/queued-boot-progress/USBPollingDevice.cpp
+index 7158652..b9c1d54 100644
+--- a/queued-boot-progress/USBPollingDevice.cpp
++++ b/queued-boot-progress/USBPollingDevice.cpp
+@@ -15,77 +15,28 @@
+  * limitations under the License.
+  */
+ 
++#include "USBPollingDevice.hpp"
++
+ #include "BootProgressManager.hpp"
+-#include "PollingDevice.hpp"
++
++#include <sys/time.h>
+ 
+ #include <phosphor-logging/lg2.hpp>
+ 
+ #include <format>
++#include <functional>
+ 
+-USBPollingDevice::USBPollingDevice(const uint8_t& bus,
+-                                   const uint8_t& deviceAddress) :
+-    bus(bus), deviceAddress(deviceAddress), ctx(nullptr), devHandle(nullptr)
+-{
+-    if (libusb_init(&ctx) < 0)
+-    {
+-        lg2::error("USBPollingDevice: Failed to initialize libusb");
+-        ctx = nullptr;
+-        return;
+-    }
+-    libusb_device** deviceList = nullptr;
+-    ssize_t count = libusb_get_device_list(ctx, &deviceList);
+-    if (count < 0)
+-    {
+-        lg2::error("USBPollingDevice: Failed to get USB device list");
+-        libusb_exit(ctx);
+-        ctx = nullptr;
+-        return;
+-    }
+-    libusb_device* device = nullptr;
+-    bool found = false;
+-    for (ssize_t i = 0; i < count; ++i)
+-    {
+-        device = deviceList[i];
+-        libusb_device_descriptor desc;
+-        if (libusb_get_device_descriptor(device, &desc) == 0 &&
+-            libusb_get_bus_number(device) == bus &&
+-            libusb_get_device_address(device) == deviceAddress)
+-        {
+-            found = true;
+-            break;
+-        }
+-    }
+-    if (!found)
+-    {
+-        lg2::error(
+-            "USBPollingDevice: No USB device found with bus {BUS} and address {ADDRESS}",
+-            "BUS", this->bus, "ADDRESS", this->deviceAddress);
+-        libusb_free_device_list(deviceList, 1);
+-        libusb_exit(ctx);
+-        ctx = nullptr;
+-        return;
+-    }
+-    if (libusb_open(device, &devHandle) < 0)
+-    {
+-        lg2::error("USBPollingDevice: Failed to open USB device");
+-        libusb_free_device_list(deviceList, 1);
+-        libusb_exit(ctx);
+-        ctx = nullptr;
+-        return;
+-    }
+-    libusb_free_device_list(deviceList, 1);
+-}
++USBPollingDevice::USBPollingDevice(libusb_device_handle* handle, uint8_t busNum,
++                                   uint8_t deviceAddr) :
++    bus(busNum), deviceAddress(deviceAddr), devHandle(handle)
++{}
+ 
+ USBPollingDevice::~USBPollingDevice()
+ {
+     if (devHandle)
+     {
+         libusb_close(devHandle);
+-    }
+-    if (ctx)
+-    {
+-        libusb_exit(ctx);
+-        ctx = nullptr;
++        devHandle = nullptr;
+     }
+ }
+ 
+@@ -93,7 +44,13 @@ bool USBPollingDevice::readRegisterValue(uint32_t regAddr, uint32_t& regValue)
+ {
+     if (!devHandle)
+     {
+-        lg2::debug("USB device not opened");
++        if (deviceHealthy)
++        {
++            lg2::debug("USB device not opened: bus {BUS}, addr {ADDR}", "BUS",
++                       static_cast<int>(bus), "ADDR",
++                       static_cast<int>(deviceAddress));
++            deviceHealthy = false;
++        }
+         return false;
+     }
+     static constexpr uint8_t readLength = 4;
+@@ -109,20 +66,35 @@ bool USBPollingDevice::readRegisterValue(uint32_t regAddr, uint32_t& regValue)
+                                 wIndex, readData.data(), readLength, timeoutMs);
+     if (transferLength < 0)
+     {
+-        lg2::debug("Failed to read register {REG_ADDR}: {ERROR}", "REG_ADDR",
+-                   regAddrStr, "ERROR", transferLength);
++        if (deviceHealthy)
++        {
++            lg2::error("Failed to read register {REG_ADDR}: {ERROR}",
++                       "REG_ADDR", regAddrStr, "ERROR", transferLength);
++            deviceHealthy = false;
++        }
+         return false;
+     }
+     if (transferLength != readLength)
+     {
+-        lg2::debug("Failed to read register {REG_ADDR}: {ERROR}", "REG_ADDR",
+-                   regAddrStr, "ERROR", transferLength);
++        if (deviceHealthy)
++        {
++            lg2::error("Failed to read register {REG_ADDR}: {ERROR}",
++                       "REG_ADDR", regAddrStr, "ERROR", transferLength);
++            deviceHealthy = false;
++        }
+         return false;
+     }
+     regValue = (static_cast<uint32_t>(readData[3]) << 24) |
+                (static_cast<uint32_t>(readData[2]) << 16) |
+                (static_cast<uint32_t>(readData[1]) << 8) |
+                static_cast<uint32_t>(readData[0]);
++    if (!deviceHealthy)
++    {
++        lg2::info("USB device bus {BUS} addr {ADDR} recovered", "BUS",
++                  static_cast<int>(bus), "ADDR",
++                  static_cast<int>(deviceAddress));
++        deviceHealthy = true;
++    }
+     return true;
+ }
+ 
+@@ -130,23 +102,27 @@ USBDeviceEnumerator::USBDeviceEnumerator(
+     sdbusplus::async::context& ctx, std::shared_ptr<BootProgressManager> mgr,
+     uint16_t vendorId, uint16_t productId,
+     std::chrono::seconds rescanInterval) :
+-    PollingDeviceEnumerator(ctx, mgr), vendorId(vendorId), productId(productId),
+-    rescanInterval(rescanInterval)
++    PollingDeviceEnumerator(
++        ctx, std::bind_front(&BootProgressManager::onDeviceAdded, mgr),
++        std::bind_front(&BootProgressManager::onDeviceRemoved, mgr)),
++    vendorId(vendorId), productId(productId), rescanInterval(rescanInterval)
+ {
+-    if (libusb_init(&usbCtx) < 0)
++    libusb_context* raw = nullptr;
++    if (libusb_init(&raw) < 0)
+     {
+-        lg2::debug("USBDeviceEnumerator: failed to init libusb");
+-        usbCtx = nullptr;
++        lg2::error("USBDeviceEnumerator: failed to init libusb");
++        return;
+     }
++    usbCtx.reset(raw);
+     if (!libusb_has_capability(LIBUSB_CAP_HAS_HOTPLUG))
+     {
+-        lg2::debug("USBDeviceEnumerator: hotplug not supported");
++        lg2::info("USBDeviceEnumerator: hotplug not supported");
+         hotplugSupported = false;
+         return;
+     }
+     hotplugSupported = true;
+     int rc = libusb_hotplug_register_callback(
+-        usbCtx,
++        usbCtx.get(),
+         (libusb_hotplug_event)(LIBUSB_HOTPLUG_EVENT_DEVICE_ARRIVED |
+                                LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT),
+         (libusb_hotplug_flag)0, vendorId, productId, LIBUSB_HOTPLUG_MATCH_ANY,
+@@ -156,17 +132,24 @@ USBDeviceEnumerator::USBDeviceEnumerator(
+         lg2::error("USBDeviceEnumerator: failed to register hotplug callback");
+         return;
+     }
++    scanDeviceList();
++    libusb_set_pollfd_notifiers(usbCtx.get(), pollfdAddedCallback,
++                                pollfdRemovedCallback, this);
++    attachFirstPollfd(true);
+ }
+ 
+ USBDeviceEnumerator::~USBDeviceEnumerator()
+ {
+-    if (cbHandle)
++    if (cbHandle && usbCtx)
+     {
+-        libusb_hotplug_deregister_callback(usbCtx, cbHandle);
++        libusb_hotplug_deregister_callback(usbCtx.get(), cbHandle);
++        cbHandle = 0;
+     }
+     if (usbCtx)
+     {
+-        libusb_exit(usbCtx);
++        libusb_set_pollfd_notifiers(usbCtx.get(), nullptr, nullptr, nullptr);
++        libusbBell.reset();
++        libusbBellFd = -1;
+     }
+ }
+ 
+@@ -201,30 +184,44 @@ void USBDeviceEnumerator::handleHotplug(libusb_device* dev,
+     {
+         lg2::info("USB device arrived: bus {BUS}, addr {ADDR}", "BUS",
+                   static_cast<int>(bus), "ADDR", static_cast<int>(addr));
+-        int socketId = addDeviceAndGetSocketId(bus, addr);
+-        manager->onDeviceAdded(TransportInterface::USB, bus, addr, socketId);
++        tryAddDevice(dev);
+     }
+     else if (event == LIBUSB_HOTPLUG_EVENT_DEVICE_LEFT)
+     {
+         lg2::info("USB device removed: bus {BUS}, addr {ADDR}", "BUS",
+                   static_cast<int>(bus), "ADDR", static_cast<int>(addr));
+-        int socketId = removeDeviceAndGetSocketId(bus, addr);
+-        if (socketId == -1)
+-        {
+-            lg2::warning(
+-                "USB device bus {BUS} address {ADDRESS} not found in device mapping",
+-                "BUS", static_cast<int>(bus), "ADDRESS",
+-                static_cast<int>(addr));
+-            return;
+-        }
+-        manager->onDeviceRemoved(TransportInterface::USB, bus, addr, socketId);
++        notifyDeviceRemoved(TransportInterface::USB, bus, addr);
++    }
++}
++
++void USBDeviceEnumerator::tryAddDevice(libusb_device* dev)
++{
++    uint8_t busNum = libusb_get_bus_number(dev);
++    uint8_t addr = libusb_get_device_address(dev);
++    libusb_device_handle* handle = nullptr;
++    if (libusb_open(dev, &handle) != 0)
++    {
++        lg2::error(
++            "USBDeviceEnumerator: failed to open device bus {BUS} addr {ADDR}",
++            "BUS", static_cast<int>(busNum), "ADDR", static_cast<int>(addr));
++        return;
++    }
++    auto device = std::make_shared<USBPollingDevice>(handle, busNum, addr);
++    if (!device)
++    {
++        lg2::error(
++            "USBDeviceEnumerator: failed to create USB polling device for bus {BUS}, address {ADDRESS}",
++            "BUS", busNum, "ADDRESS", addr);
++        libusb_close(handle);
++        return;
+     }
++    notifyDeviceAdded(std::move(device), TransportInterface::USB, busNum, addr);
+ }
+ 
+ void USBDeviceEnumerator::scanDeviceList()
+ {
+     libusb_device** devs = nullptr;
+-    ssize_t cnt = libusb_get_device_list(usbCtx, &devs);
++    ssize_t cnt = libusb_get_device_list(usbCtx.get(), &devs);
+     if (cnt < 0)
+     {
+         lg2::error("USBDeviceEnumerator: libusb_get_device_list failed");
+@@ -242,11 +239,7 @@ void USBDeviceEnumerator::scanDeviceList()
+         }
+         if (desc.idVendor == vendorId && desc.idProduct == productId)
+         {
+-            uint8_t bus = libusb_get_bus_number(dev);
+-            uint8_t addr = libusb_get_device_address(dev);
+-            int socketId = addDeviceAndGetSocketId(bus, addr);
+-            manager->onDeviceAdded(TransportInterface::USB, bus, addr,
+-                                   socketId);
++            tryAddDevice(dev);
+         }
+     }
+     libusb_free_device_list(devs, 1);
+@@ -254,23 +247,100 @@ void USBDeviceEnumerator::scanDeviceList()
+ 
+ sdbusplus::async::task<void> USBDeviceEnumerator::run()
+ {
+-    if (!usbCtx)
++    if (!usbCtx.get())
+     {
+         lg2::error("USBDeviceEnumerator: libusb context not initialized");
+         co_return;
+     }
+     while (!ctx.stop_requested())
+     {
+-        if (hotplugSupported)
++        if (!libusbBell)
+         {
+-            libusb_handle_events(usbCtx);
++            processLibusbEvents();
++            co_await sdbusplus::async::sleep_for(ctx, rescanInterval);
++            continue;
+         }
+-        else
++
++        co_await libusbBell->next();
++        processLibusbEvents();
++    }
++    co_return;
++}
++
++void USBDeviceEnumerator::pollfdAddedCallback(int fd, short /* events */,
++                                              void* userData)
++{
++    auto* self = static_cast<USBDeviceEnumerator*>(userData);
++    if (self)
++    {
++        self->addWatcher(fd);
++    }
++}
++
++void USBDeviceEnumerator::pollfdRemovedCallback(int fd, void* userData)
++{
++    auto* self = static_cast<USBDeviceEnumerator*>(userData);
++    if (self)
++    {
++        self->removeWatcher(fd);
++    }
++}
++
++void USBDeviceEnumerator::addWatcher(int fd)
++{
++    if (libusbBell)
++    {
++        return;
++    }
++    try
++    {
++        libusbBell = std::make_unique<sdbusplus::async::fdio>(ctx, fd);
++        libusbBellFd = fd;
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error(
++            "USBDeviceEnumerator: Failed to create fdio for FD {FD}: {ERROR}",
++            "FD", fd, "ERROR", e.what());
++    }
++}
++
++void USBDeviceEnumerator::removeWatcher(int fd)
++{
++    if (fd != libusbBellFd)
++    {
++        return;
++    }
++    libusbBell.reset();
++    libusbBellFd = -1;
++    attachFirstPollfd();
++}
++
++void USBDeviceEnumerator::attachFirstPollfd(bool warnIfNull)
++{
++    const libusb_pollfd** pfds = libusb_get_pollfds(usbCtx.get());
++    if (!pfds)
++    {
++        if (warnIfNull)
+         {
+-            scanDeviceList();
++            lg2::warning(
++                "USBDeviceEnumerator: libusb_get_pollfds returned null");
+         }
++        return;
++    }
++    if (*pfds != nullptr)
++    {
++        addWatcher((*pfds)->fd);
++    }
++    libusb_free_pollfds(pfds);
++}
+ 
+-        co_await sdbusplus::async::sleep_for(ctx, rescanInterval);
++void USBDeviceEnumerator::processLibusbEvents()
++{
++    struct timeval tv = {0, 0};
++    libusb_handle_events_timeout_completed(usbCtx.get(), &tv, nullptr);
++    if (!hotplugSupported)
++    {
++        scanDeviceList();
+     }
+-    co_return;
+ }
+diff --git a/queued-boot-progress/USBPollingDevice.hpp b/queued-boot-progress/USBPollingDevice.hpp
+new file mode 100644
+index 0000000..4fe1ac7
+--- /dev/null
++++ b/queued-boot-progress/USBPollingDevice.hpp
+@@ -0,0 +1,106 @@
++/*
++ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION &
++ * AFFILIATES. All rights reserved. SPDX-License-Identifier: Apache-2.0
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ * http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++#pragma once
++
++#include "PollingDevice.hpp"
++
++#include <libusb-1.0/libusb.h>
++
++#include <sdbusplus/async/fdio.hpp>
++
++#include <chrono>
++#include <cstdint>
++#include <memory>
++
++class BootProgressManager;
++
++class USBPollingDevice : public PollingDevice
++{
++  public:
++    USBPollingDevice(libusb_device_handle* handle, uint8_t bus,
++                     uint8_t deviceAddress);
++    ~USBPollingDevice() override;
++
++    USBPollingDevice(const USBPollingDevice&) = delete;
++    USBPollingDevice& operator=(const USBPollingDevice&) = delete;
++    USBPollingDevice(USBPollingDevice&&) = delete;
++    USBPollingDevice& operator=(USBPollingDevice&&) = delete;
++
++    bool readRegisterValue(uint32_t regAddr, uint32_t& regValue) override;
++
++  private:
++    uint8_t bus;
++    uint8_t deviceAddress;
++    libusb_device_handle* devHandle = nullptr;
++};
++
++class USBDeviceEnumerator : public PollingDeviceEnumerator
++{
++  public:
++    USBDeviceEnumerator(sdbusplus::async::context& ctx,
++                        std::shared_ptr<BootProgressManager> mgr,
++                        uint16_t vendorId, uint16_t productId,
++                        std::chrono::seconds rescanInterval);
++    ~USBDeviceEnumerator() override;
++
++    USBDeviceEnumerator(const USBDeviceEnumerator&) = delete;
++    USBDeviceEnumerator& operator=(const USBDeviceEnumerator&) = delete;
++    USBDeviceEnumerator(USBDeviceEnumerator&&) = delete;
++    USBDeviceEnumerator& operator=(USBDeviceEnumerator&&) = delete;
++
++    sdbusplus::async::task<void> run() override;
++
++  private:
++    struct LibusbContextDeleter
++    {
++        void operator()(libusb_context* p) const
++        {
++            if (p)
++            {
++                libusb_exit(p);
++            }
++        }
++    };
++    using UsbContextPtr = std::unique_ptr<libusb_context, LibusbContextDeleter>;
++
++    uint16_t vendorId;
++    uint16_t productId;
++    std::chrono::seconds rescanInterval;
++
++    UsbContextPtr usbCtx;
++    libusb_hotplug_callback_handle cbHandle = 0;
++    bool hotplugSupported = false;
++
++    static int LIBUSB_CALL hotplugCallback(
++        libusb_context* ctx, libusb_device* dev, libusb_hotplug_event event,
++        void* userData);
++
++    void handleHotplug(libusb_device* dev, libusb_hotplug_event event);
++    void tryAddDevice(libusb_device* dev);
++
++    void scanDeviceList();
++    static void pollfdAddedCallback(int fd, short events, void* userData);
++    static void pollfdRemovedCallback(int fd, void* userData);
++    void addWatcher(int fd);
++    void removeWatcher(int fd);
++    void attachFirstPollfd(bool warnIfNull = false);
++    void processLibusbEvents();
++
++    std::unique_ptr<sdbusplus::async::fdio> libusbBell;
++    int libusbBellFd = -1;
++};
+-- 
+2.47.1
+

@@ -2,6 +2,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI:append = " \
     file://0001-Add-queued-boot-progress-support.patch \
+    file://0002-queued-boot-progress-update-49527530a5.0a5ef0dafc.patch \
 "
 
 DEPENDS += "phosphor-logging"

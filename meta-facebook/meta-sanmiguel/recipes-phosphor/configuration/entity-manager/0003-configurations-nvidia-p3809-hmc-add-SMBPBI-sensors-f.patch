@@ -6,17 +6,19 @@ Subject: [PATCH 3/9] configurations: nvidia: p3809-hmc: add SMBPBI sensors for
 
 Add SMBPBI sensors for SanMiguel system.
 
+[1] https://gerrit.openbmc.org/c/openbmc/entity-manager/+/89947/1
+
 Signed-off-by: Potin Lai <potin.lai@quantatw.com>
 Change-Id: I74c166c791ef51bf1a94e88b8050149a44766779
 ---
- configurations/nvidia/p3809-hmc.json | 772 +++++++++++++++++++++++++++
- 1 file changed, 772 insertions(+)
+ configurations/nvidia/p3809-hmc.json | 874 +++++++++++++++++++++++++++
+ 1 file changed, 874 insertions(+)
 
 diff --git a/configurations/nvidia/p3809-hmc.json b/configurations/nvidia/p3809-hmc.json
-index 613a79a..f14342a 100644
+index 613a79a..a4f2133 100644
 --- a/configurations/nvidia/p3809-hmc.json
 +++ b/configurations/nvidia/p3809-hmc.json
-@@ -12,6 +12,778 @@
+@@ -12,6 +12,880 @@
              "Name": "HMC",
              "Port": 80,
              "Type": "SatelliteController"
@@ -173,17 +175,17 @@ index 613a79a..f14342a 100644
 +            "Thresholds": [
 +                {
 +                    "Direction": "less than",
-+                    "Hysteresis": 0.001,
++                    "Hysteresis": 0.002,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": -0.05
++                    "Value": -0.1
 +                },
 +                {
 +                    "Direction": "less than",
-+                    "Hysteresis": 0.08,
++                    "Hysteresis": 0.04,
 +                    "Name": "lower critical",
 +                    "Severity": 1,
-+                    "Value": -4.0
++                    "Value": -2.0
 +                },
 +                {
 +                    "Direction": "less than",
@@ -209,17 +211,17 @@ index 613a79a..f14342a 100644
 +            "Thresholds": [
 +                {
 +                    "Direction": "less than",
-+                    "Hysteresis": 0.001,
++                    "Hysteresis": 0.002,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": -0.05
++                    "Value": -0.1
 +                },
 +                {
 +                    "Direction": "less than",
-+                    "Hysteresis": 0.08,
++                    "Hysteresis": 0.04,
 +                    "Name": "lower critical",
 +                    "Severity": 1,
-+                    "Value": -4.0
++                    "Value": -2.0
 +                },
 +                {
 +                    "Direction": "less than",
@@ -245,17 +247,17 @@ index 613a79a..f14342a 100644
 +            "Thresholds": [
 +                {
 +                    "Direction": "less than",
-+                    "Hysteresis": 0.001,
++                    "Hysteresis": 0.002,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": -0.05
++                    "Value": -0.1
 +                },
 +                {
 +                    "Direction": "less than",
-+                    "Hysteresis": 0.08,
++                    "Hysteresis": 0.04,
 +                    "Name": "lower critical",
 +                    "Severity": 1,
-+                    "Value": -4.0
++                    "Value": -2.0
 +                },
 +                {
 +                    "Direction": "less than",
@@ -281,17 +283,17 @@ index 613a79a..f14342a 100644
 +            "Thresholds": [
 +                {
 +                    "Direction": "less than",
-+                    "Hysteresis": 0.001,
++                    "Hysteresis": 0.002,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": -0.05
++                    "Value": -0.1
 +                },
 +                {
 +                    "Direction": "less than",
-+                    "Hysteresis": 0.08,
++                    "Hysteresis": 0.04,
 +                    "Name": "lower critical",
 +                    "Severity": 1,
-+                    "Value": -4.0
++                    "Value": -2.0
 +                },
 +                {
 +                    "Direction": "less than",
@@ -441,10 +443,10 @@ index 613a79a..f14342a 100644
 +                },
 +                {
 +                    "Direction": "less than",
-+                    "Hysteresis": 0.001,
++                    "Hysteresis": 0.002,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": -0.05
++                    "Value": -0.1
 +                }
 +            ],
 +            "Type": "SmbpbiVirtualEeprom",
@@ -463,10 +465,24 @@ index 613a79a..f14342a 100644
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
-+                    "Hysteresis": 1.64,
++                    "Hysteresis": 1.8,
 +                    "Name": "upper non critical",
 +                    "Severity": 0,
-+                    "Value": 87.0
++                    "Value": 90.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.84,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 92.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.9,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 95.0
 +                }
 +            ],
 +            "Type": "SmbpbiVirtualEeprom",
@@ -485,10 +501,24 @@ index 613a79a..f14342a 100644
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
-+                    "Hysteresis": 1.64,
++                    "Hysteresis": 1.8,
 +                    "Name": "upper non critical",
 +                    "Severity": 0,
-+                    "Value": 87.0
++                    "Value": 90.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.84,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 92.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.9,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 95.0
 +                }
 +            ],
 +            "Type": "SmbpbiVirtualEeprom",
@@ -507,10 +537,24 @@ index 613a79a..f14342a 100644
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
-+                    "Hysteresis": 1.64,
++                    "Hysteresis": 1.8,
 +                    "Name": "upper non critical",
 +                    "Severity": 0,
-+                    "Value": 87.0
++                    "Value": 90.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.84,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 92.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.9,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 95.0
 +                }
 +            ],
 +            "Type": "SmbpbiVirtualEeprom",
@@ -529,10 +573,24 @@ index 613a79a..f14342a 100644
 +            "Thresholds": [
 +                {
 +                    "Direction": "greater than",
-+                    "Hysteresis": 1.64,
++                    "Hysteresis": 1.8,
 +                    "Name": "upper non critical",
 +                    "Severity": 0,
-+                    "Value": 87.0
++                    "Value": 90.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.84,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 92.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.9,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 95.0
 +                }
 +            ],
 +            "Type": "SmbpbiVirtualEeprom",
@@ -600,6 +658,29 @@ index 613a79a..f14342a 100644
 +            "PollRate": 1,
 +            "PowerState": "On",
 +            "ReadOffset": 672,
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.7,
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 85.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.76,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 88.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.8,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 90.0
++                }
++            ],
 +            "Type": "SmbpbiVirtualEeprom",
 +            "Units": "DegreesC",
 +            "ValueType": "FLOAT64"
@@ -616,17 +697,17 @@ index 613a79a..f14342a 100644
 +            "Thresholds": [
 +                {
 +                    "Direction": "less than",
-+                    "Hysteresis": 0.001,
++                    "Hysteresis": 0.002,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": -0.05
++                    "Value": -0.1
 +                },
 +                {
 +                    "Direction": "less than",
-+                    "Hysteresis": 0.08,
++                    "Hysteresis": 0.06,
 +                    "Name": "lower critical",
 +                    "Severity": 1,
-+                    "Value": -4.0
++                    "Value": -3.0
 +                },
 +                {
 +                    "Direction": "less than",
@@ -727,6 +808,29 @@ index 613a79a..f14342a 100644
 +            "PollRate": 1,
 +            "PowerState": "On",
 +            "ReadOffset": 928,
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.7,
++                    "Name": "upper non critical",
++                    "Severity": 0,
++                    "Value": 85.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.76,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 88.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.8,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 90.0
++                }
++            ],
 +            "Type": "SmbpbiVirtualEeprom",
 +            "Units": "DegreesC",
 +            "ValueType": "FLOAT64"
@@ -743,17 +847,17 @@ index 613a79a..f14342a 100644
 +            "Thresholds": [
 +                {
 +                    "Direction": "less than",
-+                    "Hysteresis": 0.001,
++                    "Hysteresis": 0.002,
 +                    "Name": "lower non critical",
 +                    "Severity": 0,
-+                    "Value": -0.05
++                    "Value": -0.1
 +                },
 +                {
 +                    "Direction": "less than",
-+                    "Hysteresis": 0.08,
++                    "Hysteresis": 0.06,
 +                    "Name": "lower critical",
 +                    "Severity": 1,
-+                    "Value": -4.0
++                    "Value": -3.0
 +                },
 +                {
 +                    "Direction": "less than",

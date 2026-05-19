@@ -1,5 +1,4 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
-SRCREV = "07f7dec4dfdff2e8a082ed09d10ad7bbf1bb0679"
 
 SRC_URI:append = " \
     file://0001-configurations-nvidia-Add-HMC-P3809-support.patch \
@@ -11,4 +10,7 @@ SRC_URI:append = " \
     file://0007-configurations-nvidia-vr_nvl72-add-GPIO-leak-detecto.patch \
     file://0008-configurations-nvidia-cx9_mezzanine_module-add-NIC-s.patch \
     file://0009-configurations-nvidia-clover_cx9-add-NIC-sensor-conf.patch \
+    file://0010-configurations-nvidia-p3809-hmc-Add-NvidiaMctpVdm-co.patch \
+    file://0011-configurations-nvidia-cx9_mezzanine_module-add-data-.patch \
+    file://0012-configurations-nvidia-cable_cartridge-change-cable-c.patch \
 "

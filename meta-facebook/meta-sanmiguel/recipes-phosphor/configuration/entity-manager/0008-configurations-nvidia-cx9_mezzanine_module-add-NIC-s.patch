@@ -1,7 +1,7 @@
-From 759b851f5c783b07d9677b30f7c44615f3977d55 Mon Sep 17 00:00:00 2001
+From 680de9e69838e54205a77d1713756839c72cf8cf Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 25 Mar 2026 13:51:45 +0800
-Subject: [PATCH 8/9] configurations: nvidia: cx9_mezzanine_module: add NIC
+Subject: [PATCH 1/1] configurations: nvidia: cx9_mezzanine_module: add NIC
  sensor configs
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -43,14 +43,14 @@ root@bmc:~# busctl tree xyz.openbmc_project.EntityManager | grep -e "IOB[0-3]_NI
 Signed-off-by: Potin Lai <potin.lai@quantatw.com>
 Change-Id: I344184aee3f3e6ffaf844fcf17e55e4f08d67c30
 ---
- .../nvidia/cx9_mezzanine_module.json          | 54 +++++++++++++++++++
- 1 file changed, 54 insertions(+)
+ .../nvidia/cx9_mezzanine_module.json          | 86 +++++++++++++++++++
+ 1 file changed, 86 insertions(+)
 
 diff --git a/configurations/nvidia/cx9_mezzanine_module.json b/configurations/nvidia/cx9_mezzanine_module.json
-index 7cdc62b..53d4682 100644
+index 7cdc62b..0a8b6f1 100644
 --- a/configurations/nvidia/cx9_mezzanine_module.json
 +++ b/configurations/nvidia/cx9_mezzanine_module.json
-@@ -5,6 +5,60 @@
+@@ -5,6 +5,92 @@
              "Bus": "$bus",
              "Name": "NVIDIA VR NVL72 IO Board $bus - 73 FRU",
              "Type": "EEPROM"
@@ -69,6 +69,22 @@ index 7cdc62b..53d4682 100644
 +            "MinValue": -255.0,
 +            "Name": "IOB$bus - 73 NIC0_OSFP_TEMP_C",
 +            "PowerState": "On",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.36,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 68
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.1,
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 5
++                }
++            ],
 +            "Timeout": 30.0,
 +            "Type": "ExternalSensor",
 +            "Units": "DegreesC"
@@ -96,6 +112,22 @@ index 7cdc62b..53d4682 100644
 +            "MinValue": -255.0,
 +            "Name": "IOB$bus - 73 NIC1_OSFP_TEMP_C",
 +            "PowerState": "On",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.36,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 68
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.1,
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 5
++                }
++            ],
 +            "Timeout": 30.0,
 +            "Type": "ExternalSensor",
 +            "Units": "DegreesC"
@@ -112,5 +144,5 @@ index 7cdc62b..53d4682 100644
      ],
      "Name": "NVIDIA VR NVL72 IO Board $bus - 73",
 -- 
-2.31.1
+2.47.1
 

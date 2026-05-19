@@ -64,3 +64,7 @@ do_install:append() {
 }
 
 FILES:${PN} += "${sysconfdir}"
+
+# Not needed for meru
+SYSTEMD_SERVICE:${PN}:remove = "come_identify.service"
+OPENBMC_UTILS_FILES:remove = "come_identify.sh"

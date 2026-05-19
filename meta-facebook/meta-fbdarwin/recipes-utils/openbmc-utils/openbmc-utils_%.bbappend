@@ -31,4 +31,5 @@ OPENBMC_UTILS_FILES += " \
     "
 
 # Not needed for fbdarwin
-SYSTEMD_SERVICE:${PN}:remove = "setup_i2c.service power-on.service"
+SYSTEMD_SERVICE:${PN}:remove = "setup_i2c.service power-on.service come_identify.service"
+OPENBMC_UTILS_FILES:remove = "come_identify.sh"

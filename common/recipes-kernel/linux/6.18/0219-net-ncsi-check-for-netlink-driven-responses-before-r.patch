@@ -1,7 +1,7 @@
-From b0b52d80b07b6d5b35a5c81fefe17ab721d632c7 Mon Sep 17 00:00:00 2001
+From c647afc40827791735965d1ac43b666d025d5dee Mon Sep 17 00:00:00 2001
 From: Jeremy Kerr <jk@codeconstruct.com.au>
 Date: Thu, 12 Sep 2024 14:23:57 +0800
-Subject: [PATCH 220/238] net: ncsi: check for netlink-driven responses before
+Subject: [PATCH 219/237] net: ncsi: check for netlink-driven responses before
  requiring a handler
 
 Lore link:
@@ -109,5 +109,5 @@ index fbd84bc8026a..5b5ee2eead2d 100644
  
  out:
 -- 
-2.52.0
+2.53.0-Meta
 

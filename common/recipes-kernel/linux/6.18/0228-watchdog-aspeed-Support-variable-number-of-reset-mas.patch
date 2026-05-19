@@ -1,7 +1,7 @@
-From 691df705619297d59cbf5802a121d944e1074d65 Mon Sep 17 00:00:00 2001
+From c8621800a30f761d4cddb0218762afe9291de80f Mon Sep 17 00:00:00 2001
 From: Chin-Ting Kuo <chin-ting_kuo@aspeedtech.com>
 Date: Fri, 10 Oct 2025 16:03:14 +0800
-Subject: [PATCH 229/238] watchdog: aspeed: Support variable number of reset
+Subject: [PATCH 228/237] watchdog: aspeed: Support variable number of reset
  mask registers
 
 Starting from the AST2600 platform, the SoC design has become more
@@ -75,5 +75,5 @@ index 837e15701c0e..d23e565f30a8 100644
  	}
  
 -- 
-2.52.0
+2.53.0-Meta
 

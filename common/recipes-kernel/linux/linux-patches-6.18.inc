@@ -43,34 +43,33 @@ SRC_URI:append = " \
     file://0208-ARM-dts-aspeed-g6-Add-AST2600-I3Cs.patch \
     file://0209-dt-bindings-i3c-hub-Add-Renesas-RG3MxxB12A1-I3C-HUB.patch \
     file://0210-i3c-i3c-hub-Add-Renesas-RG3MxxB12A1-I3C-HUB-driver.patch \
-    file://0211-aspeed-g6.dtsi-update-for-PWM-and-TACH-driver.patch \
-    file://0212-ARM-dts-aspeed-g6-add-pcc-config-in-aspeed-g6.dtsi.patch \
-    file://0213-dmaengine-aspeed-Add-AST2600-UART-DMA-driver.patch \
-    file://0214-serial-8250-Add-AST2600-UART-driver.patch \
-    file://0215-drivers-misc-Add-Aspeed-OTP-control-register.patch \
-    file://0216-soc-aspeed-lpc-pcc-Add-PCC-controller-support.patch \
-    file://0217-i2c-ast2600-support-ssif.patch \
-    file://0218-ARM-dts-aspeed-g6-Add-UDMA-node.patch \
-    file://0219-net-ftgmac100-reset-MAC-by-SCU-on-RMII.patch \
-    file://0220-net-ncsi-check-for-netlink-driven-responses-before-r.patch \
-    file://0221-i3c-ast2600-Validate-AST2600-I3C-for-MCTP-over-I3C.patch \
-    file://0222-i3c-dw-Add-err-messages-for-ibi_fifo_clear-handling.patch \
-    file://0223-i3c-dw-handle-transfer-abort-errors-distinctly.patch \
-    file://0224-i3c-dw-Handle-unexpected-responses-caused-by-SDA-noi.patch \
-    file://0225-i3c-handle-null-transfers-during-response-processing.patch \
-    file://0226-i3c-master-ast2600-Fix-missing-of_node-for-virtual-I.patch \
-    file://0227-i3c-dw-Improve-IBI-queue-handling-when-encountering-.patch \
-    file://0228-i3c-master-dw-i3c-master-Fix-race-condition-in-halt-.patch \
-    file://0229-watchdog-aspeed-Support-variable-number-of-reset-mas.patch \
-    file://0230-watchdog-aspeed-Add-support-for-AST2700-platform.patch \
-    file://0231-spi-aspeed-Use-phys_addr_t-for-bus-addresses-to-supp.patch \
-    file://0232-spi-aspeed-Add-support-for-the-AST2700-SPI-controlle.patch \
-    file://0233-gpio-aspeed-sgpio-Create-llops-to-handle-hardware-ac.patch \
-    file://0234-gpio-aspeed-sgpio-Convert-IRQ-functions-to-use-llops.patch \
-    file://0235-gpio-aspeed-sgpio-Support-G7-Aspeed-sgpiom-controlle.patch \
-    file://0236-iio-adc-aspeed-Add-AST2700-ADC-support.patch \
-    file://0237-iio-adc-aspeed-Disable-the-last-channel-by-default.patch \
-    file://0238-net-ftgmac100-add-support-for-AST2700.patch \
+    file://0211-ARM-dts-aspeed-g6-add-pcc-config-in-aspeed-g6.dtsi.patch \
+    file://0212-dmaengine-aspeed-Add-AST2600-UART-DMA-driver.patch \
+    file://0213-serial-8250-Add-AST2600-UART-driver.patch \
+    file://0214-drivers-misc-Add-Aspeed-OTP-control-register.patch \
+    file://0215-soc-aspeed-lpc-pcc-Add-PCC-controller-support.patch \
+    file://0216-i2c-ast2600-support-ssif.patch \
+    file://0217-ARM-dts-aspeed-g6-Add-UDMA-node.patch \
+    file://0218-net-ftgmac100-reset-MAC-by-SCU-on-RMII.patch \
+    file://0219-net-ncsi-check-for-netlink-driven-responses-before-r.patch \
+    file://0220-i3c-ast2600-Validate-AST2600-I3C-for-MCTP-over-I3C.patch \
+    file://0221-i3c-dw-Add-err-messages-for-ibi_fifo_clear-handling.patch \
+    file://0222-i3c-dw-handle-transfer-abort-errors-distinctly.patch \
+    file://0223-i3c-dw-Handle-unexpected-responses-caused-by-SDA-noi.patch \
+    file://0224-i3c-handle-null-transfers-during-response-processing.patch \
+    file://0225-i3c-master-ast2600-Fix-missing-of_node-for-virtual-I.patch \
+    file://0226-i3c-dw-Improve-IBI-queue-handling-when-encountering-.patch \
+    file://0227-i3c-master-dw-i3c-master-Fix-race-condition-in-halt-.patch \
+    file://0228-watchdog-aspeed-Support-variable-number-of-reset-mas.patch \
+    file://0229-watchdog-aspeed-Add-support-for-AST2700-platform.patch \
+    file://0230-spi-aspeed-Use-phys_addr_t-for-bus-addresses-to-supp.patch \
+    file://0231-spi-aspeed-Add-support-for-the-AST2700-SPI-controlle.patch \
+    file://0232-gpio-aspeed-sgpio-Create-llops-to-handle-hardware-ac.patch \
+    file://0233-gpio-aspeed-sgpio-Convert-IRQ-functions-to-use-llops.patch \
+    file://0234-gpio-aspeed-sgpio-Support-G7-Aspeed-sgpiom-controlle.patch \
+    file://0235-iio-adc-aspeed-Add-AST2700-ADC-support.patch \
+    file://0236-iio-adc-aspeed-Disable-the-last-channel-by-default.patch \
+    file://0237-net-ftgmac100-add-support-for-AST2700.patch \
 "
 
 #

@@ -1,7 +1,7 @@
-From 6e8eafeb20c110237cdfcb3e82bb480866e4ec98 Mon Sep 17 00:00:00 2001
+From 7f7341b0d0eb97d1910abedec758c247c1cadb87 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Thu, 21 Aug 2025 10:50:13 +0800
-Subject: [PATCH 223/238] i3c: dw: handle transfer abort errors distinctly
+Subject: [PATCH 222/237] i3c: dw: handle transfer abort errors distinctly
 
 Handle transfer abort errors separately from other I/O errors
 to prevent halting the controller unnecessarily. Adjust error handling
@@ -46,5 +46,5 @@ index e690f3030d2f..5984003716f3 100644
  		 * The controller will enter the HALT state if an error occurs.
  		 * Therefore, there is no need to manually halt the controller
 -- 
-2.52.0
+2.53.0-Meta
 

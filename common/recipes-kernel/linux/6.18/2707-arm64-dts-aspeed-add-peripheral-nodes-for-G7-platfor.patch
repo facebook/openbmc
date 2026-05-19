@@ -1,4 +1,4 @@
-From 05312c03b68c5da2fef8f7166eea264399811dd0 Mon Sep 17 00:00:00 2001
+From 8016fa3d2b3b8d69d88f0f7c40d673b899efcd4b Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <cosmo.chou@quantatw.com>
 Date: Thu, 16 Apr 2026 09:49:37 +0800
 Subject: [PATCH 2707/2707] arm64: dts: aspeed: add peripheral nodes for G7
@@ -602,5 +602,5 @@ index 2a6f80a255aa..2eb8b692d339 100644
 +	};
 +};
 -- 
-2.52.0
+2.53.0-Meta
 

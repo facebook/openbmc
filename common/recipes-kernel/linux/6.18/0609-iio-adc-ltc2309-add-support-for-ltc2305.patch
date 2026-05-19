@@ -1,4 +1,4 @@
-From 6eba3e88a79232a2fae525b6ee0064cf84a94970 Mon Sep 17 00:00:00 2001
+From a334b983a5483f5351082b8fba5331fd7ede24e9 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <kylehsieh1995@gmail.com>
 Date: Wed, 25 Mar 2026 10:09:28 +0800
 Subject: [PATCH 609/610] iio: adc: ltc2309: add support for ltc2305
@@ -136,5 +136,5 @@ index 3f27ffc66668..316256edf150 100644
  };
  MODULE_DEVICE_TABLE(i2c, ltc2309_id);
 -- 
-2.52.0
+2.53.0-Meta
 

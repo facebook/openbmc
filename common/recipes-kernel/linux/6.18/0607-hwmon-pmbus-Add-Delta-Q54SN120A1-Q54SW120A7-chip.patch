@@ -1,4 +1,4 @@
-From 3a69cd0e90e6a0a19fff3cd9719ad417e58bbf40 Mon Sep 17 00:00:00 2001
+From 0d0ad675388132482dd677e40fc38c2763ff42c0 Mon Sep 17 00:00:00 2001
 From: Colin Huang <u8813345@gmail.com>
 Date: Mon, 16 Mar 2026 16:39:34 +0800
 Subject: [PATCH 607/610] hwmon: (pmbus) Add Delta Q54SN120A1 Q54SW120A7 chip
@@ -71,5 +71,5 @@ index 7b0d292a425a..3068983ceacf 100644
  };
  
 -- 
-2.52.0
+2.53.0-Meta
 

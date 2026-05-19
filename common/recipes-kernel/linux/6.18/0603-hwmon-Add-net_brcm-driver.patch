@@ -1,4 +1,4 @@
-From 9feee44cb2e9743807b061369c2b7003ee31bf32 Mon Sep 17 00:00:00 2001
+From 99a0d8a541e288c42ff7afc73882ee652b728b52 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Thu, 8 Apr 2021 15:23:48 -0700
 Subject: [PATCH 603/610] hwmon: Add net_brcm driver
@@ -297,5 +297,5 @@ index 000000000000..638a4ab7d7cf
 +MODULE_DESCRIPTION("NET_BRCM Driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.52.0
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From 152ea4bf86318e390050d43b4bb2499a0de86b0e Mon Sep 17 00:00:00 2001
+From 09a431017128492eccb5477ce037bc157f43094e Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Joan=20Olguy=20Can=C3=A9us?= <joancaneus@fb.com>
 Date: Wed, 12 Aug 2020 18:01:39 -0700
 Subject: [PATCH 106/112] jtag: aspeed: add AST2600 support
@@ -154,5 +154,5 @@ index beba9d80ebe0..d351121aded7 100644
  };
  
 -- 
-2.47.3
+2.53.0-Meta
 

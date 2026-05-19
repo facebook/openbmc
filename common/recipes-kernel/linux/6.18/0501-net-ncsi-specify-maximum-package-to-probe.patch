@@ -1,4 +1,4 @@
-From 85b2ce13fe19658c4e107c81aa8c6968025a41af Mon Sep 17 00:00:00 2001
+From ac2539521aecf5302fad8ca90859fa844bb22b5b Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <cosmo.chou@quantatw.com>
 Date: Wed, 22 May 2024 01:36:37 +0800
 Subject: [PATCH 501/501] net/ncsi: specify maximum package to probe
@@ -82,5 +82,5 @@ index 372b3680beb4..2d760b712ba6 100644
  
  	return nd;
 -- 
-2.47.3
+2.53.0-Meta
 

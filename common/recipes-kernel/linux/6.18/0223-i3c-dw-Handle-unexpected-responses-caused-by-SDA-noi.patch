@@ -1,7 +1,7 @@
-From ffc1061a75981c811f56f5c31e105f0ec3696b29 Mon Sep 17 00:00:00 2001
+From bb6308b0529b4d2c503cab2cc691bf9a8e43b562 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Fri, 21 Nov 2025 18:32:59 +0800
-Subject: [PATCH 224/238] i3c: dw: Handle unexpected responses caused by SDA
+Subject: [PATCH 223/237] i3c: dw: Handle unexpected responses caused by SDA
  noise
 
 Currently, if an IBI address appears in the DAT (including the 0x2 hot-join
@@ -87,5 +87,5 @@ index 5984003716f3..c38c746f3fd4 100644
  			      COMMAND_PORT_ROC;
  
 -- 
-2.52.0
+2.53.0-Meta
 

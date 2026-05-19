@@ -1,4 +1,4 @@
-From 4f653af71029f4ef76e708c70623e6e2d9b0be63 Mon Sep 17 00:00:00 2001
+From 2af24b793b08f9497273c44f9a56c0e378674bfe Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Tue, 18 Oct 2022 11:38:44 -0700
 Subject: [PATCH 902/903] mmc: sdhci-of-aspeed: add "skip_probe" module
@@ -64,5 +64,5 @@ index ca97b01996b1..be772e56b657 100644
  	if (!aspeed_pdata) {
  		dev_err(&pdev->dev, "Missing platform configuration data\n");
 -- 
-2.47.3
+2.53.0-Meta
 

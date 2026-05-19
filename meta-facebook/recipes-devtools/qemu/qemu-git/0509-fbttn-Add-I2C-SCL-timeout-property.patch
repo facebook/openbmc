@@ -1,4 +1,4 @@
-From c4ab32639b8b7729232e8d1a34a015c325be72ff Mon Sep 17 00:00:00 2001
+From 0cb4d849cf2932085ed9ab89c2bafec1e1fd3486 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Tue, 16 Aug 2022 00:32:54 -0700
 Subject: [PATCH 509/512] fbttn: Add I2C SCL timeout property
@@ -25,10 +25,10 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  5 files changed, 52 insertions(+), 2 deletions(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index f4aa8a65f1..a3db3406c5 100644
+index c70e208812..a48c442058 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -432,5 +432,3 @@ static const TypeInfo aspeed_machine_types[] = {
+@@ -441,5 +441,3 @@ static const TypeInfo aspeed_machine_types[] = {
  };
  
  DEFINE_TYPES(aspeed_machine_types)
@@ -171,5 +171,5 @@ index d42cb4865a..c958a76298 100644
      uint32_t regs[ASPEED_I2C_NEW_NUM_REG];
      uint32_t pending_intr_sts;
 -- 
-2.53.0-Meta
+2.52.0
 

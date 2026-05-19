@@ -1,4 +1,4 @@
-From cd74c0829ba91bb45a9b117b8ab71ec2f376782a Mon Sep 17 00:00:00 2001
+From 2815cdd50659e64f97647572b6465dc2ad8fcbdc Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Tue, 2 Jan 2024 17:50:00 +0800
 Subject: [PATCH 500/501] NCSI: Add propety : no-channel-monitor and
@@ -104,5 +104,5 @@ index 446e4e3b9553..372b3680beb4 100644
  		ndp->package_probe_id = 0;
  		ndp->channel_probe_id = 0;
 -- 
-2.47.3
+2.53.0-Meta
 

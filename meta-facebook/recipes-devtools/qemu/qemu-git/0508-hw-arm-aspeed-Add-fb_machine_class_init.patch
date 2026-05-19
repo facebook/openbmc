@@ -1,4 +1,4 @@
-From c167e3acce79a5c22b7b839aa1fd3cc0f4fe21cd Mon Sep 17 00:00:00 2001
+From 0eed222697279c075241d1fcba2731b16da11d22 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Fri, 20 May 2022 17:07:55 -0700
 Subject: [PATCH 508/512] hw/arm/aspeed: Add fb_machine_class_init
@@ -14,10 +14,10 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  6 files changed, 361 insertions(+)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index a3db3406c5..f4aa8a65f1 100644
+index a48c442058..c70e208812 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -432,3 +432,5 @@ static const TypeInfo aspeed_machine_types[] = {
+@@ -441,3 +441,5 @@ static const TypeInfo aspeed_machine_types[] = {
  };
  
  DEFINE_TYPES(aspeed_machine_types)
@@ -438,5 +438,5 @@ index a00238ed74..84252dcd41 100644
 +
  #endif
 -- 
-2.53.0-Meta
+2.52.0
 

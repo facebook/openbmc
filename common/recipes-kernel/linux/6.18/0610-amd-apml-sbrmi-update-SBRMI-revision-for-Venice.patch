@@ -1,4 +1,4 @@
-From 2274ce4762880feca0bc9c33a2efc81179133673 Mon Sep 17 00:00:00 2001
+From e49cc70cd520839d13a9ba8c17af9de9ccabfe05 Mon Sep 17 00:00:00 2001
 From: Kevin Tung <kevin.tung.openbmc@gmail.com>
 Date: Thu, 7 May 2026 15:56:51 +0800
 Subject: [PATCH 610/610] amd-apml: sbrmi: update SBRMI revision for Venice
@@ -75,5 +75,5 @@ index f7d858f3a2ec..27e1f420aa1c 100644
  			else
  				*size = SBRMI_REG_ADDR_SIZE_DEF;
 -- 
-2.52.0
+2.53.0-Meta
 

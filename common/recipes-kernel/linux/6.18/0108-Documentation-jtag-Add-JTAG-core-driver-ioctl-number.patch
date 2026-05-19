@@ -1,4 +1,4 @@
-From 97287c84545671659c483bacf92d3d58896c5f1a Mon Sep 17 00:00:00 2001
+From 7324e9f51338cb26ff5965b71f69f89c7a9d16ec Mon Sep 17 00:00:00 2001
 From: Ernesto Corona <ernesto.corona@intel.com>
 Date: Mon, 13 Apr 2020 15:29:19 -0700
 Subject: [PATCH 108/112] Documentation jtag: Add JTAG core driver ioctl number
@@ -69,5 +69,5 @@ index 7c527a01d1cf..2af26b100ad4 100644
  0xCA  00-0F  uapi/misc/cxl.h                                           Dead since 6.15
  0xCA  10-2F  uapi/misc/ocxl.h
 -- 
-2.47.3
+2.53.0-Meta
 

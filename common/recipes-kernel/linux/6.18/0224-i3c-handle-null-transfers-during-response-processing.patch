@@ -1,7 +1,7 @@
-From 7e8ff5835a7c4c3bf9ae39efb96ec429caf07de5 Mon Sep 17 00:00:00 2001
+From e35cd8bdb4d7bd3191dff2a87063795ee89c8357 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Tue, 30 Sep 2025 16:48:35 +0800
-Subject: [PATCH 225/238] i3c: handle null transfers during response processing
+Subject: [PATCH 224/237] i3c: handle null transfers during response processing
 
 Fixes a null transfer scenario by adding error handling for responses
 when no transfer is active. Logs detailed errors for invalid responses
@@ -52,5 +52,5 @@ index c38c746f3fd4..8d74ae1105e1 100644
  		struct dw_i3c_cmd *cmd;
  		u32 resp;
 -- 
-2.52.0
+2.53.0-Meta
 

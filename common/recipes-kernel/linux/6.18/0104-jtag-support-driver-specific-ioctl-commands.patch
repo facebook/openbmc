@@ -1,4 +1,4 @@
-From 23f25ee1930c5d3dde5dcd5585c1727a3c45b891 Mon Sep 17 00:00:00 2001
+From 9df9d6a3a7106456b27f9f07d0d5dd328d31bdd5 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Tue, 14 Jul 2020 22:59:49 -0700
 Subject: [PATCH 104/112] jtag: support driver specific ioctl commands
@@ -22,7 +22,7 @@ Signature: 22554562:1594850292:671a79caf605ed77e9935a0188e8b3872cc257ca
  2 files changed, 4 insertions(+)
 
 diff --git a/drivers/jtag/jtag.c b/drivers/jtag/jtag.c
-index 47503a102f64..090f56d582a4 100644
+index 453b8004045b..0eda608c0935 100644
 --- a/drivers/jtag/jtag.c
 +++ b/drivers/jtag/jtag.c
 @@ -155,6 +155,8 @@ static long jtag_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
@@ -55,5 +55,5 @@ index 4153c905e550..6a6b53a549d8 100644
  
  void *jtag_priv(struct jtag *jtag);
 -- 
-2.47.3
+2.53.0-Meta
 

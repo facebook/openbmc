@@ -1,7 +1,7 @@
-From d0f9d2a6dc2f4d21ecb431e008720b378724c774 Mon Sep 17 00:00:00 2001
+From 58b173a0a321699fd852b9f1bd17d074f1062cec Mon Sep 17 00:00:00 2001
 From: Jacky Chou <jacky_chou@aspeedtech.com>
 Date: Tue, 29 Apr 2025 18:27:38 +0800
-Subject: [PATCH 219/238] net: ftgmac100: reset MAC by SCU on RMII
+Subject: [PATCH 218/237] net: ftgmac100: reset MAC by SCU on RMII
 
 Because MAC SW reset cannot reset RMII interface, use scu reset to fully
 reset MAC and RMII.
@@ -14,7 +14,7 @@ Change-Id: I130487c2dcfb3890b7629ff2946f68f0feb808a7
  1 file changed, 4 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-index d56715df1922..ed6a2824da0a 100644
+index e8d3b2ae8e4f..63bf8b7f3ce2 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 +++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 @@ -250,6 +250,7 @@ mac0: ethernet@1e660000 {
@@ -50,5 +50,5 @@ index d56715df1922..ed6a2824da0a 100644
  		};
  
 -- 
-2.52.0
+2.53.0-Meta
 

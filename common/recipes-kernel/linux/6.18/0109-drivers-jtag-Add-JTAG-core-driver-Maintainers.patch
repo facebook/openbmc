@@ -1,4 +1,4 @@
-From 5ed2cc0b1ca4df58b4d25e700526844d9a1d8cb8 Mon Sep 17 00:00:00 2001
+From d45bff8ad9428261fea3871fd4eab8698c545e77 Mon Sep 17 00:00:00 2001
 From: Ernesto Corona <ernesto.corona@intel.com>
 Date: Mon, 13 Apr 2020 15:29:20 -0700
 Subject: [PATCH 109/112] drivers: jtag: Add JTAG core driver Maintainers
@@ -36,7 +36,7 @@ Test Plan: booted up linux 5.15 on cmm and elbert successfully.
  1 file changed, 11 insertions(+)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 10b1f6f61afc..9b181438d07d 100644
+index c04eecff98f9..fcf039423194 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
 @@ -13416,6 +13416,17 @@ L:	linux-serial@vger.kernel.org
@@ -58,5 +58,5 @@ index 10b1f6f61afc..9b181438d07d 100644
  M:	Clemens Ladisch <clemens@ladisch.de>
  L:	linux-hwmon@vger.kernel.org
 -- 
-2.47.3
+2.53.0-Meta
 

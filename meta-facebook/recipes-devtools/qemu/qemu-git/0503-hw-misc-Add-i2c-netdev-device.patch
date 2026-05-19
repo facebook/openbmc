@@ -1,4 +1,4 @@
-From d448dda7f4ed657c861f34841391e25336393ee0 Mon Sep 17 00:00:00 2001
+From 4edea8a8b579581194aee183d61038c1b9e8be30 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 27 Apr 2022 16:23:48 -0700
 Subject: [PATCH 503/512] hw/misc: Add i2c-netdev device
@@ -288,17 +288,17 @@ index 0000000000..f9064a9679
 +
 +type_init(register_types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 092f70bde2..2c4f959811 100644
+index fa6a961ac9..9ef88e1437 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -151,6 +151,7 @@ system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
+@@ -152,6 +152,7 @@ system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
  system_ss.add(when: 'CONFIG_GRLIB', if_true: files('grlib_ahb_apb_pnp.c'))
  
  system_ss.add(when: 'CONFIG_I2C_ECHO', if_true: files('i2c-echo.c'))
 +system_ss.add(when: 'CONFIG_I2C', if_true: files('i2c-netdev.c'))
  
- specific_ss.add(when: 'CONFIG_AVR_POWER', if_true: files('avr_power.c'))
+ system_ss.add(when: 'CONFIG_AVR_POWER', if_true: files('avr_power.c'))
  
 -- 
-2.53.0-Meta
+2.52.0
 

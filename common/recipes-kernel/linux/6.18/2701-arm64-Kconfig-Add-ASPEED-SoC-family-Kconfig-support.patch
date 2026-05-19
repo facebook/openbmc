@@ -1,4 +1,4 @@
-From ed20b74e39bfa8cd9874753ac87452ac71d46e80 Mon Sep 17 00:00:00 2001
+From 81056d7e29afead10327d9f9c150dd0b0955b710 Mon Sep 17 00:00:00 2001
 From: Ryan Chen <ryan_chen@aspeedtech.com>
 Date: Thu, 12 Jun 2025 14:49:24 +0800
 Subject: [PATCH 2701/2707] arm64: Kconfig: Add ASPEED SoC family Kconfig
@@ -30,5 +30,5 @@ index 13173795c43d..ac304048a84e 100644
  	bool "Axiado SoC Family"
  	select GPIOLIB
 -- 
-2.52.0
+2.53.0-Meta
 

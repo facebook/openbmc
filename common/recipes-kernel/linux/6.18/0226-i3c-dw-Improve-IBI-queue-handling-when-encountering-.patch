@@ -1,7 +1,7 @@
-From b6e7b1c5010a8fc981b3ab908217efeedc32e440 Mon Sep 17 00:00:00 2001
+From acf6cd63409153480f980983807012971f4b2e21 Mon Sep 17 00:00:00 2001
 From: Zoey Chung <zoey_yj_chung@wiwynn.com>
 Date: Tue, 10 Mar 2026 14:16:35 +0800
-Subject: [PATCH 227/238] i3c: dw: Improve IBI queue handling when encountering
+Subject: [PATCH 226/237] i3c: dw: Improve IBI queue handling when encountering
  infinite IBI data reads
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -202,5 +202,5 @@ index 8d74ae1105e1..d3426583f8d4 100644
  			queue_work(master->base.wq, &master->hj_work);
  		} else {
 -- 
-2.52.0
+2.53.0-Meta
 

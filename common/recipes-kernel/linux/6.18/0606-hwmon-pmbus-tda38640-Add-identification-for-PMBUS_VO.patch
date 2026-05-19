@@ -1,4 +1,4 @@
-From ce32a1e2f75444b91ad6d9533bfe5072b16afc5e Mon Sep 17 00:00:00 2001
+From e5945c9aeb413b9e2f3439cb9f32fcc4e2364b5e Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Wed, 4 Feb 2026 15:05:26 +0800
 Subject: [PATCH 606/610] hwmon: pmbus: tda38640: Add identification for
@@ -64,5 +64,5 @@ index d902d39f49f4..3d0c174ea20b 100644
  	.num_regulators = 1,
  	.reg_desc = tda38640_reg_desc,
 -- 
-2.52.0
+2.53.0-Meta
 

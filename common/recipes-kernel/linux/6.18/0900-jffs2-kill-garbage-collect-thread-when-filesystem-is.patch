@@ -1,4 +1,4 @@
-From 1c8fef8ebaa5841025279864420dcc177c730bc0 Mon Sep 17 00:00:00 2001
+From 9f73aaa1368d285ee93a1beefd8e3817c40f10d9 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Thu, 22 Aug 2019 17:07:24 -0700
 Subject: [PATCH 900/903] jffs2: kill garbage collect thread when filesystem is
@@ -57,5 +57,5 @@ index 1b833bbffcf5..a7198b7babed 100644
  	case INO_STATE_READING:
  		/* Someone's currently trying to read it. We must wait for
 -- 
-2.47.3
+2.53.0-Meta
 

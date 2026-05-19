@@ -1,4 +1,4 @@
-From 5792ad4a6b969edb2f91f764c3f564cb06bf8628 Mon Sep 17 00:00:00 2001
+From 941c40ab8a2443c39325c680c1fcc1fba5df35ad Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Wed, 4 Sep 2024 06:49:01 -0400
 Subject: [PATCH 111/112] ARM: dts: aspeed-g6: add jtag controllers
@@ -27,10 +27,10 @@ Signature: 27663040:1617989954:ef64ea4d7a805b0eb4967b7167589aa8afc5562c
  1 file changed, 20 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-index ecf6ff54fda3..0ac0d40f4bb8 100644
+index 8321f0fc333c..c8ac625bac09 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 +++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-@@ -378,6 +378,26 @@ rng: hwrng@1e6e2524 {
+@@ -387,6 +387,26 @@ rng: hwrng@1e6e2524 {
  				quality = <100>;
  			};
  
@@ -58,5 +58,5 @@ index ecf6ff54fda3..0ac0d40f4bb8 100644
  				compatible = "aspeed,ast2600-gfx", "syscon";
  				reg = <0x1e6e6000 0x1000>;
 -- 
-2.47.3
+2.53.0-Meta
 

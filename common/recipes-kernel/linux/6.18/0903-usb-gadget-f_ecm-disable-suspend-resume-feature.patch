@@ -1,4 +1,4 @@
-From e474dc29bd210310dc9e0ac689759f3f7ee76cbe Mon Sep 17 00:00:00 2001
+From beb19e1d044c958a1f41677c88db06d3a8e10026 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Tue, 23 Sep 2025 17:50:53 -0700
 Subject: [PATCH 903/903] usb: gadget: f_ecm: disable suspend/resume feature
@@ -49,5 +49,5 @@ index e315f18b7f9f..54dc2237637f 100644
  	return &ecm->port.func;
  }
 -- 
-2.52.0
+2.53.0-Meta
 

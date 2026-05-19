@@ -1,4 +1,4 @@
-From e623c2818cdcf7ab53e69b283e3386b5f481ad62 Mon Sep 17 00:00:00 2001
+From 7db608873c5c67fe25430d657f960df7b00d399b Mon Sep 17 00:00:00 2001
 From: Ryan Chen <ryan_chen@aspeedtech.com>
 Date: Thu, 12 Jun 2025 15:23:35 +0800
 Subject: [PATCH 2702/2707] arm64: dts: aspeed: Add initial AST27xx SoC device
@@ -619,5 +619,5 @@ index 000000000000..4a584d475e69
 +	status = "okay";
 +};
 -- 
-2.52.0
+2.53.0-Meta
 

@@ -1,7 +1,7 @@
-From cea6d1dd852e05d715b737263f137356bd4e0daf Mon Sep 17 00:00:00 2001
+From b71e02767682e78d0532498774639f95a0ff0418 Mon Sep 17 00:00:00 2001
 From: Chin-Ting Kuo <chin-ting_kuo@aspeedtech.com>
 Date: Fri, 10 Oct 2025 16:03:15 +0800
-Subject: [PATCH 230/238] watchdog: aspeed: Add support for AST2700 platform
+Subject: [PATCH 229/237] watchdog: aspeed: Add support for AST2700 platform
 
 Add AST2700 platform support to the ASPEED watchdog driver. This includes
 a new per-platform configuration with SCU reset status register at
@@ -54,5 +54,5 @@ index d23e565f30a8..c9e79851504c 100644
  		u32 reg = readl(wdt->base + WDT_RESET_WIDTH);
  		int i;
 -- 
-2.52.0
+2.53.0-Meta
 

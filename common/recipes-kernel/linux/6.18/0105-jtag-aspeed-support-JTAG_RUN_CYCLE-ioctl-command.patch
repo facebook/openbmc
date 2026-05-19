@@ -1,4 +1,4 @@
-From 9666b5780cf2a80b61d48038ec71eeb36ebc498b Mon Sep 17 00:00:00 2001
+From 2b7dbb33442fe866dacc04d5d7212a57bd05e22c Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Tue, 14 Jul 2020 23:25:29 -0700
 Subject: [PATCH 105/112] jtag: aspeed: support JTAG_RUN_CYCLE ioctl command
@@ -111,5 +111,5 @@ index ff92223919a7..beba9d80ebe0 100644
  
  static int aspeed_jtag_probe(struct platform_device *pdev)
 -- 
-2.47.3
+2.53.0-Meta
 

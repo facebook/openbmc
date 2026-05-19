@@ -1,7 +1,7 @@
-From ccb683d5a6d5d672f2bab46b7e6b43bb816fec39 Mon Sep 17 00:00:00 2001
+From a4bb75793c408849a66b7362fe6359a5023c77d0 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Wed, 25 Feb 2026 15:19:35 +0800
-Subject: [PATCH 226/238] i3c: master: ast2600: Fix missing of_node for virtual
+Subject: [PATCH 225/237] i3c: master: ast2600: Fix missing of_node for virtual
  I2C adapter
 
 The ASPEED AST2600 I3C master driver creates a virtual I2C adapter to
@@ -30,5 +30,5 @@ index 0665773cd57d..8250da40a60b 100644
  }
  
 -- 
-2.52.0
+2.53.0-Meta
 

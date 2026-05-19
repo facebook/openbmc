@@ -1,4 +1,4 @@
-From 6fed128afb96d4d996138ab7da3629230d2a803f Mon Sep 17 00:00:00 2001
+From da0a547d5024bb129e1d7965d86704cf3a0f3d6e Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <kylehsieh1995@gmail.com>
 Date: Wed, 25 Mar 2026 10:05:23 +0800
 Subject: [PATCH 608/610] iio: adc: ltc2309: explicitly assign hex values to
@@ -65,5 +65,5 @@ index 5f0d947d0615..3f27ffc66668 100644
  
  #define LTC2309_CHAN(_chan, _addr) {				\
 -- 
-2.52.0
+2.53.0-Meta
 

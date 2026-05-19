@@ -1,7 +1,7 @@
-From b50fa092641df6dd4a785924bf74288ee2031126 Mon Sep 17 00:00:00 2001
+From 8644a24259db230945766885ff69026441bc58da Mon Sep 17 00:00:00 2001
 From: Zoey Chung <zoey_yj_chung@wiwynn.com>
 Date: Mon, 18 Aug 2025 18:20:47 +0800
-Subject: [PATCH 222/238] i3c: dw: Add err messages for ibi_fifo_clear handling
+Subject: [PATCH 221/237] i3c: dw: Add err messages for ibi_fifo_clear handling
 
 Description:
 - Add err messages and return code logging for `dw_i3c_master_enter_halt`,
@@ -82,5 +82,5 @@ index 54034be7be24..e690f3030d2f 100644
  	dw_i3c_master_exit_halt(master);
  }
 -- 
-2.52.0
+2.53.0-Meta
 

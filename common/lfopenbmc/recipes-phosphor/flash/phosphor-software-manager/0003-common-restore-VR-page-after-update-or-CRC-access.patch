@@ -1,4 +1,4 @@
-From f14c2b88a1c71d2446269f650dbc34629f151d1d Mon Sep 17 00:00:00 2001
+From 3a81e52366c96176a04c163a6dd92f77f9d06aad Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Wed, 8 Apr 2026 18:35:20 +0800
 Subject: [PATCH 3/3] common: restore VR page after update or CRC access
@@ -20,12 +20,15 @@ It works together with sensor read pause handling in [2].
 
 Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
 ---
- common/include/pmbus.hpp          | 28 +++++++++++++++++++++++
- common/meson.build                |  1 +
- common/src/pmbus.cpp              | 37 +++++++++++++++++++++++++++++++
- i2c-vr/i2cvr_software_manager.cpp |  3 +--
- i2c-vr/mps/mp297x.cpp             |  4 ++++
- 5 files changed, 71 insertions(+), 2 deletions(-)
+ common/include/pmbus.hpp | 28 ++++++++++++++++++++++++++++
+ common/meson.build       |  1 +
+ common/src/pmbus.cpp     | 37 +++++++++++++++++++++++++++++++++++++
+ i2c-vr/mps/mp297x.cpp    |  4 ++++
+ i2c-vr/mps/mp2x6xx.cpp   |  4 ++++
+ i2c-vr/mps/mp5998.cpp    |  4 ++++
+ i2c-vr/mps/mpq87xx.cpp   |  4 ++++
+ i2c-vr/mps/mpx9xx.cpp    |  4 ++++
+ 8 files changed, 86 insertions(+)
  create mode 100644 common/src/pmbus.cpp
 
 diff --git a/common/include/pmbus.hpp b/common/include/pmbus.hpp
@@ -72,7 +75,7 @@ index f241245..c885135 100644
 +    std::optional<uint8_t> originalPage;
 +};
 diff --git a/common/meson.build b/common/meson.build
-index 9d393e9..24a45c4 100644
+index afcf42b..7dc82b0 100644
 --- a/common/meson.build
 +++ b/common/meson.build
 @@ -27,6 +27,7 @@ software_common_lib = static_library(
@@ -126,20 +129,6 @@ index 0000000..47b1a8f
 +        }
 +    }
 +}
-diff --git a/i2c-vr/i2cvr_software_manager.cpp b/i2c-vr/i2cvr_software_manager.cpp
-index e8e411d..04b02a4 100644
---- a/i2c-vr/i2cvr_software_manager.cpp
-+++ b/i2c-vr/i2cvr_software_manager.cpp
-@@ -89,8 +89,7 @@ sdbusplus::async::task<bool> I2CVRSoftwareManager::initDevice(
- 
-     // Wait for PSUSensor to detect the activation signal so it can skip
-     // readings from this sensor while retrieving the CRC from this device.
--    co_await sdbusplus::async::sleep_for(ctx, std::chrono::milliseconds(1000));
--
-+    co_await sdbusplus::async::sleep_for(ctx, std::chrono::milliseconds(10000));
-     uint32_t sum;
-     if (!(co_await i2cDevice->getVersion(&sum)))
-     {
 diff --git a/i2c-vr/mps/mp297x.cpp b/i2c-vr/mps/mp297x.cpp
 index 87b20a5..1a1648c 100644
 --- a/i2c-vr/mps/mp297x.cpp
@@ -162,6 +151,94 @@ index 87b20a5..1a1648c 100644
      (void)force;
  
      auto groupedConfigData = getGroupedConfigData();
+diff --git a/i2c-vr/mps/mp2x6xx.cpp b/i2c-vr/mps/mp2x6xx.cpp
+index 4d53b40..96e5de2 100644
+--- a/i2c-vr/mps/mp2x6xx.cpp
++++ b/i2c-vr/mps/mp2x6xx.cpp
+@@ -347,6 +347,8 @@ sdbusplus::async::task<bool> MP2X6XX::getCRC(uint32_t* checksum)
+     std::vector<uint8_t> tbuf;
+     std::vector<uint8_t> rbuf;
+ 
++    PageGuard guard(i2cInterface);
++
+     tbuf = buildByteVector(PMBusCmd::page, MPSPage::page0);
+     if (!i2cInterface.sendReceive(tbuf, rbuf))
+     {
+@@ -401,6 +403,8 @@ sdbusplus::async::task<bool> MP2X6XX::updateFirmware(bool force)
+ {
+     (void)force;
+ 
++    PageGuard guard(i2cInterface);
++
+     if (!co_await checkId(PMBusCmd::mfrId, configuration->vendorId))
+     {
+         co_return false;
+diff --git a/i2c-vr/mps/mp5998.cpp b/i2c-vr/mps/mp5998.cpp
+index 5e189e7..3cc458b 100644
+--- a/i2c-vr/mps/mp5998.cpp
++++ b/i2c-vr/mps/mp5998.cpp
+@@ -310,6 +310,8 @@ sdbusplus::async::task<bool> MP5998::getCRC(uint32_t* checksum)
+     std::vector<uint8_t> tbuf;
+     std::vector<uint8_t> rbuf;
+ 
++    PageGuard guard(i2cInterface);
++
+     tbuf = buildByteVector(PMBusCmd::page, MPSPage::page0);
+     if (!i2cInterface.sendReceive(tbuf, rbuf))
+     {
+@@ -407,6 +409,8 @@ sdbusplus::async::task<bool> MP5998::updateFirmware(bool force)
+ {
+     (void)force;
+ 
++    PageGuard guard(i2cInterface);
++
+     if (!co_await checkId(PMBusCmd::mfrId, configuration->vendorId))
+     {
+         co_return false;
+diff --git a/i2c-vr/mps/mpq87xx.cpp b/i2c-vr/mps/mpq87xx.cpp
+index a1c27ef..210a34f 100644
+--- a/i2c-vr/mps/mpq87xx.cpp
++++ b/i2c-vr/mps/mpq87xx.cpp
+@@ -231,6 +231,8 @@ sdbusplus::async::task<bool> MPQ87XX::getCRC(uint32_t* checksum)
+     std::vector<uint8_t> tbuf;
+     std::vector<uint8_t> rbuf;
+ 
++    PageGuard guard(i2cInterface);
++
+     tbuf = buildByteVector(PMBusCmd::page, MPSPage::page0);
+     if (!i2cInterface.sendReceive(tbuf, rbuf))
+     {
+@@ -260,6 +262,8 @@ sdbusplus::async::task<bool> MPQ87XX::updateFirmware(bool force)
+ {
+     (void)force;
+ 
++    PageGuard guard(i2cInterface);
++
+     auto groupedConfigData = getGroupedConfigData();
+     static constexpr size_t maxRetryCount = 2;
+ 
+diff --git a/i2c-vr/mps/mpx9xx.cpp b/i2c-vr/mps/mpx9xx.cpp
+index 2dabada..c2a1337 100644
+--- a/i2c-vr/mps/mpx9xx.cpp
++++ b/i2c-vr/mps/mpx9xx.cpp
+@@ -401,6 +401,8 @@ sdbusplus::async::task<bool> MPX9XX::getCRC(uint32_t* checksum)
+     std::vector<uint8_t> tbuf;
+     std::vector<uint8_t> rbuf;
+ 
++    PageGuard guard(i2cInterface);
++
+     tbuf = buildByteVector(PMBusCmd::page, MPSPage::page0);
+     if (!i2cInterface.sendReceive(tbuf, rbuf))
+     {
+@@ -510,6 +512,8 @@ sdbusplus::async::task<bool> MPX9XX::updateFirmware(bool force)
+         co_return false;
+     }
+ 
++    PageGuard guard(i2cInterface);
++
+     if (!co_await checkId(MPX9XXCmd::vendorId, configuration->vendorId))
+     {
+         co_return false;
 -- 
-2.52.0
+2.54.0
 

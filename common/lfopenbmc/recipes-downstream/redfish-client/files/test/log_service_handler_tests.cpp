@@ -3,6 +3,7 @@
 #include <redfish_client/core/unhandled_mapper.hpp>
 #include <redfish_client/core/cper_mapper.hpp>
 #include <redfish_client/core/hgx_ps_run_pwr_fault_mapper.hpp>
+#include <redfish_client/core/hgx_thermal_mapper.hpp>
 
 #include <nlohmann/json.hpp>
 #include <sdbusplus/server.hpp>
@@ -164,6 +165,7 @@ class LogServiceHandlerTest : public ::testing::Test
     {
         auto& registry = core::LogEntryMapperRegistry::instance();
         registry.registerMapper(std::make_unique<HgxPsRunPwrFaultMapper>(), 110);
+        registry.registerMapper(std::make_unique<HgxThermalMapper>(), 105);
         registry.registerMapper(std::make_unique<CperMapper>(), 100);
         registry.registerMapper(std::make_unique<UnhandledMapper>(), 0);
         logManager.start();
@@ -766,6 +768,81 @@ TEST_F(LogServiceHandlerTest, PsRunPwrFaultInsufficientMessageArgsTest)
     Log log = (*logManager.logs)[0];
     EXPECT_EQ(LoggingLevel::Critical, log.severity);
     EXPECT_EQ("com.meta.RedfishClient.UnexpectedException"s, log.message);
+}
+
+static constexpr const char* kThermalEntryCollectionJson = R"(
+{
+    "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries",
+    "@odata.type": "#LogEntryCollection.LogEntryCollection",
+    "Members@odata.count": 2,
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries/1863",
+            "@odata.type": "#LogEntry.v1_15_0.LogEntry",
+            "Id": "1863",
+            "Created": "2025-01-01T12:00:00+00:00",
+            "EntryType": "Event",
+            "MessageId": "ResourceEvent.1.0.ResourceErrorsDetected",
+            "MessageArgs": ["GPU_2 THERM_WARN_INT", "Abnormal State Change"],
+            "Severity": "Warning",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/Processors/GPU_2"
+                }
+            }
+        },
+        {
+            "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries/5023",
+            "@odata.type": "#LogEntry.v1_15_0.LogEntry",
+            "Id": "5023",
+            "Created": "2025-01-01T12:00:00+00:00",
+            "EntryType": "Event",
+            "MessageId": "ResourceEvent.1.0.ResourceErrorsDetected",
+            "MessageArgs": ["GPU_SXM_8 ThrottleReason", "HWThermalSlowdown"],
+            "Severity": "Critical",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/Processors/GPU_SXM_8"
+                }
+            }
+        }
+    ]
+}
+)";
+
+TEST_F(LogServiceHandlerTest, HgxThermalMapperTest)
+{
+    sdbusplus::async::context ctx;
+    auto logServiceHandler =
+        std::make_shared<LogServiceHandler>(ctx, "fake.url", std::nullopt);
+
+    auto logEntryCollection =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            kThermalEntryCollectionJson);
+
+    using namespace std::string_literals;
+
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+      co_await logServiceHandler->commit(logEntryCollection);
+    }());
+
+    ASSERT_EQ(2, logManager.logs->size());
+
+    // Verify the first entry: Warning
+    Log log1 = (*logManager.logs)[0];
+    EXPECT_EQ(LoggingLevel::Error, log1.severity);
+    EXPECT_EQ("xyz.openbmc_project.State.Thermal.DeviceOverOperatingTemperature"s,
+              log1.message);
+    EXPECT_EQ("/redfish/v1/Systems/HGX_Baseboard_0/Processors/GPU_2",
+              log1.additionalData["DEVICE"]);
+
+    // Verify the second entry: Critical
+    Log log2 = (*logManager.logs)[1];
+    EXPECT_EQ(LoggingLevel::Critical, log2.severity);
+    EXPECT_EQ("xyz.openbmc_project.State.Thermal.DeviceOverOperatingTemperatureFault"s,
+              log2.message);
+    EXPECT_EQ("/redfish/v1/Systems/HGX_Baseboard_0/Processors/GPU_SXM_8",
+              log2.additionalData["DEVICE"]);
 }
 
 } // namespace redfish_client::core

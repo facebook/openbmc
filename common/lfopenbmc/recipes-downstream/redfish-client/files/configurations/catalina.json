@@ -1,7 +1,7 @@
 {
   "host": "172.31.13.251",
   "compatible": "com.meta.Hardware.BMC.Model.Catalina",
-  "components": ["grace_cpu", "blackwell_gpu", "hgx_power_supply"],
+  "components": ["grace_cpu", "blackwell_gpu", "hgx_power_supply", "hgx_thermal"],
   "sensorConfig": {
     "associationPath": "/xyz/openbmc_project/inventory/system/board/NVIDIA_HMC",
     "intervalMilliseconds": 2000,

@@ -1,0 +1,32 @@
+From 904c33d228da90a380a45ab9e72945d2c59dcc6c Mon Sep 17 00:00:00 2001
+From: Cosmo Chou <cosmo.chou@quantatw.com>
+Date: Tue, 19 May 2026 18:40:58 +0800
+Subject: [PATCH] boards: ast2700_evb: bootmcu: disable PCIe EHCI and PCIe xHCI
+
+Disable PCIe EHCI / PCIe xHCI by defalut.
+
+Signed-off-by: Cosmo Chou <cosmo.chou@quantatw.com>
+---
+ boards/aspeed/ast2700_evb/ast2700_evb_ast2700_bootmcu.dts | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/boards/aspeed/ast2700_evb/ast2700_evb_ast2700_bootmcu.dts b/boards/aspeed/ast2700_evb/ast2700_evb_ast2700_bootmcu.dts
+index 56fb17a6..171900c9 100644
+--- a/boards/aspeed/ast2700_evb/ast2700_evb_ast2700_bootmcu.dts
++++ b/boards/aspeed/ast2700_evb/ast2700_evb_ast2700_bootmcu.dts
+@@ -304,8 +304,12 @@
+ 
+ &pcie0 {
+ 	/delete-property/ bmc-device;
++	/delete-property/ ehci;
++	/delete-property/ xhci;
+ };
+ 
+ &pcie1 {
+ 	/delete-property/ bmc-device;
++	/delete-property/ ehci;
++	/delete-property/ xhci;
+ };
+-- 
+2.53.0
+

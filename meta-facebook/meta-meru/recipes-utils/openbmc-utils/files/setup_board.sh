@@ -27,6 +27,11 @@ if [ ! -e "$SMB_EEPROM_SYSFS" ]; then
     exit 0
 fi
 
+if [ -f "/sys/bus/i2c/drivers/at24/9-0053/eeprom" ]; then
+    echo "Found chassis EEPROM at 0x53, adjusting eeprom.json"
+    sed -i '/"name" : "chassis_eeprom"/ {N; s/9-0052/9-0053/}' /etc/weutil/eeprom.json
+fi
+
 product=$($WEUTIL_CMD smb 2>&1 | awk -F': ' '/Product Name:/ {print $2}')
 
 if [ "${product^^}" != "MERU800BFA" ]; then

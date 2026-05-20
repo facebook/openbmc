@@ -174,6 +174,12 @@ wedge_power_asic() {
             echo "$power_state" > "$ASIC_0_ASIC_PCIE_RESET_SYSFS"
             echo "$power_state" > "$ASIC_1_ASIC_PCIE_RESET_SYSFS"
             ;;
+        SAINTPAUL)
+            echo "$power_state" > "$ASIC_0_ASIC_PCIE_RESET_SYSFS"
+            echo "$power_state" > "$ASIC_0_ASIC_SYS_RESET_SYSFS"
+            echo "$power_state" > "$ASIC_1_ASIC_PCIE_RESET_SYSFS"
+            echo "$power_state" > "$ASIC_1_ASIC_SYS_RESET_SYSFS"
+            ;;
         ICECUBE800BANW)
             echo "$power_state" > "$ASIC_0_ASIC_PCIE_RESET_SYSFS"
             echo "$power_state" > "$ASIC_0_ASIC_SYS_RESET_SYSFS"
@@ -529,7 +535,7 @@ maybe_fix_dmi_config() {
    fi
 
    product=$(awk -F': ' '/Product Name:/ {print $2}' "$TEMP_WEUTIL_OUTPUT")
-   if ! [[ "${product^^}" =~ "MERU" ]] && ! [[ "${product^^}" =~ "BLACKWOLF" ]] && ! [[ "${product^^}" =~ "ICECUBE" ]] && ! [[ "${product^^}" =~ "GLA" ]]; then
+   if ! [[ "${product^^}" =~ "MERU" ]] && ! [[ "${product^^}" =~ "BLACKWOLF" ]] && ! [[ "${product^^}" =~ "ICECUBE" ]] && ! [[ "${product^^}" =~ "SAINTPAUL" ]] && ! [[ "${product^^}" =~ "GLA" ]]; then
       echo "Not fixing aboot_conf DMI_BOARD_NAME as weutil product is not valid"
       return
    fi

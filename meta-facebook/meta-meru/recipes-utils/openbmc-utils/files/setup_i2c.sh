@@ -79,6 +79,12 @@ i2c_device_add 0 0x50 24c512 # BMC EEPROM
 i2c_device_add 9 0x50 24c512 # SCM EEPROM
 i2c_device_add 9 0x23 smbcpld # SMBCPLD
 i2c_device_add 9 0x52 24c512 # SMB EEPROM
+
+# CHASSIS_EEPROM
+if i2cget -y 9 0x53 0x0 &>/dev/null; then
+   i2c_device_add 9 0x53 24c512
+fi
+
 i2c_device_add 12 0x43 pwrcpld
 
 # Wait for the SMB EEPROM and CPLD drivers to load

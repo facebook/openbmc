@@ -12,14 +12,68 @@ Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
 Reviewed-by: David Lechner <dlechner@baylibre.com>
 Signed-off-by: Jonathan Cameron <Jonathan.Cameron@huawei.com>
 ---
- drivers/iio/adc/aspeed_adc.c | 34 ++++++++++++++++++++++++++++++++++
- 1 file changed, 34 insertions(+)
+ arch/arm/boot/dts/aspeed/aspeed-g5.dtsi |  1 +
+ arch/arm/boot/dts/aspeed/aspeed-g6.dtsi |  2 ++
+ drivers/iio/adc/aspeed_adc.c            | 43 ++++++++++++++++++++-----
+ 3 files changed, 38 insertions(+), 8 deletions(-)
 
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-g5.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g5.dtsi
+index 6e61ba53c..6b5044ffd 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-g5.dtsi
++++ b/arch/arm/boot/dts/aspeed/aspeed-g5.dtsi
+@@ -306,6 +306,7 @@ adc: adc@1e6e9000 {
+ 				clocks = <&syscon ASPEED_CLK_APB>;
+ 				resets = <&syscon ASPEED_RESET_ADC>;
+ 				#io-channel-cells = <1>;
++				aspeed,scu = <&syscon>;
+ 				status = "disabled";
+ 			};
+ 
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
+index ed6a2824d..f92f88a13 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
++++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
+@@ -447,6 +447,7 @@ adc0: adc@1e6e9000 {
+ 				resets = <&syscon ASPEED_RESET_ADC>;
+ 				interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>;
+ 				#io-channel-cells = <1>;
++				aspeed,scu = <&syscon>;
+ 				status = "disabled";
+ 			};
+ 
+@@ -457,6 +458,7 @@ adc1: adc@1e6e9100 {
+ 				resets = <&syscon ASPEED_RESET_ADC>;
+ 				interrupts = <GIC_SPI 46 IRQ_TYPE_LEVEL_HIGH>;
+ 				#io-channel-cells = <1>;
++				aspeed,scu = <&syscon>;
+ 				status = "disabled";
+ 			};
+ 
 diff --git a/drivers/iio/adc/aspeed_adc.c b/drivers/iio/adc/aspeed_adc.c
 index 8ab29948214a..9df6e7f68f19 100644
 --- a/drivers/iio/adc/aspeed_adc.c
 +++ b/drivers/iio/adc/aspeed_adc.c
-@@ -646,6 +646,16 @@ static const struct aspeed_adc_trim_locate ast2600_adc1_trim = {
+@@ -174,18 +174,11 @@ static const struct iio_chan_spec aspeed_adc_iio_bat_channels[] = {
+ 
+ static int aspeed_adc_set_trim_data(struct iio_dev *indio_dev)
+ {
+-	struct device_node *syscon;
+ 	struct regmap *scu;
+ 	u32 scu_otp, trimming_val;
+ 	struct aspeed_adc_data *data = iio_priv(indio_dev);
+ 
+-	syscon = of_find_node_by_name(NULL, "syscon");
+-	if (syscon == NULL) {
+-		dev_warn(data->dev, "Couldn't find syscon node\n");
+-		return -EOPNOTSUPP;
+-	}
+-	scu = syscon_node_to_regmap(syscon);
+-	of_node_put(syscon);
++	scu = syscon_regmap_lookup_by_phandle(data->dev->of_node, "aspeed,scu");
+ 	if (IS_ERR(scu)) {
+ 		dev_warn(data->dev, "Failed to get syscon regmap\n");
+ 		return -EOPNOTSUPP;
+@@ -646,6 +639,16 @@ static const struct aspeed_adc_trim_locate ast2600_adc1_trim = {
  	.field = GENMASK(7, 4),
  };
  
@@ -36,7 +90,7 @@ index 8ab29948214a..9df6e7f68f19 100644
  static const struct aspeed_adc_model_data ast2400_model_data = {
  	.model_name = "ast2400-adc",
  	.vref_fixed_mv = 2500,
-@@ -690,11 +700,35 @@ static const struct aspeed_adc_model_data ast2600_adc1_model_data = {
+@@ -690,11 +693,35 @@ static const struct aspeed_adc_model_data ast2600_adc1_model_data = {
  	.trim_locate = &ast2600_adc1_trim,
  };
  

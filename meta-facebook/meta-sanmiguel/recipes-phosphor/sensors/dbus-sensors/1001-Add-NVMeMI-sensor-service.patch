@@ -1,7 +1,7 @@
-From 9cece6815297ef2ac9ac9d71023098c878574552 Mon Sep 17 00:00:00 2001
+From b584c2dd12be45005c1afc09b321511f0f1fe3ed Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Sat, 2 May 2026 22:46:03 +0800
-Subject: [PATCH 1001/1002] Add NVMeMI sensor service
+Subject: [PATCH 1/2] Add NVMeMI sensor service
 
 Add NVMeMI sensor service from Nvidia dbus-sensors repo.
 
@@ -37,12 +37,12 @@ Add NVMeMI sensor service from Nvidia dbus-sensors repo.
  create mode 100644 src/nvmemi/meson.build
 
 diff --git a/meson.options b/meson.options
-index c8a8d34..919e388 100644
+index 8553d5e..0718209 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -107,3 +107,9 @@ option(
+@@ -119,3 +119,9 @@ option(
      value: 'enabled',
-     description: 'Enable Cable monitor.',
+     description: 'Enable valve monitor.',
  )
 +option(
 +    'nvme-mi',
@@ -50,8 +50,9 @@ index c8a8d34..919e388 100644
 +    value: 'disabled',
 +    description: 'Enable NVMe-MI sensor.',
 +)
+\ No newline at end of file
 diff --git a/service_files/meson.build b/service_files/meson.build
-index 5b949a2..619391e 100644
+index 4a7c776..7576b73 100644
 --- a/service_files/meson.build
 +++ b/service_files/meson.build
 @@ -19,6 +19,7 @@ unit_files = [
@@ -61,7 +62,7 @@ index 5b949a2..619391e 100644
 +    ['nvme-mi', 'xyz.openbmc_project.nvmemisensor.service'],
      ['psu', 'xyz.openbmc_project.psusensor.service'],
      ['smbpbi', 'xyz.openbmc_project.smbpbisensor.service'],
- ]
+     ['valve-monitor', 'xyz.openbmc_project.valvemonitor.service'],
 diff --git a/service_files/xyz.openbmc_project.nvmemisensor.service b/service_files/xyz.openbmc_project.nvmemisensor.service
 new file mode 100644
 index 0000000..c3965ce
@@ -82,7 +83,7 @@ index 0000000..c3965ce
 +[Install]
 +WantedBy=multi-user.target
 diff --git a/src/meson.build b/src/meson.build
-index 9e6da9e..915bb45 100644
+index 3ecf709..f18b2de 100644
 --- a/src/meson.build
 +++ b/src/meson.build
 @@ -127,6 +127,7 @@ subdir('mctp')
@@ -2517,5 +2518,5 @@ index 0000000..ae181f5
 +)
 +
 -- 
-2.52.0
+2.47.1
 

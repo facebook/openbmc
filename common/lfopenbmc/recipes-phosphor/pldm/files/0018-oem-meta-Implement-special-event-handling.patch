@@ -1,79 +1,63 @@
-From cfd3327ec2052e7db7908256310221d64906b173 Mon Sep 17 00:00:00 2001
-From: Sora Su <sora_su@wiwynn.com>
-Date: Thu, 2 Apr 2026 09:56:55 +0800
-Subject: [PATCH 18/23] oem-meta: Implement special event handling
+From e1cd833ac988b248021c03dad844b67b5f31e70b Mon Sep 17 00:00:00 2001
+From: Eric Yang <eric.yang.wiwynn@gmail.com>
+Date: Thu, 21 May 2026 07:03:10 +0000
+Subject: [PATCH] oem-meta: Implement special event handling
 
 Certain events must be recorded by directly invoking phosphor-logging.
-In particular, the CXL HB requires controlling the event severity
-based on its current state.
+In particular, the CXL HB requires controlling the event severity based
+on its current state.
 
-Tested: Verified on the Yosemite4 platform. All events were recorded
-correctly.
+Also preserve the specific event type name in FAILURE_DATA instead of
+hardcoding generic strings, so that different power rail faults
+(HSC_OCP, P12V_STBY_UV, POWER_ON_SEQUENCE_FAILURE, DIMM_PMIC_ERROR)
+and thermal faults (CPU_THERMAL_TRIP, FAST_PROCHOT) can be distinguished
+in the SEL entry.
+
+Tested:
+Verified on the Yosemite4 platform. All events were recorded correctly.
 
 Change-Id: I5bec004d181122ae7bac7aec347ea8692a5dc9fb
+Co-developed-by: Sora Su <sora_su@wiwynn.com>
 Signed-off-by: Sora Su <sora_su@wiwynn.com>
+Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
 ---
- .../file_io_type_event_log.cpp                | 85 +++++++++++++++++--
- 1 file changed, 80 insertions(+), 5 deletions(-)
+ .../file_io_type_event_log.cpp                | 70 +++++++++++++++++--
+ 1 file changed, 63 insertions(+), 7 deletions(-)
 
 diff --git a/oem/meta/libpldmresponder/file_io_type_event_log.cpp b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-index 600aa7a..35338ce 100644
+index 9414eddb..4a22c0c5 100644
 --- a/oem/meta/libpldmresponder/file_io_type_event_log.cpp
 +++ b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-@@ -726,6 +726,81 @@ static void rainbowFault(const message& eventData, const std::string&,
+@@ -627,7 +627,8 @@ static void thermalFault(const message& eventData, const std::string&,
+     auto device = "/xyz/openbmc_project/State/Thermal/host" + slotNum + "/cpu0";
+     EventAssert eventStatus = static_cast<EventAssert>(eventData[1]);
+ 
+-    record::thermalFault(device, eventStatus, "Thermal Trip");
++    record::thermalFault(device, eventStatus,
++                         std::string(eventList[eventData[0]]));
+ }
+ 
+ static void powerRailFault(const message& eventData, const std::string&,
+@@ -636,7 +637,8 @@ static void powerRailFault(const message& eventData, const std::string&,
+     auto device = "/xyz/openbmc_project/State/Power/host" + slotNum + "/power";
+     EventAssert eventStatus = static_cast<EventAssert>(eventData[1]);
+ 
+-    record::powerRailFault(device, eventStatus, "Power Rail Fault");
++    record::powerRailFault(device, eventStatus,
++                           std::string(eventList[eventData[0]]));
+ }
+ 
+ static void prochotSdSensor(const message& eventData, const std::string&,
+@@ -724,6 +726,60 @@ static void rainbowFault(const message& eventData, const std::string&,
      recordEventLog(updatedFault, eventStatus, eventData[3], eventData[4]);
  }
  
-+static void cxlEvent(const message& eventData, const std::string& event,
-+                     const std::string&)
++static void createEventLog(
++    const std::string& event,
++    sdbusplus::xyz::openbmc_project::Logging::server::Entry::Level severity)
 +{
-+    lg2::info("{INFO}", "INFO", event); // Create log in journal
++    lg2::info("{INFO}", "INFO", event);
 +    auto& bus = pldm::utils::DBusHandler::getBus();
-+    using EntrySeverity =
-+        sdbusplus::xyz::openbmc_project::Logging::server::Entry::Level;
-+
-+    static constexpr auto loggingService = "xyz.openbmc_project.Logging";
-+    static constexpr auto loggingPath = "/xyz/openbmc_project/logging";
-+    static constexpr auto loggingInterface =
-+        "xyz.openbmc_project.Logging.Create";
-+
-+    std::string severityStr;
-+    EventAssert eventStatus = static_cast<EventAssert>(eventData[1]);
-+    if (eventStatus == EventAssert::DEASSERTED)
-+    {
-+        severityStr =
-+            sdbusplus::xyz::openbmc_project::Logging::server::convertForMessage(
-+                EntrySeverity::Error);
-+    }
-+    else
-+    {
-+        severityStr =
-+            sdbusplus::xyz::openbmc_project::Logging::server::convertForMessage(
-+                EntrySeverity::Informational);
-+    }
-+
-+    try
-+    {
-+        auto method = bus.new_method_call(loggingService, loggingPath,
-+                                          loggingInterface, "Create");
-+
-+        std::map<std::string, std::string> addlData{};
-+        method.append(event.c_str(), severityStr, addlData);
-+        bus.call_noreply(method, dbusTimeout);
-+    }
-+    catch (const std::exception& e)
-+    {
-+        lg2::error("Failed to create info-level D-Bus log: {ERR}", "ERR", e);
-+    }
-+}
-+
-+static void platformEvent([[maybe_unused]] const message& eventData,
-+                          const std::string& event, const std::string&)
-+{
-+    lg2::info("{INFO}", "INFO", event); // Create log in journal
-+    auto& bus = pldm::utils::DBusHandler::getBus();
-+    using EntrySeverity =
-+        sdbusplus::xyz::openbmc_project::Logging::server::Entry::Level;
 +
 +    static constexpr auto loggingService = "xyz.openbmc_project.Logging";
 +    static constexpr auto loggingPath = "/xyz/openbmc_project/logging";
@@ -82,7 +66,7 @@ index 600aa7a..35338ce 100644
 +
 +    auto severityStr =
 +        sdbusplus::xyz::openbmc_project::Logging::server::convertForMessage(
-+            EntrySeverity::Informational);
++            severity);
 +
 +    try
 +    {
@@ -95,14 +79,37 @@ index 600aa7a..35338ce 100644
 +    }
 +    catch (const std::exception& e)
 +    {
-+        lg2::error("Failed to create info-level D-Bus log: {ERR}", "ERR", e);
++        lg2::error("Failed to create D-Bus event log: {ERR}", "ERR", e);
 +    }
++}
++
++static void cxlEvent(const message& eventData, const std::string& event,
++                     const std::string&)
++{
++    using EntrySeverity =
++        sdbusplus::xyz::openbmc_project::Logging::server::Entry::Level;
++
++    EventAssert eventStatus = static_cast<EventAssert>(eventData[1]);
++    auto severity = (eventStatus == EventAssert::DEASSERTED)
++                        ? EntrySeverity::Error
++                        : EntrySeverity::Informational;
++
++    createEventLog(event, severity);
++}
++
++static void platformEvent(const message&, const std::string& event,
++                          const std::string&)
++{
++    using EntrySeverity =
++        sdbusplus::xyz::openbmc_project::Logging::server::Entry::Level;
++
++    createEventLog(event, EntrySeverity::Informational);
 +}
 +
  static void reportError(const message&, const std::string& event,
                          const std::string&)
  {
-@@ -788,11 +863,11 @@ static const std::map<EventType, EventDescriptor> eventHandlers = {
+@@ -786,11 +842,11 @@ static const std::map<EventType, EventDescriptor> eventHandlers = {
      {EventType::POWER_ON_SEQUENCE_FAILURE, {report::powerRailFault, nullptr}},
      {EventType::DIMM_PMIC_ERROR,
       {report::powerRailFault, format::dimmPmicError}},
@@ -120,5 +127,5 @@ index 600aa7a..35338ce 100644
       {report::prochotSdSensor, nullptr}},
      {EventType::MTIA_FAULT, {report::mtiaFault, nullptr}},
 -- 
-2.52.0
+2.43.0
 

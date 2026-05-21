@@ -1104,8 +1104,6 @@ PAL_SENSOR_MAP dvt_nic_sensor_map[] = {
   {"NIC_SENSOR_TEMP_C", NIC, read_nic_temp, true, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [NIC_SENSOR_P12V] =
   {"NIC_SENSOR_P12V_VOLT_V", ADC128_IN6, read_voltage_nic, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
-  [NIC_SENSOR_CUR] =
-  {"NIC_SENSOR_CURR_A", ADC128_IN7, read_voltage_nic, false, {1.837, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [NIC_PMON_VOLT_V] =
   {"NIC_PMON_VOLT_V", NIC_PMON_VOLT , read_nic_pmon, false, {13.42, 0, 0, 10.98, 0, 0, 0, 0}, VOLT},
   [NIC_PMON_CURR_A] =
@@ -1119,8 +1117,6 @@ PAL_SENSOR_MAP dvt_2nd_nic_sensor_map[] = {
   {"NIC_SENSOR_TEMP_C", NIC, read_nic_temp, true, {95, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [NIC_SENSOR_P12V] =
   {"NIC_SENSOR_P12V_VOLT_V", ADC128_IN6, read_voltage_nic, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
-  [NIC_SENSOR_CUR] =
-  {"NIC_SENSOR_CURR_A", ADC128_IN7, read_voltage_nic, false, {1.837, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [NIC_PMON_VOLT_V] =
   {"NIC_PMON_VOLT_V", NIC_PMON_VOLT , read_sq52205, false, {13.42, 0, 0, 10.98, 0, 0, 0, 0}, VOLT},
   [NIC_PMON_CURR_A] =
@@ -1821,7 +1817,6 @@ const uint8_t nic_sensor_list[] = {
 const uint8_t dvt_nic_sensor_list[] = {
   NIC_SENSOR_TEMP,
   NIC_SENSOR_P12V,
-  NIC_SENSOR_CUR,
   NIC_PMON_VOLT_V,
   NIC_PMON_CURR_A,
   NIC_PMON_PWR_W,

@@ -148,6 +148,7 @@ if [ "$mb_product" != "GTA" ]; then
   SWB_2ND_SOURCE="1"
   SWB_3RD_SOURCE="2"
   SWB_4TH_SOURCE="3"
+  SWB_5TH_SOURCE="4"
 
   # BIC I/O Expander PCA9539 0xEC BIC
   i2c_device_add 32 0x76 pca9539
@@ -299,6 +300,9 @@ if [ "$mb_product" != "GTA" ]; then
           kv set swb_nic_vendor "Broadcom"
         elif [ "$val" -eq 4 ]; then
           kv set swb_nic_source "$SWB_4TH_SOURCE"
+          kv set swb_nic_vendor "AMD"
+        elif [ "$val" -eq 5 ]; then
+          kv set swb_nic_source "$SWB_5TH_SOURCE"
           kv set swb_nic_vendor "AMD"
         fi
         break

@@ -163,6 +163,7 @@ check_swb_nic_source()
   readonly NIC_MLX_OPTIC=1
   readonly NIC_BRCM_OPTIC=2
   readonly NIC_AMD_OPTIC=3
+  readonly NIC_AMD_800G_OPTIC=4
 
   nic_source=$(kv get swb_nic_source)
   expr_file=$(awk -F': ' '/"expr_file"/ {gsub(/[",]/, "", $2); print $2}' $DEFAULT_FSC_CONFIG)
@@ -194,7 +195,8 @@ check_swb_nic_source()
 
    if [ "$nic_source" == $NIC_MLX_OPTIC ]  ||
       [ "$nic_source" == $NIC_BRCM_OPTIC ] ||
-      [ "$nic_source" == $NIC_AMD_OPTIC ]; then
+      [ "$nic_source" == $NIC_AMD_OPTIC ] ||
+      [ "$nic_source" == $NIC_AMD_800G_OPTIC ]; then
      sed -i '/swb_tray_switch_linear(/i \
   swb_tray_nic_optic_linear(\
     max([\

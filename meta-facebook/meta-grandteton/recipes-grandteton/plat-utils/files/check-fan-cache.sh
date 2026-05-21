@@ -27,16 +27,15 @@ check_swb_nic_source()
    readonly NIC_MLX=0
    readonly NIC_MLX_OPTIC=1
    readonly NIC_BRCM_OPTIC=2
+   readonly NIC_AMD_OPTIC=3
+   readonly NIC_AMD_800G_OPTIC=4
 
    nic_source=$(kv get swb_nic_source)
-   # default
-   if [ -n "$nic_source" ]; then
-     kv set swb_nic_source "$SWB_1ST_SOURCE"
-     kv set swb_nic_vendor "Mellanox "
-   fi
 
-   if [ "$nic_source" == $NIC_MLX_OPTIC ] ||
-      [ "$nic_source" == $NIC_BRCM_OPTIC ]; then
+   if [ "$nic_source" == $NIC_MLX_OPTIC  ] ||
+      [ "$nic_source" == $NIC_BRCM_OPTIC ] ||
+      [ "$nic_source" == $NIC_AMD_OPTIC  ] ||
+      [ "$nic_source" == $NIC_AMD_800G_OPTIC ]; then
 
     expr_file=$(awk -F': ' '/"expr_file"/ {gsub(/[",]/, "", $2); print $2}' $default_fsc_config)
       sed -i '/swb_tray_nic_linear(/i \

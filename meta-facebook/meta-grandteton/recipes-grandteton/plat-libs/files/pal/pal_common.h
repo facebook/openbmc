@@ -9,6 +9,7 @@ enum {
   THIRD_SOURCE = 2,
   FOURTH_SOURCE = 3,
   DISCRETE_SOURCE = 3,
+  FIFTH_SOURCE =  4,
 };
 
 enum {

@@ -1,4 +1,4 @@
-From d4a9963fdde84eea84d1e0a0f6dab29b0f388704 Mon Sep 17 00:00:00 2001
+From 963a0f8d035293d4c8f1f307df224fd1b02a5444 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
 Subject: [PATCH 05/23] platform-mc: Add option for discovering FRU data
@@ -52,10 +52,10 @@ index 4c8234f..2555022 100644
  option(
      'fw-update-pkg-inotify',
 diff --git a/platform-mc/platform_manager.cpp b/platform-mc/platform_manager.cpp
-index 9d9338c..3f999fc 100644
+index b6c9d81..27c8e01 100644
 --- a/platform-mc/platform_manager.cpp
 +++ b/platform-mc/platform_manager.cpp
-@@ -671,6 +671,7 @@ exec::task<int> PlatformManager::eventMessageSupported(
+@@ -678,6 +678,7 @@ exec::task<int> PlatformManager::eventMessageSupported(
  exec::task<int> PlatformManager::getFRURecordTableMetadata(pldm_tid_t tid,
                                                             uint16_t* total)
  {
@@ -63,7 +63,7 @@ index 9d9338c..3f999fc 100644
      Request request(
          sizeof(pldm_msg_hdr) + PLDM_GET_FRU_RECORD_TABLE_METADATA_REQ_BYTES);
      auto requestMsg = new (request.data()) pldm_msg;
-@@ -733,6 +734,11 @@ exec::task<int> PlatformManager::getFRURecordTableMetadata(pldm_tid_t tid,
+@@ -740,6 +741,11 @@ exec::task<int> PlatformManager::getFRURecordTableMetadata(pldm_tid_t tid,
      }
  
      co_return rc;
@@ -75,7 +75,7 @@ index 9d9338c..3f999fc 100644
  }
  
  exec::task<int> PlatformManager::getFRURecordTable(
-@@ -741,6 +747,7 @@ exec::task<int> PlatformManager::getFRURecordTable(
+@@ -748,6 +754,7 @@ exec::task<int> PlatformManager::getFRURecordTable(
      uint8_t* transferFlag, size_t* responseCnt,
      std::vector<uint8_t>& recordData)
  {
@@ -83,7 +83,7 @@ index 9d9338c..3f999fc 100644
      Request request(sizeof(pldm_msg_hdr) + PLDM_GET_FRU_RECORD_TABLE_REQ_BYTES);
      auto requestMsg = new (request.data()) pldm_msg;
  
-@@ -798,11 +805,22 @@ exec::task<int> PlatformManager::getFRURecordTable(
+@@ -805,11 +812,22 @@ exec::task<int> PlatformManager::getFRURecordTable(
      }
  
      co_return rc;
@@ -106,7 +106,7 @@ index 9d9338c..3f999fc 100644
      if (tid == PLDM_TID_RESERVED || !termini.contains(tid) || !termini[tid])
      {
          lg2::error("Invalid terminus {TID}", "TID", tid);
-@@ -810,12 +828,19 @@ void PlatformManager::updateInventoryWithFru(
+@@ -817,12 +835,19 @@ void PlatformManager::updateInventoryWithFru(
      }
  
      termini[tid]->updateInventoryWithFru(fruData, fruLen);
@@ -126,7 +126,7 @@ index 9d9338c..3f999fc 100644
      if (!totalTableRecords)
      {
          lg2::info("Fru record table has 0 records");
-@@ -871,6 +896,12 @@ exec::task<int> PlatformManager::getFRURecordTables(
+@@ -878,6 +903,12 @@ exec::task<int> PlatformManager::getFRURecordTables(
      fruData = receivedFru;
  
      co_return PLDM_SUCCESS;

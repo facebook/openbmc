@@ -1,7 +1,7 @@
-From 26acfd3842e7d2252f790ad543baae211de94482 Mon Sep 17 00:00:00 2001
+From b8663bb01be984b25b8fe05c9b70542a0296fc6a Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Tue, 5 May 2026 20:34:03 +0800
-Subject: [PATCH 1/1] TODO: nvidia-gpu: add leak sensors
+Subject: [PATCH 1000/1002] TODO: nvidia-gpu: add leak sensors
 
 Add nvidia sma leak detector voltage sensors.
 
@@ -535,5 +535,5 @@ index b3b88c9..4a95f2c 100644
  )
  
 -- 
-2.47.1
+2.52.0
 

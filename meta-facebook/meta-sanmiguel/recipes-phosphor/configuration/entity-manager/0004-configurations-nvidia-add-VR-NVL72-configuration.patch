@@ -1,7 +1,7 @@
-From c87c00cba3ff19ee81497eeb6449c91fb903923a Mon Sep 17 00:00:00 2001
+From 3c960fdd744169489fd57702735523a78b16adef Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 5 Mar 2026 19:09:36 +0800
-Subject: [PATCH 4/9] configurations: nvidia: add VR NVL72 configuration
+Subject: [PATCH 04/12] configurations: nvidia: add VR NVL72 configuration
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -28,10 +28,10 @@ Signed-off-by: Potin Lai <potin.lai@quantatw.com>
  create mode 100644 configurations/nvidia/vr_nvl72.json
 
 diff --git a/configurations/meson.build b/configurations/meson.build
-index 4ef92e3..61083aa 100644
+index 3aaafe8..24ae711 100644
 --- a/configurations/meson.build
 +++ b/configurations/meson.build
-@@ -300,6 +300,7 @@ configs = [
+@@ -302,6 +302,7 @@ configs = [
      'nvidia/p3809-hmc.json',
      'nvidia/p4764-hmc.json',
      'nvidia/rtx6000_pro.json',

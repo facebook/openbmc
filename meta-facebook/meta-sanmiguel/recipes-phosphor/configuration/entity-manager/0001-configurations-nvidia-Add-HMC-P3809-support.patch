@@ -1,7 +1,7 @@
-From b174419ee7b4347c31d13992b8626a1f5cf4e5fc Mon Sep 17 00:00:00 2001
+From bc23698404e81ea805259fc675bc946243a25ad0 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Mon, 23 Feb 2026 10:31:58 +0800
-Subject: [PATCH 1/9] configurations: nvidia: Add HMC P3809 support
+Subject: [PATCH 01/12] configurations: nvidia: Add HMC P3809 support
 
 Add Nvidia HMC P3809 board support.
 
@@ -16,10 +16,10 @@ Change-Id: I2939dd98b8ffbe0a72102c14bccc2caef7c83c8c
  create mode 100644 configurations/nvidia/p3809-hmc.json
 
 diff --git a/configurations/meson.build b/configurations/meson.build
-index 81195a3..1e8f630 100644
+index b4286dd..5f166b0 100644
 --- a/configurations/meson.build
 +++ b/configurations/meson.build
-@@ -298,6 +298,7 @@ configs = [
+@@ -300,6 +300,7 @@ configs = [
      'nvidia/gb300.json',
      'nvidia/hmc.json',
      'nvidia/imgx_connectx8_supernic_switch.json',

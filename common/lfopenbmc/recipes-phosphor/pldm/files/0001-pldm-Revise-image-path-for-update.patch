@@ -1,4 +1,4 @@
-From 9546321813833bdece1ee705891f960f3b87c6aa Mon Sep 17 00:00:00 2001
+From c87d7db70ce7b5907808bc728daa16f6e118df85 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <delphine_cc_chiu@wiwynn.com>
 Date: Tue, 25 Jun 2024 14:51:37 +0800
 Subject: [PATCH 01/23] pldm: Revise image path for update
@@ -15,10 +15,10 @@ Upstream-Status: Pending
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/fw-update/watch.cpp b/fw-update/watch.cpp
-index cd2e571..59b11b1 100644
+index 9a42540..a67bc64 100644
 --- a/fw-update/watch.cpp
 +++ b/fw-update/watch.cpp
-@@ -22,7 +22,7 @@ Watch::Watch(sd_event* loop, std::function<int(std::string&)> imageCallback) :
+@@ -23,7 +23,7 @@ Watch::Watch(sd_event* loop,
      imageCallback(imageCallback)
  {
      // Check if IMAGE DIR exists.
@@ -27,7 +27,7 @@ index cd2e571..59b11b1 100644
      if (!fs::is_directory(imgDirPath))
      {
          fs::create_directories(imgDirPath);
-@@ -38,7 +38,7 @@ Watch::Watch(sd_event* loop, std::function<int(std::string&)> imageCallback) :
+@@ -39,7 +39,7 @@ Watch::Watch(sd_event* loop,
              "inotify_init1 failed, errno="s + std::strerror(error));
      }
  
@@ -36,7 +36,7 @@ index cd2e571..59b11b1 100644
      if (-1 == wd)
      {
          auto error = errno;
-@@ -91,7 +91,7 @@ int Watch::callback(sd_event_source* /* s */, int fd, uint32_t revents,
+@@ -92,7 +92,7 @@ int Watch::callback(sd_event_source* /* s */, int fd, uint32_t revents,
          auto event = reinterpret_cast<inotify_event*>(&buffer[offset]);
          if ((event->mask & IN_CLOSE_WRITE) && !(event->mask & IN_ISDIR))
          {

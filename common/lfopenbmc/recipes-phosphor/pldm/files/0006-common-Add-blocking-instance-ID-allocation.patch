@@ -1,4 +1,4 @@
-From 08ca49df59ecb35dc7f2246c972725709c4c2aa8 Mon Sep 17 00:00:00 2001
+From 765b7b39c745f9f6c36fa6732625d2e6a7872089 Mon Sep 17 00:00:00 2001
 From: Amithash Prasad <amithash@meta.com>
 Date: Wed, 21 May 2025 16:23:33 -0700
 Subject: [PATCH 06/23] common: Add blocking instance ID allocation
@@ -19,7 +19,7 @@ Signed-off-by: Amithash Prasad <amithash@meta.com>
  create mode 100644 test/instance_id_test.cpp
 
 diff --git a/common/instance_id.hpp b/common/instance_id.hpp
-index 33be4ce..86039c0 100644
+index 421bc7b..86039c0 100644
 --- a/common/instance_id.hpp
 +++ b/common/instance_id.hpp
 @@ -5,8 +5,11 @@
@@ -79,7 +79,7 @@ index 33be4ce..86039c0 100644
 -    std::expected<uint8_t, InstanceIdError> next(uint8_t tid)
 +    std::expected<uint8_t, InstanceIdError> next(uint8_t tid, uint32_t timeout = 3)
      {
--        uint8_t id;
+-        uint8_t id = 0;
 -        int rc = pldm_instance_id_alloc(pldmInstanceIdDb, tid, &id);
 -
 -        if (rc)

@@ -1,7 +1,8 @@
-From 42a7da7f2fb18f7313f19c2ae3d74549d3d657b9 Mon Sep 17 00:00:00 2001
+From 9ce83ab965ac2ca6bfe73eaeccb260ce71e8c0c8 Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Tue, 24 Mar 2026 18:08:32 +0800
-Subject: [PATCH 7/9] configurations: nvidia: vr_nvl72: add GPIO leak detector
+Subject: [PATCH 07/12] configurations: nvidia: vr_nvl72: add GPIO leak
+ detector
 
 Add GPIO leak detector configuration for SanMiguel platform.
 

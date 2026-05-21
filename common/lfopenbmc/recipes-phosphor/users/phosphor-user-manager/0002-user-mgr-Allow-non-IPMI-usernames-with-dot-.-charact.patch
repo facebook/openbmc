@@ -1,4 +1,4 @@
-From 6032312731831991f54e15854c6e7be4d65e9144 Mon Sep 17 00:00:00 2001
+From a8833f46c0c67dd91433896355799d7fe975e7f6 Mon Sep 17 00:00:00 2001
 From: Marco Kawajiri <kawajiri@meta.com>
 Date: Fri, 5 Apr 2024 07:54:27 -0700
 Subject: [PATCH 2/2] user-mgr: Allow non-IPMI usernames with dot '.' character
@@ -38,7 +38,7 @@ Signed-off-by: Marco Kawajiri <kawajiri@meta.com>
  2 files changed, 20 insertions(+), 4 deletions(-)
 
 diff --git a/test/user_mgr_test.cpp b/test/user_mgr_test.cpp
-index 8b6113e..5c40ead 100644
+index 9345ce5..2b24c1a 100644
 --- a/test/user_mgr_test.cpp
 +++ b/test/user_mgr_test.cpp
 @@ -980,12 +980,23 @@ TEST_F(UserMgrInTest,
@@ -66,10 +66,10 @@ index 8b6113e..5c40ead 100644
  
  TEST_F(UserMgrInTest, UserAddNotRootFailedWithInternalFailure)
 diff --git a/user_mgr.cpp b/user_mgr.cpp
-index e1a0ab4..731048b 100644
+index 7acaf2a..36bd9ed 100644
 --- a/user_mgr.cpp
 +++ b/user_mgr.cpp
-@@ -134,6 +134,11 @@ struct SystemUserInfo
+@@ -136,6 +136,11 @@ struct SystemUserInfo
      std::vector<char> buffer;
  };
  
@@ -81,7 +81,7 @@ index e1a0ab4..731048b 100644
  void checkAndThrowsForGroupChangeAllowed(const std::string& groupName)
  {
      bool allowed = false;
-@@ -315,8 +320,8 @@ void UserMgr::throwForUserExists(const std::string& userName)
+@@ -317,8 +322,8 @@ void UserMgr::throwForUserExists(const std::string& userName)
  void UserMgr::throwForUserNameConstraints(
      const std::string& userName, const std::vector<std::string>& groupNames)
  {
@@ -92,7 +92,7 @@ index e1a0ab4..731048b 100644
      {
          if (userName.length() > ipmiMaxUserNameLen)
          {
-@@ -338,8 +343,8 @@ void UserMgr::throwForUserNameConstraints(
+@@ -340,8 +345,8 @@ void UserMgr::throwForUserNameConstraints(
          elog<InvalidArgument>(Argument::ARGUMENT_NAME("User name"),
                                Argument::ARGUMENT_VALUE("Invalid length"));
      }
@@ -104,5 +104,5 @@ index e1a0ab4..731048b 100644
          lg2::error("Invalid username '{USERNAME}'", "USERNAME", userName);
          elog<InvalidArgument>(Argument::ARGUMENT_NAME("User name"),
 -- 
-2.47.3
+2.52.0
 

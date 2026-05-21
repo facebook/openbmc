@@ -1,7 +1,7 @@
-From da9798ca0ad03efc01462153714824552eb9dca4 Mon Sep 17 00:00:00 2001
+From 71d918f87218f28cadbc90971b7d48142688a4e1 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Fri, 6 Mar 2026 08:28:12 +0800
-Subject: [PATCH 2/9] configurations: nvidia: Rename hmc to p4764-hmc
+Subject: [PATCH 02/12] configurations: nvidia: Rename hmc to p4764-hmc
 
 A new HMC board (P3809) has been introduced. Rename hmc.json to
 p4764-hmc.json to distinguish the configuration file for the P4764 HMC
@@ -18,10 +18,10 @@ Change-Id: I8855b9adf482338416b1750c11feb0b8b0529043
  rename configurations/nvidia/{hmc.json => p4764-hmc.json} (100%)
 
 diff --git a/configurations/meson.build b/configurations/meson.build
-index 1e8f630..4ef92e3 100644
+index 5f166b0..3aaafe8 100644
 --- a/configurations/meson.build
 +++ b/configurations/meson.build
-@@ -296,9 +296,9 @@ configs = [
+@@ -298,9 +298,9 @@ configs = [
      'nvidia/cx8_mezzanine_module.json',
      'nvidia/gb200.json',
      'nvidia/gb300.json',

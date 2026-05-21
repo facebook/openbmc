@@ -1,7 +1,7 @@
-From 0b4c5f7bc62495c6eb171a0257ee6944fae86982 Mon Sep 17 00:00:00 2001
+From 279557693001430259d2dc7a230082836dd5869b Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Fri, 13 Feb 2026 18:21:43 +0530
-Subject: [PATCH 1/1] queued-boot-progress: update 49527530a5..0a5ef0dafc
+Subject: [PATCH 2/2] queued-boot-progress: update 49527530a5..0a5ef0dafc
 
 Sync queued-boot-progress related changes in Core-26.01-2_br [1] from Nvidia phosphor-host-postd repo.
 
@@ -1944,5 +1944,5 @@ index 0000000..4fe1ac7
 +    int libusbBellFd = -1;
 +};
 -- 
-2.47.1
+2.52.0
 

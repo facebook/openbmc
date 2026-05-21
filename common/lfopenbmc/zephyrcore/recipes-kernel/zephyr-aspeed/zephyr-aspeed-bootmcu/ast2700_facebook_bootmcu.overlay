@@ -1,0 +1,17 @@
+/*
+ * Copyright 2026-present Facebook. All Rights Reserved.
+ */
+
+&uart12 {
+	current-speed = <57600>;
+};
+
+&pcie0 {
+	/delete-property/ ehci;
+	/delete-property/ xhci;
+};
+
+&pcie1 {
+	/delete-property/ ehci;
+	/delete-property/ xhci;
+};

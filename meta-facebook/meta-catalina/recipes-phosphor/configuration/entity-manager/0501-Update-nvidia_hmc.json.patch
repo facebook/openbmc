@@ -1,16 +1,16 @@
-From d492074f46700a7ea472fd1a2feca315d9fed3d4 Mon Sep 17 00:00:00 2001
+From 33f02852d5a26cf185b521ffeb721e61e9e735ca Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
 Date: Thu, 31 Jul 2025 17:02:26 +0800
 Subject: [PATCH 501/503] Update nvidia_hmc.json
 
 ---
- configurations/nvidia/hmc.json | 330 +++++++++++++++++++++++++--------
+ configurations/nvidia/p4764-hmc.json | 330 +++++++++++++++++++++------
  1 file changed, 256 insertions(+), 74 deletions(-)
 
-diff --git a/configurations/nvidia/hmc.json b/configurations/nvidia/hmc.json
-index f1d2e52..c206016 100644
---- a/configurations/nvidia/hmc.json
-+++ b/configurations/nvidia/hmc.json
+diff --git a/configurations/nvidia/p4764-hmc.json b/configurations/nvidia/p4764-hmc.json
+index ea77195..9538e6f 100644
+--- a/configurations/nvidia/p4764-hmc.json
++++ b/configurations/nvidia/p4764-hmc.json
 @@ -23,20 +23,6 @@
              "PowerState": "On",
              "ReadOffset": 25,
@@ -576,5 +576,5 @@ index f1d2e52..c206016 100644
              ],
              "Type": "SmbpbiVirtualEeprom",
 -- 
-2.47.3
+2.52.0
 

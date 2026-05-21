@@ -1,7 +1,7 @@
-From 90da91f6313709aa071047b0a2077117bc2b2c9a Mon Sep 17 00:00:00 2001
+From 031e1c837a48811e3e4b07ca071da26b038d4730 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Fri, 6 Mar 2026 14:33:54 +0800
-Subject: [PATCH 03/12] configurations: nvidia: p3809-hmc: add SMBPBI sensors
+Subject: [PATCH 01/10] configurations: nvidia: p3809-hmc: add SMBPBI sensors
  for SanMiguel
 
 Add SMBPBI sensors for SanMiguel system.

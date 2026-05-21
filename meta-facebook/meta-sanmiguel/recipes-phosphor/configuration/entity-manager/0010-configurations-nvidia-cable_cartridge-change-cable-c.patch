@@ -1,7 +1,7 @@
-From e6db7b1d0bfa6fc19f5b001b2116fe84d7ce9462 Mon Sep 17 00:00:00 2001
+From ef6b6fe120d3fc143ac6880ce9900a920d63bf66 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 14 May 2026 08:28:07 +0800
-Subject: [PATCH 12/12] configurations: nvidia: cable_cartridge: change cable
+Subject: [PATCH 10/10] configurations: nvidia: cable_cartridge: change cable
  cartridge index mapping
 
 Changge cable cartridge index mapping to support VR200 related platfrom.

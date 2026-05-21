@@ -1,7 +1,7 @@
-From e5e4b37c0ef5a2619170568a0ce0c7f0be30187f Mon Sep 17 00:00:00 2001
+From e659cb4c7f40850e7fe8adb0a6408f080be09f6f Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Mon, 4 May 2026 16:37:45 +0800
-Subject: [PATCH 11/12] configurations: nvidia: cx9_mezzanine_module: add data
+Subject: [PATCH 09/10] configurations: nvidia: cx9_mezzanine_module: add data
  drive temp sensor
 
 Add NVMeMI sensor node to support data drive temperature monitoring.

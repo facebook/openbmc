@@ -1,4 +1,4 @@
-From 79bbf2d7d9e12b9cde15c92f776c77fcddd83b99 Mon Sep 17 00:00:00 2001
+From 5c8bce4f9757ddd0c8ad0fc65f05b7b0f63f7fce Mon Sep 17 00:00:00 2001
 From: Christopher Meis <christopher.meis@9elements.com>
 Date: Wed, 17 Sep 2025 09:07:06 +0200
 Subject: [PATCH 300/301] Multi-host/HW-inventory: add processor subtree
@@ -399,10 +399,10 @@ index 98795600..58a792cc 100644
          asyncResp,
          boost::urls::format("/redfish/v1/Systems/{}/Processors",
 diff --git a/redfish-core/lib/systems.hpp b/redfish-core/lib/systems.hpp
-index b1fa85ab..805342a9 100644
+index dbbe2a37..127af335 100644
 --- a/redfish-core/lib/systems.hpp
 +++ b/redfish-core/lib/systems.hpp
-@@ -3059,9 +3059,6 @@ inline void processComputerSystemGet(
+@@ -3055,9 +3055,6 @@ inline void processComputerSystemGet(
      {
          asyncResp->res.jsonValue["Bios"]["@odata.id"] =
              boost::urls::format("/redfish/v1/Systems/{}/Bios", systemName);
@@ -412,7 +412,7 @@ index b1fa85ab..805342a9 100644
          asyncResp->res.jsonValue["Memory"]["@odata.id"] =
              boost::urls::format("/redfish/v1/Systems/{}/Memory", systemName);
          asyncResp->res.jsonValue["Storage"]["@odata.id"] =
-@@ -3071,6 +3068,9 @@ inline void processComputerSystemGet(
+@@ -3067,6 +3064,9 @@ inline void processComputerSystemGet(
                                  systemName);
      }
  

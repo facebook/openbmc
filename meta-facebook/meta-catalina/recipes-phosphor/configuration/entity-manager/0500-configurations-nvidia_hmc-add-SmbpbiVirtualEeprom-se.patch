@@ -1,4 +1,4 @@
-From fbdb20b9c534a45541ac46b5ac3c1136fb37af2a Mon Sep 17 00:00:00 2001
+From 5a2d71a283734e124c4e0f22bdfee5fff3579538 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Tue, 20 Aug 2024 13:27:07 +0800
 Subject: [PATCH] configurations: nvidia_hmc: add SmbpbiVirtualEeprom sensors
@@ -8,13 +8,13 @@ Add SmbpbiVirtualEeprom sensors configs for Nvidia HMC.
 Signed-off-by: Potin Lai <potin.lai@quantatw.com>
 Change-Id: I99a3612b7bf5ffbae60a1af98dd702963728fc29
 ---
- configurations/nvidia/hmc.json | 824 +++++++++++++++++++++++++++++++++
+ configurations/nvidia/p4764-hmc.json | 824 +++++++++++++++++++++++++++
  1 file changed, 824 insertions(+)
 
-diff --git a/configurations/nvidia/hmc.json b/configurations/nvidia/hmc.json
-index f541408..f1d2e52 100644
---- a/configurations/nvidia/hmc.json
-+++ b/configurations/nvidia/hmc.json
+diff --git a/configurations/nvidia/p4764-hmc.json b/configurations/nvidia/p4764-hmc.json
+index f541408..ea77195 100644
+--- a/configurations/nvidia/p4764-hmc.json
++++ b/configurations/nvidia/p4764-hmc.json
 @@ -12,6 +12,830 @@
              "Name": "HMC",
              "Port": 80,
@@ -847,5 +847,5 @@ index f541408..f1d2e52 100644
      ],
      "Name": "NVIDIA HMC",
 -- 
-2.47.3
+2.52.0
 

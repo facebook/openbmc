@@ -1,7 +1,7 @@
-From c3f5e6d4973d0336b0439e5b157f86f7bba61082 Mon Sep 17 00:00:00 2001
+From 64aa72c03b193e6601ecc555cc9cde19563e127b Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 5 Mar 2026 19:07:57 +0800
-Subject: [PATCH 05/12] configurations: nvidia: add Clover CX9 module
+Subject: [PATCH 03/10] configurations: nvidia: add Clover CX9 module
  configuration
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8

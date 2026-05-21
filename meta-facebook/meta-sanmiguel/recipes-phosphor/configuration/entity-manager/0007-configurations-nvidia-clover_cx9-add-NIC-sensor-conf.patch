@@ -1,7 +1,7 @@
-From 5829f26ce8352ccfbc9ddc106d5213ce1e50a37a Mon Sep 17 00:00:00 2001
+From 0d0876baca8e87305b25fb8ee640f683d9fc410a Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 25 Mar 2026 20:05:24 +0800
-Subject: [PATCH 09/12] configurations: nvidia: clover_cx9: add NIC sensor
+Subject: [PATCH 07/10] configurations: nvidia: clover_cx9: add NIC sensor
  configs
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8

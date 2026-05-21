@@ -1,4 +1,4 @@
-From 708daa528fc1a00a8b86c341d0d1505e58dd0474 Mon Sep 17 00:00:00 2001
+From 562570d6a9500c451d88dde6c7c80eb4e56ad97e Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Tue, 7 Jan 2025 13:35:34 +0800
 Subject: [PATCH 236/237] iio: adc: aspeed: Disable the last channel by default
@@ -18,7 +18,7 @@ Change-Id: Ic7bf980bdbabf4cc749c1f2a1231aaf61ad54933
  1 file changed, 26 insertions(+), 16 deletions(-)
 
 diff --git a/drivers/iio/adc/aspeed_adc.c b/drivers/iio/adc/aspeed_adc.c
-index 9df6e7f68f19..d47e24206659 100644
+index 040045770276..0249658f694b 100644
 --- a/drivers/iio/adc/aspeed_adc.c
 +++ b/drivers/iio/adc/aspeed_adc.c
 @@ -72,6 +72,8 @@
@@ -30,7 +30,7 @@ index 9df6e7f68f19..d47e24206659 100644
  
  #define ASPEED_ADC_INIT_POLLING_TIME	500
  #define ASPEED_ADC_INIT_TIMEOUT		500000
-@@ -281,28 +283,31 @@ static int aspeed_adc_read_raw(struct iio_dev *indio_dev,
+@@ -274,28 +276,31 @@ static int aspeed_adc_read_raw(struct iio_dev *indio_dev,
  			       int *val, int *val2, long mask)
  {
  	struct aspeed_adc_data *data = iio_priv(indio_dev);
@@ -75,7 +75,7 @@ index 9df6e7f68f19..d47e24206659 100644
  			       data->base + ASPEED_REG_ENGINE_CONTROL);
  		} else
  			*val = readw(data->base + chan->address);
-@@ -613,9 +618,14 @@ static int aspeed_adc_probe(struct platform_device *pdev)
+@@ -606,9 +611,14 @@ static int aspeed_adc_probe(struct platform_device *pdev)
  
  	aspeed_adc_compensation(indio_dev);
  	/* Start all channels in normal mode. */

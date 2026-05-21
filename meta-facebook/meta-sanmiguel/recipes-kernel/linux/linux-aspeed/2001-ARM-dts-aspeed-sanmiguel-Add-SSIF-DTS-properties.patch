@@ -1,7 +1,8 @@
-From 3bff0a4d1bdc2b4af22c8b4c87e7392aa8867562 Mon Sep 17 00:00:00 2001
+From 6f69019a0c87487ba6eed2cbd2c9ef56d18a95e1 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 11 Mar 2026 13:20:57 +0800
-Subject: [PATCH 2/3] ARM: dts: aspeed: sanmiguel: Add SSIF DTS properties
+Subject: [PATCH 2001/2002] ARM: dts: aspeed: sanmiguel: Add SSIF DTS
+ properties
 
 Add SSIF-related DTS properties that are not yet supported upstream.
 
@@ -32,5 +33,5 @@ index 74c8c1772109..facc6be016eb 100644
  };
  
 -- 
-2.31.1
+2.53.0-Meta
 

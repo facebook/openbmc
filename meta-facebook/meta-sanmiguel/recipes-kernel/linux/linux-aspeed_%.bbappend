@@ -14,6 +14,6 @@ SRC_URI:append = " \
 
 
 SRC_URI:append = " \
-    file://2003-ARM-dts-aspeed-sanmiguel-Add-SSIF-DTS-properties.patch \
-    file://2004-ARM-dts-aspeed-sanmiguel-Add-CP2112-and-downstream-I.patch \
+    file://2001-ARM-dts-aspeed-sanmiguel-Add-SSIF-DTS-properties.patch \
+    file://2002-ARM-dts-aspeed-sanmiguel-Add-CP2112-and-downstream-I.patch \
     "

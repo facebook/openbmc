@@ -1,7 +1,7 @@
-From 18eebeeb41306e00a91c42296d3f505e2623524b Mon Sep 17 00:00:00 2001
+From e09317f39acaee83d589e617ab0f6eec1ae6f265 Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Wed, 5 Mar 2025 16:12:45 -0500
-Subject: [PATCH 1/2] CPER: add generic event for CPER errors
+Subject: [PATCH] CPER: add generic event for CPER errors
 
 We do not have a high-level design for CPER errors from libcper and/or
 SMCs, but these devices are able to create CPER events.  Define simple
@@ -156,5 +156,5 @@ index 0000000..3d37809
 +          message: A generic CPER fault has been detected on {Source}.
 +      errno: EIO
 -- 
-2.47.3
+2.53.0-Meta
 

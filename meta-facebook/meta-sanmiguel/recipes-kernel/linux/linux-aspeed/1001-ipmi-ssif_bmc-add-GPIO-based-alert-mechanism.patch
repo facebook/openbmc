@@ -1,7 +1,7 @@
-From 1f1eef333a64f8472d1967fb6863bc13546f32ca Mon Sep 17 00:00:00 2001
+From ffe344f07e75e150a4e8a72a97e83f99492060d2 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Wed, 2 Oct 2024 12:10:32 +0800
-Subject: [PATCH 1001/1015] ipmi: ssif_bmc: add GPIO-based alert mechanism
+Subject: [PATCH 1001/1007] ipmi: ssif_bmc: add GPIO-based alert mechanism
 
 Implement GPIO-based alert mechanism in the SSIF BMC driver to notify
 the host when a response is ready.
@@ -17,7 +17,7 @@ LORE: https://lore.kernel.org/all/20241022-ssif-alert-gpios-v2-2-c7dd6dd17a7e@gm
  1 file changed, 15 insertions(+)
 
 diff --git a/drivers/char/ipmi/ssif_bmc.c b/drivers/char/ipmi/ssif_bmc.c
-index e8460e966b83..b863f854ab17 100644
+index 7a52e3ea49ed..6e4d9e82aaf2 100644
 --- a/drivers/char/ipmi/ssif_bmc.c
 +++ b/drivers/char/ipmi/ssif_bmc.c
 @@ -17,6 +17,7 @@
@@ -46,7 +46,7 @@ index e8460e966b83..b863f854ab17 100644
  exit:
  	spin_unlock_irqrestore(&ssif_bmc->lock, flags);
  
-@@ -583,6 +588,9 @@ static void process_smbus_cmd(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
+@@ -584,6 +589,9 @@ static void process_smbus_cmd(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
  	memset(&ssif_bmc->part_buf.payload[0], 0, MAX_PAYLOAD_PER_TRANSACTION);
  
  	if (*val == SSIF_IPMI_SINGLEPART_WRITE || *val == SSIF_IPMI_MULTIPART_WRITE_START) {
@@ -56,7 +56,7 @@ index e8460e966b83..b863f854ab17 100644
  		/*
  		 * The response maybe not come in-time, causing host SSIF driver
  		 * to timeout and resend a new request. In such case check for
-@@ -639,6 +647,8 @@ static void on_read_requested_event(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
+@@ -640,6 +648,8 @@ static void on_read_requested_event(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
  	calculate_response_part_pec(&ssif_bmc->part_buf);
  	ssif_bmc->part_buf.index = 0;
  	*val = ssif_bmc->part_buf.length;
@@ -65,7 +65,7 @@ index e8460e966b83..b863f854ab17 100644
  }
  
  static void on_read_processed_event(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
-@@ -809,6 +819,11 @@ static int ssif_bmc_probe(struct i2c_client *client)
+@@ -810,6 +820,11 @@ static int ssif_bmc_probe(struct i2c_client *client)
  	if (!ssif_bmc)
  		return -ENOMEM;
  
@@ -78,5 +78,5 @@ index e8460e966b83..b863f854ab17 100644
  
  	init_waitqueue_head(&ssif_bmc->wait_queue);
 -- 
-2.47.3
+2.53.0-Meta
 

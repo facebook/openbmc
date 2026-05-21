@@ -1,7 +1,7 @@
-From b5820d777d0cf163e2bce0497b978883d75a838d Mon Sep 17 00:00:00 2001
+From 56856ae5bf3887dd1b8e76ce66edd17bdbae6b6f Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Tue, 25 Nov 2025 14:43:25 +0800
-Subject: [PATCH 1/1] Add RTL8211F RMII to SGMII bridge support
+Subject: [PATCH 1007/1007] Add RTL8211F RMII to SGMII bridge support
 
 Link: https://github.com/NVIDIA/linux/commit/0574ab4dbb8d5d365dc98026a48b75901871a6b5
 ---
@@ -146,5 +146,5 @@ index 7c3d277efaf0..db6626180e5e 100644
  		.handle_interrupt = rtl8211f_handle_interrupt,
  		.set_wol	= rtl8211f_set_wol,
 -- 
-2.31.1
+2.53.0-Meta
 

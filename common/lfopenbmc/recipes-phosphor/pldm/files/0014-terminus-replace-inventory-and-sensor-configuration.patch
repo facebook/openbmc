@@ -1,4 +1,4 @@
-From 9f72a23067a7f6e68666237f3709ef2c84bcd8f4 Mon Sep 17 00:00:00 2001
+From 9196b81c56f988369e50701185b3a7887adde44c Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Fri, 26 Dec 2025 14:35:14 +0800
 Subject: [PATCH 14/23] terminus: replace inventory and sensor configuration
@@ -20,14 +20,14 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  .../test/firmware_inventory_manager_test.cpp  |   5 +-
  platform-mc/terminus.cpp                      | 161 +++++++++++++++-
  platform-mc/terminus.hpp                      |  44 +++++
- platform-mc/terminus_manager.cpp              |  47 +++++
+ platform-mc/terminus_manager.cpp              |  52 +++++
  platform-mc/test/event_manager_test.cpp       |  12 +-
  platform-mc/test/platform_manager_test.cpp    |  24 +--
  platform-mc/test/terminus_manager_test.cpp    |  32 ++--
  requester/mctp_endpoint_discovery.cpp         | 178 +++++++++++++-----
  requester/mctp_endpoint_discovery.hpp         |  11 ++
  .../test/mctp_endpoint_discovery_test.cpp     |  31 +--
- 12 files changed, 462 insertions(+), 92 deletions(-)
+ 12 files changed, 467 insertions(+), 92 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
 index 5cc260d..8a5cb95 100644
@@ -55,7 +55,7 @@ index 5cc260d..8a5cb95 100644
  /** @brief Type definition of MCTP endpoint D-Bus properties in
   *         xyz.openbmc_project.MCTP.Endpoint D-Bus interface.
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index 73fe450..d78b2db 100644
+index 318ac01..82392fe 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
 @@ -727,7 +727,7 @@ std::optional<SoftwareName> obtainDeviceNameFromConfigurations(
@@ -345,10 +345,10 @@ index 4627737..d5b8648 100644
      std::string inventoryPath;
  
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index dfeea76..473ceb9 100644
+index dfeea76..1d70d84 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
-@@ -201,6 +201,45 @@ exec::task<int> TerminusManager::discoverMctpTerminusTask()
+@@ -201,6 +201,50 @@ exec::task<int> TerminusManager::discoverMctpTerminusTask()
          for (const auto& mctpInfo : mctpInfos)
          {
              auto it = findTerminusPtr(mctpInfo);
@@ -367,6 +367,11 @@ index dfeea76..473ceb9 100644
 +                    lg2::info(
 +                        "Deferred Association detected for TID {TID}. Re-initializing...",
 +                        "TID", tid);
++
++                    if (manager)
++                    {
++                        manager->stopSensorPolling(tid);
++                    }
 +
 +                    // Remove the old Terminus
 +                    this->unmapTid(tid);
@@ -394,7 +399,7 @@ index dfeea76..473ceb9 100644
              if (it == termini.end())
              {
                  mctpInfoAvailTable[mctpInfo] = true;
-@@ -496,6 +535,14 @@ exec::task<int> TerminusManager::initMctpTerminus(const MctpInfo& mctpInfo)
+@@ -496,6 +540,14 @@ exec::task<int> TerminusManager::initMctpTerminus(const MctpInfo& mctpInfo)
          termini[tid]->setTerminusName(mctpInfoName.value());
      }
  
@@ -985,5 +990,5 @@ index 3eb57cf..71ce9c4 100644
      constexpr auto mockedDbusPath =
          "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
 -- 
-2.52.0
+2.47.3
 

@@ -1,4 +1,4 @@
-From ead997f45125df142fabe530459e43068e3d6928 Mon Sep 17 00:00:00 2001
+From 5ffdad57d63d1ea6a3a6a19c7eacb1a4f5f5148c Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Tue, 21 Apr 2026 21:24:06 -0700
 Subject: [PATCH 21/23] Add back sensor polling time configuration
@@ -73,7 +73,7 @@ index 1497072..6a36548 100644
   * @brief SensorManager
   *
 diff --git a/platform-mc/test/sensor_manager_test.cpp b/platform-mc/test/sensor_manager_test.cpp
-index 9bc1737..4868147 100644
+index 67298c2..aa2167a 100644
 --- a/platform-mc/test/sensor_manager_test.cpp
 +++ b/platform-mc/test/sensor_manager_test.cpp
 @@ -145,7 +145,7 @@ TEST_F(SensorManagerTest, sensorPollingTest)
@@ -86,5 +86,5 @@ index 9bc1737..4868147 100644
          });
      EXPECT_CALL(sensorManager, doSensorPolling(tid))
 -- 
-2.52.0
+2.47.3
 

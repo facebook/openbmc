@@ -1,7 +1,7 @@
-From b584c2dd12be45005c1afc09b321511f0f1fe3ed Mon Sep 17 00:00:00 2001
+From 371d2132b282f9d396900d75b36ee4eeda9fbf58 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Sat, 2 May 2026 22:46:03 +0800
-Subject: [PATCH 1/2] Add NVMeMI sensor service
+Subject: [PATCH 1001/1002] Add NVMeMI sensor service
 
 Add NVMeMI sensor service from Nvidia dbus-sensors repo.
 
@@ -83,10 +83,10 @@ index 0000000..c3965ce
 +[Install]
 +WantedBy=multi-user.target
 diff --git a/src/meson.build b/src/meson.build
-index 3ecf709..f18b2de 100644
+index 2e7d82e..985daca 100644
 --- a/src/meson.build
 +++ b/src/meson.build
-@@ -127,6 +127,7 @@ subdir('mctp')
+@@ -139,6 +139,7 @@ subdir('mctp')
  subdir('mcu')
  subdir('nvidia-gpu')
  subdir('nvme')
@@ -2518,5 +2518,5 @@ index 0000000..ae181f5
 +)
 +
 -- 
-2.47.1
+2.53.0-Meta
 

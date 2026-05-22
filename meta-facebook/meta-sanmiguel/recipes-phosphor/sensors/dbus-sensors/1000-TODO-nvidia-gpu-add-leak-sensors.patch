@@ -1,7 +1,7 @@
-From 26acfd3842e7d2252f790ad543baae211de94482 Mon Sep 17 00:00:00 2001
+From 8036d21bb5b7316fb7b00e3c4aae3982288197c5 Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Tue, 5 May 2026 20:34:03 +0800
-Subject: [PATCH 1/1] TODO: nvidia-gpu: add leak sensors
+Subject: [PATCH 1000/1002] TODO: nvidia-gpu: add leak sensors
 
 Add nvidia sma leak detector voltage sensors.
 
@@ -10,7 +10,7 @@ Add nvidia sma leak detector voltage sensors.
 Change-Id: Id2bbf490beaca9408dbda7019dd506eb68e65ee0
 Signed-off-by: Mike Hsieh <mike_hsieh@quantatw.com>
 ---
- src/nvidia-gpu/NvidiaDeviceDiscovery.cpp |   2 +-
+ src/nvidia-gpu/NvidiaDeviceDiscovery.cpp |   3 +-
  src/nvidia-gpu/NvidiaGpuMctpVdm.cpp      | 118 ++++++++++++++++
  src/nvidia-gpu/NvidiaGpuMctpVdm.hpp      |  20 +++
  src/nvidia-gpu/NvidiaSmaDevice.cpp       |  17 ++-
@@ -18,19 +18,20 @@ Signed-off-by: Mike Hsieh <mike_hsieh@quantatw.com>
  src/nvidia-gpu/NvidiaSmaLeakSensor.cpp   | 171 +++++++++++++++++++++++
  src/nvidia-gpu/NvidiaSmaLeakSensor.hpp   |  63 +++++++++
  src/nvidia-gpu/meson.build               |   1 +
- 8 files changed, 388 insertions(+), 8 deletions(-)
+ 8 files changed, 389 insertions(+), 8 deletions(-)
  create mode 100644 src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
  create mode 100644 src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
 
 diff --git a/src/nvidia-gpu/NvidiaDeviceDiscovery.cpp b/src/nvidia-gpu/NvidiaDeviceDiscovery.cpp
-index 26a65b1..7badbfe 100644
+index fca8396..9768527 100644
 --- a/src/nvidia-gpu/NvidiaDeviceDiscovery.cpp
 +++ b/src/nvidia-gpu/NvidiaDeviceDiscovery.cpp
-@@ -117,7 +117,7 @@ void processQueryDeviceIdResponse(
+@@ -115,7 +115,8 @@ void processQueryDeviceIdResponse(
+                 "EID", eid, "DEVTYPE", responseDeviceType, "IID",
                  responseInstanceId);
  
-             const std::string smaName =
--                std::format("{}_SMA_{}", configs.name, responseInstanceId);
+-            const std::string smaName = std::format("Nvidia_SMA_{}", eid);
++            const std::string smaName =
 +                std::format("{}_SMA_{}", configs.name, eid);
  
              std::shared_ptr<SmaDevice>& sma = smaDevices[smaName];
@@ -523,7 +524,7 @@ index 0000000..a012338
 +        commonPhysicalContextInterface;
 +};
 diff --git a/src/nvidia-gpu/meson.build b/src/nvidia-gpu/meson.build
-index b3b88c9..4a95f2c 100644
+index 7070e10..8d32855 100644
 --- a/src/nvidia-gpu/meson.build
 +++ b/src/nvidia-gpu/meson.build
 @@ -22,6 +22,7 @@ gpusensor_sources = files(
@@ -532,8 +533,8 @@ index b3b88c9..4a95f2c 100644
      'NvidiaSmaDevice.cpp',
 +    'NvidiaSmaLeakSensor.cpp',
      'OcpMctpVdm.cpp',
+     'SerialQueue.cpp',
  )
- 
 -- 
-2.47.1
+2.53.0-Meta
 

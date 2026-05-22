@@ -1,4 +1,4 @@
-From cada5737d51bbc7647a74a0484136444ac40390b Mon Sep 17 00:00:00 2001
+From f044e6d95918a9fc63cbc20b3301e83cefc11de0 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 21 May 2026 07:03:10 +0000
 Subject: [PATCH 18/23] oem-meta: Implement special event handling
@@ -127,5 +127,5 @@ index 600aa7a..a2d36d9 100644
       {report::prochotSdSensor, nullptr}},
      {EventType::MTIA_FAULT, {report::mtiaFault, nullptr}},
 -- 
-2.47.3
+2.52.0
 

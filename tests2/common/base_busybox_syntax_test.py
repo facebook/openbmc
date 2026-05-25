@@ -122,6 +122,7 @@ KNOWN_USAGE_STRINGS = {
     "cmp": [
         "cmp [-l] [-s] FILE1 [FILE2]",
         "cmp [-ls] [-n NUM] FILE1 [FILE2]",  # BusyBox v1.35.0
+        "cmp [-l|s] [-n NUM] FILE1 [FILE2]",  # BusyBox v1.38.0
     ],
     "cp": [
         "cp [OPTIONS] SOURCE... DEST",
@@ -271,7 +272,7 @@ KNOWN_USAGE_STRINGS = {
     ],
     "od": [
         "od [-aBbcDdeFfHhIiLlOovXx] [FILE]",
-        "od [-abcdeFfhiloxsv] [FILE]", # BusyBox 1.37.0
+        "od [-abcdeFfhiloxsv] [FILE]",  # BusyBox 1.37.0
     ],
     "openvt": ["openvt [-c N] [-sw] [PROG ARGS]"],
     "patch": [

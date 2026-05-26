@@ -39,7 +39,6 @@ var CompatibleVersionMapping = map[string]string{
 	"fby3pvt":    "fby3",
 	"fby3vboot2": "fby3",
 	"fbnd":       "northdome",
-	"kodiak":     "sandia",
 	"minipack3n": "acctonbmc",
 	"minipack3ba": "acctonbmc",
 	"icecube800bc": "celesticabmc",

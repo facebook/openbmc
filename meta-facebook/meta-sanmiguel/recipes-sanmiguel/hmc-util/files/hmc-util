@@ -7,6 +7,9 @@ HMC_URL_PREFIX="http://${HMC_IP}"
 FW_UPDATE_URL="${HMC_URL_PREFIX}/redfish/v1/UpdateService/update-multipart"
 FW_INVENTORY_URL="${HMC_URL_PREFIX}/redfish/v1/UpdateService/FirmwareInventory"
 MANAGERS_HGX_BMC_0="${HMC_URL_PREFIX}/redfish/v1/Managers/HGX_BMC_0"
+MANAGERS_HGX_BMC_DIAG_URL="${HMC_URL_PREFIX}/redfish/v1/Managers/HGX_BMC_0/LogServices/Dump/Actions/LogService.CollectDiagnosticData"
+SYSTEMS_BASEBOARD_DIAG_URL="${HMC_URL_PREFIX}/redfish/v1/Systems/HGX_Baseboard_0/LogServices/Dump/Actions/LogService.CollectDiagnosticData"
+
 CURL_CONNECT_TIMEOUT=3
 
 HMC_MANG_COMP_LIST=(
@@ -34,6 +37,16 @@ HMC_MANG_COMP_LIST=(
     "HGX_SBIOS_FMC_1"
     "HGX_SBIOS_FW_0"
     "HGX_SBIOS_FW_1"
+)
+
+DUMP_DIAG_TYPE_LIST=(
+    "manager"
+    "oem-cpld"
+    "oem-hw-checkout"
+    "oem-fw-attr"
+    "oem-erot"
+    "oem-rot"
+    "oem-sma"
 )
 
 is_hmc_managed_fw_comp()
@@ -260,6 +273,131 @@ sync_hmc_datetime()
     done
 }
 
+check_task_complete()
+{
+    TASK_ID="$1"
+    echo "TASK_ID: ${TASK_ID}"
+    echo
+
+    MESSAGE_COUNT=0
+    for (( retry = 0; retry < 500; retry++ ))
+    do
+        sleep 10
+        CURL_CMD="curl --connect-timeout ${CURL_CONNECT_TIMEOUT} -s http://${HMC_IP}${TASK_ID}"
+        if ! CURL_DATA=$(eval "${CURL_CMD}"); then
+            echo "failed: HMC not response."
+            return 1
+        fi
+
+        if ! PERCENT=$(echo "$CURL_DATA" | jq -r '."PercentComplete"'); then
+            echo "failed: incorrect response format."
+            return 1
+        elif ! TASK_STATE=$(echo "$CURL_DATA" | jq -r '."TaskState"'); then
+            echo "failed: incorrect response format."
+            return 1
+        elif ! TASK_STATUS=$(echo "$CURL_DATA" | jq -r '."TaskStatus"'); then
+            echo "failed: incorrect response format."
+            return 1
+        fi
+
+        NEW_MESSAGE_COUNT=$(echo "$CURL_DATA" | jq -r '.Messages | length')
+        for ((i=MESSAGE_COUNT; i<NEW_MESSAGE_COUNT; i++))
+        do
+            echo "[$i] $(echo "$CURL_DATA" | jq -r ".Messages[$i].Message")"
+        done
+        MESSAGE_COUNT="$NEW_MESSAGE_COUNT"
+
+        echo -ne "PercentComplete: ${PERCENT} ...... (seconds: $((retry*10)))\r"
+
+        if [ "$TASK_STATE" != "Running" ]; then
+            echo -e "\r\nUpdate finished, state: ${TASK_STATE}, status: ${TASK_STATUS}"
+            if [ "$TASK_STATE" = "Completed" ]; then
+                return 0
+            else
+                return 1
+            fi
+        fi
+    done
+
+    echo -e "\r\nfailed: Update process timeout."
+    return 1
+}
+
+hmc_dump_diag()
+{
+    DIAG_TYPE="$1"
+    if [ "$DIAG_TYPE" = "manager" ]; then
+        DIAG_URL="${MANAGERS_HGX_BMC_DIAG_URL}"
+        INPUT_DATA="{\"DiagnosticDataType\": \"Manager\"}"
+    elif [ "$DIAG_TYPE" = "oem-cpld" ]; then
+        DIAG_URL="${SYSTEMS_BASEBOARD_DIAG_URL}"
+        INPUT_DATA="{\"DiagnosticDataType\": \"OEM\", \"OEMDiagnosticDataType\":\"DiagnosticType=CPLD\"}"
+    elif [ "$DIAG_TYPE" = "oem-hw-checkout" ]; then
+        DIAG_URL="${SYSTEMS_BASEBOARD_DIAG_URL}"
+        INPUT_DATA="{\"DiagnosticDataType\": \"OEM\", \"OEMDiagnosticDataType\":\"DiagnosticType=HardwareCheckout\"}"
+    elif [ "$DIAG_TYPE" = "oem-fw-attr" ]; then
+        DIAG_URL="${SYSTEMS_BASEBOARD_DIAG_URL}"
+        INPUT_DATA="{\"DiagnosticDataType\": \"OEM\", \"OEMDiagnosticDataType\":\"DiagnosticType=FirmwareAttributes\"}"
+    elif [ "$DIAG_TYPE" = "oem-erot" ]; then
+        DIAG_URL="${SYSTEMS_BASEBOARD_DIAG_URL}"
+        INPUT_DATA="{\"DiagnosticDataType\": \"OEM\", \"OEMDiagnosticDataType\":\"DiagnosticType=EROT\"}"
+    elif [ "$DIAG_TYPE" = "oem-rot" ]; then
+        DIAG_URL="${SYSTEMS_BASEBOARD_DIAG_URL}"
+        INPUT_DATA="{\"DiagnosticDataType\": \"OEM\", \"OEMDiagnosticDataType\":\"DiagnosticType=ROT\"}"
+    elif [ "$DIAG_TYPE" = "oem-sma" ]; then
+        DIAG_URL="${SYSTEMS_BASEBOARD_DIAG_URL}"
+        INPUT_DATA="{\"DiagnosticDataType\": \"OEM\", \"OEMDiagnosticDataType\":\"DiagnosticType=SMA\"}"
+    else
+        echo "failed: invalid diag type"
+        return 1
+    fi
+
+    CURL_CMD="curl --connect-timeout ${CURL_CONNECT_TIMEOUT} -s -X POST '${DIAG_URL}' -d '${INPUT_DATA}'"
+    echo "CMD: ${CURL_CMD}"
+    if ! CURL_DATA=$(eval "${CURL_CMD}"); then
+        echo "failed: HMC not response."
+        return 1
+    fi
+
+    TASK_ID=$(echo "$CURL_DATA" | jq -r '."@odata.id"')
+
+    if ! check_task_complete "$TASK_ID"; then
+        return 1
+    fi
+
+    echo -e "\r\nDownloading file ......"
+
+    CURL_CMD="curl --connect-timeout ${CURL_CONNECT_TIMEOUT} -s http://${HMC_IP}${TASK_ID}"
+    if ! CURL_DATA=$(eval "${CURL_CMD}"); then
+        echo "failed: HMC not response."
+        return 1
+    fi
+
+    if ! LOCATION=$(echo "$CURL_DATA" | jq -r '.Payload.HttpHeaders[] | select(startswith("Location:")) | split(": ")[1]'); then
+        echo "failed: unable find payload location."
+        return 1
+    fi
+
+    ENTRY_ID="$(echo "$LOCATION" | awk -F/ '{print $NF}')"
+
+    CURL_CMD="curl --connect-timeout ${CURL_CONNECT_TIMEOUT} -s http://${HMC_IP}${LOCATION}"
+    if ! CURL_DATA=$(eval "${CURL_CMD}"); then
+        echo "failed: HMC not response."
+        return 1
+    fi
+
+    DUMP_FILEPATH="/tmp/hmc-dump-${DUMP_TYPE}-$(date +"%Y%m%d%H%M%S")_${ENTRY_ID}.tar.xz"
+    CURL_CMD="curl --connect-timeout ${CURL_CONNECT_TIMEOUT} -s http://${HMC_IP}${LOCATION}/attachment -o ${DUMP_FILEPATH}"
+
+    if ! $CURL_CMD; then
+        echo "failed: unable to download dump file (http://${HMC_IP}${LOCATION}/attachment)"
+        return 1
+    fi
+
+    echo "Download dump filepath: ${DUMP_FILEPATH}"
+    return 0
+}
+
 is_number() {
     # Check if input is a valid number
     if ! [[ "$1" =~ ^[0-9]+$ ]]; then
@@ -277,12 +415,17 @@ print_usage()
     echo "  --version <all|bundle|sbios|HGX_COMP>"
     echo "  [--update|--force-update] <all|bundle|sbios|HGX_COMP> <file>"
     echo "  --sync-datetime [retry_count] [retry_delay]"
+    echo "  --diag DIAG_TYPE"
     echo
     echo "HGX_COMP:"
     for comp in "${HMC_MANG_COMP_LIST[@]}"; do
         echo "  $comp"
     done
     echo
+    echo "DIAG_TYPE:"
+    for diag_type in "${DUMP_DIAG_TYPE_LIST[@]}"; do
+        echo "  $diag_type"
+    done
 }
 
 INPUT_CMD="$1"
@@ -322,6 +465,8 @@ elif [ "$1" = "--sync-datetime" ]; then
         RETRY_DELAY_SEC=0
     fi
     sync_hmc_datetime "$RETRY_COUNT" "$RETRY_DELAY_SEC"
+elif [ "$1" = "--diag" ]; then
+    hmc_dump_diag "$2"
 else
     print_usage
 fi

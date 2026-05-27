@@ -30,7 +30,7 @@ DATA_STATUS_REGISTER=513
 READY_STATUS="0x5555"
 
 
-for fileNum in {1..8}; do
+for fileNum in {0..8}; do
   error=""
   if \
     $FLOCK rackmoncli write "$UDA" 512 "$fileNum" > /dev/null && \

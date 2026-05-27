@@ -51,7 +51,7 @@ class FwUpgradeTest(unittest.TestCase):
         ],  # priority=3, upgrade_cmd
         "bios": [
             1,
-            "/usr/local/bin/bios_util.sh write {filename}",
+            "/usr/local/bin/bios_util.sh write {filename} --init-aconf",
         ],  # priority=1, upgrade_cmd
     }
 

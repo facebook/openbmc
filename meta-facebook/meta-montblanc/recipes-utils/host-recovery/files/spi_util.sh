@@ -186,9 +186,7 @@ expand_image_file() {
     mtd_idx=$1
     file=$2
 
-    flashsize=$(flashrom -p linux_mtd:dev=$mtd_idx | grep -i kB |
-                xargs echo | cut -d '(' -f 2 | cut -d ' ' -f 0)
-    targetsize=$((flashsize * 1024))
+    targetsize=$(flashrom -p linux_mtd:dev=$mtd_idx --flash-size | tail -1)
     filesize=$(stat -c%s $file)
     add_size=$((targetsize - filesize))
 

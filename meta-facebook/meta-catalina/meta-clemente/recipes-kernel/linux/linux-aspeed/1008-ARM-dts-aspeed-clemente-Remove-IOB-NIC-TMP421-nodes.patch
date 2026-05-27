@@ -1,0 +1,75 @@
+From aca49c700e1ec85e041faef83709aaff94382583 Mon Sep 17 00:00:00 2001
+From: Mike Hsieh <mike.quanta.115@gmail.com>
+Date: Fri, 22 May 2026 17:58:36 +0800
+Subject: [PATCH] ARM: dts: aspeed: clemente: Remove IOB NIC TMP421 nodes
+
+Remove the TMP421 sensor entry from the DTS, as it is no longer the
+primary telemetry source.
+
+Accessing the CX8 NIC via I2C while it is powered off causes voltage
+leakage on the bus, leading to EEPROM corruption on shared I2C devices.
+Removing this node prevents the BMC from initiating traffic to the NIC
+during initialization, protecting the integrity of the shared bus.
+
+LORE: https://lore.kernel.org/all/20260522-clemente-dts-remove-iob-nic-tmp421-v1-1-ee2509a71502@gmail.com/
+
+Signed-off-by: Mike Hsieh <mike.quanta.115@gmail.com>
+---
+ .../aspeed/aspeed-bmc-facebook-clemente.dts   | 20 -------------------
+ 1 file changed, 20 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
+index 2aff21442f11..820d39a92974 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
+@@ -443,11 +443,6 @@ i2c0mux2ch0: i2c@0 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			reg = <0>;
+-			// IOB0 NIC0 TEMP
+-			temperature-sensor@1f {
+-				compatible = "ti,tmp421";
+-				reg = <0x1f>;
+-			};
+ 		};
+ 
+ 		i2c0mux2ch1: i2c@1 {
+@@ -466,11 +461,6 @@ i2c0mux2ch3: i2c@3 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			reg = <3>;
+-			// IOB0 NIC1 TEMP
+-			temperature-sensor@1f {
+-				compatible = "ti,tmp421";
+-				reg = <0x1f>;
+-			};
+ 		};
+ 	};
+ 
+@@ -637,11 +627,6 @@ i2c0mux5ch0: i2c@0 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			reg = <0>;
+-			// IOB1 NIC0 TEMP
+-			temperature-sensor@1f {
+-				compatible = "ti,tmp421";
+-				reg = <0x1f>;
+-			};
+ 		};
+ 
+ 		i2c0mux5ch1: i2c@1 {
+@@ -666,11 +651,6 @@ i2c0mux5ch3: i2c@3 {
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 			reg = <3>;
+-			// IOB1 NIC1 TEMP
+-			temperature-sensor@1f {
+-				compatible = "ti,tmp421";
+-				reg = <0x1f>;
+-			};
+ 		};
+ 	};
+ };
+-- 
+2.43.0
+

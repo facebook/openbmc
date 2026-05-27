@@ -9,6 +9,7 @@ SRC_URI += " \
     file://1005-clemente-dts-Add-EEPROMs-for-boot-and-data-drive-FRUs.patch \
     file://1006-clemente-dts-add-gpio-line-name-to-io-exp.patch \
     file://1007-net-mctp-add-gateway-routing-support.patch \
+    file://1008-ARM-dts-aspeed-clemente-Remove-IOB-NIC-TMP421-nodes.patch \
     file://clemente-sensor.cfg \
 "
 

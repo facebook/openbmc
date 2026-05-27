@@ -1,0 +1,54 @@
+From 9028acac25d0f9dbcd3f09b232d8d5040890b461 Mon Sep 17 00:00:00 2001
+From: Kevin Tung <kevin.tung.openbmc@gmail.com>
+Date: Mon, 20 Apr 2026 19:42:31 +0800
+Subject: [PATCH] iio: adc: rtq6056: add i2c_device_id support
+
+Add i2c_device_id table to support legacy I2C instantiation.
+Update probe to use i2c_get_match_data() so device data can be
+retrieved consistently for both OF and legacy I2C instantiation.
+
+lore link: https://lore.kernel.org/all/20260420-rtq6056_support_sysfs_instantiation-v1-1-483ccee27b63@gmail.com/
+
+Signed-off-by: Kevin Tung <kevin.tung.openbmc@gmail.com>
+---
+ drivers/iio/adc/rtq6056.c | 10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/iio/adc/rtq6056.c b/drivers/iio/adc/rtq6056.c
+index 2bf3a09ac6b0..e2b1da13c0d3 100644
+--- a/drivers/iio/adc/rtq6056.c
++++ b/drivers/iio/adc/rtq6056.c
+@@ -728,7 +728,7 @@ static int rtq6056_probe(struct i2c_client *i2c)
+ 	if (!i2c_check_functionality(i2c->adapter, I2C_FUNC_SMBUS_WORD_DATA))
+ 		return -EOPNOTSUPP;
+ 
+-	devdata = device_get_match_data(dev);
++	devdata = i2c_get_match_data(i2c);
+ 	if (!devdata)
+ 		return dev_err_probe(dev, -EINVAL, "Invalid dev data\n");
+ 
+@@ -871,6 +871,13 @@ static const struct richtek_dev_data rtq6059_devdata = {
+ 	.set_average = rtq6059_adc_set_average,
+ };
+ 
++static const struct i2c_device_id rtq6056_id[] = {
++	{ "rtq6056", (kernel_ulong_t)&rtq6056_devdata },
++	{ "rtq6059", (kernel_ulong_t)&rtq6059_devdata },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, rtq6056_id);
++
+ static const struct of_device_id rtq6056_device_match[] = {
+ 	{ .compatible = "richtek,rtq6056", .data = &rtq6056_devdata },
+ 	{ .compatible = "richtek,rtq6059", .data = &rtq6059_devdata },
+@@ -885,6 +892,7 @@ static struct i2c_driver rtq6056_driver = {
+ 		.pm = pm_ptr(&rtq6056_pm_ops),
+ 	},
+ 	.probe = rtq6056_probe,
++	.id_table = rtq6056_id,
+ };
+ module_i2c_driver(rtq6056_driver);
+ 
+-- 
+2.53.0
+

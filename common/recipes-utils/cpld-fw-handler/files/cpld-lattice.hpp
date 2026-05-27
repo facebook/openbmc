@@ -48,6 +48,7 @@ enum cpldI2cCmd
     CMD_READ_DEVICE_ID = 0xE0,
     CMD_READ_SOFTIP_ID = 0xE6,
     CMD_READ_BUSY_FLAG = 0xF0,
+    CMD_I2C_LOCK = 0xA2,
 };
 
 struct cpldI2cInfo
@@ -76,7 +77,10 @@ class CpldLatticeManager : public CpldManager
     int fwUpdate(bool legacy) override;
     int fwVerifyOnly(bool legacy) override;
     int jedFileParser();
+
+    uint8_t softIpVersion = 0;
     bool CheckSOFTIP();
+    bool setCrcMode(bool enable);
 
   protected:
     int readDeviceId();
@@ -90,6 +94,7 @@ class CpldLatticeManager : public CpldManager
     uint8_t waitBusyAndVerifyCRC();
     uint16_t crc16_ccitt(std::span<const uint8_t> cmd);
     void appendCrc16(std::vector<uint8_t>& cmd);
+    int lockI2c();
 
   private:
     int indexof(const char* str, const char* ptn);

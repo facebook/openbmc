@@ -28,13 +28,53 @@ const std::map<std::string, std::vector<uint8_t>> MagicDeviceIdMappingTable = {
     {"LFMXO5-65T", {0x01, 0x0f, 0xc0, 0x44}},
 };
 
+int CpldLatticeManager::lockI2c()
+{
+    if (!isSOFTIP || ((softIpVersion & 0xF0) != 0x20))
+    {
+        return 0;
+    }
+
+    std::vector<uint8_t> cmd = {CMD_I2C_LOCK, 0x1};
+    constexpr size_t resSize = 1;
+    std::vector<uint8_t> readData(resSize, 0);
+    if (i2cWriteReadCmd(cmd, resSize, readData) < 0)
+    {
+        std::cerr << "Failed to send lock command." << std::endl;
+        return -1;
+    }
+
+    if (!readData.empty() && (readData[0] & 0xFE) != 0x00)
+    {
+        return 0;
+    }
+
+    std::cerr << "I2C lock not acquired, response: 0x" << std::hex << (int)readData[0] << std::endl;
+    return -1;
+}
+
+bool CpldLatticeManager::setCrcMode(bool enable)
+{
+    std::vector<uint8_t> cmd = {
+        0xfd, static_cast<uint8_t>(enable ? 0x01 : 0x00), 0x00, 0x00};
+
+    int ret = i2cWriteReadCmd(cmd);
+    if (ret < 0) {
+        std::cerr << "Fail to " << (enable ? "enable" : "disable")
+        << " CRC mode." << std::endl;
+        return false;
+    }
+    return true;
+}
+
 bool CpldLatticeManager::CheckSOFTIP()
 {
+    if (!setCrcMode(false)) {
+        return false;
+    }
     std::vector<uint8_t> cmd = {CMD_READ_SOFTIP_ID, 0x0, 0x0, 0x0};
-    appendCrc16(cmd);
 
-
-    constexpr size_t resSize = 7;
+    constexpr size_t resSize = 5;
     std::vector<uint8_t> readData(resSize, 0);
 
     int ret = i2cWriteReadCmd(cmd, resSize, readData);
@@ -43,6 +83,8 @@ bool CpldLatticeManager::CheckSOFTIP()
         std::cout << "Fail to read SOFTIP Id." << std::endl;
         return false;
     }
+
+    setCrcMode(true);
 
     std::vector<uint8_t> MagicNumber(readData.begin(), readData.begin() + 4);
     bool matchFound = false;
@@ -55,8 +97,16 @@ bool CpldLatticeManager::CheckSOFTIP()
             break;
         }
     }
-
-    isSOFTIP = matchFound;
+    if (matchFound) {
+        isSOFTIP = true;
+        softIpVersion = readData[4];
+        if (debugMode)
+        {
+            std::cout << std::format("Detected SOFTIP, Version: v{}.{}\n",
+                                     softIpVersion >> 4,
+                                     softIpVersion & 0x0f);
+        }
+    }
 
     return isSOFTIP;
 }
@@ -129,8 +179,7 @@ int CpldLatticeManager::jedFileParser()
             state = ParseState::Cfg;
             continue;
         }
-        else if (line.starts_with(TAG_END_CONFIG) ||
-                    line.starts_with(TAG_END_CFG))
+        else if (line.starts_with(TAG_END_CONFIG))
         {
             state = ParseState::EndCfg;
             continue;
@@ -243,13 +292,21 @@ int CpldLatticeManager::jedFileParser()
 
 int CpldLatticeManager::readDeviceId()
 {
+    if (lockI2c() < 0)
+    {
+        return -1;
+    }
     // 0xE0
     std::vector<uint8_t> cmd = {CMD_READ_DEVICE_ID, 0x0, 0x0, 0x0};
     size_t resSize;
     if (isSOFTIP)
     {
-        appendCrc16(cmd);
-        resSize = 6;
+        if ((softIpVersion & 0xF0) == 0x10) {
+            appendCrc16(cmd);
+            resSize = 6;
+        } else {
+            resSize = 4;
+        }
     }
     else
     {
@@ -321,6 +378,10 @@ int CpldLatticeManager::readDeviceId()
 
 int CpldLatticeManager::enableProgramMode()
 {
+    if (lockI2c() < 0)
+    {
+        return -1;
+    }
     // 0x74 transparent mode
     std::vector<uint8_t> cmd;
     if (isSOFTIP)
@@ -369,6 +430,10 @@ int CpldLatticeManager::enableProgramMode()
 
 int CpldLatticeManager::eraseFlash()
 {
+    if (lockI2c() < 0)
+    {
+        return -1;
+    }
     std::vector<uint8_t> cmd;
 
     if (isLCMXO3D || isSOFTIP)
@@ -456,6 +521,10 @@ int CpldLatticeManager::eraseFlash()
 
 int CpldLatticeManager::resetConfigFlash()
 {
+    if (lockI2c() < 0)
+    {
+        return -1;
+    }
     // CMD_RESET_CONFIG_FLASH = 0x46
 
     std::vector<uint8_t> cmd;
@@ -691,6 +760,10 @@ int CpldLatticeManager::programUserCode()
 
 int CpldLatticeManager::programDone()
 {
+    if (lockI2c() < 0)
+    {
+        return -1;
+    }
     // CMD_PROGRAM_DONE = 0x5E
     std::vector<uint8_t> cmd = {CMD_PROGRAM_DONE, 0x0, 0x0, 0x0};
 
@@ -776,6 +849,10 @@ int CpldLatticeManager::verifyUserCode()
 
 int CpldLatticeManager::disableConfigInterface()
 {
+    if (lockI2c() < 0)
+    {
+        return -1;
+    }
     int8_t ret = 0;
     // CMD_DISABLE_CONFIG_INTERFACE = 0x26,
     std::vector<uint8_t> cmd = {CMD_DISABLE_CONFIG_INTERFACE, 0x0, 0x0};
@@ -902,6 +979,10 @@ uint8_t CpldLatticeManager::waitBusyAndVerifyCRC()
 
 int CpldLatticeManager::readBusyFlag(uint8_t& busyFlag)
 {
+    if (lockI2c() < 0)
+    {
+        return -1;
+    }
     std::vector<uint8_t> cmd = {CMD_READ_BUSY_FLAG, 0x0, 0x0, 0x0};
     constexpr size_t resSize = 1;
     std::vector<uint8_t> readData(resSize, 0);
@@ -920,6 +1001,10 @@ int CpldLatticeManager::readBusyFlag(uint8_t& busyFlag)
 
 int CpldLatticeManager::readStatusReg(uint8_t& statusReg)
 {
+    if (lockI2c() < 0)
+    {
+        return -1;
+    }
     std::vector<uint8_t> cmd = {CMD_READ_STATUS_REG, 0x0, 0x0, 0x0};
     constexpr size_t resSize = 4;
     std::vector<uint8_t> readData(resSize, 0);
@@ -945,7 +1030,28 @@ int CpldLatticeManager::readStatusReg(uint8_t& statusReg)
 
 int CpldLatticeManager::readUserCode(uint32_t& userCode)
 {
-    std::vector<uint8_t> cmd = {CMD_READ_FW_VERSION, 0x0, 0x0, 0x0};
+    if (lockI2c() < 0)
+    {
+        return -1;
+    }
+    std::vector<uint8_t> cmd;
+    if ((softIpVersion & 0xF0) == 0x20)
+    {
+        uint8_t targetIdx = 0x00;
+        if (target == "CFG0")
+        {
+            targetIdx = 0x01;
+        }
+        else if (target == "CFG1")
+        {
+            targetIdx = 0x02;
+        }
+        cmd = {CMD_READ_FW_VERSION, 0x00, targetIdx, 0x00};
+    }
+    else
+    {
+        cmd = {CMD_READ_FW_VERSION, 0x00, 0x00, 0x00};
+    }
     const auto isXO5 = chip == "LFMXO5-25";
     size_t resSize;
     std::array<uint8_t, 6> data{};
@@ -984,9 +1090,10 @@ int CpldLatticeManager::readUserCode(uint32_t& userCode)
 
     userCode = isXO5 ? (uint32_t{data[4]} << 24) | (data[3] << 16) |
                            (data[2] << 8) | data[1]
-                     : isSOFTIP ? (uint32_t{data[3]} << 24) | (data[2] << 16) |
-                            (data[1] << 8) | data[0]
-                                : (uint32_t{data[0]} << 24) | (data[1] << 16) |
+                     : (isSOFTIP && (((softIpVersion & 0xF0) == 0x10))) ?
+                           (uint32_t{data[3]} << 24) | (data[2] << 16) |
+                           (data[1] << 8) | data[0]
+                     : (uint32_t{data[0]} << 24) | (data[1] << 16) |
                            (data[2] << 8) | data[3];
 
     return 0;
@@ -1488,8 +1595,12 @@ int CpldLatticeManager::XO5Familyv2_update()
     XO5I2CManagerv2 i2cManager(bus, addr, imagePath, chip, interface, target,
                                debugMode);
 
-    i2cManager.isSOFTIP = true;
-    std::cout << std::format("Starting to update {}\n", chip);
+    i2cManager.isSOFTIP = CheckSOFTIP();
+    i2cManager.softIpVersion = this->softIpVersion;
+    std::cout << std::format("Starting to update {} with SOFTIP {}.{}\n",
+                             chip,
+                             i2cManager.softIpVersion >> 4,
+                             i2cManager.softIpVersion & 0x0f);
     if (target.empty())
     {
         target = "CFG0";
@@ -1566,30 +1677,37 @@ int CpldLatticeManager::XO5Familyv2_update()
 int CpldLatticeManager::XO5Familyv2_version()
 {
     uint32_t userCode = 0;
-
-    if (target == "CFG0" || target == "CFG1")
-    {
-        if (resetConfigFlash() < 0)
+    if ((softIpVersion & 0xF0) == 0x10) {
+        if (target == "CFG0" || target == "CFG1")
         {
-            std::cerr << "Reset config flash failed." << std::endl;
+            if (resetConfigFlash() < 0)
+            {
+                std::cerr << "Reset config flash failed." << std::endl;
+                return -1;
+            }
+        }
+
+        // read user code first time
+        if (readUserCode(userCode) < 0)
+        {
+            std::cerr << "Read usercode failed." << std::endl;
             return -1;
         }
-    }
-
-    // read user code first time
-    if (readUserCode(userCode) < 0)
-    {
-        std::cerr << "Read usercode failed." << std::endl;
-        return -1;
-    }
-    while (waitBusyAndVerifyCRC() & BUSY_MASK)
-    {
-        std::this_thread::sleep_for(5ms);
-    }
-    if (readUserCode(userCode) < 0)
-    {
-        std::cerr << "Read usercode failed." << std::endl;
-        return -1;
+        while (waitBusyAndVerifyCRC() & BUSY_MASK)
+        {
+            std::this_thread::sleep_for(5ms);
+        }
+        if (readUserCode(userCode) < 0)
+        {
+            std::cerr << "Read usercode failed." << std::endl;
+            return -1;
+        }
+    } else {
+        if (readUserCode(userCode) < 0)
+        {
+            std::cerr << "Read usercode failed." << std::endl;
+            return -1;
+        }
     }
     std::cout << "CPLD " << target << " version: 0x" << std::hex
             << std::setfill('0') << std::setw(8) << userCode << std::endl;
@@ -1755,6 +1873,12 @@ bool XO5I2CManagerv2::eraseCfg()
     {
         appendCrc16(cmd);
     }
+
+    if (lockI2c() < 0)
+    {
+        return -1;
+    }
+
     if (i2cWriteReadCmd(cmd) != 0)
     {
         std::cerr << "Noop failed.\n";
@@ -1790,6 +1914,10 @@ bool XO5I2CManagerv2::eraseCfg()
 
 bool XO5I2CManagerv2::programCfg()
 {
+    if (lockI2c() < 0)
+    {
+        return -1;
+    }
     uint8_t CRCandBusyCheck = 0;
     const auto& cfgData = fwInfo.cfgData;
     const auto totalBytes = cfgData.size();
@@ -1824,6 +1952,10 @@ bool XO5I2CManagerv2::programCfg()
             constexpr size_t resSize = 1;
             std::vector<uint8_t> readData(resSize, 0);
             int ret = i2cWriteReadCmd(cmd, resSize, readData);
+            if (page % 2 == 0)
+            {
+                break;
+            }
             CRCandBusyCheck = waitBusyAndVerifyCRC();
             if ((ret != 0) || (readData.size() != resSize) || (readData[0] & 0x01) == 0 || (CRCandBusyCheck & CRC_MASK))
             {
@@ -1946,6 +2078,10 @@ bool XO5I2CManagerv2::post_program()
 
 int XO5I2CManagerv2::reset_calculate_hash()
 {
+    if (lockI2c() < 0)
+    {
+        return -1;
+    }
     std::vector<uint8_t> cmd{static_cast<uint8_t>(Cmd::CMD_RST_CAL_HASH), 0x0, 0x0, 0x0};
 
     appendCrc16(cmd);
@@ -1971,6 +2107,10 @@ int XO5I2CManagerv2::reset_calculate_hash()
 
 int XO5I2CManagerv2::read_fw_hash()
 {
+    if (lockI2c() < 0)
+    {
+        return -1;
+    }
     std::vector<uint8_t> cmd{static_cast<uint8_t>(Cmd::CMD_READ_FW_HASH), 0x0, 0x0, 0x0};
 
     appendCrc16(cmd);

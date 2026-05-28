@@ -200,6 +200,7 @@ const char * fbgc_get_gpio_name(uint8_t gpio);
 /* BIC GPIO helpers (unchanged external API) */
 uint8_t fbgc_get_bic_gpio_list_size(void);
 const char * fbgc_get_bic_gpio_name(uint8_t gpio);
+int fbgc_local_get_system_stage(bool *is_mp);
 
 #ifdef __cplusplus
 } // extern "C"

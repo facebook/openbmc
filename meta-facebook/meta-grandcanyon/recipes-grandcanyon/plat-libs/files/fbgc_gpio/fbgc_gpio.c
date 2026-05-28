@@ -738,7 +738,7 @@ static const bool board_id_invert[BOARD_ID_PIN_NUM] = { false, false, false };
 #define STAGE_MP 6
 
 /* Returns 0 on success, sets *is_mp = true if MP stage */
-static int fbgc_local_get_system_stage(bool *is_mp) {
+int fbgc_local_get_system_stage(bool *is_mp) {
   static int cached = -1;
   const char *pins[BOARD_ID_PIN_NUM] = { "GPIOH2", "GPIOH1", "GPIOH0" };
   uint8_t s = 0;
@@ -776,12 +776,6 @@ static int fbgc_local_get_system_stage(bool *is_mp) {
 
   cached = (int)s;
   *is_mp = (s == STAGE_MP);
-
-  syslog(LOG_INFO,
-         "%s(): GPIOH2=%d GPIOH1=%d GPIOH0=%d -> raw=0x%02x (%s)",
-         __func__,
-         bits[0], bits[1], bits[2],
-         s, *is_mp ? "MP" : "DVT");
   return 0;
 }
 
@@ -839,17 +833,14 @@ int fbgc_gpio_init(void) {
     if (strcmp(detected, "dvt_a") == 0) {
       gpio_expander_gpio_table      = gpio_expander_gpio_table_dvt_a;
       gpio_expander_gpio_table_size = MAX_GPIO_EXPANDER_GPIO_PINS;
-      syslog(LOG_INFO, "fbgc_gpio_init: detected exported shadow → DVT-A");
       return 0;
     } else if (strcmp(detected, "dvt_b") == 0) {
       gpio_expander_gpio_table      = gpio_expander_gpio_table_dvt_b;
       gpio_expander_gpio_table_size = MAX_GPIO_EXPANDER_GPIO_PINS;
-      syslog(LOG_INFO, "fbgc_gpio_init: detected exported shadow → DVT-B");
       return 0;
     } else if (strcmp(detected, "hack") == 0) {
       gpio_expander_gpio_table      = gpio_expander_gpio_table_hack;
       gpio_expander_gpio_table_size = MAX_GPIO_EXPANDER_GPIO_PINS;
-      syslog(LOG_INFO, "fbgc_gpio_init: detected exported shadow → HACK");
       return 0;
     }
   }
@@ -861,22 +852,21 @@ int fbgc_gpio_init(void) {
     if (got_stage == 0) {
       break;
     }
-    syslog(LOG_WARNING,
-           "fbgc_gpio_init: GPIO stage read failed, retry %d/3", retry + 1);
+    syslog(LOG_WARNING, "%s(): GPIO stage read failed, retry %d/3", __func__, retry + 1);
     usleep(10000);
   }
 
   /* Step 2: Read GPIOY3 to determine the A/B side */
   uint8_t uic_loc_for_log = UIC_SIDEA;
   if (fbgc_fallback_read_uic_location(&uic_loc_for_log) < 0) {
-    syslog(LOG_WARNING, "fbgc_gpio_init: GPIOY3 read failed, side unknown");
+    syslog(LOG_WARNING, "%s(): GPIOY3 read failed, side unknown", __func__);
   }
 
   if (got_stage < 0) {
     gpio_expander_gpio_table      = gpio_expander_gpio_table_hack;
     gpio_expander_gpio_table_size = MAX_GPIO_EXPANDER_GPIO_PINS;
     syslog(LOG_WARNING,
-           "fbgc_gpio_init: GPIO stage read failed → HACK (side=%s)",
+           "%s(): GPIO stage read failed → HACK (side=%s)", __func__,
            (uic_loc_for_log == UIC_SIDEB) ? "B" : "A");
     return 0;
   }
@@ -887,15 +877,11 @@ int fbgc_gpio_init(void) {
   if (is_mp) {
     gpio_expander_gpio_table      = gpio_expander_gpio_table_hack;
     gpio_expander_gpio_table_size = MAX_GPIO_EXPANDER_GPIO_PINS;
-    syslog(LOG_INFO, "fbgc_gpio_init: stage=MP side=%s → HACK",
-           (uic_loc == UIC_SIDEB) ? "B" : "A");
   } else {
     if (uic_loc == UIC_SIDEB) {
       gpio_expander_gpio_table = gpio_expander_gpio_table_dvt_b;
-      syslog(LOG_INFO, "fbgc_gpio_init: stage=DVT side=B → DVT-B");
     } else {
       gpio_expander_gpio_table = gpio_expander_gpio_table_dvt_a;
-      syslog(LOG_INFO, "fbgc_gpio_init: stage=DVT side=A → DVT-A");
     }
   }
 

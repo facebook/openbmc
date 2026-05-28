@@ -2020,59 +2020,6 @@ size_t e1s_sensor_cnt = ARRAY_SIZE(e1s_sensor_list);
 size_t iocm_sensor_cnt = ARRAY_SIZE(iocm_sensor_list);
 
 #ifdef CONFIG_GRANDCANYON2
-/* GPIOH2/H1/H0 raw value: MP=6, others=DVT */
-#define STAGE_MP 6
-
-static const bool board_id_invert[BOARD_ID_PIN_NUM] = { false, false, false };
-
-/* Returns 0 on success, sets *is_mp = true if MP stage */
-static int fbgc_local_get_system_stage(bool *is_mp) {
-  static int cached = -1;
-  const char *pins[BOARD_ID_PIN_NUM] = { "GPIOH2", "GPIOH1", "GPIOH0" };
-  uint8_t s = 0;
-  int bits[BOARD_ID_PIN_NUM] = { 0 };
-
-  if (!is_mp) {
-    syslog(LOG_WARNING, "%s(): is_mp is NULL", __func__);
-    return -1;
-  }
-
-  if (cached >= 0) {
-    *is_mp = (cached == STAGE_MP);
-    return 0;
-  }
-
-  for (int i = 0; i < BOARD_ID_PIN_NUM; i++) {
-    gpio_desc_t *g = gpio_open_by_name(GPIO_CHIP_ASPEED, pins[i]);
-    if (!g) {
-      syslog(LOG_WARNING, "%s(): open %s failed: %m", __func__, pins[i]);
-      return -1;
-    }
-
-    gpio_value_t v;
-    if (gpio_get_value(g, &v) != 0) {
-      syslog(LOG_WARNING, "%s(): get %s value failed: %m", __func__, pins[i]);
-      gpio_close(g);
-      return -1;
-    }
-    gpio_close(g);
-
-    bits[i] = (v == GPIO_VALUE_HIGH) ? 1 : 0;
-    if (board_id_invert[i]) bits[i] ^= 1;
-    s = (s << 1) | (uint8_t)bits[i];  /* H2=MSB, H0=LSB */
-  }
-
-  cached = (int)s;
-  *is_mp = (s == STAGE_MP);
-
-  syslog(LOG_INFO,
-         "%s(): GPIOH2=%d GPIOH1=%d GPIOH0=%d -> raw=0x%02x (%s)",
-         __func__,
-         bits[0], bits[1], bits[2],
-         s, *is_mp ? "MP" : "DVT");
-  return 0;
-}
-
 size_t dvt_dpb_sensor_cnt = ARRAY_SIZE(dvt_dpb_sensor_list);
 size_t dvt_scc_sensor_cnt = ARRAY_SIZE(dvt_scc_sensor_list);
 size_t dvt_nic_sensor_cnt = ARRAY_SIZE(dvt_nic_sensor_list);
@@ -2083,6 +2030,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   uint8_t chassis_type = 0;
 
 #ifdef CONFIG_GRANDCANYON2
+  /* MP(Hack)=6, others=DVT */
   if (fbgc_local_get_system_stage(&is_mp) < 0) {
     syslog(LOG_WARNING, "%s(): Failed to get system stage\n", __func__);
     return -1;

@@ -20,7 +20,9 @@
 package flash
 
 import (
+	"errors"
 	"log"
+	"os"
 
 	"github.com/facebook/openbmc/tools/flashy/lib/fileutils"
 	"github.com/facebook/openbmc/tools/flashy/lib/flash/flashcp"
@@ -29,6 +31,8 @@ import (
 	"github.com/facebook/openbmc/tools/flashy/lib/step"
 	"github.com/facebook/openbmc/tools/flashy/lib/utils"
 )
+
+const persistMotdPath = "/run/mnt-persist/etc-data/motd"
 
 // FlashCp is a step function that runs the flashcp procedure.
 func FlashCp(stepParams step.StepParams) step.StepExitError {
@@ -77,6 +81,13 @@ var flashCpAndValidate = func(
 		log.Printf("FlashCp succeeded")
 	}
 	// reset motd back to default on LF OpenBMC
-	_ = fileutils.RemoveFile("/run/mnt-persist/etc-data/motd")
+	switch rmErr := fileutils.RemoveFile(persistMotdPath); {
+	case rmErr == nil:
+		log.Printf("Reset persist motd %q", persistMotdPath)
+	case errors.Is(rmErr, os.ErrNotExist):
+		// expected on non-LF OpenBMC or when motd was never modified
+	default:
+		log.Printf("Failed to reset persist motd %q: %v", persistMotdPath, rmErr)
+	}
 	return err
 }

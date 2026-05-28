@@ -36,6 +36,7 @@
 #include <openbmc/libgpio.h>
 #include <openbmc/pal.h>
 #include <openbmc/kv.h>
+#include <openbmc/obmc-i2c.h>
 #include <facebook/fbgc_gpio.h>
 
 #define POLL_TIMEOUT -1 /* Forever */
@@ -389,7 +390,7 @@ fru_missing_init(gpiopoll_pin_t *gp, gpio_value_t value) {
     syslog(LOG_WARNING, "%s(): fail to handle fru missing because parameter: *gp is NULL\n", __func__);
     return;
   }
-  
+
   cfg = gpio_poll_get_config(gp);
   if (cfg == NULL) {
     syslog(LOG_WARNING, "%s(): fail to handle fru missing because parameter: *cfg is NULL\n", __func__);
@@ -423,6 +424,96 @@ fru_missing_init(gpiopoll_pin_t *gp, gpio_value_t value) {
   }
 }
 
+#ifdef CONFIG_GRANDCANYON2
+#define FM_P1V2_STBY_EN_R_OFFSET 0x02
+#define FM_P1V2_STBY_EN_R_BIT 2
+
+static int
+read_p12v_stby_en_from_server_cpld(uint8_t *val)
+{
+  int i2cfd = -1;
+  int ret = -1;
+  int retry = 0;
+  uint8_t tbuf[1] = {FM_P1V2_STBY_EN_R_OFFSET};
+  uint8_t rbuf[1] = {0};
+
+  if (val == NULL) {
+    return -1;
+  }
+
+  i2cfd = i2c_cdev_slave_open(
+      I2C_ES_FPGA_BUS,
+      ES_FPGA_SLAVE_ADDR,
+      I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_WARNING, "%s(): failed to open Server CPLD bus=%u addr=0x%02X", __func__, I2C_ES_FPGA_BUS, ES_FPGA_SLAVE_ADDR);
+    return i2cfd;
+  }
+
+  while (retry < MAX_RETRY) {
+    ret = i2c_rdwr_msg_transfer(
+        i2cfd,
+        ES_FPGA_SLAVE_ADDR << 1,
+        tbuf,
+        sizeof(tbuf),
+        rbuf,
+        sizeof(rbuf));
+
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s(): Server CPLD read failed, retry=%d, bus=%u addr7=0x%02X offset=0x%02X ret=%d",
+              __func__, retry, I2C_ES_FPGA_BUS, ES_FPGA_SLAVE_ADDR, FM_P1V2_STBY_EN_R_OFFSET, ret);
+      retry++;
+      msleep(100);
+      continue;
+    }
+
+    *val = rbuf[0];
+    ret = 0;
+    break;
+  }
+
+  close(i2cfd);
+  return ret;
+}
+
+static void
+pwr_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
+{
+  const struct gpiopoll_config *cfg = NULL;
+  uint8_t cpld_val = 0;
+  (void)last;
+
+  if (gp == NULL) {
+    syslog(LOG_WARNING, "%s(): failed to handle power fault because gp is NULL", __func__);
+    return;
+  }
+
+  cfg = gpio_poll_get_config(gp);
+  if (cfg == NULL) {
+    syslog(LOG_WARNING, "%s(): failed to handle power fault because cfg is NULL", __func__);
+    return;
+  }
+
+  if (curr == GPIO_VALUE_HIGH) {
+    return;
+  }
+
+  if (strcmp(cfg->shadow, "BIC_READY_IN") == 0) {
+    if (read_p12v_stby_en_from_server_cpld(&cpld_val) < 0) {
+      syslog(LOG_WARNING, "%s(): failed to read FM_P1V2_STBY_EN_R value from Server CPLD(might 12V OFF)", __func__);
+      return;
+    }
+    if (((cpld_val >> FM_P1V2_STBY_EN_R_BIT) & 0x1) == 1) {
+      syslog(LOG_CRIT, "PWR fault: P1V2_STBY_PG, ASSERTED");
+      return;
+    }
+  } else {
+    syslog(LOG_CRIT, "PWR fault: %s, ASSERTED", cfg->shadow);
+  }
+}
+
+#endif
+
 // GPIO table
 static struct gpiopoll_config gpios[] = {
   // shadow, description, edge, handler, oneshot
@@ -430,6 +521,11 @@ static struct gpiopoll_config gpios[] = {
   {"DEBUG_PWR_BTN_N",      "GPION0",   GPIO_EDGE_BOTH,  debug_card_pwr_rst_btn_hndlr,  NULL},
   {"DEBUG_BMC_UART_SEL_R", "GPIOM4",   GPIO_EDGE_BOTH,  debug_card_uart_sel_btn_hndlr, NULL},
   {"NIC_PRSNTB3_N",        "GPIOS0",   GPIO_EDGE_BOTH,  fru_missing_hndlr,             fru_missing_init},
+#ifdef CONFIG_GRANDCANYON2
+  {"HSC_P12V_DPB_FAULT_N_IN_R", "GPIOB4", GPIO_EDGE_FALLING, pwr_fault_hndlr, NULL},
+  {"HSC_COMP_FAULT_N_IN_R",     "GPIOB5", GPIO_EDGE_FALLING, pwr_fault_hndlr, NULL},
+  {"BIC_READY_IN", "GPIOQ6", GPIO_EDGE_FALLING, pwr_fault_hndlr, NULL},
+#endif
 };
 
 int

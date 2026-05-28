@@ -312,6 +312,23 @@ enum {
   SYS_SMI_STUCK_LOW  = 0x0E,
   SYS_EVENT_HOST_STALL = 0x20,
   SYS_E1S0_ALERT = 0x21,
+  SYS_TEMP_ALERT = 0x22,
+
+};
+
+// System status event - VR_FAULT
+enum {
+  PVCCIN_CPU0 = 0,
+  PVCCFA_EHV_FIVRA_CPU0 = 1,
+  PVCCINFAON_CPU0 = 2,
+  PVCCFA_EHV_CPU0 = 3,
+  PVCCD_HV_CPU = 4,
+  P1V05_PCH_STB = 5,
+  P1V8_STBY = 6,
+  P5V_STBY = 7,
+  P3V3_STBY = 8,
+  VR_P12V_E1S_0 = 9,
+  VR_P3V3_E1S_0 = 10,
 };
 
 // Server board Discrete/SEL Sensors
@@ -323,6 +340,7 @@ enum {
   
 #ifdef CONFIG_GRANDCANYON2
   BIC_SENSOR_PMIC_ERROR    = 0xB4,
+  BIC_SENSOR_VR_FAULT      = 0xB1,
 #endif  
 
   BIC_SENSOR_POWER_ERROR   = 0x56,
@@ -337,6 +355,8 @@ enum {
   SEL_EVENT_TYPE_MASK              = 0x7F,
   SEL_EVENT_DIR_ASSERT             = 0x00,
   SEL_EVENT_DATA1_INDEX            = 0,
+  SEL_EVENT_DATA2_INDEX            = 1,
+  SEL_EVENT_DATA3_INDEX            = 2,
   SEL_EVENT_OFFSET_LOW_NIBBLE_MASK = 0x0F,
   SEL_EVENT_DATA_FULL_MASK         = 0xFF,
   EVENT_READING_TYPE_OEM_NOTIF     = 0x77,
@@ -366,6 +386,12 @@ enum {
 enum {
   NIC_PE_RST_LOW   = 0x00,
   NIC_PE_RST_HIGH  = 0x01,
+};
+
+enum {
+  UNKNOWN_SOURCE = 0,
+  MAIN_SOURCE,  // default
+  SECOND_SOURCE,
 };
 
 // BMC hardware revision ID
@@ -584,6 +610,11 @@ typedef struct {
   uint16_t other_fault_mask;
 } efuse_profile_t;
 
+typedef struct {
+  uint8_t id;
+  const char *name;
+} vr_source_map_t;
+
 typedef enum {
   FAULT_NONE = 0,
   FAULT_OTHER_ONLY,
@@ -591,6 +622,22 @@ typedef enum {
   FAULT_UV_AND_OTHER,
   FAULT_INVALID,
 } fault_type_t;
+
+typedef enum {
+  NON_PMBUS = 0,
+  PMBUS,
+} power_fault_src_type_t;
+
+typedef struct {
+  const char *name;
+  uint8_t gpio_id;
+  const char *gpio_shadow_name;
+  power_fault_src_type_t type;
+  bool active_low;
+  uint8_t pmbus_bus;
+  uint8_t pmbus_addr;
+  int last_gpio_value;
+} power_fault_source_t;
 
 int pal_set_id_led(uint8_t slot, enum LED_HIGH_ACTIVE status);
 int pal_set_status_led(uint8_t fru, status_led_color color);
@@ -646,6 +693,7 @@ int pal_reset_nic();
 mfr_id_t pal_detect_efuse_mfr_id(uint8_t bus, uint8_t addr);
 const char *pal_get_mfr_name(mfr_id_t mfr);
 int pal_read_pmbus_byte_from_exp(uint8_t bus, uint8_t addr, uint8_t cmd, uint8_t rlen, uint8_t *data);
+uint8_t pal_detect_nic_pmon_module(void);
 #ifdef __cplusplus
 } // extern "C"
 #endif

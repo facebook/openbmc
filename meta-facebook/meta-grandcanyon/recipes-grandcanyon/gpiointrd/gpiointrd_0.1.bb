@@ -17,7 +17,7 @@ LOCAL_URI = " \
     file://run-gpiointrd.sh \
     "
 
-DEPENDS += " libpal update-rc.d-native libgpio-ctrl libfbgc-common libfbgc-gpio "
+DEPENDS += " libpal update-rc.d-native libgpio-ctrl libfbgc-common libfbgc-gpio libobmc-i2c"
 
 do_install:append() {
   install -d ${D}${sysconfdir}/init.d

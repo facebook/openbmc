@@ -18,7 +18,7 @@ LOCAL_URI = " \
     file://clear-hsc-fault.sh \
     "
 
-DEPENDS += " libpal update-rc.d-native libgpio-ctrl libfbgc-common libfbgc-gpio "
+DEPENDS += " libpal update-rc.d-native libgpio-ctrl libfbgc-common libfbgc-gpio libobmc-i2c"
 
 LDFLAGS:append = " -lexp"
 

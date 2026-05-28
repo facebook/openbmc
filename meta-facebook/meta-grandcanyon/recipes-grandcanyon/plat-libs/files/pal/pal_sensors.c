@@ -2559,60 +2559,12 @@ sq52205_init() {
 }
 
 static void
-detect_nic_pmon_module() {
-  int fd = 0, ret = -1;
-  uint8_t retry = MAX_RETRY, tlen = 1, rlen = 8;
-  uint8_t tbuf[16] = {0};
-  uint8_t rbuf[16] = {0};
-  uint8_t bus = 0, addr = 0;
-  char model_str[7] = {0};
+detect_nic_pmon_module()
+{
+  nic_pmon_source_info = pal_detect_nic_pmon_module();
 
-  bus  = nic_pmon_info_list[0].bus;
-  addr = nic_pmon_info_list[0].slv_addr;
-
-  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if (fd < 0) {
-    syslog(LOG_WARNING, "%s() Failed to open I2C bus %d\n", __func__, bus);
-    nic_pmon_source_info = UNKNOWN_SOURCE;
-    return;
-  }
-
-  /* --- Step 1: Check INA233 via PMBUS_MFR_MODEL (0x9A) --- */
-  tbuf[0] = PMBUS_MFR_MODEL;
-  while (ret < 0 && retry-- > 0) {
-    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
-  }
-
-  if (ret == 0) {
-    memcpy(model_str, &rbuf[1], 6);
-    if (strncmp(model_str, "INA233", 6) == 0) {
-      close(fd);
-      nic_pmon_source_info = MAIN_SOURCE;
-      return;
-    }
-  }
-
-  /* --- Step 2: Check SQ52205 via 0x0D, MID field D6-D2 --- */
-  memset(tbuf, 0, sizeof(tbuf));
-  memset(rbuf, 0, sizeof(rbuf));
-  tbuf[0] = 0x0D;
-  rlen = 2;
-  ret = -1;
-  retry = MAX_RETRY;
-
-  while (ret < 0 && retry-- > 0) {
-    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
-  }
-
-  close(fd);
-
-  if (ret == 0 && (rbuf[1] & 0x7C) == 0x4C) {
-    nic_pmon_source_info = SECOND_SOURCE;
+  if (nic_pmon_source_info == SECOND_SOURCE) {
     sq52205_init();
-  }
-  else {
-    syslog(LOG_WARNING, "%s() Unknown NIC PMON module\n", __func__);
-    nic_pmon_source_info = UNKNOWN_SOURCE;
   }
 }
 

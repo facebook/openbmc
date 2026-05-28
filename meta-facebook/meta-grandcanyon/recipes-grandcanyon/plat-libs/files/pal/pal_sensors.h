@@ -89,12 +89,6 @@
 
 #endif
 
-enum {
-  UNKNOWN_SOURCE = 0,
-  MAIN_SOURCE,  // default
-  SECOND_SOURCE,
-};
-
 typedef struct {
   float ucr_thresh;
   float unc_thresh;

@@ -3066,6 +3066,11 @@ pal_get_custom_event_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
         case BIC_SENSOR_CATERR:
           snprintf(name, MAX_SNR_NAME, "CATERR");
           break;
+#ifdef CONFIG_GRANDCANYON2
+        case  BIC_SENSOR_VR_FAULT:
+          snprintf(name, MAX_SNR_NAME, "VR_FAULT");
+          break;
+#endif
         default:
           snprintf(name, MAX_SNR_NAME, "Unknown");
           ret = PAL_ENOTSUP;
@@ -3134,8 +3139,19 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
 
   switch (snr_type) {
     case IPMI_OEM_SENSOR_TYPE_SYS_STA:
+#ifdef CONFIG_GRANDCANYON2
+      if (snr_num == BIC_SENSOR_VR_FAULT) {
+        snprintf(name, MAX_SNR_NAME, "VR_FAULT");
+        return PAL_EOK;
+      } else {
+        snprintf(name, MAX_SNR_NAME, "SYSTEM_STATUS");
+        return PAL_EOK;
+      }
+#else
       snprintf(name, MAX_SNR_NAME, "SYSTEM_STATUS");
       return PAL_EOK;
+#endif
+
     case IPMI_OEM_SENSOR_TYPE_OEM_C3:
       snprintf(name, MAX_SNR_NAME, "POWER_ERROR");
       return PAL_EOK;
@@ -3297,6 +3313,51 @@ pal_parse_gc_sys_sts_event(uint8_t *event_data, char *error_log) {
   return PAL_EOK;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+static const vr_source_map_t vr_name_map[] = {
+  { PVCCIN_CPU0,             "PVCCIN_CPU0" },
+  { PVCCFA_EHV_FIVRA_CPU0,   "PVCCFA_EHV_FIVRA_CPU0" },
+  { PVCCINFAON_CPU0,         "PVCCINFAON_CPU0" },
+  { PVCCFA_EHV_CPU0,         "PVCCFA_EHV_CPU0" },
+  { PVCCD_HV_CPU,            "PVCCD_HV_CPU" },
+  { P1V05_PCH_STB,           "P1V05_PCH_STB"},
+  { P1V8_STBY,               "P1V8_STBY"},
+  { P5V_STBY,                "P5V_STBY"},
+  { P3V3_STBY,               "P3V3_STBY"},
+  { VR_P12V_E1S_0,           "P12V_E1S_0"},
+  { VR_P3V3_E1S_0,           "P3V3_E1S_0"},
+};
+
+static int pal_parse_gc2_sys_vr_event(uint8_t *event_data, char *error_log)
+{
+  uint8_t event = 0;
+  char event_str[MAX_EVENT_STR] = {0};
+  const char *name = "Unknown VR";
+
+  if (event_data == NULL || error_log == NULL) {
+    syslog(LOG_ERR, "%s(): NULL parameter", __func__);
+    return -1;
+  }
+
+  event = event_data[SEL_EVENT_DATA1_INDEX] & SEL_EVENT_DATA_FULL_MASK;
+
+  for (size_t i = 0; i < ARRAY_SIZE(vr_name_map); i++) {
+    if (vr_name_map[i].id == event) {
+      name = vr_name_map[i].name;
+      break;
+    }
+  }
+
+  snprintf(event_str, sizeof(event_str),
+           "%s status: 0x%02x%02x",
+           name, event_data[SEL_EVENT_DATA2_INDEX], event_data[SEL_EVENT_DATA3_INDEX]);
+
+  strcat(error_log, event_str);
+
+  return PAL_EOK;
+}
+#endif
+
 static int
 pal_parse_gc2_sys_sts_event(uint8_t *event_data, char *error_log) {
   uint8_t event = 0;
@@ -3350,6 +3411,9 @@ pal_parse_gc2_sys_sts_event(uint8_t *event_data, char *error_log) {
       break;
     case SYS_SMI_STUCK_LOW:
       strcat(error_log, "SMI stuck low over 90s");
+      break;
+    case SYS_TEMP_ALERT:
+      strcat(error_log, "SMB_SENSOR_LVC3_ALERT_N");
       break;
     default:
       strcat(error_log, "Undefined system event");
@@ -3429,7 +3493,11 @@ pal_parse_sys_sts_event(uint8_t snr_num, uint8_t *event_data, char *error_log) {
   if (snr_num == GC2_SENSOR_SYSTEM_STATUS) {
     return pal_parse_gc2_sys_sts_event(event_data, error_log);
   }
-
+#ifdef CONFIG_GRANDCANYON2
+  if (snr_num == BIC_SENSOR_VR_FAULT) {
+    return pal_parse_gc2_sys_vr_event(event_data, error_log);
+  }
+#endif
   strcat(error_log, "Undefined system event");
   return PAL_EOK;
 }
@@ -4838,7 +4906,6 @@ pal_convert_to_dimm_str(uint8_t cpu, uint8_t channel, uint8_t slot, char *str) {
 }
 #endif
 
-
 const char *
 pal_get_mfr_name(mfr_id_t mfr)
 {
@@ -4941,3 +5008,82 @@ pal_read_pmbus_byte_from_exp(uint8_t bus, uint8_t addr, uint8_t cmd, uint8_t rle
 
   return -1;
 }
+#ifdef CONFIG_GRANDCANYON2
+uint8_t
+pal_detect_nic_pmon_module(void)
+{
+  int fd = 0, ret = -1;
+  uint8_t retry = MAX_RETRY, tlen = 1, rlen = 8;
+  uint8_t nic_pmon_source_info = UNKNOWN_SOURCE;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t bus = 0, addr = 0;
+  char model_str[7] = {0};
+
+  bus  = NIC_PMON_BUS;
+  addr = NIC_PMON_ADDR;
+
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s() Failed to open I2C bus %d\n", __func__, bus);
+
+    nic_pmon_source_info = UNKNOWN_SOURCE;
+    return nic_pmon_source_info;
+  }
+
+  /*
+   * Step 1: Check INA233 via PMBUS_MFR_MODEL.
+   *
+   * INA233 is PMBus device. MFR_MODEL returns block data:
+   *   rbuf[0] = length
+   *   rbuf[1..] = string
+   */
+  tbuf[0] = PMBUS_MFR_MODEL;
+  ret = -1;
+  retry = MAX_RETRY;
+  rlen = 8;
+
+  while (ret < 0 && retry-- > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  }
+
+  if (ret == 0 && rbuf[0] >= 6) {
+    memcpy(model_str, &rbuf[1], 6);
+    model_str[6] = '\0';
+
+    if (strncmp(model_str, "INA233", 6) == 0) {
+      close(fd);
+      nic_pmon_source_info = MAIN_SOURCE;
+      return nic_pmon_source_info;
+    }
+  }
+
+  /*
+   * Step 2: Check SQ52205 via register 0x0D.
+   * MID field: D6-D2.
+   */
+  memset(tbuf, 0, sizeof(tbuf));
+  memset(rbuf, 0, sizeof(rbuf));
+
+  tbuf[0] = 0x0D;
+  ret = -1;
+  retry = MAX_RETRY;
+  rlen = 2;
+
+  while (ret < 0 && retry-- > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  }
+
+  close(fd);
+
+  if (ret == 0 && ((rbuf[1] & 0x7C) == 0x4C)) {
+    nic_pmon_source_info = SECOND_SOURCE;
+    return nic_pmon_source_info;
+  }
+
+  syslog(LOG_WARNING, "%s() Unknown NIC PMON module, bus=%u addr=0x%02x", __func__, bus, addr);
+
+  nic_pmon_source_info = UNKNOWN_SOURCE;
+  return nic_pmon_source_info;
+}
+#endif

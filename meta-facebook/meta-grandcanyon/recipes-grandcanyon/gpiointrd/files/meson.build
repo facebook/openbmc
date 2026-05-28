@@ -13,6 +13,7 @@ dep_libs = [
     dependency('obmc-pal'),
     dependency('threads'),
     dependency('libkv'),
+    dependency('libobmc-i2c'),
 ]
 
 executable('gpiointrd', 'gpiointrd.c', dependencies : dep_libs, install: true)

@@ -1,0 +1,196 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Pete O_o <pmb@meta.com>
+Date: Wed, 27 May 2026 08:18:00 -0700
+Subject: [PATCH 25/25] platform-mc: lazy-attach FRU Decorator interfaces
+
+PldmEntityReq<> previously inherited AssetIntf / AssetTagIntf /
+RevisionIntf / CompatibleIntf and constructed all of them in its
+ctor. This caused pldmd to publish xyz.openbmc_project.Inventory.
+Decorator.Asset on /xyz/openbmc_project/inventory/system/board/
+<TerminusName> with empty-string defaults for every property the
+moment a Terminus inventory object was created, irrespective of
+whether the terminus had any FRU data to populate.
+
+When EntityManager owned the same inventory path (e.g. Quanta
+Minerva_Aegis on Harma), pldmd's empty-defaults interface raced
+EM's populated one through ObjectMapper. Symptom:
+
+  # pldmd running:
+  $ mfg-tool inventory | jq '...Decorator.Asset'
+  { "PartNumber": "", "SerialNumber": "", "Manufacturer": "", ... }
+
+  # pldmd stopped:
+  $ mfg-tool inventory | jq '...Decorator.Asset'
+  { "PartNumber": "3UF0MBA03Z0", "Manufacturer": "Quanta", ... }
+
+The race is not init-ordering; mapper indexing of pldmd's
+InterfacesAdded happens shortly after pldmd registers, after which
+queries hit pldmd's empty view.
+
+Fix: don't auto-attach the four Decorator interfaces in the
+PldmEntityReq ctor. Hold them as std::optional<> members and emplace
+each one lazily on first property write. For terminus paths where
+pldmd has no FRU data (the Minerva_Aegis case), Decorator.Asset
+never appears on D-Bus, EM remains uncontested, and the race
+vanishes structurally.
+
+The ItemIntf (Inventory.Item.{Board,Cpu,Dimm,...}) marker interface
+keeps eager construction -- it has no string properties to stomp
+and other code relies on its presence to mark the terminus.
+
+Move semantics are dropped (= delete) since PldmEntityReq is only
+ever held via std::unique_ptr<PldmEntityBase> and never moved.
+
+Signed-off-by: Pete O_o <pmb@meta.com>
+---
+ platform-mc/dbus_impl_fru.hpp | 82 ++++++++++++++++++
+ 1 file changed, 59 insertions(+), 23 deletions(-)
+
+--- a/platform-mc/dbus_impl_fru.hpp
++++ b/platform-mc/dbus_impl_fru.hpp
+@@ -18,6 +18,7 @@
+ #include <sdbusplus/server/object.hpp>
+ 
+ #include <memory>
++#include <optional>
+ 
+ namespace pldm
+ {
+@@ -84,22 +85,26 @@
+     virtual std::vector<std::string> names(std::vector<std::string> values) = 0;
+ 
+   protected:
+-    PldmEntityBase(sdbusplus::bus_t& /*bus*/, const std::string& /*path*/) {}
++    PldmEntityBase(sdbusplus::bus_t& bus, const std::string& path) :
++        bus_(bus), path_(path)
++    {}
++
++    sdbusplus::bus_t& bus_;
++    std::string path_;
+ };
+ 
+ /** @class PldmEntityReq
+  *  @brief Templated PLDM inventory entity implementation.
+- *  @details Inherits Decorator interfaces for properties and an
+- *           entity-type-specific Inventory.Item marker interface.
++ *  @details Holds an entity-type-specific Inventory.Item marker interface and
++ *           lazily attaches Decorator interfaces (Asset, AssetTag, Revision,
++ *           Compatible) only when a property is actually written. This avoids
++ *           publishing empty-string defaults on D-Bus and racing other
++ *           services (e.g. EntityManager) that own the same inventory path.
+  *  @tparam ItemServer - The sdbusplus server type for the Item interface
+  */
+ template <typename ItemServer>
+ class PldmEntityReq :
+     public PldmEntityBase,
+-    public AssetIntf,
+-    public AssetTagIntf,
+-    public RevisionIntf,
+-    public CompatibleIntf,
+     public sdbusplus::server::object_t<ItemServer>
+ {
+   public:
+@@ -108,56 +113,87 @@
+     PldmEntityReq() = delete;
+     PldmEntityReq(const PldmEntityReq&) = delete;
+     PldmEntityReq& operator=(const PldmEntityReq&) = delete;
+-    PldmEntityReq(PldmEntityReq&&) noexcept = default;
+-    PldmEntityReq& operator=(PldmEntityReq&&) noexcept = default;
++    PldmEntityReq(PldmEntityReq&&) = delete;
++    PldmEntityReq& operator=(PldmEntityReq&&) = delete;
+     ~PldmEntityReq() override = default;
+ 
+     PldmEntityReq(sdbusplus::bus_t& bus, const std::string& path) :
+-        PldmEntityBase(bus, path), AssetIntf(bus, path.c_str()),
+-        AssetTagIntf(bus, path.c_str()), RevisionIntf(bus, path.c_str()),
+-        CompatibleIntf(bus, path.c_str()), ItemIntf(bus, path.c_str())
++        PldmEntityBase(bus, path), ItemIntf(bus, path.c_str())
+     {}
+ 
+     std::string partNumber(std::string value) override
+     {
+-        return AssetIntf::partNumber(std::move(value));
++        ensureAsset();
++        return asset_->partNumber(std::move(value));
+     }
+     std::string serialNumber(std::string value) override
+     {
+-        return AssetIntf::serialNumber(std::move(value));
++        ensureAsset();
++        return asset_->serialNumber(std::move(value));
+     }
+     std::string manufacturer(std::string value) override
+     {
+-        return AssetIntf::manufacturer(std::move(value));
++        ensureAsset();
++        return asset_->manufacturer(std::move(value));
+     }
+     std::string buildDate(std::string value) override
+     {
+-        return AssetIntf::buildDate(std::move(value));
++        ensureAsset();
++        return asset_->buildDate(std::move(value));
+     }
+     std::string model(std::string value) override
+     {
+-        return AssetIntf::model(std::move(value));
++        ensureAsset();
++        return asset_->model(std::move(value));
+     }
+     std::string subModel(std::string value) override
+     {
+-        return AssetIntf::subModel(std::move(value));
++        ensureAsset();
++        return asset_->subModel(std::move(value));
+     }
+     std::string sparePartNumber(std::string value) override
+     {
+-        return AssetIntf::sparePartNumber(std::move(value));
++        ensureAsset();
++        return asset_->sparePartNumber(std::move(value));
+     }
+     std::string assetTag(std::string value) override
+     {
+-        return AssetTagIntf::assetTag(std::move(value));
++        if (!assetTag_)
++        {
++            assetTag_.emplace(bus_, path_.c_str());
++        }
++        return assetTag_->assetTag(std::move(value));
+     }
+     std::string version(std::string value) override
+     {
+-        return RevisionIntf::version(std::move(value));
++        if (!revision_)
++        {
++            revision_.emplace(bus_, path_.c_str());
++        }
++        return revision_->version(std::move(value));
+     }
+     std::vector<std::string> names(std::vector<std::string> values) override
+     {
+-        return CompatibleIntf::names(std::move(values));
+-    }
++        if (!compatible_)
++        {
++            compatible_.emplace(bus_, path_.c_str());
++        }
++        return compatible_->names(std::move(values));
++    }
++
++  private:
++    void ensureAsset()
++    {
++        if (!asset_)
++        {
++            asset_.emplace(bus_, path_.c_str());
++        }
++    }
++
++    std::optional<AssetIntf> asset_;
++    std::optional<AssetTagIntf> assetTag_;
++    std::optional<RevisionIntf> revision_;
++    std::optional<CompatibleIntf> compatible_;
+ };
+ 
+ // Item interface server types

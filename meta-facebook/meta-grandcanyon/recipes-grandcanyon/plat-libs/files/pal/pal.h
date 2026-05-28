@@ -662,7 +662,11 @@ int pal_get_80port_record(uint8_t slot_id, uint8_t *res_data, size_t max_len, si
 int pal_get_num_slots(uint8_t *num);
 int pal_write_error_code_file(unsigned char error_code_update, uint8_t error_code_status);
 int pal_read_error_code_file(uint8_t *error_code_array, uint8_t error_code_array_len);
+#ifdef CONFIG_GRANDCANYON2
+int pal_get_error_code(uint8_t *exp_codes, uint16_t *exp_cnt, uint8_t *bmc_codes, uint16_t *bmc_cnt);
+#else
 int pal_get_error_code(uint8_t *data, uint8_t* error_count);
+#endif
 void pal_set_error_code(unsigned char error_num, uint8_t error_code_status);
 int pal_bmc_err_enable(const char *error_item);
 int pal_bmc_err_disable(const char *error_item);

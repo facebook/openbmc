@@ -97,6 +97,85 @@ led_sync_handler() {
 
 // Thread to handle different case of system status LED
 // Define on OpenBMC spec. "3.2.4 Status/Fault LED"
+#ifdef CONFIG_GRANDCANYON2
+static void *
+system_status_led_handler() {
+  int ret = 0, blink_count = 1;
+  uint8_t server_power_status = SERVER_12V_OFF;
+  uint8_t exp_codes[MAX_NUM_ERR_CODES] = {0}, bmc_codes[MAX_NUM_ERR_CODES] = {0};
+  uint16_t exp_cnt = 0, bmc_cnt = 0;
+
+  char value[MAX_VALUE_LEN] = {0};
+
+  // set flag to notice BMC front-paneld system_status_led_handler is ready
+  kv_set("flag_front_sys_status_led", STR_VALUE_1, 0, 0);
+
+  while(1) {
+    // Get flag to check if status LED is setting by fpc-util
+    ret = kv_get("flag_fpc_status", value, NULL, 0);
+    if ((ret == 0) && (strcmp(value, STR_VALUE_1) == 0)) {
+      sleep(SYNC_SYSTEM_STATUS_LED_INTERVAL);
+      continue;
+    }
+
+    ret = pal_get_server_power(FRU_SERVER, &server_power_status);
+    if (ret < 0) {
+      //if can't get server power status, keep system status LED solid yellow
+      syslog(LOG_WARNING, "%s(): failed to get server power status", __func__);
+
+      ret = pal_set_status_led(FRU_UIC, STATUS_LED_YELLOW);
+      if (ret < 0) {
+        syslog(LOG_WARNING, "%s(): failed to set server status LED to solid yellow", __func__);
+      }
+
+    } else {
+      ret = pal_get_error_code(exp_codes, &exp_cnt, bmc_codes, &bmc_cnt);
+
+      // When server power on
+      if (server_power_status == SERVER_POWER_ON) {
+        if ((exp_cnt == 0) && (bmc_cnt == 0) && (ret == 0)) {
+          // Solid Blue: BMC, server, and Expander have no fault
+          ret = pal_set_status_led(FRU_UIC, STATUS_LED_BLUE);
+          if (ret < 0) {
+            syslog(LOG_WARNING, "%s(): failed to set server status LED to solid blue", __func__);
+          }
+        } else {
+          // Solid Yellow: BMC, server, or Expander have fault
+          ret = pal_set_status_led(FRU_UIC, STATUS_LED_YELLOW);
+          if (ret < 0) {
+            syslog(LOG_WARNING, "%s(): failed to set server status LED to solid yellow", __func__);
+          }
+        }
+
+      // When server power off: only check BMC has error or not
+      } else {
+
+        // Blinking Yellow: BMC have no fault
+        if ((bmc_cnt == 0) && (ret == 0)){
+          if (blink_count > 0) {
+            ret = pal_set_status_led(FRU_UIC, STATUS_LED_YELLOW);
+          } else {
+            ret = pal_set_status_led(FRU_UIC, STATUS_LED_OFF);
+          }
+          blink_count = blink_count * -1;
+
+        // Solid Yellow: BMC have fault
+        } else {
+          ret = pal_set_status_led(FRU_UIC, STATUS_LED_YELLOW);
+          if (ret < 0) {
+            syslog(LOG_WARNING, "%s(): failed to set server status LED to solid yellow", __func__);
+          }
+        }
+      }
+    }
+
+    sleep(SYNC_SYSTEM_STATUS_LED_INTERVAL);
+  } // end while loop
+
+  return NULL;
+}
+
+#else
 static void *
 system_status_led_handler() {
   int ret = 0, blink_count = 1, i = 0;
@@ -181,6 +260,7 @@ system_status_led_handler() {
   
   return NULL;
 }
+#endif
 
 // Thread to handle fru health
 static void *
@@ -214,7 +294,116 @@ fru_health_handler() {
   
   return NULL;
 }
+#ifdef CONFIG_GRANDCANYON2
+static void
+reset_dbg_card_error_state(uint16_t *cur_error_count,
+                           uint16_t *pre_error_count,
+                           int *error_index,
+                           int *poll_error_timer)
+{
+  *cur_error_count = 0;
+  *pre_error_count = 0;
+  *error_index = 0;
+  *poll_error_timer = 0;
+}
+static void *
+dbg_card_show_error_code(void *arg)
+{
+  uint8_t dbg_present = 0;
+  uint8_t uart_sel = 0;
+  uint8_t error[MAX_NUM_ERR_CODES] = {0}, error_code = 0;
+  uint16_t cur_error_count = 0, pre_error_count = 0;
+  int ret = 0;
+  int poll_error_timer = 0, error_index = 0;
+  uint8_t exp_codes[MAX_NUM_ERR_CODES] = {0}, bmc_codes[MAX_NUM_ERR_CODES] = {0};
+  uint16_t exp_cnt = 0, bmc_cnt = 0;
+  int i = 0;
 
+  (void)arg;
+
+  ret = kv_set("flag_front_err_code", STR_VALUE_1, 0, 0);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: failed to set flag_front_err_code", __func__);
+  }
+
+  while (1) {
+    ret = pal_is_debug_card_present(&dbg_present);
+    if ((ret != 0) || (dbg_present != FRU_PRESENT)) {
+      reset_dbg_card_error_state(&cur_error_count, &pre_error_count, &error_index, &poll_error_timer);
+      sleep(DBG_CARD_SHOW_ERR_INTERVAL);
+      continue;
+    }
+
+    ret = pal_get_debug_card_uart_sel(&uart_sel);
+    if ((ret != 0) || (uart_sel != DEBUG_UART_SEL_BMC)) {
+      reset_dbg_card_error_state(&cur_error_count, &pre_error_count, &error_index, &poll_error_timer);
+      sleep(DBG_CARD_SHOW_ERR_INTERVAL);
+      continue;
+    }
+
+    if (poll_error_timer == 0) {
+      memset(error, 0, sizeof(error));
+      memset(exp_codes, 0, sizeof(exp_codes));
+      memset(bmc_codes, 0, sizeof(bmc_codes));
+
+      cur_error_count = 0;
+      exp_cnt = 0;
+      bmc_cnt = 0;
+
+      ret = pal_get_error_code(exp_codes, &exp_cnt, bmc_codes, &bmc_cnt);
+      if (ret == 0) {
+        for (i = 0; i < exp_cnt && cur_error_count < MAX_NUM_ERR_CODES; i++) {
+          error[cur_error_count++] = exp_codes[i];
+        }
+
+        for (i = 0; i < bmc_cnt && cur_error_count < MAX_NUM_ERR_CODES; i++) {
+          error[cur_error_count++] = bmc_codes[i];
+        }
+
+        if (cur_error_count < pre_error_count) {
+          error_index = 0;
+        }
+
+        if (error_index >= cur_error_count) {
+          error_index = 0;
+        }
+
+        pre_error_count = cur_error_count;
+      } else {
+        cur_error_count = 0;
+        pre_error_count = 0;
+        error_index = 0;
+      }
+    }
+
+    if (cur_error_count == 0) {
+      error_code = 0;
+      error_index = 0;
+    } else {
+      if (error_index >= cur_error_count) {
+        error_index = 0;
+      }
+
+      error_code = error[error_index];
+
+      error_index++;
+      if (error_index >= cur_error_count) {
+        error_index = 0;
+      }
+    }
+    pal_post_display(error_code);
+
+    poll_error_timer++;
+    if (poll_error_timer >= DBG_CARD_UPDATE_ERR_INTERVAL) {
+      poll_error_timer = 0;
+    }
+
+    sleep(DBG_CARD_SHOW_ERR_INTERVAL);
+  } // while loop end
+
+  pthread_exit(NULL);
+}
+#else //!CONFIG_GRANDCANYON2
 // Thread to show error code on debug card
 static void *
 dbg_card_show_error_code() {
@@ -280,6 +469,7 @@ dbg_card_show_error_code() {
 
   pthread_exit(NULL);
 }
+#endif
 
 // Thread to handle heartbeat health
 static void *

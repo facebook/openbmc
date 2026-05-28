@@ -1950,6 +1950,87 @@ pal_write_error_code_file(unsigned char error_code_update, uint8_t error_code_st
   return 0;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+#define ERR_CODE_BYTES        (MAX_NUM_ERR_CODES / 8)   // 32
+
+static int bitmap_to_codelist(const uint8_t *bm, int bm_len,
+                              uint8_t *out, int out_len) {
+  int cnt = 0;
+
+  for (int i = 0; i < bm_len; i++) {
+    for (int b = 0; b < 8; b++) {
+      if (GETBIT(bm[i], b)) {
+        if (cnt >= out_len) {
+          return cnt;
+        }
+        out[cnt++] = (uint8_t)(i * 8 + b);
+      }
+    }
+  }
+
+  return cnt;
+}
+
+int pal_get_error_code(uint8_t *exp_codes, uint16_t *exp_cnt,
+                       uint8_t *bmc_codes, uint16_t *bmc_cnt) {
+  uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t rlen = 0, tlen = 0;
+
+  uint8_t exp_bm[ERR_CODE_BYTES] = {0};
+  uint8_t bmc_bm[ERR_CODE_BYTES] = {0};
+
+  int ret;
+  int exp_total = 0;
+  int bmc_total = 0;
+
+  if (!exp_codes || !exp_cnt || !bmc_codes || !bmc_cnt) {
+    return -1;
+  }
+
+  memset(exp_codes, 0, MAX_NUM_ERR_CODES);
+  memset(bmc_codes, 0, MAX_NUM_ERR_CODES);
+  *exp_cnt = 0;
+  *bmc_cnt = 0;
+
+  // 1) Expander error code bitmap
+  ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_OEM_EXP_ERROR_CODE,
+                              tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): failed to get exp error code", __func__);
+    memset(exp_bm, 0, sizeof(exp_bm));
+  } else {
+    memcpy(exp_bm, rbuf, MIN((size_t)rlen, sizeof(exp_bm)));
+
+    // code 0 = "No error" -> ignore
+    exp_bm[0] = CLEARBIT(exp_bm[0], 0);
+  }
+
+  // 2) BMC bitmap
+  ret = pal_read_error_code_file(bmc_bm, ERR_CODE_BYTES);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): failed to get bmc error code", __func__);
+    memset(bmc_bm, 0, sizeof(bmc_bm));
+  }
+
+  // 3) Convert bitmap -> code list (in pal_get_error_code)
+  exp_total = bitmap_to_codelist(exp_bm, ERR_CODE_BYTES, exp_codes, MAX_NUM_ERR_CODES);
+  bmc_total = bitmap_to_codelist(bmc_bm, ERR_CODE_BYTES, bmc_codes, MAX_NUM_ERR_CODES);
+
+  int w = 0;
+  for (int i = 0; i < bmc_total && i < MAX_NUM_ERR_CODES; i++) {
+    if (bmc_codes[i] >= BMC_ERR_CODE_START_NUM) {
+      bmc_codes[w++] = bmc_codes[i];
+    }
+  }
+  bmc_total = w;
+
+  *exp_cnt = (exp_total > MAX_NUM_ERR_CODES) ? MAX_NUM_ERR_CODES : exp_total;
+  *bmc_cnt = (bmc_total > MAX_NUM_ERR_CODES) ? MAX_NUM_ERR_CODES : bmc_total;
+
+  return 0;
+}
+#else //!CONFIG_GRANDCANYON2
 int
 pal_get_error_code(uint8_t *data, uint8_t* error_count) {
   uint8_t tbuf[MAX_IPMB_BUFFER] = {0x00};
@@ -2018,6 +2099,8 @@ pal_get_error_code(uint8_t *data, uint8_t* error_count) {
 
   return 0;
 }
+
+#endif
 
 void pal_set_error_code(unsigned char error_num, uint8_t error_code_status) {
   int ret = 0;

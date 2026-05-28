@@ -44,7 +44,11 @@ print_usage_help(void) {
   uint8_t chassis_type = 0;
 
   printf("Usage: enclosure-util --error\n");
+#ifdef CONFIG_GRANDCANYON2
+  printf("         Expander error code range: 0x00~0xFF\n");
+#else
   printf("         Expander error code range: 1~100\n");
+#endif
   printf("         BMC error code range:      0x64~0xFF\n");
   printf("       enclosure-util --ack-clear\n");
   printf("       enclosure-util --hdd-status\n");
@@ -61,6 +65,39 @@ print_usage_help(void) {
   
 }
 
+#ifdef CONFIG_GRANDCANYON2
+void
+show_error_code() {
+  uint8_t exp_codes[MAX_NUM_ERR_CODES] = {0}, bmc_codes[MAX_NUM_ERR_CODES] = {0};
+  uint16_t exp_cnt = 0, bmc_cnt = 0;
+
+  if (pal_get_error_code(exp_codes, &exp_cnt, bmc_codes, &bmc_cnt) < 0) {
+    printf("enclosure-util: fail to get error code\n");
+    return;
+  }
+
+  if (exp_cnt == 0) {
+    printf("Expander Error Counter: 0 (No Error)\n");
+  } else {
+    printf("Expander Error Counter: %d\n", exp_cnt);
+    for (int i = 0; i < exp_cnt; i++) {
+      uint8_t c = exp_codes[i];
+      printf("Expander Error Code 0x%02X: %s\n", c, exp_error_code_description[c]);
+    }
+  }
+
+  if (bmc_cnt == 0){
+    printf("BMC Error Counter: 0 (No Error)\n");
+  } else {
+    printf("BMC Error Counter: %d\n", bmc_cnt);
+    for (int i = 0; i < bmc_cnt; i++) {
+      uint8_t c = bmc_codes[i];
+      printf("BMC Error Code 0x%02X: %s\n", c, bmc_error_code_description[c - BMC_ERR_CODE_START_NUM]);
+    }
+
+  }
+}
+#else //!CONFIG_GRANDCANYON2
 void
 show_error_code() {
   uint8_t error[MAX_NUM_ERR_CODES] = {0}, error_count = 0;
@@ -94,6 +131,7 @@ show_error_code() {
     }
   }
 }
+#endif
 
 void
 show_hdd_status(int hdd_id) {

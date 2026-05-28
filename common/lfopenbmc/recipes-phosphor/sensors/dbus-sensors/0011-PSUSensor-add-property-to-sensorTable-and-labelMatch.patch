@@ -1,4 +1,4 @@
-From 291276e253534deb346d6410f57b70872750d94e Mon Sep 17 00:00:00 2001
+From 3a1ababffe50b98f6319b7a609b9ce777d612502 Mon Sep 17 00:00:00 2001
 From: Andy-Hsu-wiwynn <andy.hsu.wiwynn@gmail.com>
 Date: Fri, 15 Aug 2025 15:44:31 +0800
 Subject: [PATCH 11/19] PSUSensor:add property to sensorTable and labelMatch
@@ -21,10 +21,10 @@ Signed-off-by: Andy Hsu <andy.hsu.wiwynn@gmail.com>
  1 file changed, 5 insertions(+), 2 deletions(-)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index d1a03fb..e7f711a 100644
+index 31cf769..a757dbe 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -190,8 +190,9 @@ struct SensorUnit
+@@ -193,8 +193,9 @@ struct SensorUnit
      auto operator<=>(const SensorUnit&) const = default;
  };
  
@@ -35,7 +35,7 @@ index d1a03fb..e7f711a 100644
      {"fan", sensor_paths::unitRPMs},
      {"in", sensor_paths::unitVolts},
      {"power", sensor_paths::unitWatts},
-@@ -199,10 +200,12 @@ static constexpr const std::array<SensorUnit, 6> sensorTable{{
+@@ -202,10 +203,12 @@ static constexpr const std::array<SensorUnit, 6> sensorTable{{
      {"voltage", sensor_paths::unitVolts},
  }};
  
@@ -50,5 +50,5 @@ index d1a03fb..e7f711a 100644
      {"in", "Output Voltage", 255, 0, 3, 0},
      {"iout", "Output Current", 255, 0, 3, 0},
 -- 
-2.52.0
+2.53.0-Meta
 

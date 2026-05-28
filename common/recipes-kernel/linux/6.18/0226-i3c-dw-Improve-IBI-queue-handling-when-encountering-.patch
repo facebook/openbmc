@@ -1,4 +1,4 @@
-From acf6cd63409153480f980983807012971f4b2e21 Mon Sep 17 00:00:00 2001
+From bdfe51ac886967ddeefaa500d505083deb14cfa9 Mon Sep 17 00:00:00 2001
 From: Zoey Chung <zoey_yj_chung@wiwynn.com>
 Date: Tue, 10 Mar 2026 14:16:35 +0800
 Subject: [PATCH 226/237] i3c: dw: Improve IBI queue handling when encountering
@@ -119,10 +119,10 @@ index 8250da40a60b..1d003eacf83c 100644
  
  static const struct dw_i3c_platform_ops ast2600_i3c_ops = {
 diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
-index 8d74ae1105e1..d3426583f8d4 100644
+index 4745aeedf85e..66705b044a3b 100644
 --- a/drivers/i3c/master/dw-i3c-master.c
 +++ b/drivers/i3c/master/dw-i3c-master.c
-@@ -386,17 +386,20 @@ static int dw_i3c_master_exit_halt(struct dw_i3c_master *master)
+@@ -387,17 +387,20 @@ static int dw_i3c_master_exit_halt(struct dw_i3c_master *master)
  	return ret;
  }
  
@@ -148,7 +148,7 @@ index 8d74ae1105e1..d3426583f8d4 100644
  
  	ret = readl_poll_timeout_atomic(master->regs + PRESENT_STATE, status,
  					FIELD_GET(CM_TFR_STS, status) == halt_state,
-@@ -1636,8 +1639,8 @@ static void dw_i3c_master_drain_ibi_queue(struct dw_i3c_master *master,
+@@ -1635,8 +1638,8 @@ static void dw_i3c_master_drain_ibi_queue(struct dw_i3c_master *master,
  		readl(master->regs + IBI_QUEUE_STATUS);
  }
  
@@ -159,7 +159,7 @@ index 8d74ae1105e1..d3426583f8d4 100644
  {
  	struct dw_i3c_i2c_dev_data *data;
  	struct i3c_ibi_slot *slot;
-@@ -1647,6 +1650,7 @@ static void dw_i3c_master_handle_ibi_sir(struct dw_i3c_master *master,
+@@ -1646,6 +1649,7 @@ static void dw_i3c_master_handle_ibi_sir(struct dw_i3c_master *master,
  	u8 addr, len;
  	int idx;
  	bool terminate_ibi = false;
@@ -167,7 +167,7 @@ index 8d74ae1105e1..d3426583f8d4 100644
  
  	addr = IBI_QUEUE_IBI_ADDR(status);
  	len = IBI_QUEUE_STATUS_DATA_LEN(status);
-@@ -1701,15 +1705,21 @@ static void dw_i3c_master_handle_ibi_sir(struct dw_i3c_master *master,
+@@ -1700,15 +1704,21 @@ static void dw_i3c_master_handle_ibi_sir(struct dw_i3c_master *master,
  
  	spin_unlock_irqrestore(&master->devs_lock, flags);
  
@@ -191,7 +191,7 @@ index 8d74ae1105e1..d3426583f8d4 100644
  }
  
  /* "ibis": referring to In-Band Interrupts, and not
-@@ -1745,7 +1755,8 @@ static void dw_i3c_master_irq_handle_ibis(struct dw_i3c_master *master)
+@@ -1744,7 +1754,8 @@ static void dw_i3c_master_irq_handle_ibis(struct dw_i3c_master *master)
  		}
  
  		if (IBI_TYPE_SIRQ(reg)) {

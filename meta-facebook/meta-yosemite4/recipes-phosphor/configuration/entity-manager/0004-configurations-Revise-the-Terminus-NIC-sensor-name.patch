@@ -1,4 +1,4 @@
-From d68139511a5ed944d775b77ef89ec55e329bbbfc Mon Sep 17 00:00:00 2001
+From 438bcfe48d8545373700e140cad9aca930efc23a Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Wed, 17 Jul 2024 11:33:26 +0800
 Subject: [PATCH 4/7] configurations: Revise the Terminus NIC sensor name
@@ -8,13 +8,13 @@ Subject: [PATCH 4/7] configurations: Revise the Terminus NIC sensor name
 
 Change-Id: I46a611d4a4c2a29f320baedcdbe1c9112898de4a
 ---
- configurations/meta/terminus_2x100g_nic_tsff.json | 6 +++---
+ configurations/meta/terminus_100g_nic_tsff.json | 6 +++---
  1 file changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/configurations/meta/terminus_2x100g_nic_tsff.json b/configurations/meta/terminus_2x100g_nic_tsff.json
-index 0d19e6b..c40e222 100644
---- a/configurations/meta/terminus_2x100g_nic_tsff.json
-+++ b/configurations/meta/terminus_2x100g_nic_tsff.json
+diff --git a/configurations/meta/terminus_100g_nic_tsff.json b/configurations/meta/terminus_100g_nic_tsff.json
+index e4f92d7..261ccd6 100644
+--- a/configurations/meta/terminus_100g_nic_tsff.json
++++ b/configurations/meta/terminus_100g_nic_tsff.json
 @@ -3,7 +3,7 @@
          {
              "Address": "$address",
@@ -39,9 +39,9 @@ index 0d19e6b..c40e222 100644
      ],
 -    "Name": "Terminus NIC FRU $bus",
 +    "Name": "Terminus NIC FRU $bus % 24",
-     "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Terminus 2x100G NIC TSFF'})",
+     "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Terminus .*100G NIC TSFF'})",
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
 -- 
-2.47.3
+2.53.0-Meta
 

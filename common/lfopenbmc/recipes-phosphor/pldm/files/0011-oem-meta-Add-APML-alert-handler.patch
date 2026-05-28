@@ -1,7 +1,7 @@
-From 1b6e3900788c6217c8916dda1d7d9fccd5cd3f95 Mon Sep 17 00:00:00 2001
+From 11dc973070ce59f28d8e2c13edb99aecb1bbdf9e Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Thu, 23 Oct 2025 14:18:22 +0800
-Subject: [PATCH 11/23] oem-meta: Add APML alert handler
+Subject: [PATCH 11/24] oem-meta: Add APML alert handler
 
 Add APML alert handler. Keep the implementation for the amd-ras tool
 downstream, as it is not supported upstream.
@@ -18,7 +18,7 @@ Signed-off-by: Sora Su <baxiche@gmail.com>
  create mode 100644 oem/meta/libpldmresponder/file_io_type_apml_alert.hpp
 
 diff --git a/oem/meta/libpldmresponder/file_io.cpp b/oem/meta/libpldmresponder/file_io.cpp
-index f41743f..a3249fb 100644
+index 737de8b..f4c0c20 100644
 --- a/oem/meta/libpldmresponder/file_io.cpp
 +++ b/oem/meta/libpldmresponder/file_io.cpp
 @@ -1,5 +1,6 @@
@@ -183,5 +183,5 @@ index fb5ba14..cff4ca7 100644
      'file_io_type_crash_dump.cpp',
      'file_io_type_event_log.cpp',
 -- 
-2.52.0
+2.53.0-Meta
 

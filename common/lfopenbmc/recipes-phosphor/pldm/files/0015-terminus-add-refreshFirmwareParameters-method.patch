@@ -1,7 +1,7 @@
-From 98f2aaad154a2944f75c42a0788db0949f2ee932 Mon Sep 17 00:00:00 2001
+From 55c22ab17bedd31f4f6fa0780bb541dec3640ec8 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 7 May 2026 21:56:34 +0800
-Subject: [PATCH 15/23] terminus: add refreshFirmwareParameters method
+Subject: [PATCH 15/24] terminus: add refreshFirmwareParameters method
 
 Add `refreshFirmwareParameters` to query firmware parameters without
 running `handleMctpEndpoints`.
@@ -301,5 +301,5 @@ index 20f9c5c..96a35e9 100644
       *
       *  @param[in] mctpInfoMap - information of discovered MCTP endpoints
 -- 
-2.47.3
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From 525d8aab4454767d9c01cf0bcacbeb0994ab125f Mon Sep 17 00:00:00 2001
+From 41a103a0b2542b2c126d935d17bd9bacdf79a2b0 Mon Sep 17 00:00:00 2001
 From: Dylan Hung <dylan_hung@aspeedtech.com>
 Date: Mon, 29 Apr 2024 17:51:06 +0800
 Subject: [PATCH 220/237] i3c: ast2600: Validate AST2600 I3C for MCTP-over-I3C
@@ -185,7 +185,7 @@ index e05e83812c71..0665773cd57d 100644
  
  static int ast2600_i3c_probe(struct platform_device *pdev)
 diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
-index 825eb2d20e9e..54034be7be24 100644
+index 585f32011974..d2a74b7dffd4 100644
 --- a/drivers/i3c/master/dw-i3c-master.c
 +++ b/drivers/i3c/master/dw-i3c-master.c
 @@ -6,6 +6,7 @@
@@ -193,10 +193,10 @@ index 825eb2d20e9e..54034be7be24 100644
  
  #include <linux/bitops.h>
 +#include <linux/bitfield.h>
+ #include <linux/cleanup.h>
  #include <linux/clk.h>
  #include <linux/completion.h>
- #include <linux/err.h>
-@@ -29,8 +30,10 @@
+@@ -30,8 +31,10 @@
  #define DEVICE_CTRL			0x0
  #define DEV_CTRL_ENABLE			BIT(31)
  #define DEV_CTRL_RESUME			BIT(30)
@@ -207,7 +207,7 @@ index 825eb2d20e9e..54034be7be24 100644
  
  #define DEVICE_ADDR			0x4
  #define DEV_ADDR_DYNAMIC_ADDR_VALID	BIT(31)
-@@ -43,6 +46,16 @@
+@@ -44,6 +47,16 @@
  #define COMMAND_PORT_SDAP		BIT(27)
  #define COMMAND_PORT_ROC		BIT(26)
  #define COMMAND_PORT_SPEED(x)		(((x) << 21) & GENMASK(23, 21))
@@ -224,7 +224,7 @@ index 825eb2d20e9e..54034be7be24 100644
  #define COMMAND_PORT_DEV_INDEX(x)	(((x) << 16) & GENMASK(20, 16))
  #define COMMAND_PORT_CP			BIT(15)
  #define COMMAND_PORT_CMD(x)		(((x) << 7) & GENMASK(14, 7))
-@@ -79,6 +92,7 @@
+@@ -80,6 +93,7 @@
  
  #define RX_TX_DATA_PORT			0x14
  #define IBI_QUEUE_STATUS		0x18
@@ -232,7 +232,7 @@ index 825eb2d20e9e..54034be7be24 100644
  #define IBI_QUEUE_STATUS_IBI_ID(x)	(((x) & GENMASK(15, 8)) >> 8)
  #define IBI_QUEUE_STATUS_DATA_LEN(x)	((x) & GENMASK(7, 0))
  #define IBI_QUEUE_IBI_ADDR(x)		(IBI_QUEUE_STATUS_IBI_ID(x) >> 1)
-@@ -99,7 +113,8 @@
+@@ -100,7 +114,8 @@
  #define QUEUE_THLD_CTRL_RESP_BUF(x)	(((x) - 1) << 8)
  
  #define DATA_BUFFER_THLD_CTRL		0x20
@@ -242,7 +242,7 @@ index 825eb2d20e9e..54034be7be24 100644
  
  #define IBI_QUEUE_CTRL			0x24
  #define IBI_MR_REQ_REJECT		0x2C
-@@ -159,6 +174,12 @@
+@@ -160,6 +175,12 @@
  #define DATA_BUFFER_STATUS_LEVEL_TX(x)	((x) & GENMASK(7, 0))
  
  #define PRESENT_STATE			0x54
@@ -255,7 +255,7 @@ index 825eb2d20e9e..54034be7be24 100644
  #define CCC_DEVICE_STATUS		0x58
  #define DEVICE_ADDR_TABLE_POINTER	0x5c
  #define DEVICE_ADDR_TABLE_DEPTH(x)	(((x) & GENMASK(31, 16)) >> 16)
-@@ -176,17 +197,17 @@
+@@ -177,17 +198,17 @@
  #define DEVICE_CTRL_EXTENDED		0xb0
  #define SCL_I3C_OD_TIMING		0xb4
  #define SCL_I3C_PP_TIMING		0xb8
@@ -280,7 +280,7 @@ index 825eb2d20e9e..54034be7be24 100644
  
  #define SCL_EXT_LCNT_TIMING		0xc8
  #define SCL_EXT_LCNT_4(x)		(((x) << 24) & GENMASK(31, 24))
-@@ -195,8 +216,14 @@
+@@ -196,8 +217,14 @@
  #define SCL_EXT_LCNT_1(x)		((x) & GENMASK(7, 0))
  
  #define SCL_EXT_TERMN_LCNT_TIMING	0xcc
@@ -296,7 +296,7 @@ index 825eb2d20e9e..54034be7be24 100644
  
  #define BUS_IDLE_TIMING			0xd8
  #define I3C_VER_ID			0xe0
-@@ -204,10 +231,11 @@
+@@ -205,10 +232,11 @@
  #define EXTENDED_CAPABILITY		0xe8
  #define SLAVE_CONFIG			0xec
  
@@ -310,7 +310,7 @@ index 825eb2d20e9e..54034be7be24 100644
  #define DEV_ADDR_TABLE_STATIC_ADDR(x)	((x) & GENMASK(6, 0))
  #define DEV_ADDR_TABLE_LOC(start, idx)	((start) + ((idx) << 2))
  
-@@ -215,8 +243,19 @@
+@@ -216,8 +244,19 @@
  #define I3C_BUS_SDR2_SCL_RATE		6000000
  #define I3C_BUS_SDR3_SCL_RATE		4000000
  #define I3C_BUS_SDR4_SCL_RATE		2000000
@@ -330,7 +330,7 @@ index 825eb2d20e9e..54034be7be24 100644
  #define I3C_BUS_THIGH_MAX_NS		41
  
  #define XFER_TIMEOUT (msecs_to_jiffies(1000))
-@@ -295,6 +334,18 @@ to_dw_i3c_master(struct i3c_master_controller *master)
+@@ -296,6 +335,18 @@ to_dw_i3c_master(struct i3c_master_controller *master)
  	return container_of(master, struct dw_i3c_master, base);
  }
  
@@ -349,7 +349,7 @@ index 825eb2d20e9e..54034be7be24 100644
  static void dw_i3c_master_disable(struct dw_i3c_master *master)
  {
  	writel(readl(master->regs + DEVICE_CTRL) & ~DEV_CTRL_ENABLE,
-@@ -314,6 +365,50 @@ static void dw_i3c_master_enable(struct dw_i3c_master *master)
+@@ -315,6 +366,50 @@ static void dw_i3c_master_enable(struct dw_i3c_master *master)
  	       master->regs + DEVICE_CTRL);
  }
  
@@ -400,7 +400,7 @@ index 825eb2d20e9e..54034be7be24 100644
  static int dw_i3c_master_get_addr_pos(struct dw_i3c_master *master, u8 addr)
  {
  	int pos;
-@@ -498,9 +593,14 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
+@@ -499,9 +594,14 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
  	complete(&xfer->comp);
  
  	if (ret < 0) {
@@ -417,7 +417,7 @@ index 825eb2d20e9e..54034be7be24 100644
  	}
  
  	xfer = list_first_entry_or_null(&master->xferqueue.list,
-@@ -539,45 +639,77 @@ static void dw_i3c_master_set_intr_regs(struct dw_i3c_master *master)
+@@ -540,45 +640,77 @@ static void dw_i3c_master_set_intr_regs(struct dw_i3c_master *master)
  	writel(IBI_REQ_REJECT_ALL, master->regs + IBI_MR_REQ_REJECT);
  }
  
@@ -523,7 +523,7 @@ index 825eb2d20e9e..54034be7be24 100644
  	lcnt = DIV_ROUND_UP(core_rate, I3C_BUS_SDR1_SCL_RATE) - hcnt;
  	scl_timing = SCL_EXT_LCNT_1(lcnt);
  	lcnt = DIV_ROUND_UP(core_rate, I3C_BUS_SDR2_SCL_RATE) - hcnt;
-@@ -589,6 +721,21 @@ static int dw_i3c_clk_cfg(struct dw_i3c_master *master)
+@@ -590,6 +722,21 @@ static int dw_i3c_clk_cfg(struct dw_i3c_master *master)
  	writel(scl_timing, master->regs + SCL_EXT_LCNT_TIMING);
  	master->ext_lcnt_timing = scl_timing;
  
@@ -545,7 +545,7 @@ index 825eb2d20e9e..54034be7be24 100644
  	return 0;
  }
  
-@@ -598,32 +745,60 @@ static int dw_i2c_clk_cfg(struct dw_i3c_master *master)
+@@ -599,32 +746,60 @@ static int dw_i2c_clk_cfg(struct dw_i3c_master *master)
  	u16 hcnt, lcnt;
  	u32 scl_timing;
  
@@ -624,7 +624,7 @@ index 825eb2d20e9e..54034be7be24 100644
  
  	return 0;
  }
-@@ -631,7 +806,6 @@ static int dw_i2c_clk_cfg(struct dw_i3c_master *master)
+@@ -632,7 +807,6 @@ static int dw_i2c_clk_cfg(struct dw_i3c_master *master)
  static int dw_i3c_master_bus_init(struct i3c_master_controller *m)
  {
  	struct dw_i3c_master *master = to_dw_i3c_master(m);
@@ -632,7 +632,7 @@ index 825eb2d20e9e..54034be7be24 100644
  	struct i3c_device_info info = { };
  	int ret;
  
-@@ -647,22 +821,11 @@ static int dw_i3c_master_bus_init(struct i3c_master_controller *m)
+@@ -648,22 +822,11 @@ static int dw_i3c_master_bus_init(struct i3c_master_controller *m)
  	if (ret)
  		goto rpm_out;
  
@@ -659,7 +659,7 @@ index 825eb2d20e9e..54034be7be24 100644
  
  	ret = i3c_master_get_free_addr(m, 0);
  	if (ret < 0)
-@@ -698,6 +861,7 @@ static int dw_i3c_ccc_set(struct dw_i3c_master *master,
+@@ -699,6 +862,7 @@ static int dw_i3c_ccc_set(struct dw_i3c_master *master,
  {
  	struct dw_i3c_xfer *xfer;
  	struct dw_i3c_cmd *cmd;
@@ -667,7 +667,7 @@ index 825eb2d20e9e..54034be7be24 100644
  	int ret, pos = 0;
  
  	if (ccc->id & I3C_CCC_DIRECT) {
-@@ -723,9 +887,21 @@ static int dw_i3c_ccc_set(struct dw_i3c_master *master,
+@@ -724,9 +888,21 @@ static int dw_i3c_ccc_set(struct dw_i3c_master *master,
  		      COMMAND_PORT_TOC |
  		      COMMAND_PORT_ROC;
  
@@ -690,7 +690,7 @@ index 825eb2d20e9e..54034be7be24 100644
  
  	ret = xfer->ret;
  	if (xfer->cmds[0].error == RESPONSE_ERROR_IBA_NACK)
-@@ -740,6 +916,7 @@ static int dw_i3c_ccc_get(struct dw_i3c_master *master, struct i3c_ccc_cmd *ccc)
+@@ -741,6 +917,7 @@ static int dw_i3c_ccc_get(struct dw_i3c_master *master, struct i3c_ccc_cmd *ccc)
  {
  	struct dw_i3c_xfer *xfer;
  	struct dw_i3c_cmd *cmd;
@@ -698,7 +698,7 @@ index 825eb2d20e9e..54034be7be24 100644
  	int ret, pos;
  
  	pos = dw_i3c_master_get_addr_pos(master, ccc->dests[0].addr);
-@@ -764,9 +941,21 @@ static int dw_i3c_ccc_get(struct dw_i3c_master *master, struct i3c_ccc_cmd *ccc)
+@@ -765,9 +942,21 @@ static int dw_i3c_ccc_get(struct dw_i3c_master *master, struct i3c_ccc_cmd *ccc)
  		      COMMAND_PORT_TOC |
  		      COMMAND_PORT_ROC;
  
@@ -721,7 +721,7 @@ index 825eb2d20e9e..54034be7be24 100644
  
  	ret = xfer->ret;
  	if (xfer->cmds[0].error == RESPONSE_ERROR_IBA_NACK)
-@@ -820,7 +1009,7 @@ static int dw_i3c_master_daa(struct i3c_master_controller *m)
+@@ -821,7 +1010,7 @@ static int dw_i3c_master_daa(struct i3c_master_controller *m)
  	struct dw_i3c_master *master = to_dw_i3c_master(m);
  	struct dw_i3c_xfer *xfer;
  	struct dw_i3c_cmd *cmd;
@@ -730,7 +730,7 @@ index 825eb2d20e9e..54034be7be24 100644
  	u8 last_addr = 0;
  	int ret, pos;
  
-@@ -878,9 +1067,21 @@ static int dw_i3c_master_daa(struct i3c_master_controller *m)
+@@ -879,9 +1068,21 @@ static int dw_i3c_master_daa(struct i3c_master_controller *m)
  		      COMMAND_PORT_TOC |
  		      COMMAND_PORT_ROC;
  
@@ -753,7 +753,7 @@ index 825eb2d20e9e..54034be7be24 100644
  
  	newdevs = GENMASK(master->maxdevs - cmd->rx_len - 1, 0);
  	newdevs &= ~olddevs;
-@@ -888,6 +1089,16 @@ static int dw_i3c_master_daa(struct i3c_master_controller *m)
+@@ -889,6 +1090,16 @@ static int dw_i3c_master_daa(struct i3c_master_controller *m)
  	for (pos = 0; pos < master->maxdevs; pos++) {
  		if (newdevs & BIT(pos))
  			i3c_master_add_i3c_dev_locked(m, master->devs[pos].addr);
@@ -771,9 +771,9 @@ index 825eb2d20e9e..54034be7be24 100644
  
  	dw_i3c_master_free_xfer(xfer);
 @@ -906,6 +1117,7 @@ static int dw_i3c_master_priv_xfers(struct i3c_dev_desc *dev,
+ 	struct i3c_master_controller *m = i3c_dev_get_master(dev);
  	struct dw_i3c_master *master = to_dw_i3c_master(m);
  	unsigned int nrxwords = 0, ntxwords = 0;
- 	struct dw_i3c_xfer *xfer;
 +	u32 sda_lvl_pre, sda_lvl_post;
  	int i, ret = 0;
  
@@ -801,7 +801,7 @@ index 825eb2d20e9e..54034be7be24 100644
  
  	for (i = 0; i < i3c_nxfers; i++) {
  		struct dw_i3c_cmd *cmd = &xfer->cmds[i];
-@@ -1066,6 +1290,7 @@ static int dw_i3c_master_i2c_xfers(struct i2c_dev_desc *dev,
+@@ -1065,6 +1289,7 @@ static int dw_i3c_master_i2c_xfers(struct i2c_dev_desc *dev,
  	struct dw_i3c_master *master = to_dw_i3c_master(m);
  	unsigned int nrxwords = 0, ntxwords = 0;
  	struct dw_i3c_xfer *xfer;
@@ -809,7 +809,7 @@ index 825eb2d20e9e..54034be7be24 100644
  	int i, ret = 0;
  
  	if (!i2c_nxfers)
-@@ -1085,6 +1310,12 @@ static int dw_i3c_master_i2c_xfers(struct i2c_dev_desc *dev,
+@@ -1084,6 +1309,12 @@ static int dw_i3c_master_i2c_xfers(struct i2c_dev_desc *dev,
  	    nrxwords > master->caps.datafifodepth)
  		return -EOPNOTSUPP;
  
@@ -822,7 +822,7 @@ index 825eb2d20e9e..54034be7be24 100644
  	xfer = dw_i3c_master_alloc_xfer(master, i2c_nxfers);
  	if (!xfer)
  		return -ENOMEM;
-@@ -1121,9 +1352,21 @@ static int dw_i3c_master_i2c_xfers(struct i2c_dev_desc *dev,
+@@ -1120,9 +1351,21 @@ static int dw_i3c_master_i2c_xfers(struct i2c_dev_desc *dev,
  			cmd->cmd_lo |= COMMAND_PORT_TOC;
  	}
  
@@ -845,7 +845,7 @@ index 825eb2d20e9e..54034be7be24 100644
  
  	ret = xfer->ret;
  	dw_i3c_master_free_xfer(xfer);
-@@ -1367,8 +1610,10 @@ static void dw_i3c_master_handle_ibi_sir(struct dw_i3c_master *master,
+@@ -1366,8 +1609,10 @@ static void dw_i3c_master_handle_ibi_sir(struct dw_i3c_master *master,
  	struct i3c_ibi_slot *slot;
  	struct i3c_dev_desc *dev;
  	unsigned long flags;
@@ -856,7 +856,7 @@ index 825eb2d20e9e..54034be7be24 100644
  
  	addr = IBI_QUEUE_IBI_ADDR(status);
  	len = IBI_QUEUE_STATUS_DATA_LEN(status);
-@@ -1411,6 +1656,7 @@ static void dw_i3c_master_handle_ibi_sir(struct dw_i3c_master *master,
+@@ -1410,6 +1655,7 @@ static void dw_i3c_master_handle_ibi_sir(struct dw_i3c_master *master,
  		dev_dbg_ratelimited(&master->base.dev,
  				    "IBI payload len %d greater than max %d\n",
  				    len, dev->ibi->max_payload_len);
@@ -864,7 +864,7 @@ index 825eb2d20e9e..54034be7be24 100644
  		goto err_drain;
  	}
  
-@@ -1426,6 +1672,9 @@ static void dw_i3c_master_handle_ibi_sir(struct dw_i3c_master *master,
+@@ -1425,6 +1671,9 @@ static void dw_i3c_master_handle_ibi_sir(struct dw_i3c_master *master,
  
  err_drain:
  	dw_i3c_master_drain_ibi_queue(master, len);
@@ -874,7 +874,7 @@ index 825eb2d20e9e..54034be7be24 100644
  
  	spin_unlock_irqrestore(&master->devs_lock, flags);
  }
-@@ -1438,15 +1687,30 @@ static void dw_i3c_master_irq_handle_ibis(struct dw_i3c_master *master)
+@@ -1437,15 +1686,30 @@ static void dw_i3c_master_irq_handle_ibis(struct dw_i3c_master *master)
  {
  	unsigned int i, len, n_ibis;
  	u32 reg;
@@ -905,7 +905,7 @@ index 825eb2d20e9e..54034be7be24 100644
  		if (IBI_TYPE_SIRQ(reg)) {
  			dw_i3c_master_handle_ibi_sir(master, reg);
  		} else if (IBI_TYPE_HJ(reg)) {
-@@ -1459,6 +1723,19 @@ static void dw_i3c_master_irq_handle_ibis(struct dw_i3c_master *master)
+@@ -1458,6 +1722,19 @@ static void dw_i3c_master_irq_handle_ibis(struct dw_i3c_master *master)
  			dw_i3c_master_drain_ibi_queue(master, len);
  		}
  	}
@@ -925,7 +925,7 @@ index 825eb2d20e9e..54034be7be24 100644
  }
  
  static irqreturn_t dw_i3c_master_irq_handler(int irq, void *dev_id)
-@@ -1473,11 +1750,14 @@ static irqreturn_t dw_i3c_master_irq_handler(int irq, void *dev_id)
+@@ -1472,11 +1749,14 @@ static irqreturn_t dw_i3c_master_irq_handler(int irq, void *dev_id)
  		return IRQ_NONE;
  	}
  
@@ -945,7 +945,7 @@ index 825eb2d20e9e..54034be7be24 100644
  
  	if (status & INTR_IBI_THLD_STAT)
  		dw_i3c_master_irq_handle_ibis(master);
-@@ -1519,11 +1799,70 @@ static void dw_i3c_platform_set_dat_ibi_nop(struct dw_i3c_master *i3c,
+@@ -1518,11 +1798,70 @@ static void dw_i3c_platform_set_dat_ibi_nop(struct dw_i3c_master *i3c,
  {
  }
  
@@ -1016,7 +1016,7 @@ index 825eb2d20e9e..54034be7be24 100644
  static void dw_i3c_hj_work(struct work_struct *work)
  {
  	struct dw_i3c_master *master =
-@@ -1535,6 +1874,7 @@ static void dw_i3c_hj_work(struct work_struct *work)
+@@ -1534,6 +1873,7 @@ static void dw_i3c_hj_work(struct work_struct *work)
  int dw_i3c_common_probe(struct dw_i3c_master *master,
  			struct platform_device *pdev)
  {
@@ -1024,19 +1024,19 @@ index 825eb2d20e9e..54034be7be24 100644
  	int ret, irq;
  
  	if (!master->platform_ops)
-@@ -1576,6 +1916,11 @@ int dw_i3c_common_probe(struct dw_i3c_master *master,
+@@ -1573,6 +1913,11 @@ int dw_i3c_common_probe(struct dw_i3c_master *master,
  
  	platform_set_drvdata(pdev, master);
  
 +	np = pdev->dev.of_node;
 +	ret = dw_i3c_of_populate_bus_timing(master, np);
 +	if (ret)
-+		goto err_assert_rst;
++		return ret;
 +
  	pm_runtime_set_autosuspend_delay(&pdev->dev, RPM_AUTOSUSPEND_TIMEOUT);
  	pm_runtime_use_autosuspend(&pdev->dev);
  	pm_runtime_set_active(&pdev->dev);
-@@ -1603,6 +1948,8 @@ int dw_i3c_common_probe(struct dw_i3c_master *master,
+@@ -1600,6 +1945,8 @@ int dw_i3c_common_probe(struct dw_i3c_master *master,
  	if (ret)
  		goto err_disable_pm;
  

@@ -1,4 +1,4 @@
-From 9ccdb3f032d3a99eb0ef5348b74bebd125ba043e Mon Sep 17 00:00:00 2001
+From 595a5e314aa782dcd482a7477c1620bbcd40983e Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Fri, 30 Jan 2026 08:58:27 +0800
 Subject: [PATCH] meta-facebook-ventura2-Add-aspeed-bmc-facebook-ventura2.dts
@@ -13,11 +13,11 @@ Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
  create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
 
 diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
-index 7d70f08e436c..41ca20fae5da 100644
+index 6b68671f9379..45a7f95428b0 100644
 --- a/arch/arm/boot/dts/aspeed/Makefile
 +++ b/arch/arm/boot/dts/aspeed/Makefile
-@@ -36,6 +36,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
- 	aspeed-bmc-facebook-minipack.dtb \
+@@ -37,6 +37,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
+ 	aspeed-bmc-facebook-rainiera6.dtb \
  	aspeed-bmc-facebook-sanmiguel.dtb \
  	aspeed-bmc-facebook-santabarbara.dtb \
 +	aspeed-bmc-facebook-ventura2.dtb \
@@ -3036,5 +3036,5 @@ index 000000000000..1a9edf01e1d9
 +};
 +
 -- 
-2.52.0
+2.53.0-Meta
 

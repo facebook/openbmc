@@ -1,4 +1,4 @@
-From 910e1564d6058d0500eed9b5e55a590a06b687f0 Mon Sep 17 00:00:00 2001
+From f760027ec9b8c84928b19b4f66b2504054ede62d Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Mon, 19 May 2025 15:12:23 +0800
 Subject: [PATCH 06/19] psu: support gpio bridge
@@ -230,7 +230,7 @@ index b84e1ee..f758470 100644
      boost::asio::random_access_file inputDev;
      boost::asio::steady_timer waitTimer;
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 3359259..d1a03fb 100644
+index c602137..31cf769 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -31,6 +31,7 @@
@@ -257,7 +257,7 @@ index 3359259..d1a03fb 100644
  
  static constexpr auto sensorTypes = std::to_array<
      std::pair<std::string_view, I2CDeviceType>>({
-@@ -381,6 +384,61 @@ static void checkPWMSensor(
+@@ -384,6 +387,61 @@ static void checkPWMSensor(
          name, pwmPathStr, dbusConnection, objectServer, objPath, "PSU");
  }
  
@@ -319,7 +319,7 @@ index 3359259..d1a03fb 100644
  static void createSensorsCallback(
      boost::asio::io_context& io, sdbusplus::asio::object_server& objectServer,
      std::shared_ptr<sdbusplus::asio::connection>& dbusConnection,
-@@ -812,7 +870,6 @@ static void createSensorsCallback(
+@@ -815,7 +873,6 @@ static void createSensorsCallback(
                      "LABEL", labelHead);
                  continue;
              }
@@ -327,7 +327,7 @@ index 3359259..d1a03fb 100644
              // Protect the hardcoded labelMatch list from changes,
              // by making a copy and modifying that instead.
              // Avoid bleedthrough of one device's customizations to
-@@ -1141,12 +1198,15 @@ static void createSensorsCallback(
+@@ -1144,12 +1201,15 @@ static void createSensorsCallback(
              }
              else
              {
@@ -357,5 +357,5 @@ index abcdfe8..3680cac 100644
      include_directories: src_inc,
      install: true,
 -- 
-2.52.0
+2.53.0-Meta
 

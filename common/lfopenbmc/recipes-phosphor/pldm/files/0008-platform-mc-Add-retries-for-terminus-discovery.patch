@@ -1,7 +1,7 @@
-From af457123199b8a71137bf7550423a40891e00675 Mon Sep 17 00:00:00 2001
+From 7db7c4dceb6dfe0821754585cc124de2e2f4b24b Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 23 Sep 2025 09:47:45 +0000
-Subject: [PATCH 08/23] platform-mc: Add retries for terminus discovery
+Subject: [PATCH 08/24] platform-mc: Add retries for terminus discovery
 
 Adds a configurable, per-endpoint retry mechanism to terminus discovery.
 Endpoints are scheduled for retry when:
@@ -230,5 +230,5 @@ index f1bfe79..4f5c9ab 100644
  } // namespace platform_mc
  } // namespace pldm
 -- 
-2.52.0
+2.53.0-Meta
 

@@ -1,8 +1,8 @@
-From a145832016701771666e4d5a51c1c970f9046a80 Mon Sep 17 00:00:00 2001
+From 019dd986ed83bcaa1dc9e1059149b4a2f24be70c Mon Sep 17 00:00:00 2001
 From: Carter Chen <carter.chen.wiwynn@gmail.com>
 Date: Mon, 1 Dec 2025 08:46:59 +0000
-Subject: [PATCH 1/1] fw_update: Reimplement package parser to use new libpldm
- API
+Subject: [PATCH 24/24] fw_update: Reimplement package parser to use new
+ libpldm API
 
 libpldm has revised the APIs for firmware package, the old APIs are
 now deprecated. Switch to the new APIs and use libpldm iterators to
@@ -2412,5 +2412,5 @@ index 2b896ab..28af66b 100644
      std::unordered_map<mctp_eid_t, std::unique_ptr<DeviceUpdater>>
          deviceUpdaterMap;
 -- 
-2.47.1
+2.53.0-Meta
 

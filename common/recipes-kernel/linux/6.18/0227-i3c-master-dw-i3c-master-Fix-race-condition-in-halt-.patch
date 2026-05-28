@@ -1,4 +1,4 @@
-From a29ee59899297a2c321fee15f20c6c1b442fb80c Mon Sep 17 00:00:00 2001
+From 35620d7fd9348fb5636fd71392d6f477e5e5b3e8 Mon Sep 17 00:00:00 2001
 From: Zoey Chung <zoey_yj_chung@wiwynn.com>
 Date: Tue, 10 Mar 2026 14:22:37 +0800
 Subject: [PATCH 227/237] i3c: master: dw-i3c-master: Fix race condition in
@@ -28,10 +28,10 @@ Signed-off-by: Zoey Chung <zoey_yj_chung@wiwynn.com>
  1 file changed, 12 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
-index d3426583f8d4..1147b6c16e19 100644
+index 66705b044a3b..58e2a85c07e6 100644
 --- a/drivers/i3c/master/dw-i3c-master.c
 +++ b/drivers/i3c/master/dw-i3c-master.c
-@@ -368,14 +368,14 @@ static void dw_i3c_master_enable(struct dw_i3c_master *master)
+@@ -369,14 +369,14 @@ static void dw_i3c_master_enable(struct dw_i3c_master *master)
  static int dw_i3c_master_exit_halt(struct dw_i3c_master *master)
  {
  	u32 status;
@@ -49,7 +49,7 @@ index d3426583f8d4..1147b6c16e19 100644
  					10, 1000000);
  
  	if (ret)
-@@ -398,12 +398,17 @@ static int dw_i3c_master_enter_halt(struct dw_i3c_master *master, bool by_sw)
+@@ -399,12 +399,17 @@ static int dw_i3c_master_enter_halt(struct dw_i3c_master *master, bool by_sw)
  	u32 halt_state = CM_TFR_STS_MASTER_HALT;
  	int ret;
  

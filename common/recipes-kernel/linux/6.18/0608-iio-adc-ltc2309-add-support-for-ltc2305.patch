@@ -1,7 +1,7 @@
-From a334b983a5483f5351082b8fba5331fd7ede24e9 Mon Sep 17 00:00:00 2001
+From 5d562b40f2a3f600f5c18542fb0b8963112ab604 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <kylehsieh1995@gmail.com>
 Date: Wed, 25 Mar 2026 10:09:28 +0800
-Subject: [PATCH 609/610] iio: adc: ltc2309: add support for ltc2305
+Subject: [PATCH 608/609] iio: adc: ltc2309: add support for ltc2305
 
 Add support for the LTC2305 ADC to the LTC2309 driver. The LTC2305 is
 a 2-channel, 12-bit SAR ADC that is register-compatible with the

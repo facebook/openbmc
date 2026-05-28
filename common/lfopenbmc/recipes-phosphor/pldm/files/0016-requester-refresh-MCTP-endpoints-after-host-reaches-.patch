@@ -1,7 +1,7 @@
-From 00a4b829783a9f95d59c9a176b997cc7f02896ee Mon Sep 17 00:00:00 2001
+From 135dfff16a3df7812a1cd32b18882e030dfc8640 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 17:16:49 +0800
-Subject: [PATCH 16/23] requester: refresh MCTP endpoints after host reaches
+Subject: [PATCH 16/24] requester: refresh MCTP endpoints after host reaches
  running state
 
 Some MCTP endpoints associated with MCTPI2CTarget or MCTPI3CTarget
@@ -223,5 +223,5 @@ index 96a35e9..dd0ba18 100644
       * D-Bus signal raised.
       *
 -- 
-2.47.3
+2.53.0-Meta
 

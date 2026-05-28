@@ -1,7 +1,7 @@
-From 9208194d1e69ecee7eaadd0584ff146aa060dce3 Mon Sep 17 00:00:00 2001
+From 034a5b50b4d3892c0dad0af89a161b3bc9479bec Mon Sep 17 00:00:00 2001
 From: Andy Chung <Andy.Chung@amd.com>
 Date: Wed, 10 Dec 2025 17:05:01 +0800
-Subject: [PATCH 605/610] apml: Add support for SP7 platform
+Subject: [PATCH 605/609] apml: Add support for SP7 platform
 
 Extend I3C PID table to support SP7 platform.
 Link: https://github.com/AMDESE/linux-aspeed/commit/387d564e2a06289e4ff6d8202cb95570f0c8cea6

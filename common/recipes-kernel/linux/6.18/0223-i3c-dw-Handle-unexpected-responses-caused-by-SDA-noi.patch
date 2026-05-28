@@ -1,4 +1,4 @@
-From bb6308b0529b4d2c503cab2cc691bf9a8e43b562 Mon Sep 17 00:00:00 2001
+From 864898acfb4ee19d5ec10d5f34fc7ce114233e74 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Fri, 21 Nov 2025 18:32:59 +0800
 Subject: [PATCH 223/237] i3c: dw: Handle unexpected responses caused by SDA
@@ -20,10 +20,10 @@ Change-Id: I6d66b30ea02fcb3f9bc0c6514d62989ab26c65fb
  1 file changed, 14 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
-index 5984003716f3..c38c746f3fd4 100644
+index 039a5661d196..2e86a4950b08 100644
 --- a/drivers/i3c/master/dw-i3c-master.c
 +++ b/drivers/i3c/master/dw-i3c-master.c
-@@ -568,8 +568,12 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
+@@ -569,8 +569,12 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
  		u32 resp;
  
  		resp = readl(master->regs + RESPONSE_QUEUE_PORT);
@@ -38,7 +38,7 @@ index 5984003716f3..c38c746f3fd4 100644
  		cmd->rx_len = RESPONSE_PORT_DATA_LEN(resp);
  		cmd->error = RESPONSE_PORT_ERR_STATUS(resp);
  		if (cmd->rx_len && !cmd->error)
-@@ -897,7 +901,8 @@ static int dw_i3c_ccc_set(struct dw_i3c_master *master,
+@@ -898,7 +902,8 @@ static int dw_i3c_ccc_set(struct dw_i3c_master *master,
  		      COMMAND_PORT_DEV_INDEX(pos) |
  		      COMMAND_PORT_CMD(ccc->id) |
  		      COMMAND_PORT_TOC |
@@ -48,7 +48,7 @@ index 5984003716f3..c38c746f3fd4 100644
  
  	sda_lvl_pre = FIELD_GET(SDA_LINE_SIGNAL_LEVEL,
  				readl(master->regs + PRESENT_STATE));
-@@ -951,7 +956,8 @@ static int dw_i3c_ccc_get(struct dw_i3c_master *master, struct i3c_ccc_cmd *ccc)
+@@ -952,7 +957,8 @@ static int dw_i3c_ccc_get(struct dw_i3c_master *master, struct i3c_ccc_cmd *ccc)
  		      COMMAND_PORT_DEV_INDEX(pos) |
  		      COMMAND_PORT_CMD(ccc->id) |
  		      COMMAND_PORT_TOC |
@@ -58,7 +58,7 @@ index 5984003716f3..c38c746f3fd4 100644
  
  	sda_lvl_pre = FIELD_GET(SDA_LINE_SIGNAL_LEVEL,
  				readl(master->regs + PRESENT_STATE));
-@@ -1077,7 +1083,8 @@ static int dw_i3c_master_daa(struct i3c_master_controller *m)
+@@ -1078,7 +1084,8 @@ static int dw_i3c_master_daa(struct i3c_master_controller *m)
  		      COMMAND_PORT_CMD(I3C_CCC_ENTDAA) |
  		      COMMAND_PORT_ADDR_ASSGN_CMD |
  		      COMMAND_PORT_TOC |
@@ -77,7 +77,7 @@ index 5984003716f3..c38c746f3fd4 100644
  			       COMMAND_PORT_DEV_INDEX(data->index) |
  			       COMMAND_PORT_ROC;
  
-@@ -1347,7 +1354,7 @@ static int dw_i3c_master_i2c_xfers(struct i2c_dev_desc *dev,
+@@ -1346,7 +1353,7 @@ static int dw_i3c_master_i2c_xfers(struct i2c_dev_desc *dev,
  		cmd->cmd_hi = COMMAND_PORT_ARG_DATA_LEN(i2c_xfers[i].len) |
  			COMMAND_PORT_TRANSFER_ARG;
  

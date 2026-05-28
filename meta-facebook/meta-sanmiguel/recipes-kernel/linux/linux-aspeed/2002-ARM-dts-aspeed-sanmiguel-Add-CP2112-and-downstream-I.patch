@@ -1,4 +1,4 @@
-From 60a9dbc1edd62224d2d65f17246f182bc3199e28 Mon Sep 17 00:00:00 2001
+From 32a2832ab4b73739a9e805d2b7310244c218a024 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 11 Mar 2026 13:28:31 +0800
 Subject: [PATCH 2002/2002] ARM: dts: aspeed: sanmiguel: Add CP2112 and
@@ -18,7 +18,7 @@ Signed-off-by: Potin Lai <potin.lai@quantatw.com>
  1 file changed, 449 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
-index facc6be016eb..12cb02481ab8 100644
+index 265cc125418e..0bf91560ef6c 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
 @@ -24,6 +24,13 @@ aliases {
@@ -217,7 +217,7 @@ index facc6be016eb..12cb02481ab8 100644
  &fmc {
  	status = "okay";
  
-@@ -605,6 +787,273 @@ &i2c15 {
+@@ -609,6 +791,273 @@ &i2c15 {
  	status = "okay";
  };
  

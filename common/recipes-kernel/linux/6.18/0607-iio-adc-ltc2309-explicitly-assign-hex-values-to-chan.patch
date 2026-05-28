@@ -1,7 +1,7 @@
-From da0a547d5024bb129e1d7965d86704cf3a0f3d6e Mon Sep 17 00:00:00 2001
+From e3cae7f9bae23ea9a292c67613a654c6ece0972f Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <kylehsieh1995@gmail.com>
 Date: Wed, 25 Mar 2026 10:05:23 +0800
-Subject: [PATCH 608/610] iio: adc: ltc2309: explicitly assign hex values to
+Subject: [PATCH 607/609] iio: adc: ltc2309: explicitly assign hex values to
  channel enums
 
 The current ltc2309_channels enum relies on implicit sequential

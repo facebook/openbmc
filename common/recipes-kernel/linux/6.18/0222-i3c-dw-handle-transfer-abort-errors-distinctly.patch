@@ -1,4 +1,4 @@
-From 7f7341b0d0eb97d1910abedec758c247c1cadb87 Mon Sep 17 00:00:00 2001
+From 2ae60dc594ae42ae323dbc1befbb1269343bdd4d Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Thu, 21 Aug 2025 10:50:13 +0800
 Subject: [PATCH 222/237] i3c: dw: handle transfer abort errors distinctly
@@ -20,10 +20,10 @@ Change-Id: Ief964fe7b2a37014cb101a68e4bcdd7f035ebb56
  1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
-index e690f3030d2f..5984003716f3 100644
+index ba69500ebf99..039a5661d196 100644
 --- a/drivers/i3c/master/dw-i3c-master.c
 +++ b/drivers/i3c/master/dw-i3c-master.c
-@@ -581,9 +581,11 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
+@@ -582,9 +582,11 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
  		switch (xfer->cmds[i].error) {
  		case RESPONSE_NO_ERROR:
  			break;
@@ -36,7 +36,7 @@ index e690f3030d2f..5984003716f3 100644
  		case RESPONSE_ERROR_CRC:
  		case RESPONSE_ERROR_FRAME:
  			ret = -EIO;
-@@ -602,7 +604,7 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
+@@ -603,7 +605,7 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
  	xfer->ret = ret;
  	complete(&xfer->comp);
  

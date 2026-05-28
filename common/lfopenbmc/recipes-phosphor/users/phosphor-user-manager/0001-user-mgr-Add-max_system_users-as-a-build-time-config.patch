@@ -1,4 +1,4 @@
-From eafb109529b0c346259f1857be5bddbb8fb53730 Mon Sep 17 00:00:00 2001
+From 17513c3f30349c0ebe26d0311382b4cc64fbdb68 Mon Sep 17 00:00:00 2001
 From: Marco Kawajiri <kawajiri@meta.com>
 Date: Wed, 27 Mar 2024 09:54:11 -0700
 Subject: [PATCH 1/2] user-mgr: Add max_system_users as a build-time config
@@ -67,7 +67,7 @@ index 95df809..038a42b 100644
 +    description: 'Maximum allowed number of system users',
 +)
 diff --git a/user_mgr.hpp b/user_mgr.hpp
-index 119950c..efead70 100644
+index 3aff46e..07f8811 100644
 --- a/user_mgr.hpp
 +++ b/user_mgr.hpp
 @@ -14,6 +14,7 @@
@@ -78,8 +78,8 @@ index 119950c..efead70 100644
  #include "json_serializer.hpp"
  #include "users.hpp"
  
-@@ -47,7 +48,7 @@ namespace user
- {
+@@ -58,7 +59,7 @@ struct SystemUserInfo
+ };
  
  inline constexpr size_t ipmiMaxUsers = 15;
 -inline constexpr size_t maxSystemUsers = 30;
@@ -88,5 +88,5 @@ index 119950c..efead70 100644
  extern uint8_t maxPasswdLength; // MAX_PASSWORD_LENGTH;
  inline constexpr size_t maxSystemGroupNameLength = 32;
 -- 
-2.47.3
+2.53.0-Meta
 

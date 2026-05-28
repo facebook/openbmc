@@ -1,4 +1,4 @@
-From 8644a24259db230945766885ff69026441bc58da Mon Sep 17 00:00:00 2001
+From 5aeabfe655403ae772e8baf41cf2c52ebefc753d Mon Sep 17 00:00:00 2001
 From: Zoey Chung <zoey_yj_chung@wiwynn.com>
 Date: Mon, 18 Aug 2025 18:20:47 +0800
 Subject: [PATCH 221/237] i3c: dw: Add err messages for ibi_fifo_clear handling
@@ -19,10 +19,10 @@ Test Plan:
  1 file changed, 17 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
-index 54034be7be24..e690f3030d2f 100644
+index d2a74b7dffd4..ba69500ebf99 100644
 --- a/drivers/i3c/master/dw-i3c-master.c
 +++ b/drivers/i3c/master/dw-i3c-master.c
-@@ -392,9 +392,11 @@ static int dw_i3c_master_enter_halt(struct dw_i3c_master *master, bool by_sw)
+@@ -393,9 +393,11 @@ static int dw_i3c_master_enter_halt(struct dw_i3c_master *master, bool by_sw)
  	u32 halt_state = CM_TFR_STS_MASTER_HALT;
  	int ret;
  
@@ -35,7 +35,7 @@ index 54034be7be24..e690f3030d2f 100644
  
  	ret = readl_poll_timeout_atomic(master->regs + PRESENT_STATE, status,
  					FIELD_GET(CM_TFR_STS, status) == halt_state,
-@@ -517,6 +519,7 @@ static void dw_i3c_master_dequeue_xfer_locked(struct dw_i3c_master *master,
+@@ -518,6 +520,7 @@ static void dw_i3c_master_dequeue_xfer_locked(struct dw_i3c_master *master,
  {
  	if (master->xferqueue.cur == xfer) {
  		u32 status;
@@ -43,7 +43,7 @@ index 54034be7be24..e690f3030d2f 100644
  
  		master->xferqueue.cur = NULL;
  
-@@ -524,8 +527,15 @@ static void dw_i3c_master_dequeue_xfer_locked(struct dw_i3c_master *master,
+@@ -525,8 +528,15 @@ static void dw_i3c_master_dequeue_xfer_locked(struct dw_i3c_master *master,
  		       RESET_CTRL_RESP_QUEUE | RESET_CTRL_CMD_QUEUE,
  		       master->regs + RESET_CTRL);
  
@@ -60,7 +60,7 @@ index 54034be7be24..e690f3030d2f 100644
  	} else {
  		list_del_init(&xfer->node);
  	}
-@@ -1705,7 +1715,7 @@ static void dw_i3c_master_irq_handle_ibis(struct dw_i3c_master *master)
+@@ -1704,7 +1714,7 @@ static void dw_i3c_master_irq_handle_ibis(struct dw_i3c_master *master)
  		reg = readl(master->regs + IBI_QUEUE_STATUS);
  
  		if (reg & IBI_QUEUE_STATUS_RSP_NACK) {
@@ -69,7 +69,7 @@ index 54034be7be24..e690f3030d2f 100644
  					    "Nacked IBI from non-requested dev addr %02lx\n",
  					    IBI_QUEUE_IBI_ADDR(reg));
  			goto ibi_fifo_clear;
-@@ -1733,7 +1743,10 @@ static void dw_i3c_master_irq_handle_ibis(struct dw_i3c_master *master)
+@@ -1732,7 +1742,10 @@ static void dw_i3c_master_irq_handle_ibis(struct dw_i3c_master *master)
  					10, 1000000);
  	if (ret)
  		dev_err(&master->base.dev,

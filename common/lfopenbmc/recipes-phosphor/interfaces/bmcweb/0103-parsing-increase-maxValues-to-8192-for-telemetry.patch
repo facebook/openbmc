@@ -1,0 +1,32 @@
+From 86a6fab2b029bc72f14b6b63973fd1ed3a20e745 Mon Sep 17 00:00:00 2001
+From: Jagpal Singh Gill <paligill@gmail.com>
+Date: Tue, 27 May 2026 00:00:00 -0700
+Subject: [PATCH] parsing: increase maxValues to 5000 for telemetry
+
+The BmcwebSaxParse JSON parser caps the total number of values in a
+request body at 500. This is too low for telemetry report creation
+requests, which can contain hundreds of sensor metric properties.
+A report with ~120 sensors already exceeds this limit, causing
+MalformedJSON errors.
+
+Increase maxValues from 500 to 5000. The 1MB body size limit still
+guards against truly abusive payloads.
+
+Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
+---
+ http/parsing.hpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/http/parsing.hpp b/http/parsing.hpp
+index 5a012bd..b44e453 100644
+--- a/http/parsing.hpp
++++ b/http/parsing.hpp
+@@ -51,7 +51,7 @@ class BmcwebSaxParse : public nlohmann::json::json_sax_t
+     constexpr static int maxDepth = 10;
+
+     int totalValues = 0;
+-    constexpr static int maxValues = 500;
++    constexpr static int maxValues = 5000;
+
+   public:
+     BmcwebSaxParse(nlohmann::json& j) : parser(j, false) {}

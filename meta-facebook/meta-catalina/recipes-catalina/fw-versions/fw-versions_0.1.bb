@@ -13,23 +13,16 @@ FW_TOOLS = "\
     bmc-tpm,platform-sys-init.service,,multi-user.target,0 \
     nic0,network-wait-ipv6-ll@eth0.service,,multi-user.target,0 \
     nic1,network-wait-ipv6-ll@eth1.service,,multi-user.target,0 \
-    pdb-vr-aux,platform-sys-init.service,,multi-user.target,0 \
-    pdb-cpld,platform-sys-init.service,,multi-user.target,0 \
-    pdb-vr-n1,platform-sys-init.service,,multi-user.target,0 \
-    pdb-vr-n2,platform-sys-init.service,,multi-user.target,0 \
     scm-cpld,platform-sys-init.service,,multi-user.target,0 \
-    hdd-cpld,platform-sys-init.service,,multi-user.target,0 \
 "
 
 # Append HDD-specific services for clemente, enabling support for two HDDs
 FW_TOOLS:append:clemente = " \
+    hdd-cpld,platform-sys-init.service,,multi-user.target,0 \
     hdd-cpld,platform-sys-init.service,,multi-user.target,1 \
     interposer-cpld,platform-sys-init.service,,multi-user.target,0 \
-"
-# Remove vr-aux-specific services for clemente, PDB not support
-FW_TOOLS:remove:clemente = " \
-    pdb-vr-aux,platform-sys-init.service,,multi-user.target,0 \
-    pdb-cpld,platform-sys-init.service,,multi-user.target,0 \
+    pdb-vr-n1,platform-sys-init.service,,multi-user.target,0 \
+    pdb-vr-n2,platform-sys-init.service,,multi-user.target,0 \
 "
 
 S = "${UNPACKDIR}"

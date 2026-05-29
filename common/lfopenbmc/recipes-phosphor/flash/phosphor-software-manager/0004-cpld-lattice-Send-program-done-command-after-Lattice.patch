@@ -1,8 +1,8 @@
-From ad74730fd6aa1e4d31538d9cc24bd7bb5cc2315e Mon Sep 17 00:00:00 2001
+From 8862a4f5026b989fd23e72d643f5405589b30223 Mon Sep 17 00:00:00 2001
 From: Daniel Hsu <Daniel-Hsu@quantatw.com>
 Date: Fri, 22 May 2026 14:04:41 +0800
-Subject: [PATCH] cpld: lattice: Send program done command after Lattice XO5
- update
+Subject: [PATCH 4/4] cpld: lattice: Send program done command after Lattice
+ XO5 update
 
 Implement and invoke programDone() using the 0x5E command code in
 finishUpdate() to properly finalize the CPLD firmware update sequence.
@@ -28,11 +28,11 @@ index f262758..906e8a0 100644
 +    programDone = 0x5e,
      readUsercode = 0xc0
  };
-
+ 
 @@ -315,6 +316,24 @@ sdbusplus::async::task<bool> LatticeXO5CPLD::readUserCode(uint32_t& userCode)
      co_return true;
  }
-
+ 
 +sdbusplus::async::task<bool> LatticeXO5CPLD::programDone()
 +{
 +    std::vector<uint8_t> request = {};
@@ -67,7 +67,7 @@ index f262758..906e8a0 100644
 +
      co_return true;
  }
-
+ 
 diff --git a/cpld/lattice/lattice_xo5_cpld.hpp b/cpld/lattice/lattice_xo5_cpld.hpp
 index 1ac84cc..16b6c00 100644
 --- a/cpld/lattice/lattice_xo5_cpld.hpp
@@ -80,6 +80,6 @@ index 1ac84cc..16b6c00 100644
      sdbusplus::async::task<bool> readPage(uint8_t block, uint8_t page,
                                            std::vector<uint8_t>& data);
  };
---
-2.53.0
+-- 
+2.53.0-Meta
 

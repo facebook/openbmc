@@ -94,7 +94,7 @@ SRC_URI:append = " \
     file://0607-iio-adc-ltc2309-explicitly-assign-hex-values-to-chan.patch \
     file://0608-iio-adc-ltc2309-add-support-for-ltc2305.patch \
     file://0609-amd-apml-sbrmi-update-SBRMI-revision-for-Venice.patch \
-    file://0611-iio-adc-rtq6056-add-i2c_device_id-support.patch \
+    file://0610-iio-adc-rtq6056-add-i2c_device_id-support.patch \
 "
 
 #

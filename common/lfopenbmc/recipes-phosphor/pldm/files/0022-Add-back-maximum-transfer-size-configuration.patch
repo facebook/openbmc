@@ -1,7 +1,7 @@
-From 146bc5abe1da8e6e54a4b0623223babf89830e19 Mon Sep 17 00:00:00 2001
+From 69b354c7915424e058ac49d61fc84d6e0aaa9cc5 Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Tue, 21 Apr 2026 23:45:07 -0700
-Subject: [PATCH 22/24] Add back maximum transfer size configuration
+Subject: [PATCH 22/25] Add back maximum transfer size configuration
 
 When syncing the latest upstream changes, multiple
 Facebook platforms that used this option [1] failed

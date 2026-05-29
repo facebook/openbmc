@@ -1,7 +1,7 @@
-From 3630abce33a9c35ee3d5708d6e89a32d33cc24dc Mon Sep 17 00:00:00 2001
+From e46d4719664181aa0efd478c122b1f1823b08152 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 21 May 2026 07:03:10 +0000
-Subject: [PATCH 18/24] oem-meta: Implement special event handling
+Subject: [PATCH 18/25] oem-meta: Implement special event handling
 
 Certain events must be recorded by directly invoking phosphor-logging.
 In particular, the CXL HB requires controlling the event severity based

@@ -1,7 +1,7 @@
-From ff52bdca59eb9f2eb50e8008b6dde02347846212 Mon Sep 17 00:00:00 2001
+From 41ef2bde41f579f3a7843f13881266d4a244c7ec Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Wed, 4 Feb 2026 15:05:26 +0800
-Subject: [PATCH 606/609] hwmon: pmbus: tda38640: Add identification for
+Subject: [PATCH 606/610] hwmon: pmbus: tda38640: Add identification for
  PMBUS_VOUT_MODE
 
 Add support for detecting the PMBUS_VOUT_MODE for tda38640. Both

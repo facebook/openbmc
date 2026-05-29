@@ -1,7 +1,7 @@
-From 6e4466fd384f27e99404135a78a9efbad5b68f52 Mon Sep 17 00:00:00 2001
+From 487fa2d11a0fbabe3af80d582778df32802827ac Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Sat, 28 Mar 2026 08:23:09 -0400
-Subject: [PATCH 17/24] oem-meta: add getSlotNumberStringByTID mapping for
+Subject: [PATCH 17/25] oem-meta: add getSlotNumberStringByTID mapping for
  SantaBarbara
 
 Add the slot number mapping for SantaBarbara from an early revision of

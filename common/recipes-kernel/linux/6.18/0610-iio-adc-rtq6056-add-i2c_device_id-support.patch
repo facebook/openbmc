@@ -1,7 +1,7 @@
-From 9028acac25d0f9dbcd3f09b232d8d5040890b461 Mon Sep 17 00:00:00 2001
+From 71383529b434f65b2b7e636cfbc21ab30cb6323a Mon Sep 17 00:00:00 2001
 From: Kevin Tung <kevin.tung.openbmc@gmail.com>
 Date: Mon, 20 Apr 2026 19:42:31 +0800
-Subject: [PATCH] iio: adc: rtq6056: add i2c_device_id support
+Subject: [PATCH 610/610] iio: adc: rtq6056: add i2c_device_id support
 
 Add i2c_device_id table to support legacy I2C instantiation.
 Update probe to use i2c_get_match_data() so device data can be
@@ -50,5 +50,5 @@ index 2bf3a09ac6b0..e2b1da13c0d3 100644
  module_i2c_driver(rtq6056_driver);
  
 -- 
-2.53.0
+2.53.0-Meta
 

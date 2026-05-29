@@ -1,7 +1,7 @@
-From 19880c98ebcc44dd0540adf4448bacae89878ced Mon Sep 17 00:00:00 2001
+From 8bf23eea7d2aef7897a0ab68fa1842eb8c62bc53 Mon Sep 17 00:00:00 2001
 From: Sora Su <sora_su@wiwynn.com>
 Date: Fri, 13 Mar 2026 13:02:16 +0800
-Subject: [PATCH 19/24] oem-meta: Add retry event deduplication for unified
+Subject: [PATCH 19/25] oem-meta: Add retry event deduplication for unified
  BIOS events
 
 Refactor event handler signatures from raw pointers to std::span

@@ -1,7 +1,7 @@
-From 019dd986ed83bcaa1dc9e1059149b4a2f24be70c Mon Sep 17 00:00:00 2001
+From e7f584ef63484e9eafa9510743632c45d4ca2d52 Mon Sep 17 00:00:00 2001
 From: Carter Chen <carter.chen.wiwynn@gmail.com>
 Date: Mon, 1 Dec 2025 08:46:59 +0000
-Subject: [PATCH 24/24] fw_update: Reimplement package parser to use new
+Subject: [PATCH 24/25] fw_update: Reimplement package parser to use new
  libpldm API
 
 libpldm has revised the APIs for firmware package, the old APIs are

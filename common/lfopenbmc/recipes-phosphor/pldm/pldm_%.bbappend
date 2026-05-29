@@ -28,7 +28,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0022-Add-back-maximum-transfer-size-configuration.patch \
     file://0023-Add-back-instance-id-expiration-interval.patch \
     file://0024-fw_update-Reimplement-package-parser-to-use-new-libp.patch \
-    file://0025-platform-mc-lazy-attach-FRU-decorator-interfaces.patch \
+    file://0025-platform-mc-lazy-attach-FRU-Decorator-interfaces.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

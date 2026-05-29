@@ -1,7 +1,7 @@
-From 7225686f01ceca625efdd8f1a27eeb3c6ada812d Mon Sep 17 00:00:00 2001
+From 7a0afbfa91b6989d6e1b9906854b5ce2b47ec842 Mon Sep 17 00:00:00 2001
 From: Kevin Tung <kevin.tung.openbmc@gmail.com>
 Date: Thu, 7 May 2026 15:56:51 +0800
-Subject: [PATCH 609/609] amd-apml: sbrmi: update SBRMI revision for Venice
+Subject: [PATCH 609/610] amd-apml: sbrmi: update SBRMI revision for Venice
 
 Update the SBRMI revision to 0x31 for Venice CPU.
 

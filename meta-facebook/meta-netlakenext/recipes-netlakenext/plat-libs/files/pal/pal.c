@@ -46,11 +46,6 @@
 #define KEY_SERVER_CPLD_VER "server_cpld_ver"
 #define MAX_NUM_GPIO_LED_POSTCODE 8
 
-#define PCC_PORT1_ABORT (0xC0)
-#define PCC_PORT2_ABORT (0xC1)
-#define PCC_PORT3_ABORT (0xC2)
-#define PCC_PORT4_ABORT (0xC3)
-
 const char pal_fru_list[] = "all, server, bmc, pdb, fio, nic";
 
 // export to sensor-util
@@ -1430,6 +1425,10 @@ pal_max31790_init(void) {
   return ret;
 }
 
+int pal_udbg_get_frame_total_num() {
+  return 5;
+}
+
 int
 pal_get_80port_record(uint8_t slot, uint8_t *buf, size_t max_len, size_t *len) {
   if (!pal_is_slot_server(slot)) {
@@ -1631,10 +1630,10 @@ int pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
   // read postcodes from the FIFO of lpc-pcc driver, and put in cache store
   while (read(fd, &one_code, sizeof(one_code)) == sizeof(one_code)) {
     port = one_code >> 8;
-    if ((index == 0 && port == PCC_PORT1_ABORT) ||
-        (index == 1 && port == PCC_PORT2_ABORT) ||
-        (index == 2 && port == PCC_PORT3_ABORT) ||
-        (index == 3 && port == PCC_PORT4_ABORT)) {
+    if ((index == 0 && (port & PCC_PORT1) == PCC_PORT1) ||
+        (index == 1 && (port & PCC_PORT2) == PCC_PORT2) ||
+        (index == 2 && (port & PCC_PORT3) == PCC_PORT3) ||
+        (index == 3 && (port & PCC_PORT4) == PCC_PORT4)) {
       post_code |= (one_code & 0xFF) << (index * 8);
     } else {
       // discard incomplete remnants
@@ -1744,10 +1743,10 @@ int pal_dimm_page_init()
       return -1;
     }
 
-    // set 2-byte mode
+    // set page 0 for DIMM temp sensor
     uint8_t setpage_data[2];
-    setpage_data[0] = DIMM_SPD_PAGE_CMD;
-    setpage_data[1] = DIMM_SPD_2BYTE_MODE;
+    setpage_data[0] = DIMM_PAGE_OFFSET;
+    setpage_data[1] = DIMM_PAGE0;
     do {
       ret = i2c_rdwr_msg_transfer(fd, dimm_addr_list[id],
                                   setpage_data, sizeof(setpage_data), &rbuf, rlen);

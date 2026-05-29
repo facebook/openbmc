@@ -1,4 +1,6 @@
-# Copyright 2020-present Facebook. All Rights Reserved.
+#! /bin/sh
+#
+# Copyright 2015-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,14 +16,27 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-DEPENDS += " libipmi libfruid libnetlakenext-common libpal "
-RDEPENDS_${PN} += "libipmi libfruid libnetlakenext-common libpal "
+### BEGIN INIT INFO
+# Provides:          ipmbd
+# Required-Start:
+# Required-Stop:
+# Default-Start:     S
+# Default-Stop:      0 6
+# Short-Description: Provides ipmb message tx/rx service
+#
+### END INIT INFO
 
-LDFLAGS += " -lipmb -lnetlakenext_common -lpal "
-CFLAGS:prepend = "-DCONFIG_POSTCODE_AMD"
+# shellcheck disable=SC1091,SC2039
+. /usr/local/fbpackages/utils/ast-functions
 
-FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
-SRC_URI += "file://fruid.c \
-            file://usb-dbg-conf.c \
-           "
+# shellcheck disable=SC3037
+echo -n "Starting IPMB Rx/Tx Daemon.."
+
+echo slave-mqueue 0x1010 > /sys/bus/i2c/devices/i2c-6/new_device  #USB DBG
+
+# shellcheck disable=SC3045
+ulimit -q 1024000
+runsv /etc/sv/ipmbd_6 > /dev/null 2>&1 &
+

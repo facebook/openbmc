@@ -359,6 +359,30 @@ post_complete_status_init(gpiopoll_pin_t *gp, gpio_value_t value) {
   set_apml_probe_status(value, INIT);
 }
 
+// thread for display post code led
+static void *
+post_code_led_handler() {
+  uint8_t buffer[MAX_VALUE_LEN] = {0};
+  size_t len = 0;
+  int res = 0;
+  bool is_failed = false;
+
+  while (true) {
+    res = pal_get_80port_record(FRU_SERVER, buffer, MAX_VALUE_LEN, &len);
+
+    if ((res < 0)&& (is_failed == false)) {
+      syslog(LOG_WARNING, "%s Fail to read pcc file \n", __func__);
+      is_failed = true;
+    } else if (res == 0) {
+      is_failed = false;
+    } else {
+      syslog(LOG_WARNING, "%s Fail to Unknown status \n", __func__);
+    }
+
+    sleep(1);
+  }
+}
+
 static int8_t
 set_debug_present_routing(gpio_value_t value) {
   int ret = 0;
@@ -442,6 +466,7 @@ int
 main(int argc, char **argv) {
   int rc, pid_file;
   pthread_t tid_server_power_monitor;
+  pthread_t tid_post_code_led_handler;
   gpiopoll_desc_t *polldesc;
 
   pid_file = open("/var/run/gpiod.pid", O_CREAT | O_RDWR, 0666);
@@ -466,6 +491,9 @@ main(int argc, char **argv) {
     }
     if (init_kv_value(POST_CMPLT_KV_KEY, "FM_BIOS_POST_CMPLT_R_N") < 0) {
         syslog(LOG_WARNING, "%s set up kv post complete failed!\n", __func__);
+    }
+    if (pthread_create(&tid_post_code_led_handler, NULL, post_code_led_handler, NULL) < 0) {
+      syslog(LOG_WARNING, "pthread_create for post_code_led_handler\n");
     }
   }
 

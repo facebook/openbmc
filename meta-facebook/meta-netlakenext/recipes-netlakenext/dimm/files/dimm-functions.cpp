@@ -105,7 +105,7 @@ is_dimm_present(uint8_t slot_id, uint8_t dimm) {
 }
 
 static int
-read_dimm_i2c(uint8_t slot_id, uint8_t bus_id, uint8_t addr, uint8_t offs_len,
+read_dimm_i2c(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t offs_len,
                     uint32_t offset, uint8_t len, uint8_t *rxbuf) {
   int fd = 0, ret = -1;
   uint8_t tbuf[16] = {0};
@@ -115,7 +115,7 @@ read_dimm_i2c(uint8_t slot_id, uint8_t bus_id, uint8_t addr, uint8_t offs_len,
     return -1;
   }
 
-  fd = i2c_cdev_slave_open(bus_id, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
   if (fd < 0) {
     return ret;
   }
@@ -135,7 +135,7 @@ read_dimm_i2c(uint8_t slot_id, uint8_t bus_id, uint8_t addr, uint8_t offs_len,
 }
 
 static int
-write_dimm_i2c(uint8_t slot_id, uint8_t bus_id, uint8_t addr, uint8_t offs_len,
+write_dimm_i2c(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t offs_len,
                      uint32_t offset, uint8_t len, uint8_t *txbuf) {
   int fd = 0, ret = -1;
   uint8_t tbuf[64] = {0};
@@ -146,7 +146,7 @@ write_dimm_i2c(uint8_t slot_id, uint8_t bus_id, uint8_t addr, uint8_t offs_len,
     return -1;
   }
 
-  fd = i2c_cdev_slave_open(bus_id, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
   if (fd < 0) {
     return ret;
   }
@@ -167,7 +167,7 @@ write_dimm_i2c(uint8_t slot_id, uint8_t bus_id, uint8_t addr, uint8_t offs_len,
 
 int
 util_read_spd(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint16_t offset, uint8_t len, uint8_t *rxbuf) {
-  uint8_t bus_id = 0;
+  uint8_t bus = DIMM_BUS;
   uint8_t addr = 0;
   uint32_t spd_offset = ((offset & 0x780) << 1) | (0x80 | (offset & 0x7F));
 
@@ -175,22 +175,22 @@ util_read_spd(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint16_t offset, u
     return -1;
   }
 
-  addr = spd_addr[dimm % (num_dimms_per_cpu/2)];
+  addr = spd_addr[dimm % num_dimms_per_cpu];
 
-  return read_dimm_i2c(slot_id, bus_id, addr, 2, spd_offset, len, rxbuf);
+  return read_dimm_i2c(slot_id, bus, addr, 2, spd_offset, len, rxbuf);
 }
 
 int
 util_set_EE_page(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t /*page_num*/) {
-  uint8_t bus_id = 0;
+  uint8_t bus = DIMM_BUS;
   uint8_t addr = 0;
   uint8_t buf[8];
 
-  addr = spd_addr[dimm % (num_dimms_per_cpu/2)];
+  addr = spd_addr[dimm % num_dimms_per_cpu];
 
   // set MR11[3] = 1b for 2-bytes addressing (offset) mode
   buf[0] = 0x08;
-  return write_dimm_i2c(slot_id, bus_id, addr, 1, 0x0b, 1, buf);
+  return write_dimm_i2c(slot_id, bus, addr, 1, 0x0b, 1, buf);
 }
 
 int
@@ -205,7 +205,7 @@ is_pmic_supported(void) {
 
 int
 util_read_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *rxbuf) {
-  uint8_t bus_id = 0;
+  uint8_t bus = DIMM_BUS;
   uint8_t addr = 0;
   uint32_t pmic_offset = offset;
 
@@ -213,14 +213,14 @@ util_read_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, u
     return -1;
   }
 
-  addr = pmic_addr[dimm % (num_dimms_per_cpu/2)];
+  addr = pmic_addr[dimm % num_dimms_per_cpu];
 
-  return read_dimm_i2c(slot_id, bus_id, addr, 1, pmic_offset, len, rxbuf);
+  return read_dimm_i2c(slot_id, bus, addr, 1, pmic_offset, len, rxbuf);
 }
 
 int
 util_write_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *txbuf) {
-  uint8_t bus_id = 0;
+  uint8_t bus = DIMM_BUS;
   uint8_t addr = 0;
   uint32_t pmic_offset = offset;
 
@@ -228,7 +228,21 @@ util_write_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, 
     return -1;
   }
 
-  addr = pmic_addr[dimm % (num_dimms_per_cpu/2)];
+  addr = pmic_addr[dimm % num_dimms_per_cpu];
 
-  return write_dimm_i2c(slot_id, bus_id, addr, 1, pmic_offset, len, txbuf);
+  return write_dimm_i2c(slot_id, bus, addr, 1, pmic_offset, len, txbuf);
+}
+
+int
+util_set_SODIMM_page(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t /*page_num*/) {
+  uint8_t bus = DIMM_BUS;
+  uint8_t addr = 0;
+  uint8_t buf[8];
+  uint32_t spd_offset = 0x000b;
+
+  addr = spd_addr[dimm % num_dimms_per_cpu];
+
+  // set MR11[3] = 0b MR11[2:0] = '000' for setting page 0 
+  buf[0] = 0x00;
+  return write_dimm_i2c(slot_id, bus, addr, 2, spd_offset, 1, buf);
 }

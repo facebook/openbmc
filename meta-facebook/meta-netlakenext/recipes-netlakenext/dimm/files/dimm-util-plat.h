@@ -30,6 +30,7 @@
 #define FRU_ID_ALL_NETLAKE2 1
 
 // 8-bits address
+#define DIMM_BUS 4
 #define DIMMA_SPD_ADDR 0xa0
 #define DIMMB_SPD_ADDR 0xa2
 

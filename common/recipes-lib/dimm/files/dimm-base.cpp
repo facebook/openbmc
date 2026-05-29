@@ -128,6 +128,13 @@ util_set_EE_page(uint8_t /*fru_id*/, uint8_t /*cpu*/, uint8_t /*dimm*/, uint8_t 
   return -1;
 }
 
+// select page 0 on SODIMM for temp reading
+int __attribute__((weak))
+util_set_SODIMM_page(uint8_t /*fru_id*/, uint8_t /*cpu*/, uint8_t /*dimm*/, uint8_t /*page_num*/)
+{
+  return -1;
+}
+
 // read 1 byte off SPD bus,
 // input:  fru_id/cpu/dimm/offset
 int __attribute__((weak))
@@ -271,7 +278,7 @@ set_dimm_loop(uint8_t dimm, uint8_t *startCPU, uint8_t *endCPU,
 
 static int
 check_dimm_type_ddr5(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t *type) {
-  uint8_t dev_type, dimm_present;
+  uint8_t dev_type = 0, dimm_present = 0;
 
   util_set_EE_page(fru_id, cpu, dimm, 0);
   util_read_spd_with_retry(fru_id, cpu, dimm, OFFSET_TYPE, 1, 0, &dev_type, &dimm_present);
@@ -291,7 +298,7 @@ check_dimm_type_ddr5(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t *type) {
 
 static int
 get_serial(uint8_t fru_id, uint8_t cpu, uint8_t dimm, char *sn_str) {
-  uint8_t dimm_present, i, buf[LEN_SERIAL] = {0};
+  uint8_t dimm_present = 0, i = 0, buf[LEN_SERIAL] = {0};
   uint16_t offset = OFFSET_SERIAL;
   int ret;
 
@@ -321,7 +328,7 @@ get_serial(uint8_t fru_id, uint8_t cpu, uint8_t dimm, char *sn_str) {
 
 int
 util_get_serial(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options) {
-  uint8_t i, cpu, startCPU, endCPU, startDimm, endDimm;
+  uint8_t i = 0, cpu = 0, startCPU = 0, endCPU = 0, startDimm = 0, endDimm = 0;
   int ret;
   json_t *config_arr = NULL;
   char   sn[LEN_SERIAL_STRING] = {0};
@@ -363,6 +370,7 @@ util_get_serial(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options) {
         else
           printf("NO DIMM\n");
       }
+      util_set_SODIMM_page(fru_id, cpu, i, 0);
     }
   }
   if (json) {
@@ -377,12 +385,13 @@ err_exit:
     if (config_arr)
       json_decref(config_arr);
   }
+  util_set_SODIMM_page(fru_id, cpu, dimm, 0);
   return -1;
 }
 
 static int
 get_part(uint8_t fru_id, uint8_t cpu, uint8_t dimm, char *pn_str) {
-  uint8_t dimm_present, i, buf[LEN_SPD5_DIMM_PN] = {0};
+  uint8_t dimm_present = 0, i = 0, buf[LEN_SPD5_DIMM_PN] = {0};
   uint8_t len = LEN_PART_NUMBER;
   uint16_t offset = OFFSET_PART_NUMBER;
   int ret;
@@ -414,7 +423,7 @@ get_part(uint8_t fru_id, uint8_t cpu, uint8_t dimm, char *pn_str) {
 
 int
 util_get_part(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options) {
-  uint8_t i, cpu, startCPU, endCPU, startDimm, endDimm;
+  uint8_t i = 0, cpu = 0, startCPU = 0, endCPU = 0, startDimm = 0, endDimm = 0;
   int ret;
   json_t *config_arr = NULL;
   char   pn[LEN_PN_STRING] = {0};
@@ -456,6 +465,7 @@ util_get_part(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options) {
         else
           printf("NO DIMM\n");
       }
+      util_set_SODIMM_page(fru_id, cpu, i, 0);
     }
   }
   if (json) {
@@ -470,12 +480,13 @@ err_exit:
     if (config_arr)
       json_decref(config_arr);
   }
+  util_set_SODIMM_page(fru_id, cpu, dimm, 0);
   return -1;
 }
 
 int
 util_get_raw_dump(uint8_t fru_id, uint8_t dimm, bool /*json*/, uint8_t* options) {
-  uint8_t i, page, cpu, startCPU, endCPU, startDimm, endDimm, dimm_present = 0;
+  uint8_t i = 0, page = 0, cpu = 0, startCPU = 0, endCPU = 0, startDimm = 0, endDimm = 0, dimm_present = 0;
   uint8_t page_num = 2;
   uint8_t buf[SPD5_DUMP_LEN] = {0};
   uint16_t j = 0;
@@ -517,6 +528,7 @@ util_get_raw_dump(uint8_t fru_id, uint8_t dimm, bool /*json*/, uint8_t* options)
           }
         }
       }
+      util_set_SODIMM_page(fru_id, cpu, i, 0);
     }
     printf("\n");
   }
@@ -528,7 +540,7 @@ int
 util_get_cache(uint8_t fru_id, uint8_t dimm, bool /*json*/, uint8_t* options) {
 #define MAX_KEY_SIZE 100
 #define MAX_VALUE_SIZE 128
-  uint8_t i, cpu, dimmNum, startCPU, endCPU, startDimm, endDimm = 0;
+  uint8_t i = 0, cpu = 0, dimmNum = 0, startCPU = 0, endCPU = 0, startDimm = 0, endDimm = 0;
   size_t len;
   char key[MAX_KEY_SIZE] = {0};
   char value[MAX_VALUE_SIZE] = {0};
@@ -623,7 +635,7 @@ get_config(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t type, json_t *obj)
 #define SERIAL_OFFSET 5
 #define PN_OFFSET 9
 #define BUF_SIZE 64
-  uint8_t i, dimm_present = 0;
+  uint8_t i = 0, dimm_present = 0;
   uint8_t buf[BUF_SIZE] = {0};
   uint8_t mincycle = 0;
   uint16_t mfg_id = 0;
@@ -727,7 +739,7 @@ get_config_spd5(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t type, json_t 
 // PN, SN + vendor, manufacture_date, size, speed, clock speed.
 int
 util_get_config(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options) {
-  uint8_t i, cpu, startCPU, endCPU, startDimm, endDimm, dev_type;
+  uint8_t i = 0, cpu = 0, startCPU = 0, endCPU = 0, startDimm = 0, endDimm = 0, dev_type = 0;
   int ret;
   json_t *config_arr = NULL;
 
@@ -778,6 +790,7 @@ util_get_config(uint8_t fru_id, uint8_t dimm, bool json, uint8_t* options) {
       } else {
         get_config(fru_id, cpu, i, dev_type, config_obj);
       }
+      util_set_SODIMM_page(fru_id, cpu, i, 0);
     }
   }
   if (json) {

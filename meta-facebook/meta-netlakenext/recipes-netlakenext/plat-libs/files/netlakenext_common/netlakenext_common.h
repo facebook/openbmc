@@ -48,6 +48,10 @@ extern "C" {
 #define BMC_FRU_ADDR 0x56
 #define NIC_FRU_ADDR 0x50
 
+#define CPLD_SPI_MUX_BUS 4
+#define CPLD_SPI_MUX_ADDR 0x3E
+#define CPLD_SPI_MUX_REG 0x0A
+
 //In Netlake codebase, all definition used 0 base bus, 8 bit address
 #define VR_BUS  0
 #define VR_PVDDCR_BUS 20
@@ -80,8 +84,8 @@ extern "C" {
 #define DIMMA_ADDR 0xA0
 #define DIMMB_ADDR 0xA2
 #define DIMM_TEMP_LEN 1
-#define DIMM_SPD_PAGE_CMD 0x0b
-#define DIMM_SPD_2BYTE_MODE 0x08
+#define DIMM_PAGE_OFFSET 0x0b
+#define DIMM_PAGE0 0x00
 
 #define INA230_ADDR 0x80
 #define INA230_POWER 0x03

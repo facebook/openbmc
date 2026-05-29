@@ -139,6 +139,7 @@ int pmic_clear_err(uint8_t fru_id, uint8_t cpu, uint8_t dimm_num);
 // util functions to be provided by each platform
 int util_check_me_status(uint8_t fru_id);
 int util_set_EE_page(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t page_num);
+int util_set_SODIMM_page(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t page_num);
 int util_read_spd_byte(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint8_t offset);
 int util_read_spd(uint8_t fru_id, uint8_t cpu, uint8_t dimm, uint16_t offset, uint8_t len, uint8_t *rxbuf);
 int plat_init(void);

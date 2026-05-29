@@ -1,7 +1,7 @@
-From 6320b0446432e5ff75445352e3b1b48c6ef5b910 Mon Sep 17 00:00:00 2001
+From 390596554ba9b338551028d6eb0b58f495dcbf3e Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Wed, 8 Apr 2026 18:35:20 +0800
-Subject: [PATCH 3/4] common: restore VR page after update or CRC access
+Subject: [PATCH 3/3] common: restore VR page after update or CRC access
 
 Some VR devices have multiple pages, and sensor polling may access
 data that is not on the same page as the version information. If the

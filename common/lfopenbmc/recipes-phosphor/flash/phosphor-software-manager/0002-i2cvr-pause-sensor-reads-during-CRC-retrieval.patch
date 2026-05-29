@@ -1,7 +1,7 @@
-From a30966f18e53c811b91856bcb922ffc4440a01d5 Mon Sep 17 00:00:00 2001
+From 2756dc29d60ed47c7c3c40304275ffc28a65034e Mon Sep 17 00:00:00 2001
 From: Kevin Tung <kevin.tung@quantatw.com>
 Date: Wed, 8 Oct 2025 13:52:45 +0800
-Subject: [PATCH 2/4] i2cvr: pause sensor reads during CRC retrieval
+Subject: [PATCH 2/3] i2cvr: pause sensor reads during CRC retrieval
 
 Pause sensor reads while retrieving the CRC to update the version.
 During CRC retrieval, both the CRC process and PSU sensor monitoring
@@ -21,7 +21,7 @@ Signed-off-by: Kevin Tung <kevin.tung.openbmc@gmail.com>
  1 file changed, 10 insertions(+)
 
 diff --git a/i2c-vr/i2cvr_software_manager.cpp b/i2c-vr/i2cvr_software_manager.cpp
-index 93ffe1d..e8e411d 100644
+index d812657..1824a70 100644
 --- a/i2c-vr/i2cvr_software_manager.cpp
 +++ b/i2c-vr/i2cvr_software_manager.cpp
 @@ -84,6 +84,13 @@ sdbusplus::async::task<bool> I2CVRSoftwareManager::initDevice(

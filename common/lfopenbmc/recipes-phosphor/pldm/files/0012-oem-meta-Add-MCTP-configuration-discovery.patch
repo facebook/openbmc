@@ -1,7 +1,7 @@
-From a1545117be292f5caceae12571f13f48385e0f62 Mon Sep 17 00:00:00 2001
+From e2b8c06020a9bb6c7c5169c3bdc2289f6392b3c7 Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Wed, 17 Sep 2025 16:05:34 +0800
-Subject: [PATCH 12/25] oem-meta: Add MCTP configuration discovery
+Subject: [PATCH] oem-meta: Add MCTP configuration discovery
 
 Introduces a `ConfigurationDiscoveryHandler` to dynamically discover MCTP
 endpoint configurations from D-Bus. This handler listens for MCTP
@@ -667,5 +667,5 @@ index 8df1b50..9f890ea 100644
                       TID](IO& io, int fd, uint32_t revents) mutable {
          if (revents & (POLLHUP | POLLERR))
 -- 
-2.53.0-Meta
+2.52.0
 

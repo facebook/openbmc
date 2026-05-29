@@ -1,7 +1,7 @@
-From 0273f46a38a0cd5d74bfe80824756a84edebbf5b Mon Sep 17 00:00:00 2001
+From be655018b896fda6b5d06932fdbf3bf0e0f37800 Mon Sep 17 00:00:00 2001
 From: Pete O_o <pmb@meta.com>
 Date: Wed, 27 May 2026 08:18:00 -0700
-Subject: [PATCH 25/25] platform-mc: lazy-attach FRU Decorator interfaces
+Subject: [PATCH] platform-mc: lazy-attach FRU Decorator interfaces
 
 PldmEntityReq<> previously inherited AssetIntf / AssetTagIntf /
 RevisionIntf / CompatibleIntf and constructed all of them in its
@@ -196,5 +196,5 @@ index 088a56f..44ba54a 100644
  
  // Item interface server types
 -- 
-2.53.0-Meta
+2.52.0
 

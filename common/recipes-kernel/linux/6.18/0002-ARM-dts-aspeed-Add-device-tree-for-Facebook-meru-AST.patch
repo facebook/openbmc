@@ -1,8 +1,8 @@
-From 28c789e6256c506003deddec74bacd9e4a29e35c Mon Sep 17 00:00:00 2001
+From 282666cdf9fcb0713018a00ab71fe606048d02df Mon Sep 17 00:00:00 2001
 From: Adam Calabrigo <adamc@arista.com>
 Date: Fri, 13 Mar 2026 14:15:41 +0000
-Subject: [PATCH 2/2] ARM: dts: aspeed: Add device tree for Facebook meru
- (AST2600) BMC
+Subject: [PATCH] ARM: dts: aspeed: Add device tree for Facebook meru (AST2600)
+ BMC
 
 meru is Facebook's next generation switch platform with an AST2600
 BMC integrated for health monitoring purpose.
@@ -163,5 +163,5 @@ index 000000000000..37d6d817d32d
 +		&pinctrl_adc14_default &pinctrl_adc15_default>;
 +};
 -- 
-2.53.0-Meta
+2.52.0
 

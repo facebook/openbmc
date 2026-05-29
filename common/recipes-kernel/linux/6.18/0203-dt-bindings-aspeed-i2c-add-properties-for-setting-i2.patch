@@ -1,8 +1,8 @@
-From 10e546c938aeec20f02f028ed57b6c993be36f90 Mon Sep 17 00:00:00 2001
+From 97afe36007b1333b116298bc23202ab2d8d7c6cd Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Wed, 1 Jun 2022 10:10:37 +0800
-Subject: [PATCH 203/237] dt-bindings: aspeed-i2c: add properties for setting
- i2c clock duty cycle
+Subject: [PATCH] dt-bindings: aspeed-i2c: add properties for setting i2c clock
+ duty cycle
 
 Introduce a new property for setting a minimum duty cycle for clock high.
 
@@ -32,5 +32,5 @@ index 5b9bd2feda3b..7f0b0a21e7c1 100644
    - reg
    - compatible
 -- 
-2.53.0-Meta
+2.52.0
 

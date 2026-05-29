@@ -1,7 +1,7 @@
-From bdfe51ac886967ddeefaa500d505083deb14cfa9 Mon Sep 17 00:00:00 2001
+From 43b780d36eeb3d98938c02d8ca6e269249e89a3c Mon Sep 17 00:00:00 2001
 From: Zoey Chung <zoey_yj_chung@wiwynn.com>
 Date: Tue, 10 Mar 2026 14:16:35 +0800
-Subject: [PATCH 226/237] i3c: dw: Improve IBI queue handling when encountering
+Subject: [PATCH] i3c: dw: Improve IBI queue handling when encountering
  infinite IBI data reads
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -119,7 +119,7 @@ index 8250da40a60b..1d003eacf83c 100644
  
  static const struct dw_i3c_platform_ops ast2600_i3c_ops = {
 diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
-index 4745aeedf85e..66705b044a3b 100644
+index d8f5638196cd..23e72651ef2a 100644
 --- a/drivers/i3c/master/dw-i3c-master.c
 +++ b/drivers/i3c/master/dw-i3c-master.c
 @@ -387,17 +387,20 @@ static int dw_i3c_master_exit_halt(struct dw_i3c_master *master)
@@ -202,5 +202,5 @@ index 4745aeedf85e..66705b044a3b 100644
  			queue_work(master->base.wq, &master->hj_work);
  		} else {
 -- 
-2.53.0-Meta
+2.52.0
 

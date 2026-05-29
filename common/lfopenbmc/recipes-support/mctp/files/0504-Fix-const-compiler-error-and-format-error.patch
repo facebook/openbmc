@@ -1,7 +1,7 @@
-From 7afe5b51611afa983d87bc2f5aeb1c26971245f5 Mon Sep 17 00:00:00 2001
+From f58f7535bfa299f452cf5f9cc19515b9697e8e44 Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Thu, 2 Apr 2026 09:25:08 -0700
-Subject: [PATCH 504/504] Fix const compiler error and format error
+Subject: [PATCH] Fix const compiler error and format error
 
 This fixes the build time error we are seeing on meta platforms
 ---

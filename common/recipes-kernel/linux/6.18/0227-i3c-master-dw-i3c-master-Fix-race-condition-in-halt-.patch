@@ -1,8 +1,8 @@
-From 35620d7fd9348fb5636fd71392d6f477e5e5b3e8 Mon Sep 17 00:00:00 2001
+From 26eb2bffc78a6dd500aa9e07087762dff7ed4c22 Mon Sep 17 00:00:00 2001
 From: Zoey Chung <zoey_yj_chung@wiwynn.com>
 Date: Tue, 10 Mar 2026 14:22:37 +0800
-Subject: [PATCH 227/237] i3c: master: dw-i3c-master: Fix race condition in
- halt/resume sequences
+Subject: [PATCH] i3c: master: dw-i3c-master: Fix race condition in halt/resume
+ sequences
 
 The controller may immediately start a transfer and enter the halt state
 again after resuming from a previous halt (e.g., due to a pending error).
@@ -28,7 +28,7 @@ Signed-off-by: Zoey Chung <zoey_yj_chung@wiwynn.com>
  1 file changed, 12 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
-index 66705b044a3b..58e2a85c07e6 100644
+index 23e72651ef2a..4ae7a01f9dbf 100644
 --- a/drivers/i3c/master/dw-i3c-master.c
 +++ b/drivers/i3c/master/dw-i3c-master.c
 @@ -369,14 +369,14 @@ static void dw_i3c_master_enable(struct dw_i3c_master *master)
@@ -72,5 +72,5 @@ index 66705b044a3b..58e2a85c07e6 100644
  	if (ret)
  		dev_err(&master->base.dev,
 -- 
-2.53.0-Meta
+2.52.0
 

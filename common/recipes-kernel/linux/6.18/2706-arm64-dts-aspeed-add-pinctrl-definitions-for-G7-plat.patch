@@ -1,8 +1,7 @@
-From 11e332e2fe72d4c2fdfdb8b1a5c724db0eac9eb3 Mon Sep 17 00:00:00 2001
+From b79fe0344ba194ceb0254e7c5859515d86dab13f Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Wed, 11 Mar 2026 09:47:41 +0800
-Subject: [PATCH 2706/2707] arm64: dts: aspeed: add pinctrl definitions for G7
- platforms
+Subject: [PATCH] arm64: dts: aspeed: add pinctrl definitions for G7 platforms
 
 Introduce pinctrl nodes and include pinctrl state definitions for
 various peripherals in G7 platform device trees to support pin
@@ -1394,5 +1393,5 @@ index 000000000000..219fdd9e9885
 +	};
 +};
 -- 
-2.53.0-Meta
+2.52.0
 

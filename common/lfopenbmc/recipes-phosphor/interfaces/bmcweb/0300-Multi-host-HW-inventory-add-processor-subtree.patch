@@ -1,7 +1,7 @@
-From 5c8bce4f9757ddd0c8ad0fc65f05b7b0f63f7fce Mon Sep 17 00:00:00 2001
+From d650972007eba6e3e41971feff867509536ca702 Mon Sep 17 00:00:00 2001
 From: Christopher Meis <christopher.meis@9elements.com>
 Date: Wed, 17 Sep 2025 09:07:06 +0200
-Subject: [PATCH 300/301] Multi-host/HW-inventory: add processor subtree
+Subject: [PATCH] Multi-host/HW-inventory: add processor subtree
 
 This implements the processor subtree for multi-host system.
 Requires a containing/contained_by association implemented in EM config

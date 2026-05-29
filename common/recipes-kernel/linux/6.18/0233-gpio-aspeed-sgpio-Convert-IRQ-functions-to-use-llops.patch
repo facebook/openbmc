@@ -1,8 +1,8 @@
-From f9200b7055ade92e179bc44f24c1a07b102eba8e Mon Sep 17 00:00:00 2001
+From b595e59ad3d31062bb546561beca7b6f82e90130 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Fri, 23 Jan 2026 17:26:29 +0800
-Subject: [PATCH 233/237] gpio: aspeed-sgpio: Convert IRQ functions to use
- llops callbacks
+Subject: [PATCH] gpio: aspeed-sgpio: Convert IRQ functions to use llops
+ callbacks
 
 Update aspeed_sgpio_irq_handler() and aspeed_sgpio_setup_irqs() to use
 the llops callbacks for register access instead of direct iowrite32().
@@ -84,5 +84,5 @@ index 04ac47819b5a..bf83e19a1bf0 100644
  
  	return 0;
 -- 
-2.53.0-Meta
+2.52.0
 

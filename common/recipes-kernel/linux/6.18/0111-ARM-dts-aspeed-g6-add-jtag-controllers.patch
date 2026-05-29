@@ -1,7 +1,7 @@
-From 941c40ab8a2443c39325c680c1fcc1fba5df35ad Mon Sep 17 00:00:00 2001
+From 28645759a3ac39645fd457a9e6de21ba1991f750 Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Wed, 4 Sep 2024 06:49:01 -0400
-Subject: [PATCH 111/112] ARM: dts: aspeed-g6: add jtag controllers
+Subject: [PATCH] ARM: dts: aspeed-g6: add jtag controllers
 
 Summary:
 
@@ -58,5 +58,5 @@ index 8321f0fc333c..c8ac625bac09 100644
  				compatible = "aspeed,ast2600-gfx", "syscon";
  				reg = <0x1e6e6000 0x1000>;
 -- 
-2.53.0-Meta
+2.52.0
 

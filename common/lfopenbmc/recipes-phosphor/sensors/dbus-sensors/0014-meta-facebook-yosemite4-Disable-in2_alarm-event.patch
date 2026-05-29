@@ -1,7 +1,7 @@
-From 369a40b05923c0086daa669825c41d98cb530682 Mon Sep 17 00:00:00 2001
+From 1c778cd9b877dceaef7cbd1e2052ff9a959624fd Mon Sep 17 00:00:00 2001
 From: KayYCHuang-wiwynn <kay.yc.huang.wiwynn@gmail.com>
 Date: Mon, 17 Mar 2025 02:25:46 +0000
-Subject: [PATCH 14/19] meta-facebook: yosemite4: Disable in2_alarm event
+Subject: [PATCH] meta-facebook: yosemite4: Disable in2_alarm event
 
 ---
  meson.build               | 4 ++++
@@ -53,5 +53,5 @@ index 8393828..6b0a948 100644
                                        {"ConfigureError", {"in1_fault"}}};
  const static EventPathList limitEventMatch{
 -- 
-2.53.0-Meta
+2.52.0
 

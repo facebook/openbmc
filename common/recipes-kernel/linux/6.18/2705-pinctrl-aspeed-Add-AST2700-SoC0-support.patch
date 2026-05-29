@@ -1,7 +1,7 @@
-From 3a1debfe73e928c286a4010a673e3f947c71ef9c Mon Sep 17 00:00:00 2001
+From a46967eed060074f4b7262742b6b1d454b496252 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Tue, 20 Jan 2026 19:43:07 +0800
-Subject: [PATCH 2705/2707] pinctrl: aspeed: Add AST2700 SoC0 support
+Subject: [PATCH] pinctrl: aspeed: Add AST2700 SoC0 support
 
 Add pinctrl support for the SoC0 instance of the ASPEED AST2700.
 
@@ -806,5 +806,5 @@ index 000000000000..35a28b677318
 +}
 +arch_initcall(aspeed_g7_soc0_pinctrl_init);
 -- 
-2.53.0-Meta
+2.52.0
 

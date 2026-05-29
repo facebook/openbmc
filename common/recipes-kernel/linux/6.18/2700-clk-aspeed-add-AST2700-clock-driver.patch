@@ -1,7 +1,7 @@
-From f243f056611c6bc9e82b5003c94ac99ddbcdca21 Mon Sep 17 00:00:00 2001
+From 3766c78e07a3beffa0ce49148330973b37985851 Mon Sep 17 00:00:00 2001
 From: Ryan Chen <ryan_chen@aspeedtech.com>
 Date: Wed, 24 Dec 2025 13:37:24 +0800
-Subject: [PATCH 2700/2707] clk: aspeed: add AST2700 clock driver
+Subject: [PATCH] clk: aspeed: add AST2700 clock driver
 
 Add AST2700 clock controller driver and also use axiliary
 device framework register the reset controller driver.
@@ -1110,5 +1110,5 @@ index 000000000000..bbb2b571eb72
 +
 +module_platform_driver(ast2700_scu_driver);
 -- 
-2.53.0-Meta
+2.52.0
 

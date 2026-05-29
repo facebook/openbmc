@@ -1,7 +1,7 @@
-From bde2806e4fa57d55bda0c467d273398d812a843f Mon Sep 17 00:00:00 2001
+From 21ea8cc8cdedf6541de3ea9116c4507cc9bbf2c2 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 5 Mar 2026 19:09:36 +0800
-Subject: [PATCH 02/10] configurations: nvidia: add VR NVL72 configuration
+Subject: [PATCH] configurations: nvidia: add VR NVL72 configuration
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -100,5 +100,5 @@ index 0000000..9f4c652
 +    }
 +]
 -- 
-2.53.0-Meta
+2.52.0
 

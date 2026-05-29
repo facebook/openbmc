@@ -1,7 +1,7 @@
-From 77d58470786802c5ee9bf65d36011b1a508d8143 Mon Sep 17 00:00:00 2001
+From 909efcee3eac7d46f4210e3750c82fdd37bbd30f Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 15:59:10 +0000
-Subject: [PATCH 204/205] Map DBus event to RF MessageID and parse args
+Subject: [PATCH] Map DBus event to RF MessageID and parse args
 
 There is a generated map that contains DBus event name and corresponding
 RF info - Registry, MessageID within the registry and names of arguments

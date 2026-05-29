@@ -1,7 +1,7 @@
-From 7a0afbfa91b6989d6e1b9906854b5ce2b47ec842 Mon Sep 17 00:00:00 2001
+From 0c81987ff19e03039b9cf82e3a86b7439a1170aa Mon Sep 17 00:00:00 2001
 From: Kevin Tung <kevin.tung.openbmc@gmail.com>
 Date: Thu, 7 May 2026 15:56:51 +0800
-Subject: [PATCH 609/610] amd-apml: sbrmi: update SBRMI revision for Venice
+Subject: [PATCH] amd-apml: sbrmi: update SBRMI revision for Venice
 
 Update the SBRMI revision to 0x31 for Venice CPU.
 
@@ -75,5 +75,5 @@ index f7d858f3a2ec..27e1f420aa1c 100644
  			else
  				*size = SBRMI_REG_ADDR_SIZE_DEF;
 -- 
-2.53.0-Meta
+2.52.0
 

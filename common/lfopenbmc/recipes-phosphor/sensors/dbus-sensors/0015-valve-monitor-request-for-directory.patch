@@ -1,7 +1,7 @@
-From b0c6f3b4b19c86ff1ee8f9de2204694c5ba5af24 Mon Sep 17 00:00:00 2001
+From 3f81f371109ff391d25a2704da9914c2bdc8e672 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Fri, 19 Dec 2025 05:41:23 -0800
-Subject: [PATCH 15/19] valve-monitor: request for directory
+Subject: [PATCH] valve-monitor: request for directory
 
 Request the directory for valve-monitor. The purpose of the valve
 monitor service is to monitor the water valves in liquid cooling setups.

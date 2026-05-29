@@ -1,7 +1,7 @@
-From 1cf521ce8f6a4ac926276704d4d92c790f44b2af Mon Sep 17 00:00:00 2001
+From 6989bf9e87086c3037b3e4acb61eaba672fbcdd5 Mon Sep 17 00:00:00 2001
 From: Dirk Chen <dirkchen@amd.com>
 Date: Tue, 13 Jan 2026 01:06:34 +0800
-Subject: [PATCH 1/2] cpld: Add firmware update support for Lattice XO5-15D
+Subject: [PATCH] cpld: Add firmware update support for Lattice XO5-15D
 
 Enable firmware update capability for the Lattice XO5-15D CPLD.
 The update flow differs from the Lattice XO5 series and follows

@@ -1,7 +1,7 @@
-From 313569457332b6beb0f597ef57be7e25481fd49e Mon Sep 17 00:00:00 2001
+From 6853ee966b148bb046d4c187cf377cc728eeaefd Mon Sep 17 00:00:00 2001
 From: Ryan Chen <ryan_chen@aspeedtech.com>
 Date: Tue, 7 Apr 2026 11:08:05 +0800
-Subject: [PATCH 2703/2707] irqchip/ast2700-intc: Add AST2700-A2 support
+Subject: [PATCH] irqchip/ast2700-intc: Add AST2700-A2 support
 
 The AST2700 interrupt fabric is shared by multiple integrated processors
 (PSP/SSP/TSP/BootMCU), each with its own interrupt controller and its own
@@ -1108,5 +1108,5 @@ index 000000000000..318296638445
 +
 +#endif
 -- 
-2.53.0-Meta
+2.52.0
 

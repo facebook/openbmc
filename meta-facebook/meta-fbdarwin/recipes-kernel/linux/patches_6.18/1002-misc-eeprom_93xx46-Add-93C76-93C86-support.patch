@@ -1,7 +1,7 @@
-From 30ee7af5fcfa1cbd1ab267356f9d1a0acb178ede Mon Sep 17 00:00:00 2001
+From 2082c01b7b5ba1dd1c7d91e1e0a70c8723828101 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Wed, 27 Apr 2022 10:56:49 -0700
-Subject: [PATCH 1002/1003] misc: eeprom_93xx46: Add 93C76/93C86 support
+Subject: [PATCH] misc: eeprom_93xx46: Add 93C76/93C86 support
 
 Summary:
 This PR adds support to the kernel 5.15 for 93C86 chip definitions and
@@ -26,7 +26,7 @@ Tags: accept2ship
  1 file changed, 38 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/misc/eeprom/eeprom_93xx46.c b/drivers/misc/eeprom/eeprom_93xx46.c
-index 5230e910a1d1..59212f420ab2 100644
+index 5230e910a1d1..a9b063d015a0 100644
 --- a/drivers/misc/eeprom/eeprom_93xx46.c
 +++ b/drivers/misc/eeprom/eeprom_93xx46.c
 @@ -30,6 +30,7 @@ struct eeprom_93xx46_platform_data {

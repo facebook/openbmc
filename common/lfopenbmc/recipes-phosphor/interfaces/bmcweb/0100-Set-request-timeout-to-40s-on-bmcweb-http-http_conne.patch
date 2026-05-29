@@ -1,8 +1,7 @@
-From ca552223dfb9924bbd7105daeb23d02dcc3f8852 Mon Sep 17 00:00:00 2001
+From 07f88bbaa962a357ef95999d12222856225511bc Mon Sep 17 00:00:00 2001
 From: Marco Kawajiri <kawajiri@meta.com>
 Date: Wed, 5 Feb 2025 09:42:22 -0800
-Subject: [PATCH 100/103] Set request timeout to 40s on
- bmcweb/http/http_connection.hpp
+Subject: [PATCH] Set request timeout to 40s on bmcweb/http/http_connection.hpp
 
 Change-Id: Ieb9c9569a141cbb194fa362ac0426a9e8127becf
 ---
@@ -23,5 +22,5 @@ index d9c470bd..6592f2b0 100644
          {
              // if we're waiting for future requests while idle in keepalive,
 -- 
-2.53.0-Meta
+2.52.0
 

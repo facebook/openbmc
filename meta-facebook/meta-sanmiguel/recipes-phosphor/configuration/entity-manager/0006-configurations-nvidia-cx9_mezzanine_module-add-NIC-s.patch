@@ -1,8 +1,8 @@
-From b895335bf9214268d11756fab69a50bee8ebeaf0 Mon Sep 17 00:00:00 2001
+From 0e58d2e24d5f859de3564ec2ac464e52a9f0d529 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 25 Mar 2026 13:51:45 +0800
-Subject: [PATCH 06/10] configurations: nvidia: cx9_mezzanine_module: add NIC
- sensor configs
+Subject: [PATCH] configurations: nvidia: cx9_mezzanine_module: add NIC sensor
+ configs
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

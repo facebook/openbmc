@@ -1,7 +1,7 @@
-From 562570d6a9500c451d88dde6c7c80eb4e56ad97e Mon Sep 17 00:00:00 2001
+From 8b5dda4f6eec1a446528aacb92de2aefe0f9df31 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Tue, 7 Jan 2025 13:35:34 +0800
-Subject: [PATCH 236/237] iio: adc: aspeed: Disable the last channel by default
+Subject: [PATCH] iio: adc: aspeed: Disable the last channel by default
 
 When the controller supports battery sensing, the driver will default to
 disabling the last channel. This modification is necessary because the
@@ -94,5 +94,5 @@ index 040045770276..0249658f694b 100644
  	       data->base + ASPEED_REG_ENGINE_CONTROL);
  
 -- 
-2.53.0-Meta
+2.52.0
 

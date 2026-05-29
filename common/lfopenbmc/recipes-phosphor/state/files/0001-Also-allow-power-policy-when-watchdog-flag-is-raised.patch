@@ -1,7 +1,7 @@
-From 20dcc5877ee2d30e70e2d41e880a9f2821800d7d Mon Sep 17 00:00:00 2001
+From c4d694723cce66faba8ca49b8e11fe1315294f34 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Wed, 3 Apr 2024 15:13:25 +0800
-Subject: [PATCH 1/2] Also allow power policy when watchdog flag is raised
+Subject: [PATCH] Also allow power policy when watchdog flag is raised
 
 Change-Id: I333abc0313a6560ce509c9481e9b92e592f5ad80
 ---
@@ -9,7 +9,7 @@ Change-Id: I333abc0313a6560ce509c9481e9b92e592f5ad80
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/discover_system_state.cpp b/discover_system_state.cpp
-index ee0a62f..116048e 100644
+index ee95cda..1a86bb5 100644
 --- a/discover_system_state.cpp
 +++ b/discover_system_state.cpp
 @@ -135,7 +135,7 @@ int main(int argc, char** argv)

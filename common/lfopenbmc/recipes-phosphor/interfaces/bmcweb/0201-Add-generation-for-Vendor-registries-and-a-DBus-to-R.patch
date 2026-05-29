@@ -1,8 +1,7 @@
-From 24c0ab49f1ab2607eb18e1864d37d00744feb846 Mon Sep 17 00:00:00 2001
+From 70f42d9100d80f8a923135874a3ede73062a3678 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 12:50:55 +0000
-Subject: [PATCH 201/205] Add generation for Vendor registries and a DBus to RF
- map
+Subject: [PATCH] Add generation for Vendor registries and a DBus to RF map
 
 The system consumes Log events sent over DBus, but these events
 do not have Redfish message IDs, so they cannot be used directly.

@@ -1,7 +1,7 @@
-From 96eee8ffda91fe9d9107ea30e59d9a8115e1f49c Mon Sep 17 00:00:00 2001
+From 7734c287037a72bf5809a9ea05f10400f6b54d49 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Mon, 11 May 2020 13:51:25 -0700
-Subject: [PATCH 112/112] ARM: dts: aspeed-g5: add jtag controller
+Subject: [PATCH] ARM: dts: aspeed-g5: add jtag controller
 
 Summary:
 Add JTAG controller in aspeed-g5.dtsi. The patch is generated from
@@ -43,5 +43,5 @@ index 00950fc372ea..6e61ba53cd5c 100644
  				compatible = "aspeed,ast2500-gfx", "syscon";
  				reg = <0x1e6e6000 0x1000>;
 -- 
-2.53.0-Meta
+2.52.0
 

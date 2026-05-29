@@ -1,7 +1,7 @@
-From c03819ff4491a809fb5188a2eaf9066f408948f3 Mon Sep 17 00:00:00 2001
+From 39a9c22dbc0a9743a198e7f6cffe31f80d65d5ab Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Thu, 13 Oct 2022 03:38:28 -0700
-Subject: [PATCH 110/112] fixup jtag patch series
+Subject: [PATCH] fixup jtag patch series
 
 Put common file changes in this single diff so it's easier to resolve
 merge conflicts in future upgrade.
@@ -37,5 +37,5 @@ index 8e1ffa4358d5..a685aeab0ba6 100644
  
  # GPIO must come after pinctrl as gpios may need to mux pins etc
 -- 
-2.53.0-Meta
+2.52.0
 

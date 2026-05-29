@@ -1,7 +1,7 @@
-From aa1873b0b58db06347846de671c8d8821c6b4f95 Mon Sep 17 00:00:00 2001
+From 3db105299037ab28a370ba023c923aae02174ce3 Mon Sep 17 00:00:00 2001
 From: EricYang-wiwynn <Eric_Yang@wiwynn.com>
 Date: Mon, 17 Mar 2025 18:54:44 +0800
-Subject: [PATCH 503/504] mctpd: Implement retry mechanism for static EID setup
+Subject: [PATCH] mctpd: Implement retry mechanism for static EID setup
 
 Added a retry logic to the setup_static_eid function to enhance
 robustness when calling the GetSubTreePaths method.

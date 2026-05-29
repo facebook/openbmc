@@ -1,7 +1,7 @@
-From 371d2132b282f9d396900d75b36ee4eeda9fbf58 Mon Sep 17 00:00:00 2001
+From f31bc70e3a1977408463ed314e7029d24277f6dd Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Sat, 2 May 2026 22:46:03 +0800
-Subject: [PATCH 1001/1002] Add NVMeMI sensor service
+Subject: [PATCH] Add NVMeMI sensor service
 
 Add NVMeMI sensor service from Nvidia dbus-sensors repo.
 
@@ -2518,5 +2518,5 @@ index 0000000..ae181f5
 +)
 +
 -- 
-2.53.0-Meta
+2.52.0
 

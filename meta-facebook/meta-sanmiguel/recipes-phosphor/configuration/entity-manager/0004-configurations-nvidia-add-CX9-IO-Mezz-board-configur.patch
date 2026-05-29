@@ -1,8 +1,7 @@
-From b3765182056bbfe9212efff9433ae135cbd93c99 Mon Sep 17 00:00:00 2001
+From 5a224146179a76da247d1e535f0c9b2663b02178 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 5 Mar 2026 19:08:45 +0800
-Subject: [PATCH 04/10] configurations: nvidia: add CX9 IO Mezz board
- configuration
+Subject: [PATCH] configurations: nvidia: add CX9 IO Mezz board configuration
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -78,5 +77,5 @@ index 0000000..7cdc62b
 +    }
 +}
 -- 
-2.53.0-Meta
+2.52.0
 

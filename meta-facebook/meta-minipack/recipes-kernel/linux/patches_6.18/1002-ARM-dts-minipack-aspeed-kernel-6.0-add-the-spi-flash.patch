@@ -1,8 +1,8 @@
-From cd20a350024d7ce3bd74c6bbb368ba0800c110b8 Mon Sep 17 00:00:00 2001
+From 15a2bfb60df0a7f5ed32a90c0d18fafae51bfe75 Mon Sep 17 00:00:00 2001
 From: Yiang Han <hya321@meta.com>
 Date: Wed, 30 Nov 2022 10:56:20 -0800
-Subject: [PATCH 1002/1002] ARM: dts: minipack: aspeed: kernel 6.0: add the spi
- flash device desc.
+Subject: [PATCH] ARM: dts: minipack: aspeed: kernel 6.0: add the spi flash
+ device desc.
 
 ---
  .../aspeed/aspeed-bmc-facebook-minipack.dts   | 41 +++++++++++++++++++

@@ -1,8 +1,8 @@
-From f10d87ef9c63bbcbeb150964a80084e06352b085 Mon Sep 17 00:00:00 2001
+From 42d71340df47302d3557def898da65eda8a52c21 Mon Sep 17 00:00:00 2001
 From: Liora Guo <liora.guo.wiwynn@gmail.com>
 Date: Thu, 6 Nov 2025 07:34:47 +0000
-Subject: [PATCH 2/2] yosemite4: fb-ipmi-oem: skip FRU read when motherboard
- path is missing
+Subject: [PATCH] yosemite4: fb-ipmi-oem: skip FRU read when motherboard path
+ is missing
 
 [Task Description]
 On YosemiteV4 platforms, when the motherboard FRU path cannot be resolved, getFruData() now returns -1 instead of falling back to a
@@ -30,7 +30,7 @@ generic selection. This prevents showing SN/PN from the wrong FRU.
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/src/oemcommands.cpp b/src/oemcommands.cpp
-index 0f8d0e8..958e9ec 100644
+index c9b578f..7b4e815 100644
 --- a/src/oemcommands.cpp
 +++ b/src/oemcommands.cpp
 @@ -704,7 +704,7 @@ int8_t getFruData(std::string& data, std::string& name)
@@ -43,5 +43,5 @@ index 0f8d0e8..958e9ec 100644
  
      bool platform = isMultiHostPlatform();
 -- 
-2.47.3
+2.52.0
 

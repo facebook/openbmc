@@ -1,7 +1,7 @@
-From 8cbb0d491b365518674c27abc97251c7637a2ae6 Mon Sep 17 00:00:00 2001
+From e61efebd5c9cf46cd0b2d4a42af4a2306181889d Mon Sep 17 00:00:00 2001
 From: Saptarsi Saha <saptarsis@nvidia.com>
 Date: Tue, 20 May 2025 21:38:37 +0530
-Subject: [PATCH 19/19] mctpreactor: Support configuration for USB MCTP devices
+Subject: [PATCH] mctpreactor: Support configuration for USB MCTP devices
 
 Changes for MCTPUSBDevice reactor with schema defined in mctp.json[1]
 

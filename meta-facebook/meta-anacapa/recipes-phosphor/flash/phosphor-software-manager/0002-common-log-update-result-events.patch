@@ -1,7 +1,7 @@
-From 165f8822f46c7fbaaf9b1a30f3a50fc9a1e8129b Mon Sep 17 00:00:00 2001
+From 86a4230b71d89cd7f25ae5d99a6a40d16cbfb594 Mon Sep 17 00:00:00 2001
 From: Rex Fu <Rex.Fu@amd.com>
 Date: Thu, 7 May 2026 10:36:47 +0800
-Subject: [PATCH 2/2] common: log update result events
+Subject: [PATCH] common: log update result events
 
 Emit structured UpdateSuccessful and ApplyFailed events from the
 generic device update flow so Redfish EventLog can report the final

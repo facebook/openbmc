@@ -1,7 +1,7 @@
-From 0a46c675d894cc4e3c55ce4c52dc046ede94869a Mon Sep 17 00:00:00 2001
+From 9ec97d4aaca58196ad43867c0fe6b457da74f290 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Mon, 9 May 2022 22:55:21 -0700
-Subject: [PATCH 201/237] spi: add user-mode aspeed spi driver
+Subject: [PATCH] spi: add user-mode aspeed spi driver
 
 Summary:
 The driver was copied from linux-aspeed-5.15, and it is used to access
@@ -699,5 +699,5 @@ index 000000000000..88f9adad57e5
 +MODULE_DESCRIPTION("ASPEED SPI Host Driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.53.0-Meta
+2.52.0
 

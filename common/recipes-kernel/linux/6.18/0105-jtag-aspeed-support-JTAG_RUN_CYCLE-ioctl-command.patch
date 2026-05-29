@@ -1,7 +1,7 @@
-From 2b7dbb33442fe866dacc04d5d7212a57bd05e22c Mon Sep 17 00:00:00 2001
+From 53c78660915bb47a755453b0111ee4fea203fe1f Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Tue, 14 Jul 2020 23:25:29 -0700
-Subject: [PATCH 105/112] jtag: aspeed: support JTAG_RUN_CYCLE ioctl command
+Subject: [PATCH] jtag: aspeed: support JTAG_RUN_CYCLE ioctl command
 
 Summary:
 JTAG_FUN_CYCLE command is used by xapp (provided by Xilinx). We may have
@@ -111,5 +111,5 @@ index ff92223919a7..beba9d80ebe0 100644
  
  static int aspeed_jtag_probe(struct platform_device *pdev)
 -- 
-2.53.0-Meta
+2.52.0
 

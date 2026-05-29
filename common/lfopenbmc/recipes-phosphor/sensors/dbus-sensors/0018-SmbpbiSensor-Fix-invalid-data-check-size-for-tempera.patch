@@ -1,8 +1,8 @@
-From 9bcbcad699940b994675c6b05d895260b67bb4fd Mon Sep 17 00:00:00 2001
+From ae9ab796f05b37e822a2dc0a72f3e8a50cf50611 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Fri, 20 Mar 2026 13:29:18 +0800
-Subject: [PATCH 18/19] SmbpbiSensor: Fix invalid data check size for
- temperature sensor
+Subject: [PATCH] SmbpbiSensor: Fix invalid data check size for temperature
+ sensor
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

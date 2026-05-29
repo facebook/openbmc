@@ -1,8 +1,7 @@
-From 743f00b3f0655aab286aa4437293d3162213e86a Mon Sep 17 00:00:00 2001
+From f1d3bc1f35db9c5811eb449a12a0cc31c0e88c6d Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 6 May 2026 09:57:59 +0800
-Subject: [PATCH 08/10] configurations: nvidia: p3809-hmc: Add NvidiaMctpVdm
- config
+Subject: [PATCH] configurations: nvidia: p3809-hmc: Add NvidiaMctpVdm config
 
 Add NvidiaMctpVdm config to enable NSM management via nvidia-gpu sensor
 service.

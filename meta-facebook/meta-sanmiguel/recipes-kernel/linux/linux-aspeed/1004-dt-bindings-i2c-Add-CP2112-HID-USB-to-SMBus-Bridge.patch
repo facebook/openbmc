@@ -1,8 +1,7 @@
-From 87cb60f85a9f2c730c3a6338ddc8f341324e8f6d Mon Sep 17 00:00:00 2001
+From bff3f45eec2edfb1804a828c8a0e54309ed0d969 Mon Sep 17 00:00:00 2001
 From: Danny Kaehn <danny.kaehn@plexus.com>
 Date: Wed, 26 Nov 2025 11:05:24 -0600
-Subject: [PATCH 1004/1007] dt-bindings: i2c: Add CP2112 HID USB to SMBus
- Bridge
+Subject: [PATCH] dt-bindings: i2c: Add CP2112 HID USB to SMBus Bridge
 
 This is a USB HID device which includes an I2C controller and 8 GPIO pins.
 
@@ -133,5 +132,5 @@ index 000000000000..4b5c1af3673d
 +      };
 +    };
 -- 
-2.53.0-Meta
+2.52.0
 

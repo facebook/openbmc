@@ -1,7 +1,7 @@
-From e39fbc47d47322697081e74f5708e020a21ed5ea Mon Sep 17 00:00:00 2001
+From 29eff5eaa207b346627e2c27dfe995c9f0416713 Mon Sep 17 00:00:00 2001
 From: Christopher Meis <christopher.meis@9elements.com>
 Date: Tue, 23 Sep 2025 10:24:36 +0200
-Subject: [PATCH 301/301] Multi-host/HW-inventory: add memory subtree
+Subject: [PATCH] Multi-host/HW-inventory: add memory subtree
 
 This implements the memory subtree for multi-host system.
 Requires a containing/contained_by association implemented in EM config

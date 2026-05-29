@@ -1,7 +1,7 @@
-From 9df9d6a3a7106456b27f9f07d0d5dd328d31bdd5 Mon Sep 17 00:00:00 2001
+From edee9b91f90db4f2e515ad5d2bd7f117956979ff Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Tue, 14 Jul 2020 22:59:49 -0700
-Subject: [PATCH 104/112] jtag: support driver specific ioctl commands
+Subject: [PATCH] jtag: support driver specific ioctl commands
 
 Summary:
 The patch adds "ioctl" callback to jtag_ops for supporting driver
@@ -55,5 +55,5 @@ index 4153c905e550..6a6b53a549d8 100644
  
  void *jtag_priv(struct jtag *jtag);
 -- 
-2.53.0-Meta
+2.52.0
 

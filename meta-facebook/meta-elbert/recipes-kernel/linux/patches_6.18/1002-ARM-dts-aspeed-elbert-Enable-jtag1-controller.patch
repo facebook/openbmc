@@ -1,7 +1,7 @@
-From 6eaf45d78d05223fe85a11a1f1b69680770d6a66 Mon Sep 17 00:00:00 2001
+From 5f7baca69f6b44c6a2352dc15d328c3c72259917 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Mon, 9 May 2022 23:06:09 -0700
-Subject: [PATCH 1002/1003] ARM: dts: aspeed: elbert: Enable jtag1 controller
+Subject: [PATCH] ARM: dts: aspeed: elbert: Enable jtag1 controller
 
 Summary: Enable jtag controller in elbert device tree.
 

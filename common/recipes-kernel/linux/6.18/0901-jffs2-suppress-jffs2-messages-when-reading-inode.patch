@@ -1,7 +1,7 @@
-From 309878e3f186ff847ab20236784af7899d16ce1e Mon Sep 17 00:00:00 2001
+From 8be49eeed20136394c48e2c3cd74ab59bca00d4c Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Thu, 26 Sep 2019 16:03:16 -0700
-Subject: [PATCH 901/903] jffs2: suppress jffs2 messages when reading inode
+Subject: [PATCH] jffs2: suppress jffs2 messages when reading inode
 
 Summary:
 
@@ -84,5 +84,5 @@ index f987f78a894e..7bce40ab68af 100644
  		      f->inocache->ino, rii->highest_version, rii->latest_mctime,
  		      rii->mctime_ver);
 -- 
-2.53.0-Meta
+2.52.0
 

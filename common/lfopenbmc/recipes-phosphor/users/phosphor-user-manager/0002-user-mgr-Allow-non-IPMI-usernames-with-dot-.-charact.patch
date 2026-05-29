@@ -1,7 +1,7 @@
-From cecdf54e89bea33914a6456d91dcbdacceabaa90 Mon Sep 17 00:00:00 2001
+From e9f1100b890e098b3d806a0a3b581168f8f2f0b9 Mon Sep 17 00:00:00 2001
 From: Marco Kawajiri <kawajiri@meta.com>
 Date: Fri, 5 Apr 2024 07:54:27 -0700
-Subject: [PATCH 2/2] user-mgr: Allow non-IPMI usernames with dot '.' character
+Subject: [PATCH] user-mgr: Allow non-IPMI usernames with dot '.' character
 
 Meta Inc's user certificates [1] can contain '.' as a valid character.
 Added logic to maintain the current regex for IPMI users and another one
@@ -66,7 +66,7 @@ index 29000fb..5f3f483 100644
  
  TEST_F(UserMgrInTest, UserAddNotRootFailedWithInternalFailure)
 diff --git a/user_mgr.cpp b/user_mgr.cpp
-index 19bc785..0d2ab0a 100644
+index ca4eca9..370e1ea 100644
 --- a/user_mgr.cpp
 +++ b/user_mgr.cpp
 @@ -130,6 +130,11 @@ constexpr std::array<const char*, 4> allowedGroupPrefix = {
@@ -104,5 +104,5 @@ index 19bc785..0d2ab0a 100644
          lg2::error("Invalid username '{USERNAME}'", "USERNAME", userName);
          elog<InvalidArgument>(Argument::ARGUMENT_NAME("User name"),
 -- 
-2.53.0-Meta
+2.52.0
 

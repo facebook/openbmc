@@ -1,7 +1,7 @@
-From acaca0dc7ddac285ec9b06b340302a20e8d4cbd3 Mon Sep 17 00:00:00 2001
+From c6fdd9ac3e0e667d29e466571a91b767fc9b59c5 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Tue, 14 Jul 2020 22:18:35 -0700
-Subject: [PATCH 103/112] jtag: aspeed: support sysfs interface
+Subject: [PATCH] jtag: aspeed: support sysfs interface
 
 Summary:
 Add sysfs interface to avoid breaking existing user space applications,
@@ -205,5 +205,5 @@ index 9f4e6ba88f04..ff92223919a7 100644
  
  err_jtag_register:
 -- 
-2.53.0-Meta
+2.52.0
 

@@ -1,7 +1,7 @@
-From d2a5abe062abfe28e7b4912ba8ac56650d9615de Mon Sep 17 00:00:00 2001
+From 0808b784d8fa2fda5f450355100975255e68f2e4 Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Thu, 23 Oct 2025 14:18:22 +0800
-Subject: [PATCH 11/25] oem-meta: Add APML alert handler
+Subject: [PATCH] oem-meta: Add APML alert handler
 
 Add APML alert handler. Keep the implementation for the amd-ras tool
 downstream, as it is not supported upstream.
@@ -183,5 +183,5 @@ index fb5ba14..cff4ca7 100644
      'file_io_type_crash_dump.cpp',
      'file_io_type_event_log.cpp',
 -- 
-2.53.0-Meta
+2.52.0
 

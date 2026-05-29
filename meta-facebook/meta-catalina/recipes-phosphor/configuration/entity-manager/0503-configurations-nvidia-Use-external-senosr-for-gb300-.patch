@@ -1,8 +1,8 @@
-From 21ca21decc4a9665979bd845ad7a5bc3cc94de0e Mon Sep 17 00:00:00 2001
+From 805012c6313e5fd4b2f876419fa79a10a98c6e4c Mon Sep 17 00:00:00 2001
 From: Bruce Hung <bruce.jy.hung@fii-foxconn.com>
 Date: Thu, 13 Nov 2025 22:41:51 +0800
-Subject: [PATCH 503/503] configurations: nvidia: Use external senosr for gb300
- IO board
+Subject: [PATCH] configurations: nvidia: Use external senosr for gb300 IO
+ board
 
 The only way to access all sensors on a CX8 is through PLDM.
 To do so we need to expose them as external sensor in order
@@ -139,5 +139,5 @@ index 316688f..da8811d 100644
      ],
      "Name": "NVIDIA GB300 IO Board $bus - 29 % 11",
 -- 
-2.47.3
+2.52.0
 

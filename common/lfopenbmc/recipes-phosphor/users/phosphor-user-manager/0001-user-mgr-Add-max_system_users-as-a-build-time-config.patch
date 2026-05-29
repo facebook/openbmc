@@ -1,7 +1,7 @@
-From 17513c3f30349c0ebe26d0311382b4cc64fbdb68 Mon Sep 17 00:00:00 2001
+From 55a699497aa983856e76f2e56ca4103a024bb7d6 Mon Sep 17 00:00:00 2001
 From: Marco Kawajiri <kawajiri@meta.com>
 Date: Wed, 27 Mar 2024 09:54:11 -0700
-Subject: [PATCH 1/2] user-mgr: Add max_system_users as a build-time config
+Subject: [PATCH] user-mgr: Add max_system_users as a build-time config
 
 Added build-time option to configure max number of system users.
 Defaults to 30 (same as previous hard-coded limit)
@@ -88,5 +88,5 @@ index 3aff46e..07f8811 100644
  extern uint8_t maxPasswdLength; // MAX_PASSWORD_LENGTH;
  inline constexpr size_t maxSystemGroupNameLength = 32;
 -- 
-2.53.0-Meta
+2.52.0
 

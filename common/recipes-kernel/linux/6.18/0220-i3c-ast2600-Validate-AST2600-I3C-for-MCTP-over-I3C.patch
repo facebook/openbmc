@@ -1,7 +1,7 @@
-From 41a103a0b2542b2c126d935d17bd9bacdf79a2b0 Mon Sep 17 00:00:00 2001
+From 006fa2a708b5624136ebc34b4579b2761718871f Mon Sep 17 00:00:00 2001
 From: Dylan Hung <dylan_hung@aspeedtech.com>
 Date: Mon, 29 Apr 2024 17:51:06 +0800
-Subject: [PATCH 220/237] i3c: ast2600: Validate AST2600 I3C for MCTP-over-I3C
+Subject: [PATCH] i3c: ast2600: Validate AST2600 I3C for MCTP-over-I3C
 
 This patch introduces minimal changes to validate the functionality of
 Aspeed AST2600 I3C controllers for MCTP-over-I3C.
@@ -185,7 +185,7 @@ index e05e83812c71..0665773cd57d 100644
  
  static int ast2600_i3c_probe(struct platform_device *pdev)
 diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
-index 585f32011974..d2a74b7dffd4 100644
+index 585f32011974..2a37d686204d 100644
 --- a/drivers/i3c/master/dw-i3c-master.c
 +++ b/drivers/i3c/master/dw-i3c-master.c
 @@ -6,6 +6,7 @@
@@ -1076,5 +1076,5 @@ index c5cb695c16ab..718c6dc895c9 100644
  
  extern int dw_i3c_common_probe(struct dw_i3c_master *master,
 -- 
-2.53.0-Meta
+2.52.0
 

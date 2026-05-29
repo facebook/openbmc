@@ -1,7 +1,7 @@
-From b4be75bd39973b0a27b2cc6cce89db9966108019 Mon Sep 17 00:00:00 2001
+From 69b68a672ced155421713611744df4365fce5396 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Wed, 26 Mar 2025 16:20:54 +0000
-Subject: [PATCH 205/205] Show mapped and raw Dbus messages in Log services
+Subject: [PATCH] Show mapped and raw Dbus messages in Log services
 
 Currently we have a flag, that enables mapping in the code, and if the
 mapping is enabled, it will try to map an entry, and if it fails, it

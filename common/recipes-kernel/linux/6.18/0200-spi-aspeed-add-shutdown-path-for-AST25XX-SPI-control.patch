@@ -1,8 +1,7 @@
-From 79c4b330fbe861b460ab2e5199ab4a410f485fed Mon Sep 17 00:00:00 2001
+From 6f2126bbceee021fe0b4c55129994799cf11d576 Mon Sep 17 00:00:00 2001
 From: dhineskumareswaran <dhineskumar.eswaran@celestica.com>
 Date: Mon, 5 Dec 2022 12:17:20 +0000
-Subject: [PATCH 200/237] spi: aspeed: add shutdown path for AST25XX SPI
- controller
+Subject: [PATCH] spi: aspeed: add shutdown path for AST25XX SPI controller
 
 Summary:
 Restoring the register back to default state by adding shutdown
@@ -101,5 +100,5 @@ index 04eebb65cfa6..55851270956a 100644
  		.name		= DEVICE_NAME,
  		.of_match_table = aspeed_spi_matches,
 -- 
-2.53.0-Meta
+2.52.0
 

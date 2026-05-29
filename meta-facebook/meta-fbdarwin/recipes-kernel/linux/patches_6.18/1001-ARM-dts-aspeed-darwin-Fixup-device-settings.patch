@@ -1,7 +1,7 @@
-From 2660de9ceaeed0c09a45eae4a3a3c1e96c0ae5df Mon Sep 17 00:00:00 2001
+From 4dc53aacc292d6b91a765e769aee70cd51d20314 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Tue, 23 Sep 2025 22:30:15 -0700
-Subject: [PATCH 1001/1003] ARM: dts: aspeed: darwin: Fixup device settings
+Subject: [PATCH] ARM: dts: aspeed: darwin: Fixup device settings
 
 Apply more settings on top of the upstreamed version of darwin dts.
 

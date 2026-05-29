@@ -1,7 +1,7 @@
-From 2bca6c24770a694730038564ae46c736ffe9cb6c Mon Sep 17 00:00:00 2001
+From 24d76e58fb1185c6a821d3b505748dfdcec3e789 Mon Sep 17 00:00:00 2001
 From: Ernesto Corona <ernesto.corona@intel.com>
 Date: Mon, 13 Apr 2020 15:29:16 -0700
-Subject: [PATCH 101/112] dt-binding: jtag: Aspeed 2400 and 2500 series
+Subject: [PATCH] dt-binding: jtag: Aspeed 2400 and 2500 series
 
 Aspeed AST2400 and AST2500 JTAG master controller driver.
 
@@ -113,5 +113,5 @@ index 000000000000..3db49b70db45
 +
 +...
 -- 
-2.53.0-Meta
+2.52.0
 

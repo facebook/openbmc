@@ -1,7 +1,7 @@
-From da2411b69940d72bec96d324e56fe3c2e426fa02 Mon Sep 17 00:00:00 2001
+From c687cff38a6bdcedee437a2d8bc9a52626535649 Mon Sep 17 00:00:00 2001
 From: MandyMCHung <mandy.hung.wiwynn@gmail.com>
 Date: Mon, 3 Mar 2025 10:39:31 +0800
-Subject: [PATCH 201/202] Avoid recreating hwmon temp when blade cycle
+Subject: [PATCH] Avoid recreating hwmon temp when blade cycle
 
 Problem:
 AC/DC cycles cause all hwmon temperature sensors to become unavailable.
@@ -54,7 +54,7 @@ index 8045676..6d97aa1 100644
  // clang-format on
 \ No newline at end of file
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
-index 9377ae9..124db81 100644
+index cb6ead8..10fb80d 100644
 --- a/src/hwmon-temp/HwmonTempMain.cpp
 +++ b/src/hwmon-temp/HwmonTempMain.cpp
 @@ -14,6 +14,8 @@
@@ -114,7 +114,7 @@ index 4e4f550..271f38c 100644
      install_dir: '/usr/libexec/dbus-sensors',
  )
 diff --git a/src/meson.build b/src/meson.build
-index 771eb46..a6a4d81 100644
+index 2e7d82e..33584f2 100644
 --- a/src/meson.build
 +++ b/src/meson.build
 @@ -7,6 +7,10 @@ conf_data.set10(

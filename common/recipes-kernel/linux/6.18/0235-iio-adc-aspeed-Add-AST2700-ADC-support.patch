@@ -1,7 +1,7 @@
-From 6213a9c36bfc1f3906356bb01a3a740149c1e94f Mon Sep 17 00:00:00 2001
+From 1c2c08572a4d6ec3e656ca13bc4111bffb4f3f3d Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Mon, 3 Nov 2025 18:52:17 +0800
-Subject: [PATCH 235/237] iio: adc: aspeed: Add AST2700 ADC support
+Subject: [PATCH] iio: adc: aspeed: Add AST2700 ADC support
 
 This patch adds support for the ADCs found on the Aspeed AST2700 SoC,
 which includes two instances: "ast2700-adc0" and "ast2700-adc1". While
@@ -18,7 +18,7 @@ Signed-off-by: Jonathan Cameron <Jonathan.Cameron@huawei.com>
  3 files changed, 38 insertions(+), 8 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g5.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g5.dtsi
-index 6e61ba53c..6b5044ffd 100644
+index 6e61ba53cd5c..6b5044ffdd02 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-g5.dtsi
 +++ b/arch/arm/boot/dts/aspeed/aspeed-g5.dtsi
 @@ -306,6 +306,7 @@ adc: adc@1e6e9000 {
@@ -30,7 +30,7 @@ index 6e61ba53c..6b5044ffd 100644
  			};
  
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
-index ed6a2824d..f92f88a13 100644
+index 63bf8b7f3ce2..d730b1f722d6 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 +++ b/arch/arm/boot/dts/aspeed/aspeed-g6.dtsi
 @@ -447,6 +447,7 @@ adc0: adc@1e6e9000 {
@@ -50,7 +50,7 @@ index ed6a2824d..f92f88a13 100644
  			};
  
 diff --git a/drivers/iio/adc/aspeed_adc.c b/drivers/iio/adc/aspeed_adc.c
-index 8ab29948214a..9df6e7f68f19 100644
+index 8ab29948214a..040045770276 100644
 --- a/drivers/iio/adc/aspeed_adc.c
 +++ b/drivers/iio/adc/aspeed_adc.c
 @@ -174,18 +174,11 @@ static const struct iio_chan_spec aspeed_adc_iio_bat_channels[] = {
@@ -127,5 +127,5 @@ index 8ab29948214a..9df6e7f68f19 100644
  };
  MODULE_DEVICE_TABLE(of, aspeed_adc_matches);
 -- 
-2.53.0-Meta
+2.52.0
 

@@ -1,8 +1,8 @@
-From 4182e7e91fc876ce5ef53df9bc6ea529159174af Mon Sep 17 00:00:00 2001
+From 2a454f9ee14cda3f7ad1e338a71b7cd2b3603ee9 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Sun, 23 Mar 2025 11:03:46 +0800
-Subject: [PATCH 4/6] configurations: nvidia_gb200_io_board: Use external
- sensor service for temperature monitoring
+Subject: [PATCH] configurations: nvidia_gb200_io_board: Use external sensor
+ service for temperature monitoring
 
 Due to a hardware design limitation, the port temperature is only
 accessible via pldmtool.
@@ -18,7 +18,7 @@ Change-Id: Iee90f1b75cf3a7ddabcd5f5cd640897431d4a6ea
  1 file changed, 70 insertions(+), 20 deletions(-)
 
 diff --git a/configurations/nvidia/cx7_mezzanine_module.json b/configurations/nvidia/cx7_mezzanine_module.json
-index 7a00978..1a07e06 100644
+index 7a00978..69f2dcb 100644
 --- a/configurations/nvidia/cx7_mezzanine_module.json
 +++ b/configurations/nvidia/cx7_mezzanine_module.json
 @@ -7,72 +7,122 @@
@@ -165,5 +165,5 @@ index 7a00978..1a07e06 100644
      ],
      "Name": "NVIDIA GB200 IO Board $bus - 29 % 11",
 -- 
-2.47.3
+2.52.0
 

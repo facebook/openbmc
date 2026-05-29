@@ -1,8 +1,7 @@
-From 5c600e71d2754aa9481fe2dc08c878f59373b1d0 Mon Sep 17 00:00:00 2001
+From 44e8de120cd8c93823e2ee59bec51954bb3dbdad Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Mon, 3 Feb 2025 20:46:01 +0800
-Subject: [PATCH 1003/1007] ipmi: ssif_bmc: Add support for adjustable response
- timeout
+Subject: [PATCH] ipmi: ssif_bmc: Add support for adjustable response timeout
 
 Implement support for the `timeout-ms` device tree property, allowing
 platforms to adjust the userspace response timeout as needed.
@@ -52,5 +51,5 @@ index 015c006a764a..0694078612ba 100644
  	ssif_bmc->alert = devm_gpiod_get(&client->dev, "alert", GPIOD_ASIS);
  	if (!IS_ERR(ssif_bmc->alert))
 -- 
-2.53.0-Meta
+2.52.0
 

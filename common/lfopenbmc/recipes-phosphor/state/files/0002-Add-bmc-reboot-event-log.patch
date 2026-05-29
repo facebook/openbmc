@@ -1,7 +1,7 @@
-From 0843c6c5f10d7be2cce693c4026440dc5c25c4f4 Mon Sep 17 00:00:00 2001
+From 0f9f36dae6264fc43284725ec62a34d7f8c6efb7 Mon Sep 17 00:00:00 2001
 From: Patrick NC Lin <patrick.nc.lin.wiwynn@gmail.com>
 Date: Fri, 14 Mar 2025 14:25:05 +0800
-Subject: [PATCH 2/2] Add bmc reboot event log
+Subject: [PATCH] Add bmc reboot event log
 
 - Since the BMC currently does not have a reboot event log, adding this
   feature will help with debugging when issues occur.

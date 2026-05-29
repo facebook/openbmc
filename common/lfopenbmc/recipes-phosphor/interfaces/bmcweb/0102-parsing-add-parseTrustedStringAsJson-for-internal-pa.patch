@@ -1,8 +1,7 @@
-From 63e104517e1483ced4618c5e8167bfe7664ea67c Mon Sep 17 00:00:00 2001
+From 351d95b5fa04d7c98619776a89ecf0385bf2b92d Mon Sep 17 00:00:00 2001
 From: Rick Yazwinski <rickyaz@meta.com>
 Date: Tue, 12 May 2026 06:43:37 -0700
-Subject: [PATCH 102/103] parsing: add parseTrustedStringAsJson for internal
- payloads
+Subject: [PATCH] parsing: add parseTrustedStringAsJson for internal payloads
 
 parseStringAsJson() routes through BmcwebSaxParse, which hard-caps a
 payload at 500 total JSON values to defend against malicious external
@@ -80,5 +79,5 @@ index 51b77465..16420c1e 100644
              {
                  BMCWEB_LOG_ERROR("Error parsing persistent data in json file.");
 -- 
-2.53.0-Meta
+2.52.0
 

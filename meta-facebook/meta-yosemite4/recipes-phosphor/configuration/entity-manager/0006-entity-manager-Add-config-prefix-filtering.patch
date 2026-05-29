@@ -1,7 +1,7 @@
-From c7d11898c3b902a36dd997499da9a3c60552ed70 Mon Sep 17 00:00:00 2001
+From 77343ea12212e724dff55dad2afabfc99e25f1ef Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 11 Mar 2025 13:47:42 +0800
-Subject: [PATCH 6/7] entity-manager: Add config-prefix filtering
+Subject: [PATCH] entity-manager: Add config-prefix filtering
 
 This change introduces a new option "config-prefix" that enables
 filtering of JSON configuration files by their filename prefix.

@@ -1,7 +1,7 @@
-From 394cc8e2c6d8f61a03b820f4ae1864e9b28ef633 Mon Sep 17 00:00:00 2001
+From acf8309e20bca6c361d052869c63996011d5330b Mon Sep 17 00:00:00 2001
 From: Fred Chen <Fred.Chen@quantatw.com>
 Date: Fri, 19 Dec 2025 08:56:05 +0800
-Subject: [PATCH 1/5] configurations: Revise the OCP NIC sensor name
+Subject: [PATCH] configurations: Revise the OCP NIC sensor name
 
 Apply a conversion formula to map I2C bus numbers to NIC IDs. The
 formula needs to work with two different I2C bus groups.

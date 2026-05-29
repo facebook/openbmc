@@ -1,7 +1,7 @@
-From 7beefd76283252601e9d7103f7ec23d5181f2b00 Mon Sep 17 00:00:00 2001
+From a8bb25a7fd1781e70ebf8a7a093a960cbaaa159d Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Mon, 9 May 2022 23:08:05 -0700
-Subject: [PATCH 1001/1003] ARM: dts: aspeed: elbert: Enable spi1 controller
+Subject: [PATCH] ARM: dts: aspeed: elbert: Enable spi1 controller
 
 Summary: Enable spi1 controller in elbert dts.
 

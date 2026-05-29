@@ -1,7 +1,7 @@
-From 2756dc29d60ed47c7c3c40304275ffc28a65034e Mon Sep 17 00:00:00 2001
+From af0a2444cb3a016ad4d396f837be30603c0f74ea Mon Sep 17 00:00:00 2001
 From: Kevin Tung <kevin.tung@quantatw.com>
 Date: Wed, 8 Oct 2025 13:52:45 +0800
-Subject: [PATCH 2/3] i2cvr: pause sensor reads during CRC retrieval
+Subject: [PATCH] i2cvr: pause sensor reads during CRC retrieval
 
 Pause sensor reads while retrieving the CRC to update the version.
 During CRC retrieval, both the CRC process and PSU sensor monitoring
@@ -49,5 +49,5 @@ index d812657..1824a70 100644
                           SoftwareInf::SoftwareVersion::VersionPurpose::Other);
  
 -- 
-2.53.0-Meta
+2.52.0
 

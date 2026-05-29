@@ -1,7 +1,7 @@
-From 0ae8b8bfb4566790f1dc8071f07544e3b81ac6df Mon Sep 17 00:00:00 2001
+From a675c9ebdbc62da2bbbb90cada10bb0681f8d440 Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Mon, 2 Mar 2026 15:09:10 +0800
-Subject: [PATCH 2704/2707] pinctrl: aspeed: Add AST2700 SoC1 support
+Subject: [PATCH] pinctrl: aspeed: Add AST2700 SoC1 support
 
 Implement pin multiplexing (and pin configuration where applicable)
 for the AST2700 SoC1 SCU pinctrl block using static SoC data tables.
@@ -1793,5 +1793,5 @@ index 000000000000..d09123e24ef7
 +}
 +arch_initcall(aspeed_g7_soc1_pinctrl_init);
 -- 
-2.53.0-Meta
+2.52.0
 

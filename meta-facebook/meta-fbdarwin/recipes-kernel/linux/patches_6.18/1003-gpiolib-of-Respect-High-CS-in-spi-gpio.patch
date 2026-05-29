@@ -1,7 +1,7 @@
-From b2eed44bcc7284b9965370de1268d606aa6790d1 Mon Sep 17 00:00:00 2001
+From cbc87cae120827d557e2fec906f5a8bfbf5f4cdf Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@fb.com>
 Date: Wed, 27 Apr 2022 10:56:56 -0700
-Subject: [PATCH 1003/1003] gpiolib-of: Respect High CS in spi-gpio
+Subject: [PATCH] gpiolib-of: Respect High CS in spi-gpio
 
 Summary:
 This is needed to enable High CS to be respected in dts for spi-gpio
@@ -32,7 +32,7 @@ Tags: accept2ship
  1 file changed, 1 insertion(+)
 
 diff --git a/drivers/gpio/gpiolib-of.c b/drivers/gpio/gpiolib-of.c
-index fad4edf9cc5c..1f1c2e223fb6 100644
+index 7bb33c46788c..7b309962599c 100644
 --- a/drivers/gpio/gpiolib-of.c
 +++ b/drivers/gpio/gpiolib-of.c
 @@ -357,6 +357,7 @@ static void of_gpio_flags_quirks(const struct device_node *np,

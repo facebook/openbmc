@@ -1,7 +1,7 @@
-From c57fc03c4ec10d5330c76f26ad8755d10c3cf584 Mon Sep 17 00:00:00 2001
+From 981641002a023041cc9e1ccc29fdbca78f106198 Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
 Date: Thu, 31 Jul 2025 11:35:27 +0800
-Subject: [PATCH 502/503] Update CX7 sensor thresholds
+Subject: [PATCH] Update CX7 sensor thresholds
 
 ---
  configurations/ocp/cx7_ocp.json | 15 +++------------
@@ -37,5 +37,5 @@ index 0c16355..78e9d18 100644
              ],
              "Type": "ExternalSensor"
 -- 
-2.47.3
+2.52.0
 

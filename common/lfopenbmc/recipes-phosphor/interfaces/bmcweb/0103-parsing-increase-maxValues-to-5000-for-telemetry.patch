@@ -1,7 +1,7 @@
-From a41d92abe750d901c73b5827e80c11850701befc Mon Sep 17 00:00:00 2001
+From 1300015c0311c0346f881fc8d8d614504572102e Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Wed, 27 May 2026 00:00:00 -0700
-Subject: [PATCH 103/103] parsing: increase maxValues to 5000 for telemetry
+Subject: [PATCH] parsing: increase maxValues to 5000 for telemetry
 
 The BmcwebSaxParse JSON parser caps the total number of values in a
 request body at 500. This is too low for telemetry report creation
@@ -31,5 +31,5 @@ index 5a012bd3..467e2c7c 100644
    public:
      BmcwebSaxParse(nlohmann::json& j) : parser(j, false) {}
 -- 
-2.53.0-Meta
+2.52.0
 

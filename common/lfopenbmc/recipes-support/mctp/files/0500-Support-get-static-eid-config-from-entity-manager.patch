@@ -1,7 +1,7 @@
-From ea656c402b990b2eed175fbe015faf6bd8884bf8 Mon Sep 17 00:00:00 2001
+From 7489a2c0eaf7cf7c9d0ce4e162e07cdd5b1ed5ee Mon Sep 17 00:00:00 2001
 From: PeterHo-wiwynn <Peter_MH_Ho@wiwynn.com>
 Date: Wed, 11 Oct 2023 14:31:47 +0800
-Subject: [PATCH 500/504] Support get static eid config from entity manager
+Subject: [PATCH] Support get static eid config from entity manager
 
 The mctpd will try to find the configuration interface
 "xyz.openbmc_project.Configuration.MCTPEndpoint" and parse the data.

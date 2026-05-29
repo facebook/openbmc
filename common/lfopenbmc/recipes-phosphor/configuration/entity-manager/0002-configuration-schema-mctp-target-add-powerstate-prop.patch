@@ -1,8 +1,7 @@
-From 22234106191acd46f1a57227ee712146dc714195 Mon Sep 17 00:00:00 2001
+From c4bb58dec8d2cb47eaea69adb19aa1e5a09025e0 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 16:20:37 +0800
-Subject: [PATCH 2/2] configuration: schema: mctp target add powerstate
- property
+Subject: [PATCH] configuration: schema: mctp target add powerstate property
 
 Some devices do not provide valid data until the system reaches
 the power-ready state.
@@ -19,7 +18,7 @@ Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
  1 file changed, 6 insertions(+)
 
 diff --git a/schemas/mctp.json b/schemas/mctp.json
-index 9549613..1daf4d7 100644
+index 76d1b04..8496eae 100644
 --- a/schemas/mctp.json
 +++ b/schemas/mctp.json
 @@ -34,6 +34,9 @@
@@ -43,5 +42,5 @@ index 9549613..1daf4d7 100644
                      "type": "string",
                      "enum": ["MCTPI3CTarget"]
 -- 
-2.47.3
+2.52.0
 

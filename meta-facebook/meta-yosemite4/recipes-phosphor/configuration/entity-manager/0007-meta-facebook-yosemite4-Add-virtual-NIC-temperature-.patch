@@ -1,8 +1,8 @@
-From fae861b14a8bf3435928438eecd3988a33515197 Mon Sep 17 00:00:00 2001
+From 3cc78600ce42f8c5666a7a6ebcf952ef1514ddef Mon Sep 17 00:00:00 2001
 From: Rush Chen <Rush_Chen@wiwynn.com>
 Date: Wed, 4 Jun 2025 17:23:22 +0800
-Subject: [PATCH 7/7] meta-facebook: yosemite4: Add virtual NIC temperature
- sensors into fan table
+Subject: [PATCH] meta-facebook: yosemite4: Add virtual NIC temperature sensors
+ into fan table
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -28,7 +28,7 @@ Content-Transfer-Encoding: 8bit
  1 file changed, 44 insertions(+)
 
 diff --git a/configurations/meta/yv4/yosemite4.json b/configurations/meta/yv4/yosemite4.json
-index 18e9aec..3e7f7b6 100644
+index be3f908..5d351e7 100644
 --- a/configurations/meta/yv4/yosemite4.json
 +++ b/configurations/meta/yv4/yosemite4.json
 @@ -761,6 +761,50 @@
@@ -83,5 +83,5 @@ index 18e9aec..3e7f7b6 100644
      ],
      "Name": "Yosemite 4 Management Board",
 -- 
-2.47.3
+2.52.0
 

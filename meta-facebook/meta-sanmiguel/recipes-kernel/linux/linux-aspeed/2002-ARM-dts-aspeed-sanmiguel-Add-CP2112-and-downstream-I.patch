@@ -1,8 +1,8 @@
-From 32a2832ab4b73739a9e805d2b7310244c218a024 Mon Sep 17 00:00:00 2001
+From 2bb0c934af3b67150fb89ec11d7b155dfd62fae5 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 11 Mar 2026 13:28:31 +0800
-Subject: [PATCH 2002/2002] ARM: dts: aspeed: sanmiguel: Add CP2112 and
- downstream IOEXP nodes
+Subject: [PATCH] ARM: dts: aspeed: sanmiguel: Add CP2112 and downstream IOEXP
+ nodes
 
 Add CP2112 and its downstream IOEXP nodes. CP2112 fwnode support is
 still under review upstream [1], so these nodes rely on downstream
@@ -492,5 +492,5 @@ index 265cc125418e..0bf91560ef6c 100644
  	status = "okay";
  
 -- 
-2.53.0-Meta
+2.52.0
 

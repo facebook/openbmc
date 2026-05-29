@@ -1,8 +1,7 @@
-From c70adfbb9d0862c53f72d997be73a9c20f498335 Mon Sep 17 00:00:00 2001
+From 18d7482c4ff36070759d728fc1d83ade90bfd7ec Mon Sep 17 00:00:00 2001
 From: Michael Garner <garnermic@fb.com>
 Date: Tue, 21 Jun 2022 15:13:30 -0700
-Subject: [PATCH 205/237] i2c: add a slave backend to receive and queue
- messages
+Subject: [PATCH] i2c: add a slave backend to receive and queue messages
 
 Summary:
 Ported form Kernel 5.6:
@@ -432,5 +431,5 @@ index 000000000000..983f3b5d798d
 +MODULE_AUTHOR("Haiyue Wang <haiyue.wang@linux.intel.com>");
 +MODULE_DESCRIPTION("I2C slave mode for receiving and queuing messages");
 -- 
-2.53.0-Meta
+2.52.0
 

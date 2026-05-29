@@ -1,7 +1,7 @@
-From 2ae60dc594ae42ae323dbc1befbb1269343bdd4d Mon Sep 17 00:00:00 2001
+From 336b32110734489638ef01e1776a21967be99bbc Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Thu, 21 Aug 2025 10:50:13 +0800
-Subject: [PATCH 222/237] i3c: dw: handle transfer abort errors distinctly
+Subject: [PATCH] i3c: dw: handle transfer abort errors distinctly
 
 Handle transfer abort errors separately from other I/O errors
 to prevent halting the controller unnecessarily. Adjust error handling
@@ -20,7 +20,7 @@ Change-Id: Ief964fe7b2a37014cb101a68e4bcdd7f035ebb56
  1 file changed, 4 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
-index ba69500ebf99..039a5661d196 100644
+index 7a4d1d01d66b..90a0b44d1109 100644
 --- a/drivers/i3c/master/dw-i3c-master.c
 +++ b/drivers/i3c/master/dw-i3c-master.c
 @@ -582,9 +582,11 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
@@ -46,5 +46,5 @@ index ba69500ebf99..039a5661d196 100644
  		 * The controller will enter the HALT state if an error occurs.
  		 * Therefore, there is no need to manually halt the controller
 -- 
-2.53.0-Meta
+2.52.0
 

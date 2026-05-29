@@ -1,7 +1,7 @@
-From 09eed64b621300872ae172b120dfc0982f1aca6e Mon Sep 17 00:00:00 2001
+From 180ef3349dc8c380ad12e592d02b102c373ad251 Mon Sep 17 00:00:00 2001
 From: Danny Kaehn <danny.kaehn@plexus.com>
 Date: Tue, 27 Jan 2026 08:47:49 -0600
-Subject: [PATCH 1005/1007] HID: cp2112: Fwnode Support
+Subject: [PATCH] HID: cp2112: Fwnode Support
 
 Support describing the CP2112's I2C and GPIO interfaces in firmware.
 
@@ -80,5 +80,5 @@ index 803b883ae875..ea19b5cb58f9 100644
  	if (ret) {
  		hid_err(hdev, "parse failed\n");
 -- 
-2.53.0-Meta
+2.52.0
 

@@ -1,8 +1,7 @@
-From 864898acfb4ee19d5ec10d5f34fc7ce114233e74 Mon Sep 17 00:00:00 2001
+From ff7333c497ac407f3f3b7c98b9423860d82cd64b Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Fri, 21 Nov 2025 18:32:59 +0800
-Subject: [PATCH 223/237] i3c: dw: Handle unexpected responses caused by SDA
- noise
+Subject: [PATCH] i3c: dw: Handle unexpected responses caused by SDA noise
 
 Currently, if an IBI address appears in the DAT (including the 0x2 hot-join
 address) and is marked for rejection, the controller will NACK the IBI and
@@ -20,7 +19,7 @@ Change-Id: I6d66b30ea02fcb3f9bc0c6514d62989ab26c65fb
  1 file changed, 14 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
-index 039a5661d196..2e86a4950b08 100644
+index 90a0b44d1109..f12705e68dd2 100644
 --- a/drivers/i3c/master/dw-i3c-master.c
 +++ b/drivers/i3c/master/dw-i3c-master.c
 @@ -569,8 +569,12 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
@@ -87,5 +86,5 @@ index 039a5661d196..2e86a4950b08 100644
  			      COMMAND_PORT_ROC;
  
 -- 
-2.53.0-Meta
+2.52.0
 

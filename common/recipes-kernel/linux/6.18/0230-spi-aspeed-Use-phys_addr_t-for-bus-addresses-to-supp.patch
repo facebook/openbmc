@@ -1,8 +1,8 @@
-From 29e922f3e2bd5af24292589ddc93e50233551b20 Mon Sep 17 00:00:00 2001
+From 41661076e2bd0b19e05ef6ccc4c6d702daf63b45 Mon Sep 17 00:00:00 2001
 From: Chin-Ting Kuo <chin-ting_kuo@aspeedtech.com>
 Date: Fri, 14 Nov 2025 18:10:41 +0800
-Subject: [PATCH 230/237] spi: aspeed: Use phys_addr_t for bus addresses to
- support 64-bit platforms
+Subject: [PATCH] spi: aspeed: Use phys_addr_t for bus addresses to support
+ 64-bit platforms
 
 Update bus address types from u32 to phys_addr_t to support systems with
 64-bit memory address space. This change ensures compatibility with
@@ -151,5 +151,5 @@ index 55851270956a..8e53b7d72fe4 100644
  	/* disable zero size segments */
  	if (start == end)
 -- 
-2.53.0-Meta
+2.52.0
 

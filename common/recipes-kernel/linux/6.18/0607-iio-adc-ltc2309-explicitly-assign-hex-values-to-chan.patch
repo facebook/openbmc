@@ -1,8 +1,8 @@
-From 529500581076aead8f1805069551983d0d2b898b Mon Sep 17 00:00:00 2001
+From c52b735c486d472b93e0eb70d1f639ffb1bc006e Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <kylehsieh1995@gmail.com>
 Date: Wed, 25 Mar 2026 10:05:23 +0800
-Subject: [PATCH 607/610] iio: adc: ltc2309: explicitly assign hex values to
- channel enums
+Subject: [PATCH] iio: adc: ltc2309: explicitly assign hex values to channel
+ enums
 
 The current ltc2309_channels enum relies on implicit sequential
 assignment. While this works for the 8-channel LTC2309, it is
@@ -65,5 +65,5 @@ index 5f0d947d0615..3f27ffc66668 100644
  
  #define LTC2309_CHAN(_chan, _addr) {				\
 -- 
-2.53.0-Meta
+2.52.0
 

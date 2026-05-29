@@ -1,8 +1,7 @@
-From 0ea20868d98988fe5f9b7b5a8876d199bd3538c7 Mon Sep 17 00:00:00 2001
+From 0132a7cae7aeec52befaa6ceb2b7b07753bde34f Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 5 Mar 2026 19:07:57 +0800
-Subject: [PATCH 03/10] configurations: nvidia: add Clover CX9 module
- configuration
+Subject: [PATCH] configurations: nvidia: add Clover CX9 module configuration
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -72,5 +71,5 @@ index 0000000..1129750
 +    }
 +}
 -- 
-2.53.0-Meta
+2.52.0
 

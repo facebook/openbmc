@@ -1,6 +1,6 @@
-From 8e1ab031391abbded9311dd157eafeef7db7bd75 Mon Sep 17 00:00:00 2001
+From 603364d0579e0b70e182192a12e82aed3fee38ae Mon Sep 17 00:00:00 2001
 From: "Fred.Chen" <Fred.Chen@quantatw.com>
-Date: Tue, 10 Jun 2025 18:29:38 +0800
+Date: Thu, 14 May 2026 12:13:39 +0800
 Subject: [PATCH] ARM: dts: aspeed: santabarbara: add device nodes behind the
  i3c hub
 
@@ -13,11 +13,11 @@ driver is merged.
 I3C hub lore link:
 https://lore.kernel.org/all/20250917142055.2806576-2-steven.niu.uj@renesas.com/
 ---
- .../aspeed-bmc-facebook-santabarbara.dts      | 988 ++++++++++++++++++
- 1 file changed, 988 insertions(+)
+ .../aspeed-bmc-facebook-santabarbara.dts      | 1042 +++++++++++++++++
+ 1 file changed, 1042 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-index d4dcd8b537d5..11df069011e3 100644
+index d4dcd8b53..b905e1718 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 @@ -39,6 +39,14 @@ aliases {
@@ -35,7 +35,7 @@ index d4dcd8b537d5..11df069011e3 100644
  		i2c48 = &i2c6mux0ch0;
  		i2c49 = &i2c6mux0ch1;
  		i2c50 = &i2c6mux0ch2;
-@@ -71,6 +79,17 @@ aliases {
+@@ -71,6 +79,20 @@ aliases {
  		i2c77 = &i2c13mux1ch1;
  		i2c78 = &i2c13mux1ch2;
  		i2c79 = &i2c13mux1ch3;
@@ -50,10 +50,13 @@ index d4dcd8b537d5..11df069011e3 100644
 +		i2c112 = &i3chub2target1;
 +		i2c113 = &i3chub2target5;
 +		i2c114 = &i3chub2target2;
++		i2c115 = &i3chub2target3;
++		i2c116 = &i3chub2target6;
++		i2c117 = &i3chub2target7;
  	};
  
  	chosen {
-@@ -1678,6 +1697,975 @@ &i2c15 {
+@@ -1678,6 +1700,1026 @@ &i2c15 {
  	status = "okay";
  };
  
@@ -735,6 +738,23 @@ index d4dcd8b537d5..11df069011e3 100644
 +			};
 +		};
 +
++		i3chub2target3: target-port@3 {
++			compatible = "i3c-hub-smbus";
++			reg = <3>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clock-frequency = <100000>;
++			multi-master;
++			mctp-controller;
++			io-internal-pullups-disable;
++			status = "okay";
++
++			mctp@10 {
++				compatible = "mctp-i2c-controller";
++				reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++			};
++		};
++
 +		i3chub2target4: target-port@4 {
 +			compatible = "i3c-hub-smbus";
 +			reg = <4>;
@@ -788,6 +808,40 @@ index d4dcd8b537d5..11df069011e3 100644
 +			eeprom@50 {
 +				compatible = "atmel,24c64";
 +				reg = <0x50>;
++			};
++		};
++		
++		i3chub2target6: target-port@6 {
++			compatible = "i3c-hub-smbus";
++			reg = <6>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clock-frequency = <100000>;
++			multi-master;
++			mctp-controller;
++			io-internal-pullups-disable;
++			status = "okay";
++
++			mctp@10 {
++				compatible = "mctp-i2c-controller";
++				reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++			};
++		};
++
++		i3chub2target7: target-port@7 {
++			compatible = "i3c-hub-smbus";
++			reg = <7>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++			clock-frequency = <100000>;
++			multi-master;
++			mctp-controller;
++			io-internal-pullups-disable;
++			status = "okay";
++
++			mctp@10 {
++				compatible = "mctp-i2c-controller";
++				reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
 +			};
 +		};
 +	};
@@ -1030,5 +1084,5 @@ index d4dcd8b537d5..11df069011e3 100644
  	aspeed,lpc-io-reg = <0xca8>;
  	status = "okay";
 -- 
-2.52.0
+2.34.1
 

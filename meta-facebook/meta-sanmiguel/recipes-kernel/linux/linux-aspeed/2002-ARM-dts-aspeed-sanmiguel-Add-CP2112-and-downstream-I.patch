@@ -14,14 +14,14 @@ This patch can be dropped once upstream support is available.
 
 Signed-off-by: Potin Lai <potin.lai@quantatw.com>
 ---
- .../aspeed/aspeed-bmc-facebook-sanmiguel.dts  | 449 ++++++++++++++++++
- 1 file changed, 449 insertions(+)
+ .../aspeed/aspeed-bmc-facebook-sanmiguel.dts  | 540 ++++++++++++++++++
+ 1 file changed, 540 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
-index 265cc125418e..0bf91560ef6c 100644
+index 265cc125418e..f9f37a3deb30 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
-@@ -24,6 +24,13 @@ aliases {
+@@ -24,6 +24,18 @@ aliases {
  		i2c17	= &imux17;
  		i2c18	= &imux18;
  		i2c19	= &imux19;
@@ -32,10 +32,15 @@ index 265cc125418e..0bf91560ef6c 100644
 +		i2c74   = &i2c74;
 +		i2c75   = &i2c75;
 +		i2c76   = &i2c76;
++		i2c77	= &i2c77;
++		i2c78	= &i2c78;
++		i2c79	= &i2c79;
++		i2c80	= &i2c80;
++		i2c81	= &i2c81;
  	};
  
  	chosen {
-@@ -113,6 +120,181 @@ &pinctrl_adc4_default &pinctrl_adc5_default
+@@ -113,6 +125,232 @@ &pinctrl_adc4_default &pinctrl_adc5_default
  	status = "okay";
  };
  
@@ -48,6 +53,17 @@ index 265cc125418e..0bf91560ef6c 100644
 +			reg = <1>;
 +			hub@4 {
 +				reg = <4>;
++				device@1 {
++					reg = <1>;
++					interface@1 {
++						reg = <1 1>;
++
++						i2c77: i2c {
++							#address-cells = <1>;
++							#size-cells = <0>;
++						};
++					};
++				};
 +				cp2112g: device@2 {
 +					reg = <2>;
 +					gpio-controller;
@@ -93,6 +109,16 @@ index 265cc125418e..0bf91560ef6c 100644
 +				};
 +				hub@3 {
 +					reg = <3>;
++					device@1 {
++						reg = <1>;
++						interface@1 {
++						reg = <1 1>;
++							i2c79: i2c {
++								#address-cells = <1>;
++								#size-cells = <0>;
++							};
++						};
++					};
 +					cp2112c: device@2 {
 +						reg = <2>;
 +						gpio-controller;
@@ -118,6 +144,16 @@ index 265cc125418e..0bf91560ef6c 100644
 +				};
 +				hub@4 {
 +					reg = <4>;
++					device@1 {
++						reg = <1>;
++						interface@1 {
++						reg = <1 1>;
++							i2c78: i2c {
++								#address-cells = <1>;
++								#size-cells = <0>;
++							};
++						};
++					};
 +					cp2112d: device@2 {
 +						reg = <2>;
 +						gpio-controller;
@@ -161,6 +197,16 @@ index 265cc125418e..0bf91560ef6c 100644
 +				};
 +				hub@3 {
 +					reg = <3>;
++					device@1 {
++						reg = <1>;
++						interface@1 {
++						reg = <1 1>;
++							i2c80: i2c {
++								#address-cells = <1>;
++								#size-cells = <0>;
++							};
++						};
++					};
 +					cp2112e: device@2 {
 +						reg = <2>;
 +						gpio-controller;
@@ -186,6 +232,16 @@ index 265cc125418e..0bf91560ef6c 100644
 +				};
 +				hub@4 {
 +					reg = <4>;
++					device@1 {
++						reg = <1>;
++						interface@1 {
++						reg = <1 1>;
++							i2c81: i2c {
++								#address-cells = <1>;
++								#size-cells = <0>;
++							};
++						};
++					};
 +					cp2112f: device@2 {
 +						reg = <2>;
 +						gpio-controller;
@@ -217,7 +273,7 @@ index 265cc125418e..0bf91560ef6c 100644
  &fmc {
  	status = "okay";
  
-@@ -609,6 +791,273 @@ &i2c15 {
+@@ -609,6 +847,308 @@ &i2c15 {
  	status = "okay";
  };
  
@@ -485,6 +541,41 @@ index 265cc125418e..0bf91560ef6c 100644
 +			"",
 +			"",
 +			"";
++	};
++};
++
++&i2c72 {
++	clover_fru: eeprom@50 {
++		compatible = "atmel,24c128";
++		reg = <0x50>;
++	};
++};
++
++&i2c73 {
++	iob0_fru: eeprom@50 {
++		compatible = "atmel,24c128";
++		reg = <0x50>;
++	};
++};
++
++&i2c74 {
++	iob1_fru: eeprom@50 {
++		compatible = "atmel,24c128";
++		reg = <0x50>;
++	};
++};
++
++&i2c75 {
++	iob2_fru: eeprom@50 {
++		compatible = "atmel,24c128";
++		reg = <0x50>;
++	};
++};
++
++&i2c76 {
++	iob3_fru: eeprom@50 {
++		compatible = "atmel,24c128";
++		reg = <0x50>;
 +	};
 +};
 +

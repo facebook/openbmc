@@ -1,0 +1,681 @@
+From 30e43600513470dadac5fb386775a449d4d32902 Mon Sep 17 00:00:00 2001
+From: "Radivoje (Ogi) Jovanovic" <rjovanovic@nvidia.com>
+Date: Thu, 22 Jan 2026 09:36:54 -0800
+Subject: [PATCH 1/2] i2c: muxes: introduce virtual-mux host
+
+- Registers a virtual I2C adapter; forwards xfers to client over a link I2C bus
+- Supports fixed bus number via DT property virtual-bus-num
+- Advertises SMBus emulation capabilities
+- No DT child auto-instantiation; userspace creates devices when desired
+
+[1] https://github.com/NVIDIA/linux/commit/4313ef5318b80ebdf7d8d74292b68a89e505fa6a
+
+Signed-off-by: Radivoje (Ogi) Jovanovic <rjovanovic@nvidia.com>
+---
+ .../bindings/i2c/virtual-mux-host.yaml        |  53 ++
+ drivers/i2c/muxes/Kconfig                     |   8 +
+ drivers/i2c/muxes/Makefile                    |   1 +
+ drivers/i2c/muxes/virtual-mux-host.c          | 563 ++++++++++++++++++
+ 4 files changed, 625 insertions(+)
+ create mode 100644 Documentation/devicetree/bindings/i2c/virtual-mux-host.yaml
+ create mode 100644 drivers/i2c/muxes/virtual-mux-host.c
+
+diff --git a/Documentation/devicetree/bindings/i2c/virtual-mux-host.yaml b/Documentation/devicetree/bindings/i2c/virtual-mux-host.yaml
+new file mode 100644
+index 000000000000..532199bdd212
+--- /dev/null
++++ b/Documentation/devicetree/bindings/i2c/virtual-mux-host.yaml
+@@ -0,0 +1,53 @@
++# SPDX-License-Identifier: (GPL-2.0-only OR BSD-2-Clause)
++%YAML 1.2
++---
++$id: http://devicetree.org/schemas/i2c/virtual-mux-host.yaml#
++$schema: http://devicetree.org/meta-schemas/core.yaml#
++
++title: Virtual I2C Mux Host (Remote I2C FRU Host Adapter)
++
++maintainers:
++  - Radivoje (Ogi) Jovanovic <rjovanovic@nvidia.com>
++
++description: |
++  The virtual-mux-host is an I2C client on a link bus that exposes a virtual
++  I2C adapter to Linux. Transfers submitted to the virtual adapter are framed
++  and forwarded over the link bus to a remote bridge target.
++
++properties:
++  compatible:
++    const: virtual-mux-host
++
++  reg:
++    maxItems: 1
++    description: I2C address of the remote bridge target on the link bus.
++
++  use-crc16:
++    type: boolean
++    description:
++      Enable CRC16 framing for requests and responses.
++
++  virtual-bus-num:
++    $ref: /schemas/types.yaml#/definitions/uint32
++    description:
++      Optional fixed bus number for the virtual adapter.
++
++required:
++  - compatible
++  - reg
++
++additionalProperties: false
++
++examples:
++  - |
++    i2c@0 {
++        #address-cells = <1>;
++        #size-cells = <0>;
++
++        bridge@52 {
++            compatible = "virtual-mux-host";
++            reg = <0x52>;
++            use-crc16;
++            virtual-bus-num = <12>;
++        };
++    };
+diff --git a/drivers/i2c/muxes/Kconfig b/drivers/i2c/muxes/Kconfig
+index 6d2f66810cdc..6c431bda6b4c 100644
+--- a/drivers/i2c/muxes/Kconfig
++++ b/drivers/i2c/muxes/Kconfig
+@@ -135,4 +135,12 @@ config I2C_MUX_MULE
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called i2c-mux-mule.
+ 
++config VIRTUAL_MUX_HOST
++	tristate "I2C Bridge Host (virtual adapter forwarding)"
++	depends on I2C
++	help
++	  Registers a virtual I2C adapter that forwards i2c_transfer() over a link
++	  I2C bus to a remote bridge client. Intended for exposing remote FRU EEPROMs
++	  or other devices to stock drivers via a virtual bus.
++
+ endmenu
+diff --git a/drivers/i2c/muxes/Makefile b/drivers/i2c/muxes/Makefile
+index 4b24f49515a7..a7c8b08c280c 100644
+--- a/drivers/i2c/muxes/Makefile
++++ b/drivers/i2c/muxes/Makefile
+@@ -15,5 +15,6 @@ obj-$(CONFIG_I2C_MUX_PCA9541)	+= i2c-mux-pca9541.o
+ obj-$(CONFIG_I2C_MUX_PCA954x)	+= i2c-mux-pca954x.o
+ obj-$(CONFIG_I2C_MUX_PINCTRL)	+= i2c-mux-pinctrl.o
+ obj-$(CONFIG_I2C_MUX_REG)	+= i2c-mux-reg.o
++obj-$(CONFIG_VIRTUAL_MUX_HOST)	+= virtual-mux-host.o
+ 
+ ccflags-$(CONFIG_I2C_DEBUG_BUS) := -DDEBUG
+diff --git a/drivers/i2c/muxes/virtual-mux-host.c b/drivers/i2c/muxes/virtual-mux-host.c
+new file mode 100644
+index 000000000000..ea18b05b6686
+--- /dev/null
++++ b/drivers/i2c/muxes/virtual-mux-host.c
+@@ -0,0 +1,563 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Remote I2C FRU Host Adapter
++ *
++ * Registers a virtual I2C adapter. Forwards i2c_transfer() to a remote bridge
++ * target over a link I2C bus using the Remote I2C FRU Bridge Protocol.
++ *
++ * Intended use: expose remote FRU EEPROM(s) to stock at24 and OpenBMC FRU/IPMI.
++ */
++
++#include <linux/module.h>
++#include <linux/i2c.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/delay.h>
++#include <linux/slab.h>
++#include <linux/crc16.h>
++#include <linux/mutex.h>
++#include <linux/printk.h>
++#include <linux/minmax.h>
++
++#define DRV_NAME "virtual-mux-host"
++
++/* Protocol constants */
++#define RI_MAGIC_REQ  cpu_to_le16(0x4952) /* 'R''I' */
++#define RI_MAGIC_RESP cpu_to_le16(0x4F52) /* 'R''O' */
++/* Protocol version:
++ * 0x01 - original framing
++ * 0x02 - host-selected bus_id (deprecated)
++ * 0x03 - client-enforced mapping; host sends only virtual addresses
++ */
++#define RI_VER        0x03
++
++#define RI_MSG_SUBMIT_XFER 0x01
++#define RI_MSG_XFER_RESULT 0x81
++#define RI_MSG_NOT_READY   0x82
++
++#define RI_FLAG_CRC16      BIT(0)
++
++#define RI_MAX_MSGS        4
++#define RI_MAX_REQ_BYTES   2048
++#define RI_MAX_RESP_BYTES  4096
++#define RI_RESP_PAYLOAD_HDR_LEN 8 /* status(2) + nread(1) + rsvd(1) + rsvd2(4) */
++#define RI_SLEEP_MS        5
++
++/* Common header (packed) */
++struct __packed ri_hdr {
++	__le16 magic;
++	u8     version;
++	u8     msg_type;
++	u8     seq;
++	u8     header_len;
++	__le16 total_len;
++	__le16 flags;
++	__le16 reserved;
++};
++
++struct remote_host {
++	struct device *dev;
++	struct i2c_client *link_client;     /* The *link* bus client (bridge addr) */
++	struct i2c_adapter virt_adap;        /* Virtual adapter presented to Linux */
++	struct i2c_algorithm algo;
++	struct mutex xfer_lock;             /* serialize transfers (FRU is fine) */
++	u8 seq;
++	bool use_crc;
++	u32 adapter_nr;                     /* optional forced bus number */
++};
++
++static int ri_build_submit_frame(struct remote_host *h,
++				 struct i2c_msg *msgs, int num,
++				 u8 **out_buf, size_t *out_len, u8 seq)
++{
++	u8 *buf;
++	size_t off = 0, i;
++	u16 flags = 0;
++	struct ri_hdr *hdr;
++	int read_count = 0;
++
++	if (num <= 0 || num > RI_MAX_MSGS)
++		return -EINVAL;
++
++	buf = kzalloc(RI_MAX_REQ_BYTES, GFP_KERNEL);
++	if (!buf)
++		return -ENOMEM;
++
++	hdr = (struct ri_hdr *)buf;
++	hdr->magic = RI_MAGIC_REQ;
++	hdr->version = RI_VER;
++	hdr->msg_type = RI_MSG_SUBMIT_XFER;
++	hdr->seq = seq;
++	hdr->header_len = sizeof(*hdr);
++	hdr->flags = 0;
++	hdr->reserved = 0;
++
++	if (h->use_crc) {
++		flags |= RI_FLAG_CRC16;
++		hdr->flags = cpu_to_le16(flags);
++	}
++
++	off = sizeof(*hdr);
++
++	/* Payload header */
++	buf[off++] = (u8)num;     /* nmsgs */
++	buf[off++] = 0;           /* retry_hint */
++	*(__le16 *)&buf[off] = cpu_to_le16(0); off += 2;  /* timeout_ms_hint */
++	*(__le32 *)&buf[off] = cpu_to_le32(0); off += 4;  /* client_cookie */
++
++	dev_dbg(h->dev, "submit seq=%u nmsgs=%d\n", seq, num);
++
++	/* Message descriptors */
++	for (i = 0; i < num; i++) {
++		u16 len = msgs[i].len;
++		u8 addr = msgs[i].addr & 0x7f;  /* host sends virtual address only */
++		bool is_read = !!(msgs[i].flags & I2C_M_RD);
++
++		if (off + 1 + 1 + 2 > RI_MAX_REQ_BYTES) {
++			kfree(buf);
++			return -EMSGSIZE;
++		}
++
++		buf[off++] = addr;
++
++		/* msg_flags: bit0=READ */
++		buf[off++] = is_read ? 0x01 : 0x00;
++
++		dev_dbg(h->dev, "  msg[%zu]: %s virt=0x%02x len=%u\n",
++			i, is_read ? "RD" : "WR", addr, len);
++
++		*(__le16 *)&buf[off] = cpu_to_le16(len);
++		off += 2;
++
++		if (!is_read) {
++			if (off + len > RI_MAX_REQ_BYTES) {
++				kfree(buf);
++				return -EMSGSIZE;
++			}
++			memcpy(&buf[off], msgs[i].buf, len);
++			off += len;
++		} else {
++			read_count++;
++		}
++	}
++
++	/* Fill total_len and optional CRC */
++	if (h->use_crc) {
++		u16 crc;
++
++		if (off + 2 > RI_MAX_REQ_BYTES) {
++			kfree(buf);
++			return -EMSGSIZE;
++		}
++		hdr->total_len = cpu_to_le16(off + 2);
++		crc = crc16(0, buf, off);
++		*(__le16 *)&buf[off] = cpu_to_le16(crc);
++		off += 2;
++	} else {
++		hdr->total_len = cpu_to_le16(off);
++	}
++
++	*out_buf = buf;
++	*out_len = off;
++	return 0;
++}
++
++static int ri_parse_response(struct remote_host *h,
++			     struct i2c_msg *msgs, int num,
++			     const u8 *buf, size_t buflen, u8 seq)
++{
++	size_t cursor = 0;
++	bool saw_not_ready = false;
++
++	while (cursor + sizeof(struct ri_hdr) <= buflen) {
++		const struct ri_hdr *hdr;
++		size_t off;
++		u16 total;
++		u16 flags;
++		s16 status;
++		u8 nread_msgs;
++		int i, read_idx = 0;
++
++		hdr = (const struct ri_hdr *)(buf + cursor);
++
++		dev_dbg(h->dev,
++			"resp hdr: magic=0x%04x ver=0x%02x type=0x%02x seq=%u hlen=%u total=%u flags=0x%04x buflen=%zu cursor=%zu\n",
++			(u32)le16_to_cpu(hdr->magic), hdr->version, hdr->msg_type, hdr->seq,
++			hdr->header_len, (u32)le16_to_cpu(hdr->total_len), (u32)le16_to_cpu(hdr->flags),
++			buflen, cursor);
++
++		if (hdr->magic != RI_MAGIC_RESP || hdr->version != RI_VER)
++			return -EPROTO;
++
++		total = le16_to_cpu(hdr->total_len);
++		flags = le16_to_cpu(hdr->flags);
++
++		if (total < sizeof(*hdr) || cursor + total > buflen)
++			return -EMSGSIZE;
++
++		if (flags & RI_FLAG_CRC16) {
++			u16 crc_calc, crc_frame;
++
++			if (total < sizeof(*hdr) + 2)
++				return -EMSGSIZE;
++			crc_frame = le16_to_cpu(*(__le16 *)&buf[cursor + total - 2]);
++			crc_calc = crc16(0, buf + cursor, total - 2);
++			if (crc_frame != crc_calc)
++				return -EBADMSG;
++		}
++
++		/* If this is NOT_READY, be tolerant of seq mismatches and continue scanning */
++		if (hdr->msg_type == RI_MSG_NOT_READY) {
++			saw_not_ready = true;
++			cursor += total;
++			continue;
++		}
++
++		/* For real responses, require matching seq */
++		if (hdr->msg_type != RI_MSG_XFER_RESULT || hdr->seq != seq) {
++			cursor += total;
++			continue;
++		}
++
++		/* Parse the selected frame */
++		off = cursor + sizeof(*hdr);
++
++		/* Response payload: s16 status, u8 nread_msgs, u8 reserved, ... */
++		if (off + RI_RESP_PAYLOAD_HDR_LEN > cursor + total)
++			return -EMSGSIZE;
++
++		status = (s16)le16_to_cpu(*(__le16 *)&buf[off]); off += 2;
++		nread_msgs = buf[off++]; /* u8 */
++		off++;                   /* reserved */
++		off += 2;                /* reserved2 */
++		off += 2;                /* reserved2 cont (we used 4 bytes total) */
++
++		/* Log parsed structure summary before applying to msgs */
++		dev_dbg(h->dev, "resp parsed: seq=%u status=%d nread=%u total=%u\n",
++			 (unsigned int)seq, (int)status, (unsigned int)nread_msgs, (unsigned int)total);
++
++		if (status == -EAGAIN)
++			return -EAGAIN;
++		if (status < 0)
++			return (int)status;
++
++		dev_dbg(h->dev, "resp ok: seq=%u nread=%u\n", seq, nread_msgs);
++
++		/* Copy read payloads into corresponding read msgs in original array */
++		for (i = 0; i < num; i++) {
++			if (!(msgs[i].flags & I2C_M_RD))
++				continue;
++
++			if (read_idx >= nread_msgs)
++				return -EPROTO;
++
++			if (off + 2 > cursor + total)
++				return -EMSGSIZE;
++
++			{
++				u16 rlen = le16_to_cpu(*(__le16 *)&buf[off]);
++
++				off += 2;
++
++				if (rlen != msgs[i].len)
++					return -EPROTO;
++
++				if (off + rlen > cursor + total)
++					return -EMSGSIZE;
++
++				memcpy(msgs[i].buf, &buf[off], rlen);
++				off += rlen;
++			}
++
++			read_idx++;
++		}
++
++		if (read_idx != nread_msgs)
++			return -EPROTO;
++
++		return 0;
++	}
++
++	/* No usable frame; if we saw NOT_READY earlier, ask caller to retry */
++	return saw_not_ready ? -EAGAIN : -EPROTO;
++}
++
++static int ri_read_response_frame(struct remote_host *h,
++				  const struct ri_hdr *hdr,
++				  u8 *resp, u16 total)
++{
++	u16 remain;
++	u8 *p;
++	int r;
++
++	/* Sanity on total size */
++	if (total < sizeof(*hdr) || total > RI_MAX_RESP_BYTES)
++		return -EMSGSIZE;
++
++	/* Copy header into resp buffer and read the exact remainder */
++	memcpy(resp, hdr, sizeof(*hdr));
++	remain = total - sizeof(*hdr);
++	p = resp + sizeof(*hdr);
++	while (remain) {
++		r = i2c_master_recv(h->link_client, p, remain);
++		if (r < 0)
++			return r;
++		if (r == 0)
++			return -EMSGSIZE;
++		p += r;
++		remain -= r;
++	}
++
++	return 0;
++}
++
++static void ri_hex_dump(struct remote_host *h, const char *label,
++			const void *buf, size_t len)
++{
++	char prefix[64];
++
++	scnprintf(prefix, sizeof(prefix), "%s: %s: ", dev_name(h->dev), label);
++	print_hex_dump_debug(prefix, DUMP_PREFIX_OFFSET, 16, 1,
++			     buf, len, false);
++}
++
++static int remote_master_xfer(struct i2c_adapter *adap,
++			      struct i2c_msg *msgs, int num)
++{
++	struct remote_host *h = i2c_get_adapdata(adap);
++	u8 *req = NULL;
++	size_t req_len = 0;
++	u8 *resp = NULL;
++	int ret, tries;
++	u8 seq;
++
++	mutex_lock(&h->xfer_lock);
++
++	seq = ++h->seq;
++	dev_dbg(h->dev, "xfer start: seq=%u num=%d\n", seq, num);
++
++	ret = ri_build_submit_frame(h, msgs, num, &req, &req_len, seq);
++	if (ret)
++		goto out;
++
++	/* Dump request frame (first 128 bytes) */
++	ri_hex_dump(h, "ri host req", req, min_t(size_t, req_len, 128));
++
++	ret = i2c_master_send(h->link_client, req, req_len);
++	if (ret < 0)
++		goto out;
++	if (ret != req_len) {
++		ret = -EIO;
++		goto out;
++	}
++
++	resp = kzalloc(RI_MAX_RESP_BYTES, GFP_KERNEL);
++	if (!resp) {
++		ret = -ENOMEM;
++		goto out;
++	}
++
++	/* Poll FETCH: read header first, then exact remaining payload */
++	for (tries = 0; tries < 50; tries++) {
++		struct ri_hdr hdr_local;
++		int r;
++		u16 total;
++		u8 msg_type;
++
++		/* Read exactly header */
++		r = i2c_master_recv(h->link_client, (u8 *)&hdr_local, sizeof(hdr_local));
++		if (r < 0) {
++			ret = r;
++			goto out;
++		}
++		if (r != sizeof(hdr_local)) {
++			ret = -EMSGSIZE;
++			goto out;
++		}
++
++		/* Dump raw header */
++		ri_hex_dump(h, "ri host resp hdr", &hdr_local, sizeof(hdr_local));
++
++		/* Basic validation */
++		if (hdr_local.magic != RI_MAGIC_RESP || hdr_local.version != RI_VER) {
++			ret = -EPROTO;
++			goto out;
++		}
++
++		msg_type = hdr_local.msg_type;
++		total = le16_to_cpu(hdr_local.total_len);
++
++		/* NOT_READY: tolerate any seq and retry */
++		if (msg_type == RI_MSG_NOT_READY) {
++			dev_dbg(h->dev, "resp not ready (seq=%u), retrying\n", hdr_local.seq);
++			msleep(RI_SLEEP_MS);
++			continue;
++		}
++
++		/* For real responses, require matching seq */
++		if (msg_type != RI_MSG_XFER_RESULT || hdr_local.seq != seq) {
++			dev_dbg(h->dev, "skip resp type=0x%02x seq=%u (want %u)\n",
++				msg_type, hdr_local.seq, seq);
++			/* Drain the rest of this frame if any to keep link sane */
++			if (total > sizeof(hdr_local) && total <= RI_MAX_RESP_BYTES) {
++				u16 drain = total - sizeof(hdr_local);
++				u8 drain_buf[32];
++
++				while (drain) {
++					int chunk = min_t(int, drain, (int)sizeof(drain_buf));
++
++					r = i2c_master_recv(h->link_client, drain_buf, chunk);
++					if (r <= 0)
++						break;
++					drain -= r;
++				}
++			}
++			msleep(RI_SLEEP_MS);
++			continue;
++		}
++
++		ret = ri_read_response_frame(h, &hdr_local, resp, total);
++		if (ret)
++			goto out;
++
++		/* Dump full frame (first 128 bytes) */
++		ri_hex_dump(h, "ri host resp full", resp, min_t(u16, total, 128));
++
++		/* Parse the complete frame */
++		ret = ri_parse_response(h, msgs, num, resp, total, seq);
++		if (ret == 0) {
++			ret = num;
++			dev_dbg(h->dev, "xfer done: seq=%u ok\n", seq);
++			goto out;
++		}
++		if (ret == -EAGAIN) {
++			msleep(RI_SLEEP_MS);
++			continue;
++		}
++		dev_err(h->dev, "xfer err: seq=%u ret=%d\n", seq, ret);
++		goto out;
++	}
++
++	ret = -ETIMEDOUT;
++	dev_err(h->dev, "xfer timeout: seq=%u\n", seq);
++
++out:
++	kfree(resp);
++	kfree(req);
++	mutex_unlock(&h->xfer_lock);
++	return ret;
++}
++
++static u32 remote_func(struct i2c_adapter *adap)
++{
++	/*
++	 * Support plain I2C and SMBus via emulation.
++	 * The core will route SMBus ops through i2c_smbus_xfer_emulated(),
++	 * which we can service over the remote I2C message path.
++	 */
++	return I2C_FUNC_I2C
++		| I2C_FUNC_SMBUS_EMUL
++		| I2C_FUNC_SMBUS_QUICK
++		| I2C_FUNC_SMBUS_BYTE
++		| I2C_FUNC_SMBUS_BYTE_DATA
++		| I2C_FUNC_SMBUS_WORD_DATA
++		| I2C_FUNC_SMBUS_PROC_CALL
++		| I2C_FUNC_SMBUS_BLOCK_DATA
++		| I2C_FUNC_SMBUS_I2C_BLOCK;
++}
++
++/* No DT child auto-creation; devices will be created manually by userspace */
++
++static int ri_host_probe(struct i2c_client *client)
++{
++	struct remote_host *h;
++	int ret;
++
++	/* Loud boot-time marker to confirm protocol version at runtime */
++	dev_info(&client->dev, "virtual-mux-host: protocol v3\n");
++
++	h = devm_kzalloc(&client->dev, sizeof(*h), GFP_KERNEL);
++	if (!h)
++		return -ENOMEM;
++
++	h->dev = &client->dev;
++	h->link_client = client;
++	mutex_init(&h->xfer_lock);
++
++	/* DT optional: use-crc16 */
++	h->use_crc = of_property_read_bool(client->dev.of_node, "use-crc16");
++	dev_dbg(&client->dev, "host probe: addr=%02x use-crc16=%d\n",
++		client->addr, h->use_crc);
++
++	/* Virtual adapter setup */
++	h->algo.master_xfer = remote_master_xfer;
++	h->algo.functionality = remote_func;
++
++	h->virt_adap.owner = THIS_MODULE;
++	h->virt_adap.algo = &h->algo;
++	h->virt_adap.dev.parent = &client->dev;
++	h->virt_adap.dev.of_node = client->dev.of_node;
++
++	snprintf(h->virt_adap.name, sizeof(h->virt_adap.name),
++		 "virtual-mux-%s", dev_name(&client->dev));
++
++	i2c_set_adapdata(&h->virt_adap, h);
++
++	/* Optional fixed bus number: virtual-bus-num = <12>; */
++	if (!of_property_read_u32(client->dev.of_node, "virtual-bus-num", &h->adapter_nr)) {
++		/* Ensure the numbered adapter uses the requested bus number */
++		h->virt_adap.nr = h->adapter_nr;
++		ret = i2c_add_numbered_adapter(&h->virt_adap);
++	} else {
++		ret = i2c_add_adapter(&h->virt_adap);
++	}
++
++	if (ret) {
++		dev_err(&client->dev, "failed to add virtual adapter: %d\n", ret);
++		return ret;
++	}
++	dev_dbg(&client->dev, "host: virtual adapter created nr=%d\n", h->virt_adap.nr);
++
++	i2c_set_clientdata(client, h);
++
++	dev_info(&client->dev, "virtual-mux-host registered as i2c-%d (crc=%d)\n",
++		 h->virt_adap.nr, h->use_crc);
++
++	return 0;
++}
++
++static void ri_host_remove(struct i2c_client *client)
++{
++	struct remote_host *h = i2c_get_clientdata(client);
++
++	i2c_del_adapter(&h->virt_adap);
++}
++
++static const struct of_device_id ri_host_of_match[] = {
++	{ .compatible = "virtual-mux-host" },
++	{ }
++};
++MODULE_DEVICE_TABLE(of, ri_host_of_match);
++
++/* Allow manual binding via sysfs new_device */
++static const struct i2c_device_id ri_host_id[] = {
++	{ "virtual-mux-host", 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, ri_host_id);
++
++static struct i2c_driver ri_host_driver = {
++	.driver = {
++		.name = DRV_NAME,
++		.of_match_table = ri_host_of_match,
++	},
++	.id_table = ri_host_id,
++	.probe = ri_host_probe,
++	.remove = ri_host_remove,
++};
++
++module_i2c_driver(ri_host_driver);
++
++MODULE_AUTHOR("Radivoje (Ogi) Jovanovic");
++MODULE_DESCRIPTION("Virtual I2C Mux Host (virtual adapter forwarding over I2C)");
++MODULE_LICENSE("GPL");
+-- 
+2.47.1
+

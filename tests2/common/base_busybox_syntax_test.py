@@ -133,7 +133,10 @@ KNOWN_USAGE_STRINGS = {
         "cpio [-dmvu] [-F FILE] [-R USER[:GRP]] [-ti] [EXTR_FILE]...",  # BusyBox 1.30.1
     ],
     "crontab": ["crontab [-c DIR] [-u USER] [-ler]|[FILE]"],
-    "cut": ["cut [OPTIONS] [FILE]..."],
+    "cut": [
+        "cut [OPTIONS] [FILE]...",
+        "cut {-b|c LIST | -f|F LIST [-d SEP] [-s]} [-D] [-O SEP] [FILE]...",  # BusyBox 1.38.0
+    ],
     "date": [
         "date [OPTIONS] [+FMT] [TIME]",
         "date [OPTIONS] [+FMT] [[-s] TIME]",  # BusyBox v1.35.0
@@ -409,7 +412,10 @@ KNOWN_USAGE_STRINGS = {
         "vi [-c CMD] [-H] [FILE]...",  # BusyBox v1.35.0
     ],
     "vlock": ["vlock [-a]"],
-    "watch": ["watch [-n SEC] [-t] PROG ARGS"],
+    "watch": [
+        "watch [-n SEC] [-t] PROG ARGS",
+        "watch [-n SEC] [-tx] PROG ARGS",  # BusyBox v1.38.0
+    ],
     "wc": [
         "wc [-clwL] [FILE]...",
         "wc [-cmlwL] [FILE]...",  # BusyBox 1.31.0

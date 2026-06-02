@@ -153,7 +153,10 @@ rackmon::RegisterMapDatabase loadDatabase(const std::string& regMapPath) {
   return db;
 }
 
-void dataCommand(const json& intf, const std::string& regMapPath) {
+void dataCommand(
+    const json& intf,
+    const std::string& regMapPath,
+    bool readData) {
   auto dev = std::make_shared<rackmon::Modbus>();
   devInitialize(*dev, intf);
   rackmon::RegisterMapDatabase db = loadDatabase(regMapPath);
@@ -162,13 +165,22 @@ void dataCommand(const json& intf, const std::string& regMapPath) {
   rackmon::InterfaceScanner scanner(
       dev, devices, db, rackmon::PollThreadTime(0), true);
   scanner.fullScan();
-  scanner.updateDeviceRegisters();
-  std::vector<rackmon::ModbusDeviceValueData> data;
-  for (const auto& device : devices.getAllModbusDevices()) {
-    auto valueData = device->getValueData();
-    data.push_back(valueData);
+  json jdata;
+  auto allDevices = devices.getAllModbusDevices();
+  if (readData) {
+    scanner.updateDeviceRegisters();
+    std::transform(
+        allDevices.begin(),
+        allDevices.end(),
+        std::back_inserter(jdata),
+        [](const auto& kv) { return kv->getValueData(); });
+  } else {
+    std::transform(
+        allDevices.begin(),
+        allDevices.end(),
+        std::back_inserter(jdata),
+        [](const auto& kv) { return kv->getInfo(); });
   }
-  json jdata = data;
   std::string sdata = jdata.dump(4);
   std::cout << sdata << std::endl;
 }
@@ -212,6 +224,12 @@ int main(int argc, char* argv[]) {
   CLI::App* data = app.add_subcommand("data", "Get Data from device");
   std::string regMapPath{};
   data->add_option("-r,--regmap", regMapPath, "Register Map JSON")->required();
+
+  CLI::App* discover =
+      app.add_subcommand("discover", "Discover devices without reading data");
+  std::string discoverRegMapPath{};
+  discover->add_option("-r,--regmap", discoverRegMapPath, "Register Map JSON")
+      ->required();
 
   auto addCommonOpts = [&](CLI::App* sub,
                            int& addr,
@@ -258,7 +276,13 @@ int main(int argc, char* argv[]) {
   if (*data) {
     intf["baudrate"] = 19200;
     intf["min_delay"] = 3;
-    dataCommand(intf, regMapPath);
+    dataCommand(intf, regMapPath, true);
+    return 0;
+  }
+  if (*discover) {
+    intf["baudrate"] = 19200;
+    intf["min_delay"] = 3;
+    dataCommand(intf, discoverRegMapPath, false);
     return 0;
   }
   if (*read) {

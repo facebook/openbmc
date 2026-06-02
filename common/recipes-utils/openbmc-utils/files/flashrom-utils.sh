@@ -1,3 +1,4 @@
+#!/bin/bash
 # Copyright 2021-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -49,7 +50,7 @@ flashrom_cmd() {
     spi_dev="$1"
     shift
 
-    flashrom -p linux_spi:dev=/dev/"$spi_dev" $@
+    flashrom -p linux_spi:dev=/dev/"$spi_dev" "$@"
 }
 
 #
@@ -137,7 +138,7 @@ flash_get_size() {
         return 1
     fi
 
-    size=$(echo "$info" | cut -d '(' -f 2 | cut -d ' ' -f 1)
+    size=$(echo "$info" | head -n1 | cut -d '(' -f 2 | cut -d ' ' -f 1)
     if ! is_decimal "$size"; then
         echo "Unable to determine flash size! flashrom output:"
         flash_dump_summary "$1"

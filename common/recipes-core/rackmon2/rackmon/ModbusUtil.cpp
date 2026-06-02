@@ -3,6 +3,7 @@
 #include <sys/file.h>
 #include <unistd.h>
 #include <filesystem>
+#include <iomanip>
 #include <iostream>
 #include "InterfaceScanner.h"
 #include "Log.h"
@@ -67,6 +68,32 @@ void rawCommand(
   // issues.
   resp.len += 2;
   std::cout << resp << std::endl;
+}
+
+void readCommand(
+    const json& intf,
+    uint8_t deviceAddr,
+    uint16_t registerOffset,
+    uint16_t registerCount,
+    rackmon::Parity parity,
+    int timeout) {
+  rackmon::Modbus dev;
+  devInitialize(dev, intf);
+  std::vector<uint16_t> regs(registerCount);
+  rackmon::ReadHoldingRegistersReq req(
+      deviceAddr, registerOffset, registerCount);
+  rackmon::ReadHoldingRegistersResp resp(deviceAddr, regs);
+  try {
+    dev.command(req, resp, 0, rackmon::ModbusTime(timeout), parity);
+  } catch (std::exception& e) {
+    std::cerr << "ERROR: " << e.what() << std::endl;
+    return;
+  }
+  for (size_t i = 0; i < regs.size(); i++) {
+    std::cout << "0x" << std::hex << std::setfill('0') << std::setw(4)
+              << regs[i] << " ";
+  }
+  std::cout << std::endl;
 }
 
 json getJSON(const std::string& fileName) {
@@ -156,6 +183,29 @@ int main(int argc, char* argv[]) {
   std::string regMapPath{};
   data->add_option("-r,--regmap", regMapPath, "Register Map JSON")->required();
 
+  auto addCommonOpts = [&](CLI::App* sub,
+                           int& addr,
+                           int& reg,
+                           std::string& par,
+                           int& baud,
+                           int& tout) {
+    sub->add_option("addr", addr, "Device address")->required();
+    sub->add_option("register", reg, "Register offset")->required();
+    sub->add_option("--parity", par, "Parity")
+        ->check(CLI::IsMember({"ODD", "EVEN", "NONE"}))
+        ->capture_default_str();
+    sub->add_option("--baudrate", baud, "Baudrate")->capture_default_str();
+    sub->add_option("-t,--timeout", tout, "Transaction Timeout (ms)")
+        ->capture_default_str();
+  };
+
+  int rAddr = 0, rReg = 0, rBaud = 19200, rTimeout = 0, rCount = 1;
+  std::string rParity = "EVEN";
+  CLI::App* read = app.add_subcommand("read", "Read holding register(s)");
+  addCommonOpts(read, rAddr, rReg, rParity, rBaud, rTimeout);
+  read->add_option("-c,--count", rCount, "Number of registers to read")
+      ->capture_default_str();
+
   CLI11_PARSE(app, argc, argv);
   RackmondLock lock;
 
@@ -172,6 +222,13 @@ int main(int argc, char* argv[]) {
     intf["baudrate"] = 19200;
     intf["min_delay"] = 3;
     dataCommand(intf, regMapPath);
+    return 0;
+  }
+  if (*read) {
+    intf["baudrate"] = rBaud;
+    intf["min_delay"] = minDelay;
+    readCommand(intf, rAddr, rReg, rCount, parityMap.at(rParity), rTimeout);
+    return 0;
   }
 
   return 0;

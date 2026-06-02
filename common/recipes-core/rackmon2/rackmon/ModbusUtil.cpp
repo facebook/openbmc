@@ -96,6 +96,36 @@ void readCommand(
   std::cout << std::endl;
 }
 
+void writeCommand(
+    const json& intf,
+    uint8_t deviceAddr,
+    uint16_t registerOffset,
+    std::vector<uint16_t>& values,
+    rackmon::Parity parity,
+    int timeout) {
+  rackmon::Modbus dev;
+  devInitialize(dev, intf);
+  try {
+    if (values.size() == 1) {
+      rackmon::WriteSingleRegisterReq req(
+          deviceAddr, registerOffset, values[0]);
+      rackmon::WriteSingleRegisterResp resp(deviceAddr, registerOffset);
+      dev.command(req, resp, 0, rackmon::ModbusTime(timeout), parity);
+    } else {
+      rackmon::WriteMultipleRegistersReq req(deviceAddr, registerOffset);
+      for (uint16_t val : values) {
+        req << val;
+      }
+      rackmon::WriteMultipleRegistersResp resp(
+          deviceAddr, registerOffset, values.size());
+      dev.command(req, resp, 0, rackmon::ModbusTime(timeout), parity);
+    }
+  } catch (std::exception& e) {
+    std::cerr << "ERROR: " << e.what() << std::endl;
+    return;
+  }
+}
+
 json getJSON(const std::string& fileName) {
   std::ifstream ifs(fileName);
   json contents;
@@ -206,6 +236,13 @@ int main(int argc, char* argv[]) {
   read->add_option("-c,--count", rCount, "Number of registers to read")
       ->capture_default_str();
 
+  int wAddr = 0, wReg = 0, wBaud = 19200, wTimeout = 0;
+  std::vector<uint16_t> wValues;
+  std::string wParity = "EVEN";
+  CLI::App* write = app.add_subcommand("write", "Write holding register(s)");
+  addCommonOpts(write, wAddr, wReg, wParity, wBaud, wTimeout);
+  write->add_option("values", wValues, "Value(s) to write")->required();
+
   CLI11_PARSE(app, argc, argv);
   RackmondLock lock;
 
@@ -228,6 +265,12 @@ int main(int argc, char* argv[]) {
     intf["baudrate"] = rBaud;
     intf["min_delay"] = minDelay;
     readCommand(intf, rAddr, rReg, rCount, parityMap.at(rParity), rTimeout);
+    return 0;
+  }
+  if (*write) {
+    intf["baudrate"] = wBaud;
+    intf["min_delay"] = minDelay;
+    writeCommand(intf, wAddr, wReg, wValues, parityMap.at(wParity), wTimeout);
     return 0;
   }
 

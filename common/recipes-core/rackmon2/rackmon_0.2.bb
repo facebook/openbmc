@@ -109,6 +109,7 @@ LOCAL_URI += " \
     file://scripts/rackmon-stress.py \
     file://scripts/table-rackmon-dump \
     file://scripts/table-rackmon-list \
+    file://scripts/hpr-power-off.sh \
     "
 
 # Test sources
@@ -191,6 +192,7 @@ do_install:append() {
 
     install -m 755 ${UNPACKDIR}/scripts/table-rackmon-dump ${bin}/table-rackmon-dump
     install -m 755 ${UNPACKDIR}/scripts/table-rackmon-list ${bin}/table-rackmon-list
+    install -m 755 ${UNPACKDIR}/scripts/hpr-power-off.sh ${bin}/hpr-power-off
 }
 
 FILES:${PN} = "${prefix}/local/bin ${sysconfdir} "

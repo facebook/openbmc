@@ -1,7 +1,7 @@
-From a510889d47ab8dfe68f96570dd0b9b203fabb104 Mon Sep 17 00:00:00 2001
+From 08feaf64bd63422bd78cbc10b088ac337bde3d37 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Fri, 22 May 2026 10:08:11 +0800
-Subject: [PATCH 2/2] ARM: dts: aspeed: sanmiguel: Add virtual-mux-host node
+Subject: [PATCH] ARM: dts: aspeed: sanmiguel: Add virtual-mux-host node
 
 NVIDIA uses a virtual-mux mechanism to allow the BMC to access
 multiple FRU EEPROMs via a single address [1].
@@ -34,5 +34,5 @@ index f9f37a3deb30..4435ae6b2e5f 100644
  
  &i2c2 {
 -- 
-2.52.0
+2.53.0-Meta
 

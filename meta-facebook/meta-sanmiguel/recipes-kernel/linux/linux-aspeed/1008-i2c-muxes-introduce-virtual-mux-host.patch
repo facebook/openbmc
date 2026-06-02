@@ -1,7 +1,7 @@
-From 30e43600513470dadac5fb386775a449d4d32902 Mon Sep 17 00:00:00 2001
+From 4f33b132b1bf35d9329bd14891898667055440fa Mon Sep 17 00:00:00 2001
 From: "Radivoje (Ogi) Jovanovic" <rjovanovic@nvidia.com>
 Date: Thu, 22 Jan 2026 09:36:54 -0800
-Subject: [PATCH 1/2] i2c: muxes: introduce virtual-mux host
+Subject: [PATCH] i2c: muxes: introduce virtual-mux host
 
 - Registers a virtual I2C adapter; forwards xfers to client over a link I2C bus
 - Supports fixed bus number via DT property virtual-bus-num
@@ -677,5 +677,5 @@ index 000000000000..ea18b05b6686
 +MODULE_DESCRIPTION("Virtual I2C Mux Host (virtual adapter forwarding over I2C)");
 +MODULE_LICENSE("GPL");
 -- 
-2.47.1
+2.53.0-Meta
 

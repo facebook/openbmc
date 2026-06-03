@@ -418,6 +418,10 @@ gpio_cfg bmc_gpio_table[] = {
   // BOARD_REV_ID2, GPIOH2 (874)
   [GPIO_BOARD_REV_ID2] =
   {"BOARD_REV_ID2", "GPIOH2", GPIO_DIRECTION_IN, GPIO_VALUE_INVALID},
+#ifdef CONFIG_GRANDCANYON2
+  [GPIO_BOARD_REV_ID3] =
+  {"BOARD_REV_ID3", "GPIOH3", GPIO_DIRECTION_IN, GPIO_VALUE_INVALID},
+#endif
   // EN_ASD_DEBUG, GPIOI5 (885)
   [GPIO_EN_ASD_DEBUG] =
   {"EN_ASD_DEBUG", "GPIOI5", GPIO_DIRECTION_IN, GPIO_VALUE_INVALID},
@@ -732,7 +736,7 @@ static const uint8_t bic_gpio_pin_size_ti =
 gpio_cfg *gpio_expander_gpio_table      = NULL;
 size_t    gpio_expander_gpio_table_size = 0;
 
-static const bool board_id_invert[BOARD_ID_PIN_NUM] = { false, false, false };
+static const bool board_id_invert[BOARD_ID_PIN_NUM] = { false, false, false, false };
 
 /* GPIOH2/H1/H0 raw value: MP=6, others=DVT */
 #define STAGE_MP 6
@@ -740,7 +744,7 @@ static const bool board_id_invert[BOARD_ID_PIN_NUM] = { false, false, false };
 /* Returns 0 on success, sets *is_mp = true if MP stage */
 int fbgc_local_get_system_stage(bool *is_mp) {
   static int cached = -1;
-  const char *pins[BOARD_ID_PIN_NUM] = { "GPIOH2", "GPIOH1", "GPIOH0" };
+  const char *pins[BOARD_ID_PIN_NUM] = { "GPIOH3", "GPIOH2", "GPIOH1", "GPIOH0" };
   uint8_t s = 0;
   int bits[BOARD_ID_PIN_NUM] = { 0 };
 

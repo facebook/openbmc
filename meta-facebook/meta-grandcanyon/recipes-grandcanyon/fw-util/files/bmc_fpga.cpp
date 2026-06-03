@@ -90,7 +90,16 @@ bool BmcFpgaComponent::is_valid_image(string image, bool force) {
         cout << "Failed to get stage of UIC" << endl;
         goto end;
       }
-
+#ifdef CONFIG_GRANDCANYON2
+      // Align UIC board ID to system stage
+      if ((board_rev_id == UIC_STAGE_DVT) || (board_rev_id == UIC_STAGE_DVT3)) {
+        board_rev_id = STAGE_DVT;
+      } else if ((board_rev_id == UIC_STAGE_PVT_MAX15090) || (board_rev_id == UIC_STAGE_PVT_TPS25974_RS31332_INA233)) {
+        board_rev_id = STAGE_PVT;
+      } else if ((board_rev_id == UIC_STAGE_MP_MAX15090) ||  (board_rev_id == UIC_STAGE_MP_TPS25974_RS31332_INA233)) {
+        board_rev_id = STAGE_MP;
+      }
+#else
       // Align UIC board ID to system stage
       if ((board_rev_id == UIC_STAGE_DVT) || (board_rev_id == UIC_STAGE_DVT3)) {
         board_rev_id = STAGE_DVT;
@@ -99,6 +108,7 @@ bool BmcFpgaComponent::is_valid_image(string image, bool force) {
       } else if (board_rev_id == UIC_STAGE_MP) {
         board_rev_id = STAGE_MP;
       }
+#endif
       break;
     case BIC_FPGA_LOCATION:
       comp = FW_BIC_FPGA;

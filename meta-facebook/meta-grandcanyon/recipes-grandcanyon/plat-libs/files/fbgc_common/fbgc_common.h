@@ -101,7 +101,11 @@ extern "C" {
 #define SOCK_PATH_ASD_BIC "/tmp/asd_bic_socket_1"
 #define SOCK_PATH_JTAG_MSG "/tmp/jtag_msg_socket_1"
 
+#ifdef CONFIG_GRANDCANYON2
+#define BOARD_ID_PIN_NUM 4
+#else
 #define BOARD_ID_PIN_NUM 3
+#endif
 
 // For IOC Daemon
 #define SOCK_PATH_IOC      "ioc_socket_%d"
@@ -254,6 +258,20 @@ enum {
   STAGE_MP
 };
 
+#ifdef CONFIG_GRANDCANYON2
+// UIC board ID stage
+enum {
+  UIC_STAGE_PRE_EVT = 0,
+  UIC_STAGE_EVT = 1,
+  UIC_STAGE_DVT = 2,
+  UIC_STAGE_DVT3 = 3,
+  UIC_STAGE_HACK = 6,
+  UIC_STAGE_PVT_MAX15090 = 8,
+  UIC_STAGE_PVT_TPS25974_RS31332_INA233 = 9,
+  UIC_STAGE_MP_MAX15090 = 10,
+  UIC_STAGE_MP_TPS25974_RS31332_INA233 = 11
+};
+#else
 // UIC board ID stage
 enum {
   UIC_STAGE_PRE_EVT = 0,
@@ -264,6 +282,7 @@ enum {
   UIC_STAGE_PVT3,
   UIC_STAGE_MP
 };
+#endif
 
 // GC2 board ID stage
 enum {

@@ -68,6 +68,8 @@
 #define NIC_PMON_CURRENT_LSB          0.001
 #define NIC_PMON_BUS                  9
 #define NIC_PMON_ADDR                 (0x8A)
+#define UIC_CURR_BUS                  10
+#define UIC_CURR_ADDR                 (0x8A)
 
 #define PMBUS_READ_VIN  0x88  // Input voltage
 #define PMBUS_READ_IIN  0x89  // Input current
@@ -643,13 +645,14 @@ enum {
   NIC = 0,
 };
 
-// NIC_PMON INFO
+#ifdef CONFIG_GRANDCANYON2
 enum {
   NIC_PMON_VOLT = 0,
   NIC_PMON_CURR = 1,
   NIC_PMON_PWR = 2,
+  UIC_CURR = 3,
 };
-
+#endif
 
 // EXPANDER
 enum {

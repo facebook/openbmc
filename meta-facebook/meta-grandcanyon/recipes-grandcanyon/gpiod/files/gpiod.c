@@ -1348,7 +1348,7 @@ run_gpiod(int argc, char **argv) {
     ret_scc_stby_uv_fault = -1;
     ret_power_fault = -1;
   } else {
-    if (board_rev_id == UIC_STAGE_MP) {
+    if (board_rev_id == UIC_STAGE_HACK) {
       syslog(LOG_INFO, "%s(): Hack stage, skip", __func__);
       ret_scc_stby_uv_fault = -1;
       ret_power_fault = -1;

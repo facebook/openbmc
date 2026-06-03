@@ -268,8 +268,13 @@ fbgc_common_get_system_stage(uint8_t *stage) {
   if (stage == NULL) {
     syslog(LOG_WARNING, "%s(): system stage is missing", __func__);
   }
+#ifdef CONFIG_GRANDCANYON2
+  uint8_t board_id[BOARD_ID_PIN_NUM] =
+        {GPIO_BOARD_REV_ID3, GPIO_BOARD_REV_ID2, GPIO_BOARD_REV_ID1, GPIO_BOARD_REV_ID0};
+#else
   uint8_t board_id[BOARD_ID_PIN_NUM] = 
         {GPIO_BOARD_REV_ID2, GPIO_BOARD_REV_ID1, GPIO_BOARD_REV_ID0};
+#endif
   int i = 0;
   int val = 0;
 

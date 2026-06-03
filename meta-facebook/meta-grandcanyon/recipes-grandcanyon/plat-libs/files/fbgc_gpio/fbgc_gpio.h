@@ -20,11 +20,12 @@
 #define __FBGC_GPIO_H__
 
 #ifdef CONFIG_GRANDCANYON2
-#define BOARD_ID_PIN_NUM 3
+#define BOARD_ID_PIN_NUM 4
 #endif
 
 #include <stdint.h>
 #include <openbmc/libgpio.h>
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -119,6 +120,9 @@ enum {
   GPIO_BOARD_REV_ID0,
   GPIO_BOARD_REV_ID1,
   GPIO_BOARD_REV_ID2,
+#ifdef CONFIG_GRANDCANYON2
+  GPIO_BOARD_REV_ID3,
+#endif
   GPIO_EN_ASD_DEBUG,
   GPIO_DEBUG_RST_BTN_N,
   GPIO_E1S_1_P3V3_PG_R,

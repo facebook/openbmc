@@ -55,11 +55,12 @@ static bool scc_thresh_init = false;
 static bool dpb_thresh_init = false;
 
 #ifdef CONFIG_GRANDCANYON2
-static int read_nic_pmon(uint8_t nic_pmon_id, float *value);
-static bool is_mp   = false;
-
-static int read_sq52205(uint8_t nic_pmon_id, float *value);
+static uint8_t stage = 0;
+static int read_ina233(uint8_t sensor_id, float *value);
+static int read_sq52205(uint8_t sensor_id, float *value);
 static uint8_t nic_pmon_source_info = UNKNOWN_SOURCE;
+static uint8_t uic_pmon_source_info = UNKNOWN_SOURCE;
+
 #endif
 
 //{SensorName, ID, FUNCTION, STBY_READ, {UCR, UNC, UNR, LCR, LNC, LNR, Pos, Neg}, unit}
@@ -85,6 +86,54 @@ PAL_SENSOR_MAP uic_sensor_map[] = {
   {"UIC_ADC_P1V0_STBY_VOLT_V", ADC8, read_adc_val, true, {1.1, 0, 0, 0.9, 0, 0, 0, 0}, VOLT},
   [UIC_P12V_ISENSE_CUR] =
   {"UIC_P12V_ISENSE_CURR_A", ADC9, read_adc_val, true, {1.71, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  [UIC_INLET_TEMP] =
+  {"UIC_INLET_TEMP_C", TEMP_INLET, read_temp, true, {45, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+};
+PAL_SENSOR_MAP pvt_uic_sensor_map[] = {
+  [UIC_ADC_P12V_DPB] =
+  {"UIC_ADC_P12V_DPB_VOLT_V", ADC0, read_adc_val, true, {13.7, 0, 0, 11.3, 0, 0, 0, 0}, VOLT},
+  [UIC_ADC_P12V_STBY] =
+  {"UIC_ADC_P12V_STBY_VOLT_V", ADC1, read_adc_val, true, {13.7, 0, 0, 11.3, 0, 0, 0, 0}, VOLT},
+  [UIC_ADC_P5V_STBY] =
+  {"UIC_ADC_P5V_STBY_VOLT_V", ADC2, read_adc_val, true, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [UIC_ADC_P3V3_STBY] =
+  {"UIC_ADC_P3V3_STBY_VOLT_V", ADC3, read_adc_val, true, {3.6, 0, 0, 2.97, 0, 0, 0, 0}, VOLT},
+  [UIC_ADC_P3V3_RGM] =
+  {"UIC_ADC_P3V3_RGM_VOLT_V", ADC4, read_adc_val, true, {3.6, 0, 0, 2.97, 0, 0, 0, 0}, VOLT},
+  [UIC_ADC_P2V5_STBY] =
+  {"UIC_ADC_P2V5_STBY_VOLT_V", ADC5, read_adc_val, true, {2.75, 0, 0, 2.25, 0, 0, 0, 0}, VOLT},
+  [UIC_ADC_P1V8_STBY] =
+  {"UIC_ADC_P1V8_STBY_VOLT_V", ADC6, read_adc_val, true, {1.98, 0, 0, 1.62, 0, 0, 0, 0}, VOLT},
+  [UIC_ADC_P1V2_STBY] =
+  {"UIC_ADC_P1V2_STBY_VOLT_V", ADC7, read_adc_val, true, {1.26, 0, 0, 1.08, 0, 0, 0, 0}, VOLT},
+  [UIC_ADC_P1V0_STBY] =
+  {"UIC_ADC_P1V0_STBY_VOLT_V", ADC8, read_adc_val, true, {1.1, 0, 0, 0.9, 0, 0, 0, 0}, VOLT},
+  [UIC_P12V_ISENSE_CUR] =
+  {"UIC_P12V_ISENSE_CURR_A", UIC_CURR, read_ina233, true, {1.71, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  [UIC_INLET_TEMP] =
+  {"UIC_INLET_TEMP_C", TEMP_INLET, read_temp, true, {45, 0, 0, 0, 0, 0, 0, 0}, TEMP},
+};
+PAL_SENSOR_MAP pvt_2nd_uic_sensor_map[] = {
+  [UIC_ADC_P12V_DPB] =
+  {"UIC_ADC_P12V_DPB_VOLT_V", ADC0, read_adc_val, true, {13.7, 0, 0, 11.3, 0, 0, 0, 0}, VOLT},
+  [UIC_ADC_P12V_STBY] =
+  {"UIC_ADC_P12V_STBY_VOLT_V", ADC1, read_adc_val, true, {13.7, 0, 0, 11.3, 0, 0, 0, 0}, VOLT},
+  [UIC_ADC_P5V_STBY] =
+  {"UIC_ADC_P5V_STBY_VOLT_V", ADC2, read_adc_val, true, {5.5, 0, 0, 4.5, 0, 0, 0, 0}, VOLT},
+  [UIC_ADC_P3V3_STBY] =
+  {"UIC_ADC_P3V3_STBY_VOLT_V", ADC3, read_adc_val, true, {3.6, 0, 0, 2.97, 0, 0, 0, 0}, VOLT},
+  [UIC_ADC_P3V3_RGM] =
+  {"UIC_ADC_P3V3_RGM_VOLT_V", ADC4, read_adc_val, true, {3.6, 0, 0, 2.97, 0, 0, 0, 0}, VOLT},
+  [UIC_ADC_P2V5_STBY] =
+  {"UIC_ADC_P2V5_STBY_VOLT_V", ADC5, read_adc_val, true, {2.75, 0, 0, 2.25, 0, 0, 0, 0}, VOLT},
+  [UIC_ADC_P1V8_STBY] =
+  {"UIC_ADC_P1V8_STBY_VOLT_V", ADC6, read_adc_val, true, {1.98, 0, 0, 1.62, 0, 0, 0, 0}, VOLT},
+  [UIC_ADC_P1V2_STBY] =
+  {"UIC_ADC_P1V2_STBY_VOLT_V", ADC7, read_adc_val, true, {1.26, 0, 0, 1.08, 0, 0, 0, 0}, VOLT},
+  [UIC_ADC_P1V0_STBY] =
+  {"UIC_ADC_P1V0_STBY_VOLT_V", ADC8, read_adc_val, true, {1.1, 0, 0, 0.9, 0, 0, 0, 0}, VOLT},
+  [UIC_P12V_ISENSE_CUR] =
+  {"UIC_P12V_ISENSE_CURR_A", UIC_CURR, read_sq52205, true, {1.71, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [UIC_INLET_TEMP] =
   {"UIC_INLET_TEMP_C", TEMP_INLET, read_temp, true, {45, 0, 0, 0, 0, 0, 0, 0}, TEMP},
 };
@@ -1105,11 +1154,11 @@ PAL_SENSOR_MAP dvt_nic_sensor_map[] = {
   [NIC_SENSOR_P12V] =
   {"NIC_SENSOR_P12V_VOLT_V", ADC128_IN6, read_voltage_nic, false, {13.2, 0, 0, 10.8, 0, 0, 0, 0}, VOLT},
   [NIC_PMON_VOLT_V] =
-  {"NIC_PMON_VOLT_V", NIC_PMON_VOLT , read_nic_pmon, false, {13.42, 0, 0, 10.98, 0, 0, 0, 0}, VOLT},
+  {"NIC_PMON_VOLT_V", NIC_PMON_VOLT , read_ina233, false, {13.42, 0, 0, 10.98, 0, 0, 0, 0}, VOLT},
   [NIC_PMON_CURR_A] =
-  {"NIC_PMON_CURR_A", NIC_PMON_CURR, read_nic_pmon, false, {2.31, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  {"NIC_PMON_CURR_A", NIC_PMON_CURR, read_ina233, false, {2.31, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [NIC_PMON_PWR_W] =
-  {"NIC_PMON_PWR_W", NIC_PMON_PWR , read_nic_pmon, false, {28.182, 0, 0, 0, 0, 0, 0, 0}, POWER},
+  {"NIC_PMON_PWR_W", NIC_PMON_PWR , read_ina233, false, {28.182, 0, 0, 0, 0, 0, 0, 0}, POWER},
 };
 
 PAL_SENSOR_MAP dvt_2nd_nic_sensor_map[] = {
@@ -1849,10 +1898,11 @@ PAL_I2C_BUS_INFO nic_info_list[] = {
 };
 
 #ifdef CONFIG_GRANDCANYON2
-PAL_I2C_BUS_INFO nic_pmon_info_list[] = {
+PAL_I2C_BUS_INFO pmon_info_list[] = {
   {NIC_PMON_VOLT, NIC_PMON_BUS, NIC_PMON_ADDR},
   {NIC_PMON_CURR, NIC_PMON_BUS, NIC_PMON_ADDR},
   {NIC_PMON_PWR, NIC_PMON_BUS, NIC_PMON_ADDR},
+  {UIC_CURR, UIC_CURR_BUS, UIC_CURR_ADDR},
 };
 #endif
 
@@ -2030,10 +2080,17 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
   uint8_t chassis_type = 0;
 
 #ifdef CONFIG_GRANDCANYON2
-  /* MP(Hack)=6, others=DVT */
-  if (fbgc_local_get_system_stage(&is_mp) < 0) {
-    syslog(LOG_WARNING, "%s(): Failed to get system stage\n", __func__);
-    return -1;
+  int ret = 0;
+  int retry = 0;
+
+  for (retry = 0; retry < 5; retry++) {
+    ret = fbgc_common_get_system_stage(&stage);
+    if (ret >= 0) {
+      break;
+    }
+  }
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): failed to get system stage after 5 retries", __func__);
   }
 #endif
 
@@ -2050,7 +2107,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *sensor_list = (uint8_t *) dpb_sensor_list;
     *cnt = dpb_sensor_cnt;
   #ifdef CONFIG_GRANDCANYON2
-  if (!is_mp){
+  if (stage != UIC_STAGE_HACK){
     *sensor_list = (uint8_t *) dvt_dpb_sensor_list;
     *cnt = dvt_dpb_sensor_cnt;
   }
@@ -2060,7 +2117,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *sensor_list = (uint8_t *) scc_sensor_list;
     *cnt = scc_sensor_cnt;
   #ifdef CONFIG_GRANDCANYON2
-  if (!is_mp){
+  if (stage != UIC_STAGE_HACK){
     *sensor_list = (uint8_t *) dvt_scc_sensor_list;
     *cnt = dvt_scc_sensor_cnt;
   }
@@ -2070,7 +2127,7 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
     *sensor_list = (uint8_t *) nic_sensor_list;
     *cnt = nic_sensor_cnt;
   #ifdef CONFIG_GRANDCANYON2
-  if (!is_mp){
+  if (stage != UIC_STAGE_HACK){
     *sensor_list = (uint8_t *) dvt_nic_sensor_list;
     *cnt = dvt_nic_sensor_cnt;
   }
@@ -2451,7 +2508,7 @@ read_voltage_nic(uint8_t id, float *value) {
 
 #ifdef CONFIG_GRANDCANYON2
 static void
-sq52205_init() {
+sq52205_init(uint8_t fru_num) {
   int fd = 0, ret = -1;
   uint8_t retry = MAX_RETRY;
   uint8_t tbuf[16] = {0};
@@ -2459,8 +2516,15 @@ sq52205_init() {
   uint16_t config = SQ52205_CONFIG_VALUE;
   uint16_t calibration = 0;
 
-  bus  = nic_pmon_info_list[0].bus;
-  addr = nic_pmon_info_list[0].slv_addr;
+  if (fru_num == FRU_UIC){
+    bus  = pmon_info_list[UIC_CURR].bus;
+    addr = pmon_info_list[UIC_CURR].slv_addr;
+  }
+  else{
+    bus  = pmon_info_list[NIC_PMON_VOLT].bus;
+    addr = pmon_info_list[NIC_PMON_VOLT].slv_addr;
+  }
+
   while (ret < 0 && retry-- > 0) {
     fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
   }
@@ -2507,33 +2571,109 @@ sq52205_init() {
 }
 
 static void
-detect_nic_pmon_module()
-{
-  nic_pmon_source_info = pal_detect_nic_pmon_module();
+detect_pmon_module(uint8_t fru_num) {
+  int fd = 0, ret = -1;
+  uint8_t retry = MAX_RETRY, tlen = 1, rlen = 7;
+  uint8_t tbuf[16] = {0};
+  uint8_t rbuf[16] = {0};
+  uint8_t bus = 0, addr = 0;
+  char model_str[7] = {0};
 
-  if (nic_pmon_source_info == SECOND_SOURCE) {
-    sq52205_init();
+  if (fru_num == FRU_UIC){
+    bus  = pmon_info_list[UIC_CURR].bus;
+    addr = pmon_info_list[UIC_CURR].slv_addr;
+  }
+  else{
+    bus  = pmon_info_list[NIC_PMON_VOLT].bus;
+    addr = pmon_info_list[NIC_PMON_VOLT].slv_addr;
+  }
+
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_WARNING, "%s() Failed to open I2C bus %d\n", __func__, bus);
+    if (fru_num == FRU_UIC){
+      uic_pmon_source_info = UNKNOWN_SOURCE;
+    }
+    else{
+      nic_pmon_source_info = UNKNOWN_SOURCE;
+    }
+    return;
+  }
+
+  /* --- Step 1: Check INA233 via PMBUS_MFR_MODEL (0x9A) --- */
+  tbuf[0] = PMBUS_MFR_MODEL;
+  while (ret < 0 && retry-- > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  }
+
+  if (ret == 0) {
+    memcpy(model_str, &rbuf[1], 6);
+    if (strncmp(model_str, "INA233", 6) == 0) {
+      close(fd);
+      if (fru_num == FRU_UIC) {
+        uic_pmon_source_info = MAIN_SOURCE;
+      }
+      else {
+        nic_pmon_source_info = MAIN_SOURCE;
+      }
+      return;
+    }
+  }
+
+  /* --- Step 2: Check SQ52205 via 0x0D, MID field D6-D2 --- */
+  memset(tbuf, 0, sizeof(tbuf));
+  memset(rbuf, 0, sizeof(rbuf));
+  tbuf[0] = 0x0D;
+  rlen = 2;
+  ret = -1;
+  retry = MAX_RETRY;
+
+  while (ret < 0 && retry-- > 0) {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, tlen, rbuf, rlen);
+  }
+
+  close(fd);
+
+  if (ret == 0 && (rbuf[1] & 0x7C) == 0x4C) {
+    if (fru_num == FRU_UIC) {
+      uic_pmon_source_info = SECOND_SOURCE;
+    }
+    else {
+      nic_pmon_source_info = SECOND_SOURCE;
+    }
+    sq52205_init(fru_num);
+  }
+  else {
+    syslog(LOG_WARNING, "%s() Unknown NIC PMON module\n", __func__);
+    if (fru_num == FRU_UIC) {
+      uic_pmon_source_info = UNKNOWN_SOURCE;
+    }
+    else {
+      nic_pmon_source_info = UNKNOWN_SOURCE;
+    }
   }
 }
 
 static int
-read_sq52205(uint8_t nic_pmon_id, float *value) {
+read_sq52205(uint8_t sensor_id, float *value) {
   int fd = 0, ret = -1;
   uint8_t retry = MAX_RETRY, tlen = 1, rlen = 2;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
   uint8_t bus = 0, addr = 0;
 
-  if (nic_pmon_source_info != SECOND_SOURCE) {
+  if (sensor_id == UIC_CURR) {
+      if (uic_pmon_source_info != SECOND_SOURCE) return ERR_SENSOR_NA;
+  } else {
+      if (nic_pmon_source_info != SECOND_SOURCE) return ERR_SENSOR_NA;
+  }
+
+  if (sensor_id >= ARRAY_SIZE(pmon_info_list)) {
     return ERR_SENSOR_NA;
   }
 
-  if (nic_pmon_id >= ARRAY_SIZE(nic_pmon_info_list)) {
-    return ERR_SENSOR_NA;
-  }
-
-  bus  = nic_pmon_info_list[nic_pmon_id].bus;
-  addr = nic_pmon_info_list[nic_pmon_id].slv_addr;
+  bus  = pmon_info_list[sensor_id].bus;
+  addr = pmon_info_list[sensor_id].slv_addr;
 
   fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
   if (fd < 0) {
@@ -2541,11 +2681,12 @@ read_sq52205(uint8_t nic_pmon_id, float *value) {
     return ERR_SENSOR_NA;
   }
 
-  switch (nic_pmon_id) {
+  switch (sensor_id) {
     case NIC_PMON_VOLT:
       tbuf[0] = SQ52205_VOLT_REG;
       break;
     case NIC_PMON_CURR:
+    case UIC_CURR:
       tbuf[0] = SQ52205_CURR_REG;
       break;
     case NIC_PMON_PWR:
@@ -2561,21 +2702,21 @@ read_sq52205(uint8_t nic_pmon_id, float *value) {
   }
 
   if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to read nic_pmon_id=%d reg=0x%02X\n",
-           __func__, nic_pmon_id, tbuf[0]);
+    syslog(LOG_WARNING, "%s() Failed to read sensor_id=%d reg=0x%02X\n",
+           __func__, sensor_id, tbuf[0]);
     close(fd);
     return ERR_SENSOR_NA;
   }
 
   uint16_t raw = ((uint16_t)rbuf[0] << 8) | rbuf[1];
 
-  switch (nic_pmon_id) {
+  switch (sensor_id) {
     case NIC_PMON_VOLT:
       // 1.25 mV/LSB
       *value = (float)raw * 1.25f / 1000.0f;
       break;
-
     case NIC_PMON_CURR:
+    case UIC_CURR:
       if (rbuf[0] & 0x80) {
         *value = 0;
       } else {
@@ -2598,7 +2739,7 @@ read_sq52205(uint8_t nic_pmon_id, float *value) {
 }
 
 static int
-nic_pmon_set_calibration(int fd, uint8_t addr) {
+ina233_set_calibration(int fd, uint8_t addr) {
   int ret = -1;
   uint8_t retry = MAX_RETRY;
   uint8_t tbuf[16] = {0};
@@ -2621,19 +2762,19 @@ nic_pmon_set_calibration(int fd, uint8_t addr) {
 
 
 static int
-read_nic_pmon(uint8_t nic_pmon_id, float *value) {
+read_ina233(uint8_t sensor_id, float *value) {
   int fd = 0, ret = -1;
   uint8_t retry = MAX_RETRY, tlen = 1, rlen = 2;
   uint8_t tbuf[16] = {0};
   uint8_t rbuf[16] = {0};
   uint8_t bus = 0, addr = 0;
 
-  if (nic_pmon_id >= ARRAY_SIZE(nic_pmon_info_list)) {
+  if (sensor_id >= ARRAY_SIZE(pmon_info_list)) {
     return ERR_SENSOR_NA;
   }
 
-  bus  = nic_pmon_info_list[nic_pmon_id].bus;
-  addr = nic_pmon_info_list[nic_pmon_id].slv_addr;
+  bus  = pmon_info_list[sensor_id].bus;
+  addr = pmon_info_list[sensor_id].slv_addr;
 
   fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
   if (fd < 0) {
@@ -2642,18 +2783,19 @@ read_nic_pmon(uint8_t nic_pmon_id, float *value) {
   }
 
   // Set calibration register before reading current/power
-  if (nic_pmon_set_calibration(fd, addr) < 0) {
-    syslog(LOG_WARNING, "%s() Failed to set calibration, nic_pmon_id=%d\n",
-            __func__, nic_pmon_id);
+  if (ina233_set_calibration(fd, addr) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to set calibration, sensor_id=%d\n",
+            __func__, sensor_id);
     close(fd);
     return ERR_SENSOR_NA;
   }
 
-  switch (nic_pmon_id) {
+  switch (sensor_id) {
     case NIC_PMON_VOLT:
       tbuf[0] = PMBUS_READ_VIN;
       break;
     case NIC_PMON_CURR:
+    case UIC_CURR:
       tbuf[0] = PMBUS_READ_IIN;
       break;
     case NIC_PMON_PWR:
@@ -2669,24 +2811,25 @@ read_nic_pmon(uint8_t nic_pmon_id, float *value) {
   }
 
 #ifdef DEBUG
-  syslog(LOG_DEBUG, "%s() nic_pmon_id=%d reg=0x%02X rbuf[0]=0x%02X rbuf[1]=0x%02X\n",
-         __func__, nic_pmon_id, tbuf[0], rbuf[0], rbuf[1]);
+  syslog(LOG_DEBUG, "%s() sensor_id=%d reg=0x%02X rbuf[0]=0x%02X rbuf[1]=0x%02X\n",
+         __func__, sensor_id, tbuf[0], rbuf[0], rbuf[1]);
 #endif
 
   if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to read nic_pmon_id=%d reg=0x%02X\n",
-           __func__, nic_pmon_id, tbuf[0]);
+    syslog(LOG_WARNING, "%s() Failed to read sensor_id=%d reg=0x%02X\n",
+           __func__, sensor_id, tbuf[0]);
     close(fd);
     return ERR_SENSOR_NA;
   }
 
   uint16_t raw = (rbuf[1] << 8) | rbuf[0];
 
-  switch (nic_pmon_id) {
+  switch (sensor_id) {
     case NIC_PMON_VOLT:
       *value = (float)raw / 800;
       break;
     case NIC_PMON_CURR:
+    case UIC_CURR:
       if (rbuf[1] & 0x80) {
         *value = 0;
       } else {
@@ -3019,11 +3162,17 @@ exp_read_sensor_thresh_wrapper(uint8_t fru, uint8_t *sensor_list, thresh_sensor_
 
     // Get threshold of SCC_IOC_TEMP from sensor map
     if ((fru == FRU_SCC) && (snr_num == SCC_IOC_TEMP)) {
-    #ifdef CONFIG_GRANDCANYON2
-      PAL_SENSOR_MAP *scc_map = is_mp ? scc_sensor_map : dvt_scc_sensor_map;
-    #else
+#ifdef CONFIG_GRANDCANYON2
+      PAL_SENSOR_MAP *scc_map = NULL;
+      if (stage == UIC_STAGE_HACK) {
+        scc_map = scc_sensor_map;
+      }
+      else {
+        scc_map = dvt_scc_sensor_map;
+      }
+#else
       PAL_SENSOR_MAP *scc_map = scc_sensor_map;
-    #endif
+#endif
       high_crit = scc_map[snr_num].snr_thresh.ucr_thresh;
       high_warn = scc_map[snr_num].snr_thresh.unc_thresh;
       low_crit  = scc_map[snr_num].snr_thresh.lcr_thresh;
@@ -3064,14 +3213,24 @@ exp_get_sensor_thresh_from_file(uint8_t fru) {
   switch (fru) {
     case FRU_DPB:
     #ifdef CONFIG_GRANDCANYON2
-        sensor_map = is_mp ? dpb_sensor_map : dvt_dpb_sensor_map;
+      if (stage == UIC_STAGE_HACK) {
+        sensor_map = dpb_sensor_map;
+      }
+      else {
+        sensor_map = dvt_dpb_sensor_map;
+      }
     #else
         sensor_map = dpb_sensor_map;
     #endif
         break;
       case FRU_SCC:
     #ifdef CONFIG_GRANDCANYON2
-        sensor_map = is_mp ? scc_sensor_map : dvt_scc_sensor_map;
+        if (stage == UIC_STAGE_HACK) {
+          sensor_map = scc_sensor_map;
+        }
+        else {
+          sensor_map = dvt_scc_sensor_map;
+        }
     #else
         sensor_map = scc_sensor_map;
     #endif
@@ -3362,8 +3521,16 @@ expander_sensor_check(uint8_t fru, uint8_t sensor_num) {
 
   if (abs(current_time - timestamp) > EXP_SENSOR_WAIT_TIME) {
     #ifdef CONFIG_GRANDCANYON2
-      uint8_t dpb_first_sensor = is_mp ? dpb_sensor_list[0] : dvt_dpb_sensor_list[0];
-      uint8_t scc_first_sensor = is_mp ? scc_sensor_list[0] : dvt_scc_sensor_list[0];
+    uint8_t dpb_first_sensor = 0;
+    uint8_t scc_first_sensor = 0;
+    if (stage == UIC_STAGE_HACK) {
+      dpb_first_sensor = dpb_sensor_list[0];
+      scc_first_sensor = scc_sensor_list[0];
+    }
+    else {
+      dpb_first_sensor = dvt_dpb_sensor_list[0];
+      scc_first_sensor = dvt_scc_sensor_list[0];
+    }
     #else
       uint8_t dpb_first_sensor = dpb_sensor_list[0];
       uint8_t scc_first_sensor = scc_sensor_list[0];
@@ -3936,9 +4103,22 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
     }
     break;
   case FRU_UIC:
-    id = uic_sensor_map[sensor_num].id;
-    ret = uic_sensor_map[sensor_num].read_sensor(id, (float*) value);
-
+  #ifdef CONFIG_GRANDCANYON2
+    if (stage == UIC_STAGE_PVT_TPS25974_RS31332_INA233 || stage == UIC_STAGE_MP_TPS25974_RS31332_INA233){
+      detect_pmon_module(FRU_UIC);
+      if (uic_pmon_source_info == MAIN_SOURCE) {
+        id = pvt_uic_sensor_map[sensor_num].id;
+        ret = pvt_uic_sensor_map[sensor_num].read_sensor(id, (float*) value);
+      } else {
+        id = pvt_2nd_uic_sensor_map[sensor_num].id;
+        ret = pvt_2nd_uic_sensor_map[sensor_num].read_sensor(id, (float*) value);
+      }
+    }else
+  #endif
+    {
+      id = uic_sensor_map[sensor_num].id;
+      ret = uic_sensor_map[sensor_num].read_sensor(id, (float*) value);
+    }
     if (sensor_num == UIC_INLET_TEMP) {
       if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
         syslog(LOG_WARNING, "%s() Failed to get chassis type, use Type 5 UIC Inlet temperature correction table\n", __func__);
@@ -3956,7 +4136,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   case FRU_SCC:
     if (sensor_num == SCC_IOC_TEMP) {
   #ifdef CONFIG_GRANDCANYON2
-      if (!is_mp) {
+      if (stage != UIC_STAGE_HACK){
         id = dvt_scc_sensor_map[sensor_num].id;
         ret = dvt_scc_sensor_map[sensor_num].read_sensor(id, (float*) value);
       } else
@@ -3975,8 +4155,8 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   case FRU_NIC:
     get_current_source(KEY_DPB_SOURCE_INFO, &dpb_source_info);
   #ifdef CONFIG_GRANDCANYON2
-    detect_nic_pmon_module();
-    if (!is_mp) {
+    if (stage != UIC_STAGE_HACK){
+      detect_pmon_module(FRU_NIC);
       if (nic_pmon_source_info == MAIN_SOURCE) {
         id = dvt_nic_sensor_map[sensor_num].id;
         ret = dvt_nic_sensor_map[sensor_num].read_sensor(id, (float*) value);
@@ -4046,11 +4226,23 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
 
   switch(fru) {
   case FRU_UIC:
+  #ifdef CONFIG_GRANDCANYON2
+  if (stage == UIC_STAGE_PVT_TPS25974_RS31332_INA233 || stage == UIC_STAGE_MP_TPS25974_RS31332_INA233){
+    detect_pmon_module(FRU_UIC);
+    if (uic_pmon_source_info == MAIN_SOURCE) {
+      snprintf(name, MAX_SENSOR_NAME_SIZE, "%s", pvt_uic_sensor_map[sensor_num].snr_name);
+    } else {
+      snprintf(name, MAX_SENSOR_NAME_SIZE, "%s", pvt_2nd_uic_sensor_map[sensor_num].snr_name);
+    }
+  } else
+  #endif
+  {
     snprintf(name, MAX_SENSOR_NAME_SIZE, "%s", uic_sensor_map[sensor_num].snr_name);
+  }
     break;
   case FRU_DPB:
   #ifdef CONFIG_GRANDCANYON2
-    if (!is_mp) {
+    if (stage != UIC_STAGE_HACK){
       snprintf(name, MAX_SENSOR_NAME_SIZE, "%s", dvt_dpb_sensor_map[sensor_num].snr_name);
     } else
   #endif
@@ -4060,7 +4252,7 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
     break;
   case FRU_SCC:
   #ifdef CONFIG_GRANDCANYON2
-    if (!is_mp) {
+    if (stage != UIC_STAGE_HACK){
       snprintf(name, MAX_SENSOR_NAME_SIZE, "%s", dvt_scc_sensor_map[sensor_num].snr_name);
     } else
   #endif
@@ -4070,7 +4262,7 @@ pal_get_sensor_name(uint8_t fru, uint8_t sensor_num, char *name) {
     break;
   case FRU_NIC:
   #ifdef CONFIG_GRANDCANYON2
-    if (!is_mp) {
+    if (stage != UIC_STAGE_HACK){
       if (nic_pmon_source_info == MAIN_SOURCE) {
         snprintf(name, MAX_SENSOR_NAME_SIZE, "%s", dvt_nic_sensor_map[sensor_num].snr_name);
       } else {
@@ -4134,12 +4326,22 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
   switch (fru) {
   case FRU_UIC:
     sensor_map = uic_sensor_map;
+#ifdef CONFIG_GRANDCANYON2
+    if (stage == UIC_STAGE_PVT_TPS25974_RS31332_INA233 || stage == UIC_STAGE_MP_TPS25974_RS31332_INA233){
+      detect_pmon_module(FRU_UIC);
+      if (uic_pmon_source_info == MAIN_SOURCE) {
+        sensor_map = pvt_uic_sensor_map;
+      } else {
+        sensor_map = pvt_2nd_uic_sensor_map;
+      }
+    }
+#endif
     break;
   case FRU_DPB:
     exp_thresh_init = &dpb_thresh_init;
     sensor_map = dpb_sensor_map;
   #ifdef CONFIG_GRANDCANYON2
-  if (!is_mp) {
+  if (stage != UIC_STAGE_HACK){
     sensor_map = dvt_dpb_sensor_map;
   }
   #endif
@@ -4148,7 +4350,7 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
     exp_thresh_init = &scc_thresh_init;
     sensor_map = scc_sensor_map;
   #ifdef CONFIG_GRANDCANYON2
-  if (!is_mp) {
+  if (stage != UIC_STAGE_HACK){
     sensor_map = dvt_scc_sensor_map;
   }
   #endif
@@ -4156,13 +4358,12 @@ pal_get_sensor_threshold(uint8_t fru, uint8_t sensor_num, uint8_t thresh, void *
   case FRU_NIC:
     sensor_map = nic_sensor_map;
   #ifdef CONFIG_GRANDCANYON2
-  if (!is_mp) {
+  if (stage != UIC_STAGE_HACK){
     if (nic_pmon_source_info == MAIN_SOURCE) {
       sensor_map = dvt_nic_sensor_map;
     } else {
       sensor_map = dvt_2nd_nic_sensor_map;
     }
-
   }
   #endif
     break;
@@ -4236,11 +4437,20 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   switch (fru) {
   case FRU_UIC:
     sensor_units = uic_sensor_map[sensor_num].units;
+  #ifdef CONFIG_GRANDCANYON2
+    if (stage == UIC_STAGE_PVT_TPS25974_RS31332_INA233 || stage == UIC_STAGE_MP_TPS25974_RS31332_INA233){
+      if (uic_pmon_source_info == MAIN_SOURCE) {
+        sensor_units = pvt_uic_sensor_map[sensor_num].units;
+      } else {
+        sensor_units = pvt_2nd_uic_sensor_map[sensor_num].units;
+      }
+    }
+  #endif
     break;
   case FRU_DPB:
     sensor_units = dpb_sensor_map[sensor_num].units;
   #ifdef CONFIG_GRANDCANYON2
-    if (!is_mp) {
+    if (stage != UIC_STAGE_HACK){
       sensor_units = dvt_dpb_sensor_map[sensor_num].units;
     }
   #endif
@@ -4248,7 +4458,7 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   case FRU_SCC:
     sensor_units = scc_sensor_map[sensor_num].units;
   #ifdef CONFIG_GRANDCANYON2
-    if (!is_mp) {
+    if (stage != UIC_STAGE_HACK){
       sensor_units = dvt_scc_sensor_map[sensor_num].units;
     }
   #endif
@@ -4256,7 +4466,7 @@ pal_get_sensor_units(uint8_t fru, uint8_t sensor_num, char *units) {
   case FRU_NIC:
     sensor_units = nic_sensor_map[sensor_num].units;
   #ifdef CONFIG_GRANDCANYON2
-    if (!is_mp) {
+    if (stage != UIC_STAGE_HACK){
       if (nic_pmon_source_info == MAIN_SOURCE) {
         sensor_units = dvt_nic_sensor_map[sensor_num].units;
       } else {

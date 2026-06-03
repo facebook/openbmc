@@ -1,4 +1,4 @@
-From f509c21c420a15ab84eea446a3c93f9cc7148cbd Mon Sep 17 00:00:00 2001
+From c4b59926a0173d4361ac8a02f1ab8c913ed305eb Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 2 Oct 2025 11:13:35 +0800
 Subject: [PATCH] Arm64: aspeed: dts: add yosemite5 dts
@@ -6,8 +6,8 @@ Subject: [PATCH] Arm64: aspeed: dts: add yosemite5 dts
 Add yosemite5 ast2700 dts.
 ---
  arch/arm64/boot/dts/aspeed/Makefile           |    1 +
- .../aspeed-bmc-facebook-yosemite5a7.dts       | 1372 +++++++++++++++++
- 2 files changed, 1373 insertions(+)
+ .../aspeed-bmc-facebook-yosemite5a7.dts       | 1384 +++++++++++++++++
+ 2 files changed, 1385 insertions(+)
  create mode 100644 arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
 
 diff --git a/arch/arm64/boot/dts/aspeed/Makefile b/arch/arm64/boot/dts/aspeed/Makefile
@@ -22,10 +22,10 @@ index ffe7e1501..f19cb564f 100644
  	ast2700-evb.dtb
 diff --git a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
 new file mode 100644
-index 000000000..272510c15
+index 000000000..532944e4e
 --- /dev/null
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
-@@ -0,0 +1,1372 @@
+@@ -0,0 +1,1384 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +// Copyright (c) 2025 Facebook Inc.
 +
@@ -553,6 +553,12 @@ index 000000000..272510c15
 +		reg = <0x49>;
 +	};
 +
++	power-monitor@4b {
++		compatible = "ti,tps25990";
++		reg = <0x4b>;
++		ti,rimon-micro-ohms = <430000000>;
++	};
++
 +	/* PDB FRU */
 +	eeprom@56 {
 +		compatible = "atmel,24c128";
@@ -879,6 +885,11 @@ index 000000000..272510c15
 +	temperature-sensor@49 {
 +		compatible = "ti,tmp75";
 +		reg = <0x49>;
++	};
++
++	adc@4b {
++		compatible = "ti,ads7830";
++		reg = <0x4b>;
 +	};
 +
 +	/* E1S EB FRU */
@@ -1378,8 +1389,12 @@ index 000000000..272510c15
 +*/
 +
 +&wdt0 {
++	status = "disabled";
++};
++
++&wdt1 {
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_wdtrst0n_default>;
++	pinctrl-0 = <&pinctrl_wdtrst1n_default>;
 +	aspeed,reset-type = "soc";
 +	aspeed,external-signal;
 +	aspeed,ext-push-pull;
@@ -1392,11 +1407,8 @@ index 000000000..272510c15
 +	status = "okay";
 +};
 +
-+&pinctrl1 {
-+	pinctrl_rgmii0_driving: rgmii0-driving {
-+		groups = "RMII0";
-+		drive-strength = <3>;
-+	};
++&pinctrl_rmii0_default {
++	drive-strength = <16>;
 +};
 -- 
 2.53.0

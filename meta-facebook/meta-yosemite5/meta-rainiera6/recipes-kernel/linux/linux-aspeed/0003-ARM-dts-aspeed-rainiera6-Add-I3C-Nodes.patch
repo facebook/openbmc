@@ -1,0 +1,64 @@
+From 0709a767de41418b328147c2646c3eae3155e8a2 Mon Sep 17 00:00:00 2001
+From: Neil Cheng <Neil.Cheng@quantatw.com>
+Date: Fri, 29 May 2026 19:02:34 +0800
+Subject: [PATCH] ARM: dts: aspeed: rainiera6: Add I3C Nodes
+
+Add the I3C nodes to the Rainier DTS in the Meta tree temporarily.
+These nodes will remain here until the upstream AST2600 I3C support
+patch [1] is merged.
+
+[1]: https://lore.kernel.org/all/20240506105120.3028083-2-dylan_hung@aspeedtech.com/
+
+Signed-off-by: Neil Cheng <Neil.Cheng@quantatw.com>
+---
+ .../aspeed/aspeed-bmc-facebook-rainiera6.dts  | 37 +++++++++++++++++++
+ 1 file changed, 37 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
+index 36d1c0373..adadf1646 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
+@@ -810,6 +810,43 @@ &i2c15 {
+ 	status = "okay";
+ };
+ 
++&i3c_global {
++	status = "okay";
++};
++
++&i3c0 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i3c1_default>;
++	i3c-scl-hz = <2500000>;
++	sda-pullup-ohms = <2000>;
++};
++
++&i3c1 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i3c2_default>;
++	i3c-scl-hz = <2500000>;
++	sda-pullup-ohms = <2000>;
++};
++
++&i3c2 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i3c3_default>;
++	i3c-scl-hz = <2500000>;
++	sda-pullup-ohms = <2000>;
++};
++
++&i3c3 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i3c4_default>;
++	i3c-scl-hz = <2500000>;
++	sda-pullup-ohms = <2000>;
++	mctp-controller;
++};
++
+ &mac2 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_ncsi3_default>;

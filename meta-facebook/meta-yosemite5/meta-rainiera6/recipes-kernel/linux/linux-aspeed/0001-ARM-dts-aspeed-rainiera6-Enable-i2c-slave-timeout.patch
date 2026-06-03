@@ -1,0 +1,43 @@
+From 3d470f6b544fe53a55dcb85a81619ce9068d851a Mon Sep 17 00:00:00 2001
+From: Neil Cheng <Neil.Cheng@quantatw.com>
+Date: Mon, 4 May 2026 21:08:01 +0800
+Subject: [PATCH] ARM: dts: aspeed: rainiera6: Enable i2c slave timeout
+
+Enable the I2C slave timeout property for NIC,CXL,debug card to
+prevent the slave interface from hanging due to incomplete or abnormal
+I2C transactions, such as those occurring during HOST DC cycle but CXL
+is doing i2c transfer.
+
+Signed-off-by: Neil Cheng <Neil.Cheng@quantatw.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
+index b29e08cea..19aa8a391 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
+@@ -220,6 +220,7 @@ &i2c2 {
+ 
+ &i2c4 {
+ 	multi-master;
++	i2c-scl-clk-low-timeout-us = <31744>;
+ 	mctp-controller;
+ 	clock-frequency = <400000>;
+ 	status = "okay";
+@@ -347,6 +348,7 @@ i2c6mux0ch3: i2c@3 {
+ 
+ &i2c7 {
+ 	multi-master;
++	i2c-scl-clk-low-timeout-us = <31744>;
+ 	status = "okay";
+ 
+ 	ipmb@10 {
+@@ -728,6 +730,7 @@ rtc@6f {
+ /* MCIO 4A I2C */
+ &i2c12 {
+ 	multi-master;
++	i2c-scl-clk-low-timeout-us = <31744>;
+ 	mctp-controller;
+ 	clock-frequency = <400000>;
+ 	status = "okay";

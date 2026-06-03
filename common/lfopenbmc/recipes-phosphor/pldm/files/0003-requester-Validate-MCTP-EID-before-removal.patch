@@ -12,20 +12,21 @@ Change-Id: I7586cdca5cd77c3d0a62979ca962745bd0e0970e
 Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
 Upstream-Status: Pending
 ---
- requester/mctp_endpoint_discovery.cpp | 15 ++++++++++++++-
- 1 file changed, 14 insertions(+), 1 deletion(-)
+ requester/mctp_endpoint_discovery.cpp | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 614b46e..b73b592 100644
+index 614b46e..5b11a1e 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
-@@ -264,12 +264,25 @@ void MctpDiscovery::removeFromExistingMctpInfos(MctpInfos& mctpInfos,
+@@ -264,12 +264,26 @@ void MctpDiscovery::removeFromExistingMctpInfos(MctpInfos& mctpInfos,
  {
      for (const auto& mctpInfo : existingMctpInfos)
      {
-+        std::string MCTPObject = std::string(MCTPPath) + "/" +
-+                                 std::to_string(std::get<3>(mctpInfo)) + "/" +
-+                                 std::to_string(std::get<0>(mctpInfo));
++        std::string MCTPObject =
++            std::string(MCTPPath) + "/networks/" +
++            std::to_string(std::get<3>(mctpInfo)) + "/endpoints/" +
++            std::to_string(std::get<0>(mctpInfo));
 +
          if (std::find(mctpInfos.begin(), mctpInfos.end(), mctpInfo) ==
              mctpInfos.end())

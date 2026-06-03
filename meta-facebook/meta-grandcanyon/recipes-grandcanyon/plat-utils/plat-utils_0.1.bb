@@ -31,6 +31,7 @@ LOCAL_URI = " \
     file://check_pal_sku.sh \
     file://setup-platform.sh \
     file://sync_date.sh \
+    file://fix_sv_time.sh \
     file://check_bmc_ready.sh \
     file://check_2nd_source.sh \
     file://check_nic_status.sh \
@@ -39,7 +40,7 @@ LOCAL_URI = " \
 pkgdir = "utils"
 
 # the tools for BMC will be installed in the image
-binfiles = " sol-util power-on.sh check_pal_sku.sh sync_date.sh check_bmc_ready.sh check_2nd_source.sh "
+binfiles = " sol-util power-on.sh check_pal_sku.sh sync_date.sh fix_sv_time.sh check_bmc_ready.sh check_2nd_source.sh "
 
 DEPENDS:append = "update-rc.d-native"
 RDEPENDS:${PN} += "bash python3 gpiocli "

@@ -32,6 +32,7 @@ do
     sleep 1
   else
     logger -s -p user.crit -t sync-date "Syncing up BMC time from NTP"
+    /usr/local/bin/fix_sv_time.sh
     exit 0
   fi
 done
@@ -59,6 +60,7 @@ if [ "$(is_server_prsnt)" = "$SERVER_PRESENT" ] ; then
       ret=$?
       if [ $ret = "$SYNC_TIME_OK" ]; then
         logger -s -p user.crit -t sync-date "Syncing up BMC time from Host(ME)"
+        /usr/local/bin/fix_sv_time.sh
         exit 0
       else
         # get invalid SEL time

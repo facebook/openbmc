@@ -56,8 +56,6 @@ setup_gpio CPE_CTRL  GPIOR2 out 0
 setup_gpio BMC_FPGA_PROG  GPIOR3 out 0
 # COME Boot Okay
 setup_gpio BOOT_OK  GPIOR4 in 
-# TPM Reset
-setup_gpio TPM_RST_L  GPIOR5 out 1
 # TPM PIRQ
 setup_gpio TPM_PIRQ_L  GPIOR6 in 
 # USB2B VBUS Sense

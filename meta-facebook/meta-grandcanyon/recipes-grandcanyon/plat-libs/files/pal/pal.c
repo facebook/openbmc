@@ -2532,6 +2532,53 @@ pal_host_stall_handler(uint8_t fru) {
   return;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+static int
+pal_capture_sensor_snapshot(void) {
+    FILE *fp = NULL;
+    FILE *out_fp = NULL;
+    char buf[512] = {0};
+    char filepath[128] = {0};
+    char timestamp[32] = {0};
+    time_t now;
+    struct tm *tm_info;
+
+    time(&now);
+    tm_info = localtime(&now);
+    strftime(timestamp, sizeof(timestamp), "%Y%m%d_%H%M%S", tm_info);
+
+    snprintf(filepath, sizeof(filepath),
+             "/mnt/data/sensor_snapshot_%s.log", timestamp);
+
+    out_fp = fopen(filepath, "w");
+    if (out_fp == NULL) {
+        syslog(LOG_ERR, "%s(): Failed to open file: %s", __func__, filepath);
+        return -1;
+    }
+
+    fprintf(out_fp, "=== CATERR Event - Sensor Snapshot ===\n");
+    fprintf(out_fp, "Timestamp : %s\n", timestamp);
+    fprintf(out_fp, "======================================\n\n");
+
+    fp = popen("/usr/local/bin/sensor-util all --force 2>&1", "r");
+    if (fp == NULL) {
+        syslog(LOG_ERR, "%s(): Failed to popen sensor-util", __func__);
+        fclose(out_fp);
+        return -1;
+    }
+
+    while (fgets(buf, sizeof(buf), fp) != NULL) {
+        fputs(buf, out_fp);
+    }
+
+    pclose(fp);
+    fclose(out_fp);
+
+    syslog(LOG_INFO, "%s(): Sensor snapshot saved -> %s", __func__, filepath);
+    return 0;
+}
+#endif
+
 static int
 pal_bic_sel_handler(uint8_t snr_num, uint8_t *event_data) {
   int ret = PAL_EOK;
@@ -2554,6 +2601,9 @@ pal_bic_sel_handler(uint8_t snr_num, uint8_t *event_data) {
   switch (snr_num) {
     case CATERR_B:
       ret = pal_store_crashdump();
+#ifdef CONFIG_GRANDCANYON2
+      pal_capture_sensor_snapshot();
+#endif
       is_err_server_sel = true;
       break;
     case CPU_DIMM_HOT:

@@ -71,6 +71,11 @@ fbgc_get_fruid_name(uint8_t fru, char *name) {
     case FRU_FAN3:
       snprintf(name, MAX_FRU_NAME_STR, "FAN3");
       break;
+#ifdef CONFIG_GRANDCANYON2
+    case FRU_PTB:
+      snprintf(name, MAX_FRU_NAME_STR, "PTB");
+      break;
+#endif
     default:
       syslog(LOG_WARNING, "%s: wrong fruid", __func__);
       return -1;
@@ -122,6 +127,11 @@ fbgc_get_fruid_path(uint8_t fru, char *path) {
     case FRU_FAN3:
       snprintf(fname, sizeof(fname), "fan3");
       break;
+#ifdef CONFIG_GRANDCANYON2
+    case FRU_PTB:
+      snprintf(fname, sizeof(fname), "ptb");
+      break;
+#endif
     default:
       syslog(LOG_WARNING, "%s: wrong fruid", __func__);
       return -1;
@@ -147,6 +157,9 @@ fbgc_get_fruid_eeprom_path(uint8_t fru, char *path) {
     case FRU_FAN1:
     case FRU_FAN2:
     case FRU_FAN3:
+#ifdef CONFIG_GRANDCANYON2
+    case FRU_PTB:
+#endif
       return -1;
     case FRU_E1S_IOCM:
       if (fbgc_common_get_chassis_type(&type) < 0) {

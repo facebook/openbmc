@@ -40,6 +40,9 @@
 
 uint8_t expander_fruid_list[] = {FRU_SCC, FRU_DPB};
 uint8_t expander_fan_fruid_list[] = {FRU_FAN0, FRU_FAN1, FRU_FAN2, FRU_FAN3};
+#ifdef CONFIG_GRANDCANYON2
+uint8_t expander_ptb_fruid_list[] = {FRU_PTB};
+#endif
 
 static void
 exp_read_fruid_wrapper(uint8_t fru, char* fru_path) {
@@ -134,6 +137,9 @@ fruid_cache_init(void) {
   if ((ret < 0) || (rbuf[0] != EXP_FAN_FRU_READY)) {
     syslog(LOG_WARNING, "%s(): Checking of FAN FRU is pending until EXP FAN FRU cache is ready.\n", __func__);
   }
+
+  exp_read_fruid_wrapper(expander_ptb_fruid_list[0], COMMON_FRU_PATH);
+
 #else
   // If use new EXP f/w, version > 17 (0x11)
   // Ask EXP about FAN FRU state before dump

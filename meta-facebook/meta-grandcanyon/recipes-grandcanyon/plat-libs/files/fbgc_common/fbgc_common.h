@@ -197,6 +197,9 @@ enum {
   FRU_FAN1,
   FRU_FAN2,
   FRU_FAN3,
+#ifdef CONFIG_GRANDCANYON2
+  FRU_PTB,
+#endif
   FRU_CNT,
 };
 

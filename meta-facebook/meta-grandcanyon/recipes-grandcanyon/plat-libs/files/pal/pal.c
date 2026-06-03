@@ -82,11 +82,20 @@ const char pal_dev_pwr_list[] = "e1s0, e1s1";
 const char pal_dev_pwr_option_list[] = "status, off, on";
 
 // export to fruid-util
+#ifdef CONFIG_GRANDCANYON2
+const char pal_fru_list_print[] = "all, server, bmc, uic, dpb, scc, nic, e1s_iocm, fan0, fan1, fan2, fan3, ptb";
+#else
 const char pal_fru_list_print[] = "all, server, bmc, uic, dpb, scc, nic, e1s_iocm, fan0, fan1, fan2, fan3";
+#endif
 const char pal_fru_list_rw[] = "server, bmc, uic, nic, e1s_iocm";
 
+
 // fru name list for pal_get_fru_id()
+#ifdef CONFIG_GRANDCANYON2
+const char *fru_str_list[] = {"all", "server", "bmc", "uic", "dpb", "scc", "nic", "e1s_iocm", "fan0", "fan1", "fan2", "fan3", "ptb"};
+#else
 const char *fru_str_list[] = {"all", "server", "bmc", "uic", "dpb", "scc", "nic", "e1s_iocm", "fan0", "fan1", "fan2", "fan3"};
+#endif
 
 const char pal_pwm_list[] = "0";
 const char pal_tach_list[] = "0...7";
@@ -382,6 +391,9 @@ pal_is_fru_ready(uint8_t fru, uint8_t *status) {
     case FRU_FAN1:
     case FRU_FAN2:
     case FRU_FAN3:
+#ifdef CONFIG_GRANDCANYON2
+    case FRU_PTB:
+#endif
       *status = 1;
       break;
     default:
@@ -449,6 +461,9 @@ pal_is_fru_prsnt(uint8_t fru, uint8_t *status) {
     case FRU_BMC:
     case FRU_UIC:
     case FRU_DPB:
+#ifdef CONFIG_GRANDCANYON2
+    case FRU_PTB:
+#endif
       *status = 1;
       break;
     default:
@@ -517,6 +532,11 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
     case FRU_SCC:
       *caps = FRU_CAPABILITY_FRUID_READ | FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_HISTORY;
       break;
+#ifdef CONFIG_GRANDCANYON2
+    case FRU_PTB:
+      *caps = FRU_CAPABILITY_FRUID_READ | FRU_CAPABILITY_SENSOR_READ | FRU_CAPABILITY_SENSOR_HISTORY;
+      break;
+#endif
     case FRU_E1S_IOCM:
       *caps = FRU_CAPABILITY_SENSOR_ALL;
       fbgc_common_get_chassis_type(&chassis_type);
@@ -612,6 +632,12 @@ pal_get_fru_name(uint8_t fru, char *name) {
    case FRU_FAN3:
       snprintf(name, MAX_FRU_CMD_STR, "fan3");
       break;
+#ifdef CONFIG_GRANDCANYON2
+   case FRU_PTB:
+      snprintf(name, MAX_FRU_CMD_STR, "ptb");
+      break;
+#endif
+
    default:
       if (fru > MAX_NUM_FRUS) {
         return -1;
@@ -2821,6 +2847,9 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
     case FRU_FAN2:
     case FRU_FAN3:
     case FRU_BMC:
+#ifdef CONFIG_GRANDCANYON2
+    case FRU_PTB:
+#endif
       return ERR_SENSOR_NA;
 
     default:

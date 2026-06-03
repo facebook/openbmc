@@ -1236,7 +1236,7 @@ PAL_SENSOR_MAP iocm_sensor_map[] = {
   [IOCM_P0V865] =
   {"IOCM_P0V865_VOLT_V", ADS1015_IN3, read_voltage_iocm, false, {0.89, 0, 0, 0.85, 0, 0, 0, 0}, VOLT},
   [IOCM_CUR] =
-  {"IOCM_SENSOR_CURR_A", ADC128_IN0, read_current_iocm, false, {0, 0, 0, 0, 0, 0, 0, 0}, CURR},
+  {"IOCM_SENSOR_CURR_A", ADC128_IN0, read_current_iocm, false, {3.45, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [IOCM_TEMP] =
   {"IOCM_SENSOR_TEMP_C", TEMP_IOCM, read_temp, false, {93, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [IOCM_IOC_TEMP] =

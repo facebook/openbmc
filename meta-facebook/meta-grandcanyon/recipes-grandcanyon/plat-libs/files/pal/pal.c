@@ -2553,7 +2553,6 @@ pal_bic_sel_handler(uint8_t snr_num, uint8_t *event_data) {
 
   switch (snr_num) {
     case CATERR_B:
-    case MACHINE_CHK_ERR :
       ret = pal_store_crashdump();
       is_err_server_sel = true;
       break;
@@ -2687,10 +2686,6 @@ pal_oem_unified_sel_handler(uint8_t fru, uint8_t general_info, uint8_t *sel) {
   error_type = general_info & 0x0f;
   err_id2 = sel[14];
   err_id1 = sel[15];
-
-  if (error_type == UNIFIED_MEM_ERR) { 
-    pal_store_crashdump();
-  }
 
   // Check if the feature to detect NIC PCIe link drop is enable
   snprintf(key, sizeof(key), "check_nic_pcie_link_drop");
@@ -3619,7 +3614,11 @@ static int pal_parse_caterr_event(uint8_t *event_data, char *error_log) {
       strcat(error_log, "MCERR");
       break;
     case MEM_RMCA:
+#ifdef CONFIG_GRANDCANYON2
+      strcat(error_log, "MCERR/RMCA");
+#else
       strcat(error_log, "MEM_RMCA");
+#endif
       break;
     default:
       strcat(error_log, "CATERR");

@@ -4651,13 +4651,56 @@ int pal_register_sensor_failure_tolerance_policy(uint8_t fru) {
   return 0;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+static const char *
+pal_get_server_sensor_name(uint8_t sensor_num)
+{
+  switch (sensor_num) {
+    case ES_THERMAL_MARGIN:
+      return "MB_SOC_THERMAL_MARGIN_C";
+    case ES_VR_VCCIN_TEMP_C:
+      return "MB_VR_VCCIN_TEMP_C";
+    case ES_VR_FIVRA_TEMP_C:
+      return "MB_VR_FIVRA_TEMP_C";
+    case ES_VR_EHV_TEMP_C:
+      return "MB_VR_EHV_TEMP_C";
+    case ES_VR_VCCD_TEMP_C:
+      return "MB_VR_VCCD_TEMP_C";
+    case ES_VR_FAON_TEMP_C:
+      return "MB_VR_FAON_TEMP_C";
+    default:
+      return "UNKNOWN_SENSOR";
+  }
+}
+
+static bool
+is_server_unr_shutdown_sensor(uint8_t fru, uint8_t snr_num, uint8_t thresh)
+{
+  if ((fru != FRU_SERVER) || (thresh != UNR_THRESH)) {
+    return false;
+  }
+
+  switch (snr_num) {
+    case ES_THERMAL_MARGIN:
+    case ES_VR_VCCIN_TEMP_C:
+    case ES_VR_FIVRA_TEMP_C:
+    case ES_VR_EHV_TEMP_C:
+    case ES_VR_VCCD_TEMP_C:
+    case ES_VR_FAON_TEMP_C:
+      return true;
+    default:
+      return false;
+  }
+}
+#endif
+
 void
 pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh)
 {
   char key[MAX_KEY_LEN] = {0};
 
 #ifdef CONFIG_GRANDCANYON2
-  if ((fru == FRU_SERVER) && (snr_num == ES_THERMAL_MARGIN) && (thresh == UNR_THRESH)) {
+  if (is_server_unr_shutdown_sensor(fru, snr_num, thresh) == true) {
     uint8_t server_power_status = 0;
     if (pal_get_server_power(fru, &server_power_status) < 0) {
       syslog(LOG_WARNING, "%s: Fail to get server power status", __func__);
@@ -4667,7 +4710,7 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
       if (pal_set_server_power(fru, SERVER_POWER_OFF) < 0) {
         syslog(LOG_ERR, "%s: Fail to send host power off command", __func__);
       } else {
-        syslog(LOG_CRIT, "SERVER_POWER_OFF due to CPU temperature is over UNR");
+        syslog(LOG_CRIT, "SERVER_POWER_OFF due to %s over UNR", pal_get_server_sensor_name(snr_num));
       }
     }
   }

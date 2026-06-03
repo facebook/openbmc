@@ -695,7 +695,7 @@ class Fscd(object):
 
         """
         self.need_rearm = self.check_fan_rearm()
-        ctx = {}
+        ctx = {"dt": time_difference}
         if not self.sensor_filter_all:
             sensors_tuples = self.machine.read_sensors(self.sensors, None)
             self.fsc_safe_guards(sensors_tuples)
@@ -724,7 +724,6 @@ class Fscd(object):
             Logger.debug("Calculate")
 
             if chassis_intrusion_boost_flag == 0 and sensor_violated_flag == 0:
-                ctx["dt"] = time_difference
                 ctx["dead_fans"] = dead_fans
                 ctx["last_pwm"] = zone.last_pwm
                 ignore_fan_mode = False

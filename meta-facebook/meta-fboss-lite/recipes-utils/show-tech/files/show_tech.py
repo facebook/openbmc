@@ -21,11 +21,11 @@
 # This script is for dumping debug information on fbdarwin
 
 import argparse
-import subprocess
 import os
 import re
+import subprocess
 
-VERSION = "0.10"
+VERSION = "0.20"
 
 
 def runCmd(cmd, echo=False, verbose=False, timeout=60, ignoreReturncode=False):
@@ -63,11 +63,12 @@ def runCmd(cmd, echo=False, verbose=False, timeout=60, ignoreReturncode=False):
     return output
 
 
-def dumpWeutil(target="chassis_eeprom", verbose=False):
-    cmd = "weutil -e {}".format(target)
+def eepromDump():
+    # This function relies on the external script 'dump_eeprom.sh'.
+    # Please ensure it is present and executable at /usr/local/bin/dump_eeprom.sh
     print(
-        "##### {} SERIAL NUMBER #####\n{}".format(
-            target, runCmd(cmd, echo=verbose, verbose=verbose)
+        "##### EEPROM DUMP #####\n{}".format(
+            runCmd("/usr/local/bin/dump_eeprom.sh", verbose=True, echo=True)
         )
     )
 
@@ -110,19 +111,36 @@ def logDump():
     print("########## DEBUG LOGS ##########")
     print("################################\n")
     print("#### DMESG LOG ####\n{}\n\n".format(runCmd("dmesg", echo=True)))
-    print(
-        "#### BOOT CONSOLE LOG ####\n{}\n\n".format(
-            runCmd("cat /var/log/boot", echo=True)
-        )
-    )
+
     print(
         "#### LINUX MESSAGES LOG ####\n{}\n\n".format(
             runCmd("cat /var/log/messages", echo=True)
         )
     )
+    print(
+        "#### REDFISH LOG ####\n{}\n\n".format(runCmd("cat /tmp/rest.log", echo=True))
+    )
+    print(
+        "#### MNT DATA LOG ####\n{}\n\n".format(
+            runCmd("cat /mnt/data/logfile", echo=True)
+        )
+    )
+    print(
+        "#### CRI_SEL ####\n{}\n\n".format(runCmd("cat /mnt/data/cri_sel", echo=True))
+    )
     print("################################")
     print("########## HOST (uServer) CPU LOGS ##########")
     print("################################\n")
+    print(
+        "#### HOST POST CODE Current ####\n{}\n\n".format(
+            runCmd("cat /var/log/postcode_current", echo=True)
+        )
+    )
+    print(
+        "#### HOST POST CODE Last ####\n{}\n\n".format(
+            runCmd("cat /mnt/data/postcode_last", echo=True)
+        )
+    )
     print("#### mTerm LOG ####\n")
 
     file_list = os.listdir("/var/log/")
@@ -140,19 +158,12 @@ def dumpNetworkStatus():
 
 
 def i2cDetectDump():
+    # This function relies on the external script 'i2c_scan.sh'.
+    # Please ensure it is present and executable at /usr/local/bin/i2c_scan.sh
     print("################################")
     print("########## I2C DETECT ##########")
     print("################################\n")
-
-    for bus in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13]:
-        print(
-            "##### SMBus{} INFO #####\n{}".format(
-                bus,
-                runCmd(
-                    "i2cdetect -y {}".format(bus), verbose=True, timeout=5, echo=True
-                ),
-            )
-        )
+    print(runCmd("/usr/local/bin/i2c_scan.sh", echo=True, verbose=True))
 
 
 def sensorDump():
@@ -195,10 +206,7 @@ def showtech(verboseLevel=0):
     print("##### BMC UPTIME #####\n{}".format(runCmd("uptime")))
 
     if verbose:
-        dumpWeutil("chassis_eeprom", verbose=verbose)
-        dumpWeutil("scm_eeprom", verbose=verbose)
-        dumpWeutil("bmc_eeprom", verbose=verbose)
-        dumpEmmc()
+        eepromDump()
         dumpBootInfo()
         dumpOobStatus()
         dumpNetworkStatus()

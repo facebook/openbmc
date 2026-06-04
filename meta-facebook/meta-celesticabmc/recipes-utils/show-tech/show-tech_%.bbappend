@@ -1,4 +1,4 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,11 +15,9 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-require recipes-core/images/fboss-lite-image.inc
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-IMAGE_INSTALL += " \
-    host-recovery \
-    fbmc-snapshot \
-    ssd-mond \
-    show-tech \
+LOCAL_URI += "\
+    file://dump_eeprom.sh \
+    file://i2c_scan.sh \
     "

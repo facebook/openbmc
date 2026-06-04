@@ -30,6 +30,8 @@ LOCAL_URI = " \
     file://meta_info.sh \
     file://oob-mdio-util.sh \
     file://oob-status.sh \
+    file://dump_eeprom.sh \
+    file://i2c_scan.sh \
     file://show_tech.py \
     "
 
@@ -40,6 +42,8 @@ SHOWTECH_UTILS_FILES = " \
     meta_info.sh \
     oob-mdio-util.sh \
     oob-status.sh \
+    dump_eeprom.sh \
+    i2c_scan.sh \
     show_tech.py \
     "
 

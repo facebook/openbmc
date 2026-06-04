@@ -21,4 +21,5 @@ IMAGE_INSTALL += " \
     host-recovery \
     fbmc-snapshot \
     ssd-mond \
+    show-tech \
     "

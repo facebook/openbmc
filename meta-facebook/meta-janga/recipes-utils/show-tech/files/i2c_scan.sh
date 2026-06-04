@@ -1,4 +1,6 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+#!/bin/bash
+#
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,12 +16,21 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-require recipes-core/images/fboss-lite-image.inc
+# shellcheck disable=SC1091
+# read the Hardware revision from MCB CPLD register
+. /usr/local/bin/openbmc-utils.sh
 
-IMAGE_INSTALL += " \
-    host-recovery \
-    fbmc-snapshot \
-    ssd-mond \
-    show-tech \
-    "
+scan_i2cbus() {
+    # Define bus list
+    local buses=(0 1 2 3 4 5 6 7 8 9 10 11 12 13 15)
+    
+    for bus in "${buses[@]}"; do
+        echo -e "##### I2C Bus${bus} INFO #####"
+        # i2cdetect command
+        timeout 5 i2cdetect -y "$bus"
+        echo ""
+    done
+}
+scan_i2cbus

@@ -23,4 +23,5 @@ IMAGE_INSTALL += " \
     leakage-mond \
     apml  \
     postcode-mond \
+    show-tech \
     "

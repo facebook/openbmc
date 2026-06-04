@@ -89,8 +89,7 @@ write_spi1_dev(){
     echo "Writing $file to ${dev}..."
 
     tmpfile="/tmp/temp_image"
-    flashsize=$(flashrom -p linux_mtd:dev="$SPI1_MTD_INDEX" | grep -i kB | xargs echo | cut -d '(' -f 2 | cut -d ' ' -f 0)
-    targetsize=$((flashsize * 1024))
+    targetsize=$(flashrom -p linux_mtd:dev="$SPI1_MTD_INDEX" --flash-size | tail -n 1)
 
     # store to the temp-file
     cp "$file" "$tmpfile"

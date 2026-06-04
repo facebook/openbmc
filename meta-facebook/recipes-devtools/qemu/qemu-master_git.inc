@@ -71,6 +71,7 @@ SRC_URI += " \
            file://0531-aspeed-add-montblanc-bmc-reference-from-fuji.patch \
            file://0532-aspeed-add-janga-bmc.patch \
            file://0533-hw-ssi-aspeed_smc-don-t-bus-fault-on-flash-window-ac.patch \
+           file://0534-aspeed-Add-sanmiguel-bmc.patch \
            "
 
 SRC_URI += " \

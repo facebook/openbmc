@@ -1,0 +1,56 @@
+From 5464ad1285968456edf6212ac5fb0f710d4fda38 Mon Sep 17 00:00:00 2001
+From: Rick Yazwinski <rickyaz@meta.com>
+Date: Thu, 4 Jun 2026 10:38:06 -0700
+Subject: [PATCH] aspeed: Add sanmiguel-bmc
+
+Add a QEMU machine for Facebook SanMiguel, an Nvidia compute platform
+built on the AST2600. Values mirror the board's meta-sanmiguel
+machine.conf and device tree (aspeed-bmc-facebook-sanmiguel.dts):
+
+  - SoC      : ast2600-a3
+  - DRAM     : 2 GiB    (memory@80000000, reg <0x80000000 0x80000000>)
+  - SPI flash: 128 MiB  (mx66l1g45g; FLASH_SIZE = 131072 KiB)
+  - console  : UART5    (chosen stdout-path = serial4)
+  - BMC NIC  : mac0     (&mac0 RGMII + &mdio0 in the DTS)
+
+With ASPEED_MAC0_ON the default network backend is wired to
+ftgmac100[0]; the remaining MACs are left unconnected, matching the
+hardware.
+
+Signed-off-by: Rick Yazwinski <rickyaz@meta.com>
+---
+ hw/arm/aspeed_ast2600_evb.c | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+diff --git a/hw/arm/aspeed_ast2600_evb.c b/hw/arm/aspeed_ast2600_evb.c
+index bda4e9f98b..973b1d2a58 100644
+--- a/hw/arm/aspeed_ast2600_evb.c
++++ b/hw/arm/aspeed_ast2600_evb.c
+@@ -310,6 +310,24 @@ static const struct FBMachineData fb_machines[] = {
+         .stdout_path = ASPEED_DEV_UART5,
+         .ram_size    = FUJI_BMC_RAM_SIZE,
+     },
++    {
++        /*
++         * Facebook SanMiguel (Nvidia compute, AST2600). Values mirror the
++         * board's meta-sanmiguel machine.conf / device tree
++         * (aspeed-bmc-facebook-sanmiguel.dts): 2 GiB DRAM, 128 MiB SPI flash,
++         * console on UART5 (chosen stdout serial4), and the BMC NIC on mac0
++         * (RGMII, &mac0 + &mdio0 in the DTS).
++         */
++        .name        = "sanmiguel-bmc",
++        .desc        = "Facebook SanMiguel BMC (Cortex-A7)",
++        .soc_name    = "ast2600-a3",
++        .hw_strap1   = AST2600_EVB_HW_STRAP1,
++        .hw_strap2   = AST2600_EVB_HW_STRAP2,
++        .flash_model = "mx66l1g45g",
++        .macs_mask   = ASPEED_MAC0_ON,
++        .stdout_path = ASPEED_DEV_UART5,
++        .ram_size    = FUJI_BMC_RAM_SIZE,
++    },
+ };
+ 
+ DEFINE_FB_MACHINES()
+-- 
+2.53.0-Meta
+

@@ -484,9 +484,8 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
 #ifdef CONFIG_GRANDCANYON2
   ret = bic_get_server_power_status(status);
   if (ret < 0) {
-    // if bic not responding, we reset status to SERVER_12V_ON
     syslog(LOG_WARNING, "%s(): BIC no response, server DC power status is unknown\n", __func__);
-    return -1;
+    return ret;
   }
 #else
   ret = pal_get_fpga_ver_cache(I2C_BS_FPGA_BUS, GET_FPGA_VER_ADDR, server_fpga_ver);

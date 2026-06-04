@@ -1,4 +1,4 @@
-From 6989bf9e87086c3037b3e4acb61eaba672fbcdd5 Mon Sep 17 00:00:00 2001
+From 8f14f74b05d1694d614b43ab03d0dcd9c5e9a5f7 Mon Sep 17 00:00:00 2001
 From: Dirk Chen <dirkchen@amd.com>
 Date: Tue, 13 Jan 2026 01:06:34 +0800
 Subject: [PATCH] cpld: Add firmware update support for Lattice XO5-15D
@@ -156,7 +156,7 @@ Signed-off-by: Dirk Chen <dirkchen@amd.com>
  create mode 100644 cpld/lattice/lattice_xo5d_cpld.hpp
 
 diff --git a/cpld/lattice/lattice_base_cpld.hpp b/cpld/lattice/lattice_base_cpld.hpp
-index eeb91bd..1ee88ef 100644
+index c0ea4ce..8b566a2 100644
 --- a/cpld/lattice/lattice_base_cpld.hpp
 +++ b/cpld/lattice/lattice_base_cpld.hpp
 @@ -20,6 +20,7 @@ enum class latticeChip
@@ -164,18 +164,18 @@ index eeb91bd..1ee88ef 100644
      LCMXO3D_9400,
      LFMXO5_25,
 +    LFMXO5_15D,
+     LFMXO5_35T,
+     LFMXO5_65T,
      UNSUPPORTED = -1,
- };
- 
-@@ -39,6 +40,7 @@ inline std::string getLatticeChipStr(latticeChip chip,
+@@ -41,6 +42,7 @@ inline std::string getLatticeChipStr(latticeChip chip,
          {latticeChip::LCMXO3D_4300, "LCMXO3D_4300"},
          {latticeChip::LCMXO3D_9400, "LCMXO3D_9400"},
          {latticeChip::LFMXO5_25, "LFMXO5_25"},
 +        {latticeChip::LFMXO5_15D, "LFMXO5_15D"},
+         {latticeChip::LFMXO5_35T, "LFMXO5_35T"},
+         {latticeChip::LFMXO5_65T, "LFMXO5_65T"},
      };
-     auto chipString = chipStringMap.at(chip);
-     if (chipStringMap.find(chip) == chipStringMap.end())
-@@ -66,6 +68,7 @@ enum class latticeChipFamily
+@@ -70,6 +72,7 @@ enum class latticeChipFamily
      XO2,
      XO3,
      XO5,
@@ -183,30 +183,30 @@ index eeb91bd..1ee88ef 100644
  };
  
  struct cpldInfo
-@@ -86,6 +89,7 @@ const std::map<latticeChip, cpldInfo> supportedDeviceMap = {
-     {latticeChip::LCMXO3D_9400,
+@@ -91,6 +94,7 @@ const std::map<latticeChip, cpldInfo> supportedDeviceMap = {
       {latticeChipFamily::XO3, {0x21, 0x2e, 0x30, 0x43}}},
-     {latticeChip::LFMXO5_25, {latticeChipFamily::XO5, {}}},
+     {latticeChip::LFMXO5_25,
+      {latticeChipFamily::XO5, {0x01, 0x0F, 0x70, 0x43}}},
 +    {latticeChip::LFMXO5_15D, {latticeChipFamily::XO5D, {}}},
- };
- 
- struct cpldI2cInfo
+     {latticeChip::LFMXO5_35T,
+      {latticeChipFamily::XO5, {0x09, 0x0F, 0xC0, 0x43}}},
+     {latticeChip::LFMXO5_65T,
 diff --git a/cpld/lattice/lattice_cpld_factory.cpp b/cpld/lattice/lattice_cpld_factory.cpp
-index 0436e09..56b946c 100644
+index ad5d9ca..bc87d6d 100644
 --- a/cpld/lattice/lattice_cpld_factory.cpp
 +++ b/cpld/lattice/lattice_cpld_factory.cpp
-@@ -2,6 +2,7 @@
- 
+@@ -3,6 +3,7 @@
  #include "lattice_xo3_cpld.hpp"
- #include "lattice_xo5_cpld.hpp"
+ #include "lattice_xo5_standard_cpld.hpp"
+ #include "lattice_xo5_tseries_cpld.hpp"
 +#include "lattice_xo5d_cpld.hpp"
  
  #include <phosphor-logging/lg2.hpp>
  
-@@ -33,6 +34,10 @@ std::unique_ptr<LatticeBaseCPLD> LatticeCPLDFactory::getLatticeCPLD(
-             return std::make_unique<LatticeXO5CPLD>(
-                 CPLDInterface::ctx, CPLDInterface::bus, CPLDInterface::address,
-                 chipModelStr, target, false);
+@@ -44,6 +45,10 @@ std::unique_ptr<LatticeBaseCPLD> LatticeCPLDFactory::getLatticeCPLD(
+                     CPLDInterface::ctx, CPLDInterface::bus,
+                     CPLDInterface::address, chipModelStr, target, false);
+             }
 +        case latticeChipFamily::XO5D:
 +            return std::make_unique<LatticeXO5DCPLD>(
 +                CPLDInterface::ctx, CPLDInterface::bus, CPLDInterface::address,
@@ -1035,17 +1035,17 @@ index 0000000..647c2b6
 +
 +} // namespace phosphor::software::cpld
 diff --git a/cpld/meson.build b/cpld/meson.build
-index d05a124..bdf4692 100644
+index de05e51..3512a2d 100644
 --- a/cpld/meson.build
 +++ b/cpld/meson.build
-@@ -5,6 +5,7 @@ cpld_vendor_src = files(
-     'lattice/lattice_cpld_factory.cpp',
-     'lattice/lattice_xo3_cpld.cpp',
-     'lattice/lattice_xo5_cpld.cpp',
+@@ -7,6 +7,7 @@ cpld_vendor_src = files(
+     'lattice/lattice_xo5_base_cpld.cpp',
+     'lattice/lattice_xo5_standard_cpld.cpp',
+     'lattice/lattice_xo5_tseries_cpld.cpp',
 +    'lattice/lattice_xo5d_cpld.cpp',
  )
  
  exe = executable(
 -- 
-2.52.0
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From d650972007eba6e3e41971feff867509536ca702 Mon Sep 17 00:00:00 2001
+From d8557b84c92f1f771ee218f1e88b91127e9fb838 Mon Sep 17 00:00:00 2001
 From: Christopher Meis <christopher.meis@9elements.com>
 Date: Wed, 17 Sep 2025 09:07:06 +0200
 Subject: [PATCH] Multi-host/HW-inventory: add processor subtree
@@ -179,7 +179,7 @@ Signed-off-by: Christopher Meis <christopher.meis@9elements.com>
  2 files changed, 92 insertions(+), 49 deletions(-)
 
 diff --git a/redfish-core/lib/processor.hpp b/redfish-core/lib/processor.hpp
-index 98795600..58a792cc 100644
+index 28e4c1c6..7273ff8e 100644
 --- a/redfish-core/lib/processor.hpp
 +++ b/redfish-core/lib/processor.hpp
 @@ -20,6 +20,7 @@
@@ -214,7 +214,7 @@ index 98795600..58a792cc 100644
  /**
   * @brief Fill out uuid info of a processor by
   * requesting data from the given D-Bus object.
-@@ -791,26 +809,29 @@ inline void handleProcessorSubtree(
+@@ -793,26 +811,29 @@ inline void handleProcessorSubtree(
   */
  inline void getProcessorObject(
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
@@ -257,7 +257,7 @@ index 98795600..58a792cc 100644
          [asyncResp, processorId, callback{std::move(callback)}](
              const boost::system::error_code& ec,
              const dbus::utility::MapperGetSubTreeResponse& subtree) {
-@@ -821,16 +842,16 @@ inline void getProcessorObject(
+@@ -823,16 +844,16 @@ inline void getProcessorObject(
  
  inline void getProcessorData(
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
@@ -278,7 +278,7 @@ index 98795600..58a792cc 100644
  
      for (const auto& [serviceName, interfaceList] : serviceMap)
      {
-@@ -991,23 +1012,20 @@ inline void handleProcessorGet(
+@@ -993,23 +1014,20 @@ inline void handleProcessorGet(
      {
          return;
      }
@@ -312,7 +312,7 @@ index 98795600..58a792cc 100644
  }
  
  inline void doPatchProcessor(
-@@ -1081,11 +1099,34 @@ inline void handleProcessorPatch(
+@@ -1083,11 +1101,34 @@ inline void handleProcessorPatch(
      // Check for 404 and find matching D-Bus object, then run
      // property patch handlers if that all succeeds.
      getProcessorObject(
@@ -348,7 +348,7 @@ index 98795600..58a792cc 100644
  inline void handleProcessorCollectionGet(
      App& app, const crow::Request& req,
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
-@@ -1095,32 +1136,34 @@ inline void handleProcessorCollectionGet(
+@@ -1097,32 +1138,34 @@ inline void handleProcessorCollectionGet(
      {
          return;
      }
@@ -423,5 +423,5 @@ index dbbe2a37..127af335 100644
          boost::urls::format(
              "/redfish/v1/Systems/{}/Actions/ComputerSystem.Reset", systemName);
 -- 
-2.52.0
+2.53.0-Meta
 

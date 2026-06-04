@@ -1,4 +1,4 @@
-From ea438fd9f6592e88d3e4e329dca89ec4691b5702 Mon Sep 17 00:00:00 2001
+From 6d6763edd6dc895d43c522abca771ff8b06b2581 Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Tue, 5 May 2026 20:34:03 +0800
 Subject: [PATCH] TODO: nvidia-gpu: add leak sensors
@@ -37,7 +37,7 @@ index fca8396..9768527 100644
              std::shared_ptr<SmaDevice>& sma = smaDevices[smaName];
  
 diff --git a/src/nvidia-gpu/NvidiaGpuMctpVdm.cpp b/src/nvidia-gpu/NvidiaGpuMctpVdm.cpp
-index 84b8ab7..02229d1 100644
+index 13791c9..a8981f2 100644
 --- a/src/nvidia-gpu/NvidiaGpuMctpVdm.cpp
 +++ b/src/nvidia-gpu/NvidiaGpuMctpVdm.cpp
 @@ -8,6 +8,8 @@
@@ -49,7 +49,7 @@ index 84b8ab7..02229d1 100644
  #include <bit>
  #include <cerrno>
  #include <cstddef>
-@@ -1523,4 +1525,120 @@ int decodeGetEccErrorCountsResponse(
+@@ -1606,4 +1608,120 @@ int decodeGetEccErrorCountsResponse(
      return buffer.getError();
  }
  
@@ -171,18 +171,18 @@ index 84b8ab7..02229d1 100644
 +
  } // namespace gpu
 diff --git a/src/nvidia-gpu/NvidiaGpuMctpVdm.hpp b/src/nvidia-gpu/NvidiaGpuMctpVdm.hpp
-index 49c9393..03003ca 100644
+index 54b715d..fa8c5ad 100644
 --- a/src/nvidia-gpu/NvidiaGpuMctpVdm.hpp
 +++ b/src/nvidia-gpu/NvidiaGpuMctpVdm.hpp
-@@ -58,6 +58,7 @@ enum class PlatformEnvironmentalCommands : uint8_t
-     GET_CLOCK_LIMIT = 0x11,
+@@ -59,6 +59,7 @@ enum class PlatformEnvironmentalCommands : uint8_t
+     GET_VIOLATION_DURATION = 0x45,
      GET_CURRENT_UTILIZATION = 0x47,
      GET_ECC_ERROR_COUNTS = 0x7D,
 +    GET_LEAK_DETECTION_INFO = 0x17,
  };
  
  enum class PlatformEnvironmentalEvent : uint8_t
-@@ -172,6 +173,9 @@ constexpr size_t maxInventoryDataSize = 256;
+@@ -173,6 +174,9 @@ constexpr size_t maxInventoryDataSize = 256;
  constexpr size_t queryDeviceIdentificationRequestSize =
      ocp::accelerator_management::commonRequestSize;
  
@@ -192,7 +192,7 @@ index 49c9393..03003ca 100644
  constexpr size_t getNumericSensorReadingRequestSize =
      ocp::accelerator_management::commonRequestSize + 1;
  
-@@ -407,4 +411,20 @@ int decodeGetEccErrorCountsResponse(
+@@ -435,4 +439,20 @@ int decodeGetEccErrorCountsResponse(
      uint32_t& sramUncorrectedParity, uint32_t& dramCorrected,
      uint32_t& dramUncorrected);
  
@@ -524,10 +524,10 @@ index 0000000..a012338
 +        commonPhysicalContextInterface;
 +};
 diff --git a/src/nvidia-gpu/meson.build b/src/nvidia-gpu/meson.build
-index 12b2c15..a8a5193 100644
+index db60d66..4657aaa 100644
 --- a/src/nvidia-gpu/meson.build
 +++ b/src/nvidia-gpu/meson.build
-@@ -26,6 +26,7 @@ gpusensor_sources = files(
+@@ -28,6 +28,7 @@ gpusensor_sources = files(
      'NvidiaPciePort.cpp',
      'NvidiaPciePortMetrics.cpp',
      'NvidiaSmaDevice.cpp',
@@ -536,5 +536,5 @@ index 12b2c15..a8a5193 100644
      'SerialQueue.cpp',
  )
 -- 
-2.52.0
+2.53.0-Meta
 

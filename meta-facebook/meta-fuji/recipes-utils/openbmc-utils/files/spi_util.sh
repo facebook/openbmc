@@ -37,6 +37,7 @@ check_duplicate_process()
     echo $pid 1>&200
 }
 
+#shellcheck disable=SC2317
 remove_pid_file()
 {
     if [ -f $PIDFILE ]; then
@@ -102,8 +103,7 @@ write_spi1_dev(){
     echo "Writing $file to ${dev}..."
 
     tmpfile="$file"_ext
-    flashsize=$(flashrom -p linux_mtd:dev=$SPI1_MTD_INDEX | grep -i kB | xargs echo | cut -d '(' -f 2 | cut -d ' ' -f 0)
-    targetsize=$((flashsize * 1024))
+    targetsize=$(flashrom -p linux_mtd:dev=$SPI1_MTD_INDEX --flash-size | tail -n 1)
 
     case ${dev} in
         "PCIE_SW"|"TH4_PCIE_FLASH"|"COME_BIOS"|"DOM_FPGA_ALL"|"DOM_FPGA_PIM1"|"DOM_FPGA_PIM2"|"DOM_FPGA_PIM3"|"DOM_FPGA_PIM4"|"DOM_FPGA_PIM5"|"DOM_FPGA_PIM6"|"DOM_FPGA_PIM7"|"DOM_FPGA_PIM8")
@@ -717,6 +717,7 @@ operate_spi2_dev(){
 }
 
 
+#shellcheck disable=SC2317
 cleanup_spi(){
     if [ $ret -eq 1 ]; then
         exit 1

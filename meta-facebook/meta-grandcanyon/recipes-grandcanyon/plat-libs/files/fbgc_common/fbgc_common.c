@@ -849,7 +849,11 @@ fbgc_common_validate_img(const char *img_path, uint8_t comp, uint8_t expected_bo
  * Returns 0 on success and sets *is_mp. */
 static int
 gpio_name_type_read_stage(bool *is_mp) {
+#ifdef CONFIG_GRANDCANYON2
+  const char *pins[BOARD_ID_PIN_NUM] = {"GPIOH3", "GPIOH2", "GPIOH1", "GPIOH0"};
+#else
   const char *pins[BOARD_ID_PIN_NUM] = {"GPIOH2", "GPIOH1", "GPIOH0"};
+#endif
   uint8_t raw = 0;
   int i = 0;
 

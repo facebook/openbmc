@@ -1,4 +1,4 @@
-From acf146dac0ca95fa2c9cea5e5585bebcc9d2c28f Mon Sep 17 00:00:00 2001
+From 748c805f3608f735a4b2313550d961a198b9fb75 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Fri, 26 Dec 2025 14:35:14 +0800
 Subject: [PATCH] terminus: replace inventory and sensor configuration
@@ -645,7 +645,7 @@ index 8db58f1..ca1b3ef 100644
      auto tid = mappedTid.value();
      termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 0141817..7e915e9 100644
+index eda8a42..3563281 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -80,9 +80,9 @@ void MctpDiscovery::getMctpInfos(std::map<MctpInfo, Availability>& mctpInfoMap)
@@ -672,7 +672,7 @@ index 0141817..7e915e9 100644
                      searchConfigurationFor(pldm::utils::DBusHandler(),
                                             mctpInfo);
                      mctpInfos.emplace_back(std::move(mctpInfo));
-@@ -392,7 +392,8 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
+@@ -393,7 +393,8 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
              const UUID& uuid = getEndpointUUIDProp(service, objPath);
  
              MctpInfo mctpInfo(std::get<eid>(epProps), uuid, "",
@@ -682,7 +682,7 @@ index 0141817..7e915e9 100644
              searchConfigurationFor(pldm::utils::DBusHandler(), mctpInfo);
              if (!std::ranges::contains(existingMctpInfos, mctpInfo))
              {
-@@ -497,71 +498,164 @@ std::string MctpDiscovery::constructMctpReactorObjectPath(
+@@ -498,71 +499,164 @@ std::string MctpDiscovery::constructMctpReactorObjectPath(
             "/endpoints/" + std::to_string(eid) + "/configured_by";
  }
  
@@ -990,5 +990,5 @@ index 3eb57cf..71ce9c4 100644
      constexpr auto mockedDbusPath =
          "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
 -- 
-2.52.0
+2.53.0-Meta
 

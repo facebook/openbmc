@@ -1,4 +1,4 @@
-From 86130fa4e80f2c2d55f41353cbb6be3809c9c4d2 Mon Sep 17 00:00:00 2001
+From 7d2d55c58855bc6517e3956e8a5513ae263be5a7 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 17:16:49 +0800
 Subject: [PATCH] requester: refresh MCTP endpoints after host reaches running
@@ -29,7 +29,7 @@ Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
  2 files changed, 158 insertions(+)
 
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index f5e6e5f..cc55b68 100644
+index 9a0c8c0..42bf5b1 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -32,6 +32,12 @@ MctpDiscovery::MctpDiscovery(
@@ -45,7 +45,7 @@ index f5e6e5f..cc55b68 100644
      handlers(list)
  {
      std::map<MctpInfo, Availability> currentMctpInfoMap;
-@@ -419,6 +425,144 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
+@@ -420,6 +426,144 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
      }
  }
  
@@ -223,5 +223,5 @@ index 96a35e9..dd0ba18 100644
       * D-Bus signal raised.
       *
 -- 
-2.52.0
+2.53.0-Meta
 

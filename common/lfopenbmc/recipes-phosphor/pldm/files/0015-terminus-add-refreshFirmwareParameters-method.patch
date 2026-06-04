@@ -1,4 +1,4 @@
-From b3eac91dbab2b1ca56a7e63d64b4ac8cb6f8e5ba Mon Sep 17 00:00:00 2001
+From 2c32c9754aa20e9f841cd85ccbe1df5493ad9248 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 7 May 2026 21:56:34 +0800
 Subject: [PATCH] terminus: add refreshFirmwareParameters method
@@ -252,10 +252,10 @@ index 1ff5e64..d939280 100644
       *         the updated EM configurations
       *
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 7e915e9..f5e6e5f 100644
+index 3563281..9a0c8c0 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
-@@ -478,6 +478,18 @@ void MctpDiscovery::updateMctpEndpointAvailability(const MctpInfo& mctpInfo,
+@@ -479,6 +479,18 @@ void MctpDiscovery::updateMctpEndpointAvailability(const MctpInfo& mctpInfo,
      }
  }
  
@@ -301,5 +301,5 @@ index 20f9c5c..96a35e9 100644
       *
       *  @param[in] mctpInfoMap - information of discovered MCTP endpoints
 -- 
-2.52.0
+2.53.0-Meta
 

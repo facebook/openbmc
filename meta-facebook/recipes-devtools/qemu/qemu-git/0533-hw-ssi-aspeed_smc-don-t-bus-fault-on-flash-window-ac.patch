@@ -1,0 +1,70 @@
+From 143d07ce3652f58b927ebef4aceb08c34c75ef7e Mon Sep 17 00:00:00 2001
+From: Rick Yazwinski <rickyaz@meta.com>
+Date: Thu, 4 Jun 2026 08:21:12 -0700
+Subject: [PATCH] hw/ssi/aspeed_smc: don't bus-fault on flash window access in
+ read mode
+
+Commit 80c5be9458 ("hw/ssi/aspeed_smc: Convert mem ops to
+read/write_with_attrs for error handling") made aspeed_smc_flash_read()
+and aspeed_smc_flash_write() return MEMTX_ERROR from their default
+(unhandled command mode) switch arms instead of silently ignoring the
+access as before.
+
+On AST2500, U-Boot performs a stray write into the flash AHB window
+while the controller is still in fast-read mode (CTRL_FREADMODE) during
+recovery boot. Real Aspeed hardware ignores such an access; it does not
+raise a bus error. Returning MEMTX_ERROR data-aborts the guest, which
+breaks AST2500 SPL/U-Boot boot -- the board spins in a "Booting
+recovery U-Boot." loop and never reaches Linux.
+
+Restore the pre-regression behaviour: log the unexpected mode but treat
+the access as a no-op (read returns zeroed data) and return MEMTX_OK.
+Genuine error propagation for the unwritable-flash case is preserved.
+
+Reproduced with: qemu-system-aarch64 -machine tiogapass-bmc on a signed
+fbtp (AST2500) image; boots to Linux with this change, loops without it.
+---
+ hw/ssi/aspeed_smc.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/hw/ssi/aspeed_smc.c b/hw/ssi/aspeed_smc.c
+index 3767ad0c7a..9dd5df48e4 100644
+--- a/hw/ssi/aspeed_smc.c
++++ b/hw/ssi/aspeed_smc.c
+@@ -519,8 +519,15 @@ static MemTxResult aspeed_smc_flash_read(void *opaque, hwaddr addr,
+         aspeed_smc_flash_unselect(fl);
+         break;
+     default:
++        /*
++         * A read from the flash AHB window while the controller is in an
++         * unexpected command mode is ignored by real Aspeed hardware -- it
++         * does not raise a bus error. Returning MEMTX_ERROR here data-aborts
++         * the guest and breaks AST2500 SPL/U-Boot boot (recovery loop), so
++         * keep the legacy behaviour: return zeroed data with MEMTX_OK.
++         */
+         aspeed_smc_error("invalid flash mode %d", aspeed_smc_flash_mode(fl));
+-        return MEMTX_ERROR;
++        break;
+     }
+ 
+     trace_aspeed_smc_flash_read(fl->cs, addr, size, *data,
+@@ -662,8 +669,15 @@ static MemTxResult aspeed_smc_flash_write(void *opaque, hwaddr addr,
+         aspeed_smc_flash_unselect(fl);
+         break;
+     default:
++        /*
++         * A write to the flash AHB window while the controller is in a read
++         * command mode (e.g. fast-read) is ignored by real Aspeed hardware --
++         * it does not raise a bus error. AST2500 U-Boot performs such a stray
++         * write during recovery boot; returning MEMTX_ERROR data-aborts the
++         * guest and breaks the boot (recovery loop). Ignore it with MEMTX_OK.
++         */
+         aspeed_smc_error("invalid flash mode %d", aspeed_smc_flash_mode(fl));
+-        return MEMTX_ERROR;
++        break;
+     }
+ 
+     return MEMTX_OK;
+-- 
+2.53.0-Meta
+

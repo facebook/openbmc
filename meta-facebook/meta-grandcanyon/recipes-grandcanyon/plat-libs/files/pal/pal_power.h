@@ -39,6 +39,11 @@
 #define BMC_CPLD_RESET_HIGH      0x33    // (bit 0 = 1)
 #define BMC_CPLD_RESET_DELAY        1       // Hold time in seconds
 
+// ES FPGA (Server CPLD) DC Power Status - GC2 specific
+// Device: I2C Bus 3 (I2C_ES_FPGA_BUS), 7-bit addr 0x0F (ES_FPGA_SLAVE_ADDR)
+#define ES_FPGA_DC_POWER_STATUS_OFFSET  0x0F    // Register offset for DC power status
+#define ES_FPGA_DC_POWER_STATUS_BIT     1       // Bit 1: 1=DC_ON, 0=DC_OFF
+
 #else
 #define BS_FPGA_SERVER_POWER_CTRL 0x0F
 #define BS_FPGA_SERVER_POWER_STATUS 0x04

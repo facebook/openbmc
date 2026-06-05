@@ -454,7 +454,11 @@ pal_get_server_12v_power(uint8_t fru, uint8_t *status) {
 int
 pal_get_server_power(uint8_t fru, uint8_t *status) {
   int ret = 0;
-#ifndef CONFIG_GRANDCANYON2
+#ifdef CONFIG_GRANDCANYON2
+  int i2cfd = 0;
+  uint8_t cpld_offset = ES_FPGA_DC_POWER_STATUS_OFFSET;
+  uint8_t res = 0;
+#else
   int i2cfd = 0;
   char server_fpga_ver[MAX_VALUE_LEN] = {0};
   char server_fpga_stage[MAX_VALUE_LEN] = {0};
@@ -482,6 +486,36 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
   }
   
 #ifdef CONFIG_GRANDCANYON2
+  // Primary path: Read DC power status from ES FPGA (Server CPLD) via I2C
+  // Device: I2C Bus 3, 7-bit addr 0x0F, offset 0x0F, bit 1
+  i2cfd = i2c_cdev_slave_open(I2C_ES_FPGA_BUS, ES_FPGA_SLAVE_ADDR, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    syslog(LOG_WARNING, "%s(): Failed to open ES FPGA I2C bus %d, fallback to BIC",
+           __func__, I2C_ES_FPGA_BUS);
+    goto bic_fallback;
+  }
+
+  ret = i2c_rdwr_msg_transfer(i2cfd, (ES_FPGA_SLAVE_ADDR << 1),
+                              &cpld_offset, sizeof(cpld_offset), &res, sizeof(res));
+  close(i2cfd);
+
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s(): ES FPGA no response, fallback to BIC", __func__);
+    goto bic_fallback;
+  }
+
+  // Bit 1: 1=DC_ON (SERVER_POWER_ON), 0=DC_OFF (SERVER_POWER_OFF)
+  *status = (res >> ES_FPGA_DC_POWER_STATUS_BIT) & 0x01;
+  return 0;
+
+bic_fallback:
+  // Re-check 12V power status — use same logic as function entry
+  ret = pal_get_server_12v_power(fru, status);
+  if (ret < 0 || (*status) == SERVER_12V_OFF) {
+    return ret;
+  }
+
+  // Fallback path: Query BIC via IPMB (legacy method)
   ret = bic_get_server_power_status(status);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s(): BIC no response, server DC power status is unknown\n", __func__);

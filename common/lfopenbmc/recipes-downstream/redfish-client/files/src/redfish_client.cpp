@@ -221,7 +221,7 @@ void RedfishClient::runSensorLoop()
 
 auto RedfishClient::loadConfig() -> sdbusplus::async::task<>
 {
-    auto compatiblePlatformName = co_await getCompatiblePlatformName();
+    auto compatiblePlatformName = co_await getCompatiblePlatformNames();
     config = loadCompatibleConfig(configDir, compatiblePlatformName);
     co_return;
 }
@@ -241,8 +241,9 @@ void RedfishClient::registerLogMappers()
     info("Mapper registration complete");
 }
 
-Config RedfishClient::loadCompatibleConfig(const std::string& configDir,
-                            const std::string& compatiblePlatformName)
+Config RedfishClient::loadCompatibleConfig(
+    const std::string& configDir,
+    const std::vector<std::string>& compatiblePlatformNames)
 {
     namespace fs = std::filesystem;
     for (const auto& entry : fs::directory_iterator(configDir))
@@ -258,15 +259,18 @@ Config RedfishClient::loadCompatibleConfig(const std::string& configDir,
                                  std::istreambuf_iterator<char>());
         auto config = Config::parse(jsonContents);
 
-        if (config.compatible == compatiblePlatformName)
+        for (auto platformName: compatiblePlatformNames)
         {
-            info("Matched config file: {FILE}", "FILE",
-                 entry.path().string());
-            return config;
+            if (config.compatible == platformName)
+            {
+                info("Matched config file: {FILE}", "FILE",
+                     entry.path().string());
+                return config;
+            }
         }
     }
-    error("No matching config file found for platform: {PLATFORM}",
-          "PLATFORM", compatiblePlatformName);
+    error("No matching config file found for platform list: {PLATFORM}",
+          "PLATFORM", std::format("{}", compatiblePlatformNames));
     throw std::runtime_error("No matching config file found");
 }
 
@@ -293,10 +297,11 @@ auto RedfishClient::subtree_for_target_interface(
     co_return;
 }
 
-auto RedfishClient::getCompatiblePlatformName() -> sdbusplus::async::task<std::string>
+auto RedfishClient::getCompatiblePlatformNames()
+    -> sdbusplus::async::task<std::vector<std::string>>
 {
-    std::string platformName;
-    while (!ctx.stop_requested() && platformName.empty())
+    std::vector<std::string> platformNames;
+    while (!ctx.stop_requested() && platformNames.empty())
     {
         try
         {
@@ -313,19 +318,21 @@ auto RedfishClient::getCompatiblePlatformName() -> sdbusplus::async::task<std::s
                                 "xyz.openbmc_project.Inventory.Decorator.Compatible")
                             .template get_property<
                                 std::vector<std::string>>(ctx, "Names");
-                    if (!names.empty())
+                    for (auto name : names)
                     {
-                        platformName = names[0];
                         info("Compatible : Names : {PLATFORMNAME}",
-                             "PLATFORMNAME", platformName);
+                             "PLATFORMNAME", name);
                     }
+
+                    platformNames.insert(platformNames.end(), names.begin(),
+                                         names.end());
                     co_return;
                 },
                 1);
 
-            if (platformName.empty())
+            if (platformNames.empty())
             {
-                info("platformName is still empty. Retry again");
+                info("platformNames is still empty. Retry again");
             }
         }
         catch (const sdbusplus::exception::SdBusError& e)
@@ -335,7 +342,7 @@ auto RedfishClient::getCompatiblePlatformName() -> sdbusplus::async::task<std::s
         co_await sdbusplus::async::sleep_for(
             ctx, std::chrono::milliseconds(500));
     }
-    co_return platformName;
+    co_return platformNames;
 }
 
 } // namespace redfish_client::core

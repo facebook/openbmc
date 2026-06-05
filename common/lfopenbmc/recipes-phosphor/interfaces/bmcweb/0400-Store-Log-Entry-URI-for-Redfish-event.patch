@@ -1,0 +1,344 @@
+From fa805b62c538d1385372040bdced74deba40fe3f Mon Sep 17 00:00:00 2001
+From: Archit Mehrotra <architmehrotra@meta.com>
+Date: Sat, 4 Apr 2026 11:20:55 -0700
+Subject: [PATCH] Store Log Entry URI for Redfish event
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Store Log Entry URI for a Redfish event. This is to ensure
+the originating log entry can be tracked from the RF event.
+
+This change modifies the event schema version from v1_4_0 to v1_7_0
+only in one code path which involves filterAndSendEventLogs().
+This code path is exclusively utilized to send EventLog entries
+to subscribers.
+These can be send in 2 ways
+1. Filesystem inotify (/var/log filesystem)
+2. D-Bus signal (phosphor-logging)
+
+Both of the above options utilize the exact same code path:
+sendEventsToSubs() → filterAndSendEventLogs() → formatEventLogEntry() →
+sendEventToSubscriber()
+
+So the changes done are limited to subscription events only
+with no regression impact to other code paths or any other
+functionality.
+
+Client-facing changes:
+ - Added LogEntry navigation property to event entries,
+   linking back to the originating EventLog entry.
+ - Addy MessageSeverity field to align with the
+   DMTF Event schema.
+ - Bumped Event schema version from v1_4_0 to v1_7_0, which
+   is the minimum version that includes the LogEntry property.
+
+Tested:
+- Unit tests pass
+- Built an image with my code, ran it in QEMU:
+  1. Created a subscription pointing to my receiver service [1]
+  2. Verified that the subscription has been created successfully [2]
+  3. Injected a log entry with command: [3]. It injected a DBus
+     log entry with a name that has a corresponding RF message ID.
+  4. BMCWeb sent event to the receiver. See [4] it's a debug from the
+     receiver web service which logged raw payload containing the
+     newly added LogEntry and MessageSeverity fields along with the
+     existing Severity field .
+  5. Ran command to see the corresponding log entry from the
+     LogService using the Log Entry ID from the RF event
+     to ensure correct match: [5]
+  6. Ran rf_service_validator against the QEMU instance.
+- Verified against COMMON_ERRORS.md
+- Verified newly added properties exist in both CSDL and Json schema
+  https://redfish.dmtf.org/schemas/v1/Event_v1.xml
+
+[1] Command to create subscription with the QEMU instance with output
+```
+  curl -k -u root:0penBmc -H "Content-Type: application/json" \
+  -X POST \
+   -d '{
+     "Context": "127.0.0.1",
+    "DeliveryRetryPolicy": "RetryForever",
+     "Destination": "http://127.0.0.1:8888/events",
+     "EventFormatType": "Event",
+     "HeartbeatIntervalMinutes": 10,
+     "Protocol": "Redfish",
+     "SendHeartbeat": false,
+     "SubscriptionType": "RedfishEvent",
+     "VerifyCertificate": true
+   }' \
+   https://{$bmc}/redfish/v1/EventService/Subscriptions
+
+{
+  "@Message.ExtendedInfo": [
+    {
+      "@odata.type": "#Message.v1_1_1.Message",
+      "Message": "The resource was created successfully.",
+      "MessageArgs": [],
+      "MessageId": "Base.1.19.Created",
+      "MessageSeverity": "OK",
+      "Resolution": "None."
+    }
+  ]
+}
+
+```
+[2] Command to verify that the subscription has been created and its output:
+
+```
+curl -s -k -u root:0penBmc -X GET https://{$bmc}/redfish/v1/EventService/Subscriptions
+
+{
+  "@odata.id": "/redfish/v1/EventService/Subscriptions",
+  "@odata.type": "#EventDestinationCollection.EventDestinationCollection",
+  "Members": [
+    {
+      "@odata.id": "/redfish/v1/EventService/Subscriptions/3943065927"
+    }
+  ],
+  "Members@odata.count": 1,
+  "Name": "Event Destination Collections"
+}
+```
+
+[3] Command to inject a log entry and its output:
+```
+log-create xyz.openbmc_project.Sensor.Threshold.ReadingAboveUpperCriticalThreshold  --json '{ "SENSOR_NAME": "TEST_SENSOR", "READING_VALUE": 99.5, "UNITS": "xyz.openbmc_project.Sensor.Value.Unit.DegreesC", "THRESHOLD_VALUE": 8.0 }'
+<3> OPENBMC_MESSAGE_ID={"severity":2,"xyz.openbmc_project.Sensor.Threshold.ReadingAboveUpperCriticalThreshold":{"READING_VALUE":99.5,"SENSOR_NAME":"TEST_SENSOR","THRESHOLD_VALUE":85.0,"UNITS":"xyz.openbmc_project.Sensor.Value.Unit.DegreesC","_SOURCE":{"COLUMN":45,"FILE":"/usr/src/debug/phosphor-logging/1.0+git/log_create_main.cpp","FUNCTION":"int generate_event(const std::string&, const nlohmann::json_abi_v3_12_0::json&, std::optional<int>)","LINE":35,"PID":21229}}}
+/xyz/openbmc_project/logging/entry/184
+```
+
+[4] Raw payload received by the web service:
+```
+Received request: "{\n  \"@odata.type\": \"#Event.v1_7_0.Event\",\n  \"Events\": [\n    {\n      \"Context\": \"127.0.0.1\",\n      \"EventId\": \"2\",\n      \"EventTimestamp\": \"2026-05-07T05:10:51.597-07:00\",\n      \"LogEntry\": {\n        \"@odata.id\": \"/redfish/v1/Managers/bmc/LogServices/EventLog/Entries/184\"\n      },\n      \"MemberId\": \"0\",\n      \"Message\": \"Sensor 'TEST_SENSOR' reading of 99.5 (xyz.openbmc_project.Sensor.Value.Unit.DegreesC) is above the 85.0 upper critical threshold.\",\n      \"MessageArgs\": [\n        \"TEST_SENSOR\",\n        \"99.5\",\n        \"xyz.openbmc_project.Sensor.Value.Unit.DegreesC\",\n        \"85.0\"\n      ],\n      \"MessageId\": \"SensorEvent.1.0.ReadingAboveUpperCriticalThreshold\",\n      \"MessageSeverity\": \"Critical\",\n      \"Severity\": \"Critical\"\n    }\n  ],\n  \"Id\": \"3\",\n  \"Name\": \"Event Log\"\n}"
+```
+[5] Logservices request and output
+
+```
+curl -ks -u root:0penBmc -H "Content-Type: application/json"  https://{$bmc}/redfish/v1/Managers/bmc/LogServices/EventLog/Entries/184
+
+{
+  "@odata.id": "/redfish/v1/Managers/bmc/LogServices/EventLog/Entries/184",
+  "@odata.type": "#LogEntry.v1_9_0.LogEntry",
+  "AdditionalDataURI": "/redfish/v1/Managers/bmc/LogServices/EventLog/Entries/184/attachment",
+  "Created": "2026-05-07T05:10:51.597-07:00",
+  "EntryType": "Event",
+  "Id": "184",
+  "Message": "Sensor 'TEST_SENSOR' reading of 99.5 (xyz.openbmc_project.Sensor.Value.Unit.DegreesC) is above the 85.0 upper critical threshold.",
+  "MessageArgs": [
+    "TEST_SENSOR",
+    "99.5",
+    "xyz.openbmc_project.Sensor.Value.Unit.DegreesC",
+    "85.0"
+  ],
+  "MessageId": "SensorEvent.1.0.ReadingAboveUpperCriticalThreshold",
+  "Modified": "2026-05-07T05:10:51.597-07:00",
+  "Name": "Manager Event Log Entry",
+  "Resolution": "Check the condition of the resources listed in RelatedItem.",
+  "Resolved": false,
+  "Severity": "Critical"
+}
+```
+
+Change-Id: I46de49f47cc3783070a1d207394d5e1f02ff11be
+Signed-off-by: Archit Mehrotra <architmehrotra@meta.com>
+---
+ docs/Redfish.md                              | 16 +++++++++++
+ redfish-core/include/event_log.hpp           |  5 ++++
+ redfish-core/src/event_log.cpp               | 30 +++++++++++++++++++-
+ redfish-core/src/subscription.cpp            |  4 +--
+ test/redfish-core/include/event_log_test.cpp | 24 +++++++++++++++-
+ 5 files changed, 75 insertions(+), 4 deletions(-)
+
+diff --git a/docs/Redfish.md b/docs/Redfish.md
+index 77b667f..ce13954 100644
+--- a/docs/Redfish.md
++++ b/docs/Redfish.md
+@@ -622,6 +622,22 @@ Fields common to all schemas
+ - Protocol
+ - SendHeartbeat
+ 
++### Event (payload sent to EventDestination subscribers)
++
++#### Event
++
++- @odata.type
++- Events[]/Context
++- Events[]/EventId
++- Events[]/EventTimestamp
++- Events[]/LogEntry
++- Events[]/Message
++- Events[]/MessageArgs
++- Events[]/MessageId
++- Events[]/MessageSeverity
++- Id
++- Name
++
+ ### /redfish/v1/JsonSchemas/
+ 
+ #### JsonSchemaFileCollection
+diff --git a/redfish-core/include/event_log.hpp b/redfish-core/include/event_log.hpp
+index 18b2650..04bf50d 100644
+--- a/redfish-core/include/event_log.hpp
++++ b/redfish-core/include/event_log.hpp
+@@ -3,6 +3,7 @@
+ #include "event_logs_object_type.hpp"
+ #include "utils/time_utils.hpp"
+ 
++#include <boost/url/url.hpp>
+ #include <nlohmann/json.hpp>
+ 
+ #include <cstdint>
+@@ -28,6 +29,10 @@ int getEventLogParams(const std::string& logEntry, std::string& timestamp,
+                       std::string& messageID,
+                       std::vector<std::string>& messageArgs);
+ 
++boost::urls::url formatEventLogEntryUri(std::string_view eventLogParent,
++                                        std::string_view eventLogPath,
++                                        const std::string& logEntryID);
++
+ void formatEventLogEntry(uint64_t eventId,
+                          const redfish::EventLogObjectsType& logEntry,
+                          const std::string& customText,
+diff --git a/redfish-core/src/event_log.cpp b/redfish-core/src/event_log.cpp
+index 83ffe75..aa13b94 100644
+--- a/redfish-core/src/event_log.cpp
++++ b/redfish-core/src/event_log.cpp
+@@ -3,11 +3,20 @@
+ // SPDX-FileCopyrightText: Copyright 2020 Intel Corporation
+ #include "event_log.hpp"
+ 
++#include "bmcweb_config.h"
++
+ #include "event_logs_object_type.hpp"
+ #include "logging.hpp"
+ #include "str_utility.hpp"
+ #include "utils/time_utils.hpp"
+-
++// Suppress clang-tidy warning. This header is required
++// for the nlohmann::adl_serializer<boost::urls::url> specialization,
++// invoked implicitly when assigning a boost::urls::url to nlohmann::json.
++// NOLINTNEXTLINE(misc-include-cleaner)
++#include "utility.hpp"
++
++#include <boost/url/format.hpp>
++#include <boost/url/url.hpp>
+ #include <nlohmann/json.hpp>
+ 
+ #include <cerrno>
+@@ -109,6 +118,15 @@ int getEventLogParams(const std::string& logEntry, std::string& timestamp,
+     return 0;
+ }
+ 
++boost::urls::url formatEventLogEntryUri(std::string_view eventLogParent,
++                                        std::string_view eventLogPath,
++                                        const std::string& logEntryID)
++{
++    return boost::urls::format(
++        "/redfish/v1/{}/{}/LogServices/EventLog/Entries/{}", eventLogParent,
++        eventLogPath, logEntryID);
++}
++
+ void formatEventLogEntry(uint64_t eventId,
+                          const redfish::EventLogObjectsType& logEntry,
+                          const std::string& customText,
+@@ -129,11 +147,21 @@ void formatEventLogEntry(uint64_t eventId,
+     logEntryJson["EventId"] = std::to_string(eventId);
+ 
+     logEntryJson["Severity"] = logEntry.severity;
++    logEntryJson["MessageSeverity"] = logEntry.severity;
+     logEntryJson["Message"] = logEntry.message;
+     logEntryJson["MessageId"] = logEntry.messageId;
+     logEntryJson["MessageArgs"] = logEntry.messageArgs;
+     logEntryJson["EventTimestamp"] = std::move(timestamp);
+     logEntryJson["Context"] = customText;
++    std::string_view eventLogParent = "Managers";
++    std::string_view eventLogPath = BMCWEB_REDFISH_MANAGER_URI_NAME;
++    if constexpr (BMCWEB_REDFISH_EVENTLOG_LOCATION == "systems")
++    {
++        eventLogParent = "Systems";
++        eventLogPath = BMCWEB_REDFISH_SYSTEM_URI_NAME;
++    }
++    logEntryJson["LogEntry"]["@odata.id"] =
++        formatEventLogEntryUri(eventLogParent, eventLogPath, logEntry.id);
+ }
+ 
+ } // namespace event_log
+diff --git a/redfish-core/src/subscription.cpp b/redfish-core/src/subscription.cpp
+index 8b028d3..47dd52f 100644
+--- a/redfish-core/src/subscription.cpp
++++ b/redfish-core/src/subscription.cpp
+@@ -100,7 +100,7 @@ void Subscription::sendHeartbeatEvent()
+     eventRecord.emplace_back(std::move(eventMessage));
+ 
+     nlohmann::json msgJson;
+-    msgJson["@odata.type"] = "#Event.v1_4_0.Event";
++    msgJson["@odata.type"] = "#Event.v1_7_0.Event";
+     msgJson["Name"] = "Heartbeat";
+     msgJson["Events"] = std::move(eventRecord);
+ 
+@@ -241,7 +241,7 @@ void Subscription::filterAndSendEventLogs(
+     }
+ 
+     nlohmann::json msg;
+-    msg["@odata.type"] = "#Event.v1_4_0.Event";
++    msg["@odata.type"] = "#Event.v1_7_0.Event";
+     msg["Id"] = std::to_string(eventId);
+     msg["Name"] = "Event Log";
+     msg["Events"] = std::move(logEntryArray);
+diff --git a/test/redfish-core/include/event_log_test.cpp b/test/redfish-core/include/event_log_test.cpp
+index f57c26c..79a68e3 100644
+--- a/test/redfish-core/include/event_log_test.cpp
++++ b/test/redfish-core/include/event_log_test.cpp
+@@ -1,6 +1,7 @@
+ #include "event_log.hpp"
+ #include "event_logs_object_type.hpp"
+ 
++#include <boost/url/url_view.hpp>
+ #include <nlohmann/json.hpp>
+ 
+ #include <cerrno>
+@@ -127,11 +128,12 @@ TEST(RedfishEventLog, FormatEventLogEntrySuccess)
+     std::string message = "Power supply PSU 1 fan FAN 2 failed.";
+     std::string messageID = "OpenBMC.0.1.PowerSupplyFanFailed";
+     std::vector<std::string> messageArgs = {"PSU 1", "FAN 2"};
++    std::string severity = "Warning";
+     std::string timestamp = "my-timestamp";
+     std::string customText = "customText";
+ 
+     const redfish::EventLogObjectsType& logEntry{
+-        logEntryID, message, messageID, messageArgs, "", "", timestamp};
++        logEntryID, message, messageID, messageArgs, "", severity, timestamp};
+ 
+     nlohmann::json::object_t logEntryJson;
+     formatEventLogEntry(eventId, logEntry, customText, logEntryJson);
+@@ -157,6 +159,26 @@ TEST(RedfishEventLog, FormatEventLogEntrySuccess)
+ 
+     ASSERT_TRUE(logEntryJson.contains("Context"));
+     ASSERT_EQ(logEntryJson["Context"], "customText");
++
++    ASSERT_TRUE(logEntryJson.contains("MessageSeverity"));
++    ASSERT_EQ(logEntryJson["MessageSeverity"], "Warning");
++
++    ASSERT_TRUE(logEntryJson.contains("LogEntry"));
++}
++
++TEST(RedfishEventLog, FormatEventLogEntryUriSystems)
++{
++    ASSERT_EQ(
++        formatEventLogEntryUri("Systems", "system", "123"),
++        boost::urls::url_view(
++            "/redfish/v1/Systems/system/LogServices/EventLog/Entries/123"));
++}
++
++TEST(RedfishEventLog, FormatEventLogEntryUriManagers)
++{
++    ASSERT_EQ(formatEventLogEntryUri("Managers", "bmc", "456"),
++              boost::urls::url_view(
++                  "/redfish/v1/Managers/bmc/LogServices/EventLog/Entries/456"));
+ }
+ } // namespace
+ } // namespace redfish::event_log
+-- 
+2.53.0-Meta
+

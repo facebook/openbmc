@@ -35,3 +35,7 @@ SRC_URI:append:fb-compute-multihost = " \
     file://0300-Multi-host-HW-inventory-add-processor-subtree.patch \
     file://0301-Multi-host-HW-inventory-add-memory-subtree.patch \
 "
+
+SRC_URI:append = " \
+    file://0400-Store-Log-Entry-URI-for-Redfish-event.patch \
+"

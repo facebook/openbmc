@@ -13,7 +13,11 @@ FILES:${PN} += " \
     "
 
 S = "${UNPACKDIR}"
-SRC_URI = "file://ftdi_mdio.c \
+SRC_URI = "file://ftdi_mdio_cli.c \
+           file://ftdi_mdio_core.c \
+           file://ftdi_mdio_core.h \
+           file://ftdi_mdio_daemon.c \
+           file://ftdi_mdio_daemon.h \
            file://meson.build \
            file://marvell-switch-init_evt \
            file://marvell-switch-init_evt.service \

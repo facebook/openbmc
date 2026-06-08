@@ -22,4 +22,5 @@ IMAGE_INSTALL += " \
     show-tech \
     rackmon \
     ftdicmd \
+    apml \
     "

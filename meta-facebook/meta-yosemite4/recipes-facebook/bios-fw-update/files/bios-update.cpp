@@ -22,7 +22,7 @@
 using TargetDetermined = sdbusplus::event::xyz::openbmc_project::software::Update::TargetDetermined;
 using UpdateSuccessful = sdbusplus::event::xyz::openbmc_project::software::Update::UpdateSuccessful;
 using VerificationFailed = sdbusplus::error::xyz::openbmc_project::software::Update::VerificationFailed;
-using ApplyFailed = sdbusplus::error::xyz::openbmc_project::software::Update::ApplyFailed;
+using ApplyFailed = sdbusplus::error::xyz::openbmc_project::software::Update::ActivateFailed;
 
 constexpr auto BIOS_NAME = "BIOS";
 constexpr auto HOST_STATE_SERVICE = "xyz.openbmc_project.State.Host";
@@ -341,7 +341,7 @@ int main(int argc, char** argv)
         std::cerr << "Error: BIOS image file is required unless --erase is specified.\n";
         return -1;
     }
-    
+
     if (eraseFlag) {
         std::cout << "[ERASE] Start erasing BIOS flash ...\n";
         int ret = update_bic_usb_bios(slotId, imagePath, cpuType, /*eraseOnly=*/true);
@@ -351,7 +351,7 @@ int main(int argc, char** argv)
             std::cout << "[ERASE] BIOS erase: fail\n";
         return ret;
     }
-    
+
     std::ifstream package(imagePath, std::ios::binary);
     if (!package) {
         std::cerr << "Failed to open package file: " << imagePath << std::endl;
@@ -489,8 +489,8 @@ int main(int argc, char** argv)
     } while (--retryCount > 0);
     if (retryCount <= 0)
     {
-        std::cerr << 
-            "Failed to acquire lock after multiple attempts, retry time exhausted" << 
+        std::cerr <<
+            "Failed to acquire lock after multiple attempts, retry time exhausted" <<
             std::endl;
         addSelBySelType(SEL_TYPE::ApplyFailed, slotId, imagePath);
         close(fd);

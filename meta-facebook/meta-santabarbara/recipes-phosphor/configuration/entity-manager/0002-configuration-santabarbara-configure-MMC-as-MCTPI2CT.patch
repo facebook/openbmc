@@ -1,4 +1,4 @@
-From ff660ded284dbcbf6a38122332f7239c24704072 Mon Sep 17 00:00:00 2001
+From 14fdde3b3bf6006c25866d874ffbbb23e6852975 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 16:31:12 +0800
 Subject: [PATCH] configuration: santabarbara: configure MMC as MCTPI2CTarget

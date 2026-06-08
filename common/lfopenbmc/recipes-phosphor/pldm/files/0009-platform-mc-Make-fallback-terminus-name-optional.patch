@@ -1,4 +1,4 @@
-From 3d3f8b1647428a3afd2bc54551c19fe3c1309eaf Mon Sep 17 00:00:00 2001
+From 134820b014ace2ac6ecfc8a579e07c67c3ca6936 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Mon, 13 Oct 2025 11:10:37 +0000
 Subject: [PATCH] platform-mc: Make fallback terminus name optional
@@ -45,7 +45,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  3 files changed, 19 insertions(+)
 
 diff --git a/meson.build b/meson.build
-index 67971ad..3375572 100644
+index aa4dcaa..daa8033 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -127,6 +127,10 @@ conf_data.set(
@@ -79,10 +79,10 @@ index 8a0ed9e..d08fc13 100644
  option(
      'fw-update-pkg-inotify',
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 35751d7..76d50f6 100644
+index 0bec89f..d831e24 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
-@@ -238,7 +238,14 @@ void Terminus::parseTerminusPDRs()
+@@ -240,7 +240,14 @@ void Terminus::parseTerminusPDRs()
  
      if (terminusName.empty())
      {

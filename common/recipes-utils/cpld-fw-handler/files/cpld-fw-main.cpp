@@ -16,7 +16,7 @@
 
 using TargetDetermined = sdbusplus::event::xyz::openbmc_project::software::Update::TargetDetermined;
 using UpdateSuccessful = sdbusplus::event::xyz::openbmc_project::software::Update::UpdateSuccessful;
-using ApplyFailed = sdbusplus::error::xyz::openbmc_project::software::Update::ApplyFailed;
+using ApplyFailed = sdbusplus::error::xyz::openbmc_project::software::Update::ActivateFailed;
 using VerificationFailed = sdbusplus::error::xyz::openbmc_project::software::Update::VerificationFailed;
 
 enum class SEL_TYPE
@@ -181,7 +181,7 @@ int main(int argc, char** argv)
 
     auto cpldManager = CpldLatticeManager(bus, addr, imagePath, chip, interface,
                                           target, debugMode);
-    
+
     addSelBySelType(SEL_TYPE::TargetDetermined, imagePath, chip, cpldType, info);
 
     if (version->parsed())
@@ -220,8 +220,8 @@ int main(int argc, char** argv)
         } while (--retryCount > 0);
         if (retryCount <= 0)
         {
-            std::cerr << 
-                "Failed to acquire lock after multiple attempts, retry time exhausted" << 
+            std::cerr <<
+                "Failed to acquire lock after multiple attempts, retry time exhausted" <<
                 std::endl;
             addSelBySelType(SEL_TYPE::ApplyFailed, imagePath, chip, cpldType, info);
             close(fd);

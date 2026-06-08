@@ -1,4 +1,4 @@
-From e9f1100b890e098b3d806a0a3b581168f8f2f0b9 Mon Sep 17 00:00:00 2001
+From b3e784b664e22bdb5d2d59573cdbfc43471c65ed Mon Sep 17 00:00:00 2001
 From: Marco Kawajiri <kawajiri@meta.com>
 Date: Fri, 5 Apr 2024 07:54:27 -0700
 Subject: [PATCH] user-mgr: Allow non-IPMI usernames with dot '.' character
@@ -66,7 +66,7 @@ index 29000fb..5f3f483 100644
  
  TEST_F(UserMgrInTest, UserAddNotRootFailedWithInternalFailure)
 diff --git a/user_mgr.cpp b/user_mgr.cpp
-index ca4eca9..370e1ea 100644
+index e0b61d8..f1783ff 100644
 --- a/user_mgr.cpp
 +++ b/user_mgr.cpp
 @@ -130,6 +130,11 @@ constexpr std::array<const char*, 4> allowedGroupPrefix = {
@@ -81,7 +81,7 @@ index ca4eca9..370e1ea 100644
  void checkAndThrowsForGroupChangeAllowed(const std::string& groupName)
  {
      bool allowed = false;
-@@ -311,8 +316,8 @@ void UserMgr::throwForUserExists(const std::string& userName)
+@@ -307,8 +312,8 @@ void UserMgr::throwForUserExists(const std::string& userName)
  void UserMgr::throwForUserNameConstraints(
      const std::string& userName, const std::vector<std::string>& groupNames)
  {
@@ -92,7 +92,7 @@ index ca4eca9..370e1ea 100644
      {
          if (userName.length() > ipmiMaxUserNameLen)
          {
-@@ -334,8 +339,8 @@ void UserMgr::throwForUserNameConstraints(
+@@ -330,8 +335,8 @@ void UserMgr::throwForUserNameConstraints(
          elog<InvalidArgument>(Argument::ARGUMENT_NAME("User name"),
                                Argument::ARGUMENT_VALUE("Invalid length"));
      }
@@ -104,5 +104,5 @@ index ca4eca9..370e1ea 100644
          lg2::error("Invalid username '{USERNAME}'", "USERNAME", userName);
          elog<InvalidArgument>(Argument::ARGUMENT_NAME("User name"),
 -- 
-2.52.0
+2.53.0-Meta
 

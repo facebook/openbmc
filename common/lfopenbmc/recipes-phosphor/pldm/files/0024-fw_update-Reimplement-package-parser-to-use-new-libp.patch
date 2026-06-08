@@ -1,4 +1,4 @@
-From 96bf5efcf6e0928bc4b59bff80b7eca2186c66be Mon Sep 17 00:00:00 2001
+From 48c13dd3634e9471814605fcce879b37a52dd51e Mon Sep 17 00:00:00 2001
 From: Carter Chen <carter.chen.wiwynn@gmail.com>
 Date: Mon, 1 Dec 2025 08:46:59 +0000
 Subject: [PATCH] fw_update: Reimplement package parser to use new libpldm API
@@ -123,11 +123,12 @@ index 8a5cb95..7b5c9a0 100644
  } // namespace fw_update
  
 diff --git a/common/utils.cpp b/common/utils.cpp
-index 8b975fc..21be1a1 100644
+index 2d08925..d35ff99 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
-@@ -1,8 +1,11 @@
- #include "utils.hpp"
+@@ -2,9 +2,12 @@
+ 
+ #include "common/start_lifetime_as.hpp"
  
 +#include <fcntl.h>
  #include <libpldm/pdr.h>
@@ -138,7 +139,7 @@ index 8b975fc..21be1a1 100644
  
  #include <xyz/openbmc_project/BIOSConfig/Manager/client.hpp>
  #include <xyz/openbmc_project/Common/error.hpp>
-@@ -13,12 +16,14 @@
+@@ -15,6 +18,7 @@
  
  #include <algorithm>
  #include <cctype>
@@ -146,14 +147,15 @@ index 8b975fc..21be1a1 100644
  #include <ctime>
  #include <fstream>
  #include <iostream>
- #include <map>
+@@ -22,6 +26,7 @@
+ #include <memory>
  #include <stdexcept>
  #include <string>
 +#include <system_error>
  #include <vector>
  
  PHOSPHOR_LOG2_USING;
-@@ -965,5 +970,160 @@ long int generateSwId()
+@@ -975,5 +980,160 @@ long int generateSwId()
      return random() % 10000;
  }
  
@@ -1762,10 +1764,10 @@ index 99f8ff2..016ea48 100644
      FirmwareInventoryManagerTest inventoryManager(&mockHandler, configurations,
                                                    updateManager);
 diff --git a/fw-update/test/inventory_manager_test.cpp b/fw-update/test/inventory_manager_test.cpp
-index da0dfb7..2779081 100644
+index 0b0672f..19124ad 100644
 --- a/fw-update/test/inventory_manager_test.cpp
 +++ b/fw-update/test/inventory_manager_test.cpp
-@@ -19,7 +19,7 @@ class InventoryManagerTest : public testing::Test
+@@ -22,7 +22,7 @@ class InventoryManagerTest : public testing::Test
          reqHandler(nullptr, event, instanceIdDb, false, seconds(1), 2,
                     milliseconds(100)),
          updateManager(event, reqHandler, instanceIdDb, outDescriptorMap,

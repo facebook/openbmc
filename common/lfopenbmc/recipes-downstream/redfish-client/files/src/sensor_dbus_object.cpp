@@ -50,6 +50,11 @@ std::optional<ValueIntf::Unit> toMaybeIntfUnits(const std::string& unitsStr)
         return ValueIntf::Unit::Watts;
     }
 
+    if (unitsStr == "A")
+    {
+        return ValueIntf::Unit::Amperes;
+    }
+
     return std::nullopt;
 }
 

@@ -233,7 +233,7 @@ void RedfishClient::registerLogMappers()
     if (config->components.has_value()) {
         for (const auto& componentName : config->components.value()) {
             info("Registering component: {COMPONENT}", "COMPONENT", componentName);
-            component_config::registerComponent(componentName);
+            component_config::registerComponent(componentName, *config);
         }
     }
 

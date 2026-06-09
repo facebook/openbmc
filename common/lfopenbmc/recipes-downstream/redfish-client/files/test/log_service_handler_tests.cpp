@@ -4,6 +4,7 @@
 #include <redfish_client/core/cper_mapper.hpp>
 #include <redfish_client/core/hgx_ps_run_pwr_fault_mapper.hpp>
 #include <redfish_client/core/hgx_thermal_mapper.hpp>
+#include <redfish_client/core/sensor_threshold_mapper.hpp>
 
 #include <nlohmann/json.hpp>
 #include <sdbusplus/server.hpp>
@@ -164,7 +165,12 @@ class LogServiceHandlerTest : public ::testing::Test
     void SetUp() override
     {
         auto& registry = core::LogEntryMapperRegistry::instance();
+        std::vector<core::SensorMapper> testMappers = {
+            {"/redfish/v1/Chassis/HGX_GPU_2/Sensors/HGX_GPU_2_DRAM_0_Temp_0",
+             "temperature", "HGX_GPU2_DRAM_TEMP_C"}};
+
         registry.registerMapper(std::make_unique<HgxPsRunPwrFaultMapper>(), 110);
+        registry.registerMapper(std::make_unique<SensorThresholdMapper>(testMappers), 106);
         registry.registerMapper(std::make_unique<HgxThermalMapper>(), 105);
         registry.registerMapper(std::make_unique<CperMapper>(), 100);
         registry.registerMapper(std::make_unique<UnhandledMapper>(), 0);
@@ -843,6 +849,109 @@ TEST_F(LogServiceHandlerTest, HgxThermalMapperTest)
               log2.message);
     EXPECT_EQ("/redfish/v1/Systems/HGX_Baseboard_0/Processors/GPU_SXM_8",
               log2.additionalData["DEVICE"]);
+}
+
+TEST_F(LogServiceHandlerTest, SensorThresholdMappingTest)
+{
+    struct TestCase
+    {
+        std::string redfishMsgId;
+        std::string expectedDbusMsg;
+        LoggingLevel expectedSeverity;
+        bool isError; // Errors have THRESHOLD_VALUE, Events (NormalRange) don't
+    };
+
+    std::vector<TestCase> testCases = {
+        {"SensorEvent.1.0.0.ReadingAboveUpperFatalThreshold",
+         "xyz.openbmc_project.Sensor.Threshold.ReadingAboveUpperHardShutdownThreshold",
+         LoggingLevel::Critical, true},
+        {"SensorEvent.1.0.0.ReadingAboveUpperCriticalThreshold",
+         "xyz.openbmc_project.Sensor.Threshold.ReadingAboveUpperCriticalThreshold",
+         LoggingLevel::Critical, true},
+        {"SensorEvent.1.0.0.ReadingAboveUpperCautionThreshold",
+         "xyz.openbmc_project.Sensor.Threshold.ReadingAboveUpperWarningThreshold",
+         LoggingLevel::Warning, true},
+        {"SensorEvent.1.0.0.ReadingBelowLowerCriticalThreshold",
+         "xyz.openbmc_project.Sensor.Threshold.ReadingBelowLowerCriticalThreshold",
+         LoggingLevel::Critical, true},
+        {"SensorEvent.1.0.0.ReadingBelowLowerFatalThreshold",
+         "xyz.openbmc_project.Sensor.Threshold.ReadingBelowLowerHardShutdownThreshold",
+         LoggingLevel::Critical, true},
+        {"SensorEvent.1.0.0.ReadingBelowLowerCautionThreshold",
+         "xyz.openbmc_project.Sensor.Threshold.ReadingBelowLowerWarningThreshold",
+         LoggingLevel::Warning, true},
+        {"SensorEvent.1.0.0.SensorReadingNormalRange",
+         "xyz.openbmc_project.Sensor.Threshold.SensorReadingNormalRange",
+         LoggingLevel::Informational, false}};
+
+    sdbusplus::async::context ctx;
+    auto handler =
+        std::make_shared<LogServiceHandler>(ctx, "fake.url", std::nullopt);
+
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+        for (size_t idx = 0; idx < testCases.size(); ++idx)
+        {
+            const auto& tc = testCases[idx];
+            std::string entryId = std::to_string(idx + 1);
+
+            // Construct the minimal JSON for this case
+            nlohmann::json member = {
+                {"@odata.id",
+                 "/redfish/v1/Systems/System0/LogServices/EventLog/Entries/" + entryId},
+                {"@odata.type", "#LogEntry.v1_15_0.LogEntry"},
+                {"Created", "2025-01-01T12:00:00+00:00"},
+                {"EntryType", "Event"},
+                {"Id", entryId},
+                {"MessageId", tc.redfishMsgId},
+                {"MessageArgs", {"HGX_GPU_2_DRAM_0_Temp_0", "100.0", "Cel", "90.0"}},
+                {"Severity", "Critical"},
+                {"Links",
+                 {"OriginOfCondition",
+                  {"@odata.id",
+                   "/redfish/v1/Chassis/HGX_GPU_2/Sensors/HGX_GPU_2_DRAM_0_Temp_0"}}}
+            };
+            nlohmann::json collection = {
+                {"@odata.id",
+                 "/redfish/v1/Systems/System0/LogServices/EventLog/Entries"},
+                {"@odata.type", "#LogEntryCollection.LogEntryCollection"},
+                {"Members@odata.count", 1},
+                {"Members", nlohmann::json::array({member})}};
+
+            auto logEntries =
+                redfish_binding::LogEntryCollection::parseLogEntryCollection(
+                    collection.dump());
+
+            size_t startSize = logManager.logs->size();
+
+            co_await handler->commit(logEntries);
+
+            if (logManager.logs->size() != startSize + 1)
+            {
+                throw std::runtime_error("Failed to commit: " + tc.redfishMsgId);
+            }
+
+            Log newLog = (*logManager.logs)[startSize];
+            EXPECT_EQ(tc.expectedDbusMsg, newLog.message);
+            EXPECT_EQ(tc.expectedSeverity, newLog.severity);
+            EXPECT_EQ(
+                "/xyz/openbmc_project/sensors/temperature/HGX_GPU2_DRAM_TEMP_C",
+                newLog.additionalData.at("SENSOR_NAME"));
+            EXPECT_EQ("100.0", newLog.additionalData.at("READING_VALUE"));
+            EXPECT_EQ("xyz.openbmc_project.Sensor.Value.Unit.DegreesC",
+                      newLog.additionalData.at("UNITS"));
+
+            if (tc.isError)
+            {
+                EXPECT_EQ("90.0", newLog.additionalData.at("THRESHOLD_VALUE"));
+            }
+            else
+            {
+                EXPECT_EQ(newLog.additionalData.find("THRESHOLD_VALUE"),
+                          newLog.additionalData.end());
+            }
+        }
+        co_return;
+    }());
 }
 
 } // namespace redfish_client::core

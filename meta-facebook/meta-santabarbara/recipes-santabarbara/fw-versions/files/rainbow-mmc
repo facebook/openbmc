@@ -1,18 +1,18 @@
 #!/bin/bash
 
-declare -A RAINBOW_MMC_CONFIG=(
-    [0]="10:rainbow0_mmc"
-    [1]="20:rainbow1_mmc" 
-    [2]="30:rainbow2_mmc"
-    [3]="40:rainbow3_mmc"
+declare -A ASIC_MODULE_MMC_CONFIG=(
+    [0]="10:asic_module0_mmc"
+    [1]="20:asic_module1_mmc"
+    [2]="30:asic_module2_mmc"
+    [3]="40:asic_module3_mmc"
 )
 
-rainbow_mmc_index=$1
-config=${RAINBOW_MMC_CONFIG[$rainbow_mmc_index]}
+asic_module_mmc_index=$1
+config=${ASIC_MODULE_MMC_CONFIG[$asic_module_mmc_index]}
 eid=${config%:*}
 dbus_path=${config#*:}
 
-echo "Getting Rainbow-mmc$rainbow_mmc_index version (EID=$eid)"
+echo "Getting asic_module-mmc$asic_module_mmc_index version (EID=$eid)"
 
 MAX_RETRIES=3
 RETRY_COUNT=0
@@ -23,7 +23,7 @@ while [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
                jq -r '.ActiveComponentImageSetVersionString' 2>/dev/null )
 
     if [ -n "$version" ] && [ "$version" != "null" ]; then
-        echo "Rainbow$rainbow_mmc_index version: $version"
+        echo "asic_module$asic_module_mmc_index version: $version"
         
         busctl set-property xyz.openbmc_project.Settings \
             "/xyz/openbmc_project/software/chassis/$dbus_path" \

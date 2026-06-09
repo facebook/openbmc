@@ -5,6 +5,7 @@
         "get_version": "/usr/local/bin/bios_ver.sh"
     },
     "scm" : {
+        "get_version" : "/usr/local/bin/fpga_ver.sh | grep SCM_FPGA | cut -f 2 -d ' '",
         "upgrade_cmd" : "/usr/local/bin/fpga_util.sh scm program {filename}",
         "post_action" : "/usr/local/bin/dpeCheck.sh dpe",
         "priority" : 2

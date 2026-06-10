@@ -1388,7 +1388,7 @@ index 000000000000..73a9b96e6635
 +}
 +
 +static int i3c_hub_i2c_xfers(struct i2c_dev_desc *dev,
-+			     const struct i2c_msg *xfers, int nxfers)
++			     struct i2c_msg *xfers, int nxfers)
 +{
 +	struct i3c_master_controller *parent = parent_controller_from_i2c_desc(dev);
 +	struct logical_bus *bus = bus_from_i2c_desc(dev);
@@ -1513,7 +1513,7 @@ index 000000000000..73a9b96e6635
 +}
 +
 +static int i3c_hub_i2c_xfers_smbus(struct i2c_dev_desc *dev,
-+				   const struct i2c_msg *xfers, int nxfers)
++				   struct i2c_msg *xfers, int nxfers)
 +{
 +	return 0;
 +}

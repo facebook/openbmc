@@ -62,6 +62,11 @@ extern "C" {
 #define VR_PVDDCR_ADDR 0x40
 #define VR_PVDDCR_SOC_ADDR 0x40
 #define VR_PVDD_MISC_ADDR 0x42
+#define VR_MFR_ID_REG 0x99
+#define VR_MFR_ID_MAX_LEN 6
+#define VR_MFR_ID_MAIN 0x4D5053
+#define VR_MFR_ID_SECOND 0x4946
+#define VR_RETRY_TIME 5
 
 #define MTP_HSC_BUS 9
 #define MTP_HSC_ADDR 0x80
@@ -180,6 +185,7 @@ int netlakenext_common_check_image_signature(uint8_t* data);
 bool netlakenext_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t rev_id);
 int netlakenext_common_get_img_ver(const char* image_path, char* ver);
 int netlakenext_common_get_board_rev(uint8_t* rev_id);
+int netlakenext_common_get_board_rev_backup(uint8_t* rev_id);
 int netlakenext_common_linear11_convert(uint8_t *value_raw, float *value_linear11);
 int netlakenext_common_linear16_convert(uint8_t *value_raw, uint8_t mode, float *value_linear16);
 

@@ -1225,7 +1225,7 @@ pal_pmbus_sensor_info_initial(void) {
   uint8_t pmbus_type = 0;
   uint8_t rev_id = 0;
 
-  ret = netlakenext_common_get_board_rev(&rev_id);
+  ret = netlakenext_common_get_board_rev_backup(&rev_id);
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Failed to get CPLD board revision, use main source setting as default", __func__);
   }

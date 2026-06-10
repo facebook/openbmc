@@ -125,22 +125,14 @@ void vr_change_bus(struct vr_info *vr_list, int vr_cnt, enum board_rev stage) {
 int plat_vr_init(void) {
   int ret;
   int i2cfd = 0;
-  uint8_t rev_id;
+  uint8_t rev_id = 0;
   uint8_t tlen = 1;
   uint8_t rev_id_reg = CPLD_REV_ID_REG;
   int vr_cnt;
 
-  i2cfd = i2c_cdev_slave_open(CPLD_REV_ID_BUS, CPLD_REV_ID_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if ( i2cfd < 0 ) {
-    syslog(LOG_ERR, "Failed to open CPLD, fd=%x\n", i2cfd);
-    return -1;
-  }
-
-  ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_REV_ID_ADDR, &rev_id_reg, tlen, &rev_id, sizeof(rev_id));
-  close(i2cfd);
+  ret = netlakenext_common_get_board_rev_backup(&rev_id);
   if (ret < 0) {
-    syslog(LOG_ERR, "Failed to get board revision form fpga\n");
-    ret = -1;
+    syslog(LOG_ERR, "%s(): failed to get board revision. rev_id=%02X\n", __func__, rev_id);
   }
 
   int sku = ((int)rev_id & 0x08) >> 3;

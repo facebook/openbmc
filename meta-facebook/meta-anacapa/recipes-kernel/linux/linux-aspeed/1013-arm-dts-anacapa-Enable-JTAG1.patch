@@ -1,7 +1,7 @@
-From af550650b77c0bd00f1997712b7de28cd2278d92 Mon Sep 17 00:00:00 2001
+From 24c2eb3ca5d8098e92f2c62e2b8d9cbe4a006f1e Mon Sep 17 00:00:00 2001
 From: Akshay Gupta <Akshay.Gupta@amd.com>
 Date: Tue, 7 Apr 2026 12:09:32 +0530
-Subject: [PATCH 1/3] arm: dts: anacapa: Enable JTAG1
+Subject: [PATCH 1013/1013] arm: dts: anacapa: Enable JTAG1
 
 Enable JTAG1 for debug
 
@@ -12,23 +12,23 @@ Signed-off-by: Akshay Gupta <Akshay.Gupta@amd.com>
  2 files changed, 10 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts
-index 9a70acd1f..4b54c3901 100644
+index e2dafdb127ed..f3b58fb79167 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts
-@@ -448,6 +448,11 @@ &gpio1 {
- 	"BMC_GPIO18E2", "BMC_GPIO18E3";
+@@ -310,6 +310,11 @@ &gpio1 {
+ 	"FM_BMC_PROT_LS_EN", "AC_PWR_BMC_BTN_N", "", "";
  };
  
 +/* Enable JTAG 1 */
 +&jtag1 {
-+	status = "okay";
++ status = "okay";
 +};
 +
  // L Bridge Board
  &i2c0 {
  	status = "okay";
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-index 6d231d8c8..5f249ab99 100644
+index 6d231d8c8553..b7080e243fb6 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 @@ -324,6 +324,11 @@ &gpio1 {
@@ -37,12 +37,12 @@ index 6d231d8c8..5f249ab99 100644
  
 +/* Enable JTAG 1 */
 +&jtag1 {
-+	status = "okay";
++ status = "okay";
 +};
 +
  // L Bridge Board
  &i2c0 {
  	status = "okay";
 -- 
-2.34.1
+2.53.0-Meta
 

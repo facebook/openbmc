@@ -1,7 +1,7 @@
-From 05efedd53131a433f0784d93ea4878be93e92330 Mon Sep 17 00:00:00 2001
+From 0c51a946f317a32166ed8e15e1d0eeb4a9290eab Mon Sep 17 00:00:00 2001
 From: Andy Chung <Andy.Chung@amd.com>
 Date: Thu, 5 Mar 2026 10:54:23 +0800
-Subject: [PATCH] ARM: dts: aspeed: anacapa: enable APML I3C bus
+Subject: [PATCH 1003/1003] ARM: dts: aspeed: anacapa: enable APML I3C bus
 
 Enable I3C bus for APML feature.
 APML driver still in downstream, keep this in
@@ -11,14 +11,13 @@ downstream now.
  1 file changed, 14 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa.dts
-index 0a4b87c45..9a80d8eaf 100644
+index 80147fe777e3..855834fce40e 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa.dts
-@@ -1233,3 +1233,17 @@ &gfx {
- 	status = "okay";
+@@ -186,6 +186,20 @@ &gfx {
  	memory-region = <&gfx_memory>;
  };
-+
+ 
 +// CPU SIC/SID (APML)
 +&i3c0 {
 +    status = "okay";
@@ -32,6 +31,10 @@ index 0a4b87c45..9a80d8eaf 100644
 +        assigned-address = <0x3c>;
 +    };
 +};
++
+ &gpio0 {
+ 	gpio-line-names =
+ 
 -- 
-2.34.1
+2.53.0-Meta
 

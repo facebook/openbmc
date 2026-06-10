@@ -1,4 +1,4 @@
-From b6f2d12021d814552bcc62cd988232cc19d31ac3 Mon Sep 17 00:00:00 2001
+From 06b081ebfb58bc1356b82c261109e024eec0e47e Mon Sep 17 00:00:00 2001
 From: Akshay Gupta <akshay.gupta@amd.com>
 Date: Fri, 8 May 2026 13:26:25 +0530
 Subject: [PATCH] arm: dts: anacapa: Modify the RMI/TSI device IDs
@@ -11,10 +11,10 @@ device recognition.
  2 files changed, 28 insertions(+), 20 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts
-index 4b54c3901..842e24bf6 100644
+index f3b58fb79167..2336593d6897 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts
-@@ -1309,14 +1309,18 @@ &gfx {
+@@ -188,16 +188,20 @@ &gfx {
  
  // CPU SIC/SID (APML)
  &i3c0 {
@@ -43,8 +43,10 @@ index 4b54c3901..842e24bf6 100644
 +		assigned-address = <0x3c>;
 +	};
  };
+ 
+ &gpio0 {
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-index 5f249ab99..ce501ccfb 100644
+index b7080e243fb6..ff13ba4dd90e 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 @@ -940,16 +940,20 @@ &i2c15 {
@@ -79,5 +81,5 @@ index 5f249ab99..ce501ccfb 100644
  
  &kcs2 {
 -- 
-2.34.1
+2.52.0
 

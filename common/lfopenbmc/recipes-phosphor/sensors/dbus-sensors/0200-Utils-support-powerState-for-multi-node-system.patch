@@ -1,4 +1,4 @@
-From 0b2708fe7bdb3c4e23c99ee7445d1a58ac1ac70b Mon Sep 17 00:00:00 2001
+From 8f30e17522b6a327720bf1d16bfe3ac228df9f93 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH] Utils: support powerState for multi-node system
@@ -885,10 +885,10 @@ index 914c260..f9ea9ce 100644
  
      void getPath(const std::string& path, const std::string& interface,
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
-index e666730..cb6ead8 100644
+index 301cfb7..d983392 100644
 --- a/src/hwmon-temp/HwmonTempMain.cpp
 +++ b/src/hwmon-temp/HwmonTempMain.cpp
-@@ -600,7 +600,11 @@ static void powerStateChanged(
+@@ -631,7 +631,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {
@@ -902,7 +902,7 @@ index e666730..cb6ead8 100644
          }
      }
 diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
-index 8aa499d..628d7bc 100644
+index 624cb4a..b72ec18 100644
 --- a/src/psu/PSUSensor.cpp
 +++ b/src/psu/PSUSensor.cpp
 @@ -56,14 +56,14 @@ PSUSensor::PSUSensor(
@@ -924,7 +924,7 @@ index 8aa499d..628d7bc 100644
      std::string unitPath = sensor_paths::getPathForUnits(sensorUnits);
      lg2::debug(
 diff --git a/src/psu/PSUSensor.hpp b/src/psu/PSUSensor.hpp
-index 43fc8b3..130e458 100644
+index 8599826..42d4800 100644
 --- a/src/psu/PSUSensor.hpp
 +++ b/src/psu/PSUSensor.hpp
 @@ -97,7 +97,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
@@ -936,7 +936,7 @@ index 43fc8b3..130e458 100644
      ~PSUSensor() override;
      PSUSensor(const PSUSensor&) = delete;
      PSUSensor(PSUSensor&&) = delete;
-@@ -144,6 +144,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
+@@ -146,6 +146,7 @@ class PSUSensor : public Sensor, public std::enable_shared_from_this<PSUSensor>
      static constexpr double defaultSensorPoll = 1.0;
      static constexpr unsigned int defaultSensorPollMs =
          static_cast<unsigned int>(defaultSensorPoll * 1000);
@@ -945,10 +945,10 @@ index 43fc8b3..130e458 100644
  
  struct PSUProperty
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 6f6ae54..680b815 100644
+index 99df384..7c89bc6 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -841,6 +841,7 @@ static void createSensorsCallback(
+@@ -852,6 +852,7 @@ static void createSensorsCallback(
          checkGroupEvent(directory.string(), groupEventPathList);
  
          PowerState readState = getPowerState(*baseConfig);
@@ -956,7 +956,7 @@ index 6f6ae54..680b815 100644
  
          /* Check if there are more sensors in the same interface */
          int i = 1;
-@@ -1405,7 +1406,7 @@ static void createSensorsCallback(
+@@ -1437,7 +1438,7 @@ static void createSensorsCallback(
                      sensorName, std::move(sensorThresholds), *interfacePath,
                      readState, sensorUnits, factor, maxReading, minReading,
                      sensorOffset, labelHead, thresholdConfSize, pollRate,
@@ -965,7 +965,7 @@ index 6f6ae54..680b815 100644
  
                  if (fwName != nullptr)
                  {
-@@ -1549,7 +1550,11 @@ static void powerStateChanged(
+@@ -1580,7 +1581,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {

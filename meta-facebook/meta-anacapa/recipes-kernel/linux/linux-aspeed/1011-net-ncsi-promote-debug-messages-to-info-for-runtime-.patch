@@ -1,4 +1,4 @@
-From 5773877df9fa4c06be2b4f4f8034fb0f338fb6da Mon Sep 17 00:00:00 2001
+From cd004eabd4418534f572ced6f6150f9247bf13ea Mon Sep 17 00:00:00 2001
 From: Colin Huang <colin.huang2@amd.com>
 Date: Mon, 20 Apr 2026 10:19:14 +0800
 Subject: [PATCH] net: ncsi: promote debug messages to info for runtime
@@ -32,7 +32,7 @@ Signed-off-by: Colin Huang <colin.huang2@amd.com>
  4 files changed, 33 insertions(+), 20 deletions(-)
 
 diff --git a/net/ncsi/ncsi-aen.c b/net/ncsi/ncsi-aen.c
-index 62fb1031763d..3b314509c5e3 100644
+index 040a31557201..f8db0a94344c 100644
 --- a/net/ncsi/ncsi-aen.c
 +++ b/net/ncsi/ncsi-aen.c
 @@ -74,7 +74,7 @@ static int ncsi_aen_handler_lsc(struct ncsi_dev_priv *ndp,
@@ -63,7 +63,7 @@ index 62fb1031763d..3b314509c5e3 100644
  		   ncm->data[3] & 0x1 ? "" : "not ", nc->id);
  
 diff --git a/net/ncsi/ncsi-manage.c b/net/ncsi/ncsi-manage.c
-index 82285ac83678..e874f9a9048c 100644
+index 2d760b712ba6..05d653d9dbcf 100644
 --- a/net/ncsi/ncsi-manage.c
 +++ b/net/ncsi/ncsi-manage.c
 @@ -25,6 +25,9 @@
@@ -220,7 +220,7 @@ index 2f872d064396..b0d5e5613b96 100644
  			   package->id);
  
 diff --git a/net/ncsi/ncsi-rsp.c b/net/ncsi/ncsi-rsp.c
-index fc6a4f961e12..aad6fd37c8d9 100644
+index 5b5ee2eead2d..93b6fe0bbd3c 100644
 --- a/net/ncsi/ncsi-rsp.c
 +++ b/net/ncsi/ncsi-rsp.c
 @@ -46,12 +46,12 @@ static int ncsi_validate_rsp_pkt(struct ncsi_request *nr,
@@ -256,3 +256,6 @@ index fc6a4f961e12..aad6fd37c8d9 100644
  			   "NCSI: checksum mismatched; recd: %08x calc: %08x\n",
  			   *pchecksum, htonl(checksum));
  		return -EINVAL;
+-- 
+2.52.0
+

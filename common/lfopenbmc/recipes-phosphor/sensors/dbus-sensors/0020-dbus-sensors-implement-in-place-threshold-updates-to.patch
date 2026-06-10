@@ -1,4 +1,4 @@
-From 85ae6f5dbb12708a76f3263423955770453d4f8c Mon Sep 17 00:00:00 2001
+From f8b0f98e992240f4a5420a442edf0c1650923edc Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Tue, 12 May 2026 17:19:05 +0800
 Subject: [PATCH] dbus-sensors: implement in-place threshold updates to
@@ -357,10 +357,10 @@ index e666730..301cfb7 100644
                          {
                              sensor = nullptr;
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 9a4ee10..6b32f1d 100644
+index ac62784..99df384 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -1383,6 +1383,27 @@ static void createSensorsCallback(
+@@ -1397,6 +1397,27 @@ static void createSensorsCallback(
              // destruct existing one first if already created
  
              auto& sensor = sensors[sensorName];
@@ -389,5 +389,5 @@ index 9a4ee10..6b32f1d 100644
              {
                  sensor = nullptr;
 -- 
-2.34.1
+2.52.0
 

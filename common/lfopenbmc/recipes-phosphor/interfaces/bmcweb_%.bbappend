@@ -38,5 +38,5 @@ SRC_URI:append:fb-compute-multihost = " \
 
 SRC_URI:append = " \
     file://0104-sensor-add-charge-type-support.patch \
-    file://0400-Store-Log-Entry-URI-for-Redfish-event.patch \
+    file://0105-Store-Log-Entry-URI-for-Redfish-event.patch \
 "

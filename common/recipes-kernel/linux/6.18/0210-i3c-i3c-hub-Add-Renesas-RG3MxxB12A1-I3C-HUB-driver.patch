@@ -1,4 +1,4 @@
-From a6448267218bfda8897129c832ddcbf82e816b38 Mon Sep 17 00:00:00 2001
+From 5372942c65715a78fe463a389393a2d593dd4ede Mon Sep 17 00:00:00 2001
 From: Steven Niu <steven.niu.uj@renesas.com>
 Date: Sat, 17 Feb 2024 21:14:12 +0800
 Subject: [PATCH] i3c: i3c-hub: Add Renesas RG3MxxB12A1 I3C HUB driver
@@ -57,7 +57,7 @@ index 11982efbc6d9..ca298faaee9a 100644
 +obj-$(CONFIG_I3C_HUB)	+= i3c-hub.o
 diff --git a/drivers/i3c/i3c-hub.c b/drivers/i3c/i3c-hub.c
 new file mode 100644
-index 000000000000..73a9b96e6635
+index 000000000000..b8c1422a6412
 --- /dev/null
 +++ b/drivers/i3c/i3c-hub.c
 @@ -0,0 +1,1982 @@

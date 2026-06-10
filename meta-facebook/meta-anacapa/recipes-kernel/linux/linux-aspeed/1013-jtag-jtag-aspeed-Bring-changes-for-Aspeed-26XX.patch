@@ -1,7 +1,7 @@
-From fcb2fefb4a27c88d0c9e77c8070cd5cf9d6bbe39 Mon Sep 17 00:00:00 2001
+From d8300cfac438e312b20ac1d9e3c75f59cfc20b42 Mon Sep 17 00:00:00 2001
 From: Akshay Gupta <Akshay.Gupta@amd.com>
 Date: Tue, 7 Apr 2026 13:08:32 +0530
-Subject: [PATCH 3/4] jtag: jtag-aspeed: Bring changes for Aspeed 26XX
+Subject: [PATCH] jtag: jtag-aspeed: Bring changes for Aspeed 26XX
 
 - Bring changes for Aspeed 26XX to the meta driver to support
   the JTAG driver on Aspeed 2600 chip.
@@ -16,7 +16,7 @@ Subject: [PATCH 3/4] jtag: jtag-aspeed: Bring changes for Aspeed 26XX
  1 file changed, 51 insertions(+)
 
 diff --git a/drivers/jtag/jtag-aspeed.c b/drivers/jtag/jtag-aspeed.c
-index e0a46fd12..a8959096e 100644
+index d351121aded7..81a5cb22d8cc 100644
 --- a/drivers/jtag/jtag-aspeed.c
 +++ b/drivers/jtag/jtag-aspeed.c
 @@ -20,6 +20,8 @@
@@ -113,5 +113,5 @@ index e0a46fd12..a8959096e 100644
  }
  
 -- 
-2.34.1
+2.52.0
 

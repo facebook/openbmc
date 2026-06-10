@@ -1,4 +1,4 @@
-From fa805b62c538d1385372040bdced74deba40fe3f Mon Sep 17 00:00:00 2001
+From 910e2295b1f789139f83e54087f49a571aafe239 Mon Sep 17 00:00:00 2001
 From: Archit Mehrotra <architmehrotra@meta.com>
 Date: Sat, 4 Apr 2026 11:20:55 -0700
 Subject: [PATCH] Store Log Entry URI for Redfish event
@@ -151,7 +151,7 @@ Signed-off-by: Archit Mehrotra <architmehrotra@meta.com>
  5 files changed, 75 insertions(+), 4 deletions(-)
 
 diff --git a/docs/Redfish.md b/docs/Redfish.md
-index 77b667f..ce13954 100644
+index 40641d5d..e1e1d4c3 100644
 --- a/docs/Redfish.md
 +++ b/docs/Redfish.md
 @@ -622,6 +622,22 @@ Fields common to all schemas
@@ -178,7 +178,7 @@ index 77b667f..ce13954 100644
  
  #### JsonSchemaFileCollection
 diff --git a/redfish-core/include/event_log.hpp b/redfish-core/include/event_log.hpp
-index 18b2650..04bf50d 100644
+index 18b26505..04bf50dc 100644
 --- a/redfish-core/include/event_log.hpp
 +++ b/redfish-core/include/event_log.hpp
 @@ -3,6 +3,7 @@
@@ -201,7 +201,7 @@ index 18b2650..04bf50d 100644
                           const redfish::EventLogObjectsType& logEntry,
                           const std::string& customText,
 diff --git a/redfish-core/src/event_log.cpp b/redfish-core/src/event_log.cpp
-index 83ffe75..aa13b94 100644
+index 83ffe75d..aa13b94b 100644
 --- a/redfish-core/src/event_log.cpp
 +++ b/redfish-core/src/event_log.cpp
 @@ -3,11 +3,20 @@
@@ -265,7 +265,7 @@ index 83ffe75..aa13b94 100644
  
  } // namespace event_log
 diff --git a/redfish-core/src/subscription.cpp b/redfish-core/src/subscription.cpp
-index 8b028d3..47dd52f 100644
+index 8b028d3c..47dd52fe 100644
 --- a/redfish-core/src/subscription.cpp
 +++ b/redfish-core/src/subscription.cpp
 @@ -100,7 +100,7 @@ void Subscription::sendHeartbeatEvent()
@@ -287,7 +287,7 @@ index 8b028d3..47dd52f 100644
      msg["Name"] = "Event Log";
      msg["Events"] = std::move(logEntryArray);
 diff --git a/test/redfish-core/include/event_log_test.cpp b/test/redfish-core/include/event_log_test.cpp
-index f57c26c..79a68e3 100644
+index f57c26c0..79a68e3c 100644
 --- a/test/redfish-core/include/event_log_test.cpp
 +++ b/test/redfish-core/include/event_log_test.cpp
 @@ -1,6 +1,7 @@
@@ -340,5 +340,5 @@ index f57c26c..79a68e3 100644
  } // namespace
  } // namespace redfish::event_log
 -- 
-2.53.0-Meta
+2.52.0
 

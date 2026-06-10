@@ -1,4 +1,4 @@
-From 3fb5378c8f2bc20625a05b99a8372b8ec848a69c Mon Sep 17 00:00:00 2001
+From 648d6cc2ff7d297c109dfbbc07fb0242063932b0 Mon Sep 17 00:00:00 2001
 From: Colin Huang <colin.huang2@amd.com>
 Date: Tue, 7 Apr 2026 21:13:27 +0800
 Subject: [PATCH] ARM: dts: aspeed: anacapa: add EVT2 devicetree and update
@@ -1157,3 +1157,6 @@ index 980628af80b0..18b6a7525178 100644
 -#include "aspeed-bmc-facebook-anacapa-evt1.dts"
 +#include "aspeed-bmc-facebook-anacapa-evt2.dts"
  
+-- 
+2.52.0
+

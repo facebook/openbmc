@@ -1,4 +1,4 @@
-From a1e2bcaf1b5f1ac93ae784a75fa3afe64d281858 Mon Sep 17 00:00:00 2001
+From fb26f98039de2aeffb9adb98cb4f860250f4bf18 Mon Sep 17 00:00:00 2001
 From: Colin Huang <colin.huang2@amd.com>
 Date: Wed, 8 Apr 2026 15:50:49 +0800
 Subject: [PATCH] ARM: dts: aspeed: anacapa: evt2: config ncsi device
@@ -15,10 +15,10 @@ Signed-off-by: Colin Huang <colin.huang2@amd.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-index 66ca0968b11f..6147e392fd25 100644
+index 855c3058fee2..4372a01e85bd 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-@@ -901,6 +901,8 @@ &mac2 {
+@@ -899,6 +899,8 @@ &mac2 {
  	pinctrl-names = "default";
  	pinctrl-0 = <&pinctrl_ncsi3_default>;
  	use-ncsi;
@@ -27,3 +27,6 @@ index 66ca0968b11f..6147e392fd25 100644
  };
  
  &sgpiom0 {
+-- 
+2.52.0
+

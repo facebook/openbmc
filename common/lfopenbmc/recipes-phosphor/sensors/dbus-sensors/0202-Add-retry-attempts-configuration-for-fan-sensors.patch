@@ -1,4 +1,4 @@
-From 7e6b2ce8ca4d5dd34b7b2b3f42f5eea83b9bba70 Mon Sep 17 00:00:00 2001
+From 562b6f4f13c6f1d9877f72acc67e353cf47c4bf3 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Wed, 26 Mar 2025 18:49:46 +0800
 Subject: [PATCH] Add retry attempts configuration for fan sensors
@@ -38,10 +38,10 @@ index d04fca0..86bb4a4 100644
 +    description: 'Number of retry attempts for fan sensor operations',
 +)
 diff --git a/src/fan/FanMain.cpp b/src/fan/FanMain.cpp
-index c2fdaa5..1fdad2f 100644
+index 076ce6f..eb858ff 100644
 --- a/src/fan/FanMain.cpp
 +++ b/src/fan/FanMain.cpp
-@@ -671,7 +671,7 @@ int main()
+@@ -684,7 +684,7 @@ int main()
  
      boost::asio::post(io, [&]() {
          createSensors(io, objectServer, tachSensors, pwmSensors, presenceGpios,
@@ -50,7 +50,7 @@ index c2fdaa5..1fdad2f 100644
      });
  
      boost::asio::steady_timer filterTimer(io);
-@@ -693,7 +693,7 @@ int main()
+@@ -706,7 +706,7 @@ int main()
                      return;
                  }
                  createSensors(io, objectServer, tachSensors, pwmSensors,

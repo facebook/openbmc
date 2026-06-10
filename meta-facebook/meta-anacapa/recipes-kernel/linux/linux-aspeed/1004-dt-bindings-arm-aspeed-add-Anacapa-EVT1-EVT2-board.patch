@@ -1,8 +1,7 @@
-From ad5a5fcf53648883587d1202614cbbc9b0304c65 Mon Sep 17 00:00:00 2001
+From fbbc77ebe52063e19b574dd94ab9dd03d80e9478 Mon Sep 17 00:00:00 2001
 From: Colin Huang <colin.huang2@amd.com>
 Date: Tue, 7 Apr 2026 21:44:04 +0800
-Subject: [PATCH 1005/1005] dt-bindings: arm: aspeed: add Anacapa EVT1 EVT2
- board
+Subject: [PATCH] dt-bindings: arm: aspeed: add Anacapa EVT1 EVT2 board
 
 Document Anacapa BMC EVT1 and EVT2 compatibles.
 
@@ -27,5 +26,5 @@ index 9ba195b8f22d..6cc42370539c 100644
                - facebook,catalina-bmc
                - facebook,clemente-bmc
 -- 
-2.53.0-Meta
+2.52.0
 

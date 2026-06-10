@@ -1,7 +1,7 @@
-From 0c51a946f317a32166ed8e15e1d0eeb4a9290eab Mon Sep 17 00:00:00 2001
+From 129e4b75d9ea3d5e4dc18652caafb1e1b4b180be Mon Sep 17 00:00:00 2001
 From: Andy Chung <Andy.Chung@amd.com>
 Date: Thu, 5 Mar 2026 10:54:23 +0800
-Subject: [PATCH 1003/1003] ARM: dts: aspeed: anacapa: enable APML I3C bus
+Subject: [PATCH] ARM: dts: aspeed: anacapa: enable APML I3C bus
 
 Enable I3C bus for APML feature.
 APML driver still in downstream, keep this in
@@ -36,5 +36,5 @@ index 80147fe777e3..855834fce40e 100644
  	gpio-line-names =
  
 -- 
-2.53.0-Meta
+2.52.0
 

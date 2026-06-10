@@ -1,8 +1,8 @@
-From 7a714dba091d9448ca18853bfd19cbab3a58a751 Mon Sep 17 00:00:00 2001
+From e4601657e82e04fdd5366b609327b1c47a4a8df9 Mon Sep 17 00:00:00 2001
 From: Colin Huang <colin.huang2@amd.com>
 Date: Tue, 7 Apr 2026 20:40:52 +0800
-Subject: [PATCH 1006/1006] ARM: dts: aspeed: anacapa: add EVT1 devicetree and
- point wrapper to it
+Subject: [PATCH] ARM: dts: aspeed: anacapa: add EVT1 devicetree and point
+ wrapper to it
 
 This change introduces a development-phase devicetree for the
 Facebook Anacapa BMC EVT1 hardware revision and updates the Anacapa
@@ -2360,5 +2360,5 @@ index d630f5c0ef68..980628af80b0 100644
 -	status = "okay";
 -};
 -- 
-2.53.0-Meta
+2.52.0
 

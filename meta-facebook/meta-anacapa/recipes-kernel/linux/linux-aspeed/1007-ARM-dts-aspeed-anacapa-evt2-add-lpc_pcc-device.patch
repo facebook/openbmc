@@ -1,4 +1,4 @@
-From 67e86e50b119c02f645640f07c29d8a686c2121c Mon Sep 17 00:00:00 2001
+From 313588f2582dc43dd16c8b36102c6b71927ce240 Mon Sep 17 00:00:00 2001
 From: Colin Huang <colin.huang2@amd.com>
 Date: Wed, 8 Apr 2026 15:44:47 +0800
 Subject: [PATCH] ARM: dts: aspeed: anacapa: evt2: add lpc_pcc device
@@ -14,10 +14,10 @@ Signed-off-by: Colin Huang <colin.huang2@amd.com>
  1 file changed, 10 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-index 665bcd010d3e..66ca0968b11f 100644
+index 6e1e51e6c3f2..855c3058fee2 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-@@ -886,6 +886,16 @@ &lpc_ctrl {
+@@ -884,6 +884,16 @@ &lpc_ctrl {
  	status = "okay";
  };
  
@@ -34,3 +34,6 @@ index 665bcd010d3e..66ca0968b11f 100644
  &mac2 {
  	status = "okay";
  	pinctrl-names = "default";
+-- 
+2.52.0
+

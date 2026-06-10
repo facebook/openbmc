@@ -1,4 +1,4 @@
-From 08c09d8dcf302cbc9a8843722f63267df0f933ab Mon Sep 17 00:00:00 2001
+From 51cbc52fccc01a547315b4a7749e7ef02e632e7a Mon Sep 17 00:00:00 2001
 From: Colin Huang <colin.huang2@amd.com>
 Date: Wed, 8 Apr 2026 15:53:05 +0800
 Subject: [PATCH] ARM: dts: aspeed: anacapa: evt2: enable APML I3C bus
@@ -13,10 +13,10 @@ Signed-off-by: Colin Huang <colin.huang2@amd.com>
  1 file changed, 14 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-index 6147e392fd25..10b05c8edc2d 100644
+index 4372a01e85bd..285a03c6ad81 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-@@ -872,6 +872,20 @@ &i2c15 {
+@@ -870,6 +870,20 @@ &i2c15 {
  	status = "okay";
  };
  
@@ -37,3 +37,6 @@ index 6147e392fd25..10b05c8edc2d 100644
  &kcs2 {
  	aspeed,lpc-io-reg = <0xca8>;
  	status = "okay";
+-- 
+2.52.0
+

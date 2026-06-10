@@ -1,7 +1,7 @@
-From 24c2eb3ca5d8098e92f2c62e2b8d9cbe4a006f1e Mon Sep 17 00:00:00 2001
+From 038ca44aed0940ba10b49fcf98746123cd6f1290 Mon Sep 17 00:00:00 2001
 From: Akshay Gupta <Akshay.Gupta@amd.com>
 Date: Tue, 7 Apr 2026 12:09:32 +0530
-Subject: [PATCH 1013/1013] arm: dts: anacapa: Enable JTAG1
+Subject: [PATCH] arm: dts: anacapa: Enable JTAG1
 
 Enable JTAG1 for debug
 
@@ -44,5 +44,5 @@ index 6d231d8c8553..b7080e243fb6 100644
  &i2c0 {
  	status = "okay";
 -- 
-2.53.0-Meta
+2.52.0
 

@@ -1,0 +1,105 @@
+From 31c47b8a64e4a08c3adcd8cf26aeb146eb959489 Mon Sep 17 00:00:00 2001
+From: Jagpal Singh Gill <paligill@gmail.com>
+Date: Mon, 8 Jun 2026 15:27:00 -0700
+Subject: [PATCH] sensor: add charge type support
+
+Add ChargeAh ReadingType and Ah units mapping for
+charge sensors exposed under /sensors/charge/ D-Bus
+path. This enables battery backup unit remaining and
+full charge sensors to appear in Redfish. Unit test
+added for charge sensor type.
+
+Tested:
+Sensor Query using curl -
+```
+{
+  "@odata.id": "/redfish/v1/Chassis/BBU_SHELF_1/Sensors/charge_BBU_SHELF_1_BBU5_REMAINING_CHARGE_AH",
+  "@odata.type": "#Sensor.v1_11_1.Sensor",
+  "Id": "charge_BBU_SHELF_1_BBU5_REMAINING_CHARGE_AH",
+  "Name": "BBU SHELF 1 BBU5 REMAINING CHARGE AH",
+  "Reading": 10477.0,
+  "ReadingType": "ChargeAh",
+  "ReadingUnits": "Ah",
+  "Status": {
+    "Health": "OK",
+    "State": "Enabled"
+  },
+...
+}
+```
+Redfish Validator in progress.
+
+Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
+Change-Id: I9b7180cb8597378a1b42f9da73335ca96b20d55a
+---
+ redfish-core/include/utils/sensor_utils.hpp          |  8 ++++++++
+ redfish-core/lib/sensors.hpp                         |  3 ++-
+ .../redfish-core/include/utils/sensor_utils_test.cpp | 12 ++++++++++++
+ 3 files changed, 22 insertions(+), 1 deletion(-)
+
+diff --git a/redfish-core/include/utils/sensor_utils.hpp b/redfish-core/include/utils/sensor_utils.hpp
+index c170afb2..8a22771c 100644
+--- a/redfish-core/include/utils/sensor_utils.hpp
++++ b/redfish-core/include/utils/sensor_utils.hpp
+@@ -246,6 +246,10 @@ inline std::string_view toReadingUnits(std::string_view sensorType)
+     {
+         return "Pa";
+     }
++    if (sensorType == "charge")
++    {
++        return "Ah";
++    }
+     return "";
+ }
+ 
+@@ -306,6 +310,10 @@ inline sensor::ReadingType toReadingType(std::string_view sensorType)
+     {
+         return sensor::ReadingType::PressurePa;
+     }
++    if (sensorType == "charge")
++    {
++        return sensor::ReadingType::ChargeAh;
++    }
+     return sensor::ReadingType::Invalid;
+ }
+ 
+diff --git a/redfish-core/lib/sensors.hpp b/redfish-core/lib/sensors.hpp
+index d3ee9264..abc06060 100644
+--- a/redfish-core/lib/sensors.hpp
++++ b/redfish-core/lib/sensors.hpp
+@@ -82,7 +82,8 @@ constexpr auto getSensorPaths(){
+         "/xyz/openbmc_project/sensors/energy",
+         "/xyz/openbmc_project/sensors/liquidflow",
+         "/xyz/openbmc_project/sensors/pressure",
+-        "/xyz/openbmc_project/sensors/utilization"});
++        "/xyz/openbmc_project/sensors/utilization",
++        "/xyz/openbmc_project/sensors/charge"});
+     } else {
+       return  std::to_array<std::string_view>({"/xyz/openbmc_project/sensors/power",
+         "/xyz/openbmc_project/sensors/current",
+diff --git a/test/redfish-core/include/utils/sensor_utils_test.cpp b/test/redfish-core/include/utils/sensor_utils_test.cpp
+index 2d6995e7..f989e111 100644
+--- a/test/redfish-core/include/utils/sensor_utils_test.cpp
++++ b/test/redfish-core/include/utils/sensor_utils_test.cpp
+@@ -400,6 +400,18 @@ TEST(FillSensorIdentity, Success)
+     EXPECT_FALSE(sensorJson.contains("Implementation"));
+     EXPECT_FALSE(sensorJson.contains("ReadingBasis"));
+     EXPECT_EQ(unit.to_string(), "/Reading");
++
++    sensorJson.clear();
++    unit = "/Reading"_json_pointer;
++    result = fillSensorIdentity("bbu_charge", "charge", properties, sensorJson,
++                                isExcerpt, unit);
++    EXPECT_TRUE(result);
++    EXPECT_THAT(sensorJson["@odata.type"], StartsWith("#Sensor.v1_"));
++    EXPECT_EQ(sensorJson["Id"].get<std::string>(), "charge_bbu_charge");
++    EXPECT_EQ(sensorJson["Name"].get<std::string>(), "bbu charge");
++    EXPECT_EQ(sensorJson["ReadingType"], sensor::ReadingType::ChargeAh);
++    EXPECT_EQ(sensorJson["ReadingUnits"].get<std::string>(), "Ah");
++    EXPECT_EQ(unit.to_string(), "/Reading");
+ }
+ 
+ TEST(FillSensorIdentity, Failure)
+-- 
+2.52.0
+

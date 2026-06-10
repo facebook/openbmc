@@ -730,9 +730,9 @@ PAL_SENSOR_MAP dvt_dpb_sensor_map[] = {
   [PTB_P12V_PU3_DC_MODULE] =
   {"PTB_DCMODULE1_12V_VOLT_V", EXPANDER, NULL, false, {13, 0, 0, 11.3, 0, 0, 0, 0}, VOLT},
   [PTB_U19_ADC_MONITOR] =
-  {"PTB_VSENSE_48V_VOLT_V", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
+  {"PTB_VSENSE_48V_VOLT_mV", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
   [PTB_U20_ADC_MONITOR] =
-  {"PTB_VSENSE_GND_VOLT_V", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
+  {"PTB_VSENSE_GND_VOLT_mV", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
   [PTB_P48V_AUX_Current] =
   {"PTB_HSC_48V_AUX_CURR_A", EXPANDER, NULL, false, {48, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [PTB_P12V_PU2_DC_MODULE_Current] =
@@ -750,9 +750,9 @@ PAL_SENSOR_MAP dvt_dpb_sensor_map[] = {
   [PTB_P12V_PU3_DC_MODULE_TEMP] =
   {"PTB_DCMODULE1_12V_TEMP_C", EXPANDER, NULL, false, {113, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [PTB_U34_ADC_MONITOR_V] =
-  {"PTB_TSENSE_48V_VOLT_V", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
+  {"PTB_TSENSE_48V_VOLT_mV", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
   [PTB_U35_ADC_MONITOR_V] =
-  {"PTB_TSENSE_GND_VOLT_V", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
+  {"PTB_TSENSE_GND_VOLT_mV", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
   [FAN_0_FRONT] =
   {"DPB_FAN0_FRONT_TACH_RPM", EXPANDER, NULL, false, {13000, 12700, 0, 700, 800, 0, 0, 0}, FAN},
   [FAN_0_REAR] =

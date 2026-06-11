@@ -1,0 +1,97 @@
+From fea5f4e0a093b548905647ae7f1914990bf13a7a Mon Sep 17 00:00:00 2001
+From: Freddie Jheng <Freddie.Jheng@quantatw.com>
+Date: Wed, 10 Jun 2026 10:33:08 +0800
+Subject: [PATCH] configuration: santabarbara: add PLDM sensors to SWB
+ MCTPI2CTarget
+
+Add PLDMSensors (TEMP_C) and Inventory fields to SWB_SCO1-4 in the AEB
+switch board config and SWB_PEX in the BRCM switch board config.
+
+Ref: https://gerrit.openbmc.org/c/openbmc/entity-manager/+/91145
+Change-Id: I953d1fdab22ca08b54d588b383e0efe4c112769a
+Signed-off-by: Freddie Jheng <Freddie.Jheng@quantatw.com>
+---
+ .../santabarbara_pcie_switch_board_aeb.json   | 28 +++++++++++++++++++
+ .../santabarbara_pcie_switch_board_brcm.json  |  7 +++++
+ 2 files changed, 35 insertions(+)
+
+diff --git a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_aeb.json b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_aeb.json
+index aea402b..9a3e695 100644
+--- a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_aeb.json
++++ b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_aeb.json
+@@ -446,25 +446,53 @@
+         {
+             "Address": "0x20",
+             "Bus": "114",
++            "Inventory": "",
+             "Name": "SWB_SCO1",
++            "PLDMSensors": [
++                {
++                    "ID": 6144,
++                    "Name": "TEMP_C"
++                }
++            ],
+             "Type": "MCTPI2CTarget"
+         },
+         {
+             "Address": "0x21",
+             "Bus": "115",
++            "Inventory": "",
+             "Name": "SWB_SCO2",
++            "PLDMSensors": [
++                {
++                    "ID": 6144,
++                    "Name": "TEMP_C"
++                }
++            ],
+             "Type": "MCTPI2CTarget"
+         },
+         {
+             "Address": "0x22",
+             "Bus": "116",
++            "Inventory": "",
+             "Name": "SWB_SCO3",
++            "PLDMSensors": [
++                {
++                    "ID": 6144,
++                    "Name": "TEMP_C"
++                }
++            ],
+             "Type": "MCTPI2CTarget"
+         },
+         {
+             "Address": "0x23",
+             "Bus": "117",
++            "Inventory": "",
+             "Name": "SWB_SCO4",
++            "PLDMSensors": [
++                {
++                    "ID": 6144,
++                    "Name": "TEMP_C"
++                }
++            ],
+             "Type": "MCTPI2CTarget"
+         },
+         {
+diff --git a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json
+index 9a34a34..252abc8 100644
+--- a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json
++++ b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json
+@@ -428,7 +428,14 @@
+         {
+             "Address": "0x62",
+             "Bus": "114",
++            "Inventory": "",
+             "Name": "SWB_PEX",
++            "PLDMSensors": [
++                {
++                    "ID": 1,
++                    "Name": "TEMP_C"
++                }
++            ],
+             "Type": "MCTPI2CTarget"
+         },
+         {
+-- 
+2.34.1
+

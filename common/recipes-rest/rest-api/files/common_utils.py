@@ -29,10 +29,11 @@ class RequestContext:
 
 
 async def _run_in_common_executor(func, *args, **kwargs):
-    # The common REST handlers use their own executor (thread based); this is
-    # intentionally separated from the executor of the board-specific REST
-    # handlers, so that a problem in the common REST handlers will not
-    # interfere with the board-specific handlers, and vice versa.
+    # common handler will use its own executor (thread based),
+    # we initentionally separated this from the executor of
+    # board-specific REST handler, so that any problem in
+    # common REST handlers will not interfere with board-specific
+    # REST handler, and vice versa
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(common_executor, func, *args, **kwargs)
 

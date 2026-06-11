@@ -48,6 +48,7 @@ def async_in_common_executor(func):
     """
 
     async def func_wrapper(*args, **kwargs):
+        # Convert the possibly blocking helper function into async
         return await _run_in_common_executor(func, *args, **kwargs)
 
     return func_wrapper

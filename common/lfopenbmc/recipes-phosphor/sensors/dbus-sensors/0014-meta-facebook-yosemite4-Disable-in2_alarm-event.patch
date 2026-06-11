@@ -1,4 +1,4 @@
-From 1c778cd9b877dceaef7cbd1e2052ff9a959624fd Mon Sep 17 00:00:00 2001
+From b1379b97153af07ee721435287e7ab795558839d Mon Sep 17 00:00:00 2001
 From: KayYCHuang-wiwynn <kay.yc.huang.wiwynn@gmail.com>
 Date: Mon, 17 Mar 2025 02:25:46 +0000
 Subject: [PATCH] meta-facebook: yosemite4: Disable in2_alarm event
@@ -39,11 +39,11 @@ index c8a8d34..b87ed5f 100644
 +    description: 'Disable in2_alarm event.',
 +)
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 8393828..6b0a948 100644
+index efc0aec..c5533a5 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -243,7 +243,9 @@ static constexpr std::array<PSUProperty, 22> labelMatch{{
- }};
+@@ -243,7 +243,9 @@ constexpr static auto labelMatch = std::to_array<PSUProperty>({
+ });
  
  const static EventPathList eventMatch{{"PredictiveFailure", {"power1_alarm"}},
 +#ifndef DISABLE_IN2_ALARM_EVENT
@@ -53,5 +53,5 @@ index 8393828..6b0a948 100644
                                        {"ConfigureError", {"in1_fault"}}};
  const static EventPathList limitEventMatch{
 -- 
-2.52.0
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From c0e4927763cae906584c72382acc251fa670bb88 Mon Sep 17 00:00:00 2001
+From 45905d4cae9823176945262be7110e968488ec0c Mon Sep 17 00:00:00 2001
 From: Andy-Hsu-wiwynn <andy.hsu.wiwynn@gmail.com>
 Date: Fri, 15 Aug 2025 15:44:31 +0800
 Subject: [PATCH] PSUSensor:add property to sensorTable and labelMatch
@@ -17,11 +17,11 @@ Confirmed expected sensors appeared on dbus
 Change-Id: I4767352847d2e43ad356ebb57f61b5a0d9f6180d
 Signed-off-by: Andy Hsu <andy.hsu.wiwynn@gmail.com>
 ---
- src/psu/PSUSensorMain.cpp | 7 +++++--
- 1 file changed, 5 insertions(+), 2 deletions(-)
+ src/psu/PSUSensorMain.cpp | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 31cf769..a757dbe 100644
+index a9334ca..d4d4b99 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -193,8 +193,9 @@ struct SensorUnit
@@ -35,12 +35,7 @@ index 31cf769..a757dbe 100644
      {"fan", sensor_paths::unitRPMs},
      {"in", sensor_paths::unitVolts},
      {"power", sensor_paths::unitWatts},
-@@ -202,10 +203,12 @@ static constexpr const std::array<SensorUnit, 6> sensorTable{{
-     {"voltage", sensor_paths::unitVolts},
- }};
- 
--static constexpr std::array<PSUProperty, 20> labelMatch{{
-+static constexpr std::array<PSUProperty, 22> labelMatch{{
+@@ -206,6 +207,8 @@ constexpr static auto labelMatch = std::to_array<PSUProperty>({
      {"curr", "Output Current", 255, 0, 3, 0},
      {"fan", "Fan Speed ", 30000, 0, 0, 0},
      {"iin", "Input Current", 20, 0, 3, 0},
@@ -50,5 +45,5 @@ index 31cf769..a757dbe 100644
      {"in", "Output Voltage", 255, 0, 3, 0},
      {"iout", "Output Current", 255, 0, 3, 0},
 -- 
-2.52.0
+2.53.0-Meta
 

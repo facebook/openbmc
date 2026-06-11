@@ -1,4 +1,4 @@
-From 72c0dd9f265754dea1a993c9e718751670e965da Mon Sep 17 00:00:00 2001
+From 52ce5e9a91ed25b083bd6cbd1e84f94f854397fa Mon Sep 17 00:00:00 2001
 From: Marco Kawajiri <kawajiri@meta.com>
 Date: Fri, 5 Apr 2024 07:54:27 -0700
 Subject: [PATCH] user-mgr: Allow non-IPMI usernames with dot '.' character
@@ -66,10 +66,10 @@ index e9f909b..14cd9b2 100644
  
  TEST_F(UserMgrInTest, UserAddNotRootFailedWithInternalFailure)
 diff --git a/user_mgr.cpp b/user_mgr.cpp
-index 02a0d00..091c62c 100644
+index b835970..cb95bbd 100644
 --- a/user_mgr.cpp
 +++ b/user_mgr.cpp
-@@ -131,6 +131,11 @@ constexpr std::array<const char*, 4> allowedGroupPrefix = {
+@@ -132,6 +132,11 @@ constexpr std::array<const char*, 4> allowedGroupPrefix = {
      "openbmc_orfp_", // OpenBMC Redfish OEM Privileges
  };
  
@@ -81,7 +81,7 @@ index 02a0d00..091c62c 100644
  void checkAndThrowsForGroupChangeAllowed(const std::string& groupName)
  {
      bool allowed = false;
-@@ -343,8 +348,8 @@ void UserMgr::throwForUserExists(const std::string& userName)
+@@ -344,8 +349,8 @@ void UserMgr::throwForUserExists(const std::string& userName)
  void UserMgr::throwForUserNameConstraints(
      const std::string& userName, const std::vector<std::string>& groupNames)
  {
@@ -92,7 +92,7 @@ index 02a0d00..091c62c 100644
      {
          if (userName.length() > ipmiMaxUserNameLen)
          {
-@@ -366,8 +371,8 @@ void UserMgr::throwForUserNameConstraints(
+@@ -367,8 +372,8 @@ void UserMgr::throwForUserNameConstraints(
          elog<InvalidArgument>(Argument::ARGUMENT_NAME("User name"),
                                Argument::ARGUMENT_VALUE("Invalid length"));
      }

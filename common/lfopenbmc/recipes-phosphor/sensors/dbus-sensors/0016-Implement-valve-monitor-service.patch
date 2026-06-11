@@ -1,4 +1,4 @@
-From 9531e9f71ea1aa09a6670fd5281586e7f5870977 Mon Sep 17 00:00:00 2001
+From 9fe7d829263fbbcbc95f0801584f00f503184c00 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Tue, 29 Jul 2025 21:01:23 -0700
 Subject: [PATCH] Implement valve monitor service
@@ -458,10 +458,10 @@ index 0000000..22ff9ed
 +
 +} // namespace gpio
 diff --git a/src/leakdetector/LeakGPIODetector.cpp b/src/leakdetector/LeakGPIODetector.cpp
-index 976716f..f77c3e4 100644
+index b8a2012..ed0b330 100644
 --- a/src/leakdetector/LeakGPIODetector.cpp
 +++ b/src/leakdetector/LeakGPIODetector.cpp
-@@ -49,15 +49,15 @@ GPIODetector::GPIODetector(sdbusplus::async::context& ctx, Events& leakEvents,
+@@ -48,15 +48,15 @@ GPIODetector::GPIODetector(sdbusplus::async::context& ctx, Events& leakEvents,
                   DetectorIntf::Detector::properties_t{
                       config.name, DetectorState::Normal, config.type}),
      ctx(ctx), leakEvents(leakEvents), config(config),
@@ -482,7 +482,7 @@ index 976716f..f77c3e4 100644
      debug("Created leak detector {NAME}", "NAME", config.name);
  }
 diff --git a/src/leakdetector/LeakGPIODetector.hpp b/src/leakdetector/LeakGPIODetector.hpp
-index e841374..34554ac 100644
+index 8c27f0e..0e22232 100644
 --- a/src/leakdetector/LeakGPIODetector.hpp
 +++ b/src/leakdetector/LeakGPIODetector.hpp
 @@ -1,6 +1,6 @@
@@ -1287,5 +1287,5 @@ index d881ba8..d00cefa 100644
 +    install_dir: '/usr/libexec/dbus-sensors',
 +)
 -- 
-2.52.0
+2.53.0-Meta
 

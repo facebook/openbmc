@@ -1,4 +1,4 @@
-From 7d2d55c58855bc6517e3956e8a5513ae263be5a7 Mon Sep 17 00:00:00 2001
+From 917f2219fe7c92c696b36b00779681a30698450a Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 17:16:49 +0800
 Subject: [PATCH] requester: refresh MCTP endpoints after host reaches running
@@ -29,7 +29,7 @@ Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
  2 files changed, 158 insertions(+)
 
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 9a0c8c0..42bf5b1 100644
+index 99e4c72..69b12d7 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -32,6 +32,12 @@ MctpDiscovery::MctpDiscovery(
@@ -191,10 +191,10 @@ index 9a0c8c0..42bf5b1 100644
  {
      MctpInfos addedInfos;
 diff --git a/requester/mctp_endpoint_discovery.hpp b/requester/mctp_endpoint_discovery.hpp
-index 96a35e9..dd0ba18 100644
+index 38aa5c5..246ffb2 100644
 --- a/requester/mctp_endpoint_discovery.hpp
 +++ b/requester/mctp_endpoint_discovery.hpp
-@@ -90,6 +90,9 @@ class MctpDiscovery
+@@ -86,6 +86,9 @@ class MctpDiscovery
      /** @brief Used to watch for new MCTP endpoints */
      sdbusplus::bus::match_t mctpEndpointPropChangedSignal;
  
@@ -204,7 +204,7 @@ index 96a35e9..dd0ba18 100644
      /** @brief List of handlers need to notify when new MCTP
       * Endpoint is Added/Removed */
      std::vector<MctpDiscoveryHandlerIntf*> handlers;
-@@ -104,6 +107,17 @@ class MctpDiscovery
+@@ -100,6 +103,17 @@ class MctpDiscovery
       */
      void propertiesChangedCb(sdbusplus::message_t& msg);
  

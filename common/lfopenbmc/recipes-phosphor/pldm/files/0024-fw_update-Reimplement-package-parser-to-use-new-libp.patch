@@ -1,4 +1,4 @@
-From 48c13dd3634e9471814605fcce879b37a52dd51e Mon Sep 17 00:00:00 2001
+From 5bf50d9375591d510908afe60c42ba3dc9b4df42 Mon Sep 17 00:00:00 2001
 From: Carter Chen <carter.chen.wiwynn@gmail.com>
 Date: Mon, 1 Dec 2025 08:46:59 +0000
 Subject: [PATCH] fw_update: Reimplement package parser to use new libpldm API
@@ -34,7 +34,7 @@ Signed-off-by: Carter Chen <carter.chen.wiwynn@gmail.com>
  15 files changed, 961 insertions(+), 606 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
-index 8a5cb95..7b5c9a0 100644
+index 27b8172..dfbfb54 100644
 --- a/common/types.hpp
 +++ b/common/types.hpp
 @@ -1,4 +1,5 @@
@@ -43,7 +43,7 @@ index 8a5cb95..7b5c9a0 100644
  
  #include <sdbusplus/message/types.hpp>
  
-@@ -120,14 +121,16 @@ using VendorDefinedDescriptorTitle = std::string;
+@@ -124,14 +125,16 @@ using VendorDefinedDescriptorTitle = std::string;
  using VendorDefinedDescriptorData = std::vector<uint8_t>;
  using VendorDefinedDescriptorInfo =
      std::tuple<VendorDefinedDescriptorTitle, VendorDefinedDescriptorData>;
@@ -63,7 +63,7 @@ index 8a5cb95..7b5c9a0 100644
  using DownstreamDescriptorMap = std::unordered_map<eid, DownstreamDeviceInfo>;
  
  // Component information
-@@ -150,38 +153,39 @@ using DeviceIDRecordCount = uint8_t;
+@@ -154,38 +157,39 @@ using DeviceIDRecordCount = uint8_t;
  using DeviceUpdateOptionFlags = std::bitset<32>;
  using ApplicableComponents = std::vector<size_t>;
  using ComponentImageSetVersion = std::string;
@@ -907,7 +907,7 @@ index a4c2d03..743f629 100644
      /** @brief Component image information for all the components in the fw
       *         update package
 diff --git a/fw-update/manager.hpp b/fw-update/manager.hpp
-index d939280..086e83c 100644
+index 7a04ea0..cebbfd5 100644
 --- a/fw-update/manager.hpp
 +++ b/fw-update/manager.hpp
 @@ -44,7 +44,7 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
@@ -1418,7 +1418,7 @@ index 71bc717..fd4fad5 100644
  
  } // namespace fw_update
 diff --git a/fw-update/package_parser.hpp b/fw-update/package_parser.hpp
-index 4348a80..ac8e5e8 100644
+index 396a05f..ac8e5e8 100644
 --- a/fw-update/package_parser.hpp
 +++ b/fw-update/package_parser.hpp
 @@ -6,6 +6,7 @@
@@ -1570,7 +1570,7 @@ index 4348a80..ac8e5e8 100644
 -    PackageParserV1(PackageParserV1&&) = default;
 -    PackageParserV1& operator=(const PackageParserV1&) = delete;
 -    PackageParserV1& operator=(PackageParserV1&&) = delete;
--    ~PackageParserV1() = default;
+-    ~PackageParserV1() override = default;
 +    ComponentBitmapBitLength componentBitmapBitLength;
  
 -    /** @brief Constructor
@@ -1597,7 +1597,7 @@ index 4348a80..ac8e5e8 100644
 -        PackageParser(pkgHeaderSize, pkgVersion, componentBitmapBitLength)
 -    {}
 -
--    virtual void parse(const std::vector<uint8_t>& pkgHdr, uintmax_t pkgSize);
+-    void parse(const std::vector<uint8_t>& pkgHdr, uintmax_t pkgSize) override;
 +    static ApplicableComponents parseBitmapToComponents(
 +        const uint8_t* bitmapPtr, size_t bitmapLength);
  };
@@ -2413,5 +2413,5 @@ index 2b896ab..28af66b 100644
      std::unordered_map<mctp_eid_t, std::unique_ptr<DeviceUpdater>>
          deviceUpdaterMap;
 -- 
-2.52.0
+2.53.0-Meta
 

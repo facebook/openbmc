@@ -70,10 +70,16 @@ def async_web_handler_in_common_executor(func):
     """
 
     async def func_wrapper(self, request: web.Request, *args, **kwargs):
+        # aiohttp >= 2.3 exposes can_read_body; aiohttp 2.1.0 used on
+        # older distros (rocko/dunfell) only has the equivalent payload check
+        # via `request.content.at_eof()``.
+        can_read_body = getattr(request, "can_read_body", None)
+        if can_read_body is None:
+            can_read_body = not request.content.at_eof()
         ctx = RequestContext(
             method=request.method,
             path=request.path,
-            json_data=await request.json() if request.can_read_body else {},
+            json_data=await request.json() if can_read_body else {},
         )
         return await _run_in_common_executor(func, self, ctx, *args, **kwargs)
 

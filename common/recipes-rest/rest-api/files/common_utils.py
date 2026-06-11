@@ -3,7 +3,8 @@ import json
 import os
 import re
 from concurrent.futures import ThreadPoolExecutor
-from typing import Dict, List, Optional, Set, Tuple, Union  # noqa: F401
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional, Set, Tuple, Union  # noqa: F401
 
 from aiohttp import web
 from common_webapp import WebApp
@@ -14,38 +15,65 @@ common_executor = ThreadPoolExecutor(5)
 ENDPOINT_CHILDREN = {}  # type: Dict[str, Set[str]]
 
 
-def common_force_async(func):
-    # common handler will use its own executor (thread based),
-    # we initentionally separated this from the executor of
-    # board-specific REST handler, so that any problem in
-    # common REST handlers will not interfere with board-specific
-    # REST handler, and vice versa
+@dataclass(frozen=True)
+class RequestContext:
+    """Thread-safe, immutable context extracted from an aiohttp request.
+
+    This dataclass captures request data before entering the executor thread,
+    since aiohttp's request object is not thread-safe.
+    """
+
+    method: str
+    path: str
+    json_data: Dict[str, Any]
+
+
+async def _run_in_common_executor(func, *args, **kwargs):
+    # The common REST handlers use their own executor (thread based); this is
+    # intentionally separated from the executor of the board-specific REST
+    # handlers, so that a problem in the common REST handlers will not
+    # interfere with the board-specific handlers, and vice versa.
+    loop = asyncio.get_running_loop()
+    return await loop.run_in_executor(common_executor, func, *args, **kwargs)
+
+
+def async_in_common_executor(func):
+    """Decorator to run a blocking function in the common executor thread pool.
+
+    Use this for standalone functions that do NOT take an aiohttp request as a
+    parameter. The decorated function's arguments are forwarded unchanged.
+
+    For request handlers that need access to the aiohttp request, use
+    `async_web_handler_in_common_executor` instead.
+    """
+
     async def func_wrapper(*args, **kwargs):
-        # Convert the possibly blocking helper function into async
-        loop = asyncio.get_running_loop()
-        result = await loop.run_in_executor(common_executor, func, *args, **kwargs)
-        return result
+        return await _run_in_common_executor(func, *args, **kwargs)
 
     return func_wrapper
 
 
-# When we call request.json() in asynchronous function, a generator
-# will be returned. Upon calling next(), the generator will either :
-#
-# 1) return the next data as usual,
-#   - OR -
-# 2) throw StopIteration, with its first argument as the data
-#    (this is for indicating that no more data is available)
-#
-# Not sure why aiohttp's request generator is implemented this way, but
-# the following function will handle both of the cases mentioned above.
-def get_data_from_generator(data_generator):
-    data = None
-    try:
-        data = next(data_generator)
-    except StopIteration as e:
-        data = e.args[0]
-    return data
+def async_web_handler_in_common_executor(func):
+    """Decorator to run a blocking aiohttp handler in the common executor thread pool.
+
+    Use this for request handlers that take an aiohttp request as a parameter.
+    Because the aiohttp request object is not thread-safe, the request is read
+    on the event loop and converted into an immutable, thread-safe
+    RequestContext, which is passed to the handler in place of the request.
+
+    For standalone functions that do not take a request, use `async_in_common_executor`
+    instead.
+    """
+
+    async def func_wrapper(self, request: web.Request, *args, **kwargs):
+        ctx = RequestContext(
+            method=request.method,
+            path=request.path,
+            json_data=await request.json() if request.can_read_body else {},
+        )
+        return await _run_in_common_executor(func, self, ctx, *args, **kwargs)
+
+    return func_wrapper
 
 
 def get_endpoints(path: str):

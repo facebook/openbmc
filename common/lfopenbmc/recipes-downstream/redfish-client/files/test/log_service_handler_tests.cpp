@@ -4,6 +4,7 @@
 #include <redfish_client/core/cper_mapper.hpp>
 #include <redfish_client/core/hgx_ps_run_pwr_fault_mapper.hpp>
 #include <redfish_client/core/hgx_thermal_mapper.hpp>
+#include <redfish_client/core/hgx_leak_detector_mapper.hpp>
 #include <redfish_client/core/sensor_threshold_mapper.hpp>
 
 #include <nlohmann/json.hpp>
@@ -170,6 +171,7 @@ class LogServiceHandlerTest : public ::testing::Test
              "temperature", "HGX_GPU2_DRAM_TEMP_C"}};
 
         registry.registerMapper(std::make_unique<HgxPsRunPwrFaultMapper>(), 110);
+        registry.registerMapper(std::make_unique<HgxLeakDetectorMapper>(), 109);
         registry.registerMapper(std::make_unique<SensorThresholdMapper>(testMappers), 106);
         registry.registerMapper(std::make_unique<HgxThermalMapper>(), 105);
         registry.registerMapper(std::make_unique<CperMapper>(), 100);
@@ -849,6 +851,61 @@ TEST_F(LogServiceHandlerTest, HgxThermalMapperTest)
               log2.message);
     EXPECT_EQ("/redfish/v1/Systems/HGX_Baseboard_0/Processors/GPU_SXM_8",
               log2.additionalData["DEVICE"]);
+}
+
+static constexpr const char* kLeakDetectorEntryCollectionJson = R"(
+{
+    "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries",
+    "@odata.type": "#LogEntryCollection.LogEntryCollection",
+    "Members@odata.count": 1,
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/System0/LogServices/EventLog/Entries/4307",
+            "@odata.type": "#LogEntry.v1_15_0.LogEntry",
+            "Id": "4307",
+            "EntryType": "Event",
+            "Created": "2026-04-06T21:59:59+00:00",
+            "MessageId": "ResourceEvent.1.0.ResourceStatusChangedCritical",
+            "Message": "The health of resource 'Chassis_0_LeakDetector_0_ColdPlate' has changed to Critical.",
+            "MessageArgs": ["Chassis_0_LeakDetector_0_ColdPlate"],
+            "Severity": "Critical",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Chassis/HGX_Baseboard_0/LeakDetection/LeakDetectors/Chassis_0_LeakDetector_0_ColdPlate"
+                }
+            }
+        }
+    ]
+}
+)";
+
+TEST_F(LogServiceHandlerTest, LeakDetectorMapperTest)
+{
+    sdbusplus::async::context ctx;
+    auto logServiceHandler =
+        std::make_shared<LogServiceHandler>(ctx, "fake.url", std::nullopt);
+
+    auto logEntryCollection =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            kLeakDetectorEntryCollectionJson);
+
+    using namespace std::string_literals;
+
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+      co_await logServiceHandler->commit(logEntryCollection);
+    }());
+
+    // Expect 1 log: LeakDetectedCritical
+    ASSERT_EQ(1, logManager.logs->size());
+
+    Log log = (*logManager.logs)[0];
+    EXPECT_EQ(LoggingLevel::Critical, log.severity);
+    EXPECT_EQ("xyz.openbmc_project.State.Leak.Detector.LeakDetectedCritical"s,
+              log.message);
+
+    std::string expectedDetectorPath =
+        "/xyz/openbmc_project/state/leak/detector/Chassis_0_LeakDetector_0_ColdPlate";
+    EXPECT_EQ(expectedDetectorPath, log.additionalData["DETECTOR_NAME"]);
 }
 
 TEST_F(LogServiceHandlerTest, SensorThresholdMappingTest)

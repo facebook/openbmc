@@ -1,36 +1,49 @@
-From 51b46608a2d7e298f960f3aa2780657096b29dd9 Mon Sep 17 00:00:00 2001
+From b52f8fed587d3858da16c0f41b3af45f2f17840f Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
-Date: Fri, 26 Dec 2025 14:35:14 +0800
+Date: Tue, 31 Mar 2026 20:37:28 +0800
 Subject: [PATCH] terminus: replace inventory and sensor configuration
 
-Add fetchEntityManagerConfiguration to retrieve inventory name and
-sensor configuration from EntityManager.
+Some devices (e.g. OCP NIC) do not provide auxiliary sensor names.
+When auxiliary names are unavailable, pldmd uses a combination of
+terminus ID and sensor ID as the sensor name.
 
-This queries EntityManager via GetManagedObjects using the associated
-inventory path, discovers PLDM sensor mappings, and updates auxiliary
-sensor names based on sensor ID and Name properties.
+Introduce fetchEntityManagerConfiguration to query EntityManager via
+GetManagedObjects using the associated inventory path. This allows
+pldmd to discover PLDM sensor mappings and update auxiliary sensor
+names based on sensor ID and Name properties.
 
 EM link:https://gerrit.openbmc.org/c/openbmc/entity-manager/+/86156
+
+Testing:
+On the Harma platform, replace the default PLDM sensor and inventory
+names with platform-specific names.
+
+Sensor name updates:
+- Terminus_1_Sensor_300 to NIC_TEMPERATURE1
+- Terminus_1_Sensor_500 to NIC_TEMPERATURE2
+
+Inventory name update:
+- MINERVA_AEGIS to Minerva_Aegis
 
 Change-Id: I326459c75d6dc8b822302eaf7f0b85f13412b0db
 Signed-off-by: Peter Yin <peter.yin@quantatw.com>
 ---
- common/types.hpp                              |   7 +-
+ common/types.hpp                              |  11 +-
  fw-update/inventory_manager.cpp               |   2 +-
  .../test/firmware_inventory_manager_test.cpp  |   5 +-
- platform-mc/terminus.cpp                      | 161 +++++++++++++++-
+ platform-mc/terminus.cpp                      | 160 +++++++++++++++-
  platform-mc/terminus.hpp                      |  44 +++++
- platform-mc/terminus_manager.cpp              |  52 +++++
+ platform-mc/terminus_manager.cpp              |  54 +++++-
  platform-mc/test/event_manager_test.cpp       |  12 +-
  platform-mc/test/platform_manager_test.cpp    |  24 +--
  platform-mc/test/terminus_manager_test.cpp    |  32 ++--
- requester/mctp_endpoint_discovery.cpp         | 178 +++++++++++++-----
- requester/mctp_endpoint_discovery.hpp         |  11 ++
+ requester/mctp_endpoint_discovery.cpp         | 181 +++++++++++++-----
+ requester/mctp_endpoint_discovery.hpp         |  15 +-
  .../test/mctp_endpoint_discovery_test.cpp     |  31 +--
- 12 files changed, 467 insertions(+), 92 deletions(-)
+ 12 files changed, 472 insertions(+), 99 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
-index 5cc260d..8a5cb95 100644
+index 5cc260d..27b8172 100644
 --- a/common/types.hpp
 +++ b/common/types.hpp
 @@ -37,6 +37,10 @@ using NetworkId = uint32_t;
@@ -54,6 +67,17 @@ index 5cc260d..8a5cb95 100644
  
  /** @brief Type definition of MCTP endpoint D-Bus properties in
   *         xyz.openbmc_project.MCTP.Endpoint D-Bus interface.
+@@ -61,6 +66,10 @@ using MctpEndpointProps = std::tuple<NetworkId, eid, MCTPMsgTypes>;
+  */
+ using MctpInfos = std::vector<MctpInfo>;
+ 
++const std::vector<std::string> interfaceFilter = {
++    "xyz.openbmc_project.Configuration.MCTPI2CTarget",
++    "xyz.openbmc_project.Configuration.MCTPI3CTarget"};
++
+ /**
+  * In `Table 2 - Special endpoint IDs` of DSP0236.
+  * EID from 1 to 7 is reserved EID. So the start valid EID is 8
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
 index 318ac01..82392fe 100644
 --- a/fw-update/inventory_manager.cpp
@@ -84,18 +108,10 @@ index c7effaa..99f8ff2 100644
  
      Event event(sdeventplus::Event::get_default());
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index d831e24..2d3324f 100644
+index d831e24..4a90ebc 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
-@@ -2,6 +2,7 @@
- 
- #include "common/start_lifetime_as.hpp"
- #include "dbus_impl_fru.hpp"
-+#include "requester/mctp_endpoint_discovery.hpp"
- 
- #include <libpldm/platform.h>
- 
-@@ -230,6 +231,12 @@ void Terminus::parseTerminusPDRs()
+@@ -230,6 +230,12 @@ void Terminus::parseTerminusPDRs()
          }
      }
  
@@ -108,7 +124,7 @@ index d831e24..2d3324f 100644
      auto tName = findTerminusName();
      if (tName && !tName.value().empty())
      {
-@@ -250,7 +257,18 @@ void Terminus::parseTerminusPDRs()
+@@ -250,7 +256,18 @@ void Terminus::parseTerminusPDRs()
  #endif
      }
  
@@ -128,7 +144,7 @@ index d831e24..2d3324f 100644
      {
          lg2::info("Terminus ID {TID}: Created Inventory path {PATH}.", "TID",
                    tid, "PATH", inventoryPath);
-@@ -837,5 +855,146 @@ std::vector<std::string> Terminus::getSensorNames(const SensorID& sensorId)
+@@ -837,5 +854,146 @@ std::vector<std::string> Terminus::getSensorNames(const SensorID& sensorId)
      return sensorNames;
  }
  
@@ -345,10 +361,18 @@ index 4627737..d5b8648 100644
      std::string inventoryPath;
  
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index dfeea76..1d70d84 100644
+index dfeea76..de32b24 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
-@@ -201,6 +201,50 @@ exec::task<int> TerminusManager::discoverMctpTerminusTask()
+@@ -187,7 +187,6 @@ exec::task<int> TerminusManager::discoverMctpTerminusTask()
+ {
+     std::vector<pldm_tid_t> addedTids;
+     bool terminusInitFailed = false;
+-
+     while (!queuedMctpInfos.empty())
+     {
+         if (manager)
+@@ -201,6 +200,50 @@ exec::task<int> TerminusManager::discoverMctpTerminusTask()
          for (const auto& mctpInfo : mctpInfos)
          {
              auto it = findTerminusPtr(mctpInfo);
@@ -399,11 +423,12 @@ index dfeea76..1d70d84 100644
              if (it == termini.end())
              {
                  mctpInfoAvailTable[mctpInfo] = true;
-@@ -496,6 +540,14 @@ exec::task<int> TerminusManager::initMctpTerminus(const MctpInfo& mctpInfo)
+@@ -496,6 +539,15 @@ exec::task<int> TerminusManager::initMctpTerminus(const MctpInfo& mctpInfo)
          termini[tid]->setTerminusName(mctpInfoName.value());
      }
  
 +    AssociatedPath associatedPath = std::get<5>(mctpInfo);
++
 +    if (associatedPath.has_value())
 +    {
 +        lg2::info("Terminus {TID} has associated path {PATH}", "PATH",
@@ -645,7 +670,7 @@ index 8db58f1..ca1b3ef 100644
      auto tid = mappedTid.value();
      termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index eda8a42..3563281 100644
+index eda8a42..6f66824 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -80,9 +80,9 @@ void MctpDiscovery::getMctpInfos(std::map<MctpInfo, Availability>& mctpInfoMap)
@@ -682,7 +707,7 @@ index eda8a42..3563281 100644
              searchConfigurationFor(pldm::utils::DBusHandler(), mctpInfo);
              if (!std::ranges::contains(existingMctpInfos, mctpInfo))
              {
-@@ -498,71 +499,164 @@ std::string MctpDiscovery::constructMctpReactorObjectPath(
+@@ -498,71 +499,163 @@ std::string MctpDiscovery::constructMctpReactorObjectPath(
             "/endpoints/" + std::to_string(eid) + "/configured_by";
  }
  
@@ -698,8 +723,10 @@ index eda8a42..3563281 100644
 -        std::string associatedObjPath;
 -        std::string associatedService;
 -        std::string associatedInterface;
+-        sdbusplus::object_path inventorySubtreePath(inventorySubtreePathStr);
 +        // Define the search scope for the association
-         sdbusplus::object_path inventorySubtreePath(inventorySubtreePathStr);
++        sdbusplus::message::object_path inventorySubtreePath(
++            inventorySubtreePathStr);
 +        constexpr auto subTreeDepth = 3;
  
 -        //"/{board or chassis type}/{board or chassis}/{device}"
@@ -748,12 +775,21 @@ index eda8a42..3563281 100644
 +                return std::ranges::contains(interfaceFilter, intf);
              });
 -        if (associatedInterfaceItr == dBusIntfList.end())
-+
-+        if (it != dBusIntfList.end())
-         {
+-        {
 -            error("No associated interface found for path {PATH}", "PATH",
 -                  mctpReactorObjectPath);
 -            return;
+-        }
+-        associatedInterface = *associatedInterfaceItr;
+-        auto mctpTargetProperties = handler.getDbusPropertiesVariant(
+-            associatedService.c_str(), associatedObjPath.c_str(),
+-            associatedInterface.c_str());
+-        auto name = getNameFromProperties(mctpTargetProperties);
+-        if (!name.empty())
++
++        if (it != dBusIntfList.end())
+         {
+-            std::get<std::optional<std::string>>(mctpInfo) = name;
 +            // Retrieve properties to get the name
 +            auto mctpTargetProperties = handler.getDbusPropertiesVariant(
 +                associatedService.c_str(), associatedObjPath.c_str(),
@@ -770,15 +806,13 @@ index eda8a42..3563281 100644
 +            configurations.insert_or_assign(associatedObjPath, mctpInfo);
 +            return true;
          }
--        associatedInterface = *associatedInterfaceItr;
--        auto mctpTargetProperties = handler.getDbusPropertiesVariant(
--            associatedService.c_str(), associatedObjPath.c_str(),
--            associatedInterface.c_str());
--        auto name = getNameFromProperties(mctpTargetProperties);
--        if (!name.empty())
-+    }
-+    catch (const std::exception& e)
-+    {
+-        configurations.emplace(associatedObjPath, mctpInfo);
+     }
+     catch (const std::exception& e)
+     {
+-        error(
+-            "Error getting associated subtree for path {PATH}, error - {ERROR}",
+-            "PATH", mctpReactorObjectPath, "ERROR", e);
 +        lg2::error("Error resolving association for {PATH}: {ERR}", "PATH",
 +                   mctpReactorObjectPath, "ERR", e);
 +    }
@@ -791,27 +825,9 @@ index eda8a42..3563281 100644
 +{
 +    const auto mctpReactorObjectPath = constructMctpReactorObjectPath(mctpInfo);
 +
-+    // Synchronous attempt: If the association exists, resolve it immediately.
-+    if (resolveAssociation(handler, mctpInfo))
-+    {
-+        // If there was a lingering match rule for this path, clean it up as it
-+        // is no longer needed.
-+        if (associationMatches.contains(mctpReactorObjectPath))
-         {
--            std::get<std::optional<std::string>>(mctpInfo) = name;
-+            associationMatches.erase(mctpReactorObjectPath);
-         }
--        configurations.emplace(associatedObjPath, mctpInfo);
-+        return;
-     }
--    catch (const std::exception& e)
-+
 +    // If resolution failed, check if we are already monitoring this path.
 +    if (associationMatches.contains(mctpReactorObjectPath))
-     {
--        error(
--            "Error getting associated subtree for path {PATH}, error - {ERROR}",
--            "PATH", mctpReactorObjectPath, "ERROR", e);
++    {
          return;
      }
 +
@@ -880,14 +896,35 @@ index eda8a42..3563281 100644
 +        lg2::error("Failed to create match rule for {PATH}: {ERR}", "PATH",
 +                   mctpReactorObjectPath, "ERR", e);
 +    }
++
++    // Synchronous attempt after registering the match rule. If the association
++    // already exists, resolve it immediately and cancel the deferred rule.
++    // Registering first ensures that if InterfacesAdded arrives while
++    // resolveAssociation's bus.call() blocks the event loop, the signal lands
++    // in the socket buffer and is processed when the event loop resumes.
++    if (resolveAssociation(handler, mctpInfo))
++    {
++        associationMatches.erase(mctpReactorObjectPath);
++    }
  }
  
  void MctpDiscovery::removeConfigs(const MctpInfos& removedInfos)
 diff --git a/requester/mctp_endpoint_discovery.hpp b/requester/mctp_endpoint_discovery.hpp
-index ac980ac..20f9c5c 100644
+index ac980ac..47e90e7 100644
 --- a/requester/mctp_endpoint_discovery.hpp
 +++ b/requester/mctp_endpoint_discovery.hpp
-@@ -243,6 +243,17 @@ class MctpDiscovery
+@@ -28,10 +28,6 @@ constexpr const char* MCTPConnectivityProp = "Connectivity";
+ constexpr const char* inventorySubtreePathStr =
+     "/xyz/openbmc_project/inventory/system";
+ 
+-const std::vector<std::string> interfaceFilter = {
+-    "xyz.openbmc_project.Configuration.MCTPI2CTarget",
+-    "xyz.openbmc_project.Configuration.MCTPI3CTarget"};
+-
+ /** @class MctpDiscoveryHandlerIntf
+  *
+  * This abstract class defines the APIs for MctpDiscovery class has common
+@@ -243,6 +239,17 @@ class MctpDiscovery
       * information.
       */
      Configurations configurations;
@@ -990,5 +1027,5 @@ index 3eb57cf..71ce9c4 100644
      constexpr auto mockedDbusPath =
          "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
 -- 
-2.52.0
+2.34.1
 

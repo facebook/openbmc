@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: OpenBMC <openbmc@meta.com>
+Date: Tue, 10 Jun 2026 00:00:00 -0700
+Subject: [PATCH] unix/configure: don't let implicit-decl errors break feature
+ probes
+
+UnZip's hand-rolled configure detects optional features with historical
+"link tests" that call library functions (closedir/opendir, memset,
+fchmod, ...) without including a prototype, relying on the C compiler
+treating an implicit function declaration (and implicit int) as a mere
+warning.
+
+GCC >= 14 promotes -Wimplicit-function-declaration, -Wimplicit-int and
+-Wint-conversion to hard errors by default. Under such a host compiler
+the probe programs fail to COMPILE, so configure wrongly concludes the
+features are absent and emits -DNO_DIR, -DZMEM, -DNO_ERRNO, -DNO_FCHMOD,
+etc. -DNO_DIR in particular activates an AT&T-3B1-era fallback in
+unix/unix.c ("typedef FILE DIR;" + custom opendir/readdir) that collides
+with the system <dirent.h>, breaking the (native) build entirely.
+
+Restore the historical behaviour by downgrading those three diagnostics
+back to warnings for the compiler used by configure and the subsequent
+build, so feature detection works as intended.
+
+Upstream-Status: Inappropriate [legacy package, no active upstream]
+---
+ unix/configure | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/unix/configure b/unix/configure
+index 0a4d2d0..1111111 100644
+--- a/unix/configure
++++ b/unix/configure
+@@ -12,6 +12,14 @@
+ trap "rm -f conftest* core a.out; exit 1" 1 2 3 15
+ 
+ CC=${1-cc}
++# OpenBMC: GCC >= 14 makes -Wimplicit-function-declaration, -Wimplicit-int and
++# -Wint-conversion errors by default. The feature probes below are historical
++# link tests that call closedir()/memset()/fchmod() etc. without a prototype;
++# under a newer host compiler they fail to COMPILE, so configure wrongly
++# concludes the features are missing and emits -DNO_DIR/-DZMEM/-DNO_ERRNO.
++# -DNO_DIR then enables a broken "typedef FILE DIR" fallback that collides
++# with <dirent.h>. Restore warning behaviour so detection works.
++CC="$CC -Wno-error=implicit-function-declaration -Wno-error=implicit-int -Wno-error=int-conversion"
+ CFLAGS=${2}
+ CFLAGSR=${CFLAGS}
+ IZ_BZIP2=${3}

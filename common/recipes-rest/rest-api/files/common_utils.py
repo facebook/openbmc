@@ -55,14 +55,17 @@ def async_in_common_executor(func):
 
 
 def async_web_handler_in_common_executor(func):
-    """Decorator to run a blocking aiohttp handler in the common executor thread pool.
+    """Decorator for aiohttp endpoint handlers, run in the common executor thread pool.
 
-    Use this for request handlers that take an aiohttp request as a parameter.
-    Because the aiohttp request object is not thread-safe, the request is read
-    on the event loop and converted into an immutable, thread-safe
-    RequestContext, which is passed to the handler in place of the request.
+    Use this for handlers wired up as aiohttp routes (the ones aiohttp invokes
+    with a `web.Request`). Note that the decorated handler does NOT receive the
+    raw request: the decorator reads the request on the event loop and passes a
+    `RequestContext` in its place, so the handler's signature is
+    `(self, ctx: RequestContext)`, not `(self, request)`. This conversion is
+    required because the aiohttp request object is not thread-safe and must not
+    be touched from the executor thread.
 
-    For standalone functions that do not take a request, use `async_in_common_executor`
+    For standalone functions that do not handle a web request, use `async_in_common_executor`
     instead.
     """
 

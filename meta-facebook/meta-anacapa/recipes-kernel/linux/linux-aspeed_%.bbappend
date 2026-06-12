@@ -18,4 +18,5 @@ SRC_URI:append = " \
     file://1013-jtag-jtag-aspeed-Bring-changes-for-Aspeed-26XX.patch \
     file://1014-jtag-jtag-aspeed-Increase-the-wait-iteration-to-300.patch \
     file://1015-arm-dts-anacapa-Modify-the-RMI-TSI-device-IDs.patch \
+    file://1016-ARM-dts-aspeed-anacapa-add-interrupt-properties-for-.patch \
 "

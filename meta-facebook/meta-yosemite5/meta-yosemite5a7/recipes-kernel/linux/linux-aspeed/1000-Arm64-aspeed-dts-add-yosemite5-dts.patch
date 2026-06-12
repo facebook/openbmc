@@ -1,4 +1,4 @@
-From 1d047c942355de9123cd7949a5c8ee9825e4c9b0 Mon Sep 17 00:00:00 2001
+From edc173f4587a13fe33d7e87bff654f7ee42b5bf2 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 2 Oct 2025 11:13:35 +0800
 Subject: [PATCH] Arm64: aspeed: dts: add yosemite5 dts
@@ -16,13 +16,13 @@ index ffe7e1501..f19cb564f 100644
 +++ b/arch/arm64/boot/dts/aspeed/Makefile
 @@ -1,4 +1,5 @@
  # SPDX-License-Identifier: GPL-2.0
-
+ 
  dtb-$(CONFIG_ARCH_ASPEED) += \
 +	aspeed-bmc-facebook-yosemite5a7.dtb \
  	ast2700-evb.dtb
 diff --git a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
 new file mode 100644
-index 000000000..2cde05662
+index 000000000..8326806ff
 --- /dev/null
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
 @@ -0,0 +1,1385 @@
@@ -1313,7 +1313,7 @@ index 000000000..2cde05662
 +	/*bit120-bit127*/
 +	"","",
 +	"","",
-+	"","",
++	"PRSNT_CXL_N","",
 +	"","",
 +	"","",
 +	"","",
@@ -1411,6 +1411,6 @@ index 000000000..2cde05662
 +&pinctrl_rmii0_default {
 +	drive-strength = <16>;
 +};
---
+-- 
 2.53.0
 

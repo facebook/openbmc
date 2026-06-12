@@ -120,4 +120,5 @@ SRC_URI:append = " \
     file://2705-pinctrl-aspeed-Add-AST2700-SoC0-support.patch \
     file://2706-arm64-dts-aspeed-add-pinctrl-definitions-for-G7-plat.patch \
     file://2707-arm64-dts-aspeed-add-peripheral-nodes-for-G7-platfor.patch \
+    file://2708-pinctrl-aspeed-Fix-GPIO-mux-value-for-ADC-capable-ba.patch \
 "

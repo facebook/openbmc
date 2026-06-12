@@ -5,7 +5,7 @@ project(
     version: '0.2',
     license: 'GPL2',
     # Meson 0.40 only supports c++1z as an alias for c++17.
-    default_options: ['cpp_std=c++1z', 'warning_level=3', 'werror=true'],
+    default_options: ['cpp_std=c++2a', 'warning_level=3', 'werror=true'],
     meson_version: '>=0.40',
 )
 

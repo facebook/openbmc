@@ -76,6 +76,7 @@ srcs = [
     'src/hgx_thermal_mapper.cpp',
     'src/hgx_leak_detector_mapper.cpp',
     'src/sensor_threshold_mapper.cpp',
+    'src/aggregate_mapper.cpp',
 ]
 
 root_inc = include_directories('include')

@@ -23,6 +23,8 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 37095,1,,,,,FLOAT,,,0,,1,,UPS_Pump_Rack_Battery_Shutdown_Voltage,Volts
 37096,1,,,,,FLOAT,,,0,,1,,UPS_Pump_Rack_Battery_Low_Voltage,Volts
 37097,1,,,,,FLOAT,,,0,,1,,UPS_Pump_Rack_Battery_High_Voltage,Volts
+37114,5,,,,,STRING,,,,,,,UPS_Pump_Rack_LCD_FW_Version,
+37121,1,,,,,FLOAT,,,0,,1,,UPS_Pump_Rack_Battery_Temperature,DegreesC
 37135,1,,,,,INTEGER,,,,,,,UPS_Fan_Rack_1_Warning_Information_1,
 37136,1,,,,,INTEGER,,,,,,,UPS_Fan_Rack_1_Warning_Information_2,
 37137,1,,,,,INTEGER,,,,,,,UPS_Fan_Rack_1_Warning_Information_3,
@@ -47,6 +49,8 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 37156,1,,,,,FLOAT,,,0,,1,,UPS_Fan_Rack_1_Battery_Shutdown_Voltage,Volts
 37157,1,,,,,FLOAT,,,0,,1,,UPS_Fan_Rack_1_Battery_Low_Voltage,Volts
 37158,1,,,,,FLOAT,,,0,,1,,UPS_Fan_Rack_1_Battery_High_Voltage,Volts
+37175,5,,,,,STRING,,,,,,,UPS_Fan_Rack_1_LCD_FW_Version,
+37182,1,,,,,FLOAT,,,0,,1,,UPS_Fan_Rack_1_Battery_Temperature,DegreesC
 37201,1,,,,,INTEGER,,,,,,,UPS_Fan_Rack_2_Warning_Information_1,
 37202,1,,,,,INTEGER,,,,,,,UPS_Fan_Rack_2_Warning_Information_2,
 37203,1,,,,,INTEGER,,,,,,,UPS_Fan_Rack_2_Warning_Information_3,
@@ -71,3 +75,8 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 37222,1,,,,,FLOAT,,,0,,1,,UPS_Fan_Rack_2_Battery_Shutdown_Voltage,Volts
 37223,1,,,,,FLOAT,,,0,,1,,UPS_Fan_Rack_2_Battery_Low_Voltage,Volts
 37224,1,,,,,FLOAT,,,0,,1,,UPS_Fan_Rack_2_Battery_High_Voltage,Volts
+37241,5,,,,,STRING,,,,,,,UPS_Fan_Rack_2_LCD_FW_Version,
+37248,1,,,,,FLOAT,,,0,,1,,UPS_Fan_Rack_2_Battery_Temperature,DegreesC
+37696,5,,,,,STRING,,,,,,,UPS_Pump_Rack_FBPN,
+37701,5,,,,,STRING,,,,,,,UPS_Fan_Rack_1_FBPN,
+37706,5,,,,,STRING,,,,,,,UPS_Fan_Rack_2_FBPN,

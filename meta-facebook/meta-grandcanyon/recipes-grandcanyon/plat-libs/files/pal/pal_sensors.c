@@ -39,7 +39,7 @@ static bool is_dpb_sensor_cached = false;
 static bool is_scc_sensor_cached = false;
 
 static sensor_info_t g_sinfo[MAX_SENSOR_NUM + 1] = {0};
-static bool is_sdr_init[FRU_CNT] = {false};
+static bool is_sdr_init[MAX_NUM_FRUS+1] = {false};
 
 static uint8_t dpb_source_info = UNKNOWN_SOURCE;
 static uint8_t iocm_source_info = UNKNOWN_SOURCE;

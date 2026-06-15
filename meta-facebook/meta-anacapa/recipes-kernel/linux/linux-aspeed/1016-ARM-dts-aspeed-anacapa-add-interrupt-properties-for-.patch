@@ -1,4 +1,4 @@
-From c424e2ae6f4aca16936398d6914ed21d0cd0b711 Mon Sep 17 00:00:00 2001
+From e29a05d1d8be57ec9e1c5d7aadf920d1b973311c Mon Sep 17 00:00:00 2001
 From: Rex Fu <Rex.Fu@amd.com>
 Date: Fri, 17 Apr 2026 14:14:55 +0800
 Subject: [PATCH] ARM: dts: aspeed: anacapa: add interrupt properties for PDB
@@ -15,10 +15,10 @@ Signed-off-by: Rex Fu <Rex.Fu@amd.com>
  1 file changed, 12 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-index 6d231d8c8..c935e2b9f 100644
+index ff13ba4dd90e..655e324c92df 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-@@ -509,6 +509,9 @@ gpio@22 {
+@@ -514,6 +514,9 @@ gpio@22 {
  				gpio-controller;
  				#gpio-cells = <2>;
  
@@ -28,7 +28,7 @@ index 6d231d8c8..c935e2b9f 100644
  				gpio-line-names =
  					"RPDB_FAN_FULL_SPEED_R_N", "RPDB_I2C_TEMP75_U8_ALERT_R_N",
  					"RPDB_I2C_TMP432_U29_ALERT_R_N", "RPDB_GLOBAL_WP",
-@@ -528,6 +531,9 @@ gpio@24 {
+@@ -533,6 +536,9 @@ gpio@24 {
  				gpio-controller;
  				#gpio-cells = <2>;
  
@@ -38,7 +38,7 @@ index 6d231d8c8..c935e2b9f 100644
  				gpio-line-names =
  					"RPDB_EAM2_PRSNT_MOS_N_R", "RPDB_EAM3_PRSNT_MOS_N_R",
  					"RPDB_PWRGD_P50V_HSC4_SYS_R",
-@@ -557,6 +563,9 @@ gpio@22 {
+@@ -562,6 +568,9 @@ gpio@22 {
  				gpio-controller;
  				#gpio-cells = <2>;
  
@@ -48,7 +48,7 @@ index 6d231d8c8..c935e2b9f 100644
  				gpio-line-names =
  					"LPDB_FAN_FULL_SPEED_R_N","LPDB_I2C_TEMP75_U8_ALERT_R_N",
  					"LPDB_I2C_TMP432_U29_ALERT_R_N","LPDB_GLOBAL_WP",
-@@ -574,6 +583,9 @@ gpio@24 {
+@@ -579,6 +588,9 @@ gpio@24 {
  				gpio-controller;
  				#gpio-cells = <2>;
  
@@ -59,5 +59,5 @@ index 6d231d8c8..c935e2b9f 100644
  					"LPDB_P50V_FAN1_R2_PG","LPDB_P50V_FAN2_R2_PG",
  					"LPDB_P50V_FAN3_R2_PG","LPDB_P50V_FAN4_R2_PG",
 -- 
-2.34.1
+2.53.0-Meta
 

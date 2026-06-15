@@ -5,6 +5,6 @@ SRC_URI:append = " \
     file://0002-configuration-santabarbara-configure-MMC-as-MCTPI2CT.patch \
     file://0003-configurations-revise-the-BRCM-800G-OCP-NIC-sensor-n.patch \
     file://0004-configuration-santabarbara-update-NIC-thresholds.patch \
-    file://0007-configuration-santabarbara-add-PLDM-sensors-to-SWB-M.patch \
-    file://0008-configuration-santabarbara-add-Inventory-PowerState-.patch \
+    file://0005-configuration-santabarbara-add-PLDM-sensors-to-SWB-M.patch \
+    file://0006-configuration-santabarbara-add-Inventory-PowerState-.patch \
 "

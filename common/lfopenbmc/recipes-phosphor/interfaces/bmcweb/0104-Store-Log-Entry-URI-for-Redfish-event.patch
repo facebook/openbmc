@@ -1,4 +1,4 @@
-From 910e2295b1f789139f83e54087f49a571aafe239 Mon Sep 17 00:00:00 2001
+From 91da7c83695e2c75e60dbdbef970f7dd56c5c351 Mon Sep 17 00:00:00 2001
 From: Archit Mehrotra <architmehrotra@meta.com>
 Date: Sat, 4 Apr 2026 11:20:55 -0700
 Subject: [PATCH] Store Log Entry URI for Redfish event
@@ -340,5 +340,5 @@ index f57c26c0..79a68e3c 100644
  } // namespace
  } // namespace redfish::event_log
 -- 
-2.52.0
+2.53.0-Meta
 

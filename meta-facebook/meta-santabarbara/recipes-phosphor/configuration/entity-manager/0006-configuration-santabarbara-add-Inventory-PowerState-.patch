@@ -1,4 +1,4 @@
-From ecf46ee295c017b86b708a4f09aafbb833e3faf8 Mon Sep 17 00:00:00 2001
+From 5de42bdf955e1c5dddfe43c5b630207a2e536435 Mon Sep 17 00:00:00 2001
 From: Freddie Jheng <Freddie.Jheng@quantatw.com>
 Date: Wed, 10 Jun 2026 11:10:55 +0800
 Subject: [PATCH] configuration: santabarbara: add Inventory/PowerState to
@@ -44,5 +44,5 @@ index 154d060..0dd2138 100644
          }
      ],
 -- 
-2.34.1
+2.53.0-Meta
 

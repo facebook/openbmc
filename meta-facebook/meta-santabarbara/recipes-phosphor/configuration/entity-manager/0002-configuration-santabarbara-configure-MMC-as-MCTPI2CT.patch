@@ -1,4 +1,4 @@
-From 14fdde3b3bf6006c25866d874ffbbb23e6852975 Mon Sep 17 00:00:00 2001
+From 1de329ba0067420a4558ff140464fd3a8e6a1582 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 16:31:12 +0800
 Subject: [PATCH] configuration: santabarbara: configure MMC as MCTPI2CTarget
@@ -12,28 +12,22 @@ https://gerrit.openbmc.org/c/openbmc/entity-manager/+/88430
 
 Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
 ---
- .../meta/santabarbara/santabarbara_rainbow.json           | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ configurations/meta/santabarbara/santabarbara_rainbow.json | 2 ++
+ 1 file changed, 2 insertions(+)
 
 diff --git a/configurations/meta/santabarbara/santabarbara_rainbow.json b/configurations/meta/santabarbara/santabarbara_rainbow.json
-index 26e8318..ad5476a 100644
+index 3cb4b66..3e353e3 100644
 --- a/configurations/meta/santabarbara/santabarbara_rainbow.json
 +++ b/configurations/meta/santabarbara/santabarbara_rainbow.json
-@@ -15,6 +15,14 @@
-             },
-             "Name": "Santabarbara_Rainbow_CPLD_$bus / 2 + 2 * 3 % 5 * 3 + 1 / 4",
-             "Type": "LatticeLCMXO3D_9400Firmware"
-+        },
-+        {
-+            "Address": "0x21",
-+            "Bus": "$bus / 2 + 2 * 3 % 5 * 3 + 1 / 4 + 102",
+@@ -20,6 +20,8 @@
+             "Address": "0x21",
+             "Bus": "$bus / 2 + 2 * 3 % 5 * 3 + 1 / 4 + 102",
+             "Name": "MMC",
 +            "Inventory": "Rainbow",
-+            "Name": "MMC",
 +            "PowerState": "BiosPost",
-+            "Type": "MCTPI2CTarget"
+             "Type": "MCTPI2CTarget"
          }
      ],
-     "Name": "Santa Barbara Rainbow module $bus / 2 + 2 * 3 % 5 * 3 + 1 / 4",
 -- 
-2.52.0
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From fea5f4e0a093b548905647ae7f1914990bf13a7a Mon Sep 17 00:00:00 2001
+From 7a552d714a044a2b08cf2b244819757b1c3ef609 Mon Sep 17 00:00:00 2001
 From: Freddie Jheng <Freddie.Jheng@quantatw.com>
 Date: Wed, 10 Jun 2026 10:33:08 +0800
 Subject: [PATCH] configuration: santabarbara: add PLDM sensors to SWB
@@ -93,5 +93,5 @@ index 9a34a34..252abc8 100644
          },
          {
 -- 
-2.34.1
+2.53.0-Meta
 

@@ -3399,6 +3399,13 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
     } else if ((p_sensor_data[i].raw_data_1 == 0xFF) && (p_sensor_data[i].raw_data_2 == 0xFF)) {
       // Sensor value is not ready
       snprintf(str, sizeof(str), "NA");
+#ifdef CONFIG_GRANDCANYON2
+    } else if ((p_sensor_data[i].sensor_status == EXP_SENSOR_STATUS_OK) && (p_sensor_data[i].raw_data_1 == 0x00) && (p_sensor_data[i].raw_data_2 == 0x00)){
+      pal_get_sensor_units(fru, p_sensor_data[i].sensor_num, units);
+      if (strncmp(units, "Volts", sizeof(units)) == 0){
+        snprintf(str, sizeof(str), "NA");
+      }
+#endif
     } else {
       // search the corresponding sensor table to fill up the raw data and status
       pal_get_sensor_units(fru, p_sensor_data[i].sensor_num, units);

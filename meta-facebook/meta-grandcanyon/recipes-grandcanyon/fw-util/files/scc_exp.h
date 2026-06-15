@@ -7,7 +7,11 @@
 #include <facebook/fbgc_common.h>
 #include "fw-util.h"
 
+#ifdef CONFIG_GRANDCANYON2
+#define FW_VERSION_BYTES 5
+#else
 #define FW_VERSION_BYTES 4
+#endif
 
 using namespace std;
 

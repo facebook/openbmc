@@ -66,6 +66,7 @@ TEST(Config, FullConfig)
     EXPECT_EQ(config.sensorConfig->intervalMilliseconds, 2000);
     EXPECT_EQ(config.sensorConfig->maxRetries, 3);
     EXPECT_EQ(config.sensorConfig->retryIntervalMilliseconds, 100);
+    EXPECT_EQ(config.sensorConfig->metricReportUrls.has_value(), false);
     EXPECT_EQ(config.sensorConfig->mappers.size(), 2);
     EXPECT_EQ(config.sensorConfig->mappers[0].fromUrl,
               "/redfish/v1/Chassis/Chassis_A/Sensors/Temp_0");
@@ -111,6 +112,35 @@ TEST(Config, FullConfig)
     EXPECT_EQ(config.updateServiceConfig->softwareMappers[0]
                   .updateParametersTargetsOverride.has_value(),
               false);
+}
+
+TEST(Config, MetricReportConfig)
+{
+    std::string configJson = R"(
+{
+  "host": "0.0.0.1",
+  "compatible": "com.meta.Hardware.BMC.TEST",
+  "sensorConfig": {
+    "associationPath": "/xyz/openbmc_project/inventory/system/board/A",
+    "intervalMilliseconds": 2000,
+    "maxRetries": 3,
+    "retryIntervalMilliseconds": 100,
+    "metricReportUrls": [
+      "/redfish/v1/TelemetryService/MetricReports/Report1",
+      "/redfish/v1/TelemetryService/MetricReports/Report2"
+    ],
+    "mappers": []
+  }
+}
+)";
+    auto config = Config::parse(configJson);
+    EXPECT_EQ(config.sensorConfig.has_value(), true);
+    EXPECT_EQ(config.sensorConfig->metricReportUrls.has_value(), true);
+    EXPECT_EQ(config.sensorConfig->metricReportUrls.value().size(), 2);
+    EXPECT_EQ(config.sensorConfig->metricReportUrls.value()[0],
+              "/redfish/v1/TelemetryService/MetricReports/Report1");
+    EXPECT_EQ(config.sensorConfig->metricReportUrls.value()[1],
+              "/redfish/v1/TelemetryService/MetricReports/Report2");
 }
 
 TEST(Config, PartialConfig)

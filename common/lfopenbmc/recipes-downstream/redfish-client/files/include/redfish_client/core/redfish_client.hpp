@@ -35,6 +35,12 @@ class RedfishClient
 
     auto runEventPollingLoop() -> sdbusplus::async::task<>;
 
+    void ingestMetricReport(
+        const nlohmann::json& report,
+        const std::unordered_map<std::string_view, SensorDbusObject*>&
+            urlToSensor,
+        std::vector<SensorDbusObject*>& nonReportSensors);
+
     void runSensorLoop();
 
     auto loadConfig() -> sdbusplus::async::task<>;

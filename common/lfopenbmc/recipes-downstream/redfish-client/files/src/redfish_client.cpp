@@ -6,12 +6,29 @@
 
 #include <phosphor-logging/lg2.hpp>
 
+#include <charconv>
 #include <fstream>
 
 PHOSPHOR_LOG2_USING;
 
 namespace redfish_client::core
 {
+
+static double parseMetricValue(const nlohmann::json& val)
+{
+    if (val.is_string())
+    {
+        const auto& strVal = val.get_ref<const std::string&>();
+        double result = 0;
+        if (auto [ptr, ec] = std::from_chars(
+                strVal.data(), strVal.data() + strVal.size(), result);
+            ec == std::errc())
+        {
+            return result;
+        }
+    }
+    return std::numeric_limits<double>::quiet_NaN();
+}
 
 static inline auto subtree(sdbusplus::async::context& ctx,
                            const auto& subpath, const auto& interface,
@@ -113,16 +130,11 @@ std::optional<Sensor> RedfishClient::readWithRetries(const SensorMapper& mapper)
             std::format("http://{}{}", config->host, mapper.fromUrl);
         try
         {
-            auto it = httpHandles.find(expandedUrl);
-            if (it == httpHandles.end())
+            auto& httpHandle = httpHandles[expandedUrl];
+            if (!httpHandle)
             {
-                it = httpHandles
-                         .insert({expandedUrl,
-                                  std::make_unique<AsyncHttpHandle>(
-                                      expandedUrl)})
-                         .first;
+                httpHandle = std::make_unique<AsyncHttpHandle>(expandedUrl);
             }
-            auto& httpHandle = it->second;
             // TODO: Switch to co_await when this function is switched to
             // coroutine
             auto maybeResponse = stdexec::sync_wait(httpHandle->get(ctx));
@@ -193,24 +205,143 @@ auto RedfishClient::runEventPollingLoop() -> sdbusplus::async::task<>
     co_return;
 }
 
+void RedfishClient::ingestMetricReport(
+    const nlohmann::json& report,
+    const std::unordered_map<std::string_view, SensorDbusObject*>& urlToSensor,
+    std::vector<SensorDbusObject*>& nonReportSensors)
+{
+    if (!report.contains("MetricValues") || !report["MetricValues"].is_array())
+    {
+        return;
+    }
+
+    for (const auto& metricValue : report["MetricValues"])
+    {
+        if (!metricValue.contains("MetricProperty") ||
+            !metricValue["MetricProperty"].is_string() ||
+            !metricValue.contains("MetricValue"))
+        {
+            continue;
+        }
+
+        std::string_view fromUrl =
+            metricValue["MetricProperty"].get_ref<const std::string&>();
+        if (size_t hashPos = fromUrl.find('#');
+            hashPos != std::string_view::npos)
+        {
+            fromUrl = fromUrl.substr(0, hashPos);
+        }
+
+        auto itSensor = urlToSensor.find(fromUrl);
+        if (itSensor == urlToSensor.end())
+        {
+            continue;
+        }
+        auto& metric = itSensor->second;
+
+        if (metric->object == nullptr)
+        {
+            auto maybeSensor = readWithRetries(metric->mapper);
+            if (maybeSensor.has_value())
+            {
+                ctx.spawn(metric->update(maybeSensor.value()));
+                std::string expandedUrl = std::format(
+                    "http://{}{}", config->host, metric->mapper.fromUrl);
+                httpHandles.erase(expandedUrl);
+            }
+            std::erase(nonReportSensors, metric);
+            continue;
+        }
+
+        double val = parseMetricValue(metricValue["MetricValue"]);
+        ctx.spawn(metric->update(Sensor{val}));
+    }
+}
+
 void RedfishClient::runSensorLoop()
 {
     info("Running sensor loop");
+
+    const auto& sensorConfig = *config->sensorConfig;
+    std::unordered_map<std::string_view, SensorDbusObject*> urlToSensor;
+    std::vector<SensorDbusObject*> nonReportSensors;
+
+    urlToSensor.reserve(metrics.size());
+    nonReportSensors.reserve(metrics.size());
+    for (const auto& [metricKey, metric] : metrics)
+    {
+        urlToSensor[metric->mapper.fromUrl] = metric.get();
+        nonReportSensors.push_back(metric.get());
+    }
+
     try
     {
         while (!ctx.stop_requested())
         {
-            for (const auto& [metricKey, metric] : metrics)
+            if (sensorConfig.metricReportUrls &&
+                !sensorConfig.metricReportUrls->empty())
             {
-                auto maybeSensor = readWithRetries(metric->mapper);
-                if (!maybeSensor.has_value())
+                const auto& urls = *sensorConfig.metricReportUrls;
+                for (const auto& url : urls)
                 {
-                    continue;
+                    std::string expandedUrl =
+                        std::format("http://{}{}", config->host, url);
+                    try
+                    {
+                        auto& httpHandle = httpHandles[expandedUrl];
+                        if (!httpHandle)
+                        {
+                            httpHandle =
+                                std::make_unique<AsyncHttpHandle>(expandedUrl);
+                        }
+
+                        auto maybeResponse =
+                            stdexec::sync_wait(httpHandle->get(ctx));
+                        if (!maybeResponse.has_value())
+                        {
+                            throw std::runtime_error("Http request stopped");
+                        }
+                        const auto& response =
+                            std::get<0>(maybeResponse.value());
+                        if (response.code != 200)
+                        {
+                            throw std::runtime_error(std::format(
+                                "Http response error code: {}", response.code));
+                        }
+
+                        auto report = nlohmann::json::parse(response.body);
+                        ingestMetricReport(report, urlToSensor,
+                                           nonReportSensors);
+                    }
+                    catch (const std::exception& exn)
+                    {
+                        info("Exception while querying url ({URL}): {EXC}",
+                             "URL", expandedUrl.c_str(), "EXC", exn);
+                    }
                 }
-                ctx.spawn(metric->update(maybeSensor.value()));
+
+                for (const auto& metric : nonReportSensors)
+                {
+                    auto maybeSensor = readWithRetries(metric->mapper);
+                    if (maybeSensor.has_value())
+                    {
+                        ctx.spawn(metric->update(maybeSensor.value()));
+                    }
+                }
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(
-                config->sensorConfig.value().intervalMilliseconds));
+            else
+            {
+                for (const auto& [metricKey, metric] : metrics)
+                {
+                    auto maybeSensor = readWithRetries(metric->mapper);
+                    if (maybeSensor.has_value())
+                    {
+                        ctx.spawn(metric->update(maybeSensor.value()));
+                    }
+                }
+            }
+            std::this_thread::sleep_for(
+                std::chrono::milliseconds(sensorConfig.intervalMilliseconds));
         }
     }
     catch (const std::logic_error& exn)

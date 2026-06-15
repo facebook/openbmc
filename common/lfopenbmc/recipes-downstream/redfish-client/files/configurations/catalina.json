@@ -7,6 +7,7 @@
     "intervalMilliseconds": 2000,
     "maxRetries": 3,
     "retryIntervalMilliseconds": 200,
+    "metricReportUrls": ["/redfish/v1/TelemetryService/MetricReports/HGX_CpuProcessorMetrics_0"],
     "mappers": [
       {
         "fromUrl": "/redfish/v1/Chassis/HGX_Chassis_0/Sensors/HGX_Chassis_0_TotalGPU_Power_0",

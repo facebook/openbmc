@@ -34,6 +34,20 @@ void from_json(const nlohmann::json& json, LogServiceConfig& config)
     }
 }
 
+void from_json(const nlohmann::json& json, SensorConfig& config)
+{
+    json.at("associationPath").get_to(config.associationPath);
+    json.at("mappers").get_to(config.mappers);
+    json.at("intervalMilliseconds").get_to(config.intervalMilliseconds);
+    json.at("maxRetries").get_to(config.maxRetries);
+    json.at("retryIntervalMilliseconds")
+        .get_to(config.retryIntervalMilliseconds);
+    if (auto it = json.find("metricReportUrls"); it != json.end())
+    {
+        config.metricReportUrls = it->template get<std::vector<std::string>>();
+    }
+}
+
 void from_json(const nlohmann::json& json, Config& config)
 {
     json.at("host").get_to(config.host);

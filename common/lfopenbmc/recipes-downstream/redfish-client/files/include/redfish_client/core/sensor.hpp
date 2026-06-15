@@ -13,6 +13,8 @@ class Sensor
     virtual ~Sensor() = default;
     static std::optional<Sensor> parseSensor(const std::string& sensorJson);
 
+    explicit Sensor(double reading) : reading(reading) {}
+
     double getReading() const;
 
     const std::string& getSensorUnitText() const;

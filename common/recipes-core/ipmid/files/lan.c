@@ -47,7 +47,7 @@ void plat_lan_init(lan_config_t *lan)
   struct ifaddrs *ifaddr, *ifa;
   struct sockaddr_in *addr;
   struct sockaddr_in6 *addr6;
-  int family, n, i;
+  int family, i;
   unsigned long ip;
   unsigned char *ip6, *netmask6;
   int sd;
@@ -65,7 +65,7 @@ void plat_lan_init(lan_config_t *lan)
   }
 
   pal_get_eth_intf_name(intf_name);
-  for (ifa = ifaddr, n = 0; ifa != NULL; ifa = ifa->ifa_next, n++) {
+  for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
     if (ifa->ifa_addr == NULL) {
       continue;
     }

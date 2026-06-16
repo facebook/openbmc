@@ -46,7 +46,7 @@ class InterfaceTest(CommonInterfaceTest, unittest.TestCase):
         Logger.log_testname(self._testMethodName)
         self.assertEqual(self.ping_v6(), 0, "Ping test for usb0 v6 failed")
 
-    @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+    @unittest.skip("usb0 is not used for BMC<->x86 communication on montblanc")
     def test_usb0_v6_x86_interface(self):
         """
         Tests usb0 v6 interface ping to x86 side

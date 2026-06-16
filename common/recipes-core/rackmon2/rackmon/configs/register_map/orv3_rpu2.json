@@ -1843,60 +1843,6 @@
             "name": "Fan_Rack_2_ETH_FW_Revision"
         },
         {
-            "begin": 439,
-            "length": 10,
-            "format": "STRING",
-            "name": "UPS_Pump_Rack_PFC_FW_Version"
-        },
-        {
-            "begin": 449,
-            "length": 10,
-            "format": "STRING",
-            "name": "UPS_Pump_Rack_INV_FW_Version"
-        },
-        {
-            "begin": 459,
-            "length": 10,
-            "format": "STRING",
-            "name": "UPS_Pump_Rack_COM_FW_Version"
-        },
-        {
-            "begin": 479,
-            "length": 10,
-            "format": "STRING",
-            "name": "UPS_Fan_Rack_1_PFC_FW_Version"
-        },
-        {
-            "begin": 489,
-            "length": 10,
-            "format": "STRING",
-            "name": "UPS_Fan_Rack_1_INV_FW_Version"
-        },
-        {
-            "begin": 499,
-            "length": 10,
-            "format": "STRING",
-            "name": "UPS_Fan_Rack_1_COM_FW_Version"
-        },
-        {
-            "begin": 519,
-            "length": 10,
-            "format": "STRING",
-            "name": "UPS_Fan_Rack_2_PFC_FW_Version"
-        },
-        {
-            "begin": 529,
-            "length": 10,
-            "format": "STRING",
-            "name": "UPS_Fan_Rack_2_INV_FW_Version"
-        },
-        {
-            "begin": 539,
-            "length": 10,
-            "format": "STRING",
-            "name": "UPS_Fan_Rack_2_COM_FW_Version"
-        },
-        {
             "begin": 37874,
             "length": 1,
             "format": "INTEGER",
@@ -3741,6 +3687,24 @@
             "unit": "Volts"
         },
         {
+            "begin": 37099,
+            "length": 5,
+            "format": "STRING",
+            "name": "UPS_Pump_Rack_PFC_FW_Version"
+        },
+        {
+            "begin": 37104,
+            "length": 5,
+            "format": "STRING",
+            "name": "UPS_Pump_Rack_INV_FW_Version"
+        },
+        {
+            "begin": 37109,
+            "length": 5,
+            "format": "STRING",
+            "name": "UPS_Pump_Rack_COM_FW_Version"
+        },
+        {
             "begin": 37114,
             "length": 5,
             "format": "STRING",
@@ -3958,6 +3922,24 @@
             "unit": "Volts"
         },
         {
+            "begin": 37160,
+            "length": 5,
+            "format": "STRING",
+            "name": "UPS_Fan_Rack_1_PFC_FW_Version"
+        },
+        {
+            "begin": 37165,
+            "length": 5,
+            "format": "STRING",
+            "name": "UPS_Fan_Rack_1_INV_FW_Version"
+        },
+        {
+            "begin": 37170,
+            "length": 5,
+            "format": "STRING",
+            "name": "UPS_Fan_Rack_1_COM_FW_Version"
+        },
+        {
             "begin": 37175,
             "length": 5,
             "format": "STRING",
@@ -4172,6 +4154,24 @@
             "scale": 1.0,
             "name": "UPS_Fan_Rack_2_Battery_High_Voltage",
             "unit": "Volts"
+        },
+        {
+            "begin": 37226,
+            "length": 5,
+            "format": "STRING",
+            "name": "UPS_Fan_Rack_2_PFC_FW_Version"
+        },
+        {
+            "begin": 37231,
+            "length": 5,
+            "format": "STRING",
+            "name": "UPS_Fan_Rack_2_INV_FW_Version"
+        },
+        {
+            "begin": 37236,
+            "length": 5,
+            "format": "STRING",
+            "name": "UPS_Fan_Rack_2_COM_FW_Version"
         },
         {
             "begin": 37241,

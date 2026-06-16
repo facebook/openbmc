@@ -1,8 +1,10 @@
 #include "cpld-lattice.hpp"
 #include "xo5/xo5_sram_recover.hpp"
 #include <openssl/sha.h>
+#include <unistd.h>
 #include <cstdint>
 #include <fstream>
+#include <iomanip>
 #include <map>
 #include <numeric>
 #include <thread>

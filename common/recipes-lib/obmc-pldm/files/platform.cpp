@@ -70,14 +70,20 @@ Response Handler::platformEventMessage(const pldm_msg* request,
 Response Handler::set_state_effecter_states(const pldm_msg* request,
                                             size_t payloadLength)
 {
+  if (payloadLength < 3) {
+    return CmdHandler::ccOnlyResponse(request, PLDM_ERROR_INVALID_DATA);
+  }
   uint8_t effecter_id = (request->payload[1] << 8 | request->payload[0]);
   uint8_t comp_effecter_count = request->payload[2];
-  set_effecter_state_field field[8]{};
-  memcpy(field, &request->payload[3], sizeof(set_effecter_state_field) * 8);
 
   if (comp_effecter_count < 0x01 || comp_effecter_count > 0x08) {
     return CmdHandler::ccOnlyResponse(request, PLDM_ERROR_INVALID_DATA);
   }
+  if (payloadLength < 3 + sizeof(set_effecter_state_field) * comp_effecter_count) {
+    return CmdHandler::ccOnlyResponse(request, PLDM_ERROR_INVALID_DATA);
+  }
+  set_effecter_state_field field[8]{};
+  memcpy(field, &request->payload[3], sizeof(set_effecter_state_field) * comp_effecter_count);
 
   switch (effecter_id) {
     case EFFECTER_ID_NOTIFY_TO_ADDSEL:

@@ -53,9 +53,9 @@ ssize_t i2c_dev_show_label(struct device *dev,
   const i2c_dev_attr_st *dev_attr = i2c_attr->isa_i2c_attr;
 
   if (dev_attr->ida_help) {
-    return sprintf(buf, "%s\n", dev_attr->ida_help);
+    return sysfs_emit(buf, "%s\n", dev_attr->ida_help);
   }
-  return sprintf(buf, "%s\n", dev_attr->ida_name);
+  return sysfs_emit(buf, "%s\n", dev_attr->ida_name);
 }
 EXPORT_SYMBOL_GPL(i2c_dev_show_label);
 

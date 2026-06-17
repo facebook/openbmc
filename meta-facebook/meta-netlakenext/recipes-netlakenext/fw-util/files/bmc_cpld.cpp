@@ -75,7 +75,9 @@ int BmcCpldComponent::get_version(json& ver_json)
   std::string cmd = "cpld-handler version -b " + this->bus + " -a " + this->address + " -i i2c -c " + this->cpld_type;
   std::string result;
 
+  std::cout.setstate(std::ios_base::failbit);
   int rc = run_command(cmd, &result);
+  std::cout.clear();
 
   if (rc != 0) {
     std::cerr << "Failed to get CPLD version (command error)\n";

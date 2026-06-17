@@ -1,0 +1,86 @@
+From f0c5f3568f7a06d402bd23944142b15888956048 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai.pt@gmail.com>
+Date: Mon, 15 Jun 2026 16:59:24 +0800
+Subject: [PATCH 3/3] hwmon: (pmbus/lm25066) add current limit configuration
+ support
+
+Add support for the 'ti,current-range' devicetree property to configure
+the current limit via the DEVICE_SETUP (0xD9) register, overriding the
+physical CL pin setting.
+
+This configuration is supported on all chips in this driver (LM25066,
+LM5064, LM5066, LM5066i) except LM25056.
+
+The property values "low" and "high" map to:
+- LM25066: low = 25 mV, high = 46 mV
+- LM5064, LM5066, LM5066i: low = 26 mV, high = 50 mV
+
+The Bit 4 mapping to High/Low current limit is handled dynamically on
+probe because it is swapped for LM25066 compared to the other supported
+chips.
+
+[1] LORE: https://lore.kernel.org/all/20260615-lm25066-cl-config-v3-2-decb4f5b0b77@gmail.com/
+
+Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
+---
+ drivers/hwmon/pmbus/lm25066.c | 37 +++++++++++++++++++++++++++++++++++
+ 1 file changed, 37 insertions(+)
+
+diff --git a/drivers/hwmon/pmbus/lm25066.c b/drivers/hwmon/pmbus/lm25066.c
+index 6e23ada64e2f..e26378a55f9f 100644
+--- a/drivers/hwmon/pmbus/lm25066.c
++++ b/drivers/hwmon/pmbus/lm25066.c
+@@ -34,6 +34,7 @@ enum chips { lm25056, lm25066, lm5064, lm5066, lm5066i };
+ #define LM25066_READ_AVG_PIN		0xdf
+ 
+ #define LM25066_DEV_SETUP_CL		BIT(4)	/* Current limit */
++#define LM25066_DEV_SETUP_CL_CFG	BIT(2)	/* Current limit configuration */
+ 
+ #define LM25066_SAMPLES_FOR_AVG_MAX	4096
+ 
+@@ -484,6 +485,42 @@ static int lm25066_probe(struct i2c_client *client)
+ 
+ 	data->id = (enum chips)(unsigned long)i2c_get_match_data(client);
+ 
++	if (data->id != lm25056) {
++		int config_new = config;
++		const char *cl_setting;
++		int ret;
++
++		if (!of_property_read_string(client->dev.of_node,
++					     "ti,current-range", &cl_setting)) {
++			config_new |= LM25066_DEV_SETUP_CL_CFG;
++			if (strcmp(cl_setting, "high") == 0) {
++				if (data->id == lm25066)
++					config_new |= LM25066_DEV_SETUP_CL;
++				else
++					config_new &= ~LM25066_DEV_SETUP_CL;
++			} else if (strcmp(cl_setting, "low") == 0) {
++				if (data->id == lm25066)
++					config_new &= ~LM25066_DEV_SETUP_CL;
++				else
++					config_new |= LM25066_DEV_SETUP_CL;
++			} else {
++				dev_err(&client->dev,
++					"invalid current-range setting: %s\n",
++					cl_setting);
++				return -EINVAL;
++			}
++		}
++
++		if (config_new != config) {
++			ret = i2c_smbus_write_byte_data(client,
++							LM25066_DEVICE_SETUP,
++							config_new);
++			if (ret < 0)
++				return ret;
++			config = config_new;
++		}
++	}
++
+ 	info = &data->info;
+ 
+ 	info->pages = 1;
+-- 
+2.52.0
+

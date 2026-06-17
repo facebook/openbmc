@@ -96,6 +96,9 @@ SRC_URI:append = " \
     file://0608-iio-adc-ltc2309-add-support-for-ltc2305.patch \
     file://0609-amd-apml-sbrmi-update-SBRMI-revision-for-Venice.patch \
     file://0610-iio-adc-rtq6056-add-i2c_device_id-support.patch \
+    file://0611-hwmon-pmbus-lm25066-Fix-PMBus-coefficients-for-LM506.patch \
+    file://0612-dt-bindings-hwmon-pmbus-ti-lm25066-add-current-limit.patch \
+    file://0613-hwmon-pmbus-lm25066-add-current-limit-configuration-.patch \
 "
 
 #

@@ -20,6 +20,7 @@
  */
 
 #include <fcntl.h>
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/mman.h>
@@ -60,6 +61,13 @@
 #define CTRL_PAGE 0x00
 #define RES_MUL_CTRL 0x2f
 #define EN_RES_MUL_LEARN (1 << 7)
+
+/* A directly-attached uServer can only ever source one MAC on its port. Seeing
+   this many distinct MACs on USERVER_PORT means it is acting as a network
+   uplink, i.e. the mgmt cable is swapped. The threshold (vs >1) absorbs
+   transient/stale reads without masking a real swap, which floods the port with
+   many MACs. */
+#define MAX_DISTINCT 4
 
 /* ARL/VTABLE Page (0x05) */
 #define ARL_PAGE 0x05
@@ -192,13 +200,13 @@ static int find_userver_mac(MdioCtx* ctx, int idx, uint64_t* mac) {
   // Result registers 0 and 1 are 0x10 apart
   uint8_t base = ARLA_SRCH_RSLT_MACVID + idx * 0x10;
 
-  /* Read the result register */
+  /* Read MACVID (0x60/0x70) BEFORE the result register (0x68/0x78) */
+  uint64_t macvid = reg_read(ctx, ARL_PAGE, base, 8);
   uint32_t rslt = reg_read(ctx, ARL_PAGE, base + 8, 4);
 
   /* Check if the port we are after was found in the table */
   if ((rslt & RSLT_VALID) && (rslt & RSLT_PORT_MASK) == USERVER_PORT) {
-    /* Read the MACVID register */
-    *mac = reg_read(ctx, ARL_PAGE, base, 8);
+    *mac = macvid;
     return 1;
   }
   return 0;
@@ -218,12 +226,19 @@ static void print_mac(uint64_t mac) {
 int main(void) {
   MdioCtx ctx;
   uint64_t mac;
+  uint64_t seen[MAX_DISTINCT];
+  int nseen = 0;
 
   /* Failing to init MDIO => exit immediately */
   if (mdio_init(&ctx) < 0) {
     fprintf(stderr, "Failed to initialize MDIO\n");
     return 1;
   }
+
+  /* Rewind the search pointer to the top of the table. The STDN start bit
+     does not reset it, so without this a search left mid-table (or at the
+     end) by a previous run completes immediately and finds nothing. */
+  reg_write(&ctx, ARL_PAGE, ARLA_SRCH_ADR, 0, 2);
 
   /* Initiate a sequential search of the internal MAC table */
   reg_write(&ctx, ARL_PAGE, ARLA_SRCH_CTL, ARLA_SRCH_STDN | ARLA_SRCH_VLID, 2);
@@ -241,17 +256,40 @@ int main(void) {
       continue;
     }
 
-    /* Check both result registers */
-    for (int i = 0; i < 2; i++) {
+    /* Check both result registers. The search can report the same entry in
+       both result bins, so collect only genuinely distinct MACs. Stop once we
+       have enough to declare a miscable, no need to scan further. */
+    for (int i = 0; i < 2 && nseen < MAX_DISTINCT; i++) {
       if (find_userver_mac(&ctx, i, &mac)) {
-        /* Target MAC was found, print it */
-        print_mac(mac);
+        bool dup = false;
 
-        /* ... then cleanup and exit */
-        mdio_cleanup(&ctx);
-        return 0;
+        for (int k = 0; k < nseen; k++) {
+          if (seen[k] == mac) {
+            dup = true;
+            break;
+          }
+        }
+
+        if (!dup) {
+          seen[nseen++] = mac;
+        }
       }
     }
+  }
+
+  /* Many distinct MACs on the uServer port means it is acting as an uplink:
+     the mgmt cable is swapped. */
+  if (nseen >= MAX_DISTINCT) {
+    fprintf(stderr, "Multiple MACs found, likely bmc mgmt cable swapped!\n");
+    mdio_cleanup(&ctx);
+    return 1;
+  }
+
+  /* First valid MAC we encounter should be the microserver MAC */
+  if (nseen > 0) {
+    print_mac(seen[0]);
+    mdio_cleanup(&ctx);
+    return 0;
   }
 
   /* Nothing was found. This can happen if multicast learning and forwarding not

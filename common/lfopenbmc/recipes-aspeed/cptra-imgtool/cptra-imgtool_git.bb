@@ -7,6 +7,8 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 BRANCH = "master"
 SRC_URI = "git://github.com/AspeedTech-BMC/cptra_imgtool;protocol=https;branch=${BRANCH};"
 
+SRC_URI += " file://Cargo.lock "
+
 # Tag for v00.01.04
 SRCREV = "27d312fb99cc8f1eab7a89ed866c9595dd6e0e9b"
 
@@ -15,18 +17,25 @@ PV = "1.0+git"
 DEPENDS += "caliptra-sw caliptra-mcu-sw"
 RDEPENDS:${PN} += "caliptra-sw caliptra-mcu-sw"
 
-inherit cargo
+inherit cargo cargo-update-recipe-crates
 
-# Using cargo to download packages
-CARGO_DISABLE_BITBAKE_VENDORING = "1"
+require ${BPN}-crates.inc
+require ${BPN}-git-crates.inc
 
-# Enable network for the compile task allowing cargo to download dependencies
-do_compile[network] = "1"
+# crates.io may reject the API download endpoint used by BitBake's crate
+# fetcher; prefer the static crate tarball location first.
+PREMIRRORS:prepend = " \
+    https://crates.io/api/v1/crates/([^/]*)/[^/]*/download https://static.crates.io/crates/\1/ \n \
+"
+
+do_configure:prepend() {
+    install -m 0644 ${UNPACKDIR}/Cargo.lock ${S}/Cargo.lock
+}
 
 do_compile() {
     cd ${S}
     # Build cptra_imgtool
-    cargo build -p cptra-imgtool --release
+    cargo build --offline -p cptra-imgtool --release
     cd -
 }
 

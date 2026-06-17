@@ -1,4 +1,4 @@
-From cfdac443c2d60c1c9b1426557336e9172f276137 Mon Sep 17 00:00:00 2001
+From 11f97f3c2e926ddecee154fb845a54f5b0a61019 Mon Sep 17 00:00:00 2001
 From: Fred Chen <Fred.Chen@quantatw.com>
 Date: Wed, 6 May 2026 22:21:39 +0800
 Subject: [PATCH] Thresholds: Add option to log thresholds on second hit
@@ -19,31 +19,15 @@ Gerrit: https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/89990
 Change-Id: Ic68c88c55d8e7382e7d7fbb8fd6fa6732d69933d
 Signed-off-by: Fred Chen <Fred.Chen@quantatw.com>
 ---
- src/Thresholds.cpp | 46 +++++++++++++++++++++++++++++++++++++++++++---
+ src/Thresholds.cpp | 35 ++++++++++++++++++++++++++++++++---
  src/Thresholds.hpp |  6 ++++--
- 2 files changed, 47 insertions(+), 5 deletions(-)
+ 2 files changed, 36 insertions(+), 5 deletions(-)
 
 diff --git a/src/Thresholds.cpp b/src/Thresholds.cpp
-index 4865b8b..f0b66cf 100644
+index 4865b8b..d8ba525 100644
 --- a/src/Thresholds.cpp
 +++ b/src/Thresholds.cpp
-@@ -63,13 +63,33 @@ Direction findThresholdDirection(const std::string& direct)
-     return Direction::ERROR;
- }
- 
-+// static std::optional<std::string> extractLogOnSecondHit(
-+//     const SensorBaseConfigMap& properties)
-+// {
-+//     auto findLogOnSecondHit = properties.find("LogOnSecondHit");
-+//     if (findLogOnSecondHit == properties.end())
-+//     {
-+//         return std::nullopt;
-+//     }
-+//     return std::visit(VariantToStringVisitor(), findLogOnSecondHit->second);
-+// }
-+
- bool parseThresholdsFromConfig(
-     const SensorData& sensorData,
+@@ -68,8 +68,17 @@ bool parseThresholdsFromConfig(
      std::vector<thresholds::Threshold>& thresholdVector,
      const std::string* matchLabel, const int* sensorIndex)
  {
@@ -61,7 +45,7 @@ index 4865b8b..f0b66cf 100644
          if (intf.find("Thresholds") == std::string::npos)
          {
              continue;
-@@ -140,7 +160,9 @@ bool parseThresholdsFromConfig(
+@@ -140,7 +149,9 @@ bool parseThresholdsFromConfig(
          }
          double val = std::visit(VariantToDoubleVisitor(), valueFind->second);
  
@@ -72,7 +56,7 @@ index 4865b8b..f0b66cf 100644
      }
      return true;
  }
-@@ -281,7 +303,14 @@ static std::vector<ChangeParam> checkThresholds(Sensor* sensor, double value)
+@@ -281,7 +292,14 @@ static std::vector<ChangeParam> checkThresholds(Sensor* sensor, double value)
          {
              if (value >= threshold.value)
              {
@@ -88,7 +72,7 @@ index 4865b8b..f0b66cf 100644
                  if (++cHiTrue < assertLogCount)
                  {
                      lg2::info(
-@@ -293,11 +322,13 @@ static std::vector<ChangeParam> checkThresholds(Sensor* sensor, double value)
+@@ -293,11 +311,13 @@ static std::vector<ChangeParam> checkThresholds(Sensor* sensor, double value)
              }
              else if (value < (threshold.value - threshold.hysteresis))
              {
@@ -102,7 +86,7 @@ index 4865b8b..f0b66cf 100644
                  ++cHiMidstate;
              }
          }
-@@ -305,7 +336,14 @@ static std::vector<ChangeParam> checkThresholds(Sensor* sensor, double value)
+@@ -305,7 +325,14 @@ static std::vector<ChangeParam> checkThresholds(Sensor* sensor, double value)
          {
              if (value <= threshold.value)
              {
@@ -118,7 +102,7 @@ index 4865b8b..f0b66cf 100644
                  if (++cLoTrue < assertLogCount)
                  {
                      lg2::info(
-@@ -317,11 +355,13 @@ static std::vector<ChangeParam> checkThresholds(Sensor* sensor, double value)
+@@ -317,11 +344,13 @@ static std::vector<ChangeParam> checkThresholds(Sensor* sensor, double value)
              }
              else if (value > (threshold.value + threshold.hysteresis))
              {

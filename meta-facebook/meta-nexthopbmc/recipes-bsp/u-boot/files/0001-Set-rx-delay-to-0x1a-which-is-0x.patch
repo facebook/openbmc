@@ -1,0 +1,27 @@
+From 47242a8f293029012ae0864f91984b0160b757d9 Mon Sep 17 00:00:00 2001
+From: Nate White <nate@nexthop.ai>
+Date: Thu, 2 Apr 2026 15:59:52 +0100
+Subject: [PATCH] Set rx delay to 0x1a which is 0x
+
+Signed-off-by: Nate White <nate@nexthop.ai>
+---
+ arch/arm/dts/aspeed-bmc-facebook-fblite.dts | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/arm/dts/aspeed-bmc-facebook-fblite.dts b/arch/arm/dts/aspeed-bmc-facebook-fblite.dts
+index 625ce755..a95fda4e 100644
+--- a/arch/arm/dts/aspeed-bmc-facebook-fblite.dts
++++ b/arch/arm/dts/aspeed-bmc-facebook-fblite.dts
+@@ -55,6 +55,12 @@
+ 	};
+ };
+ 
++&scu {
++	mac3-clk-delay = <0x1a 0x00 /* 1000 Mbps (Gigabit) RX and TX delay */
++			  0x08 0x04 /* 100 Mbps (Fast Eth) RX and TX delay */
++			  0x08 0x04>; /* 10 Mbps (Ethernet)  RX and TX delay */
++};
++
+ &fmc {
+ 	status = "okay";
+ 

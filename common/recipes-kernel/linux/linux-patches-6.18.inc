@@ -99,6 +99,7 @@ SRC_URI:append = " \
     file://0611-hwmon-pmbus-lm25066-Fix-PMBus-coefficients-for-LM506.patch \
     file://0612-dt-bindings-hwmon-pmbus-ti-lm25066-add-current-limit.patch \
     file://0613-hwmon-pmbus-lm25066-add-current-limit-configuration-.patch \
+    file://0614-nfc-nxp-nci-Add-ISO15693-support.patch \
 "
 
 #

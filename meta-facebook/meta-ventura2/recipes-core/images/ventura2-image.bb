@@ -18,3 +18,6 @@ IMAGE_INSTALL:append = " modbus-device-util"
 # Scripts to perform FW Upgrade of AALCv2.
 IMAGE_INSTALL:append = " psu-update"
 
+# Tool to emulate device events for testing
+IMAGE_INSTALL:append = " event-emulator"
+

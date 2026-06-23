@@ -31,17 +31,19 @@ class RedfishClient
     ~RedfishClient();
 
   private:
-    std::optional<Sensor> readWithRetries(const SensorMapper& mapper);
+    auto readWithRetries(const SensorMapper& mapper)
+        -> sdbusplus::async::task<std::optional<Sensor>>;
 
     auto runEventPollingLoop() -> sdbusplus::async::task<>;
 
-    void ingestMetricReport(
+    auto ingestMetricReport(
         const nlohmann::json& report,
         const std::unordered_map<std::string_view, SensorDbusObject*>&
             urlToSensor,
-        std::vector<SensorDbusObject*>& nonReportSensors);
+        std::vector<SensorDbusObject*>& nonReportSensors)
+        -> sdbusplus::async::task<>;
 
-    void runSensorLoop();
+    auto runSensorLoop() -> sdbusplus::async::task<>;
 
     auto loadConfig() -> sdbusplus::async::task<>;
 
@@ -67,7 +69,6 @@ class RedfishClient
     std::vector<std::shared_ptr<LogServiceHandler>> logServiceHandlers;
     std::string configDir;
     std::optional<Config> config;
-    std::thread sensorThread;
     std::string persistDir;
     std::unordered_map<std::string, std::unique_ptr<AsyncHttpHandle>>
         httpHandles;

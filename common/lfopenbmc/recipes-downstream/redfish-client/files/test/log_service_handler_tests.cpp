@@ -48,7 +48,7 @@ class Create : public CreateSyncIntf
         CreateSyncIntf(bus, path), logs(logs)
     {}
 
-    sdbusplus::message::object_path create(
+    sdbusplus::object_path create(
         std::string message, LoggingLevel severity,
         std::map<std::string, std::string> additionalData) override
     {
@@ -59,7 +59,7 @@ class Create : public CreateSyncIntf
         std::string pathStr = Create::instance_path;
         pathStr += "/entry/";
         pathStr += std::to_string(nextId++);
-        sdbusplus::message::object_path path(pathStr);
+        sdbusplus::object_path path(pathStr);
         return path;
     }
 

@@ -159,7 +159,7 @@ ThresholdArgs extractArgs(redfish_binding::LogEntry::LogEntry& entry,
 template <typename T>
 T makeThresholdError(const ThresholdArgs& a)
 {
-    return T("SENSOR_NAME", sdbusplus::message::object_path(a.sensorName),
+    return T("SENSOR_NAME", sdbusplus::object_path(a.sensorName),
              "READING_VALUE", a.readingValue,
              "UNITS", a.units,
              "THRESHOLD_VALUE", a.thresholdValue);
@@ -168,7 +168,7 @@ T makeThresholdError(const ThresholdArgs& a)
 template <typename T>
 T makeThresholdNormal(const ThresholdArgs& a)
 {
-    return T("SENSOR_NAME", sdbusplus::message::object_path(a.sensorName),
+    return T("SENSOR_NAME", sdbusplus::object_path(a.sensorName),
              "READING_VALUE", a.readingValue,
              "UNITS", a.units);
 }

@@ -90,7 +90,7 @@ xyz.openbmc_project.State.Decorator.OperationalStatus interface -         -     
 .Functional                                           property  b         true                                     emits-change writable
 
 ...
-Apr 03 13:49:55 ventura valvemonitor[4371]: OPENBMC_MESSAGE_ID={"xyz.openbmc_project.State.Valve.ValveClose":{"VALVE_NAME":"/xyz/openbmc_project/inventory/system/valve/Ventura_Supply_Valve","_SOURCE":{"COLUMN":76,"FILE":"../git/src/valve-monitor/ValveEvents.cpp","FUNCTION":"sdbusplus::async::task<> valve::Events::generateValveEvent(sdbusplus::message::object_path, bool)","LINE":21,"PID":4371}}}
+Apr 03 13:49:55 ventura valvemonitor[4371]: OPENBMC_MESSAGE_ID={"xyz.openbmc_project.State.Valve.ValveClose":{"VALVE_NAME":"/xyz/openbmc_project/inventory/system/valve/Ventura_Supply_Valve","_SOURCE":{"COLUMN":76,"FILE":"../git/src/valve-monitor/ValveEvents.cpp","FUNCTION":"sdbusplus::async::task<> valve::Events::generateValveEvent(sdbusplus::object_path, bool)","LINE":21,"PID":4371}}}
 ...
 
 ```
@@ -598,7 +598,7 @@ index 0000000..e40efb8
 +        {{"Low", PinPolarity::activeLow}, {"High", PinPolarity::activeHigh}}};
 +
 +auto getConfig(sdbusplus::async::context& ctx,
-+               sdbusplus::message::object_path objectPath)
++               sdbusplus::object_path objectPath)
 +    -> sdbusplus::async::task<std::optional<ValveConfig>>
 +{
 +    ValveConfig config = {};
@@ -655,7 +655,7 @@ index 0000000..e40efb8
 +{
 +    std::replace(valveName.begin(), valveName.end(), ' ', '_');
 +
-+    return (sdbusplus::message::object_path(ValveIntf::namespace_path::value) /
++    return (sdbusplus::object_path(ValveIntf::namespace_path::value) /
 +            ValveIntf::namespace_path::valve / valveName);
 +}
 +
@@ -663,7 +663,7 @@ index 0000000..e40efb8
 +{
 +    std::replace(valveName.begin(), valveName.end(), ' ', '_');
 +
-+    return (sdbusplus::message::object_path(ValveControlIntf::namespace_path) /
++    return (sdbusplus::object_path(ValveControlIntf::namespace_path) /
 +            valveName);
 +}
 +
@@ -677,7 +677,7 @@ index 0000000..e40efb8
 +constexpr ValveControlIntf::Definitions::properties_t initControlAssociations{};
 +
 +GPIOValve::GPIOValve(sdbusplus::async::context& ctx,
-+                     sdbusplus::message::object_path& objectPath,
++                     sdbusplus::object_path& objectPath,
 +                     Events& events, const config::ValveConfig& config) :
 +    ValveIntf(ctx, getObjectPath(config.name).str.c_str(), initValues,
 +              initAssociations, initAvailability, initOperationalState),
@@ -931,7 +931,7 @@ index 0000000..725197e
 +
 +/** @brief Get the valve configuration from the Entity Manager */
 +auto getConfig(sdbusplus::async::context& ctx,
-+               sdbusplus::message::object_path objectPath)
++               sdbusplus::object_path objectPath)
 +    -> sdbusplus::async::task<std::optional<ValveConfig>>;
 +
 +} // namespace config
@@ -940,7 +940,7 @@ index 0000000..725197e
 +{
 +  public:
 +    explicit GPIOValve(sdbusplus::async::context& ctx,
-+                       sdbusplus::message::object_path& objectPath,
++                       sdbusplus::object_path& objectPath,
 +                       Events& events, const config::ValveConfig& config);
 +
 +    ~GPIOValve();
@@ -961,7 +961,7 @@ index 0000000..725197e
 +    auto createControlAssociations() -> void;
 +
 +    sdbusplus::async::context& ctx;
-+    sdbusplus::message::object_path inventoryPath;
++    sdbusplus::object_path inventoryPath;
 +    Events& events;
 +    config::ValveConfig config;
 +    gpio::GPIInterface inputInterface;
@@ -1043,7 +1043,7 @@ index 0000000..9543d2d
 +
 +PHOSPHOR_LOG2_USING;
 +
-+auto Events::generateValveEvent(sdbusplus::message::object_path valvePath,
++auto Events::generateValveEvent(sdbusplus::object_path valvePath,
 +                                bool open) -> sdbusplus::async::task<>
 +{
 +    namespace event_intf = sdbusplus::event::xyz::openbmc_project::state::Valve;
@@ -1085,7 +1085,7 @@ index 0000000..3f9ce8f
 +
 +    explicit Events(sdbusplus::async::context& ctx) : ctx(ctx) {}
 +
-+    auto generateValveEvent(sdbusplus::message::object_path valvePath,
++    auto generateValveEvent(sdbusplus::object_path valvePath,
 +                            bool open) -> sdbusplus::async::task<>;
 +
 +  private:
@@ -1129,7 +1129,7 @@ index 0000000..f38c021
 +}
 +
 +auto ValveMonitor::processInventoryAdded(
-+    const sdbusplus::message::object_path& objectPath,
++    const sdbusplus::object_path& objectPath,
 +    const std::string& /*unused*/) -> void
 +{
 +    // Added NO_LINT to bypass clang-tidy warning about STDEXEC_ASSERT as clang
@@ -1139,7 +1139,7 @@ index 0000000..f38c021
 +}
 +
 +auto ValveMonitor::processInventoryRemoved(
-+    const sdbusplus::message::object_path& objectPath,
++    const sdbusplus::object_path& objectPath,
 +    const std::string& /*unused*/) -> void
 +{
 +    if (!valves.contains(objectPath.str))
@@ -1151,7 +1151,7 @@ index 0000000..f38c021
 +}
 +
 +auto ValveMonitor::processConfigAddedAsync(
-+    sdbusplus::message::object_path objectPath) -> sdbusplus::async::task<>
++    sdbusplus::object_path objectPath) -> sdbusplus::async::task<>
 +{
 +    auto res = co_await config::getConfig(ctx, objectPath);
 +    if (!res.has_value())
@@ -1238,16 +1238,16 @@ index 0000000..9d66262
 +
 +    /** @brief  Process new interfaces added to inventory */
 +    auto processInventoryAdded(
-+        const sdbusplus::message::object_path& objectPath,
++        const sdbusplus::object_path& objectPath,
 +        const std::string& interfaceName) -> void;
 +
 +    /** @brief Process interfaces removed from inventory */
 +    auto processInventoryRemoved(
-+        const sdbusplus::message::object_path& objectPath,
++        const sdbusplus::object_path& objectPath,
 +        const std::string& interfaceName) -> void;
 +
 +    /** @brief Process the config add asynchronously */
-+    auto processConfigAddedAsync(sdbusplus::message::object_path objectPath)
++    auto processConfigAddedAsync(sdbusplus::object_path objectPath)
 +        -> sdbusplus::async::task<>;
 +
 +    sdbusplus::async::context& ctx;

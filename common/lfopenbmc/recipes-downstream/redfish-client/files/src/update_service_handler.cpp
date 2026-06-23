@@ -269,11 +269,11 @@ auto MultipartSoftwareUpdate::update(sdbusplus::message::unix_fd image,
 
 Software::Software(sdbusplus::async::context& ctx, const std::string& id) :
     sdbusplus::async::context_ref(ctx), id(id),
-    path(sdbusplus::message::object_path(SoftwareVersion::namespace_path) /
+    path(sdbusplus::object_path(SoftwareVersion::namespace_path) /
          std::format("{}_{}", id, randomIdGenerator()()))
 {}
 
-sdbusplus::message::object_path Software::getPath() const
+sdbusplus::object_path Software::getPath() const
 {
     return path;
 }

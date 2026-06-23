@@ -15,7 +15,7 @@ namespace mfgtool::utils::mapper
 
 /** Map of object path to service names. */
 using services_t =
-    std::map<sdbusplus::message::object_path, std::vector<std::string>>;
+    std::map<sdbusplus::object_path, std::vector<std::string>>;
 
 /** Get a list of services hosting a dbus interface by calling mapper.
  *
@@ -50,7 +50,7 @@ auto subtree_for_each(
     sdbusplus::async::context& ctx, const std::string& subpath,
     const std::string& interface,
     const std::function<sdbusplus::async::task<>(
-        const sdbusplus::message::object_path&, const std::string&)>& coroutine,
+        const sdbusplus::object_path&, const std::string&)>& coroutine,
     size_t depth = 0) -> sdbusplus::async::task<>;
 
 /** Iterate over the objects in a subtree.

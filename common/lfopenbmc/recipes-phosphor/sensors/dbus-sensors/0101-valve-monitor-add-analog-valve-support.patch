@@ -193,7 +193,7 @@ index 0000000..85b3f55
 +{
 +
 +auto getAnalogConfig(sdbusplus::async::context& ctx,
-+                     sdbusplus::message::object_path objectPath)
++                     sdbusplus::object_path objectPath)
 +    -> sdbusplus::async::task<std::optional<AnalogConfig>>
 +{
 +    AnalogConfig config = {};
@@ -296,7 +296,7 @@ index 0000000..85b3f55
 +static constexpr double hwmonMillivoltScale = 1000.0;
 +
 +AnalogValve::AnalogValve(sdbusplus::async::context& ctx,
-+                         sdbusplus::message::object_path& objectPath,
++                         sdbusplus::object_path& objectPath,
 +                         Events& events, const LocalConfig& localConfig,
 +                         const config::AnalogConfig& config) :
 +    BaseValve(ctx, objectPath, events, localConfig, config),
@@ -721,7 +721,7 @@ index 0000000..854dc74
 +
 +/** @brief Get the analog valve configuration from the Entity Manager */
 +auto getAnalogConfig(sdbusplus::async::context& ctx,
-+                     sdbusplus::message::object_path objectPath)
++                     sdbusplus::object_path objectPath)
 +    -> sdbusplus::async::task<std::optional<AnalogConfig>>;
 +
 +} // namespace config
@@ -730,7 +730,7 @@ index 0000000..854dc74
 +{
 +  public:
 +    explicit AnalogValve(sdbusplus::async::context& ctx,
-+                         sdbusplus::message::object_path& objectPath,
++                         sdbusplus::object_path& objectPath,
 +                         Events& events, const LocalConfig& localConfig,
 +                         const config::AnalogConfig& config);
 +
@@ -817,7 +817,7 @@ index 0000000..56af6fc
 +{
 +    std::replace(valveName.begin(), valveName.end(), ' ', '_');
 +
-+    return (sdbusplus::message::object_path(ValveIntf::namespace_path::value) /
++    return (sdbusplus::object_path(ValveIntf::namespace_path::value) /
 +            ValveIntf::namespace_path::valve / valveName);
 +}
 +
@@ -825,7 +825,7 @@ index 0000000..56af6fc
 +{
 +    std::replace(valveName.begin(), valveName.end(), ' ', '_');
 +
-+    return (sdbusplus::message::object_path(ValveControlIntf::namespace_path) /
++    return (sdbusplus::object_path(ValveControlIntf::namespace_path) /
 +            valveName);
 +}
 +
@@ -839,7 +839,7 @@ index 0000000..56af6fc
 +constexpr ValveControlIntf::Definitions::properties_t initControlAssociations{};
 +
 +BaseValve::BaseValve(sdbusplus::async::context& ctx,
-+                     const sdbusplus::message::object_path& objectPath,
++                     const sdbusplus::object_path& objectPath,
 +                     Events& events, const LocalConfig& localConfig,
 +                     const config::BaseConfig& config) :
 +    ValveIntf(ctx, getObjectPath(config.name).str.c_str(), initValues,
@@ -1020,7 +1020,7 @@ index 0000000..446dc9f
 +{
 +  public:
 +    explicit BaseValve(sdbusplus::async::context& ctx,
-+                       const sdbusplus::message::object_path& objectPath,
++                       const sdbusplus::object_path& objectPath,
 +                       Events& events, const LocalConfig& localConfig,
 +                       const config::BaseConfig& config);
 +
@@ -1056,7 +1056,7 @@ index 0000000..446dc9f
 +        -> sdbusplus::async::task<std::optional<std::string>>;
 +
 +    sdbusplus::async::context& ctx;
-+    sdbusplus::message::object_path inventoryPath;
++    sdbusplus::object_path inventoryPath;
 +    Events& events;
 +    const LocalConfig& localConfig;
 +    config::BaseConfig baseConfig;
@@ -1106,7 +1106,7 @@ index e40efb8..75b4a6a 100644
 @@ -39,15 +32,15 @@ static constexpr std::array<std::pair<std::string_view, PinPolarity>, 2>
  
  auto getConfig(sdbusplus::async::context& ctx,
-                sdbusplus::message::object_path objectPath)
+                sdbusplus::object_path objectPath)
 -    -> sdbusplus::async::task<std::optional<ValveConfig>>
 +    -> sdbusplus::async::task<std::optional<GPIOConfig>>
  {
@@ -1131,7 +1131,7 @@ index e40efb8..75b4a6a 100644
 -{
 -    std::replace(valveName.begin(), valveName.end(), ' ', '_');
 -
--    return (sdbusplus::message::object_path(ValveIntf::namespace_path::value) /
+-    return (sdbusplus::object_path(ValveIntf::namespace_path::value) /
 -            ValveIntf::namespace_path::valve / valveName);
 -}
 -
@@ -1139,7 +1139,7 @@ index e40efb8..75b4a6a 100644
 -{
 -    std::replace(valveName.begin(), valveName.end(), ' ', '_');
 -
--    return (sdbusplus::message::object_path(ValveControlIntf::namespace_path) /
+-    return (sdbusplus::object_path(ValveControlIntf::namespace_path) /
 -            valveName);
 -}
 -
@@ -1153,7 +1153,7 @@ index e40efb8..75b4a6a 100644
 -constexpr ValveControlIntf::Definitions::properties_t initControlAssociations{};
 -
  GPIOValve::GPIOValve(sdbusplus::async::context& ctx,
-                      sdbusplus::message::object_path& objectPath,
+                      sdbusplus::object_path& objectPath,
 -                     Events& events, const config::ValveConfig& config) :
 -    ValveIntf(ctx, getObjectPath(config.name).str.c_str(), initValues,
 -              initAssociations, initAvailability, initOperationalState),
@@ -1410,7 +1410,7 @@ index 725197e..e26efbf 100644
 @@ -67,38 +47,26 @@ struct ValveConfig
  /** @brief Get the valve configuration from the Entity Manager */
  auto getConfig(sdbusplus::async::context& ctx,
-                sdbusplus::message::object_path objectPath)
+                sdbusplus::object_path objectPath)
 -    -> sdbusplus::async::task<std::optional<ValveConfig>>;
 +    -> sdbusplus::async::task<std::optional<GPIOConfig>>;
  
@@ -1421,7 +1421,7 @@ index 725197e..e26efbf 100644
  {
    public:
      explicit GPIOValve(sdbusplus::async::context& ctx,
-                        sdbusplus::message::object_path& objectPath,
+                        sdbusplus::object_path& objectPath,
 -                       Events& events, const config::ValveConfig& config);
 -
 -    ~GPIOValve();
@@ -1447,7 +1447,7 @@ index 725197e..e26efbf 100644
 -    auto createControlAssociations() -> void;
 -
 -    sdbusplus::async::context& ctx;
--    sdbusplus::message::object_path inventoryPath;
+-    sdbusplus::object_path inventoryPath;
 -    Events& events;
 -    config::ValveConfig config;
 +    config::GPIOConfig gpioConfig;
@@ -1732,12 +1732,12 @@ diff --git a/src/valve-monitor/ValveEvents.cpp b/src/valve-monitor/ValveEvents.c
 index 9543d2d..56ec12e 100644
 --- a/src/valve-monitor/ValveEvents.cpp
 +++ b/src/valve-monitor/ValveEvents.cpp
-@@ -31,4 +31,32 @@ auto Events::generateValveEvent(sdbusplus::message::object_path valvePath,
+@@ -31,4 +31,32 @@ auto Events::generateValveEvent(sdbusplus::object_path valvePath,
            valvePath, "STATUS", open);
  }
  
 +auto Events::handleValveSetPointWarning(
-+    sdbusplus::message::object_path valvePath, bool asserted)
++    sdbusplus::object_path valvePath, bool asserted)
 +    -> sdbusplus::async::task<>
 +{
 +    namespace error_intf = sdbusplus::error::xyz::openbmc_project::state::Valve;
@@ -1780,15 +1780,15 @@ index 3f9ce8f..cebd637 100644
  {
  
 @@ -16,8 +19,15 @@ class Events
-     auto generateValveEvent(sdbusplus::message::object_path valvePath,
+     auto generateValveEvent(sdbusplus::object_path valvePath,
                              bool open) -> sdbusplus::async::task<>;
  
-+    auto handleValveSetPointWarning(sdbusplus::message::object_path valvePath,
++    auto handleValveSetPointWarning(sdbusplus::object_path valvePath,
 +                                    bool asserted) -> sdbusplus::async::task<>;
 +
    private:
 +    /** @brief Map of valve path to pending event object path */
-+    using event_map_t = std::map<std::string, sdbusplus::message::object_path>;
++    using event_map_t = std::map<std::string, sdbusplus::object_path>;
 +
      sdbusplus::async::context& ctx;
 +    event_map_t pendingEvents;
@@ -1828,7 +1828,7 @@ index 0000000..7d3735e
 +}
 +
 +auto ValveFactory::createValve(sdbusplus::async::context& ctx,
-+                               sdbusplus::message::object_path objectPath,
++                               sdbusplus::object_path objectPath,
 +                               Events& events, const LocalConfig& localConfig,
 +                               const std::string& interfaceName)
 +    -> sdbusplus::async::task<std::unique_ptr<BaseValve>>
@@ -1904,7 +1904,7 @@ index 0000000..80ad48f
 +
 +    /** @brief Create a valve from the given Entity Manager object path */
 +    static auto createValve(sdbusplus::async::context& ctx,
-+                            sdbusplus::message::object_path objectPath,
++                            sdbusplus::object_path objectPath,
 +                            Events& events, const LocalConfig& localConfig,
 +                            const std::string& interfaceName)
 +        -> sdbusplus::async::task<std::unique_ptr<BaseValve>>;
@@ -1947,7 +1947,7 @@ index f38c021..48b487b 100644
  }
  
  auto ValveMonitor::processInventoryAdded(
-     const sdbusplus::message::object_path& objectPath,
+     const sdbusplus::object_path& objectPath,
 -    const std::string& /*unused*/) -> void
 +    const std::string& interfaceName) -> void
  {
@@ -1963,8 +1963,8 @@ index f38c021..48b487b 100644
  }
  
  auto ValveMonitor::processConfigAddedAsync(
--    sdbusplus::message::object_path objectPath) -> sdbusplus::async::task<>
-+    sdbusplus::message::object_path objectPath, std::string interfaceName)
+-    sdbusplus::object_path objectPath) -> sdbusplus::async::task<>
++    sdbusplus::object_path objectPath, std::string interfaceName)
 +    -> sdbusplus::async::task<>
  {
 -    auto res = co_await config::getConfig(ctx, objectPath);
@@ -2034,8 +2034,8 @@ index 9d66262..a2fde53 100644
          const std::string& interfaceName) -> void;
  
      /** @brief Process the config add asynchronously */
--    auto processConfigAddedAsync(sdbusplus::message::object_path objectPath)
-+    auto processConfigAddedAsync(sdbusplus::message::object_path objectPath,
+-    auto processConfigAddedAsync(sdbusplus::object_path objectPath)
++    auto processConfigAddedAsync(sdbusplus::object_path objectPath,
 +                                 std::string interfaceName)
          -> sdbusplus::async::task<>;
  

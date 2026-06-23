@@ -46,7 +46,7 @@ enum class SEL_TYPE
 };
 
 void addSelBySelType(SEL_TYPE selType, uint8_t slotId, const std::string& imagePath) {
-    auto targetName = sdbusplus::message::object_path(std::string(BIOS_NAME) + " slot" + std::to_string(slotId));
+    auto targetName = sdbusplus::object_path(std::string(BIOS_NAME) + " slot" + std::to_string(slotId));
 
     switch (selType) {
         case SEL_TYPE::TargetDetermined: {

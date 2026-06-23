@@ -1,4 +1,4 @@
-From 11de29732de0dad44e4c4eb328e37262f1ebd4d3 Mon Sep 17 00:00:00 2001
+From f5fab9ab4c976a2bd5a9f64bf643a40b273e6475 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 16:48:20 +0800
 Subject: [PATCH] platform-mc: Add MCTP recovery option
@@ -17,10 +17,10 @@ Upstream-Status: Pending
  4 files changed, 16 insertions(+)
 
 diff --git a/common/utils.cpp b/common/utils.cpp
-index b7de564..2d08925 100644
+index d0bd39e..0a4509a 100644
 --- a/common/utils.cpp
 +++ b/common/utils.cpp
-@@ -583,6 +583,7 @@ int emitStateSensorEventSignal(uint8_t tid, uint16_t sensorId,
+@@ -588,6 +588,7 @@ int emitStateSensorEventSignal(uint8_t tid, uint16_t sensorId,
  
  void recoverMctpEndpoint(const std::string& endpointObjPath)
  {
@@ -28,7 +28,7 @@ index b7de564..2d08925 100644
      auto& bus = DBusHandler::getBus();
      try
      {
-@@ -600,6 +601,9 @@ void recoverMctpEndpoint(const std::string& endpointObjPath)
+@@ -605,6 +606,9 @@ void recoverMctpEndpoint(const std::string& endpointObjPath)
              "failed to make a D-Bus call to recover MCTP Endpoint, ERROR {ERR_EXCEP}",
              "ERR_EXCEP", e);
      }
@@ -39,7 +39,7 @@ index b7de564..2d08925 100644
  
  uint16_t findStateSensorId(const pldm_pdr* pdrRepo, uint8_t tid,
 diff --git a/meson.build b/meson.build
-index 8e2282f..c111aef 100644
+index cd6f800..26da906 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -118,6 +118,8 @@ elif get_option('transport-implementation') == 'af-mctp'
@@ -71,7 +71,7 @@ index ca8920f..4c8234f 100644
  option(
      'fw-update-pkg-inotify',
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index eee6748..de29d1e 100644
+index 73f1834..68098ee 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
 @@ -720,6 +720,7 @@ exec::task<int> TerminusManager::sendRecvPldmMsg(
@@ -91,5 +91,5 @@ index eee6748..de29d1e 100644
      co_return rc;
  }
 -- 
-2.52.0
+2.53.0-Meta
 

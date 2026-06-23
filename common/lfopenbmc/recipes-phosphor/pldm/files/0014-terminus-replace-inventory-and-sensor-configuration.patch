@@ -725,7 +725,7 @@ index eda8a42..6f66824 100644
 -        std::string associatedInterface;
 -        sdbusplus::object_path inventorySubtreePath(inventorySubtreePathStr);
 +        // Define the search scope for the association
-+        sdbusplus::message::object_path inventorySubtreePath(
++        sdbusplus::object_path inventorySubtreePath(
 +            inventorySubtreePathStr);
 +        constexpr auto subTreeDepth = 3;
  
@@ -850,7 +850,7 @@ index eda8a42..6f66824 100644
 +                sdbusplus::bus::match::rules::argNpath(0, matchPath),
 +            [this, mctpInfo,
 +             mctpReactorObjectPath](sdbusplus::message_t& msg) mutable {
-+                sdbusplus::message::object_path objPath;
++                sdbusplus::object_path objPath;
 +                using InterfaceMap = std::map<
 +                    std::string,
 +                    std::map<std::string, std::variant<std::vector<std::string>,

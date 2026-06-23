@@ -74,7 +74,7 @@ static inline auto all_properties(sdbusplus::async::context& ctx,
  */
 static inline auto assert_consistent(
     sdbusplus::async::context& ctx,
-    const sdbusplus::message::object_path& path, const std::string& interface,
+    const sdbusplus::object_path& path, const std::string& interface,
     const std::vector<std::string>& services) -> sdbusplus::async::task<>
 {
     PHOSPHOR_LOG2_USING;
@@ -138,7 +138,7 @@ auto subtree_for_each(
     sdbusplus::async::context& ctx, const std::string& subpath,
     const std::string& interface,
     const std::function<sdbusplus::async::task<>(
-        const sdbusplus::message::object_path&, const std::string&)>& coroutine,
+        const sdbusplus::object_path&, const std::string&)>& coroutine,
     size_t depth) -> sdbusplus::async::task<>
 {
     PHOSPHOR_LOG2_USING;

@@ -2173,7 +2173,7 @@ index 0000000..9bb6e54
 +                return;
 +            }
 +
-+            sdbusplus::message::object_path path;
++            sdbusplus::object_path path;
 +            std::vector<std::string> interfaces;
 +
 +            msg.read(path, interfaces);
@@ -2320,7 +2320,7 @@ index 0000000..c25fbc0
 +    const std::string& sensorName, const std::string& sensorConfiguration,
 +    const uint8_t eid) :
 +    StatusInterface(
-+        static_cast<sdbusplus::bus::bus&>(*conn),
++        static_cast<sdbusplus::bus_t&>(*conn),
 +        ("/xyz/openbmc_project/sensors/drive/" + escapeName(sensorName))
 +            .c_str(),
 +        StatusInterface::action::defer_emit),

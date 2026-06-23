@@ -137,7 +137,7 @@ index e220b38..63501c9 100644
 +    bool logOnSecondHit;
      bool writeable;
 +    bool assertPending = false;
-     std::optional<sdbusplus::message::object_path> assertedLog;
+     std::optional<sdbusplus::object_path> assertedLog;
  
      bool operator==(const Threshold& rhs) const
 -- 

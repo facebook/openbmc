@@ -1,7 +1,7 @@
-From d862086550ccf0eea6575f80649625b376bf5760 Mon Sep 17 00:00:00 2001
+From 342157beca47c387a8d2e1cad688e70635e23780 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Thu, 11 Jun 2026 15:58:17 +0800
-Subject: [PATCH 2/3] dt-bindings: hwmon: pmbus: ti,lm25066: add current limit
+Subject: [PATCH] dt-bindings: hwmon: pmbus: ti,lm25066: add current limit
  properties
 
 Add a 'ti,current-range' string property to configure the device's Current
@@ -62,5 +62,5 @@ index a20f140dc79a..fe42daabaaa8 100644
  unevaluatedProperties: false
  
 -- 
-2.52.0
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From 91da7c83695e2c75e60dbdbef970f7dd56c5c351 Mon Sep 17 00:00:00 2001
+From 659af160f4d46867aff35183e2ab00615f382128 Mon Sep 17 00:00:00 2001
 From: Archit Mehrotra <architmehrotra@meta.com>
 Date: Sat, 4 Apr 2026 11:20:55 -0700
 Subject: [PATCH] Store Log Entry URI for Redfish event
@@ -151,10 +151,10 @@ Signed-off-by: Archit Mehrotra <architmehrotra@meta.com>
  5 files changed, 75 insertions(+), 4 deletions(-)
 
 diff --git a/docs/Redfish.md b/docs/Redfish.md
-index 40641d5d..e1e1d4c3 100644
+index 27f3397f..30b29773 100644
 --- a/docs/Redfish.md
 +++ b/docs/Redfish.md
-@@ -622,6 +622,22 @@ Fields common to all schemas
+@@ -626,6 +626,22 @@ Fields common to all schemas
  - Protocol
  - SendHeartbeat
  

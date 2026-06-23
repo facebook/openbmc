@@ -61,7 +61,7 @@ void addSelBySelType(SEL_TYPE selType,
         return;
     }
 
-    auto targetName = sdbusplus::message::object_path(deviceType + " " + info);
+    auto targetName = sdbusplus::object_path(deviceType + " " + info);
 
     switch (selType)
     {

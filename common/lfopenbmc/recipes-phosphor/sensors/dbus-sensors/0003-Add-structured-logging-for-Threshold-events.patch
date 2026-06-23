@@ -162,7 +162,7 @@ index 9a14b53..4865b8b 100644
 +template <typename errorObj>
 +auto logAssertThresholdHelper(const std::string& objPath, double assertValue,
 +                              Unit unit, double thresholdValue)
-+    -> sdbusplus::message::object_path
++    -> sdbusplus::object_path
 +{
 +    return lg2::commit(
 +        errorObj("SENSOR_NAME", objPath, "READING_VALUE", assertValue, "UNITS",
@@ -176,7 +176,7 @@ index 9a14b53..4865b8b 100644
 +    namespace errors =
 +        sdbusplus::error::xyz::openbmc_project::sensor::Threshold;
 +    static const std::map<std::tuple<thresholds::Level, thresholds::Direction>,
-+                          std::function<sdbusplus::message::object_path(
++                          std::function<sdbusplus::object_path(
 +                              const std::string&, double, Unit, double)>>
 +        thresholdLogMap = {
 +            {{Level::WARNING, Direction::HIGH},
@@ -287,7 +287,7 @@ index 17c2649..e220b38 100644
      double value;
      double hysteresis;
      bool writeable;
-+    std::optional<sdbusplus::message::object_path> assertedLog;
++    std::optional<sdbusplus::object_path> assertedLog;
  
      bool operator==(const Threshold& rhs) const
      {

@@ -1,4 +1,4 @@
-From ce8c5c505f04f911ecba32345af110a7e359fe72 Mon Sep 17 00:00:00 2001
+From 12bc3e68deef0fa755880e06a5ddbd17678b52bb Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Mon, 23 Mar 2026 12:45:06 +0800
 Subject: [PATCH] mctpd: add AssignBridgeStatic method
@@ -47,7 +47,7 @@ Signed-off-by: Potin Lai <potin.lai@quantatw.com>
  2 files changed, 260 insertions(+)
 
 diff --git a/docs/mctpd.md b/docs/mctpd.md
-index bab76b6f54..236e1a540f 100644
+index 4e866e3..b80683a 100644
 --- a/docs/mctpd.md
 +++ b/docs/mctpd.md
 @@ -203,6 +203,37 @@ This call will fail if the endpoint already has an EID, and that EID is
@@ -89,10 +89,10 @@ index bab76b6f54..236e1a540f 100644
  
  Like SetupEndpoint but will not assign EIDs, will only query endpoints for a
 diff --git a/src/mctpd.c b/src/mctpd.c
-index 9cd16f3ae1..f24cb94c31 100644
+index a7036ad..60864bb 100644
 --- a/src/mctpd.c
 +++ b/src/mctpd.c
-@@ -2329,6 +2329,34 @@ static int allocate_eid(struct ctx *ctx, struct net *net,
+@@ -2257,6 +2257,34 @@ static int allocate_eid(struct ctx *ctx, struct net *net,
  	return -1;
  }
  
@@ -127,7 +127,7 @@ index 9cd16f3ae1..f24cb94c31 100644
  static int endpoint_assign_eid(struct ctx *ctx, sd_bus_error *berr,
  			       const dest_phys *dest, struct peer **ret_peer,
  			       mctp_eid_t static_eid, bool assign_bridge)
-@@ -2442,6 +2470,100 @@ static int endpoint_assign_eid(struct ctx *ctx, sd_bus_error *berr,
+@@ -2370,6 +2398,100 @@ static int endpoint_assign_eid(struct ctx *ctx, sd_bus_error *berr,
  	return 0;
  }
  
@@ -228,7 +228,7 @@ index 9cd16f3ae1..f24cb94c31 100644
  /* Populates a sd_bus_error based on mctpd's convention for error codes.
   * Does nothing if berr is already set.
   */
-@@ -3126,6 +3248,98 @@ err:
+@@ -2957,6 +3079,98 @@ err:
  	return rc;
  }
  
@@ -327,7 +327,7 @@ index 9cd16f3ae1..f24cb94c31 100644
  static int method_learn_endpoint(sd_bus_message *call, void *data,
  				 sd_bus_error *berr)
  {
-@@ -4055,6 +4269,21 @@ static const sd_bus_vtable bus_link_owner_vtable[] = {
+@@ -3908,6 +4122,21 @@ static const sd_bus_vtable bus_link_owner_vtable[] = {
  		method_assign_endpoint_static,
  		0),
  
@@ -350,5 +350,5 @@ index 9cd16f3ae1..f24cb94c31 100644
  		"ay",
  		SD_BUS_PARAM(physaddr),
 -- 
-2.52.0
+2.53.0-Meta
 

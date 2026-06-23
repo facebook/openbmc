@@ -1,4 +1,4 @@
-From 1cf6d41b8ae3c09c16e44dad49593d8af4f5da20 Mon Sep 17 00:00:00 2001
+From ee1874afaa152e465f8fa41549d82101930c0edb Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Wed, 6 May 2026 16:06:20 +0800
 Subject: [PATCH] pinctrl: aspeed: Add AST2700 SoC0 support
@@ -22,7 +22,7 @@ Signed-off-by: Linus Walleij <linusw@kernel.org>
  create mode 100644 drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc0.c
 
 diff --git a/drivers/pinctrl/aspeed/Kconfig b/drivers/pinctrl/aspeed/Kconfig
-index 2cf78e969bd6..680483f7eb92 100644
+index e892292bf966..8e1d4da0891d 100644
 --- a/drivers/pinctrl/aspeed/Kconfig
 +++ b/drivers/pinctrl/aspeed/Kconfig
 @@ -32,6 +32,15 @@ config PINCTRL_ASPEED_G6
@@ -53,7 +53,7 @@ index a4f2ed97a891..7a41ca45c6ba 100644
  obj-$(CONFIG_PINCTRL_ASPEED_G7_SOC1)	+= pinctrl-aspeed-g7-soc1.o
 diff --git a/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc0.c b/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc0.c
 new file mode 100644
-index 000000000000..35a28b677318
+index 000000000000..94f216f55bdd
 --- /dev/null
 +++ b/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc0.c
 @@ -0,0 +1,749 @@
@@ -807,5 +807,5 @@ index 000000000000..35a28b677318
 +}
 +arch_initcall(aspeed_g7_soc0_pinctrl_init);
 -- 
-2.52.0
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From 5bf50d9375591d510908afe60c42ba3dc9b4df42 Mon Sep 17 00:00:00 2001
+From 2217811aa55ca74a5a7faa7d230cd5f0a07a8769 Mon Sep 17 00:00:00 2001
 From: Carter Chen <carter.chen.wiwynn@gmail.com>
 Date: Mon, 1 Dec 2025 08:46:59 +0000
 Subject: [PATCH] fw_update: Reimplement package parser to use new libpldm API
@@ -17,21 +17,21 @@ Signed-off-by: Unive Tien <unive.tien.wiwynn@gmail.com>
 Signed-off-by: Carter Chen <carter.chen.wiwynn@gmail.com>
 ---
  common/types.hpp                              |  48 +-
- common/utils.cpp                              | 160 +++++++
- common/utils.hpp                              |  86 ++++
  fw-update/aggregate_update_manager.hpp        |   4 +-
  fw-update/device_updater.cpp                  | 207 ++++-----
  fw-update/device_updater.hpp                  |  20 +-
+ fw-update/item_update_manager.cpp             |  31 +-
  fw-update/manager.hpp                         |   2 +-
  fw-update/package_parser.cpp                  | 427 ++++++++----------
  fw-update/package_parser.hpp                  | 141 ++----
  fw-update/test/device_updater_test.cpp        |  70 +--
  .../test/firmware_inventory_manager_test.cpp  |   6 +-
+ fw-update/test/firmware_inventory_test.cpp    |   3 +-
  fw-update/test/inventory_manager_test.cpp     |   2 +-
  fw-update/test/package_parser_test.cpp        | 120 +++--
  fw-update/update_manager.cpp                  | 241 ++++++++--
  fw-update/update_manager.hpp                  |  33 +-
- 15 files changed, 961 insertions(+), 606 deletions(-)
+ 15 files changed, 731 insertions(+), 624 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
 index 27b8172..dfbfb54 100644
@@ -122,308 +122,11 @@ index 27b8172..dfbfb54 100644
  
  } // namespace fw_update
  
-diff --git a/common/utils.cpp b/common/utils.cpp
-index 2d08925..d35ff99 100644
---- a/common/utils.cpp
-+++ b/common/utils.cpp
-@@ -2,9 +2,12 @@
- 
- #include "common/start_lifetime_as.hpp"
- 
-+#include <fcntl.h>
- #include <libpldm/pdr.h>
- #include <libpldm/pldm_types.h>
- #include <linux/mctp.h>
-+#include <sys/mman.h>
-+#include <sys/stat.h>
- 
- #include <xyz/openbmc_project/BIOSConfig/Manager/client.hpp>
- #include <xyz/openbmc_project/Common/error.hpp>
-@@ -15,6 +18,7 @@
- 
- #include <algorithm>
- #include <cctype>
-+#include <cstdlib>
- #include <ctime>
- #include <fstream>
- #include <iostream>
-@@ -22,6 +26,7 @@
- #include <memory>
- #include <stdexcept>
- #include <string>
-+#include <system_error>
- #include <vector>
- 
- PHOSPHOR_LOG2_USING;
-@@ -975,5 +980,160 @@ long int generateSwId()
-     return random() % 10000;
- }
- 
-+MMapHandler::MMapHandler(int fd, std::optional<size_t> size)
-+{
-+    struct stat sb;
-+    if (fstat(fd, &sb) == -1)
-+    {
-+        error("Failed to get the actual file size");
-+        data = nullptr;
-+        throw std::runtime_error("Failed to get the actual file size");
-+    }
-+
-+    if (size.has_value())
-+    {
-+        this->size = size.value();
-+        if (this->size > static_cast<size_t>(sb.st_size))
-+        {
-+            error("Requested size {REQSIZE} exceeds file size {FILESIZE}",
-+                  "REQSIZE", this->size, "FILESIZE", sb.st_size);
-+            data = nullptr;
-+            throw std::invalid_argument("Requested size exceeds file size");
-+        }
-+    }
-+    else
-+    {
-+        this->size = static_cast<size_t>(sb.st_size);
-+    }
-+
-+    data = static_cast<const char*>(
-+        mmap(nullptr, this->size, PROT_READ, MAP_PRIVATE, fd, 0));
-+    if (data == MAP_FAILED)
-+    {
-+        int savedErrno = errno;
-+        data = nullptr;
-+        error("mmap failed: size {SIZE}, error: {ERROR}", "SIZE", this->size,
-+              "ERROR", savedErrno);
-+        throw std::system_error(savedErrno, std::system_category(),
-+                                "mmap failed");
-+    }
-+}
-+
-+MMapHandler::MMapHandler(const std::filesystem::path& path,
-+                         std::optional<size_t> size)
-+{
-+    int localFd = open(path.c_str(), O_RDONLY);
-+    if (localFd < 0)
-+    {
-+        int savedErrno = errno;
-+        error("Failed to open file: {PATH}, error: {ERROR}", "PATH",
-+              path.c_str(), "ERROR", savedErrno);
-+        throw std::system_error(savedErrno, std::system_category(),
-+                                "Failed to open file: " + path.string());
-+    }
-+
-+    struct stat sb;
-+    if (fstat(localFd, &sb) == -1)
-+    {
-+        int savedErrno = errno;
-+        close(localFd);
-+        error("Failed to fstat file: {ERROR}", "ERROR", savedErrno);
-+        throw std::system_error(savedErrno, std::system_category(),
-+                                "Failed to fstat file");
-+    }
-+
-+    if (size.has_value())
-+    {
-+        this->size = size.value();
-+        if (this->size > static_cast<size_t>(sb.st_size))
-+        {
-+            close(localFd);
-+            error("Requested size {REQSIZE} exceeds file size {FILESIZE}",
-+                  "REQSIZE", this->size, "FILESIZE", sb.st_size);
-+            throw std::invalid_argument("Requested size exceeds file size");
-+        }
-+    }
-+    else
-+    {
-+        this->size = static_cast<size_t>(sb.st_size);
-+    }
-+
-+    data = static_cast<const char*>(
-+        mmap(nullptr, this->size, PROT_READ, MAP_PRIVATE, localFd, 0));
-+    // mmap() adds its own reference to the file; close fd immediately
-+    close(localFd);
-+
-+    if (data == MAP_FAILED)
-+    {
-+        int savedErrno = errno;
-+        data = nullptr;
-+        error("mmap failed: size {SIZE}, error: {ERROR}", "SIZE", this->size,
-+              "ERROR", savedErrno);
-+        throw std::system_error(savedErrno, std::system_category(),
-+                                "mmap failed");
-+    }
-+}
-+
-+MMapHandler::MMapHandler(MMapHandler&& other) noexcept :
-+    size(other.size), data(other.data)
-+{
-+    other.data = nullptr;
-+    other.size = 0;
-+}
-+
-+MMapHandler& MMapHandler::operator=(MMapHandler&& other) noexcept
-+{
-+    if (this != &other)
-+    {
-+        if (data)
-+        {
-+            // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-+            munmap(const_cast<char*>(data), size);
-+        }
-+        data = other.data;
-+        size = other.size;
-+        other.data = nullptr;
-+        other.size = 0;
-+    }
-+    return *this;
-+}
-+
-+MMapHandler::~MMapHandler()
-+{
-+    if (data)
-+    {
-+        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-+        munmap(const_cast<char*>(data), size);
-+    }
-+}
-+
-+const char* MMapHandler::getData() const
-+{
-+    return data;
-+}
-+
-+std::span<const uint8_t> MMapHandler::getBytes() const
-+{
-+    if (!data)
-+    {
-+        return {};
-+    }
-+    return {std::bit_cast<const uint8_t*>(data), size};
-+}
-+
-+std::span<const char> MMapHandler::getChars() const
-+{
-+    if (!data)
-+    {
-+        return {};
-+    }
-+    return {data, size};
-+}
-+
-+size_t MMapHandler::getSize() const
-+{
-+    return size;
-+}
-+
- } // namespace utils
- } // namespace pldm
-diff --git a/common/utils.hpp b/common/utils.hpp
-index b0b14e0..34b232e 100644
---- a/common/utils.hpp
-+++ b/common/utils.hpp
-@@ -21,6 +21,7 @@
- #include <cstdint>
- #include <filesystem>
- #include <map>
-+#include <span>
- #include <string>
- #include <variant>
- #include <vector>
-@@ -751,5 +752,90 @@ std::optional<T> getBiosAttrValue(const std::string& dbusAttrName)
-  */
- void setBiosAttr(const PendingAttributesList& biosAttrList);
- 
-+/** @brief RAII class to handle mmap and munmap */
-+class MMapHandler
-+{
-+  public:
-+    /** @brief Constructor to handle mmap with file descriptor
-+     *
-+     *  @param[in] fd - file descriptor to be mapped
-+     *  @param[in] size - size to be mapped (optional)
-+     *
-+     *  @note The file descriptor is not owned by MMapHandler and will not be
-+     *        closed in the destructor when constructed with this method.
-+     */
-+    MMapHandler(int fd, std::optional<size_t> size = std::nullopt);
-+
-+    /** @brief Constructor to handle mmap with file path
-+     *
-+     *  Opens the file, memory maps it, and manages the file descriptor
-+     * lifecycle.
-+     *
-+     *  @param[in] path - filesystem path to the file to be opened and mapped
-+     *  @param[in] size - size to be mapped (optional)
-+     *
-+     *  @note The file descriptor is owned by MMapHandler and will be
-+     *        automatically closed in the destructor.
-+     */
-+    explicit MMapHandler(const std::filesystem::path& path,
-+                         std::optional<size_t> size = std::nullopt);
-+
-+    /** @brief Copy operations (deleted)
-+     *
-+     *  Copying is not allowed because the mapped memory region is owned
-+     *  by a single MMapHandler instance to prevent double munmap.
-+     */
-+    MMapHandler(const MMapHandler&) = delete;
-+    MMapHandler& operator=(const MMapHandler&) = delete;
-+
-+    /** @brief Move operations
-+     *
-+     *  Transfers ownership of the mapped memory and file descriptor,
-+     *  leaving the source object in a valid but empty state.
-+     */
-+    MMapHandler(MMapHandler&& other) noexcept;
-+    MMapHandler& operator=(MMapHandler&& other) noexcept;
-+
-+    /** @brief Destructor to handle munmap and optionally close file descriptor
-+     *
-+     *  Unmaps the memory and closes the file descriptor if it was opened
-+     *  by MMapHandler (i.e., constructed with file path).
-+     */
-+    ~MMapHandler();
-+
-+    /** @brief Get the const data pointer of the mapped data
-+     *
-+     *  @return const char* - read-only pointer to the mapped data
-+     */
-+    const char* getData() const;
-+
-+    /** @brief Get the size of the mapped data
-+     *
-+     *  @return size_t - size of the mapped data
-+     */
-+    size_t getSize() const;
-+
-+    /** @brief Get a read-only view of the mapped data as bytes
-+     *
-+     *  @return std::span<const uint8_t> - read-only byte view of mapped data
-+     *
-+     *  @note The caller is responsible for parsing and interpreting the bytes,
-+     *        including handling endianness, alignment, and data validation.
-+     */
-+    std::span<const uint8_t> getBytes() const;
-+
-+    /** @brief Get a read-only view of the mapped data as chars
-+     *
-+     *  @return std::span<const char> - read-only char view of mapped data
-+     *
-+     *  @note The caller is responsible for parsing and interpreting the chars.
-+     */
-+    std::span<const char> getChars() const;
-+
-+  private:
-+    size_t size;
-+    const char* data = nullptr;
-+};
-+
- } // namespace utils
- } // namespace pldm
 diff --git a/fw-update/aggregate_update_manager.hpp b/fw-update/aggregate_update_manager.hpp
-index eb15dc9..fb57cc3 100644
+index c9acc6c..ca3d0ab 100644
 --- a/fw-update/aggregate_update_manager.hpp
 +++ b/fw-update/aggregate_update_manager.hpp
-@@ -21,6 +21,7 @@ class AggregateUpdateManager : public UpdateManager
+@@ -22,6 +22,7 @@ class AggregateUpdateManager : public UpdateManager
       * @param[in] handler - PLDM request handler
       * @param[in] instanceIdDb - Reference to the instance ID database
       * @param[in] descriptorMap - Descriptor map for the update manager
@@ -431,7 +134,7 @@ index eb15dc9..fb57cc3 100644
       * @param[in] componentInfoMap - Component information map for the update
       * manager
       */
-@@ -28,9 +29,10 @@ class AggregateUpdateManager : public UpdateManager
+@@ -29,9 +30,10 @@ class AggregateUpdateManager : public UpdateManager
          Event& event,
          pldm::requester::Handler<pldm::requester::Request>& handler,
          InstanceIdDb& instanceIdDb, const DescriptorMap& descriptorMap,
@@ -444,7 +147,7 @@ index eb15dc9..fb57cc3 100644
  
      /**
 diff --git a/fw-update/device_updater.cpp b/fw-update/device_updater.cpp
-index 7c02190..4e5c187 100644
+index 39fbd2d..4260984 100644
 --- a/fw-update/device_updater.cpp
 +++ b/fw-update/device_updater.cpp
 @@ -9,6 +9,9 @@
@@ -465,7 +168,7 @@ index 7c02190..4e5c187 100644
 -    const FirmwareDeviceIDRecord& fwDeviceIDRecord,
 +    mctp_eid_t eid, const DeviceIDRecord& deviceIDRecord,
      const ComponentImageInfos& compImageInfos, const ComponentInfo& compInfo,
-     uint32_t maxTransferSize, UpdateManager* updateManager) :
+     uint32_t maxTransferSize, UpdateManagerBase* updateManager) :
 -    eid(eid), package(package), fwDeviceIDRecord(fwDeviceIDRecord),
 -    compImageInfos(compImageInfos), compInfo(compInfo),
 +    eid(eid), compImageInfos(compImageInfos), compInfo(compInfo),
@@ -861,7 +564,7 @@ index 7c02190..4e5c187 100644
      if (componentIndex == applicableComponents.size() - 1)
      {
 diff --git a/fw-update/device_updater.hpp b/fw-update/device_updater.hpp
-index a4c2d03..743f629 100644
+index a0621c3..94a659d 100644
 --- a/fw-update/device_updater.hpp
 +++ b/fw-update/device_updater.hpp
 @@ -124,9 +124,7 @@ class DeviceUpdater
@@ -906,6 +609,65 @@ index a4c2d03..743f629 100644
  
      /** @brief Component image information for all the components in the fw
       *         update package
+diff --git a/fw-update/item_update_manager.cpp b/fw-update/item_update_manager.cpp
+index 3fd9589..7c7a2f6 100644
+--- a/fw-update/item_update_manager.cpp
++++ b/fw-update/item_update_manager.cpp
+@@ -41,20 +41,10 @@ bool ItemUpdateManager::processPackage()
+         return false;
+     }
+ 
+-    auto buffer = std::vector<uint8_t>(packageMap->getBytes().begin(),
+-                                       packageMap->getBytes().end());
+-    parser = parsePkgHeader(buffer);
+-    if (parser == nullptr)
+-    {
+-        error("Invalid PLDM package header information");
+-        inProgressActivation->activation(
+-            software::Activation::Activations::Invalid);
+-        packageMap.reset();
+-        return false;
+-    }
+     try
+     {
+-        parser->parse(buffer, buffer.size());
++        parser = std::make_unique<PackageParser>(std::span<const uint8_t>(
++            packageMap->getBytes().data(), packageMap->getSize()));
+     }
+     catch (const std::exception& e)
+     {
+@@ -66,6 +56,15 @@ bool ItemUpdateManager::processPackage()
+         return false;
+     }
+ 
++    if (parser == nullptr)
++    {
++        error("Invalid PLDM package header information");
++        inProgressActivation->activation(
++            software::Activation::Activations::Invalid);
++        packageMap.reset();
++        return false;
++    }
++
+     auto deviceIdRecordOffset =
+         associatePkgToDevice(parser->getFwDeviceIDRecords(), descriptors);
+     if (!deviceIdRecordOffset)
+@@ -80,12 +79,10 @@ bool ItemUpdateManager::processPackage()
+     const auto& fwDeviceIDRecords = parser->getFwDeviceIDRecords();
+     const auto& compImageInfos = parser->getComponentImageInfos();
+ 
+-    auto packageSpan = packageMap->getChars();
+-    packageDataStream =
+-        std::make_unique<std::ispanstream>(packageSpan, std::ios::binary);
++    DeviceIDRecord deviceIDRecord = fwDeviceIDRecords[*deviceIdRecordOffset];
+     deviceUpdater = std::make_unique<DeviceUpdater>(
+-        eid, *packageDataStream, fwDeviceIDRecords[*deviceIdRecordOffset],
+-        compImageInfos, componentInfo, MAXIMUM_TRANSFER_SIZE, this);
++        eid, deviceIDRecord, compImageInfos, componentInfo,
++        MAXIMUM_TRANSFER_SIZE, this);
+     inProgressActivation->activation(software::Activation::Activations::Ready);
+     activationProgress = std::make_unique<ActivationProgress>(
+         pldm::utils::DBusHandler::getBus(), objPathWithSwId);
 diff --git a/fw-update/manager.hpp b/fw-update/manager.hpp
 index 7a04ea0..cebbfd5 100644
 --- a/fw-update/manager.hpp
@@ -1746,7 +1508,7 @@ index 93641b6..3a24c56 100644
      constexpr std::array<uint8_t, sizeof(pldm_msg_hdr) +
                                        sizeof(pldm_request_firmware_data_req)>
 diff --git a/fw-update/test/firmware_inventory_manager_test.cpp b/fw-update/test/firmware_inventory_manager_test.cpp
-index 99f8ff2..016ea48 100644
+index 1f9ed0b..da3f131 100644
 --- a/fw-update/test/firmware_inventory_manager_test.cpp
 +++ b/fw-update/test/firmware_inventory_manager_test.cpp
 @@ -74,9 +74,11 @@ TEST(GetBoardPath_WithMockHandler, ReturnsExpectedBoardPath)
@@ -1763,6 +1525,27 @@ index 99f8ff2..016ea48 100644
  
      FirmwareInventoryManagerTest inventoryManager(&mockHandler, configurations,
                                                    updateManager);
+diff --git a/fw-update/test/firmware_inventory_test.cpp b/fw-update/test/firmware_inventory_test.cpp
+index beb17ec..a509189 100644
+--- a/fw-update/test/firmware_inventory_test.cpp
++++ b/fw-update/test/firmware_inventory_test.cpp
+@@ -38,6 +38,7 @@ TEST(FirmwareInventoryTest, ConstructorSetsProperties)
+         "/xyz/openbmc_project/inventory/system/board/PLDM_Device";
+     Descriptors firmwareDescriptors;
+     DescriptorMap firmwareDescriptorMap{};
++    DownstreamDescriptorMap firmwareDownstreamDescriptorMap{};
+     ComponentInfo firmwareComponentInfo;
+     ComponentInfoMap firmwareComponentInfoMap{};
+     SoftwareVersionPurpose expectedPurpose = SoftwareVersionPurpose::Unknown;
+@@ -49,7 +50,7 @@ TEST(FirmwareInventoryTest, ConstructorSetsProperties)
+ 
+     AggregateUpdateManager updateManager(
+         event, handler, instanceIdDb, firmwareDescriptorMap,
+-        firmwareComponentInfoMap);
++        firmwareDownstreamDescriptorMap, firmwareComponentInfoMap);
+ 
+     FirmwareInventoryTest inventory(
+         softwareIdentifier, expectedSoftwarePath, expectedSoftwareHash,
 diff --git a/fw-update/test/inventory_manager_test.cpp b/fw-update/test/inventory_manager_test.cpp
 index 0b0672f..19124ad 100644
 --- a/fw-update/test/inventory_manager_test.cpp
@@ -1970,7 +1753,7 @@ index 6dba8be..9df08c0 100644
 +    EXPECT_THROW(PackageParser{fwPkgHdr}, InternalFailure);
  }
 diff --git a/fw-update/update_manager.cpp b/fw-update/update_manager.cpp
-index c465134..b568b2b 100644
+index bcf70ee..ee892ea 100644
 --- a/fw-update/update_manager.cpp
 +++ b/fw-update/update_manager.cpp
 @@ -4,14 +4,22 @@
@@ -2305,7 +2088,7 @@ index c465134..b568b2b 100644
      return deviceUpdaterInfos;
  }
  
-@@ -316,13 +454,16 @@ void UpdateManager::clearActivationInfo()
+@@ -316,13 +454,16 @@ void UpdateManager::resetActivationState()
      activationProgress.reset();
      objPath.clear();
  
@@ -2327,7 +2110,7 @@ index c465134..b568b2b 100644
      totalNumComponentUpdates = 0;
  }
 diff --git a/fw-update/update_manager.hpp b/fw-update/update_manager.hpp
-index 2b896ab..28af66b 100644
+index d6a8924..2960064 100644
 --- a/fw-update/update_manager.hpp
 +++ b/fw-update/update_manager.hpp
 @@ -20,6 +20,7 @@
@@ -2349,7 +2132,7 @@ index 2b896ab..28af66b 100644
  using DeviceUpdaterInfos = std::vector<DeviceUpdaterInfo>;
  using TotalComponentUpdates = size_t;
  
-@@ -47,13 +50,25 @@ class UpdateManager
+@@ -84,13 +87,25 @@ class UpdateManager : public UpdateManagerBase
      UpdateManager& operator=(UpdateManager&&) = delete;
      virtual ~UpdateManager() = default;
  
@@ -2368,7 +2151,7 @@ index 2b896ab..28af66b 100644
          InstanceIdDb& instanceIdDb, const DescriptorMap& descriptorMap,
 +        const DownstreamDescriptorMap& downstreamDescriptorMap,
          const ComponentInfoMap& componentInfoMap) :
-         event(event), handler(handler), instanceIdDb(instanceIdDb),
+         UpdateManagerBase(event, handler, instanceIdDb),
 -        descriptorMap(descriptorMap), componentInfoMap(componentInfoMap),
 +        descriptorMap(descriptorMap),
 +        downstreamDescriptorMap(downstreamDescriptorMap),
@@ -2376,7 +2159,7 @@ index 2b896ab..28af66b 100644
  #ifdef FW_UPDATE_INOTIFY_ENABLED
          watch(event.get(),
                [this](const std::string& packageFilePath) {
-@@ -119,7 +134,9 @@ class UpdateManager
+@@ -156,7 +171,9 @@ class UpdateManager : public UpdateManagerBase
       */
      DeviceUpdaterInfos associatePkgToDevices(
          const FirmwareDeviceIDRecords& fwDeviceIDRecords,
@@ -2386,7 +2169,7 @@ index 2b896ab..28af66b 100644
          TotalComponentUpdates& totalNumComponentUpdates);
  
      /** @brief Generate a unique software ID based on current timestamp
-@@ -139,6 +156,8 @@ class UpdateManager
+@@ -172,6 +189,8 @@ class UpdateManager : public UpdateManagerBase
    private:
      /** @brief Device identifiers of the managed FDs */
      const DescriptorMap& descriptorMap;
@@ -2395,7 +2178,7 @@ index 2b896ab..28af66b 100644
      /** @brief Component information needed for the update of the managed FDs */
      const ComponentInfoMap& componentInfoMap;
  #ifdef FW_UPDATE_INOTIFY_ENABLED
-@@ -152,7 +171,15 @@ class UpdateManager
+@@ -185,7 +204,15 @@ class UpdateManager : public UpdateManagerBase
  
      std::filesystem::path fwPackageFilePath;
      std::unique_ptr<PackageParser> parser;
@@ -2413,5 +2196,5 @@ index 2b896ab..28af66b 100644
      std::unordered_map<mctp_eid_t, std::unique_ptr<DeviceUpdater>>
          deviceUpdaterMap;
 -- 
-2.53.0-Meta
+2.52.0
 

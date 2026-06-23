@@ -1,7 +1,7 @@
-From f0c5f3568f7a06d402bd23944142b15888956048 Mon Sep 17 00:00:00 2001
+From c764788fdbd08e10af4b1d42e4dcf090d117fd65 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Mon, 15 Jun 2026 16:59:24 +0800
-Subject: [PATCH 3/3] hwmon: (pmbus/lm25066) add current limit configuration
+Subject: [PATCH] hwmon: (pmbus/lm25066) add current limit configuration
  support
 
 Add support for the 'ti,current-range' devicetree property to configure
@@ -82,5 +82,5 @@ index 6e23ada64e2f..e26378a55f9f 100644
  
  	info->pages = 1;
 -- 
-2.52.0
+2.53.0-Meta
 

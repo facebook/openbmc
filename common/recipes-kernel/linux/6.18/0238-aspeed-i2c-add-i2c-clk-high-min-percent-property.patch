@@ -1,4 +1,4 @@
-From fcb9f2b2fad22714319fed1457c3423d5890a70a Mon Sep 17 00:00:00 2001
+From f5c8d53833fb84c609749f80eb2112a3df85441e Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Tue, 26 May 2026 10:01:20 +0800
 Subject: [PATCH] aspeed: i2c: add i2c-clk-high-min-percent property
@@ -25,7 +25,7 @@ Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
  1 file changed, 71 insertions(+), 24 deletions(-)
 
 diff --git a/drivers/i2c/busses/i2c-ast2600.c b/drivers/i2c/busses/i2c-ast2600.c
-index cce89f2d4..956f2c623 100644
+index cce89f2d4ec4..956f2c623c75 100644
 --- a/drivers/i2c/busses/i2c-ast2600.c
 +++ b/drivers/i2c/busses/i2c-ast2600.c
 @@ -345,6 +345,7 @@ struct ast2600_i2c_bus {
@@ -188,5 +188,5 @@ index cce89f2d4..956f2c623 100644
  	i2c_bus->adap.owner = THIS_MODULE;
  	i2c_bus->adap.algo = &i2c_ast2600_algorithm;
 -- 
-2.34.1
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From 5fb7e0f7cb798a4d898656118aaa7438e4825997 Mon Sep 17 00:00:00 2001
+From dbc99f395eb942c616e8e5a81c742aecda6280a0 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <jagpalgill@fb.com>
 Date: Wed, 1 Apr 2026 00:27:58 -0700
 Subject: [PATCH] valve-monitor: add analog valve support
@@ -151,7 +151,7 @@ Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
 
 diff --git a/src/valve-monitor/AnalogValve.cpp b/src/valve-monitor/AnalogValve.cpp
 new file mode 100644
-index 0000000..85b3f55
+index 0000000..8a830d8
 --- /dev/null
 +++ b/src/valve-monitor/AnalogValve.cpp
 @@ -0,0 +1,503 @@
@@ -660,7 +660,7 @@ index 0000000..85b3f55
 +} // namespace valve
 diff --git a/src/valve-monitor/AnalogValve.hpp b/src/valve-monitor/AnalogValve.hpp
 new file mode 100644
-index 0000000..854dc74
+index 0000000..f8a2228
 --- /dev/null
 +++ b/src/valve-monitor/AnalogValve.hpp
 @@ -0,0 +1,116 @@
@@ -782,7 +782,7 @@ index 0000000..854dc74
 +} // namespace valve
 diff --git a/src/valve-monitor/BaseValve.cpp b/src/valve-monitor/BaseValve.cpp
 new file mode 100644
-index 0000000..56af6fc
+index 0000000..b8140ca
 --- /dev/null
 +++ b/src/valve-monitor/BaseValve.cpp
 @@ -0,0 +1,176 @@
@@ -964,7 +964,7 @@ index 0000000..56af6fc
 +} // namespace valve
 diff --git a/src/valve-monitor/BaseValve.hpp b/src/valve-monitor/BaseValve.hpp
 new file mode 100644
-index 0000000..446dc9f
+index 0000000..90de751
 --- /dev/null
 +++ b/src/valve-monitor/BaseValve.hpp
 @@ -0,0 +1,100 @@
@@ -1069,7 +1069,7 @@ index 0000000..446dc9f
 +
 +} // namespace valve
 diff --git a/src/valve-monitor/GPIOValve.cpp b/src/valve-monitor/GPIOValve.cpp
-index e40efb8..75b4a6a 100644
+index f5e501b..44718c5 100644
 --- a/src/valve-monitor/GPIOValve.cpp
 +++ b/src/valve-monitor/GPIOValve.cpp
 @@ -1,28 +1,21 @@
@@ -1341,7 +1341,7 @@ index e40efb8..75b4a6a 100644
 -
  } // namespace valve
 diff --git a/src/valve-monitor/GPIOValve.hpp b/src/valve-monitor/GPIOValve.hpp
-index 725197e..e26efbf 100644
+index 36a692d..970ca85 100644
 --- a/src/valve-monitor/GPIOValve.hpp
 +++ b/src/valve-monitor/GPIOValve.hpp
 @@ -1,18 +1,13 @@
@@ -1729,7 +1729,7 @@ index 0000000..fbf9f28
 +
 +} // namespace valve
 diff --git a/src/valve-monitor/ValveEvents.cpp b/src/valve-monitor/ValveEvents.cpp
-index 9543d2d..56ec12e 100644
+index b965c86..05db203 100644
 --- a/src/valve-monitor/ValveEvents.cpp
 +++ b/src/valve-monitor/ValveEvents.cpp
 @@ -31,4 +31,32 @@ auto Events::generateValveEvent(sdbusplus::object_path valvePath,
@@ -1766,7 +1766,7 @@ index 9543d2d..56ec12e 100644
 +
  } // namespace valve
 diff --git a/src/valve-monitor/ValveEvents.hpp b/src/valve-monitor/ValveEvents.hpp
-index 3f9ce8f..cebd637 100644
+index b6fc054..154c442 100644
 --- a/src/valve-monitor/ValveEvents.hpp
 +++ b/src/valve-monitor/ValveEvents.hpp
 @@ -3,6 +3,9 @@
@@ -1797,7 +1797,7 @@ index 3f9ce8f..cebd637 100644
  } // namespace valve
 diff --git a/src/valve-monitor/ValveFactory.cpp b/src/valve-monitor/ValveFactory.cpp
 new file mode 100644
-index 0000000..7d3735e
+index 0000000..c7b153b
 --- /dev/null
 +++ b/src/valve-monitor/ValveFactory.cpp
 @@ -0,0 +1,73 @@
@@ -1876,7 +1876,7 @@ index 0000000..7d3735e
 +} // namespace valve
 diff --git a/src/valve-monitor/ValveFactory.hpp b/src/valve-monitor/ValveFactory.hpp
 new file mode 100644
-index 0000000..80ad48f
+index 0000000..1921ea8
 --- /dev/null
 +++ b/src/valve-monitor/ValveFactory.hpp
 @@ -0,0 +1,31 @@
@@ -1912,7 +1912,7 @@ index 0000000..80ad48f
 +
 +} // namespace valve
 diff --git a/src/valve-monitor/ValveMonitor.cpp b/src/valve-monitor/ValveMonitor.cpp
-index f38c021..48b487b 100644
+index 397e86b..0cf06d8 100644
 --- a/src/valve-monitor/ValveMonitor.cpp
 +++ b/src/valve-monitor/ValveMonitor.cpp
 @@ -1,6 +1,6 @@
@@ -2008,7 +2008,7 @@ index f38c021..48b487b 100644
  
      co_return;
 diff --git a/src/valve-monitor/ValveMonitor.hpp b/src/valve-monitor/ValveMonitor.hpp
-index 9d66262..a2fde53 100644
+index fe6c733..7d2874a 100644
 --- a/src/valve-monitor/ValveMonitor.hpp
 +++ b/src/valve-monitor/ValveMonitor.hpp
 @@ -1,6 +1,8 @@
@@ -2072,5 +2072,5 @@ index d00cefa..0f6a388 100644
      include_directories: src_inc,
      install: true,
 -- 
-2.52.0
+2.53.0-Meta
 

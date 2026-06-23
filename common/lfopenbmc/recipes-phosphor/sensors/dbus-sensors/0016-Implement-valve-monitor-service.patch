@@ -1,4 +1,4 @@
-From 9fe7d829263fbbcbc95f0801584f00f503184c00 Mon Sep 17 00:00:00 2001
+From e2c48c0b711696cfe0381ab53f4366711e7b285d Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Tue, 29 Jul 2025 21:01:23 -0700
 Subject: [PATCH] Implement valve monitor service
@@ -554,7 +554,7 @@ index 3ecf709..2e7d82e 100644
  
 diff --git a/src/valve-monitor/GPIOValve.cpp b/src/valve-monitor/GPIOValve.cpp
 new file mode 100644
-index 0000000..e40efb8
+index 0000000..f5e501b
 --- /dev/null
 +++ b/src/valve-monitor/GPIOValve.cpp
 @@ -0,0 +1,299 @@
@@ -859,7 +859,7 @@ index 0000000..e40efb8
 +} // namespace valve
 diff --git a/src/valve-monitor/GPIOValve.hpp b/src/valve-monitor/GPIOValve.hpp
 new file mode 100644
-index 0000000..725197e
+index 0000000..36a692d
 --- /dev/null
 +++ b/src/valve-monitor/GPIOValve.hpp
 @@ -0,0 +1,105 @@
@@ -1026,7 +1026,7 @@ index 0000000..fb849e5
 +  Configuration.
 diff --git a/src/valve-monitor/ValveEvents.cpp b/src/valve-monitor/ValveEvents.cpp
 new file mode 100644
-index 0000000..9543d2d
+index 0000000..b965c86
 --- /dev/null
 +++ b/src/valve-monitor/ValveEvents.cpp
 @@ -0,0 +1,34 @@
@@ -1066,7 +1066,7 @@ index 0000000..9543d2d
 +} // namespace valve
 diff --git a/src/valve-monitor/ValveEvents.hpp b/src/valve-monitor/ValveEvents.hpp
 new file mode 100644
-index 0000000..3f9ce8f
+index 0000000..b6fc054
 --- /dev/null
 +++ b/src/valve-monitor/ValveEvents.hpp
 @@ -0,0 +1,23 @@
@@ -1095,7 +1095,7 @@ index 0000000..3f9ce8f
 +} // namespace valve
 diff --git a/src/valve-monitor/ValveMonitor.cpp b/src/valve-monitor/ValveMonitor.cpp
 new file mode 100644
-index 0000000..f38c021
+index 0000000..397e86b
 --- /dev/null
 +++ b/src/valve-monitor/ValveMonitor.cpp
 @@ -0,0 +1,102 @@
@@ -1203,7 +1203,7 @@ index 0000000..f38c021
 +}
 diff --git a/src/valve-monitor/ValveMonitor.hpp b/src/valve-monitor/ValveMonitor.hpp
 new file mode 100644
-index 0000000..9d66262
+index 0000000..fe6c733
 --- /dev/null
 +++ b/src/valve-monitor/ValveMonitor.hpp
 @@ -0,0 +1,49 @@

@@ -1,4 +1,4 @@
-From 6d794a736eff03c72fbdd5944a81b2cdf8478767 Mon Sep 17 00:00:00 2001
+From db0f426ccae967d67f92488f580002decdcd4d07 Mon Sep 17 00:00:00 2001
 From: Kevin Tung <kevin.tung@quantatw.com>
 Date: Wed, 8 Oct 2025 13:52:45 +0800
 Subject: [PATCH] i2cvr: pause sensor reads during CRC retrieval
@@ -21,10 +21,10 @@ Signed-off-by: Kevin Tung <kevin.tung.openbmc@gmail.com>
  1 file changed, 10 insertions(+)
 
 diff --git a/i2c-vr/i2cvr_software_manager.cpp b/i2c-vr/i2cvr_software_manager.cpp
-index 5a0b394..fc0a6aa 100644
+index 8d24708..88db3e3 100644
 --- a/i2c-vr/i2cvr_software_manager.cpp
 +++ b/i2c-vr/i2cvr_software_manager.cpp
-@@ -85,6 +85,13 @@ sdbusplus::async::task<bool> I2CVRSoftwareManager::initDevice(
+@@ -86,6 +86,13 @@ sdbusplus::async::task<bool> I2CVRSoftwareManager::initDevice(
      std::unique_ptr<SoftwareInf::Software> software =
          std::make_unique<SoftwareInf::Software>(ctx, *i2cDevice);
  
@@ -38,7 +38,7 @@ index 5a0b394..fc0a6aa 100644
      uint32_t sum;
      if (!(co_await i2cDevice->getVersion(&sum)))
      {
-@@ -92,6 +99,9 @@ sdbusplus::async::task<bool> I2CVRSoftwareManager::initDevice(
+@@ -93,6 +100,9 @@ sdbusplus::async::task<bool> I2CVRSoftwareManager::initDevice(
          co_return false;
      }
  

@@ -1,7 +1,7 @@
-From d4a6dd51c17bb1e792e6013e9b57e3c74b5996da Mon Sep 17 00:00:00 2001
+From 8204351d630745a60011b622b4409b5c2cf3d1ba Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
-Subject: [PATCH] platform-mc: Add option for discovering FRU data
+Subject: [PATCH 04/23] platform-mc: Add option for discovering FRU data
 
 Allow enabling or disabling the discovery of FRU data from terminus.
 Supports retrieving FRU data during the terminus discovery phase and
@@ -18,7 +18,7 @@ Upstream-Status: Pending
  4 files changed, 59 insertions(+), 3 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index c111aef..9c574cf 100644
+index 26da906..70878de 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -119,6 +119,10 @@ elif get_option('transport-implementation') == 'af-mctp'
@@ -200,5 +200,5 @@ index b536b0c..0bec89f 100644
  
  std::vector<std::string> Terminus::getSensorNames(const SensorID& sensorId)
 -- 
-2.52.0
+2.43.0
 

@@ -1,0 +1,656 @@
+From a89cb03ea70c1ec901553a89e0bcdae59b3b0af4 Mon Sep 17 00:00:00 2001
+From: Eric Yang <eric.yang.wiwynn@gmail.com>
+Date: Thu, 12 Feb 2026 09:57:38 +0000
+Subject: [PATCH 15/23] requester: Parse MCTP endpoint from InterfacesRemoved
+ signal
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Change removeEndpoints() to parse networkId and EID directly from the
+InterfacesRemoved signal's object path, instead of calling GetSubtree
+to compare with existingMctpInfos.
+
+Parse the path format:
+  /au/com/codeconstruct/mctp1/networks/{networkId}/endpoints/{eid}
+
+Extract networkId from /networks/ and EID from /endpoints/, then find
+the matching entry in existingMctpInfos. This works correctly even when
+multiple endpoints share the same EID on different networks.
+
+New removal flow after receiving InterfacesRemoved signal:
++-----------------------------------+
+| Parse object path                 |
+| Extract networkId and EID         |
++----------------+------------------+
+                 |
++----------------v------------------+
+| Find matching entry in            |
+| existingMctpInfos by:             |
+| - networkId match                 |
+| - EID match                       |
++----------------+------------------+
+                 |
++----------------v------------------+
+| Remove MCTP info from list        |
++----------------+------------------+
+                 |
++----------------v------------------+
+| Trigger removal flow:             |
+| - Stop sensor polling             |
+| - Cleanup terminus state          |
+| - Erase mctpInfoAvailTable entry  |
++-----------------------------------+
+
+Motivation:
+The previous implementation called GetSubtree to query the current set
+of MCTP endpoints, then compared the result with existingMctpInfos to
+identify removed endpoints. This has a race condition when an endpoint
+is removed and quickly re-added.
+
+The issue occurs when pldmd experiences delays in processing queued
+D-Bus signals. If an endpoint undergoes a remove-and-re-add sequence
+before pldmd processes the InterfacesRemoved signal, the GetSubtree
+query will show the endpoint already present (re-added), causing the
+comparison to find no difference and skip the removal flow.
+
+The consequence is that removeMctpTerminus() never executes, leaving
+stale terminus state. Even though the networkId and EID appear correct,
+the old terminus entry with its internal state remains uncleaned. Sensor
+polling stops functioning and sensor values freeze, requiring explicit
+removal and re-initialization to recover.
+
+[Race condition when EID is removed and re-added]
++-----------------------------------+
+| EID physically disconnected       |
+| -> InterfacesRemoved signal sent  |
++----------------+------------------+
+                 |
++----------------v------------------+
+| Signal queued in D-Bus            |
+| (pldmd processing other work)     |
++----------------+------------------+
+                 |
++----------------v------------------+
+| EID returns (same net ID & EID)   |
+| -> InterfacesAdded signal sent    |
++----------------+------------------+
+                 |
++----------------v------------------+
+| Process delayed InterfacesRemoved |
++----------------+------------------+
+                 |
++----------------v------------------+
+| Call GetSubtree to query current  |
+| MCTP endpoints from D-Bus         |
++----------------+------------------+
+                 |
++----------------v------------------+
+| GetSubtree returns: EID present   |
+| (already re-added)                |
++----------------+------------------+
+                 |
++----------------v------------------+
+| Compare result with               |
+| existingMctpInfos                 |
++----------------+------------------+
+                 |
++----------------v------------------+
+| No difference found               |
+| -> Skip removal flow (BUG)        |
++----------------+------------------+
+                 |
++----------------v------------------+
+| Stale terminus state persists:    |
+| - removeMctpTerminus() not called |
+| - sensorPollTimers not stopped    |
+| - Old terminus entry remains      |
+| - mctpInfoTable not cleared       |
+| - Sensor polling broken           |
+| - Values frozen, need re-init     |
++-----------------------------------+
+
+By parsing endpoint information directly from the InterfacesRemoved
+signal, the need for a GetSubtree query is eliminated along with its
+timing dependency. The signal explicitly identifies the endpoint to
+remove, making the removal operation deterministic and independent of
+the endpoint’s current presence. When InterfacesAdded arrives, it
+triggers a fresh initialization with a clean state.
+
+Tested:
+- Unit tests pass for parseMctpEndpointPath with valid and invalid
+  path formats
+- Unit tests pass for removeEndpoints covering match/no-match,
+  cross-network, wrong interface, and malformed path scenarios
+- Verified on yosemite4 platform: triggered power control to remove
+  and re-add EID 10, journal log confirmed removal flow correctly
+  parsed endpoint path (networkId=1, EID=10), and re-add successfully
+  re-created all terminus sensors
+- Confirmed sensor polling remains active across all 8 slots after
+  endpoint remove/re-add cycle by injecting test values and verifying
+  they were overwritten by real sensor readings
+
+Change-Id: I9a880c5a1d664e0b325db52dd88ed1449fa5908c
+Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
+---
+ requester/mctp_endpoint_discovery.cpp         | 117 ++++++--
+ requester/mctp_endpoint_discovery.hpp         |  19 +-
+ .../test/mctp_endpoint_discovery_test.cpp     | 284 ++++++++++++++----
+ 3 files changed, 318 insertions(+), 102 deletions(-)
+
+diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
+index 5b1bab6..c5180c4 100644
+--- a/requester/mctp_endpoint_discovery.cpp
++++ b/requester/mctp_endpoint_discovery.cpp
+@@ -265,27 +265,6 @@ void MctpDiscovery::addToExistingMctpInfos(const MctpInfos& addedInfos)
+     }
+ }
+ 
+-void MctpDiscovery::removeFromExistingMctpInfos(MctpInfos& mctpInfos,
+-                                                MctpInfos& removedInfos)
+-{
+-    for (const auto& mctpInfo : existingMctpInfos)
+-    {
+-        if (std::find(mctpInfos.begin(), mctpInfos.end(), mctpInfo) ==
+-            mctpInfos.end())
+-        {
+-            removedInfos.emplace_back(mctpInfo);
+-        }
+-    }
+-    for (const auto& mctpInfo : removedInfos)
+-    {
+-        info("Removing Endpoint networkId '{NETWORK}' and  EID '{EID}'",
+-             "NETWORK", std::get<3>(mctpInfo), "EID", std::get<0>(mctpInfo));
+-        existingMctpInfos.erase(std::remove(existingMctpInfos.begin(),
+-                                            existingMctpInfos.end(), mctpInfo),
+-                                existingMctpInfos.end());
+-    }
+-}
+-
+ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
+ {
+     using Interface = std::string;
+@@ -513,19 +492,95 @@ void MctpDiscovery::discoverEndpoints(sdbusplus::message_t& msg)
+     handleMctpEndpoints(addedInfos);
+ }
+ 
+-void MctpDiscovery::removeEndpoints(sdbusplus::message_t&)
++std::optional<std::pair<NetworkId, eid>> MctpDiscovery::parseMctpEndpointPath(
++    const std::string& path)
+ {
+-    MctpInfos mctpInfos;
+-    MctpInfos removedInfos;
+-    std::map<MctpInfo, Availability> currentMctpInfoMap;
+-    getMctpInfos(currentMctpInfoMap);
+-    for (const auto& mapIt : currentMctpInfoMap)
++    constexpr std::string_view networksPrefix = "/networks/";
++    constexpr std::string_view endpointsPrefix = "/endpoints/";
++
++    auto networksPos = path.find(networksPrefix);
++    auto endpointsPos = path.find(endpointsPrefix);
++
++    if (networksPos == std::string::npos || endpointsPos == std::string::npos ||
++        networksPos >= endpointsPos)
++    {
++        return std::nullopt;
++    }
++
++    auto networkIdStart = networksPos + networksPrefix.length();
++    auto networkIdEnd = path.find('/', networkIdStart);
++    if (networkIdEnd == std::string::npos)
++    {
++        return std::nullopt;
++    }
++
++    auto eidStart = endpointsPos + endpointsPrefix.length();
++    auto eidEnd = path.find('/', eidStart);
++    if (eidEnd != std::string::npos)
++    {
++        return std::nullopt;
++    }
++
++    try
++    {
++        NetworkId networkId = static_cast<NetworkId>(std::stoi(
++            path.substr(networkIdStart, networkIdEnd - networkIdStart)));
++        eid eidVal = static_cast<eid>(std::stoi(path.substr(eidStart)));
++        return std::make_pair(networkId, eidVal);
++    }
++    catch (const std::exception&)
++    {
++        return std::nullopt;
++    }
++}
++
++void MctpDiscovery::removeEndpoints(sdbusplus::message_t& msg)
++{
++    try
++    {
++        auto [objPath, interfaces] =
++            msg.unpack<sdbusplus::object_path, std::vector<std::string>>();
++
++        // Only process removal of MCTP Endpoint interface
++        if (!std::ranges::contains(interfaces, MCTPEndpoint::interface))
++        {
++            return;
++        }
++
++        auto parsed = parseMctpEndpointPath(objPath.str);
++        if (!parsed)
++        {
++            error(
++                "Unexpected MCTP path format '{PATH}', error - invalid format",
++                "PATH", objPath.str);
++            return;
++        }
++        auto [networkId, eid] = *parsed;
++
++        auto it = std::ranges::find_if(
++            existingMctpInfos, [eid, networkId](const MctpInfo& mctpInfo) {
++                return std::get<0>(mctpInfo) == eid &&
++                       std::get<3>(mctpInfo) == networkId;
++            });
++
++        if (it != existingMctpInfos.end())
++        {
++            info("Removing Endpoint networkId '{NETWORK}' and EID '{EID}'",
++                 "NETWORK", networkId, "EID", static_cast<unsigned>(eid));
++            MctpInfos removedInfos{*it};
++            existingMctpInfos.erase(it);
++            handleRemovedMctpEndpoints(removedInfos);
++            removeConfigs(removedInfos);
++        }
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        error("Error reading InterfacesRemoved message: {ERROR}", "ERROR", e);
++    }
++    catch (const std::exception& e)
+     {
+-        mctpInfos.push_back(mapIt.first);
++        error("Error processing removed MCTP endpoint: {ERROR}", "ERROR", e);
+     }
+-    removeFromExistingMctpInfos(mctpInfos, removedInfos);
+-    handleRemovedMctpEndpoints(removedInfos);
+-    removeConfigs(removedInfos);
+ }
+ 
+ void MctpDiscovery::handleMctpEndpoints(const MctpInfos& mctpInfos)
+diff --git a/requester/mctp_endpoint_discovery.hpp b/requester/mctp_endpoint_discovery.hpp
+index 85689a8..b8685bc 100644
+--- a/requester/mctp_endpoint_discovery.hpp
++++ b/requester/mctp_endpoint_discovery.hpp
+@@ -178,14 +178,6 @@ class MctpDiscovery
+      */
+     void addToExistingMctpInfos(const MctpInfos& mctpInfos);
+ 
+-    /** @brief Erase the removed MCTP endpoint from existingMctpInfos.
+-     *
+-     *  @param[in] mctpInfos - the remaining MCTP endpoints
+-     *  @param[out] removedInfos - the removed MCTP endpoints
+-     */
+-    void removeFromExistingMctpInfos(MctpInfos& mctpInfos,
+-                                     MctpInfos& removedInfos);
+-
+     friend class ::TestMctpDiscovery;
+ 
+   private:
+@@ -238,6 +230,17 @@ class MctpDiscovery
+     void searchConfigurationFor(const pldm::utils::DBusHandler& handler,
+                                 MctpInfo& mctpInfo);
+ 
++    /** @brief Parse networkId and EID from MCTP endpoint object path.
++     *
++     *  Expected path format:
++     *  /au/com/codeconstruct/mctp1/networks/{networkId}/endpoints/{eid}
++     *
++     *  @param[in] path - the MCTP endpoint D-Bus object path
++     *  @return pair of {networkId, eid} on success, std::nullopt on failure
++     */
++    static std::optional<std::pair<NetworkId, eid>> parseMctpEndpointPath(
++        const std::string& path);
++
+     /** @brief Remove configuration associated with the removed MCTP endpoint.
+      *
+      *  @param[in] removedInfos - the removed MCTP endpoints
+diff --git a/requester/test/mctp_endpoint_discovery_test.cpp b/requester/test/mctp_endpoint_discovery_test.cpp
+index 71ce9c4..5d4e884 100644
+--- a/requester/test/mctp_endpoint_discovery_test.cpp
++++ b/requester/test/mctp_endpoint_discovery_test.cpp
+@@ -3,6 +3,8 @@
+ #include "common/utils.hpp"
+ #include "requester/test/mock_mctp_discovery_handler_intf.hpp"
+ 
++#include <systemd/sd-bus.h>
++
+ #include <gmock/gmock.h>
+ #include <gtest/gtest.h>
+ 
+@@ -22,6 +24,10 @@ class TestMctpDiscovery : public ::testing::Test
+     {
+         mctpDiscovery.searchConfigurationFor(handler, mctpInfo);
+     }
++    static auto parseMctpEndpointPath(const std::string& path)
++    {
++        return pldm::MctpDiscovery::parseMctpEndpointPath(path);
++    }
+ };
+ 
+ TEST(MctpEndpointDiscoveryTest, SingleHandleMctpEndpoint)
+@@ -69,8 +75,7 @@ TEST(MctpEndpointDiscoveryTest, goodAddToExistingMctpInfos)
+     pldm::MockManager manager;
+     const pldm::MctpInfos& mctpInfos = {
+         pldm::MctpInfo(11, pldm::emptyUUID, "", 1, std::nullopt, std::nullopt),
+-        pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt,
+-                       std::nullopt)};
++        pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt, std::nullopt)};
+ 
+     auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
+         bus, std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager});
+@@ -95,67 +100,70 @@ TEST(MctpEndpointDiscoveryTest, badAddToExistingMctpInfos)
+     EXPECT_NE(mctpDiscoveryHandler->existingMctpInfos.size(), 2);
+ }
+ 
+-TEST(MctpEndpointDiscoveryTest, goodRemoveFromExistingMctpInfos)
++TEST(MctpEndpointDiscoveryTest, parseMctpEndpointPathGood)
+ {
+-    auto& bus = pldm::utils::DBusHandler::getBus();
+-    pldm::MockManager manager;
+-    const pldm::MctpInfos& mctpInfos = {
+-        pldm::MctpInfo(11, pldm::emptyUUID, "def", 2, std::nullopt,
+-                       std::nullopt),
+-        pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt,
+-                       std::nullopt)};
+-
+-    auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
+-        bus, std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager});
+-    mctpDiscoveryHandler->addToExistingMctpInfos(mctpInfos);
+-    EXPECT_EQ(mctpDiscoveryHandler->existingMctpInfos.size(), 2);
+-    pldm::MctpInfo mctpInfo = mctpDiscoveryHandler->existingMctpInfos.back();
+-    EXPECT_EQ(std::get<0>(mctpInfo), 12);
+-    EXPECT_EQ(std::get<2>(mctpInfo), "abc");
+-    EXPECT_EQ(std::get<3>(mctpInfo), 1);
+-    pldm::MctpInfos removedInfos;
+-    pldm::MctpInfos remainMctpInfos;
+-    remainMctpInfos.emplace_back(pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1,
+-                                                std::nullopt, std::nullopt));
+-
+-    mctpDiscoveryHandler->removeFromExistingMctpInfos(remainMctpInfos,
+-                                                      removedInfos);
+-    EXPECT_EQ(mctpDiscoveryHandler->existingMctpInfos.size(), 1);
+-    mctpInfo = mctpDiscoveryHandler->existingMctpInfos.back();
+-    EXPECT_EQ(std::get<0>(mctpInfo), 12);
+-    EXPECT_EQ(std::get<2>(mctpInfo), "abc");
+-    EXPECT_EQ(std::get<3>(mctpInfo), 1);
+-    EXPECT_EQ(removedInfos.size(), 1);
+-    mctpInfo = removedInfos.back();
+-    EXPECT_EQ(std::get<0>(mctpInfo), 11);
+-    EXPECT_EQ(std::get<2>(mctpInfo), "def");
+-    EXPECT_EQ(std::get<3>(mctpInfo), 2);
++    // Standard codeconstruct path
++    auto result = TestMctpDiscovery::parseMctpEndpointPath(
++        "/au/com/codeconstruct/mctp1/networks/1/endpoints/10");
++    ASSERT_TRUE(result.has_value());
++    EXPECT_EQ(result->first, 1);
++    EXPECT_EQ(result->second, 10);
++
++    // Different networkId and EID
++    result = TestMctpDiscovery::parseMctpEndpointPath(
++        "/au/com/codeconstruct/mctp1/networks/3/endpoints/25");
++    ASSERT_TRUE(result.has_value());
++    EXPECT_EQ(result->first, 3);
++    EXPECT_EQ(result->second, 25);
++
++    // NetworkId 0
++    result = TestMctpDiscovery::parseMctpEndpointPath(
++        "/au/com/codeconstruct/mctp1/networks/0/endpoints/1");
++    ASSERT_TRUE(result.has_value());
++    EXPECT_EQ(result->first, 0);
++    EXPECT_EQ(result->second, 1);
+ }
+ 
+-TEST(MctpEndpointDiscoveryTest, goodRemoveEndpoints)
++TEST(MctpEndpointDiscoveryTest, parseMctpEndpointPathBad)
+ {
+-    auto& bus = pldm::utils::DBusHandler::getBus();
+-    pldm::MockManager manager;
+-    const pldm::MctpInfos& mctpInfos = {
+-        pldm::MctpInfo(11, pldm::emptyUUID, "def", 2, std::nullopt,
+-                       std::nullopt),
+-        pldm::MctpInfo(12, pldm::emptyUUID, "abc", 1, std::nullopt,
+-                       std::nullopt)};
+-
+-    auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
+-        bus, std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager});
+-    mctpDiscoveryHandler->addToExistingMctpInfos(mctpInfos);
+-    EXPECT_EQ(mctpDiscoveryHandler->existingMctpInfos.size(), 2);
+-    pldm::MctpInfo mctpInfo = mctpDiscoveryHandler->existingMctpInfos.back();
+-    EXPECT_EQ(std::get<0>(mctpInfo), 12);
+-    EXPECT_EQ(std::get<2>(mctpInfo), "abc");
+-    EXPECT_EQ(std::get<3>(mctpInfo), 1);
+-    sdbusplus::message_t msg = sdbusplus::bus::new_default().new_method_call(
+-        "xyz.openbmc_project.sdbusplus.test.Object",
+-        "/xyz/openbmc_project/sdbusplus/test/object",
+-        "xyz.openbmc_project.sdbusplus.test.Object", "Unused");
+-    mctpDiscoveryHandler->removeEndpoints(msg);
+-    EXPECT_EQ(mctpDiscoveryHandler->existingMctpInfos.size(), 0);
++    // Empty path
++    EXPECT_FALSE(TestMctpDiscovery::parseMctpEndpointPath("").has_value());
++
++    // Missing /networks/ segment
++    EXPECT_FALSE(TestMctpDiscovery::parseMctpEndpointPath(
++                     "/au/com/codeconstruct/mctp1/endpoints/10")
++                     .has_value());
++
++    // Missing /endpoints/ segment
++    EXPECT_FALSE(TestMctpDiscovery::parseMctpEndpointPath(
++                     "/au/com/codeconstruct/mctp1/networks/1")
++                     .has_value());
++
++    // Reversed order: endpoints before networks
++    EXPECT_FALSE(
++        TestMctpDiscovery::parseMctpEndpointPath("/endpoints/10/networks/1")
++            .has_value());
++
++    // Trailing slash after EID
++    EXPECT_FALSE(TestMctpDiscovery::parseMctpEndpointPath(
++                     "/au/com/codeconstruct/mctp1/networks/1/endpoints/10/")
++                     .has_value());
++
++    // Extra path segment after EID
++    EXPECT_FALSE(
++        TestMctpDiscovery::parseMctpEndpointPath(
++            "/au/com/codeconstruct/mctp1/networks/1/endpoints/10/extra")
++            .has_value());
++
++    // Non-numeric networkId
++    EXPECT_FALSE(TestMctpDiscovery::parseMctpEndpointPath(
++                     "/au/com/codeconstruct/mctp1/networks/abc/endpoints/10")
++                     .has_value());
++
++    // Non-numeric EID
++    EXPECT_FALSE(TestMctpDiscovery::parseMctpEndpointPath(
++                     "/au/com/codeconstruct/mctp1/networks/1/endpoints/xyz")
++                     .has_value());
+ }
+ 
+ TEST(MctpEndpointDiscoveryTest, goodSearchConfigurationFor)
+@@ -163,8 +171,8 @@ TEST(MctpEndpointDiscoveryTest, goodSearchConfigurationFor)
+     MockdBusHandler mockedDbusHandler;
+     auto& bus = mockedDbusHandler.getBus();
+     pldm::MockManager manager;
+-    const pldm::MctpInfos& mctpInfos = {pldm::MctpInfo(
+-        10, pldm::emptyUUID, "abc", 1, std::nullopt, std::nullopt)};
++    const pldm::MctpInfos& mctpInfos = {
++        pldm::MctpInfo(10, pldm::emptyUUID, "abc", 1, std::nullopt, std::nullopt)};
+ 
+     constexpr auto mockedDbusPath =
+         "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
+@@ -210,8 +218,8 @@ TEST(MctpEndpointDiscoveryTest, badSearchConfigurationFor)
+     MockdBusHandler mockedDbusHandler;
+     auto& bus = mockedDbusHandler.getBus();
+     pldm::MockManager manager;
+-    const pldm::MctpInfos& mctpInfos = {pldm::MctpInfo(
+-        10, pldm::emptyUUID, "abc", 1, std::nullopt, std::nullopt)};
++    const pldm::MctpInfos& mctpInfos = {
++        pldm::MctpInfo(10, pldm::emptyUUID, "abc", 1, std::nullopt, std::nullopt)};
+ 
+     constexpr auto mockedDbusPath =
+         "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
+@@ -244,3 +252,153 @@ TEST(MctpEndpointDiscoveryTest, badSearchConfigurationFor)
+         TestMctpDiscovery::getConfigurations(*mctpDiscoveryHandler);
+     EXPECT_EQ(configuration.size(), 0);
+ }
++
++TEST(MctpEndpointDiscoveryTest, removeEndpointsMatchFound)
++{
++    auto& bus = pldm::utils::DBusHandler::getBus();
++    pldm::MockManager manager;
++
++    EXPECT_CALL(manager, handleRemovedMctpEndpoints(_)).Times(1);
++
++    auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
++        bus, std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager});
++
++    // Pre-populate existingMctpInfos with an endpoint on network 1, EID 10
++    const pldm::MctpInfos& seedInfos = {
++        pldm::MctpInfo(10, pldm::emptyUUID, "", 1, std::nullopt, std::nullopt)};
++    mctpDiscoveryHandler->addToExistingMctpInfos(seedInfos);
++    ASSERT_EQ(mctpDiscoveryHandler->existingMctpInfos.size(), 1);
++
++    // Build InterfacesRemoved signal matching that endpoint
++    auto msg = bus.new_signal("/test", "org.freedesktop.DBus.ObjectManager",
++                              "InterfacesRemoved");
++    sdbusplus::object_path objPath{
++        "/au/com/codeconstruct/mctp1/networks/1/endpoints/10"};
++    std::vector<std::string> interfaces{MCTPEndpoint::interface};
++    msg.append(objPath, interfaces);
++    ASSERT_EQ(0, sd_bus_message_seal(msg.get(), 0, 0));
++
++    mctpDiscoveryHandler->removeEndpoints(msg);
++    EXPECT_EQ(mctpDiscoveryHandler->existingMctpInfos.size(), 0);
++}
++
++TEST(MctpEndpointDiscoveryTest, removeEndpointsNoMatch)
++{
++    auto& bus = pldm::utils::DBusHandler::getBus();
++    pldm::MockManager manager;
++
++    // Handler should NOT be called when endpoint is not in existingMctpInfos
++    EXPECT_CALL(manager, handleRemovedMctpEndpoints(_)).Times(0);
++
++    auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
++        bus, std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager});
++
++    // Seed with EID 10 on network 1
++    const pldm::MctpInfos& seedInfos = {
++        pldm::MctpInfo(10, pldm::emptyUUID, "", 1, std::nullopt, std::nullopt)};
++    mctpDiscoveryHandler->addToExistingMctpInfos(seedInfos);
++    ASSERT_EQ(mctpDiscoveryHandler->existingMctpInfos.size(), 1);
++
++    // Signal removes EID 99 which doesn't exist
++    auto msg = bus.new_signal("/test", "org.freedesktop.DBus.ObjectManager",
++                              "InterfacesRemoved");
++    sdbusplus::object_path objPath{
++        "/au/com/codeconstruct/mctp1/networks/1/endpoints/99"};
++    std::vector<std::string> interfaces{MCTPEndpoint::interface};
++    msg.append(objPath, interfaces);
++    ASSERT_EQ(0, sd_bus_message_seal(msg.get(), 0, 0));
++
++    mctpDiscoveryHandler->removeEndpoints(msg);
++    // Original entry should remain untouched
++    EXPECT_EQ(mctpDiscoveryHandler->existingMctpInfos.size(), 1);
++}
++
++TEST(MctpEndpointDiscoveryTest, removeEndpointsSameEidDifferentNetwork)
++{
++    auto& bus = pldm::utils::DBusHandler::getBus();
++    pldm::MockManager manager;
++
++    // Only the matching network+EID entry should be removed
++    EXPECT_CALL(manager, handleRemovedMctpEndpoints(_)).Times(1);
++
++    auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
++        bus, std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager});
++
++    // EID 10 on network 1, EID 10 on network 2
++    const pldm::MctpInfos& seedInfos = {
++        pldm::MctpInfo(10, pldm::emptyUUID, "", 1, std::nullopt, std::nullopt),
++        pldm::MctpInfo(10, pldm::emptyUUID, "", 2, std::nullopt, std::nullopt)};
++    mctpDiscoveryHandler->addToExistingMctpInfos(seedInfos);
++    ASSERT_EQ(mctpDiscoveryHandler->existingMctpInfos.size(), 2);
++
++    // Signal removes EID 10 on network 1 only
++    auto msg = bus.new_signal("/test", "org.freedesktop.DBus.ObjectManager",
++                              "InterfacesRemoved");
++    sdbusplus::object_path objPath{
++        "/au/com/codeconstruct/mctp1/networks/1/endpoints/10"};
++    std::vector<std::string> interfaces{MCTPEndpoint::interface};
++    msg.append(objPath, interfaces);
++    ASSERT_EQ(0, sd_bus_message_seal(msg.get(), 0, 0));
++
++    mctpDiscoveryHandler->removeEndpoints(msg);
++    ASSERT_EQ(mctpDiscoveryHandler->existingMctpInfos.size(), 1);
++    // Remaining entry should be network 2
++    EXPECT_EQ(std::get<3>(mctpDiscoveryHandler->existingMctpInfos[0]), 2);
++}
++
++TEST(MctpEndpointDiscoveryTest, removeEndpointsWrongInterface)
++{
++    auto& bus = pldm::utils::DBusHandler::getBus();
++    pldm::MockManager manager;
++
++    // Handler should NOT be called for non-MCTP interface removal
++    EXPECT_CALL(manager, handleRemovedMctpEndpoints(_)).Times(0);
++
++    auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
++        bus, std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager});
++
++    const pldm::MctpInfos& seedInfos = {
++        pldm::MctpInfo(10, pldm::emptyUUID, "", 1, std::nullopt, std::nullopt)};
++    mctpDiscoveryHandler->addToExistingMctpInfos(seedInfos);
++
++    // Signal with unrelated interface - should be ignored
++    auto msg = bus.new_signal("/test", "org.freedesktop.DBus.ObjectManager",
++                              "InterfacesRemoved");
++    sdbusplus::object_path objPath{
++        "/au/com/codeconstruct/mctp1/networks/1/endpoints/10"};
++    std::vector<std::string> interfaces{"xyz.openbmc_project.Inventory.Item"};
++    msg.append(objPath, interfaces);
++    ASSERT_EQ(0, sd_bus_message_seal(msg.get(), 0, 0));
++
++    mctpDiscoveryHandler->removeEndpoints(msg);
++    // Endpoint should remain since the signal was for a different interface
++    EXPECT_EQ(mctpDiscoveryHandler->existingMctpInfos.size(), 1);
++}
++
++TEST(MctpEndpointDiscoveryTest, removeEndpointsMalformedPath)
++{
++    auto& bus = pldm::utils::DBusHandler::getBus();
++    pldm::MockManager manager;
++
++    // Handler should NOT be called for malformed paths
++    EXPECT_CALL(manager, handleRemovedMctpEndpoints(_)).Times(0);
++
++    auto mctpDiscoveryHandler = std::make_unique<pldm::MctpDiscovery>(
++        bus, std::initializer_list<pldm::MctpDiscoveryHandlerIntf*>{&manager});
++
++    const pldm::MctpInfos& seedInfos = {
++        pldm::MctpInfo(10, pldm::emptyUUID, "", 1, std::nullopt, std::nullopt)};
++    mctpDiscoveryHandler->addToExistingMctpInfos(seedInfos);
++
++    // Signal with malformed object path (missing /endpoints/ segment)
++    auto msg = bus.new_signal("/test", "org.freedesktop.DBus.ObjectManager",
++                              "InterfacesRemoved");
++    sdbusplus::object_path objPath{"/au/com/codeconstruct/mctp1/networks/1"};
++    std::vector<std::string> interfaces{MCTPEndpoint::interface};
++    msg.append(objPath, interfaces);
++    ASSERT_EQ(0, sd_bus_message_seal(msg.get(), 0, 0));
++
++    mctpDiscoveryHandler->removeEndpoints(msg);
++    // Endpoint should remain since path couldn't be parsed
++    EXPECT_EQ(mctpDiscoveryHandler->existingMctpInfos.size(), 1);
++}
+-- 
+2.43.0
+

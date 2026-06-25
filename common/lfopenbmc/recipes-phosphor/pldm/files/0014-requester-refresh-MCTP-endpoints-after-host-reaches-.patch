@@ -1,8 +1,8 @@
-From 326552856c014d76a3347f4f93e78e066bd69c45 Mon Sep 17 00:00:00 2001
+From 7fbdec8786223828ade06a9bcc35c4a3187e37d6 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 17:16:49 +0800
-Subject: [PATCH] requester: refresh MCTP endpoints after host reaches running
- state
+Subject: [PATCH 14/23] requester: refresh MCTP endpoints after host reaches
+ running state
 
 Some MCTP endpoints associated with MCTPI2CTarget or MCTPI3CTarget
 do not expose complete object information until BIOS POST.
@@ -29,7 +29,7 @@ Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
  2 files changed, 158 insertions(+)
 
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 6e70438..b7946c9 100644
+index 6e4dd13..5b1bab6 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -32,6 +32,12 @@ MctpDiscovery::MctpDiscovery(
@@ -45,7 +45,7 @@ index 6e70438..b7946c9 100644
      handlers(list)
  {
      std::map<MctpInfo, Availability> currentMctpInfoMap;
-@@ -420,6 +426,144 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
+@@ -361,6 +367,144 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
      }
  }
  
@@ -191,7 +191,7 @@ index 6e70438..b7946c9 100644
  {
      MctpInfos addedInfos;
 diff --git a/requester/mctp_endpoint_discovery.hpp b/requester/mctp_endpoint_discovery.hpp
-index 3d9ea3b..2800b78 100644
+index 0c65889..85689a8 100644
 --- a/requester/mctp_endpoint_discovery.hpp
 +++ b/requester/mctp_endpoint_discovery.hpp
 @@ -86,6 +86,9 @@ class MctpDiscovery
@@ -223,5 +223,5 @@ index 3d9ea3b..2800b78 100644
       * D-Bus signal raised.
       *
 -- 
-2.53.0-Meta
+2.43.0
 

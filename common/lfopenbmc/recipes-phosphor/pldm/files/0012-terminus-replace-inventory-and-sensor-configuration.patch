@@ -1,7 +1,7 @@
-From b52f8fed587d3858da16c0f41b3af45f2f17840f Mon Sep 17 00:00:00 2001
+From d604d62777fdb9c4caa9c6663bfdd466edee0da4 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 31 Mar 2026 20:37:28 +0800
-Subject: [PATCH] terminus: replace inventory and sensor configuration
+Subject: [PATCH 12/23] terminus: replace inventory and sensor configuration
 
 Some devices (e.g. OCP NIC) do not provide auxiliary sensor names.
 When auxiliary names are unavailable, pldmd uses a combination of
@@ -79,10 +79,10 @@ index 5cc260d..27b8172 100644
   * In `Table 2 - Special endpoint IDs` of DSP0236.
   * EID from 1 to 7 is reserved EID. So the start valid EID is 8
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index 318ac01..82392fe 100644
+index c11dc8b..52e0150 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
-@@ -727,7 +727,7 @@ std::optional<SoftwareName> obtainDeviceNameFromConfigurations(
+@@ -722,7 +722,7 @@ std::optional<SoftwareName> obtainDeviceNameFromConfigurations(
      {
          if (std::get<pldm::eid>(mctpInfo) == eid)
          {
@@ -92,7 +92,7 @@ index 318ac01..82392fe 100644
              {
                  return *nameOption;
 diff --git a/fw-update/test/firmware_inventory_manager_test.cpp b/fw-update/test/firmware_inventory_manager_test.cpp
-index c7effaa..99f8ff2 100644
+index d279b35..1f9ed0b 100644
 --- a/fw-update/test/firmware_inventory_manager_test.cpp
 +++ b/fw-update/test/firmware_inventory_manager_test.cpp
 @@ -62,8 +62,9 @@ TEST(GetBoardPath_WithMockHandler, ReturnsExpectedBoardPath)
@@ -361,7 +361,7 @@ index 4627737..d5b8648 100644
      std::string inventoryPath;
  
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index dfeea76..de32b24 100644
+index c1e6c98..93c41dd 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
 @@ -187,7 +187,6 @@ exec::task<int> TerminusManager::discoverMctpTerminusTask()
@@ -561,7 +561,7 @@ index aaa808a..60037c1 100644
      termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
          tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
 diff --git a/platform-mc/test/terminus_manager_test.cpp b/platform-mc/test/terminus_manager_test.cpp
-index 8db58f1..ca1b3ef 100644
+index a170bd1..6d02e20 100644
 --- a/platform-mc/test/terminus_manager_test.cpp
 +++ b/platform-mc/test/terminus_manager_test.cpp
 @@ -50,7 +50,7 @@ class TerminusManagerTest : public testing::Test
@@ -670,7 +670,7 @@ index 8db58f1..ca1b3ef 100644
      auto tid = mappedTid.value();
      termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index eda8a42..6f66824 100644
+index d24bd43..d455767 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -80,9 +80,9 @@ void MctpDiscovery::getMctpInfos(std::map<MctpInfo, Availability>& mctpInfoMap)
@@ -697,7 +697,7 @@ index eda8a42..6f66824 100644
                      searchConfigurationFor(pldm::utils::DBusHandler(),
                                             mctpInfo);
                      mctpInfos.emplace_back(std::move(mctpInfo));
-@@ -393,7 +393,8 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
+@@ -335,7 +335,8 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
              const UUID& uuid = getEndpointUUIDProp(service, objPath);
  
              MctpInfo mctpInfo(std::get<eid>(epProps), uuid, "",
@@ -707,7 +707,7 @@ index eda8a42..6f66824 100644
              searchConfigurationFor(pldm::utils::DBusHandler(), mctpInfo);
              if (!std::ranges::contains(existingMctpInfos, mctpInfo))
              {
-@@ -498,71 +499,163 @@ std::string MctpDiscovery::constructMctpReactorObjectPath(
+@@ -438,71 +439,163 @@ std::string MctpDiscovery::constructMctpReactorObjectPath(
             "/endpoints/" + std::to_string(eid) + "/configured_by";
  }
  
@@ -910,7 +910,7 @@ index eda8a42..6f66824 100644
  
  void MctpDiscovery::removeConfigs(const MctpInfos& removedInfos)
 diff --git a/requester/mctp_endpoint_discovery.hpp b/requester/mctp_endpoint_discovery.hpp
-index ac980ac..47e90e7 100644
+index 56214fc..d7d77a0 100644
 --- a/requester/mctp_endpoint_discovery.hpp
 +++ b/requester/mctp_endpoint_discovery.hpp
 @@ -28,10 +28,6 @@ constexpr const char* MCTPConnectivityProp = "Connectivity";
@@ -924,7 +924,7 @@ index ac980ac..47e90e7 100644
  /** @class MctpDiscoveryHandlerIntf
   *
   * This abstract class defines the APIs for MctpDiscovery class has common
-@@ -243,6 +239,17 @@ class MctpDiscovery
+@@ -237,6 +233,17 @@ class MctpDiscovery
       * information.
       */
      Configurations configurations;
@@ -1027,5 +1027,5 @@ index 3eb57cf..71ce9c4 100644
      constexpr auto mockedDbusPath =
          "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
 -- 
-2.34.1
+2.43.0
 

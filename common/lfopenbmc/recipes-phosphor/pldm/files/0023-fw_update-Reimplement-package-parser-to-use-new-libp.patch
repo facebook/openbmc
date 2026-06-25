@@ -1,7 +1,8 @@
-From 2217811aa55ca74a5a7faa7d230cd5f0a07a8769 Mon Sep 17 00:00:00 2001
+From ba9a8b96c1dd9a4174aafd747705ca0c97416041 Mon Sep 17 00:00:00 2001
 From: Carter Chen <carter.chen.wiwynn@gmail.com>
 Date: Mon, 1 Dec 2025 08:46:59 +0000
-Subject: [PATCH] fw_update: Reimplement package parser to use new libpldm API
+Subject: [PATCH 23/23] fw_update: Reimplement package parser to use new
+ libpldm API
 
 libpldm has revised the APIs for firmware package, the old APIs are
 now deprecated. Switch to the new APIs and use libpldm iterators to
@@ -610,7 +611,7 @@ index a0621c3..94a659d 100644
      /** @brief Component image information for all the components in the fw
       *         update package
 diff --git a/fw-update/item_update_manager.cpp b/fw-update/item_update_manager.cpp
-index 3fd9589..7c7a2f6 100644
+index 3fd9589..38e00fe 100644
 --- a/fw-update/item_update_manager.cpp
 +++ b/fw-update/item_update_manager.cpp
 @@ -41,20 +41,10 @@ bool ItemUpdateManager::processPackage()
@@ -2196,5 +2197,5 @@ index d6a8924..2960064 100644
      std::unordered_map<mctp_eid_t, std::unique_ptr<DeviceUpdater>>
          deviceUpdaterMap;
 -- 
-2.52.0
+2.43.0
 

@@ -1,7 +1,7 @@
-From 339510877091fc3ec65a640dcc5f7179517077df Mon Sep 17 00:00:00 2001
+From 5a151c8188ef7da382eba997ee28cf853a7183ca Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 23 Sep 2025 09:47:45 +0000
-Subject: [PATCH] platform-mc: Add retries for terminus discovery
+Subject: [PATCH 06/23] platform-mc: Add retries for terminus discovery
 
 Adds a configurable, per-endpoint retry mechanism to terminus discovery.
 Endpoints are scheduled for retry when:
@@ -33,7 +33,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  4 files changed, 93 insertions(+), 6 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index b7423f6..67971ad 100644
+index 70878de..e9cbe3a 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -123,6 +123,10 @@ conf_data.set(
@@ -69,7 +69,7 @@ index 2555022..8a0ed9e 100644
  option(
      'fw-update-pkg-inotify',
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index de29d1e..dfeea76 100644
+index 68098ee..c1e6c98 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
 @@ -186,16 +186,18 @@ TerminiMapper::iterator TerminusManager::findTerminusPtr(
@@ -230,5 +230,5 @@ index f1bfe79..4f5c9ab 100644
  } // namespace platform_mc
  } // namespace pldm
 -- 
-2.52.0
+2.43.0
 

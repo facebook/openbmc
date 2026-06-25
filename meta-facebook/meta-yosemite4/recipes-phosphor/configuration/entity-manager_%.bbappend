@@ -1,7 +1,7 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/entity-manager:"
 
 EXTRA_OEMESON:append = " \
-     -Dconfig-prefix=yosemite4,100g_1p_ocp_mezz,200g_1p_ocp_mezz,cx7_ocp,terminus_2x100g_nic_tsff,bmc_storage_module \
+     -Dconfig-prefix=yosemite4,100g_1p_ocp_mezz,200g_1p_ocp_mezz,cx7_ocp,terminus_100g_nic_tsff,bmc_storage_module \
  "
 
 SRC_URI += " \

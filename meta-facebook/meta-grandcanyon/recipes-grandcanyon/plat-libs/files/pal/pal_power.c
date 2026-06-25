@@ -509,17 +509,20 @@ pal_get_server_power(uint8_t fru, uint8_t *status) {
   return 0;
 
 bic_fallback:
-  // Re-check 12V power status — use same logic as function entry
-  ret = pal_get_server_12v_power(fru, status);
-  if (ret < 0 || (*status) == SERVER_12V_OFF) {
-    return ret;
-  }
-
-  // Fallback path: Query BIC via IPMB (legacy method)
   ret = bic_get_server_power_status(status);
   if (ret < 0) {
-    syslog(LOG_WARNING, "%s(): BIC no response, server DC power status is unknown\n", __func__);
-    return ret;
+    uint8_t server_present_status = 0;
+
+    ret = pal_is_fru_prsnt(fru, &server_present_status);
+    syslog(LOG_WARNING, "%s(): pal_is_fru_prsnt ret=%d server_present_status=0x%x",
+           __func__, ret, server_present_status);
+
+    if (ret < 0 || server_present_status != FRU_PRESENT) {
+      *status = SERVER_POWER_OFF;
+      return 0;
+    }
+
+    return pal_get_server_12v_power(fru, status);
   }
 #else
   ret = pal_get_fpga_ver_cache(I2C_BS_FPGA_BUS, GET_FPGA_VER_ADDR, server_fpga_ver);

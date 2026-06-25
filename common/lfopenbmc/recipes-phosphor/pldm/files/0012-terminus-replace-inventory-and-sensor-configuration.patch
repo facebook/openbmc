@@ -1,7 +1,7 @@
-From d604d62777fdb9c4caa9c6663bfdd466edee0da4 Mon Sep 17 00:00:00 2001
+From bf3f737c692f81f71fe54df72e67c22106bae681 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 31 Mar 2026 20:37:28 +0800
-Subject: [PATCH 12/23] terminus: replace inventory and sensor configuration
+Subject: [PATCH] terminus: replace inventory and sensor configuration
 
 Some devices (e.g. OCP NIC) do not provide auxiliary sensor names.
 When auxiliary names are unavailable, pldmd uses a combination of
@@ -79,10 +79,10 @@ index 5cc260d..27b8172 100644
   * In `Table 2 - Special endpoint IDs` of DSP0236.
   * EID from 1 to 7 is reserved EID. So the start valid EID is 8
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index c11dc8b..52e0150 100644
+index 318ac01..82392fe 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
-@@ -722,7 +722,7 @@ std::optional<SoftwareName> obtainDeviceNameFromConfigurations(
+@@ -727,7 +727,7 @@ std::optional<SoftwareName> obtainDeviceNameFromConfigurations(
      {
          if (std::get<pldm::eid>(mctpInfo) == eid)
          {
@@ -1027,5 +1027,5 @@ index 3eb57cf..71ce9c4 100644
      constexpr auto mockedDbusPath =
          "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
 -- 
-2.43.0
+2.53.0-Meta
 

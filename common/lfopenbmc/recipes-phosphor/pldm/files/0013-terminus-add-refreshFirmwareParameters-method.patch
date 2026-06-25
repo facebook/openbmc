@@ -1,7 +1,7 @@
-From c70563eed3a9ad59fc0456eb40d117b9151b3362 Mon Sep 17 00:00:00 2001
+From 32555e49c7751a55c46c1563aa9efd9a2452ca0e Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 7 May 2026 21:56:34 +0800
-Subject: [PATCH 13/23] terminus: add refreshFirmwareParameters method
+Subject: [PATCH] terminus: add refreshFirmwareParameters method
 
 Add `refreshFirmwareParameters` to query firmware parameters without
 running `handleMctpEndpoints`.
@@ -36,7 +36,7 @@ Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
  5 files changed, 159 insertions(+), 1 deletion(-)
 
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index 52e0150..2e49feb 100644
+index 82392fe..2f4b129 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
 @@ -12,6 +12,11 @@ namespace pldm
@@ -301,5 +301,5 @@ index d7d77a0..0c65889 100644
       *
       *  @param[in] mctpInfoMap - information of discovered MCTP endpoints
 -- 
-2.43.0
+2.53.0-Meta
 

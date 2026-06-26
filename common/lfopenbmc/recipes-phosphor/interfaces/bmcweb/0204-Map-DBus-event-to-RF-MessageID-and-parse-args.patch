@@ -1,4 +1,4 @@
-From c6e060539817fa2bb6f2aae8aaad2098369060bd Mon Sep 17 00:00:00 2001
+From 6d4bb59c944f0800fe22852d136e0cbe21544e46 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 15:59:10 +0000
 Subject: [PATCH] Map DBus event to RF MessageID and parse args
@@ -457,7 +457,7 @@ index 1ab494cb..49837f19 100644
  
  static void dbusEventLogMatchHandlerSingleEntry(
 diff --git a/redfish-core/src/event_log.cpp b/redfish-core/src/event_log.cpp
-index c6860c39..83ffe75d 100644
+index 3b252e7b..a5b4e985 100644
 --- a/redfish-core/src/event_log.cpp
 +++ b/redfish-core/src/event_log.cpp
 @@ -3,8 +3,8 @@
@@ -478,7 +478,7 @@ index c6860c39..83ffe75d 100644
  #include <string>
  #include <string_view>
  #include <utility>
-@@ -108,51 +109,15 @@ int getEventLogParams(const std::string& logEntry, std::string& timestamp,
+@@ -115,51 +116,15 @@ int getEventLogParams(const std::string& logEntry, std::string& timestamp,
      return 0;
  }
  
@@ -535,7 +535,7 @@ index c6860c39..83ffe75d 100644
      std::size_t dot = timestamp.find_first_of('.');
      std::size_t plus = timestamp.find_first_of('+', dot);
      if (dot != std::string::npos && plus != std::string::npos)
-@@ -160,21 +125,15 @@ int formatEventLogEntry(uint64_t eventId, const std::string& logEntryID,
+@@ -167,21 +132,15 @@ int formatEventLogEntry(uint64_t eventId, const std::string& logEntryID,
          timestamp.erase(dot, plus - dot);
      }
  
@@ -766,7 +766,7 @@ index 00000000..5f036526
 +} // namespace dbus_registries_map
 +} // namespace redfish
 diff --git a/test/meson.build b/test/meson.build
-index 3f6b5f05..201756ba 100644
+index afd30196..6c4ad47d 100644
 --- a/test/meson.build
 +++ b/test/meson.build
 @@ -53,6 +53,7 @@ srcfiles_unittest = files(
@@ -855,7 +855,7 @@ index 63b1a2bc..15cc4e76 100644
          {"Id", DbusVariantType(static_cast<uint32_t>(1838))},
          {"Message", DbusVariantType("")},
 diff --git a/test/redfish-core/include/event_log_test.cpp b/test/redfish-core/include/event_log_test.cpp
-index e25b3b82..f57c26c0 100644
+index 9985cbe5..42f06922 100644
 --- a/test/redfish-core/include/event_log_test.cpp
 +++ b/test/redfish-core/include/event_log_test.cpp
 @@ -1,4 +1,5 @@
@@ -872,7 +872,7 @@ index e25b3b82..f57c26c0 100644
  #include <vector>
  
  #include <gtest/gtest.h>
-@@ -122,19 +122,19 @@ TEST(RedfishEventLog, GetEventLogParamsFailNoComma)
+@@ -133,19 +133,19 @@ TEST(RedfishEventLog, GetEventLogParamsFailNoComma)
  
  TEST(RedfishEventLog, FormatEventLogEntrySuccess)
  {
@@ -898,7 +898,7 @@ index e25b3b82..f57c26c0 100644
  
      ASSERT_TRUE(logEntryJson.contains("EventId"));
      ASSERT_EQ(logEntryJson["EventId"], "0");
-@@ -158,23 +158,5 @@ TEST(RedfishEventLog, FormatEventLogEntrySuccess)
+@@ -169,23 +169,5 @@ TEST(RedfishEventLog, FormatEventLogEntrySuccess)
      ASSERT_TRUE(logEntryJson.contains("Context"));
      ASSERT_EQ(logEntryJson["Context"], "customText");
  }

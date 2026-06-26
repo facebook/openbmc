@@ -1,4 +1,4 @@
-From 659af160f4d46867aff35183e2ab00615f382128 Mon Sep 17 00:00:00 2001
+From 39c22543439e8caaead7956d488c5f2982972e39 Mon Sep 17 00:00:00 2001
 From: Archit Mehrotra <architmehrotra@meta.com>
 Date: Sat, 4 Apr 2026 11:20:55 -0700
 Subject: [PATCH] Store Log Entry URI for Redfish event
@@ -151,7 +151,7 @@ Signed-off-by: Archit Mehrotra <architmehrotra@meta.com>
  5 files changed, 75 insertions(+), 4 deletions(-)
 
 diff --git a/docs/Redfish.md b/docs/Redfish.md
-index 27f3397f..30b29773 100644
+index 26240404..1209da46 100644
 --- a/docs/Redfish.md
 +++ b/docs/Redfish.md
 @@ -626,6 +626,22 @@ Fields common to all schemas
@@ -201,7 +201,7 @@ index 18b26505..04bf50dc 100644
                           const redfish::EventLogObjectsType& logEntry,
                           const std::string& customText,
 diff --git a/redfish-core/src/event_log.cpp b/redfish-core/src/event_log.cpp
-index 83ffe75d..aa13b94b 100644
+index a5b4e985..0bfada98 100644
 --- a/redfish-core/src/event_log.cpp
 +++ b/redfish-core/src/event_log.cpp
 @@ -3,11 +3,20 @@
@@ -226,7 +226,7 @@ index 83ffe75d..aa13b94b 100644
  #include <nlohmann/json.hpp>
  
  #include <cerrno>
-@@ -109,6 +118,15 @@ int getEventLogParams(const std::string& logEntry, std::string& timestamp,
+@@ -116,6 +125,15 @@ int getEventLogParams(const std::string& logEntry, std::string& timestamp,
      return 0;
  }
  
@@ -242,7 +242,7 @@ index 83ffe75d..aa13b94b 100644
  void formatEventLogEntry(uint64_t eventId,
                           const redfish::EventLogObjectsType& logEntry,
                           const std::string& customText,
-@@ -129,11 +147,21 @@ void formatEventLogEntry(uint64_t eventId,
+@@ -136,11 +154,21 @@ void formatEventLogEntry(uint64_t eventId,
      logEntryJson["EventId"] = std::to_string(eventId);
  
      logEntryJson["Severity"] = logEntry.severity;
@@ -287,7 +287,7 @@ index 8b028d3c..47dd52fe 100644
      msg["Name"] = "Event Log";
      msg["Events"] = std::move(logEntryArray);
 diff --git a/test/redfish-core/include/event_log_test.cpp b/test/redfish-core/include/event_log_test.cpp
-index f57c26c0..79a68e3c 100644
+index 42f06922..33bc3559 100644
 --- a/test/redfish-core/include/event_log_test.cpp
 +++ b/test/redfish-core/include/event_log_test.cpp
 @@ -1,6 +1,7 @@
@@ -298,7 +298,7 @@ index f57c26c0..79a68e3c 100644
  #include <nlohmann/json.hpp>
  
  #include <cerrno>
-@@ -127,11 +128,12 @@ TEST(RedfishEventLog, FormatEventLogEntrySuccess)
+@@ -138,11 +139,12 @@ TEST(RedfishEventLog, FormatEventLogEntrySuccess)
      std::string message = "Power supply PSU 1 fan FAN 2 failed.";
      std::string messageID = "OpenBMC.0.1.PowerSupplyFanFailed";
      std::vector<std::string> messageArgs = {"PSU 1", "FAN 2"};
@@ -312,7 +312,7 @@ index f57c26c0..79a68e3c 100644
  
      nlohmann::json::object_t logEntryJson;
      formatEventLogEntry(eventId, logEntry, customText, logEntryJson);
-@@ -157,6 +159,26 @@ TEST(RedfishEventLog, FormatEventLogEntrySuccess)
+@@ -168,6 +170,26 @@ TEST(RedfishEventLog, FormatEventLogEntrySuccess)
  
      ASSERT_TRUE(logEntryJson.contains("Context"));
      ASSERT_EQ(logEntryJson["Context"], "customText");

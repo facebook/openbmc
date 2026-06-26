@@ -1,0 +1,43 @@
+From 3b0c89a799e511ba4c7d3bb915e16d11bf422581 Mon Sep 17 00:00:00 2001
+From: Eldin Lee <eldin.lee@quantatw.com>
+Date: Tue, 9 Jun 2026 14:04:24 +0800
+Subject: [PATCH] valve-monitor: delay analog valve feedback monitoring during
+ startup
+
+Wait 120 seconds before starting analog valve feedback monitoring
+to allow the feedback signal to stabilize after power-on.
+
+This prevents transient or invalid feedback readings during
+startup from triggering incorrect valve state evaluations.
+
+Change-Id: I6df9764888f44c51a3b5e04ba502919bd3e74075
+Signed-off-by: Eldin Lee <eldin.lee@quantatw.com>
+---
+ src/valve-monitor/AnalogValve.cpp | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/src/valve-monitor/AnalogValve.cpp b/src/valve-monitor/AnalogValve.cpp
+index 8a830d8..b52a9a4 100644
+--- a/src/valve-monitor/AnalogValve.cpp
++++ b/src/valve-monitor/AnalogValve.cpp
+@@ -311,6 +311,17 @@ auto AnalogValve::checkSetPointTolerance(double voltage)
+ 
+ auto AnalogValve::monitorFeedbackAsync() -> sdbusplus::async::task<>
+ {
++    // Wait for the valve feedback to stabilize after power-on.
++    // Ignore invalid feedback during startup.
++    static constexpr auto startupDelay = std::chrono::seconds(120);
++    info(
++        "Waiting {DELAY_SECONDS}s for analog valve feedback to stabilize before monitoring: "
++        "inventory={INVENTORY}, valve={VALVE}",
++        "DELAY_SECONDS", startupDelay.count(), "INVENTORY", inventoryPath.str,
++        "VALVE", baseConfig.name);
++
++    co_await sdbusplus::async::sleep_for(ctx, startupDelay);
++
+     while (!ctx.stop_requested())
+     {
+         co_await sdbusplus::async::sleep_for(
+-- 
+2.34.1
+

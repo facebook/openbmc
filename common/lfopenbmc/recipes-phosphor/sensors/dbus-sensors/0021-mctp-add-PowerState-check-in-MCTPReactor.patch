@@ -1,0 +1,245 @@
+From aa06c0411580ee536aa72f138335df49328b3400 Mon Sep 17 00:00:00 2001
+From: Sandy Chu <sandy.chu.wiwynn@gmail.com>
+Date: Fri, 5 Jun 2026 08:12:59 +0000
+Subject: [PATCH] mctp: add PowerState check in MCTPReactor
+
+Add PowerState configuration support to MCTP devices and
+check the required power state before endpoint setup.
+
+This prevents MCTPReactor from attempting endpoint setup
+when the required system power state is not satisfied,
+reducing unnecessary retries for devices that are not
+expected to be available in the current power state.
+
+Tested:
+- Tested on YV5 CXL configuration with MCTPI2CTarget
+PowerState set to BiosPost.
+- Confirmed MCTPReactor did not repeatedly attempt endpoint
+setup for the CXL MCTP device and the journal no longer showed
+repeated "i2c-12 __i2c_transfer failed -6" messages while
+the host was powered off.
+- Confirmed the CXL MCTP endpoint was recreated successfully
+after the host was powered on and reached BiosPost.
+
+Change-Id: I9d719b52356db043181373ff07cfca1240f79250
+Signed-off-by: Sandy Chu <sandy.chu.wiwynn@gmail.com>
+---
+ src/mctp/MCTPEndpoint.cpp      | 14 ++++++++++----
+ src/mctp/MCTPEndpoint.hpp      | 22 +++++++++++++++++-----
+ src/mctp/MCTPReactor.cpp       | 17 +++++++++++++++++
+ src/mctp/MCTPReactorMain.cpp   |  2 ++
+ src/tests/test_MCTPReactor.cpp | 11 +++++++++++
+ 5 files changed, 57 insertions(+), 9 deletions(-)
+
+diff --git a/src/mctp/MCTPEndpoint.cpp b/src/mctp/MCTPEndpoint.cpp
+index 986e3e0..af973c0 100644
+--- a/src/mctp/MCTPEndpoint.cpp
++++ b/src/mctp/MCTPEndpoint.cpp
+@@ -44,8 +44,10 @@ static constexpr const char* mctpdEndpointControlInterface =
+ 
+ MCTPDDevice::MCTPDDevice(
+     const std::shared_ptr<sdbusplus::asio::connection>& connection,
+-    const std::string& interface, const std::vector<uint8_t>& physaddr) :
+-    connection(connection), interface(interface), physaddr(physaddr)
++    const std::string& interface, const std::vector<uint8_t>& physaddr,
++    PowerState powerState) :
++    connection(connection), interface(interface), physaddr(physaddr),
++    powerState(powerState)
+ {}
+ 
+ void MCTPDDevice::onEndpointInterfacesRemoved(
+@@ -453,9 +455,11 @@ std::shared_ptr<I2CMCTPDDevice> I2CMCTPDDevice::from(
+         throw std::invalid_argument("Bad bus index");
+     }
+ 
++    PowerState ps = getPowerState(iface);
++
+     try
+     {
+-        return std::make_shared<I2CMCTPDDevice>(connection, bus, address);
++        return std::make_shared<I2CMCTPDDevice>(connection, bus, address, ps);
+     }
+     catch (const MCTPException& ex)
+     {
+@@ -508,9 +512,11 @@ std::shared_ptr<I3CMCTPDDevice> I3CMCTPDDevice::from(
+         throw std::invalid_argument("Bad bus index");
+     }
+ 
++    PowerState ps = getPowerState(iface);
++
+     try
+     {
+-        return std::make_shared<I3CMCTPDDevice>(connection, bus, address);
++        return std::make_shared<I3CMCTPDDevice>(connection, bus, address, ps);
+     }
+     catch (const MCTPException& ex)
+     {
+diff --git a/src/mctp/MCTPEndpoint.hpp b/src/mctp/MCTPEndpoint.hpp
+index deed905..5b91152 100644
+--- a/src/mctp/MCTPEndpoint.hpp
++++ b/src/mctp/MCTPEndpoint.hpp
+@@ -183,6 +183,11 @@ class MCTPDevice
+      * @return An opaque, internally-stable identifier representing the device
+      */
+     virtual std::size_t id() const = 0;
++
++    /**
++     * @return The PowerState requirement for this device
++     */
++    virtual PowerState getRequiredPowerState() const = 0;
+ };
+ 
+ class MCTPDDevice;
+@@ -271,7 +276,8 @@ class MCTPDDevice :
+     MCTPDDevice() = delete;
+     MCTPDDevice(const std::shared_ptr<sdbusplus::asio::connection>& connection,
+                 const std::string& interface,
+-                const std::vector<uint8_t>& physaddr);
++                const std::vector<uint8_t>& physaddr,
++                PowerState powerState = PowerState::always);
+     MCTPDDevice(const MCTPDDevice& other) = delete;
+     MCTPDDevice(MCTPDDevice&& other) = delete;
+     ~MCTPDDevice() override = default;
+@@ -282,6 +288,10 @@ class MCTPDDevice :
+     void remove() override;
+     std::string describe() const override;
+     std::size_t id() const override;
++    PowerState getRequiredPowerState() const override
++    {
++        return powerState;
++    }
+ 
+   private:
+     static void onEndpointInterfacesRemoved(
+@@ -291,6 +301,7 @@ class MCTPDDevice :
+     std::shared_ptr<sdbusplus::asio::connection> connection;
+     const std::string interface;
+     const std::vector<uint8_t> physaddr;
++    PowerState powerState;
+     std::shared_ptr<MCTPDEndpoint> endpoint;
+     std::unique_ptr<sdbusplus::bus::match_t> removeMatch;
+ 
+@@ -322,8 +333,8 @@ class I2CMCTPDDevice : public MCTPDDevice
+     I2CMCTPDDevice() = delete;
+     I2CMCTPDDevice(
+         const std::shared_ptr<sdbusplus::asio::connection>& connection, int bus,
+-        uint8_t physaddr) :
+-        MCTPDDevice(connection, interfaceFromBus(bus), {physaddr})
++        uint8_t physaddr, PowerState powerState = PowerState::always) :
++        MCTPDDevice(connection, interfaceFromBus(bus), {physaddr}, powerState)
+     {}
+     ~I2CMCTPDDevice() override = default;
+ 
+@@ -345,8 +356,9 @@ class I3CMCTPDDevice : public MCTPDDevice
+     I3CMCTPDDevice() = delete;
+     I3CMCTPDDevice(
+         const std::shared_ptr<sdbusplus::asio::connection>& connection, int bus,
+-        const std::vector<uint8_t>& physaddr) :
+-        MCTPDDevice(connection, interfaceFromBus(bus), physaddr)
++        const std::vector<uint8_t>& physaddr,
++        PowerState powerState = PowerState::always) :
++        MCTPDDevice(connection, interfaceFromBus(bus), physaddr, powerState)
+     {}
+     ~I3CMCTPDDevice() override = default;
+ 
+diff --git a/src/mctp/MCTPReactor.cpp b/src/mctp/MCTPReactor.cpp
+index d4f591c..b408971 100644
+--- a/src/mctp/MCTPReactor.cpp
++++ b/src/mctp/MCTPReactor.cpp
+@@ -130,6 +130,23 @@ void MCTPReactor::trackEndpoint(const std::shared_ptr<MCTPEndpoint>& ep)
+ 
+ void MCTPReactor::setupEndpoint(const std::shared_ptr<MCTPDevice>& dev)
+ {
++    // Check power state before attempting setup
++    if (!readingStateGood(dev->getRequiredPowerState()))
++    {
++        switch (states[dev->id()])
++        {
++            case MCTPDeviceState::Assigning:
++                next(dev, MCTPDeviceState::Unassigned);
++                break;
++            case MCTPDeviceState::Recovering:
++                next(dev, MCTPDeviceState::Lost);
++                break;
++            default:
++                break;
++        }
++        return;
++    }
++
+     debug(
+         "Attempting to setup up MCTP endpoint for device at [ {MCTP_DEVICE} ]",
+         "MCTP_DEVICE", dev->describe());
+diff --git a/src/mctp/MCTPReactorMain.cpp b/src/mctp/MCTPReactorMain.cpp
+index 9d2d321..7c4ab0d 100644
+--- a/src/mctp/MCTPReactorMain.cpp
++++ b/src/mctp/MCTPReactorMain.cpp
+@@ -244,6 +244,8 @@ int main()
+ 
+     systemBus->request_name("xyz.openbmc_project.MCTPReactor");
+ 
++    setupPowerMatch(systemBus);
++
+     boost::asio::post(io, [reactor, systemBus]() {
+         auto gsc = std::make_shared<GetSensorConfiguration>(
+             systemBus, std::bind_front(manageMCTPEntity, systemBus, reactor));
+diff --git a/src/tests/test_MCTPReactor.cpp b/src/tests/test_MCTPReactor.cpp
+index ee549ed..80580f7 100644
+--- a/src/tests/test_MCTPReactor.cpp
++++ b/src/tests/test_MCTPReactor.cpp
+@@ -26,6 +26,7 @@ class MockMCTPDevice : public MCTPDevice
+     MOCK_METHOD(void, remove, (), (override));
+     MOCK_METHOD(std::string, describe, (), (const, override));
+     MOCK_METHOD(std::size_t, id, (), (const, override));
++    MOCK_METHOD(PowerState, getRequiredPowerState, (), (const, override));
+ };
+ 
+ class MockMCTPEndpoint : public MCTPEndpoint
+@@ -65,6 +66,8 @@ class MCTPReactorFixture : public testing::Test
+         EXPECT_CALL(*device, describe())
+             .WillRepeatedly(testing::Return("mock device"));
+         EXPECT_CALL(*device, id()).WillRepeatedly(testing::Return(0UL));
++        EXPECT_CALL(*device, getRequiredPowerState())
++            .WillRepeatedly(testing::Return(PowerState::always));
+ 
+         endpoint = std::make_shared<MockMCTPEndpoint>();
+         EXPECT_CALL(*endpoint, device())
+@@ -483,6 +486,8 @@ TEST(MCTPReactor, replaceConfiguration)
+     EXPECT_CALL(*idev, setup(testing::_))
+         .WillOnce(testing::InvokeArgument<0>(std::error_code(), iep));
+     EXPECT_CALL(*idev, remove()).WillOnce([&]() { iep->remove(); });
++    EXPECT_CALL(*idev, getRequiredPowerState())
++        .WillRepeatedly(testing::Return(PowerState::always));
+ 
+     EXPECT_CALL(*iep, device()).WillRepeatedly(testing::Return(idev));
+ 
+@@ -502,6 +507,8 @@ TEST(MCTPReactor, replaceConfiguration)
+     EXPECT_CALL(*rdev, setup(testing::_))
+         .WillOnce(testing::InvokeArgument<0>(std::error_code(), rep));
+     EXPECT_CALL(*rdev, remove()).WillOnce([&]() { rep->remove(); });
++    EXPECT_CALL(*rdev, getRequiredPowerState())
++        .WillRepeatedly(testing::Return(PowerState::always));
+ 
+     EXPECT_CALL(*rep, device()).WillRepeatedly(testing::Return(rdev));
+ 
+@@ -540,6 +547,8 @@ TEST(MCTPReactor, concurrentEndpointSetupReactorTeardown)
+         EXPECT_CALL(*device, id()).WillRepeatedly(testing::Return(0UL));
+         EXPECT_CALL(*device, setup(testing::_))
+             .WillOnce(testing::SaveArg<0>(&setupHandler));
++        EXPECT_CALL(*device, getRequiredPowerState())
++            .WillRepeatedly(testing::Return(PowerState::always));
+ 
+         reactor->manageMCTPDevice("/test", device);
+     }
+@@ -575,6 +584,8 @@ TEST(MCTPReactor, manageMockDeviceDelayedSetup)
+                     std::make_error_code(std::errc::permission_denied),
+                     endpoint))
+                 .WillOnce(testing::SaveArg<0>(&setupHandler));
++            EXPECT_CALL(*device, getRequiredPowerState())
++                .WillRepeatedly(testing::Return(PowerState::always));
+ 
+             reactor->manageMCTPDevice("/test", device);
+ 
+-- 
+2.43.0
+

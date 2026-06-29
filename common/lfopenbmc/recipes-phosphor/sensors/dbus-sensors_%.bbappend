@@ -21,6 +21,7 @@ SRC_URI:append = " \
     file://0018-SmbpbiSensor-Fix-invalid-data-check-size-for-tempera.patch \
     file://0019-mctpreactor-Support-configuration-for-USB-MCTP-devic.patch \
     file://0020-dbus-sensors-implement-in-place-threshold-updates-to.patch \
+    file://0021-mctp-add-PowerState-check-in-MCTPReactor.patch \
 "
 
 SRC_URI:append:ventura2 = " \

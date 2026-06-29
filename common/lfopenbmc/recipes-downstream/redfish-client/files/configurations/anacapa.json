@@ -7,5 +7,32 @@
       "/redfish/v1/Systems/MI450/LogServices/EventLog/Entries"
     ],
     "intervalMilliseconds": 2000
+  },
+  "updateServiceConfig": {
+    "intervalMilliseconds": 30000,
+    "softwareMappers": [],
+    "firmwareMappers": [
+      {
+        "fromId": "PLDM_BUNDLE",
+        "toId": "AMC_pldm_bundle",
+        "updateParametersTargetsOverride": []
+      },
+      {
+        "fromId": "AMC_FW",
+        "toId": "AMC_fw"
+      },
+      {
+        "fromId": "EROT_FW",
+        "toId": "AMC_erot_fw"
+      },
+      {
+        "fromId": "PHC_FPGA",
+        "toId": "AMC_phc_fpga"
+      },
+      {
+        "fromId": "ROTCFG",
+        "toId": "AMC_rotcfg"
+      }
+    ]
   }
 }

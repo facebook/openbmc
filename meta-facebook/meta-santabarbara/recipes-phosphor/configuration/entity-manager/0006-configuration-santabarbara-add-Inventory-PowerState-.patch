@@ -23,7 +23,7 @@ index c5dd388..ce75edf 100644
          {
              "Address": "0x21",
              "Bus": "$bus / 2 + 2 * 3 % 5 * 3 + 1 / 4 + 102",
-+            "Inventory": "Arke EVB",
++            "Inventory": "Arke_EVB",
              "Name": "MMC",
 +            "PowerState": "BiosPost",
              "Type": "MCTPI2CTarget"

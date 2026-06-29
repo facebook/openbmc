@@ -286,7 +286,7 @@ netlakenext_common_get_board_rev(uint8_t* rev_id) {
 }
 
 int
-netlakenext_common_get_vr_source(uint8_t bus, uint8_t addr, uint8_t* rev_id) {
+netlakenext_common_get_vr_source(uint8_t bus, uint8_t addr, uint8_t* sku) {
   int ret = 0;
   int i2cfd = 0;
   int retry = 0;
@@ -295,7 +295,6 @@ netlakenext_common_get_vr_source(uint8_t bus, uint8_t addr, uint8_t* rev_id) {
 
   i2cfd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
   if ( i2cfd < 0 ) {
-    syslog(LOG_ERR, "%s(): failed to open VR, fd=%x, bus=%d, addr=%02X\n", __func__, i2cfd, bus, addr >> 1);
     return -1;
   }
 
@@ -310,8 +309,6 @@ netlakenext_common_get_vr_source(uint8_t bus, uint8_t addr, uint8_t* rev_id) {
     }
   }
   if (retry == VR_RETRY_TIME) {
-    syslog(LOG_ERR, "%s(): failed to get VR MFR ID length, retry=%d, bus=%d, addr=%02X\n",
-      __func__, retry, bus, addr >> 1);
     close(i2cfd);
     return -1;
   }
@@ -328,46 +325,39 @@ netlakenext_common_get_vr_source(uint8_t bus, uint8_t addr, uint8_t* rev_id) {
     }
   }
   if (retry == VR_RETRY_TIME) {
-    syslog(LOG_ERR, "%s(): failed to get VR MFR ID, retry=%d, bus=%d, addr=%02X\n",
-      __func__, retry, bus, addr >> 1);
     close(i2cfd);
     return -1;
   }
   close(i2cfd);
 
-  if (rbuf[1] == (VR_MFR_ID_MAIN & 0xFF) &&
-	    rbuf[2] == ((VR_MFR_ID_MAIN >> 8) & 0xFF) &&
-	    rbuf[3] == ((VR_MFR_ID_MAIN >> 16) & 0xFF)) {
-		*rev_id = 0x00;
-    syslog(LOG_INFO, "%s(): get VR MFR ID main, bus=%d, addr=%02X\n", __func__, bus, addr >> 1);
-  } else if (rbuf[1] == (VR_MFR_ID_SECOND & 0xFF) &&
-             rbuf[2] == ((VR_MFR_ID_SECOND >> 8) & 0xFF)) {
-    *rev_id = 0x08;
-    syslog(LOG_INFO, "%s(): get VR MFR ID second, bus=%d, addr=%02X\n", __func__, bus, addr >> 1);
+  if (rbuf[1] == (VR_MFR_ID_MPS & 0xFF) &&
+	    rbuf[2] == ((VR_MFR_ID_MPS >> 8) & 0xFF) &&
+	    rbuf[3] == ((VR_MFR_ID_MPS >> 16) & 0xFF)) {
+		*sku = MPS;
+  } else if (rbuf[1] == (VR_MFR_ID_INF & 0xFF) &&
+             rbuf[2] == ((VR_MFR_ID_INF >> 8) & 0xFF)) {
+    *sku = INFINEON;
+  } else {
+    *sku = RENESAS;
   }
 
   return ret;
 }
 
 int
-netlakenext_common_get_board_rev_backup(uint8_t* rev_id) {
+netlakenext_common_get_vr_sku(uint8_t* sku, bool* change_vr_bus) {
   int ret = 0;
 
-  ret = netlakenext_common_get_board_rev(rev_id);
+  ret = netlakenext_common_get_vr_source(VR_PVDD_MISC_BUS, VR_PVDD_MISC_ADDR, sku);
   if (ret < 0) {
-    syslog(LOG_ERR, "%s(): failed to get CPLD board revision.\n", __func__);
-    ret = netlakenext_common_get_vr_source(VR_PVDD_MISC_BUS, VR_PVDD_MISC_ADDR, rev_id);
+    *change_vr_bus = false;
+    ret = netlakenext_common_get_vr_source(VR_BUS, VR_PVDD_MISC_ADDR, sku);
     if (ret < 0) {
-      syslog(LOG_ERR, "%s(): failed to get VR source, bus=%d, addr=%02X.\n",
-        __func__, VR_PVDD_MISC_BUS, VR_PVDD_MISC_ADDR >> 1);
-      ret = netlakenext_common_get_vr_source(VR_BUS, VR_PVDD_MISC_ADDR, rev_id);
-      if (ret < 0) {
-        syslog(LOG_ERR, "%s(): failed to get VR source, bus=%d, addr=%02X.\n",
-          __func__, VR_BUS, VR_PVDD_MISC_ADDR >> 1);
-      }
-    } else {
-      *rev_id |= 0x01;
+      syslog(LOG_ERR, "%s(): failed to get VR source, bus=%d, %d.\n",
+        __func__, VR_BUS, VR_PVDD_MISC_BUS);
     }
+  } else {
+    *change_vr_bus = true;
   }
 
   return ret;

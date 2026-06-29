@@ -107,6 +107,8 @@ int pal_copy_eeprom_to_bin(const char *eeprom_file, const char *bin_file);
 int pal_check_fru_is_valid(const char* fruid_path);
 int pal_get_cpld_ver(uint8_t fru, char *rbuf);
 int pal_post_display(uint8_t status);
+int pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log);
+void parse_mce_error_sel(uint8_t *event_data, char *error_log);
 
 int pal_set_id_led(uint8_t fru, enum LED_HIGH_ACTIVE value);
 int pal_set_fault_led(uint8_t fru, enum LED_HIGH_ACTIVE value);

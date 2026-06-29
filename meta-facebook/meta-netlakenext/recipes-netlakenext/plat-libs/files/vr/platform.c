@@ -8,6 +8,7 @@
 #include <openbmc/obmc-pal.h>
 #include "mp29608a.h"
 #include "xdpe152xx.h"
+#include "raa_gen3p5.h"
 
 enum {
   VR_VDDCR_VDDCR_SOC = 0,
@@ -66,7 +67,15 @@ struct vr_ops xpde19283d_ops = {
   .fw_verify = NULL,
 };
 
-struct vr_info netlakenext_vr_list[] = {
+struct vr_ops raa229641_ops = {
+  .get_fw_ver = get_raa_gen3p5_ver,
+  .parse_file = raa_gen3p5_parse_file,
+  .validate_file = NULL,
+  .fw_update = raa_gen3p5_fw_update,
+  .fw_verify = NULL,
+};
+
+struct vr_info netlakenext_vr_mps_list[] = {
   [VR_VDDCR_VDDCR_SOC] = {
     .bus = VR_BUS,
     .addr = VR_PVDDCR_ADDR,
@@ -87,7 +96,7 @@ struct vr_info netlakenext_vr_list[] = {
   },
 };
 
-struct vr_info netlakenext_vr_second_list[] = {
+struct vr_info netlakenext_vr_inf_list[] = {
   [VR_VDDCR_VDDCR_SOC] = {
     .bus = VR_BUS,
     .addr = VR_PVDDCR_ADDR,
@@ -106,8 +115,27 @@ struct vr_info netlakenext_vr_second_list[] = {
   },
 };
 
-void vr_change_bus(struct vr_info *vr_list, int vr_cnt, enum board_rev stage) {
-  if (stage >= EVT2) {
+struct vr_info netlakenext_vr_rns_list[] = {
+  [VR_VDDCR_VDDCR_SOC] = {
+    .bus = VR_BUS,
+    .addr = VR_PVDDCR_ADDR,
+    .dev_name = "VR_VDDCR/VR_VDDCR_SOC",
+    .ops = &raa229641_ops,
+    .private_data = "server",
+    .xfer = &netlakenext_vr_rdwr,
+  },
+  [VR_VDD_MISC] = {
+    .bus = VR_BUS,
+    .addr = VR_PVDD_MISC_ADDR,
+    .dev_name = "VR_VDD_MISC",
+    .ops = &raa229641_ops,
+    .private_data = "server",
+    .xfer = &netlakenext_vr_rdwr,
+  },
+};
+
+void vr_change_bus(struct vr_info *vr_list, int vr_cnt, bool change_vr_bus) {
+  if (change_vr_bus) {
     for (int i = 0; i < vr_cnt; i++) {
       if (vr_list[i].addr == VR_PVDDCR_ADDR) {
         vr_list[i].bus = VR_PVDDCR_BUS;
@@ -125,26 +153,29 @@ void vr_change_bus(struct vr_info *vr_list, int vr_cnt, enum board_rev stage) {
 int plat_vr_init(void) {
   int ret;
   int i2cfd = 0;
-  uint8_t rev_id = 0;
+  uint8_t sku = 0;
+  bool change_vr_bus = false;
   uint8_t tlen = 1;
   uint8_t rev_id_reg = CPLD_REV_ID_REG;
   int vr_cnt;
 
-  ret = netlakenext_common_get_board_rev_backup(&rev_id);
+  ret = netlakenext_common_get_vr_sku(&sku, &change_vr_bus);
   if (ret < 0) {
-    syslog(LOG_ERR, "%s(): failed to get board revision. rev_id=%02X\n", __func__, rev_id);
+    syslog(LOG_ERR, "%s() Failed to get vr sku, use main source (MPS) setting as default", __func__);
   }
 
-  int sku = ((int)rev_id & 0x08) >> 3;
-  enum board_rev stage = (enum board_rev)(rev_id & 0x07);
-  if (sku == 0) {
-    vr_cnt = sizeof(netlakenext_vr_list)/sizeof(netlakenext_vr_list[0]);
-    vr_change_bus(netlakenext_vr_list, vr_cnt, stage);
-    ret = vr_device_register(netlakenext_vr_list, vr_cnt );
-  } else if (sku == 1) {
-    vr_cnt = sizeof(netlakenext_vr_second_list)/sizeof(netlakenext_vr_second_list[0]);
-    vr_change_bus(netlakenext_vr_second_list, vr_cnt, stage);
-    ret = vr_device_register(netlakenext_vr_second_list, vr_cnt );
+  if (sku == MPS) {
+    vr_cnt = sizeof(netlakenext_vr_mps_list)/sizeof(netlakenext_vr_mps_list[0]);
+    vr_change_bus(netlakenext_vr_mps_list, vr_cnt, change_vr_bus);
+    ret = vr_device_register(netlakenext_vr_mps_list, vr_cnt);
+  } else if (sku == INFINEON) {
+    vr_cnt = sizeof(netlakenext_vr_inf_list)/sizeof(netlakenext_vr_inf_list[0]);
+    vr_change_bus(netlakenext_vr_inf_list, vr_cnt, change_vr_bus);
+    ret = vr_device_register(netlakenext_vr_inf_list, vr_cnt);
+  } else if (sku == RENESAS) {
+    vr_cnt = sizeof(netlakenext_vr_rns_list)/sizeof(netlakenext_vr_rns_list[0]);
+    vr_change_bus(netlakenext_vr_rns_list, vr_cnt, change_vr_bus);
+    ret = vr_device_register(netlakenext_vr_rns_list, vr_cnt);
   } else {
     syslog(LOG_ERR, "Invalid board revision got from fpga.");
   }

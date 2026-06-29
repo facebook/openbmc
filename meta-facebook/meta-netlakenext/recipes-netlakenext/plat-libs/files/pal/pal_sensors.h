@@ -10,7 +10,7 @@
 #define HSC_NO_SET_PAGE              0
 #define ADM1278_RSENSE               0.5
 
-#define MAX_PMBUS_SUP_PMBUS_TYPE_CNT  2
+#define MAX_PMBUS_SUP_PMBUS_TYPE_CNT  3
 #define MAX_HSC_SUP_CMD_CNT 3
 
 #define SENSOR_RETRY_TIME                   3
@@ -221,6 +221,7 @@ enum {
 enum pmbus_dev_type{
   MP29608B = 0,
   XDPE19283D,
+  RAA229641,
 };
 
 enum pmbus_page{
@@ -236,6 +237,7 @@ enum pmbus_read_byte{
 enum pmbus_read_type{
   LINEAR11 = 0,
   VOUT_MODE,
+  DIRECT,
 };
 
 // PMBUS_CMD_INFO
@@ -280,6 +282,15 @@ static pmbus_dev_info pmbus_dev_list[] = {
   {CMD_IIN, READ_WORD, LINEAR11},
   {CMD_POUT, READ_WORD, LINEAR11},
   {CMD_PIN, READ_WORD, LINEAR11},}},
+  [RAA229641] = {
+  {{CMD_TEMP1, READ_WORD, DIRECT},
+  {CMD_TEMP2, READ_WORD, DIRECT},
+  {CMD_VOUT, READ_WORD, DIRECT},
+  {CMD_VIN, READ_WORD, DIRECT},
+  {CMD_IOUT, READ_WORD, DIRECT},
+  {CMD_IIN, READ_WORD, DIRECT},
+  {CMD_POUT, READ_WORD, DIRECT},
+  {CMD_PIN, READ_WORD, DIRECT},}},
 };
 
 enum {

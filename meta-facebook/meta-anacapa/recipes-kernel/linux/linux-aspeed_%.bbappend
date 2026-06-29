@@ -19,4 +19,9 @@ SRC_URI:append = " \
     file://1014-jtag-jtag-aspeed-Increase-the-wait-iteration-to-300.patch \
     file://1015-arm-dts-anacapa-Modify-the-RMI-TSI-device-IDs.patch \
     file://1016-ARM-dts-aspeed-anacapa-add-interrupt-properties-for-.patch \
+    file://1017-arm-dts-anacapa-Align-thermtrip-SGPIO-pin-names.patch \
+    file://1018-arm-dts-anacapa-Rename-left-PDB-presence-pin.patch \
+    file://1019-arm-dts-anacapa-Align-EDSFF-SGPIO-pin-names.patch \
+    file://1020-arm-dts-anacapa-Align-PDB-fan-GPIO-numbering.patch \
+    file://1021-arm-dts-anacapa-Align-leakage-SGPIO-pin-names.patch \
 "

@@ -1,0 +1,37 @@
+From 81272a538d135e5ed3a4ad66cad4835338541171 Mon Sep 17 00:00:00 2001
+From: Rex Fu <Rex.Fu@amd.com>
+Date: Fri, 26 Jun 2026 16:34:40 +0800
+Subject: [PATCH 2/5] arm: dts: anacapa: Rename left PDB presence pin
+
+Summary:
+- Rename PDB_PRSNT_R_N to PDB_L_PRSNT_R_N.
+
+LORE: https://lore.kernel.org/all/20260602-anacapa-devlop-phase-devicetree-v3-3-7c93c5df8d9b@gmail.com/
+
+Motivation:
+- To align the PDB presence SGPIO pin name with upstream Anacapa DTS.
+
+Test Plan:
+- Build pass
+
+Signed-off-by: Rex Fu <Rex.Fu@amd.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+index 70cf6c46d..fb77b2aa7 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+@@ -1092,7 +1092,7 @@ &sgpiom0 {
+ 	"EAM2_BRD_PRSNT_R_L", "",
+ 	"EAM3_BRD_PRSNT_R_L", "",
+ 	"FM_TPM_PRSNT_R_N", "",
+-	"PDB_PRSNT_R_N", "",
++	"PDB_L_PRSNT_R_N", "",
+ 	"PRSNT_EDSFF0_N", "",
+ 	"PRSNT_CPU0_N", "",
+ 
+-- 
+2.43.0
+

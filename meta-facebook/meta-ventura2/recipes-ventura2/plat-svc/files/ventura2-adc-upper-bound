@@ -1,0 +1,76 @@
+#!/bin/bash
+set -e
+
+# Set the ADC upper bound based on the deglitch feature provided by Aspeed
+# LORE link: https://lore.kernel.org/all/20230925081845.4147424-1-billy_tsai@aspeedtech.com/
+
+ADC0_PATH=""
+ADC1_PATH=""
+
+for dev in /sys/bus/iio/devices/iio:device*; do
+    if [ -f "$dev/name" ]; then
+        dev_name=$(cat "$dev/name")
+        if [ "$dev_name" == "ast2600-adc0" ]; then
+            ADC0_PATH="$dev"
+        elif [ "$dev_name" == "ast2600-adc1" ]; then
+            ADC1_PATH="$dev"
+        fi
+    fi
+done
+
+if [ -z "$ADC0_PATH" ] || [ -z "$ADC1_PATH" ]; then
+    echo "Error: Cannot find AST2600 ADC devices."
+    exit 1
+fi
+
+set_adc_upper_bound()
+{
+    # Set upper bound 0x34C for ADC channel 0
+    echo 844 > "$ADC0_PATH"/events/in_voltage0_thresh_rising_value
+    # Enable de-glitch for ADC channel 0
+    echo 1 > "$ADC0_PATH"/events/in_voltage0_thresh_rising_en
+
+    # Set upper bound 0x32C for ADC channel 1
+    echo 812 > "$ADC0_PATH"/events/in_voltage1_thresh_rising_value
+    # Enable de-glitch for ADC channel 1
+    echo 1 > "$ADC0_PATH"/events/in_voltage1_thresh_rising_en
+
+    # Set upper bound 0x32A for ADC channel 2
+    echo 810 > "$ADC0_PATH"/events/in_voltage2_thresh_rising_value
+    # Enable de-glitch for ADC channel 2
+    echo 1 > "$ADC0_PATH"/events/in_voltage2_thresh_rising_en
+
+    # Set upper bound 0x32A for ADC channel 3
+    echo 810 > "$ADC0_PATH"/events/in_voltage3_thresh_rising_value
+    # Enable de-glitch for ADC channel 3
+    echo 1 > "$ADC0_PATH"/events/in_voltage3_thresh_rising_en
+
+    # Set upper bound 0x327 for ADC channel 4
+    echo 807 > "$ADC0_PATH"/events/in_voltage4_thresh_rising_value
+    # Enable de-glitch for ADC channel 4
+    echo 1 > "$ADC0_PATH"/events/in_voltage4_thresh_rising_en
+
+    # Set upper bound 0x32A for ADC channel 5
+    echo 810 > "$ADC0_PATH"/events/in_voltage5_thresh_rising_value
+    # Enable de-glitch for ADC channel 5
+    echo 1 > "$ADC0_PATH"/events/in_voltage5_thresh_rising_en
+
+    # Set upper bound 0x2CD for ADC channel 6
+    echo 717 > "$ADC0_PATH"/events/in_voltage6_thresh_rising_value
+    # Enable de-glitch for ADC channel 6
+    echo 1 > "$ADC0_PATH"/events/in_voltage6_thresh_rising_en
+
+    # Set upper bound 0x285 for ADC channel 7
+    echo 645 > "$ADC0_PATH"/events/in_voltage7_thresh_rising_value
+    # Enable de-glitch for ADC channel 7
+    echo 1 > "$ADC0_PATH"/events/in_voltage7_thresh_rising_en
+
+    # Set upper bound 0x1AF for ADC channel 10
+    echo 431 > "$ADC1_PATH"/events/in_voltage2_thresh_rising_value
+    # Enable de-glitch for ADC channel 10
+    echo 1 > "$ADC1_PATH"/events/in_voltage2_thresh_rising_en
+}
+
+set_adc_upper_bound
+
+exit 0

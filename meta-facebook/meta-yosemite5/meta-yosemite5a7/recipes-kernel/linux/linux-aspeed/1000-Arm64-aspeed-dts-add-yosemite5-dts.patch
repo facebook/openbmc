@@ -486,9 +486,9 @@ index 000000000..8326806ff
 +			"SLOT3_CM_UPDATE","SLOT4_CM_UPDATE",
 +			"SLOT5_CM_UPDATE","SLOT6_CM_UPDATE",
 +			"","",
-+			"","",
-+			"","",
-+			"","",
++			"SLOT1_PRSNT_N","SLOT2_PRSNT_N",
++			"SLOT3_PRSNT_N","SLOT4_PRSNT_N",
++			"SLOT5_PRSNT_N","SLOT6_PRSNT_N",
 +			"","";
 +	};
 +

@@ -1,0 +1,32 @@
+From d6af25d1a17ceb659ead2466b729be000c9ce974 Mon Sep 17 00:00:00 2001
+From: Cool Lee <cool_lee@aspeedtech.com>
+Date: Tue, 14 Apr 2026 14:58:53 +0800
+Subject: [PATCH] mcu-runtime: sdram_ast2700: Update tREFI accordingly
+
+tREFI of DDR5 should be 3.6 us.
+
+Signed-off-by: Cool Lee <cool_lee@aspeedtech.com>
+Change-Id: I411efbdfa61fca0ddf03e0c12880b0bb60b478d5
+---
+ apps/mcu-runtime/soc/ast2700/sdram_ast2700.c | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/apps/mcu-runtime/soc/ast2700/sdram_ast2700.c b/apps/mcu-runtime/soc/ast2700/sdram_ast2700.c
+index 56d8eab..ea4c880 100644
+--- a/apps/mcu-runtime/soc/ast2700/sdram_ast2700.c
++++ b/apps/mcu-runtime/soc/ast2700/sdram_ast2700.c
+@@ -404,6 +404,11 @@ static int sdramc_exit_self_refresh(struct sdramc *sdramc)
+ static void sdramc_enable_refresh(struct sdramc *sdramc)
+ {
+ 	struct sdramc_regs *regs = sdramc->regs;
++	uint32_t tREFI;
++
++	/* update tREFI */
++	tREFI = (is_ddr4() ? 0xb4 : 0x5a);
++	sys_write32(sys_read32((uint32_t)&regs->refctl) & ~0xff0000 | (tREFI << 16), (uint32_t)&regs->refctl);
+ 
+ 	/* refresh update */
+ 	//clrbits(le32, (uint32_t)&regs->refctl, 0x8000);
+-- 
+2.34.1
+

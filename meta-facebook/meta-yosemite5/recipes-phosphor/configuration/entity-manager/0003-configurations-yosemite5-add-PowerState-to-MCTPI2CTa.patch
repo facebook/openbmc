@@ -31,7 +31,7 @@ index d7053b3..2a33e9e 100644
              "Address": "0x32",
              "Bus": "15",
              "Name": "CXL",
-+            "PowerState": "BiosPost",
++            "PowerState": "On",
              "Type": "MCTPI2CTarget"
          },
          {
@@ -43,7 +43,7 @@ index d0a0d82..ac1c0e5 100644
              "Address": "0x32",
              "Bus": "12",
              "Name": "CXL",
-+            "PowerState": "BiosPost",
++            "PowerState": "On",
              "Type": "MCTPI2CTarget"
          },
          {
@@ -55,7 +55,7 @@ index 48854f8..8936d49 100644
              "Address": "0x32",
              "Bus": "15",
              "Name": "CXL",
-+            "PowerState": "BiosPost",
++            "PowerState": "On",
              "Type": "MCTPI2CTarget"
          },
          {
@@ -67,7 +67,7 @@ index 2719b3b..54a9fa7 100644
              "Address": "0x32",
              "Bus": "12",
              "Name": "CXL",
-+            "PowerState": "BiosPost",
++            "PowerState": "On",
              "Type": "MCTPI2CTarget"
          },
          {
@@ -79,7 +79,7 @@ index d8637bc..b15242f 100644
              "Address": "0x32",
              "Bus": "15",
              "Name": "CXL",
-+            "PowerState": "BiosPost",
++            "PowerState": "On",
              "Type": "MCTPI2CTarget"
          },
          {
@@ -91,7 +91,7 @@ index 356ea13..284f97c 100644
              "Address": "0x32",
              "Bus": "12",
              "Name": "CXL",
-+            "PowerState": "BiosPost",
++            "PowerState": "On",
              "Type": "MCTPI2CTarget"
          },
          {
@@ -103,7 +103,7 @@ index 03bbeca..15fb6fc 100644
              "Address": "0x32",
              "Bus": "15",
              "Name": "CXL",
-+            "PowerState": "BiosPost",
++            "PowerState": "On",
              "Type": "MCTPI2CTarget"
          },
          {
@@ -115,7 +115,7 @@ index f36bb93..e324d0f 100644
              "Address": "0x32",
              "Bus": "12",
              "Name": "CXL",
-+            "PowerState": "BiosPost",
++            "PowerState": "On",
              "Type": "MCTPI2CTarget"
          },
          {

@@ -304,7 +304,7 @@ def main():
         except Exception as e:
             print("Firmware update failed %s" % str(e))
             print("Status register dump:")
-            print(get_status_reg(args.addr.to_bytes(1, "big")))
+            print(get_status_reg(args.addr))
             traceback.print_exc()
             sys.exit(1)
     print("Upgrade Success!")

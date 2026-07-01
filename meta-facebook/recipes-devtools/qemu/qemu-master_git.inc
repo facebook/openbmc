@@ -88,6 +88,7 @@ SRC_URI += " \
            file://0009-Add-INA230-INA238-I2C-power-monitor-device-emulation.patch \
            file://0010-Add-MAX31790-fan-controller-device-emulation-for-BMC.patch \
            file://0011-Add-PCF8563-Real-Time-Clock-device-emulation-for-BMC.patch \
+           file://0012-Add-minerva.patch \
            "
 
 QEMU_CHECKOUT_DIR = "${BPN}-${PV}"

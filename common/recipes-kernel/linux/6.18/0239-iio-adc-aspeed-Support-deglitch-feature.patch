@@ -1,7 +1,7 @@
-From 5530987dd45956f96a9ceaba8958e40a8cc7091f Mon Sep 17 00:00:00 2001
+From 654215a71637001abad18a52dd926819792a8319 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Mon, 29 Jun 2026 11:40:26 +0800
-Subject: [PATCH 2/2] [PATCH] iio: adc: aspeed: Support deglitch feature.
+Subject: [PATCH] iio: adc: aspeed: Support deglitch feature.
 
 Create event sysfs for applying the deglitch condition. When
 in_voltageY_thresh_rising_en/in_voltageY_thresh_falling_en is set to true,
@@ -19,7 +19,7 @@ Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
  1 file changed, 191 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/iio/adc/aspeed_adc.c b/drivers/iio/adc/aspeed_adc.c
-index 0249658f6..9badb3e12 100644
+index 0249658f694b..9badb3e12d40 100644
 --- a/drivers/iio/adc/aspeed_adc.c
 +++ b/drivers/iio/adc/aspeed_adc.c
 @@ -121,6 +121,27 @@ struct aspeed_adc_data {
@@ -276,5 +276,5 @@ index 0249658f6..9badb3e12 100644
  	indio_dev->info = &aspeed_adc_iio_info;
  	indio_dev->modes = INDIO_DIRECT_MODE;
 -- 
-2.34.1
+2.53.0-Meta
 

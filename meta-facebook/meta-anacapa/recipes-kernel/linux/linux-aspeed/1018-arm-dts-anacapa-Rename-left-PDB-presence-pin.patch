@@ -1,7 +1,7 @@
-From 81272a538d135e5ed3a4ad66cad4835338541171 Mon Sep 17 00:00:00 2001
+From e7864aedac9d77eb402f3bed22e4b22f64afbf14 Mon Sep 17 00:00:00 2001
 From: Rex Fu <Rex.Fu@amd.com>
 Date: Fri, 26 Jun 2026 16:34:40 +0800
-Subject: [PATCH 2/5] arm: dts: anacapa: Rename left PDB presence pin
+Subject: [PATCH] arm: dts: anacapa: Rename left PDB presence pin
 
 Summary:
 - Rename PDB_PRSNT_R_N to PDB_L_PRSNT_R_N.
@@ -20,7 +20,7 @@ Signed-off-by: Rex Fu <Rex.Fu@amd.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-index 70cf6c46d..fb77b2aa7 100644
+index 70cf6c46ddc0..fb77b2aa7bb9 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 @@ -1092,7 +1092,7 @@ &sgpiom0 {
@@ -33,5 +33,5 @@ index 70cf6c46d..fb77b2aa7 100644
  	"PRSNT_CPU0_N", "",
  
 -- 
-2.43.0
+2.53.0-Meta
 

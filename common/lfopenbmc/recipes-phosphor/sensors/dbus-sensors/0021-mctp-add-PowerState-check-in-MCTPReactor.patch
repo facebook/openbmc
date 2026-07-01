@@ -1,4 +1,4 @@
-From aa06c0411580ee536aa72f138335df49328b3400 Mon Sep 17 00:00:00 2001
+From cb5c8ffd05d6a1b4f553240e573b73b1768dbf90 Mon Sep 17 00:00:00 2001
 From: Sandy Chu <sandy.chu.wiwynn@gmail.com>
 Date: Fri, 5 Jun 2026 08:12:59 +0000
 Subject: [PATCH] mctp: add PowerState check in MCTPReactor
@@ -32,10 +32,10 @@ Signed-off-by: Sandy Chu <sandy.chu.wiwynn@gmail.com>
  5 files changed, 57 insertions(+), 9 deletions(-)
 
 diff --git a/src/mctp/MCTPEndpoint.cpp b/src/mctp/MCTPEndpoint.cpp
-index 986e3e0..af973c0 100644
+index 32413ba..24ae0fa 100644
 --- a/src/mctp/MCTPEndpoint.cpp
 +++ b/src/mctp/MCTPEndpoint.cpp
-@@ -44,8 +44,10 @@ static constexpr const char* mctpdEndpointControlInterface =
+@@ -48,8 +48,10 @@ static constexpr const char* mctpdEndpointControlInterface =
  
  MCTPDDevice::MCTPDDevice(
      const std::shared_ptr<sdbusplus::asio::connection>& connection,
@@ -48,7 +48,7 @@ index 986e3e0..af973c0 100644
  {}
  
  void MCTPDDevice::onEndpointInterfacesRemoved(
-@@ -453,9 +455,11 @@ std::shared_ptr<I2CMCTPDDevice> I2CMCTPDDevice::from(
+@@ -457,9 +459,11 @@ std::shared_ptr<I2CMCTPDDevice> I2CMCTPDDevice::from(
          throw std::invalid_argument("Bad bus index");
      }
  
@@ -61,7 +61,7 @@ index 986e3e0..af973c0 100644
      }
      catch (const MCTPException& ex)
      {
-@@ -508,9 +512,11 @@ std::shared_ptr<I3CMCTPDDevice> I3CMCTPDDevice::from(
+@@ -512,9 +516,11 @@ std::shared_ptr<I3CMCTPDDevice> I3CMCTPDDevice::from(
          throw std::invalid_argument("Bad bus index");
      }
  
@@ -75,10 +75,10 @@ index 986e3e0..af973c0 100644
      catch (const MCTPException& ex)
      {
 diff --git a/src/mctp/MCTPEndpoint.hpp b/src/mctp/MCTPEndpoint.hpp
-index deed905..5b91152 100644
+index 7e268ca..c3204db 100644
 --- a/src/mctp/MCTPEndpoint.hpp
 +++ b/src/mctp/MCTPEndpoint.hpp
-@@ -183,6 +183,11 @@ class MCTPDevice
+@@ -184,6 +184,11 @@ class MCTPDevice
       * @return An opaque, internally-stable identifier representing the device
       */
      virtual std::size_t id() const = 0;
@@ -90,7 +90,7 @@ index deed905..5b91152 100644
  };
  
  class MCTPDDevice;
-@@ -271,7 +276,8 @@ class MCTPDDevice :
+@@ -272,7 +277,8 @@ class MCTPDDevice :
      MCTPDDevice() = delete;
      MCTPDDevice(const std::shared_ptr<sdbusplus::asio::connection>& connection,
                  const std::string& interface,
@@ -100,7 +100,7 @@ index deed905..5b91152 100644
      MCTPDDevice(const MCTPDDevice& other) = delete;
      MCTPDDevice(MCTPDDevice&& other) = delete;
      ~MCTPDDevice() override = default;
-@@ -282,6 +288,10 @@ class MCTPDDevice :
+@@ -283,6 +289,10 @@ class MCTPDDevice :
      void remove() override;
      std::string describe() const override;
      std::size_t id() const override;
@@ -111,7 +111,7 @@ index deed905..5b91152 100644
  
    private:
      static void onEndpointInterfacesRemoved(
-@@ -291,6 +301,7 @@ class MCTPDDevice :
+@@ -292,6 +302,7 @@ class MCTPDDevice :
      std::shared_ptr<sdbusplus::asio::connection> connection;
      const std::string interface;
      const std::vector<uint8_t> physaddr;
@@ -119,7 +119,7 @@ index deed905..5b91152 100644
      std::shared_ptr<MCTPDEndpoint> endpoint;
      std::unique_ptr<sdbusplus::bus::match_t> removeMatch;
  
-@@ -322,8 +333,8 @@ class I2CMCTPDDevice : public MCTPDDevice
+@@ -323,8 +334,8 @@ class I2CMCTPDDevice : public MCTPDDevice
      I2CMCTPDDevice() = delete;
      I2CMCTPDDevice(
          const std::shared_ptr<sdbusplus::asio::connection>& connection, int bus,
@@ -130,7 +130,7 @@ index deed905..5b91152 100644
      {}
      ~I2CMCTPDDevice() override = default;
  
-@@ -345,8 +356,9 @@ class I3CMCTPDDevice : public MCTPDDevice
+@@ -346,8 +357,9 @@ class I3CMCTPDDevice : public MCTPDDevice
      I3CMCTPDDevice() = delete;
      I3CMCTPDDevice(
          const std::shared_ptr<sdbusplus::asio::connection>& connection, int bus,
@@ -171,10 +171,10 @@ index d4f591c..b408971 100644
          "Attempting to setup up MCTP endpoint for device at [ {MCTP_DEVICE} ]",
          "MCTP_DEVICE", dev->describe());
 diff --git a/src/mctp/MCTPReactorMain.cpp b/src/mctp/MCTPReactorMain.cpp
-index 9d2d321..7c4ab0d 100644
+index 06d9a0a..4abcafe 100644
 --- a/src/mctp/MCTPReactorMain.cpp
 +++ b/src/mctp/MCTPReactorMain.cpp
-@@ -244,6 +244,8 @@ int main()
+@@ -251,6 +251,8 @@ int main()
  
      systemBus->request_name("xyz.openbmc_project.MCTPReactor");
  
@@ -241,5 +241,5 @@ index ee549ed..80580f7 100644
              reactor->manageMCTPDevice("/test", device);
  
 -- 
-2.43.0
+2.53.0-Meta
 

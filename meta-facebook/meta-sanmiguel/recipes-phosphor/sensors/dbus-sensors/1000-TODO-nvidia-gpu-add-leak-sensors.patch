@@ -1,4 +1,4 @@
-From a0a44fc2d80ed313869066cd52a4a9b8b4d9eac0 Mon Sep 17 00:00:00 2001
+From 1de886414c8f0a88114e9da7d981ddb47cdab9f9 Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Tue, 5 May 2026 20:34:03 +0800
 Subject: [PATCH] TODO: nvidia-gpu: add leak sensors
@@ -13,12 +13,12 @@ Signed-off-by: Mike Hsieh <mike_hsieh@quantatw.com>
  src/nvidia-gpu/NvidiaDeviceDiscovery.cpp |   3 +-
  src/nvidia-gpu/NvidiaGpuMctpVdm.cpp      | 118 ++++++++++++++++
  src/nvidia-gpu/NvidiaGpuMctpVdm.hpp      |  20 +++
- src/nvidia-gpu/NvidiaSmaDevice.cpp       |  17 ++-
- src/nvidia-gpu/NvidiaSmaDevice.hpp       |   4 +-
+ src/nvidia-gpu/NvidiaSmaDevice.cpp       |  16 ++-
+ src/nvidia-gpu/NvidiaSmaDevice.hpp       |   3 +-
  src/nvidia-gpu/NvidiaSmaLeakSensor.cpp   | 171 +++++++++++++++++++++++
  src/nvidia-gpu/NvidiaSmaLeakSensor.hpp   |  63 +++++++++
  src/nvidia-gpu/meson.build               |   1 +
- 8 files changed, 389 insertions(+), 8 deletions(-)
+ 8 files changed, 389 insertions(+), 6 deletions(-)
  create mode 100644 src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
  create mode 100644 src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
 
@@ -214,19 +214,18 @@ index 7486b86..e506266 100644
 +
  } // namespace gpu
 diff --git a/src/nvidia-gpu/NvidiaSmaDevice.cpp b/src/nvidia-gpu/NvidiaSmaDevice.cpp
-index 9a6da15..06c4cdb 100644
+index e193256..df30bd9 100644
 --- a/src/nvidia-gpu/NvidiaSmaDevice.cpp
 +++ b/src/nvidia-gpu/NvidiaSmaDevice.cpp
-@@ -6,7 +6,7 @@
- #include "NvidiaSmaDevice.hpp"
+@@ -7,6 +7,7 @@
  
  #include "NvidiaDeviceDiscovery.hpp"
--#include "NvidiaGpuSensor.hpp"
+ #include "NvidiaGpuTempSensor.hpp"
 +#include "NvidiaSmaLeakSensor.hpp"
  #include "Thresholds.hpp"
  #include "Utils.hpp"
  
-@@ -44,9 +44,16 @@ void SmaDevice::init()
+@@ -44,9 +45,16 @@ void SmaDevice::init()
  
  void SmaDevice::makeSensors()
  {
@@ -246,7 +245,7 @@ index 9a6da15..06c4cdb 100644
          gpu::DeviceIdentification::DEVICE_SMA);
  
      lg2::info("Added MCA {NAME} Sensors with chassis path: {PATH}.", "NAME",
-@@ -57,7 +64,7 @@ void SmaDevice::makeSensors()
+@@ -57,7 +65,7 @@ void SmaDevice::makeSensors()
  
  void SmaDevice::read()
  {
@@ -256,19 +255,18 @@ index 9a6da15..06c4cdb 100644
      waitTimer.expires_after(std::chrono::milliseconds(sensorPollMs));
      waitTimer.async_wait(
 diff --git a/src/nvidia-gpu/NvidiaSmaDevice.hpp b/src/nvidia-gpu/NvidiaSmaDevice.hpp
-index 6fccc43..975324b 100644
+index a78f83b..3078e53 100644
 --- a/src/nvidia-gpu/NvidiaSmaDevice.hpp
 +++ b/src/nvidia-gpu/NvidiaSmaDevice.hpp
-@@ -7,7 +7,7 @@
- 
+@@ -8,6 +8,7 @@
  #include "MctpRequester.hpp"
  #include "NvidiaDeviceDiscovery.hpp"
--#include "NvidiaGpuSensor.hpp"
+ #include "NvidiaGpuTempSensor.hpp"
 +#include "NvidiaSmaLeakSensor.hpp"
  
  #include <boost/asio/io_context.hpp>
  #include <boost/asio/steady_timer.hpp>
-@@ -53,7 +53,7 @@ class SmaDevice : public std::enable_shared_from_this<SmaDevice>
+@@ -53,7 +54,7 @@ class SmaDevice : public std::enable_shared_from_this<SmaDevice>
  
      sdbusplus::asio::object_server& objectServer;
  
@@ -524,7 +522,7 @@ index 0000000..a012338
 +        commonPhysicalContextInterface;
 +};
 diff --git a/src/nvidia-gpu/meson.build b/src/nvidia-gpu/meson.build
-index 78d3177..b1cb04e 100644
+index e39ec97..5dfacea 100644
 --- a/src/nvidia-gpu/meson.build
 +++ b/src/nvidia-gpu/meson.build
 @@ -28,6 +28,7 @@ gpusensor_sources = files(

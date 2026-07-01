@@ -1,7 +1,7 @@
-From be6bce600709f0ff7c9a989cd28439757b2d8a87 Mon Sep 17 00:00:00 2001
+From ffc2b1fc0904542e7e70efd546eb50761d008953 Mon Sep 17 00:00:00 2001
 From: Rex Fu <Rex.Fu@amd.com>
 Date: Fri, 26 Jun 2026 16:30:20 +0800
-Subject: [PATCH 1/5] arm: dts: anacapa: Align thermtrip SGPIO pin names
+Subject: [PATCH] arm: dts: anacapa: Align thermtrip SGPIO pin names
 
 Summary:
 - Align thermtrip SGPIO pin names with upstream Anacapa DTS.
@@ -20,7 +20,7 @@ Signed-off-by: Rex Fu <Rex.Fu@amd.com>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-index 655e324c9..70cf6c46d 100644
+index 655e324c92df..70cf6c46ddc0 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 @@ -1150,8 +1150,8 @@ &sgpiom0 {
@@ -35,5 +35,5 @@ index 655e324c9..70cf6c46d 100644
  	"CPLD_SGPIO_RDY", "Port80_b6",
  	"FM_MAIN_PWREN_RMC_EN_ISO", "Port80_b7",
 -- 
-2.43.0
+2.53.0-Meta
 

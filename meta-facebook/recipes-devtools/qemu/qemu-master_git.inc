@@ -86,6 +86,7 @@ SRC_URI += " \
            file://0007-Subject-PATCH-configure-lookup-meson-exutable-from-P.patch \
            file://0008-qemu-Ensure-pip-and-the-python-venv-aren-t-used-for-.patch \
            file://0009-Add-INA230-INA238-I2C-power-monitor-device-emulation.patch \
+           file://0010-Add-MAX31790-fan-controller-device-emulation-for-BMC.patch \
            "
 
 QEMU_CHECKOUT_DIR = "${BPN}-${PV}"

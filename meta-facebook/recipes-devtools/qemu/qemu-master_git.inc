@@ -85,6 +85,7 @@ SRC_URI += " \
            file://0006-Define-MAP_SYNC-and-MAP_SHARED_VALIDATE-on-needed-li.patch \
            file://0007-Subject-PATCH-configure-lookup-meson-exutable-from-P.patch \
            file://0008-qemu-Ensure-pip-and-the-python-venv-aren-t-used-for-.patch \
+           file://0009-Add-INA230-INA238-I2C-power-monitor-device-emulation.patch \
            "
 
 QEMU_CHECKOUT_DIR = "${BPN}-${PV}"

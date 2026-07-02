@@ -125,3 +125,6 @@ tools/fboss-lite/lib64
 # ai slop garbage
 *.profraw
 *.profdata
+
+# dot files that get created by the docker build container
+.*

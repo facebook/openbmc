@@ -60,68 +60,6 @@ std::optional<ValueIntf::Unit> toMaybeIntfUnits(const std::string& unitsStr)
 
 using PathIntf = ValueIntf::namespace_path;
 
-// Source:
-// https://github.com/openbmc/phosphor-dbus-interfaces/blob/master/yaml/xyz/openbmc_project/Sensor/Value.interface.yaml
-
-const char* getActualMetricNamespace(const char* logicalNameParam)
-{
-    // This function is an identify function for the time being, but
-    // having a lookup table infrastructure makes it possible for us to
-    // change the values supported in the interface without worrying about
-    // the values actually emitted by the redfish server.
-
-    std::string logicalName(logicalNameParam);
-    if (logicalName == "airflow")
-    {
-        return PathIntf::airflow;
-    }
-    if (logicalName == "altitude")
-    {
-        return PathIntf::altitude;
-    }
-    if (logicalName == "current")
-    {
-        return PathIntf::current;
-    }
-    if (logicalName == "energy")
-    {
-        return PathIntf::energy;
-    }
-    if (logicalName == "fan_tach")
-    {
-        return PathIntf::fan_tach;
-    }
-    if (logicalName == "humidity")
-    {
-        return PathIntf::humidity;
-    }
-    if (logicalName == "liquidflow")
-    {
-        return PathIntf::liquidflow;
-    }
-    if (logicalName == "power")
-    {
-        return PathIntf::power;
-    }
-    if (logicalName == "pressure")
-    {
-        return PathIntf::pressure;
-    }
-    if (logicalName == "temperature")
-    {
-        return PathIntf::temperature;
-    }
-    if (logicalName == "utilization")
-    {
-        return PathIntf::utilization;
-    }
-    if (logicalName == "voltage")
-    {
-        return PathIntf::voltage;
-    }
-    throw std::invalid_argument(logicalName.c_str());
-}
-
 const char* getSensorRootPath()
 {
     return PathIntf::value;

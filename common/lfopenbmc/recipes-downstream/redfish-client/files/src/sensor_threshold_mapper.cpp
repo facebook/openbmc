@@ -109,9 +109,8 @@ std::string extractSensorName(redfish_binding::LogEntry::LogEntry& entry,
         auto unit = maybeUnit.value_or(ValueUnit::DegreesC);
         auto ns = unitToNamespace(unit);
 
-        return std::string(getSensorRootPath()) + "/" +
-               getActualMetricNamespace(std::string(ns).c_str()) +
-               "/" + sensorId;
+        return std::string(getSensorRootPath()) + "/" + std::string(ns) + "/" +
+               sensorId;
     }
     return "Unknown Sensor";
 }

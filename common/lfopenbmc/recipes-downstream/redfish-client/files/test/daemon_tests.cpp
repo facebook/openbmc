@@ -15,24 +15,6 @@ TEST(DbusUtilsTest, SensorRootPath)
     EXPECT_STREQ("/xyz/openbmc_project/sensors", getSensorRootPath());
 }
 
-TEST(DbusUtilsTest, ActualMetricNamespace)
-{
-    EXPECT_STREQ("airflow", getActualMetricNamespace("airflow"));
-    EXPECT_STREQ("altitude", getActualMetricNamespace("altitude"));
-    EXPECT_STREQ("current", getActualMetricNamespace("current"));
-    EXPECT_STREQ("energy", getActualMetricNamespace("energy"));
-    EXPECT_STREQ("fan_tach", getActualMetricNamespace("fan_tach"));
-    EXPECT_STREQ("humidity", getActualMetricNamespace("humidity"));
-    EXPECT_STREQ("liquidflow", getActualMetricNamespace("liquidflow"));
-    EXPECT_STREQ("power", getActualMetricNamespace("power"));
-    EXPECT_STREQ("pressure", getActualMetricNamespace("pressure"));
-    EXPECT_STREQ("temperature", getActualMetricNamespace("temperature"));
-    EXPECT_STREQ("utilization", getActualMetricNamespace("utilization"));
-    EXPECT_STREQ("voltage", getActualMetricNamespace("voltage"));
-    EXPECT_THROW(getActualMetricNamespace("unknown_namespace"),
-                 std::invalid_argument);
-}
-
 TEST(DbusUtilsTest, MaybeIntfUnits)
 {
     auto testSuccessHelper =

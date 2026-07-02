@@ -17,8 +17,6 @@ using PathIntf = ValueIntf::namespace_path;
 
 std::optional<ValueIntf::Unit> toMaybeIntfUnits(const std::string& unitsStr);
 
-const char* getActualMetricNamespace(const char* logicalNameParam);
-
 const char* getSensorRootPath();
 
 struct SensorDbusObject

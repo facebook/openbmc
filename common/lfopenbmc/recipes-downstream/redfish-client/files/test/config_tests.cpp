@@ -1,5 +1,7 @@
 #include <redfish_client/core/config.hpp>
 
+#include <stdexcept>
+
 #include <gtest/gtest.h>
 
 using redfish_client::core::Config;
@@ -206,4 +208,28 @@ TEST(Config, InvalidConfig)
 }
 )";
     EXPECT_THROW(Config::parse(configJson), nlohmann::json::out_of_range);
+}
+
+TEST(Config, RejectsUnknownSensorNamespace)
+{
+    std::string configJson = R"(
+{
+  "host": "0.0.0.1",
+  "compatible": "com.meta.Hardware.BMC.TEST",
+  "sensorConfig": {
+    "associationPath": "/xyz/openbmc_project/inventory/system/board/A",
+    "intervalMilliseconds": 2000,
+    "maxRetries": 3,
+    "retryIntervalMilliseconds": 100,
+    "mappers": [
+      {
+        "fromUrl": "/redfish/v1/Chassis/Chassis_A/Sensors/Temp_0",
+        "toNamespace": "not_a_real_namespace",
+        "toId": "Chassis_A_Temp_0"
+      }
+    ]
+  }
+}
+)";
+    EXPECT_THROW(Config::parse(configJson), std::invalid_argument);
 }

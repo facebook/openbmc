@@ -69,11 +69,8 @@ auto RedfishClient::run() -> sdbusplus::async::task<>
              sensorConfig.mappers.size());
         for (const auto& mapper : sensorConfig.mappers)
         {
-            auto metricNamespace = std::string(
-                getActualMetricNamespace(mapper.toNamespace.c_str()));
-
             std::string fullMetricPath =
-                std::string(getSensorRootPath()) + "/" + metricNamespace +
+                std::string(getSensorRootPath()) + "/" + mapper.toNamespace +
                 "/" + mapper.toId;
 
             metrics[mapper.toId] = std::make_shared<SensorDbusObject>(

@@ -1,7 +1,7 @@
-From 2e8e638a0bda46e51760a20998e7871c66cac107 Mon Sep 17 00:00:00 2001
+From db23627cf6058d6f6ec15316fe1c51f43eff5ebe Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Tue, 5 May 2026 20:34:03 +0800
-Subject: [PATCH 1/2] nvidia-gpu: add support for SMA leak sensors
+Subject: [PATCH] nvidia-gpu: add support for SMA leak sensors
 
 The patch adds support for SMA leak sensor reading. It introduces a
 voltage sensor for leakage detection.
@@ -646,5 +646,5 @@ index d9c9c6e..e08cc95 100644
 +
  } // namespace gpu_mctp_tests
 -- 
-2.53.0
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From f8b0f98e992240f4a5420a442edf0c1650923edc Mon Sep 17 00:00:00 2001
+From b4cda8d056891eade5391cbb0030228a5c995ed4 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Tue, 12 May 2026 17:19:05 +0800
 Subject: [PATCH] dbus-sensors: implement in-place threshold updates to
@@ -156,7 +156,7 @@ Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
  4 files changed, 118 insertions(+), 40 deletions(-)
 
 diff --git a/src/adc/ADCSensorMain.cpp b/src/adc/ADCSensorMain.cpp
-index be02bdd..c3dab9d 100644
+index cfacd9a..8145cb6 100644
 --- a/src/adc/ADCSensorMain.cpp
 +++ b/src/adc/ADCSensorMain.cpp
 @@ -196,23 +196,36 @@ void createSensors(
@@ -208,7 +208,7 @@ index be02bdd..c3dab9d 100644
  
                  auto findCPU = baseConfiguration->second.find("CPURequired");
 diff --git a/src/fan/FanMain.cpp b/src/fan/FanMain.cpp
-index c2fdaa5..076ce6f 100644
+index ac14147..0baca76 100644
 --- a/src/fan/FanMain.cpp
 +++ b/src/fan/FanMain.cpp
 @@ -417,22 +417,35 @@ void createSensors(
@@ -257,7 +257,7 @@ index c2fdaa5..076ce6f 100644
              std::vector<thresholds::Threshold> sensorThresholds;
              if (!parseThresholdsFromConfig(*sensorData, sensorThresholds))
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
-index e666730..301cfb7 100644
+index 7af815f..1237690 100644
 --- a/src/hwmon-temp/HwmonTempMain.cpp
 +++ b/src/hwmon-temp/HwmonTempMain.cpp
 @@ -401,37 +401,42 @@ void createSensors(
@@ -357,7 +357,7 @@ index e666730..301cfb7 100644
                          {
                              sensor = nullptr;
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index ac62784..99df384 100644
+index f4b8d54..fd293a1 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -1397,6 +1397,27 @@ static void createSensorsCallback(
@@ -389,5 +389,5 @@ index ac62784..99df384 100644
              {
                  sensor = nullptr;
 -- 
-2.52.0
+2.53.0-Meta
 

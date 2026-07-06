@@ -1,4 +1,4 @@
-From 695a11959d061a0f84142c2b5ab852bb5a52402a Mon Sep 17 00:00:00 2001
+From 658bece358fb76a7b1f8d3d7eebcde81736066bb Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 23 Jan 2025 15:10:57 +0800
 Subject: [PATCH] psusensor: fixed not activate for multiple power state
@@ -38,7 +38,7 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  1 file changed, 26 insertions(+)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 9134d0a..12fcd83 100644
+index 8c3faa3..12e90fc 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -323,6 +323,27 @@ void checkEventLimits(const std::string& sensorPathStr,
@@ -82,5 +82,5 @@ index 9134d0a..12fcd83 100644
              {
                  continue;
 -- 
-2.52.0
+2.53.0-Meta
 

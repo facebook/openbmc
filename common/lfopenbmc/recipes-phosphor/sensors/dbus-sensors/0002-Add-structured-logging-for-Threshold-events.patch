@@ -1,4 +1,4 @@
-From 1168dd94f71987dd96d7a5515a1c470e9265e848 Mon Sep 17 00:00:00 2001
+From 42d5ce7e56a40844476c7c1d52ca4e3edadd9285 Mon Sep 17 00:00:00 2001
 From: Amithash Prasasd <amithash@meta.com>
 Date: Thu, 21 Nov 2024 21:00:02 -0800
 Subject: [PATCH] Add structured logging for Threshold events
@@ -64,7 +64,7 @@ index 0110986..c7f6996 100644
      sdbusplus,
      uring,
 diff --git a/src/Thresholds.cpp b/src/Thresholds.cpp
-index 9a14b53..4865b8b 100644
+index 9a14b53..25916ce 100644
 --- a/src/Thresholds.cpp
 +++ b/src/Thresholds.cpp
 @@ -8,18 +8,28 @@
@@ -264,7 +264,7 @@ index 9a14b53..4865b8b 100644
  }
  
 diff --git a/src/Thresholds.hpp b/src/Thresholds.hpp
-index 17c2649..e220b38 100644
+index 17c2649..ab46de9 100644
 --- a/src/Thresholds.hpp
 +++ b/src/Thresholds.hpp
 @@ -5,6 +5,7 @@
@@ -353,5 +353,5 @@ index 2bc03c6..216c4d6 100644
  
          sensorInterface->register_property("Unit", std::string(unit));
 -- 
-2.52.0
+2.53.0-Meta
 

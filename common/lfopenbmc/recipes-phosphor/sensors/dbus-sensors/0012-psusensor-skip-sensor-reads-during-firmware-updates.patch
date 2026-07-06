@@ -1,4 +1,4 @@
-From 72214d9d58007e2bbec79e47d017daab6d41ac8b Mon Sep 17 00:00:00 2001
+From e619c7ea9998048c5d1e435c9ab00aea788315bc Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <cosmo.chou@quantatw.com>
 Date: Wed, 24 Sep 2025 11:35:31 +0800
 Subject: [PATCH] psusensor: skip sensor reads during firmware updates
@@ -205,7 +205,7 @@ index 12be365..71dd017 100644
      sdbusplus::asio::object_server& objServer;
      std::shared_ptr<sdbusplus::asio::dbus_interface> eventInterface;
 diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
-index 5ec743d..624cb4a 100644
+index 25fbb0c..b428aa2 100644
 --- a/src/psu/PSUSensor.cpp
 +++ b/src/psu/PSUSensor.cpp
 @@ -162,8 +162,43 @@ void PSUSensor::handleResponseStatic(const std::weak_ptr<PSUSensor>& weak,
@@ -296,7 +296,7 @@ index f758470..8599826 100644
      static constexpr size_t warnAfterErrorCount = 10;
  
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index a757dbe..20df34a 100644
+index 6de17fa..f3920c8 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -61,6 +61,7 @@
@@ -587,11 +587,11 @@ index a757dbe..20df34a 100644
 +    {
 +        types.push_back(type);
 +    }
-     std::vector<std::unique_ptr<sdbusplus::bus::match_t>> matches =
+     std::vector<std::unique_ptr<sdbusplus::match>> matches =
 -        setupPropertiesChangedMatches(*systemBus, sensorTypes, eventHandler);
 +        setupPropertiesChangedMatches(*systemBus, types, eventHandler);
  
-     matches.emplace_back(std::make_unique<sdbusplus::bus::match_t>(
+     matches.emplace_back(std::make_unique<sdbusplus::match>(
          static_cast<sdbusplus::bus_t&>(*systemBus),
 @@ -1459,6 +1672,9 @@ int main()
  
@@ -604,5 +604,5 @@ index a757dbe..20df34a 100644
      io.run();
  }
 -- 
-2.52.0
+2.53.0-Meta
 

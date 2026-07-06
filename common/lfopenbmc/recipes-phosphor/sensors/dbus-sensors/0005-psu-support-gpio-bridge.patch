@@ -1,4 +1,4 @@
-From 18055baa650028e36b4866df8cff97cd111ec6cf Mon Sep 17 00:00:00 2001
+From 8468024068836c51a6b500f096440e814b37a75a Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Mon, 19 May 2025 15:12:23 +0800
 Subject: [PATCH] psu: support gpio bridge
@@ -41,14 +41,14 @@ NAME      TYPE      SIGNATURE RESULT/VALUE
 Change-Id: I7cb220cc973644f9e6494fe087749cd15885db5c
 Signed-off-by: Peter Yin <peter.yin@quantatw.com>
 ---
- src/psu/PSUSensor.cpp     | 43 +++++++++++++++++++++---
+ src/psu/PSUSensor.cpp     | 44 +++++++++++++++++++++---
  src/psu/PSUSensor.hpp     | 70 ++++++++++++++++++++++++++++++++++++++-
  src/psu/PSUSensorMain.cpp | 64 +++++++++++++++++++++++++++++++++--
  src/psu/meson.build       |  1 +
- 4 files changed, 170 insertions(+), 8 deletions(-)
+ 4 files changed, 171 insertions(+), 8 deletions(-)
 
 diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
-index 89541ad..5ec743d 100644
+index f5b5cea..25fbb0c 100644
 --- a/src/psu/PSUSensor.cpp
 +++ b/src/psu/PSUSensor.cpp
 @@ -37,6 +37,7 @@
@@ -61,10 +61,10 @@ index 89541ad..5ec743d 100644
  #include <system_error>
 @@ -54,10 +55,12 @@ PSUSensor::PSUSensor(
      const std::string& sensorConfiguration, const PowerState& powerState,
-     const std::string_view sensorUnits, double factor, double max,
-     double min, double offset, const std::string& label, size_t tSize,
--    double pollRate, const std::shared_ptr<I2CDevice>& i2cDevice) :
-+    double pollRate, const std::shared_ptr<I2CDevice>& i2cDevice,
+     const std::string_view sensorUnits, double factor, double max, double min,
+     double offset, const std::string& label, size_t tSize, double pollRate,
+-    const std::shared_ptr<I2CDevice>& i2cDevice) :
++    const std::shared_ptr<I2CDevice>& i2cDevice,
 +    std::optional<BridgeGpio>&& bridgeGpio) :
      Sensor(escapeName(sensorName), std::move(thresholdsIn), sensorConfiguration,
             objectType, false, false, max, min, conn, powerState),
@@ -74,13 +74,14 @@ index 89541ad..5ec743d 100644
      inputDev(io, path, boost::asio::random_access_file::read_only),
      waitTimer(io), path(path), sensorFactor(factor), sensorOffset(offset),
      thresholdTimer(io)
-@@ -170,9 +173,34 @@ void PSUSensor::setupRead()
+@@ -169,9 +172,35 @@ void PSUSensor::setupRead()
+         return;
      }
  
-     std::weak_ptr<PSUSensor> weak = weak_from_this();
 -    inputDev.async_read_some_at(
 -        0, boost::asio::buffer(buffer),
 -        std::bind_front(&PSUSensor::handleResponseStatic, weak_from_this()));
++    std::weak_ptr<PSUSensor> weak = weak_from_this();
 +
 +    if (bridgeGpio.has_value())
 +    {
@@ -112,7 +113,7 @@ index 89541ad..5ec743d 100644
  }
  
  void PSUSensor::restartRead()
-@@ -234,6 +262,11 @@ void PSUSensor::handleResponse(const boost::system::error_code& err,
+@@ -233,6 +262,11 @@ void PSUSensor::handleResponse(const boost::system::error_code& err,
          updateValue((rawValue / sensorFactor) + sensorOffset);
      }
  
@@ -230,7 +231,7 @@ index b84e1ee..f758470 100644
      boost::asio::random_access_file inputDev;
      boost::asio::steady_timer waitTimer;
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index c602137..31cf769 100644
+index 420496b..95a83c4 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -31,6 +31,7 @@
@@ -357,5 +358,5 @@ index abcdfe8..3680cac 100644
      include_directories: src_inc,
      install: true,
 -- 
-2.52.0
+2.53.0-Meta
 

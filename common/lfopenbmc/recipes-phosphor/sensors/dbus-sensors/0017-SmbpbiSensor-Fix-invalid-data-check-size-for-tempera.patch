@@ -1,4 +1,4 @@
-From ae9ab796f05b37e822a2dc0a72f3e8a50cf50611 Mon Sep 17 00:00:00 2001
+From 6f48b5c1584d0d19ce0c95ade55d2c21ce1c2a06 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Fri, 20 Mar 2026 13:29:18 +0800
 Subject: [PATCH] SmbpbiSensor: Fix invalid data check size for temperature
@@ -32,7 +32,7 @@ Signed-off-by: Potin Lai <potin.lai@quantatw.com>
  1 file changed, 6 insertions(+), 2 deletions(-)
 
 diff --git a/src/smbpbi/SmbpbiSensor.cpp b/src/smbpbi/SmbpbiSensor.cpp
-index c6c44f1..299400d 100644
+index ff293ab..b5ff674 100644
 --- a/src/smbpbi/SmbpbiSensor.cpp
 +++ b/src/smbpbi/SmbpbiSensor.cpp
 @@ -276,9 +276,13 @@ int SmbpbiSensor::readRawEEPROMData(double& data)
@@ -52,5 +52,5 @@ index c6c44f1..299400d 100644
          data = std::numeric_limits<double>::quiet_NaN();
          return 0;
 -- 
-2.52.0
+2.53.0-Meta
 

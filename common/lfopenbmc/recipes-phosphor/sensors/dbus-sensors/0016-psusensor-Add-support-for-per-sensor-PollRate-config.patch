@@ -1,4 +1,4 @@
-From 8952ee65258d8c3a98e3f8f15bd5b3db4891eddd Mon Sep 17 00:00:00 2001
+From 5523a74aeb58f6d6d22a1298e13c5a51e51bcb2f Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 2 Sep 2025 10:07:42 +0800
 Subject: [PATCH] psusensor: Add support for per-sensor PollRate config
@@ -23,7 +23,7 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  1 file changed, 13 insertions(+)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 7abdb9c..ac62784 100644
+index 6cb4e03..f4b8d54 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -1087,6 +1087,7 @@ static void createSensorsCallback(
@@ -54,5 +54,5 @@ index 7abdb9c..ac62784 100644
              // then prefix/suffix composition becomes not necessary,
              // and in fact not wanted, because it gets in the way.
 -- 
-2.52.0
+2.53.0-Meta
 

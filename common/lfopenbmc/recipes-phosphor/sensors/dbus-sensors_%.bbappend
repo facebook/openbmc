@@ -2,26 +2,25 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI:append = " \
     file://0001-DeviceMgmt-fix-device-not-found.patch \
-    file://0002-PSUSensor-Fix-error-for-decimal-part-of-scalefactor.patch \
-    file://0003-Add-structured-logging-for-Threshold-events.patch \
-    file://0004-psusensor-fixed-not-activate-for-multiple-power-stat.patch \
-    file://0005-psusensors-fixed-multiple-power-state-issue.patch \
-    file://0006-psu-support-gpio-bridge.patch \
-    file://0007-meta-facebook-ventura-add-SCM-sensor-offset.patch \
-    file://0008-PWMSensor-synchronize-hardware-PWM-with-D-Bus-proper.patch \
-    file://0009-leakdetector-check-event-before-event_read.patch \
-    file://0010-Add-delay-before-leak-event-log-to-prevent-AC-OFF-gl.patch \
-    file://0011-PSUSensor-add-property-to-sensorTable-and-labelMatch.patch \
-    file://0012-hwmontemp-Remove-newly-created-sensor-from-sensorsCh.patch \
-    file://0013-psusensor-skip-sensor-reads-during-firmware-updates.patch \
-    file://0014-meta-facebook-yosemite4-Disable-in2_alarm-event.patch \
-    file://0015-valve-monitor-request-for-directory.patch \
-    file://0016-Implement-valve-monitor-service.patch \
-    file://0017-psusensor-Add-support-for-per-sensor-PollRate-config.patch \
-    file://0018-SmbpbiSensor-Fix-invalid-data-check-size-for-tempera.patch \
-    file://0019-mctpreactor-Support-configuration-for-USB-MCTP-devic.patch \
-    file://0020-dbus-sensors-implement-in-place-threshold-updates-to.patch \
-    file://0021-mctp-add-PowerState-check-in-MCTPReactor.patch \
+    file://0002-Add-structured-logging-for-Threshold-events.patch \
+    file://0003-psusensor-fixed-not-activate-for-multiple-power-stat.patch \
+    file://0004-psusensors-fixed-multiple-power-state-issue.patch \
+    file://0005-psu-support-gpio-bridge.patch \
+    file://0006-meta-facebook-ventura-add-SCM-sensor-offset.patch \
+    file://0007-PWMSensor-synchronize-hardware-PWM-with-D-Bus-proper.patch \
+    file://0008-leakdetector-check-event-before-event_read.patch \
+    file://0009-Add-delay-before-leak-event-log-to-prevent-AC-OFF-gl.patch \
+    file://0010-PSUSensor-add-property-to-sensorTable-and-labelMatch.patch \
+    file://0011-hwmontemp-Remove-newly-created-sensor-from-sensorsCh.patch \
+    file://0012-psusensor-skip-sensor-reads-during-firmware-updates.patch \
+    file://0013-meta-facebook-yosemite4-Disable-in2_alarm-event.patch \
+    file://0014-valve-monitor-request-for-directory.patch \
+    file://0015-Implement-valve-monitor-service.patch \
+    file://0016-psusensor-Add-support-for-per-sensor-PollRate-config.patch \
+    file://0017-SmbpbiSensor-Fix-invalid-data-check-size-for-tempera.patch \
+    file://0018-mctpreactor-Support-configuration-for-USB-MCTP-devic.patch \
+    file://0019-dbus-sensors-implement-in-place-threshold-updates-to.patch \
+    file://0020-mctp-add-PowerState-check-in-MCTPReactor.patch \
 "
 
 SRC_URI:append:ventura2 = " \

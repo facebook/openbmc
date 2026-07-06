@@ -1,4 +1,4 @@
-From b1379b97153af07ee721435287e7ab795558839d Mon Sep 17 00:00:00 2001
+From 6519e4338d75c103b2a07c3af0ecacfcd5c3eabf Mon Sep 17 00:00:00 2001
 From: KayYCHuang-wiwynn <kay.yc.huang.wiwynn@gmail.com>
 Date: Mon, 17 Mar 2025 02:25:46 +0000
 Subject: [PATCH] meta-facebook: yosemite4: Disable in2_alarm event
@@ -39,7 +39,7 @@ index c8a8d34..b87ed5f 100644
 +    description: 'Disable in2_alarm event.',
 +)
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index efc0aec..c5533a5 100644
+index f3920c8..6cb4e03 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -243,7 +243,9 @@ constexpr static auto labelMatch = std::to_array<PSUProperty>({

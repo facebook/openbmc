@@ -1,4 +1,4 @@
-From b15e5f2ecef4be2ac115105b3a7c81b02facdab6 Mon Sep 17 00:00:00 2001
+From d4852a17a19b92e6113b3c5f460445dcacdf94dc Mon Sep 17 00:00:00 2001
 From: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
 Date: Thu, 27 Nov 2025 18:31:21 +0800
 Subject: [PATCH] hwmontemp: Remove newly created sensor from sensorsChanged
@@ -24,7 +24,7 @@ Signed-off-by: Kimi Chen <kimi.zy.chen@fii-foxconn.com>
  1 file changed, 22 insertions(+), 12 deletions(-)
 
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
-index 616d0f8..e666730 100644
+index df2bc54..7af815f 100644
 --- a/src/hwmon-temp/HwmonTempMain.cpp
 +++ b/src/hwmon-temp/HwmonTempMain.cpp
 @@ -401,24 +401,34 @@ void createSensors(
@@ -75,5 +75,5 @@ index 616d0f8..e666730 100644
                  }
  
 -- 
-2.52.0
+2.53.0-Meta
 

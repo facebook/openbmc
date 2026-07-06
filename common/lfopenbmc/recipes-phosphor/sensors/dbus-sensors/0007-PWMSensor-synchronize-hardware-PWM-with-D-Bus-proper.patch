@@ -1,4 +1,4 @@
-From 5ddf063d3b74dfd654180b3fbf334cc2a68a4575 Mon Sep 17 00:00:00 2001
+From f535bbfc8f484dfd39a9b451f3f59ef55007d32c Mon Sep 17 00:00:00 2001
 From: Yang Chen <yang.chen@quantatw.com>
 Date: Wed, 23 Jul 2025 14:47:58 +0800
 Subject: [PATCH] PWMSensor: synchronize hardware PWM with D-Bus property
@@ -178,5 +178,5 @@ index 3a1396e..84cbb93 100644
          },
          [this](uint64_t& curVal) {
 -- 
-2.52.0
+2.53.0-Meta
 

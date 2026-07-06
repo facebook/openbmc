@@ -1,4 +1,4 @@
-From cb5c8ffd05d6a1b4f553240e573b73b1768dbf90 Mon Sep 17 00:00:00 2001
+From 1186d982d82563c4a37bd2116cdc1e902d622def Mon Sep 17 00:00:00 2001
 From: Sandy Chu <sandy.chu.wiwynn@gmail.com>
 Date: Fri, 5 Jun 2026 08:12:59 +0000
 Subject: [PATCH] mctp: add PowerState check in MCTPReactor
@@ -32,7 +32,7 @@ Signed-off-by: Sandy Chu <sandy.chu.wiwynn@gmail.com>
  5 files changed, 57 insertions(+), 9 deletions(-)
 
 diff --git a/src/mctp/MCTPEndpoint.cpp b/src/mctp/MCTPEndpoint.cpp
-index 32413ba..24ae0fa 100644
+index 76764aa..3320d20 100644
 --- a/src/mctp/MCTPEndpoint.cpp
 +++ b/src/mctp/MCTPEndpoint.cpp
 @@ -48,8 +48,10 @@ static constexpr const char* mctpdEndpointControlInterface =
@@ -48,7 +48,7 @@ index 32413ba..24ae0fa 100644
  {}
  
  void MCTPDDevice::onEndpointInterfacesRemoved(
-@@ -457,9 +459,11 @@ std::shared_ptr<I2CMCTPDDevice> I2CMCTPDDevice::from(
+@@ -456,9 +458,11 @@ std::shared_ptr<I2CMCTPDDevice> I2CMCTPDDevice::from(
          throw std::invalid_argument("Bad bus index");
      }
  
@@ -61,7 +61,7 @@ index 32413ba..24ae0fa 100644
      }
      catch (const MCTPException& ex)
      {
-@@ -512,9 +516,11 @@ std::shared_ptr<I3CMCTPDDevice> I3CMCTPDDevice::from(
+@@ -511,9 +515,11 @@ std::shared_ptr<I3CMCTPDDevice> I3CMCTPDDevice::from(
          throw std::invalid_argument("Bad bus index");
      }
  
@@ -75,7 +75,7 @@ index 32413ba..24ae0fa 100644
      catch (const MCTPException& ex)
      {
 diff --git a/src/mctp/MCTPEndpoint.hpp b/src/mctp/MCTPEndpoint.hpp
-index 7e268ca..c3204db 100644
+index ab62bde..4ce3a1b 100644
 --- a/src/mctp/MCTPEndpoint.hpp
 +++ b/src/mctp/MCTPEndpoint.hpp
 @@ -184,6 +184,11 @@ class MCTPDevice
@@ -117,7 +117,7 @@ index 7e268ca..c3204db 100644
      const std::vector<uint8_t> physaddr;
 +    PowerState powerState;
      std::shared_ptr<MCTPDEndpoint> endpoint;
-     std::unique_ptr<sdbusplus::bus::match_t> removeMatch;
+     std::unique_ptr<sdbusplus::match> removeMatch;
  
 @@ -323,8 +334,8 @@ class I2CMCTPDDevice : public MCTPDDevice
      I2CMCTPDDevice() = delete;
@@ -171,7 +171,7 @@ index d4f591c..b408971 100644
          "Attempting to setup up MCTP endpoint for device at [ {MCTP_DEVICE} ]",
          "MCTP_DEVICE", dev->describe());
 diff --git a/src/mctp/MCTPReactorMain.cpp b/src/mctp/MCTPReactorMain.cpp
-index 06d9a0a..4abcafe 100644
+index 59038f5..3c02fc2 100644
 --- a/src/mctp/MCTPReactorMain.cpp
 +++ b/src/mctp/MCTPReactorMain.cpp
 @@ -251,6 +251,8 @@ int main()

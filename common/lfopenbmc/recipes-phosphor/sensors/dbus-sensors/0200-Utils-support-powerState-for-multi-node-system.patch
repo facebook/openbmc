@@ -1,7 +1,7 @@
-From 8f30e17522b6a327720bf1d16bfe3ac228df9f93 Mon Sep 17 00:00:00 2001
+From c2bb6a0f8b9eaea91fcd156f661e8c060221d0a4 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
-Subject: [PATCH] Utils: support powerState for multi-node system
+Subject: [PATCH 200/200] Utils: support powerState for multi-node system
 
 The current code of dbus-sensors only get powerState values for Chassis0
 and Host0 which cannot be used for the system with multiple server
@@ -123,7 +123,7 @@ Change-Id: I49ede1e6276acdbee2f8a9807c738be7970beaf9
  7 files changed, 410 insertions(+), 172 deletions(-)
 
 diff --git a/src/Utils.cpp b/src/Utils.cpp
-index b3d9ed9..90c9843 100644
+index 8632ea1..eea9f50 100644
 --- a/src/Utils.cpp
 +++ b/src/Utils.cpp
 @@ -41,6 +41,7 @@
@@ -142,7 +142,7 @@ index b3d9ed9..90c9843 100644
 -static bool biosHasPost = false;
 +using powerStatePair = std::pair<std::string, bool>;
 +using powerMatchPair =
-+    std::pair<std::string, std::unique_ptr<sdbusplus::bus::match_t>>;
++    std::pair<std::string, std::unique_ptr<sdbusplus::match>>;
 +
  static bool manufacturingMode = false;
 -static bool chassisStatusOn = false;
@@ -151,10 +151,10 @@ index b3d9ed9..90c9843 100644
 +static std::vector<powerStatePair> chassisStatusOn;
 +static std::vector<powerStatePair> chassisReqPowerTransOff;
  
- static std::unique_ptr<sdbusplus::bus::match_t> powerMatch = nullptr;
- static std::unique_ptr<sdbusplus::bus::match_t> postMatch = nullptr;
- static std::unique_ptr<sdbusplus::bus::match_t> chassisMatch = nullptr;
-+static std::unique_ptr<sdbusplus::bus::match_t> chassisReqPowerTransOffMatch = nullptr;
+ static std::unique_ptr<sdbusplus::match> powerMatch = nullptr;
+ static std::unique_ptr<sdbusplus::match> postMatch = nullptr;
+ static std::unique_ptr<sdbusplus::match> chassisMatch = nullptr;
++static std::unique_ptr<sdbusplus::match> chassisReqPowerTransOffMatch = nullptr;
 +
 +static std::vector<powerMatchPair> powerMatchVec;
 +static std::vector<powerMatchPair> postMatchVec;
@@ -443,7 +443,7 @@ index b3d9ed9..90c9843 100644
          return;
      }
  
--    powerMatch = std::make_unique<sdbusplus::bus::match_t>(
+-    powerMatch = std::make_unique<sdbusplus::match>(
 -        static_cast<sdbusplus::bus_t&>(*conn),
 -        "type='signal',interface='" + std::string(properties::interface) +
 -            "',path='" + std::string(power::path) + "',arg0='" +
@@ -489,7 +489,7 @@ index b3d9ed9..90c9843 100644
 +            timerVec.emplace_back(std::make_shared<boost::asio::steady_timer>(
 +                conn->get_io_context()));
 +
-+        powerMatch = std::make_unique<sdbusplus::bus::match_t>(
++        powerMatch = std::make_unique<sdbusplus::match>(
 +            static_cast<sdbusplus::bus_t&>(*conn),
 +            "type='signal',interface='" + std::string(properties::interface) +
 +                "',path='" + std::string(path) + "',arg0='" +
@@ -555,7 +555,7 @@ index b3d9ed9..90c9843 100644
 -            }
 -        });
 -
--    postMatch = std::make_unique<sdbusplus::bus::match_t>(
+-    postMatch = std::make_unique<sdbusplus::match>(
 -        static_cast<sdbusplus::bus_t&>(*conn),
 -        "type='signal',interface='" + std::string(properties::interface) +
 -            "',path='" + std::string(post::path) + "',arg0='" +
@@ -577,7 +577,7 @@ index b3d9ed9..90c9843 100644
 -            }
 -        });
 -
--    chassisMatch = std::make_unique<sdbusplus::bus::match_t>(
+-    chassisMatch = std::make_unique<sdbusplus::match>(
 -        static_cast<sdbusplus::bus_t&>(*conn),
 -        "type='signal',interface='" + std::string(properties::interface) +
 -            "',path='" + std::string(chassis::path) + "',arg0='" +
@@ -599,7 +599,7 @@ index b3d9ed9..90c9843 100644
 +        powerMatchVec.emplace_back(
 +            std::make_pair(std::string(path), std::move(powerMatch)));
 +
-+        postMatch = std::make_unique<sdbusplus::bus::match_t>(
++        postMatch = std::make_unique<sdbusplus::match>(
 +            static_cast<sdbusplus::bus_t&>(*conn),
 +            "type='signal',interface='" + std::string(properties::interface) +
 +                "',path='" + std::string(path) + "',arg0='" +
@@ -668,7 +668,7 @@ index b3d9ed9..90c9843 100644
 +            std::make_shared<boost::asio::steady_timer>(
 +                conn->get_io_context()));
 +
-+        chassisMatch = std::make_unique<sdbusplus::bus::match_t>(
++        chassisMatch = std::make_unique<sdbusplus::match>(
 +            static_cast<sdbusplus::bus_t&>(*conn),
 +            "type='signal',interface='" + std::string(properties::interface) +
 +                "',path='" + std::string(path) + "',arg0='" +
@@ -733,7 +733,7 @@ index b3d9ed9..90c9843 100644
 +            std::make_pair(std::string(path), std::move(chassisMatch)));
 +        getChassisStatus(conn, slotNumber);
 +
-+        chassisReqPowerTransOffMatch = std::make_unique<sdbusplus::bus::match_t>(
++        chassisReqPowerTransOffMatch = std::make_unique<sdbusplus::match>(
 +            static_cast<sdbusplus::bus_t&>(*conn),
 +            "type='signal',interface='" + std::string(properties::interface) +
 +                "',path='" + std::string(path) + "',arg0='" +
@@ -776,7 +776,7 @@ index b3d9ed9..90c9843 100644
  
  void setupPowerMatch(const std::shared_ptr<sdbusplus::asio::connection>& conn)
 diff --git a/src/Utils.hpp b/src/Utils.hpp
-index 914c260..f9ea9ce 100644
+index c082697..3d948f4 100644
 --- a/src/Utils.hpp
 +++ b/src/Utils.hpp
 @@ -56,6 +56,7 @@ using ManagedObjectType =
@@ -885,7 +885,7 @@ index 914c260..f9ea9ce 100644
  
      void getPath(const std::string& path, const std::string& interface,
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
-index 301cfb7..d983392 100644
+index 1237690..58b41b8 100644
 --- a/src/hwmon-temp/HwmonTempMain.cpp
 +++ b/src/hwmon-temp/HwmonTempMain.cpp
 @@ -631,7 +631,11 @@ static void powerStateChanged(
@@ -902,13 +902,13 @@ index 301cfb7..d983392 100644
          }
      }
 diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
-index 624cb4a..b72ec18 100644
+index b428aa2..900abc1 100644
 --- a/src/psu/PSUSensor.cpp
 +++ b/src/psu/PSUSensor.cpp
 @@ -56,14 +56,14 @@ PSUSensor::PSUSensor(
-     const std::string_view sensorUnits, double factor, double max,
-     double min, double offset, const std::string& label, size_t tSize,
-     double pollRate, const std::shared_ptr<I2CDevice>& i2cDevice,
+     const std::string_view sensorUnits, double factor, double max, double min,
+     double offset, const std::string& label, size_t tSize, double pollRate,
+     const std::shared_ptr<I2CDevice>& i2cDevice,
 -    std::optional<BridgeGpio>&& bridgeGpio) :
 +    std::optional<BridgeGpio>&& bridgeGpio, const size_t& slotId) :
      Sensor(escapeName(sensorName), std::move(thresholdsIn), sensorConfiguration,
@@ -945,7 +945,7 @@ index 8599826..42d4800 100644
  
  struct PSUProperty
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 99df384..7c89bc6 100644
+index fd293a1..49f0823 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -852,6 +852,7 @@ static void createSensorsCallback(
@@ -1016,5 +1016,5 @@ index 216c4d6..5bdbacc 100644
  
      void markFunctional(bool isFunctional)
 -- 
-2.52.0
+2.53.0-Meta
 

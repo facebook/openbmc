@@ -1,4 +1,4 @@
-From 45905d4cae9823176945262be7110e968488ec0c Mon Sep 17 00:00:00 2001
+From fc8f86b252d66ae7275020c80c0e24cc3f7402fa Mon Sep 17 00:00:00 2001
 From: Andy-Hsu-wiwynn <andy.hsu.wiwynn@gmail.com>
 Date: Fri, 15 Aug 2025 15:44:31 +0800
 Subject: [PATCH] PSUSensor:add property to sensorTable and labelMatch
@@ -21,7 +21,7 @@ Signed-off-by: Andy Hsu <andy.hsu.wiwynn@gmail.com>
  1 file changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index a9334ca..d4d4b99 100644
+index 95a83c4..6de17fa 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -193,8 +193,9 @@ struct SensorUnit

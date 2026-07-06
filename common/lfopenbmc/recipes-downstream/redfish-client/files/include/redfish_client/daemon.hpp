@@ -29,22 +29,4 @@ void runRedfishClient(const std::string& serviceName,
                       sdbusplus::async::context& ctx, const Config& config,
                       std::string persistDir = "");
 
-// SensorDbusObject interface
-class ISensorDbusObject
-{
-  public:
-    ISensorDbusObject() = default;
-    virtual ~ISensorDbusObject() = default;
-    ISensorDbusObject(const ISensorDbusObject&) = delete;
-    ISensorDbusObject(ISensorDbusObject&&) = delete;
-    ISensorDbusObject& operator=(const ISensorDbusObject&) = delete;
-    ISensorDbusObject& operator=(ISensorDbusObject&&) = delete;
-
-    virtual sdbusplus::async::task<> update(Sensor sensor) = 0;
-};
-
-std::shared_ptr<ISensorDbusObject> createSensorDbusObjectForTest(
-    sdbusplus::async::context& ctx, const char* metricPath,
-    const std::string& associationPath);
-
 } // namespace redfish_client_daemon

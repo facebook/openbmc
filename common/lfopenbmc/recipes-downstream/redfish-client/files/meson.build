@@ -66,8 +66,6 @@ srcs = [
     'src/log_service_handler.cpp',
     'src/update_service_handler.cpp',
     'src/redfish_client.cpp',
-    'src/sensor_dbus_object.cpp',
-    'src/server_object_intf.cpp',
     'src/log_entry_mapper_registry.cpp',
     'src/log_entry_mapper_utils.cpp',
     'src/cper_mapper.cpp',

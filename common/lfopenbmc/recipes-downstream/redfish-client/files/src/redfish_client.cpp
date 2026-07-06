@@ -6,6 +6,7 @@
 
 #include <phosphor-logging/lg2.hpp>
 
+#include <algorithm>
 #include <charconv>
 #include <fstream>
 
@@ -65,18 +66,10 @@ auto RedfishClient::run() -> sdbusplus::async::task<>
     if (config->sensorConfig.has_value())
     {
         const auto& sensorConfig = config->sensorConfig.value();
-        info("Creating Sensor objects: {SIZE}", "SIZE",
+        info("Configured Sensor objects: {SIZE}", "SIZE",
              sensorConfig.mappers.size());
-        for (const auto& mapper : sensorConfig.mappers)
-        {
-            std::string fullMetricPath =
-                std::string(getSensorRootPath()) + "/" + mapper.toNamespace +
-                "/" + mapper.toId;
-
-            metrics[mapper.toId] = std::make_shared<SensorDbusObject>(
-                ctx, fullMetricPath.c_str(), mapper,
-                sensorConfig.associationPath);
-        }
+        // Sensor objects are created lazily on first successful read (see
+        // pollSensor), so nothing is published here.
         ctx.spawn(runSensorLoop());
     }
 
@@ -113,7 +106,7 @@ auto RedfishClient::run() -> sdbusplus::async::task<>
 RedfishClient::~RedfishClient() = default;
 
 auto RedfishClient::readWithRetries(const SensorMapper& mapper)
-    -> sdbusplus::async::task<std::optional<Sensor>>
+    -> sdbusplus::async::task<std::optional<redfish_binding::Sensor::Sensor>>
 {
     for (size_t i = 0; i < config->sensorConfig.value().maxRetries; ++i)
     {
@@ -143,7 +136,7 @@ auto RedfishClient::readWithRetries(const SensorMapper& mapper)
 
         try
         {
-            co_return Sensor::parseSensor(sensorJson);
+            co_return redfish_binding::Sensor::parseSensor(sensorJson);
         }
         catch (const std::exception& exn)
         {
@@ -193,8 +186,7 @@ auto RedfishClient::runEventPollingLoop() -> sdbusplus::async::task<>
 
 auto RedfishClient::ingestMetricReport(
     const nlohmann::json& report,
-    const std::unordered_map<std::string_view, SensorDbusObject*>& urlToSensor,
-    std::vector<SensorDbusObject*>& nonReportSensors)
+    std::unordered_set<std::string>& reportCovered)
     -> sdbusplus::async::task<>
 {
     if (!report.contains("MetricValues") || !report["MetricValues"].is_array())
@@ -211,37 +203,98 @@ auto RedfishClient::ingestMetricReport(
             continue;
         }
 
-        std::string_view fromUrl =
+        std::string fromUrl =
             metricValue["MetricProperty"].get_ref<const std::string&>();
-        if (size_t hashPos = fromUrl.find('#');
-            hashPos != std::string_view::npos)
+        if (size_t hashPos = fromUrl.find('#'); hashPos != std::string::npos)
         {
             fromUrl = fromUrl.substr(0, hashPos);
         }
 
-        auto itSensor = urlToSensor.find(fromUrl);
-        if (itSensor == urlToSensor.end())
+        auto itSensor = sensors.find(fromUrl);
+        if (itSensor != sensors.end())
         {
-            continue;
-        }
-        auto& metric = itSensor->second;
-
-        if (metric->object == nullptr)
-        {
-            auto maybeSensor = co_await readWithRetries(metric->mapper);
-            if (maybeSensor.has_value())
-            {
-                ctx.spawn(metric->update(maybeSensor.value()));
-                std::string expandedUrl = std::format(
-                    "http://{}{}", config->host, metric->mapper.fromUrl);
-                httpHandles.erase(expandedUrl);
-            }
-            std::erase(nonReportSensors, metric);
+            // Already published: the report carries only a bare value.
+            double val = parseMetricValue(metricValue["MetricValue"]);
+            ctx.spawn(itSensor->second->updateValue(val));
             continue;
         }
 
-        double val = parseMetricValue(metricValue["MetricValue"]);
-        ctx.spawn(metric->update(Sensor{val}));
+        // Not yet created. Find the configured mapper for this URL (cold path,
+        // happens at most once per sensor) and do a full read to establish the
+        // sensor's unit and range, then publish it.
+        const SensorMapper* mapper = findMapper(fromUrl);
+        if (mapper == nullptr)
+        {
+            continue;
+        }
+
+        // Reports drive this sensor from now on, so stop polling it
+        // individually even if this first read fails.
+        reportCovered.insert(mapper->fromUrl);
+
+        auto maybeSensor = co_await readWithRetries(*mapper);
+        if (!maybeSensor.has_value())
+        {
+            continue;
+        }
+        auto sensor = Sensor::create(ctx, deriveObjectPath(*mapper),
+                                     config->sensorConfig->associationPath,
+                                     maybeSensor.value());
+        if (!sensor)
+        {
+            continue;
+        }
+        sensors.emplace(mapper->fromUrl, std::move(sensor));
+        // The persistent read handle is no longer needed once reports drive
+        // this sensor.
+        httpHandles.erase(std::format("http://{}{}", config->host,
+                                      mapper->fromUrl));
+    }
+}
+
+const SensorMapper* RedfishClient::findMapper(std::string_view fromUrl) const
+{
+    const auto& mappers = config->sensorConfig->mappers;
+    auto it = std::ranges::find_if(mappers, [&](const auto& mapper) {
+        return mapper.fromUrl == fromUrl;
+    });
+    return it != mappers.end() ? &*it : nullptr;
+}
+
+std::string RedfishClient::deriveObjectPath(const SensorMapper& mapper) const
+{
+    // mapper.toNamespace is validated against the supported namespaces when the
+    // config is parsed, so it is used verbatim here.
+    return std::string(sensorRootPath) + "/" + mapper.toNamespace + "/" +
+           mapper.toId;
+}
+
+auto RedfishClient::pollSensor(const SensorMapper& mapper)
+    -> sdbusplus::async::task<>
+{
+    auto maybeSensor = co_await readWithRetries(mapper);
+    if (!maybeSensor.has_value())
+    {
+        co_return;
+    }
+    auto& parsed = maybeSensor.value();
+
+    auto it = sensors.find(mapper.fromUrl);
+    if (it != sensors.end())
+    {
+        // Already published; push the new reading value.
+        double val = parsed.getReading().hasValue()
+                         ? parsed.getReading().value()
+                         : std::numeric_limits<double>::quiet_NaN();
+        ctx.spawn(it->second->updateValue(val));
+        co_return;
+    }
+
+    auto sensor = Sensor::create(ctx, deriveObjectPath(mapper),
+                                 config->sensorConfig->associationPath, parsed);
+    if (sensor)
+    {
+        sensors.emplace(mapper.fromUrl, std::move(sensor));
     }
 }
 
@@ -250,16 +303,9 @@ auto RedfishClient::runSensorLoop() -> sdbusplus::async::task<>
     info("Running sensor loop");
 
     const auto& sensorConfig = *config->sensorConfig;
-    std::unordered_map<std::string_view, SensorDbusObject*> urlToSensor;
-    std::vector<SensorDbusObject*> nonReportSensors;
-
-    urlToSensor.reserve(metrics.size());
-    nonReportSensors.reserve(metrics.size());
-    for (const auto& [metricKey, metric] : metrics)
-    {
-        urlToSensor[metric->mapper.fromUrl] = metric.get();
-        nonReportSensors.push_back(metric.get());
-    }
+    // Sensors that have appeared in a metric report are driven by reports and
+    // are no longer polled individually.
+    std::unordered_set<std::string> reportCovered;
 
     try
     {
@@ -290,8 +336,7 @@ auto RedfishClient::runSensorLoop() -> sdbusplus::async::task<>
                         }
 
                         auto report = nlohmann::json::parse(response.body);
-                        co_await ingestMetricReport(report, urlToSensor,
-                                                    nonReportSensors);
+                        co_await ingestMetricReport(report, reportCovered);
                     }
                     catch (const std::exception& exn)
                     {
@@ -300,24 +345,21 @@ auto RedfishClient::runSensorLoop() -> sdbusplus::async::task<>
                     }
                 }
 
-                for (const auto& metric : nonReportSensors)
+                // Individually poll the sensors not (yet) covered by a report.
+                for (const auto& mapper : sensorConfig.mappers)
                 {
-                    auto maybeSensor = co_await readWithRetries(metric->mapper);
-                    if (maybeSensor.has_value())
+                    if (reportCovered.contains(mapper.fromUrl))
                     {
-                        ctx.spawn(metric->update(maybeSensor.value()));
+                        continue;
                     }
+                    co_await pollSensor(mapper);
                 }
             }
             else
             {
-                for (const auto& [metricKey, metric] : metrics)
+                for (const auto& mapper : sensorConfig.mappers)
                 {
-                    auto maybeSensor = co_await readWithRetries(metric->mapper);
-                    if (maybeSensor.has_value())
-                    {
-                        ctx.spawn(metric->update(maybeSensor.value()));
-                    }
+                    co_await pollSensor(mapper);
                 }
             }
             co_await sdbusplus::async::sleep_for(

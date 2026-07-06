@@ -32,7 +32,7 @@ void runRedfishClient(const std::string& serviceName,
                       const std::string configDir, std::string persistDir)
 {
     ctx.request_name(serviceName.c_str());
-    sdbusplus::server::manager_t manager{ctx, getSensorRootPath()};
+    sdbusplus::server::manager_t manager{ctx, sensorRootPath};
     RedfishClient client(ctx, configDir, persistDir);
     ctx.spawn(client.run());
     ctx.run();
@@ -43,41 +43,10 @@ void runRedfishClient(const std::string& serviceName,
                       std::string persistDir)
 {
     ctx.request_name(serviceName.c_str());
-    sdbusplus::server::manager_t manager{ctx, getSensorRootPath()};
+    sdbusplus::server::manager_t manager{ctx, sensorRootPath};
     RedfishClient client(ctx, config, persistDir);
     ctx.spawn(client.run());
     ctx.run();
-}
-
-struct SensorDbusObjectForTest : public ISensorDbusObject
-{
-    SensorDbusObjectForTest() = delete;
-    SensorDbusObjectForTest(const SensorDbusObjectForTest&) = delete;
-    SensorDbusObjectForTest(SensorDbusObjectForTest&&) = delete;
-
-    SensorDbusObjectForTest(sdbusplus::async::context& ctx,
-                            const char* metricPath, const SensorMapper& mapper,
-                            const std::string& associationPath) :
-        ctx(ctx), innerObject(std::make_shared<SensorDbusObject>(
-                      ctx, metricPath, mapper, associationPath))
-    {}
-
-    sdbusplus::async::task<> update(Sensor sensor) override
-    {
-        return innerObject->update(sensor);
-    }
-
-    sdbusplus::async::context& ctx;
-    std::shared_ptr<SensorDbusObject> innerObject;
-};
-
-std::shared_ptr<ISensorDbusObject> createSensorDbusObjectForTest(
-    sdbusplus::async::context& ctx, const char* metricPath,
-    const std::string& associationPath)
-{
-    SensorMapper fakeMapper;
-    return std::make_shared<SensorDbusObjectForTest>(
-        ctx, metricPath, fakeMapper, associationPath);
 }
 
 } // namespace redfish_client_daemon

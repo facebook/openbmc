@@ -110,7 +110,7 @@ std::string extractSensorName(redfish_binding::LogEntry::LogEntry& entry,
         // unitToNamespace already yields a supported namespace segment.
         auto ns = unitToNamespace(unit);
 
-        return std::string(sensorRootPath) + "/" + std::string(ns) + "/" +
+        return std::string(Sensor::rootPath) + "/" + std::string(ns) + "/" +
                sensorId;
     }
     return "Unknown Sensor";

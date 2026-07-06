@@ -18,13 +18,15 @@ class SensorTest : public ::testing::Test
   protected:
     static constexpr auto kBusName = "xyz.openbmc_project.test.NotARealService";
 
+    static constexpr auto kSensorNamespace = "some";
+    static constexpr auto kSensorId = "Metric";
     static constexpr auto kMetricPath =
         "/xyz/openbmc_project/sensors/some/Metric";
 
     static constexpr auto kAssociationPath =
         "/xyz/openbmc_project/inventory/system/NotARealBoard/XXX";
 
-    SensorTest() : manager(ctx, sensorRootPath) {}
+    SensorTest() : manager(ctx, Sensor::rootPath) {}
 
     ~SensorTest() noexcept override {}
 
@@ -49,12 +51,13 @@ class SensorTest : public ::testing::Test
     }
 
     // Create (and publish) a Sensor from raw reading fields, exercising the
-    // D-Bus object directly. Returns nullptr when the unit is absent (mirroring
+    // D-Bus object directly. The object path is composed as rootPath/ns/id.
+    // Returns nullptr when the unit is absent or unrecognized (mirroring
     // Sensor::create).
     std::unique_ptr<Sensor> createSensor(
-        const std::string& objectPath, const std::string& associationPath,
-        double reading, const std::string& unit,
-        std::optional<double> minValue = std::nullopt,
+        const std::string& ns, const std::string& id,
+        const std::string& associationPath, double reading,
+        const std::string& unit, std::optional<double> minValue = std::nullopt,
         std::optional<double> maxValue = std::nullopt)
     {
         nlohmann::json json;
@@ -69,7 +72,7 @@ class SensorTest : public ::testing::Test
             json["ReadingRangeMax"] = maxValue.value();
         }
         auto parsed = redfish_binding::Sensor::parseSensor(json.dump());
-        return Sensor::create(ctx, objectPath, associationPath, parsed);
+        return Sensor::create(ctx, ns, id, associationPath, parsed);
     }
 
     auto getSensorClient()
@@ -104,7 +107,7 @@ TEST_F(SensorTest, FailWithBadJson)
 
 TEST_F(SensorTest, SensorRootPath)
 {
-    EXPECT_STREQ("/xyz/openbmc_project/sensors", sensorRootPath);
+    EXPECT_STREQ("/xyz/openbmc_project/sensors", Sensor::rootPath);
     testBodyExecuted = true;
 }
 
@@ -133,6 +136,26 @@ TEST_F(SensorTest, ToMaybeUnit)
     testBodyExecuted = true;
 }
 
+TEST_F(SensorTest, ToMaybeMetadata)
+{
+    // A recognized unit yields its enum and the per-unit default range.
+    auto pct = Sensor::toMaybeMetadata("%");
+    ASSERT_TRUE(pct.has_value());
+    EXPECT_EQ(SensorValueIntf::Unit::Percent, pct->unit);
+    EXPECT_EQ(0.0, pct->minValue);
+    EXPECT_EQ(100.0, pct->maxValue);
+
+    auto cel = Sensor::toMaybeMetadata("Cel");
+    ASSERT_TRUE(cel.has_value());
+    EXPECT_EQ(SensorValueIntf::Unit::DegreesC, cel->unit);
+    EXPECT_EQ(-128.0, cel->minValue);
+    EXPECT_EQ(127.0, cel->maxValue);
+
+    // An unrecognized unit yields nullopt.
+    EXPECT_FALSE(Sensor::toMaybeMetadata("unknown_unit").has_value());
+    testBodyExecuted = true;
+}
+
 TEST_F(SensorTest, NoOpBeforeCreation)
 {
     ctx.spawn([this]() -> sdbusplus::async::task<> {
@@ -151,8 +174,9 @@ TEST_F(SensorTest, EmptyAssociationPath)
 {
     ctx.spawn([this]() -> sdbusplus::async::task<> {
         std::string emptyAssociation;
-        auto sensorServer =
-            createSensor(kMetricPath, emptyAssociation, 10.0, "");
+        auto sensorServer = createSensor(kSensorNamespace, kSensorId,
+                                         emptyAssociation, 10.0, "%");
+        EXPECT_NE(nullptr, sensorServer);
         auto associationClient = getAssociationClient();
 
         auto associations = co_await associationClient.associations();
@@ -167,7 +191,8 @@ TEST_F(SensorTest, CreateAndUpdate)
 {
     ctx.spawn([this]() -> sdbusplus::async::task<> {
         auto sensorServer =
-            createSensor(kMetricPath, kAssociationPath, 25.0, "%", 0.0, 100.0);
+            createSensor(kSensorNamespace, kSensorId, kAssociationPath, 25.0,
+                         "%", 0.0, 100.0);
         auto sensorClient = getSensorClient();
         auto associationClient = getAssociationClient();
 
@@ -195,7 +220,8 @@ TEST_F(SensorTest, ValueUpdateKeepsUnitAndRange)
 {
     ctx.spawn([this]() -> sdbusplus::async::task<> {
         auto sensorServer =
-            createSensor(kMetricPath, kAssociationPath, 25.0, "Cel", -10, 10);
+            createSensor(kSensorNamespace, kSensorId, kAssociationPath, 25.0,
+                         "Cel", -10, 10);
         auto sensorClient = getSensorClient();
 
         EXPECT_EQ(25.0, co_await sensorClient.value());
@@ -222,8 +248,8 @@ TEST_F(SensorTest, MaxMinOmitted)
     ctx.spawn([this]() -> sdbusplus::async::task<> {
         // When the Redfish sensor omits the range, per-unit defaults are
         // applied (J -> 0..100000).
-        auto sensorServer =
-            createSensor(kMetricPath, kAssociationPath, 25.0, "J");
+        auto sensorServer = createSensor(kSensorNamespace, kSensorId,
+                                         kAssociationPath, 25.0, "J");
         auto sensorClient = getSensorClient();
 
         EXPECT_EQ(25.0, co_await sensorClient.value());
@@ -236,20 +262,19 @@ TEST_F(SensorTest, MaxMinOmitted)
     }());
 }
 
-TEST_F(SensorTest, UnrecognizedUnitDefaultsToAmperes)
+TEST_F(SensorTest, UnrecognizedUnitIsNotCreated)
 {
     ctx.spawn([this]() -> sdbusplus::async::task<> {
-        auto sensorServer = createSensor(kMetricPath, kAssociationPath, 3.0,
-                                         "This is not a real unit");
+        // A unit we do not recognize produces no D-Bus object.
+        auto sensorServer =
+            createSensor(kSensorNamespace, kSensorId, kAssociationPath, 3.0,
+                         "This is not a real unit");
+        EXPECT_EQ(nullptr, sensorServer);
+
+        // Nothing is published on the bus.
         auto sensorClient = getSensorClient();
-
-        EXPECT_EQ(3.0, co_await sensorClient.value());
-        // Unrecognized units fall back to Amperes so the object is valid.
-        EXPECT_EQ(SensorValueIntf::Unit::Amperes, co_await sensorClient.unit());
-
-        co_await sensorServer->updateValue(6.0);
-        EXPECT_EQ(6.0, co_await sensorClient.value());
-        EXPECT_EQ(SensorValueIntf::Unit::Amperes, co_await sensorClient.unit());
+        EXPECT_THROW(co_await sensorClient.value(),
+                     sdbusplus::exception::SdBusError);
 
         testBodyExecuted = true;
         co_return;
@@ -263,8 +288,8 @@ TEST_F(SensorTest, MissingUnitsIsNotCreated)
         nlohmann::json json;
         json["Reading"] = 5.0;
         auto parsed = redfish_binding::Sensor::parseSensor(json.dump());
-        auto sensorServer =
-            Sensor::create(ctx, kMetricPath, kAssociationPath, parsed);
+        auto sensorServer = Sensor::create(ctx, kSensorNamespace, kSensorId,
+                                           kAssociationPath, parsed);
         EXPECT_EQ(nullptr, sensorServer);
 
         // Nothing is published on the bus.
@@ -284,8 +309,8 @@ TEST_F(SensorTest, MissingReadingBecomesNan)
         nlohmann::json json;
         json["ReadingUnits"] = "Cel";
         auto parsed = redfish_binding::Sensor::parseSensor(json.dump());
-        auto sensorServer =
-            Sensor::create(ctx, kMetricPath, kAssociationPath, parsed);
+        auto sensorServer = Sensor::create(ctx, kSensorNamespace, kSensorId,
+                                           kAssociationPath, parsed);
         EXPECT_NE(nullptr, sensorServer);
 
         auto sensorClient = getSensorClient();

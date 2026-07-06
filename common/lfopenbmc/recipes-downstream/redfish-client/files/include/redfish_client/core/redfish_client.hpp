@@ -54,9 +54,6 @@ class RedfishClient
     // URL does not belong to one of our sensors.
     const SensorMapper* findMapper(std::string_view fromUrl) const;
 
-    // Build the D-Bus object path for a sensor from its mapper.
-    std::string deriveObjectPath(const SensorMapper& mapper) const;
-
     auto loadConfig() -> sdbusplus::async::task<>;
 
     void registerLogMappers();

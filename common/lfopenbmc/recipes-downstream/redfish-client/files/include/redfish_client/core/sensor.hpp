@@ -18,31 +18,21 @@
 namespace redfish_client::core
 {
 
-// The D-Bus sensor Value interface: the target of the Redfish -> D-Bus
-// translation performed by Sensor.
 using SensorValueIntf = sdbusplus::common::xyz::openbmc_project::sensor::Value;
-
-// Root object path under which all sensor D-Bus objects are created
-// (e.g. "/xyz/openbmc_project/sensors").
-inline constexpr auto sensorRootPath = SensorValueIntf::namespace_path::value;
 
 class Sensor;
 
-// The set of D-Bus interfaces a sensor object exposes: the sensor Value
-// (value/unit/min/max) and the Association.Definitions (link to its chassis).
+// A sensor also implements Association.Definitions, not just Value, so it can be
+// linked back to the chassis that owns it.
 using SensorInterfaces = sdbusplus::async::server_t<
     Sensor,
     sdbusplus::aserver::xyz::openbmc_project::association::Definitions,
     sdbusplus::aserver::xyz::openbmc_project::sensor::Value>;
 
-// Sensor is the D-Bus representation of a single fetched Redfish sensor. It is
-// the live bus object: constructing it registers the object on the bus and
-// publishes the first reading. A Sensor is only created once a sensor has been
-// read successfully and has a unit, so sensors that never produce a valid
-// reading never appear on the bus.
-//
-// The unit and value range are fixed at construction (Redfish sensors do not
-// change their unit); only the value is mutable afterwards via updateValue().
+// The live D-Bus object for one Redfish sensor. Created lazily, only once a
+// reading with a known unit has arrived, so sensors that never yield a valid
+// reading stay off the bus. Unit and range are fixed at construction because
+// Redfish never changes them mid-life; only the value moves afterwards.
 class Sensor : public SensorInterfaces
 {
   public:
@@ -53,29 +43,44 @@ class Sensor : public SensorInterfaces
     Sensor& operator=(Sensor&&) = delete;
     ~Sensor() = default;
 
-    // Translate a parsed Redfish sensor and, if it is valid, create and publish
-    // the D-Bus object for it. Returns nullptr when the sensor has no
-    // ReadingUnits, in which case nothing is placed on the bus. Per-unit default
-    // value ranges are applied when the Redfish sensor omits them.
+    // Sourced from the interface definition so it stays in step with the
+    // namespace the objects actually live under.
+    static constexpr auto rootPath = SensorValueIntf::namespace_path::value;
+
+    // The immutable half of a sensor: the unit and the range its value spans,
+    // both fixed once the object is published.
+    struct Metadata
+    {
+        SensorValueIntf::Unit unit;
+        double minValue;
+        double maxValue;
+    };
+
+    // A sensor whose unit is absent or unrecognized cannot be represented
+    // faithfully, so it is skipped (nullptr) rather than published under a
+    // guessed unit. The object path is composed as rootPath/ns/id.
     static std::unique_ptr<Sensor> create(
-        sdbusplus::async::context& ctx, const std::string& objectPath,
-        const std::string& associationPath,
+        sdbusplus::async::context& ctx, const std::string& ns,
+        const std::string& id, const std::string& associationPath,
         redfish_binding::Sensor::Sensor& parsed);
 
-    // Publish a new value, suppressing redundant PropertiesChanged signals.
+    // Stays silent when the value barely moved, so continuous polling does not
+    // flood the bus with PropertiesChanged signals.
     auto updateValue(double current) -> sdbusplus::async::task<>;
 
-    // Map a Redfish ReadingUnits string (e.g. "Cel", "W", "%") to the D-Bus
-    // sensor Value unit enum. Returns nullopt for unrecognized units. Static so
-    // other units (e.g. the threshold mapper) can reuse the same mapping.
+    // Redfish reports units as free-form strings, so only a known set maps onto
+    // D-Bus; an unknown unit yields nullopt. The range is a fallback default for
+    // sensors that report none of their own.
+    static std::optional<Metadata> toMaybeMetadata(const std::string& unitsStr);
+
+    // The unit alone, for when the range is not needed.
     static std::optional<SensorValueIntf::Unit> toMaybeUnit(
         const std::string& unitsStr);
 
   private:
     Sensor(sdbusplus::async::context& ctx, const std::string& objectPath,
            const std::string& associationPath, double reading,
-           const std::string& unit, std::optional<double> minValue,
-           std::optional<double> maxValue);
+           const Metadata& metadata);
 
     auto shouldSkipSignal(double current) -> bool;
 

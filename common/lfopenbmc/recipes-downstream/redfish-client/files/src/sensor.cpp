@@ -11,28 +11,6 @@
 namespace redfish_client::core
 {
 
-// Source:
-// https://github.com/openbmc/phosphor-dbus-interfaces/blob/master/yaml/xyz/openbmc_project/Sensor/Value.interface.yaml
-
-std::optional<SensorValueIntf::Unit> Sensor::toMaybeUnit(
-    const std::string& unitsStr)
-{
-    // The strings used here and the mapping to SensorValueIntf::Unit were
-    // obtained experimentally and should be extended as needed.
-    using Unit = SensorValueIntf::Unit;
-    static const std::unordered_map<std::string_view, Unit> units = {
-        {"%", Unit::Percent}, {"Cel", Unit::DegreesC}, {"J", Unit::Joules},
-        {"Pa", Unit::Pascals}, {"V", Unit::Volts},     {"W", Unit::Watts},
-        {"A", Unit::Amperes},
-    };
-
-    if (auto it = units.find(unitsStr); it != units.end())
-    {
-        return it->second;
-    }
-    return std::nullopt;
-}
-
 namespace
 {
 
@@ -47,57 +25,79 @@ std::optional<double> toMaybeDouble(redfish_binding::Property<double>& property)
 
 } // namespace
 
+auto Sensor::toMaybeMetadata(const std::string& unitsStr)
+    -> std::optional<Metadata>
+{
+    using Unit = SensorValueIntf::Unit;
+    static const std::unordered_map<std::string_view, Metadata> table = {
+        {"%", {Unit::Percent, 0.0, 100.0}},
+        {"Cel", {Unit::DegreesC, -128.0, 127.0}},
+        {"J", {Unit::Joules, 0.0, 100000.0}},
+        {"Pa", {Unit::Pascals, 30000.0, 120000.0}},
+        {"V", {Unit::Volts, 0.0, 255.0}},
+        {"W", {Unit::Watts, 0.0, 3000.0}},
+        {"A", {Unit::Amperes, 0.0, 255.0}},
+    };
+
+    if (auto it = table.find(unitsStr); it != table.end())
+    {
+        return it->second;
+    }
+    return std::nullopt;
+}
+
+std::optional<SensorValueIntf::Unit> Sensor::toMaybeUnit(
+    const std::string& unitsStr)
+{
+    return toMaybeMetadata(unitsStr).transform([](const Metadata& metadata) {
+        return metadata.unit;
+    });
+}
+
 std::unique_ptr<Sensor> Sensor::create(
-    sdbusplus::async::context& ctx, const std::string& objectPath,
-    const std::string& associationPath,
+    sdbusplus::async::context& ctx, const std::string& ns,
+    const std::string& id, const std::string& associationPath,
     redfish_binding::Sensor::Sensor& parsed)
 {
-    // A sensor without a unit cannot be meaningfully represented on the bus, so
-    // it is skipped entirely (no D-Bus object is ever created).
+    // Without a unit there is nothing meaningful to put on the bus.
     if (!parsed.getReadingUnits().hasValue())
     {
         return nullptr;
     }
     std::string unit = parsed.getReadingUnits().value();
 
-    double reading = toMaybeDouble(parsed.getReading())
-                         .value_or(std::numeric_limits<double>::quiet_NaN());
-
-    static const std::unordered_map<std::string, std::pair<double, double>>
-        unitDefaults = {{"V", {0.0, 255.0}},      {"A", {0.0, 255.0}},
-                        {"W", {0.0, 3000.0}},     {"J", {0.0, 100000.0}},
-                        {"Cel", {-128.0, 127.0}}, {"Pa", {30000.0, 120000.0}},
-                        {"%", {0.0, 100.0}}};
-
-    auto maybeMin = toMaybeDouble(parsed.getReadingRangeMin());
-    auto maybeMax = toMaybeDouble(parsed.getReadingRangeMax());
-
-    std::optional<double> minValue;
-    std::optional<double> maxValue;
-    if (auto it = unitDefaults.find(unit); it != unitDefaults.end())
+    // An unmappable unit is skipped rather than published under a guessed one.
+    auto maybeMetadata = toMaybeMetadata(unit);
+    if (!maybeMetadata.has_value())
     {
-        minValue = maybeMin.value_or(it->second.first);
-        maxValue = maybeMax.value_or(it->second.second);
+        return nullptr;
     }
-    else
+    Metadata metadata = maybeMetadata.value();
+
+    if (auto& minProp = parsed.getReadingRangeMin(); minProp.hasValue())
     {
-        minValue = maybeMin;
-        maxValue = maybeMax;
+        metadata.minValue = minProp.value();
+    }
+    if (auto& maxProp = parsed.getReadingRangeMax(); maxProp.hasValue())
+    {
+        metadata.maxValue = maxProp.value();
     }
 
+    auto objectPath = std::string(rootPath) + "/" + ns + "/" + id;
     return std::unique_ptr<Sensor>(new Sensor(
-        ctx, objectPath, associationPath, reading, unit, minValue, maxValue));
+        ctx, objectPath, associationPath,
+        toMaybeDouble(parsed.getReading())
+            .value_or(std::numeric_limits<double>::quiet_NaN()),
+        metadata));
 }
 
 Sensor::Sensor(sdbusplus::async::context& ctx, const std::string& objectPath,
                const std::string& associationPath, double reading,
-               const std::string& unit, std::optional<double> minValue,
-               std::optional<double> maxValue) :
+               const Metadata& metadata) :
     SensorInterfaces(ctx, objectPath.c_str())
 {
-    // Populate every property without signalling the bus; the object is
-    // announced atomically with emit_added() below, so consumers only ever see
-    // a fully-initialized sensor.
+    // Populate everything before announcing: emit_added() publishes the object
+    // as a unit, so a half-built sensor is never visible to consumers.
     constexpr bool emitSignal = false;
 
     if (!associationPath.empty())
@@ -108,19 +108,9 @@ Sensor::Sensor(sdbusplus::async::context& ctx, const std::string& objectPath,
         this->associations<emitSignal>(associations);
     }
 
-    auto maybeUnit = toMaybeUnit(unit);
-    // Initialize the unit to something even when unrecognized, otherwise we see
-    // errors on some OS versions.
-    this->unit<emitSignal>(maybeUnit.value_or(SensorValueIntf::Unit::Amperes));
-
-    if (minValue.has_value())
-    {
-        this->min_value<emitSignal>(minValue.value());
-    }
-    if (maxValue.has_value())
-    {
-        this->max_value<emitSignal>(maxValue.value());
-    }
+    this->unit<emitSignal>(metadata.unit);
+    this->min_value<emitSignal>(metadata.minValue);
+    this->max_value<emitSignal>(metadata.maxValue);
 
     this->value<emitSignal>(reading);
     if (!std::isnan(reading))
@@ -134,16 +124,6 @@ Sensor::Sensor(sdbusplus::async::context& ctx, const std::string& objectPath,
 
 auto Sensor::updateValue(double current) -> sdbusplus::async::task<>
 {
-    // Uncomment this to debug. If we leave this uncommented in the code
-    // then phosphor logging always prints these in TTY mode and that makes
-    // manual testing a bit difficult.
-    //
-    // Note:
-    // https://github.com/openbmc/phosphor-logging/blob/master/docs/structured-logging.md
-    // "The lg2 APIs detect if the application is running on a TTY and
-    // additionally log to the TTY."
-    //
-    // debug("Updating metric {VALUE}", "VALUE", current);
     std::lock_guard<std::mutex> guard(this->lock);
 
     if (shouldSkipSignal(current))
@@ -160,6 +140,9 @@ auto Sensor::updateValue(double current) -> sdbusplus::async::task<>
 
 auto Sensor::shouldSkipSignal(double current) -> bool
 {
+    // Skip unless the reading moved by at least 1%; sub-percent jitter is not
+    // worth waking every bus consumer. A reading appearing or disappearing
+    // (a NaN transition) always signals.
     if (std::isnan(lastNotifiedValue) && std::isnan(current))
     {
         return true;
@@ -176,7 +159,8 @@ auto Sensor::shouldSkipSignal(double current) -> bool
     assert(!std::isnan(current));
     if (std::abs(lastNotifiedValue) < 1e-6)
     {
-        // avoid division by zero
+        // Baseline is ~0, so a percentage change is undefined; treat as no
+        // change.
         return true;
     }
     auto changed =

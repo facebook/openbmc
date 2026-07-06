@@ -237,7 +237,7 @@ auto RedfishClient::ingestMetricReport(
         {
             continue;
         }
-        auto sensor = Sensor::create(ctx, deriveObjectPath(*mapper),
+        auto sensor = Sensor::create(ctx, mapper->toNamespace, mapper->toId,
                                      config->sensorConfig->associationPath,
                                      maybeSensor.value());
         if (!sensor)
@@ -261,14 +261,6 @@ const SensorMapper* RedfishClient::findMapper(std::string_view fromUrl) const
     return it != mappers.end() ? &*it : nullptr;
 }
 
-std::string RedfishClient::deriveObjectPath(const SensorMapper& mapper) const
-{
-    // mapper.toNamespace is validated against the supported namespaces when the
-    // config is parsed, so it is used verbatim here.
-    return std::string(sensorRootPath) + "/" + mapper.toNamespace + "/" +
-           mapper.toId;
-}
-
 auto RedfishClient::pollSensor(const SensorMapper& mapper)
     -> sdbusplus::async::task<>
 {
@@ -290,7 +282,7 @@ auto RedfishClient::pollSensor(const SensorMapper& mapper)
         co_return;
     }
 
-    auto sensor = Sensor::create(ctx, deriveObjectPath(mapper),
+    auto sensor = Sensor::create(ctx, mapper.toNamespace, mapper.toId,
                                  config->sensorConfig->associationPath, parsed);
     if (sensor)
     {

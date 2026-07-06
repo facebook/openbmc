@@ -32,7 +32,7 @@ void runRedfishClient(const std::string& serviceName,
                       const std::string configDir, std::string persistDir)
 {
     ctx.request_name(serviceName.c_str());
-    sdbusplus::server::manager_t manager{ctx, sensorRootPath};
+    sdbusplus::server::manager_t manager{ctx, Sensor::rootPath};
     RedfishClient client(ctx, configDir, persistDir);
     ctx.spawn(client.run());
     ctx.run();
@@ -43,7 +43,7 @@ void runRedfishClient(const std::string& serviceName,
                       std::string persistDir)
 {
     ctx.request_name(serviceName.c_str());
-    sdbusplus::server::manager_t manager{ctx, sensorRootPath};
+    sdbusplus::server::manager_t manager{ctx, Sensor::rootPath};
     RedfishClient client(ctx, config, persistDir);
     ctx.spawn(client.run());
     ctx.run();

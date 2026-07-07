@@ -1,7 +1,7 @@
-From 9c82d0acb74e3aef39a59ca64d0cdc1e4492cf65 Mon Sep 17 00:00:00 2001
+From 5f80e94477808cd90cf6a4bc84b8af62744fe26f Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Thu, 18 Aug 2022 16:10:19 -0700
-Subject: [PATCH 529/532] aspeed: Add greatlakes-bmc
+Subject: [PATCH] aspeed: Add greatlakes-bmc
 
 Signed-off-by: Peter Delevoryas <pdel@fb.com>
 ---

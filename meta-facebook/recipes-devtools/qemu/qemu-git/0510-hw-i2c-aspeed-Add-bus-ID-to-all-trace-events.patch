@@ -1,7 +1,7 @@
-From a499aadc6bf6dbb650d78f7c9f646a7a0584e942 Mon Sep 17 00:00:00 2001
+From feda7b3b2f4aaf7a92e87490863414220f284e83 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 24 Aug 2022 00:48:44 -0700
-Subject: [PATCH 510/512] hw/i2c/aspeed: Add bus ID to all trace events
+Subject: [PATCH] hw/i2c/aspeed: Add bus ID to all trace events
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  2 files changed, 14 insertions(+), 12 deletions(-)
 
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index 4d126182a9..4930a6e265 100644
+index 7680048cc7..adf9632341 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
 @@ -63,7 +63,8 @@ static inline void aspeed_i2c_bus_raise_interrupt(AspeedI2CBus *bus)

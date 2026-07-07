@@ -1,7 +1,7 @@
-From d193e9bb40ddd9085453d74c0236a61b19f1911b Mon Sep 17 00:00:00 2001
+From dbd8779a202f79d67b75b2b0852b677abbc1a3bc Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Tue, 23 Nov 2021 09:22:10 -0800
-Subject: [PATCH 502/512] hw: aspeed_vic: Add heartbeat LED registers
+Subject: [PATCH] hw: aspeed_vic: Add heartbeat LED registers
 
 Signed-off-by: Peter Delevoryas <pdel@fb.com>
 ---
@@ -10,7 +10,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  2 files changed, 20 insertions(+)
 
 diff --git a/hw/intc/aspeed_vic.c b/hw/intc/aspeed_vic.c
-index b0a9a39705..e61193f57a 100644
+index bd0c87802e..f5e6c9179c 100644
 --- a/hw/intc/aspeed_vic.c
 +++ b/hw/intc/aspeed_vic.c
 @@ -168,6 +168,12 @@ static uint64_t aspeed_vic_read(void *opaque, hwaddr offset, unsigned size)
@@ -40,7 +40,7 @@ index b0a9a39705..e61193f57a 100644
  
      default:
          qemu_log_mask(LOG_GUEST_ERROR,
-@@ -303,6 +316,8 @@ static void aspeed_vic_reset(DeviceState *dev)
+@@ -303,6 +316,8 @@ static void aspeed_vic_reset_hold(Object *obj, ResetType type)
      s->sense = 0x1F07FFF8FFFFULL;
      s->dual_edge = 0xF800070000ULL;
      s->event = 0x5F07FFF8FFFFULL;

@@ -1,7 +1,7 @@
-From bf9d292c121df732f204362aa78a27f9d910fb2d Mon Sep 17 00:00:00 2001
+From f78f85afeed43925cc99c394c54b5c48bec2c38a Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 24 Aug 2022 01:55:12 -0700
-Subject: [PATCH 512/512] hw/i2c/aspeed: Fix bus derivation for slave events
+Subject: [PATCH] hw/i2c/aspeed: Fix bus derivation for slave events
 
 The existing code assumes there's one AspeedI2CBus attached to each
 I2CBus. That's not the case in a multi-SoC system where two
@@ -14,10 +14,10 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  2 files changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index 71e908a3be..d0d477db12 100644
+index adb9fa61e5..651255c4f6 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
-@@ -1448,8 +1448,7 @@ static int aspeed_i2c_bus_new_slave_event(AspeedI2CBus *bus,
+@@ -1439,8 +1439,7 @@ static int aspeed_i2c_bus_new_slave_event(AspeedI2CBus *bus,
  
  static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
  {
@@ -27,7 +27,7 @@ index 71e908a3be..d0d477db12 100644
      uint32_t reg_intr_sts = aspeed_i2c_bus_intr_sts_offset(bus);
      uint32_t reg_byte_buf = aspeed_i2c_bus_byte_buf_offset(bus);
      uint32_t reg_dev_addr = aspeed_i2c_bus_dev_addr_offset(bus);
-@@ -1507,8 +1506,7 @@ static void aspeed_i2c_bus_new_slave_send_async(AspeedI2CBus *bus, uint8_t data)
+@@ -1498,8 +1497,7 @@ static void aspeed_i2c_bus_new_slave_send_async(AspeedI2CBus *bus, uint8_t data)
  
  static void aspeed_i2c_bus_slave_send_async(I2CSlave *slave, uint8_t data)
  {
@@ -37,7 +37,7 @@ index 71e908a3be..d0d477db12 100644
      uint32_t reg_intr_sts = aspeed_i2c_bus_intr_sts_offset(bus);
      uint32_t reg_byte_buf = aspeed_i2c_bus_byte_buf_offset(bus);
  
-@@ -1571,6 +1569,7 @@ static void aspeed_i2c_bus_realize(DeviceState *dev, Error **errp)
+@@ -1555,6 +1553,7 @@ static void aspeed_i2c_bus_realize(DeviceState *dev, Error **errp)
      s->bus = i2c_init_bus(dev, s->name);
      s->slave = i2c_slave_create_simple(s->bus, TYPE_ASPEED_I2C_BUS_SLAVE,
                                         0xff);
@@ -46,10 +46,10 @@ index 71e908a3be..d0d477db12 100644
      memory_region_init_io(&s->mr, OBJECT(s), &aspeed_i2c_bus_ops,
                            s, s->name, aic->reg_size);
 diff --git a/include/hw/i2c/aspeed_i2c.h b/include/hw/i2c/aspeed_i2c.h
-index c958a76298..057f092358 100644
+index b4cc48b8a6..671db07ff7 100644
 --- a/include/hw/i2c/aspeed_i2c.h
 +++ b/include/hw/i2c/aspeed_i2c.h
-@@ -284,6 +284,7 @@ struct AspeedI2CState {
+@@ -281,6 +281,7 @@ struct AspeedI2CState {
  OBJECT_DECLARE_SIMPLE_TYPE(AspeedI2CBusSlave, ASPEED_I2C_BUS_SLAVE)
  struct AspeedI2CBusSlave {
      I2CSlave i2c;

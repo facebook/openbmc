@@ -1,7 +1,7 @@
-From 253141a957637f11dbd33d2c09ef5810787929ef Mon Sep 17 00:00:00 2001
+From 9fbd778d39d726776b442a1ca989b8b9f82b2cac Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 23 Aug 2022 23:24:36 -0700
-Subject: [PATCH 524/532] fby35: Setup I2C devices and GPIO's
+Subject: [PATCH] fby35: Setup I2C devices and GPIO's
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 ---
@@ -164,7 +164,7 @@ index 4e5f8000c6..eaf37c48e4 100644
  
  static void aspeed_machine_fby35_class_init(ObjectClass *oc, const void *data)
 diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
-index a43a358e82..0a603061ac 100644
+index bcb26cf83b..bccca42f55 100644
 --- a/hw/arm/fby35.c
 +++ b/hw/arm/fby35.c
 @@ -9,6 +9,7 @@
@@ -254,7 +254,7 @@ index a43a358e82..0a603061ac 100644
  static void fby35_bmc_init(Fby35State *s)
  {
      AspeedSoCState *soc;
-@@ -120,6 +179,7 @@ static void fby35_bmc_init(Fby35State *s)
+@@ -119,6 +178,7 @@ static void fby35_bmc_init(Fby35State *s)
                                       rom_size, &error_abort);
          }
      }
@@ -262,7 +262,7 @@ index a43a358e82..0a603061ac 100644
  }
  
  static void fby35_bic_init(Fby35State *s)
-@@ -147,6 +207,8 @@ static void fby35_bic_init(Fby35State *s)
+@@ -145,6 +205,8 @@ static void fby35_bic_init(Fby35State *s)
      aspeed_board_init_flashes(&soc->fmc, "sst25vf032b", 2, 2);
      aspeed_board_init_flashes(&soc->spi[0], "sst25vf032b", 2, 4);
      aspeed_board_init_flashes(&soc->spi[1], "sst25vf032b", 2, 6);
@@ -271,7 +271,7 @@ index a43a358e82..0a603061ac 100644
  }
  
  static void fby35_init(MachineState *machine)
-@@ -167,6 +229,36 @@ static void fby35_init(MachineState *machine)
+@@ -165,6 +227,36 @@ static void fby35_init(MachineState *machine)
      fby35_bic_init(s);
  }
  
@@ -308,7 +308,7 @@ index a43a358e82..0a603061ac 100644
  
  static bool fby35_get_mmio_exec(Object *obj, Error **errp)
  {
-@@ -194,6 +286,7 @@ static void fby35_class_init(ObjectClass *oc, const void *data)
+@@ -192,6 +284,7 @@ static void fby35_class_init(ObjectClass *oc, const void *data)
      mc->no_cdrom = 1;
      mc->auto_create_sdcard = true;
      mc->min_cpus = mc->max_cpus = mc->default_cpus = 3;

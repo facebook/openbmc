@@ -1,7 +1,7 @@
-From c53af625a11a8ad29392cba5ee9a219530d79ffc Mon Sep 17 00:00:00 2001
+From 7171de3d80374b43dab04929469e9a5d4e1d92ae Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
-Subject: [PATCH 520/522] hw/misc/aspeed: Add intel-me
+Subject: [PATCH] hw/misc/aspeed: Add intel-me
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -26,10 +26,10 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  create mode 100644 hw/misc/intel_me.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index f638790412..e43680ee4b 100644
+index a821f561e2..561cf88e89 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -1285,6 +1285,7 @@ F: hw/arm/fby35.c
+@@ -1280,6 +1280,7 @@ F: tests/*/*ast2700*
  F: pc-bios/ast27x0_bootrom.bin
  F: roms/vbootrom
  F: hw/misc/fby35_sb_cpld.c
@@ -206,10 +206,10 @@ index 0000000000..ac99c6f05b
 +
 +DEFINE_TYPES(types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index b09ba406e4..52aa4ef995 100644
+index 220236eb30..e8357707ef 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -145,7 +145,8 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -146,7 +146,8 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_xdma.c',
    'aspeed_peci.c',
    'aspeed_sli.c',
@@ -220,10 +220,10 @@ index b09ba406e4..52aa4ef995 100644
  system_ss.add(when: 'CONFIG_MSF2', if_true: files('msf2-sysreg.c'))
  system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
 diff --git a/hw/misc/trace-events b/hw/misc/trace-events
-index bab488fbec..1c464dfa2d 100644
+index fe74bdb87d..7beb879c62 100644
 --- a/hw/misc/trace-events
 +++ b/hw/misc/trace-events
-@@ -421,3 +421,11 @@ iommu_testdev_dma_armed(bool armed) "armed=%d"
+@@ -423,3 +423,11 @@ iommu_testdev_dma_armed(bool armed) "armed=%d"
  # fby35_sb_cpld.c
  fby35_sb_cpld_read(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"
  fby35_sb_cpld_write(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"
@@ -236,5 +236,5 @@ index bab488fbec..1c464dfa2d 100644
 +intel_me_tx_data(uint8_t addr, uint8_t data) "addr 0x%02x data 0x%02x"
 +intel_me_tx_end(uint8_t addr) "addr 0x%02x"
 -- 
-2.52.0
+2.53.0-Meta
 

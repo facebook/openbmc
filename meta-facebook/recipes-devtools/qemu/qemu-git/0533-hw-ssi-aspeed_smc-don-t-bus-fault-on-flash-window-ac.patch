@@ -1,4 +1,4 @@
-From 143d07ce3652f58b927ebef4aceb08c34c75ef7e Mon Sep 17 00:00:00 2001
+From 155108804dcd85a92412f3dcd19e11bba3fe50ec Mon Sep 17 00:00:00 2001
 From: Rick Yazwinski <rickyaz@meta.com>
 Date: Thu, 4 Jun 2026 08:21:12 -0700
 Subject: [PATCH] hw/ssi/aspeed_smc: don't bus-fault on flash window access in
@@ -28,7 +28,7 @@ fbtp (AST2500) image; boots to Linux with this change, loops without it.
  1 file changed, 16 insertions(+), 2 deletions(-)
 
 diff --git a/hw/ssi/aspeed_smc.c b/hw/ssi/aspeed_smc.c
-index 3767ad0c7a..9dd5df48e4 100644
+index d87fbd798c..164c69fc63 100644
 --- a/hw/ssi/aspeed_smc.c
 +++ b/hw/ssi/aspeed_smc.c
 @@ -519,8 +519,15 @@ static MemTxResult aspeed_smc_flash_read(void *opaque, hwaddr addr,

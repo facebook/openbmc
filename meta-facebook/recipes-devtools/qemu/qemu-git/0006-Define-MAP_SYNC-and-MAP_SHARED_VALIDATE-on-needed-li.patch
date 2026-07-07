@@ -1,7 +1,7 @@
-From 97f2e8d58e2bc7c49a230ec77c538be9bc54cad0 Mon Sep 17 00:00:00 2001
+From aea6bebb89df395e278f9af48ab46e4e361041d4 Mon Sep 17 00:00:00 2001
 From: Khem Raj <raj.khem@gmail.com>
 Date: Mon, 21 Mar 2022 10:09:38 -0700
-Subject: [PATCH 06/10] Define MAP_SYNC and MAP_SHARED_VALIDATE on needed linux
+Subject: [PATCH] Define MAP_SYNC and MAP_SHARED_VALIDATE on needed linux
  systems
 
 linux only wires MAP_SYNC and MAP_SHARED_VALIDATE for architectures
@@ -44,5 +44,5 @@ index ed14f9c64d..038f5b4b55 100644
  #include "qemu/host-utils.h"
  #include "qemu/cutils.h"
 -- 
-2.52.0
+2.53.0-Meta
 

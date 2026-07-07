@@ -1,7 +1,7 @@
-From d7b8c968e078538093fbefeeab1c6a914ea08f76 Mon Sep 17 00:00:00 2001
+From 3cd03e48c218b51d685507cc16e0acd8cf09d231 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
-Subject: [PATCH 507/512] hw/i2c/pca954x: Add method to get channels
+Subject: [PATCH] hw/i2c/pca954x: Add method to get channels
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

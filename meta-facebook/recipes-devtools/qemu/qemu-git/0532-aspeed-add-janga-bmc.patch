@@ -1,15 +1,15 @@
-From 22189d4b6379c33e2f59b540a47e16086dd13461 Mon Sep 17 00:00:00 2001
+From 1eeeabc04902d9b63d84c41c17f796c074fdb998 Mon Sep 17 00:00:00 2001
 From: Tao Ren <taoren@meta.com>
 Date: Mon, 10 Jul 2023 16:47:00 +0700
-Subject: [PATCH 532/532] aspeed: add janga bmc
+Subject: [PATCH] aspeed: add janga bmc
 
 Signed-off-by: Tao Ren <taoren@meta.com>
 ---
- hw/arm/aspeed_ast2600_evb.c | 72 +++++++++++++++++++++++++++++++++++++
- 1 file changed, 72 insertions(+)
+ hw/arm/aspeed_ast2600_evb.c | 73 +++++++++++++++++++++++++++++++++++++
+ 1 file changed, 73 insertions(+)
 
 diff --git a/hw/arm/aspeed_ast2600_evb.c b/hw/arm/aspeed_ast2600_evb.c
-index c40aeff1c8..832f57b09f 100644
+index adbcc31556..31430f6861 100644
 --- a/hw/arm/aspeed_ast2600_evb.c
 +++ b/hw/arm/aspeed_ast2600_evb.c
 @@ -23,6 +23,10 @@
@@ -100,7 +100,7 @@ index c40aeff1c8..832f57b09f 100644
  #define MONTBLANC_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
  
  static void aspeed_machine_montblanc_class_init(ObjectClass *oc, const void *data)
-@@ -168,6 +235,11 @@ static const TypeInfo aspeed_ast2600_evb_types[] = {
+@@ -168,6 +235,12 @@ static const TypeInfo aspeed_ast2600_evb_types[] = {
          .class_init    = aspeed_machine_ast2600_evb_class_init,
          .interfaces    = arm_machine_interfaces,
      },
@@ -108,6 +108,7 @@ index c40aeff1c8..832f57b09f 100644
 +        .name          = MACHINE_TYPE_NAME("janga-bmc"),
 +        .parent        = TYPE_ASPEED_MACHINE,
 +        .class_init    = aspeed_machine_janga_class_init,
++        .interfaces    = arm_machine_interfaces,
 +    },
      {
          .name          = MACHINE_TYPE_NAME("montblanc-bmc"),

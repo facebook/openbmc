@@ -1,7 +1,7 @@
-From 5de8f8fea497186d997bc6e6f36e2a2dd04d85ec Mon Sep 17 00:00:00 2001
+From e5f23343a9863e328f3a8623f0c2d8f8f396d8d8 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Thu, 5 Jan 2023 01:13:45 -0800
-Subject: [PATCH 504/512] hw/misc: Add byte-by-byte i2c network device
+Subject: [PATCH] hw/misc: Add byte-by-byte i2c network device
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 ---
@@ -279,10 +279,10 @@ index 0000000000..732cebd822
 +
 +type_init(register_types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 9ef88e1437..406364ad89 100644
+index 843b6f60e3..44b19b0721 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -152,7 +152,7 @@ system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
+@@ -153,7 +153,7 @@ system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
  system_ss.add(when: 'CONFIG_GRLIB', if_true: files('grlib_ahb_apb_pnp.c'))
  
  system_ss.add(when: 'CONFIG_I2C_ECHO', if_true: files('i2c-echo.c'))
@@ -541,10 +541,10 @@ index 0000000000..aaf8c85427
 +    return ret;
 +}
 diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
-index 728dde54b3..6c61ca3956 100644
+index 088e64aca5..f998d30466 100644
 --- a/tests/qtest/meson.build
 +++ b/tests/qtest/meson.build
-@@ -217,6 +217,7 @@ qtests_npcm8xx = \
+@@ -219,6 +219,7 @@ qtests_npcm8xx = \
    ['npcm_gmac-test']
  qtests_aspeed = \
    ['aspeed_gpio-test',
@@ -553,5 +553,5 @@ index 728dde54b3..6c61ca3956 100644
     'aspeed_scu-test',
     'aspeed_smc-test']
 -- 
-2.52.0
+2.53.0-Meta
 

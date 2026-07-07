@@ -1,7 +1,7 @@
-From 49145cd847951068b9cc1c90c80d1e205dfbbe2c Mon Sep 17 00:00:00 2001
+From a8be7ff5c7282e68318e7e6e6589546b7680a7b7 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Tue, 14 Jun 2022 11:32:13 -0700
-Subject: [PATCH 506/512] hw: m25p80: Add BP and TB bits to n25q00
+Subject: [PATCH] hw: m25p80: Add BP and TB bits to n25q00
 
 This flash model is a 128MB Micron flash model that we can use with fb
 machines to test U-Boot.
@@ -12,10 +12,10 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/hw/block/m25p80.c b/hw/block/m25p80.c
-index b8a2543c0b..0af9b7ffd8 100644
+index 4a4cda6602..01fc4d1d0b 100644
 --- a/hw/block/m25p80.c
 +++ b/hw/block/m25p80.c
-@@ -273,7 +273,8 @@ static const FlashPartInfo known_devices[] = {
+@@ -274,7 +274,8 @@ static const FlashPartInfo known_devices[] = {
      { INFO_STACKED("mt35xu02gbba", 0x2c5b1c, 0x104100, 128 << 10, 2048,
                     ER_4K | ER_32K, 4),
                     .sfdp_read = m25p80_sfdp_mt35xu02g },

@@ -1,7 +1,7 @@
-From 649a2fa79daa2ccddec83e5638ac4029633c6091 Mon Sep 17 00:00:00 2001
+From e950537cd3dd77b1a8658df74bd836d45e0a1739 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
-Subject: [PATCH 517/522] aspeed: Expose i2c buses to machine
+Subject: [PATCH] aspeed: Expose i2c buses to machine
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -10,11 +10,11 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 Signed-off-by: Cédric Le Goater <clg@kaod.org>
 ---
  hw/arm/aspeed_soc_common.c  |  14 +++++
- hw/arm/fby35.c              |  13 +++++
+ hw/arm/fby35.c              |  15 ++++-
  hw/i2c/aspeed_i2c.c         |   8 ++-
  include/hw/arm/aspeed_soc.h |   2 +
  include/hw/arm/fby35.h      | 110 ++++++++++++++++++++++++++++++++++++
- 5 files changed, 146 insertions(+), 1 deletion(-)
+ 5 files changed, 146 insertions(+), 3 deletions(-)
  create mode 100644 include/hw/arm/fby35.h
 
 diff --git a/hw/arm/aspeed_soc_common.c b/hw/arm/aspeed_soc_common.c
@@ -43,7 +43,7 @@ index 7f7768c0ee..28aae10c83 100644
                       hwaddr addr)
  {
 diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
-index d3bfd2c7d2..a43a358e82 100644
+index d3bfd2c7d2..bcb26cf83b 100644
 --- a/hw/arm/fby35.c
 +++ b/hw/arm/fby35.c
 @@ -15,6 +15,9 @@
@@ -56,7 +56,23 @@ index d3bfd2c7d2..a43a358e82 100644
  
  #define TYPE_FBY35 MACHINE_TYPE_NAME("fby35")
  OBJECT_DECLARE_SIMPLE_TYPE(Fby35State, FBY35);
-@@ -149,8 +152,18 @@ static void fby35_bic_init(Fby35State *s)
+@@ -74,7 +77,6 @@ static void fby35_bmc_init(Fby35State *s)
+     AspeedSoCState *soc;
+     AspeedSoCClass *sc;
+ 
+-    object_initialize_child(OBJECT(s), "bmc", &s->bmc, "ast2600-a3");
+     soc = ASPEED_SOC(&s->bmc);
+     sc = ASPEED_SOC_GET_CLASS(soc);
+ 
+@@ -127,7 +129,6 @@ static void fby35_bic_init(Fby35State *s)
+     s->bic_sysclk = clock_new(OBJECT(s), "SYSCLK");
+     clock_set_hz(s->bic_sysclk, 200000000ULL);
+ 
+-    object_initialize_child(OBJECT(s), "bic", &s->bic, "ast1030-a1");
+     soc = ASPEED_SOC(&s->bic);
+     sc = ASPEED_SOC_GET_CLASS(soc);
+ 
+@@ -149,8 +150,18 @@ static void fby35_bic_init(Fby35State *s)
  static void fby35_init(MachineState *machine)
  {
      Fby35State *s = FBY35(machine);
@@ -76,10 +92,10 @@ index d3bfd2c7d2..a43a358e82 100644
  }
  
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index f602e5e5f4..893e4ba12b 100644
+index 3e022bf238..97cd6802d1 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
-@@ -1566,7 +1566,12 @@ static void aspeed_i2c_bus_realize(DeviceState *dev, Error **errp)
+@@ -1550,7 +1550,12 @@ static void aspeed_i2c_bus_realize(DeviceState *dev, Error **errp)
  
      sysbus_init_irq(SYS_BUS_DEVICE(dev), &s->irq);
  
@@ -93,7 +109,7 @@ index f602e5e5f4..893e4ba12b 100644
      s->slave = i2c_slave_create_simple(s->bus, TYPE_ASPEED_I2C_BUS_SLAVE,
                                         0xff);
      ASPEED_I2C_BUS_SLAVE(s->slave)->bus = s;
-@@ -1585,6 +1590,7 @@ static const Property aspeed_i2c_bus_properties[] = {
+@@ -1569,6 +1574,7 @@ static const Property aspeed_i2c_bus_properties[] = {
      DEFINE_PROP_LINK("controller", AspeedI2CBus, controller, TYPE_ASPEED_I2C,
                       AspeedI2CState *),
      DEFINE_PROP_STRING("bus-name", AspeedI2CBus, name),
@@ -102,10 +118,10 @@ index f602e5e5f4..893e4ba12b 100644
  
  static void aspeed_i2c_bus_get_scl_timeout(Object *obj, Visitor *v,
 diff --git a/include/hw/arm/aspeed_soc.h b/include/hw/arm/aspeed_soc.h
-index d7b3647ca1..96a065f18e 100644
+index 3aac144cd4..a3bce779d0 100644
 --- a/include/hw/arm/aspeed_soc.h
 +++ b/include/hw/arm/aspeed_soc.h
-@@ -304,6 +304,8 @@ bool aspeed_soc_uart_realize(MemoryRegion *memory, SerialMM *smm,
+@@ -303,6 +303,8 @@ bool aspeed_soc_uart_realize(MemoryRegion *memory, SerialMM *smm,
  void aspeed_soc_uart_set_chr(SerialMM *uart, int dev, int uarts_base,
                               int uarts_num, Chardev *chr);
  bool aspeed_soc_dram_init(AspeedSoCState *s, Error **errp);

@@ -1,7 +1,7 @@
-From f4db5289c74c43f23d22c891b46097e80c3a89bc Mon Sep 17 00:00:00 2001
+From 305e7629a0a3dc5164bf303262bd8ce219a7afc6 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Fri, 17 Jun 2022 12:21:22 -0700
-Subject: [PATCH 501/512] aspeed: Zero extend flash files to 128MB
+Subject: [PATCH] aspeed: Zero extend flash files to 128MB
 
 This finally removes the requirement that you have to pad your QEMU
 flash images with zeroes.

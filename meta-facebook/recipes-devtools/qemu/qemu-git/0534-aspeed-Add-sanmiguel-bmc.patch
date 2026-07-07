@@ -1,4 +1,4 @@
-From 5464ad1285968456edf6212ac5fb0f710d4fda38 Mon Sep 17 00:00:00 2001
+From 978ac41a22ec2df72cccb51f0e71338b6fab78c8 Mon Sep 17 00:00:00 2001
 From: Rick Yazwinski <rickyaz@meta.com>
 Date: Thu, 4 Jun 2026 10:38:06 -0700
 Subject: [PATCH] aspeed: Add sanmiguel-bmc
@@ -23,10 +23,10 @@ Signed-off-by: Rick Yazwinski <rickyaz@meta.com>
  1 file changed, 18 insertions(+)
 
 diff --git a/hw/arm/aspeed_ast2600_evb.c b/hw/arm/aspeed_ast2600_evb.c
-index bda4e9f98b..973b1d2a58 100644
+index 31430f6861..c89c52731e 100644
 --- a/hw/arm/aspeed_ast2600_evb.c
 +++ b/hw/arm/aspeed_ast2600_evb.c
-@@ -310,6 +310,24 @@ static const struct FBMachineData fb_machines[] = {
+@@ -312,6 +312,24 @@ static const struct FBMachineData fb_machines[] = {
          .stdout_path = ASPEED_DEV_UART5,
          .ram_size    = FUJI_BMC_RAM_SIZE,
      },

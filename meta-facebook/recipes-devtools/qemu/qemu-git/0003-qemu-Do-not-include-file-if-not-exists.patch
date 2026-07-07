@@ -1,7 +1,7 @@
-From 84fb2e48f49ce86b395e08b3c1ed099b0d7fff14 Mon Sep 17 00:00:00 2001
+From 6b1dbb599bd0172fc65f89bba595e59888152aa7 Mon Sep 17 00:00:00 2001
 From: Oleksiy Obitotskyy <oobitots@cisco.com>
 Date: Wed, 25 Mar 2020 21:21:35 +0200
-Subject: [PATCH 03/10] qemu: Do not include file if not exists
+Subject: [PATCH] qemu: Do not include file if not exists
 
 Script configure checks for if_alg.h and check failed but
 if_alg.h still included.
@@ -16,7 +16,7 @@ Signed-off-by: Sakib Sajal <sakib.sajal@windriver.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/linux-user/syscall.c b/linux-user/syscall.c
-index f4b74ad350..3da51ea833 100644
+index d257fb9ca9..57aa9d8884 100644
 --- a/linux-user/syscall.c
 +++ b/linux-user/syscall.c
 @@ -117,7 +117,9 @@
@@ -30,5 +30,5 @@ index f4b74ad350..3da51ea833 100644
  #include <sound/asound.h>
  #ifdef HAVE_BTRFS_H
 -- 
-2.52.0
+2.53.0-Meta
 

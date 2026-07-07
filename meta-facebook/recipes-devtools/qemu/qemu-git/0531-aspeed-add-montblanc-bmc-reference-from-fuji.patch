@@ -1,18 +1,18 @@
-From ae6e79607cd0325f83582d57531afc25c51221ac Mon Sep 17 00:00:00 2001
+From 5c7802f587b8bc1c6932bf2107f8bf7d62ba5a3b Mon Sep 17 00:00:00 2001
 From: Sittisak Sinprem <ssinprem@celestica.com>
 Date: Mon, 8 May 2023 14:37:18 +0700
-Subject: [PATCH 531/532] aspeed add montblanc bmc reference from fuji
+Subject: [PATCH] aspeed add montblanc bmc reference from fuji
 
 - I2C list follow I2C Tree v1.6 20230320
 - fru eeprom data use FB FRU format version 4
 
 Signed-off-by: Sittisak Sinprem <ssinprem@celestica.com>
 ---
- hw/arm/aspeed_ast2600_evb.c | 111 ++++++++++++++++++++++++++++++++++++
- 1 file changed, 111 insertions(+)
+ hw/arm/aspeed_ast2600_evb.c | 112 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 112 insertions(+)
 
 diff --git a/hw/arm/aspeed_ast2600_evb.c b/hw/arm/aspeed_ast2600_evb.c
-index af734e706b..c40aeff1c8 100644
+index af734e706b..adbcc31556 100644
 --- a/hw/arm/aspeed_ast2600_evb.c
 +++ b/hw/arm/aspeed_ast2600_evb.c
 @@ -12,14 +12,21 @@
@@ -122,7 +122,7 @@ index af734e706b..c40aeff1c8 100644
  static void aspeed_machine_ast2600_evb_class_init(ObjectClass *oc,
                                                    const void *data)
  {
-@@ -55,12 +140,38 @@ static void aspeed_machine_ast2600_evb_class_init(ObjectClass *oc,
+@@ -55,12 +140,39 @@ static void aspeed_machine_ast2600_evb_class_init(ObjectClass *oc,
      aspeed_machine_ast2600_class_emmc_init(oc);
  };
  
@@ -158,6 +158,7 @@ index af734e706b..c40aeff1c8 100644
 +        .name          = MACHINE_TYPE_NAME("montblanc-bmc"),
 +        .parent        = TYPE_ASPEED_MACHINE,
 +        .class_init    = aspeed_machine_montblanc_class_init,
++        .interfaces    = arm_machine_interfaces,
      }
  };
  

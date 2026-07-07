@@ -26,8 +26,8 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=a3b50d8b88dcc0eb3d7d39b760b9e821 \
 # QEMU reference - commit SHA for reproducible builds
 # To update to latest master, run:
 #   git ls-remote https://github.com/qemu/qemu.git refs/heads/master | cut -f1
-# v11.0.0
-QEMU_REF ?= "b7d13c3602176b648cdcf351dc0a1c8d5f5aa8cc"
+# v11.0.0-2604-ga59157f98f
+QEMU_REF ?= "a59157f98f0b69b0bbdb26bc15fbc4d6c8060799"
 
 # Use git protocol (required by BitBake QA)
 SRC_URI = "git://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \
@@ -51,6 +51,7 @@ SRC_URI += " \
            file://0511-hw-i2c-aspeed-Add-slave-event-traces.patch \
            file://0512-hw-i2c-aspeed-Fix-bus-derivation-for-slave-events.patch \
            \
+           file://0513-aspeed-Re-add-hw-arm-fby35.c.patch \
            file://0514-hw-i2c-aspeed-Fix-interrupt-status-flag-names.patch \
            file://0515-tests-Create-qtest-for-Aspeed-I2C-controller.patch \
            file://0516-scripts-Add-redact-util.patch \
@@ -83,8 +84,6 @@ SRC_URI += " \
            file://0006-Define-MAP_SYNC-and-MAP_SHARED_VALIDATE-on-needed-li.patch \
            file://0007-Subject-PATCH-configure-lookup-meson-exutable-from-P.patch \
            file://0008-qemu-Ensure-pip-and-the-python-venv-aren-t-used-for-.patch \
-           file://0009-hw-arm-aspeed-Add-Facebook-Anacapa-BMC-machine.patch \
-           file://0010-hw-arm-aspeed-Add-BMC-machine-to-build.patch \
            "
 
 QEMU_CHECKOUT_DIR = "${BPN}-${PV}"
@@ -117,7 +116,7 @@ SRCREV_berkeley-softfloat-3 = "b64af41c3276f97f0e181920400ee056b9c88037"
 SRCREV_berkeley-testfloat-3 = "e7af9751d9f9fd3b47911f51a5cfd08af256a9ab"
 SRCREV_dtc = "b6910bec11614980a21e46fbccc35934b671bd81"
 SRCREV_slirp = "26be815b86e8d49add8c9a8b320239b9594ff03d"
-SRCREV_libvfio-user = "0b28d205572c80b568a1003db2c8f37ca333e4d7"
+SRCREV_libvfio-user = "4d9f663450fa80ff375612dbbafe073700e3d3d8"
 SRCREV_libblkio = "f84cc963a444e4cb34813b2dcfc5bf8526947dc0"
 
 SRCREV_FORMAT = "default_keycodemapdb_berkeley-softfloat-3_berkeley-testfloat-3_dtc_slirp_libvfio-user_libblkio"

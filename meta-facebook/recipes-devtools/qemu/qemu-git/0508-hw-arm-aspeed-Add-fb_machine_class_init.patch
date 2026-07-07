@@ -1,7 +1,7 @@
-From 0eed222697279c075241d1fcba2731b16da11d22 Mon Sep 17 00:00:00 2001
+From 61ef1298a4d01000dc6a71ae9b17bcb2007d8203 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Fri, 20 May 2022 17:07:55 -0700
-Subject: [PATCH 508/512] hw/arm/aspeed: Add fb_machine_class_init
+Subject: [PATCH] hw/arm/aspeed: Add fb_machine_class_init
 
 Signed-off-by: Peter Delevoryas <pdel@fb.com>
 ---
@@ -438,5 +438,5 @@ index a00238ed74..84252dcd41 100644
 +
  #endif
 -- 
-2.52.0
+2.53.0-Meta
 

@@ -1,7 +1,7 @@
-From 904ba264f42564c74d4241d2e8f7e93bc9916697 Mon Sep 17 00:00:00 2001
+From dc4e8d71aaa2b29d2c8c722aa655eb456abd1e32 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 23 Aug 2022 16:57:35 -0700
-Subject: [PATCH 521/522] hw/misc/aspeed: Add fby35 server board bridge IC
+Subject: [PATCH] hw/misc/aspeed: Add fby35 server board bridge IC
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 ---
@@ -361,10 +361,10 @@ index 0000000000..c7b1d420e2
 +
 +DEFINE_TYPES(types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 52aa4ef995..ba3579b1de 100644
+index e8357707ef..82c51ba15c 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -145,6 +145,7 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -146,6 +146,7 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_xdma.c',
    'aspeed_peci.c',
    'aspeed_sli.c',
@@ -373,10 +373,10 @@ index 52aa4ef995..ba3579b1de 100644
    'intel_me.c'))
  
 diff --git a/hw/misc/trace-events b/hw/misc/trace-events
-index 1c464dfa2d..dc625d9981 100644
+index 7beb879c62..7f956f209e 100644
 --- a/hw/misc/trace-events
 +++ b/hw/misc/trace-events
-@@ -418,6 +418,10 @@ iommu_testdev_dma_verify(uint32_t expected, uint32_t actual) "expected=0x%x actu
+@@ -420,6 +420,10 @@ iommu_testdev_dma_verify(uint32_t expected, uint32_t actual) "expected=0x%x actu
  iommu_testdev_dma_result(uint32_t result) "DMA completed result=0x%x"
  iommu_testdev_dma_armed(bool armed) "armed=%d"
  
@@ -432,5 +432,5 @@ index b8fbd1bf9a..20bd43fbae 100644
 +
  #endif
 -- 
-2.52.0
+2.53.0-Meta
 

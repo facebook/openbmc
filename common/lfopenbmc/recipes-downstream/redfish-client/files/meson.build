@@ -63,6 +63,7 @@ srcs = [
     'src/daemon.cpp',
     'src/persist_map.cpp',
     'src/sensor.cpp',
+    'src/sensor_handler.cpp',
     'src/log_service_handler.cpp',
     'src/update_service_handler.cpp',
     'src/redfish_client.cpp',

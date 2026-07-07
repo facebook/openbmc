@@ -1,4 +1,4 @@
-From e5f23343a9863e328f3a8623f0c2d8f8f396d8d8 Mon Sep 17 00:00:00 2001
+From 9b34ce29e5bcb95615eb96808c1832807c0f12a0 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Thu, 5 Jan 2023 01:13:45 -0800
 Subject: [PATCH] hw/misc: Add byte-by-byte i2c network device
@@ -541,10 +541,10 @@ index 0000000000..aaf8c85427
 +    return ret;
 +}
 diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
-index 088e64aca5..f998d30466 100644
+index 56ff860e21..e9b043275c 100644
 --- a/tests/qtest/meson.build
 +++ b/tests/qtest/meson.build
-@@ -219,6 +219,7 @@ qtests_npcm8xx = \
+@@ -221,6 +221,7 @@ qtests_npcm8xx = \
    ['npcm_gmac-test']
  qtests_aspeed = \
    ['aspeed_gpio-test',

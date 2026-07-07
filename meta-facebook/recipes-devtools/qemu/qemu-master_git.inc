@@ -28,7 +28,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=a3b50d8b88dcc0eb3d7d39b760b9e821 \
 #   git ls-remote https://github.com/qemu/qemu.git refs/heads/master | cut -f1
 # This is normally updated by the daily yocto sync job when
 # --refresh-patches is enabled
-QEMU_REF ?= "a59157f98f0b69b0bbdb26bc15fbc4d6c8060799"
+QEMU_REF ?= "916ab315cc2b3a3825ebb399d83339660144d5bd"
 
 # Use git protocol (required by BitBake QA)
 SRC_URI = "git://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \
@@ -52,7 +52,7 @@ SRC_URI += " \
            file://0511-hw-i2c-aspeed-Add-slave-event-traces.patch \
            file://0512-hw-i2c-aspeed-Fix-bus-derivation-for-slave-events.patch \
            \
-           file://0513-aspeed-Re-add-hw-arm-fby35.c.patch \
+           file://0513-aspeed-Re-add-hw-arm-fby35.c-dual-SoC-fby35-machine-.patch \
            file://0514-hw-i2c-aspeed-Fix-interrupt-status-flag-names.patch \
            file://0515-tests-Create-qtest-for-Aspeed-I2C-controller.patch \
            file://0516-scripts-Add-redact-util.patch \

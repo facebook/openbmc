@@ -1,4 +1,4 @@
-From 74d0eda7d4dec6ba6a772f84d676f5385a6d3552 Mon Sep 17 00:00:00 2001
+From 9b04608f6cbe044090e1fb7fbc94181805763264 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH] hw/misc/aspeed: Add fby35-sb-cpld
@@ -33,7 +33,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  create mode 100644 hw/misc/fby35_sb_cpld.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index f0695d3d2a..a821f561e2 100644
+index f7219d5d99..aa2c7bfb24 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
 @@ -1279,6 +1279,7 @@ F: tests/*/*aspeed*
@@ -202,10 +202,10 @@ index 44b19b0721..220236eb30 100644
  system_ss.add(when: 'CONFIG_MSF2', if_true: files('msf2-sysreg.c'))
  system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
 diff --git a/hw/misc/trace-events b/hw/misc/trace-events
-index 99910fc068..fe74bdb87d 100644
+index c9a868b3ef..b5e1862478 100644
 --- a/hw/misc/trace-events
 +++ b/hw/misc/trace-events
-@@ -419,3 +419,7 @@ iommu_testdev_dma_read(uint64_t gva, uint32_t len) "gva=0x%" PRIx64 " len=%u"
+@@ -442,3 +442,7 @@ iommu_testdev_dma_read(uint64_t gva, uint32_t len) "gva=0x%" PRIx64 " len=%u"
  iommu_testdev_dma_verify(uint32_t expected, uint32_t actual) "expected=0x%x actual=0x%x"
  iommu_testdev_dma_result(uint32_t result) "DMA completed result=0x%x"
  iommu_testdev_dma_armed(bool armed) "armed=%d"

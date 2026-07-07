@@ -1,4 +1,4 @@
-From 7171de3d80374b43dab04929469e9a5d4e1d92ae Mon Sep 17 00:00:00 2001
+From 6b38db34874815741d4120772c4213c22db06b6d Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH] hw/misc/aspeed: Add intel-me
@@ -26,7 +26,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  create mode 100644 hw/misc/intel_me.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index a821f561e2..561cf88e89 100644
+index aa2c7bfb24..0e4cdbe5be 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
 @@ -1280,6 +1280,7 @@ F: tests/*/*ast2700*
@@ -220,10 +220,10 @@ index 220236eb30..e8357707ef 100644
  system_ss.add(when: 'CONFIG_MSF2', if_true: files('msf2-sysreg.c'))
  system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
 diff --git a/hw/misc/trace-events b/hw/misc/trace-events
-index fe74bdb87d..7beb879c62 100644
+index b5e1862478..083b415661 100644
 --- a/hw/misc/trace-events
 +++ b/hw/misc/trace-events
-@@ -423,3 +423,11 @@ iommu_testdev_dma_armed(bool armed) "armed=%d"
+@@ -446,3 +446,11 @@ iommu_testdev_dma_armed(bool armed) "armed=%d"
  # fby35_sb_cpld.c
  fby35_sb_cpld_read(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"
  fby35_sb_cpld_write(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"

@@ -16,6 +16,7 @@ LOCAL_URI = " \
     "
 
 DEPENDS += " \
+    cli11 \
     nlohmann-json \
     phosphor-dbus-interfaces \
     phosphor-logging \

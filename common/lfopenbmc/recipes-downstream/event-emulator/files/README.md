@@ -13,11 +13,11 @@ them from real device events.
 # Generate an event
 event-emulator <device-type> <event-type> [EventName]
 
-# Resolve a previously generated event
-event-emulator resolve <device-type> <event-type> [EventName]
+# Resolve a previously generated event (-r / --resolve)
+event-emulator <device-type> <event-type> [EventName] --resolve
 
 # Show supported events for a device
-event-emulator <device-type>
+event-emulator <device-type> --help
 ```
 
 `EventName` is optional. When provided, it overrides the leaf (last segment)
@@ -42,8 +42,8 @@ suffix are still applied. When omitted, the device's default name is used.
 | sensor-failure       | Sensor failure                     |
 | all                  | Generate/resolve all device events |
 
-Not all devices support all event types. Use `event-emulator <device-type>` to
-see supported events.
+Not all devices support all event types. Use
+`event-emulator <device-type> --help` to see supported events.
 
 ## Examples
 
@@ -57,27 +57,27 @@ event-emulator psu power-fault PSU_3_2_CUSTOM_ALARM
 # fires on /xyz/openbmc_project/state/power_rail/PSU_3_2_CUSTOM_ALARM_EMULATED
 
 # Resolve that custom event (pass the same name)
-event-emulator resolve psu power-fault PSU_3_2_CUSTOM_ALARM
+event-emulator psu power-fault PSU_3_2_CUSTOM_ALARM --resolve
 
 # Generate all BBU events
 event-emulator bbu all
 
-# Resolve the PSU power fault
-event-emulator resolve psu power-fault
+# Resolve the PSU power fault (-r is shorthand for --resolve)
+event-emulator psu power-fault -r
 
 # Resolve all BBU events
-event-emulator resolve bbu all
+event-emulator bbu all --resolve
 ```
 
 ## State
 
 Pending event paths are stored in `/tmp/event-emulator/events.json`, keyed by
-`device:event-type:event-name`. This allows the resolve command to find
-previously generated events without requiring the user to track event paths
-manually. Because the key includes the name, events of the same device and
-type but different `EventName` can be pending at the same time; only an
-identical event is rejected as already pending. Resolve must be given the same
-`EventName` that was used to generate.
+`device:event-type:event-name`. This allows `--resolve` to find previously
+generated events without requiring the user to track event paths manually.
+Because the key includes the name, events of the same device and type but
+different `EventName` can be pending at the same time; only an identical event
+is rejected as already pending. `--resolve` must be given the same `EventName`
+that was used to generate.
 
 ## Adding a New Device
 

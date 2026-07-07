@@ -1,8 +1,7 @@
 #include "helper.hpp"
-#include <redfish_client/daemon.hpp>
-#include <redfish_client/core/update_service_handler.hpp>
 
-#include <xyz/openbmc_project/Sensor/Value/client.hpp>
+#include <redfish_client/core/update_service_handler.hpp>
+#include <redfish_client/daemon.hpp>
 #include <xyz/openbmc_project/Software/Activation/client.hpp>
 #include <xyz/openbmc_project/Software/Version/client.hpp>
 
@@ -26,29 +25,6 @@ static constexpr auto kTestConfigFormat = R"(
   {{
     "host": "localhost:{}",
     "compatible": "com.meta.Hardware.BMC.TEST",
-    "sensorConfig": {{
-      "associationPath": "/xyz/openbmc_project/inventory/system/host0",
-      "intervalMilliseconds": 10,
-      "maxRetries": 1,
-      "retryIntervalMilliseconds": 1,
-      "mappers": [
-        {{
-          "fromUrl": "/redfish/v1/Chassis/Host0/Sensors/Temp0",
-          "toNamespace": "temperature",
-          "toId": "Host0_Temp0"
-        }},
-        {{
-          "fromUrl": "/redfish/v1/Chassis/Host0/Sensors/Temp1",
-          "toNamespace": "temperature",
-          "toId": "Host0_Temp1"
-        }},
-        {{
-          "fromUrl": "/redfish/v1/Chassis/Host0/Sensors/Pressure0",
-          "toNamespace": "pressure",
-          "toId": "Host0_Pressure0"
-        }}
-      ]
-    }},
     "updateServiceConfig": {{
       "intervalMilliseconds": 10,
       "firmwareMappers": [
@@ -69,30 +45,6 @@ static constexpr auto kTestConfigFormat = R"(
       ]
     }}
   }}
-)";
-
-static constexpr auto kTestResponse0 = R"(
-  {
-    "Name": "Unused",
-    "Reading": 100.0,
-    "ReadingType": "Temperature",
-    "ReadingUnits": "Cel",
-    "Status": {
-      "State": "Enabled"
-    }
-  }
-)";
-
-static constexpr auto kTestResponse1 = R"(
-  {
-    "Name": "Unused",
-    "Reading": 200.0,
-    "ReadingType": "Temperature",
-    "ReadingUnits": "Cel",
-    "Status": {
-      "State": "Enabled"
-    }
-  }
 )";
 
 static constexpr auto kFirmwareInventoryResponse = R"(
@@ -150,16 +102,7 @@ static constexpr auto kSoftwareInventoryResponse = R"(
 std::string generateResponse(
     const SimpleTestHttpServer::ReceivedHttpRequest& request)
 {
-    if (request.path.ends_with("/Temp0"))
-    {
-        return kTestResponse0;
-    }
-    else if (request.path.ends_with("/Temp1"))
-    {
-        return kTestResponse1;
-    }
-    else if (request.path.ends_with(
-                 "/UpdateService/FirmwareInventory?$expand=."))
+    if (request.path.ends_with("/UpdateService/FirmwareInventory?$expand=."))
     {
         return kFirmwareInventoryResponse;
     }
@@ -173,13 +116,6 @@ std::string generateResponse(
         // Bad response
         return "[]";
     }
-}
-
-auto getSensorClient(sdbusplus::async::context& ctx, const char* metricPath)
-{
-    using ValueClient =
-        sdbusplus::client::xyz::openbmc_project::sensor::Value<>;
-    return ValueClient(ctx).service(kServiceName).path(metricPath);
 }
 
 auto getSoftwareVersionClient(sdbusplus::async::context& ctx, const char* path)
@@ -214,9 +150,9 @@ TEST(RedfishClientTests, SimpleDaemonRun)
 
     ctx.spawn([&server](
                   sdbusplus::async::context& ctx) -> sdbusplus::async::task<> {
-        // First wait for the getBodyCount value to go up to a large enough
-        // number. This gives the test daemon enough time to write those
-        // sensor values to dbus.
+        // First wait for the request count to go up to a large enough number.
+        // This gives the test daemon enough time to publish the software
+        // objects to dbus.
         static constexpr auto kMaxRequests = 50;
         static constexpr auto kSleepMilliseconds = 100;
         while (server.getReceivedRequests().size() < kMaxRequests)
@@ -224,21 +160,6 @@ TEST(RedfishClientTests, SimpleDaemonRun)
             co_await sdbusplus::async::sleep_for(
                 ctx, std::chrono::milliseconds(kSleepMilliseconds));
         }
-
-        auto sensorClient0 = getSensorClient(
-            ctx, "/xyz/openbmc_project/sensors/temperature/Host0_Temp0");
-        EXPECT_EQ(100.0, co_await sensorClient0.value());
-
-        auto sensorClient1 = getSensorClient(
-            ctx, "/xyz/openbmc_project/sensors/temperature/Host0_Temp1");
-        EXPECT_EQ(200.0, co_await sensorClient1.value());
-
-        // Source sends bad json for this, so we should not be able to read
-        // it.
-        auto sensorClient2 = getSensorClient(
-            ctx, "/xyz/openbmc_project/sensors/pressure/Host0_Pressure0");
-        EXPECT_THROW(co_await sensorClient2.value(),
-                     sdbusplus::exception::SdBusError);
 
         constexpr auto fw0Path = "/xyz/openbmc_project/software/Host0_FW0_1234";
         auto fw0VersionClient = getSoftwareVersionClient(ctx, fw0Path);

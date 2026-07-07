@@ -1,4 +1,4 @@
-From 8f14f74b05d1694d614b43ab03d0dcd9c5e9a5f7 Mon Sep 17 00:00:00 2001
+From d77eecf25fcbd36aa59fbac09bb3ec37f8eb2c9e Mon Sep 17 00:00:00 2001
 From: Dirk Chen <dirkchen@amd.com>
 Date: Tue, 13 Jan 2026 01:06:34 +0800
 Subject: [PATCH] cpld: Add firmware update support for Lattice XO5-15D
@@ -1035,10 +1035,10 @@ index 0000000..647c2b6
 +
 +} // namespace phosphor::software::cpld
 diff --git a/cpld/meson.build b/cpld/meson.build
-index de05e51..3512a2d 100644
+index 9fa47ea..efe5bb7 100644
 --- a/cpld/meson.build
 +++ b/cpld/meson.build
-@@ -7,6 +7,7 @@ cpld_vendor_src = files(
+@@ -10,6 +10,7 @@ cpld_vendor_src = files(
      'lattice/lattice_xo5_base_cpld.cpp',
      'lattice/lattice_xo5_standard_cpld.cpp',
      'lattice/lattice_xo5_tseries_cpld.cpp',

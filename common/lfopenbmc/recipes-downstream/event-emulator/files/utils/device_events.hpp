@@ -9,13 +9,15 @@
 namespace event_emulator
 {
 
+// Per-device event names (leaf). Final path = <interface-prefix> + name +
+// "_EMULATED"; the prefix is owned by each generate/resolve function.
 struct DeviceEventData
 {
-    std::string sensorPath;
-    std::string powerRailPath;
-    std::string fanPath;
-    std::string smcPath;
-    std::string sensorFailurePath;
+    std::string sensorName;
+    std::string powerRailName;
+    std::string fanName;
+    std::string smcName;
+    std::string sensorFailureName;
     std::string failureType;
     std::string powerFailureData;
     std::vector<std::string> supportedEvents;

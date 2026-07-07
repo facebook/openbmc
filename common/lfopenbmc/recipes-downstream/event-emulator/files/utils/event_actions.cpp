@@ -13,6 +13,37 @@ namespace event_emulator
 
 PHOSPHOR_LOG2_USING;
 
+// If eventName is provided, override the default name (leaf) used by this
+// event type. Only the name relevant to eventType is changed.
+static void applyEventName(DeviceEventData& data, const std::string& eventType,
+                           const std::string& eventName)
+{
+    if (eventName.empty())
+    {
+        return;
+    }
+    if (eventType == "reading-critical")
+    {
+        data.sensorName = eventName;
+    }
+    else if (eventType == "power-fault")
+    {
+        data.powerRailName = eventName;
+    }
+    else if (eventType == "fan-failure")
+    {
+        data.fanName = eventName;
+    }
+    else if (eventType == "controller-failure")
+    {
+        data.smcName = eventName;
+    }
+    else if (eventType == "sensor-failure")
+    {
+        data.sensorFailureName = eventName;
+    }
+}
+
 auto dispatchGenerate(sdbusplus::async::context& ctx,
                       const std::string& eventType, const DeviceEventData& data)
     -> sdbusplus::async::task<sdbusplus::object_path>
@@ -66,16 +97,20 @@ auto dispatchResolve(sdbusplus::async::context& ctx,
 
 auto processGenerate(sdbusplus::async::context& ctx, const std::string& device,
                      const std::string& eventType, const DeviceEventData& data,
-                     EventStateMap& state) -> sdbusplus::async::task<>
+                     EventStateMap& state, const std::string& eventName)
+    -> sdbusplus::async::task<>
 {
-    auto key = makeKey(device, eventType);
+    auto key = makeKey(device, eventType, eventName);
     if (state.contains(key))
     {
         std::cerr << eventType << ": already pending (use resolve first)\n";
         co_return;
     }
 
-    auto path = co_await dispatchGenerate(ctx, eventType, data);
+    DeviceEventData eventData = data;
+    applyEventName(eventData, eventType, eventName);
+
+    auto path = co_await dispatchGenerate(ctx, eventType, eventData);
     state[key] = path.str;
     std::cout << eventType << ": " << path.str << "\n";
     co_return;
@@ -83,9 +118,10 @@ auto processGenerate(sdbusplus::async::context& ctx, const std::string& device,
 
 auto processResolve(sdbusplus::async::context& ctx, const std::string& device,
                     const std::string& eventType, const DeviceEventData& data,
-                    EventStateMap& state) -> sdbusplus::async::task<>
+                    EventStateMap& state, const std::string& eventName)
+    -> sdbusplus::async::task<>
 {
-    auto key = makeKey(device, eventType);
+    auto key = makeKey(device, eventType, eventName);
     auto it = state.find(key);
     if (it == state.end())
     {
@@ -93,28 +129,34 @@ auto processResolve(sdbusplus::async::context& ctx, const std::string& device,
         co_return;
     }
 
+    DeviceEventData eventData = data;
+    applyEventName(eventData, eventType, eventName);
+
     sdbusplus::object_path path(it->second);
-    co_await dispatchResolve(ctx, eventType, path, data);
+    co_await dispatchResolve(ctx, eventType, path, eventData);
     std::cout << eventType << ": resolved " << path.str << "\n";
     state.erase(it);
 }
 
 auto runGenerate(sdbusplus::async::context& ctx, const std::string& device,
-                 const std::string& eventType) -> sdbusplus::async::task<>
+                 const std::string& eventType, const std::string& eventName)
+    -> sdbusplus::async::task<>
 {
     auto data = getDeviceData(device);
     auto state = loadState();
 
     if (eventType == "all")
     {
+        // eventName is only meaningful for a single event, ignore for "all".
         for (const auto& et : data.supportedEvents)
         {
-            co_await processGenerate(ctx, device, et, data, state);
+            co_await processGenerate(ctx, device, et, data, state, "");
         }
     }
     else
     {
-        co_await processGenerate(ctx, device, eventType, data, state);
+        co_await processGenerate(ctx, device, eventType, data, state,
+                                 eventName);
     }
 
     saveState(state);
@@ -123,21 +165,23 @@ auto runGenerate(sdbusplus::async::context& ctx, const std::string& device,
 }
 
 auto runResolve(sdbusplus::async::context& ctx, const std::string& device,
-                const std::string& eventType) -> sdbusplus::async::task<>
+                const std::string& eventType, const std::string& eventName)
+    -> sdbusplus::async::task<>
 {
     auto data = getDeviceData(device);
     auto state = loadState();
 
     if (eventType == "all")
     {
+        // eventName is only meaningful for a single event, ignore for "all".
         for (const auto& et : data.supportedEvents)
         {
-            co_await processResolve(ctx, device, et, data, state);
+            co_await processResolve(ctx, device, et, data, state, "");
         }
     }
     else
     {
-        co_await processResolve(ctx, device, eventType, data, state);
+        co_await processResolve(ctx, device, eventType, data, state, eventName);
     }
 
     saveState(state);

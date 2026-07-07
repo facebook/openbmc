@@ -15,9 +15,17 @@ PHOSPHOR_LOG2_USING;
 
 using SensorUnit = sdbusplus::common::xyz::openbmc_project::sensor::Value::Unit;
 
-static auto emulatedPath(const std::string& path) -> sdbusplus::object_path
+// Interface object-path prefixes. The leaf name comes from DeviceEventData.
+static constexpr auto sensorPrefix = "/xyz/openbmc_project/sensor/";
+static constexpr auto powerRailPrefix =
+    "/xyz/openbmc_project/state/power_rail/";
+static constexpr auto fanPrefix = "/xyz/openbmc_project/state/fan/";
+static constexpr auto smcPrefix = "/xyz/openbmc_project/state/smc/";
+
+static auto emulatedPath(std::string_view prefix, const std::string& name)
+    -> sdbusplus::object_path
 {
-    return sdbusplus::object_path(path + "_EMULATED");
+    return sdbusplus::object_path(std::string(prefix) + name + "_EMULATED");
 }
 
 namespace sensorError =
@@ -40,8 +48,8 @@ auto generateReadingCritical(sdbusplus::async::context& ctx,
     info("Creating SensorReadingCritical event...");
     co_return co_await lg2::commit(
         ctx, sensorError::ReadingCritical(
-                 "SENSOR_NAME", emulatedPath(data.sensorPath), "READING_VALUE",
-                 85.0, "UNITS", SensorUnit::DegreesC));
+                 "SENSOR_NAME", emulatedPath(sensorPrefix, data.sensorName),
+                 "READING_VALUE", 85.0, "UNITS", SensorUnit::DegreesC));
 }
 
 auto generatePowerFault(sdbusplus::async::context& ctx,
@@ -50,9 +58,10 @@ auto generatePowerFault(sdbusplus::async::context& ctx,
 {
     info("Creating PowerRailFault event...");
     co_return co_await lg2::commit(
-        ctx, powerError::PowerRailFault("POWER_RAIL",
-                                        emulatedPath(data.powerRailPath),
-                                        "FAILURE_DATA", data.powerFailureData));
+        ctx,
+        powerError::PowerRailFault(
+            "POWER_RAIL", emulatedPath(powerRailPrefix, data.powerRailName),
+            "FAILURE_DATA", data.powerFailureData));
 }
 
 auto generateFanFailure(sdbusplus::async::context& ctx,
@@ -61,7 +70,8 @@ auto generateFanFailure(sdbusplus::async::context& ctx,
 {
     info("Creating FanFailure event...");
     co_return co_await lg2::commit(
-        ctx, fanError::FanFailed("FAN_NAME", emulatedPath(data.fanPath)));
+        ctx,
+        fanError::FanFailed("FAN_NAME", emulatedPath(fanPrefix, data.fanName)));
 }
 
 auto generateControllerFailure(sdbusplus::async::context& ctx,
@@ -70,8 +80,9 @@ auto generateControllerFailure(sdbusplus::async::context& ctx,
 {
     info("Creating SMCFailed event...");
     co_return co_await lg2::commit(
-        ctx, smcError::SMCFailed("IDENTIFIER", emulatedPath(data.smcPath),
-                                 "FAILURE_TYPE", data.failureType));
+        ctx,
+        smcError::SMCFailed("IDENTIFIER", emulatedPath(smcPrefix, data.smcName),
+                            "FAILURE_TYPE", data.failureType));
 }
 
 auto generateSensorFailure(sdbusplus::async::context& ctx,
@@ -80,8 +91,9 @@ auto generateSensorFailure(sdbusplus::async::context& ctx,
 {
     info("Creating SensorFailure event...");
     co_return co_await lg2::commit(
-        ctx, sensorIntfError::SensorFailure(
-                 "SENSOR_NAME", emulatedPath(data.sensorFailurePath)));
+        ctx,
+        sensorIntfError::SensorFailure(
+            "SENSOR_NAME", emulatedPath(sensorPrefix, data.sensorFailureName)));
 }
 
 auto resolveReadingCritical(sdbusplus::async::context& ctx,
@@ -93,8 +105,8 @@ auto resolveReadingCritical(sdbusplus::async::context& ctx,
     co_await lg2::resolve(ctx, eventPath);
     co_await lg2::commit(
         ctx, sensorEvent::SensorReadingNormalRange(
-                 "SENSOR_NAME", emulatedPath(data.sensorPath), "READING_VALUE",
-                 25.0, "UNITS", SensorUnit::DegreesC));
+                 "SENSOR_NAME", emulatedPath(sensorPrefix, data.sensorName),
+                 "READING_VALUE", 25.0, "UNITS", SensorUnit::DegreesC));
 }
 
 auto resolvePowerFault(sdbusplus::async::context& ctx,
@@ -103,9 +115,10 @@ auto resolvePowerFault(sdbusplus::async::context& ctx,
 {
     info("Resolving PowerRailFault event {PATH}...", "PATH", eventPath);
     co_await lg2::resolve(ctx, eventPath);
-    co_await lg2::commit(ctx,
-                         powerEvent::PowerRailFaultRecovered(
-                             "POWER_RAIL", emulatedPath(data.powerRailPath)));
+    co_await lg2::commit(
+        ctx,
+        powerEvent::PowerRailFaultRecovered(
+            "POWER_RAIL", emulatedPath(powerRailPrefix, data.powerRailName)));
 }
 
 auto resolveFanFailure(sdbusplus::async::context& ctx,
@@ -115,7 +128,8 @@ auto resolveFanFailure(sdbusplus::async::context& ctx,
     info("Resolving FanFailure event {PATH}...", "PATH", eventPath);
     co_await lg2::resolve(ctx, eventPath);
     co_await lg2::commit(
-        ctx, fanEvent::FanRestored("FAN_NAME", emulatedPath(data.fanPath)));
+        ctx, fanEvent::FanRestored("FAN_NAME",
+                                   emulatedPath(fanPrefix, data.fanName)));
 }
 
 auto resolveControllerFailure(sdbusplus::async::context& ctx,
@@ -126,7 +140,8 @@ auto resolveControllerFailure(sdbusplus::async::context& ctx,
     info("Resolving SMCFailed event {PATH}...", "PATH", eventPath);
     co_await lg2::resolve(ctx, eventPath);
     co_await lg2::commit(
-        ctx, smcEvent::SMCRestored("IDENTIFIER", emulatedPath(data.smcPath)));
+        ctx, smcEvent::SMCRestored("IDENTIFIER",
+                                   emulatedPath(smcPrefix, data.smcName)));
 }
 
 auto resolveSensorFailure(sdbusplus::async::context& ctx,
@@ -137,8 +152,9 @@ auto resolveSensorFailure(sdbusplus::async::context& ctx,
     info("Resolving SensorFailure event {PATH}...", "PATH", eventPath);
     co_await lg2::resolve(ctx, eventPath);
     co_await lg2::commit(
-        ctx, sensorIntfEvent::SensorRestored(
-                 "SENSOR_NAME", emulatedPath(data.sensorFailurePath)));
+        ctx,
+        sensorIntfEvent::SensorRestored(
+            "SENSOR_NAME", emulatedPath(sensorPrefix, data.sensorFailureName)));
 }
 
 } // namespace event_emulator

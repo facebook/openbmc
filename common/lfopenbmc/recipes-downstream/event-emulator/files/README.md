@@ -11,14 +11,19 @@ them from real device events.
 
 ```bash
 # Generate an event
-event-emulator <device-type> <event-type>
+event-emulator <device-type> <event-type> [EventName]
 
 # Resolve a previously generated event
-event-emulator resolve <device-type> <event-type>
+event-emulator resolve <device-type> <event-type> [EventName]
 
 # Show supported events for a device
 event-emulator <device-type>
 ```
+
+`EventName` is optional. When provided, it overrides the leaf (last segment)
+of the event object path/name; the interface prefix and the `_EMULATED`
+suffix are still applied. When omitted, the device's default name is used.
+`EventName` cannot be combined with `all`.
 
 ## Device Types
 
@@ -47,6 +52,13 @@ see supported events.
 event-emulator psu power-fault
 # output: power-fault: /xyz/openbmc_project/logging/entry/42
 
+# Generate a PSU power fault event with a custom name
+event-emulator psu power-fault PSU_3_2_CUSTOM_ALARM
+# fires on /xyz/openbmc_project/state/power_rail/PSU_3_2_CUSTOM_ALARM_EMULATED
+
+# Resolve that custom event (pass the same name)
+event-emulator resolve psu power-fault PSU_3_2_CUSTOM_ALARM
+
 # Generate all BBU events
 event-emulator bbu all
 
@@ -59,9 +71,13 @@ event-emulator resolve bbu all
 
 ## State
 
-Pending event paths are stored in `/tmp/event-emulator/events.json`. This
-allows the resolve command to find previously generated events without
-requiring the user to track event paths manually.
+Pending event paths are stored in `/tmp/event-emulator/events.json`, keyed by
+`device:event-type:event-name`. This allows the resolve command to find
+previously generated events without requiring the user to track event paths
+manually. Because the key includes the name, events of the same device and
+type but different `EventName` can be pending at the same time; only an
+identical event is rejected as already pending. Resolve must be given the same
+`EventName` that was used to generate.
 
 ## Adding a New Device
 
@@ -75,8 +91,8 @@ namespace event_emulator
 
 static DeviceRegistration myDeviceRegistration("mydevice", [] {
     return DeviceEventData{
-        .sensorPath = "/xyz/openbmc_project/sensor/MY_SENSOR",
-        // ... other paths ...
+        .sensorName = "MY_SENSOR",
+        // ... other leaf names ...
         .supportedEvents = {"reading-critical", "fan-failure"},
     };
 });
@@ -88,9 +104,11 @@ Add the file to `meson.build` and rebuild. No other changes needed.
 
 ## Adding a New Event Type
 
-1. If the new event uses a D-Bus path not already in `DeviceEventData`, add a
-   new path field to the struct in `utils/device_events.hpp` and populate it
-   in the device files under `devices/` that support it.
+1. If the new event uses a name not already in `DeviceEventData`, add a new
+   leaf-name field to the struct in `utils/device_events.hpp` and populate it
+   in the device files under `devices/` that support it. The interface
+   object-path prefix is owned by the generate/resolve function (see the
+   `*Prefix` constants in `utils/device_events.cpp`), not the struct.
 
 2. Add generate and resolve functions in `utils/device_events.hpp` and
    `utils/device_events.cpp` following the existing pattern.

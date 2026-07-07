@@ -39,10 +39,10 @@ void saveState(const EventStateMap& state)
     file << j.dump(4) << "\n";
 }
 
-auto makeKey(const std::string& device, const std::string& eventType)
-    -> std::string
+auto makeKey(const std::string& device, const std::string& eventType,
+             const std::string& eventName) -> std::string
 {
-    return device + ":" + eventType;
+    return device + ":" + eventType + ":" + eventName;
 }
 
 } // namespace event_emulator

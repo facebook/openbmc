@@ -20,6 +20,9 @@ void printUsage(const char* prog)
               << "path/name. If omitted, the default is used. It cannot be\n"
               << "used with 'all'.\n"
               << "\n"
+              << "Note: every generated event has '_EMULATED' appended to its\n"
+              << "name to distinguish emulated events from production ones.\n"
+              << "\n"
               << "Device types:\n";
 
     for (const auto& [name, _] : getDeviceRegistry())

@@ -1,7 +1,7 @@
 #include "helper.hpp"
 
+#include <redfish_client/core/redfish_client.hpp>
 #include <redfish_client/core/update_service_handler.hpp>
-#include <redfish_client/daemon.hpp>
 #include <xyz/openbmc_project/Software/Activation/client.hpp>
 #include <xyz/openbmc_project/Software/Version/client.hpp>
 
@@ -13,7 +13,6 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-using namespace redfish_client_daemon;
 using namespace redfish_client::core;
 
 namespace
@@ -137,7 +136,6 @@ auto getSoftwareActivationClient(sdbusplus::async::context& ctx,
 
 TEST(RedfishClientTests, SimpleDaemonRun)
 {
-    installSignalHandlers();
     sdbusplus::async::context ctx;
     std::unordered_map<std::string, std::string> responseHeaders;
     SimpleTestHttpServer server(generateResponse, responseHeaders);
@@ -145,7 +143,10 @@ TEST(RedfishClientTests, SimpleDaemonRun)
     auto config = Config::parse(configJson);
     Software::randomIdGenerator() = []() { return 1234; };
     auto daemonThread = std::make_unique<std::thread>([&ctx, &config]() {
-        runRedfishClient(kServiceName, ctx, config);
+        ctx.request_name(kServiceName);
+        RedfishClient client(ctx, config, /*persistDir=*/"");
+        ctx.spawn(client.run());
+        ctx.run();
     });
 
     ctx.spawn([&server](

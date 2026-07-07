@@ -60,7 +60,6 @@ link_args = ['-rdynamic']
 srcs = [
     'src/async_http_client.cpp',
     'src/config.cpp',
-    'src/daemon.cpp',
     'src/persist_map.cpp',
     'src/sensor.cpp',
     'src/sensor_handler.cpp',
@@ -97,7 +96,7 @@ install_subdir(
 
 executable(
     'redfish-client',
-    'src/daemon_main.cpp',
+    'src/main.cpp',
     dependencies: base_deps,
     include_directories: root_inc,
     cpp_args: cpp_args,

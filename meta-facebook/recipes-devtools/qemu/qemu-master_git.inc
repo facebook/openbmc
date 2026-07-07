@@ -26,7 +26,8 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=a3b50d8b88dcc0eb3d7d39b760b9e821 \
 # QEMU reference - commit SHA for reproducible builds
 # To update to latest master, run:
 #   git ls-remote https://github.com/qemu/qemu.git refs/heads/master | cut -f1
-# v11.0.0-2604-ga59157f98f
+# This is normally updated by the daily yocto sync job when
+# --refresh-patches is enabled
 QEMU_REF ?= "a59157f98f0b69b0bbdb26bc15fbc4d6c8060799"
 
 # Use git protocol (required by BitBake QA)

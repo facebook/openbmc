@@ -236,7 +236,7 @@ fru_insert_event(int fru_id, uint8_t *e1s_iocm_present_status) {
 static void *
 fru_missing_monitor() {
   uint8_t fru_present_flag = 0, chassis_type = 0, uic_location_id = 0;
-  uint8_t fru_present_status[FRU_CNT] = {FRU_PRESENT};
+  uint8_t fru_present_status[MAX_NUM_FRUS+1] = {FRU_PRESENT};
   uint8_t e1s_iocm_present_status[E1S_IOCM_SLOT_NUM] = {FRU_PRESENT};
   char fru_name[MAX_FRU_NAME_STR] = {0};
   char uic_location = '?';
@@ -250,7 +250,7 @@ fru_missing_monitor() {
   kv_set("flag_gpiod_fru_miss", STR_VALUE_1, 0, 0);
 
   while(1) {
-    for (fru_id = FRU_SERVER; fru_id < FRU_CNT; fru_id++) {
+    for (fru_id = FRU_SERVER; fru_id <= pal_get_fru_count(); fru_id++) {
       if ((fru_id == FRU_SERVER) || (fru_id == FRU_SCC)) {
         if (pal_is_fru_prsnt(fru_id, &fru_present_flag) < 0) {
           syslog(LOG_WARNING, "%s(): fail to get fru: %d present status\n", __func__, fru_id);

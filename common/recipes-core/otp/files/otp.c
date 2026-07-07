@@ -892,7 +892,6 @@ static int otp_print_strap_info(int view)
 	uint32_t bit_offset;
 	uint32_t length;
 	uint32_t otp_value;
-	uint32_t otp_protect;
 
 	otp_read_strap(strap_status);
 
@@ -912,7 +911,6 @@ static int otp_print_strap_info(int view)
 		length = strap_info[i].length;
 		for (j = 0; j < length; j++) {
 			otp_value |= strap_status[bit_offset + j].value << j;
-			otp_protect |= strap_status[bit_offset + j].protected << j;
 		}
 		if (otp_value != strap_info[i].value &&
 		    strap_info[i].value != OTP_REG_RESERVED)
@@ -1946,7 +1944,7 @@ static int _do_otpprotect(int argc, char *const argv[], int preg)
 		printf("OTPSTRAP[%d] %salready protected\n", input, info);
 		return OTP_SUCCESS;
 	}
-	
+
 	ret = otp_prog_conf_b(prog_address, bit_offset, 1);
 
 	if (ret == OTP_SUCCESS)

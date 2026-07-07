@@ -1,3 +1,4 @@
+#include "utils/clowntown.hpp"
 #include "utils/json.hpp"
 #include "utils/register.hpp"
 #include "utils/supervise.hpp"
@@ -16,6 +17,16 @@ int main(int argc, char** argv)
 {
     CLI::App app{"mfg-tool: temporary utilities for manufacturing support"};
     app.require_subcommand(1);
+
+    // Global expert-mode flag.  When set, mfg-tool skips its safety guardrails
+    // (e.g. refusing to run when multiple services publish conflicting data for
+    // the same object).  Bound to the global accessor so any command can honor
+    // it.  Use it before the subcommand, e.g. `mfg-tool --clowntown inventory`.
+    app.add_flag(
+        "--clowntown", mfgtool::clowntown::flag(),
+        "Expert mode: skip mfg-tool's safety guardrails. You are telling the "
+        "tool you know what you are doing and do not want it being careful.");
+
     mfgtool::init_commands(app);
 
     int timeout = 0;

@@ -1,9 +1,10 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI:append = " \
-    file://1000-TODO-nvidia-gpu-add-leak-sensors.patch \
     file://1001-Add-NVMeMI-sensor-service.patch \
     file://1002-Fix-NVMeMI-sensor-build-error.patch \
+    file://1003-nvidia-gpu-add-support-for-SMA-leak-sensors.patch \
+    file://1004-nvidia-gpu-probe-SMA-sensors-via-MCTP-before-instant.patch \
 "
 
 DEPENDS += " libnvme"

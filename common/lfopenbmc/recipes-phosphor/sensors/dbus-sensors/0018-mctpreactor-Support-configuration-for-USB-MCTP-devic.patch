@@ -1,0 +1,334 @@
+From dbca9d83fd05266f591385a196692d371306ef0e Mon Sep 17 00:00:00 2001
+From: Saptarsi Saha <saptarsis@nvidia.com>
+Date: Tue, 20 May 2025 21:38:37 +0530
+Subject: [PATCH] mctpreactor: Support configuration for USB MCTP devices
+
+Changes for MCTPUSBDevice reactor with schema defined in mctp.json[1]
+
+Tested
+'''
+On gb200nvl-obmc machine, the mctpreactor is able to read the exposed EM config and populate the EID properly for usb devices.
+'''
+'''
+MCTP over USB enumeration on Alon8 via this + [2].
+'''
+[1](https://gerrit.openbmc.org/c/openbmc/entity-manager/+/77381)
+[2](https://gerrit.openbmc.org/c/openbmc/entity-manager/+/85991)
+
+Change-Id: I2a2c30605b2738f64d30b3f3efcdefdece8e5652
+Signed-off-by: Saptarsi Saha <saptarsis@nvidia.com>
+Signed-off-by: Deepak Kodihalli <deepak.kodihalli.83@gmail.com>
+---
+ src/mctp/MCTPEndpoint.cpp    | 204 +++++++++++++++++++++++++++++++++++
+ src/mctp/MCTPEndpoint.hpp    |  28 +++++
+ src/mctp/MCTPReactorMain.cpp |  11 +-
+ 3 files changed, 241 insertions(+), 2 deletions(-)
+
+diff --git a/src/mctp/MCTPEndpoint.cpp b/src/mctp/MCTPEndpoint.cpp
+index 93eea5e..76764aa 100644
+--- a/src/mctp/MCTPEndpoint.cpp
++++ b/src/mctp/MCTPEndpoint.cpp
+@@ -21,13 +21,17 @@
+ #include <exception>
+ #include <filesystem>
+ #include <format>
++#include <fstream>
+ #include <functional>
++#include <iterator>
+ #include <map>
+ #include <memory>
++#include <numeric>
+ #include <optional>
+ #include <set>
+ #include <stdexcept>
+ #include <string>
++#include <string_view>
+ #include <system_error>
+ #include <utility>
+ #include <variant>
+@@ -561,3 +565,203 @@ std::string I3CMCTPDDevice::interfaceFromBus(int bus)
+           "I3C_BUS", bus, "NET_DEVICE", netdir);
+     throw MCTPException("No matching net device found for the specified bus");
+ }
++
++/*
++ * Given the sysfs path for a USB root hub, determines the bus number. An
++ * example root hub path on an AST2600 is
++ * /sys/devices/platform/ahb/1e6a3000.usb. This function identifies the
++ * correct bus device directory (e.g. "usb1") by looking for a "busnum"
++ * attribute file within it, and returns the content of that file.
++ */
++std::string USBMCTPDDevice::busFromRootHubPath(
++    const std::filesystem::path& rootHubPath)
++{
++    std::error_code ec;
++    std::filesystem::directory_iterator it(rootHubPath, ec);
++    if (ec)
++    {
++        error("Unable to open RootHubPath {PATH}", "PATH", rootHubPath);
++        throw MCTPException("Invalid RootHubPath");
++    }
++
++    for (const auto& entry : it)
++    {
++        const auto& path = entry.path();
++        if (!entry.is_directory() ||
++            !path.filename().string().starts_with("usb"))
++        {
++            continue;
++        }
++
++        std::filesystem::path busnumPath = path / "busnum";
++        if (!std::filesystem::exists(busnumPath))
++        {
++            continue;
++        }
++        std::ifstream busnumFile(busnumPath);
++        std::string busnum;
++        if (busnumFile >> busnum && !busnum.empty())
++        {
++            return busnum;
++        }
++    }
++
++    error(
++        "No directory containing a 'busnum' file found under RootHubPath {PATH}",
++        "PATH", rootHubPath);
++    throw MCTPException("Could not determine bus number");
++}
++
++/*
++ * Given the components of a USB device's sysfs path, construct the full path
++ * and determine the network interface name associated with it.
++ */
++std::string USBMCTPDDevice::interfaceFromSysfs(
++    const std::string& bus, const std::string& port, uint8_t configuration,
++    uint8_t interfaceNum)
++{
++    std::filesystem::path netdir =
++        std::format("/sys/bus/usb/devices/{}-{}/{}-{}:{}.{}/net", bus, port,
++                    bus, port, configuration, interfaceNum);
++    std::error_code ec;
++    std::filesystem::directory_iterator it(netdir, ec);
++    if (ec || it == std::filesystem::end(it))
++    {
++        error("No net device associated with USB device at {NET_DEVICE}",
++              "NET_DEVICE", netdir);
++        throw MCTPException("Device is not configured as an MCTP interface");
++    }
++
++    return it->path().filename();
++}
++
++std::optional<SensorBaseConfigMap> USBMCTPDDevice::match(
++    const SensorData& config)
++{
++    auto iface = config.find(configInterfaceName(configType));
++    if (iface == config.end())
++    {
++        return std::nullopt;
++    }
++    return iface->second;
++}
++
++bool USBMCTPDDevice::match(const std::set<std::string>& interfaces)
++{
++    return interfaces.contains(configInterfaceName(configType));
++}
++
++std::shared_ptr<USBMCTPDDevice> USBMCTPDDevice::from(
++    const std::shared_ptr<sdbusplus::asio::connection>& connection,
++    const SensorBaseConfigMap& iface)
++{
++    auto mName = iface.find("Name");
++    auto mType = iface.find("Type");
++    if (mType == iface.end())
++    {
++        throw std::invalid_argument(
++            "No 'Type' member found for provided configuration object");
++    }
++
++    auto type = std::visit(VariantToStringVisitor(), mType->second);
++    if (type != configType)
++    {
++        throw std::invalid_argument("Not an USB device");
++    }
++
++    auto mRootHubPosition = iface.find("RootHubPosition");
++    auto mPort = iface.find("Port");
++    auto mConfiguration = iface.find("Configuration");
++    auto mInterface = iface.find("Interface");
++
++    if (mName == iface.end() || mRootHubPosition == iface.end() ||
++        mPort == iface.end() || mConfiguration == iface.end() ||
++        mInterface == iface.end())
++    {
++        throw std::invalid_argument(
++            "Configuration object violates MCTPUSBDevice schema");
++    }
++
++    // Check SOC family
++    std::ifstream socFamilyFile("/sys/bus/soc/devices/soc0/family");
++    if (!socFamilyFile)
++    {
++        throw MCTPException("Unable to read SOC family information");
++    }
++    std::string socFamily;
++    std::getline(socFamilyFile, socFamily);
++    if (socFamily.find("AST2600") == std::string::npos)
++    {
++        error("Unsupported SOC for USB MCTP: {SOC_FAMILY}", "SOC_FAMILY",
++              socFamily);
++        throw MCTPException("Unsupported SOC for USB MCTP");
++    }
++
++    // Map RootHubPosition to actual path
++    auto rootHubPosition =
++        std::visit(VariantToStringVisitor(), mRootHubPosition->second);
++    std::string rootHubPath;
++    if (rootHubPosition == "0")
++    {
++        rootHubPath = "/sys/devices/platform/ahb/1e6a3000.usb";
++    }
++    else if (rootHubPosition == "1")
++    {
++        rootHubPath = "/sys/devices/platform/ahb/1e6b0000.usb";
++    }
++    else
++    {
++        error("Invalid RootHubPosition: {POSITION}", "POSITION",
++              rootHubPosition);
++        throw std::invalid_argument("Invalid RootHubPosition");
++    }
++
++    auto portArray = std::visit(VariantToNumArrayVisitor<uint8_t, uint64_t>(),
++                                mPort->second);
++    if (portArray.empty())
++    {
++        throw std::invalid_argument("Bad Port value");
++    }
++
++    // Convert port array to dot-separated string (e.g., [1, 2, 1] -> "1.2.1")
++    std::string port = std::accumulate(
++        std::next(portArray.begin()), portArray.end(),
++        std::to_string(portArray[0]), [](const std::string& acc, uint8_t val) {
++            return acc + "." + std::to_string(val);
++        });
++
++    auto sConfiguration =
++        std::visit(VariantToStringVisitor(), mConfiguration->second);
++    uint8_t configuration{};
++    auto [cptr, cec] = std::from_chars(
++        sConfiguration.data(), sConfiguration.data() + sConfiguration.size(),
++        configuration);
++    if (cec != std::errc{})
++    {
++        throw std::invalid_argument("Bad Configuration value");
++    }
++
++    auto sInterface = std::visit(VariantToStringVisitor(), mInterface->second);
++    uint8_t interfaceNum{};
++    auto [iptr, iec] = std::from_chars(
++        sInterface.data(), sInterface.data() + sInterface.size(), interfaceNum);
++    if (iec != std::errc{})
++    {
++        throw std::invalid_argument("Bad Interface value");
++    }
++
++    try
++    {
++        std::string bus = busFromRootHubPath(rootHubPath);
++        std::string interface =
++            interfaceFromSysfs(bus, port, configuration, interfaceNum);
++        return std::make_shared<USBMCTPDDevice>(connection, interface);
++    }
++    catch (const MCTPException& ex)
++    {
++        warning(
++            "Failed to create MCTPUSBDevice at [ RootHubPosition: {POSITION}, port: {USB_PORT} ]: {EXCEPTION}",
++            "POSITION", rootHubPosition, "USB_PORT", port, "EXCEPTION", ex);
++        return {};
++    }
++}
+diff --git a/src/mctp/MCTPEndpoint.hpp b/src/mctp/MCTPEndpoint.hpp
+index 371d2ad..ab62bde 100644
+--- a/src/mctp/MCTPEndpoint.hpp
++++ b/src/mctp/MCTPEndpoint.hpp
+@@ -9,6 +9,7 @@
+ 
+ #include <cstdint>
+ #include <exception>
++#include <filesystem>
+ #include <functional>
+ #include <memory>
+ #include <optional>
+@@ -355,3 +356,30 @@ class I3CMCTPDDevice : public MCTPDDevice
+ 
+     static std::string interfaceFromBus(int bus);
+ };
++
++class USBMCTPDDevice : public MCTPDDevice
++{
++  public:
++    static std::optional<SensorBaseConfigMap> match(const SensorData& config);
++    static bool match(const std::set<std::string>& interfaces);
++    static std::shared_ptr<USBMCTPDDevice> from(
++        const std::shared_ptr<sdbusplus::asio::connection>& connection,
++        const SensorBaseConfigMap& iface);
++
++    USBMCTPDDevice() = delete;
++    USBMCTPDDevice(
++        const std::shared_ptr<sdbusplus::asio::connection>& connection,
++        const std::string& interface) :
++        MCTPDDevice(connection, interface, std::vector<uint8_t>{})
++    {}
++    ~USBMCTPDDevice() override = default;
++
++  private:
++    static constexpr const char* configType = "MCTPUSBDevice";
++
++    static std::string busFromRootHubPath(
++        const std::filesystem::path& rootHubPath);
++    static std::string interfaceFromSysfs(
++        const std::string& bus, const std::string& port, uint8_t configuration,
++        uint8_t interfaceNum);
++};
+diff --git a/src/mctp/MCTPReactorMain.cpp b/src/mctp/MCTPReactorMain.cpp
+index ba1bbf8..59038f5 100644
+--- a/src/mctp/MCTPReactorMain.cpp
++++ b/src/mctp/MCTPReactorMain.cpp
+@@ -93,6 +93,12 @@ static std::shared_ptr<MCTPDevice> deviceFromConfig(
+             info("Creating I3CMCTPDDevice");
+             return I3CMCTPDDevice::from(connection, *iface);
+         }
++
++        iface = USBMCTPDDevice::match(config);
++        if (iface)
++        {
++            return USBMCTPDDevice::from(connection, *iface);
++        }
+     }
+     catch (const std::invalid_argument& ex)
+     {
+@@ -132,7 +138,8 @@ static void removeInventory(const std::shared_ptr<MCTPReactor>& reactor,
+         msg.unpack<sdbusplus::object_path, std::set<std::string>>();
+     try
+     {
+-        if (I2CMCTPDDevice::match(removed) || I3CMCTPDDevice::match(removed))
++        if (I2CMCTPDDevice::match(removed) || I3CMCTPDDevice::match(removed) ||
++            USBMCTPDDevice::match(removed))
+         {
+             reactor->unmanageMCTPDevice(path.str);
+         }
+@@ -247,7 +254,7 @@ int main()
+     boost::asio::post(io, [reactor, systemBus]() {
+         auto gsc = std::make_shared<GetSensorConfiguration>(
+             systemBus, std::bind_front(manageMCTPEntity, systemBus, reactor));
+-        std::vector<std::string_view> types{"MCTPI2CTarget", "MCTPI3CTarget"};
++        std::vector<std::string_view> types{"MCTPI2CTarget", "MCTPI3CTarget", "MCTPUSBDevice"};
+         gsc->getConfiguration(types);
+     });
+ 
+-- 
+2.53.0-Meta
+

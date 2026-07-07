@@ -1,4 +1,4 @@
-From 2f540455fa1d953ab4c773d3a501f51bd8782f80 Mon Sep 17 00:00:00 2001
+From e644e0afb87afa9d7189bb94d9b5d79b23f97a47 Mon Sep 17 00:00:00 2001
 From: Ernesto Corona <ernesto.corona@intel.com>
 Date: Mon, 13 Apr 2020 15:29:19 -0700
 Subject: [PATCH] Documentation jtag: Add JTAG core driver ioctl number
@@ -56,10 +56,10 @@ Test Plan: booted up linux 5.15 on cmm and elbert successfully.
  1 file changed, 2 insertions(+)
 
 diff --git a/Documentation/userspace-api/ioctl/ioctl-number.rst b/Documentation/userspace-api/ioctl/ioctl-number.rst
-index 7c527a01d1cf..2af26b100ad4 100644
+index d896b9991a4f..d525772efa75 100644
 --- a/Documentation/userspace-api/ioctl/ioctl-number.rst
 +++ b/Documentation/userspace-api/ioctl/ioctl-number.rst
-@@ -385,6 +385,8 @@ Code  Seq#    Include File                                             Comments
+@@ -384,6 +384,8 @@ Code  Seq#    Include File                                             Comments
  0xB8  01-02  uapi/misc/mrvl_cn10k_dpi.h                                Marvell CN10K DPI driver
  0xB8  all    uapi/linux/mshv.h                                         Microsoft Hyper-V /dev/mshv driver
                                                                         <mailto:linux-hyperv@vger.kernel.org>
@@ -69,5 +69,5 @@ index 7c527a01d1cf..2af26b100ad4 100644
  0xCA  00-0F  uapi/misc/cxl.h                                           Dead since 6.15
  0xCA  10-2F  uapi/misc/ocxl.h
 -- 
-2.52.0
+2.53.0-Meta
 

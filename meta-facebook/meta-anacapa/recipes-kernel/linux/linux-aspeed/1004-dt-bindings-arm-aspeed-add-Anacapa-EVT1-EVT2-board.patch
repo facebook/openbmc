@@ -1,0 +1,30 @@
+From fbbc77ebe52063e19b574dd94ab9dd03d80e9478 Mon Sep 17 00:00:00 2001
+From: Colin Huang <colin.huang2@amd.com>
+Date: Tue, 7 Apr 2026 21:44:04 +0800
+Subject: [PATCH] dt-bindings: arm: aspeed: add Anacapa EVT1 EVT2 board
+
+Document Anacapa BMC EVT1 and EVT2 compatibles.
+
+LORE: https://lore.kernel.org/all/20260409-anacapa-devlop-phase-devicetree-v2-0-68f328671653@gmail.com/
+
+Signed-off-by: Colin Huang <colin.huang2@amd.com>
+---
+ Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml b/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml
+index 9ba195b8f22d..6cc42370539c 100644
+--- a/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml
++++ b/Documentation/devicetree/bindings/arm/aspeed/aspeed.yaml
+@@ -84,6 +84,8 @@ properties:
+               - asus,ast2600-kommando-ipmi-card
+               - asus,x4tf-bmc
+               - facebook,anacapa-bmc
++              - facebook,anacapa-bmc-evt1
++              - facebook,anacapa-bmc-evt2
+               - facebook,bletchley-bmc
+               - facebook,catalina-bmc
+               - facebook,clemente-bmc
+-- 
+2.52.0
+

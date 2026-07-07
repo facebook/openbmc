@@ -1,4 +1,4 @@
-From 001ae687381e624711707f8cc77a7645ea531c7e Mon Sep 17 00:00:00 2001
+From dab7f8d1e3a84bfd927db338c94d7e98efbfa900 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Fri, 27 Mar 2026 06:38:52 +0000
 Subject: [PATCH] Fix log flooding caused by per-sensor failsafe logging
@@ -274,10 +274,10 @@ index 8d377a0..edce96d 100644
   * logs for its corresponding zones.
   */
 diff --git a/meson.build b/meson.build
-index 0a99d2e..47285eb 100644
+index d1e3018..bc6e77c 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -133,6 +133,7 @@ libswampd_sources = [
+@@ -137,6 +137,7 @@ libswampd_sources = [
      'dbus/dbuspassive.cpp',
      'dbus/dbuswrite.cpp',
      'failsafeloggers/builder.cpp',
@@ -370,5 +370,5 @@ index 6a99246..60cce28 100644
    private:
      /*
 -- 
-2.43.0
+2.53.0-Meta
 

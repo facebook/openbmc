@@ -1,0 +1,48 @@
+From 5de42bdf955e1c5dddfe43c5b630207a2e536435 Mon Sep 17 00:00:00 2001
+From: Freddie Jheng <Freddie.Jheng@quantatw.com>
+Date: Wed, 10 Jun 2026 11:10:55 +0800
+Subject: [PATCH] configuration: santabarbara: add Inventory/PowerState to
+ Arkes MMC
+
+Add Inventory and PowerState fields to MMC in the Arke EVB config and
+Electra config.
+
+Ref: https://gerrit.openbmc.org/c/openbmc/entity-manager/+/91146
+Change-Id: I99e3a33efa958a9ac59dbbe47d198b824f717d2d
+Signed-off-by: Freddie Jheng <Freddie.Jheng@quantatw.com>
+---
+ configurations/meta/santabarbara/santabarbara_arke_evb.json | 2 ++
+ configurations/meta/santabarbara/santabarbara_electra.json  | 2 ++
+ 2 files changed, 4 insertions(+)
+
+diff --git a/configurations/meta/santabarbara/santabarbara_arke_evb.json b/configurations/meta/santabarbara/santabarbara_arke_evb.json
+index c5dd388..ce75edf 100644
+--- a/configurations/meta/santabarbara/santabarbara_arke_evb.json
++++ b/configurations/meta/santabarbara/santabarbara_arke_evb.json
+@@ -19,7 +19,9 @@
+         {
+             "Address": "0x21",
+             "Bus": "$bus / 2 + 2 * 3 % 5 * 3 + 1 / 4 + 102",
++            "Inventory": "Arke_EVB",
+             "Name": "MMC",
++            "PowerState": "BiosPost",
+             "Type": "MCTPI2CTarget"
+         }
+     ],
+diff --git a/configurations/meta/santabarbara/santabarbara_electra.json b/configurations/meta/santabarbara/santabarbara_electra.json
+index 154d060..0dd2138 100644
+--- a/configurations/meta/santabarbara/santabarbara_electra.json
++++ b/configurations/meta/santabarbara/santabarbara_electra.json
+@@ -19,7 +19,9 @@
+         {
+             "Address": "0x21",
+             "Bus": "$bus / 2 + 2 * 3 % 5 * 3 + 1 / 4 + 102",
++            "Inventory": "Electra",
+             "Name": "MMC",
++            "PowerState": "BiosPost",
+             "Type": "MCTPI2CTarget"
+         }
+     ],
+-- 
+2.53.0-Meta
+

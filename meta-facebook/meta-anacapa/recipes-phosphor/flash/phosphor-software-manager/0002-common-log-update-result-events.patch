@@ -1,4 +1,4 @@
-From 86a4230b71d89cd7f25ae5d99a6a40d16cbfb594 Mon Sep 17 00:00:00 2001
+From 25918ce38aa63e6cf5b493c6f82f4d3639bbd6c1 Mon Sep 17 00:00:00 2001
 From: Rex Fu <Rex.Fu@amd.com>
 Date: Thu, 7 May 2026 10:36:47 +0800
 Subject: [PATCH] common: log update result events
@@ -13,11 +13,11 @@ Tested:
 
 Signed-off-by: Rex Fu <Rex.Fu@amd.com>
 ---
- common/src/device.cpp | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
+ common/src/device.cpp | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
 
 diff --git a/common/src/device.cpp b/common/src/device.cpp
-index 78df16e..5d14b5f 100644
+index dae5f80..33f4572 100644
 --- a/common/src/device.cpp
 +++ b/common/src/device.cpp
 @@ -5,6 +5,8 @@
@@ -29,11 +29,10 @@ index 78df16e..5d14b5f 100644
  #include <sdbusplus/asio/object_server.hpp>
  #include <sdbusplus/async/context.hpp>
  #include <sdbusplus/bus.hpp>
-@@ -189,6 +191,18 @@ sdbusplus::async::task<bool> Device::continueUpdateWithMappedPackage(
-     {
-         softwarePending->setActivation(
-             ActivationInterface::Activations::Active);
-+
+@@ -209,6 +211,17 @@ sdbusplus::async::task<bool> Device::continueUpdateWithMappedPackage(
+ 
+         co_await events.generateUpdateSuccessful(softwarePending->objectPath,
+                                                  componentVersion);
 +        lg2::commit(
 +            sdbusplus::event::xyz::openbmc_project::software::Update::UpdateSuccessful(
 +            "TARGET_NAME", config.configName,
@@ -42,7 +41,7 @@ index 78df16e..5d14b5f 100644
 +    else
 +    {
 +        lg2::commit(
-+            sdbusplus::error::xyz::openbmc_project::software::Update::ApplyFailed(
++            sdbusplus::error::xyz::openbmc_project::software::Update::ActivateFailed(
 +            "IMAGE_IDENTIFIER", componentVersion,
 +            "TARGET_NAME", config.configName));
      }

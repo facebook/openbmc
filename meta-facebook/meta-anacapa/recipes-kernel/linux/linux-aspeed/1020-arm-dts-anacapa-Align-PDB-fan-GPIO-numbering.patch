@@ -1,0 +1,65 @@
+From f2f2ece017608aaaf096213030064154e49429ac Mon Sep 17 00:00:00 2001
+From: Rex Fu <Rex.Fu@amd.com>
+Date: Fri, 26 Jun 2026 16:44:47 +0800
+Subject: [PATCH] arm: dts: anacapa: Align PDB fan GPIO numbering
+
+Summary:
+
+* Align LPDB and RPDB fan GPIO names with platform fan numbering.
+
+LORE: https://lore.kernel.org/all/20260602-anacapa-devlop-phase-devicetree-v3-7-7c93c5df8d9b@gmail.com/
+
+Motivation:
+
+* To keep fan GPIO line names consistent with fan inventory.
+
+Test Plan:
+
+* Build pass
+
+Signed-off-by: Rex Fu <Rex.Fu@amd.com>
+---
+ .../aspeed-bmc-facebook-anacapa-evt2.dts      | 20 +++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+index 7063afe3673c..e5d8b5e71859 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+@@ -543,11 +543,11 @@ gpio@24 {
+ 					"RPDB_EAM2_PRSNT_MOS_N_R", "RPDB_EAM3_PRSNT_MOS_N_R",
+ 					"RPDB_PWRGD_P50V_HSC4_SYS_R",
+ 					"RPDB_PWRGD_P50V_STBY_SYS_BUF_R",
+-					"RPDB_P50V_FAN1_R2_PG", "RPDB_P50V_FAN2_R2_PG",
+-					"RPDB_P50V_FAN3_R2_PG", "RPDB_P50V_FAN4_R2_PG",
+-					"", "RPDB_FAN1_PRSNT_N_R",
+-					"", "RPDB_FAN2_PRSNT_N_R",
+-					"RPDB_FAN3_PRSNT_N_R", "RPDB_FAN4_PRSNT_N_R",
++					"RPDB_P50V_FAN5_R2_PG", "RPDB_P50V_FAN6_R2_PG",
++					"RPDB_P50V_FAN7_R2_PG", "RPDB_P50V_FAN8_R2_PG",
++					"", "RPDB_FAN5_PRSNT_N_R",
++					"", "RPDB_FAN6_PRSNT_N_R",
++					"RPDB_FAN7_PRSNT_N_R", "RPDB_FAN8_PRSNT_N_R",
+ 					"", "";
+ 			};
+ 
+@@ -592,11 +592,11 @@ gpio@24 {
+ 				interrupts = <174 IRQ_TYPE_LEVEL_LOW>;
+ 
+ 				gpio-line-names =
+-					"LPDB_P50V_FAN1_R2_PG","LPDB_P50V_FAN2_R2_PG",
+-					"LPDB_P50V_FAN3_R2_PG","LPDB_P50V_FAN4_R2_PG",
+-					"LPDB_P50V_FAN5_R2_PG","LPDB_FAN1_PRSNT_N_R",
+-					"LPDB_FAN2_PRSNT_N_R","LPDB_FAN3_PRSNT_N_R",
+-					"LPDB_FAN4_PRSNT_N_R","LPDB_FAN5_PRSNT_N_R",
++					"LPDB_P50V_FAN0_R2_PG","LPDB_P50V_FAN1_R2_PG",
++					"LPDB_P50V_FAN2_R2_PG","LPDB_P50V_FAN3_R2_PG",
++					"LPDB_P50V_FAN4_R2_PG","LPDB_FAN0_PRSNT_N_R",
++					"LPDB_FAN1_PRSNT_N_R","LPDB_FAN2_PRSNT_N_R",
++					"LPDB_FAN3_PRSNT_N_R","LPDB_FAN4_PRSNT_N_R",
+ 					"","",
+ 					"","",
+ 					"","";
+-- 
+2.53.0-Meta
+

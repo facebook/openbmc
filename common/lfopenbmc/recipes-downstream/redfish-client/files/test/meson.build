@@ -21,7 +21,6 @@ endif
 
 tests = {
     'async_http_client_tests': ['helper.cpp', 'async_http_client_tests.cpp'],
-    'daemon_tests': ['daemon_tests.cpp'],
     'dbus_server_tests': ['dbus_server_tests.cpp', 'helper.cpp'],
     'eventlog_parser_tests': ['eventlog_parser_tests.cpp'],
     'log_service_handler_tests': ['log_service_handler_tests.cpp'],

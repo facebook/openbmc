@@ -1,0 +1,159 @@
+From a5b5f1e69e04b613cbd3418fbbef0ff908fdb6ad Mon Sep 17 00:00:00 2001
+From: Andy Chung <Andy.Chung@amd.com>
+Date: Fri, 27 Mar 2026 13:56:07 +0800
+Subject: [PATCH] Enable NIC MCTP over I2C
+
+---
+ .../aspeed/aspeed-bmc-facebook-anacapa.dts    | 67 ++++++++++++++++++-
+ 1 file changed, 65 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa.dts
+index 855834fce40e..d630f5c0ef68 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa.dts
+@@ -627,38 +627,67 @@ eeprom@56 {
+ // R Bridge Board
+ &i2c10 {
+ 	status = "okay";
++	multi-master;
++	mctp@10 {
++		compatible = "mctp-i2c-controller";
++		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++	};
+ 
+ 	i2c-mux@71 {
+ 		compatible = "nxp,pca9548";
+ 		reg = <0x71>;
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+-		i2c-mux-idle-disconnect;
+ 
+ 		i2c10mux0ch0: i2c@0 {
+ 			reg = <0>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++			mctp-controller;
+ 		};
+ 		i2c10mux0ch1: i2c@1 {
+ 			reg = <1>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++			mctp-controller;
++			// BE NIC FRU
++			eeprom@50 {
++				compatible = "atmel,24c32";
++				reg = <0x50>;
++			};
+ 		};
+ 		i2c10mux0ch2: i2c@2 {
+ 			reg = <2>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++			mctp-controller;
++			// BE NIC FRU
++			eeprom@50 {
++				compatible = "atmel,24c32";
++				reg = <0x50>;
++			};
+ 		};
+ 		i2c10mux0ch3: i2c@3 {
+ 			reg = <3>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++			mctp-controller;
++			// BE NIC FRU
++			eeprom@50 {
++				compatible = "atmel,24c32";
++				reg = <0x50>;
++			};
+ 		};
+ 		i2c10mux0ch4: i2c@4 {
+ 			reg = <4>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++			mctp-controller;
++			// BE NIC FRU
++			eeprom@50 {
++				compatible = "atmel,24c32";
++				reg = <0x50>;
++			};
+ 		};
+ 		i2c10mux0ch5: i2c@5 {
+ 			reg = <5>;
+@@ -704,38 +733,72 @@ i2c10mux0ch7: i2c@7 {
+ // L Bridge Board
+ &i2c11 {
+ 	status = "okay";
++	multi-master;
++	mctp@10 {
++		compatible = "mctp-i2c-controller";
++		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++	};
+ 
+ 	i2c-mux@71 {
+ 		compatible = "nxp,pca9548";
+ 		reg = <0x71>;
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+-		i2c-mux-idle-disconnect;
+ 
+ 		i2c11mux0ch0: i2c@0 {
+ 			reg = <0>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++			mctp-controller;
++			// FE NIC FRU
++			eeprom@50 {
++				compatible = "atmel,24c32";
++				reg = <0x50>;
++			};
+ 		};
+ 		i2c11mux0ch1: i2c@1 {
+ 			reg = <1>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++			mctp-controller;
++			// BE NIC FRU
++			eeprom@50 {
++				compatible = "atmel,24c32";
++				reg = <0x50>;
++			};
+ 		};
+ 		i2c11mux0ch2: i2c@2 {
+ 			reg = <2>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++			mctp-controller;
++			// BE NIC FRU
++			eeprom@50 {
++				compatible = "atmel,24c32";
++				reg = <0x50>;
++			};
+ 		};
+ 		i2c11mux0ch3: i2c@3 {
+ 			reg = <3>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++			mctp-controller;
++			// BE NIC FRU
++			eeprom@50 {
++				compatible = "atmel,24c32";
++				reg = <0x50>;
++			};
+ 		};
+ 		i2c11mux0ch4: i2c@4 {
+ 			reg = <4>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++			mctp-controller;
++			// BE NIC FRU
++			eeprom@50 {
++				compatible = "atmel,24c32";
++				reg = <0x50>;
++			};
+ 		};
+ 		i2c11mux0ch5: i2c@5 {
+ 			reg = <5>;
+-- 
+2.52.0
+

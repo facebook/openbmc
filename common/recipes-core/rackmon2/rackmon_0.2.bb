@@ -35,8 +35,6 @@ LOCAL_URI = " \
     file://meson.build \
     file://meson_options.txt \
     file://rackmond.service.in \
-    file://run-rackmond.sh \
-    file://setup-rackmond.sh \
     file://Log.h \
     file://Device.cpp \
     file://Device.h \
@@ -152,7 +150,7 @@ SERVICE_AFTER:openbmc-fb ?= "After=setup_i2c.service openbmc_gpio_setup.service"
 SERVICE_WANT ?= ""
 SERVICE_WANT:openbmc-fb ?= "Wants=openbmc_gpio_setup.service setup_board.service"
 
-install_systemd() {
+do_install:append() {
     sed -i -e "s:REPLACE_WITH_INTERFACE_CONFIG_PATH:${INTERFACE_CONFIG}:" ${UNPACKDIR}/rackmond.service.in
     sed -i -e "s:REPLACE_WITH_REGMAP_CONFIG_DIR_PATH:/usr/share/rackmon/registermap:" ${UNPACKDIR}/rackmond.service.in
 
@@ -162,24 +160,7 @@ install_systemd() {
     install -d ${D}${systemd_system_unitdir}
 
     install -m 0644 ${UNPACKDIR}/rackmond.service.in ${D}${systemd_system_unitdir}/rackmond.service
-}
 
-install_sysv() {
-    install -d ${D}${sysconfdir}/init.d
-    install -d ${D}${sysconfdir}/rcS.d
-    install -d ${D}${sysconfdir}/sv
-    install -d ${D}${sysconfdir}/sv/rackmond
-    install -m 755 ${UNPACKDIR}/run-rackmond.sh ${D}${sysconfdir}/sv/rackmond/run
-    install -m 755 ${UNPACKDIR}/setup-rackmond.sh ${D}${sysconfdir}/init.d/rackmond
-    update-rc.d -r ${D} rackmond start 95 2 3 4 5  .
-}
-
-do_install:append() {
-    if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
-        install_systemd
-    else
-        install_sysv
-    fi
     bin="${D}/usr/local/bin"
     install_wrapper "/usr/local/bin/rackmoncli legacy_list" ${bin}/rackmonstatus
     install_wrapper "/usr/local/bin/rackmoncli data --format raw --json" ${bin}/rackmondata
@@ -198,7 +179,7 @@ do_install:append() {
 FILES:${PN} = "${prefix}/local/bin ${sysconfdir} "
 FILES:${PN} += "/usr/share/rackmon /usr/share/rackmon/interface /usr/share/rackmon/registermap "
 
-FILES:${PN} += "${@bb.utils.contains('DISTRO_FEATURES', 'systemd', '${systemd_system_unitdir}', '', d)}"
+FILES:${PN} += "${systemd_system_unitdir}"
 FILES:${PN} += "${PYTHON_SITEPACKAGES_DIR}/pyrmd.py"
 
 SYSTEMD_SERVICE:${PN} = "rackmond.service"

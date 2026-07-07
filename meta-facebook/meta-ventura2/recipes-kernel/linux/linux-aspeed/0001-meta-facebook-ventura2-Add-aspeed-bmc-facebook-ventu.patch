@@ -1,6 +1,6 @@
-From 595a5e314aa782dcd482a7477c1620bbcd40983e Mon Sep 17 00:00:00 2001
+From cdb0bcab573015bf9f174c401e951fd21cb7e0c5 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
-Date: Fri, 30 Jan 2026 08:58:27 +0800
+Date: Wed, 27 May 2026 15:14:14 +0800
 Subject: [PATCH] meta-facebook-ventura2-Add-aspeed-bmc-facebook-ventura2.dts
 
 lore: https://lore.kernel.org/all/20260424-ventura2_initial_dts-v4-0-806b00ea4314@gmail.com/
@@ -8,28 +8,28 @@ lore: https://lore.kernel.org/all/20260424-ventura2_initial_dts-v4-0-806b00ea431
 Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 ---
  arch/arm/boot/dts/aspeed/Makefile             |    1 +
- .../aspeed/aspeed-bmc-facebook-ventura2.dts   | 3005 +++++++++++++++++
- 2 files changed, 3006 insertions(+)
+ .../aspeed/aspeed-bmc-facebook-ventura2.dts   | 2958 +++++++++++++++++
+ 2 files changed, 2959 insertions(+)
  create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
 
 diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
-index 6b68671f9379..45a7f95428b0 100644
+index 6b68671f9379..6874b621deb4 100644
 --- a/arch/arm/boot/dts/aspeed/Makefile
 +++ b/arch/arm/boot/dts/aspeed/Makefile
-@@ -37,6 +37,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
- 	aspeed-bmc-facebook-rainiera6.dtb \
+@@ -38,6 +38,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
  	aspeed-bmc-facebook-sanmiguel.dtb \
  	aspeed-bmc-facebook-santabarbara.dtb \
-+	aspeed-bmc-facebook-ventura2.dtb \
  	aspeed-bmc-facebook-tiogapass.dtb \
++	aspeed-bmc-facebook-ventura2.dtb \
  	aspeed-bmc-facebook-wedge40.dtb \
  	aspeed-bmc-facebook-wedge100.dtb \
+ 	aspeed-bmc-facebook-wedge400-data64.dtb \
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
 new file mode 100644
-index 000000000000..1a9edf01e1d9
+index 000000000000..bb838f32bc48
 --- /dev/null
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
-@@ -0,0 +1,3005 @@
+@@ -0,0 +1,2958 @@
 +// SPDX-License-Identifier: GPL-2.0
 +// Copyright (c) 2023 Facebook Inc.
 +/dts-v1/;
@@ -399,20 +399,12 @@ index 000000000000..1a9edf01e1d9
 +			#address-cells = <1>;
 +			#size-cells = <0>;
 +			reg = <0>;
-+			temp-sensor@4c {
-+				compatible = "adi,adt7461";
-+				reg = <0x4c>;
-+			};
 +		};
 +
 +		i2c0mux0ch1: i2c@1 {
 +			#address-cells = <1>;
 +			#size-cells = <0>;
 +			reg = <1>;
-+			temp-sensor@4c {
-+				compatible = "adi,adt7461";
-+				reg = <0x4c>;
-+			};
 +		};
 +
 +		i2c0mux0ch2: i2c@2 {
@@ -1761,26 +1753,7 @@ index 000000000000..1a9edf01e1d9
 +			#address-cells = <1>;
 +			#size-cells = <0>;
 +			reg = <2>;
-+
-+			power-monitor@11 {
-+				compatible = "infineon,tda38640";
-+				reg = <0x11>;
-+			};
-+
-+			power-monitor@22 {
-+				compatible = "infineon,tda38640";
-+				reg = <0x22>;
-+			};
-+
-+			power-monitor@45 {
-+				compatible = "infineon,tda38640";
-+				reg = <0x45>;
-+			};
-+
-+			power-monitor@66 {
-+				compatible = "infineon,tda38640";
-+				reg = <0x66>;
-+			};
++			status = "okay";
 +		};
 +
 +		i2c4mux0ch3: i2c@3 {
@@ -2208,18 +2181,7 @@ index 000000000000..1a9edf01e1d9
 +
 +&i2c10 {
 +	status = "okay";
-+
-+	power-sensor@41 {
-+		compatible = "ti,ina238";
-+		reg = <0x41>;
-+		shunt-resistor = <20000>;
-+	};
-+
-+	power-sensor@43 {
-+		compatible = "ti,ina238";
-+		reg = <0x43>;
-+		shunt-resistor = <20000>;
-+	};
++	i2c-clk-high-min-percent = <50>;
 +
 +	adc@35 {
 +		compatible = "maxim,max11617";
@@ -2235,24 +2197,6 @@ index 000000000000..1a9edf01e1d9
 +		compatible = "lltc,ltc4287";
 +		reg = <0x44>;
 +		shunt-resistor-micro-ohms = <500>;
-+	};
-+
-+	power-monitor@40 {
-+		compatible = "ti,ina230";
-+		reg = <0x40>;
-+		shunt-resistor = <1000>;
-+	};
-+
-+	power-monitor@45 {
-+		compatible = "ti,ina230";
-+		reg = <0x45>;
-+		shunt-resistor = <1000>;
-+	};
-+
-+	power-monitor@4f {
-+		compatible = "ti,ina230";
-+		reg = <0x4f>;
-+		shunt-resistor = <1000>;
 +	};
 +
 +	adc@48 {
@@ -2856,7 +2800,7 @@ index 000000000000..1a9edf01e1d9
 +&sgpiom0 {
 +	status = "okay";
 +	ngpios = <128>;
-+	bus-frequency = <200000>;
++	bus-frequency = <100000>;
 +	gpio-line-names =
 +	/*"input pin","output pin"*/
 +	/*A0 - A7*/
@@ -3008,7 +2952,7 @@ index 000000000000..1a9edf01e1d9
 +&spi2 {
 +	status = "okay";
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_spi2_default>;
++	pinctrl-0 = <&pinctrl_spi2_default &pinctrl_spi2cs1_default>;
 +
 +	flash@0 {
 +		status = "okay";
@@ -3018,6 +2962,15 @@ index 000000000000..1a9edf01e1d9
 +		spi-tx-bus-width = <2>;
 +		spi-rx-bus-width = <2>;
 +	};
++
++	flash@1 {
++        status = "okay";
++        m25p,fast-read;
++        label = "e810";
++        spi-max-frequency = <12000000>;
++        spi-tx-bus-width = <2>;
++        spi-rx-bus-width = <2>;
++    };
 +};
 +
 +&uart3 {
@@ -3036,5 +2989,5 @@ index 000000000000..1a9edf01e1d9
 +};
 +
 -- 
-2.53.0-Meta
+2.34.1
 

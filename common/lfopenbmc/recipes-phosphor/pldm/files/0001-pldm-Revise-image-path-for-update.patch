@@ -1,4 +1,4 @@
-From c05e468cfc8dfc1f5271582043538a418eb8f5f9 Mon Sep 17 00:00:00 2001
+From 6f04f5c283474d7feb51ecdf5128064bafcc5358 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <delphine_cc_chiu@wiwynn.com>
 Date: Tue, 25 Jun 2024 14:51:37 +0800
 Subject: [PATCH] pldm: Revise image path for update
@@ -15,7 +15,7 @@ Upstream-Status: Pending
  1 file changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/fw-update/watch.cpp b/fw-update/watch.cpp
-index 9a42540..a67bc64 100644
+index 6a632a1..48f473e 100644
 --- a/fw-update/watch.cpp
 +++ b/fw-update/watch.cpp
 @@ -23,7 +23,7 @@ Watch::Watch(sd_event* loop,
@@ -36,7 +36,7 @@ index 9a42540..a67bc64 100644
      if (-1 == wd)
      {
          auto error = errno;
-@@ -92,7 +92,7 @@ int Watch::callback(sd_event_source* /* s */, int fd, uint32_t revents,
+@@ -94,7 +94,7 @@ int Watch::callback(sd_event_source* /* s */, int fd, uint32_t revents,
          auto event = reinterpret_cast<inotify_event*>(&buffer[offset]);
          if ((event->mask & IN_CLOSE_WRITE) && !(event->mask & IN_ISDIR))
          {
@@ -46,5 +46,5 @@ index 9a42540..a67bc64 100644
          }
  
 -- 
-2.52.0
+2.53.0-Meta
 

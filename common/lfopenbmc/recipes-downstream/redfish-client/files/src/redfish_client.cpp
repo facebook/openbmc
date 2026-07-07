@@ -6,12 +6,30 @@
 
 #include <phosphor-logging/lg2.hpp>
 
+#include <algorithm>
+#include <charconv>
 #include <fstream>
 
 PHOSPHOR_LOG2_USING;
 
 namespace redfish_client::core
 {
+
+static double parseMetricValue(const nlohmann::json& val)
+{
+    if (val.is_string())
+    {
+        const auto& strVal = val.get_ref<const std::string&>();
+        double result = 0;
+        if (auto [ptr, ec] = std::from_chars(
+                strVal.data(), strVal.data() + strVal.size(), result);
+            ec == std::errc())
+        {
+            return result;
+        }
+    }
+    return std::numeric_limits<double>::quiet_NaN();
+}
 
 static inline auto subtree(sdbusplus::async::context& ctx,
                            const auto& subpath, const auto& interface,
@@ -48,22 +66,11 @@ auto RedfishClient::run() -> sdbusplus::async::task<>
     if (config->sensorConfig.has_value())
     {
         const auto& sensorConfig = config->sensorConfig.value();
-        info("Creating Sensor objects: {SIZE}", "SIZE",
+        info("Configured Sensor objects: {SIZE}", "SIZE",
              sensorConfig.mappers.size());
-        for (const auto& mapper : sensorConfig.mappers)
-        {
-            auto metricNamespace = std::string(
-                getActualMetricNamespace(mapper.toNamespace.c_str()));
-
-            std::string fullMetricPath =
-                std::string(getSensorRootPath()) + "/" + metricNamespace +
-                "/" + mapper.toId;
-
-            metrics[mapper.toId] = std::make_shared<SensorDbusObject>(
-                ctx, fullMetricPath.c_str(), mapper,
-                sensorConfig.associationPath);
-        }
-        sensorThread = std::thread([this] { runSensorLoop(); });
+        // Sensor objects are created lazily on first successful read (see
+        // pollSensor), so nothing is published here.
+        ctx.spawn(runSensorLoop());
     }
 
     if (config->logServiceConfig.has_value())
@@ -96,15 +103,10 @@ auto RedfishClient::run() -> sdbusplus::async::task<>
     co_return;
 }
 
-RedfishClient::~RedfishClient()
-{
-    if (sensorThread.joinable())
-    {
-        sensorThread.join();
-    }
-}
+RedfishClient::~RedfishClient() = default;
 
-std::optional<Sensor> RedfishClient::readWithRetries(const SensorMapper& mapper)
+auto RedfishClient::readWithRetries(const SensorMapper& mapper)
+    -> sdbusplus::async::task<std::optional<redfish_binding::Sensor::Sensor>>
 {
     for (size_t i = 0; i < config->sensorConfig.value().maxRetries; ++i)
     {
@@ -113,24 +115,12 @@ std::optional<Sensor> RedfishClient::readWithRetries(const SensorMapper& mapper)
             std::format("http://{}{}", config->host, mapper.fromUrl);
         try
         {
-            auto it = httpHandles.find(expandedUrl);
-            if (it == httpHandles.end())
+            auto& httpHandle = httpHandles[expandedUrl];
+            if (!httpHandle)
             {
-                it = httpHandles
-                         .insert({expandedUrl,
-                                  std::make_unique<AsyncHttpHandle>(
-                                      expandedUrl)})
-                         .first;
+                httpHandle = std::make_unique<AsyncHttpHandle>(expandedUrl);
             }
-            auto& httpHandle = it->second;
-            // TODO: Switch to co_await when this function is switched to
-            // coroutine
-            auto maybeResponse = stdexec::sync_wait(httpHandle->get(ctx));
-            if (!maybeResponse.has_value())
-            {
-                throw std::runtime_error("Http request stopped");
-            }
-            const auto& response = std::get<0>(maybeResponse.value());
+            auto response = co_await httpHandle->get(ctx);
             if (response.code != 200)
             {
                 throw std::runtime_error(std::format(
@@ -146,7 +136,7 @@ std::optional<Sensor> RedfishClient::readWithRetries(const SensorMapper& mapper)
 
         try
         {
-            return Sensor::parseSensor(sensorJson);
+            co_return redfish_binding::Sensor::parseSensor(sensorJson);
         }
         catch (const std::exception& exn)
         {
@@ -155,10 +145,11 @@ std::optional<Sensor> RedfishClient::readWithRetries(const SensorMapper& mapper)
                  sensorJson.c_str());
         };
 
-        std::this_thread::sleep_for(std::chrono::milliseconds(
-            config->sensorConfig.value().retryIntervalMilliseconds));
+        co_await sdbusplus::async::sleep_for(
+            ctx, std::chrono::milliseconds(
+                     config->sensorConfig.value().retryIntervalMilliseconds));
     }
-    return std::nullopt;
+    co_return std::nullopt;
 }
 
 auto RedfishClient::runEventPollingLoop() -> sdbusplus::async::task<>
@@ -193,30 +184,186 @@ auto RedfishClient::runEventPollingLoop() -> sdbusplus::async::task<>
     co_return;
 }
 
-void RedfishClient::runSensorLoop()
+auto RedfishClient::ingestMetricReport(
+    const nlohmann::json& report,
+    std::unordered_set<std::string>& reportCovered)
+    -> sdbusplus::async::task<>
+{
+    if (!report.contains("MetricValues") || !report["MetricValues"].is_array())
+    {
+        co_return;
+    }
+
+    for (const auto& metricValue : report["MetricValues"])
+    {
+        if (!metricValue.contains("MetricProperty") ||
+            !metricValue["MetricProperty"].is_string() ||
+            !metricValue.contains("MetricValue"))
+        {
+            continue;
+        }
+
+        std::string fromUrl =
+            metricValue["MetricProperty"].get_ref<const std::string&>();
+        if (size_t hashPos = fromUrl.find('#'); hashPos != std::string::npos)
+        {
+            fromUrl = fromUrl.substr(0, hashPos);
+        }
+
+        auto itSensor = sensors.find(fromUrl);
+        if (itSensor != sensors.end())
+        {
+            // Already published: the report carries only a bare value.
+            double val = parseMetricValue(metricValue["MetricValue"]);
+            ctx.spawn(itSensor->second->updateValue(val));
+            continue;
+        }
+
+        // Not yet created. Find the configured mapper for this URL (cold path,
+        // happens at most once per sensor) and do a full read to establish the
+        // sensor's unit and range, then publish it.
+        const SensorMapper* mapper = findMapper(fromUrl);
+        if (mapper == nullptr)
+        {
+            continue;
+        }
+
+        // Reports drive this sensor from now on, so stop polling it
+        // individually even if this first read fails.
+        reportCovered.insert(mapper->fromUrl);
+
+        auto maybeSensor = co_await readWithRetries(*mapper);
+        if (!maybeSensor.has_value())
+        {
+            continue;
+        }
+        auto sensor = Sensor::create(ctx, mapper->toNamespace, mapper->toId,
+                                     config->sensorConfig->associationPath,
+                                     maybeSensor.value());
+        if (!sensor)
+        {
+            continue;
+        }
+        sensors.emplace(mapper->fromUrl, std::move(sensor));
+        // The persistent read handle is no longer needed once reports drive
+        // this sensor.
+        httpHandles.erase(std::format("http://{}{}", config->host,
+                                      mapper->fromUrl));
+    }
+}
+
+const SensorMapper* RedfishClient::findMapper(std::string_view fromUrl) const
+{
+    const auto& mappers = config->sensorConfig->mappers;
+    auto it = std::ranges::find_if(mappers, [&](const auto& mapper) {
+        return mapper.fromUrl == fromUrl;
+    });
+    return it != mappers.end() ? &*it : nullptr;
+}
+
+auto RedfishClient::pollSensor(const SensorMapper& mapper)
+    -> sdbusplus::async::task<>
+{
+    auto maybeSensor = co_await readWithRetries(mapper);
+    if (!maybeSensor.has_value())
+    {
+        co_return;
+    }
+    auto& parsed = maybeSensor.value();
+
+    auto it = sensors.find(mapper.fromUrl);
+    if (it != sensors.end())
+    {
+        // Already published; push the new reading value.
+        double val = parsed.getReading().hasValue()
+                         ? parsed.getReading().value()
+                         : std::numeric_limits<double>::quiet_NaN();
+        ctx.spawn(it->second->updateValue(val));
+        co_return;
+    }
+
+    auto sensor = Sensor::create(ctx, mapper.toNamespace, mapper.toId,
+                                 config->sensorConfig->associationPath, parsed);
+    if (sensor)
+    {
+        sensors.emplace(mapper.fromUrl, std::move(sensor));
+    }
+}
+
+auto RedfishClient::runSensorLoop() -> sdbusplus::async::task<>
 {
     info("Running sensor loop");
+
+    const auto& sensorConfig = *config->sensorConfig;
+    // Sensors that have appeared in a metric report are driven by reports and
+    // are no longer polled individually.
+    std::unordered_set<std::string> reportCovered;
+
     try
     {
         while (!ctx.stop_requested())
         {
-            for (const auto& [metricKey, metric] : metrics)
+            if (sensorConfig.metricReportUrls &&
+                !sensorConfig.metricReportUrls->empty())
             {
-                auto maybeSensor = readWithRetries(metric->mapper);
-                if (!maybeSensor.has_value())
+                const auto& urls = *sensorConfig.metricReportUrls;
+                for (const auto& url : urls)
                 {
-                    continue;
+                    std::string expandedUrl =
+                        std::format("http://{}{}", config->host, url);
+                    try
+                    {
+                        auto& httpHandle = httpHandles[expandedUrl];
+                        if (!httpHandle)
+                        {
+                            httpHandle =
+                                std::make_unique<AsyncHttpHandle>(expandedUrl);
+                        }
+
+                        auto response = co_await httpHandle->get(ctx);
+                        if (response.code != 200)
+                        {
+                            throw std::runtime_error(std::format(
+                                "Http response error code: {}", response.code));
+                        }
+
+                        auto report = nlohmann::json::parse(response.body);
+                        co_await ingestMetricReport(report, reportCovered);
+                    }
+                    catch (const std::exception& exn)
+                    {
+                        info("Exception while querying url ({URL}): {EXC}",
+                             "URL", expandedUrl.c_str(), "EXC", exn);
+                    }
                 }
-                ctx.spawn(metric->update(maybeSensor.value()));
+
+                // Individually poll the sensors not (yet) covered by a report.
+                for (const auto& mapper : sensorConfig.mappers)
+                {
+                    if (reportCovered.contains(mapper.fromUrl))
+                    {
+                        continue;
+                    }
+                    co_await pollSensor(mapper);
+                }
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(
-                config->sensorConfig.value().intervalMilliseconds));
+            else
+            {
+                for (const auto& mapper : sensorConfig.mappers)
+                {
+                    co_await pollSensor(mapper);
+                }
+            }
+            co_await sdbusplus::async::sleep_for(
+                ctx,
+                std::chrono::milliseconds(sensorConfig.intervalMilliseconds));
         }
     }
     catch (const std::logic_error& exn)
     {
         debug("Unhandled logic error: {NAME}", "WHAT", exn.what());
     };
+    co_return;
 }
 
 auto RedfishClient::loadConfig() -> sdbusplus::async::task<>
@@ -233,7 +380,7 @@ void RedfishClient::registerLogMappers()
     if (config->components.has_value()) {
         for (const auto& componentName : config->components.value()) {
             info("Registering component: {COMPONENT}", "COMPONENT", componentName);
-            component_config::registerComponent(componentName);
+            component_config::registerComponent(componentName, *config);
         }
     }
 

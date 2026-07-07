@@ -1,4 +1,4 @@
-From e6f2f269e0affe441ad687db97262be1d8ebd30b Mon Sep 17 00:00:00 2001
+From 06b6bf21560e429bdde0d810e6e755da868a37a8 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Fri, 1 Nov 2024 17:44:55 +0800
 Subject: [PATCH] platform-mc: Handle get PLDM Commands failure
@@ -16,7 +16,7 @@ Upstream-Status: Pending
  1 file changed, 7 insertions(+)
 
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index 8eef674..eee6748 100644
+index 4a160a8..73f1834 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
 @@ -414,6 +414,13 @@ exec::task<int> TerminusManager::initMctpTerminus(const MctpInfo& mctpInfo)
@@ -34,5 +34,5 @@ index 8eef674..eee6748 100644
  
          for (size_t i = 0; i < cmds.size(); i++)
 -- 
-2.52.0
+2.53.0-Meta
 

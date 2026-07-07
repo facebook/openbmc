@@ -63,6 +63,11 @@ static const loc_decode LOC_HYNIX[] = {
   { 3, "Vietnam" },
 };
 
+static const loc_decode LOC_KINGSTON[] = {
+  { 1, "Taiwan" },
+  { 4, "Shanghai (China)" },
+};
+
 static const char* lookup_loc(uint8_t code, const loc_decode* tbl, size_t n) {
   for (size_t i = 0; i < n; ++i)
     if (tbl[i].code == code) return tbl[i].name;
@@ -165,6 +170,11 @@ int get_spd5_dimm_vendor_location(uint8_t fru_id, uint8_t cpu, uint8_t dimm, cha
     }
   } else if (strcmp(vendor, "SK Hynix") == 0) {
     if (const char* s = lookup_loc(loc_raw, LOC_HYNIX, ARRAY_SIZE(LOC_HYNIX))) {
+      snprintf(out, LEN_MFG_STRING, "%s", s);
+      return 0;
+    }
+  } else if (strcmp(vendor, "Kingston") == 0) {
+    if (const char* s = lookup_loc(loc_raw, LOC_KINGSTON, ARRAY_SIZE(LOC_KINGSTON))) {
       snprintf(out, LEN_MFG_STRING, "%s", s);
       return 0;
     }

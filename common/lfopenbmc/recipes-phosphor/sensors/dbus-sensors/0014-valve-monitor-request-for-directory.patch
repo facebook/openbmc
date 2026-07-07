@@ -1,0 +1,105 @@
+From 763fc959b66a9bc22a582627a558e08e98d0dde6 Mon Sep 17 00:00:00 2001
+From: Jagpal Singh Gill <paligill@gmail.com>
+Date: Fri, 19 Dec 2025 05:41:23 -0800
+Subject: [PATCH] valve-monitor: request for directory
+
+Request the directory for valve-monitor. The purpose of the valve
+monitor service is to monitor the water valves in liquid cooling setups.
+More details and implementation are covered in subsequent patches in
+this stack series.
+
+Tested: Build passes with meson option enabled.
+
+Change-Id: I79febb610f02684e8cf53ae4c2dcb53c65371e2d
+Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
+---
+ meson.options                 |  6 +++++
+ src/meson.build               |  1 +
+ src/valve-monitor/OWNERS      | 41 +++++++++++++++++++++++++++++++++++
+ src/valve-monitor/meson.build |  3 +++
+ 4 files changed, 51 insertions(+)
+ create mode 100644 src/valve-monitor/OWNERS
+ create mode 100644 src/valve-monitor/meson.build
+
+diff --git a/meson.options b/meson.options
+index b87ed5f..8553d5e 100644
+--- a/meson.options
++++ b/meson.options
+@@ -113,3 +113,9 @@ option(
+     value: 'false',
+     description: 'Disable in2_alarm event.',
+ )
++option(
++    'valve-monitor',
++    type: 'feature',
++    value: 'enabled',
++    description: 'Enable valve monitor.',
++)
+diff --git a/src/meson.build b/src/meson.build
+index 9e6da9e..3ecf709 100644
+--- a/src/meson.build
++++ b/src/meson.build
+@@ -130,3 +130,4 @@ subdir('nvme')
+ subdir('psu')
+ subdir('smbpbi')
+ subdir('tests')
++subdir('valve-monitor')
+diff --git a/src/valve-monitor/OWNERS b/src/valve-monitor/OWNERS
+new file mode 100644
+index 0000000..12448f1
+--- /dev/null
++++ b/src/valve-monitor/OWNERS
+@@ -0,0 +1,41 @@
++# OWNERS
++# ------
++#
++# The OWNERS file maintains the list of individuals responsible for various
++# parts of this repository, including code review and approval.  We use the
++# Gerrit 'owners' plugin, which consumes this file, along with some extra
++# keywords for our own purposes and tooling.
++#
++# For details on the configuration used by 'owners' see:
++#  https://gerrit.googlesource.com/plugins/owners/+/refs/heads/master/owners/src/main/resources/Documentation/config.md
++#
++# An OWNERS file must be in the root of a repository but may also be present
++# in any subdirectory.  The contents of the subdirectory OWNERS file are
++# combined with parent directories unless 'inherit: false' is set.
++#
++# The owners file is YAML and has [up to] 4 top-level keywords.
++#   * owners: A list of individuals who have approval authority on the
++#     repository.
++#
++#   * reviewers: A list of individuals who have requested review notification
++#     on the repository.
++#
++#   * matchers: A list of specific file/path matchers for granular 'owners' and
++#     'reviewers'.  See 'owners' plugin documentation.
++#
++#   * openbmc: A list of openbmc-specific meta-data about owners and reviewers.
++#     - name: preferred name of the individual.
++#     - email: preferred email address of the individual.
++#     - discord: Discord nickname of the individual.
++#
++# It is expected that these 4 sections will be listed in the order above and
++# data within them will be kept sorted.
++
++inherited: true
++owners:
++- paligill@gmail.com
++
++openbmc:
++- name: Jagpal Singh Gill
++  email: paligill@gmail.com
++  discord: jagpalgill
+diff --git a/src/valve-monitor/meson.build b/src/valve-monitor/meson.build
+new file mode 100644
+index 0000000..d881ba8
+--- /dev/null
++++ b/src/valve-monitor/meson.build
+@@ -0,0 +1,3 @@
++if not get_option('valve-monitor').allowed()
++    subdir_done()
++endif
+-- 
+2.53.0-Meta
+

@@ -425,16 +425,16 @@ fru_missing_init(gpiopoll_pin_t *gp, gpio_value_t value) {
 }
 
 #ifdef CONFIG_GRANDCANYON2
-#define FM_P1V2_STBY_EN_R_OFFSET 0x02
-#define FM_P1V2_STBY_EN_R_BIT 2
+#define P1V2_STBY_PG_OFFSET 0x03
+#define P1V2_STBY_PG_BIT 1
 
 static int
-read_p12v_stby_en_from_server_cpld(uint8_t *val)
+read_server_cpld_reg(uint8_t offset, uint8_t *val)
 {
   int i2cfd = -1;
   int ret = -1;
   int retry = 0;
-  uint8_t tbuf[1] = {FM_P1V2_STBY_EN_R_OFFSET};
+  uint8_t tbuf[1] = {offset};
   uint8_t rbuf[1] = {0};
 
   if (val == NULL) {
@@ -446,7 +446,9 @@ read_p12v_stby_en_from_server_cpld(uint8_t *val)
       ES_FPGA_SLAVE_ADDR,
       I2C_SLAVE_FORCE_CLAIM);
   if (i2cfd < 0) {
-    syslog(LOG_WARNING, "%s(): failed to open Server CPLD bus=%u addr=0x%02X", __func__, I2C_ES_FPGA_BUS, ES_FPGA_SLAVE_ADDR);
+    syslog(LOG_WARNING,
+           "%s(): failed to open Server CPLD bus=%u addr=0x%02X",
+           __func__, I2C_ES_FPGA_BUS, ES_FPGA_SLAVE_ADDR);
     return i2cfd;
   }
 
@@ -460,8 +462,10 @@ read_p12v_stby_en_from_server_cpld(uint8_t *val)
         sizeof(rbuf));
 
     if (ret < 0) {
-      syslog(LOG_WARNING, "%s(): Server CPLD read failed, retry=%d, bus=%u addr7=0x%02X offset=0x%02X ret=%d",
-              __func__, retry, I2C_ES_FPGA_BUS, ES_FPGA_SLAVE_ADDR, FM_P1V2_STBY_EN_R_OFFSET, ret);
+      syslog(LOG_WARNING,
+             "%s(): Server CPLD read failed, retry=%d, bus=%u addr7=0x%02X offset=0x%02X ret=%d",
+             __func__, retry, I2C_ES_FPGA_BUS, ES_FPGA_SLAVE_ADDR,
+             offset, ret);
       retry++;
       msleep(100);
       continue;
@@ -480,8 +484,9 @@ static void
 pwr_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
   const struct gpiopoll_config *cfg = NULL;
-  uint8_t cpld_val = 0;
+  uint8_t p1v2_stby_pg = 0, pwrgd_val = 0;
   (void)last;
+
 
   if (gp == NULL) {
     syslog(LOG_WARNING, "%s(): failed to handle power fault because gp is NULL", __func__);
@@ -499,17 +504,36 @@ pwr_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
   }
 
   if (strcmp(cfg->shadow, "BIC_READY_IN") == 0) {
-    if (read_p12v_stby_en_from_server_cpld(&cpld_val) < 0) {
-      syslog(LOG_WARNING, "%s(): failed to read FM_P1V2_STBY_EN_R value from Server CPLD(might 12V OFF)", __func__);
+
+    if (read_server_cpld_reg(P1V2_STBY_PG_OFFSET, &pwrgd_val) < 0) {
+      syslog(LOG_WARNING, "%s(): failed to read Server CPLD PWRGD register, skip P1V2_STBY_PG SEL", __func__);
       return;
     }
-    if (((cpld_val >> FM_P1V2_STBY_EN_R_BIT) & 0x1) == 1) {
-      syslog(LOG_CRIT, "PWR fault: P1V2_STBY_PG, ASSERTED");
+
+    p1v2_stby_pg = (pwrgd_val >> P1V2_STBY_PG_BIT) & 0x1;
+
+    if (p1v2_stby_pg == 1) {
       return;
     }
-  } else {
-    syslog(LOG_CRIT, "PWR fault: %s, ASSERTED", cfg->shadow);
+
+    gpio_value_t comp_stby_pg = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_COMP_STBY_PG_IN));
+
+    /*
+    * COMP_STBY_PG_IN low indicates the platform is in normal 12V-off state.
+    * Do not report P1V2_STBY_PG fault SEL in this case.
+    */
+    if (comp_stby_pg == GPIO_VALUE_LOW) {
+      return;
+    } else if (comp_stby_pg == GPIO_VALUE_INVALID) {
+      syslog(LOG_WARNING, "%s(): failed to read COMP_STBY_PG_IN, skip P1V2_STBY_PG SEL", __func__);
+      return;
+    }
+
+    syslog(LOG_CRIT, "PWR fault: P1V2_STBY_PG, ASSERTED");
+    return;
   }
+
+  syslog(LOG_CRIT, "PWR fault: %s, ASSERTED", cfg->shadow);
 }
 
 #endif

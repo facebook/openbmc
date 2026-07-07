@@ -1,6 +1,6 @@
 #!/bin/bash
 # Populate DIMM inventory on D-Bus from dimm-util SPD data.
-# Runs per-slot during host-start/reboot targets.
+# Runs per-slot on host-start; once per BMC boot (guarded by a /run marker).
 set -e
 
 slot=$1
@@ -17,6 +17,16 @@ log_dimm() {
     local label=$1; shift
     echo "Slot${slot} ${label}: $*"
 }
+
+# Run once per BMC boot per slot. DIMM population only changes on a physical
+# swap (12V off + sled pull), so re-reading on every host DC cycle/reboot is
+# wasted CPU/PLDM. The marker lives in /run (tmpfs) so it clears on BMC reboot;
+# delete it and re-trigger to force a refresh without rebooting the BMC.
+MARKER="/run/dimm-inventory/slot${slot}.done"
+if [ -f "$MARKER" ]; then
+    log "already populated this BMC boot, skip (rm $MARKER or reboot BMC to refresh)"
+    exit 0
+fi
 
 BOARD_BASE="/xyz/openbmc_project/inventory/system/board"
 DIMM_INV_BASE="$BOARD_BASE"
@@ -77,92 +87,121 @@ fi
 board_name=${board_path##*/}
 log "found board: $board_name"
 
-# Step 2-4: Wait for POST, read dimm-util, populate D-Bus.
-# Combined in one retry loop following the bios fw-version pattern:
-#   POST not ready -> retry
-#   dimm-util fails -> retry
-#   any busctl write fails -> retry whole batch
-# dimm-util reads SPD through BIC -> ME -> SMBus. ME must be ready,
-# and configured speed is only valid after memory training (POST).
+# The work is split into three phases with independent budgets so the expensive
+# dimm-util SPD read is not re-run on cheap downstream failures:
+#   Phase 2 (POST-wait)   cheap pldmtool poll; budget kept fully aligned with the
+#                         fw-versions/bios POST-wait (configured DIMM speed is only
+#                         valid after memory training, so never give up early).
+#   Phase 3 (read+verify) call dimm-util once, validate the SPD; small bounded
+#                         retry only when data is empty/stale (the read is costly,
+#                         so this is NOT the 240-wide budget).
+#   Phase 4 (write)       write to D-Bus; retry only the failed writes from the
+#                         already-parsed in-memory data, never re-reading dimm-util.
 eid=$((10 * slot))
-MAX_RETRIES_FW=240
-RETRY_COUNT=0
-declare -A done_dimms   # track successfully populated DIMMs across retries
+MAX_RETRIES_FW=240   # POST-wait budget, aligned with fw-versions/bios
+MAX_RETRIES_DU=3     # dimm-util read + data-validity retries (SPD not ready yet)
+MAX_RETRIES_WR=6     # D-Bus write-only retries (transient busctl/settingsd failure)
 
-while [ "$RETRY_COUNT" -lt "$MAX_RETRIES_FW" ]; do
-    # Step 2: check POST complete (same pldmtool command as fw-versions/bios)
+# Step 2: Wait for POST to complete (same pldmtool command as fw-versions/bios).
+# dimm-util reads SPD through BIC -> ME -> SMBus; ME must be ready and the
+# configured speed is only valid after memory training (POST). No dimm-util here.
+posted=0
+for ((retry = 0; retry < MAX_RETRIES_FW; retry++)); do
     present_state=$(
         pldmtool platform GetStateEffecterStates -m "$eid" -i 0xff22 |
             jq --raw-output '."presentState[1]"'
     ) || present_state=""
 
     if [ -z "$present_state" ]; then
-        log "pldmtool EID=$eid failed, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES_FW)"
-        RETRY_COUNT=$((RETRY_COUNT + 1))
+        log "pldmtool EID=$eid failed, retrying... ($((retry + 1))/$MAX_RETRIES_FW)"
         sleep 5
         continue
     fi
 
     if [ "$present_state" != "1" ]; then
-        log "POST not complete (state=$present_state), retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES_FW)"
-        RETRY_COUNT=$((RETRY_COUNT + 1))
+        log "POST not complete (state=$present_state), retrying... ($((retry + 1))/$MAX_RETRIES_FW)"
         sleep 5
         continue
     fi
 
-    # Step 3: Read DIMM config via dimm-util
-    config_json=$(dimm-util "slot${slot}" --config --json --force 2>/dev/null) || config_json=""
+    posted=1
+    break
+done
+
+if [ "$posted" -ne 1 ]; then
+    log "POST did not complete after $MAX_RETRIES_FW retries, exit"
+    exit 2
+fi
+log "POST complete"
+
+# Step 3: Read DIMM config via dimm-util and validate the SPD, with a small
+# bounded retry. Right after POST a DIMM's SPD can briefly read back empty or
+# stale, so re-run dimm-util a few times if the whole read is empty or a present
+# DIMM has no valid SPD yet. The parse (single jq pass) and the field conversions
+# are done here so a write retry never has to re-read or re-parse.
+declare -a write_plan   # one US(0x1f)-delimited record per writable DIMM
+stale_count=0
+for ((du_retry = 0; du_retry < MAX_RETRIES_DU; du_retry++)); do
+    config_json=$(dimm-util "slot${slot}" --config --json --force) || config_json=""
 
     if [ -z "$config_json" ] || [ "$config_json" = "null" ]; then
-        log "dimm-util slot${slot} returned no data, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES_FW)"
-        RETRY_COUNT=$((RETRY_COUNT + 1))
+        log "dimm-util slot${slot} returned no data, retrying... ($((du_retry + 1))/$MAX_RETRIES_DU)"
         sleep 5
         continue
     fi
 
     num_dimms=$(echo "$config_json" | jq 'length') || num_dimms=0
-    log "POST complete, dimm-util returned $num_dimms DIMMs"
+    log "dimm-util returned $num_dimms DIMMs"
 
-    # Step 4: Parse JSON and populate D-Bus for each DIMM
-    write_failed=0
+    # Extract all per-DIMM fields in a single jq pass (one record per DIMM)
+    # instead of ~16 echo|jq|sed subprocesses per DIMM. rt mirrors the previous
+    # trailing-whitespace trim (sed 's/[[:space:]]*$//'); has_config replaces the
+    # old "config | keys[] empty" presence check. Values are otherwise identical.
+    # Fields are joined with ASCII US (0x1f), NOT tab: tab is IFS-whitespace so
+    # `read` would collapse empty fields; 0x1f cannot appear in SPD ASCII data.
+    mapfile -t dimm_records < <(
+        echo "$config_json" | jq -r '
+            def rt: sub("[[:space:]]+$"; "");
+            .[] | [
+                .DIMM,
+                ((.config | length) > 0 | tostring),
+                (.config.Manufacturer // "" | rt),
+                (.config["Manufacturing Date"] // "" | rt),
+                (.config["Part Number"] // "" | rt),
+                (.config["Serial Number"] // "" | rt),
+                (.config.Size // "" | rt),
+                (.config.Speed // "" | rt),
+                (.config.Type // "" | rt)
+            ] | join("\u001f")'
+    )
+
+    # Build the write plan: validate each DIMM and convert its fields once.
+    write_plan=()
     stale_count=0
     for ((i = 0; i < num_dimms; i++)); do
-        dimm_label=$(echo "$config_json" | jq -r ".[$i].DIMM") || continue
-
-        # Skip DIMMs already populated in a previous retry
-        if [[ -n "${done_dimms[$dimm_label]+x}" ]]; then
-            continue
-        fi
+        IFS=$'\x1f' read -r dimm_label has_config manufacturer mfg_date \
+            part_number serial_number dimm_size dimm_speed dimm_type \
+            <<< "${dimm_records[i]}"
+        [ -z "$dimm_label" ] && continue
 
         obj_path=$(get_dimm_obj_path "$slot" "$dimm_label")
         if [ -z "$obj_path" ]; then
             continue
         fi
 
-        # Check if settings object exists
+        # Skip if config is empty (DIMM not present)
+        if [ "$has_config" != "true" ]; then
+            log_dimm "$dimm_label" "not present (empty config)"
+            continue
+        fi
+
+        # Check if settings object exists (write target)
         if ! busctl introspect "$SETTINGS_SVC" "$obj_path" --timeout=120 &>/dev/null; then
             log_dimm "$dimm_label" "settings object not found at $obj_path, skipping"
             continue
         fi
 
-        # Extract fields from config JSON
-        config_keys=$(echo "$config_json" | jq -r ".[$i].config | keys[]" 2>/dev/null) || config_keys=""
-
-        # Skip if config is empty (DIMM not present)
-        if [ -z "$config_keys" ]; then
-            log_dimm "$dimm_label" "not present (empty config)"
-            continue
-        fi
-
-        manufacturer=$(echo "$config_json" | jq -r ".[$i].config.Manufacturer // empty" | sed 's/[[:space:]]*$//')
-        mfg_date=$(echo "$config_json" | jq -r ".[$i].config[\"Manufacturing Date\"] // empty" | sed 's/[[:space:]]*$//')
-        part_number=$(echo "$config_json" | jq -r ".[$i].config[\"Part Number\"] // empty" | sed 's/[[:space:]]*$//')
-        serial_number=$(echo "$config_json" | jq -r ".[$i].config[\"Serial Number\"] // empty" | sed 's/[[:space:]]*$//')
-        dimm_size=$(echo "$config_json" | jq -r ".[$i].config.Size // empty" | sed 's/[[:space:]]*$//')
-        dimm_speed=$(echo "$config_json" | jq -r ".[$i].config.Speed // empty" | sed 's/[[:space:]]*$//')
-        dimm_type=$(echo "$config_json" | jq -r ".[$i].config.Type // empty" | sed 's/[[:space:]]*$//')
-
-        # Skip if all important fields are empty or "Unknown"
+        # A present DIMM with no valid SPD yet is stale -> triggers a re-read.
         has_valid_data=0
         for field in "$manufacturer" "$part_number" "$serial_number"; do
             if [ -n "$field" ] && [ "$field" != "Unknown" ] && [ "$field" != "" ]; then
@@ -171,7 +210,7 @@ while [ "$RETRY_COUNT" -lt "$MAX_RETRIES_FW" ]; do
             fi
         done
         if [ "$has_valid_data" -eq 0 ]; then
-            log_dimm "$dimm_label" "no valid SPD data, skipping"
+            log_dimm "$dimm_label" "no valid SPD data yet (stale)"
             stale_count=$((stale_count + 1))
             continue
         fi
@@ -241,6 +280,50 @@ while [ "$RETRY_COUNT" -lt "$MAX_RETRIES_FW" ]; do
 
         log_dimm "$dimm_label" "${manufacturer:-N/A}, ${part_number:-N/A}, ${serial_number:-N/A}, ${dimm_type:-N/A}, ${dimm_speed:-N/A}, ${dimm_size:-N/A}, date=${mfg_date:-N/A}"
 
+        # Queue the validated DIMM for writing (9 fields, US(0x1f)-delimited,
+        # same reason as dimm_records: 0x1f cannot appear in SPD ASCII data).
+        write_plan+=("$(printf '%s\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s\x1f%s' \
+            "$dimm_label" "$obj_path" "$manufacturer" "$part_number" \
+            "$serial_number" "$build_date" "$size_kb" "$speed_mts" "$dbus_mem_type")")
+    done
+
+    # Data is good when every present writable DIMM yielded valid SPD.
+    if [ "${#write_plan[@]}" -gt 0 ] && [ "$stale_count" -eq 0 ]; then
+        break
+    fi
+
+    if [ "${#write_plan[@]}" -eq 0 ]; then
+        log "no valid DIMM SPD yet, retrying... ($((du_retry + 1))/$MAX_RETRIES_DU)"
+    else
+        log "$stale_count DIMM(s) have no valid SPD yet (${#write_plan[@]} ok), retrying... ($((du_retry + 1))/$MAX_RETRIES_DU)"
+    fi
+    sleep 5
+done
+
+if [ "${#write_plan[@]}" -eq 0 ]; then
+    log "failed to read valid DIMM SPD after $MAX_RETRIES_DU attempts, exit"
+    exit 2
+fi
+
+# Step 4: Write the validated DIMM data to D-Bus settings, retrying only the
+# writes (no dimm-util re-read). settingsd/busctl failures are transient and the
+# SPD data is already in memory, so re-reading it would be pure waste. done_dimms
+# tracks per-DIMM success so a retry re-attempts only the not-yet-written DIMMs.
+declare -A done_dimms
+write_failed=0
+for ((wr_retry = 0; wr_retry < MAX_RETRIES_WR; wr_retry++)); do
+    write_failed=0
+    for entry in "${write_plan[@]}"; do
+        IFS=$'\x1f' read -r dimm_label obj_path manufacturer part_number \
+            serial_number build_date size_kb speed_mts dbus_mem_type <<< "$entry"
+        size_kb=${size_kb:-0}
+        speed_mts=${speed_mts:-0}
+
+        # Skip DIMMs already written in a previous retry
+        if [[ -n "${done_dimms[$dimm_label]+x}" ]]; then
+            continue
+        fi
+
         # Write asset properties to D-Bus (--timeout=120 matches wf-misc pattern)
         ok=1
         for prop_pair in \
@@ -304,33 +387,26 @@ while [ "$RETRY_COUNT" -lt "$MAX_RETRIES_FW" ]; do
 
     populated=${#done_dimms[@]}
 
-    # Success: no failures this round and we have populated DIMMs
-    if [ "$write_failed" -eq 0 ] && [ "$stale_count" -eq 0 ] && [ "$populated" -gt 0 ]; then
+    # Success: every queued DIMM written. Retry only re-attempts failed writes.
+    if [ "$write_failed" -eq 0 ] && [ "$populated" -gt 0 ]; then
         break
     fi
 
-    # Determine retry reason
-    if [ "$populated" -eq 0 ] && [ "$num_dimms" -gt 0 ]; then
-        log "all $num_dimms DIMMs returned empty SPD, host may not be ready, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES_FW)"
-    elif [ "$stale_count" -gt 0 ]; then
-        log "$stale_count DIMMs had no valid SPD data ($populated ok so far), retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES_FW)"
-    elif [ "$write_failed" -ne 0 ]; then
-        log "D-Bus write failures ($populated ok so far), retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES_FW)"
-    fi
-
-    RETRY_COUNT=$((RETRY_COUNT + 1))
+    log "D-Bus write incomplete ($populated/${#write_plan[@]} ok), retrying writes... ($((wr_retry + 1))/$MAX_RETRIES_WR)"
     sleep 5
 done
 
 populated=${#done_dimms[@]}
 
-if [ "$RETRY_COUNT" -ge "$MAX_RETRIES_FW" ]; then
-    if [ "$populated" -gt 0 ]; then
-        log "reached max retries but populated $populated DIMMs (some may be missing)"
-    else
-        log "failed to populate DIMM inventory after $MAX_RETRIES_FW retries"
+# Drop the once-per-boot marker only when every writable DIMM had valid SPD
+# (stale_count==0) AND all writes succeeded. A failed/partial run leaves no marker
+# so the next host-start retries.
+if [ "$write_failed" -eq 0 ] && [ "$stale_count" -eq 0 ] && [ "$populated" -gt 0 ]; then
+    mkdir -p "$(dirname "$MARKER")" && touch "$MARKER"
+    log "done, populated $populated DIMMs"
+else
+    log "done with issues: populated $populated/${#write_plan[@]} DIMMs, stale=$stale_count, write_failed=$write_failed (no marker; will retry next host-start)"
+    if [ "$populated" -eq 0 ]; then
         exit 2
     fi
 fi
-
-log "done, populated $populated DIMMs"

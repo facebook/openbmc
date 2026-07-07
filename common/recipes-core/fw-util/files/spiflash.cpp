@@ -145,7 +145,7 @@ int MTDComponent::update(const std::string& image)
 {
   // flash_method default is "flashcp"
   if (flash_method == "flashrom") {
-    std::cout << "Update by using flasrom" << std::endl;
+    std::cout << "Update by using flashrom" << std::endl;
     return update_by_flashrom(image);
   } else {
     std::cout << "Update by using flashcp" << std::endl;

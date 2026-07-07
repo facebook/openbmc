@@ -1,4 +1,4 @@
-From d8557b84c92f1f771ee218f1e88b91127e9fb838 Mon Sep 17 00:00:00 2001
+From 5405e3620c3a65a630a7bebdc27f94dde8258a85 Mon Sep 17 00:00:00 2001
 From: Christopher Meis <christopher.meis@9elements.com>
 Date: Wed, 17 Sep 2025 09:07:06 +0200
 Subject: [PATCH] Multi-host/HW-inventory: add processor subtree
@@ -179,18 +179,18 @@ Signed-off-by: Christopher Meis <christopher.meis@9elements.com>
  2 files changed, 92 insertions(+), 49 deletions(-)
 
 diff --git a/redfish-core/lib/processor.hpp b/redfish-core/lib/processor.hpp
-index 28e4c1c6..7273ff8e 100644
+index e99964c6..306f63c5 100644
 --- a/redfish-core/lib/processor.hpp
 +++ b/redfish-core/lib/processor.hpp
-@@ -20,6 +20,7 @@
+@@ -19,6 +19,7 @@
+ #include "utils/collection.hpp"
  #include "utils/dbus_utils.hpp"
- #include "utils/hex_utils.hpp"
  #include "utils/json_utils.hpp"
 +#include "utils/systems_utils.hpp"
  
  #include <boost/beast/http/field.hpp>
  #include <boost/beast/http/verb.hpp>
-@@ -53,6 +54,23 @@ constexpr std::array<std::string_view, 2> processorInterfaces = {
+@@ -55,6 +56,23 @@ constexpr std::array<std::string_view, 2> processorInterfaces = {
      "xyz.openbmc_project.Inventory.Item.Cpu",
      "xyz.openbmc_project.Inventory.Item.Accelerator"};
  
@@ -214,7 +214,7 @@ index 28e4c1c6..7273ff8e 100644
  /**
   * @brief Fill out uuid info of a processor by
   * requesting data from the given D-Bus object.
-@@ -793,26 +811,29 @@ inline void handleProcessorSubtree(
+@@ -863,26 +881,29 @@ inline void handleProcessorSubtree(
   */
  inline void getProcessorObject(
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
@@ -257,7 +257,7 @@ index 28e4c1c6..7273ff8e 100644
          [asyncResp, processorId, callback{std::move(callback)}](
              const boost::system::error_code& ec,
              const dbus::utility::MapperGetSubTreeResponse& subtree) {
-@@ -823,16 +844,16 @@ inline void getProcessorObject(
+@@ -893,16 +914,16 @@ inline void getProcessorObject(
  
  inline void getProcessorData(
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
@@ -278,7 +278,7 @@ index 28e4c1c6..7273ff8e 100644
  
      for (const auto& [serviceName, interfaceList] : serviceMap)
      {
-@@ -993,23 +1014,20 @@ inline void handleProcessorGet(
+@@ -1063,23 +1084,20 @@ inline void handleProcessorGet(
      {
          return;
      }
@@ -312,7 +312,7 @@ index 28e4c1c6..7273ff8e 100644
  }
  
  inline void doPatchProcessor(
-@@ -1083,11 +1101,34 @@ inline void handleProcessorPatch(
+@@ -1153,11 +1171,34 @@ inline void handleProcessorPatch(
      // Check for 404 and find matching D-Bus object, then run
      // property patch handlers if that all succeeds.
      getProcessorObject(
@@ -348,7 +348,7 @@ index 28e4c1c6..7273ff8e 100644
  inline void handleProcessorCollectionGet(
      App& app, const crow::Request& req,
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
-@@ -1097,32 +1138,34 @@ inline void handleProcessorCollectionGet(
+@@ -1167,32 +1208,34 @@ inline void handleProcessorCollectionGet(
      {
          return;
      }
@@ -399,10 +399,10 @@ index 28e4c1c6..7273ff8e 100644
          asyncResp,
          boost::urls::format("/redfish/v1/Systems/{}/Processors",
 diff --git a/redfish-core/lib/systems.hpp b/redfish-core/lib/systems.hpp
-index dbbe2a37..127af335 100644
+index 03d7aac1..7d62f26e 100644
 --- a/redfish-core/lib/systems.hpp
 +++ b/redfish-core/lib/systems.hpp
-@@ -3055,9 +3055,6 @@ inline void processComputerSystemGet(
+@@ -3079,9 +3079,6 @@ inline void processComputerSystemGet(
      {
          asyncResp->res.jsonValue["Bios"]["@odata.id"] =
              boost::urls::format("/redfish/v1/Systems/{}/Bios", systemName);
@@ -412,7 +412,7 @@ index dbbe2a37..127af335 100644
          asyncResp->res.jsonValue["Memory"]["@odata.id"] =
              boost::urls::format("/redfish/v1/Systems/{}/Memory", systemName);
          asyncResp->res.jsonValue["Storage"]["@odata.id"] =
-@@ -3067,6 +3064,9 @@ inline void processComputerSystemGet(
+@@ -3091,6 +3088,9 @@ inline void processComputerSystemGet(
                                  systemName);
      }
  

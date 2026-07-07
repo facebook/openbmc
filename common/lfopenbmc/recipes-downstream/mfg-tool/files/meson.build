@@ -49,6 +49,7 @@ executable(
   'cmd/valve-control.cpp',
   'cmd/valve-state.cpp',
   'cmd/version-display.cpp',
+  'utils/clowntown.cpp',
   'utils/json.cpp',
   'utils/mapper.cpp',
   'utils/redfish-registry.cpp',

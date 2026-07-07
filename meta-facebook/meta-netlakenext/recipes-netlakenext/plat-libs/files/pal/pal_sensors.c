@@ -238,29 +238,29 @@ PAL_DEV_INFO temp_dev_list[] = {
 
 PAL_PMBUS_INFO pmbus_dev_table[] = {
   [VR_PVDDCR_TEMP] =
-  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_TEMP1}, {XDPE19283D, PAGE0, CMD_TEMP1}}},
+  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_TEMP1}, {XDPE19283D, PAGE0, CMD_TEMP1}, {RAA229641, PAGE0, CMD_TEMP1}}},
   [VR_PVDDCR_SOC_TEMP] =
-  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_TEMP1}, {XDPE19283D, PAGE1, CMD_TEMP2}}},
+  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_TEMP1}, {XDPE19283D, PAGE1, CMD_TEMP2}, {RAA229641, PAGE1, CMD_TEMP2}}},
   [VR_PVDD_MISC_TEMP] =
-  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_TEMP1}, {XDPE19283D, PAGE0, CMD_TEMP1}}},
+  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_TEMP1}, {XDPE19283D, PAGE0, CMD_TEMP1}, {RAA229641, PAGE0, CMD_TEMP1}}},
   [VR_PVDDCR_VOL] =
-  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_VOUT}, {XDPE19283D, PAGE0, CMD_VOUT}}},
+  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_VOUT}, {XDPE19283D, PAGE0, CMD_VOUT}, {RAA229641, PAGE0, CMD_VOUT}}},
   [VR_PVDDCR_SOC_VOL] =
-  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_VOUT}, {XDPE19283D, PAGE1, CMD_VOUT}}},
+  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_VOUT}, {XDPE19283D, PAGE1, CMD_VOUT}, {RAA229641, PAGE1, CMD_VOUT}}},
   [VR_PVDD_MISC_VOL] =
-  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_VOUT}, {XDPE19283D, PAGE0, CMD_VOUT}}},
+  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_VOUT}, {XDPE19283D, PAGE0, CMD_VOUT}, {RAA229641, PAGE0, CMD_VOUT}}},
   [VR_PVDDCR_CUR] =
-  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_IOUT}, {XDPE19283D, PAGE0, CMD_IOUT}}},
+  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_IOUT}, {XDPE19283D, PAGE0, CMD_IOUT}, {RAA229641, PAGE0, CMD_IOUT}}},
   [VR_PVDDCR_SOC_CUR] =
-  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_IOUT}, {XDPE19283D, PAGE1, CMD_IOUT}}},
+  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_IOUT}, {XDPE19283D, PAGE1, CMD_IOUT}, {RAA229641, PAGE1, CMD_IOUT}}},
   [VR_PVDD_MISC_CUR] =
-  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_IOUT}, {XDPE19283D, PAGE0, CMD_IOUT}}},
+  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_IOUT}, {XDPE19283D, PAGE0, CMD_IOUT}, {RAA229641, PAGE0, CMD_IOUT}}},
   [VR_PVDDCR_PWR] =
-  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_POUT}, {XDPE19283D, PAGE0, CMD_POUT}}},
+  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_POUT}, {XDPE19283D, PAGE0, CMD_POUT}, {RAA229641, PAGE0, CMD_POUT}}},
   [VR_PVDDCR_SOC_PWR] =
-  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_POUT}, {XDPE19283D, PAGE1, CMD_POUT}}},
+  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_POUT}, {XDPE19283D, PAGE1, CMD_POUT}, {RAA229641, PAGE1, CMD_POUT}}},
   [VR_PVDD_MISC_PWR] =
-  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_POUT}, {XDPE19283D, PAGE0, CMD_POUT}}},
+  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_POUT}, {XDPE19283D, PAGE0, CMD_POUT}, {RAA229641, PAGE0, CMD_POUT}}},
 };
 
 PAL_PMBUS_INFO hsc_dev_table[] = {
@@ -481,6 +481,10 @@ read_adc_val(uint8_t id, float *value) {
   }
 
   ret = sensors_read_adc(adc_label[id], value);
+
+  if (*value < 0) {
+    *value = 0;
+  }
 
   return ret;
 }
@@ -720,11 +724,32 @@ read_pmbus(uint8_t id, float *value) {
         syslog(LOG_ERR, "%s() vr type is invalid %d-%d %d\n", __func__, bus, addr, pmbus_i2c_data.type);
       }
       break;
+    case DIRECT:
+      if (pmbus_i2c_data.type == RAA229641) {
+        if (pmbus_i2c_data.offset == CMD_IOUT) {
+          *value = (float)((rbuf_reading_raw[1] << 8) | rbuf_reading_raw[0]) * 0.1;
+        } else if (pmbus_i2c_data.offset == CMD_VIN || pmbus_i2c_data.offset == CMD_IIN) {
+          *value = (float)((rbuf_reading_raw[1] << 8) | rbuf_reading_raw[0]) * 0.01;
+        } else if (pmbus_i2c_data.offset == CMD_VOUT) {
+          *value = (float)((rbuf_reading_raw[1] << 8) | rbuf_reading_raw[0]) * 0.001;
+        } else {
+          *value = (float)((rbuf_reading_raw[1] << 8) | rbuf_reading_raw[0]);
+        }
+      }
+      else {
+        *value = 0;
+        syslog(LOG_ERR, "%s() vr type is invalid %d-%d %d\n", __func__, bus, addr, pmbus_i2c_data.type);
+      }
+      break;
     default:
       *value = 0;
       syslog(LOG_ERR, "%s() Now only support linear-11 and linear-16 format\n",
             __func__);
       break;
+    }
+
+    if (*value < 0) {
+      *value = 0;
     }
 
     close(fd);

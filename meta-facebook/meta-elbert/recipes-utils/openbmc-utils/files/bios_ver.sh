@@ -35,8 +35,13 @@ if [ ! -f "$BIOS_VER_CACHE" ]; then
           | awk -F'[/=/"]' '{print $3}')
     if [ -z "$ver" ]; then
         ver="UNKNOWN"
+    else
+        # Cache the info only when it's not UNKNOWN
+        echo "$ver" > "$BIOS_VER_CACHE"
     fi
-    echo "$ver" > "$BIOS_VER_CACHE"
+    echo "$ver"
+else 
+    # Use Cache file
+    cat "$BIOS_VER_CACHE"
 fi
 
-cat "$BIOS_VER_CACHE"

@@ -961,7 +961,7 @@ bool
 pal_is_fw_update_ongoing_system(void) {
   uint8_t i = 0;
 
-  for (i = FRU_SERVER; i < FRU_CNT; i++) {
+  for (i = FRU_SERVER; i <= pal_get_fru_count(); i++) {
     if (pal_is_fw_update_ongoing(i) == true) {
       return true;
     }

@@ -66,14 +66,15 @@ srcs = [
     'src/log_service_handler.cpp',
     'src/update_service_handler.cpp',
     'src/redfish_client.cpp',
-    'src/sensor_dbus_object.cpp',
-    'src/server_object_intf.cpp',
     'src/log_entry_mapper_registry.cpp',
     'src/log_entry_mapper_utils.cpp',
     'src/cper_mapper.cpp',
     'src/hgx_ps_run_pwr_fault_mapper.cpp',
     'src/unhandled_mapper.cpp',
     'src/hgx_thermal_mapper.cpp',
+    'src/hgx_leak_detector_mapper.cpp',
+    'src/sensor_threshold_mapper.cpp',
+    'src/aggregate_mapper.cpp',
 ]
 
 root_inc = include_directories('include')

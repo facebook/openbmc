@@ -1,0 +1,42 @@
+From 51cbc52fccc01a547315b4a7749e7ef02e632e7a Mon Sep 17 00:00:00 2001
+From: Colin Huang <colin.huang2@amd.com>
+Date: Wed, 8 Apr 2026 15:53:05 +0800
+Subject: [PATCH] ARM: dts: aspeed: anacapa: evt2: enable APML I3C bus
+
+Enable I3C bus for APML feature.
+APML driver still in downstream, keep this in
+downstream now.
+
+Signed-off-by: Colin Huang <colin.huang2@amd.com>
+---
+ .../aspeed/aspeed-bmc-facebook-anacapa-evt2.dts    | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+index 4372a01e85bd..285a03c6ad81 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+@@ -870,6 +870,20 @@ &i2c15 {
+ 	status = "okay";
+ };
+ 
++// CPU SIC/SID (APML)
++&i3c0 {
++    status = "okay";
++    i3c-scl-hz = <6000000>;
++        sbtsi_p0_0: sbtsi@4c,22400000001 {
++        reg = <0x4c 0x224 0x00000001>;
++        assigned-address = <0x4c>;
++    };
++    sbrmi_p0_1: sbrmi@3c,22400000002 {
++        reg = <0x3c 0x224 0x00000002>;
++        assigned-address = <0x3c>;
++    };
++};
++
+ &kcs2 {
+ 	aspeed,lpc-io-reg = <0xca8>;
+ 	status = "okay";
+-- 
+2.52.0
+

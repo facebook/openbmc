@@ -1,4 +1,4 @@
-From 5fb7e0f7cb798a4d898656118aaa7438e4825997 Mon Sep 17 00:00:00 2001
+From dbc99f395eb942c616e8e5a81c742aecda6280a0 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <jagpalgill@fb.com>
 Date: Wed, 1 Apr 2026 00:27:58 -0700
 Subject: [PATCH] valve-monitor: add analog valve support
@@ -151,7 +151,7 @@ Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
 
 diff --git a/src/valve-monitor/AnalogValve.cpp b/src/valve-monitor/AnalogValve.cpp
 new file mode 100644
-index 0000000..85b3f55
+index 0000000..8a830d8
 --- /dev/null
 +++ b/src/valve-monitor/AnalogValve.cpp
 @@ -0,0 +1,503 @@
@@ -193,7 +193,7 @@ index 0000000..85b3f55
 +{
 +
 +auto getAnalogConfig(sdbusplus::async::context& ctx,
-+                     sdbusplus::message::object_path objectPath)
++                     sdbusplus::object_path objectPath)
 +    -> sdbusplus::async::task<std::optional<AnalogConfig>>
 +{
 +    AnalogConfig config = {};
@@ -296,7 +296,7 @@ index 0000000..85b3f55
 +static constexpr double hwmonMillivoltScale = 1000.0;
 +
 +AnalogValve::AnalogValve(sdbusplus::async::context& ctx,
-+                         sdbusplus::message::object_path& objectPath,
++                         sdbusplus::object_path& objectPath,
 +                         Events& events, const LocalConfig& localConfig,
 +                         const config::AnalogConfig& config) :
 +    BaseValve(ctx, objectPath, events, localConfig, config),
@@ -660,7 +660,7 @@ index 0000000..85b3f55
 +} // namespace valve
 diff --git a/src/valve-monitor/AnalogValve.hpp b/src/valve-monitor/AnalogValve.hpp
 new file mode 100644
-index 0000000..854dc74
+index 0000000..f8a2228
 --- /dev/null
 +++ b/src/valve-monitor/AnalogValve.hpp
 @@ -0,0 +1,116 @@
@@ -721,7 +721,7 @@ index 0000000..854dc74
 +
 +/** @brief Get the analog valve configuration from the Entity Manager */
 +auto getAnalogConfig(sdbusplus::async::context& ctx,
-+                     sdbusplus::message::object_path objectPath)
++                     sdbusplus::object_path objectPath)
 +    -> sdbusplus::async::task<std::optional<AnalogConfig>>;
 +
 +} // namespace config
@@ -730,7 +730,7 @@ index 0000000..854dc74
 +{
 +  public:
 +    explicit AnalogValve(sdbusplus::async::context& ctx,
-+                         sdbusplus::message::object_path& objectPath,
++                         sdbusplus::object_path& objectPath,
 +                         Events& events, const LocalConfig& localConfig,
 +                         const config::AnalogConfig& config);
 +
@@ -782,7 +782,7 @@ index 0000000..854dc74
 +} // namespace valve
 diff --git a/src/valve-monitor/BaseValve.cpp b/src/valve-monitor/BaseValve.cpp
 new file mode 100644
-index 0000000..56af6fc
+index 0000000..b8140ca
 --- /dev/null
 +++ b/src/valve-monitor/BaseValve.cpp
 @@ -0,0 +1,176 @@
@@ -817,7 +817,7 @@ index 0000000..56af6fc
 +{
 +    std::replace(valveName.begin(), valveName.end(), ' ', '_');
 +
-+    return (sdbusplus::message::object_path(ValveIntf::namespace_path::value) /
++    return (sdbusplus::object_path(ValveIntf::namespace_path::value) /
 +            ValveIntf::namespace_path::valve / valveName);
 +}
 +
@@ -825,7 +825,7 @@ index 0000000..56af6fc
 +{
 +    std::replace(valveName.begin(), valveName.end(), ' ', '_');
 +
-+    return (sdbusplus::message::object_path(ValveControlIntf::namespace_path) /
++    return (sdbusplus::object_path(ValveControlIntf::namespace_path) /
 +            valveName);
 +}
 +
@@ -839,7 +839,7 @@ index 0000000..56af6fc
 +constexpr ValveControlIntf::Definitions::properties_t initControlAssociations{};
 +
 +BaseValve::BaseValve(sdbusplus::async::context& ctx,
-+                     const sdbusplus::message::object_path& objectPath,
++                     const sdbusplus::object_path& objectPath,
 +                     Events& events, const LocalConfig& localConfig,
 +                     const config::BaseConfig& config) :
 +    ValveIntf(ctx, getObjectPath(config.name).str.c_str(), initValues,
@@ -964,7 +964,7 @@ index 0000000..56af6fc
 +} // namespace valve
 diff --git a/src/valve-monitor/BaseValve.hpp b/src/valve-monitor/BaseValve.hpp
 new file mode 100644
-index 0000000..446dc9f
+index 0000000..90de751
 --- /dev/null
 +++ b/src/valve-monitor/BaseValve.hpp
 @@ -0,0 +1,100 @@
@@ -1020,7 +1020,7 @@ index 0000000..446dc9f
 +{
 +  public:
 +    explicit BaseValve(sdbusplus::async::context& ctx,
-+                       const sdbusplus::message::object_path& objectPath,
++                       const sdbusplus::object_path& objectPath,
 +                       Events& events, const LocalConfig& localConfig,
 +                       const config::BaseConfig& config);
 +
@@ -1056,7 +1056,7 @@ index 0000000..446dc9f
 +        -> sdbusplus::async::task<std::optional<std::string>>;
 +
 +    sdbusplus::async::context& ctx;
-+    sdbusplus::message::object_path inventoryPath;
++    sdbusplus::object_path inventoryPath;
 +    Events& events;
 +    const LocalConfig& localConfig;
 +    config::BaseConfig baseConfig;
@@ -1069,7 +1069,7 @@ index 0000000..446dc9f
 +
 +} // namespace valve
 diff --git a/src/valve-monitor/GPIOValve.cpp b/src/valve-monitor/GPIOValve.cpp
-index e40efb8..75b4a6a 100644
+index f5e501b..44718c5 100644
 --- a/src/valve-monitor/GPIOValve.cpp
 +++ b/src/valve-monitor/GPIOValve.cpp
 @@ -1,28 +1,21 @@
@@ -1106,7 +1106,7 @@ index e40efb8..75b4a6a 100644
 @@ -39,15 +32,15 @@ static constexpr std::array<std::pair<std::string_view, PinPolarity>, 2>
  
  auto getConfig(sdbusplus::async::context& ctx,
-                sdbusplus::message::object_path objectPath)
+                sdbusplus::object_path objectPath)
 -    -> sdbusplus::async::task<std::optional<ValveConfig>>
 +    -> sdbusplus::async::task<std::optional<GPIOConfig>>
  {
@@ -1131,7 +1131,7 @@ index e40efb8..75b4a6a 100644
 -{
 -    std::replace(valveName.begin(), valveName.end(), ' ', '_');
 -
--    return (sdbusplus::message::object_path(ValveIntf::namespace_path::value) /
+-    return (sdbusplus::object_path(ValveIntf::namespace_path::value) /
 -            ValveIntf::namespace_path::valve / valveName);
 -}
 -
@@ -1139,7 +1139,7 @@ index e40efb8..75b4a6a 100644
 -{
 -    std::replace(valveName.begin(), valveName.end(), ' ', '_');
 -
--    return (sdbusplus::message::object_path(ValveControlIntf::namespace_path) /
+-    return (sdbusplus::object_path(ValveControlIntf::namespace_path) /
 -            valveName);
 -}
 -
@@ -1153,7 +1153,7 @@ index e40efb8..75b4a6a 100644
 -constexpr ValveControlIntf::Definitions::properties_t initControlAssociations{};
 -
  GPIOValve::GPIOValve(sdbusplus::async::context& ctx,
-                      sdbusplus::message::object_path& objectPath,
+                      sdbusplus::object_path& objectPath,
 -                     Events& events, const config::ValveConfig& config) :
 -    ValveIntf(ctx, getObjectPath(config.name).str.c_str(), initValues,
 -              initAssociations, initAvailability, initOperationalState),
@@ -1341,7 +1341,7 @@ index e40efb8..75b4a6a 100644
 -
  } // namespace valve
 diff --git a/src/valve-monitor/GPIOValve.hpp b/src/valve-monitor/GPIOValve.hpp
-index 725197e..e26efbf 100644
+index 36a692d..970ca85 100644
 --- a/src/valve-monitor/GPIOValve.hpp
 +++ b/src/valve-monitor/GPIOValve.hpp
 @@ -1,18 +1,13 @@
@@ -1410,7 +1410,7 @@ index 725197e..e26efbf 100644
 @@ -67,38 +47,26 @@ struct ValveConfig
  /** @brief Get the valve configuration from the Entity Manager */
  auto getConfig(sdbusplus::async::context& ctx,
-                sdbusplus::message::object_path objectPath)
+                sdbusplus::object_path objectPath)
 -    -> sdbusplus::async::task<std::optional<ValveConfig>>;
 +    -> sdbusplus::async::task<std::optional<GPIOConfig>>;
  
@@ -1421,7 +1421,7 @@ index 725197e..e26efbf 100644
  {
    public:
      explicit GPIOValve(sdbusplus::async::context& ctx,
-                        sdbusplus::message::object_path& objectPath,
+                        sdbusplus::object_path& objectPath,
 -                       Events& events, const config::ValveConfig& config);
 -
 -    ~GPIOValve();
@@ -1447,7 +1447,7 @@ index 725197e..e26efbf 100644
 -    auto createControlAssociations() -> void;
 -
 -    sdbusplus::async::context& ctx;
--    sdbusplus::message::object_path inventoryPath;
+-    sdbusplus::object_path inventoryPath;
 -    Events& events;
 -    config::ValveConfig config;
 +    config::GPIOConfig gpioConfig;
@@ -1729,15 +1729,15 @@ index 0000000..fbf9f28
 +
 +} // namespace valve
 diff --git a/src/valve-monitor/ValveEvents.cpp b/src/valve-monitor/ValveEvents.cpp
-index 9543d2d..56ec12e 100644
+index b965c86..05db203 100644
 --- a/src/valve-monitor/ValveEvents.cpp
 +++ b/src/valve-monitor/ValveEvents.cpp
-@@ -31,4 +31,32 @@ auto Events::generateValveEvent(sdbusplus::message::object_path valvePath,
+@@ -31,4 +31,32 @@ auto Events::generateValveEvent(sdbusplus::object_path valvePath,
            valvePath, "STATUS", open);
  }
  
 +auto Events::handleValveSetPointWarning(
-+    sdbusplus::message::object_path valvePath, bool asserted)
++    sdbusplus::object_path valvePath, bool asserted)
 +    -> sdbusplus::async::task<>
 +{
 +    namespace error_intf = sdbusplus::error::xyz::openbmc_project::state::Valve;
@@ -1766,7 +1766,7 @@ index 9543d2d..56ec12e 100644
 +
  } // namespace valve
 diff --git a/src/valve-monitor/ValveEvents.hpp b/src/valve-monitor/ValveEvents.hpp
-index 3f9ce8f..cebd637 100644
+index b6fc054..154c442 100644
 --- a/src/valve-monitor/ValveEvents.hpp
 +++ b/src/valve-monitor/ValveEvents.hpp
 @@ -3,6 +3,9 @@
@@ -1780,15 +1780,15 @@ index 3f9ce8f..cebd637 100644
  {
  
 @@ -16,8 +19,15 @@ class Events
-     auto generateValveEvent(sdbusplus::message::object_path valvePath,
+     auto generateValveEvent(sdbusplus::object_path valvePath,
                              bool open) -> sdbusplus::async::task<>;
  
-+    auto handleValveSetPointWarning(sdbusplus::message::object_path valvePath,
++    auto handleValveSetPointWarning(sdbusplus::object_path valvePath,
 +                                    bool asserted) -> sdbusplus::async::task<>;
 +
    private:
 +    /** @brief Map of valve path to pending event object path */
-+    using event_map_t = std::map<std::string, sdbusplus::message::object_path>;
++    using event_map_t = std::map<std::string, sdbusplus::object_path>;
 +
      sdbusplus::async::context& ctx;
 +    event_map_t pendingEvents;
@@ -1797,7 +1797,7 @@ index 3f9ce8f..cebd637 100644
  } // namespace valve
 diff --git a/src/valve-monitor/ValveFactory.cpp b/src/valve-monitor/ValveFactory.cpp
 new file mode 100644
-index 0000000..7d3735e
+index 0000000..c7b153b
 --- /dev/null
 +++ b/src/valve-monitor/ValveFactory.cpp
 @@ -0,0 +1,73 @@
@@ -1828,7 +1828,7 @@ index 0000000..7d3735e
 +}
 +
 +auto ValveFactory::createValve(sdbusplus::async::context& ctx,
-+                               sdbusplus::message::object_path objectPath,
++                               sdbusplus::object_path objectPath,
 +                               Events& events, const LocalConfig& localConfig,
 +                               const std::string& interfaceName)
 +    -> sdbusplus::async::task<std::unique_ptr<BaseValve>>
@@ -1876,7 +1876,7 @@ index 0000000..7d3735e
 +} // namespace valve
 diff --git a/src/valve-monitor/ValveFactory.hpp b/src/valve-monitor/ValveFactory.hpp
 new file mode 100644
-index 0000000..80ad48f
+index 0000000..1921ea8
 --- /dev/null
 +++ b/src/valve-monitor/ValveFactory.hpp
 @@ -0,0 +1,31 @@
@@ -1904,7 +1904,7 @@ index 0000000..80ad48f
 +
 +    /** @brief Create a valve from the given Entity Manager object path */
 +    static auto createValve(sdbusplus::async::context& ctx,
-+                            sdbusplus::message::object_path objectPath,
++                            sdbusplus::object_path objectPath,
 +                            Events& events, const LocalConfig& localConfig,
 +                            const std::string& interfaceName)
 +        -> sdbusplus::async::task<std::unique_ptr<BaseValve>>;
@@ -1912,7 +1912,7 @@ index 0000000..80ad48f
 +
 +} // namespace valve
 diff --git a/src/valve-monitor/ValveMonitor.cpp b/src/valve-monitor/ValveMonitor.cpp
-index f38c021..48b487b 100644
+index 397e86b..0cf06d8 100644
 --- a/src/valve-monitor/ValveMonitor.cpp
 +++ b/src/valve-monitor/ValveMonitor.cpp
 @@ -1,6 +1,6 @@
@@ -1947,7 +1947,7 @@ index f38c021..48b487b 100644
  }
  
  auto ValveMonitor::processInventoryAdded(
-     const sdbusplus::message::object_path& objectPath,
+     const sdbusplus::object_path& objectPath,
 -    const std::string& /*unused*/) -> void
 +    const std::string& interfaceName) -> void
  {
@@ -1963,8 +1963,8 @@ index f38c021..48b487b 100644
  }
  
  auto ValveMonitor::processConfigAddedAsync(
--    sdbusplus::message::object_path objectPath) -> sdbusplus::async::task<>
-+    sdbusplus::message::object_path objectPath, std::string interfaceName)
+-    sdbusplus::object_path objectPath) -> sdbusplus::async::task<>
++    sdbusplus::object_path objectPath, std::string interfaceName)
 +    -> sdbusplus::async::task<>
  {
 -    auto res = co_await config::getConfig(ctx, objectPath);
@@ -2008,7 +2008,7 @@ index f38c021..48b487b 100644
  
      co_return;
 diff --git a/src/valve-monitor/ValveMonitor.hpp b/src/valve-monitor/ValveMonitor.hpp
-index 9d66262..a2fde53 100644
+index fe6c733..7d2874a 100644
 --- a/src/valve-monitor/ValveMonitor.hpp
 +++ b/src/valve-monitor/ValveMonitor.hpp
 @@ -1,6 +1,8 @@
@@ -2034,8 +2034,8 @@ index 9d66262..a2fde53 100644
          const std::string& interfaceName) -> void;
  
      /** @brief Process the config add asynchronously */
--    auto processConfigAddedAsync(sdbusplus::message::object_path objectPath)
-+    auto processConfigAddedAsync(sdbusplus::message::object_path objectPath,
+-    auto processConfigAddedAsync(sdbusplus::object_path objectPath)
++    auto processConfigAddedAsync(sdbusplus::object_path objectPath,
 +                                 std::string interfaceName)
          -> sdbusplus::async::task<>;
  
@@ -2072,5 +2072,5 @@ index d00cefa..0f6a388 100644
      include_directories: src_inc,
      install: true,
 -- 
-2.52.0
+2.53.0-Meta
 

@@ -33,7 +33,7 @@ extern "C" {
 
 #define EEPROM_PATH     "/sys/bus/i2c/devices/%d-00%X/eeprom"
 #define COMMON_FRU_PATH "/tmp/fruid_%s.bin"
-#define FRU_SERVER_BIN  "/tmp/fruid_server.bin"
+#define FRU_SERVER_BIN  "/tmp/fruid_fboss.bin" // MB FRU uses Meta FBOSS EEPROM format
 #define FRU_BMC_BIN  "/tmp/fruid_bmc.bin"
 #define FRU_NIC_BIN  "/tmp/fruid_nic.bin"
 
@@ -62,6 +62,11 @@ extern "C" {
 #define VR_PVDDCR_ADDR 0x40
 #define VR_PVDDCR_SOC_ADDR 0x40
 #define VR_PVDD_MISC_ADDR 0x42
+#define VR_MFR_ID_REG 0x99
+#define VR_MFR_ID_MAX_LEN 6
+#define VR_MFR_ID_MPS 0x4D5053
+#define VR_MFR_ID_INF 0x4946
+#define VR_RETRY_TIME 5
 
 #define MTP_HSC_BUS 9
 #define MTP_HSC_ADDR 0x80
@@ -79,6 +84,7 @@ extern "C" {
 #define CPLD_ADC_REG_BUS 4
 #define CPLD_ADC_REG_ADDR 0x1E
 #define CPLD_GET_REV_RETRY_TIME 3
+#define CPLD_VR_SOURCE_BIT (0x18)
 
 #define I2C_BUS5 4
 #define DIMMA_ADDR 0xA0
@@ -131,7 +137,7 @@ extern "C" {
 
 enum {
   FRU_ALL = 0,
-  FRU_SERVER,
+  FRU_SERVER, // MB FRU uses Meta FBOSS EEPROM format
   FRU_BMC,
   FRU_PDB,
   FRU_FIO,
@@ -163,6 +169,12 @@ enum board_rev {
   MP = 6,
 };
 
+enum vr_sku {
+  MPS = 0,
+  INFINEON,
+  RENESAS,
+};
+
 enum {
   FORCE_UPDATE_UNSET = 0x0,
   FORCE_UPDATE_SET,
@@ -180,6 +192,7 @@ int netlakenext_common_check_image_signature(uint8_t* data);
 bool netlakenext_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t rev_id);
 int netlakenext_common_get_img_ver(const char* image_path, char* ver);
 int netlakenext_common_get_board_rev(uint8_t* rev_id);
+int netlakenext_common_get_vr_sku(uint8_t* sku, bool* change_vr_bus);
 int netlakenext_common_linear11_convert(uint8_t *value_raw, float *value_linear11);
 int netlakenext_common_linear16_convert(uint8_t *value_raw, uint8_t mode, float *value_linear16);
 

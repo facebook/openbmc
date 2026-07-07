@@ -1,0 +1,68 @@
+From 3545baaaa0e2b47ca3bbf1e87f25cf6af5afeefb Mon Sep 17 00:00:00 2001
+From: Rex Fu <Rex.Fu@amd.com>
+Date: Fri, 26 Jun 2026 16:39:59 +0800
+Subject: [PATCH] arm: dts: anacapa: Align EDSFF SGPIO pin names
+
+Summary:
+- Align EDSFF presence and power-good SGPIO pin names with upstream
+  Anacapa DTS.
+
+LORE: https://lore.kernel.org/all/20260602-anacapa-devlop-phase-devicetree-v3-3-7c93c5df8d9b@gmail.com/
+
+Motivation:
+- To keep local Anacapa DTS naming consistent with upstream DTS.
+
+Test Plan:
+- Build pass
+
+Signed-off-by: Rex Fu <Rex.Fu@amd.com>
+---
+ .../aspeed/aspeed-bmc-facebook-anacapa-evt2.dts  | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+index fb77b2aa7bb9..7063afe3673c 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+@@ -1067,11 +1067,11 @@ &sgpiom0 {
+ 	"", "",
+ 
+ 	/* G0-G7 line 96-111 */
+-	"L_PRSNT_EDSFF2_N", "",
+-	"L_PRSNT_EDSFF3_N", "",
++	"L_PRSNT_EDSFF0_N", "",
++	"L_PRSNT_EDSFF1_N", "",
+ 	"R_PRSNT_EDSFF2_N", "",
+ 	"R_PRSNT_EDSFF3_N", "",
+-	"", "",
++	"HPM_EDSFF_PG", "",
+ 	"", "",
+ 	"", "",
+ 	"PRSNT_NFC_BOARD_R", "",
+@@ -1093,7 +1093,7 @@ &sgpiom0 {
+ 	"EAM3_BRD_PRSNT_R_L", "",
+ 	"FM_TPM_PRSNT_R_N", "",
+ 	"PDB_L_PRSNT_R_N", "",
+-	"PRSNT_EDSFF0_N", "",
++	"PRSNT_EDSFF_BOOT_N", "",
+ 	"PRSNT_CPU0_N", "",
+ 
+ 	/* J0-J7 line 144-159 */
+@@ -1117,10 +1117,10 @@ &sgpiom0 {
+ 	"PDB_ALERT_R_N", "",
+ 
+ 	/* L0-L7 line 176-191 */
+-	"CPU0_SP7R1", "",
+-	"CPU0_SP7R2", "",
+-	"CPU0_SP7R3", "",
+-	"CPU0_SP7R4", "",
++	"L_EDSFF0_PG", "",
++	"L_EDSFF1_PG", "",
++	"R_EDSFF2_PG", "",
++	"R_EDSFF3_PG", "",
+ 	"CPU0_CORETYPE0", "",
+ 	"CPU0_CORETYPE1", "",
+ 	"CPU0_CORETYPE2", "",
+-- 
+2.53.0-Meta
+

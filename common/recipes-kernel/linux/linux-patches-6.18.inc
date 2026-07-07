@@ -70,6 +70,8 @@ SRC_URI:append = " \
     file://0235-iio-adc-aspeed-Add-AST2700-ADC-support.patch \
     file://0236-iio-adc-aspeed-Disable-the-last-channel-by-default.patch \
     file://0237-net-ftgmac100-add-support-for-AST2700.patch \
+    file://0238-aspeed-i2c-add-i2c-clk-high-min-percent-property.patch \
+    file://0239-iio-adc-aspeed-Support-deglitch-feature.patch \
 "
 
 #
@@ -95,6 +97,11 @@ SRC_URI:append = " \
     file://0608-iio-adc-ltc2309-add-support-for-ltc2305.patch \
     file://0609-amd-apml-sbrmi-update-SBRMI-revision-for-Venice.patch \
     file://0610-iio-adc-rtq6056-add-i2c_device_id-support.patch \
+    file://0611-hwmon-pmbus-lm25066-Fix-PMBus-coefficients-for-LM506.patch \
+    file://0612-dt-bindings-hwmon-pmbus-ti-lm25066-add-current-limit.patch \
+    file://0613-hwmon-pmbus-lm25066-add-current-limit-configuration-.patch \
+    file://0614-nfc-nxp-nci-Add-ISO15693-support.patch \
+    file://0615-misc-amd-apml-Add-Venice-B0-I3C-device-IDs.patch \
 "
 
 #
@@ -120,4 +127,5 @@ SRC_URI:append = " \
     file://2705-pinctrl-aspeed-Add-AST2700-SoC0-support.patch \
     file://2706-arm64-dts-aspeed-add-pinctrl-definitions-for-G7-plat.patch \
     file://2707-arm64-dts-aspeed-add-peripheral-nodes-for-G7-platfor.patch \
+    file://2708-pinctrl-aspeed-Fix-GPIO-mux-value-for-ADC-capable-ba.patch \
 "

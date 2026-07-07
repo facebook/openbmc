@@ -45,6 +45,8 @@
 #define MAX_FAN_CONTROLLER_LEN 32
 #define KEY_SERVER_CPLD_VER "server_cpld_ver"
 #define MAX_NUM_GPIO_LED_POSTCODE 8
+#define UNINITIAL_POWER_LIMIT 0x02
+#define MAX_MCE_ERROR_STR_LEN 256
 
 const char pal_fru_list[] = "all, server, bmc, pdb, fio, nic";
 
@@ -93,6 +95,7 @@ struct pal_key_cfg {
   {"server_boot_order", "0100090203ff", NULL},
   {"timestamp_sled", "0", NULL},
   /* Add more Keys here */
+  {"server_power_limit_status", "enable (invalid)", NULL},
   {NULL, NULL, NULL} /* This is the last key of the list */
 };
 
@@ -270,7 +273,7 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 
   switch (fru) {
     case FRU_SERVER:
-      *caps = (FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL);
+      *caps = (FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL); // MB FRU uses Meta FBOSS EEPROM format; managed via weutil
       break;
     case FRU_BMC:
       *caps = (FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL);
@@ -836,6 +839,85 @@ pal_get_cpld_ver(uint8_t fru, char *rbuf) {
 }
 
 int
+pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
+{
+  uint8_t snr_num = sel[11];
+  uint8_t *event_data = &sel[10];
+  bool parsed = true;
+
+  strcpy(error_log, "");
+  switch(snr_num) {
+    case MACHINE_CHK_ERR:
+      parse_mce_error_sel(event_data, error_log);
+      parsed = true;
+      break;
+    default:
+      parsed = false;
+      break;
+  }
+
+  if (parsed == true) {
+    return 0;
+  }
+
+  pal_parse_sel_helper(fru, sel, error_log);
+  return 0;
+}
+
+void
+parse_mce_error_sel(uint8_t *event_data, char *error_log) {
+  uint8_t *ed = &event_data[3];
+  uint8_t error_type = ((ed[1] & 0x60) >> 5);
+  char cri_sel[512] = {0};
+
+  const char *err_type_str = "";
+
+  if ((ed[0] & 0x0F) == 0x0B) { // Uncorrectable
+    switch (error_type) {
+      case 0x00:
+        err_type_str = "Uncorrected Recoverable Error, ";
+        break;
+      case 0x01:
+        err_type_str = "Uncorrected Thread Fatal Error, ";
+        break;
+      case 0x02:
+        err_type_str = "Uncorrected System Fatal Error, ";
+        break;
+      default:
+        err_type_str = "Unknown, ";
+        break;
+    }
+  } else if ((ed[0] & 0x0F) == 0x0C) { // Correctable
+    switch (error_type) {
+      case 0x00:
+        err_type_str = "Correctable Error, ";
+        break;
+      case 0x01:
+        err_type_str = "Deferred Error, ";
+        break;
+      default:
+        err_type_str = "Unknown, ";
+        break;
+    }
+  }
+
+  snprintf(error_log,
+           MAX_MCE_ERROR_STR_LEN,
+           "%sBank Number %u, CPU %u, Core %u",
+           err_type_str,
+           ed[1] & 0x1F,
+           (ed[2] & 0xE0) >> 5,
+           ed[2] & 0x1F);
+
+  snprintf(cri_sel,
+           sizeof(cri_sel),
+           "MACHINE_CHK_ERR, %s",
+           error_log);
+
+  pal_add_cri_sel(cri_sel);
+}
+
+int
 pal_parse_oem_unified_sel(uint8_t fru, uint8_t *sel, char *error_log)
 {
   char *post_err[] = {
@@ -1223,21 +1305,20 @@ int
 pal_pmbus_sensor_info_initial(void) {
   int ret = 0;
   uint8_t pmbus_type = 0;
-  uint8_t rev_id = 0;
+  uint8_t sku = 0;
+  bool change_vr_bus = false;
 
-  ret = netlakenext_common_get_board_rev(&rev_id);
+  ret = netlakenext_common_get_vr_sku(&sku, &change_vr_bus);
   if (ret < 0) {
-    syslog(LOG_ERR, "%s() Failed to get CPLD board revision, use main source setting as default", __func__);
+    syslog(LOG_ERR, "%s() Failed to get vr sku, use main source (MPS) setting as default", __func__);
   }
 
-  int sku = ((int)rev_id & 0x08) >> 3;
-  enum board_rev stage = (enum board_rev)(rev_id & 0x07);
   extern PAL_PMBUS_INFO pmbus_dev_table[];
   extern size_t pmbus_dev_cnt;
 
   for (uint8_t i = 0; i < pmbus_dev_cnt; i++) {
     pmbus_type = pmbus_dev_table[i].sku_pmbus_type[sku].type;
-    if (stage >= EVT2) {
+    if (change_vr_bus) {
       if (pmbus_dev_table[i].slv_addr == VR_PVDDCR_ADDR) {
         pmbus_dev_table[i].bus = VR_PVDDCR_BUS;
       }
@@ -1766,4 +1847,80 @@ int pal_dimm_page_init()
 
   close(fd);
   return 0;
+}
+
+int
+pal_set_power_limit(uint8_t slot_id, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
+  int ret = CC_UNSPECIFIED_ERROR;
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  if ((req_data == NULL) || (res_data == NULL) || (res_len == NULL)) {
+    syslog(LOG_WARNING, "%s() Fail to set power limit due to null pointer check", __func__);
+    return -1;
+  }
+
+  *res_len = 0;
+
+  snprintf(key, sizeof(key), "server_power_limit_status");
+  uint8_t s = req_data[0];
+
+  // bit[0]: CPU package power limit status (0: disable, 1: enable), bit[7]: valid bit (0: invalid, 1: valid)
+  snprintf(value, sizeof(value), "%s%s",
+         (s & 0x01) ? "enable" : "disable",
+         (s & 0x80) ? "" : " (invalid)");
+  
+  ret = kv_set(key, value, 0, KV_FPERSIST);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Fail to set the key \"%s\"", __func__, key);
+  }
+
+  return ret;
+}
+
+int
+pal_get_power_limit(uint8_t slot_id, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
+  int ret = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  if ((req_data == NULL) || (res_data == NULL) || (res_len == NULL)) {
+    syslog(LOG_WARNING, "%s() Fail to get power limit due to null pointer check", __func__);
+    return -1;
+  }
+
+  *res_len = 0;
+
+  snprintf(key, sizeof(key), "server_power_limit_status");
+  ret = kv_get(key, value, NULL, KV_FPERSIST);
+  if (ret < 0) {
+    res_data[*res_len] = UNINITIAL_POWER_LIMIT;
+    ret = CC_SUCCESS;
+  } else {
+    bool enabled = false;
+    bool valid = true;
+
+    if (strncmp(value, "enable", 6) == 0) {
+        enabled = true;
+    } else if (strncmp(value, "disable", 7) == 0) {
+        enabled = false;
+    } else {
+        syslog(LOG_WARNING, "%s() Invalid power limit status value: %s", __func__, value);
+        res_data[*res_len] = UNINITIAL_POWER_LIMIT;
+        return -1;
+    }
+
+    if (strstr(value, "(invalid)") != NULL) {
+        valid = false;
+    }
+
+    uint8_t status = 0;
+    // bit[0]: CPU package power limit status (0: disable, 1: enable), bit[7]: valid bit (0: invalid, 1: valid)
+    if (enabled) status |= 0x01;
+    if (valid)   status |= 0x80;
+    res_data[*res_len] = status;
+  }
+  *res_len = SIZE_CPU_POWER_LIMIT_DATA;
+
+  return ret;
 }

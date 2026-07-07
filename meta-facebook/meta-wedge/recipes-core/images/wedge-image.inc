@@ -16,7 +16,6 @@ IMAGE_INSTALL += " \
   bcm5396-util \
   ast-mdio \
   fan-ctrl \
-  rackmon \
   psu-update \
   sensor-setup \
   usb-console \

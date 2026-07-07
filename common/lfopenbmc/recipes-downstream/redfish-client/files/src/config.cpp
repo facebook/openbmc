@@ -1,7 +1,35 @@
 #include <redfish_client/core/config.hpp>
+#include <xyz/openbmc_project/Sensor/Value/common.hpp>
+
+#include <algorithm>
+#include <stdexcept>
+#include <string_view>
+#include <unordered_set>
 
 namespace redfish_client::core
 {
+
+namespace
+{
+
+// Validate a configured sensor namespace against the set defined by the D-Bus
+// Sensor.Value interface. The configured string is used verbatim to compose
+// sensor object paths, so it must be one the interface actually supports.
+bool isValidSensorNamespace(std::string_view ns)
+{
+    using NamespacePath =
+        sdbusplus::common::xyz::openbmc_project::sensor::Value::namespace_path;
+    static const std::unordered_set<std::string_view> valid = {
+        NamespacePath::airflow,     NamespacePath::altitude,
+        NamespacePath::current,     NamespacePath::energy,
+        NamespacePath::fan_tach,    NamespacePath::humidity,
+        NamespacePath::liquidflow,  NamespacePath::power,
+        NamespacePath::pressure,    NamespacePath::temperature,
+        NamespacePath::utilization, NamespacePath::voltage};
+    return valid.contains(ns);
+}
+
+} // namespace
 
 void from_json(const nlohmann::json& json, UpdateServiceMapper& mapper)
 {
@@ -14,7 +42,6 @@ void from_json(const nlohmann::json& json, UpdateServiceMapper& mapper)
             it->template get<std::vector<std::string>>();
     }
 }
-
 
 void from_json(const nlohmann::json& json, LogServiceConfig& config)
 {
@@ -31,6 +58,30 @@ void from_json(const nlohmann::json& json, LogServiceConfig& config)
         {
             it->get_to(config.skipHistoricalEntriesThresholdSeconds.emplace());
         }
+    }
+}
+
+void from_json(const nlohmann::json& json, SensorConfig& config)
+{
+    json.at("associationPath").get_to(config.associationPath);
+    json.at("mappers").get_to(config.mappers);
+    if (auto it = std::ranges::find_if(config.mappers,
+                                       [](const auto& mapper) {
+                                           return !isValidSensorNamespace(
+                                               mapper.toNamespace);
+                                       });
+        it != config.mappers.end())
+    {
+        throw std::invalid_argument(
+            "Unknown sensor namespace in config: " + it->toNamespace);
+    }
+    json.at("intervalMilliseconds").get_to(config.intervalMilliseconds);
+    json.at("maxRetries").get_to(config.maxRetries);
+    json.at("retryIntervalMilliseconds")
+        .get_to(config.retryIntervalMilliseconds);
+    if (auto it = json.find("metricReportUrls"); it != json.end())
+    {
+        config.metricReportUrls = it->template get<std::vector<std::string>>();
     }
 }
 

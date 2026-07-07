@@ -39,7 +39,12 @@ extern "C" {
 #include "pal_sensors.h"
 #include "pal_power.h"
 
-#define MAX_NUM_FRUS    (FRU_CNT-1)
+#ifdef CONFIG_GRANDCANYON2
+#define MAX_NUM_FRUS    12
+#else
+#define MAX_NUM_FRUS    11
+#endif
+
 #define MAX_NODES       1
 #define FRUID_SIZE      512
 #define CUSTOM_FRU_LIST 1

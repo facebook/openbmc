@@ -1,0 +1,90 @@
+From 9df6d07233096a651df37ab836fdb2cac79ab06c Mon Sep 17 00:00:00 2001
+From: James Athappilly <jamesatha@meta.com>
+Date: Tue, 21 Apr 2026 21:24:06 -0700
+Subject: [PATCH] Add back sensor polling time configuration
+
+When syncing the latest upstream changes, multiple
+Facebook platforms that used this option [1] failed
+to build. This gets us back to building again.
+
+[1] https://github.com/search?q=repo%3Afacebook%2Fopenbmc+Dsensor-polling-time
+
+Change-Id: Ib1f2f3b5aefe195c784d49689d3fd724167360ff
+Signed-off-by: James Athappilly <jamesatha@gmail.com>
+---
+ meson.build                              |  2 ++
+ meson.options                            | 17 +++++++++++++++++
+ platform-mc/sensor_manager.hpp           |  2 --
+ platform-mc/test/sensor_manager_test.cpp |  2 +-
+ 4 files changed, 20 insertions(+), 3 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index 9aa05d4..a266f23 100644
+--- a/meson.build
++++ b/meson.build
+@@ -132,6 +132,8 @@ conf_data.set(
+     get_option('enable-fallback-terminus-name').enabled(),
+ )
+ 
++conf_data.set('SENSOR_POLLING_TIME', get_option('sensor-polling-time'))
++
+ # Firmware update inotify option
+ if get_option('fw-update-pkg-inotify').allowed()
+     conf_data.set('FW_UPDATE_INOTIFY_ENABLED', 1)
+diff --git a/meson.options b/meson.options
+index cb0e866..0f63a71 100644
+--- a/meson.options
++++ b/meson.options
+@@ -159,6 +159,23 @@ option(
+     description: 'Enable fallback terminus name "Terminus_{tid}" when no terminus name is found.',
+ )
+ 
++## Sensor Polling Options
++option(
++    'sensor-polling-time',
++    type: 'integer',
++    min: 1,
++    max: 10000,
++    description: '''The configured timeout in milliseconds of the common sensor
++                    polling timer of each terminus which will trigger the
++                    terminus sensor reading task. The task will check
++                    whether the sensor in the terminus sensors list need to
++                    be updated by comparing the sensor `updateInterval` with the
++                    interval between current timestamp and latest updated
++                    timestamp of the sensor. The task will send
++                    `GetSensorReading` if the sensor need to be updated.''',
++    value: 249,
++)
++
+ # Firmware Update configuration parameters
+ option(
+     'fw-update-pkg-inotify',
+diff --git a/platform-mc/sensor_manager.hpp b/platform-mc/sensor_manager.hpp
+index 1497072..6a36548 100644
+--- a/platform-mc/sensor_manager.hpp
++++ b/platform-mc/sensor_manager.hpp
+@@ -18,8 +18,6 @@ namespace platform_mc
+ 
+ using namespace pldm::pdr;
+ 
+-inline constexpr uint64_t SENSOR_POLLING_TIME = 249;
+-
+ /**
+  * @brief SensorManager
+  *
+diff --git a/platform-mc/test/sensor_manager_test.cpp b/platform-mc/test/sensor_manager_test.cpp
+index 67298c2..aa2167a 100644
+--- a/platform-mc/test/sensor_manager_test.cpp
++++ b/platform-mc/test/sensor_manager_test.cpp
+@@ -145,7 +145,7 @@ TEST_F(SensorManagerTest, sensorPollingTest)
+     ON_CALL(sensorManager, doSensorPolling(tid))
+         .WillByDefault([this, &t0, &t1](unsigned char) {
+             ASSERT_TRUE(sd_event_now(event.get(), CLOCK_MONOTONIC, &t1) >= 0);
+-            EXPECT_GE(t1 - t0, pldm::platform_mc::SENSOR_POLLING_TIME * 1000);
++            EXPECT_GE(t1 - t0, SENSOR_POLLING_TIME * 1000);
+             t0 = t1;
+         });
+     EXPECT_CALL(sensorManager, doSensorPolling(tid))
+-- 
+2.53.0-Meta
+

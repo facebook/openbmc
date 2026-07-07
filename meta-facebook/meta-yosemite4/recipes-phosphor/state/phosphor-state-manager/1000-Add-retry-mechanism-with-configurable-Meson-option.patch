@@ -1,4 +1,4 @@
-From ed03d405c8079bb65d49e80e11c0784463fff57f Mon Sep 17 00:00:00 2001
+From 27b560c16d00af0c1f8c1e9790a0f7d9948e8c33 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Wed, 26 Mar 2025 18:30:01 +0800
 Subject: [PATCH] Add retry mechanism with configurable Meson option
@@ -13,12 +13,12 @@ the number of retries to be configured via a Meson option.
  4 files changed, 52 insertions(+), 24 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index 090babb..8fdc98d 100644
+index 0511808..dc5bbe0 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -82,6 +82,8 @@ conf.set10(
-     get_option('apply-power-policy-bmc-ready').allowed(),
- )
+@@ -96,6 +96,8 @@ else
+     conf.set('NUM_CHASSIS_SMP', 0)
+ endif
  
 +conf.set('RETRY_ATTEMPTS', get_option('retry_attempts'))
 +
@@ -26,12 +26,12 @@ index 090babb..8fdc98d 100644
  
  nlohmann_json_dep = dependency('nlohmann_json', include_type: 'system')
 diff --git a/meson.options b/meson.options
-index f24d068..4ca8479 100644
+index 8a26c1d..c5e6c06 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -188,3 +188,10 @@ option(
-     value: 'enabled',
-     description: 'Link phosphor-bmc-quiesce-reboot.service into obmc-bmc-service-quiesce@0.target.wants to automatically reboot when BMC enters Quiesced',
+@@ -210,3 +210,10 @@ option(
+     value: 12,
+     description: 'Maximum number of chassis instances to aggregate in multi-chassis SMP mode (1-N)',
  )
 +
 +option(
@@ -165,5 +165,5 @@ index 5f721b8..13d2755 100644
  
  } // namespace settings
 -- 
-2.52.0
+2.53.0-Meta
 

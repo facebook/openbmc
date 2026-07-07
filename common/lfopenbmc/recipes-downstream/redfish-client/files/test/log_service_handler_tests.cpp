@@ -4,6 +4,8 @@
 #include <redfish_client/core/cper_mapper.hpp>
 #include <redfish_client/core/hgx_ps_run_pwr_fault_mapper.hpp>
 #include <redfish_client/core/hgx_thermal_mapper.hpp>
+#include <redfish_client/core/hgx_leak_detector_mapper.hpp>
+#include <redfish_client/core/sensor_threshold_mapper.hpp>
 
 #include <nlohmann/json.hpp>
 #include <sdbusplus/server.hpp>
@@ -46,7 +48,7 @@ class Create : public CreateSyncIntf
         CreateSyncIntf(bus, path), logs(logs)
     {}
 
-    sdbusplus::message::object_path create(
+    sdbusplus::object_path create(
         std::string message, LoggingLevel severity,
         std::map<std::string, std::string> additionalData) override
     {
@@ -57,7 +59,7 @@ class Create : public CreateSyncIntf
         std::string pathStr = Create::instance_path;
         pathStr += "/entry/";
         pathStr += std::to_string(nextId++);
-        sdbusplus::message::object_path path(pathStr);
+        sdbusplus::object_path path(pathStr);
         return path;
     }
 
@@ -164,7 +166,13 @@ class LogServiceHandlerTest : public ::testing::Test
     void SetUp() override
     {
         auto& registry = core::LogEntryMapperRegistry::instance();
+        std::vector<core::SensorMapper> testMappers = {
+            {"/redfish/v1/Chassis/HGX_GPU_2/Sensors/HGX_GPU_2_DRAM_0_Temp_0",
+             "temperature", "HGX_GPU2_DRAM_TEMP_C"}};
+
         registry.registerMapper(std::make_unique<HgxPsRunPwrFaultMapper>(), 110);
+        registry.registerMapper(std::make_unique<HgxLeakDetectorMapper>(), 109);
+        registry.registerMapper(std::make_unique<SensorThresholdMapper>(testMappers), 106);
         registry.registerMapper(std::make_unique<HgxThermalMapper>(), 105);
         registry.registerMapper(std::make_unique<CperMapper>(), 100);
         registry.registerMapper(std::make_unique<UnhandledMapper>(), 0);
@@ -843,6 +851,164 @@ TEST_F(LogServiceHandlerTest, HgxThermalMapperTest)
               log2.message);
     EXPECT_EQ("/redfish/v1/Systems/HGX_Baseboard_0/Processors/GPU_SXM_8",
               log2.additionalData["DEVICE"]);
+}
+
+static constexpr const char* kLeakDetectorEntryCollectionJson = R"(
+{
+    "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries",
+    "@odata.type": "#LogEntryCollection.LogEntryCollection",
+    "Members@odata.count": 1,
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/System0/LogServices/EventLog/Entries/4307",
+            "@odata.type": "#LogEntry.v1_15_0.LogEntry",
+            "Id": "4307",
+            "EntryType": "Event",
+            "Created": "2026-04-06T21:59:59+00:00",
+            "MessageId": "ResourceEvent.1.0.ResourceStatusChangedCritical",
+            "Message": "The health of resource 'Chassis_0_LeakDetector_0_ColdPlate' has changed to Critical.",
+            "MessageArgs": ["Chassis_0_LeakDetector_0_ColdPlate"],
+            "Severity": "Critical",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Chassis/HGX_Baseboard_0/LeakDetection/LeakDetectors/Chassis_0_LeakDetector_0_ColdPlate"
+                }
+            }
+        }
+    ]
+}
+)";
+
+TEST_F(LogServiceHandlerTest, LeakDetectorMapperTest)
+{
+    sdbusplus::async::context ctx;
+    auto logServiceHandler =
+        std::make_shared<LogServiceHandler>(ctx, "fake.url", std::nullopt);
+
+    auto logEntryCollection =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            kLeakDetectorEntryCollectionJson);
+
+    using namespace std::string_literals;
+
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+      co_await logServiceHandler->commit(logEntryCollection);
+    }());
+
+    // Expect 1 log: LeakDetectedCritical
+    ASSERT_EQ(1, logManager.logs->size());
+
+    Log log = (*logManager.logs)[0];
+    EXPECT_EQ(LoggingLevel::Critical, log.severity);
+    EXPECT_EQ("xyz.openbmc_project.State.Leak.Detector.LeakDetectedCritical"s,
+              log.message);
+
+    std::string expectedDetectorPath =
+        "/xyz/openbmc_project/state/leak/detector/Chassis_0_LeakDetector_0_ColdPlate";
+    EXPECT_EQ(expectedDetectorPath, log.additionalData["DETECTOR_NAME"]);
+}
+
+TEST_F(LogServiceHandlerTest, SensorThresholdMappingTest)
+{
+    struct TestCase
+    {
+        std::string redfishMsgId;
+        std::string expectedDbusMsg;
+        LoggingLevel expectedSeverity;
+        bool isError; // Errors have THRESHOLD_VALUE, Events (NormalRange) don't
+    };
+
+    std::vector<TestCase> testCases = {
+        {"SensorEvent.1.0.0.ReadingAboveUpperFatalThreshold",
+         "xyz.openbmc_project.Sensor.Threshold.ReadingAboveUpperHardShutdownThreshold",
+         LoggingLevel::Critical, true},
+        {"SensorEvent.1.0.0.ReadingAboveUpperCriticalThreshold",
+         "xyz.openbmc_project.Sensor.Threshold.ReadingAboveUpperCriticalThreshold",
+         LoggingLevel::Critical, true},
+        {"SensorEvent.1.0.0.ReadingAboveUpperCautionThreshold",
+         "xyz.openbmc_project.Sensor.Threshold.ReadingAboveUpperWarningThreshold",
+         LoggingLevel::Warning, true},
+        {"SensorEvent.1.0.0.ReadingBelowLowerCriticalThreshold",
+         "xyz.openbmc_project.Sensor.Threshold.ReadingBelowLowerCriticalThreshold",
+         LoggingLevel::Critical, true},
+        {"SensorEvent.1.0.0.ReadingBelowLowerFatalThreshold",
+         "xyz.openbmc_project.Sensor.Threshold.ReadingBelowLowerHardShutdownThreshold",
+         LoggingLevel::Critical, true},
+        {"SensorEvent.1.0.0.ReadingBelowLowerCautionThreshold",
+         "xyz.openbmc_project.Sensor.Threshold.ReadingBelowLowerWarningThreshold",
+         LoggingLevel::Warning, true},
+        {"SensorEvent.1.0.0.SensorReadingNormalRange",
+         "xyz.openbmc_project.Sensor.Threshold.SensorReadingNormalRange",
+         LoggingLevel::Informational, false}};
+
+    sdbusplus::async::context ctx;
+    auto handler =
+        std::make_shared<LogServiceHandler>(ctx, "fake.url", std::nullopt);
+
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+        for (size_t idx = 0; idx < testCases.size(); ++idx)
+        {
+            const auto& tc = testCases[idx];
+            std::string entryId = std::to_string(idx + 1);
+
+            // Construct the minimal JSON for this case
+            nlohmann::json member = {
+                {"@odata.id",
+                 "/redfish/v1/Systems/System0/LogServices/EventLog/Entries/" + entryId},
+                {"@odata.type", "#LogEntry.v1_15_0.LogEntry"},
+                {"Created", "2025-01-01T12:00:00+00:00"},
+                {"EntryType", "Event"},
+                {"Id", entryId},
+                {"MessageId", tc.redfishMsgId},
+                {"MessageArgs", {"HGX_GPU_2_DRAM_0_Temp_0", "100.0", "Cel", "90.0"}},
+                {"Severity", "Critical"},
+                {"Links",
+                 {"OriginOfCondition",
+                  {"@odata.id",
+                   "/redfish/v1/Chassis/HGX_GPU_2/Sensors/HGX_GPU_2_DRAM_0_Temp_0"}}}
+            };
+            nlohmann::json collection = {
+                {"@odata.id",
+                 "/redfish/v1/Systems/System0/LogServices/EventLog/Entries"},
+                {"@odata.type", "#LogEntryCollection.LogEntryCollection"},
+                {"Members@odata.count", 1},
+                {"Members", nlohmann::json::array({member})}};
+
+            auto logEntries =
+                redfish_binding::LogEntryCollection::parseLogEntryCollection(
+                    collection.dump());
+
+            size_t startSize = logManager.logs->size();
+
+            co_await handler->commit(logEntries);
+
+            if (logManager.logs->size() != startSize + 1)
+            {
+                throw std::runtime_error("Failed to commit: " + tc.redfishMsgId);
+            }
+
+            Log newLog = (*logManager.logs)[startSize];
+            EXPECT_EQ(tc.expectedDbusMsg, newLog.message);
+            EXPECT_EQ(tc.expectedSeverity, newLog.severity);
+            EXPECT_EQ(
+                "/xyz/openbmc_project/sensors/temperature/HGX_GPU2_DRAM_TEMP_C",
+                newLog.additionalData.at("SENSOR_NAME"));
+            EXPECT_EQ("100.0", newLog.additionalData.at("READING_VALUE"));
+            EXPECT_EQ("xyz.openbmc_project.Sensor.Value.Unit.DegreesC",
+                      newLog.additionalData.at("UNITS"));
+
+            if (tc.isError)
+            {
+                EXPECT_EQ("90.0", newLog.additionalData.at("THRESHOLD_VALUE"));
+            }
+            else
+            {
+                EXPECT_EQ(newLog.additionalData.find("THRESHOLD_VALUE"),
+                          newLog.additionalData.end());
+            }
+        }
+        co_return;
+    }());
 }
 
 } // namespace redfish_client::core

@@ -112,9 +112,17 @@ auto processGenerate(sdbusplus::async::context& ctx, const std::string& device,
     DeviceEventData eventData = data;
     applyEventName(eventData, eventType, eventName);
 
-    auto path = co_await dispatchGenerate(ctx, eventType, eventData);
-    state[key] = path.str;
-    std::cout << eventType << ": " << path.str << "\n";
+    try
+    {
+        auto path = co_await dispatchGenerate(ctx, eventType, eventData);
+        state[key] = path.str;
+        std::cout << eventType << ": " << path.str << "\n";
+    }
+    catch (const sdbusplus::exception::SdBusError& e)
+    {
+        std::cerr << eventType << ": failed to generate: " << e.name() << " ("
+                  << e.what() << ")\n";
+    }
     co_return;
 }
 

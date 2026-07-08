@@ -11,17 +11,12 @@ trap cleanup INT TERM QUIT EXIT
 SCM_SPI="spi1.0"
 SCM_SPIDEV="spidev1.0"
 SCM_MTD=""
-REMOVE_BIOS_VER=0
 
 # Temp file for storing constructed aconf image.
 TEMP_ACONF_IMAGE="/tmp/tmp_biosutil_aconf_image"
 
 cleanup() {
     disconnect_spi
-    if [ "$REMOVE_BIOS_VER" -eq 1 ]; then
-        echo "Removing bios cache file ..."
-        rm -f "$BIOS_VER_CACHE"
-    fi
     rm -f $TEMP_ACONF_IMAGE
 }
 
@@ -145,7 +140,7 @@ get_partition_opts() {
 if [ "$1" = "erase" ]; then
     popts=$(get_partition_opts "$2" "$3" "total")
     echo "Erasing flash content ..."
-    REMOVE_BIOS_VER=1
+    echo "UNKNOWN" > "$BIOS_VER_CACHE"
     run_flashrom "$popts -E" || exit 1
 elif [ "$1" = "read" ]; then
     popts=$(get_partition_opts "$3" "$4" "total")
@@ -161,13 +156,14 @@ elif [ "$1" = "write" ]; then
         usage
         exit 1
     fi
-    REMOVE_BIOS_VER=1
+    echo "UNKNOWN" > "$BIOS_VER_CACHE"
     retry_command 5 write_flash "$popts" "$2" || exit 1
     if [ "$3" == "--init-aconf" ]; then
         create_aboot_conf_image "$BMC_CONF_FILE" "$TEMP_ACONF_IMAGE" || exit 1
         popts="-l $LAYOUT_FILE -i aboot_conf"
         retry_command 5 write_flash "$popts" "$TEMP_ACONF_IMAGE" || exit 1
     fi
+    rm -f "$BIOS_VER_CACHE"
 else
     usage
     exit 1

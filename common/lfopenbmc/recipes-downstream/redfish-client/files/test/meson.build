@@ -27,6 +27,10 @@ tests = {
     'redfish_binding_tests': ['redfish_binding_tests.cpp'],
     'sensor_tests': ['sensor_tests.cpp'],
     'sensor_handler_tests': ['sensor_handler_tests.cpp', 'helper.cpp'],
+    'update_service_handler_tests': [
+        'update_service_handler_tests.cpp',
+        'helper.cpp',
+    ],
     'config_tests': ['config_tests.cpp'],
 }
 

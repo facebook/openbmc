@@ -5,8 +5,10 @@
 #include "utils/event_state.hpp"
 
 #include <phosphor-logging/lg2.hpp>
+#include <sdbusplus/exception.hpp>
 
 #include <iostream>
+#include <string_view>
 
 namespace event_emulator
 {
@@ -133,9 +135,24 @@ auto processResolve(sdbusplus::async::context& ctx, const std::string& device,
     applyEventName(eventData, eventType, eventName);
 
     sdbusplus::object_path path(it->second);
-    co_await dispatchResolve(ctx, eventType, path, eventData);
-    std::cout << eventType << ": resolved " << path.str << "\n";
-    state.erase(it);
+    try
+    {
+        co_await dispatchResolve(ctx, eventType, path, eventData);
+        std::cout << eventType << ": resolved " << path.str << "\n";
+        state.erase(it);
+    }
+    catch (const sdbusplus::exception::SdBusError& e)
+    {
+        std::cerr << eventType << ": failed to resolve " << path.str << ": "
+                  << e.name() << " (" << e.what() << ")\n";
+        // If the stored entry no longer exists (e.g. logs were cleared or the
+        // entry was pruned), drop the stale state.
+        if (std::string_view(e.name()) ==
+            "org.freedesktop.DBus.Error.UnknownObject")
+        {
+            state.erase(it);
+        }
+    }
 }
 
 auto runGenerate(sdbusplus::async::context& ctx, const std::string& device,

@@ -1,4 +1,4 @@
-From e3dabaf30c44630e251688a28f904afa9828c85a Mon Sep 17 00:00:00 2001
+From 6460b92b2ca7636e9576cb43b05220b4868a63f0 Mon Sep 17 00:00:00 2001
 From: Amithash Prasad <amithash@meta.com>
 Date: Wed, 25 Mar 2026 15:51:35 -0700
 Subject: [PATCH] lg2: commit: Allow users to provide additional data
@@ -9,12 +9,16 @@ which can be extended.
 Change-Id: I9a0d77234647ae856c503566c1e2936209bbe3df
 Signed-off-by: Amithash Prasad <amithash@meta.com>
 ---
+ README.md                               |  9 +++++++++
+ lib/include/phosphor-logging/commit.hpp | 16 +++++++++++++---
+ lib/lg2_commit.cpp                      | 17 +++++++++++------
+ 3 files changed, 33 insertions(+), 9 deletions(-)
 
 diff --git a/README.md b/README.md
 index 18b9602..5fd1690 100644
 --- a/README.md
 +++ b/README.md
-@@ -89,6 +89,15 @@
+@@ -89,6 +89,15 @@ lg2::commit(sdbusplus::event::xyz::openbmc_project::Logging::Cleared(
      "NUMBER_OF_LOGS", count), LOG_CRIT);
  ```
  
@@ -65,7 +69,7 @@ index 75c6659..05e85ae 100644
  
  /** Resolve an existing event/error.
   *
-@@ -33,11 +40,14 @@
+@@ -33,11 +40,14 @@ void resolve(const sdbusplus::object_path& logPath);
   *
   *  @param ctx - The async context to use.
   *  @param e - The event to commit.
@@ -85,7 +89,7 @@ diff --git a/lib/lg2_commit.cpp b/lib/lg2_commit.cpp
 index b45ee86..704db6b 100644
 --- a/lib/lg2_commit.cpp
 +++ b/lib/lg2_commit.cpp
-@@ -115,7 +115,8 @@
+@@ -115,7 +115,8 @@ auto extractEvent(sdbusplus::exception::generated_event_base&& t)
  } // namespace details
  
  auto commit(sdbusplus::exception::generated_event_base&& t,
@@ -95,7 +99,7 @@ index b45ee86..704db6b 100644
  {
      int severity = overrideLevel.value_or(t.severity());
      // Check event filters first.
-@@ -144,8 +145,10 @@
+@@ -144,8 +145,10 @@ auto commit(sdbusplus::exception::generated_event_base&& t,
              b.new_method_call(Create::default_service, Create::instance_path,
                                Create::interface, "Create");
  
@@ -108,7 +112,7 @@ index b45ee86..704db6b 100644
  
          auto reply = b.call(m);
  
-@@ -171,7 +174,7 @@
+@@ -171,7 +174,7 @@ void resolve(const sdbusplus::object_path& logPath)
  
  auto commit(sdbusplus::async::context& ctx,
              sdbusplus::exception::generated_event_base&& t,
@@ -117,7 +121,7 @@ index b45ee86..704db6b 100644
      -> sdbusplus::async::task<sdbusplus::object_path>
  {
      using details::Create;
-@@ -184,11 +187,13 @@
+@@ -184,11 +187,13 @@ auto commit(sdbusplus::async::context& ctx,
  
      if constexpr (LG2_COMMIT_DBUS)
      {
@@ -133,3 +137,6 @@ index b45ee86..704db6b 100644
      }
      co_return {};
  }
+-- 
+2.53.0-Meta
+

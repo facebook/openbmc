@@ -1,8 +1,8 @@
-From 6eef577cdc352140aa35e594321306c4f4fd41fd Mon Sep 17 00:00:00 2001
+From bfb324861075eb8fe6ceb741038352dab13689ff Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Fri, 26 Jun 2026 12:06:37 -0700
-Subject: [PATCH 11/14] Add INA230/INA238 I2C power monitor device emulation
- for BMC platforms.
+Subject: [PATCH] Add INA230/INA238 I2C power monitor device emulation for BMC
+ platforms.
 
 The INA230/INA238 provide voltage, current, and power monitoring over I2C.
 These devices are register-compatible and share the same emulation.
@@ -16,10 +16,10 @@ Used in server power distribution for real-time power monitoring.
  create mode 100644 hw/sensor/ina230.c
 
 diff --git a/hw/arm/Kconfig b/hw/arm/Kconfig
-index 4e50fb1111..f5d96f55f8 100644
+index 82e0bc2e70..a34cb2b6f8 100644
 --- a/hw/arm/Kconfig
 +++ b/hw/arm/Kconfig
-@@ -548,6 +548,7 @@ config ASPEED_SOC
+@@ -551,6 +551,7 @@ config ASPEED_SOC
      select TMP105
      select TMP421
      select EMC141X

@@ -1,7 +1,7 @@
-From 26788d3092606daf9023454eb757ab84009537dd Mon Sep 17 00:00:00 2001
+From cd2d6574bb7fa7428a9a739e8fc085f1d935b51f Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Fri, 26 Jun 2026 11:36:34 -0700
-Subject: [PATCH 12/12] Add minerva
+Subject: [PATCH] Add minerva
 
 ---
  hw/arm/aspeed_ast2600_minerva.c | 298 ++++++++++++++++++++++++++++++++

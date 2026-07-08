@@ -1,4 +1,4 @@
-From e950537cd3dd77b1a8658df74bd836d45e0a1739 Mon Sep 17 00:00:00 2001
+From a2a9cf4bb206564ab5d351f9f29228b244cfd07c Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH] aspeed: Expose i2c buses to machine
@@ -118,10 +118,10 @@ index 3e022bf238..97cd6802d1 100644
  
  static void aspeed_i2c_bus_get_scl_timeout(Object *obj, Visitor *v,
 diff --git a/include/hw/arm/aspeed_soc.h b/include/hw/arm/aspeed_soc.h
-index 3aac144cd4..a3bce779d0 100644
+index 41dc04e293..214d250bf7 100644
 --- a/include/hw/arm/aspeed_soc.h
 +++ b/include/hw/arm/aspeed_soc.h
-@@ -303,6 +303,8 @@ bool aspeed_soc_uart_realize(MemoryRegion *memory, SerialMM *smm,
+@@ -306,6 +306,8 @@ bool aspeed_soc_uart_realize(MemoryRegion *memory, SerialMM *smm,
  void aspeed_soc_uart_set_chr(SerialMM *uart, int dev, int uarts_base,
                               int uarts_num, Chardev *chr);
  bool aspeed_soc_dram_init(AspeedSoCState *s, Error **errp);

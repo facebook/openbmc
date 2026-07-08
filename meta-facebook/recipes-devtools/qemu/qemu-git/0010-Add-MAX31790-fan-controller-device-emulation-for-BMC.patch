@@ -1,7 +1,7 @@
-From d853e37954f9796b0325fb740f1ecc72ad36eeb5 Mon Sep 17 00:00:00 2001
+From 859071c70c992dd3fd4af4fe63ddb1fd52d091c7 Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Fri, 26 Jun 2026 14:40:22 -0700
-Subject: [PATCH 12/14] Add MAX31790 fan controller device emulation for BMC
+Subject: [PATCH] Add MAX31790 fan controller device emulation for BMC
  platforms.
 
 The MAX31790 provides 6-channel fan control with PWM and
@@ -16,10 +16,10 @@ management in servers.
  create mode 100644 hw/sensor/max31790.c
 
 diff --git a/hw/arm/Kconfig b/hw/arm/Kconfig
-index f5d96f55f8..8f5ee0a2ca 100644
+index a34cb2b6f8..0d135e1898 100644
 --- a/hw/arm/Kconfig
 +++ b/hw/arm/Kconfig
-@@ -553,6 +553,7 @@ config ASPEED_SOC
+@@ -556,6 +556,7 @@ config ASPEED_SOC
      select LED
      select PMBUS
      select MAX31785

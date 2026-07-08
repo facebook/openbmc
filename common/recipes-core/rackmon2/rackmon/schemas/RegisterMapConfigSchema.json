@@ -31,6 +31,22 @@
       "minimum": 0,
       "maximum": 65535
     },
+    "time_sync": {
+      "type": "object",
+      "required": ["address"],
+      "additionalProperties": false,
+      "properties": {
+        "address": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 65535
+        },
+        "interval": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
     "baudrate": {
       "type": "integer",
       "minimum": 19200,

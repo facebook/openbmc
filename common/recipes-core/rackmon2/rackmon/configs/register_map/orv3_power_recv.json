@@ -8,6 +8,10 @@
     ],
     "probe_register": 8,
     "baudrate": 19200,
+    "time_sync": {
+        "address": 98,
+        "interval": 3600
+    },
     "special_handlers": [
         {
             "reg": 98,

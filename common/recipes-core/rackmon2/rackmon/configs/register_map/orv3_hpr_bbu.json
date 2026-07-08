@@ -36,6 +36,10 @@
     ],
     "probe_register": 0,
     "baudrate": 115200,
+    "time_sync": {
+        "address": 101,
+        "interval": 3600
+    },
     "special_handlers": [
         {
             "reg": 101,

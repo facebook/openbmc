@@ -34,6 +34,7 @@ Example configuration covering all the cases:
 | default_baudrate | Default baud-rate used for the device during discovery |
 | preferred_baudrate | (Optional) Operating baud-rate which rackmon should negotiate to (See [Baud-rate Negotiation](#baud-rate-negotiation)) |
 | baud_config | (Optional) See [Baud-rate Negotiation](#baud-rate-negotiation) |
+| time_sync | (Optional) See [Time Sync](#time-sync) |
 | special_handlers | (Optional) See [Special Handling](#special-handling) |
 | registers | List of register descriptors - See [Register Descriptor](#register-descriptor-json) |
 
@@ -154,6 +155,21 @@ This is accomplished using the `special_handlers` key in the register map.
 | shell | Run a shell command and interpret its output (Example, date +%s) |
 | value | Write the value provided |
 
+## Time Sync
+Some devices may have clocks with a week crystal which may drift over time. To workaround this, we can
+sync the current time on a regular basis. These devices usually have a register which can be written to
+with the current unix time. To accomadate this, we can specify the following in the register map:
+
+```
+    "time_sync": {
+      "reg": 298,
+      "period": 3600
+```
+
+| Field | Field Description |
+| ----- | ----------------- |
+| reg | Register address on which the action is performed. Currently this is hard-coded to be of length 2 |
+| period | The interval in seconds at which the time is synced. |
 
 ## Baud-rate Negotiation
 

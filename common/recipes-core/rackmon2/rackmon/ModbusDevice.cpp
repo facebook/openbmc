@@ -15,6 +15,7 @@ ModbusDevice::ModbusDevice(
     int numCommandRetries)
     : interface_(interface),
       numCommandRetries_(numCommandRetries),
+      timeSync_(registerMap.timeSync),
       registerMap_(registerMap) {
   info_.deviceAddress = deviceAddress;
   info_.port = interface_.getPort();
@@ -138,6 +139,44 @@ void ModbusDevice::readFileRecord(
   command(req, resp, timeout);
 }
 
+void ModbusDevice::syncDeviceTime() {
+  if (!timeSync_) {
+    return;
+  }
+  time_t time = getCurrentTime();
+  uint16_t reg = timeSync_->reg;
+  time_t interval = timeSync_->period;
+  if (time < (lastTimeRefresh_ + interval)) {
+    return;
+  }
+  WriteMultipleRegistersReq req(info_.deviceAddress, reg);
+  req << uint32_t(time);
+  WriteMultipleRegistersResp resp(info_.deviceAddress, reg, 2);
+  try {
+    command(req, resp);
+  } catch (ModbusError& e) {
+    if (e.errorCode == ModbusErrorCode::ILLEGAL_DATA_ADDRESS ||
+        e.errorCode == ModbusErrorCode::ILLEGAL_FUNCTION) {
+      logInfo << "DEV:0x" << std::hex << +info_.deviceAddress
+              << " Time sync write at 0x" << std::hex << +reg << ' '
+              << " unsupported. Disabled from future updates" << std::endl;
+      // Some device SKUs may not support this and we want to
+      // avoid spamming logs with this error. Just disable future
+      // updates.
+      timeSync_.reset();
+    } else {
+      logInfo << "DEV:0x" << std::hex << +info_.deviceAddress
+              << " Time sync write at 0x" << std::hex << +reg << ' '
+              << " caught: " << e.what() << std::endl;
+    }
+  } catch (std::exception& e) {
+    logInfo << "DEV:0x" << std::hex << +info_.deviceAddress
+            << " Time sync write at 0x" << std::hex << +reg << ' '
+            << " caught: " << e.what() << std::endl;
+  }
+  lastTimeRefresh_ = time;
+}
+
 void ModbusDevice::forceReloadRegister(
     RegisterStore& registerStore,
     time_t reloadTime) {
@@ -213,6 +252,7 @@ void ModbusDevice::reloadAllRegisters() {
     }
     specialHandler.handle(*this);
   }
+  syncDeviceTime();
   bool singleShot = singleShotReload_;
   singleShotReload_ = false;
   if (singleShot) {
@@ -243,6 +283,10 @@ void ModbusDevice::setActive() {
   // Clear the num failures so we consider it active.
   info_.numConsecutiveFailures = 0;
   info_.mode = ModbusDeviceMode::ACTIVE;
+
+  // Reset time sync config in case it was cleared
+  // in a previous active round.
+  timeSync_ = registerMap_.timeSync;
   // Force read all registers on next reload
   singleShotReload_ = true;
 }

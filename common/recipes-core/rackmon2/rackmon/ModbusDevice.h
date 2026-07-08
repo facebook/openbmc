@@ -97,6 +97,8 @@ class ModbusDevice {
   std::vector<RegisterStoreSpan> reloadPlan_{};
   mutable std::shared_mutex infoMutex_{};
   std::vector<ModbusSpecialHandler> specialHandlers_{};
+  time_t lastTimeRefresh_{};
+  std::optional<TimeSyncConfig> timeSync_{};
   bool setBaudEnabled_ = true;
   const RegisterMap& registerMap_;
   std::atomic<bool> singleShotReload_{true};
@@ -109,6 +111,7 @@ class ModbusDevice {
   void forceReloadRegister(RegisterStore& registerStore, time_t reloadTime);
   void forceReloadPlan();
   bool reloadRegisterSpan(RegisterStoreSpan& span, bool singleShot);
+  void syncDeviceTime();
 
  protected:
   virtual time_t getCurrentTime() {

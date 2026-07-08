@@ -121,6 +121,33 @@ TEST(RegisterMapTest, JSONCoversionBaudrate) {
   EXPECT_EQ(rmap.name, "orv2_psu");
   EXPECT_EQ(rmap.registerDescriptors.size(), 1);
   EXPECT_EQ(rmap.specialHandlers.size(), 0);
+  EXPECT_FALSE(rmap.timeSync.has_value());
+}
+
+TEST(RegisterMapTest, JSONConversionCurrentTime) {
+  std::string inp = R"({
+    "name": "orv2_psu",
+    "address_range": [[160, 191]],
+    "probe_register": 104,
+    "time_sync": {
+      "address": 42,
+      "interval": 32
+    },
+    "baudrate": 19200,
+    "registers": [
+      {
+        "begin": 0,
+        "length": 8,
+        "format": "STRING",
+        "name": "MFG_MODEL"
+      }
+    ]
+  })";
+  nlohmann::json j = nlohmann::json::parse(inp);
+  RegisterMap rmap = j;
+  EXPECT_TRUE(rmap.timeSync.has_value());
+  EXPECT_EQ(rmap.timeSync->reg, 42);
+  EXPECT_EQ(rmap.timeSync->period, 32);
 }
 
 TEST(RegisterMapTest, JSONCoversionSpecial) {

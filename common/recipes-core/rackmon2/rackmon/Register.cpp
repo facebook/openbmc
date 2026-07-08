@@ -515,6 +515,11 @@ void from_json(const json& j, SpecialHandlerInfo& m) {
   j.at("info").get_to(m.info);
 }
 
+void from_json(const json& j, TimeSyncConfig& m) {
+  j.at("address").get_to(m.reg);
+  j.at("interval").get_to(m.period);
+}
+
 void from_json(const json& j, RegisterMap& m) {
   j.at("address_range").get_to(m.applicableAddresses);
   j.at("probe_register").get_to(m.probeRegister);
@@ -527,6 +532,9 @@ void from_json(const json& j, RegisterMap& m) {
   j.at("registers").get_to(tmp);
   for (auto& i : tmp) {
     m.registerDescriptors[i.begin] = i;
+  }
+  if (j.contains("time_sync")) {
+    m.timeSync = j.at("time_sync").get<TimeSyncConfig>();
   }
   if (j.contains("special_handlers")) {
     j.at("special_handlers").get_to(m.specialHandlers);

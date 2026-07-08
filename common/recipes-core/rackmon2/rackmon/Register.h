@@ -318,6 +318,14 @@ struct AddrRange {
   bool contains(uint8_t) const;
 };
 
+// Some devices have a time sync register. This is the config on
+// how to access/update it with the current time.
+struct TimeSyncConfig {
+  uint16_t reg;
+  time_t period;
+};
+void from_json(const nlohmann::json& j, TimeSyncConfig& m);
+
 // Container of an entire register map. This is the memory
 // representation of each JSON register map descriptors
 struct RegisterMap {
@@ -327,6 +335,7 @@ struct RegisterMap {
   uint32_t baudrate;
   size_t maxRegisterSpanLength;
   Parity parity;
+  std::optional<TimeSyncConfig> timeSync;
   std::vector<SpecialHandlerInfo> specialHandlers;
   std::map<uint16_t, RegisterDescriptor> registerDescriptors;
   const RegisterDescriptor& at(uint16_t reg) const {

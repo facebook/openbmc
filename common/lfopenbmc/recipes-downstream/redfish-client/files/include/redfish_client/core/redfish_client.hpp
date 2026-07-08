@@ -1,5 +1,4 @@
 #include <redfish_client/core/config.hpp>
-#include <redfish_client/core/log_service_handler.hpp>
 
 #include <sdbusplus/async.hpp>
 #include <xyz/openbmc_project/ObjectMapper/client.hpp>
@@ -29,8 +28,6 @@ class RedfishClient
     ~RedfishClient();
 
   private:
-    auto runEventPollingLoop() -> sdbusplus::async::task<>;
-
     auto loadConfig() -> sdbusplus::async::task<>;
 
     void registerLogMappers();
@@ -51,7 +48,6 @@ class RedfishClient
         -> sdbusplus::async::task<std::vector<std::string>>;
 
     sdbusplus::async::context& ctx;
-    std::vector<std::shared_ptr<LogServiceHandler>> logServiceHandlers;
     std::string configDir;
     std::optional<Config> config;
     std::string persistDir;

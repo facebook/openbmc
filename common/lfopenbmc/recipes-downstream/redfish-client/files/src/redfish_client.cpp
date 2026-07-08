@@ -1,4 +1,5 @@
 #include <redfish_client/core/redfish_client.hpp>
+#include <redfish_client/core/log_service_handler.hpp>
 #include <redfish_client/core/sensor_handler.hpp>
 #include <redfish_client/core/update_service_handler.hpp>
 #include <redfish_client/core/log_entry_mapper_registry.hpp>
@@ -56,24 +57,8 @@ auto RedfishClient::run() -> sdbusplus::async::task<>
 
     if (config->logServiceConfig.has_value())
     {
-        const auto& logServiceConfig = config->logServiceConfig.value();
-        info("logServiceConfig intervalMilliseconds = {INTERVAL}",
-             "INTERVAL", logServiceConfig.intervalMilliseconds);
-        for (const auto& url : logServiceConfig.urls)
-        {
-            auto expandedUrl =
-                std::format("http://{}{}", config->host, url);
-            info("logServiceConfig url = {URL}", "URL",
-                 expandedUrl.c_str());
-            info("persistDir = {PERSIST_DIR}", "PERSIST_DIR", persistDir);
-
-            logServiceHandlers.push_back(
-                std::make_shared<LogServiceHandler>(
-                    ctx, expandedUrl,
-                    logServiceConfig.skipHistoricalEntriesThresholdSeconds,
-                    persistDir));
-        }
-        ctx.spawn(runEventPollingLoop());
+        ctx.spawn(LogServiceHandler::run(
+            ctx, config->host, config->logServiceConfig.value(), persistDir));
     }
 
     if (config->updateServiceConfig.has_value())
@@ -85,38 +70,6 @@ auto RedfishClient::run() -> sdbusplus::async::task<>
 }
 
 RedfishClient::~RedfishClient() = default;
-
-auto RedfishClient::runEventPollingLoop() -> sdbusplus::async::task<>
-{
-    if (logServiceHandlers.size() == 0)
-    {
-        co_return;
-    }
-
-    info("Running event polling loop");
-
-    try
-    {
-        while (!ctx.stop_requested())
-        {
-            for (auto& logServiceHandler : logServiceHandlers)
-            {
-                co_await logServiceHandler->runOnce();
-            }
-
-            co_await sdbusplus::async::sleep_for(
-                ctx,
-                std::chrono::milliseconds(
-                    config->logServiceConfig.value().intervalMilliseconds));
-        }
-    }
-    catch (const std::logic_error& exn)
-    {
-        debug("Unhandled logic error: {NAME}", "WHAT", exn.what());
-    };
-
-    co_return;
-}
 
 auto RedfishClient::loadConfig() -> sdbusplus::async::task<>
 {

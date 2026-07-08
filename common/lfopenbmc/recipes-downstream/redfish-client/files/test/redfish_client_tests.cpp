@@ -44,6 +44,10 @@ constexpr auto kTestConfigFormat = R"(
         }}
       ]
     }},
+    "logServiceConfig": {{
+      "intervalMilliseconds": 5000,
+      "urls": ["/redfish/v1/Systems/System0/LogServices/EventLog/Entries"]
+    }},
     "updateServiceConfig": {{
       "intervalMilliseconds": 5000,
       "firmwareMappers": [
@@ -58,6 +62,16 @@ constexpr auto kTestConfigFormat = R"(
 )";
 
 constexpr auto kSensorResponse = R"({"Reading": 100.0, "ReadingUnits": "Cel"})";
+
+// An empty log collection is enough to prove the log handler polled without
+// needing a logging service to receive committed entries.
+constexpr auto kLogEntriesResponse = R"(
+{
+  "@odata.type": "#LogEntryCollection.LogEntryCollection",
+  "Members@odata.count": 0,
+  "Members": []
+}
+)";
 
 constexpr auto kFirmwareInventoryResponse = R"(
 {
@@ -87,13 +101,17 @@ std::string generateResponse(
     {
         return kFirmwareInventoryResponse;
     }
+    if (request.path.ends_with("/EventLog/Entries"))
+    {
+        return kLogEntriesResponse;
+    }
     return "[]";
 }
 
 } // namespace
 
-// End-to-end: RedfishClient::run() must spawn both the sensor and
-// update-service handlers, each publishing to dbus.
+// End-to-end: RedfishClient::run() must spawn the sensor, update-service, and
+// log-service handlers, and each must reach out / publish to dbus.
 TEST(RedfishClientTests, WiresUpHandlers)
 {
     sdbusplus::async::context ctx;
@@ -108,7 +126,8 @@ TEST(RedfishClientTests, WiresUpHandlers)
         ctx.run();
     });
 
-    ctx.spawn([](sdbusplus::async::context& ctx) -> sdbusplus::async::task<> {
+    ctx.spawn([&server](
+                  sdbusplus::async::context& ctx) -> sdbusplus::async::task<> {
         auto sensorClient =
             sdbusplus::client::xyz::openbmc_project::sensor::Value<>(ctx)
                 .service(kServiceName)
@@ -150,6 +169,27 @@ TEST(RedfishClientTests, WiresUpHandlers)
         // firmware.
         EXPECT_EQ(100.0, value.value_or(0.0));
         EXPECT_EQ("FW0-V1", version.value_or(""));
+
+        // LogServiceHandler doesn't publish a readable object (it commits
+        // events), so confirm it was wired by checking it polled its URL.
+        bool logPolled = false;
+        for (int i = 0; i < 100 && !logPolled; ++i)
+        {
+            for (const auto& request : server.getReceivedRequests())
+            {
+                if (request.path.ends_with("/EventLog/Entries"))
+                {
+                    logPolled = true;
+                    break;
+                }
+            }
+            if (!logPolled)
+            {
+                co_await sdbusplus::async::sleep_for(
+                    ctx, std::chrono::milliseconds(20));
+            }
+        }
+        EXPECT_TRUE(logPolled);
 
         ctx.request_stop();
         co_return;

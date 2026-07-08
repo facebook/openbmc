@@ -1,3 +1,4 @@
+#include "helper.hpp"
 #include <redfish_client/core/log_service_handler.hpp>
 #include <redfish_client/core/log_entry_mapper_registry.hpp>
 #include <redfish_client/core/unhandled_mapper.hpp>
@@ -287,6 +288,27 @@ TEST_F(LogServiceHandlerTest, BasicTest)
         EXPECT_EQ("3d61a466-ab40-409a-a698-f362d464b38f"s,
                   cper.at("NotificationType").get<std::string>());
     }
+}
+
+TEST_F(LogServiceHandlerTest, LoadFetchesParsesAndCommits)
+{
+    sdbusplus::async::context ctx;
+    SimpleTestHttpServer server(
+        [](const SimpleTestHttpServer::ReceivedHttpRequest&) {
+            return std::string(kEventlogEntryCollectionJson);
+        },
+        {});
+    auto logServiceHandler = std::make_shared<LogServiceHandler>(
+        ctx, std::format("http://localhost:{}/logs", server.getPort()),
+        std::nullopt);
+
+    // load() drives the full path: fetch the collection over HTTP, parse it,
+    // and commit its entries.
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+        co_await logServiceHandler->load();
+    }());
+
+    EXPECT_EQ(2, logManager.logs->size());
 }
 
 TEST_F(LogServiceHandlerTest, InMemoryPersistTest)

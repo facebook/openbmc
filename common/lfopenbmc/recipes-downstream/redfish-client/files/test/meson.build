@@ -22,7 +22,7 @@ endif
 tests = {
     'async_http_client_tests': ['helper.cpp', 'async_http_client_tests.cpp'],
     'redfish_client_tests': ['redfish_client_tests.cpp', 'helper.cpp'],
-    'log_service_handler_tests': ['log_service_handler_tests.cpp'],
+    'log_service_handler_tests': ['log_service_handler_tests.cpp', 'helper.cpp'],
     'persist_map_tests': ['persist_map_tests.cpp'],
     'redfish_binding_tests': ['redfish_binding_tests.cpp'],
     'sensor_tests': ['sensor_tests.cpp'],

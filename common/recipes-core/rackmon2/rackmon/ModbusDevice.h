@@ -39,27 +39,6 @@ struct ModbusRegisterFilter {
 
 class ModbusDevice;
 
-class ModbusSpecialHandler : public SpecialHandlerInfo {
-  uint8_t deviceAddress_;
-  time_t lastHandleTime_ = 0;
-  bool handled_ = false;
-  bool canHandle() {
-    if (period == -1) {
-      return !handled_;
-    }
-    return getTime() > (lastHandleTime_ + period);
-  }
-
-  virtual time_t getTime() {
-    return std::time(nullptr);
-  }
-
- public:
-  ModbusSpecialHandler(uint8_t deviceAddress) : deviceAddress_(deviceAddress) {}
-  virtual ~ModbusSpecialHandler() = default;
-  void handle(ModbusDevice& dev);
-};
-
 // Generic Device information
 struct ModbusDeviceInfo {
   uint8_t deviceAddress = 0;
@@ -96,7 +75,6 @@ class ModbusDevice {
   ModbusDeviceRawData info_;
   std::vector<RegisterStoreSpan> reloadPlan_{};
   mutable std::shared_mutex infoMutex_{};
-  std::vector<ModbusSpecialHandler> specialHandlers_{};
   time_t lastTimeRefresh_{};
   std::optional<TimeSyncConfig> timeSync_{};
   bool setBaudEnabled_ = true;

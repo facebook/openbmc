@@ -487,34 +487,6 @@ void to_json(json& j, const RegisterStore& m) {
   }
 }
 
-void from_json(const json& j, WriteActionInfo& action) {
-  j.at("interpret").get_to(action.interpret);
-  if (j.contains("shell")) {
-    action.shell = j.at("shell");
-  } else {
-    action.shell = std::nullopt;
-  }
-  if (j.contains("value")) {
-    action.value = j.at("value");
-  } else {
-    action.value = std::nullopt;
-  }
-  if (!action.shell && !action.value) {
-    throw std::runtime_error("Bad special handler");
-  }
-}
-
-void from_json(const json& j, SpecialHandlerInfo& m) {
-  j.at("reg").get_to(m.reg);
-  j.at("len").get_to(m.len);
-  m.period = j.value("period", -1);
-  j.at("action").get_to(m.action);
-  if (m.action != "write") {
-    throw std::runtime_error("Unsupported action: " + m.action);
-  }
-  j.at("info").get_to(m.info);
-}
-
 void from_json(const json& j, TimeSyncConfig& m) {
   j.at("address").get_to(m.reg);
   j.at("interval").get_to(m.period);
@@ -535,9 +507,6 @@ void from_json(const json& j, RegisterMap& m) {
   }
   if (j.contains("time_sync")) {
     m.timeSync = j.at("time_sync").get<TimeSyncConfig>();
-  }
-  if (j.contains("special_handlers")) {
-    j.at("special_handlers").get_to(m.specialHandlers);
   }
 }
 void to_json(json& j, const RegisterMap& m) {

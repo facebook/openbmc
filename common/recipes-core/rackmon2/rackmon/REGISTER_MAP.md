@@ -34,8 +34,11 @@ Example configuration covering all the cases:
 | default_baudrate | Default baud-rate used for the device during discovery |
 | preferred_baudrate | (Optional) Operating baud-rate which rackmon should negotiate to (See [Baud-rate Negotiation](#baud-rate-negotiation)) |
 | baud_config | (Optional) See [Baud-rate Negotiation](#baud-rate-negotiation) |
+<<<<<<< HEAD
 | time_sync | (Optional) See [Time Sync](#time-sync) |
 | special_handlers | (Optional) See [Special Handling](#special-handling) |
+=======
+>>>>>>> 07b2dd5b144 (rackmon2: Remove support for special handlers)
 | registers | List of register descriptors - See [Register Descriptor](#register-descriptor-json) |
 
 ## Register Format Types
@@ -117,43 +120,6 @@ consuming tables within tables).
   ]
 }
 ```
-
-## Special Handling
-Sometimes we want to perform certain "special" operations on registers
-of all discovered modbus devices. For example, PSUs/BBUs do not have a
-synchronized clock. Thus, it is beneficial if the controller "feeds" the
-correct system time to the PSU, which would make blackbox/debug data
-retrieved from the PSU dependable (useless if the time-stamp is inaccurate).
-
-This is accomplished using the `special_handlers` key in the register map.
-(This is not shown in the earlier section to maintain simplicity).
-
-```
-{
-  "special_handlers": [
-    {
-      "reg": 298,
-      "len": 2,
-      "period": 3600,
-      "action": "write",
-      "info": {
-        "interpret": "INTEGER",
-        "shell": "date +%s"
-      }
-    }
-  ]
-}
-```
-| Field | Field Description |
-| ----- | ----------------- |
-| reg | Register address on which the action is performed |
-| len | The length of data we are performing the operation with |
-| period | If provided, the action is periodic. If not provided, the action is performed once at start up |
-| action | action to take. Currently only "write" is supported. This allows a particular value to be written to the register |
-| info | This determines what value is written. We need one of the two keys to be present: "shell", "value" |
-| interpret | How to interpret the output (See [Register Format Types](#register-format-types)) |
-| shell | Run a shell command and interpret its output (Example, date +%s) |
-| value | Write the value provided |
 
 ## Time Sync
 Some devices may have clocks with a week crystal which may drift over time. To workaround this, we can

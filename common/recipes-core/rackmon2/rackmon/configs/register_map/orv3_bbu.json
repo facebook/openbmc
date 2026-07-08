@@ -12,18 +12,6 @@
         "address": 302,
         "interval": 3600
     },
-    "special_handlers": [
-        {
-            "reg": 302,
-            "len": 2,
-            "period": 3600,
-            "action": "write",
-            "info": {
-                "interpret": "INTEGER",
-                "shell": "date +%s"
-            }
-        }
-    ],
     "registers": [
         {
             "begin": 0,

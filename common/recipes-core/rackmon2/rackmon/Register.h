@@ -287,24 +287,6 @@ class RegisterStoreSpan {
       size_t maxSpanLength = kDefaultMaxRegisterSpanLength);
 };
 
-struct WriteActionInfo {
-  std::optional<std::string> shell{};
-  RegisterValueType interpret;
-  std::optional<std::string> value{};
-};
-void from_json(const nlohmann::json& j, WriteActionInfo& action);
-
-struct SpecialHandlerInfo {
-  uint16_t reg;
-  uint16_t len;
-  int32_t period;
-  std::string action;
-  // XXX if we have more actions other than write,
-  // this needs to become a std::variant<...>
-  WriteActionInfo info;
-};
-void from_json(const nlohmann::json& j, SpecialHandlerInfo& m);
-
 // Storage for address ranges. Provides comparision operators
 // to allow for it to be used as a key in a map --> This allows
 // for us to do quick lookups of addr to register map to use.
@@ -336,7 +318,6 @@ struct RegisterMap {
   size_t maxRegisterSpanLength;
   Parity parity;
   std::optional<TimeSyncConfig> timeSync;
-  std::vector<SpecialHandlerInfo> specialHandlers;
   std::map<uint16_t, RegisterDescriptor> registerDescriptors;
   const RegisterDescriptor& at(uint16_t reg) const {
     return registerDescriptors.at(reg);

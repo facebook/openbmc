@@ -24,4 +24,5 @@ SRC_URI:append = " \
     file://1019-arm-dts-anacapa-Align-EDSFF-SGPIO-pin-names.patch \
     file://1020-arm-dts-anacapa-Align-PDB-fan-GPIO-numbering.patch \
     file://1021-arm-dts-anacapa-Align-leakage-SGPIO-pin-names.patch \
+    file://1022-ARM-dts-aspeed-anacapa-evt2-add-shunt-resistor-value.patch \
 "

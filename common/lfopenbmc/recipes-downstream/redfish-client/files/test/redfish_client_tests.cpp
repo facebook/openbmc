@@ -134,7 +134,7 @@ auto getSoftwareActivationClient(sdbusplus::async::context& ctx,
 
 } // namespace
 
-TEST(RedfishClientTests, SimpleDaemonRun)
+TEST(RedfishClientTests, SimpleRun)
 {
     sdbusplus::async::context ctx;
     std::unordered_map<std::string, std::string> responseHeaders;
@@ -142,7 +142,7 @@ TEST(RedfishClientTests, SimpleDaemonRun)
     auto configJson = std::format(kTestConfigFormat, server.getPort());
     auto config = Config::parse(configJson);
     Software::randomIdGenerator() = []() { return 1234; };
-    auto daemonThread = std::make_unique<std::thread>([&ctx, &config]() {
+    auto clientThread = std::make_unique<std::thread>([&ctx, &config]() {
         ctx.request_name(kServiceName);
         RedfishClient client(ctx, config, /*persistDir=*/"");
         ctx.spawn(client.run());
@@ -152,8 +152,8 @@ TEST(RedfishClientTests, SimpleDaemonRun)
     ctx.spawn([&server](
                   sdbusplus::async::context& ctx) -> sdbusplus::async::task<> {
         // First wait for the request count to go up to a large enough number.
-        // This gives the test daemon enough time to publish the software
-        // objects to dbus.
+        // This gives the client enough time to publish the software objects to
+        // dbus.
         static constexpr auto kMaxRequests = 50;
         static constexpr auto kSleepMilliseconds = 100;
         while (server.getReceivedRequests().size() < kMaxRequests)
@@ -222,6 +222,6 @@ TEST(RedfishClientTests, SimpleDaemonRun)
         ctx.request_stop();
         co_return;
     }(ctx));
-    daemonThread->join();
-    daemonThread = nullptr; // Make sure it's destroyed before the context.
+    clientThread->join();
+    clientThread = nullptr; // Make sure it's destroyed before the context.
 }

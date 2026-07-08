@@ -21,11 +21,9 @@ endif
 
 tests = {
     'async_http_client_tests': ['helper.cpp', 'async_http_client_tests.cpp'],
-    'dbus_server_tests': ['dbus_server_tests.cpp', 'helper.cpp'],
-    'eventlog_parser_tests': ['eventlog_parser_tests.cpp'],
+    'redfish_client_tests': ['redfish_client_tests.cpp', 'helper.cpp'],
     'log_service_handler_tests': ['log_service_handler_tests.cpp'],
     'persist_map_tests': ['persist_map_tests.cpp'],
-    'redfish_binding_common_tests': ['redfish_binding_common_tests.cpp'],
     'redfish_binding_tests': ['redfish_binding_tests.cpp'],
     'sensor_tests': ['sensor_tests.cpp'],
     'sensor_handler_tests': ['sensor_handler_tests.cpp', 'helper.cpp'],

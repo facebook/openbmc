@@ -1,4 +1,4 @@
-From 87fc396d28eb08482cfa2fd8b0dcf031c2b4cffd Mon Sep 17 00:00:00 2001
+From b07479146d4ff129fc29697557c0983efd557dda Mon Sep 17 00:00:00 2001
 From: Peter Shen <peter.shen@amd.com>
 Date: Tue, 2 Jun 2026 19:30:07 +0800
 Subject: [PATCH] ARM: dts: aspeed: anacapa: evt2: add shunt resistor values
@@ -22,10 +22,10 @@ Signed-off-by: Peter Shen <peter.shen@amd.com>
  1 file changed, 37 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-index ce501ccfb..27d465f34 100644
+index 92aa58735868..a9af7ccc7f19 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-@@ -545,6 +545,27 @@ gpio@24 {
+@@ -551,6 +551,27 @@ gpio@24 {
  					"", "";
  			};
  
@@ -53,7 +53,7 @@ index ce501ccfb..27d465f34 100644
  			// R-PDB FRU
  			eeprom@50 {
  				compatible = "atmel,24c128";
-@@ -590,6 +611,22 @@ gpio@24 {
+@@ -602,6 +623,22 @@ gpio@24 {
  					"","";
  			};
  
@@ -76,3 +76,6 @@ index ce501ccfb..27d465f34 100644
  			// L-PDB FRU
  			eeprom@50 {
  				compatible = "atmel,24c128";
+-- 
+2.53.0-Meta
+

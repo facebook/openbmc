@@ -34,11 +34,7 @@ Example configuration covering all the cases:
 | default_baudrate | Default baud-rate used for the device during discovery |
 | preferred_baudrate | (Optional) Operating baud-rate which rackmon should negotiate to (See [Baud-rate Negotiation](#baud-rate-negotiation)) |
 | baud_config | (Optional) See [Baud-rate Negotiation](#baud-rate-negotiation) |
-<<<<<<< HEAD
 | time_sync | (Optional) See [Time Sync](#time-sync) |
-| special_handlers | (Optional) See [Special Handling](#special-handling) |
-=======
->>>>>>> 07b2dd5b144 (rackmon2: Remove support for special handlers)
 | registers | List of register descriptors - See [Register Descriptor](#register-descriptor-json) |
 
 ## Register Format Types

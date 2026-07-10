@@ -1,4 +1,4 @@
-From 301e2646cdad0b2877943efc9cd11c93f1f431e3 Mon Sep 17 00:00:00 2001
+From 54895ab3cddd8596b9b5b321db5e0b7cee457382 Mon Sep 17 00:00:00 2001
 From: "P.K. Lee" <pkleequanta@gmail.com>
 Date: Thu, 26 Feb 2026 14:28:06 +0800
 Subject: [PATCH] ARM: dts: aspeed: ventura: add the 0x11 ioexp to i2c10
@@ -20,7 +20,7 @@ Signed-off-by: P.K. Lee <pkleequanta@gmail.com>
  1 file changed, 229 insertions(+), 215 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
-index ecf1420f2..8570f1214 100644
+index ecf1420f2bd5..8570f121496c 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
 @@ -201,7 +201,7 @@ led-22 {
@@ -521,5 +521,5 @@ index ecf1420f2..8570f1214 100644
 +	aspeed,ext-pulse-duration = <256>;
 +};
 -- 
-2.43.0
+2.53.0-Meta
 

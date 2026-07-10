@@ -1,4 +1,4 @@
-From 52864ecc6f0e20635125b1c6812c8ea3c1b0ce48 Mon Sep 17 00:00:00 2001
+From 718c9d0e1b3b2fb85ca7a83a3d1aff977f2dfc95 Mon Sep 17 00:00:00 2001
 From: Jason Hsu <Jason-Hsu@quantatw.com>
 Date: Wed, 10 Sep 2025 18:13:00 +0800
 Subject: [PATCH] ARM: dts: aspeed: ventura: add missing cable presence gpios
@@ -28,7 +28,7 @@ Signed-off-by: Jason Hsu <Jason-Hsu@quantatw.com>
  1 file changed, 346 insertions(+), 269 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
-index 54528a560..72076cf2f 100644
+index 54528a560f77..72076cf2f635 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
 @@ -53,8 +53,8 @@ chosen {
@@ -807,5 +807,5 @@ index 54528a560..72076cf2f 100644
 -	aspeed,ext-pulse-duration = <256>;
 -};
 -- 
-2.34.1
+2.53.0-Meta
 

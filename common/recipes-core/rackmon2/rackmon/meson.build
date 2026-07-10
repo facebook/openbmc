@@ -109,7 +109,6 @@ if get_option('orv3') == true
         'orv3_bbu.json',
         'orv3_rpu.json',
         'orv3_rpu2.json',
-        'orv3_power_recv.json',
         'orv3_hpr_pmm_psu.json',
         'orv3_hpr_pmm_bbu.json',
         'orv3_hpr_pmm_cbu.json',

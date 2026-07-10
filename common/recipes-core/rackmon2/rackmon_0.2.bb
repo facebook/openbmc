@@ -78,7 +78,6 @@ LOCAL_URI += " \
     file://configs/register_map/orv3_bbu.json \
     file://configs/register_map/orv3_rpu.json \
     file://configs/register_map/orv3_rpu2.json \
-    file://configs/register_map/orv3_power_recv.json \
     file://configs/register_map/orv3_hpr_pmm_psu.json \
     file://configs/register_map/orv3_hpr_pmm_bbu.json \
     file://configs/register_map/orv3_hpr_pmm_cbu.json \

@@ -83,6 +83,10 @@ void from_json(const nlohmann::json& json, SensorConfig& config)
     {
         config.metricReportUrls = it->template get<std::vector<std::string>>();
     }
+    if (auto it = json.find("cacheConnection"); it != json.end())
+    {
+        it->get_to(config.cacheConnection);
+    }
 }
 
 void from_json(const nlohmann::json& json, Config& config)

@@ -25,6 +25,7 @@ struct SensorConfig
     size_t maxRetries;
     size_t retryIntervalMilliseconds;
     std::optional<std::vector<std::string>> metricReportUrls;
+    bool cacheConnection = true;
 };
 
 void from_json(const nlohmann::json& json, SensorConfig& config);

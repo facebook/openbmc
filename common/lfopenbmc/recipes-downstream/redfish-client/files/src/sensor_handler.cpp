@@ -98,7 +98,7 @@ auto SensorHandler::fetchSensor(sdbusplus::async::context& ctx,
     // httpHandles.
     std::unique_ptr<AsyncHttpHandle> ownHandle;
     AsyncHttpHandle* handle = nullptr;
-    if (cacheConnection)
+    if (cacheConnection && config.cacheConnection)
     {
         auto& cached = httpHandles[path];
         if (!cached)

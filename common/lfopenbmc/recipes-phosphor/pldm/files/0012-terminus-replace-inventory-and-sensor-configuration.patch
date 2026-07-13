@@ -1,4 +1,4 @@
-From bf3f737c692f81f71fe54df72e67c22106bae681 Mon Sep 17 00:00:00 2001
+From 21f75d4eee6b5ab52bf75ab3d7028ae74a8fc32a Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 31 Mar 2026 20:37:28 +0800
 Subject: [PATCH] terminus: replace inventory and sensor configuration
@@ -79,10 +79,10 @@ index 5cc260d..27b8172 100644
   * In `Table 2 - Special endpoint IDs` of DSP0236.
   * EID from 1 to 7 is reserved EID. So the start valid EID is 8
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index 318ac01..82392fe 100644
+index aa5794f..38d0338 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
-@@ -727,7 +727,7 @@ std::optional<SoftwareName> obtainDeviceNameFromConfigurations(
+@@ -746,7 +746,7 @@ std::optional<SoftwareName> obtainDeviceNameFromConfigurations(
      {
          if (std::get<pldm::eid>(mctpInfo) == eid)
          {
@@ -361,7 +361,7 @@ index 4627737..d5b8648 100644
      std::string inventoryPath;
  
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index c1e6c98..93c41dd 100644
+index 3749458..1c31d22 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
 @@ -187,7 +187,6 @@ exec::task<int> TerminusManager::discoverMctpTerminusTask()
@@ -561,7 +561,7 @@ index aaa808a..60037c1 100644
      termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
          tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
 diff --git a/platform-mc/test/terminus_manager_test.cpp b/platform-mc/test/terminus_manager_test.cpp
-index a170bd1..6d02e20 100644
+index 9bee4b9..b35b0d6 100644
 --- a/platform-mc/test/terminus_manager_test.cpp
 +++ b/platform-mc/test/terminus_manager_test.cpp
 @@ -50,7 +50,7 @@ class TerminusManagerTest : public testing::Test

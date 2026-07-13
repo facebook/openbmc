@@ -3584,7 +3584,7 @@ pal_parse_gc2_sys_sts_event(uint8_t *event_data, char *error_log) {
 static int
 pal_parse_pmic_error_event(uint8_t *event_data, char *error_log) {
   static const char *dimm_label[] = {
-    "A0", "A2", "A3", "A4", "A6", "A7"
+    "A2", "A3", "A6", "A7"
   };
 
   static const char *pmic_err_name[] = {
@@ -3604,7 +3604,7 @@ pal_parse_pmic_error_event(uint8_t *event_data, char *error_log) {
     "VOUT_1V8_PG",
     "HIGH_CURRENT_WARNING",
     "CURRENT_LIMIT_WARNING",
-    "CURRENT_TEMP_SHUTDOWN",
+    "CRITICAL_TEMP_SHUTDOWN",
   };
 
   uint8_t dimm_id = 0;

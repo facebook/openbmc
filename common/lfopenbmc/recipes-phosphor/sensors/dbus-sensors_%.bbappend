@@ -21,6 +21,7 @@ SRC_URI:append = " \
     file://0018-mctpreactor-Support-configuration-for-USB-MCTP-devic.patch \
     file://0019-dbus-sensors-implement-in-place-threshold-updates-to.patch \
     file://0020-mctp-add-PowerState-check-in-MCTPReactor.patch \
+    file://0021-CableMonitor-increase-reconcile-delay-to-60s.patch \
 "
 
 SRC_URI:append:ventura2 = " \

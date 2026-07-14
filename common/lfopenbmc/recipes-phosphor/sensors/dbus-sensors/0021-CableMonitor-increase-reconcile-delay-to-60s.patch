@@ -1,0 +1,29 @@
+From 5b6b11c5be0515ac5c751061df69a81f3ec60113 Mon Sep 17 00:00:00 2001
+From: Freddie Jheng <Freddie.Jheng@quantatw.com>
+Date: Thu, 9 Jul 2026 14:38:45 +0800
+Subject: [PATCH] CableMonitor: increase reconcile delay to 60s
+
+Increase the delay before reconcileCableData() is invoked from 5
+seconds to 60 seconds to avoid running before all cable inventory
+data is available.
+
+Signed-off-by: Freddie Jheng <Freddie.Jheng@quantatw.com>
+---
+ src/cable-monitor/CableMonitor.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/cable-monitor/CableMonitor.cpp b/src/cable-monitor/CableMonitor.cpp
+index 1c0fff1..d70c14c 100644
+--- a/src/cable-monitor/CableMonitor.cpp
++++ b/src/cable-monitor/CableMonitor.cpp
+@@ -68,7 +68,7 @@ auto Monitor::configUpdateHandler(std::string configFileName)
+     }
+     co_await entityManager.handleInventoryGet();
+     ctx.spawn([](auto& self) -> sdbusplus::async::task<> {
+-        co_await sdbusplus::async::sleep_for(self.ctx, std::chrono::seconds(5));
++        co_await sdbusplus::async::sleep_for(self.ctx, std::chrono::seconds(60));
+         self.reconcileCableData();
+     }(*this));
+ }
+--
+2.34.1

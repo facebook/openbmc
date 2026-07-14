@@ -47,4 +47,5 @@ PLATFORMS = [
     "yosemite",
     "yosemite4",
     "yosemite5",
+    "yosemite5a7",
 ]

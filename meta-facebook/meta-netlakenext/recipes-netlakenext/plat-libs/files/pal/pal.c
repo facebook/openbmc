@@ -60,6 +60,36 @@ size_t pal_tach_cnt = 4;
 const int fan_map[] = {1, 3, 5, 7};
 const int fanIdToPwmIdMapping[] = {0, 0, 0, 0};
 
+const static pmbus_dev_info pmbus_dev_list[] = {
+  [MP29608B] = {
+  {{CMD_TEMP1, READ_WORD, LINEAR11},
+  {CMD_TEMP2, READ_WORD, LINEAR11},
+  {CMD_VOUT, READ_WORD, VOUT_MODE},
+  {CMD_VIN, READ_WORD, LINEAR11},
+  {CMD_IOUT, READ_WORD, LINEAR11},
+  {CMD_IIN, READ_WORD, LINEAR11},
+  {CMD_POUT, READ_WORD, LINEAR11},
+  {CMD_PIN, READ_WORD, LINEAR11},}},
+  [XDPE19283D] = {
+  {{CMD_TEMP1, READ_WORD, LINEAR11},
+  {CMD_TEMP2, READ_WORD, LINEAR11},
+  {CMD_VOUT, READ_WORD, VOUT_MODE},
+  {CMD_VIN, READ_WORD, LINEAR11},
+  {CMD_IOUT, READ_WORD, LINEAR11},
+  {CMD_IIN, READ_WORD, LINEAR11},
+  {CMD_POUT, READ_WORD, LINEAR11},
+  {CMD_PIN, READ_WORD, LINEAR11},}},
+  [RAA229641] = {
+  {{CMD_TEMP1, READ_WORD, DIRECT},
+  {CMD_TEMP2, READ_WORD, DIRECT},
+  {CMD_VOUT, READ_WORD, DIRECT},
+  {CMD_VIN, READ_WORD, DIRECT},
+  {CMD_IOUT, READ_WORD, DIRECT},
+  {CMD_IIN, READ_WORD, DIRECT},
+  {CMD_POUT, READ_WORD, DIRECT},
+  {CMD_PIN, READ_WORD, DIRECT},}},
+};
+
 enum key_event {
   KEY_BEFORE_SET,
   KEY_AFTER_INI,
@@ -1116,7 +1146,7 @@ pal_write_error_code_file(unsigned char error_code_update, uint8_t error_code_st
     error_code_array[byte_site] = CLEARBIT(error_code_array[byte_site], bit_site);
   }
 
-  for (i = 0; i < sizeof(error_code_array); i++) {
+  for (i = 0; i < (int)sizeof(error_code_array); i++) {
     fprintf(err_file, "%X ", error_code_array[i]);
   }
   fprintf(err_file, "\n");
@@ -1354,7 +1384,6 @@ pal_pmbus_sensor_info_initial(void) {
 int
 pal_hsc_reading_enable(void) {
   int ret, fd;
-  uint8_t rbuf[CPLD_VER_BYTE] = {0};
   uint8_t bus = MTP_HSC_BUS;
   uint8_t addr = MTP_HSC_ADDR;
   uint8_t enable_vout_req[MTP_HSC_EN_VOUT_LENGTH] = {0};
@@ -1464,7 +1493,6 @@ int
 pal_max31790_init(void) {
   int fd, ret = 0;
   struct stat buf;
-  int retry = MAX31790_PROBE_RETRY;
   uint8_t tlen = 2;
   uint8_t bus = FAN_CTL_BUS;
   uint8_t addr = FAN_CTL_ADDR;
@@ -1602,8 +1630,6 @@ pal_set_uart_routing(uint8_t routing) {
   uint32_t ctrl;
   void *lpc_reg;
   void *lpc_hicr;
-  int raw_board_id[3] = {0};
-  int board_id = 0;
 
   lpc_fd = open("/dev/mem", O_RDWR | O_SYNC );
   if (lpc_fd < 0) {
@@ -1623,12 +1649,6 @@ pal_set_uart_routing(uint8_t routing) {
   ctrl &= (~HICRA_MASK_UART4);
 
   if (routing == DEBUG_CARD_ABSENT) {
-
-    raw_board_id[0] = ((gpio_get_value_by_shadow("MTP_BOARD_REV_ID0") == GPIO_VALUE_LOW) ? 0 : 1);
-    raw_board_id[1] = ((gpio_get_value_by_shadow("MTP_BOARD_REV_ID1") == GPIO_VALUE_LOW) ? 0 : 1);
-    raw_board_id[2] = ((gpio_get_value_by_shadow("MTP_BOARD_REV_ID2") == GPIO_VALUE_LOW) ? 0 : 1);
-    board_id = ((raw_board_id[0] & 0x1) << 2) + ((raw_board_id[1] & 0x1) << 1) + ((raw_board_id[2] & 0x1));
-
     // Route UART3 to UART4 for SoL purpose
     ctrl |= (UART3_TO_UART4 << 25);
 
@@ -1816,7 +1836,7 @@ int pal_dimm_page_init()
   uint8_t rbuf = 0;
   uint8_t rlen = DIMM_TEMP_LEN;
 
-  for (int id = 0; id < sizeof(dimm_addr_list); id++) {
+  for (size_t id = 0; id < sizeof(dimm_addr_list); id++) {
     fd = i2c_cdev_slave_open(I2C_BUS5, dimm_addr_list[id] >> 1,
                             I2C_SLAVE_FORCE_CLAIM);
     if (fd < 0) {

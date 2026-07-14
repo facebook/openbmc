@@ -13,6 +13,12 @@ static int (*vr_xfer)(uint8_t, uint8_t, uint8_t*, uint8_t, uint8_t*, uint8_t) =
 
 static bool debug = false;
 
+static const uint32_t raa_gen3p5_supported_dev_ids[] = {
+    0x49D2BA00, 0x49D2BB00, 0x49D2BC00, 0x49D2D600, 0x49D2DA00, 0x49D2BD00,
+    0x49D2BE00, 0x49D2D500, 0x49D2C000, 0x49D2D700, 0x49D2C100, 0x49D2D800,
+    0x49D2DB00, 0x49D2C400, 0x49D2C500, 0x49D2C600, 0x49D2C700, 0x49D2C800,
+    0x49D2C900, 0x49D2DE00, 0x49D2F100, 0x49D2DF00, 0x49D2CA00};
+
 static int raa_dma_rd(uint8_t bus, uint8_t addr, uint8_t* reg, uint8_t* resp) {
   uint8_t tbuf[16], rbuf[16];
 

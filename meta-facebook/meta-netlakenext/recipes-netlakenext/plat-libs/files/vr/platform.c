@@ -152,11 +152,8 @@ void vr_change_bus(struct vr_info *vr_list, int vr_cnt, bool change_vr_bus) {
 
 int plat_vr_init(void) {
   int ret;
-  int i2cfd = 0;
   uint8_t sku = 0;
   bool change_vr_bus = false;
-  uint8_t tlen = 1;
-  uint8_t rev_id_reg = CPLD_REV_ID_REG;
   int vr_cnt;
 
   ret = netlakenext_common_get_vr_sku(&sku, &change_vr_bus);

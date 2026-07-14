@@ -643,7 +643,6 @@ read_pmbus(uint8_t id, float *value) {
     uint8_t vout_mode_data = VR_VOUT_MODE_REG;
     uint8_t rlen_vout_mode = 1;
     uint8_t rbuf_vout_mode;
-    float* rbuf_reading = 0;
 
     retry = SENSOR_RETRY_TIME;
     do {
@@ -1068,7 +1067,6 @@ read_nic_temp(uint8_t id, float *value) {
   uint8_t tlen = sizeof(tbuf);
   uint8_t rlen = NIC_TEMP_LEN;
   uint8_t rbuf = 0;
-  uint8_t res_temp = 0;
   static int nic_temp_retry = 0;
 
   fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
@@ -1135,8 +1133,6 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char str[MAX_VALUE_LEN] = {0};
   char fru_name[32] = {0};
   int ret = 0;
-  uint8_t id = 0;
-  uint8_t server_status = 0;
   PAL_SENSOR_MAP sensor;
 
   if (pal_get_fru_name(fru, fru_name)) {

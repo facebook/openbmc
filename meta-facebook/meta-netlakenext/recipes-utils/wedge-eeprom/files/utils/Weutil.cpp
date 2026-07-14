@@ -349,7 +349,7 @@ static void modifyEepromData(const std::string& eDeviceName,
 
   size_t Check_CRC_location = 0;
   // check CRC TL byte is in eeprom or not
-  for (int i = 0 ; i < data.size() ; i++) {
+  for (size_t i = 0 ; i < data.size() ; i++) {
     if ((data[i+1] == CRC_TYPE_ADR)&&(data[i+2] == CRC_LEN_ADR)) {
       Check_CRC_location = i;
       break;
@@ -359,7 +359,7 @@ static void modifyEepromData(const std::string& eDeviceName,
   // check is there has garbage data after CRC TLV byte
   if ((data[Check_CRC_location+5] == NULL_BYTE)&&(data[Check_CRC_location+6] == NULL_BYTE)) {
       // check CRC TL byte is in eeprom again
-    for (int j = Check_CRC_location+5 ; j < data.size() ; j++) {
+    for (size_t j = Check_CRC_location + 5 ; j < data.size() ; j++) {
       if ((data[j] == CRC_TYPE_ADR)&&(data[j] == CRC_LEN_ADR)) {
         std::cerr << std::endl;
         std::cerr << "ERROR: Get Another CRC TL data!" << std::endl;
@@ -421,7 +421,7 @@ static void modifyEepromData(const std::string& eDeviceName,
         }
 
         // add data value to new_eeprom_data after add modify value
-        if (data.size() > (eepromType + eepromLength_adr_size + (static_cast<int>(data[eepromLength])) + 1)) {
+        if (data.size() > static_cast<size_t>(eepromType + eepromLength_adr_size + (static_cast<int>(data[eepromLength])) + 1)) {
           new_eeprom_data.insert(new_eeprom_data.end(), data.begin() + eepromType + eepromLength_adr_size + (static_cast<int>(data[eepromLength])) + 1, data.end());
         } else {
           std::cerr << std::endl;

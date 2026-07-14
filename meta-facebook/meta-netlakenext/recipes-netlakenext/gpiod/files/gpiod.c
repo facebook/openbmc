@@ -56,7 +56,6 @@ server_power_monitor() {
   uint8_t status = 0;
   uint8_t fru = 1;
   char str[MAX_VALUE_LEN] = {0};
-  int tread_time = 0 ;
 
   // Wait power-on.sh finished, then update last power state
   sleep(20);
@@ -123,8 +122,6 @@ smi_monitor() {
 
 static void
 smi_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  uint8_t status = 0;
-  uint8_t fru = 1;
   pthread_t tid_smi_monitor;
 
   if (curr == GPIO_VALUE_LOW) {
@@ -208,7 +205,7 @@ reset_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
     if (gpio_get_value(uart_mux_gpio, &val) != 0) {
       syslog(LOG_WARNING, "%s() gpio_get_value_by_shadow failed\n", __func__);
     } else {
-      if (val == GPIO_LOW) {
+      if (val == GPIO_VALUE_LOW) {
         if (run_command("reboot") < 0) {
           syslog(LOG_ERR, "%s() Failed to do bmc power reset\n", __func__);
         }
@@ -316,7 +313,6 @@ set_apml_probe_status(gpio_value_t value, uint8_t gpio_change) {
 
     fp = fopen((char*)APML_BIND_PATH, "w");
     if (fp == NULL) {
-      int err = errno;
       syslog(LOG_INFO, "failed to open device for write %s error: %s", APML_BIND_PATH, strerror(errno));
       return;
     }
@@ -335,7 +331,6 @@ set_apml_probe_status(gpio_value_t value, uint8_t gpio_change) {
     fp = fopen((char*)APML_UNBIND_PATH, "w");
 
     if (fp == NULL) {
-      int err = errno;
       syslog(LOG_INFO, "failed to open device for write %s error: %s", APML_UNBIND_PATH, strerror(errno));
       return;
     }

@@ -19,7 +19,7 @@ def cpu_package_power_limit(fru, argv):
                 key_name, kv.FPERSIST, False
             )
             print(f"Power limit status: {result}")
-        except kv.KeyNotFoundFailure as e:
+        except kv.KeyNotFoundFailure:
             print("Power limit status: uninitialized")
         except Exception as e:
             print(f"Error: Failed to get status due to {e}")

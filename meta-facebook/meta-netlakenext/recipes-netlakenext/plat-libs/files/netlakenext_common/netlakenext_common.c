@@ -140,8 +140,6 @@ bool
 netlakenext_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t rev_id) {
   const char* board_type[] = {"POC1", "POC2", "EVT", "DVT", "PVT", "MP"};
   uint8_t signed_byte = 0x0;
-  uint8_t bmc_location = 0;
-  uint8_t stage_idx = 0;
   struct stat file_info;
 
   if (stat(img_path, &file_info) < 0) {
@@ -380,7 +378,7 @@ netlakenext_common_linear11_convert(uint8_t *value_raw, float *value_linear11) {
   uint16_t data = (value_raw[1] << 8) | value_raw[0];
 
   int msb_y, msb_n, data_n;
-  double data_x = 0, data_y = 0;
+  double data_y = 0;
 
   msb_y = (data >> 10) & 0x1;
   msb_n = (data >> 15) & 0x1;

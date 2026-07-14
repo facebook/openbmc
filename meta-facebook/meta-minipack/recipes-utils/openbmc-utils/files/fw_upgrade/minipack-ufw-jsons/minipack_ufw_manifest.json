@@ -44,12 +44,12 @@
         "priority": 2
     },
     "scm" : {
-        "get_version" : "/usr/local/bin/cpld_ver.sh |grep SCM|grep Top|cut -d ' ' -f 3",
+        "get_version" : "/usr/local/bin/cpld_ver.sh | awk -F': ' '/^SCMCPLD:/ {print $2}'",
         "upgrade_cmd" : "/usr/local/bin/scmcpld_update.sh {filename}",
         "priority": 5
     },
     "smb" : {
-        "get_version" : "/usr/local/bin/cpld_ver.sh |grep SMB|grep Top|cut -d ' ' -f 3",
+        "get_version" : "/usr/local/bin/cpld_ver.sh | awk -F': ' '/^SMBCPLD:/ {print $2}'",
         "upgrade_cmd" : "/usr/local/bin/smbcpld_update.sh {filename}",
         "priority": 7
     }

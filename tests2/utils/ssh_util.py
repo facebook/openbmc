@@ -26,6 +26,11 @@ from pexpect import pxssh
 class OpenBMCSSHSession:
     SYNC_MULTIPLIER = 5
     LOGIN_RETRIES = 3
+    # Set a bash-safe unique prompt ourselves; pxssh's probe can fall through to
+    # a zsh prompt string that bash can't render, breaking sync on the session.
+    UNIQUE_PROMPT = r"\[PEXPECT\][\$\#] "
+    PROMPT_SET_BASH = r"PS1='[PEXPECT]\$ '"
+    PROMPT_TIMEOUT = 10
     SSH_OPTS = (
         " -o 'StrictHostKeyChecking=no'"
         " -o 'UserKnownHostsFile=/dev/null'"
@@ -53,13 +58,23 @@ class OpenBMCSSHSession:
                 self._username,
                 ssh_key=self._ssh_key,
                 sync_multiplier=self.SYNC_MULTIPLIER,
+                auto_prompt_reset=False,
             )
         else:
             self.session.login(
                 self._hostname,
                 self._username,
                 sync_multiplier=self.SYNC_MULTIPLIER,
+                auto_prompt_reset=False,
             )
+        self._set_bash_prompt()
+
+    def _set_bash_prompt(self):
+        self.session.PROMPT = self.UNIQUE_PROMPT
+        self.session.sendline("unset PROMPT_COMMAND")
+        self.session.sendline(self.PROMPT_SET_BASH)
+        if not self.session.prompt(timeout=self.PROMPT_TIMEOUT):
+            raise pxssh.ExceptionPxssh("could not synchronize on bash prompt")
 
     def login(self):
         last_exc = None
@@ -71,4 +86,6 @@ class OpenBMCSSHSession:
                 return
             except pxssh.ExceptionPxssh as exc:
                 last_exc = exc
-        raise last_exc
+        if last_exc is not None:
+            raise last_exc
+        raise pxssh.ExceptionPxssh("login failed")

@@ -331,12 +331,13 @@ class BaseFwUpgradeTest(object):
             )  # wait for prompt
 
     def receive_command_output_from_UUT(self, only_last=False):
+        print("DBG raw before: {!r}".format(self.bmc_ssh_session.session.before))
         cmd_result = self.bmc_ssh_session.session.before.decode("utf-8")
         print("DBG cmd_result: {}".format(cmd_result))
         if only_last:
             lines = cmd_result.split("\r\n")
             print("DBG lines: {}".format(lines))
-            if lines:
+            if len(lines) > 1:
                 return lines[1]
             else:
                 return ""
@@ -564,8 +565,16 @@ class BaseFwUpgradeTest(object):
             if len(check_version_cmd) == 0:
                 current_ver = ""
             else:
-                self.send_command_to_UUT(check_version_cmd)
+                synced = self.send_command_to_UUT(check_version_cmd)
                 current_ver = self.receive_command_output_from_UUT(only_last=True)
+                if not synced or current_ver == "":
+                    self.fail(
+                        "empty version output for {} (cmd={!r}, before={!r})".format(
+                            fw_entity,
+                            check_version_cmd,
+                            self.bmc_ssh_session.session.before,
+                        )
+                    )
 
             version_length = len(current_ver)
             if version_length > 11 or version_length == 0:

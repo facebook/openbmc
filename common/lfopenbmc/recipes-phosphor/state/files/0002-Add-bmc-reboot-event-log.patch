@@ -1,4 +1,4 @@
-From 908be95361d9341a417a29e87ef02ce85b3c5c2c Mon Sep 17 00:00:00 2001
+From ef472056910e303b690423ade8a2ba74d192bcee Mon Sep 17 00:00:00 2001
 From: Patrick NC Lin <patrick.nc.lin.wiwynn@gmail.com>
 Date: Fri, 14 Mar 2025 14:25:05 +0800
 Subject: [PATCH] Add bmc reboot event log
@@ -47,10 +47,10 @@ Change-Id: Iea03d771cc06bf632826f07d71b5c9f55460d887
  1 file changed, 24 insertions(+), 6 deletions(-)
 
 diff --git a/bmc_state_manager.cpp b/bmc_state_manager.cpp
-index 81527cc..41f2a0b 100644
+index 1d47440..d3902ba 100644
 --- a/bmc_state_manager.cpp
 +++ b/bmc_state_manager.cpp
-@@ -273,9 +273,32 @@ BMC::BMCState BMC::currentBMCState(BMCState value)
+@@ -270,6 +270,8 @@ BMC::BMCState BMC::currentBMCState(BMCState value)
  
  BMC::RebootCause BMC::lastRebootCause(RebootCause value)
  {
@@ -58,6 +58,10 @@ index 81527cc..41f2a0b 100644
 +
      info("Setting the RebootCause field to {LAST_REBOOT_CAUSE}",
           "LAST_REBOOT_CAUSE", value);
+ 
+@@ -279,6 +281,27 @@ BMC::RebootCause BMC::lastRebootCause(RebootCause value)
+                                             getBootDevice()));
+     }
  
 +    switch (value)
 +    {
@@ -83,7 +87,7 @@ index 81527cc..41f2a0b 100644
      return server::BMC::lastRebootCause(value);
  }
  
-@@ -348,15 +371,10 @@ void BMC::discoverLastRebootCause()
+@@ -372,15 +395,10 @@ void BMC::discoverLastRebootCause()
      // A 0 indicates a pinhole reset occurred
      if (0 == gpioval)
      {

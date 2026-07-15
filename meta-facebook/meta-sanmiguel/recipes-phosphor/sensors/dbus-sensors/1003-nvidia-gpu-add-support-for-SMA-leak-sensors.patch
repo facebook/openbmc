@@ -1,4 +1,4 @@
-From db23627cf6058d6f6ec15316fe1c51f43eff5ebe Mon Sep 17 00:00:00 2001
+From d1de6a8d9678df917b1dc77b253b6ab8997c527d Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Tue, 5 May 2026 20:34:03 +0800
 Subject: [PATCH] nvidia-gpu: add support for SMA leak sensors
@@ -9,14 +9,14 @@ voltage sensor for leakage detection.
 Change-Id: Id2bbf490beaca9408dbda7019dd506eb68e65ee0
 Signed-off-by: Mike Hsieh <mike_hsieh@quantatw.com>
 ---
- src/nvidia-gpu/NvidiaGpuMctpVdm.cpp    | 114 +++++++++++++++++
- src/nvidia-gpu/NvidiaGpuMctpVdm.hpp    |  20 +++
- src/nvidia-gpu/NvidiaSmaDevice.cpp     |  14 +++
- src/nvidia-gpu/NvidiaSmaDevice.hpp     |   3 +
- src/nvidia-gpu/NvidiaSmaLeakSensor.cpp | 161 +++++++++++++++++++++++++
- src/nvidia-gpu/NvidiaSmaLeakSensor.hpp |  67 ++++++++++
- src/nvidia-gpu/meson.build             |   1 +
- src/tests/test_NvidiaGpuSensorTest.cpp | 137 +++++++++++++++++++++
+ src/nvidia-gpu/NvidiaGpuMctpVdm.cpp           | 114 +++++++++++++
+ src/nvidia-gpu/NvidiaGpuMctpVdm.hpp           |  20 +++
+ src/nvidia-gpu/NvidiaSmaDevice.cpp            |  14 ++
+ src/nvidia-gpu/NvidiaSmaDevice.hpp            |   3 +
+ src/nvidia-gpu/NvidiaSmaLeakSensor.cpp        | 161 ++++++++++++++++++
+ src/nvidia-gpu/NvidiaSmaLeakSensor.hpp        |  67 ++++++++
+ src/nvidia-gpu/meson.build                    |   1 +
+ .../nvidia-gpu/test_NvidiaGpuMctpVdm.cpp      | 137 +++++++++++++++
  8 files changed, 517 insertions(+)
  create mode 100644 src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
  create mode 100644 src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
@@ -499,10 +499,10 @@ index e39ec97..5dfacea 100644
      'OcpMctpVdm.cpp',
      'SerialQueue.cpp',
  )
-diff --git a/src/tests/test_NvidiaGpuSensorTest.cpp b/src/tests/test_NvidiaGpuSensorTest.cpp
+diff --git a/src/tests/nvidia-gpu/test_NvidiaGpuMctpVdm.cpp b/src/tests/nvidia-gpu/test_NvidiaGpuMctpVdm.cpp
 index d9c9c6e..e08cc95 100644
---- a/src/tests/test_NvidiaGpuSensorTest.cpp
-+++ b/src/tests/test_NvidiaGpuSensorTest.cpp
+--- a/src/tests/nvidia-gpu/test_NvidiaGpuMctpVdm.cpp
++++ b/src/tests/nvidia-gpu/test_NvidiaGpuMctpVdm.cpp
 @@ -4258,4 +4258,141 @@ TEST_F(GpuMctpVdmTests,
      EXPECT_NE(result, 0);
  }

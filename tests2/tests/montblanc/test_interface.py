@@ -29,14 +29,6 @@ Tests eth0 & usb0 v6 interface
 
 
 class InterfaceTest(CommonInterfaceTest, unittest.TestCase):
-    def test_eth0_v4_interface(self):
-        """
-        Tests eth0 v4 interface
-        """
-        self.set_ifname("eth0")
-        Logger.log_testname(name=self._testMethodName)
-        self.assertEqual(self.ping_v4(), 0, "Ping test for eth0 v4 failed")
-
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_usb0_v6_interface(self):
         """

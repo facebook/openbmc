@@ -65,8 +65,12 @@ extern "C" {
 #define VR_MFR_ID_REG 0x99
 #define VR_MFR_ID_MAX_LEN 6
 #define VR_MFR_ID_MPS 0x4D5053
+#define VR_MFR_ID_MPS_LEN 3
 #define VR_MFR_ID_INF 0x4946
-#define VR_RETRY_TIME 5
+#define VR_MFR_ID_INF_LEN 2
+#define VR_MFR_ID_RNS 0x00000000
+#define VR_MFR_ID_RNS_LEN 4
+#define VR_RETRY_TIME 3
 
 #define MTP_HSC_BUS 9
 #define MTP_HSC_ADDR 0x80

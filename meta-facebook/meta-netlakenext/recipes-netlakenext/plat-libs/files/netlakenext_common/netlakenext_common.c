@@ -287,64 +287,66 @@ int
 netlakenext_common_get_vr_source(uint8_t bus, uint8_t addr, uint8_t* sku) {
   int ret = 0;
   int i2cfd = 0;
-  int retry = 0;
+  int retry_match = 0;
   uint8_t rbuf[VR_MFR_ID_MAX_LEN] = {0};
   uint8_t tbuf[1] = { VR_MFR_ID_REG };
 
-  i2cfd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if ( i2cfd < 0 ) {
-    return -1;
-  }
+  for (retry_match = 0; retry_match < VR_RETRY_TIME; retry_match++) {
+    int retry_i2c = 0;
+    i2cfd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if ( i2cfd < 0 ) {
+      usleep(10000);
+      continue;
+    }
 
-  while (retry < VR_RETRY_TIME) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, addr,
-      tbuf, sizeof(tbuf), rbuf, sizeof(rbuf));
-    if ( ret < 0 ) {
-      retry++;
-      usleep(100000);
-    } else {
+    while (retry_i2c < VR_RETRY_TIME) {
+      ret = i2c_rdwr_msg_transfer(i2cfd, addr,
+        tbuf, sizeof(tbuf), rbuf, sizeof(rbuf));
+      if ( ret < 0 ) {
+        retry_i2c++;
+        usleep(10000);
+      } else {
+        break;
+      }
+    }
+    if (retry_i2c == VR_RETRY_TIME) {
+      close(i2cfd);
+      continue;
+    }
+    close(i2cfd);
+
+    if (rbuf[0] == VR_MFR_ID_MPS_LEN &&
+        rbuf[1] == (VR_MFR_ID_MPS & 0xFF) &&
+        rbuf[2] == ((VR_MFR_ID_MPS >> 8) & 0xFF) &&
+        rbuf[3] == ((VR_MFR_ID_MPS >> 16) & 0xFF)) {
+      *sku = MPS;
+      break;
+    } else if (rbuf[0] == VR_MFR_ID_INF_LEN &&
+               rbuf[1] == (VR_MFR_ID_INF & 0xFF) &&
+               rbuf[2] == ((VR_MFR_ID_INF >> 8) & 0xFF)) {
+      *sku = INFINEON;
+      break;
+    } else if (rbuf[0] == VR_MFR_ID_RNS_LEN &&
+               rbuf[1] == (VR_MFR_ID_RNS & 0xFF) &&
+               rbuf[2] == ((VR_MFR_ID_RNS >> 8) & 0xFF) &&
+               rbuf[3] == ((VR_MFR_ID_RNS >> 16) & 0xFF) &&
+               rbuf[4] == ((VR_MFR_ID_RNS >> 24) & 0xFF)) {
+      *sku = RENESAS;
       break;
     }
   }
-  if (retry == VR_RETRY_TIME) {
-    close(i2cfd);
+
+  if (retry_match == VR_RETRY_TIME) {
     return -1;
   }
 
-  retry = 0;
-  while (retry < VR_RETRY_TIME) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, addr,
-      tbuf, sizeof(tbuf), rbuf, rbuf[0] + 1);
-    if ( ret < 0 ) {
-      retry++;
-      usleep(100000);
-    } else {
-      break;
-    }
-  }
-  if (retry == VR_RETRY_TIME) {
-    close(i2cfd);
-    return -1;
-  }
-  close(i2cfd);
-
-  if (rbuf[1] == (VR_MFR_ID_MPS & 0xFF) &&
-	    rbuf[2] == ((VR_MFR_ID_MPS >> 8) & 0xFF) &&
-	    rbuf[3] == ((VR_MFR_ID_MPS >> 16) & 0xFF)) {
-		*sku = MPS;
-  } else if (rbuf[1] == (VR_MFR_ID_INF & 0xFF) &&
-             rbuf[2] == ((VR_MFR_ID_INF >> 8) & 0xFF)) {
-    *sku = INFINEON;
-  } else {
-    *sku = RENESAS;
-  }
-
-  return ret;
+  return 0;
 }
 
 int
 netlakenext_common_get_vr_sku(uint8_t* sku, bool* change_vr_bus) {
   int ret = 0;
+  uint8_t rev_id = 0;
 
   ret = netlakenext_common_get_vr_source(VR_PVDD_MISC_BUS, VR_PVDD_MISC_ADDR, sku);
   if (ret < 0) {
@@ -353,6 +355,25 @@ netlakenext_common_get_vr_sku(uint8_t* sku, bool* change_vr_bus) {
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to get VR source, bus=%d, %d.\n",
         __func__, VR_BUS, VR_PVDD_MISC_BUS);
+      ret = netlakenext_common_get_board_rev(&rev_id);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s(): failed to get board revision id.\n", __func__);
+      } else {
+        switch ((rev_id & CPLD_VR_SOURCE_BIT) >> 3) {
+          case 0b10:
+             *sku = MPS;
+             break;
+          case 0b11:
+             *sku = INFINEON;
+             break;
+          case 0b01:
+             *sku = RENESAS;
+             break;
+          default:
+            syslog(LOG_ERR, "%s(): invalid board revision id: %d.\n", __func__, rev_id);
+            return -1;
+        }
+      }
     }
   } else {
     *change_vr_bus = true;

@@ -725,14 +725,18 @@ read_pmbus(uint8_t id, float *value) {
       break;
     case DIRECT:
       if (pmbus_i2c_data.type == RAA229641) {
-        if (pmbus_i2c_data.offset == CMD_IOUT) {
-          *value = (float)((rbuf_reading_raw[1] << 8) | rbuf_reading_raw[0]) * 0.1;
-        } else if (pmbus_i2c_data.offset == CMD_VIN || pmbus_i2c_data.offset == CMD_IIN) {
-          *value = (float)((rbuf_reading_raw[1] << 8) | rbuf_reading_raw[0]) * 0.01;
-        } else if (pmbus_i2c_data.offset == CMD_VOUT) {
-          *value = (float)((rbuf_reading_raw[1] << 8) | rbuf_reading_raw[0]) * 0.001;
+        uint16_t value_tmp = ((uint16_t)rbuf_reading_raw[1] << 8) | rbuf_reading_raw[0];
+        if (pmbus_i2c_data.offset != CMD_VOUT) {
+          *value = (float)(int16_t)value_tmp;
         } else {
-          *value = (float)((rbuf_reading_raw[1] << 8) | rbuf_reading_raw[0]);
+          *value = (float)value_tmp;
+        }
+        if (pmbus_i2c_data.offset == CMD_IOUT) {
+          *value *= 0.1;
+        } else if (pmbus_i2c_data.offset == CMD_VIN || pmbus_i2c_data.offset == CMD_IIN) {
+          *value *= 0.01;
+        } else if (pmbus_i2c_data.offset == CMD_VOUT) {
+          *value *= 0.001;
         }
       }
       else {

@@ -25,6 +25,26 @@ function is_numeric {
   fi
 }
 
+capture_sensor_snapshot()
+{
+    local timestamp
+    local snapshot_file
+
+    timestamp=$(date +"%Y%m%d_%H%M%S")
+    snapshot_file="/mnt/data/sensor_snapshot_${timestamp}.log"
+
+    {
+        echo "=== CATERR Event - Sensor Snapshot ==="
+        echo "Timestamp : ${timestamp}"
+        echo "======================================"
+        echo
+        /usr/local/bin/sensor-util all --force 2>&1
+    } > "${snapshot_file}"
+
+    logger -t ipmid -p daemon.info \
+        "Sensor snapshot saved -> ${snapshot_file}"
+}
+
 if [ "$FRU_NAME" != "server" ]; then
   echo "FRU: $FRU_NAME is not supported"
   exit 1
@@ -133,6 +153,8 @@ done
 if [ "$DWR" == "1" ] || [ "$SECOND_DUMP" == "1" ]; then
   echo "Auto Dump after System Reset or Demoted Warm Reset"
 fi
+
+capture_sensor_snapshot
 
 if [ "$DELAY_SEC" != "0" ]; then
   echo "Auto Dump will start after ${DELAY_SEC}s..."

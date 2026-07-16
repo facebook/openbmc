@@ -62,6 +62,16 @@
 #define CRC16_LUT_LEN 256
 #define CRC16_RESULT_LEN 2
 
+#ifdef CONFIG_GRANDCANYON2
+// ISL Gen3 CRC record location
+#define ISL_GEN3_FILE_HEAD           5
+#define ISL_GEN3_LEGACY_CRC_IDX      (276 - ISL_GEN3_FILE_HEAD)   // 271
+#define ISL_GEN3_PRODUCTION_CRC_IDX  (290 - ISL_GEN3_FILE_HEAD)   // 285
+#define ISL_GEN3_SW_REV_MIN          0x06
+#define CMD_ISL_VR_DEV_REV           0xAE  // DEVREV record marker (vs 0xAD for DEVID)
+
+#endif
+
 typedef struct {
   uint8_t command;
   uint8_t data_len;
@@ -118,6 +128,26 @@ vr_remaining_writes_check(uint8_t cnt, uint8_t force) {
   return ret;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+static int
+vr_already_flashed_check(uint32_t dev_val, uint32_t exp_val, uint8_t force, const char *label, const char *value_fmt) {
+  char hexstr[16];
+
+  if (force == FORCE_UPDATE_SET) {
+    return 0;
+  }
+  if (dev_val != exp_val) {
+    return 0;
+  }
+
+  snprintf(hexstr, sizeof(hexstr), value_fmt, dev_val);
+  printf("WARNING: the %s is the same as used now %s!\n", label, hexstr);
+  printf("Please use \"--force\" option to try again.\n");
+  syslog(LOG_WARNING, "%s: redundant programming", __func__);
+  return -1;
+}
+#endif
+
 // Refer "isl69259_ds_Aug_21_2019" 10.71 & 10.73
 static int
 vr_ISL_polling_status(uint8_t addr) {
@@ -171,6 +201,42 @@ error_exit:
   return ret;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+static int
+vr_ISL_get_crc(uint8_t addr, uint32_t *crc) {
+  uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t tlen = 0, rlen = 0;
+  int ret;
+
+  tbuf[0] = (VR_BUS << 1) + 1;
+  tbuf[1] = addr;
+  tbuf[2] = 0x00;
+  tbuf[3] = CMD_ISL_VR_DMAADDR;
+  tbuf[4] = 0x94; // per Renesas DMP Gen3 CRC Check guide, Step 6c
+  tbuf[5] = 0x00;
+  tlen = 6;
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "[%s] Failed to set DMA address 0x94", __func__);
+    return ret;
+  }
+
+  tbuf[2] = 0x04;
+  tbuf[3] = CMD_ISL_VR_DMAFIX;
+  tlen = 4;
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "[%s] Failed to read CRC via DMA", __func__);
+    return ret;
+  }
+
+  // little-endian: rbuf[0] is LSB ... rbuf[3] is MSB (per Renesas doc Step 6c)
+  *crc = (uint32_t)rbuf[0] | ((uint32_t)rbuf[1] << 8) | ((uint32_t)rbuf[2] << 16) | ((uint32_t)rbuf[3] << 24);
+  return 0;
+}
+#endif
+
 static int
 vr_ISL_program(vr *dev, uint8_t force) {
   int i = 0;
@@ -184,6 +250,23 @@ vr_ISL_program(vr *dev, uint8_t force) {
   vr_data *list = dev->pdata;
   uint8_t addr = dev->addr;
   int len = dev->data_cnt;
+
+#ifdef CONFIG_GRANDCANYON2
+  if (dev->expected_crc != 0) {
+    uint32_t crc_now = 0;
+    ret = vr_ISL_get_crc(addr, &crc_now);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "[%s] Failed to read current CRC before programming, skip pre-check", __func__);
+    } else {
+      int chk = vr_already_flashed_check(crc_now, dev->expected_crc, force, "CRC", "%08X");
+      if (chk < 0) {
+        return -1;
+      }
+    }
+  } else {
+    syslog(LOG_WARNING, "[%s] No expected_crc parsed from file, skip pre-flash guard", __func__);
+  }
+#endif
 
   //get the remaining of the VR
   ret = bic_get_isl_vr_remaining_writes(VR_BUS, addr, &remaining_writes);
@@ -250,6 +333,9 @@ vr_ISL_hex_parser(char *image) {
   uint8_t crc8_check = 0;
   uint8_t data[CRC8_BUF_LEN] = {0};
   uint8_t data_end = 0;
+#ifdef CONFIG_GRANDCANYON2
+  int crc_record_idx = -1;   // which "00" data line holds the overall config CRC
+#endif
 
   fp = fopen(image, "r");
   if (fp == NULL) {
@@ -313,6 +399,22 @@ vr_ISL_hex_parser(char *image) {
         printf(", Addr %x\n", vr_list[vr_cnt].addr);
 #endif
       }
+#ifdef CONFIG_GRANDCANYON2
+      else if (string_2_byte(&tmp_buf[6]) == CMD_ISL_VR_DEV_REV) {
+        // DEVREV record: determine Gen3 Legacy vs Production, which decides
+        // where the overall configuration CRC is located in the file.
+        int sw_rev = string_2_byte(&tmp_buf[8]);
+        if (sw_rev < 0) {
+          ret = -1;
+          goto error_exit;
+        }
+        if (sw_rev < ISL_GEN3_SW_REV_MIN) {
+          crc_record_idx = ISL_GEN3_LEGACY_CRC_IDX;
+        } else {
+          crc_record_idx = ISL_GEN3_PRODUCTION_CRC_IDX;
+        }
+      }
+#endif
     } else if (start_with(tmp_buf, "00")) { // Not inittialized 
       //initialize the metadata
       j = 0;
@@ -376,6 +478,13 @@ vr_ISL_hex_parser(char *image) {
       vr_list[vr_cnt].pdata[data_cnt].command = data[1];
       vr_list[vr_cnt].pdata[data_cnt].data_len = cnt - 3;
       memcpy(vr_list[vr_cnt].pdata[data_cnt].data, &data[2], vr_list[vr_cnt].pdata[data_cnt].data_len);
+#ifdef CONFIG_GRANDCANYON2
+      // If this is the record holding the overall configuration CRC, capture it.
+      if (data_cnt == crc_record_idx && vr_list[vr_cnt].pdata[data_cnt].data_len >= 4) {
+        memcpy(&vr_list[vr_cnt].expected_crc, vr_list[vr_cnt].pdata[data_cnt].data, sizeof(uint32_t));
+        printf("File CRC : %08X\n", vr_list[vr_cnt].expected_crc);
+      }
+#endif
 #ifdef DEBUG
       printf(" cmd: %x, data_len: %x, data: ", vr_list[vr_cnt].pdata[data_cnt].command, vr_list[vr_cnt].pdata[data_cnt].data_len);
       for (i = 0; i < vr_list[vr_cnt].pdata[data_cnt].data_len; i++){
@@ -575,6 +684,12 @@ vr_TI_csv_parser(char *image) {
   if (ret < 0) {
     syslog(LOG_WARNING, "[%s] CRC16 is error!", __func__);
   }
+#ifdef CONFIG_GRANDCANYON2
+  else {
+    uint16_t file_crc = ((uint16_t)vr_list[vr_cnt].pdata[0].data[10] << 8) | vr_list[vr_cnt].pdata[0].data[9];
+    printf("File CRC : %04X\n", file_crc);
+  }
+#endif
 
 error_exit:
   if (fp != NULL) {
@@ -607,6 +722,50 @@ vr_TI_program(vr *dev, uint8_t force) {
   uint8_t addr = dev->addr;
   int len = dev->data_cnt;
   vr_data *list = dev->pdata;
+
+#ifdef CONFIG_GRANDCANYON2
+  // step 0 - Already-flashed guard (shared across vendors, aligned with
+  // common/tps53688.c program_tps(); same NVM_CHECKSUM register used by the
+  // post-write verification below, just read once before programming too).
+  {
+    uint8_t chk_tbuf[MAX_IPMB_BUFFER] = {0};
+    uint8_t chk_rbuf[MAX_IPMB_BUFFER] = {0};
+    uint8_t chk_tlen = 0, chk_rlen = 0;
+    uint8_t dev_lo, dev_hi;
+
+    chk_tbuf[0] = (VR_BUS << 1) + 1;
+    chk_tbuf[1] = addr;
+    chk_tbuf[2] = 0x04; // read 4 bytes to detect format (same as post-write verify)
+    chk_tbuf[3] = CMD_TI_VR_NVM_CHECKSUM;
+    chk_tlen = 4;
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, chk_tbuf, chk_tlen, chk_rbuf, &chk_rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "[%s] Failed to read NVM_CHECKSUM before programming", __func__);
+      goto error_exit;
+    }
+
+    // Detect response format:
+    //   BlockRead: rbuf[0]=count(0x02), rbuf[1]=CRC_lo, rbuf[2]=CRC_hi
+    //   Direct:    rbuf[0]=CRC_lo,      rbuf[1]=CRC_hi
+    if (chk_rlen == 3 && chk_rbuf[0] == 0x02) {
+      dev_lo = chk_rbuf[1];
+      dev_hi = chk_rbuf[2];
+    } else {
+      dev_lo = chk_rbuf[0];
+      dev_hi = chk_rbuf[1];
+    }
+
+    uint32_t dev_crc = ((uint32_t)dev_hi << 8) | dev_lo;
+    uint32_t exp_crc = ((uint32_t)list[0].data[10] << 8) | list[0].data[9];
+
+    int chk = vr_already_flashed_check(dev_crc, exp_crc, force, "CRC", "%04X");
+    if (chk < 0) {
+      ret = -1;
+      goto error_exit;
+    }
+  }
+
+#endif
 
   tbuf[0] = (VR_BUS << 1) + 1;
   tbuf[1] = addr;
@@ -1239,7 +1398,7 @@ check_xdpe152xx_image(struct xdpe152xx_config *config) {
     }
   }
 
-  printf("File CRC (sum of non-trim sections): 0x%08X\n", sum);
+  printf("File CRC : %08X\n", sum);
   if (sum != config->sum_exp) {
     syslog(LOG_WARNING, "%s: Checksum mismatched! Expected: 0x%08X, Actual: 0x%08X",
            __func__, config->sum_exp, sum);
@@ -1399,7 +1558,6 @@ vr_XDPE152XX_parse_file(char *image) {
       token = strstr(token, "0x");
       if (token) {
         config->sum_exp = (uint32_t)strtoul(token, NULL, 16);
-        printf("Configuration Checksum: 0x%08X\n", config->sum_exp);
       }
       continue;
     }
@@ -1535,8 +1693,6 @@ vr_XDPE152XX_parse_file(char *image) {
   uint8_t addr7 = (uint8_t)(addr_base_value & 0x7F);
   config->addr = (uint8_t)(addr7 << 1); // 8-bit write address
 
-  printf("Forced PMBus address (7-bit)=0x%02X, write=0x%02X\n", addr7, config->addr);
-
   return config;
 }
 
@@ -1591,7 +1747,22 @@ static int vr_XDPE152XX_program(uint8_t addr, struct xdpe152xx_config *config, u
     return 0;
   }
 
-  // 1) Get remaining write count
+  // 1) Already-flashed guard (aligned with common/xdpe152xx.c program_xdpe152xx(),
+  //    which checks CRC before remaining writes; also matches ISL/TI ordering)
+  ret = vr_xdpe152xx_get_crc(addr, &crc_now);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: failed to read current CRC before programming", __func__);
+    goto cleanup_unlock;
+  }
+  {
+    int chk = vr_already_flashed_check(crc_now, config->sum_exp, force, "Checksum", "%08X");
+    if (chk < 0) {
+      ret = -1;               // blocked = failure, no longer misreported as success
+      goto cleanup_unlock;
+    }
+  }
+
+  // 2) Get remaining write count
   ret = bic_get_ifx_vr_remaining_writes_mfr(VR_BUS, addr, &remain);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s: failed to get remaining writes", __func__);
@@ -1602,19 +1773,11 @@ static int vr_XDPE152XX_program(uint8_t addr, struct xdpe152xx_config *config, u
     goto cleanup_unlock;
   }
 
-  // 2) Unlock registers
+  // 3) Unlock registers
   ret = vr_XDPE152XX_unlock_reg(addr);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s: unlock failed", __func__);
     goto cleanup_unlock;
-  }
-
-  // 3) CRC early exit (unless force)
-  ret = vr_xdpe152xx_get_crc(addr, &crc_now);
-  if (ret >= 0 && !force && (crc_now == config->sum_exp)) {
-    printf("WARNING: Configuration already up-to-date (CRC=0x%08X). Use --force to override.\n", crc_now);
-    ret = 0;
-    goto cleanup_lockback;
   }
 
   // 4) Global invalidate (FE/FE/00/00 -> 0x12); if it fails, do per-section surgical invalidate later
@@ -1658,28 +1821,142 @@ static int vr_XDPE152XX_program(uint8_t addr, struct xdpe152xx_config *config, u
       continue;
     }
 
-    // Clear STATUS_CML bit0 (consistent with your current logic)
-    tbuf[0] = (VR_BUS << 1) + 1; tbuf[1] = addr;
-    tbuf[2] = 0x00; tbuf[3] = PMBUS_STS_CML; tbuf[4] = 0x01; tlen = 5;
-    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-    if (ret < 0) {
-      syslog(LOG_WARNING, "%s: clear STATUS_CML failed", __func__);
-      goto program_fail;
-    }
+    // Section size (low 16 bits of the second DWORD), needed for OTP_CONF_STO.
+    uint16_t sec_size = (uint16_t)(s->data[1] & 0xFFFF);
 
-    // If global invalidate didn't succeed, surgically invalidate this section (header_code + XVcode)
-    if (!did_global_invalidate) {
+#ifdef DEBUG
+    printf("[DEBUG] sec=%d hc=0x%02X xv=%u size=%u\n", i, header_code, xvcode, sec_size);
+#endif
+
+    // Per AN001-XDPE1x2xx sec 6.5: on CML Other Memory Fault, re-invalidate
+    // and rewrite the section rather than aborting (OTP writes are permanent,
+    // so a failed attempt still consumes write budget while leaving a
+    // corrupted/unrecognized section).
+    int section_ok = 0;
+    for (int attempt = 0; attempt < 5 && !section_ok; attempt++) {
+      if (attempt > 0) {
+        printf("WARNING: section %d upload failed, retrying (attempt %d/5)...\n", i, attempt + 1);
+        syslog(LOG_WARNING, "%s: retrying section (sec=%d, hc=0x%02X xv=%u)", __func__, i, header_code, xvcode);
+
+        // Re-invalidate before rewriting; a failed store may have left an
+        // incomplete/corrupted header in place (AN001 sec 6.2).
+        tbuf[0] = (VR_BUS << 1) + 1; tbuf[1] = addr; tbuf[2] = 0x00;
+        tbuf[3] = 0x10; tbuf[4] = 0x00; tlen = 5;
+        (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+
+        tbuf[2] = 0x00; tbuf[3] = MFR_FW_CMD_DATA; tbuf[4] = 0x04;
+        tbuf[5] = header_code; tbuf[6] = xvcode; tbuf[7] = 0x00; tbuf[8] = 0x00; tlen = 9;
+        (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+
+        tbuf[0] = (VR_BUS << 1) + 1; tbuf[1] = addr; tbuf[2] = 0x00;
+        tbuf[3] = 0x10; tbuf[4] = 0x00; tlen = 5;
+        (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+
+        tbuf[2] = 0x00; tbuf[3] = MFR_FW_CMD; tbuf[4] = OTP_FILE_INVD; tlen = 5;
+        (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+        msleep(10);
+      }
+
+      // Clear STATUS_CML bit0
+      tbuf[0] = (VR_BUS << 1) + 1; tbuf[1] = addr;
+      tbuf[2] = 0x00; tbuf[3] = PMBUS_STS_CML; tbuf[4] = 0x01; tlen = 5;
+      ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+      if (ret < 0) {
+#ifdef DEBUG
+        printf("[DEBUG] sec=%d attempt=%d: clear STATUS_CML failed (ret=%d)\n", i, attempt + 1, ret);
+#endif
+        syslog(LOG_WARNING, "%s: clear STATUS_CML failed", __func__);
+        goto program_fail;
+      }
+
+      // If global invalidate didn't succeed, surgically invalidate this section (header_code + XVcode)
+      if (!did_global_invalidate && attempt == 0) {
+        // Bridge init before 0xFD
+        tbuf[0] = (VR_BUS << 1) + 1; tbuf[1] = addr; tbuf[2] = 0x00;
+        tbuf[3] = 0x10; tbuf[4] = 0x00; tlen = 5;
+        (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+
+        // 0xFD: [header_code, xvcode, 0, 0]
+        tbuf[2] = 0x00; tbuf[3] = MFR_FW_CMD_DATA; tbuf[4] = 0x04;
+        tbuf[5] = header_code; tbuf[6] = xvcode; tbuf[7] = 0x00; tbuf[8] = 0x00; tlen = 9;
+        ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+        if (ret < 0) {
+#ifdef DEBUG
+          printf("[DEBUG] sec=%d attempt=%d: surgical invalidate (0xFD) failed (ret=%d)\n", i, attempt + 1, ret);
+#endif
+          syslog(LOG_WARNING, "%s: surgical invalidate data failed (hc=0x%02X xv=%u)", __func__, header_code, xvcode);
+          goto program_fail;
+        }
+
+        // Bridge init before 0xFE
+        tbuf[0] = (VR_BUS << 1) + 1; tbuf[1] = addr; tbuf[2] = 0x00;
+        tbuf[3] = 0x10; tbuf[4] = 0x00; tlen = 5;
+        (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+
+        // 0xFE: 0x12
+        tbuf[2] = 0x00; tbuf[3] = MFR_FW_CMD; tbuf[4] = OTP_FILE_INVD; tlen = 5;
+        ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+        if (ret < 0) {
+#ifdef DEBUG
+          printf("[DEBUG] sec=%d attempt=%d: execute OTP_FILE_INVD failed (ret=%d)\n", i, attempt + 1, ret);
+#endif
+          syslog(LOG_WARNING, "%s: execute OTP_FILE_INVD failed (hc=0x%02X xv=%u)", __func__, header_code, xvcode);
+          goto program_fail;
+        }
+        msleep(10);
+      }
+
+      // At the start of each section: reset scratchpad start address to 0x2005E000
+      tbuf[0] = (VR_BUS << 1) + 1; tbuf[1] = addr; tbuf[2] = 0x00;
+      tbuf[3] = RPTR; tbuf[4] = 0x04;
+      tbuf[5] = 0x00; tbuf[6] = 0xE0; tbuf[7] = 0x05; tbuf[8] = 0x20; tlen = 9;
+      ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+      if (ret < 0) {
+#ifdef DEBUG
+        printf("[DEBUG] sec=%d attempt=%d: set scratchpad address failed (ret=%d)\n", i, attempt + 1, ret);
+#endif
+        syslog(LOG_WARNING, "%s: set scratchpad address failed", __func__);
+        goto program_fail;
+      }
+      msleep(10);
+
+      // Stream all DWORDs of this section to the scratchpad
+      for (int k = 0; k < s->data_cnt; k++) {
+        tbuf[0] = (VR_BUS << 1) + 1;
+        tbuf[1] = addr;
+        tbuf[2] = 0x00;                // read cnt
+        tbuf[3] = MFR_REG_WRITE;       // 0xDE
+        tbuf[4] = 0x04;                // block count
+        memcpy(&tbuf[5], &s->data[k], 4);  // little endian
+        tlen = 9;
+        ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+        if (ret < 0) {
+#ifdef DEBUG
+          printf("[DEBUG] sec=%d attempt=%d: write data failed at dword %d/%d (ret=%d)\n",
+                 i, attempt + 1, k, s->data_cnt, ret);
+#endif
+          syslog(LOG_WARNING, "%s: write data failed (sec=%d, dword=%d, hc=0x%02X xv=%u)", __func__, i, k, header_code, xvcode);
+          goto program_fail;
+        }
+        msleep(10);  // VR_WRITE_DELAY
+      }
+
       // Bridge init before 0xFD
       tbuf[0] = (VR_BUS << 1) + 1; tbuf[1] = addr; tbuf[2] = 0x00;
       tbuf[3] = 0x10; tbuf[4] = 0x00; tlen = 5;
       (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
 
-      // 0xFD: [header_code, xvcode, 0, 0]
+      // 0xFD: [size_lo, size_hi, 0, 0]
       tbuf[2] = 0x00; tbuf[3] = MFR_FW_CMD_DATA; tbuf[4] = 0x04;
-      tbuf[5] = header_code; tbuf[6] = xvcode; tbuf[7] = 0x00; tbuf[8] = 0x00; tlen = 9;
+      tbuf[5] = (uint8_t)(sec_size & 0xFF);
+      tbuf[6] = (uint8_t)((sec_size >> 8) & 0xFF);
+      tbuf[7] = 0x00; tbuf[8] = 0x00; tlen = 9;
       ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
       if (ret < 0) {
-        syslog(LOG_WARNING, "%s: surgical invalidate data failed (hc=0x%02X xv=%u)", __func__, header_code, xvcode);
+#ifdef DEBUG
+        printf("[DEBUG] sec=%d attempt=%d: write section size failed (size=%u, ret=%d)\n", i, attempt + 1, sec_size, ret);
+#endif
+        syslog(LOG_WARNING, "%s: write section size failed (sec=%d, size=%u)", __func__, i, sec_size);
         goto program_fail;
       }
 
@@ -1688,97 +1965,60 @@ static int vr_XDPE152XX_program(uint8_t addr, struct xdpe152xx_config *config, u
       tbuf[3] = 0x10; tbuf[4] = 0x00; tlen = 5;
       (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
 
-      // 0xFE: 0x12
-      tbuf[2] = 0x00; tbuf[3] = MFR_FW_CMD; tbuf[4] = OTP_FILE_INVD; tlen = 5;
+      // 0xFE: 0x11 (OTP_CONF_STO to commit this section)
+      tbuf[2] = 0x00; tbuf[3] = MFR_FW_CMD; tbuf[4] = OTP_CONF_STO; tlen = 5;
       ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
       if (ret < 0) {
-        syslog(LOG_WARNING, "%s: execute OTP_FILE_INVD failed (hc=0x%02X xv=%u)", __func__, header_code, xvcode);
+#ifdef DEBUG
+        printf("[DEBUG] sec=%d attempt=%d: execute OTP_CONF_STO failed (ret=%d)\n", i, attempt + 1, ret);
+#endif
+        syslog(LOG_WARNING, "%s: execute OTP_CONF_STO failed (sec=%d)", __func__, i);
         goto program_fail;
       }
-      msleep(10);
-    }
 
-    // At the start of each section: reset scratchpad start address to 0x2005E000
-    tbuf[0] = (VR_BUS << 1) + 1; tbuf[1] = addr; tbuf[2] = 0x00;
-    tbuf[3] = RPTR; tbuf[4] = 0x04;
-    tbuf[5] = 0x00; tbuf[6] = 0xE0; tbuf[7] = 0x05; tbuf[8] = 0x20; tlen = 9;
-    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-    if (ret < 0) {
-      syslog(LOG_WARNING, "%s: set scratchpad address failed", __func__);
-      goto program_fail;
-    }
-    msleep(10);
+      // Soak: based on section size (2 ms/byte, at least 200 ms)
+      {
+        int loops = (sec_size / 50) + 2;
+#ifdef DEBUG
+        printf("[DEBUG] sec=%d attempt=%d: soaking ~%d ms\n", i, attempt + 1, loops * 100);
+#endif
+        for (int sloop = 0; sloop < loops; sloop++) {
+          msleep(100);
+        }
+      }
 
-    // Stream all DWORDs of this section to the scratchpad
-    for (int k = 0; k < s->data_cnt; k++) {
+      // Check STATUS_CML bit0
       tbuf[0] = (VR_BUS << 1) + 1;
       tbuf[1] = addr;
-      tbuf[2] = 0x00;                // read cnt
-      tbuf[3] = MFR_REG_WRITE;       // 0xDE
-      tbuf[4] = 0x04;                // block count
-      memcpy(&tbuf[5], &s->data[k], 4);  // little endian
-      tlen = 9;
+      tbuf[2] = 0x01;                  // read 1 byte
+      tbuf[3] = PMBUS_STS_CML;         // 0x7E
+      tlen = 4;
       ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
       if (ret < 0) {
-        syslog(LOG_WARNING, "%s: write data failed (sec=%d, dword=%d, hc=0x%02X xv=%u)", __func__, i, k, header_code, xvcode);
+#ifdef DEBUG
+        printf("[DEBUG] sec=%d attempt=%d: read STATUS_CML failed (ret=%d)\n", i, attempt + 1, ret);
+#endif
+        syslog(LOG_WARNING, "%s: read STATUS_CML failed after section (sec=%d)", __func__, i);
         goto program_fail;
       }
-      msleep(10);  // VR_WRITE_DELAY
-    }
-
-    // Get this section's size (low 16 bits of the second DWORD)
-    uint16_t sec_size = (uint16_t)(s->data[1] & 0xFFFF);
-
-    // Bridge init before 0xFD
-    tbuf[0] = (VR_BUS << 1) + 1; tbuf[1] = addr; tbuf[2] = 0x00;
-    tbuf[3] = 0x10; tbuf[4] = 0x00; tlen = 5;
-    (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-
-    // 0xFD: [size_lo, size_hi, 0, 0]
-    tbuf[2] = 0x00; tbuf[3] = MFR_FW_CMD_DATA; tbuf[4] = 0x04;
-    tbuf[5] = (uint8_t)(sec_size & 0xFF);
-    tbuf[6] = (uint8_t)((sec_size >> 8) & 0xFF);
-    tbuf[7] = 0x00; tbuf[8] = 0x00; tlen = 9;
-    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-    if (ret < 0) {
-      syslog(LOG_WARNING, "%s: write section size failed (sec=%d, size=%u)", __func__, i, sec_size);
-      goto program_fail;
-    }
-
-    // Bridge init before 0xFE
-    tbuf[0] = (VR_BUS << 1) + 1; tbuf[1] = addr; tbuf[2] = 0x00;
-    tbuf[3] = 0x10; tbuf[4] = 0x00; tlen = 5;
-    (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-
-    // 0xFE: 0x11 (OTP_CONF_STO to commit this section)
-    tbuf[2] = 0x00; tbuf[3] = MFR_FW_CMD; tbuf[4] = OTP_CONF_STO; tlen = 5;
-    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-    if (ret < 0) {
-      syslog(LOG_WARNING, "%s: execute OTP_CONF_STO failed (sec=%d)", __func__, i);
-      goto program_fail;
-    }
-
-    // Soak: based on section size (2 ms/byte, at least 200 ms)
-    {
-      int loops = (sec_size / 50) + 2;
-      for (int sloop = 0; sloop < loops; sloop++) {
-        msleep(100);
+      if (rbuf[0] & 0x01) {
+#ifdef DEBUG
+        printf("[DEBUG] sec=%d attempt=%d: CML fault, STATUS_CML=0x%02X\n", i, attempt + 1, rbuf[0]);
+#endif
+        syslog(LOG_WARNING, "%s: CML Other Memory Fault after section (sec=%d, sts=0x%02X, attempt=%d)",
+               __func__, i, rbuf[0], attempt + 1);
+        continue; // retry this section (or fall through to failure below if out of attempts)
       }
+
+#ifdef DEBUG
+      printf("[DEBUG] sec=%d attempt=%d: OK, STATUS_CML=0x%02X\n", i, attempt + 1, rbuf[0]);
+#endif
+      section_ok = 1;
     }
 
-    // Check STATUS_CML bit0
-    tbuf[0] = (VR_BUS << 1) + 1;
-    tbuf[1] = addr;
-    tbuf[2] = 0x01;                  // read 1 byte
-    tbuf[3] = PMBUS_STS_CML;         // 0x7E
-    tlen = 4;
-    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-    if (ret < 0) {
-      syslog(LOG_WARNING, "%s: read STATUS_CML failed after section (sec=%d)", __func__, i);
-      goto program_fail;
-    }
-    if (rbuf[0] & 0x01) {
-      syslog(LOG_WARNING, "%s: CML Other Memory Fault after section (sec=%d, sts=0x%02X)", __func__, i, rbuf[0]);
+    if (!section_ok) {
+      syslog(LOG_WARNING, "%s: section %d (hc=0x%02X xv=%u) failed after 2 attempts, giving up",
+             __func__, i, header_code, xvcode);
       ret = -1;
       goto program_fail;
     }
@@ -1961,7 +2201,6 @@ int update_bic_vr(char *image, uint8_t force) {
     }
 
     // Step 3: File integrity validation
-    printf("Validating configuration file...\n");
     ret = check_xdpe152xx_image(xdpe_config);
     if (ret < 0) {
       printf("Configuration file validation failed!\n");
@@ -1982,13 +2221,12 @@ int update_bic_vr(char *image, uint8_t force) {
       goto error_exit;
     }
 
-    printf("Updating target %s (addr=0x%02X, XDPE152xx)...\n",
-           get_vr_name(xdpe_config->addr), xdpe_config->addr);
+    printf("Update VR: %s\n", get_vr_name(xdpe_config->addr));
 
     // Step 5: Update XDPE
     ret = vr_XDPE152XX_program(xdpe_config->addr, xdpe_config, force);
     if (ret < 0) {
-      printf("XDPE152xx update failed\n");
+      printf("ERROR: VR Firmware update fail!\n");
       free(xdpe_config);
       goto error_exit;
     }
@@ -2044,10 +2282,10 @@ int update_bic_vr(char *image, uint8_t force) {
   }
 
   // Step 5: Perform the update
-  printf("Updating %s (addr=0x%02X)...\n", get_vr_name(vr_list[0].addr), vr_list[0].addr);
+  printf("Update VR: %s\n", get_vr_name(vr_list[0].addr));
   ret = vr_tool[sel_vendor].program(&vr_list[0], force);
   if (ret < 0) {
-    printf("Update failed on 0x%02X\n", vr_list[0].addr);
+    printf("ERROR: VR Firmware update fail!\n");
     goto error_exit;
   }
 

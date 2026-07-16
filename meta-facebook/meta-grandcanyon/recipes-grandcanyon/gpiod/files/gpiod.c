@@ -385,6 +385,7 @@ server_power_monitor() {
           //*****Server power from off change to on
           } else if (((server_pre_pwr_status == SERVER_POWER_OFF) || (server_pre_pwr_status == SERVER_12V_OFF))
                    && (server_cur_pwr_status == SERVER_POWER_ON)) {
+            pal_clear_mrc_warning(FRU_SERVER);
             syslog(LOG_CRIT, "FRU: %d, Server is powered on", FRU_SERVER);
           }
 

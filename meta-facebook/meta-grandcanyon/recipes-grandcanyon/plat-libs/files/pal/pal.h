@@ -704,6 +704,8 @@ int pal_clear_event_only_error_ack();
 int pal_check_server_power_change_correct(uint8_t action);
 int pal_get_fanfru_serial_num(int fan_id, uint8_t *serial_num, uint8_t serial_len);
 int pal_get_sysfw_ver_from_bic(uint8_t slot, uint8_t *ver);
+int pal_get_mrc_desc(uint16_t major, uint16_t minor, char *desc);
+int pal_clear_mrc_warning(uint8_t slot);
 int pal_nic_poweroff_action();
 int pal_nic_poweron_action();
 int pal_reset_nic();

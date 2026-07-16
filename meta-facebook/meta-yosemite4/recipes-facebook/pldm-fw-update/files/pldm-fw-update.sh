@@ -800,6 +800,8 @@ update_bic_version_dbus() {
 	if [ "$bic_name" == "sd" ]; then
 	echo "Updating SD BIC version to Settings D-Bus"
 	sleep 15 # wait for BIC reset
+	# Check and reset unresponsive slots in same hub before version check
+	check_and_reset_unresponsive_slots_in_same_hub "$slot_id"
 	# Check if slot_id is empty
 	if [ -z "$slot_id" ]; then
 		# Loop through slot_id values from 1 to 8 if slot_id is empty
@@ -834,6 +836,8 @@ update_bic_version_dbus() {
 	elif [ "$bic_name" == "wf" ]; then
 		echo "Updating WF BIC version to Settings D-Bus"
 		sleep 15 # wait for BIC reset
+		# Check and reset unresponsive slots in same hub before version check
+		check_and_reset_unresponsive_slots_in_same_hub "$slot_id"
 		# Check if slot_id is empty
 		if [ -z "$slot_id" ]; then
 			# Loop through slot_id values from 1 to 8 if slot_id is empty
@@ -1250,12 +1254,13 @@ handle_firmware_operations () {
 	echo "Start to Update PLDM component"
 
 	is_other_bic_updating
-
+	check_and_reset_unresponsive_slots_in_same_hub "$slot_id"
 	update_bic "$pldm_image" "$slot_id" "$bic_name"
 	ret=$?
 	if [ "$ret" -ne 0 ]; then
 		echo "Failed to Update PLDM component. Return with error code: $ret"
 		delete_software_id
+		check_and_reset_unresponsive_slots_in_same_hub "$slot_id"
 		echo "Restart PLDM service for recover"
 		systemctl stop pldmd
 		sleep 10
@@ -1321,6 +1326,49 @@ retry_firmware_operation() {
     add_result_sel "${FAILURE_MSG}"
     echo "Maximum retries ($MAX_RETRIES) reached. Exiting with error code: $ret."
     exit "$ret"
+}
+
+check_and_reset_unresponsive_slots_in_same_hub() {
+	local current_slot=$1
+	local start_slot=1
+	local end_slot=4
+
+	if [ "$current_slot" -ge 5 ] && [ "$current_slot" -le 8 ]; then
+		start_slot=5
+		end_slot=8
+	fi
+
+	for hub_slot in $(seq "$start_slot" "$end_slot"); do
+		local eid
+		eid="${hub_slot}0"
+		hub_bus_id=$((hub_slot-1))
+
+		if pldmtool base GetTID -m "$eid" 2>/dev/null | grep -q "\"Response\": $eid"; then
+			echo "Slot $hub_slot (EID $eid): GetTID response OK"
+		else
+			echo "Slot $hub_slot (EID $eid): no valid GetTID response, do reset"
+			i2ctransfer -f -y "$hub_bus_id" w2@0x21 0x8 0x0
+			sleep 1
+			i2ctransfer -f -y "$hub_bus_id" w2@0x21 0x8 0x1
+			sleep 15
+			
+			# Check again after reset, retry up to 3 times
+			local retry_count=0
+			while [ $retry_count -lt 3 ]; do
+				if pldmtool base GetTID -m "$eid" 2>/dev/null | grep -q "\"Response\": $eid"; then
+					echo "Slot $hub_slot (EID $eid): GetTID response OK after retry $((retry_count+1))"
+					break
+				else
+					echo "Slot $hub_slot (EID $eid): still no valid response, retry $((retry_count+1))/3"
+					i2ctransfer -f -y "$hub_bus_id" w2@0x21 0x8 0x0
+					sleep 1
+					i2ctransfer -f -y "$hub_bus_id" w2@0x21 0x8 0x1
+					sleep 15
+					((retry_count++))
+				fi
+			done
+		fi
+	done
 }
 
 add_init_sel() {

@@ -45,4 +45,5 @@ IMAGE_INSTALL += " \
   flashrom \
   dimm-util \
   cpld-handler \
+  apml \
   "

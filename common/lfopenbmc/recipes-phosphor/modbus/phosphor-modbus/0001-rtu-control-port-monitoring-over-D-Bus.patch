@@ -1,7 +1,7 @@
-From de588322c1f76ebcf78fb71343e2b4997fd4673d Mon Sep 17 00:00:00 2001
+From b36be4ade90c5498846548439619ccd1338e0c73 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Mon, 13 Jul 2026 14:10:18 -0700
-Subject: [PATCH 1/2] rtu: control port monitoring over D-Bus
+Subject: [PATCH] rtu: control port monitoring over D-Bus
 
 Implement the xyz.openbmc_project.Control.Port interface on each serial
 port object at /xyz/openbmc_project/control/port/<PortName>. Writing the

@@ -1,7 +1,7 @@
-From ea4cf4430fae6f720a502577960ce9fa6e8c03f0 Mon Sep 17 00:00:00 2001
+From 8bdc8f992e4b22e487cc860a9d376e9d9aaa2a09 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Wed, 15 Jul 2026 11:57:21 -0700
-Subject: [PATCH 2/2] rtu: re-read firmware on monitoring resume
+Subject: [PATCH] rtu: re-read firmware on monitoring resume
 
 When monitoring is re-enabled on a port (e.g. after a firmware update
 completes), the firmware version reported by devices on that port may

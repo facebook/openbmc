@@ -256,6 +256,9 @@ class BaseFwUpgradeTest(object):
         if self.bmc_ssh_session.session.isalive():
             test_cmd = 'echo "CIT TESTING" > /dev/kmsg'
             ret = self.send_command_to_UUT(test_cmd)
+            # Consume any leftover prompt from the marker so the first real
+            # command's prompt() aligns with its own output.
+            self.flush_session_contents()
         else:
             self.print_line(
                 "DBG: Connection is not alive, so Pinging host {} ...".format(
@@ -412,7 +415,6 @@ class BaseFwUpgradeTest(object):
         md5sum_cmd = "md5sum {} | cut -d ' ' -f 1"
 
         for fw_entity in self.json:
-
             filename = os.path.join(
                 self.remote_bin_path, self.json[fw_entity][UFW_NAME]
             )
@@ -525,6 +527,8 @@ class BaseFwUpgradeTest(object):
         try:
             self.send_command_to_UUT(condition_cmd)
             is_type_match = self.receive_command_output_from_UUT(only_last=True)
+            if not is_type_match.strip():
+                return False
             for error in error_list:
                 if error in is_type_match:
                     return False
@@ -768,7 +772,9 @@ class BaseFwUpgradeTest(object):
             self.upgrade_one_component(component, logging)
             # Retry an intermittently failed upgrade
             if not component["upgrade_status"]:
-                print(f"*** Upgrade of component {component['entity']} failed, retrying ***")
+                print(
+                    f"*** Upgrade of component {component['entity']} failed, retrying ***"
+                )
                 component["upgrade_status"] = True
                 self.upgrade_one_component(component, logging)
 

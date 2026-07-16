@@ -97,4 +97,10 @@ int pal_host_power_on_pre_actions();
 int pal_host_power_on_post_actions();
 int pal_restore_host_power_on_pre_actions();
 
+#ifdef CONFIG_GRANDCANYON2
+bool pal_power_transition_event_filtered(const char *key_suffix,
+                                         bool include_on_transition,
+                                         const char *token);
+#endif
+
 #endif

@@ -5124,8 +5124,33 @@ pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh) {
     return 1;
   }
 
+#ifdef CONFIG_GRANDCANYON2
+  {
+    char token[16] = {0};
+    snprintf(token, sizeof(token), "0x%02X:0x%02X", fru, snr_num);
+    if (pal_power_transition_event_filtered("", false, token)) {
+      return 1;
+    }
+  }
+#endif
+
   return 0;
 }
+
+#ifdef CONFIG_GRANDCANYON2
+int
+pal_ignore_sel(uint8_t fru, uint8_t *sel) {
+  char token[16] = {0};
+
+  if ((sel == NULL) || (sel[2] != 0x02)) {
+    return 0;
+  }
+
+  snprintf(token, sizeof(token), "0x%02X:0x%02X", sel[11], sel[13]);
+
+  return pal_power_transition_event_filtered("_SEL", true, token) ? 1 : 0;
+}
+#endif
 
 int
 pal_get_fanfru_serial_num(int fan_id, uint8_t *serial_num, uint8_t serial_len) {

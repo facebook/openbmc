@@ -677,8 +677,16 @@ int pal_bmc_err_enable(const char *error_item);
 int pal_bmc_err_disable(const char *error_item);
 void pal_i2c_crash_assert_handle(int i2c_bus_num);
 void pal_i2c_crash_deassert_handle(int i2c_bus_num);
+#ifdef CONFIG_GRANDCANYON2
+int pal_get_drive_health(const char* i2c_bus_dev, uint8_t drive_id);
+#else
 int pal_get_drive_health(const char* i2c_bus_dev);
+#endif
 int pal_get_drive_status(const char* i2c_bus_dev);
+#ifdef CONFIG_GRANDCANYON2
+int pal_get_mb_e1s_health(void);
+int pal_get_mb_e1s_status(void);
+#endif
 int pal_is_crashdump_ongoing(uint8_t fru);
 int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
 int pal_get_tach_cnt();

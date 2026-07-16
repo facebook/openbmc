@@ -70,6 +70,18 @@
 #define PCIE_DPC_TRIGGER_ERR_ID     0x53
 #define PCIE_LINK_DROP_ERR_ID       0x5A
 
+#ifdef CONFIG_GRANDCANYON2
+// NVMe-MI
+#define NVME_SFLGS_REG        0x01
+#define NVME_WARNING_REG      0x02
+
+// E1.S Boot Drive I2C Bus (BIC I2C_BUS2)
+#define MB_E1S_BIC_BUS_IDX      0x02    // I2C_BUS2
+#define NVME_MI_ADDR_7BIT       0x6A    // I2C_NVME_INTF_ADDR
+#define NVME_MI_ADDR_8BIT       (NVME_MI_ADDR_7BIT << 1)  // 0xD4
+
+#endif
+
 const char pal_fru_list[] = "all, server, bmc, uic, dpb, scc, nic, e1s_iocm";
 
 // export to sensor-util
@@ -2318,6 +2330,63 @@ pal_teardown_exp_uart_bridging(void) {
   return set_exp_uart_bridging(DISABLE_BRIDGING);
 }
 
+#ifdef CONFIG_GRANDCANYON2
+int
+pal_get_drive_health(const char* i2c_bus_dev, uint8_t drive_id) {
+  uint8_t status_flags = 0;
+  uint8_t warning_value = 0;
+  int ret = 0;
+
+  if (i2c_bus_dev == NULL) {
+    syslog(LOG_CRIT, "fail to get drive health because NULL parameter: *i2c_bus_dev\n");
+    return -1;
+  }
+
+  if (nvme_smart_warning_read(i2c_bus_dev, &warning_value) < 0) {
+    syslog(LOG_CRIT, "FRU: %d E1.S %d: fail to read SMART Warning from %s",
+           FRU_E1S_IOCM, drive_id, i2c_bus_dev);
+    return -1;
+  }
+
+  if (nvme_sflgs_read(i2c_bus_dev, &status_flags) < 0) {
+    syslog(LOG_CRIT, "FRU: %d E1.S %d: fail to read Status Flags from %s",
+           FRU_E1S_IOCM, drive_id, i2c_bus_dev);
+    return -1;
+  }
+
+  if ((warning_value & NVME_SMART_WARNING_MASK) != NVME_SMART_WARNING_MASK) {
+    ret = -1;
+    if (!(warning_value & (1 << 0)))
+      syslog(LOG_CRIT, "FRU: %d E1.S %d SMART Warning: Spare Space below threshold",
+             FRU_E1S_IOCM, drive_id);
+    if (!(warning_value & (1 << 1)))
+      syslog(LOG_CRIT, "FRU: %d E1.S %d SMART Warning: Temperature above/under threshold",
+             FRU_E1S_IOCM, drive_id);
+    if (!(warning_value & (1 << 2)))
+      syslog(LOG_CRIT, "FRU: %d E1.S %d SMART Warning: NVM Subsystem Reliability degraded",
+             FRU_E1S_IOCM, drive_id);
+    if (!(warning_value & (1 << 3)))
+      syslog(LOG_CRIT, "FRU: %d E1.S %d SMART Warning: Media placed in Read Only mode",
+             FRU_E1S_IOCM, drive_id);
+    if (!(warning_value & (1 << 4)))
+      syslog(LOG_CRIT, "FRU: %d E1.S %d SMART Warning: Volatile Memory Backup Device failed",
+             FRU_E1S_IOCM, drive_id);
+  }
+
+  if ((status_flags & NVME_STATUS_MASK) != NVME_STATUS_NORMAL) {
+    ret = -1;
+    if (!(status_flags & (1 << 5)))
+      syslog(LOG_CRIT, "FRU: %d E1.S %d Status Flags: Drive Functional check failed",
+             FRU_E1S_IOCM, drive_id);
+    if (!(status_flags & (1 << 3)))
+      syslog(LOG_CRIT, "FRU: %d E1.S %d Status Flags: Port 0 PCIe Link is down",
+             FRU_E1S_IOCM, drive_id);
+  }
+
+  return ret;
+}
+
+#else
 int
 pal_get_drive_health(const char* i2c_bus_dev) {
   uint8_t status_flags = 0;
@@ -2347,6 +2416,46 @@ pal_get_drive_health(const char* i2c_bus_dev) {
   }
   return 0;
 }
+#endif
+
+#ifdef CONFIG_GRANDCANYON2
+static int
+pal_nvme_read_serial_block(const char *i2c_bus_dev, uint8_t *buf, uint8_t size)
+{
+    int dev = -1;
+    int ret = 0;
+
+    if (i2c_bus_dev == NULL || buf == NULL || size == 0) {
+        syslog(LOG_WARNING, "%s(): invalid parameter", __func__);
+        return -1;
+    }
+
+    dev = open(i2c_bus_dev, O_RDWR);
+    if (dev < 0) {
+        syslog(LOG_WARNING, "%s(): open(%s) failed", __func__, i2c_bus_dev);
+        return -1;
+    }
+
+    if (ioctl(dev, I2C_SLAVE, I2C_NVME_INTF_ADDR) < 0) {
+        syslog(LOG_WARNING, "%s(): ioctl I2C_SLAVE failed", __func__);
+        close(dev);
+        return -1;
+    }
+
+    // Use block read instead of byte-by-byte to support Micron SSD.
+    // Equivalent to: i2ctransfer -y X w1@0x6A 0x0B r<size>
+    ret = i2c_smbus_read_i2c_block_data(dev, NVME_SERIAL_NUM_REG, size, buf);
+    close(dev);
+
+    if (ret < 0 || (uint8_t)ret < size) {
+        syslog(LOG_WARNING, "%s(): block read failed (ret=%d, expected=%d)",
+               __func__, ret, size);
+        return -1;
+    }
+
+    return 0;
+}
+#endif
 
 int
 pal_get_drive_status(const char* i2c_bus_dev) {
@@ -2377,11 +2486,21 @@ pal_get_drive_status(const char* i2c_bus_dev) {
     printf("%s: %s\n", vendor_decode_result.key, vendor_decode_result.value);
   }
 
+#ifdef CONFIG_GRANDCANYON2
+  snprintf(sn_decode_result.key, PART_KEY_SIZE, "Serial Number");
+  if (pal_nvme_read_serial_block(i2c_bus_dev, ssd.serial_num, MAX_SERIAL_NUM_SIZE) < 0) {
+    printf("%s: Fail to read Serial Number\n", sn_decode_result.key);
+  } else {
+    nvme_serial_num_decode(ssd.serial_num, &sn_decode_result);
+    printf("%s: %s\n", sn_decode_result.key, sn_decode_result.value);
+  }
+#else
   if (nvme_serial_num_read_decode(i2c_bus_dev, ssd.serial_num, MAX_SERIAL_NUM_SIZE, &sn_decode_result) < 0) {
     printf("%s: Fail to read Serial Number\n", sn_decode_result.key);
   } else {
     printf("%s: %s\n", sn_decode_result.key, sn_decode_result.value);
   }
+#endif
 
   if (nvme_temp_read_decode(i2c_bus_dev, &ssd.temp, &temp_decode_result) < 0) {
     printf("%s: Fail to read Composite Temperature\n", temp_decode_result.key);
@@ -2389,11 +2508,19 @@ pal_get_drive_status(const char* i2c_bus_dev) {
     printf("%s: %s\n", temp_decode_result.key, temp_decode_result.value);
   }
 
+#ifdef CONFIG_GRANDCANYON2
+  if (nvme_pdlu_read_decode(i2c_bus_dev, &ssd.pdlu, &pdlu_decode_result) < 0) {
+    printf("%s: Fail to read Percentage Drive Life Useds\n", pdlu_decode_result.key);
+  } else {
+    printf("%s: %s\n", pdlu_decode_result.key, pdlu_decode_result.value);
+  }
+#else
   if (nvme_pdlu_read_decode(i2c_bus_dev, &ssd.pdlu, &pdlu_decode_result) < 0) {
     printf("%s: Fail to read Percentage Drive Life Useds\n", temp_decode_result.key);
   } else {
     printf("%s: %s\n", temp_decode_result.key, pdlu_decode_result.value);
   }
+#endif
 
   if (nvme_sflgs_read_decode(i2c_bus_dev, &ssd.sflgs, &status_flag_decode_result) < 0) {
     printf("%s: Fail to read Status Flags\n", status_flag_decode_result.self.key);
@@ -2421,6 +2548,202 @@ pal_get_drive_status(const char* i2c_bus_dev) {
   printf("\n");
   return 0;
 }
+#ifdef CONFIG_GRANDCANYON2
+/*
+ * Read a single NVMe-MI register from MB E1.S via BIC MASTER_WRITE_READ.
+ *
+ * txbuf format (CMD_APP_MASTER_WRITE_READ):
+ * [0] bus_id     = MB_E1S_BIC_BUS_IDX (0x02)
+ * [1] slave_addr = 0x6A << 1 = 0xD4
+ * [2] read_count = 1
+ * [3] reg_addr   = target register
+ */
+static int
+bic_read_nvme_reg(uint8_t reg, uint8_t *value)
+{
+    uint8_t tbuf[4] = {0};
+    uint8_t rbuf[8] = {0};
+    uint8_t rlen    = 0;
+    int     ret     = 0;
+
+    tbuf[0] = MB_E1S_BIC_BUS_IDX;  // bus = 0x02
+    tbuf[1] = NVME_MI_ADDR_8BIT;   // addr = 0xD4
+    tbuf[2] = 1;                   // read 1 byte
+    tbuf[3] = reg;                 // target register
+
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ,
+                           CMD_APP_MASTER_WRITE_READ,
+                           tbuf, 4,
+                           rbuf, &rlen);
+
+    if (ret < 0 || rlen < 1) {
+        syslog(LOG_WARNING, "%s(): failed to read reg=0x%02X", __func__, reg);
+        return -1;
+    }
+
+    *value = rbuf[0];
+    return 0;
+}
+
+/*
+ * Read a 16-bit word from NVMe-MI via two consecutive byte reads.
+ * Byte swap is consistent with nvme_read_word().
+ */
+static int
+bic_read_nvme_word(uint8_t reg, uint16_t *value)
+{
+    uint8_t hi = 0, lo = 0;
+
+    if (bic_read_nvme_reg(reg,     &hi) < 0 ||
+        bic_read_nvme_reg(reg + 1, &lo) < 0) {
+        return -1;
+    }
+
+    *value = (hi << 8) | lo;
+    return 0;
+}
+
+/*
+ * Read a block of consecutive NVMe-MI registers.
+ */
+static int
+bic_read_nvme_block(uint8_t start_reg, uint8_t *buf, uint8_t len)
+{
+    for (uint8_t i = 0; i < len; i++) {
+        if (bic_read_nvme_reg(start_reg + i, &buf[i]) < 0) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+int
+pal_get_mb_e1s_health(void)
+{
+  uint8_t warning = 0;
+  uint8_t sflgs   = 0;
+  int     ret     = 0;
+
+  if (bic_read_nvme_reg(NVME_WARNING_REG, &warning) < 0) {
+    syslog(LOG_CRIT, "FRU: %d E1.S Boot: fail to read SMART Warning via BIC",
+           FRU_E1S_IOCM);
+    return -1;
+  }
+
+  if (bic_read_nvme_reg(NVME_SFLGS_REG, &sflgs) < 0) {
+    syslog(LOG_CRIT, "FRU: %d E1.S Boot: fail to read Status Flags via BIC",
+           FRU_E1S_IOCM);
+    return -1;
+  }
+
+  if ((warning & NVME_SMART_WARNING_MASK) != NVME_SMART_WARNING_MASK) {
+    ret = -1;
+    if (!(warning & (1 << 0)))
+      syslog(LOG_CRIT, "FRU: %d MB E1.S SMART Warning: Spare Space below threshold", FRU_E1S_IOCM);
+    if (!(warning & (1 << 1)))
+      syslog(LOG_CRIT, "FRU: %d MB E1.S SMART Warning: Temperature above/under threshold", FRU_E1S_IOCM);
+    if (!(warning & (1 << 2)))
+      syslog(LOG_CRIT, "FRU: %d MB E1.S SMART Warning: NVM Subsystem Reliability degraded", FRU_E1S_IOCM);
+    if (!(warning & (1 << 3)))
+      syslog(LOG_CRIT, "FRU: %d MB E1.S SMART Warning: Media placed in Read Only mode", FRU_E1S_IOCM);
+    if (!(warning & (1 << 4)))
+      syslog(LOG_CRIT, "FRU: %d MB E1.S SMART Warning: Volatile Memory Backup Device failed", FRU_E1S_IOCM);
+  }
+
+  if ((sflgs & NVME_STATUS_MASK) != NVME_STATUS_NORMAL) {
+    ret = -1;
+    if (!(sflgs & (1 << 5)))
+      syslog(LOG_CRIT, "FRU: %d MB E1.S Status Flags: Drive Functional check failed", FRU_E1S_IOCM);
+    if (!(sflgs & (1 << 3)))
+      syslog(LOG_CRIT, "FRU: %d MB E1.S Status Flags: Port 0 PCIe Link is down", FRU_E1S_IOCM);
+  }
+
+  return ret;
+}
+
+int
+pal_get_mb_e1s_status(void)
+{
+    ssd_data ssd;
+    t_key_value_pair  vendor_decode_result;
+    t_key_value_pair  sn_decode_result;
+    t_key_value_pair  temp_decode_result;
+    t_key_value_pair  pdlu_decode_result;
+    t_status_flags    status_flag_decode_result;
+    t_smart_warning   smart_warning_decode_result;
+
+    memset(&ssd,                         0, sizeof(ssd));
+    memset(&vendor_decode_result,        0, sizeof(vendor_decode_result));
+    memset(&sn_decode_result,            0, sizeof(sn_decode_result));
+    memset(&temp_decode_result,          0, sizeof(temp_decode_result));
+    memset(&pdlu_decode_result,          0, sizeof(pdlu_decode_result));
+    memset(&status_flag_decode_result,   0, sizeof(status_flag_decode_result));
+    memset(&smart_warning_decode_result, 0, sizeof(smart_warning_decode_result));
+
+    /* Vendor ID (word, reg 0x09) */
+    if (bic_read_nvme_word(NVME_VENDOR_REG, &ssd.vendor) < 0) {
+        printf("Vendor: Fail to read Vendor\n");
+        return -1;
+    } else {
+        nvme_vendor_decode(ssd.vendor, &vendor_decode_result);
+        printf("%s: %s\n", vendor_decode_result.key, vendor_decode_result.value);
+    }
+
+    /* Serial Number (20 bytes, reg 0x0B) */
+    if (bic_read_nvme_block(NVME_SERIAL_NUM_REG, ssd.serial_num, MAX_SERIAL_NUM_SIZE) < 0) {
+        printf("Serial Number: Fail to read Serial Number\n");
+    } else {
+        nvme_serial_num_decode(ssd.serial_num, &sn_decode_result);
+        printf("%s: %s\n", sn_decode_result.key, sn_decode_result.value);
+    }
+
+    /* Composite Temperature (reg 0x03) */
+    if (bic_read_nvme_reg(NVME_TEMP_REG, &ssd.temp) < 0) {
+        printf("Composite Temperature: Fail to read Composite Temperature\n");
+    } else {
+        nvme_temp_decode(ssd.temp, &temp_decode_result);
+        printf("%s: %s\n", temp_decode_result.key, temp_decode_result.value);
+    }
+
+    /* Percentage Drive Life Used (reg 0x04) */
+    if (bic_read_nvme_reg(NVME_PDLU_REG, &ssd.pdlu) < 0) {
+        printf("Percentage Drive Life Used: Fail to read Percentage Drive Life Used\n");
+    } else {
+        nvme_pdlu_decode(ssd.pdlu, &pdlu_decode_result);
+        printf("%s: %s\n", pdlu_decode_result.key, pdlu_decode_result.value);
+    }
+
+    /* Status Flags (reg 0x01) */
+    if (bic_read_nvme_reg(NVME_SFLGS_REG, &ssd.sflgs) < 0) {
+        printf("Status Flags: Fail to read Status Flags\n");
+    } else {
+        nvme_sflgs_decode(ssd.sflgs, &status_flag_decode_result);
+        printf("%s: %s\n",    status_flag_decode_result.self.key,          status_flag_decode_result.self.value);
+        printf("    %s: %s\n", status_flag_decode_result.read_complete.key, status_flag_decode_result.read_complete.value);
+        printf("    %s: %s\n", status_flag_decode_result.ready.key,         status_flag_decode_result.ready.value);
+        printf("    %s: %s\n", status_flag_decode_result.functional.key,    status_flag_decode_result.functional.value);
+        printf("    %s: %s\n", status_flag_decode_result.reset_required.key,status_flag_decode_result.reset_required.value);
+        printf("    %s: %s\n", status_flag_decode_result.port0_link.key,    status_flag_decode_result.port0_link.value);
+        printf("    %s: %s\n", status_flag_decode_result.port1_link.key,    status_flag_decode_result.port1_link.value);
+    }
+
+    /* SMART Critical Warning (reg 0x02) */
+    if (bic_read_nvme_reg(NVME_WARNING_REG, &ssd.warning) < 0) {
+        printf("SMART Critical Warning: Fail to read SMART Critical Warning\n");
+    } else {
+        nvme_smart_warning_decode(ssd.warning, &smart_warning_decode_result);
+        printf("%s: %s\n",    smart_warning_decode_result.self.key,          smart_warning_decode_result.self.value);
+        printf("    %s: %s\n", smart_warning_decode_result.spare_space.key,   smart_warning_decode_result.spare_space.value);
+        printf("    %s: %s\n", smart_warning_decode_result.temp_warning.key,  smart_warning_decode_result.temp_warning.value);
+        printf("    %s: %s\n", smart_warning_decode_result.reliability.key,   smart_warning_decode_result.reliability.value);
+        printf("    %s: %s\n", smart_warning_decode_result.media_status.key,  smart_warning_decode_result.media_status.value);
+        printf("    %s: %s\n", smart_warning_decode_result.backup_device.key, smart_warning_decode_result.backup_device.value);
+    }
+
+    printf("\n");
+    return 0;
+}
+#endif
 
 int
 pal_is_crashdump_ongoing(uint8_t fru)

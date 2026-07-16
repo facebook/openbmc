@@ -210,8 +210,45 @@ show_e1s_status() {
   if(ret < 0) {
     syslog(LOG_DEBUG, "%s(): fail to get e1.s 1 status.", __func__);
   }
+#ifdef CONFIG_GRANDCANYON2
+  printf("e1.s (Boot): \n");
+  ret = pal_get_mb_e1s_status();
+  if (ret < 0) {
+      syslog(LOG_DEBUG, "%s(): fail to get MB e1.s status.", __func__);
+  }
+#endif
 }
 
+#ifdef CONFIG_GRANDCANYON2
+void
+show_e1s_health() {
+  int ret = 0;
+
+  ret = pal_get_drive_health(I2C_DEV_E1S_0_PATH, 0);
+  if (ret < 0) {
+    syslog(LOG_DEBUG, "%s(): fail to get e1.s 0 health.", __func__);
+    printf("e1.s 0: Abnormal\n");
+  } else {
+    printf("e1.s 0: Normal\n");
+  }
+
+  ret = pal_get_drive_health(I2C_DEV_E1S_1_PATH, 1);
+  if (ret < 0) {
+    syslog(LOG_DEBUG, "%s(): fail to get e1.s 1 health.", __func__);
+    printf("e1.s 1: Abnormal\n");
+  } else {
+    printf("e1.s 1: Normal\n");
+  }
+
+  ret = pal_get_mb_e1s_health();
+  if (ret < 0) {
+    syslog(LOG_DEBUG, "%s(): fail to get e1.s (Boot) health.", __func__);
+    printf("e1.s (Boot): Abnormal\n");
+  } else {
+    printf("e1.s (Boot): Normal\n");
+  }
+}
+#else
 void
 show_e1s_health() {
   int ret = 0;
@@ -234,6 +271,7 @@ show_e1s_health() {
     printf("e1.s 1: Normal\n");
   }
 }
+#endif
 
 int
 main(int argc, char **argv) {

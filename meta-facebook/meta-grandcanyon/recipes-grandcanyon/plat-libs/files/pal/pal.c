@@ -150,6 +150,7 @@ struct pal_key_cfg {
   {"uic_sensor_health", "1", NULL},
   {"dpb_sensor_health", "1", NULL},
   {"scc_sensor_health", "1", NULL},
+  {"scc_sel_error", "1", NULL},
   {"nic_sensor_health", "1", NULL},
   {"e1s_iocm_sensor_health", "1", NULL},
   {"bmc_health", "1", NULL},
@@ -3144,6 +3145,8 @@ pal_get_fru_health(uint8_t fru, uint8_t *value) {
   if (fru == FRU_SERVER) {
     snprintf(key, sizeof(key), "server_sel_error");
 
+  } else if (fru == FRU_SCC) {
+    snprintf(key, sizeof(key), "scc_sel_error");
   } else {
     return 0;
   }
@@ -3250,6 +3253,11 @@ pal_log_clear(char *fru) {
       syslog(LOG_ERR, "%s(): failed to clear the scc seneor health value", __func__);
     }
 
+    ret = pal_set_key_value("scc_sel_error", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear scc sel error value", __func__);
+    }
+
   } else if (strcmp(fru, "nic") == 0) {
     ret = pal_set_key_value("nic_sensor_health", val);
     if (ret < 0) {
@@ -3288,6 +3296,11 @@ pal_log_clear(char *fru) {
     ret = pal_set_key_value("scc_sensor_health", val);
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to clear scc seneor health value", __func__);
+    }
+
+    ret = pal_set_key_value("scc_sel_error", val);
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s(): failed to clear scc sel error value", __func__);
     }
 
     ret = pal_set_key_value("nic_sensor_health", val);
@@ -4652,7 +4665,7 @@ pal_handle_string_sel(char *log, uint8_t log_len)
     snprintf(key, sizeof(key), "dpb_sensor_health");
   } else if (strstr(log, "SCC_") != NULL) {
     fru = FRU_SCC;
-    snprintf(key, sizeof(key), "scc_sensor_health");
+    snprintf(key, sizeof(key), "scc_sel_error");
   } else {
     return ret;
   }

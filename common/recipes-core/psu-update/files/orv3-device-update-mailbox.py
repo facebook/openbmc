@@ -286,6 +286,7 @@ def update_device(addr, filename, vendor_param):
     print("done")
 
 
+@retry(5, delay=1.0)
 def print_revision(addr, params):
     vers = ", ".join([rmd.get(addr, vers, True) for vers in params["version-reg"]])
     print("Version: ", vers)

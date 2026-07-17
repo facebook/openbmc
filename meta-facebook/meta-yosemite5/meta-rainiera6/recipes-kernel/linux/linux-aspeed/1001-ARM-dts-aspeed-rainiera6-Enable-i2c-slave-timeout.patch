@@ -14,7 +14,6 @@ Signed-off-by: Neil Cheng <Neil.Cheng@quantatw.com>
  1 file changed, 3 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
-index b29e08cea..19aa8a391 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
 @@ -220,6 +220,7 @@ &i2c2 {
@@ -25,15 +24,7 @@ index b29e08cea..19aa8a391 100644
  	mctp-controller;
  	clock-frequency = <400000>;
  	status = "okay";
-@@ -347,6 +348,7 @@ i2c6mux0ch3: i2c@3 {
- 
- &i2c7 {
- 	multi-master;
-+	i2c-scl-clk-low-timeout-us = <31744>;
- 	status = "okay";
- 
- 	ipmb@10 {
-@@ -728,6 +730,7 @@ rtc@6f {
+@@ -728,6 +729,7 @@ rtc@6f {
  /* MCIO 4A I2C */
  &i2c12 {
  	multi-master;
@@ -41,3 +32,14 @@ index b29e08cea..19aa8a391 100644
  	mctp-controller;
  	clock-frequency = <400000>;
  	status = "okay";
+@@ -789,7 +791,8 @@ eeprom@51 {
+ 
+ /* PROT reserve */
+ &i2c14 {
+ 	multi-master;
++	i2c-scl-clk-low-timeout-us = <31744>;
+ 	status = "okay";
+ 
+ 	ipmb@10 {
+-- 
+2.34.1

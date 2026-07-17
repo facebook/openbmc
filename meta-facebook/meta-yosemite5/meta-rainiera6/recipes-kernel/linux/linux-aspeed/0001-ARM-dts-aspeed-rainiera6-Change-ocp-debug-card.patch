@@ -1,0 +1,49 @@
+From 9f39c32cfe953ba6640babd5e29f4100ccdc2273 Mon Sep 17 00:00:00 2001
+From: RQ Lai <r.q.lai@quantatw.com>
+Date: Mon, 29 Jun 2026 14:05:38 +0800
+Subject: [PATCH 1/1] ARM: dts: aspeed: rainiera6: Config ocp debug card
+
+Set correct I2C bus for LCD debug card
+
+
+Signed-off-by: RQ Lai <r.q.lai@quantatw.com>
+---
+ .../dts/aspeed/aspeed-bmc-facebook-rainiera6.dts   | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
+index b29e08cea..c1b442cdc 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
+@@ -346,14 +346,7 @@ i2c6mux0ch3: i2c@3 {
+ };
+
+ &i2c7 {
+-	multi-master;
+ 	status = "okay";
+-
+-	ipmb@10 {
+-		compatible = "ipmb-dev";
+-		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+-		i2c-protocol;
+-	};
+ };
+
+ &i2c8 {
+@@ -789,7 +782,14 @@ eeprom@51 {
+
+ /* PROT reserve */
+ &i2c14 {
++	multi-master;
+ 	status = "okay";
++
++	ipmb@10 {
++		compatible = "ipmb-dev";
++		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++		i2c-protocol;
++	};
+ };
+
+ /* MCIO 3A I2C */
+--
+2.34.1

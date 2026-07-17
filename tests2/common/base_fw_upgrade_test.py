@@ -119,6 +119,8 @@ class BaseFwUpgradeTest(object):
     DEFAULT_SCM_BOOT_TIME = 30  # SCM startup time
     DEFAULT_COMMAND_EXEC_DELAY = 4  # Delay for UUT command handler
     DEFAULT_COMMAND_PROMTP_TIME_OUT = 10  # Waiting promtp timeout
+    DEFAULT_POST_UPGRADE_VERSION_RETRIES = 6  # re-reads after a flash
+    DEFAULT_POST_UPGRADE_VERSION_DELAY = 15  # settle delay between re-reads (s)
 
     try:
         DEFAULT_POWER_RESET_CMD = FwUpgrader._POWER_RESET_HARD
@@ -256,8 +258,7 @@ class BaseFwUpgradeTest(object):
         if self.bmc_ssh_session.session.isalive():
             test_cmd = 'echo "CIT TESTING" > /dev/kmsg'
             ret = self.send_command_to_UUT(test_cmd)
-            # Consume any leftover prompt from the marker so the first real
-            # command's prompt() aligns with its own output.
+            # Drain the marker's prompt so the first real command stays aligned.
             self.flush_session_contents()
         else:
             self.print_line(
@@ -334,12 +335,9 @@ class BaseFwUpgradeTest(object):
             )  # wait for prompt
 
     def receive_command_output_from_UUT(self, only_last=False):
-        print("DBG raw before: {!r}".format(self.bmc_ssh_session.session.before))
         cmd_result = self.bmc_ssh_session.session.before.decode("utf-8")
-        print("DBG cmd_result: {}".format(cmd_result))
         if only_last:
             lines = cmd_result.split("\r\n")
-            print("DBG lines: {}".format(lines))
             if len(lines) > 1:
                 return lines[1]
             else:
@@ -537,7 +535,28 @@ class BaseFwUpgradeTest(object):
             Logger.info("Exception {} occured when running command".format(e))
             return False
 
-    def checking_components_version(self, components=None, logging=False):
+    def _read_component_version(self, check_version_cmd, retry_on_empty=False):
+        # A just-flashed component (or a briefly hung OOB session) can return an
+        # empty version read; re-read with a settle delay and reconnect on EOF.
+        attempts = self.DEFAULT_POST_UPGRADE_VERSION_RETRIES if retry_on_empty else 1
+        synced = False
+        current_ver = ""
+        for attempt in range(attempts):
+            try:
+                synced = self.send_command_to_UUT(check_version_cmd)
+                current_ver = self.receive_command_output_from_UUT(only_last=True)
+            except pexpect.exceptions.EOF:
+                synced, current_ver = False, ""
+                self.reconnect_to_remote_host(self.bmc_reconnect_timeout)
+            if synced and current_ver != "":
+                return synced, current_ver
+            if attempt < attempts - 1:
+                time.sleep(self.DEFAULT_POST_UPGRADE_VERSION_DELAY)
+        return synced, current_ver
+
+    def checking_components_version(
+        self, components=None, logging=False, retry_on_empty=False
+    ):
         """
         check and compare between firmware package and running version
         on remote host
@@ -569,8 +588,9 @@ class BaseFwUpgradeTest(object):
             if len(check_version_cmd) == 0:
                 current_ver = ""
             else:
-                synced = self.send_command_to_UUT(check_version_cmd)
-                current_ver = self.receive_command_output_from_UUT(only_last=True)
+                synced, current_ver = self._read_component_version(
+                    check_version_cmd, retry_on_empty
+                )
                 if not synced or current_ver == "":
                     self.fail(
                         "empty version output for {} (cmd={!r}, before={!r})".format(
@@ -876,7 +896,7 @@ class BaseFwUpgradeTest(object):
 
         # Check version and prepare upgrade list
         if not self.checking_components_version(
-            components_to_upgrade, logging=G_VERBOSE
+            components_to_upgrade, logging=G_VERBOSE, retry_on_empty=True
         ):
             # No need upgrading for all components
             # Summary the test with verbose flag
@@ -903,7 +923,9 @@ class BaseFwUpgradeTest(object):
             )
 
         # Get the current version of components on UUT
-        self.checking_components_version(upgraded_components, logging=G_VERBOSE)
+        self.checking_components_version(
+            upgraded_components, logging=G_VERBOSE, retry_on_empty=True
+        )
 
         # Summary test result for only collective test
         self.summary_test(

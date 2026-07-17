@@ -41,6 +41,7 @@
 #include <openbmc/vbs.h>
 #include <openbmc/misc-utils.h>
 #include <signal.h>
+#include <limits.h>
 #include "healthd.h"
 
 #define I2C_BUS_NUM            14
@@ -67,6 +68,13 @@
 #define ADDR_LAST_RECOVER_ECC_OFFSET 0x5c // Address of Last Recoverable ECC Error Addr
 #define MAX_ECC_RECOVERABLE_ERROR_COUNTER 255
 #define MAX_ECC_UNRECOVERABLE_ERROR_COUNTER 15
+
+#define EDAC_SYSFS_PATH_DEFAULT "/sys/devices/system/edac/mc/mc0"
+#define EDAC_CE_COUNT_FILE      "ce_count"
+#define EDAC_UE_COUNT_FILE      "ue_count"
+#define EDAC_RESET_COUNTERS_FILE "reset_counters"
+#define ECC_SOURCE_MCR          0
+#define ECC_SOURCE_EDAC         1
 
 #define BMC_HEALTH_FILE "bmc_health"
 #define HEALTH "1"
@@ -206,6 +214,10 @@ static struct threshold_s *unrec_ecc_threshold;
 static size_t unrec_ecc_threshold_num = 0;
 static unsigned int ecc_recov_max_counter = MAX_ECC_RECOVERABLE_ERROR_COUNTER;
 static unsigned int ecc_unrec_max_counter = MAX_ECC_UNRECOVERABLE_ERROR_COUNTER;
+
+/* EDAC configuration */
+static int ecc_source = ECC_SOURCE_MCR;  // default: direct MCR polling
+static char edac_sysfs_path[PATH_MAX] = EDAC_SYSFS_PATH_DEFAULT;
 
 /* BMC Health Monitor */
 static bool regen_log_enabled = false;
@@ -490,6 +502,32 @@ initialize_ecc_config(json_t *conf) {
   ecc_monitor_enabled = json_is_true(tmp);
   if (!ecc_monitor_enabled) {
     return;
+  }
+  // Parse ecc_source: "edac" or "mcr" (default)
+  tmp = json_object_get(conf, "ecc_source");
+  if (tmp && json_is_string(tmp)) {
+    const char *source = json_string_value(tmp);
+    if (!strcmp(source, "edac")) {
+      ecc_source = ECC_SOURCE_EDAC;
+      syslog(LOG_INFO, "ECC monitoring source: EDAC sysfs");
+    } else {
+      ecc_source = ECC_SOURCE_MCR;
+      syslog(LOG_INFO, "ECC monitoring source: MCR direct");
+    }
+  }
+  // Parse EDAC sysfs path, default is /sys/devices/system/edac/mc/mc0
+  tmp = json_object_get(conf, "edac_sysfs_path");
+  if (tmp && json_is_string(tmp)) {
+    const char *path = json_string_value(tmp);
+
+    if (path && path[0] != '\0') {
+      if (snprintf(edac_sysfs_path, sizeof(edac_sysfs_path), "%s", path) >=
+          (int)sizeof(edac_sysfs_path)) {
+        syslog(LOG_WARNING, "%s: edac_sysfs_path is too long, using default path", __func__);
+        snprintf(edac_sysfs_path, sizeof(edac_sysfs_path), "%s", EDAC_SYSFS_PATH_DEFAULT);
+      }
+      syslog(LOG_INFO, "ECC EDAC sysfs path: %s", edac_sysfs_path);
+    }
   }
   tmp = json_object_get(conf, "ecc_address_log");
   if (tmp || json_is_boolean(tmp)) {
@@ -789,48 +827,66 @@ threshold_check(const char *target, float value, struct threshold_s *thresholds,
 static void ecc_threshold_assert_check(const char *target, int value,
                                        struct threshold_s *thres, uint32_t ecc_err_addr) {
   int thres_counter = 0;
+  bool is_unrecoverable = false;
+  bool is_recoverable = false;
 
   if (strcasestr(target, "Unrecover") != 0ULL) {
+    is_unrecoverable = true;
     thres_counter = (ecc_unrec_max_counter * thres->value / 100);
   } else if (strcasestr(target, "Recover") != 0ULL) {
+    is_recoverable = true;
     thres_counter = (ecc_recov_max_counter * thres->value / 100);
   } else {
     return;
   }
+
   if (!thres->asserted && value > thres_counter) {
     thres->asserted = true;
+
     if (thres->log) {
       if (ecc_addr_log) {
-        syslog(thres->log_level, "%s occurred (over %d%%) "
-            "Counter = %d Address of last recoverable ECC error = 0x%x",
-            target, (int)thres->value, value, (ecc_err_addr >> 4) & 0xFFFFFFFF);
+        if (is_unrecoverable) {
+          syslog(thres->log_level, "%s occurred (over %d%%) "
+              "Counter = %d Address of first unrecoverable ECC error = 0x%x",
+              target, (int)thres->value, value,
+              (ecc_err_addr >> 4) & 0xFFFFFFFF);
+        } else if (is_recoverable) {
+          syslog(thres->log_level, "%s occurred (over %d%%) "
+              "Counter = %d Address of last recoverable ECC error = 0x%x",
+              target, (int)thres->value, value,
+              (ecc_err_addr >> 4) & 0xFFFFFFFF);
+        }
       } else {
         syslog(thres->log_level, "ECC occurred (over %d%%): %s Counter = %d",
             (int)thres->value, target, value);
       }
     }
+
     if (thres->reboot) {
       pal_bmc_reboot(RB_AUTOBOOT);
     }
+
     if (thres->bmc_error_trigger) {
       pthread_mutex_lock(&global_error_mutex);
-      if (!bmc_health) { // assert in bmc_health key only when not yet set
+
+      if (!bmc_health) {
         pal_set_key_value(BMC_HEALTH_FILE, NOT_HEALTH);
       }
-      if (strcasestr(target, "Unrecover") != 0ULL) {
+
+      if (is_unrecoverable) {
         bmc_health = SETBIT(bmc_health, BIT_UNRECOVERABLE_ECC);
-      } else if (strcasestr(target, "Recover") != 0ULL) {
+      } else if (is_recoverable) {
         bmc_health = SETBIT(bmc_health, BIT_RECOVERABLE_ECC);
       } else {
         pthread_mutex_unlock(&global_error_mutex);
         return;
       }
+
       pthread_mutex_unlock(&global_error_mutex);
       pal_bmc_err_enable(target);
     }
   }
 }
-
 static void
 ecc_threshold_check(const char *target, int value, struct threshold_s *thresholds,
                     size_t num, uint32_t ecc_err_addr) {
@@ -1168,6 +1224,62 @@ memory_usage_monitor(void *unused __attribute__((unused))) {
   return NULL;
 }
 
+static int write_edac_reset_counter(void) {
+  char path[PATH_MAX];
+  FILE *fp;
+  int ret;
+
+  ret = snprintf(path, sizeof(path), "%s/%s", edac_sysfs_path, EDAC_RESET_COUNTERS_FILE);
+
+  if (ret < 0 || ret >= (int)sizeof(path)) {
+    return -1;
+  }
+
+  fp = fopen(path, "w");
+  if (!fp) {
+    return -1;
+  }
+
+  if (fputs("1", fp) < 0) {
+    fclose(fp);
+    return -1;
+  }
+
+  fclose(fp);
+  return 0;
+}
+
+static int read_edac_counter(const char *counter_file, uint32_t *value) {
+  char path[PATH_MAX];
+  char buf[32] = {0};
+  FILE *fp;
+  int ret;
+
+  if (counter_file == NULL || value == NULL) {
+    return -1;
+  }
+
+  ret = snprintf(path, sizeof(path), "%s/%s", edac_sysfs_path, counter_file);
+  if (ret < 0 || ret >= (int)sizeof(path)) {
+    return -1;
+  }
+
+  fp = fopen(path, "r");
+  if (!fp) {
+    return -1;
+  }
+
+  if (fgets(buf, sizeof(buf), fp) == NULL) {
+    fclose(fp);
+    return -1;
+  }
+
+  fclose(fp);
+  *value = (uint32_t)strtoul(buf, NULL, 10);
+
+  return 0;
+}
+
 // Thread to monitor the ECC counter
 static void *
 ecc_mon_handler(void *unused __attribute__((unused))) {
@@ -1175,13 +1287,24 @@ ecc_mon_handler(void *unused __attribute__((unused))) {
   uint32_t ecc_status = 0;
   uint32_t unrecover_ecc_err_addr = 0;
   uint32_t recover_ecc_err_addr = 0;
-  uint16_t ecc_recoverable_error_counter = 0;
-  uint8_t ecc_unrecoverable_error_counter = 0;
+  uint32_t ecc_recoverable_error_counter = 0;
+  uint32_t ecc_unrecoverable_error_counter = 0;
   void *mcr_base_addr;
   void *mcr50_addr;
   void *mcr58_addr;
   void *mcr5c_addr;
   int retry_err = 0;
+
+  // EDAC mode: reset EDAC counters
+  if (ecc_source == ECC_SOURCE_EDAC) {
+    if (write_edac_reset_counter() != 0) {
+      syslog(LOG_WARNING, "%s: cannot reset EDAC counters", __func__);
+    } else {
+      syslog(LOG_INFO, "%s: EDAC ECC counters reset", __func__);
+    }
+
+    syslog(LOG_INFO, "%s: EDAC ECC monitoring started", __func__);
+  }
 
   // set flag to notice BMC healthd ecc_mon_handler is ready
   kv_set("flag_healthd_ecc", "1", 0, 0);
@@ -1201,10 +1324,43 @@ ecc_mon_handler(void *unused __attribute__((unused))) {
 
     retry_err = 0;
 
-    mcr_base_addr = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mcr_fd,
-        AST_MCR_BASE);
-    mcr50_addr = (char*)mcr_base_addr + INTR_CTRL_STS_OFFSET;
-    ecc_status = *(volatile uint32_t*) mcr50_addr;
+    mcr_base_addr = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, mcr_fd, AST_MCR_BASE);
+    if (mcr_base_addr == MAP_FAILED) {
+      syslog(LOG_ERR, "%s - cannot mmap MCR", __func__);
+      close(mcr_fd);
+      sleep(ecc_monitor_interval);
+      continue;
+    }
+
+    // Read counter: EDAC from sysfs, MCR from register
+    if (ecc_source == ECC_SOURCE_EDAC) {
+      uint32_t ce_count = 0, ue_count = 0;
+
+      if (read_edac_counter(EDAC_CE_COUNT_FILE, &ce_count) != 0 ||
+          read_edac_counter(EDAC_UE_COUNT_FILE, &ue_count) != 0) {
+        syslog(LOG_WARNING, "%s: cannot read EDAC ECC counters", __func__);
+        munmap(mcr_base_addr, PAGE_SIZE);
+        close(mcr_fd);
+        sleep(ecc_monitor_interval);
+        continue;
+      }
+
+      ecc_recoverable_error_counter = ce_count;
+      ecc_unrecoverable_error_counter = ue_count;
+    } else {
+      mcr50_addr = (char*)mcr_base_addr + INTR_CTRL_STS_OFFSET;
+      ecc_status = *(volatile uint32_t*) mcr50_addr;
+      ecc_recoverable_error_counter = (ecc_status >> 16) & 0xFF;
+      ecc_unrecoverable_error_counter = (ecc_status >> 12) & 0xF;
+    }
+
+    if (ecc_recoverable_error_counter > ecc_recov_max_counter) {
+      ecc_recoverable_error_counter = ecc_recov_max_counter;
+    }
+    if (ecc_unrecoverable_error_counter > ecc_unrec_max_counter) {
+      ecc_unrecoverable_error_counter = ecc_unrec_max_counter;
+    }
+
     if (ecc_addr_log) {
       mcr58_addr = (char*)mcr_base_addr + ADDR_FIRST_UNRECOVER_ECC_OFFSET;
       unrecover_ecc_err_addr = *(volatile uint32_t*) mcr58_addr;
@@ -1213,9 +1369,6 @@ ecc_mon_handler(void *unused __attribute__((unused))) {
     }
     munmap(mcr_base_addr, PAGE_SIZE);
     close(mcr_fd);
-
-    ecc_recoverable_error_counter = (ecc_status >> 16) & 0xFF;
-    ecc_unrecoverable_error_counter = (ecc_status >> 12) & 0xF;
 
     // Check ECC recoverable error counter
     ecc_threshold_check(recoverable_ecc_name, ecc_recoverable_error_counter,
@@ -1264,6 +1417,14 @@ bmc_health_monitor(void *unused __attribute__((unused)))
         recov_ecc_threshold[i].asserted = false;
       for(i = 0; i < unrec_ecc_threshold_num; i++)
         unrec_ecc_threshold[i].asserted = false;
+
+      if (ecc_source == ECC_SOURCE_EDAC) {
+        if (write_edac_reset_counter() != 0) {
+          syslog(LOG_WARNING, "Failed to reset EDAC ECC counters");
+        } else {
+          syslog(LOG_INFO, "EDAC ECC counters reset");
+        }
+      }
 
       pthread_mutex_lock(&global_error_mutex);
       bmc_health = 0;

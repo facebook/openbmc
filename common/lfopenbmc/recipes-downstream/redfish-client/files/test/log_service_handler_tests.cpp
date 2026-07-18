@@ -804,7 +804,7 @@ static constexpr const char* kThermalEntryCollectionJson = R"(
 {
     "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries",
     "@odata.type": "#LogEntryCollection.LogEntryCollection",
-    "Members@odata.count": 2,
+    "Members@odata.count": 3,
     "Members": [
         {
             "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries/1863",
@@ -835,6 +835,21 @@ static constexpr const char* kThermalEntryCollectionJson = R"(
                     "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/Processors/GPU_SXM_8"
                 }
             }
+        },
+        {
+            "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries/5024",
+            "@odata.type": "#LogEntry.v1_15_0.LogEntry",
+            "Id": "5024",
+            "Created": "2025-01-01T12:00:00+00:00",
+            "EntryType": "Event",
+            "MessageId": "ResourceEvent.1.0.ResourceErrorsDetected",
+            "MessageArgs": ["GPU_4 THERM_OVERT_INT", "Abnormal State Change"],
+            "Severity": "Critical",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/Processors/GPU_4"
+                }
+            }
         }
     ]
 }
@@ -856,7 +871,7 @@ TEST_F(LogServiceHandlerTest, HgxThermalMapperTest)
       co_await logServiceHandler->commit(logEntryCollection);
     }());
 
-    ASSERT_EQ(2, logManager.logs->size());
+    ASSERT_EQ(3, logManager.logs->size());
 
     // Verify the first entry: Warning
     Log log1 = (*logManager.logs)[0];
@@ -873,6 +888,14 @@ TEST_F(LogServiceHandlerTest, HgxThermalMapperTest)
               log2.message);
     EXPECT_EQ("/redfish/v1/Systems/HGX_Baseboard_0/Processors/GPU_SXM_8",
               log2.additionalData["DEVICE"]);
+
+    // Verify the third entry: THERM_OVERT_INT (Critical)
+    Log log3 = (*logManager.logs)[2];
+    EXPECT_EQ(LoggingLevel::Critical, log3.severity);
+    EXPECT_EQ("xyz.openbmc_project.State.Thermal.DeviceOverOperatingTemperatureFault"s,
+              log3.message);
+    EXPECT_EQ("/redfish/v1/Systems/HGX_Baseboard_0/Processors/GPU_4",
+              log3.additionalData["DEVICE"]);
 }
 
 static constexpr const char* kLeakDetectorEntryCollectionJson = R"(

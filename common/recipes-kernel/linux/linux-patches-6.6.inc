@@ -12,6 +12,7 @@ SRC_URI:append = " \
     file://0006-net-ftgmac100-reset-MAC-by-SCU-on-RMII.patch \
     file://0007-net-ftgmac100-Get-link-speed-and-duplex-for-NC-SI.patch \
     file://0008-net-ncsi-check-for-netlink-driven-responses-before-r.patch \
+    file://0009-leds-pca9532-Fix-inverted-GPIO-output-polarity.patch \
 "
 
 #

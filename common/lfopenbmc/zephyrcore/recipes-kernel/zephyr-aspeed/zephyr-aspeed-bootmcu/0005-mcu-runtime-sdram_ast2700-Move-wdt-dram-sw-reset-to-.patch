@@ -1,9 +1,10 @@
-From 7ff611cbbc7da5c111979e981b1bb38e35cf8a4a Mon Sep 17 00:00:00 2001
+From bb0192bacd283371383a6d8a0dfb85d02cbf3219 Mon Sep 17 00:00:00 2001
 From: Cool Lee <cool_lee@aspeedtech.com>
 Date: Wed, 10 Jun 2026 12:44:08 +0800
 Subject: [PATCH] mcu-runtime: sdram_ast2700: Move wdt dram sw reset to 7
 
-Move WDT dram reset from WDT0 to WDT7.
+WDT SW reset is reserved for customer application, move to an unused
+wdt.
 
 Signed-off-by: Cool Lee <cool_lee@aspeedtech.com>
 Change-Id: Ia938c321ee2aa4b3d559272dddb06010eb6d65d7

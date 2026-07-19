@@ -1,0 +1,97 @@
+From 145c52994712a8cf6d601b75c60cef53b53d5fe3 Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Thu, 18 Jun 2026 13:49:25 +0800
+Subject: [PATCH] mcu-runtime: sdram_ast2700: disable DARB recovery for SSP/TSP
+
+SSP/TSP data accesses are routed to the DRAMC port served by DARB2
+(0x12c01200). Under certain conditions an SSP/TSP reset leaves the
+master's outstanding requests stuck so it can no longer access DRAM
+after the reset.
+
+Disable the DARB2 master request recovery request for the TSP (bit5)
+and SSP (bit14) data masters by setting their bits in the DARB Master
+Request Recovery Control Register (offset 0x88). The setting is applied
+once at the end of dram_init(), after the init retry loop and QoS setup,
+so it is in effect before SSP/TSP are loaded and survives later SSP/TSP
+resets (which go through SCU and do not re-run dram_init).
+
+The helper takes the DARB base and a master mask so other masters or
+DARB instances can be handled the same way; note the master-to-bit
+mapping differs per DARB instance.
+
+Change-Id: I60c7b68216317545bf1060ab82917db62d2f8025
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+---
+ .../soc/ast2700/include/sdram_ast2700.h       | 21 +++++++++++++++++++
+ apps/mcu-runtime/soc/ast2700/sdram_ast2700.c  | 16 ++++++++++++++
+ 2 files changed, 37 insertions(+)
+
+diff --git a/apps/mcu-runtime/soc/ast2700/include/sdram_ast2700.h b/apps/mcu-runtime/soc/ast2700/include/sdram_ast2700.h
+index 503aca4..ff47af7 100644
+--- a/apps/mcu-runtime/soc/ast2700/include/sdram_ast2700.h
++++ b/apps/mcu-runtime/soc/ast2700/include/sdram_ast2700.h
+@@ -25,6 +25,27 @@
+ 
+ #define DRAMC_BASE			(0x12c00000)
+ #define DRAMC_PHY_BASE			(0x13000000)
++
++/*
++ * DRAM Memory Bus Arbiter (DARB). One DARB per DRAMC port; each block is
++ * 0x100 apart. Masters are routed to a DRAMC port via its DARB instance.
++ */
++#define DARB_BASE			(0x12c01000)
++#define DARBn_BASE(n)			(DARB_BASE + (n) * 0x100)
++#define DARB0_BASE			DARBn_BASE(0)
++#define DARB1_BASE			DARBn_BASE(1)
++#define DARB2_BASE			DARBn_BASE(2)
++#define DARB3_BASE			DARBn_BASE(3)
++
++/*
++ * DARB Master Request Recovery Control Register (offset 0x88). Each bit
++ * disables the reset recovery request for one master, but the master-to-bit
++ * mapping differs per DARB instance, so these bit defines are DARB-specific.
++ */
++#define DARB_REQ_RECOVERY_CTRL		(0x88)
++/* DARB2 master indices */
++#define DARB2_RECOVERY_TSP_DATA		BIT(5)
++#define DARB2_RECOVERY_SSP_DATA		BIT(14)
+ #define dwc_ddrphy_apb_wr(addr, value)		(*(volatile unsigned short *)(DRAMC_PHY_BASE + 2 * (addr)) = (unsigned short)value)
+ #define dwc_ddrphy_apb_rd(addr)			(*(volatile unsigned short *)(DRAMC_PHY_BASE + 2 * (addr)))
+ 
+diff --git a/apps/mcu-runtime/soc/ast2700/sdram_ast2700.c b/apps/mcu-runtime/soc/ast2700/sdram_ast2700.c
+index c92131a..ea7f2ab 100644
+--- a/apps/mcu-runtime/soc/ast2700/sdram_ast2700.c
++++ b/apps/mcu-runtime/soc/ast2700/sdram_ast2700.c
+@@ -1119,6 +1119,18 @@ static void sdramc_qos_init(struct sdramc *sdramc)
+                (uint32_t)&sdramc->regs->port[1].cfg);
+ }
+ 
++/*
++ * Disable the DARB master request recovery for the given masters on the
++ * DARB instance at @darb_base. Setting a master's bit to 1 disables its
++ * reset recovery request, which avoids the master being unable to access
++ * DRAM after a reset (e.g. the SSP/TSP data masters after an SSP/TSP reset).
++ * @master_mask is an OR of DARB_RECOVERY_* bits.
++ */
++static void sdramc_darb_recovery_disable(uint32_t darb_base, uint32_t master_mask)
++{
++	sys_set_bits(darb_base + DARB_REQ_RECOVERY_CTRL, master_mask);
++}
++
+ void sdramc_reset(struct sdramc *sdramc)
+ {
+ 	// enable phy clock.
+@@ -1235,6 +1247,10 @@ int dram_init(struct ast_chip *chip)
+ 
+ 	sdramc_qos_init(sdramc);
+ 
++	/* SSP/TSP data masters are routed to DRAMC port served by DARB2 */
++	sdramc_darb_recovery_disable(DARB2_BASE,
++				     DARB2_RECOVERY_TSP_DATA | DARB2_RECOVERY_SSP_DATA);
++
+ 	LOG_DBG("%s is successfully initialized\n", ac->desc);
+ 	sdramc_set_flag(DRAMC_INIT_DONE);
+ 
+-- 
+2.34.1
+

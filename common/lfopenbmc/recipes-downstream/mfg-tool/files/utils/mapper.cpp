@@ -52,12 +52,16 @@ static inline auto all_properties(sdbusplus::async::context& ctx,
     -> sdbusplus::async::task<property_map>
 {
     property_map props{};
-    for (auto&& [name, value] :
-         co_await sdbusplus::async::proxy()
-             .service(service)
-             .path(path)
-             .interface(interface)
-             .get_all_properties<property_variant>(ctx))
+    // Note: the co_await result is hoisted into a local rather than used
+    // directly as the range-init of the for loop.  Awaiting inside a
+    // range-based-for expression triggers an internal compiler error in the
+    // GCC coroutine transform (get_callee_fndecl, tree.cc) on gcc 16.1.
+    auto all = co_await sdbusplus::async::proxy()
+                   .service(service)
+                   .path(path)
+                   .interface(interface)
+                   .get_all_properties<property_variant>(ctx);
+    for (auto&& [name, value] : all)
     {
         props.emplace(name, value);
     }

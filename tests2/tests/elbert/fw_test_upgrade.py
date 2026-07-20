@@ -39,7 +39,11 @@ class FwUpgradeTest(unittest.TestCase):
     _COMPONENTS = {
         "bios": [
             1,
-            "/usr/local/bin/bios_util.sh write {filename} --init-aconf",
+            (
+                "/usr/local/bin/wedge_power.sh off && sleep 60 && "
+                "/usr/local/bin/bios_util.sh write {filename} --init-aconf; "
+                "RC=$?; /usr/local/bin/wedge_power.sh on; exit $RC"
+            ),
         ],  # priority=1, upgrade_cmd
         "scm": [
             2,

@@ -102,6 +102,8 @@ SRC_URI:append = " \
     file://0613-hwmon-pmbus-lm25066-add-current-limit-configuration-.patch \
     file://0614-nfc-nxp-nci-Add-ISO15693-support.patch \
     file://0615-misc-amd-apml-Add-Venice-B0-I3C-device-IDs.patch \
+    file://0616-dt-bindings-trivial-devices-Add-adi-max20912-and-max.patch \
+    file://0617-hwmon-pmbus-Add-driver-for-Analog-Devices-MAX20912-a.patch \
 "
 
 #

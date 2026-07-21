@@ -428,6 +428,8 @@ PAL_SENSOR_MAP dpb_sensor_map[] = {
   {"PTB_DCMODULE0_12V_PWR_W", EXPANDER, NULL, false, {1063.92, 0, 0, 0, 0, 0, 0, 0}, POWER},
   [PTB_P12V_PU3_DC_MODULE_Power] =
   {"PTB_DCMODULE1_12V_PWR_W", EXPANDER, NULL, false, {1063.92, 0, 0, 0, 0, 0, 0, 0}, POWER},
+  [PTB_P48V_AUX_TEMP] =
+  {"PTB_HSC_48V_AUX_TEMP_C", EXPANDER, NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [FAN_0_FRONT] =
   {"DPB_FAN0_FRONT_TACH_RPM", EXPANDER, NULL, false, {13000, 12700, 0, 700, 800, 0, 0, 0}, FAN},
   [FAN_0_REAR] =
@@ -753,6 +755,8 @@ PAL_SENSOR_MAP dvt_dpb_sensor_map[] = {
   {"PTB_TSENSE_48V_VOLT_mV", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
   [PTB_U35_ADC_MONITOR_V] =
   {"PTB_TSENSE_GND_VOLT_mV", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
+  [PTB_P48V_AUX_TEMP] =
+  {"PTB_HSC_48V_AUX_TEMP_C", EXPANDER, NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [FAN_0_FRONT] =
   {"DPB_FAN0_FRONT_TACH_RPM", EXPANDER, NULL, false, {13000, 12700, 0, 700, 800, 0, 0, 0}, FAN},
   [FAN_0_REAR] =
@@ -1507,6 +1511,7 @@ const uint8_t dpb_sensor_list[] = {
   PTB_P48V_AUX_Power,
   PTB_P12V_PU2_DC_MODULE_Power,
   PTB_P12V_PU3_DC_MODULE_Power,
+  PTB_P48V_AUX_TEMP,
   FAN_0_FRONT,
   FAN_0_REAR,
   FAN_1_FRONT,
@@ -1671,6 +1676,7 @@ const uint8_t dvt_dpb_sensor_list[] = {
   PTB_P12V_PU3_DC_MODULE_TEMP,
   PTB_U34_ADC_MONITOR_V,
   PTB_U35_ADC_MONITOR_V,
+  PTB_P48V_AUX_TEMP,
   FAN_0_FRONT,
   FAN_0_REAR,
   FAN_1_FRONT,

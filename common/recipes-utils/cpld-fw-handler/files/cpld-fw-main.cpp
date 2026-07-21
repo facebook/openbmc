@@ -8,16 +8,20 @@
 #include <fcntl.h>
 #include <cstdio>
 #include <string>
+#ifdef ENABLE_EVENTS
 #include <phosphor-logging/lg2.hpp>
 #include <phosphor-logging/commit.hpp>
 #include <xyz/openbmc_project/Software/Update/event.hpp>
+#endif
 
 #include <chrono>
 
+#ifdef ENABLE_EVENTS
 using TargetDetermined = sdbusplus::event::xyz::openbmc_project::software::Update::TargetDetermined;
 using UpdateSuccessful = sdbusplus::event::xyz::openbmc_project::software::Update::UpdateSuccessful;
 using ApplyFailed = sdbusplus::error::xyz::openbmc_project::software::Update::ActivateFailed;
 using VerificationFailed = sdbusplus::error::xyz::openbmc_project::software::Update::VerificationFailed;
+#endif
 
 enum class SEL_TYPE
 {
@@ -45,6 +49,7 @@ inline std::string to_string(CpldType type)
     }
 }
 
+#ifdef ENABLE_EVENTS
 static bool isAllowSel(const std::string& imagePath, const std::string& chip)
 {
     return !imagePath.empty() && !chip.empty();
@@ -111,6 +116,13 @@ void addSelBySelType(SEL_TYPE selType,
         }
     }
 }
+#else
+inline void addSelBySelType(
+    SEL_TYPE /*selType*/, const std::string& /*imagePath*/,
+    const std::string& /*chip*/, const std::string& /*deviceType*/,
+    const std::string& /*info*/)
+{}
+#endif
 
 static std::string getCpldType(std::string_view cpldName)
 {

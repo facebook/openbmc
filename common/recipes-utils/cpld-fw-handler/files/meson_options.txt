@@ -5,3 +5,10 @@ option(
     description: '''Support to update EBR_INIT data so BMC could update
                     Nuvoton MGM CPLD firmware.'''
 )
+
+option(
+    'enable-events',
+    type: 'feature',
+    value: 'enabled',
+    description: 'Enable event logs for CPLD FW update.'
+)

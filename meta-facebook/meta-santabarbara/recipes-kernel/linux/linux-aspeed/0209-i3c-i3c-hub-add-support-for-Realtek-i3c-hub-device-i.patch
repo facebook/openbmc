@@ -1,0 +1,36 @@
+From 51db908ef33224ea68fd0c17ec28e927eff46eee Mon Sep 17 00:00:00 2001
+From: Fred Chen <Fred.Chen@quantatw.com>
+Date: Mon, 6 Jul 2026 19:15:50 +0800
+Subject: [PATCH] i3c: i3c-hub: add support for Realtek i3c hub device id
+
+Add the Realtek I3C hub ID to the existing Renesas driver to support
+the second-source hub for the PVT build.
+
+- The native Realtek driver is currently being redesigned upstream for
+  a more generic architecture, which requires time to refactor and test.
+- As recommended by the vendor, we temporarily use the Renesas driver
+  with the new ID to ensure compatibility and hit the PVT deadline.
+
+realtek hub lore: https://lore.kernel.org/all/20260525125128.297-2-zain_zhou@realsil.com.cn/
+---
+ drivers/i3c/i3c-hub.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/drivers/i3c/i3c-hub.c b/drivers/i3c/i3c-hub.c
+index f0df26db7..8fbdc4e16 100644
+--- a/drivers/i3c/i3c-hub.c
++++ b/drivers/i3c/i3c-hub.c
+@@ -296,6 +296,10 @@ static const struct i3c_hub_devdata {
+ 	{ 0x8812, 8 },
+ 	{ 0x4912, 4 },
+ 	{ 0x8912, 8 },
++	{ 0x4000, 4 },
++	{ 0x4100, 4 },
++	{ 0x8000, 8 },
++	{ 0x8100, 8 },
+ };
+ 
+ #define VIO_EXTERNAL	0x00u
+-- 
+2.39.3
+

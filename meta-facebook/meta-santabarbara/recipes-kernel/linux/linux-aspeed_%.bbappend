@@ -25,5 +25,6 @@ SRC_URI:append = " \
     file://0206-i3c-i3c-hub-Improve-SMBus-Agent-reset-function.patch \
     file://0207-i3c-i3c-hub-Improve-SMBus-Agent-buf-id-sync.patch \
     file://0208-i3c-i3c-hub-Check-VIOS-power-good-status.patch \
+    file://0209-i3c-i3c-hub-add-support-for-Realtek-i3c-hub-device-i.patch \
     file://santabarbara-local.cfg \
 "

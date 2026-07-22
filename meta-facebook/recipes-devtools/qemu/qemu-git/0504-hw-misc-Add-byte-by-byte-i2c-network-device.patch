@@ -5,11 +5,11 @@ Subject: [PATCH] hw/misc: Add byte-by-byte i2c network device
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 ---
- hw/misc/i2c-netdev2.c         | 259 ++++++++++++++++++++++++++++++++++
+ hw/misc/i2c-netdev2.c         | 262 ++++++++++++++++++++++++++++++++++
  hw/misc/meson.build           |   2 +-
  tests/qtest/aspeed_i2c-test.c | 243 +++++++++++++++++++++++++++++++
  tests/qtest/meson.build       |   1 +
- 4 files changed, 504 insertions(+), 1 deletion(-)
+ 4 files changed, 507 insertions(+), 1 deletion(-)
  create mode 100644 hw/misc/i2c-netdev2.c
  create mode 100644 tests/qtest/aspeed_i2c-test.c
 
@@ -18,7 +18,7 @@ new file mode 100644
 index 0000000000..732cebd822
 --- /dev/null
 +++ b/hw/misc/i2c-netdev2.c
-@@ -0,0 +1,259 @@
+@@ -0,0 +1,262 @@
 +#include "qemu/osdep.h"
 +#include "qemu/main-loop.h"
 +#include "qapi/error.h"
@@ -112,6 +112,9 @@ index 0000000000..732cebd822
 +    switch (len) {
 +    case START_LEN:
 +        i2c_bus_master(s->bus, s->bh);
++        /* i2c_bus_master() only queues; kick the scheduler so an idle bus
++         * runs s->bh (no-op if busy, release runs it later). */
++        i2c_schedule_pending_master(s->bus);
 +        break;
 +    case DATA_LEN:
 +        qemu_bh_schedule(s->bh);

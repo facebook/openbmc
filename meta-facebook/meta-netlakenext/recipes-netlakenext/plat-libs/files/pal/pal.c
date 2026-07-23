@@ -1129,6 +1129,10 @@ pal_write_error_code_file(unsigned char error_code_update, uint8_t error_code_st
   }
 
   err_file = fopen(ERR_CODE_BIN, "r+");
+  if (err_file == NULL) {
+    syslog(LOG_WARNING, "%s: fail to open %s file because %s ", __func__, ERR_CODE_BIN, strerror(errno));
+    return -1;
+  }
 
   ret = pal_flock_retry(fileno(err_file));
   if (ret < 0) {
@@ -1638,6 +1642,12 @@ pal_set_uart_routing(uint8_t routing) {
 
   lpc_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, lpc_fd,
              AST_LPC_BASE);
+  if (lpc_reg == MAP_FAILED) {
+    syslog(LOG_ERR, "%s: mmap failed: %s", __func__, strerror(errno));
+    close(lpc_fd);
+    return -1;
+  }
+
   lpc_hicr = (char*)lpc_reg + HICRA_OFFSET;
 
   // Read HICRA register
@@ -1837,7 +1847,7 @@ int pal_dimm_page_init()
   uint8_t rlen = DIMM_TEMP_LEN;
 
   for (size_t id = 0; id < sizeof(dimm_addr_list); id++) {
-    fd = i2c_cdev_slave_open(I2C_BUS5, dimm_addr_list[id] >> 1,
+    fd = i2c_cdev_slave_open(DIMM_BUS, dimm_addr_list[id] >> 1,
                             I2C_SLAVE_FORCE_CLAIM);
     if (fd < 0) {
       syslog(LOG_ERR, "Failed to open DIMM 0x%x\n", dimm_addr_list[id]);
@@ -1858,14 +1868,14 @@ int pal_dimm_page_init()
 
     if (ret < 0) {
       syslog(LOG_ERR, "%s() Failed to set 2-byte mode %x-%x", __func__,
-            I2C_BUS5, dimm_addr_list[id]);
+            DIMM_BUS, dimm_addr_list[id]);
       close(fd);
       return -1;
     }
+    close(fd);
     retry = SENSOR_RETRY_TIME;
   }
 
-  close(fd);
   return 0;
 }
 
@@ -1943,4 +1953,92 @@ pal_get_power_limit(uint8_t slot_id, uint8_t *req_data, uint8_t *res_data, uint8
   *res_len = SIZE_CPU_POWER_LIMIT_DATA;
 
   return ret;
+}
+
+static int pal_pmic_modify_reg(int fd, uint8_t addr, uint8_t offset, 
+                        uint8_t mask, uint8_t value)
+{
+  int ret = 0;
+  uint8_t retry = SENSOR_RETRY_TIME;
+  uint8_t tbuf[2];
+  uint8_t rbuf = 0;
+  uint8_t rlen = 1;
+
+  // read raw data
+  do {
+    ret = i2c_rdwr_msg_transfer(fd, addr, &offset, sizeof(offset), &rbuf, rlen);
+    if (ret != 0) {
+      usleep(SENSOR_RETRY_INTERVAL_USEC);
+    }
+  } while ((ret < 0) && ((retry--) > 0));
+
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to read %x-%x", __func__, DIMM_BUS, addr);
+    return -1;
+  }
+
+  tbuf[0] = offset;
+  tbuf[1] = (rbuf & ~mask) | value;
+
+  retry = SENSOR_RETRY_TIME;
+  // modify the register
+  do {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, sizeof(tbuf), NULL, 0);
+    if (ret != 0) {
+      usleep(SENSOR_RETRY_INTERVAL_USEC);
+    }
+  } while ((ret < 0) && ((retry--) > 0));
+
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to set reg %x-%x", __func__, DIMM_BUS, addr);
+    return -1;
+  }
+
+  return 0;
+}
+
+int pal_pmic_pwr_setting()
+{
+  int fd = 0;
+  const uint8_t pmic_addr_list[] = {
+    PMICA_ADDR,
+    PMICB_ADDR,
+  };
+
+  for (size_t id = 0; id < sizeof(pmic_addr_list); id++) {
+    fd = i2c_cdev_slave_open(DIMM_BUS, pmic_addr_list[id] >> 1,
+                            I2C_SLAVE_FORCE_CLAIM);
+    if (fd < 0) {
+      syslog(LOG_ERR, "Failed to open PMIC 0x%x\n", pmic_addr_list[id]);
+      return -1;
+    }
+    // set 0x30 bit 7 as 1 to enable ADC
+    int ret = pal_pmic_modify_reg(fd, pmic_addr_list[id], PMIC_ADC_REG, 0, (1 << 7));
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Failed to enable PMIC ADC %x-%x", __func__,
+            DIMM_BUS, pmic_addr_list[id]);
+      close(fd);
+      return -1;
+    }
+
+    // set 0x1A bit 1 as 1 to read total power value
+    ret = pal_pmic_modify_reg(fd, pmic_addr_list[id], PMIC_TOTAL_PWR, 0, (1 << 1));
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Failed to set PMIC total power %x-%x", __func__,
+            DIMM_BUS, pmic_addr_list[id]);
+      close(fd);
+      return -1;
+    }
+    // set 0x1B bit 6 as 1 to read power value
+    ret = pal_pmic_modify_reg(fd, pmic_addr_list[id], PMIC_PWR_SELECT, 0, (1 << 6));
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Failed to set PMIC power read %x-%x", __func__,
+            DIMM_BUS, pmic_addr_list[id]);
+      close(fd);
+      return -1;
+    }
+    close(fd);
+  }
+
+  return 0;
 }

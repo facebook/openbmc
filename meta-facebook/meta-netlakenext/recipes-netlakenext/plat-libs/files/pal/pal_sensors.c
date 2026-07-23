@@ -22,7 +22,7 @@ static int read_adc_val(uint8_t id, float *value);
 static int read_battery_val(uint8_t id, float *value);
 static int read_temp(uint8_t id, float *value);
 static int read_dimm_temp(uint8_t id, float *value);
-static int read_cpu_temp(uint8_t id, float *value);
+static int read_dimm_pwr(uint8_t id, float *value);
 static int read_rpm(uint8_t id, float *value);
 static int read_pmbus(uint8_t id, float *value);
 static int read_hsc(uint8_t id, float *value);
@@ -30,7 +30,7 @@ static int read_cpld_adc(uint8_t id, float *value);
 static int read_ina230_pwr(uint8_t id, float *value);
 static int read_nvme_temp(uint8_t id, float *value);
 static int read_nic_temp(uint8_t id, float *value);
-static int retryDIMM = 0;
+static int read_cpu_hwmon(uint8_t id, float *value);
 static int retrySensor = 0;
 static int retryFAN[4] = {0, 0, 0, 0};
 
@@ -41,11 +41,17 @@ PAL_SENSOR_MAP server_sensor_map[] = {
   [SERVER_OUTLET_TEMP] =
   {"NETLAKE2_OUTLET_TEMP", MB_OUTLET, read_temp, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [SERVER_SOC_TEMP] =
-  {"SOC_TEMP", SOC_TEMP, read_cpu_temp, POST_COMPLT_READING, {85, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  {"SOC_TEMP", SOC_TEMP, read_cpu_hwmon, POST_COMPLT_READING, {85, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  [SERVER_SOC_PWR] =
+  {"SOC_PWR", SOC_PWR, read_cpu_hwmon, POST_COMPLT_READING, {77.25, 76.5, 78, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
   [SERVER_DIMMA_TEMP] =
   {"DIMMA_TEMP", DIMMA_TEMP, read_dimm_temp, POST_COMPLT_READING, {85, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  [SERVER_DIMMA_PWR] =
+  {"DIMMA_PWR", PMIC_DIMMA_PWR, read_dimm_pwr, POST_COMPLT_READING, {10, 0, 0, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
   [SERVER_DIMMB_TEMP] =
   {"DIMMB_TEMP", DIMMB_TEMP, read_dimm_temp, POST_COMPLT_READING, {85, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  [SERVER_DIMMB_PWR] =
+  {"DIMMB_PWR", PMIC_DIMMB_PWR, read_dimm_pwr, POST_COMPLT_READING, {10, 0, 0, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
   [SERVER_A_P12V_STBY_NETLAKE2_VOL] =
   {"A_P12V_STBY_NETLAKE2_VOL", CPLD_ADC_P12V_STBY, read_cpld_adc, STBY_READING, {13.35, 13.22, 13.48, 10.71, 10.82, 10.6, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [SERVER_A_P3V3_STBY_NETLAKE2_VOL] =
@@ -164,8 +170,11 @@ const uint8_t server_sensor_list[] = {
   SERVER_INLET_TEMP,
   SERVER_OUTLET_TEMP,
   SERVER_SOC_TEMP,
+  SERVER_SOC_PWR,
   SERVER_DIMMA_TEMP,
+  SERVER_DIMMA_PWR,
   SERVER_DIMMB_TEMP,
+  SERVER_DIMMB_PWR,
   SERVER_A_P12V_STBY_NETLAKE2_VOL,
   SERVER_A_P3V3_STBY_NETLAKE2_VOL,
   SERVER_A_P1V8_STBY_NETLAKE2_VOL,
@@ -214,6 +223,11 @@ const uint8_t dimm_addr_list[] = {
   DIMMB_ADDR,
 };
 
+const uint8_t pmic_addr_list[] = {
+  PMICA_ADDR,
+  PMICB_ADDR,
+};
+
 const uint8_t pdb_sensor_list[] = {
   FAN0_TACH,
   FAN1_TACH,
@@ -229,11 +243,12 @@ const uint8_t nic_sensor_list[] = {
   BMC_OCP_NIC_TEMP,
 };
 
-PAL_DEV_INFO temp_dev_list[] = {
+PAL_DEV_INFO hwmon_dev_list[] = {
   {"tmp75-i2c-4-4c",  "MB_INLET_TEMP"},
   {"tmp75-i2c-4-4a",  "MB_OUTLET_TEMP"},
   {"tmp75-i2c-10-48",  "FIO_INLET_TEMP"},
   {"sbtsi_0.0-i2c-1-4c",  "SOC_TEMP"},
+  {"sbrmi_0.0-i2c-1-3c",  "SOC_PWR"},
 };
 
 PAL_PMBUS_INFO pmbus_dev_table[] = {
@@ -367,30 +382,30 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 **/
 static int
 read_temp(uint8_t id, float *value) {
-  if (id >= ARRAY_SIZE(temp_dev_list)) {
+  if (id >= ARRAY_SIZE(hwmon_dev_list)) {
     return ERR_SENSOR_NA;
   }
 
-  return sensors_read(temp_dev_list[id].chip, temp_dev_list[id].label, value);
+  return sensors_read(hwmon_dev_list[id].chip, hwmon_dev_list[id].label, value);
 }
 
 static int
-read_cpu_temp(uint8_t id, float *value) {
+read_cpu_hwmon(uint8_t id, float *value) {
   if (value == NULL) {
     syslog(LOG_ERR, "%s: invalid parameter: value pointer is NULL", __func__);
     return -1;
   }
 
-  if (id >= ARRAY_SIZE(temp_dev_list)) {
+  if (id >= ARRAY_SIZE(hwmon_dev_list)) {
     return ERR_SENSOR_NA;
   }
 
   int ret = 0;
-  ret = sensors_read(temp_dev_list[id].chip, temp_dev_list[id].label, value);
+  ret = sensors_read(hwmon_dev_list[id].chip, hwmon_dev_list[id].label, value);
   if ((ret < 0) && (retrySensor < SENSOR_RETRY_TIME)) {
     sensors_reinit();
     sleep(POWER_ON_SENSOR_RETRY_SEC);
-    ret = sensors_read(temp_dev_list[id].chip, temp_dev_list[id].label, value);
+    ret = sensors_read(hwmon_dev_list[id].chip, hwmon_dev_list[id].label, value);
     if (ret != 0) {
       retrySensor++;
     }
@@ -414,7 +429,7 @@ read_dimm_temp(uint8_t id, float *value) {
   uint8_t rlen = DIMM_TEMP_LEN;
   uint8_t low_byte = 0, high_byte = 0;
 
-  fd = i2c_cdev_slave_open(I2C_BUS5, dimm_addr_list[id] >> 1,
+  fd = i2c_cdev_slave_open(DIMM_BUS, dimm_addr_list[id] >> 1,
                           I2C_SLAVE_FORCE_CLAIM);
   if (fd < 0) {
     syslog(LOG_ERR, "Failed to open DIMM 0x%x\n", dimm_addr_list[id]);
@@ -432,7 +447,7 @@ read_dimm_temp(uint8_t id, float *value) {
 
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Failed to get lowbyte reading %x-%x", __func__,
-          I2C_BUS5, dimm_addr_list[id]);
+          DIMM_BUS, dimm_addr_list[id]);
     close(fd);
     return -1;
   }
@@ -451,7 +466,7 @@ read_dimm_temp(uint8_t id, float *value) {
 
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Failed to get highbyte reading %x-%x", __func__,
-          I2C_BUS5, dimm_addr_list[id]);
+          DIMM_BUS, dimm_addr_list[id]);
     close(fd);
     return -1;
   }
@@ -470,6 +485,48 @@ read_dimm_temp(uint8_t id, float *value) {
   *value = temp;
   close(fd);
   return ret;
+}
+
+static int
+read_dimm_pwr(uint8_t id, float *value) {
+  if (value == NULL) {
+    syslog(LOG_ERR, "%s: invalid parameter: value pointer is NULL", __func__);
+    return -1;
+  }
+
+  int ret = 0, fd = 0;
+  uint8_t retry = SENSOR_RETRY_TIME;
+  uint8_t tbuf = PMIC_VDD_READ;
+  uint8_t tlen = sizeof(tbuf);
+  uint8_t rbuf = 0;
+  uint8_t rlen = 1;
+
+  fd = i2c_cdev_slave_open(DIMM_BUS, pmic_addr_list[id] >> 1,
+                          I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_ERR, "Failed to open PMIC 0x%x\n", pmic_addr_list[id]);
+    return -1;
+  }
+
+  do {
+    ret = i2c_rdwr_msg_transfer(fd, pmic_addr_list[id],
+                                &tbuf, tlen, &rbuf, rlen);
+    if (ret != 0) {
+      usleep(SENSOR_RETRY_INTERVAL_USEC);
+    }
+  } while ((ret < 0) && ((retry--) > 0));
+
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to read DIMM power %x-%x", __func__,
+          DIMM_BUS, pmic_addr_list[id]);
+    close(fd);
+    return -1;
+  }
+
+  *value = (float)rbuf * 0.125;
+
+  close(fd);
+  return 0;
 }
 
 static int
@@ -915,7 +972,7 @@ read_ina230_pwr(uint8_t id, float *value) {
   uint8_t rlen = INA230_GET_DATA_LEN;
   int32_t read_ina230_raw;
 
-  fd = i2c_cdev_slave_open(I2C_BUS5, INA230_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  fd = i2c_cdev_slave_open(DIMM_BUS, INA230_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
   if (fd < 0) {
     syslog(LOG_ERR, "Failed to open ina230 0x%x\n", INA230_ADDR);
     return -1;
@@ -966,7 +1023,7 @@ read_ina230_pwr(uint8_t id, float *value) {
 
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Failed to get ina230 reading %x-%x", __func__,
-          I2C_BUS5, INA230_ADDR);
+          DIMM_BUS, INA230_ADDR);
     close(fd);
     return -1;
 
@@ -1198,7 +1255,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       ret = sensor.read_sensor(sensor.id, (float * ) value);
     } else {
       ret = SENSOR_NA;
-      retryDIMM = 0;
+      retrySensor = 0;
     }
   } else {
     ret = ERR_SENSOR_NA;

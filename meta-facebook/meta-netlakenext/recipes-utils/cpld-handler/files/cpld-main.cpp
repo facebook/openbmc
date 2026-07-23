@@ -87,6 +87,8 @@ int main(int argc, char** argv)
             {
                 break; // Successfully acquired the lock
             }
+            close(fd);
+            fd = -1;
             std::cerr << "Another instance is running, waiting for lock..." << std::endl;
             std::cerr << "Retry time remaining: " << retryCount << std::endl;
             sleep(10); // Wait before retrying
@@ -108,6 +110,8 @@ int main(int argc, char** argv)
             if  (cpldManager.fwVerifyOnly(legacyMode) < 0)
             {
                 std::cerr << "CPLD verify failed" << std::endl;
+                flock(fd, LOCK_UN);
+                close(fd);
                 return -1;
             }
         }
@@ -116,6 +120,8 @@ int main(int argc, char** argv)
             if (cpldManager.fwUpdate(legacyMode) < 0)
             {
                 std::cerr << "CPLD update failed" << std::endl;
+                flock(fd, LOCK_UN);
+                close(fd);
                 return -1;
             }
         }

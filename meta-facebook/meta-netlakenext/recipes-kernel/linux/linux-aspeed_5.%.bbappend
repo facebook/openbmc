@@ -29,4 +29,5 @@ SRC_URI += "file://netlakenext.cfg \
             file://1006-sbrmi-CPUID-support-for-v1.0.patch \
             file://1007-sbrmi-Extend-clean-hwmon-teardown-in-RMI-driver.patch \
             file://1008-sbtsi-Ensure-clean-teardown-for-hwmon-and-IOCTL.patch \
+            file://1101-kernel-5.10-prioritize-1-byte-register-address-probi.patch \
 	"

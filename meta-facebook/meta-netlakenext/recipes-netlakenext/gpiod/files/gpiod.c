@@ -161,19 +161,21 @@ uart_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) 
   gpio = gpio_open_by_shadow("UART_BMC_MUX_CTRL");
   if (gpio == NULL) {
      syslog(LOG_WARNING, "%s() Open GPIO UART_BMC_MUX_CTRL failed\n", __func__);
+     return;
   }
-  else {
-    if (gpio_get_value(gpio, &val))  {
-      syslog(LOG_WARNING, "%s() gpio_get_value_by_shadow failed\n", __func__);
-      gpio_close(gpio);
-      return;
-    }
-    if (gpio_set_value(gpio, !val)) {
-      syslog(LOG_WARNING, "%s() gpio_set_value failed\n", __func__);
-      gpio_close(gpio);
-      return;
-    }
+
+  if (gpio_get_value(gpio, &val))  {
+    syslog(LOG_WARNING, "%s() gpio_get_value_by_shadow failed\n", __func__);
+    goto gpio_exit;
   }
+
+  if (gpio_set_value(gpio, !val)) {
+    syslog(LOG_WARNING, "%s() gpio_set_value failed\n", __func__);
+    goto gpio_exit;
+  }
+
+gpio_exit:
+    gpio_close(gpio);
 }
 
 static void
@@ -183,14 +185,16 @@ power_button_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr)
   gpio = gpio_open_by_shadow("PWR_BTN_COME_R_N");
   if (gpio == NULL) {
      syslog(LOG_WARNING, "%s() Open GPIO PWR_BTN_COME_R_N failed\n", __func__);
+     return;
   }
-  else {
-    if (gpio_set_value(gpio, curr) != 0) {
-      syslog(LOG_WARNING, "%s() gpio_set_value failed\n", __func__);
-      gpio_close(gpio);
-      return;
-    }
+
+  if (gpio_set_value(gpio, curr) != 0) {
+    syslog(LOG_WARNING, "%s() gpio_set_value failed\n", __func__);
+    goto gpio_exit;
   }
+
+gpio_exit:
+    gpio_close(gpio);
 }
 
 static void
@@ -326,6 +330,7 @@ set_apml_probe_status(gpio_value_t value, uint8_t gpio_change) {
 
     sensors_reinit();
     pal_dimm_page_init();
+    pal_pmic_pwr_setting();
   } else {
     syslog(LOG_WARNING, "FRU: %d, Post complete gpio de-assert to high", FRU_SERVER);
     fp = fopen((char*)APML_UNBIND_PATH, "w");

@@ -120,6 +120,7 @@ int8_t pal_set_uart_routing(uint8_t routing);
 int pal_get_sensor_util_timeout(uint8_t fru);
 int pal_hwmon_probe(char *path, char *dev);
 int pal_dimm_page_init(void);
+int pal_pmic_pwr_setting(void);
 
 #ifdef __cplusplus
 } // extern "C"

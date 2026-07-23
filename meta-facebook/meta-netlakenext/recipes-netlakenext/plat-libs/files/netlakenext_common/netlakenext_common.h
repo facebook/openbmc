@@ -90,12 +90,19 @@ extern "C" {
 #define CPLD_GET_REV_RETRY_TIME 3
 #define CPLD_VR_SOURCE_BIT (0x18)
 
-#define I2C_BUS5 4
+#define DIMM_BUS 4
 #define DIMMA_ADDR 0xA0
 #define DIMMB_ADDR 0xA2
 #define DIMM_TEMP_LEN 1
 #define DIMM_PAGE_OFFSET 0x0b
 #define DIMM_PAGE0 0x00
+
+#define PMICA_ADDR 0x90
+#define PMICB_ADDR 0x92
+#define PMIC_ADC_REG 0x30
+#define PMIC_TOTAL_PWR 0x1A
+#define PMIC_PWR_SELECT 0x1B
+#define PMIC_VDD_READ 0x0C
 
 #define INA230_ADDR 0x80
 #define INA230_POWER 0x03

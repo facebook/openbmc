@@ -1,0 +1,77 @@
+From d6ca405b4481ba711f8b73401df65ad115f5f212 Mon Sep 17 00:00:00 2001
+From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
+Date: Mon, 22 Jun 2026 09:54:24 +0800
+Subject: [PATCH] usb: host: ehci-platform: add ASPEED AST2700 support
+
+This patch introduces EHCI host controller support for the ASPEED
+AST2700 SoC.
+
+lore: https://lore.kernel.org/all/20250928032407.27764-3-ryan_chen@aspeedtech.com/
+
+Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
+---
+ drivers/usb/host/ehci-platform.c | 19 +++++++++++++++++--
+ 1 file changed, 17 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/host/ehci-platform.c b/drivers/usb/host/ehci-platform.c
+index 6aab45c85..5e7af830a 100644
+--- a/drivers/usb/host/ehci-platform.c
++++ b/drivers/usb/host/ehci-platform.c
+@@ -27,6 +27,7 @@
+ #include <linux/io.h>
+ #include <linux/module.h>
+ #include <linux/of.h>
++#include <linux/of_device.h>
+ #include <linux/platform_device.h>
+ #include <linux/reset.h>
+ #include <linux/sys_soc.h>
+@@ -241,6 +242,8 @@ static int ehci_platform_probe(struct platform_device *dev)
+ 	struct usb_ehci_pdata *pdata = dev_get_platdata(&dev->dev);
+ 	struct ehci_platform_priv *priv;
+ 	struct ehci_hcd *ehci;
++	const struct of_device_id *match;
++	bool dma_mask_64;
+ 	int err, irq, clk = 0;
+ 
+ 	if (usb_disabled())
+@@ -253,8 +256,14 @@ static int ehci_platform_probe(struct platform_device *dev)
+ 	if (!pdata)
+ 		pdata = &ehci_platform_defaults;
+ 
++	dma_mask_64 = pdata->dma_mask_64;
++	/* Force 64-bit DMA for ASPEED AST2700: DRAM is above 4GB (0x400000000) */
++	match = of_match_device(dev->dev.driver->of_match_table, &dev->dev);
++	if (match && match->data)
++		dma_mask_64 = true;
++
+ 	err = dma_coerce_mask_and_coherent(&dev->dev,
+-		pdata->dma_mask_64 ? DMA_BIT_MASK(64) : DMA_BIT_MASK(32));
++		dma_mask_64 ? DMA_BIT_MASK(64) : DMA_BIT_MASK(32));
+ 	if (err) {
+ 		dev_err(&dev->dev, "Error: DMA mask configuration failed\n");
+ 		return err;
+@@ -298,7 +307,9 @@ static int ehci_platform_probe(struct platform_device *dev)
+ 		if (of_device_is_compatible(dev->dev.of_node,
+ 					    "aspeed,ast2500-ehci") ||
+ 		    of_device_is_compatible(dev->dev.of_node,
+-					    "aspeed,ast2600-ehci"))
++					    "aspeed,ast2600-ehci") ||
++		    of_device_is_compatible(dev->dev.of_node,
++					    "aspeed,ast2700-ehci"))
+ 			ehci->is_aspeed = 1;
+ 
+ 		if (soc_device_match(quirk_poll_match))
+@@ -484,6 +495,10 @@ static const struct of_device_id vt8500_ehci_ids[] = {
+ 	{ .compatible = "via,vt8500-ehci", },
+ 	{ .compatible = "wm,prizm-ehci", },
+ 	{ .compatible = "generic-ehci", },
++	{ .compatible = "aspeed,ast2500-ehci", },
++	{ .compatible = "aspeed,ast2600-ehci", },
++	/* .data = (void *)1 forces 64-bit DMA for AST2700 (DRAM > 4GB) */
++	{ .compatible = "aspeed,ast2700-ehci", .data = (void *)1, },
+ 	{ .compatible = "cavium,octeon-6335-ehci", },
+ 	{}
+ };
+-- 
+2.34.1
+

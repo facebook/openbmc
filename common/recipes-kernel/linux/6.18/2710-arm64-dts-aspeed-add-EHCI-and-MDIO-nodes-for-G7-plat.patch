@@ -1,0 +1,70 @@
+From 57160db2e1f25a01eb874ecbdea230dc10ff4943 Mon Sep 17 00:00:00 2001
+From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
+Date: Mon, 22 Jun 2026 09:52:20 +0800
+Subject: [PATCH] arm64: dts: aspeed: add EHCI and MDIO nodes for G7 platforms
+
+Add device tree nodes for EHCI (USB 2.0 Host Controller) and MDIO
+peripherals in AST2700. These nodes are disabled by default and
+can be enabled by specific board device trees.
+
+lore: https://lore.kernel.org/all/20260609-upstream_ast2700-v9-3-f631752f0cb1@aspeedtech.com/
+
+Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
+---
+ .../boot/dts/aspeed/aspeed-g7-common.dtsi     | 33 +++++++++++++++++++
+ 1 file changed, 33 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
+index 2eb8b692d..3ceb82197 100644
+--- a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
++++ b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
+@@ -23,6 +23,28 @@ soc0-sram@0 {
+ 		};
+ 	};
+ 
++	ehci0: usb@12061000 {
++		compatible = "aspeed,ast2700-ehci", "generic-ehci";
++		reg = <0x0 0x12061000 0x0 0x100>;
++		interrupts = <GIC_SPI 33 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&syscon0 SCU0_CLK_GATE_PORTAUSB2CLK>;
++		resets = <&syscon0 SCU0_RESET_PORTA_VHUB_EHCI>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_usb2ah_default>;
++		status = "disabled";
++	};
++
++	ehci1: usb@12063000 {
++		compatible = "aspeed,ast2700-ehci", "generic-ehci";
++		reg = <0x0 0x12063000 0x0 0x100>;
++		interrupts = <GIC_SPI 37 IRQ_TYPE_LEVEL_HIGH>;
++		clocks = <&syscon0 SCU0_CLK_GATE_PORTBUSB2CLK>;
++		resets = <&syscon0 SCU0_RESET_PORTB_VHUB_EHCI>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_usb2bh_default>;
++		status = "disabled";
++	};
++
+ 	intc0: interrupt-controller@12100000 {
+ 		compatible = "aspeed,ast2700-intc0";
+ 		reg = <0x0 0x12100000 0x0 0x3c00>;
+@@ -491,6 +513,17 @@ flash@1 {
+ 		};
+ 	};
+ 
++	mdio0: mdio@14040000 {
++		compatible = "aspeed,ast2700-mdio", "aspeed,ast2600-mdio";
++		reg = <0x0 0x14040000 0x0 0x8>;
++		resets = <&syscon1 SCU1_RESET_MII>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_mdio0_default>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		status = "disabled";
++	};
++
+ 	mac0: ethernet@14050000 {
+ 		compatible = "aspeed,ast2700-mac", "faraday,ftgmac100";
+ 		reg = <0x0 0x14050000 0x0 0x200>;
+-- 
+2.34.1
+

@@ -5,6 +5,7 @@ EXTRA_OEMESON:append = " \
  "
 
 SRC_URI += " \
+    file://0000-configuration-yosemite4-Add-config-for-Wailua-Falls.patch \
     file://0001-configuration-Revise-CX7-NIC-card-temperature-sensor.patch \
     file://0002-configurations-Revise-the-BRCM-NIC-sensor-name.patch \
     file://0003-Add-mctp-eids-configuration-for-Yosemite-4.patch \

@@ -1,7 +1,7 @@
-From 310e0d4a004f60a6c0160a52a3c258ff8ed4605b Mon Sep 17 00:00:00 2001
+From 5c004ad3501b1303c748b99a35406a1e594a9105 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 25 Sep 2023 11:10:46 +0800
-Subject: [PATCH] Add mctp eids configuration for Yosemite 4
+Subject: [PATCH 04/10] Add mctp eids configuration for Yosemite 4
 
 The MCTP specification is defined in DSP0236. As describe in section
 8.17.2, we need a configuration for static EIDs. The `mctpd` from
@@ -23,10 +23,10 @@ Signed-off-by: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
  .../yosemite4_sentineldome_t1_retimer.json    | 16 +++++++
  .../meta/yv4/yosemite4_sentineldome_t2.json   | 16 +++++++
  .../yosemite4_sentineldome_t2_retimer.json    | 16 +++++++
- .../meta/yv4/yosemite4_wailuafalls.json       | 45 ++++++++++++++++++
+ .../yosemite4_wailuafalls_without_asic.json   | 15 ++++++
  schemas/exposes_record.json                   |  3 ++
  schemas/legacy.json                           | 47 +++++++++++++++++++
- 8 files changed, 181 insertions(+), 1 deletion(-)
+ 8 files changed, 151 insertions(+), 1 deletion(-)
 
 diff --git a/configurations/meta/yv4/yosemite4_floatingfalls.json b/configurations/meta/yv4/yosemite4_floatingfalls.json
 index d694ff5..8cc55c3 100644
@@ -164,11 +164,11 @@ index 0bc1a83..1b6c918 100644
          {
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
-diff --git a/configurations/meta/yv4/yosemite4_wailuafalls.json b/configurations/meta/yv4/yosemite4_wailuafalls.json
-index 99746ef..7a0b36c 100644
---- a/configurations/meta/yv4/yosemite4_wailuafalls.json
-+++ b/configurations/meta/yv4/yosemite4_wailuafalls.json
-@@ -1,5 +1,50 @@
+diff --git a/configurations/meta/yv4/yosemite4_wailuafalls_without_asic.json b/configurations/meta/yv4/yosemite4_wailuafalls_without_asic.json
+index 836a777..2d0e554 100644
+--- a/configurations/meta/yv4/yosemite4_wailuafalls_without_asic.json
++++ b/configurations/meta/yv4/yosemite4_wailuafalls_without_asic.json
+@@ -1,5 +1,20 @@
  {
      "Exposes": [
 +        {
@@ -184,36 +184,6 @@ index 99746ef..7a0b36c 100644
 +            "Class": "I3C",
 +            "EndpointId": "$bus % 15 * 10 + 2",
 +            "Name": "BIC",
-+            "Type": "MCTPEndpoint"
-+        },
-+        {
-+            "Address": [
-+                "7",
-+                "236",
-+                "128",
-+                "1",
-+                "0",
-+                "$bus % 16 * 5"
-+            ],
-+            "Bus": "$bus / 4 - 4",
-+            "Class": "I3C",
-+            "EndpointId": "$bus % 15 * 10 + 4",
-+            "Name": "CXL1",
-+            "Type": "MCTPEndpoint"
-+        },
-+        {
-+            "Address": [
-+                "7",
-+                "236",
-+                "128",
-+                "1",
-+                "0",
-+                "$bus % 16 * 5"
-+            ],
-+            "Bus": "$bus / 4 - 4",
-+            "Class": "I3C",
-+            "EndpointId": "$bus % 15 * 10 + 5",
-+            "Name": "CXL2",
 +            "Type": "MCTPEndpoint"
 +        },
          {
@@ -313,5 +283,5 @@ index 72edcf4..4b39bfc 100644
                  "type": "number"
              },
 -- 
-2.53.0-Meta
+2.43.0
 

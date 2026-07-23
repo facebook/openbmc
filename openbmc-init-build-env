@@ -60,6 +60,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-qemux86-git:lf-master
   meta-qemux86:lf-master
   meta-rainiera6:lf-master
+  meta-rainiera7:lf-master
   meta-sanmiguel:lf-master
   meta-santabarbara:lf-master
   meta-tahan:lf-master

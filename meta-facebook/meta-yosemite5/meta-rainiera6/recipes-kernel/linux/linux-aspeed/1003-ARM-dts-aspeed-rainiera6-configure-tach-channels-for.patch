@@ -1,4 +1,4 @@
-From e5e32269621794eab533cd071d8a1f7d880d3eb5 Mon Sep 17 00:00:00 2001
+From a77dfc9fab132e1b3134c1173d5ba532c9ec8e7a Mon Sep 17 00:00:00 2001
 From: Neil Cheng <Neil.Cheng@quantatw.com>
 Date: Wed, 6 May 2026 10:46:41 +0800
 Subject: [PATCH] ARM: dts: aspeed: rainiera6: configure tach channels for
@@ -15,10 +15,10 @@ Signed-off-by: Neil Cheng <Neil.Cheng@quantatw.com>
  1 file changed, 10 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
-index 19aa8a391..36d1c0373 100644
+index 479c8385a..689184545 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
-@@ -518,6 +518,16 @@ psu@5c {
+@@ -516,6 +516,16 @@ psu@5c {
  	fan-controller@5e{
  		compatible = "maxim,max31790";
  		reg = <0x5e>;
@@ -35,3 +35,6 @@ index 19aa8a391..36d1c0373 100644
  	};
  
  	/* I2C MUX for PWRPIC #1, #2, #11, #12 */
+-- 
+2.34.1
+

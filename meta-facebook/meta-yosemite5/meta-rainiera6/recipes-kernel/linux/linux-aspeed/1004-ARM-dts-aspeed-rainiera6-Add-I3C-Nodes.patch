@@ -1,4 +1,4 @@
-From 0709a767de41418b328147c2646c3eae3155e8a2 Mon Sep 17 00:00:00 2001
+From f303a50798640f5cb1ea8a4e827453c5f9da42cd Mon Sep 17 00:00:00 2001
 From: Neil Cheng <Neil.Cheng@quantatw.com>
 Date: Fri, 29 May 2026 19:02:34 +0800
 Subject: [PATCH] ARM: dts: aspeed: rainiera6: Add I3C Nodes
@@ -15,10 +15,10 @@ Signed-off-by: Neil Cheng <Neil.Cheng@quantatw.com>
  1 file changed, 37 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
-index 36d1c0373..adadf1646 100644
+index 689184545..93853a7dc 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
-@@ -810,6 +810,43 @@ &i2c15 {
+@@ -816,6 +816,43 @@ &i2c15 {
  	status = "okay";
  };
  
@@ -62,3 +62,6 @@ index 36d1c0373..adadf1646 100644
  &mac2 {
  	pinctrl-names = "default";
  	pinctrl-0 = <&pinctrl_ncsi3_default>;
+-- 
+2.34.1
+

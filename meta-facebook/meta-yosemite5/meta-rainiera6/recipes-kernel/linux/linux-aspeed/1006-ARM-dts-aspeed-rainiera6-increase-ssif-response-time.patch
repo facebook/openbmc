@@ -1,0 +1,34 @@
+From eca3f29225509d874922be833bb41b591b470d2f Mon Sep 17 00:00:00 2001
+From: Frank Tsao <Frank.Tsao@quantatw.com>
+Date: Mon, 29 Jun 2026 22:18:05 +0800
+Subject: [PATCH] ARM: dts: aspeed: rainiera6: increase ssif response timeout
+ to 5s
+
+The SSIF driver currently uses a default response timeout of 500 ms.
+If the response is provided after this interval, it is discarded by
+the driver, which may cause the host to miss the command response.
+
+Stress testing shows frequent timeout occurrences at 500 ms. Increase
+the response timeout to 5000 ms to improve robustness and reduce the
+likelihood of dropped responses.
+
+Signed-off-by: Frank Tsao <Frank.Tsao@quantatw.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
+index 7bf5acdde..d7b00642f 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
+@@ -211,6 +211,7 @@ ssif_bmc: ssif-bmc@10 {
+ 		compatible = "ssif-bmc";
+ 		reg = <0x10>;
+ 		status = "okay";
++		timeout-ms = <5000>;
+ 	};
+ };
+ 
+-- 
+2.34.1
+

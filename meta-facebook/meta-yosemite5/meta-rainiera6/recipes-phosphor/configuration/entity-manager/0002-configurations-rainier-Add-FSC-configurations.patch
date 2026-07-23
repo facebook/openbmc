@@ -1,4 +1,4 @@
-From c6d73f40bfd624b12db3cdf5e213b9026fd5c803 Mon Sep 17 00:00:00 2001
+From 0d6ca91dd32c457f009adfac7cfb28bb890fbe42 Mon Sep 17 00:00:00 2001
 From: Neil Cheng <Neil.Cheng@quantatw.com>
 Date: Mon, 8 Jun 2026 17:07:11 +0800
 Subject: [PATCH] configurations: rainier: Add FSC configurations
@@ -439,3 +439,6 @@ index b5754e2..fb4e946 100644
          {
              "Address": "0x4B",
              "Bus": 9,
+-- 
+2.53.0-Meta
+

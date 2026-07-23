@@ -1,4 +1,4 @@
-From 8bdc8f992e4b22e487cc860a9d376e9d9aaa2a09 Mon Sep 17 00:00:00 2001
+From b9184d3cc9c96027d7c032afb15750cc0902b2b2 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Wed, 15 Jul 2026 11:57:21 -0700
 Subject: [PATCH] rtu: re-read firmware on monitoring resume
@@ -26,10 +26,10 @@ Change-Id: I7b97967913a06ffdc672aa7872af50bd370f0ec4
  6 files changed, 79 insertions(+), 1 deletion(-)
 
 diff --git a/rtu/device/base_device.hpp b/rtu/device/base_device.hpp
-index f42fe36..d120ebc 100644
+index 198dd37..38a92a5 100644
 --- a/rtu/device/base_device.hpp
 +++ b/rtu/device/base_device.hpp
-@@ -95,6 +95,16 @@ class BaseDevice
+@@ -96,6 +96,16 @@ class BaseDevice
          stopped = false;
      }
  

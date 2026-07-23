@@ -1,8 +1,7 @@
-From 03ef228745c569c16f03813fe81414e28fbf36b3 Mon Sep 17 00:00:00 2001
+From 7d07d4142fadeee2d35773444c9f1157ac28b2ae Mon Sep 17 00:00:00 2001
 From: Fred Chen <fredchen.openbmc@gmail.com>
 Date: Tue, 7 Jul 2026 11:04:01 +0800
-Subject: [PATCH 616/617] dt-bindings: trivial-devices: Add adi max20912 and
- max20916
+Subject: [PATCH] dt-bindings: trivial-devices: Add adi max20912 and max20916
 
 Add device tree bindings for Analog Devices MAX20912 and MAX20916
 Dual-Output Voltage Regulator.
@@ -15,7 +14,7 @@ Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
  1 file changed, 4 insertions(+)
 
 diff --git a/Documentation/devicetree/bindings/trivial-devices.yaml b/Documentation/devicetree/bindings/trivial-devices.yaml
-index dd5077ab3..01393fd75 100644
+index dd5077ab3a20..01393fd75c40 100644
 --- a/Documentation/devicetree/bindings/trivial-devices.yaml
 +++ b/Documentation/devicetree/bindings/trivial-devices.yaml
 @@ -51,6 +51,10 @@ properties:
@@ -30,5 +29,5 @@ index dd5077ab3..01393fd75 100644
            - ams,iaq-core
              # Temperature monitoring of Astera Labs PT5161L PCIe retimer
 -- 
-2.39.3
+2.53.0-Meta
 

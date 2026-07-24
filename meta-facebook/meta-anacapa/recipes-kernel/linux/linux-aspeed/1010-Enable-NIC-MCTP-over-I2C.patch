@@ -3,14 +3,55 @@ From: Andy Chung <Andy.Chung@amd.com>
 Date: Fri, 27 Mar 2026 13:56:07 +0800
 Subject: [PATCH] Enable NIC MCTP over I2C
 
+LORE:  https://lore.kernel.org/all/20260602-anacapa-devlop-phase-devicetree-v3-8-7c93c5df8d9b@gmail.com/
+
 ---
- .../aspeed-bmc-facebook-anacapa-evt2.dts      | 67 ++++++++++++++++++-
- 1 file changed, 65 insertions(+), 2 deletions(-)
+ .../aspeed-bmc-facebook-anacapa-evt2.dts      | 99 +++++++++++++++----
+ 1 file changed, 81 insertions(+), 18 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-index 285a03c6ad81..6d231d8c8553 100644
+index 285a03c6a..a99cd0ecf 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+@@ -35,22 +35,22 @@ aliases {
+ 		i2c33 = &i2c8mux0ch1;
+ 		i2c34 = &i2c8mux0ch2;
+ 		i2c35 = &i2c8mux0ch3;
+-		i2c36 = &i2c10mux0ch0;
+-		i2c37 = &i2c10mux0ch1;
+-		i2c38 = &i2c10mux0ch2;
+-		i2c39 = &i2c10mux0ch3;
+-		i2c40 = &i2c10mux0ch4;
+-		i2c41 = &i2c10mux0ch5;
+-		i2c42 = &i2c10mux0ch6;
+-		i2c43 = &i2c10mux0ch7;
+-		i2c44 = &i2c11mux0ch0;
+-		i2c45 = &i2c11mux0ch1;
+-		i2c46 = &i2c11mux0ch2;
+-		i2c47 = &i2c11mux0ch3;
+-		i2c48 = &i2c11mux0ch4;
+-		i2c49 = &i2c11mux0ch5;
+-		i2c50 = &i2c11mux0ch6;
+-		i2c51 = &i2c11mux0ch7;
++		i2c36 = &i2c11mux0ch5;
++		i2c37 = &i2c11mux0ch6;
++		i2c38 = &i2c11mux0ch7;
++		i2c39 = &i2c11mux0ch0;
++		i2c40 = &i2c11mux0ch1;
++		i2c41 = &i2c11mux0ch2;
++		i2c42 = &i2c11mux0ch3;
++		i2c43 = &i2c11mux0ch4;
++		i2c44 = &i2c10mux0ch1;
++		i2c45 = &i2c10mux0ch2;
++		i2c46 = &i2c10mux0ch3;
++		i2c47 = &i2c10mux0ch4;
++		i2c48 = &i2c10mux0ch5;
++		i2c49 = &i2c10mux0ch6;
++		i2c50 = &i2c10mux0ch7;
++		i2c51 = &i2c10mux0ch0;
+ 		i2c52 = &i2c13mux0ch0;
+ 		i2c53 = &i2c13mux0ch1;
+ 		i2c54 = &i2c13mux0ch2;
 @@ -629,38 +629,67 @@ eeprom@56 {
  // R Bridge Board
  &i2c10 {
@@ -20,14 +61,14 @@ index 285a03c6ad81..6d231d8c8553 100644
 +		compatible = "mctp-i2c-controller";
 +		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
 +	};
- 
+
  	i2c-mux@71 {
  		compatible = "nxp,pca9548";
  		reg = <0x71>;
  		#address-cells = <1>;
  		#size-cells = <0>;
 -		i2c-mux-idle-disconnect;
- 
+
  		i2c10mux0ch0: i2c@0 {
  			reg = <0>;
  			#address-cells = <1>;
@@ -89,14 +130,14 @@ index 285a03c6ad81..6d231d8c8553 100644
 +		compatible = "mctp-i2c-controller";
 +		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
 +	};
- 
+
  	i2c-mux@71 {
  		compatible = "nxp,pca9548";
  		reg = <0x71>;
  		#address-cells = <1>;
  		#size-cells = <0>;
 -		i2c-mux-idle-disconnect;
- 
+
  		i2c11mux0ch0: i2c@0 {
  			reg = <0>;
  			#address-cells = <1>;
@@ -154,6 +195,5 @@ index 285a03c6ad81..6d231d8c8553 100644
  		};
  		i2c11mux0ch5: i2c@5 {
  			reg = <5>;
--- 
+--
 2.52.0
-

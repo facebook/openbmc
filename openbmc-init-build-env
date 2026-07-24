@@ -60,7 +60,7 @@ PLAT_DISTRO_OVERRIDES=(
   meta-qemux86-git:lf-master
   meta-qemux86:lf-master
   meta-rainiera6:lf-master
-  meta-rainiera7:lf-master
+# meta-rainiera7:lf-master  # TEMP disabled: layer landed at top-level meta-facebook/meta-rainiera7 (not yv5-nested) and does not propagate to lf-master, breaking the daily auto-update sync. Re-enable once the placement is fixed (see D112848220).
   meta-sanmiguel:lf-master
   meta-santabarbara:lf-master
   meta-tahan:lf-master

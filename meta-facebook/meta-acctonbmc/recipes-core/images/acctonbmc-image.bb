@@ -22,4 +22,6 @@ IMAGE_INSTALL += " \
     show-tech \
     rackmon \
     ftdicmd \
+    libcpldupdate-dll-gpio \
+    cpldupdate \
     "

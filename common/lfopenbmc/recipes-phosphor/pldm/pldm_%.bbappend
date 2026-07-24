@@ -19,14 +19,14 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0013-terminus-add-refreshFirmwareParameters-method.patch \
     file://0014-requester-refresh-MCTP-endpoints-after-host-reaches-.patch \
     file://0015-requester-Parse-MCTP-endpoint-from-InterfacesRemoved.patch \
-    file://0016-oem-meta-add-getSlotNumberStringByTID-mapping-for-Sa.patch \
-    file://0017-oem-meta-Implement-special-event-handling.patch \
-    file://0018-oem-meta-Add-retry-event-deduplication-for-unified-B.patch \
-    file://0019-oem-meta-Add-call-to-the-fw-versions-sd-retimer-serv.patch \
-    file://0020-Add-back-sensor-polling-time-configuration.patch \
-    file://0021-Add-back-maximum-transfer-size-configuration.patch \
-    file://0022-Add-back-instance-id-expiration-interval.patch \
-    file://0023-fw_update-Reimplement-package-parser-to-use-new-libp.patch \
+    file://0016-oem-meta-Implement-special-event-handling.patch \
+    file://0017-oem-meta-Add-retry-event-deduplication-for-unified-B.patch \
+    file://0018-oem-meta-Add-call-to-the-fw-versions-sd-retimer-serv.patch \
+    file://0019-Add-back-sensor-polling-time-configuration.patch \
+    file://0020-Add-back-maximum-transfer-size-configuration.patch \
+    file://0021-Add-back-instance-id-expiration-interval.patch \
+    file://0022-fw_update-Reimplement-package-parser-to-use-new-libp.patch \
+    file://0023-oem-meta-support-MCTP-I2C-and-I3C-target-configs.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

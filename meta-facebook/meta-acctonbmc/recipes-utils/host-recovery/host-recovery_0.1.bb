@@ -24,10 +24,12 @@ LIC_FILES_CHKSUM = "file://spi_util.sh;beginline=5;endline=18;md5=0b1ee7d6f844d4
 S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://spi_util.sh \
+    file://cpld_update.sh \
 "
 
 HOSTRECOVERY_UTILS_FILES = " \
     spi_util.sh \
+    cpld_update.sh \
 "
 
 do_install() {

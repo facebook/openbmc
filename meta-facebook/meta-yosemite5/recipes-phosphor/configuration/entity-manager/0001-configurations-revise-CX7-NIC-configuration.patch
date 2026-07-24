@@ -1,6 +1,6 @@
-From 3eeac9e966f906d788cec3c7c16ff69efd6507f8 Mon Sep 17 00:00:00 2001
-From: Cosmo Chou <cosmo.chou@quantatw.com>
-Date: Mon, 9 Feb 2026 11:02:57 +0800
+From fd51fd83c7d8b55ee6c22209712ad22b2aefd444 Mon Sep 17 00:00:00 2001
+From: Daniel Hsu <Daniel-Hsu@quantatw.com>
+Date: Fri, 24 Jul 2026 14:49:19 +0800
 Subject: [PATCH] configurations: revise CX7 NIC configuration
 
 Add MCTPI2CTarget entry to allow MCTPReactor to automatically
@@ -9,20 +9,21 @@ EID configuration.
 
 Revise the CX7 NIC temperature sensor name.
 
+Remove the lower critical threshold
+Add upper non-recoverable threshold
+
 Tested on Yv5:
 EID is correctly assigned, the version object is properly exposed.
 Temperature sensor is exposed as NIC0_TEMP_C.
-
-Signed-off-by: Cosmo Chou <cosmo.chou@quantatw.com>
 ---
- configurations/ocp/cx7_ocp.json | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ configurations/ocp/cx7_ocp.json | 28 ++++++++++++++++++----------
+ 1 file changed, 18 insertions(+), 10 deletions(-)
 
 diff --git a/configurations/ocp/cx7_ocp.json b/configurations/ocp/cx7_ocp.json
-index 3f11519..480d37c 100644
+index 3f11519..b13dd70 100644
 --- a/configurations/ocp/cx7_ocp.json
 +++ b/configurations/ocp/cx7_ocp.json
-@@ -3,20 +3,27 @@
+@@ -3,37 +3,45 @@
          {
              "Address": "$address",
              "Bus": "$bus",
@@ -48,20 +49,28 @@ index 3f11519..480d37c 100644
 +            "Name1": "NIC$bus % 2 TEMP_C",
              "Thresholds": [
                  {
-                     "Direction": "less than",
-+                    "Hysteresis": 0.1,
+-                    "Direction": "less than",
++                    "Direction": "greater than",
++                    "Hysteresis": 2.1,
                      "Index": 2,
-                     "Name": "lower critical",
+-                    "Name": "lower critical",
++                    "Name": "upper critical",
                      "Severity": 1,
-@@ -24,6 +31,7 @@
+-                    "Value": 5
++                    "Value": 105
                  },
                  {
                      "Direction": "greater than",
-+                    "Hysteresis": 2.1,
++                    "Hysteresis": 2.3,
                      "Index": 2,
-                     "Name": "upper critical",
-                     "Severity": 1,
-@@ -33,7 +41,7 @@
+-                    "Name": "upper critical",
+-                    "Severity": 1,
+-                    "Value": 105
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 115
+                 }
+             ],
              "Type": "TMP421"
          }
      ],
@@ -70,6 +79,6 @@ index 3f11519..480d37c 100644
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Nvidia ConnectX-7 OCP3.0'})",
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
--- 
-2.52.0
+--
+2.53.0
 

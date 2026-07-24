@@ -8,7 +8,7 @@ inherit systemd
 RDEPENDS:${PN} += "python3-pyusb python3-misc"
 
 FILES:${PN} += " \
-    ${libexecdir}/ventura \
+    ${libexecdir}/xr21-gpio \
     ${systemd_system_unitdir} \
     "
 
@@ -23,9 +23,9 @@ SYSTEMD_SERVICE:${PN} = " \
     "
 
 do_install() {
-    VENTURA_LIBEXECDIR="${D}${libexecdir}/ventura"
-    install -d ${VENTURA_LIBEXECDIR}
-    install -m 0755 ${UNPACKDIR}/gpio5_auto_rs485.py ${VENTURA_LIBEXECDIR}
+    INSTALL_DIR="${D}${libexecdir}/xr21-gpio"
+    install -d ${INSTALL_DIR}
+    install -m 0755 ${UNPACKDIR}/gpio5_auto_rs485.py ${INSTALL_DIR}
 
     install -d ${D}${systemd_system_unitdir}
     install -m 0644 ${UNPACKDIR}/xr21-gpio-mod.service ${D}${systemd_system_unitdir}

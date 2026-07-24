@@ -21,3 +21,5 @@ IMAGE_INSTALL:append = " psu-update"
 # Tool to emulate device events for testing
 IMAGE_INSTALL:append = " event-emulator"
 
+# XR Config
+IMAGE_INSTALL:append = " xr21-gpio-mod"

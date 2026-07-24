@@ -1,0 +1,52 @@
+From 3095fcf4da64d236f945579e7b3e203ff526f7a0 Mon Sep 17 00:00:00 2001
+From: Carl Lee <carl.lee@amd.com>
+Date: Thu, 30 Apr 2026 17:33:44 +0800
+Subject: [PATCH] ARM: dts: aspeed: anacapa: Add eeprom device node for NFC
+ adaptor board
+
+Add eeprom device node for NFC adaptor board FRU.
+
+Lore link:
+https://lore.kernel.org/all/20260602-anacapa-devlop-phase-devicetree-v3-6-7c93c5df8d9b@gmail.com/
+
+Signed-off-by: Carl Lee <carl.lee@amd.com>
+---
+ .../arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts | 5 +++++
+ .../arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts | 5 +++++
+ 2 files changed, 10 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts
+index 2336593d6..c2eed92d5 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts
+@@ -927,6 +927,11 @@ nfc@28 {
+ 
+ 				enable-gpios = <&sgpiom0 241 GPIO_ACTIVE_HIGH>;
+ 			};
++
++			eeprom@50 {
++				compatible = "atmel,24c128";
++				reg = <0x50>;
++			};
+ 		};
+ 	};
+ };
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+index 655e324c9..eeba56091 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+@@ -937,6 +937,11 @@ nfc@28 {
+ 
+ 				enable-gpios = <&sgpiom0 241 GPIO_ACTIVE_HIGH>;
+ 			};
++
++			eeprom@50 {
++				compatible = "atmel,24c128";
++				reg = <0x50>;
++			};
+ 		};
+ 	};
+ };
+-- 
+2.34.1
+

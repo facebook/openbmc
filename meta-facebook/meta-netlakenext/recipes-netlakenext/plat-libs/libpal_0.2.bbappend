@@ -29,3 +29,5 @@ RDEPENDS_${PN} += " \
     libphymem \
     libnvme-mi \
     "
+
+EXTRA_OEMESON:append = " -Dcrashdump-amd=true"

@@ -46,4 +46,5 @@ IMAGE_INSTALL += " \
   dimm-util \
   cpld-handler \
   apml \
+  crashdump-amd \
   "

@@ -22,6 +22,7 @@ SRC_URI:append = " \
     file://0019-dbus-sensors-implement-in-place-threshold-updates-to.patch \
     file://0020-mctp-add-PowerState-check-in-MCTPReactor.patch \
     file://0021-CableMonitor-increase-reconcile-delay-to-60s.patch \
+    file://0022-PSUSensor-add-ADI-MAX20912-and-MAX20916-support.patch \
 "
 
 SRC_URI:append:ventura2 = " \

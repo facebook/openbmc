@@ -3,6 +3,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 SRC_URI:append = " \
     file://0001-configuration-schema-extend-MCTP-target-members.patch \
     file://0002-configuration-schema-mctp-target-add-powerstate-prop.patch \
+    file://0003-configurations-santabarbara-add-MB-ADI-VR-sensors.patch \
 "
 
 do_install:append() {

@@ -1,4 +1,4 @@
-From 256c58c17f81c9c875dd0de423ad04227b151556 Mon Sep 17 00:00:00 2001
+From aecdb9cfaa21cb324910a595adc425fa45f509d2 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 2 Oct 2025 11:13:35 +0800
 Subject: [PATCH] Arm64: aspeed: dts: add yosemite5 dts
@@ -6,8 +6,8 @@ Subject: [PATCH] Arm64: aspeed: dts: add yosemite5 dts
 Add yosemite5 ast2700 dts.
 ---
  arch/arm64/boot/dts/aspeed/Makefile           |    1 +
- .../aspeed-bmc-facebook-yosemite5a7.dts       | 1384 +++++++++++++++++
- 2 files changed, 1385 insertions(+)
+ .../aspeed-bmc-facebook-yosemite5a7.dts       | 1385 +++++++++++++++++
+ 2 files changed, 1386 insertions(+)
  create mode 100644 arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
 
 diff --git a/arch/arm64/boot/dts/aspeed/Makefile b/arch/arm64/boot/dts/aspeed/Makefile
@@ -22,10 +22,10 @@ index ffe7e1501..f19cb564f 100644
  	ast2700-evb.dtb
 diff --git a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
 new file mode 100644
-index 000000000..440a91413
+index 000000000..d3e4029a1
 --- /dev/null
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
-@@ -0,0 +1,1384 @@
+@@ -0,0 +1,1385 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +// Copyright (c) 2025 Facebook Inc.
 +
@@ -385,6 +385,7 @@ index 000000000..440a91413
 +
 +&i2c2 {
 +	status = "okay";
++	i2c-clk-high-min-percent = <50>;
 +
 +	/* I2C MUX for PWRPIC #13 ~ #16 */
 +	i2c-mux@77 {

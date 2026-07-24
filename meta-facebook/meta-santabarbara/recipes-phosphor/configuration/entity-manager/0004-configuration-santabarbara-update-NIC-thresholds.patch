@@ -1,7 +1,7 @@
-From 8de00e11d693540add7b70f48dd6606d25d872cf Mon Sep 17 00:00:00 2001
+From 277b58dbcaebeba3c95c0ee51f0d6d1b374df254 Mon Sep 17 00:00:00 2001
 From: Frank Chen <FrankChen4@quantatw.com>
 Date: Tue, 7 Apr 2026 20:29:39 +0800
-Subject: [PATCH] configuration: santabarbara: update NIC thresholds
+Subject: [PATCH 4/6] configuration: santabarbara: update NIC thresholds
 
 NIC0 may report negative readings when the OS loads the MLX driver.
 This causes the lower critical threshold to be incorrectly triggered.
@@ -124,5 +124,5 @@ index f858767..45b4870 100644
              ],
              "Type": "TMP421"
 -- 
-2.52.0
+2.47.3
 

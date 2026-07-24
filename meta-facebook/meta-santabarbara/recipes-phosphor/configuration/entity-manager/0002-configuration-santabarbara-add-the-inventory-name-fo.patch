@@ -1,33 +1,31 @@
-From 1de329ba0067420a4558ff140464fd3a8e6a1582 Mon Sep 17 00:00:00 2001
+From d305c38e520e22abda530b8d053dd06e25de6671 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 16:31:12 +0800
-Subject: [PATCH] configuration: santabarbara: configure MMC as MCTPI2CTarget
- in BiosPost
+Subject: [PATCH 2/6] configuration: santabarbara: add the inventory name for
+ rainbow
 
-Mark MMC devices as MCTPI2CTarget and set PowerState to BiosPost,
-indicating they are valid after BIOS POST.
+Add the inventory name for rainbow.
 
-The link of the gerrit:
-https://gerrit.openbmc.org/c/openbmc/entity-manager/+/88430
+The link of upstream:
+https://gerrit.openbmc.org/c/openbmc/entity-manager/+/92530
 
 Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
 ---
- configurations/meta/santabarbara/santabarbara_rainbow.json | 2 ++
- 1 file changed, 2 insertions(+)
+ configurations/meta/santabarbara/santabarbara_rainbow.json | 1 +
+ 1 file changed, 1 insertion(+)
 
 diff --git a/configurations/meta/santabarbara/santabarbara_rainbow.json b/configurations/meta/santabarbara/santabarbara_rainbow.json
-index 3cb4b66..3e353e3 100644
+index 3cb4b66..066a3ee 100644
 --- a/configurations/meta/santabarbara/santabarbara_rainbow.json
 +++ b/configurations/meta/santabarbara/santabarbara_rainbow.json
-@@ -20,6 +20,8 @@
+@@ -20,6 +20,7 @@
              "Address": "0x21",
              "Bus": "$bus / 2 + 2 * 3 % 5 * 3 + 1 / 4 + 102",
              "Name": "MMC",
 +            "Inventory": "Rainbow",
-+            "PowerState": "BiosPost",
              "Type": "MCTPI2CTarget"
          }
      ],
 -- 
-2.53.0-Meta
+2.47.3
 

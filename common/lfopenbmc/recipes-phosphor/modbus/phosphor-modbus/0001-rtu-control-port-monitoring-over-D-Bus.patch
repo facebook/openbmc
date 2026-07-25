@@ -1,4 +1,4 @@
-From b36be4ade90c5498846548439619ccd1338e0c73 Mon Sep 17 00:00:00 2001
+From db77c67662852d7ed71246f937c0a9d56ca083f8 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Mon, 13 Jul 2026 14:10:18 -0700
 Subject: [PATCH] rtu: control port monitoring over D-Bus
@@ -20,10 +20,10 @@ Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
 Change-Id: Ic79128be4c2dff1e63281ad1e2bdf4c4f45f3cc0
 ---
  rtu/device_manager.cpp |  5 +++++
- rtu/port/base_port.cpp | 34 ++++++++++++++++++++++++++++++++++
- rtu/port/base_port.hpp | 17 ++++++++++++++++-
- tests/test_port.cpp    | 39 +++++++++++++++++++++++++++++++++++++++
- 4 files changed, 94 insertions(+), 1 deletion(-)
+ rtu/port/base_port.cpp | 46 ++++++++++++++++++++++++++++++++++++++++++
+ rtu/port/base_port.hpp | 17 +++++++++++++++-
+ tests/test_port.cpp    | 39 +++++++++++++++++++++++++++++++++++
+ 4 files changed, 106 insertions(+), 1 deletion(-)
 
 diff --git a/rtu/device_manager.cpp b/rtu/device_manager.cpp
 index 16f9886..781e1ae 100644
@@ -56,10 +56,15 @@ index 16f9886..781e1ae 100644
      info("Creating Modbus device manager");
      phosphor::modbus::rtu::DeviceManager deviceManager{ctx};
 diff --git a/rtu/port/base_port.cpp b/rtu/port/base_port.cpp
-index 61590a5..4366d08 100644
+index 61590a5..534ffc3 100644
 --- a/rtu/port/base_port.cpp
 +++ b/rtu/port/base_port.cpp
-@@ -11,6 +11,7 @@
+@@ -7,18 +7,35 @@
+ #include <phosphor-logging/lg2.hpp>
+ #include <xyz/openbmc_project/Configuration/USBPort/client.hpp>
+ 
++#include <algorithm>
+ #include <filesystem>
  #include <format>
  #include <optional>
  #include <regex>
@@ -67,18 +72,30 @@ index 61590a5..4366d08 100644
  
  namespace phosphor::modbus::rtu::port
  {
-@@ -19,6 +20,10 @@ PHOSPHOR_LOG2_USING;
  
+ PHOSPHOR_LOG2_USING;
+ 
++namespace
++{
++// D-Bus object paths cannot contain '-', so replace it with '_' when deriving
++// the path segment from a port name (e.g. ttyRS485-8 -> ttyRS485_8).
++std::string toObjectPathSegment(std::string name)
++{
++    std::ranges::replace(name, '-', '_');
++    return name;
++}
++} // namespace
++
  BasePort::BasePort(sdbusplus::async::context& ctx, const config::Config& config,
                     const std::string& devicePath) :
 +    PortControlIntf(ctx, sdbusplus::object_path(
 +                             sdbusplus::common::xyz::openbmc_project::control::
 +                                 Port::namespace_path) /
-+                             config.name),
++                             toObjectPathSegment(config.name)),
      name(config.name), mutex(config.name)
  {
      fd = open(devicePath.c_str(), O_RDWR | O_NOCTTY);
-@@ -39,9 +44,38 @@ BasePort::BasePort(sdbusplus::async::context& ctx, const config::Config& config,
+@@ -39,9 +56,38 @@ BasePort::BasePort(sdbusplus::async::context& ctx, const config::Config& config,
          throw std::runtime_error("Failed to create Modbus interface");
      }
  

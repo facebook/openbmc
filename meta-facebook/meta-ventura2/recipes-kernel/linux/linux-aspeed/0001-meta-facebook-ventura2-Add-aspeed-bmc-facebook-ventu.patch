@@ -1,4 +1,4 @@
-From d28781660c1aed0f0699577be607c33643773738 Mon Sep 17 00:00:00 2001
+From c7b9ca33f01da5fda4f908fbc0c36b5ac7aec048 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Wed, 27 May 2026 15:14:14 +0800
 Subject: [PATCH] meta-facebook-ventura2-Add-aspeed-bmc-facebook-ventura2.dts
@@ -13,7 +13,7 @@ Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
  create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
 
 diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
-index 6b68671f9..6874b621d 100644
+index 6b68671f9379..6874b621deb4 100644
 --- a/arch/arm/boot/dts/aspeed/Makefile
 +++ b/arch/arm/boot/dts/aspeed/Makefile
 @@ -38,6 +38,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
@@ -26,7 +26,7 @@ index 6b68671f9..6874b621d 100644
  	aspeed-bmc-facebook-wedge400-data64.dtb \
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
 new file mode 100644
-index 000000000..679d62ae8
+index 000000000000..679d62ae8b10
 --- /dev/null
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
 @@ -0,0 +1,2958 @@
@@ -2988,3 +2988,6 @@ index 000000000..679d62ae8
 +	aspeed,ext-pulse-duration = <256>;
 +};
 +
+-- 
+2.53.0-Meta
+

@@ -1,4 +1,4 @@
-From 90ef52a6012ebe980a9da930e17ebcb319f20d72 Mon Sep 17 00:00:00 2001
+From 974ac90fb77fb44a2eeb76ff18e727c90b657286 Mon Sep 17 00:00:00 2001
 From: Zinc Lim <zinclim@meta.com>
 Date: Tue, 21 Jul 2026 14:04:45 -0700
 Subject: [PATCH] hw/i2c/aspeed: mask I2CS slave address to 7 bits
@@ -29,5 +29,6 @@ index 97cd6802d1..fe2b86f48a 100644
          break;
      case A_I2CS_INTR_CTRL:
          bus->regs[R_I2CS_INTR_CTRL] = value;
---
+-- 
 2.53.0-Meta
+

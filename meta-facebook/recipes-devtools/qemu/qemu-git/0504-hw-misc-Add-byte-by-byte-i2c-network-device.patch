@@ -1,4 +1,4 @@
-From 9b34ce29e5bcb95615eb96808c1832807c0f12a0 Mon Sep 17 00:00:00 2001
+From 4d6e6ed5e07d3c2a421e1bf121d3f561b6ebdc01 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Thu, 5 Jan 2023 01:13:45 -0800
 Subject: [PATCH] hw/misc: Add byte-by-byte i2c network device
@@ -15,7 +15,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 
 diff --git a/hw/misc/i2c-netdev2.c b/hw/misc/i2c-netdev2.c
 new file mode 100644
-index 0000000000..732cebd822
+index 0000000000..3fab619dbf
 --- /dev/null
 +++ b/hw/misc/i2c-netdev2.c
 @@ -0,0 +1,262 @@

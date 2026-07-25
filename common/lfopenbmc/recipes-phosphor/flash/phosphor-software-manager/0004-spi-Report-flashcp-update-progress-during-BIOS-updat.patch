@@ -1,4 +1,4 @@
-From 275dfefad62bec756c61051b805a97499571d80d Mon Sep 17 00:00:00 2001
+From 3abcf1140334b2e91e4209b580bdc7f340743625 Mon Sep 17 00:00:00 2001
 From: Neil Cheng <Neil.Cheng@quantatw.com>
 Date: Wed, 8 Jul 2026 10:16:27 +0800
 Subject: [PATCH] spi: Report flashcp update progress during BIOS update
@@ -235,3 +235,6 @@ index a0b1b62..da53a89 100644
 +    sdbusplus::async::task<bool> executeFlashcpWithProgress(
 +        const std::string& imagePath, const std::string& mtdPath) const;
  };
+-- 
+2.53.0-Meta
+

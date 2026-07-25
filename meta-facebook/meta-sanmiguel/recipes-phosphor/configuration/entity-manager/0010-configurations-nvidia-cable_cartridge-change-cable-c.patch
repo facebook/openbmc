@@ -1,4 +1,4 @@
-From 0ab3955e4a529edda454090b70a6b61580b8b8a2 Mon Sep 17 00:00:00 2001
+From 34a4ea59beff6cedfa5beb8779a0036494b2ffa5 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 14 May 2026 08:28:07 +0800
 Subject: [PATCH] configurations: nvidia: cable_cartridge: change cable
@@ -18,7 +18,7 @@ Change-Id: I546a2a4aefc3296e823ade7ee5115b43ab665acd
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/configurations/nvidia/cable_cartridge.json b/configurations/nvidia/cable_cartridge.json
-index 2a0e39b..3ea9503 100644
+index c5953a0..b7d4b05 100644
 --- a/configurations/nvidia/cable_cartridge.json
 +++ b/configurations/nvidia/cable_cartridge.json
 @@ -3,11 +3,11 @@
@@ -32,9 +32,9 @@ index 2a0e39b..3ea9503 100644
      ],
 -    "Name": "NVIDIA Cable Cartridge $bus + 1 % 2 * 2 + $address % 2",
 +    "Name": "NVIDIA Cable Cartridge $address - 83",
-     "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': '18x1RU CBL Cartridge', 'BOARD_MANUFACTURER': 'Nvidia'})",
+     "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': '18x1RU CBL Cartridge', 'BOARD_MANUFACTURER': '(Nvidia|NVIDIA)'})",
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
 -- 
-2.52.0
+2.53.0-Meta
 

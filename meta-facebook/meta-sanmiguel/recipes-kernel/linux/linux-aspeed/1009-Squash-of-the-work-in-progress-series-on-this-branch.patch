@@ -1,0 +1,532 @@
+From bc2766ad8dc33ca327faa6e5af225a6bdc860093 Mon Sep 17 00:00:00 2001
+From: "Radivoje (Ogi) Jovanovic" <rjovanovic@nvidia.com>
+Date: Thu, 28 May 2026 13:43:12 -0700
+Subject: [PATCH 1/2] Squash of the work-in-progress series on this branch into
+ a single patch. Cumulative changes against develop-6.12:
+
+  - Protocol v3: host sends only virtual addresses (client enforces
+    the mapping), CRC16 in both directions when requested,
+    RI_FLAG_OFFSET0_READ capability so each response is read in a
+    single I2C transaction starting at offset 0 (removes the
+    cross-STOP cursor on the slave). Loud boot-time marker confirms
+    the runtime protocol version.
+
+  - Two-level wallclock-bounded retry:
+      * Inner FETCH poll (ri_do_one_xfer) polls the client for the
+        response with xfer-timeout-ms as the per-attempt deadline and
+        poll-sleep-ms between header reads; on bad header, stale seq,
+        body fetch error, or parse failure the attempt aborts so the
+        outer loop can resubmit.
+      * Outer retry loop (remote_master_xfer) resubmits with a fresh
+        seq on retryable errors (-EBUSY/-EAGAIN/-ETIMEDOUT/-EBADMSG/
+        -EREMOTEIO/-EPROTO/-EMSGSIZE) until host-retry-max-ms
+        expires. The retry sleep is clamped to the remaining budget
+        and the deadline is re-checked after the sleep, so the loop
+        does not overshoot the cap by a full sleep interval. Worst-
+        case total runtime is host-retry-max-ms + one xfer-timeout-ms
+        (we deliberately let an in-flight ri_do_one_xfer finish
+        rather than aborting mid-poll).
+
+  - Stuck-seq resync: when the client serves a frame whose seq does
+    not match our outstanding submit for RI_STALE_RESYNC_THRESHOLD
+    consecutive poll cycles, fire a zero-length write to the link
+    client. The matching virtual-mux-client patch treats that as a
+    request to drop its tx_ready so subsequent reads return NOT_READY
+    and the outer retry can resubmit with a fresh seq. Recovers the
+    iter-14-class stall (client's WRITE_RECEIVED stream for our
+    submit got dropped, worker never ran, host saw stale seq for ~4
+    seconds) without waiting for the full poll-deadline timeout.
+
+  - Logging policy: per-poll NOT_READY status is dev_dbg (silent by
+    default; the eventual rx ok / skip / poll deadline conveys the
+    same "did this attempt make progress" signal). Per-event failure
+    paths (bad header, CRC mismatch, parse error, fetch: skip, poll
+    deadline expired, xfer retry) remain at dev_warn so a single
+    log dump captures the why-trail of a failing transaction.
+    Recovered/failed outcome line summarizes per call.
+
+  - DT-tunable timing knobs (xfer-poll-sleep-ms, xfer-timeout-ms,
+    host-retry-max-ms, host-retry-sleep-ms) clamped to a sane
+    ceiling and to mutually-consistent relationships (timeout >=
+    poll-sleep; retry-max >= timeout). Optional fixed virtual bus
+    number via virtual-bus-num.
+
+  - DTS wiring (nvidia-vr-bmc-nvl-core.dtsi): adds the
+    virtual-mux-host slave on the link bus with the v3 timing knobs.
+
+[1] https://github.com/NVIDIA/linux/commit/ba0bb79db8169a953c53a0ad8988370e6f05392f
+
+Signed-off-by: Radivoje (Ogi) Jovanovic <rjovanovic@nvidia.com>
+---
+ drivers/i2c/muxes/virtual-mux-host.c | 303 +++++++++++++++++++++++----
+ 1 file changed, 266 insertions(+), 37 deletions(-)
+
+diff --git a/drivers/i2c/muxes/virtual-mux-host.c b/drivers/i2c/muxes/virtual-mux-host.c
+index ea18b05b6686..31149f88ed7b 100644
+--- a/drivers/i2c/muxes/virtual-mux-host.c
++++ b/drivers/i2c/muxes/virtual-mux-host.c
+@@ -35,13 +35,53 @@
+ #define RI_MSG_XFER_RESULT 0x81
+ #define RI_MSG_NOT_READY   0x82
+ 
+-#define RI_FLAG_CRC16      BIT(0)
++#define RI_FLAG_CRC16        BIT(0)
++/*
++ * Capability flag, host -> client: "I will read the response in a single
++ * I2C transaction starting at offset 0. Please serve every READ_REQUESTED
++ * from offset 0 instead of advancing a cursor across STOPs."
++ * The client echoes the flag in the response header if it honored the
++ * request. The host then knows whether to issue the new single-transaction
++ * full-frame read or fall back to the legacy header+remainder pattern.
++ * Old clients ignore unknown flag bits and respond without it.
++ */
++#define RI_FLAG_OFFSET0_READ BIT(1)
+ 
+ #define RI_MAX_MSGS        4
+ #define RI_MAX_REQ_BYTES   2048
+ #define RI_MAX_RESP_BYTES  4096
+ #define RI_RESP_PAYLOAD_HDR_LEN 8 /* status(2) + nread(1) + rsvd(1) + rsvd2(4) */
+-#define RI_SLEEP_MS        5
++#define RI_DEFAULT_POLL_SLEEP_MS   40
++#define RI_DEFAULT_XFER_TIMEOUT_MS 2500
++
++/*
++ * Sanity ceiling for DT-supplied timing values (ms). A typo'd or
++ * pathological value gets clamped here so we don't compute absurd
++ * jiffy counts or wedge the FETCH poll loop with hundreds of millions
++ * of iterations.
++ */
++#define RI_DT_TIMING_MAX_MS  60000
++
++/*
++ * Wallclock cap and inter-attempt sleep for the host's outer retry loop.
++ * Symmetric with the client's downstream retry: on transient errors
++ * (-EBUSY/-EAGAIN/-ETIMEDOUT/-EBADMSG/-EREMOTEIO) we resubmit with a fresh
++ * seq until success or deadline. Sized below fru-device's 10s rescan future
++ * cap so a stuck transaction can't take an entire bus offline.
++ */
++#define RI_DEFAULT_HOST_RETRY_MAX_MS    8000
++#define RI_DEFAULT_HOST_RETRY_SLEEP_MS  20
++
++/*
++ * Stale-seq resync threshold. If the client serves a frame whose seq does
++ * not match our outstanding submit for this many consecutive poll cycles,
++ * the client is likely stuck on a previous result (its WRITE_RECEIVED
++ * stream for our submit may have been dropped by the i2c-target
++ * subsystem). Send a zero-length write to nudge the client into clearing
++ * its tx_ready so it returns NOT_READY for the remainder of this xfer;
++ * the outer retry loop then resubmits with a fresh seq.
++ */
++#define RI_STALE_RESYNC_THRESHOLD       3
+ 
+ /* Common header (packed) */
+ struct __packed ri_hdr {
+@@ -63,6 +103,10 @@ struct remote_host {
+ 	struct mutex xfer_lock;             /* serialize transfers (FRU is fine) */
+ 	u8 seq;
+ 	bool use_crc;
++	u32 poll_sleep_ms;                  /* DT: xfer-poll-sleep-ms */
++	u32 xfer_timeout_ms;                /* DT: xfer-timeout-ms */
++	u32 host_retry_max_ms;              /* DT: host-retry-max-ms */
++	u32 host_retry_sleep_ms;            /* DT: host-retry-sleep-ms */
+ 	u32 adapter_nr;                     /* optional forced bus number */
+ };
+ 
+@@ -92,10 +136,11 @@ static int ri_build_submit_frame(struct remote_host *h,
+ 	hdr->flags = 0;
+ 	hdr->reserved = 0;
+ 
+-	if (h->use_crc) {
++	if (h->use_crc)
+ 		flags |= RI_FLAG_CRC16;
+-		hdr->flags = cpu_to_le16(flags);
+-	}
++	/* Advertise that we will single-transaction read responses */
++	flags |= RI_FLAG_OFFSET0_READ;
++	hdr->flags = cpu_to_le16(flags);
+ 
+ 	off = sizeof(*hdr);
+ 
+@@ -186,24 +231,41 @@ static int ri_parse_response(struct remote_host *h,
+ 			hdr->header_len, (u32)le16_to_cpu(hdr->total_len), (u32)le16_to_cpu(hdr->flags),
+ 			buflen, cursor);
+ 
+-		if (hdr->magic != RI_MAGIC_RESP || hdr->version != RI_VER)
++		if (hdr->magic != RI_MAGIC_RESP || hdr->version != RI_VER) {
++			dev_warn(h->dev,
++				 "parse: bad hdr magic=0x%04x ver=0x%02x seq=%u (want seq=%u)\n",
++				 (u32)le16_to_cpu(hdr->magic), hdr->version,
++				 hdr->seq, seq);
+ 			return -EPROTO;
++		}
+ 
+ 		total = le16_to_cpu(hdr->total_len);
+ 		flags = le16_to_cpu(hdr->flags);
+ 
+-		if (total < sizeof(*hdr) || cursor + total > buflen)
++		if (total < sizeof(*hdr) || cursor + total > buflen) {
++			dev_warn(h->dev,
++				 "parse: bad total=%u seq=%u buflen=%zu\n",
++				 total, hdr->seq, buflen);
+ 			return -EMSGSIZE;
++		}
+ 
+ 		if (flags & RI_FLAG_CRC16) {
+ 			u16 crc_calc, crc_frame;
+ 
+-			if (total < sizeof(*hdr) + 2)
++			if (total < sizeof(*hdr) + 2) {
++				dev_warn(h->dev,
++					 "parse: short for CRC seq=%u total=%u\n",
++					 hdr->seq, total);
+ 				return -EMSGSIZE;
++			}
+ 			crc_frame = le16_to_cpu(*(__le16 *)&buf[cursor + total - 2]);
+ 			crc_calc = crc16(0, buf + cursor, total - 2);
+-			if (crc_frame != crc_calc)
++			if (crc_frame != crc_calc) {
++				dev_warn(h->dev,
++					 "parse: CRC mismatch seq=%u frame=0x%04x calc=0x%04x total=%u\n",
++					 hdr->seq, crc_frame, crc_calc, total);
+ 				return -EBADMSG;
++			}
+ 		}
+ 
+ 		/* If this is NOT_READY, be tolerant of seq mismatches and continue scanning */
+@@ -236,8 +298,6 @@ static int ri_parse_response(struct remote_host *h,
+ 		dev_dbg(h->dev, "resp parsed: seq=%u status=%d nread=%u total=%u\n",
+ 			 (unsigned int)seq, (int)status, (unsigned int)nread_msgs, (unsigned int)total);
+ 
+-		if (status == -EAGAIN)
+-			return -EAGAIN;
+ 		if (status < 0)
+ 			return (int)status;
+ 
+@@ -289,15 +349,35 @@ static int ri_read_response_frame(struct remote_host *h,
+ 	u16 remain;
+ 	u8 *p;
+ 	int r;
++	bool offset0;
+ 
+ 	/* Sanity on total size */
+ 	if (total < sizeof(*hdr) || total > RI_MAX_RESP_BYTES)
+ 		return -EMSGSIZE;
+ 
+-	/* Copy header into resp buffer and read the exact remainder */
+-	memcpy(resp, hdr, sizeof(*hdr));
+-	remain = total - sizeof(*hdr);
+-	p = resp + sizeof(*hdr);
++	/*
++	 * If the client echoed RI_FLAG_OFFSET0_READ in the response header,
++	 * it serves every READ_REQUESTED from offset 0 and we re-read the
++	 * full frame (header included) in a single I2C transaction. This
++	 * removes the cross-STOP cursor in the slave and is immune to
++	 * end-of-xfer callback quirks in any particular slave back-end.
++	 *
++	 * If the flag is not echoed, the client is the legacy implementation
++	 * that advances a cursor across STOPs; preserve the original
++	 * memcpy-header + read-remainder pattern so this host stays
++	 * compatible with old clients.
++	 */
++	offset0 = !!(le16_to_cpu(hdr->flags) & RI_FLAG_OFFSET0_READ);
++
++	if (offset0) {
++		remain = total;
++		p = resp;
++	} else {
++		memcpy(resp, hdr, sizeof(*hdr));
++		remain = total - sizeof(*hdr);
++		p = resp + sizeof(*hdr);
++	}
++
+ 	while (remain) {
+ 		r = i2c_master_recv(h->link_client, p, remain);
+ 		if (r < 0)
+@@ -321,18 +401,32 @@ static void ri_hex_dump(struct remote_host *h, const char *label,
+ 			     buf, len, false);
+ }
+ 
+-static int remote_master_xfer(struct i2c_adapter *adap,
+-			      struct i2c_msg *msgs, int num)
++static bool ri_xfer_retryable(int ret)
++{
++	/*
++	 * Transient wire/link conditions worth a fresh resubmit.
++	 * -EPROTO and -EMSGSIZE are included because in practice they
++	 * occur when a wire glitch corrupts the response header (magic /
++	 * version / total_len byte), not when the two driver versions
++	 * actually disagree on the protocol - a fresh submit with a new
++	 * seq normally clears them. -EIO / -ENOMEM / -EINVAL / -ENODEV
++	 * indicate real local resource or downstream-bus problems and
++	 * won't get better on retry.
++	 */
++	return ret == -EBUSY || ret == -EAGAIN || ret == -ETIMEDOUT ||
++	       ret == -EBADMSG || ret == -EREMOTEIO ||
++	       ret == -EPROTO || ret == -EMSGSIZE;
++}
++
++static int ri_do_one_xfer(struct remote_host *h, struct i2c_msg *msgs, int num)
+ {
+-	struct remote_host *h = i2c_get_adapdata(adap);
+ 	u8 *req = NULL;
+ 	size_t req_len = 0;
+ 	u8 *resp = NULL;
+-	int ret, tries;
++	int ret, tries, max_tries;
++	unsigned int stale_polls = 0;
+ 	u8 seq;
+ 
+-	mutex_lock(&h->xfer_lock);
+-
+ 	seq = ++h->seq;
+ 	dev_dbg(h->dev, "xfer start: seq=%u num=%d\n", seq, num);
+ 
+@@ -358,7 +452,9 @@ static int remote_master_xfer(struct i2c_adapter *adap,
+ 	}
+ 
+ 	/* Poll FETCH: read header first, then exact remaining payload */
+-	for (tries = 0; tries < 50; tries++) {
++	max_tries = DIV_ROUND_UP(h->xfer_timeout_ms, h->poll_sleep_ms);
++	max_tries = max_t(int, 1, max_tries);
++	for (tries = 0; tries < max_tries; tries++) {
+ 		struct ri_hdr hdr_local;
+ 		int r;
+ 		u16 total;
+@@ -367,10 +463,15 @@ static int remote_master_xfer(struct i2c_adapter *adap,
+ 		/* Read exactly header */
+ 		r = i2c_master_recv(h->link_client, (u8 *)&hdr_local, sizeof(hdr_local));
+ 		if (r < 0) {
++			dev_warn(h->dev,
++				 "fetch hdr: recv error seq=%u ret=%d\n", seq, r);
+ 			ret = r;
+ 			goto out;
+ 		}
+ 		if (r != sizeof(hdr_local)) {
++			dev_warn(h->dev,
++				 "fetch hdr: short recv seq=%u got=%d want=%zu\n",
++				 seq, r, sizeof(hdr_local));
+ 			ret = -EMSGSIZE;
+ 			goto out;
+ 		}
+@@ -380,6 +481,10 @@ static int remote_master_xfer(struct i2c_adapter *adap,
+ 
+ 		/* Basic validation */
+ 		if (hdr_local.magic != RI_MAGIC_RESP || hdr_local.version != RI_VER) {
++			dev_warn(h->dev,
++				 "fetch hdr: bad magic=0x%04x ver=0x%02x seq=%u (want seq=%u)\n",
++				 (u32)le16_to_cpu(hdr_local.magic),
++				 hdr_local.version, hdr_local.seq, seq);
+ 			ret = -EPROTO;
+ 			goto out;
+ 		}
+@@ -389,15 +494,19 @@ static int remote_master_xfer(struct i2c_adapter *adap,
+ 
+ 		/* NOT_READY: tolerate any seq and retry */
+ 		if (msg_type == RI_MSG_NOT_READY) {
+-			dev_dbg(h->dev, "resp not ready (seq=%u), retrying\n", hdr_local.seq);
+-			msleep(RI_SLEEP_MS);
++			dev_dbg(h->dev,
++				"fetch: NOT_READY seq=%u (want %u) total=%u try=%d/%d\n",
++				hdr_local.seq, seq, total, tries, max_tries);
++			msleep(h->poll_sleep_ms);
+ 			continue;
+ 		}
+ 
+ 		/* For real responses, require matching seq */
+ 		if (msg_type != RI_MSG_XFER_RESULT || hdr_local.seq != seq) {
+-			dev_dbg(h->dev, "skip resp type=0x%02x seq=%u (want %u)\n",
+-				msg_type, hdr_local.seq, seq);
++			dev_warn(h->dev,
++				 "fetch: skip type=0x%02x seq=%u (want type=0x%02x seq=%u) total=%u\n",
++				 msg_type, hdr_local.seq,
++				 (u32)RI_MSG_XFER_RESULT, seq, total);
+ 			/* Drain the rest of this frame if any to keep link sane */
+ 			if (total > sizeof(hdr_local) && total <= RI_MAX_RESP_BYTES) {
+ 				u16 drain = total - sizeof(hdr_local);
+@@ -412,13 +521,37 @@ static int remote_master_xfer(struct i2c_adapter *adap,
+ 					drain -= r;
+ 				}
+ 			}
+-			msleep(RI_SLEEP_MS);
++			if (++stale_polls == RI_STALE_RESYNC_THRESHOLD) {
++				struct i2c_msg resync = {
++					.addr  = h->link_client->addr,
++					.flags = 0,
++					.len   = 0,
++					.buf   = NULL,
++				};
++				int rret;
++
++				rret = i2c_transfer(h->link_client->adapter,
++						    &resync, 1);
++				if (rret < 0)
++					dev_warn(h->dev,
++						 "stale-seq resync send failed seq=%u after %u stale polls: ret=%d\n",
++						 seq, stale_polls, rret);
++				else
++					dev_info(h->dev,
++						 "stale-seq resync sent seq=%u after %u stale polls\n",
++						 seq, stale_polls);
++			}
++			msleep(h->poll_sleep_ms);
+ 			continue;
+ 		}
+ 
+ 		ret = ri_read_response_frame(h, &hdr_local, resp, total);
+-		if (ret)
++		if (ret) {
++			dev_warn(h->dev,
++				 "fetch body: ri_read_response_frame seq=%u total=%u ret=%d\n",
++				 seq, total, ret);
+ 			goto out;
++		}
+ 
+ 		/* Dump full frame (first 128 bytes) */
+ 		ri_hex_dump(h, "ri host resp full", resp, min_t(u16, total, 128));
+@@ -428,22 +561,88 @@ static int remote_master_xfer(struct i2c_adapter *adap,
+ 		if (ret == 0) {
+ 			ret = num;
+ 			dev_dbg(h->dev, "xfer done: seq=%u ok\n", seq);
+-			goto out;
+-		}
+-		if (ret == -EAGAIN) {
+-			msleep(RI_SLEEP_MS);
+-			continue;
++		} else {
++			dev_warn(h->dev,
++				 "parse: ri_parse_response seq=%u total=%u ret=%d\n",
++				 seq, total, ret);
+ 		}
+-		dev_err(h->dev, "xfer err: seq=%u ret=%d\n", seq, ret);
+ 		goto out;
+ 	}
+ 
++	dev_warn(h->dev,
++		 "fetch: poll deadline expired seq=%u timeout_ms=%u\n",
++		 seq, h->xfer_timeout_ms);
+ 	ret = -ETIMEDOUT;
+-	dev_err(h->dev, "xfer timeout: seq=%u\n", seq);
+ 
+ out:
+ 	kfree(resp);
+ 	kfree(req);
++	return ret;
++}
++
++static int remote_master_xfer(struct i2c_adapter *adap,
++			      struct i2c_msg *msgs, int num)
++{
++	struct remote_host *h = i2c_get_adapdata(adap);
++	unsigned long deadline;
++	unsigned int retries = 0;
++	int ret;
++
++	mutex_lock(&h->xfer_lock);
++
++	deadline = jiffies + msecs_to_jiffies(h->host_retry_max_ms);
++	for (;;) {
++		unsigned long left_jif;
++		u32 sleep_ms;
++
++		ret = ri_do_one_xfer(h, msgs, num);
++		if (!ri_xfer_retryable(ret))
++			break;
++		dev_warn(h->dev,
++			 "xfer retry: ret=%d retries=%u (sleeping %ums)\n",
++			 ret, retries, h->host_retry_sleep_ms);
++		if (time_after_eq(jiffies, deadline))
++			break;
++		retries++;
++		/*
++		 * Clamp the retry sleep to the remaining wallclock budget so
++		 * we don't overshoot host-retry-max-ms by a full sleep
++		 * interval on the last cycle, then re-check the deadline
++		 * before launching another attempt: msleep can still drift
++		 * past the deadline and we don't want to spend another full
++		 * xfer-timeout-ms past budget. The in-flight ri_do_one_xfer
++		 * is always allowed to finish - aborting mid-xfer is what we
++		 * explicitly do not want; worst-case total runtime is thus
++		 * host-retry-max-ms + one xfer-timeout-ms.
++		 */
++		left_jif = deadline - jiffies;
++		sleep_ms = h->host_retry_sleep_ms;
++		if (jiffies_to_msecs(left_jif) < sleep_ms)
++			sleep_ms = jiffies_to_msecs(left_jif);
++		if (sleep_ms)
++			msleep(sleep_ms);
++		if (time_after_eq(jiffies, deadline))
++			break;
++	}
++
++	/*
++	 * Per-attempt failure events (bad header, CRC, parse error, retry,
++	 * poll deadline, stale-seq skip) stay at dev_warn so a single log
++	 * dump captures *why* a transfer needed retries; without that
++	 * why-trail the iter-14-class "stuck on stale seq for 4s then
++	 * recovered after 2 retries" symptom is invisible from a single
++	 * outcome line. Per-poll NOT_READY status is dev_dbg (no event
++	 * content; only useful with dynamic debug enabled). The single
++	 * recovered/failed line below is the summary; the per-event lines
++	 * above are the why-trail.
++	 */
++	if (retries && ret > 0)
++		dev_info(h->dev, "xfer recovered: ret=%d retries=%u\n",
++			 ret, retries);
++	else if (ret < 0)
++		dev_err(h->dev, "xfer failed: ret=%d retries=%u\n",
++			ret, retries);
++
+ 	mutex_unlock(&h->xfer_lock);
+ 	return ret;
+ }
+@@ -486,6 +685,33 @@ static int ri_host_probe(struct i2c_client *client)
+ 
+ 	/* DT optional: use-crc16 */
+ 	h->use_crc = of_property_read_bool(client->dev.of_node, "use-crc16");
++	if (of_property_read_u32(client->dev.of_node, "xfer-poll-sleep-ms", &h->poll_sleep_ms))
++		h->poll_sleep_ms = RI_DEFAULT_POLL_SLEEP_MS;
++	if (of_property_read_u32(client->dev.of_node, "xfer-timeout-ms", &h->xfer_timeout_ms))
++		h->xfer_timeout_ms = RI_DEFAULT_XFER_TIMEOUT_MS;
++	if (of_property_read_u32(client->dev.of_node, "host-retry-max-ms",
++				 &h->host_retry_max_ms))
++		h->host_retry_max_ms = RI_DEFAULT_HOST_RETRY_MAX_MS;
++	if (of_property_read_u32(client->dev.of_node, "host-retry-sleep-ms",
++				 &h->host_retry_sleep_ms))
++		h->host_retry_sleep_ms = RI_DEFAULT_HOST_RETRY_SLEEP_MS;
++	/* Clamp DT values to a sane ceiling before applying relationships */
++	if (h->poll_sleep_ms > RI_DT_TIMING_MAX_MS)
++		h->poll_sleep_ms = RI_DT_TIMING_MAX_MS;
++	if (h->xfer_timeout_ms > RI_DT_TIMING_MAX_MS)
++		h->xfer_timeout_ms = RI_DT_TIMING_MAX_MS;
++	if (h->host_retry_max_ms > RI_DT_TIMING_MAX_MS)
++		h->host_retry_max_ms = RI_DT_TIMING_MAX_MS;
++	if (h->host_retry_sleep_ms > RI_DT_TIMING_MAX_MS)
++		h->host_retry_sleep_ms = RI_DT_TIMING_MAX_MS;
++	if (h->poll_sleep_ms == 0)
++		h->poll_sleep_ms = RI_DEFAULT_POLL_SLEEP_MS;
++	if (h->xfer_timeout_ms < h->poll_sleep_ms)
++		h->xfer_timeout_ms = h->poll_sleep_ms;
++	if (h->host_retry_sleep_ms == 0)
++		h->host_retry_sleep_ms = RI_DEFAULT_HOST_RETRY_SLEEP_MS;
++	if (h->host_retry_max_ms < h->xfer_timeout_ms)
++		h->host_retry_max_ms = h->xfer_timeout_ms;
+ 	dev_dbg(&client->dev, "host probe: addr=%02x use-crc16=%d\n",
+ 		client->addr, h->use_crc);
+ 
+@@ -520,8 +746,11 @@ static int ri_host_probe(struct i2c_client *client)
+ 
+ 	i2c_set_clientdata(client, h);
+ 
+-	dev_info(&client->dev, "virtual-mux-host registered as i2c-%d (crc=%d)\n",
+-		 h->virt_adap.nr, h->use_crc);
++	dev_info(&client->dev,
++		 "virtual-mux-host registered as i2c-%d crc=%d xfer-timeout-ms=%u poll-sleep-ms=%u host-retry-max-ms=%u retry-sleep-ms=%u\n",
++		 h->virt_adap.nr, h->use_crc,
++		 h->xfer_timeout_ms, h->poll_sleep_ms,
++		 h->host_retry_max_ms, h->host_retry_sleep_ms);
+ 
+ 	return 0;
+ }
+-- 
+2.52.0
+

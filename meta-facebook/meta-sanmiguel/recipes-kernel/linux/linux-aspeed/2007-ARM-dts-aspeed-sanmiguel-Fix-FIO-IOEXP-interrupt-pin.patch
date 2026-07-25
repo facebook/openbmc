@@ -1,0 +1,36 @@
+From a4f0bbbc1c5866e7a272f52d6b65ec0d1478f5c1 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai.pt@gmail.com>
+Date: Mon, 20 Jul 2026 09:18:14 +0800
+Subject: [PATCH 1/1] ARM: dts: aspeed: sanmiguel: Fix FIO IOEXP interrupt pin
+
+The interrupt properties for fio_ioexp (pca9555 on i2c14) were incorrectly
+configured to gpio1 with ASPEED_GPIO(B, 6).
+
+Update the interrupt-parent to gpio0 and the interrupt pin to
+ASPEED_GPIO(C, 6) according to the hardware specification.
+
+Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
+
+[1] https://lore.kernel.org/all/20260721-upstream-sanmiguel-fix-fio-ioexp-intr-v1-1-8245ae0ca590@gmail.com/
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
+index 1dcd2bf1794c..80a65ee97569 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
+@@ -834,8 +834,8 @@ fio_ioexp: gpio@20 {
+ 		reg = <0x20>;
+ 		gpio-controller;
+ 		#gpio-cells = <2>;
+-		interrupt-parent = <&gpio1>;
+-		interrupts = <ASPEED_GPIO(B, 6) IRQ_TYPE_LEVEL_LOW>;
++		interrupt-parent = <&gpio0>;
++		interrupts = <ASPEED_GPIO(C, 6) IRQ_TYPE_LEVEL_LOW>;
+ 
+ 		gpio-line-names =
+ 			"", "", "", "",
+-- 
+2.52.0
+

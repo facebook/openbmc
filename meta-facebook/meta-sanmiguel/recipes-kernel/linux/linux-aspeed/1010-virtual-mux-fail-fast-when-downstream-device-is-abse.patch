@@ -1,0 +1,92 @@
+From 7e1cddc7e58802e038f5aeecddf5e7c0380f6401 Mon Sep 17 00:00:00 2001
+From: Peter Zhang <yqzhang@nvidia.com>
+Date: Tue, 9 Jun 2026 13:20:20 -0700
+Subject: [PATCH 2/2] virtual-mux: fail fast when downstream device is absent
+
+CP2112 reports address NACK as -ETIMEDOUT. Treat fast ETIMEDOUT (<800ms)
+as no device on the HMC client and skip retries on the BMC host so bus 90
+FRU scans don't hang during host OS reboot.
+
+[1] https://github.com/NVIDIA/linux/commit/8a9e20678f9203d9bcbbded420ba344af6f8489b
+
+Signed-off-by: Peter Zhang <yqzhang@nvidia.com>
+---
+ drivers/i2c/muxes/virtual-mux-host.c | 41 ++++++++++++++++++++--------
+ 1 file changed, 29 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/i2c/muxes/virtual-mux-host.c b/drivers/i2c/muxes/virtual-mux-host.c
+index 31149f88ed7b..4540c140f994 100644
+--- a/drivers/i2c/muxes/virtual-mux-host.c
++++ b/drivers/i2c/muxes/virtual-mux-host.c
+@@ -83,6 +83,12 @@
+  */
+ #define RI_STALE_RESYNC_THRESHOLD       3
+ 
++/*
++ * CP2112 reports address NACK as -ETIMEDOUT. Match virtual-mux-client:
++ * fast ETIMEDOUT (< this ms) is treated as no device, not a link glitch.
++ */
++#define RI_NACK_FAST_FAIL_MS            800
++
+ /* Common header (packed) */
+ struct __packed ri_hdr {
+ 	__le16 magic;
+@@ -401,21 +407,28 @@ static void ri_hex_dump(struct remote_host *h, const char *label,
+ 			     buf, len, false);
+ }
+ 
+-static bool ri_xfer_retryable(int ret)
++static bool ri_xfer_retryable(int ret, unsigned int elapsed_ms)
+ {
+ 	/*
+-	 * Transient wire/link conditions worth a fresh resubmit.
+-	 * -EPROTO and -EMSGSIZE are included because in practice they
+-	 * occur when a wire glitch corrupts the response header (magic /
+-	 * version / total_len byte), not when the two driver versions
+-	 * actually disagree on the protocol - a fresh submit with a new
+-	 * seq normally clears them. -EIO / -ENOMEM / -EINVAL / -ENODEV
+-	 * indicate real local resource or downstream-bus problems and
+-	 * won't get better on retry.
++	 * Class A (device gone / hard downstream): no retry this xfer.
++	 * -ENXIO: target address NACK (no device), relayed by HMC client.
++	 * -EIO: device responded but data xfer failed.
++	 * -ENODEV: downstream bus unavailable.
++	 * -EREMOTEIO: legacy NACK mapping from older HMC firmware.
++	 *
++	 * Class B (transient link/protocol): retry within host-retry-max-ms.
++	 * -ETIMEDOUT: link or bus timeout. CP2112 reports address NACK as
++	 * -ETIMEDOUT too; fast completion (< RI_NACK_FAST_FAIL_MS) is treated
++	 * as Class A. Slow ETIMEDOUT stays retryable.
++	 * -EPROTO / -EMSGSIZE: corrupted RI frame, usually clears on resubmit.
+ 	 */
++	if (ret == -ENXIO || ret == -EIO || ret == -ENODEV || ret == -EREMOTEIO)
++		return false;
++	if (ret == -ETIMEDOUT && elapsed_ms < RI_NACK_FAST_FAIL_MS)
++		return false;
++
+ 	return ret == -EBUSY || ret == -EAGAIN || ret == -ETIMEDOUT ||
+-	       ret == -EBADMSG || ret == -EREMOTEIO ||
+-	       ret == -EPROTO || ret == -EMSGSIZE;
++	       ret == -EBADMSG || ret == -EPROTO || ret == -EMSGSIZE;
+ }
+ 
+ static int ri_do_one_xfer(struct remote_host *h, struct i2c_msg *msgs, int num)
+@@ -593,10 +606,14 @@ static int remote_master_xfer(struct i2c_adapter *adap,
+ 	deadline = jiffies + msecs_to_jiffies(h->host_retry_max_ms);
+ 	for (;;) {
+ 		unsigned long left_jif;
++		unsigned long attempt_start;
++		unsigned int elapsed_ms;
+ 		u32 sleep_ms;
+ 
++		attempt_start = jiffies;
+ 		ret = ri_do_one_xfer(h, msgs, num);
+-		if (!ri_xfer_retryable(ret))
++		elapsed_ms = jiffies_to_msecs(jiffies - attempt_start);
++		if (!ri_xfer_retryable(ret, elapsed_ms))
+ 			break;
+ 		dev_warn(h->dev,
+ 			 "xfer retry: ret=%d retries=%u (sleeping %ums)\n",
+-- 
+2.52.0
+

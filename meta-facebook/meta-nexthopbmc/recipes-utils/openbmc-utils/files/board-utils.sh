@@ -17,6 +17,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
+. /usr/local/bin/gpio-utils.sh
+
 wedge_board_type() {
     echo 'nexthopbmc'
 }
@@ -27,36 +29,56 @@ wedge_board_rev() {
 }
 
 userver_power_is_on() {
-    echo "FIXME: feature not implemented!!"
-    return 1
+    local val
+    val=$(gpio_get_value CPE_CTRL)
+    if [ "$val" = "1" ]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 userver_power_on() {
-    echo "FIXME: feature not implemented!!"
-    return 1
+    gpio_set_value CPE_CTRL 1
 }
 
 userver_power_off() {
-    echo "FIXME: feature not implemented!!"
-    return 1
+    gpio_set_value CPE_CTRL 0
 }
 
 userver_reset() {
-    return 1
-    echo "FIXME: feature not implemented!!"
+    userver_power_off
+
+    sleep 5
+
+    userver_power_on
+    return 0
 }
 
 chassis_power_cycle() {
-    echo "FIXME: feature not implemented!!"
-    return 1
+    gpio_set_value BMC_PWR_CYC_REQ 1
 }
 
 bmc_mac_addr() {
-    echo "FIXME: feature not implemented!!"
-    return 1
+    # Fetch mac addr supporting v5+ format.
+    bmc_mac=$(weutil | sed -nE 's/BMC MAC Base: (.*)/\1/p')
+    if [ -z "$bmc_mac" ]; then
+        echo "BMC MAC Address Not Found !" 1>&2
+        logger -p user.crit "BMC MAC Address Not Found !"
+        return 1
+    else
+        echo "$bmc_mac"
+    fi
 }
 
 userver_mac_addr() {
-    echo "FIXME: feature not implemented!!"
-    return 1
+    # Fetch mac addr supporting v5+ format.
+    cpu_mac=$(weutil | sed -nE 's/X86 CPU MAC Base: (.*)/\1/p')
+    if [ -z "$cpu_mac" ]; then
+        echo "x86 CPU MAC Address Not Found !" 1>&2
+        logger -p user.crit "x86 CPU MAC Address Not Found !"
+        return 1
+    else
+        echo "$cpu_mac"
+    fi
 }

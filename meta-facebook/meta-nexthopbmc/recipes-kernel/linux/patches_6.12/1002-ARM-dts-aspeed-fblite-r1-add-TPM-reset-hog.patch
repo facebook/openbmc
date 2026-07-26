@@ -1,0 +1,31 @@
+From bb82c0a519e4a4b9a3c98426a79636a379661132 Mon Sep 17 00:00:00 2001
+From: Nate White <nate@nexthop.ai>
+Date: Thu, 28 May 2026 17:08:11 +0100
+Subject: [PATCH] ARM: dts: aspeed: fblite-r1: add TPM reset hog
+
+TPM reset needs to be de-asserted, so we drive this IO line high.
+
+Signed-off-by: Nate White <nate@nexthop.ai>
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+index 0a9dc481a..2312a12b1 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+@@ -85,3 +85,14 @@ &vhub {
+ &udc {
+ 	status = "okay";
+ };
++
++&gpio0 {
++	status = "okay";
++
++	gpior5-hog {
++		gpio-hog;
++		gpios = <ASPEED_GPIO(R, 5) GPIO_ACTIVE_HIGH>;
++		label = "TPM_RST_L";
++		output-high;
++	};
++};

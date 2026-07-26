@@ -1,7 +1,7 @@
-From 10009a6343b95797d462d1f2996a7b12e959288b Mon Sep 17 00:00:00 2001
+From 3da0ce0170e2b2af986f0a596c5d535fc6855969 Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike.quanta.115@gmail.com>
 Date: Thu, 18 Jun 2026 15:41:44 +0800
-Subject: [PATCH 1/2] ARM: dts: aspeed: sanmiguel: fix PDB HSC shunt resistor
+Subject: [PATCH] ARM: dts: aspeed: sanmiguel: fix PDB HSC shunt resistor
 
 Correct the shunt-resistor-micro-ohms values for the four TI LM5066i
 hot-swap controllers on the PDB. This ensures accurate current and
@@ -15,10 +15,10 @@ Signed-off-by: Mike Hsieh <mike.quanta.115@gmail.com>
  1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
-index 4435ae6b2e5f..bcf8d33a2f8b 100644
+index b14a9f3b55b6..0b5a267a8a13 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
-@@ -697,7 +697,7 @@ pdb_mps_hsc1: power-monitor@10 {
+@@ -702,7 +702,7 @@ pdb_mps_hsc1: power-monitor@10 {
  	pdb_ti_hsc1: power-monitor@11 {
  		compatible = "ti,lm5066i";
  		reg = <0x11>;
@@ -27,7 +27,7 @@ index 4435ae6b2e5f..bcf8d33a2f8b 100644
  	};
  
  	pdb_mps_hsc2: power-monitor@12 {
-@@ -708,7 +708,7 @@ pdb_mps_hsc2: power-monitor@12 {
+@@ -713,7 +713,7 @@ pdb_mps_hsc2: power-monitor@12 {
  	pdb_ti_hsc2: power-monitor@13 {
  		compatible = "ti,lm5066i";
  		reg = <0x13>;
@@ -36,7 +36,7 @@ index 4435ae6b2e5f..bcf8d33a2f8b 100644
  	};
  
  	pdb_mps_hsc3: power-monitor@14 {
-@@ -719,7 +719,7 @@ pdb_mps_hsc3: power-monitor@14 {
+@@ -724,7 +724,7 @@ pdb_mps_hsc3: power-monitor@14 {
  	pdb_ti_hsc3: power-monitor@15 {
  		compatible = "ti,lm5066i";
  		reg = <0x15>;
@@ -45,7 +45,7 @@ index 4435ae6b2e5f..bcf8d33a2f8b 100644
  	};
  
  	pdb_mps_hsc4: power-monitor@16 {
-@@ -730,7 +730,7 @@ pdb_mps_hsc4: power-monitor@16 {
+@@ -735,7 +735,7 @@ pdb_mps_hsc4: power-monitor@16 {
  	pdb_ti_hsc4: power-monitor@17 {
  		compatible = "ti,lm5066i";
  		reg = <0x17>;
@@ -55,5 +55,5 @@ index 4435ae6b2e5f..bcf8d33a2f8b 100644
  
  	pdb_ioexp_20: gpio@20 {
 -- 
-2.52.0
+2.53.0-Meta
 

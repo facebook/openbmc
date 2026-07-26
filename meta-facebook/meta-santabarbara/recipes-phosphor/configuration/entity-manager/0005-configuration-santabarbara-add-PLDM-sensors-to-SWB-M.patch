@@ -1,7 +1,7 @@
-From 530c8213fed42d83231c4f4a2370db27c87fd189 Mon Sep 17 00:00:00 2001
+From a0e6b9328ec829cbd9598bbaeb771023c6dc5e9a Mon Sep 17 00:00:00 2001
 From: Freddie Jheng <Freddie.Jheng@quantatw.com>
 Date: Wed, 10 Jun 2026 10:33:08 +0800
-Subject: [PATCH 5/6] configuration: santabarbara: add PLDM sensors to SWB
+Subject: [PATCH] configuration: santabarbara: add PLDM sensors to SWB
  MCTPI2CTarget
 
 Add PLDMSensors (TEMP_C) and Inventory fields to SWB_SCO1-4 in the AEB
@@ -16,7 +16,7 @@ Signed-off-by: Freddie Jheng <Freddie.Jheng@quantatw.com>
  2 files changed, 35 insertions(+)
 
 diff --git a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_aeb.json b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_aeb.json
-index 092892a..6f4276b 100644
+index 9192872..066f65c 100644
 --- a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_aeb.json
 +++ b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_aeb.json
 @@ -446,25 +446,53 @@
@@ -74,7 +74,7 @@ index 092892a..6f4276b 100644
          },
          {
 diff --git a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json
-index c2b3a78..cc469d5 100644
+index f53dc9d..9b0702c 100644
 --- a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json
 +++ b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json
 @@ -428,7 +428,14 @@
@@ -93,5 +93,5 @@ index c2b3a78..cc469d5 100644
          },
          {
 -- 
-2.47.3
+2.53.0-Meta
 

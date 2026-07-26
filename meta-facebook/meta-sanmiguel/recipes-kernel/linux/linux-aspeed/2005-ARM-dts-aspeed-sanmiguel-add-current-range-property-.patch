@@ -1,8 +1,8 @@
-From c5c74566281aa2e5ae7148ae254e5d2d7e6c9ad5 Mon Sep 17 00:00:00 2001
+From e1707e0bcc475a310a5b4162f9c33aef0a6f8fde Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike.quanta.115@gmail.com>
 Date: Thu, 18 Jun 2026 15:41:45 +0800
-Subject: [PATCH 2/2] ARM: dts: aspeed: sanmiguel: add current-range property
- for PDB HSC
+Subject: [PATCH] ARM: dts: aspeed: sanmiguel: add current-range property for
+ PDB HSC
 
 Configure the ti,current-range property for the four TI LM5066i
 hot-swap controllers on PDB board.
@@ -24,10 +24,10 @@ Signed-off-by: Mike Hsieh <mike.quanta.115@gmail.com>
  1 file changed, 4 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
-index bcf8d33a2f8b..0878217ed9c5 100644
+index 0b5a267a8a13..3473c0c98337 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
-@@ -698,6 +698,7 @@ pdb_ti_hsc1: power-monitor@11 {
+@@ -703,6 +703,7 @@ pdb_ti_hsc1: power-monitor@11 {
  		compatible = "ti,lm5066i";
  		reg = <0x11>;
  		shunt-resistor-micro-ohms = <1000>;
@@ -35,7 +35,7 @@ index bcf8d33a2f8b..0878217ed9c5 100644
  	};
  
  	pdb_mps_hsc2: power-monitor@12 {
-@@ -709,6 +710,7 @@ pdb_ti_hsc2: power-monitor@13 {
+@@ -714,6 +715,7 @@ pdb_ti_hsc2: power-monitor@13 {
  		compatible = "ti,lm5066i";
  		reg = <0x13>;
  		shunt-resistor-micro-ohms = <321>;
@@ -43,7 +43,7 @@ index bcf8d33a2f8b..0878217ed9c5 100644
  	};
  
  	pdb_mps_hsc3: power-monitor@14 {
-@@ -720,6 +722,7 @@ pdb_ti_hsc3: power-monitor@15 {
+@@ -725,6 +727,7 @@ pdb_ti_hsc3: power-monitor@15 {
  		compatible = "ti,lm5066i";
  		reg = <0x15>;
  		shunt-resistor-micro-ohms = <321>;
@@ -51,7 +51,7 @@ index bcf8d33a2f8b..0878217ed9c5 100644
  	};
  
  	pdb_mps_hsc4: power-monitor@16 {
-@@ -731,6 +734,7 @@ pdb_ti_hsc4: power-monitor@17 {
+@@ -736,6 +739,7 @@ pdb_ti_hsc4: power-monitor@17 {
  		compatible = "ti,lm5066i";
  		reg = <0x17>;
  		shunt-resistor-micro-ohms = <500>;
@@ -60,5 +60,5 @@ index bcf8d33a2f8b..0878217ed9c5 100644
  
  	pdb_ioexp_20: gpio@20 {
 -- 
-2.52.0
+2.53.0-Meta
 

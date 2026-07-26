@@ -1,8 +1,8 @@
-From 0d796f284d9ee7891c10c3827de1a1bbafb786bc Mon Sep 17 00:00:00 2001
+From 039192ce74d2aa8f47432fedfa808b0e65b20c68 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Thu, 16 Jul 2026 00:34:01 +0800
-Subject: [PATCH 1/1] ARM: dts: aspeed: sanmiguel: fix PWRGD_RMC_N active-low
- hog configuration
+Subject: [PATCH] ARM: dts: aspeed: sanmiguel: fix PWRGD_RMC_N active-low hog
+ configuration
 
 GPIO 14 on the fio_ioexp (pca9555) controller corresponds to the
 PWRGD_RMC_N signal, which is active-low.
@@ -36,5 +36,5 @@ index 3473c0c98337..1dcd2bf1794c 100644
  	};
  
 -- 
-2.52.0
+2.53.0-Meta
 

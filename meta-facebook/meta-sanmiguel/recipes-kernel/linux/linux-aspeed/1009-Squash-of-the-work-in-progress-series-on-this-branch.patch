@@ -1,8 +1,8 @@
-From bc2766ad8dc33ca327faa6e5af225a6bdc860093 Mon Sep 17 00:00:00 2001
+From 529d283a1bf9df36df896dd745bd17070db019c4 Mon Sep 17 00:00:00 2001
 From: "Radivoje (Ogi) Jovanovic" <rjovanovic@nvidia.com>
 Date: Thu, 28 May 2026 13:43:12 -0700
-Subject: [PATCH 1/2] Squash of the work-in-progress series on this branch into
- a single patch. Cumulative changes against develop-6.12:
+Subject: [PATCH] Squash of the work-in-progress series on this branch into a
+ single patch. Cumulative changes against develop-6.12:
 
   - Protocol v3: host sends only virtual addresses (client enforces
     the mapping), CRC16 in both directions when requested,
@@ -528,5 +528,5 @@ index ea18b05b6686..31149f88ed7b 100644
  	return 0;
  }
 -- 
-2.52.0
+2.53.0-Meta
 

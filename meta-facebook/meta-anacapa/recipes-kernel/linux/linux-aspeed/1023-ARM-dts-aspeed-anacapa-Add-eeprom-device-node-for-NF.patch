@@ -1,4 +1,4 @@
-From 3095fcf4da64d236f945579e7b3e203ff526f7a0 Mon Sep 17 00:00:00 2001
+From 48b078ee9503e22bbfc7113ab20cdef1970e6c5f Mon Sep 17 00:00:00 2001
 From: Carl Lee <carl.lee@amd.com>
 Date: Thu, 30 Apr 2026 17:33:44 +0800
 Subject: [PATCH] ARM: dts: aspeed: anacapa: Add eeprom device node for NFC
@@ -16,7 +16,7 @@ Signed-off-by: Carl Lee <carl.lee@amd.com>
  2 files changed, 10 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts
-index 2336593d6..c2eed92d5 100644
+index 2336593d6897..c2eed92d5f3b 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts
 @@ -927,6 +927,11 @@ nfc@28 {
@@ -32,10 +32,10 @@ index 2336593d6..c2eed92d5 100644
  	};
  };
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-index 655e324c9..eeba56091 100644
+index b54997431d85..8b6a51e690dd 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-@@ -937,6 +937,11 @@ nfc@28 {
+@@ -974,6 +974,11 @@ nfc@28 {
  
  				enable-gpios = <&sgpiom0 241 GPIO_ACTIVE_HIGH>;
  			};
@@ -48,5 +48,5 @@ index 655e324c9..eeba56091 100644
  	};
  };
 -- 
-2.34.1
+2.53.0-Meta
 

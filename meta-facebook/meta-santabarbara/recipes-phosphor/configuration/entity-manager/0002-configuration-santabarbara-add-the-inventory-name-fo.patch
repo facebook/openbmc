@@ -1,7 +1,7 @@
-From d305c38e520e22abda530b8d053dd06e25de6671 Mon Sep 17 00:00:00 2001
+From 3673a1213f441ed62506e079d1bac352549e8e8b Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 16:31:12 +0800
-Subject: [PATCH 2/6] configuration: santabarbara: add the inventory name for
+Subject: [PATCH] configuration: santabarbara: add the inventory name for
  rainbow
 
 Add the inventory name for rainbow.
@@ -27,5 +27,5 @@ index 3cb4b66..066a3ee 100644
          }
      ],
 -- 
-2.47.3
+2.53.0-Meta
 

@@ -1,7 +1,7 @@
-From a4f0bbbc1c5866e7a272f52d6b65ec0d1478f5c1 Mon Sep 17 00:00:00 2001
+From acbce3391c78d1f46b75e38a9bc86a1427a111f4 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Mon, 20 Jul 2026 09:18:14 +0800
-Subject: [PATCH 1/1] ARM: dts: aspeed: sanmiguel: Fix FIO IOEXP interrupt pin
+Subject: [PATCH] ARM: dts: aspeed: sanmiguel: Fix FIO IOEXP interrupt pin
 
 The interrupt properties for fio_ioexp (pca9555 on i2c14) were incorrectly
 configured to gpio1 with ASPEED_GPIO(B, 6).
@@ -32,5 +32,5 @@ index 1dcd2bf1794c..80a65ee97569 100644
  		gpio-line-names =
  			"", "", "", "",
 -- 
-2.52.0
+2.53.0-Meta
 

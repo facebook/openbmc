@@ -22,7 +22,7 @@ SRC_URI:append = " \
 SRC_URI:append = " \
     file://2001-ARM-dts-aspeed-sanmiguel-Add-SSIF-DTS-properties.patch \
     file://2002-ARM-dts-aspeed-sanmiguel-Add-CP2112-and-downstream-I.patch \
-    file://2003-ARM-dts-aspeed-sanmiguel-Add-virtual-mux-host-node.patch \
+    file://2003-ARM-dts-aspeed-sanmiguel-add-virtual-mux-host-node.patch \
     file://2004-ARM-dts-aspeed-sanmiguel-fix-PDB-HSC-shunt-resistor.patch \
     file://2005-ARM-dts-aspeed-sanmiguel-add-current-range-property-.patch \
     file://2006-ARM-dts-aspeed-sanmiguel-fix-PWRGD_RMC_N-active-low-.patch \

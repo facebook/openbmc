@@ -1,4 +1,4 @@
-From fd51fd83c7d8b55ee6c22209712ad22b2aefd444 Mon Sep 17 00:00:00 2001
+From 81a6fb9c403b32671a04d6a2085fd44f5773496f Mon Sep 17 00:00:00 2001
 From: Daniel Hsu <Daniel-Hsu@quantatw.com>
 Date: Fri, 24 Jul 2026 14:49:19 +0800
 Subject: [PATCH] configurations: revise CX7 NIC configuration
@@ -79,6 +79,6 @@ index 3f11519..b13dd70 100644
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Nvidia ConnectX-7 OCP3.0'})",
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
---
-2.53.0
+-- 
+2.53.0-Meta
 

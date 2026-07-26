@@ -1,16 +1,15 @@
-From 9181fdcf854a9f0e1c0dfe38f328f0b1e49a74b7 Mon Sep 17 00:00:00 2001
+From a43b990acbb941f2ba4771900b137da107783515 Mon Sep 17 00:00:00 2001
 From: Andy Chung <Andy.Chung@amd.com>
 Date: Fri, 27 Mar 2026 13:56:07 +0800
 Subject: [PATCH] Enable NIC MCTP over I2C
 
 LORE:  https://lore.kernel.org/all/20260602-anacapa-devlop-phase-devicetree-v3-8-7c93c5df8d9b@gmail.com/
-
 ---
  .../aspeed-bmc-facebook-anacapa-evt2.dts      | 99 +++++++++++++++----
  1 file changed, 81 insertions(+), 18 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-index 285a03c6a..a99cd0ecf 100644
+index 285a03c6ad81..a99cd0ecf59c 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 @@ -35,22 +35,22 @@ aliases {
@@ -61,14 +60,14 @@ index 285a03c6a..a99cd0ecf 100644
 +		compatible = "mctp-i2c-controller";
 +		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
 +	};
-
+ 
  	i2c-mux@71 {
  		compatible = "nxp,pca9548";
  		reg = <0x71>;
  		#address-cells = <1>;
  		#size-cells = <0>;
 -		i2c-mux-idle-disconnect;
-
+ 
  		i2c10mux0ch0: i2c@0 {
  			reg = <0>;
  			#address-cells = <1>;
@@ -130,14 +129,14 @@ index 285a03c6a..a99cd0ecf 100644
 +		compatible = "mctp-i2c-controller";
 +		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
 +	};
-
+ 
  	i2c-mux@71 {
  		compatible = "nxp,pca9548";
  		reg = <0x71>;
  		#address-cells = <1>;
  		#size-cells = <0>;
 -		i2c-mux-idle-disconnect;
-
+ 
  		i2c11mux0ch0: i2c@0 {
  			reg = <0>;
  			#address-cells = <1>;
@@ -195,5 +194,6 @@ index 285a03c6a..a99cd0ecf 100644
  		};
  		i2c11mux0ch5: i2c@5 {
  			reg = <5>;
---
-2.52.0
+-- 
+2.53.0-Meta
+

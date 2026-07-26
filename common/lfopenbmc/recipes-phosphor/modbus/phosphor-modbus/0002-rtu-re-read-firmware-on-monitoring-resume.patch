@@ -1,4 +1,4 @@
-From b9184d3cc9c96027d7c032afb15750cc0902b2b2 Mon Sep 17 00:00:00 2001
+From acb5eff24fd10539b1514a7ee893d9022adeee08 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Wed, 15 Jul 2026 11:57:21 -0700
 Subject: [PATCH] rtu: re-read firmware on monitoring resume
@@ -26,7 +26,7 @@ Change-Id: I7b97967913a06ffdc672aa7872af50bd370f0ec4
  6 files changed, 79 insertions(+), 1 deletion(-)
 
 diff --git a/rtu/device/base_device.hpp b/rtu/device/base_device.hpp
-index 198dd37..38a92a5 100644
+index 285baa3..fc6a8e1 100644
 --- a/rtu/device/base_device.hpp
 +++ b/rtu/device/base_device.hpp
 @@ -96,6 +96,16 @@ class BaseDevice
@@ -47,10 +47,10 @@ index 198dd37..38a92a5 100644
      // Pre-computed pairing of register config and its corresponding sensor,
      // built at construction to avoid map lookups on every poll cycle.
 diff --git a/rtu/device_manager.cpp b/rtu/device_manager.cpp
-index 781e1ae..1de1599 100644
+index ab52a1d..3e19f74 100644
 --- a/rtu/device_manager.cpp
 +++ b/rtu/device_manager.cpp
-@@ -92,7 +92,11 @@ auto DeviceManager::processPortAdded(const sdbusplus::object_path& objectPath,
+@@ -94,7 +94,11 @@ auto DeviceManager::processPortAdded(const sdbusplus::object_path& objectPath,
  
      try
      {
@@ -63,7 +63,7 @@ index 781e1ae..1de1599 100644
      }
      catch (const std::exception& e)
      {
-@@ -239,6 +243,14 @@ auto DeviceManager::processDeviceAdded(const DeviceFactoryConfigIntf& config)
+@@ -241,6 +245,14 @@ auto DeviceManager::processDeviceAdded(const DeviceFactoryConfigIntf& config)
      }
  }
  
@@ -94,10 +94,10 @@ index fb0d973..822986a 100644
      entity_manager::EntityManagerInterface entityManager;
      EventIntf::Events events;
 diff --git a/rtu/port/base_port.cpp b/rtu/port/base_port.cpp
-index 4366d08..0fbf061 100644
+index 534ffc3..d6ad852 100644
 --- a/rtu/port/base_port.cpp
 +++ b/rtu/port/base_port.cpp
-@@ -73,6 +73,12 @@ auto BasePort::set_property(monitoring_enabled_t, bool enabled) -> bool
+@@ -85,6 +85,12 @@ auto BasePort::set_property(monitoring_enabled_t, bool enabled) -> bool
      bool monitoringEnabled = !monitoringLock.has_value();
      bool changed = (monitoringEnabled != monitoring_enabled_);
      monitoring_enabled_ = monitoringEnabled;

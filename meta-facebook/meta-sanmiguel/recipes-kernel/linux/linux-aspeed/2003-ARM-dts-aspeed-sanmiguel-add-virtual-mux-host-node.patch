@@ -1,7 +1,7 @@
-From 041576425fe33413091619cebaf60954522a303f Mon Sep 17 00:00:00 2001
+From fdc8b5247170f3a0a0857df6fe936dc51d359694 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Fri, 22 May 2026 10:08:11 +0800
-Subject: [PATCH 1/1] ARM: dts: aspeed: sanmiguel: add virtual-mux-host node
+Subject: [PATCH] ARM: dts: aspeed: sanmiguel: add virtual-mux-host node
 
 Add a virtual-mux-host node and its corresponding properties on the
 i2c1 bus. This enables the BMC to access the HPM and HMC FRU EEPROMs
@@ -17,7 +17,7 @@ Signed-off-by: Potin Lai <potin.lai@quantatw.com>
  1 file changed, 11 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
-index 0643bb1618e3..3473c0c98337 100644
+index f9f37a3deb30..b14a9f3b55b6 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
 @@ -440,6 +440,17 @@ ssif-bmc@10 {
@@ -39,5 +39,5 @@ index 0643bb1618e3..3473c0c98337 100644
  
  &i2c2 {
 -- 
-2.52.0
+2.53.0-Meta
 

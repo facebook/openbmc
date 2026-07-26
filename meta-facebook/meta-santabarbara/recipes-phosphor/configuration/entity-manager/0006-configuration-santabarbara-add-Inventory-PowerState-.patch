@@ -1,7 +1,7 @@
-From db314f40631de6950470385779da2fca221d2982 Mon Sep 17 00:00:00 2001
+From e0dfb258a654c640809f8da75b6f0f3c711205c0 Mon Sep 17 00:00:00 2001
 From: Freddie Jheng <Freddie.Jheng@quantatw.com>
 Date: Wed, 10 Jun 2026 11:10:55 +0800
-Subject: [PATCH 6/6] configuration: santabarbara: add Inventory/PowerState to
+Subject: [PATCH] configuration: santabarbara: add Inventory/PowerState to
  Arkes MMC
 
 Add Inventory and PowerState fields to MMC in the Arke EVB config and
@@ -44,5 +44,5 @@ index 154d060..0dd2138 100644
          }
      ],
 -- 
-2.47.3
+2.53.0-Meta
 

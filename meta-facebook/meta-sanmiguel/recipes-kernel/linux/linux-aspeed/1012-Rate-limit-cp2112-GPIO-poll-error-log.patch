@@ -1,7 +1,7 @@
-From 082d2a06f81e209189df219b0b1c9b70fddf6ede Mon Sep 17 00:00:00 2001
+From 6bd68c9ec805e9e034d0c50bde52d0439bc6e7ff Mon Sep 17 00:00:00 2001
 From: Kai Chen <tingkaic@nvidia.com>
 Date: Mon, 11 May 2026 10:33:01 -0700
-Subject: [PATCH 2/3] Rate-limit cp2112 GPIO poll error log
+Subject: [PATCH] Rate-limit cp2112 GPIO poll error log
 
 cp2112 polls GPIO at 10Hz for interrupt usage. When the underlying USB
 HID transfer fails persistently (e.g. device in fail state), the
@@ -92,5 +92,5 @@ index 2b99c3fb3da7..4fbced9281e9 100644
  	}
  
 -- 
-2.52.0
+2.53.0-Meta
 

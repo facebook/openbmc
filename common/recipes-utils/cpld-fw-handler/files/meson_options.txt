@@ -9,6 +9,6 @@ option(
 option(
     'enable-events',
     type: 'feature',
-    value: 'enabled',
+    value: 'disabled',
     description: 'Enable event logs for CPLD FW update.'
 )

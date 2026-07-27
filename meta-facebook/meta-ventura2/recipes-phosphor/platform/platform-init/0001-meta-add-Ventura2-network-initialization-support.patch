@@ -1,0 +1,1906 @@
+From 4c83606783fc49ef9524bbb3de235747abe4feba Mon Sep 17 00:00:00 2001
+From: Eldin Lee <eldin.lee@quantatw.com>
+Date: Mon, 25 May 2026 23:04:21 +0800
+Subject: [PATCH] meta: add Ventura2 network initialization support
+
+Add support for Meta Ventura2 platform initialization.
+
+The Ventura2 platform uses a Marvell 88E6393X switch and
+88E1512 PHYs. Add the required initialization sequence to
+configure the switch, PHYs, SERDES links, and LED settings.
+
+Add a userspace MDIO netlink wrapper for accessing the
+native ASPEED MDIO controller and an FTDI MPSSE-based
+Clause 22 MDIO implementation.
+
+Add an MDIO backend abstraction layer that automatically
+selects between the native MDIO and FTDI-based
+implementations at runtime.
+
+Extend the FTDI-based MDIO backend to support both
+AST2600 and AST2700 platforms by probing the appropriate
+USB controller instance during initialization.
+
+Add Meson wrap definitions for libusb, libmnl and libftdi1 to
+support dependency fallback during CI builds when the
+required development packages are not available in the
+build environment.
+
+Update Meson build rules and dependencies required by the
+new platform support.
+
+Depends-on:
+https://gerrit.openbmc.org/c/openbmc/openbmc/+/92583
+
+Change-Id: Ic4a3e9d2faba4666bdf95fe512cc4f522f6eb2a1
+Signed-off-by: Eldin Lee <eldin.lee@quantatw.com>
+---
+ ftdi_mdio.cpp                                 | 550 ++++++++++++++++++
+ ftdi_mdio.hpp                                 |  46 ++
+ mdio.cpp                                      | 279 +++++++++
+ mdio.hpp                                      | 109 ++++
+ meson.build                                   |  30 +-
+ meta/meta.hpp                                 |   9 +
+ meta/ventura2.cpp                             | 520 +++++++++++++++++
+ platform.cpp                                  |  15 +-
+ subprojects/libftdi1.wrap                     |   9 +
+ subprojects/libmnl.wrap                       |   9 +
+ subprojects/libusb.wrap                       |  11 +
+ subprojects/packagefiles/libftdi1/meson.build |  61 ++
+ .../packagefiles/libftdi1/meson.options       |   6 +
+ subprojects/packagefiles/libmnl/meson.build   |  54 ++
+ subprojects/packagefiles/libmnl/meson.options |   6 +
+ 15 files changed, 1705 insertions(+), 9 deletions(-)
+ create mode 100644 ftdi_mdio.cpp
+ create mode 100644 ftdi_mdio.hpp
+ create mode 100644 mdio.cpp
+ create mode 100644 mdio.hpp
+ create mode 100644 meta/meta.hpp
+ create mode 100644 meta/ventura2.cpp
+ create mode 100644 subprojects/libftdi1.wrap
+ create mode 100644 subprojects/libmnl.wrap
+ create mode 100644 subprojects/libusb.wrap
+ create mode 100644 subprojects/packagefiles/libftdi1/meson.build
+ create mode 100644 subprojects/packagefiles/libftdi1/meson.options
+ create mode 100644 subprojects/packagefiles/libmnl/meson.build
+ create mode 100644 subprojects/packagefiles/libmnl/meson.options
+
+diff --git a/ftdi_mdio.cpp b/ftdi_mdio.cpp
+new file mode 100644
+index 0000000..5384334
+--- /dev/null
++++ b/ftdi_mdio.cpp
+@@ -0,0 +1,550 @@
++// SPDX-License-Identifier: Apache-2.0
++// SPDX-FileCopyrightText: Copyright OpenBMC Authors
++
++#include "ftdi_mdio.hpp"
++
++#include <unistd.h>
++
++#include <array>
++#include <cerrno>
++#include <cstddef>
++#include <filesystem>
++#include <fstream>
++#include <optional>
++#include <stdexcept>
++#include <string>
++#include <string_view>
++#include <system_error>
++#include <vector>
++
++namespace ftdi_mdio
++{
++
++namespace
++{
++
++namespace mpsse
++{
++
++namespace command
++{
++
++constexpr uint8_t clockDataBytesOutMsb = 0x10;
++constexpr uint8_t clockDataBytesInMsb = 0x34;
++constexpr uint8_t sendImmediate = 0x87;
++constexpr uint8_t setClockDivisor = 0x86;
++constexpr uint8_t disableClockDivideBy5 = 0x8a;
++constexpr uint8_t disableAdaptiveClocking = 0x97;
++constexpr uint8_t disableThreePhaseClocking = 0x8d;
++constexpr uint8_t setAdbusGpio = 0x80;
++constexpr uint8_t setAcbusGpio = 0x82;
++
++} // namespace command
++
++} // namespace mpsse
++
++namespace clause22
++{
++
++constexpr uint32_t startBitShift = 30;
++constexpr uint32_t startBitMask = 0x3;
++constexpr uint32_t start = 0x1;
++
++constexpr uint32_t operationBitShift = 28;
++constexpr uint32_t operationBitMask = 0x3;
++constexpr uint32_t operationWrite = 0x1;
++constexpr uint32_t operationRead = 0x2;
++
++constexpr uint32_t phyAddressBitShift = 23;
++constexpr uint32_t phyAddressBitMask = 0x1f;
++
++constexpr uint32_t registerAddressBitShift = 18;
++constexpr uint32_t registerAddressBitMask = 0x1f;
++
++constexpr uint32_t turnaroundBitShift = 16;
++constexpr uint32_t turnaroundBitMask = 0x3;
++constexpr uint32_t turnaroundRead = 0x0;
++constexpr uint32_t turnaroundWrite = 0x2;
++
++} // namespace clause22
++
++int readSysfsInt(const std::filesystem::path& path)
++{
++    std::ifstream input(path);
++    int value = 0;
++    if (!(input >> value))
++    {
++        return -1;
++    }
++
++    return value;
++}
++
++int openUsbDeviceByPath(struct ftdi_context& context,
++                        const std::filesystem::path& devicePath)
++{
++    int busNumber = readSysfsInt(devicePath / "busnum");
++    int deviceNumber = readSysfsInt(devicePath / "devnum");
++    if (busNumber < 0 || deviceNumber < 0)
++    {
++        return -ENODEV;
++    }
++
++    int openResult =
++        ftdi_usb_open_bus_addr(&context, static_cast<uint8_t>(busNumber),
++                               static_cast<uint8_t>(deviceNumber));
++    if (openResult < 0 && openResult != -5)
++    {
++        return (openResult == -3) ? -ENODEV : -EIO;
++    }
++
++    return 0;
++}
++
++bool hasPathComponent(const std::filesystem::path& path,
++                      std::string_view component)
++{
++    for (const auto& part : path)
++    {
++        if (part.string() == component)
++        {
++            return true;
++        }
++    }
++
++    return false;
++}
++
++std::optional<int> parseUsbBusNumber(const std::string& usbRootName)
++{
++    constexpr std::string_view usbPrefix = "usb";
++    if (!usbRootName.starts_with(usbPrefix))
++    {
++        return std::nullopt;
++    }
++
++    try
++    {
++        return std::stoi(usbRootName.substr(usbPrefix.size()));
++    }
++    catch (const std::exception&)
++    {
++        return std::nullopt;
++    }
++}
++
++std::string makeUsbControllerName(std::string_view controllerAddress)
++{
++    constexpr std::string_view usbSuffix = ".usb";
++    std::string controller(controllerAddress);
++    if (!controller.ends_with(usbSuffix))
++    {
++        controller += usbSuffix;
++    }
++
++    return controller;
++}
++
++std::optional<std::filesystem::path> resolveUsbDevicePath(
++    std::string_view controllerAddress, std::string_view location)
++{
++    const std::string controller = makeUsbControllerName(controllerAddress);
++
++    const std::filesystem::path usbDevicesPath("/sys/bus/usb/devices");
++    std::error_code errorCode;
++    for (const auto& entry :
++         std::filesystem::directory_iterator(usbDevicesPath, errorCode))
++    {
++        const std::string usbRootName = entry.path().filename().string();
++        const std::optional<int> busNumber = parseUsbBusNumber(usbRootName);
++        if (!busNumber)
++        {
++            continue;
++        }
++
++        const std::filesystem::path usbRootPath =
++            std::filesystem::canonical(entry.path(), errorCode);
++        if (errorCode)
++        {
++            errorCode.clear();
++            continue;
++        }
++
++        if (!hasPathComponent(usbRootPath, controller))
++        {
++            continue;
++        }
++
++        const std::filesystem::path devicePath =
++            usbDevicesPath /
++            (std::to_string(*busNumber) + "-" + std::string(location));
++        if (std::filesystem::exists(devicePath, errorCode))
++        {
++            return devicePath;
++        }
++        errorCode.clear();
++    }
++
++    return std::nullopt;
++}
++
++uint32_t makeClause22Frame(uint8_t operation, uint8_t phyAddress,
++                           uint8_t registerAddress, uint8_t turnaround)
++{
++    uint32_t frame = 0;
++    frame |= (clause22::start & clause22::startBitMask)
++             << clause22::startBitShift;
++    frame |= (operation & clause22::operationBitMask)
++             << clause22::operationBitShift;
++    frame |= (phyAddress & clause22::phyAddressBitMask)
++             << clause22::phyAddressBitShift;
++    frame |= (registerAddress & clause22::registerAddressBitMask)
++             << clause22::registerAddressBitShift;
++    frame |= (turnaround & clause22::turnaroundBitMask)
++             << clause22::turnaroundBitShift;
++    return frame;
++}
++
++class MpssePacketBuilder
++{
++  public:
++    void beginClockData(uint8_t command)
++    {
++        append(command);
++        lengthPosition = position;
++        append(0x00);
++        append(0x00);
++        payloadStart = position;
++    }
++
++    void endClockData()
++    {
++        const std::size_t payloadLength = position - payloadStart;
++        const std::size_t encodedLength = payloadLength - 1;
++        packet[lengthPosition] = static_cast<uint8_t>(encodedLength & 0xff);
++        packet[lengthPosition + 1] =
++            static_cast<uint8_t>((encodedLength >> 8) & 0xff);
++        clockDataLength = payloadLength;
++    }
++
++    void append(uint8_t value)
++    {
++        packet[position++] = value;
++    }
++
++    void appendIdle()
++    {
++        append(0xff);
++    }
++
++    void appendBigEndian16(uint16_t value)
++    {
++        append(static_cast<uint8_t>((value >> 8) & 0xff));
++        append(static_cast<uint8_t>(value & 0xff));
++    }
++
++    void appendClause22Header(uint32_t frame)
++    {
++        appendIdle();
++        appendIdle();
++        appendIdle();
++        appendIdle();
++        append(static_cast<uint8_t>((frame >> 24) & 0xff));
++        append(static_cast<uint8_t>((frame >> 16) & 0xff));
++    }
++
++    std::size_t clockDataPayloadSize() const
++    {
++        if (clockDataLength != 0)
++        {
++            return clockDataLength;
++        }
++
++        return position - payloadStart;
++    }
++
++    const uint8_t* data() const
++    {
++        return packet.data();
++    }
++
++    int size() const
++    {
++        return static_cast<int>(position);
++    }
++
++  private:
++    std::array<uint8_t, 12> packet = {};
++    std::size_t position = 0;
++    std::size_t lengthPosition = 0;
++    std::size_t payloadStart = 0;
++    std::size_t clockDataLength = 0;
++};
++
++} // namespace
++
++Mdio::Mdio(const DeviceConfig& config)
++{
++    if (ftdi_init(&context) < 0)
++    {
++        throw std::runtime_error("failed to initialize ftdi context");
++    }
++    initialized = true;
++
++    if (openDevice(config) < 0)
++    {
++        if (opened)
++        {
++            ftdi_usb_close(&context);
++            opened = false;
++        }
++        ftdi_deinit(&context);
++        initialized = false;
++        throw std::runtime_error("failed to open ftdi mdio device");
++    }
++}
++
++Mdio::~Mdio()
++{
++    if (opened)
++    {
++        ftdi_usb_close(&context);
++    }
++
++    if (initialized)
++    {
++        ftdi_deinit(&context);
++    }
++}
++
++int Mdio::openDevice(const DeviceConfig& config)
++{
++    if (ftdi_set_interface(&context, config.interface) < 0)
++    {
++        return -EIO;
++    }
++
++    const std::optional<std::filesystem::path> devicePath =
++        resolveUsbDevicePath(config.controllerAddress, config.location);
++    if (!devicePath)
++    {
++        return -ENODEV;
++    }
++
++    int openResult = openUsbDeviceByPath(context, *devicePath);
++    if (openResult < 0)
++    {
++        return openResult;
++    }
++    opened = true;
++
++    return initializeOpenedDevice();
++}
++
++int Mdio::initializeOpenedDevice()
++{
++    if (configurePort() < 0)
++    {
++        return -EIO;
++    }
++
++    const uint8_t mpsseSetup[] = {
++        mpsse::command::disableClockDivideBy5,
++        mpsse::command::disableAdaptiveClocking,
++        mpsse::command::disableThreePhaseClocking,
++    };
++    if (writeData(mpsseSetup, sizeof(mpsseSetup)) < 0)
++    {
++        return -EIO;
++    }
++
++    if (setClockDivider(59) < 0)
++    {
++        return -EIO;
++    }
++
++    const uint8_t adbusGpioSetup[] = {
++        mpsse::command::setAdbusGpio,
++        0x01, // value
++        0x03, // direction
++    };
++    if (writeData(adbusGpioSetup, sizeof(adbusGpioSetup)) < 0)
++    {
++        return -EIO;
++    }
++
++    const uint8_t acbusGpioSetup[] = {
++        mpsse::command::setAcbusGpio,
++        0x00, // value
++        0x00, // direction
++    };
++    if (writeData(acbusGpioSetup, sizeof(acbusGpioSetup)) < 0)
++    {
++        return -EIO;
++    }
++
++    return 0;
++}
++
++int Mdio::configurePort()
++{
++    int result = ftdi_usb_reset(&context);
++    if (result < 0)
++    {
++        return -EIO;
++    }
++
++    result = ftdi_tcioflush(&context);
++    if (result < 0)
++    {
++        return -EIO;
++    }
++
++    result = ftdi_read_data_set_chunksize(&context, 65536);
++    if (result < 0)
++    {
++        return -EIO;
++    }
++
++    result = ftdi_write_data_set_chunksize(&context, 65536);
++    if (result < 0)
++    {
++        return -EIO;
++    }
++
++    result = ftdi_set_event_char(&context, 0, 0);
++    if (result < 0)
++    {
++        return -EIO;
++    }
++
++    result = ftdi_set_error_char(&context, 0, 0);
++    if (result < 0)
++    {
++        return -EIO;
++    }
++
++    context.usb_read_timeout = 100;
++    context.usb_write_timeout = 5000;
++
++    result = ftdi_set_latency_timer(&context, 1);
++    if (result < 0)
++    {
++        return -EIO;
++    }
++
++    result = ftdi_setflowctrl(&context, SIO_RTS_CTS_HS);
++    if (result < 0)
++    {
++        return -EIO;
++    }
++
++    if (ftdi_set_bitmode(&context, 0x0, BITMODE_RESET) < 0)
++    {
++        return -EIO;
++    }
++
++    if (ftdi_set_bitmode(&context, 0x0b, BITMODE_MPSSE) < 0)
++    {
++        return -EIO;
++    }
++
++    usleep(50000);
++    return 0;
++}
++
++int Mdio::setClockDivider(uint16_t clockDivider)
++{
++    // TCK period = 60MHz / ((1 + clockDivider) * 2)
++    const uint8_t command[] = {
++        mpsse::command::setClockDivisor,
++        static_cast<uint8_t>(clockDivider & 0xff),
++        static_cast<uint8_t>((clockDivider >> 8) & 0xff),
++    };
++    int result = writeData(command, sizeof(command));
++    if (result < 0)
++    {
++        return result;
++    }
++
++    return 0;
++}
++
++int Mdio::writeData(const uint8_t* data, int size)
++{
++    int written = ftdi_write_data(&context, data, size);
++    return (written == size) ? 0 : -EIO;
++}
++
++int Mdio::readData(uint8_t* data, int size)
++{
++    int remaining = size;
++    while (remaining > 0)
++    {
++        int received = ftdi_read_data(&context, data, remaining);
++        if (received < 0)
++        {
++            return -EIO;
++        }
++        if (received == 0)
++        {
++            return -ETIMEDOUT;
++        }
++
++        data += received;
++        remaining -= received;
++    }
++
++    return 0;
++}
++
++int Mdio::read(uint8_t phyAddress, uint8_t registerAddress, uint16_t& value)
++{
++    uint32_t frame =
++        makeClause22Frame(clause22::operationRead, phyAddress, registerAddress,
++                          clause22::turnaroundRead);
++
++    MpssePacketBuilder packet;
++    packet.beginClockData(mpsse::command::clockDataBytesInMsb);
++    packet.appendClause22Header(frame);
++    const std::size_t readDataOffset = packet.clockDataPayloadSize();
++    packet.appendIdle();
++    packet.appendIdle();
++    packet.endClockData();
++    packet.append(mpsse::command::sendImmediate);
++
++    int result = writeData(packet.data(), packet.size());
++    if (result < 0)
++    {
++        return result;
++    }
++
++    std::vector<uint8_t> response(packet.clockDataPayloadSize());
++    result = readData(response.data(), static_cast<int>(response.size()));
++    if (result < 0)
++    {
++        return result;
++    }
++
++    value = (static_cast<uint16_t>(response[readDataOffset]) << 8) |
++            response[readDataOffset + 1];
++    return 0;
++}
++
++int Mdio::write(uint8_t phyAddress, uint8_t registerAddress, uint16_t value)
++{
++    uint32_t frame =
++        makeClause22Frame(clause22::operationWrite, phyAddress, registerAddress,
++                          clause22::turnaroundWrite);
++
++    MpssePacketBuilder packet;
++    packet.beginClockData(mpsse::command::clockDataBytesOutMsb);
++    packet.appendClause22Header(frame);
++    packet.appendBigEndian16(value);
++    packet.endClockData();
++    packet.append(mpsse::command::sendImmediate);
++
++    return writeData(packet.data(), packet.size());
++}
++
++} // namespace ftdi_mdio
+diff --git a/ftdi_mdio.hpp b/ftdi_mdio.hpp
+new file mode 100644
+index 0000000..dfa4094
+--- /dev/null
++++ b/ftdi_mdio.hpp
+@@ -0,0 +1,46 @@
++// SPDX-License-Identifier: Apache-2.0
++// SPDX-FileCopyrightText: Copyright OpenBMC Authors
++
++#pragma once
++
++#include <ftdi.h>
++
++#include <cstdint>
++#include <string_view>
++
++namespace ftdi_mdio
++{
++
++struct DeviceConfig
++{
++    std::string_view controllerAddress;
++    std::string_view location;
++    enum ftdi_interface interface = INTERFACE_A;
++};
++
++class Mdio
++{
++  public:
++    explicit Mdio(const DeviceConfig& config);
++    ~Mdio();
++
++    Mdio(const Mdio&) = delete;
++    Mdio& operator=(const Mdio&) = delete;
++
++    int read(uint8_t phyAddress, uint8_t registerAddress, uint16_t& value);
++    int write(uint8_t phyAddress, uint8_t registerAddress, uint16_t value);
++
++  private:
++    int openDevice(const DeviceConfig& config);
++    int initializeOpenedDevice();
++    int configurePort();
++    int setClockDivider(uint16_t clockDivider);
++    int writeData(const uint8_t* data, int size);
++    int readData(uint8_t* data, int size);
++
++    struct ftdi_context context = {};
++    bool initialized = false;
++    bool opened = false;
++};
++
++} // namespace ftdi_mdio
+diff --git a/mdio.cpp b/mdio.cpp
+new file mode 100644
+index 0000000..5388129
+--- /dev/null
++++ b/mdio.cpp
+@@ -0,0 +1,279 @@
++// SPDX-License-Identifier: Apache-2.0
++// SPDX-FileCopyrightText: Copyright OpenBMC Authors
++
++#include "mdio.hpp"
++
++#include <glob.h>
++#include <linux/genetlink.h>
++
++#include <cerrno>
++#include <cstdio>
++#include <cstring>
++#include <stdexcept>
++
++namespace mdio
++{
++
++using namespace mdio::abi;
++
++static constexpr auto attributeIndex(NetlinkAttribute attribute)
++{
++    return static_cast<int>(attribute);
++}
++
++static constexpr auto commandValue(GenericNetlinkCommand command)
++{
++    return static_cast<uint8_t>(command);
++}
++
++static constexpr uint64_t makeRegisterArgument(uint16_t registerAddress)
++{
++    return (static_cast<uint64_t>(ArgumentMode::registerReference) << 16) |
++           registerAddress;
++}
++
++static constexpr uint64_t makeImmediateArgument(uint16_t value)
++{
++    return (static_cast<uint64_t>(ArgumentMode::immediate) << 16) | value;
++}
++
++static constexpr Instruction makeInstruction(
++    Operation operation, uint64_t argument0, uint64_t argument1,
++    uint64_t argument2)
++{
++    return Instruction{
++        .op = static_cast<uint64_t>(operation),
++        .reserved = 0,
++        .arg0 = argument0,
++        .arg1 = argument1,
++        .arg2 = argument2,
++    };
++}
++
++Mdio::Mdio(const char* busPattern)
++{
++    bus = findFirstBus(busPattern);
++    if (bus.empty())
++        throw std::runtime_error(
++            "failed to find mdio bus: " + std::string(busPattern));
++
++    if (openSocket() < 0)
++        throw std::runtime_error("failed to open netlink socket");
++
++    if (initFamilyId() < 0)
++        throw std::runtime_error("failed to init mdio netlink family id");
++}
++
++Mdio::~Mdio()
++{
++    if (socket != nullptr)
++    {
++        mnl_socket_close(socket);
++        socket = nullptr;
++    }
++}
++
++int Mdio::openSocket()
++{
++    if (socket != nullptr)
++        return 0;
++
++    socket = mnl_socket_open(NETLINK_GENERIC);
++    if (socket == nullptr)
++        return -errno;
++
++    if (mnl_socket_bind(socket, 0, MNL_SOCKET_AUTOPID) < 0)
++    {
++        int socketError = -errno;
++        mnl_socket_close(socket);
++        socket = nullptr;
++        return socketError;
++    }
++
++    return 0;
++}
++
++int Mdio::query(nlmsghdr* netlinkHeader, mnl_cb_t callback, void* data)
++{
++    const uint32_t seqNum = ++seq;
++    const unsigned portId = mnl_socket_get_portid(socket);
++    netlinkHeader->nlmsg_seq = seqNum;
++
++    if (mnl_socket_sendto(socket, netlinkHeader, netlinkHeader->nlmsg_len) < 0)
++        return -errno;
++
++    int ret;
++    do
++    {
++        ret = mnl_socket_recvfrom(socket, msgBuffer, sizeof(msgBuffer));
++        if (ret <= 0)
++            break;
++        ret = mnl_cb_run(msgBuffer, ret, seqNum, portId, callback, data);
++    } while (ret > 0);
++
++    return (ret == 0) ? 0 : ret;
++}
++
++int Mdio::parseAttr(const nlattr* attr, void* data)
++{
++    auto** table = static_cast<const nlattr**>(data);
++    table[mnl_attr_get_type(attr)] = attr;
++    return MNL_CB_OK;
++}
++
++int Mdio::familyIdCallback(const nlmsghdr* netlinkHeader, void* data)
++{
++    auto* self = static_cast<Mdio*>(data);
++
++    nlattr* attrs[CTRL_ATTR_MAX + 1] = {};
++    mnl_attr_parse(netlinkHeader, sizeof(genlmsghdr), parseAttr, attrs);
++
++    if (attrs[CTRL_ATTR_FAMILY_ID] == nullptr)
++        return MNL_CB_ERROR;
++
++    self->familyId = mnl_attr_get_u16(attrs[CTRL_ATTR_FAMILY_ID]);
++    return MNL_CB_OK;
++}
++
++int Mdio::initFamilyId()
++{
++    auto* netlinkHeader = mnl_nlmsg_put_header(msgBuffer);
++    netlinkHeader->nlmsg_type = GENL_ID_CTRL;
++    netlinkHeader->nlmsg_flags = NLM_F_REQUEST | NLM_F_ACK;
++
++    auto* genericNetlinkHeader = static_cast<genlmsghdr*>(
++        mnl_nlmsg_put_extra_header(netlinkHeader, sizeof(genlmsghdr)));
++    genericNetlinkHeader->cmd = CTRL_CMD_GETFAMILY;
++    genericNetlinkHeader->version = 1;
++
++    mnl_attr_put_u16(netlinkHeader, CTRL_ATTR_FAMILY_ID, GENL_ID_CTRL);
++    mnl_attr_put_strz(netlinkHeader, CTRL_ATTR_FAMILY_NAME, "mdio");
++
++    return query(netlinkHeader, familyIdCallback, this);
++}
++
++int Mdio::transferCallback(const nlmsghdr* netlinkHeader, void* data)
++{
++    auto* context = static_cast<TransferContext*>(data);
++
++    nlattr* attrs[attributeIndex(NetlinkAttribute::max) + 1] = {};
++    mnl_attr_parse(netlinkHeader, sizeof(genlmsghdr), parseAttr, attrs);
++
++    if (attrs[attributeIndex(NetlinkAttribute::error)] != nullptr)
++        context->error = static_cast<int>(
++            mnl_attr_get_u32(attrs[attributeIndex(NetlinkAttribute::error)]));
++
++    /* write operations produce no data attribute */
++    if (attrs[attributeIndex(NetlinkAttribute::data)] == nullptr)
++    {
++        int ret =
++            context->callback(nullptr, 0, context->error, context->userData);
++        if (ret != 0)
++            context->error = ret;
++        return (ret == 0) ? MNL_CB_OK : MNL_CB_ERROR;
++    }
++
++    int payloadLength = mnl_attr_get_payload_len(
++                            attrs[attributeIndex(NetlinkAttribute::data)]) /
++                        sizeof(uint32_t);
++    auto* payload = static_cast<uint32_t*>(
++        mnl_attr_get_payload(attrs[attributeIndex(NetlinkAttribute::data)]));
++
++    int ret = context->callback(payload, payloadLength, context->error,
++                                context->userData);
++    if (ret != 0)
++        context->error = ret;
++    return (ret == 0) ? MNL_CB_OK : MNL_CB_ERROR;
++}
++
++int Mdio::transfer(Instruction* instructions, int instructionCount,
++                   TransferCallback callback, void* userData)
++{
++    TransferContext context{
++        .callback = callback,
++        .userData = userData,
++        .error = 0,
++    };
++
++    auto* netlinkHeader = mnl_nlmsg_put_header(msgBuffer);
++    netlinkHeader->nlmsg_type = familyId;
++    netlinkHeader->nlmsg_flags =
++        NLM_F_REQUEST; /* no ACK: response carries error code */
++
++    auto* genericNetlinkHeader = static_cast<genlmsghdr*>(
++        mnl_nlmsg_put_extra_header(netlinkHeader, sizeof(genlmsghdr)));
++    genericNetlinkHeader->cmd = commandValue(GenericNetlinkCommand::transfer);
++    genericNetlinkHeader->version = 1;
++
++    mnl_attr_put_strz(netlinkHeader, attributeIndex(NetlinkAttribute::busId),
++                      bus.c_str());
++    mnl_attr_put(netlinkHeader, attributeIndex(NetlinkAttribute::program),
++                 instructionCount * sizeof(*instructions), instructions);
++    mnl_attr_put_u16(netlinkHeader, attributeIndex(NetlinkAttribute::timeout),
++                     1000);
++
++    int ret = query(netlinkHeader, transferCallback, &context);
++    return (context.error != 0) ? context.error : ret;
++}
++
++int Mdio::readCallback(uint32_t* data, int length, int error, void* userData)
++{
++    if (error != 0)
++        return error;
++    if (length != 1)
++        return -EINVAL;
++
++    *static_cast<uint16_t*>(userData) = static_cast<uint16_t>(data[0]);
++    return 0;
++}
++
++int Mdio::writeCallback([[maybe_unused]] uint32_t* data, int length, int error,
++                        [[maybe_unused]] void* userData)
++{
++    if (error != 0)
++        return error;
++    if (length != 0)
++        return -EINVAL;
++    return 0;
++}
++
++int Mdio::read(uint8_t phyAddress, uint8_t registerAddress, uint16_t& value)
++{
++    Instruction instructions[] = {
++        makeInstruction(Operation::read, makeImmediateArgument(phyAddress),
++                        makeImmediateArgument(registerAddress),
++                        makeRegisterArgument(0)),
++        makeInstruction(Operation::emit, makeRegisterArgument(0), 0, 0),
++    };
++    return transfer(instructions, 2, readCallback, &value);
++}
++
++int Mdio::write(uint8_t phyAddress, uint8_t registerAddress, uint16_t value)
++{
++    Instruction instructions[] = {
++        makeInstruction(Operation::write, makeImmediateArgument(phyAddress),
++                        makeImmediateArgument(registerAddress),
++                        makeImmediateArgument(value)),
++    };
++    return transfer(instructions, 1, writeCallback, nullptr);
++}
++
++std::string Mdio::findFirstBus(const char* pattern)
++{
++    char globPattern[128] = {};
++    snprintf(globPattern, sizeof(globPattern), "/sys/class/mdio_bus/%s",
++             pattern);
++
++    glob_t matches = {};
++    if (glob(globPattern, 0, nullptr, &matches) != 0 || matches.gl_pathc == 0)
++    {
++        globfree(&matches);
++        return {};
++    }
++
++    std::string result = matches.gl_pathv[0] + strlen("/sys/class/mdio_bus/");
++    globfree(&matches);
++    return result;
++}
++
++} // namespace mdio
+diff --git a/mdio.hpp b/mdio.hpp
+new file mode 100644
+index 0000000..15440b7
+--- /dev/null
++++ b/mdio.hpp
+@@ -0,0 +1,109 @@
++// SPDX-License-Identifier: Apache-2.0
++// SPDX-FileCopyrightText: Copyright OpenBMC Authors
++
++#pragma once
++
++#include <libmnl/libmnl.h>
++
++#include <cstdint>
++#include <string>
++
++namespace mdio
++{
++
++// C++ reimplementation of mdio-tools/include/linux/mdio-netlink.h ABI
++namespace abi
++{
++
++// Subset of mdio-netlink ABI used by this wrapper.
++// Keep numeric values aligned with mdio-tools/include/linux/mdio-netlink.h.
++
++// Generic Netlink commands (MDIO_GENL_*)
++enum class GenericNetlinkCommand : uint8_t
++{
++    transfer = 1,
++};
++
++// Netlink attributes (MDIO_NLA_*)
++enum class NetlinkAttribute : uint8_t
++{
++    busId = 1,
++    timeout = 2,
++    program = 3,
++    data = 4,
++    error = 5,
++    max = error,
++};
++
++// Bytecode opcodes (MDIO_NL_OP_*)
++enum class Operation : uint8_t
++{
++    read = 1,
++    write = 2,
++    emit = 8,
++};
++
++// Argument modes (MDIO_NL_ARG_*)
++enum class ArgumentMode : uint8_t
++{
++    registerReference = 1,
++    immediate = 2,
++};
++
++struct Instruction
++{
++    uint64_t op:8;
++    uint64_t reserved:2;
++    uint64_t arg0:18;
++    uint64_t arg1:18;
++    uint64_t arg2:18;
++};
++
++} // namespace abi
++
++class Mdio
++{
++  public:
++    explicit Mdio(const char* busPattern);
++    ~Mdio();
++
++    Mdio(const Mdio&) = delete;
++    Mdio& operator=(const Mdio&) = delete;
++
++    int read(uint8_t phyAddress, uint8_t registerAddress, uint16_t& value);
++    int write(uint8_t phyAddress, uint8_t registerAddress, uint16_t value);
++
++  private:
++    using TransferCallback = int (*)(uint32_t* data, int length, int error,
++                                     void* userData);
++
++    struct TransferContext
++    {
++        TransferCallback callback;
++        void* userData;
++        int error;
++    };
++
++    int openSocket();
++    int initFamilyId();
++    int query(nlmsghdr* netlinkHeader, mnl_cb_t callback, void* data);
++    int transfer(abi::Instruction* instructions, int instructionCount,
++                 TransferCallback callback, void* userData);
++
++    static std::string findFirstBus(const char* pattern);
++    static int parseAttr(const nlattr* attr, void* data);
++    static int familyIdCallback(const nlmsghdr* netlinkHeader, void* data);
++    static int transferCallback(const nlmsghdr* netlinkHeader, void* data);
++    static int readCallback(uint32_t* data, int length, int error,
++                            void* userData);
++    static int writeCallback(uint32_t* data, int length, int error,
++                             void* userData);
++
++    alignas(NLMSG_ALIGNTO) char msgBuffer[0x1000] = {};
++    std::string bus;
++    mnl_socket* socket = nullptr;
++    uint16_t familyId = 0;
++    uint32_t seq = 0;
++};
++
++} // namespace mdio
+diff --git a/meson.build b/meson.build
+index f402c48..bd60ef2 100644
+--- a/meson.build
++++ b/meson.build
+@@ -10,7 +10,16 @@ gpiodcxx_dep = dependency('libgpiodcxx', default_options: ['bindings=cxx'])
+ systemd_dep = dependency('systemd')
+ libsystemd_dep = dependency('libsystemd')
+ sdbusplus = dependency('sdbusplus', include_type: 'system')
++libmnl = dependency(
++    'libmnl',
++    fallback: ['libmnl', 'libmnl_dep'],
++)
+ 
++libftdi = dependency(
++    'libftdi1',
++    include_type: 'system',
++    fallback: ['libftdi1', 'libftdi1_dep'],
++)
+ 
+ cli11_dep = dependency(
+     'CLI11',
+@@ -22,16 +31,31 @@ i2c_dep = meson.get_compiler('cpp').find_library('i2c')
+ platform_srcs = files(
+     'intel/acrp.cpp',
+     'intel/jcrp.cpp',
++    'meta/ventura2.cpp',
+     'nvidia/gb200.cpp',
+     'nvidia/nvl32.cpp',
+ )
+-util_srcs = files('gpio.cpp', 'i2c.cpp', 'utilities.cpp')
++util_srcs = files(
++    'ftdi_mdio.cpp',
++    'gpio.cpp',
++    'i2c.cpp',
++    'mdio.cpp',
++    'utilities.cpp',
++)
+ 
+ exe = executable(
+     'platform',
+     ['platform.cpp'] + platform_srcs + util_srcs,
+-    dependencies: [gpiodcxx_dep, libsystemd_dep, cli11_dep, i2c_dep, sdbusplus],
+-    include_directories: ['.', 'nvidia', 'intel'],
++    dependencies: [
++        gpiodcxx_dep,
++        libsystemd_dep,
++        cli11_dep,
++        i2c_dep,
++        sdbusplus,
++        libmnl,
++        libftdi,
++    ],
++    include_directories: ['.', 'nvidia', 'intel', 'meta'],
+     install: true,
+     install_dir: get_option('libexecdir'),
+ )
+diff --git a/meta/meta.hpp b/meta/meta.hpp
+new file mode 100644
+index 0000000..a943178
+--- /dev/null
++++ b/meta/meta.hpp
+@@ -0,0 +1,9 @@
++// SPDX-License-Identifier: Apache-2.0
++// SPDX-FileCopyrightText: Copyright OpenBMC Authors
++
++#pragma once
++
++namespace meta
++{
++int init_ventura2();
++} // namespace meta
+diff --git a/meta/ventura2.cpp b/meta/ventura2.cpp
+new file mode 100644
+index 0000000..88ad83d
+--- /dev/null
++++ b/meta/ventura2.cpp
+@@ -0,0 +1,520 @@
++// SPDX-License-Identifier: Apache-2.0
++// SPDX-FileCopyrightText: Copyright OpenBMC Authors
++
++#include "ftdi_mdio.hpp"
++#include "gpio.hpp"
++#include "mdio.hpp"
++
++#include <systemd/sd-daemon.h>
++#include <unistd.h>
++
++#include <cerrno>
++#include <cstdint>
++#include <cstdio>
++#include <cstdlib>
++#include <exception>
++#include <iostream>
++#include <memory>
++#include <string_view>
++#include <utility>
++
++namespace meta
++{
++
++class MdioBackend
++{
++  public:
++    virtual ~MdioBackend() = default;
++
++    virtual int read(uint8_t phy, uint8_t reg, uint16_t& value) = 0;
++    virtual int write(uint8_t phy, uint8_t reg, uint16_t value) = 0;
++};
++
++template <typename Device>
++class MdioBackendAdapter : public MdioBackend
++{
++  public:
++    template <typename... Args>
++    explicit MdioBackendAdapter(Args&&... args) :
++        mdio(std::forward<Args>(args)...)
++    {}
++
++    int read(uint8_t phy, uint8_t reg, uint16_t& value) override
++    {
++        return mdio.read(phy, reg, value);
++    }
++
++    int write(uint8_t phy, uint8_t reg, uint16_t value) override
++    {
++        return mdio.write(phy, reg, value);
++    }
++
++    Device mdio;
++};
++
++std::unique_ptr<MdioBackend> createMdioBackend()
++{
++    int modprobeRet = std::system("/sbin/modprobe mdio-netlink");
++    if (modprobeRet)
++    {
++        std::cerr << "[mdio] failed to load mdio-netlink module\n";
++    }
++
++    try
++    {
++        auto native = std::make_unique<MdioBackendAdapter<mdio::Mdio>>("1*");
++
++        uint16_t value = 0xffff;
++
++        if (native->read(0x00, 0x00, value) == 0 && value != 0xffff &&
++            value != 0x0000)
++        {
++            std::cerr << "[mdio] using native backend\n";
++            return native;
++        }
++
++        std::cerr << "[mdio] native probe failed, fallback to FTDI\n";
++    }
++    catch (const std::exception& e)
++    {
++        std::cerr << "[mdio] native backend exception: " << e.what() << "\n";
++    }
++
++    const auto tryFtdiBackend =
++        [](std::string_view platform, std::string_view controllerAddress,
++           std::string_view location,
++           enum ftdi_interface interface) -> std::unique_ptr<MdioBackend> {
++        try
++        {
++            const ftdi_mdio::DeviceConfig ftdiDevice = {
++                .controllerAddress = controllerAddress,
++                .location = location,
++                .interface = interface,
++            };
++
++            auto ftdi = std::make_unique<MdioBackendAdapter<ftdi_mdio::Mdio>>(
++                ftdiDevice);
++
++            std::cerr << "[mdio] using FTDI backend (" << platform << ")\n";
++
++            return ftdi;
++        }
++        catch (const std::exception& e)
++        {
++            std::cerr << "[mdio] FTDI backend exception (" << platform
++                      << "): " << e.what() << "\n";
++        }
++
++        return nullptr;
++    };
++
++    if (auto ftdi = tryFtdiBackend("AST2600", "1e6a1000", "1.4", INTERFACE_A))
++    {
++        return ftdi;
++    }
++
++    if (auto ftdi = tryFtdiBackend("AST2700", "12061000", "1.4", INTERFACE_A))
++    {
++        return ftdi;
++    }
++
++    throw std::runtime_error("Failed to initialize any MDIO backend");
++}
++
++class Mv88e6xxx
++{
++  public:
++    explicit Mv88e6xxx(MdioBackend& mdio) : mdio(mdio) {}
++
++    int readReg(uint8_t phy, uint8_t reg, uint16_t& value, bool print = false)
++    {
++        int ret = mdio.read(phy, reg, value);
++
++        if (ret || print)
++        {
++            fprintf(stderr, "    %s: phy=0x%02X reg=0x%02X val=0x%04X %s\n",
++                    __func__, phy, reg, value, ret ? "FAILED" : "");
++        }
++
++        return ret;
++    }
++
++    int writeReg(uint8_t phy, uint8_t reg, uint16_t value, bool print = false)
++    {
++        int ret = mdio.write(phy, reg, value);
++
++        if (ret || print)
++        {
++            fprintf(stderr, "    %s: phy=0x%02X reg=0x%02X val=0x%04X %s\n",
++                    __func__, phy, reg, value, ret ? "FAILED" : "");
++        }
++
++        return ret;
++    }
++
++    int readSmiC45(bool ext, uint8_t phy, uint8_t dev, uint16_t reg,
++                   uint16_t& value, bool print = false)
++    {
++        const uint16_t cmdBase =
++            Smi::busy | Smi::modeClause45 | Smi::phySelect(ext, phy) |
++            Smi::deviceSelect(dev);
++
++        int ret = smiWriteData(reg);
++        if (!ret)
++        {
++            ret = smiCommand(cmdBase | Smi::opClause45WriteAddress);
++        }
++        if (!ret)
++        {
++            ret = smiCommand(cmdBase | Smi::opClause45ReadData);
++        }
++        if (!ret)
++        {
++            ret = smiReadData(value);
++        }
++
++        if (ret || print)
++        {
++            fprintf(stderr,
++                    "    %s: phy=%s/%u dev=%u "
++                    "reg=0x%04X val=0x%04X %s\n",
++                    __func__, Smi::phyType(ext), phy, dev, reg, value,
++                    ret ? "FAILED" : "");
++        }
++
++        return ret;
++    }
++
++    int writeSmiC45(bool ext, uint8_t phy, uint8_t dev, uint16_t reg,
++                    uint16_t value, bool print = false)
++    {
++        const uint16_t cmdBase =
++            Smi::busy | Smi::modeClause45 | Smi::phySelect(ext, phy) |
++            Smi::deviceSelect(dev);
++
++        int ret = smiWriteData(reg);
++        if (!ret)
++        {
++            ret = smiCommand(cmdBase | Smi::opClause45WriteAddress);
++        }
++        if (!ret)
++        {
++            ret = smiWriteData(value);
++        }
++        if (!ret)
++        {
++            ret = smiCommand(cmdBase | Smi::opClause45WriteData);
++        }
++
++        if (ret || print)
++        {
++            fprintf(stderr,
++                    "    %s: phy=%s/%u dev=%u "
++                    "reg=0x%04X val=0x%04X %s\n",
++                    __func__, Smi::phyType(ext), phy, dev, reg, value,
++                    ret ? "FAILED" : "");
++        }
++        return ret;
++    }
++
++    int readSmiC22(bool ext, uint8_t phy, uint16_t page, uint8_t reg,
++                   uint16_t& value, bool print = false)
++    {
++        const uint16_t cmdBase =
++            Smi::busy | Smi::modeClause22 | Smi::phySelect(ext, phy);
++        int ret = smiWriteData(page);
++        if (!ret)
++        {
++            ret = smiCommand(cmdBase | Smi::opClause22Write |
++                             Smi::clause22PageRegister);
++        }
++        if (!ret)
++        {
++            ret = smiCommand(cmdBase | Smi::opClause22Read |
++                             Smi::registerSelect(reg));
++        }
++        if (!ret)
++        {
++            ret = smiReadData(value);
++        }
++
++        if (ret || print)
++        {
++            fprintf(stderr,
++                    "    %s: phy=%s/%u page=%u "
++                    "reg=0x%02X val=0x%04X %s\n",
++                    __func__, Smi::phyType(ext), phy, page, reg, value,
++                    ret ? "FAILED" : "");
++        }
++        return ret;
++    }
++
++    int writeSmiC22(bool ext, uint8_t phy, uint16_t page, uint8_t reg,
++                    uint16_t value, bool print = false)
++    {
++        const uint16_t cmdBase =
++            Smi::busy | Smi::modeClause22 | Smi::phySelect(ext, phy);
++        int ret = smiWriteData(page);
++        if (!ret)
++        {
++            ret = smiCommand(cmdBase | Smi::opClause22Write |
++                             Smi::clause22PageRegister);
++        }
++        if (!ret)
++        {
++            ret = smiWriteData(value);
++        }
++        if (!ret)
++        {
++            ret = smiCommand(cmdBase | Smi::opClause22Write |
++                             Smi::registerSelect(reg));
++        }
++
++        if (ret || print)
++        {
++            fprintf(stderr,
++                    "    %s: phy=%s/%u page=%u "
++                    "reg=0x%02X val=0x%04X %s\n",
++                    __func__, Smi::phyType(ext), phy, page, reg, value,
++                    ret ? "FAILED" : "");
++        }
++        return ret;
++    }
++
++  private:
++    struct Smi
++    {
++        static constexpr uint8_t phyAddress = 0x1c;
++        static constexpr uint8_t commandRegister = 0x18;
++        static constexpr uint8_t dataRegister = 0x19;
++
++        static constexpr uint16_t busy = 0x8000;
++        static constexpr uint16_t modeClause22 = 0x1000;
++        static constexpr uint16_t modeClause45 = 0x0000;
++
++        static constexpr uint16_t opClause22Write = 0x0400;
++        static constexpr uint16_t opClause22Read = 0x0800;
++        static constexpr uint16_t opClause45WriteAddress = 0x0000;
++        static constexpr uint16_t opClause45WriteData = 0x0400;
++        static constexpr uint16_t opClause45ReadData = 0x0c00;
++
++        static constexpr int waitBusyTimeout = 200;
++        static constexpr useconds_t waitBusyDelayUs = 1000;
++
++        static constexpr uint8_t clause22PageRegister = 22;
++
++        static constexpr uint16_t phySelect(bool externalPhy, uint8_t phy)
++        {
++            return (static_cast<uint16_t>(externalPhy) << 13) |
++                   (static_cast<uint16_t>(phy & 0x1f) << 5);
++        }
++
++        static constexpr uint16_t deviceSelect(uint8_t device)
++        {
++            return device & 0x1f;
++        }
++
++        static constexpr uint16_t registerSelect(uint8_t reg)
++        {
++            return reg & 0x1f;
++        }
++
++        static const char* phyType(bool externalPhy)
++        {
++            return externalPhy ? "external" : "internal";
++        }
++    };
++
++    int waitSmiReady()
++    {
++        int ret;
++        uint16_t value;
++        for (int i = 0; i < Smi::waitBusyTimeout; ++i)
++        {
++            value = 0;
++            ret = readReg(Smi::phyAddress, Smi::commandRegister, value);
++            if (ret)
++            {
++                return ret;
++            }
++            if ((value & Smi::busy) == 0)
++            {
++                return EXIT_SUCCESS;
++            }
++
++            usleep(Smi::waitBusyDelayUs);
++        }
++
++        fprintf(stderr, "waitSmiReady: timeout\n");
++        return -ETIMEDOUT;
++    }
++
++    int smiWriteData(uint16_t value, bool print = false)
++    {
++        return writeReg(Smi::phyAddress, Smi::dataRegister, value, print);
++    }
++
++    int smiReadData(uint16_t& value, bool print = false)
++    {
++        return readReg(Smi::phyAddress, Smi::dataRegister, value, print);
++    }
++
++    int smiCommand(uint16_t cmd, bool print = false)
++    {
++        int ret = writeReg(Smi::phyAddress, Smi::commandRegister, cmd, print);
++        if (!ret)
++        {
++            ret = waitSmiReady();
++        }
++        return ret;
++    }
++
++    MdioBackend& mdio;
++};
++
++int bringup_mv88e6xxx_network()
++{
++    auto mdio = createMdioBackend();
++    Mv88e6xxx sw(*mdio);
++    uint16_t value;
++
++    std::cerr << "[mv88e6xxx] bring-up begin\n";
++
++    std::cerr << "[mv88e6xxx] clear PHY detect on Port 0\n";
++    int ret = sw.writeReg(0, 0x00, 0x04, true);
++
++    if (!ret)
++    {
++        std::cerr
++            << "[mv88e6xxx] disable Port 0, 9 and 10 before configuring\n";
++        ret = sw.writeReg(0, 0x04, 0x7C, true) ||
++              sw.writeReg(9, 0x04, 0x7C, true) ||
++              sw.writeReg(10, 0x04, 0x7C, true);
++    }
++
++    if (!ret)
++    {
++        std::cerr
++            << "[mv88e6xxx] configure external PHY on Port 9 and Port 10 to SGMII mode\n";
++        ret = sw.writeSmiC22(1, 0, 18, 20, 0x8001, true) ||
++              sw.writeSmiC22(1, 1, 18, 20, 0x8001, true);
++    }
++
++    if (!ret)
++    {
++        std::cerr
++            << "[mv88e6xxx] configure switch Port 9 and Port 10 to SGMII mode\n";
++        ret = sw.writeReg(9, 0x00, 0x0a, true) ||
++              sw.writeReg(10, 0x00, 0x0a, true);
++    }
++
++    if (!ret)
++    {
++        std::cerr << "[mv88e6xxx] force Port 0 link up at 100Mbps\n";
++        ret = sw.writeReg(0, 0x01, 0x203D, true);
++    }
++
++    if (!ret)
++    {
++        std::cerr << "[mv88e6xxx] re-enable Port 0, 9 and 10\n";
++        ret = sw.writeReg(0, 0x04, 0x7F, true) ||
++              sw.writeReg(9, 0x04, 0x7F, true) ||
++              sw.writeReg(10, 0x04, 0x7F, true);
++    }
++
++    if (!ret)
++    {
++        // ERRATA 4.7: When changing C_Mode on SERDES port from any mode to
++        // 1000BASE-X mode the link may not come up due to invalid 1000BASE-X
++        // advertisement
++        std::cerr << "[mv88e6xxx] apply ERRATA 4.7 for Port 9 and Port 10\n";
++        for (int phy = 9; phy <= 10 && !ret; phy++)
++        {
++            ret =
++                sw.writeSmiC45(false, phy, 4, 0x2004, 0x20, true) ||
++                sw.readSmiC45(false, phy, 4, 0x2000, value, true) ||
++                sw.writeSmiC45(false, phy, 4, 0x2000, (value | 1 << 15), true);
++        }
++    }
++
++    if (!ret)
++    {
++        // ERRATA 4.8: Link may not come up after hardware reset or software
++        // reset in 1000BASE-X or SGMII mode
++        std::cerr << "[mv88e6xxx] apply ERRATA 4.8 for Port 9 and Port 10\n";
++        for (int phy = 9; phy <= 10; phy++)
++        {
++            ret =
++                sw.readSmiC45(false, phy, 4, 0xF074, value, true) ||
++                sw.writeSmiC45(false, phy, 4, 0xF074, (value | 1 << 14), true);
++        }
++    }
++
++    if (!ret)
++    {
++        std::cerr << "[mv88e6xxx] configure LED on Port 1 through Port 8\n";
++        for (int phy = 1; phy <= 8 && !ret; phy++)
++        {
++            ret = sw.writeReg(phy, 22, 0x8033, true);
++        }
++    }
++
++    if (!ret)
++    {
++        std::cerr << "[mv88e6xxx] configure LED on Port 9 and Port 10\n";
++        // LED0 Gb Link (off = no link, on = Gb link)
++        // LED1 On - Link, Blink - Activity, Off - No Link
++        for (int phy = 0; phy <= 1 && !ret; phy++)
++        {
++            ret = sw.readSmiC22(true, phy, 3, 16, value, true) ||
++                  sw.writeSmiC22(true, phy, 3, 16, (value & 0xff00) | 0x0017,
++                                 true);
++        }
++    }
++
++    std::cerr << "[mv88e6xxx] bring-up end\n";
++    return ret;
++}
++
++int bringup_evt_board()
++{
++    std::cerr << "[evt_board] bring-up start\n";
++    std::cerr
++        << "[evt_board]   Set PWRGD signals high to deassert Marvell 88E6393X reset\n";
++    gpio::set("FPGA_PWRGD_P1V05_AUX_R", 1);
++    gpio::set("FPGA_PWRGD_P5V_AUX_R2", 1);
++    gpio::set("FPGA_PWRGD_P12V_AUX_R2", 1);
++    gpio::set("FPGA_PWRGD_P1V5_AUX_R", 1);
++
++    std::cerr << "[evt_board]   Reset Marvell 88E6393X\n";
++    gpio::set("FPGA_PWRGD_P1V5_AUX_R", 0);
++    usleep(12000);
++    gpio::set("FPGA_PWRGD_P1V5_AUX_R", 1);
++
++    std::cerr << "[evt_board]   Reset Marvell 88E1512\n";
++    gpio::set("FPGA_RST_88E1512_PLD", 0);
++    usleep(12000);
++    gpio::set("FPGA_RST_88E1512_PLD", 1);
++    std::cerr << "[evt_board] bring-up end\n";
++
++    return EXIT_SUCCESS;
++}
++
++int init_ventura2()
++{
++    int ret = bringup_evt_board();
++    if (ret)
++    {
++        return ret;
++    }
++
++    ret = bringup_mv88e6xxx_network();
++    if (ret)
++    {
++        return ret;
++    }
++
++    sd_notify(0, "READY=1");
++    return EXIT_SUCCESS;
++}
++} // namespace meta
+diff --git a/platform.cpp b/platform.cpp
+index a90e209..9cc5271 100644
+--- a/platform.cpp
++++ b/platform.cpp
+@@ -4,6 +4,7 @@
+ #include "gpio.hpp"
+ #include "i2c.hpp"
+ #include "intel.hpp"
++#include "meta.hpp"
+ #include "nvidia.hpp"
+ #include "utilities.hpp"
+ 
+@@ -19,12 +20,14 @@
+ #include <string_view>
+ #include <utility>
+ 
+-constexpr std::array<std::pair<std::string_view, int (*)()>, 5> init_functions{
+-    {{"intel-acrp", intel::init_acrp},
+-     {"intel-jcrp", intel::init_jcrp},
+-     {"nvidia-gb200", nvidia::init_gb200_base},
+-     {"nvidia-gb200-with-p2020", nvidia::init_gb200_with_p2020},
+-     {"nvidia-nvl32", nvidia::init_nvl32}}};
++constexpr std::array<std::pair<std::string_view, int (*)()>, 6> init_functions{{
++    {"intel-acrp", intel::init_acrp},
++    {"intel-jcrp", intel::init_jcrp},
++    {"nvidia-gb200", nvidia::init_gb200_base},
++    {"nvidia-gb200-with-p2020", nvidia::init_gb200_with_p2020},
++    {"nvidia-nvl32", nvidia::init_nvl32},
++    {"meta-ventura2", meta::init_ventura2},
++}};
+ 
+ int main(int argc, char** argv)
+ {
+diff --git a/subprojects/libftdi1.wrap b/subprojects/libftdi1.wrap
+new file mode 100644
+index 0000000..50fab9f
+--- /dev/null
++++ b/subprojects/libftdi1.wrap
+@@ -0,0 +1,9 @@
++[wrap-file]
++directory = libftdi1-1.5
++source_url = http://www.intra2net.com/en/developer/libftdi/download/libftdi1-1.5.tar.bz2
++source_filename = libftdi1-1.5.tar.bz2
++source_hash = 7c7091e9c86196148bd41177b4590dccb1510bfe6cea5bf7407ff194482eb049
++patch_directory = libftdi1
++
++[provide]
++libftdi1 = libftdi1_dep
+diff --git a/subprojects/libmnl.wrap b/subprojects/libmnl.wrap
+new file mode 100644
+index 0000000..3945f6e
+--- /dev/null
++++ b/subprojects/libmnl.wrap
+@@ -0,0 +1,9 @@
++[wrap-file]
++directory = libmnl-1.0.5
++source_url = https://netfilter.org/pub/libmnl/libmnl-1.0.5.tar.bz2
++source_filename = libmnl-1.0.5.tar.bz2
++source_hash = 274b9b919ef3152bfb3da3a13c950dd60d6e2bcd54230ffeca298d03b40d0525
++patch_directory = libmnl
++
++[provide]
++libmnl = libmnl_dep
+diff --git a/subprojects/libusb.wrap b/subprojects/libusb.wrap
+new file mode 100644
+index 0000000..ab1ee35
+--- /dev/null
++++ b/subprojects/libusb.wrap
+@@ -0,0 +1,11 @@
++[wrap-file]
++directory = libusb-1.0.29
++source_url = https://github.com/libusb/libusb/releases/download/v1.0.29/libusb-1.0.29.tar.bz2
++source_filename = libusb-1.0.29.tar.bz2
++source_hash = 5977fc950f8d1395ccea9bd48c06b3f808fd3c2c961b44b0c2e6e29fc3a70a85
++patch_filename = libusb_1.0.29-2_patch.zip
++patch_url = https://wrapdb.mesonbuild.com/v2/libusb_1.0.29-2/get_patch
++patch_hash = 91aa91c553ae4325b6b5a2f473f346c3443f580f820aedd7ce53976847d50f15
++
++[provide]
++libusb-1.0 = libusb_dep
+diff --git a/subprojects/packagefiles/libftdi1/meson.build b/subprojects/packagefiles/libftdi1/meson.build
+new file mode 100644
+index 0000000..3e80485
+--- /dev/null
++++ b/subprojects/packagefiles/libftdi1/meson.build
+@@ -0,0 +1,61 @@
++project(
++    'libftdi1',
++    'c',
++    version: '1.5',
++    meson_version: '>=0.56.0',
++    default_options: [
++        'werror=false',
++        'warning_level=0',
++    ],
++)
++
++libusb_project = subproject(
++    'libusb',
++    default_options: [
++        'tests=false',
++        'werror=false',
++        'warning_level=0',
++    ],
++)
++libusb_dep = libusb_project.get_variable('libusb_dep')
++
++version_conf = configuration_data()
++version_conf.set('MAJOR_VERSION', '1')
++version_conf.set('MINOR_VERSION', '5')
++version_conf.set('VERSION_STRING', meson.project_version())
++version_conf.set('SNAPSHOT_VERSION', 'unknown')
++
++libftdi1_build_inc = include_directories('.')
++libftdi1_src_inc = include_directories('src')
++
++configure_file(
++    input: 'src/ftdi_version_i.h.in',
++    output: 'ftdi_version_i.h',
++    configuration: version_conf,
++)
++
++libftdi1_lib = library(
++    'ftdi1',
++    files(
++        'src/ftdi.c',
++        'src/ftdi_stream.c',
++    ),
++    c_args: [
++        '-Wno-error',
++    ],
++    dependencies: libusb_dep,
++    include_directories: [
++        libftdi1_build_inc,
++        libftdi1_src_inc,
++    ],
++    override_options: [
++        'werror=false',
++        'warning_level=0',
++    ],
++)
++
++libftdi1_dep = declare_dependency(
++    dependencies: libusb_dep,
++    include_directories: libftdi1_src_inc,
++    link_with: libftdi1_lib,
++)
+diff --git a/subprojects/packagefiles/libftdi1/meson.options b/subprojects/packagefiles/libftdi1/meson.options
+new file mode 100644
+index 0000000..218736c
+--- /dev/null
++++ b/subprojects/packagefiles/libftdi1/meson.options
+@@ -0,0 +1,6 @@
++option(
++    'platform-name',
++    type: 'string',
++    value: '',
++    description: 'Unused parent project option',
++)
+diff --git a/subprojects/packagefiles/libmnl/meson.build b/subprojects/packagefiles/libmnl/meson.build
+new file mode 100644
+index 0000000..43e5710
+--- /dev/null
++++ b/subprojects/packagefiles/libmnl/meson.build
+@@ -0,0 +1,54 @@
++project(
++    'libmnl',
++    'c',
++    version: '1.0.5',
++    meson_version: '>=0.56.0',
++    default_options: [
++        'werror=false',
++        'warning_level=0',
++    ],
++)
++
++libmnl_inc = include_directories('include')
++libmnl_build_inc = include_directories('.')
++
++cc = meson.get_compiler('c')
++
++config_h = configuration_data()
++config_h.set(
++    'HAVE_VISIBILITY_HIDDEN',
++    cc.has_argument('-fvisibility=hidden') ? 1 : false,
++)
++
++configure_file(
++    output: 'config.h',
++    configuration: config_h,
++)
++
++libmnl_lib = library(
++    'mnl',
++    files(
++        'src/attr.c',
++        'src/callback.c',
++        'src/nlmsg.c',
++        'src/socket.c',
++    ),
++    c_args: [
++        '-D_FILE_OFFSET_BITS=64',
++        '-D_REENTRANT',
++        '-Wno-error',
++    ],
++    include_directories: [
++        libmnl_build_inc,
++        libmnl_inc,
++    ],
++    override_options: [
++        'werror=false',
++        'warning_level=0',
++    ],
++)
++
++libmnl_dep = declare_dependency(
++    include_directories: libmnl_inc,
++    link_with: libmnl_lib,
++)
+diff --git a/subprojects/packagefiles/libmnl/meson.options b/subprojects/packagefiles/libmnl/meson.options
+new file mode 100644
+index 0000000..218736c
+--- /dev/null
++++ b/subprojects/packagefiles/libmnl/meson.options
+@@ -0,0 +1,6 @@
++option(
++    'platform-name',
++    type: 'string',
++    value: '',
++    description: 'Unused parent project option',
++)
+-- 
+2.34.1
+

@@ -1,5 +1,7 @@
 require common/images/fb-openbmc-image.inc
 
+IMAGE_INSTALL:append = " platform-init"
+
 # FTDI-based MDIO tool and scripts to initialize the Marvell switch during the EVT phase
 IMAGE_INSTALL:append = " ftdi-mdio"
 

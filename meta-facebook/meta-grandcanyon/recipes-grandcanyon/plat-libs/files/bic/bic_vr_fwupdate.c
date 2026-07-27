@@ -100,7 +100,7 @@ show_progress(int current_progress, int total) {
 }
 
 static int
-vr_remaining_writes_check(uint8_t cnt, uint8_t force) {
+vr_remaining_writes_check(uint16_t cnt, uint8_t force) {
   int ret = BIC_STATUS_SUCCESS;
 
   printf("remaining writes %d.\n", cnt);
@@ -765,6 +765,19 @@ vr_TI_program(vr *dev, uint8_t force) {
     }
   }
 
+  // Check remaining writes before consuming one
+  uint16_t remaining = 0;
+  if (bic_get_ti_vr_remaining_wr(addr, &remaining) == 0) {
+    if (remaining == UNINITIALIZED_EEPROM) {
+      // Auto-init on first use, mirrors yv35 load_tps_remaining_wr behavior
+      remaining = MAX_TI_VR_REMAIN_WR;
+      bic_set_ti_vr_remaining_wr(addr, remaining);
+    }
+    ret = vr_remaining_writes_check(remaining, force);
+    if (ret < 0) {
+      goto error_exit;
+    }
+  }
 #endif
 
   tbuf[0] = (VR_BUS << 1) + 1;
@@ -884,6 +897,18 @@ vr_TI_program(vr *dev, uint8_t force) {
     ret = 0;
   }
 
+  if (bic_get_ti_vr_remaining_wr(addr, &remaining) == 0) {
+    if (remaining == UNINITIALIZED_EEPROM) {
+      remaining = MAX_TI_VR_REMAIN_WR;
+    }
+    if (remaining > 0) {
+      remaining--;
+    }
+    if (bic_set_ti_vr_remaining_wr(addr, remaining) < 0) {
+      syslog(LOG_WARNING, "[%s] Failed to decrement TI VR remaining writes, "
+             "addr=0x%02X", __func__, addr);
+    }
+  }
 #else  // !CONFIG_GRANDCANYON2
   //step 3 - verify data
   tbuf[3] = TI_USER_NVM_INDEX;

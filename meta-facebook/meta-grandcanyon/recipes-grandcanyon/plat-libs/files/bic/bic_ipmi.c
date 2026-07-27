@@ -616,6 +616,109 @@ error_exit:
   return ret;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+// Calculate zero-sum checksum: 2's complement of the sum of all data bytes,
+// such that sum(data) + checksum = 0 (mod 256)
+static uint8_t
+zero_checksum_calculate(uint8_t *buf, uint8_t len) {
+  uint8_t i, ret = 0;
+  for (i = 0; i < len; i++) {
+    ret += *(buf++);
+  }
+  ret = (~ret) + 1;
+  return ret;
+}
+
+// Validate zero-sum checksum: 2's complement of sum(data) + checksum should be 0
+static bool
+zero_checksum_valid(uint8_t *buf, uint8_t len) {
+  uint8_t i, ret = 0;
+  for (i = 0; i < len; i++) {
+    ret += *(buf++);
+  }
+  ret += *(buf++);   // include checksum byte
+  ret = (~ret) + 1;
+  return (ret == 0) ? true : false;
+}
+
+// Read TI VR remaining writes from BIC EEPROM
+int
+bic_get_ti_vr_remaining_wr(uint8_t addr, uint16_t *remain) {
+  uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  if (remain == NULL) {
+    syslog(LOG_WARNING, "%s: NULL pointer", __func__);
+    return -1;
+  }
+
+  tbuf[0] = BIC_EEPROM_BUS;
+  tbuf[1] = BIC_EEPROM_ADDR;
+  tbuf[2] = 3;                                   // read 3 bytes (high, low, checksum)
+  tbuf[3] = VR_REMAINING_WRITE_START_ADDR;
+  tbuf[4] = TI_VR_REMAINING_WRITE_OFFSET(addr);
+  tlen = 5;
+
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
+                         tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to read EEPROM, addr=0x%02X, ret=%d",
+           __func__, addr, ret);
+    return ret;
+  }
+
+  *remain = ((uint16_t)rbuf[0] << 8) | rbuf[1];  // higher byte first
+
+  // UNINITIALIZED_EEPROM means not yet provisioned; let caller auto-init
+  if (*remain == UNINITIALIZED_EEPROM) {
+    syslog(LOG_INFO, "%s() EEPROM uninitialized for VR addr=0x%02X, will auto-init",
+           __func__, addr);
+    return 0;
+  }
+
+  if (!zero_checksum_valid(rbuf, VR_REMAIN_WR_SIZE)) {
+    syslog(LOG_WARNING, "%s() Checksum invalid for VR addr=0x%02X "
+           "(0x%02X 0x%02X 0x%02X)",
+           __func__, addr, rbuf[0], rbuf[1], rbuf[2]);
+    return -1;
+  }
+
+  return 0;
+}
+
+// Write TI VR remaining writes back to BIC EEPROM
+int
+bic_set_ti_vr_remaining_wr(uint8_t addr, uint16_t remain) {
+  uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  tbuf[0] = BIC_EEPROM_BUS;
+  tbuf[1] = BIC_EEPROM_ADDR;
+  tbuf[2] = 0;                                   // write only
+  tbuf[3] = VR_REMAINING_WRITE_START_ADDR;
+  tbuf[4] = TI_VR_REMAINING_WRITE_OFFSET(addr);
+  tbuf[5] = (remain >> 8) & 0xFF;                // higher byte
+  tbuf[6] = remain & 0xFF;                       // lower byte
+  tbuf[7] = zero_checksum_calculate(&tbuf[5], VR_REMAIN_WR_SIZE);
+  tlen = 8;
+
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
+                         tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to write EEPROM, addr=0x%02X, remain=%u, ret=%d",
+           __func__, addr, remain, ret);
+  }
+
+  return ret;
+}
+#endif // CONFIG_GRANDCANYON2
+
 int
 bic_switch_mux_for_bios_spi(uint8_t mux) {
   uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
@@ -795,7 +898,24 @@ cleanup:
     }
     
 #ifdef CONFIG_GRANDCANYON2
-    snprintf(ver_str, MAX_VALUE_LEN, "Texas Instruments %02X%02X, Remaining Writes: Not support", rbuf[1], rbuf[0]);
+    // TI VR has no remaining-writes query command; read software counter from BIC EEPROM
+    {
+      uint16_t remaining = 0;
+      if (bic_get_ti_vr_remaining_wr(addr, &remaining) < 0) {
+        snprintf(ver_str, MAX_VALUE_LEN,
+                 "Texas Instruments %02X%02X, Remaining Writes: Unknown",
+                 rbuf[1], rbuf[0]);
+      } else {
+        if (remaining == UNINITIALIZED_EEPROM) {
+          // Auto-init on first use
+          remaining = MAX_TI_VR_REMAIN_WR;
+          bic_set_ti_vr_remaining_wr(addr, remaining);
+        }
+        snprintf(ver_str, MAX_VALUE_LEN,
+                 "Texas Instruments %02X%02X, Remaining Writes: %u",
+                 rbuf[1], rbuf[0], remaining);
+      }
+    }
 #else
     snprintf(ver_str, MAX_VALUE_LEN, "Texas Instruments %02X%02X", rbuf[1], rbuf[0]);
 #endif

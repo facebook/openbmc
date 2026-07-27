@@ -40,6 +40,16 @@ extern "C" {
 // Infineon VR MFR command parameters
 #define INF_VR_CMD_GET_VERSION    0x2D
 #define INF_VR_CMD_GET_REM_WRITES 0x10
+
+// BIC EEPROM for TI VR remaining write software counter
+#define BIC_EEPROM_BUS                     0x02
+#define BIC_EEPROM_ADDR                    0xA8
+#define VR_REMAINING_WRITE_START_ADDR      0x0A   // high byte of 16-bit EEPROM offset
+#define UNINITIALIZED_EEPROM               0xFFFF  // factory-blank value
+#define VR_REMAIN_WR_SIZE                  2       // data bytes before checksum
+#define MAX_TI_VR_REMAIN_WR                1000
+// Unique EEPROM low-byte offset per VR I2C address
+#define TI_VR_REMAINING_WRITE_OFFSET(addr) (((addr) & 0x0f) | 0x40)
 #endif
 
 // command for ISL VR
@@ -87,6 +97,10 @@ int bic_get_ifx_vr_remaining_writes_mfr(uint8_t bus, uint8_t addr, uint8_t *writ
 int bic_get_ifx_vr_version_mfr(uint8_t bus, uint8_t addr, uint8_t *ver_data);
 #endif
 int bic_get_isl_vr_remaining_writes(uint8_t bus, uint8_t addr, uint8_t *writes);
+#ifdef CONFIG_GRANDCANYON2
+int bic_get_ti_vr_remaining_wr(uint8_t addr, uint16_t *remain);
+int bic_set_ti_vr_remaining_wr(uint8_t addr, uint16_t remain);
+#endif
 int bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str);
 int bic_get_vr_ver_cache(uint8_t bus, uint8_t addr, char *ver_str);
 int bic_switch_mux_for_bios_spi(uint8_t mux);

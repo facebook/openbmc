@@ -1,0 +1,57 @@
+From 6bb176e55a7715e5f99be6df7f7128582db3040f Mon Sep 17 00:00:00 2001
+From: Vishnunithyasoundhar S <vishnunithyasoundhar.s@intel.com>
+Date: Wed, 22 Jul 2026 10:29:21 +0530
+Subject: [PATCH 24/25] platform-mc: fix dangling reference to rcOpt in
+ doSensorPolling
+
+The coroutine captured rcOpt by reference from the
+doSensorPollingTaskHandles map entry. stopPolling() can run between any
+co_await suspension point, erase the map entry and destroy rcOpt,
+leaving the coroutine with a dangling reference on resume.
+
+Remove the &rcOpt capture. Store the result in a local int and write
+back via a fresh find(tid) after the co_await completes, skipping the
+write if the entry was already erased.
+
+Change-Id: Ia4b50beeadf1e9367e7737e7037a52edebc802fc
+Signed-off-by: Vishnunithyasoundhar S <vishnunithyasoundhar.s@intel.com>
+---
+ platform-mc/sensor_manager.cpp | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/platform-mc/sensor_manager.cpp b/platform-mc/sensor_manager.cpp
+index c408e92..10e8702 100644
+--- a/platform-mc/sensor_manager.cpp
++++ b/platform-mc/sensor_manager.cpp
+@@ -126,12 +126,13 @@ void SensorManager::doSensorPolling(pldm_tid_t tid)
+                      std::forward_as_tuple())
+             .first->second;
+     scope.spawn(
+-        [this, &rcOpt, tid]() -> exec::task<void> {
++        [this, tid]() -> exec::task<void> {
+             auto res =
+                 co_await stdexec::stopped_as_optional(doSensorPollingTask(tid));
++            int rc = PLDM_SUCCESS;
+             if (res.has_value())
+             {
+-                rcOpt = *res;
++                rc = *res;
+             }
+             else
+             {
+@@ -151,7 +152,11 @@ void SensorManager::doSensorPolling(pldm_tid_t tid)
+                         "Terminus ID {TID}: Failed to stop polling timer. Exception: {EXCEPTION}",
+                         "TID", tid, "EXCEPTION", e);
+                 }
+-                rcOpt = PLDM_SUCCESS;
++            }
++            if (auto it = doSensorPollingTaskHandles.find(tid);
++                it != doSensorPollingTaskHandles.end())
++            {
++                it->second.second = rc;
+             }
+         }(),
+         exec::default_task_context<void>(stdexec::inline_scheduler{}));
+-- 
+2.47.3
+

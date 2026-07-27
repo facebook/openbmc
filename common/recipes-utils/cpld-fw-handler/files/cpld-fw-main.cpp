@@ -181,18 +181,24 @@ int main(int argc, char** argv)
     version->add_option("-b,--bus", bus, "i2c bus")->required();
     version->add_option("-a,--addr", addr, "slave address")->required();
     version->add_option("-t,--target", target,
-                        "used for LCMXO3D series CPLD, CFG0|CFG1");
+                        "used for LCMXO3D|LFMXO5 series CPLD, CFG0|CFG1");
     version->add_option(
         "-c,--chip", chip,
         "LCMXO3LF-4300|LCMXO3LF-6900|LCMXO3D-4300|LCMXO3D-9400|LFMXO5-25|LFMXO5-65T");
 
     CLI11_PARSE(app, argc, argv);
 
-    auto cpldType = getCpldType(chip);
-    auto info = getInfo(cpldType, bus);
-
     auto cpldManager = CpldLatticeManager(bus, addr, imagePath, chip, interface,
                                           target, debugMode);
+
+    if (chip.empty())
+    {
+        cpldManager.autoDetectChip();
+        chip = cpldManager.getChipName();
+    }
+
+    auto cpldType = getCpldType(chip);
+    auto info = getInfo(cpldType, bus);
 
     addSelBySelType(SEL_TYPE::TargetDetermined, imagePath, chip, cpldType, info);
 

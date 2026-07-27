@@ -77,6 +77,11 @@ class CpldLatticeManager : public CpldManager
     int fwUpdate(bool legacy) override;
     int fwVerifyOnly(bool legacy) override;
     int jedFileParser();
+    int autoDetectChip();
+    std::string getChipName() const
+    {
+        return chip;
+    }
 
     uint8_t softIpVersion = 0;
     bool CheckSOFTIP();

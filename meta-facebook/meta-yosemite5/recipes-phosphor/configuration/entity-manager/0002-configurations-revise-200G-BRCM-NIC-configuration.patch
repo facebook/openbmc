@@ -1,6 +1,6 @@
-From 66bf04dbe1b7d99f48eee4547e2fa24351a917bb Mon Sep 17 00:00:00 2001
-From: Kevin Tung <kevin.tung.openbmc@gmail.com>
-Date: Tue, 17 Mar 2026 12:01:37 -0700
+From 351790f58ab6a4192fe2950eac99559ef45b464e Mon Sep 17 00:00:00 2001
+From: Daniel Hsu <Daniel-Hsu@quantatw.com>
+Date: Fri, 24 Jul 2026 15:25:19 +0800
 Subject: [PATCH] configurations: revise 200G BRCM NIC configuration
 
 Add an MCTPI2CTarget entry to allow MCTPReactor to automatically
@@ -9,19 +9,21 @@ EID configuration.
 
 Update the BRCM NIC temperature sensor naming.
 
+Update thresholds
+
 Tested on Yv5:
 - EID is correctly assigned
 - Version object is properly exposed
 - Temperature sensor is exposed as NIC0_TEMP_C
 ---
- configurations/broadcomm/200g_1p_ocp_mezz.json | 16 ++++++++++++----
- 1 file changed, 12 insertions(+), 4 deletions(-)
+ .../broadcomm/200g_1p_ocp_mezz.json           | 28 ++++++++++++-------
+ 1 file changed, 18 insertions(+), 10 deletions(-)
 
 diff --git a/configurations/broadcomm/200g_1p_ocp_mezz.json b/configurations/broadcomm/200g_1p_ocp_mezz.json
-index 3f028b7..205941a 100644
+index 3f028b7..a9c29b6 100644
 --- a/configurations/broadcomm/200g_1p_ocp_mezz.json
 +++ b/configurations/broadcomm/200g_1p_ocp_mezz.json
-@@ -3,20 +3,27 @@
+@@ -3,37 +3,45 @@
          {
              "Address": "$address",
              "Bus": "$bus",
@@ -47,20 +49,28 @@ index 3f028b7..205941a 100644
 +            "Name1": "NIC$bus % 2 TEMP_C",
              "Thresholds": [
                  {
-                     "Direction": "less than",
-+                    "Hysteresis": 0.1,
+-                    "Direction": "less than",
++                    "Direction": "greater than",
++                    "Hysteresis": 2.1,
                      "Index": 2,
-                     "Name": "lower critical",
+-                    "Name": "lower critical",
++                    "Name": "upper critical",
                      "Severity": 1,
-@@ -24,6 +31,7 @@
+-                    "Value": 5
++                    "Value": 105
                  },
                  {
                      "Direction": "greater than",
-+                    "Hysteresis": 2.1,
++                    "Hysteresis": 2.3,
                      "Index": 2,
-                     "Name": "upper critical",
-                     "Severity": 1,
-@@ -33,7 +41,7 @@
+-                    "Name": "upper critical",
+-                    "Severity": 1,
+-                    "Value": 105
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 115
+                 }
+             ],
              "Type": "TMP421"
          }
      ],
@@ -69,6 +79,6 @@ index 3f028b7..205941a 100644
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'BRCM 200G 1P.*57508 OCP Mezz'})",
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
--- 
-2.52.0
+--
+2.53.0
 

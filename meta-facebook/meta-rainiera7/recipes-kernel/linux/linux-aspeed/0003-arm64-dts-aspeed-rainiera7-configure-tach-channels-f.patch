@@ -1,0 +1,37 @@
+From 0f3d1af03137e3063d32445dbec52551a4154974 Mon Sep 17 00:00:00 2001
+From: Neil Cheng <Neil.Cheng@quantatw.com>
+Date: Tue, 23 Jun 2026 16:16:19 +0800
+Subject: [PATCH] arm64: dts: aspeed: rainiera7: configure tach channels for
+ max31790
+
+Follow Yosemite5 since rainier use the same PDB.
+Configure the TACH sensor channels in the MAX31790 fan controller node.
+This functionality is not supported in the upstream device tree,
+so the change is applied only in the Meta tree.
+
+Signed-off-by: Neil Cheng <Neil.Cheng@quantatw.com>
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts  | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts
+index 2adf739cf..4f68f29b7 100644
+--- a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts
++++ b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts
+@@ -507,6 +507,16 @@ psu@5c {
+ 	fan-controller@5e {
+ 		compatible = "maxim,max31790";
+ 		reg = <0x5e>;
++        #address-cells = <1>;
++		#size-cells = <0>;
++		channel@1 {
++			reg = <1>;
++			sensor-type = "TACH";
++		};
++		channel@2 {
++			reg = <2>;
++			sensor-type = "TACH";
++		};
+ 	};
+ 
+ 	/* I2C MUX for PWRPIC #1, #2, #11, #12 */

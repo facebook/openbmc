@@ -27,7 +27,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0021-Add-back-instance-id-expiration-interval.patch \
     file://0022-fw_update-Reimplement-package-parser-to-use-new-libp.patch \
     file://0023-oem-meta-support-MCTP-I2C-and-I3C-target-configs.patch \
-    file://0024-platform-mc-fix-dangling-reference-to-rcOpt-in-doSen.patch \
+    file://0024-platform-mc-fix-dangling-exec-async_scope-in-doSenso.patch \
     file://0025-oem-meta-santabarbara-update-event-logs-from-rainbow.patch \
 "
 

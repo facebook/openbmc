@@ -1,0 +1,137 @@
+From cd1f524ef4bb1ca43a3e3dde64a0916ab25f0f59 Mon Sep 17 00:00:00 2001
+From: Vishnunithyasoundhar S <vishnunithyasoundhar.s@intel.com>
+Date: Wed, 22 Jul 2026 10:29:21 +0530
+Subject: [PATCH 24/25] platform-mc: fix dangling exec::async_scope in
+ doSensorPolling
+
+stopPolling() erased the doSensorPollingTaskHandles entry while a
+coroutine was still suspended on the scope. A response arriving after
+the erase would resume the coroutine on freed memory, causing SIGSEGV.
+
+Introduce PollHandle, a heap-allocated struct holding the scope and
+completion flag. The coroutine takes a shared_ptr<PollHandle> as an
+explicit parameter so the scope outlives the map entry until
+final_suspend is done.
+
+Also replace [this, tid] captures with explicit parameters. Captures
+are accessed through the closure object, which is a temporary;
+parameters are guaranteed to live in the coroutine frame.
+
+Change-Id: Ia4b50beeadf1e9367e7737e7037a52edebc802fc
+Signed-off-by: Vishnunithyasoundhar S <vishnunithyasoundhar.s@intel.com>
+---
+ platform-mc/sensor_manager.cpp | 42 +++++++++++++++++-----------------
+ platform-mc/sensor_manager.hpp | 13 ++++++++++-
+ 2 files changed, 33 insertions(+), 22 deletions(-)
+
+diff --git a/platform-mc/sensor_manager.cpp b/platform-mc/sensor_manager.cpp
+index c408e92..b0e8ff1 100644
+--- a/platform-mc/sensor_manager.cpp
++++ b/platform-mc/sensor_manager.cpp
+@@ -99,9 +99,11 @@ void SensorManager::stopPolling(pldm_tid_t tid)
+ 
+     if (doSensorPollingTaskHandles.contains(tid))
+     {
+-        auto& [scope, rcOpt] = doSensorPollingTaskHandles[tid];
+-        scope.request_stop();
++        doSensorPollingTaskHandles[tid]->scope.request_stop();
+         doSensorPollingTaskHandles.erase(tid);
++        // The coroutine holds its own shared_ptr<PollHandle> as a parameter
++        // (in the coroutine frame), so the scope outlives this erase and is
++        // destroyed cleanly after final_suspend completes its bookkeeping.
+     }
+ 
+     availableState.erase(tid);
+@@ -112,37 +114,35 @@ void SensorManager::doSensorPolling(pldm_tid_t tid)
+     auto it = doSensorPollingTaskHandles.find(tid);
+     if (it != doSensorPollingTaskHandles.end())
+     {
+-        auto& [scope, rcOpt] = it->second;
+-        if (!rcOpt.has_value())
++        if (!it->second->rcOpt.has_value())
+         {
+             return;
+         }
+-        doSensorPollingTaskHandles.erase(tid);
++        doSensorPollingTaskHandles.erase(it);
+     }
+ 
+-    auto& [scope, rcOpt] =
+-        doSensorPollingTaskHandles
+-            .emplace(std::piecewise_construct, std::forward_as_tuple(tid),
+-                     std::forward_as_tuple())
+-            .first->second;
+-    scope.spawn(
+-        [this, &rcOpt, tid]() -> exec::task<void> {
+-            auto res =
+-                co_await stdexec::stopped_as_optional(doSensorPollingTask(tid));
++    auto handle = std::make_shared<PollHandle>();
++    doSensorPollingTaskHandles[tid] = handle;
++    handle->scope.spawn(
++        [](SensorManager& self, pldm_tid_t tid,
++           std::shared_ptr<PollHandle> handle) -> exec::task<void> {
++            auto res = co_await stdexec::stopped_as_optional(
++                self.doSensorPollingTask(tid));
++            int rc = PLDM_SUCCESS;
+             if (res.has_value())
+             {
+-                rcOpt = *res;
++                rc = *res;
+             }
+             else
+             {
+                 lg2::info("Stopped polling for Terminus ID {TID}", "TID", tid);
+                 try
+                 {
+-                    if (sensorPollTimers.contains(tid) &&
+-                        sensorPollTimers[tid] &&
+-                        sensorPollTimers[tid]->isRunning())
++                    if (self.sensorPollTimers.contains(tid) &&
++                        self.sensorPollTimers[tid] &&
++                        self.sensorPollTimers[tid]->isRunning())
+                     {
+-                        sensorPollTimers[tid]->stop();
++                        self.sensorPollTimers[tid]->stop();
+                     }
+                 }
+                 catch (const std::exception& e)
+@@ -151,9 +151,9 @@ void SensorManager::doSensorPolling(pldm_tid_t tid)
+                         "Terminus ID {TID}: Failed to stop polling timer. Exception: {EXCEPTION}",
+                         "TID", tid, "EXCEPTION", e);
+                 }
+-                rcOpt = PLDM_SUCCESS;
+             }
+-        }(),
++            handle->rcOpt = rc;
++        }(*this, tid, handle),
+         exec::default_task_context<void>(stdexec::inline_scheduler{}));
+ }
+ 
+diff --git a/platform-mc/sensor_manager.hpp b/platform-mc/sensor_manager.hpp
+index 6a36548..1540b1e 100644
+--- a/platform-mc/sensor_manager.hpp
++++ b/platform-mc/sensor_manager.hpp
+@@ -109,8 +109,19 @@ class SensorManager
+     /** @brief sensor polling timers */
+     std::map<pldm_tid_t, std::unique_ptr<sdbusplus::Timer>> sensorPollTimers;
+ 
++    /** @brief Shared state for a single doSensorPolling coroutine run.
++     *  Heap-allocated so stopPolling() can erase the map entry immediately
++     *  while the coroutine keeps the scope alive via its shared_ptr parameter
++     *  until final_suspend completes the scope's internal bookkeeping.
++     */
++    struct PollHandle
++    {
++        exec::async_scope scope;
++        std::optional<int> rcOpt;
++    };
++
+     /** @brief coroutine handle of doSensorPollingTasks */
+-    std::map<pldm_tid_t, std::pair<exec::async_scope, std::optional<int>>>
++    std::map<pldm_tid_t, std::shared_ptr<PollHandle>>
+         doSensorPollingTaskHandles;
+ 
+     /** @brief Available state for pldm request of terminus */
+-- 
+2.47.3
+

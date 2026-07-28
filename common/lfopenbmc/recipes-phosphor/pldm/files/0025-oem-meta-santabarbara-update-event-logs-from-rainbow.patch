@@ -1,4 +1,4 @@
-From e257012ccbb88ebe490b64bf8bf631f02ac464b7 Mon Sep 17 00:00:00 2001
+From 7b5a2bf1196e8c3e592aa7f02dd9c57576ce2fd7 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Mon, 27 Jul 2026 17:59:48 +0800
 Subject: [PATCH 25/25] oem-meta: santabarbara: update event logs from rainbow

@@ -738,6 +738,40 @@ static int nic_is_resetting = 0;
 static bool cycle_thread_is_running = false;
 pthread_mutex_t cycle_thread_lock = PTHREAD_MUTEX_INITIALIZER;
 
+#ifdef CONFIG_GRANDCANYON2
+// Emit a repeated failure log only once per boot, keyed by a /tmp marker file
+// so the de-duplication also holds across the short-lived processes that call
+// into libpal. Returns true the first time `marker` is seen (caller should
+// log), false thereafter. A NULL marker always returns true (never rate
+// limited). Usage: if (pal_log_once("/tmp/foo_logged")) { syslog(...); }
+//
+// The check-then-create is done with a single O_CREAT|O_EXCL open() so two
+// processes racing on the same first failure can't both slip through. This
+// still touches the filesystem on every call once the marker exists, so
+// hot-path callers (e.g. a polling thread) should additionally gate with a
+// process-local `static bool` and only call this once per process.
+bool
+pal_log_once(const char *marker) {
+  int fd = -1;
+  ssize_t wr = 0;
+
+  if (marker == NULL) {
+    return true;
+  }
+
+  fd = open(marker, O_CREAT | O_EXCL | O_WRONLY, 0644);
+  if (fd < 0) {
+    return (errno == EEXIST) ? false : true;
+  }
+
+  wr = write(fd, "logged\n", 7);
+  (void)wr;
+  close(fd);
+
+  return true;
+}
+#endif
+
 static int
 pal_key_index(char *key) {
   int i = 0;
@@ -1742,14 +1776,34 @@ int pal_get_sku(platformInformation *pal_sku) {
   ret = pal_get_key_value(key, str);
 
   if (ret < 0) {
+#ifdef CONFIG_GRANDCANYON2
+    static bool sku_key_fail_logged = false;
+    if (!sku_key_fail_logged) {
+      if (pal_log_once("/tmp/pal_get_sku_key_fail_logged")) {
+        syslog(LOG_ERR, "%s(): Failed to get platform SKU because failed to get key value of %s\n", __func__, key);
+      }
+      sku_key_fail_logged = true;
+    }
+#else
     syslog(LOG_ERR, "%s(): Failed to get platform SKU because failed to get key value of %s\n", __func__, key);
+#endif
     return -1;
   }
 
   pal_sku_value = atoi(str);
 
   if (pal_sku_value >= MAX_SKU_VALUE) {
+#ifdef CONFIG_GRANDCANYON2
+    static bool sku_invalid_logged = false;
+    if (!sku_invalid_logged) {
+      if (pal_log_once("/tmp/pal_get_sku_invalid_logged")) {
+        syslog(LOG_WARNING, "%s(): Failed to get platform SKU because SKU value is wrong\n", __func__);
+      }
+      sku_invalid_logged = true;
+    }
+#else
     syslog(LOG_WARNING, "%s(): Failed to get platform SKU because SKU value is wrong\n", __func__);
+#endif
     return -1;
   } else {
     for (i = pal_sku_size - 1; i >= 0; i--) {
@@ -1780,7 +1834,17 @@ int pal_get_uic_location(uint8_t *uic_id){
   // UIC_ID[0:1]: 01=UIC_A; 10=UIC_B
   ret = pal_get_sku(&pal_sku);
   if (ret < 0) {
+#ifdef CONFIG_GRANDCANYON2
+    static bool uic_location_sku_fail_logged = false;
+    if (!uic_location_sku_fail_logged) {
+      if (pal_log_once("/tmp/pal_get_uic_location_sku_fail_logged")) {
+        syslog(LOG_WARNING, "%s(): Failed to get UIC location because failed to get sku value\n", __func__);
+      }
+      uic_location_sku_fail_logged = true;
+    }
+#else
     syslog(LOG_WARNING, "%s(): Failed to get UIC location because failed to get sku value\n", __func__);
+#endif
     return -1;
   }
 

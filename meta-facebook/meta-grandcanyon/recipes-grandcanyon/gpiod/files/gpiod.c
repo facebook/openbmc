@@ -310,7 +310,17 @@ fru_missing_monitor() {
         // Type 5 and Type unknown
         } else {
           if (pal_get_uic_location(&uic_location_id) < 0) {
+#ifdef CONFIG_GRANDCANYON2
+            static bool uic_location_fail_logged = false;
+            if (!uic_location_fail_logged) {
+              if (pal_log_once("/tmp/gpiod_uic_location_fail_logged")) {
+                syslog(LOG_WARNING, "%s(): fail to get uic location\n", __func__);
+              }
+              uic_location_fail_logged = true;
+            }
+#else
             syslog(LOG_WARNING, "%s(): fail to get uic location\n", __func__);
+#endif
             uic_location = '?';
           } else {
             if(uic_location_id == UIC_SIDEA) {

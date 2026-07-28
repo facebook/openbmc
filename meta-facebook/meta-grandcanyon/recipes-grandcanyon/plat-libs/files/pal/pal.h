@@ -655,6 +655,13 @@ int pal_bind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name, char *bind
 int pal_unbind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name, char *bind_dir);
 int pal_get_sku(platformInformation *pal_sku);
 int pal_get_uic_location(uint8_t *uic_id);
+#ifdef CONFIG_GRANDCANYON2
+// GC2: rate-limit a repeated failure log so it is emitted only once per boot.
+// De-duplication is keyed by a /tmp marker file so it also holds across the
+// short-lived processes that call into libpal. Returns true the first time the
+// given marker is seen (i.e. when the caller should log), false afterwards.
+bool pal_log_once(const char *marker);
+#endif
 int pal_copy_eeprom_to_bin(const char *eeprom_file, const char *bin_file);
 int pal_get_debug_card_uart_sel(uint8_t *uart_sel);
 int pal_is_debug_card_present(uint8_t *status);

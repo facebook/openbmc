@@ -4582,7 +4582,17 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
   if (ret == 0) {
     *rpm = (int) value;
   } else {
+#ifdef CONFIG_GRANDCANYON2
+    static bool fan_speed_fail_logged = false;
+    if (!fan_speed_fail_logged) {
+      if (pal_log_once("/tmp/pal_get_fan_speed_fail_logged")) {
+        syslog(LOG_ERR, "%s() failed to get fan%d speed\n", __func__, fan);
+      }
+      fan_speed_fail_logged = true;
+    }
+#else
     syslog(LOG_ERR, "%s() failed to get fan%d speed\n", __func__, fan);
+#endif
   }
 
   return ret;

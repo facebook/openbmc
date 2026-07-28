@@ -94,6 +94,7 @@ enum {
   SERVER_PVDDCR_SOC_PWR = 0x1D,
   SERVER_PVDD_MISC_PWR = 0x1E,
   SERVER_P12V_COME_PWR = 0x1F,
+  SERVER_P12V_COME_IOUT = 0x20,
 };
 
 enum {
@@ -202,6 +203,7 @@ enum {
 // INA230 sensors
 enum {
   P12V_COME_PWR = 0,
+  P12V_COME_IOUT,
 };
 
 // NVME
@@ -295,6 +297,12 @@ typedef struct {
   uint8_t slv_addr;
   PAL_PMBUS_TYPE sku_pmbus_type[MAX_PMBUS_SUP_PMBUS_TYPE_CNT];
 } PAL_PMBUS_INFO;
+
+typedef struct {
+  uint8_t bus;
+  uint8_t addr;
+  uint8_t offset;
+} PAL_INA230_INFO;
 
 enum hsc_dev_type{
   ADM1278 = 0,

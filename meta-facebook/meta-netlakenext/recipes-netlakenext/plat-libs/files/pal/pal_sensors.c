@@ -27,7 +27,7 @@ static int read_rpm(uint8_t id, float *value);
 static int read_pmbus(uint8_t id, float *value);
 static int read_hsc(uint8_t id, float *value);
 static int read_cpld_adc(uint8_t id, float *value);
-static int read_ina230_pwr(uint8_t id, float *value);
+static int read_ina230(uint8_t id, float *value);
 static int read_nvme_temp(uint8_t id, float *value);
 static int read_nic_temp(uint8_t id, float *value);
 static int read_cpu_hwmon(uint8_t id, float *value);
@@ -97,7 +97,9 @@ PAL_SENSOR_MAP server_sensor_map[] = {
   [SERVER_PVDD_MISC_PWR] =
   {"PVDD_MISC_PWR", VR_PVDD_MISC_PWR, read_pmbus, POWER_ON_READING, {24.72, 0, 24.96, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
   [SERVER_P12V_COME_PWR] =
-  {"P12V_COME_PWR", P12V_COME_PWR, read_ina230_pwr, STBY_READING, {117.46455, 0, 119.75648, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
+  {"P12V_COME_PWR", P12V_COME_PWR, read_ina230, STBY_READING, {117.46455, 0, 119.75648, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
+  [SERVER_P12V_COME_IOUT] =
+  {"P12V_COME_IOUT", P12V_COME_IOUT, read_ina230, STBY_READING, {10.97, 9.87, 0, 0, 0, 0, 0, 0}, CURR, NORMAL_POLL_INTERVAL},
 };
 
 PAL_SENSOR_MAP bmc_sensor_map[] = {
@@ -198,6 +200,7 @@ const uint8_t server_sensor_list[] = {
   SERVER_PVDDCR_SOC_PWR,
   SERVER_PVDD_MISC_PWR,
   SERVER_P12V_COME_PWR,
+  SERVER_P12V_COME_IOUT,
 };
 
 const uint8_t bmc_sensor_list[] = {
@@ -282,6 +285,11 @@ PAL_PMBUS_INFO hsc_dev_table[] = {
   [HSC_VOUT] = {MTP_HSC_BUS, MTP_HSC_ADDR, {{ADM1278, HSC_NO_SET_PAGE, CMD_VOUT}}},
   [HSC_IOUT] = {MTP_HSC_BUS, MTP_HSC_ADDR, {{ADM1278, HSC_NO_SET_PAGE, CMD_IOUT}}},
   [HSC_PIN] = {MTP_HSC_BUS, MTP_HSC_ADDR, {{ADM1278, HSC_NO_SET_PAGE, CMD_PIN}}},
+};
+
+PAL_INA230_INFO ina230_dev_table[] = {
+  [P12V_COME_PWR] = {INA230_BUS, INA230_ADDR, INA230_POWER},
+  [P12V_COME_IOUT] = {INA230_BUS, INA230_ADDR, INA230_IOUT},
 };
 
 /*List item: {CPLD-ADC reading low-byte offset, resistor ratio}
@@ -902,17 +910,17 @@ read_cpld_adc(uint8_t id, float *value) {
   uint8_t rbuf = 0;
   uint16_t sensor_read_raw = 0x0000;
 
-  fd = i2c_cdev_slave_open(CPLD_ADC_REG_BUS, CPLD_ADC_REG_ADDR >> 1,
+  fd = i2c_cdev_slave_open(CPLD_BUS_4, CPLD_ADC_ADDR_BUS_4 >> 1,
                            I2C_SLAVE_FORCE_CLAIM);
   if (fd < 0) {
-    syslog(LOG_ERR, "Failed to open CPLD 0x%x\n", CPLD_ADC_REG_ADDR);
+    syslog(LOG_ERR, "Failed to open CPLD 0x%x\n", CPLD_ADC_ADDR_BUS_4);
     return -1;
   }
 
   //Get low byte
   retry = SENSOR_RETRY_TIME;
   do {
-    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADC_REG_ADDR,
+    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADC_ADDR_BUS_4,
                                 &tbuf, tlen, &rbuf, rlen);
     if (ret != 0) {
       usleep(SENSOR_RETRY_INTERVAL_USEC);
@@ -921,7 +929,7 @@ read_cpld_adc(uint8_t id, float *value) {
 
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Failed to get lowbyte reading %x-%x", __func__,
-           CPLD_ADC_REG_BUS, CPLD_ADC_REG_ADDR);
+           CPLD_BUS_4, CPLD_ADC_ADDR_BUS_4);
     close(fd);
     return -1;
   } else {
@@ -933,7 +941,7 @@ read_cpld_adc(uint8_t id, float *value) {
   tbuf += 1;
   retry = SENSOR_RETRY_TIME;
   do {
-    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADC_REG_ADDR,
+    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADC_ADDR_BUS_4,
                                 &tbuf, tlen, &rbuf, rlen);
     if (ret != 0) {
       usleep(SENSOR_RETRY_INTERVAL_USEC);
@@ -943,7 +951,7 @@ read_cpld_adc(uint8_t id, float *value) {
 
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Failed to get highbyte reading %x-%x", __func__,
-           CPLD_ADC_REG_BUS, CPLD_ADC_REG_ADDR);
+           CPLD_BUS_4, CPLD_ADC_ADDR_BUS_4);
     return -1;
   } else {
     //Mask for getting bit[4-11]
@@ -957,26 +965,33 @@ read_cpld_adc(uint8_t id, float *value) {
 }
 
 static int
-read_ina230_pwr(uint8_t id, float *value) {
+read_ina230(uint8_t id, float *value) {
   if (value == NULL) {
     syslog(LOG_ERR, "%s: invalid parameter: value pointer is NULL", __func__);
     return -1;
   }
 
   int ret = 0, fd = 0;
+  uint8_t bus = ina230_dev_table[id].bus;
+  uint8_t addr = ina230_dev_table[id].addr;
   uint8_t retry = SENSOR_RETRY_TIME;
   uint8_t calibration = INA230_CALIBRATION;
-  uint8_t tbuf = INA230_POWER;
+  uint8_t tbuf = ina230_dev_table[id].offset;
   uint8_t tlen = sizeof(tbuf);
   uint8_t rbuf[2] = {0};
   uint8_t rlen = INA230_GET_DATA_LEN;
   int32_t read_ina230_raw;
 
-  fd = i2c_cdev_slave_open(DIMM_BUS, INA230_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
   if (fd < 0) {
-    syslog(LOG_ERR, "Failed to open ina230 0x%x\n", INA230_ADDR);
+    syslog(LOG_ERR, "Failed to open ina230 0x%x\n", addr);
     return -1;
   }
+  // 
+  uint8_t config_data[3];
+  config_data[0] = INA230_CONFIG;
+  config_data[1] = LSB_INA230_CONFIG;
+  config_data[2] = MSB_INA230_CONFIG;
 
   //default calibration date
   uint8_t default_calibration_data[3];
@@ -986,7 +1001,7 @@ read_ina230_pwr(uint8_t id, float *value) {
 
   // Get INA230 Calibration
   do {
-    ret = i2c_rdwr_msg_transfer(fd, INA230_ADDR, &calibration, sizeof(calibration),
+    ret = i2c_rdwr_msg_transfer(fd, addr, &calibration, sizeof(calibration),
                                 rbuf, rlen);
     if (ret < 0) {
       syslog(LOG_ERR, "%s: get ina230 calibration failed", __func__);
@@ -995,8 +1010,17 @@ read_ina230_pwr(uint8_t id, float *value) {
     }
 
     if (rbuf[0] == 0x00 && rbuf[1] == 0x00) {
+      // Set config register to 0x274f
+      ret = i2c_rdwr_msg_transfer(fd, addr, config_data,
+                                  sizeof(config_data), NULL, 0);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s: write ina230 config failed", __func__);
+        close(fd);
+        return -1;
+      }
+
       /* Write the config in the Calibration register */
-      ret = i2c_rdwr_msg_transfer(fd, INA230_ADDR, default_calibration_data,
+      ret = i2c_rdwr_msg_transfer(fd, addr, default_calibration_data,
                                   sizeof(default_calibration_data), NULL, 0);
       if (ret < 0) {
         syslog(LOG_ERR, "%s: write ina230 default calibration failed", __func__);
@@ -1013,9 +1037,9 @@ read_ina230_pwr(uint8_t id, float *value) {
 
   retry = SENSOR_RETRY_TIME;
 
-  // Read ina230 power register
+  // Read ina230 power or voltage register
   do {
-    ret = i2c_rdwr_msg_transfer(fd, INA230_ADDR, &tbuf, tlen, rbuf, rlen);
+    ret = i2c_rdwr_msg_transfer(fd, addr, &tbuf, tlen, rbuf, rlen);
     if (ret != 0) {
       usleep(SENSOR_RETRY_INTERVAL_USEC);
     }
@@ -1023,17 +1047,23 @@ read_ina230_pwr(uint8_t id, float *value) {
 
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Failed to get ina230 reading %x-%x", __func__,
-          DIMM_BUS, INA230_ADDR);
+          bus, addr);
     close(fd);
     return -1;
-
-
-
   }
 
-  // ina230 pwr
-  read_ina230_raw = (rbuf[0] << 8) | rbuf[1];
-  *value = ((float) read_ina230_raw) / 40;
+  switch(tbuf) {
+    case INA230_POWER:
+      // ina230 pwr
+      read_ina230_raw = (rbuf[0] << 8) | rbuf[1];
+      *value = ((float) read_ina230_raw) / 40;
+      break;
+    case INA230_IOUT:
+      // ina230 IOUT
+      read_ina230_raw = (rbuf[0] << 8) | rbuf[1];
+      *value = ((float) read_ina230_raw) / 1000;
+      break;
+  }
 
   close(fd);
   return 0;

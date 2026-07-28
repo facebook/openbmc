@@ -238,30 +238,29 @@ exit:
 }
 
 int
-netlakenext_common_get_board_rev(uint8_t* rev_id) {
+netlakenext_get_cpld_data(int bus, uint8_t addr, uint8_t reg, uint8_t* value) {
   int ret = 0;
   int i2cfd = 0;
   int retry = 0;
-  uint8_t rbuf[CPLD_REV_ID_BYTE] = {0};
+  uint8_t rbuf[CPLD_REG_BYTE] = {0};
   uint8_t rlen = sizeof(rbuf);
   uint8_t tlen = 1;
-  uint8_t rev_id_reg = CPLD_REV_ID_REG;
 
-  if(rev_id == NULL)
+  if(value == NULL)
   {
-    syslog(LOG_ERR, "%s() Pointer \"rev_id\" is NULL.\n", __func__);
+    syslog(LOG_ERR, "%s() Pointer \"value\" is NULL.\n", __func__);
     return -1;
   }
 
-  i2cfd = i2c_cdev_slave_open(CPLD_REV_ID_BUS, CPLD_REV_ID_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  i2cfd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
   if ( i2cfd < 0 ) {
     syslog(LOG_ERR, "Failed to open CPLD, fd=%x\n", i2cfd);
     return -1;
   }
 
-  while (retry < CPLD_GET_REV_RETRY_TIME) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, CPLD_REV_ID_ADDR,
-				&rev_id_reg, tlen, rbuf, rlen);
+  while (retry < CPLD_RETRY_TIME) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, addr,
+				&reg, tlen, rbuf, rlen);
     if ( ret < 0 ) {
       retry++;
       usleep(100000);
@@ -270,16 +269,33 @@ netlakenext_common_get_board_rev(uint8_t* rev_id) {
     }
   }
 
-  if (retry == CPLD_GET_REV_RETRY_TIME) {
+  if (retry == CPLD_RETRY_TIME) {
     syslog(LOG_ERR, "Failed to do i2c_rdwr_msg_transfer, retry = %d\n", retry);
     ret = -1;
   }
   else {
-    *rev_id = rbuf[0];
+    *value = rbuf[0];
   }
 
   close(i2cfd);
 
+  return ret;
+}
+
+int
+netlakenext_common_get_sys_cfg(uint8_t* sys_cfg) {
+  int ret = 0;
+  ret = netlakenext_get_cpld_data(CPLD_BUS_2, CPLD_ADDR_BUS_2, CPLD_SYS_CONFIG_REG_REG, sys_cfg);
+  if (ret == 0) {
+    return ret;
+  }
+  syslog(LOG_ERR, "Failed to get system config on bus %d, addr %02x, reg %02x\n",
+    CPLD_BUS_2, CPLD_ADDR_BUS_2, CPLD_SYS_CONFIG_REG_REG);
+  ret = netlakenext_get_cpld_data(CPLD_BUS_4, CPLD_ADDR_BUS_4, CPLD_SYS_CONFIG_REG_REG, sys_cfg);
+  if (ret != 0) {
+    syslog(LOG_ERR, "Failed to get system config on backup bus %d, addr %02x, reg %02x\n",
+      CPLD_BUS_4, CPLD_ADDR_BUS_4, CPLD_SYS_CONFIG_REG_REG);
+  }
   return ret;
 }
 
@@ -346,7 +362,7 @@ netlakenext_common_get_vr_source(uint8_t bus, uint8_t addr, uint8_t* sku) {
 int
 netlakenext_common_get_vr_sku(uint8_t* sku, bool* change_vr_bus) {
   int ret = 0;
-  uint8_t rev_id = 0;
+  uint8_t sys_cfg = 0;
 
   ret = netlakenext_common_get_vr_source(VR_PVDD_MISC_BUS, VR_PVDD_MISC_ADDR, sku);
   if (ret < 0) {
@@ -355,11 +371,11 @@ netlakenext_common_get_vr_sku(uint8_t* sku, bool* change_vr_bus) {
     if (ret < 0) {
       syslog(LOG_ERR, "%s(): failed to get VR source, bus=%d, %d.\n",
         __func__, VR_BUS, VR_PVDD_MISC_BUS);
-      ret = netlakenext_common_get_board_rev(&rev_id);
+      ret = netlakenext_common_get_sys_cfg(&sys_cfg);
       if (ret < 0) {
-        syslog(LOG_ERR, "%s(): failed to get board revision id.\n", __func__);
+        syslog(LOG_ERR, "%s(): failed to get system config.\n", __func__);
       } else {
-        switch ((rev_id & CPLD_VR_SOURCE_BIT) >> 3) {
+        switch ((sys_cfg & CPLD_VR_SOURCE_BIT) >> 3) {
           case 0b10:
              *sku = MPS;
              break;
@@ -370,7 +386,7 @@ netlakenext_common_get_vr_sku(uint8_t* sku, bool* change_vr_bus) {
              *sku = RENESAS;
              break;
           default:
-            syslog(LOG_ERR, "%s(): invalid board revision id: %d.\n", __func__, rev_id);
+            syslog(LOG_ERR, "%s(): invalid system config: %d.\n", __func__, sys_cfg);
             return -1;
         }
       }

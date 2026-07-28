@@ -126,7 +126,7 @@ struct pal_key_cfg {
   {"timestamp_sled", "0", NULL},
   /* Add more Keys here */
   {"server_power_limit_status", "enable (invalid)", NULL},
-  {"fan_rpm_cfg", "55", NULL},
+  {"fan_rpm_cfg", "80", NULL},
   {NULL, NULL, NULL} /* This is the last key of the list */
 };
 
@@ -826,9 +826,9 @@ int
 pal_get_cpld_ver(uint8_t fru, char *rbuf) {
   int ret, i2cfd;
   uint8_t rbuf_i2c[CPLD_VER_BYTE] = {0};
-  uint8_t i2c_bus = CPLD_FW_REG_BUS;
-  uint8_t cpld_addr = CPLD_FW_REG_ADDR;
-  uint32_t ver_reg = CPLD_VER_REG;
+  uint8_t i2c_bus = CPLD_FW_BUS;
+  uint8_t cpld_addr = CPLD_FW_ADDR;
+  uint32_t ver_reg = CPLD_FW_VER_REG;
 
   if (rbuf == NULL)
   {

@@ -48,9 +48,20 @@ extern "C" {
 #define BMC_FRU_ADDR 0x56
 #define NIC_FRU_ADDR 0x50
 
-#define CPLD_SPI_MUX_BUS 4
-#define CPLD_SPI_MUX_ADDR 0x3E
+#define CPLD_BUS_2 2
+#define CPLD_ADDR_BUS_2 0x1E
+#define CPLD_BUS_4 4
+#define CPLD_ADDR_BUS_4 0x3E
+#define CPLD_SYS_CONFIG_REG_REG 0x01
+#define CPLD_REV_ID_BIT (0x07)
+#define CPLD_VR_SOURCE_BIT (0x18)
 #define CPLD_SPI_MUX_REG 0x0A
+#define CPLD_ADC_ADDR_BUS_4 0x1E
+#define CPLD_FW_BUS 3
+#define CPLD_FW_ADDR 0x80
+#define CPLD_FW_VER_REG 0x28002000
+#define CPLD_RETRY_TIME 3
+#define CPLD_REG_BYTE 1
 
 //In Netlake codebase, all definition used 0 base bus, 8 bit address
 #define VR_BUS  0
@@ -78,18 +89,6 @@ extern "C" {
 #define MTP_HSC_EN_VOUT_LENGTH 3
 #define MTP_HSC_POWER_CYCLE_REG 0xD9
 
-#define CPLD_REV_ID_BUS 2
-#define CPLD_REV_ID_ADDR 0x1E
-#define CPLD_REV_ID_REG 0x01
-#define CPLD_REV_ID_BYTE 1
-#define CPLD_FW_REG_BUS 3
-#define CPLD_FW_REG_ADDR 0x80
-#define CPLD_VER_REG 0x28002000
-#define CPLD_ADC_REG_BUS 4
-#define CPLD_ADC_REG_ADDR 0x1E
-#define CPLD_GET_REV_RETRY_TIME 3
-#define CPLD_VR_SOURCE_BIT (0x18)
-
 #define DIMM_BUS 4
 #define DIMMA_ADDR 0xA0
 #define DIMMB_ADDR 0xA2
@@ -104,9 +103,14 @@ extern "C" {
 #define PMIC_PWR_SELECT 0x1B
 #define PMIC_VDD_READ 0x0C
 
+#define INA230_BUS 4
 #define INA230_ADDR 0x80
+#define INA230_CONFIG 0x00
 #define INA230_POWER 0x03
+#define INA230_IOUT 0x04
 #define INA230_CALIBRATION 0x05
+#define LSB_INA230_CONFIG 0x4E
+#define MSB_INA230_CONFIG 0xDF
 #define LSB_INA230_DEFAULT_CALIBRATION 0x14
 #define MSB_INA230_DEFAULT_CALIBRATION 0x00
 #define INA230_GET_DATA_LEN 2
@@ -202,7 +206,7 @@ int netlakenext_common_check_image_md5(const char* image_path, int cal_size, uin
 int netlakenext_common_check_image_signature(uint8_t* data);
 bool netlakenext_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t rev_id);
 int netlakenext_common_get_img_ver(const char* image_path, char* ver);
-int netlakenext_common_get_board_rev(uint8_t* rev_id);
+int netlakenext_common_get_sys_cfg(uint8_t* sys_cfg);
 int netlakenext_common_get_vr_sku(uint8_t* sku, bool* change_vr_bus);
 int netlakenext_common_linear11_convert(uint8_t *value_raw, float *value_linear11);
 int netlakenext_common_linear16_convert(uint8_t *value_raw, uint8_t mode, float *value_linear16);

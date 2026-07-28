@@ -410,7 +410,7 @@ int plat_get_board_id(char *id)
 {
   uint8_t byte;
 
-  if (!netlakenext_common_get_board_rev(&byte)){
+  if (!netlakenext_common_get_sys_cfg(&byte)){
     sprintf(id, "%d%d%d%d%d",
       (byte & (1<<4))?1:0,
       (byte & (1<<3))?1:0,

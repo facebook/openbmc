@@ -174,7 +174,7 @@ int plat_vr_init(void) {
     vr_change_bus(netlakenext_vr_rns_list, vr_cnt, change_vr_bus);
     ret = vr_device_register(netlakenext_vr_rns_list, vr_cnt);
   } else {
-    syslog(LOG_ERR, "Invalid board revision got from fpga.");
+    syslog(LOG_ERR, "Invalid system config got from fpga.");
   }
 
   if (ret < 0) {

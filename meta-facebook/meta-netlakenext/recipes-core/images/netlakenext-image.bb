@@ -47,4 +47,5 @@ IMAGE_INSTALL += " \
   cpld-handler \
   apml \
   crashdump-amd \
+  addc \
   "

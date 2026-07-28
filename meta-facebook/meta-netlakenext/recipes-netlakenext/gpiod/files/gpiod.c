@@ -44,6 +44,8 @@
 #define PCA954X_BUS_ADDR_WITH_M2_DE "7-0073"
 #define APML_BUS_ADDR "1-004c"
 #define POLL_TIMEOUT        -1 /* Forever */
+#define ADDC_CMD_INIT "/usr/bin/amd-ras -i"
+#define ADDC_CMD "/usr/bin/amd-ras"
 
 enum GPIO_DETECT {
   INIT = 0,
@@ -95,12 +97,24 @@ cpu_alert_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
 
   ret = kv_get(POST_CMPLT_KV_KEY, str, NULL, 0);
   if (ret < 0) {
-    syslog(LOG_ERR, "%s: Failed to get post complete status in kv.", __func__);
+    syslog(LOG_WARNING, "%s: Failed to get post complete status in kv.", __func__);
     return;
   }
 
-  if (strncmp(str, LOW_STR, strlen(LOW_STR)) == 0) {
-    // TODO: AMD ADDC
+  if (strncmp(str, LOW_STR, strlen(LOW_STR)) != 0) {
+    return;
+  }
+
+  ret = system(ADDC_CMD);
+  if (ret == 0) {
+    return;
+  }
+
+  syslog(LOG_WARNING, "%s: Failed to execute addc, ret=%d. Do server reset...", __func__, ret);
+
+  ret = pal_set_server_power(FRU_SERVER, SERVER_POWER_RESET);
+  if (ret != 0) {
+    syslog(LOG_WARNING, "%s: Server reset failed, ret=%d.", __func__, ret);
   }
 }
 
@@ -326,6 +340,11 @@ set_apml_probe_status(gpio_value_t value, uint8_t gpio_change) {
 
     if (rc < 0) {
       syslog(LOG_WARNING, "%s() apml driver bind failed\n", __func__);
+    }
+
+    rc = system(ADDC_CMD_INIT);
+    if (rc != 0) {
+      syslog(LOG_ERR, "%s: Initial addc config failed, rc=%d", __func__, rc);
     }
 
     sensors_reinit();

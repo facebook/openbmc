@@ -1,7 +1,7 @@
-From e0b0e1f0b16646ece520a7f092dba4fe70350344 Mon Sep 17 00:00:00 2001
+From ff6d37b2ceed1f3ca11cf23f4095dc71c8e7b0f9 Mon Sep 17 00:00:00 2001
 From: Kai Chen <tingkaic@nvidia.com>
 Date: Thu, 5 Mar 2026 01:42:11 -0800
-Subject: [PATCH] Replace cp2112 sync xfer with async workqueue
+Subject: [PATCH 1/1] Replace cp2112 sync xfer with async workqueue
 
 Calling hid_hw_raw_request() and hid_hw_output_report() directly from
 the I2C adapter or GPIO callback context blocks the calling thread until
@@ -84,7 +84,7 @@ Signed-off-by: Ting-Kai Chen <tingkaic@nvidia.com>
  1 file changed, 145 insertions(+), 58 deletions(-)
 
 diff --git a/drivers/hid/hid-cp2112.c b/drivers/hid/hid-cp2112.c
-index 4c5957e0a5cc..2b99c3fb3da7 100644
+index 04379db93571..82f930db8e4f 100644
 --- a/drivers/hid/hid-cp2112.c
 +++ b/drivers/hid/hid-cp2112.c
 @@ -27,6 +27,8 @@
@@ -96,7 +96,7 @@ index 4c5957e0a5cc..2b99c3fb3da7 100644
  #include "hid-ids.h"
  
  /**
-@@ -154,7 +156,7 @@ struct cp2112_string_report {
+@@ -156,7 +158,7 @@ struct cp2112_string_report {
  /* Number of times to request transfer status before giving up waiting for a
     transfer to complete. This may need to be changed if SMBUS clock, retries,
     or read/write/scl_low timeout settings are changed. */
@@ -105,7 +105,7 @@ index 4c5957e0a5cc..2b99c3fb3da7 100644
  
  /* Time in ms to wait for a CP2112_DATA_READ_RESPONSE or
     CP2112_TRANSFER_STATUS_RESPONSE. */
-@@ -184,12 +186,125 @@ struct cp2112_device {
+@@ -186,12 +188,125 @@ struct cp2112_device {
  	struct delayed_work gpio_poll_worker;
  	unsigned long irq_mask;
  	u8 gpio_prev_state;
@@ -231,7 +231,7 @@ index 4c5957e0a5cc..2b99c3fb3da7 100644
  static int cp2112_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
  {
  	struct cp2112_device *dev = gpiochip_get_data(chip);
-@@ -199,9 +314,8 @@ static int cp2112_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+@@ -201,9 +316,8 @@ static int cp2112_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
  
  	guard(mutex)(&dev->lock);
  
@@ -243,7 +243,7 @@ index 4c5957e0a5cc..2b99c3fb3da7 100644
  	if (ret != CP2112_GPIO_CONFIG_LENGTH) {
  		hid_err(hdev, "error requesting GPIO config: %d\n", ret);
  		if (ret >= 0)
-@@ -212,9 +326,8 @@ static int cp2112_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+@@ -214,9 +328,8 @@ static int cp2112_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
  	buf[1] &= ~BIT(offset);
  	buf[2] = gpio_push_pull;
  
@@ -255,7 +255,7 @@ index 4c5957e0a5cc..2b99c3fb3da7 100644
  	if (ret != CP2112_GPIO_CONFIG_LENGTH) {
  		hid_err(hdev, "error setting GPIO config: %d\n", ret);
  		if (ret >= 0)
-@@ -236,9 +349,8 @@ static int cp2112_gpio_set_unlocked(struct cp2112_device *dev,
+@@ -238,9 +351,8 @@ static int cp2112_gpio_set_unlocked(struct cp2112_device *dev,
  	buf[1] = value ? CP2112_GPIO_ALL_GPIO_MASK : 0;
  	buf[2] = BIT(offset);
  
@@ -267,7 +267,7 @@ index 4c5957e0a5cc..2b99c3fb3da7 100644
  	if (ret != CP2112_GPIO_SET_LENGTH) {
  		hid_err(hdev, "error setting GPIO values: %d\n", ret);
  		return ret < 0 ? ret : -EIO;
-@@ -266,9 +378,8 @@ static int cp2112_gpio_get_all(struct gpio_chip *chip)
+@@ -268,9 +380,8 @@ static int cp2112_gpio_get_all(struct gpio_chip *chip)
  
  	guard(mutex)(&dev->lock);
  
@@ -279,7 +279,7 @@ index 4c5957e0a5cc..2b99c3fb3da7 100644
  	if (ret != CP2112_GPIO_GET_LENGTH) {
  		hid_err(hdev, "error requesting GPIO values: %d\n", ret);
  		return ret < 0 ? ret : -EIO;
-@@ -298,9 +409,8 @@ static int cp2112_gpio_direction_output(struct gpio_chip *chip,
+@@ -300,9 +411,8 @@ static int cp2112_gpio_direction_output(struct gpio_chip *chip,
  
  	guard(mutex)(&dev->lock);
  
@@ -291,7 +291,7 @@ index 4c5957e0a5cc..2b99c3fb3da7 100644
  	if (ret != CP2112_GPIO_CONFIG_LENGTH) {
  		hid_err(hdev, "error requesting GPIO config: %d\n", ret);
  		return ret < 0 ? ret : -EIO;
-@@ -309,9 +419,8 @@ static int cp2112_gpio_direction_output(struct gpio_chip *chip,
+@@ -311,9 +421,8 @@ static int cp2112_gpio_direction_output(struct gpio_chip *chip,
  	buf[1] |= 1 << offset;
  	buf[2] = gpio_push_pull;
  
@@ -303,7 +303,7 @@ index 4c5957e0a5cc..2b99c3fb3da7 100644
  	if (ret < 0) {
  		hid_err(hdev, "error setting GPIO config: %d\n", ret);
  		return ret;
-@@ -324,43 +433,6 @@ static int cp2112_gpio_direction_output(struct gpio_chip *chip,
+@@ -326,43 +435,6 @@ static int cp2112_gpio_direction_output(struct gpio_chip *chip,
  	return cp2112_gpio_set_unlocked(dev, offset, value);
  }
  
@@ -347,7 +347,7 @@ index 4c5957e0a5cc..2b99c3fb3da7 100644
  static int cp2112_wait(struct cp2112_device *dev, atomic_t *avail)
  {
  	int ret = 0;
-@@ -1239,6 +1311,10 @@ static int cp2112_probe(struct hid_device *hdev, const struct hid_device_id *id)
+@@ -1242,6 +1314,10 @@ static int cp2112_probe(struct hid_device *hdev, const struct hid_device_id *id)
  		return ret;
  	}
  
@@ -355,10 +355,10 @@ index 4c5957e0a5cc..2b99c3fb3da7 100644
 +				     &dev->hid_xfer_timeout_ms))
 +		dev->hid_xfer_timeout_ms = 500;
 +
- 	if (is_acpi_device_node(dev_fwnode(&hdev->dev))) {
- 		device_for_each_child_node(&hdev->dev, child) {
- 			ret = acpi_get_local_address(ACPI_HANDLE_FWNODE(child), &addr);
-@@ -1284,6 +1360,15 @@ static int cp2112_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	cp2112_fwnode = dev_fwnode(&hdev->dev);
+ 	if (is_acpi_device_node(cp2112_fwnode)) {
+ 		fwnode_for_each_child_node(cp2112_fwnode, child) {
+@@ -1288,6 +1364,15 @@ static int cp2112_probe(struct hid_device *hdev, const struct hid_device_id *id)
  		goto err_hid_close;
  	}
  
@@ -374,7 +374,7 @@ index 4c5957e0a5cc..2b99c3fb3da7 100644
  	ret = cp2112_hid_get(hdev, CP2112_GET_VERSION_INFO, buf, sizeof(buf),
  			     HID_FEATURE_REPORT);
  	if (ret != sizeof(buf)) {
-@@ -1319,8 +1404,6 @@ static int cp2112_probe(struct hid_device *hdev, const struct hid_device_id *id)
+@@ -1323,8 +1408,6 @@ static int cp2112_probe(struct hid_device *hdev, const struct hid_device_id *id)
  		goto err_power_normal;
  	}
  
@@ -383,7 +383,7 @@ index 4c5957e0a5cc..2b99c3fb3da7 100644
  	dev->adap.owner		= THIS_MODULE;
  	dev->adap.class		= I2C_CLASS_HWMON;
  	dev->adap.algo		= &smbus_algorithm;
-@@ -1388,6 +1471,8 @@ static int cp2112_probe(struct hid_device *hdev, const struct hid_device_id *id)
+@@ -1392,6 +1475,8 @@ static int cp2112_probe(struct hid_device *hdev, const struct hid_device_id *id)
  	i2c_del_adapter(&dev->adap);
  err_power_normal:
  	hid_hw_power(hdev, PM_HINT_NORMAL);
@@ -392,7 +392,7 @@ index 4c5957e0a5cc..2b99c3fb3da7 100644
  err_hid_close:
  	hid_hw_close(hdev);
  err_hid_stop:
-@@ -1402,6 +1487,8 @@ static void cp2112_remove(struct hid_device *hdev)
+@@ -1406,6 +1491,8 @@ static void cp2112_remove(struct hid_device *hdev)
  	sysfs_remove_group(&hdev->dev.kobj, &cp2112_attr_group);
  	i2c_del_adapter(&dev->adap);
  
@@ -402,5 +402,5 @@ index 4c5957e0a5cc..2b99c3fb3da7 100644
  		dev->gpio_poll = false;
  		cancel_delayed_work_sync(&dev->gpio_poll_worker);
 -- 
-2.53.0-Meta
+2.52.0
 

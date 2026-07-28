@@ -1,7 +1,7 @@
-From 6bd68c9ec805e9e034d0c50bde52d0439bc6e7ff Mon Sep 17 00:00:00 2001
+From f89d89f4e32db1baf6dcbe82768043a997e9ce6e Mon Sep 17 00:00:00 2001
 From: Kai Chen <tingkaic@nvidia.com>
 Date: Mon, 11 May 2026 10:33:01 -0700
-Subject: [PATCH] Rate-limit cp2112 GPIO poll error log
+Subject: [PATCH 1/1] Rate-limit cp2112 GPIO poll error log
 
 cp2112 polls GPIO at 10Hz for interrupt usage. When the underlying USB
 HID transfer fails persistently (e.g. device in fail state), the
@@ -79,10 +79,10 @@ Fixes jira https://nvbugspro.nvidia.com/bug/6155899
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/drivers/hid/hid-cp2112.c b/drivers/hid/hid-cp2112.c
-index 2b99c3fb3da7..4fbced9281e9 100644
+index 82f930db8e4f..1347fbb242df 100644
 --- a/drivers/hid/hid-cp2112.c
 +++ b/drivers/hid/hid-cp2112.c
-@@ -381,7 +381,7 @@ static int cp2112_gpio_get_all(struct gpio_chip *chip)
+@@ -383,7 +383,7 @@ static int cp2112_gpio_get_all(struct gpio_chip *chip)
  	ret = cp2112_hid_get(hdev, CP2112_GPIO_GET, buf, CP2112_GPIO_GET_LENGTH,
  			     HID_FEATURE_REPORT);
  	if (ret != CP2112_GPIO_GET_LENGTH) {
@@ -92,5 +92,5 @@ index 2b99c3fb3da7..4fbced9281e9 100644
  	}
  
 -- 
-2.53.0-Meta
+2.52.0
 

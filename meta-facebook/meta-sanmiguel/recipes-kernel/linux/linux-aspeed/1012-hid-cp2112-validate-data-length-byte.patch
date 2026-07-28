@@ -1,7 +1,7 @@
-From 7842ac2cd2add65da039edeb6814c98c58faf172 Mon Sep 17 00:00:00 2001
+From 8e8054b59a0cf50d9b1cadc3d61b8564ef9a9c59 Mon Sep 17 00:00:00 2001
 From: Kai Chen <tingkaic@nvidia.com>
 Date: Sat, 18 Apr 2026 02:49:22 -0700
-Subject: [PATCH] hid-cp2112: validate data length byte
+Subject: [PATCH 1/1] hid-cp2112: validate data length byte
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -56,10 +56,10 @@ Fixes nvbug https://nvbugspro.nvidia.com/bug/5992548
  1 file changed, 2 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/hid/hid-cp2112.c b/drivers/hid/hid-cp2112.c
-index 4fbced9281e9..8cf3515c4161 100644
+index 1347fbb242df..309fd7c85bcb 100644
 --- a/drivers/hid/hid-cp2112.c
 +++ b/drivers/hid/hid-cp2112.c
-@@ -893,7 +893,8 @@ static int cp2112_xfer(struct i2c_adapter *adap, u16 addr,
+@@ -895,7 +895,8 @@ static int cp2112_xfer(struct i2c_adapter *adap, u16 addr,
  		memcpy(data->block + 1, buf, read_length);
  		break;
  	case I2C_SMBUS_BLOCK_DATA:
@@ -70,5 +70,5 @@ index 4fbced9281e9..8cf3515c4161 100644
  			goto power_normal;
  		}
 -- 
-2.53.0-Meta
+2.52.0
 

@@ -1,11 +1,11 @@
-From 0bb608f1b79e08c3959a663b280de1881ce7e62d Mon Sep 17 00:00:00 2001
+From cf2089e4e2e4176bb915fb3dd6474b210bdf6ae2 Mon Sep 17 00:00:00 2001
 From: Andy Hsu <andy.hsu.wiwynn@gmail.com>
 Date: Tue, 21 Jul 2026 02:33:15 +0000
-Subject: [PATCH] configuration: yosemite4: Add config for Wailua Falls
+Subject: [PATCH 01/11] configuration: yosemite4: Add config for Wailua Falls
 
 ### Summary:
-Related JIRA ticket:
-https://metainfra.atlassian.net/jira/software/c/projects/YV4T1M/list?jql=project%20%3D%20YV4T1M%20ORDER%20BY%20created%20DESC&selectedIssue=YV4T1M-2363
+Related JIRA ticket: YV4T1M-2363
+Related Gerrit ticket: https://gerrit.openbmc.org/c/openbmc/entity-manager/+/92683
 
 # Description:
 Add a configuration file for the Wailua Falls without ASIC.
@@ -19,9 +19,9 @@ A new configuration file is required to support the additional Wailua falls boar
 (2)Test on Yv4: pass
 ---
  configurations/meson.build                    |   1 +
- .../meta/yv4/yosemite4_wailuafalls.json       |  49 ++++++++-
+ .../meta/yv4/yosemite4_wailuafalls.json       |   2 +-
  .../yosemite4_wailuafalls_without_asic.json   | 102 ++++++++++++++++++
- 3 files changed, 150 insertions(+), 2 deletions(-)
+ 3 files changed, 104 insertions(+), 1 deletion(-)
  create mode 100644 configurations/meta/yv4/yosemite4_wailuafalls_without_asic.json
 
 diff --git a/configurations/meson.build b/configurations/meson.build
@@ -37,61 +37,10 @@ index 8c08062..e8ff3de 100644
      'meta/yv5/yosemite5_1kw_paddle_board_hsc_mps.json',
      'meta/yv5/yosemite5_1kw_paddle_board_hsc_rds.json',
 diff --git a/configurations/meta/yv4/yosemite4_wailuafalls.json b/configurations/meta/yv4/yosemite4_wailuafalls.json
-index 99746ef..90fda8f 100644
+index 99746ef..1778805 100644
 --- a/configurations/meta/yv4/yosemite4_wailuafalls.json
 +++ b/configurations/meta/yv4/yosemite4_wailuafalls.json
-@@ -1,5 +1,50 @@
- {
-     "Exposes": [
-+        {
-+            "Address": [
-+                "7",
-+                "236",
-+                "128",
-+                "1",
-+                "0",
-+                "$bus % 16 * 5"
-+            ],
-+            "Bus": "$bus / 4 - 4",
-+            "Class": "I3C",
-+            "EndpointId": "$bus % 15 * 10 + 2",
-+            "Name": "BIC",
-+            "Type": "MCTPEndpoint"
-+        },
-+        {
-+            "Address": [
-+                "7",
-+                "236",
-+                "128",
-+                "1",
-+                "0",
-+                "$bus % 16 * 5"
-+            ],
-+            "Bus": "$bus / 4 - 4",
-+            "Class": "I3C",
-+            "EndpointId": "$bus % 15 * 10 + 4",
-+            "Name": "CXL1",
-+            "Type": "MCTPEndpoint"
-+        },
-+        {
-+            "Address": [
-+                "7",
-+                "236",
-+                "128",
-+                "1",
-+                "0",
-+                "$bus % 16 * 5"
-+            ],
-+            "Bus": "$bus / 4 - 4",
-+            "Class": "I3C",
-+            "EndpointId": "$bus % 15 * 10 + 5",
-+            "Name": "CXL2",
-+            "Type": "MCTPEndpoint"
-+        },
-         {
-             "CheckHysteresisWithSetpoint": true,
-             "Class": "temp",
-@@ -275,7 +320,7 @@
+@@ -275,7 +275,7 @@
          }
      ],
      "Name": "Yosemite 4 Wailua Falls Slot $bus % 15",
@@ -100,16 +49,9 @@ index 99746ef..90fda8f 100644
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
          "BuildDate": "$BOARD_MANUFACTURE_DATE",
-@@ -298,4 +343,4 @@
-         "Type": "ASIC"
-     },
-     "xyz.openbmc_project.Inventory.Item.Dimm": {}
--}
-+}
-\ No newline at end of file
 diff --git a/configurations/meta/yv4/yosemite4_wailuafalls_without_asic.json b/configurations/meta/yv4/yosemite4_wailuafalls_without_asic.json
 new file mode 100644
-index 0000000..836a777
+index 0000000..64d09c7
 --- /dev/null
 +++ b/configurations/meta/yv4/yosemite4_wailuafalls_without_asic.json
 @@ -0,0 +1,102 @@
@@ -215,7 +157,6 @@ index 0000000..836a777
 +        "SlotNumber": "$bus % 15"
 +    }
 +}
-\ No newline at end of file
 -- 
-2.53.0-Meta
+2.43.0
 

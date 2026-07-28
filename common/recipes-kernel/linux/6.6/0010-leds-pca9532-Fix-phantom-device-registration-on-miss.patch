@@ -1,0 +1,53 @@
+From 29f71d434b6c830d5e5913619bb4d2d1af5dc4f8 Mon Sep 17 00:00:00 2001
+From: Cosmo Chou <chou.cosmo@gmail.com>
+Date: Wed, 15 Jul 2026 15:23:44 +0800
+Subject: [PATCH] leds: pca9532: Fix phantom device registration on missing
+ hardware
+
+The initial PWM and PSC register writes in pca9532_configure() do not
+check the return values of i2c_smbus_write_byte_data(). If the I2C
+device is physically absent from the bus, the write fails with -ENXIO.
+However, the driver ignores this error and allows probe() to complete
+successfully.
+
+This results in the registration of phantom LED class devices and
+gpiochips backed by non-existent hardware. Subsequent GPIO reads from
+these phantom chips return bogus values (due to -ENXIO being truncated
+to an unsigned char in pca9532_gpio_get_value()), silently corrupting
+hardware state tracking in userspace.
+
+Propagate the I2C write failures back to probe() so the driver core
+can gracefully abort binding and release devres-managed resources.
+
+Fixes: e14fa82439d3 ("leds: Add pca9532 led driver")
+Signed-off-by: Cosmo Chou <chou.cosmo@gmail.com>
+---
+ drivers/leds/leds-pca9532.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/leds/leds-pca9532.c b/drivers/leds/leds-pca9532.c
+index b15389d818eb..9f8a7511ec3f 100644
+--- a/drivers/leds/leds-pca9532.c
++++ b/drivers/leds/leds-pca9532.c
+@@ -353,10 +353,14 @@ static int pca9532_configure(struct i2c_client *client,
+ 	for (i = 0; i < 2; i++)	{
+ 		data->pwm[i] = pdata->pwm[i];
+ 		data->psc[i] = pdata->psc[i];
+-		i2c_smbus_write_byte_data(client, PCA9532_REG_PWM(maxleds, i),
+-			data->pwm[i]);
+-		i2c_smbus_write_byte_data(client, PCA9532_REG_PSC(maxleds, i),
+-			data->psc[i]);
++		err = i2c_smbus_write_byte_data(client, PCA9532_REG_PWM(maxleds, i),
++						data->pwm[i]);
++		if (err < 0)
++			return err;
++		err = i2c_smbus_write_byte_data(client, PCA9532_REG_PSC(maxleds, i),
++						data->psc[i]);
++		if (err < 0)
++			return err;
+ 	}
+ 
+ 	for (i = 0; i < data->chip_info->num_leds; i++) {
+-- 
+2.53.0
+

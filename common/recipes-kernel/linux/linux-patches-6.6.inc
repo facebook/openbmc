@@ -13,6 +13,7 @@ SRC_URI:append = " \
     file://0007-net-ftgmac100-Get-link-speed-and-duplex-for-NC-SI.patch \
     file://0008-net-ncsi-check-for-netlink-driven-responses-before-r.patch \
     file://0009-leds-pca9532-Fix-inverted-GPIO-output-polarity.patch \
+    file://0010-leds-pca9532-Fix-phantom-device-registration-on-miss.patch \
 "
 
 #

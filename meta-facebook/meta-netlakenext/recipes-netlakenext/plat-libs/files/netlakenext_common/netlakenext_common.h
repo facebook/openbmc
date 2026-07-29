@@ -48,6 +48,8 @@ extern "C" {
 #define BMC_FRU_ADDR 0x56
 #define NIC_FRU_ADDR 0x50
 
+#define I2C_RETRY_TIME 3
+
 #define CPLD_BUS_2 2
 #define CPLD_ADDR_BUS_2 0x1E
 #define CPLD_BUS_4 4
@@ -56,6 +58,8 @@ extern "C" {
 #define CPLD_REV_ID_BIT (0x07)
 #define CPLD_VR_SOURCE_BIT (0x18)
 #define CPLD_SPI_MUX_REG 0x0A
+#define CPLD_MISC_CTRL_SIG_REG 0x0C
+#define CPLD_KBRST_BIT (0x10)
 #define CPLD_ADC_ADDR_BUS_4 0x1E
 #define CPLD_FW_BUS 3
 #define CPLD_FW_ADDR 0x80
@@ -88,6 +92,8 @@ extern "C" {
 #define MTP_PMON_CONFIG_ADDR 0xD4
 #define MTP_HSC_EN_VOUT_LENGTH 3
 #define MTP_HSC_POWER_CYCLE_REG 0xD9
+#define MTP_HSC_SAMPLE_AVG_1 0x16
+#define MTP_HSC_SAMPLE_AVG_2 0x3F
 
 #define DIMM_BUS 4
 #define DIMMA_ADDR 0xA0
@@ -205,7 +211,9 @@ typedef struct {
 int netlakenext_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data);
 int netlakenext_common_check_image_signature(uint8_t* data);
 bool netlakenext_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t rev_id);
+int netlakenext_common_i2c_transfer(uint8_t bus, uint8_t addr, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t rlen);
 int netlakenext_common_get_img_ver(const char* image_path, char* ver);
+int netlakenext_get_cpld_data(int bus, uint8_t addr, uint8_t reg, uint8_t* value);
 int netlakenext_common_get_sys_cfg(uint8_t* sys_cfg);
 int netlakenext_common_get_vr_sku(uint8_t* sku, bool* change_vr_bus);
 int netlakenext_common_linear11_convert(uint8_t *value_raw, float *value_linear11);

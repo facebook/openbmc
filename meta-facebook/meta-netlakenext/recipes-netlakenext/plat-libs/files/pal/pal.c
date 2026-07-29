@@ -29,6 +29,7 @@
 #include <syslog.h>
 #include <string.h>
 #include <time.h>
+#include <pthread.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <openbmc/libgpio.h>
@@ -36,6 +37,7 @@
 #include <openbmc/obmc-sensors.h>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
+#include "dimm-util-plat.h"
 #include "pal.h"
 #include "pal_sensors.h"
 
@@ -1391,8 +1393,6 @@ pal_hsc_reading_enable(void) {
   int ret, fd;
   uint8_t bus = MTP_HSC_BUS;
   uint8_t addr = MTP_HSC_ADDR;
-  uint8_t enable_vout_req[MTP_HSC_EN_VOUT_LENGTH] = {0};
-  //enable_vout_req[0]: PMON_CONFIG address, enable_vout_req[1-2]: PMON_CONFIG register
 
   fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
   if (fd < 0) {
@@ -1400,24 +1400,20 @@ pal_hsc_reading_enable(void) {
     return -1;
   }
 
-  uint8_t pmon_config_addr = MTP_PMON_CONFIG_ADDR;
-  ret = i2c_rdwr_msg_transfer(fd, addr, &pmon_config_addr, sizeof(pmon_config_addr), (enable_vout_req + 1), 2);
+  // set 128 samples average for HSC reading
+  //config_data[0]: PMON_CONFIG address, config_data[1-2]: PMON_CONFIG register
+  uint8_t config_data[MTP_HSC_EN_VOUT_LENGTH];
+  config_data[0] = MTP_PMON_CONFIG_ADDR;
+  config_data[1] = MTP_HSC_SAMPLE_AVG_1;
+  config_data[2] = MTP_HSC_SAMPLE_AVG_2;
+
+  ret = i2c_rdwr_msg_transfer(fd, addr, config_data, sizeof(config_data), NULL, 0);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s() i2c_rdwr_msg_transfer to slave@0x%02X on bus %u failed", __func__, addr, bus);
     close(fd);
     return -1;
   }
-
-  //set bit 1 to 1 for Enabling VOUT sampling
-  enable_vout_req[1] |= 0x2;
-  enable_vout_req[0] = pmon_config_addr;
-  ret = i2c_rdwr_msg_transfer(fd, addr, enable_vout_req, MTP_HSC_EN_VOUT_LENGTH, NULL, 0);
   close(fd);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s() i2c_rdwr_msg_transfer to slave@0x%02X on bus %u failed", __func__, addr, bus);
-    return -1;
-  }
-
   return 0;
 }
 
@@ -1876,7 +1872,6 @@ int pal_dimm_page_init()
     close(fd);
     retry = SENSOR_RETRY_TIME;
   }
-
   return 0;
 }
 
@@ -2000,14 +1995,8 @@ static int pal_pmic_modify_reg(int fd, uint8_t addr, uint8_t offset,
 
 int pal_pmic_pwr_setting()
 {
-  int fd = 0;
-  const uint8_t pmic_addr_list[] = {
-    PMICA_ADDR,
-    PMICB_ADDR,
-  };
-
-  for (size_t id = 0; id < sizeof(pmic_addr_list); id++) {
-    fd = i2c_cdev_slave_open(DIMM_BUS, pmic_addr_list[id] >> 1,
+  for (int id = 0; id < MAX_DIMM_NUM_NETLAKE2; id++) {
+    int fd = i2c_cdev_slave_open(DIMM_BUS, pmic_addr_list[id] >> 1,
                             I2C_SLAVE_FORCE_CLAIM);
     if (fd < 0) {
       syslog(LOG_ERR, "Failed to open PMIC 0x%x\n", pmic_addr_list[id]);
@@ -2040,6 +2029,83 @@ int pal_pmic_pwr_setting()
     }
     close(fd);
   }
-
   return 0;
+}
+
+void*
+pmic_monitor(void *arg) {
+  char str[MAX_VALUE_LEN] = {0};
+  uint8_t slot_id = FRU_SERVER;
+  uint8_t error_data[MAX_DIMM_NUM_NETLAKE2][ERR_PATTERN_LEN] = {{0}};
+
+  (void)arg;
+
+  while (1) {
+    // check POST complete status before reading PMIC power, to avoid HOST reboot
+    int ret = kv_get(POST_CMPLT_KV_KEY, str, NULL, 0);
+    if (ret < 0 || strncmp(str, LOW_STR, strlen(LOW_STR)) != 0) {
+      sleep(MONITOR_PMIC_ERROR_TIME_S);
+      continue;
+    }
+    for (uint8_t dimm = 0; dimm < MAX_DIMM_NUM_NETLAKE2; dimm++) {
+      ret = get_pmic_error_data_raw(slot_id, dimm, error_data[dimm]);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s() Failed to get PMIC raw error data from slot %d dimm %d PMIC addr 0x%02x",
+              __func__, slot_id, dimm, pmic_addr_list[dimm]);
+        continue;
+      }
+
+      ret = compare_pmic_raw_and_log(dimm, error_data[dimm]);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s() Failed to compare PMIC raw error data from slot %d dimm %d PMIC addr 0x%02x",
+              __func__, slot_id, dimm, pmic_addr_list[dimm]);
+        continue;
+      }
+    }
+    sleep(MONITOR_PMIC_ERROR_TIME_S);
+  }
+
+  return NULL;
+}
+
+int
+pal_pmic_monitor_init() {
+  static bool initialized = false;
+  pthread_t tid_pmic_monitor;
+
+  if (initialized) {
+    return 0;
+  }
+
+  if (pthread_create(&tid_pmic_monitor, NULL, pmic_monitor, NULL) == 0) {
+    pthread_detach(tid_pmic_monitor);
+    initialized = true;
+  } else {
+    syslog(LOG_ERR, "%s() Failed to create PMIC monitor thread", __func__);
+    return -1;
+  }
+  return 0;
+}
+
+void
+pal_dimm_init() {
+  int ret = 0;
+
+  // set DIMM page 0 for DIMM temperature sensor
+  ret = pal_dimm_page_init();
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to initialize DIMM page", __func__);
+  }
+
+  // set PMIC register to read total power value
+  ret = pal_pmic_pwr_setting();
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to set PMIC power", __func__);
+  }
+  
+  // initialize PMIC monitor thread to monitor PMIC error and log
+  ret = pal_pmic_monitor_init();
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to initialize PMIC monitor", __func__);
+  }
 }

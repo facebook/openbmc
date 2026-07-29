@@ -29,11 +29,19 @@
 #define FRU_ID_MAX_NETLAKE2 1
 #define FRU_ID_ALL_NETLAKE2 1
 
-// 8-bits address
-#define DIMM_BUS 4
-#define DIMMA_SPD_ADDR 0xa0
-#define DIMMB_SPD_ADDR 0xa2
+// for NL2 to record PMIC SEL
+#define TOTAL_PMIC_ERROR_NUM 17
+#define ERR_PATTERN_LEN 7
+#define PMIC_RETRY_INTERVAL_USEC 100000
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-#define DIMMA_PMIC_ADDR 0x90
-#define DIMMB_PMIC_ADDR 0x92
+int get_pmic_error_data_raw(uint8_t slot_id, uint8_t dimm, uint8_t *error_data);
+int compare_pmic_raw_and_log(uint8_t dimm, const uint8_t *data);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif

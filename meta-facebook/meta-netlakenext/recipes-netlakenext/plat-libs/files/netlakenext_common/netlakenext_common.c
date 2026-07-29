@@ -187,6 +187,46 @@ netlakenext_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uin
 }
 
 int
+netlakenext_common_i2c_transfer(uint8_t bus, uint8_t addr, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t rlen) {
+  int ret = 0;
+  int i2cfd = 0;
+  int retry = 0;
+
+  if (tbuf == NULL && tlen != 0) {
+    syslog(LOG_ERR, "%s() Pointer \"tbuf\" is NULL.\n", __func__);
+    return -1;
+  }
+  if (rbuf == NULL && rlen != 0) {
+    syslog(LOG_ERR, "%s() Pointer \"rbuf\" is NULL.\n", __func__);
+    return -1;
+  }
+
+  i2cfd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+  if (i2cfd < 0) {
+    return -1;
+  }
+
+  while (retry < I2C_RETRY_TIME) {
+    ret = i2c_rdwr_msg_transfer(i2cfd, addr, tbuf, tlen, rbuf, rlen);
+    if (ret < 0) {
+      retry++;
+      usleep(100000);
+    } else {
+      ret = 0;
+      break;
+    }
+  }
+
+  if (retry == I2C_RETRY_TIME) {
+    ret = -1;
+  }
+
+  close(i2cfd);
+
+  return ret;
+}
+
+int
 netlakenext_common_get_img_ver(const char* image_path, char* ver) {
   int fd = 0;
   int byte_read_length = 0;
@@ -240,44 +280,21 @@ exit:
 int
 netlakenext_get_cpld_data(int bus, uint8_t addr, uint8_t reg, uint8_t* value) {
   int ret = 0;
-  int i2cfd = 0;
-  int retry = 0;
-  uint8_t rbuf[CPLD_REG_BYTE] = {0};
-  uint8_t rlen = sizeof(rbuf);
-  uint8_t tlen = 1;
+  uint8_t rbuf[CPLD_REG_BYTE] = { 0 };
+  uint8_t rlen = CPLD_REG_BYTE;
+  uint8_t tbuf[CPLD_REG_BYTE] = { reg };
+  uint8_t tlen = CPLD_REG_BYTE;
 
-  if(value == NULL)
-  {
+  if (value == NULL) {
     syslog(LOG_ERR, "%s() Pointer \"value\" is NULL.\n", __func__);
     return -1;
   }
 
-  i2cfd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
-  if ( i2cfd < 0 ) {
-    syslog(LOG_ERR, "Failed to open CPLD, fd=%x\n", i2cfd);
-    return -1;
-  }
+  ret = netlakenext_common_i2c_transfer(bus, addr, tbuf, tlen, rbuf, rlen);
 
-  while (retry < CPLD_RETRY_TIME) {
-    ret = i2c_rdwr_msg_transfer(i2cfd, addr,
-				&reg, tlen, rbuf, rlen);
-    if ( ret < 0 ) {
-      retry++;
-      usleep(100000);
-    } else {
-      break;
-    }
-  }
-
-  if (retry == CPLD_RETRY_TIME) {
-    syslog(LOG_ERR, "Failed to do i2c_rdwr_msg_transfer, retry = %d\n", retry);
-    ret = -1;
-  }
-  else {
+  if (ret == 0) {
     *value = rbuf[0];
   }
-
-  close(i2cfd);
 
   return ret;
 }
@@ -302,34 +319,16 @@ netlakenext_common_get_sys_cfg(uint8_t* sys_cfg) {
 int
 netlakenext_common_get_vr_source(uint8_t bus, uint8_t addr, uint8_t* sku) {
   int ret = 0;
-  int i2cfd = 0;
-  int retry_match = 0;
+  int retry = 0;
   uint8_t rbuf[VR_MFR_ID_MAX_LEN] = {0};
   uint8_t tbuf[1] = { VR_MFR_ID_REG };
 
-  for (retry_match = 0; retry_match < VR_RETRY_TIME; retry_match++) {
-    int retry_i2c = 0;
-    i2cfd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
-    if ( i2cfd < 0 ) {
-      usleep(10000);
-      continue;
-    }
+  for (retry = 0; retry < VR_RETRY_TIME; retry++) {
+    ret = netlakenext_common_i2c_transfer(bus, addr, tbuf, 1, rbuf, VR_MFR_ID_MAX_LEN);
 
-    while (retry_i2c < VR_RETRY_TIME) {
-      ret = i2c_rdwr_msg_transfer(i2cfd, addr,
-        tbuf, sizeof(tbuf), rbuf, sizeof(rbuf));
-      if ( ret < 0 ) {
-        retry_i2c++;
-        usleep(10000);
-      } else {
-        break;
-      }
-    }
-    if (retry_i2c == VR_RETRY_TIME) {
-      close(i2cfd);
+    if (ret < 0) {
       continue;
     }
-    close(i2cfd);
 
     if (rbuf[0] == VR_MFR_ID_MPS_LEN &&
         rbuf[1] == (VR_MFR_ID_MPS & 0xFF) &&
@@ -352,7 +351,8 @@ netlakenext_common_get_vr_source(uint8_t bus, uint8_t addr, uint8_t* sku) {
     }
   }
 
-  if (retry_match == VR_RETRY_TIME) {
+  if (retry == VR_RETRY_TIME) {
+    syslog(LOG_ERR, "%s() Failed to get VR manufacturer ID, bus %d addr %02x\n", __func__, bus, addr);
     return -1;
   }
 

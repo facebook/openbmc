@@ -10,6 +10,7 @@ pal_deps += [
     dependency('libnvme-mi'),
     dependency('libobmc-sensors'),
     dependency('libphymem'),
+    dependency('libdimm'),
     ]
 
 pal_sources += [

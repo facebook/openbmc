@@ -348,8 +348,7 @@ set_apml_probe_status(gpio_value_t value, uint8_t gpio_change) {
     }
 
     sensors_reinit();
-    pal_dimm_page_init();
-    pal_pmic_pwr_setting();
+    pal_dimm_init();
   } else {
     syslog(LOG_WARNING, "FRU: %d, Post complete gpio de-assert to high", FRU_SERVER);
     fp = fopen((char*)APML_UNBIND_PATH, "w");

@@ -150,6 +150,50 @@ pal_set_rst_btn(uint8_t slot, uint8_t status) {
   return ret;
 }
 
+// Update the CPLD_KBRST_BIT input to the server at given slot
+int
+pal_set_kbrst(uint8_t slot, uint8_t status) {
+  int ret = 0;
+  uint8_t bus = CPLD_BUS_4;
+  uint8_t addr = CPLD_ADDR_BUS_4;
+  uint8_t tbuf[CPLD_REG_BYTE + 1] = { CPLD_MISC_CTRL_SIG_REG, 0 };
+  uint8_t tlen = CPLD_REG_BYTE + 1;
+
+  if (slot != FRU_SERVER) {
+    return ERROR;
+  }
+
+  ret = netlakenext_get_cpld_data(bus, addr, tbuf[0], &(tbuf[1]));
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s: Failed to read CPLD MISC_CTRL_SIG register, bus %d addr %02x reg %02x\n",
+      __func__, bus, addr, tbuf[0]);
+    return ERROR;
+  }
+
+  if (status == LOW) {
+    if ((tbuf[1] & CPLD_KBRST_BIT) == 0) {
+      syslog(LOG_WARNING, "%s: CPLD_KBRST_BIT is already in LOW state\n", __func__);
+      return NO_ACTION;
+    }
+    tbuf[1] &= ~CPLD_KBRST_BIT;
+  } else if (status == HIGH) {
+    if ((tbuf[1] & CPLD_KBRST_BIT) != 0) {
+      syslog(LOG_WARNING, "%s: CPLD_KBRST_BIT is already in HIGH state\n", __func__);
+      return NO_ACTION;
+    }
+    tbuf[1] |= CPLD_KBRST_BIT;
+  }
+  ret = netlakenext_common_i2c_transfer(bus, addr, tbuf, tlen, NULL, 0);
+
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s: Failed to set CPLD_KBRST_BIT, bus %d addr %02x reg %02x value %02x\n",
+      __func__, bus, addr, tbuf[0], tbuf[1]);
+    return ERROR;
+  }
+
+  return SUCCESS;
+}
+
 int
 pal_set_server_power(uint8_t fru, uint8_t cmd) {
   uint8_t status;
@@ -190,10 +234,10 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
     case SERVER_POWER_RESET:
       if (status == SERVER_POWER_ON) {
-        if (pal_set_rst_btn(fru, LOW) < 0)
+        if (pal_set_kbrst(fru, LOW) < 0)
           return ERROR;
         sleep(1);
-        if (pal_set_rst_btn(fru, HIGH) < 0)
+        if (pal_set_kbrst(fru, HIGH) < 0)
           return ERROR;
       } else if (status == SERVER_POWER_OFF) {
         printf("Current Power is OFF, therefore cannot reset.\n");

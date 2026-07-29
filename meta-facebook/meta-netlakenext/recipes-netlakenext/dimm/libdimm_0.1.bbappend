@@ -8,4 +8,5 @@ LOCAL_URI += " \
         file://dimm-util-plat.h \
         "
 
-DEPENDS += " libobmc-i2c"
+DEPENDS += " libobmc-i2c libnetlakenext-common"
+RDEPENDS:${PN} += "libnetlakenext-common"

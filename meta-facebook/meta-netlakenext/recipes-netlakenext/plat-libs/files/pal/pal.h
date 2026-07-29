@@ -87,10 +87,13 @@ extern "C" {
 #define UART3_TO_UART4 0x6
 #define UART4_TO_UART3 0x4
 
+#define MONITOR_PMIC_ERROR_TIME_S 5
+
 extern const char pal_fru_list_sensor_history[];
 extern const char pal_fru_list[];
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
+extern const uint8_t pmic_addr_list[];
 
 enum {
   FRU_ABSENT           = 0,
@@ -121,6 +124,8 @@ int pal_get_sensor_util_timeout(uint8_t fru);
 int pal_hwmon_probe(char *path, char *dev);
 int pal_dimm_page_init(void);
 int pal_pmic_pwr_setting(void);
+int pal_pmic_monitor_init(void);
+void pal_dimm_init(void);
 
 #ifdef __cplusplus
 } // extern "C"

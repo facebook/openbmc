@@ -24,6 +24,8 @@ SCM_PWR_IN_RESET_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_in_reset"
 SCM_CPU_READY_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_ready"
 CPU_CONTROL_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_control"
 SMB_EEPROM_SYSFS="/sys/bus/i2c/drivers/at24/9-0052/eeprom"
+SMB_NONSTDBY_PWR_SYSFS="${PWRCPLD_SYSFS_DIR}/smb_nonstdby_pwr"
+CPU_NONSTDBY_PWR_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_nonstdby_pwr"
 
 # SMB CPLD endpoints
 SMBCPLD_SYSFS_DIR="/sys/bus/i2c/drivers/smbcpld/9-0023"
@@ -48,6 +50,7 @@ DS4520_IO0_REG=0xf8
 # Board IDs
 BOARD_ID_MERU800B=5
 BOARD_ID_RUGGLES=8
+BOARD_ID_ICECUBE=11
 
 ACONF_SMB_SERIAL_CACHE="/mnt/data/.aconf_smb_serial"
 TEMP_WEUTIL_OUTPUT="/tmp/tmp_weutil_output"
@@ -133,7 +136,7 @@ wedge_product_eeprom_source() {
 }
 
 wedge_product_name() {
-    output=$($WEUTIL_CMD smb 2>&1) || { echo "$output"; return 1; }
+    output=$($WEUTIL_CMD chassis_eeprom 2>&1) || { echo "$output"; return 1; }
     echo "$output" | awk -F': ' '/Product Name:/ {print $2}'
 }
 
@@ -240,6 +243,11 @@ wedge_is_scm_p1()
     return 1
 }
 
+smb_power_on() {
+    echo 1 > "$SMB_NONSTDBY_PWR_SYSFS"
+    echo 1 > "$CPU_NONSTDBY_PWR_SYSFS"
+}
+
 userver_power_is_on() {
     isCpuReady="$(head -n 1 "$SCM_CPU_READY_SYSFS" 2> /dev/null)"
     if [ "$isCpuReady" = "0x1" ]; then
@@ -255,7 +263,9 @@ userver_power_on() {
 
     sync
     sleep 0.5
-    if [ "$cpu_id" = "$BOARD_ID_RUGGLES" ]; then
+    smb_power_on
+
+    if [[ "$cpu_id" == "$BOARD_ID_RUGGLES" || "$cpu_id" == "$BOARD_ID_ICECUBE" ]]; then
         # Power on using the cpld
         echo 1 > "$CPU_CONTROL_SYSFS"
     else
@@ -271,7 +281,7 @@ userver_power_off() {
     local cpu_id
     cpu_id=$(wedge_cpu_id)
 
-    if [ "$cpu_id" = "$BOARD_ID_RUGGLES" ]; then
+    if [[ "$cpu_id" == "$BOARD_ID_RUGGLES" || "$cpu_id" == "$BOARD_ID_ICECUBE" ]]; then
         # Power off using the cpld
         echo 0 > "$CPU_CONTROL_SYSFS"
     else
@@ -308,7 +318,7 @@ bmc_mac_addr() {
     mac_base_hex=$(echo "$mac_base" |  tr '[:lower:]' '[:upper:]' | tr -d ':')
     mac_dec=$(printf '%d\n' 0x"$mac_base_hex")
     cpu_id=$(wedge_cpu_id)
-    if [ "$cpu_id" = "$BOARD_ID_RUGGLES" ]; then
+    if [[ "$cpu_id" == "$BOARD_ID_RUGGLES" || "$cpu_id" == "$BOARD_ID_ICECUBE" ]]; then
         mac_offset=3
     else
         mac_offset=2
@@ -535,7 +545,13 @@ maybe_fix_dmi_config() {
    fi
 
    product=$(awk -F': ' '/Product Name:/ {print $2}' "$TEMP_WEUTIL_OUTPUT")
-   if ! [[ "${product^^}" =~ "MERU" ]] && ! [[ "${product^^}" =~ "BLACKWOLF" ]] && ! [[ "${product^^}" =~ "ICECUBE" ]] && ! [[ "${product^^}" =~ "SAINTPAUL" ]] && ! [[ "${product^^}" =~ "GLA" ]]; then
+
+   if [[ "${product^^}" =~ "ICECUBE" ]]; then
+      echo "DMI_BOARD_NAME fix up not supported on this platform"
+      return
+   fi
+
+   if ! [[ "${product^^}" =~ "MERU" ]] && ! [[ "${product^^}" =~ "BLACKWOLF" ]] && ! [[ "${product^^}" =~ "SAINTPAUL" ]] && ! [[ "${product^^}" =~ "GLA" ]]; then
       echo "Not fixing aboot_conf DMI_BOARD_NAME as weutil product is not valid"
       return
    fi

@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zinc Lim <zinclim@meta.com>
+Date: Mon, 21 Jul 2026 00:00:00 +0000
+Subject: [PATCH] ARM: dts: aspeed: yosemite5: enable i2c4 DMA slave mode
+
+Put i2c4 (the NIC MCTP bus) into DMA transfer mode. The AST2600 QEMU
+aspeed model only implements DMA-based slave RX, so DMA mode is required
+for the BMC to receive MCTP responses while acting as an i2c slave under
+emulation.
+
+Signed-off-by: Zinc Lim <zinclim@meta.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5.dts
+@@ -231,5 +231,6 @@
+ &i2c4 {
+ 	multi-master;
+ 	mctp-controller;
+ 	clock-frequency = <400000>;
++	aspeed,enable-dma;
+ 	status = "okay";

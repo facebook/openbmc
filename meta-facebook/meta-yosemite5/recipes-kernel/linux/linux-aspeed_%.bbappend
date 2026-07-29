@@ -27,6 +27,7 @@ SRC_URI:append = " \
     file://1015-ARM-dts-aspeed-yosemite5-Add-MP5998-power-monitor.patch \
     file://1016-ARM-dts-aspeed-yosemite5-Add-E1S-x4-board-IO-expander.patch \
     file://1017-ARM-dts-aspeed-yosemite5-add-power-fault-led-node.patch \
+    file://1018-ARM-dts-aspeed-yosemite5-i2c4-enable-dma.patch \
     file://0202-dt-bindings-i3c-Add-i3c-hub-support.patch \
     file://0203-i3c-Add-driver-for-i3c-hub-device.patch \
     file://0204-enable-i2c-slave-timeout.patch \

@@ -26,6 +26,7 @@ struct SensorConfig
     size_t retryIntervalMilliseconds;
     std::optional<std::vector<std::string>> metricReportUrls;
     bool cacheConnection = true;
+    bool ignoreUnavailableSensor = false;
 };
 
 void from_json(const nlohmann::json& json, SensorConfig& config);

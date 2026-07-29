@@ -87,6 +87,10 @@ void from_json(const nlohmann::json& json, SensorConfig& config)
     {
         it->get_to(config.cacheConnection);
     }
+    if (auto it = json.find("ignoreUnavailableSensor"); it != json.end())
+    {
+        it->get_to(config.ignoreUnavailableSensor);
+    }
 }
 
 void from_json(const nlohmann::json& json, Config& config)

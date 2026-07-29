@@ -130,8 +130,11 @@ auto SensorHandler::fetchSensor(sdbusplus::async::context& ctx,
         }
         if (response->code != 200)
         {
-            info("Http response error code from {URL}: {CODE}", "URL", url,
-                 "CODE", response->code);
+            if (!config.ignoreUnavailableSensor)
+            {
+                info("Http response error code from {URL}: {CODE}", "URL",
+                     url, "CODE", response->code);
+            }
             continue;
         }
         auto trySensor =
@@ -166,8 +169,11 @@ auto SensorHandler::fetchAndUpdateSensorsFromMetricReport(
     }
     if (response->code != 200)
     {
-        info("Http response error code from {URL}: {CODE}", "URL", url, "CODE",
-             response->code);
+        if (!config.ignoreUnavailableSensor)
+        {
+            info("Http response error code from {URL}: {CODE}", "URL", url,
+                 "CODE", response->code);
+        }
         co_return;
     }
     auto report = nlohmann::json::parse(response->body, nullptr, false);

@@ -1,4 +1,4 @@
-From 979354f83812f69b66b6dec8b18f9f2a6b0f8a7d Mon Sep 17 00:00:00 2001
+From 9608a06c347abb78fb810381b6ed53ffd9aa7cb3 Mon Sep 17 00:00:00 2001
 From: Carl Lee <carl.lee@amd.com>
 Date: Tue, 12 May 2026 17:46:09 +0800
 Subject: [PATCH] nfc: nxp-nci: Add ISO15693 support
@@ -30,5 +30,5 @@ index 66b198663387..448e5a4e7338 100644
  
  #define NXP_NCI_RF_PLL_UNLOCKED_NTF nci_opcode_pack(NCI_GID_RF_MGMT, 0x21)
 -- 
-2.34.1
+2.52.0
 

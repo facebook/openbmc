@@ -1,4 +1,4 @@
-From c77c750b0dea153c7cf7cee36e66039b182c21f9 Mon Sep 17 00:00:00 2001
+From 6fcec2b5994dca7747bb1006e6aec9bd0a65de0e Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Fri, 24 Nov 2023 15:54:07 +0800
 Subject: [PATCH] Kernel6v5: Support apml driver
@@ -38,10 +38,10 @@ Link: https://github.com/AMDESE/OpenBMC/blob/master/meta-amd/meta-common/recipes
  create mode 100644 include/uapi/linux/amd-apml.h
 
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 48d935cdca6e..a456a6f57462 100644
+index e1db63eb4ad5..68473da93941 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
-@@ -1955,6 +1955,28 @@ config SENSORS_SBTSI
+@@ -1958,6 +1958,28 @@ config SENSORS_SBTSI
  	  This driver can also be built as a module. If so, the module will
  	  be called sbtsi_temp.
  

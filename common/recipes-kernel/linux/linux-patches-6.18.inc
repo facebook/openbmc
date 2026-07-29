@@ -97,13 +97,10 @@ SRC_URI:append = " \
     file://0608-iio-adc-ltc2309-add-support-for-ltc2305.patch \
     file://0609-amd-apml-sbrmi-update-SBRMI-revision-for-Venice.patch \
     file://0610-iio-adc-rtq6056-add-i2c_device_id-support.patch \
-    file://0611-hwmon-pmbus-lm25066-Fix-PMBus-coefficients-for-LM506.patch \
-    file://0612-dt-bindings-hwmon-pmbus-ti-lm25066-add-current-limit.patch \
-    file://0613-hwmon-pmbus-lm25066-add-current-limit-configuration-.patch \
-    file://0614-nfc-nxp-nci-Add-ISO15693-support.patch \
-    file://0615-misc-amd-apml-Add-Venice-B0-I3C-device-IDs.patch \
-    file://0616-dt-bindings-trivial-devices-Add-adi-max20912-and-max.patch \
-    file://0617-hwmon-pmbus-Add-driver-for-Analog-Devices-MAX20912-a.patch \
+    file://0611-nfc-nxp-nci-Add-ISO15693-support.patch \
+    file://0612-misc-amd-apml-Add-Venice-B0-I3C-device-IDs.patch \
+    file://0613-dt-bindings-trivial-devices-Add-adi-max20912-and-max.patch \
+    file://0614-hwmon-pmbus-Add-driver-for-Analog-Devices-MAX20912-a.patch \
 "
 
 #

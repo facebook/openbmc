@@ -1,4 +1,4 @@
-From f6361b982308c40bb5b18e84a35ae3a8479356f2 Mon Sep 17 00:00:00 2001
+From 671d9a4ed60d18ed717b2afaa0769c370c4de88f Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Tue, 25 Nov 2025 14:43:25 +0800
 Subject: [PATCH] Add RTL8211F RMII to SGMII bridge support
@@ -23,7 +23,7 @@ index b05c2a1e9024..388e6734aa76 100644
 +	help
 +	  Enable P3809 RGMII/SGMII bridge with 1GB speed
 diff --git a/drivers/net/phy/realtek/realtek_main.c b/drivers/net/phy/realtek/realtek_main.c
-index 7c3d277efaf0..db6626180e5e 100644
+index 05df1a33b0e2..7587c9c5c2f5 100644
 --- a/drivers/net/phy/realtek/realtek_main.c
 +++ b/drivers/net/phy/realtek/realtek_main.c
 @@ -106,6 +106,12 @@
@@ -133,7 +133,7 @@ index 7c3d277efaf0..db6626180e5e 100644
  static int rtlgen_read_vend2(struct phy_device *phydev, int regnum)
  {
  	return __mdiobus_c45_read(phydev->mdio.bus, 0, MDIO_MMD_VEND2, regnum);
-@@ -1815,7 +1901,11 @@ static struct phy_driver realtek_drvs[] = {
+@@ -1816,7 +1902,11 @@ static struct phy_driver realtek_drvs[] = {
  		.name		= "RTL8211F Gigabit Ethernet",
  		.probe		= rtl8211f_probe,
  		.config_init	= &rtl8211f_config_init,

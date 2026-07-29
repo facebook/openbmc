@@ -1,4 +1,4 @@
-From 5ee8199e6adb8060ce36d1b439feeac91e3adef6 Mon Sep 17 00:00:00 2001
+From 19e8304ae1f82c805b4616684df575f1fed01b3d Mon Sep 17 00:00:00 2001
 From: Fred Chen <fredchen.openbmc@gmail.com>
 Date: Tue, 7 Jul 2026 12:22:11 +0800
 Subject: [PATCH] hwmon: (pmbus) Add driver for Analog Devices MAX20912 and
@@ -322,5 +322,5 @@ index 000000000000..3d028a619678
 +MODULE_LICENSE("GPL");
 +MODULE_IMPORT_NS("PMBUS");
 -- 
-2.53.0-Meta
+2.52.0
 

@@ -1,4 +1,4 @@
-From e1707e0bcc475a310a5b4162f9c33aef0a6f8fde Mon Sep 17 00:00:00 2001
+From f9f24fdb56388ec456a000a22fa62dcf94d723c5 Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike.quanta.115@gmail.com>
 Date: Thu, 18 Jun 2026 15:41:45 +0800
 Subject: [PATCH] ARM: dts: aspeed: sanmiguel: add current-range property for
@@ -24,7 +24,7 @@ Signed-off-by: Mike Hsieh <mike.quanta.115@gmail.com>
  1 file changed, 4 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
-index 0b5a267a8a13..3473c0c98337 100644
+index 49a2987bdfbe..80a65ee97569 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
 @@ -703,6 +703,7 @@ pdb_ti_hsc1: power-monitor@11 {
@@ -60,5 +60,5 @@ index 0b5a267a8a13..3473c0c98337 100644
  
  	pdb_ioexp_20: gpio@20 {
 -- 
-2.53.0-Meta
+2.52.0
 

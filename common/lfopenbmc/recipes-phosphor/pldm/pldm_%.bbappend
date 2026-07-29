@@ -1,5 +1,13 @@
 FILESEXTRAPATHS:prepend:openbmc-fb-lf := "${THISDIR}/files:"
 
+# Pin pldm behind master. Upstream 164629ef half-migrated the fw-update package
+# parser (package_parser.hpp declares the new-libpldm API while the .cpp is still
+# the old impl), so downstream patch 0022 -- the same migration carried from WIP
+# gerrit 80194 -- no longer applies. Hold at the previous sync's SRCREV, where
+# 0022 applies cleanly. Drop this pin AND patch 0022 once 80194 lands upstream.
+# Tracked by T282487007.
+SRCREV:openbmc-fb-lf = "fdc82200dd97b05bc190e920466f77430ef7f468"
+
 # EXTRA_OEMESON:append:openbmc-fb-lf = " -Doem-meta=enabled"
 
 SRC_URI:append:openbmc-fb-lf = " \

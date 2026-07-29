@@ -1,4 +1,4 @@
-From f47ad1c6e835689c290b75cd34fcf5d5e0ca02d9 Mon Sep 17 00:00:00 2001
+From 23850c1e239d3b5b098d476ef89e727ad625ce09 Mon Sep 17 00:00:00 2001
 From: Peter Zhang <yqzhang@nvidia.com>
 Date: Tue, 9 Jun 2026 13:20:20 -0700
 Subject: [PATCH] virtual-mux: fail fast when downstream device is absent
@@ -88,5 +88,5 @@ index 31149f88ed7b..4540c140f994 100644
  		dev_warn(h->dev,
  			 "xfer retry: ret=%d retries=%u (sleeping %ums)\n",
 -- 
-2.53.0-Meta
+2.52.0
 

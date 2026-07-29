@@ -1,4 +1,4 @@
-From 4f33b132b1bf35d9329bd14891898667055440fa Mon Sep 17 00:00:00 2001
+From 71e5da7e36d82cae4061263806d7d0eb81e45ac5 Mon Sep 17 00:00:00 2001
 From: "Radivoje (Ogi) Jovanovic" <rjovanovic@nvidia.com>
 Date: Thu, 22 Jan 2026 09:36:54 -0800
 Subject: [PATCH] i2c: muxes: introduce virtual-mux host
@@ -677,5 +677,5 @@ index 000000000000..ea18b05b6686
 +MODULE_DESCRIPTION("Virtual I2C Mux Host (virtual adapter forwarding over I2C)");
 +MODULE_LICENSE("GPL");
 -- 
-2.53.0-Meta
+2.52.0
 

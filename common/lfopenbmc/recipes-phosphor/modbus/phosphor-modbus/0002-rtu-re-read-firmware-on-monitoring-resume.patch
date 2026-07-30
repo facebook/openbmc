@@ -99,8 +99,8 @@ index 5591747..706d8c2 100644
 +++ b/rtu/port/base_port.cpp
 @@ -85,6 +85,12 @@ auto BasePort::set_property(monitoring_enabled_t, bool enabled) -> bool
      bool monitoringEnabled = !monitoringLock.has_value();
-     bool changed = (monitoringEnabled != monitoring_enabled_);
-     monitoring_enabled_ = monitoringEnabled;
+     bool changed = (monitoringEnabled != properties.monitoring_enabled);
+     properties.monitoring_enabled = monitoringEnabled;
 +
 +    if (changed && monitoringEnabled && monitoringResumedHandler)
 +    {

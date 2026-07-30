@@ -126,8 +126,8 @@ index ab5502e..5591747 100644
 +    // Monitoring is enabled only when the port is not reserved, so a failed
 +    // reservation leaves the property unchanged.
 +    bool monitoringEnabled = !monitoringLock.has_value();
-+    bool changed = (monitoringEnabled != monitoring_enabled_);
-+    monitoring_enabled_ = monitoringEnabled;
++    bool changed = (monitoringEnabled != properties.monitoring_enabled);
++    properties.monitoring_enabled = monitoringEnabled;
 +    return changed;
 +}
 +

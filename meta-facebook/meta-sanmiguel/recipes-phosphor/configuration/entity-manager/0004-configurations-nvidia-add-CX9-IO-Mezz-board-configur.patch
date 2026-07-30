@@ -1,4 +1,4 @@
-From c7b6366c4a4948e0782a67049e5e592a59a63a99 Mon Sep 17 00:00:00 2001
+From 2ad809d6e55de4e85eff4a9d6204e2a6947e651c Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 5 Mar 2026 19:08:45 +0800
 Subject: [PATCH] configurations: nvidia: add CX9 IO Mezz board configuration
@@ -33,10 +33,10 @@ Signed-off-by: Potin Lai <potin.lai@quantatw.com>
  create mode 100644 configurations/nvidia/cx9_mezzanine_module.json
 
 diff --git a/configurations/meson.build b/configurations/meson.build
-index fac5805..c31358d 100644
+index 6e635a5..83f66c6 100644
 --- a/configurations/meson.build
 +++ b/configurations/meson.build
-@@ -318,6 +318,7 @@ configs = [
+@@ -322,6 +322,7 @@ configs = [
      'nvidia/clover_cx9.json',
      'nvidia/cx7_mezzanine_module.json',
      'nvidia/cx8_mezzanine_module.json',

@@ -104,7 +104,7 @@ SoftwareActivationProgress::SoftwareActivationProgress(
 
 bool SoftwareActivationProgress::set_property(progress_t, auto progress)
 {
-    progress_ = progress;
+    properties.progress = progress;
     // Always return true, even if the new value is unchanged.
     // This ensures that a property changed signal is emitted every time.
     // Otherwise, bmcweb may mark the associated task as aborted if it does not

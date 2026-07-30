@@ -1,7 +1,7 @@
-From cf2089e4e2e4176bb915fb3dd6474b210bdf6ae2 Mon Sep 17 00:00:00 2001
+From 9b4fffb9df32f6c4b7e059f0af5b3ef53682530d Mon Sep 17 00:00:00 2001
 From: Andy Hsu <andy.hsu.wiwynn@gmail.com>
 Date: Tue, 21 Jul 2026 02:33:15 +0000
-Subject: [PATCH 01/11] configuration: yosemite4: Add config for Wailua Falls
+Subject: [PATCH] configuration: yosemite4: Add config for Wailua Falls
 
 ### Summary:
 Related JIRA ticket: YV4T1M-2363
@@ -25,10 +25,10 @@ A new configuration file is required to support the additional Wailua falls boar
  create mode 100644 configurations/meta/yv4/yosemite4_wailuafalls_without_asic.json
 
 diff --git a/configurations/meson.build b/configurations/meson.build
-index 8c08062..e8ff3de 100644
+index 8ab7aef..fd69f83 100644
 --- a/configurations/meson.build
 +++ b/configurations/meson.build
-@@ -281,6 +281,7 @@ configs = [
+@@ -283,6 +283,7 @@ configs = [
      'meta/yv4/yosemite4_sentineldome_t2.json',
      'meta/yv4/yosemite4_sentineldome_t2_retimer.json',
      'meta/yv4/yosemite4_wailuafalls.json',
@@ -158,5 +158,5 @@ index 0000000..64d09c7
 +    }
 +}
 -- 
-2.43.0
+2.53.0-Meta
 

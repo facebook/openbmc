@@ -1,4 +1,4 @@
-From cd004eabd4418534f572ced6f6150f9247bf13ea Mon Sep 17 00:00:00 2001
+From b2353be5215848485d4292b3d3f5da5a1d898632 Mon Sep 17 00:00:00 2001
 From: Colin Huang <colin.huang2@amd.com>
 Date: Mon, 20 Apr 2026 10:19:14 +0800
 Subject: [PATCH] net: ncsi: promote debug messages to info for runtime
@@ -63,7 +63,7 @@ index 040a31557201..f8db0a94344c 100644
  		   ncm->data[3] & 0x1 ? "" : "not ", nc->id);
  
 diff --git a/net/ncsi/ncsi-manage.c b/net/ncsi/ncsi-manage.c
-index 2d760b712ba6..05d653d9dbcf 100644
+index 446e4e3b9553..cb02c6b16755 100644
 --- a/net/ncsi/ncsi-manage.c
 +++ b/net/ncsi/ncsi-manage.c
 @@ -25,6 +25,9 @@
@@ -118,7 +118,7 @@ index 2d760b712ba6..05d653d9dbcf 100644
  				   "NCSI: channel %u link down after config\n",
  				   nc->id);
  		}
-@@ -1291,7 +1302,7 @@ static int ncsi_choose_active_channel(struct ncsi_dev_priv *ndp)
+@@ -1290,7 +1301,7 @@ static int ncsi_choose_active_channel(struct ncsi_dev_priv *ndp)
  						  &ndp->channel_queue);
  				spin_unlock_irqrestore(&ndp->lock, flags);
  
@@ -127,7 +127,7 @@ index 2d760b712ba6..05d653d9dbcf 100644
  					   "NCSI: Channel %u added to queue (link %s)\n",
  					   nc->id,
  					   ncm->data[2] & 0x1 ? "up" : "down");
-@@ -1582,13 +1593,13 @@ int ncsi_process_next_channel(struct ncsi_dev_priv *ndp)
+@@ -1581,13 +1592,13 @@ int ncsi_process_next_channel(struct ncsi_dev_priv *ndp)
  	switch (old_state) {
  	case NCSI_CHANNEL_INACTIVE:
  		ndp->ndev.state = ncsi_dev_state_config;
@@ -143,7 +143,7 @@ index 2d760b712ba6..05d653d9dbcf 100644
  			   nc->id);
  		ncsi_suspend_channel(ndp);
  		break;
-@@ -1635,7 +1646,7 @@ static int ncsi_kick_channels(struct ncsi_dev_priv *ndp)
+@@ -1634,7 +1645,7 @@ static int ncsi_kick_channels(struct ncsi_dev_priv *ndp)
  				if ((ndp->ndev.state & 0xff00) ==
  						ncsi_dev_state_config ||
  						!list_empty(&nc->link)) {
@@ -152,7 +152,7 @@ index 2d760b712ba6..05d653d9dbcf 100644
  						   "NCSI: channel %p marked dirty\n",
  						   nc);
  					nc->reconfigure_needed = true;
-@@ -1655,7 +1666,7 @@ static int ncsi_kick_channels(struct ncsi_dev_priv *ndp)
+@@ -1654,7 +1665,7 @@ static int ncsi_kick_channels(struct ncsi_dev_priv *ndp)
  			list_add_tail_rcu(&nc->link, &ndp->channel_queue);
  			spin_unlock_irqrestore(&ndp->lock, flags);
  
@@ -161,7 +161,7 @@ index 2d760b712ba6..05d653d9dbcf 100644
  			n++;
  		}
  	}
-@@ -1686,7 +1697,7 @@ int ncsi_vlan_rx_add_vid(struct net_device *dev, __be16 proto, u16 vid)
+@@ -1685,7 +1696,7 @@ int ncsi_vlan_rx_add_vid(struct net_device *dev, __be16 proto, u16 vid)
  	list_for_each_entry_rcu(vlan, &ndp->vlan_vids, list) {
  		n_vids++;
  		if (vlan->vid == vid) {
@@ -170,7 +170,7 @@ index 2d760b712ba6..05d653d9dbcf 100644
  				   vid);
  			return 0;
  		}
-@@ -1706,7 +1717,7 @@ int ncsi_vlan_rx_add_vid(struct net_device *dev, __be16 proto, u16 vid)
+@@ -1705,7 +1716,7 @@ int ncsi_vlan_rx_add_vid(struct net_device *dev, __be16 proto, u16 vid)
  	vlan->vid = vid;
  	list_add_rcu(&vlan->list, &ndp->vlan_vids);
  
@@ -179,7 +179,7 @@ index 2d760b712ba6..05d653d9dbcf 100644
  
  	found = ncsi_kick_channels(ndp) != 0;
  
-@@ -1735,7 +1746,7 @@ int ncsi_vlan_rx_kill_vid(struct net_device *dev, __be16 proto, u16 vid)
+@@ -1734,7 +1745,7 @@ int ncsi_vlan_rx_kill_vid(struct net_device *dev, __be16 proto, u16 vid)
  	/* Remove the VLAN id from our internal list */
  	list_for_each_entry_safe(vlan, tmp, &ndp->vlan_vids, list)
  		if (vlan->vid == vid) {
@@ -188,7 +188,7 @@ index 2d760b712ba6..05d653d9dbcf 100644
  			list_del_rcu(&vlan->list);
  			found = true;
  			kfree(vlan);
-@@ -1890,7 +1901,7 @@ void ncsi_stop_dev(struct ncsi_dev *nd)
+@@ -1861,7 +1872,7 @@ void ncsi_stop_dev(struct ncsi_dev *nd)
  		}
  	}
  
@@ -220,7 +220,7 @@ index 2f872d064396..b0d5e5613b96 100644
  			   package->id);
  
 diff --git a/net/ncsi/ncsi-rsp.c b/net/ncsi/ncsi-rsp.c
-index 5b5ee2eead2d..93b6fe0bbd3c 100644
+index fbd84bc8026a..ec897b43767d 100644
 --- a/net/ncsi/ncsi-rsp.c
 +++ b/net/ncsi/ncsi-rsp.c
 @@ -46,12 +46,12 @@ static int ncsi_validate_rsp_pkt(struct ncsi_request *nr,

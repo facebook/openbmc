@@ -1,4 +1,4 @@
-From c6142e920fc53de3a5d97e73f6cfe9a62c738964 Mon Sep 17 00:00:00 2001
+From de1e0ebb06a76ca82bfe4d4d410bfd0124daff93 Mon Sep 17 00:00:00 2001
 From: Rex Fu <Rex.Fu@amd.com>
 Date: Fri, 26 Jun 2026 17:07:14 +0800
 Subject: [PATCH] arm: dts: anacapa: Align leakage SGPIO pin names
@@ -23,7 +23,7 @@ Signed-off-by: Rex Fu <Rex.Fu@amd.com>
  1 file changed, 7 insertions(+), 7 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-index e5d8b5e71859..92aa58735868 100644
+index e92c09b6c5f1..4869cf342805 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 @@ -1020,7 +1020,7 @@ &sgpiom0 {
@@ -62,5 +62,5 @@ index e5d8b5e71859..92aa58735868 100644
  	"", "",
  
 -- 
-2.53.0-Meta
+2.52.0
 

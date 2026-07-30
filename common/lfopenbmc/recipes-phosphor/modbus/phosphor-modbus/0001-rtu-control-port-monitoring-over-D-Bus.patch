@@ -1,4 +1,4 @@
-From d6e82ccf611769e7583692b88cc30b09a9702483 Mon Sep 17 00:00:00 2001
+From 80b78e4ac7920f47f07fbc82be32874e1ef5cd12 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Mon, 13 Jul 2026 14:10:18 -0700
 Subject: [PATCH] rtu: control port monitoring over D-Bus
@@ -26,7 +26,7 @@ Change-Id: Ic79128be4c2dff1e63281ad1e2bdf4c4f45f3cc0
  4 files changed, 106 insertions(+), 1 deletion(-)
 
 diff --git a/rtu/device_manager.cpp b/rtu/device_manager.cpp
-index b8fb13b..ab52a1d 100644
+index d493e75..288143e 100644
 --- a/rtu/device_manager.cpp
 +++ b/rtu/device_manager.cpp
 @@ -7,6 +7,7 @@
@@ -37,7 +37,7 @@ index b8fb13b..ab52a1d 100644
  #include <xyz/openbmc_project/Inventory/Item/client.hpp>
  #include <xyz/openbmc_project/Metric/Value/client.hpp>
  #include <xyz/openbmc_project/Sensor/Value/client.hpp>
-@@ -309,6 +310,8 @@ auto main() -> int
+@@ -337,6 +338,8 @@ auto main() -> int
      using MetricIntf = sdbusplus::client::xyz::openbmc_project::metric::Value<>;
      using SoftwareIntf =
          sdbusplus::client::xyz::openbmc_project::software::Version<>;
@@ -46,7 +46,7 @@ index b8fb13b..ab52a1d 100644
      sdbusplus::server::manager_t sensorManager{
          ctx, SensorIntf::namespace_path::value};
      sdbusplus::server::manager_t metricManager{
-@@ -317,6 +320,8 @@ auto main() -> int
+@@ -345,6 +348,8 @@ auto main() -> int
          ctx, InventoryIntf::namespace_path};
      sdbusplus::server::manager_t softwareManager{ctx,
                                                   SoftwareIntf::namespace_path};
@@ -56,7 +56,7 @@ index b8fb13b..ab52a1d 100644
      info("Creating Modbus device manager");
      phosphor::modbus::rtu::DeviceManager deviceManager{ctx};
 diff --git a/rtu/port/base_port.cpp b/rtu/port/base_port.cpp
-index 61590a5..534ffc3 100644
+index ab5502e..5591747 100644
 --- a/rtu/port/base_port.cpp
 +++ b/rtu/port/base_port.cpp
 @@ -7,18 +7,35 @@
@@ -101,7 +101,7 @@ index 61590a5..534ffc3 100644
  
 +    emit_added();
 +
-     info("Serial port {NAME} created successfully", "NAME", config.name);
+     debug("Serial port {NAME} created successfully", "NAME", config.name);
  }
  
 +BasePort::~BasePort()
@@ -135,7 +135,7 @@ index 61590a5..534ffc3 100644
  
  ExclusiveLock::ExclusiveLock(ExclusiveLock&& other) noexcept : port(other.port)
 diff --git a/rtu/port/base_port.hpp b/rtu/port/base_port.hpp
-index 101350d..5af0000 100644
+index 4f3b17e..b4808f2 100644
 --- a/rtu/port/base_port.hpp
 +++ b/rtu/port/base_port.hpp
 @@ -6,6 +6,7 @@
@@ -146,8 +146,8 @@ index 101350d..5af0000 100644
  
  #include <concepts>
  #include <optional>
-@@ -126,12 +127,24 @@ class ExclusiveLock
-     BasePort* port;
+@@ -136,12 +137,24 @@ struct OperationOptions
+     ExclusiveLock* lock = nullptr;
  };
  
 -class BasePort
@@ -172,7 +172,7 @@ index 101350d..5af0000 100644
  
      auto readHoldingRegisters(uint8_t deviceAddress, uint16_t registerOffset,
                                uint32_t baudRate, Parity parity,
-@@ -157,6 +170,8 @@ class BasePort
+@@ -167,6 +180,8 @@ class BasePort
      std::unique_ptr<ModbusIntf> modbus;
      sdbusplus::async::mutex mutex;
      bool busy = false;
@@ -182,7 +182,7 @@ index 101350d..5af0000 100644
  
  } // namespace phosphor::modbus::rtu::port
 diff --git a/tests/test_port.cpp b/tests/test_port.cpp
-index 32a2beb..a4daf4b 100644
+index 04c1d04..d02e473 100644
 --- a/tests/test_port.cpp
 +++ b/tests/test_port.cpp
 @@ -126,6 +126,29 @@ class PortTest : public BaseTest

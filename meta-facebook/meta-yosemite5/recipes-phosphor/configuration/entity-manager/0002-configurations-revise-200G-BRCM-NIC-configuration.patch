@@ -1,4 +1,4 @@
-From 351790f58ab6a4192fe2950eac99559ef45b464e Mon Sep 17 00:00:00 2001
+From aed87c902592654539657da8592f55194b8070d1 Mon Sep 17 00:00:00 2001
 From: Daniel Hsu <Daniel-Hsu@quantatw.com>
 Date: Fri, 24 Jul 2026 15:25:19 +0800
 Subject: [PATCH] configurations: revise 200G BRCM NIC configuration
@@ -79,6 +79,6 @@ index 3f028b7..a9c29b6 100644
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'BRCM 200G 1P.*57508 OCP Mezz'})",
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
---
-2.53.0
+-- 
+2.53.0-Meta
 

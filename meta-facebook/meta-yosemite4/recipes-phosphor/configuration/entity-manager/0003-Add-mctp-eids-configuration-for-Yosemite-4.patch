@@ -1,7 +1,7 @@
-From bf5a09fc2a40f7ec84871b3fd08f16b0ce132dc3 Mon Sep 17 00:00:00 2001
+From 4b099e2d863878a1f7dfefe05f62ed936d6466d5 Mon Sep 17 00:00:00 2001
 From: Delphine CC Chiu <Delphine_CC_Chiu@wiwynn.com>
 Date: Mon, 25 Sep 2023 11:10:46 +0800
-Subject: [PATCH 04/11] Add mctp eids configuration for Yosemite 4
+Subject: [PATCH] Add mctp eids configuration for Yosemite 4
 
 The MCTP specification is defined in DSP0236. As describe in section
 8.17.2, we need a configuration for static EIDs. The `mctpd` from
@@ -246,7 +246,7 @@ index 64d09c7..ee56f2e 100644
              "CheckHysteresisWithSetpoint": true,
              "Class": "temp",
 diff --git a/schemas/exposes_record.json b/schemas/exposes_record.json
-index 49657fd..87c9d00 100644
+index 6a532ac..141d5d1 100644
 --- a/schemas/exposes_record.json
 +++ b/schemas/exposes_record.json
 @@ -179,6 +179,9 @@
@@ -260,7 +260,7 @@ index 49657fd..87c9d00 100644
              ]
          },
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index 72edcf4..4b39bfc 100644
+index a2dd53d..86a91cc 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
 @@ -1,6 +1,43 @@
@@ -339,5 +339,5 @@ index 72edcf4..4b39bfc 100644
                  "type": "number"
              },
 -- 
-2.43.0
+2.53.0-Meta
 

@@ -15,15 +15,13 @@ SRC_URI:append = " \
     file://1010-Enable-NIC-MCTP-over-I2C.patch \
     file://1011-net-ncsi-promote-debug-messages-to-info-for-runtime-.patch \
     file://1012-arm-dts-anacapa-Enable-JTAG1.patch \
-    file://1013-jtag-jtag-aspeed-Bring-changes-for-Aspeed-26XX.patch \
-    file://1014-jtag-jtag-aspeed-Increase-the-wait-iteration-to-300.patch \
-    file://1015-arm-dts-anacapa-Modify-the-RMI-TSI-device-IDs.patch \
-    file://1016-ARM-dts-aspeed-anacapa-add-interrupt-properties-for-.patch \
-    file://1017-arm-dts-anacapa-Align-thermtrip-SGPIO-pin-names.patch \
-    file://1018-arm-dts-anacapa-Rename-left-PDB-presence-pin.patch \
-    file://1019-arm-dts-anacapa-Align-EDSFF-SGPIO-pin-names.patch \
-    file://1020-arm-dts-anacapa-Align-PDB-fan-GPIO-numbering.patch \
-    file://1021-arm-dts-anacapa-Align-leakage-SGPIO-pin-names.patch \
-    file://1022-ARM-dts-aspeed-anacapa-evt2-add-shunt-resistor-value.patch \
-    file://1023-ARM-dts-aspeed-anacapa-Add-eeprom-device-node-for-NF.patch \
+    file://1013-arm-dts-anacapa-Modify-the-RMI-TSI-device-IDs.patch \
+    file://1014-ARM-dts-aspeed-anacapa-add-interrupt-properties-for-.patch \
+    file://1015-arm-dts-anacapa-Align-thermtrip-SGPIO-pin-names.patch \
+    file://1016-arm-dts-anacapa-Rename-left-PDB-presence-pin.patch \
+    file://1017-arm-dts-anacapa-Align-EDSFF-SGPIO-pin-names.patch \
+    file://1018-arm-dts-anacapa-Align-PDB-fan-GPIO-numbering.patch \
+    file://1019-arm-dts-anacapa-Align-leakage-SGPIO-pin-names.patch \
+    file://1020-ARM-dts-aspeed-anacapa-evt2-add-shunt-resistor-value.patch \
+    file://1021-ARM-dts-aspeed-anacapa-Add-eeprom-device-node-for-NF.patch \
 "

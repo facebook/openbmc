@@ -1,7 +1,7 @@
-From ff6d37b2ceed1f3ca11cf23f4095dc71c8e7b0f9 Mon Sep 17 00:00:00 2001
+From 6ced9f5ca0fc0e46959609b4c7b24f55419c0616 Mon Sep 17 00:00:00 2001
 From: Kai Chen <tingkaic@nvidia.com>
 Date: Thu, 5 Mar 2026 01:42:11 -0800
-Subject: [PATCH 1/1] Replace cp2112 sync xfer with async workqueue
+Subject: [PATCH] Replace cp2112 sync xfer with async workqueue
 
 Calling hid_hw_raw_request() and hid_hw_output_report() directly from
 the I2C adapter or GPIO callback context blocks the calling thread until
@@ -402,5 +402,5 @@ index 04379db93571..82f930db8e4f 100644
  		dev->gpio_poll = false;
  		cancel_delayed_work_sync(&dev->gpio_poll_worker);
 -- 
-2.52.0
+2.53.0-Meta
 

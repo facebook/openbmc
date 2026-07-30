@@ -1,4 +1,4 @@
-From 3545baaaa0e2b47ca3bbf1e87f25cf6af5afeefb Mon Sep 17 00:00:00 2001
+From 53156b1cdadfdd9c8f6d14371454bc138826d0b6 Mon Sep 17 00:00:00 2001
 From: Rex Fu <Rex.Fu@amd.com>
 Date: Fri, 26 Jun 2026 16:39:59 +0800
 Subject: [PATCH] arm: dts: anacapa: Align EDSFF SGPIO pin names
@@ -21,7 +21,7 @@ Signed-off-by: Rex Fu <Rex.Fu@amd.com>
  1 file changed, 8 insertions(+), 8 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-index fb77b2aa7bb9..7063afe3673c 100644
+index e0ffa4b28324..ee8ca37f02d6 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 @@ -1067,11 +1067,11 @@ &sgpiom0 {
@@ -64,5 +64,5 @@ index fb77b2aa7bb9..7063afe3673c 100644
  	"CPU0_CORETYPE1", "",
  	"CPU0_CORETYPE2", "",
 -- 
-2.53.0-Meta
+2.52.0
 

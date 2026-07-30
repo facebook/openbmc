@@ -1,4 +1,4 @@
-From 6519e4338d75c103b2a07c3af0ecacfcd5c3eabf Mon Sep 17 00:00:00 2001
+From b710118bd2a0aebcd2fa4a427e0c4212aef2536d Mon Sep 17 00:00:00 2001
 From: KayYCHuang-wiwynn <kay.yc.huang.wiwynn@gmail.com>
 Date: Mon, 17 Mar 2025 02:25:46 +0000
 Subject: [PATCH] meta-facebook: yosemite4: Disable in2_alarm event
@@ -10,10 +10,10 @@ Subject: [PATCH] meta-facebook: yosemite4: Disable in2_alarm event
  3 files changed, 12 insertions(+)
 
 diff --git a/meson.build b/meson.build
-index c7f6996..1b30ce6 100644
+index ae59f99..b40be7d 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -31,6 +31,10 @@ add_project_arguments(
+@@ -32,6 +32,10 @@ add_project_arguments(
      language: 'cpp',
  )
  

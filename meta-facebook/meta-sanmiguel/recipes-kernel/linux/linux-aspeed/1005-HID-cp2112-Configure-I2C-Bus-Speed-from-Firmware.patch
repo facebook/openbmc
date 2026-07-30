@@ -1,7 +1,7 @@
-From 752305fb1de5a961e8514bd64fd319a0b61b11a9 Mon Sep 17 00:00:00 2001
+From 4e4adf5c073505e3cd52056d404fd81fbe4e1045 Mon Sep 17 00:00:00 2001
 From: Danny Kaehn <danny.kaehn@plexus.com>
 Date: Tue, 27 Jan 2026 08:47:50 -0600
-Subject: [PATCH 1/1] HID: cp2112: Configure I2C Bus Speed from Firmware
+Subject: [PATCH] HID: cp2112: Configure I2C Bus Speed from Firmware
 
 Now that the I2C adapter on the CP2112 can have an associated firmware
 node, set the bus speed based on firmware configuration
@@ -36,5 +36,5 @@ index e960fc988058..04379db93571 100644
  
  	ret = cp2112_hid_output(hdev, (u8 *)&config, sizeof(config),
 -- 
-2.52.0
+2.53.0-Meta
 

@@ -1,7 +1,7 @@
-From 8e8054b59a0cf50d9b1cadc3d61b8564ef9a9c59 Mon Sep 17 00:00:00 2001
+From 02f824e29160d3d844666dbdbe86dfda8b5c2d45 Mon Sep 17 00:00:00 2001
 From: Kai Chen <tingkaic@nvidia.com>
 Date: Sat, 18 Apr 2026 02:49:22 -0700
-Subject: [PATCH 1/1] hid-cp2112: validate data length byte
+Subject: [PATCH] hid-cp2112: validate data length byte
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -70,5 +70,5 @@ index 1347fbb242df..309fd7c85bcb 100644
  			goto power_normal;
  		}
 -- 
-2.52.0
+2.53.0-Meta
 

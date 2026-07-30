@@ -1,4 +1,4 @@
-From 42d5ce7e56a40844476c7c1d52ca4e3edadd9285 Mon Sep 17 00:00:00 2001
+From 18f14a5f457a8a75c379a37e099f52c051570e30 Mon Sep 17 00:00:00 2001
 From: Amithash Prasasd <amithash@meta.com>
 Date: Thu, 21 Nov 2024 21:00:02 -0800
 Subject: [PATCH] Add structured logging for Threshold events
@@ -47,10 +47,10 @@ Signed-off-by: Amithash Prasasd <amithash@meta.com>
  4 files changed, 178 insertions(+), 1 deletion(-)
 
 diff --git a/meson.build b/meson.build
-index 0110986..c7f6996 100644
+index e475a84..ae59f99 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -45,10 +45,12 @@ boost = dependency(
+@@ -46,10 +46,12 @@ boost = dependency(
  )
  sdbusplus = dependency('sdbusplus')
  phosphor_logging_dep = dependency('phosphor-logging')

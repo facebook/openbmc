@@ -1,0 +1,26 @@
+From da5efbf0152c2cf2f1fa0c92e553df7602a9d26b Mon Sep 17 00:00:00 2001
+From: Zane Li <zane.li.wiwynn@gmail.com>
+Date: Thu, 14 May 2026 01:22:17 +0000
+Subject: [PATCH] netlakenext: healthd: make log more detail
+
+Signed-off-by: Zane Li <zane.li.wiwynn@gmail.com>
+---
+ healthd.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/healthd.c b/healthd.c
+index 7ef6444..c1f4f2f 100755
+--- a/healthd.c
++++ b/healthd.c
+@@ -1740,7 +1740,7 @@ log_reboot_cause(char *sled_off_time)
+       BMC_REBOOT_BY_CMD(bmc_reboot_base, sram_offset) = 0;
+     // ===== others =====
+     } else {
+-      syslog(LOG_CRIT, "BMC Reboot detected");
++      syslog(LOG_CRIT, "BMC Reboot detected - unknown cause");
+     }
+   }
+   munmap(bmc_reboot_base, PAGE_SIZE);
+-- 
+2.43.0
+

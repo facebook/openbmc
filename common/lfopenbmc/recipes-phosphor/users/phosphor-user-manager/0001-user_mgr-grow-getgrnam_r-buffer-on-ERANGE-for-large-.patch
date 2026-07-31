@@ -1,0 +1,320 @@
+From 40bd039323123c65cccfd7e0ccdb75047ab6013d Mon Sep 17 00:00:00 2001
+From: Rick Yazwinski <rickyaz@meta.com>
+Date: Fri, 31 Jul 2026 11:01:47 -0700
+Subject: [PATCH] user_mgr: grow getgrnam_r buffer on ERANGE for large groups
+
+UserMgr looked up groups with getgrnam_r() using a buffer sized only from
+sysconf(_SC_GETGR_R_SIZE_MAX) (or a 1024-byte fallback), which POSIX
+documents as an *initial* hint, not a guaranteed-sufficient size. Two of
+the three group-lookup call sites went further and used a fixed 4096-byte
+std::array with no retry at all:
+
+  - getUsersInGroup()
+  - ensurePredefinedGroupsExist()
+
+getgrnam_r() must pack the entire group entry into the caller's buffer:
+the member name strings AND the NULL-terminated array of char* member
+pointers. A group with many members can therefore need considerably more
+space than the sysconf() hint or a fixed 4 KiB buffer, in which case
+getgrnam_r() returns ERANGE.
+
+When that happened the affected call sites treated the group as missing:
+getUsersInGroup() returned an empty member list, and
+ensurePredefinedGroupsExist() concluded a predefined group (e.g.
+"redfish", "priv-admin") did not exist. Because bmcweb derives a user's
+Redfish privilege from the User Manager over D-Bus, a user in such a
+group ended up with an empty UserPrivilege. Every privileged Redfish
+route then returned 403 "Insufficient Privilege" and account reads
+returned 500, even though the user was correctly listed in the group in
+/etc/group. This took down all privileged Redfish access once the
+"redfish" group grew past the buffer (around 190 members / a ~3.3 KiB
+line).
+
+Only isGroupMember() had an ERANGE grow-retry, and it was capped at 32
+KiB and open-coded inline.
+
+Consolidate all group lookups behind a single getSystemGroup() helper
+(mirroring the existing getSystemUser()/SystemUserInfo pattern) that:
+
+  - seeds the buffer from sysconf(_SC_GETGR_R_SIZE_MAX) (1024 fallback);
+  - doubles the buffer and retries while getgrnam_r() returns ERANGE, up
+    to a 1 MiB safety cap, so a large group can no longer be misreported
+    as missing;
+  - distinguishes "found", "genuinely absent" (rc 0 with a NULL result)
+    and "lookup error" (via an optional out-status parameter), so callers
+    keep their existing not-found-vs-error semantics.
+
+Route getUsersInGroup(), isGroupMember() and ensurePredefinedGroupsExist()
+through the helper. This also removes a latent NULL-dereference in
+getUsersInGroup(), which iterated grp.gr_mem without first checking it was
+non-NULL.
+
+Tested:
+  Built a yosemite4 BMC image with this change and flashed it onto real
+  hardware whose /etc/group had a "redfish" group of 189 members (a ~3.3
+  KiB line) -- the size that reproduced the failure with the old code.
+
+  Before (unpatched image, same 189-member group):
+    journalctl -u xyz.openbmc_project.User.Manager:
+      Failed to look up predefined group 'redfish': 34   (34 == ERANGE)
+      Group 'redfish' not found
+    busctl ... User.Manager GetUserInfo s root:
+      UserGroups: ["ssh"]        UserPrivilege: ""
+    GET /redfish/v1/Managers/bmc/Truststore/Certificates -> 403
+    GET /redfish/v1/AccountService/Accounts/root          -> 500
+
+  After (patched image, same 189-member group):
+    No ERANGE / "not found" messages in the User Manager log.
+    busctl ... User.Manager GetUserInfo s root:
+      UserGroups: ["hostconsole","ipmi","redfish","ssh"]
+      UserPrivilege: "priv-admin"
+    GET /redfish/v1/Managers/bmc/Truststore/Certificates -> 200
+    GET /redfish/v1/AccountService/Accounts/root          -> 200
+
+  Image built clean (bitbake yosemite4-image); clang-format clean.
+
+Signed-off-by: Rick Yazwinski <rickyaz@meta.com>
+---
+ user_mgr.cpp | 147 +++++++++++++++++++++++++++------------------------
+ user_mgr.hpp |  28 ++++++++++
+ 2 files changed, 107 insertions(+), 68 deletions(-)
+
+diff --git a/user_mgr.cpp b/user_mgr.cpp
+index ffb68fa..4481236 100644
+--- a/user_mgr.cpp
++++ b/user_mgr.cpp
+@@ -320,6 +320,66 @@ std::unique_ptr<struct SystemUserInfo> UserMgr::getSystemUser(
+     return nullptr;
+ }
+ 
++std::unique_ptr<struct SystemGroupInfo> UserMgr::getSystemGroup(
++    const std::string& groupName, int* lookupStatus) const
++{
++    auto buflen = sysconf(_SC_GETGR_R_SIZE_MAX);
++    if (buflen <= 0)
++    {
++        // sysconf() only offers an initial hint; use a sane default when it is
++        // unknown. getgrnam_r() may still need more room (handled below).
++        buflen = 1024;
++    }
++
++    auto res = std::make_unique<struct SystemGroupInfo>();
++    res->buffer.resize(buflen);
++    struct group* grpPtr = nullptr;
++
++    // Groups with many members can need far more space than the sysconf() hint,
++    // in which case getgrnam_r() returns ERANGE. Grow the buffer and retry
++    // until the entry fits or a generous safety cap is reached, so a large
++    // group can never be misreported as missing.
++    constexpr size_t maxGroupBufferLength = 1024 * 1024;
++    int status = getgrnam_r(groupName.c_str(), &res->grp, res->buffer.data(),
++                            res->buffer.size(), &grpPtr);
++    while (status == ERANGE && res->buffer.size() < maxGroupBufferLength)
++    {
++        res->buffer.resize(res->buffer.size() * 2);
++        lg2::debug(
++            "Increased getgrnam_r() buffer for group '{GROUP}' to {SIZE}",
++            "GROUP", groupName, "SIZE", res->buffer.size());
++        status = getgrnam_r(groupName.c_str(), &res->grp, res->buffer.data(),
++                            res->buffer.size(), &grpPtr);
++    }
++
++    if (lookupStatus != nullptr)
++    {
++        *lookupStatus = status;
++    }
++
++    // On success getgrnam_r() returns 0 and sets grpPtr to &res->grp. A 0
++    // return with a null grpPtr means the group genuinely does not exist.
++    if (status == 0 && grpPtr == &res->grp)
++    {
++        return res;
++    }
++
++    if (status == ERANGE)
++    {
++        lg2::error(
++            "Group '{GROUP}' info exceeds {SIZE} bytes; cannot look it up",
++            "GROUP", groupName, "SIZE", maxGroupBufferLength);
++    }
++    else if (status != 0)
++    {
++        lg2::error("Failed to look up group '{GROUP}': {STATUS}", "GROUP",
++                   groupName, "STATUS", status);
++    }
++    // status == 0 with a null grpPtr -> group not found; the caller decides
++    // whether that is an error worth logging.
++    return nullptr;
++}
++
+ bool UserMgr::isUserExist(const std::string& userName) const
+ {
+     if (userName.empty())
+@@ -1269,25 +1329,19 @@ bool UserMgr::isUserEnabled(const std::string& userName)
+ std::vector<std::string> UserMgr::getUsersInGroup(const std::string& groupName)
+ {
+     std::vector<std::string> usersInGroup;
+-    // Should be more than enough to get the pwd structure.
+-    std::array<char, 4096> buffer{};
+-    struct group grp;
+-    struct group* resultPtr = nullptr;
+ 
+-    int status = getgrnam_r(groupName.c_str(), &grp, buffer.data(),
+-                            buffer.max_size(), &resultPtr);
+-
+-    if (!status && (&grp == resultPtr))
+-    {
+-        for (; *(grp.gr_mem) != NULL; ++(grp.gr_mem))
+-        {
+-            usersInGroup.emplace_back(*(grp.gr_mem));
+-        }
+-    }
+-    else
++    auto groupInfo = getSystemGroup(groupName);
++    if (groupInfo == nullptr)
+     {
+         lg2::error("Group '{GROUPNAME}' not found", "GROUPNAME", groupName);
+         // Don't throw error, just return empty userList - fallback
++        return usersInGroup;
++    }
++
++    for (char** mem = groupInfo->grp.gr_mem; mem != nullptr && *mem != nullptr;
++         ++mem)
++    {
++        usersInGroup.emplace_back(*mem);
+     }
+     return usersInGroup;
+ }
+@@ -1367,62 +1421,24 @@ gid_t UserMgr::getPrimaryGroup(const std::string& userName) const
+ bool UserMgr::isGroupMember(const std::string& userName, gid_t primaryGid,
+                             const std::string& groupName) const
+ {
+-    static auto buflen = sysconf(_SC_GETGR_R_SIZE_MAX);
+-    if (buflen <= 0)
++    auto groupInfo = getSystemGroup(groupName);
++    if (groupInfo == nullptr)
+     {
+-        // Use a default size if there is no hard limit suggested by sysconf()
+-        buflen = 1024;
++        return false;
+     }
+ 
+-    struct group grp;
+-    struct group* grpPtr = nullptr;
+-    std::vector<char> buffer(buflen);
+-
+-    auto status = getgrnam_r(groupName.c_str(), &grp, buffer.data(),
+-                             buffer.size(), &grpPtr);
+-
+-    // Groups with a lot of members may require a buffer of bigger size than
+-    // suggested by _SC_GETGR_R_SIZE_MAX.
+-    // 32K should be enough for about 2K members.
+-    constexpr auto maxBufferLength = 32 * 1024;
+-    while (status == ERANGE && buflen < maxBufferLength)
++    const struct group& grp = groupInfo->grp;
++    if (primaryGid == grp.gr_gid)
+     {
+-        buflen *= 2;
+-        buffer.resize(buflen);
+-
+-        lg2::debug("Increase buffer for getgrnam_r() to {SIZE}", "SIZE",
+-                   buflen);
+-
+-        status = getgrnam_r(groupName.c_str(), &grp, buffer.data(),
+-                            buffer.size(), &grpPtr);
++        return true;
+     }
+ 
+-    // On success, getgrnam_r() returns zero, and set *grpPtr to grp.
+-    // If no matching group record was found, these functions return 0
+-    // and store NULL in *grpPtr
+-    if (!status && (&grp == grpPtr))
++    for (auto i = 0; grp.gr_mem && grp.gr_mem[i]; ++i)
+     {
+-        if (primaryGid == grp.gr_gid)
++        if (userName == grp.gr_mem[i])
+         {
+             return true;
+         }
+-
+-        for (auto i = 0; grp.gr_mem && grp.gr_mem[i]; ++i)
+-        {
+-            if (userName == grp.gr_mem[i])
+-            {
+-                return true;
+-            }
+-        }
+-    }
+-    else if (status == ERANGE)
+-    {
+-        lg2::error("Group info of {GROUP} requires too much memory", "GROUP",
+-                   groupName);
+-    }
+-    else
+-    {
+-        lg2::error("Group {GROUP} does not exist", "GROUP", groupName);
+     }
+ 
+     return false;
+@@ -1432,13 +1448,8 @@ void UserMgr::ensurePredefinedGroupsExist()
+ {
+     for (const char* group : predefinedGroups)
+     {
+-        std::array<char, 4096> buffer{};
+-        struct group grp;
+-        struct group* resultPtr = nullptr;
+-
+-        int status = getgrnam_r(group, &grp, buffer.data(), buffer.max_size(),
+-                                &resultPtr);
+-        if (status == 0 && resultPtr != nullptr)
++        int status = 0;
++        if (getSystemGroup(group, &status) != nullptr)
+         {
+             // Group already present on the system.
+             continue;
+diff --git a/user_mgr.hpp b/user_mgr.hpp
+index ed266ec..f3f22e0 100644
+--- a/user_mgr.hpp
++++ b/user_mgr.hpp
+@@ -58,6 +58,16 @@ struct SystemUserInfo
+     std::vector<char> buffer;
+ };
+ 
++/** @struct SystemGroupInfo
++ *  @brief Holds the result of a getgrnam_r() lookup.
++ *         The buffer member owns the storage that the group fields point into.
++ */
++struct SystemGroupInfo
++{
++    struct group grp;
++    std::vector<char> buffer;
++};
++
+ inline constexpr size_t ipmiMaxUsers = 15;
+ inline constexpr size_t maxSystemUsers = MAX_SYSTEM_USERS;
+ inline constexpr uint8_t minPasswdLength = 8;
+@@ -468,6 +478,24 @@ class UserMgr : public Ifaces
+     virtual std::unique_ptr<struct SystemUserInfo> getSystemUser(
+         const std::string& userName) const;
+ 
++    /** @brief look up a system group by name, growing the getgrnam_r() buffer
++     *         as needed for groups with many members.
++     *
++     *  sysconf(_SC_GETGR_R_SIZE_MAX) is only an initial hint; getgrnam_r() can
++     *  still return ERANGE for large groups, so the buffer is grown and the
++     *  lookup retried until it fits or a generous safety cap is reached.
++     *
++     *  @param[in]  groupName - name of the group
++     *  @param[out] lookupStatus - if non-null, receives the final getgrnam_r()
++     *              status. It is 0 when the group was found or is genuinely
++     *              absent, and the failing errno otherwise (e.g. ERANGE).
++     *
++     *  @return - unique pointer of SystemGroupInfo struct if the group exists,
++     *            nullptr if it does not exist or could not be looked up.
++     */
++    std::unique_ptr<struct SystemGroupInfo> getSystemGroup(
++        const std::string& groupName, int* lookupStatus = nullptr) const;
++
+     /** @brief check for user presence
+      *  method to check for user existence
+      *

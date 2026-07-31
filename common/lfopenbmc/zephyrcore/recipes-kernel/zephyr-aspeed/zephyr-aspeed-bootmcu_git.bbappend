@@ -9,7 +9,6 @@ SRC_URI:append = " \
     file://0005-mcu-runtime-sdram_ast2700-Move-wdt-dram-sw-reset-to-.patch;patchdir=aspeed-zephyr-project \
     file://0006-mcu-runtime-sdram_ast2700-Fix-otp-for-VGA-VRAM-size-.patch;patchdir=aspeed-zephyr-project \
     file://0007-mcu-runtime-sdram_ast2700-disable-DARB-recovery-for-.patch;patchdir=aspeed-zephyr-project \
-    file://0008-mcu-runtime-sdram_ast2700-Set-mpll-1550.patch;patchdir=aspeed-zephyr-project \
 "
 
 BOOTMCU_EXTRA_DTC_OVERLAY_FILE ?= "${UNPACKDIR}/ast2700_facebook_bootmcu.overlay"

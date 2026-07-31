@@ -101,6 +101,7 @@ SRC_URI:append = " \
     file://0612-misc-amd-apml-Add-Venice-B0-I3C-device-IDs.patch \
     file://0613-dt-bindings-trivial-devices-Add-adi-max20912-and-max.patch \
     file://0614-hwmon-pmbus-Add-driver-for-Analog-Devices-MAX20912-a.patch \
+    file://0615-nfc-nxp-nci-treat-ENXIO-in-IRQ-thread-as-no-data-ava.patch \
 "
 
 #

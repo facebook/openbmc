@@ -1,0 +1,47 @@
+From 41fc24395c7eedeaac6519d01688996075403a96 Mon Sep 17 00:00:00 2001
+From: Carl Lee <carl.lee@amd.com>
+Date: Wed, 20 May 2026 18:23:56 +0800
+Subject: [PATCH] nfc: nxp-nci: treat -ENXIO in IRQ thread as no data available
+
+The I2C read operation in the IRQ thread may return -ENXIO
+when the controller has not yet provided data after asserting IRQ.
+
+IRQ assertion does not guarantee that data is immediately
+available on the I2C bus. In such cases, the read request may
+be NACKed, resulting in -ENXIO.
+
+Treat this condition as "no data available yet" and log it at
+debug level instead of reporting it as a read failure.
+
+This avoids misleading error messages during normal operation.
+
+Lore link:
+https://lore.kernel.org/all/20260526-nfc-nxp-nci-treat-enxio-as-no-data-available-yet-v1-1-305bb11b9147@amd.com
+
+Signed-off-by: Carl Lee <carl.lee@amd.com>
+---
+ drivers/nfc/nxp-nci/i2c.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/drivers/nfc/nxp-nci/i2c.c b/drivers/nfc/nxp-nci/i2c.c
+index a6c08175d9dd..1d9d7d6fd542 100644
+--- a/drivers/nfc/nxp-nci/i2c.c
++++ b/drivers/nfc/nxp-nci/i2c.c
+@@ -231,6 +231,14 @@ static irqreturn_t nxp_nci_i2c_irq_thread_fn(int irq, void *phy_id)
+ 		if (info->mode == NXP_NCI_MODE_FW)
+ 			nxp_nci_fw_recv_frame(phy->ndev, NULL);
+ 	}
++	if (r == -ENXIO) {
++		/*
++		 * -ENXIO may occur if the controller has not yet
++		 * provided data after asserting IRQ.
++		 */
++		dev_dbg(&client->dev, "No data available yet\n");
++		goto exit_irq_handled;
++	}
+ 	if (r < 0) {
+ 		nfc_err(&client->dev, "Read failed with error %d\n", r);
+ 		goto exit_irq_handled;
+-- 
+2.34.1
+

@@ -99,6 +99,27 @@ class BaseInterfaceTest(object):
         Logger.debug("Got ip address for " + str(self.ifname))
         return ipv6
 
+    def get_mac_address(self):
+        """
+        Get MAC address of a given interface
+        """
+        f = subprocess.Popen(
+            ["ip", "link", "show", self.ifname.encode("utf-8")],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        out, err = f.communicate()
+        if len(out) == 0 or len(err) != 0:
+            raise Exception(f"Device {self.ifname} does not exist [FAILED]")
+        out = out.decode("utf-8")
+        if "link/ether " not in out:
+            raise Exception(
+                f"Device {self.ifname} does not have a MAC address [FAILED]\ncommand output: {out}"
+            )
+        mac = out.split("link/ether ")[1].split(" ")[0]
+        Logger.debug(f"Got mac address for {self.ifname}")
+        return mac
+
     def run_ping(self, cmd):
         self.assertNotEqual(cmd, None, "run_ping cmd not set")
         if cmd != "":

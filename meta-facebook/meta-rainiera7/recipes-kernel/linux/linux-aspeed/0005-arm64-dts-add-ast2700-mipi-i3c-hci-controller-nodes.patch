@@ -1,6 +1,6 @@
-From 23b2ea67806a57ceef8064101d3d49eda5632d81 Mon Sep 17 00:00:00 2001
-From: "Frank Tsao" <Frank.Tsao@quantatw.com>
-Date: Wed, 29 Jul 2026 15:37:10 +0800
+From 014b0f6aa07bb5d0f5510e937b715811f4cf4c0b Mon Sep 17 00:00:00 2001
+From: "Alan Tsai" <Alan-Tsai@quantatw.com>
+Date: Fri, 31 Jul 2026 10:20:07 +0800
 Subject: [PATCH] arm64: dts: add ast2700 mipi-i3c-hci controller nodes from
  AspeedTech to aspeed-g7-common.dtsi
 

@@ -1,6 +1,6 @@
-From 79b9aaf56c175e022acce503270ada1ed7756aff Mon Sep 17 00:00:00 2001
-From: "Frank Tsao" <Frank.Tsao@quantatw.com>
-Date: Wed, 29 Jul 2026 15:40:39 +0800
+From 7059775e4e0201bb35c61e3668e48e21c8896edf Mon Sep 17 00:00:00 2001
+From: "Alan Tsai" <Alan-Tsai@quantatw.com>
+Date: Fri, 31 Jul 2026 10:20:55 +0800
 Subject: [PATCH] arm64: dts: aspeed: Add i3c nodes to rainiera7 dts
 
 Add i3c nodes to rainiera7 dts.
@@ -9,7 +9,7 @@ Add i3c nodes to rainiera7 dts.
  1 file changed, 62 insertions(+)
 
 diff --git a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts
-index 4f68f29b7..05dbc32bc 100644
+index 4f68f29b7..59cfd2dae 100644
 --- a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts
 @@ -36,6 +36,10 @@ aliases {

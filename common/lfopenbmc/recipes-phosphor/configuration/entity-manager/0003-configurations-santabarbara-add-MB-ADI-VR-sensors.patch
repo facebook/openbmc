@@ -1,4 +1,4 @@
-From 3a4e824e2ab89f73cf8765619e0e491f8da4038e Mon Sep 17 00:00:00 2001
+From 17b1b46c6c9ae5a0e8e3b8229ba0825beb1ae029 Mon Sep 17 00:00:00 2001
 From: Fred Chen <Fred.Chen@quantatw.com>
 Date: Tue, 21 Jul 2026 15:20:54 +0800
 Subject: [PATCH] configurations: santabarbara: add MB ADI VR sensors
@@ -26,7 +26,7 @@ Signed-off-by: Fred Chen <Fred.Chen@quantatw.com>
  2 files changed, 287 insertions(+)
 
 diff --git a/configurations/meta/santabarbara/santabarbara_mb_vr_adi.json b/configurations/meta/santabarbara/santabarbara_mb_vr_adi.json
-index 7c64d9d..290b322 100644
+index a039f94..0340d48 100644
 --- a/configurations/meta/santabarbara/santabarbara_mb_vr_adi.json
 +++ b/configurations/meta/santabarbara/santabarbara_mb_vr_adi.json
 @@ -875,6 +875,281 @@
@@ -311,7 +311,7 @@ index 7c64d9d..290b322 100644
          {
              "Address": "0x46",
              "Bus": "18",
-@@ -1087,6 +1362,11 @@
+@@ -1080,6 +1355,11 @@
              "ILimitMax": 100,
              "ILimitMin": 0,
              "Inputs": [
@@ -323,7 +323,7 @@ index 7c64d9d..290b322 100644
                  "MB_VR_PVDD18_S5_TEMP_C"
              ],
              "Name": "PID_MB_VR",
-@@ -1651,6 +1931,11 @@
+@@ -1630,6 +1910,11 @@
          {
              "Class": "temp",
              "Inputs": [
@@ -336,7 +336,7 @@ index 7c64d9d..290b322 100644
              ],
              "Name": "Stepwise_MB_VR",
 diff --git a/schemas/legacy.json b/schemas/legacy.json
-index 72edcf4..e084751 100644
+index a2dd53d..cad0256 100644
 --- a/schemas/legacy.json
 +++ b/schemas/legacy.json
 @@ -1007,6 +1007,8 @@
@@ -349,5 +349,5 @@ index 72edcf4..e084751 100644
                          "MAX34451",
                          "MP2856",
 -- 
-2.39.3
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From 4c83606783fc49ef9524bbb3de235747abe4feba Mon Sep 17 00:00:00 2001
+From 17fd0c5954143f650307305f53a3d25b91320e69 Mon Sep 17 00:00:00 2001
 From: Eldin Lee <eldin.lee@quantatw.com>
 Date: Mon, 25 May 2026 23:04:21 +0800
 Subject: [PATCH] meta: add Ventura2 network initialization support
@@ -39,10 +39,10 @@ Signed-off-by: Eldin Lee <eldin.lee@quantatw.com>
  ftdi_mdio.hpp                                 |  46 ++
  mdio.cpp                                      | 279 +++++++++
  mdio.hpp                                      | 109 ++++
- meson.build                                   |  30 +-
- meta/meta.hpp                                 |   9 +
- meta/ventura2.cpp                             | 520 +++++++++++++++++
- platform.cpp                                  |  15 +-
+ meson.build                                   |  28 +-
+ platform.cpp                                  |   2 +
+ platforms/meta/platforms.hpp                  |   9 +
+ platforms/meta/ventura2.cpp                   | 520 +++++++++++++++++
  subprojects/libftdi1.wrap                     |   9 +
  subprojects/libmnl.wrap                       |   9 +
  subprojects/libusb.wrap                       |  11 +
@@ -50,13 +50,13 @@ Signed-off-by: Eldin Lee <eldin.lee@quantatw.com>
  .../packagefiles/libftdi1/meson.options       |   6 +
  subprojects/packagefiles/libmnl/meson.build   |  54 ++
  subprojects/packagefiles/libmnl/meson.options |   6 +
- 15 files changed, 1705 insertions(+), 9 deletions(-)
+ 15 files changed, 1697 insertions(+), 2 deletions(-)
  create mode 100644 ftdi_mdio.cpp
  create mode 100644 ftdi_mdio.hpp
  create mode 100644 mdio.cpp
  create mode 100644 mdio.hpp
- create mode 100644 meta/meta.hpp
- create mode 100644 meta/ventura2.cpp
+ create mode 100644 platforms/meta/platforms.hpp
+ create mode 100644 platforms/meta/ventura2.cpp
  create mode 100644 subprojects/libftdi1.wrap
  create mode 100644 subprojects/libmnl.wrap
  create mode 100644 subprojects/libusb.wrap
@@ -1074,7 +1074,7 @@ index 0000000..15440b7
 +
 +} // namespace mdio
 diff --git a/meson.build b/meson.build
-index f402c48..bd60ef2 100644
+index 2c8d240..cc8afc8 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -10,7 +10,16 @@ gpiodcxx_dep = dependency('libgpiodcxx', default_options: ['bindings=cxx'])
@@ -1096,11 +1096,12 @@ index f402c48..bd60ef2 100644
      'CLI11',
 @@ -22,16 +31,31 @@ i2c_dep = meson.get_compiler('cpp').find_library('i2c')
  platform_srcs = files(
-     'intel/acrp.cpp',
-     'intel/jcrp.cpp',
-+    'meta/ventura2.cpp',
-     'nvidia/gb200.cpp',
-     'nvidia/nvl32.cpp',
+     'platforms/intel/acrp.cpp',
+     'platforms/intel/jcrp.cpp',
++    'platforms/meta/ventura2.cpp',
+     'platforms/nvidia/gb200.cpp',
+     'platforms/nvidia/nvl32.cpp',
+     'platforms/nvidia/vr_nvl.cpp',
  )
 -util_srcs = files('gpio.cpp', 'i2c.cpp', 'utilities.cpp')
 +util_srcs = files(
@@ -1115,7 +1116,6 @@ index f402c48..bd60ef2 100644
      'platform',
      ['platform.cpp'] + platform_srcs + util_srcs,
 -    dependencies: [gpiodcxx_dep, libsystemd_dep, cli11_dep, i2c_dep, sdbusplus],
--    include_directories: ['.', 'nvidia', 'intel'],
 +    dependencies: [
 +        gpiodcxx_dep,
 +        libsystemd_dep,
@@ -1125,15 +1125,34 @@ index f402c48..bd60ef2 100644
 +        libmnl,
 +        libftdi,
 +    ],
-+    include_directories: ['.', 'nvidia', 'intel', 'meta'],
+     include_directories: ['.', 'platforms'],
      install: true,
      install_dir: get_option('libexecdir'),
- )
-diff --git a/meta/meta.hpp b/meta/meta.hpp
+diff --git a/platform.cpp b/platform.cpp
+index 66663cb..a4ce288 100644
+--- a/platform.cpp
++++ b/platform.cpp
+@@ -4,6 +4,7 @@
+ #include "gpio.hpp"
+ #include "i2c.hpp"
+ #include "intel/platforms.hpp"
++#include "meta/platforms.hpp"
+ #include "nvidia/platforms.hpp"
+ #include "utilities.hpp"
+ 
+@@ -23,6 +24,7 @@ constexpr auto init_functions =
+     std::to_array<std::pair<std::string_view, int (*)()>>(
+         {{"intel-acrp", intel::init_acrp},
+          {"intel-jcrp", intel::init_jcrp},
++         {"meta-ventura2", meta::init_ventura2},
+          {"nvidia-gb200", nvidia::init_gb200_base},
+          {"nvidia-gb200-with-p2020", nvidia::init_gb200_with_p2020},
+          {"nvidia-nvl32", nvidia::init_nvl32},
+diff --git a/platforms/meta/platforms.hpp b/platforms/meta/platforms.hpp
 new file mode 100644
 index 0000000..a943178
 --- /dev/null
-+++ b/meta/meta.hpp
++++ b/platforms/meta/platforms.hpp
 @@ -0,0 +1,9 @@
 +// SPDX-License-Identifier: Apache-2.0
 +// SPDX-FileCopyrightText: Copyright OpenBMC Authors
@@ -1144,11 +1163,11 @@ index 0000000..a943178
 +{
 +int init_ventura2();
 +} // namespace meta
-diff --git a/meta/ventura2.cpp b/meta/ventura2.cpp
+diff --git a/platforms/meta/ventura2.cpp b/platforms/meta/ventura2.cpp
 new file mode 100644
 index 0000000..88ad83d
 --- /dev/null
-+++ b/meta/ventura2.cpp
++++ b/platforms/meta/ventura2.cpp
 @@ -0,0 +1,520 @@
 +// SPDX-License-Identifier: Apache-2.0
 +// SPDX-FileCopyrightText: Copyright OpenBMC Authors
@@ -1670,39 +1689,6 @@ index 0000000..88ad83d
 +    return EXIT_SUCCESS;
 +}
 +} // namespace meta
-diff --git a/platform.cpp b/platform.cpp
-index a90e209..9cc5271 100644
---- a/platform.cpp
-+++ b/platform.cpp
-@@ -4,6 +4,7 @@
- #include "gpio.hpp"
- #include "i2c.hpp"
- #include "intel.hpp"
-+#include "meta.hpp"
- #include "nvidia.hpp"
- #include "utilities.hpp"
- 
-@@ -19,12 +20,14 @@
- #include <string_view>
- #include <utility>
- 
--constexpr std::array<std::pair<std::string_view, int (*)()>, 5> init_functions{
--    {{"intel-acrp", intel::init_acrp},
--     {"intel-jcrp", intel::init_jcrp},
--     {"nvidia-gb200", nvidia::init_gb200_base},
--     {"nvidia-gb200-with-p2020", nvidia::init_gb200_with_p2020},
--     {"nvidia-nvl32", nvidia::init_nvl32}}};
-+constexpr std::array<std::pair<std::string_view, int (*)()>, 6> init_functions{{
-+    {"intel-acrp", intel::init_acrp},
-+    {"intel-jcrp", intel::init_jcrp},
-+    {"nvidia-gb200", nvidia::init_gb200_base},
-+    {"nvidia-gb200-with-p2020", nvidia::init_gb200_with_p2020},
-+    {"nvidia-nvl32", nvidia::init_nvl32},
-+    {"meta-ventura2", meta::init_ventura2},
-+}};
- 
- int main(int argc, char** argv)
- {
 diff --git a/subprojects/libftdi1.wrap b/subprojects/libftdi1.wrap
 new file mode 100644
 index 0000000..50fab9f
@@ -1902,5 +1888,5 @@ index 0000000..218736c
 +    description: 'Unused parent project option',
 +)
 -- 
-2.34.1
+2.53.0-Meta
 

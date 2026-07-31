@@ -13,7 +13,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 DEPENDS:append = " update-rc.d-native"
 
-DEPENDS += "glog libmisc-utils nlohmann-json cli11 python3-jsonschema-native"
+DEPENDS += "glog libmisc-utils nlohmann-json cli11 python3-jsonschema-native systemd"
 RDEPENDS:${PN} = "glog libmisc-utils python3-core bash"
 
 def get_profile_flag(d):

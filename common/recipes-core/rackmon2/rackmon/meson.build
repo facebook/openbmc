@@ -21,10 +21,10 @@ common = files(
     'UARTDevice.cpp',
     'InterfaceScanner.cpp',
     'ModbusDeviceInventory.cpp',
+    'UnixSock.cpp',
 )
 svc_common = common + files(
     'Rackmon.cpp',
-    'UnixSock.cpp',
 )
 srcs = svc_common + files('RackmonSvcUnix.cpp')
 test_srcs = svc_common + files(
@@ -94,7 +94,7 @@ rackmon_cli_exe = executable(
 modbus_util_exe = executable(
     'modbus-util',
     common + files('ModbusUtil.cpp'),
-    dependencies: deps,
+    dependencies: deps + [cc.find_library('systemd')],
     install: true,
     install_dir: 'local/bin',
 )

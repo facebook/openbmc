@@ -1,4 +1,4 @@
-From 80b78e4ac7920f47f07fbc82be32874e1ef5cd12 Mon Sep 17 00:00:00 2001
+From 0559e3f9252fd3900a47292b5a68991c2b494ad1 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Mon, 13 Jul 2026 14:10:18 -0700
 Subject: [PATCH] rtu: control port monitoring over D-Bus
@@ -26,7 +26,7 @@ Change-Id: Ic79128be4c2dff1e63281ad1e2bdf4c4f45f3cc0
  4 files changed, 106 insertions(+), 1 deletion(-)
 
 diff --git a/rtu/device_manager.cpp b/rtu/device_manager.cpp
-index d493e75..288143e 100644
+index 70d5678..087854a 100644
 --- a/rtu/device_manager.cpp
 +++ b/rtu/device_manager.cpp
 @@ -7,6 +7,7 @@
@@ -37,7 +37,7 @@ index d493e75..288143e 100644
  #include <xyz/openbmc_project/Inventory/Item/client.hpp>
  #include <xyz/openbmc_project/Metric/Value/client.hpp>
  #include <xyz/openbmc_project/Sensor/Value/client.hpp>
-@@ -337,6 +338,8 @@ auto main() -> int
+@@ -355,6 +356,8 @@ auto main() -> int
      using MetricIntf = sdbusplus::client::xyz::openbmc_project::metric::Value<>;
      using SoftwareIntf =
          sdbusplus::client::xyz::openbmc_project::software::Version<>;
@@ -46,7 +46,7 @@ index d493e75..288143e 100644
      sdbusplus::server::manager_t sensorManager{
          ctx, SensorIntf::namespace_path::value};
      sdbusplus::server::manager_t metricManager{
-@@ -345,6 +348,8 @@ auto main() -> int
+@@ -363,6 +366,8 @@ auto main() -> int
          ctx, InventoryIntf::namespace_path};
      sdbusplus::server::manager_t softwareManager{ctx,
                                                   SoftwareIntf::namespace_path};
@@ -56,7 +56,7 @@ index d493e75..288143e 100644
      info("Creating Modbus device manager");
      phosphor::modbus::rtu::DeviceManager deviceManager{ctx};
 diff --git a/rtu/port/base_port.cpp b/rtu/port/base_port.cpp
-index ab5502e..5591747 100644
+index ab5502e..98cd865 100644
 --- a/rtu/port/base_port.cpp
 +++ b/rtu/port/base_port.cpp
 @@ -7,18 +7,35 @@

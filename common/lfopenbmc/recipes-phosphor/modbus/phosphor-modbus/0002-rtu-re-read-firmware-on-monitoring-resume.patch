@@ -1,4 +1,4 @@
-From 688020d213fca6c4b7d51e7dd6a270868e602e55 Mon Sep 17 00:00:00 2001
+From a24721726aa6bbf4f2639e14a668d1e78c134931 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Wed, 15 Jul 2026 11:57:21 -0700
 Subject: [PATCH] rtu: re-read firmware on monitoring resume
@@ -26,10 +26,10 @@ Change-Id: I7b97967913a06ffdc672aa7872af50bd370f0ec4
  6 files changed, 79 insertions(+), 1 deletion(-)
 
 diff --git a/rtu/device/base_device.hpp b/rtu/device/base_device.hpp
-index 285baa3..fc6a8e1 100644
+index 88c14dc..6be5353 100644
 --- a/rtu/device/base_device.hpp
 +++ b/rtu/device/base_device.hpp
-@@ -96,6 +96,16 @@ class BaseDevice
+@@ -101,6 +101,16 @@ class BaseDevice
          stopped = false;
      }
  
@@ -47,7 +47,7 @@ index 285baa3..fc6a8e1 100644
      // Pre-computed pairing of register config and its corresponding sensor,
      // built at construction to avoid map lookups on every poll cycle.
 diff --git a/rtu/device_manager.cpp b/rtu/device_manager.cpp
-index 288143e..751c167 100644
+index 087854a..26eb12e 100644
 --- a/rtu/device_manager.cpp
 +++ b/rtu/device_manager.cpp
 @@ -106,7 +106,11 @@ auto DeviceManager::processPortAdded(const sdbusplus::object_path& objectPath,
@@ -63,7 +63,7 @@ index 288143e..751c167 100644
      }
      catch (const std::exception& e)
      {
-@@ -269,6 +273,14 @@ auto DeviceManager::processDeviceAdded(const DeviceFactoryConfigIntf& config)
+@@ -287,6 +291,14 @@ auto DeviceManager::processDeviceAdded(const DeviceFactoryConfigIntf& config)
      }
  }
  
@@ -79,10 +79,10 @@ index 288143e..751c167 100644
  {
      while (!ctx.stop_requested())
 diff --git a/rtu/device_manager.hpp b/rtu/device_manager.hpp
-index 1f9b1ab..97f151a 100644
+index 55efc99..b2ce6d1 100644
 --- a/rtu/device_manager.hpp
 +++ b/rtu/device_manager.hpp
-@@ -92,6 +92,10 @@ class DeviceManager
+@@ -97,6 +97,10 @@ class DeviceManager
       */
      auto cleanupStoppedDevices() -> sdbusplus::async::task<>;
  
@@ -94,7 +94,7 @@ index 1f9b1ab..97f151a 100644
      entity_manager::EntityManagerInterface entityManager;
      EventIntf::Events events;
 diff --git a/rtu/port/base_port.cpp b/rtu/port/base_port.cpp
-index 5591747..706d8c2 100644
+index 98cd865..458c7b2 100644
 --- a/rtu/port/base_port.cpp
 +++ b/rtu/port/base_port.cpp
 @@ -85,6 +85,12 @@ auto BasePort::set_property(monitoring_enabled_t, bool enabled) -> bool

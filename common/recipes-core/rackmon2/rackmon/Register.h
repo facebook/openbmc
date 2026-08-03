@@ -308,12 +308,23 @@ struct TimeSyncConfig {
 };
 void from_json(const nlohmann::json& j, TimeSyncConfig& m);
 
+struct ProbeRegister {
+  uint16_t registerAddress;
+  std::optional<std::vector<uint16_t>> values;
+};
+void from_json(const nlohmann::json& j, ProbeRegister& m);
+
+struct Probe {
+ public:
+  std::vector<ProbeRegister> probeRegisters;
+};
+
 // Container of an entire register map. This is the memory
 // representation of each JSON register map descriptors
 struct RegisterMap {
   AddrRange applicableAddresses;
   std::string name;
-  uint16_t probeRegister;
+  Probe probe;
   uint32_t baudrate;
   size_t maxRegisterSpanLength;
   Parity parity;

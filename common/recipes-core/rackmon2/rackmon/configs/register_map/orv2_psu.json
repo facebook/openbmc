@@ -6,7 +6,11 @@
             191
         ]
     ],
-    "probe_register": 104,
+    "probe": [
+      {
+        "register": 104
+      }
+    ],
     "baudrate": 19200,
     "time_sync": {
         "address": 298,

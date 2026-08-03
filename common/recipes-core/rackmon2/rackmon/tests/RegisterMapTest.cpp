@@ -38,7 +38,7 @@ TEST(RegisterMapTest, JSONCoversion) {
   std::string inp = R"({
     "name": "orv2_psu",
     "address_range": [[160, 191]],
-    "probe_register": 104,
+    "probe": [{"register": 104}],
     "baudrate": 19200,
     "max_span_length": 4,
     "registers": [
@@ -67,7 +67,7 @@ TEST(RegisterMapTest, JSONCoversion) {
           [](auto const& ent) {
             return (ent.first == 160 && ent.second == 191);
           }));
-  EXPECT_EQ(rmap.probeRegister, 104);
+  EXPECT_EQ(rmap.probe.probeRegisters[0].registerAddress, 104);
   EXPECT_EQ(rmap.baudrate, 19200);
   EXPECT_EQ(rmap.name, "orv2_psu");
   EXPECT_EQ(rmap.maxRegisterSpanLength, 4);
@@ -92,7 +92,7 @@ TEST(RegisterMapTest, JSONCoversionBaudrate) {
   std::string inp = R"({
     "name": "orv2_psu",
     "address_range": [[160, 191]],
-    "probe_register": 104,
+    "probe": [{"register": 104}],
     "baudrate": 19200,
     "registers": [
       {
@@ -115,7 +115,7 @@ TEST(RegisterMapTest, JSONCoversionBaudrate) {
   EXPECT_EQ(
       rmap.maxRegisterSpanLength,
       RegisterStoreSpan::kDefaultMaxRegisterSpanLength);
-  EXPECT_EQ(rmap.probeRegister, 104);
+  EXPECT_EQ(rmap.probe.probeRegisters[0].registerAddress, 104);
   EXPECT_EQ(rmap.baudrate, 19200);
   EXPECT_EQ(rmap.name, "orv2_psu");
   EXPECT_EQ(rmap.registerDescriptors.size(), 1);
@@ -126,11 +126,11 @@ TEST(RegisterMapTest, JSONConversionCurrentTime) {
   std::string inp = R"({
     "name": "orv2_psu",
     "address_range": [[160, 191]],
-    "probe_register": 104,
     "time_sync": {
       "address": 42,
       "interval": 32
     },
+    "probe": [{"register": 104}],
     "baudrate": 19200,
     "registers": [
       {
@@ -162,7 +162,7 @@ class RegisterMapDatabaseTest : public ::testing::Test {
     json1 = R"({
         "name": "orv2_psu",
         "address_range": [[160, 191], [10, 10]],
-        "probe_register": 104,
+        "probe": [{"register": 104}],
         "baudrate": 19200,
         "registers": [
           {
@@ -177,7 +177,7 @@ class RegisterMapDatabaseTest : public ::testing::Test {
     json2 = R"({
         "name": "orv3_psu",
         "address_range": [[110, 140], [10, 10]],
-        "probe_register": 104,
+        "probe": [{"register": 104}],
         "baudrate": 115200,
         "registers": [
           {

@@ -4,7 +4,7 @@
   "title": "Rackmon Register Map Configuration",
   "description": "Schema to test the Register Map JSON configuration",
   "type": "object",
-  "required": ["name", "address_range", "probe_register", "baudrate", "registers"],
+  "required": ["name", "address_range", "probe", "baudrate", "registers"],
   "additionalProperties": false,
   
   "properties": {
@@ -26,10 +26,32 @@
         }
       }
     },
-    "probe_register": {
-      "type": "integer",
-      "minimum": 0,
-      "maximum": 65535
+    "probe": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["register"],
+        "properties": {
+          "register": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          },
+          "value": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 65535,
+            "items": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 65535
+            }
+          }
+        }
+      }
     },
     "time_sync": {
       "type": "object",

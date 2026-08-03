@@ -43,7 +43,7 @@ class ModbusDeviceTest : public ::testing::Test {
   std::string regmap_s = R"({
     "name": "orv3_psu",
     "address_range": [[110, 140]],
-    "probe_register": 104,
+    "probe": [{"register": 104}],
     "baudrate": 19200,
     "registers": [
       {
@@ -636,7 +636,7 @@ static nlohmann::json getPlanRegmap() {
   std::string regmap_s = R"({
     "name": "orv3_psu",
     "address_range": [[5, 5]],
-    "probe_register": 0,
+    "probe": [{"register": 0}],
     "baudrate": 19200,
     "registers": [
       {
@@ -924,7 +924,7 @@ static nlohmann::json getTimeSyncRegmap() {
   std::string regmap_s = R"({
     "name": "orv3_psu",
     "address_range": [[5, 5]],
-    "probe_register": 0,
+    "probe": [{"register": 0}],
     "baudrate": 19200,
     "time_sync": {
       "address": 4,

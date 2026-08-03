@@ -492,9 +492,20 @@ void from_json(const json& j, TimeSyncConfig& m) {
   j.at("interval").get_to(m.period);
 }
 
+void from_json(const nlohmann::json& j, ProbeRegister& m) {
+  j.at("register").get_to(m.registerAddress);
+  if (j.contains("value")) {
+    std::vector<uint16_t> values;
+    j.at("value").get_to(values);
+    m.values = values;
+  } else {
+    m.values = std::nullopt;
+  }
+}
+
 void from_json(const json& j, RegisterMap& m) {
   j.at("address_range").get_to(m.applicableAddresses);
-  j.at("probe_register").get_to(m.probeRegister);
+  j.at("probe").get_to(m.probe.probeRegisters);
   j.at("name").get_to(m.name);
   m.parity = j.value("parity", Parity::EVEN);
   j.at("baudrate").get_to(m.baudrate);
@@ -511,7 +522,6 @@ void from_json(const json& j, RegisterMap& m) {
 }
 void to_json(json& j, const RegisterMap& m) {
   j["address_range"] = m.applicableAddresses;
-  j["probe_register"] = m.probeRegister;
   j["name"] = m.name;
   j["baudrate"] = m.baudrate;
   j["registers"] = {};

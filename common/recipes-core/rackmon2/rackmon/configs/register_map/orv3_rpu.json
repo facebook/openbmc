@@ -6,7 +6,11 @@
             12
         ]
     ],
-    "probe_register": 36864,
+    "probe": [
+      {
+        "register": 36864
+      }
+    ],
     "baudrate": 19200,
     "parity": "NONE",
     "registers": [

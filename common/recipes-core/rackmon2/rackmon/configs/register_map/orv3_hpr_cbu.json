@@ -34,7 +34,15 @@
             168
         ]
     ],
-    "probe_register": 0,
+    "probe": [
+      {
+        "register": 4096,
+        "value": [12289]
+      },
+      {
+        "register": 0
+      }
+    ],
     "baudrate": 115200,
     "time_sync": {
         "address": 101,

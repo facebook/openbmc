@@ -6,7 +6,15 @@
             27
         ]
     ],
-    "probe_register": 0,
+    "probe": [
+      {
+        "register": 4096,
+        "value": [36865, 36866]
+      },
+      {
+        "register": 0
+      }
+    ],
     "baudrate": 115200,
     "time_sync": {
         "address": 80,

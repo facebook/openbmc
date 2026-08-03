@@ -36,6 +36,7 @@ PLATFORMS = [
     "morgan800cc",
     "northdome",
     "rainiera6",
+    "rainiera7",
     "sanmiguel",
     "santabarbara",
     "tahan",

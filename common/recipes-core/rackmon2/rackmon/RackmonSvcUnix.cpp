@@ -170,6 +170,10 @@ void RackmonUNIXSocketService::executeJSONCommand(const json& req, json& resp) {
     rackmond_.start();
   } else if (cmd == "rescan") {
     rackmond_.forceScan();
+  } else if (cmd == "getInterface") {
+    auto [port, devAddress] =
+        getVerifiedAddress(req.at("devAddress"), uniqueDevAddress);
+    resp["data"] = rackmond_.getInterfaceName(devAddress, port);
   } else if (cmd == "getMonitorData") {
     ModbusDataFilter filter{};
     if (req.contains("filter")) {

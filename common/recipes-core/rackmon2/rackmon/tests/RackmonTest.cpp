@@ -325,6 +325,13 @@ TEST_F(RackmonTest, BasicScanFoundOne) {
   records[0].data.resize(2);
   EXPECT_THROW(
       mon.readFileRecord(100, std::nullopt, records), std::out_of_range);
+  EXPECT_THROW(mon.getInterfaceName(100, std::nullopt), std::out_of_range);
+
+  // A known address resolves to the interface it was found on. Mock3Modbus
+  // has initialize() mocked out, so its device path is never populated and
+  // the name comes back empty.
+  EXPECT_EQ(mon.getInterfaceName(161, std::nullopt), "");
+  EXPECT_EQ(mon.getInterfaceName(161, 123), "");
 
   // Use a known handled response.
   ReadHoldingRegistersReq req(161, 0, 8);

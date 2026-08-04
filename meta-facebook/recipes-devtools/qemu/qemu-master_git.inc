@@ -75,6 +75,7 @@ SRC_URI += " \
            file://0533-hw-ssi-aspeed_smc-don-t-bus-fault-on-flash-window-ac.patch \
            file://0534-aspeed-Add-sanmiguel-bmc.patch \
            file://0535-hw-i2c-aspeed-mask-I2CS-slave-address-to-7-bits.patch \
+           file://0536-add-usbredir-subproject.patch \
            "
 
 SRC_URI += " \
@@ -148,6 +149,7 @@ SRC_URI += " \
     git://gitlab.freedesktop.org/slirp/libslirp.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/slirp;name=slirp \
     git://gitlab.com/qemu-project/libvfio-user.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/libvfio-user;name=libvfio-user \
     git://gitlab.com/libblkio/libblkio.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/libblkio;name=libblkio \
+    git://gitlab.freedesktop.org/spice/usbredir.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/usbredir;name=usbredir \
     "
 
 # Pin subproject revisions (from .wrap files)
@@ -158,8 +160,10 @@ SRCREV_dtc = "b6910bec11614980a21e46fbccc35934b671bd81"
 SRCREV_slirp = "26be815b86e8d49add8c9a8b320239b9594ff03d"
 SRCREV_libvfio-user = "4d9f663450fa80ff375612dbbafe073700e3d3d8"
 SRCREV_libblkio = "f84cc963a444e4cb34813b2dcfc5bf8526947dc0"
+# usbredir v0.13.0 (pins libusbredirparser for QEMU's usb-redir device)
+SRCREV_usbredir = "5fc0e1c43194d948545941d408f4c10d084eb6ed"
 
-SRCREV_FORMAT = "default_keycodemapdb_berkeley-softfloat-3_berkeley-testfloat-3_dtc_slirp_libvfio-user_libblkio"
+SRCREV_FORMAT = "default_keycodemapdb_berkeley-softfloat-3_berkeley-testfloat-3_dtc_slirp_libvfio-user_libblkio_usbredir"
 
 # Disable shallow git clone - QEMU repo requires full clone for checkout
 BB_GIT_SHALLOW = "0"

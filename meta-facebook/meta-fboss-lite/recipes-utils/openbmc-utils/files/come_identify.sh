@@ -29,15 +29,18 @@ netlake_type=$?
 if [ "$netlake_type" -eq 1 ]; then
     # Netlake 2.0
     echo "Loading APML modules for Netlake 2.0"
-    i2c_device_add 5 0x4c sbtsi
-    i2c_device_add 5 0x3c sbrmi
-    modprobe apml_sbrmi 
+    modprobe apml_common
+    modprobe apml_sbrmi
     modprobe apml_sbtsi
-
+    modprobe apml_alertl
 elif [ "$netlake_type" -eq 0 ]; then
     # Netlake 1.0
     echo "No additional modules needed for Netlake 1.0"
-
+    # Unload APML modules for Netlake 1.0 as DTS has been configured to probe and load them automatically.
+    modprobe -r apml_alertl
+    modprobe -r apml_sbrmi
+    modprobe -r apml_sbtsi
+    modprobe -r apml_common
 else
     echo "Error: Failed to identify Netlake version. Exit code: $netlake_type" >&2
     exit 1

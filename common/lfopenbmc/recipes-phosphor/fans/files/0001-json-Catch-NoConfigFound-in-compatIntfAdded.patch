@@ -1,0 +1,42 @@
+From a31268635b446a0d6a413a21604f8aba1f7caf56 Mon Sep 17 00:00:00 2001
+From: Freddie Jheng <Freddie.Jheng@quantatw.com>
+Date: Mon, 3 Aug 2026 14:08:45 +0800
+Subject: [PATCH] json: Catch NoConfigFound in compatIntfAdded
+
+compatIntfAdded() calls _loadFunc() without a try/catch, unlike the
+constructor. If no config file exists for an application, each
+interfacesAdded signal for a compatible object throws NoConfigFound
+out of compatIntfAdded() uncaught, crashing the process.
+
+Catch it the same way the constructor does and wait for the next
+signal or a SIGHUP to retry.
+
+Change-Id: I1087bd9c4a63e952582da82bcc907bd446fa870d
+Signed-off-by: Freddie Jheng <Freddie.Jheng@quantatw.com>
+---
+ json_config.hpp | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/json_config.hpp b/json_config.hpp
+index 807cc33..7d7bdfc 100644
+--- a/json_config.hpp
++++ b/json_config.hpp
+@@ -218,7 +218,14 @@ class JsonConfig
+         // Only one dbus object with the compatible interface is used at a time
+         _confCompatValues =
+             std::get<std::vector<std::string>>(props.at(confCompatProp));
+-        _loadFunc();
++        try
++        {
++            _loadFunc();
++        }
++        catch (const NoConfigFound&)
++        {
++            // Wait for another compatible interfacesAdded signal
++        }
+     }
+ 
+     /**
+-- 
+2.34.1
+

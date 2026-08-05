@@ -1,4 +1,4 @@
-From 0f3d1af03137e3063d32445dbec52551a4154974 Mon Sep 17 00:00:00 2001
+From a568b321f1ff06698ea512766c28387ad57c3660 Mon Sep 17 00:00:00 2001
 From: Neil Cheng <Neil.Cheng@quantatw.com>
 Date: Tue, 23 Jun 2026 16:16:19 +0800
 Subject: [PATCH] arm64: dts: aspeed: rainiera7: configure tach channels for
@@ -15,7 +15,7 @@ Signed-off-by: Neil Cheng <Neil.Cheng@quantatw.com>
  1 file changed, 10 insertions(+)
 
 diff --git a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts
-index 2adf739cf..4f68f29b7 100644
+index 2adf739cf648..4f68f29b7fc6 100644
 --- a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts
 @@ -507,6 +507,16 @@ psu@5c {
@@ -35,3 +35,6 @@ index 2adf739cf..4f68f29b7 100644
  	};
  
  	/* I2C MUX for PWRPIC #1, #2, #11, #12 */
+-- 
+2.53.0-Meta
+

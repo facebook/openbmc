@@ -1,4 +1,4 @@
-From b523a1c4b30fde4017f1d97bd077d81b0ff72d5b Mon Sep 17 00:00:00 2001
+From a87ae6a827740d01aa396933ab53a21b647f426f Mon Sep 17 00:00:00 2001
 From: Christopher Meis <christopher.meis@9elements.com>
 Date: Wed, 17 Sep 2025 09:07:06 +0200
 Subject: [PATCH] Multi-host/HW-inventory: add processor subtree
@@ -179,7 +179,7 @@ Signed-off-by: Christopher Meis <christopher.meis@9elements.com>
  2 files changed, 91 insertions(+), 49 deletions(-)
 
 diff --git a/redfish-core/lib/processor.hpp b/redfish-core/lib/processor.hpp
-index b3e36a78..876c385a 100644
+index f0dd4aa0..60e167e3 100644
 --- a/redfish-core/lib/processor.hpp
 +++ b/redfish-core/lib/processor.hpp
 @@ -20,6 +20,7 @@
@@ -274,10 +274,10 @@ index b3e36a78..876c385a 100644
 -                            BMCWEB_REDFISH_SYSTEM_URI_NAME, processorId);
 +    asyncResp->res.jsonValue["@odata.id"] = boost::urls::format(
 +        "/redfish/v1/Systems/{}/Processors/{}", systemName, processorId);
- 
-     for (const auto& [serviceName, interfaceList] : serviceMap)
-     {
-@@ -1139,23 +1159,20 @@ inline void handleProcessorGet(
+     asyncResp->res.jsonValue["SubProcessors"]["@odata.id"] =
+         boost::urls::format(
+             "/redfish/v1/Systems/{}/Processors/{}/SubProcessors",
+@@ -1143,23 +1163,20 @@ inline void handleProcessorGet(
      {
          return;
      }
@@ -311,7 +311,7 @@ index b3e36a78..876c385a 100644
  }
  
  inline void doPatchProcessor(
-@@ -1229,11 +1246,34 @@ inline void handleProcessorPatch(
+@@ -1233,11 +1250,34 @@ inline void handleProcessorPatch(
      // Check for 404 and find matching D-Bus object, then run
      // property patch handlers if that all succeeds.
      getProcessorObject(
@@ -347,7 +347,7 @@ index b3e36a78..876c385a 100644
  inline void handleProcessorCollectionGet(
      App& app, const crow::Request& req,
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
-@@ -1243,32 +1283,34 @@ inline void handleProcessorCollectionGet(
+@@ -1247,32 +1287,34 @@ inline void handleProcessorCollectionGet(
      {
          return;
      }

@@ -1,5 +1,5 @@
-From 8e3779667840de014fb42a332154ac9358c84aed Mon Sep 17 00:00:00 2001
-From: "Alan Tsai" <Alan-Tsai@quantatw.com>
+From d08a69b5b9e4b61a34ee4745b5ea10050494f3b8 Mon Sep 17 00:00:00 2001
+From: Alan Tsai <Alan-Tsai@quantatw.com>
 Date: Fri, 31 Jul 2026 10:18:42 +0800
 Subject: [PATCH] i3c: add aspeed mipi-i3c-hci driver
 
@@ -57,7 +57,7 @@ Porting mipi-i3c-hci driver from AspeedTech-BMC linux.
  create mode 100644 include/uapi/linux/i3c/i3cdev.h
 
 diff --git a/drivers/i3c/Kconfig b/drivers/i3c/Kconfig
-index 6b6a1f29b..2497d32a1 100644
+index 6b6a1f29bd33..2497d32a1be8 100644
 --- a/drivers/i3c/Kconfig
 +++ b/drivers/i3c/Kconfig
 @@ -20,6 +20,28 @@ menuconfig I3C
@@ -116,7 +116,7 @@ index 6b6a1f29b..2497d32a1 100644
 +	  Select which target port is used for the identification.
  endif # I3C
 diff --git a/drivers/i3c/Makefile b/drivers/i3c/Makefile
-index ca298faae..3e7f0f1fb 100644
+index ca298faaee9a..3e7f0f1fb24d 100644
 --- a/drivers/i3c/Makefile
 +++ b/drivers/i3c/Makefile
 @@ -1,5 +1,8 @@
@@ -129,7 +129,7 @@ index ca298faae..3e7f0f1fb 100644
  obj-$(CONFIG_I3C_HUB)	+= i3c-hub.o
 +obj-$(CONFIG_I3C_MUX_IMX3102) 	+= i3c-mux-imx3102.o
 diff --git a/drivers/i3c/device.c b/drivers/i3c/device.c
-index 2763bf8f5..f204b3c4c 100644
+index 2763bf8f58af..f204b3c4c155 100644
 --- a/drivers/i3c/device.c
 +++ b/drivers/i3c/device.c
 @@ -47,20 +47,125 @@ int i3c_device_do_priv_xfers(struct i3c_device *dev,
@@ -660,7 +660,7 @@ index 2763bf8f5..f204b3c4c 100644
 +}
 +EXPORT_SYMBOL_GPL(i3c_device_dbgopcode_rd_ccc);
 diff --git a/drivers/i3c/i3c-hub.c b/drivers/i3c/i3c-hub.c
-index b8c1422a6..748664ea3 100644
+index b8c1422a6412..748664ea3e25 100644
 --- a/drivers/i3c/i3c-hub.c
 +++ b/drivers/i3c/i3c-hub.c
 @@ -1,6 +1,15 @@
@@ -4108,7 +4108,7 @@ index b8c1422a6..748664ea3 100644
  static struct i3c_driver i3c_hub = {
 diff --git a/drivers/i3c/i3c-mux-imx3102.c b/drivers/i3c/i3c-mux-imx3102.c
 new file mode 100644
-index 000000000..3204ac025
+index 000000000000..3204ac02539b
 --- /dev/null
 +++ b/drivers/i3c/i3c-mux-imx3102.c
 @@ -0,0 +1,227 @@
@@ -4341,7 +4341,7 @@ index 000000000..3204ac025
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/i3c/i3cdev.c b/drivers/i3c/i3cdev.c
 new file mode 100644
-index 000000000..0b2d32686
+index 000000000000..0b2d32686a76
 --- /dev/null
 +++ b/drivers/i3c/i3cdev.c
 @@ -0,0 +1,428 @@
@@ -4774,7 +4774,7 @@ index 000000000..0b2d32686
 +module_init(i3cdev_init);
 +module_exit(i3cdev_exit);
 diff --git a/drivers/i3c/internals.h b/drivers/i3c/internals.h
-index a0c76adf7..d731c633c 100644
+index a0c76adf7ea3..d731c633ce38 100644
 --- a/drivers/i3c/internals.h
 +++ b/drivers/i3c/internals.h
 @@ -10,18 +10,20 @@
@@ -4838,7 +4838,7 @@ index a0c76adf7..d731c633c 100644
 +			     struct i3c_device_info *info, u16 write_len);
  #endif /* I3C_INTERNAL_H */
 diff --git a/drivers/i3c/master.c b/drivers/i3c/master.c
-index 0fe7d2228..3946c2792 100644
+index 0fe7d2228e4a..3946c2792afc 100644
 --- a/drivers/i3c/master.c
 +++ b/drivers/i3c/master.c
 @@ -18,6 +18,7 @@
@@ -6780,7 +6780,7 @@ index 0fe7d2228..3946c2792 100644
  {
  	int res;
 diff --git a/drivers/i3c/master/adi-i3c-master.c b/drivers/i3c/master/adi-i3c-master.c
-index d329faf4b..82ac0b3d0 100644
+index d329faf4b3f9..82ac0b3d057a 100644
 --- a/drivers/i3c/master/adi-i3c-master.c
 +++ b/drivers/i3c/master/adi-i3c-master.c
 @@ -362,7 +362,7 @@ static int adi_i3c_master_send_ccc_cmd(struct i3c_master_controller *m,
@@ -6793,7 +6793,7 @@ index d329faf4b..82ac0b3d0 100644
  
  static int adi_i3c_master_priv_xfers(struct i3c_dev_desc *dev,
 diff --git a/drivers/i3c/master/ast2600-i3c-master.c b/drivers/i3c/master/ast2600-i3c-master.c
-index 1d003eacf..7dc6b2b4f 100644
+index 1d003eacf83c..7dc6b2b4fb99 100644
 --- a/drivers/i3c/master/ast2600-i3c-master.c
 +++ b/drivers/i3c/master/ast2600-i3c-master.c
 @@ -11,6 +11,7 @@
@@ -7357,7 +7357,7 @@ index 1d003eacf..7dc6b2b4f 100644
  }
  
 diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
-index c72119111..94c3210d2 100644
+index c72119111453..94c3210d2bdd 100644
 --- a/drivers/i3c/master/dw-i3c-master.c
 +++ b/drivers/i3c/master/dw-i3c-master.c
 @@ -7,12 +7,12 @@
@@ -8999,7 +8999,7 @@ index c72119111..94c3210d2 100644
  	/* Disable interrupts */
  	writel((u32)~INTR_ALL, master->regs + INTR_STATUS_EN);
 diff --git a/drivers/i3c/master/dw-i3c-master.h b/drivers/i3c/master/dw-i3c-master.h
-index 3577a2bf7..14490d56c 100644
+index 3577a2bf7b32..14490d56cb3c 100644
 --- a/drivers/i3c/master/dw-i3c-master.h
 +++ b/drivers/i3c/master/dw-i3c-master.h
 @@ -10,7 +10,7 @@
@@ -9082,7 +9082,7 @@ index 3577a2bf7..14490d56c 100644
  
  extern int dw_i3c_common_probe(struct dw_i3c_master *master,
 diff --git a/drivers/i3c/master/i3c-master-cdns.c b/drivers/i3c/master/i3c-master-cdns.c
-index 46a24b860..97b151564 100644
+index 46a24b8607df..97b151564d3d 100644
 --- a/drivers/i3c/master/i3c-master-cdns.c
 +++ b/drivers/i3c/master/i3c-master-cdns.c
 @@ -398,6 +398,7 @@ struct cdns_i3c_data {
@@ -9135,7 +9135,7 @@ index 46a24b860..97b151564 100644
  }
  
 diff --git a/drivers/i3c/master/mipi-i3c-hci/cmd.h b/drivers/i3c/master/mipi-i3c-hci/cmd.h
-index b1bf87daa..086c29e44 100644
+index b1bf87daa651..086c29e44dae 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/cmd.h
 +++ b/drivers/i3c/master/mipi-i3c-hci/cmd.h
 @@ -17,6 +17,14 @@
@@ -9262,7 +9262,7 @@ index b1bf87daa..086c29e44 100644
  };
  
 diff --git a/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c b/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c
-index efb7a1f92..d864bea31 100644
+index efb7a1f92641..d864bea316d6 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c
 @@ -9,6 +9,7 @@
@@ -9595,7 +9595,7 @@ index efb7a1f92..d864bea31 100644
  	.perform_daa		= hci_cmd_v1_daa,
  };
 diff --git a/drivers/i3c/master/mipi-i3c-hci/cmd_v2.c b/drivers/i3c/master/mipi-i3c-hci/cmd_v2.c
-index 5fc2e4c55..87319a7d0 100644
+index 5fc2e4c55ebb..87319a7d0424 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/cmd_v2.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/cmd_v2.c
 @@ -149,7 +149,8 @@ static void hci_cmd_v2_prep_private_xfer(struct i3c_hci *hci,
@@ -9609,7 +9609,7 @@ index 5fc2e4c55..87319a7d0 100644
  	unsigned int mode = XFERMODE_IDX_I3C_SDR;
  	unsigned int rate = get_i3c_rate_idx(hci);
 diff --git a/drivers/i3c/master/mipi-i3c-hci/core.c b/drivers/i3c/master/mipi-i3c-hci/core.c
-index 75e6610cf..463cde563 100644
+index 1eeab337e5e5..8fa311e4c154 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/core.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/core.c
 @@ -10,17 +10,22 @@
@@ -9851,7 +9851,7 @@ index 75e6610cf..463cde563 100644
  	ret = i3c_master_set_info(m, &info);
  	if (ret)
  		return ret;
-@@ -165,6 +364,54 @@ static void i3c_hci_bus_cleanup(struct i3c_master_controller *m)
+@@ -168,6 +367,54 @@ static void i3c_hci_bus_cleanup(struct i3c_master_controller *m)
  		mipi_i3c_hci_dat_v1.cleanup(hci);
  }
  
@@ -9906,7 +9906,7 @@ index 75e6610cf..463cde563 100644
  void mipi_i3c_hci_resume(struct i3c_hci *hci)
  {
  	reg_set(HC_CONTROL, HC_CONTROL_RESUME);
-@@ -173,7 +420,14 @@ void mipi_i3c_hci_resume(struct i3c_hci *hci)
+@@ -176,7 +423,14 @@ void mipi_i3c_hci_resume(struct i3c_hci *hci)
  /* located here rather than pio.c because needed bits are in core reg space */
  void mipi_i3c_hci_pio_reset(struct i3c_hci *hci)
  {
@@ -9922,7 +9922,7 @@ index 75e6610cf..463cde563 100644
  }
  
  /* located here rather than dct.c because needed bits are in core reg space */
-@@ -182,6 +436,28 @@ void mipi_i3c_hci_dct_index_reset(struct i3c_hci *hci)
+@@ -185,6 +439,28 @@ void mipi_i3c_hci_dct_index_reset(struct i3c_hci *hci)
  	reg_write(DCT_SECTION, FIELD_PREP(DCT_TABLE_INDEX, 0));
  }
  
@@ -9951,7 +9951,7 @@ index 75e6610cf..463cde563 100644
  static int i3c_hci_send_ccc_cmd(struct i3c_master_controller *m,
  				struct i3c_ccc_cmd *ccc)
  {
-@@ -204,8 +480,8 @@ static int i3c_hci_send_ccc_cmd(struct i3c_master_controller *m,
+@@ -207,8 +483,8 @@ static int i3c_hci_send_ccc_cmd(struct i3c_master_controller *m,
  		xfer->data = NULL;
  		xfer->data_len = 0;
  		xfer->rnw = false;
@@ -9962,7 +9962,7 @@ index 75e6610cf..463cde563 100644
  		xfer++;
  	}
  
-@@ -214,7 +490,7 @@ static int i3c_hci_send_ccc_cmd(struct i3c_master_controller *m,
+@@ -217,7 +493,7 @@ static int i3c_hci_send_ccc_cmd(struct i3c_master_controller *m,
  		xfer[i].data_len = ccc->dests[i].payload.len;
  		xfer[i].rnw = ccc->rnw;
  		ret = hci->cmd->prep_ccc(hci, &xfer[i], ccc->dests[i].addr,
@@ -9971,7 +9971,7 @@ index 75e6610cf..463cde563 100644
  		if (ret)
  			goto out;
  		xfer[i].cmd_desc[0] |= CMD_0_ROC;
-@@ -246,6 +522,8 @@ static int i3c_hci_send_ccc_cmd(struct i3c_master_controller *m,
+@@ -249,6 +525,8 @@ static int i3c_hci_send_ccc_cmd(struct i3c_master_controller *m,
  			ccc->err = I3C_ERROR_M2;
  			fallthrough;
  		default:
@@ -9980,7 +9980,7 @@ index 75e6610cf..463cde563 100644
  			ret = -EIO;
  			goto out;
  		}
-@@ -317,6 +595,8 @@ static int i3c_hci_priv_xfers(struct i3c_dev_desc *dev,
+@@ -320,6 +598,8 @@ static int i3c_hci_priv_xfers(struct i3c_dev_desc *dev,
  		if (i3c_xfers[i].rnw)
  			i3c_xfers[i].len = RESP_DATA_LENGTH(xfer[i].response);
  		if (RESP_STATUS(xfer[i].response) != RESP_SUCCESS) {
@@ -9989,7 +9989,7 @@ index 75e6610cf..463cde563 100644
  			ret = -EIO;
  			goto out;
  		}
-@@ -327,6 +607,71 @@ static int i3c_hci_priv_xfers(struct i3c_dev_desc *dev,
+@@ -330,6 +610,71 @@ static int i3c_hci_priv_xfers(struct i3c_dev_desc *dev,
  	return ret;
  }
  
@@ -10061,7 +10061,7 @@ index 75e6610cf..463cde563 100644
  static int i3c_hci_i2c_xfers(struct i2c_dev_desc *dev,
  			     struct i2c_msg *i2c_xfers, int nxfers)
  {
-@@ -343,7 +688,7 @@ static int i3c_hci_i2c_xfers(struct i2c_dev_desc *dev,
+@@ -346,7 +691,7 @@ static int i3c_hci_i2c_xfers(struct i2c_dev_desc *dev,
  		return -ENOMEM;
  
  	for (i = 0; i < nxfers; i++) {
@@ -10070,7 +10070,7 @@ index 75e6610cf..463cde563 100644
  		xfer[i].data_len = i2c_xfers[i].len;
  		xfer[i].rnw = i2c_xfers[i].flags & I2C_M_RD;
  		hci->cmd->prep_i2c_xfer(hci, dev, &xfer[i]);
-@@ -363,12 +708,18 @@ static int i3c_hci_i2c_xfers(struct i2c_dev_desc *dev,
+@@ -366,12 +711,18 @@ static int i3c_hci_i2c_xfers(struct i2c_dev_desc *dev,
  	}
  	for (i = 0; i < nxfers; i++) {
  		if (RESP_STATUS(xfer[i].response) != RESP_SUCCESS) {
@@ -10089,7 +10089,7 @@ index 75e6610cf..463cde563 100644
  	hci_free_xfer(xfer, nxfers);
  	return ret;
  }
-@@ -384,7 +735,12 @@ static int i3c_hci_attach_i3c_dev(struct i3c_dev_desc *dev)
+@@ -387,7 +738,12 @@ static int i3c_hci_attach_i3c_dev(struct i3c_dev_desc *dev)
  	if (!dev_data)
  		return -ENOMEM;
  	if (hci->cmd == &mipi_i3c_hci_cmd_v1) {
@@ -10102,7 +10102,7 @@ index 75e6610cf..463cde563 100644
  		if (ret < 0) {
  			kfree(dev_data);
  			return ret;
-@@ -406,6 +762,9 @@ static int i3c_hci_reattach_i3c_dev(struct i3c_dev_desc *dev, u8 old_dyn_addr)
+@@ -409,6 +765,9 @@ static int i3c_hci_reattach_i3c_dev(struct i3c_dev_desc *dev, u8 old_dyn_addr)
  	if (hci->cmd == &mipi_i3c_hci_cmd_v1)
  		mipi_i3c_hci_dat_v1.set_dynamic_addr(hci, dev_data->dat_idx,
  					     dev->info.dyn_addr);
@@ -10112,7 +10112,7 @@ index 75e6610cf..463cde563 100644
  	return 0;
  }
  
-@@ -433,7 +792,11 @@ static int i3c_hci_attach_i2c_dev(struct i2c_dev_desc *dev)
+@@ -436,7 +795,11 @@ static int i3c_hci_attach_i2c_dev(struct i2c_dev_desc *dev)
  	dev_data = kzalloc(sizeof(*dev_data), GFP_KERNEL);
  	if (!dev_data)
  		return -ENOMEM;
@@ -10125,7 +10125,7 @@ index 75e6610cf..463cde563 100644
  	if (ret < 0) {
  		kfree(dev_data);
  		return ret;
-@@ -465,12 +828,21 @@ static int i3c_hci_request_ibi(struct i3c_dev_desc *dev,
+@@ -468,12 +831,21 @@ static int i3c_hci_request_ibi(struct i3c_dev_desc *dev,
  	struct i3c_master_controller *m = i3c_dev_get_master(dev);
  	struct i3c_hci *hci = to_i3c_hci(m);
  	struct i3c_hci_dev_data *dev_data = i3c_dev_get_master_data(dev);
@@ -10150,7 +10150,7 @@ index 75e6610cf..463cde563 100644
  	return hci->io->request_ibi(hci, dev, req);
  }
  
-@@ -514,8 +886,10 @@ static void i3c_hci_recycle_ibi_slot(struct i3c_dev_desc *dev,
+@@ -517,8 +889,10 @@ static void i3c_hci_recycle_ibi_slot(struct i3c_dev_desc *dev,
  static const struct i3c_master_controller_ops i3c_hci_ops = {
  	.bus_init		= i3c_hci_bus_init,
  	.bus_cleanup		= i3c_hci_bus_cleanup,
@@ -10161,7 +10161,7 @@ index 75e6610cf..463cde563 100644
  	.priv_xfers		= i3c_hci_priv_xfers,
  	.i2c_xfers		= i3c_hci_i2c_xfers,
  	.attach_i3c_dev		= i3c_hci_attach_i3c_dev,
-@@ -528,6 +902,283 @@ static const struct i3c_master_controller_ops i3c_hci_ops = {
+@@ -531,6 +905,283 @@ static const struct i3c_master_controller_ops i3c_hci_ops = {
  	.enable_ibi		= i3c_hci_enable_ibi,
  	.disable_ibi		= i3c_hci_disable_ibi,
  	.recycle_ibi_slot	= i3c_hci_recycle_ibi_slot,
@@ -10445,7 +10445,7 @@ index 75e6610cf..463cde563 100644
  };
  
  static irqreturn_t i3c_hci_irq_handler(int irq, void *dev_id)
-@@ -549,10 +1200,14 @@ static irqreturn_t i3c_hci_irq_handler(int irq, void *dev_id)
+@@ -561,10 +1212,14 @@ static irqreturn_t i3c_hci_irq_handler(int irq, void *dev_id)
  		val &= ~INTR_HC_SEQ_CANCEL;
  	}
  	if (val & INTR_HC_INTERNAL_ERR) {
@@ -10462,7 +10462,7 @@ index 75e6610cf..463cde563 100644
  	if (val)
  		dev_warn_once(&hci->master.dev,
  			      "unexpected INTR_STATUS %#x\n", val);
-@@ -563,6 +1218,56 @@ static irqreturn_t i3c_hci_irq_handler(int irq, void *dev_id)
+@@ -575,6 +1230,56 @@ static irqreturn_t i3c_hci_irq_handler(int irq, void *dev_id)
  	return result;
  }
  
@@ -10519,7 +10519,7 @@ index 75e6610cf..463cde563 100644
  static int i3c_hci_init(struct i3c_hci *hci)
  {
  	bool size_in_dwords, mode_selector;
-@@ -600,8 +1305,8 @@ static int i3c_hci_init(struct i3c_hci *hci)
+@@ -612,8 +1317,8 @@ static int i3c_hci_init(struct i3c_hci *hci)
  	hci->DAT_entry_size = FIELD_GET(DAT_ENTRY_SIZE, regval) ? 0 : 8;
  	if (size_in_dwords)
  		hci->DAT_entries = 4 * hci->DAT_entries / hci->DAT_entry_size;
@@ -10530,7 +10530,7 @@ index 75e6610cf..463cde563 100644
  
  	regval = reg_read(DCT_SECTION);
  	offset = FIELD_GET(DCT_TABLE_OFFSET, regval);
-@@ -610,23 +1315,23 @@ static int i3c_hci_init(struct i3c_hci *hci)
+@@ -622,23 +1327,23 @@ static int i3c_hci_init(struct i3c_hci *hci)
  	hci->DCT_entry_size = FIELD_GET(DCT_ENTRY_SIZE, regval) ? 0 : 16;
  	if (size_in_dwords)
  		hci->DCT_entries = 4 * hci->DCT_entries / hci->DCT_entry_size;
@@ -10559,7 +10559,7 @@ index 75e6610cf..463cde563 100644
  
  	ret = i3c_hci_parse_ext_caps(hci);
  	if (ret)
-@@ -658,6 +1363,10 @@ static int i3c_hci_init(struct i3c_hci *hci)
+@@ -670,6 +1375,10 @@ static int i3c_hci_init(struct i3c_hci *hci)
  	 * Bit 0:5 are defined in IP version < 0.8 but not handled by PIO code
  	 */
  	reg_write(INTR_STATUS_ENABLE, GENMASK(31, 10));
@@ -10570,7 +10570,7 @@ index 75e6610cf..463cde563 100644
  
  	/* Make sure our data ordering fits the host's */
  	regval = reg_read(HC_CONTROL);
-@@ -709,9 +1418,19 @@ static int i3c_hci_init(struct i3c_hci *hci)
+@@ -721,9 +1430,19 @@ static int i3c_hci_init(struct i3c_hci *hci)
  		if (mode_selector && (reg_read(HC_CONTROL) & HC_CONTROL_PIO_MODE)) {
  			dev_err(&hci->master.dev, "PIO mode is stuck\n");
  			ret = -EIO;
@@ -10591,7 +10591,7 @@ index 75e6610cf..463cde563 100644
  		}
  	}
  
-@@ -723,7 +1442,7 @@ static int i3c_hci_init(struct i3c_hci *hci)
+@@ -735,7 +1454,7 @@ static int i3c_hci_init(struct i3c_hci *hci)
  			ret = -EIO;
  		} else {
  			hci->io = &mipi_i3c_hci_pio;
@@ -10600,7 +10600,7 @@ index 75e6610cf..463cde563 100644
  		}
  	}
  
-@@ -741,50 +1460,74 @@ static int i3c_hci_init(struct i3c_hci *hci)
+@@ -753,35 +1472,56 @@ static int i3c_hci_init(struct i3c_hci *hci)
  	return 0;
  }
  
@@ -10672,7 +10672,8 @@ index 75e6610cf..463cde563 100644
  
  	ret = i3c_hci_init(hci);
  	if (ret)
- 		return ret;
+@@ -790,15 +1530,18 @@ static int i3c_hci_probe(struct platform_device *pdev)
+ 	WRITE_ONCE(hci->irq_inactive, true);
  
  	irq = platform_get_irq(pdev, 0);
 -	ret = devm_request_irq(&pdev->dev, irq, i3c_hci_irq_handler,
@@ -10694,7 +10695,7 @@ index 75e6610cf..463cde563 100644
  
  	return 0;
  }
-@@ -793,11 +1536,12 @@ static void i3c_hci_remove(struct platform_device *pdev)
+@@ -807,11 +1550,12 @@ static void i3c_hci_remove(struct platform_device *pdev)
  {
  	struct i3c_hci *hci = platform_get_drvdata(pdev);
  
@@ -10709,7 +10710,7 @@ index 75e6610cf..463cde563 100644
  };
  MODULE_DEVICE_TABLE(of, i3c_hci_of_match);
 diff --git a/drivers/i3c/master/mipi-i3c-hci/dat.h b/drivers/i3c/master/mipi-i3c-hci/dat.h
-index 1f0f345c3..73a61f5fe 100644
+index 1f0f345c3daf..73a61f5fe6c9 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/dat.h
 +++ b/drivers/i3c/master/mipi-i3c-hci/dat.h
 @@ -18,7 +18,11 @@
@@ -10725,7 +10726,7 @@ index 1f0f345c3..73a61f5fe 100644
  	void (*set_dynamic_addr)(struct i3c_hci *hci, unsigned int dat_idx, u8 addr);
  	void (*set_static_addr)(struct i3c_hci *hci, unsigned int dat_idx, u8 addr);
 diff --git a/drivers/i3c/master/mipi-i3c-hci/dat_v1.c b/drivers/i3c/master/mipi-i3c-hci/dat_v1.c
-index 85c491697..d2d66bd67 100644
+index 85c4916972e4..d2d66bd67a38 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/dat_v1.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/dat_v1.c
 @@ -77,6 +77,28 @@ static void hci_dat_v1_cleanup(struct i3c_hci *hci)
@@ -10811,7 +10812,7 @@ index 85c491697..d2d66bd67 100644
  	return -ENODEV;
  }
 diff --git a/drivers/i3c/master/mipi-i3c-hci/dma.c b/drivers/i3c/master/mipi-i3c-hci/dma.c
-index 34c21a56a..a8eaeabce 100644
+index 34c21a56a25d..a8eaeabceebe 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/dma.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/dma.c
 @@ -14,12 +14,13 @@
@@ -11397,7 +11398,7 @@ index 34c21a56a..a8eaeabce 100644
  			ring_status = rh_reg_read(RING_STATUS);
  			if (!(ring_status & RING_STATUS_RUNNING) &&
 diff --git a/drivers/i3c/master/mipi-i3c-hci/ext_caps.c b/drivers/i3c/master/mipi-i3c-hci/ext_caps.c
-index 5350b209a..da9106e49 100644
+index 5350b209aa3d..da9106e49a79 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/ext_caps.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/ext_caps.c
 @@ -16,6 +16,9 @@
@@ -11641,7 +11642,7 @@ index 5350b209a..da9106e49 100644
  			dev_err(&hci->master.dev,
  				"ext_cap 0x%02x has size %d (expecting >= %d)\n",
 diff --git a/drivers/i3c/master/mipi-i3c-hci/ext_caps.h b/drivers/i3c/master/mipi-i3c-hci/ext_caps.h
-index 9df17822f..016060b97 100644
+index 9df17822fdb4..016060b97b61 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/ext_caps.h
 +++ b/drivers/i3c/master/mipi-i3c-hci/ext_caps.h
 @@ -12,6 +12,7 @@
@@ -11653,7 +11654,7 @@ index 9df17822f..016060b97 100644
  
  int i3c_hci_parse_ext_caps(struct i3c_hci *hci);
 diff --git a/drivers/i3c/master/mipi-i3c-hci/hci.h b/drivers/i3c/master/mipi-i3c-hci/hci.h
-index 32c8aecde..cf3d3c3ba 100644
+index 5502ab0a3535..aa7a29049408 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/hci.h
 +++ b/drivers/i3c/master/mipi-i3c-hci/hci.h
 @@ -34,12 +34,18 @@ struct hci_cmd_ops;
@@ -11675,7 +11676,7 @@ index 32c8aecde..cf3d3c3ba 100644
  	void __iomem *AUTOCMD_regs;
  	void __iomem *DEBUG_regs;
  	const struct hci_io_ops *io;
-@@ -62,6 +68,16 @@ struct i3c_hci {
+@@ -63,6 +69,16 @@ struct i3c_hci {
  	u32 vendor_version_id;
  	u32 vendor_product_id;
  	void *vendor_data;
@@ -11692,7 +11693,7 @@ index 32c8aecde..cf3d3c3ba 100644
  };
  
  
-@@ -119,6 +135,8 @@ struct hci_io_ops {
+@@ -120,6 +136,8 @@ struct hci_io_ops {
  	int (*request_ibi)(struct i3c_hci *hci, struct i3c_dev_desc *dev,
  			   const struct i3c_ibi_setup *req);
  	void (*free_ibi)(struct i3c_hci *hci, struct i3c_dev_desc *dev);
@@ -11701,7 +11702,7 @@ index 32c8aecde..cf3d3c3ba 100644
  	void (*recycle_ibi_slot)(struct i3c_hci *hci, struct i3c_dev_desc *dev,
  				struct i3c_ibi_slot *slot);
  	int (*init)(struct i3c_hci *hci);
-@@ -146,8 +164,10 @@ struct i3c_hci_dev_data {
+@@ -147,8 +165,10 @@ struct i3c_hci_dev_data {
  /* global functions */
  void mipi_i3c_hci_resume(struct i3c_hci *hci);
  void mipi_i3c_hci_pio_reset(struct i3c_hci *hci);
@@ -11713,7 +11714,7 @@ index 32c8aecde..cf3d3c3ba 100644
  
  #endif
 diff --git a/drivers/i3c/master/mipi-i3c-hci/ibi.h b/drivers/i3c/master/mipi-i3c-hci/ibi.h
-index e1f98e264..287878eed 100644
+index e1f98e264da0..287878eed147 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/ibi.h
 +++ b/drivers/i3c/master/mipi-i3c-hci/ibi.h
 @@ -25,6 +25,10 @@
@@ -11728,7 +11729,7 @@ index e1f98e264..287878eed 100644
  static inline struct i3c_dev_desc *
  i3c_hci_addr_to_dev(struct i3c_hci *hci, unsigned int addr)
 diff --git a/drivers/i3c/master/mipi-i3c-hci/pio.c b/drivers/i3c/master/mipi-i3c-hci/pio.c
-index 35e6acc95..9ebfab9e9 100644
+index 35e6acc958a8..9ebfab9e9612 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/pio.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/pio.c
 @@ -14,7 +14,7 @@
@@ -12227,7 +12228,7 @@ index 35e6acc95..9ebfab9e9 100644
  };
 diff --git a/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.h b/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.h
 new file mode 100644
-index 000000000..2d10a2692
+index 000000000000..2d10a2692b32
 --- /dev/null
 +++ b/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.h
 @@ -0,0 +1,447 @@
@@ -12679,7 +12680,7 @@ index 000000000..2d10a2692
 +
 +#endif
 diff --git a/drivers/i3c/master/renesas-i3c.c b/drivers/i3c/master/renesas-i3c.c
-index 5b1bf5a02..275f7b924 100644
+index 5b1bf5a0266c..275f7b924288 100644
 --- a/drivers/i3c/master/renesas-i3c.c
 +++ b/drivers/i3c/master/renesas-i3c.c
 @@ -8,7 +8,6 @@
@@ -12706,7 +12707,7 @@ index 5b1bf5a02..275f7b924 100644
  		return -ENOMEM;
  
 diff --git a/drivers/i3c/master/svc-i3c-master.c b/drivers/i3c/master/svc-i3c-master.c
-index d33f4c765..93531cb21 100644
+index d33f4c765497..93531cb216d1 100644
 --- a/drivers/i3c/master/svc-i3c-master.c
 +++ b/drivers/i3c/master/svc-i3c-master.c
 @@ -201,6 +201,7 @@ struct svc_i3c_drvdata {
@@ -12790,7 +12791,7 @@ index d33f4c765..93531cb21 100644
  	pm_runtime_dont_use_autosuspend(&pdev->dev);
 diff --git a/drivers/i3c/mctp/Kconfig b/drivers/i3c/mctp/Kconfig
 new file mode 100644
-index 000000000..c272bca7e
+index 000000000000..c272bca7e057
 --- /dev/null
 +++ b/drivers/i3c/mctp/Kconfig
 @@ -0,0 +1,23 @@
@@ -12819,7 +12820,7 @@ index 000000000..c272bca7e
 +    configured as an I3C Target Device on the I3C Bus.
 diff --git a/drivers/i3c/mctp/Makefile b/drivers/i3c/mctp/Makefile
 new file mode 100644
-index 000000000..05eb78684
+index 000000000000..05eb78684843
 --- /dev/null
 +++ b/drivers/i3c/mctp/Makefile
 @@ -0,0 +1,3 @@
@@ -12828,7 +12829,7 @@ index 000000000..05eb78684
 +obj-$(CONFIG_I3C_TARGET_MCTP)	+= i3c-target-mctp.o
 diff --git a/drivers/i3c/mctp/i3c-mctp.c b/drivers/i3c/mctp/i3c-mctp.c
 new file mode 100644
-index 000000000..c4758de7c
+index 000000000000..c4758de7c6ac
 --- /dev/null
 +++ b/drivers/i3c/mctp/i3c-mctp.c
 @@ -0,0 +1,697 @@
@@ -13531,7 +13532,7 @@ index 000000000..c4758de7c
 +MODULE_LICENSE("GPL");
 diff --git a/drivers/i3c/mctp/i3c-target-mctp.c b/drivers/i3c/mctp/i3c-target-mctp.c
 new file mode 100644
-index 000000000..28645bb15
+index 000000000000..28645bb156ba
 --- /dev/null
 +++ b/drivers/i3c/mctp/i3c-target-mctp.c
 @@ -0,0 +1,485 @@
@@ -14021,7 +14022,7 @@ index 000000000..28645bb15
 +MODULE_DESCRIPTION("I3C Target MCTP driver");
 +MODULE_LICENSE("GPL");
 diff --git a/include/dt-bindings/i3c/i3c.h b/include/dt-bindings/i3c/i3c.h
-index 373439218..1d5aecdee 100644
+index 373439218bba..1d5aecdee914 100644
 --- a/include/dt-bindings/i3c/i3c.h
 +++ b/include/dt-bindings/i3c/i3c.h
 @@ -13,4 +13,11 @@
@@ -14037,7 +14038,7 @@ index 373439218..1d5aecdee 100644
 +
  #endif
 diff --git a/include/linux/i3c/ccc.h b/include/linux/i3c/ccc.h
-index ad59a4ae6..9e413cfa4 100644
+index ad59a4ae60d1..9e413cfa450e 100644
 --- a/include/linux/i3c/ccc.h
 +++ b/include/linux/i3c/ccc.h
 @@ -26,12 +26,16 @@
@@ -14110,7 +14111,7 @@ index ad59a4ae6..9e413cfa4 100644
  	struct i3c_ccc_cmd_dest *dests;
  	enum i3c_error_code err;
 diff --git a/include/linux/i3c/device.h b/include/linux/i3c/device.h
-index 74a36837b..c4845b02a 100644
+index 74a36837bfbe..c4845b02acf3 100644
 --- a/include/linux/i3c/device.h
 +++ b/include/linux/i3c/device.h
 @@ -43,11 +43,32 @@ enum i3c_error_code {
@@ -14259,7 +14260,7 @@ index 74a36837b..c4845b02a 100644
  
  #endif /* I3C_DEV_H */
 diff --git a/include/linux/i3c/master.h b/include/linux/i3c/master.h
-index 1aa1efd83..ed465ee1c 100644
+index 1aa1efd835b8..ed465ee1cd82 100644
 --- a/include/linux/i3c/master.h
 +++ b/include/linux/i3c/master.h
 @@ -14,6 +14,7 @@
@@ -14473,7 +14474,7 @@ index 1aa1efd83..ed465ee1c 100644
   *			       device descriptor
 diff --git a/include/linux/i3c/mctp/i3c-mctp.h b/include/linux/i3c/mctp/i3c-mctp.h
 new file mode 100644
-index 000000000..dd20750d7
+index 000000000000..dd20750d79d8
 --- /dev/null
 +++ b/include/linux/i3c/mctp/i3c-mctp.h
 @@ -0,0 +1,50 @@
@@ -14529,7 +14530,7 @@ index 000000000..dd20750d7
 +#endif /* I3C_MCTP_H */
 diff --git a/include/linux/i3c/target.h b/include/linux/i3c/target.h
 new file mode 100644
-index 000000000..8c86a6531
+index 000000000000..8c86a65315a0
 --- /dev/null
 +++ b/include/linux/i3c/target.h
 @@ -0,0 +1,32 @@
@@ -14567,7 +14568,7 @@ index 000000000..8c86a6531
 +#endif
 diff --git a/include/uapi/linux/i3c/i3cdev.h b/include/uapi/linux/i3c/i3cdev.h
 new file mode 100644
-index 000000000..5adc1e3e7
+index 000000000000..5adc1e3e7c4f
 --- /dev/null
 +++ b/include/uapi/linux/i3c/i3cdev.h
 @@ -0,0 +1,37 @@
@@ -14609,5 +14610,5 @@ index 000000000..5adc1e3e7
 +
 +#endif
 -- 
-2.25.1
+2.53.0-Meta
 

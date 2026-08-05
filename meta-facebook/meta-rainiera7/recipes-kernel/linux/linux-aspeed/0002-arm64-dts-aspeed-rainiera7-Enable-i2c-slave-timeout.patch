@@ -1,4 +1,4 @@
-From f53bdbbc3f47f3282301d58f5529fdb1d24623fd Mon Sep 17 00:00:00 2001
+From 2dbb24eddf7d8e2708b8dabb07bbd341f3e59d46 Mon Sep 17 00:00:00 2001
 From: Neil Cheng <Neil.Cheng@quantatw.com>
 Date: Tue, 23 Jun 2026 16:03:27 +0800
 Subject: [PATCH] arm64: dts: aspeed: rainiera7: Enable i2c slave timeout
@@ -14,7 +14,7 @@ Signed-off-by: Neil Cheng <Neil.Cheng@quantatw.com>
  1 file changed, 3 insertions(+)
 
 diff --git a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts
-index 373e9f225..2adf739cf 100644
+index 373e9f2256a6..2adf739cf648 100644
 --- a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts
 @@ -238,6 +238,7 @@ &gpio1 {
@@ -41,3 +41,6 @@ index 373e9f225..2adf739cf 100644
  	status = "okay";
  
  	ipmb@10 {
+-- 
+2.53.0-Meta
+

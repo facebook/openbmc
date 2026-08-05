@@ -1,18 +1,17 @@
-From 014b0f6aa07bb5d0f5510e937b715811f4cf4c0b Mon Sep 17 00:00:00 2001
-From: "Alan Tsai" <Alan-Tsai@quantatw.com>
+From b26dc5d4cebb298a04ab782149b0bf1734d43160 Mon Sep 17 00:00:00 2001
+From: Alan Tsai <Alan-Tsai@quantatw.com>
 Date: Fri, 31 Jul 2026 10:20:07 +0800
 Subject: [PATCH] arm64: dts: add ast2700 mipi-i3c-hci controller nodes from
  AspeedTech to aspeed-g7-common.dtsi
 
 This driver is referenced from below link:
 Link: https://github.com/AspeedTech-BMC/linux/commit/0fac7a7c2839f5566c6ad9931020bcf5860a126b
-
 ---
  .../boot/dts/aspeed/aspeed-g7-common.dtsi     | 208 ++++++++++++++++++
  1 file changed, 208 insertions(+)
 
 diff --git a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
-index 3ceb82197..66c22532b 100644
+index 3ceb82197de4..66c22532b2f2 100644
 --- a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
 @@ -225,6 +225,214 @@ i2c: bus@14c0f000 {
@@ -231,5 +230,5 @@ index 3ceb82197..66c22532b 100644
  		compatible = "aspeed,ast2700-otp";
  		reg = <0 0x14c07000 0 0x1000>;
 -- 
-2.25.1
+2.53.0-Meta
 

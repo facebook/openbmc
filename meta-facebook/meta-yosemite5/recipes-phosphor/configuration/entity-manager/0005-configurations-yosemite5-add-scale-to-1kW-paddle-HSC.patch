@@ -1,0 +1,47 @@
+From 76444c0b38ea0c3146307b1deb2cd2ccfa39c080 Mon Sep 17 00:00:00 2001
+From: Pat Lin <pat.lin.wiwynn@gmail.com>
+Date: Wed, 22 Jul 2026 05:35:02 +0000
+Subject: [PATCH] configurations: yosemite5: add scale to 1kW paddle HSC
+ sensors
+
+After removing the TPS25990 nodes (at addresses 0x47 and 0x4b) from
+the device tree, the Rimon resistor settings are no longer passed to
+the driver. As a result, we need to explicitly add the `Scale` parameter
+to the entity-manager configuration for the 1kW paddle board. This ensures
+that the HSC current and power sensors continue to report accurate readings.
+---
+ configurations/meta/yv5/yosemite5_1kw_paddle_board_hsc_rds.json | 2 ++
+ configurations/meta/yv5/yosemite5_1kw_paddle_board_hsc_tic.json | 2 ++
+ 2 files changed, 4 insertions(+)
+
+diff --git a/configurations/meta/yv5/yosemite5_1kw_paddle_board_hsc_rds.json b/configurations/meta/yv5/yosemite5_1kw_paddle_board_hsc_rds.json
+index 0f5c9943a..f2a196d74 100644
+--- a/configurations/meta/yv5/yosemite5_1kw_paddle_board_hsc_rds.json
++++ b/configurations/meta/yv5/yosemite5_1kw_paddle_board_hsc_rds.json
+@@ -95,7 +95,9 @@
+             ],
+             "Type": "TPS25990",
+             "iin_Name": "PADDLE_HSC_CURR_A",
++            "iin_Scale": 430,
+             "pin_Name": "PADDLE_HSC_PWR_W",
++            "pin_Scale": 430000,
+             "temp1_Name": "PADDLE_HSC_TEMP_C",
+             "vin_Name": "PADDLE_HSC_VIN_VOLT_V",
+             "vout1_Name": "PADDLE_HSC_VOUT_VOLT_V"
+diff --git a/configurations/meta/yv5/yosemite5_1kw_paddle_board_hsc_tic.json b/configurations/meta/yv5/yosemite5_1kw_paddle_board_hsc_tic.json
+index 67e663046..f6a468a0d 100644
+--- a/configurations/meta/yv5/yosemite5_1kw_paddle_board_hsc_tic.json
++++ b/configurations/meta/yv5/yosemite5_1kw_paddle_board_hsc_tic.json
+@@ -85,7 +85,9 @@
+             ],
+             "Type": "TPS25990",
+             "iin_Name": "PADDLE_HSC_CURR_A",
++            "iin_Scale": 430,
+             "pin_Name": "PADDLE_HSC_PWR_W",
++            "pin_Scale": 430000,
+             "temp1_Name": "PADDLE_HSC_TEMP_C",
+             "vin_Name": "PADDLE_HSC_VIN_VOLT_V",
+             "vout1_Name": "PADDLE_HSC_VOUT_VOLT_V"
+-- 
+2.43.0
+

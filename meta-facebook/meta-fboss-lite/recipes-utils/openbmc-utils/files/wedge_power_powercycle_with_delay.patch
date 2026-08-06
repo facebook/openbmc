@@ -8,7 +8,7 @@ Subject: [PATCH] wedge_power_powercycle_with_delay
  1 file changed, 32 insertions(+), 10 deletions(-)
 
 diff --git a/wedge_power.sh b/wedge_power.sh
-index ab9f129d9d5..5757645f4a1 100755
+index 99cb15ff2e1..2a5f9cf5c9f 100755
 --- a/wedge_power.sh
 +++ b/wedge_power.sh
 @@ -104,15 +104,30 @@ do_off() {
@@ -45,8 +45,8 @@ index ab9f129d9d5..5757645f4a1 100755
              *)
                  usage
                  exit 1
-@@ -123,16 +138,23 @@ do_reset() {
-     if [ $system -eq 1 ]; then
+@@ -129,16 +144,23 @@ do_reset() {
+ 
          logger -p user.crit "Power reset the whole system ..."
          echo  "Power reset the whole system ..."
 -

@@ -966,8 +966,8 @@ _update_fw(uint8_t slot_id, uint8_t target, uint8_t type, uint32_t offset,
     }
 
     sleep(1);
-    printf("_update_fw: slot: %u, target %u, offset: %u, len: %u retrying..\n",
-           slot_id, target, offset, len);
+    printf("_update_fw: target %u, offset: %u, len: %u retrying..\n",
+           target, offset, len);
   }
 
   return ret;
@@ -985,7 +985,7 @@ update_bic(uint8_t slot_id, int fd, size_t file_size, uint8_t intf) {
   uint8_t type = TYPE_1OU_VERNAL_FALLS_WITH_AST;
   ssize_t count;
 
-  printf("updating fw on slot %d:\n", slot_id);
+  printf("updating fw on server:\n");
 
   // Write chunks of binary data in a loop
   dsize = file_size/100;
@@ -1071,7 +1071,7 @@ update_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path, u
     goto exit;
   }
 
-  printf("file size = %zu bytes, slot = %u, intf = 0x%x\n", file_size, slot_id, intf);
+  printf("file size = %zu bytes, intf = 0x%x\n", file_size, intf);
 
   if (force == 0) {
     if (get_server_board_revision_id(&board_rev_id, sizeof(board_rev_id)) < 0) {
@@ -1128,7 +1128,7 @@ recovery_bic_runtime_fw(uint8_t slot_id, uint8_t comp, uint8_t intf, char *path,
     syslog(LOG_WARNING, "%s() cannot open the file: %s, fd = %d\n", __func__, path, fd);
     return -1;
   }
-  printf("file size = %zu bytes, slot=%u, comp=%u, intf=0x%x\n", file_size, slot_id, comp, intf);
+  printf("file size = %zu bytes, comp=%u, intf=0x%x\n", file_size, comp, intf);
 
   if (sv_control(MTERM_BIC_SERVICE, SV_STOP) == SV_STOP) {
     mterm_stopped = true;
@@ -1345,8 +1345,8 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
     snprintf(origin_path, sizeof(origin_path), "%s", path);
   }
 
-  fprintf(stderr, "slot_id: %x, comp: %x, intf: %x, img: %s, force: %x\n", slot_id, comp, intf, origin_path, force);
-  syslog(LOG_CRIT, "Updating %s on slot%d. File: %s", get_component_name(comp), slot_id, origin_path);
+  fprintf(stderr, "comp: %x, intf: %x, img: %s, force: %x\n", comp, intf, origin_path, force);
+  syslog(LOG_CRIT, "Updating %s on server. File: %s", get_component_name(comp), origin_path);
 
   //get the intf
   intf = NONE_INTF;
@@ -1377,7 +1377,7 @@ bic_update_fw_path_or_fd(uint8_t slot_id, uint8_t comp, char *path, int fd, uint
       return -1;
   }
 
-  syslog(LOG_CRIT, "Updated %s on slot%d. File: %s. Result: %s", get_component_name(comp), slot_id, origin_path, (ret != 0)?"Fail":"Success");
+  syslog(LOG_CRIT, "Updated %s on server. File: %s. Result: %s", get_component_name(comp), origin_path, (ret != 0)?"Fail":"Success");
   if (fd_opened) {
     close(fd);
   }

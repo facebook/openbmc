@@ -58,11 +58,15 @@ print_usage_help(void) {
     return;
   }
   
+#ifdef CONFIG_GRANDCANYON2
+  if ((chassis_type == CHASSIS_TYPE5) || (chassis_type == CHASSIS_TYPE7)) {
+#else
   if (chassis_type == CHASSIS_TYPE5) {
+#endif
     printf("       enclosure-util --e1s-health\n");
     printf("       enclosure-util --e1s-status\n");
   }
-  
+
 }
 
 #ifdef CONFIG_GRANDCANYON2
@@ -193,10 +197,83 @@ show_hdd_status(int hdd_id) {
   }
 }
 
-void 
+#ifdef CONFIG_GRANDCANYON2
+void
 show_e1s_status() {
   int ret = 0;
-  
+  uint8_t chassis_type = 0;
+
+  if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get chassis type. \n", __func__);
+    return;
+  }
+
+  // T7 chassis has no e1.s 0/1 data drives, only the MB e1.s boot drive
+  if (chassis_type == CHASSIS_TYPE5) {
+    /* read NVMe-MI data */
+    printf("e1.s 0: \n");
+    ret = pal_get_drive_status(I2C_DEV_E1S_0_PATH);
+    if(ret < 0) {
+      syslog(LOG_DEBUG, "%s(): fail to get e1.s 0 status.", __func__);
+    }
+
+    /* read NVMe-MI data */
+    printf("e1.s 1: \n");
+    ret = pal_get_drive_status(I2C_DEV_E1S_1_PATH);
+    if(ret < 0) {
+      syslog(LOG_DEBUG, "%s(): fail to get e1.s 1 status.", __func__);
+    }
+  }
+
+  printf("e1.s (Boot): \n");
+  ret = pal_get_mb_e1s_status();
+  if (ret < 0) {
+      syslog(LOG_DEBUG, "%s(): fail to get MB e1.s status.", __func__);
+  }
+}
+
+void
+show_e1s_health() {
+  int ret = 0;
+  uint8_t chassis_type = 0;
+
+  if (fbgc_common_get_chassis_type(&chassis_type) < 0) {
+    syslog(LOG_WARNING, "%s() Failed to get chassis type. \n", __func__);
+    return;
+  }
+
+  // T7 chassis has no e1.s 0/1 data drives, only the MB e1.s boot drive
+  if (chassis_type == CHASSIS_TYPE5) {
+    ret = pal_get_drive_health(I2C_DEV_E1S_0_PATH, 0);
+    if (ret < 0) {
+      syslog(LOG_DEBUG, "%s(): fail to get e1.s 0 health.", __func__);
+      printf("e1.s 0: Abnormal\n");
+    } else {
+      printf("e1.s 0: Normal\n");
+    }
+
+    ret = pal_get_drive_health(I2C_DEV_E1S_1_PATH, 1);
+    if (ret < 0) {
+      syslog(LOG_DEBUG, "%s(): fail to get e1.s 1 health.", __func__);
+      printf("e1.s 1: Abnormal\n");
+    } else {
+      printf("e1.s 1: Normal\n");
+    }
+  }
+
+  ret = pal_get_mb_e1s_health();
+  if (ret < 0) {
+    syslog(LOG_DEBUG, "%s(): fail to get e1.s (Boot) health.", __func__);
+    printf("e1.s (Boot): Abnormal\n");
+  } else {
+    printf("e1.s (Boot): Normal\n");
+  }
+}
+#else
+void
+show_e1s_status() {
+  int ret = 0;
+
   /* read NVMe-MI data */
   printf("e1.s 0: \n");
   ret = pal_get_drive_status(I2C_DEV_E1S_0_PATH);
@@ -210,45 +287,8 @@ show_e1s_status() {
   if(ret < 0) {
     syslog(LOG_DEBUG, "%s(): fail to get e1.s 1 status.", __func__);
   }
-#ifdef CONFIG_GRANDCANYON2
-  printf("e1.s (Boot): \n");
-  ret = pal_get_mb_e1s_status();
-  if (ret < 0) {
-      syslog(LOG_DEBUG, "%s(): fail to get MB e1.s status.", __func__);
-  }
-#endif
 }
 
-#ifdef CONFIG_GRANDCANYON2
-void
-show_e1s_health() {
-  int ret = 0;
-
-  ret = pal_get_drive_health(I2C_DEV_E1S_0_PATH, 0);
-  if (ret < 0) {
-    syslog(LOG_DEBUG, "%s(): fail to get e1.s 0 health.", __func__);
-    printf("e1.s 0: Abnormal\n");
-  } else {
-    printf("e1.s 0: Normal\n");
-  }
-
-  ret = pal_get_drive_health(I2C_DEV_E1S_1_PATH, 1);
-  if (ret < 0) {
-    syslog(LOG_DEBUG, "%s(): fail to get e1.s 1 health.", __func__);
-    printf("e1.s 1: Abnormal\n");
-  } else {
-    printf("e1.s 1: Normal\n");
-  }
-
-  ret = pal_get_mb_e1s_health();
-  if (ret < 0) {
-    syslog(LOG_DEBUG, "%s(): fail to get e1.s (Boot) health.", __func__);
-    printf("e1.s (Boot): Abnormal\n");
-  } else {
-    printf("e1.s (Boot): Normal\n");
-  }
-}
-#else
 void
 show_e1s_health() {
   int ret = 0;
@@ -300,7 +340,11 @@ main(int argc, char **argv) {
       return -1;
     }
   
+#ifdef CONFIG_GRANDCANYON2
+    if ((chassis_type == CHASSIS_TYPE5) || (chassis_type == CHASSIS_TYPE7)) {
+#else
     if (chassis_type == CHASSIS_TYPE5) {
+#endif
       if (strcmp(argv[1], "--e1s-status") == 0) {
         show_e1s_status();
         return 0;

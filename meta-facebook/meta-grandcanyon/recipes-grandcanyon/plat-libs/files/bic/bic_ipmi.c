@@ -327,87 +327,93 @@ bic_get_ifx_vr_version_mfr(uint8_t bus, uint8_t addr, uint8_t *ver_data) {
   uint8_t rlen = 0;
   int ret = 0;
 
+  if (ver_data == NULL) {
+    syslog(LOG_ERR, "%s: pointer is NULL\n", __func__);
+    return -1;
+  }
+
   tbuf[0] = (bus << 1) + 1;
   tbuf[1] = addr;
 
-  // Set Register Pointer (RPTR = 0x10)
   tbuf[2] = 0x00; // read cnt
-  tbuf[3] = 0x10; // RPTR register
-  tbuf[4] = 0x00; // Initialize data
+  tbuf[3] = 0x10; // write protect
+  tbuf[4] = 0x00; // unlock
   tlen = 5;
   
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to initialize RPTR", __func__);
-    goto error_exit;
+    syslog(LOG_WARNING, "%s() Failed to unlock WP", __func__);
+    return ret;
   }
 
-  // Initialize MFR_FW_COMMAND
+  usleep(300);
+
+  // Step 1 : Explicitly initialize MFR_FW_COMMAND_DATA (0xFD)
+
   tbuf[2] = 0x00; // read cnt
-  tbuf[3] = CMD_INF_VR_MFR_EXECUTE; // 0xFE
-  tbuf[4] = 0x00; // Initialize/clear
-  tlen = 5;
-  
+  tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD (MFR_FW_COMMAND_DATA)
+  tbuf[4] = 0x04; // block write byte count = 4
+  tbuf[5] = 0x00; // header_code = 0 (query total checksum)
+  tbuf[6] = 0x00; // XVcode = 0
+  tbuf[7] = 0x00; // reserved
+  tbuf[8] = 0x00; // partition_number = 0
+  tlen = 9;
+
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to initialize MFR_FW_COMMAND", __func__);
-    goto error_exit;
+    syslog(LOG_WARNING, "%s() Failed to initialize MFR_FW_COMMAND_DATA (0xFD)", __func__);
+    return ret;
   }
 
-  // Execute GET_CRC command (0x2D)  
+  usleep(300);
+
+  // Step 2 : Execute GET_CRC command (0x2D). 
   tbuf[2] = 0x00; // read cnt
   tbuf[3] = CMD_INF_VR_MFR_EXECUTE; // 0xFE
   tbuf[4] = INF_VR_CMD_GET_VERSION; // 0x2D (GET_CRC)
   tlen = 5;
-  
+
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s() Failed to execute GET_CRC command", __func__);
-    goto error_exit;
+    return ret;
   }
 
   // Wait for command execution completion (GET_CRC needs 20ms)
   usleep(20000); // 20ms
 
-  // Read CRC result
-  tbuf[2] = 0x05; // read cnt
+  // Step 3 : Read CRC result.
+  tbuf[2] = 0x06; // read cnt
   tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD (MFR_FW_COMMAND_DATA)
   tlen = 4;
-  
+
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s() Failed to read CRC data", __func__);
-    goto error_exit;
+    return ret;
   }
 
   // Copy result
   if (rlen >= 5) {
     memcpy(ver_data, rbuf, 5);
     // ver_data[0] = 0x04 (length)
-    // ver_data[1] = 0x5E (CRC byte 0)
-    // ver_data[2] = 0xDA (CRC byte 1)
-    // ver_data[3] = 0xA2 (CRC byte 2)
-    // ver_data[4] = 0x02 (CRC byte 3)
+    // ver_data[1] = CRC byte 0
+    // ver_data[2] = CRC byte 1
+    // ver_data[3] = CRC byte 2
+    // ver_data[4] = CRC byte 3
   } else {
     syslog(LOG_WARNING, "%s() Invalid response length: %d, expected >= 5", __func__, rlen);
     ret = -1;
-    goto error_exit;
+    return ret;
   }
 
-  // Cleanup/restore RPTR  
-  tbuf[2] = 0x00; // read cnt
-  tbuf[3] = 0x10; // RPTR register
-  tbuf[4] = 0x80; // Cleanup/reset flag
-  tlen = 5;
-  
-  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to cleanup RPTR (non-fatal)", __func__);
-    // This error doesn't affect the result, just log warning
-    ret = 0; // Reset to success
+  // Sanity check
+  if (ver_data[1] == 0 && ver_data[2] == 0 && ver_data[3] == 0 && ver_data[4] == 0) {
+    syslog(LOG_WARNING, "%s() Got all-zero CRC result (section not found), bus=%u addr=0x%02X",
+           __func__, bus, addr);
+    return -1;
   }
 
-error_exit:
   return ret;
 }
 
@@ -450,50 +456,56 @@ bic_get_ifx_vr_remaining_writes_mfr(uint8_t bus, uint8_t addr, uint8_t *writes) 
   int conf_size = get_xdpe152xx_config_size_by_devid(product_id, rev_code);
   if (conf_size <= 0) conf_size = XDPE15284C_CONF_SIZE; // fallback
 
-  // RPTR init
   tbuf[0] = (bus << 1) + 1;
   tbuf[1] = addr;
 
-  // Set Register Pointer (RPTR = 0x10)
   tbuf[2] = 0x00; // read cnt
-  tbuf[3] = 0x10; // RPTR register
-  tbuf[4] = 0x00; // Initialize data
+  tbuf[3] = 0x10; // write protect
+  tbuf[4] = 0x00; // unlock
   tlen = 5;
   
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to initialize RPTR", __func__);
+    syslog(LOG_WARNING, "%s() Failed to unlock WP", __func__);
+    return ret;
+  }
+  
+  usleep(300);
+
+  // Step 1 : Explicitly initialize MFR_FW_COMMAND_DATA (0xFD).
+  tbuf[2] = 0x00; // read cnt
+  tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD
+  tbuf[4] = 0x04; // block write byte count = 4
+  tbuf[5] = 0x00;
+  tbuf[6] = 0x00;
+  tbuf[7] = 0x00;
+  tbuf[8] = 0x00; // partition_number = 0
+  tlen = 9;
+  
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to initialize MFR_FW_COMMAND_DATA (0xFD)", __func__);
     return ret;
   }
 
-  // Initialize MFR_FW_COMMAND  
-  tbuf[2] = 0x00; // read cnt
-  tbuf[3] = CMD_INF_VR_MFR_EXECUTE; // 0xFE
-  tbuf[4] = 0x00; // Initialize/clear
-  tlen = 5;
-  
-  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to initialize MFR_FW_COMMAND", __func__);
-    goto out_cleanup_rptr;
-  }
+  usleep(300);
 
-  // Execute OTP_PARTITION_SIZE_REMAINING command (0x10)  
+  // Step 2 : Execute OTP_PARTITION_SIZE_REMAINING (0x10).
   tbuf[2] = 0x00; // read cnt
   tbuf[3] = CMD_INF_VR_MFR_EXECUTE; // 0xFE
   tbuf[4] = INF_VR_CMD_GET_REM_WRITES; // 0x10
   tlen = 5;
-  
+
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s() Failed to execute OTP_PARTITION_SIZE_REMAINING", __func__);
-    goto out_cleanup_rptr;
+    return ret;
   }
 
   // Wait for command execution completion (OTP_PARTITION_SIZE_REMAINING needs 1ms)
-  usleep(1000); // 1ms
-  
-  // Read remaining space result  
+  usleep(1000);
+
+  // Step 3 : Read remaining space result
   tbuf[2] = 0x06; // read cnt
   tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD (MFR_FW_COMMAND_DATA)
   tlen = 4;
@@ -501,30 +513,28 @@ bic_get_ifx_vr_remaining_writes_mfr(uint8_t bus, uint8_t addr, uint8_t *writes) 
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s() Failed to read remaining writes data", __func__);
-    goto out_cleanup_rptr;
+    return ret;
   }
 
   if (rlen < 5 || rbuf[0] != 0x04) {
     syslog(LOG_WARNING, "%s() Invalid block read: rlen=%u, len=%u", __func__, rlen, rbuf[0]);
-    ret = -1;
-    goto out_cleanup_rptr;
+    return -1;
   }
 
   // Little-endian 16-bit remaining bytes (match original xdpe: only take lower 16 bits)
   uint16_t remaining_size = (uint16_t)(rbuf[1] | (rbuf[2] << 8));
 
+  // Sanity check : all-zero remaining size likely indicates
+  if (remaining_size == 0) {
+    syslog(LOG_WARNING, "%s() Got zero remaining size (possible stale partition residual), "
+           "bus=%u addr=0x%02X", __func__, bus, addr);
+    return -1;
+  }
+
   // Convert to "remaining full-program counts"
   *writes = (uint8_t)(remaining_size / conf_size);
 
-  // RPTR cleanup (optional)
-out_cleanup_rptr:
-  tbuf[2] = 0x00; // read cnt
-  tbuf[3] = 0x10; // RPTR register
-  tbuf[4] = 0x80; // Cleanup/reset flag
-  tlen = 5;
-  (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-
-  return (ret < 0) ? ret : 0;
+  return 0;
 }
 #endif // CONFIG_GRANDCANYON2
 

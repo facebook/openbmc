@@ -1433,68 +1433,6 @@ check_xdpe152xx_image(struct xdpe152xx_config *config) {
   return 0;
 }
 
-// ===== VR Communication Functions =====
-int vr_xdpe152xx_get_crc(uint8_t addr, uint32_t *sum) {
-  uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
-  uint8_t rbuf[MAX_IPMB_BUFFER] = {0};
-  uint8_t tlen = 0, rlen = 0;
-  int ret;
-
-  if (!sum) return -1;
-
-  // (Optional) RPTR initialization, if the platform requires it
-  tbuf[0] = (VR_BUS << 1) + 1;
-  tbuf[1] = addr;
-  tbuf[2] = 0x00;
-  tbuf[3] = 0x10;     // RPTR
-  tbuf[4] = 0x00;
-  tlen = 5;
-  (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-
-  // 0xFD: block write 4 bytes of zeros
-  tbuf[2] = 0x00;
-  tbuf[3] = MFR_FW_CMD_DATA; // 0xFD
-  tbuf[4] = 0x04;            // count
-  tbuf[5] = 0x00;
-  tbuf[6] = 0x00;
-  tbuf[7] = 0x00;
-  tbuf[8] = 0x00;
-  tlen = 9;
-  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-  if (ret < 0) return ret;
-
-  // 0xFE: execute GET_CRC (0x2D)
-  tbuf[2] = 0x00;
-  tbuf[3] = MFR_FW_CMD;      // 0xFE
-  tbuf[4] = GET_CRC_CMD;     // 0x2D
-  tlen = 5;
-  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-  if (ret < 0) return ret;
-
-  usleep(20000); // 20ms
-
-  // Read 0xFD result
-  tbuf[2] = 0x05;            // read count: want 1(len)+4(data)
-  tbuf[3] = MFR_FW_CMD_DATA; // 0xFD
-  tlen = 4;
-  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-  if (ret < 0) return ret;
-
-  if (rlen < 5 || rbuf[0] != 4) {
-    syslog(LOG_WARNING, "%s: invalid block length: rlen=%u, blk=%u", __func__, rlen, rbuf[0]);
-    return -1;
-  }
-  memcpy(sum, &rbuf[1], 4);
-
-  // (Optional) RPTR cleanup
-  tbuf[2] = 0x00;
-  tbuf[3] = 0x10;
-  tbuf[4] = 0x80;
-  tlen = 5;
-  (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-
-  return 0;
-}
 
 // ===== Parser Function =====
 // Helpers for parsing
@@ -1733,7 +1671,7 @@ static int vr_XDPE152XX_program(uint8_t addr, struct xdpe152xx_config *config, u
   uint8_t tlen = 0, rlen = 0;
 
   uint8_t remain = 0;
-  uint32_t crc_now = 0;
+  uint8_t crc_now = 0;
   int prog_cnt = 0;
   int upload_total_cnt = 0;
   int did_global_invalidate = 0;
@@ -1774,7 +1712,7 @@ static int vr_XDPE152XX_program(uint8_t addr, struct xdpe152xx_config *config, u
 
   // 1) Already-flashed guard (aligned with common/xdpe152xx.c program_xdpe152xx(),
   //    which checks CRC before remaining writes; also matches ISL/TI ordering)
-  ret = vr_xdpe152xx_get_crc(addr, &crc_now);
+  ret = bic_get_ifx_vr_version_mfr(VR_BUS, addr, &crc_now);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s: failed to read current CRC before programming", __func__);
     goto cleanup_unlock;

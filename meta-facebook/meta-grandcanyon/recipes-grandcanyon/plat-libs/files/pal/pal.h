@@ -589,6 +589,14 @@ enum {
 // PMBus register
 enum {
   PMBUS_CLEAR_FAULTS        = 0x03,
+  PMBUS_SMBALERT_MASK       = 0x1B,
+  PMBUS_VIN_OFF             = 0x36,
+  PMBUS_VIN_OV_FLT          = 0x55,
+  PMBUS_VIN_OV_WARN         = 0x57,
+  PMBUS_VIN_UV_WARN         = 0x58,
+  PMBUS_VIN_UV_FLT          = 0x59,
+  PMBUS_IIN_OC_FAULT_LIMIT  = 0x5B,
+  PMBUS_IIN_OC_WARN         = 0x5D,
   PMBUS_STATUS_BYTE         = 0x78,
   PMBUS_STATUS_WORD         = 0x79,
   PMBUS_STATUS_VOUT         = 0x7A,
@@ -643,6 +651,12 @@ typedef struct {
   uint8_t pmbus_addr;
   int last_gpio_value;
 } power_fault_source_t;
+
+typedef struct {
+  uint8_t reg;
+  uint16_t value;
+  const char *name;
+} efuse_threshold_cfg_t;
 
 int pal_set_id_led(uint8_t slot, enum LED_HIGH_ACTIVE status);
 int pal_set_status_led(uint8_t fru, status_led_color color);

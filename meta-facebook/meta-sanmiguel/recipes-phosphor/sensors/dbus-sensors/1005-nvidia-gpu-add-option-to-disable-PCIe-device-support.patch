@@ -1,0 +1,96 @@
+From 09cb0061900effe9919f4063c2fd74c835ad9764 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Wed, 1 Jul 2026 13:47:12 +0800
+Subject: [PATCH 1/1] nvidia-gpu: add option to disable PCIe device support
+
+The nvidia-gpu service scans all discovered EIDs and creates the
+corresponding sensor objects.
+
+ConnectX NICs, which are PCIe devices, support both PLDM and NSM
+protocols. On platforms where PLDM is used for monitoring, creating
+NSM sensor objects for these devices is unnecessary and may cause
+duplicate monitoring.
+
+Add a Meson build option to allow platforms to disable PCIe device
+support in the nvidia-gpu service.
+
+[1] https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/91900/3
+
+Change-Id: I247f347776a4f41d8d4b8a5230e3d1191b2dfa82
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+---
+ meson.build                              |  4 ++++
+ meson.options                            |  6 ++++++
+ src/nvidia-gpu/NvidiaDeviceDiscovery.cpp | 11 ++++++++---
+ 3 files changed, 18 insertions(+), 3 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index b40be7d..6494292 100644
+--- a/meson.build
++++ b/meson.build
+@@ -61,5 +61,9 @@ default_deps = [
+     uring,
+ ]
+ 
++if not get_option('nvidia-gpu-pcie').allowed()
++    add_project_arguments('-DNVIDIA_GPU_DISABLE_PCIE', language: 'cpp')
++endif
++
+ subdir('service_files')
+ subdir('src')
+diff --git a/meson.options b/meson.options
+index 0718209..6dfb444 100644
+--- a/meson.options
++++ b/meson.options
+@@ -70,6 +70,12 @@ option(
+     value: 'enabled',
+     description: 'Enable GPU sensor.',
+ )
++option(
++    'nvidia-gpu-pcie',
++    type: 'feature',
++    value: 'enabled',
++    description: 'Enable PCIe support in Nvidia GPU sensor.',
++)
+ option(
+     'external',
+     type: 'feature',
+diff --git a/src/nvidia-gpu/NvidiaDeviceDiscovery.cpp b/src/nvidia-gpu/NvidiaDeviceDiscovery.cpp
+index ef8bc37..73dcc86 100644
+--- a/src/nvidia-gpu/NvidiaDeviceDiscovery.cpp
++++ b/src/nvidia-gpu/NvidiaDeviceDiscovery.cpp
+@@ -44,8 +44,8 @@ void processQueryDeviceIdResponse(
+         gpuDevices,
+     boost::container::flat_map<std::string, std::shared_ptr<SmaDevice>>&
+         smaDevices,
+-    boost::container::flat_map<std::string, std::shared_ptr<PcieDevice>>&
+-        pcieDevices,
++    [[maybe_unused]] boost::container::flat_map<
++        std::string, std::shared_ptr<PcieDevice>>& pcieDevices,
+     const std::shared_ptr<sdbusplus::asio::connection>& conn,
+     mctp::MctpRequester& mctpRequester, const SensorConfigs& configs,
+     const std::string& path, uint8_t eid,
+@@ -139,6 +139,7 @@ void processQueryDeviceIdResponse(
+ 
+         case gpu::DeviceIdentification::DEVICE_PCIE:
+         {
++#ifndef NVIDIA_GPU_DISABLE_PCIE
+             lg2::info(
+                 "Found the PCIe Device with EID {EID}, DeviceType {DEVTYPE}, InstanceId {IID}.",
+                 "EID", eid, "DEVTYPE", responseDeviceType, "IID",
+@@ -162,7 +163,11 @@ void processQueryDeviceIdResponse(
+                     "PCIe Device with name {NAME} already exists. Skipping creating a new device.",
+                     "NAME", pcieName);
+             }
+-
++#else
++            lg2::info(
++                "Found the PCIe Device with EID {EID}, but PCIe support is disabled.",
++                "EID", eid);
++#endif
+             break;
+         }
+     }
+-- 
+2.52.0
+

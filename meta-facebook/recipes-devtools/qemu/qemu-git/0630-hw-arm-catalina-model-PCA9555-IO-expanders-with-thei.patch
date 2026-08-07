@@ -1,8 +1,8 @@
-From 214ba4acb90892eb7f0ff78b08facecbb314a8b3 Mon Sep 17 00:00:00 2001
+From 2374abf5f36f7cf4a512a226d6927850ab15b026 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 9 Jul 2026 17:23:16 +0200
-Subject: [PATCH 630/631] hw/arm: catalina: model PCA9555 IO expanders with
- their own type
+Subject: [PATCH] hw/arm: catalina: model PCA9555 IO expanders with their own
+ type
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -21,7 +21,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 12 insertions(+), 12 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_catalina.c b/hw/arm/aspeed_ast2600_catalina.c
-index 65495a524ea..f3b22e9aa9a 100644
+index 65495a524e..f3b22e9aa9 100644
 --- a/hw/arm/aspeed_ast2600_catalina.c
 +++ b/hw/arm/aspeed_ast2600_catalina.c
 @@ -533,7 +533,7 @@ static void catalina_bmc_i2c_init(AspeedMachineState *bmc)
@@ -89,5 +89,5 @@ index 65495a524ea..f3b22e9aa9a 100644
      /* &i2c15 */
      /* temperature-sensor@1f - tmp421 */
 -- 
-2.50.1
+2.53.0-Meta
 

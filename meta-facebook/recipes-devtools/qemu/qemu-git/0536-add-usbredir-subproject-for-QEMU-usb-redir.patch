@@ -1,4 +1,4 @@
-From 7b9709b2832ca4943a7bc2800adf1e7d90b3f853 Mon Sep 17 00:00:00 2001
+From 50ac4626f0915088f074fcbd248ae3984ccb5607 Mon Sep 17 00:00:00 2001
 From: OpenBMC QEMU Builder <openbmc@meta.com>
 Date: Fri, 24 Jul 2026 12:00:00 -0700
 Subject: [PATCH] add usbredir subproject for QEMU usb-redir
@@ -33,3 +33,4 @@ index 0000000000..1d89834010
 +libusbredirparser-0.5 = usbredir_parser_lib_dep
 -- 
 2.53.0-Meta
+

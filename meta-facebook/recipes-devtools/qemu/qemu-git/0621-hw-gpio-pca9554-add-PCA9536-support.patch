@@ -1,7 +1,7 @@
-From b1b4b3d10c181d55e73a621c2100e78e914eafd0 Mon Sep 17 00:00:00 2001
+From 1423459dae0adf04a044d7298644fcdeaddcde0d Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 9 Jul 2026 17:23:07 +0200
-Subject: [PATCH 621/631] hw/gpio: pca9554: add PCA9536 support
+Subject: [PATCH] hw/gpio: pca9554: add PCA9536 support
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -26,7 +26,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  2 files changed, 54 insertions(+), 27 deletions(-)
 
 diff --git a/hw/gpio/pca9554.c b/hw/gpio/pca9554.c
-index 8427e01e9b2..b44ec0d9991 100644
+index 8427e01e9b..b44ec0d999 100644
 --- a/hw/gpio/pca9554.c
 +++ b/hw/gpio/pca9554.c
 @@ -24,6 +24,8 @@ struct PCA9554Class {
@@ -167,9 +167,7 @@ index 8427e01e9b2..b44ec0d9991 100644
      device_class_set_legacy_reset(dc, pca9554_reset);
      dc->vmsd = &pca9554_vmstate;
      device_class_set_props(dc, pca9554_properties);
-+
-+    pc->pin_count = PCA9554_PIN_COUNT;
- }
+-}
  
 -static const TypeInfo pca9554_info = {
 -    .name          = TYPE_PCA9554,
@@ -180,7 +178,9 @@ index 8427e01e9b2..b44ec0d9991 100644
 -    .class_size    = sizeof(PCA9554Class),
 -    .abstract      = false,
 -};
--
++    pc->pin_count = PCA9554_PIN_COUNT;
++}
+ 
 -static void pca9554_register_types(void)
 +static void pca9536_class_init(ObjectClass *klass, const void *data)
  {
@@ -210,7 +210,7 @@ index 8427e01e9b2..b44ec0d9991 100644
 +
 +DEFINE_TYPES(pca9554_types);
 diff --git a/include/hw/gpio/pca9554.h b/include/hw/gpio/pca9554.h
-index 54bfc4c4c7a..c09108e8b65 100644
+index 54bfc4c4c7..c09108e8b6 100644
 --- a/include/hw/gpio/pca9554.h
 +++ b/include/hw/gpio/pca9554.h
 @@ -12,12 +12,14 @@
@@ -229,5 +229,5 @@ index 54bfc4c4c7a..c09108e8b65 100644
  struct PCA9554State {
      /*< private >*/
 -- 
-2.50.1
+2.53.0-Meta
 

@@ -1,7 +1,7 @@
-From 79d25deaf2dbca17e6092177aa789e3b28f1f76d Mon Sep 17 00:00:00 2001
+From d7c2b99f1525c4e1014328d687419875b9b09bb0 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 9 Jul 2026 17:23:04 +0200
-Subject: [PATCH 618/631] tests/qtest: pca9555: test polarity inversion
+Subject: [PATCH] tests/qtest: pca9555: test polarity inversion
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -19,7 +19,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 44 insertions(+)
 
 diff --git a/tests/qtest/pca9555-test.c b/tests/qtest/pca9555-test.c
-index 6b085702c3c..2afa061bd2e 100644
+index 6b085702c3..2afa061bd2 100644
 --- a/tests/qtest/pca9555-test.c
 +++ b/tests/qtest/pca9555-test.c
 @@ -99,6 +99,46 @@ static void test_port_independence(void *obj, void *data,
@@ -81,5 +81,5 @@ index 6b085702c3c..2afa061bd2e 100644
  
  libqos_init(pca9555_register_nodes);
 -- 
-2.50.1
+2.53.0-Meta
 

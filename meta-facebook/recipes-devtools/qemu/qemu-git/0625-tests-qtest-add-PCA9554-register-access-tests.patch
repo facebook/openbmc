@@ -1,7 +1,7 @@
-From 752f1d550cea79831322ef4bfe83b5fde0963d64 Mon Sep 17 00:00:00 2001
+From f032704994a8b20a42b5e1910bbd24d73cecb154 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 9 Jul 2026 17:23:11 +0200
-Subject: [PATCH 625/631] tests/qtest: add PCA9554 register access tests
+Subject: [PATCH] tests/qtest: add PCA9554 register access tests
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -21,10 +21,10 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  create mode 100644 tests/qtest/pca9554-test.c
 
 diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
-index e92130bd04d..4d81857174a 100644
+index 024d4e0519..42176d088d 100644
 --- a/tests/qtest/meson.build
 +++ b/tests/qtest/meson.build
-@@ -319,6 +319,7 @@ qos_test_ss.add(
+@@ -321,6 +321,7 @@ qos_test_ss.add(
    'tulip-test.c',
    'nvme-test.c',
    'pca9552-test.c',
@@ -34,7 +34,7 @@ index e92130bd04d..4d81857174a 100644
    'pcnet-test.c',
 diff --git a/tests/qtest/pca9554-test.c b/tests/qtest/pca9554-test.c
 new file mode 100644
-index 00000000000..a5f213a59cc
+index 0000000000..a5f213a59c
 --- /dev/null
 +++ b/tests/qtest/pca9554-test.c
 @@ -0,0 +1,41 @@
@@ -80,5 +80,5 @@ index 00000000000..a5f213a59cc
 +
 +libqos_init(pca9554_register_nodes);
 -- 
-2.50.1
+2.53.0-Meta
 

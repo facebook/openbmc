@@ -1,8 +1,8 @@
-From f733eacd02f25bdb3b88bfc7dff2ab1a8c2995e3 Mon Sep 17 00:00:00 2001
+From 2825083bfd6b817157ad4a5ae636467c159707ea Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 9 Jul 2026 17:23:03 +0200
-Subject: [PATCH 617/631] tests/qtest: pca9555: test output-to-input reflection
- and pull-ups
+Subject: [PATCH] tests/qtest: pca9555: test output-to-input reflection and
+ pull-ups
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -20,7 +20,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 75 insertions(+)
 
 diff --git a/tests/qtest/pca9555-test.c b/tests/qtest/pca9555-test.c
-index 5945c3441e9..6b085702c3c 100644
+index 5945c3441e..6b085702c3 100644
 --- a/tests/qtest/pca9555-test.c
 +++ b/tests/qtest/pca9555-test.c
 @@ -28,6 +28,77 @@ static void test_reset_defaults(void *obj, void *data, QGuestAllocator *alloc)
@@ -113,5 +113,5 @@ index 5945c3441e9..6b085702c3c 100644
  
  libqos_init(pca9555_register_nodes);
 -- 
-2.50.1
+2.53.0-Meta
 

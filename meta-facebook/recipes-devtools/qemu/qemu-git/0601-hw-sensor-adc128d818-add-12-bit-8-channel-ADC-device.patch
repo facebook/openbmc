@@ -1,8 +1,7 @@
-From 54a53b965ef7e386e57e265353bd0b4b2fcb5d81 Mon Sep 17 00:00:00 2001
+From 7eeba961bdfa581bf33811c0f9aea985a528c851 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 7 Jul 2026 11:15:54 +0200
-Subject: [PATCH 601/631] hw/sensor: adc128d818: add 12-bit 8-channel ADC
- device
+Subject: [PATCH] hw/sensor: adc128d818: add 12-bit 8-channel ADC device
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -36,7 +35,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  create mode 100644 include/hw/sensor/adc128d818.h
 
 diff --git a/hw/sensor/Kconfig b/hw/sensor/Kconfig
-index bc6331b4abb..b459ac22407 100644
+index a7e3b50833..dca0f29900 100644
 --- a/hw/sensor/Kconfig
 +++ b/hw/sensor/Kconfig
 @@ -1,3 +1,7 @@
@@ -49,7 +48,7 @@ index bc6331b4abb..b459ac22407 100644
      depends on I2C
 diff --git a/hw/sensor/adc128d818.c b/hw/sensor/adc128d818.c
 new file mode 100644
-index 00000000000..c65508cba14
+index 0000000000..c65508cba1
 --- /dev/null
 +++ b/hw/sensor/adc128d818.c
 @@ -0,0 +1,696 @@
@@ -750,7 +749,7 @@ index 00000000000..c65508cba14
 +
 +DEFINE_TYPES(adc128d818_types)
 diff --git a/hw/sensor/meson.build b/hw/sensor/meson.build
-index 420fdc33592..fe36c9ef910 100644
+index 152653d461..62bd519edd 100644
 --- a/hw/sensor/meson.build
 +++ b/hw/sensor/meson.build
 @@ -1,3 +1,4 @@
@@ -759,7 +758,7 @@ index 420fdc33592..fe36c9ef910 100644
  system_ss.add(when: 'CONFIG_TMP421', if_true: files('tmp421.c'))
  system_ss.add(when: 'CONFIG_DPS310', if_true: files('dps310.c'))
 diff --git a/hw/sensor/trace-events b/hw/sensor/trace-events
-index a3fe54fa6dc..5a3630f7bbd 100644
+index a3fe54fa6d..5a3630f7bb 100644
 --- a/hw/sensor/trace-events
 +++ b/hw/sensor/trace-events
 @@ -1,5 +1,13 @@
@@ -778,7 +777,7 @@ index a3fe54fa6dc..5a3630f7bbd 100644
  tmp105_write(uint8_t dev, uint8_t addr) "device: 0x%02x, addr 0x%02x"
 diff --git a/include/hw/sensor/adc128d818.h b/include/hw/sensor/adc128d818.h
 new file mode 100644
-index 00000000000..10c34b96464
+index 0000000000..10c34b9646
 --- /dev/null
 +++ b/include/hw/sensor/adc128d818.h
 @@ -0,0 +1,14 @@
@@ -797,5 +796,5 @@ index 00000000000..10c34b96464
 +
 +#endif
 -- 
-2.50.1
+2.53.0-Meta
 

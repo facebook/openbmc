@@ -1,8 +1,7 @@
-From f26d21dea2389cd956c99dcb94e7c68b226830e7 Mon Sep 17 00:00:00 2001
+From e9b95cef90571b1470946230989cb64870374268 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 7 Jul 2026 11:15:55 +0200
-Subject: [PATCH 602/631] tests/qtest: adc128d818: add test harness and
- register access
+Subject: [PATCH] tests/qtest: adc128d818: add test harness and register access
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -23,7 +22,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
 
 diff --git a/tests/qtest/adc128d818-test.c b/tests/qtest/adc128d818-test.c
 new file mode 100644
-index 00000000000..9a8811256f6
+index 0000000000..9a8811256f
 --- /dev/null
 +++ b/tests/qtest/adc128d818-test.c
 @@ -0,0 +1,169 @@
@@ -197,10 +196,10 @@ index 00000000000..9a8811256f6
 +}
 +libqos_init(adc128d818_register_nodes);
 diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
-index 56ff860e216..5e1fc597e6d 100644
+index 064e512184..bb7365ce9a 100644
 --- a/tests/qtest/meson.build
 +++ b/tests/qtest/meson.build
-@@ -304,6 +304,7 @@ qtests_hexagon = ['boot-serial-test']
+@@ -306,6 +306,7 @@ qtests_hexagon = ['boot-serial-test']
  qos_test_ss = ss.source_set()
  qos_test_ss.add(
    'ac97-test.c',
@@ -209,5 +208,5 @@ index 56ff860e216..5e1fc597e6d 100644
    'adm1266-test.c',
    'ds1338-test.c',
 -- 
-2.50.1
+2.53.0-Meta
 

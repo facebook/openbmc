@@ -1,8 +1,8 @@
-From 44de19d126ba64226ad0a58007547ea0e53322c0 Mon Sep 17 00:00:00 2001
+From 2d3476389d91a72d4aa0b856e515ecc2a4b4ef0f Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 7 Jul 2026 11:15:58 +0200
-Subject: [PATCH 605/631] tests/qtest: adc128d818: test operating modes and
- power control
+Subject: [PATCH] tests/qtest: adc128d818: test operating modes and power
+ control
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -20,7 +20,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 377 insertions(+)
 
 diff --git a/tests/qtest/adc128d818-test.c b/tests/qtest/adc128d818-test.c
-index 3e3fabb8d9f..91eda5ca74d 100644
+index 3e3fabb8d9..91eda5ca74 100644
 --- a/tests/qtest/adc128d818-test.c
 +++ b/tests/qtest/adc128d818-test.c
 @@ -447,6 +447,368 @@ static void test_temp_hysteresis(void *obj, void *data,
@@ -414,5 +414,5 @@ index 3e3fabb8d9f..91eda5ca74d 100644
  }
  libqos_init(adc128d818_register_nodes);
 -- 
-2.50.1
+2.53.0-Meta
 

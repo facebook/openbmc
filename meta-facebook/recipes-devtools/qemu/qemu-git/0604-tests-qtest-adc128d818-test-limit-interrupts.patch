@@ -1,7 +1,7 @@
-From e46f41e6475d057f3327622fbb76ea74900ec77a Mon Sep 17 00:00:00 2001
+From 2602a4def9718a131bcb0b79cd00c7baae60cb61 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 7 Jul 2026 11:15:57 +0200
-Subject: [PATCH 604/631] tests/qtest: adc128d818: test limit interrupts
+Subject: [PATCH] tests/qtest: adc128d818: test limit interrupts
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -18,7 +18,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 121 insertions(+)
 
 diff --git a/tests/qtest/adc128d818-test.c b/tests/qtest/adc128d818-test.c
-index 891189f0bd8..3e3fabb8d9f 100644
+index 891189f0bd..3e3fabb8d9 100644
 --- a/tests/qtest/adc128d818-test.c
 +++ b/tests/qtest/adc128d818-test.c
 @@ -330,6 +330,123 @@ static void test_ext_vref(void *obj, void *data, QGuestAllocator *alloc)
@@ -156,5 +156,5 @@ index 891189f0bd8..3e3fabb8d9f 100644
  }
  libqos_init(adc128d818_register_nodes);
 -- 
-2.50.1
+2.53.0-Meta
 

@@ -1,7 +1,7 @@
-From 26f108b46bae633a74b1129b9699b8db8c328852 Mon Sep 17 00:00:00 2001
+From 9e9c556faf02a197388e009f80fdf08bc1dc5fa0 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 9 Jul 2026 17:23:05 +0200
-Subject: [PATCH 619/631] tests/qtest: pca9555: test auto-increment and command
+Subject: [PATCH] tests/qtest: pca9555: test auto-increment and command
  wrapping
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -21,7 +21,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 88 insertions(+)
 
 diff --git a/tests/qtest/pca9555-test.c b/tests/qtest/pca9555-test.c
-index 2afa061bd2e..84d771bcbb8 100644
+index 2afa061bd2..84d771bcbb 100644
 --- a/tests/qtest/pca9555-test.c
 +++ b/tests/qtest/pca9555-test.c
 @@ -139,6 +139,87 @@ static void test_polarity_with_output(void *obj, void *data,
@@ -127,5 +127,5 @@ index 2afa061bd2e..84d771bcbb8 100644
  
  libqos_init(pca9555_register_nodes);
 -- 
-2.50.1
+2.53.0-Meta
 

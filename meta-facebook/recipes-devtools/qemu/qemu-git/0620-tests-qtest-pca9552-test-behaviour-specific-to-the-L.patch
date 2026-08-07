@@ -1,8 +1,8 @@
-From 607c0cfcef71ad2d2dbd1803eb85c3e62d1748fa Mon Sep 17 00:00:00 2001
+From 7154c4ecdc253f30d7ecabeb8e27fc645a652055 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 9 Jul 2026 17:23:06 +0200
-Subject: [PATCH 620/631] tests/qtest: pca9552: test behaviour specific to the
- LED variant
+Subject: [PATCH] tests/qtest: pca9552: test behaviour specific to the LED
+ variant
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -30,7 +30,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 76 insertions(+)
 
 diff --git a/tests/qtest/pca9552-test.c b/tests/qtest/pca9552-test.c
-index 74749576923..3718dfbd227 100644
+index 7474957692..3718dfbd22 100644
 --- a/tests/qtest/pca9552-test.c
 +++ b/tests/qtest/pca9552-test.c
 @@ -77,6 +77,76 @@ static void send_and_receive(void *obj, void *data, QGuestAllocator *alloc)
@@ -123,5 +123,5 @@ index 74749576923..3718dfbd227 100644
 +
  libqos_init(pca9552_register_nodes);
 -- 
-2.50.1
+2.53.0-Meta
 

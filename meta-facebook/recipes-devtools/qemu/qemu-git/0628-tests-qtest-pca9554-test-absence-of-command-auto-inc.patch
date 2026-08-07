@@ -1,8 +1,7 @@
-From 6f07e6862606a6d68dd29b66906ae90639136e48 Mon Sep 17 00:00:00 2001
+From 378f34a9fb1a4d8a74441f840f11ee04f7e0145d Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 9 Jul 2026 17:23:14 +0200
-Subject: [PATCH 628/631] tests/qtest: pca9554: test absence of command
- auto-increment
+Subject: [PATCH] tests/qtest: pca9554: test absence of command auto-increment
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -25,7 +24,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 28 insertions(+)
 
 diff --git a/tests/qtest/pca9554-test.c b/tests/qtest/pca9554-test.c
-index 74237df611e..0da1f3304b9 100644
+index 74237df611..0da1f3304b 100644
 --- a/tests/qtest/pca9554-test.c
 +++ b/tests/qtest/pca9554-test.c
 @@ -102,6 +102,33 @@ static void test_polarity_with_output(void *obj, void *data,
@@ -71,5 +70,5 @@ index 74237df611e..0da1f3304b9 100644
  
  libqos_init(pca9554_register_nodes);
 -- 
-2.50.1
+2.53.0-Meta
 

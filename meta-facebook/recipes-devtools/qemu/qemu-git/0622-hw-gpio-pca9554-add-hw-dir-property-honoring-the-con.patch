@@ -1,8 +1,8 @@
-From 770199e88db2830fb9624159927598b10f3a79ed Mon Sep 17 00:00:00 2001
+From 53b23dcd36c17b1111784e62e85551d5e9c79655 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 9 Jul 2026 17:23:08 +0200
-Subject: [PATCH 622/631] hw/gpio: pca9554: add hw-dir property honoring the
- configured pin direction
+Subject: [PATCH] hw/gpio: pca9554: add hw-dir property honoring the configured
+ pin direction
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -45,7 +45,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  2 files changed, 43 insertions(+), 23 deletions(-)
 
 diff --git a/hw/gpio/pca9554.c b/hw/gpio/pca9554.c
-index b44ec0d9991..ed38fe102b1 100644
+index b44ec0d999..ed38fe102b 100644
 --- a/hw/gpio/pca9554.c
 +++ b/hw/gpio/pca9554.c
 @@ -154,6 +154,14 @@ static int pca9554_event(I2CSlave *i2c, enum i2c_event event)
@@ -151,7 +151,7 @@ index b44ec0d9991..ed38fe102b1 100644
  
  static void pca9554_class_init(ObjectClass *klass, const void *data)
 diff --git a/include/hw/gpio/pca9554.h b/include/hw/gpio/pca9554.h
-index c09108e8b65..ac835371aac 100644
+index c09108e8b6..ac835371aa 100644
 --- a/include/hw/gpio/pca9554.h
 +++ b/include/hw/gpio/pca9554.h
 @@ -33,6 +33,7 @@ struct PCA9554State {
@@ -163,5 +163,5 @@ index c09108e8b65..ac835371aac 100644
  
  #endif
 -- 
-2.50.1
+2.53.0-Meta
 

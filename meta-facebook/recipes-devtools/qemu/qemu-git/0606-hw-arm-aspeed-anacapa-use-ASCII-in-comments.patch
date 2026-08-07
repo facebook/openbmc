@@ -1,7 +1,7 @@
-From 588941c7db4d1004fc0239f842f62ec950336bb5 Mon Sep 17 00:00:00 2001
+From 2abc0db551a32614353ed7de080e4243db326202 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 7 Jul 2026 11:16:00 +0200
-Subject: [PATCH 606/631] hw/arm/aspeed: anacapa: use ASCII in comments
+Subject: [PATCH] hw/arm/aspeed: anacapa: use ASCII in comments
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -18,7 +18,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_anacapa.c b/hw/arm/aspeed_ast2600_anacapa.c
-index a1c8111a934..bd6cc006860 100644
+index a1c8111a93..bd6cc00686 100644
 --- a/hw/arm/aspeed_ast2600_anacapa.c
 +++ b/hw/arm/aspeed_ast2600_anacapa.c
 @@ -242,7 +242,7 @@ static void anacapa_bmc_i2c_init(AspeedMachineState *bmc)
@@ -58,5 +58,5 @@ index a1c8111a934..bd6cc006860 100644
  
  static void aspeed_machine_anacapa_class_init(ObjectClass *oc,
 -- 
-2.50.1
+2.53.0-Meta
 

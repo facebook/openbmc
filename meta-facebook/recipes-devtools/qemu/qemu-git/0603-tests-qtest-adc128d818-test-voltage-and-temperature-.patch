@@ -1,7 +1,7 @@
-From d2ec848fbd187d2e5bb1fd58a391914ce38035e7 Mon Sep 17 00:00:00 2001
+From 2e20c65f3bdad2209b8da5796dcee9b683cfe88e Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 7 Jul 2026 11:15:56 +0200
-Subject: [PATCH 603/631] tests/qtest: adc128d818: test voltage and temperature
+Subject: [PATCH] tests/qtest: adc128d818: test voltage and temperature
  conversion
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -19,7 +19,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 189 insertions(+)
 
 diff --git a/tests/qtest/adc128d818-test.c b/tests/qtest/adc128d818-test.c
-index 9a8811256f6..891189f0bd8 100644
+index 9a8811256f..891189f0bd 100644
 --- a/tests/qtest/adc128d818-test.c
 +++ b/tests/qtest/adc128d818-test.c
 @@ -150,6 +150,186 @@ static void test_ain_property(void *obj, void *data, QGuestAllocator *alloc)
@@ -225,5 +225,5 @@ index 9a8811256f6..891189f0bd8 100644
  }
  libqos_init(adc128d818_register_nodes);
 -- 
-2.50.1
+2.53.0-Meta
 

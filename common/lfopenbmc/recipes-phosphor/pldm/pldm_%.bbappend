@@ -10,6 +10,10 @@ SRCREV:openbmc-fb-lf = "fdc82200dd97b05bc190e920466f77430ef7f468"
 
 # EXTRA_OEMESON:append:openbmc-fb-lf = " -Doem-meta=enabled"
 
+PACKAGECONFIG[oem-arm] = "-Doem-arm=enabled, -Doem-arm=disabled"
+PACKAGECONFIG:append = " oem-arm"
+PACKAGECONFIG:remove = "softoff"
+
 SRC_URI:append:openbmc-fb-lf = " \
     file://host_eid \
     file://0001-pldm-Revise-image-path-for-update.patch \
@@ -37,6 +41,8 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0023-oem-meta-support-MCTP-I2C-and-I3C-target-configs.patch \
     file://0024-platform-mc-fix-dangling-exec-async_scope-in-doSenso.patch \
     file://0025-oem-meta-santabarbara-update-event-logs-from-rainbow.patch \
+    file://0026-platform-mc-add-helper-to-get-terminus-name.patch \
+    file://0027-oem-arm-handle-boot-progress-sensor-events.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

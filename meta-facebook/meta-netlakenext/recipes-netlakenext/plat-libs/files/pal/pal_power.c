@@ -236,7 +236,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       if (status == SERVER_POWER_ON) {
         if (pal_set_kbrst(fru, LOW) < 0)
           return ERROR;
-        sleep(1);
+        usleep(160000);
         if (pal_set_kbrst(fru, HIGH) < 0)
           return ERROR;
       } else if (status == SERVER_POWER_OFF) {

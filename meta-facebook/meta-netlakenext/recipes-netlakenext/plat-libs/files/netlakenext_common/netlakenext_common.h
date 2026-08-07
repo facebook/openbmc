@@ -155,6 +155,7 @@ extern "C" {
 #define LOW_STR             "0"
 #define PWR_GOOD_KV_KEY     "power_good_status"
 #define POST_CMPLT_KV_KEY   "post_complete_status"
+#define SKIP_BMC_FWUPD_PRECHK_KV_KEY   "skip_bmc_fwupd_precheck"
 
 enum {
   FRU_ALL = 0,
@@ -188,6 +189,7 @@ enum board_rev {
   DVT = 4,
   PVT = 5,
   MP = 6,
+  BOARD_REV_COUNT
 };
 
 enum vr_sku {
@@ -215,7 +217,7 @@ int netlakenext_common_i2c_transfer(uint8_t bus, uint8_t addr, uint8_t *tbuf, ui
 int netlakenext_common_get_img_ver(const char* image_path, char* ver);
 int netlakenext_get_cpld_data(int bus, uint8_t addr, uint8_t reg, uint8_t* value);
 int netlakenext_common_get_sys_cfg(uint8_t* sys_cfg);
-int netlakenext_common_get_vr_sku(uint8_t* sku, bool* change_vr_bus);
+int netlakenext_common_get_vr_sku(uint8_t* sku);
 int netlakenext_common_linear11_convert(uint8_t *value_raw, float *value_linear11);
 int netlakenext_common_linear16_convert(uint8_t *value_raw, uint8_t mode, float *value_linear16);
 

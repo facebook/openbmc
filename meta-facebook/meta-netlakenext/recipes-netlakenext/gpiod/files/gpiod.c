@@ -42,7 +42,7 @@
 #define APML_UNBIND_PATH "/sys/bus/i2c/drivers/sbtsi/unbind"
 #define PCA954X_BUS_ADDR_WITH_M2_ABC "7-0071"
 #define PCA954X_BUS_ADDR_WITH_M2_DE "7-0073"
-#define APML_BUS_ADDR "1-004c"
+#define APML_BUS_ADDR "5-004c"
 #define POLL_TIMEOUT        -1 /* Forever */
 #define ADDC_CMD_INIT "/usr/bin/amd-ras -i"
 #define ADDC_CMD "/usr/bin/amd-ras"

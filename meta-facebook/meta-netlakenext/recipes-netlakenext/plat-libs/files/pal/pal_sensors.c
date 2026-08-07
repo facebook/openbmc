@@ -250,8 +250,8 @@ PAL_DEV_INFO hwmon_dev_list[] = {
   {"tmp75-i2c-4-4c",  "MB_INLET_TEMP"},
   {"tmp75-i2c-4-4a",  "MB_OUTLET_TEMP"},
   {"tmp75-i2c-10-48",  "FIO_INLET_TEMP"},
-  {"sbtsi_0.0-i2c-1-4c",  "SOC_TEMP"},
-  {"sbrmi_0.0-i2c-1-3c",  "SOC_PWR"},
+  {"sbtsi_0.0-i2c-5-4c",  "SOC_TEMP"},
+  {"sbrmi_0.0-i2c-5-3c",  "SOC_PWR"},
 };
 
 PAL_PMBUS_INFO pmbus_dev_table[] = {

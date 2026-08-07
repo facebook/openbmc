@@ -1343,9 +1343,8 @@ pal_pmbus_sensor_info_initial(void) {
   int ret = 0;
   uint8_t pmbus_type = 0;
   uint8_t sku = 0;
-  bool change_vr_bus = false;
 
-  ret = netlakenext_common_get_vr_sku(&sku, &change_vr_bus);
+  ret = netlakenext_common_get_vr_sku(&sku);
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Failed to get vr sku, use main source (MPS) setting as default", __func__);
   }
@@ -1355,17 +1354,6 @@ pal_pmbus_sensor_info_initial(void) {
 
   for (uint8_t i = 0; i < pmbus_dev_cnt; i++) {
     pmbus_type = pmbus_dev_table[i].sku_pmbus_type[sku].type;
-    if (change_vr_bus) {
-      if (pmbus_dev_table[i].slv_addr == VR_PVDDCR_ADDR) {
-        pmbus_dev_table[i].bus = VR_PVDDCR_BUS;
-      }
-      else if (pmbus_dev_table[i].slv_addr == VR_PVDDCR_SOC_ADDR) {
-        pmbus_dev_table[i].bus = VR_PVDDCR_SOC_BUS;
-      }
-      else if (pmbus_dev_table[i].slv_addr == VR_PVDD_MISC_ADDR) {
-        pmbus_dev_table[i].bus = VR_PVDD_MISC_BUS;
-      }
-    }
     for (int j = 0; j < MAX_PMBUS_SUP_CMD_CNT; j++) {
       if (pmbus_dev_table[i].sku_pmbus_type[sku].offset == pmbus_dev_list[pmbus_type].pmbus_cmd_list[j].read_cmd) {
         char key_with_cmd[MAX_KEY_LEN];

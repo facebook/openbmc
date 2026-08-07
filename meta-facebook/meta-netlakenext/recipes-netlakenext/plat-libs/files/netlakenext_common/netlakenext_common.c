@@ -360,39 +360,33 @@ netlakenext_common_get_vr_source(uint8_t bus, uint8_t addr, uint8_t* sku) {
 }
 
 int
-netlakenext_common_get_vr_sku(uint8_t* sku, bool* change_vr_bus) {
+netlakenext_common_get_vr_sku(uint8_t* sku) {
   int ret = 0;
   uint8_t sys_cfg = 0;
 
-  ret = netlakenext_common_get_vr_source(VR_PVDD_MISC_BUS, VR_PVDD_MISC_ADDR, sku);
+  ret = netlakenext_common_get_vr_source(VR_BUS, VR_PVDD_MISC_ADDR, sku);
   if (ret < 0) {
-    *change_vr_bus = false;
-    ret = netlakenext_common_get_vr_source(VR_BUS, VR_PVDD_MISC_ADDR, sku);
+    syslog(LOG_ERR, "%s(): failed to get VR source, bus=%d.\n",
+      __func__, VR_BUS);
+    ret = netlakenext_common_get_sys_cfg(&sys_cfg);
     if (ret < 0) {
-      syslog(LOG_ERR, "%s(): failed to get VR source, bus=%d, %d.\n",
-        __func__, VR_BUS, VR_PVDD_MISC_BUS);
-      ret = netlakenext_common_get_sys_cfg(&sys_cfg);
-      if (ret < 0) {
-        syslog(LOG_ERR, "%s(): failed to get system config.\n", __func__);
-      } else {
-        switch ((sys_cfg & CPLD_VR_SOURCE_BIT) >> 3) {
-          case 0b10:
-             *sku = MPS;
-             break;
-          case 0b11:
-             *sku = INFINEON;
-             break;
-          case 0b01:
-             *sku = RENESAS;
-             break;
-          default:
-            syslog(LOG_ERR, "%s(): invalid system config: %d.\n", __func__, sys_cfg);
-            return -1;
-        }
+      syslog(LOG_ERR, "%s(): failed to get system config.\n", __func__);
+    } else {
+      switch ((sys_cfg & CPLD_VR_SOURCE_BIT) >> 3) {
+        case 0b10:
+            *sku = MPS;
+            break;
+        case 0b11:
+            *sku = INFINEON;
+            break;
+        case 0b01:
+            *sku = RENESAS;
+            break;
+        default:
+          syslog(LOG_ERR, "%s(): invalid system config: %d.\n", __func__, sys_cfg);
+          return -1;
       }
     }
-  } else {
-    *change_vr_bus = true;
   }
 
   return ret;

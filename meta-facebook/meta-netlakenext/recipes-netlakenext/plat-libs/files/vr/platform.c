@@ -134,44 +134,24 @@ struct vr_info netlakenext_vr_rns_list[] = {
   },
 };
 
-void vr_change_bus(struct vr_info *vr_list, int vr_cnt, bool change_vr_bus) {
-  if (change_vr_bus) {
-    for (int i = 0; i < vr_cnt; i++) {
-      if (vr_list[i].addr == VR_PVDDCR_ADDR) {
-        vr_list[i].bus = VR_PVDDCR_BUS;
-      }
-      else if (vr_list[i].addr == VR_PVDDCR_SOC_ADDR) {
-        vr_list[i].bus = VR_PVDDCR_SOC_BUS;
-      }
-      else if (vr_list[i].addr == VR_PVDD_MISC_ADDR) {
-        vr_list[i].bus = VR_PVDD_MISC_BUS;
-      }
-    }
-  }
-}
-
 int plat_vr_init(void) {
   int ret;
   uint8_t sku = 0;
-  bool change_vr_bus = false;
   int vr_cnt;
 
-  ret = netlakenext_common_get_vr_sku(&sku, &change_vr_bus);
+  ret = netlakenext_common_get_vr_sku(&sku);
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Failed to get vr sku, use main source (MPS) setting as default", __func__);
   }
 
   if (sku == MPS) {
     vr_cnt = sizeof(netlakenext_vr_mps_list)/sizeof(netlakenext_vr_mps_list[0]);
-    vr_change_bus(netlakenext_vr_mps_list, vr_cnt, change_vr_bus);
     ret = vr_device_register(netlakenext_vr_mps_list, vr_cnt);
   } else if (sku == INFINEON) {
     vr_cnt = sizeof(netlakenext_vr_inf_list)/sizeof(netlakenext_vr_inf_list[0]);
-    vr_change_bus(netlakenext_vr_inf_list, vr_cnt, change_vr_bus);
     ret = vr_device_register(netlakenext_vr_inf_list, vr_cnt);
   } else if (sku == RENESAS) {
     vr_cnt = sizeof(netlakenext_vr_rns_list)/sizeof(netlakenext_vr_rns_list[0]);
-    vr_change_bus(netlakenext_vr_rns_list, vr_cnt, change_vr_bus);
     ret = vr_device_register(netlakenext_vr_rns_list, vr_cnt);
   } else {
     syslog(LOG_ERR, "Invalid system config got from fpga.");

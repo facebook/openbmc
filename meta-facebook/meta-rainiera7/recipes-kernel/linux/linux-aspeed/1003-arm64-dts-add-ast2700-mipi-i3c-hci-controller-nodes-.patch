@@ -1,4 +1,4 @@
-From b26dc5d4cebb298a04ab782149b0bf1734d43160 Mon Sep 17 00:00:00 2001
+From 8e3e66c9f2ab282dec7bed2596525347d01dc734 Mon Sep 17 00:00:00 2001
 From: Alan Tsai <Alan-Tsai@quantatw.com>
 Date: Fri, 31 Jul 2026 10:20:07 +0800
 Subject: [PATCH] arm64: dts: add ast2700 mipi-i3c-hci controller nodes from
@@ -11,7 +11,7 @@ Link: https://github.com/AspeedTech-BMC/linux/commit/0fac7a7c2839f5566c6ad993102
  1 file changed, 208 insertions(+)
 
 diff --git a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
-index 3ceb82197de4..66c22532b2f2 100644
+index 3ceb82197..66c22532b 100644
 --- a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
 @@ -225,6 +225,214 @@ i2c: bus@14c0f000 {

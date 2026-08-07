@@ -1,7 +1,7 @@
-From 09cb0061900effe9919f4063c2fd74c835ad9764 Mon Sep 17 00:00:00 2001
+From f0c092c4b07cf02373ea07f88797b7beb71ceed6 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 1 Jul 2026 13:47:12 +0800
-Subject: [PATCH 1/1] nvidia-gpu: add option to disable PCIe device support
+Subject: [PATCH] nvidia-gpu: add option to disable PCIe device support
 
 The nvidia-gpu service scans all discovered EIDs and creates the
 corresponding sensor objects.
@@ -56,7 +56,7 @@ index 0718209..6dfb444 100644
      'external',
      type: 'feature',
 diff --git a/src/nvidia-gpu/NvidiaDeviceDiscovery.cpp b/src/nvidia-gpu/NvidiaDeviceDiscovery.cpp
-index ef8bc37..73dcc86 100644
+index fca8396..86c1118 100644
 --- a/src/nvidia-gpu/NvidiaDeviceDiscovery.cpp
 +++ b/src/nvidia-gpu/NvidiaDeviceDiscovery.cpp
 @@ -44,8 +44,8 @@ void processQueryDeviceIdResponse(
@@ -92,5 +92,5 @@ index ef8bc37..73dcc86 100644
          }
      }
 -- 
-2.52.0
+2.53.0-Meta
 

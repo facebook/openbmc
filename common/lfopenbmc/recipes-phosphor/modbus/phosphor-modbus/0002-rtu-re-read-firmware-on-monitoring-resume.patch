@@ -39,7 +39,7 @@ index 88c14dc..6be5353 100644
 +    {
 +        if (config.serialPort == portName && currentFirmware)
 +        {
-+            ctx.spawn(currentFirmware->readVersionRegister());
++            ctx.spawn(currentFirmware->readVersionRegisters());
 +        }
 +    }
 +

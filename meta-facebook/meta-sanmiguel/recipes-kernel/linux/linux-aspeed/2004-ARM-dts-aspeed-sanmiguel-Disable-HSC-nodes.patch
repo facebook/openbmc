@@ -1,7 +1,7 @@
-From 203b3caff2c1e3702a7c61c6d0201249d3053043 Mon Sep 17 00:00:00 2001
+From 7a58be9319a91d9f9761eecb4533ec75a97b42f8 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Thu, 30 Jul 2026 10:03:29 +0800
-Subject: [PATCH 1/1] ARM: dts: aspeed: sanmiguel: Disable HSC nodes
+Subject: [PATCH] ARM: dts: aspeed: sanmiguel: Disable HSC nodes
 
 Disable Hot-Swap Controller (HSC) power monitor nodes in the DTS.
 
@@ -17,10 +17,10 @@ Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
  1 file changed, 8 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
-index 3cc6e772cc8c..b4463533d2d2 100644
+index 49a2987bdfbe..bcec9f8ef0d0 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
-@@ -445,45 +445,53 @@ &i2c9 {
+@@ -697,45 +697,53 @@ &i2c9 {
  	pdb_mps_hsc1: power-monitor@10 {
  		compatible = "mps,mp5926";
  		reg = <0x10>;
@@ -75,5 +75,5 @@ index 3cc6e772cc8c..b4463533d2d2 100644
  
  	pdb_ioexp_20: gpio@20 {
 -- 
-2.52.0
+2.53.0-Meta
 

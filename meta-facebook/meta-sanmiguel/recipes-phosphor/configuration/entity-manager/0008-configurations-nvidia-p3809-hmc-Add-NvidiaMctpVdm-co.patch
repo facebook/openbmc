@@ -1,4 +1,4 @@
-From f1d3bc1f35db9c5811eb449a12a0cc31c0e88c6d Mon Sep 17 00:00:00 2001
+From db0b8bd0c215bf9bc18abd90004310c399d8598f Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 6 May 2026 09:57:59 +0800
 Subject: [PATCH] configurations: nvidia: p3809-hmc: Add NvidiaMctpVdm config
@@ -15,10 +15,10 @@ Change-Id: Ia61f0481f04b87ebf34d3d2d43fa6f36b26a757e
  1 file changed, 4 insertions(+)
 
 diff --git a/configurations/nvidia/p3809-hmc.json b/configurations/nvidia/p3809-hmc.json
-index a4f2133..b3ee330 100644
+index 7797a3c..588da87 100644
 --- a/configurations/nvidia/p3809-hmc.json
 +++ b/configurations/nvidia/p3809-hmc.json
-@@ -886,6 +886,10 @@
+@@ -798,6 +798,10 @@
              "Type": "SmbpbiVirtualEeprom",
              "Units": "Volts",
              "ValueType": "FLOAT64"
@@ -30,5 +30,5 @@ index a4f2133..b3ee330 100644
      ],
      "Name": "NVIDIA HMC",
 -- 
-2.52.0
+2.53.0-Meta
 

@@ -1,25 +1,26 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From 7b9709b2832ca4943a7bc2800adf1e7d90b3f853 Mon Sep 17 00:00:00 2001
 From: OpenBMC QEMU Builder <openbmc@meta.com>
 Date: Fri, 24 Jul 2026 12:00:00 -0700
-Subject: [PATCH] add usbredir subproject (parser-only) for QEMU usb-redir
+Subject: [PATCH] add usbredir subproject for QEMU usb-redir
 
 Provide libusbredirparser-0.5 from a vendored usbredir meson subproject so
 QEMU's configure --enable-usb-redir resolves the dependency without a system
 libusbredirparser. The subproject source is fetched and pinned by the recipe
 (SRCREV_usbredir); with --disable-download meson uses that pre-placed tree.
 
-Two changes:
-  * subprojects/usbredir.wrap maps the libusbredirparser-0.5 dependency to the
-    subproject's usbredir_parser_lib_dep variable.
-  * subprojects/usbredir/meson.build is trimmed to build only usbredirparser;
-    upstream unconditionally builds usbredirhost/tools/tests which require
-    libusb (not present in the QEMU build) and are unused by QEMU.
+The wrap maps the libusbredirparser-0.5 dependency to the subproject's
+usbredir_parser_lib_dep variable.  The usbredir subproject also builds its
+host library, so libusb must be available in the build environment.
 
 Signed-off-by: OpenBMC QEMU Builder <openbmc@meta.com>
 ---
+ subprojects/usbredir.wrap | 7 +++++++
+ 1 file changed, 7 insertions(+)
+ create mode 100644 subprojects/usbredir.wrap
+
 diff --git a/subprojects/usbredir.wrap b/subprojects/usbredir.wrap
 new file mode 100644
-index 0000000..1d89834
+index 0000000000..1d89834010
 --- /dev/null
 +++ b/subprojects/usbredir.wrap
 @@ -0,0 +1,7 @@
@@ -30,34 +31,5 @@ index 0000000..1d89834
 +
 +[provide]
 +libusbredirparser-0.5 = usbredir_parser_lib_dep
-diff --git a/subprojects/usbredir/meson.build b/subprojects/usbredir/meson.build
-index aac9909..4e14240 100644
---- a/subprojects/usbredir/meson.build
-+++ b/subprojects/usbredir/meson.build
-@@ -98,20 +98,8 @@ endif
- configure_file(output : 'config.h', configuration : config)
- 
- subdir('usbredirparser')
--subdir('usbredirhost')
--if get_option('tools').enabled()
--    subdir('tools')
--endif
--if host_machine.system() != 'windows'
--    subdir('usbredirtestclient')
--
--    if get_option('fuzzing').enabled()
--        subdir('fuzzing')
--    endif
--endif
--if get_option('tests').enabled()
--    subdir('tests')
--endif
--subdir('data')
-+# QEMU only needs libusbredirparser (see subprojects/usbredir.wrap). The other
-+# components (usbredirhost, tools, usbredirtestclient, fuzzing, tests) require
-+# libusb and are not used by QEMU, so they are not built here.
- 
- summary(summary_info, bool_yn: true)
 -- 
 2.53.0-Meta
-

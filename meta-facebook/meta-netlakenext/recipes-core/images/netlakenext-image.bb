@@ -48,4 +48,5 @@ IMAGE_INSTALL += " \
   apml \
   crashdump-amd \
   addc \
+  yaap \
   "

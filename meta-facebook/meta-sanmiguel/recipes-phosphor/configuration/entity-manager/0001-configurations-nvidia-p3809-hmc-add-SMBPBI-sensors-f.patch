@@ -1,24 +1,24 @@
-From 8a3c86850adf60591fb2f4c1c7b39c9761a685a9 Mon Sep 17 00:00:00 2001
+From 4a7bf63099459be2904d522992786d3274031981 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Fri, 6 Mar 2026 14:33:54 +0800
-Subject: [PATCH] configurations: nvidia: p3809-hmc: add SMBPBI sensors for
+Subject: [PATCH 1/1] configurations: nvidia: p3809-hmc: add SMBPBI sensors for
  SanMiguel
 
 Add SMBPBI sensors for SanMiguel system.
 
-[1] https://gerrit.openbmc.org/c/openbmc/entity-manager/+/89947/1
+[1] https://gerrit.openbmc.org/c/openbmc/entity-manager/+/89947/3
 
 Signed-off-by: Potin Lai <potin.lai@quantatw.com>
 Change-Id: I74c166c791ef51bf1a94e88b8050149a44766779
 ---
- configurations/nvidia/p3809-hmc.json | 874 +++++++++++++++++++++++++++
- 1 file changed, 874 insertions(+)
+ configurations/nvidia/p3809-hmc.json | 786 +++++++++++++++++++++++++++
+ 1 file changed, 786 insertions(+)
 
 diff --git a/configurations/nvidia/p3809-hmc.json b/configurations/nvidia/p3809-hmc.json
-index 613a79a..a4f2133 100644
+index 613a79a..7797a3c 100644
 --- a/configurations/nvidia/p3809-hmc.json
 +++ b/configurations/nvidia/p3809-hmc.json
-@@ -12,6 +12,880 @@
+@@ -12,6 +12,792 @@
              "Name": "HMC",
              "Port": 80,
              "Type": "SatelliteController"
@@ -26,95 +26,7 @@ index 613a79a..a4f2133 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 3,
-+            "MaxValue": 127,
-+            "MinValue": -128,
-+            "Name": "HGX_GPU0_DRAM_TEMP_C",
-+            "PollRate": 1,
-+            "PowerState": "On",
-+            "ReadOffset": 25,
-+            "Thresholds": [
-+                {
-+                    "Direction": "greater than",
-+                    "Hysteresis": 2.1,
-+                    "Name": "upper non critical",
-+                    "Severity": 0,
-+                    "Value": 105.0
-+                }
-+            ],
-+            "Type": "SmbpbiVirtualEeprom",
-+            "Units": "DegreesC",
-+            "ValueType": "UINT64"
-+        },
-+        {
-+            "Address": "0x4f",
-+            "Bus": 3,
-+            "MaxValue": 127,
-+            "MinValue": -128,
-+            "Name": "HGX_GPU1_DRAM_TEMP_C",
-+            "PollRate": 1,
-+            "PowerState": "On",
-+            "ReadOffset": 29,
-+            "Thresholds": [
-+                {
-+                    "Direction": "greater than",
-+                    "Hysteresis": 2.1,
-+                    "Name": "upper non critical",
-+                    "Severity": 0,
-+                    "Value": 105.0
-+                }
-+            ],
-+            "Type": "SmbpbiVirtualEeprom",
-+            "Units": "DegreesC",
-+            "ValueType": "UINT64"
-+        },
-+        {
-+            "Address": "0x4f",
-+            "Bus": 3,
-+            "MaxValue": 127,
-+            "MinValue": -128,
-+            "Name": "HGX_GPU2_DRAM_TEMP_C",
-+            "PollRate": 1,
-+            "PowerState": "On",
-+            "ReadOffset": 33,
-+            "Thresholds": [
-+                {
-+                    "Direction": "greater than",
-+                    "Hysteresis": 2.1,
-+                    "Name": "upper non critical",
-+                    "Severity": 0,
-+                    "Value": 105.0
-+                }
-+            ],
-+            "Type": "SmbpbiVirtualEeprom",
-+            "Units": "DegreesC",
-+            "ValueType": "UINT64"
-+        },
-+        {
-+            "Address": "0x4f",
-+            "Bus": 3,
-+            "MaxValue": 127,
-+            "MinValue": -128,
-+            "Name": "HGX_GPU3_DRAM_TEMP_C",
-+            "PollRate": 1,
-+            "PowerState": "On",
-+            "ReadOffset": 37,
-+            "Thresholds": [
-+                {
-+                    "Direction": "greater than",
-+                    "Hysteresis": 2.1,
-+                    "Name": "upper non critical",
-+                    "Severity": 0,
-+                    "Value": 105.0
-+                }
-+            ],
-+            "Type": "SmbpbiVirtualEeprom",
-+            "Units": "DegreesC",
-+            "ValueType": "UINT64"
-+        },
-+        {
-+            "Address": "0x4f",
-+            "Bus": 3,
-+            "MaxValue": 1023,
++            "MaxValue": 3000,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU0_PWR_W",
 +            "PollRate": 1,
@@ -127,7 +39,7 @@ index 613a79a..a4f2133 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 3,
-+            "MaxValue": 1023,
++            "MaxValue": 3000,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU1_PWR_W",
 +            "PollRate": 1,
@@ -140,7 +52,7 @@ index 613a79a..a4f2133 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 3,
-+            "MaxValue": 1023,
++            "MaxValue": 3000,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU2_PWR_W",
 +            "PollRate": 1,
@@ -153,7 +65,7 @@ index 613a79a..a4f2133 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 3,
-+            "MaxValue": 1023,
++            "MaxValue": 3000,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU3_PWR_W",
 +            "PollRate": 1,
@@ -362,7 +274,7 @@ index 613a79a..a4f2133 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 3,
-+            "MaxValue": 1023,
++            "MaxValue": 3000,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU0_DRAM_PWR_W",
 +            "PollRate": 1,
@@ -375,7 +287,7 @@ index 613a79a..a4f2133 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 3,
-+            "MaxValue": 1023,
++            "MaxValue": 3000,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU1_DRAM_PWR_W",
 +            "PollRate": 1,
@@ -388,7 +300,7 @@ index 613a79a..a4f2133 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 3,
-+            "MaxValue": 1023,
++            "MaxValue": 3000,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU2_DRAM_PWR_W",
 +            "PollRate": 1,
@@ -401,7 +313,7 @@ index 613a79a..a4f2133 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 3,
-+            "MaxValue": 1023,
++            "MaxValue": 3000,
 +            "MinValue": 0,
 +            "Name": "HGX_GPU3_DRAM_PWR_W",
 +            "PollRate": 1,
@@ -613,7 +525,7 @@ index 613a79a..a4f2133 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 3,
-+            "MaxValue": 500,
++            "MaxValue": 3000,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU0_PWR_W",
 +            "PollRate": 1,
@@ -626,7 +538,7 @@ index 613a79a..a4f2133 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 3,
-+            "MaxValue": 100,
++            "MaxValue": 3000,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU0_VR_CPU_PWR_W",
 +            "PollRate": 1,
@@ -639,7 +551,7 @@ index 613a79a..a4f2133 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 3,
-+            "MaxValue": 10,
++            "MaxValue": 3000,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU0_VR_SOC_PWR_W",
 +            "PollRate": 1,
@@ -763,7 +675,7 @@ index 613a79a..a4f2133 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 3,
-+            "MaxValue": 500,
++            "MaxValue": 3000,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU1_PWR_W",
 +            "PollRate": 1,
@@ -776,7 +688,7 @@ index 613a79a..a4f2133 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 3,
-+            "MaxValue": 100,
++            "MaxValue": 3000,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU1_VR_CPU_PWR_W",
 +            "PollRate": 1,
@@ -789,7 +701,7 @@ index 613a79a..a4f2133 100644
 +        {
 +            "Address": "0x4f",
 +            "Bus": 3,
-+            "MaxValue": 10,
++            "MaxValue": 3000,
 +            "MinValue": 0,
 +            "Name": "HGX_CPU1_VR_SOC_PWR_W",
 +            "PollRate": 1,

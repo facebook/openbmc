@@ -1,3 +1,5 @@
+FILESEXTRAPATHS:prepend := "${THISDIR}/caliptra-mcu-sw_1x:"
+
 SUMMARY = "Caliptra MCU firmware and software"
 HOMEPAGE = "https://github.com/chipsalliance/caliptra-mcu-sw"
 
@@ -12,12 +14,10 @@ SRC_URI = "gitsm://github.com/chipsalliance/caliptra-mcu-sw;protocol=https;branc
 
 SRCREV = "2b7837402328ab611968d40243075082469df7ae"
 
-PV = "1.0+git"
-
 inherit cargo cargo-update-recipe-crates
 
-require ${BPN}-crates.inc
-require ${BPN}-git-crates.inc
+require caliptra-mcu-sw_1x-crates.inc
+require caliptra-mcu-sw_1x-git-crates.inc
 
 # crates.io may reject the API download endpoint used by BitBake's crate
 # fetcher; prefer the static crate tarball location first.

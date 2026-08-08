@@ -1,4 +1,4 @@
-From 2c750350cd130ebba12c5a61871d9801a24d0afc Mon Sep 17 00:00:00 2001
+From 9a5ec3687e015c16217852e13bb4dd88f8769886 Mon Sep 17 00:00:00 2001
 From: RQ Lai <r.q.lai@quantatw.com>
 Date: Tue, 4 Aug 2026 03:44:19 +0800
 Subject: [PATCH] configurations: rainier: Support for a second source MB
@@ -36,3 +36,6 @@ index 66c5122..e66ded1 100644
              "MATCH_ONE"
          ],
          "Type": "Board",
+-- 
+2.53.0-Meta
+

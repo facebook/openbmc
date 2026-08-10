@@ -26,4 +26,6 @@ SRC_URI:append = " \
     file://1021-ARM-dts-aspeed-anacapa-Add-eeprom-device-node-for-NF.patch \
     file://1022-ARM-dts-aspeed-anacapa-add-JTAG-CPLD-TRST-pin-to-SGP.patch \
     file://1023-ARM-dts-aspeed-anacapa-Support-Venice-B0-CPU-APML.patch \
+    file://1024-jtag-jtag-aspeed-Bring-changes-for-Aspeed-26XX.patch \
+    file://1025-jtag-jtag-aspeed-Increase-the-wait-iteration-to-300.patch \
 "

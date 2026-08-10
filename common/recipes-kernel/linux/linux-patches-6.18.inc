@@ -102,6 +102,7 @@ SRC_URI:append = " \
     file://0613-dt-bindings-trivial-devices-Add-adi-max20912-and-max.patch \
     file://0614-hwmon-pmbus-Add-driver-for-Analog-Devices-MAX20912-a.patch \
     file://0615-nfc-nxp-nci-treat-ENXIO-in-IRQ-thread-as-no-data-ava.patch \
+    file://0616-hwmon-kb9002-Add-driver-for-Kandou-KB9002-retimer.patch \
 "
 
 #

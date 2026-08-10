@@ -24,6 +24,7 @@ SRC_URI:append = " \
     file://0021-CableMonitor-increase-reconcile-delay-to-60s.patch \
     file://0022-PSUSensor-add-ADI-MAX20912-and-MAX20916-support.patch \
     file://0023-Psusensor-support-I3C-devices-with-full-48-bit-PID-a.patch \
+    file://0024-nvmesensor-implement-in-place-threshold-updates-to-p.patch \
 "
 
 SRC_URI:append:ventura2 = " \

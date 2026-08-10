@@ -1,0 +1,179 @@
+From 52668949cc06980db0a9d9919aa0cab30863f586 Mon Sep 17 00:00:00 2001
+From: Richard Yang <richard.yang@amd.com>
+Date: Mon, 27 Jul 2026 17:16:09 +0800
+Subject: [PATCH] nvmesensor: implement in-place threshold updates to preserve
+ state
+
+NVMeSensor was not covered by the in-place threshold update in patch
+0019. When a threshold property is changed via D-Bus, entity-manager
+emits a PropertiesChanged signal which triggers createSensors(). The
+original code destroys all sensor objects and recreates them, causing
+the 'assertedLog' state to be lost. This results in:
+- Duplicate threshold event logs (one from old object, one from new)
+- The first log entry is never resolved (orphaned)
+- Potential service crash (sd_bus_add_object_vtable: File exists)
+
+This patch implements in-place threshold updates for NVMe sensors,
+following the same pattern as ADC/Fan/HwmonTemp/PSU:
+- Skips sensor destruction on rescan (only full creation on first scan)
+- Updates threshold values in-place while keeping the object alive
+- Preserves assertedLog state to allow successful event resolution
+- Adds getSensors() accessor to NVMeContext for sensor lookup
+
+Tested:
+root@bmc:# mfg-tool log-clear
+root@bmc:# busctl set-property xyz.openbmc_project.NVMeSensor /xyz/openbmc_project/sensors/temperature/MB_E1S_BOOT_TEMP_C xyz.openbmc_project.Sensor.Threshold.Critical CriticalHigh d 0
+root@bmc:# sleep 5
+root@bmc:# busctl set-property xyz.openbmc_project.NVMeSensor /xyz/openbmc_project/sensors/temperature/MB_E1S_BOOT_TEMP_C xyz.openbmc_project.Sensor.Threshold.Critical CriticalHigh d 70
+root@bmc:# sleep 15
+root@bmc:# journalctl -u xyz.openbmc_project.nvmesensor.service --no-pager -n 15
+Jul 27 01:00:01 bmc nvmesensor[23130]: NVMeSensor MB_E1S0_TEMP_C thresholds updated in-place to preserve state
+Jul 27 01:00:01 bmc nvmesensor[23130]: NVMeSensor MB_E1S1_TEMP_C thresholds updated in-place to preserve state
+Jul 27 01:00:01 bmc nvmesensor[23130]: NVMeSensor MB_E1S2_TEMP_C thresholds updated in-place to preserve state
+Jul 27 01:00:01 bmc nvmesensor[23130]: NVMeSensor MB_E1S3_TEMP_C thresholds updated in-place to preserve state
+Jul 27 01:00:01 bmc nvmesensor[23130]: NVMeSensor MB_E1S_BOOT_TEMP_C thresholds updated in-place to preserve state
+Jul 27 01:00:02 bmc nvmesensor[23130]: Sensor name: MB_E1S_BOOT_TEMP_C, high threshold: 0.000000, assert value: 32.000000, raw data: nan
+Jul 27 01:00:06 bmc nvmesensor[23130]: OPENBMC_MESSAGE_ID={"severity":6,"xyz.openbmc_project.Sensor.Threshold.SensorReadingNormalRange":...}
+Jul 27 01:00:07 bmc nvmesensor[23130]: NVMeSensor MB_E1S0_TEMP_C thresholds updated in-place to preserve state
+Jul 27 01:00:07 bmc nvmesensor[23130]: NVMeSensor MB_E1S1_TEMP_C thresholds updated in-place to preserve state
+Jul 27 01:00:07 bmc nvmesensor[23130]: NVMeSensor MB_E1S2_TEMP_C thresholds updated in-place to preserve state
+Jul 27 01:00:07 bmc nvmesensor[23130]: NVMeSensor MB_E1S3_TEMP_C thresholds updated in-place to preserve state
+Jul 27 01:00:07 bmc nvmesensor[23130]: NVMeSensor MB_E1S_BOOT_TEMP_C thresholds updated in-place to preserve state
+root@bmc:~# mfg-tool log-display 2>/dev/null | sort-log-entry | jq
+{
+"1": {
+"message": "xyz.openbmc_project.Logging.Cleared",
+"resolved": false,
+"timestamp": "2026-07-27T07:59:46.884000000Z"
+},
+"2": {
+"message": "xyz.openbmc_project.Sensor.Threshold.ReadingAboveUpperCriticalThreshold",
+"resolved": true,
+"timestamp": "2026-07-27T08:00:01.062000000Z"
+},
+"3": {
+"message": "xyz.openbmc_project.Sensor.Threshold.SensorReadingNormalRange",
+"resolved": false,
+"timestamp": "2026-07-27T08:00:06.288000000Z"
+}
+}
+---
+ src/nvme/NVMeContext.hpp    |  5 +++
+ src/nvme/NVMeSensorMain.cpp | 61 ++++++++++++++++++++++++++++++++++---
+ 2 files changed, 62 insertions(+), 4 deletions(-)
+
+diff --git a/src/nvme/NVMeContext.hpp b/src/nvme/NVMeContext.hpp
+index cb5d062..33a0f32 100644
+--- a/src/nvme/NVMeContext.hpp
++++ b/src/nvme/NVMeContext.hpp
+@@ -37,6 +37,11 @@ class NVMeContext : public std::enable_shared_from_this<NVMeContext>
+         sensors.emplace_back(sensor);
+     }
+ 
++    const std::list<std::shared_ptr<NVMeSensor>>& getSensors() const
++    {
++        return sensors;
++    }
++
+     std::optional<std::shared_ptr<NVMeSensor>> getSensorAtPath(
+         const std::string& path)
+     {
+diff --git a/src/nvme/NVMeSensorMain.cpp b/src/nvme/NVMeSensorMain.cpp
+index f4e2e49..3612d7e 100644
+--- a/src/nvme/NVMeSensorMain.cpp
++++ b/src/nvme/NVMeSensorMain.cpp
+@@ -159,20 +159,25 @@ static std::shared_ptr<NVMeContext> provideRootBusContext(
+     return context;
+ }
+ 
++static bool firstScan = true;
++
+ static void handleSensorConfigurations(
+     boost::asio::io_context& io, sdbusplus::asio::object_server& objectServer,
+     std::shared_ptr<sdbusplus::asio::connection>& dbusConnection,
+     const ManagedObjectType& sensorConfigurations)
+ {
+     // todo: it'd be better to only update the ones we care about
+-    for (const auto& [_, nvmeContextPtr] : nvmeDeviceMap)
++    if (firstScan)
+     {
+-        if (nvmeContextPtr)
++        for (const auto& [_, nvmeContextPtr] : nvmeDeviceMap)
+         {
+-            nvmeContextPtr->close();
++            if (nvmeContextPtr)
++            {
++                nvmeContextPtr->close();
++            }
+         }
++        nvmeDeviceMap.clear();
+     }
+-    nvmeDeviceMap.clear();
+ 
+     // iterate through all found configurations
+     for (const auto& [interfacePath, sensorData] : sensorConfigurations)
+@@ -198,6 +203,53 @@ static void handleSensorConfigurations(
+             continue;
+         }
+ 
++        // on rescan, update thresholds in-place to preserve assertedLog state
++        if (!firstScan)
++        {
++            bool found = false;
++            for (const auto& [_, context] : nvmeDeviceMap)
++            {
++                for (auto& sensor : context->getSensors())
++                {
++                    if (sensor->name == escapeName(*sensorName))
++                    {
++                        std::vector<thresholds::Threshold> newThresholds;
++                        if (parseThresholdsFromConfig(sensorData,
++                                                     newThresholds))
++                        {
++                            auto& oldThresholds = sensor->thresholds;
++                            for (const auto& newTh : newThresholds)
++                            {
++                                for (auto& oldTh : oldThresholds)
++                                {
++                                    if (newTh.level == oldTh.level &&
++                                        newTh.direction == oldTh.direction)
++                                    {
++                                        oldTh.value = newTh.value;
++                                    }
++                                }
++                            }
++                            thresholds::updateThresholds(sensor.get());
++                            lg2::info(
++                                "NVMeSensor {NAME} thresholds updated in-place to preserve state",
++                                "NAME", *sensorName);
++                        }
++                        found = true;
++                        break;
++                    }
++                }
++                if (found)
++                {
++                    break;
++                }
++            }
++            if (found)
++            {
++                continue;
++            }
++            // sensor not found, fall through to create it
++        }
++
+         std::vector<thresholds::Threshold> sensorThresholds;
+         if (!parseThresholdsFromConfig(sensorData, sensorThresholds))
+         {
+@@ -238,6 +290,7 @@ static void handleSensorConfigurations(
+     {
+         context->pollNVMeDevices();
+     }
++    firstScan = false;
+ }
+ 
+ void createSensors(boost::asio::io_context& io,
+-- 
+2.43.0
+

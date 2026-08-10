@@ -43,6 +43,9 @@ SRC_URI:append:santabarbara = " \
     file://0301-Thresholds-Add-option-to-log-thresholds-on-second-hi.patch \
 "
 
+SRC_URI:remove:santabarbara = " \
+    file://0023-Psusensor-support-I3C-devices-with-full-48-bit-PID-a.patch \
+"
 PACKAGECONFIG[valvemonitor] = "-Dvalve-monitor=enabled, -Dvalve-monitor=disabled"
 
 SYSTEMD_SERVICE:${PN} += "${@bb.utils.contains('PACKAGECONFIG', 'valvemonitor', \

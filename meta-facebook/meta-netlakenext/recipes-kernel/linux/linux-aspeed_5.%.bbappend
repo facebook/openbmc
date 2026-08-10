@@ -31,4 +31,5 @@ SRC_URI += "file://netlakenext.cfg \
             file://1008-sbtsi-Ensure-clean-teardown-for-hwmon-and-IOCTL.patch \
             file://1101-kernel-5.10-prioritize-1-byte-register-address-probi.patch \
             file://1102-kernel-5.10-port-Linux-6.6-JTAG-driver-for-support-HW2.patch \
+            file://1103-netlakenext-linux-fix-unaligned-access-in-amd-sbtsi-.patch \
 	"

@@ -3,4 +3,5 @@ EXTRA_OEMESON:append = " \
   -Dsensor-polling-time=2000 \
   -Dmctp-recovery=disabled \
   -Denable-fallback-terminus-name=disabled \
+  -Ddbus-timeout-value=60 \
 "

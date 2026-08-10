@@ -10,8 +10,8 @@ Summary:
 3. Update Thor3 NIC thresholds and sensor name to align with Mortaro.
 ---
  .../amd/vulcano_1O800_800g_ocp.json           | 142 +++++++++++++++++-
- configurations/broadcomm/800g_1p_ocp.json     |  22 +--
- 2 files changed, 154 insertions(+), 10 deletions(-)
+ configurations/broadcomm/800g_1p_ocp.json     |  24 ++---
+ 2 files changed, 155 insertions(+), 11 deletions(-)
 
 diff --git a/configurations/amd/vulcano_1O800_800g_ocp.json b/configurations/amd/vulcano_1O800_800g_ocp.json
 index 84ecebc..c7444b1 100644
@@ -40,13 +40,13 @@ index 84ecebc..c7444b1 100644
 +                    "Direction": "greater than",
 +                    "Name": "upper critical",
 +                    "Severity": 1,
-+                    "Value": 105
++                    "Value": 100
 +                },
 +                {
 +                    "Direction": "greater than",
 +                    "Name": "upper non recoverable",
 +                    "Severity": 4,
-+                    "Value": 110
++                    "Value": 105
 +                }
 +            ],
 +            "Type": "ExternalSensor",
@@ -70,13 +70,13 @@ index 84ecebc..c7444b1 100644
 +                    "Direction": "greater than",
 +                    "Name": "upper critical",
 +                    "Severity": 1,
-+                    "Value": 105
++                    "Value": 100
 +                },
 +                {
 +                    "Direction": "greater than",
 +                    "Name": "upper non recoverable",
 +                    "Severity": 4,
-+                    "Value": 110
++                    "Value": 105
 +                }
 +            ],
 +            "Type": "ExternalSensor",
@@ -197,13 +197,14 @@ index c80209c..1a8be3d 100644
 -                    "Index": 2,
                      "Name": "upper critical",
                      "Severity": 1,
-                     "Value": 105
+-                    "Value": 105
++                    "Value": 100
 +                },
 +                {
 +                    "Direction": "greater than",
 +                    "Name": "upper non recoverable",
 +                    "Severity": 4,
-+                    "Value": 110
++                    "Value": 105
                  }
              ],
              "Type": "TMP421"
@@ -214,6 +215,5 @@ index c80209c..1a8be3d 100644
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Broadcom BCM957708 1x800G OCP', 'BOARD_MANUFACTURER': 'Broadcom'})",
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
--- 
+--
 2.34.1
-

@@ -1,8 +1,7 @@
-From ccf367c11a45199c8afc8ef62722ac03fa864fe9 Mon Sep 17 00:00:00 2001
+From 81cf83f94aead4e05a6b5795f0ae7034f3292c26 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Wed, 17 Dec 2025 10:39:36 +0800
-Subject: [PATCH 1003/1007] ARM: dts: aspeed: bletchley: Remove unused pca9539
- properties
+Subject: [PATCH] ARM: dts: aspeed: bletchley: Remove unused pca9539 properties
 
 Remove unused #address-cells and #size-cells properties from
 pca9539 nodes to fix dt-schema warnings.
@@ -72,5 +71,5 @@ index 5919a5046078..8df145d2bcfd 100644
  		#gpio-cells = <2>;
  
 -- 
-2.43.0
+2.53.0
 

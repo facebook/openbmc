@@ -381,8 +381,13 @@ int CpldLatticeManager::readDeviceId()
 
 int CpldLatticeManager::autoDetectChip()
 {
-    constexpr std::array<uint8_t, 4> cmd = {CMD_READ_DEVICE_ID};
+    std::vector<uint8_t> cmd = {CMD_READ_DEVICE_ID, 0x0, 0x0, 0x0};
     std::array<uint8_t, 5> readData = {};
+
+    if (CheckSOFTIP() && ((softIpVersion & 0xF0) == 0x10))
+    {
+        appendCrc16(cmd);
+    }
 
     if (i2cWriteReadCmd(cmd, readData.size(), readData) != 0)
     {

@@ -73,11 +73,11 @@ PAL_SENSOR_MAP server_sensor_map[] = {
   [SERVER_A_PVDD_MISC_S5_VOL] =
   {"A_PVDD_MISC_S5_VOL", CPLD_ADC_PVDD_MISC_S5, read_cpld_adc, STBY_READING, {0.81, 0.80, 0.82, 0.69, 0.70, 0.68, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [SERVER_PVDDCR_TEMP] =
-  {"PVDDCR_TEMP", VR_PVDDCR_TEMP, read_pmbus, POWER_ON_READING, {125, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  {"PVDDCR_TEMP", VR_PVDDCR_TEMP, read_pmbus, POWER_ON_READING, {100, 0, 125, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [SERVER_PVDDCR_SOC_TEMP] =
-  {"PVDDCR_SOC_TEMP", VR_PVDDCR_SOC_TEMP, read_pmbus, POWER_ON_READING, {125, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  {"PVDDCR_SOC_TEMP", VR_PVDDCR_SOC_TEMP, read_pmbus, POWER_ON_READING, {100, 0, 125, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [SERVER_PVDD_MISC_TEMP] =
-  {"PVDD_MISC_TEMP", VR_PVDD_MISC_TEMP, read_pmbus, POWER_ON_READING, {125, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  {"PVDD_MISC_TEMP", VR_PVDD_MISC_TEMP, read_pmbus, POWER_ON_READING, {100, 0, 125, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [SERVER_PVDDCR_VOL] =
   {"PVDDCR_VOL", VR_PVDDCR_VOL, read_pmbus, POWER_ON_READING, {1.82, 1.75, 1.90, 0, 0, 0, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [SERVER_PVDDCR_SOC_VOL] =
@@ -97,7 +97,7 @@ PAL_SENSOR_MAP server_sensor_map[] = {
   [SERVER_PVDD_MISC_PWR] =
   {"PVDD_MISC_PWR", VR_PVDD_MISC_PWR, read_pmbus, POWER_ON_READING, {24.72, 0, 24.96, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
   [SERVER_P12V_COME_PWR] =
-  {"P12V_COME_PWR", P12V_COME_PWR, read_ina230, STBY_READING, {117.46455, 0, 119.75648, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
+  {"P12V_COME_PWR", P12V_COME_PWR, read_ina230, STBY_READING, {117.4645454, 0, 119.7564826, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
   [SERVER_P12V_COME_IOUT] =
   {"P12V_COME_IOUT", P12V_COME_IOUT, read_ina230, STBY_READING, {10.97, 9.87, 0, 0, 0, 0, 0, 0}, CURR, NORMAL_POLL_INTERVAL},
 };
@@ -143,18 +143,6 @@ PAL_SENSOR_MAP fio_sensor_map[] = {
 PAL_SENSOR_MAP nic_sensor_map[] = {
   [BMC_OCP_NIC_TEMP] =
   {"OCP_NIC_TEMP", OCP_NIC_TEMP, read_nic_temp, POWER_ON_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
-};
-
-const char *adc_label[] = {
-  "ADC_P5V_STBY_VOL",
-  "ADC_P12V_STBY_MTP_VOL",
-  "ADC_P3V3_STBY_MTP_VOL",
-  "ADC_P12V_COME_VOL",
-  "ADC_P3V3_NIC_MTP_CURR",
-  "ADC_P12V_NIC_MTP_CURR",
-  "ADC_P3V3_NIC_MTP_VOL",
-  "ADC_P12V_NIC_MTP_VOL",
-  "ADC_P3V_BAT_MTP_VOL",
 };
 
 PAL_SENSOR_MAP pdb_sensor_map[] = {
@@ -221,6 +209,13 @@ const uint8_t bmc_sensor_list[] = {
   BMC_E1S_TEMP,
 };
 
+const uint8_t pdb_sensor_list[] = {
+  FAN0_TACH,
+  FAN1_TACH,
+  FAN2_TACH,
+  FAN3_TACH,
+};
+
 const uint8_t dimm_addr_list[] = {
   DIMMA_ADDR,
   DIMMB_ADDR,
@@ -229,13 +224,6 @@ const uint8_t dimm_addr_list[] = {
 const uint8_t pmic_addr_list[] = {
   PMICA_ADDR,
   PMICB_ADDR,
-};
-
-const uint8_t pdb_sensor_list[] = {
-  FAN0_TACH,
-  FAN1_TACH,
-  FAN2_TACH,
-  FAN3_TACH,
 };
 
 const uint8_t fio_sensor_list[] = {
@@ -252,6 +240,18 @@ PAL_DEV_INFO hwmon_dev_list[] = {
   {"tmp75-i2c-10-48",  "FIO_INLET_TEMP"},
   {"sbtsi_0.0-i2c-5-4c",  "SOC_TEMP"},
   {"sbrmi_0.0-i2c-5-3c",  "SOC_PWR"},
+};
+
+const char *adc_label[] = {
+  "ADC_P5V_STBY_VOL",
+  "ADC_P12V_STBY_MTP_VOL",
+  "ADC_P3V3_STBY_MTP_VOL",
+  "ADC_P12V_COME_VOL",
+  "ADC_P3V3_NIC_MTP_CURR",
+  "ADC_P12V_NIC_MTP_CURR",
+  "ADC_P3V3_NIC_MTP_VOL",
+  "ADC_P12V_NIC_MTP_VOL",
+  "ADC_P3V_BAT_MTP_VOL",
 };
 
 PAL_PMBUS_INFO pmbus_dev_table[] = {

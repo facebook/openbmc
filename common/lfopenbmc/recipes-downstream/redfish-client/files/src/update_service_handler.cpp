@@ -24,7 +24,6 @@ auto loop(sdbusplus::async::context& ctx,
           std::unique_ptr<UpdateServiceHandler> handler,
           size_t intervalMilliseconds) -> sdbusplus::async::task<void>
 {
-    sdbusplus::server::manager_t manager{ctx, SoftwareVersion::namespace_path};
     while (!ctx.stop_requested())
     {
         co_await handler->load(ctx);

@@ -5,6 +5,8 @@
 #include <boost/stacktrace.hpp>
 #include <phosphor-logging/lg2.hpp>
 #include <redfish_client/core/redfish_client.hpp>
+#include <redfish_client/core/sensor.hpp>
+#include <redfish_client/core/update_service_handler.hpp>
 
 #include <csignal>
 #include <string>
@@ -47,6 +49,9 @@ int main(int argc, const char** argv)
     {
         const std::string kServiceName = "xyz.openbmc_project.RedfishClient";
         sdbusplus::async::context ctx;
+        sdbusplus::server::manager_t sensorManager{ctx, Sensor::rootPath};
+        sdbusplus::server::manager_t softwareManager{
+            ctx, SoftwareVersion::namespace_path};
         ctx.request_name(kServiceName.c_str());
         RedfishClient client(ctx, configDir, persistDir);
         ctx.spawn(client.run());

@@ -37,7 +37,6 @@ auto loop(sdbusplus::async::context& ctx,
           std::unique_ptr<SensorHandler> handler, size_t intervalMilliseconds)
     -> sdbusplus::async::task<void>
 {
-    sdbusplus::server::manager_t manager{ctx, Sensor::rootPath};
     while (!ctx.stop_requested())
     {
         co_await handler->load(ctx);

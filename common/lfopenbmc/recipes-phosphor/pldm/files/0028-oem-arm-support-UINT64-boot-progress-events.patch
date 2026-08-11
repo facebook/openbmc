@@ -1,0 +1,103 @@
+From 5c92046add7e9ed1fb09dd07b2444293195cbbe5 Mon Sep 17 00:00:00 2001
+From: Abhishek R <abhishek.ramireddygarireddy@arm.com>
+Date: Thu, 6 Aug 2026 14:47:48 +0000
+Subject: [PATCH] oem/arm: support UINT64 boot progress events
+
+Decode Arm BootProgressCode numeric sensor events UINT64 values
+and publish the complete eight-byte value.
+
+Tested:
+
+$ log-util list postcode
+Timestamp                 POST Code
+------------------------- ---------
+2026-08-05 05:06:56       0x0000000000006000
+2026-08-05 05:07:00       0x0182100B00000001
+2026-08-05 05:07:00       0x0182100700000001
+2026-08-05 05:07:02       0x0182200B00000001
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/pldm/+/93287]
+
+Change-Id: I3c234549bbfe50260190eee97b14c92b9e9dd39d
+Signed-off-by: Abhishek R <abhishek.ramireddygarireddy@arm.com>
+---
+ oem/arm/event/oem_event_manager.cpp | 25 ++++++++++++++++++++-----
+ oem/arm/event/oem_event_manager.hpp |  2 +-
+ 2 files changed, 21 insertions(+), 6 deletions(-)
+
+diff --git a/oem/arm/event/oem_event_manager.cpp b/oem/arm/event/oem_event_manager.cpp
+index 6f27efd..b408181 100644
+--- a/oem/arm/event/oem_event_manager.cpp
++++ b/oem/arm/event/oem_event_manager.cpp
+@@ -38,9 +38,13 @@ constexpr auto bootProgressProperty = "BootProgress";
+ constexpr auto bootProgressStageOem =
+     "xyz.openbmc_project.State.Boot.Progress.ProgressStages.OEM";
+ 
+-std::vector<uint8_t> bootProgressToBytes(uint32_t presentReading)
++std::vector<uint8_t> bootProgressToBytes(uint64_t presentReading)
+ {
+     return {
++        static_cast<uint8_t>((presentReading >> 56) & 0xff),
++        static_cast<uint8_t>((presentReading >> 48) & 0xff),
++        static_cast<uint8_t>((presentReading >> 40) & 0xff),
++        static_cast<uint8_t>((presentReading >> 32) & 0xff),
+         static_cast<uint8_t>((presentReading >> 24) & 0xff),
+         static_cast<uint8_t>((presentReading >> 16) & 0xff),
+         static_cast<uint8_t>((presentReading >> 8) & 0xff),
+@@ -172,10 +176,11 @@ int OemEventManager::processNumericSensorEvent(
+     uint8_t eventState = 0;
+     uint8_t previousEventState = 0;
+     uint8_t sensorDataSize = 0;
+-    uint32_t presentReading = 0;
+-    auto rc = decode_numeric_sensor_data(
++    pldm_numeric_sensor_value presentReadingData{};
++    uint64_t presentReading = 0;
++    auto rc = decode_numeric_sensor_data_to_value(
+         sensorData, sensorDataLength, &eventState, &previousEventState,
+-        &sensorDataSize, &presentReading);
++        &presentReadingData);
+     if (rc)
+     {
+         lg2::error(
+@@ -185,6 +190,16 @@ int OemEventManager::processNumericSensorEvent(
+         return rc;
+     }
+ 
++    sensorDataSize = presentReadingData.sensor_data_size;
++    if (sensorDataSize != PLDM_SENSOR_DATA_SIZE_UINT64)
++    {
++        lg2::error(
++            "Unsupported Arm boot progress sensor data size {SIZE} for terminus {TID}, sensor {SID}",
++            "SIZE", sensorDataSize, "TID", tid, "SID", sensorId);
++        return PLDM_ERROR_INVALID_DATA;
++    }
++    presentReading = presentReadingData.value.value_u64;
++
+     switch (sensorId)
+     {
+         case bootProgressSensorId:
+@@ -201,7 +216,7 @@ int OemEventManager::processNumericSensorEvent(
+     }
+ }
+ 
+-int OemEventManager::updateBootProgress(uint32_t presentReading) const
++int OemEventManager::updateBootProgress(uint64_t presentReading) const
+ {
+     auto postCode = bootProgressToBytes(presentReading);
+ 
+diff --git a/oem/arm/event/oem_event_manager.hpp b/oem/arm/event/oem_event_manager.hpp
+index 7757cf2..99545aa 100644
+--- a/oem/arm/event/oem_event_manager.hpp
++++ b/oem/arm/event/oem_event_manager.hpp
+@@ -85,7 +85,7 @@ class OemEventManager
+      *
+      *  @return PLDM completion code
+      */
+-    int updateBootProgress(uint32_t presentReading) const;
++    int updateBootProgress(uint64_t presentReading) const;
+ 
+     platform_mc::Manager* manager = nullptr;
+ };
+-- 
+2.34.1
+

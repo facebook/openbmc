@@ -1,33 +1,42 @@
-From 5bea46951953d172f32816b6cd3634740fe68263 Mon Sep 17 00:00:00 2001
+From ef06204b73ab9ae7f859fe7da100dc6bb0687a3a Mon Sep 17 00:00:00 2001
 From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
 Date: Tue, 30 Jun 2026 16:48:53 +0530
 Subject: [PATCH] platform-mc: add helper to get terminus name
 
-Add a Manager helper to look up a terminus by TID and return its
-terminus name. This allows OEM handlers to identify platform-specific
-termini without depending on sensor names.
+Add a Manager helper to look up a discovered terminus by TID and
+return the terminus name from its Entity Auxiliary Names PDR.
+
+The helper lets OEM handlers map an incoming event's TID to the stable
+platform identity advertised by the terminus. TID and MCTP EID are
+assigned during discovery and can change across rediscovery or transport
+topology changes, while the MCTP network ID identifies the transport
+instance and a sensor name identifies the sensor rather than the
+terminus.
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/pldm/+/91864]
 
 Change-Id: Ib6a3ce08f6354cf14bcd2e11fc9e6ebc02097509
 Signed-off-by: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
 ---
- platform-mc/manager.hpp | 25 +++++++++++++++++++++++++
- 1 file changed, 25 insertions(+)
+ platform-mc/manager.hpp | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
 
 diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
-index 056d7bc9cf9..81a992535d0 100644
+index 056d7bc..6474180 100644
 --- a/platform-mc/manager.hpp
 +++ b/platform-mc/manager.hpp
-@@ -10,6 +10,9 @@
+@@ -10,6 +10,10 @@
  
  #include <libpldm/pldm.h>
  
 +#include <optional>
 +#include <string>
++#include <string_view>
 +
  namespace pldm
  {
  namespace platform_mc
-@@ -237,6 +240,28 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+@@ -237,6 +241,22 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
          eventManager.registerPolledEventHandler(eventClass, handlers);
      }
  
@@ -36,7 +45,7 @@ index 056d7bc9cf9..81a992535d0 100644
 +     *  @param[in] tid - Terminus ID
 +     *  @return terminus name when a matching terminus exists
 +     */
-+    std::optional<std::string> getTerminusName(pldm_tid_t tid)
++    std::optional<std::string_view> getTerminusName(pldm_tid_t tid)
 +    {
 +        auto terminus = termini.find(tid);
 +        if (terminus == termini.end() || !terminus->second)
@@ -44,13 +53,7 @@ index 056d7bc9cf9..81a992535d0 100644
 +            return std::nullopt;
 +        }
 +
-+        auto terminusName = terminus->second->getTerminusName();
-+        if (!terminusName.has_value())
-+        {
-+            return std::nullopt;
-+        }
-+
-+        return std::string{terminusName.value()};
++        return terminus->second->getTerminusName();
 +    }
 +
      /** @brief Register OEM flow to poll the PLDM Event use

@@ -4,6 +4,8 @@ EXTRA_OEMESON:append = " -Denable-fallback-terminus-name=disabled "
 EXTRA_OEMESON:append = " -Ddiscovery-fru-data-from-terminus=disabled "
 EXTRA_OEMESON:append = " -Ddbus-timeout-value=30 "
 
+PACKAGECONFIG:append = " oem-arm"
+
 do_install:append:openbmc-fb-lf() {
     rm -f ${D}/usr/share/pldm/host_eid
 }

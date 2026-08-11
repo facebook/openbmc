@@ -11,8 +11,6 @@ SRCREV:openbmc-fb-lf = "fdc82200dd97b05bc190e920466f77430ef7f468"
 # EXTRA_OEMESON:append:openbmc-fb-lf = " -Doem-meta=enabled"
 
 PACKAGECONFIG[oem-arm] = "-Doem-arm=enabled, -Doem-arm=disabled"
-PACKAGECONFIG:append = " oem-arm"
-PACKAGECONFIG:remove = "softoff"
 
 SRC_URI:append:openbmc-fb-lf = " \
     file://host_eid \
@@ -43,6 +41,8 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0025-oem-meta-santabarbara-update-event-logs-from-rainbow.patch \
     file://0026-platform-mc-add-helper-to-get-terminus-name.patch \
     file://0027-oem-arm-handle-boot-progress-sensor-events.patch \
+    file://0028-oem-arm-support-UINT64-boot-progress-events.patch \
+    file://0029-platform-mc-use-tagged-numeric-sensor-decode.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

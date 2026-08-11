@@ -1,4 +1,4 @@
-From 018a1a4180571905fd7e3881f194f39092ecc725 Mon Sep 17 00:00:00 2001
+From 5e6b56ff1f8d911f24504070a2c49a9e80db4438 Mon Sep 17 00:00:00 2001
 From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
 Date: Tue, 9 Jun 2026 21:59:35 +0530
 Subject: [PATCH] oem: arm: handle boot progress sensor events
@@ -21,29 +21,69 @@ $log-util list postcode
 ..
 2026-04-30 07:45:32       0x00006000
 
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/pldm/+/91115]
+
 Change-Id: I53185814727cff1197407882d7795e17558ecfd1
 Signed-off-by: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
 ---
+ common/utils.cpp                    |   8 +
+ common/utils.hpp                    |   6 +
  meson.build                         |   8 +
  meson.options                       |   8 +
  oem/arm/event/meson.build           |   1 +
- oem/arm/event/oem_event_manager.cpp | 219 ++++++++++++++++++++++++++++
- oem/arm/event/oem_event_manager.hpp |  48 ++++++
+ oem/arm/event/oem_event_manager.cpp | 246 ++++++++++++++++++++++++++++
+ oem/arm/event/oem_event_manager.hpp |  94 +++++++++++
  oem/arm/meson.build                 |   1 +
- oem/arm/oem_arm.hpp                 |  60 ++++++++
+ oem/arm/oem_arm.hpp                 |  93 +++++++++++
  pldmd/pldmd.cpp                     |   8 +
- 8 files changed, 353 insertions(+)
+ 10 files changed, 473 insertions(+)
  create mode 100644 oem/arm/event/meson.build
  create mode 100644 oem/arm/event/oem_event_manager.cpp
  create mode 100644 oem/arm/event/oem_event_manager.hpp
  create mode 100644 oem/arm/meson.build
  create mode 100644 oem/arm/oem_arm.hpp
 
+diff --git a/common/utils.cpp b/common/utils.cpp
+index 0a4509a..9428d55 100644
+--- a/common/utils.cpp
++++ b/common/utils.cpp
+@@ -706,6 +706,14 @@ std::string getCurrentSystemTime()
+     return std::format("{:%F %Z %T}", zonedTime);
+ }
+ 
++uint64_t getCurrentSystemTimeUsec()
++{
++    return static_cast<uint64_t>(
++        std::chrono::duration_cast<std::chrono::microseconds>(
++            std::chrono::system_clock::now().time_since_epoch())
++            .count());
++}
++
+ bool checkForFruPresence(const std::string& objPath)
+ {
+     bool isPresent = false;
+diff --git a/common/utils.hpp b/common/utils.hpp
+index 7003ad5..c7b6a36 100644
+--- a/common/utils.hpp
++++ b/common/utils.hpp
+@@ -632,6 +632,12 @@ std::vector<std::string> split(std::string_view srcStr, std::string_view delim,
+  */
+ std::string getCurrentSystemTime();
+ 
++/** @brief Get the current system timestamp in microseconds
++ *
++ *  @return - uint64_t equivalent of system time since epoch in microseconds
++ */
++uint64_t getCurrentSystemTimeUsec();
++
+ /** @brief checks if the FRU is actually present.
+  *  @param[in] objPath - FRU object path.
+  *
 diff --git a/meson.build b/meson.build
-index cd6f800e8c0..d5017ca46d4 100644
+index cfe7858..53e0ff4 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -198,6 +198,10 @@ if get_option('oem-ampere').allowed()
+@@ -219,6 +219,10 @@ if get_option('oem-ampere').allowed()
      add_project_arguments('-DOEM_AMPERE', language: 'cpp')
  endif
  
@@ -54,7 +94,7 @@ index cd6f800e8c0..d5017ca46d4 100644
  if get_option('oem-meta').allowed()
      add_project_arguments('-DOEM_META', language: 'cpp')
  endif
-@@ -245,6 +249,10 @@ if get_option('oem-ampere').allowed()
+@@ -266,6 +270,10 @@ if get_option('oem-ampere').allowed()
      subdir('oem/ampere')
  endif
  
@@ -66,10 +106,10 @@ index cd6f800e8c0..d5017ca46d4 100644
      subdir('oem/meta')
  endif
 diff --git a/meson.options b/meson.options
-index ca8920f64b8..4ace63d9309 100644
+index c4d9b97..f4d73d5 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -109,6 +109,14 @@ option(
+@@ -129,6 +129,14 @@ option(
      value: 'enabled',
  )
  
@@ -78,7 +118,7 @@ index ca8920f64b8..4ace63d9309 100644
 +    'oem-arm',
 +    type: 'feature',
 +    description: 'Enable ARM OEM PLDM',
-+    value: 'disabled',
++    value: 'enabled',
 +)
 +
  ## OEM META Options
@@ -86,17 +126,17 @@ index ca8920f64b8..4ace63d9309 100644
      'oem-meta',
 diff --git a/oem/arm/event/meson.build b/oem/arm/event/meson.build
 new file mode 100644
-index 00000000000..900fafcbf15
+index 0000000..900fafc
 --- /dev/null
 +++ b/oem/arm/event/meson.build
 @@ -0,0 +1 @@
 +oem_files += files('oem_event_manager.cpp')
 diff --git a/oem/arm/event/oem_event_manager.cpp b/oem/arm/event/oem_event_manager.cpp
 new file mode 100644
-index 00000000000..e4eeead4b28
+index 0000000..6f27efd
 --- /dev/null
 +++ b/oem/arm/event/oem_event_manager.cpp
-@@ -0,0 +1,219 @@
+@@ -0,0 +1,246 @@
 +#include "oem_event_manager.hpp"
 +
 +#include "common/utils.hpp"
@@ -106,7 +146,6 @@ index 00000000000..e4eeead4b28
 +
 +#include <phosphor-logging/lg2.hpp>
 +
-+#include <chrono>
 +#include <exception>
 +#include <string>
 +#include <tuple>
@@ -148,43 +187,33 @@ index 00000000000..e4eeead4b28
 +    };
 +}
 +
-+uint64_t getCurrentTimestamp()
-+{
-+    return static_cast<uint64_t>(
-+        std::chrono::duration_cast<std::chrono::microseconds>(
-+            std::chrono::system_clock::now().time_since_epoch())
-+            .count());
-+}
-+
-+void setBootProgressProperty(auto& bus, const std::string& service,
-+                             const char* property,
-+                             const std::variant<uint64_t, std::string>& value)
-+{
-+    auto method = bus.new_method_call(service.c_str(), bootProgressObjectPath,
-+                                      pldm::utils::dbusProperties, "Set");
-+    method.append(bootProgressInterface, property, value);
-+    bus.call_noreply(method, dbusTimeout);
-+}
-+
 +} // namespace
 +
 +int OemEventManager::handleSensorEvent(
 +    const pldm_msg* request, size_t payloadLength, uint8_t /* formatVersion */,
 +    pldm_tid_t tid, size_t eventDataOffset)
 +{
++    lg2::info(
++        "Received an Arm OEM sensor event from terminus {TID}. The payload "
++        "length is {LEN} bytes and the event data starts at offset {OFFSET}",
++        "TID", tid, "LEN", payloadLength, "OFFSET", eventDataOffset);
++
++    // Validate the request before using request->payload, and make sure the
++    // event data offset is inside the payload before computing eventData.
 +    if (request == nullptr || eventDataOffset > payloadLength)
 +    {
-+        lg2::error(
-+            "Invalid Arm sensor event payload length {LEN}, offset {OFFSET}",
-+            "LEN", payloadLength, "OFFSET", eventDataOffset);
++        lg2::error("Invalid Arm sensor event payload. The request is null or "
++                   "the event data offset {OFFSET} exceeds the payload length "
++                   "{LEN}",
++                   "OFFSET", eventDataOffset, "LEN", payloadLength);
 +        return PLDM_ERROR_INVALID_LENGTH;
 +    }
 +
 +    if (!isPhxTerminus(tid))
 +    {
-+        lg2::debug("Ignoring Arm sensor event from terminus {TID}; "
-+                   "Arm OEM handles only sensor events from the PHX terminus",
-+                   "TID", tid);
++        lg2::info("Ignoring Arm OEM sensor event from terminus {TID}; "
++                  "Arm OEM handles only sensor events from the PHX terminus",
++                  "TID", tid);
 +        return PLDM_SUCCESS;
 +    }
 +
@@ -197,16 +226,23 @@ index 00000000000..e4eeead4b28
 +
 +bool OemEventManager::isPhxTerminus(pldm_tid_t tid) const
 +{
-+    if (manager == nullptr)
++    if (!manager)
 +    {
++        lg2::debug("Unable to resolve Arm terminus {TID}; manager is null",
++                   "TID", tid);
 +        return false;
 +    }
 +
 +    auto terminusName = manager->getTerminusName(tid);
 +    if (!terminusName.has_value())
 +    {
++        lg2::debug("Unable to resolve Arm terminus name for terminus {TID}",
++                   "TID", tid);
 +        return false;
 +    }
++
++    lg2::debug("Resolved Arm terminus {TID} to name {NAME}", "TID", tid, "NAME",
++               terminusName.value());
 +
 +    return terminusName.value() == bootProgressTerminusName;
 +}
@@ -214,6 +250,13 @@ index 00000000000..e4eeead4b28
 +int OemEventManager::decodeSensorEvent(pldm_tid_t tid, const uint8_t* eventData,
 +                                       size_t eventDataSize)
 +{
++    if (eventData == nullptr)
++    {
++        lg2::error("Invalid Arm sensor event data from terminus {TID}", "TID",
++                   tid);
++        return PLDM_ERROR_INVALID_DATA;
++    }
++
 +    uint16_t sensorId = 0;
 +    uint8_t sensorEventClassType = 0;
 +    size_t eventClassDataOffset = 0;
@@ -227,9 +270,22 @@ index 00000000000..e4eeead4b28
 +        return rc;
 +    }
 +
++    lg2::debug("Decoded Arm sensor event from terminus {TID}. Sensor {SID} "
++               "reported class {CLASS} with class data offset {OFFSET}",
++               "TID", tid, "SID", sensorId, "CLASS", sensorEventClassType,
++               "OFFSET", eventClassDataOffset);
++
 +    if (sensorEventClassType != PLDM_NUMERIC_SENSOR_STATE)
 +    {
 +        return PLDM_SUCCESS;
++    }
++
++    if (eventClassDataOffset > eventDataSize)
++    {
++        lg2::error("Invalid Arm sensor event data. Class data offset {OFFSET} "
++                   "exceeds event data size {SIZE}",
++                   "OFFSET", eventClassDataOffset, "SIZE", eventDataSize);
++        return PLDM_ERROR_INVALID_LENGTH;
 +    }
 +
 +    const auto* sensorData = eventData + eventClassDataOffset;
@@ -243,6 +299,15 @@ index 00000000000..e4eeead4b28
 +    pldm_tid_t tid, uint16_t sensorId, const uint8_t* sensorData,
 +    size_t sensorDataLength)
 +{
++    if (sensorData == nullptr)
++    {
++        lg2::error(
++            "Invalid Arm numeric sensor event data from terminus {TID}, sensor "
++            "{SID}",
++            "TID", tid, "SID", sensorId);
++        return PLDM_ERROR_INVALID_DATA;
++    }
++
 +    uint8_t eventState = 0;
 +    uint8_t previousEventState = 0;
 +    uint8_t sensorDataSize = 0;
@@ -262,10 +327,9 @@ index 00000000000..e4eeead4b28
 +    switch (sensorId)
 +    {
 +        case bootProgressSensorId:
-+            lg2::info(
-+                "Arm BootProgressCode event from terminus {TID}, sensor {SID}, "
-+                "present reading {READING}",
-+                "TID", tid, "SID", sensorId, "READING", presentReading);
++            lg2::info("Arm boot progress code event from terminus {TID}. "
++                      "Sensor {SID} reported present reading {READING}",
++                      "TID", tid, "SID", sensorId, "READING", presentReading);
 +            return updateBootProgress(presentReading);
 +        default:
 +            lg2::debug(
@@ -293,19 +357,22 @@ index 00000000000..e4eeead4b28
 +                          BootRawValue{postCode, std::vector<uint8_t>{}}));
 +        bus.call_noreply(method, dbusTimeout);
 +
-+        auto bootProgressService = dbusHandler.getService(
-+            bootProgressObjectPath, bootProgressInterface);
-+        setBootProgressProperty(
-+            bus, bootProgressService, bootProgressLastUpdateProperty,
-+            std::variant<uint64_t, std::string>{getCurrentTimestamp()});
-+        setBootProgressProperty(bus, bootProgressService, bootProgressProperty,
-+                                std::variant<uint64_t, std::string>{
-+                                    std::string{bootProgressStageOem}});
++        pldm::utils::DBusMapping bootProgressLastUpdate = {
++            bootProgressObjectPath, bootProgressInterface,
++            bootProgressLastUpdateProperty, "uint64_t"};
++        dbusHandler.setDbusProperty(bootProgressLastUpdate,
++                                    pldm::utils::getCurrentSystemTimeUsec());
++
++        pldm::utils::DBusMapping bootProgress = {
++            bootProgressObjectPath, bootProgressInterface, bootProgressProperty,
++            "string"};
++        dbusHandler.setDbusProperty(bootProgress,
++                                    std::string{bootProgressStageOem});
 +    }
 +    catch (const std::exception& e)
 +    {
 +        lg2::error(
-+            "Failed to update Boot.Progress from Arm BootProgressCode event: "
++            "Failed to update boot progress from Arm boot progress code event: "
 +            "{ERROR}",
 +            "ERROR", e);
 +        return PLDM_ERROR;
@@ -318,10 +385,10 @@ index 00000000000..e4eeead4b28
 +} // namespace pldm
 diff --git a/oem/arm/event/oem_event_manager.hpp b/oem/arm/event/oem_event_manager.hpp
 new file mode 100644
-index 00000000000..05fda527d1f
+index 0000000..7757cf2
 --- /dev/null
 +++ b/oem/arm/event/oem_event_manager.hpp
-@@ -0,0 +1,48 @@
+@@ -0,0 +1,94 @@
 +#pragma once
 +
 +#include <libpldm/base.h>
@@ -349,20 +416,66 @@ index 00000000000..05fda527d1f
 +    OemEventManager& operator=(OemEventManager&&) = delete;
 +    ~OemEventManager() = default;
 +
++    /** @brief Construct the Arm OEM event manager
++     *
++     *  @param[in] manager - Platform manager used to resolve terminus names
++     */
 +    explicit OemEventManager(platform_mc::Manager* manager) : manager(manager)
 +    {}
 +
++    /** @brief Handle an Arm OEM sensor event
++     *
++     *  @param[in] request - PLDM request message
++     *  @param[in] payloadLength - Request payload length
++     *  @param[in] formatVersion - Event message format version
++     *  @param[in] tid - Terminus ID that sent the event
++     *  @param[in] eventDataOffset - Offset of the event data in the payload
++     *
++     *  @return PLDM completion code
++     */
 +    int handleSensorEvent(const pldm_msg* request, size_t payloadLength,
 +                          uint8_t formatVersion, pldm_tid_t tid,
 +                          size_t eventDataOffset);
 +
 +  private:
++    /** @brief Check whether a terminus is the PHX terminus
++     *
++     *  @param[in] tid - Terminus ID
++     *
++     *  @return true if the terminus name is PHX, false otherwise
++     */
 +    bool isPhxTerminus(pldm_tid_t tid) const;
++
++    /** @brief Decode a PLDM sensor event payload
++     *
++     *  @param[in] tid - Terminus ID that sent the event
++     *  @param[in] eventData - Sensor event data
++     *  @param[in] eventDataSize - Sensor event data size
++     *
++     *  @return PLDM completion code
++     */
 +    int decodeSensorEvent(pldm_tid_t tid, const uint8_t* eventData,
 +                          size_t eventDataSize);
++
++    /** @brief Process numeric sensor event data
++     *
++     *  @param[in] tid - Terminus ID that sent the event
++     *  @param[in] sensorId - Sensor ID from the event
++     *  @param[in] sensorData - Numeric sensor event data
++     *  @param[in] sensorDataLength - Numeric sensor event data length
++     *
++     *  @return PLDM completion code
++     */
 +    int processNumericSensorEvent(pldm_tid_t tid, uint16_t sensorId,
 +                                  const uint8_t* sensorData,
 +                                  size_t sensorDataLength);
++
++    /** @brief Update boot progress D-Bus properties
++     *
++     *  @param[in] presentReading - Boot progress reading from the sensor event
++     *
++     *  @return PLDM completion code
++     */
 +    int updateBootProgress(uint32_t presentReading) const;
 +
 +    platform_mc::Manager* manager = nullptr;
@@ -372,21 +485,25 @@ index 00000000000..05fda527d1f
 +} // namespace pldm
 diff --git a/oem/arm/meson.build b/oem/arm/meson.build
 new file mode 100644
-index 00000000000..b5e7ad96ff2
+index 0000000..b5e7ad9
 --- /dev/null
 +++ b/oem/arm/meson.build
 @@ -0,0 +1 @@
 +subdir('event')
 diff --git a/oem/arm/oem_arm.hpp b/oem/arm/oem_arm.hpp
 new file mode 100644
-index 00000000000..848cda427b6
+index 0000000..eb92dc2
 --- /dev/null
 +++ b/oem/arm/oem_arm.hpp
-@@ -0,0 +1,60 @@
+@@ -0,0 +1,93 @@
 +#pragma once
 +
 +#include "../../libpldmresponder/platform.hpp"
 +#include "../../oem/arm/event/oem_event_manager.hpp"
++
++#include <libpldm/base.h>
++
++#include <phosphor-logging/lg2.hpp>
 +
 +#include <memory>
 +
@@ -414,6 +531,11 @@ index 00000000000..848cda427b6
 +    OemARM& operator=(const OemARM&) = delete;
 +    OemARM& operator=(OemARM&&) = delete;
 +
++    /** @brief Construct the Arm OEM handler registration object
++     *
++     *  @param[in] platformHandler - Platform responder handler
++     *  @param[in] platformManager - Platform manager used by event handlers
++     */
 +    explicit OemARM(responder::platform::Handler* platformHandler,
 +                    platform_mc::Manager* platformManager) :
 +        oemEventManager(
@@ -423,15 +545,39 @@ index 00000000000..848cda427b6
 +    }
 +
 +  private:
++    /** @brief Register Arm OEM event handlers
++     *
++     *  @param[in] platformHandler - Platform responder handler
++     */
 +    void registerOemEventHandlers(responder::platform::Handler* platformHandler)
 +    {
++        if (!platformHandler)
++        {
++            lg2::error("Unable to register Arm OEM event handlers; platform "
++                       "handler is null");
++            return;
++        }
++
 +        auto* eventManager = oemEventManager.get();
++        if (!eventManager)
++        {
++            lg2::error("Unable to register Arm OEM event handlers; event "
++                       "manager is null");
++            return;
++        }
 +
 +        platformHandler->registerEventHandlers(
 +            PLDM_SENSOR_EVENT,
 +            {[eventManager](const pldm_msg* request, size_t payloadLength,
 +                            uint8_t formatVersion, uint8_t tid,
 +                            size_t eventDataOffset) {
++                if (!eventManager)
++                {
++                    lg2::error("Unable to handle Arm OEM sensor event; event "
++                               "manager is null");
++                    return static_cast<int>(PLDM_ERROR);
++                }
++
 +                return eventManager->handleSensorEvent(
 +                    request, payloadLength, formatVersion, tid,
 +                    eventDataOffset);
@@ -444,7 +590,7 @@ index 00000000000..848cda427b6
 +} // namespace oem_arm
 +} // namespace pldm
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index a1b4595a7b5..bb14313c82a 100644
+index 0eb722e..44c9716 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
 @@ -65,6 +65,10 @@ PHOSPHOR_LOG2_USING;

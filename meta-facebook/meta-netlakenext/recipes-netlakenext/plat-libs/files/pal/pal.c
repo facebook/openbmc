@@ -820,8 +820,53 @@ pal_set_fan_speed(uint8_t pwm_id, uint8_t pwm_value) {
     syslog(LOG_WARNING, "%s: Invalid pwm index: %d", __func__, pwm_id);
     return -1;
   }
+  syslog(LOG_CRIT, "Set PWM value: %d for pwm id = %d", pwm_value, pwm_id);
 
   return sensors_write_pwmfan(pwm_id, (float)pwm_value);
+}
+
+int
+pal_set_pwm_kv_value(int pwm_value) {
+  int ret = 0;
+  char value[MAX_VALUE_LEN];
+  
+  if (pwm_value < 0 || pwm_value > 100) {
+    syslog(LOG_WARNING, "%s() invalid pwm_value=%d (expected 0~100)", __func__, pwm_value);
+    return -1;
+  }
+
+  snprintf(value, sizeof(value), "%d", pwm_value);
+
+  ret = kv_set("fan_rpm_cfg", value, 0, KV_FPERSIST);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Fail to set the key 'fan_rpm_cfg'", __func__);
+  } else if (ret == 0) {
+    printf("Setting fan_rpm_cfg value to %d\n", pwm_value);
+    syslog(LOG_CRIT, "Setting fan_rpm_cfg value to %d", pwm_value);
+  }
+
+  return ret;
+}
+
+int
+pal_get_pwm_kv_value(int *pwm_value) {
+  int ret = 0;
+  char value[MAX_VALUE_LEN];
+
+  if (pwm_value == NULL)
+  {
+    syslog(LOG_ERR, "%s() Pointer \"pwm_value\" is NULL.\n", __func__);
+    return -1;
+  }
+
+  ret = kv_get("fan_rpm_cfg", value, NULL, KV_FPERSIST);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Fail to get the key 'fan_rpm_cfg'", __func__);
+    return ret;
+  }
+
+  *pwm_value = atoi(value);
+  return 0;
 }
 
 int

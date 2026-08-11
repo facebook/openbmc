@@ -126,6 +126,8 @@ int pal_dimm_page_init(void);
 int pal_pmic_pwr_setting(void);
 int pal_pmic_monitor_init(void);
 void pal_dimm_init(void);
+int pal_set_pwm_kv_value(int pwm_value);
+int pal_get_pwm_kv_value(int *pwm_value);
 
 #ifdef __cplusplus
 } // extern "C"

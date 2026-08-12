@@ -31,10 +31,15 @@ class CHASSISEepromTest(EepromV5Test, unittest.TestCase):
         self.eeprom_cmd = ["/usr/bin/weutil -e chassis_eeprom"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK3N","MINIPACK3BA"]
+        self.product_name = [
+            "MINIPACK3N",
+            "MINIPACK3BA",
+            "WEDGE800BACT",
+            "WEDGE800CACT",
+        ]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ["FCB"]
+        self.location_on_fabric = ["FCB", "MCB"]
 
     """
     Chassis EEPROM have only BMC and ASIC switch need to ignore x86

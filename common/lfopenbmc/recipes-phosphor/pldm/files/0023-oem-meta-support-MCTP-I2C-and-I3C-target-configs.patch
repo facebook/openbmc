@@ -1,7 +1,7 @@
-From e31949fa05b1619d7357397d206c84d204687f1a Mon Sep 17 00:00:00 2001
-From: Henry Wu <Henry_Wu@quantatw.com>
-Date: Wed, 22 Jul 2026 20:31:47 +0800
-Subject: [PATCH] oem-meta: support MCTP I2C and I3C target configs
+From 22bb034e15966f9229213d4a423f7517e13c70aa Mon Sep 17 00:00:00 2001
+From: x <x@x>
+Date: Tue, 11 Aug 2026 16:21:14 -0700
+Subject: [PATCH 23/25] oem-meta: support MCTP I2C and I3C target configs
 
 getSlotNumberStringByTID() currently only works for devices registered
 as MCTPEndpoint, so endpoints exposed through MCTPI2Ctarget or
@@ -22,7 +22,7 @@ Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
  5 files changed, 149 insertions(+), 46 deletions(-)
 
 diff --git a/oem/meta/libpldmresponder/file_io_type_event_log.cpp b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-index 84ae633..9f4d4ea 100644
+index a9ad75e..cbb2d8a 100644
 --- a/oem/meta/libpldmresponder/file_io_type_event_log.cpp
 +++ b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
 @@ -12,6 +12,7 @@
@@ -33,8 +33,8 @@ index 84ae633..9f4d4ea 100644
  #include <string>
  #include <string_view>
  #include <utility>
-@@ -655,6 +656,13 @@ static const std::map<uint8_t, FaultDesc> rainbowFaultsList = {
-       "DEVICE", record::powerRailFault}},
+@@ -783,6 +784,13 @@ static const std::map<uint8_t, FaultDesc> rainbowFaultsList = {
+       "DEVICE", record::thermalFault}},
  };
  
 +struct EventContext
@@ -47,7 +47,7 @@ index 84ae633..9f4d4ea 100644
  namespace report
  {
  static void recordEventLog(const FaultDesc& fault, EventAssert eventStatus,
-@@ -672,9 +680,10 @@ static void recordEventLog(const FaultDesc& fault, EventAssert eventStatus,
+@@ -800,9 +808,10 @@ static void recordEventLog(const FaultDesc& fault, EventAssert eventStatus,
  }
  
  static void thermalFault(const message& eventData, const std::string&,
@@ -60,7 +60,7 @@ index 84ae633..9f4d4ea 100644
      EventAssert eventStatus = static_cast<EventAssert>(eventData[1]);
  
      record::thermalFault(device, eventStatus,
-@@ -682,18 +691,20 @@ static void thermalFault(const message& eventData, const std::string&,
+@@ -810,18 +819,20 @@ static void thermalFault(const message& eventData, const std::string&,
  }
  
  static void powerRailFault(const message& eventData, const std::string& event,
@@ -85,7 +85,7 @@ index 84ae633..9f4d4ea 100644
  
      if (eventData[3] == 0 && eventData[4] == 0)
      {
-@@ -717,7 +728,7 @@ static void prochotSdSensor(const message& eventData, const std::string&,
+@@ -845,7 +856,7 @@ static void prochotSdSensor(const message& eventData, const std::string&,
  }
  
  static void mtiaFault(const message& eventData, const std::string&,
@@ -94,7 +94,7 @@ index 84ae633..9f4d4ea 100644
  {
      EventAssert eventStatus = static_cast<EventAssert>(eventData[1]);
      auto faultEvent = mtiaFaultsList.find(eventData[2]);
-@@ -731,8 +742,25 @@ static void mtiaFault(const message& eventData, const std::string&,
+@@ -859,8 +870,25 @@ static void mtiaFault(const message& eventData, const std::string&,
      recordEventLog(faultEvent->second, eventStatus, eventData[3], eventData[4]);
  }
  
@@ -121,7 +121,7 @@ index 84ae633..9f4d4ea 100644
  {
      EventAssert eventStatus = static_cast<EventAssert>(eventData[1]);
      auto faultEvent = rainbowFaultsList.find(eventData[2]);
-@@ -743,33 +771,19 @@ static void rainbowFault(const message& eventData, const std::string&,
+@@ -871,33 +899,19 @@ static void rainbowFault(const message& eventData, const std::string&,
          return;
      }
  
@@ -163,7 +163,7 @@ index 84ae633..9f4d4ea 100644
      }
  
      recordEventLog(updatedFault, eventStatus, eventData[3], eventData[4]);
-@@ -807,7 +821,7 @@ static void createEventLog(
+@@ -935,7 +949,7 @@ static void createEventLog(
  }
  
  static void cxlEvent(const message& eventData, const std::string& event,
@@ -172,7 +172,7 @@ index 84ae633..9f4d4ea 100644
  {
      using EntrySeverity =
          sdbusplus::xyz::openbmc_project::Logging::server::Entry::Level;
-@@ -821,7 +835,7 @@ static void cxlEvent(const message& eventData, const std::string& event,
+@@ -949,7 +963,7 @@ static void cxlEvent(const message& eventData, const std::string& event,
  }
  
  static void platformEvent(const message&, const std::string& event,
@@ -181,7 +181,7 @@ index 84ae633..9f4d4ea 100644
  {
      using EntrySeverity =
          sdbusplus::xyz::openbmc_project::Logging::server::Entry::Level;
-@@ -830,13 +844,13 @@ static void platformEvent(const message&, const std::string& event,
+@@ -958,13 +972,13 @@ static void platformEvent(const message&, const std::string& event,
  }
  
  static void reportError(const message&, const std::string& event,
@@ -197,7 +197,7 @@ index 84ae633..9f4d4ea 100644
  {
      static constexpr auto SYSTEMD_SERVICE = "org.freedesktop.systemd1";
      static constexpr auto SYSTEMD_ROOT = "/org/freedesktop/systemd1";
-@@ -848,7 +862,7 @@ static void updateRetimerFwVersion(const message&, const std::string&,
+@@ -976,7 +990,7 @@ static void updateRetimerFwVersion(const message&, const std::string&,
      auto bus = sdbusplus::bus::new_default();
      auto method = bus.new_method_call(SYSTEMD_SERVICE, SYSTEMD_ROOT,
                                        SYSTEMD_INTERFACE, "StartUnit");
@@ -206,7 +206,7 @@ index 84ae633..9f4d4ea 100644
                     ".service";
      method.append(service, "replace");
      bus.call_noreply(method);
-@@ -893,7 +907,7 @@ static std::string dimmPmicError(const message& eventData, EventType eventType)
+@@ -1021,7 +1035,7 @@ static std::string dimmPmicError(const message& eventData, EventType eventType)
  } // namespace format
  
  using EventReporter = void (*)(const message&, const std::string&,
@@ -215,7 +215,7 @@ index 84ae633..9f4d4ea 100644
  using EventFormatter = std::string (*)(const message&, EventType);
  
  struct EventDescriptor
-@@ -971,7 +985,7 @@ static void checkEventAssert(const message& eventData, std::string& event,
+@@ -1099,7 +1113,7 @@ static void checkEventAssert(const message& eventData, std::string& event,
  }
  
  static std::string processEventData(const message& eventData,
@@ -224,7 +224,7 @@ index 84ae633..9f4d4ea 100644
  {
      std::string event;
      EventType eventType = static_cast<EventType>(eventData[0]);
-@@ -994,14 +1008,14 @@ static std::string processEventData(const message& eventData,
+@@ -1122,14 +1136,14 @@ static std::string processEventData(const message& eventData,
          }
      }
  
@@ -241,7 +241,7 @@ index 84ae633..9f4d4ea 100644
  {
      EventType eventType = static_cast<EventType>(eventData[0]);
      auto it = eventHandlers.find(eventType);
-@@ -1009,7 +1023,7 @@ static void addSystemEventLogAndJournal(const message& eventData,
+@@ -1137,7 +1151,7 @@ static void addSystemEventLogAndJournal(const message& eventData,
      {
          if (it->second.reporter)
          {
@@ -250,7 +250,7 @@ index 84ae633..9f4d4ea 100644
          }
      }
      else
-@@ -1021,7 +1035,7 @@ static void addSystemEventLogAndJournal(const message& eventData,
+@@ -1149,7 +1163,7 @@ static void addSystemEventLogAndJournal(const message& eventData,
      if (eventType == EventType::POST_ENDED ||
          eventType == EventType::POST_COMPLETED)
      {
@@ -259,7 +259,7 @@ index 84ae633..9f4d4ea 100644
      }
  }
  
-@@ -1066,9 +1080,10 @@ int EventLogHandler::write(const message& eventData)
+@@ -1194,9 +1208,10 @@ int EventLogHandler::write(const message& eventData)
          receivedEventTimeStamp[eventKey] = eventTimeStamp;
      }
  
@@ -438,5 +438,5 @@ index 28f63ed..dc8d41c 100644
   * @brief Get the slot number from D-Bus for the given sender tid.
   *
 -- 
-2.47.3
+2.53.0-Meta
 

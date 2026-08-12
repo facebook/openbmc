@@ -1,13 +1,5 @@
 FILESEXTRAPATHS:prepend:openbmc-fb-lf := "${THISDIR}/files:"
 
-# Pin pldm behind master. Upstream 164629ef half-migrated the fw-update package
-# parser (package_parser.hpp declares the new-libpldm API while the .cpp is still
-# the old impl), so downstream patch 0022 -- the same migration carried from WIP
-# gerrit 80194 -- no longer applies. Hold at the previous sync's SRCREV, where
-# 0022 applies cleanly. Drop this pin AND patch 0022 once 80194 lands upstream.
-# Tracked by T282487007.
-SRCREV:openbmc-fb-lf = "fdc82200dd97b05bc190e920466f77430ef7f468"
-
 # EXTRA_OEMESON:append:openbmc-fb-lf = " -Doem-meta=enabled"
 
 PACKAGECONFIG[oem-arm] = "-Doem-arm=enabled, -Doem-arm=disabled"
@@ -37,8 +29,6 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0021-Add-back-instance-id-expiration-interval.patch \
     file://0022-fw_update-Reimplement-package-parser-to-use-new-libp.patch \
     file://0023-oem-meta-support-MCTP-I2C-and-I3C-target-configs.patch \
-    file://0024-platform-mc-fix-dangling-exec-async_scope-in-doSenso.patch \
-    file://0025-oem-meta-santabarbara-update-event-logs-from-rainbow.patch \
     file://0026-platform-mc-add-helper-to-get-terminus-name.patch \
     file://0027-oem-arm-handle-boot-progress-sensor-events.patch \
     file://0028-oem-arm-support-UINT64-boot-progress-events.patch \

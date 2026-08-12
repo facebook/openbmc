@@ -1,0 +1,318 @@
+From e4cdffa520b35b5e78cc611a57402333696c987c Mon Sep 17 00:00:00 2001
+From: Frank Chen <FrankChen4@quantatw.com>
+Date: Tue, 21 Jul 2026 15:02:54 +0800
+Subject: [PATCH] configurations: santabarbara: add NIC osfp sensor and
+ relative fsc
+
+Add pldm sensor "SENSOR_500", which is osfp sensor and add it into fsc.
+
+Change-Id: I53e9b889b0613078d7e0956cf12a9985b27c581d
+Signed-off-by: Frank Chen <FrankChen4@quantatw.com>
+---
+ .../santabarbara_pcie_switch_board_aeb.json   | 65 +++++++++++++++++++
+ .../santabarbara_pcie_switch_board_brcm.json  | 65 +++++++++++++++++++
+ ...barbara_pcie_switch_board_brcm_vr_sni.json | 65 +++++++++++++++++++
+ configurations/ocp/cx7_ocp.json               | 13 ++++
+ configurations/ocp/cx8_ocp.json               | 13 ++++
+ 5 files changed, 221 insertions(+)
+
+diff --git a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_aeb.json b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_aeb.json
+index f51a517..c155b22 100644
+--- a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_aeb.json
++++ b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_aeb.json
+@@ -720,6 +720,36 @@
+                 "Zone 0"
+             ]
+         },
++        {
++            "CheckHysteresisWithSetpoint": true,
++            "Class": "temp",
++            "DCoefficient": -1.0,
++            "FFGainCoefficient": 0.0,
++            "FFOffCoefficient": 0.0,
++            "ICoefficient": -0.5,
++            "ILimitMax": 100,
++            "ILimitMin": 0,
++            "InputUnavailableAsFailed": false,
++            "Inputs": [
++                "OSFP_NIC1_SENSOR",
++                "OSFP_NIC2_SENSOR",
++                "OSFP_NIC3_SENSOR",
++                "OSFP_NIC4_SENSOR"
++            ],
++            "Name": "PID_BE_OSFP_NIC_SENSOR",
++            "NegativeHysteresis": 2.0,
++            "OutLimitMax": 100,
++            "OutLimitMin": 0,
++            "PCoefficient": -5.0,
++            "PositiveHysteresis": 0.0,
++            "SetPoint": 60.0,
++            "SlewNeg": 0.0,
++            "SlewPos": 0.0,
++            "Type": "Pid",
++            "Zones": [
++                "Zone 0"
++            ]
++        },
+         {
+             "Class": "temp",
+             "Inputs": [
+@@ -754,6 +784,41 @@
+                 "Zone 0"
+             ]
+         },
++        {
++            "Class": "temp",
++            "InputUnavailableAsFailed": false,
++            "Inputs": [
++                "OSFP_NIC1_SENSOR",
++                "OSFP_NIC2_SENSOR",
++                "OSFP_NIC3_SENSOR",
++                "OSFP_NIC4_SENSOR"
++            ],
++            "Name": "Stepwise_BE_OSFP_NIC_SENSOR",
++            "NegativeHysteresis": 1.0,
++            "Output": [
++                30.0,
++                31.0,
++                32.0,
++                33.0,
++                34.0,
++                35.0,
++                100.0
++            ],
++            "PositiveHysteresis": 0.0,
++            "Reading": [
++                51.0,
++                52.0,
++                53.0,
++                54.0,
++                55.0,
++                56.0,
++                68.0
++            ],
++            "Type": "Stepwise",
++            "Zones": [
++                "Zone 0"
++            ]
++        },
+         {
+             "Address": "0x48",
+             "Bus": 32,
+diff --git a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json
+index e9eb8a3..3fbc262 100644
+--- a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json
++++ b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json
+@@ -663,6 +663,36 @@
+                 "Zone 0"
+             ]
+         },
++        {
++            "CheckHysteresisWithSetpoint": true,
++            "Class": "temp",
++            "DCoefficient": -1.0,
++            "FFGainCoefficient": 0.0,
++            "FFOffCoefficient": 0.0,
++            "ICoefficient": -0.5,
++            "ILimitMax": 100,
++            "ILimitMin": 0,
++            "InputUnavailableAsFailed": false,
++            "Inputs": [
++                "OSFP_NIC1_SENSOR",
++                "OSFP_NIC2_SENSOR",
++                "OSFP_NIC3_SENSOR",
++                "OSFP_NIC4_SENSOR"
++            ],
++            "Name": "PID_BE_OSFP_NIC_SENSOR",
++            "NegativeHysteresis": 2.0,
++            "OutLimitMax": 100,
++            "OutLimitMin": 0,
++            "PCoefficient": -5.0,
++            "PositiveHysteresis": 0.0,
++            "SetPoint": 60.0,
++            "SlewNeg": 0.0,
++            "SlewPos": 0.0,
++            "Type": "Pid",
++            "Zones": [
++                "Zone 0"
++            ]
++        },
+         {
+             "Class": "temp",
+             "Inputs": [
+@@ -697,6 +727,41 @@
+                 "Zone 0"
+             ]
+         },
++        {
++            "Class": "temp",
++            "InputUnavailableAsFailed": false,
++            "Inputs": [
++                "OSFP_NIC1_SENSOR",
++                "OSFP_NIC2_SENSOR",
++                "OSFP_NIC3_SENSOR",
++                "OSFP_NIC4_SENSOR"
++            ],
++            "Name": "Stepwise_BE_OSFP_NIC_SENSOR",
++            "NegativeHysteresis": 1.0,
++            "Output": [
++                30.0,
++                31.0,
++                32.0,
++                33.0,
++                34.0,
++                35.0,
++                100.0
++            ],
++            "PositiveHysteresis": 0.0,
++            "Reading": [
++                51.0,
++                52.0,
++                53.0,
++                54.0,
++                55.0,
++                56.0,
++                68.0
++            ],
++            "Type": "Stepwise",
++            "Zones": [
++                "Zone 0"
++            ]
++        },
+         {
+             "Address": "0x48",
+             "Bus": 32,
+diff --git a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm_vr_sni.json b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm_vr_sni.json
+index 54c0043..9590e50 100644
+--- a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm_vr_sni.json
++++ b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm_vr_sni.json
+@@ -454,6 +454,36 @@
+                 "Zone 0"
+             ]
+         },
++        {
++            "CheckHysteresisWithSetpoint": true,
++            "Class": "temp",
++            "DCoefficient": -1.0,
++            "FFGainCoefficient": 0.0,
++            "FFOffCoefficient": 0.0,
++            "ICoefficient": -0.5,
++            "ILimitMax": 100,
++            "ILimitMin": 0,
++            "InputUnavailableAsFailed": false,
++            "Inputs": [
++                "OSFP_NIC1_SENSOR",
++                "OSFP_NIC2_SENSOR",
++                "OSFP_NIC3_SENSOR",
++                "OSFP_NIC4_SENSOR"
++            ],
++            "Name": "PID_BE_OSFP_NIC_SENSOR",
++            "NegativeHysteresis": 2.0,
++            "OutLimitMax": 100,
++            "OutLimitMin": 0,
++            "PCoefficient": -5.0,
++            "PositiveHysteresis": 0.0,
++            "SetPoint": 60.0,
++            "SlewNeg": 0.0,
++            "SlewPos": 0.0,
++            "Type": "Pid",
++            "Zones": [
++                "Zone 0"
++            ]
++        },
+         {
+             "Class": "temp",
+             "Inputs": [
+@@ -488,6 +518,41 @@
+                 "Zone 0"
+             ]
+         },
++        {
++            "Class": "temp",
++            "InputUnavailableAsFailed": false,
++            "Inputs": [
++                "OSFP_NIC1_SENSOR",
++                "OSFP_NIC2_SENSOR",
++                "OSFP_NIC3_SENSOR",
++                "OSFP_NIC4_SENSOR"
++            ],
++            "Name": "Stepwise_BE_OSFP_NIC_SENSOR",
++            "NegativeHysteresis": 1.0,
++            "Output": [
++                30.0,
++                31.0,
++                32.0,
++                33.0,
++                34.0,
++                35.0,
++                100.0
++            ],
++            "PositiveHysteresis": 0.0,
++            "Reading": [
++                51.0,
++                52.0,
++                53.0,
++                54.0,
++                55.0,
++                56.0,
++                68.0
++            ],
++            "Type": "Stepwise",
++            "Zones": [
++                "Zone 0"
++            ]
++        },
+         {
+             "Address": "0x48",
+             "Bus": 32,
+diff --git a/configurations/ocp/cx7_ocp.json b/configurations/ocp/cx7_ocp.json
+index a083676..1731fe0 100644
+--- a/configurations/ocp/cx7_ocp.json
++++ b/configurations/ocp/cx7_ocp.json
+@@ -6,6 +6,19 @@
+             "Name": "OCP CX7 NIC FRU $bus % 109 % 11",
+             "Type": "EEPROM"
+         },
++        {
++            "Address": "0x32",
++            "Bus": "$bus",
++            "Inventory": "",
++            "Name": "NIC$bus % 109 % 11",
++            "PLDMSensors": [
++                {
++                    "ID": 500,
++                    "Name": "OSFP_SENSOR"
++                }
++            ],
++            "Type": "MCTPI2CTarget"
++        },
+         {
+             "Address": "0x1f",
+             "Bus": "$bus",
+diff --git a/configurations/ocp/cx8_ocp.json b/configurations/ocp/cx8_ocp.json
+index 45b4870..5f8e11c 100644
+--- a/configurations/ocp/cx8_ocp.json
++++ b/configurations/ocp/cx8_ocp.json
+@@ -6,6 +6,19 @@
+             "Name": "OCP CX8 NIC FRU $bus % 109 % 11",
+             "Type": "EEPROM"
+         },
++        {
++            "Address": "0x32",
++            "Bus": "$bus",
++            "Inventory": "",
++            "Name": "NIC$bus % 109 % 11",
++            "PLDMSensors": [
++                {
++                    "ID": 500,
++                    "Name": "OSFP_SENSOR"
++                }
++            ],
++            "Type": "MCTPI2CTarget"
++        },
+         {
+             "Address": "0x1f",
+             "Bus": "$bus",
+-- 
+2.47.3
+

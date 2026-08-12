@@ -76,6 +76,7 @@ SRC_URI += " \
            file://0534-aspeed-Add-sanmiguel-bmc.patch \
            file://0535-hw-i2c-aspeed-mask-I2CS-slave-address-to-7-bits.patch \
            file://0536-add-usbredir-subproject-for-QEMU-usb-redir.patch \
+           file://0537-hw-i2c-aspeed-add-target-buffer-mode-RX-support.patch \
            "
 
 SRC_URI += " \

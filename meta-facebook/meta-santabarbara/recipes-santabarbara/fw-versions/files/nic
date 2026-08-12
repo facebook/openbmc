@@ -1,36 +1,72 @@
 #!/bin/bash
 
+get_eid_by_mctp_dev() {
+    local mctp_dev="$1"
+
+    mctp neigh 2>/dev/null | awk -v mctp_dev="$mctp_dev" '
+        $1 == "eid" {
+            for (i = 1; i <= NF; i++) {
+                if ($i == "dev" && $(i + 1) == mctp_dev) {
+                    print $2
+                    exit
+                }
+            }
+        }'
+}
+
 # NIC configurations
 declare -A NIC_CONFIG=(
-    [0]="49:mb_nic0"
-    [1]="50:swb_nic1" 
-    [2]="51:swb_nic2"
-    [3]="54:swb_nic3"
-    [4]="55:swb_nic4"
+    [0]="mctpi2c11:mb_nic0"
+    [1]="mctpi2c110:swb_nic1"
+    [2]="mctpi2c111:swb_nic2"
+    [3]="mctpi2c112:swb_nic3"
+    [4]="mctpi2c113:swb_nic4"
 )
 
 nic_index=$1
+
+if [[ ! "$nic_index" =~ ^[0-4]$ ]]; then
+    echo "Usage: $0 <nic index: 0-4>"
+    exit 1
+fi
+
+if ! command -v mctp >/dev/null 2>&1; then
+    echo "mctp command not found"
+    exit 1
+fi
+
 config=${NIC_CONFIG[$nic_index]}
-eid=${config%:*}
+mctp_dev=${config%:*}
 dbus_path=${config#*:}
 
-echo "Getting NIC$nic_index version (EID=$eid)"
+echo "Getting NIC$nic_index version (dev=$mctp_dev)"
 
 MAX_RETRIES=3
 RETRY_COUNT=0
 version=""
 
 while [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
-    version=$(pldmtool fw_update GetFwParams -m "$eid" 2>/dev/null | \
-              jq -r '.ComponentParameterEntries[].ActiveComponentVersionString' 2>/dev/null)
+    eid=$(get_eid_by_mctp_dev "$mctp_dev")
+
+    if [ -z "$eid" ]; then
+        echo "Cannot find EID for $mctp_dev, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES)"
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        sleep 5
+        continue
+    fi
+
+    echo "Using EID=$eid for $mctp_dev"
+
+    version=$(pldmtool fw_update GetFirmwareParameters -m "$eid" 2>/dev/null | \
+              jq -r '.ActiveComponentImageSetVersionString // empty' 2>/dev/null)
 
     if [ -n "$version" ] && [ "$version" != "null" ]; then
         echo "NIC$nic_index version: $version"
-        
+
         busctl set-property xyz.openbmc_project.Settings \
             "/xyz/openbmc_project/software/chassis/$dbus_path" \
             xyz.openbmc_project.Software.Version Version "s" "$version"
-        
+
         break
     else
         echo "Version is empty, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES)"

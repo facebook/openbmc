@@ -1,4 +1,4 @@
-From ef06204b73ab9ae7f859fe7da100dc6bb0687a3a Mon Sep 17 00:00:00 2001
+From c4a0e56f215209dbf1c6538c1189f9d67cae4cdd Mon Sep 17 00:00:00 2001
 From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
 Date: Tue, 30 Jun 2026 16:48:53 +0530
 Subject: [PATCH] platform-mc: add helper to get terminus name
@@ -60,5 +60,5 @@ index 056d7bc..6474180 100644
       *         PollForPlatformEventMessage command
       *
 -- 
-2.34.1
+2.53.0-Meta
 

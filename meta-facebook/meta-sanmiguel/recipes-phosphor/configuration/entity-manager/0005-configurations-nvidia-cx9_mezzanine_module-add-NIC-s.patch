@@ -1,4 +1,4 @@
-From 0e58d2e24d5f859de3564ec2ac464e52a9f0d529 Mon Sep 17 00:00:00 2001
+From 5fa1e890ca0a7219c012c5a8b3426cda129f5ff6 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 25 Mar 2026 13:51:45 +0800
 Subject: [PATCH] configurations: nvidia: cx9_mezzanine_module: add NIC sensor
@@ -144,5 +144,5 @@ index 7cdc62b..0a8b6f1 100644
      ],
      "Name": "NVIDIA VR NVL72 IO Board $bus - 73",
 -- 
-2.52.0
+2.53.0-Meta
 

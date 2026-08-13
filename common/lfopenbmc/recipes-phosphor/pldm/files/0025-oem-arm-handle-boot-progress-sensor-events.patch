@@ -1,4 +1,4 @@
-From 5e6b56ff1f8d911f24504070a2c49a9e80db4438 Mon Sep 17 00:00:00 2001
+From da324d6a3577b555ea934e42949094dd84d22de5 Mon Sep 17 00:00:00 2001
 From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
 Date: Tue, 9 Jun 2026 21:59:35 +0530
 Subject: [PATCH] oem: arm: handle boot progress sensor events
@@ -616,5 +616,5 @@ index 0eb722e..44c9716 100644
      pldm::oem_meta::OemMETA oemMETA(&dbusHandler, invoker,
                                      platformHandler.get());
 -- 
-2.34.1
+2.53.0-Meta
 

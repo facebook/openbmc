@@ -1,4 +1,4 @@
-From 155b4943a1ea90c08c78b2c91d6b315d6384c828 Mon Sep 17 00:00:00 2001
+From 33885d5f7c57cbed603d03a991e08cee8e6f3149 Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Tue, 24 Mar 2026 18:08:32 +0800
 Subject: [PATCH] configurations: nvidia: vr_nvl72: add GPIO leak detector
@@ -64,5 +64,5 @@ index 9f4c652..482409f 100644
          ],
          "Name": "NVIDIA VR NVL72 1",
 -- 
-2.52.0
+2.53.0-Meta
 

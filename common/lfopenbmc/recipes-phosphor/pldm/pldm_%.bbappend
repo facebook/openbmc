@@ -29,10 +29,10 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0021-Add-back-instance-id-expiration-interval.patch \
     file://0022-fw_update-Reimplement-package-parser-to-use-new-libp.patch \
     file://0023-oem-meta-support-MCTP-I2C-and-I3C-target-configs.patch \
-    file://0026-platform-mc-add-helper-to-get-terminus-name.patch \
-    file://0027-oem-arm-handle-boot-progress-sensor-events.patch \
-    file://0028-oem-arm-support-UINT64-boot-progress-events.patch \
-    file://0029-platform-mc-use-tagged-numeric-sensor-decode.patch \
+    file://0024-platform-mc-add-helper-to-get-terminus-name.patch \
+    file://0025-oem-arm-handle-boot-progress-sensor-events.patch \
+    file://0026-oem-arm-support-UINT64-boot-progress-events.patch \
+    file://0027-platform-mc-use-tagged-numeric-sensor-decode.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

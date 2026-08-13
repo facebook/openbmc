@@ -1,4 +1,4 @@
-From 6a3aa0ea5c5f32e789c166d9b975707a9d6fe49e Mon Sep 17 00:00:00 2001
+From bfefd55bae591e76f112b4d92876df0d994a3377 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 25 Mar 2026 20:05:24 +0800
 Subject: [PATCH] configurations: nvidia: clover_cx9: add NIC sensor configs
@@ -79,5 +79,5 @@ index 1129750..4deaec3 100644
      ],
      "Name": "NVIDIA VR NVL72 Clover",
 -- 
-2.52.0
+2.53.0-Meta
 

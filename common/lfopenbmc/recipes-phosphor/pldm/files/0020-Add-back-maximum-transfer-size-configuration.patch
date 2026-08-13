@@ -1,4 +1,4 @@
-From 740a201137827ba56fd7f41183c69daa443b2486 Mon Sep 17 00:00:00 2001
+From 0ec2a52508aba73f66e84538cb8fabb7a482b025 Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Tue, 21 Apr 2026 23:45:07 -0700
 Subject: [PATCH] Add back maximum transfer size configuration
@@ -19,10 +19,10 @@ Signed-off-by: James Athappilly <jamesatha@gmail.com>
  4 files changed, 12 insertions(+), 2 deletions(-)
 
 diff --git a/fw-update/item_update_manager.cpp b/fw-update/item_update_manager.cpp
-index 4e5def4..3fd9589 100644
+index 2d014dd..90abcc0 100644
 --- a/fw-update/item_update_manager.cpp
 +++ b/fw-update/item_update_manager.cpp
-@@ -79,7 +79,6 @@ bool ItemUpdateManager::processPackage()
+@@ -80,7 +80,6 @@ bool ItemUpdateManager::processPackage()
  
      const auto& fwDeviceIDRecords = parser->getFwDeviceIDRecords();
      const auto& compImageInfos = parser->getComponentImageInfos();

@@ -1,7 +1,7 @@
-From d02edc74abb345c6dc1de2f304878a2e081837df Mon Sep 17 00:00:00 2001
+From 94b7f465fea4c037e6675dae55f5146759102e1b Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 31 Mar 2026 20:37:28 +0800
-Subject: [PATCH 12/23] terminus: replace inventory and sensor configuration
+Subject: [PATCH] terminus: replace inventory and sensor configuration
 
 Some devices (e.g. OCP NIC) do not provide auxiliary sensor names.
 When auxiliary names are unavailable, pldmd uses a combination of
@@ -43,7 +43,7 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  12 files changed, 438 insertions(+), 101 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
-index 5cc260d3..27b8172d 100644
+index 5cc260d..27b8172 100644
 --- a/common/types.hpp
 +++ b/common/types.hpp
 @@ -37,6 +37,10 @@ using NetworkId = uint32_t;
@@ -79,7 +79,7 @@ index 5cc260d3..27b8172d 100644
   * In `Table 2 - Special endpoint IDs` of DSP0236.
   * EID from 1 to 7 is reserved EID. So the start valid EID is 8
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index aa5794f7..38d03387 100644
+index aa5794f..38d0338 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
 @@ -746,7 +746,7 @@ std::optional<SoftwareName> obtainDeviceNameFromConfigurations(
@@ -92,7 +92,7 @@ index aa5794f7..38d03387 100644
              {
                  return *nameOption;
 diff --git a/fw-update/test/firmware_inventory_manager_test.cpp b/fw-update/test/firmware_inventory_manager_test.cpp
-index d279b35a..1f9ed0b6 100644
+index d279b35..1f9ed0b 100644
 --- a/fw-update/test/firmware_inventory_manager_test.cpp
 +++ b/fw-update/test/firmware_inventory_manager_test.cpp
 @@ -62,8 +62,9 @@ TEST(GetBoardPath_WithMockHandler, ReturnsExpectedBoardPath)
@@ -108,7 +108,7 @@ index d279b35a..1f9ed0b6 100644
  
      Event event(sdeventplus::Event::get_default());
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index d831e243..2f4598ed 100644
+index d831e24..2f4598e 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -230,6 +230,12 @@ void Terminus::parseTerminusPDRs()
@@ -279,7 +279,7 @@ index d831e243..2f4598ed 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index 46277378..af6a4da0 100644
+index 4627737..af6a4da 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
 @@ -119,6 +119,23 @@ class Terminus
@@ -330,7 +330,7 @@ index 46277378..af6a4da0 100644
      std::string inventoryPath;
  
 diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
-index 37494585..1c31d22d 100644
+index 3749458..1c31d22 100644
 --- a/platform-mc/terminus_manager.cpp
 +++ b/platform-mc/terminus_manager.cpp
 @@ -187,7 +187,6 @@ exec::task<int> TerminusManager::discoverMctpTerminusTask()
@@ -409,7 +409,7 @@ index 37494585..1c31d22d 100644
  }
  
 diff --git a/platform-mc/test/event_manager_test.cpp b/platform-mc/test/event_manager_test.cpp
-index e4c6cc01..10c803fb 100644
+index e4c6cc0..10c803f 100644
 --- a/platform-mc/test/event_manager_test.cpp
 +++ b/platform-mc/test/event_manager_test.cpp
 @@ -171,8 +171,8 @@ TEST_F(EventManagerTest, processNumericSensorEventTest)
@@ -453,7 +453,7 @@ index e4c6cc01..10c803fb 100644
      EXPECT_CALL(eventManager, processCperEvent(_, _, _, _))
          .Times(1)
 diff --git a/platform-mc/test/platform_manager_test.cpp b/platform-mc/test/platform_manager_test.cpp
-index 76a4f277..8b8dc99e 100644
+index 76a4f27..8b8dc99 100644
 --- a/platform-mc/test/platform_manager_test.cpp
 +++ b/platform-mc/test/platform_manager_test.cpp
 @@ -33,8 +33,8 @@ class PlatformManagerTest : public testing::Test
@@ -530,7 +530,7 @@ index 76a4f277..8b8dc99e 100644
      termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
          tid, 1 << PLDM_BASE | 1 << PLDM_PLATFORM, event);
 diff --git a/platform-mc/test/terminus_manager_test.cpp b/platform-mc/test/terminus_manager_test.cpp
-index 3b0173d1..4bb39b43 100644
+index 3b0173d..4bb39b4 100644
 --- a/platform-mc/test/terminus_manager_test.cpp
 +++ b/platform-mc/test/terminus_manager_test.cpp
 @@ -51,7 +51,7 @@ class TerminusManagerTest : public testing::Test
@@ -639,7 +639,7 @@ index 3b0173d1..4bb39b43 100644
      auto tid = mappedTid.value();
      termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index d24bd436..7b3a9118 100644
+index d24bd43..7b3a911 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -80,9 +80,9 @@ void MctpDiscovery::getMctpInfos(std::map<MctpInfo, Availability>& mctpInfoMap)
@@ -879,7 +879,7 @@ index d24bd436..7b3a9118 100644
  
  void MctpDiscovery::removeConfigs(const MctpInfos& removedInfos)
 diff --git a/requester/mctp_endpoint_discovery.hpp b/requester/mctp_endpoint_discovery.hpp
-index 56214fc1..d7d77a0d 100644
+index 56214fc..d7d77a0 100644
 --- a/requester/mctp_endpoint_discovery.hpp
 +++ b/requester/mctp_endpoint_discovery.hpp
 @@ -28,10 +28,6 @@ constexpr const char* MCTPConnectivityProp = "Connectivity";
@@ -912,7 +912,7 @@ index 56214fc1..d7d77a0d 100644
  
  } // namespace pldm
 diff --git a/requester/test/mctp_endpoint_discovery_test.cpp b/requester/test/mctp_endpoint_discovery_test.cpp
-index 3eb57cfb..71ce9c4d 100644
+index 3eb57cf..71ce9c4 100644
 --- a/requester/test/mctp_endpoint_discovery_test.cpp
 +++ b/requester/test/mctp_endpoint_discovery_test.cpp
 @@ -68,8 +68,9 @@ TEST(MctpEndpointDiscoveryTest, goodAddToExistingMctpInfos)
@@ -996,5 +996,5 @@ index 3eb57cfb..71ce9c4d 100644
      constexpr auto mockedDbusPath =
          "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
 -- 
-2.34.1
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From e4cdffa520b35b5e78cc611a57402333696c987c Mon Sep 17 00:00:00 2001
+From 8d91f583e6148d41c835a2011ff15bf480516fee Mon Sep 17 00:00:00 2001
 From: Frank Chen <FrankChen4@quantatw.com>
 Date: Tue, 21 Jul 2026 15:02:54 +0800
 Subject: [PATCH] configurations: santabarbara: add NIC osfp sensor and
@@ -183,10 +183,10 @@ index e9eb8a3..3fbc262 100644
              "Address": "0x48",
              "Bus": 32,
 diff --git a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm_vr_sni.json b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm_vr_sni.json
-index 54c0043..9590e50 100644
+index 0f06a64..ea38ee3 100644
 --- a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm_vr_sni.json
 +++ b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm_vr_sni.json
-@@ -454,6 +454,36 @@
+@@ -460,6 +460,36 @@
                  "Zone 0"
              ]
          },
@@ -223,7 +223,7 @@ index 54c0043..9590e50 100644
          {
              "Class": "temp",
              "Inputs": [
-@@ -488,6 +518,41 @@
+@@ -494,6 +524,41 @@
                  "Zone 0"
              ]
          },
@@ -314,5 +314,5 @@ index 45b4870..5f8e11c 100644
              "Address": "0x1f",
              "Bus": "$bus",
 -- 
-2.47.3
+2.53.0-Meta
 

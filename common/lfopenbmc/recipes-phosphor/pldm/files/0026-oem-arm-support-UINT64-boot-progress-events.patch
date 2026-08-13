@@ -1,4 +1,4 @@
-From 5c92046add7e9ed1fb09dd07b2444293195cbbe5 Mon Sep 17 00:00:00 2001
+From d12fba3042a5df079416f264e0096f1781597d01 Mon Sep 17 00:00:00 2001
 From: Abhishek R <abhishek.ramireddygarireddy@arm.com>
 Date: Thu, 6 Aug 2026 14:47:48 +0000
 Subject: [PATCH] oem/arm: support UINT64 boot progress events
@@ -99,5 +99,5 @@ index 7757cf2..99545aa 100644
      platform_mc::Manager* manager = nullptr;
  };
 -- 
-2.34.1
+2.53.0-Meta
 

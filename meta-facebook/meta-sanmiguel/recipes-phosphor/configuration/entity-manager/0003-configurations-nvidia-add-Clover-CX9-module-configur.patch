@@ -1,4 +1,4 @@
-From 5b4cc78f9b4aee8deb638bd405a6241a06e4ae8d Mon Sep 17 00:00:00 2001
+From 1449eddcb3f6aa29bf66da6d97dcc0b9abc6e99f Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 5 Mar 2026 19:07:57 +0800
 Subject: [PATCH] configurations: nvidia: add Clover CX9 module configuration
@@ -27,7 +27,7 @@ Signed-off-by: Potin Lai <potin.lai@quantatw.com>
  create mode 100644 configurations/nvidia/clover_cx9.json
 
 diff --git a/configurations/meson.build b/configurations/meson.build
-index 1e54d5d..e48dbe8 100644
+index d7e8bc4..e8b7d26 100644
 --- a/configurations/meson.build
 +++ b/configurations/meson.build
 @@ -322,6 +322,7 @@ configs = [
@@ -37,7 +37,7 @@ index 1e54d5d..e48dbe8 100644
 +    'nvidia/clover_cx9.json',
      'nvidia/cx7_mezzanine_module.json',
      'nvidia/cx8_mezzanine_module.json',
-     'nvidia/gb200.json',
+     'nvidia/cx9_mezzanine_module.json',
 diff --git a/configurations/nvidia/clover_cx9.json b/configurations/nvidia/clover_cx9.json
 new file mode 100644
 index 0000000..1129750

@@ -1,7 +1,7 @@
-From 22bb034e15966f9229213d4a423f7517e13c70aa Mon Sep 17 00:00:00 2001
+From 10465e7ce88701cf3483b7227e69eb5d0705f62a Mon Sep 17 00:00:00 2001
 From: x <x@x>
 Date: Tue, 11 Aug 2026 16:21:14 -0700
-Subject: [PATCH 23/25] oem-meta: support MCTP I2C and I3C target configs
+Subject: [PATCH] oem-meta: support MCTP I2C and I3C target configs
 
 getSlotNumberStringByTID() currently only works for devices registered
 as MCTPEndpoint, so endpoints exposed through MCTPI2Ctarget or

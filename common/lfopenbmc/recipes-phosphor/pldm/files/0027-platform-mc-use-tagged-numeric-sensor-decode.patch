@@ -1,4 +1,4 @@
-From 0fcf3986bc31ad812dbb994756a41309f08c24e9 Mon Sep 17 00:00:00 2001
+From 364f4fa59963f99e042929bc9bfa4efbc07b6d69 Mon Sep 17 00:00:00 2001
 From: Abhishek R <abhishek.ramireddygarireddy@arm.com>
 Date: Thu, 6 Aug 2026 14:48:45 +0000
 Subject: [PATCH] platform-mc: use tagged numeric sensor decode
@@ -101,5 +101,5 @@ index fc0a6e8..d752830 100644
          "processNumericSensorEvent tid {TID}, sensorID {SID} value {VAL} previousState {PSTATE} eventState {ESTATE}",
          "TID", tid, "SID", sensorId, "VAL", value, "PSTATE", previousEventState,
 -- 
-2.34.1
+2.53.0-Meta
 

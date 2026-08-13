@@ -1,4 +1,4 @@
-From c0fce79a9d3cdf605b509f6f9ad5c1fcbc79f1f3 Mon Sep 17 00:00:00 2001
+From 57551c2639acdda87c114c0761db1908e40673e7 Mon Sep 17 00:00:00 2001
 From: Andy Chung <Andy.Chung@amd.com>
 Date: Thu, 16 Jul 2026 14:08:59 +0800
 Subject: [PATCH] hwmon: (kb9002) Add driver for Kandou KB9002 retimer
@@ -17,7 +17,7 @@ LORE: https://lore.kernel.org/all/20260715-kb9002-upstream-v2-0-2fd390383da5@amd
  create mode 100644 drivers/hwmon/kb9002.c
 
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index a456a6f57..d9b87f278 100644
+index 68473da93941..cccd954e0bcb 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
 @@ -355,6 +355,17 @@ config SENSORS_KFAN
@@ -39,7 +39,7 @@ index a456a6f57..d9b87f278 100644
  	tristate "AMD Family 15h processor power"
  	depends on X86 && PCI && CPU_SUP_AMD
 diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 67efec0d9..cda319c52 100644
+index 67efec0d979b..cda319c52a33 100644
 --- a/drivers/hwmon/Makefile
 +++ b/drivers/hwmon/Makefile
 @@ -111,6 +111,7 @@ obj-$(CONFIG_SENSORS_IT87)	+= it87.o
@@ -52,7 +52,7 @@ index 67efec0d9..cda319c52 100644
  obj-$(CONFIG_SENSORS_LAN966X)	+= lan966x-hwmon.o
 diff --git a/drivers/hwmon/kb9002.c b/drivers/hwmon/kb9002.c
 new file mode 100644
-index 000000000..a63a66a28
+index 000000000000..a63a66a28bf7
 --- /dev/null
 +++ b/drivers/hwmon/kb9002.c
 @@ -0,0 +1,459 @@
@@ -516,5 +516,5 @@ index 000000000..a63a66a28
 +MODULE_DESCRIPTION("Kandou KB9002 PCIe retimer hwmon driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.34.1
+2.53.0-Meta
 

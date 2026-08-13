@@ -1,4 +1,4 @@
-From db0b8bd0c215bf9bc18abd90004310c399d8598f Mon Sep 17 00:00:00 2001
+From a04d7856162c55f1eb1c8c25bd26c916cabf3373 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 6 May 2026 09:57:59 +0800
 Subject: [PATCH] configurations: nvidia: p3809-hmc: Add NvidiaMctpVdm config

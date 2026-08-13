@@ -13,22 +13,44 @@ skip retry events already processed, keyed by TID and event type.
 Also fix an inverted return-value check in handleOemEvent and
 replace bare 0 returns with PLDM_SUCCESS for clarity.
 
+[YV4T1M-2254] Reconstruct the BIC timestamp with a proper non-overlapping
+shift (the previous <<12/<<8/<<4 was lossy and collided), include the event
+sub-type byte in the dedup key, and only treat a match as a retry within a
+short window -- so a genuine event is no longer dropped as a false retry.
+
 Change-Id: I957cc6375443e40ab586c4e654468a5a1f7107e2
 Signed-off-by: Sora Su <sora_su@wiwynn.com>
 ---
- oem/meta/event/oem_event_manager.cpp | 63 +++++++++++++++++++++++-----
- oem/meta/event/oem_event_manager.hpp | 19 ++++++---
- 2 files changed, 66 insertions(+), 16 deletions(-)
+ oem/meta/event/oem_event_manager.cpp | 82 ++++++++++++++++++++++++----
+ oem/meta/event/oem_event_manager.hpp | 19 +++++--
+ 2 files changed, 85 insertions(+), 16 deletions(-)
 
 diff --git a/oem/meta/event/oem_event_manager.cpp b/oem/meta/event/oem_event_manager.cpp
-index 2b311fa..d3f3b8c 100644
+index f6571d0..70cc9a9 100644
 --- a/oem/meta/event/oem_event_manager.cpp
 +++ b/oem/meta/event/oem_event_manager.cpp
-@@ -15,26 +15,37 @@ namespace pldm
+@@ -6,35 +6,54 @@
+ #include <phosphor-logging/lg2.hpp>
+ #include <xyz/openbmc_project/Inventory/Decorator/Slot/client.hpp>
+ 
++#include <chrono>
+ #include <cstdint>
+ #include <iostream>
+ #include <sstream>
++#include <tuple>
+ 
+ namespace pldm
+ {
  namespace oem_meta
  {
  
-+std::map<std::pair<pldm_tid_t, UnifiedError>, uint32_t>
++// YV4T1M-2254: key includes the event sub-type byte (eventData[7]) so that
++// cert / HTTP-boot-fail / PXE-boot-fail (all GeneralInfo POST 0x28) do not
++// share one dedup key; the value carries the BIC timestamp plus the
++// steady-clock time it was seen, so a match only counts as a retry within a
++// short window (BIC resends are seconds apart; loops are minutes apart).
++std::map<std::tuple<pldm_tid_t, uint8_t, uint8_t>,
++         std::pair<uint32_t, std::chrono::steady_clock::time_point>>
 +    receivedEventMsgTimeStamp;
 +
  int OemEventManager::processOemMetaEvent(
@@ -65,7 +87,7 @@ index 2b311fa..d3f3b8c 100644
          }
      }
  
-@@ -60,7 +71,7 @@ int OemEventManager::processOemMetaEvent(
+@@ -60,7 +79,7 @@ int OemEventManager::processOemMetaEvent(
                                              "RAW_EVENT", rawLog));
      }
  
@@ -74,7 +96,7 @@ index 2b311fa..d3f3b8c 100644
  }
  
  int OemEventManager::handleOemEvent(
-@@ -75,7 +86,7 @@ int OemEventManager::handleOemEvent(
+@@ -75,7 +94,7 @@ int OemEventManager::handleOemEvent(
          lg2::error("Receive OEM Meta event from not Meta specific device");
          return PLDM_ERROR;
      }
@@ -83,7 +105,7 @@ index 2b311fa..d3f3b8c 100644
      {
          return PLDM_ERROR;
      }
-@@ -83,7 +94,7 @@ int OemEventManager::handleOemEvent(
+@@ -83,7 +102,7 @@ int OemEventManager::handleOemEvent(
      return PLDM_SUCCESS;
  }
  
@@ -92,7 +114,7 @@ index 2b311fa..d3f3b8c 100644
                                          std::string& errorLog) const
  {
      errorLog = "Standard (0x02), ";
-@@ -234,9 +245,40 @@ void OemEventManager::handleSystemEvent(const uint8_t* eventData,
+@@ -234,9 +253,51 @@ void OemEventManager::handleSystemEvent(const uint8_t* eventData,
      }
  }
  
@@ -107,15 +129,26 @@ index 2b311fa..d3f3b8c 100644
 +        // recorded by the BIC. This works as long as each event type is sent by
 +        // only one thread on the BIC, i.e., no race condition occurs for the
 +        // same event type.
-+        uint32_t eventTimeStamp = (eventData[16] << 12) + (eventData[17] << 8) +
-+                                  (eventData[18] << 4) + eventData[19];
-+        std::pair<pldm_tid_t, UnifiedError> eventKey =
-+            std::make_pair(tid, static_cast<UnifiedError>(0xF & eventData[1]));
++        // YV4T1M-2254: reconstruct the 4-byte BIC timestamp with a proper,
++        // non-overlapping shift. The previous (<<12/<<8/<<4) overlapped nibbles
++        // and was lossy, so distinct events collided on one value and a genuine
++        // event was dropped as a false "retry".
++        uint32_t eventTimeStamp =
++            (static_cast<uint32_t>(eventData[16]) << 24) |
++            (static_cast<uint32_t>(eventData[17]) << 16) |
++            (static_cast<uint32_t>(eventData[18]) << 8) |
++            static_cast<uint32_t>(eventData[19]);
++        auto eventKey = std::make_tuple(
++            tid, static_cast<uint8_t>(0xF & eventData[1]), eventData[7]);
++        auto now = std::chrono::steady_clock::now();
++        constexpr auto retryWindow = std::chrono::seconds(10);
 +        lg2::info(
 +            "oem event msg: detected retry event, type {TYPE}, timestamp {TIMEST}",
 +            "TYPE", 0xF & eventData[1], "TIMEST", eventTimeStamp);
-+        if (receivedEventMsgTimeStamp.count(eventKey) &&
-+            receivedEventMsgTimeStamp[eventKey] == eventTimeStamp)
++        auto prev = receivedEventMsgTimeStamp.find(eventKey);
++        if (prev != receivedEventMsgTimeStamp.end() &&
++            prev->second.first == eventTimeStamp &&
++            (now - prev->second.second) < retryWindow)
 +        {
 +            lg2::info(
 +                "oem platform event: skip retry event, TID {TID}, event type {EVTT}, event time stamp {TIMEST}",
@@ -123,7 +156,7 @@ index 2b311fa..d3f3b8c 100644
 +                eventTimeStamp);
 +            return PLDM_SUCCESS;
 +        }
-+        receivedEventMsgTimeStamp[eventKey] = eventTimeStamp;
++        receivedEventMsgTimeStamp[eventKey] = {eventTimeStamp, now};
 +    }
 +    else
 +    {
@@ -135,7 +168,7 @@ index 2b311fa..d3f3b8c 100644
      errorLog = "Facebook Unified SEL (0xFB), ";
  
      DimmInfo dimmInfo = {
-@@ -566,10 +608,11 @@ void OemEventManager::handleUnifiedBIOSEvent(const uint8_t* eventData,
+@@ -566,10 +627,11 @@ void OemEventManager::handleUnifiedBIOSEvent(const uint8_t* eventData,
              break;
          }
      }
@@ -148,7 +181,7 @@ index 2b311fa..d3f3b8c 100644
      uint8_t generalInfo) const
  {
      std::string dimmLocation, dimm;
-@@ -618,7 +661,7 @@ void OemEventManager::handleMemoryError(
+@@ -618,7 +680,7 @@ void OemEventManager::handleMemoryError(
  }
  
  void OemEventManager::handleSystemPostEvent(
@@ -237,5 +270,5 @@ index 30d478c..aefef2f 100644
          std::string dimmDevName = "";
          for (size_t i = 0; i < cxlBdfMap.size(); i++)
 -- 
-2.53.0-Meta
+2.43.0
 

@@ -1,6 +1,6 @@
 ﻿/**
- *  @brief      Implements the TPM2_FlushContext method
- *  @file       TPM2_FlushContext.c
+ *  @brief      Implements the TPM2_PolicyOR method
+ *  @file       TPM2_PolicyOR.c
  *  @details    This file was auto-generated based on TPM2.0 specification revision 116.
  *
  *              Copyright Licenses:
@@ -55,21 +55,22 @@
  *              Any marks and brands contained herein are the property of their
  *              respective owners.
  */
-#include "TPM2_FlushContext.h"
+#include "TPM2_PolicyOR.h"
 #include "TPM2_Marshal.h"
 #include "DeviceManagement.h"
 #include "Platform.h"
 #include "StdInclude.h"
 
 /**
- *  @brief  Implementation of TPM2_FlushContext command.
+ *  @brief  Implementation of TPM2_PolicyOR command.
  *
- *  @retval TPM_RC_HANDLE                   flushHandle does not reference a loaded object or session.
+ *  @retval TPM_RC_VALUE                    commandCode of policySession previously set to a different value.
  */
 _Check_return_
 unsigned int
-TSS_TPM2_FlushContext(
-    _In_    TSS_TPMI_DH_CONTEXT     flushHandle
+TSS_TPM2_PolicyOR(
+    _In_    TSS_TPMI_SH_POLICY      policySession,
+    _In_    TSS_TPML_DIGEST*        pHashList
 )
 {
     unsigned int unReturnValue = RC_SUCCESS;
@@ -83,13 +84,13 @@ TSS_TPM2_FlushContext(
         // Request parameters
         TSS_TPM_ST tag = TSS_TPM_ST_NO_SESSIONS;
         TSS_UINT32 unCommandSize = 0;
-        TSS_TPM_CC commandCode = TSS_TPM_CC_FlushContext;
+        TSS_TPM_CC commandCode = TSS_TPM_CC_PolicyOR;
         // Response parameters
         TSS_UINT32 unResponseSize = 0;
         TSS_TPM_RC responseCode = TSS_TPM_RC_SUCCESS;
+
         Platform_MemorySet(rgbRequest, 0, sizeof(rgbRequest));
         Platform_MemorySet(rgbResponse, 0, sizeof(rgbResponse));
-
         // Marshal the request
         pbBuffer = rgbRequest;
         unReturnValue = TSS_TPMI_ST_COMMAND_TAG_Marshal(&tag, &pbBuffer, &nSizeRemaining);
@@ -101,7 +102,10 @@ TSS_TPM2_FlushContext(
         unReturnValue = TSS_TPM_CC_Marshal(&commandCode, &pbBuffer, &nSizeRemaining);
         if (RC_SUCCESS != unReturnValue)
             break;
-        unReturnValue = TSS_TPMI_DH_CONTEXT_Marshal(&flushHandle, &pbBuffer, &nSizeRemaining);
+        unReturnValue = TSS_TPMI_SH_POLICY_Marshal(&policySession, &pbBuffer, &nSizeRemaining);
+        if (RC_SUCCESS != unReturnValue)
+            break;
+        unReturnValue = TSS_TPML_DIGEST_Marshal(pHashList, &pbBuffer, &nSizeRemaining);
         if (RC_SUCCESS != unReturnValue)
             break;
 

@@ -1962,6 +1962,47 @@ TSS_TPM2B_DIGEST_Unmarshal(
 }
 
 /**
+ *  @brief      Marshals a TSS_TPM2B_DIGEST array
+ *  @details    Refer to: Table 72 - Definition of TPM2B_DIGEST Structure
+ *
+ *  @param      PpSource    Location containing the value that is to be marshaled in to the designated buffer.
+ *  @param      PprgbBuffer Location in the output buffer where the first octet of the TYPE is to be placed.
+ *  @param      PpnSize     Number of octets remaining in **PprgbBuffer.
+ *  @param      PnCount     Number of elements.
+ *
+ *  @retval     RC_SUCCESS  The operation completed successfully.
+ *  @retval     ...         Error codes from called functions.
+ */
+_Check_return_
+unsigned int
+TSS_TPM2B_DIGEST_Array_Marshal(
+    _In_    const TSS_TPM2B_DIGEST*         PpSource,
+    _Inout_ TSS_BYTE**                      PprgbBuffer,
+    _Inout_ TSS_INT32*                      PpnSize,
+    _In_    TSS_INT32                       PnCount)
+{
+    unsigned int unReturnValue = RC_E_FAIL;
+    // Check parameters
+    if ((NULL == PpSource) || (NULL == PprgbBuffer) || (NULL == *PprgbBuffer) || (NULL == PpnSize))
+    {
+        unReturnValue = RC_E_BAD_PARAMETER;
+    }
+    else
+    {
+        TSS_INT32 nPos;
+        unReturnValue = RC_SUCCESS;
+        // Marshal byte by byte to the buffer
+        for (nPos = 0; nPos < PnCount; nPos++)
+        {
+            unReturnValue = TSS_TPM2B_DIGEST_Marshal(&PpSource[nPos], PprgbBuffer, PpnSize);
+            if (RC_SUCCESS != unReturnValue)
+                break;
+        }
+    }
+    return unReturnValue;
+}
+
+/**
  *  @brief      Marshals a TPM2B_NONCE type
  *  @details    Refer to: Table 74 - Definition of Types for TPM2B_NONCE
  *
@@ -2814,6 +2855,58 @@ TSS_TPML_HANDLE_Unmarshal(
         if (RC_SUCCESS != unReturnValue)
             break;
         unReturnValue = TSS_TPM_HANDLE_Array_Unmarshal((TSS_TPM_HANDLE *) & (PpTarget->handle), PprgbBuffer, PpnSize, PpTarget->count);
+        if (RC_SUCCESS != unReturnValue)
+            break;
+    }
+    WHILE_FALSE_END;
+    return unReturnValue;
+}
+
+/**
+ *  @brief      Marshals a TSS_TPML_DIGEST structure
+ *  @details    Refer to: Table 99 - Definition of TPML_DIGEST Structure
+ *
+ *  @param      PpSource    Location containing the value that is to be marshaled in to the designated buffer.
+ *  @param      PprgbBuffer Location in the output buffer where the first octet of the TYPE is to be placed.
+ *  @param      PpnSize     Number of octets remaining in **PprgbBuffer.
+ *
+ *  @retval     RC_SUCCESS  The operation completed successfully.
+ *  @retval     ...         Error codes from called functions.
+ */
+_Check_return_
+unsigned int
+TSS_TPML_DIGEST_Marshal(
+    _In_    const TSS_TPML_DIGEST*          PpSource,
+    _Inout_ TSS_BYTE**                      PprgbBuffer,
+    _Inout_ TSS_INT32*                      PpnSize)
+{
+    unsigned int unReturnValue = RC_E_FAIL;
+    do
+    {
+        // Check parameters
+        if ((NULL == PpSource) || (NULL == PprgbBuffer) || (NULL == *PprgbBuffer) || (NULL == PpnSize))
+        {
+            unReturnValue = RC_E_BAD_PARAMETER;
+            break;
+        }
+        // Check size for PpnSize parameter
+        if (*PpnSize < (TSS_INT32) sizeof(PpSource->count))
+        {
+            unReturnValue = RC_E_BUFFER_TOO_SMALL;
+            break;
+        }
+        // Marshal size
+        unReturnValue = TSS_UINT32_Marshal((TSS_UINT32 *) & (PpSource->count), PprgbBuffer, PpnSize);
+        if (RC_SUCCESS != unReturnValue)
+            break;
+        // Check size for array
+        if (*PpnSize < (TSS_INT32) PpSource->count)
+        {
+            unReturnValue = RC_E_BUFFER_TOO_SMALL;
+            break;
+        }
+        // Marshal array
+        unReturnValue = TSS_TPM2B_DIGEST_Array_Marshal((TSS_TPM2B_DIGEST *) & (PpSource->digests), PprgbBuffer, PpnSize, PpSource->count);
         if (RC_SUCCESS != unReturnValue)
             break;
     }

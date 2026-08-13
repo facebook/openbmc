@@ -4,7 +4,7 @@
  *              Afterwards the TPM related information is returned to the calling module.
  *  @file       CommandFlow_TpmInfo.c
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -15,6 +15,10 @@
 
 #include "CommandFlow_TpmInfo.h"
 #include "FirmwareUpdate.h"
+
+#ifdef WINDOWS
+#include "TPM2_FieldUpgradeDataVendor.h"
+#endif
 
 /**
  *  @brief      Processes a sequence of TPM info related commands.
@@ -69,6 +73,25 @@ CommandFlow_TpmInfo_Execute(
             if (RC_SUCCESS != unReturnValue)
                 break;
         }
+
+#ifdef WINDOWS
+        // Check if FieldUpgrade commands can be submitted
+        if (TPM_DEVICE_ACCESS_WIN_TBS == DeviceManagement_GetDeviceAccessMode())
+        {
+            TSS_TPM2B_MAX_BUFFER dummyData;
+            dummyData.size = 0;
+            unsigned int unReturnValueTemp = TSS_TPM2_FieldUpgradeDataVendor(&dummyData);
+            if ((TPM_E_COMMAND_BLOCKED | RC_TPM_MASK) == unReturnValueTemp)
+            {
+                LOGGING_WRITE_LEVEL4(L"TPM2_FieldUpgradeDataVendor command was blocked by TBS!");
+                PpTpmInfo->fFuCommandsBlocked = TRUE;
+            }
+            else
+            {
+                PpTpmInfo->fFuCommandsBlocked = FALSE;
+            }
+        }
+#endif
 
         PpTpmInfo->hdr.unReturnCode = RC_SUCCESS;
     }

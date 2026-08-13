@@ -3,7 +3,7 @@
  *  @details    This module validates if all preconditions are met to switch to the requested operation mode and executes the task.
  *  @file       CommandFlow_SetMode.h
  *
- *  Copyright 2020 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2020 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.

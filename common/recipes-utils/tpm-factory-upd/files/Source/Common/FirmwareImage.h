@@ -3,7 +3,7 @@
  *  @details    This module provides helper functions to access a firmware image.
  *  @file       FirmwareImage.h
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -31,6 +31,13 @@ static const GUID EFI_IFXTPM_FIRMWARE_IMAGE_GUID =
 #define FIRMWARE_IMAGE_V1 0x01
 #define FIRMWARE_IMAGE_V2 0x02
 #define FIRMWARE_IMAGE_V3 0x03
+
+/// Definitions for firmware image struct version
+#define FIRMWARE_IMAGE_STRUCT_V1 0x01
+#define FIRMWARE_IMAGE_STRUCT_V2 0x02
+#define FIRMWARE_IMAGE_STRUCT_V3 0x03
+#define FIRMWARE_IMAGE_STRUCT_V4 0x04
+#define FIRMWARE_IMAGE_STRUCT_V5 0x05
 
 /// The ID of the signing key used to create the firmware image signature
 #define SIG_KEY_ID_1 0x0001
@@ -138,47 +145,52 @@ typedef struct tdIfxFirmwareImage
     /// Size in bytes of rgwszSourceVersions. Uses big-endian format.
     unsigned short usSourceVersionsSize;
     /// Allowed versions where the firmware update can be applied to. Array of version names (e.g. "5.12.3456.0") with additional null termination (multi string).
-    ///  Size of multi string array is usSourceVersionsSize.
+    /// Size of multi string array is usSourceVersionsSize.
     BYTE* prgwszSourceVersions;
     /// Target TPM family. Either DEVICE_TYPE_TPM_12 or DEVICE_TYPE_TPM_20.
     unsigned char bTargetTpmFamily;
     /// Size in bytes of wszTargetVersion. Uses big-endian format.
-    unsigned short  usTargetVersionSize;
+    unsigned short usTargetVersionSize;
     /// Target version name (e.g. "5.12.3456.0") wszTargetVersion includes a terminating NULL character.
     /// Size of wszTargetVersion is usTargetVersionSize.
     wchar_t wszTargetVersion[64];
     /// Size in bytes of the policy parameter block in rgbPolicyParameterBlock. Uses big-endian format.
     unsigned int unManifestDataSize;
     /// Manifest data. Includes one or more manifest data elements.
-    // Size is unManifestDataSize.
+    /// Size is unManifestDataSize.
     unsigned char* rgbManifestData;
     /// Number of manifests included within rgbManifestData. Uses big-endian format.
     unsigned short usNumManifests;
     /// Key group id. Uses big-endian format.
     unsigned int unKeyGroupId;
     /// Size in bytes of the parameter block in rgbPolicyParameterBlock. Uses big-endian format.
-    unsigned short  usPolicyParameterBlockSize;
+    unsigned short usPolicyParameterBlockSize;
     /// Parameter block. Either points to a manifest block or to a legacy policy parameter block.
-    // Size is usParameterBlockSize.
+    /// Size is usParameterBlockSize.
     unsigned char* rgbPolicyParameterBlock;
     /// Size in bytes of the firmware block in rgbFirmware. Uses big-endian format.
     unsigned int unFirmwareSize;
     /// Firmware block. Size is unFirmwareSize.
     unsigned char* rgbFirmware;
     /// Version number indicating the structure version of the firmware image. Will be increased with every non-breaking firmware image file structure change.
-    unsigned short  usImageStructureVersion;
+    unsigned short usImageStructureVersion;
     /// Target state
     BITFIELD_TPM_TARGET_STATE bfTargetState;
     /// Firmware image capabilities
     BITFIELD_FIRMWARE_IMAGE_CAPABILITIES bfCapabilities;
     /// Count of the allowed source versions (unsigned integer representation)
-    unsigned short  usIntSourceVersionCount;
+    unsigned short usIntSourceVersionCount;
     /// Allowed source versions (unsigned integer representation) only used for V1 and V2
     unsigned int rgunIntSourceVersions[MAX_SOURCE_VERSIONS_COUNT];
     /// Checksum over the IfxFirmwareImage structure excluding the unChecksum field. Uses big-endian format.
     unsigned int unChecksum;
     /// Key identifier for signature
-    unsigned short  usSignatureKeyId;
+    unsigned short usSignatureKeyId;
+    /// Size in bytes of rgbSalesCode
+    unsigned short usSalesCodeSize;
+    /// TPM sales code maximum 16 bytes (added with image struct version 5; maybe not set at all).
+    /// Depending on the sales code size the complete sales code or less bytes are checked (starts with).
+    BYTE rgbSalesCode[16];
     /// Byte array for signature
     BYTE rgbSignature[256];
 } IfxFirmwareImage;

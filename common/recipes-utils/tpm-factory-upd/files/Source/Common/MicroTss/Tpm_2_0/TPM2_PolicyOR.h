@@ -1,6 +1,6 @@
 ﻿/**
- *  @brief      Declares the TPM2_Shutdown method
- *  @file       TPM2_Shutdown.h
+ *  @brief      Declares the TPM2_PolicyOR method
+ *  @file       TPM2_PolicyOR.h
  *  @details    This file was auto-generated based on TPM2.0 specification revision 116.
  *
  *              Copyright Licenses:
@@ -63,14 +63,15 @@ extern "C" {
 #endif
 
 /**
- *  @brief  Implementation of TPM2_Shutdown command.
+ *  @brief  Implementation of TPM2_PolicyOR command.
  *
- *  @retval TPM_RC_TYPE                     if PCR bank has been re-configured, a CLEAR StateSave() is required.
+ *  @retval TPM_RC_VALUE                    commandCode of policySession previously set to a different value.
  */
 _Check_return_
 unsigned int
-TSS_TPM2_Shutdown(
-    _In_    TSS_TPM_SU      shutdownType
+TSS_TPM2_PolicyOR(
+    _In_    TSS_TPMI_SH_POLICY      policySession,
+    _In_    TSS_TPML_DIGEST*        pHashList
 );
 
 #ifdef __cplusplus

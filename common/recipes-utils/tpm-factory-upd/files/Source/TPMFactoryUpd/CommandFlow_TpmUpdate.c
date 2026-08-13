@@ -3,7 +3,7 @@
  *  @details    This module processes the firmware update. Afterwards the result is returned to the calling module.
  *  @file       CommandFlow_TpmUpdate.c
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -29,6 +29,9 @@
 #include "Utility.h"
 
 #include <TPM2_FlushContext.h>
+#include <TPM2_GetCapability.h>
+#include <TPM2_PolicyCommandCode.h>
+#include "TPM2_PolicyOR.h"
 #include <TPM2_StartAuthSession.h>
 #include <TPM2_FieldUpgradeTypes.h>
 #include <TPM_OIAP.h>
@@ -58,6 +61,7 @@ BOOL s_fUpdateThroughConfigFile = FALSE;
 
 static const BYTE s_rgbOAEPPad[] = { 'T', 'C', 'P', 'A' };
 const wchar_t CwszErrorMsgFormatAddKeyUIntegerValuePair[] = L"PropertyStorage_AddKeyUIntegerValuePair failed while updating the property '%ls'.";
+const wchar_t CwszErrorMsgFormatPropertyStorage_Add[] = L"PropertyStorage_AddKeyValuePair failed to add property '%ls'.";
 
 /**
  *  @brief      Callback function to save the used firmware image path to TPM_FACTORY_UPD_RUNDATA_FILE (once an update has been started successfully)
@@ -204,6 +208,71 @@ CommandFlow_TpmUpdate_IsTpmUpdatableWithFirmware(
 
             // Set new firmware valid state to "YES"
             PpTpmUpdate->unNewFirmwareValid = GENERIC_TRISTATE_STATE_YES;
+        }
+    }
+    WHILE_FALSE_END;
+
+    LOGGING_WRITE_LEVEL4_FMT(LOGGING_METHOD_EXIT_STRING_RET_VAL, unReturnValue);
+
+    return unReturnValue;
+}
+
+/**
+ *  @brief      Checks if the given policy handle can be used to update the TPM.
+ *  @details    The function calls FirmwareUpdate_IsPolicySessionLoaded to check whether the given policy handle can be found within loaded policy sessions.
+ *
+ *  @param      PphPolicySession            Pointer to policy session handle.
+ *
+ *  @retval     RC_SUCCESS                  The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER          An invalid parameter was passed to the function.
+ *  @retval     RC_E_INVALID_POLICY_HANDLE  An invalid policy handle was passed to the function.
+ *  @retval     RC_E_FAIL                   An unexpected error occurred.
+ *  @retval     ...                         Error codes from called functions.
+ */
+_Check_return_
+unsigned int
+CommandFlow_TpmUpdate_IsTpmUpdatableWithPolicyHandle(
+    _Out_ TSS_TPMI_SH_AUTH_SESSION* PphPolicySession)
+{
+    unsigned int unReturnValue = RC_E_FAIL;
+
+    LOGGING_WRITE_LEVEL4(LOGGING_METHOD_ENTRY_STRING);
+
+    do
+    {
+        TSS_TPMI_SH_AUTH_SESSION hPolicySessionHandle;
+
+        // Check parameters
+        if (NULL == PphPolicySession)
+        {
+            unReturnValue = RC_E_BAD_PARAMETER;
+            ERROR_STORE(unReturnValue, L"Parameter not initialized correctly (PphPolicySession is NULL)");
+            break;
+        }
+        *PphPolicySession = 0;
+
+        if (FALSE == PropertyStorage_GetUIntegerValueByKey(PROPERTY_POLICYHANDLE, &hPolicySessionHandle))
+        {
+            unReturnValue = RC_E_FAIL;
+            ERROR_STORE_FMT(unReturnValue, L"PropertyStorage_GetUIntegerValueByKey failed to get property '%ls'.", PROPERTY_POLICYHANDLE);
+            break;
+        }
+
+        unReturnValue = FirmwareUpdate_IsPolicySessionLoaded(&hPolicySessionHandle);
+        if (RC_SUCCESS == unReturnValue)
+        {
+            *PphPolicySession = hPolicySessionHandle;
+        }
+        else if (RC_E_TPM20_POLICY_SESSION_NOT_LOADED == unReturnValue)
+        {
+            unReturnValue = RC_E_INVALID_POLICYHANDLE_OPTION;
+            ERROR_STORE(unReturnValue, MSG_RC_E_INVALID_POLICYHANDLE_OPTION);
+            break;
+        }
+        else
+        {
+            ERROR_STORE(unReturnValue, L"TSS_TPM2_GetCapability returned an unexpected value. (TPM_CAP_HANDLES,TPM_HT_LOADED_SESSION)");
+            break;
         }
     }
     WHILE_FALSE_END;
@@ -515,9 +584,29 @@ CommandFlow_TpmUpdate_PrepareFirmwareUpdate(
         }
         else if (PpTpmUpdate->info.sTpmState.attribs.tpm20)
         {
-            // Prepare TPM2.0 update
-            PpTpmUpdate->info.hdr.unReturnCode = FirmwareUpdate_PrepareTPM20Policy(&PpTpmUpdate->hPolicySession);
-            unReturnValue = RC_SUCCESS;
+            unsigned int unUpdateType = UPDATE_TYPE_NONE;
+
+            // Check which type is given
+            if (TRUE == PropertyStorage_GetUIntegerValueByKey(PROPERTY_UPDATE_TYPE, &unUpdateType))
+            {
+                if (UPDATE_TYPE_TPM20_EMPTYPLATFORMAUTH == unUpdateType)
+                {
+                    // Prepare TPM2.0 update for empty platform auth
+                    PpTpmUpdate->info.hdr.unReturnCode = FirmwareUpdate_PrepareTPM20Policy(&PpTpmUpdate->hPolicySession);
+                    unReturnValue = RC_SUCCESS;
+                }
+                else if (UPDATE_TYPE_TPM20_PLATFORMPOLICY == unUpdateType)
+                {
+                    // Prepare TPM2.0 update for no empty platform auth
+                    PpTpmUpdate->info.hdr.unReturnCode = CommandFlow_TpmUpdate_GetTPM20PolicyHandle(&PpTpmUpdate->hPolicySession);
+                    unReturnValue = RC_SUCCESS;
+                }
+                else
+                {
+                    unReturnValue = RC_E_FAIL;
+                    ERROR_STORE(unReturnValue, L"Unsupported Update type detected");
+                }
+            }
         }
         else if (PpTpmUpdate->info.sTpmState.attribs.tpm12)
         {
@@ -648,7 +737,7 @@ CommandFlow_TpmUpdate_IsFirmwareUpdatable(
             }
 
             // Check if TPM2.0 is detected and correct update type is set
-            if (PpTpmUpdate->info.sTpmState.attribs.tpm20 && UPDATE_TYPE_TPM20_EMPTYPLATFORMAUTH != unUpdateType)
+            if (PpTpmUpdate->info.sTpmState.attribs.tpm20 && (UPDATE_TYPE_TPM20_EMPTYPLATFORMAUTH != unUpdateType) && (UPDATE_TYPE_TPM20_PLATFORMPOLICY != unUpdateType))
             {
                 // For TPM2.0 based firmware update loader exclude config file usage in non-operational mode
                 if (!(PpTpmUpdate->info.sTpmState.attribs.tpmHasFULoader20 &&
@@ -1111,6 +1200,14 @@ CommandFlow_TpmUpdate_Parse(
                         break;
                     }
                 }
+                else if (0 == Platform_StringCompare(PwszValue, CMD_UPDATE_OPTION_TPM20_PLATFORMPOLICY, PunValueSize, TRUE))
+                {
+                    if (!PropertyStorage_AddKeyUIntegerValuePair(PROPERTY_CONFIG_FILE_UPDATE_TYPE20, UPDATE_TYPE_TPM20_PLATFORMPOLICY))
+                    {
+                        ERROR_STORE_FMT(unReturnValue, CwszErrorMsgFormatAddKeyUIntegerValuePair, PROPERTY_CONFIG_FILE_UPDATE_TYPE20);
+                        break;
+                    }
+                }
                 else
                 {
                     unReturnValue = RC_E_INVALID_SETTING;
@@ -1279,6 +1376,214 @@ CommandFlow_TpmUpdate_FinalizeParsing(
     LOGGING_WRITE_LEVEL4_FMT(LOGGING_METHOD_EXIT_STRING_RET_VAL, PunReturnValue);
 
     return PunReturnValue;
+}
+
+/**
+ *  @brief      Finalize policy configuration settings parsing
+ *  @details
+ *
+ *  @param      PunReturnValue  Current return code which can be overwritten here.
+ *  @retval     PunReturnValue  In case PunReturnValue is not equal to RC_SUCCESS.
+ *  @retval     RC_SUCCESS      The operation completed successfully.
+ *  @retval     RC_E_FAIL       An unexpected error occurred.
+ */
+_Check_return_
+unsigned int
+CommandFlow_TpmUpdate_FinalizePolicyParsing(
+    _In_ unsigned int PunReturnValue)
+{
+    LOGGING_WRITE_LEVEL4(LOGGING_METHOD_ENTRY_STRING);
+
+    do
+    {
+        unsigned int unIndex = 0;
+        wchar_t* prgwszMandatoryProperties[] = {
+            PROPERTY_CONFIG_POLICY_UPDATE_DIGEST1,
+            PROPERTY_CONFIG_POLICY_UPDATE_DIGEST2,
+            L""
+        };
+
+        if (RC_SUCCESS != PunReturnValue)
+            break;
+
+        // Check if all mandatory settings were parsed
+        while (0 != Platform_StringCompare(prgwszMandatoryProperties[unIndex], L"", RG_LEN(L""), FALSE))
+        {
+            if (!PropertyStorage_ExistsElement(prgwszMandatoryProperties[unIndex]))
+            {
+                PunReturnValue = RC_E_INVALID_SETTING;
+                ERROR_STORE_FMT(PunReturnValue, L"TPM update policy config file: %ls is mandatory", prgwszMandatoryProperties[unIndex]);
+                break;
+            }
+            unIndex++;
+        }
+        if (RC_SUCCESS != PunReturnValue)
+            break;
+
+        // Verify that all available elements / digests are given continously ordered
+        BOOL fAvailable = TRUE;
+        for(unsigned int unDigestCount = 1; unDigestCount <= CONFIG_POLICY_DIGEST_MAX_COUNT; unDigestCount++)
+        {
+            // Get property name of policy digest. This loop interates through available properties of policy digests
+            wchar_t wszConfigValueName[MAX_NAME];
+            unsigned int unValueSize = RG_LEN(wszConfigValueName);
+            unsigned int unReturnValue = Platform_StringFormat(wszConfigValueName, &unValueSize, PROPERTY_CONFIG_POLICY_UPDATE_DIGESTx, unDigestCount);
+            if (RC_SUCCESS != unReturnValue)
+            {
+                ERROR_STORE(unReturnValue, L"Platform_StringFormat failed");
+                break;
+            }
+
+            // Check for first unavailable element
+            if (FALSE == PropertyStorage_ExistsElement(wszConfigValueName))
+                fAvailable = FALSE;
+
+            // Verify that all following elements are not available either
+            if (PropertyStorage_ExistsElement(wszConfigValueName) && !fAvailable)
+            {
+                PunReturnValue = RC_E_INVALID_SETTING;
+                ERROR_STORE(PunReturnValue, L"Settings in TPM update policy config file are not in series.");
+                break;
+            }
+        }
+    }
+    WHILE_FALSE_END;
+
+    LOGGING_WRITE_LEVEL4_FMT(LOGGING_METHOD_EXIT_STRING_RET_VAL, PunReturnValue);
+
+    return PunReturnValue;
+}
+
+/**
+ *  @brief      Parses the policy configuration file to get one element
+ *  @details    Parses the policy configuration file to get one element as part of a parsing workflow to
+ *              loop through a configuration file element by element.
+ *
+ *  @param      PwszSection         Pointer to a wide character array containing the current section.
+ *  @param      PunSectionSize      Size of the section buffer in elements including the zero termination.
+ *  @param      PwszKey             Pointer to a wide character array containing the current key.
+ *  @param      PunKeySize          Size of the key buffer in elements including the zero termination.
+ *  @param      PwszValue           Pointer to a wide character array containing the current value.
+ *  @param      PunValueSize        Size of the value buffer in elements including the zero termination.
+ *  @retval     RC_SUCCESS          The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER  An invalid parameter was passed to the function. It is NULL or empty.
+ *  @retval     RC_E_FAIL           An unexpected error occurred.
+ */
+_Check_return_
+unsigned int
+CommandFlow_TpmUpdate_ParsePolicyConfig(
+    _In_z_count_(PunSectionSize)    const wchar_t* PwszSection,
+    _In_                            unsigned int   PunSectionSize,
+    _In_z_count_(PunKeySize)        const wchar_t* PwszKey,
+    _In_                            unsigned int   PunKeySize,
+    _In_z_count_(PunValueSize)      const wchar_t* PwszValue,
+    _In_                            unsigned int   PunValueSize)
+{
+    unsigned int unReturnValue = RC_E_FAIL;
+
+    LOGGING_WRITE_LEVEL4(LOGGING_METHOD_ENTRY_STRING);
+
+    UNREFERENCED_PARAMETER(PunValueSize);
+
+    do
+    {
+        // Check parameters
+        if (PLATFORM_STRING_IS_NULL_OR_EMPTY(PwszSection) ||
+                0 == PunSectionSize ||
+                PLATFORM_STRING_IS_NULL_OR_EMPTY(PwszKey) ||
+                0 == PunKeySize ||
+                PLATFORM_STRING_IS_NULL_OR_EMPTY(PwszValue) ||
+                0 == PunValueSize)
+        {
+            unReturnValue = RC_E_BAD_PARAMETER;
+            ERROR_STORE(unReturnValue, L"One or more input parameters are NULL or empty.");
+            break;
+        }
+
+        // Section Update Type
+        if (0 == Platform_StringCompare(PwszSection, CONFIG_SECTION_POLICY_UPDATE, PunSectionSize, TRUE))
+        {
+            BOOL fConfigSettingDetected = FALSE;
+
+            // Check for setting PolicyDigest[1..8]
+            // This loop interates through available properties of policy digests
+            for (unsigned int unDigestCount = 1; unDigestCount <= CONFIG_POLICY_DIGEST_MAX_COUNT; unDigestCount++)
+            {
+                // Get configuration name of policy digest: PolicyDigest[1..8]
+                wchar_t wszConfigOptionName[MAX_NAME];
+                unsigned int unValueSize = RG_LEN(wszConfigOptionName);
+                unReturnValue = Platform_StringFormat(wszConfigOptionName, &unValueSize, CONFIG_POLICY_UPDATE_DIGESTx, unDigestCount);
+                if (RC_SUCCESS != unReturnValue)
+                {
+                    ERROR_STORE(unReturnValue, L"Platform_StringFormat failed");
+                    break;
+                }
+
+                // Check if key (option in config file) is 'PolicyDigest[1..8]'
+                // Compare string length without line endings (one might be a sub string)
+                if (((PunKeySize - 1) == unValueSize) && (0 == Platform_StringCompare(PwszKey, wszConfigOptionName, PunKeySize, TRUE)))
+                {
+                    // Verify that the string value of the config option has the correct size
+                    if ((TSS_SHA256_DIGEST_SIZE * 2) != (PunValueSize))
+                    {
+                        unReturnValue = RC_E_INVALID_SETTING;
+                        ERROR_STORE_FMT(unReturnValue, L"Option '%ls' in TPM update policy config file has invalid value.", PwszKey);
+                        break;
+                    }
+
+                    // Get property name of policy digest: PolicyDigest[1..8]
+                    wchar_t wszPropertyName[MAX_NAME];
+                    unValueSize = RG_LEN(wszPropertyName);
+                    unReturnValue = Platform_StringFormat(wszPropertyName, &unValueSize, PROPERTY_CONFIG_POLICY_UPDATE_DIGESTx, unDigestCount);
+                    if (RC_SUCCESS != unReturnValue)
+                    {
+                        ERROR_STORE(unReturnValue, L"Platform_StringFormat failed");
+                        break;
+                    }
+
+                    // Set property in property storage
+                    if (!PropertyStorage_AddKeyValuePair(wszPropertyName, PwszValue))
+                    {
+                        // Get detailed reason of error to detect dublicated setting in config file
+                        if (PropertyStorage_ExistsElement(wszPropertyName))
+                        {
+                            unReturnValue = RC_E_INVALID_SETTING;
+                            ERROR_STORE_FMT(unReturnValue, L"Option in TPM update policy config file must be set only once: '%ls'", wszConfigOptionName);
+                        }
+                        else
+                        {
+                            unReturnValue = RC_E_INTERNAL;
+                            ERROR_STORE_FMT(unReturnValue, CwszErrorMsgFormatPropertyStorage_Add, wszPropertyName);
+                        }
+                        break;
+                    }
+                    fConfigSettingDetected = TRUE;
+                }
+            }
+            // Verify if loop ended successfully
+            if (RC_SUCCESS != unReturnValue)
+                break;
+
+            // Verify if loop ended with valid option detected
+            if (!fConfigSettingDetected)
+            {
+                unReturnValue = RC_E_INVALID_SETTING;
+                ERROR_STORE(unReturnValue, L"Invalid option in policy configuration file.");
+                break;
+            }
+        }
+        else
+        {
+            unReturnValue = RC_E_INVALID_SETTING;
+            ERROR_STORE(unReturnValue, L"Invalid or missing section in policy configuration file.");
+            break;
+        }
+    }
+    WHILE_FALSE_END;
+
+    LOGGING_WRITE_LEVEL4_FMT(LOGGING_METHOD_EXIT_STRING_RET_VAL, unReturnValue);
+
+    return unReturnValue;
 }
 
 /**
@@ -1771,6 +2076,251 @@ CommandFlow_TpmUpdate_ProceedUpdateConfig(
     WHILE_FALSE_END;
 
     LOGGING_WRITE_LEVEL4_FMT(LOGGING_METHOD_EXIT_STRING_RET_VAL, unReturnValue);
+
+    return unReturnValue;
+}
+
+/**
+ *  @brief      Parses the update policy configuration settings
+ *  @details    Parses the update policy configuration settings for a settings file based update flow
+ *
+ *  @param      PpPolicyDigestList      Pointer to an initialized buffer containing the concatonated policy digests.
+ *
+ *  @retval     RC_SUCCESS              The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER      An invalid parameter was passed to the function. It is NULL or empty.
+ *  @retval     RC_E_FAIL               An unexpected error occurred.
+ */
+_Check_return_
+unsigned int
+CommandFlow_TpmUpdate_ProceedUpdatePolicyConfig(
+    _Out_ TSS_TPML_DIGEST* PpPolicyDigestList)
+{
+    unsigned int unReturnValue = RC_E_FAIL;
+
+    LOGGING_WRITE_LEVEL4(LOGGING_METHOD_ENTRY_STRING);
+
+    do
+    {
+        // Check parameters
+        if (NULL == PpPolicyDigestList)
+        {
+            unReturnValue = RC_E_BAD_PARAMETER;
+            ERROR_STORE(unReturnValue, L"Parameter not initialized correctly (pPolicyDigest is NULL)");
+            break;
+        }
+
+        Platform_MemorySet(PpPolicyDigestList, 0, sizeof(TSS_TPML_DIGEST));
+        wchar_t wszConfigFilePath[MAX_STRING_1024];
+        unsigned int unConfigFileNamePathSize = RG_LEN(wszConfigFilePath);
+        IGNORE_RETURN_VALUE(Platform_StringSetZero(wszConfigFilePath, RG_LEN(wszConfigFilePath)));
+
+        // Get configuration file path from property storage
+        if (FALSE == PropertyStorage_GetValueByKey(PROPERTY_POLICYFILE_PATH, wszConfigFilePath, &unConfigFileNamePathSize))
+        {
+            unReturnValue = RC_E_FAIL;
+            ERROR_STORE_FMT(unReturnValue, L"PropertyStorage_GetValueByKey failed to get property '%ls'.", PROPERTY_POLICYFILE_PATH);
+            break;
+        }
+
+        // Check if file exists
+        if (!FileIO_Exists(wszConfigFilePath))
+        {
+            unReturnValue = RC_E_INVALID_CONFIG_OPTION;
+            ERROR_STORE_FMT(unReturnValue, L"The config file '%ls' does not exist", wszConfigFilePath);
+            break;
+        }
+
+        // Parse configuration file using the configuration module
+        // to loop through the policy config file
+        unReturnValue = Config_ParseCustom(
+                            wszConfigFilePath,
+                            &CommandFlow_TpmUpdate_InitializeParsing,
+                            &CommandFlow_TpmUpdate_FinalizePolicyParsing,
+                            &CommandFlow_TpmUpdate_ParsePolicyConfig);
+        if (RC_SUCCESS != unReturnValue)
+        {
+            ERROR_STORE(unReturnValue, L"Error while parsing the config file of the config option.");
+            break;
+        }
+
+        // Get all policy digests from property store and add it to TPML_DIGEST structure
+        unsigned int unDigestCount;
+        unsigned int unDigestCapacity;
+        for (unDigestCount = 1; unDigestCount <= CONFIG_POLICY_DIGEST_MAX_COUNT; unDigestCount++)
+        {
+            wchar_t wszConfigValueName[MAX_NAME];
+            unsigned int unValueSize = RG_LEN(wszConfigValueName);
+            wchar_t wszValue[MAX_NAME];
+
+            // Get property name of policy digest. This loop interates through available properties of policy digests
+            unReturnValue = Platform_StringFormat(wszConfigValueName, &unValueSize, PROPERTY_CONFIG_POLICY_UPDATE_DIGESTx, unDigestCount);
+            if (RC_SUCCESS != unReturnValue)
+            {
+                ERROR_STORE(unReturnValue, L"Platform_StringFormat failed");
+                break;
+            }
+
+            // Stop at first unset element / digest, correct amount of policy digests has been verified before
+            if (FALSE == PropertyStorage_ExistsElement(wszConfigValueName))
+                break;
+
+            // Get digest from property store
+            unValueSize = RG_LEN(wszValue);
+            if (FALSE == PropertyStorage_GetValueByKey(wszConfigValueName, wszValue, &unValueSize))
+            {
+                unReturnValue = RC_E_INTERNAL;
+                ERROR_STORE(unReturnValue, L"Error detected processing the policy config: PropertyStorage does not hold a valid value for the policy digest.");
+                break;
+            }
+
+            // Return policy digests as TPM2B_DIGEST structure as elements of TPML_DIGEST structure
+            TSS_TPM2B_DIGEST* pDigest;
+            pDigest = &PpPolicyDigestList->digests[unDigestCount - 1];  // Loop started with 1
+            unDigestCapacity = sizeof(pDigest->buffer);
+            unReturnValue = UiUtility_StringScanHexToByte(wszValue, pDigest->buffer, &unDigestCapacity);
+            if (RC_SUCCESS != unReturnValue)
+            {
+                unReturnValue = RC_E_INVALID_SETTING;
+                ERROR_STORE(unReturnValue, L"Utility_StringScanHexToByte returned an unexpected error. String contains non hex characters.");
+                break;
+            }
+            PpPolicyDigestList->count = unDigestCount;
+            pDigest->size = (unsigned short)unDigestCapacity;
+        }
+    }
+    WHILE_FALSE_END;
+
+    LOGGING_WRITE_LEVEL4_FMT(LOGGING_METHOD_EXIT_STRING_RET_VAL, unReturnValue);
+
+    return unReturnValue;
+}
+
+/**
+ *  @brief      Prepares a policy session for TPM firmware.
+ *  @details    The function prepares a policy session for TPM Firmware Update and returns the session handle
+ *              for non empty platform authorization using default policy behaviour utilizing policy command code or
+ *              having options in authorization including the TPM Firmware Update command.
+ *              Further the function returns the policy handle for an external created policy session.
+ *
+ *  @param      PphPolicySession                    Pointer to session handle that will be filled in by this method.
+ *
+ *  @retval     RC_SUCCESS                          The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER                  An invalid parameter was passed to the function. It is invalid or NULL.
+ *  @retval     RC_E_FAIL                           An unexpected error occurred.
+ *  @retval     RC_E_PLATFORM_AUTH_NOT_EMPTY        In case PlatformAuth is not the Empty Buffer.
+ *  @retval     RC_E_PLATFORM_HIERARCHY_DISABLED    In case platform hierarchy has been disabled.
+ *  @retval     TPM_RC_VALUE                        In case policy command code has not been set correctly before calling TSS_TPM2_PolicyOR.
+ *  @retval     ...                                 Error codes from called functions. like TPM error codes.
+ */
+_Check_return_
+unsigned int
+CommandFlow_TpmUpdate_GetTPM20PolicyHandle(
+    _Out_ TSS_TPMI_SH_AUTH_SESSION* PphPolicySession)
+{
+    unsigned int unReturnValue = RC_E_FAIL;
+    TSS_TPMI_SH_AUTH_SESSION hPolicySession = 0;
+    BOOL fPolicyConfig = FALSE;
+
+    do
+    {
+        // Check parameters
+        if (NULL == PphPolicySession)
+        {
+            unReturnValue = RC_E_BAD_PARAMETER;
+            ERROR_STORE(unReturnValue, L"Parameter not initialized correctly (PphPolicySession is NULL)");
+            break;
+        }
+        *PphPolicySession = 0;
+
+        // Check if policy handle is available from outside created session
+        if (PropertyStorage_ExistsElement(PROPERTY_POLICYHANDLE))
+        {
+            // Prepare TPM2.0 update for no empty platform auth and given policy session handle
+            unReturnValue = CommandFlow_TpmUpdate_IsTpmUpdatableWithPolicyHandle(PphPolicySession);
+            break;
+        }
+
+        // Initialize structure for list of policy digests
+        TSS_TPML_DIGEST sPolicyDigestList;
+        Platform_MemorySet(&sPolicyDigestList, 0, sizeof(sPolicyDigestList));
+
+        if (PropertyStorage_ExistsElement(PROPERTY_POLICYFILE_PATH))
+        {
+            // Parse policy config file
+            unReturnValue = CommandFlow_TpmUpdate_ProceedUpdatePolicyConfig(&sPolicyDigestList);
+            if (RC_SUCCESS != unReturnValue)
+                break;
+
+            fPolicyConfig = TRUE;
+        }
+
+        // Authorization session area
+        TSS_AuthorizationCommandData sAuthSessionData;
+        TSS_AcknowledgmentResponseData sAckAuthSessionData;
+
+        Platform_MemorySet(&sAuthSessionData, 0, sizeof(sAuthSessionData));
+        Platform_MemorySet(&sAckAuthSessionData, 0, sizeof(sAckAuthSessionData));
+
+        TSS_TPM2B_NONCE sNonceTpm;
+        TSS_TPM2B_NONCE sNonceCaller;
+        Platform_MemorySet(&sNonceTpm, 0, sizeof(sNonceTpm));
+        Platform_MemorySet(&sNonceCaller, 0, sizeof(sNonceCaller));
+        sNonceCaller.size = TSS_SHA256_DIGEST_SIZE;
+        unReturnValue = Crypt_GetRandom(sNonceCaller.size, sNonceCaller.buffer);
+        if (RC_SUCCESS != unReturnValue)
+        {
+            ERROR_STORE(unReturnValue, L"Error calling Crypt_GetRandom");
+            break;
+        }
+
+        // Start policy session
+        TSS_TPM2B_ENCRYPTED_SECRET sEncSecretEmpty;
+        TSS_TPMT_SYM_DEF sSymDefEmpty;
+        Platform_MemorySet(&sEncSecretEmpty, 0, sizeof(sEncSecretEmpty));
+        Platform_MemorySet(&sSymDefEmpty, 0, sizeof(sSymDefEmpty));
+
+        sSymDefEmpty.algorithm = TSS_TPM_ALG_NULL;
+        unReturnValue = TSS_TPM2_StartAuthSession(TSS_TPM_RH_NULL,
+                        // Bind must be NULL, otherwise we'd have
+                        // to calculate AuthSessionData.hmac !!
+                        TSS_TPM_RH_NULL,
+                        &sNonceCaller, &sEncSecretEmpty,
+                        TSS_TPM_SE_POLICY, &sSymDefEmpty, TSS_TPM_ALG_SHA256,
+                        &hPolicySession, &sNonceTpm);
+        if (TSS_TPM_RC_SUCCESS != unReturnValue)
+        {
+            ERROR_STORE(unReturnValue, L"Error calling TSS_TPM2_StartAuthSession");
+            break;
+        }
+
+        // Update policy session to include command TPM2_FieldUpgradeStartVendor
+        unReturnValue = (unsigned int)TSS_TPM2_PolicyCommandCode(hPolicySession, TPM2_CC_FieldUpgradeStartVendor);
+        if (TSS_TPM_RC_SUCCESS != unReturnValue)
+        {
+            ERROR_STORE(unReturnValue, L"Error calling TSS_TPM2_PolicyCommandCode");
+            break;
+        }
+
+        if (fPolicyConfig)
+        {
+            // Update policy session to include options in authorization(list of policy digests).
+            // The list must contain the above policy command code for TPM2_CC_FieldUpgradeStartVendor.
+            // If not, the command will fail with TPM_RC_VALUE.
+            unReturnValue = (unsigned int)TSS_TPM2_PolicyOR(hPolicySession, &sPolicyDigestList);
+            if (TSS_TPM_RC_SUCCESS != unReturnValue)
+            {
+                ERROR_STORE(unReturnValue, L"Error calling TSS_TPM2_PolicyOR");
+                break;
+            }
+        }
+
+        *PphPolicySession = hPolicySession;
+    }
+    WHILE_FALSE_END;
+
+    // Try to close policy session in case of errors (only if session has already been started)
+    if (RC_SUCCESS != unReturnValue && 0 != hPolicySession)
+        IGNORE_RETURN_VALUE(TSS_TPM2_FlushContext(hPolicySession));
 
     return unReturnValue;
 }

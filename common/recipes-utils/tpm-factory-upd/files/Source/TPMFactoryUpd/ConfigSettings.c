@@ -3,7 +3,7 @@
  *  @details    Module to verify and store configuration settings. Implements the IConfigSettings interface.
  *  @file       TPMFactoryUpd\ConfigSettings.c
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -84,8 +84,8 @@ ConfigSettings_InitializeParsing()
             break;
         }
 
-        // Set default device access mode: MODE = TPM_DEVICE_ACCESS_DRIVER
-        if (!PropertyStorage_SetUIntegerValueByKey(PROPERTY_TPM_DEVICE_ACCESS_MODE, TPM_DEVICE_ACCESS_DRIVER))
+        // Set default device access mode
+        if (!PropertyStorage_SetUIntegerValueByKey(PROPERTY_TPM_DEVICE_ACCESS_MODE, TPM_DEVICE_ACCESS_DEFAULT))
         {
             ERROR_STORE_FMT(unReturnValue, CwszErrorMsgFormatSetDefaultFailed, PROPERTY_TPM_DEVICE_ACCESS_MODE);
             break;
@@ -292,6 +292,13 @@ ConfigSettings_Parse(
                             break;
                         }
 #endif
+#ifdef WINDOWS_TBS
+                        case TPM_DEVICE_ACCESS_WIN_TBS:
+                        {
+                            unReturnValue = RC_SUCCESS;
+                            break;
+                        }
+#endif // WINDOWS_TBS
                         default:
                         {
                             unReturnValue = RC_E_INVALID_SETTING;
@@ -304,6 +311,18 @@ ConfigSettings_Parse(
                         break;
                 }
 
+                unReturnValue = RC_SUCCESS;
+                break;
+            }
+            // Check DEVICE_PATH option
+            if (0 == Platform_StringCompare(PwszKey, CONFIG_KEY_TPM_DEVICE_ACCESS_PATH, PunKeySize, FALSE))
+            {
+                // Store setting value
+                if (!PropertyStorage_ChangeValueByKey(PROPERTY_TPM_DEVICE_ACCESS_PATH, PwszValue))
+                {
+                    ERROR_STORE_FMT(unReturnValue, CwszErrorMsgFormatChangeValueByKey, PROPERTY_TPM_DEVICE_ACCESS_PATH);
+                    break;
+                }
                 unReturnValue = RC_SUCCESS;
                 break;
             }

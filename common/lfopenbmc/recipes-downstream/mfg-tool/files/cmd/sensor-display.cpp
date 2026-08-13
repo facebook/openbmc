@@ -105,7 +105,7 @@ struct command
                                              service);
                     }
                 }
-                catch (const std::exception& e)
+                catch (const sdbusplus::exception_t& e)
                 {
                     warning(
                         "Failed GetManagedObjects for {SERVICE} at {PATH}: {ERROR}",
@@ -166,7 +166,7 @@ struct command
                 extract_value(props);
             }
         }
-        catch (const std::exception& e)
+        catch (const sdbusplus::exception_t& e)
         {
             warning("Failed to parse value: {PATH}, error: {ERROR}", "PATH",
                     objpath.str, "ERROR", e.what());
@@ -199,7 +199,7 @@ struct command
                     }
                 }
             }
-            catch (const std::exception& e)
+            catch (const sdbusplus::exception_t& e)
             {
                 warning(
                     "Failed to parse hard-shutdown thresholds: {PATH}, error: {ERROR}",
@@ -234,7 +234,7 @@ struct command
                     }
                 }
             }
-            catch (const std::exception& e)
+            catch (const sdbusplus::exception_t& e)
             {
                 warning(
                     "Failed to parse critical thresholds: {PATH}, error: {ERROR}",
@@ -269,7 +269,7 @@ struct command
                     }
                 }
             }
-            catch (const std::exception& e)
+            catch (const sdbusplus::exception_t& e)
             {
                 warning(
                     "Failed to parse warning thresholds: {PATH}, error: {ERROR}",
@@ -321,7 +321,7 @@ struct command
                     }
                 }
             }
-            catch (const std::exception& e)
+            catch (const sdbusplus::exception_t& e)
             {
                 warning(
                     "Failed to parse threshold entries: {PATH}, error: {ERROR}",

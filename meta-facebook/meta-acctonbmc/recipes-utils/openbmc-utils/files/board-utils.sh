@@ -39,6 +39,12 @@ POWER_CYCLE_GO="${MCBCPLD_SYSFS_DIR}/power_cycle_go"
 BOARD_ID="${MCBCPLD_SYSFS_DIR}/board_id"
 VERSION_ID="${MCBCPLD_SYSFS_DIR}/version_id"
 
+apml_bus_identify() {
+    # Return an empty value to skip loading APML modules on the current platform.
+    # Platform-specific conditions can be added to return different APML bus values if needed.
+    echo ""
+}
+
 wedge_board_type_from_idprom() {
     product_name=$(weutil | grep 'Product Name' | cut -d ' ' -f3)
     product_name=${product_name,,}

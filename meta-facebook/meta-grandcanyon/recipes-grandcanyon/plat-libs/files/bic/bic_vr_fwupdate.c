@@ -1671,7 +1671,8 @@ static int vr_XDPE152XX_program(uint8_t addr, struct xdpe152xx_config *config, u
   uint8_t tlen = 0, rlen = 0;
 
   uint8_t remain = 0;
-  uint8_t crc_now = 0;
+  uint8_t ver_data[5] = {0};
+  uint32_t crc_now = 0;
   int prog_cnt = 0;
   int upload_total_cnt = 0;
   int did_global_invalidate = 0;
@@ -1712,11 +1713,13 @@ static int vr_XDPE152XX_program(uint8_t addr, struct xdpe152xx_config *config, u
 
   // 1) Already-flashed guard (aligned with common/xdpe152xx.c program_xdpe152xx(),
   //    which checks CRC before remaining writes; also matches ISL/TI ordering)
-  ret = bic_get_ifx_vr_version_mfr(VR_BUS, addr, &crc_now);
+  ret = bic_get_ifx_vr_version_mfr(VR_BUS, addr, ver_data);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s: failed to read current CRC before programming", __func__);
     goto cleanup_unlock;
   }
+  crc_now = (uint32_t)ver_data[1] | ((uint32_t)ver_data[2] << 8) |
+            ((uint32_t)ver_data[3] << 16) | ((uint32_t)ver_data[4] << 24);
   {
     int chk = vr_already_flashed_check(crc_now, config->sum_exp, force, "Checksum", "%08X");
     if (chk < 0) {

@@ -280,6 +280,7 @@ bic_get_vr_device_id(uint8_t *rbuf, uint8_t *rlen, uint8_t bus, uint8_t addr) {
   uint8_t tlen = 0;
   int ret = 0;
 
+#ifndef CONFIG_GRANDCANYON2
   // set VR page
   tbuf[0] = (bus << 1) + 1;
   tbuf[1] = addr;
@@ -288,14 +289,6 @@ bic_get_vr_device_id(uint8_t *rbuf, uint8_t *rlen, uint8_t bus, uint8_t addr) {
   tbuf[4] = 0x01;
   tlen = 5;
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, rlen);
-#ifdef CONFIG_GRANDCANYON2
-  if (ret < 0) {
-    syslog(LOG_WARNING,
-           "%s():%d Page set failed for addr=0x%02X, "
-           "still trying to read device ID. ret=%d",
-           __func__, __LINE__, addr, ret);
-  }
-#else
   if (ret < 0) {
     syslog(LOG_WARNING, "%s():%d Failed to send command code to switch VR page. ret=%d", __func__,__LINE__, ret);
     return ret;

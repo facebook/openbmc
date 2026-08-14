@@ -1731,6 +1731,26 @@ void pal_update_ts_sled() {
   }
 }
 
+int 
+pal_check_abl_error(uint32_t postcode) {
+  uint8_t head = postcode >> 24;
+  uint8_t last = postcode & 0xff;
+  if (head != 0xEE || ((postcode >> 16) & 0xff) != 0xF6) {
+    return 0;
+  }
+  else {
+    switch (last) {
+      case 0x00:
+        syslog(LOG_CRIT, "Reset the system as ABL workaround for the Hynix S3 DRAM issue.");
+        break;
+      default:
+        syslog(LOG_CRIT, "unknown ABL Event(postcode = 0x%08X) ", postcode);
+        break;
+    }
+  }
+  return 0;
+}
+
 int pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
 {
   const char *dev_path = "/dev/aspeed-lpc-pcc";

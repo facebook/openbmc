@@ -383,7 +383,7 @@ bic_get_ifx_vr_version_mfr(uint8_t bus, uint8_t addr, uint8_t *ver_data) {
   usleep(20000); // 20ms
 
   // Step 3 : Read CRC result.
-  tbuf[2] = 0x06; // read cnt
+  tbuf[2] = 0x05; // read cnt
   tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD (MFR_FW_COMMAND_DATA)
   tlen = 4;
 

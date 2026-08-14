@@ -1,0 +1,31 @@
+From be5d72e5a1812b4ceb7395db9778d375882b6cc9 Mon Sep 17 00:00:00 2001
+From: Dirk Chen <dirkchen@amd.com>
+Date: Tue, 16 Jun 2026 17:12:58 +0800
+Subject: [PATCH] psusensor: skip sensor reads during firmware updates
+
+This patch is based on the following PR [1].
+A new MPS VR chip, the MPQ87xx series, has been introduced.
+Add MPQ87XXFirmware to the lookup table.
+
+[1] https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/83968
+
+Signed-off-by: Dirk Chen <dirkchen@amd.com>
+---
+ src/psu/PSUSensorMain.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
+index c630d59..f67a2f1 100644
+--- a/src/psu/PSUSensorMain.cpp
++++ b/src/psu/PSUSensorMain.cpp
+@@ -193,6 +193,7 @@ static constexpr auto firmwareTypes = std::to_array<std::string_view>({
+     "MP297XFirmware",
+     "MP5998Firmware",
+     "MP994XFirmware",
++    "MPQ87XXFirmware",
+ });
+ 
+ static boost::container::flat_map<std::string, std::shared_ptr<PSUSensor>>
+-- 
+2.34.1
+

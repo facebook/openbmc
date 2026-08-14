@@ -24,4 +24,5 @@ IMAGE_INSTALL += " \
     ftdicmd \
     libcpldupdate-dll-gpio \
     cpldupdate \
+    apml \
     "

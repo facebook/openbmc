@@ -1,4 +1,4 @@
-From 0bb88411a23001d5d332f5a534ffdc95c2c154e3 Mon Sep 17 00:00:00 2001
+From 47f7534f7c0860f2bace364b30e8c66338bdd481 Mon Sep 17 00:00:00 2001
 From: Elton Wang <elton.wang.wiwynn@gmail.com>
 Date: Wed, 24 Jun 2026 11:11:49 +0000
 Subject: [PATCH] configurations: yosemite5: Add T22 drive configuration
@@ -18,10 +18,10 @@ Signed-off-by: Elton Wang <elton.wang.wiwynn@gmail.com>
  create mode 100644 configurations/meta/yv5/yosemite5_rio_grande_ssd.json
 
 diff --git a/configurations/meson.build b/configurations/meson.build
-index 9df3bd1..ca6febb 100644
+index ef9dae8..5d3da57 100644
 --- a/configurations/meson.build
 +++ b/configurations/meson.build
-@@ -316,6 +316,7 @@ configs = [
+@@ -317,6 +317,7 @@ configs = [
      'meta/yv5/yosemite5_medusa_board_discrete.json',
      'meta/yv5/yosemite5_rio_grande_adc_sgy.json',
      'meta/yv5/yosemite5_rio_grande_adc_ti.json',

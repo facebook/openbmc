@@ -1,4 +1,4 @@
-From 9cc9322890417e3155d82f4910736be642f96348 Mon Sep 17 00:00:00 2001
+From fe156bb5deeb3555e87f12c360ce8b42ad95bcb3 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Mon, 13 Jul 2026 14:14:45 -0700
 Subject: [PATCH] Control/Port: Add interface for monitoring control
@@ -65,7 +65,7 @@ index 0000000..7f0d179
 +)
 +
 diff --git a/gen/xyz/openbmc_project/Control/meson.build b/gen/xyz/openbmc_project/Control/meson.build
-index 55bc7b5..526bc2f 100644
+index 717218a..e9ce5f6 100644
 --- a/gen/xyz/openbmc_project/Control/meson.build
 +++ b/gen/xyz/openbmc_project/Control/meson.build
 @@ -11,6 +11,7 @@ subdir('FieldMode')
@@ -76,7 +76,7 @@ index 55bc7b5..526bc2f 100644
  subdir('Power')
  subdir('PowerSupplyAttributes')
  subdir('PowerSupplyRedundancy')
-@@ -290,6 +291,30 @@ generated_markdown += custom_target(
+@@ -289,6 +290,30 @@ generated_markdown += custom_target(
      build_by_default: should_generate_markdown,
  )
  

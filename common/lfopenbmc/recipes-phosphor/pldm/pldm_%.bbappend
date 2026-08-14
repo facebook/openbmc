@@ -33,7 +33,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0025-oem-arm-handle-boot-progress-sensor-events.patch \
     file://0026-oem-arm-support-UINT64-boot-progress-events.patch \
     file://0027-platform-mc-use-tagged-numeric-sensor-decode.patch \
-    file://0028-oem-meta-do-not-drop-OEM-event-during-MCTP-endpoint.patch \
+    file://0028-oem-meta-don-t-drop-OEM-event-during-MCTP-endpoint-r.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

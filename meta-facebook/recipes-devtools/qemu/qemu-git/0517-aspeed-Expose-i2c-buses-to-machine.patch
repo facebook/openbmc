@@ -1,4 +1,4 @@
-From a2a9cf4bb206564ab5d351f9f29228b244cfd07c Mon Sep 17 00:00:00 2001
+From 81c36ffbde7d27f8f7a7eb44fd1a65702397b1f1 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH] aspeed: Expose i2c buses to machine
@@ -92,10 +92,10 @@ index d3bfd2c7d2..bcb26cf83b 100644
  }
  
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index 3e022bf238..97cd6802d1 100644
+index 97c9d627f2..5538a1284a 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
-@@ -1550,7 +1550,12 @@ static void aspeed_i2c_bus_realize(DeviceState *dev, Error **errp)
+@@ -1629,7 +1629,12 @@ static void aspeed_i2c_bus_realize(DeviceState *dev, Error **errp)
  
      sysbus_init_irq(SYS_BUS_DEVICE(dev), &s->irq);
  
@@ -109,7 +109,7 @@ index 3e022bf238..97cd6802d1 100644
      s->slave = i2c_slave_create_simple(s->bus, TYPE_ASPEED_I2C_BUS_SLAVE,
                                         0xff);
      ASPEED_I2C_BUS_SLAVE(s->slave)->bus = s;
-@@ -1569,6 +1574,7 @@ static const Property aspeed_i2c_bus_properties[] = {
+@@ -1648,6 +1653,7 @@ static const Property aspeed_i2c_bus_properties[] = {
      DEFINE_PROP_LINK("controller", AspeedI2CBus, controller, TYPE_ASPEED_I2C,
                       AspeedI2CState *),
      DEFINE_PROP_STRING("bus-name", AspeedI2CBus, name),
@@ -118,10 +118,10 @@ index 3e022bf238..97cd6802d1 100644
  
  static void aspeed_i2c_bus_get_scl_timeout(Object *obj, Visitor *v,
 diff --git a/include/hw/arm/aspeed_soc.h b/include/hw/arm/aspeed_soc.h
-index 41dc04e293..214d250bf7 100644
+index cd68c7f1ca..05f5c06690 100644
 --- a/include/hw/arm/aspeed_soc.h
 +++ b/include/hw/arm/aspeed_soc.h
-@@ -306,6 +306,8 @@ bool aspeed_soc_uart_realize(MemoryRegion *memory, SerialMM *smm,
+@@ -307,6 +307,8 @@ bool aspeed_soc_uart_realize(MemoryRegion *memory, SerialMM *smm,
  void aspeed_soc_uart_set_chr(SerialMM *uart, int dev, int uarts_base,
                               int uarts_num, Chardev *chr);
  bool aspeed_soc_dram_init(AspeedSoCState *s, Error **errp);

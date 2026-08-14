@@ -1,4 +1,4 @@
-From 974ac90fb77fb44a2eeb76ff18e727c90b657286 Mon Sep 17 00:00:00 2001
+From 1aac3472bccbf12247c34d7b6bcbfec77f68855b Mon Sep 17 00:00:00 2001
 From: Zinc Lim <zinclim@meta.com>
 Date: Tue, 21 Jul 2026 14:04:45 -0700
 Subject: [PATCH] hw/i2c/aspeed: mask I2CS slave address to 7 bits
@@ -13,10 +13,10 @@ Signed-off-by: Zinc Lim <zinclim@meta.com>
  1 file changed, 5 insertions(+), 1 deletion(-)
 
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index 97cd6802d1..fe2b86f48a 100644
+index 5538a1284a..4dc01727eb 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
-@@ -813,7 +813,11 @@ static void aspeed_i2c_bus_new_write(AspeedI2CBus *bus, hwaddr offset,
+@@ -882,7 +882,11 @@ static void aspeed_i2c_bus_new_write(AspeedI2CBus *bus, hwaddr offset,
          } else {
              bus->regs[R_I2CS_CMD] = value;
          }

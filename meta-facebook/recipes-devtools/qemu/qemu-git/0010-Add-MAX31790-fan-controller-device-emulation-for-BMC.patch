@@ -1,4 +1,4 @@
-From 859071c70c992dd3fd4af4fe63ddb1fd52d091c7 Mon Sep 17 00:00:00 2001
+From e900e70c3b118ff76519b5ada6559010913493c3 Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Fri, 26 Jun 2026 14:40:22 -0700
 Subject: [PATCH] Add MAX31790 fan controller device emulation for BMC
@@ -16,22 +16,22 @@ management in servers.
  create mode 100644 hw/sensor/max31790.c
 
 diff --git a/hw/arm/Kconfig b/hw/arm/Kconfig
-index a34cb2b6f8..0d135e1898 100644
+index ab02afbc4b..5ae3edcfaa 100644
 --- a/hw/arm/Kconfig
 +++ b/hw/arm/Kconfig
-@@ -556,6 +556,7 @@ config ASPEED_SOC
+@@ -559,6 +559,7 @@ config ASPEED_SOC
      select LED
      select PMBUS
      select MAX31785
 +    select MAX31790
+     select ADC128D818
      select FSI_APB2OPB_ASPEED
      select AT24C
-     select PCI_EXPRESS
 diff --git a/hw/sensor/Kconfig b/hw/sensor/Kconfig
-index 317533f2b5..a7e3b50833 100644
+index 267f2b0091..dca0f29900 100644
 --- a/hw/sensor/Kconfig
 +++ b/hw/sensor/Kconfig
-@@ -35,6 +35,10 @@ config MAX34451
+@@ -39,6 +39,10 @@ config MAX34451
      bool
      depends on I2C
  
@@ -478,10 +478,10 @@ index 0000000000..6a414e63fc
 +
 +type_init(max31790_register_types)
 diff --git a/hw/sensor/meson.build b/hw/sensor/meson.build
-index 0326c76c82..152653d461 100644
+index 4b6da6ae15..62bd519edd 100644
 --- a/hw/sensor/meson.build
 +++ b/hw/sensor/meson.build
-@@ -6,6 +6,7 @@ system_ss.add(when: 'CONFIG_ADM1266', if_true: files('adm1266.c'))
+@@ -7,6 +7,7 @@ system_ss.add(when: 'CONFIG_ADM1266', if_true: files('adm1266.c'))
  system_ss.add(when: 'CONFIG_ADM1272', if_true: files('adm1272.c'))
  system_ss.add(when: 'CONFIG_INA230', if_true: files('ina230.c'))
  system_ss.add(when: 'CONFIG_MAX34451', if_true: files('max34451.c'))

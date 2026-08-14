@@ -1,4 +1,4 @@
-From bfb324861075eb8fe6ceb741038352dab13689ff Mon Sep 17 00:00:00 2001
+From 39ab27ad502cca681cdbc7389de239cca7644bd2 Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Fri, 26 Jun 2026 12:06:37 -0700
 Subject: [PATCH] Add INA230/INA238 I2C power monitor device emulation for BMC
@@ -16,22 +16,22 @@ Used in server power distribution for real-time power monitoring.
  create mode 100644 hw/sensor/ina230.c
 
 diff --git a/hw/arm/Kconfig b/hw/arm/Kconfig
-index 82e0bc2e70..a34cb2b6f8 100644
+index 260d2f0751..ab02afbc4b 100644
 --- a/hw/arm/Kconfig
 +++ b/hw/arm/Kconfig
-@@ -551,6 +551,7 @@ config ASPEED_SOC
+@@ -553,6 +553,7 @@ config ASPEED_SOC
      select TMP105
      select TMP421
      select EMC141X
 +    select INA230
+     select OR_IRQ
      select UNIMP
      select LED
-     select PMBUS
 diff --git a/hw/sensor/Kconfig b/hw/sensor/Kconfig
-index bc6331b4ab..317533f2b5 100644
+index b459ac2240..267f2b0091 100644
 --- a/hw/sensor/Kconfig
 +++ b/hw/sensor/Kconfig
-@@ -27,6 +27,10 @@ config ADM1266
+@@ -31,6 +31,10 @@ config ADM1266
      depends on PMBUS
      default y if PMBUS
  
@@ -379,10 +379,10 @@ index 0000000000..27598fe286
 +
 +type_init(ina230_register_types)
 diff --git a/hw/sensor/meson.build b/hw/sensor/meson.build
-index 420fdc3359..0326c76c82 100644
+index fe36c9ef91..4b6da6ae15 100644
 --- a/hw/sensor/meson.build
 +++ b/hw/sensor/meson.build
-@@ -4,6 +4,7 @@ system_ss.add(when: 'CONFIG_DPS310', if_true: files('dps310.c'))
+@@ -5,6 +5,7 @@ system_ss.add(when: 'CONFIG_DPS310', if_true: files('dps310.c'))
  system_ss.add(when: 'CONFIG_EMC141X', if_true: files('emc141x.c'))
  system_ss.add(when: 'CONFIG_ADM1266', if_true: files('adm1266.c'))
  system_ss.add(when: 'CONFIG_ADM1272', if_true: files('adm1272.c'))

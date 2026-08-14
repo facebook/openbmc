@@ -1,4 +1,4 @@
-From 4be5d0dc00e4158c7e69df8280d0b64aa7aa24e1 Mon Sep 17 00:00:00 2001
+From 4f23b8637276ab2d729d4d3f3893ac1456c208eb Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH] hw/misc/aspeed: Add intel-me
@@ -26,10 +26,10 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  create mode 100644 hw/misc/intel_me.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index e63c1f8bf5..fe79a9f517 100644
+index 98d3e3b8b8..cdb5ebe638 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -1282,6 +1282,7 @@ F: tests/*/*ast2700*
+@@ -1289,6 +1289,7 @@ F: tests/*/*ast2700*
  F: pc-bios/ast27x0_bootrom.bin
  F: roms/vbootrom
  F: hw/misc/fby35_sb_cpld.c
@@ -206,10 +206,10 @@ index 0000000000..ac99c6f05b
 +
 +DEFINE_TYPES(types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 220236eb30..e8357707ef 100644
+index 07966b054c..ce1eb6025e 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -146,7 +146,8 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -147,7 +147,8 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_xdma.c',
    'aspeed_peci.c',
    'aspeed_sli.c',

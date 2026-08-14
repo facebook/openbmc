@@ -1,4 +1,4 @@
-From e141bed89b81f8a759248524aa6652ae2bbad924 Mon Sep 17 00:00:00 2001
+From eeef753c23053b3f9d624628a83d87314f4c7429 Mon Sep 17 00:00:00 2001
 From: Zinc Lim <zinclim@meta.com>
 Date: Wed, 12 Aug 2026 00:21:10 -0700
 Subject: [PATCH] hw/i2c/aspeed: add target buffer mode RX support
@@ -31,10 +31,10 @@ Signed-off-by: Zinc Lim <zinclim@meta.com>
  2 files changed, 121 insertions(+), 22 deletions(-)
 
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index fe2b86f48a..0d4180f8fe 100644
+index 4dc01727eb..138c353fe2 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
-@@ -169,6 +169,7 @@ static uint64_t aspeed_i2c_bus_new_read(AspeedI2CBus *bus, hwaddr offset,
+@@ -170,6 +170,7 @@ static uint64_t aspeed_i2c_bus_new_read(AspeedI2CBus *bus, hwaddr offset,
          value = extract64(bus->dma_dram_offset, 0, 32);
          break;
      case A_I2CM_CMD:
@@ -42,7 +42,7 @@ index fe2b86f48a..0d4180f8fe 100644
          value = SHARED_FIELD_DP32(value, BUS_BUSY_STS, i2c_bus_busy(bus->bus));
          break;
      case A_I2CM_DMA_TX_ADDR_HI:
-@@ -818,6 +819,14 @@ static void aspeed_i2c_bus_new_write(AspeedI2CBus *bus, hwaddr offset,
+@@ -887,6 +888,14 @@ static void aspeed_i2c_bus_new_write(AspeedI2CBus *bus, hwaddr offset,
          i2c_slave_set_address(bus->slave,
              SHARED_ARRAY_FIELD_EX32(bus->regs, R_I2CS_DEV_ADDR,
                                      SLAVE_DEV_ADDR1));
@@ -57,7 +57,7 @@ index fe2b86f48a..0d4180f8fe 100644
          break;
      case A_I2CS_INTR_CTRL:
          bus->regs[R_I2CS_INTR_CTRL] = value;
-@@ -827,7 +836,11 @@ static void aspeed_i2c_bus_new_write(AspeedI2CBus *bus, hwaddr offset,
+@@ -896,7 +905,11 @@ static void aspeed_i2c_bus_new_write(AspeedI2CBus *bus, hwaddr offset,
          if (ARRAY_FIELD_EX32(bus->regs, I2CS_INTR_CTRL, PKT_CMD_DONE)) {
              if (ARRAY_FIELD_EX32(bus->regs, I2CS_INTR_STS, PKT_CMD_DONE) &&
                  FIELD_EX32(value, I2CS_INTR_STS, PKT_CMD_DONE)) {
@@ -70,7 +70,7 @@ index fe2b86f48a..0d4180f8fe 100644
              }
          } else {
              bus->regs[R_I2CS_INTR_STS] &= ~value;
-@@ -1403,33 +1416,119 @@ static const char *I2C_EVENT[] = {
+@@ -1475,33 +1488,119 @@ static const char *I2C_EVENT[] = {
      [I2C_FINISH] = "I2C_FINISH",
  };
  
@@ -202,7 +202,7 @@ index fe2b86f48a..0d4180f8fe 100644
          aspeed_i2c_bus_raise_slave_interrupt(bus);
          break;
      default:
-@@ -1488,15 +1587,11 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
+@@ -1560,15 +1659,11 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
  
  static void aspeed_i2c_bus_new_slave_send_async(AspeedI2CBus *bus, uint8_t data)
  {
@@ -224,7 +224,7 @@ index fe2b86f48a..0d4180f8fe 100644
  
  static void aspeed_i2c_bus_slave_send_async(I2CSlave *slave, uint8_t data)
 diff --git a/include/hw/i2c/aspeed_i2c.h b/include/hw/i2c/aspeed_i2c.h
-index 671db07ff7..7f949236de 100644
+index 8e8daa4865..b14f441525 100644
 --- a/include/hw/i2c/aspeed_i2c.h
 +++ b/include/hw/i2c/aspeed_i2c.h
 @@ -37,6 +37,7 @@ OBJECT_DECLARE_TYPE(AspeedI2CState, AspeedI2CClass, ASPEED_I2C)

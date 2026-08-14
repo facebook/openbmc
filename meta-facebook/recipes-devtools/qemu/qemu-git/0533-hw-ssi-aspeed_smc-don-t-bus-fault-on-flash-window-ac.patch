@@ -1,4 +1,4 @@
-From 4e945788da49ce070dc86f9ca8df7696240a5586 Mon Sep 17 00:00:00 2001
+From c23cc2627d520704fbeeffd11d5f408f2f3cd34e Mon Sep 17 00:00:00 2001
 From: Rick Yazwinski <rickyaz@meta.com>
 Date: Thu, 4 Jun 2026 08:21:12 -0700
 Subject: [PATCH] hw/ssi/aspeed_smc: don't bus-fault on flash window access in
@@ -28,10 +28,10 @@ fbtp (AST2500) image; boots to Linux with this change, loops without it.
  1 file changed, 16 insertions(+), 2 deletions(-)
 
 diff --git a/hw/ssi/aspeed_smc.c b/hw/ssi/aspeed_smc.c
-index c8cc6cfa56..96d5c95ac0 100644
+index bf596f7b2d..b616e614a8 100644
 --- a/hw/ssi/aspeed_smc.c
 +++ b/hw/ssi/aspeed_smc.c
-@@ -525,8 +525,15 @@ static MemTxResult aspeed_smc_flash_read(void *opaque, hwaddr addr,
+@@ -534,8 +534,15 @@ static MemTxResult aspeed_smc_flash_read(void *opaque, hwaddr addr,
          aspeed_smc_flash_unselect(fl);
          break;
      default:
@@ -48,7 +48,7 @@ index c8cc6cfa56..96d5c95ac0 100644
      }
  
      trace_aspeed_smc_flash_read(fl->cs, addr, size, *data,
-@@ -566,8 +573,15 @@ static MemTxResult aspeed_smc_flash_write(void *opaque, hwaddr addr,
+@@ -575,8 +582,15 @@ static MemTxResult aspeed_smc_flash_write(void *opaque, hwaddr addr,
          aspeed_smc_flash_unselect(fl);
          break;
      default:

@@ -1,4 +1,4 @@
-From 1fd683f15e8162eb36afb547577c489ee04c549d Mon Sep 17 00:00:00 2001
+From 31f240519b951e64b97cb1d35dd06c0eed04f7cf Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Tue, 16 Aug 2022 00:32:54 -0700
 Subject: [PATCH] fbttn: Add I2C SCL timeout property
@@ -25,7 +25,7 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  5 files changed, 52 insertions(+), 2 deletions(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index c70e208812..a48c442058 100644
+index 6dc6190283..a9238e6217 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
 @@ -441,5 +441,3 @@ static const TypeInfo aspeed_machine_types[] = {
@@ -60,7 +60,7 @@ index 6fcafc7212..86e15b68eb 100644
      {
          .name        = "fbtp-bmc",
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index 27afcaecee..7680048cc7 100644
+index 68bdcd0e25..3aa7e5e275 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
 @@ -26,6 +26,7 @@
@@ -80,7 +80,7 @@ index 27afcaecee..7680048cc7 100644
          break;
      case A_I2CD_DMA_ADDR:
          if (!aic->has_dma) {
-@@ -539,11 +542,28 @@ static void aspeed_i2c_bus_handle_cmd(AspeedI2CBus *bus, uint64_t value)
+@@ -608,11 +611,28 @@ static void aspeed_i2c_bus_handle_cmd(AspeedI2CBus *bus, uint64_t value)
          aspeed_i2c_bus_cmd_dump(bus);
      }
  
@@ -109,7 +109,7 @@ index 27afcaecee..7680048cc7 100644
          aspeed_i2c_set_state(bus, state);
  
          addr = aspeed_i2c_get_addr(bus);
-@@ -1537,6 +1557,24 @@ static const Property aspeed_i2c_bus_properties[] = {
+@@ -1616,6 +1636,24 @@ static const Property aspeed_i2c_bus_properties[] = {
      DEFINE_PROP_STRING("bus-name", AspeedI2CBus, name),
  };
  
@@ -134,7 +134,7 @@ index 27afcaecee..7680048cc7 100644
  static void aspeed_i2c_bus_class_init(ObjectClass *klass, const void *data)
  {
      DeviceClass *dc = DEVICE_CLASS(klass);
-@@ -1546,6 +1584,11 @@ static void aspeed_i2c_bus_class_init(ObjectClass *klass, const void *data)
+@@ -1625,6 +1663,11 @@ static void aspeed_i2c_bus_class_init(ObjectClass *klass, const void *data)
      dc->realize = aspeed_i2c_bus_realize;
      rc->phases.hold = aspeed_i2c_bus_reset_hold;
      device_class_set_props(dc, aspeed_i2c_bus_properties);
@@ -159,10 +159,10 @@ index 1ad0e95c0e..5337e922b5 100644
  # mpc_i2c.c
  
 diff --git a/include/hw/i2c/aspeed_i2c.h b/include/hw/i2c/aspeed_i2c.h
-index 156998e7c1..b4cc48b8a6 100644
+index 05937a7a0b..6beca7bba6 100644
 --- a/include/hw/i2c/aspeed_i2c.h
 +++ b/include/hw/i2c/aspeed_i2c.h
-@@ -251,6 +251,7 @@ struct AspeedI2CBus {
+@@ -253,6 +253,7 @@ struct AspeedI2CBus {
      char *name;
      uint8_t id;
      qemu_irq irq;

@@ -25,4 +25,6 @@ SRC_URI:append = " \
     file://1002-ARM-dts-aspeed-fblite-r1-Enable-ehci1-and-uhci.patch \
     file://1003-ARM-dts-aspeed-fblite-r1-Enable-I2C-bus-14.patch \
     file://1004-ARM-dts-aspeed-fblite-r1-Allocate-SPI1-flash-size-to-64MB.patch \
+    file://1005-ARM-dts-aspeed-fblite-r1-Add-ssif-slave-address-at-I.patch \
+    file://1006-i2c-aspeed-Acknowledge-Tx-ack-late-when-in-SLAVE_REA.patch \
 "

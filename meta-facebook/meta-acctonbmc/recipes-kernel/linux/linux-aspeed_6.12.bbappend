@@ -21,6 +21,7 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/patches_6.12:"
 # Include patches from elbert machine layer.
 #
 SRC_URI:append = " \
+    file://0608-Update-the-AMD-APML-kernel-driver-apml_modules.patch \
     file://1001-ARM-dts-aspeed-fblite-r1-fixup-device-settings.patch \
     file://1002-ARM-dts-aspeed-fblite-r1-Enable-ehci1-and-uhci.patch \
     file://1003-ARM-dts-aspeed-fblite-r1-Enable-I2C-bus-14.patch \

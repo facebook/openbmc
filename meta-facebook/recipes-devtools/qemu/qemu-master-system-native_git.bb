@@ -8,7 +8,7 @@ require qemu-master-native_git.inc
 # As some of the files installed by qemu-master-native and qemu-system-native
 # are the same, we depend on qemu-master-native to get the full installation set
 # and avoid file clashes
-DEPENDS += "glib-2.0-native zlib-native pixman-native qemu-master-native"
+DEPENDS += "glib-2.0-native zlib-native pixman-native qemu-master-native python3-qemu-qmp-native"
 
 EXTRA_OECONF:append = " --target-list=${@get_qemu_system_target_list(d)}"
 
@@ -27,8 +27,4 @@ do_install:append() {
     rm -rf ${D}${datadir}/qemu/keymaps
     rm -rf ${D}${datadir}/icons/
     rm -rf ${D}${includedir}/qemu-plugin.h
-
-    # Install qmp.py to be used with testimage
-    install -d ${D}${libdir}/qemu-python/qmp/
-    install -D ${S}/python/qemu/qmp/* ${D}${libdir}/qemu-python/qmp/
 }

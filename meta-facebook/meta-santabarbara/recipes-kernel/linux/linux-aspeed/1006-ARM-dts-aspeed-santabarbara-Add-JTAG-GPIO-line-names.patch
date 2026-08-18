@@ -1,0 +1,47 @@
+From 616651f76100065a58df6582762151ec12af7e9a Mon Sep 17 00:00:00 2001
+From: Fred Chen <fredchen.openbmc@gmail.com>
+Date: Fri, 7 Aug 2026 10:56:03 +0800
+Subject: [PATCH 1006/1008] ARM: dts: aspeed: santabarbara: Add JTAG GPIO line
+ names
+
+Label the GPIO lines used for the CPU JTAG debug interface
+(TDI/TCK/TMS/TDO and CPLD DBREQ/TRST). These lines are driven from
+userspace via GPIO bit-banging to emulate JTAG signals for CPU
+debugging, so naming them lets userspace request the lines by name.
+
+lore link: https://lore.kernel.org/all/20260807083415.672008-4-fredchen.openbmc@gmail.com/
+
+Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts  | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+index 2772ae739..32b8341dc 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+@@ -221,7 +221,9 @@ &gpio0 {
+ 	/*F0-F7*/	"","","","","","","","",
+ 	/*G0-G7*/	"FM_MUX1_SEL_R","","","","","","","",
+ 	/*H0-H7*/	"","","","","","","","",
+-	/*I0-I7*/	"","","","","","","","",
++	/*I0-I7*/	"","JTAG_1_BMC_TDI",
++			"JTAG_1_BMC_TCK","JTAG_1_BMC_TMS",
++			"JTAG_1_BMC_TDO","","","",
+ 	/*J0-J7*/	"","","","","","","","",
+ 	/*K0-K7*/	"","","","","","","","",
+ 	/*L0-L7*/	"","","","","","","","",
+@@ -2976,8 +2978,8 @@ &sgpiom0 {
+ 	"FM_IOEXP_U541_INT_N","FM_MODULE_PWR_EN_N_3B",
+ 	/*H4-H7 line 120-127*/
+ 	"FM_IOEXP_PDB2_U1003_INT_N","FM_MODULE_PWR_EN_N_4B",
+-	"","",
+-	"","",
++	"","JTAG_CPLD_DBREQ",
++	"","JTAG_CPLD_TRST",
+ 	"FM_MAIN_PWREN_RMC_EN_ISO_R","",
+ 	/*I0-I3 line 128-135*/
+ 	"","","","",
+-- 
+2.39.3
+

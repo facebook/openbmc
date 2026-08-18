@@ -1,19 +1,22 @@
-From 3fcdf9a432ced0001d13ea7cf49b658dabea9863 Mon Sep 17 00:00:00 2001
+From 67b2632234e4b58226f064ef462112cb45110e8b Mon Sep 17 00:00:00 2001
 From: Fred Chen <fredchen.openbmc@gmail.com>
-Date: Thu, 29 Jan 2026 14:52:42 +0800
-Subject: [PATCH] ARM: dts: aspeed: santabarbara: Add system monitoring GPIOs
+Date: Fri, 7 Aug 2026 10:27:44 +0800
+Subject: [PATCH 1004/1008] ARM: dts: aspeed: santabarbara: Add system
+ monitoring GPIOs
 
-Add several GPIO expanders to the Santabarbara platform, with ioexp0
-(0x20) configured to aggregate interrupt signals from downstream
-expanders to optimize sideband pin usage.
+Add several GPIO expanders on the switch board for NIC, PEX, and cable
+presence monitoring. Due to a design change, ioexp0 (0x20) now
+aggregates interrupts from the downstream expanders (0x21-0x27) onto a
+single sgpiom0 line, reducing the number of sideband interrupt pins
+required.
 
-The new GPIO nodes provide support for:
+The new nodes provide:
 - NIC1-4 power good monitoring, reset control, and fault detection
 - Switch PEX power good signals and hardware SKU/Revision IDs
 - Cable presence detection and selection for four SPI flashes
 - System power fault alert via SGPIO and E1S GPIO expander interrupt
 
-lore link: https://lore.kernel.org/all/20260421130344.2751662-2-fredchen.openbmc@gmail.com/
+lore link: https://lore.kernel.org/all/20260807083415.672008-2-fredchen.openbmc@gmail.com/
 
 Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
 ---
@@ -21,10 +24,10 @@ Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
  1 file changed, 124 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-index 9d60d1801..223e01f94 100644
+index 8b3831515..ab50fd0b1 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-@@ -638,6 +638,8 @@ gpio@74 {
+@@ -641,6 +641,8 @@ gpio@74 {
  				reg = <0x74>;
  				gpio-controller;
  				#gpio-cells = <2>;
@@ -33,7 +36,7 @@ index 9d60d1801..223e01f94 100644
  				gpio-line-names =
  					"P12V_E1S_ADC_ALERT","BUFF0_100M_LOSB_PLD",
  					"E1S_BP_SKU_ID0","E1S_BP_SKU_ID1",
-@@ -1357,6 +1359,112 @@ eeprom@50 {
+@@ -1360,6 +1362,112 @@ eeprom@50 {
  &i2c12 {
  	status = "okay";
  
@@ -146,7 +149,7 @@ index 9d60d1801..223e01f94 100644
  	gpio@27 {
  		compatible = "nxp,pca9555";
  		reg = <0x27>;
-@@ -1371,6 +1479,21 @@ gpio@27 {
+@@ -1374,6 +1482,21 @@ gpio@27 {
  			"SPI_MUX_SEL","","","";
  	};
  
@@ -168,7 +171,7 @@ index 9d60d1801..223e01f94 100644
  	// SWB FRU
  	eeprom@52 {
  		compatible = "atmel,24c64";
-@@ -2777,7 +2900,7 @@ &sgpiom0 {
+@@ -2841,7 +2964,7 @@ &sgpiom0 {
  	"MB_SKU_ID_1","PASSWORD_CLEAR",
  	"MB_SKU_ID_2","",
  	"MB_SKU_ID_3","",

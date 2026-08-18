@@ -1,8 +1,8 @@
-From 603364d0579e0b70e182192a12e82aed3fee38ae Mon Sep 17 00:00:00 2001
+From 7c268dc273827128700d8613e63741786bba3c92 Mon Sep 17 00:00:00 2001
 From: "Fred.Chen" <Fred.Chen@quantatw.com>
 Date: Thu, 14 May 2026 12:13:39 +0800
-Subject: [PATCH] ARM: dts: aspeed: santabarbara: add device nodes behind the
- i3c hub
+Subject: [PATCH 1001/1008] ARM: dts: aspeed: santabarbara: add device nodes
+ behind the i3c hub
 
 Add device nodes behind the i3c hub. Each hub slave port can be
 configured to use either SMBus or I3C protocol.
@@ -13,11 +13,11 @@ driver is merged.
 I3C hub lore link:
 https://lore.kernel.org/all/20250917142055.2806576-2-steven.niu.uj@renesas.com/
 ---
- .../aspeed-bmc-facebook-santabarbara.dts      | 1042 +++++++++++++++++
- 1 file changed, 1042 insertions(+)
+ .../aspeed-bmc-facebook-santabarbara.dts      | 1052 +++++++++++++++++
+ 1 file changed, 1052 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-index d4dcd8b53..b905e1718 100644
+index d4dcd8b53..400e893af 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 @@ -39,6 +39,14 @@ aliases {
@@ -56,7 +56,7 @@ index d4dcd8b53..b905e1718 100644
  	};
  
  	chosen {
-@@ -1678,6 +1700,1026 @@ &i2c15 {
+@@ -1678,6 +1700,1036 @@ &i2c15 {
  	status = "okay";
  };
  
@@ -864,24 +864,28 @@ index d4dcd8b53..b905e1718 100644
 +		compatible = "ti,ina230";
 +		reg = <0x40>;
 +		shunt-resistor = <2000>;
++		status = "disabled";
 +	};
 +
 +	power-monitor@43 {
 +		compatible = "ti,ina230";
 +		reg = <0x43>;
 +		shunt-resistor = <2000>;
++		status = "disabled";
 +	};
 +
 +	power-monitor@44 {
 +		compatible = "ti,ina230";
 +		reg = <0x44>;
 +		shunt-resistor = <2000>;
++		status = "disabled";
 +	};
 +
 +	power-monitor@47 {
 +		compatible = "ti,ina230";
 +		reg = <0x47>;
 +		shunt-resistor = <2000>;
++		status = "disabled";
 +	};
 +};
 +
@@ -1032,11 +1036,13 @@ index d4dcd8b53..b905e1718 100644
 +	vdrop-sensor@42 {
 +		compatible = "ti,ina238";
 +		reg = <0x42>;
++		status = "disabled";
 +	};
 +
 +	vdrop-sensor@40 {
 +		compatible = "ti,ina238";
 +		reg = <0x43>;
++		status = "disabled";
 +	};
 +};
 +
@@ -1045,24 +1051,28 @@ index d4dcd8b53..b905e1718 100644
 +		compatible = "ti,ina238";
 +		reg = <0x40>;
 +		shunt-resistor = <500>;
++		status = "disabled";
 +	};
 +
 +	power-monitor@41 {
 +		compatible = "ti,ina238";
 +		reg = <0x41>;
 +		shunt-resistor = <500>;
++		status = "disabled";
 +	};
 +
 +	power-monitor@44 {
 +		compatible = "ti,ina238";
 +		reg = <0x44>;
 +		shunt-resistor = <500>;
++		status = "disabled";
 +	};
 +
 +	power-monitor@45 {
 +		compatible = "ti,ina238";
 +		reg = <0x45>;
 +		shunt-resistor = <500>;
++		status = "disabled";
 +	};
 +};
 +
@@ -1084,5 +1094,5 @@ index d4dcd8b53..b905e1718 100644
  	aspeed,lpc-io-reg = <0xca8>;
  	status = "okay";
 -- 
-2.34.1
+2.39.3
 

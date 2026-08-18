@@ -1,0 +1,48 @@
+From 02b28f16f3ee50cc7a1cb47a4799c9b13f4579ec Mon Sep 17 00:00:00 2001
+From: Fred Chen <fredchen.openbmc@gmail.com>
+Date: Fri, 7 Aug 2026 10:56:13 +0800
+Subject: [PATCH 1007/1008] ARM: dts: aspeed: santabarbara: Add SGPIO line
+ names
+
+Label two groups of SGPIO lines.
+
+- FM_MCIO_[1-4]_THERMTRIP_N: thermal trip signals carried over the
+  MCIO cables, indicating overheat on each of the four asic modules.
+- UFM_READ_CMPLT: asserted by the BMC after it finishes reading UFM
+  data, to notify the CPLD that the data can be cleared.
+
+lore link: https://lore.kernel.org/all/20260807083415.672008-5-fredchen.openbmc@gmail.com/
+
+Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts   | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+index 32b8341dc..15cacaaff 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+@@ -2972,7 +2972,7 @@ &sgpiom0 {
+ 	"MB_SKU_ID_3","",
+ 	"SYS_PWR_FAULT_ALERT","BIOS_DEBUG_MODE",
+ 	/*H0-H3 line 112-119*/
+-	"FM_IOEXP_U538_INT_N","",
++	"FM_IOEXP_U538_INT_N","UFM_READ_CMPLT",
+ 	"FM_IOEXP_U539_INT_N","FM_MODULE_PWR_EN_N_1B",
+ 	"FM_IOEXP_U540_INT_N","FM_MODULE_PWR_EN_N_2B",
+ 	"FM_IOEXP_U541_INT_N","FM_MODULE_PWR_EN_N_3B",
+@@ -3006,7 +3006,10 @@ &sgpiom0 {
+ 	"I3C_MCIO_4B_ALERT_ISO_R_N","",
+ 	"","",
+ 	/*K4-K7 line 168-175*/
+-	"","","","","","","","",
++	"FM_MCIO_1_THERMTRIP_N","",
++	"FM_MCIO_2_THERMTRIP_N","",
++	"FM_MCIO_3_THERMTRIP_N","",
++	"FM_MCIO_4_THERMTRIP_N","",
+ 	/*L0-L3 line 176-183*/
+ 	"FM_CPU0_THERMTRIP_N","",
+ 	"FM_CPU0_PROCHOT_N","",
+-- 
+2.39.3
+

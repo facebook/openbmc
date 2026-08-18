@@ -1,10 +1,10 @@
 {
   "host": "192.168.31.1",
   "compatible": "com.meta.Hardware.BMC.Model.Anacapa",
-  "components": [],
+  "components": ["anacapa"],
   "logServiceConfig": {
     "urls": [
-      "/redfish/v1/Systems/MI450/LogServices/EventLog/Entries"
+      "/redfish/v1/Systems/Accelerators/LogServices/EventLog/Entries"
     ],
     "intervalMilliseconds": 2000
   },
@@ -38,7 +38,7 @@
   "sensorConfig": {
     "associationPath": "/xyz/openbmc_project/inventory/system/board/AMD_AMC",
     "intervalMilliseconds": 2000,
-    "maxRetries": 3,
+    "maxRetries": 1,
     "retryIntervalMilliseconds": 200,
     "cacheConnection": false,
     "ignoreUnavailableSensor": true,

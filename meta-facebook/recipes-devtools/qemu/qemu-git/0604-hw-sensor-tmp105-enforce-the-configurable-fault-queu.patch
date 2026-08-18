@@ -1,0 +1,183 @@
+From 323fd0b84b499bed9f9e8a9984eac54acfde6545 Mon Sep 17 00:00:00 2001
+From: Emmanuel Blot via <qemu-arm@nongnu.org>
+Date: Fri, 31 Jul 2026 12:45:03 +0200
+Subject: [PATCH 604/625] hw/sensor: tmp105: enforce the configurable fault
+ queue
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The fault-queue depth selected in the configuration register was decoded
+but never consulted, so the ALERT pin tripped on the very first
+out-of-limit conversion regardless of the programmed depth.
+
+Track the consecutive-fault count and only change the ALERT state once
+it reaches the programmed depth; any in-range conversion clears the
+count. The default configuration keeps the previous behaviour. The count
+is migrated through an optional subsection so existing streams stay
+compatible.
+
+Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
+Link: https://lore.kernel.org/qemu-devel/20260731-sanmiguel-bmc-locator-v2-4-1266926ba769@free.fr
+Signed-off-by: Cédric Le Goater <clg@redhat.com>
+---
+ hw/sensor/tmp105.c | 87 +++++++++++++++++++++++++++++-----------------
+ 1 file changed, 55 insertions(+), 32 deletions(-)
+
+diff --git a/hw/sensor/tmp105.c b/hw/sensor/tmp105.c
+index f7d0c738caa..5c77f991cc2 100644
+--- a/hw/sensor/tmp105.c
++++ b/hw/sensor/tmp105.c
+@@ -54,6 +54,7 @@ struct TMP105State {
+     int16_t temperature;
+     int16_t limit[2];
+     int faults;
++    uint8_t fault_count;
+     uint8_t alarm;
+     /*
+      * The TMP105 initially looks for a temperature rising above T_high;
+@@ -78,43 +79,40 @@ static void tmp105_interrupt_update(TMP105State *s)
+ 
+ static void tmp105_alarm_update(TMP105State *s, bool one_shot)
+ {
++    bool fault;
++
+     if (FIELD_EX8(s->config, CONFIG, SHUTDOWN_MODE) && !one_shot) {
+         return;
+     }
+ 
+-    if (FIELD_EX8(s->config, CONFIG, THERMOSTAT_MODE)) {
+-        /*
+-         * TM == 1 : Interrupt mode. We signal Alert when the
+-         * temperature rises above T_high, and expect the guest to clear
+-         * it (eg by reading a device register).
+-         */
+-        if (s->detect_falling) {
+-            if (s->temperature < s->limit[0]) {
+-                s->alarm = 1;
+-                s->detect_falling = false;
+-            }
+-        } else {
+-            if (s->temperature >= s->limit[1]) {
+-                s->alarm = 1;
+-                s->detect_falling = true;
+-            }
+-        }
++    /*
++     * A fault is a conversion that lies outside the limit currently being
++     * watched: above T_high while looking for the alarm to trip, below T_low
++     * afterwards.
++     */
++    if (s->detect_falling) {
++        fault = s->temperature < s->limit[0];
+     } else {
+-        /*
+-         * TM == 0 : Comparator mode. We signal Alert when the temperature
+-         * rises above T_high, and stop signalling it when the temperature
+-         * falls below T_low.
+-         */
++        fault = s->temperature >= s->limit[1];
++    }
++
++    if (!fault) {
++        s->fault_count = 0;
++    } else if (++s->fault_count >= s->faults) {
++        s->fault_count = 0;
+         if (s->detect_falling) {
+-            if (s->temperature < s->limit[0]) {
+-                s->alarm = 0;
+-                s->detect_falling = false;
+-            }
++            /*
++             * Temperature fell back below T_low. In comparator mode (TM == 0)
++             * the alarm is released; in interrupt mode (TM == 1) it is
++             * asserted again and the guest is expected to clear it by reading
++             * a register.
++             */
++            s->alarm = FIELD_EX8(s->config, CONFIG, THERMOSTAT_MODE);
++            s->detect_falling = false;
+         } else {
+-            if (s->temperature >= s->limit[1]) {
+-                s->alarm = 1;
+-                s->detect_falling = true;
+-            }
++            /* Temperature rose to or above T_high: assert the alarm. */
++            s->alarm = 1;
++            s->detect_falling = true;
+         }
+     }
+ 
+@@ -204,7 +202,12 @@ static void tmp105_write(TMP105State *s)
+         }
+         s->config = FIELD_DP8(s->buf[0], CONFIG, ONE_SHOT, 0);
+         s->faults = tmp105_faultq[FIELD_EX8(s->config, CONFIG, FAULT_QUEUE)];
+-        tmp105_alarm_update(s, FIELD_EX8(s->buf[0], CONFIG, ONE_SHOT));
++        if (FIELD_EX8(s->buf[0], CONFIG, ONE_SHOT) &&
++            FIELD_EX8(s->config, CONFIG, SHUTDOWN_MODE)) {
++            tmp105_alarm_update(s, true);
++        } else {
++            tmp105_interrupt_update(s);
++        }
+         break;
+ 
+     case TMP105_REG_T_LOW:
+@@ -213,7 +216,7 @@ static void tmp105_write(TMP105State *s)
+             s->limit[s->pointer & 1] = (int16_t)
+                     ((((uint16_t) s->buf[0]) << 8) | (s->buf[1] & 0xf0));
+         }
+-        tmp105_alarm_update(s, false);
++        tmp105_interrupt_update(s);
+         break;
+     }
+ }
+@@ -281,6 +284,13 @@ static bool detect_falling_needed(void *opaque)
+     return s->detect_falling;
+ }
+ 
++static bool fault_count_needed(void *opaque)
++{
++    const TMP105State *s = opaque;
++
++    return s->fault_count != 0;
++}
++
+ static const VMStateDescription vmstate_tmp105_detect_falling = {
+     .name = "TMP105/detect-falling",
+     .version_id = 1,
+@@ -292,6 +302,17 @@ static const VMStateDescription vmstate_tmp105_detect_falling = {
+     }
+ };
+ 
++static const VMStateDescription vmstate_tmp105_fault_count = {
++    .name = "TMP105/fault-count",
++    .version_id = 1,
++    .minimum_version_id = 1,
++    .needed = fault_count_needed,
++    .fields = (const VMStateField[]) {
++        VMSTATE_UINT8(fault_count, TMP105State),
++        VMSTATE_END_OF_LIST()
++    }
++};
++
+ static const VMStateDescription vmstate_tmp105 = {
+     .name = "TMP105",
+     .version_id = 0,
+@@ -310,6 +331,7 @@ static const VMStateDescription vmstate_tmp105 = {
+     },
+     .subsections = (const VMStateDescription * const []) {
+         &vmstate_tmp105_detect_falling,
++        &vmstate_tmp105_fault_count,
+         NULL
+     }
+ };
+@@ -322,6 +344,7 @@ static void tmp105_reset_hold(Object *obj, ResetType type)
+     s->pointer = 0;
+     s->config = 0;
+     s->faults = tmp105_faultq[FIELD_EX8(s->config, CONFIG, FAULT_QUEUE)];
++    s->fault_count = 0;
+     s->alarm = 0;
+     s->detect_falling = false;
+ 
+-- 
+2.50.1
+

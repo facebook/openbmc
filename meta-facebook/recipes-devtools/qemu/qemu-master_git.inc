@@ -73,7 +73,6 @@ SRC_URI += " \
            file://0531-aspeed-add-montblanc-bmc-reference-from-fuji.patch \
            file://0532-aspeed-add-janga-bmc.patch \
            file://0533-hw-ssi-aspeed_smc-don-t-bus-fault-on-flash-window-ac.patch \
-           file://0534-aspeed-Add-sanmiguel-bmc.patch \
            file://0535-hw-i2c-aspeed-mask-I2CS-slave-address-to-7-bits.patch \
            file://0536-add-usbredir-subproject-for-QEMU-usb-redir.patch \
            file://0537-hw-i2c-aspeed-add-target-buffer-mode-RX-support.patch \
@@ -88,10 +87,116 @@ SRC_URI += " \
            file://0006-Define-MAP_SYNC-and-MAP_SHARED_VALIDATE-on-needed-li.patch \
            file://0007-Subject-PATCH-configure-lookup-meson-exutable-from-P.patch \
            file://0008-qemu-Ensure-pip-and-the-python-venv-aren-t-used-for-.patch \
-           file://0009-Add-INA230-INA238-I2C-power-monitor-device-emulation.patch \
            file://0010-Add-MAX31790-fan-controller-device-emulation-for-BMC.patch \
            file://0011-Add-PCF8563-Real-Time-Clock-device-emulation-for-BMC.patch \
-           file://0012-Add-minerva.patch \
+           "
+
+SRC_URI += " \
+           file://0601-hw-sensor-tmp105-make-device-state-private-to-the-im.patch \
+           file://0602-hw-sensor-tmp105-name-the-parent-object-field-parent.patch \
+           file://0603-hw-sensor-tmp105-implement-Resettable-reset.patch \
+           file://0604-hw-sensor-tmp105-enforce-the-configurable-fault-queu.patch \
+           file://0605-hw-sensor-tmp105-describe-the-temperature-property.patch \
+           file://0606-hw-arm-aspeed-guard-board-local-temperature-sensor-a.patch \
+           file://0607-hw-sensor-tmp105-add-TMP75-TMP175-and-LM75B-variants.patch \
+           file://0608-tests-qtest-tmp105-cover-the-ALERT-fault-queue.patch \
+           file://0609-tests-qtest-tmp105-cover-the-TMP75-TMP175-and-LM75B-.patch \
+           file://0610-tests-qtest-tmp105-cover-one-shot-and-fault-queue-wr.patch \
+           file://0611-tests-qtest-tmp105-cover-shutdown-clearing-the-ALERT.patch \
+           file://0612-hw-arm-sanmiguel-add-Facebook-SanMiguel-BMC-machine.patch \
+           file://0613-hw-arm-sanmiguel-populate-EEPROM-data.patch \
+           file://0614-hw-arm-catalina-use-the-real-TMP75-model.patch \
+           file://0615-hw-arm-fuji-use-the-real-TMP75-and-LM75B-temperature.patch \
+           file://0616-tests-functional-aspeed-optionally-check-the-device-.patch \
+           file://0617-tests-functional-give-the-set_machine-probe-VM-the-t.patch \
+           file://0618-tests-functional-add-a-pure-Python-device-locator-re.patch \
+           file://0619-tests-functional-add-a-device-locator-self-check.patch \
+           file://0620-tests-functional-aspeed-add-hwmon-sensor-read-helper.patch \
+           file://0621-tests-functional-arm-sanmiguel-add-BMC-boot-test.patch \
+           file://0622-tests-functional-arm-catalina-test-TMP75.patch \
+           file://0623-tests-functional-arm-catalina-test-PCA9555-IO-expand.patch \
+           file://0624-hw-arm-catalina-drive-pca9554-io-expander-input-pins.patch \
+           file://0625-tests-functional-arm-catalina-test-PCA9554-IO-expand.patch \
+           file://0626-hw-arm-sanmiguel-remove-the-second-SPI-flash-control.patch \
+           file://0627-docs-system-arm-aspeed-add-the-catalina-bmc-machine.patch \
+           file://0628-docs-system-arm-aspeed-add-the-sanmiguel-bmc-machine.patch \
+           file://0629-hw-i2c-pca954x-drop-unused-header-inclusions.patch \
+           file://0630-hw-i2c-pca954x-add-PCA9545-4-channel-mux-model.patch \
+           file://0631-hw-i2c-pca954x-migrate-mux-state.patch \
+           file://0632-tests-qtest-pca9545-add-mux-test.patch \
+           file://0633-hw-rtc-ds1338-move-TYPE_DS1338-to-a-public-header.patch \
+           file://0634-hw-ds1338-use-the-TYPE_DS1338-constant-instead-of-th.patch \
+           file://0635-hw-rtc-ds1338-implement-Resettable-reset.patch \
+           file://0636-hw-rtc-ds1338-parameterise-the-register-map-via-a-de.patch \
+           file://0637-tests-qtest-ds1338-cover-the-DS1338-specific-registe.patch \
+           file://0638-hw-rtc-ds1338-add-DS1339-variant.patch \
+           file://0639-tests-qtest-ds1339-add-RTC-test.patch \
+           file://0640-tests-qtest-ds1339-cover-power-on-defaults-and-reser.patch \
+           file://0641-tests-qtest-ds1339-cover-oscillator-stop-restart-and.patch \
+           file://0642-tests-qtest-ds1339-cover-the-Century-bit.patch \
+           file://0643-hw-sensor-ina230-add-current-voltage-power-monitor.patch \
+           file://0644-tests-qtest-ina230-add-current-voltage-power-monitor.patch \
+           file://0645-tests-qtest-ina230-cover-voltage-injection-and-power.patch \
+           file://0646-tests-qtest-ina230-cover-the-ALERT-limit-functions-a.patch \
+           file://0647-tests-qtest-ina230-cover-the-injection-property-limi.patch \
+           file://0648-tests-qtest-ina230-cover-operating-modes-and-trigger.patch \
+           file://0649-tests-qtest-ina230-cover-ALERT-latch-persistence.patch \
+           file://0650-hw-sensor-ina238-add-current-voltage-power-monitor.patch \
+           file://0651-tests-qtest-ina238-add-current-voltage-power-monitor.patch \
+           file://0652-tests-qtest-ina238-cover-voltage-temperature-injecti.patch \
+           file://0653-tests-qtest-ina238-cover-the-ALERT-path-and-conversi.patch \
+           file://0654-tests-qtest-ina238-cover-the-injection-property-limi.patch \
+           file://0655-tests-qtest-ina238-cover-the-operating-modes.patch \
+           file://0656-tests-qtest-ina238-cover-conversion-ready-and-alert-.patch \
+           file://0657-hw-arm-minerva-add-Facebook-BMC-machine.patch \
+           file://0658-hw-arm-minerva-populate-EEPROM-data.patch \
+           file://0659-hw-sensor-tmp421-do-not-report-a-stale-errno-on-a-pa.patch \
+           file://0660-hw-sensor-tmp421-name-the-parent-object-field-parent.patch \
+           file://0661-hw-sensor-tmp421-implement-Resettable-reset.patch \
+           file://0662-hw-sensor-tmp421-model-device-variants-with-a-class-.patch \
+           file://0663-hw-sensor-tmp421-honor-per-variant-channels-and-chan.patch \
+           file://0664-hw-sensor-tmp421-implement-register-write-masks-one-.patch \
+           file://0665-hw-sensor-tmp421-describe-the-temperature-properties.patch \
+           file://0666-hw-sensor-tmp421-keep-the-measurement-across-a-range.patch \
+           file://0667-hw-sensor-tmp421-migrate-the-exact-measurement.patch \
+           file://0668-hw-sensor-tmp421-publish-the-variant-type-names.patch \
+           file://0669-hw-arm-aspeed-use-the-TMP421-type-name-macros.patch \
+           file://0670-tests-qtest-tmp421-cover-device-IDs-and-reset-defaul.patch \
+           file://0671-tests-qtest-tmp421-cover-temperature-encoding-and-ra.patch \
+           file://0672-tests-qtest-tmp421-cover-per-variant-channels-and-en.patch \
+           file://0673-tests-qtest-tmp421-cover-software-reset-and-N-factor.patch \
+           file://0674-tests-qtest-tmp421-cover-the-register-form-of-the-mi.patch \
+           file://0675-hw-sensor-tmp105-add-the-TMP1075-variant.patch \
+           file://0676-tests-qtest-tmp105-cover-the-TMP1075-device-ID-and-r.patch \
+           file://0677-tests-qtest-tmp105-cover-the-TMP1075-config-register.patch \
+           file://0678-hw-arm-clemente-add-Facebook-Clemente-BMC-machine.patch \
+           file://0679-hw-arm-clemente-populate-the-FRU-EEPROMs.patch \
+           file://0680-hw-gpio-pca9552-restate-every-pin-level-on-reset.patch \
+           file://0681-hw-gpio-pca9552-add-the-PCA9539-variant-with-a-hardw.patch \
+           file://0682-tests-qtest-pca9539-cover-the-PCA9539-I-O-expander.patch \
+           file://0683-hw-arm-santabarbara-add-Facebook-Santabarbara-BMC-ma.patch \
+           file://0684-hw-arm-santabarbara-populate-the-FRU-EEPROMs.patch \
+           file://0685-hw-arm-yosemite5-add-Facebook-Yosemite-5-BMC-machine.patch \
+           file://0686-hw-arm-yosemite5-populate-the-FRU-EEPROMs.patch \
+           file://0687-hw-arm-bletchley-align-the-I2C-layout-with-the-devic.patch \
+           file://0688-hw-arm-bletchley-correct-the-file-copyright-header.patch \
+           file://0689-hw-arm-bletchley-select-the-board-revision-with-a-ma.patch \
+           file://0690-hw-arm-bletchley-populate-the-v1.0-FRU-EEPROMs.patch \
+           file://0691-hw-arm-bletchley-populate-the-v1.5-FRU-EEPROMs.patch \
+           file://0692-hw-arm-harma-add-Facebook-Harma-BMC-machine.patch \
+           file://0693-hw-arm-harma-populate-the-FRU-EEPROMs.patch \
+           file://0694-hw-arm-ventura-add-Facebook-Ventura-BMC-machine.patch \
+           file://0695-hw-arm-ventura-populate-the-FRU-EEPROMs.patch \
+           file://0696-tests-functional-arm-minerva-add-BMC-boot-test.patch \
+           file://0697-tests-functional-arm-minerva-test-INA230.patch \
+           file://0698-tests-functional-arm-minerva-test-INA238.patch \
+           file://0699-tests-functional-arm-clemente-add-BMC-boot-test.patch \
+           file://0700-tests-functional-arm-santabarbara-add-BMC-boot-test.patch \
+           file://0701-tests-functional-arm-yosemite5-add-BMC-boot-test.patch \
+           file://0702-tests-functional-arm-bletchley-exercise-the-I2C-sens.patch \
+           file://0703-tests-functional-arm-bletchley-cover-the-v1.5-board-.patch \
+           file://0704-tests-functional-arm-harma-add-BMC-boot-test.patch \
+           file://0705-tests-functional-arm-ventura-add-BMC-boot-test.patch \
            "
 
 QEMU_CHECKOUT_DIR = "${BPN}-${PV}"

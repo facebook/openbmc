@@ -10,16 +10,15 @@ management in servers.
 ---
  hw/arm/Kconfig        |   1 +
  hw/sensor/Kconfig     |   4 +
- hw/sensor/max31790.c  | 429 ++++++++++++++++++++++++++++++++++++++++++
+ hw/sensor/max31790.c  | 429 ++++++++++++++++++++++++++++++++++++++++++++++++++
  hw/sensor/meson.build |   1 +
  4 files changed, 435 insertions(+)
- create mode 100644 hw/sensor/max31790.c
 
 diff --git a/hw/arm/Kconfig b/hw/arm/Kconfig
-index ab02afbc4b..5ae3edcfaa 100644
+index 260d2f0751..a310c534cc 100644
 --- a/hw/arm/Kconfig
 +++ b/hw/arm/Kconfig
-@@ -559,6 +559,7 @@ config ASPEED_SOC
+@@ -558,6 +558,7 @@ config ASPEED_SOC
      select LED
      select PMBUS
      select MAX31785
@@ -28,10 +27,10 @@ index ab02afbc4b..5ae3edcfaa 100644
      select FSI_APB2OPB_ASPEED
      select AT24C
 diff --git a/hw/sensor/Kconfig b/hw/sensor/Kconfig
-index 267f2b0091..dca0f29900 100644
+index b459ac2240..2ed162f478 100644
 --- a/hw/sensor/Kconfig
 +++ b/hw/sensor/Kconfig
-@@ -39,6 +39,10 @@ config MAX34451
+@@ -35,6 +35,10 @@ config MAX34451
      bool
      depends on I2C
  
@@ -478,12 +477,12 @@ index 0000000000..6a414e63fc
 +
 +type_init(max31790_register_types)
 diff --git a/hw/sensor/meson.build b/hw/sensor/meson.build
-index 4b6da6ae15..62bd519edd 100644
+index fe36c9ef91..1945aa4edb 100644
 --- a/hw/sensor/meson.build
 +++ b/hw/sensor/meson.build
-@@ -7,6 +7,7 @@ system_ss.add(when: 'CONFIG_ADM1266', if_true: files('adm1266.c'))
+@@ -6,6 +6,7 @@ system_ss.add(when: 'CONFIG_EMC141X', if_true: files('emc141x.c'))
+ system_ss.add(when: 'CONFIG_ADM1266', if_true: files('adm1266.c'))
  system_ss.add(when: 'CONFIG_ADM1272', if_true: files('adm1272.c'))
- system_ss.add(when: 'CONFIG_INA230', if_true: files('ina230.c'))
  system_ss.add(when: 'CONFIG_MAX34451', if_true: files('max34451.c'))
 +system_ss.add(when: 'CONFIG_MAX31790', if_true: files('max31790.c'))
  system_ss.add(when: 'CONFIG_LSM303DLHC_MAG', if_true: files('lsm303dlhc_mag.c'))

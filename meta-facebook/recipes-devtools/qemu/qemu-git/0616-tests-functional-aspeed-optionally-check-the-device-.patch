@@ -1,0 +1,50 @@
+From 64128c9f19efa40d9b4b9ef0f788a59a209e5716 Mon Sep 17 00:00:00 2001
+From: Emmanuel Blot via <qemu-arm@nongnu.org>
+Date: Fri, 31 Jul 2026 12:45:15 +0200
+Subject: [PATCH 616/625] tests/functional: aspeed: optionally check the device
+ tree model on boot
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add an optional 'dt_model' argument to do_test_arm_aspeed_openbmc().
+When
+provided, the helper also waits for the kernel's "Machine model: ..."
+line,
+letting a test confirm the booted image actually matches the expected
+board
+device tree rather than only the SoC revision.
+
+Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
+Link: https://lore.kernel.org/qemu-devel/20260731-sanmiguel-bmc-locator-v2-16-1266926ba769@free.fr
+Signed-off-by: Cédric Le Goater <clg@redhat.com>
+---
+ tests/functional/aspeed.py | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/tests/functional/aspeed.py b/tests/functional/aspeed.py
+index 076da1036cf..08af6b4839c 100644
+--- a/tests/functional/aspeed.py
++++ b/tests/functional/aspeed.py
+@@ -8,7 +8,8 @@
+ class AspeedTest(LinuxKernelTest):
+ 
+     def do_test_arm_aspeed_openbmc(self, machine, image, uboot='2019.04',
+-                                   cpu_id='0x0', soc='AST2500 rev A1'):
++                                   cpu_id='0x0', soc='AST2500 rev A1',
++                                   dt_model=None):
+         self.set_machine(machine)
+         self.vm.set_console()
+         self.vm.add_args('-drive', f'file={image},if=mtd,format=raw',
+@@ -19,6 +20,8 @@ def do_test_arm_aspeed_openbmc(self, machine, image, uboot='2019.04',
+         self.wait_for_console_pattern('## Loading kernel from FIT Image')
+         self.wait_for_console_pattern('Starting kernel ...')
+         self.wait_for_console_pattern(f'Booting Linux on physical CPU {cpu_id}')
++        if dt_model:
++            self.wait_for_console_pattern(f'Machine model: {dt_model}')
+         self.wait_for_console_pattern(f'ASPEED {soc}')
+         self.wait_for_console_pattern('/init as init process')
+         self.wait_for_boot_complete()
+-- 
+2.50.1
+

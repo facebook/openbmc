@@ -6,12 +6,12 @@ Subject: [PATCH] hw/arm/aspeed: Add fb_machine_class_init
 Signed-off-by: Peter Delevoryas <pdel@fb.com>
 ---
  hw/arm/aspeed.c                  |   2 +
- hw/arm/aspeed_ast2400_palmetto.c |  56 +++++++++++++
+ hw/arm/aspeed_ast2400_palmetto.c |  61 ++++++++++++++
  hw/arm/aspeed_ast2500_evb.c      | 137 +++++++++++++++++++++++++++++++
  hw/arm/aspeed_ast2600_evb.c      |  40 +++++++++
  hw/arm/aspeed_ast2600_fuji.c     |  58 +++++++++++++
  include/hw/arm/aspeed.h          |  68 +++++++++++++++
- 6 files changed, 361 insertions(+)
+ 6 files changed, 366 insertions(+)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
 index a48c442058..c70e208812 100644
@@ -27,13 +27,18 @@ diff --git a/hw/arm/aspeed_ast2400_palmetto.c b/hw/arm/aspeed_ast2400_palmetto.c
 index 776aa43a45..892c49dd4e 100644
 --- a/hw/arm/aspeed_ast2400_palmetto.c
 +++ b/hw/arm/aspeed_ast2400_palmetto.c
-@@ -12,6 +12,10 @@
+@@ -12,6 +12,15 @@
  #include "hw/arm/aspeed.h"
  #include "hw/arm/aspeed_soc.h"
  #include "hw/i2c/smbus_eeprom.h"
 +#include "hw/nvram/eeprom_at24c.h"
 +#include "hw/sensor/tmp105.h"
 +
++/*
++ * Guard the alias against the TYPE_TMP75 that hw/sensor/tmp105.h now
++ * defines.
++ */
++#undef TYPE_TMP75
 +#define TYPE_TMP75 TYPE_TMP105
  
  /* Palmetto hardware value: 0x120CE416 */

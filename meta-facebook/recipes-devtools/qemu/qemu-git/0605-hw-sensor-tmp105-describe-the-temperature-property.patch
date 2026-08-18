@@ -1,0 +1,35 @@
+From ba521149ef32f84b4f2eb47208fef244b9ebdd49 Mon Sep 17 00:00:00 2001
+From: Emmanuel Blot via <qemu-arm@nongnu.org>
+Date: Fri, 31 Jul 2026 12:45:04 +0200
+Subject: [PATCH 605/625] hw/sensor: tmp105: describe the temperature property
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Attach a description to the dynamic "temperature" QOM property so it is
+documented in the QOM introspection output (qom-list-properties). The
+value is expressed in millidegrees Celsius.
+
+Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
+Link: https://lore.kernel.org/qemu-devel/20260731-sanmiguel-bmc-locator-v2-5-1266926ba769@free.fr
+Signed-off-by: Cédric Le Goater <clg@redhat.com>
+---
+ hw/sensor/tmp105.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/hw/sensor/tmp105.c b/hw/sensor/tmp105.c
+index 5c77f991cc2..fefa6617117 100644
+--- a/hw/sensor/tmp105.c
++++ b/hw/sensor/tmp105.c
+@@ -367,6 +367,8 @@ static void tmp105_initfn(Object *obj)
+     object_property_add(obj, "temperature", "int",
+                         tmp105_get_temperature,
+                         tmp105_set_temperature, NULL, NULL);
++    object_property_set_description(obj, "temperature",
++                                    "Temperature, in millidegrees Celsius");
+ }
+ 
+ static void tmp105_class_init(ObjectClass *klass, const void *data)
+-- 
+2.50.1
+

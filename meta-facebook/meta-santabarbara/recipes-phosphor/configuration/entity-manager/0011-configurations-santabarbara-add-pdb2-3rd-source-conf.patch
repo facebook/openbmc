@@ -1,0 +1,950 @@
+From 8264e731b6712d07e55c3256e71be334ccbb607f Mon Sep 17 00:00:00 2001
+From: Fred Chen <Fred.Chen@quantatw.com>
+Date: Fri, 7 Aug 2026 18:01:20 +0800
+Subject: [PATCH 11/11] configurations: santabarbara: add pdb2 3rd source
+ config
+
+Add PDB2 3rd source config.
+As PVT introduced multiple power sensor sources and different power
+bricks, brick-$vendor was appended to AM4 for distinction from earlier
+phases.
+
+Since the 3rd-source power monitor ISL28022 can't share the same driver
+as the main and 2nd sources, we switched to dynamically loading the
+driver with default resistor values. After current load testing, we
+adjusted each power sensor's scale parameter based on the results.
+
+Gerrit: https://gerrit.openbmc.org/c/openbmc/entity-manager/+/93299/2
+
+Change-Id: I99bee452f10c0aae224ece129a7165a4feab0ae1
+Signed-off-by: Fred Chen <Fred.Chen@quantatw.com>
+---
+ configurations/meson.build                    |   1 +
+ .../meta/santabarbara/santabarbara_pdb2.json  |  24 +-
+ .../santabarbara/santabarbara_pdb2_vr_ti.json |  26 +-
+ .../santabarbara_pdb2_vr_ti_brick_lux.json    | 772 ++++++++++++++++++
+ 4 files changed, 814 insertions(+), 9 deletions(-)
+ create mode 100644 configurations/meta/santabarbara/santabarbara_pdb2_vr_ti_brick_lux.json
+
+diff --git a/configurations/meson.build b/configurations/meson.build
+index af81296..16b5e53 100644
+--- a/configurations/meson.build
++++ b/configurations/meson.build
+@@ -218,6 +218,7 @@ configs = [
+     'meta/santabarbara/santabarbara_pdb1_vr_sni_efu_rds.json',
+     'meta/santabarbara/santabarbara_pdb2.json',
+     'meta/santabarbara/santabarbara_pdb2_vr_ti.json',
++    'meta/santabarbara/santabarbara_pdb2_vr_ti_brick_lux.json',
+     'meta/santabarbara/santabarbara_pttv.json',
+     'meta/santabarbara/santabarbara_rainbow.json',
+     'meta/santabarbara/santabarbara_scm.json',
+diff --git a/configurations/meta/santabarbara/santabarbara_pdb2.json b/configurations/meta/santabarbara/santabarbara_pdb2.json
+index 4e27ce9..e86c881 100644
+--- a/configurations/meta/santabarbara/santabarbara_pdb2.json
++++ b/configurations/meta/santabarbara/santabarbara_pdb2.json
+@@ -357,8 +357,12 @@
+             ],
+             "Type": "INA230",
+             "curr1_Name": "PDB2_P12V_FAN4_CURR_A",
++            "curr1_Offset": 0.0125,
++            "curr1_Scale": 200.734688962,
+             "in1_Name": "PDB2_P12V_FAN4_VOLT_V",
+-            "power1_Name": "PDB2_P12V_FAN4_PWR_W"
++            "power1_Name": "PDB2_P12V_FAN4_PWR_W",
++            "power1_Offset": 0.1564,
++            "power1_Scale": 200344.592699443
+         },
+         {
+             "Address": "0x43",
+@@ -405,8 +409,12 @@
+             ],
+             "Type": "INA230",
+             "curr1_Name": "PDB2_P12V_FAN5_CURR_A",
++            "curr1_Offset": 0.0125,
++            "curr1_Scale": 200.734688962,
+             "in1_Name": "PDB2_P12V_FAN5_VOLT_V",
+-            "power1_Name": "PDB2_P12V_FAN5_PWR_W"
++            "power1_Name": "PDB2_P12V_FAN5_PWR_W",
++            "power1_Offset": 0.1564,
++            "power1_Scale": 200344.592699443
+         },
+         {
+             "Address": "0x44",
+@@ -453,8 +461,12 @@
+             ],
+             "Type": "INA230",
+             "curr1_Name": "PDB2_P12V_FAN6_CURR_A",
++            "curr1_Offset": 0.0125,
++            "curr1_Scale": 200.734688962,
+             "in1_Name": "PDB2_P12V_FAN6_VOLT_V",
+-            "power1_Name": "PDB2_P12V_FAN6_PWR_W"
++            "power1_Name": "PDB2_P12V_FAN6_PWR_W",
++            "power1_Offset": 0.1564,
++            "power1_Scale": 200344.592699443
+         },
+         {
+             "Address": "0x47",
+@@ -501,8 +513,12 @@
+             ],
+             "Type": "INA230",
+             "curr1_Name": "PDB2_P12V_FAN7_CURR_A",
++            "curr1_Offset": 0.0125,
++            "curr1_Scale": 200.734688962,
+             "in1_Name": "PDB2_P12V_FAN7_VOLT_V",
+-            "power1_Name": "PDB2_P12V_FAN7_PWR_W"
++            "power1_Name": "PDB2_P12V_FAN7_PWR_W",
++            "power1_Offset": 0.1564,
++            "power1_Scale": 200344.592699443
+         },
+         {
+             "Address": "0x53",
+diff --git a/configurations/meta/santabarbara/santabarbara_pdb2_vr_ti.json b/configurations/meta/santabarbara/santabarbara_pdb2_vr_ti.json
+index 521e10f..18c782d 100644
+--- a/configurations/meta/santabarbara/santabarbara_pdb2_vr_ti.json
++++ b/configurations/meta/santabarbara/santabarbara_pdb2_vr_ti.json
+@@ -357,8 +357,12 @@
+             ],
+             "Type": "INA230",
+             "curr1_Name": "PDB2_P12V_FAN4_CURR_A",
++            "curr1_Offset": -0.0079,
++            "curr1_Scale": 198.894148534,
+             "in1_Name": "PDB2_P12V_FAN4_VOLT_V",
+-            "power1_Name": "PDB2_P12V_FAN4_PWR_W"
++            "power1_Name": "PDB2_P12V_FAN4_PWR_W",
++            "power1_Offset": -0.0869,
++            "power1_Scale": 198467.828365022
+         },
+         {
+             "Address": "0x43",
+@@ -405,8 +409,12 @@
+             ],
+             "Type": "INA230",
+             "curr1_Name": "PDB2_P12V_FAN5_CURR_A",
++            "curr1_Offset": -0.0079,
++            "curr1_Scale": 198.894148534,
+             "in1_Name": "PDB2_P12V_FAN5_VOLT_V",
+-            "power1_Name": "PDB2_P12V_FAN5_PWR_W"
++            "power1_Name": "PDB2_P12V_FAN5_PWR_W",
++            "power1_Offset": -0.0869,
++            "power1_Scale": 198467.828365022
+         },
+         {
+             "Address": "0x44",
+@@ -453,8 +461,12 @@
+             ],
+             "Type": "INA230",
+             "curr1_Name": "PDB2_P12V_FAN6_CURR_A",
++            "curr1_Offset": -0.0079,
++            "curr1_Scale": 198.894148534,
+             "in1_Name": "PDB2_P12V_FAN6_VOLT_V",
+-            "power1_Name": "PDB2_P12V_FAN6_PWR_W"
++            "power1_Name": "PDB2_P12V_FAN6_PWR_W",
++            "power1_Offset": -0.0869,
++            "power1_Scale": 198467.828365022
+         },
+         {
+             "Address": "0x47",
+@@ -501,8 +513,12 @@
+             ],
+             "Type": "INA230",
+             "curr1_Name": "PDB2_P12V_FAN7_CURR_A",
++            "curr1_Offset": -0.0079,
++            "curr1_Scale": 198.894148534,
+             "in1_Name": "PDB2_P12V_FAN7_VOLT_V",
+-            "power1_Name": "PDB2_P12V_FAN7_PWR_W"
++            "power1_Name": "PDB2_P12V_FAN7_PWR_W",
++            "power1_Offset": -0.0869,
++            "power1_Scale": 198467.828365022
+         },
+         {
+             "Address": "0x4a",
+@@ -732,7 +748,7 @@
+         }
+     ],
+     "Name": "Santa Barbara PDB2",
+-    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Santa Barbara PDB2', 'BOARD_MANUFACTURER': 'Quanta', 'BOARD_INFO_AM4': 'vr-ti'})",
++    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Santa Barbara PDB2', 'BOARD_MANUFACTURER': 'Quanta', 'BOARD_INFO_AM4': '^vr-ti$|^vr-ti brick-dta$'})",
+     "Type": "Board",
+     "xyz.openbmc_project.Inventory.Decorator.Asset": {
+         "BuildDate": "$BOARD_MANUFACTURE_DATE",
+diff --git a/configurations/meta/santabarbara/santabarbara_pdb2_vr_ti_brick_lux.json b/configurations/meta/santabarbara/santabarbara_pdb2_vr_ti_brick_lux.json
+new file mode 100644
+index 0000000..c4bcf7d
+--- /dev/null
++++ b/configurations/meta/santabarbara/santabarbara_pdb2_vr_ti_brick_lux.json
+@@ -0,0 +1,772 @@
++{
++    "Exposes": [
++        {
++            "Address": "$address",
++            "Bus": "$bus",
++            "Name": "Santa Barbara PDB2 FRU",
++            "Type": "EEPROM"
++        },
++        {
++            "Name": "PDB2_Cable_Sideband",
++            "PresencePinNames": [
++                "PDB1_SB_CONN_PRSNT_N"
++            ],
++            "PresencePinValues": [
++                0
++            ],
++            "Type": "GPIODeviceDetect"
++        },
++        {
++            "Name": "PDB2_FAN7",
++            "PresencePinNames": [
++                "FAN_4_PRSNT_R_N"
++            ],
++            "PresencePinValues": [
++                0
++            ],
++            "Type": "GPIODeviceDetect"
++        },
++        {
++            "Name": "PDB2_FAN6",
++            "PresencePinNames": [
++                "FAN_5_PRSNT_R_N"
++            ],
++            "PresencePinValues": [
++                0
++            ],
++            "Type": "GPIODeviceDetect"
++        },
++        {
++            "Name": "PDB2_FAN5",
++            "PresencePinNames": [
++                "FAN_6_PRSNT_R_N"
++            ],
++            "PresencePinValues": [
++                0
++            ],
++            "Type": "GPIODeviceDetect"
++        },
++        {
++            "Name": "PDB2_FAN4",
++            "PresencePinNames": [
++                "FAN_7_PRSNT_R_N"
++            ],
++            "PresencePinValues": [
++                0
++            ],
++            "Type": "GPIODeviceDetect"
++        },
++        {
++            "Address": "0x21",
++            "Bus": 43,
++            "Connector": {
++                "Name": "PDB2_FAN4_TACH_IL",
++                "Pwm": 5,
++                "PwmName": "PDB2_FAN4_PWM_PCT",
++                "Tachs": [
++                    4
++                ]
++            },
++            "Index": 4,
++            "Name": "PDB2_FAN4_TACH_IL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 800,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 40000
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 20,
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 1000
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x21",
++            "Bus": 43,
++            "Connector": {
++                "Name": "PDB2_FAN4_TACH_OL",
++                "Pwm": 5,
++                "PwmName": "PDB2_FAN4_PWM_PCT",
++                "Tachs": [
++                    5
++                ]
++            },
++            "Index": 5,
++            "Name": "PDB2_FAN4_TACH_OL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 700,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 35000
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 20,
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 1000
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x21",
++            "Bus": 43,
++            "Connector": {
++                "Name": "PDB2_FAN5_TACH_IL",
++                "Pwm": 3,
++                "PwmName": "PDB2_FAN5_PWM_PCT",
++                "Tachs": [
++                    3
++                ]
++            },
++            "Index": 3,
++            "Name": "PDB2_FAN5_TACH_IL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 800,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 40000
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 20,
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 1000
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x21",
++            "Bus": 43,
++            "Connector": {
++                "Name": "PDB2_FAN5_TACH_OL",
++                "Pwm": 3,
++                "PwmName": "PDB2_FAN5_PWM_PCT",
++                "Tachs": [
++                    10
++                ]
++            },
++            "Index": 10,
++            "Name": "PDB2_FAN5_TACH_OL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 700,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 35000
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 20,
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 1000
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x21",
++            "Bus": 43,
++            "Connector": {
++                "Name": "PDB2_FAN6_TACH_IL",
++                "Pwm": 2,
++                "PwmName": "PDB2_FAN6_PWM_PCT",
++                "Tachs": [
++                    1
++                ]
++            },
++            "Index": 1,
++            "Name": "PDB2_FAN6_TACH_IL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 800,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 40000
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 20,
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 1000
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x21",
++            "Bus": 43,
++            "Connector": {
++                "Name": "PDB2_FAN6_TACH_OL",
++                "Pwm": 2,
++                "PwmName": "PDB2_FAN6_PWM_PCT",
++                "Tachs": [
++                    2
++                ]
++            },
++            "Index": 2,
++            "Name": "PDB2_FAN6_TACH_OL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 700,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 35000
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 20,
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 1000
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x21",
++            "Bus": 43,
++            "Connector": {
++                "Name": "PDB2_FAN7_TACH_IL",
++                "Pwm": 0,
++                "PwmName": "PDB2_FAN7_PWM_PCT",
++                "Tachs": [
++                    0
++                ]
++            },
++            "Index": 0,
++            "Name": "PDB2_FAN7_TACH_IL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 800,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 40000
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 20,
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 1000
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x21",
++            "Bus": 43,
++            "Connector": {
++                "Name": "PDB2_FAN7_TACH_OL",
++                "Pwm": 0,
++                "PwmName": "PDB2_FAN7_PWM_PCT",
++                "Tachs": [
++                    7
++                ]
++            },
++            "Index": 7,
++            "Name": "PDB2_FAN7_TACH_OL_SPEED_RPM",
++            "PowerState": "Always",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 700,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 35000
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 20,
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 1000
++                }
++            ],
++            "Type": "I2CFan"
++        },
++        {
++            "Address": "0x40",
++            "Bus": 41,
++            "Labels": [
++                "in0",
++                "curr1",
++                "power1"
++            ],
++            "Name": "PDB2_P12V_FAN4",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.264,
++                    "Label": "in0",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 13.2
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.216,
++                    "Label": "in0",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 10.8
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.126,
++                    "Label": "curr1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 6.3
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.6632,
++                    "Label": "power1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 83.16
++                }
++            ],
++            "Type": "ISL28022",
++            "curr1_Name": "PDB2_P12V_FAN4_CURR_A",
++            "curr1_Offset": -0.0018,
++            "curr1_Scale": 203.115796315,
++            "in0_Name": "PDB2_P12V_FAN4_VOLT_V",
++            "power1_Name": "PDB2_P12V_FAN4_PWR_W",
++            "power1_Offset": 0.0988,
++            "power1_Scale": 207723.146590225
++        },
++        {
++            "Address": "0x43",
++            "Bus": 41,
++            "Labels": [
++                "in0",
++                "curr1",
++                "power1"
++            ],
++            "Name": "PDB2_P12V_FAN5",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.264,
++                    "Label": "in0",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 13.2
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.216,
++                    "Label": "in0",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 10.8
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.126,
++                    "Label": "curr1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 6.3
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.6632,
++                    "Label": "power1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 83.16
++                }
++            ],
++            "Type": "ISL28022",
++            "curr1_Name": "PDB2_P12V_FAN5_CURR_A",
++            "curr1_Offset": -0.0018,
++            "curr1_Scale": 203.115796315,
++            "in0_Name": "PDB2_P12V_FAN5_VOLT_V",
++            "power1_Name": "PDB2_P12V_FAN5_PWR_W",
++            "power1_Offset": 0.0988,
++            "power1_Scale": 207723.146590225
++        },
++        {
++            "Address": "0x44",
++            "Bus": 41,
++            "Labels": [
++                "in0",
++                "curr1",
++                "power1"
++            ],
++            "Name": "PDB2_P12V_FAN6",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.264,
++                    "Label": "in0",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 13.2
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.216,
++                    "Label": "in0",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 10.8
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.126,
++                    "Label": "curr1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 6.3
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.6632,
++                    "Label": "power1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 83.16
++                }
++            ],
++            "Type": "ISL28022",
++            "curr1_Name": "PDB2_P12V_FAN6_CURR_A",
++            "curr1_Offset": -0.0018,
++            "curr1_Scale": 203.115796315,
++            "in0_Name": "PDB2_P12V_FAN6_VOLT_V",
++            "power1_Name": "PDB2_P12V_FAN6_PWR_W",
++            "power1_Offset": 0.0988,
++            "power1_Scale": 207723.146590225
++        },
++        {
++            "Address": "0x47",
++            "Bus": 41,
++            "Labels": [
++                "in0",
++                "curr1",
++                "power1"
++            ],
++            "Name": "PDB2_P12V_FAN7",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.264,
++                    "Label": "in0",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 13.2
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.216,
++                    "Label": "in0",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 10.8
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.126,
++                    "Label": "curr1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 6.3
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.6632,
++                    "Label": "power1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 83.16
++                }
++            ],
++            "Type": "ISL28022",
++            "curr1_Name": "PDB2_P12V_FAN7_CURR_A",
++            "curr1_Offset": -0.0018,
++            "curr1_Scale": 203.115796315,
++            "in0_Name": "PDB2_P12V_FAN7_VOLT_V",
++            "power1_Name": "PDB2_P12V_FAN7_PWR_W",
++            "power1_Offset": 0.0988,
++            "power1_Scale": 207723.146590225
++        },
++        {
++            "Address": "0x4a",
++            "Bus": 40,
++            "Name": "PDB2_TOP_TEMP_C",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.6,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 80.0
++                }
++            ],
++            "Type": "TMP75"
++        },
++        {
++            "Address": "0x4e",
++            "Bus": 40,
++            "Name": "PDB2_BOT_TEMP_C",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.6,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 80.0
++                }
++            ],
++            "Type": "TMP75"
++        },
++        {
++            "Address": "0x50",
++            "Bus": 42,
++            "Labels": [
++                "iin",
++                "pin",
++                "temp1",
++                "vin",
++                "vout1"
++            ],
++            "Name": "PDB2_P12V_AUX_HSC",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 4.725,
++                    "Label": "iin",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 236.25
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 59.5822,
++                    "Label": "pin",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 2979.11
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 2,
++                    "Label": "temp1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 100
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.2522,
++                    "Label": "vout1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 12.61
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.2278,
++                    "Label": "vout1",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 11.39
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.285,
++                    "Label": "vin",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 14.25
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.2,
++                    "Label": "vin",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 10
++                }
++            ],
++            "Type": "TPS25990",
++            "iin_Name": "PDB2_P12V_AUX_HSC_CURR_A",
++            "iin_Offset": -0.8096,
++            "iin_Scale": 1007.557,
++            "pin_Name": "PDB2_P12V_AUX_HSC_PWR_W",
++            "pin_Offset": -10,
++            "pin_Scale": 998003.992,
++            "temp1_Name": "PDB2_P12V_AUX_HSC_TEMP_C",
++            "vin_Name": "PDB2_P12V_AUX_HSC_VIN_VOLT_V",
++            "vout1_Name": "PDB2_P12V_AUX_HSC_VOUT_VOLT_V"
++        },
++        {
++            "Address": "0x61",
++            "Bus": 42,
++            "Labels": [
++                "iout1",
++                "pout1",
++                "temp1",
++                "vout1"
++            ],
++            "Name": "PDB2_P12V_BRICK0",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 2.6,
++                    "Label": "iout1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 130.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 32.786,
++                    "Label": "pout1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 1639.3
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 2,
++                    "Label": "temp1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 100
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.2522,
++                    "Label": "vout1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 12.61
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.2278,
++                    "Label": "vout1",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 11.39
++                }
++            ],
++            "Type": "pmbus",
++            "iout1_Name": "PDB2_P12V_BRICK0_CURR_A",
++            "pout1_Name": "PDB2_P12V_BRICK0_POUT_PWR_W",
++            "temp1_Name": "PDB2_P12V_BRICK0_TEMP_C",
++            "vout1_Name": "PDB2_P12V_BRICK0_VOUT_VOLT_V"
++        },
++        {
++            "Address": "0x64",
++            "Bus": 42,
++            "Labels": [
++                "iout1",
++                "pout1",
++                "temp1",
++                "vout1"
++            ],
++            "Name": "PDB2_P12V_BRICK1",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 2.6,
++                    "Label": "iout1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 130.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 32.786,
++                    "Label": "pout1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 1639.3
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 2,
++                    "Label": "temp1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 100
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.2522,
++                    "Label": "vout1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 12.61
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.2278,
++                    "Label": "vout1",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 11.39
++                }
++            ],
++            "Type": "pmbus",
++            "iout1_Name": "PDB2_P12V_BRICK1_CURR_A",
++            "pout1_Name": "PDB2_P12V_BRICK1_POUT_PWR_W",
++            "temp1_Name": "PDB2_P12V_BRICK1_TEMP_C",
++            "vout1_Name": "PDB2_P12V_BRICK1_VOUT_VOLT_V"
++        }
++    ],
++    "Name": "Santa Barbara PDB2",
++    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Santa Barbara PDB2', 'BOARD_MANUFACTURER': 'Quanta', 'BOARD_INFO_AM4': 'vr-ti brick-lux'})",
++    "Type": "Board",
++    "xyz.openbmc_project.Inventory.Decorator.Asset": {
++        "BuildDate": "$BOARD_MANUFACTURE_DATE",
++        "Manufacturer": "$BOARD_MANUFACTURER",
++        "Model": "$BOARD_PRODUCT_NAME",
++        "PartNumber": "$BOARD_PART_NUMBER",
++        "SerialNumber": "$BOARD_SERIAL_NUMBER",
++        "SparePartNumber": "$BOARD_INFO_AM1"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.AssetTag": {
++        "AssetTag": "$PRODUCT_ASSET_TAG"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.Compatible": {
++        "Names": [
++            "com.meta.Hardware.Santabarbara.Boards.Power_Distribution_Board_2"
++        ]
++    },
++    "xyz.openbmc_project.Inventory.Decorator.Revision": {
++        "Version": "$PRODUCT_VERSION"
++    }
++}
+-- 
+2.39.3
+

@@ -9,4 +9,7 @@ SRC_URI:append = " \
     file://0006-configuration-santabarbara-add-Inventory-to-Arkes-MM.patch \
     file://0007-configurations-santabarbara-add-MCTPI2CTarget-for-SW.patch \
     file://0008-configurations-santabarbara-add-NIC-osfp-sensor-and-.patch \
+    file://0009-configurations-santabarbara-add-e1s-3rd-source-confi.patch \
+    file://0010-configutations-santabarbara-add-pdb1-3rd-source-conf.patch \
+    file://0011-configurations-santabarbara-add-pdb2-3rd-source-conf.patch \
 "

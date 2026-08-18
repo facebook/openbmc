@@ -1,0 +1,1053 @@
+From 324365c1115bb84df85948cbb7f2f04250138170 Mon Sep 17 00:00:00 2001
+From: Fred Chen <Fred.Chen@quantatw.com>
+Date: Fri, 7 Aug 2026 17:42:05 +0800
+Subject: [PATCH 09/11] configurations: santabarbara: add e1s 3rd source config
+
+Add 3rd source E1.s board config.
+
+Since the 3rd-source power monitor ISL28022 can't share the same driver
+as the main and 2nd sources, we switched to dynamically loading the
+driver with default resistor values. After current load testing, we
+adjusted each power sensor's scale parameter based on the results.
+
+Gerrit: https://gerrit.openbmc.org/c/openbmc/entity-manager/+/93297
+
+Change-Id: I5aa1c27b86ff66d0cf228ff55a718c8a82d6d8b3
+Signed-off-by: Fred Chen <Fred.Chen@quantatw.com>
+---
+ configurations/meson.build                    |   2 +
+ .../santabarbara/santabarbara_e1s_bp.json     |  28 +-
+ .../santabarbara_e1s_bp_vr_ti.json            | 464 ++++++++++++++++++
+ .../santabarbara_e1s_bp_vr_tos.json           | 464 ++++++++++++++++++
+ 4 files changed, 950 insertions(+), 8 deletions(-)
+ create mode 100644 configurations/meta/santabarbara/santabarbara_e1s_bp_vr_ti.json
+ create mode 100644 configurations/meta/santabarbara/santabarbara_e1s_bp_vr_tos.json
+
+diff --git a/configurations/meson.build b/configurations/meson.build
+index ef9dae8..f3be293 100644
+--- a/configurations/meson.build
++++ b/configurations/meson.build
+@@ -199,6 +199,8 @@ configs = [
+     'meta/santabarbara/santabarbara_arke_evb.json',
+     'meta/santabarbara/santabarbara_cable.json',
+     'meta/santabarbara/santabarbara_e1s_bp.json',
++    'meta/santabarbara/santabarbara_e1s_bp_vr_ti.json',
++    'meta/santabarbara/santabarbara_e1s_bp_vr_tos.json',
+     'meta/santabarbara/santabarbara_electra.json',
+     'meta/santabarbara/santabarbara_evb.json',
+     'meta/santabarbara/santabarbara_evb_pdb2.json',
+diff --git a/configurations/meta/santabarbara/santabarbara_e1s_bp.json b/configurations/meta/santabarbara/santabarbara_e1s_bp.json
+index 913268c..089a35e 100644
+--- a/configurations/meta/santabarbara/santabarbara_e1s_bp.json
++++ b/configurations/meta/santabarbara/santabarbara_e1s_bp.json
+@@ -196,8 +196,12 @@
+             ],
+             "Type": "INA230",
+             "curr1_Name": "E1S_BP_P12V_E1S0_CURR_A",
++            "curr1_Offset": 0.006,
++            "curr1_Scale": 200.144103755,
+             "in1_Name": "E1S_BP_P12V_E1S0_VOLT_V",
+-            "power1_Name": "E1S_BP_P12V_E1S0_PWR_W"
++            "power1_Name": "E1S_BP_P12V_E1S0_PWR_W",
++            "power1_Offset": 0.0671,
++            "power1_Scale": 199107.996177126
+         },
+         {
+             "Address": "0x40",
+@@ -244,12 +248,12 @@
+             ],
+             "Type": "INA230",
+             "curr1_Name": "E1S_BP_P12V_E1S1_CURR_A",
+-            "curr1_Offset": -5e-05,
+-            "curr1_Scale": 1323.101349563,
++            "curr1_Offset": 0.006,
++            "curr1_Scale": 200.144103755,
+             "in1_Name": "E1S_BP_P12V_E1S1_VOLT_V",
+             "power1_Name": "E1S_BP_P12V_E1S1_PWR_W",
+-            "power1_Offset": 0.0004,
+-            "power1_Scale": 1327492.366919
++            "power1_Offset": 0.0671,
++            "power1_Scale": 199107.996177126
+         },
+         {
+             "Address": "0x45",
+@@ -296,8 +300,12 @@
+             ],
+             "Type": "INA230",
+             "curr1_Name": "E1S_BP_P12V_E1S2_CURR_A",
++            "curr1_Offset": 0.006,
++            "curr1_Scale": 200.144103755,
+             "in1_Name": "E1S_BP_P12V_E1S2_VOLT_V",
+-            "power1_Name": "E1S_BP_P12V_E1S2_PWR_W"
++            "power1_Name": "E1S_BP_P12V_E1S2_PWR_W",
++            "power1_Offset": 0.0671,
++            "power1_Scale": 199107.996177126
+         },
+         {
+             "Address": "0x44",
+@@ -344,8 +352,12 @@
+             ],
+             "Type": "INA230",
+             "curr1_Name": "E1S_BP_P12V_E1S3_CURR_A",
++            "curr1_Offset": 0.006,
++            "curr1_Scale": 200.144103755,
+             "in1_Name": "E1S_BP_P12V_E1S3_VOLT_V",
+-            "power1_Name": "E1S_BP_P12V_E1S3_PWR_W"
++            "power1_Name": "E1S_BP_P12V_E1S3_PWR_W",
++            "power1_Offset": 0.0671,
++            "power1_Scale": 199107.996177126
+         },
+         {
+             "Address": "0x6a",
+@@ -428,7 +440,7 @@
+         }
+     ],
+     "Name": "Santa Barbara E1.S BP",
+-    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Santa Barbara E1.S BP'})",
++    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Santa Barbara E1.S BP', 'BOARD_MANUFACTURER': 'Quanta', 'BOARD_INFO_AM4': 'vr-rds'})",
+     "Type": "Board",
+     "xyz.openbmc_project.Inventory.Decorator.Asset": {
+         "BuildDate": "$BOARD_MANUFACTURE_DATE",
+diff --git a/configurations/meta/santabarbara/santabarbara_e1s_bp_vr_ti.json b/configurations/meta/santabarbara/santabarbara_e1s_bp_vr_ti.json
+new file mode 100644
+index 0000000..03da642
+--- /dev/null
++++ b/configurations/meta/santabarbara/santabarbara_e1s_bp_vr_ti.json
+@@ -0,0 +1,464 @@
++{
++    "Exposes": [
++        {
++            "Address": "0x48",
++            "Bus": 28,
++            "Labels": [
++                "in0",
++                "in1",
++                "in2",
++                "in3",
++                "in4"
++            ],
++            "Name": "E1S_BP_ADC",
++            "Thresholds": [
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.0627,
++                    "Label": "in0",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 3.135
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.0693,
++                    "Label": "in0",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 3.465
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.0627,
++                    "Label": "in1",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 3.135
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.0693,
++                    "Label": "in1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 3.465
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.0627,
++                    "Label": "in2",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 3.135
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.0693,
++                    "Label": "in2",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 3.465
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.0627,
++                    "Label": "in3",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 3.135
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.0693,
++                    "Label": "in3",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 3.465
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.0627,
++                    "Label": "in4",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 3.135
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.0693,
++                    "Label": "in4",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 3.465
++                }
++            ],
++            "Type": "ADS7830",
++            "in0_Name": "E1S_BP_P3V3_E1S0_VOLT_V",
++            "in0_Scale": 479.103,
++            "in1_Name": "E1S_BP_P3V3_E1S1_VOLT_V",
++            "in1_Scale": 479.103,
++            "in2_Name": "E1S_BP_P3V3_E1S2_VOLT_V",
++            "in2_Scale": 479.103,
++            "in3_Name": "E1S_BP_P3V3_E1S3_VOLT_V",
++            "in3_Scale": 479.103,
++            "in4_Name": "E1S_BP_P3V3_AUX_VOLT_V",
++            "in4_Scale": 479.103
++        },
++        {
++            "Address": "$address",
++            "Bus": "$bus",
++            "Name": "Santa Barbara E1.S BP FRU",
++            "Type": "EEPROM"
++        },
++        {
++            "Name": "E1S_BP_E1S0",
++            "PresencePinNames": [
++                "E1S_BP_0_PRSNT_R_N"
++            ],
++            "PresencePinValues": [
++                0
++            ],
++            "Type": "GPIODeviceDetect"
++        },
++        {
++            "Name": "E1S_BP_E1S1",
++            "PresencePinNames": [
++                "E1S_BP_1_PRSNT_R_N"
++            ],
++            "PresencePinValues": [
++                0
++            ],
++            "Type": "GPIODeviceDetect"
++        },
++        {
++            "Name": "E1S_BP_E1S2",
++            "PresencePinNames": [
++                "E1S_BP_2_PRSNT_R_N"
++            ],
++            "PresencePinValues": [
++                0
++            ],
++            "Type": "GPIODeviceDetect"
++        },
++        {
++            "Name": "E1S_BP_E1S3",
++            "PresencePinNames": [
++                "E1S_BP_3_PRSNT_R_N"
++            ],
++            "PresencePinValues": [
++                0
++            ],
++            "Type": "GPIODeviceDetect"
++        },
++        {
++            "Address": "0x41",
++            "Bus": 30,
++            "Labels": [
++                "in1",
++                "curr1",
++                "power1"
++            ],
++            "Name": "E1S_BP_P12V_E1S0",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.264,
++                    "Label": "in1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 13.2
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.216,
++                    "Label": "in1",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 10.8
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.05,
++                    "Label": "curr1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 2.5
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.5,
++                    "Label": "power1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 25
++                }
++            ],
++            "Type": "INA230",
++            "curr1_Name": "E1S_BP_P12V_E1S0_CURR_A",
++            "curr1_Offset": 0.0034,
++            "curr1_Scale": 197.460655964,
++            "in1_Name": "E1S_BP_P12V_E1S0_VOLT_V",
++            "power1_Name": "E1S_BP_P12V_E1S0_PWR_W",
++            "power1_Offset": 0.0581,
++            "power1_Scale": 198255.352894528
++        },
++        {
++            "Address": "0x40",
++            "Bus": 30,
++            "Labels": [
++                "in1",
++                "curr1",
++                "power1"
++            ],
++            "Name": "E1S_BP_P12V_E1S1",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.264,
++                    "Label": "in1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 13.2
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.216,
++                    "Label": "in1",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 10.8
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.05,
++                    "Label": "curr1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 2.5
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.5,
++                    "Label": "power1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 25
++                }
++            ],
++            "Type": "INA230",
++            "curr1_Name": "E1S_BP_P12V_E1S1_CURR_A",
++            "curr1_Offset": 0.0043,
++            "curr1_Scale": 200.044009682,
++            "in1_Name": "E1S_BP_P12V_E1S1_VOLT_V",
++            "power1_Name": "E1S_BP_P12V_E1S1_PWR_W",
++            "power1_Offset": 0.0755,
++            "power1_Scale": 201865.234769268
++        },
++        {
++            "Address": "0x45",
++            "Bus": 30,
++            "Labels": [
++                "in1",
++                "curr1",
++                "power1"
++            ],
++            "Name": "E1S_BP_P12V_E1S2",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.264,
++                    "Label": "in1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 13.2
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.216,
++                    "Label": "in1",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 10.8
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.05,
++                    "Label": "curr1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 2.5
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.5,
++                    "Label": "power1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 25
++                }
++            ],
++            "Type": "INA230",
++            "curr1_Name": "E1S_BP_P12V_E1S2_CURR_A",
++            "curr1_Offset": 0.0036,
++            "curr1_Scale": 197.573793812,
++            "in1_Name": "E1S_BP_P12V_E1S2_VOLT_V",
++            "power1_Name": "E1S_BP_P12V_E1S2_PWR_W",
++            "power1_Offset": 0.0675,
++            "power1_Scale": 200642.054574639
++        },
++        {
++            "Address": "0x44",
++            "Bus": 30,
++            "Labels": [
++                "in1",
++                "curr1",
++                "power1"
++            ],
++            "Name": "E1S_BP_P12V_E1S3",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.264,
++                    "Label": "in1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 13.2
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.216,
++                    "Label": "in1",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 10.8
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.05,
++                    "Label": "curr1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 2.5
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.5,
++                    "Label": "power1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 25
++                }
++            ],
++            "Type": "INA230",
++            "curr1_Name": "E1S_BP_P12V_E1S3_CURR_A",
++            "curr1_Offset": 0.0056,
++            "curr1_Scale": 197.090937759,
++            "in1_Name": "E1S_BP_P12V_E1S3_VOLT_V",
++            "power1_Name": "E1S_BP_P12V_E1S3_PWR_W",
++            "power1_Offset": 0.0942,
++            "power1_Scale": 199167.479933876
++        },
++        {
++            "Address": "0x6a",
++            "Bus": 24,
++            "Name": "E1S_BP_E1S0_TEMP_C",
++            "PowerState": "On",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.4,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 70.0
++                }
++            ],
++            "Type": "NVME1000"
++        },
++        {
++            "Address": "0x6a",
++            "Bus": 25,
++            "Name": "E1S_BP_E1S1_TEMP_C",
++            "PowerState": "On",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.4,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 70.0
++                }
++            ],
++            "Type": "NVME1000"
++        },
++        {
++            "Address": "0x6a",
++            "Bus": 26,
++            "Name": "E1S_BP_E1S2_TEMP_C",
++            "PowerState": "On",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.4,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 70.0
++                }
++            ],
++            "Type": "NVME1000"
++        },
++        {
++            "Address": "0x6a",
++            "Bus": 27,
++            "Name": "E1S_BP_E1S3_TEMP_C",
++            "PowerState": "On",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.4,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 70.0
++                }
++            ],
++            "Type": "NVME1000"
++        },
++        {
++            "Address": "0x48",
++            "Bus": 29,
++            "Name": "E1S_BP_TEMP_C",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.4,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 70.0
++                }
++            ],
++            "Type": "TMP75"
++        }
++    ],
++    "Name": "Santa Barbara E1.S BP",
++    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Santa Barbara E1.S BP', 'BOARD_MANUFACTURER': 'Quanta', 'BOARD_INFO_AM4': 'vr-ti'})",
++    "Type": "Board",
++    "xyz.openbmc_project.Inventory.Decorator.Asset": {
++        "BuildDate": "$BOARD_MANUFACTURE_DATE",
++        "Manufacturer": "$BOARD_MANUFACTURER",
++        "Model": "$BOARD_PRODUCT_NAME",
++        "PartNumber": "$BOARD_PART_NUMBER",
++        "SerialNumber": "$BOARD_SERIAL_NUMBER",
++        "SparePartNumber": "$BOARD_INFO_AM1"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.AssetTag": {
++        "AssetTag": "$PRODUCT_ASSET_TAG"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.Compatible": {
++        "Names": [
++            "com.meta.Hardware.Santabarbara.Boards.E1S_Backplane"
++        ]
++    },
++    "xyz.openbmc_project.Inventory.Decorator.Revision": {
++        "Version": "$PRODUCT_VERSION"
++    }
++}
+diff --git a/configurations/meta/santabarbara/santabarbara_e1s_bp_vr_tos.json b/configurations/meta/santabarbara/santabarbara_e1s_bp_vr_tos.json
+new file mode 100644
+index 0000000..36fe8b8
+--- /dev/null
++++ b/configurations/meta/santabarbara/santabarbara_e1s_bp_vr_tos.json
+@@ -0,0 +1,464 @@
++{
++    "Exposes": [
++        {
++            "Address": "0x48",
++            "Bus": 28,
++            "Labels": [
++                "in0",
++                "in1",
++                "in2",
++                "in3",
++                "in4"
++            ],
++            "Name": "E1S_BP_ADC",
++            "Thresholds": [
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.0627,
++                    "Label": "in0",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 3.135
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.0693,
++                    "Label": "in0",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 3.465
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.0627,
++                    "Label": "in1",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 3.135
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.0693,
++                    "Label": "in1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 3.465
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.0627,
++                    "Label": "in2",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 3.135
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.0693,
++                    "Label": "in2",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 3.465
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.0627,
++                    "Label": "in3",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 3.135
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.0693,
++                    "Label": "in3",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 3.465
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.0627,
++                    "Label": "in4",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 3.135
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.0693,
++                    "Label": "in4",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 3.465
++                }
++            ],
++            "Type": "ADS7830",
++            "in0_Name": "E1S_BP_P3V3_E1S0_VOLT_V",
++            "in0_Scale": 479.103,
++            "in1_Name": "E1S_BP_P3V3_E1S1_VOLT_V",
++            "in1_Scale": 479.103,
++            "in2_Name": "E1S_BP_P3V3_E1S2_VOLT_V",
++            "in2_Scale": 479.103,
++            "in3_Name": "E1S_BP_P3V3_E1S3_VOLT_V",
++            "in3_Scale": 479.103,
++            "in4_Name": "E1S_BP_P3V3_AUX_VOLT_V",
++            "in4_Scale": 479.103
++        },
++        {
++            "Address": "$address",
++            "Bus": "$bus",
++            "Name": "Santa Barbara E1.S BP FRU",
++            "Type": "EEPROM"
++        },
++        {
++            "Name": "E1S_BP_E1S0",
++            "PresencePinNames": [
++                "E1S_BP_0_PRSNT_R_N"
++            ],
++            "PresencePinValues": [
++                0
++            ],
++            "Type": "GPIODeviceDetect"
++        },
++        {
++            "Name": "E1S_BP_E1S1",
++            "PresencePinNames": [
++                "E1S_BP_1_PRSNT_R_N"
++            ],
++            "PresencePinValues": [
++                0
++            ],
++            "Type": "GPIODeviceDetect"
++        },
++        {
++            "Name": "E1S_BP_E1S2",
++            "PresencePinNames": [
++                "E1S_BP_2_PRSNT_R_N"
++            ],
++            "PresencePinValues": [
++                0
++            ],
++            "Type": "GPIODeviceDetect"
++        },
++        {
++            "Name": "E1S_BP_E1S3",
++            "PresencePinNames": [
++                "E1S_BP_3_PRSNT_R_N"
++            ],
++            "PresencePinValues": [
++                0
++            ],
++            "Type": "GPIODeviceDetect"
++        },
++        {
++            "Address": "0x41",
++            "Bus": 30,
++            "Labels": [
++                "in0",
++                "curr1",
++                "power1"
++            ],
++            "Name": "E1S_BP_P12V_E1S0",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.264,
++                    "Label": "in0",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 13.2
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.216,
++                    "Label": "in0",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 10.8
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.05,
++                    "Label": "curr1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 2.5
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.5,
++                    "Label": "power1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 25
++                }
++            ],
++            "Type": "ISL28022",
++            "curr1_Name": "E1S_BP_P12V_E1S0_CURR_A",
++            "curr1_Offset": 0.012,
++            "curr1_Scale": 198.212126618,
++            "in0_Name": "E1S_BP_P12V_E1S0_VOLT_V",
++            "power1_Name": "E1S_BP_P12V_E1S0_PWR_W",
++            "power1_Offset": 0.0452,
++            "power1_Scale": 211095.161698894
++        },
++        {
++            "Address": "0x40",
++            "Bus": 30,
++            "Labels": [
++                "in0",
++                "curr1",
++                "power1"
++            ],
++            "Name": "E1S_BP_P12V_E1S1",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.264,
++                    "Label": "in0",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 13.2
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.216,
++                    "Label": "in0",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 10.8
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.05,
++                    "Label": "curr1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 2.5
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.5,
++                    "Label": "power1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 25
++                }
++            ],
++            "Type": "ISL28022",
++            "curr1_Name": "E1S_BP_P12V_E1S1_CURR_A",
++            "curr1_Offset": 0.003,
++            "curr1_Scale": 200.00400008,
++            "in0_Name": "E1S_BP_P12V_E1S1_VOLT_V",
++            "power1_Name": "E1S_BP_P12V_E1S1_PWR_W",
++            "power1_Offset": 0.1253,
++            "power1_Scale": 208785.702355103
++        },
++        {
++            "Address": "0x45",
++            "Bus": 30,
++            "Labels": [
++                "in0",
++                "curr1",
++                "power1"
++            ],
++            "Name": "E1S_BP_P12V_E1S2",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.264,
++                    "Label": "in0",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 13.2
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.216,
++                    "Label": "in0",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 10.8
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.05,
++                    "Label": "curr1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 2.5
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.5,
++                    "Label": "power1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 25
++                }
++            ],
++            "Type": "ISL28022",
++            "curr1_Name": "E1S_BP_P12V_E1S2_CURR_A",
++            "curr1_Offset": 0.0053,
++            "curr1_Scale": 197.032687723,
++            "in0_Name": "E1S_BP_P12V_E1S2_VOLT_V",
++            "power1_Name": "E1S_BP_P12V_E1S2_PWR_W",
++            "power1_Offset": -0.1601,
++            "power1_Scale": 205579.425611085
++        },
++        {
++            "Address": "0x44",
++            "Bus": 30,
++            "Labels": [
++                "in0",
++                "curr1",
++                "power1"
++            ],
++            "Name": "E1S_BP_P12V_E1S3",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.264,
++                    "Label": "in0",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 13.2
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.216,
++                    "Label": "in0",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 10.8
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.05,
++                    "Label": "curr1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 2.5
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.5,
++                    "Label": "power1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 25
++                }
++            ],
++            "Type": "ISL28022",
++            "curr1_Name": "E1S_BP_P12V_E1S3_CURR_A",
++            "curr1_Offset": 0.0122,
++            "curr1_Scale": 196.163050728,
++            "in0_Name": "E1S_BP_P12V_E1S3_VOLT_V",
++            "power1_Name": "E1S_BP_P12V_E1S3_PWR_W",
++            "power1_Offset": 0.2396,
++            "power1_Scale": 203628.662770572
++        },
++        {
++            "Address": "0x6a",
++            "Bus": 24,
++            "Name": "E1S_BP_E1S0_TEMP_C",
++            "PowerState": "On",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.4,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 70.0
++                }
++            ],
++            "Type": "NVME1000"
++        },
++        {
++            "Address": "0x6a",
++            "Bus": 25,
++            "Name": "E1S_BP_E1S1_TEMP_C",
++            "PowerState": "On",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.4,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 70.0
++                }
++            ],
++            "Type": "NVME1000"
++        },
++        {
++            "Address": "0x6a",
++            "Bus": 26,
++            "Name": "E1S_BP_E1S2_TEMP_C",
++            "PowerState": "On",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.4,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 70.0
++                }
++            ],
++            "Type": "NVME1000"
++        },
++        {
++            "Address": "0x6a",
++            "Bus": 27,
++            "Name": "E1S_BP_E1S3_TEMP_C",
++            "PowerState": "On",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.4,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 70.0
++                }
++            ],
++            "Type": "NVME1000"
++        },
++        {
++            "Address": "0x48",
++            "Bus": 29,
++            "Name": "E1S_BP_TEMP_C",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.4,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 70.0
++                }
++            ],
++            "Type": "TMP75"
++        }
++    ],
++    "Name": "Santa Barbara E1.S BP",
++    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Santa Barbara E1.S BP', 'BOARD_MANUFACTURER': 'Quanta', 'BOARD_INFO_AM4': 'vr-tos'})",
++    "Type": "Board",
++    "xyz.openbmc_project.Inventory.Decorator.Asset": {
++        "BuildDate": "$BOARD_MANUFACTURE_DATE",
++        "Manufacturer": "$BOARD_MANUFACTURER",
++        "Model": "$BOARD_PRODUCT_NAME",
++        "PartNumber": "$BOARD_PART_NUMBER",
++        "SerialNumber": "$BOARD_SERIAL_NUMBER",
++        "SparePartNumber": "$BOARD_INFO_AM1"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.AssetTag": {
++        "AssetTag": "$PRODUCT_ASSET_TAG"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.Compatible": {
++        "Names": [
++            "com.meta.Hardware.Santabarbara.Boards.E1S_Backplane"
++        ]
++    },
++    "xyz.openbmc_project.Inventory.Decorator.Revision": {
++        "Version": "$PRODUCT_VERSION"
++    }
++}
+-- 
+2.39.3
+

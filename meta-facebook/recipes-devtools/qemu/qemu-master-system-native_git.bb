@@ -10,9 +10,13 @@ require qemu-master-native_git.inc
 # and avoid file clashes
 DEPENDS += "glib-2.0-native zlib-native pixman-native qemu-master-native python3-qemu-qmp-native"
 
+# subprojects/usbredir also configures usbredirhost, which requires libusb
+# even though QEMU only consumes libusbredirparser-0.5.
+DEPENDS += "libusb1-native"
+
 EXTRA_OECONF:append = " --target-list=${@get_qemu_system_target_list(d)}"
 
-PACKAGECONFIG ??= "fdt alsa kvm pie slirp png pixman \
+PACKAGECONFIG ??= "fdt alsa kvm pie slirp png pixman usb-redir \
     ${@bb.utils.contains('DISTRO_FEATURES', 'opengl', 'virglrenderer epoxy', '', d)} \
 "
 

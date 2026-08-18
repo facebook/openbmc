@@ -273,9 +273,11 @@ PACKAGECONFIG[kvm] = "--enable-kvm,--disable-kvm"
 PACKAGECONFIG[virglrenderer] = "--enable-virglrenderer,--disable-virglrenderer,virglrenderer"
 # spice will be in meta-networking layer
 PACKAGECONFIG[spice] = "--enable-spice,--disable-spice,spice"
-# usbredir will be in meta-networking layer
 PACKAGECONFIG[dbus-display] = "--enable-dbus-display,--disable-dbus-display,glib-2.0-native,dbus"
-PACKAGECONFIG[usb-redir] = "--enable-usb-redir,--disable-usb-redir,usbredir"
+# No usbredir dependency: libusbredirparser comes from the pinned
+# subprojects/usbredir (SRCREV_usbredir, patch 0536), keeping the binary
+# self-contained as facebook/qemu/build.sh expects.
+PACKAGECONFIG[usb-redir] = "--enable-usb-redir,--disable-usb-redir,"
 PACKAGECONFIG[snappy] = "--enable-snappy,--disable-snappy,snappy"
 # No glusterfs: the meson option was removed by 3822df47c240 (v11.1.0-rc0).
 PACKAGECONFIG[xkbcommon] = "--enable-xkbcommon,--disable-xkbcommon,libxkbcommon"

@@ -27,6 +27,7 @@ SRC_URI = "file://COPYING \
            file://sync_date.sh \
            file://power-on.sh \
            file://setup-eth.sh \
+           file://setup-addc-init.sh \
           "
 
 pkgdir = "utils"
@@ -34,7 +35,7 @@ pkgdir = "utils"
 S = "${UNPACKDIR}"
 
 # the tools for BMC will be installed in the image
-binfiles = " sol-util sync_date.sh power-on.sh"
+binfiles = " sol-util sync_date.sh power-on.sh setup-addc-init.sh"
 
 DEPENDS:append = "update-rc.d-native"
 RDEPENDS:${PN} += "bash python3 "
@@ -66,6 +67,9 @@ do_install() {
 
   install -m 755 power-on.sh ${D}${sysconfdir}/init.d/power-on.sh
   update-rc.d -r ${D} power-on.sh start 90 5 .
+
+  install -m 755 setup-addc-init.sh ${D}${sysconfdir}/init.d/setup-addc-init.sh
+  update-rc.d -r ${D} setup-addc-init.sh start 88 5 .
 }
 
 FILES:${PN} += "/usr/local ${sysconfdir}"

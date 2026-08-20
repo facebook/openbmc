@@ -156,6 +156,7 @@ extern "C" {
 #define PWR_GOOD_KV_KEY     "power_good_status"
 #define POST_CMPLT_KV_KEY   "post_complete_status"
 #define SKIP_BMC_FWUPD_PRECHK_KV_KEY   "skip_bmc_fwupd_precheck"
+#define ADDC_INIT_KV_KEY    "addc_init"
 
 enum {
   FRU_ALL = 0,

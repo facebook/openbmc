@@ -33,6 +33,7 @@
 #include <openbmc/kv.h>
 #include <openbmc/obmc-sensors.h>
 #include <openbmc/libgpio.h>
+#include "esmi_rmi.h"
 
 #define POWER_ON_STR        "on"
 #define POWER_OFF_STR       "off"
@@ -46,11 +47,15 @@
 #define POLL_TIMEOUT        -1 /* Forever */
 #define ADDC_CMD_INIT "/usr/bin/amd-ras -i"
 #define ADDC_CMD "/usr/bin/amd-ras"
+#define RAS_FATAL_ERROR (1)
 
 enum GPIO_DETECT {
   INIT = 0,
   IRQ,
 };
+
+static volatile bool addc_init_running = false;
+static pthread_mutex_t addc_init_lock = PTHREAD_MUTEX_INITIALIZER;
 
 // Thread for gpio timer
 static void *
@@ -93,28 +98,47 @@ cpu_thermal_trip_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t c
 static void
 cpu_alert_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   int ret = 0;
+  uint8_t buf = 0;
   char str[MAX_VALUE_LEN] = {0};
 
-  ret = kv_get(POST_CMPLT_KV_KEY, str, NULL, 0);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s: Failed to get post complete status in kv.", __func__);
+  if (read_sbrmi_ras_status(0, &buf) != OOB_SUCCESS) {
+    syslog(LOG_WARNING, "%s: Read SBRMI RAS status failed", __func__);
     return;
   }
 
-  if (strncmp(str, LOW_STR, strlen(LOW_STR)) != 0) {
+  if (!buf)
+    return;
+
+  syslog(LOG_CRIT, "%s: Found CPU %serror in SBRMI RAS status register. Value: 0x%x",
+                   __func__, (buf == RAS_FATAL_ERROR) ? "fatal " : "", buf);
+
+  ret = kv_get(ADDC_INIT_KV_KEY, str, NULL, KV_FPERSIST);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: Failed to get ADDC init status in kv", __func__);
+    return;
+  }
+
+  if (strncmp(str, HIGH_STR, strlen(HIGH_STR)) != 0) {
+    syslog(LOG_CRIT, "%s: ADDC init not complete, skip ADDC harvest", __func__);
     return;
   }
 
   ret = system(ADDC_CMD);
   if (ret == 0) {
+    /*
+     * Follow AMD recommendation:
+     * After ADDC execution, CPU MCU requires time to reset APML.
+     * Wait 1 second before monitoring GPIO events and reading SBRMI RAS status registers.
+     */
+    sleep(1);
     return;
   }
 
-  syslog(LOG_WARNING, "%s: Failed to execute addc, ret=%d. Do server reset...", __func__, ret);
+  syslog(LOG_CRIT, "%s: ADDC harvest failed, ret=%d. Do server reset...", __func__, ret);
 
   ret = pal_set_server_power(FRU_SERVER, SERVER_POWER_RESET);
   if (ret != 0) {
-    syslog(LOG_WARNING, "%s: Server reset failed, ret=%d.", __func__, ret);
+    syslog(LOG_WARNING, "%s: Server reset failed, ret=%d", __func__, ret);
   }
 }
 
@@ -318,6 +342,72 @@ power_good_status_init(gpiopoll_pin_t *gp, gpio_value_t value) {
   set_nvme_probe_status(value, INIT);
 }
 
+static void *
+addc_init_handler() {
+  int ret = 0;
+
+  syslog(LOG_CRIT, "%s: ADDC init started", __func__);
+
+  ret = system(ADDC_CMD_INIT);
+
+  pthread_mutex_lock(&addc_init_lock);
+
+  addc_init_running = false;
+  if (ret != 0) {
+    syslog(LOG_CRIT, "%s: ADDC init failed, ret=%d", __func__, ret);
+  } else {
+    ret = kv_set(ADDC_INIT_KV_KEY, HIGH_STR, 0, KV_FPERSIST);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s: ADDC init succeeded, but failed to set ADDC init status in kv", __func__);
+    } else {
+      syslog(LOG_CRIT, "%s: ADDC init succeeded", __func__);
+    }
+  }
+
+  pthread_mutex_unlock(&addc_init_lock);
+
+  return NULL;
+}
+
+static void
+addc_init() {
+  int ret = 0;
+  char str[MAX_VALUE_LEN] = {0};
+  pthread_t tid_addc_init_handler;
+
+  pthread_mutex_lock(&addc_init_lock);
+
+  ret = kv_get(ADDC_INIT_KV_KEY, str, NULL, KV_FPERSIST);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s: Failed to get addc init status in kv", __func__);
+    pthread_mutex_unlock(&addc_init_lock);
+    return;
+  }
+  if (strncmp(str, LOW_STR, strlen(LOW_STR)) != 0) {
+    pthread_mutex_unlock(&addc_init_lock);
+    return;
+  }
+
+  if (addc_init_running) {
+    pthread_mutex_unlock(&addc_init_lock);
+    return;
+  }
+  addc_init_running = true;
+
+  pthread_mutex_unlock(&addc_init_lock);
+
+  if (pthread_create(&tid_addc_init_handler, NULL, addc_init_handler, NULL) == 0) {
+    pthread_detach(tid_addc_init_handler);
+  } else {
+    syslog(LOG_ERR, "%s: Failed to create addc_init_handler thread", __func__);
+    pthread_mutex_lock(&addc_init_lock);
+    addc_init_running = false;
+    pthread_mutex_unlock(&addc_init_lock);
+  }
+
+  return;
+}
+
 static void
 set_apml_probe_status(gpio_value_t value, uint8_t gpio_change) {
   kv_set(POST_CMPLT_KV_KEY, (value == GPIO_VALUE_HIGH) ? HIGH_STR : LOW_STR, 0, 0);
@@ -342,11 +432,7 @@ set_apml_probe_status(gpio_value_t value, uint8_t gpio_change) {
       syslog(LOG_WARNING, "%s() apml driver bind failed\n", __func__);
     }
 
-    rc = system(ADDC_CMD_INIT);
-    if (rc != 0) {
-      syslog(LOG_ERR, "%s: Initial addc config failed, rc=%d", __func__, rc);
-    }
-
+    addc_init();
     sensors_reinit();
     pal_dimm_init();
   } else {

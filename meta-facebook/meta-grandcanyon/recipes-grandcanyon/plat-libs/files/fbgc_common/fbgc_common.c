@@ -528,6 +528,23 @@ exit:
   return ret;
 }
 
+// GC2 server board FPGA Board_ID (bit[6:3]) is one-hot per stage, not a
+// sequential count; convert it to the shared sequential STAGE_* index that
+// fbgc_common_validate_img()/bmc_fpga.cpp expect.
+static uint8_t
+gc2_decode_board_id_stage(uint8_t board_id) {
+  switch (board_id) {
+    case ES_STAGE_POC: return STAGE_PRE_EVT;
+    case ES_STAGE_EVT: return STAGE_EVT;
+    case ES_STAGE_DVT: return STAGE_DVT;
+    case ES_STAGE_PVT: return STAGE_PVT;
+    case ES_STAGE_MP:  return STAGE_MP;
+    default:
+      syslog(LOG_WARNING, "%s(): unrecognized GC2 board_id one-hot value: 0x%x", __func__, board_id);
+      return 0xFF;
+  }
+}
+
 int
 get_server_board_revision_id(uint8_t* board_rev_id, uint8_t board_rev_id_len) {
   int i2cfd = 0, ret = 0, retry = 0;
@@ -565,7 +582,7 @@ get_server_board_revision_id(uint8_t* board_rev_id, uint8_t board_rev_id_len) {
   }
 
   if (fbgc_common_is_grandcanyon2()){
-    *board_rev_id = (*board_rev_id >> 3) & 0x0F; //Bit[6:3]
+    *board_rev_id = gc2_decode_board_id_stage((*board_rev_id >> 3) & 0x0F); //Bit[6:3], one-hot Board_ID
   }
 
 
@@ -823,7 +840,7 @@ fbgc_common_validate_img(const char *img_path, uint8_t comp, uint8_t expected_bo
   int expected_comp = 0;
   const char *component[] = {"Unknown", "CPLD", "BIC", "BIOS"};
   const char *rev_sb[] = {"POC", "EVT", "DVT", "PVT", "MP"};
-  const char *rev_bb[] = {"Pre-EVT", "EVT", "DVT", "DVT3", "PVT", "MP"};
+  const char *rev_bb[] = {"Pre-EVT", "EVT", "DVT", "PVT", "MP"};
   const char **stage = NULL;
 
   switch (comp) {

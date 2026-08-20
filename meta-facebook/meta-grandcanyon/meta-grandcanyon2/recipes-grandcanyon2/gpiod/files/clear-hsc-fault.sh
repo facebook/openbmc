@@ -59,7 +59,7 @@ send_sel() {
 get_system_stage() {
   stage=0
 
-  for i in $(seq 2 -1 0); do
+  for i in $(seq 3 -1 0); do
     val=$(gpio_get "BOARD_REV_ID${i}")
     stage=$((stage * 2 + val))
   done

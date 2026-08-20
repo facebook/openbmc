@@ -1,7 +1,7 @@
-From 18d2ec1f2d4a91884e8c533667b57ac063c4b0e1 Mon Sep 17 00:00:00 2001
+From dbbc1be6f37b50b6aec7dbc2ac5c3d69fdb95328 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 6 Aug 2026 11:09:35 +0200
-Subject: [PATCH 699/705] tests/functional/arm: clemente: add BMC boot test
+Subject: [PATCH] tests/functional/arm: clemente: add BMC boot test
 
 Boot the OpenBMC flash image, then drive the two OCP NIC TMP421
 sensors through QOM and confirm the readings propagate to the guest
@@ -104,5 +104,5 @@ index 0000000000..c3feb4941b
 +if __name__ == '__main__':
 +    AspeedTest.main()
 -- 
-2.50.1
+2.53.0-Meta
 

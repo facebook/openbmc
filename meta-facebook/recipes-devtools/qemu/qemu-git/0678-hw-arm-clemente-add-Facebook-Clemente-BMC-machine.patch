@@ -1,7 +1,7 @@
-From 9b58338daebfc43fd5c843546b0f68634800dd2a Mon Sep 17 00:00:00 2001
+From db0fbebbb4acb21a8c0458923b45f4ddcab0f8f8 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 5 Aug 2026 16:40:36 +0200
-Subject: [PATCH 678/705] hw/arm: clemente: add Facebook Clemente BMC machine
+Subject: [PATCH] hw/arm: clemente: add Facebook Clemente BMC machine
 
 Add the 'clemente-bmc' machine type, an AST2600-based BMC, modelled
 from its device tree (aspeed-bmc-facebook-clemente.dts).
@@ -25,7 +25,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  create mode 100644 hw/arm/aspeed_ast2600_clemente.c
 
 diff --git a/docs/system/arm/aspeed.rst b/docs/system/arm/aspeed.rst
-index 4fb7cf439e..afdd58ed57 100644
+index bbd3d9cdf4..db0035189b 100644
 --- a/docs/system/arm/aspeed.rst
 +++ b/docs/system/arm/aspeed.rst
 @@ -34,6 +34,7 @@ AST2600 SoC based machines :
@@ -277,7 +277,7 @@ index 0000000000..67b7b28675
 +
 +DEFINE_TYPES(aspeed_ast2600_clemente_types)
 diff --git a/hw/arm/meson.build b/hw/arm/meson.build
-index adbc2977fb..9f33242583 100644
+index ec3825a027..17390895b1 100644
 --- a/hw/arm/meson.build
 +++ b/hw/arm/meson.build
 @@ -60,6 +60,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
@@ -289,5 +289,5 @@ index adbc2977fb..9f33242583 100644
    'aspeed_ast2600_fby35.c',
    'aspeed_ast2600_fuji.c',
 -- 
-2.50.1
+2.53.0-Meta
 

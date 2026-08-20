@@ -1,7 +1,7 @@
-From ea56335f9528f0b6891e3b0d4c9936d6961e1060 Mon Sep 17 00:00:00 2001
+From efede83c71bfc875aacae8496c3e72211c3de366 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 10:39:59 +0200
-Subject: [PATCH 632/705] tests/qtest: pca9545: add mux test
+Subject: [PATCH] tests/qtest: pca9545: add mux test
 
 Exercise the PCA9545 4-channel I2C mux: channel selection through the
 control byte, upper-nibble read-back, and interrupt logic.
@@ -14,10 +14,10 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  create mode 100644 tests/qtest/pca9545-test.c
 
 diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
-index dcdbfe2889..9b0de28d30 100644
+index 0ba83bdfd4..39df0ed326 100644
 --- a/tests/qtest/meson.build
 +++ b/tests/qtest/meson.build
-@@ -318,6 +318,7 @@ qos_test_ss.add(
+@@ -320,6 +320,7 @@ qos_test_ss.add(
    'ne2000-test.c',
    'tulip-test.c',
    'nvme-test.c',
@@ -148,5 +148,5 @@ index 0000000000..91f56db92f
 +}
 +libqos_init(pca9545_register_nodes);
 -- 
-2.50.1
+2.53.0-Meta
 

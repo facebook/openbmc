@@ -1,7 +1,7 @@
-From aff5117fda7227c2a4dc4eba90c2c27e2c2a0ca3 Mon Sep 17 00:00:00 2001
+From 8c55c4bb74f7d9be60784d9b8b04496c78f15235 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 11:25:16 +0200
-Subject: [PATCH 688/705] hw/arm: bletchley: correct the file copyright header
+Subject: [PATCH] hw/arm: bletchley: correct the file copyright header
 
 The header carried "Copyright 2016 IBM Corp.", which does not reflect
 the machine's actual history:
@@ -37,5 +37,5 @@ index 7d0b4afefb..4dd000714b 100644
   * SPDX-License-Identifier: GPL-2.0-or-later
   *
 -- 
-2.50.1
+2.53.0-Meta
 

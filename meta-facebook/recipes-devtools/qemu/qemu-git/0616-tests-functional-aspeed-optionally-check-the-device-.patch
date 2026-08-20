@@ -1,8 +1,8 @@
-From 64128c9f19efa40d9b4b9ef0f788a59a209e5716 Mon Sep 17 00:00:00 2001
+From 554adfe530bd39746b5c7c647eaeea947aeb6261 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:15 +0200
-Subject: [PATCH 616/625] tests/functional: aspeed: optionally check the device
- tree model on boot
+Subject: [PATCH] tests/functional: aspeed: optionally check the device tree
+ model on boot
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -23,7 +23,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/tests/functional/aspeed.py b/tests/functional/aspeed.py
-index 076da1036cf..08af6b4839c 100644
+index 076da1036c..08af6b4839 100644
 --- a/tests/functional/aspeed.py
 +++ b/tests/functional/aspeed.py
 @@ -8,7 +8,8 @@
@@ -46,5 +46,5 @@ index 076da1036cf..08af6b4839c 100644
          self.wait_for_console_pattern('/init as init process')
          self.wait_for_boot_complete()
 -- 
-2.50.1
+2.53.0-Meta
 

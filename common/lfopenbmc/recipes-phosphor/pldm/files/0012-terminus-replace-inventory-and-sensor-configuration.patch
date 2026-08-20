@@ -1,4 +1,4 @@
-From 94b7f465fea4c037e6675dae55f5146759102e1b Mon Sep 17 00:00:00 2001
+From 1f6a2332ef5d8c47840e5ad6fcec7a0b3d455b55 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 31 Mar 2026 20:37:28 +0800
 Subject: [PATCH] terminus: replace inventory and sensor configuration
@@ -43,7 +43,7 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  12 files changed, 438 insertions(+), 101 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
-index 5cc260d..27b8172 100644
+index 4e76ac0..fe391e2 100644
 --- a/common/types.hpp
 +++ b/common/types.hpp
 @@ -37,6 +37,10 @@ using NetworkId = uint32_t;
@@ -79,10 +79,10 @@ index 5cc260d..27b8172 100644
   * In `Table 2 - Special endpoint IDs` of DSP0236.
   * EID from 1 to 7 is reserved EID. So the start valid EID is 8
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index aa5794f..38d0338 100644
+index de25b5e..652458e 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
-@@ -746,7 +746,7 @@ std::optional<SoftwareName> obtainDeviceNameFromConfigurations(
+@@ -755,7 +755,7 @@ std::optional<SoftwareName> obtainDeviceNameFromConfigurations(
      {
          if (std::get<pldm::eid>(mctpInfo) == eid)
          {
@@ -92,7 +92,7 @@ index aa5794f..38d0338 100644
              {
                  return *nameOption;
 diff --git a/fw-update/test/firmware_inventory_manager_test.cpp b/fw-update/test/firmware_inventory_manager_test.cpp
-index d279b35..1f9ed0b 100644
+index 2ae280a..c8b1bd8 100644
 --- a/fw-update/test/firmware_inventory_manager_test.cpp
 +++ b/fw-update/test/firmware_inventory_manager_test.cpp
 @@ -62,8 +62,9 @@ TEST(GetBoardPath_WithMockHandler, ReturnsExpectedBoardPath)

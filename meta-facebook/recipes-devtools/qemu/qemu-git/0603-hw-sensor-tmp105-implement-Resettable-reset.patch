@@ -1,7 +1,7 @@
-From 5e32149f3a331fe3f9013587e0cf2bf6bfa17e53 Mon Sep 17 00:00:00 2001
+From 7a99062827f1f87ee96b2ae92545a17560eb68b1 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:02 +0200
-Subject: [PATCH 603/625] hw/sensor: tmp105: implement Resettable reset
+Subject: [PATCH] hw/sensor: tmp105: implement Resettable reset
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -22,7 +22,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/hw/sensor/tmp105.c b/hw/sensor/tmp105.c
-index aabeb34f083..f7d0c738caa 100644
+index aabeb34f08..f7d0c738ca 100644
 --- a/hw/sensor/tmp105.c
 +++ b/hw/sensor/tmp105.c
 @@ -314,9 +314,9 @@ static const VMStateDescription vmstate_tmp105 = {
@@ -61,5 +61,5 @@ index aabeb34f083..f7d0c738caa 100644
  }
  
 -- 
-2.50.1
+2.53.0-Meta
 

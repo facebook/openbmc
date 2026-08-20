@@ -1,7 +1,7 @@
-From 880d19313821ee760afe447fac15e0eb34affc8c Mon Sep 17 00:00:00 2001
+From 4130e813c202b0cc0dfdefd8f1ef0063f52aa855 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 3 Aug 2026 14:24:35 +0200
-Subject: [PATCH 627/705] docs/system/arm/aspeed: add the catalina-bmc machine
+Subject: [PATCH] docs/system/arm/aspeed: add the catalina-bmc machine
 
 The Facebook Catalina BMC machine is supported by hw/arm but has never
 been listed in the Aspeed documentation. Add it to the AST2600 machine
@@ -18,7 +18,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/docs/system/arm/aspeed.rst b/docs/system/arm/aspeed.rst
-index b6dd757f6e..e8c25bdd34 100644
+index 2d51ceeb84..933df41f96 100644
 --- a/docs/system/arm/aspeed.rst
 +++ b/docs/system/arm/aspeed.rst
 @@ -1,5 +1,5 @@
@@ -38,5 +38,5 @@ index b6dd757f6e..e8c25bdd34 100644
  - ``gb200nvl-bmc``         Nvidia GB200nvl BMC
  
 -- 
-2.50.1
+2.53.0-Meta
 

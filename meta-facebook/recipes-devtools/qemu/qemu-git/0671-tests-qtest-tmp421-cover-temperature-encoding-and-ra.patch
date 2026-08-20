@@ -1,8 +1,7 @@
-From e0226c69281042bcddaa24a6b8758116dc7891c3 Mon Sep 17 00:00:00 2001
+From d147443e9f0afc773eb49abe1a3e53e0d266502c Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 5 Aug 2026 18:07:02 +0200
-Subject: [PATCH 671/705] tests/qtest: tmp421: cover temperature encoding and
- range
+Subject: [PATCH] tests/qtest: tmp421: cover temperature encoding and range
 
 Set a temperature over QMP and read it back through the two-byte and
 single-byte register paths, checking the fixed-point encoding, the
@@ -155,5 +154,5 @@ index 2307e5f603..1a14457c58 100644
  
  libqos_init(tmp421_register_nodes);
 -- 
-2.50.1
+2.53.0-Meta
 

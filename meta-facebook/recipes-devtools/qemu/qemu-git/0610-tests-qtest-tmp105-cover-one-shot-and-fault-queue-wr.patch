@@ -1,8 +1,8 @@
-From 9d95e4a62c8e3dcc5963668c7a722d550d7b32f9 Mon Sep 17 00:00:00 2001
+From a0fb05e1bc7e4c29a863d819f3da02cb773bf248 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:09 +0200
-Subject: [PATCH 610/625] tests/qtest: tmp105: cover one-shot and fault-queue
- write immunity
+Subject: [PATCH] tests/qtest: tmp105: cover one-shot and fault-queue write
+ immunity
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -20,7 +20,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 102 insertions(+)
 
 diff --git a/tests/qtest/tmp105-test.c b/tests/qtest/tmp105-test.c
-index ea6803715a3..e586a634d8f 100644
+index ea6803715a..e586a634d8 100644
 --- a/tests/qtest/tmp105-test.c
 +++ b/tests/qtest/tmp105-test.c
 @@ -33,6 +33,8 @@
@@ -147,5 +147,5 @@ index ea6803715a3..e586a634d8f 100644
      /* TMP75: register-compatible, but with a 1/2/3/4 fault queue. */
      QOSGraphEdgeOptions tmp75_opts = {
 -- 
-2.50.1
+2.53.0-Meta
 

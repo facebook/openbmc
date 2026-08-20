@@ -1,8 +1,8 @@
-From 39f829439570d29f68c663d369cb56a973fc0a3b Mon Sep 17 00:00:00 2001
+From cb9f4f57f7e70bb267257f9880249ef94019f12f Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 17:23:08 +0200
-Subject: [PATCH 689/705] hw/arm: bletchley: select the board revision with a
- machine property
+Subject: [PATCH] hw/arm: bletchley: select the board revision with a machine
+ property
 
 Two Bletchley revisions are in the field, differing only in FRU
 layout: the BMC MAC address moved from a custom field of the chassis
@@ -20,7 +20,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  2 files changed, 57 insertions(+), 1 deletion(-)
 
 diff --git a/docs/system/arm/aspeed.rst b/docs/system/arm/aspeed.rst
-index d33d320ae6..e45b3c21fe 100644
+index e50422ac92..bef1c9986f 100644
 --- a/docs/system/arm/aspeed.rst
 +++ b/docs/system/arm/aspeed.rst
 @@ -246,6 +246,19 @@ under Linux), use :
@@ -133,5 +133,5 @@ index 4dd000714b..3b9341694c 100644
          .interfaces    = arm_machine_interfaces,
      }
 -- 
-2.50.1
+2.53.0-Meta
 

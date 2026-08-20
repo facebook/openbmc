@@ -1,4 +1,4 @@
-From 50ac4626f0915088f074fcbd248ae3984ccb5607 Mon Sep 17 00:00:00 2001
+From 194d90c9a50fa18d14d249b8b7a79e7872d74295 Mon Sep 17 00:00:00 2001
 From: OpenBMC QEMU Builder <openbmc@meta.com>
 Date: Fri, 24 Jul 2026 12:00:00 -0700
 Subject: [PATCH] add usbredir subproject for QEMU usb-redir

@@ -1,7 +1,7 @@
-From dc11bb1a7c247ae29ad716f541a049d16b9470b1 Mon Sep 17 00:00:00 2001
+From 8e7377e8bd656de3465402588b57e72b947702c6 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 16:16:03 +0200
-Subject: [PATCH 704/705] tests/functional/arm: harma: add BMC boot test
+Subject: [PATCH] tests/functional/arm: harma: add BMC boot test
 
 Boot the OpenBMC flash image, then drive a fan control board power
 sensor, the NIC temperature sensor, a muxed power monitor and one of
@@ -152,5 +152,5 @@ index 0000000000..de2e7575e3
 +if __name__ == '__main__':
 +    AspeedTest.main()
 -- 
-2.50.1
+2.53.0-Meta
 

@@ -1,7 +1,7 @@
-From 16b3383556d1dda7024d4fafee69c4ef5744ffa8 Mon Sep 17 00:00:00 2001
+From 1d0b17a184e2a3887ca8cd4c1634511b6f63b397 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 11:26:59 +0200
-Subject: [PATCH 638/705] hw/rtc: ds1338: add DS1339 variant
+Subject: [PATCH] hw/rtc: ds1338: add DS1339 variant
 
 The Dallas/Maxim DS1339 register map is only partially compatible with
 the DS1338: it shares the clock/calendar time registers but differs
@@ -143,6 +143,7 @@ index 628274bf39..a5d2287d07 100644
 -        VMSTATE_INT32(ptr, DS1338State),
 -        VMSTATE_BOOL(addr_byte, DS1338State),
 -        VMSTATE_END_OF_LIST()
+-    }
 +    .post_load = ds1338_post_load,
 +    .fields = vmstate_ds1338_fields,
 +};
@@ -160,8 +161,8 @@ index 628274bf39..a5d2287d07 100644
 +    .minimum_version_id = 3,
 +    .post_load = ds1338_post_load,
 +    .fields = vmstate_ds1338_fields,
-+};
-+
+ };
+ 
 +/* Reconstruct a struct tm from the (frozen) BCD time registers in nvram. */
 +static void frozen_time(DS1338State *s, struct tm *now)
 +{
@@ -179,13 +180,12 @@ index 628274bf39..a5d2287d07 100644
 +        now->tm_hour = tmp;
 +    } else {
 +        now->tm_hour = from_bcd(s->nvram[2] & (HOURS_12 - 1));
-     }
--};
++    }
 +    now->tm_mday = from_bcd(s->nvram[4] & 0x3f);
 +    now->tm_mon = from_bcd(s->nvram[5] & 0x1f) - 1;
 +    now->tm_year = s->prev_century * 100 + from_bcd(s->nvram[6]);
 +}
- 
++
  static void capture_current_time(DS1338State *s)
  {
      /* Capture the current time into the secondary registers
@@ -399,5 +399,5 @@ index f4cfe6a8e7..fff04c225d 100644
  
  #endif
 -- 
-2.50.1
+2.53.0-Meta
 

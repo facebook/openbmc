@@ -1,8 +1,8 @@
-From cd45d92d689497dbb1487635beffffbe215f90e9 Mon Sep 17 00:00:00 2001
+From 021857ef431b643488e393ad6aa1fb83ad4a8fdb Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:24 +0200
-Subject: [PATCH 625/625] tests/functional/arm: catalina: test PCA9554 IO
- expander via QOM
+Subject: [PATCH] tests/functional/arm: catalina: test PCA9554 IO expander via
+ QOM
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -18,7 +18,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 8 insertions(+)
 
 diff --git a/tests/functional/arm/test_aspeed_catalina.py b/tests/functional/arm/test_aspeed_catalina.py
-index 56247748919..f9ee62260b1 100755
+index 5624774891..f9ee62260b 100755
 --- a/tests/functional/arm/test_aspeed_catalina.py
 +++ b/tests/functional/arm/test_aspeed_catalina.py
 @@ -33,6 +33,11 @@ class CatalinaMachine(AspeedTest):
@@ -51,5 +51,5 @@ index 56247748919..f9ee62260b1 100755
      def check_ioexp(self, qom, gpiodetect, pins):
          # The guest drives these lines as inputs: set_pin injects an external
 -- 
-2.50.1
+2.53.0-Meta
 

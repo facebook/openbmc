@@ -1,4 +1,4 @@
-From da324d6a3577b555ea934e42949094dd84d22de5 Mon Sep 17 00:00:00 2001
+From 4652834ff74a7fe0cc97ec2154ef0d3f8d6264ed Mon Sep 17 00:00:00 2001
 From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
 Date: Tue, 9 Jun 2026 21:59:35 +0530
 Subject: [PATCH] oem: arm: handle boot progress sensor events
@@ -80,10 +80,10 @@ index 7003ad5..c7b6a36 100644
   *  @param[in] objPath - FRU object path.
   *
 diff --git a/meson.build b/meson.build
-index cfe7858..53e0ff4 100644
+index f15c94c..1d7033c 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -219,6 +219,10 @@ if get_option('oem-ampere').allowed()
+@@ -225,6 +225,10 @@ if get_option('oem-ampere').allowed()
      add_project_arguments('-DOEM_AMPERE', language: 'cpp')
  endif
  
@@ -94,7 +94,7 @@ index cfe7858..53e0ff4 100644
  if get_option('oem-meta').allowed()
      add_project_arguments('-DOEM_META', language: 'cpp')
  endif
-@@ -266,6 +270,10 @@ if get_option('oem-ampere').allowed()
+@@ -272,6 +276,10 @@ if get_option('oem-ampere').allowed()
      subdir('oem/ampere')
  endif
  
@@ -106,7 +106,7 @@ index cfe7858..53e0ff4 100644
      subdir('oem/meta')
  endif
 diff --git a/meson.options b/meson.options
-index c4d9b97..f4d73d5 100644
+index 69a75c2..636e79f 100644
 --- a/meson.options
 +++ b/meson.options
 @@ -129,6 +129,14 @@ option(

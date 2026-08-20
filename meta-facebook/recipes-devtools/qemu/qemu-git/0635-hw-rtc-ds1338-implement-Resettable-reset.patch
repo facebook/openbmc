@@ -1,7 +1,7 @@
-From 120b5e86bc8eba7ca8712ede293583f386e18e20 Mon Sep 17 00:00:00 2001
+From c558f3f7568b5d857e65071da16a713d482a8168 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 21 Jul 2026 12:04:57 +0200
-Subject: [PATCH 635/705] hw/rtc: ds1338: implement Resettable reset
+Subject: [PATCH] hw/rtc: ds1338: implement Resettable reset
 
 The device relied on device_class_set_legacy_reset(), a compatibility
 shim around the legacy DeviceState reset hook. Convert ds1338_reset()
@@ -43,5 +43,5 @@ index f8b3340bf0..74aee6c746 100644
  }
  
 -- 
-2.50.1
+2.53.0-Meta
 

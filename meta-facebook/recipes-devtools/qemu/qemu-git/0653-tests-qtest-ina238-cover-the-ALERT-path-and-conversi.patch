@@ -1,7 +1,7 @@
-From c6175c7d138d23f6f96e39c51626f7ad2fe824dd Mon Sep 17 00:00:00 2001
+From 125b383f23898ac4000bc675707ab5727e89bf3e Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 23 Jul 2026 16:49:34 +0200
-Subject: [PATCH 653/705] tests/qtest: ina238: cover the ALERT path and
+Subject: [PATCH] tests/qtest: ina238: cover the ALERT path and
  conversion-ready flag
 
 Cover the shunt/bus/temperature/power alert thresholds, the multi-alert
@@ -180,5 +180,5 @@ index 88e8ce1dc8..ed345df0ef 100644
  }
  libqos_init(ina238_register_nodes);
 -- 
-2.50.1
+2.53.0-Meta
 

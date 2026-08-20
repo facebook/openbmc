@@ -1,4 +1,4 @@
-From ccdc8b6d793c5a1c46322f8f70db75fac4a438cd Mon Sep 17 00:00:00 2001
+From 8384c5e58896be662756dbe546f0db489f37f287 Mon Sep 17 00:00:00 2001
 From: Carter Chen <carter.chen.wiwynn@gmail.com>
 Date: Mon, 1 Dec 2025 08:46:59 +0000
 Subject: [PATCH] fw_update: Reimplement package parser to use new libpldm API
@@ -16,10 +16,10 @@ Signed-off-by: Unive Tien <unive.tien.wiwynn@gmail.com>
 Signed-off-by: Carter Chen <carter.chen.wiwynn@gmail.com>
 ---
  common/types.hpp                              |  49 +-
- fw-update/aggregate_update_manager.hpp        |   4 +-
+ fw-update/aggregate_update_manager.hpp        |   5 +-
  fw-update/device_updater.cpp                  | 204 ++++----
  fw-update/device_updater.hpp                  |  20 +-
- fw-update/item_update_manager.cpp             |  31 +-
+ fw-update/item_update_manager.cpp             |  28 +-
  fw-update/manager.hpp                         |   2 +-
  fw-update/package_parser.cpp                  | 474 +++++++++---------
  fw-update/package_parser.hpp                  | 114 ++---
@@ -30,10 +30,10 @@ Signed-off-by: Carter Chen <carter.chen.wiwynn@gmail.com>
  fw-update/test/package_parser_test.cpp        | 247 +++++++--
  fw-update/update_manager.cpp                  | 322 ++++++++++--
  fw-update/update_manager.hpp                  |  37 +-
- 15 files changed, 1014 insertions(+), 588 deletions(-)
+ 15 files changed, 1014 insertions(+), 586 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
-index 27b8172..aad6821 100644
+index fe391e2..26c3dff 100644
 --- a/common/types.hpp
 +++ b/common/types.hpp
 @@ -1,4 +1,5 @@
@@ -127,10 +127,10 @@ index 27b8172..aad6821 100644
 +    std::vector<std::tuple<pldm_package_component_image_information, CompImage,
 +                           CompVersion>>;
  
- } // namespace fw_update
- 
+ // Pre/Post condition
+ using ConditionIdentifier = SoftwareName;
 diff --git a/fw-update/aggregate_update_manager.hpp b/fw-update/aggregate_update_manager.hpp
-index c9acc6c..ca3d0ab 100644
+index 6a82238..f06cd70 100644
 --- a/fw-update/aggregate_update_manager.hpp
 +++ b/fw-update/aggregate_update_manager.hpp
 @@ -22,6 +22,7 @@ class AggregateUpdateManager : public UpdateManager
@@ -141,18 +141,22 @@ index c9acc6c..ca3d0ab 100644
       * @param[in] componentInfoMap - Component information map for the update
       * manager
       */
-@@ -29,9 +30,10 @@ class AggregateUpdateManager : public UpdateManager
+@@ -29,12 +30,14 @@ class AggregateUpdateManager : public UpdateManager
          Event& event,
          pldm::requester::Handler<pldm::requester::Request>& handler,
          InstanceIdDb& instanceIdDb, const DescriptorMap& descriptorMap,
 +        const DownstreamDescriptorMap& downstreamDescriptorMap,
-         const ComponentInfoMap& componentInfoMap) :
+         const ComponentInfoMap& componentInfoMap,
+         const ConditionPaths& conditionPathPair = ConditionPaths{},
+         const std::string& conditionArg = std::string{},
+         std::function<void()> taskCompletionCallback = nullptr) :
          UpdateManager(event, handler, instanceIdDb, descriptorMap,
--                      componentInfoMap)
-+                      downstreamDescriptorMap, componentInfoMap)
+-                      componentInfoMap, conditionPathPair, conditionArg,
++                      downstreamDescriptorMap, componentInfoMap,
++                      conditionPathPair, conditionArg,
+                       std::move(taskCompletionCallback))
      {}
  
-     /**
 diff --git a/fw-update/device_updater.cpp b/fw-update/device_updater.cpp
 index 39fbd2d..aa1afd0 100644
 --- a/fw-update/device_updater.cpp
@@ -614,10 +618,10 @@ index a0621c3..75c5ed8 100644
      /** @brief Component image information for all the components in the fw
       *         update package
 diff --git a/fw-update/item_update_manager.cpp b/fw-update/item_update_manager.cpp
-index 90abcc0..e2daa8d 100644
+index 720f297..4799b53 100644
 --- a/fw-update/item_update_manager.cpp
 +++ b/fw-update/item_update_manager.cpp
-@@ -42,24 +42,23 @@ bool ItemUpdateManager::processPackage()
+@@ -45,24 +45,23 @@ bool ItemUpdateManager::processPackage()
          return false;
      }
  
@@ -652,7 +656,7 @@ index 90abcc0..e2daa8d 100644
          inProgressActivation->activation(
              software::Activation::Activations::Invalid);
          parser.reset();
-@@ -74,6 +73,7 @@ bool ItemUpdateManager::processPackage()
+@@ -77,6 +76,7 @@ bool ItemUpdateManager::processPackage()
          error("Failed to associate package to device");
          inProgressActivation->activation(
              software::Activation::Activations::Invalid);
@@ -660,7 +664,7 @@ index 90abcc0..e2daa8d 100644
          packageMap.reset();
          return false;
      }
-@@ -81,11 +81,8 @@ bool ItemUpdateManager::processPackage()
+@@ -84,11 +84,8 @@ bool ItemUpdateManager::processPackage()
      const auto& fwDeviceIDRecords = parser->getFwDeviceIDRecords();
      const auto& compImageInfos = parser->getComponentImageInfos();
  
@@ -672,26 +676,9 @@ index 90abcc0..e2daa8d 100644
 +        eid, DeviceIDRecord{fwDeviceIDRecords[*deviceIdRecordOffset]},
          compImageInfos, componentInfo, MAXIMUM_TRANSFER_SIZE, this);
      inProgressActivation->activation(software::Activation::Activations::Ready);
-     activationProgress = std::make_unique<ActivationProgress>(
-@@ -125,6 +122,7 @@ std::string ItemUpdateManager::processFd(int fd)
-         {
-             error("Failed to process firmware update package");
-             updateInProgress = false;
-+            this->parser.reset();
-             packageMap.reset();
-             this->dupFd.reset();
-             throw sdbusplus::xyz::openbmc_project::Common::Error::Unavailable();
-@@ -154,8 +152,6 @@ std::optional<DeviceIDRecordOffset> ItemUpdateManager::associatePkgToDevice(
- void ItemUpdateManager::updateDeviceCompletion(mctp_eid_t /*eid*/, bool status)
+     if (!preConditionPath.empty())
+@@ -264,6 +261,7 @@ void ItemUpdateManager::teardownUpdate()
  {
-     activationProgress->progress(100);
--    packageMap.reset();
--    dupFd.reset();
- 
-     auto endTime = std::chrono::steady_clock::now();
-     auto dur =
-@@ -167,6 +163,7 @@ void ItemUpdateManager::updateDeviceCompletion(mctp_eid_t /*eid*/, bool status)
-                : software::Activation::Activations::Failed);
      deviceUpdater.reset();
      packageDataStream.reset();
 +    parser.reset();
@@ -1587,7 +1574,7 @@ index 93641b6..92c78dd 100644
 +    EXPECT_EQ(response[sizeof(pldm_msg_hdr)], PLDM_FWUP_DATA_OUT_OF_RANGE);
 +}
 diff --git a/fw-update/test/firmware_inventory_manager_test.cpp b/fw-update/test/firmware_inventory_manager_test.cpp
-index 1f9ed0b..da3f131 100644
+index c8b1bd8..4ef9869 100644
 --- a/fw-update/test/firmware_inventory_manager_test.cpp
 +++ b/fw-update/test/firmware_inventory_manager_test.cpp
 @@ -74,9 +74,11 @@ TEST(GetBoardPath_WithMockHandler, ReturnsExpectedBoardPath)
@@ -1959,12 +1946,12 @@ index b53da29..89dd69b 100644
 +    EXPECT_THROW(PackageParser{fwPkgHdr}, InternalFailure);
  }
 diff --git a/fw-update/update_manager.cpp b/fw-update/update_manager.cpp
-index bcf70ee..3e4b413 100644
+index de9e715..a4a9880 100644
 --- a/fw-update/update_manager.cpp
 +++ b/fw-update/update_manager.cpp
-@@ -4,14 +4,22 @@
- #include "common/utils.hpp"
+@@ -5,14 +5,22 @@
  #include "package_parser.hpp"
+ #include "systemd_interface.hpp"
  
 +#include <fcntl.h>
 +#include <sys/mman.h>
@@ -1985,7 +1972,7 @@ index bcf70ee..3e4b413 100644
  PHOSPHOR_LOG2_USING;
  
  namespace pldm
-@@ -47,9 +55,17 @@ int UpdateManager::processPackage(const std::filesystem::path& packageFilePath)
+@@ -48,9 +56,17 @@ int UpdateManager::processPackage(const std::filesystem::path& packageFilePath)
          if (activation->activation() ==
              software::Activation::Activations::Activating)
          {
@@ -2006,7 +1993,7 @@ index bcf70ee..3e4b413 100644
              std::filesystem::remove(packageFilePath);
              return -1;
          }
-@@ -59,38 +75,153 @@ int UpdateManager::processPackage(const std::filesystem::path& packageFilePath)
+@@ -60,38 +76,153 @@ int UpdateManager::processPackage(const std::filesystem::path& packageFilePath)
          }
      }
  
@@ -2177,7 +2164,7 @@ index bcf70ee..3e4b413 100644
  }
  
  std::string UpdateManager::processStreamDefer(std::istream& package,
-@@ -128,45 +259,50 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
+@@ -129,45 +260,50 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
              pldm::utils::DBusHandler::getBus(), objPath,
              software::Activation::Activations::Invalid, this);
          parser.reset();
@@ -2242,7 +2229,7 @@ index bcf70ee..3e4b413 100644
      if (!deviceUpdaterInfos.size())
      {
          error(
-@@ -175,23 +311,64 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
+@@ -176,23 +312,64 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
              pldm::utils::DBusHandler::getBus(), objPath,
              software::Activation::Activations::Invalid, this);
          parser.reset();
@@ -2314,8 +2301,8 @@ index bcf70ee..3e4b413 100644
 +            Incompatible();
      }
  
-     activation = std::make_unique<Activation>(
-@@ -207,7 +384,9 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
+     updateInProgress = true;
+@@ -209,7 +386,9 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
  
  DeviceUpdaterInfos UpdateManager::associatePkgToDevices(
      const FirmwareDeviceIDRecords& fwDeviceIDRecords,
@@ -2325,7 +2312,7 @@ index bcf70ee..3e4b413 100644
      TotalComponentUpdates& totalNumComponentUpdates)
  {
      DeviceUpdaterInfos deviceUpdaterInfos;
-@@ -215,19 +394,56 @@ DeviceUpdaterInfos UpdateManager::associatePkgToDevices(
+@@ -217,19 +396,56 @@ DeviceUpdaterInfos UpdateManager::associatePkgToDevices(
      {
          const auto& deviceIDDescriptors =
              std::get<Descriptors>(fwDeviceIDRecords[index]);
@@ -2386,7 +2373,7 @@ index bcf70ee..3e4b413 100644
      return deviceUpdaterInfos;
  }
  
-@@ -316,13 +532,19 @@ void UpdateManager::resetActivationState()
+@@ -393,13 +609,19 @@ void UpdateManager::resetActivationState()
      activationProgress.reset();
      objPath.clear();
  
@@ -2411,18 +2398,18 @@ index bcf70ee..3e4b413 100644
      totalNumComponentUpdates = 0;
  }
 diff --git a/fw-update/update_manager.hpp b/fw-update/update_manager.hpp
-index d6a8924..050b5e7 100644
+index 883b254..d58eb48 100644
 --- a/fw-update/update_manager.hpp
 +++ b/fw-update/update_manager.hpp
-@@ -20,6 +20,7 @@
- #include <chrono>
+@@ -21,6 +21,7 @@
  #include <filesystem>
  #include <fstream>
+ #include <functional>
 +#include <span>
  #include <unordered_map>
+ #include <utility>
  
- namespace pldm
-@@ -33,7 +34,9 @@ using namespace sdeventplus::source;
+@@ -35,7 +36,9 @@ using namespace sdeventplus::source;
  using namespace pldm;
  
  using DeviceIDRecordOffset = size_t;
@@ -2433,7 +2420,7 @@ index d6a8924..050b5e7 100644
  using DeviceUpdaterInfos = std::vector<DeviceUpdaterInfo>;
  using TotalComponentUpdates = size_t;
  
-@@ -84,13 +87,25 @@ class UpdateManager : public UpdateManagerBase
+@@ -86,16 +89,28 @@ class UpdateManager : public UpdateManagerBase
      UpdateManager& operator=(UpdateManager&&) = delete;
      virtual ~UpdateManager() = default;
  
@@ -2451,7 +2438,10 @@ index d6a8924..050b5e7 100644
          pldm::requester::Handler<pldm::requester::Request>& handler,
          InstanceIdDb& instanceIdDb, const DescriptorMap& descriptorMap,
 +        const DownstreamDescriptorMap& downstreamDescriptorMap,
-         const ComponentInfoMap& componentInfoMap) :
+         const ComponentInfoMap& componentInfoMap,
+         const ConditionPaths& conditionPathPair = ConditionPaths{},
+         const std::string& conditionArg = std::string{},
+         std::function<void()> taskCompletionCallback = nullptr) :
          UpdateManagerBase(event, handler, instanceIdDb),
 -        descriptorMap(descriptorMap), componentInfoMap(componentInfoMap),
 +        descriptorMap(descriptorMap),
@@ -2460,7 +2450,7 @@ index d6a8924..050b5e7 100644
  #ifdef FW_UPDATE_INOTIFY_ENABLED
          watch(event.get(),
                [this](const std::string& packageFilePath) {
-@@ -156,7 +171,9 @@ class UpdateManager : public UpdateManagerBase
+@@ -163,7 +178,9 @@ class UpdateManager : public UpdateManagerBase
       */
      DeviceUpdaterInfos associatePkgToDevices(
          const FirmwareDeviceIDRecords& fwDeviceIDRecords,
@@ -2470,8 +2460,8 @@ index d6a8924..050b5e7 100644
          TotalComponentUpdates& totalNumComponentUpdates);
  
      /** @brief Generate a unique software ID based on current timestamp
-@@ -172,6 +189,8 @@ class UpdateManager : public UpdateManagerBase
-   private:
+@@ -189,6 +206,8 @@ class UpdateManager : public UpdateManagerBase
+ 
      /** @brief Device identifiers of the managed FDs */
      const DescriptorMap& descriptorMap;
 +    /** @brief Downstream identifiers of the managed FDs */
@@ -2479,7 +2469,7 @@ index d6a8924..050b5e7 100644
      /** @brief Component information needed for the update of the managed FDs */
      const ComponentInfoMap& componentInfoMap;
  #ifdef FW_UPDATE_INOTIFY_ENABLED
-@@ -184,8 +203,20 @@ class UpdateManager : public UpdateManagerBase
+@@ -201,8 +220,20 @@ class UpdateManager : public UpdateManagerBase
      std::string objPath;
  
      std::filesystem::path fwPackageFilePath;

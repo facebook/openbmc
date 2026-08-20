@@ -1,7 +1,7 @@
-From c7566e5cda8f8ad865a63de3a0e14fa31af33c25 Mon Sep 17 00:00:00 2001
+From f7c888f5a9264c096a999c36079ec1bad3557de8 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 11:25:29 +0200
-Subject: [PATCH 633/705] hw/rtc: ds1338: move TYPE_DS1338 to a public header
+Subject: [PATCH] hw/rtc: ds1338: move TYPE_DS1338 to a public header
 
 Move the TYPE_DS1338 type name definition from ds1338.c into a new
 include/hw/rtc/ds1338.h header so that boards instantiating the device
@@ -61,5 +61,5 @@ index 0000000000..f4cfe6a8e7
 +
 +#endif
 -- 
-2.50.1
+2.53.0-Meta
 

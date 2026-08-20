@@ -1,8 +1,8 @@
-From 16b46891e6d2074a338b12f36e27dbcdebaa3be6 Mon Sep 17 00:00:00 2001
+From 571cbd4ca1b1994becdb3a67651a1ed3df855618 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 14 Aug 2026 18:30:30 +0200
-Subject: [PATCH 674/705] tests/qtest: tmp421: cover the register form of the
- migration stream
+Subject: [PATCH] tests/qtest: tmp421: cover the register form of the migration
+ stream
 
 A stream carrying no measurement subsection is the shape of every
 stream written before that subsection existed, and loading one
@@ -108,5 +108,5 @@ index ed62fcf109..ab1bbe3cf5 100644
  
  libqos_init(tmp421_register_nodes);
 -- 
-2.50.1
+2.53.0-Meta
 

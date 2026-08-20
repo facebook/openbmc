@@ -1,7 +1,7 @@
-From edbb7025abd940d044f2a2fc7dc6e010fd2885bf Mon Sep 17 00:00:00 2001
+From ec5230ef75ef14d8f66bdf188bb60689e8033b76 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 5 Aug 2026 18:07:53 +0200
-Subject: [PATCH 672/705] tests/qtest: tmp421: cover per-variant channels and
+Subject: [PATCH] tests/qtest: tmp421: cover per-variant channels and
  enablement
 
 Check that each variant exposes only its own temperature properties,
@@ -83,5 +83,5 @@ index 1a14457c58..febf3615ee 100644
  
  static void tmp421_register_nodes(void)
 -- 
-2.50.1
+2.53.0-Meta
 

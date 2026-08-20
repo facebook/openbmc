@@ -1,7 +1,7 @@
-From cb6c65588df954d047b83f40d2717d6fbb0639f0 Mon Sep 17 00:00:00 2001
+From 4731d2aebe7e91f71ba5d6403aa32126ddcb26b6 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:11 +0200
-Subject: [PATCH 612/625] hw/arm: sanmiguel: add Facebook SanMiguel BMC machine
+Subject: [PATCH] hw/arm: sanmiguel: add Facebook SanMiguel BMC machine
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -24,7 +24,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
 
 diff --git a/hw/arm/aspeed_ast2600_sanmiguel.c b/hw/arm/aspeed_ast2600_sanmiguel.c
 new file mode 100644
-index 00000000000..0f766449ae1
+index 0000000000..0f766449ae
 --- /dev/null
 +++ b/hw/arm/aspeed_ast2600_sanmiguel.c
 @@ -0,0 +1,142 @@
@@ -171,7 +171,7 @@ index 00000000000..0f766449ae1
 +
 +DEFINE_TYPES(aspeed_ast2600_sanmiguel_types)
 diff --git a/hw/arm/meson.build b/hw/arm/meson.build
-index 4233a800be2..2d5f4a0fe41 100644
+index ae07f80c68..96719a8067 100644
 --- a/hw/arm/meson.build
 +++ b/hw/arm/meson.build
 @@ -65,6 +65,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
@@ -183,5 +183,5 @@ index 4233a800be2..2d5f4a0fe41 100644
    'aspeed_ast10x0_evb.c',
    'aspeed_ast1040.c',
 -- 
-2.50.1
+2.53.0-Meta
 

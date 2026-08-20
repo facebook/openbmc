@@ -1,4 +1,4 @@
-From 5fbb079bb365350e7faffdbcebc94b6251392ef1 Mon Sep 17 00:00:00 2001
+From 2af31482d6e74d5518b482d42b96e9cf50d85d32 Mon Sep 17 00:00:00 2001
 From: Colin Huang <colin.huang2@amd.com>
 Date: Mon, 20 Apr 2026 10:19:14 +0800
 Subject: [PATCH] net: ncsi: promote debug messages to info for runtime
@@ -198,10 +198,10 @@ index 2d760b712ba6..05d653d9dbcf 100644
  }
  EXPORT_SYMBOL_GPL(ncsi_stop_dev);
 diff --git a/net/ncsi/ncsi-netlink.c b/net/ncsi/ncsi-netlink.c
-index 2f872d064396..b0d5e5613b96 100644
+index 8cc538358f6a..4520a3cf1f9e 100644
 --- a/net/ncsi/ncsi-netlink.c
 +++ b/net/ncsi/ncsi-netlink.c
-@@ -688,7 +688,7 @@ static int ncsi_set_channel_mask_nl(struct sk_buff *msg,
+@@ -692,7 +692,7 @@ static int ncsi_set_channel_mask_nl(struct sk_buff *msg,
  			spin_unlock_irqrestore(&package->lock, flags);
  			return -ERANGE;
  		}
@@ -210,7 +210,7 @@ index 2f872d064396..b0d5e5613b96 100644
  			   "NCSI: Channel %u set as preferred channel\n",
  			   channel->id);
  	}
-@@ -696,7 +696,7 @@ static int ncsi_set_channel_mask_nl(struct sk_buff *msg,
+@@ -700,7 +700,7 @@ static int ncsi_set_channel_mask_nl(struct sk_buff *msg,
  	package->channel_whitelist =
  		nla_get_u32(info->attrs[NCSI_ATTR_CHANNEL_MASK]);
  	if (package->channel_whitelist == 0)

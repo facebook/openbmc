@@ -1,7 +1,7 @@
-From d16c7d02f237f34cfe53bc029e316b1fc961e94f Mon Sep 17 00:00:00 2001
+From 7fa0284e4ef8b9f982d7433dc6fc29aaccefc6d4 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 22 Jul 2026 17:25:54 +0200
-Subject: [PATCH 642/705] tests/qtest: ds1339: cover the Century bit
+Subject: [PATCH] tests/qtest: ds1339: cover the Century bit
 
 Verify that the Century bit is a writable bit preserved across an
 oscillator stop/restart, that programming the year never toggles
@@ -109,5 +109,5 @@ index 9f190209db..1a7bad54b4 100644
  }
  
 -- 
-2.50.1
+2.53.0-Meta
 

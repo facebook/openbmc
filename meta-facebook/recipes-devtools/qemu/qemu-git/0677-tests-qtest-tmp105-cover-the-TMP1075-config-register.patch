@@ -1,8 +1,7 @@
-From 39280d6b447e19052c6c36189360b4a82ca9e124 Mon Sep 17 00:00:00 2001
+From cadd3bfcdde02f0f7f676f9903a41687ec2f540d Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 6 Aug 2026 16:21:41 +0200
-Subject: [PATCH 677/705] tests/qtest: tmp105: cover the TMP1075 config
- register width
+Subject: [PATCH] tests/qtest: tmp105: cover the TMP1075 config register width
 
 Check that the 16-bit Config register keeps single-byte read and write
 compatibility and that the reserved low byte reads back constant.
@@ -54,5 +53,5 @@ index 426c4f9ae7..3af265281e 100644
  }
  libqos_init(tmp105_register_nodes);
 -- 
-2.50.1
+2.53.0-Meta
 

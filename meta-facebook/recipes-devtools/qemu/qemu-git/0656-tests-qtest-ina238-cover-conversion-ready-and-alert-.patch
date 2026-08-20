@@ -1,8 +1,8 @@
-From bec314369cf17ed9eef1a9fedafe65d4e037b3e3 Mon Sep 17 00:00:00 2001
+From 7d6653608bd232c63f3e6c191d2d5413db076665 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 22 Jul 2026 17:33:07 +0200
-Subject: [PATCH 656/705] tests/qtest: ina238: cover conversion-ready and
- alert-latch semantics
+Subject: [PATCH] tests/qtest: ina238: cover conversion-ready and alert-latch
+ semantics
 
 Add coverage for the DIAG_ALRT flag-clearing rules: a read always clears
 CNVRF while a write clears it only in latch mode, and the limit flags
@@ -182,5 +182,5 @@ index f3491642df..f9b2c2e05f 100644
  }
  libqos_init(ina238_register_nodes);
 -- 
-2.50.1
+2.53.0-Meta
 

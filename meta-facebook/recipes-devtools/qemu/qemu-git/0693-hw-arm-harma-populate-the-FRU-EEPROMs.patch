@@ -1,7 +1,7 @@
-From 6d3c177814a220238ecdf0a962df862facaa017f Mon Sep 17 00:00:00 2001
+From 4cd7421230d69a9621dab62e0f29de8aefb532e3 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 12 Aug 2026 15:51:12 +0200
-Subject: [PATCH 693/705] hw/arm: harma: populate the FRU EEPROMs
+Subject: [PATCH] hw/arm: harma: populate the FRU EEPROMs
 
 Back six of the eight FRU EEPROMs with images read from hardware, so
 guest firmware can identify the MB, MB NIC, PDB, SCM, BSM and Aegis
@@ -323,5 +323,5 @@ index 5740fb1b8f..6ab695f8b5 100644
  
  static void aspeed_machine_harma_class_init(ObjectClass *oc, const void *data)
 -- 
-2.50.1
+2.53.0-Meta
 

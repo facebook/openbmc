@@ -1,4 +1,4 @@
-From e900e70c3b118ff76519b5ada6559010913493c3 Mon Sep 17 00:00:00 2001
+From 261d8563de960addfec0662d8423b19f2fe1b21e Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Fri, 26 Jun 2026 14:40:22 -0700
 Subject: [PATCH] Add MAX31790 fan controller device emulation for BMC
@@ -10,9 +10,10 @@ management in servers.
 ---
  hw/arm/Kconfig        |   1 +
  hw/sensor/Kconfig     |   4 +
- hw/sensor/max31790.c  | 429 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ hw/sensor/max31790.c  | 429 ++++++++++++++++++++++++++++++++++++++++++
  hw/sensor/meson.build |   1 +
  4 files changed, 435 insertions(+)
+ create mode 100644 hw/sensor/max31790.c
 
 diff --git a/hw/arm/Kconfig b/hw/arm/Kconfig
 index 260d2f0751..a310c534cc 100644

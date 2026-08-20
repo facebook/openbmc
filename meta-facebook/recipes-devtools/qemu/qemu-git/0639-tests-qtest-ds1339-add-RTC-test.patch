@@ -1,7 +1,7 @@
-From 0adf289b2efaa241058016d713e9d8a10d147ce5 Mon Sep 17 00:00:00 2001
+From 9adf94f706b67ae849c0d80104df63787b452434 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 11:26:59 +0200
-Subject: [PATCH 639/705] tests/qtest: ds1339: add RTC test
+Subject: [PATCH] tests/qtest: ds1339: add RTC test
 
 Exercise the DS1339-specific register map: the shared time registers,
 the control register, the OSF write-protect behaviour of the status
@@ -123,10 +123,10 @@ index 0000000000..77298823ef
 +
 +libqos_init(ds1339_register_nodes);
 diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
-index 9b0de28d30..545062e91c 100644
+index 39df0ed326..f4967c1b47 100644
 --- a/tests/qtest/meson.build
 +++ b/tests/qtest/meson.build
-@@ -308,6 +308,7 @@ qos_test_ss.add(
+@@ -310,6 +310,7 @@ qos_test_ss.add(
    'adm1272-test.c',
    'adm1266-test.c',
    'ds1338-test.c',
@@ -135,5 +135,5 @@ index 9b0de28d30..545062e91c 100644
    'eepro100-test.c',
    'es1370-test.c',
 -- 
-2.50.1
+2.53.0-Meta
 

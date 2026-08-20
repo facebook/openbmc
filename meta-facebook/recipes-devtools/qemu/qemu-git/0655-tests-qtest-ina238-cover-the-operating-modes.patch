@@ -1,7 +1,7 @@
-From 45d8093cbc95f1a90bf88a570c7f53a0f4392b47 Mon Sep 17 00:00:00 2001
+From 8f24987b6125ada2d226b5a3aed0d50ceb4b198f Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 22 Jul 2026 17:31:44 +0200
-Subject: [PATCH 655/705] tests/qtest: ina238: cover the operating modes
+Subject: [PATCH] tests/qtest: ina238: cover the operating modes
 
 Add coverage for the ADC_CONFIG MODE field: shutdown modes perform no
 conversion and leave the measurement registers and CNVRF untouched,
@@ -111,5 +111,5 @@ index b344bc6bde..f3491642df 100644
      qos_add_test("alert-shunt", "ina238", test_alert_shunt, NULL);
      qos_add_test("alert-bus", "ina238", test_alert_bus, NULL);
 -- 
-2.50.1
+2.53.0-Meta
 

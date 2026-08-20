@@ -1,4 +1,4 @@
-From 3cc78600ce42f8c5666a7a6ebcf952ef1514ddef Mon Sep 17 00:00:00 2001
+From a47d5fed758e4c1dd68b4bd6a1c2264a84ac9695 Mon Sep 17 00:00:00 2001
 From: Rush Chen <Rush_Chen@wiwynn.com>
 Date: Wed, 4 Jun 2025 17:23:22 +0800
 Subject: [PATCH] meta-facebook: yosemite4: Add virtual NIC temperature sensors
@@ -83,5 +83,5 @@ index be3f908..5d351e7 100644
      ],
      "Name": "Yosemite 4 Management Board",
 -- 
-2.52.0
+2.53.0-Meta
 

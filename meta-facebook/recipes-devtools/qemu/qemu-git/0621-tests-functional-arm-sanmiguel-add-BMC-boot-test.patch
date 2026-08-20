@@ -1,7 +1,7 @@
-From aba03d2b552cca9518b9cc3d574fd323878ad32f Mon Sep 17 00:00:00 2001
+From c0c64f35c9abb96c527c22da268590c5e53add03 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:20 +0200
-Subject: [PATCH 621/625] tests/functional/arm: sanmiguel: add BMC boot test
+Subject: [PATCH] tests/functional/arm: sanmiguel: add BMC boot test
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -28,7 +28,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  create mode 100644 tests/functional/arm/test_aspeed_sanmiguel.py
 
 diff --git a/tests/functional/arm/meson.build b/tests/functional/arm/meson.build
-index bb78dcf3e47..4b263dd3e0b 100644
+index bb78dcf3e4..4b263dd3e0 100644
 --- a/tests/functional/arm/meson.build
 +++ b/tests/functional/arm/meson.build
 @@ -17,6 +17,7 @@ test_arm_timeouts = {
@@ -49,7 +49,7 @@ index bb78dcf3e47..4b263dd3e0b 100644
    'collie',
 diff --git a/tests/functional/arm/test_aspeed_sanmiguel.py b/tests/functional/arm/test_aspeed_sanmiguel.py
 new file mode 100644
-index 00000000000..3d35e4aa869
+index 0000000000..a6ea915da3
 --- /dev/null
 +++ b/tests/functional/arm/test_aspeed_sanmiguel.py
 @@ -0,0 +1,72 @@
@@ -126,5 +126,5 @@ index 00000000000..3d35e4aa869
 +if __name__ == '__main__':
 +    AspeedTest.main()
 -- 
-2.50.1
+2.53.0-Meta
 

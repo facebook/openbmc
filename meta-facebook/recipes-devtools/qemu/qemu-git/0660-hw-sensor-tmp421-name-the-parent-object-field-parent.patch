@@ -1,8 +1,7 @@
-From 433c9cbdbb8b50163442ead4b4068317e13a86de Mon Sep 17 00:00:00 2001
+From eb3e5db817000832bdab1797c816b86467582436 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 5 Aug 2026 17:55:46 +0200
-Subject: [PATCH 660/705] hw/sensor: tmp421: name the parent object field
- parent_obj
+Subject: [PATCH] hw/sensor: tmp421: name the parent object field parent_obj
 
 Follow the QOM convention for the embedded I2CSlave, matching the other
 hw/sensor I2C devices. No functional change.
@@ -44,5 +43,5 @@ index fde41b2323..e7927699ce 100644
  
  static void tmp421_class_init(ObjectClass *klass, const void *data)
 -- 
-2.50.1
+2.53.0-Meta
 

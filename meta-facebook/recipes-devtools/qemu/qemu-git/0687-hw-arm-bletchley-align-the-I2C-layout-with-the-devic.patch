@@ -1,8 +1,7 @@
-From 4ab3750513bd6e51e9b3581f37fb103cbd39e33f Mon Sep 17 00:00:00 2001
+From 003deecd1140c5e8d8b06ee44985aeda8015cb64 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 11:10:41 +0200
-Subject: [PATCH 687/705] hw/arm: bletchley: align the I2C layout with the
- device tree
+Subject: [PATCH] hw/arm: bletchley: align the I2C layout with the device tree
 
 Several I2C devices described by the board device tree were absent or
 mismodelled: the per-sled FRU EEPROMs and PCA9536 expanders on buses
@@ -104,5 +103,5 @@ index 370baaa037..7d0b4afefb 100644
  
  static void aspeed_machine_bletchley_class_init(ObjectClass *oc,
 -- 
-2.50.1
+2.53.0-Meta
 

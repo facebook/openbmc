@@ -28,7 +28,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=a3b50d8b88dcc0eb3d7d39b760b9e821 \
 #   git ls-remote https://github.com/qemu/qemu.git refs/heads/master | cut -f1
 # This is normally updated by the daily yocto sync job when
 # --refresh-patches is enabled
-QEMU_REF ?= "fa19879df1658f96ac07365fca8835b7decd6995"
+QEMU_REF ?= "ae4f3443209ab154b48b706a146e5f557ab147cb"
 
 # Use git protocol (required by BitBake QA)
 SRC_URI = "git://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \
@@ -73,9 +73,9 @@ SRC_URI:append = " \
            file://0531-aspeed-add-montblanc-bmc-reference-from-fuji.patch \
            file://0532-aspeed-add-janga-bmc.patch \
            file://0533-hw-ssi-aspeed_smc-don-t-bus-fault-on-flash-window-ac.patch \
-           file://0535-hw-i2c-aspeed-mask-I2CS-slave-address-to-7-bits.patch \
-           file://0536-add-usbredir-subproject-for-QEMU-usb-redir.patch \
-           file://0537-hw-i2c-aspeed-add-target-buffer-mode-RX-support.patch \
+           file://0534-hw-i2c-aspeed-mask-I2CS-slave-address-to-7-bits.patch \
+           file://0535-add-usbredir-subproject-for-QEMU-usb-redir.patch \
+           file://0536-hw-i2c-aspeed-add-target-buffer-mode-RX-support.patch \
            "
 
 SRC_URI:append = " \
@@ -87,8 +87,8 @@ SRC_URI:append = " \
            file://0006-Define-MAP_SYNC-and-MAP_SHARED_VALIDATE-on-needed-li.patch \
            file://0007-Subject-PATCH-configure-lookup-meson-exutable-from-P.patch \
            file://0008-qemu-Ensure-pip-and-the-python-venv-aren-t-used-for-.patch \
-           file://0010-Add-MAX31790-fan-controller-device-emulation-for-BMC.patch \
-           file://0011-Add-PCF8563-Real-Time-Clock-device-emulation-for-BMC.patch \
+           file://0009-Add-MAX31790-fan-controller-device-emulation-for-BMC.patch \
+           file://0010-Add-PCF8563-Real-Time-Clock-device-emulation-for-BMC.patch \
            "
 
 SRC_URI:append = " \

@@ -1,8 +1,8 @@
-From 07b9d0feb3245641e99265427459e885a0ebbe5b Mon Sep 17 00:00:00 2001
+From 7aef4d6375197d780a1baf55bd05f13aaee0bc6b Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 22 Jul 2026 17:27:57 +0200
-Subject: [PATCH 648/705] tests/qtest: ina230: cover operating modes and
- triggered conversions
+Subject: [PATCH] tests/qtest: ina230: cover operating modes and triggered
+ conversions
 
 Add coverage for the MODE field: power-down retains the last results,
 the shunt/bus channel-enable bits gate which registers track new inputs,
@@ -128,5 +128,5 @@ index fa6118018d..c5dc3ad148 100644
      qos_add_test("bus-injection", "ina230", test_bus_injection, NULL);
      qos_add_test("shunt-limits", "ina230", test_shunt_limits, NULL);
 -- 
-2.50.1
+2.53.0-Meta
 

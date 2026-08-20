@@ -1,7 +1,7 @@
-From 4ea6583cc51f8105a8dc53110643dae389d2219f Mon Sep 17 00:00:00 2001
+From edd09edf51cfb945d38be6a49f2478d1bfb857c5 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 21 Jul 2026 14:33:13 +0200
-Subject: [PATCH 650/705] hw/sensor: ina238: add current/voltage/power monitor
+Subject: [PATCH] hw/sensor: ina238: add current/voltage/power monitor
 
 Add a model for the Texas Instruments INA238, an 85V, 16-bit I2C
 current-shunt, power and temperature monitor.
@@ -30,7 +30,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  create mode 100644 include/hw/sensor/ina238.h
 
 diff --git a/hw/arm/Kconfig b/hw/arm/Kconfig
-index 934d0101e5..62b872ba5a 100644
+index 01dbb8a5d9..2a84d8d2ba 100644
 --- a/hw/arm/Kconfig
 +++ b/hw/arm/Kconfig
 @@ -555,6 +555,7 @@ config ASPEED_SOC
@@ -42,7 +42,7 @@ index 934d0101e5..62b872ba5a 100644
      select UNIMP
      select LED
 diff --git a/hw/sensor/Kconfig b/hw/sensor/Kconfig
-index da519159ac..9b7c76fcf5 100644
+index cc409963fe..43cd8c0578 100644
 --- a/hw/sensor/Kconfig
 +++ b/hw/sensor/Kconfig
 @@ -6,6 +6,10 @@ config INA230
@@ -857,7 +857,7 @@ index 0000000000..cf046970be
 +
 +DEFINE_TYPES(ina238_types)
 diff --git a/hw/sensor/meson.build b/hw/sensor/meson.build
-index b81f001fdf..7e6fd64488 100644
+index d913a282f9..1beb196fc1 100644
 --- a/hw/sensor/meson.build
 +++ b/hw/sensor/meson.build
 @@ -1,5 +1,6 @@
@@ -906,5 +906,5 @@ index 0000000000..3bc3c02073
 +
 +#endif
 -- 
-2.50.1
+2.53.0-Meta
 

@@ -1,8 +1,8 @@
-From f0e111b8e7640a8eaf0e7d8eae77a97821d11672 Mon Sep 17 00:00:00 2001
+From 125b6d271d19cd44122543f5433507d75ba86da9 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 11:26:59 +0200
-Subject: [PATCH 636/705] hw/rtc: ds1338: parameterise the register map via a
- device class
+Subject: [PATCH] hw/rtc: ds1338: parameterise the register map via a device
+ class
 
 In preparation for a register-compatible variant, refactor DS1338
 register map. Introduce DS1338Class, carrying the register-pointer wrap
@@ -151,5 +151,5 @@ index 74aee6c746..628274bf39 100644
      },
  };
 -- 
-2.50.1
+2.53.0-Meta
 

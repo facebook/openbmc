@@ -1,7 +1,7 @@
-From f7a3ef862013805cf3527e4dc114be7dda8a1f87 Mon Sep 17 00:00:00 2001
+From fa149ba5dc5506a47007d68f1465c7d27d04c12b Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 10:43:47 +0200
-Subject: [PATCH 657/705] hw/arm: minerva: add Facebook BMC machine
+Subject: [PATCH] hw/arm: minerva: add Facebook BMC machine
 
 Add a machine for the Facebook Minerva Chassis Management Module (BMC),
 an AST2600-based board modelled from its device tree
@@ -24,7 +24,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  create mode 100644 hw/arm/aspeed_ast2600_minerva.c
 
 diff --git a/docs/system/arm/aspeed.rst b/docs/system/arm/aspeed.rst
-index 28a9881beb..4fb7cf439e 100644
+index f38f33cbe1..bbd3d9cdf4 100644
 --- a/docs/system/arm/aspeed.rst
 +++ b/docs/system/arm/aspeed.rst
 @@ -36,6 +36,7 @@ AST2600 SoC based machines :
@@ -224,7 +224,7 @@ index 0000000000..f3ec64adb3
 +
 +DEFINE_TYPES(aspeed_ast2600_minerva_types)
 diff --git a/hw/arm/meson.build b/hw/arm/meson.build
-index 2d5f4a0fe4..adbc2977fb 100644
+index 96719a8067..ec3825a027 100644
 --- a/hw/arm/meson.build
 +++ b/hw/arm/meson.build
 @@ -64,6 +64,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
@@ -236,5 +236,5 @@ index 2d5f4a0fe4..adbc2977fb 100644
    'aspeed_ast2600_sanmiguel.c',
    'aspeed_ast10x0.c',
 -- 
-2.50.1
+2.53.0-Meta
 

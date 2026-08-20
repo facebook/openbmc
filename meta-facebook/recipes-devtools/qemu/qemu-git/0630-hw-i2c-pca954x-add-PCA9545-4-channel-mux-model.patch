@@ -1,7 +1,7 @@
-From bf1a2a59b86946d442011b0592196075c6453bba Mon Sep 17 00:00:00 2001
+From f599e8806e1295eccbd01755b36b8a51b135019f Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 10:39:59 +0200
-Subject: [PATCH 630/705] hw/i2c: pca954x: add PCA9545 4-channel mux model
+Subject: [PATCH] hw/i2c: pca954x: add PCA9545 4-channel mux model
 
 The PCA9545 is a 4-channel I2C mux/switch. What sets it apart from the
 plain PCA9546 is its interrupt logic: one INTn input per channel and a
@@ -15,7 +15,7 @@ switches keep their previous behaviour.
 
 Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
 ---
- hw/i2c/i2c_mux_pca954x.c         | 76 ++++++++++++++++++++++++++++++++++++++--
+ hw/i2c/i2c_mux_pca954x.c         | 76 +++++++++++++++++++++++++++++++-
  include/hw/i2c/i2c_mux_pca954x.h |  1 +
  2 files changed, 75 insertions(+), 2 deletions(-)
 
@@ -207,5 +207,5 @@ index 3a676a30a9..be7c3e6e19 100644
  #define TYPE_PCA9548 "pca9548"
  
 -- 
-2.50.1
+2.53.0-Meta
 

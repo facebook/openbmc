@@ -1,8 +1,8 @@
-From e2c9217df744e69017771450562f37fd9a93a43f Mon Sep 17 00:00:00 2001
+From 9c28edab5f64be7939644c3db90cbe7b13137ffa Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 11:36:17 +0200
-Subject: [PATCH 634/705] hw: ds1338: use the TYPE_DS1338 constant instead of
- the "ds1338" string
+Subject: [PATCH] hw: ds1338: use the TYPE_DS1338 constant instead of the
+ "ds1338" string
 
 Now that TYPE_DS1338 is exposed by include/hw/rtc/ds1338.h, use it in
 the machines that instantiate the RTC by its raw type name string.
@@ -260,4 +260,5 @@ index d808bcc11c..8314d9d13a 100644
  
      /* Load or create device tree */
 -- 
-2.50.1
+2.53.0-Meta
+

@@ -1,8 +1,8 @@
-From 596fefe73c16951e7988575eab0109f6dab89877 Mon Sep 17 00:00:00 2001
+From b470e7b9ca261a6336ef3c17848fbeacad740a35 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 22 Jul 2026 17:25:24 +0200
-Subject: [PATCH 641/705] tests/qtest: ds1339: cover oscillator stop/restart
- and time programming
+Subject: [PATCH] tests/qtest: ds1339: cover oscillator stop/restart and time
+ programming
 
 Verify that toggling EOSC stops and restarts the oscillator (setting OSF
 on stop and leaving it set on restart), and that a time programmed while
@@ -55,5 +55,5 @@ index ea0a910dd4..9f190209db 100644
                   test_stopped_reserved_bits, NULL);
      qos_add_test("address-wrap", "ds1339", test_address_wrap, NULL);
 -- 
-2.50.1
+2.53.0-Meta
 

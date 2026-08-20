@@ -1,7 +1,7 @@
-From 29c06e83c140e47adbd77706f206faf6e2120ee4 Mon Sep 17 00:00:00 2001
+From 8c12b53f48fb722b4acbeaa80f8227ea7ca24fd4 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 10:38:22 +0200
-Subject: [PATCH 629/705] hw/i2c: pca954x: drop unused header inclusions
+Subject: [PATCH] hw/i2c: pca954x: drop unused header inclusions
 
 The qapi/error.h, hw/core/sysbus.h and qemu/module.h headers are
 included but not used by i2c_mux_pca954x.c. Remove them.
@@ -12,7 +12,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  1 file changed, 3 deletions(-)
 
 diff --git a/hw/i2c/i2c_mux_pca954x.c b/hw/i2c/i2c_mux_pca954x.c
-index c603446028..c8e75da8b2 100644
+index 2905e51b07..794651e7e2 100644
 --- a/hw/i2c/i2c_mux_pca954x.c
 +++ b/hw/i2c/i2c_mux_pca954x.c
 @@ -15,15 +15,12 @@
@@ -32,5 +32,5 @@ index c603446028..c8e75da8b2 100644
  #include "qom/object.h"
  #include "trace.h"
 -- 
-2.50.1
+2.53.0-Meta
 

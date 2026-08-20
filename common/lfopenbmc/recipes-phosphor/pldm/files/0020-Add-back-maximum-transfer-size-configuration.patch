@@ -1,4 +1,4 @@
-From 0ec2a52508aba73f66e84538cb8fabb7a482b025 Mon Sep 17 00:00:00 2001
+From c1b6d448554b4dc361117888d713ce176097ef16 Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Tue, 21 Apr 2026 23:45:07 -0700
 Subject: [PATCH] Add back maximum transfer size configuration
@@ -19,10 +19,10 @@ Signed-off-by: James Athappilly <jamesatha@gmail.com>
  4 files changed, 12 insertions(+), 2 deletions(-)
 
 diff --git a/fw-update/item_update_manager.cpp b/fw-update/item_update_manager.cpp
-index 2d014dd..90abcc0 100644
+index 6053a89..720f297 100644
 --- a/fw-update/item_update_manager.cpp
 +++ b/fw-update/item_update_manager.cpp
-@@ -80,7 +80,6 @@ bool ItemUpdateManager::processPackage()
+@@ -83,7 +83,6 @@ bool ItemUpdateManager::processPackage()
  
      const auto& fwDeviceIDRecords = parser->getFwDeviceIDRecords();
      const auto& compImageInfos = parser->getComponentImageInfos();
@@ -31,10 +31,10 @@ index 2d014dd..90abcc0 100644
      auto packageSpan = packageMap->getChars();
      packageDataStream =
 diff --git a/fw-update/update_manager.cpp b/fw-update/update_manager.cpp
-index fae8034..bcf70ee 100644
+index 38782b1..de9e715 100644
 --- a/fw-update/update_manager.cpp
 +++ b/fw-update/update_manager.cpp
-@@ -182,7 +182,6 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
+@@ -183,7 +183,6 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
      const auto& fwDeviceIDRecords = parser->getFwDeviceIDRecords();
      const auto& compImageInfos = parser->getComponentImageInfos();
  
@@ -43,7 +43,7 @@ index fae8034..bcf70ee 100644
      {
          const auto& fwDeviceIDRecord =
 diff --git a/meson.build b/meson.build
-index a266f23..5d36242 100644
+index f014e0e..b42502e 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -112,6 +112,7 @@ conf_data.set(
@@ -55,7 +55,7 @@ index a266f23..5d36242 100644
      conf_data.set('PLDM_TRANSPORT_WITH_MCTP_DEMUX', 1)
  elif get_option('transport-implementation') == 'af-mctp'
 diff --git a/meson.options b/meson.options
-index 0f63a71..164b113 100644
+index ab87a51..244f6b2 100644
 --- a/meson.options
 +++ b/meson.options
 @@ -68,6 +68,17 @@ option(

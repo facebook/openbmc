@@ -1,4 +1,4 @@
-From 09c3c760b4a19999e6d774316e4ab9ff6749aa3d Mon Sep 17 00:00:00 2001
+From d279a33b3df7e6353b0f1ccf489a3e68d7cac68b Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH] Utils: support powerState for multi-node system
@@ -885,10 +885,10 @@ index c082697..3d948f4 100644
  
      void getPath(const std::string& path, const std::string& interface,
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
-index 1237690..58b41b8 100644
+index 23549c4..85272bd 100644
 --- a/src/hwmon-temp/HwmonTempMain.cpp
 +++ b/src/hwmon-temp/HwmonTempMain.cpp
-@@ -631,7 +631,11 @@ static void powerStateChanged(
+@@ -633,7 +633,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {
@@ -945,10 +945,10 @@ index 8599826..42d4800 100644
  
  struct PSUProperty
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 3df3761..2cb6c16 100644
+index ff76a77..de8423b 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -855,6 +855,7 @@ static void createSensorsCallback(
+@@ -857,6 +857,7 @@ static void createSensorsCallback(
          checkGroupEvent(directory.string(), groupEventPathList);
  
          PowerState readState = getPowerState(*baseConfig);
@@ -956,7 +956,7 @@ index 3df3761..2cb6c16 100644
  
          /* Check if there are more sensors in the same interface */
          int i = 1;
-@@ -1440,7 +1441,7 @@ static void createSensorsCallback(
+@@ -1442,7 +1443,7 @@ static void createSensorsCallback(
                      sensorName, std::move(sensorThresholds), *interfacePath,
                      readState, sensorUnits, factor, maxReading, minReading,
                      sensorOffset, labelHead, thresholdConfSize, pollRate,
@@ -965,7 +965,7 @@ index 3df3761..2cb6c16 100644
  
                  if (fwName != nullptr)
                  {
-@@ -1583,7 +1584,11 @@ static void powerStateChanged(
+@@ -1585,7 +1586,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {

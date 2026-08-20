@@ -1,8 +1,8 @@
-From eed3259dceffd90b105759dfe8b6ab4b2afc4fe0 Mon Sep 17 00:00:00 2001
+From 128f01825271061b1aa8b5123bb43ea15e605ca4 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:10 +0200
-Subject: [PATCH 611/625] tests/qtest: tmp105: cover shutdown clearing the
- ALERT across variants
+Subject: [PATCH] tests/qtest: tmp105: cover shutdown clearing the ALERT across
+ variants
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -19,7 +19,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 56 insertions(+)
 
 diff --git a/tests/qtest/tmp105-test.c b/tests/qtest/tmp105-test.c
-index e586a634d8f..504f6b72022 100644
+index e586a634d8..504f6b7202 100644
 --- a/tests/qtest/tmp105-test.c
 +++ b/tests/qtest/tmp105-test.c
 @@ -335,6 +335,41 @@ static void test_tmp75_tm_clears_alert(void *obj, void *data,
@@ -106,5 +106,5 @@ index e586a634d8f..504f6b72022 100644
  }
  libqos_init(tmp105_register_nodes);
 -- 
-2.50.1
+2.53.0-Meta
 

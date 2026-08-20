@@ -1,7 +1,7 @@
-From 54f04c4a69e49e54c4acc2f5b0ba7ad2165e1494 Mon Sep 17 00:00:00 2001
+From db8bee435f53d9aea2d1cab49f042735f50fa634 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 6 Aug 2026 15:54:34 +0200
-Subject: [PATCH 700/705] tests/functional/arm: santabarbara: add BMC boot test
+Subject: [PATCH] tests/functional/arm: santabarbara: add BMC boot test
 
 Boot the OpenBMC flash image, then drive the OCP NIC TMP421 sensor and
 one of the Rainbow ADC128D818 voltage monitors through QOM and confirm
@@ -119,5 +119,5 @@ index 0000000000..05abf77e63
 +if __name__ == '__main__':
 +    AspeedTest.main()
 -- 
-2.50.1
+2.53.0-Meta
 

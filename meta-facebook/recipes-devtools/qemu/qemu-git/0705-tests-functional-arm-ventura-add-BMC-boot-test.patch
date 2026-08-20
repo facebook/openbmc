@@ -1,7 +1,7 @@
-From 00110828c583d08e1f9659185a73dff0330a0216 Mon Sep 17 00:00:00 2001
+From 678f1daa4678531c9b6045561264892358ed7d70 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 18:18:01 +0200
-Subject: [PATCH 705/705] tests/functional/arm: ventura: add BMC boot test
+Subject: [PATCH] tests/functional/arm: ventura: add BMC boot test
 
 Boot an OpenBMC image to a login shell to keep the board wired up as
 the tree changes around it.
@@ -88,5 +88,5 @@ index 0000000000..01b800f200
 +if __name__ == '__main__':
 +    AspeedTest.main()
 -- 
-2.50.1
+2.53.0-Meta
 

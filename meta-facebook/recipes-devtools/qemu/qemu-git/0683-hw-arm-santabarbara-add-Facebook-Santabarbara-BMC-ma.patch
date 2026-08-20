@@ -1,8 +1,7 @@
-From 94a37bc73deeec6052406b714fe8089a13f23569 Mon Sep 17 00:00:00 2001
+From 3e7eb437a639c55810480064b39531134c7ae5f1 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 6 Aug 2026 15:25:05 +0200
-Subject: [PATCH 683/705] hw/arm: santabarbara: add Facebook Santabarbara BMC
- machine
+Subject: [PATCH] hw/arm: santabarbara: add Facebook Santabarbara BMC machine
 
 Add the 'santabarbara-bmc' machine type, an AST2600-based BMC, modelled
 from its device tree (aspeed-bmc-facebook-santabarbara.dts).
@@ -28,7 +27,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  create mode 100644 hw/arm/aspeed_ast2600_santabarbara.c
 
 diff --git a/docs/system/arm/aspeed.rst b/docs/system/arm/aspeed.rst
-index afdd58ed57..3081180b1b 100644
+index db0035189b..aa43e0d47b 100644
 --- a/docs/system/arm/aspeed.rst
 +++ b/docs/system/arm/aspeed.rst
 @@ -35,6 +35,7 @@ AST2600 SoC based machines :
@@ -297,7 +296,7 @@ index 0000000000..65e133e6f7
 +
 +DEFINE_TYPES(aspeed_ast2600_santabarbara_types)
 diff --git a/hw/arm/meson.build b/hw/arm/meson.build
-index 9f33242583..c4470f43af 100644
+index 17390895b1..3ad25df85a 100644
 --- a/hw/arm/meson.build
 +++ b/hw/arm/meson.build
 @@ -67,6 +67,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
@@ -309,5 +308,5 @@ index 9f33242583..c4470f43af 100644
    'aspeed_ast10x0.c',
    'aspeed_ast10x0_evb.c',
 -- 
-2.50.1
+2.53.0-Meta
 

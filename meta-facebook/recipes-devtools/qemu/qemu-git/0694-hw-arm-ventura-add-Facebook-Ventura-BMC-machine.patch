@@ -1,7 +1,7 @@
-From fd93c5603cd38808fd8ca883b714f70b0c9b60bf Mon Sep 17 00:00:00 2001
+From d334e4bef5c300b9c4986edbe6c9b7c72ed0e251 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 17:43:53 +0200
-Subject: [PATCH 694/705] hw/arm: ventura: add Facebook Ventura BMC machine
+Subject: [PATCH] hw/arm: ventura: add Facebook Ventura BMC machine
 
 Ventura is an AST2600-based rack management controller for a
 liquid-cooled compute rack. Model the board from its device tree
@@ -30,7 +30,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  create mode 100644 hw/arm/aspeed_ast2600_ventura.c
 
 diff --git a/docs/system/arm/aspeed.rst b/docs/system/arm/aspeed.rst
-index bb2e7a2c52..aade6dd87a 100644
+index b011ceca0d..c95a95b8b2 100644
 --- a/docs/system/arm/aspeed.rst
 +++ b/docs/system/arm/aspeed.rst
 @@ -40,6 +40,7 @@ AST2600 SoC based machines :
@@ -211,7 +211,7 @@ index 0000000000..b9913e479f
 +
 +DEFINE_TYPES(aspeed_ast2600_ventura_types)
 diff --git a/hw/arm/meson.build b/hw/arm/meson.build
-index a1be02e52e..f4e0122784 100644
+index da68b634a0..301eec073e 100644
 --- a/hw/arm/meson.build
 +++ b/hw/arm/meson.build
 @@ -70,6 +70,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
@@ -223,5 +223,5 @@ index a1be02e52e..f4e0122784 100644
    'aspeed_ast10x0.c',
    'aspeed_ast10x0_evb.c',
 -- 
-2.50.1
+2.53.0-Meta
 

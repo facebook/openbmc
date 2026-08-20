@@ -1,7 +1,7 @@
-From 6f0ea39b6eeaa680ce54fb29e8e7ff65f0e4f815 Mon Sep 17 00:00:00 2001
+From 5d94d0cdc6c4280be5c7c7169331bbd9dd6812d9 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 12 Aug 2026 16:10:15 +0200
-Subject: [PATCH 684/705] hw/arm: santabarbara: populate the FRU EEPROMs
+Subject: [PATCH] hw/arm: santabarbara: populate the FRU EEPROMs
 
 Back 11 of the 18 FRU EEPROMs with images read from hardware, so guest
 firmware can identify the MB, SCM, BSM, SWB, FIO, OCP NIC, E1.S
@@ -553,5 +553,5 @@ index 65e133e6f7..1c0114a9e6 100644
      /* &i2c14 - empty */
      /* &i2c15 - empty */
 -- 
-2.50.1
+2.53.0-Meta
 

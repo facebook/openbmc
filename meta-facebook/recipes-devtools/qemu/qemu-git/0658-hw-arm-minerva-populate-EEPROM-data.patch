@@ -1,7 +1,7 @@
-From 56c7bf46a7dca6a51ba9bc5db1bbeedf1c0d0f61 Mon Sep 17 00:00:00 2001
+From bdf19ce1045c156b45a505c29445b8d1f91e2d6e Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 3 Aug 2026 15:24:04 +0200
-Subject: [PATCH 658/705] hw/arm: minerva: populate EEPROM data
+Subject: [PATCH] hw/arm: minerva: populate EEPROM data
 
 The Minerva BMC carries 31 FRU EEPROMs: the CMM, the CMM SCM and the
 BMC storage module, one per Fan Controller Board, sixteen Harma
@@ -811,5 +811,5 @@ index f3ec64adb3..ec4d976735 100644
  
  static void aspeed_machine_minerva_class_init(ObjectClass *oc,
 -- 
-2.50.1
+2.53.0-Meta
 

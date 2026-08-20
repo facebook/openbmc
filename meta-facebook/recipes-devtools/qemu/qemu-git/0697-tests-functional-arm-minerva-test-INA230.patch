@@ -1,7 +1,7 @@
-From 72064adf96121ed4e6ced8778a7aa1cb7693600e Mon Sep 17 00:00:00 2001
+From 517638cb3614ab801daa57f9eaec03455371c722 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 17:05:09 +0200
-Subject: [PATCH 697/705] tests/functional/arm: minerva: test INA230
+Subject: [PATCH] tests/functional/arm: minerva: test INA230
 
 Extend the Minerva CMM boot test to validate the INA230 power monitor at
 i2c0 address 0x40: drive the shunt and bus voltages through QOM and
@@ -64,5 +64,5 @@ index 925a82b139..738e26bae4 100644
  if __name__ == '__main__':
      AspeedTest.main()
 -- 
-2.50.1
+2.53.0-Meta
 

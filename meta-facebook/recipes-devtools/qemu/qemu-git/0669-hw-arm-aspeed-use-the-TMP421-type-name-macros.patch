@@ -1,7 +1,7 @@
-From e55251f4e93012f455c0e6cf324732f2c32f0936 Mon Sep 17 00:00:00 2001
+From 256931d872179f4de283b87c90bcee8886147f88 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 5 Aug 2026 18:04:47 +0200
-Subject: [PATCH 669/705] hw/arm/aspeed: use the TMP421 type-name macros
+Subject: [PATCH] hw/arm/aspeed: use the TMP421 type-name macros
 
 Include the new tmp421.h and refer to the sensor variants through
 TYPE_TMP421/TYPE_TMP422/TYPE_TMP423 instead of open-coded string
@@ -266,4 +266,5 @@ index 8f0a412ddc..05b09da9b9 100644
  
      i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 11), TYPE_TMP105,
 -- 
-2.50.1
+2.53.0-Meta
+

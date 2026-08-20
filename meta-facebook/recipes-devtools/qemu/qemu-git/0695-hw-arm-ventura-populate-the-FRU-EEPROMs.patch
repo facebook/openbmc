@@ -1,7 +1,7 @@
-From c8f66e387e06a8badcf55c54fa3bdfe337944f79 Mon Sep 17 00:00:00 2001
+From c3f27ca98b3978f381337d5c4fea23b81d281e07 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 18:03:29 +0200
-Subject: [PATCH 695/705] hw/arm: ventura: populate the FRU EEPROMs
+Subject: [PATCH] hw/arm: ventura: populate the FRU EEPROMs
 
 Back the seven FRU EEPROMs with images read from hardware, so guest
 firmware can identify the RMC, SCM, BSM, LED, rear I/O and the two fan
@@ -350,5 +350,5 @@ index b9913e479f..ebb4d1a938 100644
  
  static void aspeed_machine_ventura_class_init(ObjectClass *oc,
 -- 
-2.50.1
+2.53.0-Meta
 

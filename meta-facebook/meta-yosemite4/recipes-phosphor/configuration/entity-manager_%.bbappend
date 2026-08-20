@@ -5,13 +5,12 @@ EXTRA_OEMESON:append = " \
  "
 
 SRC_URI += " \
-    file://0000-configuration-yosemite4-Add-config-for-Wailua-Falls.patch \
-    file://0001-configuration-Revise-CX7-NIC-card-temperature-sensor.patch \
-    file://0002-configurations-Revise-the-BRCM-NIC-sensor-name.patch \
-    file://0003-Add-mctp-eids-configuration-for-Yosemite-4.patch \
-    file://0004-configurations-Revise-the-Terminus-NIC-sensor-name.patch \
-    file://0005-configurations-yosemite4-NIC-card-support-slot-numbe.patch \
-    file://0006-entity-manager-Add-config-prefix-filtering.patch \
-    file://0007-meta-facebook-yosemite4-Add-virtual-NIC-temperature-.patch \
+    file://0000-configuration-Revise-CX7-NIC-card-temperature-sensor.patch \
+    file://0001-configurations-Revise-the-BRCM-NIC-sensor-name.patch \
+    file://0002-Add-mctp-eids-configuration-for-Yosemite-4.patch \
+    file://0003-configurations-Revise-the-Terminus-NIC-sensor-name.patch \
+    file://0004-configurations-yosemite4-NIC-card-support-slot-numbe.patch \
+    file://0005-entity-manager-Add-config-prefix-filtering.patch \
+    file://0006-meta-facebook-yosemite4-Add-virtual-NIC-temperature-.patch \
 "
 

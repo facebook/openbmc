@@ -1,8 +1,8 @@
-From f831c836f641e602b88e79a4d190f3d15ceed2a0 Mon Sep 17 00:00:00 2001
+From 1059a0f43d36170defc1ea4b3c4c9223e96ea11a Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:23 +0200
-Subject: [PATCH 624/625] hw/arm: catalina: drive pca9554 io expander input
- pins externally
+Subject: [PATCH] hw/arm: catalina: drive pca9554 io expander input pins
+ externally
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -22,7 +22,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 10 insertions(+), 3 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_catalina.c b/hw/arm/aspeed_ast2600_catalina.c
-index 928e140b216..69e072c932f 100644
+index 928e140b21..69e072c932 100644
 --- a/hw/arm/aspeed_ast2600_catalina.c
 +++ b/hw/arm/aspeed_ast2600_catalina.c
 @@ -545,9 +545,16 @@ static void catalina_bmc_i2c_init(AspeedMachineState *bmc)
@@ -46,5 +46,5 @@ index 928e140b216..69e072c932f 100644
      i2c_slave_create_simple(pca954x_i2c_get_bus(i2c_mux, 6),
                              TYPE_PCA9555, 0x25);
 -- 
-2.50.1
+2.53.0-Meta
 

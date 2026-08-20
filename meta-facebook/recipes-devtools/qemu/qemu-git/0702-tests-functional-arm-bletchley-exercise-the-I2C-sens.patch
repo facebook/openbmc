@@ -1,8 +1,7 @@
-From b8f865784e4f11990a5889db0f8511472371940f Mon Sep 17 00:00:00 2001
+From fa1a60be2a9b90e91d49db9c25e8c7022ba7e5ef Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 15:52:57 +0200
-Subject: [PATCH 702/705] tests/functional/arm: bletchley: exercise the I2C
- sensors
+Subject: [PATCH] tests/functional/arm: bletchley: exercise the I2C sensors
 
 The test stopped at the login prompt, so it only proved the machine
 boots. Log in and drive the sled power monitor and the two front-panel
@@ -91,5 +90,5 @@ index 5a60b24b3d..c6844d53b5 100755
  if __name__ == '__main__':
      AspeedTest.main()
 -- 
-2.50.1
+2.53.0-Meta
 

@@ -1,8 +1,7 @@
-From a537d4128a334b50bd910054ed89e5a101a5f90f Mon Sep 17 00:00:00 2001
+From f0814875997f2661d7c7c2a2329a4d1d0fee0dc2 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:05 +0200
-Subject: [PATCH 606/625] hw/arm: aspeed: guard board-local temperature-sensor
- aliases
+Subject: [PATCH] hw/arm: aspeed: guard board-local temperature-sensor aliases
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -25,7 +24,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  2 files changed, 11 insertions(+)
 
 diff --git a/hw/arm/aspeed_ast2600_catalina.c b/hw/arm/aspeed_ast2600_catalina.c
-index f714c9d1b32..33e75338efc 100644
+index f714c9d1b3..33e75338ef 100644
 --- a/hw/arm/aspeed_ast2600_catalina.c
 +++ b/hw/arm/aspeed_ast2600_catalina.c
 @@ -22,6 +22,11 @@
@@ -41,10 +40,10 @@ index f714c9d1b32..33e75338efc 100644
  #define TYPE_TMP421 "tmp421"
  #define TYPE_DS1338 "ds1338"
 diff --git a/hw/arm/aspeed_ast2600_fuji.c b/hw/arm/aspeed_ast2600_fuji.c
-index 37db252e276..6dc3535f0cb 100644
+index 00d78bf803..e5aca6f0c0 100644
 --- a/hw/arm/aspeed_ast2600_fuji.c
 +++ b/hw/arm/aspeed_ast2600_fuji.c
-@@ -15,7 +15,13 @@
+@@ -16,7 +16,13 @@
  #include "hw/sensor/tmp105.h"
  #include "hw/nvram/eeprom_at24c.h"
  
@@ -59,5 +58,5 @@ index 37db252e276..6dc3535f0cb 100644
  #define TYPE_TMP422 "tmp422"
  
 -- 
-2.50.1
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From 8785dea3eec86bcf7b8fec4baeadd59b0f64cc63 Mon Sep 17 00:00:00 2001
+From 94ed3f2fcae94035418f3616724ecdedf64a8bfe Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Fri, 26 Jun 2026 16:42:14 -0700
 Subject: [PATCH] Add PCF8563 Real-Time Clock device emulation for BMC
@@ -15,7 +15,7 @@ for maintaining system time.
  create mode 100644 hw/rtc/pcf8563.c
 
 diff --git a/hw/arm/Kconfig b/hw/arm/Kconfig
-index 5ae3edcfaa..01dbb8a5d9 100644
+index a310c534cc..373e85d146 100644
 --- a/hw/arm/Kconfig
 +++ b/hw/arm/Kconfig
 @@ -537,6 +537,7 @@ config ASPEED_SOC

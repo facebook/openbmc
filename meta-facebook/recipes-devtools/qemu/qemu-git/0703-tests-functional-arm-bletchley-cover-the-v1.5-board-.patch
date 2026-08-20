@@ -1,7 +1,7 @@
-From 63eb8fe2878e1a592ca6e413cf09bc1db94f9ec6 Mon Sep 17 00:00:00 2001
+From 27e46cfaa88d8d1c136a4b77d41275b6012ecb30 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 17:23:08 +0200
-Subject: [PATCH 703/705] tests/functional/arm: bletchley: cover the v1.5 board
+Subject: [PATCH] tests/functional/arm: bletchley: cover the v1.5 board
  revision
 
 Boot the machine a second time with the other board revision selected
@@ -31,7 +31,7 @@ index e3002adc81..64b2d7e17e 100644
    'aspeed_clemente' : 480,
    'aspeed_gb200nvl_bmc' : 480,
 diff --git a/tests/functional/arm/test_aspeed_bletchley.py b/tests/functional/arm/test_aspeed_bletchley.py
-index 7220c4e9f1..15ed3b9211 100755
+index c6844d53b5..7ffcac1311 100755
 --- a/tests/functional/arm/test_aspeed_bletchley.py
 +++ b/tests/functional/arm/test_aspeed_bletchley.py
 @@ -29,6 +29,13 @@ class BletchleyMachine(AspeedTest):
@@ -104,5 +104,5 @@ index 7220c4e9f1..15ed3b9211 100755
  if __name__ == '__main__':
      AspeedTest.main()
 -- 
-2.50.1
+2.53.0-Meta
 

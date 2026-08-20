@@ -1,7 +1,7 @@
-From a0d0c6b71563730e91e790ea1c3d18d3a24cca94 Mon Sep 17 00:00:00 2001
+From 7f2845d3b766b32e88f59363426b2b073b1da240 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:12 +0200
-Subject: [PATCH 613/625] hw/arm: sanmiguel: populate EEPROM data
+Subject: [PATCH] hw/arm: sanmiguel: populate EEPROM data
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -16,7 +16,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 269 insertions(+), 6 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_sanmiguel.c b/hw/arm/aspeed_ast2600_sanmiguel.c
-index 0f766449ae1..251dab141ff 100644
+index 0f766449ae..251dab141f 100644
 --- a/hw/arm/aspeed_ast2600_sanmiguel.c
 +++ b/hw/arm/aspeed_ast2600_sanmiguel.c
 @@ -23,6 +23,267 @@
@@ -335,5 +335,5 @@ index 0f766449ae1..251dab141ff 100644
      /* &i2c15 — empty */
  }
 -- 
-2.50.1
+2.53.0-Meta
 

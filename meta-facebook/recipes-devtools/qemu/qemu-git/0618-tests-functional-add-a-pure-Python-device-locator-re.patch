@@ -1,8 +1,7 @@
-From e8c147351459d507c13620aec5162da063da97fc Mon Sep 17 00:00:00 2001
+From 61f74bd0031a8545943c73cf749f7dd92f15f3b9 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:17 +0200
-Subject: [PATCH 618/625] tests/functional: add a pure-Python device-locator
- resolver
+Subject: [PATCH] tests/functional: add a pure-Python device-locator resolver
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -34,7 +33,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
 
 diff --git a/tests/functional/qemu_test/locator.py b/tests/functional/qemu_test/locator.py
 new file mode 100644
-index 00000000000..bc8ba111a4b
+index 0000000000..bc8ba111a4
 --- /dev/null
 +++ b/tests/functional/qemu_test/locator.py
 @@ -0,0 +1,586 @@
@@ -625,5 +624,5 @@ index 00000000000..bc8ba111a4b
 +            raise LocatorError(f"resolved object is not of type '{typename}'")
 +        return path
 -- 
-2.50.1
+2.53.0-Meta
 

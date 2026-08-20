@@ -1,7 +1,7 @@
-From 9a3c826fe29e3aca30f68dfcea44cfb2f2c8394d Mon Sep 17 00:00:00 2001
+From cc4a7412f0b48921121f458495e497f59777c7dd Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 12:09:47 +0200
-Subject: [PATCH 692/705] hw/arm: harma: add Facebook Harma BMC machine
+Subject: [PATCH] hw/arm: harma: add Facebook Harma BMC machine
 
 Add an AST2600-based machine for the Facebook Harma platform, modelled
 from its device tree (aspeed-bmc-facebook-harma.dts).
@@ -25,7 +25,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  create mode 100644 hw/arm/aspeed_ast2600_harma.c
 
 diff --git a/docs/system/arm/aspeed.rst b/docs/system/arm/aspeed.rst
-index e45b3c21fe..bb2e7a2c52 100644
+index bef1c9986f..b011ceca0d 100644
 --- a/docs/system/arm/aspeed.rst
 +++ b/docs/system/arm/aspeed.rst
 @@ -39,6 +39,7 @@ AST2600 SoC based machines :
@@ -234,7 +234,7 @@ index 0000000000..5740fb1b8f
 +
 +DEFINE_TYPES(aspeed_ast2600_harma_types)
 diff --git a/hw/arm/meson.build b/hw/arm/meson.build
-index 4939425e7e..a1be02e52e 100644
+index ab657d5654..da68b634a0 100644
 --- a/hw/arm/meson.build
 +++ b/hw/arm/meson.build
 @@ -65,6 +65,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
@@ -246,5 +246,5 @@ index 4939425e7e..a1be02e52e 100644
    'aspeed_ast2600_rainier.c',
    'aspeed_ast2600_santabarbara.c',
 -- 
-2.50.1
+2.53.0-Meta
 

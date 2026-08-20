@@ -1,7 +1,7 @@
-From 7f4cbc9799ef1b49607d3af3a6ae86df7082e0ea Mon Sep 17 00:00:00 2001
+From 20d94b7ae5d39eff8ecd0a92cd278cabaf1dc1e1 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 3 Aug 2026 14:24:44 +0200
-Subject: [PATCH 628/705] docs/system/arm/aspeed: add the sanmiguel-bmc machine
+Subject: [PATCH] docs/system/arm/aspeed: add the sanmiguel-bmc machine
 
 The Facebook SanMiguel BMC machine is supported by hw/arm but has never
 been listed in the Aspeed documentation. Add it to the AST2600 machine
@@ -13,7 +13,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  1 file changed, 1 insertion(+)
 
 diff --git a/docs/system/arm/aspeed.rst b/docs/system/arm/aspeed.rst
-index e8c25bdd34..28a9881beb 100644
+index 933df41f96..f38f33cbe1 100644
 --- a/docs/system/arm/aspeed.rst
 +++ b/docs/system/arm/aspeed.rst
 @@ -34,6 +34,7 @@ AST2600 SoC based machines :
@@ -25,5 +25,5 @@ index e8c25bdd34..28a9881beb 100644
  - ``gb200nvl-bmc``         Nvidia GB200nvl BMC
  
 -- 
-2.50.1
+2.53.0-Meta
 

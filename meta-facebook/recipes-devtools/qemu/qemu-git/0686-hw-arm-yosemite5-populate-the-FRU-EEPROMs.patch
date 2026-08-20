@@ -1,7 +1,7 @@
-From 8787c96a288bf3443df9a34d839068e8d1aa44ee Mon Sep 17 00:00:00 2001
+From ecee07a15ffb33b9ca500a0e933222578a2c0011 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 12 Aug 2026 15:58:44 +0200
-Subject: [PATCH 686/705] hw/arm: yosemite5: populate the FRU EEPROMs
+Subject: [PATCH] hw/arm: yosemite5: populate the FRU EEPROMs
 
 Back nine of the ten FRU EEPROMs with images read from hardware, so
 guest firmware can identify the medusa board, paddle board, SCM, BSM,
@@ -438,5 +438,5 @@ index 2bfa6cf504..81a10a39a9 100644
      i2c_slave_create_simple(i2c[13], TYPE_DS1339, 0x68);
  
 -- 
-2.50.1
+2.53.0-Meta
 

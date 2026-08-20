@@ -1,8 +1,8 @@
-From ffafa7320ffe6dc5c61c18b8e0ef3070c8529971 Mon Sep 17 00:00:00 2001
+From 5b05e2b50f9e5c73240a63854bfad526e3e51aaf Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:08 +0200
-Subject: [PATCH 609/625] tests/qtest: tmp105: cover the TMP75, TMP175 and
- LM75B variants
+Subject: [PATCH] tests/qtest: tmp105: cover the TMP75, TMP175 and LM75B
+ variants
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -20,7 +20,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 138 insertions(+)
 
 diff --git a/tests/qtest/tmp105-test.c b/tests/qtest/tmp105-test.c
-index 29a031fb7bf..ea6803715a3 100644
+index 29a031fb7b..ea6803715a 100644
 --- a/tests/qtest/tmp105-test.c
 +++ b/tests/qtest/tmp105-test.c
 @@ -19,9 +19,20 @@
@@ -185,5 +185,5 @@ index 29a031fb7bf..ea6803715a3 100644
  }
  libqos_init(tmp105_register_nodes);
 -- 
-2.50.1
+2.53.0-Meta
 

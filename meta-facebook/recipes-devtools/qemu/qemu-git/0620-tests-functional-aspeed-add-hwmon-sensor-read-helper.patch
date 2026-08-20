@@ -1,8 +1,7 @@
-From dab1ae1d76ddfd02e4a64b3d8c97be28173577bb Mon Sep 17 00:00:00 2001
+From 23a7d9d03ecd9d99132b669c5141c33928eb3df1 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:19 +0200
-Subject: [PATCH 620/625] tests/functional: aspeed: add hwmon sensor read
- helpers
+Subject: [PATCH] tests/functional: aspeed: add hwmon sensor read helpers
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -19,7 +18,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 16 insertions(+)
 
 diff --git a/tests/functional/aspeed.py b/tests/functional/aspeed.py
-index 08af6b4839c..84d40fc0e9d 100644
+index 08af6b4839..84d40fc0e9 100644
 --- a/tests/functional/aspeed.py
 +++ b/tests/functional/aspeed.py
 @@ -2,6 +2,9 @@
@@ -53,5 +52,5 @@ index 08af6b4839c..84d40fc0e9d 100644
          self.require_netdev('user')
          self.vm.set_console()
 -- 
-2.50.1
+2.53.0-Meta
 

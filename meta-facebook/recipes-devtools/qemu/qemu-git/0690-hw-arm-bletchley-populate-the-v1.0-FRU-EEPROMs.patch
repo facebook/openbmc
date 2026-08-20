@@ -1,7 +1,7 @@
-From 7a2b9652136cca52fce78f946ab24d9ab221802f Mon Sep 17 00:00:00 2001
+From 89fe132db4b686fa4faccaa78449226830e7839c Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 16:27:25 +0200
-Subject: [PATCH 690/705] hw/arm: bletchley: populate the v1.0 FRU EEPROMs
+Subject: [PATCH] hw/arm: bletchley: populate the v1.0 FRU EEPROMs
 
 Back the eight FRU EEPROMs with images read from a v1.0 chassis, so
 guest firmware can identify the six sled interposers, the storage
@@ -358,5 +358,5 @@ index 3b9341694c..d894655864 100644
      /* Bus 9 */
      i2c_slave_create_simple(i2c[9], TYPE_TMP421, 0x4f);
 -- 
-2.50.1
+2.53.0-Meta
 

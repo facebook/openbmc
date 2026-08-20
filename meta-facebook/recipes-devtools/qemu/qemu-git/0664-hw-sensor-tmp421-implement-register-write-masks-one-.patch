@@ -1,8 +1,8 @@
-From e589160603827514b6a6db9e811c06b0c33e00e4 Mon Sep 17 00:00:00 2001
+From 8fdc361c981086264b87c975ed5f447550080fa9 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 5 Aug 2026 18:01:09 +0200
-Subject: [PATCH 664/705] hw/sensor: tmp421: implement register write masks,
- one-shot and N-factor
+Subject: [PATCH] hw/sensor: tmp421: implement register write masks, one-shot
+ and N-factor
 
 Mask out reserved and absent-channel bits on writes to the two
 configuration registers and the conversion rate, accept the one-shot
@@ -128,5 +128,5 @@ index 8bacd7d05e..59225e8bfd 100644
      s->config[0] = 0;
      s->config[1] = sc->config2_reset;
 -- 
-2.50.1
+2.53.0-Meta
 

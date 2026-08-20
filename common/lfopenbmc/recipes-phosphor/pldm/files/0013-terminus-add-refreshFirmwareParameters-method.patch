@@ -1,4 +1,4 @@
-From 32555e49c7751a55c46c1563aa9efd9a2452ca0e Mon Sep 17 00:00:00 2001
+From a5a2707afc0531493d7ee5c0bf31b4d28c545ba6 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 7 May 2026 21:56:34 +0800
 Subject: [PATCH] terminus: add refreshFirmwareParameters method
@@ -36,10 +36,10 @@ Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
  5 files changed, 159 insertions(+), 1 deletion(-)
 
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index 82392fe..2f4b129 100644
+index 652458e..8697466 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
-@@ -12,6 +12,11 @@ namespace pldm
+@@ -14,6 +14,11 @@ namespace pldm
  {
  namespace fw_update
  {
@@ -51,7 +51,7 @@ index 82392fe..2f4b129 100644
  void InventoryManager::discoverFDs(const MctpInfos& mctpInfos)
  {
      for (const auto& mctpInfo : mctpInfos)
-@@ -30,11 +35,88 @@ void InventoryManager::discoverFDs(const MctpInfos& mctpInfos)
+@@ -32,11 +37,88 @@ void InventoryManager::discoverFDs(const MctpInfos& mctpInfos)
      }
  }
  
@@ -140,7 +140,7 @@ index 82392fe..2f4b129 100644
          firmwareDeviceNameMap.erase(eid);
          descriptorMap.erase(eid);
          downstreamDescriptorMap.erase(eid);
-@@ -90,6 +172,7 @@ void InventoryManager::queryDeviceIdentifiers(
+@@ -92,6 +174,7 @@ void InventoryManager::queryDeviceIdentifiers(
          error(
              "No response received for query device identifiers for endpoint ID {EID}",
              "EID", eid);
@@ -148,7 +148,7 @@ index 82392fe..2f4b129 100644
          return;
      }
  
-@@ -639,10 +722,25 @@ void InventoryManager::getFirmwareParameters(
+@@ -641,10 +724,25 @@ void InventoryManager::getFirmwareParameters(
          error(
              "No response received for get firmware parameters for endpoint ID {EID}",
              "EID", eid);
@@ -252,7 +252,7 @@ index 924f4fc..7a04ea0 100644
       *         the updated EM configurations
       *
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index d455767..6e4dd13 100644
+index 7b3a911..54fb5e7 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -419,6 +419,18 @@ void MctpDiscovery::updateMctpEndpointAvailability(const MctpInfo& mctpInfo,

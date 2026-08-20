@@ -1,7 +1,7 @@
-From 96a06f4bfb87e8af1a8446f75ef7795c47557c91 Mon Sep 17 00:00:00 2001
+From 0676a59bcfa53cb73b362626a34bc506e3ed4fec Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 21 Jul 2026 14:33:37 +0200
-Subject: [PATCH 698/705] tests/functional/arm: minerva: test INA238
+Subject: [PATCH] tests/functional/arm: minerva: test INA238
 
 Extend the Minerva CMM boot test to validate an INA238 power monitor on
 Fan Controller Board 1 (i2c2 PCA9548 channel 1, address 0x40): drive the
@@ -55,5 +55,5 @@ index 738e26bae4..b36aad1ed1 100644
  if __name__ == '__main__':
      AspeedTest.main()
 -- 
-2.50.1
+2.53.0-Meta
 

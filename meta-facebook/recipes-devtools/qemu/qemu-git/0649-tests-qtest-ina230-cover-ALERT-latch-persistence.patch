@@ -1,7 +1,7 @@
-From 27482a5a921ad02e3d96f0bd1dbe0f3bf0ff157e Mon Sep 17 00:00:00 2001
+From c87fea42d2b536803923f1f09894583c4875d802 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 22 Jul 2026 17:28:16 +0200
-Subject: [PATCH 649/705] tests/qtest: ina230: cover ALERT latch persistence
+Subject: [PATCH] tests/qtest: ina230: cover ALERT latch persistence
 
 In latch mode a Mask/Enable read releases the alert even while the
 fault is still present; verify it stays cleared until the next
@@ -135,5 +135,5 @@ index c5dc3ad148..944857412c 100644
      qos_add_test("alert-power", "ina230", test_alert_power, NULL);
      qos_add_test("cvrf", "ina230", test_cvrf, NULL);
 -- 
-2.50.1
+2.53.0-Meta
 

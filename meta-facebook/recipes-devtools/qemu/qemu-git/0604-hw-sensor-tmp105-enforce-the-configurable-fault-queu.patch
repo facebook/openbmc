@@ -1,8 +1,7 @@
-From 323fd0b84b499bed9f9e8a9984eac54acfde6545 Mon Sep 17 00:00:00 2001
+From b76f22a68224a1ba9538cf0077fb62ebb4d3a930 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:03 +0200
-Subject: [PATCH 604/625] hw/sensor: tmp105: enforce the configurable fault
- queue
+Subject: [PATCH] hw/sensor: tmp105: enforce the configurable fault queue
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -25,7 +24,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 55 insertions(+), 32 deletions(-)
 
 diff --git a/hw/sensor/tmp105.c b/hw/sensor/tmp105.c
-index f7d0c738caa..5c77f991cc2 100644
+index f7d0c738ca..5c77f991cc 100644
 --- a/hw/sensor/tmp105.c
 +++ b/hw/sensor/tmp105.c
 @@ -54,6 +54,7 @@ struct TMP105State {
@@ -179,5 +178,5 @@ index f7d0c738caa..5c77f991cc2 100644
      s->detect_falling = false;
  
 -- 
-2.50.1
+2.53.0-Meta
 

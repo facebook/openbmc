@@ -1,8 +1,8 @@
-From 384842e92d629a0e9ddd1b694c26ffde5bb4f5f8 Mon Sep 17 00:00:00 2001
+From 06fd0b06995737d8ff4e1febfed38f6344a5b8f7 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:16 +0200
-Subject: [PATCH 617/625] tests/functional: give the set_machine probe VM the
- test workdir
+Subject: [PATCH] tests/functional: give the set_machine probe VM the test
+ workdir
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -22,7 +22,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/tests/functional/qemu_test/testcase.py b/tests/functional/qemu_test/testcase.py
-index e4179d165c0..ed861709e10 100644
+index 69d3d06cc0..b0474a3113 100644
 --- a/tests/functional/qemu_test/testcase.py
 +++ b/tests/functional/qemu_test/testcase.py
 @@ -317,7 +317,7 @@ def set_machine(self, machinename):
@@ -35,5 +35,5 @@ index e4179d165c0..ed861709e10 100644
  
              try:
 -- 
-2.50.1
+2.53.0-Meta
 

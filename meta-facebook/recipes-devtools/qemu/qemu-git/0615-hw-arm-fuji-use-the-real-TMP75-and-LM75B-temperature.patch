@@ -1,8 +1,8 @@
-From 8cb2cf0dc0e6de787e309f3f454ea4082b054f34 Mon Sep 17 00:00:00 2001
+From d374fd2b8592840a8bd492b6a96e647a6c3c64ff Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:14 +0200
-Subject: [PATCH 615/625] hw/arm: fuji: use the real TMP75 and LM75B
- temperature sensors
+Subject: [PATCH] hw/arm: fuji: use the real TMP75 and LM75B temperature
+ sensors
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -75,5 +75,5 @@ index e5aca6f0c0..a5e9ddd695 100644
      i2c_slave_create_simple(i2c[51], TYPE_TMP75, 0x48);
      i2c_slave_create_simple(i2c[52], TYPE_TMP75, 0x49);
 -- 
-2.50.1
+2.53.0-Meta
 

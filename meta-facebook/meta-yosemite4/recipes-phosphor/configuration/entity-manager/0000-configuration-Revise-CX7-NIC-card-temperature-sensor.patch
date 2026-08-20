@@ -1,4 +1,4 @@
-From 28761c83e91c21a3cd19c2c846e0683330661e75 Mon Sep 17 00:00:00 2001
+From 8be9af1d3532fc51d477c08caeaf0724decf59fe Mon Sep 17 00:00:00 2001
 From: RickyWu-wiwynn <ricky_cx_wu@wiwynn.com>
 Date: Wed, 17 Jul 2024 11:06:18 +0800
 Subject: [PATCH] configuration: Revise CX7 NIC card temperature sensor
@@ -55,5 +55,5 @@ index 3f11519..9403a23 100644
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
 -- 
-2.52.0
+2.53.0-Meta
 

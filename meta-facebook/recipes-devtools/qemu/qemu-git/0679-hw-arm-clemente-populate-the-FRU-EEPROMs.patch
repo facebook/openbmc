@@ -1,7 +1,7 @@
-From 48c393a69c90c746a05b1c88aa721704b7314040 Mon Sep 17 00:00:00 2001
+From b932b75b9c186a129401d91983598b8629a9ae0f Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 12 Aug 2026 16:07:13 +0200
-Subject: [PATCH 679/705] hw/arm: clemente: populate the FRU EEPROMs
+Subject: [PATCH] hw/arm: clemente: populate the FRU EEPROMs
 
 Back 24 of the 27 FRU EEPROMs with images read from hardware, so guest
 firmware can identify the HPMs, the CPU and boot drives, the SCM, BSM,
@@ -1111,5 +1111,5 @@ index 67b7b28675..3560c6105e 100644
  
  static void aspeed_machine_clemente_class_init(ObjectClass *oc,
 -- 
-2.50.1
+2.53.0-Meta
 

@@ -1,7 +1,7 @@
-From 5caa72c71770a4c0fd2053b3be9e8dd44aa17ff3 Mon Sep 17 00:00:00 2001
+From 5e0c0512096af8b471aee819bc119dfd4e9002b5 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:18 +0200
-Subject: [PATCH 619/625] tests/functional: add a device-locator self-check
+Subject: [PATCH] tests/functional: add a device-locator self-check
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -25,7 +25,7 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  create mode 100644 tests/functional/arm/test_device_locator.py
 
 diff --git a/tests/functional/arm/meson.build b/tests/functional/arm/meson.build
-index 61b00932db9..bb78dcf3e47 100644
+index 61b00932db..bb78dcf3e4 100644
 --- a/tests/functional/arm/meson.build
 +++ b/tests/functional/arm/meson.build
 @@ -29,6 +29,7 @@ test_arm_timeouts = {
@@ -38,7 +38,7 @@ index 61b00932db9..bb78dcf3e47 100644
  
 diff --git a/tests/functional/arm/test_device_locator.py b/tests/functional/arm/test_device_locator.py
 new file mode 100644
-index 00000000000..3807a493618
+index 0000000000..3807a49361
 --- /dev/null
 +++ b/tests/functional/arm/test_device_locator.py
 @@ -0,0 +1,120 @@
@@ -163,5 +163,5 @@ index 00000000000..3807a493618
 +if __name__ == '__main__':
 +    QemuSystemTest.main()
 -- 
-2.50.1
+2.53.0-Meta
 

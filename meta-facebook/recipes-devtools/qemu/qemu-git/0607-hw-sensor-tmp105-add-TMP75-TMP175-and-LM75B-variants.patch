@@ -1,8 +1,7 @@
-From 2297817cfc940cbaa9832719dde981fcde4d6d11 Mon Sep 17 00:00:00 2001
+From 245cdeff49e89e9d9ba25d86840032465a97bfcf Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:06 +0200
-Subject: [PATCH 607/625] hw/sensor: tmp105: add TMP75, TMP175 and LM75B
- variants
+Subject: [PATCH] hw/sensor: tmp105: add TMP75, TMP175 and LM75B variants
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -25,12 +24,12 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
 Link: https://lore.kernel.org/qemu-devel/20260731-sanmiguel-bmc-locator-v2-7-1266926ba769@free.fr
 Signed-off-by: Cédric Le Goater <clg@redhat.com>
 ---
- hw/sensor/tmp105.c         | 176 ++++++++++++++++++++++++++++++-------
+ hw/sensor/tmp105.c         | 172 ++++++++++++++++++++++++++++++-------
  include/hw/sensor/tmp105.h |   6 +-
- 2 files changed, 148 insertions(+), 34 deletions(-)
+ 2 files changed, 146 insertions(+), 32 deletions(-)
 
 diff --git a/hw/sensor/tmp105.c b/hw/sensor/tmp105.c
-index fefa6617117..ece0650d703 100644
+index fefa661711..ece0650d70 100644
 --- a/hw/sensor/tmp105.c
 +++ b/hw/sensor/tmp105.c
 @@ -1,5 +1,5 @@
@@ -157,17 +156,17 @@ index fefa6617117..ece0650d703 100644
 +            if (FIELD_EX8(config, CONFIG, THERMOSTAT_MODE)) {
 +                s->alarm = 0;
 +            }
-         }
--        s->config = FIELD_DP8(s->buf[0], CONFIG, ONE_SHOT, 0);
--        s->faults = tmp105_faultq[FIELD_EX8(s->config, CONFIG, FAULT_QUEUE)];
--        if (FIELD_EX8(s->buf[0], CONFIG, ONE_SHOT) &&
--            FIELD_EX8(s->config, CONFIG, SHUTDOWN_MODE)) {
++        }
 +        if (tc->tm_change_clears_alert &&
 +            FIELD_EX8(config ^ s->config, CONFIG, THERMOSTAT_MODE)) {
 +            s->alarm = 0;
 +            s->fault_count = 0;
 +            s->detect_falling = false;
-+        }
+         }
+-        s->config = FIELD_DP8(s->buf[0], CONFIG, ONE_SHOT, 0);
+-        s->faults = tmp105_faultq[FIELD_EX8(s->config, CONFIG, FAULT_QUEUE)];
+-        if (FIELD_EX8(s->buf[0], CONFIG, ONE_SHOT) &&
+-            FIELD_EX8(s->config, CONFIG, SHUTDOWN_MODE)) {
 +        waking = FIELD_EX8(s->config & ~config, CONFIG, SHUTDOWN_MODE);
 +        one_shot = FIELD_EX8(config, CONFIG, ONE_SHOT);
 +        s->config = FIELD_DP8(config, CONFIG, ONE_SHOT, 0);
@@ -250,12 +249,20 @@ index fefa6617117..ece0650d703 100644
 +    tc->fixed_res = -1;
 +    tc->limit_lsb_mask = 0xf0;
 +    tc->tm_change_clears_alert = false;
-+}
-+
+ }
+ 
+-static const TypeInfo tmp105_info = {
+-    .name          = TYPE_TMP105,
+-    .parent        = TYPE_I2C_SLAVE,
+-    .instance_size = sizeof(TMP105State),
+-    .instance_init = tmp105_initfn,
+-    .class_init    = tmp105_class_init,
+-};
 +static void tmp175_class_init(ObjectClass *klass, const void *data)
 +{
 +    TMP105Class *tc = TMP105_CLASS(klass);
-+
+ 
+-static void tmp105_register_types(void)
 +    tc->faultq = tmp105_faultq[0];
 +    tc->config_wmask = 0xff;
 +    tc->fixed_res = -1;
@@ -264,7 +271,8 @@ index fefa6617117..ece0650d703 100644
 +}
 +
 +static void tmp75_class_init(ObjectClass *klass, const void *data)
-+{
+ {
+-    type_register_static(&tmp105_info);
 +    TMP105Class *tc = TMP105_CLASS(klass);
 +
 +    tc->faultq = tmp105_faultq[1];
@@ -272,8 +280,9 @@ index fefa6617117..ece0650d703 100644
 +    tc->fixed_res = -1;
 +    tc->limit_lsb_mask = 0xf0;
 +    tc->tm_change_clears_alert = true;
-+}
-+
+ }
+ 
+-type_init(tmp105_register_types)
 +static void lm75b_class_init(ObjectClass *klass, const void *data)
 +{
 +    TMP105Class *tc = TMP105_CLASS(klass);
@@ -283,14 +292,8 @@ index fefa6617117..ece0650d703 100644
 +    tc->fixed_res = 2;
 +    tc->limit_lsb_mask = 0x80;
 +    tc->tm_change_clears_alert = false;
- }
- 
--static const TypeInfo tmp105_info = {
--    .name          = TYPE_TMP105,
--    .parent        = TYPE_I2C_SLAVE,
--    .instance_size = sizeof(TMP105State),
--    .instance_init = tmp105_initfn,
--    .class_init    = tmp105_class_init,
++}
++
 +static const TypeInfo tmp105_types[] = {
 +    {
 +        .name          = TYPE_TMP105,
@@ -315,17 +318,11 @@ index fefa6617117..ece0650d703 100644
 +        .parent        = TYPE_TMP105,
 +        .class_init    = lm75b_class_init,
 +    },
- };
- 
--static void tmp105_register_types(void)
--{
--    type_register_static(&tmp105_info);
--}
--
--type_init(tmp105_register_types)
++};
++
 +DEFINE_TYPES(tmp105_types)
 diff --git a/include/hw/sensor/tmp105.h b/include/hw/sensor/tmp105.h
-index daece592e9b..0698aeead78 100644
+index daece592e9..0698aeead7 100644
 --- a/include/hw/sensor/tmp105.h
 +++ b/include/hw/sensor/tmp105.h
 @@ -1,5 +1,5 @@
@@ -347,5 +344,5 @@ index daece592e9b..0698aeead78 100644
  
  #endif
 -- 
-2.50.1
+2.53.0-Meta
 

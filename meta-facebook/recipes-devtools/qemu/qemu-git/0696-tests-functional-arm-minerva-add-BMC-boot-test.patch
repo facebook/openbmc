@@ -1,7 +1,7 @@
-From e1c4ff863064a4755680d8df3ac6b154c67ddca6 Mon Sep 17 00:00:00 2001
+From 72aca98fd05d2e182ad200e6dbd2cd7930536ace Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 10:45:21 +0200
-Subject: [PATCH 696/705] tests/functional/arm: minerva: add BMC boot test
+Subject: [PATCH] tests/functional/arm: minerva: add BMC boot test
 
 Add a functional test booting the Facebook Minerva BMC machine.
 
@@ -73,5 +73,5 @@ index 0000000000..925a82b139
 +if __name__ == '__main__':
 +    AspeedTest.main()
 -- 
-2.50.1
+2.53.0-Meta
 

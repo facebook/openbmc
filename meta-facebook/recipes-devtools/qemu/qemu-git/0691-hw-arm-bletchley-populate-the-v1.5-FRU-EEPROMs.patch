@@ -1,7 +1,7 @@
-From ff17923b5280120ea0bfffde2e783058445b61f2 Mon Sep 17 00:00:00 2001
+From b15b134fb9b8f8d2bd50274ac2322fb037f892e1 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 17:23:08 +0200
-Subject: [PATCH 691/705] hw/arm: bletchley: populate the v1.5 FRU EEPROMs
+Subject: [PATCH] hw/arm: bletchley: populate the v1.5 FRU EEPROMs
 
 Add the v1.5 image set, so "board-revision" now yields two distinct
 FRU layouts.
@@ -321,5 +321,5 @@ index d894655864..551bafea36 100644
      I2CBus *i2c[13] = {};
      for (int i = 0; i < 13; i++) {
 -- 
-2.50.1
+2.53.0-Meta
 

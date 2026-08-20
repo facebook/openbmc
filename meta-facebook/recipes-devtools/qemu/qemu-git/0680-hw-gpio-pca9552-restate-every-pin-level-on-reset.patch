@@ -1,7 +1,7 @@
-From 2149247ab9532424686be3c00a250cfe3c9eb495 Mon Sep 17 00:00:00 2001
+From 3bd62a5946028d24f96e3ac79c315b6284bb15d6 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 14 Aug 2026 15:26:36 +0200
-Subject: [PATCH 680/705] hw/gpio: pca9552: restate every pin level on reset
+Subject: [PATCH] hw/gpio: pca9552: restate every pin level on reset
 
 A GPIO line carries no state its consumer can read back: the far end
 knows only what it was last told. The pin update drives a line solely
@@ -99,5 +99,5 @@ index 719149b717..67274ad815 100644
      }
  }
 -- 
-2.50.1
+2.53.0-Meta
 

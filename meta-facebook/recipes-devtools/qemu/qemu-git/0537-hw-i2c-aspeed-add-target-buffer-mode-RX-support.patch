@@ -17,7 +17,12 @@ driver arms I2CS_CMD.RX_BUFF_EN, which is what lets a transfer exceed the 16 byt
 pool. The STOP interrupt omits SLAVE_ADDR_RX_MATCH because
 ast2600_i2c_target_packet_buff_irq() has no case for SLAVE_MATCH|RX_DONE|STOP.
 
-Two supporting fixes: clear WAIT_TX/RX_DMA when the guest W1Cs PKT_CMD_DONE, as a
+WAIT_RX_DMA gates that withheld ACK, so it is not a write-to-clear status bit
+like the rest of the low word: only arming RX_BUFF_EN or ending the transfer may
+clear it. Clearing it while the ACK is still owed strands the initiator
+mid-transfer and every later master transfer on the bus fails with -EBUSY.
+
+Two supporting fixes: clear WAIT_TX_DMA when the guest W1Cs PKT_CMD_DONE, as a
 stale flag is decoded as part of the next target interrupt; and return the real
 I2CM_CMD register on read instead of -1, since the target ISR checks it for an
 in-flight master command and all ones aborted every master transfer with -EBUSY.
@@ -26,12 +31,12 @@ DMA mode target RX is unchanged.
 
 Signed-off-by: Zinc Lim <zinclim@meta.com>
 ---
- hw/i2c/aspeed_i2c.c         | 139 ++++++++++++++++++++++++++++++------
- include/hw/i2c/aspeed_i2c.h |   4 ++
- 2 files changed, 121 insertions(+), 22 deletions(-)
+ hw/i2c/aspeed_i2c.c         | 142 ++++++++++++++++++++++++++++++------
+ include/hw/i2c/aspeed_i2c.h |   4 +
+ 2 files changed, 124 insertions(+), 22 deletions(-)
 
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index d358616b11..3d91e479e4 100644
+index d358616b11..f82775a210 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
 @@ -170,6 +170,7 @@ static uint64_t aspeed_i2c_bus_new_read(AspeedI2CBus *bus, hwaddr offset,
@@ -57,20 +62,25 @@ index d358616b11..3d91e479e4 100644
          break;
      case A_I2CS_INTR_CTRL:
          bus->regs[R_I2CS_INTR_CTRL] = value;
-@@ -898,7 +907,11 @@ static void aspeed_i2c_bus_new_write(AspeedI2CBus *bus, hwaddr offset,
+@@ -898,9 +907,16 @@ static void aspeed_i2c_bus_new_write(AspeedI2CBus *bus, hwaddr offset,
          if (ARRAY_FIELD_EX32(bus->regs, I2CS_INTR_CTRL, PKT_CMD_DONE)) {
              if (ARRAY_FIELD_EX32(bus->regs, I2CS_INTR_STS, PKT_CMD_DONE) &&
                  FIELD_EX32(value, I2CS_INTR_STS, PKT_CMD_DONE)) {
 -                bus->regs[R_I2CS_INTR_STS] &= 0xfffc0000;
 +                /*
-+                 * Also clears WAIT_TX/RX_DMA: a stale flag would be decoded
-+                 * as part of the next target interrupt.
++                 * Also clears WAIT_TX_DMA, but not WAIT_RX_DMA: it gates the
++                 * bus ACK withheld in A_I2CS_CMD, so only arming RX_BUFF_EN
++                 * or ending the transfer may clear it.
 +                 */
-+                bus->regs[R_I2CS_INTR_STS] &= 0xfcfc0000;
++                bus->regs[R_I2CS_INTR_STS] &= 0xfdfc0000;
              }
          } else {
++            /* Same invariant on the explicit write-to-clear path. */
++            value &= ~R_I2CS_INTR_STS_WAIT_RX_DMA_MASK;
              bus->regs[R_I2CS_INTR_STS] &= ~value;
-@@ -1477,33 +1490,119 @@ static const char *I2C_EVENT[] = {
+         }
+         if (!bus->regs[R_I2CS_INTR_STS]) {
+@@ -1477,33 +1493,119 @@ static const char *I2C_EVENT[] = {
      [I2C_FINISH] = "I2C_FINISH",
  };
  
@@ -202,7 +212,7 @@ index d358616b11..3d91e479e4 100644
          aspeed_i2c_bus_raise_slave_interrupt(bus);
          break;
      default:
-@@ -1562,15 +1661,11 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
+@@ -1562,15 +1664,11 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
  
  static void aspeed_i2c_bus_new_slave_send_async(AspeedI2CBus *bus, uint8_t data)
  {

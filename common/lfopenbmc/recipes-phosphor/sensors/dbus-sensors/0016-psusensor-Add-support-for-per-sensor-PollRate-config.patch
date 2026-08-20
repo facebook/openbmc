@@ -1,4 +1,4 @@
-From 5523a74aeb58f6d6d22a1298e13c5a51e51bcb2f Mon Sep 17 00:00:00 2001
+From 3c13fcbdb6060b332763941297577fd598030848 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 2 Sep 2025 10:07:42 +0800
 Subject: [PATCH] psusensor: Add support for per-sensor PollRate config
@@ -23,10 +23,10 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  1 file changed, 13 insertions(+)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 6cb4e03..f4b8d54 100644
+index 85bf392..a085685 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -1087,6 +1087,7 @@ static void createSensorsCallback(
+@@ -1089,6 +1089,7 @@ static void createSensorsCallback(
              std::string keyOffset = labelHead + "_Offset";
              std::string keyPowerState = labelHead + "_PowerState";
              std::string keyShuntResistor = labelHead + "_ShuntResistorInOhms";
@@ -34,7 +34,7 @@ index 6cb4e03..f4b8d54 100644
  
              bool customizedName = false;
              auto findCustomName = baseConfig->find(keyName);
-@@ -1200,6 +1201,18 @@ static void createSensorsCallback(
+@@ -1202,6 +1203,18 @@ static void createSensorsCallback(
                  continue;
              }
  

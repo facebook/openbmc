@@ -1,4 +1,4 @@
-From 52668949cc06980db0a9d9919aa0cab30863f586 Mon Sep 17 00:00:00 2001
+From 07f73317ce185133f7b7ad37af0943c6d5e98650 Mon Sep 17 00:00:00 2001
 From: Richard Yang <richard.yang@amd.com>
 Date: Mon, 27 Jul 2026 17:16:09 +0800
 Subject: [PATCH] nvmesensor: implement in-place threshold updates to preserve
@@ -175,5 +175,5 @@ index f4e2e49..3612d7e 100644
  
  void createSensors(boost::asio::io_context& io,
 -- 
-2.43.0
+2.53.0-Meta
 

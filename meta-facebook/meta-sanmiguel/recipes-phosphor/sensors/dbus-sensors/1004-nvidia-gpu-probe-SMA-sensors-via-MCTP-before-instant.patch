@@ -1,4 +1,4 @@
-From 775a82ee047a03a28e991a4e5ebad4eedbb3800d Mon Sep 17 00:00:00 2001
+From d97098fe33ae43c1cda6eb8f0da830bec3dc6976 Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Tue, 23 Jun 2026 16:06:39 +0800
 Subject: [PATCH] nvidia-gpu: probe SMA sensors via MCTP before instantiation
@@ -26,7 +26,7 @@ Signed-off-by: Mike Hsieh <mike_hsieh@quantatw.com>
  1 file changed, 132 insertions(+), 22 deletions(-)
 
 diff --git a/src/nvidia-gpu/NvidiaSmaDevice.cpp b/src/nvidia-gpu/NvidiaSmaDevice.cpp
-index 0dccaa8..f5c3acf 100644
+index 11a341a..12029ac 100644
 --- a/src/nvidia-gpu/NvidiaSmaDevice.cpp
 +++ b/src/nvidia-gpu/NvidiaSmaDevice.cpp
 @@ -15,15 +15,19 @@

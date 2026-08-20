@@ -1,4 +1,4 @@
-From d8536e1e8bade587f51344ab414037a07e293a65 Mon Sep 17 00:00:00 2001
+From bf1698a64eb2631a629ff66575e8ce82bc0e1395 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Sat, 2 May 2026 22:46:03 +0800
 Subject: [PATCH] Add NVMeMI sensor service

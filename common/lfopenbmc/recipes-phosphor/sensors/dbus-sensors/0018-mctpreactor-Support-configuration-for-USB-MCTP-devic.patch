@@ -1,4 +1,4 @@
-From dbca9d83fd05266f591385a196692d371306ef0e Mon Sep 17 00:00:00 2001
+From b20ed750aa439c6d81e0bd551b7b23bf4b061bc6 Mon Sep 17 00:00:00 2001
 From: Saptarsi Saha <saptarsis@nvidia.com>
 Date: Tue, 20 May 2025 21:38:37 +0530
 Subject: [PATCH] mctpreactor: Support configuration for USB MCTP devices
@@ -25,7 +25,7 @@ Signed-off-by: Deepak Kodihalli <deepak.kodihalli.83@gmail.com>
  3 files changed, 241 insertions(+), 2 deletions(-)
 
 diff --git a/src/mctp/MCTPEndpoint.cpp b/src/mctp/MCTPEndpoint.cpp
-index 93eea5e..76764aa 100644
+index efa2898..53a3e50 100644
 --- a/src/mctp/MCTPEndpoint.cpp
 +++ b/src/mctp/MCTPEndpoint.cpp
 @@ -21,13 +21,17 @@

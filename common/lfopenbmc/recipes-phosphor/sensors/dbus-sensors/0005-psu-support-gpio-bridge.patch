@@ -1,4 +1,4 @@
-From 8468024068836c51a6b500f096440e814b37a75a Mon Sep 17 00:00:00 2001
+From 612269eb6d21ecdf4cb014f2826a45b56c7437ed Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Mon, 19 May 2025 15:12:23 +0800
 Subject: [PATCH] psu: support gpio bridge
@@ -231,7 +231,7 @@ index b84e1ee..f758470 100644
      boost::asio::random_access_file inputDev;
      boost::asio::steady_timer waitTimer;
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 420496b..95a83c4 100644
+index e22fec8..bd4b525 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -31,6 +31,7 @@
@@ -250,15 +250,15 @@ index 420496b..95a83c4 100644
  #include <ranges>
  #include <regex>
  #include <stdexcept>
-@@ -64,6 +66,7 @@
- #include <vector>
- 
- static std::regex devRegex(R"((\/i[23]c\-\d+\/\d+-[a-fA-F0-9]{4,4})(\/|$))");
+@@ -66,6 +68,7 @@
+ // Greedy .* makes group 1 the last match; earlier ones are hubs or muxes.
+ static std::regex devRegex(
+     R"(^.*(\/i[23]c\-\d+\/\d+-[a-fA-F0-9]{4,12})(\/|$))");
 +static constexpr float gpioBridgeSetupTimeDefault = 1;
  
  static constexpr auto sensorTypes = std::to_array<
      std::pair<std::string_view, I2CDeviceType>>({
-@@ -384,6 +387,61 @@ static void checkPWMSensor(
+@@ -386,6 +389,61 @@ static void checkPWMSensor(
          name, pwmPathStr, dbusConnection, objectServer, objPath, "PSU");
  }
  
@@ -320,7 +320,7 @@ index 420496b..95a83c4 100644
  static void createSensorsCallback(
      boost::asio::io_context& io, sdbusplus::asio::object_server& objectServer,
      std::shared_ptr<sdbusplus::asio::connection>& dbusConnection,
-@@ -815,7 +873,6 @@ static void createSensorsCallback(
+@@ -817,7 +875,6 @@ static void createSensorsCallback(
                      "LABEL", labelHead);
                  continue;
              }
@@ -328,7 +328,7 @@ index 420496b..95a83c4 100644
              // Protect the hardcoded labelMatch list from changes,
              // by making a copy and modifying that instead.
              // Avoid bleedthrough of one device's customizations to
-@@ -1144,12 +1201,15 @@ static void createSensorsCallback(
+@@ -1146,12 +1203,15 @@ static void createSensorsCallback(
              }
              else
              {

@@ -1,4 +1,4 @@
-From f535bbfc8f484dfd39a9b451f3f59ef55007d32c Mon Sep 17 00:00:00 2001
+From cd44abe35b4aa88f7bed338bdfd153672c2839dd Mon Sep 17 00:00:00 2001
 From: Yang Chen <yang.chen@quantatw.com>
 Date: Wed, 23 Jul 2025 14:47:58 +0800
 Subject: [PATCH] PWMSensor: synchronize hardware PWM with D-Bus property

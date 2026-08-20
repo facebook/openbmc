@@ -1,4 +1,4 @@
-From 1186d982d82563c4a37bd2116cdc1e902d622def Mon Sep 17 00:00:00 2001
+From 5422b53f9b78354f90d320e8fdaf6d330042264d Mon Sep 17 00:00:00 2001
 From: Sandy Chu <sandy.chu.wiwynn@gmail.com>
 Date: Fri, 5 Jun 2026 08:12:59 +0000
 Subject: [PATCH] mctp: add PowerState check in MCTPReactor
@@ -32,7 +32,7 @@ Signed-off-by: Sandy Chu <sandy.chu.wiwynn@gmail.com>
  5 files changed, 57 insertions(+), 9 deletions(-)
 
 diff --git a/src/mctp/MCTPEndpoint.cpp b/src/mctp/MCTPEndpoint.cpp
-index 76764aa..3320d20 100644
+index 53a3e50..92cabe2 100644
 --- a/src/mctp/MCTPEndpoint.cpp
 +++ b/src/mctp/MCTPEndpoint.cpp
 @@ -48,8 +48,10 @@ static constexpr const char* mctpdEndpointControlInterface =

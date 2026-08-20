@@ -1,4 +1,4 @@
-From a7fa65c4f1bd8c78a6b069e713200c6d65e77c0b Mon Sep 17 00:00:00 2001
+From d0557e068d38e3afab16b3ef57f9defd21073923 Mon Sep 17 00:00:00 2001
 From: "eldin.lee" <eldin.lee@quantatw.com>
 Date: Wed, 9 Jul 2025 14:42:07 +0800
 Subject: [PATCH] Add delay before leak event log to prevent AC OFF glitches

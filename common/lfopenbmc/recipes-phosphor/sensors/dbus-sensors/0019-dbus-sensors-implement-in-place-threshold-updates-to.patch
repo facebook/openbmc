@@ -1,4 +1,4 @@
-From b4cda8d056891eade5391cbb0030228a5c995ed4 Mon Sep 17 00:00:00 2001
+From c7e8af6b8f270f37b9db07b8c69359403f97194d Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Tue, 12 May 2026 17:19:05 +0800
 Subject: [PATCH] dbus-sensors: implement in-place threshold updates to
@@ -257,7 +257,7 @@ index ac14147..0baca76 100644
              std::vector<thresholds::Threshold> sensorThresholds;
              if (!parseThresholdsFromConfig(*sensorData, sensorThresholds))
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
-index 7af815f..1237690 100644
+index 616c253..23549c4 100644
 --- a/src/hwmon-temp/HwmonTempMain.cpp
 +++ b/src/hwmon-temp/HwmonTempMain.cpp
 @@ -401,37 +401,42 @@ void createSensors(
@@ -323,7 +323,7 @@ index 7af815f..1237690 100644
                  std::vector<thresholds::Threshold> sensorThresholds;
  
                  if (!parseThresholdsFromConfig(sensorData, sensorThresholds,
-@@ -516,6 +521,32 @@ void createSensors(
+@@ -518,6 +523,32 @@ void createSensors(
                          }
  
                          auto& sensor = sensors[sensorName];
@@ -357,10 +357,10 @@ index 7af815f..1237690 100644
                          {
                              sensor = nullptr;
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index f4b8d54..fd293a1 100644
+index a085685..f8bc41d 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -1397,6 +1397,27 @@ static void createSensorsCallback(
+@@ -1399,6 +1399,27 @@ static void createSensorsCallback(
              // destruct existing one first if already created
  
              auto& sensor = sensors[sensorName];

@@ -1,4 +1,4 @@
-From e1c48d94e3d3621dd82913bb4e08e225b6bb74fb Mon Sep 17 00:00:00 2001
+From 102bf8f3ff7e9a2a43c2d644076131600aa13d8c Mon Sep 17 00:00:00 2001
 From: Freddie Jheng <Freddie.Jheng@quantatw.com>
 Date: Thu, 9 Jul 2026 14:38:45 +0800
 Subject: [PATCH] CableMonitor: increase reconcile delay to 60s

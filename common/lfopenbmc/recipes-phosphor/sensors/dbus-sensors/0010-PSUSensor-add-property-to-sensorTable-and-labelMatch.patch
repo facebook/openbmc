@@ -1,4 +1,4 @@
-From fc8f86b252d66ae7275020c80c0e24cc3f7402fa Mon Sep 17 00:00:00 2001
+From 137a3c9ea416187b75c476ef5032e46c2c01bb5b Mon Sep 17 00:00:00 2001
 From: Andy-Hsu-wiwynn <andy.hsu.wiwynn@gmail.com>
 Date: Fri, 15 Aug 2025 15:44:31 +0800
 Subject: [PATCH] PSUSensor:add property to sensorTable and labelMatch
@@ -21,10 +21,10 @@ Signed-off-by: Andy Hsu <andy.hsu.wiwynn@gmail.com>
  1 file changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 95a83c4..6de17fa 100644
+index bd4b525..a37457a 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -193,8 +193,9 @@ struct SensorUnit
+@@ -195,8 +195,9 @@ struct SensorUnit
      auto operator<=>(const SensorUnit&) const = default;
  };
  
@@ -35,7 +35,7 @@ index 95a83c4..6de17fa 100644
      {"fan", sensor_paths::unitRPMs},
      {"in", sensor_paths::unitVolts},
      {"power", sensor_paths::unitWatts},
-@@ -206,6 +207,8 @@ constexpr static auto labelMatch = std::to_array<PSUProperty>({
+@@ -208,6 +209,8 @@ constexpr static auto labelMatch = std::to_array<PSUProperty>({
      {"curr", "Output Current", 255, 0, 3, 0},
      {"fan", "Fan Speed ", 30000, 0, 0, 0},
      {"iin", "Input Current", 20, 0, 3, 0},

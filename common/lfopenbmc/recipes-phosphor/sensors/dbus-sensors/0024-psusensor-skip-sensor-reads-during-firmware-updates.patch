@@ -1,4 +1,4 @@
-From e1c519b3edbdf5b419f6e69ef1fd8c94227725cf Mon Sep 17 00:00:00 2001
+From 3fd8551d13e15c009028c2f4ed4151f3e7d833aa Mon Sep 17 00:00:00 2001
 From: Dirk Chen <dirkchen@amd.com>
 Date: Tue, 16 Jun 2026 17:12:58 +0800
 Subject: [PATCH] psusensor: skip sensor reads during firmware updates
@@ -15,10 +15,10 @@ Signed-off-by: Dirk Chen <dirkchen@amd.com>
  1 file changed, 1 insertion(+)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 2b8b169..3df3761 100644
+index c9c45f9..ff76a77 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -195,6 +195,7 @@ static constexpr auto firmwareTypes = std::to_array<std::string_view>({
+@@ -197,6 +197,7 @@ static constexpr auto firmwareTypes = std::to_array<std::string_view>({
      "MP297XFirmware",
      "MP5998Firmware",
      "MP994XFirmware",

@@ -1,4 +1,4 @@
-From 80ed55351112ecfda1e3eaade26167c9236565b0 Mon Sep 17 00:00:00 2001
+From 7027a2aabf68dc1abf376acce593031441d5f9ef Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Wed, 17 Sep 2025 15:12:11 -0700
 Subject: [PATCH] leakdetector: check event before event_read()

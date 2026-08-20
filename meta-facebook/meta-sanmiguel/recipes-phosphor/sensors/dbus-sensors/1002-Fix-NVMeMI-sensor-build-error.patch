@@ -1,4 +1,4 @@
-From d1dde3ddc99b01fee02e29fab5ddaf2fb1fc8b50 Mon Sep 17 00:00:00 2001
+From 9b0d74db531fbe858572b954687aeec7cf5dce16 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Sat, 2 May 2026 22:53:06 +0800
 Subject: [PATCH] Fix NVMeMI sensor build error
@@ -25,7 +25,7 @@ index cea7974..de85bda 100644
      NVMeSensor(sdbusplus::asio::object_server& objectServer,
                 boost::asio::io_context& io,
 diff --git a/src/nvmemi/NVMeMiSensorMain.cpp b/src/nvmemi/NVMeMiSensorMain.cpp
-index 9bb6e54..bb03e94 100644
+index db46737..8fb62dd 100644
 --- a/src/nvmemi/NVMeMiSensorMain.cpp
 +++ b/src/nvmemi/NVMeMiSensorMain.cpp
 @@ -46,7 +46,7 @@ extern "C"
@@ -65,7 +65,7 @@ index 9bb6e54..bb03e94 100644
              eventHandler);
  
 diff --git a/src/nvmemi/NVMeMiStatusSensor.cpp b/src/nvmemi/NVMeMiStatusSensor.cpp
-index c25fbc0..0f86f9a 100644
+index 9bd071a..f1fca90 100644
 --- a/src/nvmemi/NVMeMiStatusSensor.cpp
 +++ b/src/nvmemi/NVMeMiStatusSensor.cpp
 @@ -39,6 +39,9 @@
@@ -136,5 +136,5 @@ index c25fbc0..0f86f9a 100644
 +    // }
  }
 -- 
-2.52.0
+2.53.0-Meta
 

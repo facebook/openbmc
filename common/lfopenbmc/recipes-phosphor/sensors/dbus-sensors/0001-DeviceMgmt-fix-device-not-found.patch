@@ -1,4 +1,4 @@
-From 99ffb5709deba56d7a8111574b8d15249c744923 Mon Sep 17 00:00:00 2001
+From 5a4af672967916dc391cc157b656dbbcc4fa46cc Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <cosmo.chou@quantatw.com>
 Date: Tue, 31 Dec 2024 14:39:48 +0800
 Subject: [PATCH] DeviceMgmt: fix device not found

@@ -1,4 +1,4 @@
-From e619c7ea9998048c5d1e435c9ab00aea788315bc Mon Sep 17 00:00:00 2001
+From fd09d12c9516cae0b52674526f6e92cf2a0b26b9 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <cosmo.chou@quantatw.com>
 Date: Wed, 24 Sep 2025 11:35:31 +0800
 Subject: [PATCH] psusensor: skip sensor reads during firmware updates
@@ -296,7 +296,7 @@ index f758470..8599826 100644
      static constexpr size_t warnAfterErrorCount = 10;
  
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index 6de17fa..f3920c8 100644
+index a37457a..6dfb57d 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -61,6 +61,7 @@
@@ -307,7 +307,7 @@ index 6de17fa..f3920c8 100644
  #include <utility>
  #include <variant>
  #include <vector>
-@@ -179,6 +180,21 @@ struct DevParams
+@@ -181,6 +182,21 @@ struct DevParams
      std::string_view nameRegEx;
  };
  
@@ -329,7 +329,7 @@ index 6de17fa..f3920c8 100644
  static boost::container::flat_map<std::string, std::shared_ptr<PSUSensor>>
      sensors;
  static boost::container::flat_map<std::string, std::unique_ptr<PSUCombineEvent>>
-@@ -241,6 +257,18 @@ constexpr static auto devParamMap =
+@@ -243,6 +259,18 @@ constexpr static auto devParamMap =
           {DevTypes::IIO,
            {2, R"(\w+_(raw|input)$)", "^(in|out)_([A-Za-z]+)[0-9]*_"}}});
  
@@ -348,7 +348,7 @@ index 6de17fa..f3920c8 100644
  // Function CheckEvent will check each attribute from eventMatch table in the
  // sysfs. If the attributes exists in sysfs, then store the complete path
  // of the attribute into eventPathList.
-@@ -390,6 +418,118 @@ static void checkPWMSensor(
+@@ -392,6 +420,118 @@ static void checkPWMSensor(
          name, pwmPathStr, dbusConnection, objectServer, objPath, "PSU");
  }
  
@@ -467,7 +467,7 @@ index 6de17fa..f3920c8 100644
  std::optional<BridgeGpio> parseBridgeGpioFromConfig(
      const SensorData& sensorData, const std::string* label)
  {
-@@ -458,6 +598,41 @@ static void createSensorsCallback(
+@@ -460,6 +600,41 @@ static void createSensorsCallback(
  
      auto devices = instantiateDevices(sensorConfigs, sensors, sensorTypes);
  
@@ -509,7 +509,7 @@ index 6de17fa..f3920c8 100644
      std::vector<std::filesystem::path> pmbusPaths;
      findFiles(std::filesystem::path("/sys/bus/iio/devices"), "name",
                pmbusPaths);
-@@ -687,6 +862,20 @@ static void createSensorsCallback(
+@@ -689,6 +864,20 @@ static void createSensorsCallback(
              findPSUName = baseConfig->find("Name" + std::to_string(i++));
          } while (findPSUName != baseConfig->end());
  
@@ -530,7 +530,7 @@ index 6de17fa..f3920c8 100644
          std::vector<std::filesystem::path> sensorPaths;
          const auto* param = std::find_if(
              devParamMap.begin(), devParamMap.end(),
-@@ -1213,6 +1402,16 @@ static void createSensorsCallback(
+@@ -1215,6 +1404,16 @@ static void createSensorsCallback(
                      readState, sensorUnits, factor, maxReading, minReading,
                      sensorOffset, labelHead, thresholdConfSize, pollRate,
                      i2cDev, std::move(bridgeGpio));
@@ -547,7 +547,7 @@ index 6de17fa..f3920c8 100644
                  sensors[sensorName]->setupRead();
                  ++numCreated;
                  lg2::debug("Created '{NUM}' sensors so far", "NUM", numCreated);
-@@ -1227,7 +1426,7 @@ static void createSensorsCallback(
+@@ -1229,7 +1428,7 @@ static void createSensorsCallback(
                  std::make_unique<PSUCombineEvent>(
                      objectServer, dbusConnection, io, *psuName, readState,
                      eventPathList, groupEventPathList, "OperationalStatus",
@@ -556,7 +556,7 @@ index 6de17fa..f3920c8 100644
          }
      }
  
-@@ -1316,11 +1515,15 @@ void createSensors(
+@@ -1318,11 +1517,15 @@ void createSensors(
                                    sensorConfigs, sensorsChanged, activateOnly);
          });
      std::vector<std::string_view> types;
@@ -573,7 +573,7 @@ index 6de17fa..f3920c8 100644
      getter->getConfiguration(types);
  }
  
-@@ -1447,8 +1650,18 @@ int main()
+@@ -1449,8 +1652,18 @@ int main()
              });
          };
  
@@ -593,7 +593,7 @@ index 6de17fa..f3920c8 100644
  
      matches.emplace_back(std::make_unique<sdbusplus::match>(
          static_cast<sdbusplus::bus_t&>(*systemBus),
-@@ -1459,6 +1672,9 @@ int main()
+@@ -1461,6 +1674,9 @@ int main()
  
      getPresentCpus(systemBus);
  

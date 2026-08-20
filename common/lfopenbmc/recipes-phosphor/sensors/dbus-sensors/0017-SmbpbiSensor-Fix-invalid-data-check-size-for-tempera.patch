@@ -1,4 +1,4 @@
-From 6f48b5c1584d0d19ce0c95ade55d2c21ce1c2a06 Mon Sep 17 00:00:00 2001
+From 3bfc2c3677d1c824e35f8a7afe0d28af5d53d2e3 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Fri, 20 Mar 2026 13:29:18 +0800
 Subject: [PATCH] SmbpbiSensor: Fix invalid data check size for temperature

@@ -1,4 +1,4 @@
-From f40bec7a15873acd749a35c968d63db201a29e5f Mon Sep 17 00:00:00 2001
+From 356bcdb2b20b83472a241eeae00417d287e4a33a Mon Sep 17 00:00:00 2001
 From: Fred Chen <Fred.Chen@quantatw.com>
 Date: Thu, 23 Jul 2026 20:03:45 +0800
 Subject: [PATCH] PSUSensor: add ADI MAX20912 and MAX20916 support
@@ -24,10 +24,10 @@ Signed-off-by: Fred Chen <Fred.Chen@quantatw.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index fd293a1..ba866f7 100644
+index f8bc41d..c9c45f9 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -120,6 +120,8 @@ static constexpr auto sensorTypes = std::to_array<
+@@ -122,6 +122,8 @@ static constexpr auto sensorTypes = std::to_array<
      {"MAX20730", I2CDeviceType{"max20730", true}},
      {"MAX20734", I2CDeviceType{"max20734", true}},
      {"MAX20796", I2CDeviceType{"max20796", true}},
@@ -37,5 +37,5 @@ index fd293a1..ba866f7 100644
      {"MP2856", I2CDeviceType{"mp2856", true}},
      {"MP2857", I2CDeviceType{"mp2857", true}},
 -- 
-2.39.3
+2.53.0-Meta
 

@@ -205,6 +205,7 @@ SRC_URI:append = " \
            file://0703-tests-functional-arm-bletchley-cover-the-v1.5-board-.patch \
            file://0704-tests-functional-arm-harma-add-BMC-boot-test.patch \
            file://0705-tests-functional-arm-ventura-add-BMC-boot-test.patch \
+           file://0706-hw-i2c-aspeed_i2c-only-raise-the-target-IRQ-for-enab.patch \
            "
 
 QEMU_CHECKOUT_DIR = "${BPN}-${PV}"

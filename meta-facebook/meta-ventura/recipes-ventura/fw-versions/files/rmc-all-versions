@@ -10,8 +10,8 @@ busctl set-property \
     xyz.openbmc_project.Software.Version \
     Version "s" "$version"
 
-CFG0_version=$(cpld-fw-handler version -i i2c -b 14 -a 0x40 --target CFG0| awk '{print $NF}')
-CFG1_version=$(cpld-fw-handler version -i i2c -b 14 -a 0x40 --target CFG1| awk '{print $NF}')
+CFG0_version=$(cpld-fw-handler version -i i2c -b 14 -a 0x40 -c LCMXO3D-9400 --target CFG0| awk '{print $NF}')
+CFG1_version=$(cpld-fw-handler version -i i2c -b 14 -a 0x40 -c LCMXO3D-9400 --target CFG1| awk '{print $NF}')
 
 busctl set-property \
     xyz.openbmc_project.Settings \

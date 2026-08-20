@@ -1,4 +1,4 @@
-From f5c8d53833fb84c609749f80eb2112a3df85441e Mon Sep 17 00:00:00 2001
+From 38bbd7520901ee77be31c5d15f31bad308de3124 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Tue, 26 May 2026 10:01:20 +0800
 Subject: [PATCH] aspeed: i2c: add i2c-clk-high-min-percent property
@@ -25,10 +25,10 @@ Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
  1 file changed, 71 insertions(+), 24 deletions(-)
 
 diff --git a/drivers/i2c/busses/i2c-ast2600.c b/drivers/i2c/busses/i2c-ast2600.c
-index cce89f2d4ec4..956f2c623c75 100644
+index b87d881caef1..772bd9fc48ee 100644
 --- a/drivers/i2c/busses/i2c-ast2600.c
 +++ b/drivers/i2c/busses/i2c-ast2600.c
-@@ -345,6 +345,7 @@ struct ast2600_i2c_bus {
+@@ -352,6 +352,7 @@ struct ast2600_i2c_bus {
  	u32					debounce_level;
  	u32					manual_min_high;
  	u32					manual_data_hold;
@@ -36,7 +36,7 @@ index cce89f2d4ec4..956f2c623c75 100644
  	/* Buffer mode */
  	void __iomem			*buf_base;
  	int (*setup_tx)(u32 cmd, struct ast2600_i2c_bus *i2c_bus);
-@@ -414,20 +415,31 @@ static void ast2600_i2c_ac_timing_config(struct ast2600_i2c_bus *i2c_bus)
+@@ -421,20 +422,31 @@ static void ast2600_i2c_ac_timing_config(struct ast2600_i2c_bus *i2c_bus)
  			   (((clk_div_reg >> ((i - 1) * 8)) & GENMASK(7, 0)) + 2);
  		else
  			base_clk[i] = base_clk[4] >> (i - 4);
@@ -76,7 +76,7 @@ index cce89f2d4ec4..956f2c623c75 100644
  
  	if (i2c_bus->manual_min_high) {
  		if (i2c_bus->manual_min_high > scl_high)
-@@ -446,7 +458,7 @@ static void ast2600_i2c_ac_timing_config(struct ast2600_i2c_bus *i2c_bus)
+@@ -453,7 +465,7 @@ static void ast2600_i2c_ac_timing_config(struct ast2600_i2c_bus *i2c_bus)
  	}
  
  	data = baseclk_idx;
@@ -85,7 +85,7 @@ index cce89f2d4ec4..956f2c623c75 100644
  
  	if (i2c_bus->timeout) {
  		i2c_bus->timeout = min(i2c_bus->timeout, 31);
-@@ -485,22 +497,52 @@ static void ast2700_i2c_ac_timing_config(struct ast2600_i2c_bus *i2c_bus)
+@@ -492,22 +504,52 @@ static void ast2700_i2c_ac_timing_config(struct ast2600_i2c_bus *i2c_bus)
  
  	/* Find the most used ac-timing */
  	for (int i = 0; i < 3; i++) {
@@ -146,7 +146,7 @@ index cce89f2d4ec4..956f2c623c75 100644
  				break;
  			}
  		}
-@@ -508,12 +550,9 @@ static void ast2700_i2c_ac_timing_config(struct ast2600_i2c_bus *i2c_bus)
+@@ -515,12 +557,9 @@ static void ast2700_i2c_ac_timing_config(struct ast2600_i2c_bus *i2c_bus)
  
  	/* calculate the high min value */
  	scl_high_min = i2c_cal_high_min_config(i2c_bus, (u64)base_clk);
@@ -161,7 +161,7 @@ index cce89f2d4ec4..956f2c623c75 100644
  
  	/* fill manual min high value */
  	if (i2c_bus->manual_min_high) {
-@@ -533,8 +572,8 @@ static void ast2700_i2c_ac_timing_config(struct ast2600_i2c_bus *i2c_bus)
+@@ -540,8 +579,8 @@ static void ast2700_i2c_ac_timing_config(struct ast2600_i2c_bus *i2c_bus)
  			sda_data_hold = i2c_bus->manual_data_hold;
  	}
  
@@ -172,7 +172,7 @@ index cce89f2d4ec4..956f2c623c75 100644
  
  	if (i2c_bus->timeout) {
  		i2c_bus->timeout = min(i2c_bus->timeout, 255);
-@@ -2397,6 +2436,14 @@ static int ast2600_i2c_probe(struct platform_device *pdev)
+@@ -3065,6 +3104,14 @@ static int ast2600_i2c_probe(struct platform_device *pdev)
  
  	i2c_parse_fw_timings(i2c_bus->dev, &i2c_bus->timing_info, true);
  
@@ -188,5 +188,5 @@ index cce89f2d4ec4..956f2c623c75 100644
  	i2c_bus->adap.owner = THIS_MODULE;
  	i2c_bus->adap.algo = &i2c_ast2600_algorithm;
 -- 
-2.53.0-Meta
+2.53.0
 

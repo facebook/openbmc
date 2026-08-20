@@ -1,6 +1,6 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/linux-aspeed:"
 
-SRC_URI:append = " \
+SRC_URI:append:rainiera7 = " \
     file://1000-bindings-ipmi-ssif-bmc-Add-property-to-adjust-respon.patch \
     file://1001-ipmi-ssif_bmc-Add-support-for-adjustable-response-ti.patch \
     file://1002-i3c-add-aspeed-mipi-i3c-hci-driver.patch \

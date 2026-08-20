@@ -94,6 +94,7 @@ extern const char pal_fru_list[];
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
 extern const uint8_t pmic_addr_list[];
+extern const uint8_t dimm_addr_list[];
 
 enum {
   FRU_ABSENT           = 0,

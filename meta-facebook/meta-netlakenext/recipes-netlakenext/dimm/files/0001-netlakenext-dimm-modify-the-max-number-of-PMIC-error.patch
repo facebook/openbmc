@@ -1,0 +1,28 @@
+From 02d38bcbb2f773cffeccd4dae72f90d46fbd1487 Mon Sep 17 00:00:00 2001
+From: Hoik Chen <hoik_chen@wiwynn.com>
+Date: Fri, 29 May 2026 16:28:04 +0800
+Subject: [PATCH] netlakenext: dimm: modify the max number of PMIC error type
+
+PMIC5100 only support 12 kinds PMIC error types
+
+Signed-off-by: Hoik Chen <hoik_chen@wiwynn.com>
+---
+ dimm.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/dimm.h b/dimm.h
+index eff15230a5f..57858062bf8 100644
+--- a/dimm.h
++++ b/dimm.h
+@@ -54,7 +54,7 @@ extern "C"
+ #define DEFAULT_RETRY_INTVL_MSEC 20
+ #define MAX_FAIL_CNT LEN_SERIAL
+ #define MAX_DIMM_SMB_XFER_LEN 32
+-#define MAX_PMIC_ERR_TYPE 17
++#define MAX_PMIC_ERR_TYPE 12
+ 
+ #define ERR_INVALID_SYNTAX -2
+ 
+-- 
+2.25.1
+

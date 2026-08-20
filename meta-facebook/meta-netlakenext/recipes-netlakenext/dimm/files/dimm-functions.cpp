@@ -56,32 +56,7 @@ static const char *fru_name_netlake2[NUM_FRU_NETLAKE2] = {
   "server",
 };
 
-bool is_pmic_error_flag[MAX_DIMM_NUM_NETLAKE2][TOTAL_PMIC_ERROR_NUM];
-static const uint8_t pmic_raw_regs[ERR_PATTERN_LEN] = {0x05, 0x06, 0x08, 0x09, 0x0A, 0x0B, 0x33};
-
-const struct {
-  uint8_t pattern[ERR_PATTERN_LEN];
-  const char *error_name;
-} netlake2_pmic_map[] = {
-  // R05, R06,  R08,  R09,  R0A,  R0B,  R33
-  {{0x02, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00}, STR_SWA_OV},
-  {{0x02, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00}, STR_SWB_OV},
-  {{0x02, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00}, STR_SWC_OV},
-  {{0x02, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00}, STR_SWD_OV},
-  {{0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00}, STR_BULK_OV},
-  {{0x00, 0x00, 0x02, 0x00, 0x02, 0x00, 0x00}, STR_MGMT_OV},
-  {{0x02, 0x80, 0x00, 0x00, 0x00, 0x00, 0x00}, STR_SWA_UV},
-  {{0x02, 0x40, 0x00, 0x00, 0x00, 0x00, 0x00}, STR_SWB_UV},
-  {{0x02, 0x20, 0x00, 0x00, 0x00, 0x00, 0x00}, STR_SWC_UV},
-  {{0x02, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00}, STR_SWD_UV},
-  {{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08}, STR_BULK_UV},
-  {{0x00, 0x00, 0x00, 0x10, 0x02, 0x00, 0x00}, STR_SWITCHOVER},
-  {{0x00, 0x00, 0x00, 0x80, 0x02, 0x00, 0x00}, STR_HIGH_TEMP},
-  {{0x00, 0x00, 0x00, 0x20, 0x02, 0x00, 0x00}, STR_PG_1V8},
-  {{0x00, 0x00, 0x00, 0x0F, 0x02, 0x00, 0x00}, STR_HIGH_CURR},
-  {{0x00, 0x00, 0x00, 0x00, 0x02, 0xF0, 0x00}, STR_CURR_LIMIT},
-  {{0x00, 0x00, 0x40, 0x00, 0x00, 0x00, 0x00}, STR_CRIT_TEMP},
-};
+bool is_pmic_error_flag[MAX_DIMM_NUM_NETLAKE2][MAX_PMIC_ERR_TYPE];
 
 static uint8_t *spd_addr = netlake2_spd_addr;
 static uint8_t *pmic_addr = netlake2_pmic_addr;
@@ -272,17 +247,9 @@ int get_pmic_error_data_raw(uint8_t slot_id, uint8_t dimm, uint8_t *error_data) 
     return -1;
   }
 
-  // read R33 with retry
-  ret = read_pmic_with_retry(slot_id, cpu, dimm, 0x33, 1, &data[0x33]);
-  if (ret < 0) {
-    syslog(LOG_ERR, "%s() Failed to read PMIC error data(R33) from slot %d dimm %d",
-           __func__, slot_id, dimm);
-    return -1;
-  }
-
-  // store PMIC raw data(R05 R06 R08 R09 R0A R0B R33) for comparison
+  // store PMIC raw data(R05 R06 R08 R09 R0A R0B) for comparison
   for (uint8_t i = 0; i < ERR_PATTERN_LEN; i++) {
-    error_data[i] = data[pmic_raw_regs[i]];
+    error_data[i] = data[pmic_err_pattern_idx[i]];
   }
 
   return 0;
@@ -295,11 +262,11 @@ int compare_pmic_raw_and_log(uint8_t dimm, const uint8_t *data) {
     return -1;
   }
 
-  for (err_idx = 0; err_idx < TOTAL_PMIC_ERROR_NUM; err_idx++) {
+  for (err_idx = 0; err_idx < MAX_PMIC_ERR_TYPE; err_idx++) {
     bool pattern_matched = true;
 
     for (uint8_t reg_idx = 0; reg_idx < ERR_PATTERN_LEN; reg_idx++) {
-      uint8_t err_pattern = netlake2_pmic_map[err_idx].pattern[reg_idx];
+      uint8_t err_pattern = pmic_err[err_idx].pattern[reg_idx];
       if ((data[reg_idx] & err_pattern) != err_pattern) {
         pattern_matched = false;
         break;
@@ -307,7 +274,7 @@ int compare_pmic_raw_and_log(uint8_t dimm, const uint8_t *data) {
     }
     if (pattern_matched && !is_pmic_error_flag[dimm][err_idx]) {
       syslog(LOG_CRIT, "FRU: %d, DIMM %s, %s Assertion", FRU_SERVER,
-            netlake2_dimm_label[0][dimm], netlake2_pmic_map[err_idx].error_name);
+            dimm_label[0][dimm], pmic_err[err_idx].err_str);
       is_pmic_error_flag[dimm][err_idx] = true;
     } else if (!pattern_matched) {
       // if pattern not match, reset the flag to allow future match and alert
@@ -326,7 +293,7 @@ util_read_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, u
     return -1;
   }
 
-  addr = netlake2_pmic_addr[dimm];
+  addr = pmic_addr[dimm];
 
   return read_dimm_i2c(slot_id, DIMM_BUS, addr, 1, pmic_offset, len, rxbuf);
 }
@@ -340,7 +307,7 @@ util_write_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, 
     return -1;
   }
 
-  addr = netlake2_pmic_addr[dimm];
+  addr = pmic_addr[dimm];
 
   return write_dimm_i2c(slot_id, DIMM_BUS, addr, 1, pmic_offset, len, txbuf);
 }
@@ -351,7 +318,7 @@ util_set_SODIMM_page(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t /*p
   uint8_t buf[8];
   uint32_t spd_offset = 0x000b;
 
-  addr = netlake2_spd_addr[dimm];
+  addr = spd_addr[dimm];
 
   // set MR11[3] = 0b MR11[2:0] = '000' for setting page 0 
   buf[0] = 0x00;

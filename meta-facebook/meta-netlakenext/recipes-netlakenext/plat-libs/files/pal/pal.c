@@ -37,6 +37,7 @@
 #include <openbmc/obmc-sensors.h>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/dimm.h>
 #include "dimm-util-plat.h"
 #include "pal.h"
 #include "pal_sensors.h"
@@ -1887,17 +1888,13 @@ int pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
 
 int pal_dimm_page_init()
 {
-  int ret = 0, fd = 0;
+  int ret = 0;
   uint8_t retry = SENSOR_RETRY_TIME;
-  const uint8_t dimm_addr_list[] = {
-    DIMMA_ADDR,
-    DIMMB_ADDR,
-  };
   uint8_t rbuf = 0;
   uint8_t rlen = DIMM_TEMP_LEN;
 
-  for (size_t id = 0; id < sizeof(dimm_addr_list); id++) {
-    fd = i2c_cdev_slave_open(DIMM_BUS, dimm_addr_list[id] >> 1,
+  for (uint8_t id = 0; id < MAX_DIMM_NUM_NETLAKE2; id++) {
+    int fd = i2c_cdev_slave_open(DIMM_BUS, dimm_addr_list[id] >> 1,
                             I2C_SLAVE_FORCE_CLAIM);
     if (fd < 0) {
       syslog(LOG_ERR, "Failed to open DIMM 0x%x\n", dimm_addr_list[id]);
@@ -2048,7 +2045,7 @@ static int pal_pmic_modify_reg(int fd, uint8_t addr, uint8_t offset,
 
 int pal_pmic_pwr_setting()
 {
-  for (int id = 0; id < MAX_DIMM_NUM_NETLAKE2; id++) {
+  for (uint8_t id = 0; id < MAX_DIMM_NUM_NETLAKE2; id++) {
     int fd = i2c_cdev_slave_open(DIMM_BUS, pmic_addr_list[id] >> 1,
                             I2C_SLAVE_FORCE_CLAIM);
     if (fd < 0) {
@@ -2143,19 +2140,21 @@ pal_pmic_monitor_init() {
 void
 pal_dimm_init() {
   int ret = 0;
-
+  // init the platform DIMM-related settings
+  ret = plat_init();
+  if (ret != 0) {
+    syslog(LOG_ERR, "%s() Failed to initialize platform DIMM", __func__);
+  }
   // set DIMM page 0 for DIMM temperature sensor
   ret = pal_dimm_page_init();
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Failed to initialize DIMM page", __func__);
   }
-
   // set PMIC register to read total power value
   ret = pal_pmic_pwr_setting();
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Failed to set PMIC power", __func__);
   }
-  
   // initialize PMIC monitor thread to monitor PMIC error and log
   ret = pal_pmic_monitor_init();
   if (ret < 0) {

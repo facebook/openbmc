@@ -37,7 +37,7 @@ SRC_URI = "git://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \
            file://qemu-guest-agent.udev \
            "
 
-SRC_URI += " \
+SRC_URI:append = " \
            file://0500-net-slirp-Add-mfr-id-and-oob-eth-addr-parameters.patch \
            file://0501-aspeed-Zero-extend-flash-files-to-128MB.patch \
            file://0502-hw-aspeed_vic-Add-heartbeat-LED-registers.patch \
@@ -78,7 +78,7 @@ SRC_URI += " \
            file://0537-hw-i2c-aspeed-add-target-buffer-mode-RX-support.patch \
            "
 
-SRC_URI += " \
+SRC_URI:append = " \
            file://0001-qemu-Add-addition-environment-space-to-boot-loader-q.patch \
            file://0002-apic-fixup-fallthrough-to-PIC.patch \
            file://0003-qemu-Do-not-include-file-if-not-exists.patch \
@@ -91,7 +91,7 @@ SRC_URI += " \
            file://0011-Add-PCF8563-Real-Time-Clock-device-emulation-for-BMC.patch \
            "
 
-SRC_URI += " \
+SRC_URI:append = " \
            file://0601-hw-sensor-tmp105-make-device-state-private-to-the-im.patch \
            file://0602-hw-sensor-tmp105-name-the-parent-object-field-parent.patch \
            file://0603-hw-sensor-tmp105-implement-Resettable-reset.patch \
@@ -213,7 +213,7 @@ SRCREV = "${QEMU_REF}"
 # Meson wrap subprojects - these are fetched separately since meson wraps
 # are not git submodules. destsuffix puts them in the right location.
 # Note: rust crates are skipped since we do not need them.
-SRC_URI += " \
+SRC_URI:append = " \
     git://gitlab.com/qemu-project/keycodemapdb.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/keycodemapdb;name=keycodemapdb \
     git://gitlab.com/qemu-project/berkeley-softfloat-3.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/berkeley-softfloat-3;name=berkeley-softfloat-3 \
     git://gitlab.com/qemu-project/berkeley-testfloat-3.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/berkeley-testfloat-3;name=berkeley-testfloat-3 \

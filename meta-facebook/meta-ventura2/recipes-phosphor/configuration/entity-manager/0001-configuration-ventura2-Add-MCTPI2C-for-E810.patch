@@ -1,4 +1,4 @@
-From 447a57f687f258d59f72ceaad5fb491ea1c332f6 Mon Sep 17 00:00:00 2001
+From 2e7c67a73bdc53337d8881e4603a58f7d4877f1f Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Thu, 16 Apr 2026 12:38:46 +0800
 Subject: [PATCH] configuration: ventura2: Add MCTPI2C for E810
@@ -6,33 +6,41 @@ Subject: [PATCH] configuration: ventura2: Add MCTPI2C for E810
 Change-Id: I374119da2b253f52879dd5a0c3480e35a08fb703
 Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 ---
- configurations/meta/ventura2/ventura2_rmcv2_mb.json | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ configurations/meta/ventura2/ventura2_rmcv2_mb.json     | 6 ++++++
+ configurations/meta/ventura2/ventura2_rmcv2_mb_2nd.json | 6 ++++++
+ 2 files changed, 12 insertions(+)
 
 diff --git a/configurations/meta/ventura2/ventura2_rmcv2_mb.json b/configurations/meta/ventura2/ventura2_rmcv2_mb.json
-index 7a37e91..a819db2 100644
+index 7a37e91..be59bd2 100644
 --- a/configurations/meta/ventura2/ventura2_rmcv2_mb.json
 +++ b/configurations/meta/ventura2/ventura2_rmcv2_mb.json
-@@ -746,6 +746,19 @@
-                 "vin_Name": "RMC_BRICK_INPUT_VOLT_V",
-                 "vout1_Max": 18,
-                 "vout1_Name": "RMC_BRICK_OUTPUT_VOLT_V"
-+            },
-+			{
-+                "Address": "0x32",
-+                "Bus": "38",
-+                "Inventory": "Ventura2",
-+                "Name": "E810",
+@@ -544,6 +544,12 @@
+                 "Bus": "38",
+                 "Inventory": "Ventura2",
+                 "Name": "E810",
 +                "PLDMSensors": [
-+					{
++                    {
 +                        "ID": 300,
 +                        "Name": "TEMP_C"
 +                    }
 +                ],
-+                "Type": "MCTPI2CTarget"
-             }
-         ],
-         "Name": "Ventura2 RMC",
--- 
-2.53.0-Meta
-
+                 "Type": "MCTPI2CTarget"
+             },
+             {
+diff --git a/configurations/meta/ventura2/ventura2_rmcv2_mb_2nd.json b/configurations/meta/ventura2/ventura2_rmcv2_mb_2nd.json
+index 8a1d546..c6419d2 100644
+--- a/configurations/meta/ventura2/ventura2_rmcv2_mb_2nd.json
++++ b/configurations/meta/ventura2/ventura2_rmcv2_mb_2nd.json
+@@ -507,6 +507,12 @@
+                 "Bus": "38",
+                 "Inventory": "Ventura2",
+                 "Name": "E810",
++                "PLDMSensors": [
++                    {
++                        "ID": 300,
++                        "Name": "TEMP_C"
++                    }
++                ],
+                 "Type": "MCTPI2CTarget"
+             },
+             {

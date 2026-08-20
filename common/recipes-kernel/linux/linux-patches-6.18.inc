@@ -103,6 +103,7 @@ SRC_URI:append = " \
     file://0614-hwmon-pmbus-Add-driver-for-Analog-Devices-MAX20912-a.patch \
     file://0615-nfc-nxp-nci-treat-ENXIO-in-IRQ-thread-as-no-data-ava.patch \
     file://0616-hwmon-kb9002-Add-driver-for-Kandou-KB9002-retimer.patch \
+    file://0617-hwmon-pmbus-Add-MPQ82D00-support.patch \
 "
 
 #

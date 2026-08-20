@@ -130,13 +130,12 @@ static int ssif_write_response(const uint8_t *buf, size_t len) {
 
 static void send_timeout_response(void) {
   uint8_t rsp[sizeof(unsigned int) + 3];
-  unsigned int *plen;
+  unsigned int plen = 3; /* netfn/lun + cmd + cc */
   size_t idx;
 
-  plen = (unsigned int *)rsp;
+  memcpy(rsp, &plen, sizeof(plen));
   idx = sizeof(unsigned int);
 
-  *plen = 3; /* netfn/lun + cmd + cc */
   rsp[idx++] = (uint8_t)(((g_req_netfn + 1) << 2) | (g_req_lun & 0x03));
   rsp[idx++] = g_req_cmd;
   rsp[idx++] = CC_TIMEOUT;
@@ -158,7 +157,7 @@ static void *timer_thread_fn(void *arg) {
   struct timespec ts;
   int rc;
 
-  targ = (struct timer_arg *)arg;
+  targ = arg;
   my_gen = targ->gen;
 
   free(targ);
@@ -191,10 +190,23 @@ static void start_timer(void) {
   g_timed_out = false;
 
   targ = malloc(sizeof(*targ));
+  if (targ == NULL) {
+    g_timer_active = false;
+    pthread_mutex_unlock(&g_timer_mutex);
+    OBMC_ERROR(errno, "failed to allocate timer argument, timer not started");
+    return;
+  }
   targ->gen = g_timer_gen;
   pthread_mutex_unlock(&g_timer_mutex);
 
-  pthread_create(&tid, NULL, timer_thread_fn, targ);
+  if (pthread_create(&tid, NULL, timer_thread_fn, targ) != 0) {
+    OBMC_ERROR(errno, "failed to create timer thread");
+    free(targ);
+    pthread_mutex_lock(&g_timer_mutex);
+    g_timer_active = false;
+    pthread_mutex_unlock(&g_timer_mutex);
+    return;
+  }
   pthread_detach(tid);
 }
 
@@ -242,8 +254,8 @@ static void ssif_loop(void) {
   uint16_t ipmi_res_len;
   ssize_t rlen;
   unsigned int payload_len;
-  unsigned int *wlen_field;
-  unsigned int *ep;
+  unsigned int wlen_field;
+  unsigned int err_len;
   uint8_t netfn, lun, cmd;
   bool timed_out;
   int pret;
@@ -360,8 +372,8 @@ static void ssif_loop(void) {
     if (ipmi_res_len < 3) {
       OBMC_WARN("SSIF: ipmid response too short (%u bytes)", ipmi_res_len);
       /* Fabricate an error response */
-      ep = (unsigned int *)err_rsp;
-      *ep = 3;
+      err_len = 3;
+      memcpy(err_rsp, &err_len, sizeof(err_len));
       err_rsp[sizeof(unsigned int)] =
           (uint8_t)(((netfn + 1) << 2) | (lun & 0x03));
       err_rsp[sizeof(unsigned int) + 1] = cmd;
@@ -370,8 +382,8 @@ static void ssif_loop(void) {
       continue;
     }
 
-    wlen_field = (unsigned int *)write_buf;
-    *wlen_field = (unsigned int)ipmi_res_len;
+    wlen_field = (unsigned int)ipmi_res_len;
+    memcpy(write_buf, &wlen_field, sizeof(wlen_field));
     memcpy(&write_buf[sizeof(unsigned int)], ipmi_res, ipmi_res_len);
 
     SSIFD_VERBOSE(

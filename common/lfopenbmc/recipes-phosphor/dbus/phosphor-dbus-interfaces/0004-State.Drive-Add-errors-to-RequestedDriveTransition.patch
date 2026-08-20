@@ -1,0 +1,30 @@
+From 6803dab2d7d71d63f3e4a69363e01aafaa50fc8b Mon Sep 17 00:00:00 2001
+From: Eric Yang <eric.yang.wiwynn@gmail.com>
+Date: Fri, 29 May 2026 12:35:05 +0000
+Subject: [PATCH] State.Drive: Add NotAllowed error to RequestedDriveTransition
+
+Add a typed error to indicate that a drive transition request
+is not permitted.
+
+Change-Id: I629b663e8b018ec1f81175c43d637e00a63907a1
+Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
+---
+ yaml/xyz/openbmc_project/State/Drive.interface.yaml | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/yaml/xyz/openbmc_project/State/Drive.interface.yaml b/yaml/xyz/openbmc_project/State/Drive.interface.yaml
+index 83041325..eb8454f2 100644
+--- a/yaml/xyz/openbmc_project/State/Drive.interface.yaml
++++ b/yaml/xyz/openbmc_project/State/Drive.interface.yaml
+@@ -12,6 +12,8 @@ properties:
+       default: "NotSupported"
+       description: >
+           The desired Drive transition
++      errors:
++          - xyz.openbmc_project.Common.Error.NotAllowed
+     - name: CurrentDriveState
+       type: enum[self.DriveState]
+       default: "Unknown"
+-- 
+2.43.0
+

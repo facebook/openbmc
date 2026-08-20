@@ -1,0 +1,442 @@
+From 7f320b74e3898114e943e44a1da37a723dae46e1 Mon Sep 17 00:00:00 2001
+From: Eric Yang <eric.yang.wiwynn@gmail.com>
+Date: Thu, 23 Apr 2026 08:54:42 +0000
+Subject: [PATCH] storage: Add Drive.Reset action with association-based state
+ lookup
+
+Add Redfish Drive.Reset action support for drives managed by
+phosphor-drive-state-manager. The state daemon publishes its D-Bus
+object on a separate path from inventory and links the two with an
+association tuple. bmcweb follows the /state association from the
+inventory object to discover whether a state manager exists for a given
+drive.
+
+When a state object is found, the Drive GET response gains an Actions
+block and Status.State reflects the drive power state and rebuild
+status. The Drive.Reset POST route maps Redfish ResetType values to
+D-Bus RequestedDriveTransition. A ResetActionInfo route advertises
+the supported reset types.
+
+Tested:
+On a Yosemite5 platform with entity-manager exposing Item.Drive
+inventory objects (ssd0, ssd1) via JSON configuration and
+phosphor-drive-state-manager providing State.Drive objects linked to
+inventory via D-Bus association (simulated drives, no real NVMe power
+hardware attached to targets):
+
+  curl -sk -u root:0penBmc \
+    https://<bmc>/redfish/v1/Systems/system/Storage/1/Drives/ssd0
+
+  "Actions": {"#Drive.Reset": {
+    "target": ".../Actions/Drive.Reset", ...}}
+  "Status": {"State": "Enabled"}
+
+Drive.Reset POST with each ResetType (On, ForceOff,
+GracefulRestart, ForceRestart, PowerCycle) returns 200 and drives
+reach expected state. After ForceOff, GET shows Status.State
+StandbyOffline. After On, GET shows Enabled.
+
+Host power-off triggers automatic drive poweroff. GET on both ssd0
+and ssd1 reflects Status.State StandbyOffline. Host power-on
+restores drives and GET shows Enabled.
+
+ResetActionInfo returns all five AllowableValues. Invalid ResetType
+returns 400 ActionParameterNotSupported. Non-existent drive returns
+404 ResourceNotFound.
+
+References:
+[1] https://gerrit.openbmc.org/c/openbmc/docs/+/89404
+[2] https://gerrit.openbmc.org/c/openbmc/phosphor-state-manager/+/89401
+[3] https://gerrit.openbmc.org/c/openbmc/phosphor-dbus-interfaces/+/89402
+[4] https://gerrit.openbmc.org/c/openbmc/entity-manager/+/89550
+
+Change-Id: I4afbf23c9c587be799f44a8c3029e16a5131844d
+Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
+---
+ redfish-core/lib/storage.hpp         | 197 +++++++++++++++++++++++++++
+ redfish-core/lib/storage_chassis.hpp | 122 +++++++++++++++++
+ 2 files changed, 319 insertions(+)
+
+diff --git a/redfish-core/lib/storage.hpp b/redfish-core/lib/storage.hpp
+index 4b6e6b1c..6a62dbac 100644
+--- a/redfish-core/lib/storage.hpp
++++ b/redfish-core/lib/storage.hpp
+@@ -9,6 +9,7 @@
+ #include "async_resp.hpp"
+ #include "dbus_utility.hpp"
+ #include "error_messages.hpp"
++#include "generated/enums/action_info.hpp"
+ #include "generated/enums/resource.hpp"
+ #include "http_request.hpp"
+ #include "logging.hpp"
+@@ -16,6 +17,8 @@
+ #include "registries/privilege_registry.hpp"
+ #include "storage_chassis.hpp"
+ #include "utils/collection.hpp"
++#include "utils/dbus_utils.hpp"
++#include "utils/json_utils.hpp"
+ 
+ #include <boost/beast/http/verb.hpp>
+ #include <boost/system/error_code.hpp>
+@@ -286,6 +289,186 @@ inline void handleSystemsStorageDriveGet(
+                         driveId));
+ }
+ 
++inline std::optional<std::string> mapDriveResetTypeToTransition(
++    std::string_view resetType)
++{
++    if (resetType == "On")
++    {
++        return "xyz.openbmc_project.State.Drive.Transition.On";
++    }
++    if (resetType == "ForceOff")
++    {
++        return "xyz.openbmc_project.State.Drive.Transition.Off";
++    }
++    if (resetType == "GracefulRestart")
++    {
++        return "xyz.openbmc_project.State.Drive.Transition.Reboot";
++    }
++    if (resetType == "ForceRestart")
++    {
++        return "xyz.openbmc_project.State.Drive.Transition.HardReboot";
++    }
++    if (resetType == "PowerCycle")
++    {
++        return "xyz.openbmc_project.State.Drive.Transition.Powercycle";
++    }
++
++    return std::nullopt;
++}
++
++/**
++ * @brief Resolve the inventory path for a driveId, then follow the
++ *        /state association to find the State.Drive object and set
++ *        RequestedDriveTransition.
++ */
++inline void handleSystemsStorageDriveResetPost(
++    App& app, const crow::Request& req,
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const std::string& systemName, const std::string& driveId)
++{
++    if (!redfish::setUpRedfishRoute(app, req, asyncResp))
++    {
++        return;
++    }
++    if constexpr (BMCWEB_EXPERIMENTAL_REDFISH_MULTI_COMPUTER_SYSTEM)
++    {
++        messages::resourceNotFound(asyncResp->res, "ComputerSystem",
++                                   systemName);
++        return;
++    }
++
++    if (systemName != BMCWEB_REDFISH_SYSTEM_URI_NAME)
++    {
++        messages::resourceNotFound(asyncResp->res, "ComputerSystem",
++                                   systemName);
++        return;
++    }
++
++    std::string resetType;
++    if (!json_util::readJsonAction(req, asyncResp->res, "ResetType", resetType))
++    {
++        return;
++    }
++
++    std::optional<std::string> dbusTransition =
++        mapDriveResetTypeToTransition(resetType);
++    if (!dbusTransition)
++    {
++        messages::actionParameterNotSupported(asyncResp->res, resetType,
++                                              "ResetType");
++        return;
++    }
++
++    // First, find the inventory path for this driveId
++    constexpr std::array<std::string_view, 1> driveInterfaces = {
++        "xyz.openbmc_project.Inventory.Item.Drive"};
++    dbus::utility::getSubTreePaths(
++        "/xyz/openbmc_project/inventory", 0, driveInterfaces,
++        [asyncResp, driveId, dbusTransition = *dbusTransition](
++            const boost::system::error_code& ec,
++            const dbus::utility::MapperGetSubTreePathsResponse& drivePaths) {
++            if (ec)
++            {
++                BMCWEB_LOG_ERROR("Drive mapper call error: {}", ec);
++                messages::internalError(asyncResp->res);
++                return;
++            }
++
++            auto driveIt = std::ranges::find_if(
++                drivePaths, [&driveId](const std::string& path) {
++                    return sdbusplus::object_path(path).filename() == driveId;
++                });
++            if (driveIt == drivePaths.end())
++            {
++                messages::resourceNotFound(asyncResp->res, "Drive", driveId);
++                return;
++            }
++
++            // Follow the /state association
++            dbus::utility::getAssociationEndPoints(
++                *driveIt + "/state",
++                [asyncResp, driveId, dbusTransition](
++                    const boost::system::error_code& ec2,
++                    const dbus::utility::MapperEndPoints& stateEndpoints) {
++                    if (ec2 || stateEndpoints.empty())
++                    {
++                        messages::resourceNotFound(asyncResp->res, "Drive",
++                                                   driveId);
++                        return;
++                    }
++
++                    const std::string& statePath = stateEndpoints[0];
++
++                    constexpr std::array<std::string_view, 1> stateIfaces = {
++                        "xyz.openbmc_project.State.Drive"};
++                    dbus::utility::getDbusObject(
++                        statePath, stateIfaces,
++                        [asyncResp, statePath, dbusTransition](
++                            const boost::system::error_code& ec3,
++                            const dbus::utility::MapperGetObject& object) {
++                            if (ec3 || object.empty())
++                            {
++                                messages::internalError(asyncResp->res);
++                                return;
++                            }
++
++                            setDbusPropertyAction(
++                                asyncResp, object.begin()->first,
++                                sdbusplus::object_path(statePath),
++                                "xyz.openbmc_project.State.Drive",
++                                "RequestedDriveTransition", "ResetType",
++                                "Drive.Reset", dbusTransition);
++                        });
++                });
++        });
++}
++
++inline void handleDriveResetActionInfoGet(
++    App& app, const crow::Request& req,
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const std::string& systemName, const std::string& driveId)
++{
++    if (!redfish::setUpRedfishRoute(app, req, asyncResp))
++    {
++        return;
++    }
++    if constexpr (BMCWEB_EXPERIMENTAL_REDFISH_MULTI_COMPUTER_SYSTEM)
++    {
++        messages::resourceNotFound(asyncResp->res, "ComputerSystem",
++                                   systemName);
++        return;
++    }
++
++    if (systemName != BMCWEB_REDFISH_SYSTEM_URI_NAME)
++    {
++        messages::resourceNotFound(asyncResp->res, "ComputerSystem",
++                                   systemName);
++        return;
++    }
++
++    asyncResp->res.jsonValue["@odata.type"] = "#ActionInfo.v1_1_2.ActionInfo";
++    asyncResp->res.jsonValue["@odata.id"] = boost::urls::format(
++        "/redfish/v1/Systems/{}/Storage/1/Drives/{}/ResetActionInfo",
++        BMCWEB_REDFISH_SYSTEM_URI_NAME, driveId);
++    asyncResp->res.jsonValue["Name"] = "Reset Action Info";
++    asyncResp->res.jsonValue["Id"] = "ResetActionInfo";
++
++    nlohmann::json::object_t parameter;
++    parameter["Name"] = "ResetType";
++    parameter["Required"] = true;
++    parameter["DataType"] = action_info::ParameterTypes::String;
++    nlohmann::json::array_t allowed;
++    allowed.emplace_back("On");
++    allowed.emplace_back("ForceOff");
++    allowed.emplace_back("GracefulRestart");
++    allowed.emplace_back("ForceRestart");
++    allowed.emplace_back("PowerCycle");
++    parameter["AllowableValues"] = std::move(allowed);
++    nlohmann::json::array_t parameters;
++    parameters.emplace_back(std::move(parameter));
++    asyncResp->res.jsonValue["Parameters"] = std::move(parameters);
++}
++
+ inline void requestRoutesStorage(App& app)
+ {
+     BMCWEB_ROUTE(app, "/redfish/v1/Storage/")
+@@ -312,6 +495,20 @@ inline void requestRoutesStorage(App& app)
+         .privileges(redfish::privileges::getDrive)
+         .methods(boost::beast::http::verb::get)(
+             std::bind_front(handleSystemsStorageDriveGet, std::ref(app)));
++
++    BMCWEB_ROUTE(
++        app,
++        "/redfish/v1/Systems/<str>/Storage/1/Drives/<str>/Actions/Drive.Reset/")
++        .privileges(redfish::privileges::postDrive)
++        .methods(boost::beast::http::verb::post)(
++            std::bind_front(handleSystemsStorageDriveResetPost, std::ref(app)));
++
++    BMCWEB_ROUTE(
++        app,
++        "/redfish/v1/Systems/<str>/Storage/1/Drives/<str>/ResetActionInfo/")
++        .privileges(redfish::privileges::getActionInfo)
++        .methods(boost::beast::http::verb::get)(
++            std::bind_front(handleDriveResetActionInfoGet, std::ref(app)));
+ }
+ 
+ } // namespace redfish
+diff --git a/redfish-core/lib/storage_chassis.hpp b/redfish-core/lib/storage_chassis.hpp
+index 9d025e42..69991573 100644
+--- a/redfish-core/lib/storage_chassis.hpp
++++ b/redfish-core/lib/storage_chassis.hpp
+@@ -5,6 +5,7 @@
+ 
+ #include "app.hpp"
+ #include "async_resp.hpp"
++#include "dbus_utility.hpp"
+ #include "error_messages.hpp"
+ #include "generated/enums/drive.hpp"
+ #include "generated/enums/protocol.hpp"
+@@ -13,10 +14,127 @@
+ #include "query.hpp"
+ #include "redfish_util.hpp"
+ #include "registries/privilege_registry.hpp"
++#include "utils/dbus_utils.hpp"
++
++#include <boost/url/format.hpp>
++#include <sdbusplus/message/native_types.hpp>
++#include <sdbusplus/unpack_properties.hpp>
+ 
+ namespace redfish
+ {
+ 
++/**
++ * @brief Follow the /state association from an inventory path to find
++ *        the State.Drive object and inject Actions and state into the
++ *        Drive GET response.
++ *
++ * The association tuple ("inventory", "state", <inventory path>) is
++ * published by phosphor-drive-state-manager.  ObjectMapper creates
++ * the reverse endpoint at <inventory path>/state pointing to the
++ * state object.  If the endpoint does not exist, Actions are omitted
++ * and the existing drive response is unchanged.
++ */
++inline void addDriveStateAndActions(
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const std::string& inventoryPath, const std::string& driveId)
++{
++    dbus::utility::getAssociationEndPoints(
++        inventoryPath + "/state",
++        [asyncResp,
++         driveId](const boost::system::error_code& ec,
++                  const dbus::utility::MapperEndPoints& stateEndpoints) {
++            if (ec || stateEndpoints.empty())
++            {
++                // No state object; this drive has no power control.
++                return;
++            }
++
++            const std::string& statePath = stateEndpoints[0];
++
++            // Look up the service that owns the state object
++            constexpr std::array<std::string_view, 1> stateInterfaces = {
++                "xyz.openbmc_project.State.Drive"};
++            dbus::utility::getDbusObject(
++                statePath, stateInterfaces,
++                [asyncResp, driveId,
++                 statePath](const boost::system::error_code& ec2,
++                            const dbus::utility::MapperGetObject& object) {
++                    if (ec2 || object.empty())
++                    {
++                        return;
++                    }
++
++                    const std::string& service = object.begin()->first;
++
++                    // Inject Actions
++                    asyncResp->res.jsonValue["Actions"]["#Drive.Reset"]
++                                            ["target"] = boost::urls::format(
++                        "/redfish/v1/Systems/{}/Storage/1/Drives/{}/Actions/Drive.Reset",
++                        BMCWEB_REDFISH_SYSTEM_URI_NAME, driveId);
++                    asyncResp->res
++                        .jsonValue["Actions"]["#Drive.Reset"]
++                                  ["@Redfish.ActionInfo"] = boost::urls::format(
++                        "/redfish/v1/Systems/{}/Storage/1/Drives/{}/ResetActionInfo",
++                        BMCWEB_REDFISH_SYSTEM_URI_NAME, driveId);
++
++                    // Read state properties from the state object
++                    dbus::utility::getAllProperties(
++                        service, statePath, "xyz.openbmc_project.State.Drive",
++                        [asyncResp](const boost::system::error_code& ec3,
++                                    const dbus::utility::DBusPropertiesMap&
++                                        properties) {
++                            if (ec3)
++                            {
++                                return;
++                            }
++
++                            const std::string* currentState = nullptr;
++                            const bool* rebuilding = nullptr;
++
++                            const bool success =
++                                sdbusplus::unpackPropertiesNoThrow(
++                                    dbus_utils::UnpackErrorPrinter(),
++                                    properties, "CurrentDriveState",
++                                    currentState, "Rebuilding", rebuilding);
++
++                            if (!success)
++                            {
++                                return;
++                            }
++
++                            // Rebuilding takes priority over
++                            // CurrentDriveState because it represents an
++                            // active operation.
++                            if (rebuilding != nullptr && *rebuilding)
++                            {
++                                asyncResp->res.jsonValue["Status"]["State"] =
++                                    resource::State::Updating;
++                                return;
++                            }
++
++                            if (currentState != nullptr)
++                            {
++                                if (*currentState ==
++                                    "xyz.openbmc_project.State.Drive.DriveState.Offline")
++                                {
++                                    asyncResp->res
++                                        .jsonValue["Status"]["State"] =
++                                        resource::State::StandbyOffline;
++                                }
++                                else if (
++                                    *currentState ==
++                                    "xyz.openbmc_project.State.Drive.DriveState.UpdateInProgress")
++                                {
++                                    asyncResp->res
++                                        .jsonValue["Status"]["State"] =
++                                        resource::State::Updating;
++                                }
++                            }
++                        });
++                });
++        });
++}
++
+ inline void getDrivePresent(const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
+                             const std::string& connectionName,
+                             const std::string& path)
+@@ -359,6 +477,10 @@ inline void afterGetSubtreeSystemsStorageDrive(
+ 
+     addAllDriveInfo(asyncResp, connectionNames[0].first, path,
+                     connectionNames[0].second);
++
++    // Follow the /state association to inject Actions if a state
++    // manager is running for this drive.
++    addDriveStateAndActions(asyncResp, path, driveId);
+ }
+ 
+ inline void afterChassisDriveCollectionSubtreeGet(
+-- 
+2.43.0
+

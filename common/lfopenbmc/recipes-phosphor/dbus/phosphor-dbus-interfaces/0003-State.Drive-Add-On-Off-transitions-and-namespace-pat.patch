@@ -1,0 +1,94 @@
+From 221fc46543fa55a0226c2f1281027009ad95e05c Mon Sep 17 00:00:00 2001
+From: Eric Yang <eric.yang.wiwynn@gmail.com>
+Date: Fri, 17 Apr 2026 11:16:57 +0000
+Subject: [PATCH] State.Drive: Add On/Off transitions and namespace path
+
+Add On and Off values to the Drive Transition enum to support
+independent drive power on and power off operations, matching the
+Redfish ResetType On and ForceOff semantics.
+
+Add paths metadata to Drive.interface.yaml so that namespace_path::value
+and namespace_path::drive are available for object path construction in
+phosphor-drive-state-manager.
+
+Update the State README to describe the component-level drive state
+model alongside the existing BMC, host, and chassis sections.
+
+Change-Id: I13ab50a771f4bcf678308b53e48c6084925ca8a1
+Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
+---
+ .../openbmc_project/State/Drive.interface.yaml   | 12 ++++++++++++
+ yaml/xyz/openbmc_project/State/README.md         | 16 ++++++++++++++--
+ 2 files changed, 26 insertions(+), 2 deletions(-)
+
+diff --git a/yaml/xyz/openbmc_project/State/Drive.interface.yaml b/yaml/xyz/openbmc_project/State/Drive.interface.yaml
+index 8681a681..83041325 100644
+--- a/yaml/xyz/openbmc_project/State/Drive.interface.yaml
++++ b/yaml/xyz/openbmc_project/State/Drive.interface.yaml
+@@ -34,6 +34,12 @@ enumerations:
+       description: >
+           The desired transition for the Drive
+       values:
++          - name: "On"
++            description: >
++                The Drive should be powered on.
++          - name: "Off"
++            description: >
++                The Drive should be powered off.
+           - name: "Reboot"
+             description: >
+                 The Drive should be rebooted.
+@@ -77,3 +83,9 @@ enumerations:
+                 Current DriveState will be set to "UpdateInProgress" while
+                 starting firmware download and reset to "Ready", once activation
+                 is done or error occurs during update process.
++
++paths:
++    - namespace: /xyz/openbmc_project/state
++      segments:
++          - name: Drive
++            value: drive
+diff --git a/yaml/xyz/openbmc_project/State/README.md b/yaml/xyz/openbmc_project/State/README.md
+index d661cdda..12283fb7 100644
+--- a/yaml/xyz/openbmc_project/State/README.md
++++ b/yaml/xyz/openbmc_project/State/README.md
+@@ -11,8 +11,8 @@ reboot the BMC and hosts, and turn on and off power to the chassis. The
+ interfaces are designed in a way to support a many to many mappings of each
+ interface.
+ 
+-There are three states to track and control on a BMC based server. The states
+-below in () represent the actual parameter name as found in
++There are three primary states to track and control on a BMC based server. The
++states below in () represent the actual parameter name as found in
+ `/xyz/openbmc_project/state/`+`/bmcX,/hostY,/chassisZ` where X,Y,Z are the
+ instances (in most cases 0). For all three states, the software tracks a current
+ state, and a requested transition.
+@@ -37,6 +37,11 @@ state, and a requested transition.
+ A simple system design would be to include a single _BMC_, _Host_, and
+ _Chassis_.
+ 
++In addition to the primary platform states above, component-level state
++interfaces can also be implemented when a platform supports independent control
++of a specific component. For drives, this is represented by
++`xyz.openbmc_project.State.Drive`.
++
+ Details of the properties and their valid settings can be found in the state
+ manager dbus interface [specification][2].
+ 
+@@ -63,6 +68,13 @@ Instance 0 (chassis_system0) will be treated as a complete chassis system which
+ will include BMC, host and chassis. This will support hard power cycle of
+ complete system.
+ 
++### _Drive_
++
++The _Drive_ interface provides per-drive transition requests (`On`, `Off`,
++`Reboot`, `HardReboot`, `Powercycle`) and state reporting (`CurrentDriveState`).
++Drive instances use string identifiers (e.g. `nvme0`) and are hosted under
++`/xyz/openbmc_project/state/drive/<instance>`.
++
+ In multi-host or multi-chassis system, instance number can be used from 1-N, as
+ 0 is reserved for complete system. In multi chassis system this can be named as
+ chassis_system1 to chassis_systemN
+-- 
+2.43.0
+

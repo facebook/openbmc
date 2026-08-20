@@ -1,0 +1,169 @@
+From 550a4a02f8159cbd90ff388db8957154bad56d72 Mon Sep 17 00:00:00 2001
+From: Meghana H <Meghana.H@arm.com>
+Date: Fri, 17 Apr 2026 11:04:10 +0000
+Subject: [PATCH] faultlog: Use PrimaryLogId as faultlog file for CPER
+
+FaultLog dump creation currently creates a dummy
+fault log file for each entry. For CPER fault logs,
+the caller already provides the CPER binary path
+through the PrimaryLogId parameter.
+
+When Type is CPER, use PrimaryLogId as the dump entry
+backing file instead of creating a dummy fault log file.
+Validate that PrimaryLogId is provided and that the
+referenced file exists before creating the dump
+entry.
+
+This allows Redfish clients to download the original CPER
+binary through the dump entry attachment path while keeping
+the existing generated-file behavior for non-CPER FaultLog entries.
+
+Tested :
+
+'''
+
+Generate a cper using libcper:
+
+./libcper/build$ ./cper-generate --out test-cper.bin --sections generic
+
+Copy the cper bin into BMC:
+
+scp test-cper.bin   root@{BMC-IP}:/var/cper/
+
+Trigger CreateDump:
+
+busctl call xyz.openbmc_project.Dump.Manager  /xyz/openbmc_project/dump/faultlog  xyz.openbmc_project.Dump.Create CreateDump  "a{sv}" 2    "Type" "s" "CPER"    "Primary
+LogId" "s" "/var/cper/test-cper.bin"
+
+curl -k -u root:0penBmc -X GET https://{BMC-IP}/redfish/v1/Managers/bmc/LogServices/FaultLog/Entries/3
+
+{
+  "@odata.id": "/redfish/v1/Managers/bmc/LogServices/FaultLog/Entries/3",
+  "@odata.type": "#LogEntry.v1_11_0.LogEntry",
+  "AdditionalDataSizeBytes": 792,
+  "AdditionalDataURI": "/redfish/v1/Managers/bmc/LogServices/FaultLog/Entries/3/attachment",
+  "Created": "2026-04-17T07:07:24.775620+00:00",
+  "EntryType": "Event",
+  "Id": "3",
+  "Name": "FaultLog Dump Entry"
+}
+
+Download attachment:
+
+wget --no-check-certificate --user=root --password=0penBmc \
+  https://{BMC-IP}/redfish/v1/Managers/bmc/LogServices/FaultLog/Entries/1/attachment
+
+'''
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/phosphor-debug-collector/+/91083]
+
+Signed-off-by: Meghana H <Meghana.H@arm.com>
+Change-Id: If2b0729eb590a7274744ac9b42f5a2a1ec542850
+---
+ dump_manager_faultlog.cpp | 70 +++++++++++++++++++++++++++------------
+ 1 file changed, 48 insertions(+), 22 deletions(-)
+
+diff --git a/dump_manager_faultlog.cpp b/dump_manager_faultlog.cpp
+index 5aed504..6944024 100644
+--- a/dump_manager_faultlog.cpp
++++ b/dump_manager_faultlog.cpp
+@@ -34,7 +34,6 @@ sdbusplus::object_path Manager::createDump(
+ {
+     lg2::info("In dump_manager_fault.cpp createDump");
+ 
+-    // Currently we ignore the parameters.
+     // TODO phosphor-debug-collector/issues/22: Check parameter values and
+     // exit early if we don't receive the expected parameters
+     if (params.empty())
+@@ -46,6 +45,9 @@ sdbusplus::object_path Manager::createDump(
+         lg2::info("Got additional parameters");
+     }
+ 
++    std::string typeStr =
++        phosphor::dump::extractParameter<std::string>("Type", params);
++
+     // Get the originator id and type from params
+     std::string originatorId;
+     originatorTypes originatorType;
+@@ -57,33 +59,57 @@ sdbusplus::object_path Manager::createDump(
+     auto id = lastEntryId + 1;
+     auto idString = std::to_string(id);
+     auto objPath = std::filesystem::path(baseEntryPath) / idString;
+-
+     std::filesystem::path faultLogFilePath(
+         std::string(FAULTLOG_DUMP_PATH) + idString);
+-    std::ofstream faultLogFile;
+-
+-    errno = 0;
+-
+-    faultLogFile.open(faultLogFilePath,
+-                      std::ofstream::out | std::fstream::trunc);
+ 
+-    if (faultLogFile.is_open())
++    if (typeStr == "CPER")
+     {
+-        lg2::info("faultLogFile is open");
+-
+-        faultLogFile << "This is faultlog file #" << idString << " at "
+-                     << std::string(FAULTLOG_DUMP_PATH) + idString << std::endl;
+-
+-        faultLogFile.close();
++        std::string primaryLogIdStr =
++            phosphor::dump::extractParameter<std::string>("PrimaryLogId",
++                                                          params);
++        if (primaryLogIdStr.empty())
++        {
++            lg2::error("PrimaryLogId is missing for CPER fault log entry");
++        }
++        else if (!std::filesystem::exists(primaryLogIdStr))
++        {
++            lg2::error("CPER file does not exist at path {PATH}", "PATH",
++                       primaryLogIdStr);
++        }
++        else
++        {
++            faultLogFilePath = primaryLogIdStr;
++        }
+     }
+-    else
++
++    if (!std::filesystem::exists(faultLogFilePath))
+     {
+-        lg2::error(
+-            "Failed to open fault log file at {FILE_PATH}, errno: {ERRNO}, "
+-            "strerror: {STRERROR}, OBJECTPATH: {OBJECT_PATH}, ID: {ID}",
+-            "FILE_PATH", faultLogFilePath, "ERRNO", errno, "STRERROR",
+-            strerror(errno), "OBJECT_PATH", objPath, "ID", id);
+-        elog<Open>(ErrnoOpen(errno), PathOpen(objPath.c_str()));
++        std::ofstream faultLogFile;
++
++        errno = 0;
++
++        faultLogFile.open(faultLogFilePath,
++                          std::ofstream::out | std::fstream::trunc);
++
++        if (faultLogFile.is_open())
++        {
++            lg2::info("faultLogFile is open");
++
++            faultLogFile << "This is faultlog file #" << idString << " at "
++                         << std::string(FAULTLOG_DUMP_PATH) + idString
++                         << std::endl;
++
++            faultLogFile.close();
++        }
++        else
++        {
++            lg2::error(
++                "Failed to open fault log file at {FILE_PATH}, errno: {ERRNO}, "
++                "strerror: {STRERROR}, OBJECTPATH: {OBJECT_PATH}, ID: {ID}",
++                "FILE_PATH", faultLogFilePath, "ERRNO", errno, "STRERROR",
++                strerror(errno), "OBJECT_PATH", objPath, "ID", id);
++            elog<Open>(ErrnoOpen(errno), PathOpen(objPath.c_str()));
++        }
+     }
+ 
+     try
+-- 
+2.25.1
+

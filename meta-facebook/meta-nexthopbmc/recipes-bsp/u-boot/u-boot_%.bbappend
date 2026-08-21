@@ -19,5 +19,5 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://facebook-fblite_defconfig.append \
             file://0001-Use-correct-UART-for-nexthopbmc.patch \
-            file://0001-Set-rx-delay-to-0x1a-which-is-0x.patch \
+            file://0002-Set-rx-and-tx-delay-for-mac3.patch \
            "

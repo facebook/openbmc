@@ -28,7 +28,7 @@ index 3f028b7..a9c29b6 100644
              "Address": "$address",
              "Bus": "$bus",
 -            "Name": "BRCM OCP NIC FRU $bus",
-+            "Name": "BRCM OCP NIC FRU $bus % 2",
++            "Name": "BRCM OCP NIC FRU $bus / 10",
              "Type": "EEPROM"
          },
 +        {
@@ -45,8 +45,8 @@ index 3f028b7..a9c29b6 100644
              ],
 -            "Name": "NIC Temp $bus",
 -            "Name1": "NIC Temp $bus",
-+            "Name": "NIC$bus % 2 TEMP_C",
-+            "Name1": "NIC$bus % 2 TEMP_C",
++            "Name": "NIC$bus / 10 TEMP_C",
++            "Name1": "NIC$bus / 10 TEMP_C",
              "Thresholds": [
                  {
 -                    "Direction": "less than",
@@ -75,7 +75,7 @@ index 3f028b7..a9c29b6 100644
          }
      ],
 -    "Name": "BRCM OCP NIC FRU $bus",
-+    "Name": "BRCM OCP NIC $bus % 2",
++    "Name": "BRCM OCP NIC $bus / 10",
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'BRCM 200G 1P.*57508 OCP Mezz'})",
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {

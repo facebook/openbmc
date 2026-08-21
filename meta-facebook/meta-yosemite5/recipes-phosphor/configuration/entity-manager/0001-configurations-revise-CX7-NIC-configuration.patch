@@ -28,7 +28,7 @@ index 3f11519..b13dd70 100644
              "Address": "$address",
              "Bus": "$bus",
 -            "Name": "OCP CX7 NIC FRU $bus",
-+            "Name": "OCP CX7 NIC FRU $bus % 2",
++            "Name": "OCP CX7 NIC FRU $bus / 10",
              "Type": "EEPROM"
          },
 +        {
@@ -45,8 +45,8 @@ index 3f11519..b13dd70 100644
              ],
 -            "Name": "NIC Temp $bus",
 -            "Name1": "NIC Temp $bus",
-+            "Name": "NIC$bus % 2 TEMP_C",
-+            "Name1": "NIC$bus % 2 TEMP_C",
++            "Name": "NIC$bus / 10 TEMP_C",
++            "Name1": "NIC$bus / 10 TEMP_C",
              "Thresholds": [
                  {
 -                    "Direction": "less than",
@@ -75,7 +75,7 @@ index 3f11519..b13dd70 100644
          }
      ],
 -    "Name": "OCP CX7 NIC $bus",
-+    "Name": "OCP CX7 NIC $bus % 2",
++    "Name": "OCP CX7 NIC $bus / 10",
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Nvidia ConnectX-7 OCP3.0'})",
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {

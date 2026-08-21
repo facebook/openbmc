@@ -13,6 +13,7 @@ dep_libs = [
     dependency('libkv'),
     dependency('libobmc-sensors'),
     cc.find_library('apml64'),
+    cc.find_library('netlakenext_common'),
 ]
 
 executable('gpiod', 'gpiod.c', dependencies : dep_libs, install: true)

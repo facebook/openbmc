@@ -33,6 +33,7 @@
 #include <openbmc/kv.h>
 #include <openbmc/obmc-sensors.h>
 #include <openbmc/libgpio.h>
+#include <facebook/netlakenext_common.h>
 #include "esmi_rmi.h"
 
 #define POWER_ON_STR        "on"
@@ -177,11 +178,28 @@ dimm_hot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
 
 static void
 vr_hot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  if (last == GPIO_VALUE_LOW && curr == GPIO_VALUE_HIGH) {
-    syslog(LOG_INFO, "FRU: %d VR Hot Warning Deassertion\n", FRU_SERVER);
+  uint8_t value = 0;
+  bool assertion = false;
+
+  if (last == GPIO_VALUE_HIGH && curr == GPIO_VALUE_LOW) {
+      assertion = true;
+  } else if (last == GPIO_VALUE_LOW && curr == GPIO_VALUE_HIGH) {
+      assertion = false;
+  } else {
+      return;
   }
-  else if (last == GPIO_VALUE_HIGH && curr == GPIO_VALUE_LOW) {
-    syslog(LOG_INFO, "FRU: %d VR Hot Warning Assertion\n", FRU_SERVER);
+
+  syslog(LOG_CRIT, "FRU: %d VR Hot/OC Warning %s",
+                    FRU_SERVER, assertion ? "Assertion" : "Deassertion");
+
+  if (assertion) {
+    if (netlakenext_get_cpld_data(CPLD_BUS_2, CPLD_ADDR_BUS_2, CPLD_OCP_THERMTRIP_REG, &value)) {
+      syslog(LOG_ERR, "CPLD: Failed to read OCP/THERMTRIP register");
+    } else {
+      syslog(LOG_CRIT, "CPLD: read bus %d, addr 0x%02X, offset 0x%02X, value 0x%02X",
+                        CPLD_BUS_2, CPLD_ADDR_BUS_2 >> 1, CPLD_OCP_THERMTRIP_REG, value);
+    }
+    netlakenext_vr_dump();
   }
 }
 

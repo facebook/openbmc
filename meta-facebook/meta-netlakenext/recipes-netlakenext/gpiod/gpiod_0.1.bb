@@ -17,8 +17,8 @@ SRC_URI = "file://meson.build \
 
 S = "${UNPACKDIR}"
 
-DEPENDS += " libpal update-rc.d-native libgpio-ctrl libobmc-sensors apml"
-RDEPENDS:${PN} += " libpal libgpio-ctrl libobmc-sensors apml"
+DEPENDS += " libpal update-rc.d-native libgpio-ctrl libobmc-sensors apml libnetlakenext-common"
+RDEPENDS:${PN} += " libpal libgpio-ctrl libobmc-sensors apml libnetlakenext-common"
 
 do_install:append() {
   install -d ${D}${sysconfdir}/init.d

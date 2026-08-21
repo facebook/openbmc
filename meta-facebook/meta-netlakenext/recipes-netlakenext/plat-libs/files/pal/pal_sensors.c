@@ -45,11 +45,11 @@ PAL_SENSOR_MAP server_sensor_map[] = {
   [SERVER_SOC_PWR] =
   {"SOC_PWR", SOC_PWR, read_cpu_hwmon, POST_COMPLT_READING, {51.5, 51, 52, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
   [SERVER_DIMMA_TEMP] =
-  {"DIMMA_TEMP", DIMMA_TEMP, read_dimm_temp, POST_COMPLT_READING, {80, 0, 95, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  {"DIMMA_TEMP", DIMMA_TEMP, read_dimm_temp, POST_COMPLT_READING, {85, 0, 95, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [SERVER_DIMMA_PWR] =
   {"DIMMA_PWR", PMIC_DIMMA_PWR, read_dimm_pwr, POST_COMPLT_READING, {10, 0, 0, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
   [SERVER_DIMMB_TEMP] =
-  {"DIMMB_TEMP", DIMMB_TEMP, read_dimm_temp, POST_COMPLT_READING, {80, 0, 95, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  {"DIMMB_TEMP", DIMMB_TEMP, read_dimm_temp, POST_COMPLT_READING, {85, 0, 95, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [SERVER_DIMMB_PWR] =
   {"DIMMB_PWR", PMIC_DIMMB_PWR, read_dimm_pwr, POST_COMPLT_READING, {10, 0, 0, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
   [SERVER_A_P12V_STBY_NETLAKE2_VOL] =
@@ -631,6 +631,12 @@ read_pmbus(uint8_t id, float *value) {
   uint8_t kvbuf[5] = {0};
   char* saveptr;
   int bufcnt = 0;
+
+  ret = kv_get(VR_DUMP_KV_KEY, val, NULL, 0);
+  if ((ret == 0) && (strcmp(val, HIGH_STR) == 0)) {
+    syslog(LOG_INFO, "%s() Skip pmbus read during VR dump", __func__);
+    return SENSOR_NA;
+  }
 
   snprintf(key, MAX_FRU_CMD_STR, "pmbus-sensor%02x%c", id, '\0');
   ret = kv_get(key, val, NULL, 0);

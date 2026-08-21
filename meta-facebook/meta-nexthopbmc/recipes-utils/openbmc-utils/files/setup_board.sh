@@ -1,4 +1,6 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+#!/bin/bash
+#
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,12 +16,10 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+# shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
 
-LOCAL_URI += "\
-    file://board-utils.sh \
-    file://setup-gpio.sh \
-    file://setup_board.sh \
-    file://setup_i2c.sh \
-    "
+# Enable usb0 using g_ether for the UDC device using CDC ECM
+modprobe g_ether use_eem=0 host_addr=02:00:00:00:00:02 dev_addr=02:00:00:00:00:01

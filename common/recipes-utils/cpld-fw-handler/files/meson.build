@@ -16,6 +16,17 @@ endif
 
 openssl_dep = dependency('openssl', required : true)
 
+deps = [
+    openssl_dep,
+]
+
+if get_option('enable-events').enabled()
+    add_project_arguments('-DENABLE_EVENTS', language: 'cpp')
+    summary('enable-events', '-DENABLE_EVENTS', section: 'Enabled Features')
+    deps += dependency('phosphor-logging')
+    deps += dependency('phosphor-dbus-interfaces')
+endif
+
 executable(
     'cpld-fw-handler',
     'cpld-fw-main.cpp',
@@ -27,10 +38,6 @@ executable(
     'xo5/xo5_bit_file_frame_parser.hpp',
     'xo5/xo5_sram_recover.cpp',
     'xo5/xo5_sram_recover.hpp',
-    dependencies : [
-        openssl_dep,
-        dependency('phosphor-logging'),
-        dependency('phosphor-dbus-interfaces'),
-    ],
+    dependencies : deps,
     install: true
 )

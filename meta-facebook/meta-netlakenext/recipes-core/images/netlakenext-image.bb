@@ -45,4 +45,8 @@ IMAGE_INSTALL += " \
   flashrom \
   dimm-util \
   cpld-handler \
+  apml \
+  crashdump-amd \
+  addc \
+  yaap \
   "

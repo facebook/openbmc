@@ -1,7 +1,7 @@
-From 39cda626f8cb272eafcb00e61d8ca2ddc9ce18a2 Mon Sep 17 00:00:00 2001
+From 9c81615c29f741ba9f3aa7a5bfbe4450b42b6b05 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Fri, 26 Aug 2022 07:12:09 -0700
-Subject: [PATCH 515/522] tests: Create qtest for Aspeed I2C controller
+Subject: [PATCH] tests: Create qtest for Aspeed I2C controller
 
 Initial commit for a qtest for the Aspeed I2C controller. It uses an
 i2c-echo device and tests echoing some bytes back to itself.
@@ -159,10 +159,10 @@ index 0000000000..1db23222f0
 +    return g_test_run();
 +}
 diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
-index 6c61ca3956..2a1c8a87ae 100644
+index e9b043275c..064e512184 100644
 --- a/tests/qtest/meson.build
 +++ b/tests/qtest/meson.build
-@@ -218,6 +218,7 @@ qtests_npcm8xx = \
+@@ -222,6 +222,7 @@ qtests_npcm8xx = \
  qtests_aspeed = \
    ['aspeed_gpio-test',
     'aspeed_i2c-test',
@@ -171,5 +171,5 @@ index 6c61ca3956..2a1c8a87ae 100644
     'aspeed_scu-test',
     'aspeed_smc-test']
 -- 
-2.52.0
+2.53.0-Meta
 

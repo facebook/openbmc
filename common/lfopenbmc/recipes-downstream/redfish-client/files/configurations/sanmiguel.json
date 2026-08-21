@@ -26,6 +26,36 @@
         "fromUrl": "/redfish/v1/Chassis/HGX_GPU_3/Sensors/HGX_GPU_3_Voltage_0",
         "toNamespace": "voltage",
         "toId": "HGX_GPU3_VOLT_V"
+      },
+      {
+        "fromUrl": "/redfish/v1/Chassis/HGX_ProcessorModule_0/Sensors/HGX_ProcessorModule_0_HSC_0_InputVoltage_0",
+        "toNamespace": "voltage",
+        "toId": "HGX_PROCESSORMODULE0_HSC_VIN_VOLT_V"
+      },
+      {
+        "fromUrl": "/redfish/v1/Chassis/HGX_ProcessorModule_0/Sensors/HGX_ProcessorModule_0_HSC_0_OutputVoltage_0",
+        "toNamespace": "voltage",
+        "toId": "HGX_PROCESSORMODULE0_HSC_VOUT_VOLT_V"
+      },
+      {
+        "fromUrl": "/redfish/v1/Chassis/HGX_ProcessorModule_0/Sensors/HGX_ProcessorModule_0_HSC_0_Power_0",
+        "toNamespace": "power",
+        "toId": "HGX_PROCESSORMODULE0_HSC_PWR_W"
+      },
+      {
+        "fromUrl": "/redfish/v1/Chassis/HGX_ProcessorModule_1/Sensors/HGX_ProcessorModule_1_HSC_0_InputVoltage_0",
+        "toNamespace": "voltage",
+        "toId": "HGX_PROCESSORMODULE1_HSC_VIN_VOLT_V"
+      },
+      {
+        "fromUrl": "/redfish/v1/Chassis/HGX_ProcessorModule_1/Sensors/HGX_ProcessorModule_1_HSC_0_OutputVoltage_0",
+        "toNamespace": "voltage",
+        "toId": "HGX_PROCESSORMODULE1_HSC_VOUT_VOLT_V"
+      },
+      {
+        "fromUrl": "/redfish/v1/Chassis/HGX_ProcessorModule_1/Sensors/HGX_ProcessorModule_1_HSC_0_Power_0",
+        "toNamespace": "power",
+        "toId": "HGX_PROCESSORMODULE1_HSC_PWR_W"
       }
     ]
   },
@@ -88,7 +118,6 @@
         "fromId": "HGX_FW_ProcessorModule_SMA_1",
         "toId": "HGX_processormodule_sma_1"
       },
-
       {
         "fromId": "HGX_InfoROM_GPU_0",
         "toId": "HGX_inforom_gpu_0"

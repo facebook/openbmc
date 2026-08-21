@@ -1,6 +1,7 @@
 #ifndef _SPI_FLASH_H_
 #define _SPI_FLASH_H_
 #include <string>
+#include <vector>
 #include "fw-util.h"
 
 
@@ -50,18 +51,28 @@ class ExternalSPIComponent : public Component {
   private:
     std::string _programmer_type;
     std::string _chip_params;
-    
+    // Chip names to retry with flashrom's -c, in order, if plain
+    // auto-probe fails (e.g. because multiple chip definitions in
+    // flashrom's DB match the same detected ID). Left empty, this
+    // has no effect and behavior is identical to plain auto-probe.
+    std::vector<std::string> _chip_candidates;
+
   public:
-    ExternalSPIComponent(const std::string& fru, 
+    ExternalSPIComponent(const std::string& fru,
                         const std::string& comp,
                         const std::string& programmer_type = "ft2232_spi",
-                        const std::string& chip_params = "type=2232H,port=B") :
+                        const std::string& chip_params = "type=2232H,port=B",
+                        const std::vector<std::string>& chip_candidates = {}) :
       Component(fru, comp),
       _programmer_type(programmer_type),
-      _chip_params(chip_params) {}
-    
+      _chip_params(chip_params),
+      _chip_candidates(chip_candidates) {}
+
     int update(const std::string& image) override;
     int dump(const std::string& image) override;
+
+  private:
+    int runFlashrom(const std::string& op, const std::string& image);
 };
 
 #endif

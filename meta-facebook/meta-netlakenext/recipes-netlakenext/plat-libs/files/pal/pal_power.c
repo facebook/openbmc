@@ -150,6 +150,112 @@ pal_set_rst_btn(uint8_t slot, uint8_t status) {
   return ret;
 }
 
+// Update the CPLD_KBRST_BIT input to the server at given slot
+int
+pal_set_kbrst(uint8_t slot, uint8_t status) {
+  int ret = 0;
+  uint8_t bus = CPLD_BUS_4;
+  uint8_t addr = CPLD_ADDR_BUS_4;
+  uint8_t tbuf[CPLD_REG_BYTE + 1] = { CPLD_MISC_CTRL_SIG_REG, 0 };
+  uint8_t tlen = CPLD_REG_BYTE + 1;
+
+  if (slot != FRU_SERVER) {
+    return ERROR;
+  }
+
+  ret = netlakenext_get_cpld_data(bus, addr, tbuf[0], &(tbuf[1]));
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s: Failed to read CPLD MISC_CTRL_SIG register, bus %d addr %02x reg %02x\n",
+      __func__, bus, addr, tbuf[0]);
+    return ERROR;
+  }
+
+  if (status == LOW) {
+    if ((tbuf[1] & CPLD_KBRST_BIT) == 0) {
+      syslog(LOG_WARNING, "%s: CPLD_KBRST_BIT is already in LOW state\n", __func__);
+      return NO_ACTION;
+    }
+    tbuf[1] &= ~CPLD_KBRST_BIT;
+  } else if (status == HIGH) {
+    if ((tbuf[1] & CPLD_KBRST_BIT) != 0) {
+      syslog(LOG_WARNING, "%s: CPLD_KBRST_BIT is already in HIGH state\n", __func__);
+      return NO_ACTION;
+    }
+    tbuf[1] |= CPLD_KBRST_BIT;
+  }
+  ret = netlakenext_common_i2c_transfer(bus, addr, tbuf, tlen, NULL, 0);
+
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s: Failed to set CPLD_KBRST_BIT, bus %d addr %02x reg %02x value %02x\n",
+      __func__, bus, addr, tbuf[0], tbuf[1]);
+    return ERROR;
+  }
+
+  return SUCCESS;
+}
+
+/*
+ * Short-term workaround for JIRA-233.
+ *
+ * Asserting/de-asserting IRQ_BMC_PCH_SMI_R_N may fail , but the server's
+ * KBRST# sequence must be allowed to proceed regardless of the outcome of
+ * this GPIO operation. Therefore, all error paths in this function
+ * intentionally return SUCCESS instead of propagating the actual failure.
+ */
+int
+pal_set_IRQ_BMC_PCH_SMI(uint8_t slot, uint8_t status) {
+  gpio_desc_t *desc = NULL;
+  gpio_value_t value = GPIO_VALUE_INVALID;
+  gpio_value_t target =
+    (status != 0) ? GPIO_VALUE_HIGH : GPIO_VALUE_LOW;
+
+  if (slot != FRU_SERVER) {
+    return ERROR;
+  }
+
+  desc = gpio_open_by_shadow("IRQ_BMC_PCH_SMI_R_N");
+  if (!desc) {
+    syslog(LOG_ERR, "%s: gpio_open_by_shadow failed for IRQ_BMC_PCH_SMI_R_N", __func__);
+    return SUCCESS;
+  }
+
+  if (gpio_get_value(desc, &value)) {
+    syslog(LOG_ERR, "%s: Failed to get IRQ_BMC_PCH_SMI_R_N", __func__);
+    goto EXIT;
+  }
+  if (value == target) {
+    syslog(LOG_ERR, "%s: IRQ_BMC_PCH_SMI_R_N is already in %s state",
+                    __func__, (target == GPIO_VALUE_HIGH) ? "HIGH" : "LOW");
+    goto EXIT;
+  }
+
+  if (gpio_set_value(desc, target)) {
+    syslog(LOG_ERR, "%s: gpio_set_value failed to set IRQ_BMC_PCH_SMI_R_N to %s state",
+                    __func__, (target == GPIO_VALUE_HIGH) ? "HIGH" : "LOW");
+    goto EXIT;
+  }
+
+  value = GPIO_VALUE_INVALID;
+  if (gpio_get_value(desc, &value)) {
+    syslog(LOG_ERR, "%s: Failed to get IRQ_BMC_PCH_SMI_R_N after setting",
+                    __func__);
+    goto EXIT;
+  }
+  if (value != target) {
+    syslog(LOG_ERR, "%s: IRQ_BMC_PCH_SMI_R_N failed to set to %s state",
+                    __func__, (target == GPIO_VALUE_HIGH) ? "HIGH" : "LOW");
+    goto EXIT;
+  }
+
+  syslog(LOG_INFO, "%s: IRQ_BMC_PCH_SMI_R_N set to %s state",
+                    __func__, (target == GPIO_VALUE_HIGH) ? "HIGH" : "LOW");
+
+EXIT:
+  if (desc != NULL)
+    gpio_close(desc);
+  return SUCCESS;
+}
+
 int
 pal_set_server_power(uint8_t fru, uint8_t cmd) {
   uint8_t status;
@@ -190,10 +296,15 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
     case SERVER_POWER_RESET:
       if (status == SERVER_POWER_ON) {
-        if (pal_set_rst_btn(fru, LOW) < 0)
+        if (pal_set_IRQ_BMC_PCH_SMI(fru, LOW) < 0)
           return ERROR;
-        sleep(1);
-        if (pal_set_rst_btn(fru, HIGH) < 0)
+        usleep(500000);
+        if (pal_set_IRQ_BMC_PCH_SMI(fru, HIGH) < 0)
+          return ERROR;
+        if (pal_set_kbrst(fru, LOW) < 0)
+          return ERROR;
+        usleep(160000);
+        if (pal_set_kbrst(fru, HIGH) < 0)
           return ERROR;
       } else if (status == SERVER_POWER_OFF) {
         printf("Current Power is OFF, therefore cannot reset.\n");

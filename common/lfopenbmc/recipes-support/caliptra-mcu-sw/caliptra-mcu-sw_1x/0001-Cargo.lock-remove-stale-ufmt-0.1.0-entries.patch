@@ -1,0 +1,68 @@
+From 97361a85fbb629a656faa5a1b1ff91661a7dc945 Mon Sep 17 00:00:00 2001
+From: Vince Chang <vince_chang@aspeedtech.com>
+Date: Tue, 5 May 2026 10:35:21 +0800
+Subject: [PATCH] Cargo.lock: remove stale ufmt 0.1.0 entries
+
+The lockfile contains orphaned ufmt 0.1.0, ufmt-macros 0.1.1, and a
+duplicate ufmt-write 0.1.0 left over from an earlier workspace layout.
+Only ufmt 0.2.0 (git) is referenced by any crate in the dependency
+graph, so drop the unused blocks, the orphan ufmt-write, and simplify
+the ufmt-write disambiguation qualifier in the ufmt 0.2.0 dep list.
+
+Upstream-Status: Pending
+Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
+---
+ Cargo.lock | 27 +--------------------------
+ 1 file changed, 1 insertion(+), 26 deletions(-)
+
+diff --git a/Cargo.lock b/Cargo.lock
+index 1b1e7143..2d090bd9 100644
+--- a/Cargo.lock
++++ b/Cargo.lock
+@@ -3910,34 +3910,13 @@ version = "1.18.0"
+ source = "registry+https://github.com/rust-lang/crates.io-index"
+ checksum = "1dccffe3ce07af9386bfd29e80c0ab1a8205a2fc34e4bcd40364df902cfa8f3f"
+ 
+-[[package]]
+-name = "ufmt"
+-version = "0.1.0"
+-dependencies = [
+- "proc-macro-hack",
+- "ufmt-macros 0.1.1",
+- "ufmt-write 0.1.0",
+-]
+-
+ [[package]]
+ name = "ufmt"
+ version = "0.2.0"
+ source = "git+https://github.com/korran/ufmt.git?rev=1d0743c1ffffc68bc05ca8eeb81c166192863f33#1d0743c1ffffc68bc05ca8eeb81c166192863f33"
+ dependencies = [
+  "ufmt-macros 0.3.0",
+- "ufmt-write 0.1.0 (git+https://github.com/korran/ufmt.git?rev=1d0743c1ffffc68bc05ca8eeb81c166192863f33)",
+-]
+-
+-[[package]]
+-name = "ufmt-macros"
+-version = "0.1.1"
+-dependencies = [
+- "lazy_static",
+- "proc-macro-hack",
+- "proc-macro2",
+- "quote",
+- "regex",
+- "syn 1.0.109",
++ "ufmt-write 0.1.0",
+ ]
+ 
+ [[package]]
+@@ -3950,10 +3929,6 @@ dependencies = [
+  "syn 1.0.109",
+ ]
+ 
+-[[package]]
+-name = "ufmt-write"
+-version = "0.1.0"
+-
+ [[package]]
+ name = "ufmt-write"
+ version = "0.1.0"

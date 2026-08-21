@@ -1,9 +1,11 @@
+#include "helper.hpp"
 #include <redfish_client/core/log_service_handler.hpp>
 #include <redfish_client/core/log_entry_mapper_registry.hpp>
 #include <redfish_client/core/unhandled_mapper.hpp>
 #include <redfish_client/core/cper_mapper.hpp>
 #include <redfish_client/core/hgx_ps_run_pwr_fault_mapper.hpp>
 #include <redfish_client/core/hgx_thermal_mapper.hpp>
+#include <redfish_client/core/hgx_leak_detector_mapper.hpp>
 #include <redfish_client/core/sensor_threshold_mapper.hpp>
 
 #include <nlohmann/json.hpp>
@@ -47,7 +49,7 @@ class Create : public CreateSyncIntf
         CreateSyncIntf(bus, path), logs(logs)
     {}
 
-    sdbusplus::message::object_path create(
+    sdbusplus::object_path create(
         std::string message, LoggingLevel severity,
         std::map<std::string, std::string> additionalData) override
     {
@@ -58,7 +60,7 @@ class Create : public CreateSyncIntf
         std::string pathStr = Create::instance_path;
         pathStr += "/entry/";
         pathStr += std::to_string(nextId++);
-        sdbusplus::message::object_path path(pathStr);
+        sdbusplus::object_path path(pathStr);
         return path;
     }
 
@@ -170,6 +172,7 @@ class LogServiceHandlerTest : public ::testing::Test
              "temperature", "HGX_GPU2_DRAM_TEMP_C"}};
 
         registry.registerMapper(std::make_unique<HgxPsRunPwrFaultMapper>(), 110);
+        registry.registerMapper(std::make_unique<HgxLeakDetectorMapper>(), 109);
         registry.registerMapper(std::make_unique<SensorThresholdMapper>(testMappers), 106);
         registry.registerMapper(std::make_unique<HgxThermalMapper>(), 105);
         registry.registerMapper(std::make_unique<CperMapper>(), 100);
@@ -285,6 +288,27 @@ TEST_F(LogServiceHandlerTest, BasicTest)
         EXPECT_EQ("3d61a466-ab40-409a-a698-f362d464b38f"s,
                   cper.at("NotificationType").get<std::string>());
     }
+}
+
+TEST_F(LogServiceHandlerTest, LoadFetchesParsesAndCommits)
+{
+    sdbusplus::async::context ctx;
+    SimpleTestHttpServer server(
+        [](const SimpleTestHttpServer::ReceivedHttpRequest&) {
+            return std::string(kEventlogEntryCollectionJson);
+        },
+        {});
+    auto logServiceHandler = std::make_shared<LogServiceHandler>(
+        ctx, std::format("http://localhost:{}/logs", server.getPort()),
+        std::nullopt);
+
+    // load() drives the full path: fetch the collection over HTTP, parse it,
+    // and commit its entries.
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+        co_await logServiceHandler->load();
+    }());
+
+    EXPECT_EQ(2, logManager.logs->size());
 }
 
 TEST_F(LogServiceHandlerTest, InMemoryPersistTest)
@@ -780,7 +804,7 @@ static constexpr const char* kThermalEntryCollectionJson = R"(
 {
     "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries",
     "@odata.type": "#LogEntryCollection.LogEntryCollection",
-    "Members@odata.count": 2,
+    "Members@odata.count": 3,
     "Members": [
         {
             "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries/1863",
@@ -811,6 +835,21 @@ static constexpr const char* kThermalEntryCollectionJson = R"(
                     "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/Processors/GPU_SXM_8"
                 }
             }
+        },
+        {
+            "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries/5024",
+            "@odata.type": "#LogEntry.v1_15_0.LogEntry",
+            "Id": "5024",
+            "Created": "2025-01-01T12:00:00+00:00",
+            "EntryType": "Event",
+            "MessageId": "ResourceEvent.1.0.ResourceErrorsDetected",
+            "MessageArgs": ["GPU_4 THERM_OVERT_INT", "Abnormal State Change"],
+            "Severity": "Critical",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/Processors/GPU_4"
+                }
+            }
         }
     ]
 }
@@ -832,7 +871,7 @@ TEST_F(LogServiceHandlerTest, HgxThermalMapperTest)
       co_await logServiceHandler->commit(logEntryCollection);
     }());
 
-    ASSERT_EQ(2, logManager.logs->size());
+    ASSERT_EQ(3, logManager.logs->size());
 
     // Verify the first entry: Warning
     Log log1 = (*logManager.logs)[0];
@@ -849,6 +888,69 @@ TEST_F(LogServiceHandlerTest, HgxThermalMapperTest)
               log2.message);
     EXPECT_EQ("/redfish/v1/Systems/HGX_Baseboard_0/Processors/GPU_SXM_8",
               log2.additionalData["DEVICE"]);
+
+    // Verify the third entry: THERM_OVERT_INT (Critical)
+    Log log3 = (*logManager.logs)[2];
+    EXPECT_EQ(LoggingLevel::Critical, log3.severity);
+    EXPECT_EQ("xyz.openbmc_project.State.Thermal.DeviceOverOperatingTemperatureFault"s,
+              log3.message);
+    EXPECT_EQ("/redfish/v1/Systems/HGX_Baseboard_0/Processors/GPU_4",
+              log3.additionalData["DEVICE"]);
+}
+
+static constexpr const char* kLeakDetectorEntryCollectionJson = R"(
+{
+    "@odata.id": "/redfish/v1/Systems/HGX_Baseboard_0/LogServices/EventLog/Entries",
+    "@odata.type": "#LogEntryCollection.LogEntryCollection",
+    "Members@odata.count": 1,
+    "Members": [
+        {
+            "@odata.id": "/redfish/v1/Managers/System0/LogServices/EventLog/Entries/4307",
+            "@odata.type": "#LogEntry.v1_15_0.LogEntry",
+            "Id": "4307",
+            "EntryType": "Event",
+            "Created": "2026-04-06T21:59:59+00:00",
+            "MessageId": "ResourceEvent.1.0.ResourceStatusChangedCritical",
+            "Message": "The health of resource 'Chassis_0_LeakDetector_0_ColdPlate' has changed to Critical.",
+            "MessageArgs": ["Chassis_0_LeakDetector_0_ColdPlate"],
+            "Severity": "Critical",
+            "Links": {
+                "OriginOfCondition": {
+                    "@odata.id": "/redfish/v1/Chassis/HGX_Baseboard_0/LeakDetection/LeakDetectors/Chassis_0_LeakDetector_0_ColdPlate"
+                }
+            }
+        }
+    ]
+}
+)";
+
+TEST_F(LogServiceHandlerTest, LeakDetectorMapperTest)
+{
+    sdbusplus::async::context ctx;
+    auto logServiceHandler =
+        std::make_shared<LogServiceHandler>(ctx, "fake.url", std::nullopt);
+
+    auto logEntryCollection =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            kLeakDetectorEntryCollectionJson);
+
+    using namespace std::string_literals;
+
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+      co_await logServiceHandler->commit(logEntryCollection);
+    }());
+
+    // Expect 1 log: LeakDetectedCritical
+    ASSERT_EQ(1, logManager.logs->size());
+
+    Log log = (*logManager.logs)[0];
+    EXPECT_EQ(LoggingLevel::Critical, log.severity);
+    EXPECT_EQ("xyz.openbmc_project.State.Leak.Detector.LeakDetectedCritical"s,
+              log.message);
+
+    std::string expectedDetectorPath =
+        "/xyz/openbmc_project/state/leak/detector/Chassis_0_LeakDetector_0_ColdPlate";
+    EXPECT_EQ(expectedDetectorPath, log.additionalData["DETECTOR_NAME"]);
 }
 
 TEST_F(LogServiceHandlerTest, SensorThresholdMappingTest)

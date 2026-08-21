@@ -1,0 +1,79 @@
+From d374fd2b8592840a8bd492b6a96e647a6c3c64ff Mon Sep 17 00:00:00 2001
+From: Emmanuel Blot via <qemu-arm@nongnu.org>
+Date: Fri, 31 Jul 2026 12:45:14 +0200
+Subject: [PATCH] hw/arm: fuji: use the real TMP75 and LM75B temperature
+ sensors
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The Fuji BMC instantiates many ti,tmp75 sensors and several NXP LM75B
+sensors; the original board code approximated both with a plain TMP105
+via local TYPE_TMP75 and TYPE_LM75 aliases (the latter mislabelling the
+LM75B parts as LM75).
+
+Now that hw/sensor/tmp105.h provides proper TMP75 and LM75B models, drop
+the local aliases (and their guards) and instantiate the accurate
+devices.
+
+Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
+Link: https://lore.kernel.org/qemu-devel/20260731-sanmiguel-bmc-locator-v2-15-1266926ba769@free.fr
+Signed-off-by: Cédric Le Goater <clg@redhat.com>
+---
+ hw/arm/aspeed_ast2600_fuji.c | 22 +++++++---------------
+ 1 file changed, 7 insertions(+), 15 deletions(-)
+
+diff --git a/hw/arm/aspeed_ast2600_fuji.c b/hw/arm/aspeed_ast2600_fuji.c
+index e5aca6f0c0..a5e9ddd695 100644
+--- a/hw/arm/aspeed_ast2600_fuji.c
++++ b/hw/arm/aspeed_ast2600_fuji.c
+@@ -16,14 +16,6 @@
+ #include "hw/sensor/tmp105.h"
+ #include "hw/nvram/eeprom_at24c.h"
+ 
+-/*
+- * Guard the aliases against the TYPE_TMP75 that hw/sensor/tmp105.h now defines;
+- * TYPE_LM75 is guarded too for consistency (no LM75 model exists yet).
+- */
+-#undef TYPE_LM75
+-#define TYPE_LM75 TYPE_TMP105
+-#undef TYPE_TMP75
+-#define TYPE_TMP75 TYPE_TMP105
+ #define TYPE_TMP422 "tmp422"
+ 
+ /* Fuji hardware value */
+@@ -53,8 +45,8 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
+                                  &i2c[80 + i * 8]);
+     }
+ 
+-    i2c_slave_create_simple(i2c[17], TYPE_LM75, 0x4c);
+-    i2c_slave_create_simple(i2c[17], TYPE_LM75, 0x4d);
++    i2c_slave_create_simple(i2c[17], TYPE_LM75B, 0x4c);
++    i2c_slave_create_simple(i2c[17], TYPE_LM75B, 0x4d);
+ 
+     /*
+      * EEPROM 24c64 size is 64Kbits or 8 Kbytes
+@@ -64,15 +56,15 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
+     at24c_eeprom_init(i2c[20], 0x50, 256);
+     at24c_eeprom_init(i2c[22], 0x52, 256);
+ 
+-    i2c_slave_create_simple(i2c[3], TYPE_LM75, 0x48);
+-    i2c_slave_create_simple(i2c[3], TYPE_LM75, 0x49);
+-    i2c_slave_create_simple(i2c[3], TYPE_LM75, 0x4a);
++    i2c_slave_create_simple(i2c[3], TYPE_LM75B, 0x48);
++    i2c_slave_create_simple(i2c[3], TYPE_LM75B, 0x49);
++    i2c_slave_create_simple(i2c[3], TYPE_LM75B, 0x4a);
+     i2c_slave_create_simple(i2c[3], TYPE_TMP422, 0x4c);
+ 
+     at24c_eeprom_init(i2c[8], 0x51, 8 * KiB);
+-    i2c_slave_create_simple(i2c[8], TYPE_LM75, 0x4a);
++    i2c_slave_create_simple(i2c[8], TYPE_LM75B, 0x4a);
+ 
+-    i2c_slave_create_simple(i2c[50], TYPE_LM75, 0x4c);
++    i2c_slave_create_simple(i2c[50], TYPE_LM75B, 0x4c);
+     at24c_eeprom_init(i2c[50], 0x52, 8 * KiB);
+     i2c_slave_create_simple(i2c[51], TYPE_TMP75, 0x48);
+     i2c_slave_create_simple(i2c[52], TYPE_TMP75, 0x49);
+-- 
+2.53.0-Meta
+

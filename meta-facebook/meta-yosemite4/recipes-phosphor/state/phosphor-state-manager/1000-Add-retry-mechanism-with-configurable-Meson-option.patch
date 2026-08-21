@@ -1,4 +1,4 @@
-From d01f2550c5fc5b6146fd5591e596f56ba00489f4 Mon Sep 17 00:00:00 2001
+From 27b560c16d00af0c1f8c1e9790a0f7d9948e8c33 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Wed, 26 Mar 2025 18:30:01 +0800
 Subject: [PATCH] Add retry mechanism with configurable Meson option
@@ -13,10 +13,10 @@ the number of retries to be configured via a Meson option.
  4 files changed, 52 insertions(+), 24 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index c7f46bf..d6de460 100644
+index 0511808..dc5bbe0 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -92,6 +92,8 @@ else
+@@ -96,6 +96,8 @@ else
      conf.set('NUM_CHASSIS_SMP', 0)
  endif
  
@@ -26,10 +26,10 @@ index c7f46bf..d6de460 100644
  
  nlohmann_json_dep = dependency('nlohmann_json', include_type: 'system')
 diff --git a/meson.options b/meson.options
-index bfeb66b..7b7738e 100644
+index 8a26c1d..c5e6c06 100644
 --- a/meson.options
 +++ b/meson.options
-@@ -203,3 +203,10 @@ option(
+@@ -210,3 +210,10 @@ option(
      value: 12,
      description: 'Maximum number of chassis instances to aggregate in multi-chassis SMP mode (1-N)',
  )
@@ -165,5 +165,5 @@ index 5f721b8..13d2755 100644
  
  } // namespace settings
 -- 
-2.52.0
+2.53.0-Meta
 

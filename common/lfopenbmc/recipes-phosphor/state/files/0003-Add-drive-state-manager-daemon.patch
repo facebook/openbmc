@@ -1,0 +1,918 @@
+From 27ea7fef496f7aa0f2a18ae2b592279aab0d6cb9 Mon Sep 17 00:00:00 2001
+From: Eric Yang <eric.yang.wiwynn@gmail.com>
+Date: Thu, 23 Apr 2026 04:20:23 +0000
+Subject: [PATCH] Add drive state manager daemon
+
+Add phosphor-drive-state-manager, a single-instance daemon that
+implements the xyz.openbmc_project.State.Drive D-Bus interface for
+individual drive power control. The daemon discovers drives at runtime
+through entity-manager, creating per-device state objects dynamically
+within a single process.
+
+The daemon maps RequestedDriveTransition to systemd targets and monitors
+JobRemoved signals to update CurrentDriveState. Supported transitions
+are On, Off, Reboot, HardReboot, and Powercycle. Seven systemd target
+templates are included for transition, state, and marker operations.
+Platform-specific hardware operations attach to these targets via
+.wants/ directories, keeping all hardware logic out of the state
+manager.
+
+State transitions cross-validate JobRemoved signals against the target
+active state to prevent transient state flips when systemd stops
+conflicting targets during power transitions.
+
+Each state object publishes a D-Bus association to its inventory path
+for bmcweb state object discovery. Drives associated with a host via
+Inventory.Decorator.ManagedHost receive a host-dependency check that
+rejects power-on transitions with a D-Bus NotAllowed error when the
+host is off. Drives also follow host power lifecycle: host-off triggers
+drive poweroff, host-on triggers drive poweron.
+
+Motivation:
+On storage-dense platforms, individual NVMe/SSD drives need to be power
+cycled or reset from the BMC independently of chassis or host state.
+The State.Drive interface exists in phosphor-dbus-interfaces [1] but
+had no upstream consumer.
+
+Tested:
+On a Yosemite5 platform with entity-manager exposing
+Item.Drive inventory objects (ssd0, ssd1) via JSON configuration
+(simulated drives, no real NVMe power hardware attached to targets):
+
+  busctl tree xyz.openbmc_project.State.Drive
+  └─ /xyz/openbmc_project/state/drive/ssd0
+  └─ /xyz/openbmc_project/state/drive/ssd1
+
+  busctl set-property xyz.openbmc_project.State.Drive \
+    /xyz/openbmc_project/state/drive/ssd0 \
+    xyz.openbmc_project.State.Drive RequestedDriveTransition \
+    s xyz.openbmc_project.State.Drive.Transition.Off
+
+  CurrentDriveState transitions: Unknown → NotReady → Offline.
+  Transition.On restores to Ready.
+
+All five transition types (On, Off, Reboot, HardReboot, Powercycle)
+execute the corresponding systemd target and reach the expected final
+state.
+
+Host power-off (busctl set RequestedHostTransition Off) triggers
+automatic drive poweroff for all associated drives. Both ssd0 and ssd1
+transition to Offline. Host power-on restores all drives to Ready.
+Power-on request while host is off is rejected with NotAllowed:
+
+  busctl set-property ... Transition.On
+  Failed to set property: The operation is not allowed
+
+Reference:
+[1] https://gerrit.openbmc.org/c/openbmc/phosphor-dbus-interfaces/+/43155
+[2] https://gerrit.openbmc.org/c/openbmc/phosphor-dbus-interfaces/+/89402
+[3] https://gerrit.openbmc.org/c/openbmc/phosphor-dbus-interfaces/+/90669
+
+Depends-On: I13ab50a771f4bcf678308b53e48c6084925ca8a1
+Depends-On: I629b663e8b018ec1f81175c43d637e00a63907a1
+Change-Id: Iccc69acf71ce135481c8a59124072ee460be12a5
+Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
+---
+ drive_state_manager.cpp                       | 391 ++++++++++++++++++
+ drive_state_manager.hpp                       | 114 +++++
+ drive_state_manager_main.cpp                  | 140 +++++++
+ meson.build                                   |  10 +
+ service_files/meson.build                     |   1 +
+ .../xyz.openbmc_project.State.Drive.service   |  13 +
+ target_files/meson.build                      |   7 +
+ target_files/obmc-drive-hard-reboot@.target   |   5 +
+ target_files/obmc-drive-powercycle@.target    |   8 +
+ target_files/obmc-drive-powered-off@.target   |   3 +
+ target_files/obmc-drive-powered-on@.target    |   3 +
+ target_files/obmc-drive-poweroff@.target      |   7 +
+ target_files/obmc-drive-poweron@.target       |   9 +
+ target_files/obmc-drive-reboot@.target        |   3 +
+ 14 files changed, 714 insertions(+)
+ create mode 100644 drive_state_manager.cpp
+ create mode 100644 drive_state_manager.hpp
+ create mode 100644 drive_state_manager_main.cpp
+ create mode 100644 service_files/xyz.openbmc_project.State.Drive.service
+ create mode 100644 target_files/obmc-drive-hard-reboot@.target
+ create mode 100644 target_files/obmc-drive-powercycle@.target
+ create mode 100644 target_files/obmc-drive-powered-off@.target
+ create mode 100644 target_files/obmc-drive-powered-on@.target
+ create mode 100644 target_files/obmc-drive-poweroff@.target
+ create mode 100644 target_files/obmc-drive-poweron@.target
+ create mode 100644 target_files/obmc-drive-reboot@.target
+
+diff --git a/drive_state_manager.cpp b/drive_state_manager.cpp
+new file mode 100644
+index 00000000..e7e81d87
+--- /dev/null
++++ b/drive_state_manager.cpp
+@@ -0,0 +1,391 @@
++#include "drive_state_manager.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++#include <sdbusplus/exception.hpp>
++#include <xyz/openbmc_project/Common/error.hpp>
++
++#include <format>
++#include <string>
++#include <tuple>
++#include <variant>
++#include <vector>
++
++namespace phosphor
++{
++namespace state
++{
++namespace manager
++{
++
++PHOSPHOR_LOG2_USING;
++
++namespace server = sdbusplus::server::xyz::openbmc_project::state;
++
++constexpr auto DRIVE_STATE_POWERON_TGT_FMT = "obmc-drive-poweron@{}.target";
++constexpr auto DRIVE_STATE_POWEROFF_TGT_FMT = "obmc-drive-poweroff@{}.target";
++constexpr auto DRIVE_STATE_REBOOT_TGT_FMT = "obmc-drive-reboot@{}.target";
++constexpr auto DRIVE_STATE_HARD_REBOOT_TGT_FMT =
++    "obmc-drive-hard-reboot@{}.target";
++constexpr auto DRIVE_STATE_POWERCYCLE_TGT_FMT =
++    "obmc-drive-powercycle@{}.target";
++constexpr auto DRIVE_STATE_POWERED_ON_TGT_FMT =
++    "obmc-drive-powered-on@{}.target";
++constexpr auto DRIVE_STATE_POWERED_OFF_TGT_FMT =
++    "obmc-drive-powered-off@{}.target";
++
++constexpr auto ACTIVE_STATE = "active";
++constexpr auto ACTIVATING_STATE = "activating";
++
++constexpr auto HOST_STATE_INTERFACE = "xyz.openbmc_project.State.Host";
++constexpr auto HOST_STATE_PATH_FMT = "/xyz/openbmc_project/state/host{}";
++
++using AssocDefTuple = std::tuple<std::string, std::string, std::string>;
++
++Drive::Drive(sdbusplus::bus_t& bus, const char* objPath,
++             const std::string& instanceName, const std::string& inventoryPath,
++             std::optional<size_t> hostId) :
++    DriveInherit(bus, objPath, DriveInherit::action::defer_emit), bus(bus),
++    systemdSignals(
++        bus,
++        sdbusRule::type::signal() + sdbusRule::member("JobRemoved") +
++            sdbusRule::path(SYSTEMD_OBJ_PATH) +
++            sdbusRule::interface(SYSTEMD_MANAGER_INTERFACE),
++        [this](sdbusplus::message_t& m) { sysStateChangeJobRemoved(m); }),
++    instanceName(instanceName), inventoryPath(inventoryPath), hostId(hostId)
++{
++    createSystemdTargetTable();
++
++    // Publish association to inventory object
++    std::vector<AssocDefTuple> assocDefs;
++    assocDefs.emplace_back("inventory", "state", inventoryPath);
++    associations(assocDefs);
++
++    setupHostStateMonitoring();
++    determineInitialState();
++    this->emit_object_added();
++}
++
++void Drive::createSystemdTargetTable()
++{
++    systemdTargetTable = {
++        {Transition::On,
++         std::format(DRIVE_STATE_POWERON_TGT_FMT, instanceName)},
++        {Transition::Off,
++         std::format(DRIVE_STATE_POWEROFF_TGT_FMT, instanceName)},
++        {Transition::Reboot,
++         std::format(DRIVE_STATE_REBOOT_TGT_FMT, instanceName)},
++        {Transition::HardReboot,
++         std::format(DRIVE_STATE_HARD_REBOOT_TGT_FMT, instanceName)},
++        {Transition::Powercycle,
++         std::format(DRIVE_STATE_POWERCYCLE_TGT_FMT, instanceName)}};
++}
++
++void Drive::setupHostStateMonitoring()
++{
++    if (!hostId.has_value())
++    {
++        // No host association; drive is host-independent
++        hostRunning = true;
++        return;
++    }
++
++    auto hostPath = std::format(HOST_STATE_PATH_FMT, *hostId);
++
++    info("Drive {DRIVE} associated with host {HOSTID}, monitoring {PATH}",
++         "DRIVE", instanceName, "HOSTID", *hostId, "PATH", hostPath);
++
++    // Watch for host state property changes
++    hostStateMatch = std::make_unique<sdbusplus::bus::match_t>(
++        bus, sdbusRule::propertiesChanged(hostPath, HOST_STATE_INTERFACE),
++        [this](sdbusplus::message_t& msg) {
++            std::string interface;
++            std::map<std::string, std::variant<std::string>> properties;
++            msg.read(interface, properties);
++
++            auto findState = properties.find("CurrentHostState");
++            if (findState == properties.end())
++            {
++                return;
++            }
++
++            const auto& stateStr = std::get<std::string>(findState->second);
++            handleHostStateChange(stateStr);
++        });
++
++    // Watch for host state manager appearing on D-Bus (InterfacesAdded).
++    // host-state-manager sets initial state with skipSignal=true (no
++    // PropertiesChanged), then emits InterfacesAdded. Without this match,
++    // drives would miss the initial host state when drive-state-manager
++    // starts before host-state-manager.
++    hostIfaceAddedMatch = std::make_unique<sdbusplus::bus::match_t>(
++        bus, sdbusRule::interfacesAddedAtPath(hostPath),
++        [this](sdbusplus::message_t& msg) {
++            sdbusplus::object_path objPath;
++            std::map<std::string,
++                     std::map<std::string, std::variant<std::string>>>
++                interfaces;
++            msg.read(objPath, interfaces);
++
++            auto hostIface = interfaces.find(HOST_STATE_INTERFACE);
++            if (hostIface == interfaces.end())
++            {
++                return;
++            }
++
++            auto findState = hostIface->second.find("CurrentHostState");
++            if (findState == hostIface->second.end())
++            {
++                return;
++            }
++
++            const auto& stateStr = std::get<std::string>(findState->second);
++            info("Host {HOSTID} interface appeared, state={STATE}", "HOSTID",
++                 *hostId, "STATE", stateStr);
++            handleHostStateChange(stateStr);
++        });
++
++    // Initial read of current host state.
++    // If host state manager is not yet available, defaults to hostRunning=true
++    // (allow drive operations). When host state manager starts, its
++    // InterfacesAdded signal will be caught by hostIfaceAddedMatch above,
++    // correctly syncing the host state.
++    readHostState();
++}
++
++void Drive::handleHostStateChange(const std::string& stateStr)
++{
++    bool wasRunning = hostRunning;
++    hostRunning = stateStr.ends_with(".Running");
++
++    info("Host {HOSTID} state changed, hostRunning={RUNNING}", "HOSTID",
++         *hostId, "RUNNING", hostRunning);
++
++    // When host transitions from running to off, initiate drive
++    // poweroff per design requirement.
++    if (wasRunning && !hostRunning)
++    {
++        info("Host off, powering off drive {DRIVE}", "DRIVE", instanceName);
++        executeTransition(Transition::Off);
++        currentDriveState(DriveState::NotReady);
++        server::Drive::requestedDriveTransition(Transition::Off, true);
++    }
++    // When host transitions from off to running, auto power-on
++    // drives so they are available when the host is up.
++    else if (!wasRunning && hostRunning)
++    {
++        info("Host on, powering on drive {DRIVE}", "DRIVE", instanceName);
++        executeTransition(Transition::On);
++    }
++}
++
++void Drive::readHostState()
++{
++    if (!hostId.has_value())
++    {
++        return;
++    }
++
++    auto hostPath = std::format(HOST_STATE_PATH_FMT, *hostId);
++
++    try
++    {
++        auto currentState = utils::getProperty(
++            bus, hostPath, HOST_STATE_INTERFACE, "CurrentHostState");
++        hostRunning = currentState.ends_with(".Running");
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        // Host state manager may not be available yet. Default to running
++        // (allow drive transitions) to handle BMC-reboot-while-host-up.
++        // When host state manager appears, InterfacesAdded will fire and
++        // correct this to the actual state.
++        info("Unable to read host state: {ERROR}", "ERROR", e);
++        hostRunning = true;
++    }
++}
++
++bool Drive::isHostRunning() const
++{
++    if (!hostId.has_value())
++    {
++        // No host association means host-independent
++        return true;
++    }
++    return hostRunning;
++}
++
++void Drive::determineInitialState()
++{
++    if (stateActive(std::format(DRIVE_STATE_POWERED_OFF_TGT_FMT, instanceName)))
++    {
++        server::Drive::currentDriveState(DriveState::Offline, true);
++    }
++    else if (stateActive(
++                 std::format(DRIVE_STATE_POWERED_ON_TGT_FMT, instanceName)))
++    {
++        server::Drive::currentDriveState(DriveState::Ready, true);
++    }
++    else
++    {
++        // No marker target is active. This is expected on first boot or
++        // after a BMC reset when no drive transition has been triggered yet.
++        // The state will update to Ready or Offline when the platform
++        // starts the poweron/poweroff targets.
++        info("Drive {DRIVE} has no active marker target, state is Unknown",
++             "DRIVE", instanceName);
++        server::Drive::currentDriveState(DriveState::Unknown, true);
++    }
++
++    server::Drive::requestedDriveTransition(Transition::None, true);
++}
++
++void Drive::startUnit(const std::string& sysdUnit)
++{
++    auto method = bus.new_method_call(SYSTEMD_SERVICE, SYSTEMD_OBJ_PATH,
++                                      SYSTEMD_MANAGER_INTERFACE, "StartUnit");
++
++    method.append(sysdUnit);
++    method.append("replace");
++
++    bus.call_noreply(method);
++}
++
++bool Drive::stateActive(const std::string& target)
++{
++    sdbusplus::object_path unitTargetPath;
++
++    auto method = bus.new_method_call(SYSTEMD_SERVICE, SYSTEMD_OBJ_PATH,
++                                      SYSTEMD_MANAGER_INTERFACE, "GetUnit");
++    method.append(target);
++
++    try
++    {
++        auto result = bus.call(method);
++        unitTargetPath = result.unpack<sdbusplus::object_path>();
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        error("Error in GetUnit call: {ERROR}", "ERROR", e);
++        return false;
++    }
++
++    method = bus.new_method_call(
++        SYSTEMD_SERVICE,
++        static_cast<const std::string&>(unitTargetPath).c_str(),
++        PROPERTY_INTERFACE, "Get");
++    method.append(SYSTEMD_UNIT_INTERFACE, "ActiveState");
++
++    std::string currentStateStr;
++    try
++    {
++        auto result = bus.call(method);
++        currentStateStr =
++            std::get<std::string>(result.unpack<std::variant<std::string>>());
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        error("Error in ActiveState Get: {ERROR}", "ERROR", e);
++        return false;
++    }
++
++    return currentStateStr == ACTIVE_STATE ||
++           currentStateStr == ACTIVATING_STATE;
++}
++
++void Drive::executeTransition(Transition value)
++{
++    auto it = systemdTargetTable.find(value);
++    if (it == systemdTargetTable.end())
++    {
++        error("Unsupported drive transition requested: {TRANSITION}",
++              "TRANSITION", value);
++        return;
++    }
++
++    startUnit(it->second);
++}
++
++void Drive::sysStateChangeJobRemoved(sdbusplus::message_t& msg)
++{
++    uint32_t newStateID{};
++    sdbusplus::object_path newStateObjPath;
++    std::string newStateUnit{};
++    std::string newStateResult{};
++
++    try
++    {
++        std::tie(newStateID, newStateObjPath, newStateUnit, newStateResult) =
++            msg.unpack<uint32_t, sdbusplus::object_path, std::string,
++                       std::string>();
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        error("Error in drive state change - bad encoding: "
++              "{ERROR} {REPLY_SIG}",
++              "ERROR", e, "REPLY_SIG", msg.get_signature());
++        return;
++    }
++
++    if ((newStateUnit ==
++         std::format(DRIVE_STATE_POWERON_TGT_FMT, instanceName)) &&
++        newStateResult == "done" &&
++        stateActive(std::format(DRIVE_STATE_POWERON_TGT_FMT, instanceName)))
++    {
++        currentDriveState(DriveState::Ready);
++        server::Drive::requestedDriveTransition(Transition::None, true);
++        return;
++    }
++
++    if ((newStateUnit ==
++         std::format(DRIVE_STATE_POWEROFF_TGT_FMT, instanceName)) &&
++        newStateResult == "done" &&
++        !stateActive(std::format(DRIVE_STATE_POWERON_TGT_FMT, instanceName)))
++    {
++        currentDriveState(DriveState::Offline);
++        server::Drive::requestedDriveTransition(Transition::None, true);
++        return;
++    }
++}
++
++Drive::Transition Drive::requestedDriveTransition(Transition value)
++{
++    if (value == Transition::None)
++    {
++        return server::Drive::requestedDriveTransition(value);
++    }
++
++    if (value == Transition::NotSupported)
++    {
++        error("Drive {DRIVE} received NotSupported transition request", "DRIVE",
++              instanceName);
++        return server::Drive::requestedDriveTransition(Transition::None);
++    }
++
++    // Host dependency check: reject transitions that result in the drive
++    // being powered on when the host is off. Off is always allowed.
++    if ((value == Transition::On || value == Transition::Reboot ||
++         value == Transition::HardReboot || value == Transition::Powercycle) &&
++        !isHostRunning())
++    {
++        error(
++            "Drive {DRIVE} transition {TRANSITION} rejected: host {HOSTID} is off",
++            "DRIVE", instanceName, "TRANSITION", value, "HOSTID",
++            hostId.value_or(0));
++        throw sdbusplus::xyz::openbmc_project::Common::Error::NotAllowed();
++    }
++
++    executeTransition(value);
++    currentDriveState(DriveState::NotReady);
++    return server::Drive::requestedDriveTransition(value);
++}
++
++Drive::DriveState Drive::currentDriveState(DriveState value)
++{
++    info("Change to Drive {DRIVE_INSTANCE} State: {STATE}", "DRIVE_INSTANCE",
++         instanceName, "STATE", value);
++    return server::Drive::currentDriveState(value);
++}
++
++} // namespace manager
++} // namespace state
++} // namespace phosphor
+diff --git a/drive_state_manager.hpp b/drive_state_manager.hpp
+new file mode 100644
+index 00000000..7418798b
+--- /dev/null
++++ b/drive_state_manager.hpp
+@@ -0,0 +1,114 @@
++#pragma once
++
++#include "utils.hpp"
++
++#include <sdbusplus/bus.hpp>
++#include <xyz/openbmc_project/Association/Definitions/server.hpp>
++#include <xyz/openbmc_project/State/Drive/server.hpp>
++
++#include <map>
++#include <memory>
++#include <optional>
++#include <string>
++
++namespace phosphor
++{
++namespace state
++{
++namespace manager
++{
++
++using DriveInherit = sdbusplus::server::object_t<
++    sdbusplus::server::xyz::openbmc_project::state::Drive,
++    sdbusplus::server::xyz::openbmc_project::association::Definitions>;
++
++namespace sdbusRule = sdbusplus::bus::match::rules;
++
++/** @class Drive
++ *  @brief OpenBMC drive state management implementation.
++ *  @details A concrete implementation for xyz.openbmc_project.State.Drive
++ *  DBus API. Each instance represents one physical drive discovered
++ *  through entity-manager.
++ */
++class Drive : public DriveInherit
++{
++  public:
++    /** @brief Constructs Drive State Manager
++     *
++     *  @note This constructor passes 'true' to the base class in order to
++     *        defer dbus object registration until we can run
++     *        determineInitialState() and set our properties
++     *
++     *  @param[in] bus           - The Dbus bus object
++     *  @param[in] objPath       - The Dbus object path
++     *  @param[in] instanceName  - The drive instance name (e.g. nvme0)
++     *  @param[in] inventoryPath - The entity-manager inventory path
++     *  @param[in] hostId        - Host index from ManagedHost, or nullopt
++     */
++    Drive(sdbusplus::bus_t& bus, const char* objPath,
++          const std::string& instanceName, const std::string& inventoryPath,
++          std::optional<size_t> hostId);
++
++    /** @brief Set value of RequestedDriveTransition */
++    Transition requestedDriveTransition(Transition value) override;
++
++    /** @brief Set value of CurrentDriveState */
++    DriveState currentDriveState(DriveState value) override;
++
++    /** @brief Get the instance name */
++    const std::string& getInstanceName() const
++    {
++        return instanceName;
++    }
++
++  private:
++    /** @brief Create the systemd target to transition mapping */
++    void createSystemdTargetTable();
++
++    /** @brief Determine initial drive state based on systemd targets */
++    void determineInitialState();
++
++    /** @brief Start the systemd unit */
++    void startUnit(const std::string& sysdUnit);
++
++    /** @brief Check if systemd target is active */
++    bool stateActive(const std::string& target);
++
++    /** @brief Execute the requested transition */
++    void executeTransition(Transition value);
++
++    /** @brief Callback for systemd JobRemoved signal */
++    void sysStateChangeJobRemoved(sdbusplus::message_t& msg);
++
++    /** @brief Set up host state monitoring if hostId is set */
++    void setupHostStateMonitoring();
++
++    /** @brief Handle a host state change from any signal source */
++    void handleHostStateChange(const std::string& stateStr);
++
++    /** @brief Read current host state from D-Bus and update cache */
++    void readHostState();
++
++    /** @brief Check if host is running (from cache) */
++    bool isHostRunning() const;
++
++    sdbusplus::bus_t& bus;
++    sdbusplus::bus::match_t systemdSignals;
++    const std::string instanceName;
++    const std::string inventoryPath;
++    const std::optional<size_t> hostId;
++    std::map<Transition, std::string> systemdTargetTable;
++
++    /** @brief Cached host state for fast transition validation */
++    bool hostRunning = false;
++
++    /** @brief Match for host PropertiesChanged signal */
++    std::unique_ptr<sdbusplus::bus::match_t> hostStateMatch;
++
++    /** @brief Match for host InterfacesAdded signal (startup sync) */
++    std::unique_ptr<sdbusplus::bus::match_t> hostIfaceAddedMatch;
++};
++
++} // namespace manager
++} // namespace state
++} // namespace phosphor
+diff --git a/drive_state_manager_main.cpp b/drive_state_manager_main.cpp
+new file mode 100644
+index 00000000..096097d5
+--- /dev/null
++++ b/drive_state_manager_main.cpp
+@@ -0,0 +1,140 @@
++#include "drive_state_manager.hpp"
++#include "sub_device_manager.hpp"
++#include "utils.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++#include <sdbusplus/bus.hpp>
++#include <sdbusplus/server/manager.hpp>
++
++#include <map>
++#include <memory>
++#include <string>
++
++PHOSPHOR_LOG2_USING;
++
++using DriveState = sdbusplus::server::xyz::openbmc_project::state::Drive;
++
++constexpr auto ITEM_DRIVE_INTERFACE =
++    "xyz.openbmc_project.Inventory.Item.Drive";
++constexpr auto MANAGED_HOST_INTERFACE =
++    "xyz.openbmc_project.Inventory.Decorator.ManagedHost";
++
++/** @brief Extract drive instance name from entity-manager object path.
++ *
++ *  Entity-manager builds the object path from the Board entity "Name" field
++ *  (sanitized for D-Bus), so the last path component is the instance name.
++ */
++static std::string extractInstanceName(const std::string& objectPath)
++{
++    sdbusplus::object_path path(objectPath);
++    return path.filename();
++}
++
++/** @brief Extract HostIndex from ManagedHost interface if present. */
++static std::optional<size_t> extractHostId(
++    const phosphor::state::manager::DbusInterfaceMap& interfaces)
++{
++    auto hostIt = interfaces.find(MANAGED_HOST_INTERFACE);
++    if (hostIt == interfaces.end())
++    {
++        return std::nullopt;
++    }
++
++    auto indexIt = hostIt->second.find("HostIndex");
++    if (indexIt == hostIt->second.end())
++    {
++        return std::nullopt;
++    }
++
++    // HostIndex can be string or uint64_t in entity-manager schema
++    if (const auto* val = std::get_if<uint64_t>(&indexIt->second))
++    {
++        return static_cast<size_t>(*val);
++    }
++    if (const auto* val = std::get_if<std::string>(&indexIt->second))
++    {
++        try
++        {
++            return std::stoul(*val);
++        }
++        catch (const std::exception& e)
++        {
++            error("Failed to parse HostIndex '{VALUE}': {ERROR}", "VALUE", *val,
++                  "ERROR", e);
++        }
++    }
++
++    return std::nullopt;
++}
++
++int main()
++{
++    auto bus = sdbusplus::bus::new_default();
++
++    auto driveBusName = std::string(DriveState::interface);
++    const auto* objPath = DriveState::namespace_path::value;
++
++    // Add sdbusplus ObjectManager.
++    sdbusplus::server::manager_t objManager(bus, objPath);
++
++    // Subscribe to systemd signals once for all drive instances
++    phosphor::state::manager::utils::subscribeToSystemdSignals(bus);
++
++    // Map of inventory path -> Drive state manager instance.
++    // unique_ptr is safe: sd_bus_process handles one message at a time,
++    // so InterfacesRemoved destroys the Drive (unregistering its match)
++    // before the next message can dispatch to a stale callback.
++    std::map<std::string, std::unique_ptr<phosphor::state::manager::Drive>>
++        drives;
++
++    // Set up entity-manager discovery for Item.Drive
++    phosphor::state::manager::SubDeviceManager emWatcher(
++        bus, ITEM_DRIVE_INTERFACE,
++        // Device added callback
++        [&bus, &drives](
++            const std::string& inventoryPath,
++            const phosphor::state::manager::DbusInterfaceMap& interfaces) {
++            if (drives.contains(inventoryPath))
++            {
++                return;
++            }
++
++            auto instanceName = extractInstanceName(inventoryPath);
++            auto hostId = extractHostId(interfaces);
++
++            auto drivePath =
++                sdbusplus::object_path(DriveState::namespace_path::value) /
++                std::string(DriveState::namespace_path::drive) / instanceName;
++
++            info("Creating drive state object {PATH} for inventory {INV}",
++                 "PATH", drivePath.str, "INV", inventoryPath);
++
++            drives.emplace(inventoryPath,
++                           std::make_unique<phosphor::state::manager::Drive>(
++                               bus, drivePath.str.c_str(), instanceName,
++                               inventoryPath, hostId));
++        },
++        // Device removed callback
++        [&drives](const std::string& inventoryPath) {
++            auto it = drives.find(inventoryPath);
++            if (it != drives.end())
++            {
++                info("Removing drive state object for inventory {INV}", "INV",
++                     inventoryPath);
++                drives.erase(it);
++            }
++        });
++
++    // Scan for devices that entity-manager already published before we started
++    emWatcher.scanExistingDevices();
++
++    bus.request_name(driveBusName.c_str());
++
++    while (true)
++    {
++        bus.process_discard();
++        bus.wait();
++    }
++
++    return 0;
++}
+diff --git a/meson.build b/meson.build
+index b89c3e57..bbc01310 100644
+--- a/meson.build
++++ b/meson.build
+@@ -259,6 +259,16 @@ executable(
+     install_dir: get_option('libexecdir') / 'phosphor-state-manager',
+ )
+ 
++executable(
++    'phosphor-drive-state-manager',
++    'drive_state_manager.cpp',
++    'drive_state_manager_main.cpp',
++    dependencies: [phosphordbusinterfaces, phosphorlogging, sdbusplus],
++    link_with: [sub_device_lib, utils_lib],
++    implicit_include_directories: true,
++    install: true,
++)
++
+ executable(
+     'phosphor-systemd-target-monitor',
+     'systemd_service_parser.cpp',
+diff --git a/service_files/meson.build b/service_files/meson.build
+index 4fa6729b..73f061cd 100644
+--- a/service_files/meson.build
++++ b/service_files/meson.build
+@@ -25,6 +25,7 @@ unit_files = [
+     'phosphor-set-chassis-transition-to-off@.service',
+     'phosphor-bmc-quiesce-reboot.service',
+     'phosphor-wait-poweron-blocks.service',
++    'xyz.openbmc_project.State.Drive.service',
+ ]
+ 
+ # Add SMP-specific service file when multi-chassis SMP is enabled
+diff --git a/service_files/xyz.openbmc_project.State.Drive.service b/service_files/xyz.openbmc_project.State.Drive.service
+new file mode 100644
+index 00000000..f57170cd
+--- /dev/null
++++ b/service_files/xyz.openbmc_project.State.Drive.service
+@@ -0,0 +1,13 @@
++[Unit]
++Description=Phosphor Drive State Manager
++After=xyz.openbmc_project.EntityManager.service
++Wants=xyz.openbmc_project.EntityManager.service
++
++[Service]
++ExecStart=/usr/bin/phosphor-drive-state-manager
++Restart=always
++Type=dbus
++BusName=xyz.openbmc_project.State.Drive
++
++[Install]
++WantedBy=multi-user.target
+diff --git a/target_files/meson.build b/target_files/meson.build
+index a9f9d098..2861b86f 100644
+--- a/target_files/meson.build
++++ b/target_files/meson.build
+@@ -7,6 +7,13 @@ unit_files = [
+     'obmc-chassis-poweron@.target',
+     'obmc-chassis-powerreset@.target',
+     'obmc-chassis-powercycle@.target',
++    'obmc-drive-hard-reboot@.target',
++    'obmc-drive-powercycle@.target',
++    'obmc-drive-powered-off@.target',
++    'obmc-drive-powered-on@.target',
++    'obmc-drive-poweroff@.target',
++    'obmc-drive-poweron@.target',
++    'obmc-drive-reboot@.target',
+     'obmc-fan-control-ready@.target',
+     'obmc-fan-control.target',
+     'obmc-fan-watchdog-takeover.target',
+diff --git a/target_files/obmc-drive-hard-reboot@.target b/target_files/obmc-drive-hard-reboot@.target
+new file mode 100644
+index 00000000..5b0c1543
+--- /dev/null
++++ b/target_files/obmc-drive-hard-reboot@.target
+@@ -0,0 +1,5 @@
++[Unit]
++Description=Hard Reboot Drive%i
++After=multi-user.target
++Wants=obmc-drive-powercycle@%i.target
++After=obmc-drive-powercycle@%i.target
+diff --git a/target_files/obmc-drive-powercycle@.target b/target_files/obmc-drive-powercycle@.target
+new file mode 100644
+index 00000000..e7dac437
+--- /dev/null
++++ b/target_files/obmc-drive-powercycle@.target
+@@ -0,0 +1,8 @@
++[Unit]
++Description=Drive%i (Power Cycle)
++# Platform must attach a service that performs off-wait-on and starts
++# obmc-drive-poweron@%i.target upon completion, so the daemon can
++# update CurrentDriveState to Ready via the poweron JobRemoved signal.
++# Drives follow host power: obmc-host-stop triggers obmc-drive-poweroff
++# for all associated drives; host start triggers obmc-drive-poweron.
++After=multi-user.target
+diff --git a/target_files/obmc-drive-powered-off@.target b/target_files/obmc-drive-powered-off@.target
+new file mode 100644
+index 00000000..73a49a7a
+--- /dev/null
++++ b/target_files/obmc-drive-powered-off@.target
+@@ -0,0 +1,3 @@
++[Unit]
++Description=Drive%i (Powered Off)
++Conflicts=obmc-drive-powered-on@%i.target
+diff --git a/target_files/obmc-drive-powered-on@.target b/target_files/obmc-drive-powered-on@.target
+new file mode 100644
+index 00000000..9adc0354
+--- /dev/null
++++ b/target_files/obmc-drive-powered-on@.target
+@@ -0,0 +1,3 @@
++[Unit]
++Description=Drive%i (Powered On)
++Conflicts=obmc-drive-powered-off@%i.target
+diff --git a/target_files/obmc-drive-poweroff@.target b/target_files/obmc-drive-poweroff@.target
+new file mode 100644
+index 00000000..421f3740
+--- /dev/null
++++ b/target_files/obmc-drive-poweroff@.target
+@@ -0,0 +1,7 @@
++[Unit]
++Description=Drive%i (Power Off)
++After=multi-user.target
++Wants=mapper-wait@-xyz-openbmc_project-state-drive-%i.service
++After=mapper-wait@-xyz-openbmc_project-state-drive-%i.service
++Wants=obmc-drive-powered-off@%i.target
++Conflicts=obmc-drive-poweron@%i.target
+diff --git a/target_files/obmc-drive-poweron@.target b/target_files/obmc-drive-poweron@.target
+new file mode 100644
+index 00000000..75fa00c7
+--- /dev/null
++++ b/target_files/obmc-drive-poweron@.target
+@@ -0,0 +1,9 @@
++[Unit]
++Description=Drive%i (Power On)
++After=multi-user.target
++Wants=mapper-wait@-xyz-openbmc_project-state-drive-%i.service
++After=mapper-wait@-xyz-openbmc_project-state-drive-%i.service
++Wants=obmc-drive-powered-on@%i.target
++Conflicts=obmc-drive-poweroff@%i.target
++OnFailure=obmc-drive-poweroff@%i.target
++OnFailureJobMode=fail
+diff --git a/target_files/obmc-drive-reboot@.target b/target_files/obmc-drive-reboot@.target
+new file mode 100644
+index 00000000..dd3b38bb
+--- /dev/null
++++ b/target_files/obmc-drive-reboot@.target
+@@ -0,0 +1,3 @@
++[Unit]
++Description=Reboot Drive%i
++After=multi-user.target
+-- 
+2.43.0
+

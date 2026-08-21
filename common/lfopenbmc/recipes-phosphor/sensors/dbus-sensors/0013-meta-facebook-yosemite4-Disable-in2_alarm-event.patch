@@ -1,0 +1,57 @@
+From 79d084f075e553636a2f1b4c10be25b4bbe404da Mon Sep 17 00:00:00 2001
+From: KayYCHuang-wiwynn <kay.yc.huang.wiwynn@gmail.com>
+Date: Mon, 17 Mar 2025 02:25:46 +0000
+Subject: [PATCH] meta-facebook: yosemite4: Disable in2_alarm event
+
+---
+ meson.build               | 4 ++++
+ meson.options             | 6 ++++++
+ src/psu/PSUSensorMain.cpp | 2 ++
+ 3 files changed, 12 insertions(+)
+
+diff --git a/meson.build b/meson.build
+index ae59f99..b40be7d 100644
+--- a/meson.build
++++ b/meson.build
+@@ -32,6 +32,10 @@ add_project_arguments(
+     language: 'cpp',
+ )
+ 
++if get_option('disable-in2-alarm-event')
++    add_project_arguments('-DDISABLE_IN2_ALARM_EVENT', language : 'cpp')
++endif
++
+ threads = dependency('threads')
+ # i2c-tools doesn't ship a pkg-config file for libi2c
+ i2c = meson.get_compiler('cpp').find_library('i2c')
+diff --git a/meson.options b/meson.options
+index c8a8d34..b87ed5f 100644
+--- a/meson.options
++++ b/meson.options
+@@ -107,3 +107,9 @@ option(
+     value: 'enabled',
+     description: 'Enable Cable monitor.',
+ )
++option(
++    'disable-in2-alarm-event',
++    type: 'boolean',
++    value: 'false',
++    description: 'Disable in2_alarm event.',
++)
+diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
+index 6dfb57d..85bf392 100644
+--- a/src/psu/PSUSensorMain.cpp
++++ b/src/psu/PSUSensorMain.cpp
+@@ -245,7 +245,9 @@ constexpr static auto labelMatch = std::to_array<PSUProperty>({
+ });
+ 
+ const static EventPathList eventMatch{{"PredictiveFailure", {"power1_alarm"}},
++#ifndef DISABLE_IN2_ALARM_EVENT
+                                       {"Failure", {"in2_alarm"}},
++#endif
+                                       {"ACLost", {"in1_beep"}},
+                                       {"ConfigureError", {"in1_fault"}}};
+ const static EventPathList limitEventMatch{
+-- 
+2.53.0-Meta
+

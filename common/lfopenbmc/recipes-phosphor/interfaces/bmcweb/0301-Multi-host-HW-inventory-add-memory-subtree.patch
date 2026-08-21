@@ -1,4 +1,4 @@
-From 29eff5eaa207b346627e2c27dfe995c9f0416713 Mon Sep 17 00:00:00 2001
+From 1c3804dab00741043827b82a9e6b67a635afb5da Mon Sep 17 00:00:00 2001
 From: Christopher Meis <christopher.meis@9elements.com>
 Date: Tue, 23 Sep 2025 10:24:36 +0200
 Subject: [PATCH] Multi-host/HW-inventory: add memory subtree
@@ -165,7 +165,7 @@ Signed-off-by: Christopher Meis <christopher.meis@9elements.com>
  2 files changed, 103 insertions(+), 34 deletions(-)
 
 diff --git a/redfish-core/lib/memory.hpp b/redfish-core/lib/memory.hpp
-index ec57105c..637146f4 100644
+index 7435b7b7..f1a2a525 100644
 --- a/redfish-core/lib/memory.hpp
 +++ b/redfish-core/lib/memory.hpp
 @@ -20,6 +20,7 @@
@@ -187,7 +187,7 @@ index ec57105c..637146f4 100644
  inline std::string translateMemoryTypeToRedfish(const std::string& memoryType)
  {
      if (memoryType == "xyz.openbmc_project.Inventory.Item.Dimm.DeviceType.DDR")
-@@ -736,7 +741,8 @@ inline void getDimmPartitionData(std::shared_ptr<bmcweb::AsyncResp> asyncResp,
+@@ -737,7 +742,8 @@ inline void getDimmPartitionData(std::shared_ptr<bmcweb::AsyncResp> asyncResp,
  
  inline void afterGetDimmData(
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
@@ -197,7 +197,7 @@ index ec57105c..637146f4 100644
      const dbus::utility::MapperGetSubTreeResponse& subtree)
  {
      if (ec)
-@@ -813,25 +819,57 @@ inline void afterGetDimmData(
+@@ -814,25 +820,57 @@ inline void afterGetDimmData(
      }
      // Set @odata only if object is found
      asyncResp->res.jsonValue["@odata.type"] = "#Memory.v1_23_0.Memory";
@@ -264,7 +264,7 @@ index ec57105c..637146f4 100644
          });
  }
  
-@@ -949,22 +987,47 @@ inline void handleMemoryGet(App& app, const crow::Request& req,
+@@ -950,22 +988,47 @@ inline void handleMemoryGet(App& app, const crow::Request& req,
          return;
      }
  
@@ -319,7 +319,7 @@ index ec57105c..637146f4 100644
  }
  
  inline void handleMemoryCollectionGet(
-@@ -976,33 +1039,39 @@ inline void handleMemoryCollectionGet(
+@@ -977,33 +1040,39 @@ inline void handleMemoryCollectionGet(
      {
          return;
      }
@@ -375,10 +375,10 @@ index ec57105c..637146f4 100644
  
  inline void requestRoutesMemory(App& app)
 diff --git a/redfish-core/lib/systems.hpp b/redfish-core/lib/systems.hpp
-index 127af335..7e6efecf 100644
+index 3786923d..c1ce31d1 100644
 --- a/redfish-core/lib/systems.hpp
 +++ b/redfish-core/lib/systems.hpp
-@@ -3055,8 +3055,6 @@ inline void processComputerSystemGet(
+@@ -3086,8 +3086,6 @@ inline void processComputerSystemGet(
      {
          asyncResp->res.jsonValue["Bios"]["@odata.id"] =
              boost::urls::format("/redfish/v1/Systems/{}/Bios", systemName);
@@ -387,7 +387,7 @@ index 127af335..7e6efecf 100644
          asyncResp->res.jsonValue["Storage"]["@odata.id"] =
              boost::urls::format("/redfish/v1/Systems/{}/Storage", systemName);
          asyncResp->res.jsonValue["FabricAdapters"]["@odata.id"] =
-@@ -3064,6 +3062,8 @@ inline void processComputerSystemGet(
+@@ -3095,6 +3093,8 @@ inline void processComputerSystemGet(
                                  systemName);
      }
  
@@ -397,5 +397,5 @@ index 127af335..7e6efecf 100644
          boost::urls::format("/redfish/v1/Systems/{}/Processors", systemName);
  
 -- 
-2.52.0
+2.53.0-Meta
 

@@ -1,7 +1,7 @@
-From 78a4a530ab1d0857f1aa1f9034b4f40fbffcafdc Mon Sep 17 00:00:00 2001
+From 3ea03d7147612ecc2ad342666c6c0fabbbed1bbb Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 15 Jun 2022 13:45:39 -0700
-Subject: [PATCH 518/522] aspeed: fby35: Add bmc, bb, and nic FRU's
+Subject: [PATCH] aspeed: fby35: Add bmc, bb, and nic FRU's
 
 This provides support to run `fruid-util bmc`, `fruid-util bb`, and
 `fruid-util nic` and get some real (but redacted) output.
@@ -70,23 +70,10 @@ This provides support to run `fruid-util bmc`, `fruid-util bb`, and
 
 Signed-off-by: Peter Delevoryas <pdel@fb.com>
 ---
- hw/arm/aspeed.c       |  1 +
  scripts/gen_eeprom.py | 17 +++++++++++++++++
- 2 files changed, 18 insertions(+)
+ 1 file changed, 17 insertions(+)
  create mode 100644 scripts/gen_eeprom.py
 
-diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index a3db3406c5..9c54269d68 100644
---- a/hw/arm/aspeed.c
-+++ b/hw/arm/aspeed.c
-@@ -23,6 +23,7 @@
- #include "qemu/units.h"
- #include "hw/core/qdev-clock.h"
- #include "system/system.h"
-+#include "hw/arm/fby35.h"
- 
- static struct arm_boot_info aspeed_board_binfo = {
-     .board_id = -1, /* device-tree-only board */
 diff --git a/scripts/gen_eeprom.py b/scripts/gen_eeprom.py
 new file mode 100644
 index 0000000000..b5eceb47bd

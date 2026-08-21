@@ -4,7 +4,7 @@
  *              and TPM2.0 response codes and obtaining a corresponding error message.
  *  @file       TpmResponse.c
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -773,6 +773,20 @@ TpmResponse_GetMessage(
             unReturnValue = Platform_StringFormat(PwszResponseBuffer, &PunResponseBufferSize, TPM_RC_SUCCESS_MESSAGE);
             break;
         }
+
+#ifdef WINDOWS
+        // Check for specific TBS errors
+        switch (PunErrorCode)
+        {
+        case TPM_E_COMMAND_BLOCKED | RC_TPM_MASK:
+            return unReturnValue = Platform_StringFormat(PwszResponseBuffer, &PunResponseBufferSize, L"Command blocked by TBS!");
+            break;
+
+        // Continue
+        default:
+            break;
+        }
+#endif
 
         // Check for error format and call corresponding parser method
         if (TPM_RC_FLAG_BIT_7_F & PunErrorCode)

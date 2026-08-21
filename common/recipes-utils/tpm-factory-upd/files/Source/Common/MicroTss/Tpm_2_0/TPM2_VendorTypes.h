@@ -2,7 +2,7 @@
  *  @brief      Declares types and definitions for the TPM2 vendor specific capabilities
  *  @file       TPM2_VendorTypes.h
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -21,7 +21,10 @@ extern "C" {
  * Vendor specific property definitions for TPM_CAP_VENDOR_PROPERTY (0x00000100)
  ********************************************************************************/
 
+/// The group of fixed vendor specific properties
 #define     PT_VENDOR_FIX                                   0x80000000
+/// The group of variable vendor specific properties
+#define     PT_VENDOR_VAR                                   0xC0000000
 /// SLB9665 and SLB9670 properties
 #define     TPM_PT_VENDOR_FIX_SMLI2                         (PT_VENDOR_FIX + 1)
 /// SLB966X properties
@@ -37,6 +40,41 @@ extern "C" {
 #define     TPM_PT_VENDOR_FIX_FU_CURRENT_TPM_FW_VERSION     (PT_VENDOR_FIX + 10)
 #define     TPM_PT_VENDOR_FIX_FU_NEW_TPM_FW_VERSION         (PT_VENDOR_FIX + 11)
 #define     TPM_PT_VENDOR_FIX_FU_PROPERTIES                 (PT_VENDOR_FIX + 12)
+/// Variable vendor specific properties
+#define     TPM_PT_VENDOR_VAR_ENCRYPTDECRYPT2               (PT_VENDOR_VAR + 5)
+#define     TPM_PT_VENDOR_VAR_CHANGEEPS                     (PT_VENDOR_VAR + 6)
+#define     TPM_PT_VENDOR_VAR_TPMID_NV                      (PT_VENDOR_VAR + 7)
+
+/**
+ *  Definitions for vendor specific TPM feature configuration
+ */
+#define     VENDOR_FEATURE_ALIAS_ENCRYPTDECRYPT2            L"ENCRYPTDECRYPT2"
+#define     VENDOR_FEATURE_ALIAS_CHANGEEPS                  L"CHANGEEPS"
+#define     VENDOR_FEATURE_ALIAS_TPMID_NV                   L"TPMID_NV"
+#define     VENDOR_FEATURE_BYTE_COUNT                       4
+#define     VENDOR_FEATURE_BYTE_ENABLE                      1
+#define     VENDOR_FEATURE_BYTE_LIFETIMELOCK                3
+#define     VENDOR_FEATURE_BYTE_ENABLED_MASK                0x01
+#define     VENDOR_FEATURE_BYTE_LOCKED_MASK                 0x01
+#define     VENDOR_FEATURE_MAX_ID                           0xFF
+#define     VENDOR_FEATURE_MIN_ID                           0x05
+#define     VENDOR_FEATURE_SET_ENABLE_MASK                  0x00010000
+#define     VENDOR_FEATURE_SET_LOCK_MASK                    0x00000001
+
+/// Element of vendor feature list
+typedef struct _VENDOR_FEATURE_ELEMENT
+{
+    unsigned int unFeatureId;
+    wchar_t* pwszFeatureAlias;
+} VENDOR_FEATURE_ELEMENT;
+
+/// List of supported vendor specific properties (feature id and alias)
+static const VENDOR_FEATURE_ELEMENT VENDOR_FEATURE_LIST[MAX_FEATURE_CONFIGS] =
+{
+    { TPM_PT_VENDOR_VAR_ENCRYPTDECRYPT2, VENDOR_FEATURE_ALIAS_ENCRYPTDECRYPT2 },
+    { TPM_PT_VENDOR_VAR_CHANGEEPS, VENDOR_FEATURE_ALIAS_CHANGEEPS },
+    { TPM_PT_VENDOR_VAR_TPMID_NV, VENDOR_FEATURE_ALIAS_TPMID_NV },
+};
 
 /**
  *  @brief      TPML_MAX_BUFFER structure
@@ -48,7 +86,7 @@ typedef struct _TSS_TPML_MAX_BUFFER
     /// A value of zero is allowed.
     uint32_t count;
     /// An array of bytes
-    TSS_TPM2B_MAX_BUFFER buffer[1];
+    TSS_TPM2B_MAX_BUFFER buffer[TSS_MAX_VENDOR_PROPERTY_COUNT];
 } TSS_TPML_MAX_BUFFER;
 
 /**

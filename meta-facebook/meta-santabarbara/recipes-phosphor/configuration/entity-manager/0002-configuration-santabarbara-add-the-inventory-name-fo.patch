@@ -1,0 +1,31 @@
+From 3673a1213f441ed62506e079d1bac352549e8e8b Mon Sep 17 00:00:00 2001
+From: Henry Wu <Henry_Wu@quantatw.com>
+Date: Thu, 19 Mar 2026 16:31:12 +0800
+Subject: [PATCH] configuration: santabarbara: add the inventory name for
+ rainbow
+
+Add the inventory name for rainbow.
+
+The link of upstream:
+https://gerrit.openbmc.org/c/openbmc/entity-manager/+/92530
+
+Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
+---
+ configurations/meta/santabarbara/santabarbara_rainbow.json | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/configurations/meta/santabarbara/santabarbara_rainbow.json b/configurations/meta/santabarbara/santabarbara_rainbow.json
+index 3cb4b66..066a3ee 100644
+--- a/configurations/meta/santabarbara/santabarbara_rainbow.json
++++ b/configurations/meta/santabarbara/santabarbara_rainbow.json
+@@ -20,6 +20,7 @@
+             "Address": "0x21",
+             "Bus": "$bus / 2 + 2 * 3 % 5 * 3 + 1 / 4 + 102",
+             "Name": "MMC",
++            "Inventory": "Rainbow",
+             "Type": "MCTPI2CTarget"
+         }
+     ],
+-- 
+2.53.0-Meta
+

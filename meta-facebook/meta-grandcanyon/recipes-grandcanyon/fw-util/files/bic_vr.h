@@ -16,6 +16,9 @@ class VrComponent : public Component {
       : Component(fru, comp), server(FRU_SERVER, fru){}
     int print_version();
     int update(const std::string& image);
+#ifdef CONFIG_GRANDCANYON2
+    int fupdate(const std::string& image);
+#endif
     int get_version(json& j) override;
 };
 

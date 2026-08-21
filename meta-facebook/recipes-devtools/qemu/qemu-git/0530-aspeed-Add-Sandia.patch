@@ -1,7 +1,7 @@
-From aa5056e2f5fdc2541f077ad3624ff009a710e5d3 Mon Sep 17 00:00:00 2001
+From ffda02e05b2ab1bb07c0c11a4e799c9d1a0bee6e Mon Sep 17 00:00:00 2001
 From: Bin Huang <binhuang@fb.com>
 Date: Tue, 13 Sep 2022 12:00:56 -0700
-Subject: [PATCH 530/532] aspeed: Add Sandia
+Subject: [PATCH] aspeed: Add Sandia
 
 ---
  hw/arm/aspeed_ast2600_evb.c | 11 +++++++++++

@@ -50,12 +50,16 @@ struct command
                 iface_result = json::empty_map();
 
                 debug("Getting properties.");
-                for (const auto& [property, value] :
-                     co_await sdbusplus::async::proxy()
-                         .service(service)
-                         .path(path)
-                         .interface(interface)
-                         .template get_all_properties<InventoryTypes>(ctx))
+                // Note: hoist the co_await result into a local rather than
+                // awaiting directly in the range-init of the for loop, which
+                // trips a gcc 16.1 coroutine ICE (get_callee_fndecl, tree.cc).
+                auto properties =
+                    co_await sdbusplus::async::proxy()
+                        .service(service)
+                        .path(path)
+                        .interface(interface)
+                        .template get_all_properties<InventoryTypes>(ctx);
+                for (const auto& [property, value] : properties)
                 {
                     // Ignore the entity-manager Probe statement because nobody
                     // is going to be interested in that.

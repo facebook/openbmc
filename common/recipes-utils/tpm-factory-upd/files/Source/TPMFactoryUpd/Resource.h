@@ -3,7 +3,7 @@
  *  @details
  *  @file       Resource.h
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -109,6 +109,16 @@
 #endif // WINDOWS
 #define RES_TPM_UPDATE_FACTORYDEFAULT               L"       TPM chip state after update       :    reset to factory defaults"
 
+#ifdef WINDOWS
+//---------------- TpmUpdate prerequisites response -----------------
+#define RES_PREREQ                  L"       Prerequisites:"
+#define RES_PREREQ_DASHED_LINE      L"       --------------"
+#define RES_PREREQ_TPM_SUPPORTED    L"       SLB9672/SLB9673 (or newer)    : %s"
+#define RES_PREREQ_FU_CMDS_ALLOWED  L"       TPM2 FU commands callable     : %s"
+#define RES_PREREQ_USER_ISADMIN     L"       User has administrator rights : %s"
+#define RES_PREREQ_NOT_FULFILLED    L"Not all prerequisites are fulfilled to use the TPM Firmware Update tool!"
+#endif // WINDOWS
+
 //---------------- Tpm12_ClearOwnership response ------------
 #define RES_TPM12_CLEAR_OWNER_INFORMATION           L"       TPM1.2 Clear Ownership:"
 #define RES_TPM12_CLEAR_OWNER_DASHED_LINE           L"       -----------------------"
@@ -128,6 +138,7 @@
 #define CMD_UPDATE_OPTION_TPM12_TAKEOWNERSHIP       L"tpm12-takeownership"
 #define CMD_UPDATE_OPTION_TPM12_OWNERAUTH           L"tpm12-ownerauth"
 #define CMD_UPDATE_OPTION_TPM20_EMPTYPLATFORMAUTH   L"tpm20-emptyplatformauth"
+#define CMD_UPDATE_OPTION_TPM20_PLATFORMPOLICY      L"tpm20-platformpolicy"
 #define CMD_UPDATE_OPTION_CONFIG_FILE               L"config-file"
 #define CMD_FIRMWARE                                L"firmware"
 #define CMD_LOG                                     L"log"
@@ -135,6 +146,8 @@
 #define CMD_ACCESS_MODE                             L"access-mode"
 #define CMD_CONFIG                                  L"config"
 #define CMD_OWNERAUTH                               L"ownerauth"
+#define CMD_POLICYFILE                              L"policyfile"
+#define CMD_POLICYHANDLE                            L"policyhandle"
 #define CMD_SETMODE                                 L"setmode"
 #define CMD_SETMODE_OPTION_TPM20_FW_UPDATE          L"tpm20-fwupdate"
 #define CMD_SETMODE_OPTION_TPM20_FW_RECOVERY        L"tpm20-fwrecovery"
@@ -151,7 +164,7 @@
 #define HELP_LINE07     L"\n-%ls" /* Format parameter: CMD_INFO */
 #define HELP_LINE08     L"  Displays TPM information related to TPM Firmware Update."
 #define HELP_LINE09     L"  Cannot be used with -%ls, -%ls, -%ls, -%ls," /* Format parameter: CMD_FIRMWARE, CMD_UPDATE, CMD_CONFIG, CMD_TPM12_CLEAROWNERSHIP */
-#define HELP_LINE10     L"  -%ls or -%ls parameter." /* Format parameter: CMD_SETMODE, CMD_FORCE */
+#define HELP_LINE10     L"  -%ls, -%ls, -%ls or -%ls parameter." /* Format parameter: CMD_POLICYHANDLE, CMD_POLICYFILE, CMD_SETMODE, CMD_FORCE */
 #define HELP_LINE11     L"\n-%ls <update-type>" /* Format parameter: CMD_UPDATE */
 #define HELP_LINE12     L"  Updates a TPM with <update-type>."
 #define HELP_LINE13     L"  Possible values for <update-type> are:"
@@ -162,6 +175,12 @@
 #define HELP_LINE17A    L"                         Use the -%ls parameter to overwrite the default" /* Format parameter: CMD_OWNERAUTH */
 #define HELP_LINE17B    L"                         secret."
 #define HELP_LINE18     L"   %ls - TPM2.0 with platformAuth set to Empty Buffer." /* Format parameter: CMD_UPDATE_OPTION_TPM20_EMPTYPLATFORMAUTH */
+#define HELP_LINE18A    L"   %ls - TPM2.0 with an already set platform policy." /* Format parameter: CMD_UPDATE_OPTION_TPM20_PLATFORMPOLICY */
+#define HELP_LINE18B    L"                          Use optional parameters -%ls for an"  /* Format parameter: CMD_POLICYHANDLE */
+#define HELP_LINE18C    L"                          external created policy session or -%ls" /* Format parameter: CMD_POLICYFILE */
+#define HELP_LINE18D    L"                          for a configuration file with policy digests."
+#define HELP_LINE18E    L"                          Without parameter the default policy behavior is"
+#define HELP_LINE18F    L"                          used."
 #define HELP_LINE19     L"   %ls - Updates either a TPM1.2 or TPM2.0 to the firmware version"
 #define HELP_LINE20     L"                 configured in the configuration file." /* Format parameter: CMD_UPDATE_OPTION_CONFIG_FILE */
 #define HELP_LINE21     L"                 Requires the -%ls parameter." /* Format parameter: CMD_CONFIG */
@@ -180,8 +199,8 @@
 #define HELP_LINE36     L"\n-%ls" /* Format parameter: CMD_TPM12_CLEAROWNERSHIP */
 #define HELP_LINE37     L"  Clears the TPM Ownership taken by %ls." /* Format parameter: GwszToolName */
 #define HELP_LINE37A    L"  Use the -%ls parameter to overwrite the default secret." /* Format parameter: CMD_OWNERAUTH */
-#define HELP_LINE38     L"  Cannot be used with -%ls, -%ls, -%ls, -%ls, -%ls" /* Format parameter: CMD_FIRMWARE, CMD_UPDATE, CMD_CONFIG, CMD_INFO, CMD_SETMODE */
-#define HELP_LINE38A    L"  or -%ls parameter." /* Format parameter: CMD_FORCE */
+#define HELP_LINE38     L"  Cannot be used with -%ls, -%ls, -%ls, -%ls, -%ls," /* Format parameter: CMD_FIRMWARE, CMD_UPDATE, CMD_CONFIG, CMD_INFO, CMD_SETMODE */
+#define HELP_LINE38A    L"  -%ls, -%ls or -%ls parameter." /* Format parameter: CMD_POLICYHANDLE, CMD_POLICYFILE, CMD_FORCE */
 #define HELP_LINE39     L"\n-%ls <owner-authorization-file>" /* Format parameter: CMD_OWNERAUTH */
 #define HELP_LINE40     L"  Specifies the path to the Owner Authorization file to be used for"
 #define HELP_LINE41     L"  TPM Firmware Update. Required if -%ls parameter is given." /* Format parameter: CMD_UPDATE_OPTION_TPM12_OWNERAUTH */
@@ -189,24 +208,33 @@
 #define HELP_LINE43     L"  Specifies the TPM mode to switch into."
 #define HELP_LINE43A    L"  Possible values for <setmode-type> are:"
 #define HELP_LINE43B    L"   %ls - Switch to firmware update mode." /* Format parameter: CMD_SETMODE_OPTION_TPM20_FW_UPDATE */
-#define HELP_LINE43C    L"                     Requires the -%ls parameter."
+#define HELP_LINE43C    L"                    Requires the -%ls parameter."
 #define HELP_LINE43D    L"   %ls - Switch to firmware recovery mode." /* Format parameter: CMD_SETMODE_OPTION_TPM20_FW_RECOVERY */
 #define HELP_LINE43E    L"   %ls - Switch back to TPM operational mode." /* Format parameter: CMD_SETMODE_OPTION_TPM20_OPERATIONAL */
-#define HELP_LINE44     L"  Cannot be used with -%ls, -%ls, -%ls, -%ls" /* Format parameter: CMD_INFO, CMD_UPDATE, CMD_TPM12_CLEAROWNERSHIP, CMD_CONFIG */
-#define HELP_LINE44A    L"  or -%ls parameter." /* Format parameter: CMD_FORCE */
+#define HELP_LINE44     L"  Cannot be used with -%ls, -%ls, -%ls, -%ls," /* Format parameter: CMD_INFO, CMD_UPDATE, CMD_TPM12_CLEAROWNERSHIP, CMD_CONFIG */
+#define HELP_LINE44A    L"  -%ls, -%ls or -%ls parameter." /* Format parameter: CMD_POLICYHANDLE, CMD_POLICYFILE, CMD_FORCE */
+#define HELP_LINE45     L"\n-%ls [<policyhandle>]" /* Format parameter: CMD_POLICYHANDLE */
+#define HELP_LINE45A    L"  Optional parameter. Specifies a policy handle as a hexadecimal value of a"
+#define HELP_LINE45B    L"  policy session for TPM Firmware Update. Requires the %ls" /* Format parameter: CMD_UPDATE_OPTION_TPM20_PLATFORMPOLICY */
+#define HELP_LINE45C    L"  parameter. Cannot be used with -%ls parameter." /* Format parameter: CMD_POLICYFILE */
+#define HELP_LINE46     L"\n-%ls [<policyfile>]" /* Format parameter: CMD_POLICYFILE */
+#define HELP_LINE46A    L"  Optional parameter. Specifies a policy configuration file of policy digests"
+#define HELP_LINE46B    L"  utilizing TPM2_PolicyOR command including one policy digest for the TPM"
+#define HELP_LINE46C    L"  Firmware Update command. Requires the %ls parameter." /* Format parameter: CMD_UPDATE_OPTION_TPM20_PLATFORMPOLICY */
+#define HELP_LINE46D    L"  Cannot be used with -%ls parameter." /* Format parameter: CMD_POLICYHANDLE */
 #define HELP_FORCE1     L"\n-%ls" /* Format parameter: CMD_FORCE */
 #define HELP_FORCE2     L"  Allows a TPM Firmware Update onto the same firmware version when"
 #define HELP_FORCE3     L"  used with -%ls parameter." /* Format parameter: CMD_UPDATE */
 #define HELP_FORCE4     L"  Cannot be used with -%ls, -%ls or -%ls parameter." /* Format parameter: CMD_INFO, CMD_TPM12_CLEAROWNERSHIP, CMD_SETMODE */
 #ifdef LINUX
-#define HELP_LINE45     L"\n-%ls <mode> <path>" /* Format parameter: CMD_ACCESS_MODE */
-#define HELP_LINE46     L"  Optional parameter. Sets the mode the tool should use to connect to"
-#define HELP_LINE47     L"  the TPM device."
-#define HELP_LINE48     L"  Possible values for <mode> are:"
-#define HELP_LINE49     L"  1 - Memory based access (default value, only supported on x86 based systems"
-#define HELP_LINE50     L"      with PCH TPM support)"
-#define HELP_LINE51     L"  3 - Linux TPM driver. The <path> option can be set to define a device path"
-#define HELP_LINE52     L"      (default value: /dev/tpm0)"
+#define HELP_LINE50     L"\n-%ls <mode> <path>" /* Format parameter: CMD_ACCESS_MODE */
+#define HELP_LINE50A    L"  Optional parameter. Sets the mode the tool should use to connect to"
+#define HELP_LINE50B    L"  the TPM device."
+#define HELP_LINE50C    L"  Possible values for <mode> are:"
+#define HELP_LINE50D    L"  1 - Memory based access (default value, only supported on x86 based systems"
+#define HELP_LINE50E    L"      with PCH TPM support)"
+#define HELP_LINE50F    L"  3 - Linux TPM driver. The <path> option can be set to define a device path"
+#define HELP_LINE50G    L"      (default value: /dev/tpm0)"
 #endif // LINUX
 
 //{{NO_DEPENDENCIES}}

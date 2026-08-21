@@ -1,0 +1,52 @@
+From cdc7b3edc00966170602a4f337b3ae1fa9c0e88b Mon Sep 17 00:00:00 2001
+From: Eldin Lee <eldin.lee@quantatw.com>
+Date: Mon, 3 Aug 2026 15:10:59 +0800
+Subject: [PATCH] valve-monitor: catch event resolve exceptions
+
+Catch and log exceptions from the asynchronous event resolve operation
+to prevent an invalid logging entry from crashing valvemonitor.
+
+Change-Id: Ibb1222cdc63d57b27ca36238a546a452c3470605
+Signed-off-by: Eldin Lee <eldin.lee@quantatw.com>
+---
+ src/valve-monitor/ValveEvents.cpp | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/src/valve-monitor/ValveEvents.cpp b/src/valve-monitor/ValveEvents.cpp
+index 56ec12e..0ce94a6 100644
+--- a/src/valve-monitor/ValveEvents.cpp
++++ b/src/valve-monitor/ValveEvents.cpp
+@@ -6,6 +6,8 @@
+ #include <sdbusplus/message/native_types.hpp>
+ #include <xyz/openbmc_project/State/Valve/event.hpp>
+ 
++#include <exception>
++
+ namespace valve
+ {
+ 
+@@ -53,9 +55,19 @@ auto Events::handleValveSetPointWarning(
+     else if (!asserted && currentlyAsserted)
+     {
+         // Warning cleared — resolve the pending event
+-        co_await lg2::resolve(ctx, pendingEvents[valvePath.str]);
++        const auto eventPath = pendingEvents.at(valvePath.str);
++        try
++        {
++            co_await lg2::resolve(ctx, eventPath);
++            debug("Valve set point warning resolved for {PATH}", "PATH",
++                  valvePath);
++        }
++        catch (const std::exception& e)
++        {
++            error("Unable to resolve valve event {LOG}: {ERROR}", "LOG",
++                  eventPath, "ERROR", e.what());
++        }
+         pendingEvents.erase(valvePath.str);
+-        debug("Valve set point warning resolved for {PATH}", "PATH", valvePath);
+     }
+ }
+ 
+-- 
+2.34.1
+

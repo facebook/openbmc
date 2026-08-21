@@ -1,7 +1,7 @@
-From cf3dfc63817c89ca63f41c426a3ce48bf128f4da Mon Sep 17 00:00:00 2001
+From 61eb1d0b48aeeacebee31f0f2358a00b154058cc Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 24 Aug 2022 01:53:43 -0700
-Subject: [PATCH 511/512] hw/i2c/aspeed: Add slave event traces
+Subject: [PATCH] hw/i2c/aspeed: Add slave event traces
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 ---
@@ -10,12 +10,12 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  2 files changed, 15 insertions(+)
 
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index 4930a6e265..71e908a3be 100644
+index bd59f70f3b..594c1116ba 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
-@@ -1403,9 +1403,18 @@ static const TypeInfo aspeed_i2c_info = {
-     .abstract   = true,
- };
+@@ -1466,11 +1466,20 @@ static void aspeed_i2c_class_init(ObjectClass *klass, const void *data)
+     dc->desc = "Aspeed I2C Controller";
+ }
  
 +static const char *I2C_EVENT[] = {
 +    [I2C_START_SEND] = "I2C_START_SEND",
@@ -27,12 +27,14 @@ index 4930a6e265..71e908a3be 100644
  static int aspeed_i2c_bus_new_slave_event(AspeedI2CBus *bus,
                                            enum i2c_event event)
  {
+     AspeedI2CClass *aic = ASPEED_I2C_GET_CLASS(bus->controller);
+ 
 +    trace_aspeed_i2c_bus_new_slave_event(bus->id, I2C_EVENT[event]);
 +
      switch (event) {
      case I2C_START_SEND_ASYNC:
          if (!SHARED_ARRAY_FIELD_EX32(bus->regs, R_I2CS_CMD, RX_DMA_EN)) {
-@@ -1451,6 +1460,8 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
+@@ -1516,6 +1525,8 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
          return aspeed_i2c_bus_new_slave_event(bus, event);
      }
  
@@ -41,7 +43,7 @@ index 4930a6e265..71e908a3be 100644
      switch (event) {
      case I2C_START_SEND_ASYNC:
          /* Bit[0] == 0 indicates "send". */
-@@ -1471,6 +1482,8 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
+@@ -1536,6 +1547,8 @@ static int aspeed_i2c_bus_slave_event(I2CSlave *slave, enum i2c_event event)
          break;
  
      default:

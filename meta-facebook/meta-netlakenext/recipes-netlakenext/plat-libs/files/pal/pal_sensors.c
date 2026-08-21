@@ -22,15 +22,15 @@ static int read_adc_val(uint8_t id, float *value);
 static int read_battery_val(uint8_t id, float *value);
 static int read_temp(uint8_t id, float *value);
 static int read_dimm_temp(uint8_t id, float *value);
-static int read_cpu_temp(uint8_t id, float *value);
+static int read_dimm_pwr(uint8_t id, float *value);
 static int read_rpm(uint8_t id, float *value);
 static int read_pmbus(uint8_t id, float *value);
 static int read_hsc(uint8_t id, float *value);
 static int read_cpld_adc(uint8_t id, float *value);
-static int read_ina230_pwr(uint8_t id, float *value);
+static int read_ina230(uint8_t id, float *value);
 static int read_nvme_temp(uint8_t id, float *value);
 static int read_nic_temp(uint8_t id, float *value);
-static int retryDIMM = 0;
+static int read_cpu_hwmon(uint8_t id, float *value);
 static int retrySensor = 0;
 static int retryFAN[4] = {0, 0, 0, 0};
 
@@ -41,11 +41,17 @@ PAL_SENSOR_MAP server_sensor_map[] = {
   [SERVER_OUTLET_TEMP] =
   {"NETLAKE2_OUTLET_TEMP", MB_OUTLET, read_temp, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [SERVER_SOC_TEMP] =
-  {"SOC_TEMP", SOC_TEMP, read_cpu_temp, POST_COMPLT_READING, {85, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  {"SOC_TEMP", SOC_TEMP, read_cpu_hwmon, POST_COMPLT_READING, {85, 0, 100, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  [SERVER_SOC_PWR] =
+  {"SOC_PWR", SOC_PWR, read_cpu_hwmon, POST_COMPLT_READING, {51.5, 51, 52, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
   [SERVER_DIMMA_TEMP] =
-  {"DIMMA_TEMP", DIMMA_TEMP, read_dimm_temp, POST_COMPLT_READING, {85, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  {"DIMMA_TEMP", DIMMA_TEMP, read_dimm_temp, POST_COMPLT_READING, {80, 0, 95, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  [SERVER_DIMMA_PWR] =
+  {"DIMMA_PWR", PMIC_DIMMA_PWR, read_dimm_pwr, POST_COMPLT_READING, {10, 0, 0, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
   [SERVER_DIMMB_TEMP] =
-  {"DIMMB_TEMP", DIMMB_TEMP, read_dimm_temp, POST_COMPLT_READING, {85, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  {"DIMMB_TEMP", DIMMB_TEMP, read_dimm_temp, POST_COMPLT_READING, {80, 0, 95, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  [SERVER_DIMMB_PWR] =
+  {"DIMMB_PWR", PMIC_DIMMB_PWR, read_dimm_pwr, POST_COMPLT_READING, {10, 0, 0, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
   [SERVER_A_P12V_STBY_NETLAKE2_VOL] =
   {"A_P12V_STBY_NETLAKE2_VOL", CPLD_ADC_P12V_STBY, read_cpld_adc, STBY_READING, {13.35, 13.22, 13.48, 10.71, 10.82, 10.6, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [SERVER_A_P3V3_STBY_NETLAKE2_VOL] =
@@ -67,11 +73,11 @@ PAL_SENSOR_MAP server_sensor_map[] = {
   [SERVER_A_PVDD_MISC_S5_VOL] =
   {"A_PVDD_MISC_S5_VOL", CPLD_ADC_PVDD_MISC_S5, read_cpld_adc, STBY_READING, {0.81, 0.80, 0.82, 0.69, 0.70, 0.68, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [SERVER_PVDDCR_TEMP] =
-  {"PVDDCR_TEMP", VR_PVDDCR_TEMP, read_pmbus, POWER_ON_READING, {100, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  {"PVDDCR_TEMP", VR_PVDDCR_TEMP, read_pmbus, POWER_ON_READING, {100, 0, 125, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [SERVER_PVDDCR_SOC_TEMP] =
-  {"PVDDCR_SOC_TEMP", VR_PVDDCR_SOC_TEMP, read_pmbus, POWER_ON_READING, {100, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  {"PVDDCR_SOC_TEMP", VR_PVDDCR_SOC_TEMP, read_pmbus, POWER_ON_READING, {100, 0, 125, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [SERVER_PVDD_MISC_TEMP] =
-  {"PVDD_MISC_TEMP", VR_PVDD_MISC_TEMP, read_pmbus, POWER_ON_READING, {100, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
+  {"PVDD_MISC_TEMP", VR_PVDD_MISC_TEMP, read_pmbus, POWER_ON_READING, {100, 0, 125, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
   [SERVER_PVDDCR_VOL] =
   {"PVDDCR_VOL", VR_PVDDCR_VOL, read_pmbus, POWER_ON_READING, {1.82, 1.75, 1.90, 0, 0, 0, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [SERVER_PVDDCR_SOC_VOL] =
@@ -91,30 +97,32 @@ PAL_SENSOR_MAP server_sensor_map[] = {
   [SERVER_PVDD_MISC_PWR] =
   {"PVDD_MISC_PWR", VR_PVDD_MISC_PWR, read_pmbus, POWER_ON_READING, {24.72, 0, 24.96, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
   [SERVER_P12V_COME_PWR] =
-  {"P12V_COME_PWR", P12V_COME_PWR, read_ina230_pwr, STBY_READING, {117.46455, 0, 119.75648, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
+  {"P12V_COME_PWR", P12V_COME_PWR, read_ina230, STBY_READING, {117.4645454, 0, 119.7564826, 0, 0, 0, 0, 0}, POWER, NORMAL_POLL_INTERVAL},
+  [SERVER_P12V_COME_IOUT] =
+  {"P12V_COME_IOUT", P12V_COME_IOUT, read_ina230, STBY_READING, {10.97, 9.87, 0, 0, 0, 0, 0, 0}, CURR, NORMAL_POLL_INTERVAL},
 };
 
 PAL_SENSOR_MAP bmc_sensor_map[] = {
   [BMC_P12V_STBY_MTP_VOL] =
-  {"P12V_STBY_MTP_VOL", ADC1, read_adc_val, STBY_READING, {13.3488, 13.2192, 14.333, 10.7088, 10.8192, 10.091, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
+  {"P12V_STBY_MTP_VOL", ADC1, read_adc_val, STBY_READING, {13.349, 13.219, 14.333, 10.709, 10.819, 10.091, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [BMC_P12V_COME_VOL] =
-  {"P12V_COME_MTP_VOL", ADC3, read_adc_val, STBY_READING, {13.3488, 13.2192, 14.333, 10.7088, 10.8192, 10.091, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
+  {"P12V_COME_MTP_VOL", ADC3, read_adc_val, STBY_READING, {13.349, 13.219, 14.333, 10.709, 10.819, 10.091, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [BMC_P3V_BAT_MTP_VOL] =
-  {"P3V_BAT_MTP_VOL", ADC8, read_battery_val, STBY_READING, {3.502, 3.468, 3.993, 2.7645, 2.793, 2.31, 0, 0}, VOLT, ONE_HOUR_INVERVAL},
+  {"P3V_BAT_MTP_VOL", ADC8, read_battery_val, STBY_READING, {3.502, 3.468, 3.993, 2.764, 2.793, 2.31, 0, 0}, VOLT, ONE_HOUR_INVERVAL},
   [BMC_P3V3_STBY_MTP_VOL] =
-  {"P3V3_STBY_MTP_VOL", ADC2, read_adc_val, STBY_READING, {3.56895, 3.5343, 3.993, 3.04095, 3.0723, 2.31, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
+  {"P3V3_STBY_MTP_VOL", ADC2, read_adc_val, STBY_READING, {3.569, 3.534, 3.993, 3.041, 3.072, 2.31, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [BMC_P5V_STBY_VOL] =
-  {"P5V_STBY_VOL", ADC0, read_adc_val, STBY_READING, {5.4075, 5.355, 5.8, 4.6075, 4.655, 4, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
+  {"P5V_STBY_VOL", ADC0, read_adc_val, STBY_READING, {5.407, 5.355, 5.8, 4.608, 4.655, 4, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [BMC_P12V_NIC_MTP_VOL] =
-  {"P12V_NIC_MTP_VOL", ADC7, read_adc_val, STBY_READING, {13.3488, 13.2192, 14.333, 10.7088, 10.8192, 10.091, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
+  {"P12V_NIC_MTP_VOL", ADC7, read_adc_val, STBY_READING, {13.349, 13.219, 14.333, 10.709, 10.819, 10.091, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [BMC_P3V3_NIC_MTP_VOL] =
-  {"P3V3_NIC_MTP_VOL", ADC6, read_adc_val, STBY_READING, {3.56895, 3.5343, 3.993, 3.04095, 3.0723, 2.31, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
+  {"P3V3_NIC_MTP_VOL", ADC6, read_adc_val, STBY_READING, {3.569, 3.534, 3.993, 3.041, 3.072, 2.31, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [BMC_P12V_NIC_MTP_CURR] =
   {"P12V_NIC_MTP_CURR", ADC5, read_adc_val, STBY_READING, {3.9, 0, 0, 0, 0, 0, 0, 0}, CURR, NORMAL_POLL_INTERVAL},
   [BMC_P3V3_NIC_MTP_CURR] =
   {"P3V3_NIC_MTP_CURR", ADC4, read_adc_val, STBY_READING, {1, 0, 0, 0, 0, 0, 0, 0}, CURR, NORMAL_POLL_INTERVAL},
   [BMC_HSC_OUTPUT_VOL] =
-  {"HSC_OUTPUT_VOL", HSC_VOUT, read_hsc, STBY_READING, {13.3488, 13.2192, 14.333, 10.7088, 10.8192, 10.091, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
+  {"HSC_OUTPUT_VOL", HSC_VOUT, read_hsc, STBY_READING, {13.349, 13.219, 14.333, 10.709, 10.819, 10.091, 0, 0}, VOLT, NORMAL_POLL_INTERVAL},
   [BMC_HSC_OUTPUT_CUR] =
   {"HSC_OUTPUT_CUR", HSC_IOUT, read_hsc, STBY_READING, {20, 0, 0, 0, 0, 0, 0, 0}, CURR, NORMAL_POLL_INTERVAL},
   [BMC_HSC_INPUT_PWR] =
@@ -137,18 +145,6 @@ PAL_SENSOR_MAP nic_sensor_map[] = {
   {"OCP_NIC_TEMP", OCP_NIC_TEMP, read_nic_temp, POWER_ON_READING, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP, NORMAL_POLL_INTERVAL},
 };
 
-const char *adc_label[] = {
-  "ADC_P5V_STBY_VOL",
-  "ADC_P12V_STBY_MTP_VOL",
-  "ADC_P3V3_STBY_MTP_VOL",
-  "ADC_P12V_COME_VOL",
-  "ADC_P3V3_NIC_MTP_CURR",
-  "ADC_P12V_NIC_MTP_CURR",
-  "ADC_P3V3_NIC_MTP_VOL",
-  "ADC_P12V_NIC_MTP_VOL",
-  "ADC_P3V_BAT_MTP_VOL",
-};
-
 PAL_SENSOR_MAP pdb_sensor_map[] = {
   [FAN0_TACH] =
   {"FAN0_TACH", FAN0, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN, FAN_POLL_INTERVAL},
@@ -164,8 +160,11 @@ const uint8_t server_sensor_list[] = {
   SERVER_INLET_TEMP,
   SERVER_OUTLET_TEMP,
   SERVER_SOC_TEMP,
+  SERVER_SOC_PWR,
   SERVER_DIMMA_TEMP,
+  SERVER_DIMMA_PWR,
   SERVER_DIMMB_TEMP,
+  SERVER_DIMMB_PWR,
   SERVER_A_P12V_STBY_NETLAKE2_VOL,
   SERVER_A_P3V3_STBY_NETLAKE2_VOL,
   SERVER_A_P1V8_STBY_NETLAKE2_VOL,
@@ -189,6 +188,7 @@ const uint8_t server_sensor_list[] = {
   SERVER_PVDDCR_SOC_PWR,
   SERVER_PVDD_MISC_PWR,
   SERVER_P12V_COME_PWR,
+  SERVER_P12V_COME_IOUT,
 };
 
 const uint8_t bmc_sensor_list[] = {
@@ -209,16 +209,21 @@ const uint8_t bmc_sensor_list[] = {
   BMC_E1S_TEMP,
 };
 
-const uint8_t dimm_addr_list[] = {
-  DIMMA_ADDR,
-  DIMMB_ADDR,
-};
-
 const uint8_t pdb_sensor_list[] = {
   FAN0_TACH,
   FAN1_TACH,
   FAN2_TACH,
   FAN3_TACH,
+};
+
+const uint8_t dimm_addr_list[] = {
+  DIMMA_ADDR,
+  DIMMB_ADDR,
+};
+
+const uint8_t pmic_addr_list[] = {
+  PMICA_ADDR,
+  PMICB_ADDR,
 };
 
 const uint8_t fio_sensor_list[] = {
@@ -229,44 +234,62 @@ const uint8_t nic_sensor_list[] = {
   BMC_OCP_NIC_TEMP,
 };
 
-PAL_DEV_INFO temp_dev_list[] = {
+PAL_DEV_INFO hwmon_dev_list[] = {
   {"tmp75-i2c-4-4c",  "MB_INLET_TEMP"},
   {"tmp75-i2c-4-4a",  "MB_OUTLET_TEMP"},
   {"tmp75-i2c-10-48",  "FIO_INLET_TEMP"},
-  {"sbtsi-i2c-1-4c",  "SOC_TEMP"},
+  {"sbtsi_0.0-i2c-5-4c",  "SOC_TEMP"},
+  {"sbrmi_0.0-i2c-5-3c",  "SOC_PWR"},
+};
+
+const char *adc_label[] = {
+  "ADC_P5V_STBY_VOL",
+  "ADC_P12V_STBY_MTP_VOL",
+  "ADC_P3V3_STBY_MTP_VOL",
+  "ADC_P12V_COME_VOL",
+  "ADC_P3V3_NIC_MTP_CURR",
+  "ADC_P12V_NIC_MTP_CURR",
+  "ADC_P3V3_NIC_MTP_VOL",
+  "ADC_P12V_NIC_MTP_VOL",
+  "ADC_P3V_BAT_MTP_VOL",
 };
 
 PAL_PMBUS_INFO pmbus_dev_table[] = {
   [VR_PVDDCR_TEMP] =
-  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_TEMP1}, {XDPE19283D, PAGE0, CMD_TEMP1}}},
+  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_TEMP1}, {XDPE19283D, PAGE0, CMD_TEMP1}, {RAA229641, PAGE0, CMD_TEMP1}}},
   [VR_PVDDCR_SOC_TEMP] =
-  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_TEMP1}, {XDPE19283D, PAGE1, CMD_TEMP2}}},
+  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_TEMP1}, {XDPE19283D, PAGE1, CMD_TEMP2}, {RAA229641, PAGE1, CMD_TEMP2}}},
   [VR_PVDD_MISC_TEMP] =
-  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_TEMP1}, {XDPE19283D, PAGE0, CMD_TEMP1}}},
+  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_TEMP1}, {XDPE19283D, PAGE0, CMD_TEMP1}, {RAA229641, PAGE0, CMD_TEMP1}}},
   [VR_PVDDCR_VOL] =
-  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_VOUT}, {XDPE19283D, PAGE0, CMD_VOUT}}},
+  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_VOUT}, {XDPE19283D, PAGE0, CMD_VOUT}, {RAA229641, PAGE0, CMD_VOUT}}},
   [VR_PVDDCR_SOC_VOL] =
-  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_VOUT}, {XDPE19283D, PAGE1, CMD_VOUT}}},
+  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_VOUT}, {XDPE19283D, PAGE1, CMD_VOUT}, {RAA229641, PAGE1, CMD_VOUT}}},
   [VR_PVDD_MISC_VOL] =
-  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_VOUT}, {XDPE19283D, PAGE0, CMD_VOUT}}},
+  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_VOUT}, {XDPE19283D, PAGE0, CMD_VOUT}, {RAA229641, PAGE0, CMD_VOUT}}},
   [VR_PVDDCR_CUR] =
-  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_IOUT}, {XDPE19283D, PAGE0, CMD_IOUT}}},
+  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_IOUT}, {XDPE19283D, PAGE0, CMD_IOUT}, {RAA229641, PAGE0, CMD_IOUT}}},
   [VR_PVDDCR_SOC_CUR] =
-  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_IOUT}, {XDPE19283D, PAGE1, CMD_IOUT}}},
+  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_IOUT}, {XDPE19283D, PAGE1, CMD_IOUT}, {RAA229641, PAGE1, CMD_IOUT}}},
   [VR_PVDD_MISC_CUR] =
-  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_IOUT}, {XDPE19283D, PAGE0, CMD_IOUT}}},
+  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_IOUT}, {XDPE19283D, PAGE0, CMD_IOUT}, {RAA229641, PAGE0, CMD_IOUT}}},
   [VR_PVDDCR_PWR] =
-  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_POUT}, {XDPE19283D, PAGE0, CMD_POUT}}},
+  {VR_BUS, VR_PVDDCR_ADDR, {{MP29608B, PAGE0, CMD_POUT}, {XDPE19283D, PAGE0, CMD_POUT}, {RAA229641, PAGE0, CMD_POUT}}},
   [VR_PVDDCR_SOC_PWR] =
-  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_POUT}, {XDPE19283D, PAGE1, CMD_POUT}}},
+  {VR_BUS, VR_PVDDCR_SOC_ADDR, {{MP29608B, PAGE1, CMD_POUT}, {XDPE19283D, PAGE1, CMD_POUT}, {RAA229641, PAGE1, CMD_POUT}}},
   [VR_PVDD_MISC_PWR] =
-  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_POUT}, {XDPE19283D, PAGE0, CMD_POUT}}},
+  {VR_BUS, VR_PVDD_MISC_ADDR, {{MP29608B, PAGE0, CMD_POUT}, {XDPE19283D, PAGE0, CMD_POUT}, {RAA229641, PAGE0, CMD_POUT}}},
 };
 
 PAL_PMBUS_INFO hsc_dev_table[] = {
   [HSC_VOUT] = {MTP_HSC_BUS, MTP_HSC_ADDR, {{ADM1278, HSC_NO_SET_PAGE, CMD_VOUT}}},
   [HSC_IOUT] = {MTP_HSC_BUS, MTP_HSC_ADDR, {{ADM1278, HSC_NO_SET_PAGE, CMD_IOUT}}},
   [HSC_PIN] = {MTP_HSC_BUS, MTP_HSC_ADDR, {{ADM1278, HSC_NO_SET_PAGE, CMD_PIN}}},
+};
+
+PAL_INA230_INFO ina230_dev_table[] = {
+  [P12V_COME_PWR] = {INA230_BUS, INA230_ADDR, INA230_POWER},
+  [P12V_COME_IOUT] = {INA230_BUS, INA230_ADDR, INA230_IOUT},
 };
 
 /*List item: {CPLD-ADC reading low-byte offset, resistor ratio}
@@ -367,30 +390,30 @@ pal_get_fru_sensor_list(uint8_t fru, uint8_t **sensor_list, int *cnt) {
 **/
 static int
 read_temp(uint8_t id, float *value) {
-  if (id >= ARRAY_SIZE(temp_dev_list)) {
+  if (id >= ARRAY_SIZE(hwmon_dev_list)) {
     return ERR_SENSOR_NA;
   }
 
-  return sensors_read(temp_dev_list[id].chip, temp_dev_list[id].label, value);
+  return sensors_read(hwmon_dev_list[id].chip, hwmon_dev_list[id].label, value);
 }
 
 static int
-read_cpu_temp(uint8_t id, float *value) {
+read_cpu_hwmon(uint8_t id, float *value) {
   if (value == NULL) {
     syslog(LOG_ERR, "%s: invalid parameter: value pointer is NULL", __func__);
     return -1;
   }
 
-  if (id >= ARRAY_SIZE(temp_dev_list)) {
+  if (id >= ARRAY_SIZE(hwmon_dev_list)) {
     return ERR_SENSOR_NA;
   }
 
   int ret = 0;
-  ret = sensors_read(temp_dev_list[id].chip, temp_dev_list[id].label, value);
+  ret = sensors_read(hwmon_dev_list[id].chip, hwmon_dev_list[id].label, value);
   if ((ret < 0) && (retrySensor < SENSOR_RETRY_TIME)) {
     sensors_reinit();
     sleep(POWER_ON_SENSOR_RETRY_SEC);
-    ret = sensors_read(temp_dev_list[id].chip, temp_dev_list[id].label, value);
+    ret = sensors_read(hwmon_dev_list[id].chip, hwmon_dev_list[id].label, value);
     if (ret != 0) {
       retrySensor++;
     }
@@ -414,7 +437,7 @@ read_dimm_temp(uint8_t id, float *value) {
   uint8_t rlen = DIMM_TEMP_LEN;
   uint8_t low_byte = 0, high_byte = 0;
 
-  fd = i2c_cdev_slave_open(I2C_BUS5, dimm_addr_list[id] >> 1,
+  fd = i2c_cdev_slave_open(DIMM_BUS, dimm_addr_list[id] >> 1,
                           I2C_SLAVE_FORCE_CLAIM);
   if (fd < 0) {
     syslog(LOG_ERR, "Failed to open DIMM 0x%x\n", dimm_addr_list[id]);
@@ -432,7 +455,7 @@ read_dimm_temp(uint8_t id, float *value) {
 
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Failed to get lowbyte reading %x-%x", __func__,
-          I2C_BUS5, dimm_addr_list[id]);
+          DIMM_BUS, dimm_addr_list[id]);
     close(fd);
     return -1;
   }
@@ -451,7 +474,7 @@ read_dimm_temp(uint8_t id, float *value) {
 
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Failed to get highbyte reading %x-%x", __func__,
-          I2C_BUS5, dimm_addr_list[id]);
+          DIMM_BUS, dimm_addr_list[id]);
     close(fd);
     return -1;
   }
@@ -473,6 +496,48 @@ read_dimm_temp(uint8_t id, float *value) {
 }
 
 static int
+read_dimm_pwr(uint8_t id, float *value) {
+  if (value == NULL) {
+    syslog(LOG_ERR, "%s: invalid parameter: value pointer is NULL", __func__);
+    return -1;
+  }
+
+  int ret = 0, fd = 0;
+  uint8_t retry = SENSOR_RETRY_TIME;
+  uint8_t tbuf = PMIC_VDD_READ;
+  uint8_t tlen = sizeof(tbuf);
+  uint8_t rbuf = 0;
+  uint8_t rlen = 1;
+
+  fd = i2c_cdev_slave_open(DIMM_BUS, pmic_addr_list[id] >> 1,
+                          I2C_SLAVE_FORCE_CLAIM);
+  if (fd < 0) {
+    syslog(LOG_ERR, "Failed to open PMIC 0x%x\n", pmic_addr_list[id]);
+    return -1;
+  }
+
+  do {
+    ret = i2c_rdwr_msg_transfer(fd, pmic_addr_list[id],
+                                &tbuf, tlen, &rbuf, rlen);
+    if (ret != 0) {
+      usleep(SENSOR_RETRY_INTERVAL_USEC);
+    }
+  } while ((ret < 0) && ((retry--) > 0));
+
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to read DIMM power %x-%x", __func__,
+          DIMM_BUS, pmic_addr_list[id]);
+    close(fd);
+    return -1;
+  }
+
+  *value = (float)rbuf * 0.125;
+
+  close(fd);
+  return 0;
+}
+
+static int
 read_adc_val(uint8_t id, float *value) {
   int ret = 0;
 
@@ -481,6 +546,10 @@ read_adc_val(uint8_t id, float *value) {
   }
 
   ret = sensors_read_adc(adc_label[id], value);
+
+  if (*value < 0) {
+    *value = 0;
+  }
 
   return ret;
 }
@@ -639,7 +708,6 @@ read_pmbus(uint8_t id, float *value) {
     uint8_t vout_mode_data = VR_VOUT_MODE_REG;
     uint8_t rlen_vout_mode = 1;
     uint8_t rbuf_vout_mode;
-    float* rbuf_reading = 0;
 
     retry = SENSOR_RETRY_TIME;
     do {
@@ -720,11 +788,36 @@ read_pmbus(uint8_t id, float *value) {
         syslog(LOG_ERR, "%s() vr type is invalid %d-%d %d\n", __func__, bus, addr, pmbus_i2c_data.type);
       }
       break;
+    case DIRECT:
+      if (pmbus_i2c_data.type == RAA229641) {
+        uint16_t value_tmp = ((uint16_t)rbuf_reading_raw[1] << 8) | rbuf_reading_raw[0];
+        if (pmbus_i2c_data.offset != CMD_VOUT) {
+          *value = (float)(int16_t)value_tmp;
+        } else {
+          *value = (float)value_tmp;
+        }
+        if (pmbus_i2c_data.offset == CMD_IOUT) {
+          *value *= 0.1;
+        } else if (pmbus_i2c_data.offset == CMD_VIN || pmbus_i2c_data.offset == CMD_IIN) {
+          *value *= 0.01;
+        } else if (pmbus_i2c_data.offset == CMD_VOUT) {
+          *value *= 0.001;
+        }
+      }
+      else {
+        *value = 0;
+        syslog(LOG_ERR, "%s() vr type is invalid %d-%d %d\n", __func__, bus, addr, pmbus_i2c_data.type);
+      }
+      break;
     default:
       *value = 0;
       syslog(LOG_ERR, "%s() Now only support linear-11 and linear-16 format\n",
             __func__);
       break;
+    }
+
+    if (*value < 0) {
+      *value = 0;
     }
 
     close(fd);
@@ -817,17 +910,17 @@ read_cpld_adc(uint8_t id, float *value) {
   uint8_t rbuf = 0;
   uint16_t sensor_read_raw = 0x0000;
 
-  fd = i2c_cdev_slave_open(CPLD_ADC_REG_BUS, CPLD_ADC_REG_ADDR >> 1,
+  fd = i2c_cdev_slave_open(CPLD_BUS_4, CPLD_ADC_ADDR_BUS_4 >> 1,
                            I2C_SLAVE_FORCE_CLAIM);
   if (fd < 0) {
-    syslog(LOG_ERR, "Failed to open CPLD 0x%x\n", CPLD_ADC_REG_ADDR);
+    syslog(LOG_ERR, "Failed to open CPLD 0x%x\n", CPLD_ADC_ADDR_BUS_4);
     return -1;
   }
 
   //Get low byte
   retry = SENSOR_RETRY_TIME;
   do {
-    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADC_REG_ADDR,
+    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADC_ADDR_BUS_4,
                                 &tbuf, tlen, &rbuf, rlen);
     if (ret != 0) {
       usleep(SENSOR_RETRY_INTERVAL_USEC);
@@ -836,7 +929,7 @@ read_cpld_adc(uint8_t id, float *value) {
 
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Failed to get lowbyte reading %x-%x", __func__,
-           CPLD_ADC_REG_BUS, CPLD_ADC_REG_ADDR);
+           CPLD_BUS_4, CPLD_ADC_ADDR_BUS_4);
     close(fd);
     return -1;
   } else {
@@ -848,7 +941,7 @@ read_cpld_adc(uint8_t id, float *value) {
   tbuf += 1;
   retry = SENSOR_RETRY_TIME;
   do {
-    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADC_REG_ADDR,
+    ret = i2c_rdwr_msg_transfer(fd, CPLD_ADC_ADDR_BUS_4,
                                 &tbuf, tlen, &rbuf, rlen);
     if (ret != 0) {
       usleep(SENSOR_RETRY_INTERVAL_USEC);
@@ -858,7 +951,7 @@ read_cpld_adc(uint8_t id, float *value) {
 
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Failed to get highbyte reading %x-%x", __func__,
-           CPLD_ADC_REG_BUS, CPLD_ADC_REG_ADDR);
+           CPLD_BUS_4, CPLD_ADC_ADDR_BUS_4);
     return -1;
   } else {
     //Mask for getting bit[4-11]
@@ -872,26 +965,33 @@ read_cpld_adc(uint8_t id, float *value) {
 }
 
 static int
-read_ina230_pwr(uint8_t id, float *value) {
+read_ina230(uint8_t id, float *value) {
   if (value == NULL) {
     syslog(LOG_ERR, "%s: invalid parameter: value pointer is NULL", __func__);
     return -1;
   }
 
   int ret = 0, fd = 0;
+  uint8_t bus = ina230_dev_table[id].bus;
+  uint8_t addr = ina230_dev_table[id].addr;
   uint8_t retry = SENSOR_RETRY_TIME;
   uint8_t calibration = INA230_CALIBRATION;
-  uint8_t tbuf = INA230_POWER;
+  uint8_t tbuf = ina230_dev_table[id].offset;
   uint8_t tlen = sizeof(tbuf);
   uint8_t rbuf[2] = {0};
   uint8_t rlen = INA230_GET_DATA_LEN;
   int32_t read_ina230_raw;
 
-  fd = i2c_cdev_slave_open(I2C_BUS5, INA230_ADDR >> 1, I2C_SLAVE_FORCE_CLAIM);
+  fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
   if (fd < 0) {
-    syslog(LOG_ERR, "Failed to open ina230 0x%x\n", INA230_ADDR);
+    syslog(LOG_ERR, "Failed to open ina230 0x%x\n", addr);
     return -1;
   }
+  // 
+  uint8_t config_data[3];
+  config_data[0] = INA230_CONFIG;
+  config_data[1] = LSB_INA230_CONFIG;
+  config_data[2] = MSB_INA230_CONFIG;
 
   //default calibration date
   uint8_t default_calibration_data[3];
@@ -901,7 +1001,7 @@ read_ina230_pwr(uint8_t id, float *value) {
 
   // Get INA230 Calibration
   do {
-    ret = i2c_rdwr_msg_transfer(fd, INA230_ADDR, &calibration, sizeof(calibration),
+    ret = i2c_rdwr_msg_transfer(fd, addr, &calibration, sizeof(calibration),
                                 rbuf, rlen);
     if (ret < 0) {
       syslog(LOG_ERR, "%s: get ina230 calibration failed", __func__);
@@ -910,8 +1010,17 @@ read_ina230_pwr(uint8_t id, float *value) {
     }
 
     if (rbuf[0] == 0x00 && rbuf[1] == 0x00) {
+      // Set config register to 0x274f
+      ret = i2c_rdwr_msg_transfer(fd, addr, config_data,
+                                  sizeof(config_data), NULL, 0);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s: write ina230 config failed", __func__);
+        close(fd);
+        return -1;
+      }
+
       /* Write the config in the Calibration register */
-      ret = i2c_rdwr_msg_transfer(fd, INA230_ADDR, default_calibration_data,
+      ret = i2c_rdwr_msg_transfer(fd, addr, default_calibration_data,
                                   sizeof(default_calibration_data), NULL, 0);
       if (ret < 0) {
         syslog(LOG_ERR, "%s: write ina230 default calibration failed", __func__);
@@ -928,9 +1037,9 @@ read_ina230_pwr(uint8_t id, float *value) {
 
   retry = SENSOR_RETRY_TIME;
 
-  // Read ina230 power register
+  // Read ina230 power or voltage register
   do {
-    ret = i2c_rdwr_msg_transfer(fd, INA230_ADDR, &tbuf, tlen, rbuf, rlen);
+    ret = i2c_rdwr_msg_transfer(fd, addr, &tbuf, tlen, rbuf, rlen);
     if (ret != 0) {
       usleep(SENSOR_RETRY_INTERVAL_USEC);
     }
@@ -938,17 +1047,23 @@ read_ina230_pwr(uint8_t id, float *value) {
 
   if (ret < 0) {
     syslog(LOG_ERR, "%s() Failed to get ina230 reading %x-%x", __func__,
-          I2C_BUS5, INA230_ADDR);
+          bus, addr);
     close(fd);
     return -1;
-
-
-
   }
 
-  // ina230 pwr
-  read_ina230_raw = (rbuf[0] << 8) | rbuf[1];
-  *value = ((float) read_ina230_raw) / 40;
+  switch(tbuf) {
+    case INA230_POWER:
+      // ina230 pwr
+      read_ina230_raw = (rbuf[0] << 8) | rbuf[1];
+      *value = ((float) read_ina230_raw) / 40;
+      break;
+    case INA230_IOUT:
+      // ina230 IOUT
+      read_ina230_raw = (rbuf[0] << 8) | rbuf[1];
+      *value = ((float) read_ina230_raw) / 1000;
+      break;
+  }
 
   close(fd);
   return 0;
@@ -1043,7 +1158,6 @@ read_nic_temp(uint8_t id, float *value) {
   uint8_t tlen = sizeof(tbuf);
   uint8_t rlen = NIC_TEMP_LEN;
   uint8_t rbuf = 0;
-  uint8_t res_temp = 0;
   static int nic_temp_retry = 0;
 
   fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
@@ -1110,8 +1224,6 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
   char str[MAX_VALUE_LEN] = {0};
   char fru_name[32] = {0};
   int ret = 0;
-  uint8_t id = 0;
-  uint8_t server_status = 0;
   PAL_SENSOR_MAP sensor;
 
   if (pal_get_fru_name(fru, fru_name)) {
@@ -1173,7 +1285,7 @@ pal_sensor_read_raw(uint8_t fru, uint8_t sensor_num, void *value) {
       ret = sensor.read_sensor(sensor.id, (float * ) value);
     } else {
       ret = SENSOR_NA;
-      retryDIMM = 0;
+      retrySensor = 0;
     }
   } else {
     ret = ERR_SENSOR_NA;

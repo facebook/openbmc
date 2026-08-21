@@ -1,0 +1,49 @@
+From 137a3c9ea416187b75c476ef5032e46c2c01bb5b Mon Sep 17 00:00:00 2001
+From: Andy-Hsu-wiwynn <andy.hsu.wiwynn@gmail.com>
+Date: Fri, 15 Aug 2025 15:44:31 +0800
+Subject: [PATCH] PSUSensor:add property to sensorTable and labelMatch
+
+Description
+Add "current" to the sensorTable, and add "in_current" and "in_power"
+ to labelMatch.
+
+Motivation
+Using the RTQ6056 to monitor current and power requires additional
+ properties.
+
+Test Plan
+Confirmed expected sensors appeared on dbus
+
+Change-Id: I4767352847d2e43ad356ebb57f61b5a0d9f6180d
+Signed-off-by: Andy Hsu <andy.hsu.wiwynn@gmail.com>
+---
+ src/psu/PSUSensorMain.cpp | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
+index bd4b525..a37457a 100644
+--- a/src/psu/PSUSensorMain.cpp
++++ b/src/psu/PSUSensorMain.cpp
+@@ -195,8 +195,9 @@ struct SensorUnit
+     auto operator<=>(const SensorUnit&) const = default;
+ };
+ 
+-static constexpr const std::array<SensorUnit, 6> sensorTable{{
++static constexpr const std::array<SensorUnit, 7> sensorTable{{
+     {"curr", sensor_paths::unitAmperes},
++    {"current", sensor_paths::unitAmperes},
+     {"fan", sensor_paths::unitRPMs},
+     {"in", sensor_paths::unitVolts},
+     {"power", sensor_paths::unitWatts},
+@@ -208,6 +209,8 @@ constexpr static auto labelMatch = std::to_array<PSUProperty>({
+     {"curr", "Output Current", 255, 0, 3, 0},
+     {"fan", "Fan Speed ", 30000, 0, 0, 0},
+     {"iin", "Input Current", 20, 0, 3, 0},
++    {"in_current", "Output Current", 255, 0, 3, 0},
++    {"in_power", "Output Power", 3000, 0, 6, 0},
+     {"in_voltage", "Output Voltage", 255, 0, 3, 0},
+     {"in", "Output Voltage", 255, 0, 3, 0},
+     {"iout", "Output Current", 255, 0, 3, 0},
+-- 
+2.53.0-Meta
+

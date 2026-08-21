@@ -590,6 +590,12 @@ uint8_t plat_get_fru_sel(void)
   return FRU_SERVER;
 }
 
+int plat_get_mrc_desc(uint8_t fru, uint16_t major, uint16_t minor, char *desc)
+{
+  (void)fru;
+  return pal_get_mrc_desc(major, minor, desc);
+}
+
 int plat_get_me_status(uint8_t fru, char *status)
 {
   int ret = 0;

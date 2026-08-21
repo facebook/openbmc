@@ -117,7 +117,11 @@ expander_get_fw_ver(uint8_t *ver, uint8_t ver_len) {
   memset(&expander_ver, 0, sizeof(expander_ver));
 
   ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_GET_EXP_VERSION, tbuf, tlen, rbuf, &rlen);
+#ifdef CONFIG_GRANDCANYON2
+  if ((ret != 0) || (rlen < EXP_VERSION_RES_LEN)) {
+#else
   if ((ret != 0) || (rlen != EXP_VERSION_RES_LEN)) {
+#endif
     syslog(LOG_ERR, "%s: expander_ipmb_wrapper failed...\n", __func__);
     return -1;
   }
@@ -130,6 +134,12 @@ expander_get_fw_ver(uint8_t *ver, uint8_t ver_len) {
   } else {
     memcpy(ver, &expander_ver.firmware_region2.major_ver, ver_len);
   }
+
+#ifdef CONFIG_GRANDCANYON2
+  if (rlen > EXP_VERSION_RES_LEN) {
+    ver[4] = expander_ver.sub_ver;
+  }
+#endif
 
   return 0;
 }

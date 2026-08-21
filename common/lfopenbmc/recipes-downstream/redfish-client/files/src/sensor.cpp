@@ -1,6 +1,12 @@
 #include <redfish_client/core/sensor.hpp>
 
-#include <redfish-binding/Sensor_Sensor.hpp>
+#include <cassert>
+#include <cmath>
+#include <string_view>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace redfish_client::core
 {
@@ -17,90 +23,153 @@ std::optional<double> toMaybeDouble(redfish_binding::Property<double>& property)
     return std::nullopt;
 }
 
-double toDoubleWithDefault(redfish_binding::Property<double>& property,
-                           double defaultValue)
-{
-    if (property.hasValue())
-    {
-        return property.value();
-    }
-    return defaultValue;
-}
-
 } // namespace
 
-std::optional<Sensor> Sensor::parseSensor(const std::string& sensorJson)
+auto Sensor::toMaybeMetadata(const std::string& unitsStr)
+    -> std::optional<Metadata>
 {
-    auto parsed = redfish_binding::Sensor::parseSensor(sensorJson);
+    using Unit = SensorValueIntf::Unit;
+    static const std::unordered_map<std::string_view, Metadata> table = {
+        {"%", {Unit::Percent, 0.0, 100.0}},
+        {"Cel", {Unit::DegreesC, -128.0, 127.0}},
+        {"J", {Unit::Joules, 0.0, 100000.0}},
+        {"Pa", {Unit::Pascals, 30000.0, 120000.0}},
+        {"V", {Unit::Volts, 0.0, 255.0}},
+        {"W", {Unit::Watts, 0.0, 3000.0}},
+        {"A", {Unit::Amperes, 0.0, 255.0}},
+    };
 
-    auto maybeReading = toMaybeDouble(parsed.getReading());
-    if (!maybeReading.has_value())
+    if (auto it = table.find(unitsStr); it != table.end())
     {
-        maybeReading = std::numeric_limits<double>::quiet_NaN();
+        return it->second;
     }
+    return std::nullopt;
+}
 
+std::optional<SensorValueIntf::Unit> Sensor::toMaybeUnit(
+    const std::string& unitsStr)
+{
+    return toMaybeMetadata(unitsStr).transform([](const Metadata& metadata) {
+        return metadata.unit;
+    });
+}
+
+std::unique_ptr<Sensor> Sensor::create(
+    sdbusplus::async::context& ctx, const std::string& ns,
+    const std::string& id, const std::string& associationPath,
+    redfish_binding::Sensor::Sensor& parsed)
+{
+    // Without a unit there is nothing meaningful to put on the bus.
     if (!parsed.getReadingUnits().hasValue())
     {
-        return std::nullopt;
+        return nullptr;
+    }
+    std::string unit = parsed.getReadingUnits().value();
+
+    // An unmappable unit is skipped rather than published under a guessed one.
+    auto maybeMetadata = toMaybeMetadata(unit);
+    if (!maybeMetadata.has_value())
+    {
+        return nullptr;
+    }
+    Metadata metadata = maybeMetadata.value();
+
+    if (auto& minProp = parsed.getReadingRangeMin(); minProp.hasValue())
+    {
+        metadata.minValue = minProp.value();
+    }
+    if (auto& maxProp = parsed.getReadingRangeMax(); maxProp.hasValue())
+    {
+        metadata.maxValue = maxProp.value();
     }
 
-    Sensor sensor;
-    sensor.reading = maybeReading.value();
-    sensor.sensorUnit = parsed.getReadingUnits().value();
+    auto objectPath = std::string(rootPath) + "/" + ns + "/" + id;
+    return std::unique_ptr<Sensor>(new Sensor(
+        ctx, objectPath, associationPath,
+        toMaybeDouble(parsed.getReading())
+            .value_or(std::numeric_limits<double>::quiet_NaN()),
+        metadata));
+}
 
-    static const std::unordered_map<std::string, std::pair<double, double>>
-        unitDefaults = {{"V", {0.0, 255.0}},      {"A", {0.0, 255.0}},
-                        {"W", {0.0, 3000.0}},     {"J", {0.0, 100000.0}},
-                        {"Cel", {-128.0, 127.0}}, {"Pa", {30000.0, 120000.0}},
-                        {"%", {0.0, 100.0}}};
+Sensor::Sensor(sdbusplus::async::context& ctx, const std::string& objectPath,
+               const std::string& associationPath, double reading,
+               const Metadata& metadata) :
+    SensorInterfaces(ctx, objectPath.c_str())
+{
+    // Populate everything before announcing: emit_added() publishes the object
+    // as a unit, so a half-built sensor is never visible to consumers.
+    constexpr bool emitSignal = false;
 
-    auto it = unitDefaults.find(sensor.sensorUnit);
-    if (it != unitDefaults.end())
+    if (!associationPath.empty())
     {
-        sensor.minValue =
-            toDoubleWithDefault(parsed.getReadingRangeMin(), it->second.first);
-        sensor.maxValue =
-            toDoubleWithDefault(parsed.getReadingRangeMax(), it->second.second);
+        std::vector<std::tuple<std::string, std::string, std::string>>
+            associations;
+        associations.emplace_back("chassis", "all_sensors", associationPath);
+        this->associations<emitSignal>(associations);
+    }
+
+    this->unit<emitSignal>(metadata.unit);
+    this->min_value<emitSignal>(metadata.minValue);
+    this->max_value<emitSignal>(metadata.maxValue);
+
+    this->value<emitSignal>(reading);
+    if (!std::isnan(reading))
+    {
+        lastNotifiedValue = reading;
+    }
+
+    Definitions::emit_added();
+    Value::emit_added();
+}
+
+auto Sensor::updateValue(double current) -> sdbusplus::async::task<>
+{
+    std::lock_guard<std::mutex> guard(this->lock);
+
+    if (shouldSkipSignal(current))
+    {
+        this->value<false>(current);
     }
     else
     {
-        sensor.minValue = toMaybeDouble(parsed.getReadingRangeMin());
-        sensor.maxValue = toMaybeDouble(parsed.getReadingRangeMax());
+        lastNotifiedValue = current;
+        this->value<true>(current);
     }
-
-    return sensor;
+    co_return;
 }
 
-double Sensor::getReading() const
+auto Sensor::shouldSkipSignal(double current) -> bool
 {
-    return reading;
-}
-
-const std::string& Sensor::getSensorUnitText() const
-{
-    return sensorUnit;
-}
-
-std::optional<double> Sensor::getMinValue() const
-{
-    return minValue;
-}
-
-std::optional<double> Sensor::getMaxValue() const
-{
-    return maxValue;
-}
-
-Sensor Sensor::createTestSensor(double reading, const char* sensorUnit,
-                               std::optional<double> minValue,
-                               std::optional<double> maxValue)
-{
-    Sensor rv;
-    rv.reading = reading;
-    rv.sensorUnit = sensorUnit;
-    rv.minValue = minValue;
-    rv.maxValue = maxValue;
-    return rv;
+    // Skip unless the reading moved by at least 1%; sub-percent jitter is not
+    // worth waking every bus consumer. A reading appearing or disappearing
+    // (a NaN transition) always signals.
+    if (std::isnan(lastNotifiedValue) && std::isnan(current))
+    {
+        return true;
+    }
+    if (std::isnan(lastNotifiedValue) && !(std::isnan(current)))
+    {
+        return false;
+    }
+    if ((!std::isnan(lastNotifiedValue)) && std::isnan(current))
+    {
+        return false;
+    }
+    assert(!std::isnan(lastNotifiedValue));
+    assert(!std::isnan(current));
+    if (std::abs(lastNotifiedValue) < 1e-6)
+    {
+        // Baseline is ~0, so a percentage change is undefined; treat as no
+        // change.
+        return true;
+    }
+    auto changed =
+        std::abs((current - lastNotifiedValue) / lastNotifiedValue * 100.0);
+    if (changed >= 1.0)
+    {
+        return false;
+    }
+    return true;
 }
 
 } // namespace redfish_client::core

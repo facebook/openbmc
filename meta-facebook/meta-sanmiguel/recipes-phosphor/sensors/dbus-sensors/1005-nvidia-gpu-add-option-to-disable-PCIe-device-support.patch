@@ -1,0 +1,85 @@
+From 92d6a0530a0c27b3fcb8da33d909bc36c9a7ace9 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Wed, 1 Jul 2026 13:47:12 +0800
+Subject: [PATCH] nvidia-gpu: add option to disable PCIe device support
+
+The nvidia-gpu service scans all discovered EIDs and creates the
+corresponding sensor objects.
+
+ConnectX NICs, which are PCIe devices, support both PLDM and NSM
+protocols. On platforms where PLDM is used for monitoring, creating
+NSM sensor objects for these devices is unnecessary and may cause
+duplicate monitoring.
+
+Add a Meson build option to allow platforms to disable PCIe device
+support in the nvidia-gpu service.
+
+[1] https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/91900/3
+
+Change-Id: I247f347776a4f41d8d4b8a5230e3d1191b2dfa82
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+---
+ meson.build                      | 4 ++++
+ meson.options                    | 6 ++++++
+ src/nvidia-gpu/DeviceManager.cpp | 7 ++++++-
+ 3 files changed, 16 insertions(+), 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index b40be7d..6494292 100644
+--- a/meson.build
++++ b/meson.build
+@@ -61,5 +61,9 @@ default_deps = [
+     uring,
+ ]
+ 
++if not get_option('nvidia-gpu-pcie').allowed()
++    add_project_arguments('-DNVIDIA_GPU_DISABLE_PCIE', language: 'cpp')
++endif
++
+ subdir('service_files')
+ subdir('src')
+diff --git a/meson.options b/meson.options
+index 0718209..6dfb444 100644
+--- a/meson.options
++++ b/meson.options
+@@ -70,6 +70,12 @@ option(
+     value: 'enabled',
+     description: 'Enable GPU sensor.',
+ )
++option(
++    'nvidia-gpu-pcie',
++    type: 'feature',
++    value: 'enabled',
++    description: 'Enable PCIe support in Nvidia GPU sensor.',
++)
+ option(
+     'external',
+     type: 'feature',
+diff --git a/src/nvidia-gpu/DeviceManager.cpp b/src/nvidia-gpu/DeviceManager.cpp
+index 56d43f4..de855f5 100644
+--- a/src/nvidia-gpu/DeviceManager.cpp
++++ b/src/nvidia-gpu/DeviceManager.cpp
+@@ -138,6 +138,7 @@ void DeviceManager::processQueryDeviceIdResponse(
+ 
+         case gpu::DeviceIdentification::DEVICE_PCIE:
+         {
++#ifndef NVIDIA_GPU_DISABLE_PCIE
+             lg2::info(
+                 "Found the PCIe Device with EID {EID}, DeviceType {DEVTYPE}, InstanceId {IID}.",
+                 "EID", eid, "DEVTYPE", responseDeviceType, "IID",
+@@ -161,7 +162,11 @@ void DeviceManager::processQueryDeviceIdResponse(
+                     "PCIe Device with name {NAME} already exists. Skipping creating a new device.",
+                     "NAME", pcieName);
+             }
+-
++#else
++            lg2::info(
++                "Found the PCIe Device with EID {EID}, but PCIe support is disabled.",
++                "EID", eid);
++#endif
+             break;
+         }
+ 
+-- 
+2.53.0-Meta
+

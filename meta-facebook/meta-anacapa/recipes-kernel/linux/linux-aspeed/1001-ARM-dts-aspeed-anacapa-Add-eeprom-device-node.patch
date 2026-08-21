@@ -1,0 +1,35 @@
+From dec3ea619bc7ed43eaa755a8710c9f695a3625ea Mon Sep 17 00:00:00 2001
+From: Colin Huang <u8813345@gmail.com>
+Date: Mon, 2 Mar 2026 11:17:59 +0800
+Subject: [PATCH] ARM: dts: aspeed: anacapa: Add eeprom device node
+
+eeprom address changed (0x50 to 0x51) in DCSCM rev D
+To support previous rev (B/C) and rev D,
+add eeprom device node for DCSCM rev D.
+
+LORE Link: https://lore.kernel.org/all/20260302-add-new-eeprom-node-v1-1-2bcf87bc22e4@gmail.com/
+
+Signed-off-by: Colin Huang <u8813345@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa.dts | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa.dts
+index 671ebc819588..80147fe777e3 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa.dts
+@@ -598,6 +598,11 @@ eeprom@50 {
+ 		reg = <0x50>;
+ 	};
+ 
++	eeprom@51 {
++		compatible = "atmel,24c128";
++		reg = <0x51>;
++	};
++
+ 	// BSM FRU
+ 	eeprom@56 {
+ 		compatible = "atmel,24c64";
+-- 
+2.52.0
+

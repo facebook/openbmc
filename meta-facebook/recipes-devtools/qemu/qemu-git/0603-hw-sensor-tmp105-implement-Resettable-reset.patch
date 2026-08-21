@@ -1,0 +1,65 @@
+From 7a99062827f1f87ee96b2ae92545a17560eb68b1 Mon Sep 17 00:00:00 2001
+From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
+Date: Fri, 31 Jul 2026 12:45:02 +0200
+Subject: [PATCH] hw/sensor: tmp105: implement Resettable reset
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Previously the device reset routine was invoked once from realize() and
+never registered with the reset subsystem, so a system or bus reset left
+the TMP105 registers untouched. Convert tmp105_reset() into a proper
+Resettable hold phase (tmp105_reset_hold) registered through
+ResettableClass::phases.hold, and drop the manual call from realize() as
+the reset framework now drives it. This matches the scheme used by the
+other hw/sensor I2C devices.
+
+Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
+Link: https://lore.kernel.org/qemu-devel/20260731-sanmiguel-bmc-locator-v2-3-1266926ba769@free.fr
+Signed-off-by: Cédric Le Goater <clg@redhat.com>
+---
+ hw/sensor/tmp105.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/hw/sensor/tmp105.c b/hw/sensor/tmp105.c
+index aabeb34f08..f7d0c738ca 100644
+--- a/hw/sensor/tmp105.c
++++ b/hw/sensor/tmp105.c
+@@ -314,9 +314,9 @@ static const VMStateDescription vmstate_tmp105 = {
+     }
+ };
+ 
+-static void tmp105_reset(I2CSlave *i2c)
++static void tmp105_reset_hold(Object *obj, ResetType type)
+ {
+-    TMP105State *s = TMP105(i2c);
++    TMP105State *s = TMP105(obj);
+ 
+     s->temperature = 0;
+     s->pointer = 0;
+@@ -337,8 +337,6 @@ static void tmp105_realize(DeviceState *dev, Error **errp)
+     TMP105State *s = TMP105(i2c);
+ 
+     qdev_init_gpio_out(&i2c->qdev, &s->pin, 1);
+-
+-    tmp105_reset(&s->parent_obj);
+ }
+ 
+ static void tmp105_initfn(Object *obj)
+@@ -352,11 +350,13 @@ static void tmp105_class_init(ObjectClass *klass, const void *data)
+ {
+     DeviceClass *dc = DEVICE_CLASS(klass);
+     I2CSlaveClass *k = I2C_SLAVE_CLASS(klass);
++    ResettableClass *rc = RESETTABLE_CLASS(klass);
+ 
+     dc->realize = tmp105_realize;
+     k->event = tmp105_event;
+     k->recv = tmp105_rx;
+     k->send = tmp105_tx;
++    rc->phases.hold = tmp105_reset_hold;
+     dc->vmsd = &vmstate_tmp105;
+ }
+ 
+-- 
+2.53.0-Meta
+

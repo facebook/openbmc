@@ -1,0 +1,96 @@
+From eecc5660d5077b4397bba519878ee5bbdd5be5b6 Mon Sep 17 00:00:00 2001
+From: Kai Chen <tingkaic@nvidia.com>
+Date: Mon, 11 May 2026 10:33:01 -0700
+Subject: [PATCH] Rate-limit cp2112 GPIO poll error log
+
+cp2112 polls GPIO at 10Hz for interrupt usage. When the underlying USB
+HID transfer fails persistently (e.g. device in fail state), the
+"error requesting GPIO values: %d" message floods the kernel log at the
+same 10Hz cadence, drowning out other journal entries.
+
+Switch the error path in cp2112_gpio_get_all() from hid_err() to
+dev_err_ratelimited() so the message is capped at the default kernel
+ratelimit (10 messages per 5 seconds) while still surfacing the failure.
+The other hid_err() call sites are not on the polled path and are left
+unchanged.
+
+Test:
+On Strata-BMC, the IO_Board_SMA_[0-3] also flood with the same kernel
+error log. The SMA fw version is 0027.01.0201.0000.
+Before applying the fix:
+
+```
+root@vr-nvl-bmc:~# cat /proc/kmsg
+<3>[  119.772173 ] cp2112 0003:0955:CF11.0005: error requesting GPIO values: -32
+<3>[  119.793359 ] cp2112 0003:0955:CF11.0006: error requesting GPIO values: -32
+<3>[  119.812324 ] cp2112 0003:0955:CF11.000C: error requesting GPIO values: -32
+<3>[  119.860252 ] cp2112 0003:0955:CF11.000B: error requesting GPIO values: -32
+<3>[  119.890182 ] cp2112 0003:0955:CF11.0005: error requesting GPIO values: -32
+<3>[  119.916009 ] cp2112 0003:0955:CF11.0006: error requesting GPIO values: -32
+<3>[  119.931327 ] cp2112 0003:0955:CF11.000C: error requesting GPIO values: -32
+<3>[  119.970677 ] cp2112 0003:0955:CF11.000B: error requesting GPIO values: -32
+<3>[  120.001365 ] cp2112 0003:0955:CF11.0005: error requesting GPIO values: -32
+<3>[  120.030342 ] cp2112 0003:0955:CF11.0006: error requesting GPIO values: -32
+<3>[  120.040255 ] cp2112 0003:0955:CF11.000C: error requesting GPIO values: -32
+<3>[  120.080354 ] cp2112 0003:0955:CF11.000B: error requesting GPIO values: -32
+<3>[  120.121771 ] cp2112 0003:0955:CF11.0005: error requesting GPIO values: -32
+<3>[  120.143684 ] cp2112 0003:0955:CF11.0006: error requesting GPIO values: -32
+<3>[  120.158675 ] cp2112 0003:0955:CF11.000C: error requesting GPIO values: -32
+<3>[  120.190952 ] cp2112 0003:0955:CF11.000B: error requesting GPIO values: -32
+<3>[  120.240461 ] cp2112 0003:0955:CF11.0005: error requesting GPIO values: -32
+<3>[  120.261978 ] cp2112 0003:0955:CF11.0006: error requesting GPIO values: -32
+```
+
+After applying the the fix, the logging rate decreases to 10 messages
+per 5 seconds.
+
+```
+root@vr-nvl-bmc:~# cat /proc/kmsg
+<3>[ 2071.498206 ] cp2112 0003:0955:CF11.0005: error requesting GPIO values: -32
+<3>[ 2071.515356 ] cp2112 0003:0955:CF11.000C: error requesting GPIO values: -32
+<3>[ 2071.518204 ] cp2112 0003:0955:CF11.000A: error requesting GPIO values: -32
+<3>[ 2071.568214 ] cp2112 0003:0955:CF11.0006: error requesting GPIO values: -32
+<3>[ 2071.618227 ] cp2112 0003:0955:CF11.0005: error requesting GPIO values: -32
+<3>[ 2071.632584 ] cp2112 0003:0955:CF11.000C: error requesting GPIO values: -32
+<3>[ 2071.650155 ] cp2112 0003:0955:CF11.000A: error requesting GPIO values: -32
+<3>[ 2071.678212 ] cp2112 0003:0955:CF11.0006: error requesting GPIO values: -32
+<3>[ 2071.728223 ] cp2112 0003:0955:CF11.0005: error requesting GPIO values: -32
+<3>[ 2071.748200 ] cp2112 0003:0955:CF11.000C: error requesting GPIO values: -32
+<4>[ 2076.518190 ] cp2112_gpio_get_all: 173 callbacks suppressed
+<3>[ 2076.518224 ] cp2112 0003:0955:CF11.0006: error requesting GPIO values: -32
+<3>[ 2076.588242 ] cp2112 0003:0955:CF11.000C: error requesting GPIO values: -32
+<3>[ 2076.595889 ] cp2112 0003:0955:CF11.0005: error requesting GPIO values: -32
+<3>[ 2076.608443 ] cp2112 0003:0955:CF11.000A: error requesting GPIO values: -32
+<3>[ 2076.638459 ] cp2112 0003:0955:CF11.0006: error requesting GPIO values: -32
+<3>[ 2076.698083 ] cp2112 0003:0955:CF11.000C: error requesting GPIO values: -32
+<3>[ 2076.715906 ] cp2112 0003:0955:CF11.0005: error requesting GPIO values: -32
+<3>[ 2076.728207 ] cp2112 0003:0955:CF11.000A: error requesting GPIO values: -32
+<3>[ 2076.748809 ] cp2112 0003:0955:CF11.0006: error requesting GPIO values: -32
+<3>[ 2076.808251 ] cp2112 0003:0955:CF11.000C: error requesting GPIO values: -32
+<4>[ 2081.538218 ] cp2112_gpio_get_all: 169 callbacks suppressed
+```
+
+Signed-off-by: Ting-Kai Chen <tingkaic@nvidia.com>
+Fixes jira https://nvbugspro.nvidia.com/bug/6155899
+
+[1] https://github.com/NVIDIA/linux/commit/a6fae362fba0d8fb6e6cd17c70f81c0bb017fcf3
+---
+ drivers/hid/hid-cp2112.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/hid/hid-cp2112.c b/drivers/hid/hid-cp2112.c
+index 82f930db8e4f..1347fbb242df 100644
+--- a/drivers/hid/hid-cp2112.c
++++ b/drivers/hid/hid-cp2112.c
+@@ -383,7 +383,7 @@ static int cp2112_gpio_get_all(struct gpio_chip *chip)
+ 	ret = cp2112_hid_get(hdev, CP2112_GPIO_GET, buf, CP2112_GPIO_GET_LENGTH,
+ 			     HID_FEATURE_REPORT);
+ 	if (ret != CP2112_GPIO_GET_LENGTH) {
+-		hid_err(hdev, "error requesting GPIO values: %d\n", ret);
++		dev_err_ratelimited(&hdev->dev, "error requesting GPIO values: %d\n", ret);
+ 		return ret < 0 ? ret : -EIO;
+ 	}
+ 
+-- 
+2.53.0-Meta
+

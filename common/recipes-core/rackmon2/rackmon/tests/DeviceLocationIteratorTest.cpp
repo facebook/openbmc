@@ -23,7 +23,7 @@ TEST(DeviceLocationIteratorTest, Basic) {
   {
     "name": "orv2_psu",
     "address_range": [[160, 162], [10, 10]],
-    "probe_register": 104,
+    "probe": [{"register": 104}],
     "baudrate": 19200,
     "registers": [
       {
@@ -104,7 +104,7 @@ TEST(DeviceLocationIteratorTest, Basic) {
         {
           "name": "orv2_psu",
           "address_range": [[1, 2], [3, 4]],
-          "probe_register": 104,
+          "probe": [{"register": 104}],
           "baudrate": 19200,
           "registers": [
             {

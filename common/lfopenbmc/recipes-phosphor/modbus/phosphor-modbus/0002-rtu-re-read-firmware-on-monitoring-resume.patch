@@ -1,0 +1,201 @@
+From a24721726aa6bbf4f2639e14a668d1e78c134931 Mon Sep 17 00:00:00 2001
+From: Jagpal Singh Gill <paligill@gmail.com>
+Date: Wed, 15 Jul 2026 11:57:21 -0700
+Subject: [PATCH] rtu: re-read firmware on monitoring resume
+
+When monitoring is re-enabled on a port (e.g. after a firmware update
+completes), the firmware version reported by devices on that port may
+have changed. Re-read the firmware version for every device on the port
+when monitoring resumes.
+
+BasePort invokes a handler on the monitoring-resume transition; the
+device manager registers it to re-read the firmware version for each
+device attached to that port.
+
+Tested: Unit tests pass
+
+Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
+Change-Id: I7b97967913a06ffdc672aa7872af50bd370f0ec4
+---
+ rtu/device/base_device.hpp | 10 ++++++++++
+ rtu/device_manager.cpp     | 14 +++++++++++++-
+ rtu/device_manager.hpp     |  4 ++++
+ rtu/port/base_port.cpp     |  6 ++++++
+ rtu/port/base_port.hpp     |  9 +++++++++
+ tests/test_port.cpp        | 37 +++++++++++++++++++++++++++++++++++++
+ 6 files changed, 79 insertions(+), 1 deletion(-)
+
+diff --git a/rtu/device/base_device.hpp b/rtu/device/base_device.hpp
+index 88c14dc..6be5353 100644
+--- a/rtu/device/base_device.hpp
++++ b/rtu/device/base_device.hpp
+@@ -101,6 +101,16 @@ class BaseDevice
+         stopped = false;
+     }
+ 
++    /** @brief Re-read the firmware version if this device is on the given port
++     *  (e.g. after a firmware update on that port). */
++    auto refreshFirmwareVersion(const std::string& portName) -> void
++    {
++        if (config.serialPort == portName && currentFirmware)
++        {
++            ctx.spawn(currentFirmware->readVersionRegisters());
++        }
++    }
++
+   private:
+     // Pre-computed pairing of register config and its corresponding sensor,
+     // built at construction to avoid map lookups on every poll cycle.
+diff --git a/rtu/device_manager.cpp b/rtu/device_manager.cpp
+index 087854a..26eb12e 100644
+--- a/rtu/device_manager.cpp
++++ b/rtu/device_manager.cpp
+@@ -106,7 +106,11 @@ auto DeviceManager::processPortAdded(const sdbusplus::object_path& objectPath,
+ 
+     try
+     {
+-        ports[config->name] = PortIntf::PortFactory::create(ctx, *config);
++        auto port = PortIntf::PortFactory::create(ctx, *config);
++        port->onMonitoringResumed([this, portName = config->name]() {
++            refreshFirmwareOnPort(portName);
++        });
++        ports[config->name] = std::move(port);
+     }
+     catch (const std::exception& e)
+     {
+@@ -287,6 +291,14 @@ auto DeviceManager::processDeviceAdded(const DeviceFactoryConfigIntf& config)
+     }
+ }
+ 
++auto DeviceManager::refreshFirmwareOnPort(const std::string& portName) -> void
++{
++    for (auto& [key, device] : devices)
++    {
++        device->refreshFirmwareVersion(portName);
++    }
++}
++
+ auto DeviceManager::cleanupStoppedDevices() -> sdbusplus::async::task<>
+ {
+     while (!ctx.stop_requested())
+diff --git a/rtu/device_manager.hpp b/rtu/device_manager.hpp
+index 55efc99..b2ce6d1 100644
+--- a/rtu/device_manager.hpp
++++ b/rtu/device_manager.hpp
+@@ -97,6 +97,10 @@ class DeviceManager
+      */
+     auto cleanupStoppedDevices() -> sdbusplus::async::task<>;
+ 
++    /** @brief Re-read firmware versions for all devices on a port, invoked
++     *         when monitoring resumes on that port. */
++    auto refreshFirmwareOnPort(const std::string& portName) -> void;
++
+     sdbusplus::async::context& ctx;
+     entity_manager::EntityManagerInterface entityManager;
+     EventIntf::Events events;
+diff --git a/rtu/port/base_port.cpp b/rtu/port/base_port.cpp
+index 98cd865..458c7b2 100644
+--- a/rtu/port/base_port.cpp
++++ b/rtu/port/base_port.cpp
+@@ -85,6 +85,12 @@ auto BasePort::set_property(monitoring_enabled_t, bool enabled) -> bool
+     bool monitoringEnabled = !monitoringLock.has_value();
+     bool changed = (monitoringEnabled != properties.monitoring_enabled);
+     properties.monitoring_enabled = monitoringEnabled;
++
++    if (changed && monitoringEnabled && monitoringResumedHandler)
++    {
++        monitoringResumedHandler();
++    }
++
+     return changed;
+ }
+ 
+diff --git a/rtu/port/base_port.hpp b/rtu/port/base_port.hpp
+index b4808f2..e37f352 100644
+--- a/rtu/port/base_port.hpp
++++ b/rtu/port/base_port.hpp
+@@ -9,6 +9,7 @@
+ #include <xyz/openbmc_project/Control/Port/aserver.hpp>
+ 
+ #include <concepts>
++#include <functional>
+ #include <optional>
+ 
+ namespace phosphor::modbus::rtu::port
+@@ -173,6 +174,13 @@ class BasePort : public PortControlIntf
+      *          reserved. */
+     auto acquireExclusive() -> std::optional<ExclusiveLock>;
+ 
++    /** @brief Register a handler invoked when monitoring resumes on this port
++     *  (e.g. to re-read firmware versions after an update). */
++    auto onMonitoringResumed(std::function<void()> handler) -> void
++    {
++        monitoringResumedHandler = std::move(handler);
++    }
++
+   private:
+     friend class ExclusiveLock;
+     std::string name;
+@@ -182,6 +190,7 @@ class BasePort : public PortControlIntf
+     bool busy = false;
+     // Held while monitoring is disabled via Control.Port; reset to resume.
+     std::optional<ExclusiveLock> monitoringLock;
++    std::function<void()> monitoringResumedHandler;
+ };
+ 
+ } // namespace phosphor::modbus::rtu::port
+diff --git a/tests/test_port.cpp b/tests/test_port.cpp
+index d02e473..4c90fa2 100644
+--- a/tests/test_port.cpp
++++ b/tests/test_port.cpp
+@@ -149,6 +149,27 @@ class PortTest : public BaseTest
+         co_return;
+     }
+ 
++    auto TestMonitoringResumedHandler(MockPort& port)
++        -> sdbusplus::async::task<void>
++    {
++        int resumeCount = 0;
++        port.onMonitoringResumed([&]() { resumeCount++; });
++
++        // Disabling monitoring reserves the port; the handler must not fire.
++        port.monitoring_enabled(false);
++        EXPECT_EQ(resumeCount, 0);
++
++        // Re-enabling monitoring resumes the port and fires the handler once.
++        port.monitoring_enabled(true);
++        EXPECT_EQ(resumeCount, 1);
++
++        // A redundant enable does not fire the handler again.
++        port.monitoring_enabled(true);
++        EXPECT_EQ(resumeCount, 1);
++
++        co_return;
++    }
++
+     template <typename Config, typename Properties>
+     static inline void VerifyConfig(const Config& config,
+                                     const Properties& property)
+@@ -317,3 +338,19 @@ TEST_F(PortTest, TestMonitoringEnabled)
+ 
+     ctx.run();
+ }
++
++TEST_F(PortTest, TestMonitoringResumedHandler)
++{
++    PortConfigIntf::Config config = {};
++    auto res = PortConfigIntf::updateBaseConfig(config, properties);
++    EXPECT_TRUE(res) << "Failed to update config";
++
++    MockPort port(ctx, config, clientDevicePath);
++
++    ctx.spawn(TestMonitoringResumedHandler(port));
++
++    ctx.spawn(sdbusplus::async::sleep_for(ctx, 1s) |
++              sdbusplus::async::execution::then([&]() { ctx.request_stop(); }));
++
++    ctx.run();
++}
+-- 
+2.53.0-Meta
+

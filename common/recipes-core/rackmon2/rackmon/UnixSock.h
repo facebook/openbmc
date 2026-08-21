@@ -111,4 +111,9 @@ class UnixClient {
   }
 };
 
+class RackmonClient : public UnixClient {
+ public:
+  RackmonClient() : UnixClient("/var/run/rackmond.sock") {}
+};
+
 } // namespace rackmonsvc

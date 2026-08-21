@@ -94,15 +94,13 @@ class BaseMTermTest(object):
         bmc_ssh_session.login()  # connect to BMC
         bmc_ssh_session.session.prompt(timeout=20)  # wait for prompt
         bmc_ssh_session.session.sendline(
-            "tail -30 /var/log/mTerm_wedge.log"
-        )  # tail on mTerm logs
-        bmc_ssh_session.session.prompt(timeout=20)  # wait for prompt
-
-        self.assertIn(
-            b"CIT TESTING",
-            bmc_ssh_session.session.before,
-            "mTerm failed to record console log in {}".format(
-                bmc_ssh_session.session.before
-            ),
+            "C=$(grep -c 'CIT TESTING' /var/log/mTerm_wedge.log); echo CITCOUNT=${C}=END"
+        )
+        bmc_ssh_session.session.expect(rb"CITCOUNT=(\d+)=END", timeout=20)
+        count = int(bmc_ssh_session.session.match.group(1).decode())
+        self.assertGreater(
+            count,
+            0,
+            "mTerm failed to record console log (CIT TESTING not found in mTerm log)",
         )
         bmc_ssh_session.session.logout()  # exit

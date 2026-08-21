@@ -1,0 +1,27 @@
+From 2d2db7afd5536ba03cfb1f8c9261e30ad81f77d3 Mon Sep 17 00:00:00 2001
+From: Frank Tsao <Frank.Tsao@quantatw.com>
+Date: Mon, 29 Jun 2026 22:04:24 +0800
+Subject: [PATCH] ARM: dts: aspeed: rainiera6: enable i2c1 byte mode for SSIF
+
+enable i2c1 byte mode for SSIF between CPU and BMC
+
+Signed-off-by: Frank Tsao <Frank.Tsao@quantatw.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
+index 93853a7dc..7bf5acdde 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
+@@ -205,6 +205,7 @@ &gpio1 {
+ /* Rainiera6 SoC SSIF */
+ &i2c1 {
+ 	status = "okay";
++	aspeed,enable-byte;
+ 
+ 	ssif_bmc: ssif-bmc@10 {
+ 		compatible = "ssif-bmc";
+-- 
+2.34.1
+

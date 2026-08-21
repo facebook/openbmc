@@ -3,7 +3,7 @@
  *  @details    This module provides cryptographic functions.
  *  @file       Crypt.h
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -71,9 +71,9 @@ Crypt_HMAC(
 _Check_return_
 unsigned int
 Crypt_SHA1(
-    _In_bytecount_(PusInputMessageSize)     const BYTE*     PrgbInputMessage,
-    _In_                                    const UINT16    PusInputMessageSize,
-    _Out_bytecap_(TSS_SHA1_DIGEST_SIZE)     BYTE            PrgbSHA1[TSS_SHA1_DIGEST_SIZE]);
+    _In_bytecount_(PusInputMessageSize) const BYTE*     PrgbInputMessage,
+    _In_                                const UINT16    PusInputMessageSize,
+    _Out_bytecap_(TSS_SHA1_DIGEST_SIZE) BYTE            PrgbSHA1[TSS_SHA1_DIGEST_SIZE]);
 
 /**
  *  @brief      Calculate SHA-256 on the given data
@@ -90,9 +90,9 @@ Crypt_SHA1(
 _Check_return_
 unsigned int
 Crypt_SHA256(
-    _In_bytecount_(PunInputMessageSize)     const BYTE*         PrgbInputMessage,
-    _In_                                    const unsigned int  PunInputMessageSize,
-    _Out_bytecap_(TSS_SHA256_DIGEST_SIZE)   BYTE                PrgbSHA256[TSS_SHA256_DIGEST_SIZE]);
+    _In_bytecount_(PunInputMessageSize)     const BYTE*     PrgbInputMessage,
+    _In_                                    const UINT32    PunInputMessageSize,
+    _Out_bytecap_(TSS_SHA256_DIGEST_SIZE)   BYTE            PrgbSHA256[TSS_SHA256_DIGEST_SIZE]);
 
 /**
  *  @brief      Calculate SHA-384 on the given data
@@ -109,9 +109,9 @@ Crypt_SHA256(
 _Check_return_
 unsigned int
 Crypt_SHA384(
-    _In_bytecount_(PunInputMessageSize)     const BYTE*         PrgbInputMessage,
-    _In_                                    const unsigned int  PunInputMessageSize,
-    _Out_bytecap_(TSS_SHA384_DIGEST_SIZE)   BYTE                PrgbSHA384[TSS_SHA384_DIGEST_SIZE]);
+    _In_bytecount_(PunInputMessageSize)     const BYTE*     PrgbInputMessage,
+    _In_                                    const UINT32    PunInputMessageSize,
+    _Out_bytecap_(TSS_SHA384_DIGEST_SIZE)   BYTE            PrgbSHA384[TSS_SHA384_DIGEST_SIZE]);
 
 /**
  *  @brief      Calculate SHA-512 on the given data
@@ -128,9 +128,9 @@ Crypt_SHA384(
 _Check_return_
 unsigned int
 Crypt_SHA512(
-    _In_bytecount_(PunInputMessageSize)     const BYTE*         PrgbInputMessage,
-    _In_                                    const unsigned int  PunInputMessageSize,
-    _Out_bytecap_(TSS_SHA512_DIGEST_SIZE)   BYTE                PrgbSHA512[TSS_SHA512_DIGEST_SIZE]);
+    _In_bytecount_(PunInputMessageSize)     const BYTE*     PrgbInputMessage,
+    _In_                                    const UINT32    PunInputMessageSize,
+    _Out_bytecap_(TSS_SHA512_DIGEST_SIZE)   BYTE            PrgbSHA512[TSS_SHA512_DIGEST_SIZE]);
 
 /**
  *  @brief      Seed the pseudo random number generator
@@ -146,8 +146,8 @@ Crypt_SHA512(
 _Check_return_
 unsigned int
 Crypt_SeedRandom(
-    _In_bytecount_(PusSeedSize)         const BYTE*     PrgbSeed,
-    _In_                                const UINT16    PusSeedSize);
+    _In_bytecount_(PusSeedSize) const BYTE*     PrgbSeed,
+    _In_                        const UINT16    PusSeedSize);
 
 /**
  *  @brief      Get random bytes from the pseudo random number generator
@@ -193,20 +193,21 @@ _Check_return_
 unsigned int
 Crypt_EncryptRSA(
     _In_                                        CRYPT_ENC_SCHEME    PusEncryptionScheme,
-    _In_                                        unsigned int        PunInputDataSize,
+    _In_                                        UINT32              PunInputDataSize,
     _In_bytecount_(PunInputDataSize)            const BYTE*         PrgbInputData,
-    _In_                                        unsigned int        PunPublicModulusSize,
+    _In_                                        UINT32              PunPublicModulusSize,
     _In_bytecount_(PunPublicModulusSize)        const BYTE*         PrgbPublicModulus,
-    _In_                                        unsigned int        PunPublicExponentSize,
+    _In_                                        UINT32              PunPublicExponentSize,
     _In_bytecount_(PunPublicExponentSize)       const BYTE*         PrgbPublicExponent,
-    _In_                                        unsigned int        PunLabelSize,
+    _In_                                        UINT32              PunLabelSize,
     _In_bytecount_(PunLabelSize)                const BYTE*         PrgbLabel,
     _Inout_                                     unsigned int*       PpunEncryptedDataSize,
     _Inout_bytecap_(*PpunEncryptedDataSize)     BYTE*               PrgbEncryptedData);
 
+#ifndef UEFI
 /**
- *  @brief      Verify the given RSA PKCS#1 RSASSA-PSS signature
- *  @details    This function verifies the given RSA PKCS#1 RSASSA-PSS signature with a RSA 2048-bit public key.
+ *  @brief      Verify the given RSA PKCS#1 RSASSA-PSS signature using SHA-256
+ *  @details    This function verifies the given RSA PKCS#1 RSASSA-PSS signature using SHA-256 for a RSA 2048-bit public key.
  *
  *  @param      PrgbMessageHash         Message hash buffer.
  *  @param      PunMessageHashSize      Size of message hash buffer.
@@ -223,12 +224,39 @@ Crypt_EncryptRSA(
 _Check_return_
 unsigned int
 Crypt_VerifySignature(
-    _In_bytecount_(PunMessageHashSize)  const BYTE*         PrgbMessageHash,
-    _In_                                const unsigned int  PunMessageHashSize,
-    _In_bytecount_(PunSignatureSize)    const BYTE*         PrgbSignature,
-    _In_                                const unsigned int  PunSignatureSize,
-    _In_bytecount_(PunModulusSize)      const BYTE*         PrgbModulus,
-    _In_                                const unsigned int  PunModulusSize);
+    _In_bytecount_(PunMessageHashSize)  const BYTE*     PrgbMessageHash,
+    _In_                                const UINT32    PunMessageHashSize,
+    _In_bytecount_(PunSignatureSize)    const BYTE*     PrgbSignature,
+    _In_                                const UINT32    PunSignatureSize,
+    _In_bytecount_(PunModulusSize)      const BYTE*     PrgbModulus,
+    _In_                                const UINT32    PunModulusSize);
+#else
+/**
+ *  @brief      Verify the given RSA PKCS#1 RSASSA-PSS signature using SHA-256 from the complete message
+ *  @details    This function verifies the given RSA PKCS#1 RSASSA-PSS signature using SHA-256 for a RSA 2048-bit public key.
+ *
+ *  @param      PrgbMessage             Message hash buffer.
+ *  @param      PunMessageSize          Size of message buffer.
+ *  @param      PrgbSignature           Signature buffer.
+ *  @param      PunSignatureSize        Size of the signature buffer.
+ *  @param      PrgbModulus             Public modulus buffer.
+ *  @param      PunModulusSize          Size of public modulus buffer.
+ *
+ *  @retval     RC_SUCCESS              The operation completed successfully.
+ *  @retval     RC_E_FAIL               An unexpected error occurred during RSA functionality.
+ *  @retval     RC_E_BAD_PARAMETER      An invalid parameter was passed to the function. An input parameter is NULL or empty.
+ *  @retval     RC_E_VERIFY_SIGNATURE   In case the signature is invalid.
+ */
+_Check_return_
+unsigned int
+Crypt_VerifySignatureRsaPssSha256(
+    _In_bytecount_(PunMessageSize)      const BYTE*     PrgbMessage,
+    _In_                                const UINT32    PunMessageSize,
+    _In_bytecount_(PunSignatureSize)    const BYTE*     PrgbSignature,
+    _In_                                const UINT32    PunSignatureSize,
+    _In_bytecount_(PunModulusSize)      const BYTE*     PrgbModulus,
+    _In_                                const UINT32    PunModulusSize);
+#endif // !UEFI
 
 /**
  *  @brief      Calculate the CRC value of the given data stream

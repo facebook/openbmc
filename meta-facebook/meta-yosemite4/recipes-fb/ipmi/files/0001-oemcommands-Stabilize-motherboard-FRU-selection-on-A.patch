@@ -1,4 +1,4 @@
-From d915dbad2c548970814bc85215fb9dd47bf3c443 Mon Sep 17 00:00:00 2001
+From 3f878d328f9d7e964d07c5aa1ab2845957a7f46e Mon Sep 17 00:00:00 2001
 From: LioraGuo-wiwynn <liora.guo.wiwynn@gmail.com>
 Date: Thu, 30 Oct 2025 10:20:57 +0000
 Subject: [PATCH] oemcommands: Stabilize motherboard FRU selection on AC-off
@@ -56,10 +56,10 @@ Oct 30 04:18:21 bmc ipmid[1444]: PN:B81.10H10.005X
  1 file changed, 71 insertions(+), 17 deletions(-)
 
 diff --git a/src/oemcommands.cpp b/src/oemcommands.cpp
-index 4605fa1..c9b578f 100644
+index 68a6d75..3884271 100644
 --- a/src/oemcommands.cpp
 +++ b/src/oemcommands.cpp
-@@ -574,6 +574,36 @@ static std::optional<std::string> findFruPathByInterface(
+@@ -605,6 +605,36 @@ static std::optional<std::string> findFruPathByInterface(
      return std::nullopt;
  }
  
@@ -96,7 +96,7 @@ index 4605fa1..c9b578f 100644
  // return "" equals failed
  std::string getMotherBoardFruPath()
  {
-@@ -581,9 +611,19 @@ std::string getMotherBoardFruPath()
+@@ -612,9 +642,19 @@ std::string getMotherBoardFruPath()
  
      bool platform = isMultiHostPlatform();
      size_t hostPosition = 0;
@@ -116,7 +116,7 @@ index 4605fa1..c9b578f 100644
      if (platform == true && hostPosition == 0)
      {
          if (auto path = findFruPathByInterface(
-@@ -595,15 +635,9 @@ std::string getMotherBoardFruPath()
+@@ -626,15 +666,9 @@ std::string getMotherBoardFruPath()
          }
      }
  
@@ -133,7 +133,7 @@ index 4605fa1..c9b578f 100644
      {
          lg2::info("[2] Found Motherboard: {PATH}", "PATH", *path);
          return *path;
-@@ -643,7 +677,35 @@ int8_t getFruData(std::string& data, std::string& name)
+@@ -674,7 +708,35 @@ int8_t getFruData(std::string& data, std::string& name)
      std::vector<std::string> paths;
      std::string machinePath;
      std::string baseBoard = getMotherBoardFruPath();
@@ -170,7 +170,7 @@ index 4605fa1..c9b578f 100644
  
      bool platform = isMultiHostPlatform();
      if (platform == true)
-@@ -685,19 +747,11 @@ int8_t getFruData(std::string& data, std::string& name)
+@@ -716,19 +778,11 @@ int8_t getFruData(std::string& data, std::string& name)
      {
          if (platform == true)
          {
@@ -192,5 +192,5 @@ index 4605fa1..c9b578f 100644
          auto found = path.find(machinePath);
          if (found == std::string::npos)
 -- 
-2.52.0
+2.53.0-Meta
 

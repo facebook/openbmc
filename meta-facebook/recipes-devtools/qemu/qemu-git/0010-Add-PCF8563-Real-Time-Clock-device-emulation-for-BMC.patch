@@ -1,0 +1,298 @@
+From 94ed3f2fcae94035418f3616724ecdedf64a8bfe Mon Sep 17 00:00:00 2001
+From: James Athappilly <jamesatha@meta.com>
+Date: Fri, 26 Jun 2026 16:42:14 -0700
+Subject: [PATCH] Add PCF8563 Real-Time Clock device emulation for BMC
+ platforms.
+
+The PCF8563 provides RTC functionality over I2C. Used in BMC designs
+for maintaining system time.
+---
+ hw/arm/Kconfig     |   1 +
+ hw/rtc/Kconfig     |   5 +
+ hw/rtc/meson.build |   1 +
+ hw/rtc/pcf8563.c   | 234 +++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 241 insertions(+)
+ create mode 100644 hw/rtc/pcf8563.c
+
+diff --git a/hw/arm/Kconfig b/hw/arm/Kconfig
+index a310c534cc..373e85d146 100644
+--- a/hw/arm/Kconfig
++++ b/hw/arm/Kconfig
+@@ -537,6 +537,7 @@ config ASPEED_SOC
+     imply PCI_DEVICES
+     imply E1000E_PCI_EXPRESS
+     select DS1338
++    select PCF8563
+     select FTGMAC100
+     select I2C
+     select I3C
+diff --git a/hw/rtc/Kconfig b/hw/rtc/Kconfig
+index 315b0e4ecc..56902e3d24 100644
+--- a/hw/rtc/Kconfig
++++ b/hw/rtc/Kconfig
+@@ -3,6 +3,11 @@ config DS1338
+     depends on I2C
+     default y if I2C_DEVICES
+ 
++config PCF8563
++    bool
++    depends on I2C
++    default y if I2C_DEVICES
++
+ config M41T80
+     bool
+     depends on I2C
+diff --git a/hw/rtc/meson.build b/hw/rtc/meson.build
+index 6c87864dc0..e0594a61bc 100644
+--- a/hw/rtc/meson.build
++++ b/hw/rtc/meson.build
+@@ -1,5 +1,6 @@
+ 
+ system_ss.add(when: 'CONFIG_DS1338', if_true: files('ds1338.c'))
++system_ss.add(when: 'CONFIG_PCF8563', if_true: files('pcf8563.c'))
+ system_ss.add(when: 'CONFIG_M41T80', if_true: files('m41t80.c'))
+ system_ss.add(when: 'CONFIG_M48T59', if_true: files('m48t59.c'))
+ system_ss.add(when: 'CONFIG_PL031', if_true: files('pl031.c'))
+diff --git a/hw/rtc/pcf8563.c b/hw/rtc/pcf8563.c
+new file mode 100644
+index 0000000000..3d7bac6bf3
+--- /dev/null
++++ b/hw/rtc/pcf8563.c
+@@ -0,0 +1,234 @@
++/*
++ * NXP PCF8563 Real Time Clock
++ *
++ * This is a minimal I2C RTC implementation that provides enough
++ * functionality for BMC testing in QEMU. Modeled on the DS1338 RTC.
++ *
++ * Copyright (c) 2025 Meta Platforms, Inc. and affiliates.
++ *
++ * SPDX-License-Identifier: GPL-2.0-or-later
++ */
++
++#include "qemu/osdep.h"
++#include "hw/i2c/i2c.h"
++#include "migration/vmstate.h"
++#include "qemu/bcd.h"
++#include "qom/object.h"
++#include "system/rtc.h"
++#include "qemu/log.h"
++
++#define TYPE_PCF8563 "pcf8563"
++OBJECT_DECLARE_SIMPLE_TYPE(PCF8563State, PCF8563)
++
++/* PCF8563 Register addresses */
++#define PCF8563_REG_CONTROL_STATUS1  0x00
++#define PCF8563_REG_CONTROL_STATUS2  0x01
++#define PCF8563_REG_VL_SECONDS       0x02
++#define PCF8563_REG_MINUTES          0x03
++#define PCF8563_REG_HOURS            0x04
++#define PCF8563_REG_DAYS             0x05
++#define PCF8563_REG_WEEKDAYS         0x06
++#define PCF8563_REG_CENTURY_MONTHS   0x07
++#define PCF8563_REG_YEARS            0x08
++#define PCF8563_REG_MINUTE_ALARM     0x09
++#define PCF8563_REG_HOUR_ALARM       0x0A
++#define PCF8563_REG_DAY_ALARM        0x0B
++#define PCF8563_REG_WEEKDAY_ALARM    0x0C
++#define PCF8563_REG_CLKOUT_CONTROL   0x0D
++#define PCF8563_REG_TIMER_CONTROL    0x0E
++#define PCF8563_REG_TIMER            0x0F
++
++#define NVRAM_SIZE 16
++
++/* Flags */
++#define PCF8563_VL_SECONDS_VL  0x80  /* Voltage low bit */
++#define PCF8563_HOURS_12_24    0x00  /* Always 24-hour mode in PCF8563 */
++
++struct PCF8563State {
++    I2CSlave parent_obj;
++
++    int64_t offset;
++    uint8_t wday_offset;
++    uint8_t nvram[NVRAM_SIZE];
++    int32_t ptr;
++    bool addr_byte;
++};
++
++static const VMStateDescription vmstate_pcf8563 = {
++    .name = "pcf8563",
++    .version_id = 1,
++    .minimum_version_id = 1,
++    .fields = (const VMStateField[]) {
++        VMSTATE_I2C_SLAVE(parent_obj, PCF8563State),
++        VMSTATE_INT64(offset, PCF8563State),
++        VMSTATE_UINT8(wday_offset, PCF8563State),
++        VMSTATE_UINT8_ARRAY(nvram, PCF8563State, NVRAM_SIZE),
++        VMSTATE_INT32(ptr, PCF8563State),
++        VMSTATE_BOOL(addr_byte, PCF8563State),
++        VMSTATE_END_OF_LIST()
++    }
++};
++
++static void capture_current_time(PCF8563State *s)
++{
++    /* Capture the current time into the secondary registers */
++    struct tm now;
++    qemu_get_timedate(&now, s->offset);
++
++    /* Clear VL flag */
++    s->nvram[PCF8563_REG_VL_SECONDS] = to_bcd(now.tm_sec) & 0x7F;
++    s->nvram[PCF8563_REG_MINUTES] = to_bcd(now.tm_min) & 0x7F;
++    s->nvram[PCF8563_REG_HOURS] = to_bcd(now.tm_hour) & 0x3F;
++    s->nvram[PCF8563_REG_DAYS] = to_bcd(now.tm_mday) & 0x3F;
++    s->nvram[PCF8563_REG_WEEKDAYS] = (now.tm_wday + s->wday_offset) % 7;
++    s->nvram[PCF8563_REG_CENTURY_MONTHS] = to_bcd(now.tm_mon + 1) & 0x1F;
++
++    /* Handle century bit */
++    if (now.tm_year >= 100) {
++        s->nvram[PCF8563_REG_YEARS] = to_bcd(now.tm_year - 100);
++    } else {
++        s->nvram[PCF8563_REG_YEARS] = to_bcd(now.tm_year);
++        s->nvram[PCF8563_REG_CENTURY_MONTHS] |= 0x80;  /* Set century bit */
++    }
++}
++
++static void inc_regptr(PCF8563State *s)
++{
++    /* The register pointer wraps around after 0x0F */
++    s->ptr = (s->ptr + 1) & (NVRAM_SIZE - 1);
++    if (s->ptr == 0) {
++        capture_current_time(s);
++    }
++}
++
++static int pcf8563_event(I2CSlave *i2c, enum i2c_event event)
++{
++    PCF8563State *s = PCF8563(i2c);
++
++    switch (event) {
++    case I2C_START_RECV:
++        /* Capture happens on START_RECV */
++        capture_current_time(s);
++        break;
++    case I2C_START_SEND:
++        s->addr_byte = true;
++        break;
++    default:
++        break;
++    }
++
++    return 0;
++}
++
++static uint8_t pcf8563_recv(I2CSlave *i2c)
++{
++    PCF8563State *s = PCF8563(i2c);
++    uint8_t res = s->nvram[s->ptr];
++
++    inc_regptr(s);
++    return res;
++}
++
++static int pcf8563_send(I2CSlave *i2c, uint8_t data)
++{
++    PCF8563State *s = PCF8563(i2c);
++
++    if (s->addr_byte) {
++        s->ptr = data & (NVRAM_SIZE - 1);
++        s->addr_byte = false;
++        return 0;
++    }
++
++    if (s->ptr >= PCF8563_REG_VL_SECONDS && s->ptr <= PCF8563_REG_YEARS) {
++        /* Time register */
++        struct tm now;
++        qemu_get_timedate(&now, s->offset);
++
++        switch (s->ptr) {
++        case PCF8563_REG_VL_SECONDS:
++            now.tm_sec = from_bcd(data & 0x7F);
++            break;
++        case PCF8563_REG_MINUTES:
++            now.tm_min = from_bcd(data & 0x7F);
++            break;
++        case PCF8563_REG_HOURS:
++            now.tm_hour = from_bcd(data & 0x3F);
++            break;
++        case PCF8563_REG_DAYS:
++            now.tm_mday = from_bcd(data & 0x3F);
++            break;
++        case PCF8563_REG_WEEKDAYS:
++            /* Update wday_offset based on written value */
++            {
++                int user_wday = data & 0x07;
++                s->wday_offset = (user_wday - now.tm_wday + 7) % 7;
++            }
++            break;
++        case PCF8563_REG_CENTURY_MONTHS:
++            now.tm_mon = from_bcd(data & 0x1F) - 1;
++            /* Century bit is handled in YEARS */
++            break;
++        case PCF8563_REG_YEARS:
++            if (s->nvram[PCF8563_REG_CENTURY_MONTHS] & 0x80) {
++                now.tm_year = from_bcd(data);  /* 1900-1999 */
++            } else {
++                now.tm_year = from_bcd(data) + 100;  /* 2000-2099 */
++            }
++            break;
++        }
++        s->offset = qemu_timedate_diff(&now);
++    } else if (s->ptr >= PCF8563_REG_CONTROL_STATUS1 &&
++               s->ptr < NVRAM_SIZE) {
++        /* Control and alarm registers */
++        s->nvram[s->ptr] = data;
++    } else {
++        qemu_log_mask(LOG_GUEST_ERROR, "%s: write to invalid register 0x%02x\n",
++                      __func__, s->ptr);
++    }
++
++    inc_regptr(s);
++    return 0;
++}
++
++static void pcf8563_reset(DeviceState *dev)
++{
++    PCF8563State *s = PCF8563(dev);
++
++    /* The clock is running and synchronized with the host */
++    s->offset = 0;
++    s->wday_offset = 0;
++    memset(s->nvram, 0, NVRAM_SIZE);
++    s->ptr = 0;
++    s->addr_byte = false;
++
++    /* Initialize control registers to power-on defaults */
++    s->nvram[PCF8563_REG_CONTROL_STATUS1] = 0x00;
++    s->nvram[PCF8563_REG_CONTROL_STATUS2] = 0x00;
++}
++
++static void pcf8563_class_init(ObjectClass *klass, const void *data)
++{
++    DeviceClass *dc = DEVICE_CLASS(klass);
++    I2CSlaveClass *k = I2C_SLAVE_CLASS(klass);
++
++    k->event = pcf8563_event;
++    k->recv = pcf8563_recv;
++    k->send = pcf8563_send;
++    device_class_set_legacy_reset(dc, pcf8563_reset);
++    dc->vmsd = &vmstate_pcf8563;
++    dc->desc = "NXP PCF8563 Real Time Clock";
++}
++
++static const TypeInfo pcf8563_info = {
++    .name = TYPE_PCF8563,
++    .parent = TYPE_I2C_SLAVE,
++    .instance_size = sizeof(PCF8563State),
++    .class_init = pcf8563_class_init,
++};
++
++static void pcf8563_register_types(void)
++{
++    type_register_static(&pcf8563_info);
++}
++
++type_init(pcf8563_register_types)
+-- 
+2.53.0-Meta
+

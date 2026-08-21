@@ -287,24 +287,6 @@ class RegisterStoreSpan {
       size_t maxSpanLength = kDefaultMaxRegisterSpanLength);
 };
 
-struct WriteActionInfo {
-  std::optional<std::string> shell{};
-  RegisterValueType interpret;
-  std::optional<std::string> value{};
-};
-void from_json(const nlohmann::json& j, WriteActionInfo& action);
-
-struct SpecialHandlerInfo {
-  uint16_t reg;
-  uint16_t len;
-  int32_t period;
-  std::string action;
-  // XXX if we have more actions other than write,
-  // this needs to become a std::variant<...>
-  WriteActionInfo info;
-};
-void from_json(const nlohmann::json& j, SpecialHandlerInfo& m);
-
 // Storage for address ranges. Provides comparision operators
 // to allow for it to be used as a key in a map --> This allows
 // for us to do quick lookups of addr to register map to use.
@@ -318,16 +300,35 @@ struct AddrRange {
   bool contains(uint8_t) const;
 };
 
+// Some devices have a time sync register. This is the config on
+// how to access/update it with the current time.
+struct TimeSyncConfig {
+  uint16_t reg;
+  time_t period;
+};
+void from_json(const nlohmann::json& j, TimeSyncConfig& m);
+
+struct ProbeRegister {
+  uint16_t registerAddress;
+  std::optional<std::vector<uint16_t>> values;
+};
+void from_json(const nlohmann::json& j, ProbeRegister& m);
+
+struct Probe {
+ public:
+  std::vector<ProbeRegister> probeRegisters;
+};
+
 // Container of an entire register map. This is the memory
 // representation of each JSON register map descriptors
 struct RegisterMap {
   AddrRange applicableAddresses;
   std::string name;
-  uint16_t probeRegister;
+  Probe probe;
   uint32_t baudrate;
   size_t maxRegisterSpanLength;
   Parity parity;
-  std::vector<SpecialHandlerInfo> specialHandlers;
+  std::optional<TimeSyncConfig> timeSync;
   std::map<uint16_t, RegisterDescriptor> registerDescriptors;
   const RegisterDescriptor& at(uint16_t reg) const {
     return registerDescriptors.at(reg);

@@ -1,0 +1,36 @@
+From 194d90c9a50fa18d14d249b8b7a79e7872d74295 Mon Sep 17 00:00:00 2001
+From: OpenBMC QEMU Builder <openbmc@meta.com>
+Date: Fri, 24 Jul 2026 12:00:00 -0700
+Subject: [PATCH] add usbredir subproject for QEMU usb-redir
+
+Provide libusbredirparser-0.5 from a vendored usbredir meson subproject so
+QEMU's configure --enable-usb-redir resolves the dependency without a system
+libusbredirparser. The subproject source is fetched and pinned by the recipe
+(SRCREV_usbredir); with --disable-download meson uses that pre-placed tree.
+
+The wrap maps the libusbredirparser-0.5 dependency to the subproject's
+usbredir_parser_lib_dep variable.  The usbredir subproject also builds its
+host library, so libusb must be available in the build environment.
+
+Signed-off-by: OpenBMC QEMU Builder <openbmc@meta.com>
+---
+ subprojects/usbredir.wrap | 7 +++++++
+ 1 file changed, 7 insertions(+)
+ create mode 100644 subprojects/usbredir.wrap
+
+diff --git a/subprojects/usbredir.wrap b/subprojects/usbredir.wrap
+new file mode 100644
+index 0000000000..1d89834010
+--- /dev/null
++++ b/subprojects/usbredir.wrap
+@@ -0,0 +1,7 @@
++[wrap-git]
++directory = usbredir
++url = https://gitlab.freedesktop.org/spice/usbredir.git
++revision = 5fc0e1c43194d948545941d408f4c10d084eb6ed
++
++[provide]
++libusbredirparser-0.5 = usbredir_parser_lib_dep
+-- 
+2.53.0-Meta
+

@@ -60,20 +60,19 @@ link_args = ['-rdynamic']
 srcs = [
     'src/async_http_client.cpp',
     'src/config.cpp',
-    'src/daemon.cpp',
     'src/persist_map.cpp',
     'src/sensor.cpp',
+    'src/sensor_handler.cpp',
     'src/log_service_handler.cpp',
     'src/update_service_handler.cpp',
     'src/redfish_client.cpp',
-    'src/sensor_dbus_object.cpp',
-    'src/server_object_intf.cpp',
     'src/log_entry_mapper_registry.cpp',
     'src/log_entry_mapper_utils.cpp',
     'src/cper_mapper.cpp',
     'src/hgx_ps_run_pwr_fault_mapper.cpp',
     'src/unhandled_mapper.cpp',
     'src/hgx_thermal_mapper.cpp',
+    'src/hgx_leak_detector_mapper.cpp',
     'src/sensor_threshold_mapper.cpp',
 ]
 
@@ -96,7 +95,7 @@ install_subdir(
 
 executable(
     'redfish-client',
-    'src/daemon_main.cpp',
+    'src/main.cpp',
     dependencies: base_deps,
     include_directories: root_inc,
     cpp_args: cpp_args,

@@ -1,7 +1,7 @@
-From 4edea8a8b579581194aee183d61038c1b9e8be30 Mon Sep 17 00:00:00 2001
+From 55d229d954588186a205cc34c72664407846d1b8 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 27 Apr 2022 16:23:48 -0700
-Subject: [PATCH 503/512] hw/misc: Add i2c-netdev device
+Subject: [PATCH] hw/misc: Add i2c-netdev device
 
 First, create a script to respond to MCTP commands:
 
@@ -288,10 +288,10 @@ index 0000000000..f9064a9679
 +
 +type_init(register_types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index fa6a961ac9..9ef88e1437 100644
+index e86d9ad6b3..9e7644ecf6 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -152,6 +152,7 @@ system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
+@@ -154,6 +154,7 @@ system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
  system_ss.add(when: 'CONFIG_GRLIB', if_true: files('grlib_ahb_apb_pnp.c'))
  
  system_ss.add(when: 'CONFIG_I2C_ECHO', if_true: files('i2c-echo.c'))
@@ -300,5 +300,5 @@ index fa6a961ac9..9ef88e1437 100644
  system_ss.add(when: 'CONFIG_AVR_POWER', if_true: files('avr_power.c'))
  
 -- 
-2.52.0
+2.53.0-Meta
 

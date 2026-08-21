@@ -3,7 +3,7 @@
 #include <phosphor-logging/lg2.hpp>
 #include <phosphor-logging/commit.hpp>
 #include <xyz/openbmc_project/Sensor/Threshold/event.hpp>
-#include <redfish_client/core/sensor_dbus_object.hpp>
+#include <redfish_client/core/sensor.hpp>
 
 #include <optional>
 #include <string>
@@ -16,7 +16,7 @@ namespace redfish_client::core
 namespace
 {
 
-using ValueUnit = ValueIntf::Unit;
+using ValueUnit = SensorValueIntf::Unit;
 namespace ThresholdError =
     sdbusplus::error::xyz::openbmc_project::sensor::Threshold;
 namespace ThresholdEvent =
@@ -105,13 +105,13 @@ std::string extractSensorName(redfish_binding::LogEntry::LogEntry& entry,
             }
         }
 
-        auto maybeUnit = toMaybeIntfUnits(msgArgs[2]);
+        auto maybeUnit = Sensor::toMaybeUnit(msgArgs[2]);
         auto unit = maybeUnit.value_or(ValueUnit::DegreesC);
+        // unitToNamespace already yields a supported namespace segment.
         auto ns = unitToNamespace(unit);
 
-        return std::string(getSensorRootPath()) + "/" +
-               getActualMetricNamespace(std::string(ns).c_str()) +
-               "/" + sensorId;
+        return std::string(Sensor::rootPath) + "/" + std::string(ns) + "/" +
+               sensorId;
     }
     return "Unknown Sensor";
 }
@@ -142,7 +142,7 @@ ThresholdArgs extractArgs(redfish_binding::LogEntry::LogEntry& entry,
     }
     if (msgArgs.size() > 2)
     {
-        args.units = toMaybeIntfUnits(msgArgs[2]).value_or(ValueUnit::DegreesC);
+        args.units = Sensor::toMaybeUnit(msgArgs[2]).value_or(ValueUnit::DegreesC);
     }
     if (msgArgs.size() > 3)
     {
@@ -159,7 +159,7 @@ ThresholdArgs extractArgs(redfish_binding::LogEntry::LogEntry& entry,
 template <typename T>
 T makeThresholdError(const ThresholdArgs& a)
 {
-    return T("SENSOR_NAME", sdbusplus::message::object_path(a.sensorName),
+    return T("SENSOR_NAME", sdbusplus::object_path(a.sensorName),
              "READING_VALUE", a.readingValue,
              "UNITS", a.units,
              "THRESHOLD_VALUE", a.thresholdValue);
@@ -168,7 +168,7 @@ T makeThresholdError(const ThresholdArgs& a)
 template <typename T>
 T makeThresholdNormal(const ThresholdArgs& a)
 {
-    return T("SENSOR_NAME", sdbusplus::message::object_path(a.sensorName),
+    return T("SENSOR_NAME", sdbusplus::object_path(a.sensorName),
              "READING_VALUE", a.readingValue,
              "UNITS", a.units);
 }

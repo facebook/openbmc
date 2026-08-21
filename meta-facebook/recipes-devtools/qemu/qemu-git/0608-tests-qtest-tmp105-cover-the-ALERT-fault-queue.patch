@@ -1,0 +1,111 @@
+From 021ff20c5a08de723806a28f218230ff15c141b4 Mon Sep 17 00:00:00 2001
+From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
+Date: Fri, 31 Jul 2026 12:45:07 +0200
+Subject: [PATCH] tests/qtest: tmp105: cover the ALERT fault queue
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add two qgraph tests exercising the ALERT pin, the only way the TMP105
+exposes its alarm state. One checks the default single-fault behaviour;
+the other checks a deeper fault queue, including the running-count reset
+on an in-range conversion and its effect on both asserting and releasing
+the alarm.
+
+Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
+Link: https://lore.kernel.org/qemu-devel/20260731-sanmiguel-bmc-locator-v2-8-1266926ba769@free.fr
+Signed-off-by: Cédric Le Goater <clg@redhat.com>
+---
+ tests/qtest/tmp105-test.c | 63 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 63 insertions(+)
+
+diff --git a/tests/qtest/tmp105-test.c b/tests/qtest/tmp105-test.c
+index 3b114a50f5..29a031fb7b 100644
+--- a/tests/qtest/tmp105-test.c
++++ b/tests/qtest/tmp105-test.c
+@@ -17,6 +17,11 @@
+ 
+ #define TMP105_TEST_ID   "tmp105-test"
+ #define TMP105_TEST_ADDR 0x49
++#define TMP105_TEST_PATH "/machine/peripheral/" TMP105_TEST_ID
++
++#define TMP105_CONFIG_POL   (1 << 2)   /* ALERT active-high when set */
++#define TMP105_CONFIG_FQ_1  (0 << 3)   /* fault queue: 1 consecutive fault */
++#define TMP105_CONFIG_FQ_4  (2 << 3)   /* fault queue: 4 consecutive faults */
+ 
+ static int qmp_tmp105_get_temperature(const char *id)
+ {
+@@ -105,6 +110,62 @@ static void send_and_receive(void *obj, void *data, QGuestAllocator *alloc)
+     g_assert_cmphex(i2c_get16(i2cdev, TMP105_REG_T_HIGH), ==, 0x4230);
+ }
+ 
++/*
++ * The TMP105 exposes its alarm state only through the ALERT pin.
++ */
++static void test_alert_single_fault(void *obj, void *data,
++                                    QGuestAllocator *alloc)
++{
++    QI2CDevice *i2cdev = (QI2CDevice *)obj;
++
++    qtest_irq_intercept_out(global_qtest, TMP105_TEST_PATH);
++
++    i2c_set8(i2cdev, TMP105_REG_CONFIG, TMP105_CONFIG_POL | TMP105_CONFIG_FQ_1);
++    g_assert_false(get_irq(0));
++
++    qmp_tmp105_set_temperature(TMP105_TEST_ID, 85000);
++    g_assert_true(get_irq(0));
++
++    qmp_tmp105_set_temperature(TMP105_TEST_ID, 70000);
++    g_assert_false(get_irq(0));
++}
++
++static void test_fault_queue(void *obj, void *data, QGuestAllocator *alloc)
++{
++    QI2CDevice *i2cdev = (QI2CDevice *)obj;
++    int i;
++
++    qtest_irq_intercept_out(global_qtest, TMP105_TEST_PATH);
++
++    /* Comparator mode, active-high ALERT, fault queue of four. */
++    i2c_set8(i2cdev, TMP105_REG_CONFIG, TMP105_CONFIG_POL | TMP105_CONFIG_FQ_4);
++    g_assert_false(get_irq(0));
++
++    for (i = 0; i < 3; i++) {
++        qmp_tmp105_set_temperature(TMP105_TEST_ID, 85000);
++        g_assert_false(get_irq(0));
++    }
++
++    qmp_tmp105_set_temperature(TMP105_TEST_ID, 25000);
++    g_assert_false(get_irq(0));
++
++    for (i = 0; i < 3; i++) {
++        qmp_tmp105_set_temperature(TMP105_TEST_ID, 85000);
++        g_assert_false(get_irq(0));
++    }
++
++    qmp_tmp105_set_temperature(TMP105_TEST_ID, 85000);
++    g_assert_true(get_irq(0));
++
++    for (i = 0; i < 3; i++) {
++        qmp_tmp105_set_temperature(TMP105_TEST_ID, 70000);
++        g_assert_true(get_irq(0));
++    }
++
++    qmp_tmp105_set_temperature(TMP105_TEST_ID, 70000);
++    g_assert_false(get_irq(0));
++}
++
+ static void tmp105_register_nodes(void)
+ {
+     QOSGraphEdgeOptions opts = {
+@@ -116,5 +177,7 @@ static void tmp105_register_nodes(void)
+     qos_node_consumes("tmp105", "i2c-bus", &opts);
+ 
+     qos_add_test("tx-rx", "tmp105", send_and_receive, NULL);
++    qos_add_test("alert-single-fault", "tmp105", test_alert_single_fault, NULL);
++    qos_add_test("fault-queue", "tmp105", test_fault_queue, NULL);
+ }
+ libqos_init(tmp105_register_nodes);
+-- 
+2.53.0-Meta
+

@@ -1,8 +1,7 @@
-From 697490d803d760d85fb6f8c75d0bbad3b484df56 Mon Sep 17 00:00:00 2001
+From 21bb37a2722f30f817f2e56d5c824e78f1edd832 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Wed, 17 Dec 2025 10:39:38 +0800
-Subject: [PATCH 1005/1007] ARM: dts: aspeed: bletchley: Fix ADC vref property
- names
+Subject: [PATCH] ARM: dts: aspeed: bletchley: Fix ADC vref property names
 
 Replace non-functional 'vref' with 'aspeed,int-vref-microvolt'
 using the default 2.5V that the driver was already applying.
@@ -36,5 +35,5 @@ index 123e2d1891f6..7c27bf6bb51d 100644
  
  	pinctrl-names = "default";
 -- 
-2.43.0
+2.53.0
 

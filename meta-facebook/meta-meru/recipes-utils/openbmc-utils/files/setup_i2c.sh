@@ -77,6 +77,13 @@ wait_sysfs_file_present() {
 
 i2c_device_add 0 0x50 24c512 # BMC EEPROM
 i2c_device_add 9 0x50 24c512 # SCM EEPROM
+
+# power-up the rest of the switch
+i2c_device_add 12 0x43 pwrcpld
+modprobe pwrcpld
+wait_sysfs_file_present "$SMB_NONSTDBY_PWR_SYSFS" 10
+smb_power_on
+
 i2c_device_add 9 0x23 smbcpld # SMBCPLD
 i2c_device_add 9 0x52 24c512 # SMB EEPROM
 
@@ -85,11 +92,9 @@ if i2cget -y 9 0x53 0x0 &>/dev/null; then
    i2c_device_add 9 0x53 24c512
 fi
 
-i2c_device_add 12 0x43 pwrcpld
 
 # Wait for the SMB EEPROM and CPLD drivers to load
 modprobe at24
-modprobe pwrcpld
 wait_sysfs_file_present "$SMB_EEPROM_SYSFS" 10
 wait_sysfs_file_present "$SCM_CPU_READY_SYSFS" 10
 

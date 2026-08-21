@@ -27,6 +27,7 @@ LOCAL_URI += " \
     file://platform.cpp \
     file://vr_fw.cpp \
     file://vr_fw.h \
+    file://0001-netlakenext-prevent-update-with-incompatible-fw.patch \
     "
 
 PACKAGECONFIG:remove = "bic"

@@ -1,0 +1,132 @@
+From fe156bb5deeb3555e87f12c360ce8b42ad95bcb3 Mon Sep 17 00:00:00 2001
+From: Jagpal Singh Gill <paligill@gmail.com>
+Date: Mon, 13 Jul 2026 14:14:45 -0700
+Subject: [PATCH] Control/Port: Add interface for monitoring control
+
+Add xyz.openbmc_project.Control.Port with a writable MonitoringEnabled
+boolean property (default true) and a /xyz/openbmc_project/control/port
+path namespace. Disabling monitoring lets a service reserve a serial
+port so no other traffic occurs on it; enabling resumes monitoring.
+
+Change-Id: I39953ca787d84d66e860fcc770f07da963359be8
+Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
+---
+ .../openbmc_project/Control/Port/meson.build  | 40 +++++++++++++++++++
+ gen/xyz/openbmc_project/Control/meson.build   | 25 ++++++++++++
+ .../Control/Port.interface.yaml               | 14 +++++++
+ 3 files changed, 79 insertions(+)
+ create mode 100644 gen/xyz/openbmc_project/Control/Port/meson.build
+ create mode 100644 yaml/xyz/openbmc_project/Control/Port.interface.yaml
+
+diff --git a/gen/xyz/openbmc_project/Control/Port/meson.build b/gen/xyz/openbmc_project/Control/Port/meson.build
+new file mode 100644
+index 0000000..7f0d179
+--- /dev/null
++++ b/gen/xyz/openbmc_project/Control/Port/meson.build
+@@ -0,0 +1,40 @@
++# Generated file; do not modify.
++
++sdbusplus_current_path = 'xyz/openbmc_project/Control/Port'
++
++generated_sources += custom_target(
++    'xyz/openbmc_project/Control/Port__cpp'.underscorify(),
++    input: [
++        '../../../../../yaml/xyz/openbmc_project/Control/Port.interface.yaml',
++    ],
++    output: [
++        'common.hpp',
++        'server.hpp',
++        'server.cpp',
++        'aserver.hpp',
++        'client.hpp',
++    ],
++    depend_files: sdbusplusplus_depfiles,
++    command: [
++        sdbuspp_gen_meson_prog,
++        '--command',
++        'cpp',
++        '--output',
++        meson.current_build_dir(),
++        '--tool',
++        sdbusplusplus_prog,
++        '--directory',
++        meson.current_source_dir() / '../../../../../yaml',
++        'xyz/openbmc_project/Control/Port',
++    ],
++    install: should_generate_cpp,
++    install_dir: [
++        get_option('includedir') / sdbusplus_current_path,
++        get_option('includedir') / sdbusplus_current_path,
++        false,
++        get_option('includedir') / sdbusplus_current_path,
++        get_option('includedir') / sdbusplus_current_path,
++    ],
++    build_by_default: should_generate_cpp,
++)
++
+diff --git a/gen/xyz/openbmc_project/Control/meson.build b/gen/xyz/openbmc_project/Control/meson.build
+index 717218a..e9ce5f6 100644
+--- a/gen/xyz/openbmc_project/Control/meson.build
++++ b/gen/xyz/openbmc_project/Control/meson.build
+@@ -11,6 +11,7 @@ subdir('FieldMode')
+ subdir('Host')
+ subdir('Mode')
+ subdir('OperatingClockSpeed')
++subdir('Port')
+ subdir('Power')
+ subdir('PowerSupplyAttributes')
+ subdir('PowerSupplyRedundancy')
+@@ -289,6 +290,30 @@ generated_markdown += custom_target(
+     build_by_default: should_generate_markdown,
+ )
+ 
++generated_markdown += custom_target(
++    'xyz/openbmc_project/Control/Port__markdown'.underscorify(),
++    input: [
++        '../../../../yaml/xyz/openbmc_project/Control/Port.interface.yaml',
++    ],
++    output: ['Port.md'],
++    depend_files: sdbusplusplus_depfiles,
++    command: [
++        sdbuspp_gen_meson_prog,
++        '--command',
++        'markdown',
++        '--output',
++        meson.current_build_dir(),
++        '--tool',
++        sdbusplusplus_prog,
++        '--directory',
++        meson.current_source_dir() / '../../../../yaml',
++        'xyz/openbmc_project/Control/Port',
++    ],
++    install: should_generate_markdown,
++    install_dir: [inst_markdown_dir / sdbusplus_current_path],
++    build_by_default: should_generate_markdown,
++)
++
+ generated_markdown += custom_target(
+     'xyz/openbmc_project/Control/PowerSupplyAttributes__markdown'.underscorify(),
+     input: [
+diff --git a/yaml/xyz/openbmc_project/Control/Port.interface.yaml b/yaml/xyz/openbmc_project/Control/Port.interface.yaml
+new file mode 100644
+index 0000000..bbf802e
+--- /dev/null
++++ b/yaml/xyz/openbmc_project/Control/Port.interface.yaml
+@@ -0,0 +1,14 @@
++description: >
++    Control actions for a serial port.
++
++paths:
++    - namespace: /xyz/openbmc_project/control/port
++
++properties:
++    - name: MonitoringEnabled
++      type: boolean
++      description: >
++          Whether the devices on the port are monitored. Setting this false
++          reserves the port so no other traffic occurs on it; setting it true
++          resumes normal monitoring.
++      default: true
+-- 
+2.53.0-Meta
+

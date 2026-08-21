@@ -1,0 +1,32 @@
+From 38c2b0e1c50cbc212a0c6d6bd1cd2620352a6b6e Mon Sep 17 00:00:00 2001
+From: Neal Chen <neal_chen@accton.com>
+Date: Fri, 15 May 2026 19:15:45 +0800
+Subject: [PATCH] ARM: dts: aspeed: fblite-r1: Add ssif slave address at
+ I2C bus 5
+
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts  | 8 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+index 651f4b52377b..79c67f7457f5 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+@@ -26,6 +26,14 @@ flash@0 {
+ 	};
+ };
+ 
++&i2c5 {
++
++	ssif-bmc@10 {
++		compatible = "ssif-bmc";
++		reg = <0x10>;
++	};
++};
++
+ &i2c11 {
+ 	status = "okay";
+ };
+-- 
+2.43.0
+

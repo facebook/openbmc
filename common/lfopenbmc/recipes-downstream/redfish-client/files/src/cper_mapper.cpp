@@ -14,7 +14,7 @@ using EventSeverity = redfish_binding::LogEntry::EventSeverity;
 template <typename T>
 T makeCPER(const auto& source, const auto& cper)
 {
-    return T("SOURCE", sdbusplus::message::object_path(source), "CPER",
+    return T("SOURCE", sdbusplus::object_path(source), "CPER",
              cper.toJson().dump());
 }
 

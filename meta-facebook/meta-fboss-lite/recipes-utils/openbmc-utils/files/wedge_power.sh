@@ -121,6 +121,12 @@ do_reset() {
     done
 
     if [ $system -eq 1 ]; then
+        if pgrep -f "[f]lashy" > /dev/null || pgrep -f "[f]lashcp" > /dev/null; then
+            logger -p user.crit "System cannot be rebooted while flashy or flashcp is running"
+            echo "System cannot be rebooted while flashy or flashcp is running"
+            exit 1
+        fi
+
         logger -p user.crit "Power reset the whole system ..."
         echo  "Power reset the whole system ..."
 

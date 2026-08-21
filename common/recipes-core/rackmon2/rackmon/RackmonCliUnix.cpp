@@ -16,11 +16,6 @@ using nlohmann::json;
 using namespace std::literals::string_literals;
 using namespace rackmonsvc;
 
-class RackmonClient : public UnixClient {
- public:
-  RackmonClient() : UnixClient("/var/run/rackmond.sock") {}
-};
-
 [[nodiscard]] static int print_json(json& j) {
   std::string status;
   json data = j["data"];

@@ -487,37 +487,25 @@ void to_json(json& j, const RegisterStore& m) {
   }
 }
 
-void from_json(const json& j, WriteActionInfo& action) {
-  j.at("interpret").get_to(action.interpret);
-  if (j.contains("shell")) {
-    action.shell = j.at("shell");
-  } else {
-    action.shell = std::nullopt;
-  }
-  if (j.contains("value")) {
-    action.value = j.at("value");
-  } else {
-    action.value = std::nullopt;
-  }
-  if (!action.shell && !action.value) {
-    throw std::runtime_error("Bad special handler");
-  }
+void from_json(const json& j, TimeSyncConfig& m) {
+  j.at("address").get_to(m.reg);
+  j.at("interval").get_to(m.period);
 }
 
-void from_json(const json& j, SpecialHandlerInfo& m) {
-  j.at("reg").get_to(m.reg);
-  j.at("len").get_to(m.len);
-  m.period = j.value("period", -1);
-  j.at("action").get_to(m.action);
-  if (m.action != "write") {
-    throw std::runtime_error("Unsupported action: " + m.action);
+void from_json(const nlohmann::json& j, ProbeRegister& m) {
+  j.at("register").get_to(m.registerAddress);
+  if (j.contains("value")) {
+    std::vector<uint16_t> values;
+    j.at("value").get_to(values);
+    m.values = values;
+  } else {
+    m.values = std::nullopt;
   }
-  j.at("info").get_to(m.info);
 }
 
 void from_json(const json& j, RegisterMap& m) {
   j.at("address_range").get_to(m.applicableAddresses);
-  j.at("probe_register").get_to(m.probeRegister);
+  j.at("probe").get_to(m.probe.probeRegisters);
   j.at("name").get_to(m.name);
   m.parity = j.value("parity", Parity::EVEN);
   j.at("baudrate").get_to(m.baudrate);
@@ -528,13 +516,12 @@ void from_json(const json& j, RegisterMap& m) {
   for (auto& i : tmp) {
     m.registerDescriptors[i.begin] = i;
   }
-  if (j.contains("special_handlers")) {
-    j.at("special_handlers").get_to(m.specialHandlers);
+  if (j.contains("time_sync")) {
+    m.timeSync = j.at("time_sync").get<TimeSyncConfig>();
   }
 }
 void to_json(json& j, const RegisterMap& m) {
   j["address_range"] = m.applicableAddresses;
-  j["probe_register"] = m.probeRegister;
   j["name"] = m.name;
   j["baudrate"] = m.baudrate;
   j["registers"] = {};

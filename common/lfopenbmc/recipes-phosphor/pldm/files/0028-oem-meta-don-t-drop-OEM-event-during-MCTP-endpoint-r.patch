@@ -1,0 +1,82 @@
+From 492c7a740123f3d201cbf4995b2982ead49cfa57 Mon Sep 17 00:00:00 2001
+From: Unive Tien <unive.tien.wiwynn@gmail.com>
+Date: Fri, 7 Aug 2026 06:29:45 +0000
+Subject: [PATCH] oem-meta: don't drop OEM event during MCTP endpoint
+ re-registration
+
+checkMetaIana() returns std::optional<bool>: true = confirmed Meta device,
+false = confirmed non-Meta (reject), std::nullopt = endpoint not discovered
+yet (config map not repopulated, e.g. mid re-registration after a blade AC
+cycle). handleOemEvent() drops the event only on a confirmed non-Meta device
+(== false); std::nullopt and true both fall through so the event is logged.
+Applied as a trailing patch after the MCTP I2C/I3C config work (0023) which
+also touches this area.
+
+YV4T1M-2254
+---
+ oem/meta/event/oem_event_manager.cpp | 2 +-
+ oem/meta/utils.cpp                   | 9 +++++++--
+ oem/meta/utils.hpp                   | 6 ++++--
+ 3 files changed, 12 insertions(+), 5 deletions(-)
+
+diff --git a/oem/meta/event/oem_event_manager.cpp b/oem/meta/event/oem_event_manager.cpp
+index f1e9633..70cc9a9 100644
+--- a/oem/meta/event/oem_event_manager.cpp
++++ b/oem/meta/event/oem_event_manager.cpp
+@@ -89,7 +89,7 @@ int OemEventManager::handleOemEvent(
+     auto eventData =
+         reinterpret_cast<const uint8_t*>(request->payload) + eventDataOffset;
+     auto eventDataSize = payloadLength - eventDataOffset;
+-    if (!pldm::oem_meta::checkMetaIana(tid))
++    if (pldm::oem_meta::checkMetaIana(tid) == false)
+     {
+         lg2::error("Receive OEM Meta event from not Meta specific device");
+         return PLDM_ERROR;
+diff --git a/oem/meta/utils.cpp b/oem/meta/utils.cpp
+index b5e2fed..4a478ef 100644
+--- a/oem/meta/utils.cpp
++++ b/oem/meta/utils.cpp
+@@ -42,7 +42,7 @@ ConfigurationDiscoveryHandler* getMctpConfigurationHandler()
+ 
+ } // namespace utils
+ 
+-bool checkMetaIana(const pldm_tid_t& tid)
++std::optional<bool> checkMetaIana(const pldm_tid_t& tid)
+ {
+     static constexpr std::string MetaIANA = "0015A000";
+ 
+@@ -51,7 +51,12 @@ bool checkMetaIana(const pldm_tid_t& tid)
+         configurationDiscovery->getConfigurations().find(EID);
+     if (configurationIter == configurationDiscovery->getConfigurations().end())
+     {
+-        return false;
++        // Endpoint not yet (re-)discovered: right after a blade AC cycle the
++        // BIC's MCTP endpoint is re-registering and this configuration map has
++        // not been repopulated yet. Return "unknown" so the caller does not
++        // drop the OEM event during that window (YV4T1M-2254); a genuinely
++        // non-Meta device is still rejected once discovered (checks below).
++        return std::nullopt;
+     }
+ 
+     const MctpEndpoint& mctpEndpoint = configurationIter->second;
+diff --git a/oem/meta/utils.hpp b/oem/meta/utils.hpp
+index dc8d41c..c493613 100644
+--- a/oem/meta/utils.hpp
++++ b/oem/meta/utils.hpp
+@@ -32,9 +32,11 @@ ConfigurationDiscoveryHandler* getMctpConfigurationHandler();
+  * @brief Check the IANA of the MCTP endpoint device that sent the OEM message.
+  *
+  * @param[in] tid - PLDM TID of the sender.
+- * @param[out] bool - True if the endpoint used META IANA, false otherwise.
++ * @param[out] std::optional<bool> - true if the endpoint used META IANA;
++ *             false if it is a confirmed non-Meta device; std::nullopt if the
++ *             endpoint is not discovered yet (config not repopulated).
+  */
+-bool checkMetaIana(const pldm_tid_t& tid);
++std::optional<bool> checkMetaIana(const pldm_tid_t& tid);
+ 
+ /**
+  * @brief Get the MCTP configuration object path for the given sender tid.
+-- 
+2.53.0-Meta
+

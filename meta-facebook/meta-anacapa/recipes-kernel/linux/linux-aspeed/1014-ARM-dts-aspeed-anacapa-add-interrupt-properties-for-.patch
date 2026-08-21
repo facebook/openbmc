@@ -1,0 +1,63 @@
+From 4abee71ec6b1636194de1911c11dd555213e6211 Mon Sep 17 00:00:00 2001
+From: Rex Fu <Rex.Fu@amd.com>
+Date: Fri, 17 Apr 2026 14:14:55 +0800
+Subject: [PATCH] ARM: dts: aspeed: anacapa: add interrupt properties for PDB
+ PCA9555
+
+Add interrupt-parent and interrupts properties to the PDB PCA9555
+nodes in the anacapa DTS.
+
+LORE Link: https://lore.kernel.org/all/20260417-anacapa-pca9555-irq-v1-1-9a6d28b1b656@amd.com/
+
+Signed-off-by: Rex Fu <Rex.Fu@amd.com>
+---
+ .../dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts  | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+index 5dc4d9e6517b..67764d0b6157 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+@@ -514,6 +514,9 @@ gpio@22 {
+ 				gpio-controller;
+ 				#gpio-cells = <2>;
+ 
++				interrupt-parent = <&sgpiom0>;
++				interrupts = <174 IRQ_TYPE_LEVEL_LOW>;
++
+ 				gpio-line-names =
+ 					"RPDB_FAN_FULL_SPEED_R_N", "RPDB_I2C_TEMP75_U8_ALERT_R_N",
+ 					"RPDB_I2C_TMP432_U29_ALERT_R_N", "RPDB_GLOBAL_WP",
+@@ -533,6 +536,9 @@ gpio@24 {
+ 				gpio-controller;
+ 				#gpio-cells = <2>;
+ 
++				interrupt-parent = <&sgpiom0>;
++				interrupts = <174 IRQ_TYPE_LEVEL_LOW>;
++
+ 				gpio-line-names =
+ 					"RPDB_EAM2_PRSNT_MOS_N_R", "RPDB_EAM3_PRSNT_MOS_N_R",
+ 					"RPDB_PWRGD_P50V_HSC4_SYS_R",
+@@ -562,6 +568,9 @@ gpio@22 {
+ 				gpio-controller;
+ 				#gpio-cells = <2>;
+ 
++				interrupt-parent = <&sgpiom0>;
++				interrupts = <174 IRQ_TYPE_LEVEL_LOW>;
++
+ 				gpio-line-names =
+ 					"LPDB_FAN_FULL_SPEED_R_N","LPDB_I2C_TEMP75_U8_ALERT_R_N",
+ 					"LPDB_I2C_TMP432_U29_ALERT_R_N","LPDB_GLOBAL_WP",
+@@ -579,6 +588,9 @@ gpio@24 {
+ 				gpio-controller;
+ 				#gpio-cells = <2>;
+ 
++				interrupt-parent = <&sgpiom0>;
++				interrupts = <174 IRQ_TYPE_LEVEL_LOW>;
++
+ 				gpio-line-names =
+ 					"LPDB_P50V_FAN1_R2_PG","LPDB_P50V_FAN2_R2_PG",
+ 					"LPDB_P50V_FAN3_R2_PG","LPDB_P50V_FAN4_R2_PG",
+-- 
+2.52.0
+

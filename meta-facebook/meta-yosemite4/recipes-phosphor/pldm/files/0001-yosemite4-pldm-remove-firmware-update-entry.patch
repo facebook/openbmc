@@ -1,4 +1,4 @@
-From ed3e4bfb4b8c8821d3c3751e9aaec918407ec443 Mon Sep 17 00:00:00 2001
+From ad2d3b211e56f7755bd0b764a43e533f8f5b76ff Mon Sep 17 00:00:00 2001
 From: Unive Tien <unive.tien.wiwynn@gmail.com>
 Date: Thu, 27 Nov 2025 08:48:08 +0000
 Subject: [PATCH] yosemite4: pldm: remove firmware update entry
@@ -19,25 +19,28 @@ Tested on the Yosemite4 platform to ensure that the firmware update entry
 is no longer exposed on D-Bus, and verified that other inventory
 functionalities remain unaffected.
 ---
- fw-update/inventory_manager.cpp | 5 -----
- 1 file changed, 5 deletions(-)
+ fw-update/inventory_manager.cpp | 8 --------
+ 1 file changed, 8 deletions(-)
 
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index 73fe450..2b4f3bf 100644
+index de25b5e..8f5d46c 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
-@@ -698,11 +698,6 @@ void InventoryManager::getFirmwareParameters(
-         {
-             auto componentName = firmwareDeviceNameMap.at(eid) + "_Component_" +
-                                  std::to_string(compIdentifier);
+@@ -723,14 +723,6 @@ void InventoryManager::getFirmwareParameters(
+             auto componentName =
+                 std::format("{}_Component_{}", firmwareDeviceNameMap.at(eid),
+                             compIdentifier);
 -
 -            firmwareInventoryManager.createFirmwareEntry(
 -                SoftwareIdentifier(eid, compIdentifier), componentName,
 -                utils::toString(activeCompVerStr), descriptorMap.at(eid),
--                componentInfo);
+-                componentInfo, [this, eid]() {
+-                    this->sendQueryDeviceIdentifiersRequest(eid);
+-                    this->sendQueryDownstreamDevicesRequest(eid);
+-                });
          }
          else
          {
 -- 
-2.52.0
+2.53.0-Meta
 

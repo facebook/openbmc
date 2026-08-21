@@ -1,0 +1,41 @@
+From 9a5ec3687e015c16217852e13bb4dd88f8769886 Mon Sep 17 00:00:00 2001
+From: RQ Lai <r.q.lai@quantatw.com>
+Date: Tue, 4 Aug 2026 03:44:19 +0800
+Subject: [PATCH] configurations: rainier: Support for a second source MB
+
+Rainier will support both the primary and secondary motherboards,
+so we will use the same JSON for both.
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/entity-manager/+/93134]
+
+Change-Id: I3edfa40d2069e611b92fa7e3e1a625dea4f4277d
+Signed-off-by: RQ Lai <r.q.lai@quantatw.com>
+---
+ configurations/meta/rainier/rainier_mb_ssd.json | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/configurations/meta/rainier/rainier_mb_ssd.json b/configurations/meta/rainier/rainier_mb_ssd.json
+index 66c5122..e66ded1 100644
+--- a/configurations/meta/rainier/rainier_mb_ssd.json
++++ b/configurations/meta/rainier/rainier_mb_ssd.json
+@@ -86,7 +86,7 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'MB_E1S0', 'Compatible': 'com.meta.Hardware.Rainier.Boards.MB'})",
+             "AND",
+-            "xyz.openbmc_project.FruDevice({'PRODUCT_PRODUCT_NAME': 'Rainier .*', 'BOARD_PRODUCT_NAME': 'Motherboard', 'BOARD_INFO_AM4': 'VR-RTT V1P2VR-MPS', 'BOARD_MANUFACTURER': 'Quanta'})",
++            "xyz.openbmc_project.FruDevice({'PRODUCT_PRODUCT_NAME': 'Rainier .*', 'BOARD_PRODUCT_NAME': 'Motherboard'})",
+             "MATCH_ONE"
+         ],
+         "Type": "Board",
+@@ -185,7 +185,7 @@
+         "Probe": [
+             "xyz.openbmc_project.Inventory.Source.DevicePresence({'Name': 'MB_E1S1', 'Compatible': 'com.meta.Hardware.Rainier.Boards.MB'})",
+             "AND",
+-            "xyz.openbmc_project.FruDevice({'PRODUCT_PRODUCT_NAME': 'Rainier .*', 'BOARD_PRODUCT_NAME': 'Motherboard', 'BOARD_INFO_AM4': 'VR-RTT V1P2VR-MPS', 'BOARD_MANUFACTURER': 'Quanta'})",
++            "xyz.openbmc_project.FruDevice({'PRODUCT_PRODUCT_NAME': 'Rainier .*', 'BOARD_PRODUCT_NAME': 'Motherboard'})",
+             "MATCH_ONE"
+         ],
+         "Type": "Board",
+-- 
+2.53.0-Meta
+

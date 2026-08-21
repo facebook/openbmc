@@ -1,8 +1,7 @@
-From 709c1791008a689d8e9831e6763f47823d2fad39 Mon Sep 17 00:00:00 2001
+From 5ee845c27633d6c7e87466f2f1c81e27d312981b Mon Sep 17 00:00:00 2001
 From: Richard Purdie <richard.purdie@linuxfoundation.org>
 Date: Wed, 22 May 2024 13:58:23 +0200
-Subject: [PATCH 08/10] qemu: Ensure pip and the python venv aren't used for
- meson
+Subject: [PATCH] qemu: Ensure pip and the python venv aren't used for meson
 
 Qemu wants to use a supported python version and a specific meson version
 to "help" users and uses pip and creates a venv to do this. This is a nightmare
@@ -30,10 +29,10 @@ Signed-off-by: Richard Purdie <richard.purdie@linuxfoundation.org>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/configure b/configure
-index 92a4bf4150..0e56c2c4b2 100755
+index a91906a864..31f4dbcafe 100755
 --- a/configure
 +++ b/configure
-@@ -951,14 +951,14 @@ python="$(command -v "$python")"
+@@ -937,14 +937,14 @@ python="$(command -v "$python")"
  echo "python determined to be '$python'"
  echo "python version: $($python --version)"
  
@@ -51,5 +50,5 @@ index 92a4bf4150..0e56c2c4b2 100755
  # Finish preparing the virtual environment using vendored .whl files.
  # Even if PyPI is allowed, we disallow it here to force installation
 -- 
-2.52.0
+2.53.0-Meta
 

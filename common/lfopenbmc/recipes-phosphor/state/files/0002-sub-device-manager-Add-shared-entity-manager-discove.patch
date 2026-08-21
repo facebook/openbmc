@@ -1,0 +1,275 @@
+From 6416b1aadf9385ec5e888327fcb0d11550a0d373 Mon Sep 17 00:00:00 2001
+From: Eric Yang <eric.yang.wiwynn@gmail.com>
+Date: Thu, 23 Apr 2026 04:17:42 +0000
+Subject: [PATCH 3/4] sub-device-manager: Add shared entity-manager discovery
+ layer
+
+Add SubDeviceManager, a reusable class that watches for entity-manager
+InterfacesAdded/InterfacesRemoved signals and performs an initial
+GetManagedObjects scan. Callers register callbacks for device add and
+remove events filtered by a specific inventory item interface.
+
+Motivation:
+Sub-device state management daemons (drive, NIC, accelerator, etc.)
+share the same entity-manager discovery pattern. This shared
+infrastructure layer avoids duplicating D-Bus discovery logic across
+per-type binaries.
+
+Tested:
+On Yosemite 5 platform with entity-manager providing Item.Drive
+inventory objects (ssd0, ssd1). phosphor-dbus-interfaces [1][2] patches
+applied. Tested as part of the full drive-state-manager integration,
+see [3] for end-to-end verification.
+
+  busctl tree xyz.openbmc_project.State.Drive
+
+  /xyz/openbmc_project/state/drive/ssd0
+  /xyz/openbmc_project/state/drive/ssd1
+
+Existing Item.Drive objects discovered on startup via GetManagedObjects.
+InterfacesAdded/Removed signals correctly trigger add/remove callbacks.
+
+Reference:
+[1] https://gerrit.openbmc.org/c/openbmc/phosphor-dbus-interfaces/+/89402
+[2] https://gerrit.openbmc.org/c/openbmc/phosphor-dbus-interfaces/+/90669
+[3] https://gerrit.openbmc.org/c/openbmc/phosphor-state-manager/+/89401
+
+Change-Id: I81a881246a7ffb2a7d2d6d55aa2f5bc8910b1fce
+Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
+---
+ meson.build            |   6 +++
+ sub_device_manager.cpp | 102 +++++++++++++++++++++++++++++++++++++++++
+ sub_device_manager.hpp |  95 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 203 insertions(+)
+ create mode 100644 sub_device_manager.cpp
+ create mode 100644 sub_device_manager.hpp
+
+diff --git a/meson.build b/meson.build
+index 090babb..8de5ef1 100644
+--- a/meson.build
++++ b/meson.build
+@@ -135,6 +135,12 @@ utils_lib = static_library(
+     dependencies: [sdbusplus, phosphorlogging, phosphordbusinterfaces, libgpiod],
+ )
+ 
++sub_device_lib = static_library(
++    'sub_device_manager',
++    'sub_device_manager.cpp',
++    dependencies: [sdbusplus, phosphorlogging],
++)
++
+ executable(
+     'phosphor-host-state-manager',
+     'host_state_manager.cpp',
+diff --git a/sub_device_manager.cpp b/sub_device_manager.cpp
+new file mode 100644
+index 0000000..51a3eb8
+--- /dev/null
++++ b/sub_device_manager.cpp
+@@ -0,0 +1,102 @@
++#include "sub_device_manager.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++#include <sdbusplus/bus.hpp>
++#include <sdbusplus/message.hpp>
++
++#include <map>
++#include <string>
++#include <vector>
++
++namespace phosphor
++{
++namespace state
++{
++namespace manager
++{
++
++PHOSPHOR_LOG2_USING;
++
++constexpr auto ENTITY_MANAGER_SERVICE = "xyz.openbmc_project.EntityManager";
++constexpr auto ENTITY_MANAGER_PATH = "/xyz/openbmc_project/inventory";
++constexpr auto DBUS_OBJECT_MANAGER_INTERFACE =
++    "org.freedesktop.DBus.ObjectManager";
++
++SubDeviceManager::SubDeviceManager(
++    sdbusplus::bus_t& bus, const std::string& itemInterface,
++    DeviceAddedCallback addedCb, DeviceRemovedCallback removedCb) :
++    bus(bus), itemInterface(itemInterface), addedCallback(std::move(addedCb)),
++    removedCallback(std::move(removedCb)),
++    interfacesAddedMatch(
++        bus,
++        sdbusRule::interfacesAdded() +
++            sdbusRule::sender(ENTITY_MANAGER_SERVICE),
++        [this](sdbusplus::message_t& m) { interfacesAdded(m); }),
++    interfacesRemovedMatch(
++        bus,
++        sdbusRule::interfacesRemoved() +
++            sdbusRule::sender(ENTITY_MANAGER_SERVICE),
++        [this](sdbusplus::message_t& m) { interfacesRemoved(m); })
++{}
++
++void SubDeviceManager::scanExistingDevices()
++{
++    auto method =
++        bus.new_method_call(ENTITY_MANAGER_SERVICE, ENTITY_MANAGER_PATH,
++                            DBUS_OBJECT_MANAGER_INTERFACE, "GetManagedObjects");
++
++    try
++    {
++        auto reply = bus.call(method);
++        auto managedObjects =
++            reply.unpack<std::map<sdbusplus::object_path, DbusInterfaceMap>>();
++
++        for (const auto& [objectPath, interfaces] : managedObjects)
++        {
++            if (interfaces.contains(itemInterface))
++            {
++                info("Found existing device at {PATH}", "PATH", objectPath.str);
++                addedCallback(objectPath.str, interfaces);
++            }
++        }
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        // entity-manager may not be running yet; devices will be picked
++        // up via InterfacesAdded signals when it starts
++        info("Unable to query entity-manager: {ERROR}", "ERROR", e);
++        return;
++    }
++}
++
++void SubDeviceManager::interfacesAdded(sdbusplus::message_t& msg)
++{
++    auto [objectPath,
++          interfaces] = msg.unpack<sdbusplus::object_path, DbusInterfaceMap>();
++
++    if (interfaces.contains(itemInterface))
++    {
++        info("Device added at {PATH}", "PATH", objectPath.str);
++        addedCallback(objectPath.str, interfaces);
++    }
++}
++
++void SubDeviceManager::interfacesRemoved(sdbusplus::message_t& msg)
++{
++    auto [objectPath, interfaces] =
++        msg.unpack<sdbusplus::object_path, std::vector<std::string>>();
++
++    for (const auto& iface : interfaces)
++    {
++        if (iface == itemInterface)
++        {
++            info("Device removed at {PATH}", "PATH", objectPath.str);
++            removedCallback(objectPath.str);
++            return;
++        }
++    }
++}
++
++} // namespace manager
++} // namespace state
++} // namespace phosphor
+diff --git a/sub_device_manager.hpp b/sub_device_manager.hpp
+new file mode 100644
+index 0000000..3f3b68a
+--- /dev/null
++++ b/sub_device_manager.hpp
+@@ -0,0 +1,95 @@
++#pragma once
++
++#include "utils.hpp"
++
++#include <sdbusplus/bus.hpp>
++#include <sdbusplus/message.hpp>
++
++#include <cstdint>
++#include <functional>
++#include <map>
++#include <string>
++#include <vector>
++
++namespace phosphor
++{
++namespace state
++{
++namespace manager
++{
++
++namespace sdbusRule = sdbusplus::bus::match::rules;
++
++/** @brief Properties variant matching entity-manager's D-Bus value types */
++using DbusProperty =
++    std::variant<std::string, int64_t, uint64_t, double, int32_t, uint32_t,
++                 int16_t, uint16_t, uint8_t, bool, std::vector<uint8_t>,
++                 std::vector<std::string>>;
++using DbusPropertyMap = std::map<std::string, DbusProperty>;
++using DbusInterfaceMap = std::map<std::string, DbusPropertyMap>;
++
++/** @brief Callback when a device is added.
++ *  @param[in] inventoryPath - The inventory object path from entity-manager
++ *  @param[in] interfaces    - The interfaces and properties on this object
++ */
++using DeviceAddedCallback = std::function<void(
++    const std::string& inventoryPath, const DbusInterfaceMap& interfaces)>;
++
++/** @brief Callback when a device is removed.
++ *  @param[in] inventoryPath - The inventory object path that was removed
++ */
++using DeviceRemovedCallback =
++    std::function<void(const std::string& inventoryPath)>;
++
++/** @class SubDeviceManager
++ *  @brief Discovers sub-devices through entity-manager and manages their
++ *         lifecycle via InterfacesAdded/InterfacesRemoved signals.
++ *
++ *  This is the shared infrastructure layer for sub-device state management.
++ *  Per-type binaries (drive, NIC, etc.) instantiate this class with the
++ *  inventory item interface they care about and provide callbacks for
++ *  device add/remove events.
++ */
++class SubDeviceManager
++{
++  public:
++    /** @brief Constructs SubDeviceManager
++     *
++     *  @param[in] bus            - The D-Bus bus object
++     *  @param[in] itemInterface  - The inventory item interface to watch
++     *                              (e.g.
++     * "xyz.openbmc_project.Inventory.Item.Drive")
++     *  @param[in] addedCb        - Callback when a matching device appears
++     *  @param[in] removedCb      - Callback when a matching device disappears
++     */
++    SubDeviceManager(sdbusplus::bus_t& bus, const std::string& itemInterface,
++                     DeviceAddedCallback addedCb,
++                     DeviceRemovedCallback removedCb);
++
++    /** @brief Perform initial scan of existing entity-manager objects.
++     *
++     *  Calls GetManagedObjects on entity-manager and invokes the added
++     *  callback for each object that contains the watched interface.
++     *  Must be called after constructing the manager.
++     */
++    void scanExistingDevices();
++
++  private:
++    /** @brief Handle InterfacesAdded signal from entity-manager */
++    void interfacesAdded(sdbusplus::message_t& msg);
++
++    /** @brief Handle InterfacesRemoved signal from entity-manager */
++    void interfacesRemoved(sdbusplus::message_t& msg);
++
++    sdbusplus::bus_t& bus;
++    std::string itemInterface;
++    DeviceAddedCallback addedCallback;
++    DeviceRemovedCallback removedCallback;
++
++    sdbusplus::bus::match_t interfacesAddedMatch;
++    sdbusplus::bus::match_t interfacesRemovedMatch;
++};
++
++} // namespace manager
++} // namespace state
++} // namespace phosphor
+-- 
+2.43.0
+

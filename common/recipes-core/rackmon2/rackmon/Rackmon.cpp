@@ -141,6 +141,14 @@ void Rackmon::rawCmd(
   resp.len += 2;
 }
 
+std::string Rackmon::getInterfaceName(
+    uint8_t deviceAddress,
+    std::optional<uint8_t> port) const {
+  return deviceInventory_->getModbusDevice(deviceAddress, port)
+      ->getInterface()
+      .name();
+}
+
 void Rackmon::readHoldingRegisters(
     uint8_t deviceAddress,
     std::optional<uint8_t> port,

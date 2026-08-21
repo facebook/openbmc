@@ -57,50 +57,6 @@
             ]
         },
         {
-            "alias": "openbmc-cit-default-determinator",
-            "args": {
-                "name": "openbmc-cit-default-determinator",
-                "oncall": "openbmc",
-                "steps": [
-                    {
-                        "determinator": true,
-                        "name": "openbmc-cit-default-determinator",
-                        "shell": "facebook/sandcastle/job.py cit-diff --platform default"
-                    }
-                ]
-            },
-            "capabilities": {
-                "tenant": "openbmc",
-                "type": "lego",
-                "vcs": "openbmc-git"
-            },
-            "command": "SandcastleUniversalCommand",
-            "description": "Yocto diff listener",
-            "jellyfish_conditions": [
-                {
-                    "type": "some_file_matches_some_regexp",
-                    "value": [
-                        "^openbmc-init-build-env",
-                        "^classes/.*",
-                        "^common/.*",
-                        "^facebook/.*",
-                        "^tests2/.*",
-                        "^meta-aspeed/.*",
-                        "^meta-facebook/recipes-.*/.*",
-                        "^meta-facebook/meta-python3/.*",
-                        "^meta-facebook/classes/.*",
-                        "^meta-facebook/conf/.*",
-                        "^meta-facebook/meta-backports/.*",
-                        "^yocto/.*"
-                    ]
-                }
-            ],
-            "scheduleType": "diff",
-            "tags": [
-                "openbmc_git"
-            ]
-        },
-        {
             "alias": "openbmc-cit-acctonbmc-determinator",
             "args": {
                 "name": "openbmc-cit-acctonbmc-determinator",
@@ -1334,6 +1290,72 @@
             ]
         },
         {
+            "alias": "openbmc-cit-rainiera7-determinator",
+            "args": {
+                "name": "openbmc-cit-rainiera7-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-rainiera7-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform rainiera7"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-rainiera7/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-sanmiguel-determinator",
+            "args": {
+                "name": "openbmc-cit-sanmiguel-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-sanmiguel-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform sanmiguel"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-sanmiguel/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
             "alias": "openbmc-cit-santabarbara-determinator",
             "args": {
                 "name": "openbmc-cit-santabarbara-determinator",
@@ -1655,6 +1677,40 @@
                     "type": "some_file_matches_some_regexp",
                     "value": [
                         "^meta-facebook/meta-yosemite5/.*"
+                    ]
+                }
+            ],
+            "scheduleType": "diff",
+            "tags": [
+                "openbmc_git"
+            ]
+        },
+        {
+            "alias": "openbmc-cit-yosemite5a7-determinator",
+            "args": {
+                "name": "openbmc-cit-yosemite5a7-determinator",
+                "oncall": "openbmc",
+                "steps": [
+                    {
+                        "determinator": true,
+                        "name": "openbmc-cit-yosemite5a7-determinator",
+                        "shell": "facebook/sandcastle/job.py cit-diff --platform yosemite5a7"
+                    }
+                ]
+            },
+            "capabilities": {
+                "tenant": "openbmc",
+                "type": "lego",
+                "vcs": "openbmc-git"
+            },
+            "command": "SandcastleUniversalCommand",
+            "description": "Yocto diff listener",
+            "jellyfish_conditions": [
+                {
+                    "type": "some_file_matches_some_regexp",
+                    "value": [
+                        "^meta-facebook/meta-yosemite5/meta-yosemite5a7/.*",
+                        "^meta-facebook/meta-yosemite5/recipes-.*"
                     ]
                 }
             ],

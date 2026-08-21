@@ -1,0 +1,142 @@
+From 6460b92b2ca7636e9576cb43b05220b4868a63f0 Mon Sep 17 00:00:00 2001
+From: Amithash Prasad <amithash@meta.com>
+Date: Wed, 25 Mar 2026 15:51:35 -0700
+Subject: [PATCH] lg2: commit: Allow users to provide additional data
+
+Extend commit to allow users to provide additional data
+which can be extended.
+
+Change-Id: I9a0d77234647ae856c503566c1e2936209bbe3df
+Signed-off-by: Amithash Prasad <amithash@meta.com>
+---
+ README.md                               |  9 +++++++++
+ lib/include/phosphor-logging/commit.hpp | 16 +++++++++++++---
+ lib/lg2_commit.cpp                      | 17 +++++++++++------
+ 3 files changed, 33 insertions(+), 9 deletions(-)
+
+diff --git a/README.md b/README.md
+index 18b9602..5fd1690 100644
+--- a/README.md
++++ b/README.md
+@@ -89,6 +89,15 @@ lg2::commit(sdbusplus::event::xyz::openbmc_project::Logging::Cleared(
+     "NUMBER_OF_LOGS", count), LOG_CRIT);
+ ```
+ 
++Services may also add extra key-value pairs to the additional data of the event
++by providing the optional parameter which can be useful for adding entries like
++CALLOUT_INVENTORY_PATH which would otherwise need to go through other paths:
++
++```cpp
++lg2::commit(sdbusplus::event::xyz::openbmc_project::Logging::Cleared(
++    "NUMBER_OF_LOGS", count), std::nullopt, {"HELLO", "WORLD"});
++```
++
+ ### Event Log Filtering
+ 
+ Vendors customizing phosphor-logging for their platforms may decide that they
+diff --git a/lib/include/phosphor-logging/commit.hpp b/lib/include/phosphor-logging/commit.hpp
+index 75c6659..05e85ae 100644
+--- a/lib/include/phosphor-logging/commit.hpp
++++ b/lib/include/phosphor-logging/commit.hpp
+@@ -3,21 +3,28 @@
+ #include <sdbusplus/async.hpp>
+ #include <sdbusplus/exception.hpp>
+ 
++#include <map>
+ #include <optional>
++#include <string>
+ 
+ namespace lg2
+ {
++
++using AdditionalData_t = std::map<std::string, std::string>;
++
+ /** Commit a generated event/error.
+  *
+  *  @param e - The event to commit.
++ *  @param overrideLevel - Optional severity level override.
++ *  @param additionalData - Optional additional key-value data to include.
+  *  @return The object path of the resulting event.
+  *
+  *  Note: Similar to elog(), this will use the default dbus connection to
+  *  perform the operation.
+  */
+ auto commit(sdbusplus::exception::generated_event_base&& e,
+-            std::optional<int> overrideLevel = std::nullopt)
+-    -> sdbusplus::object_path;
++            std::optional<int> overrideLevel = std::nullopt,
++            AdditionalData_t additionalData = {}) -> sdbusplus::object_path;
+ 
+ /** Resolve an existing event/error.
+  *
+@@ -33,11 +40,14 @@ void resolve(const sdbusplus::object_path& logPath);
+  *
+  *  @param ctx - The async context to use.
+  *  @param e - The event to commit.
++ *  @param overrideLevel - Optional severity level override.
++ *  @param additionalData - Optional additional key-value data to include.
+  *  @return The object path of the resulting event.
+  */
+ auto commit(sdbusplus::async::context& ctx,
+             sdbusplus::exception::generated_event_base&& e,
+-            std::optional<int> overrideLevel = std::nullopt)
++            std::optional<int> overrideLevel = std::nullopt,
++            AdditionalData_t additionalData = {})
+     -> sdbusplus::async::task<sdbusplus::object_path>;
+ 
+ /** Resolve an existing event/error (using async context).
+diff --git a/lib/lg2_commit.cpp b/lib/lg2_commit.cpp
+index b45ee86..704db6b 100644
+--- a/lib/lg2_commit.cpp
++++ b/lib/lg2_commit.cpp
+@@ -115,7 +115,8 @@ auto extractEvent(sdbusplus::exception::generated_event_base&& t)
+ } // namespace details
+ 
+ auto commit(sdbusplus::exception::generated_event_base&& t,
+-            std::optional<int> overrideLevel) -> sdbusplus::object_path
++            std::optional<int> overrideLevel, AdditionalData_t additionalData)
++    -> sdbusplus::object_path
+ {
+     int severity = overrideLevel.value_or(t.severity());
+     // Check event filters first.
+@@ -144,8 +145,10 @@ auto commit(sdbusplus::exception::generated_event_base&& t,
+             b.new_method_call(Create::default_service, Create::instance_path,
+                               Create::interface, "Create");
+ 
+-        m.append(t.name(), details::severity_from_syslog(severity),
+-                 details::data_from_json(t));
++        auto data = details::data_from_json(t);
++        data.merge(std::move(additionalData));
++
++        m.append(t.name(), details::severity_from_syslog(severity), data);
+ 
+         auto reply = b.call(m);
+ 
+@@ -171,7 +174,7 @@ void resolve(const sdbusplus::object_path& logPath)
+ 
+ auto commit(sdbusplus::async::context& ctx,
+             sdbusplus::exception::generated_event_base&& t,
+-            std::optional<int> overrideLevel)
++            std::optional<int> overrideLevel, AdditionalData_t additionalData)
+     -> sdbusplus::async::task<sdbusplus::object_path>
+ {
+     using details::Create;
+@@ -184,11 +187,13 @@ auto commit(sdbusplus::async::context& ctx,
+ 
+     if constexpr (LG2_COMMIT_DBUS)
+     {
++        auto data = details::data_from_json(t);
++        data.merge(std::move(additionalData));
++
+         co_return co_await Create(ctx)
+             .service(Create::default_service)
+             .path(Create::instance_path)
+-            .create(t.name(), details::severity_from_syslog(severity),
+-                    details::data_from_json(t));
++            .create(t.name(), details::severity_from_syslog(severity), data);
+     }
+     co_return {};
+ }
+-- 
+2.53.0-Meta
+

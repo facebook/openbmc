@@ -87,6 +87,56 @@ get_chassis_type_by_gpio(uint8_t *type) {
   return 0;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+#define CHASSIS_TYPE_FAIL_SEL_MARKER "/tmp/fbgc_chassis_type_fail_sel_logged"
+
+static void
+fbgc_common_log_chassis_type_fail_once(int sku_value) {
+  static bool logged = false;
+  FILE *fp = NULL;
+  gpio_value_t uic_loc_type_in = GPIO_VALUE_INVALID;
+  gpio_value_t uic_rmt_type_in = GPIO_VALUE_INVALID;
+  gpio_value_t scc_loc_type_0 = GPIO_VALUE_INVALID;
+  gpio_value_t scc_rmt_type_0 = GPIO_VALUE_INVALID;
+
+  if (logged) {
+    return;
+  }
+
+  fp = fopen(CHASSIS_TYPE_FAIL_SEL_MARKER, "r");
+  if (fp != NULL) {
+    fclose(fp);
+    logged = true;
+    return;
+  }
+
+  uic_loc_type_in = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_UIC_LOC_TYPE_IN));
+  uic_rmt_type_in = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_UIC_RMT_TYPE_IN));
+  scc_loc_type_0 = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_SCC_LOC_TYPE_0));
+  scc_rmt_type_0 = gpio_get_value_by_shadow(fbgc_get_gpio_name(GPIO_SCC_RMT_TYPE_0));
+
+  syslog(LOG_LOCAL0 | LOG_CRIT,
+         "Chassis type detection failed. SKU=%d, GPIO pattern: "
+         "UIC_LOC_TYPE_IN=%d, UIC_RMT_TYPE_IN=%d, "
+         "SCC_LOC_TYPE_0=%d, SCC_RMT_TYPE_0=%d. "
+         "Expected Type5=0,0,0,0 or Type7=0,1,0,1. "
+         "Using default chassis type: Type5",
+         sku_value,
+         uic_loc_type_in,
+         uic_rmt_type_in,
+         scc_loc_type_0,
+         scc_rmt_type_0);
+
+  logged = true;
+
+  fp = fopen(CHASSIS_TYPE_FAIL_SEL_MARKER, "w");
+  if (fp != NULL) {
+    fprintf(fp, "logged\n");
+    fclose(fp);
+  }
+}
+#endif /* CONFIG_GRANDCANYON2 */
+
 int
 fbgc_common_get_chassis_type(uint8_t *type) {
   char system_info[MAX_VALUE_LEN] = {0};
@@ -102,7 +152,11 @@ fbgc_common_get_chassis_type(uint8_t *type) {
 
   if (ret < 0) { //cache not ready, get from gpio directly
     if (get_chassis_type_by_gpio(type) < 0) {
+#ifdef CONFIG_GRANDCANYON2
+      fbgc_common_log_chassis_type_fail_once(-1);
+#else
       syslog(LOG_ERR, "%s(): Unknown chassis type.\n", __func__);
+#endif
       goto error;
     } else {
       return 0;
@@ -112,7 +166,11 @@ fbgc_common_get_chassis_type(uint8_t *type) {
   sku_value = atoi(system_info);
 
   if (sku_value >= MAX_SKU_VALUE) {
+#ifdef CONFIG_GRANDCANYON2
+    fbgc_common_log_chassis_type_fail_once(sku_value);
+#else
     syslog(LOG_WARNING, "%s(): Failed to get chassis type because SKU value exceed limit, value: %d\n", __func__, sku_value);
+#endif
     goto error;
   }
 
@@ -125,14 +183,20 @@ fbgc_common_get_chassis_type(uint8_t *type) {
       *type = CHASSIS_TYPE7;
       break;
     default:
+#ifdef CONFIG_GRANDCANYON2
+      fbgc_common_log_chassis_type_fail_once(sku_value);
+#else
       syslog(LOG_WARNING, "%s(): Failed to get chassis type because SKU value is wrong, value: %d\n", __func__, sku_value);
+#endif
       goto error;
   }
 
   return 0;
 
 error:
+#ifndef CONFIG_GRANDCANYON2
   syslog(LOG_ERR, "%s(): Using default chassis type: Type5\n", __func__);
+#endif
   *type = CHASSIS_TYPE5;
   return 0;
 }
@@ -464,6 +528,23 @@ exit:
   return ret;
 }
 
+// GC2 server board FPGA Board_ID (bit[6:3]) is one-hot per stage, not a
+// sequential count; convert it to the shared sequential STAGE_* index that
+// fbgc_common_validate_img()/bmc_fpga.cpp expect.
+static uint8_t
+gc2_decode_board_id_stage(uint8_t board_id) {
+  switch (board_id) {
+    case ES_STAGE_POC: return STAGE_PRE_EVT;
+    case ES_STAGE_EVT: return STAGE_EVT;
+    case ES_STAGE_DVT: return STAGE_DVT;
+    case ES_STAGE_PVT: return STAGE_PVT;
+    case ES_STAGE_MP:  return STAGE_MP;
+    default:
+      syslog(LOG_WARNING, "%s(): unrecognized GC2 board_id one-hot value: 0x%x", __func__, board_id);
+      return 0xFF;
+  }
+}
+
 int
 get_server_board_revision_id(uint8_t* board_rev_id, uint8_t board_rev_id_len) {
   int i2cfd = 0, ret = 0, retry = 0;
@@ -501,7 +582,7 @@ get_server_board_revision_id(uint8_t* board_rev_id, uint8_t board_rev_id_len) {
   }
 
   if (fbgc_common_is_grandcanyon2()){
-    *board_rev_id = (*board_rev_id >> 3) & 0x0F; //Bit[6:3]
+    *board_rev_id = gc2_decode_board_id_stage((*board_rev_id >> 3) & 0x0F); //Bit[6:3], one-hot Board_ID
   }
 
 
@@ -759,7 +840,7 @@ fbgc_common_validate_img(const char *img_path, uint8_t comp, uint8_t expected_bo
   int expected_comp = 0;
   const char *component[] = {"Unknown", "CPLD", "BIC", "BIOS"};
   const char *rev_sb[] = {"POC", "EVT", "DVT", "PVT", "MP"};
-  const char *rev_bb[] = {"Pre-EVT", "EVT", "DVT", "DVT3", "PVT", "MP"};
+  const char *rev_bb[] = {"Pre-EVT", "EVT", "DVT", "PVT", "MP"};
   const char **stage = NULL;
 
   switch (comp) {

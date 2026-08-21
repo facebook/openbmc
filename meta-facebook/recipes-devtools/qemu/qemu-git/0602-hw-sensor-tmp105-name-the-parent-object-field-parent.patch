@@ -1,0 +1,77 @@
+From 4bf3b915b6b758e7cd4a7e3aa7d02a6af9bb32f7 Mon Sep 17 00:00:00 2001
+From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
+Date: Fri, 31 Jul 2026 12:45:01 +0200
+Subject: [PATCH] hw/sensor: tmp105: name the parent object field parent_obj
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+QEMU coding conventions expect the embedded parent object of a QOM type
+to be named parent_obj. Rename the TMP105State I2CSlave member
+accordingly and update its references; the change is purely cosmetic.
+
+Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
+Link: https://lore.kernel.org/qemu-devel/20260731-sanmiguel-bmc-locator-v2-2-1266926ba769@free.fr
+Signed-off-by: Cédric Le Goater <clg@redhat.com>
+---
+ hw/sensor/tmp105.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/hw/sensor/tmp105.c b/hw/sensor/tmp105.c
+index 6069c0905d..aabeb34f08 100644
+--- a/hw/sensor/tmp105.c
++++ b/hw/sensor/tmp105.c
+@@ -42,7 +42,7 @@ OBJECT_DECLARE_SIMPLE_TYPE(TMP105State, TMP105)
+  */
+ struct TMP105State {
+     /*< private >*/
+-    I2CSlave i2c;
++    I2CSlave parent_obj;
+     /*< public >*/
+ 
+     uint8_t len;
+@@ -187,12 +187,12 @@ static void tmp105_read(TMP105State *s)
+         break;
+     }
+ 
+-    trace_tmp105_read(s->i2c.address, s->pointer);
++    trace_tmp105_read(s->parent_obj.address, s->pointer);
+ }
+ 
+ static void tmp105_write(TMP105State *s)
+ {
+-    trace_tmp105_write(s->i2c.address, s->pointer);
++    trace_tmp105_write(s->parent_obj.address, s->pointer);
+ 
+     switch (s->pointer & 3) {
+     case TMP105_REG_TEMPERATURE:
+@@ -200,7 +200,7 @@ static void tmp105_write(TMP105State *s)
+ 
+     case TMP105_REG_CONFIG:
+         if (FIELD_EX8(s->buf[0] & ~s->config, CONFIG, SHUTDOWN_MODE)) {
+-            trace_tmp105_write_shutdown(s->i2c.address);
++            trace_tmp105_write_shutdown(s->parent_obj.address);
+         }
+         s->config = FIELD_DP8(s->buf[0], CONFIG, ONE_SHOT, 0);
+         s->faults = tmp105_faultq[FIELD_EX8(s->config, CONFIG, FAULT_QUEUE)];
+@@ -305,7 +305,7 @@ static const VMStateDescription vmstate_tmp105 = {
+         VMSTATE_INT16(temperature, TMP105State),
+         VMSTATE_INT16_ARRAY(limit, TMP105State, 2),
+         VMSTATE_UINT8(alarm, TMP105State),
+-        VMSTATE_I2C_SLAVE(i2c, TMP105State),
++        VMSTATE_I2C_SLAVE(parent_obj, TMP105State),
+         VMSTATE_END_OF_LIST()
+     },
+     .subsections = (const VMStateDescription * const []) {
+@@ -338,7 +338,7 @@ static void tmp105_realize(DeviceState *dev, Error **errp)
+ 
+     qdev_init_gpio_out(&i2c->qdev, &s->pin, 1);
+ 
+-    tmp105_reset(&s->i2c);
++    tmp105_reset(&s->parent_obj);
+ }
+ 
+ static void tmp105_initfn(Object *obj)
+-- 
+2.53.0-Meta
+

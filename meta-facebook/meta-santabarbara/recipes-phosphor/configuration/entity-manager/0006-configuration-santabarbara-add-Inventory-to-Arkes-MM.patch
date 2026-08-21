@@ -1,0 +1,42 @@
+From dd7d185811d671161fc6b36a4c7156f8177c860b Mon Sep 17 00:00:00 2001
+From: Freddie Jheng <Freddie.Jheng@quantatw.com>
+Date: Wed, 10 Jun 2026 11:10:55 +0800
+Subject: [PATCH] configuration: santabarbara: add Inventory to Arkes MMC
+
+Add Inventory field to MMC in the Arke EVB config and Electra config.
+
+Ref: https://gerrit.openbmc.org/c/openbmc/entity-manager/+/91146
+Change-Id: I99e3a33efa958a9ac59dbbe47d198b824f717d2d
+Signed-off-by: Freddie Jheng <Freddie.Jheng@quantatw.com>
+---
+ configurations/meta/santabarbara/santabarbara_arke_evb.json | 1 +
+ configurations/meta/santabarbara/santabarbara_electra.json  | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/configurations/meta/santabarbara/santabarbara_arke_evb.json b/configurations/meta/santabarbara/santabarbara_arke_evb.json
+index c5dd388..2759d5b 100644
+--- a/configurations/meta/santabarbara/santabarbara_arke_evb.json
++++ b/configurations/meta/santabarbara/santabarbara_arke_evb.json
+@@ -19,6 +19,7 @@
+         {
+             "Address": "0x21",
+             "Bus": "$bus / 2 + 2 * 3 % 5 * 3 + 1 / 4 + 102",
++            "Inventory": "Arke_EVB",
+             "Name": "MMC",
+             "Type": "MCTPI2CTarget"
+         }
+diff --git a/configurations/meta/santabarbara/santabarbara_electra.json b/configurations/meta/santabarbara/santabarbara_electra.json
+index 154d060..dcee259 100644
+--- a/configurations/meta/santabarbara/santabarbara_electra.json
++++ b/configurations/meta/santabarbara/santabarbara_electra.json
+@@ -19,6 +19,7 @@
+         {
+             "Address": "0x21",
+             "Bus": "$bus / 2 + 2 * 3 % 5 * 3 + 1 / 4 + 102",
++            "Inventory": "Electra",
+             "Name": "MMC",
+             "Type": "MCTPI2CTarget"
+         }
+-- 
+2.34.1
+

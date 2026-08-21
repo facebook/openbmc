@@ -1,0 +1,62 @@
+From f0814875997f2661d7c7c2a2329a4d1d0fee0dc2 Mon Sep 17 00:00:00 2001
+From: Emmanuel Blot via <qemu-arm@nongnu.org>
+Date: Fri, 31 Jul 2026 12:45:05 +0200
+Subject: [PATCH] hw/arm: aspeed: guard board-local temperature-sensor aliases
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The Catalina and Fuji machines define TYPE_TMP75 (and, on Fuji,
+TYPE_LM75) as local aliases of TYPE_TMP105 because no distinct model
+existed. A following change adds a canonical TYPE_TMP75 to
+hw/sensor/tmp105.h that would clash with these aliases.
+
+Guard each alias with an #undef so the header definition can be
+introduced without a redefinition warning, ahead of switching the boards
+to the real models. No functional change.
+
+Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
+Link: https://lore.kernel.org/qemu-devel/20260731-sanmiguel-bmc-locator-v2-6-1266926ba769@free.fr
+Signed-off-by: Cédric Le Goater <clg@redhat.com>
+---
+ hw/arm/aspeed_ast2600_catalina.c | 5 +++++
+ hw/arm/aspeed_ast2600_fuji.c     | 6 ++++++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/hw/arm/aspeed_ast2600_catalina.c b/hw/arm/aspeed_ast2600_catalina.c
+index f714c9d1b3..33e75338ef 100644
+--- a/hw/arm/aspeed_ast2600_catalina.c
++++ b/hw/arm/aspeed_ast2600_catalina.c
+@@ -22,6 +22,11 @@
+ #define CATALINA_BMC_HW_STRAP2 0x00000800
+ #define CATALINA_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
+ 
++/*
++ * Guard the alias against the TYPE_TMP75 that hw/sensor/tmp105.h now
++ * defines.
++ */
++#undef TYPE_TMP75
+ #define TYPE_TMP75 TYPE_TMP105
+ #define TYPE_TMP421 "tmp421"
+ #define TYPE_DS1338 "ds1338"
+diff --git a/hw/arm/aspeed_ast2600_fuji.c b/hw/arm/aspeed_ast2600_fuji.c
+index 00d78bf803..e5aca6f0c0 100644
+--- a/hw/arm/aspeed_ast2600_fuji.c
++++ b/hw/arm/aspeed_ast2600_fuji.c
+@@ -16,7 +16,13 @@
+ #include "hw/sensor/tmp105.h"
+ #include "hw/nvram/eeprom_at24c.h"
+ 
++/*
++ * Guard the aliases against the TYPE_TMP75 that hw/sensor/tmp105.h now defines;
++ * TYPE_LM75 is guarded too for consistency (no LM75 model exists yet).
++ */
++#undef TYPE_LM75
+ #define TYPE_LM75 TYPE_TMP105
++#undef TYPE_TMP75
+ #define TYPE_TMP75 TYPE_TMP105
+ #define TYPE_TMP422 "tmp422"
+ 
+-- 
+2.53.0-Meta
+

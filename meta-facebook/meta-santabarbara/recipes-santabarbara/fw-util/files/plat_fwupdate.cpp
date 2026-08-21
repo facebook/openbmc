@@ -29,9 +29,10 @@ class SWBFlashComponent : public ExternalSPIComponent {
         const std::string& fru,
         const std::string& comp,
         const std::vector<GpioConfig>& configs,
+        const std::vector<std::string>& chipCandidates = {},
         const std::string& programmerType = "ft2232_spi",
         const std::string& chipParams = "type=2232H,port=B,divisor=4")
-        : ExternalSPIComponent(fru, comp, programmerType, chipParams),
+        : ExternalSPIComponent(fru, comp, programmerType, chipParams, chipCandidates),
           gpioConfigs(configs) {}
     
     private:
@@ -113,7 +114,8 @@ class SWBFlashComponent : public ExternalSPIComponent {
     };
     
 SWBFlashComponent swbFlashBrcm("swb_brcm", "flash",
-                               {{"SPI_MUX_SEL", true}});
+                               {{"SPI_MUX_SEL", true}},
+                               {"W25Q256JW", "W25R256JW"});
 
 SWBFlashComponent swbFlashAeb1("swb_aeb1", "flash",
                                {{"SCO1_SPI_SEL", true},

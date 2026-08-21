@@ -1,0 +1,189 @@
+From 5b05e2b50f9e5c73240a63854bfad526e3e51aaf Mon Sep 17 00:00:00 2001
+From: Emmanuel Blot via <qemu-arm@nongnu.org>
+Date: Fri, 31 Jul 2026 12:45:08 +0200
+Subject: [PATCH] tests/qtest: tmp105: cover the TMP75, TMP175 and LM75B
+ variants
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Exercise the per-variant differences added to the model: the TMP75 and
+TMP175 fault-queue depths, the TMP75 alert-clear on thermostat-mode
+change, and the LM75B's reserved config bits and fixed set-point and
+temperature resolutions.
+
+Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
+Link: https://lore.kernel.org/qemu-devel/20260731-sanmiguel-bmc-locator-v2-9-1266926ba769@free.fr
+Signed-off-by: Cédric Le Goater <clg@redhat.com>
+---
+ tests/qtest/tmp105-test.c | 138 ++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 138 insertions(+)
+
+diff --git a/tests/qtest/tmp105-test.c b/tests/qtest/tmp105-test.c
+index 29a031fb7b..ea6803715a 100644
+--- a/tests/qtest/tmp105-test.c
++++ b/tests/qtest/tmp105-test.c
+@@ -19,9 +19,20 @@
+ #define TMP105_TEST_ADDR 0x49
+ #define TMP105_TEST_PATH "/machine/peripheral/" TMP105_TEST_ID
+ 
++#define TMP75_TEST_ID    "tmp75-test"
++#define TMP75_TEST_PATH  "/machine/peripheral/" TMP75_TEST_ID
++
++#define TMP175_TEST_ID   "tmp175-test"
++#define TMP175_TEST_PATH "/machine/peripheral/" TMP175_TEST_ID
++
++#define LM75B_TEST_ID    "lm75b-test"
++#define LM75B_TEST_PATH  "/machine/peripheral/" LM75B_TEST_ID
++
+ #define TMP105_CONFIG_POL   (1 << 2)   /* ALERT active-high when set */
++#define TMP105_CONFIG_TM    (1 << 1)   /* interrupt (thermostat) mode */
+ #define TMP105_CONFIG_FQ_1  (0 << 3)   /* fault queue: 1 consecutive fault */
+ #define TMP105_CONFIG_FQ_4  (2 << 3)   /* fault queue: 4 consecutive faults */
++#define TMP105_CONFIG_FQ(f) ((f) << 3) /* raw F1:F0 fault-queue field value */
+ 
+ static int qmp_tmp105_get_temperature(const char *id)
+ {
+@@ -166,6 +177,98 @@ static void test_fault_queue(void *obj, void *data, QGuestAllocator *alloc)
+     g_assert_false(get_irq(0));
+ }
+ 
++/*
++ * Drive @need consecutive over-limit conversions and check that the ALERT pin
++ * only asserts on the last one. This exercises the fault-queue length.
++ */
++static void check_fault_queue(QI2CDevice *i2cdev, const char *id,
++                              const char *path, uint8_t fq_field, int need)
++{
++    int i;
++
++    qtest_irq_intercept_out(global_qtest, path);
++
++    i2c_set8(i2cdev, TMP105_REG_CONFIG,
++             TMP105_CONFIG_POL | TMP105_CONFIG_FQ(fq_field));
++    g_assert_false(get_irq(0));
++
++    for (i = 0; i < need - 1; i++) {
++        qmp_tmp105_set_temperature(id, 85000);
++        g_assert_false(get_irq(0));
++    }
++    qmp_tmp105_set_temperature(id, 85000);
++    g_assert_true(get_irq(0));
++}
++
++/* The TMP75 maps F1:F0 = 10b to 3 consecutive faults. */
++static void test_tmp75_fault_queue(void *obj, void *data,
++                                   QGuestAllocator *alloc)
++{
++    check_fault_queue(obj, TMP75_TEST_ID, TMP75_TEST_PATH, 2, 3);
++}
++
++/* The TMP175 keeps the TMP105 mapping: F1:F0 = 10b means 4 faults. */
++static void test_tmp175_fault_queue(void *obj, void *data,
++                                    QGuestAllocator *alloc)
++{
++    check_fault_queue(obj, TMP175_TEST_ID, TMP175_TEST_PATH, 2, 4);
++}
++
++/*
++ * Toggling the thermostat mode (TM) bit clears any active alert on the TMP75.
++ */
++static void test_tmp75_tm_clears_alert(void *obj, void *data,
++                                       QGuestAllocator *alloc)
++{
++    QI2CDevice *i2cdev = (QI2CDevice *)obj;
++    int i;
++
++    qtest_irq_intercept_out(global_qtest, TMP75_TEST_PATH);
++
++    i2c_set8(i2cdev, TMP105_REG_CONFIG,
++             TMP105_CONFIG_POL | TMP105_CONFIG_FQ(3));
++    for (i = 0; i < 4; i++) {
++        qmp_tmp105_set_temperature(TMP75_TEST_ID, 85000);
++    }
++    g_assert_true(get_irq(0));
++
++    i2c_set8(i2cdev, TMP105_REG_CONFIG,
++             TMP105_CONFIG_POL | TMP105_CONFIG_FQ(3) | TMP105_CONFIG_TM);
++    g_assert_false(get_irq(0));
++}
++
++/*
++ * The LM75B has a fixed 11-bit (0.125 C) converter: the resolution and one-shot
++ * Config bits are reserved (read/write as zero) and the temperature register is
++ * always masked to 11 bits regardless of what is written to Config.
++ */
++static void test_lm75b_resolution(void *obj, void *data,
++                                  QGuestAllocator *alloc)
++{
++    QI2CDevice *i2cdev = (QI2CDevice *)obj;
++    uint16_t value;
++
++    i2c_set8(i2cdev, TMP105_REG_CONFIG, 0x60);
++    g_assert_cmphex(i2c_get8(i2cdev, TMP105_REG_CONFIG), ==, 0x00);
++
++    qmp_tmp105_set_temperature(LM75B_TEST_ID, 20938);
++    value = i2c_get16(i2cdev, TMP105_REG_TEMPERATURE);
++    g_assert_cmphex(value, ==, 0x14e0);
++}
++
++/* The LM75B set-point registers store only 9 bits. */
++static void test_lm75b_limits(void *obj, void *data,
++                              QGuestAllocator *alloc)
++{
++    QI2CDevice *i2cdev = (QI2CDevice *)obj;
++
++    i2c_set16(i2cdev, TMP105_REG_T_HIGH, 0x4231);
++    g_assert_cmphex(i2c_get16(i2cdev, TMP105_REG_T_HIGH), ==, 0x4200);
++
++    i2c_set16(i2cdev, TMP105_REG_T_LOW, 0x12b4);
++    g_assert_cmphex(i2c_get16(i2cdev, TMP105_REG_T_LOW), ==, 0x1280);
++}
++
+ static void tmp105_register_nodes(void)
+ {
+     QOSGraphEdgeOptions opts = {
+@@ -179,5 +282,40 @@ static void tmp105_register_nodes(void)
+     qos_add_test("tx-rx", "tmp105", send_and_receive, NULL);
+     qos_add_test("alert-single-fault", "tmp105", test_alert_single_fault, NULL);
+     qos_add_test("fault-queue", "tmp105", test_fault_queue, NULL);
++
++    /* TMP75: register-compatible, but with a 1/2/3/4 fault queue. */
++    QOSGraphEdgeOptions tmp75_opts = {
++        .extra_device_opts = "id=" TMP75_TEST_ID ",address=0x48"
++    };
++    add_qi2c_address(&tmp75_opts, &(QI2CAddress) { 0x48 });
++
++    qos_node_create_driver("tmp75", i2c_device_create);
++    qos_node_consumes("tmp75", "i2c-bus", &tmp75_opts);
++
++    qos_add_test("fault-queue", "tmp75", test_tmp75_fault_queue, NULL);
++    qos_add_test("tm-clears-alert", "tmp75", test_tmp75_tm_clears_alert, NULL);
++
++    /* TMP175: like the TMP105, with a 1/2/4/6 fault queue. */
++    QOSGraphEdgeOptions tmp175_opts = {
++        .extra_device_opts = "id=" TMP175_TEST_ID ",address=0x4a"
++    };
++    add_qi2c_address(&tmp175_opts, &(QI2CAddress) { 0x4a });
++
++    qos_node_create_driver("tmp175", i2c_device_create);
++    qos_node_consumes("tmp175", "i2c-bus", &tmp175_opts);
++
++    qos_add_test("fault-queue", "tmp175", test_tmp175_fault_queue, NULL);
++
++    /* LM75B: fixed 11-bit conversion and 9-bit set-point registers. */
++    QOSGraphEdgeOptions lm75b_opts = {
++        .extra_device_opts = "id=" LM75B_TEST_ID ",address=0x4c"
++    };
++    add_qi2c_address(&lm75b_opts, &(QI2CAddress) { 0x4c });
++
++    qos_node_create_driver("lm75b", i2c_device_create);
++    qos_node_consumes("lm75b", "i2c-bus", &lm75b_opts);
++
++    qos_add_test("resolution", "lm75b", test_lm75b_resolution, NULL);
++    qos_add_test("limits", "lm75b", test_lm75b_limits, NULL);
+ }
+ libqos_init(tmp105_register_nodes);
+-- 
+2.53.0-Meta
+

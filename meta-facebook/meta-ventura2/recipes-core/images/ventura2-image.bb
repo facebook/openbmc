@@ -1,5 +1,7 @@
 require common/images/fb-openbmc-image.inc
 
+IMAGE_INSTALL:append = " platform-init"
+
 # FTDI-based MDIO tool and scripts to initialize the Marvell switch during the EVT phase
 IMAGE_INSTALL:append = " ftdi-mdio"
 
@@ -18,3 +20,8 @@ IMAGE_INSTALL:append = " modbus-device-util"
 # Scripts to perform FW Upgrade of AALCv2.
 IMAGE_INSTALL:append = " psu-update"
 
+# Tool to emulate device events for testing
+IMAGE_INSTALL:append = " event-emulator"
+
+# XR Config
+IMAGE_INSTALL:append = " xr21-gpio-mod"

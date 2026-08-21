@@ -1,0 +1,39 @@
+From d3c34af7be7b78833bf227832f34e4996ff221f1 Mon Sep 17 00:00:00 2001
+From: Andy Chung <Andy.Chung@amd.com>
+Date: Thu, 25 Jun 2026 13:29:05 +0800
+Subject: [PATCH] misc: amd-apml: Add Venice B0 I3C device IDs
+
+Add I3C device IDs for the Venice B0, including RMI and TSI APML devices.
+https://github.com/AMDESE/linux-aspeed/commit/2d5a93bd996a22b15fe800b566dce331e9d5d15d
+---
+ drivers/misc/amd-apml/apml_sbtsi.c | 1 +
+ drivers/misc/amd-apml/sbrmi.c      | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/drivers/misc/amd-apml/apml_sbtsi.c b/drivers/misc/amd-apml/apml_sbtsi.c
+index bdd01b0f5daa..3d08038d28ce 100644
+--- a/drivers/misc/amd-apml/apml_sbtsi.c
++++ b/drivers/misc/amd-apml/apml_sbtsi.c
+@@ -390,6 +390,7 @@ static const struct i3c_device_id sbtsi_i3c_id[] = {
+ 	I3C_DEVICE_EXTRA_INFO(0x112, 0, 0x118, NULL),
+ 	I3C_DEVICE_EXTRA_INFO(0, 0x0, 0x118, NULL),
+ 	I3C_DEVICE_EXTRA_INFO(0x112, 0, 0x1, NULL),
++	I3C_DEVICE_EXTRA_INFO(0x112, 0, 0x119, NULL),
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(i3c, sbtsi_i3c_id);
+diff --git a/drivers/misc/amd-apml/sbrmi.c b/drivers/misc/amd-apml/sbrmi.c
+index 27e1f420aa1c..8b7db2a1ab63 100644
+--- a/drivers/misc/amd-apml/sbrmi.c
++++ b/drivers/misc/amd-apml/sbrmi.c
+@@ -855,6 +855,7 @@ static const struct i3c_device_id sbrmi_i3c_id[] = {
+ 	I3C_DEVICE_EXTRA_INFO(0x112, 0x0, 0x1118, NULL),
+ 	I3C_DEVICE_EXTRA_INFO(0, 0x0, 0x1118, NULL),
+ 	I3C_DEVICE_EXTRA_INFO(0x112, 0x0, 0x2, NULL),
++	I3C_DEVICE_EXTRA_INFO(0x112, 0x0, 0x1119, NULL),
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(i3c, sbrmi_i3c_id);
+-- 
+2.52.0
+

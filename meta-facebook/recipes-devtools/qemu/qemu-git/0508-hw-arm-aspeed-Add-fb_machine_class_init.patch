@@ -1,20 +1,20 @@
-From 0eed222697279c075241d1fcba2731b16da11d22 Mon Sep 17 00:00:00 2001
+From eb5079fc46ceabbd2d14cfd1d935ca977209d63a Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Fri, 20 May 2022 17:07:55 -0700
-Subject: [PATCH 508/512] hw/arm/aspeed: Add fb_machine_class_init
+Subject: [PATCH] hw/arm/aspeed: Add fb_machine_class_init
 
 Signed-off-by: Peter Delevoryas <pdel@fb.com>
 ---
  hw/arm/aspeed.c                  |   2 +
- hw/arm/aspeed_ast2400_palmetto.c |  56 +++++++++++++
+ hw/arm/aspeed_ast2400_palmetto.c |  61 ++++++++++++++
  hw/arm/aspeed_ast2500_evb.c      | 137 +++++++++++++++++++++++++++++++
  hw/arm/aspeed_ast2600_evb.c      |  40 +++++++++
  hw/arm/aspeed_ast2600_fuji.c     |  58 +++++++++++++
  include/hw/arm/aspeed.h          |  68 +++++++++++++++
- 6 files changed, 361 insertions(+)
+ 6 files changed, 366 insertions(+)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index a48c442058..c70e208812 100644
+index a9238e6217..6dc6190283 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
 @@ -441,3 +441,5 @@ static const TypeInfo aspeed_machine_types[] = {
@@ -24,21 +24,26 @@ index a48c442058..c70e208812 100644
 +
 +
 diff --git a/hw/arm/aspeed_ast2400_palmetto.c b/hw/arm/aspeed_ast2400_palmetto.c
-index 776aa43a45..892c49dd4e 100644
+index 776aa43a45..9465a40cf3 100644
 --- a/hw/arm/aspeed_ast2400_palmetto.c
 +++ b/hw/arm/aspeed_ast2400_palmetto.c
-@@ -12,6 +12,10 @@
+@@ -12,6 +12,15 @@
  #include "hw/arm/aspeed.h"
  #include "hw/arm/aspeed_soc.h"
  #include "hw/i2c/smbus_eeprom.h"
 +#include "hw/nvram/eeprom_at24c.h"
 +#include "hw/sensor/tmp105.h"
 +
++/*
++ * Guard the alias against the TYPE_TMP75 that hw/sensor/tmp105.h now
++ * defines.
++ */
++#undef TYPE_TMP75
 +#define TYPE_TMP75 TYPE_TMP105
  
  /* Palmetto hardware value: 0x120CE416 */
  #define PALMETTO_BMC_HW_STRAP1 (                                        \
-@@ -78,3 +82,55 @@ static const TypeInfo aspeed_ast2400_palmetto_types[] = {
+@@ -78,3 +87,55 @@ static const TypeInfo aspeed_ast2400_palmetto_types[] = {
  };
  
  DEFINE_TYPES(aspeed_ast2400_palmetto_types)
@@ -438,5 +443,5 @@ index a00238ed74..84252dcd41 100644
 +
  #endif
 -- 
-2.52.0
+2.53.0-Meta
 

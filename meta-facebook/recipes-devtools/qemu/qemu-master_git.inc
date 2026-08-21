@@ -14,7 +14,7 @@ a variety of guest operating systems. This recipe builds from git master."
 HOMEPAGE = "http://qemu.org"
 LICENSE = "GPL-2.0-only & LGPL-2.1-only"
 
-DEPENDS += "bison-native meson-native ninja-native"
+DEPENDS += "bison-native libusb1 meson-native ninja-native"
 
 require ${COREBASE}/meta/recipes-devtools/qemu/qemu-targets.inc
 
@@ -26,8 +26,9 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=a3b50d8b88dcc0eb3d7d39b760b9e821 \
 # QEMU reference - commit SHA for reproducible builds
 # To update to latest master, run:
 #   git ls-remote https://github.com/qemu/qemu.git refs/heads/master | cut -f1
-# v11.0.0
-QEMU_REF ?= "b7d13c3602176b648cdcf351dc0a1c8d5f5aa8cc"
+# This is normally updated by the daily yocto sync job when
+# --refresh-patches is enabled
+QEMU_REF ?= "ae4f3443209ab154b48b706a146e5f557ab147cb"
 
 # Use git protocol (required by BitBake QA)
 SRC_URI = "git://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \
@@ -36,7 +37,7 @@ SRC_URI = "git://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \
            file://qemu-guest-agent.udev \
            "
 
-SRC_URI += " \
+SRC_URI:append = " \
            file://0500-net-slirp-Add-mfr-id-and-oob-eth-addr-parameters.patch \
            file://0501-aspeed-Zero-extend-flash-files-to-128MB.patch \
            file://0502-hw-aspeed_vic-Add-heartbeat-LED-registers.patch \
@@ -51,6 +52,7 @@ SRC_URI += " \
            file://0511-hw-i2c-aspeed-Add-slave-event-traces.patch \
            file://0512-hw-i2c-aspeed-Fix-bus-derivation-for-slave-events.patch \
            \
+           file://0513-aspeed-Re-add-hw-arm-fby35.c-dual-SoC-fby35-machine-.patch \
            file://0514-hw-i2c-aspeed-Fix-interrupt-status-flag-names.patch \
            file://0515-tests-Create-qtest-for-Aspeed-I2C-controller.patch \
            file://0516-scripts-Add-redact-util.patch \
@@ -71,10 +73,12 @@ SRC_URI += " \
            file://0531-aspeed-add-montblanc-bmc-reference-from-fuji.patch \
            file://0532-aspeed-add-janga-bmc.patch \
            file://0533-hw-ssi-aspeed_smc-don-t-bus-fault-on-flash-window-ac.patch \
-           file://0534-aspeed-Add-sanmiguel-bmc.patch \
+           file://0534-hw-i2c-aspeed-mask-I2CS-slave-address-to-7-bits.patch \
+           file://0535-add-usbredir-subproject-for-QEMU-usb-redir.patch \
+           file://0536-hw-i2c-aspeed-add-target-buffer-mode-RX-support.patch \
            "
 
-SRC_URI += " \
+SRC_URI:append = " \
            file://0001-qemu-Add-addition-environment-space-to-boot-loader-q.patch \
            file://0002-apic-fixup-fallthrough-to-PIC.patch \
            file://0003-qemu-Do-not-include-file-if-not-exists.patch \
@@ -83,8 +87,125 @@ SRC_URI += " \
            file://0006-Define-MAP_SYNC-and-MAP_SHARED_VALIDATE-on-needed-li.patch \
            file://0007-Subject-PATCH-configure-lookup-meson-exutable-from-P.patch \
            file://0008-qemu-Ensure-pip-and-the-python-venv-aren-t-used-for-.patch \
-           file://0009-hw-arm-aspeed-Add-Facebook-Anacapa-BMC-machine.patch \
-           file://0010-hw-arm-aspeed-Add-BMC-machine-to-build.patch \
+           file://0009-Add-MAX31790-fan-controller-device-emulation-for-BMC.patch \
+           file://0010-Add-PCF8563-Real-Time-Clock-device-emulation-for-BMC.patch \
+           "
+
+SRC_URI:append = " \
+           file://0601-hw-sensor-tmp105-make-device-state-private-to-the-im.patch \
+           file://0602-hw-sensor-tmp105-name-the-parent-object-field-parent.patch \
+           file://0603-hw-sensor-tmp105-implement-Resettable-reset.patch \
+           file://0604-hw-sensor-tmp105-enforce-the-configurable-fault-queu.patch \
+           file://0605-hw-sensor-tmp105-describe-the-temperature-property.patch \
+           file://0606-hw-arm-aspeed-guard-board-local-temperature-sensor-a.patch \
+           file://0607-hw-sensor-tmp105-add-TMP75-TMP175-and-LM75B-variants.patch \
+           file://0608-tests-qtest-tmp105-cover-the-ALERT-fault-queue.patch \
+           file://0609-tests-qtest-tmp105-cover-the-TMP75-TMP175-and-LM75B-.patch \
+           file://0610-tests-qtest-tmp105-cover-one-shot-and-fault-queue-wr.patch \
+           file://0611-tests-qtest-tmp105-cover-shutdown-clearing-the-ALERT.patch \
+           file://0612-hw-arm-sanmiguel-add-Facebook-SanMiguel-BMC-machine.patch \
+           file://0613-hw-arm-sanmiguel-populate-EEPROM-data.patch \
+           file://0614-hw-arm-catalina-use-the-real-TMP75-model.patch \
+           file://0615-hw-arm-fuji-use-the-real-TMP75-and-LM75B-temperature.patch \
+           file://0616-tests-functional-aspeed-optionally-check-the-device-.patch \
+           file://0617-tests-functional-give-the-set_machine-probe-VM-the-t.patch \
+           file://0618-tests-functional-add-a-pure-Python-device-locator-re.patch \
+           file://0619-tests-functional-add-a-device-locator-self-check.patch \
+           file://0620-tests-functional-aspeed-add-hwmon-sensor-read-helper.patch \
+           file://0621-tests-functional-arm-sanmiguel-add-BMC-boot-test.patch \
+           file://0622-tests-functional-arm-catalina-test-TMP75.patch \
+           file://0623-tests-functional-arm-catalina-test-PCA9555-IO-expand.patch \
+           file://0624-hw-arm-catalina-drive-pca9554-io-expander-input-pins.patch \
+           file://0625-tests-functional-arm-catalina-test-PCA9554-IO-expand.patch \
+           file://0626-hw-arm-sanmiguel-remove-the-second-SPI-flash-control.patch \
+           file://0627-docs-system-arm-aspeed-add-the-catalina-bmc-machine.patch \
+           file://0628-docs-system-arm-aspeed-add-the-sanmiguel-bmc-machine.patch \
+           file://0629-hw-i2c-pca954x-drop-unused-header-inclusions.patch \
+           file://0630-hw-i2c-pca954x-add-PCA9545-4-channel-mux-model.patch \
+           file://0631-hw-i2c-pca954x-migrate-mux-state.patch \
+           file://0632-tests-qtest-pca9545-add-mux-test.patch \
+           file://0633-hw-rtc-ds1338-move-TYPE_DS1338-to-a-public-header.patch \
+           file://0634-hw-ds1338-use-the-TYPE_DS1338-constant-instead-of-th.patch \
+           file://0635-hw-rtc-ds1338-implement-Resettable-reset.patch \
+           file://0636-hw-rtc-ds1338-parameterise-the-register-map-via-a-de.patch \
+           file://0637-tests-qtest-ds1338-cover-the-DS1338-specific-registe.patch \
+           file://0638-hw-rtc-ds1338-add-DS1339-variant.patch \
+           file://0639-tests-qtest-ds1339-add-RTC-test.patch \
+           file://0640-tests-qtest-ds1339-cover-power-on-defaults-and-reser.patch \
+           file://0641-tests-qtest-ds1339-cover-oscillator-stop-restart-and.patch \
+           file://0642-tests-qtest-ds1339-cover-the-Century-bit.patch \
+           file://0643-hw-sensor-ina230-add-current-voltage-power-monitor.patch \
+           file://0644-tests-qtest-ina230-add-current-voltage-power-monitor.patch \
+           file://0645-tests-qtest-ina230-cover-voltage-injection-and-power.patch \
+           file://0646-tests-qtest-ina230-cover-the-ALERT-limit-functions-a.patch \
+           file://0647-tests-qtest-ina230-cover-the-injection-property-limi.patch \
+           file://0648-tests-qtest-ina230-cover-operating-modes-and-trigger.patch \
+           file://0649-tests-qtest-ina230-cover-ALERT-latch-persistence.patch \
+           file://0650-hw-sensor-ina238-add-current-voltage-power-monitor.patch \
+           file://0651-tests-qtest-ina238-add-current-voltage-power-monitor.patch \
+           file://0652-tests-qtest-ina238-cover-voltage-temperature-injecti.patch \
+           file://0653-tests-qtest-ina238-cover-the-ALERT-path-and-conversi.patch \
+           file://0654-tests-qtest-ina238-cover-the-injection-property-limi.patch \
+           file://0655-tests-qtest-ina238-cover-the-operating-modes.patch \
+           file://0656-tests-qtest-ina238-cover-conversion-ready-and-alert-.patch \
+           file://0657-hw-arm-minerva-add-Facebook-BMC-machine.patch \
+           file://0658-hw-arm-minerva-populate-EEPROM-data.patch \
+           file://0659-hw-sensor-tmp421-do-not-report-a-stale-errno-on-a-pa.patch \
+           file://0660-hw-sensor-tmp421-name-the-parent-object-field-parent.patch \
+           file://0661-hw-sensor-tmp421-implement-Resettable-reset.patch \
+           file://0662-hw-sensor-tmp421-model-device-variants-with-a-class-.patch \
+           file://0663-hw-sensor-tmp421-honor-per-variant-channels-and-chan.patch \
+           file://0664-hw-sensor-tmp421-implement-register-write-masks-one-.patch \
+           file://0665-hw-sensor-tmp421-describe-the-temperature-properties.patch \
+           file://0666-hw-sensor-tmp421-keep-the-measurement-across-a-range.patch \
+           file://0667-hw-sensor-tmp421-migrate-the-exact-measurement.patch \
+           file://0668-hw-sensor-tmp421-publish-the-variant-type-names.patch \
+           file://0669-hw-arm-aspeed-use-the-TMP421-type-name-macros.patch \
+           file://0670-tests-qtest-tmp421-cover-device-IDs-and-reset-defaul.patch \
+           file://0671-tests-qtest-tmp421-cover-temperature-encoding-and-ra.patch \
+           file://0672-tests-qtest-tmp421-cover-per-variant-channels-and-en.patch \
+           file://0673-tests-qtest-tmp421-cover-software-reset-and-N-factor.patch \
+           file://0674-tests-qtest-tmp421-cover-the-register-form-of-the-mi.patch \
+           file://0675-hw-sensor-tmp105-add-the-TMP1075-variant.patch \
+           file://0676-tests-qtest-tmp105-cover-the-TMP1075-device-ID-and-r.patch \
+           file://0677-tests-qtest-tmp105-cover-the-TMP1075-config-register.patch \
+           file://0678-hw-arm-clemente-add-Facebook-Clemente-BMC-machine.patch \
+           file://0679-hw-arm-clemente-populate-the-FRU-EEPROMs.patch \
+           file://0680-hw-gpio-pca9552-restate-every-pin-level-on-reset.patch \
+           file://0681-hw-gpio-pca9552-add-the-PCA9539-variant-with-a-hardw.patch \
+           file://0682-tests-qtest-pca9539-cover-the-PCA9539-I-O-expander.patch \
+           file://0683-hw-arm-santabarbara-add-Facebook-Santabarbara-BMC-ma.patch \
+           file://0684-hw-arm-santabarbara-populate-the-FRU-EEPROMs.patch \
+           file://0685-hw-arm-yosemite5-add-Facebook-Yosemite-5-BMC-machine.patch \
+           file://0686-hw-arm-yosemite5-populate-the-FRU-EEPROMs.patch \
+           file://0687-hw-arm-bletchley-align-the-I2C-layout-with-the-devic.patch \
+           file://0688-hw-arm-bletchley-correct-the-file-copyright-header.patch \
+           file://0689-hw-arm-bletchley-select-the-board-revision-with-a-ma.patch \
+           "
+
+# The following patches break our robot qemu tests. We want to keep them rebased
+# since they are out for review so we are keeping them in the list with an used
+# override platform
+SRC_URI:append:unused-but-want-to-keep-updated = " \
+           file://0690-hw-arm-bletchley-populate-the-v1.0-FRU-EEPROMs.patch \
+           file://0691-hw-arm-bletchley-populate-the-v1.5-FRU-EEPROMs.patch \
+           "
+SRC_URI:append = " \
+           file://0692-hw-arm-harma-add-Facebook-Harma-BMC-machine.patch \
+           file://0693-hw-arm-harma-populate-the-FRU-EEPROMs.patch \
+           file://0694-hw-arm-ventura-add-Facebook-Ventura-BMC-machine.patch \
+           file://0695-hw-arm-ventura-populate-the-FRU-EEPROMs.patch \
+           file://0696-tests-functional-arm-minerva-add-BMC-boot-test.patch \
+           file://0697-tests-functional-arm-minerva-test-INA230.patch \
+           file://0698-tests-functional-arm-minerva-test-INA238.patch \
+           file://0699-tests-functional-arm-clemente-add-BMC-boot-test.patch \
+           file://0700-tests-functional-arm-santabarbara-add-BMC-boot-test.patch \
+           file://0701-tests-functional-arm-yosemite5-add-BMC-boot-test.patch \
+           file://0702-tests-functional-arm-bletchley-exercise-the-I2C-sens.patch \
+           file://0703-tests-functional-arm-bletchley-cover-the-v1.5-board-.patch \
+           file://0704-tests-functional-arm-harma-add-BMC-boot-test.patch \
+           file://0705-tests-functional-arm-ventura-add-BMC-boot-test.patch \
+           file://0706-hw-i2c-aspeed_i2c-only-raise-the-target-IRQ-for-enab.patch \
            "
 
 QEMU_CHECKOUT_DIR = "${BPN}-${PV}"
@@ -101,7 +222,7 @@ SRCREV = "${QEMU_REF}"
 # Meson wrap subprojects - these are fetched separately since meson wraps
 # are not git submodules. destsuffix puts them in the right location.
 # Note: rust crates are skipped since we do not need them.
-SRC_URI += " \
+SRC_URI:append = " \
     git://gitlab.com/qemu-project/keycodemapdb.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/keycodemapdb;name=keycodemapdb \
     git://gitlab.com/qemu-project/berkeley-softfloat-3.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/berkeley-softfloat-3;name=berkeley-softfloat-3 \
     git://gitlab.com/qemu-project/berkeley-testfloat-3.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/berkeley-testfloat-3;name=berkeley-testfloat-3 \
@@ -109,6 +230,7 @@ SRC_URI += " \
     git://gitlab.freedesktop.org/slirp/libslirp.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/slirp;name=slirp \
     git://gitlab.com/qemu-project/libvfio-user.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/libvfio-user;name=libvfio-user \
     git://gitlab.com/libblkio/libblkio.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/libblkio;name=libblkio \
+    git://gitlab.freedesktop.org/spice/usbredir.git;protocol=https;nobranch=1;destsuffix=${QEMU_CHECKOUT_DIR}/subprojects/usbredir;name=usbredir \
     "
 
 # Pin subproject revisions (from .wrap files)
@@ -117,10 +239,12 @@ SRCREV_berkeley-softfloat-3 = "b64af41c3276f97f0e181920400ee056b9c88037"
 SRCREV_berkeley-testfloat-3 = "e7af9751d9f9fd3b47911f51a5cfd08af256a9ab"
 SRCREV_dtc = "b6910bec11614980a21e46fbccc35934b671bd81"
 SRCREV_slirp = "26be815b86e8d49add8c9a8b320239b9594ff03d"
-SRCREV_libvfio-user = "0b28d205572c80b568a1003db2c8f37ca333e4d7"
+SRCREV_libvfio-user = "4d9f663450fa80ff375612dbbafe073700e3d3d8"
 SRCREV_libblkio = "f84cc963a444e4cb34813b2dcfc5bf8526947dc0"
+# usbredir v0.13.0 (pins libusbredirparser for QEMU's usb-redir device)
+SRCREV_usbredir = "5fc0e1c43194d948545941d408f4c10d084eb6ed"
 
-SRCREV_FORMAT = "default_keycodemapdb_berkeley-softfloat-3_berkeley-testfloat-3_dtc_slirp_libvfio-user_libblkio"
+SRCREV_FORMAT = "default_keycodemapdb_berkeley-softfloat-3_berkeley-testfloat-3_dtc_slirp_libvfio-user_libblkio_usbredir"
 
 # Disable shallow git clone - QEMU repo requires full clone for checkout
 BB_GIT_SHALLOW = "0"
@@ -263,11 +387,13 @@ PACKAGECONFIG[kvm] = "--enable-kvm,--disable-kvm"
 PACKAGECONFIG[virglrenderer] = "--enable-virglrenderer,--disable-virglrenderer,virglrenderer"
 # spice will be in meta-networking layer
 PACKAGECONFIG[spice] = "--enable-spice,--disable-spice,spice"
-# usbredir will be in meta-networking layer
 PACKAGECONFIG[dbus-display] = "--enable-dbus-display,--disable-dbus-display,glib-2.0-native,dbus"
-PACKAGECONFIG[usb-redir] = "--enable-usb-redir,--disable-usb-redir,usbredir"
+# No usbredir dependency: libusbredirparser comes from the pinned
+# subprojects/usbredir (SRCREV_usbredir, patch 0536), keeping the binary
+# self-contained as facebook/qemu/build.sh expects.
+PACKAGECONFIG[usb-redir] = "--enable-usb-redir,--disable-usb-redir,"
 PACKAGECONFIG[snappy] = "--enable-snappy,--disable-snappy,snappy"
-PACKAGECONFIG[glusterfs] = "--enable-glusterfs,--disable-glusterfs,glusterfs"
+# No glusterfs: the meson option was removed by 3822df47c240 (v11.1.0-rc0).
 PACKAGECONFIG[xkbcommon] = "--enable-xkbcommon,--disable-xkbcommon,libxkbcommon"
 PACKAGECONFIG[libudev] = "--enable-libudev,--disable-libudev,udev"
 PACKAGECONFIG[attr] = "--enable-attr,--disable-attr,attr,"

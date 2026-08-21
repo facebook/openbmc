@@ -1,0 +1,32 @@
+From fb26f98039de2aeffb9adb98cb4f860250f4bf18 Mon Sep 17 00:00:00 2001
+From: Colin Huang <colin.huang2@amd.com>
+Date: Wed, 8 Apr 2026 15:50:49 +0800
+Subject: [PATCH] ARM: dts: aspeed: anacapa: evt2: config ncsi device
+
+This commit depends on the patch below:
+  https://lore.kernel.org/all/20240118052220.1906721-1-Delphine_CC_Chiu@wiwynn.com/
+  https://lore.kernel.org/all/20240701154336.3536924-1-peteryin.openbmc@gmail.com/
+After both patch accepted by upstream, ncsi config can add into anacapa dts
+in upstream.
+
+Signed-off-by: Colin Huang <colin.huang2@amd.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+index 855c3058fee2..4372a01e85bd 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+@@ -899,6 +899,8 @@ &mac2 {
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_ncsi3_default>;
+ 	use-ncsi;
++	ncsi-ctrl,start-redo-probe;
++	ncsi-package = <1>;
+ };
+ 
+ &sgpiom0 {
+-- 
+2.52.0
+

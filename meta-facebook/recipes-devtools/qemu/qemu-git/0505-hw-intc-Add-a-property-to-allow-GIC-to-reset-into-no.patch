@@ -1,8 +1,8 @@
-From 942cad7dbc67454097676be58482f48fbab9981a Mon Sep 17 00:00:00 2001
+From 8931306cf6d6dbe47998079dd75fad45647c29bd Mon Sep 17 00:00:00 2001
 From: Hao Wu <wuhaotsh@google.com>
 Date: Tue, 5 Apr 2022 15:36:35 -0700
-Subject: [PATCH 505/512] hw/intc: Add a property to allow GIC to reset into
- non secure mode
+Subject: [PATCH] hw/intc: Add a property to allow GIC to reset into non secure
+ mode
 
 This property allows certain boards like NPCM8xx to boot the kernel
 directly into non-secure mode. This is necessary since we do not

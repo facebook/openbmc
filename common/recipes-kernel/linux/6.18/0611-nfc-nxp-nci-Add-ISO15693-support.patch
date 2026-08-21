@@ -1,0 +1,34 @@
+From 9608a06c347abb78fb810381b6ed53ffd9aa7cb3 Mon Sep 17 00:00:00 2001
+From: Carl Lee <carl.lee@amd.com>
+Date: Tue, 12 May 2026 17:46:09 +0800
+Subject: [PATCH] nfc: nxp-nci: Add ISO15693 support
+
+NXP NCI controllers such as PN7150 support ISO15693 Type 5
+tags, but the driver does not currently advertise this protocol.
+
+Add NFC_PROTO_ISO15693_MASK so that ISO15693 tags can be
+detected through the Linux NFC stack.
+
+Lore link:
+https://lore.kernel.org/all/20260512-nfc-nxp-nci-add-iso15693-support-v1-1-3394e5b9dba9@amd.com/
+
+Signed-off-by: Carl Lee <carl.lee@amd.com>
+---
+ drivers/nfc/nxp-nci/core.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/nfc/nxp-nci/core.c b/drivers/nfc/nxp-nci/core.c
+index 66b198663387..448e5a4e7338 100644
+--- a/drivers/nfc/nxp-nci/core.c
++++ b/drivers/nfc/nxp-nci/core.c
+@@ -25,6 +25,7 @@
+ 			       NFC_PROTO_FELICA_MASK | \
+ 			       NFC_PROTO_ISO14443_MASK | \
+ 			       NFC_PROTO_ISO14443_B_MASK | \
++			       NFC_PROTO_ISO15693_MASK | \
+ 			       NFC_PROTO_NFC_DEP_MASK)
+ 
+ #define NXP_NCI_RF_PLL_UNLOCKED_NTF nci_opcode_pack(NCI_GID_RF_MGMT, 0x21)
+-- 
+2.52.0
+

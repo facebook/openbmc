@@ -1,4 +1,4 @@
-From cdb0bcab573015bf9f174c401e951fd21cb7e0c5 Mon Sep 17 00:00:00 2001
+From c7b9ca33f01da5fda4f908fbc0c36b5ac7aec048 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Wed, 27 May 2026 15:14:14 +0800
 Subject: [PATCH] meta-facebook-ventura2-Add-aspeed-bmc-facebook-ventura2.dts
@@ -26,7 +26,7 @@ index 6b68671f9379..6874b621deb4 100644
  	aspeed-bmc-facebook-wedge400-data64.dtb \
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
 new file mode 100644
-index 000000000000..bb838f32bc48
+index 000000000000..679d62ae8b10
 --- /dev/null
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
 @@ -0,0 +1,2958 @@
@@ -677,7 +677,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	prsnt_io_expander0: gpio@40 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x40>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -708,7 +708,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	prsnt_io_expander1: gpio@41 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x41>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -739,7 +739,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	prsnt_io_expander2: gpio@42 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x42>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -770,7 +770,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	prsnt_io_expander3: gpio@43 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x43>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -801,7 +801,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	prsnt_io_expander4: gpio@44 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x44>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -832,7 +832,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	prsnt_io_expander5: gpio@45 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x45>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -863,7 +863,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	prsnt_io_expander6: gpio@46 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x46>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -894,7 +894,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	prsnt_io_expander7: gpio@47 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x47>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -925,7 +925,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	pwrgd_io_expander0: gpio@48 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x48>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -956,7 +956,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	pwrgd_io_expander1: gpio@49 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x49>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -987,7 +987,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	pwrgd_io_expander2: gpio@4a {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x4a>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1018,7 +1018,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	pwrgd_io_expander3: gpio@4b {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x4b>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1049,7 +1049,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	pwrgd_io_expander4: gpio@4c {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x4c>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1080,7 +1080,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	pwrgd_io_expander5: gpio@4d {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x4d>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1111,7 +1111,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	pwrgd_io_expander6: gpio@4e {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x4e>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1142,7 +1142,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	pwrgd_io_expander7: gpio@4f {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x4f>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1173,7 +1173,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	large_leak_io_expander0: gpio@50 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x50>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1204,7 +1204,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	large_leak_io_expander1: gpio@51 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x51>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1235,7 +1235,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	large_leak_io_expander2: gpio@52 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x52>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1266,7 +1266,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	large_leak_io_expander3: gpio@53 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x53>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1297,7 +1297,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	large_leak_io_expander4: gpio@54 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x54>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1328,7 +1328,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	large_leak_io_expander5: gpio@55 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x55>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1359,7 +1359,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	large_leak_io_expander6: gpio@56 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x56>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1390,7 +1390,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	large_leak_io_expander7: gpio@57 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x57>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1421,7 +1421,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	small_leak_io_expander0: gpio@58 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x58>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1452,7 +1452,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	small_leak_io_expander1: gpio@59 {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x59>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1483,7 +1483,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	small_leak_io_expander2: gpio@5a {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x5a>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1514,7 +1514,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	small_leak_io_expander3: gpio@5b {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x5b>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1545,7 +1545,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	small_leak_io_expander4: gpio@5c {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x5c>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1576,7 +1576,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	small_leak_io_expander5: gpio@5d {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x5d>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1607,7 +1607,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	small_leak_io_expander6: gpio@5e {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x5e>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -1638,7 +1638,7 @@ index 000000000000..bb838f32bc48
 +	};
 +
 +	small_leak_io_expander7: gpio@5f {
-+		compatible = "nxp,pca9698";
++		compatible = "nxp,pca9505";
 +		reg = <0x5f>;
 +		gpio-controller;
 +		#gpio-cells = <2>;
@@ -2061,8 +2061,8 @@ index 000000000000..bb838f32bc48
 +		"PRSNT_MGMT_DEBUG_J53_N", "PRSNT_MINISAS_TOP_J49_N",
 +		"PRSNT_MINISAS_TOP_J50_N", "PRSNT_MINISAS_BOT_J51_N",
 +		"PRSNT_MINISAS_BOT_J52_N", "JTAG_PLD_JTAGEN",
-+		"PU_PLD_CONFIG_N", "",
-+		"", "",
++		"PU_PLD_CONFIG_N", "FM_E810_MUX_SEL_R",
++		"FM_E810_MUX_EN_R_N", "",
 +		"FM_PVCCIN_CPU_PWR_IN_ALERT_L", "IRQ_PVCCIN_CPU_VRHOT_LVC3_L",
 +		"PROT_BYPASS_ISO_L", "PROT_SPARE58_ISO";
 +};
@@ -2989,5 +2989,5 @@ index 000000000000..bb838f32bc48
 +};
 +
 -- 
-2.34.1
+2.53.0-Meta
 

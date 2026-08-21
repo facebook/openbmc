@@ -200,7 +200,6 @@ enum {
 #ifdef CONFIG_GRANDCANYON2
   FRU_PTB,
 #endif
-  FRU_CNT,
 };
 
 // AC Power status
@@ -287,12 +286,13 @@ enum {
 };
 #endif
 
-// GC2 board ID stage
+// GC2 board ID stage (one-hot, per Board_ID bit[6:3] design note)
 enum {
   ES_STAGE_POC = 0,
+  ES_STAGE_EVT = 1,
   ES_STAGE_DVT = 2,
-  ES_STAGE_PVT = 3,
-  ES_STAGE_MP  = 4
+  ES_STAGE_PVT = 4,
+  ES_STAGE_MP  = 8
 };
 
 enum {

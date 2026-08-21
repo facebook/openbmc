@@ -1,0 +1,671 @@
+From e97e871d2ce5daf563ff8c8c16165bc9f90f7b58 Mon Sep 17 00:00:00 2001
+From: Sora Su <baxiche@gmail.com>
+Date: Wed, 17 Sep 2025 16:05:34 +0800
+Subject: [PATCH] oem-meta: Add MCTP configuration discovery
+
+Introduces a `ConfigurationDiscoveryHandler` to dynamically discover MCTP
+endpoint configurations from D-Bus. This handler listens for MCTP
+endpoint discovery signals and searches the D-Bus inventory for objects
+implementing the `xyz.openbmc_project.Configuration.MCTPEndpoint`
+interface.
+
+The `checkMetaIana` and `getSlotNumberStringByTID` utility functions are
+refactored to use this new handler. This replaces previous hardcoded or
+stubbed logic with a dynamic, D-Bus-driven approach.
+
+- `checkMetaIana` now verifies the IANA from the discovered
+  configuration.
+- `getSlotNumberStringByTID` now uses the discovered D-Bus path to find
+  the associated slot number from the inventory.
+
+Change-Id: Ie7a56dfdcb22d263ce75bbab5bba7a29053e3a72
+Signed-off-by: Sora Su <baxiche@gmail.com>
+---
+ oem/meta/meson.build                          |   1 +
+ oem/meta/oem_meta.cpp                         |   9 +
+ oem/meta/oem_meta.hpp                         |   7 +
+ .../configuration_discovery_handler.cpp       | 193 ++++++++++++++++++
+ .../configuration_discovery_handler.hpp       | 149 ++++++++++++++
+ oem/meta/requester/meson.build                |   1 +
+ oem/meta/utils.cpp                            | 118 ++++++++++-
+ oem/meta/utils.hpp                            |  20 ++
+ pldmd/pldmd.cpp                               |   5 +
+ 9 files changed, 500 insertions(+), 3 deletions(-)
+ create mode 100644 oem/meta/requester/configuration_discovery_handler.cpp
+ create mode 100644 oem/meta/requester/configuration_discovery_handler.hpp
+ create mode 100644 oem/meta/requester/meson.build
+
+diff --git a/oem/meta/meson.build b/oem/meta/meson.build
+index b4fc15e..7315f41 100644
+--- a/oem/meta/meson.build
++++ b/oem/meta/meson.build
+@@ -2,3 +2,4 @@ oem_files += files('oem_meta.cpp', 'utils.cpp')
+ 
+ subdir('libpldmresponder')
+ subdir('event')
++subdir('requester')
+diff --git a/oem/meta/oem_meta.cpp b/oem/meta/oem_meta.cpp
+index 4446ba1..3a5de19 100644
+--- a/oem/meta/oem_meta.cpp
++++ b/oem/meta/oem_meta.cpp
+@@ -1,5 +1,7 @@
+ #include "oem_meta.hpp"
+ 
++#include "utils.hpp"
++
+ #include <libpldm/base.h>
+ 
+ #include <utility>
+@@ -11,6 +13,8 @@ OemMETA::OemMETA(const pldm::utils::DBusHandler* dbusHandler,
+                  pldm::responder::Invoker& invoker,
+                  pldm::responder::platform::Handler* platformHandler)
+ {
++    utils::initConfigurationDiscoveryHandler(dbusHandler);
++
+     oemEventManager = std::make_unique<oem_meta::OemEventManager>();
+     registerOemEventHandler(platformHandler);
+ 
+@@ -19,6 +23,11 @@ OemMETA::OemMETA(const pldm::utils::DBusHandler* dbusHandler,
+     registerOemHandler(invoker, std::move(fileIOHandler));
+ }
+ 
++ConfigurationDiscoveryHandler* OemMETA::getMctpConfigurationHandler() const
++{
++    return utils::getMctpConfigurationHandler();
++}
++
+ void OemMETA::registerOemEventHandler(
+     pldm::responder::platform::Handler* platformHandler)
+ {
+diff --git a/oem/meta/oem_meta.hpp b/oem/meta/oem_meta.hpp
+index be216a0..14f7d6d 100644
+--- a/oem/meta/oem_meta.hpp
++++ b/oem/meta/oem_meta.hpp
+@@ -4,6 +4,7 @@
+ #include "oem/meta/event/oem_event_manager.hpp"
+ #include "oem/meta/libpldmresponder/file_io.hpp"
+ #include "pldmd/invoker.hpp"
++#include "utils.hpp"
+ 
+ namespace pldm::oem_meta
+ {
+@@ -34,6 +35,12 @@ class OemMETA
+                      pldm::responder::Invoker& invoker,
+                      pldm::responder::platform::Handler* platformHandler);
+ 
++    /** @brief return pointer to ConfigurationDiscoveryHandler for mctp endpoint
++     *         discovery
++     *  @param[out] pointer to ConfigurationDiscoveryHandler
++     */
++    ConfigurationDiscoveryHandler* getMctpConfigurationHandler() const;
++
+   private:
+     void registerOemEventHandler(
+         pldm::responder::platform::Handler* platformHandler);
+diff --git a/oem/meta/requester/configuration_discovery_handler.cpp b/oem/meta/requester/configuration_discovery_handler.cpp
+new file mode 100644
+index 0000000..0ffd6af
+--- /dev/null
++++ b/oem/meta/requester/configuration_discovery_handler.cpp
+@@ -0,0 +1,193 @@
++#include "configuration_discovery_handler.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <algorithm>
++
++PHOSPHOR_LOG2_USING;
++
++namespace pldm::oem_meta
++{
++
++void ConfigurationDiscoveryHandler::handleMctpEndpoints(
++    const MctpInfos& newMctpInfos)
++{
++    for (const auto& newMctpInfo : newMctpInfos)
++    {
++        searchConfigurationFor(newMctpInfo);
++    }
++}
++
++void ConfigurationDiscoveryHandler::handleRemovedMctpEndpoints(
++    const MctpInfos& removedMctpInfos)
++{
++    for (const auto& removedMctpInfo : removedMctpInfos)
++    {
++        removeConfigByEid(std::get<0>(removedMctpInfo));
++    }
++}
++
++void ConfigurationDiscoveryHandler::searchConfigurationFor(MctpInfo mctpInfo)
++{
++    constexpr auto inventoryPath = "/xyz/openbmc_project/inventory/";
++    constexpr auto depthWithDownstreamDevices = std::ranges::count(
++        "/inventory/system/{BOARD_OR_CHASSIS}/{DEVICE}/{DOWNSTREAM_DEVICE}",
++        '/');
++
++    const std::vector<std::string> mctpEndpoint = {
++        "xyz.openbmc_project.Configuration.MCTPEndpoint"};
++
++    try
++    {
++        auto response = dBusIntf->getSubtree(
++            inventoryPath, depthWithDownstreamDevices, mctpEndpoint);
++
++        for (const auto& [objectPath, serviceMap] : response)
++        {
++            appendConfigIfEidMatch(std::get<eid>(mctpInfo), objectPath,
++                                   serviceMap);
++        }
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        error("{FUNC}: Failed to getSubtree with MCTPEndpoint, error={ERROR}",
++              "FUNC", std::string(__func__), "ERROR", e.what());
++        return;
++    }
++    catch (const std::exception& e)
++    {
++        error("{FUNC}: Unpredicted error occured, error={ERROR}", "FUNC",
++              std::string(__func__), "ERROR", e.what());
++        return;
++    }
++}
++
++void ConfigurationDiscoveryHandler::appendConfigIfEidMatch(
++    uint8_t targetEid, const std::string& configPath,
++    const pldm::utils::MapperServiceMap& serviceMap)
++{
++    if (!configurations.contains(targetEid))
++    {
++        const auto& serviceName = serviceMap.at(0).first;
++
++        /** mctpEndpointInterface should be
++         * "xyz.openbmc_project.Configuration.MCTPEndpoint".
++         */
++        const std::string mctpEndpointInterface =
++            "xyz.openbmc_project.Configuration.MCTPEndpoint";
++        const auto& interfaces = serviceMap.at(0).second;
++        try
++        {
++            if (std::find(interfaces.begin(), interfaces.end(),
++                          mctpEndpointInterface) == interfaces.end())
++            {
++                throw std::runtime_error(
++                    "Interface '" + mctpEndpointInterface +
++                    "' not found in serviceMap for path: " + configPath);
++            }
++
++            auto& bus = pldm::utils::DBusHandler::getBus();
++            auto method = bus.new_method_call(
++                serviceName.c_str(), configPath.c_str(),
++                "org.freedesktop.DBus.Properties", "GetAll");
++            method.append(mctpEndpointInterface);
++
++            auto response = bus.call(method);
++            pldm::utils::PropertyMap result{};
++            response.read(result);
++
++            auto eid = std::get<uint64_t>(result.at("EndpointId"));
++            if (result.contains("EndpointId") && eid != targetEid)
++            {
++                return;
++            }
++
++            MctpEndpoint mctpEndpoint = parseMctpEndpointFromResponse(result);
++            mctpEndpoint.objectPath = configPath;
++            appendIfEidMatch(targetEid, configPath, mctpEndpoint);
++        }
++        catch (const sdbusplus::exception_t& e)
++        {
++            error(
++                "{FUNC}: Failed to getAll of interface={INTERFACE} in path={PATH}, error={ERROR}",
++                "FUNC", std::string(__func__), "INTERFACE",
++                mctpEndpointInterface, "PATH", configPath, "ERROR", e.what());
++            return;
++        }
++        catch (const NoSuchPropertiesException& e)
++        {
++            error("{FUNC}: Insufficient properties in {PATH}, error={ERROR}",
++                  "FUNC", std::string(__func__), "PATH", configPath, "ERROR",
++                  e.what());
++            return;
++        }
++        catch (const std::exception& e)
++        {
++            error("{FUNC}: Unpredicted error occured, error={ERROR}", "FUNC",
++                  std::string(__func__), "ERROR", e.what());
++            return;
++        }
++    }
++}
++
++MctpEndpoint ConfigurationDiscoveryHandler::parseMctpEndpointFromResponse(
++    const pldm::utils::PropertyMap& response)
++{
++    if (response.contains("Address") && response.contains("Bus") &&
++        response.contains("EndpointId") && response.contains("Name"))
++    {
++        auto addressArray =
++            std::get<std::vector<uint64_t>>(response.at("Address"));
++        uint64_t address = 0;
++
++        for (const auto& element : addressArray)
++        {
++            address = (address << 8) | element;
++        }
++
++        auto bus = std::get<uint64_t>(response.at("Bus"));
++        auto componentName = std::get<std::string>(response.at("Name"));
++        if (response.contains("IANA"))
++        {
++            auto iana = std::get<std::string>(response.at("IANA"));
++            return MctpEndpoint{address, bus, componentName, iana,
++                                std::string{}};
++        }
++
++        return MctpEndpoint{address, bus, componentName, std::nullopt,
++                            std::string{}};
++    }
++    else
++    {
++        std::vector<std::string> missingProperties{};
++        if (response.contains("Address"))
++            missingProperties.emplace_back("Address");
++        if (response.contains("Bus"))
++            missingProperties.emplace_back("Bus");
++        if (response.contains("EndpointId"))
++            missingProperties.emplace_back("EndpointId");
++        if (response.contains("Name"))
++            missingProperties.emplace_back("Name");
++
++        throw NoSuchPropertiesException(missingProperties);
++    }
++}
++
++void ConfigurationDiscoveryHandler::appendIfEidMatch(
++    uint8_t targetEid, const std::string& /* configPath */,
++    const MctpEndpoint& endpoint)
++{
++    configurations.emplace(targetEid, endpoint);
++}
++
++void ConfigurationDiscoveryHandler::removeConfigByEid(uint8_t eid)
++{
++    if (!configurations.contains(eid))
++    {
++        return;
++    }
++
++    configurations.erase(eid);
++}
++
++} // namespace pldm::oem_meta
+diff --git a/oem/meta/requester/configuration_discovery_handler.hpp b/oem/meta/requester/configuration_discovery_handler.hpp
+new file mode 100644
+index 0000000..f8a5723
+--- /dev/null
++++ b/oem/meta/requester/configuration_discovery_handler.hpp
+@@ -0,0 +1,149 @@
++#pragma once
++
++#include "common/types.hpp"
++#include "common/utils.hpp"
++#include "requester/mctp_endpoint_discovery.hpp"
++
++namespace pldm::oem_meta
++{
++
++struct MctpEndpoint
++{
++    uint64_t address;
++    uint64_t bus;
++    std::string name;
++    std::optional<std::string> iana;
++    pldm::dbus::ObjectPath objectPath;
++};
++
++class ConfigurationDiscoveryHandler : public MctpDiscoveryHandlerIntf
++{
++  public:
++    ConfigurationDiscoveryHandler() = delete;
++    ConfigurationDiscoveryHandler(const ConfigurationDiscoveryHandler&) =
++        delete;
++    ConfigurationDiscoveryHandler(ConfigurationDiscoveryHandler&&) = delete;
++    ConfigurationDiscoveryHandler& operator=(
++        const ConfigurationDiscoveryHandler&) = delete;
++    ConfigurationDiscoveryHandler& operator=(ConfigurationDiscoveryHandler&&) =
++        delete;
++    ~ConfigurationDiscoveryHandler() = default;
++
++    explicit ConfigurationDiscoveryHandler(
++        const pldm::utils::DBusHandler* dBusIntf) : dBusIntf(dBusIntf)
++    {}
++
++    /** @brief Discover configuration associated with the new MCTP endpoints.
++     *
++     *  @param[in] newMctpInfos - information of discovered MCTP endpoint
++     */
++    void handleMctpEndpoints(const MctpInfos& newMctpInfos);
++
++    /** @brief Remove configuration associated with the removed MCTP endpoints.
++     *
++     *  @param[in] removedMctpInfos - the removed MCTP endpoints
++     */
++    void handleRemovedMctpEndpoints(const MctpInfos& removedMctpInfos);
++
++    void updateMctpEndpointAvailability(const MctpInfo& /* mctpInfo */,
++                                        Availability /* availability */)
++    {}
++    /** @brief Get Active EIDs.
++     *
++     *  @param[in] addr - MCTP address of terminus
++     *  @param[in] terminiNames - MCTP terminus name
++     */
++    std::optional<mctp_eid_t> getActiveEidByName(
++        const std::string& /* terminusName */)
++    {
++        return std::nullopt;
++    }
++
++    /** @brief Get existing configurations.
++     *
++     *  @return The configurations.
++     */
++    std::map<eid, MctpEndpoint>& getConfigurations(void)
++    {
++        return configurations;
++    }
++
++  private:
++    /** @brief Search for associated configuration for the MctpInfo.
++     *
++     *  @param[in] mctpInfo - information of discovered MCTP endpoint
++     */
++    void searchConfigurationFor(MctpInfo mctpInfo);
++
++    /** @brief Append to configurations if Endpoint Id is matched.
++     *
++     *  @param[in] targetEid - discovered MCTP endpoint Id
++     *  @param[in] configPath - the Dbus path of a configuration
++     *  @param[in] serviceMap - the map contains the service's information who
++     * expose the configuration
++     */
++    void appendConfigIfEidMatch(
++        uint8_t targetEid, const std::string& configPath,
++        const pldm::utils::MapperServiceMap& serviceMap);
++
++    /** @brief Parse MctpEndpoint from the response of GetAll method.
++     *
++     *  @param[in] response - Response data of GetAll method
++     *
++     *  @return Parsed MctpEndpoint object.
++     */
++    MctpEndpoint parseMctpEndpointFromResponse(
++        const pldm::utils::PropertyMap& response);
++
++    /** @brief Append to configuration if the MctpEndpoint's EID matches
++     * targetEid.
++     *
++     *  @param[in] targetEid - The target EID
++     *  @param[in] configPath - Discovered configuration's Dbus path
++     *  @param[in] endpoint - The configuration's MctpEndpoint information.
++     */
++    void appendIfEidMatch(uint8_t targetEid, const std::string& configPath,
++                          const MctpEndpoint& endpoint);
++
++    /** @brief Remove configuration associated with the removed MCTP endpoint.
++     *
++     *  @param[in] eid - endpoint Id of the removed MCTP Endpoint
++     */
++    void removeConfigByEid(uint8_t eid);
++
++    /** @brief The configuration contains Dbus path and the MCTP endpoint
++     * information.
++     */
++    std::map<eid, MctpEndpoint> configurations;
++
++    /** @brief D-Bus Interface object*/
++    const pldm::utils::DBusHandler* dBusIntf;
++};
++
++class NoSuchPropertiesException : public std::exception
++{
++  public:
++    NoSuchPropertiesException() = delete;
++    ~NoSuchPropertiesException() = default;
++
++    explicit NoSuchPropertiesException(
++        const std::vector<std::string> properties)
++    {
++        std::string missingProperties{};
++        for (const auto& property : properties)
++        {
++            missingProperties = std::string(property) + " ";
++        }
++        message = "Interface has no properties: " + missingProperties;
++    }
++
++    const char* what() const noexcept override
++    {
++        return message.c_str();
++    }
++
++  private:
++    std::string message;
++};
++
++} // namespace pldm::oem_meta
+diff --git a/oem/meta/requester/meson.build b/oem/meta/requester/meson.build
+new file mode 100644
+index 0000000..2b69307
+--- /dev/null
++++ b/oem/meta/requester/meson.build
+@@ -0,0 +1 @@
++oem_files += files('configuration_discovery_handler.cpp')
+diff --git a/oem/meta/utils.cpp b/oem/meta/utils.cpp
+index 702cbd3..6563a45 100644
+--- a/oem/meta/utils.cpp
++++ b/oem/meta/utils.cpp
+@@ -2,12 +2,18 @@
+ 
+ #include "common/types.hpp"
+ 
++#include <phosphor-logging/lg2.hpp>
++PHOSPHOR_LOG2_USING;
++
+ namespace pldm::oem_meta
+ {
+ 
+ namespace
+ {
+ 
++/* @brief MCTP configurations handler */
++std::unique_ptr<ConfigurationDiscoveryHandler> configurationDiscovery{};
++
+ /* @brief map PLDM TID to MCTP EID; currently, they have a one-to-one
+  *        correspondence
+  */
+@@ -19,16 +25,122 @@ eid mapTIDtoEID(const pldm_tid_t& tid)
+ 
+ } // namespace
+ 
++namespace utils
++{
++
++void initConfigurationDiscoveryHandler(
++    const pldm::utils::DBusHandler* dbusHandler)
++{
++    configurationDiscovery =
++        std::make_unique<ConfigurationDiscoveryHandler>(dbusHandler);
++}
++
++ConfigurationDiscoveryHandler* getMctpConfigurationHandler()
++{
++    return configurationDiscovery.get();
++}
++
++} // namespace utils
++
+ bool checkMetaIana(const pldm_tid_t& tid)
+ {
+-    [[maybe_unused]] const eid& EID = mapTIDtoEID(tid);
++    static constexpr std::string MetaIANA = "0015A000";
++
++    const eid& EID = mapTIDtoEID(tid);
++    auto configurationIter =
++        configurationDiscovery->getConfigurations().find(EID);
++    if (configurationIter == configurationDiscovery->getConfigurations().end())
++    {
++        return false;
++    }
++
++    const MctpEndpoint& mctpEndpoint = configurationIter->second;
++    if (!mctpEndpoint.iana.has_value())
++    {
++        lg2::error("message iana do not have value");
++        return false;
++    }
++
++    if (mctpEndpoint.iana.value() != MetaIANA)
++    {
++        lg2::error("wrong iana {IANA}", "IANA", mctpEndpoint.iana.value());
++        return false;
++    }
++
+     return true;
+ }
+ 
+ std::string getSlotNumberStringByTID(const pldm_tid_t& tid)
+ {
+-    [[maybe_unused]] const eid& EID = mapTIDtoEID(tid);
+-    return std::string{"0"};
++    static const pldm::dbus::Property slotNumberProperty = "SlotNumber";
++    static const pldm::dbus::Interface slotInterface =
++        "xyz.openbmc_project.Inventory.Decorator.Slot";
++    static const pldm::dbus::Interfaces slotInterfaces = {slotInterface};
++
++    auto tryHardcodeSlotNumberStringByTID = [tid]() {
++        for (const auto& [_, mctpEndpoint] :
++             configurationDiscovery->getConfigurations())
++        {
++            if (mctpEndpoint.objectPath.find("Yosemite_4") != std::string::npos)
++            {
++                uint8_t slotNum = tid / 10;
++                warning(
++                    "Fallback: Found Yosemite_4 in configDbusPath {CONFIG_PATH}, using slot {SLOT} for TID {TID}",
++                    "CONFIG_PATH", mctpEndpoint.objectPath, "SLOT", slotNum,
++                    "TID", tid);
++                return std::to_string(slotNum);
++            }
++        }
++        return std::string{"0"};
++    };
++
++    const eid& EID = mapTIDtoEID(tid);
++    auto configurationIter =
++        configurationDiscovery->getConfigurations().find(EID);
++    if (configurationIter == configurationDiscovery->getConfigurations().end())
++    {
++        return tryHardcodeSlotNumberStringByTID();
++    }
++
++    pldm::utils::GetAncestorsResponse response;
++    const MctpEndpoint& mctpEndpoint = configurationIter->second;
++    try
++    {
++        response = pldm::utils::DBusHandler().getAncestors(
++            mctpEndpoint.objectPath.c_str(), slotInterfaces);
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        error(
++            "GetAncestors call failed with error code {ERROR}, path {PATH} and interface {INTERFACE}",
++            "ERROR", e, "PATH", mctpEndpoint.objectPath.c_str(), "INTERFACE",
++            slotInterface);
++        return tryHardcodeSlotNumberStringByTID();
++    }
++    if (response.size() != 1)
++    {
++        error("Get invalide number {SIZE} of slot property", "SIZE",
++              response.size());
++        return tryHardcodeSlotNumberStringByTID();
++    }
++
++    uint64_t slotNum = 0;
++    try
++    {
++        slotNum = pldm::utils::DBusHandler().getDbusProperty<uint64_t>(
++            std::get<0>(response.front()).c_str(), slotNumberProperty.c_str(),
++            slotInterface.c_str());
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        warning(
++            "Getting SlotNumber property with warning {WARNING}, path {PATH} and interface {INTERFACE}",
++            "WARNING", e, "PATH", std::get<0>(response.front()).c_str(),
++            "INTERFACE", slotInterface);
++        return tryHardcodeSlotNumberStringByTID();
++    }
++
++    return std::to_string(slotNum);
+ }
+ 
+ } // namespace pldm::oem_meta
+diff --git a/oem/meta/utils.hpp b/oem/meta/utils.hpp
+index b8674e9..28f63ed 100644
+--- a/oem/meta/utils.hpp
++++ b/oem/meta/utils.hpp
+@@ -1,5 +1,7 @@
+ #pragma once
+ 
++#include "requester/configuration_discovery_handler.hpp"
++
+ #include <libpldm/base.h>
+ 
+ #include <string>
+@@ -7,6 +9,24 @@
+ namespace pldm::oem_meta
+ {
+ 
++namespace utils
++{
++
++/** @brief Construct unique_ptr to ConfigurationDiscoveryHandler for mctp
++ *         endpoint discovery
++ */
++void initConfigurationDiscoveryHandler(
++    const pldm::utils::DBusHandler* dbusHandler);
++
++/** @brief return pointer to ConfigurationDiscoveryHandler for mctp endpoint
++ *         discovery
++ *
++ *  @param[out] pointer to ConfigurationDiscoveryHandler
++ */
++ConfigurationDiscoveryHandler* getMctpConfigurationHandler();
++
++} // namespace utils
++
+ /**
+  * @brief Check the IANA of the MCTP endpoint device that sent the OEM message.
+  *
+diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
+index 8df1b50..9f890ea 100644
+--- a/pldmd/pldmd.cpp
++++ b/pldmd/pldmd.cpp
+@@ -343,7 +343,12 @@ int main(int argc, char** argv)
+                                              instanceIdDb);
+     MctpDiscovery mctpDiscoveryHandler(
+         bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
++#ifdef OEM_META
++                 fwManager.get(), platformManager.get(),
++                 oemMETA.getMctpConfigurationHandler()});
++#else
+                  fwManager.get(), platformManager.get()});
++#endif
+     auto callback = [verbose, &invoker, &reqHandler, &fwManager, &pldmTransport,
+                      TID](IO& io, int fd, uint32_t revents) mutable {
+         if (revents & (POLLHUP | POLLERR))
+-- 
+2.53.0-Meta
+

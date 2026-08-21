@@ -1,0 +1,234 @@
+From 8e3e66c9f2ab282dec7bed2596525347d01dc734 Mon Sep 17 00:00:00 2001
+From: Alan Tsai <Alan-Tsai@quantatw.com>
+Date: Fri, 31 Jul 2026 10:20:07 +0800
+Subject: [PATCH] arm64: dts: add ast2700 mipi-i3c-hci controller nodes from
+ AspeedTech to aspeed-g7-common.dtsi
+
+This driver is referenced from below link:
+Link: https://github.com/AspeedTech-BMC/linux/commit/0fac7a7c2839f5566c6ad9931020bcf5860a126b
+---
+ .../boot/dts/aspeed/aspeed-g7-common.dtsi     | 208 ++++++++++++++++++
+ 1 file changed, 208 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
+index 3ceb82197..66c22532b 100644
+--- a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
++++ b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
+@@ -225,6 +225,214 @@ i2c: bus@14c0f000 {
+ 		ranges = <0x0 0x0 0x14c0f000 0x1100>;
+ 	};
+ 
++	i3c0: i3c0@14c20000 {
++		compatible = "aspeed-i3c-hci";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c20000 0x0 0x1000>;
++		interrupts-extended = <&intc1 96>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C0CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C0>, <&syscon1 SCU1_RESET_I3CDMA>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_hvi3c0_default>;
++		status = "disabled";
++	};
++
++	i3c1: i3c1@14c21000 {
++		compatible = "aspeed-i3c-hci";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c21000 0x0 0x1000>;
++		interrupts-extended = <&intc1 97>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C1CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C1>, <&syscon1 SCU1_RESET_I3CDMA>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_hvi3c1_default>;
++		status = "disabled";
++	};
++
++	i3c2: i3c2@14c22000 {
++		compatible = "aspeed-i3c-hci";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c22000 0x0 0x1000>;
++		interrupts-extended = <&intc1 98>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C2CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C2>, <&syscon1 SCU1_RESET_I3CDMA>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_hvi3c2_default>;
++		status = "disabled";
++	};
++
++	i3c3: i3c3@14c23000 {
++		compatible = "aspeed-i3c-hci";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c23000 0x0 0x1000>;
++		interrupts-extended = <&intc1 99>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C3CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C3>, <&syscon1 SCU1_RESET_I3CDMA>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_hvi3c3_default>;
++		status = "disabled";
++	};
++
++	i3c4: i3c4@14c24000 {
++		compatible = "aspeed-i3c-hci";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c24000 0x0 0x1000>;
++		interrupts-extended = <&intc1 100>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C4CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C4>, <&syscon1 SCU1_RESET_I3CDMA>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_i3c4_default>;
++		status = "disabled";
++	};
++
++	i3c5: i3c5@14c25000 {
++		compatible = "aspeed-i3c-hci";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c25000 0x0 0x1000>;
++		interrupts-extended = <&intc1 101>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C5CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C5>, <&syscon1 SCU1_RESET_I3CDMA>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_i3c5_default>;
++		status = "disabled";
++	};
++
++	i3c6: i3c6@14c26000 {
++		compatible = "aspeed-i3c-hci";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c26000 0x0 0x1000>;
++		interrupts-extended = <&intc1 102>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C6CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C6>, <&syscon1 SCU1_RESET_I3CDMA>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_i3c6_default>;
++		status = "disabled";
++	};
++
++	i3c7: i3c7@14c27000 {
++		compatible = "aspeed-i3c-hci";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c27000 0x0 0x1000>;
++		interrupts-extended = <&intc1 103>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C7CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C7>, <&syscon1 SCU1_RESET_I3CDMA>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_i3c7_default>;
++		status = "disabled";
++	};
++
++	i3c8: i3c8@14c28000 {
++		compatible = "aspeed-i3c-hci";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c28000 0x0 0x1000>;
++		interrupts-extended = <&intc1 104>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C8CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C8>, <&syscon1 SCU1_RESET_I3CDMA>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_i3c8_default>;
++		status = "disabled";
++	};
++
++	i3c9: i3c9@14c29000 {
++		compatible = "aspeed-i3c-hci";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c29000 0x0 0x1000>;
++		interrupts-extended = <&intc1 105>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C9CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C9>, <&syscon1 SCU1_RESET_I3CDMA>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_i3c9_default>;
++		status = "disabled";
++	};
++
++	i3c10: i3c10@14c2a000 {
++		compatible = "aspeed-i3c-hci";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c2a000 0x0 0x1000>;
++		interrupts-extended = <&intc1 106>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C10CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C10>, <&syscon1 SCU1_RESET_I3CDMA>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_i3c10_default>;
++		status = "disabled";
++	};
++
++	i3c11: i3c11@14c2b000 {
++		compatible = "aspeed-i3c-hci";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c2b000 0x0 0x1000>;
++		interrupts-extended = <&intc1 107>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C11CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C11>, <&syscon1 SCU1_RESET_I3CDMA>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_i3c11_default>;
++		status = "disabled";
++	};
++
++	i3c12: i3c12@14c2c000 {
++		compatible = "aspeed-i3c-hci";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c2c000 0x0 0x1000>;
++		interrupts-extended = <&intc1 108>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C12CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C12>, <&syscon1 SCU1_RESET_I3CDMA>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_hvi3c12_default>;
++		status = "disabled";
++	};
++
++	i3c13: i3c13@14c2d000 {
++		compatible = "aspeed-i3c-hci";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c2d000 0x0 0x1000>;
++		interrupts-extended = <&intc1 109>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C13CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C13>, <&syscon1 SCU1_RESET_I3CDMA>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_hvi3c13_default>;
++		status = "disabled";
++	};
++
++	i3c14: i3c14@14c2e000 {
++		compatible = "aspeed-i3c-hci";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c2e000 0x0 0x1000>;
++		interrupts-extended = <&intc1 110>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C14CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C14>, <&syscon1 SCU1_RESET_I3CDMA>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_hvi3c14_default>;
++		status = "disabled";
++	};
++
++	i3c15: i3c15@14c2f000 {
++		compatible = "aspeed-i3c-hci";
++		#address-cells = <1>;
++		#size-cells = <0>;
++		reg = <0x0 0x14c2f000 0x0 0x1000>;
++		interrupts-extended = <&intc1 111>;
++		clocks = <&syscon1 SCU1_CLK_GATE_I3C15CLK>;
++		resets = <&syscon1 SCU1_RESET_I3C15>, <&syscon1 SCU1_RESET_I3CDMA>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_hvi3c15_default>;
++		status = "disabled";
++	};
++
+ 	otp: otp@14c07000 {
+ 		compatible = "aspeed,ast2700-otp";
+ 		reg = <0 0x14c07000 0 0x1000>;
+-- 
+2.53.0-Meta
+

@@ -36,6 +36,7 @@ PLATFORMS = [
     "morgan800cc",
     "northdome",
     "rainiera6",
+    "rainiera7",
     "sanmiguel",
     "santabarbara",
     "tahan",
@@ -47,4 +48,5 @@ PLATFORMS = [
     "yosemite",
     "yosemite4",
     "yosemite5",
+    "yosemite5a7",
 ]

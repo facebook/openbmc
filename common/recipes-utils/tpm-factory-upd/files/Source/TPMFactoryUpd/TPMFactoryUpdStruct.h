@@ -3,7 +3,7 @@
  *  @details
  *  @file       TPMFactoryUpdStruct.h
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -75,7 +75,9 @@ typedef enum td_ENUM_UPDATE_TYPES
     /// Update type for using settings from configuration file
     UPDATE_TYPE_CONFIG_FILE = 4,
     /// Update type for TPM1.2 with owner authorization provided
-    UPDATE_TYPE_TPM12_OWNERAUTH = 5
+    UPDATE_TYPE_TPM12_OWNERAUTH = 5,
+    /// Update type for TPM2.0 using platform policy
+    UPDATE_TYPE_TPM20_PLATFORMPOLICY = 6,
 } ENUM_UPDATE_TYPES;
 
 /**
@@ -140,6 +142,10 @@ typedef struct tdIfxInfo
     unsigned int            unRemainingUpdates;
     /// Number of remaining updates on same version
     unsigned int            unRemainingUpdatesSelf;
+#ifdef WINDOWS
+    /// TPM firmware update commands will be blocked by TBS
+    BOOL                    fFuCommandsBlocked;
+#endif
 } IfxInfo;
 
 /**

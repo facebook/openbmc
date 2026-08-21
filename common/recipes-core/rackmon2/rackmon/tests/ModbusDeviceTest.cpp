@@ -43,7 +43,7 @@ class ModbusDeviceTest : public ::testing::Test {
   std::string regmap_s = R"({
     "name": "orv3_psu",
     "address_range": [[110, 140]],
-    "probe_register": 104,
+    "probe": [{"register": 104}],
     "baudrate": 19200,
     "registers": [
       {
@@ -632,138 +632,11 @@ class MockModbusDevice : public ModbusDevice {
   MOCK_METHOD3(command, void(Msg&, Msg&, ModbusTime));
 };
 
-class MockSpecialHandler : public ModbusSpecialHandler {
-  time_t currTime_ = 1024;
-
- public:
-  explicit MockSpecialHandler(uint8_t deviceAddress)
-      : ModbusSpecialHandler(deviceAddress) {}
-  time_t getTime() override {
-    return currTime_;
-  }
-  void incrementTimeBy(time_t incTime) {
-    currTime_ += incTime;
-  }
-};
-
-TEST(ModbusSpecialHandler, BasicHandlingStringValuePeriodic) {
-  Modbus mock_modbus{};
-  RegisterMap mock_rmap = R"({
-    "name": "orv3_psu",
-    "address_range": [[110, 140]],
-    "probe_register": 104,
-    "baudrate": 19200,
-    "registers": [
-      {
-        "begin": 0,
-        "length": 2,
-        "name": "MFG_MODEL"
-      }
-    ]
-  })"_json;
-  MockModbusDevice dev(mock_modbus, 0x32, mock_rmap);
-
-  EXPECT_CALL(
-      dev,
-      command(
-          // addr(1) = 0x32,
-          // func(1) = 0x10,
-          // reg_off(2) = 0x000a (10),
-          // reg_cnt(2) = 0x0002
-          // bytes(1) = 0x04,
-          // data(2*2) = 0x3031 0x3233
-          encodeMsgContentEqual(0x3210000a00020430313233_EM),
-          _,
-          _))
-      .Times(Between(2, 3));
-  MockSpecialHandler special(0x32);
-  SpecialHandlerInfo& info = special;
-  info = R"({
-    "reg": 10,
-    "len": 2,
-    "period": 10,
-    "action": "write",
-    "info": {
-      "interpret": "STRING",
-      "value": "0123"
-    }
-  })"_json;
-
-  special.handle(dev);
-  // Fake advance time by 2s
-  special.incrementTimeBy(2);
-  special.handle(
-      dev); // Since the period is 10, this should technically do nothing.
-  // Fake advance time by another 4s.
-  special.incrementTimeBy(4);
-  special.handle(
-      dev); // This should do nothing as well, we are less than 10 sec.
-  // Fake advance by 5s.
-  special.incrementTimeBy(5);
-  special.handle(dev); // This should call! we are 11s out from first handle.
-}
-
-TEST(ModbusSpecialHandler, BasicHandlingIntegerOneShot) {
-  Modbus mock_modbus{};
-  RegisterMap mock_rmap = R"({
-    "name": "orv3_psu",
-    "address_range": [[110, 140]],
-    "probe_register": 104,
-    "baudrate": 19200,
-    "registers": [
-      {
-        "begin": 0,
-        "length": 2,
-        "name": "MFG_MODEL"
-      }
-    ]
-  })"_json;
-  MockModbusDevice dev(mock_modbus, 0x32, mock_rmap);
-
-  EXPECT_CALL(
-      dev,
-      command(
-          // addr(1) = 0x32,
-          // func(1) = 0x10,
-          // reg_off(2) = 0x000a (10),
-          // reg_cnt(2) = 0x0002
-          // bytes(1) = 0x04,
-          // data(2*2) = 0x00bc 0x614e (hex for int 12345678)
-          encodeMsgContentEqual(0x3210000a00020400bc614e_EM),
-          _,
-          _))
-      .Times(1);
-  MockSpecialHandler special(0x32);
-  SpecialHandlerInfo& info = special;
-  info = R"({
-    "reg": 10,
-    "len": 2,
-    "period": -1,
-    "action": "write",
-    "info": {
-      "interpret": "INTEGER",
-      "shell": "echo 12345678"
-    }
-  })"_json;
-  // 12345678 == 0x00bc614e
-
-  special.handle(dev);
-  special.incrementTimeBy(1);
-  special.handle(dev); // Do the same as above, but the call should happen only
-                       // once since period = -1
-  // fake advance clocks by 10 and 20 seconds and at each time we should
-  // not incur any further handling.
-  special.incrementTimeBy(10);
-  special.handle(dev);
-  special.incrementTimeBy(20);
-  special.handle(dev);
-}
-
 static nlohmann::json getPlanRegmap() {
   std::string regmap_s = R"({
     "name": "orv3_psu",
     "address_range": [[5, 5]],
-    "probe_register": 0,
+    "probe": [{"register": 0}],
     "baudrate": 19200,
     "registers": [
       {
@@ -1045,4 +918,100 @@ TEST_F(ModbusDeviceTest, ForceReloadGetValueData) {
     EXPECT_EQ(
         std::get<int64_t>(data.registerList[1].history[1].value), 0x76543210);
   }
+}
+
+static nlohmann::json getTimeSyncRegmap() {
+  std::string regmap_s = R"({
+    "name": "orv3_psu",
+    "address_range": [[5, 5]],
+    "probe": [{"register": 0}],
+    "baudrate": 19200,
+    "time_sync": {
+      "address": 4,
+      "interval": 10
+    },
+    "max_span_length": 0,
+    "registers": [
+      {
+        "begin": 0,
+        "length": 2,
+        "keep": 2,
+        "format": "LONG",
+        "name": "THING1"
+      }
+    ]
+  })";
+  return nlohmann::json::parse(regmap_s);
+}
+
+TEST_F(ModbusDeviceTest, TimeSync) {
+  RegisterMap regmap = getTimeSyncRegmap();
+  InSequence seq;
+  // First write timestamp.
+  EXPECT_CALL(
+      get_modbus(),
+      command(
+          // addr(1) = 0x5,
+          // func(1) = 0x10,
+          // reg_off(2) = 0x0004,
+          // reg_cnt(2) = 0x0002,
+          // bytes(1) = 0x0004,
+          // upper reg = 0x0000,
+          // lower reg = 0x0042
+          encodeMsgContentEqual(0x0510000400020400000042_EM),
+          _,
+          19200,
+          ModbusTime::zero(),
+          _))
+      .Times(1)
+      .WillOnce(SetMsgDecode<1>(0x051000040002_EM))
+      .RetiresOnSaturation();
+  // First reload reads THING1 at offset 0.
+  // Returns 0x89abcdef
+  EXPECT_CALL(
+      get_modbus(),
+      command(
+          // addr(1) = 0x5,
+          // func(1) = 0x03,
+          // reg_off(2) = 0x0000,
+          // reg_cnt(2) = 0x0002
+          encodeMsgContentEqual(0x050300000002_EM),
+          _,
+          19200,
+          ModbusTime::zero(),
+          _))
+      .Times(1)
+      .WillOnce(SetMsgDecode<1>(0x05030489abcdef_EM))
+      .RetiresOnSaturation();
+  // Second write time, now with the advanced time value 0x52.
+  //
+  EXPECT_CALL(
+      get_modbus(),
+      command(
+          // addr(1) = 0x5,
+          // func(1) = 0x10,
+          // reg_off(2) = 0x0004,
+          // reg_cnt(2) = 0x0002,
+          // bytes(1) = 0x0004,
+          // upper reg = 0x0000,
+          // lower reg = 0x0052
+          encodeMsgContentEqual(0x0510000400020400000052_EM),
+          _,
+          19200,
+          ModbusTime::zero(),
+          _))
+      .Times(1)
+      .WillOnce(SetMsgDecode<1>(0x051000040002_EM))
+      .RetiresOnSaturation();
+
+  time_t baseTime = 0x42;
+  constexpr time_t timeSyncInterval = 16;
+  ModbusDeviceMockTime dev(get_modbus(), 0x5, regmap, baseTime);
+
+  // We expect time to be written with 0x42 and one register to be read.
+  dev.reloadAllRegisters();
+  dev.incTime(timeSyncInterval);
+
+  // No registers should be read. Only time sync reg written with value 0x52
+  dev.reloadAllRegisters();
 }

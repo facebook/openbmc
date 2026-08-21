@@ -1,4 +1,4 @@
-From 1d047c942355de9123cd7949a5c8ee9825e4c9b0 Mon Sep 17 00:00:00 2001
+From b23d4c75687201eea4e0fc3a097e66427a31b794 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 2 Oct 2025 11:13:35 +0800
 Subject: [PATCH] Arm64: aspeed: dts: add yosemite5 dts
@@ -16,13 +16,13 @@ index ffe7e1501..f19cb564f 100644
 +++ b/arch/arm64/boot/dts/aspeed/Makefile
 @@ -1,4 +1,5 @@
  # SPDX-License-Identifier: GPL-2.0
-
+ 
  dtb-$(CONFIG_ARCH_ASPEED) += \
 +	aspeed-bmc-facebook-yosemite5a7.dtb \
  	ast2700-evb.dtb
 diff --git a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
 new file mode 100644
-index 000000000..2cde05662
+index 000000000..38ac86dbc
 --- /dev/null
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
 @@ -0,0 +1,1385 @@
@@ -275,7 +275,7 @@ index 000000000..2cde05662
 +		/*N0-N7*/ "","","","","","SPI_BMC_OOB_0_CS2_N","FM_DBP_CPU_PREQ_GF_N","SYS_RST_OUT",
 +		/*O0-O7*/ "","","","","SYS_BMC_PWRBTN_N","FM_TPM_PRSNT_1_N","CHASSIS_AC_LOSS","BSM_PRSNT_N",
 +		/*P0-P7*/ "","","","","","BATTERY_DETECT","IRQ_TPM_SPI_N","",
-+		/*Q0-Q7*/ "","","","","","","","BMC_EMMC_RST_N",
++		/*Q0-Q7*/ "","","JTAG_1_BMC_TRST","JTAG_1_BMC_TCK","JTAG_1_BMC_TMS","JTAG_1_BMC_TDI","JTAG_1_BMC_TDO","BMC_EMMC_RST_N",
 +		/*R0-R7*/ "","BMC_I2C_SSIF_ALERT","","","","","","",
 +		/*S0-S7*/ "","","PMBUS_REQ_N","PSU_FW_UPDATE_REQ_N","","","","",
 +		/*T0-T7*/ "","","","","","","","",
@@ -385,7 +385,7 @@ index 000000000..2cde05662
 +
 +&i2c2 {
 +	status = "okay";
-+	clock-frequency = <95000>;
++	i2c-clk-high-min-percent = <50>;
 +
 +	/* I2C MUX for PWRPIC #13 ~ #16 */
 +	i2c-mux@77 {
@@ -486,9 +486,9 @@ index 000000000..2cde05662
 +			"SLOT3_CM_UPDATE","SLOT4_CM_UPDATE",
 +			"SLOT5_CM_UPDATE","SLOT6_CM_UPDATE",
 +			"","",
-+			"","",
-+			"","",
-+			"","",
++			"SLOT1_PRSNT_N","SLOT2_PRSNT_N",
++			"SLOT3_PRSNT_N","SLOT4_PRSNT_N",
++			"SLOT5_PRSNT_N","SLOT6_PRSNT_N",
 +			"","";
 +	};
 +
@@ -1307,13 +1307,13 @@ index 000000000..2cde05662
 +	"","",
 +	"","",
 +	"","",
-+	"","",
-+	"","",
++	"PRSNT_BOOT_N","",
++	"PRSNT_MCIO1A_N","",
 +	"","",
 +	/*bit120-bit127*/
 +	"","",
 +	"","",
-+	"","",
++	"PRSNT_CXL_N","",
 +	"","",
 +	"","",
 +	"","",
@@ -1411,6 +1411,6 @@ index 000000000..2cde05662
 +&pinctrl_rmii0_default {
 +	drive-strength = <16>;
 +};
---
+-- 
 2.53.0
 

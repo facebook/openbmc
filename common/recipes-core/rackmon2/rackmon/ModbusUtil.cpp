@@ -1,37 +1,257 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
 #include <CLI/CLI.hpp>
 #include <sys/file.h>
+#include <systemd/sd-bus.h>
 #include <unistd.h>
+#include <chrono>
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
+#include <regex>
+#include <thread>
 #include "InterfaceScanner.h"
 #include "Log.h"
 #include "Modbus.h"
 #include "ModbusDevice.h"
 #include "Msg.h"
+#include "UnixSock.h"
 
 using nlohmann::json;
 
-struct RackmondLock {
-  int fd = -1;
-  RackmondLock() {
-    fd = open("/var/run/rackmond.lock", O_CREAT | O_RDWR, 0666);
-    if (fd < 0) {
-      logError << "Cannot create/open /var/run/rackmond.lock" << std::endl;
-      throw std::runtime_error("Cannot create!");
-    }
-    if (flock(fd, LOCK_EX | LOCK_NB) < 0) {
-      close(fd);
-      fd = -1;
-      throw std::runtime_error("You need to stop rackmond to use this utility");
+struct ServiceExclusionBase {
+  sd_bus* bus = nullptr;
+  std::string serviceName;
+
+  explicit ServiceExclusionBase(const std::string& svcName)
+      : serviceName(svcName) {
+    if (sd_bus_default_system(&bus) < 0) {
+      throw std::runtime_error("Failed to open system bus");
     }
   }
-  ~RackmondLock() {
-    if (fd < 0)
+  virtual ~ServiceExclusionBase() {
+    sd_bus_unref(bus);
+  }
+
+  void init() {
+    if (!isServiceRunning()) {
       return;
-    flock(fd, LOCK_UN);
-    close(fd);
+    }
+    if (serviceAction(false)) {
+      stopped_ = true;
+    }
+  }
+  void deinit() {
+    if (stopped_) {
+      serviceAction(true);
+    }
+    stopped_ = false;
+  }
+
+ private:
+  bool stopped_ = false;
+
+  bool isServiceRunning() {
+    auto unitName = serviceName + ".service";
+    auto stubbedUnitName =
+        std::regex_replace(unitName, std::regex("\\."), "_2e");
+    std::string objPath = "/org/freedesktop/systemd1/unit/" + stubbedUnitName;
+    sd_bus_error error = SD_BUS_ERROR_NULL;
+    char* cstate = nullptr;
+    int r = sd_bus_get_property_string(
+        bus,
+        "org.freedesktop.systemd1",
+        objPath.c_str(),
+        "org.freedesktop.systemd1.Unit",
+        "UnitFileState",
+        &error,
+        &cstate);
+    if (r < 0) {
+      sd_bus_error_free(&error);
+      return false;
+    }
+    std::string fileState(cstate);
+    free(cstate);
+    sd_bus_error_free(&error);
+    if (fileState != "enabled") {
+      return false;
+    }
+
+    error = SD_BUS_ERROR_NULL;
+    cstate = nullptr;
+    r = sd_bus_get_property_string(
+        bus,
+        "org.freedesktop.systemd1",
+        objPath.c_str(),
+        "org.freedesktop.systemd1.Unit",
+        "ActiveState",
+        &error,
+        &cstate);
+    if (r < 0) {
+      sd_bus_error_free(&error);
+      return false;
+    }
+    std::string activeState(cstate);
+    free(cstate);
+    sd_bus_error_free(&error);
+
+    if (activeState != "active") {
+      return false;
+    }
+    return true;
+  }
+
+ protected:
+  virtual bool serviceAction(bool start) = 0;
+};
+
+struct RackmonExclusion : public ServiceExclusionBase {
+  RackmonExclusion() : ServiceExclusionBase("rackmond") {}
+  bool serviceAction(bool start) override {
+    json req;
+    req["type"] = start ? "resume" : "pause";
+    rackmonsvc::RackmonClient cli;
+    std::string resp = cli.request(req.dump());
+    json resp_j = json::parse(resp);
+    std::string status;
+    resp_j.at("status").get_to(status);
+    if (status != "SUCCESS") {
+      std::cerr << "ACTION: " << req["type"] << " failed" << std::endl;
+      return false;
+    }
+    return true;
+  }
+};
+
+struct PhosphorModbusExclusion : public ServiceExclusionBase {
+  static constexpr auto kService = "xyz.openbmc_project.ModbusRTU";
+  static constexpr auto kPortNamespace = "/xyz/openbmc_project/control/port";
+  static constexpr auto kPortInterface = "xyz.openbmc_project.Control.Port";
+  static constexpr auto kMonitoringEnabled = "MonitoringEnabled";
+  std::string ttyName;
+  std::vector<std::string> changedPaths;
+
+  explicit PhosphorModbusExclusion(const std::string& tty)
+      : ServiceExclusionBase(kService),
+        ttyName(std::filesystem::path(tty).filename()) {
+    // DBus Object paths cannot have -.
+    std::replace(ttyName.begin(), ttyName.end(), '-', '_');
+  }
+
+  bool changeProperty(const std::string& path, bool start) {
+    sd_bus_error error = SD_BUS_ERROR_NULL;
+    int r = sd_bus_set_property(
+        bus,
+        kService,
+        path.c_str(),
+        kPortInterface,
+        kMonitoringEnabled,
+        &error,
+        "b",
+        static_cast<int>(start));
+    if (r < 0) {
+      std::cerr << "Failed to set " << kMonitoringEnabled << " on " << path
+                << ": " << (error.message ? error.message : "unknown error")
+                << std::endl;
+      sd_bus_error_free(&error);
+      return false;
+    }
+    return true;
+  }
+
+  bool stopMonitoring() {
+    std::vector<std::string> portPaths;
+    if (!getPortPaths(portPaths)) {
+      return false;
+    }
+    for (const auto& path : portPaths) {
+      if (std::filesystem::path(path).filename() != ttyName) {
+        continue;
+      }
+      if (!changeProperty(path, false)) {
+        startMonitoring();
+        return false;
+      }
+      changedPaths.push_back(path);
+    }
+    return true;
+  }
+
+  bool startMonitoring() {
+    for (const auto& path : changedPaths) {
+      changeProperty(path, true);
+    }
+    changedPaths.clear();
+    return true;
+  }
+
+  bool serviceAction(bool start) override {
+    return start ? startMonitoring() : stopMonitoring();
+  }
+
+ private:
+  // Enumerate the serial port objects exported under the port-control
+  // namespace via the service's ObjectManager.
+  bool getPortPaths(std::vector<std::string>& portPaths) {
+    sd_bus_error error = SD_BUS_ERROR_NULL;
+    sd_bus_message* reply = nullptr;
+    int r = sd_bus_call_method(
+        bus,
+        kService,
+        kPortNamespace,
+        "org.freedesktop.DBus.ObjectManager",
+        "GetManagedObjects",
+        &error,
+        &reply,
+        "");
+    if (r < 0) {
+      std::cerr << "Failed to enumerate ports under " << kPortNamespace << ": "
+                << (error.message ? error.message : "unknown error")
+                << std::endl;
+      sd_bus_error_free(&error);
+      return false;
+    }
+
+    r = sd_bus_message_enter_container(
+        reply, SD_BUS_TYPE_ARRAY, "{oa{sa{sv}}}");
+    if (r < 0) {
+      sd_bus_error_free(&error);
+      sd_bus_message_unref(reply);
+      return false;
+    }
+    while (sd_bus_message_enter_container(
+               reply, SD_BUS_TYPE_DICT_ENTRY, "oa{sa{sv}}") > 0) {
+      const char* objPath = nullptr;
+      if (sd_bus_message_read(reply, "o", &objPath) < 0) {
+        break;
+      }
+      portPaths.emplace_back(objPath);
+      sd_bus_message_skip(reply, "a{sa{sv}}");
+      sd_bus_message_exit_container(reply);
+    }
+    sd_bus_message_exit_container(reply);
+
+    sd_bus_error_free(&error);
+    sd_bus_message_unref(reply);
+    return true;
+  }
+};
+
+struct ServiceExclusion {
+  std::unique_ptr<RackmonExclusion> rackmonLock;
+  std::unique_ptr<PhosphorModbusExclusion> modbusLock;
+  ServiceExclusion(const std::string& tty)
+      : rackmonLock(std::make_unique<RackmonExclusion>()),
+        modbusLock(std::make_unique<PhosphorModbusExclusion>(tty)) {
+    rackmonLock->init();
+    modbusLock->init();
+
+    // Wait for the service to settle down after we've paused it.
+    std::this_thread::sleep_for(std::chrono::seconds(5));
+  }
+
+  ~ServiceExclusion() {
+    modbusLock->deinit();
+    rackmonLock->deinit();
   }
 };
 
@@ -262,7 +482,7 @@ int main(int argc, char* argv[]) {
   write->add_option("values", wValues, "Value(s) to write")->required();
 
   CLI11_PARSE(app, argc, argv);
-  RackmondLock lock;
+  ServiceExclusion serviceExclusion(tty);
 
   json intf;
   intf["device_path"] = tty;

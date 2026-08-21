@@ -1,0 +1,40 @@
+From 9bec29bfd34239254912f95fee4bf1805caf4e50 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Thu, 14 May 2026 08:28:07 +0800
+Subject: [PATCH] configurations: nvidia: cable_cartridge: change cable
+ cartridge index mapping
+
+Changge cable cartridge index mapping to support VR200 related platfrom.
+
+Cable cartiage FRU I2C bus address:
+- 90-0053: NVIDIA Cable Cartridge 0
+- 90-0054: NVIDIA Cable Cartridge 1
+- 90-0055: NVIDIA Cable Cartridge 2
+- 90-0056: NVIDIA Cable Cartridge 3
+
+Change-Id: I546a2a4aefc3296e823ade7ee5115b43ab665acd
+---
+ configurations/nvidia/cable_cartridge.json | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/configurations/nvidia/cable_cartridge.json b/configurations/nvidia/cable_cartridge.json
+index c5953a0..b7d4b05 100644
+--- a/configurations/nvidia/cable_cartridge.json
++++ b/configurations/nvidia/cable_cartridge.json
+@@ -3,11 +3,11 @@
+         {
+             "Address": "$address",
+             "Bus": "$bus",
+-            "Name": "NVIDIA CBC FRU $bus + 1 % 2 * 2 + $address % 2",
++            "Name": "NVIDIA CBC FRU $address - 83",
+             "Type": "EEPROM"
+         }
+     ],
+-    "Name": "NVIDIA Cable Cartridge $bus + 1 % 2 * 2 + $address % 2",
++    "Name": "NVIDIA Cable Cartridge $address - 83",
+     "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': '18x1RU CBL Cartridge', 'BOARD_MANUFACTURER': '(Nvidia|NVIDIA)'})",
+     "Type": "Board",
+     "xyz.openbmc_project.Inventory.Decorator.Asset": {
+-- 
+2.53.0-Meta
+

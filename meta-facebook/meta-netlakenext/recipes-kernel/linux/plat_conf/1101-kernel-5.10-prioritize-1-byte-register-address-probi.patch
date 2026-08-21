@@ -1,0 +1,97 @@
+From 67ab4e6b6594e0e9af591f8ab40162e8c4026c06 Mon Sep 17 00:00:00 2001
+From: Zane Li <zane.li.wiwynn@gmail.com>
+Date: Tue, 3 Feb 2026 07:55:11 +0000
+Subject: [PATCH] kernel 5.10: prioritize 1-byte register address probing
+
+Description:
+- The driver will now attempt to read the device's revision
+  using a 1-byte address first, falling back to a 2-byte address
+  only if the initial attempt fails.
+
+Motivation:
+- The previous logic prioritized 2-byte addressing to support "Turin"
+  platforms where 1-byte accesses could cause errors. However, on
+  non-Turin platforms expecting a 1-byte address.
+
+- Prioritizing the more common 1-byte access improves compatibility
+  and prevents these bus conflicts.
+
+Signed-off-by: Howard Chang <Howard_Chang@wiwynn.com>
+---
+ drivers/apml/sbrmi.c | 39 ++++++++-------------------------------
+ 1 file changed, 8 insertions(+), 31 deletions(-)
+
+diff --git a/drivers/apml/sbrmi.c b/drivers/apml/sbrmi.c
+index 1a5a21566..d0d6ff5bd 100644
+--- a/drivers/apml/sbrmi.c
++++ b/drivers/apml/sbrmi.c
+@@ -387,31 +387,17 @@ static int sbrmi_i2c_reg_read(struct i2c_client *i2cdev, int reg_size, u32 *val)
+ static int sbrmi_i2c_identify_reg_addr_size(struct i2c_client *i2c, u32 *size, u32 *rev)
+ {
+ 	u32 reg_size;
+-	int ret, i;
+-
+-	reg_size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
+-
+-	/*
+-	 * Sending 1 byte address size in Turin cause unrecoverable error
+-	 * Before trying to switch to 1 bytes, retry. 
+-	 */
+-	for (i = 0; i < MAX_RETRY; i++) {
+-		ret = sbrmi_i2c_reg_read(i2c, reg_size, rev);
+-		if (ret != I3C_I2C_MSG_XFER_SIZE) {
+-			usleep_range(10000, 20000);
+-			continue;
+-		} else {
+-			break;
+-		}
+-	}
++	int ret;
+ 
++	reg_size = SBRMI_REG_ADDR_SIZE_DEF;
++	ret = sbrmi_i2c_reg_read(i2c, reg_size, rev);
+ 	/*
+ 	 * Validate the rev value is not 0xFF, as this value can be incorrectly cached
+ 	 * when executing 2-byte address operations on SBRMI rev 0x10.
+ 	 * For SBRMI rev 0x20 an error is returned.
+ 	 */
+ 	if (ret != I3C_I2C_MSG_XFER_SIZE || *rev == 0xFF) {
+-		reg_size = SBRMI_REG_ADDR_SIZE_DEF;
++		reg_size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
+ 		ret = sbrmi_i2c_reg_read(i2c, reg_size, rev);
+ 		if (ret != I3C_I2C_MSG_XFER_SIZE) {
+ 			pr_err("I2C reg read failed with return value:%d\n", ret);
+@@ -504,26 +490,17 @@ static int sbrmi_i3c_reg_read(struct i3c_device *i3cdev, int reg_size, u32 *val)
+ static int sbrmi_i3c_identify_reg_addr_size(struct i3c_device *i3cdev, u32 *size, u32 *rev)
+ {
+ 	u32 reg_size;
+-	int ret, i;
+-
+-	reg_size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
+-	for (i = 0; i < MAX_RETRY; i++) {
+-		ret = sbrmi_i3c_reg_read(i3cdev, reg_size, rev);
+-		if (ret < 0) {
+-			usleep_range(10000, 20000);
+-			continue;
+-		} else {
+-			break;
+-		}
+-	}
++	int ret;
+ 
++	reg_size = SBRMI_REG_ADDR_SIZE_DEF;
++	ret = sbrmi_i3c_reg_read(i3cdev, reg_size, rev);
+ 	/*
+ 	 * Validate the rev value is not 0xFF, as this value can be incorrectly cached
+ 	 * when executing 2-byte address operations on SBRMI rev 0x10.
+ 	 * For SBRMI rev 0x20 an error is returned.
+ 	 */
+ 	if (ret < 0 || *rev == 0xFF) {
+-		reg_size = SBRMI_REG_ADDR_SIZE_DEF;
++		reg_size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
+ 		ret = sbrmi_i3c_reg_read(i3cdev, reg_size, rev);
+ 		if (ret < 0) {
+ 			pr_err("I3C reg read failed with return value:%d\n", ret);
+-- 
+2.43.0
+

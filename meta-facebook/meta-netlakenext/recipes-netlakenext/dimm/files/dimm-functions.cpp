@@ -18,7 +18,10 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <syslog.h>
+#include <time.h>
 #include <openbmc/obmc-i2c.h>
+#include <facebook/netlakenext_common.h>
 #include "dimm.h"
 #include "dimm-util-plat.h"
 
@@ -30,14 +33,14 @@
   #define DBG_PRINT(...)
 #endif
 
-static uint8_t netlake2_spd_addr[MAX_DIMM_PER_CPU/2] = {
-  DIMMA_SPD_ADDR,
-  DIMMB_SPD_ADDR,
+static uint8_t netlake2_spd_addr[MAX_DIMM_NUM_NETLAKE2] = {
+  DIMMA_ADDR,
+  DIMMB_ADDR,
 };
 
-static uint8_t netlake2_pmic_addr[MAX_DIMM_PER_CPU/2] = {
-  DIMMA_PMIC_ADDR,
-  DIMMB_PMIC_ADDR,
+static uint8_t netlake2_pmic_addr[MAX_DIMM_NUM_NETLAKE2] = {
+  PMICA_ADDR,
+  PMICB_ADDR,
 };
 
 // dimm location constant strings, matching silk screen
@@ -52,6 +55,8 @@ static uint8_t netlake2_dimm_cache_id[NUM_CPU_NETLAKE2][MAX_DIMM_PER_CPU] = {
 static const char *fru_name_netlake2[NUM_FRU_NETLAKE2] = {
   "server",
 };
+
+bool is_pmic_error_flag[MAX_DIMM_NUM_NETLAKE2][MAX_PMIC_ERR_TYPE];
 
 static uint8_t *spd_addr = netlake2_spd_addr;
 static uint8_t *pmic_addr = netlake2_pmic_addr;
@@ -83,7 +88,7 @@ plat_init(void) {
 
 const char *
 get_dimm_label(uint8_t cpu, uint8_t dimm) {
-  if ((cpu >= NUM_CPU_NETLAKE2) || (dimm >= num_dimms_per_cpu)) {
+  if ((cpu >= NUM_CPU_NETLAKE2) || (dimm >= MAX_DIMM_NUM_NETLAKE2)) {
     return "N/A";
   }
 
@@ -92,7 +97,7 @@ get_dimm_label(uint8_t cpu, uint8_t dimm) {
 
 uint8_t
 get_dimm_cache_id(uint8_t cpu, uint8_t dimm) {
-  if ((cpu >= NUM_CPU_NETLAKE2) || (dimm >= num_dimms_per_cpu)) {
+  if ((cpu >= NUM_CPU_NETLAKE2) || (dimm >= MAX_DIMM_NUM_NETLAKE2)) {
     return 0xff;
   }
 
@@ -105,7 +110,7 @@ is_dimm_present(uint8_t slot_id, uint8_t dimm) {
 }
 
 static int
-read_dimm_i2c(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t offs_len,
+read_dimm_i2c(uint8_t /*slot_id*/, uint8_t bus, uint8_t addr, uint8_t offs_len,
                     uint32_t offset, uint8_t len, uint8_t *rxbuf) {
   int fd = 0, ret = -1;
   uint8_t tbuf[16] = {0};
@@ -135,7 +140,7 @@ read_dimm_i2c(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t offs_len,
 }
 
 static int
-write_dimm_i2c(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t offs_len,
+write_dimm_i2c(uint8_t /*slot_id*/, uint8_t bus, uint8_t addr, uint8_t offs_len,
                      uint32_t offset, uint8_t len, uint8_t *txbuf) {
   int fd = 0, ret = -1;
   uint8_t tbuf[64] = {0};
@@ -167,7 +172,6 @@ write_dimm_i2c(uint8_t slot_id, uint8_t bus, uint8_t addr, uint8_t offs_len,
 
 int
 util_read_spd(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint16_t offset, uint8_t len, uint8_t *rxbuf) {
-  uint8_t bus = DIMM_BUS;
   uint8_t addr = 0;
   uint32_t spd_offset = ((offset & 0x780) << 1) | (0x80 | (offset & 0x7F));
 
@@ -175,22 +179,21 @@ util_read_spd(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint16_t offset, u
     return -1;
   }
 
-  addr = spd_addr[dimm % num_dimms_per_cpu];
+  addr = spd_addr[dimm];
 
-  return read_dimm_i2c(slot_id, bus, addr, 2, spd_offset, len, rxbuf);
+  return read_dimm_i2c(slot_id, DIMM_BUS, addr, 2, spd_offset, len, rxbuf);
 }
 
 int
 util_set_EE_page(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t /*page_num*/) {
-  uint8_t bus = DIMM_BUS;
   uint8_t addr = 0;
   uint8_t buf[8];
 
-  addr = spd_addr[dimm % num_dimms_per_cpu];
+  addr = spd_addr[dimm];
 
   // set MR11[3] = 1b for 2-bytes addressing (offset) mode
   buf[0] = 0x08;
-  return write_dimm_i2c(slot_id, bus, addr, 1, 0x0b, 1, buf);
+  return write_dimm_i2c(slot_id, DIMM_BUS, addr, 1, 0x0b, 1, buf);
 }
 
 int
@@ -203,9 +206,86 @@ is_pmic_supported(void) {
   return true;
 }
 
+static int
+read_pmic_with_retry(uint8_t slot_id, uint8_t cpu, uint8_t dimm, uint8_t offset,
+                     uint8_t len, uint8_t *rxbuf) {
+  int ret = 0;
+  uint8_t xfer = 0;
+
+  for (uint8_t i = 0; i < len;) {
+    for (uint8_t retry = 0; retry <= 3; retry++) {
+      xfer = ((len - i) < MAX_DIMM_SMB_XFER_LEN) ? (len - i) : MAX_DIMM_SMB_XFER_LEN;
+      ret = util_read_pmic(slot_id, cpu, dimm, offset + i, xfer, &rxbuf[i]);
+      if ((ret >= 0) || (retry == 3)) {
+        break;
+      }
+      usleep(PMIC_RETRY_INTERVAL_USEC);
+    }
+    if (ret < 0) {
+      return -1;
+    }
+    i += xfer;
+  }
+
+  return ret;
+}
+
+int get_pmic_error_data_raw(uint8_t slot_id, uint8_t dimm, uint8_t *error_data) {
+  uint8_t data[64] = {0};
+  uint8_t cpu = 0;  // only 1 CPU in Netlake2, so default to 0
+  int ret = 0;
+
+  if (error_data == NULL) {
+    return -1;
+  }
+
+  // read R05 ~ R0B with retry
+  ret = read_pmic_with_retry(slot_id, cpu, dimm, 0x05, 7, &data[5]);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to read PMIC error data(R05 ~ R0B) from slot %d dimm %d",
+           __func__, slot_id, dimm);
+    return -1;
+  }
+
+  // store PMIC raw data(R05 R06 R08 R09 R0A R0B) for comparison
+  for (uint8_t i = 0; i < ERR_PATTERN_LEN; i++) {
+    error_data[i] = data[pmic_err_pattern_idx[i]];
+  }
+
+  return 0;
+}
+
+int compare_pmic_raw_and_log(uint8_t dimm, const uint8_t *data) {
+  uint8_t err_idx = 0;
+
+  if (data == NULL || dimm >= MAX_DIMM_NUM_NETLAKE2) {
+    return -1;
+  }
+
+  for (err_idx = 0; err_idx < MAX_PMIC_ERR_TYPE; err_idx++) {
+    bool pattern_matched = true;
+
+    for (uint8_t reg_idx = 0; reg_idx < ERR_PATTERN_LEN; reg_idx++) {
+      uint8_t err_pattern = pmic_err[err_idx].pattern[reg_idx];
+      if ((data[reg_idx] & err_pattern) != err_pattern) {
+        pattern_matched = false;
+        break;
+      }
+    }
+    if (pattern_matched && !is_pmic_error_flag[dimm][err_idx]) {
+      syslog(LOG_CRIT, "FRU: %d, DIMM %s, %s Assertion", FRU_SERVER,
+            dimm_label[0][dimm], pmic_err[err_idx].err_str);
+      is_pmic_error_flag[dimm][err_idx] = true;
+    } else if (!pattern_matched) {
+      // if pattern not match, reset the flag to allow future match and alert
+      is_pmic_error_flag[dimm][err_idx] = false;
+    }
+  }
+  return 0;
+}
+
 int
 util_read_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *rxbuf) {
-  uint8_t bus = DIMM_BUS;
   uint8_t addr = 0;
   uint32_t pmic_offset = offset;
 
@@ -213,14 +293,13 @@ util_read_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, u
     return -1;
   }
 
-  addr = pmic_addr[dimm % num_dimms_per_cpu];
+  addr = pmic_addr[dimm];
 
-  return read_dimm_i2c(slot_id, bus, addr, 1, pmic_offset, len, rxbuf);
+  return read_dimm_i2c(slot_id, DIMM_BUS, addr, 1, pmic_offset, len, rxbuf);
 }
 
 int
 util_write_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, uint8_t len, uint8_t *txbuf) {
-  uint8_t bus = DIMM_BUS;
   uint8_t addr = 0;
   uint32_t pmic_offset = offset;
 
@@ -228,21 +307,20 @@ util_write_pmic(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t offset, 
     return -1;
   }
 
-  addr = pmic_addr[dimm % num_dimms_per_cpu];
+  addr = pmic_addr[dimm];
 
-  return write_dimm_i2c(slot_id, bus, addr, 1, pmic_offset, len, txbuf);
+  return write_dimm_i2c(slot_id, DIMM_BUS, addr, 1, pmic_offset, len, txbuf);
 }
 
 int
 util_set_SODIMM_page(uint8_t slot_id, uint8_t /*cpu*/, uint8_t dimm, uint8_t /*page_num*/) {
-  uint8_t bus = DIMM_BUS;
   uint8_t addr = 0;
   uint8_t buf[8];
   uint32_t spd_offset = 0x000b;
 
-  addr = spd_addr[dimm % num_dimms_per_cpu];
+  addr = spd_addr[dimm];
 
   // set MR11[3] = 0b MR11[2:0] = '000' for setting page 0 
   buf[0] = 0x00;
-  return write_dimm_i2c(slot_id, bus, addr, 2, spd_offset, 1, buf);
+  return write_dimm_i2c(slot_id, DIMM_BUS, addr, 2, spd_offset, 1, buf);
 }

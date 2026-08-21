@@ -1,0 +1,38 @@
+From 2ec80c22e92f16a6e7f05b71965e6b11e6902572 Mon Sep 17 00:00:00 2001
+From: Frank Tsao <Frank.Tsao@quantatw.com>
+Date: Tue, 30 Jun 2026 22:26:32 +0800
+Subject: [PATCH] ARM: dts: aspeed: rainiera6: Add EMC1403 temperature sensor
+ for 2nd OCP NIC
+
+The platform now supports a second OCP NIC from a different vendor,
+which integrates an EMC1403 temperature sensor accessible over I2C
+at address 0x3c.
+
+Add the corresponding device node to enable thermal monitoring of
+this NIC via the hwmon subsystem.
+
+Signed-off-by: Frank Tsao <Frank.Tsao@quantatw.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
+index d34e13b5e..9748b0b7e 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
+@@ -235,6 +235,12 @@ temperature-sensor@1f {
+ 		reg = <0x1f>;
+ 	};
+ 
++	/* OCP NIC TEMP */
++	temperature-sensor@3c {
++		compatible = "smsc,emc1403";
++		reg = <0x3c>;
++	};
++
+ 	/* OCP NIC FRU EEPROM */
+ 	eeprom@50 {
+ 		compatible = "atmel,24c64";
+-- 
+2.34.1
+

@@ -33,7 +33,7 @@ extern "C" {
 
 #define EEPROM_PATH     "/sys/bus/i2c/devices/%d-00%X/eeprom"
 #define COMMON_FRU_PATH "/tmp/fruid_%s.bin"
-#define FRU_SERVER_BIN  "/tmp/fruid_server.bin"
+#define FRU_SERVER_BIN  "/tmp/fruid_fboss.bin" // MB FRU uses Meta FBOSS EEPROM format
 #define FRU_BMC_BIN  "/tmp/fruid_bmc.bin"
 #define FRU_NIC_BIN  "/tmp/fruid_nic.bin"
 
@@ -48,9 +48,24 @@ extern "C" {
 #define BMC_FRU_ADDR 0x56
 #define NIC_FRU_ADDR 0x50
 
-#define CPLD_SPI_MUX_BUS 4
-#define CPLD_SPI_MUX_ADDR 0x3E
+#define I2C_RETRY_TIME 3
+
+#define CPLD_BUS_2 2
+#define CPLD_ADDR_BUS_2 0x1E
+#define CPLD_BUS_4 4
+#define CPLD_ADDR_BUS_4 0x3E
+#define CPLD_SYS_CONFIG_REG_REG 0x01
+#define CPLD_REV_ID_BIT (0x07)
+#define CPLD_VR_SOURCE_BIT (0x18)
 #define CPLD_SPI_MUX_REG 0x0A
+#define CPLD_MISC_CTRL_SIG_REG 0x0C
+#define CPLD_KBRST_BIT (0x10)
+#define CPLD_ADC_ADDR_BUS_4 0x1E
+#define CPLD_FW_BUS 3
+#define CPLD_FW_ADDR 0x80
+#define CPLD_FW_VER_REG 0x28002000
+#define CPLD_RETRY_TIME 3
+#define CPLD_REG_BYTE 1
 
 //In Netlake codebase, all definition used 0 base bus, 8 bit address
 #define VR_BUS  0
@@ -62,34 +77,46 @@ extern "C" {
 #define VR_PVDDCR_ADDR 0x40
 #define VR_PVDDCR_SOC_ADDR 0x40
 #define VR_PVDD_MISC_ADDR 0x42
+#define VR_MFR_ID_REG 0x99
+#define VR_MFR_ID_MAX_LEN 6
+#define VR_MFR_ID_MPS 0x4D5053
+#define VR_MFR_ID_MPS_LEN 3
+#define VR_MFR_ID_INF 0x4946
+#define VR_MFR_ID_INF_LEN 2
+#define VR_MFR_ID_RNS 0x00000000
+#define VR_MFR_ID_RNS_LEN 4
+#define VR_RETRY_TIME 3
 
 #define MTP_HSC_BUS 9
 #define MTP_HSC_ADDR 0x80
 #define MTP_PMON_CONFIG_ADDR 0xD4
 #define MTP_HSC_EN_VOUT_LENGTH 3
 #define MTP_HSC_POWER_CYCLE_REG 0xD9
+#define MTP_HSC_SAMPLE_AVG_1 0x16
+#define MTP_HSC_SAMPLE_AVG_2 0x3F
 
-#define CPLD_REV_ID_BUS 2
-#define CPLD_REV_ID_ADDR 0x1E
-#define CPLD_REV_ID_REG 0x01
-#define CPLD_REV_ID_BYTE 1
-#define CPLD_FW_REG_BUS 3
-#define CPLD_FW_REG_ADDR 0x80
-#define CPLD_VER_REG 0x28002000
-#define CPLD_ADC_REG_BUS 4
-#define CPLD_ADC_REG_ADDR 0x1E
-#define CPLD_GET_REV_RETRY_TIME 3
-
-#define I2C_BUS5 4
+#define DIMM_BUS 4
 #define DIMMA_ADDR 0xA0
 #define DIMMB_ADDR 0xA2
 #define DIMM_TEMP_LEN 1
 #define DIMM_PAGE_OFFSET 0x0b
 #define DIMM_PAGE0 0x00
 
+#define PMICA_ADDR 0x90
+#define PMICB_ADDR 0x92
+#define PMIC_ADC_REG 0x30
+#define PMIC_TOTAL_PWR 0x1A
+#define PMIC_PWR_SELECT 0x1B
+#define PMIC_VDD_READ 0x0C
+
+#define INA230_BUS 4
 #define INA230_ADDR 0x80
+#define INA230_CONFIG 0x00
 #define INA230_POWER 0x03
+#define INA230_IOUT 0x04
 #define INA230_CALIBRATION 0x05
+#define LSB_INA230_CONFIG 0x4E
+#define MSB_INA230_CONFIG 0xDF
 #define LSB_INA230_DEFAULT_CALIBRATION 0x14
 #define MSB_INA230_DEFAULT_CALIBRATION 0x00
 #define INA230_GET_DATA_LEN 2
@@ -128,10 +155,12 @@ extern "C" {
 #define LOW_STR             "0"
 #define PWR_GOOD_KV_KEY     "power_good_status"
 #define POST_CMPLT_KV_KEY   "post_complete_status"
+#define SKIP_BMC_FWUPD_PRECHK_KV_KEY   "skip_bmc_fwupd_precheck"
+#define ADDC_INIT_KV_KEY    "addc_init"
 
 enum {
   FRU_ALL = 0,
-  FRU_SERVER,
+  FRU_SERVER, // MB FRU uses Meta FBOSS EEPROM format
   FRU_BMC,
   FRU_PDB,
   FRU_FIO,
@@ -161,6 +190,13 @@ enum board_rev {
   DVT = 4,
   PVT = 5,
   MP = 6,
+  BOARD_REV_COUNT
+};
+
+enum vr_sku {
+  MPS = 0,
+  INFINEON,
+  RENESAS,
 };
 
 enum {
@@ -178,8 +214,11 @@ typedef struct {
 int netlakenext_common_check_image_md5(const char* image_path, int cal_size, uint8_t *data);
 int netlakenext_common_check_image_signature(uint8_t* data);
 bool netlakenext_common_is_valid_img(const char* img_path, FW_IMG_INFO* img_info, uint8_t rev_id);
+int netlakenext_common_i2c_transfer(uint8_t bus, uint8_t addr, uint8_t *tbuf, uint8_t tlen, uint8_t *rbuf, uint8_t rlen);
 int netlakenext_common_get_img_ver(const char* image_path, char* ver);
-int netlakenext_common_get_board_rev(uint8_t* rev_id);
+int netlakenext_get_cpld_data(int bus, uint8_t addr, uint8_t reg, uint8_t* value);
+int netlakenext_common_get_sys_cfg(uint8_t* sys_cfg);
+int netlakenext_common_get_vr_sku(uint8_t* sku);
 int netlakenext_common_linear11_convert(uint8_t *value_raw, float *value_linear11);
 int netlakenext_common_linear16_convert(uint8_t *value_raw, uint8_t mode, float *value_linear16);
 

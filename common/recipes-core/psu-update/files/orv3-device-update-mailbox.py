@@ -36,6 +36,12 @@ vendor_params = {
         "block_wait": True,
         "version-reg": ["FW_Revision"],
     },
+    "delta_cbu": {
+        "block_size": 64,
+        "boot_mode": 0xA5A5,
+        "block_wait": False,
+        "version-reg": ["FW_Revision"],
+    },
     "delta_miniups": {
         "block_size": 68,
         "boot_mode": 0xAA55,
@@ -117,12 +123,10 @@ def unlock_firmware(addr):
     rmd.write(addr, 0x300, 0x55AA, timeout=1000)
 
 
-@retry(5, delay=0.5)
+@retry(15, delay=1.0)
 def enter_boot_mode(addr, boot_mode):
     print("Entering Boot Mode...")
     rmd.write(addr, 0x301, 0xAA55, timeout=5000)
-    # Allow some time for the device to erase and prepare boot mode
-    time.sleep(15)
     verify_firmware_status(addr, ENTERED_BOOT_MODE)
 
 
@@ -282,6 +286,7 @@ def update_device(addr, filename, vendor_param):
     print("done")
 
 
+@retry(5, delay=1.0)
 def print_revision(addr, params):
     vers = ", ".join([rmd.get(addr, vers, True) for vers in params["version-reg"]])
     print("Version: ", vers)

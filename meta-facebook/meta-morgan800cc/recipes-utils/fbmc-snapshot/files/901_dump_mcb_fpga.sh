@@ -21,8 +21,14 @@
 # shellcheck source=/dev/null
 source /usr/local/bin/openbmc-utils.sh
 
-echo -e "\n##### MCB FPGA i2c dump #####"
+echo -e "\n##### MCB FPGA i2c dump (Mapped to Register Specification) #####"
 for NUM_I2C in {0..255}; do
+    HEX_ADDR=$(printf "0x%x" $((NUM_I2C * 4)))
     VALUE=$(i2cget -f -y 12 0x72 "$NUM_I2C")
-    echo "$NUM_I2C: $VALUE"
+    echo "$HEX_ADDR: $VALUE"
+
+    # 0xfc is the end of supported offsets
+    if [[ "$HEX_ADDR" == "0xfc" ]]; then
+        break
+    fi
 done

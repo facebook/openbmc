@@ -30,6 +30,8 @@ class InterfaceScanner {
   // This mimicks a restart of rackmond.
   std::atomic<bool> reqForceScan_ = true;
 
+  bool canProbe(DeviceLocation key, const RegisterMap& rmap);
+
  public:
   InterfaceScanner(
       std::shared_ptr<Modbus> interface,

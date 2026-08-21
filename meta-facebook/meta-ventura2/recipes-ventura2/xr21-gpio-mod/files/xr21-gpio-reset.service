@@ -1,0 +1,25 @@
+[Unit]
+Description=Ventura XR21 Hardware Reset
+Before=xr21-gpio-mod.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c ' \
+    if /bin/lsusb 2> /dev/null | /bin/grep -q Exar; \
+    then \
+        /bin/echo "XR21B1424 found"; \
+        PIN1=$(/usr/bin/gpiofind RST_FT4232_1_BMC_N_R 2>/dev/null); \
+        PIN2=$(/usr/bin/gpiofind RST_FT4232_2_BMC_N_R 2>/dev/null); \
+        PIN3=$(/usr/bin/gpiofind RST_FT4232_3_BMC_N_R 2>/dev/null); \
+        \
+        if [ -n "$PIN1" ]; then /usr/bin/gpioset $PIN1=0 && /bin/sleep 0.1 && /usr/bin/gpioset $PIN1=1; fi; \
+        if [ -n "$PIN2" ]; then /usr/bin/gpioset $PIN2=0 && /bin/sleep 0.1 && /usr/bin/gpioset $PIN2=1; fi; \
+        if [ -n "$PIN3" ]; then /usr/bin/gpioset $PIN3=0 && /bin/sleep 0.1 && /usr/bin/gpioset $PIN3=1; fi; \
+    else \
+        /bin/echo "XR21B1424 not found"; \
+    fi'
+
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

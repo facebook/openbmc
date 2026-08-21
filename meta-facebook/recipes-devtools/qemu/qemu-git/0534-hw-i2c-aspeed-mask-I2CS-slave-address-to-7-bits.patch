@@ -1,0 +1,34 @@
+From 645c2fa24e539ed020a3eb20d415407a7429ac11 Mon Sep 17 00:00:00 2001
+From: Zinc Lim <zinclim@meta.com>
+Date: Tue, 21 Jul 2026 14:04:45 -0700
+Subject: [PATCH] hw/i2c/aspeed: mask I2CS slave address to 7 bits
+
+For aspeed_i2c_bus_new_write, the raw I2CS_DEV_ADDR register may carry the ADDR1_ENABLE bit (bit 7).
+Extract only the 7-bit SLAVE_DEV_ADDR1 field before calling i2c_slave_set_address(), otherwise the
+enable bit is stored as part of the address and never matches a real 7-bit transfer.
+
+Signed-off-by: Zinc Lim <zinclim@meta.com>
+---
+ hw/i2c/aspeed_i2c.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
+index 06f63df25f..d358616b11 100644
+--- a/hw/i2c/aspeed_i2c.c
++++ b/hw/i2c/aspeed_i2c.c
+@@ -884,7 +884,11 @@ static void aspeed_i2c_bus_new_write(AspeedI2CBus *bus, hwaddr offset,
+         } else {
+             bus->regs[R_I2CS_CMD] = value;
+         }
+-        i2c_slave_set_address(bus->slave, bus->regs[R_I2CS_DEV_ADDR]);
++        /* Mask to the 7-bit address; the raw reg may carry ADDR1_ENABLE
++         * (bit 7), which would never match a real 7-bit transfer. */
++        i2c_slave_set_address(bus->slave,
++            SHARED_ARRAY_FIELD_EX32(bus->regs, R_I2CS_DEV_ADDR,
++                                    SLAVE_DEV_ADDR1));
+         break;
+     case A_I2CS_INTR_CTRL:
+         bus->regs[R_I2CS_INTR_CTRL] = value;
+-- 
+2.53.0-Meta
+

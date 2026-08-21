@@ -1,4 +1,4 @@
-From d8557b84c92f1f771ee218f1e88b91127e9fb838 Mon Sep 17 00:00:00 2001
+From a87ae6a827740d01aa396933ab53a21b647f426f Mon Sep 17 00:00:00 2001
 From: Christopher Meis <christopher.meis@9elements.com>
 Date: Wed, 17 Sep 2025 09:07:06 +0200
 Subject: [PATCH] Multi-host/HW-inventory: add processor subtree
@@ -174,25 +174,25 @@ Validation has succeeded.
 Change-Id: If1d239683124f120bd5421d0da87386f650ecde1
 Signed-off-by: Christopher Meis <christopher.meis@9elements.com>
 ---
- redfish-core/lib/processor.hpp | 135 ++++++++++++++++++++++-----------
+ redfish-core/lib/processor.hpp | 134 ++++++++++++++++++++++-----------
  redfish-core/lib/systems.hpp   |   6 +-
- 2 files changed, 92 insertions(+), 49 deletions(-)
+ 2 files changed, 91 insertions(+), 49 deletions(-)
 
 diff --git a/redfish-core/lib/processor.hpp b/redfish-core/lib/processor.hpp
-index 28e4c1c6..7273ff8e 100644
+index f0dd4aa0..60e167e3 100644
 --- a/redfish-core/lib/processor.hpp
 +++ b/redfish-core/lib/processor.hpp
 @@ -20,6 +20,7 @@
  #include "utils/dbus_utils.hpp"
- #include "utils/hex_utils.hpp"
  #include "utils/json_utils.hpp"
+ #include "utils/processor_utils.hpp"
 +#include "utils/systems_utils.hpp"
  
  #include <boost/beast/http/field.hpp>
  #include <boost/beast/http/verb.hpp>
-@@ -53,6 +54,23 @@ constexpr std::array<std::string_view, 2> processorInterfaces = {
-     "xyz.openbmc_project.Inventory.Item.Cpu",
-     "xyz.openbmc_project.Inventory.Item.Accelerator"};
+@@ -51,6 +52,22 @@
+ namespace redfish
+ {
  
 +// Interfaces which provide info about a Processor
 +constexpr std::array<std::string_view, 9> processorInfoInterfaces = {
@@ -210,11 +210,10 @@ index 28e4c1c6..7273ff8e 100644
 +constexpr std::array<std::string_view, 1> systemInterface = {
 +    "xyz.openbmc_project.Inventory.Item.System",
 +};
-+
  /**
   * @brief Fill out uuid info of a processor by
   * requesting data from the given D-Bus object.
-@@ -793,26 +811,29 @@ inline void handleProcessorSubtree(
+@@ -938,26 +955,29 @@ inline void handleProcessorSubtree(
   */
  inline void getProcessorObject(
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
@@ -257,7 +256,7 @@ index 28e4c1c6..7273ff8e 100644
          [asyncResp, processorId, callback{std::move(callback)}](
              const boost::system::error_code& ec,
              const dbus::utility::MapperGetSubTreeResponse& subtree) {
-@@ -823,16 +844,16 @@ inline void getProcessorObject(
+@@ -968,16 +988,16 @@ inline void getProcessorObject(
  
  inline void getProcessorData(
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
@@ -275,10 +274,10 @@ index 28e4c1c6..7273ff8e 100644
 -                            BMCWEB_REDFISH_SYSTEM_URI_NAME, processorId);
 +    asyncResp->res.jsonValue["@odata.id"] = boost::urls::format(
 +        "/redfish/v1/Systems/{}/Processors/{}", systemName, processorId);
- 
-     for (const auto& [serviceName, interfaceList] : serviceMap)
-     {
-@@ -993,23 +1014,20 @@ inline void handleProcessorGet(
+     asyncResp->res.jsonValue["SubProcessors"]["@odata.id"] =
+         boost::urls::format(
+             "/redfish/v1/Systems/{}/Processors/{}/SubProcessors",
+@@ -1143,23 +1163,20 @@ inline void handleProcessorGet(
      {
          return;
      }
@@ -312,7 +311,7 @@ index 28e4c1c6..7273ff8e 100644
  }
  
  inline void doPatchProcessor(
-@@ -1083,11 +1101,34 @@ inline void handleProcessorPatch(
+@@ -1233,11 +1250,34 @@ inline void handleProcessorPatch(
      // Check for 404 and find matching D-Bus object, then run
      // property patch handlers if that all succeeds.
      getProcessorObject(
@@ -348,7 +347,7 @@ index 28e4c1c6..7273ff8e 100644
  inline void handleProcessorCollectionGet(
      App& app, const crow::Request& req,
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
-@@ -1097,32 +1138,34 @@ inline void handleProcessorCollectionGet(
+@@ -1247,32 +1287,34 @@ inline void handleProcessorCollectionGet(
      {
          return;
      }
@@ -399,10 +398,10 @@ index 28e4c1c6..7273ff8e 100644
          asyncResp,
          boost::urls::format("/redfish/v1/Systems/{}/Processors",
 diff --git a/redfish-core/lib/systems.hpp b/redfish-core/lib/systems.hpp
-index dbbe2a37..127af335 100644
+index f6ed8c48..3786923d 100644
 --- a/redfish-core/lib/systems.hpp
 +++ b/redfish-core/lib/systems.hpp
-@@ -3055,9 +3055,6 @@ inline void processComputerSystemGet(
+@@ -3086,9 +3086,6 @@ inline void processComputerSystemGet(
      {
          asyncResp->res.jsonValue["Bios"]["@odata.id"] =
              boost::urls::format("/redfish/v1/Systems/{}/Bios", systemName);
@@ -412,7 +411,7 @@ index dbbe2a37..127af335 100644
          asyncResp->res.jsonValue["Memory"]["@odata.id"] =
              boost::urls::format("/redfish/v1/Systems/{}/Memory", systemName);
          asyncResp->res.jsonValue["Storage"]["@odata.id"] =
-@@ -3067,6 +3064,9 @@ inline void processComputerSystemGet(
+@@ -3098,6 +3095,9 @@ inline void processComputerSystemGet(
                                  systemName);
      }
  

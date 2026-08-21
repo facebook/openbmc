@@ -146,4 +146,25 @@ int VrComponent::update(const string& image) {
 
   return ret;
 }
+
+#ifdef CONFIG_GRANDCANYON2
+int VrComponent::fupdate(const string& image) {
+  int ret = 0;
+
+  try {
+    server.ready();
+
+    ret = bic_update_fw(FRU_SERVER, FW_VR, (char *)image.c_str(), FORCE_UPDATE_SET);
+    if (ret < 0) {
+      return -1;
+    }
+  } catch (string err) {
+    printf("%s\n", err.c_str());
+    return FW_STATUS_NOT_SUPPORTED;
+  }
+
+  return ret;
+}
+#endif
+
 #endif

@@ -6,7 +6,11 @@
             12
         ]
     ],
-    "probe_register": 36864,
+    "probe": [
+      {
+        "register": 36864
+      }
+    ],
     "baudrate": 19200,
     "parity": "NONE",
     "registers": [
@@ -2491,6 +2495,90 @@
             "length": 1,
             "format": "INTEGER",
             "name": "Manual_Control_RPU_Fan_OnOff"
+        },
+        {
+            "begin": 6545,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Speed_Abnormal"
+                ],
+                [
+                    1,
+                    "Access_Failure"
+                ]
+            ],
+            "name": "Sticky_Pump1_Status"
+        },
+        {
+            "begin": 6546,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Speed_Abnormal"
+                ],
+                [
+                    1,
+                    "Access_Failure"
+                ]
+            ],
+            "name": "Sticky_Pump2_Status"
+        },
+        {
+            "begin": 6547,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "Speed_Abnormal"
+                ],
+                [
+                    1,
+                    "Access_Failure"
+                ]
+            ],
+            "name": "Sticky_Pump3_Status"
+        },
+        {
+            "begin": 6548,
+            "length": 1,
+            "format": "FLAGS",
+            "flags": [
+                [
+                    0,
+                    "HEX_Bladder_Abnormal"
+                ],
+                [
+                    1,
+                    "RPU_Reservoir_Abnormal"
+                ],
+                [
+                    2,
+                    "RPU_Coolant_Flow_Blocked"
+                ],
+                [
+                    3,
+                    "RPU_Outlet_Pressure_High"
+                ],
+                [
+                    4,
+                    "Pump_1_Speed_UCR"
+                ],
+                [
+                    5,
+                    "Pump_2_Speed_UCR"
+                ],
+                [
+                    6,
+                    "Pump_3_Speed_UCR"
+                ]
+            ],
+            "name": "Sticky_RPU_Status"
         }
     ]
 }

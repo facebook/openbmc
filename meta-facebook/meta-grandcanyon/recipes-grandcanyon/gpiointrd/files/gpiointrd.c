@@ -427,6 +427,15 @@ fru_missing_init(gpiopoll_pin_t *gp, gpio_value_t value) {
 #ifdef CONFIG_GRANDCANYON2
 #define P1V2_STBY_PG_OFFSET 0x03
 #define P1V2_STBY_PG_BIT 1
+#define POWER_STATE_FILE       "/tmp/power_state"
+#define TRANSITION_FILTER_JSON "/etc/sensord/power_transition_filter.json"
+
+typedef enum {
+  TRANS_NONE       = 0,
+  TRANS_AC,
+  TRANS_DC,
+  TRANS_SLED_CYCLE,
+} trans_type_t;
 
 static int
 read_server_cpld_reg(uint8_t offset, uint8_t *val)
@@ -480,6 +489,109 @@ read_server_cpld_reg(uint8_t offset, uint8_t *val)
   return ret;
 }
 
+static trans_type_t
+get_power_transition_type(void)
+{
+  FILE *fp = fopen(POWER_STATE_FILE, "r");
+  if (!fp) return TRANS_NONE;
+
+  char state[64] = {0};
+  if (fgets(state, sizeof(state), fp) == NULL) {
+    fclose(fp);
+    return TRANS_NONE;
+  }
+  fclose(fp);
+  state[strcspn(state, "\r\n")] = '\0';
+
+  if (strcmp(state, "DC_ON_TRANSITION") == 0 ||
+      strcmp(state, "DC_OFF_TRANSITION") == 0)
+    return TRANS_DC;
+  if (strcmp(state, "AC_ON_TRANSITION") == 0 ||
+      strcmp(state, "AC_OFF_TRANSITION") == 0)
+    return TRANS_AC;
+  if (strcmp(state, "SLED_CYCLE_TRANSITION") == 0)
+    return TRANS_SLED_CYCLE;
+
+  return TRANS_NONE;
+}
+
+static const char *
+trans_type_to_gpio_key(trans_type_t type)
+{
+  switch (type) {
+    case TRANS_AC:         return "AC_GPIO";
+    case TRANS_DC:         return "DC_GPIO";
+    case TRANS_SLED_CYCLE: return "SLED_CYCLE_GPIO";
+    default:               return NULL;
+  }
+}
+
+static bool
+is_gpio_filtered_by_transition(const char *gpio_name)
+{
+  if (!gpio_name || gpio_name[0] == '\0')
+    return false;
+
+  trans_type_t trans_type = get_power_transition_type();
+  if (trans_type == TRANS_NONE)
+    return false;
+
+  const char *key = trans_type_to_gpio_key(trans_type);
+  if (!key)
+    return false;
+
+  FILE *fp = fopen(TRANSITION_FILTER_JSON, "r");
+  if (!fp) {
+    syslog(LOG_WARNING, "%s: cannot open filter JSON [%s]",
+           __func__, TRANSITION_FILTER_JSON);
+    return false;
+  }
+
+  fseek(fp, 0, SEEK_END);
+  long fsize = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+
+  if (fsize <= 0) { fclose(fp); return false; }
+
+  char *buf = (char *)malloc(fsize + 1);
+  if (!buf) { fclose(fp); return false; }
+
+  size_t bytes_read = fread(buf, 1, fsize, fp);
+  fclose(fp);
+
+  if ((long)bytes_read != fsize) {
+    free(buf);
+    return false;
+  }
+  buf[bytes_read] = '\0';
+
+  char key_pattern[32] = {0};
+  snprintf(key_pattern, sizeof(key_pattern), "\"%s\"", key);
+
+  char *key_pos = strstr(buf, key_pattern);
+  if (!key_pos) { free(buf); return false; }
+
+  char *arr_start = strchr(key_pos, '[');
+  if (!arr_start) { free(buf); return false; }
+
+  char *arr_end = strchr(arr_start, ']');
+  if (!arr_end) { free(buf); return false; }
+
+  *arr_end = '\0';
+
+  char search_pattern[256] = {0};
+  snprintf(search_pattern, sizeof(search_pattern), "\"%s\"", gpio_name);
+
+  bool found = (strstr(arr_start, search_pattern) != NULL);
+
+  if (found) {
+    syslog(LOG_INFO, "GPIO Filter: [%s] suppressed during %s transition", gpio_name, key);
+  }
+
+  free(buf);
+  return found;
+}
+
 static void
 pwr_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
 {
@@ -500,6 +612,10 @@ pwr_fault_hndlr(gpiopoll_pin_t *gp, gpio_value_t last, gpio_value_t curr)
   }
 
   if (curr == GPIO_VALUE_HIGH) {
+    return;
+  }
+
+  if (is_gpio_filtered_by_transition(cfg->shadow)) {
     return;
   }
 

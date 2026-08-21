@@ -42,7 +42,6 @@ class BaseWedgePowerTest(unittest.TestCase):
 
     CMD_EXECUTION_TIME_LIMIT = 15  # seconds
     EBUSY_ERR = 16
-    NUM_INSTANCES = 3  # Number of instances for concurrent testing
 
     def setUp(self):
         Logger.start(name=self._testMethodName)
@@ -158,6 +157,52 @@ class BaseWedgePowerTest(unittest.TestCase):
             return 0
         return 1
 
+    def run_power_cmd_test_with_retry(self, cmd, retry=3):
+        """
+        Executes a power control command within a time limit and verifies its
+        outcome as part of a test case with retry.
+
+        Args:
+            cmd (str): The power control command to execute ("off", "on",
+            "reset", "on -f").
+
+            retry (int): Retry times
+
+        Returns:
+            int: 0 if the command executed successfully within the time limit
+            and the power status matches the command, 1 otherwise.
+        """
+        full_command = f"wedge_power.sh {cmd}"
+        Logger.debug("Executing: " + str(full_command))
+
+        while retry > 0:
+            with subprocess.Popen(
+                full_command,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            ) as process:
+                try:
+                    _, stderr = process.communicate(timeout=self.CMD_EXECUTION_TIME_LIMIT)
+                except subprocess.TimeoutExpired:
+                    Logger.error(f"{full_command} timed out after {self.CMD_EXECUTION_TIME_LIMIT} seconds.")
+                    process.kill()
+                    process.communicate()
+                    return 1
+
+                if process.returncode == 0:
+                    status_code, output = self.run_power_cmd("status")
+                    expected_status = "on" if cmd in ["on", "reset", "on -f"] else "off"
+                    if status_code == 0 and expected_status in output:
+                        return 0
+                elif process.returncode == self.EBUSY_ERR:
+                    retry -= 1
+                    continue
+                else:
+                    Logger.error(f"Command failed with error: {stderr.decode()}")
+                    return 1
+        return 1
+
 
 class WedgePowerTest(BaseWedgePowerTest):
     def test_wedge_power_status(self):
@@ -202,6 +247,13 @@ class WedgePowerTest(BaseWedgePowerTest):
     def test_wedge_power_reset(self):
         """
         Tests wedge power reset
+
+        After updating the wedge_power.sh reset behavior, if the platform reset pin is not ready,
+        the script will exit with an EBUSY error after a 10-second timeout.
+
+        The CIT wedge power reset test needs to use a retry mechanism to perform the test,
+        with a default maximum of three retries in the worst case.
+        This means the platform reset pin must be ready within 30 seconds.
         """
         Logger.log_testname(name=self._testMethodName)
         # x86 power sequencing may still be in progress from the previous test.
@@ -209,5 +261,5 @@ class WedgePowerTest(BaseWedgePowerTest):
         if not self.wait_for_pltrst_high(timeout=10):
             Logger.warn("RST_PLTRST_L did not go high within 10s. But trigger reset anyways")
         self.assertEqual(
-            self.run_power_cmd_test("reset"), 0, "Power reset test failed"
+            self.run_power_cmd_test_with_retry("reset"), 0, "Power reset test failed"
         )

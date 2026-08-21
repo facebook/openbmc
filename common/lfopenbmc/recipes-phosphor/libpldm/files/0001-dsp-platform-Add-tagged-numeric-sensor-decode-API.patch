@@ -1,0 +1,703 @@
+From b13f524006421b1fbc333183669838f2e59f7917 Mon Sep 17 00:00:00 2001
+From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
+Date: Fri, 7 Aug 2026 18:33:11 +0530
+Subject: [PATCH] dsp: platform: Add tagged numeric sensor decode API
+
+Introduce decode_numeric_sensor_data_to_value() for numeric sensor
+event data. The new API returns the sensor data size together
+with the decoded reading, allowing callers to handle 64-bit sensor
+values without changing the stable decode_numeric_sensor_data() ABI.
+
+Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/libpldm/+/93303]
+
+Change-Id: I4b211ce70f8d5add0d7e717b3244b6d2e3e20d73
+Signed-off-by: Vignesh Natarajan <Vignesh.Natarajan@arm.com>
+Signed-off-by: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
+---
+ CHANGELOG.md                |   1 +
+ include/libpldm/platform.h  |  64 +++++++++++++--
+ src/dsp/platform.c          | 151 ++++++++++++++++++++----------------
+ src/msgbuf.h                |  15 +++-
+ src/msgbuf/core.h           |  87 +++++++++++++++++++++
+ src/msgbuf/platform.h       |  39 +++++++++-
+ tests/unit/dsp/platform.cpp |  63 ++++++++++++---
+ 7 files changed, 335 insertions(+), 85 deletions(-)
+
+diff --git a/CHANGELOG.md b/CHANGELOG.md
+index 10c32cd..c1a9782 100644
+--- a/CHANGELOG.md
++++ b/CHANGELOG.md
+@@ -19,6 +19,7 @@ Change categories:
+ 
+ ### Added
+ 
++- dsp: platform: Add 64-bit numeric sensor support
+ - libpldm++ support for fw update pkg v1.1.0
+ - libpldm++ support for fw update pkg v1.2.0
+ - libpldm++ support for fw update pkg v1.3.0
+diff --git a/include/libpldm/platform.h b/include/libpldm/platform.h
+index e835162..926a311 100644
+--- a/include/libpldm/platform.h
++++ b/include/libpldm/platform.h
+@@ -96,10 +96,11 @@ enum pldm_platform_transfer_flag {
+ #define PLDM_SENSOR_EVENT_SENSOR_OP_STATE_DATA_LENGTH		 2
+ #define PLDM_SENSOR_EVENT_STATE_SENSOR_STATE_DATA_LENGTH	 3
+ #define PLDM_SENSOR_EVENT_NUMERIC_SENSOR_STATE_MIN_DATA_LENGTH	 4
+-#define PLDM_SENSOR_EVENT_NUMERIC_SENSOR_STATE_MAX_DATA_LENGTH	 7
++#define PLDM_SENSOR_EVENT_NUMERIC_SENSOR_STATE_MAX_DATA_LENGTH	 11
+ #define PLDM_SENSOR_EVENT_NUMERIC_SENSOR_STATE_8BIT_DATA_LENGTH	 4
+ #define PLDM_SENSOR_EVENT_NUMERIC_SENSOR_STATE_16BIT_DATA_LENGTH 5
+ #define PLDM_SENSOR_EVENT_NUMERIC_SENSOR_STATE_32BIT_DATA_LENGTH 7
++#define PLDM_SENSOR_EVENT_NUMERIC_SENSOR_STATE_64BIT_DATA_LENGTH 11
+ 
+ /* Minimum length of data for pldmPDRRepositoryChgEvent */
+ #define PLDM_PDR_REPOSITORY_CHG_EVENT_MIN_LENGTH     2
+@@ -177,9 +178,11 @@ enum pldm_range_field_format {
+ 	PLDM_RANGE_FIELD_FORMAT_SINT16,
+ 	PLDM_RANGE_FIELD_FORMAT_UINT32,
+ 	PLDM_RANGE_FIELD_FORMAT_SINT32,
+-	PLDM_RANGE_FIELD_FORMAT_REAL32
++	PLDM_RANGE_FIELD_FORMAT_REAL32,
++	PLDM_RANGE_FIELD_FORMAT_UINT64,
++	PLDM_RANGE_FIELD_FORMAT_SINT64
+ };
+-#define PLDM_RANGE_FIELD_FORMAT_MAX PLDM_RANGE_FIELD_FORMAT_REAL32
++#define PLDM_RANGE_FIELD_FORMAT_MAX PLDM_RANGE_FIELD_FORMAT_SINT64
+ 
+ enum set_request { PLDM_NO_CHANGE = 0x00, PLDM_REQUEST_SET = 0x01 };
+ 
+@@ -401,9 +404,11 @@ enum pldm_sensor_readings_data_type {
+ 	PLDM_SENSOR_DATA_SIZE_UINT16,
+ 	PLDM_SENSOR_DATA_SIZE_SINT16,
+ 	PLDM_SENSOR_DATA_SIZE_UINT32,
+-	PLDM_SENSOR_DATA_SIZE_SINT32
++	PLDM_SENSOR_DATA_SIZE_SINT32,
++	PLDM_SENSOR_DATA_SIZE_UINT64,
++	PLDM_SENSOR_DATA_SIZE_SINT64
+ };
+-#define PLDM_SENSOR_DATA_SIZE_MAX PLDM_SENSOR_DATA_SIZE_SINT32
++#define PLDM_SENSOR_DATA_SIZE_MAX PLDM_SENSOR_DATA_SIZE_SINT64
+ 
+ /** @brief PLDM PlatformEventMessage response status
+  */
+@@ -842,6 +847,32 @@ typedef union {
+ 	int32_t value_s32;
+ } union_sensor_data_size;
+ 
++/** @union union_sensor_data_size64
++ *
++ *  The bit width and format of reading and threshold values that the sensor
++ *  returns, including 64-bit readings.
++ *  Refer to: DSP0248_1.2.0: 28.4 Table 78
++ */
++typedef union {
++	uint8_t value_u8;
++	int8_t value_s8;
++	uint16_t value_u16;
++	int16_t value_s16;
++	uint32_t value_u32;
++	int32_t value_s32;
++	uint64_t value_u64;
++	int64_t value_s64;
++} union_sensor_data_size64;
++
++/** @struct pldm_numeric_sensor_value
++ *
++ *  The tagged present value indicated by a numeric sensor event.
++ */
++struct pldm_numeric_sensor_value {
++	uint8_t sensor_data_size;
++	union_sensor_data_size64 value;
++};
++
+ /** @struct pldm_value_pdr_hdr
+  *
+  *  Structure representing PLDM PDR header for unpacked value
+@@ -2303,6 +2334,29 @@ int decode_numeric_sensor_data(const uint8_t *sensor_data,
+ 			       uint8_t *sensor_data_size,
+ 			       uint32_t *present_reading);
+ 
++/** @brief Decode numericSensorState response data
++ *
++ *  @param[in] sensor_data - sensor_data for sensorEventClass =
++ * numericSensorState
++ *  @param[in] sensor_data_length - Length of sensor_data
++ *  @param[out] event_state - The eventState value from the state change that
++ * triggered the event message
++ *  @param[out] previous_event_state - The eventState value for the state from
++ * which the present state was entered
++ *  @param[out] present_reading - The tagged present value indicated by the
++ * sensor
++ *  @return 0 on success,
++ *		-EINVAL if any argument is NULL or the sensor data size is invalid,
++ *		-EOVERFLOW if the sensor data length is invalid,
++ *		-EBADMSG if the sensor data contains unexpected bytes
++ *  @note  Caller is responsible for memory alloc and dealloc of param
++ *         'sensor_data'
++ */
++int decode_numeric_sensor_data_to_value(
++	const uint8_t *sensor_data, size_t sensor_data_length,
++	uint8_t *event_state, uint8_t *previous_event_state,
++	struct pldm_numeric_sensor_value *present_reading) LIBPLDM_API_TESTING;
++
+ /** @brief Decode Numeric Sensor Pdr data
+  *
+  *  @param[in] pdr_data - pdr data for numeric sensor
+diff --git a/src/dsp/platform.c b/src/dsp/platform.c
+index 544ecad..e18cbcc 100644
+--- a/src/dsp/platform.c
++++ b/src/dsp/platform.c
+@@ -1721,93 +1721,98 @@ int decode_numeric_sensor_data(const uint8_t *sensor_data,
+ 			       uint8_t *previous_event_state,
+ 			       uint8_t *sensor_data_size,
+ 			       uint32_t *present_reading)
++{
++	struct pldm_numeric_sensor_value reading;
++
++	if (sensor_data_size == NULL || present_reading == NULL) {
++		return PLDM_ERROR_INVALID_DATA;
++	}
++
++	int rc = decode_numeric_sensor_data_to_value(
++		sensor_data, sensor_data_length, event_state,
++		previous_event_state, &reading);
++
++	if (rc) {
++		return pldm_xlate_errno(rc);
++	}
++
++	*sensor_data_size = reading.sensor_data_size;
++	switch (*sensor_data_size) {
++	case PLDM_SENSOR_DATA_SIZE_UINT8:
++		*present_reading = reading.value.value_u8;
++		break;
++	case PLDM_SENSOR_DATA_SIZE_SINT8:
++		*present_reading = (uint32_t)(int32_t)reading.value.value_s8;
++		break;
++	case PLDM_SENSOR_DATA_SIZE_UINT16:
++		*present_reading = reading.value.value_u16;
++		break;
++	case PLDM_SENSOR_DATA_SIZE_SINT16:
++		*present_reading = (uint32_t)(int32_t)reading.value.value_s16;
++		break;
++	case PLDM_SENSOR_DATA_SIZE_UINT32:
++		*present_reading = reading.value.value_u32;
++		break;
++	case PLDM_SENSOR_DATA_SIZE_SINT32:
++		*present_reading = (uint32_t)reading.value.value_s32;
++		break;
++	default:
++		return PLDM_ERROR_INVALID_DATA;
++	}
++
++	return PLDM_SUCCESS;
++}
++
++LIBPLDM_ABI_TESTING
++int decode_numeric_sensor_data_to_value(
++	const uint8_t *sensor_data, size_t sensor_data_length,
++	uint8_t *event_state, uint8_t *previous_event_state,
++	struct pldm_numeric_sensor_value *present_reading)
+ {
+ 	PLDM_MSGBUF_RO_DEFINE_P(buf);
+ 	int rc;
+ 
+-	if (sensor_data == NULL || sensor_data_size == NULL ||
+-	    event_state == NULL || previous_event_state == NULL ||
+-	    present_reading == NULL) {
+-		return PLDM_ERROR_INVALID_DATA;
++	if (sensor_data == NULL || event_state == NULL ||
++	    previous_event_state == NULL || present_reading == NULL) {
++		return -EINVAL;
+ 	}
+ 
+ 	if (sensor_data_length >
+ 	    PLDM_SENSOR_EVENT_NUMERIC_SENSOR_STATE_MAX_DATA_LENGTH) {
+-		return PLDM_ERROR_INVALID_LENGTH;
++		return -EOVERFLOW;
+ 	}
+ 
+ 	rc = pldm_msgbuf_init_errno(
+ 		buf, PLDM_SENSOR_EVENT_NUMERIC_SENSOR_STATE_MIN_DATA_LENGTH,
+ 		sensor_data, sensor_data_length);
+ 	if (rc) {
+-		return pldm_xlate_errno(rc);
++		return rc;
+ 	}
+ 
+ 	pldm_msgbuf_extract_p(buf, event_state);
+ 	pldm_msgbuf_extract_p(buf, previous_event_state);
+-	rc = pldm_msgbuf_extract_p(buf, sensor_data_size);
++	rc = pldm_msgbuf_extract(buf, present_reading->sensor_data_size);
+ 	if (rc) {
+-		return pldm_xlate_errno(pldm_msgbuf_discard(buf, rc));
++		return pldm_msgbuf_discard(buf, rc);
+ 	}
+ 
+-	/*
+-	 * The implementation below is bonkers, but it's because the function
+-	 * prototype is bonkers. The `present_reading` argument should have been
+-	 * a tagged union.
+-	 */
+-	switch (*sensor_data_size) {
+-	case PLDM_SENSOR_DATA_SIZE_UINT8: {
+-		uint8_t val;
+-		if (!pldm_msgbuf_extract(buf, val)) {
+-			*present_reading = (uint32_t)val;
+-		}
+-		break;
+-	}
+-	case PLDM_SENSOR_DATA_SIZE_SINT8: {
+-		int8_t val;
+-		if (!pldm_msgbuf_extract(buf, val)) {
+-			*present_reading = (uint32_t)(int32_t)val;
+-		}
+-		break;
++	if (present_reading->sensor_data_size > PLDM_SENSOR_DATA_SIZE_MAX) {
++		return pldm_msgbuf_discard(buf, -EINVAL);
+ 	}
+-	case PLDM_SENSOR_DATA_SIZE_UINT16: {
+-		uint16_t val;
+-		if (!pldm_msgbuf_extract(buf, val)) {
+-			*present_reading = (uint32_t)val;
+-		}
+-		break;
+-	}
+-	case PLDM_SENSOR_DATA_SIZE_SINT16: {
+-		int16_t val;
+-		if (!pldm_msgbuf_extract(buf, val)) {
+-			*present_reading = (uint32_t)(int32_t)val;
+-		}
+-		break;
+-	}
+-	case PLDM_SENSOR_DATA_SIZE_UINT32: {
+-		uint32_t val;
+-		if (!pldm_msgbuf_extract(buf, val)) {
+-			*present_reading = (uint32_t)val;
+-		}
+-		break;
+-	}
+-	case PLDM_SENSOR_DATA_SIZE_SINT32: {
+-		int32_t val;
+-		if (!pldm_msgbuf_extract(buf, val)) {
+-			*present_reading = (uint32_t)val;
+-		}
+-		break;
+-	}
+-	default:
+-		return pldm_msgbuf_discard(buf, PLDM_ERROR_INVALID_DATA);
++
++	rc = pldm_msgbuf_extract_sensor_data64(
++		buf, present_reading->sensor_data_size,
++		&present_reading->value);
++	if (rc) {
++		return pldm_msgbuf_discard(buf, rc);
+ 	}
+ 
+ 	rc = pldm_msgbuf_complete_consumed(buf);
+ 	if (rc) {
+-		return pldm_xlate_errno(rc);
++		return rc;
+ 	}
+ 
+-	return PLDM_SUCCESS;
++	return 0;
+ }
+ 
+ LIBPLDM_ABI_STABLE
+@@ -2450,7 +2455,7 @@ int decode_get_sensor_reading_resp(
+ 		return pldm_xlate_errno(pldm_msgbuf_discard(buf, rc));
+ 	}
+ 
+-	if (*sensor_data_size > PLDM_SENSOR_DATA_SIZE_SINT32) {
++	if (*sensor_data_size > PLDM_SENSOR_DATA_SIZE_MAX) {
+ 		return pldm_msgbuf_discard(buf, PLDM_ERROR_INVALID_DATA);
+ 	}
+ 
+@@ -2485,7 +2490,7 @@ int encode_get_sensor_reading_resp(uint8_t instance_id, uint8_t completion_code,
+ 		return PLDM_ERROR_INVALID_DATA;
+ 	}
+ 
+-	if (sensor_data_size > PLDM_EFFECTER_DATA_SIZE_SINT32) {
++	if (sensor_data_size > PLDM_SENSOR_DATA_SIZE_MAX) {
+ 		return PLDM_ERROR_INVALID_DATA;
+ 	}
+ 
+@@ -2511,15 +2516,15 @@ int encode_get_sensor_reading_resp(uint8_t instance_id, uint8_t completion_code,
+ 	response->previous_state = previous_state;
+ 	response->event_state = event_state;
+ 
+-	if (sensor_data_size == PLDM_EFFECTER_DATA_SIZE_UINT8 ||
+-	    sensor_data_size == PLDM_EFFECTER_DATA_SIZE_SINT8) {
++	if (sensor_data_size == PLDM_SENSOR_DATA_SIZE_UINT8 ||
++	    sensor_data_size == PLDM_SENSOR_DATA_SIZE_SINT8) {
+ 		if (payload_length != PLDM_GET_SENSOR_READING_MIN_RESP_BYTES) {
+ 			return PLDM_ERROR_INVALID_LENGTH;
+ 		}
+ 		response->present_reading[0] = *present_reading;
+ 
+-	} else if (sensor_data_size == PLDM_EFFECTER_DATA_SIZE_UINT16 ||
+-		   sensor_data_size == PLDM_EFFECTER_DATA_SIZE_SINT16) {
++	} else if (sensor_data_size == PLDM_SENSOR_DATA_SIZE_UINT16 ||
++		   sensor_data_size == PLDM_SENSOR_DATA_SIZE_SINT16) {
+ 		if (payload_length !=
+ 		    PLDM_GET_SENSOR_READING_MIN_RESP_BYTES + 1) {
+ 			return PLDM_ERROR_INVALID_LENGTH;
+@@ -2528,8 +2533,8 @@ int encode_get_sensor_reading_resp(uint8_t instance_id, uint8_t completion_code,
+ 		val = htole16(val);
+ 		memcpy(response->present_reading, &val, 2);
+ 
+-	} else if (sensor_data_size == PLDM_EFFECTER_DATA_SIZE_UINT32 ||
+-		   sensor_data_size == PLDM_EFFECTER_DATA_SIZE_SINT32) {
++	} else if (sensor_data_size == PLDM_SENSOR_DATA_SIZE_UINT32 ||
++		   sensor_data_size == PLDM_SENSOR_DATA_SIZE_SINT32) {
+ 		if (payload_length !=
+ 		    PLDM_GET_SENSOR_READING_MIN_RESP_BYTES + 3) {
+ 			return PLDM_ERROR_INVALID_LENGTH;
+@@ -2537,6 +2542,16 @@ int encode_get_sensor_reading_resp(uint8_t instance_id, uint8_t completion_code,
+ 		uint32_t val = *(uint32_t *)present_reading;
+ 		val = htole32(val);
+ 		memcpy(response->present_reading, &val, 4);
++	} else if (sensor_data_size == PLDM_SENSOR_DATA_SIZE_UINT64 ||
++		   sensor_data_size == PLDM_SENSOR_DATA_SIZE_SINT64) {
++		if (payload_length !=
++		    PLDM_GET_SENSOR_READING_MIN_RESP_BYTES + 7) {
++			return PLDM_ERROR_INVALID_LENGTH;
++		}
++		uint64_t val;
++		memcpy(&val, present_reading, sizeof(val));
++		val = htole64(val);
++		memcpy(response->present_reading, &val, sizeof(val));
+ 	}
+ 
+ 	return PLDM_SUCCESS;
+@@ -3083,7 +3098,7 @@ int decode_numeric_effecter_pdr_data(
+ 	if (rc) {
+ 		return pldm_xlate_errno(pldm_msgbuf_discard(buf, rc));
+ 	}
+-	if (pdr_value->effecter_data_size > PLDM_SENSOR_DATA_SIZE_MAX) {
++	if (pdr_value->effecter_data_size > PLDM_EFFECTER_DATA_SIZE_SINT32) {
+ 		return pldm_msgbuf_discard(buf, PLDM_ERROR_INVALID_DATA);
+ 	}
+ 
+diff --git a/src/msgbuf.h b/src/msgbuf.h
+index 24cf6e2..ae79ef2 100644
+--- a/src/msgbuf.h
++++ b/src/msgbuf.h
+@@ -119,6 +119,14 @@
+ 	pldm_msgbuf_extract_typecheck(int32_t, pldm__msgbuf_extract_int32,     \
+ 				      dst, ctx, (void *)&(dst))
+ 
++#define pldm_msgbuf_extract_uint64(ctx, dst)                                   \
++	pldm_msgbuf_extract_typecheck(uint64_t, pldm__msgbuf_extract_uint64,   \
++				      dst, ctx, (void *)&(dst))
++
++#define pldm_msgbuf_extract_int64(ctx, dst)                                    \
++	pldm_msgbuf_extract_typecheck(int64_t, pldm__msgbuf_extract_int64,     \
++				      dst, ctx, (void *)&(dst))
++
+ #define pldm_msgbuf_extract_real32(ctx, dst)                                   \
+ 	pldm_msgbuf_extract_typecheck(real32_t, pldm__msgbuf_extract_real32,   \
+ 				      dst, ctx, (void *)&(dst))
+@@ -140,6 +148,8 @@
+ 		int16_t: pldm__msgbuf_extract_int16,                           \
+ 		uint32_t: pldm__msgbuf_extract_uint32,                         \
+ 		int32_t: pldm__msgbuf_extract_int32,                           \
++		uint64_t: pldm__msgbuf_extract_uint64,                         \
++		int64_t: pldm__msgbuf_extract_int64,                           \
+ 		real32_t: pldm__msgbuf_extract_real32)(ctx, (void *)&(dst))
+ 
+ /**
+@@ -159,6 +169,8 @@
+ 		int16_t *: pldm__msgbuf_extract_int16,                         \
+ 		uint32_t *: pldm__msgbuf_extract_uint32,                       \
+ 		int32_t *: pldm__msgbuf_extract_int32,                         \
++		uint64_t *: pldm__msgbuf_extract_uint64,                       \
++		int64_t *: pldm__msgbuf_extract_int64,                         \
+ 		real32_t *: pldm__msgbuf_extract_real32)(ctx, dst)
+ 
+ #define pldm_msgbuf_insert(dst, src)                                           \
+@@ -170,7 +182,8 @@
+ 		uint32_t: pldm_msgbuf_insert_uint32,                           \
+ 		int32_t: pldm_msgbuf_insert_int32,                             \
+ 		real32_t: pldm_msgbuf_insert_real32,                           \
+-		uint64_t: pldm_msgbuf_insert_uint64)(dst, src)
++		uint64_t: pldm_msgbuf_insert_uint64,                           \
++		int64_t: pldm_msgbuf_insert_int64)(dst, src)
+ 
+ /**
+  * Insert an array of data into the msgbuf instance
+diff --git a/src/msgbuf/core.h b/src/msgbuf/core.h
+index 430e3d8..8b2ff53 100644
+--- a/src/msgbuf/core.h
++++ b/src/msgbuf/core.h
+@@ -652,6 +652,66 @@ pldm__msgbuf_extract_int32(struct pldm_msgbuf_ro *ctx, void *dst)
+ 	return pldm__msgbuf_ro_invalidate(ctx);
+ }
+ 
++LIBPLDM_CC_NONNULL
++LIBPLDM_CC_ALWAYS_INLINE int
++// NOLINTNEXTLINE(bugprone-reserved-identifier,cert-dcl37-c,cert-dcl51-cpp)
++pldm__msgbuf_extract_uint64(struct pldm_msgbuf_ro *ctx, void *dst)
++{
++	uint64_t ldst;
++
++	static_assert(
++		// NOLINTNEXTLINE(bugprone-sizeof-expression)
++		sizeof(ldst) < INTMAX_MAX,
++		"The following addition may not uphold the runtime assertion");
++
++	if (ctx->remaining >= (intmax_t)sizeof(ldst)) {
++		assert(ctx->cursor);
++		memcpy(&ldst, ctx->cursor, sizeof(ldst));
++		ldst = le64toh(ldst);
++		memcpy(dst, &ldst, sizeof(ldst));
++		ctx->cursor += sizeof(ldst);
++		ctx->remaining -= sizeof(ldst);
++		return 0;
++	}
++
++	if (ctx->remaining > INTMAX_MIN + (intmax_t)sizeof(ldst)) {
++		ctx->remaining -= sizeof(ldst);
++		return -EOVERFLOW;
++	}
++
++	return pldm__msgbuf_ro_invalidate(ctx);
++}
++
++LIBPLDM_CC_NONNULL
++LIBPLDM_CC_ALWAYS_INLINE int
++// NOLINTNEXTLINE(bugprone-reserved-identifier,cert-dcl37-c,cert-dcl51-cpp)
++pldm__msgbuf_extract_int64(struct pldm_msgbuf_ro *ctx, void *dst)
++{
++	int64_t ldst;
++
++	static_assert(
++		// NOLINTNEXTLINE(bugprone-sizeof-expression)
++		sizeof(ldst) < INTMAX_MAX,
++		"The following addition may not uphold the runtime assertion");
++
++	if (ctx->remaining >= (intmax_t)sizeof(ldst)) {
++		assert(ctx->cursor);
++		memcpy(&ldst, ctx->cursor, sizeof(ldst));
++		ldst = (int64_t)le64toh((uint64_t)ldst);
++		memcpy(dst, &ldst, sizeof(ldst));
++		ctx->cursor += sizeof(ldst);
++		ctx->remaining -= sizeof(ldst);
++		return 0;
++	}
++
++	if (ctx->remaining > INTMAX_MIN + (intmax_t)sizeof(ldst)) {
++		ctx->remaining -= sizeof(ldst);
++		return -EOVERFLOW;
++	}
++
++	return pldm__msgbuf_ro_invalidate(ctx);
++}
++
+ LIBPLDM_CC_NONNULL
+ LIBPLDM_CC_ALWAYS_INLINE int
+ // NOLINTNEXTLINE(bugprone-reserved-identifier,cert-dcl37-c,cert-dcl51-cpp)
+@@ -792,6 +852,33 @@ pldm_msgbuf_insert_uint64(struct pldm_msgbuf_rw *ctx, const uint64_t src)
+ 	return pldm__msgbuf_rw_invalidate(ctx);
+ }
+ 
++LIBPLDM_CC_NONNULL
++LIBPLDM_CC_ALWAYS_INLINE int
++pldm_msgbuf_insert_int64(struct pldm_msgbuf_rw *ctx, const int64_t src)
++{
++	int64_t val = (int64_t)htole64((uint64_t)src);
++
++	static_assert(
++		// NOLINTNEXTLINE(bugprone-sizeof-expression)
++		sizeof(src) < INTMAX_MAX,
++		"The following addition may not uphold the runtime assertion");
++
++	if (ctx->remaining >= (intmax_t)sizeof(src)) {
++		assert(ctx->cursor);
++		memcpy(ctx->cursor, &val, sizeof(val));
++		ctx->cursor += sizeof(src);
++		ctx->remaining -= sizeof(src);
++		return 0;
++	}
++
++	if (ctx->remaining > INTMAX_MIN + (intmax_t)sizeof(src)) {
++		ctx->remaining -= sizeof(src);
++		return -EOVERFLOW;
++	}
++
++	return pldm__msgbuf_rw_invalidate(ctx);
++}
++
+ LIBPLDM_CC_NONNULL
+ LIBPLDM_CC_ALWAYS_INLINE int
+ pldm_msgbuf_insert_real32(struct pldm_msgbuf_rw *ctx, const real32_t src)
+diff --git a/src/msgbuf/platform.h b/src/msgbuf/platform.h
+index 3b3b094..4a100bb 100644
+--- a/src/msgbuf/platform.h
++++ b/src/msgbuf/platform.h
+@@ -51,9 +51,39 @@ pldm_msgbuf_extract_sensor_data(struct pldm_msgbuf_ro *ctx,
+ 		return pldm_msgbuf_extract(ctx, dst->value_u32);
+ 	case PLDM_SENSOR_DATA_SIZE_SINT32:
+ 		return pldm_msgbuf_extract(ctx, dst->value_s32);
++	case PLDM_SENSOR_DATA_SIZE_UINT64:
++	case PLDM_SENSOR_DATA_SIZE_SINT64:
++		return -EINVAL;
+ 	}
+ 
+-	return -PLDM_ERROR_INVALID_DATA;
++	return -EINVAL;
++}
++
++LIBPLDM_CC_ALWAYS_INLINE int
++pldm_msgbuf_extract_sensor_data64(struct pldm_msgbuf_ro *ctx,
++				  enum pldm_sensor_readings_data_type tag,
++				  union_sensor_data_size64 *dst)
++{
++	switch (tag) {
++	case PLDM_SENSOR_DATA_SIZE_UINT8:
++		return pldm_msgbuf_extract(ctx, dst->value_u8);
++	case PLDM_SENSOR_DATA_SIZE_SINT8:
++		return pldm_msgbuf_extract(ctx, dst->value_s8);
++	case PLDM_SENSOR_DATA_SIZE_UINT16:
++		return pldm_msgbuf_extract(ctx, dst->value_u16);
++	case PLDM_SENSOR_DATA_SIZE_SINT16:
++		return pldm_msgbuf_extract(ctx, dst->value_s16);
++	case PLDM_SENSOR_DATA_SIZE_UINT32:
++		return pldm_msgbuf_extract(ctx, dst->value_u32);
++	case PLDM_SENSOR_DATA_SIZE_SINT32:
++		return pldm_msgbuf_extract(ctx, dst->value_s32);
++	case PLDM_SENSOR_DATA_SIZE_UINT64:
++		return pldm_msgbuf_extract(ctx, dst->value_u64);
++	case PLDM_SENSOR_DATA_SIZE_SINT64:
++		return pldm_msgbuf_extract(ctx, dst->value_s64);
++	}
++
++	return -EINVAL;
+ }
+ 
+ /*
+@@ -79,6 +109,10 @@ pldm_msgbuf_extract_sensor_value(struct pldm_msgbuf_ro *ctx,
+ 		return pldm__msgbuf_extract_uint32(ctx, val);
+ 	case PLDM_SENSOR_DATA_SIZE_SINT32:
+ 		return pldm__msgbuf_extract_int32(ctx, val);
++	case PLDM_SENSOR_DATA_SIZE_UINT64:
++		return pldm__msgbuf_extract_uint64(ctx, val);
++	case PLDM_SENSOR_DATA_SIZE_SINT64:
++		return pldm__msgbuf_extract_int64(ctx, val);
+ 	}
+ 
+ 	return -PLDM_ERROR_INVALID_DATA;
+@@ -120,6 +154,9 @@ LIBPLDM_CC_ALWAYS_INLINE int pldm__msgbuf_extract_range_field_format(
+ 		return pldm__msgbuf_extract_real32(
+ 			ctx, ((char *)rff) + offsetof(union_range_field_format,
+ 						      value_f32));
++	case PLDM_RANGE_FIELD_FORMAT_UINT64:
++	case PLDM_RANGE_FIELD_FORMAT_SINT64:
++		return -PLDM_ERROR_INVALID_DATA;
+ 	}
+ 
+ 	return -PLDM_ERROR_INVALID_DATA;
+diff --git a/tests/unit/dsp/platform.cpp b/tests/unit/dsp/platform.cpp
+index b1c3c8a..cda5ab2 100644
+--- a/tests/unit/dsp/platform.cpp
++++ b/tests/unit/dsp/platform.cpp
+@@ -2847,6 +2847,7 @@ TEST(PlatformEventMessage, testGoodNumericSensorEventDataDecodeRequest)
+         eventDataArr{};
+     struct pldm_sensor_event_numeric_sensor_state* sensorData =
+         (struct pldm_sensor_event_numeric_sensor_state*)eventDataArr.data();
++    uint8_t* sensorDataBytes = eventDataArr.data();
+ 
+     size_t sensorDataLength =
+         PLDM_SENSOR_EVENT_NUMERIC_SENSOR_STATE_32BIT_DATA_LENGTH;
+@@ -2869,10 +2870,8 @@ TEST(PlatformEventMessage, testGoodNumericSensorEventDataDecodeRequest)
+     uint32_t retPresentReading;
+ 
+     auto rc = decode_numeric_sensor_data(
+-        // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+-        reinterpret_cast<uint8_t*>(sensorData), sensorDataLength,
+-        &retEventState, &retPreviousEventState, &retSensorDataSize,
+-        &retPresentReading);
++        sensorDataBytes, sensorDataLength, &retEventState,
++        &retPreviousEventState, &retSensorDataSize, &retPresentReading);
+     EXPECT_EQ(rc, PLDM_SUCCESS);
+     EXPECT_EQ(retEventState, eventState);
+     EXPECT_EQ(retPreviousEventState, previousEventState);
+@@ -2889,16 +2888,60 @@ TEST(PlatformEventMessage, testGoodNumericSensorEventDataDecodeRequest)
+     sensorData->sensor_data_size = sensorDataSize;
+     sensorDataLength = PLDM_SENSOR_EVENT_NUMERIC_SENSOR_STATE_16BIT_DATA_LENGTH;
+ 
+-    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+-    rc = decode_numeric_sensor_data(reinterpret_cast<uint8_t*>(sensorData),
+-                                    sensorDataLength, &retEventState,
+-                                    &retPreviousEventState, &retSensorDataSize,
+-                                    &retPresentReading);
++    rc = decode_numeric_sensor_data(sensorDataBytes, sensorDataLength,
++                                    &retEventState, &retPreviousEventState,
++                                    &retSensorDataSize, &retPresentReading);
+     EXPECT_EQ(rc, PLDM_SUCCESS);
+     EXPECT_EQ(retEventState, eventState);
+     EXPECT_EQ(retPreviousEventState, previousEventState);
+     EXPECT_EQ(retSensorDataSize, sensorDataSize);
+     EXPECT_EQ(static_cast<int16_t>(retPresentReading), presentReadingNew);
++
++#if HAVE_LIBPLDM_ABI_TESTING
++    struct pldm_numeric_sensor_value retPresentReadingValue;
++    sensorDataSize = PLDM_SENSOR_DATA_SIZE_UINT32;
++    sensorData->sensor_data_size = sensorDataSize;
++    sensorDataLength = PLDM_SENSOR_EVENT_NUMERIC_SENSOR_STATE_32BIT_DATA_LENGTH;
++    {
++        uint32_t presentReadingLE = htole32(presentReading);
++        memcpy(&sensorData->present_reading, &presentReadingLE,
++               sizeof(presentReadingLE));
++    }
++
++    rc = decode_numeric_sensor_data_to_value(
++        sensorDataBytes, sensorDataLength, &retEventState,
++        &retPreviousEventState, &retPresentReadingValue);
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++    EXPECT_EQ(retPresentReadingValue.sensor_data_size, sensorDataSize);
++    EXPECT_EQ(retPresentReadingValue.value.value_u32, presentReading);
++
++    uint64_t presentReading64 = 0x1122334455667788;
++    {
++        uint64_t presentReading64LE = htole64(presentReading64);
++        memcpy(&sensorData->present_reading, &presentReading64LE,
++               sizeof(presentReading64LE));
++    }
++    sensorDataSize = PLDM_SENSOR_DATA_SIZE_UINT64;
++    sensorData->sensor_data_size = sensorDataSize;
++    sensorDataLength = PLDM_SENSOR_EVENT_NUMERIC_SENSOR_STATE_64BIT_DATA_LENGTH;
++
++    rc = decode_numeric_sensor_data_to_value(
++        sensorDataBytes, sensorDataLength, &retEventState,
++        &retPreviousEventState, &retPresentReadingValue);
++    EXPECT_EQ(rc, PLDM_SUCCESS);
++    EXPECT_EQ(retPresentReadingValue.sensor_data_size, sensorDataSize);
++    EXPECT_EQ(retPresentReadingValue.value.value_u64, presentReading64);
++
++    rc = decode_numeric_sensor_data(sensorDataBytes, sensorDataLength,
++                                    &retEventState, &retPreviousEventState,
++                                    &retSensorDataSize, &retPresentReading);
++    EXPECT_EQ(rc, PLDM_ERROR_INVALID_DATA);
++
++    rc = decode_numeric_sensor_data_to_value(
++        nullptr, sensorDataLength, &retEventState, &retPreviousEventState,
++        &retPresentReadingValue);
++    EXPECT_EQ(rc, -EINVAL);
++#endif
+ }
+ 
+ TEST(PlatformEventMessage, testBadNumericSensorEventDataDecodeRequest)
+@@ -3479,7 +3522,7 @@ TEST(GetSensorReading, testBadEncodeResponse)
+         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+         reinterpret_cast<uint8_t*>(&presentReading), response,
+         responseMsg.size() - hdrSize);
+-    EXPECT_EQ(rc, PLDM_ERROR_INVALID_DATA);
++    EXPECT_EQ(rc, PLDM_ERROR_INVALID_LENGTH);
+ 
+     uint8_t sensor_dataSize = PLDM_EFFECTER_DATA_SIZE_UINT8;
+ 
+-- 
+2.34.1
+

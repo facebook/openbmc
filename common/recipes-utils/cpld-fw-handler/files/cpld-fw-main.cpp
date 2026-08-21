@@ -8,16 +8,20 @@
 #include <fcntl.h>
 #include <cstdio>
 #include <string>
+#ifdef ENABLE_EVENTS
 #include <phosphor-logging/lg2.hpp>
 #include <phosphor-logging/commit.hpp>
 #include <xyz/openbmc_project/Software/Update/event.hpp>
+#endif
 
 #include <chrono>
 
+#ifdef ENABLE_EVENTS
 using TargetDetermined = sdbusplus::event::xyz::openbmc_project::software::Update::TargetDetermined;
 using UpdateSuccessful = sdbusplus::event::xyz::openbmc_project::software::Update::UpdateSuccessful;
 using ApplyFailed = sdbusplus::error::xyz::openbmc_project::software::Update::ActivateFailed;
 using VerificationFailed = sdbusplus::error::xyz::openbmc_project::software::Update::VerificationFailed;
+#endif
 
 enum class SEL_TYPE
 {
@@ -45,6 +49,7 @@ inline std::string to_string(CpldType type)
     }
 }
 
+#ifdef ENABLE_EVENTS
 static bool isAllowSel(const std::string& imagePath, const std::string& chip)
 {
     return !imagePath.empty() && !chip.empty();
@@ -61,7 +66,7 @@ void addSelBySelType(SEL_TYPE selType,
         return;
     }
 
-    auto targetName = sdbusplus::message::object_path(deviceType + " " + info);
+    auto targetName = sdbusplus::object_path(deviceType + " " + info);
 
     switch (selType)
     {
@@ -111,6 +116,13 @@ void addSelBySelType(SEL_TYPE selType,
         }
     }
 }
+#else
+inline void addSelBySelType(
+    SEL_TYPE /*selType*/, const std::string& /*imagePath*/,
+    const std::string& /*chip*/, const std::string& /*deviceType*/,
+    const std::string& /*info*/)
+{}
+#endif
 
 static std::string getCpldType(std::string_view cpldName)
 {
@@ -169,18 +181,24 @@ int main(int argc, char** argv)
     version->add_option("-b,--bus", bus, "i2c bus")->required();
     version->add_option("-a,--addr", addr, "slave address")->required();
     version->add_option("-t,--target", target,
-                        "used for LCMXO3D series CPLD, CFG0|CFG1");
+                        "used for LCMXO3D|LFMXO5 series CPLD, CFG0|CFG1");
     version->add_option(
         "-c,--chip", chip,
         "LCMXO3LF-4300|LCMXO3LF-6900|LCMXO3D-4300|LCMXO3D-9400|LFMXO5-25|LFMXO5-65T");
 
     CLI11_PARSE(app, argc, argv);
 
-    auto cpldType = getCpldType(chip);
-    auto info = getInfo(cpldType, bus);
-
     auto cpldManager = CpldLatticeManager(bus, addr, imagePath, chip, interface,
                                           target, debugMode);
+
+    if (chip.empty())
+    {
+        cpldManager.autoDetectChip();
+        chip = cpldManager.getChipName();
+    }
+
+    auto cpldType = getCpldType(chip);
+    auto info = getInfo(cpldType, bus);
 
     addSelBySelType(SEL_TYPE::TargetDetermined, imagePath, chip, cpldType, info);
 

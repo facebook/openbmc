@@ -38,7 +38,7 @@ echo "$EMMC_INFO"
 if echo "$EMMC_INFO" | grep "Device Health.*Undefined" > /dev/null 2>&1 &&
    echo "$EMMC_INFO" | grep "Life Time.*Undefined" > /dev/null 2>&1; then
     echo "emmcd not started: device life time estimates not supported."
-    exit 1
+    exit 0
 fi
 
 echo "Starting emmcd daemon.."

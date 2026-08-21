@@ -1,0 +1,53 @@
+From 36185feb128d17b4cae2c99556902e2e4380e8c7 Mon Sep 17 00:00:00 2001
+From: Alan Tsai <alan-tsai@quantatw.com>
+Date: Thu, 20 Aug 2026 21:50:12 +0800
+Subject: [PATCH 1/2] configurations: revise 100G BRCM NIC configuration
+
+Add an MCTPI2CTarget entry to allow MCTPReactor to automatically
+assign an EID to the BRCM NIC over I2C, removing the need for manual
+EID configuration.
+
+Update thresholds
+
+Tested on Rainiera7:
+- EID is correctly assigned
+- Version object is properly exposed
+- Temperature sensor threshold is exposed correct value.
+---
+ configurations/broadcomm/100g_1p_ocp_mezz.json | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/configurations/broadcomm/100g_1p_ocp_mezz.json b/configurations/broadcomm/100g_1p_ocp_mezz.json
+index d3cb955..b198af0 100644
+--- a/configurations/broadcomm/100g_1p_ocp_mezz.json
++++ b/configurations/broadcomm/100g_1p_ocp_mezz.json
+@@ -6,6 +6,12 @@
+             "Name": "BRCM OCP NIC FRU $bus",
+             "Type": "EEPROM"
+         },
++        {
++            "Address": "0x32",
++            "Bus": "$bus",
++            "Name": "NIC",
++            "Type": "MCTPI2CTarget"
++        },
+         {
+             "Address": "0x1f",
+             "Bus": "$bus",
+@@ -28,6 +34,13 @@
+                     "Name": "upper critical",
+                     "Severity": 1,
+                     "Value": 105
++                },
++                {
++                    "Direction": "greater than",
++                    "Index": 2,
++                    "Name": "upper non recoverable",
++                    "Severity": 4,
++                    "Value": 115
+                 }
+             ],
+             "Type": "TMP421"
+-- 
+2.25.1
+

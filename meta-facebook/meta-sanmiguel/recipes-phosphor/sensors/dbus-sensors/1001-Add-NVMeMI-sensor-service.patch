@@ -1,4 +1,4 @@
-From f31bc70e3a1977408463ed314e7029d24277f6dd Mon Sep 17 00:00:00 2001
+From bf1698a64eb2631a629ff66575e8ce82bc0e1395 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Sat, 2 May 2026 22:46:03 +0800
 Subject: [PATCH] Add NVMeMI sensor service
@@ -1364,7 +1364,7 @@ index 0000000..cea7974
 +};
 diff --git a/src/nvmemi/NVMeMiSensorMain.cpp b/src/nvmemi/NVMeMiSensorMain.cpp
 new file mode 100644
-index 0000000..9bb6e54
+index 0000000..db46737
 --- /dev/null
 +++ b/src/nvmemi/NVMeMiSensorMain.cpp
 @@ -0,0 +1,898 @@
@@ -2067,7 +2067,7 @@ index 0000000..9bb6e54
 +        }
 +
 +        // this implicitly cancels the timer
-+        filterTimer.expires_after(std::chrono::seconds(1));
++        filterTimer.expires_after(std::chrono::seconds(3));
 +
 +        filterTimer.async_wait([&](const boost::system::error_code& ec) {
 +            if (ec == boost::asio::error::operation_aborted)
@@ -2173,7 +2173,7 @@ index 0000000..9bb6e54
 +                return;
 +            }
 +
-+            sdbusplus::message::object_path path;
++            sdbusplus::object_path path;
 +            std::vector<std::string> interfaces;
 +
 +            msg.read(path, interfaces);
@@ -2268,7 +2268,7 @@ index 0000000..9bb6e54
 +}
 diff --git a/src/nvmemi/NVMeMiStatusSensor.cpp b/src/nvmemi/NVMeMiStatusSensor.cpp
 new file mode 100644
-index 0000000..c25fbc0
+index 0000000..9bd071a
 --- /dev/null
 +++ b/src/nvmemi/NVMeMiStatusSensor.cpp
 @@ -0,0 +1,132 @@
@@ -2320,7 +2320,7 @@ index 0000000..c25fbc0
 +    const std::string& sensorName, const std::string& sensorConfiguration,
 +    const uint8_t eid) :
 +    StatusInterface(
-+        static_cast<sdbusplus::bus::bus&>(*conn),
++        static_cast<sdbusplus::bus_t&>(*conn),
 +        ("/xyz/openbmc_project/sensors/drive/" + escapeName(sensorName))
 +            .c_str(),
 +        StatusInterface::action::defer_emit),
@@ -2518,5 +2518,5 @@ index 0000000..ae181f5
 +)
 +
 -- 
-2.52.0
+2.53.0-Meta
 

@@ -1,0 +1,548 @@
+From b0e66222b0512c53f8fc5d4887db73d507a2cc82 Mon Sep 17 00:00:00 2001
+From: Cosmo Chou <chou.cosmo@gmail.com>
+Date: Fri, 29 May 2026 08:57:08 +0800
+Subject: [PATCH] ARM: dts: aspeed: bletchley: Add second source PCA9532 LED
+ controllers
+
+Add alternative PCA9532 LED controllers at address 0x66 to support boards
+populated with the PCA9532 instead of the primary PCA9552 at 0x67.
+
+Signed-off-by: Cosmo Chou <chou.cosmo@gmail.com>
+---
+ .../aspeed/aspeed-bmc-facebook-bletchley.dts  | 422 ++++++++++++++++++
+ 1 file changed, 422 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
+index e1fa3a18ea5c..3da1cf9bbb99 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
+@@ -6,6 +6,7 @@
+ #include <dt-bindings/gpio/aspeed-gpio.h>
+ #include <dt-bindings/usb/pd.h>
+ #include <dt-bindings/leds/leds-pca955x.h>
++#include <dt-bindings/leds/leds-pca9532.h>
+ #include <dt-bindings/interrupt-controller/irq.h>
+ #include <dt-bindings/i2c/i2c.h>
+ 
+@@ -86,6 +87,66 @@ led-7 {
+ 		};
+ 	};
+ 
++	fan_gpio_leds_alt {
++		compatible = "gpio-leds";
++
++		led-0 {
++			default-state = "on";
++			gpios = <&fan_leds_alt 8 GPIO_ACTIVE_HIGH>;
++			label = "fan0_blue";
++			retain-state-shutdown;
++		};
++
++		led-1 {
++			default-state = "on";
++			gpios = <&fan_leds_alt 9 GPIO_ACTIVE_HIGH>;
++			label = "fan1_blue";
++			retain-state-shutdown;
++		};
++
++		led-2 {
++			default-state = "on";
++			gpios = <&fan_leds_alt 10 GPIO_ACTIVE_HIGH>;
++			label = "fan2_blue";
++			retain-state-shutdown;
++		};
++
++		led-3 {
++			default-state = "on";
++			gpios = <&fan_leds_alt 11 GPIO_ACTIVE_HIGH>;
++			label = "fan3_blue";
++			retain-state-shutdown;
++		};
++
++		led-4 {
++			default-state = "off";
++			gpios = <&fan_leds_alt 12 GPIO_ACTIVE_HIGH>;
++			label = "fan0_amber";
++			retain-state-shutdown;
++		};
++
++		led-5 {
++			default-state = "off";
++			gpios = <&fan_leds_alt 13 GPIO_ACTIVE_HIGH>;
++			label = "fan1_amber";
++			retain-state-shutdown;
++		};
++
++		led-6 {
++			default-state = "off";
++			gpios = <&fan_leds_alt 14 GPIO_ACTIVE_HIGH>;
++			label = "fan2_amber";
++			retain-state-shutdown;
++		};
++
++		led-7 {
++			default-state = "off";
++			gpios = <&fan_leds_alt 15 GPIO_ACTIVE_HIGH>;
++			label = "fan3_amber";
++			retain-state-shutdown;
++		};
++	};
++
+ 	front_gpio_leds {
+ 		compatible = "gpio-leds";
+ 
+@@ -162,6 +223,24 @@ led-1 {
+ 		};
+ 	};
+ 
++	sled1_gpio_leds_alt {
++		compatible = "gpio-leds";
++
++		led-0 {
++			default-state = "keep";
++			gpios = <&sled1_leds_alt 0 GPIO_ACTIVE_LOW>;
++			label = "sled1_amber";
++			retain-state-shutdown;
++		};
++
++		led-1 {
++			default-state = "keep";
++			gpios = <&sled1_leds_alt 1 GPIO_ACTIVE_LOW>;
++			label = "sled1_blue";
++			retain-state-shutdown;
++		};
++	};
++
+ 	sled2_gpio_leds {
+ 		compatible = "gpio-leds";
+ 
+@@ -180,6 +259,24 @@ led-1 {
+ 		};
+ 	};
+ 
++	sled2_gpio_leds_alt {
++		compatible = "gpio-leds";
++
++		led-0 {
++			default-state = "keep";
++			gpios = <&sled2_leds_alt 0 GPIO_ACTIVE_LOW>;
++			label = "sled2_amber";
++			retain-state-shutdown;
++		};
++
++		led-1 {
++			default-state = "keep";
++			gpios = <&sled2_leds_alt 1 GPIO_ACTIVE_LOW>;
++			label = "sled2_blue";
++			retain-state-shutdown;
++		};
++	};
++
+ 	sled3_gpio_leds {
+ 		compatible = "gpio-leds";
+ 
+@@ -198,6 +295,24 @@ led-1 {
+ 		};
+ 	};
+ 
++	sled3_gpio_leds_alt {
++		compatible = "gpio-leds";
++
++		led-0 {
++			default-state = "keep";
++			gpios = <&sled3_leds_alt 0 GPIO_ACTIVE_LOW>;
++			label = "sled3_amber";
++			retain-state-shutdown;
++		};
++
++		led-1 {
++			default-state = "keep";
++			gpios = <&sled3_leds_alt 1 GPIO_ACTIVE_LOW>;
++			label = "sled3_blue";
++			retain-state-shutdown;
++		};
++	};
++
+ 	sled4_gpio_leds {
+ 		compatible = "gpio-leds";
+ 
+@@ -216,6 +331,24 @@ led-1 {
+ 		};
+ 	};
+ 
++	sled4_gpio_leds_alt {
++		compatible = "gpio-leds";
++
++		led-0 {
++			default-state = "keep";
++			gpios = <&sled4_leds_alt 0 GPIO_ACTIVE_LOW>;
++			label = "sled4_amber";
++			retain-state-shutdown;
++		};
++
++		led-1 {
++			default-state = "keep";
++			gpios = <&sled4_leds_alt 1 GPIO_ACTIVE_LOW>;
++			label = "sled4_blue";
++			retain-state-shutdown;
++		};
++	};
++
+ 	sled5_gpio_leds {
+ 		compatible = "gpio-leds";
+ 
+@@ -234,6 +367,24 @@ led-1 {
+ 		};
+ 	};
+ 
++	sled5_gpio_leds_alt {
++		compatible = "gpio-leds";
++
++		led-0 {
++			default-state = "keep";
++			gpios = <&sled5_leds_alt 0 GPIO_ACTIVE_LOW>;
++			label = "sled5_amber";
++			retain-state-shutdown;
++		};
++
++		led-1 {
++			default-state = "keep";
++			gpios = <&sled5_leds_alt 1 GPIO_ACTIVE_LOW>;
++			label = "sled5_blue";
++			retain-state-shutdown;
++		};
++	};
++
+ 	sled6_gpio_leds {
+ 		compatible = "gpio-leds";
+ 
+@@ -252,6 +403,24 @@ led-1 {
+ 		};
+ 	};
+ 
++	sled6_gpio_leds_alt {
++		compatible = "gpio-leds";
++
++		led-0 {
++			default-state = "keep";
++			gpios = <&sled6_leds_alt 0 GPIO_ACTIVE_LOW>;
++			label = "sled6_amber";
++			retain-state-shutdown;
++		};
++
++		led-1 {
++			default-state = "keep";
++			gpios = <&sled6_leds_alt 1 GPIO_ACTIVE_LOW>;
++			label = "sled6_blue";
++			retain-state-shutdown;
++		};
++	};
++
+ 	spi {
+ 		compatible = "spi-gpio";
+ 		#address-cells = <1>;
+@@ -430,6 +599,35 @@ eeprom@54 {
+ 		reg = <0x54>;
+ 	};
+ 
++	sled1_leds_alt: pca9532@66 {
++		compatible = "nxp,pca9532";
++		reg = <0x66>;
++		#gpio-cells = <2>;
++		gpio-controller;
++
++		gpio-line-names =
++		"led-sled1-amber","led-sled1-blue","SLED1_RST_IOEXP","SLED1_MD_REF_PWM",
++		"","","","",
++		"","","","",
++		"","","","";
++
++		led-0 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-1 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-2 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-3 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++	};
++
+ 	sled1_leds: pca9552@67 {
+ 		compatible = "nxp,pca9552";
+ 		reg = <0x67>;
+@@ -520,6 +718,35 @@ eeprom@54 {
+ 		reg = <0x54>;
+ 	};
+ 
++	sled2_leds_alt: pca9532@66 {
++		compatible = "nxp,pca9532";
++		reg = <0x66>;
++		#gpio-cells = <2>;
++		gpio-controller;
++
++		gpio-line-names =
++		"led-sled2-amber","led-sled2-blue","SLED2_RST_IOEXP","SLED2_MD_REF_PWM",
++		"","","","",
++		"","","","",
++		"","","","";
++
++		led-0 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-1 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-2 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-3 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++	};
++
+ 	sled2_leds: pca9552@67 {
+ 		compatible = "nxp,pca9552";
+ 		reg = <0x67>;
+@@ -610,6 +837,35 @@ eeprom@54 {
+ 		reg = <0x54>;
+ 	};
+ 
++	sled3_leds_alt: pca9532@66 {
++		compatible = "nxp,pca9532";
++		reg = <0x66>;
++		#gpio-cells = <2>;
++		gpio-controller;
++
++		gpio-line-names =
++		"led-sled3-amber","led-sled3-blue","SLED3_RST_IOEXP","SLED3_MD_REF_PWM",
++		"","","","",
++		"","","","",
++		"","","","";
++
++		led-0 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-1 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-2 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-3 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++	};
++
+ 	sled3_leds: pca9552@67 {
+ 		compatible = "nxp,pca9552";
+ 		reg = <0x67>;
+@@ -700,6 +956,35 @@ eeprom@54 {
+ 		reg = <0x54>;
+ 	};
+ 
++	sled4_leds_alt: pca9532@66 {
++		compatible = "nxp,pca9532";
++		reg = <0x66>;
++		#gpio-cells = <2>;
++		gpio-controller;
++
++		gpio-line-names =
++		"led-sled4-amber","led-sled4-blue","SLED4_RST_IOEXP","SLED4_MD_REF_PWM",
++		"","","","",
++		"","","","",
++		"","","","";
++
++		led-0 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-1 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-2 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-3 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++	};
++
+ 	sled4_leds: pca9552@67 {
+ 		compatible = "nxp,pca9552";
+ 		reg = <0x67>;
+@@ -790,6 +1075,35 @@ eeprom@54 {
+ 		reg = <0x54>;
+ 	};
+ 
++	sled5_leds_alt: pca9532@66 {
++		compatible = "nxp,pca9532";
++		reg = <0x66>;
++		#gpio-cells = <2>;
++		gpio-controller;
++
++		gpio-line-names =
++		"led-sled5-amber","led-sled5-blue","SLED5_RST_IOEXP","SLED5_MD_REF_PWM",
++		"","","","",
++		"","","","",
++		"","","","";
++
++		led-0 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-1 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-2 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-3 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++	};
++
+ 	sled5_leds: pca9552@67 {
+ 		compatible = "nxp,pca9552";
+ 		reg = <0x67>;
+@@ -880,6 +1194,35 @@ eeprom@54 {
+ 		reg = <0x54>;
+ 	};
+ 
++	sled6_leds_alt: pca9532@66 {
++		compatible = "nxp,pca9532";
++		reg = <0x66>;
++		#gpio-cells = <2>;
++		gpio-controller;
++
++		gpio-line-names =
++		"led-sled6-amber","led-sled6-blue","SLED6_RST_IOEXP","SLED6_MD_REF_PWM",
++		"","","","",
++		"","","","",
++		"","","","";
++
++		led-0 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-1 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-2 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-3 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++	};
++
+ 	sled6_leds: pca9552@67 {
+ 		compatible = "nxp,pca9552";
+ 		reg = <0x67>;
+@@ -993,6 +1336,85 @@ tmp421@4d {
+ 		reg = <0x4d>;
+ 	};
+ 
++	fan_leds_alt: pca9532@66 {
++		compatible = "nxp,pca9532";
++		reg = <0x66>;
++		#gpio-cells = <2>;
++		gpio-controller;
++
++		gpio-line-names =
++		"presence-fan0","presence-fan1",
++		"presence-fan2","presence-fan3",
++		"power-fan0-good","power-fan1-good",
++		"power-fan2-good","power-fan3-good",
++		"","","","",
++		"","","","";
++
++		led-0 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-1 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-2 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-3 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-4 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-5 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-6 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-7 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-8 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-9 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-10 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-11 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-12 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-13 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-14 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++
++		led-15 {
++			type = <PCA9532_TYPE_GPIO>;
++		};
++	};
++
+ 	fan_leds: pca9552@67 {
+ 		compatible = "nxp,pca9552";
+ 		reg = <0x67>;
+-- 
+2.53.0
+

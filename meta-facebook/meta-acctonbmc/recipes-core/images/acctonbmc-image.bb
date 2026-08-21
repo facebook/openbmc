@@ -20,6 +20,10 @@ require recipes-core/images/fboss-lite-image.inc
 IMAGE_INSTALL += " \
     host-recovery \
     show-tech \
+    ssifd \
     rackmon \
     ftdicmd \
+    libcpldupdate-dll-gpio \
+    cpldupdate \
+    apml \
     "

@@ -1,0 +1,148 @@
+From 5fa1e890ca0a7219c012c5a8b3426cda129f5ff6 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Wed, 25 Mar 2026 13:51:45 +0800
+Subject: [PATCH] configurations: nvidia: cx9_mezzanine_module: add NIC sensor
+ configs
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add NIC sensor configuration to enable sensor monitoring.
+
+[1] Gerrit: https://gerrit.openbmc.org/c/openbmc/entity-manager/+/88680
+
+Tested:
+```
+root@bmc:~# busctl tree xyz.openbmc_project.EntityManager | grep -e "IOB[0-3]_NIC"
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_0/IOB0_NIC0_OSFP_TEMP_C
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_0/IOB0_NIC0_PWR_W
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_0/IOB0_NIC0_TEMP_C
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_0/IOB0_NIC1_OSFP_TEMP_C
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_0/IOB0_NIC1_PWR_W
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_0/IOB0_NIC1_TEMP_C
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_1/IOB1_NIC0_OSFP_TEMP_C
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_1/IOB1_NIC0_PWR_W
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_1/IOB1_NIC0_TEMP_C
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_1/IOB1_NIC1_OSFP_TEMP_C
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_1/IOB1_NIC1_PWR_W
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_1/IOB1_NIC1_TEMP_C
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_2/IOB2_NIC0_OSFP_TEMP_C
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_2/IOB2_NIC0_PWR_W
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_2/IOB2_NIC0_TEMP_C
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_2/IOB2_NIC1_OSFP_TEMP_C
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_2/IOB2_NIC1_PWR_W
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_2/IOB2_NIC1_TEMP_C
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_3/IOB3_NIC0_OSFP_TEMP_C
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_3/IOB3_NIC0_PWR_W
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_3/IOB3_NIC0_TEMP_C
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_3/IOB3_NIC1_OSFP_TEMP_C
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_3/IOB3_NIC1_PWR_W
+          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_IO_Board_3/IOB3_NIC1_TEMP_C
+```
+
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+Change-Id: I344184aee3f3e6ffaf844fcf17e55e4f08d67c30
+---
+ .../nvidia/cx9_mezzanine_module.json          | 86 +++++++++++++++++++
+ 1 file changed, 86 insertions(+)
+
+diff --git a/configurations/nvidia/cx9_mezzanine_module.json b/configurations/nvidia/cx9_mezzanine_module.json
+index 7cdc62b..0a8b6f1 100644
+--- a/configurations/nvidia/cx9_mezzanine_module.json
++++ b/configurations/nvidia/cx9_mezzanine_module.json
+@@ -5,6 +5,92 @@
+             "Bus": "$bus",
+             "Name": "NVIDIA VR NVL72 IO Board $bus - 73 FRU",
+             "Type": "EEPROM"
++        },
++        {
++            "MaxValue": 255,
++            "MinValue": -255.0,
++            "Name": "IOB$bus - 73 NIC0_TEMP_C",
++            "PowerState": "On",
++            "Timeout": 30.0,
++            "Type": "ExternalSensor",
++            "Units": "DegreesC"
++        },
++        {
++            "MaxValue": 255,
++            "MinValue": -255.0,
++            "Name": "IOB$bus - 73 NIC0_OSFP_TEMP_C",
++            "PowerState": "On",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.36,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 68
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.1,
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 5
++                }
++            ],
++            "Timeout": 30.0,
++            "Type": "ExternalSensor",
++            "Units": "DegreesC"
++        },
++        {
++            "MaxValue": 65535,
++            "MinValue": 0,
++            "Name": "IOB$bus - 73 NIC0_PWR_W",
++            "PowerState": "On",
++            "Timeout": 30.0,
++            "Type": "ExternalSensor",
++            "Units": "Watts"
++        },
++        {
++            "MaxValue": 255,
++            "MinValue": -255.0,
++            "Name": "IOB$bus - 73 NIC1_TEMP_C",
++            "PowerState": "On",
++            "Timeout": 30.0,
++            "Type": "ExternalSensor",
++            "Units": "DegreesC"
++        },
++        {
++            "MaxValue": 255,
++            "MinValue": -255.0,
++            "Name": "IOB$bus - 73 NIC1_OSFP_TEMP_C",
++            "PowerState": "On",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.36,
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 68
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.1,
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 5
++                }
++            ],
++            "Timeout": 30.0,
++            "Type": "ExternalSensor",
++            "Units": "DegreesC"
++        },
++        {
++            "MaxValue": 65535,
++            "MinValue": 0,
++            "Name": "IOB$bus - 73 NIC1_PWR_W",
++            "PowerState": "On",
++            "Timeout": 30.0,
++            "Type": "ExternalSensor",
++            "Units": "Watts"
+         }
+     ],
+     "Name": "NVIDIA VR NVL72 IO Board $bus - 73",
+-- 
+2.53.0-Meta
+

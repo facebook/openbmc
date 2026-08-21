@@ -1,7 +1,7 @@
-From 9f391e9ac41e30733ed8249cd435e2378913dcbe Mon Sep 17 00:00:00 2001
+From a932af0a57635000ac2c9f9548d4c6dadbe201a6 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Fri, 26 Aug 2022 02:03:46 -0700
-Subject: [PATCH 526/532] qemu: Add i2c devices to oby35-cl
+Subject: [PATCH] qemu: Add i2c devices to oby35-cl
 
 Already had these from -machine fby35, so this commit just makes
 fby35_cl_bic_i2c_init public and uses it in aspeed.c and fby35.c
@@ -46,7 +46,7 @@ index a68e51c89d..00d78bf803 100644
  
  static void oby35_bb_i2c_init(AspeedMachineState *bmc)
 diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
-index a60f9dc4e7..21691c1a78 100644
+index a4731dfacd..abd2387c74 100644
 --- a/hw/arm/fby35.c
 +++ b/hw/arm/fby35.c
 @@ -46,7 +46,7 @@ struct Fby35State {

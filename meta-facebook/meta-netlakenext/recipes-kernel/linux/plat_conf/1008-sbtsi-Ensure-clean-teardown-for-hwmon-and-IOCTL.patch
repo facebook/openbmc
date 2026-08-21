@@ -1,0 +1,287 @@
+From 5dfa1fb6088d0af19d94e45ab4f4b7fec4108845 Mon Sep 17 00:00:00 2001
+From: Akshay Gupta <akshay.gupta@amd.com>
+Date: Mon, 22 Dec 2025 11:26:56 +0000
+Subject: [PATCH 08/12] sbtsi: Ensure clean teardown for hwmon and IOCTL
+
+Update misc and hwmon paths to wait for device removal to complete cleanly.
+Centralize device bind/unbind handling in a shared helper to
+improve readability, reduce duplication, and preserve existing behavior.
+
+Reviewed-by: Muralidhara M K <muralidhara.mk@amd.com>
+Signed-off-by: Akshay Gupta <akshay.gupta@amd.com>
+Signed-off-by: Naveen Krishna Chatradhi <naveenkrishna.chatradhi@amd.com>
+---
+ apml_sbtsi.c | 145 ++++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 file changed, 131 insertions(+), 14 deletions(-)
+
+diff --git a/drivers/apml/apml_sbtsi.c b/drivers/apml/apml_sbtsi.c
+index c0e4be6..17a2032 100644
+--- a/drivers/apml/apml_sbtsi.c
++++ b/drivers/apml/apml_sbtsi.c
+@@ -65,6 +65,9 @@ struct apml_sbtsi_device {
+ 	struct regmap *regmap;
+ 	struct mutex lock;
+ 	u8 dev_static_addr;
++	atomic_t in_progress;
++	atomic_t no_new_trans;
++	struct completion misc_fops_done;
+ } __packed;
+ 
+ /*
+@@ -97,6 +100,33 @@ static inline void sbtsi_mc_to_reg(s32 temp, u8 *integer, u8 *decimal)
+ 	*decimal = (temp & SBTSI_DEC_MASK) << SBTSI_DEC_OFFSET;
+ }
+ 
++static int sbtsi_prepare_lock(struct apml_sbtsi_device *tsi_dev)
++{
++	mutex_lock(&tsi_dev->lock);
++	/* Verify device unbind/remove is not invoked */
++	if (atomic_read(&tsi_dev->no_new_trans)) {
++		mutex_unlock(&tsi_dev->lock);
++		return -EBUSY;
++	}
++
++	/*
++	 * Set the in_progress variable to true, to wait for
++	 * completion during unbind/remove of driver
++	 */
++	atomic_set(&tsi_dev->in_progress, 1);
++	return 0;
++}
++
++static void sbtsi_prepare_unlock(struct apml_sbtsi_device *tsi_dev)
++{
++	/* Send complete only if device is unbinded/remove */
++	if (atomic_read(&tsi_dev->no_new_trans))
++		complete(&tsi_dev->misc_fops_done);
++
++	atomic_set(&tsi_dev->in_progress, 0);
++	mutex_unlock(&tsi_dev->lock);
++}
++
+ static int sbtsi_read(struct device *dev, enum hwmon_sensor_types type,
+ 		      u32 attr, int channel, long *val)
+ {
+@@ -104,6 +134,12 @@ static int sbtsi_read(struct device *dev, enum hwmon_sensor_types type,
+ 	unsigned int temp_int, temp_dec, cfg;
+ 	int ret;
+ 
++	/*
++	 * If device remove/unbind is called do not allow new transaction
++	 */
++	if (atomic_read(&tsi_dev->no_new_trans))
++		return -EBUSY;
++
+ 	switch (attr) {
+ 	case hwmon_temp_input:
+ 		/*
+@@ -117,7 +153,10 @@ static int sbtsi_read(struct device *dev, enum hwmon_sensor_types type,
+ 		if (ret < 0)
+ 			return ret;
+ 
+-		mutex_lock(&tsi_dev->lock);
++		ret = sbtsi_prepare_lock(tsi_dev);
++		if (ret)
++			return ret;
++
+ 		if (cfg & BIT(SBTSI_CONFIG_READ_ORDER_SHIFT)) {
+ 			ret = regmap_read(tsi_dev->regmap, SBTSI_REG_TEMP_DEC, &temp_dec);
+ 			ret = regmap_read(tsi_dev->regmap, SBTSI_REG_TEMP_INT, &temp_int);
+@@ -125,19 +164,28 @@ static int sbtsi_read(struct device *dev, enum hwmon_sensor_types type,
+ 			ret = regmap_read(tsi_dev->regmap, SBTSI_REG_TEMP_INT, &temp_int);
+ 			ret = regmap_read(tsi_dev->regmap, SBTSI_REG_TEMP_DEC, &temp_dec);
+ 		}
+-		mutex_unlock(&tsi_dev->lock);
++
++		sbtsi_prepare_unlock(tsi_dev);
+ 		break;
+ 	case hwmon_temp_max:
+-		mutex_lock(&tsi_dev->lock);
++		ret = sbtsi_prepare_lock(tsi_dev);
++		if (ret)
++			return ret;
++
+ 		ret = regmap_read(tsi_dev->regmap, SBTSI_REG_TEMP_HIGH_INT, &temp_int);
+ 		ret = regmap_read(tsi_dev->regmap, SBTSI_REG_TEMP_HIGH_DEC, &temp_dec);
+-		mutex_unlock(&tsi_dev->lock);
++
++		sbtsi_prepare_unlock(tsi_dev);
+ 		break;
+ 	case hwmon_temp_min:
+-		mutex_lock(&tsi_dev->lock);
++		ret = sbtsi_prepare_lock(tsi_dev);
++		if (ret)
++			return ret;
++
+ 		ret = regmap_read(tsi_dev->regmap, SBTSI_REG_TEMP_LOW_INT, &temp_int);
+ 		ret = regmap_read(tsi_dev->regmap, SBTSI_REG_TEMP_LOW_DEC, &temp_dec);
+-		mutex_unlock(&tsi_dev->lock);
++
++		sbtsi_prepare_unlock(tsi_dev);
+ 		break;
+ 	default:
+ 		return -EINVAL;
+@@ -158,6 +206,12 @@ static int sbtsi_write(struct device *dev, enum hwmon_sensor_types type,
+ 	unsigned int temp_int, temp_dec;
+ 	int reg_int, reg_dec, err;
+ 
++	/*
++	 * If device remove/unbind is called do not allow new transaction
++	 */
++	if (atomic_read(&tsi_dev->no_new_trans))
++		return -EBUSY;
++
+ 	switch (attr) {
+ 	case hwmon_temp_max:
+ 		reg_int = SBTSI_REG_TEMP_HIGH_INT;
+@@ -174,14 +228,17 @@ static int sbtsi_write(struct device *dev, enum hwmon_sensor_types type,
+ 	val = clamp_val(val, SBTSI_TEMP_MIN, SBTSI_TEMP_MAX);
+ 	sbtsi_mc_to_reg(val, (u8 *)&temp_int, (u8 *)&temp_dec);
+ 
+-	mutex_lock(&tsi_dev->lock);
++	err = sbtsi_prepare_lock(tsi_dev);
++	if (err)
++		return err;
++
+ 	err = regmap_write(tsi_dev->regmap, reg_int, temp_int);
+ 	if (err)
+ 		goto exit;
+ 
+ 	err = regmap_write(tsi_dev->regmap, reg_dec, temp_dec);
+ exit:
+-	mutex_unlock(&tsi_dev->lock);
++	sbtsi_prepare_unlock(tsi_dev);
+ 	return err;
+ }
+ 
+@@ -240,7 +297,15 @@ static long sbtsi_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 	if (!tsi_dev)
+ 		return -EFAULT;
+ 
+-	mutex_lock(&tsi_dev->lock);
++	/*
++	 * If device remove/unbind is called do not allow new transaction
++	 */
++	if (atomic_read(&tsi_dev->no_new_trans))
++		return -EBUSY;
++
++	ret = sbtsi_prepare_lock(tsi_dev);
++	if (ret)
++		return ret;
+ 
+ 	if (!msg.data_in.reg_in[RD_FLAG_INDEX]) {
+ 		ret = regmap_write(tsi_dev->regmap,
+@@ -257,7 +322,7 @@ static long sbtsi_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 			ret = -EFAULT;
+ 	}
+ out:
+-	mutex_unlock(&tsi_dev->lock);
++	sbtsi_prepare_unlock(tsi_dev);
+ 	return ret;
+ }
+ 
+@@ -312,6 +377,8 @@ static int sbtsi_i3c_probe(struct i3c_device *i3cdev)
+ 	if (!tsi_dev)
+ 		return -ENOMEM;
+ 
++	atomic_set(&tsi_dev->in_progress, 0);
++	atomic_set(&tsi_dev->no_new_trans, 0);
+ 	tsi_dev->regmap = regmap;
+ 	mutex_init(&tsi_dev->lock);
+ 
+@@ -338,6 +405,7 @@ static int sbtsi_i3c_probe(struct i3c_device *i3cdev)
+ 	if (!hwmon_dev)
+ 		return PTR_ERR_OR_ZERO(hwmon_dev);
+ 
++	init_completion(&tsi_dev->misc_fops_done);
+ 	return create_misc_tsi_device(tsi_dev, dev);
+ }
+ 
+@@ -361,6 +429,8 @@ static int sbtsi_i2c_probe(struct i2c_client *client)
+ 	if (!tsi_dev)
+ 		return -ENOMEM;
+ 
++	atomic_set(&tsi_dev->in_progress, 0);
++	atomic_set(&tsi_dev->no_new_trans, 0);
+ 	mutex_init(&tsi_dev->lock);
+ 	tsi_dev->regmap = devm_regmap_init_i2c(client, &sbtsi_i2c_regmap_config);
+ 	if (IS_ERR(tsi_dev->regmap))
+@@ -390,6 +460,7 @@ static int sbtsi_i2c_probe(struct i2c_client *client)
+ 	if (!hwmon_dev)
+ 		return PTR_ERR_OR_ZERO(hwmon_dev);
+ 
++	init_completion(&tsi_dev->misc_fops_done);
+ 	return create_misc_tsi_device(tsi_dev, dev);
+ }
+ 
+@@ -401,8 +472,31 @@ static void sbtsi_i3c_remove(struct i3c_device *i3cdev)
+ {
+ 	struct apml_sbtsi_device *tsi_dev = dev_get_drvdata(&i3cdev->dev);
+ 
+-	if (tsi_dev)
+-		misc_deregister(&tsi_dev->sbtsi_misc_dev);
++	if (!tsi_dev)
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 12, 0)
++		return 0;
++#else
++		return;
++#endif
++
++	/*
++	 * Set the no_new_trans so no new transaction can
++	 * occur in sbtsi functions
++	 */
++	atomic_set(&tsi_dev->no_new_trans, 1);
++	/*
++	 * If any transaction is in progress wait for the
++	 * transaction to get complete
++	 * Max wait is 3 sec for any pending transaction to
++	 * complete
++	 */
++	if (atomic_read(&tsi_dev->in_progress))
++		wait_for_completion_timeout(&tsi_dev->misc_fops_done,
++					    3 * HZ);
++	misc_deregister(&tsi_dev->sbtsi_misc_dev);
++	/* Assign fops and parent of misc dev to NULL */
++	tsi_dev->sbtsi_misc_dev.fops = NULL;
++	tsi_dev->sbtsi_misc_dev.parent = NULL;
+ 
+ 	dev_info(&i3cdev->dev, "Removed sbtsi-i3c driver\n");
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(5, 12, 0)
+@@ -418,8 +512,31 @@ static void sbtsi_i2c_remove(struct i2c_client *client)
+ {
+ 	struct apml_sbtsi_device *tsi_dev = dev_get_drvdata(&client->dev);
+ 
+-	if (tsi_dev)
+-		misc_deregister(&tsi_dev->sbtsi_misc_dev);
++	if (!tsi_dev)
++#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
++		return 0;
++#else
++		return;
++#endif
++
++	/*
++	 * Set the no_new_trans so no new transaction can
++	 * occur in sbtsi functions
++	 */
++	atomic_set(&tsi_dev->no_new_trans, 1);
++	/*
++	 * If any transaction is in progress wait for the
++	 * transaction to get complete
++	 * Max wait is 3 sec for any pending transaction to
++	 * complete
++	 */
++	if (atomic_read(&tsi_dev->in_progress))
++		wait_for_completion_timeout(&tsi_dev->misc_fops_done,
++					    3 * HZ);
++	misc_deregister(&tsi_dev->sbtsi_misc_dev);
++	/* Assign fops and parent of misc dev to NULL */
++	tsi_dev->sbtsi_misc_dev.fops = NULL;
++	tsi_dev->sbtsi_misc_dev.parent = NULL;
+ 
+ 	dev_info(&client->dev, "Removed sbtsi driver\n");
+ #if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
+-- 
+2.43.0
+

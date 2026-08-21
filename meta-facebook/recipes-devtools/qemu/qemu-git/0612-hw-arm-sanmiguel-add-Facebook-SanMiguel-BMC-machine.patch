@@ -1,0 +1,187 @@
+From 4731d2aebe7e91f71ba5d6403aa32126ddcb26b6 Mon Sep 17 00:00:00 2001
+From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
+Date: Fri, 31 Jul 2026 12:45:11 +0200
+Subject: [PATCH] hw/arm: sanmiguel: add Facebook SanMiguel BMC machine
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add an AST2600-based machine for the Facebook SanMiguel BMC, derived
+from the aspeed-bmc-facebook-sanmiguel.dts device tree.
+
+The board wires up three TMP75 temperature sensors across its I2C buses,
+alongside IO expanders, FRU EEPROMs, an I2C mux and an RTC, with 2 GiB
+RAM, dual FMC flash and RGMII networking.
+
+Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
+Link: https://lore.kernel.org/qemu-devel/20260731-sanmiguel-bmc-locator-v2-12-1266926ba769@free.fr
+Signed-off-by: Cédric Le Goater <clg@redhat.com>
+---
+ hw/arm/aspeed_ast2600_sanmiguel.c | 142 ++++++++++++++++++++++++++++++
+ hw/arm/meson.build                |   1 +
+ 2 files changed, 143 insertions(+)
+ create mode 100644 hw/arm/aspeed_ast2600_sanmiguel.c
+
+diff --git a/hw/arm/aspeed_ast2600_sanmiguel.c b/hw/arm/aspeed_ast2600_sanmiguel.c
+new file mode 100644
+index 0000000000..0f766449ae
+--- /dev/null
++++ b/hw/arm/aspeed_ast2600_sanmiguel.c
+@@ -0,0 +1,142 @@
++/*
++ * Facebook SanMiguel BMC
++ *
++ * Copyright (c) Meta Platforms, Inc. and affiliates.
++ *
++ * SPDX-License-Identifier: GPL-2.0-or-later
++ */
++
++#include "qemu/osdep.h"
++#include "hw/arm/machines-qom.h"
++#include "hw/arm/aspeed.h"
++#include "hw/arm/aspeed_soc.h"
++#include "hw/i2c/i2c_mux_pca954x.h"
++#include "hw/gpio/pca9552.h"
++#include "hw/gpio/pca9554.h"
++#include "hw/nvram/eeprom_at24c.h"
++#include "hw/sensor/tmp105.h"
++
++/* SanMiguel hardware values */
++#define SANMIGUEL_BMC_HW_STRAP1 0x00002002
++#define SANMIGUEL_BMC_HW_STRAP2 0x00000000
++#define SANMIGUEL_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
++
++#define TYPE_DS1338 "ds1338"
++
++static void sanmiguel_bmc_i2c_init(AspeedMachineState *bmc)
++{
++    /* Reference: aspeed-bmc-facebook-sanmiguel.dts */
++
++    AspeedSoCState *soc = bmc->soc;
++    I2CBus *i2c[16] = {};
++
++    for (unsigned idx = 0; idx < ARRAY_SIZE(i2c); idx++) {
++        i2c[idx] = aspeed_i2c_get_bus(&soc->i2c, idx);
++    }
++
++    /* &i2c0 */
++    /* ssif-bmc@10 — no QEMU model */
++
++    /* &i2c1 — empty */
++
++    /* &i2c2 — HPM0 */
++    /* hpm0_ioexp_20: pca9555@20 */
++    i2c_slave_create_simple(i2c[2], TYPE_PCA9555, 0x20);
++    /* hpm0_ioexp_21: pca9555@21 */
++    i2c_slave_create_simple(i2c[2], TYPE_PCA9555, 0x21);
++
++    /* &i2c3 — empty */
++    /* &i2c4 — empty */
++
++    /* &i2c5 — SMM */
++    /* smm_ioexp_20: pca9555@20 */
++    i2c_slave_create_simple(i2c[5], TYPE_PCA9555, 0x20);
++    /* smm_ioexp_21: pca9555@21 */
++    i2c_slave_create_simple(i2c[5], TYPE_PCA9555, 0x21);
++    /* smm_temp: lm75@48 */
++    i2c_slave_create_simple(i2c[5], TYPE_TMP75, 0x48);
++    /* smm_fru: eeprom@50 (24c128 = 16 KiB) */
++    at24c_eeprom_init(i2c[5], 0x50, 16 * KiB);
++    /* rtc@6f — nct3018y (ds1338 stand-in) */
++    i2c_slave_create_simple(i2c[5], TYPE_DS1338, 0x6f);
++
++    /* &i2c6 — HMC */
++    /* hmc_ioexp: tca6408@20 (pca9554 stand-in) */
++    i2c_slave_create_simple(i2c[6], TYPE_PCA9554, 0x20);
++    /* i2c-mux@70 (PCA9546) — 4 channels (imux16-19), all empty */
++    i2c_slave_create_simple(i2c[6], TYPE_PCA9546, 0x70);
++
++    /* &i2c7 — HPM1 */
++    /* hpm1_ioexp_20: pca9555@20 */
++    i2c_slave_create_simple(i2c[7], TYPE_PCA9555, 0x20);
++    /* hpm1_ioexp_21: pca9555@21 */
++    i2c_slave_create_simple(i2c[7], TYPE_PCA9555, 0x21);
++
++    /* &i2c8 — empty */
++
++    /* &i2c9 — PDB */
++    /* mp5926@10-16, lm5066i@11-17 — no QEMU model (power monitors) */
++    /* pdb_ioexp_20: pca9555@20 */
++    i2c_slave_create_simple(i2c[9], TYPE_PCA9555, 0x20);
++    /* pdb_temp: lm75@4e */
++    i2c_slave_create_simple(i2c[9], TYPE_TMP75, 0x4e);
++    /* pdb_fru: eeprom@50 (24c128 = 16 KiB) */
++    at24c_eeprom_init(i2c[9], 0x50, 16 * KiB);
++
++    /* &i2c10 — SCM */
++    /* scm_temp: lm75@48 */
++    i2c_slave_create_simple(i2c[10], TYPE_TMP75, 0x48);
++    /* scm_fru: eeprom@50 (24c128 = 16 KiB) */
++    at24c_eeprom_init(i2c[10], 0x50, 16 * KiB);
++
++    /* &i2c11 — Switch Config */
++    /* sw_config: eeprom@50 (24c64 = 8 KiB) */
++    at24c_eeprom_init(i2c[11], 0x50, 8 * KiB);
++
++    /* &i2c12 — empty */
++
++    /* &i2c13 — SMM extension */
++    /* mctp@10 — no QEMU model */
++    /* smm_ext_ioexp: pca9554@38 */
++    i2c_slave_create_simple(i2c[13], TYPE_PCA9554, 0x38);
++    /* smm_ext_fru: eeprom@55 (24c128 = 16 KiB) */
++    at24c_eeprom_init(i2c[13], 0x55, 16 * KiB);
++
++    /* &i2c14 — FIO */
++    /* fio_ioexp: pca9555@20 */
++    i2c_slave_create_simple(i2c[14], TYPE_PCA9555, 0x20);
++    /* fio_fru: eeprom@50 (24c64 = 8 KiB) */
++    at24c_eeprom_init(i2c[14], 0x50, 8 * KiB);
++
++    /* &i2c15 — empty */
++}
++
++static void aspeed_machine_sanmiguel_class_init(ObjectClass *oc,
++                                                const void *data)
++{
++    MachineClass *mc = MACHINE_CLASS(oc);
++    AspeedMachineClass *amc = ASPEED_MACHINE_CLASS(oc);
++
++    mc->desc       = "Facebook SanMiguel BMC (Cortex-A7)";
++    amc->soc_name  = "ast2600-a3";
++    amc->hw_strap1 = SANMIGUEL_BMC_HW_STRAP1;
++    amc->hw_strap2 = SANMIGUEL_BMC_HW_STRAP2;
++    amc->fmc_model = "mx66l1g45g";
++    amc->spi_model = "mx66l1g45g";
++    amc->num_cs    = 2;
++    amc->macs_mask = ASPEED_MAC0_ON;
++    amc->i2c_init  = sanmiguel_bmc_i2c_init;
++    mc->default_ram_size = SANMIGUEL_BMC_RAM_SIZE;
++    aspeed_machine_class_init_cpus_defaults(mc);
++}
++
++static const TypeInfo aspeed_ast2600_sanmiguel_types[] = {
++    {
++        .name          = MACHINE_TYPE_NAME("sanmiguel-bmc"),
++        .parent        = TYPE_ASPEED_MACHINE,
++        .class_init    = aspeed_machine_sanmiguel_class_init,
++        .interfaces    = arm_machine_interfaces,
++    }
++};
++
++DEFINE_TYPES(aspeed_ast2600_sanmiguel_types)
+diff --git a/hw/arm/meson.build b/hw/arm/meson.build
+index ae07f80c68..96719a8067 100644
+--- a/hw/arm/meson.build
++++ b/hw/arm/meson.build
+@@ -65,6 +65,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+   'aspeed_ast2600_fuji.c',
+   'aspeed_ast2600_gb200nvl.c',
+   'aspeed_ast2600_rainier.c',
++  'aspeed_ast2600_sanmiguel.c',
+   'aspeed_ast10x0.c',
+   'aspeed_ast10x0_evb.c',
+   'aspeed_ast1040.c',
+-- 
+2.53.0-Meta
+

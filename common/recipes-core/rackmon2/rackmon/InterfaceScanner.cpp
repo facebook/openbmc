@@ -5,6 +5,34 @@
 
 namespace rackmon {
 
+bool InterfaceScanner::canProbe(DeviceLocation key, const RegisterMap& rmap) {
+  std::vector<uint16_t> v(1);
+  for (auto& probeRegister : rmap.probe.probeRegisters) {
+    ReadHoldingRegistersReq req(
+        key.addr, probeRegister.registerAddress, v.size());
+    ReadHoldingRegistersResp resp(key.addr, v);
+    try {
+      key.interface.command(
+          req, resp, rmap.baudrate, kProbeTimeout, rmap.parity);
+      // Check if values are specified, if so, use them. Else, just
+      // being able to read is considered a successful probe.
+      if (probeRegister.values) {
+        if (probeRegister.values->end() ==
+            std::find(
+                probeRegister.values->begin(),
+                probeRegister.values->end(),
+                v[0])) {
+          return false;
+        }
+      }
+      return true;
+    } catch (std::exception&) {
+      // Exceptions are expected for unfound addresses.
+    }
+  }
+  return false;
+}
+
 bool InterfaceScanner::probe(const DeviceLocation& key) {
   if (!key.interface.isPresent()) {
     return false;
@@ -12,18 +40,11 @@ bool InterfaceScanner::probe(const DeviceLocation& key) {
   for (auto it = registerMapDB_.find(key.addr); it != registerMapDB_.end();
        ++it) {
     const auto& rmap = *it;
-    std::vector<uint16_t> v(1);
-    try {
-      ReadHoldingRegistersReq req(key.addr, rmap.probeRegister, v.size());
-      ReadHoldingRegistersResp resp(key.addr, v);
-      key.interface.command(
-          req, resp, rmap.baudrate, kProbeTimeout, rmap.parity);
+    if (canProbe(key, rmap)) {
       deviceInventory_.addDevice(key, rmap);
       logInfo << std::setw(2) << std::setfill('0') << "Found " << key << " on "
               << key.interface.name() << std::endl;
       return true;
-    } catch (std::exception&) {
-      // Exceptions are expected for unfound addresses.
     }
   }
   return false;

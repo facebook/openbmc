@@ -1,0 +1,35 @@
+From e5a4c4e87563b6647a0c0a2b41ca18f8b2d74603 Mon Sep 17 00:00:00 2001
+From: Henry Wu <Henry_Wu@quantatw.com>
+Date: Wed, 19 Nov 2025 16:54:10 +0800
+Subject: [PATCH 1002/1008] ARM: dts: aspeed: santabarbara: configure dimm ids
+ for sbrmi node
+
+Configure the DIMM count and DIMM ID mapping in the SBRMI node to
+enable DIMM temperature and power monitoring.
+This functionality is not supported in the upstream device tree,
+so the change is applied only in the Meta tree.
+
+Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
+---
+ .../arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+index 400e893af..3c400c09f 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+@@ -357,7 +357,10 @@ &i2c3 {
+ 	sbrmi@3c {
+ 		compatible = "amd,sbrmi";
+ 		reg = <0x3c>;
+-	};
++		dimm-count = <16>;
++		dimm-ids = <0x80 0x81 0x82 0x83 0x84 0x85 0x86 0x87
++			0x88 0x89 0x8a 0x8b 0x8c 0x8d 0x8e 0x8f>;
++		};
+ 
+ 	sbtsi@4c {
+ 		compatible = "amd,sbtsi";
+-- 
+2.39.3
+

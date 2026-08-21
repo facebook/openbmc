@@ -1,0 +1,3448 @@
+From c5a69afd908e61016b947a01b7ab4d5edb27a936 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Fri, 24 Jul 2026 14:33:41 +0800
+Subject: [PATCH] Update the AMD APML kernel driver 'apml_modules'. This update
+ is based on https://github.com/amd/apml_modules.git
+ c36ddadf9f545f8164e7a9278b27cdac58f2d601 Jul 20,2026
+
+---
+ drivers/misc/amd-apml/Kconfig        |  21 +
+ drivers/misc/amd-apml/Makefile       |   2 +
+ drivers/misc/amd-apml/README.md      | 329 ++++++++++
+ drivers/misc/amd-apml/amd-apml.h     |  80 +++
+ drivers/misc/amd-apml/apml_alertl.c  | 394 ++++++++++++
+ drivers/misc/amd-apml/apml_alertl.h  |  17 +
+ drivers/misc/amd-apml/apml_common.c  | 208 +++++++
+ drivers/misc/amd-apml/apml_common.h  |  56 ++
+ drivers/misc/amd-apml/apml_sbtsi.c   | 288 +++++++--
+ drivers/misc/amd-apml/sbrmi-common.c | 246 +++++++-
+ drivers/misc/amd-apml/sbrmi-common.h |  14 +-
+ drivers/misc/amd-apml/sbrmi.c        | 901 ++++++++++++++++-----------
+ drivers/misc/amd-apml/sbtsi-common.h |  39 ++
+ 13 files changed, 2156 insertions(+), 439 deletions(-)
+ create mode 100644 drivers/misc/amd-apml/README.md
+ create mode 100644 drivers/misc/amd-apml/amd-apml.h
+ create mode 100644 drivers/misc/amd-apml/apml_alertl.c
+ create mode 100644 drivers/misc/amd-apml/apml_alertl.h
+ create mode 100644 drivers/misc/amd-apml/apml_common.c
+ create mode 100644 drivers/misc/amd-apml/apml_common.h
+ create mode 100644 drivers/misc/amd-apml/sbtsi-common.h
+
+diff --git a/drivers/misc/amd-apml/Kconfig b/drivers/misc/amd-apml/Kconfig
+index bc9bd7ece..2f8ded4c9 100644
+--- a/drivers/misc/amd-apml/Kconfig
++++ b/drivers/misc/amd-apml/Kconfig
+@@ -26,3 +26,24 @@ config APML_SBTSI
+ 
+ 	  This driver can also be built as a module. If so, the module will
+ 	  be called apml_sbtsi.
++
++config APML_ALERTL
++	tristate "Emulated ALERTL interface driver over i2c or i3c bus"
++	depends on I2C || I3C
++	select REGMAP_I3C if I3C
++	select REGMAP_I2C if I2C
++	help
++	  If you say yes here you get support for emulated Alertl
++	  interface on AMD SoCs with APML interface connected to a BMC device.
++
++	  This driver can also be built as a module. If so, the module will
++	  be called apml_alertl.
++
++config APML_COMMON
++	tristate "Emulated COMMON interface driver over i2c or i3c bus"
++	depends on I2C || I3C
++	select REGMAP_I3C if I3C
++	select REGMAP_I2C if I2C
++	help
++	  If you say yes here you get support for APML
++	  interface on AMD SoCs with APML interface connected to a BMC device.
+\ No newline at end of file
+diff --git a/drivers/misc/amd-apml/Makefile b/drivers/misc/amd-apml/Makefile
+index a73ca261f..1956e6b24 100644
+--- a/drivers/misc/amd-apml/Makefile
++++ b/drivers/misc/amd-apml/Makefile
+@@ -4,6 +4,8 @@
+ # AMD APML BMC interface drivers
+ #
+ 
++obj-$(CONFIG_APML_COMMON)	+= apml_common.o
+ obj-$(CONFIG_APML_SBRMI)	+= apml_sbrmi.o
+ apml_sbrmi-objs = sbrmi.o sbrmi-common.o
+ obj-$(CONFIG_APML_SBTSI)	+= apml_sbtsi.o
++obj-$(CONFIG_APML_ALERTL)   += apml_alertl.o
+diff --git a/drivers/misc/amd-apml/README.md b/drivers/misc/amd-apml/README.md
+new file mode 100644
+index 000000000..da2d463de
+--- /dev/null
++++ b/drivers/misc/amd-apml/README.md
+@@ -0,0 +1,329 @@
++.. SPDX-License-Identifier: GPL-2.0
++# amd apml modules (apml_sbtsi, apml_sbrmi and apml_alertl)
++
++amd-apml: APML interface drivers for BMC
++
++EPYC processors from AMD provide APML interface for
++BMC users to monitor and configure the system parameters
++via the Advanced Platform Management List (APML) interface
++defined in EPYC processor PPR.
++
++This chapter defines custom protocols over i2c/i3c bus
++  - Mailbox
++  - CPUID [RO]
++  - MCA MSR {RO]
++  - RMI/TSI register [RW]
++
++module_i2c_i3c based sbrmi and sbtsi modules, which
++are probed as i2c or i3c client devices, depending on the
++platforms DTS.
++
++https://developer.amd.com/resources/epyc-resources/epyc-specifications
++
++APMl library provides C API fo the user space application on top of this
++module.
++
++
++Disclaimer
++===========
++
++The amd apml modules are supported only on AMD Family 19h (including
++third-generation AMD EPYC processors (codenamed "Milan")) or later
++CPUs. Using the amd apml modules on earlier CPUs could produce unexpected
++results, and may cause the processor to operate outside of your motherboard
++or system specifications. Correspondingly, defaults to only executing on
++AMD Family 19h Model (0h ~ 1Fh & 30h ~ 3Fh) server line of processors.
++
++Interface
++---------
++
++Both apml_sbtsi and apml_sbrmi modules register a misc_device
++to provide ioctl interface to user space, allowing them
++to run these custom protocols.
++
++apml_sbtsi module registers hwmon sensors for monitoring
++current temperature, managing max and min thresholds.
++
++apml_sbrmi module registers hwmon sensors for monitoring
++power_cap_max, current power consumption and managing
++power_cap. It also reports per-UMC DIMM thermal sensor
++temperatures (TS0 and TS1) when platform firmware supports
++mailbox command 0x48 (SBRMI_READ_DIMM_THERMAL_SENSOR).
++
++
++DIMM Thermal Sensors (apml_sbrmi)
++=================================
++
++Each populated UMC/DDRPHY instance exposes two on-DIMM thermal
++sensors, TS0 and TS1. The driver reads them via the SB-RMI mailbox
++and publishes up to 32 hwmon temperature channels per socket:
++
++  - Channels  0-15: TS0 for UMC instances 0-15
++  - Channels 16-31: TS1 for UMC instances 0-15
++
++Each channel exposes temp(N+1)_input (milli-degrees Celsius) and
++temp(N+1)_label in sysfs, where N is the 0-based hwmon channel index.
++Labels follow the pattern DIMM_TS0_UMCn and DIMM_TS1_UMCn (n = 0..15).
++Only channels corresponding to populated UMC instances are visible;
++unpopulated channels return -EINVAL.
++
++Mode 1 DIMM_ADDRESS encoding (mailbox data byte):
++
++  - Bit[7]:   1 (Mode 1)
++  - Bit[6]:   TS select (0 = TS0, 1 = TS1)
++  - Bit[3:0]: UMC/DDRPHY instance ID (0-15)
++
++When the optional dimm-ids device-tree property is omitted, the
++driver derives addresses using the legacy 0x80-based encoding for
++all 16 UMC instances (0x80/0xC0 for UMC0 TS0/TS1, 0x81/0xC1 for
++UMC1, and so on). When dimm-ids is present, each entry supplies
++the TS0 base address for one UMC in array order; the driver sets
++bit[6] to form the corresponding TS1 address (TS1 = TS0 | 0x40).
++
++DTS node definition for apml_sbrmi DIMM thermal sensors
++---------------------------------------------------------
++
++The apml_sbrmi node is probed as an I2C or I3C client depending on
++the platform bus wiring. See Documentation/amd,sbrmi.yaml for the
++full devicetree binding schema.
++
++required:
++  - compatible: must be "amd,sbrmi"
++  - reg: I2C slave address or I3C dynamic address
++
++optional:
++  - dimm-ids: array of TS0 mailbox addresses, one per populated UMC
++    instance (1..16 entries). Entry count sets how many UMC
++    instances expose TS0 and TS1 hwmon channels.
++
++examples:
++
++&i3c4 {
++	sbrmi_p0_sp8: sbrmi@0,2240000111A {
++		reg = <0x0 0x224 0x0000111A>;
++		assigned-address = <0x3c>;
++		/* Sixteen populated UMC instances; alternating TS0 layout */
++		dimm-ids = <0x80 0x90 0x81 0x91 0x82 0x92 0x83 0x93
++			    0x84 0x94 0x85 0x95 0x86 0x96 0x87 0x97>;
++	};
++};
++
++/* Eight populated UMC instances on a single socket */
++&i3c4 {
++	sbrmi@0,2240000111A {
++		reg = <0x0 0x224 0x0000111A>;
++		assigned-address = <0x3c>;
++		dimm-ids = <0x80 0x90 0x81 0x91 0x82 0x92 0x83 0x93>;
++	};
++};
++
++/* Legacy encoding: omit dimm-ids to use 0x80-based addresses */
++&i2c15 {
++	sbrmi@3c {
++		compatible = "amd,sbrmi";
++		reg = <0x3c>;
++	};
++};
++
++After probe, DIMM temperatures appear under the hwmon device. Each
++hwmon channel N (0-based) maps to temp(N+1)_input and temp(N+1)_label
++in sysfs, for example:
++
++#> cat /sys/class/hwmon/hwmonN/temp1_input    /* channel 0, DIMM_TS0_UMC0 */
++#> cat /sys/class/hwmon/hwmonN/temp1_label
++#> cat /sys/class/hwmon/hwmonN/temp17_input   /* channel 16, DIMM_TS1_UMC0 */
++#> cat /sys/class/hwmon/hwmonN/temp17_label
++
++
++Build and Install
++-----------------
++
++Kernel development packages for the running kernel need to be installed
++prior to building the amd apml modules. A Makefile is provided which should
++work with most kernel source trees.
++
++To cross compile for arm based BMC
++
++export CC=arm-openbmc-linux-gnueabi-gcc # Or similar
++export ARCH=arm
++KDIR=<Path to prebuilt BMC kernel>
++
++To build the kernel module:
++
++#> make
++
++To install the kernel module:
++
++#> sudo make modules_install
++
++To clean the kernel module build directory:
++
++#> make clean
++
++
++Note: There is a fix required in the upstream linux kerenl header to handle
++ the i3c_dev. the patch is kept in patches/ folder of this repo.
++
++Loading
++-------
++
++If the apml modules were installed you should use the modprobe command to
++load the module.
++
++#> sudo modprobe apml_sbrmi apml_sbtsi
++
++The apml modules can also be loaded using insmod if the module was not
++installed:
++
++#> sudo insmod ./apml_sbrmi.ko
++#> sudo insmod ./apml_sbtsi.ko
++
++APML_ALERTL
++===========
++Disclaimer: The apml_alertl module is currently experimental and may change in the future.
++
++EPYC processors from AMD provide APML ALERT_L for BMC users to monitor
++events.
++
++   |-------------------|
++   | socket       SBRMI|==== i2c/i3c bus
++   |              SBTSI|==== i2c/i3c bus
++   |            Alert_L|---- gpio line
++   |-------------------|
++
++APML Alert_L is asserted in multiple events:
++1) Machine Check Exception occurs within the system
++2) The processor alerts the SBI on system fatal error event
++3) Set by hardware as a result of a 0x71/0x72/0x73 command completion
++4) Set by firmware to indicate the completion of a mailbox operation
++5) Temperature Alert
++
++Driver Implementation Design Update
++-----------------------------------
++
++The driver has been redesigned to provide a more robust and standardized
++interface for user-space alert handling, offering richer context compared
++to the previous signal-based approach.
++
++
++When Alert_L asserts, **apml_alertl** runs its threaded interrupt handler,
++locks the global **apml_devices** list (owned by **apml_common**), and
++visits every registered node. For each **SBRMI** entry it reads the RAS
++status register; for each **SBTSI** entry it reads the temperature alert
++status register.
++
++**apml_sbrmi** and **apml_sbtsi** register with **apml_common** during their
++probe paths; **apml_alertl** finds peers only through that registry.
++
++**Planned upstream binding:** the global **apml_devices** registry is interim.
++Alert_L will probe as an auxiliary driver; alert handling will then run in
++auxiliary bind/unbind for each SB-RMI/SB-TSI device instead of a list walk.
++
++User space is notified via **kobject_uevent_env()** (**KOBJ_CHANGE**), not
++signals or debugfs.
++
++apml_alertl depends on **apml_common.ko** being loaded. SBRMI/SBTSI devices
++must be registered (typically by loading **apml_sbrmi.ko** and
++**apml_sbtsi.ko**) before alerts can be attributed to a concrete device.
++
++Key Changes
++-----------
++
++This update aims to enhance the robustness and flexibility of alert handling:
++
++ - Improved Interface: The new design enhances alert handling by providing
++   detailed context and improving interaction with user-space applications.
++ - I3C Hot-Join Support: The new design will support hot-join for I3C
++   devices, allowing for dynamic device connections.
++ - Legacy Support: The previous implementation is available on the
++   alertl-legacy branch for those who need it, though this branch will be
++   phased out over time.
++
++DTS node definition for Alert_L module
++--------------------------------------
++
++required:
++  - compatible: "apml-alertl"
++  - status
++  - gpios: GPIO line wired to Alert_L for this socket (consumer binding)
++
++optional:
++  - socket-num: 8-bit value (`/bits/ 8` encoding in device tree); if present,
++    the threaded IRQ is named **apml_irq** with that number as a suffix
++    (e.g. **apml_irq0**). If omitted, the IRQ name is **apml_irq** (useful on
++    multi-socket systems when you need distinct /proc/interrupts entries per
++    socket). Use `/bits/ 8 <N>`, the driver reads this property with
++    `of_property_read_u8()`.
++
++Example:
++
++/ {
++	/* Alert_L associated with socket 0 */
++	alertl_sock0 {
++		compatible = "apml-alertl";
++		status = "okay";
++		gpios = <&gpio0 ASPEED_GPIO(I, 7) GPIO_ACTIVE_LOW>;
++		socket-num = /bits/ 8 <0>;
++	};
++
++	/* Alert_L associated with socket 1 */
++	alertl_sock1 {
++		compatible = "apml-alertl";
++		status = "okay";
++		gpios = <&gpio0 ASPEED_GPIO(U, 4) GPIO_ACTIVE_LOW>;
++		socket-num = /bits/ 8 <1>;
++	};
++};
++
++Loading
++-------
++Load **apml_common** and the bus drivers so devices register, then
++**apml_alertl**:
++
++#> sudo modprobe apml_common
++#> sudo modprobe apml_sbrmi apml_sbtsi
++#> sudo modprobe apml_alertl
++
++Or with insmod from a build tree (order matters):
++
++#> sudo insmod ./apml_common.ko
++#> sudo insmod ./apml_sbrmi.ko
++#> sudo insmod ./apml_sbtsi.ko
++#> sudo insmod ./apml_alertl.ko
++
++Unloading
++---------
++
++Unload in reverse dependency order, e.g.:
++
++#> sudo rmmod apml_alertl
++#> sudo rmmod apml_sbtsi apml_sbrmi
++#> sudo rmmod apml_common
++
++If the driver is built in, the platform device can be unbound/rebound under:
++
++#> cd /sys/bus/platform/drivers/apml_alertl
++#> echo <device-name> > unbind
++#> echo <device-name> > bind
++
++USAGE (uevents)
++---------------
++
++Applications should listen for **change** uevents on the Alert_L platform
++device (for example via **udev** rules or **libudev**), not for POSIX signals.
++
++Each notification includes these environment variables (see **apml_alertl.c**):
++
++| Variable   | Meaning |
++|------------|---------|
++| SOURCE     | For **RMI** (RAS): RAS status register (**0x4C**). For **TSI**
++|            | (temperature): TSI status left-shifted 24 bits. |
++| BUS_NUM    | Linux bus number (**I3C** bus **id** or **I2C** adapter
++|            | **nr**). |
++| PID        | **I3C** provisioned ID (**64-bit** hex); **0** for **I2C**
++|            | devices. |
++| ADDRESS    | **I3C** static address or **I2C** client address (**hex**). |
++
++For RAS alerts, the driver clears the RAS status register and writes
++**RAS_ALERT_ASYNC** to the RMI status register (**0x2**) as part of servicing
++the event.
+diff --git a/drivers/misc/amd-apml/amd-apml.h b/drivers/misc/amd-apml/amd-apml.h
+new file mode 100644
+index 000000000..4a6bd7057
+--- /dev/null
++++ b/drivers/misc/amd-apml/amd-apml.h
+@@ -0,0 +1,80 @@
++/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
++/*
++ * Copyright (C) 2021-2022 Advanced Micro Devices, Inc.
++ */
++#ifndef _AMD_APML_H_
++#define _AMD_APML_H_
++
++#include <linux/types.h>
++
++/*
++ * Currently signal 33 to 64 are unused,
++ * using user signal number from that range
++ */
++#define USR_SIGNAL	44
++
++enum apml_protocol {
++	APML_CPUID	= 0x1000,
++	APML_MCA_MSR,
++	APML_REG,
++};
++
++/* These are byte indexes into data_in and data_out arrays */
++#define RD_WR_DATA_INDEX	0
++#define REG_OFF_INDEX		0
++#define REG_VAL_INDEX		4
++#define THREAD_LOW_INDEX	4
++#define THREAD_HI_INDEX		5
++#define EXT_FUNC_INDEX		6
++#define RD_FLAG_INDEX		7
++
++#define MB_DATA_SIZE		4
++
++struct apml_message {
++	/* message ids:
++	 * Mailbox Messages:	0x0 ... 0x999
++	 * APML_CPUID:		0x1000
++	 * APML_MCA_MSR:	0x1001
++	 * APML_REG:		0x1002 (RMI & TSI reg access)
++	 */
++	__u32 cmd;
++
++	/*
++	 * 8 bit data for reg read,
++	 * 32 bit data in case of mailbox,
++	 * upto 64 bit in case of cpuid and mca msr
++	 */
++	union {
++		__u64 cpu_msr_out;
++		__u32 mb_out[2];
++		__u8 reg_out[8];
++	} data_out;
++
++	/*
++	 * [0]...[3] mailbox 32bit input
++	 *	     cpuid & mca msr,
++	 *	     rmi rd/wr: reg_offset
++	 * [4][5] cpuid & mca msr: thread
++	 * [4] rmi reg wr: value
++	 * [6] cpuid: ext function & read eax/ebx or ecx/edx
++	 *	[7:0] -> bits [7:4] -> ext function &
++	 *	bit [0] read eax/ebx or ecx/edx
++	 * [7] read/write functionality
++	 */
++	union {
++		__u64 cpu_msr_in;
++		__u32 mb_in[2];
++		__u8 reg_in[8];
++	} data_in;
++	/*
++	 * Status code is returned in case of CPUID/MCA access
++	 * Error code is returned in case of soft mailbox
++	 */
++	__u32 fw_ret_code;
++} __attribute__((packed));
++
++/* ioctl command for mailbox msgs using generic _IOWR */
++#define SBRMI_BASE_IOCTL_NR      0xF9
++#define SBRMI_IOCTL_CMD          _IOWR(SBRMI_BASE_IOCTL_NR, 0, struct apml_message)
++
++#endif /*_AMD_APML_H_*/
+diff --git a/drivers/misc/amd-apml/apml_alertl.c b/drivers/misc/amd-apml/apml_alertl.c
+new file mode 100644
+index 000000000..f5ab1ef65
+--- /dev/null
++++ b/drivers/misc/amd-apml/apml_alertl.c
+@@ -0,0 +1,394 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++/*
++ * apml_alertl.c - Alert_L driver for AMD APML devices
++ *
++ * Copyright (C) 2025 Advanced Micro Devices, Inc.
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/platform_device.h>
++#include <linux/interrupt.h>
++#include <linux/regmap.h>
++#include <linux/i3c/device.h>
++#include <linux/i3c/master.h>
++#include <linux/gpio/consumer.h>
++#include <linux/of.h>
++#include <linux/list.h>
++#include <linux/mutex.h>
++#include <linux/i2c.h>
++
++#include "apml_common.h"
++#include "apml_alertl.h"
++
++#define DRIVER_NAME "apml_alertl"
++
++#define RAS_STATUS_REG		0x4C
++#define RMI_STATUS_REG		0x2
++
++/*
++ * SB-TSI status (0x02): read-only, volatile.
++ * TempHighAlert (bit 4) / TempLowAlert (bit 3) set on threshold crossings for
++ * the required consecutive samples. Latched mode: cleared on read; comparator
++ * mode: cleared when temperature stays inside the limit for the required
++ * consecutive samples.
++ */
++#define TSI_STATUS_REG		0x02
++/*
++ * SBRMI::Status Alert_L async status (bit 3): set when ALERT_L is asserted for
++ * RAS/fatal events read from RAS status (0x4C). Write-1-to-clear here so
++ * ALERT_L deasserts.
++ */
++#define RAS_ALERT_ASYNC		BIT(3)
++#define TSI_STATUS_SHIFT	24
++
++#define ENVP_SRC_INDX		0
++#define ENVP_BUS_NUM_INDX	1
++#define ENVP_PID_INDX		2
++#define ENVP_ADDR_INDX		3
++#define NUM_ENVP		5
++
++MODULE_ALIAS("apml_alertl:" DRIVER_NAME);
++
++/*
++ * The driver generates uevents for Temperature and RAS alerts (both fatal and non-fatal).
++ * Event data contains address, bus number, PID (for I3C devices; 0 otherwise), and alert
++ * source information. See amd-apml.h for alert source details.
++ */
++static int send_uevent(u8 address, int bus_num, u32 alert_src,
++		       u64 pid, struct device *dev)
++{
++	char *alert_source[NUM_ENVP] = { NULL };
++	int ret = 0;
++	int i;
++
++	alert_source[ENVP_SRC_INDX] = kasprintf(GFP_KERNEL, "SOURCE=0x%08x", alert_src);
++	alert_source[ENVP_BUS_NUM_INDX] = kasprintf(GFP_KERNEL, "BUS_NUM=%d", bus_num);
++	alert_source[ENVP_PID_INDX] = kasprintf(GFP_KERNEL, "PID=0x%016llx", pid);
++	alert_source[ENVP_ADDR_INDX] = kasprintf(GFP_KERNEL, "ADDRESS=0x%02x", address);
++	alert_source[NUM_ENVP - 1] = NULL;
++
++	for (i = 0; i < NUM_ENVP - 1; i++) {
++		if (!alert_source[i]) {
++			ret = -ENOMEM;
++			goto out_free;
++		}
++	}
++
++	dev_dbg(dev, "Sending uevent: Addr:0x%x Src:0x%08x\n bus:%d pid: 0x%llx\n",
++		address, alert_src, bus_num, pid);
++	ret = kobject_uevent_env(&dev->kobj, KOBJ_CHANGE, alert_source);
++
++out_free:
++	for (i = 0; i < NUM_ENVP - 1; i++)
++		kfree(alert_source[i]);
++
++	return ret;
++}
++
++/*
++ * apml_alertl_get_device_identity - resolve uevent address, bus, and PID
++ */
++static int apml_alertl_get_device_identity(struct i2c_client *client,
++					   struct i3c_device *i3cdev,
++					   u8 dev_static_addr, u8 *addr,
++					   int *bus_num, u64 *pid)
++{
++	if (i3cdev) {
++		struct i3c_device_info info;
++
++		i3c_device_get_info(i3cdev, &info);
++		*addr = dev_static_addr;
++		*bus_num = i3cdev->bus->id;
++		*pid = info.pid;
++		return 0;
++	}
++
++	if (client) {
++		*addr = client->addr;
++		*bus_num = client->adapter->nr;
++		*pid = 0;
++		return 0;
++	}
++
++	return -EINVAL;
++}
++
++/*
++ * apml_rmi_clear_alert_status - acknowledge a latched RAS alert in hardware
++ *
++ * Run promptly after any non-zero RAS_STATUS_REG read, before slow work such
++ * as uevent allocation, so ALERT_L can deassert and the falling-edge ONESHOT
++ * IRQ can see subsequent alerts. @addr is used for warning messages only.
++ */
++static int apml_rmi_clear_alert_status(struct apml_sbrmi_device *rmi,
++				       struct device *dev, unsigned int status,
++				       u8 addr)
++{
++	int ret;
++
++	mutex_lock(&rmi->lock);
++	ret = regmap_write(rmi->regmap, RAS_STATUS_REG, status);
++	if (ret) {
++		dev_warn(dev, "Failed to clear RAS status register (device: 0x%x): %d\n",
++			 addr, ret);
++	}
++
++	ret = regmap_write(rmi->regmap, RMI_STATUS_REG, RAS_ALERT_ASYNC);
++	if (ret) {
++		dev_warn(dev, "Failed to clear RMI status register (device: 0x%x): %d\n",
++			 addr, ret);
++	}
++	mutex_unlock(&rmi->lock);
++
++	return ret;
++}
++
++static int handle_rmi_device_alert(struct apml_device_node *device_node, struct device *dev)
++{
++	unsigned int status = 0;
++	int ret, bus_num, clear = 0;
++	u8 addr = 0;
++	u64 pid;
++
++	if (!device_node->rmi_dev || !device_node->rmi_dev->regmap) {
++		dev_warn(dev, "Invalid RMI device found\n");
++		return -EINVAL;
++	}
++
++	/* Protects individual device state and regmap transactions */
++	mutex_lock(&device_node->rmi_dev->lock);
++	/* Read RAS Status register */
++	ret = regmap_read(device_node->rmi_dev->regmap, RAS_STATUS_REG, &status);
++	mutex_unlock(&device_node->rmi_dev->lock);
++	if (ret)
++		return ret;
++
++	if (!status) {
++		/* No alert status - normal condition */
++		return 0;
++	}
++
++	ret = apml_alertl_get_device_identity(device_node->rmi_dev->client,
++					      device_node->rmi_dev->i3cdev,
++					      device_node->rmi_dev->dev_static_addr,
++					      &addr, &bus_num, &pid);
++	if (ret) {
++		dev_warn(dev, "RAS alert with invalid device identity (%d)\n",
++			 ret);
++		goto out;
++	}
++
++	if (!addr) {
++		dev_warn(dev, "RAS alert with no assigned address\n");
++		ret = -EINVAL;
++		goto out;
++	}
++
++	/*
++	 * Clear latched RAS status before any slow uevent work so ALERT_L can
++	 * deassert promptly.
++	 */
++	clear = apml_rmi_clear_alert_status(device_node->rmi_dev, dev, status, addr);
++
++	ret = send_uevent(addr, bus_num, status, pid, dev);
++	if (ret) {
++		dev_info(dev, "Failed to send uevent for RAS alert (device: 0x%x, err: %d)\n",
++			 addr, ret);
++	}
++
++out:
++	return clear ? clear : ret;
++}
++
++/* Handle TSI device alerts */
++static int handle_tsi_device_alert(struct apml_device_node *device_node, struct device *dev)
++{
++	unsigned int status = 0;
++	int ret, bus_num;
++	u8 addr;
++	u64 pid;
++
++	if (!device_node->tsi_dev || !device_node->tsi_dev->regmap) {
++		dev_warn(dev, "Invalid TSI device found\n");
++		return -EINVAL;
++	}
++
++	/* Protects individual device state and regmap transactions */
++	mutex_lock(&device_node->tsi_dev->lock);
++	/* Read TSI Status register */
++	ret = regmap_read(device_node->tsi_dev->regmap, TSI_STATUS_REG, &status);
++	mutex_unlock(&device_node->tsi_dev->lock);
++
++	if (ret) {
++		dev_warn(dev, "Failed to read TSI status register (err: %d)\n", ret);
++		return ret;
++	}
++
++	if (!status) {
++		/* No alert status - normal condition */
++		return ret;
++	}
++
++	ret = apml_alertl_get_device_identity(device_node->tsi_dev->client,
++					      device_node->tsi_dev->i3cdev,
++					      device_node->tsi_dev->dev_static_addr,
++					      &addr, &bus_num, &pid);
++	if (ret)
++		return ret;
++
++	if (!addr)
++		return -EINVAL;
++
++	/* Send uevent for temperature alert (shifted to avoid RAS bit overlap) */
++	ret = send_uevent(addr, bus_num, status << TSI_STATUS_SHIFT, pid, dev);
++	if (ret) {
++		dev_info(dev, "Failed to send uevent for temp alert (device: 0x%x, err: %d)\n",
++			 addr, ret);
++	}
++	return ret; /* Alert was processed */
++}
++
++/*
++ * TODO: Drop once Alert_L probes as an auxiliary driver; alert handling
++ * then runs in the auxiliary bind/unbind path for each SB-RMI/SB-TSI device.
++ */
++static void handle_apml_alerts(struct device *dev)
++{
++	struct apml_device_node *device_node, *tmp;
++	int ret;
++
++	mutex_lock(&apml_devices_lock);
++	list_for_each_entry_safe(device_node, tmp, &apml_devices, apml_dev_list) {
++		/* Get a safe reference to the device node */
++		if (!kref_get_unless_zero(&device_node->refcount))
++			continue;
++
++		/* Device-specific alert processing */
++		switch (device_node->dev_type) {
++		case APML_RMI_DEVICE:
++			ret = handle_rmi_device_alert(device_node, dev);
++			break;
++		case APML_TSI_DEVICE:
++			ret = handle_tsi_device_alert(device_node, dev);
++			break;
++		default:
++			dev_warn(dev, "Unknown device type: %d\n", device_node->dev_type);
++			ret = -EINVAL;
++			break;
++		}
++
++		if (ret) {
++			dev_dbg(dev, "Alert processing failed for device type %d: %d\n",
++				device_node->dev_type, ret);
++		}
++		/* Always release the reference */
++		apml_put_device_node(device_node);
++	}
++	mutex_unlock(&apml_devices_lock);
++}
++
++/* Handles Alert_L interrupts by delegating to unified alert handler */
++static irqreturn_t alert_l_irq_thread_handler(int irq, void *dev_id)
++{
++	struct device *dev = (struct device *)dev_id;
++
++	handle_apml_alerts(dev);
++
++	return IRQ_HANDLED;
++}
++
++static int apml_alertl_probe(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct device_node *np = dev->of_node;
++	struct apml_alertl_data *oob_alert;
++	struct gpio_desc *alertl_gpiod;
++	int ret;
++	u8 socket_num = 0;
++	char *irq_name;
++
++	oob_alert = devm_kzalloc(dev, sizeof(*oob_alert), GFP_KERNEL);
++	if (!oob_alert)
++		return -ENOMEM;
++
++	oob_alert->dev = dev;
++
++	/* Get the alert_l gpio */
++	alertl_gpiod = devm_gpiod_get(dev, NULL, GPIOD_IN);
++	if (IS_ERR(alertl_gpiod))
++		return PTR_ERR(alertl_gpiod);
++
++	/* Get IRQ number from GPIO */
++	ret = gpiod_to_irq(alertl_gpiod);
++	if (ret < 0) {
++		dev_err(dev,
++			"APML AlertL: No corresponding irq for gpio error: %d\n",
++			ret);
++		return ret;
++	}
++
++	oob_alert->irq_num = ret;
++
++	/* Try to read socket-num property from DTS */
++	ret = of_property_read_u8(np, "socket-num", &socket_num);
++	if (!ret) {
++		irq_name = devm_kasprintf(dev, GFP_KERNEL, "apml_irq%u", socket_num);
++		if (!irq_name)
++			return -ENOMEM;
++	} else {
++		irq_name = devm_kstrdup(dev, "apml_irq", GFP_KERNEL);
++		if (!irq_name)
++			return -ENOMEM;
++	}
++	dev_info(dev, "APML Alert_L for socket %u, IRQ %u\n", socket_num, oob_alert->irq_num);
++	/* Register threaded IRQ handler */
++	ret = devm_request_threaded_irq(dev, oob_alert->irq_num,
++					NULL,
++					alert_l_irq_thread_handler,
++					IRQF_TRIGGER_FALLING | IRQF_ONESHOT,
++					irq_name,
++					dev);
++	if (ret) {
++		dev_err(dev, "Cannot register IRQ:%u\n", oob_alert->irq_num);
++		return ret;
++	}
++
++	platform_set_drvdata(pdev, oob_alert);
++	return 0;
++}
++
++static void apml_alertl_remove(struct platform_device *pdev)
++{
++	struct apml_alertl_data *alertl_data = platform_get_drvdata(pdev);
++
++	if (alertl_data) {
++		/* Ensure any running interrupt handlers complete */
++		synchronize_irq(alertl_data->irq_num);
++	}
++
++	//return 0;
++}
++
++static const struct of_device_id apml_alertl_dt_ids[] = {
++	{.compatible = "apml-alertl", },
++	{},
++};
++MODULE_DEVICE_TABLE(of, apml_alertl_dt_ids);
++
++static struct platform_driver apml_alertl_driver = {
++	.driver = {
++		.name	= DRIVER_NAME,
++		.of_match_table = of_match_ptr(apml_alertl_dt_ids),
++	},
++	.probe		= apml_alertl_probe,
++	.remove		= apml_alertl_remove,
++};
++
++module_platform_driver(apml_alertl_driver);
++
++MODULE_AUTHOR("Akshay Gupta <akshay.gupta@amd.com>");
++MODULE_AUTHOR("Sathya Priya Kumar <sathyapriya.k@amd.com>");
++MODULE_AUTHOR("Naveenkrishna Chatradhi <naveenkrishna.chatradhi@amd.com>");
++MODULE_DESCRIPTION("AMD APML ALERT_L Driver");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/misc/amd-apml/apml_alertl.h b/drivers/misc/amd-apml/apml_alertl.h
+new file mode 100644
+index 000000000..db470b178
+--- /dev/null
++++ b/drivers/misc/amd-apml/apml_alertl.h
+@@ -0,0 +1,17 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++/*
++ * Copyright (C) 2025 Advanced Micro Devices, Inc.
++ */
++
++#ifndef _AMD_APML_ALERT_L__
++#define _AMD_APML_ALERT_L__
++
++struct device;
++
++/* struct apml_alertl_data - APML Alert_L driver data structure */
++struct apml_alertl_data {
++	struct device *dev;
++	int irq_num;
++};
++
++#endif /*_AMD_APML_ALERT_L__*/
+diff --git a/drivers/misc/amd-apml/apml_common.c b/drivers/misc/amd-apml/apml_common.c
+new file mode 100644
+index 000000000..2ef0033bb
+--- /dev/null
++++ b/drivers/misc/amd-apml/apml_common.c
+@@ -0,0 +1,208 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++/*
++ * apml-common.c - Common registration system for APML devices
++ *
++ * Copyright (C) 2025 Advanced Micro Devices, Inc.
++ */
++
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/i3c/device.h>
++#include <linux/i3c/master.h>
++#include <linux/mutex.h>
++#include <linux/list.h>
++#include <linux/kref.h>
++#include <linux/wait.h>
++
++#include "apml_common.h"
++
++/* Global list of registered APML devices */
++LIST_HEAD(apml_devices);
++EXPORT_SYMBOL_GPL(apml_devices);
++
++/*
++ * Global Lock: Protects apml_devices list structure during registration,
++ * unregistration, and iteration.
++ */
++DEFINE_MUTEX(apml_devices_lock);
++EXPORT_SYMBOL_GPL(apml_devices_lock);
++
++/* Release function for device node reference counting */
++static void apml_device_node_release(struct kref *ref)
++{
++	struct apml_device_node *node = container_of(ref, struct apml_device_node, refcount);
++
++	wake_up_all(&node->release_wait);
++	kfree(node);
++}
++
++/* Get a reference to a device node - increases reference count */
++struct apml_device_node *apml_get_device_node(struct apml_device_node *node)
++{
++	if (node && kref_get_unless_zero(&node->refcount))
++		return node;
++	return NULL;
++}
++EXPORT_SYMBOL_GPL(apml_get_device_node);
++
++/* Put a reference to a device node - decreases reference count */
++void apml_put_device_node(struct apml_device_node *node)
++{
++	if (!node)
++		return;
++
++	if (!kref_put(&node->refcount, apml_device_node_release))
++		wake_up_all(&node->release_wait);
++}
++EXPORT_SYMBOL_GPL(apml_put_device_node);
++
++/*
++ * Wait until only the registration kref remains, then drop it and free.
++ * Uses release_wait rather than kref internals; pairs with wake_up_all()
++ * in apml_put_device_node() and apml_device_node_release().
++ */
++static void apml_put_device_node_and_wait(struct apml_device_node *node)
++{
++	wait_event(node->release_wait, kref_read(&node->refcount) == 1);
++	apml_put_device_node(node);
++}
++
++static void apml_add_device_node(struct apml_device_node *node)
++{
++	mutex_lock(&apml_devices_lock);
++	list_add_tail(&node->apml_dev_list, &apml_devices);
++	mutex_unlock(&apml_devices_lock);
++}
++
++static int apml_register_rmi(struct apml_device_node *node,
++			     struct apml_sbrmi_device *rmi_dev)
++{
++	if (!rmi_dev->i3cdev && !rmi_dev->client) {
++		pr_err("APML: Invalid RMI device - no I2C or I3C device\n");
++		return -EINVAL;
++	}
++
++	node->rmi_dev = rmi_dev;
++	pr_info("APML: Registered SBRMI device at address 0x%x\n",
++		rmi_dev->i3cdev ? rmi_dev->dev_static_addr
++				: rmi_dev->client->addr);
++	return 0;
++}
++
++static int apml_register_tsi(struct apml_device_node *node,
++			     struct apml_sbtsi_device *tsi_dev)
++{
++	if (!tsi_dev->i3cdev && !tsi_dev->client) {
++		pr_err("APML: Invalid TSI device - no I2C or I3C device\n");
++		return -EINVAL;
++	}
++
++	node->tsi_dev = tsi_dev;
++	pr_info("APML: Registered SBTSI device at address 0x%x\n",
++		tsi_dev->i3cdev ? tsi_dev->dev_static_addr
++				: tsi_dev->client->addr);
++	return 0;
++}
++
++/*
++ * apml_register_device - record a registered SB-RMI / SB-TSI device.
++ *
++ * Returns 0 on success, -EINVAL on a malformed device, -ENOMEM on alloc
++ * failure. Callers may treat failure as non-fatal: SBRMI/SBTSI probe paths
++ * log dev_warn() and continue so hwmon/misc still bind.
++ */
++int apml_register_device(void *device, enum apml_device_type dev_type)
++{
++	struct apml_device_node *node;
++	int ret;
++
++	if (!device) {
++		pr_info("APML: Cannot register NULL device\n");
++		return -EINVAL;
++	}
++
++	node = kzalloc(sizeof(*node), GFP_KERNEL);
++	if (!node)
++		return -ENOMEM;
++
++	node->dev_type = dev_type;
++	kref_init(&node->refcount);
++	init_waitqueue_head(&node->release_wait);
++
++	switch (dev_type) {
++	case APML_RMI_DEVICE:
++		ret = apml_register_rmi(node, device);
++		break;
++	case APML_TSI_DEVICE:
++		ret = apml_register_tsi(node, device);
++		break;
++	default:
++		ret = -EINVAL;
++	}
++	if (ret) {
++		kfree(node);
++		return ret;
++	}
++
++	apml_add_device_node(node);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(apml_register_device);
++
++/*
++ * apml_unregister_device - drop a previously registered SB-RMI / SB-TSI device.
++ *
++ * Safe to call with an unknown @device; the function is a no-op in that case.
++ *
++ * Unlink is immediate; the call then waits until Alert_L (or any other
++ * consumer) drops its kref before freeing the registry wrapper.  That keeps
++ * @device valid for the regmap I/O in a running IRQ thread.  Duration is
++ * bounded by the in-flight alert handler, which in turn relies on the I2C/I3C
++ * adapter transaction timeouts rather than a separate registry timer.  A
++ * timeout here cannot safely free the node without risking use-after-free.
++ */
++void apml_unregister_device(void *device, enum apml_device_type dev_type)
++{
++	struct apml_device_node *node, *tmp, *found_node = NULL;
++	bool found;
++
++	if (!device)
++		return;
++
++	mutex_lock(&apml_devices_lock);
++	list_for_each_entry_safe(node, tmp, &apml_devices, apml_dev_list) {
++		found = false;
++
++		if (node->dev_type != dev_type)
++			continue;
++
++		switch (dev_type) {
++		case APML_RMI_DEVICE:
++			found = node->rmi_dev == device;
++			break;
++		case APML_TSI_DEVICE:
++			found = node->tsi_dev == device;
++			break;
++		}
++
++		if (found) {
++			found_node = node;
++			list_del(&found_node->apml_dev_list);
++			break;
++		}
++	}
++	mutex_unlock(&apml_devices_lock);
++
++	if (!found_node)
++		return;
++
++	/* Wait out consumer krefs, then drop the registration kref and free. */
++	apml_put_device_node_and_wait(found_node);
++}
++EXPORT_SYMBOL_GPL(apml_unregister_device);
++
++MODULE_AUTHOR("Sathya Priya Kumar <sathyapriya.k@amd.com>");
++MODULE_AUTHOR("Akshay Gupta <akshay.gupta@amd.com>");
++MODULE_DESCRIPTION("AMD APML common registry for SB-RMI/SB-TSI devices(Alert_L)");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/misc/amd-apml/apml_common.h b/drivers/misc/amd-apml/apml_common.h
+new file mode 100644
+index 000000000..4bbea5122
+--- /dev/null
++++ b/drivers/misc/amd-apml/apml_common.h
+@@ -0,0 +1,56 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++/*
++ * apml_common.h - Shared registry for SB-RMI / SB-TSI Alert_L endpoints
++ *
++ * Copyright (C) 2025 Advanced Micro Devices, Inc.
++ */
++
++#ifndef _AMD_APML_COMMON_H_
++#define _AMD_APML_COMMON_H_
++
++#include <linux/list.h>
++#include <linux/kref.h>
++#include <linux/mutex.h>
++#include <linux/wait.h>
++#include "sbrmi-common.h"
++#include "sbtsi-common.h"
++
++/*
++ * Global list of registered APML device nodes.
++ */
++extern struct list_head apml_devices;
++extern struct mutex apml_devices_lock;
++
++enum apml_device_type {
++	APML_RMI_DEVICE,	/* SB-RMI (RAS alerts via register 0x4C) */
++	APML_TSI_DEVICE,	/* SB-TSI (temperature alerts via register 0x02) */
++};
++
++/* Registry wrapper for one SB-RMI or SB-TSI device exposed to Alert_L. */
++/* apml_dev_list: link on the global apml_devices list.
++ * refcount: reference count held by Alert_L during alert dispatch; registration
++ * starts with a count of one and the node is freed when the count drops
++ * to zero.
++ * release_wait: apml_unregister_device() waits here until every consumer
++ * has dropped refcount before freeing the wrapper.
++ * dev_type: selects whether rmi_dev or tsi_dev is valid in the union below.
++ * rmi_dev: SB-RMI parent when dev_type is APML_RMI_DEVICE.
++ * tsi_dev: SB-TSI parent when dev_type is APML_TSI_DEVICE.
++ */
++struct apml_device_node {
++	struct list_head apml_dev_list;
++	struct kref refcount;
++	wait_queue_head_t release_wait;
++	enum apml_device_type dev_type;
++	union {
++		struct apml_sbrmi_device *rmi_dev;
++		struct apml_sbtsi_device *tsi_dev;
++	};
++};
++
++int apml_register_device(void *device, enum apml_device_type dev_type);
++void apml_unregister_device(void *device, enum apml_device_type dev_type);
++struct apml_device_node *apml_get_device_node(struct apml_device_node *node);
++void apml_put_device_node(struct apml_device_node *node);
++
++#endif /* _AMD_APML_COMMON_H_ */
+diff --git a/drivers/misc/amd-apml/apml_sbtsi.c b/drivers/misc/amd-apml/apml_sbtsi.c
+index 10bb9ae0a..1812158a4 100644
+--- a/drivers/misc/amd-apml/apml_sbtsi.c
++++ b/drivers/misc/amd-apml/apml_sbtsi.c
+@@ -2,7 +2,7 @@
+ /*
+  * apml_sbtsi.c - hwmon driver for a SBI Temperature Sensor Interface (SB-TSI)
+  *                compliant AMD SoC temperature device.
+- * 		   Also register to misc driver with an IOCTL.
++ *                Also register to misc driver with an IOCTL.
+  *
+  * Copyright (c) 2020, Google Inc.
+  * Copyright (c) 2020, Kun Yi <kunyi@google.com>
+@@ -22,11 +22,11 @@
+ #include <linux/of_device.h>
+ #include <linux/of.h>
+ #include <linux/regmap.h>
++#include <linux/version.h>
+ 
+-#include <uapi/linux/amd-apml.h>
++#include "amd-apml.h"
++#include "apml_common.h"
+ 
+-#define SOCK_0_ADDR	0x4C
+-#define SOCK_1_ADDR	0x48
+ /*
+  * SB-TSI registers only support SMBus byte data access. "_INT" registers are
+  * the integer part of a temperature value or limit, and "_DEC" registers are
+@@ -61,12 +61,6 @@
+ #define SBTSI_DEC_OFFSET	5
+ #define SBTSI_DEC_MASK		0x7
+ 
+-struct apml_sbtsi_device {
+-	struct miscdevice sbtsi_misc_dev;
+-	struct regmap *regmap;
+-	struct mutex lock;
+-} __packed;
+-
+ /*
+  * From SB-TSI spec: CPU temperature readings and limit registers encode the
+  * temperature in increments of 0.125 from 0 to 255.875. The "high byte"
+@@ -84,6 +78,7 @@ static inline int sbtsi_reg_to_mc(s32 integer, s32 decimal)
+ 	       (decimal >> SBTSI_DEC_OFFSET)) * SBTSI_STEP_INC;
+ }
+ 
++#define PID_TSI_GENOA_TURIN	0x22400000001ULL
+ /*
+  * Inversely, given temperature in millidegree Celsius
+  *   INT = (TEMP / 125) / 8
+@@ -97,6 +92,33 @@ static inline void sbtsi_mc_to_reg(s32 temp, u8 *integer, u8 *decimal)
+ 	*decimal = (temp & SBTSI_DEC_MASK) << SBTSI_DEC_OFFSET;
+ }
+ 
++static int sbtsi_prepare_lock(struct apml_sbtsi_device *tsi_dev)
++{
++	mutex_lock(&tsi_dev->lock);
++	/* Verify device unbind/remove is not invoked */
++	if (atomic_read(&tsi_dev->no_new_trans)) {
++		mutex_unlock(&tsi_dev->lock);
++		return -EBUSY;
++	}
++
++	/*
++	 * Set the in_progress variable to true, to wait for
++	 * completion during unbind/remove of driver
++	 */
++	atomic_set(&tsi_dev->in_progress, 1);
++	return 0;
++}
++
++static void sbtsi_prepare_unlock(struct apml_sbtsi_device *tsi_dev)
++{
++	/* Send complete only if device is unbinded/remove */
++	if (atomic_read(&tsi_dev->no_new_trans))
++		complete(&tsi_dev->misc_fops_done);
++
++	atomic_set(&tsi_dev->in_progress, 0);
++	mutex_unlock(&tsi_dev->lock);
++}
++
+ static int sbtsi_read(struct device *dev, enum hwmon_sensor_types type,
+ 		      u32 attr, int channel, long *val)
+ {
+@@ -104,6 +126,12 @@ static int sbtsi_read(struct device *dev, enum hwmon_sensor_types type,
+ 	unsigned int temp_int, temp_dec, cfg;
+ 	int ret;
+ 
++	/*
++	 * If device remove/unbind is called do not allow new transaction
++	 */
++	if (atomic_read(&tsi_dev->no_new_trans))
++		return -EBUSY;
++
+ 	switch (attr) {
+ 	case hwmon_temp_input:
+ 		/*
+@@ -117,7 +145,10 @@ static int sbtsi_read(struct device *dev, enum hwmon_sensor_types type,
+ 		if (ret < 0)
+ 			return ret;
+ 
+-		mutex_lock(&tsi_dev->lock);
++		ret = sbtsi_prepare_lock(tsi_dev);
++		if (ret)
++			return ret;
++
+ 		if (cfg & BIT(SBTSI_CONFIG_READ_ORDER_SHIFT)) {
+ 			ret = regmap_read(tsi_dev->regmap, SBTSI_REG_TEMP_DEC, &temp_dec);
+ 			ret = regmap_read(tsi_dev->regmap, SBTSI_REG_TEMP_INT, &temp_int);
+@@ -125,19 +156,28 @@ static int sbtsi_read(struct device *dev, enum hwmon_sensor_types type,
+ 			ret = regmap_read(tsi_dev->regmap, SBTSI_REG_TEMP_INT, &temp_int);
+ 			ret = regmap_read(tsi_dev->regmap, SBTSI_REG_TEMP_DEC, &temp_dec);
+ 		}
+-		mutex_unlock(&tsi_dev->lock);
++
++		sbtsi_prepare_unlock(tsi_dev);
+ 		break;
+ 	case hwmon_temp_max:
+-		mutex_lock(&tsi_dev->lock);
++		ret = sbtsi_prepare_lock(tsi_dev);
++		if (ret)
++			return ret;
++
+ 		ret = regmap_read(tsi_dev->regmap, SBTSI_REG_TEMP_HIGH_INT, &temp_int);
+ 		ret = regmap_read(tsi_dev->regmap, SBTSI_REG_TEMP_HIGH_DEC, &temp_dec);
+-		mutex_unlock(&tsi_dev->lock);
++
++		sbtsi_prepare_unlock(tsi_dev);
+ 		break;
+ 	case hwmon_temp_min:
+-		mutex_lock(&tsi_dev->lock);
++		ret = sbtsi_prepare_lock(tsi_dev);
++		if (ret)
++			return ret;
++
+ 		ret = regmap_read(tsi_dev->regmap, SBTSI_REG_TEMP_LOW_INT, &temp_int);
+ 		ret = regmap_read(tsi_dev->regmap, SBTSI_REG_TEMP_LOW_DEC, &temp_dec);
+-		mutex_unlock(&tsi_dev->lock);
++
++		sbtsi_prepare_unlock(tsi_dev);
+ 		break;
+ 	default:
+ 		return -EINVAL;
+@@ -158,6 +198,12 @@ static int sbtsi_write(struct device *dev, enum hwmon_sensor_types type,
+ 	unsigned int temp_int, temp_dec;
+ 	int reg_int, reg_dec, err;
+ 
++	/*
++	 * If device remove/unbind is called do not allow new transaction
++	 */
++	if (atomic_read(&tsi_dev->no_new_trans))
++		return -EBUSY;
++
+ 	switch (attr) {
+ 	case hwmon_temp_max:
+ 		reg_int = SBTSI_REG_TEMP_HIGH_INT;
+@@ -174,14 +220,17 @@ static int sbtsi_write(struct device *dev, enum hwmon_sensor_types type,
+ 	val = clamp_val(val, SBTSI_TEMP_MIN, SBTSI_TEMP_MAX);
+ 	sbtsi_mc_to_reg(val, (u8 *)&temp_int, (u8 *)&temp_dec);
+ 
+-	mutex_lock(&tsi_dev->lock);
++	err = sbtsi_prepare_lock(tsi_dev);
++	if (err)
++		return err;
++
+ 	err = regmap_write(tsi_dev->regmap, reg_int, temp_int);
+ 	if (err)
+ 		goto exit;
+ 
+ 	err = regmap_write(tsi_dev->regmap, reg_dec, temp_dec);
+ exit:
+-	mutex_unlock(&tsi_dev->lock);
++	sbtsi_prepare_unlock(tsi_dev);
+ 	return err;
+ }
+ 
+@@ -225,7 +274,7 @@ static const struct hwmon_chip_info sbtsi_chip_info = {
+ 
+ static long sbtsi_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ {
+-	int __user *arguser = (int  __user *)arg;
++	int __user *arguser = (int __user *)arg;
+ 	struct apml_message msg = { 0 };
+ 	struct apml_sbtsi_device *tsi_dev;
+ 	int ret;
+@@ -240,7 +289,15 @@ static long sbtsi_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 	if (!tsi_dev)
+ 		return -EFAULT;
+ 
+-	mutex_lock(&tsi_dev->lock);
++	/*
++	 * If device remove/unbind is called do not allow new transaction
++	 */
++	if (atomic_read(&tsi_dev->no_new_trans))
++		return -EBUSY;
++
++	ret = sbtsi_prepare_lock(tsi_dev);
++	if (ret)
++		return ret;
+ 
+ 	if (!msg.data_in.reg_in[RD_FLAG_INDEX]) {
+ 		ret = regmap_write(tsi_dev->regmap,
+@@ -257,7 +314,7 @@ static long sbtsi_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 			ret = -EFAULT;
+ 	}
+ out:
+-	mutex_unlock(&tsi_dev->lock);
++	sbtsi_prepare_unlock(tsi_dev);
+ 	return ret;
+ }
+ 
+@@ -268,15 +325,17 @@ static const struct file_operations sbtsi_fops = {
+ };
+ 
+ static int create_misc_tsi_device(struct apml_sbtsi_device *tsi_dev,
+-				  struct device *dev, int id)
++				  struct device *dev)
+ {
+ 	int ret;
+ 
+-	tsi_dev->sbtsi_misc_dev.name		= devm_kasprintf(dev, GFP_KERNEL, "apml_tsi%d", id);
++	tsi_dev->sbtsi_misc_dev.name		= devm_kasprintf(dev, GFP_KERNEL,
++						  "sbtsi-%x", tsi_dev->dev_static_addr);
+ 	tsi_dev->sbtsi_misc_dev.minor		= MISC_DYNAMIC_MINOR;
+ 	tsi_dev->sbtsi_misc_dev.fops		= &sbtsi_fops;
+ 	tsi_dev->sbtsi_misc_dev.parent		= dev;
+-	tsi_dev->sbtsi_misc_dev.nodename	= devm_kasprintf(dev, GFP_KERNEL, "sbtsi%d", id);
++	tsi_dev->sbtsi_misc_dev.nodename	= devm_kasprintf(dev, GFP_KERNEL,
++						  "sbtsi-%x", tsi_dev->dev_static_addr);
+ 	tsi_dev->sbtsi_misc_dev.mode		= 0600;
+ 
+ 	ret = misc_register(&tsi_dev->sbtsi_misc_dev);
+@@ -297,7 +356,12 @@ static int sbtsi_i3c_probe(struct i3c_device *i3cdev)
+ 		.val_bits = 8,
+ 	};
+ 	struct regmap *regmap;
+-	int id;
++	const char *name;
++	int ret;
++
++	if (!(I3C_PID_INSTANCE_ID(i3cdev->desc->info.pid) == 0 ||
++	    i3cdev->desc->info.pid == PID_TSI_GENOA_TURIN))
++		return -ENXIO;
+ 
+ 	regmap = devm_regmap_init_i3c(i3cdev, &sbtsi_i3c_regmap_config);
+ 	if (IS_ERR(regmap)) {
+@@ -310,25 +374,64 @@ static int sbtsi_i3c_probe(struct i3c_device *i3cdev)
+ 	if (!tsi_dev)
+ 		return -ENOMEM;
+ 
++	atomic_set(&tsi_dev->in_progress, 0);
++	atomic_set(&tsi_dev->no_new_trans, 0);
++	tsi_dev->i3cdev = i3cdev;
+ 	tsi_dev->regmap = regmap;
+ 	mutex_init(&tsi_dev->lock);
+ 
+ 	dev_set_drvdata(dev, (void *)tsi_dev);
+-	hwmon_dev = devm_hwmon_device_register_with_info(dev, "sbtsi_i3c", tsi_dev,
++
++	/*
++	 * I3C dynamic address (post-DAA); fall back to static
++	 * if not yet assigned
++	 */
++	if (i3cdev->desc->info.dyn_addr)
++		tsi_dev->dev_static_addr = i3cdev->desc->info.dyn_addr;
++	else
++		tsi_dev->dev_static_addr = i3cdev->desc->info.static_addr;
++
++	switch (tsi_dev->dev_static_addr) {
++	case 0x4c:
++		name = devm_kasprintf(dev, GFP_KERNEL, "sbtsi_%s", "0.0");
++		break;
++	case 0x48:
++		name = devm_kasprintf(dev, GFP_KERNEL, "sbtsi_%s", "1.0");
++		break;
++	default:
++		name = devm_kasprintf(dev, GFP_KERNEL, "sbtsi_%x",
++				      tsi_dev->dev_static_addr);
++		break;
++	}
++
++	hwmon_dev = devm_hwmon_device_register_with_info(dev, name, tsi_dev,
+ 							 &sbtsi_chip_info, NULL);
++	if (IS_ERR(hwmon_dev))
++		return PTR_ERR(hwmon_dev);
+ 
+-	if (!hwmon_dev)
+-		return PTR_ERR_OR_ZERO(hwmon_dev);
++	init_completion(&tsi_dev->misc_fops_done);
++	ret = create_misc_tsi_device(tsi_dev, dev);
++	if (ret)
++		return ret;
+ 
+-	if (i3cdev->desc->info.static_addr == SOCK_0_ADDR)
+-		id = 0;
+-	if (i3cdev->desc->info.static_addr == SOCK_1_ADDR)
+-		id = 1;
++	/*
++	 * Best-effort APML common registry hookup. Probe still succeeds if this
++	 * fails (-EINVAL, -ENOMEM); hwmon and misc stay up but Alert_L will
++	 * not dispatch alerts for this device until registration succeeds.
++	 */
++	ret = apml_register_device(tsi_dev, APML_TSI_DEVICE);
++	if (ret != 0)
++		dev_warn(dev, "Failed to register with ALERT_L common system: %d\n", ret);
+ 
+-	return create_misc_tsi_device(tsi_dev, dev, id);
++	return 0;
+ }
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
++static int sbtsi_i2c_probe(struct i2c_client *client,
++			   const struct i2c_device_id *tsi_id)
++#else
+ static int sbtsi_i2c_probe(struct i2c_client *client)
++#endif
+ {
+ 	struct device *dev = &client->dev;
+ 	struct device *hwmon_dev;
+@@ -337,57 +440,148 @@ static int sbtsi_i2c_probe(struct i2c_client *client)
+ 		.reg_bits = 8,
+ 		.val_bits = 8,
+ 	};
+-	int id;
++	const char *name;
++	int ret;
+ 
+ 	tsi_dev = devm_kzalloc(dev, sizeof(struct apml_sbtsi_device), GFP_KERNEL);
+ 	if (!tsi_dev)
+ 		return -ENOMEM;
+ 
++	atomic_set(&tsi_dev->in_progress, 0);
++	atomic_set(&tsi_dev->no_new_trans, 0);
+ 	mutex_init(&tsi_dev->lock);
++	tsi_dev->client = client;
+ 	tsi_dev->regmap = devm_regmap_init_i2c(client, &sbtsi_i2c_regmap_config);
+ 	if (IS_ERR(tsi_dev->regmap))
+ 		return PTR_ERR(tsi_dev->regmap);
+ 
+ 	dev_set_drvdata(dev, (void *)tsi_dev);
+ 
+-	hwmon_dev = devm_hwmon_device_register_with_info(dev, client->name,
++	tsi_dev->dev_static_addr = client->addr;
++
++	switch (tsi_dev->dev_static_addr) {
++	case 0x4c:
++		name = devm_kasprintf(dev, GFP_KERNEL, "sbtsi_%s", "0.0");
++		break;
++	case 0x48:
++		name = devm_kasprintf(dev, GFP_KERNEL, "sbtsi_%s", "1.0");
++		break;
++	default:
++		name = devm_kasprintf(dev, GFP_KERNEL, "sbtsi_%x",
++				      tsi_dev->dev_static_addr);
++		break;
++	}
++
++	hwmon_dev = devm_hwmon_device_register_with_info(dev, name,
+ 							 tsi_dev,
+ 							 &sbtsi_chip_info,
+ 							 NULL);
++	if (IS_ERR(hwmon_dev))
++		return PTR_ERR(hwmon_dev);
+ 
+-	if (!hwmon_dev)
+-		return PTR_ERR_OR_ZERO(hwmon_dev);
++	init_completion(&tsi_dev->misc_fops_done);
++	ret = create_misc_tsi_device(tsi_dev, dev);
++	if (ret)
++		return ret;
+ 
+-	if (client->addr == SOCK_0_ADDR)
+-		id = 0;
+-	if (client->addr == SOCK_1_ADDR)
+-		id = 1;
++	/*
++	 * Best-effort APML common registry hookup. Probe still succeeds if this
++	 * fails (-EINVAL, -ENOMEM); hwmon and misc stay up but Alert_L will
++	 * not dispatch alerts for this device until registration succeeds.
++	 */
++	ret = apml_register_device(tsi_dev, APML_TSI_DEVICE);
++	if (ret != 0)
++		dev_warn(dev, "Failed to register with ALERT_L common system: %d\n", ret);
+ 
+-	return create_misc_tsi_device(tsi_dev, dev, id);
++	return 0;
+ }
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 12, 0)
++static int sbtsi_i3c_remove(struct i3c_device *i3cdev)
++#else
+ static void sbtsi_i3c_remove(struct i3c_device *i3cdev)
++#endif
+ {
+ 	struct apml_sbtsi_device *tsi_dev = dev_get_drvdata(&i3cdev->dev);
+ 
+-	if (tsi_dev)
+-		misc_deregister(&tsi_dev->sbtsi_misc_dev);
++	if (!tsi_dev)
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 12, 0)
++		return 0;
++#else
++		return;
++#endif
++
++	/*
++	 * Set the no_new_trans so no new transaction can
++	 * occur in sbtsi functions
++	 */
++	atomic_set(&tsi_dev->no_new_trans, 1);
++	/*
++	 * If any transaction is in progress wait for the
++	 * transaction to get complete
++	 * Max wait is 3 sec for any pending transaction to
++	 * complete
++	 */
++	if (atomic_read(&tsi_dev->in_progress))
++		wait_for_completion_timeout(&tsi_dev->misc_fops_done,
++					    3 * HZ);
++	apml_unregister_device(tsi_dev, APML_TSI_DEVICE);
++	misc_deregister(&tsi_dev->sbtsi_misc_dev);
++	/* Assign fops and parent of misc dev to NULL */
++	tsi_dev->sbtsi_misc_dev.fops = NULL;
++	tsi_dev->sbtsi_misc_dev.parent = NULL;
+ 
+ 	dev_info(&i3cdev->dev, "Removed sbtsi-i3c driver\n");
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 12, 0)
++	return 0;
++#endif
+ }
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
++static int sbtsi_i2c_remove(struct i2c_client *client)
++#else
+ static void sbtsi_i2c_remove(struct i2c_client *client)
++#endif
+ {
+ 	struct apml_sbtsi_device *tsi_dev = dev_get_drvdata(&client->dev);
+ 
+-	if (tsi_dev)
+-		misc_deregister(&tsi_dev->sbtsi_misc_dev);
++	if (!tsi_dev)
++#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
++		return 0;
++#else
++		return;
++#endif
++
++	/*
++	 * Set the no_new_trans so no new transaction can
++	 * occur in sbtsi functions
++	 */
++	atomic_set(&tsi_dev->no_new_trans, 1);
++	/*
++	 * If any transaction is in progress wait for the
++	 * transaction to get complete
++	 * Max wait is 3 sec for any pending transaction to
++	 * complete
++	 */
++	if (atomic_read(&tsi_dev->in_progress))
++		wait_for_completion_timeout(&tsi_dev->misc_fops_done,
++					    3 * HZ);
++	apml_unregister_device(tsi_dev, APML_TSI_DEVICE);
++	misc_deregister(&tsi_dev->sbtsi_misc_dev);
++	/* Assign fops and parent of misc dev to NULL */
++	tsi_dev->sbtsi_misc_dev.fops = NULL;
++	tsi_dev->sbtsi_misc_dev.parent = NULL;
+ 
+ 	dev_info(&client->dev, "Removed sbtsi driver\n");
++#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
++	return 0;
++#endif
+ }
+ 
+ static const struct i3c_device_id sbtsi_i3c_id[] = {
+-	I3C_DEVICE_EXTRA_INFO(0x112, 0, 0x1, NULL),
++	I3C_DEVICE_EXTRA_INFO(0x112, 0, 0x1, NULL), /* Genoa/Turin */
++	I3C_DEVICE_EXTRA_INFO(0x112, 0x0, 0x118, NULL), /* Socket:0, IOD:0 Venice */
++	I3C_DEVICE_EXTRA_INFO(0x112, 0x100, 0x118, NULL), /* Socket:1 IOD:0 Venice */
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(i3c, sbtsi_i3c_id);
+diff --git a/drivers/misc/amd-apml/sbrmi-common.c b/drivers/misc/amd-apml/sbrmi-common.c
+index 7527c186a..a8610944e 100644
+--- a/drivers/misc/amd-apml/sbrmi-common.c
++++ b/drivers/misc/amd-apml/sbrmi-common.c
+@@ -6,6 +6,7 @@
+  * Copyright (C) 2021-2022 Advanced Micro Devices, Inc.
+  */
+ #include <linux/err.h>
++#include <linux/i2c.h>
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+ #include <linux/regmap.h>
+@@ -16,11 +17,16 @@
+ #define SW_ALERT_MASK	0x2
+ /* Mask to check H/W Alert status bit */
+ #define HW_ALERT_MASK	0x80
++/* Mask to check Mailbox status register support */
++#define SW_MB_MASK	0x20
+ 
+ /* Software Interrupt for triggering */
+ #define START_CMD	0x80
+ #define TRIGGER_MAILBOX	0x01
+ 
++/* Mailbox error with additional data */
++#define ERR_WITH_DATA	0x5
++
+ /* Default message lengths as per APML command protocol */
+ /* MSR */
+ #define MSR_RD_REG_LEN		0xa
+@@ -42,6 +48,13 @@
+ #define RD_CPUID_CMD	0x91
+ #define RD_MCA_CMD	0x86
+ 
++/* CPUID RE-READ using Status cmd if timeout in v1.0 */
++#define TIMEOUT_ERROR		0x11
++#define STATUS_CMD		0x72
++#define WR_DLEN_STATUS_CMD	0x1
++#define WR_LEN_STATUS_CMD	0x3
++#define I2C_XFER_RW_LEN		2
++
+ /* SB-RMI registers */
+ enum sbrmi_reg {
+ 	SBRMI_REV		= 0x0,
+@@ -67,6 +80,20 @@ enum sbrmi_reg {
+ 	SBRMI_THREAD128CS	= 0x4b,
+ };
+ 
++/* input for bulk write to v10 of CPUID and MSR protocol */
++struct cpu_msr_indata_v10 {
++	u8 cpu_mca_cmd;	/* const value */
++	u8 wr_len;	/* const value */
++	u8 rd_len;	/* const value */
++	u8 proto_cmd;	/* const value */
++	u8 thread;	/* thread number */
++	union {
++		u8 reg_offset[4];	/* input value */
++		u32 value;
++	};
++	u8 ext; /* extended function */
++} __packed;
++
+ /* input for bulk write to v21 of CPUID and MSR protocol */
+ struct cpu_msr_indata_v21 {
+ 	u8 wr_len;	/* const value */
+@@ -118,6 +145,15 @@ struct cpu_msr_outdata {
+ 	input.value =  func,						\
+ 	input.ext =  ext_func
+ 
++#define prepare_cpuid_in_msg_v10(input, thread_id, func, ext_func, wr_data_len)	\
++	input.cpu_mca_cmd = CPUID_MCA_CMD,				\
++	input.rd_len = CPUID_RD_DATA_LEN,				\
++	input.wr_len = wr_data_len,				\
++	input.proto_cmd = RD_CPUID_CMD,					\
++	input.thread = thread_id << 1,					\
++	input.value =  func,						\
++	input.ext =  ext_func
++
+ static int sbrmi_get_rev(struct apml_sbrmi_device *rmi_dev)
+ {
+ 	struct apml_message msg = { 0 };
+@@ -135,25 +171,43 @@ static int sbrmi_get_rev(struct apml_sbrmi_device *rmi_dev)
+ 	return 0;
+ }
+ 
+-/*
+- * For Mailbox command software alert status bit is set by firmware
+- * to indicate command completion
+- * For RMI Rev 0x20, new h/w status bit is introduced. which is used
+- * by firmware to indicate completion of commands (0x71, 0x72, 0x73).
+- * wait for the status bit to be set by the firmware before
+- * reading the data out.
+- */
+-static int sbrmi_wait_status(struct apml_sbrmi_device *rmi_dev,
+-			     int *status, int mask)
++static int poll_sw_interrupt_reg(struct apml_sbrmi_device *rmi_dev)
+ {
+-	int ret, retry = 100;
++	int ret = 0, retry = 100;
++	int sw_int = 0;
+ 
+ 	do {
+-		ret = regmap_read(rmi_dev->regmap, SBRMI_STATUS, status);
++		ret = regmap_read(rmi_dev->regmap, SBRMI_SW_INTERRUPT, &sw_int);
+ 		if (ret < 0)
+ 			return ret;
+ 
+-		if (*status & mask)
++		if (!(sw_int & 0x1))
++			break;
++
++		/* Wait 1~2 second for firmware to return data out */
++		if (retry > 95)
++			usleep_range(50, 100);
++		else
++			usleep_range(10000, 20000);
++	} while (retry--);
++
++	if (retry < 0)
++		ret = -ETIMEDOUT;
++	return ret;
++}
++
++static int poll_status_register(struct apml_sbrmi_device *rmi_dev,
++				int mask)
++{
++	int ret = 0, retry = 100;
++	int status;
++
++	do {
++		ret = regmap_read(rmi_dev->regmap, SBRMI_STATUS, &status);
++		if (ret < 0)
++			return ret;
++
++		if (status & mask)
+ 			break;
+ 
+ 		/* Wait 1~2 second for firmware to return data out */
+@@ -215,13 +269,50 @@ static int msr_datain_v21(struct apml_sbrmi_device *rmi_dev,
+ 	return ret;
+ }
+ 
++/*
++ * For Mailbox command software alert status bit is set by firmware
++ * to indicate command completion
++ * For RMI Rev 0x20, new h/w status bit is introduced. which is used
++ * by firmware to indicate completion of commands (0x71, 0x72, 0x73).
++ * wait for the status bit to be set by the firmware before
++ * reading the data out.
++ */
++static int sbrmi_wait_status(struct apml_sbrmi_device *rmi_dev,
++			     int mask)
++{
++	int ctrl_val = 0;
++	int ret = 0;
++
++	/* cache the rev value to identify if protocol is supported or not */
++	/* should be called here or in mailbox_xfer ? */
++	if (!rmi_dev->rev) {
++		ret = sbrmi_get_rev(rmi_dev);
++		if (ret < 0)
++			return ret;
++	}
++
++	if (mask != SW_ALERT_MASK || rmi_dev->rev == 0x10)
++		return poll_status_register(rmi_dev, mask);
++
++	ret = regmap_read(rmi_dev->regmap, SBRMI_CTRL, &ctrl_val);
++	if (ret < 0)
++		return ret;
++
++	if (ctrl_val & SW_MB_MASK)
++		return poll_status_register(rmi_dev, mask);
++	else
++		return poll_sw_interrupt_reg(rmi_dev);
++}
++
+ /* MCA MSR protocol */
+ int rmi_mca_msr_read(struct apml_sbrmi_device *rmi_dev,
+ 		     struct apml_message *msg)
+ {
+ 	struct cpu_msr_outdata output = {0};
+ 	int ret;
+-	int hw_status;
++
++	if (!rmi_dev->regmap)
++		return -ENODEV;
+ 
+ 	/* cache the rev value to identify if protocol is supported or not */
+ 	if (!rmi_dev->rev) {
+@@ -230,7 +321,7 @@ int rmi_mca_msr_read(struct apml_sbrmi_device *rmi_dev,
+ 			return ret;
+ 	}
+ 
+-	switch(rmi_dev->rev) {
++	switch (rmi_dev->rev) {
+ 	/* MCA MSR protocol for REV 0x10 is not supported*/
+ 	case 0x10:
+ 		return -EOPNOTSUPP;
+@@ -241,6 +332,7 @@ int rmi_mca_msr_read(struct apml_sbrmi_device *rmi_dev,
+ 
+ 		break;
+ 	case 0x21:
++	case 0x31:
+ 		ret = msr_datain_v21(rmi_dev, msg);
+ 		if (ret < 0)
+ 			goto exit_unlock;
+@@ -249,7 +341,7 @@ int rmi_mca_msr_read(struct apml_sbrmi_device *rmi_dev,
+ 		return -EOPNOTSUPP;
+ 	}
+ 
+-	ret = sbrmi_wait_status(rmi_dev, &hw_status, HW_ALERT_MASK);
++	ret = sbrmi_wait_status(rmi_dev, HW_ALERT_MASK);
+ 	if (ret < 0)
+ 		goto exit_unlock;
+ 
+@@ -259,7 +351,7 @@ int rmi_mca_msr_read(struct apml_sbrmi_device *rmi_dev,
+ 		goto exit_unlock;
+ 
+ 	ret = regmap_write(rmi_dev->regmap, SBRMI_STATUS,
+-			   hw_status | HW_ALERT_MASK);
++			   HW_ALERT_MASK);
+ 	if (ret < 0)
+ 		goto exit_unlock;
+ 
+@@ -278,7 +370,82 @@ int rmi_mca_msr_read(struct apml_sbrmi_device *rmi_dev,
+ 	return ret;
+ }
+ 
+-/* CPUID protocol */
++static int cpuid_datain_v10(struct apml_sbrmi_device *rmi_dev,
++			    struct apml_message *msg)
++{
++	struct cpu_msr_outdata output = {0};
++	struct cpu_msr_indata_v10 input = {0};
++	struct i2c_msg xfer[2];
++	u8 in_status[3];
++	int ret;
++
++	prepare_cpuid_in_msg_v10(input, msg->data_in.reg_in[THREAD_LOW_INDEX],
++				 msg->data_in.mb_in[RD_WR_DATA_INDEX],
++				 msg->data_in.reg_in[EXT_FUNC_INDEX],
++				 CPUID_WR_DATA_LEN);
++
++	if (!rmi_dev->client)
++		return -EOPNOTSUPP;
++
++	xfer[0].addr = rmi_dev->client->addr;
++	xfer[0].flags = 0;
++	xfer[0].len = CPUID_RD_REG_LEN;
++	xfer[0].buf = (void *)&input;
++
++	xfer[1].addr = rmi_dev->client->addr;
++	xfer[1].flags = I2C_M_RD;
++	xfer[1].len = CPUID_RD_REG_LEN;
++	xfer[1].buf = (u8 *)&output;
++
++	ret = i2c_transfer(rmi_dev->client->adapter, xfer, I2C_XFER_RW_LEN);
++	if (ret == I2C_XFER_RW_LEN)
++		ret = 0;
++	else
++		return -EIO;
++
++	if (output.num_bytes != CPUID_RD_REG_LEN - 1)
++		return -EMSGSIZE;
++
++	if (output.status && output.status != 0x11) {
++		ret = -EPROTOTYPE;
++		msg->fw_ret_code = output.status;
++		return ret;
++	}
++
++	if (output.status == TIMEOUT_ERROR) {
++		in_status[0] = STATUS_CMD;
++		in_status[1] = WR_DLEN_STATUS_CMD;
++		in_status[2] = CPUID_RD_DATA_LEN;
++
++		xfer[0].addr = rmi_dev->client->addr;
++		xfer[0].flags = 0;
++		xfer[0].len = WR_LEN_STATUS_CMD;
++		xfer[0].buf = (void *)in_status;
++
++		xfer[1].addr = rmi_dev->client->addr;
++		xfer[1].flags = I2C_M_RD;
++		xfer[1].len = CPUID_RD_REG_LEN;
++		xfer[1].buf = (u8 *)&output;
++
++		ret = i2c_transfer(rmi_dev->client->adapter, xfer, I2C_XFER_RW_LEN);
++		if (ret == I2C_XFER_RW_LEN)
++			ret = 0;
++		else
++			return -EIO;
++
++		if (output.num_bytes != CPUID_RD_REG_LEN - 1)
++			return -EMSGSIZE;
++
++		if (output.status) {
++			msg->fw_ret_code = output.status;
++			return -EPROTOTYPE;
++		}
++	}
++
++	msg->data_out.cpu_msr_out = output.value;
++	return ret;
++}
++
+ static int cpuid_datain_v20(struct apml_sbrmi_device *rmi_dev,
+ 			    struct apml_message *msg)
+ {
+@@ -332,25 +499,30 @@ int rmi_cpuid_read(struct apml_sbrmi_device *rmi_dev,
+ 		   struct apml_message *msg)
+ {
+ 	struct cpu_msr_outdata output = {0};
+-	int ret, hw_status;
++	int ret;
+ 
+-	/* cache the rev value to identify if protocol is supported or not */
++	if (!rmi_dev->regmap)
++		return -ENODEV;
++
++	/* Cache the rev value */
+ 	if (!rmi_dev->rev) {
+ 		ret = sbrmi_get_rev(rmi_dev);
+ 		if (ret < 0)
+ 			return ret;
+ 	}
+ 
+-	switch(rmi_dev->rev) {
++	switch (rmi_dev->rev) {
+ 	/* CPUID protocol for REV 0x10 is not supported*/
+ 	case 0x10:
+-		return -EOPNOTSUPP;
++		ret = cpuid_datain_v10(rmi_dev, msg);
++		goto exit_unlock;
+ 	case 0x20:
+ 		ret = cpuid_datain_v20(rmi_dev, msg);
+ 		if (ret < 0)
+ 			goto exit_unlock;
+ 		break;
+ 	case 0x21:
++	case 0x31:
+ 		ret = cpuid_datain_v21(rmi_dev, msg);
+ 		if (ret < 0)
+ 			goto exit_unlock;
+@@ -359,7 +531,7 @@ int rmi_cpuid_read(struct apml_sbrmi_device *rmi_dev,
+ 		return -EOPNOTSUPP;
+ 	}
+ 
+-	ret = sbrmi_wait_status(rmi_dev, &hw_status, HW_ALERT_MASK);
++	ret = sbrmi_wait_status(rmi_dev, HW_ALERT_MASK);
+ 	if (ret < 0)
+ 		goto exit_unlock;
+ 
+@@ -369,7 +541,7 @@ int rmi_cpuid_read(struct apml_sbrmi_device *rmi_dev,
+ 		goto exit_unlock;
+ 
+ 	ret = regmap_write(rmi_dev->regmap, SBRMI_STATUS,
+-			   hw_status | HW_ALERT_MASK);
++			   HW_ALERT_MASK);
+ 	if (ret < 0)
+ 		goto exit_unlock;
+ 
+@@ -400,7 +572,7 @@ static int esmi_oob_clear_status_alert(struct apml_sbrmi_device *rmi_dev)
+ 		return 0;
+ 
+ 	return regmap_write(rmi_dev->regmap, SBRMI_STATUS,
+-			    sw_status | SW_ALERT_MASK);
++			    SW_ALERT_MASK);
+ }
+ 
+ int rmi_mailbox_xfer(struct apml_sbrmi_device *rmi_dev,
+@@ -408,9 +580,11 @@ int rmi_mailbox_xfer(struct apml_sbrmi_device *rmi_dev,
+ {
+ 	unsigned int bytes = 0, ec = 0;
+ 	int i, ret;
+-	int sw_status;
+ 	u8 byte = 0;
+ 
++	if (!rmi_dev->regmap)
++		return -ENODEV;
++
+ 	msg->fw_ret_code = 0;
+ 
+ 	ret = esmi_oob_clear_status_alert(rmi_dev);
+@@ -452,12 +626,26 @@ int rmi_mailbox_xfer(struct apml_sbrmi_device *rmi_dev,
+ 	 * an ALERT (if enabled) to initiator (BMC) to indicate completion
+ 	 * of the requested command
+ 	 */
+-	ret = sbrmi_wait_status(rmi_dev, &sw_status, SW_ALERT_MASK);
++	ret = sbrmi_wait_status(rmi_dev, SW_ALERT_MASK);
+ 	if (ret)
+ 		goto exit_unlock;
++	/*
++	 * The firmware mirrors the original mailbox command to
++	 * SBRMI::OutBndMsg_inst0 (SBRMI_x30). Validating the command ID
++	 * against this register detects I2C transmission errors, bit-flips,
++	 * and signal noise, ensuring reliable command execution.
++	 */
++	ret = regmap_read(rmi_dev->regmap, SBRMI_OUTBNDMSG0, &bytes);
++	if (ret)
++		goto exit_unlock;
++
++	if (bytes != msg->cmd) {
++		ret = -EIO;
++		goto exit_unlock;
++	}
+ 
+ 	ret = regmap_read(rmi_dev->regmap, SBRMI_OUTBNDMSG7, &ec);
+-	if (ret || ec)
++	if (ret || (ec && ec != ERR_WITH_DATA))
+ 		goto exit_clear_alert;
+ 
+ 	/*
+@@ -480,7 +668,7 @@ int rmi_mailbox_xfer(struct apml_sbrmi_device *rmi_dev,
+ 	 * ALERT to initiator
+ 	 */
+ 	ret = regmap_write(rmi_dev->regmap, SBRMI_STATUS,
+-			   sw_status | SW_ALERT_MASK);
++			   SW_ALERT_MASK);
+ 	if (ec) {
+ 		ret = -EPROTOTYPE;
+ 		msg->fw_ret_code = ec;
+diff --git a/drivers/misc/amd-apml/sbrmi-common.h b/drivers/misc/amd-apml/sbrmi-common.h
+index 6f1aea480..4874cde02 100644
+--- a/drivers/misc/amd-apml/sbrmi-common.h
++++ b/drivers/misc/amd-apml/sbrmi-common.h
+@@ -7,12 +7,13 @@
+ #define _AMD_APML_SBRMI_H_
+ 
+ #include <linux/miscdevice.h>
+-#include <uapi/linux/amd-apml.h>
++#include "amd-apml.h"
+ 
+ /* Each client has this additional data */
+-/* in_progress: Variable is set if any transaction is in
+- * progress in IOCTL
+- * no_new_trans: Variable is set if rmmmod/unbind is called
++/* in_progress: set during any transaction, mailbox/cpuid/mcamsr/readreg,
++ * to indicate a transaction is in progress.
++ * no_new_trans: set in rmmod/unbind path to indicate,
++ * not to accept new transactions
+  */
+ struct apml_sbrmi_device {
+ 	struct miscdevice sbrmi_misc_dev;
+@@ -21,13 +22,12 @@ struct apml_sbrmi_device {
+ 	struct i2c_client *client;
+ 	struct regmap *regmap;
+ 	struct mutex lock;
+-	u32 *dimm_id;
+ 	u32 pwr_limit_max;
+ 	atomic_t in_progress;
+ 	atomic_t no_new_trans;
+ 	u8 rev;
+-	u8 sock_num;
+-} __packed;
++	u8 dev_static_addr;
++};
+ 
+ int rmi_mca_msr_read(struct apml_sbrmi_device *rmi_dev,
+ 		     struct apml_message *msg);
+diff --git a/drivers/misc/amd-apml/sbrmi.c b/drivers/misc/amd-apml/sbrmi.c
+index 3ea6a63d1..6cab080cf 100644
+--- a/drivers/misc/amd-apml/sbrmi.c
++++ b/drivers/misc/amd-apml/sbrmi.c
+@@ -19,24 +19,21 @@
+ #include <linux/of.h>
+ #include <linux/fs.h>
+ #include <linux/regmap.h>
++#include <linux/version.h>
+ 
+ #include "sbrmi-common.h"
+-
+-#define SOCK_0_ADDR	0x3C
+-#define SOCK_1_ADDR	0x38
++#include "apml_common.h"
+ 
+ /* Do not allow setting negative power limit */
+ #define SBRMI_PWR_MIN	0
+ 
++/* Try 2 byte address size before switching to 1 byte */
++#define MAX_RETRY	5
++
++
+ /* SBRMI REVISION REG */
+ #define SBRMI_REV	0x0
+-#define SBRMI_REV_BRTH (0x21)
+ 
+-#define DIMM_BASE_ID		(0x80)
+-#define MAX_DIMM_COUNT		(12)
+-#define DIMM_POWER_OFFSET	(17)
+-#define DIMM_TEMP_OFFSET	(21)
+-#define DIMM_TEMP_SCALE 	1/4
+ #define MAX_WAIT_TIME_SEC	(3)
+ 
+ /* SBRMI registers data out is 1 byte */
+@@ -49,21 +46,100 @@
+ /* Two xfers, one write and one read require to read the data */
+ #define I3C_I2C_MSG_XFER_SIZE		0x2
+ 
++/* DIMM temp */
++#define DIMM_BASE_ID		0x80	/* Mode 1: Bit[7]=1 */
++#define DIMM_TS_SELECT_BIT	BIT(6)	/* 0 = TS0, 1 = TS1 */
++#define DIMM_TEMP_OFFSET	21
++#define DIMM_CHANNELS_PER_TS	16
++#define SBRMI_MAX_DIMMS		DIMM_CHANNELS_PER_TS
++#define SBRMI_NUM_DIMM_CHANNELS	(DIMM_CHANNELS_PER_TS * 2) /* TS0 + TS1 */
++#define PID_RMI_GENOA_TURIN	0x22400000002ULL
++/*
++ * DIMM_ADDR() - Encode a hwmon channel into a Mode 1 DIMM_ADDRESS byte
++ *   Bit[7]   : 1        - Mode 1
++ *   Bit[6]   : TS select - ch / DIMM_CHANNELS_PER_TS yields 0 (TS0) or
++ *               1 (TS1), shifted to bit 6
++ *   Bit[3:0] : UMC/DDRPHY Instance ID - ch % DIMM_CHANNELS_PER_TS
++ */
++#define DIMM_ADDR(ch)						\
++	(DIMM_BASE_ID |					\
++	 (((ch) / DIMM_CHANNELS_PER_TS) << 6) |		\
++	 ((ch) % DIMM_CHANNELS_PER_TS))
++
++/*
++ * DIMM thermal config kept separate from apml_sbrmi_device (common header).
++ * Co-allocated with rmi_dev; probes still use apml_sbrmi_device * as drvdata.
++ */
++struct sbrmi_dimm_config {
++	u8 *dimm_ids;
++	int num_umc;
++};
++
++struct sbrmi_device_alloc {
++	struct apml_sbrmi_device rmi_dev;
++	struct sbrmi_dimm_config dimm;
++};
++
++static struct apml_sbrmi_device *sbrmi_dev_alloc(struct device *dev)
++{
++	struct sbrmi_device_alloc *alloc;
++
++	alloc = devm_kzalloc(dev, sizeof(*alloc), GFP_KERNEL);
++	if (!alloc)
++		return NULL;
++
++	return &alloc->rmi_dev;
++}
++
++static struct sbrmi_dimm_config *sbrmi_to_dimm_config(struct apml_sbrmi_device *rmi_dev)
++{
++	return &container_of(rmi_dev, struct sbrmi_device_alloc, rmi_dev)->dimm;
++}
++
+ static int configure_regmap(struct apml_sbrmi_device *rmi_dev);
++static bool sbrmi_dimm_channel_valid(const struct sbrmi_dimm_config *dimm, int channel);
++static int sbrmi_init_dimm_config(struct device *dev,
++				  struct apml_sbrmi_device *rmi_dev);
+ 
+ enum sbrmi_msg_id {
+ 	SBRMI_READ_PKG_PWR_CONSUMPTION = 0x1,
+ 	SBRMI_WRITE_PKG_PWR_LIMIT,
+ 	SBRMI_READ_PKG_PWR_LIMIT,
+ 	SBRMI_READ_PKG_MAX_PWR_LIMIT,
+-	SBRMI_READ_DIMM_POWER_CONSUMPTION = 0x47,
+ 	SBRMI_READ_DIMM_THERMAL_SENSOR = 0x48,
+ };
+ 
++static int sbrmi_prepare_lock(struct apml_sbrmi_device *rmi_dev)
++{
++	mutex_lock(&rmi_dev->lock);
++	/* Verify device unbind/remove is not invoked */
++	if (atomic_read(&rmi_dev->no_new_trans)) {
++		mutex_unlock(&rmi_dev->lock);
++		return -EBUSY;
++	}
++
++	/*
++	 * Set the in_progress variable to true, to wait for
++	 * completion during unbind/remove of driver
++	 */
++	atomic_set(&rmi_dev->in_progress, 1);
++	return 0;
++}
++
++static void sbrmi_prepare_unlock(struct apml_sbrmi_device *rmi_dev)
++{
++	/* Send complete only if device is unbinded/remove */
++	if (atomic_read(&rmi_dev->no_new_trans))
++		complete(&rmi_dev->misc_fops_done);
++
++	atomic_set(&rmi_dev->in_progress, 0);
++	mutex_unlock(&rmi_dev->lock);
++}
++
+ static int sbrmi_get_max_pwr_limit(struct apml_sbrmi_device *rmi_dev)
+ {
+ 	struct apml_message msg = { 0 };
+-	int ret;
++	int ret = 0;
+ 
+ 	msg.cmd = SBRMI_READ_PKG_MAX_PWR_LIMIT;
+ 	msg.data_in.reg_in[RD_FLAG_INDEX] = 1;
+@@ -79,74 +155,176 @@ static int sbrmi_read(struct device *dev, enum hwmon_sensor_types type,
+ 		      u32 attr, int channel, long *val)
+ {
+ 	struct apml_sbrmi_device *rmi_dev = dev_get_drvdata(dev);
++	struct sbrmi_dimm_config *dimm = sbrmi_to_dimm_config(rmi_dev);
+ 	struct apml_message msg = { 0 };
+-	int ret;
++	int ret = 0;
+ 
+ 	if (type != hwmon_power && type != hwmon_temp)
+ 		return -EINVAL;
+ 
++	ret = sbrmi_prepare_lock(rmi_dev);
++	if (ret)
++		return ret;
++
++	/* Configure regmap if not configured yet */
+ 	if (!rmi_dev->regmap) {
+ 		ret = configure_regmap(rmi_dev);
+ 		if (ret < 0) {
+-			pr_err("regmap configuration failed with return value:%d in sbrmi_read\n", ret);
++			pr_err("regmap configuration failed with return value:%d in hwmon read ops\n", ret);
++			sbrmi_prepare_unlock(rmi_dev);
+ 			return ret;
+ 		}
+ 	}
+ 
+-	mutex_lock(&rmi_dev->lock);
+ 	msg.data_in.reg_in[RD_FLAG_INDEX] = 1;
+ 
+-	switch (attr) {
+-	case hwmon_power_input:
+-		if (channel > 0) {
+-			msg.cmd = SBRMI_READ_DIMM_POWER_CONSUMPTION;
+-			msg.data_in.mb_in[RD_WR_DATA_INDEX] = rmi_dev->dimm_id[channel-1];
+-		} else {
++	if (type == hwmon_power) {
++		switch (attr) {
++		case hwmon_power_input:
+ 			msg.cmd = SBRMI_READ_PKG_PWR_CONSUMPTION;
++			ret = rmi_mailbox_xfer(rmi_dev, &msg);
++			break;
++		case hwmon_power_cap:
++			msg.cmd = SBRMI_READ_PKG_PWR_LIMIT;
++			ret = rmi_mailbox_xfer(rmi_dev, &msg);
++			break;
++		case hwmon_power_cap_max:
++			if (!rmi_dev->pwr_limit_max) {
++				/* Cache maximum power limit */
++				ret = sbrmi_get_max_pwr_limit(rmi_dev);
++			}
++			msg.data_out.mb_out[RD_WR_DATA_INDEX] = rmi_dev->pwr_limit_max;
++			break;
++		default:
++			ret = -EINVAL;
+ 		}
+-		ret = rmi_mailbox_xfer(rmi_dev, &msg);
+-		break;
+-	case hwmon_power_cap:
+-		msg.cmd = SBRMI_READ_PKG_PWR_LIMIT;
+-		ret = rmi_mailbox_xfer(rmi_dev, &msg);
+-		break;
+-	case hwmon_temp_input:
+-		msg.cmd = SBRMI_READ_DIMM_THERMAL_SENSOR;
+-		msg.data_in.mb_in[RD_WR_DATA_INDEX] = rmi_dev->dimm_id[channel];
+-		ret = rmi_mailbox_xfer(rmi_dev, &msg);
+-		break;
+-	case hwmon_power_cap_max:
+-		/* Cache maximum power limit */
+-		if (!rmi_dev->pwr_limit_max) {
+-			ret = sbrmi_get_max_pwr_limit(rmi_dev);
+-			if (ret < 0)
+-				goto out;
++	} else {
++		switch (attr) {
++		case hwmon_temp_input:
++			if (!sbrmi_dimm_channel_valid(dimm, channel)) {
++				ret = -EINVAL;
++				break;
++			}
++			msg.cmd = SBRMI_READ_DIMM_THERMAL_SENSOR;
++			msg.data_in.mb_in[RD_WR_DATA_INDEX] = dimm->dimm_ids[channel];
++			ret = rmi_mailbox_xfer(rmi_dev, &msg);
++			if (ret == -EPROTOTYPE)
++				dev_dbg(dev, "FW error code:0x%x\n", msg.fw_ret_code);
++			break;
++		default:
++			ret = -EINVAL;
+ 		}
+-		msg.data_out.mb_out[RD_WR_DATA_INDEX] = rmi_dev->pwr_limit_max;
+-		ret = 0;
+-		break;
+-	default:
+-		ret = -EINVAL;
+ 	}
+-	if (ret < 0)
+-		goto out;
+ 
+-	if (type == hwmon_power) {
+-		/* hwmon power attributes are in microWatt */
+-		if (channel > 0) {
+-			*val = (msg.data_out.mb_out[RD_WR_DATA_INDEX] >> DIMM_POWER_OFFSET) * 1000;
+-		} else {
++	if (!ret) {
++		if (type == hwmon_power) {
++			/* hwmon power attributes are in microWatt */
+ 			*val = (long)msg.data_out.mb_out[RD_WR_DATA_INDEX] * 1000;
++		} else {
++			/*
++			 * Temperature is an 11-bit two's complement signed value
++			 * (bits 10:0) with 0.25 deg C resolution. Bit 10 is the
++			 * sign bit; if set, extend the sign by subtracting 0x800.
++			 * Convert to milli-degrees C using integer math (multiply
++			 * by 250) to avoid floating point in the kernel.
++			 */
++			*val = msg.data_out.mb_out[RD_WR_DATA_INDEX] >> DIMM_TEMP_OFFSET;
++			if (*val & 0x400)
++				*val -= 0x800;
++			/* Report temperature in mC as per hwmon standards */
++			*val *= 250;
+ 		}
+-	} else if (type == hwmon_temp) {
+-		/* sbrmi temp is floating point, convert to deg C rational num */
+-		*val = (msg.data_out.mb_out[RD_WR_DATA_INDEX] >> DIMM_TEMP_OFFSET) * 1000 * DIMM_TEMP_SCALE;
+ 	}
+-out:
+-	mutex_unlock(&rmi_dev->lock);
++
++	sbrmi_prepare_unlock(rmi_dev);
+ 	return ret;
+ }
+ 
++static u8 sbrmi_dimm_addr_from_ts0(u8 ts0, unsigned int ts)
++{
++	return (ts0 & ~DIMM_TS_SELECT_BIT) | (ts ? DIMM_TS_SELECT_BIT : 0);
++}
++
++static bool sbrmi_dimm_channel_valid(const struct sbrmi_dimm_config *dimm, int channel)
++{
++	int umc = channel % DIMM_CHANNELS_PER_TS;
++	int ts = channel / DIMM_CHANNELS_PER_TS;
++
++	return dimm->dimm_ids && ts < 2 && umc >= 0 && umc < dimm->num_umc;
++}
++
++/*
++ * sbrmi_init_dimm_config() - Parse DT and build DIMM mailbox address table.
++ *
++ * Optional "dimm-ids" lists TS0 base addresses in order (one per UMC).
++ * The number of entries sets the populated UMC count (1..16). TS1 is derived
++ * by setting bit[6] (TS0 | 0x40). When absent, use legacy 0x80 encoding
++ * for all 16 UMC instances.
++ */
++static int sbrmi_init_dimm_config(struct device *dev,
++				  struct apml_sbrmi_device *rmi_dev)
++{
++	struct sbrmi_dimm_config *dimm = sbrmi_to_dimm_config(rmi_dev);
++	struct device_node *np = dev->of_node;
++	u32 *raw_ids;
++	int count, umc, ts, ret;
++
++	dimm->num_umc = SBRMI_MAX_DIMMS;
++	dimm->dimm_ids = devm_kcalloc(dev, SBRMI_NUM_DIMM_CHANNELS,
++				      sizeof(u8), GFP_KERNEL);
++	if (!dimm->dimm_ids)
++		return -ENOMEM;
++
++	if (!np)
++		goto default_ids;
++
++	count = of_property_count_elems_of_size(np, "dimm-ids", sizeof(u32));
++	if (count <= 0)
++		goto default_ids;
++
++	if (count < 1 || count > SBRMI_MAX_DIMMS) {
++		dev_err(dev, "dimm-ids must have 1..%d entries, got %d\n",
++			SBRMI_MAX_DIMMS, count);
++		return -EINVAL;
++	}
++
++	dimm->num_umc = count;
++
++	raw_ids = devm_kcalloc(dev, count, sizeof(u32), GFP_KERNEL);
++	if (!raw_ids)
++		return -ENOMEM;
++
++	ret = of_property_read_u32_array(np, "dimm-ids", raw_ids, count);
++	if (ret) {
++		dev_err(dev, "failed to read dimm-ids: %d\n", ret);
++		return ret;
++	}
++
++	for (umc = 0; umc < count; umc++) {
++		u8 ts0 = raw_ids[umc] & 0xff;
++
++		for (ts = 0; ts < 2; ts++) {
++			int ch = ts * DIMM_CHANNELS_PER_TS + umc;
++
++			dimm->dimm_ids[ch] = sbrmi_dimm_addr_from_ts0(ts0, ts);
++		}
++	}
++
++	dev_dbg(dev, "Using %d platform dimm-ids\n", count);
++	return 0;
++
++default_ids:
++	for (umc = 0; umc < dimm->num_umc; umc++) {
++		for (ts = 0; ts < 2; ts++) {
++			int ch = ts * DIMM_CHANNELS_PER_TS + umc;
++
++			dimm->dimm_ids[ch] = DIMM_ADDR(ch);
++		}
++	}
++
++	return 0;
++}
++
+ static int sbrmi_write(struct device *dev, enum hwmon_sensor_types type,
+ 		       u32 attr, int channel, long val)
+ {
+@@ -157,14 +335,6 @@ static int sbrmi_write(struct device *dev, enum hwmon_sensor_types type,
+ 	if (type != hwmon_power && attr != hwmon_power_cap)
+ 		return -EINVAL;
+ 
+-	if (!rmi_dev->regmap) {
+-		ret = configure_regmap(rmi_dev);
+-		if (ret < 0) {
+-			pr_err("regmap configuration failed with return value:%d in sbrmi_write\n", ret);
+-			return ret;
+-		}
+-	}
+-
+ 	/*
+ 	 * hwmon power attributes are in microWatt
+ 	 * mailbox read/write is in mWatt
+@@ -177,9 +347,23 @@ static int sbrmi_write(struct device *dev, enum hwmon_sensor_types type,
+ 	msg.data_in.mb_in[RD_WR_DATA_INDEX] = val;
+ 	msg.data_in.reg_in[RD_FLAG_INDEX] = 0;
+ 
+-	mutex_lock(&rmi_dev->lock);
++	ret = sbrmi_prepare_lock(rmi_dev);
++	if (ret)
++		return ret;
++
++	/* Configure regmap if not configured yet */
++	if (!rmi_dev->regmap) {
++		ret = configure_regmap(rmi_dev);
++		if (ret < 0) {
++			pr_err("regmap configuration failed with return value:%d in hwmon write ops\n", ret);
++			sbrmi_prepare_unlock(rmi_dev);
++			return ret;
++		}
++	}
++
+ 	ret = rmi_mailbox_xfer(rmi_dev, &msg);
+-	mutex_unlock(&rmi_dev->lock);
++
++	sbrmi_prepare_unlock(rmi_dev);
+ 	return ret;
+ }
+ 
+@@ -198,36 +382,85 @@ static umode_t sbrmi_is_visible(const void *data,
+ 		}
+ 		break;
+ 	case hwmon_temp:
++	{
++		const struct apml_sbrmi_device *rmi_dev = data;
++
++		if (!sbrmi_dimm_channel_valid(&container_of(rmi_dev,
++							    const struct sbrmi_device_alloc,
++							    rmi_dev)->dimm, channel))
++			return 0;
+ 		switch (attr) {
+ 		case hwmon_temp_input:
++		case hwmon_temp_label:
+ 			return 0444;
+ 		}
+ 		break;
++	}
+ 	default:
+ 		break;
+ 	}
+ 	return 0;
+ }
+ 
+-static struct hwmon_channel_info sbrmi_power_info = {
+-	hwmon_power,
+-	NULL
++static const u32 sbrmi_temp_config[SBRMI_NUM_DIMM_CHANNELS + 1] = {
++	[0 ... (SBRMI_NUM_DIMM_CHANNELS - 1)] = HWMON_T_INPUT | HWMON_T_LABEL,
+ };
+ 
+-static struct hwmon_channel_info sbrmi_temp_info = {
+-	hwmon_temp,
+-	NULL
++static const struct hwmon_channel_info sbrmi_temp_channel_info = {
++	.type = hwmon_temp,
++	.config = sbrmi_temp_config,
+ };
+ 
+ static const struct hwmon_channel_info *sbrmi_info[] = {
+-	&sbrmi_power_info,
+-	&sbrmi_temp_info,
++	HWMON_CHANNEL_INFO(power,
++			   HWMON_P_INPUT | HWMON_P_CAP | HWMON_P_CAP_MAX),
++	&sbrmi_temp_channel_info,
+ 	NULL
+ };
+ 
++/*
++ * Static label table - avoids any allocation in the read path.
++ * Channels  0-15: TS0, UMC/DDRPHY instances 0-15
++ * Channels 16-31: TS1, UMC/DDRPHY instances 0-15
++ */
++static const char * const sbrmi_temp_labels[SBRMI_NUM_DIMM_CHANNELS] = {
++	[0]  = "DIMM_TS0_UMC0",  [1]  = "DIMM_TS0_UMC1",
++	[2]  = "DIMM_TS0_UMC2",  [3]  = "DIMM_TS0_UMC3",
++	[4]  = "DIMM_TS0_UMC4",  [5]  = "DIMM_TS0_UMC5",
++	[6]  = "DIMM_TS0_UMC6",  [7]  = "DIMM_TS0_UMC7",
++	[8]  = "DIMM_TS0_UMC8",  [9]  = "DIMM_TS0_UMC9",
++	[10] = "DIMM_TS0_UMC10", [11] = "DIMM_TS0_UMC11",
++	[12] = "DIMM_TS0_UMC12", [13] = "DIMM_TS0_UMC13",
++	[14] = "DIMM_TS0_UMC14", [15] = "DIMM_TS0_UMC15",
++	[16] = "DIMM_TS1_UMC0",  [17] = "DIMM_TS1_UMC1",
++	[18] = "DIMM_TS1_UMC2",  [19] = "DIMM_TS1_UMC3",
++	[20] = "DIMM_TS1_UMC4",  [21] = "DIMM_TS1_UMC5",
++	[22] = "DIMM_TS1_UMC6",  [23] = "DIMM_TS1_UMC7",
++	[24] = "DIMM_TS1_UMC8",  [25] = "DIMM_TS1_UMC9",
++	[26] = "DIMM_TS1_UMC10", [27] = "DIMM_TS1_UMC11",
++	[28] = "DIMM_TS1_UMC12", [29] = "DIMM_TS1_UMC13",
++	[30] = "DIMM_TS1_UMC14", [31] = "DIMM_TS1_UMC15",
++};
++
++static int sbrmi_read_string(struct device *dev,
++			     enum hwmon_sensor_types type,
++			     u32 attr, int channel, const char **str)
++{
++	struct apml_sbrmi_device *rmi_dev = dev_get_drvdata(dev);
++	struct sbrmi_dimm_config *dimm = sbrmi_to_dimm_config(rmi_dev);
++
++	if (type != hwmon_temp || attr != hwmon_temp_label)
++		return -EOPNOTSUPP;
++	if (!sbrmi_dimm_channel_valid(dimm, channel))
++		return -EINVAL;
++	*str = sbrmi_temp_labels[channel];
++	return 0;
++}
++
+ static const struct hwmon_ops sbrmi_hwmon_ops = {
+ 	.is_visible = sbrmi_is_visible,
+ 	.read = sbrmi_read,
++	.read_string = sbrmi_read_string,
+ 	.write = sbrmi_write,
+ };
+ 
+@@ -240,54 +473,42 @@ static long sbrmi_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ {
+ 	int __user *arguser = (int  __user *)arg;
+ 	struct apml_message msg = { 0 };
+-	struct apml_sbrmi_device *rmi_dev;
+ 	bool read = false;
+ 	int ret = -EFAULT;
++	struct apml_sbrmi_device *rmi_dev;
+ 
+ 	rmi_dev = fp->private_data;
+ 	if (!rmi_dev)
+-		return ret;
++		return -ENODEV;
+ 
+ 	/*
+ 	 * If device remove/unbind is called do not allow new transaction
+-	 * Tickets: https://ontrack-internal.amd.com/browse/PLAT-122500
+-	 * 	    https://ontrack-internal.amd.com/browse/DCSM-154
+ 	 */
+ 	if (atomic_read(&rmi_dev->no_new_trans))
+ 		return -EBUSY;
+-
+ 	/* Copy the structure from user */
+ 	if (copy_struct_from_user(&msg, sizeof(msg), arguser,
+ 				  sizeof(struct apml_message)))
+ 		return ret;
+-
+ 	/*
+ 	 * Only one I2C/I3C transaction can happen at
+ 	 * one time. Take lock across so no two protocol is
+ 	 * invoked at same time, modifying the register value.
+ 	 */
+-	mutex_lock(&rmi_dev->lock);
++	ret = sbrmi_prepare_lock(rmi_dev);
++	if (ret)
++		return ret;
+ 
+-	/* Verify device unbind/remove is not invoked */
+-	if (atomic_read(&rmi_dev->no_new_trans)) {
+-		mutex_unlock(&rmi_dev->lock);
+-		return -EBUSY;
+-	}
+ 	/* Is this a read/monitor/get request */
+ 	if (msg.data_in.reg_in[RD_FLAG_INDEX])
+ 		read = true;
+-	/*
+-	 * Set the in_progress variable to true, to wait for
+-	 * completion during unbind/remove of driver
+-	 */
+-	atomic_set(&rmi_dev->in_progress, 1);
++
+ 	switch (msg.cmd) {
+ 	case 0 ... 0x999:
+ 		/* Mailbox protocol */
+ 		ret = rmi_mailbox_xfer(rmi_dev, &msg);
+ 		break;
+ 	case APML_CPUID:
+-		/* CPUID protocol */
+ 		ret = rmi_cpuid_read(rmi_dev, &msg);
+ 		break;
+ 	case APML_MCA_MSR:
+@@ -302,7 +523,7 @@ static long sbrmi_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 					  &msg.data_out.mb_out[RD_WR_DATA_INDEX]);
+ 		} else {
+ 			ret = regmap_write(rmi_dev->regmap,
+-					    msg.data_in.reg_in[REG_OFF_INDEX],
++					    msg.data_in.mb_in[REG_OFF_INDEX],
+ 					    msg.data_in.reg_in[REG_VAL_INDEX]);
+ 		}
+ 		break;
+@@ -310,11 +531,7 @@ static long sbrmi_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 		break;
+ 	}
+ 
+-	/* Send complete only if device is unbinded/remove */
+-	if (atomic_read(&rmi_dev->no_new_trans))
+-		complete(&rmi_dev->misc_fops_done);
+-	atomic_set(&rmi_dev->in_progress, 0);
+-	mutex_unlock(&rmi_dev->lock);
++	sbrmi_prepare_unlock(rmi_dev);
+ 
+ 	/* Copy results back to user only for get/monitor commands and firmware failures */
+ 	if ((read && !ret) || ret == -EPROTOTYPE) {
+@@ -329,18 +546,25 @@ static int sbrmi_open(struct inode *inode, struct file *filp)
+ 	struct miscdevice *mdev = filp->private_data;
+ 	struct apml_sbrmi_device *rmi_dev = container_of(mdev, struct apml_sbrmi_device,
+ 							 sbrmi_misc_dev);
+-	int ret = 0;
++	int ret;
+ 
+ 	if (!rmi_dev)
+ 		return -ENODEV;
+ 
++	ret = sbrmi_prepare_lock(rmi_dev);
++	if (ret)
++		return ret;
++
+ 	if (!rmi_dev->regmap) {
+ 		ret = configure_regmap(rmi_dev);
+ 		if (ret < 0) {
+ 			pr_err("regmap configuration failed with return value:%d in misc dev open\n", ret);
++			sbrmi_prepare_unlock(rmi_dev);
+ 			return ret;
+ 		}
+ 	}
++
++	sbrmi_prepare_unlock(rmi_dev);
+ 	filp->private_data = rmi_dev;
+ 	return 0;
+ }
+@@ -365,11 +589,13 @@ static int create_misc_rmi_device(struct apml_sbrmi_device *rmi_dev,
+ {
+ 	int ret;
+ 
+-	rmi_dev->sbrmi_misc_dev.name		= devm_kasprintf(dev, GFP_KERNEL, "apml_rmi%d", rmi_dev->sock_num);
++	rmi_dev->sbrmi_misc_dev.name		= devm_kasprintf(dev, GFP_KERNEL,
++						  "sbrmi-%x", rmi_dev->dev_static_addr);
+ 	rmi_dev->sbrmi_misc_dev.minor		= MISC_DYNAMIC_MINOR;
+ 	rmi_dev->sbrmi_misc_dev.fops		= &sbrmi_fops;
+ 	rmi_dev->sbrmi_misc_dev.parent		= dev;
+-	rmi_dev->sbrmi_misc_dev.nodename	= devm_kasprintf(dev, GFP_KERNEL, "sbrmi%d", rmi_dev->sock_num);
++	rmi_dev->sbrmi_misc_dev.nodename	= devm_kasprintf(dev, GFP_KERNEL,
++						  "sbrmi-%x", rmi_dev->dev_static_addr);
+ 	rmi_dev->sbrmi_misc_dev.mode		= 0600;
+ 
+ 	ret = misc_register(&rmi_dev->sbrmi_misc_dev);
+@@ -380,257 +606,204 @@ static int create_misc_rmi_device(struct apml_sbrmi_device *rmi_dev,
+ 	return ret;
+ }
+ 
+-static int sbrmi_i2c_identify_reg_addr_size(struct i2c_client *i2cdev, u32 *size, u32 *rev)
++static int sbrmi_i2c_reg_read(struct i2c_client *i2cdev, int reg_size, u32 *val)
+ {
+ 	struct i2c_msg xfer[I3C_I2C_MSG_XFER_SIZE];
+ 	int reg = SBRMI_REV;
+ 	int val_size = SBRMI_REG_DATA_SIZE;
+-	int ret;
+-	int probe = 3;
+ 
+-	do
+-	{
+-		// Attempt two byte addressing mode
+-		xfer[0].addr = i2cdev->addr;
+-		xfer[0].flags = 0;
+-		xfer[0].len = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
+-		xfer[0].buf = (void *)&reg;
+-
+-		xfer[1].addr = i2cdev->addr;
+-		xfer[1].flags = I2C_M_RD;
+-		xfer[1].len = val_size;
+-		xfer[1].buf = (void *)rev;
+-
+-		ret = i2c_transfer(i2cdev->adapter, xfer, I3C_I2C_MSG_XFER_SIZE);
+-
+-		if (ret >= 0)
+-		{
+-			pr_err("I2C SBRMI_REV command returned value: %d\n", *rev);
+-			if(*rev == SBRMI_REV_BRTH)
+-				*size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
+-			else
+-				*size = SBRMI_REG_ADDR_SIZE_DEF;
+-
+-			return 0;
+-		}
+-		else
+-		{
+-			probe--;
+-			continue;
+-		}
+-	} while (probe > 0);
++	xfer[0].addr = i2cdev->addr;
++	xfer[0].flags = 0;
++	xfer[0].len = reg_size;
++	xfer[0].buf = (void *)&reg;
+ 
+-	probe = 3;
+-	do
+-	{
+-		// Attempt one byte addressing mode
+-		xfer[0].addr = i2cdev->addr;
+-		xfer[0].flags = 0;
+-		xfer[0].len = SBRMI_REG_ADDR_SIZE_DEF;
+-		xfer[0].buf = (void *)&reg;
+-
+-		xfer[1].addr = i2cdev->addr;
+-		xfer[1].flags = I2C_M_RD;
+-		xfer[1].len = val_size;
+-		xfer[1].buf = (void *)rev;
+-
+-		ret = i2c_transfer(i2cdev->adapter, xfer, I3C_I2C_MSG_XFER_SIZE);
+-		if (ret >= 0)
+-		{
+-			pr_err("I2C SBRMI_REV command returned value: %d\n", *rev);
+-			if(*rev == SBRMI_REV_BRTH)
+-				*size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
+-			else
+-				*size = SBRMI_REG_ADDR_SIZE_DEF;
++	xfer[1].addr = i2cdev->addr;
++	xfer[1].flags = I2C_M_RD;
++	xfer[1].len = val_size;
++	xfer[1].buf = (void *)val;
+ 
+-			return 0;
+-		}
+-		else
+-		{
+-			probe--;
+-			continue;
+-		}
+-	} while (probe > 0);
++	return i2c_transfer(i2cdev->adapter, xfer, I3C_I2C_MSG_XFER_SIZE);
++}
+ 
+-	pr_err("I2C SBRMI_REV error code value: %d\n", ret);
+-	return ret;
++static int update_reg_addr_size(u32 rev, u32 *size)
++{
++	switch (rev) {
++	case 0x10:
++	case 0x20:
++	case 0x30:
++		*size = SBRMI_REG_ADDR_SIZE_DEF;
++		return 0;
++	case 0x21:
++	case 0x31:
++		*size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
++		return 0;
++	default:
++		return -EIO;
++	}
+ }
+ 
+-static int sbrmi_hwmon_add_chan_info(struct device *dev, int num)
++static int sbrmi_i2c_identify_reg_addr_size(struct i2c_client *i2c, u32 *size, u32 *rev)
+ {
+-	u32 *cfg;
+-	int i;
++	u32 reg_size;
++	int ret, i;
+ 
+-	cfg = devm_kcalloc(dev, num + 2, sizeof(*cfg), GFP_KERNEL);
+-	if (!cfg)
+-		return -ENOMEM;
++	//reg_size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
+ 
+-	// power1: PKG_PWR
+-	// power2 ~ powerN+1: DIMM_PWR
+-	cfg[0] = HWMON_P_INPUT | HWMON_P_CAP | HWMON_P_CAP_MAX;
+-	for (i = 1; i <= num; i++) {
+-		cfg[i] = HWMON_P_INPUT;
+-	}
+-	sbrmi_power_info.config = cfg;
++	/*
++	 * Sending 1 byte address size in Turin cause unrecoverable error
++	 * Before trying to switch to 1 bytes, retry. 
++	 */
+ 
+-	cfg = devm_kcalloc(dev, num + 1, sizeof(*cfg), GFP_KERNEL);
+-	if (!cfg) {
+-		devm_kfree(dev, sbrmi_power_info.config);
+-		sbrmi_power_info.config = NULL;
+-		return -ENOMEM;
++	reg_size = SBRMI_REG_ADDR_SIZE_DEF;
++
++	/*
++	 * CLS:In Fire Range FL1 must to send 1 byte address size .
++	 */
++
++	for (i = 0; i < MAX_RETRY; i++) {
++		ret = sbrmi_i2c_reg_read(i2c, reg_size, rev);
++		if (ret != I3C_I2C_MSG_XFER_SIZE) {
++			pr_err("Read 0x%x I2C reg read failed with return value:%d, rev:0x%x, reg_size:%d, size:%d\n", i2c->addr, ret, *rev, reg_size, *size);
++			usleep_range(10000, 20000);
++			continue;
++		} else {
++			break;
++		}
+ 	}
+ 
+-	// temp1 ~ tempN: DIMM_TEMP
+-	for (i = 0; i < num; i++) {
+-		cfg[i] = HWMON_T_INPUT;
++	/*
++	 * Validate the rev value is not 0xFF, as this value can be incorrectly cached
++	 * when executing 2-byte address operations on SBRMI rev 0x10.
++	 * For SBRMI rev 0x20 an error is returned.
++	 */
++	if (ret != I3C_I2C_MSG_XFER_SIZE || *rev == 0xFF) {
++		reg_size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
++		ret = sbrmi_i2c_reg_read(i2c, reg_size, rev);
++		dev_info(&i2c->dev, "identifying reg addr size \n");
++		if (ret != I3C_I2C_MSG_XFER_SIZE) {
++			pr_err("I2C reg read failed with return value:%d, rev:0x%x, reg_size:%d, size:%d\n", ret, *rev, reg_size, *size);
++			return ret;
++		}
+ 	}
+-	sbrmi_temp_info.config = cfg;
+ 
+-	return 0;
++	return update_reg_addr_size(*rev, size);
+ }
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 3, 0)
++static int sbrmi_i2c_probe(struct i2c_client *client,
++			   const struct i2c_device_id *rmi_id)
++#else
+ static int sbrmi_i2c_probe(struct i2c_client *client)
++#endif
+ {
+ 	struct device *dev = &client->dev;
+ 	struct device *hwmon_dev;
+ 	struct apml_sbrmi_device *rmi_dev;
++	const char *name;
+ 	int ret;
+-	int i;
+-	u32 dimm_cnt;
+-	u32 *dimm_id;
+ 
+-	rmi_dev = devm_kzalloc(dev, sizeof(struct apml_sbrmi_device), GFP_KERNEL);
++	rmi_dev = sbrmi_dev_alloc(dev);
+ 	if (!rmi_dev)
+ 		return -ENOMEM;
+ 
+ 	atomic_set(&rmi_dev->in_progress, 0);
+ 	atomic_set(&rmi_dev->no_new_trans, 0);
+ 	rmi_dev->client = client;
+-
+-	ret = configure_regmap(rmi_dev);
+-	if (ret < 0) {
+-		pr_err("regmap configuration failed with return value:%d in Probe\n", ret);
+-	}
+ 	mutex_init(&rmi_dev->lock);
+ 
+ 	dev_set_drvdata(dev, (void *)rmi_dev);
+ 
+-	dimm_id = (u32 *)devm_kzalloc(dev, sizeof(u32) * MAX_DIMM_COUNT, GFP_KERNEL);
+-	if (!dimm_id)
+-		return -ENOMEM;
+-
+-	dimm_cnt = 0;
+-	// Read DIMM Count
+-	ret = of_property_read_u32(dev->of_node, "dimm-count", &dimm_cnt);
++	rmi_dev->dev_static_addr = client->addr;
+ 
+-	if ( (dimm_cnt == 0) || (dimm_cnt > MAX_DIMM_COUNT) )
+-	{
+-		dev_info(&client->dev, "SBRMI: Cannot read DIMM Count or exceeds max, default it to %d\n", MAX_DIMM_COUNT);
+-		dimm_cnt = MAX_DIMM_COUNT;
+-	}
+-
+-	// Read DIMM ID
+-	ret = of_property_read_u32_array(dev->of_node, "dimm-ids", dimm_id, dimm_cnt);
+-	if (ret) {
+-		dev_info(&client->dev, "SBRMI: Cannot read DIMM IDs, set them to base address\n");
+-
+-		for (i = 0; i < dimm_cnt; i++)
+-			dimm_id[i] = DIMM_BASE_ID + i;
+-	}
+-	rmi_dev->dimm_id = dimm_id;
+-
+-	ret = sbrmi_hwmon_add_chan_info(dev, dimm_cnt);
++	ret = sbrmi_init_dimm_config(dev, rmi_dev);
+ 	if (ret)
+ 		return ret;
+ 
+-	hwmon_dev = devm_hwmon_device_register_with_info(dev, client->name,
++	switch (rmi_dev->dev_static_addr) {
++	case 0x3c:
++		name = devm_kasprintf(dev, GFP_KERNEL, "sbrmi_%s", "0.0");
++		break;
++	case 0x38:
++		name = devm_kasprintf(dev, GFP_KERNEL, "sbrmi_%s", "1.0");
++		break;
++	default:
++		name = devm_kasprintf(dev, GFP_KERNEL, "sbrmi_%x",
++				      rmi_dev->dev_static_addr);
++		break;
++	}
++
++	hwmon_dev = devm_hwmon_device_register_with_info(dev, name,
+ 							 rmi_dev,
+ 							 &sbrmi_chip_info,
+ 							 NULL);
++	if (IS_ERR(hwmon_dev))
++		return PTR_ERR(hwmon_dev);
+ 
+-	if (!hwmon_dev)
+-		return PTR_ERR_OR_ZERO(hwmon_dev);
++	init_completion(&rmi_dev->misc_fops_done);
++	ret = create_misc_rmi_device(rmi_dev, dev);
++	if (ret)
++		return ret;
+ 
+-	if (client->addr == SOCK_0_ADDR)
+-		rmi_dev->sock_num = 0;
+-	if (client->addr == SOCK_1_ADDR)
+-		rmi_dev->sock_num = 1;
++	/*
++	 * Best-effort APML common registry hookup. Probe still succeeds if this
++	 * fails (-EINVAL, -ENOMEM); hwmon and misc stay up but Alert_L will
++	 * not dispatch alerts for this device until registration succeeds.
++	 */
++	ret = apml_register_device(rmi_dev, APML_RMI_DEVICE);
++	if (ret != 0)
++		dev_warn(dev, "Failed to register with ALERT_L common system: %d\n", ret);
+ 
+-	init_completion(&rmi_dev->misc_fops_done);
+-	return create_misc_rmi_device(rmi_dev, dev);
++	return 0;
+ }
+ 
+-static int sbrmi_i3c_identify_reg_addr_size(struct i3c_device *i3cdev, u32 *size, u32 *rev)
++static int sbrmi_i3c_reg_read(struct i3c_device *i3cdev, int reg_size, u32 *val)
+ {
+ 	struct i3c_priv_xfer xfers[I3C_I2C_MSG_XFER_SIZE];
+ 	int reg = SBRMI_REV;
+ 	int val_size = SBRMI_REG_DATA_SIZE;
+-	int ret;
+-	int probe = 3;
+ 
+-	do
+-	{
+-		// Attempt two byte addressing mode
+-		xfers[0].rnw = false;
+-		xfers[0].len = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
+-		xfers[0].data.out = &reg;
++	xfers[0].rnw = false;
++	xfers[0].len = reg_size;
++	xfers[0].data.out = &reg;
+ 
+-		xfers[1].rnw = true;
+-		xfers[1].len = val_size;
+-		xfers[1].data.in = rev;
++	xfers[1].rnw = true;
++	xfers[1].len = val_size;
++	xfers[1].data.in = val;
+ 
+-		ret = i3c_device_do_priv_xfers(i3cdev, xfers, I3C_I2C_MSG_XFER_SIZE);
++	return i3c_device_do_priv_xfers(i3cdev, xfers, I3C_I2C_MSG_XFER_SIZE);
++}
+ 
+-		if (ret >= 0)
+-		{
+-			pr_err("I3C SBRMI_REV command returned value: %d\n", *rev);
+-			if(*rev == SBRMI_REV_BRTH)
+-				*size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
+-			else
+-				*size = SBRMI_REG_ADDR_SIZE_DEF;
++static int sbrmi_i3c_identify_reg_addr_size(struct i3c_device *i3cdev, u32 *size, u32 *rev)
++{
++	u32 reg_size;
++	int ret, i;
+ 
+-			return 0;
+-		}
+-		else
+-		{
+-			probe--;
++	reg_size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
++	for (i = 0; i < MAX_RETRY; i++) {
++		ret = sbrmi_i3c_reg_read(i3cdev, reg_size, rev);
++		if (ret < 0) {
++			usleep_range(10000, 20000);
+ 			continue;
++		} else {
++			break;
+ 		}
+-	} while (probe > 0);
+-
+-	probe = 3;
+-	do
+-	{
+-		// Attempt one byte addressing mode
+-		xfers[0].rnw = false;
+-		xfers[0].len = SBRMI_REG_ADDR_SIZE_DEF;
+-		xfers[0].data.out = &reg;
+-
+-		xfers[1].rnw = true;
+-		xfers[1].len = val_size;
+-		xfers[1].data.in = rev;
+-
+-		ret = i3c_device_do_priv_xfers(i3cdev, xfers, I3C_I2C_MSG_XFER_SIZE);
+-
+-		if (ret >= 0)
+-		{
+-			pr_err("I3C SBRMI_REV command returned value: %d\n", *rev);
+-			if(*rev == SBRMI_REV_BRTH)
+-				*size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
+-			else
+-				*size = SBRMI_REG_ADDR_SIZE_DEF;
++	}
+ 
+-			return 0;
+-		}
+-		else
+-		{
+-			probe--;
+-			continue;
++	/*
++	 * Validate the rev value is not 0xFF, as this value can be incorrectly cached
++	 * when executing 2-byte address operations on SBRMI rev 0x10.
++	 * For SBRMI rev 0x20 an error is returned.
++	 */
++	if (ret < 0 || *rev == 0xFF) {
++		reg_size = SBRMI_REG_ADDR_SIZE_DEF;
++		ret = sbrmi_i3c_reg_read(i3cdev, reg_size, rev);
++		if (ret < 0) {
++			pr_err("I3C reg read failed with return value:%d\n", ret);
++			return ret;
+ 		}
+-	} while (probe > 0);
++	}
+ 
+-	pr_err("I3C SBRMI_REV error code value: %d\n", ret);
+-	return ret;
++	return update_reg_addr_size(*rev, size);
+ }
+ 
+ static int init_rmi_regmap(struct apml_sbrmi_device *rmi_dev, u32 size, u32 rev)
+@@ -655,7 +828,7 @@ static int init_rmi_regmap(struct apml_sbrmi_device *rmi_dev, u32 size, u32 rev)
+ 		regmap = devm_regmap_init_i2c(rmi_dev->client,
+ 					      &sbrmi_regmap_config);
+ 		if (IS_ERR(regmap))
+-			return PTR_ERR(rmi_dev->regmap);
++			return PTR_ERR(regmap);
+ 	} else {
+ 		return -ENODEV;
+ 	}
+@@ -666,14 +839,13 @@ static int init_rmi_regmap(struct apml_sbrmi_device *rmi_dev, u32 size, u32 rev)
+ }
+ 
+ /*
+- * configure_regmap call should happen in probe, currently for Turin
+- * the I3C APML client controllers are not initialized and also
+- * Efuse need to be done so move the config to first transaction
+- * https://ontrack-internal.amd.com/browse/PLAT-126960
++ * configure_regmap call should happen in probe, however if the server is power off,
++ * regmap configuration may fail and hence driver probe will fail.
++ * configure the regmap in hwmon/ioctl
+  */
+ static int configure_regmap(struct apml_sbrmi_device *rmi_dev)
+ {
+-	u32 size = 2;
++	u32 size;
+ 	u32 rev = 0;
+ 	int ret = 0;
+ 
+@@ -701,77 +873,87 @@ static int sbrmi_i3c_probe(struct i3c_device *i3cdev)
+ 	struct device *dev = &i3cdev->dev;
+ 	struct device *hwmon_dev;
+ 	struct apml_sbrmi_device *rmi_dev;
++	const char *name;
+ 	int ret;
+-	int i;
+-	u32 dimm_cnt;
+-	u32 *dimm_id;
+ 
+-	rmi_dev = devm_kzalloc(dev, sizeof(struct apml_sbrmi_device), GFP_KERNEL);
++	if (!(I3C_PID_INSTANCE_ID(i3cdev->desc->info.pid) == 1 ||
++	    i3cdev->desc->info.pid == PID_RMI_GENOA_TURIN))
++		return -ENXIO;
++
++	rmi_dev = sbrmi_dev_alloc(dev);
+ 	if (!rmi_dev)
+ 		return -ENOMEM;
+ 
+ 	atomic_set(&rmi_dev->in_progress, 0);
+ 	atomic_set(&rmi_dev->no_new_trans, 0);
+ 	rmi_dev->i3cdev = i3cdev;
+-
+-	ret = configure_regmap(rmi_dev);
+-	if (ret < 0) {
+-		pr_err("regmap configuration failed with return value:%d in Probe\n", ret);
+-	}
+ 	mutex_init(&rmi_dev->lock);
+ 
+ 	dev_set_drvdata(dev, (void *)rmi_dev);
+ 
+-	dimm_id = (u32 *)devm_kzalloc(dev, sizeof(u32) * MAX_DIMM_COUNT, GFP_KERNEL);
+-	if (!dimm_id)
+-		return -ENOMEM;
++	/*
++	 * I3C dynamic address (post-DAA); fall back to static if
++	 * not yet assigned
++	 */
++	if (i3cdev->desc->info.dyn_addr)
++		rmi_dev->dev_static_addr = i3cdev->desc->info.dyn_addr;
++	else
++		rmi_dev->dev_static_addr = i3cdev->desc->info.static_addr;
+ 
+-	dimm_cnt = 0;
+-	// Read DIMM Count
+-	ret = of_property_read_u32(dev->of_node, "dimm-count", &dimm_cnt);
++	ret = sbrmi_init_dimm_config(dev, rmi_dev);
++	if (ret)
++		return ret;
+ 
+-	if ( (dimm_cnt == 0) || (dimm_cnt > MAX_DIMM_COUNT) )
+-	{
+-		dev_info(&i3cdev->dev, "SBRMI: Cannot read DIMM Count or exceeds max, default it to %d\n", MAX_DIMM_COUNT);
+-		dimm_cnt = MAX_DIMM_COUNT;
++	switch (rmi_dev->dev_static_addr) {
++	case 0x3c:
++		name = devm_kasprintf(dev, GFP_KERNEL, "sbrmi_%s", "0.0");
++		break;
++	case 0x38:
++		name = devm_kasprintf(dev, GFP_KERNEL, "sbrmi_%s", "1.0");
++		break;
++	default:
++		name = devm_kasprintf(dev, GFP_KERNEL, "sbrmi_%x",
++				      rmi_dev->dev_static_addr);
++		break;
+ 	}
+ 
+-	// Read DIMM ID
+-	ret = of_property_read_u32_array(dev->of_node, "dimm-ids", dimm_id, dimm_cnt);
+-	if (ret) {
+-		dev_info(&i3cdev->dev, "SBRMI: Cannot read DIMM IDs, set them to base address\n");
+-
+-		for (i = 0; i < dimm_cnt; i++)
+-			dimm_id[i] = DIMM_BASE_ID + i;
+-	}
+-	rmi_dev->dimm_id = dimm_id;
++	hwmon_dev = devm_hwmon_device_register_with_info(dev, name, rmi_dev,
++							 &sbrmi_chip_info, NULL);
++	if (IS_ERR(hwmon_dev))
++		return PTR_ERR(hwmon_dev);
+ 
+-	ret = sbrmi_hwmon_add_chan_info(dev, dimm_cnt);
++	init_completion(&rmi_dev->misc_fops_done);
++	ret = create_misc_rmi_device(rmi_dev, dev);
+ 	if (ret)
+ 		return ret;
+ 
+-	hwmon_dev = devm_hwmon_device_register_with_info(dev, "sbrmi_i3c", rmi_dev,
+-							 &sbrmi_chip_info, NULL);
+-
+-	if (!hwmon_dev)
+-		return PTR_ERR_OR_ZERO(hwmon_dev);
+-
+-	if (i3cdev->desc->info.static_addr == SOCK_0_ADDR)
+-		rmi_dev->sock_num = 0;
+-	if (i3cdev->desc->info.static_addr == SOCK_1_ADDR)
+-		rmi_dev->sock_num = 1;
++	/*
++	 * Best-effort APML common registry hookup. Probe still succeeds if this
++	 * fails (-EINVAL, -ENOMEM); hwmon and misc stay up but Alert_L will
++	 * not dispatch alerts for this device until registration succeeds.
++	 */
++	ret = apml_register_device(rmi_dev, APML_RMI_DEVICE);
++	if (ret != 0)
++		dev_warn(dev, "Failed to register with ALERT_L common system: %d\n", ret);
+ 
+-	init_completion(&rmi_dev->misc_fops_done);
+-	return create_misc_rmi_device(rmi_dev, dev);
++	return 0;
+ }
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
++static int sbrmi_i2c_remove(struct i2c_client *client)
++#else
+ static void sbrmi_i2c_remove(struct i2c_client *client)
++#endif
+ {
+-	struct device *dev = &client->dev;
+ 	struct apml_sbrmi_device *rmi_dev = dev_get_drvdata(&client->dev);
+ 
+ 	if (!rmi_dev)
++#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
++		return 0;
++#else
+ 		return;
++#endif
++
+ 	/*
+ 	 * Set the no_new_trans so no new transaction can
+ 	 * occur in sbrmi_ioctl
+@@ -780,34 +962,41 @@ static void sbrmi_i2c_remove(struct i2c_client *client)
+ 	/*
+ 	 * If any transaction is in progress wait for the
+ 	 * transaction to get complete
+-	 * Max wait is 3 sec for any pending transaction to
+-	 * complete, https://ontrack-internal.amd.com/browse/DCSM-84
++	 * Max wait for 3 sec for any pending transaction to
++	 * complete
+ 	 */
+ 	if (atomic_read(&rmi_dev->in_progress))
+ 		wait_for_completion_timeout(&rmi_dev->misc_fops_done,
+ 					    MAX_WAIT_TIME_SEC * HZ);
++
++	/* Unregister from APML common system */
++	apml_unregister_device(rmi_dev, APML_RMI_DEVICE);
+ 	misc_deregister(&rmi_dev->sbrmi_misc_dev);
+ 	/* Assign fops and parent of misc dev to NULL */
+ 	rmi_dev->sbrmi_misc_dev.fops = NULL;
+ 	rmi_dev->sbrmi_misc_dev.parent = NULL;
+ 
+-	if (rmi_dev->dimm_id)
+-		devm_kfree(dev, rmi_dev->dimm_id);
+-	if (sbrmi_power_info.config)
+-		devm_kfree(dev, sbrmi_power_info.config);
+-	if (sbrmi_temp_info.config)
+-		devm_kfree(dev, sbrmi_temp_info.config);
+-
+ 	dev_info(&client->dev, "Removed sbrmi driver\n");
++#if LINUX_VERSION_CODE < KERNEL_VERSION(6, 1, 0)
++	return 0;
++#endif
+ }
+ 
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 12, 0)
++static int sbrmi_i3c_remove(struct i3c_device *i3cdev)
++#else
+ static void sbrmi_i3c_remove(struct i3c_device *i3cdev)
++#endif
+ {
+-	struct device *dev = &i3cdev->dev;
+ 	struct apml_sbrmi_device *rmi_dev = dev_get_drvdata(&i3cdev->dev);
+ 
+ 	if (!rmi_dev)
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 12, 0)
++		return 0;
++#else
+ 		return;
++#endif
++
+ 	/*
+ 	 * Set the no_new_trans so no new transaction can
+ 	 * occur in sbrmi_ioctl
+@@ -816,25 +1005,23 @@ static void sbrmi_i3c_remove(struct i3c_device *i3cdev)
+ 	/*
+ 	 * If any transaction is in progress wait for the
+ 	 * transaction to get complete
+-	 * Max wait is 3 sec for any pending transaction to
+-	 * complete, https://ontrack-internal.amd.com/browse/DCSM-84
++	 * Max wait for 3 sec for any pending transaction to
++	 * complete
+ 	 */
+ 	if (atomic_read(&rmi_dev->in_progress))
+ 		wait_for_completion_timeout(&rmi_dev->misc_fops_done,
+-					MAX_WAIT_TIME_SEC * HZ);
++					    MAX_WAIT_TIME_SEC * HZ);
++	/* Unregister from APML common system */
++	apml_unregister_device(rmi_dev, APML_RMI_DEVICE);
+ 	misc_deregister(&rmi_dev->sbrmi_misc_dev);
+ 	/* Assign fops and parent of misc dev to NULL */
+ 	rmi_dev->sbrmi_misc_dev.fops = NULL;
+ 	rmi_dev->sbrmi_misc_dev.parent = NULL;
+ 
+-	if (rmi_dev->dimm_id)
+-		devm_kfree(dev, rmi_dev->dimm_id);
+-	if (sbrmi_power_info.config)
+-		devm_kfree(dev, sbrmi_power_info.config);
+-	if (sbrmi_temp_info.config)
+-		devm_kfree(dev, sbrmi_temp_info.config);
+-
+ 	dev_info(&i3cdev->dev, "Removed sbrmi_i3c driver\n");
++#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 12, 0)
++	return 0;
++#endif
+ }
+ 
+ static const struct i2c_device_id sbrmi_id[] = {
+@@ -852,7 +1039,9 @@ static const struct of_device_id __maybe_unused sbrmi_of_match[] = {
+ MODULE_DEVICE_TABLE(of, sbrmi_of_match);
+ 
+ static const struct i3c_device_id sbrmi_i3c_id[] = {
+-	I3C_DEVICE_EXTRA_INFO(0x112, 0x0, 0x2, NULL),
++	I3C_DEVICE_EXTRA_INFO(0x112, 0x0, 0x2, NULL), /* Genoa/Turin */
++	I3C_DEVICE_EXTRA_INFO(0x112, 0x0, 0x118, NULL), /* Socket:0, IOD:0 Venice*/
++	I3C_DEVICE_EXTRA_INFO(0x112, 0x100, 0x118, NULL), /* Socket:1 IOD:0 Venice */
+ 	{}
+ };
+ MODULE_DEVICE_TABLE(i3c, sbrmi_i3c_id);
+diff --git a/drivers/misc/amd-apml/sbtsi-common.h b/drivers/misc/amd-apml/sbtsi-common.h
+new file mode 100644
+index 000000000..f05ca7965
+--- /dev/null
++++ b/drivers/misc/amd-apml/sbtsi-common.h
+@@ -0,0 +1,39 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++/*
++ * sbtsi-common.h - Common header file to share the APML SB-TSI structure
++ *
++ * Copyright (c) 2025 Advanced Micro Devices, Inc.
++ */
++
++#ifndef _AMD_SBTSI_COMMON_H_
++#define _AMD_SBTSI_COMMON_H_
++
++#include <linux/types.h>
++#include <linux/atomic.h>
++#include <linux/completion.h>
++#include <linux/miscdevice.h>
++#include <linux/mutex.h>
++
++struct i2c_client;
++struct i3c_device;
++struct regmap;
++
++/* Each client has this additional data */
++/* in_progress: set during any transaction, hwmon read/write or IOCTL,
++ * to indicate a transaction is in progress.
++ * no_new_trans: set in rmmod/unbind path to indicate,
++ * not to accept new transactions
++ */
++struct apml_sbtsi_device {
++	struct miscdevice sbtsi_misc_dev;
++	struct i2c_client *client;
++	struct i3c_device *i3cdev;
++	struct regmap *regmap;
++	struct mutex lock;	/* lock for tsi devices */
++	u8 dev_static_addr;
++	atomic_t in_progress;
++	atomic_t no_new_trans;
++	struct completion misc_fops_done;
++};
++
++#endif
+-- 
+2.43.0
+

@@ -24,10 +24,12 @@ struct SensorConfig
     size_t intervalMilliseconds;
     size_t maxRetries;
     size_t retryIntervalMilliseconds;
-    NLOHMANN_DEFINE_TYPE_INTRUSIVE(SensorConfig, associationPath, mappers,
-                                   intervalMilliseconds, maxRetries,
-                                   retryIntervalMilliseconds)
+    std::optional<std::vector<std::string>> metricReportUrls;
+    bool cacheConnection = true;
+    bool ignoreUnavailableSensor = false;
 };
+
+void from_json(const nlohmann::json& json, SensorConfig& config);
 
 struct LogServiceConfig
 {

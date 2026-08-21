@@ -1,0 +1,227 @@
+From e7855d1a0a9dbb2bf43edb8bf9972a633a24f434 Mon Sep 17 00:00:00 2001
+From: Henry Wu <Henry_Wu@quantatw.com>
+Date: Thu, 19 Mar 2026 17:16:49 +0800
+Subject: [PATCH] requester: refresh MCTP endpoints after host reaches running
+ state
+
+Some MCTP endpoints associated with MCTPI2CTarget or MCTPI3CTarget
+do not expose complete object information until BIOS POST.
+
+If requester discovers these endpoints before BiosPost, it may cache
+incomplete or stale endpoint data.
+
+Add host state monitoring and re-handle existing endpoints when the
+host transitions to Running. Endpoints associated with
+MCTPI2CTarget or MCTPI3CTarget objects and with PowerState set to
+BiosPost are refreshed to retrieve the correct post-BIOS-POST object
+information.
+
+This change depends on the EntityManager update that adds PowerState
+support for MCTPI2CTarget and MCTPI3CTarget objects.
+
+The link of the gerrit:
+https://gerrit.openbmc.org/c/openbmc/pldm/+/88403
+
+Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
+---
+ requester/mctp_endpoint_discovery.cpp | 144 ++++++++++++++++++++++++++
+ requester/mctp_endpoint_discovery.hpp |  14 +++
+ 2 files changed, 158 insertions(+)
+
+diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
+index 6e4dd13..5b1bab6 100644
+--- a/requester/mctp_endpoint_discovery.cpp
++++ b/requester/mctp_endpoint_discovery.cpp
+@@ -32,6 +32,12 @@ MctpDiscovery::MctpDiscovery(
+     mctpEndpointPropChangedSignal(
+         bus, propertiesChangedNamespace(MCTPPath, MCTPInterfaceCC),
+         [this](sdbusplus::message_t& msg) { this->propertiesChangedCb(msg); }),
++    mctpTargetHostStateChangedSignal(
++        bus,
++        propertiesChangedNamespace(
++            "/xyz/openbmc_project/state/host0",
++            "xyz.openbmc_project.State.OperatingSystem.Status"),
++        [this](sdbusplus::message_t& msg) { this->hostStateChangedCb(msg); }),
+     handlers(list)
+ {
+     std::map<MctpInfo, Availability> currentMctpInfoMap;
+@@ -361,6 +367,144 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
+     }
+ }
+ 
++bool MctpDiscovery::isOsStandby(const dbus::Value& value) const
++{
++    const std::string* state = std::get_if<std::string>(&value);
++    if (state == nullptr)
++    {
++        error("OperatingSystemState type is invalid");
++        return false;
++    }
++
++    return (
++        *state ==
++        "xyz.openbmc_project.State.OperatingSystem.Status.OSStatus.Standby");
++}
++
++bool MctpDiscovery::isMctpTargetInBiosPost(const std::string& objPath) const
++{
++    constexpr std::array<const char*, 2> configInterfaces = {
++        "xyz.openbmc_project.Configuration.MCTPI2CTarget",
++        "xyz.openbmc_project.Configuration.MCTPI3CTarget"};
++
++    for (const auto* configInterface : configInterfaces)
++    {
++        try
++        {
++            auto service = pldm::utils::DBusHandler().getService(
++                objPath.c_str(), configInterface);
++
++            auto properties =
++                pldm::utils::DBusHandler().getDbusPropertiesVariant(
++                    service.c_str(), objPath.c_str(), configInterface);
++
++            if (!properties.contains("Type") ||
++                !properties.contains("PowerState"))
++            {
++                warning("Missing Type or PowerState on path '{PATH}'", "PATH",
++                        objPath);
++                return false;
++            }
++
++            const auto& type = std::get<std::string>(properties.at("Type"));
++            const auto& powerState =
++                std::get<std::string>(properties.at("PowerState"));
++
++            return ((type == "MCTPI2CTarget" || type == "MCTPI3CTarget") &&
++                    powerState == "BiosPost");
++        }
++        catch (const sdbusplus::exception_t&)
++        {
++            // try next interface
++        }
++        catch (const std::bad_variant_access& e)
++        {
++            error("Invalid property type on path '{PATH}', error - {ERROR}",
++                  "PATH", objPath, "ERROR", e);
++            return false;
++        }
++    }
++
++    error("Failed to read MCTP target properties from path '{PATH}'", "PATH",
++          objPath);
++    return false;
++}
++
++MctpInfos MctpDiscovery::getMatchedMctpInfosInBiosPost() const
++{
++    MctpInfos matchedInfos;
++
++    for (const auto& mctpInfo : existingMctpInfos)
++    {
++        const auto& associatedPath = std::get<5>(mctpInfo);
++        if (!associatedPath.has_value())
++        {
++            continue;
++        }
++
++        if (isMctpTargetInBiosPost(*associatedPath))
++        {
++            matchedInfos.emplace_back(mctpInfo);
++        }
++    }
++
++    return matchedInfos;
++}
++
++void MctpDiscovery::hostStateChangedCb(sdbusplus::message_t& msg)
++{
++    using Properties = std::map<std::string, dbus::Value>;
++
++    std::string interface;
++    Properties changedProps;
++    std::vector<std::string> invalidatedProps;
++
++    try
++    {
++        msg.read(interface, changedProps, invalidatedProps);
++    }
++    catch (const sdbusplus::exception_t& e)
++    {
++        error("Failed to parse PropertiesChanged: {ERROR}", "ERROR", e);
++        return;
++    }
++
++    auto it = changedProps.find("OperatingSystemState");
++    if (it == changedProps.end())
++    {
++        return;
++    }
++
++    if (!isOsStandby(it->second))
++    {
++        return;
++    }
++
++    auto matchedInfos = getMatchedMctpInfosInBiosPost();
++    if (matchedInfos.empty())
++    {
++        info("No MCTP endpoints matched MctpTarget and powerstate");
++        return;
++    }
++
++    std::string rehandleEids;
++    for (const auto& mctpInfo : matchedInfos)
++    {
++        if (!rehandleEids.empty())
++        {
++            rehandleEids += ", ";
++        }
++
++    rehandleEids +=
++        std::to_string(static_cast<unsigned>(std::get<0>(mctpInfo)));
++    }
++
++    refreshFirmwareParameters(matchedInfos);
++
++    info("hostStateChangedCb finished, refreshed EIDs: {EIDS}", "EIDS",
++        rehandleEids);
++}
++
+ void MctpDiscovery::discoverEndpoints(sdbusplus::message_t& msg)
+ {
+     MctpInfos addedInfos;
+diff --git a/requester/mctp_endpoint_discovery.hpp b/requester/mctp_endpoint_discovery.hpp
+index 0c65889..85689a8 100644
+--- a/requester/mctp_endpoint_discovery.hpp
++++ b/requester/mctp_endpoint_discovery.hpp
+@@ -86,6 +86,9 @@ class MctpDiscovery
+     /** @brief Used to watch for new MCTP endpoints */
+     sdbusplus::match mctpEndpointPropChangedSignal;
+ 
++    /** @brief Used to watch for PowerState changes on MCTP target */
++    sdbusplus::bus::match_t mctpTargetHostStateChangedSignal;
++
+     /** @brief List of handlers need to notify when new MCTP
+      * Endpoint is Added/Removed */
+     std::vector<MctpDiscoveryHandlerIntf*> handlers;
+@@ -100,6 +103,17 @@ class MctpDiscovery
+      */
+     void propertiesChangedCb(sdbusplus::message_t& msg);
+ 
++    bool isOsStandby(const dbus::Value& value) const;
++    bool isMctpTargetInBiosPost(const std::string& objPath) const;
++    MctpInfos getMatchedMctpInfosInBiosPost() const;
++
++    /** @brief Callback function when the propertiesChanged D-Bus
++     * signal is triggered for MCTP target config PowerState.
++     *
++     *  @param[in] msg - Data associated with subscribed signal
++     */
++    void hostStateChangedCb(sdbusplus::message_t& msg);
++
+     /** @brief Callback function when MCTP endpoints addedInterface
+      * D-Bus signal raised.
+      *
+-- 
+2.53.0-Meta
+

@@ -1,0 +1,32 @@
+From 5ac61f284cd374de1ec41bb7c0a1c4d882a587cf Mon Sep 17 00:00:00 2001
+From: Cosmo Chou <chou.cosmo@gmail.com>
+Date: Fri, 29 May 2026 08:51:59 +0800
+Subject: [PATCH] ARM: dts: aspeed: bletchley: Add second source ISL1208 RTC
+
+Add alternative ISL1208 RTC at address 0x6f to support boards populated
+with the ISL1208 instead of the primary PCF85263 at 0x51.
+
+Signed-off-by: Cosmo Chou <chou.cosmo@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
+index 3da1cf9bbb99..01dbbda3e4b6 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-bletchley.dts
+@@ -1269,6 +1269,11 @@ eeprom@56 {
+ 		compatible = "atmel,24c64";
+ 		reg = <0x56>;
+ 	};
++
++	rtc@6f {
++		compatible = "isil,isl1208";
++		reg = <0x6f>;
++	};
+ };
+ 
+ &i2c7 {
+-- 
+2.53.0
+

@@ -1,0 +1,33 @@
+From 4d58f334801f993a83e7f057b98e54e7efead257 Mon Sep 17 00:00:00 2001
+From: Fred Chen <fredchen.openbmc@gmail.com>
+Date: Tue, 7 Jul 2026 11:04:01 +0800
+Subject: [PATCH] dt-bindings: trivial-devices: Add adi max20912 and max20916
+
+Add device tree bindings for Analog Devices MAX20912 and MAX20916
+Dual-Output Voltage Regulator.
+
+lore link: https://lore.kernel.org/all/20260707122701.751878-2-fredchen.openbmc@gmail.com/
+
+Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
+---
+ Documentation/devicetree/bindings/trivial-devices.yaml | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/Documentation/devicetree/bindings/trivial-devices.yaml b/Documentation/devicetree/bindings/trivial-devices.yaml
+index dd5077ab3a20..01393fd75c40 100644
+--- a/Documentation/devicetree/bindings/trivial-devices.yaml
++++ b/Documentation/devicetree/bindings/trivial-devices.yaml
+@@ -51,6 +51,10 @@ properties:
+           - adi,adt7468
+             # Analog Devices LT7182S Dual Channel 6A, 20V PolyPhase Step-Down Silent Switcher
+           - adi,lt7182s
++            # Analog Devices MAX20912 Dual-Output Voltage Regulator
++          - adi,max20912
++            # Analog Devices MAX20916 Dual-Output Voltage Regulator
++          - adi,max20916
+             # AMS iAQ-Core VOC Sensor
+           - ams,iaq-core
+             # Temperature monitoring of Astera Labs PT5161L PCIe retimer
+-- 
+2.52.0
+

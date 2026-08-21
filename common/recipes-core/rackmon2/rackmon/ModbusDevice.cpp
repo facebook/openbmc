@@ -15,6 +15,7 @@ ModbusDevice::ModbusDevice(
     int numCommandRetries)
     : interface_(interface),
       numCommandRetries_(numCommandRetries),
+      timeSync_(registerMap.timeSync),
       registerMap_(registerMap) {
   info_.deviceAddress = deviceAddress;
   info_.port = interface_.getPort();
@@ -24,12 +25,6 @@ ModbusDevice::ModbusDevice(
 
   for (auto& it : registerMap.registerDescriptors) {
     info_.registerList.emplace_back(it.second);
-  }
-
-  for (const auto& sp : registerMap.specialHandlers) {
-    ModbusSpecialHandler hdl(deviceAddress);
-    hdl.SpecialHandlerInfo::operator=(sp);
-    specialHandlers_.push_back(hdl);
   }
 }
 
@@ -138,6 +133,44 @@ void ModbusDevice::readFileRecord(
   command(req, resp, timeout);
 }
 
+void ModbusDevice::syncDeviceTime() {
+  if (!timeSync_) {
+    return;
+  }
+  time_t time = getCurrentTime();
+  uint16_t reg = timeSync_->reg;
+  time_t interval = timeSync_->period;
+  if (time < (lastTimeRefresh_ + interval)) {
+    return;
+  }
+  WriteMultipleRegistersReq req(info_.deviceAddress, reg);
+  req << uint32_t(time);
+  WriteMultipleRegistersResp resp(info_.deviceAddress, reg, 2);
+  try {
+    command(req, resp);
+  } catch (ModbusError& e) {
+    if (e.errorCode == ModbusErrorCode::ILLEGAL_DATA_ADDRESS ||
+        e.errorCode == ModbusErrorCode::ILLEGAL_FUNCTION) {
+      logInfo << "DEV:0x" << std::hex << +info_.deviceAddress
+              << " Time sync write at 0x" << std::hex << +reg << ' '
+              << " unsupported. Disabled from future updates" << std::endl;
+      // Some device SKUs may not support this and we want to
+      // avoid spamming logs with this error. Just disable future
+      // updates.
+      timeSync_.reset();
+    } else {
+      logInfo << "DEV:0x" << std::hex << +info_.deviceAddress
+              << " Time sync write at 0x" << std::hex << +reg << ' '
+              << " caught: " << e.what() << std::endl;
+    }
+  } catch (std::exception& e) {
+    logInfo << "DEV:0x" << std::hex << +info_.deviceAddress
+            << " Time sync write at 0x" << std::hex << +reg << ' '
+            << " caught: " << e.what() << std::endl;
+  }
+  lastTimeRefresh_ = time;
+}
+
 void ModbusDevice::forceReloadRegister(
     RegisterStore& registerStore,
     time_t reloadTime) {
@@ -206,13 +239,7 @@ bool ModbusDevice::reloadRegisterSpan(
 void ModbusDevice::reloadAllRegisters() {
   // If the number of consecutive failures has exceeded
   // a threshold, mark the device as dormant.
-  for (auto& specialHandler : specialHandlers_) {
-    // Break early, if we are entering exclusive mode
-    if (exclusiveMode_) {
-      break;
-    }
-    specialHandler.handle(*this);
-  }
+  syncDeviceTime();
   bool singleShot = singleShotReload_;
   singleShotReload_ = false;
   if (singleShot) {
@@ -243,6 +270,10 @@ void ModbusDevice::setActive() {
   // Clear the num failures so we consider it active.
   info_.numConsecutiveFailures = 0;
   info_.mode = ModbusDeviceMode::ACTIVE;
+
+  // Reset time sync config in case it was cleared
+  // in a previous active round.
+  timeSync_ = registerMap_.timeSync;
   // Force read all registers on next reload
   singleShotReload_ = true;
 }
@@ -306,80 +337,6 @@ void ModbusDevice::forceReloadRegisters(const ModbusRegisterFilter& filter) {
                << +span.getSpanAddress() << std::endl;
     }
   }
-}
-
-static std::string commandOutput(const std::string& shell) {
-  std::array<char, 128> buffer;
-  std::string result;
-  auto pipe_close = [](auto fd) { (void)pclose(fd); };
-  std::unique_ptr<FILE, decltype(pipe_close)> pipe(
-      popen(shell.c_str(), "r"), pipe_close);
-  if (!pipe) {
-    throw std::runtime_error("popen() failed!");
-  }
-  while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
-    result += buffer.data();
-  }
-  return result;
-}
-
-void ModbusSpecialHandler::handle(ModbusDevice& dev) {
-  // Check if it is time to handle.
-  if (!canHandle()) {
-    return;
-  }
-  std::string strValue{};
-  WriteMultipleRegistersReq req(deviceAddress_, reg);
-  if (info.shell) {
-    // The command is from the JSON configuration.
-    // TODO, we currently only have need to set the
-    // current UNIX time. If we want to avoid shell,
-    // we might need a different way to generalize
-    // this.
-    strValue = commandOutput(info.shell.value());
-  } else if (info.value) {
-    strValue = info.value.value();
-  } else {
-    logError << "NULL action ignored" << std::endl;
-    return;
-  }
-  if (info.interpret == RegisterValueType::INTEGER) {
-    int32_t ival = std::stoi(strValue);
-    if (len == 1) {
-      req << uint16_t(ival);
-    } else if (len == 2) {
-      req << uint32_t(ival);
-    } else {
-      logError << "Value truncated to 32bits" << std::endl;
-      req << uint32_t(ival);
-    }
-  } else if (info.interpret == RegisterValueType::STRING) {
-    for (char c : strValue) {
-      req << uint8_t(c);
-    }
-  }
-  WriteMultipleRegistersResp resp(deviceAddress_, reg, len);
-  try {
-    dev.command(req, resp);
-  } catch (ModbusError& e) {
-    if (e.errorCode == ModbusErrorCode::ILLEGAL_DATA_ADDRESS ||
-        e.errorCode == ModbusErrorCode::ILLEGAL_FUNCTION) {
-      logInfo << "DEV:0x" << std::hex << +deviceAddress_
-              << " Special Handler at 0x" << std::hex << +reg << ' '
-              << " unsupported. Disabled from future updates" << std::endl;
-      period = -1;
-    } else {
-      logInfo << "DEV:0x" << std::hex << +deviceAddress_
-              << " Special Handler at 0x" << std::hex << +reg << ' '
-              << " caught: " << e.what() << std::endl;
-    }
-  } catch (std::exception& e) {
-    logInfo << "DEV:0x" << std::hex << +deviceAddress_
-            << " Special Handler at 0x" << std::hex << +reg << ' '
-            << " caught: " << e.what() << std::endl;
-  }
-  lastHandleTime_ = getTime();
-  handled_ = true;
 }
 
 NLOHMANN_JSON_SERIALIZE_ENUM(

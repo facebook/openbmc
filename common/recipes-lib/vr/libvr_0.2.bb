@@ -31,6 +31,8 @@ LOCAL_URI = " \
     file://mp2856.h \
     file://mp29608a.c \
     file://mp29608a.h \
+    file://raa_gen3p5.c \
+    file://raa_gen3p5.h \
     "
 
 DEPENDS += "libobmc-pmbus libkv libpal libobmc-i2c libmisc-utils"

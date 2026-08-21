@@ -1,0 +1,353 @@
+From 17b1b46c6c9ae5a0e8e3b8229ba0825beb1ae029 Mon Sep 17 00:00:00 2001
+From: Fred Chen <Fred.Chen@quantatw.com>
+Date: Tue, 21 Jul 2026 15:20:54 +0800
+Subject: [PATCH] configurations: santabarbara: add MB ADI VR sensors
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Add ADI MAX20912, MAX20916 sensor configurations for monitoring voltage,
+current, temperature and power on the motherboard.
+
+The driver is under upstream review[1].
+ADI commented that they’ll release their own version soon, so they
+preferred that we hold off on submitting patch for now and wait for
+theirs.
+Setting to WIP until upstream kernel supports this driver.
+
+[1] https://lore.kernel.org/all/20260707122701.751878-3-fredchen.openbmc@gmail.com/
+gerrit: https://gerrit.openbmc.org/c/openbmc/entity-manager/+/92661
+
+Change-Id: Idf1c741434e84243c9362b41881fed55f9170ffc
+Signed-off-by: Fred Chen <Fred.Chen@quantatw.com>
+---
+ .../santabarbara/santabarbara_mb_vr_adi.json  | 285 ++++++++++++++++++
+ schemas/legacy.json                           |   2 +
+ 2 files changed, 287 insertions(+)
+
+diff --git a/configurations/meta/santabarbara/santabarbara_mb_vr_adi.json b/configurations/meta/santabarbara/santabarbara_mb_vr_adi.json
+index a039f94..0340d48 100644
+--- a/configurations/meta/santabarbara/santabarbara_mb_vr_adi.json
++++ b/configurations/meta/santabarbara/santabarbara_mb_vr_adi.json
+@@ -875,6 +875,281 @@
+             "Name": "Santabarbara_MB_CPLD",
+             "Type": "LatticeLFMXO5_25Firmware"
+         },
++        {
++            "Address": "0x3d",
++            "Bus": 18,
++            "Labels": [
++                "vout1",
++                "vout2",
++                "iout1",
++                "iout2",
++                "temp1",
++                "temp2",
++                "pout1",
++                "pout2"
++            ],
++            "Name": "PVDDCR_SOC_P0",
++            "Name1": "PVDDIO_P0",
++            "PowerState": "On",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.0264,
++                    "Label": "vout1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 1.32
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.0122,
++                    "Label": "vout1",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 0.61
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 8.51,
++                    "Label": "iout1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 425.5
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 11.2332,
++                    "Label": "pout1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 561.66
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.0265,
++                    "Label": "vout2",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 1.325
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.0173,
++                    "Label": "vout2",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 0.865
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.104,
++                    "Label": "iout2",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 55.2
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 1.3424,
++                    "Label": "pout2",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 67.12
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 2,
++                    "Label": "temp1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 100.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 2,
++                    "Label": "temp2",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 100.0
++                }
++            ],
++            "Type": "MAX20912",
++            "iout1_Name": "MB_VR_CPU_PVDDCR_SOC_CURR_A",
++            "iout2_Name": "MB_VR_CPU_PVDDIO_CURR_A",
++            "pout1_Name": "MB_VR_CPU_PVDDCR_SOC_PWR_W",
++            "pout2_Name": "MB_VR_CPU_PVDDIO_PWR_W",
++            "temp1_Name": "MB_VR_CPU_PVDDCR_SOC_TEMP_C",
++            "temp2_Name": "MB_VR_CPU_PVDDIO_TEMP_C",
++            "vout1_Name": "MB_VR_CPU_PVDDCR_SOC_VOLT_V",
++            "vout2_Name": "MB_VR_CPU_PVDDIO_VOLT_V"
++        },
++        {
++            "Address": "0x3e",
++            "Bus": 18,
++            "Labels": [
++                "vout1",
++                "iout1",
++                "temp1",
++                "pout1"
++            ],
++            "Name": "PVDDCR_CPU1_P0",
++            "PowerState": "On",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.034,
++                    "Label": "vout1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 1.7
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.0054,
++                    "Label": "vout1",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 0.27
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 9.88,
++                    "Label": "iout1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 494.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 13.8,
++                    "Label": "pout1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 690
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 2,
++                    "Label": "temp1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 100.0
++                }
++            ],
++            "Type": "MAX20912",
++            "iout1_Name": "MB_VR_CPU_PVDDCR_CPU1_CURR_A",
++            "pout1_Name": "MB_VR_CPU_PVDDCR_CPU1_PWR_W",
++            "temp1_Name": "MB_VR_CPU_PVDDCR_CPU1_TEMP_C",
++            "vout1_Name": "MB_VR_CPU_PVDDCR_CPU1_VOLT_V"
++        },
++        {
++            "Address": "0x3f",
++            "Bus": 18,
++            "Labels": [
++                "vout1",
++                "vout2",
++                "iout1",
++                "iout2",
++                "temp1",
++                "temp2",
++                "pout1",
++                "pout2"
++            ],
++            "Name": "PVDDCR_CPU0_P0",
++            "Name1": "PVDDIO_MEM_S3_P0",
++            "PowerState": "On",
++            "Thresholds": [
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.034,
++                    "Label": "vout1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 1.7
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.0054,
++                    "Label": "vout1",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 0.27
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 9.88,
++                    "Label": "iout1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 494.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 13.8,
++                    "Label": "pout1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 690
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 0.027,
++                    "Label": "vout2",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 1.35
++                },
++                {
++                    "Direction": "less than",
++                    "Hysteresis": 0.0168,
++                    "Label": "vout2",
++                    "Name": "lower critical",
++                    "Severity": 1,
++                    "Value": 0.84
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 5.75,
++                    "Label": "iout2",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 287.5
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 7.11,
++                    "Label": "pout2",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 355.5
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 2,
++                    "Label": "temp1",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 100.0
++                },
++                {
++                    "Direction": "greater than",
++                    "Hysteresis": 2,
++                    "Label": "temp2",
++                    "Name": "upper critical",
++                    "Severity": 1,
++                    "Value": 100.0
++                }
++            ],
++            "Type": "MAX20916",
++            "iout1_Name": "MB_VR_CPU_PVDDCR_CPU0_CURR_A",
++            "iout2_Name": "MB_VR_CPU_PVDDIO_MEM_S3_CURR_A",
++            "pout1_Name": "MB_VR_CPU_PVDDCR_CPU0_PWR_W",
++            "pout2_Name": "MB_VR_CPU_PVDDIO_MEM_S3_PWR_W",
++            "temp1_Name": "MB_VR_CPU_PVDDCR_CPU0_TEMP_C",
++            "temp2_Name": "MB_VR_CPU_PVDDIO_MEM_S3_TEMP_C",
++            "vout1_Name": "MB_VR_CPU_PVDDCR_CPU0_VOLT_V",
++            "vout2_Name": "MB_VR_CPU_PVDDIO_MEM_S3_VOLT_V"
++        },
+         {
+             "Address": "0x46",
+             "Bus": "18",
+@@ -1080,6 +1355,11 @@
+             "ILimitMax": 100,
+             "ILimitMin": 0,
+             "Inputs": [
++                "MB_VR_CPU_PVDDCR_CPU0_TEMP_C",
++                "MB_VR_CPU_PVDDCR_CPU1_TEMP_C",
++                "MB_VR_CPU_PVDDCR_SOC_TEMP_C",
++                "MB_VR_CPU_PVDDIO_MEM_S3_TEMP_C",
++                "MB_VR_CPU_PVDDIO_TEMP_C",
+                 "MB_VR_PVDD18_S5_TEMP_C"
+             ],
+             "Name": "PID_MB_VR",
+@@ -1630,6 +1910,11 @@
+         {
+             "Class": "temp",
+             "Inputs": [
++                "MB_VR_CPU_PVDDCR_CPU0_TEMP_C",
++                "MB_VR_CPU_PVDDCR_CPU1_TEMP_C",
++                "MB_VR_CPU_PVDDCR_SOC_TEMP_C",
++                "MB_VR_CPU_PVDDIO_MEM_S3_TEMP_C",
++                "MB_VR_CPU_PVDDIO_TEMP_C",
+                 "MB_VR_PVDD18_S5_TEMP_C"
+             ],
+             "Name": "Stepwise_MB_VR",
+diff --git a/schemas/legacy.json b/schemas/legacy.json
+index a2dd53d..cad0256 100644
+--- a/schemas/legacy.json
++++ b/schemas/legacy.json
+@@ -1007,6 +1007,8 @@
+                         "MAX20710",
+                         "MAX20730",
+                         "MAX20734",
++                        "MAX20912",
++                        "MAX20916",
+                         "MAX20796",
+                         "MAX34451",
+                         "MP2856",
+-- 
+2.53.0-Meta
+

@@ -1,0 +1,494 @@
+From 261d8563de960addfec0662d8423b19f2fe1b21e Mon Sep 17 00:00:00 2001
+From: James Athappilly <jamesatha@meta.com>
+Date: Fri, 26 Jun 2026 14:40:22 -0700
+Subject: [PATCH] Add MAX31790 fan controller device emulation for BMC
+ platforms.
+
+The MAX31790 provides 6-channel fan control with PWM and
+tachometer monitoring over I2C. Used for active thermal
+management in servers.
+---
+ hw/arm/Kconfig        |   1 +
+ hw/sensor/Kconfig     |   4 +
+ hw/sensor/max31790.c  | 429 ++++++++++++++++++++++++++++++++++++++++++
+ hw/sensor/meson.build |   1 +
+ 4 files changed, 435 insertions(+)
+ create mode 100644 hw/sensor/max31790.c
+
+diff --git a/hw/arm/Kconfig b/hw/arm/Kconfig
+index 260d2f0751..a310c534cc 100644
+--- a/hw/arm/Kconfig
++++ b/hw/arm/Kconfig
+@@ -558,6 +558,7 @@ config ASPEED_SOC
+     select LED
+     select PMBUS
+     select MAX31785
++    select MAX31790
+     select ADC128D818
+     select FSI_APB2OPB_ASPEED
+     select AT24C
+diff --git a/hw/sensor/Kconfig b/hw/sensor/Kconfig
+index b459ac2240..2ed162f478 100644
+--- a/hw/sensor/Kconfig
++++ b/hw/sensor/Kconfig
+@@ -35,6 +35,10 @@ config MAX34451
+     bool
+     depends on I2C
+ 
++config MAX31790
++    bool
++    depends on I2C
++
+ config LSM303DLHC_MAG
+     bool
+     depends on I2C
+diff --git a/hw/sensor/max31790.c b/hw/sensor/max31790.c
+new file mode 100644
+index 0000000000..6a414e63fc
+--- /dev/null
++++ b/hw/sensor/max31790.c
+@@ -0,0 +1,429 @@
++/*
++ * MAX31790 Fan Controller
++ *
++ * Copyright (c) 2025 Meta Platforms, Inc. and affiliates.
++ *
++ * This is a minimal implementation of the MAX31790 6-channel fan controller
++ * that provides enough functionality for BMC testing in QEMU.
++ *
++ * Datasheet: https://datasheets.maximintegrated.com/en/ds/MAX31790.pdf
++ *
++ * SPDX-License-Identifier: GPL-2.0-or-later
++ */
++
++#include "qemu/osdep.h"
++#include "hw/i2c/i2c.h"
++#include "hw/core/qdev-properties.h"
++#include "migration/vmstate.h"
++#include "qemu/module.h"
++#include "qom/object.h"
++#include "qapi/error.h"
++#include "qapi/visitor.h"
++
++#define TYPE_MAX31790 "max31790"
++OBJECT_DECLARE_SIMPLE_TYPE(MAX31790State, MAX31790)
++
++/* MAX31790 has 6 fan channels */
++#define MAX31790_NUM_FANS 6
++
++/* Register addresses */
++#define MAX31790_REG_GLOBAL_CONFIG   0x00
++#define MAX31790_REG_PWM_FREQ         0x01
++
++// 0x02-0x07 for channels 1-6
++#define MAX31790_REG_FAN_CONFIG_BASE  0x02
++
++// 0x08-0x0D for channels 1-6
++#define MAX31790_REG_FAN_DYNAMICS_BASE 0x08
++#define MAX31790_REG_FAN_FAULT_STATUS2 0x10
++#define MAX31790_REG_FAN_FAULT_STATUS1 0x11
++
++// 0x18-0x2F for channels 1-12 (2 bytes each)
++#define MAX31790_REG_TACH_COUNT_BASE  0x18
++
++// 0x30-0x3B for channels 1-6 (2 bytes each)
++#define MAX31790_REG_PWM_DUTY_BASE    0x30
++
++// 0x40-0x4B for channels 1-6 (2 bytes each)
++#define MAX31790_REG_PWMOUT_BASE      0x40
++
++// 0x50-0x5B for channels 1-6 (2 bytes each)
++#define MAX31790_REG_TARGET_COUNT_BASE 0x50
++
++/* FAN_CONFIG register bits */
++// Bit 7: 1=RPM mode, 0=Manual mode
++#define MAX31790_FAN_CFG_RPM_MODE       0x80
++
++// Bit 3: 1=Enable tach monitoring
++#define MAX31790_FAN_CFG_TACH_INPUT_EN  0x08
++
++// Bit 0: 1=Tach input, 0=PWM output
++#define MAX31790_FAN_CFG_TACH_INPUT     0x01
++
++struct MAX31790State {
++    I2CSlave parent_obj;
++
++    uint8_t len;               /* Transaction byte counter */
++    uint8_t pointer;           /* Current register pointer */
++    uint8_t global_config;
++    uint8_t pwm_freq;
++    uint8_t fan_config[MAX31790_NUM_FANS];
++    uint8_t fan_dynamics[MAX31790_NUM_FANS];
++    uint8_t fault_status1;
++    uint8_t fault_status2;
++    uint16_t tach_count[MAX31790_NUM_FANS * 2];  /* 12 tach channels */
++    uint16_t pwm_duty[MAX31790_NUM_FANS];        /* 6 PWM duty cycles */
++    uint16_t target_count[MAX31790_NUM_FANS];    /* 6 target counts (16-bit) */
++};
++
++static void max31790_reset(DeviceState *dev)
++{
++    MAX31790State *s = MAX31790(dev);
++    int i;
++
++    s->len = 0;
++    s->pointer = 0;
++    s->global_config = 0x00;
++    s->pwm_freq = 0x00;
++    s->fault_status1 = 0x00;
++    s->fault_status2 = 0x00;
++
++    /* Initialize fan dynamics, PWM duty, and target counts */
++    for (i = 0; i < MAX31790_NUM_FANS; i++) {
++        s->fan_dynamics[i] = 0x40;
++        s->pwm_duty[i] = 0x0000;
++        s->target_count[i] = 0x0000;
++    }
++
++    for (i = 0; i < MAX31790_NUM_FANS * 2; i++) {
++        /*
++         * Set realistic tach count representing ~3000 RPM
++         * TACH_COUNT = 60 * SR * 8192 / RPM / 2
++         * For SR=2, RPM=3000: TACH_COUNT ≈ 1638 = 0x0666
++         */
++        s->tach_count[i] = 0x0666;
++    }
++}
++
++static uint8_t max31790_read_reg(MAX31790State *s, uint8_t reg)
++{
++    int fan_idx, tach_idx;
++
++    /* Global config and PWM frequency */
++    if (reg == MAX31790_REG_GLOBAL_CONFIG) {
++        return s->global_config;
++    }
++    if (reg == MAX31790_REG_PWM_FREQ) {
++        return s->pwm_freq;
++    }
++
++    /* Fan configuration (6 channels) */
++    if (reg >= MAX31790_REG_FAN_CONFIG_BASE &&
++        reg < MAX31790_REG_FAN_CONFIG_BASE + MAX31790_NUM_FANS) {
++        fan_idx = reg - MAX31790_REG_FAN_CONFIG_BASE;
++        return s->fan_config[fan_idx];
++    }
++
++    /* Fan dynamics (6 channels) */
++    if (reg >= MAX31790_REG_FAN_DYNAMICS_BASE &&
++        reg < MAX31790_REG_FAN_DYNAMICS_BASE + MAX31790_NUM_FANS) {
++        fan_idx = reg - MAX31790_REG_FAN_DYNAMICS_BASE;
++        return s->fan_dynamics[fan_idx];
++    }
++
++    /* Fault status */
++    if (reg == MAX31790_REG_FAN_FAULT_STATUS1) {
++        return s->fault_status1;
++    }
++    if (reg == MAX31790_REG_FAN_FAULT_STATUS2) {
++        return s->fault_status2;
++    }
++
++    /* Tach count (12 channels, 2 bytes each) */
++    if (reg >= MAX31790_REG_TACH_COUNT_BASE &&
++        reg < MAX31790_REG_TACH_COUNT_BASE + (MAX31790_NUM_FANS * 2 * 2)) {
++        tach_idx = (reg - MAX31790_REG_TACH_COUNT_BASE) / 2;
++        if ((reg - MAX31790_REG_TACH_COUNT_BASE) % 2 == 0) {
++            /* High byte */
++            return (s->tach_count[tach_idx] >> 8) & 0xFF;
++        } else {
++            /* Low byte */
++            return s->tach_count[tach_idx] & 0xFF;
++        }
++    }
++
++    /* PWM duty cycle (6 channels, 2 bytes each) */
++    if (reg >= MAX31790_REG_PWM_DUTY_BASE &&
++        reg < MAX31790_REG_PWM_DUTY_BASE + (MAX31790_NUM_FANS * 2)) {
++        fan_idx = (reg - MAX31790_REG_PWM_DUTY_BASE) / 2;
++        if ((reg - MAX31790_REG_PWM_DUTY_BASE) % 2 == 0) {
++            /* High byte */
++            return (s->pwm_duty[fan_idx] >> 8) & 0xFF;
++        } else {
++            /* Low byte */
++            return s->pwm_duty[fan_idx] & 0xFF;
++        }
++    }
++
++    /* PWMOUT (6 channels, 2 bytes each) - mirrors PWM duty cycle */
++    if (reg >= MAX31790_REG_PWMOUT_BASE &&
++        reg < MAX31790_REG_PWMOUT_BASE + (MAX31790_NUM_FANS * 2)) {
++        fan_idx = (reg - MAX31790_REG_PWMOUT_BASE) / 2;
++        if ((reg - MAX31790_REG_PWMOUT_BASE) % 2 == 0) {
++            /* High byte */
++            return (s->pwm_duty[fan_idx] >> 8) & 0xFF;
++        } else {
++            /* Low byte */
++            return s->pwm_duty[fan_idx] & 0xFF;
++        }
++    }
++
++    /* Target count (6 channels, 2 bytes each) */
++    if (reg >= MAX31790_REG_TARGET_COUNT_BASE &&
++        reg < MAX31790_REG_TARGET_COUNT_BASE + (MAX31790_NUM_FANS * 2)) {
++        fan_idx = (reg - MAX31790_REG_TARGET_COUNT_BASE) / 2;
++        if ((reg - MAX31790_REG_TARGET_COUNT_BASE) % 2 == 0) {
++            /* High byte */
++            return (s->target_count[fan_idx] >> 8) & 0xFF;
++        } else {
++            /* Low byte */
++            return s->target_count[fan_idx] & 0xFF;
++        }
++    }
++
++    return 0xFF;  /* Default for unimplemented registers */
++}
++
++static void max31790_write_reg(MAX31790State *s, uint8_t reg, uint8_t value)
++{
++    int fan_idx;
++
++    /* Global config */
++    if (reg == MAX31790_REG_GLOBAL_CONFIG) {
++        s->global_config = value;
++        return;
++    }
++
++    /* PWM frequency */
++    if (reg == MAX31790_REG_PWM_FREQ) {
++        s->pwm_freq = value;
++        return;
++    }
++
++    /* Fan configuration */
++    if (reg >= MAX31790_REG_FAN_CONFIG_BASE &&
++        reg < MAX31790_REG_FAN_CONFIG_BASE + MAX31790_NUM_FANS) {
++        fan_idx = reg - MAX31790_REG_FAN_CONFIG_BASE;
++        s->fan_config[fan_idx] = value;
++        return;
++    }
++
++    /* Fan dynamics */
++    if (reg >= MAX31790_REG_FAN_DYNAMICS_BASE &&
++        reg < MAX31790_REG_FAN_DYNAMICS_BASE + MAX31790_NUM_FANS) {
++        fan_idx = reg - MAX31790_REG_FAN_DYNAMICS_BASE;
++        s->fan_dynamics[fan_idx] = value;
++        return;
++    }
++
++    /* PWM duty cycle (6 channels, 2 bytes each) */
++    if (reg >= MAX31790_REG_PWM_DUTY_BASE &&
++        reg < MAX31790_REG_PWM_DUTY_BASE + (MAX31790_NUM_FANS * 2)) {
++        fan_idx = (reg - MAX31790_REG_PWM_DUTY_BASE) / 2;
++        if ((reg - MAX31790_REG_PWM_DUTY_BASE) % 2 == 0) {
++            /* High byte */
++            s->pwm_duty[fan_idx] =
++              (s->pwm_duty[fan_idx] & 0x00FF) | (value << 8);
++        } else {
++            /* Low byte */
++            s->pwm_duty[fan_idx] = (s->pwm_duty[fan_idx] & 0xFF00) | value;
++        }
++        return;
++    }
++
++    /* PWMOUT (6 channels, 2 bytes each) - writes update PWM duty cycle */
++    if (reg >= MAX31790_REG_PWMOUT_BASE &&
++        reg < MAX31790_REG_PWMOUT_BASE + (MAX31790_NUM_FANS * 2)) {
++        fan_idx = (reg - MAX31790_REG_PWMOUT_BASE) / 2;
++        if ((reg - MAX31790_REG_PWMOUT_BASE) % 2 == 0) {
++            /* High byte */
++            s->pwm_duty[fan_idx] =
++              (s->pwm_duty[fan_idx] & 0x00FF) | (value << 8);
++        } else {
++            /* Low byte */
++            s->pwm_duty[fan_idx] = (s->pwm_duty[fan_idx] & 0xFF00) | value;
++        }
++        return;
++    }
++
++    /* Target count (6 channels, 2 bytes each) */
++    if (reg >= MAX31790_REG_TARGET_COUNT_BASE &&
++        reg < MAX31790_REG_TARGET_COUNT_BASE + (MAX31790_NUM_FANS * 2)) {
++        fan_idx = (reg - MAX31790_REG_TARGET_COUNT_BASE) / 2;
++        if ((reg - MAX31790_REG_TARGET_COUNT_BASE) % 2 == 0) {
++            /* High byte */
++            s->target_count[fan_idx] =
++              (s->target_count[fan_idx] & 0x00FF) | (value << 8);
++        } else {
++            /* Low byte */
++            s->target_count[fan_idx] =
++              (s->target_count[fan_idx] & 0xFF00) | value;
++        }
++        return;
++    }
++}
++
++static uint8_t max31790_recv(I2CSlave *i2c)
++{
++    MAX31790State *s = MAX31790(i2c);
++    uint8_t value = max31790_read_reg(s, s->pointer);
++
++    /* Auto-increment pointer after read */
++    s->pointer++;
++
++    return value;
++}
++
++static int max31790_send(I2CSlave *i2c, uint8_t data)
++{
++    MAX31790State *s = MAX31790(i2c);
++
++    if (s->len == 0) {
++        /* First byte is the register address */
++        s->pointer = data;
++    } else {
++        /* Subsequent bytes are data to write */
++        max31790_write_reg(s, s->pointer, data);
++        s->pointer++;
++    }
++    s->len++;
++
++    return 0;
++}
++
++static int max31790_event(I2CSlave *i2c, enum i2c_event event)
++{
++    MAX31790State *s = MAX31790(i2c);
++
++    /* Reset transaction state on any event */
++    s->len = 0;
++
++    return 0;
++}
++
++static const VMStateDescription vmstate_max31790 = {
++    .name = TYPE_MAX31790,
++    .version_id = 1,
++    .minimum_version_id = 1,
++    .fields = (VMStateField[]) {
++        VMSTATE_I2C_SLAVE(parent_obj, MAX31790State),
++        VMSTATE_UINT8(len, MAX31790State),
++        VMSTATE_UINT8(pointer, MAX31790State),
++        VMSTATE_UINT8(global_config, MAX31790State),
++        VMSTATE_UINT8(pwm_freq, MAX31790State),
++        VMSTATE_UINT8_ARRAY(fan_config, MAX31790State, MAX31790_NUM_FANS),
++        VMSTATE_UINT8_ARRAY(fan_dynamics, MAX31790State, MAX31790_NUM_FANS),
++        VMSTATE_UINT8(fault_status1, MAX31790State),
++        VMSTATE_UINT8(fault_status2, MAX31790State),
++        VMSTATE_UINT16_ARRAY(tach_count, MAX31790State, MAX31790_NUM_FANS * 2),
++        VMSTATE_UINT16_ARRAY(pwm_duty, MAX31790State, MAX31790_NUM_FANS),
++        VMSTATE_UINT16_ARRAY(target_count, MAX31790State, MAX31790_NUM_FANS),
++        VMSTATE_END_OF_LIST()
++    }
++};
++
++static void max31790_get_pwm(Object *obj, Visitor *v, const char *name,
++                              void *opaque, Error **errp)
++{
++    MAX31790State *s = MAX31790(obj);
++    int channel = (int)(uintptr_t)opaque;
++    /* Return raw 16-bit register value - no translation.
++     * Upper 9 bits (15-7) contain the PWM duty cycle value. */
++    int64_t value = s->pwm_duty[channel];
++    visit_type_int(v, name, &value, errp);
++}
++
++static void max31790_set_pwm(Object *obj, Visitor *v, const char *name,
++                              void *opaque, Error **errp)
++{
++    MAX31790State *s = MAX31790(obj);
++    int channel = (int)(uintptr_t)opaque;
++    int64_t value;
++
++    if (!visit_type_int(v, name, &value, errp)) {
++        return;
++    }
++    if (value < 0 || value > 0xFFFF) {
++        error_setg(errp, "PWM value must be 0-65535 (16-bit register)");
++        return;
++    }
++    /* Store raw 16-bit register value - no translation */
++    s->pwm_duty[channel] = value;
++}
++
++static const Property max31790_properties[] = {
++    /* Channel configuration properties - default to PWM mode (0x08) */
++    DEFINE_PROP_UINT8("channel0-config", MAX31790State, fan_config[0], 0x08),
++    DEFINE_PROP_UINT8("channel1-config", MAX31790State, fan_config[1], 0x08),
++    DEFINE_PROP_UINT8("channel2-config", MAX31790State, fan_config[2], 0x08),
++    DEFINE_PROP_UINT8("channel3-config", MAX31790State, fan_config[3], 0x08),
++    DEFINE_PROP_UINT8("channel4-config", MAX31790State, fan_config[4], 0x08),
++    DEFINE_PROP_UINT8("channel5-config", MAX31790State, fan_config[5], 0x08),
++};
++
++static void max31790_class_init(ObjectClass *klass, const void *data)
++{
++    I2CSlaveClass *k = I2C_SLAVE_CLASS(klass);
++    DeviceClass *dc = DEVICE_CLASS(klass);
++
++    k->event = max31790_event;
++    k->recv = max31790_recv;
++    k->send = max31790_send;
++    device_class_set_legacy_reset(dc, max31790_reset);
++    dc->vmsd = &vmstate_max31790;
++    dc->desc = "Maxim MAX31790 6-Channel Fan Controller";
++    device_class_set_props(dc, max31790_properties);
++}
++
++static void max31790_init(Object *obj)
++{
++    MAX31790State *s = MAX31790(obj);
++    char name[8];
++    int i;
++
++    /*
++     * Initialize fan_config array to PWM mode (0x08) defaults.
++     * Properties set from platform code will override these values.
++     */
++    for (i = 0; i < MAX31790_NUM_FANS; i++) {
++        s->fan_config[i] = 0x08;
++    }
++
++    /* Create QOM properties for 6 PWM channels (for runtime control via QMP) */
++    for (i = 0; i < MAX31790_NUM_FANS; i++) {
++        snprintf(name, sizeof(name), "pwm%d", i + 1);
++        object_property_add(
++            obj,
++            name,
++            "int",
++            max31790_get_pwm,
++            max31790_set_pwm,
++            NULL,
++            (void *)(uintptr_t)i);
++    }
++}
++
++static const TypeInfo max31790_info = {
++    .name          = TYPE_MAX31790,
++    .parent        = TYPE_I2C_SLAVE,
++    .instance_size = sizeof(MAX31790State),
++    .instance_init = max31790_init,
++    .class_init    = max31790_class_init,
++};
++
++static void max31790_register_types(void)
++{
++    type_register_static(&max31790_info);
++}
++
++type_init(max31790_register_types)
+diff --git a/hw/sensor/meson.build b/hw/sensor/meson.build
+index fe36c9ef91..1945aa4edb 100644
+--- a/hw/sensor/meson.build
++++ b/hw/sensor/meson.build
+@@ -6,6 +6,7 @@ system_ss.add(when: 'CONFIG_EMC141X', if_true: files('emc141x.c'))
+ system_ss.add(when: 'CONFIG_ADM1266', if_true: files('adm1266.c'))
+ system_ss.add(when: 'CONFIG_ADM1272', if_true: files('adm1272.c'))
+ system_ss.add(when: 'CONFIG_MAX34451', if_true: files('max34451.c'))
++system_ss.add(when: 'CONFIG_MAX31790', if_true: files('max31790.c'))
+ system_ss.add(when: 'CONFIG_LSM303DLHC_MAG', if_true: files('lsm303dlhc_mag.c'))
+ system_ss.add(when: 'CONFIG_ISL_PMBUS_VR', if_true: files('isl_pmbus_vr.c'))
+ system_ss.add(when: 'CONFIG_MAX31785', if_true: files('max31785.c'))
+-- 
+2.53.0-Meta
+

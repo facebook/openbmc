@@ -29,6 +29,7 @@
 #include <syslog.h>
 #include <string.h>
 #include <time.h>
+#include <pthread.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <openbmc/libgpio.h>
@@ -36,6 +37,8 @@
 #include <openbmc/obmc-sensors.h>
 #include <openbmc/kv.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/dimm.h>
+#include "dimm-util-plat.h"
 #include "pal.h"
 #include "pal_sensors.h"
 
@@ -45,6 +48,8 @@
 #define MAX_FAN_CONTROLLER_LEN 32
 #define KEY_SERVER_CPLD_VER "server_cpld_ver"
 #define MAX_NUM_GPIO_LED_POSTCODE 8
+#define UNINITIAL_POWER_LIMIT 0x02
+#define MAX_MCE_ERROR_STR_LEN 256
 
 const char pal_fru_list[] = "all, server, bmc, pdb, fio, nic";
 
@@ -57,6 +62,36 @@ size_t pal_pwm_cnt = 1;
 size_t pal_tach_cnt = 4;
 const int fan_map[] = {1, 3, 5, 7};
 const int fanIdToPwmIdMapping[] = {0, 0, 0, 0};
+
+const static pmbus_dev_info pmbus_dev_list[] = {
+  [MP29608B] = {
+  {{CMD_TEMP1, READ_WORD, LINEAR11},
+  {CMD_TEMP2, READ_WORD, LINEAR11},
+  {CMD_VOUT, READ_WORD, VOUT_MODE},
+  {CMD_VIN, READ_WORD, LINEAR11},
+  {CMD_IOUT, READ_WORD, LINEAR11},
+  {CMD_IIN, READ_WORD, LINEAR11},
+  {CMD_POUT, READ_WORD, LINEAR11},
+  {CMD_PIN, READ_WORD, LINEAR11},}},
+  [XDPE19283D] = {
+  {{CMD_TEMP1, READ_WORD, LINEAR11},
+  {CMD_TEMP2, READ_WORD, LINEAR11},
+  {CMD_VOUT, READ_WORD, VOUT_MODE},
+  {CMD_VIN, READ_WORD, LINEAR11},
+  {CMD_IOUT, READ_WORD, LINEAR11},
+  {CMD_IIN, READ_WORD, LINEAR11},
+  {CMD_POUT, READ_WORD, LINEAR11},
+  {CMD_PIN, READ_WORD, LINEAR11},}},
+  [RAA229641] = {
+  {{CMD_TEMP1, READ_WORD, DIRECT},
+  {CMD_TEMP2, READ_WORD, DIRECT},
+  {CMD_VOUT, READ_WORD, DIRECT},
+  {CMD_VIN, READ_WORD, DIRECT},
+  {CMD_IOUT, READ_WORD, DIRECT},
+  {CMD_IIN, READ_WORD, DIRECT},
+  {CMD_POUT, READ_WORD, DIRECT},
+  {CMD_PIN, READ_WORD, DIRECT},}},
+};
 
 enum key_event {
   KEY_BEFORE_SET,
@@ -93,6 +128,8 @@ struct pal_key_cfg {
   {"server_boot_order", "0100090203ff", NULL},
   {"timestamp_sled", "0", NULL},
   /* Add more Keys here */
+  {"server_power_limit_status", "enable (invalid)", NULL},
+  {"fan_rpm_cfg", "80", NULL},
   {NULL, NULL, NULL} /* This is the last key of the list */
 };
 
@@ -270,7 +307,7 @@ pal_get_fru_capability(uint8_t fru, unsigned int *caps)
 
   switch (fru) {
     case FRU_SERVER:
-      *caps = (FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL);
+      *caps = (FRU_CAPABILITY_SENSOR_ALL | FRU_CAPABILITY_POWER_ALL); // MB FRU uses Meta FBOSS EEPROM format; managed via weutil
       break;
     case FRU_BMC:
       *caps = (FRU_CAPABILITY_FRUID_ALL | FRU_CAPABILITY_SENSOR_ALL);
@@ -784,17 +821,62 @@ pal_set_fan_speed(uint8_t pwm_id, uint8_t pwm_value) {
     syslog(LOG_WARNING, "%s: Invalid pwm index: %d", __func__, pwm_id);
     return -1;
   }
+  syslog(LOG_CRIT, "Set PWM value: %d for pwm id = %d", pwm_value, pwm_id);
 
   return sensors_write_pwmfan(pwm_id, (float)pwm_value);
+}
+
+int
+pal_set_pwm_kv_value(int pwm_value) {
+  int ret = 0;
+  char value[MAX_VALUE_LEN];
+  
+  if (pwm_value < 0 || pwm_value > 100) {
+    syslog(LOG_WARNING, "%s() invalid pwm_value=%d (expected 0~100)", __func__, pwm_value);
+    return -1;
+  }
+
+  snprintf(value, sizeof(value), "%d", pwm_value);
+
+  ret = kv_set("fan_rpm_cfg", value, 0, KV_FPERSIST);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Fail to set the key 'fan_rpm_cfg'", __func__);
+  } else if (ret == 0) {
+    printf("Setting fan_rpm_cfg value to %d\n", pwm_value);
+    syslog(LOG_CRIT, "Setting fan_rpm_cfg value to %d", pwm_value);
+  }
+
+  return ret;
+}
+
+int
+pal_get_pwm_kv_value(int *pwm_value) {
+  int ret = 0;
+  char value[MAX_VALUE_LEN];
+
+  if (pwm_value == NULL)
+  {
+    syslog(LOG_ERR, "%s() Pointer \"pwm_value\" is NULL.\n", __func__);
+    return -1;
+  }
+
+  ret = kv_get("fan_rpm_cfg", value, NULL, KV_FPERSIST);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Fail to get the key 'fan_rpm_cfg'", __func__);
+    return ret;
+  }
+
+  *pwm_value = atoi(value);
+  return 0;
 }
 
 int
 pal_get_cpld_ver(uint8_t fru, char *rbuf) {
   int ret, i2cfd;
   uint8_t rbuf_i2c[CPLD_VER_BYTE] = {0};
-  uint8_t i2c_bus = CPLD_FW_REG_BUS;
-  uint8_t cpld_addr = CPLD_FW_REG_ADDR;
-  uint32_t ver_reg = CPLD_VER_REG;
+  uint8_t i2c_bus = CPLD_FW_BUS;
+  uint8_t cpld_addr = CPLD_FW_ADDR;
+  uint32_t ver_reg = CPLD_FW_VER_REG;
 
   if (rbuf == NULL)
   {
@@ -833,6 +915,85 @@ pal_get_cpld_ver(uint8_t fru, char *rbuf) {
   }
 
   return 0;
+}
+
+int
+pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log)
+{
+  uint8_t snr_num = sel[11];
+  uint8_t *event_data = &sel[10];
+  bool parsed = true;
+
+  strcpy(error_log, "");
+  switch(snr_num) {
+    case MACHINE_CHK_ERR:
+      parse_mce_error_sel(event_data, error_log);
+      parsed = true;
+      break;
+    default:
+      parsed = false;
+      break;
+  }
+
+  if (parsed == true) {
+    return 0;
+  }
+
+  pal_parse_sel_helper(fru, sel, error_log);
+  return 0;
+}
+
+void
+parse_mce_error_sel(uint8_t *event_data, char *error_log) {
+  uint8_t *ed = &event_data[3];
+  uint8_t error_type = ((ed[1] & 0x60) >> 5);
+  char cri_sel[512] = {0};
+
+  const char *err_type_str = "";
+
+  if ((ed[0] & 0x0F) == 0x0B) { // Uncorrectable
+    switch (error_type) {
+      case 0x00:
+        err_type_str = "Uncorrected Recoverable Error, ";
+        break;
+      case 0x01:
+        err_type_str = "Uncorrected Thread Fatal Error, ";
+        break;
+      case 0x02:
+        err_type_str = "Uncorrected System Fatal Error, ";
+        break;
+      default:
+        err_type_str = "Unknown, ";
+        break;
+    }
+  } else if ((ed[0] & 0x0F) == 0x0C) { // Correctable
+    switch (error_type) {
+      case 0x00:
+        err_type_str = "Correctable Error, ";
+        break;
+      case 0x01:
+        err_type_str = "Deferred Error, ";
+        break;
+      default:
+        err_type_str = "Unknown, ";
+        break;
+    }
+  }
+
+  snprintf(error_log,
+           MAX_MCE_ERROR_STR_LEN,
+           "%sBank Number %u, CPU %u, Core %u",
+           err_type_str,
+           ed[1] & 0x1F,
+           (ed[2] & 0xE0) >> 5,
+           ed[2] & 0x1F);
+
+  snprintf(cri_sel,
+           sizeof(cri_sel),
+           "MACHINE_CHK_ERR, %s",
+           error_log);
+
+  pal_add_cri_sel(cri_sel);
 }
 
 int
@@ -1017,6 +1178,10 @@ pal_write_error_code_file(unsigned char error_code_update, uint8_t error_code_st
   }
 
   err_file = fopen(ERR_CODE_BIN, "r+");
+  if (err_file == NULL) {
+    syslog(LOG_WARNING, "%s: fail to open %s file because %s ", __func__, ERR_CODE_BIN, strerror(errno));
+    return -1;
+  }
 
   ret = pal_flock_retry(fileno(err_file));
   if (ret < 0) {
@@ -1034,7 +1199,7 @@ pal_write_error_code_file(unsigned char error_code_update, uint8_t error_code_st
     error_code_array[byte_site] = CLEARBIT(error_code_array[byte_site], bit_site);
   }
 
-  for (i = 0; i < sizeof(error_code_array); i++) {
+  for (i = 0; i < (int)sizeof(error_code_array); i++) {
     fprintf(err_file, "%X ", error_code_array[i]);
   }
   fprintf(err_file, "\n");
@@ -1223,31 +1388,18 @@ int
 pal_pmbus_sensor_info_initial(void) {
   int ret = 0;
   uint8_t pmbus_type = 0;
-  uint8_t rev_id = 0;
+  uint8_t sku = 0;
 
-  ret = netlakenext_common_get_board_rev(&rev_id);
+  ret = netlakenext_common_get_vr_sku(&sku);
   if (ret < 0) {
-    syslog(LOG_ERR, "%s() Failed to get CPLD board revision, use main source setting as default", __func__);
+    syslog(LOG_ERR, "%s() Failed to get vr sku, use main source (MPS) setting as default", __func__);
   }
 
-  int sku = ((int)rev_id & 0x08) >> 3;
-  enum board_rev stage = (enum board_rev)(rev_id & 0x07);
   extern PAL_PMBUS_INFO pmbus_dev_table[];
   extern size_t pmbus_dev_cnt;
 
   for (uint8_t i = 0; i < pmbus_dev_cnt; i++) {
     pmbus_type = pmbus_dev_table[i].sku_pmbus_type[sku].type;
-    if (stage >= EVT2) {
-      if (pmbus_dev_table[i].slv_addr == VR_PVDDCR_ADDR) {
-        pmbus_dev_table[i].bus = VR_PVDDCR_BUS;
-      }
-      else if (pmbus_dev_table[i].slv_addr == VR_PVDDCR_SOC_ADDR) {
-        pmbus_dev_table[i].bus = VR_PVDDCR_SOC_BUS;
-      }
-      else if (pmbus_dev_table[i].slv_addr == VR_PVDD_MISC_ADDR) {
-        pmbus_dev_table[i].bus = VR_PVDD_MISC_BUS;
-      }
-    }
     for (int j = 0; j < MAX_PMBUS_SUP_CMD_CNT; j++) {
       if (pmbus_dev_table[i].sku_pmbus_type[sku].offset == pmbus_dev_list[pmbus_type].pmbus_cmd_list[j].read_cmd) {
         char key_with_cmd[MAX_KEY_LEN];
@@ -1273,11 +1425,8 @@ pal_pmbus_sensor_info_initial(void) {
 int
 pal_hsc_reading_enable(void) {
   int ret, fd;
-  uint8_t rbuf[CPLD_VER_BYTE] = {0};
   uint8_t bus = MTP_HSC_BUS;
   uint8_t addr = MTP_HSC_ADDR;
-  uint8_t enable_vout_req[MTP_HSC_EN_VOUT_LENGTH] = {0};
-  //enable_vout_req[0]: PMON_CONFIG address, enable_vout_req[1-2]: PMON_CONFIG register
 
   fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
   if (fd < 0) {
@@ -1285,24 +1434,20 @@ pal_hsc_reading_enable(void) {
     return -1;
   }
 
-  uint8_t pmon_config_addr = MTP_PMON_CONFIG_ADDR;
-  ret = i2c_rdwr_msg_transfer(fd, addr, &pmon_config_addr, sizeof(pmon_config_addr), (enable_vout_req + 1), 2);
+  // set 128 samples average for HSC reading
+  //config_data[0]: PMON_CONFIG address, config_data[1-2]: PMON_CONFIG register
+  uint8_t config_data[MTP_HSC_EN_VOUT_LENGTH];
+  config_data[0] = MTP_PMON_CONFIG_ADDR;
+  config_data[1] = MTP_HSC_SAMPLE_AVG_1;
+  config_data[2] = MTP_HSC_SAMPLE_AVG_2;
+
+  ret = i2c_rdwr_msg_transfer(fd, addr, config_data, sizeof(config_data), NULL, 0);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s() i2c_rdwr_msg_transfer to slave@0x%02X on bus %u failed", __func__, addr, bus);
     close(fd);
     return -1;
   }
-
-  //set bit 1 to 1 for Enabling VOUT sampling
-  enable_vout_req[1] |= 0x2;
-  enable_vout_req[0] = pmon_config_addr;
-  ret = i2c_rdwr_msg_transfer(fd, addr, enable_vout_req, MTP_HSC_EN_VOUT_LENGTH, NULL, 0);
   close(fd);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s() i2c_rdwr_msg_transfer to slave@0x%02X on bus %u failed", __func__, addr, bus);
-    return -1;
-  }
-
   return 0;
 }
 
@@ -1383,7 +1528,6 @@ int
 pal_max31790_init(void) {
   int fd, ret = 0;
   struct stat buf;
-  int retry = MAX31790_PROBE_RETRY;
   uint8_t tlen = 2;
   uint8_t bus = FAN_CTL_BUS;
   uint8_t addr = FAN_CTL_ADDR;
@@ -1521,8 +1665,6 @@ pal_set_uart_routing(uint8_t routing) {
   uint32_t ctrl;
   void *lpc_reg;
   void *lpc_hicr;
-  int raw_board_id[3] = {0};
-  int board_id = 0;
 
   lpc_fd = open("/dev/mem", O_RDWR | O_SYNC );
   if (lpc_fd < 0) {
@@ -1531,6 +1673,12 @@ pal_set_uart_routing(uint8_t routing) {
 
   lpc_reg = mmap(NULL, PAGE_SIZE, PROT_READ|PROT_WRITE, MAP_SHARED, lpc_fd,
              AST_LPC_BASE);
+  if (lpc_reg == MAP_FAILED) {
+    syslog(LOG_ERR, "%s: mmap failed: %s", __func__, strerror(errno));
+    close(lpc_fd);
+    return -1;
+  }
+
   lpc_hicr = (char*)lpc_reg + HICRA_OFFSET;
 
   // Read HICRA register
@@ -1542,12 +1690,6 @@ pal_set_uart_routing(uint8_t routing) {
   ctrl &= (~HICRA_MASK_UART4);
 
   if (routing == DEBUG_CARD_ABSENT) {
-
-    raw_board_id[0] = ((gpio_get_value_by_shadow("MTP_BOARD_REV_ID0") == GPIO_VALUE_LOW) ? 0 : 1);
-    raw_board_id[1] = ((gpio_get_value_by_shadow("MTP_BOARD_REV_ID1") == GPIO_VALUE_LOW) ? 0 : 1);
-    raw_board_id[2] = ((gpio_get_value_by_shadow("MTP_BOARD_REV_ID2") == GPIO_VALUE_LOW) ? 0 : 1);
-    board_id = ((raw_board_id[0] & 0x1) << 2) + ((raw_board_id[1] & 0x1) << 1) + ((raw_board_id[2] & 0x1));
-
     // Route UART3 to UART4 for SoL purpose
     ctrl |= (UART3_TO_UART4 << 25);
 
@@ -1588,6 +1730,26 @@ void pal_update_ts_sled() {
   if (ret < 0) {
     syslog(LOG_ERR, "%s(): failed to set key: %s value: %s", __func__, key, timestamp_str);
   }
+}
+
+int 
+pal_check_abl_error(uint32_t postcode) {
+  uint8_t head = postcode >> 24;
+  uint8_t last = postcode & 0xff;
+  if (head != 0xEE || ((postcode >> 16) & 0xff) != 0xF6) {
+    return 0;
+  }
+  else {
+    switch (last) {
+      case 0x00:
+        syslog(LOG_CRIT, "Reset the system as ABL workaround for the Hynix S3 DRAM issue.");
+        break;
+      default:
+        syslog(LOG_CRIT, "unknown ABL Event(postcode = 0x%08X) ", postcode);
+        break;
+    }
+  }
+  return 0;
 }
 
 int pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
@@ -1726,17 +1888,13 @@ int pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
 
 int pal_dimm_page_init()
 {
-  int ret = 0, fd = 0;
+  int ret = 0;
   uint8_t retry = SENSOR_RETRY_TIME;
-  const uint8_t dimm_addr_list[] = {
-    DIMMA_ADDR,
-    DIMMB_ADDR,
-  };
   uint8_t rbuf = 0;
   uint8_t rlen = DIMM_TEMP_LEN;
 
-  for (int id = 0; id < sizeof(dimm_addr_list); id++) {
-    fd = i2c_cdev_slave_open(I2C_BUS5, dimm_addr_list[id] >> 1,
+  for (uint8_t id = 0; id < MAX_DIMM_NUM_NETLAKE2; id++) {
+    int fd = i2c_cdev_slave_open(DIMM_BUS, dimm_addr_list[id] >> 1,
                             I2C_SLAVE_FORCE_CLAIM);
     if (fd < 0) {
       syslog(LOG_ERR, "Failed to open DIMM 0x%x\n", dimm_addr_list[id]);
@@ -1757,13 +1915,249 @@ int pal_dimm_page_init()
 
     if (ret < 0) {
       syslog(LOG_ERR, "%s() Failed to set 2-byte mode %x-%x", __func__,
-            I2C_BUS5, dimm_addr_list[id]);
+            DIMM_BUS, dimm_addr_list[id]);
       close(fd);
       return -1;
     }
+    close(fd);
     retry = SENSOR_RETRY_TIME;
   }
-
-  close(fd);
   return 0;
+}
+
+int
+pal_set_power_limit(uint8_t slot_id, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
+  int ret = CC_UNSPECIFIED_ERROR;
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  if ((req_data == NULL) || (res_data == NULL) || (res_len == NULL)) {
+    syslog(LOG_WARNING, "%s() Fail to set power limit due to null pointer check", __func__);
+    return -1;
+  }
+
+  *res_len = 0;
+
+  snprintf(key, sizeof(key), "server_power_limit_status");
+  uint8_t s = req_data[0];
+
+  // bit[0]: CPU package power limit status (0: disable, 1: enable), bit[7]: valid bit (0: invalid, 1: valid)
+  snprintf(value, sizeof(value), "%s%s",
+         (s & 0x01) ? "enable" : "disable",
+         (s & 0x80) ? "" : " (invalid)");
+  
+  ret = kv_set(key, value, 0, KV_FPERSIST);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Fail to set the key \"%s\"", __func__, key);
+  }
+
+  return ret;
+}
+
+int
+pal_get_power_limit(uint8_t slot_id, uint8_t *req_data, uint8_t *res_data, uint8_t *res_len) {
+  int ret = 0;
+  char key[MAX_KEY_LEN] = {0};
+  char value[MAX_VALUE_LEN] = {0};
+
+  if ((req_data == NULL) || (res_data == NULL) || (res_len == NULL)) {
+    syslog(LOG_WARNING, "%s() Fail to get power limit due to null pointer check", __func__);
+    return -1;
+  }
+
+  *res_len = 0;
+
+  snprintf(key, sizeof(key), "server_power_limit_status");
+  ret = kv_get(key, value, NULL, KV_FPERSIST);
+  if (ret < 0) {
+    res_data[*res_len] = UNINITIAL_POWER_LIMIT;
+    ret = CC_SUCCESS;
+  } else {
+    bool enabled = false;
+    bool valid = true;
+
+    if (strncmp(value, "enable", 6) == 0) {
+        enabled = true;
+    } else if (strncmp(value, "disable", 7) == 0) {
+        enabled = false;
+    } else {
+        syslog(LOG_WARNING, "%s() Invalid power limit status value: %s", __func__, value);
+        res_data[*res_len] = UNINITIAL_POWER_LIMIT;
+        return -1;
+    }
+
+    if (strstr(value, "(invalid)") != NULL) {
+        valid = false;
+    }
+
+    uint8_t status = 0;
+    // bit[0]: CPU package power limit status (0: disable, 1: enable), bit[7]: valid bit (0: invalid, 1: valid)
+    if (enabled) status |= 0x01;
+    if (valid)   status |= 0x80;
+    res_data[*res_len] = status;
+  }
+  *res_len = SIZE_CPU_POWER_LIMIT_DATA;
+
+  return ret;
+}
+
+static int pal_pmic_modify_reg(int fd, uint8_t addr, uint8_t offset, 
+                        uint8_t mask, uint8_t value)
+{
+  int ret = 0;
+  uint8_t retry = SENSOR_RETRY_TIME;
+  uint8_t tbuf[2];
+  uint8_t rbuf = 0;
+  uint8_t rlen = 1;
+
+  // read raw data
+  do {
+    ret = i2c_rdwr_msg_transfer(fd, addr, &offset, sizeof(offset), &rbuf, rlen);
+    if (ret != 0) {
+      usleep(SENSOR_RETRY_INTERVAL_USEC);
+    }
+  } while ((ret < 0) && ((retry--) > 0));
+
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to read %x-%x", __func__, DIMM_BUS, addr);
+    return -1;
+  }
+
+  tbuf[0] = offset;
+  tbuf[1] = (rbuf & ~mask) | value;
+
+  retry = SENSOR_RETRY_TIME;
+  // modify the register
+  do {
+    ret = i2c_rdwr_msg_transfer(fd, addr, tbuf, sizeof(tbuf), NULL, 0);
+    if (ret != 0) {
+      usleep(SENSOR_RETRY_INTERVAL_USEC);
+    }
+  } while ((ret < 0) && ((retry--) > 0));
+
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to set reg %x-%x", __func__, DIMM_BUS, addr);
+    return -1;
+  }
+
+  return 0;
+}
+
+int pal_pmic_pwr_setting()
+{
+  for (uint8_t id = 0; id < MAX_DIMM_NUM_NETLAKE2; id++) {
+    int fd = i2c_cdev_slave_open(DIMM_BUS, pmic_addr_list[id] >> 1,
+                            I2C_SLAVE_FORCE_CLAIM);
+    if (fd < 0) {
+      syslog(LOG_ERR, "Failed to open PMIC 0x%x\n", pmic_addr_list[id]);
+      return -1;
+    }
+    // set 0x30 bit 7 as 1 to enable ADC
+    int ret = pal_pmic_modify_reg(fd, pmic_addr_list[id], PMIC_ADC_REG, 0, (1 << 7));
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Failed to enable PMIC ADC %x-%x", __func__,
+            DIMM_BUS, pmic_addr_list[id]);
+      close(fd);
+      return -1;
+    }
+
+    // set 0x1A bit 1 as 1 to read total power value
+    ret = pal_pmic_modify_reg(fd, pmic_addr_list[id], PMIC_TOTAL_PWR, 0, (1 << 1));
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Failed to set PMIC total power %x-%x", __func__,
+            DIMM_BUS, pmic_addr_list[id]);
+      close(fd);
+      return -1;
+    }
+    // set 0x1B bit 6 as 1 to read power value
+    ret = pal_pmic_modify_reg(fd, pmic_addr_list[id], PMIC_PWR_SELECT, 0, (1 << 6));
+    if (ret < 0) {
+      syslog(LOG_ERR, "%s() Failed to set PMIC power read %x-%x", __func__,
+            DIMM_BUS, pmic_addr_list[id]);
+      close(fd);
+      return -1;
+    }
+    close(fd);
+  }
+  return 0;
+}
+
+void*
+pmic_monitor(void *arg) {
+  char str[MAX_VALUE_LEN] = {0};
+  uint8_t slot_id = FRU_SERVER;
+  uint8_t error_data[MAX_DIMM_NUM_NETLAKE2][ERR_PATTERN_LEN] = {{0}};
+
+  (void)arg;
+
+  while (1) {
+    // check POST complete status before reading PMIC power, to avoid HOST reboot
+    int ret = kv_get(POST_CMPLT_KV_KEY, str, NULL, 0);
+    if (ret < 0 || strncmp(str, LOW_STR, strlen(LOW_STR)) != 0) {
+      sleep(MONITOR_PMIC_ERROR_TIME_S);
+      continue;
+    }
+    for (uint8_t dimm = 0; dimm < MAX_DIMM_NUM_NETLAKE2; dimm++) {
+      ret = get_pmic_error_data_raw(slot_id, dimm, error_data[dimm]);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s() Failed to get PMIC raw error data from slot %d dimm %d PMIC addr 0x%02x",
+              __func__, slot_id, dimm, pmic_addr_list[dimm]);
+        continue;
+      }
+
+      ret = compare_pmic_raw_and_log(dimm, error_data[dimm]);
+      if (ret < 0) {
+        syslog(LOG_ERR, "%s() Failed to compare PMIC raw error data from slot %d dimm %d PMIC addr 0x%02x",
+              __func__, slot_id, dimm, pmic_addr_list[dimm]);
+        continue;
+      }
+    }
+    sleep(MONITOR_PMIC_ERROR_TIME_S);
+  }
+
+  return NULL;
+}
+
+int
+pal_pmic_monitor_init() {
+  static bool initialized = false;
+  pthread_t tid_pmic_monitor;
+
+  if (initialized) {
+    return 0;
+  }
+
+  if (pthread_create(&tid_pmic_monitor, NULL, pmic_monitor, NULL) == 0) {
+    pthread_detach(tid_pmic_monitor);
+    initialized = true;
+  } else {
+    syslog(LOG_ERR, "%s() Failed to create PMIC monitor thread", __func__);
+    return -1;
+  }
+  return 0;
+}
+
+void
+pal_dimm_init() {
+  int ret = 0;
+  // init the platform DIMM-related settings
+  ret = plat_init();
+  if (ret != 0) {
+    syslog(LOG_ERR, "%s() Failed to initialize platform DIMM", __func__);
+  }
+  // set DIMM page 0 for DIMM temperature sensor
+  ret = pal_dimm_page_init();
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to initialize DIMM page", __func__);
+  }
+  // set PMIC register to read total power value
+  ret = pal_pmic_pwr_setting();
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to set PMIC power", __func__);
+  }
+  // initialize PMIC monitor thread to monitor PMIC error and log
+  ret = pal_pmic_monitor_init();
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s() Failed to initialize PMIC monitor", __func__);
+  }
 }

@@ -1,0 +1,40 @@
+From 99bdd68ce3b06c88d41be1dae9218c870bf42ea0 Mon Sep 17 00:00:00 2001
+From: Emmanuel Blot via <qemu-arm@nongnu.org>
+Date: Fri, 31 Jul 2026 12:45:13 +0200
+Subject: [PATCH] hw/arm: catalina: use the real TMP75 model
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The Catalina BMC instantiates several ti,tmp75 temperature sensors. Now
+that hw/sensor/tmp105.h provides a proper TMP75 model, drop the local
+TYPE_TMP75 alias (and its guard) so the board instantiates the accurate
+device rather than a plain TMP105.
+
+Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
+Link: https://lore.kernel.org/qemu-devel/20260731-sanmiguel-bmc-locator-v2-14-1266926ba769@free.fr
+Signed-off-by: Cédric Le Goater <clg@redhat.com>
+---
+ hw/arm/aspeed_ast2600_catalina.c | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/hw/arm/aspeed_ast2600_catalina.c b/hw/arm/aspeed_ast2600_catalina.c
+index 33e75338ef..928e140b21 100644
+--- a/hw/arm/aspeed_ast2600_catalina.c
++++ b/hw/arm/aspeed_ast2600_catalina.c
+@@ -22,12 +22,6 @@
+ #define CATALINA_BMC_HW_STRAP2 0x00000800
+ #define CATALINA_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
+ 
+-/*
+- * Guard the alias against the TYPE_TMP75 that hw/sensor/tmp105.h now
+- * defines.
+- */
+-#undef TYPE_TMP75
+-#define TYPE_TMP75 TYPE_TMP105
+ #define TYPE_TMP421 "tmp421"
+ #define TYPE_DS1338 "ds1338"
+ 
+-- 
+2.53.0-Meta
+

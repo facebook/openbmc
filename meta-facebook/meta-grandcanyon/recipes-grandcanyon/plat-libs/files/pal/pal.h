@@ -39,7 +39,12 @@ extern "C" {
 #include "pal_sensors.h"
 #include "pal_power.h"
 
-#define MAX_NUM_FRUS    (FRU_CNT-1)
+#ifdef CONFIG_GRANDCANYON2
+#define MAX_NUM_FRUS    12
+#else
+#define MAX_NUM_FRUS    11
+#endif
+
 #define MAX_NODES       1
 #define FRUID_SIZE      512
 #define CUSTOM_FRU_LIST 1
@@ -584,6 +589,14 @@ enum {
 // PMBus register
 enum {
   PMBUS_CLEAR_FAULTS        = 0x03,
+  PMBUS_SMBALERT_MASK       = 0x1B,
+  PMBUS_VIN_OFF             = 0x36,
+  PMBUS_VIN_OV_FLT          = 0x55,
+  PMBUS_VIN_OV_WARN         = 0x57,
+  PMBUS_VIN_UV_WARN         = 0x58,
+  PMBUS_VIN_UV_FLT          = 0x59,
+  PMBUS_IIN_OC_FAULT_LIMIT  = 0x5B,
+  PMBUS_IIN_OC_WARN         = 0x5D,
   PMBUS_STATUS_BYTE         = 0x78,
   PMBUS_STATUS_WORD         = 0x79,
   PMBUS_STATUS_VOUT         = 0x7A,
@@ -639,6 +652,12 @@ typedef struct {
   int last_gpio_value;
 } power_fault_source_t;
 
+typedef struct {
+  uint8_t reg;
+  uint16_t value;
+  const char *name;
+} efuse_threshold_cfg_t;
+
 int pal_set_id_led(uint8_t slot, enum LED_HIGH_ACTIVE status);
 int pal_set_status_led(uint8_t fru, status_led_color color);
 int pal_set_e1s_led(uint8_t fru, e1s_led_id id, enum LED_HIGH_ACTIVE status);
@@ -650,6 +669,13 @@ int pal_bind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name, char *bind
 int pal_unbind_i2c_device(uint8_t bus, uint8_t addr, char *driver_name, char *bind_dir);
 int pal_get_sku(platformInformation *pal_sku);
 int pal_get_uic_location(uint8_t *uic_id);
+#ifdef CONFIG_GRANDCANYON2
+// GC2: rate-limit a repeated failure log so it is emitted only once per boot.
+// De-duplication is keyed by a /tmp marker file so it also holds across the
+// short-lived processes that call into libpal. Returns true the first time the
+// given marker is seen (i.e. when the caller should log), false afterwards.
+bool pal_log_once(const char *marker);
+#endif
 int pal_copy_eeprom_to_bin(const char *eeprom_file, const char *bin_file);
 int pal_get_debug_card_uart_sel(uint8_t *uart_sel);
 int pal_is_debug_card_present(uint8_t *status);
@@ -672,8 +698,16 @@ int pal_bmc_err_enable(const char *error_item);
 int pal_bmc_err_disable(const char *error_item);
 void pal_i2c_crash_assert_handle(int i2c_bus_num);
 void pal_i2c_crash_deassert_handle(int i2c_bus_num);
+#ifdef CONFIG_GRANDCANYON2
+int pal_get_drive_health(const char* i2c_bus_dev, uint8_t drive_id);
+#else
 int pal_get_drive_health(const char* i2c_bus_dev);
+#endif
 int pal_get_drive_status(const char* i2c_bus_dev);
+#ifdef CONFIG_GRANDCANYON2
+int pal_get_mb_e1s_health(void);
+int pal_get_mb_e1s_status(void);
+#endif
 int pal_is_crashdump_ongoing(uint8_t fru);
 int pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data);
 int pal_get_tach_cnt();
@@ -691,6 +725,8 @@ int pal_clear_event_only_error_ack();
 int pal_check_server_power_change_correct(uint8_t action);
 int pal_get_fanfru_serial_num(int fan_id, uint8_t *serial_num, uint8_t serial_len);
 int pal_get_sysfw_ver_from_bic(uint8_t slot, uint8_t *ver);
+int pal_get_mrc_desc(uint16_t major, uint16_t minor, char *desc);
+int pal_clear_mrc_warning(uint8_t slot);
 int pal_nic_poweroff_action();
 int pal_nic_poweron_action();
 int pal_reset_nic();

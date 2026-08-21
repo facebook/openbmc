@@ -26,8 +26,9 @@ from tests.acctonbmc.helper.utils import PlatformInfo
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 @unittest.skipIf(
-    (platform_name := PlatformInfo.get_platform()[0] or "") not in ["WEDGE800BACT", "WEDGE800CACT"],
-    f"Test skipped: unsupported platform {platform_name}"
+    (platform_name := PlatformInfo.get_platform()[0] or "")
+    not in ["WEDGE800BACT", "WEDGE800CACT", "WEDGE800BNHP", "WEDGE800CNHP"],
+    f"Test skipped: unsupported platform {platform_name}",
 )
 class RestModbusCmdTest(common.base_rest_modbus_cmd.RestModbusCmdTest):
     pass  # just run common tests

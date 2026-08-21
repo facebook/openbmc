@@ -25,7 +25,7 @@ new file mode 100644
 index 000000000..38ac86dbc
 --- /dev/null
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
-@@ -0,0 +1,1385 @@
+@@ -0,0 +1,1387 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +// Copyright (c) 2025 Facebook Inc.
 +
@@ -684,6 +684,8 @@ index 000000000..38ac86dbc
 +					gpio-expander@27 {
 +						compatible = "nxp,pca9535";
 +						reg = <0x27>;
++						interrupt-parent = <&sgpiom0>;
++						interrupts = <228 IRQ_TYPE_LEVEL_LOW>;
 +						gpio-controller;
 +						#gpio-cells = <2>;
 +						gpio-line-names =
@@ -1304,7 +1306,7 @@ index 000000000..38ac86dbc
 +	/*bit112-bit119*/
 +	"FM_CPLD_RSVD_MCIO0A_SB1","",
 +	"FM_CPLD_RSVD_MCIO0A_SB2","",
-+	"","",
++	"IRQ_PICPWR_ALERT_N","",
 +	"","",
 +	"","",
 +	"PRSNT_BOOT_N","",

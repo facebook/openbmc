@@ -9,4 +9,5 @@ SRC_URI:append = " \
     file://0006-configuration-santabarbara-add-Inventory-to-Arkes-MM.patch \
     file://0007-configurations-santabarbara-add-MCTPI2CTarget-for-SW.patch \
     file://0008-configurations-santabarbara-add-NIC-osfp-sensor-and-.patch \
+    file://0009-configurations-catalina_fio-update-FIO-thresholds.patch \
 "

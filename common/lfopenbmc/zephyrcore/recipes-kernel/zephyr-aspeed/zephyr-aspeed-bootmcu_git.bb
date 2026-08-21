@@ -13,3 +13,11 @@ ZEPHYR_BOARD = "${ZEPHYR_BOARD_BOOTMCU}"
 ZEPHYR_MAKE_OUTPUT += "${BOOTMCU_FMC_BINARY} ${BOOTMCU_FW_BINARY}"
 
 ZEPHYR_SRC_DIR ??= "${S}/aspeed-zephyr-project/apps/mcu-runtime"
+
+SRC_URI:append:yosemite5a7 = " file://ast2700_yosemite5a7_bootmcu.overlay \
+                             "
+SRC_URI:append:rainiera7 = " file://ast2700_rainiera7_bootmcu.overlay \
+                             "
+
+BOOTMCU_EXTRA_DTC_OVERLAY_FILE:append:yosemite5a7 = ";${UNPACKDIR}/ast2700_yosemite5a7_bootmcu.overlay"
+BOOTMCU_EXTRA_DTC_OVERLAY_FILE:append:rainiera7 = ";${UNPACKDIR}/ast2700_rainiera7_bootmcu.overlay"

@@ -1,4 +1,4 @@
-From 27ea7fef496f7aa0f2a18ae2b592279aab0d6cb9 Mon Sep 17 00:00:00 2001
+From 999ca1bcc7093bec167faa464b6cd8de6f1cb3dc Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 23 Apr 2026 04:20:23 +0000
 Subject: [PATCH] Add drive state manager daemon
@@ -73,9 +73,9 @@ Depends-On: I629b663e8b018ec1f81175c43d637e00a63907a1
 Change-Id: Iccc69acf71ce135481c8a59124072ee460be12a5
 Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
 ---
- drive_state_manager.cpp                       | 391 ++++++++++++++++++
+ drive_state_manager.cpp                       | 392 ++++++++++++++++++
  drive_state_manager.hpp                       | 114 +++++
- drive_state_manager_main.cpp                  | 140 +++++++
+ drive_state_manager_main.cpp                  | 141 +++++++
  meson.build                                   |  10 +
  service_files/meson.build                     |   1 +
  .../xyz.openbmc_project.State.Drive.service   |  13 +
@@ -87,7 +87,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  target_files/obmc-drive-poweroff@.target      |   7 +
  target_files/obmc-drive-poweron@.target       |   9 +
  target_files/obmc-drive-reboot@.target        |   3 +
- 14 files changed, 714 insertions(+)
+ 14 files changed, 716 insertions(+)
  create mode 100644 drive_state_manager.cpp
  create mode 100644 drive_state_manager.hpp
  create mode 100644 drive_state_manager_main.cpp
@@ -102,10 +102,10 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
 
 diff --git a/drive_state_manager.cpp b/drive_state_manager.cpp
 new file mode 100644
-index 00000000..e7e81d87
+index 00000000..75a14a5b
 --- /dev/null
 +++ b/drive_state_manager.cpp
-@@ -0,0 +1,391 @@
+@@ -0,0 +1,392 @@
 +#include "drive_state_manager.hpp"
 +
 +#include <phosphor-logging/lg2.hpp>
@@ -170,6 +170,7 @@ index 00000000..e7e81d87
 +
 +    setupHostStateMonitoring();
 +    determineInitialState();
++    requestedDriveTransition(Transition::On);
 +    this->emit_object_added();
 +}
 +
@@ -619,10 +620,10 @@ index 00000000..7418798b
 +} // namespace phosphor
 diff --git a/drive_state_manager_main.cpp b/drive_state_manager_main.cpp
 new file mode 100644
-index 00000000..096097d5
+index 00000000..7651e3dd
 --- /dev/null
 +++ b/drive_state_manager_main.cpp
-@@ -0,0 +1,140 @@
+@@ -0,0 +1,141 @@
 +#include "drive_state_manager.hpp"
 +#include "sub_device_manager.hpp"
 +#include "utils.hpp"
@@ -746,6 +747,7 @@ index 00000000..096097d5
 +            {
 +                info("Removing drive state object for inventory {INV}", "INV",
 +                     inventoryPath);
++                it->second->requestedDriveTransition(DriveState::Transition::Off);
 +                drives.erase(it);
 +            }
 +        });
@@ -906,7 +908,7 @@ index 00000000..75fa00c7
 +OnFailureJobMode=fail
 diff --git a/target_files/obmc-drive-reboot@.target b/target_files/obmc-drive-reboot@.target
 new file mode 100644
-index 00000000..dd3b38bb
+index 00000000..920f40a1
 --- /dev/null
 +++ b/target_files/obmc-drive-reboot@.target
 @@ -0,0 +1,3 @@

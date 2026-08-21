@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,21 +16,23 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
 # shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
-#
-# Create "pwrcpld" and scm/chassis EEPROMs.
-#
+scan_i2cbus() {
+    # nexthopbmc enabled I2C buses. Bus 4 holds the BMC IDPROM and bus 8 the
+    # chassis EEPROM; bus 11 is disabled in the device tree (mdio3 shares its
+    # pins) so it is intentionally omitted.
+    local buses=(0 1 2 3 4 5 6 7 8 9 10 12 13 14 15)
 
-# FRU IDPROMS
-i2c_device_add 4 0x50 24c64  # BMC IDPROM
-i2c_device_add 8 0x50 24c64  # Chassis EEPROM
+    for bus in "${buses[@]}"; do
+        echo -e "##### I2C Bus${bus} INFO #####"
+        # i2cdetect command
+        timeout 5 i2cdetect -y "$bus"
 
-# APML
-i2c_device_add 6 0x4c sbtsi
-i2c_device_add 6 0x3c sbrmi
-
-modprobe apml_sbrmi
-modprobe apml_sbtsi
+        echo ""
+    done
+}
+scan_i2cbus

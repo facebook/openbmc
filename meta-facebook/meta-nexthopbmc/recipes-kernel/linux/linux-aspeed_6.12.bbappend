@@ -26,4 +26,5 @@ SRC_URI:append = " \
     file://1003-ARM-dts-aspeed-fblite-r1-add-TPM-reset-hog.patch \
     file://1004-ARM-dts-aspeed-fblite-r1-Add-ssif.patch \
     file://1005-ARM-dts-aspeed-fblite-r1-enable-mdio-3.patch \
+    file://1006-ARM-dts-aspeed-fblite-r1-Enable-I2C14.patch \
 "

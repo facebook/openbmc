@@ -1,0 +1,25 @@
+From 2120cf42f85e8581ba5949473548e318df34cfaf Mon Sep 17 00:00:00 2001
+From: Nate White <nate@nexthop.ai>
+Date: Fri, 19 Jun 2026 17:49:28 +0100
+Subject: [PATCH] ARM: dts: aspeed: fblite-r1: Enable I2C14
+
+There are some non-critical devices on I2C14 so enable for nexthopbmc
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+index 2c2b22046..19998bf75 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+@@ -45,6 +45,10 @@ ssif-bmc@10 {
+ 	};
+ };
+ 
++&i2c14 {
++	status = "okay";
++};
++
+ &kcs1 {
+ 	status = "okay";
+ 	aspeed,lpc-io-reg = <0xca0>;

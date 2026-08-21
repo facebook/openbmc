@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,21 +16,11 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
 # shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
 
-#
-# Create "pwrcpld" and scm/chassis EEPROMs.
-#
-
-# FRU IDPROMS
-i2c_device_add 4 0x50 24c64  # BMC IDPROM
-i2c_device_add 8 0x50 24c64  # Chassis EEPROM
-
-# APML
-i2c_device_add 6 0x4c sbtsi
-i2c_device_add 6 0x3c sbrmi
-
-modprobe apml_sbrmi
-modprobe apml_sbtsi
+# Dump the EEPROMs defined in the nexthopbmc eeprom.json.
+/usr/bin/weutil -e chassis_eeprom
+/usr/bin/weutil -e bmc_eeprom

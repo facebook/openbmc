@@ -1,0 +1,32 @@
+From c5adabfbaeac56a7317c0ac9c98887a2807e8991 Mon Sep 17 00:00:00 2001
+From: Nate White <nate@nexthop.ai>
+Date: Fri, 19 Jun 2026 17:45:54 +0100
+Subject: [PATCH] ARM: dts: aspeed: fblite-r1: enable mdio 3
+
+We need to enable MDIO3 on nexthopbmc for the OOB switch and that also means we have to disable i2c11 as they are on the same pins.
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+index 0922ab124..2c2b22046 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+@@ -27,7 +27,7 @@ flash@0 {
+ };
+ 
+ &i2c11 {
+-	status = "okay";
++	status = "disabled";
+ };
+ 
+ &lpc_ctrl {
+@@ -69,7 +69,7 @@ peci-client@30 {
+ 	};
+ };
+ 
+-&mdio1 {
++&mdio3 {
+ 	status = "okay";
+ };
+ 

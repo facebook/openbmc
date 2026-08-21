@@ -25,4 +25,5 @@ SRC_URI:append = " \
     file://1002-ARM-dts-aspeed-fblite-r1-fix-usb-device.patch \
     file://1003-ARM-dts-aspeed-fblite-r1-add-TPM-reset-hog.patch \
     file://1004-ARM-dts-aspeed-fblite-r1-Add-ssif.patch \
+    file://1005-ARM-dts-aspeed-fblite-r1-enable-mdio-3.patch \
 "

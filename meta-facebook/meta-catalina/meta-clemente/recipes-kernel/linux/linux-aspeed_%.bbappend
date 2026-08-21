@@ -10,6 +10,7 @@ SRC_URI += " \
     file://1006-clemente-dts-add-gpio-line-name-to-io-exp.patch \
     file://1007-net-mctp-add-gateway-routing-support.patch \
     file://1008-ARM-dts-aspeed-clemente-Remove-IOB-NIC-TMP421-nodes.patch \
+    file://1009-net-mctp-usb-fix-tx-queue-stall-and-related-issues.patch \
     file://clemente-sensor.cfg \
 "
 

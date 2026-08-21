@@ -1,0 +1,250 @@
+From f9eb12158074ff75cd6c0fda236fb0b016e97d74 Mon Sep 17 00:00:00 2001
+From: Rex Fu <rex.fu@amd.com>
+Date: Fri, 21 Aug 2026 09:55:19 +0800
+Subject: [PATCH] configurations: samsung: Add PM9D3a E1.S naming
+
+Define the E1.S slot name for each PM9D3a I2C bus to provide
+consistent inventory and temperature sensor naming.
+
+Upstream PM9D3a support:
+https://github.com/openbmc/entity-manager/commit/cebdda10c7dfc138cc23996fbe0ae5e0bd7c158d
+
+Signed-off-by: Rex Fu <rex.fu@amd.com>
+---
+ configurations/samsung/pm9d3a.json | 224 +++++++++++++++++++++++++----
+ 1 file changed, 200 insertions(+), 24 deletions(-)
+
+diff --git a/configurations/samsung/pm9d3a.json b/configurations/samsung/pm9d3a.json
+index 22477c2..49f8c16 100644
+--- a/configurations/samsung/pm9d3a.json
++++ b/configurations/samsung/pm9d3a.json
+@@ -1,26 +1,202 @@
+-{
+-    "Exposes": [
+-        {
+-            "Address": "$address",
+-            "Bus": "$bus",
+-            "Name": "PM9D3a $index FRU",
+-            "Type": "EEPROM"
+-        },
+-        {
+-            "Address": "0x6a",
+-            "Bus": "$bus",
+-            "Name": "PM9D3a $index Temp",
+-            "PowerState": "On",
+-            "Type": "NVME1000"
++[
++    {
++        "Exposes": [
++            {
++                "Address": "$address",
++                "Bus": "$bus",
++                "Name": "E1S_BOOT_FRU",
++                "Type": "EEPROM"
++            },
++            {
++                "Address": "0x6a",
++                "Bus": "$bus",
++                "Name": "E1S_BOOT_TEMP_C",
++                "PowerState": "On",
++                "Thresholds": [
++                    {
++                        "Direction": "less than",
++                        "Name": "lower critical",
++                        "Severity": 1,
++                        "Value": 0
++                    },
++                    {
++                        "Direction": "greater than",
++                        "Name": "upper critical",
++                        "Severity": 1,
++                        "Value": 70
++                    }
++                ],
++                "Type": "NVME1000"
++            }
++        ],
++        "Name": "E1S_BOOT",
++        "Probe": "xyz.openbmc_project.FruDevice({'BUS': 24, 'PRODUCT_PRODUCT_NAME': 'PM9D3a', 'PRODUCT_MANUFACTURER': 'Samsung'})",
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Decorator.Asset": {
++            "Manufacturer": "$PRODUCT_MANUFACTURER",
++            "Model": "$PRODUCT_PRODUCT_NAME",
++            "PartNumber": "$PRODUCT_PART_NUMBER",
++            "SerialNumber": "$PRODUCT_SERIAL_NUMBER"
++        }
++    },
++    {
++        "Exposes": [
++            {
++                "Address": "$address",
++                "Bus": "$bus",
++                "Name": "E1S0_FRU",
++                "Type": "EEPROM"
++            },
++            {
++                "Address": "0x6a",
++                "Bus": "$bus",
++                "Name": "E1S0_TEMP_C",
++                "PowerState": "On",
++                "Thresholds": [
++                    {
++                        "Direction": "less than",
++                        "Name": "lower critical",
++                        "Severity": 1,
++                        "Value": 0
++                    },
++                    {
++                        "Direction": "greater than",
++                        "Name": "upper critical",
++                        "Severity": 1,
++                        "Value": 70
++                    }
++                ],
++                "Type": "NVME1000"
++            }
++        ],
++        "Name": "L_E1S0",
++        "Probe": "xyz.openbmc_project.FruDevice({'BUS': 25, 'PRODUCT_PRODUCT_NAME': 'PM9D3a', 'PRODUCT_MANUFACTURER': 'Samsung'})",
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Decorator.Asset": {
++            "Manufacturer": "$PRODUCT_MANUFACTURER",
++            "Model": "$PRODUCT_PRODUCT_NAME",
++            "PartNumber": "$PRODUCT_PART_NUMBER",
++            "SerialNumber": "$PRODUCT_SERIAL_NUMBER"
++        }
++    },
++    {
++        "Exposes": [
++            {
++                "Address": "$address",
++                "Bus": "$bus",
++                "Name": "E1S1_FRU",
++                "Type": "EEPROM"
++            },
++            {
++                "Address": "0x6a",
++                "Bus": "$bus",
++                "Name": "E1S1_TEMP_C",
++                "PowerState": "On",
++                "Thresholds": [
++                    {
++                        "Direction": "less than",
++                        "Name": "lower critical",
++                        "Severity": 1,
++                        "Value": 0
++                    },
++                    {
++                        "Direction": "greater than",
++                        "Name": "upper critical",
++                        "Severity": 1,
++                        "Value": 70
++                    }
++                ],
++                "Type": "NVME1000"
++            }
++        ],
++        "Name": "L_E1S1",
++        "Probe": "xyz.openbmc_project.FruDevice({'BUS': 26, 'PRODUCT_PRODUCT_NAME': 'PM9D3a', 'PRODUCT_MANUFACTURER': 'Samsung'})",
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Decorator.Asset": {
++            "Manufacturer": "$PRODUCT_MANUFACTURER",
++            "Model": "$PRODUCT_PRODUCT_NAME",
++            "PartNumber": "$PRODUCT_PART_NUMBER",
++            "SerialNumber": "$PRODUCT_SERIAL_NUMBER"
++        }
++    },
++    {
++        "Exposes": [
++            {
++                "Address": "$address",
++                "Bus": "$bus",
++                "Name": "E1S2_FRU",
++                "Type": "EEPROM"
++            },
++            {
++                "Address": "0x6a",
++                "Bus": "$bus",
++                "Name": "E1S2_TEMP_C",
++                "PowerState": "On",
++                "Thresholds": [
++                    {
++                        "Direction": "less than",
++                        "Name": "lower critical",
++                        "Severity": 1,
++                        "Value": 0
++                    },
++                    {
++                        "Direction": "greater than",
++                        "Name": "upper critical",
++                        "Severity": 1,
++                        "Value": 70
++                    }
++                ],
++                "Type": "NVME1000"
++            }
++        ],
++        "Name": "R_E1S2",
++        "Probe": "xyz.openbmc_project.FruDevice({'BUS': 27, 'PRODUCT_PRODUCT_NAME': 'PM9D3a', 'PRODUCT_MANUFACTURER': 'Samsung'})",
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Decorator.Asset": {
++            "Manufacturer": "$PRODUCT_MANUFACTURER",
++            "Model": "$PRODUCT_PRODUCT_NAME",
++            "PartNumber": "$PRODUCT_PART_NUMBER",
++            "SerialNumber": "$PRODUCT_SERIAL_NUMBER"
++        }
++    },
++    {
++        "Exposes": [
++            {
++                "Address": "$address",
++                "Bus": "$bus",
++                "Name": "E1S3_FRU",
++                "Type": "EEPROM"
++            },
++            {
++                "Address": "0x6a",
++                "Bus": "$bus",
++                "Name": "E1S3_TEMP_C",
++                "PowerState": "On",
++                "Thresholds": [
++                    {
++                        "Direction": "less than",
++                        "Name": "lower critical",
++                        "Severity": 1,
++                        "Value": 0
++                    },
++                    {
++                        "Direction": "greater than",
++                        "Name": "upper critical",
++                        "Severity": 1,
++                        "Value": 70
++                    }
++                ],
++                "Type": "NVME1000"
++            }
++        ],
++        "Name": "R_E1S3",
++        "Probe": "xyz.openbmc_project.FruDevice({'BUS': 28, 'PRODUCT_PRODUCT_NAME': 'PM9D3a', 'PRODUCT_MANUFACTURER': 'Samsung'})",
++        "Type": "Board",
++        "xyz.openbmc_project.Inventory.Decorator.Asset": {
++            "Manufacturer": "$PRODUCT_MANUFACTURER",
++            "Model": "$PRODUCT_PRODUCT_NAME",
++            "PartNumber": "$PRODUCT_PART_NUMBER",
++            "SerialNumber": "$PRODUCT_SERIAL_NUMBER"
+         }
+-    ],
+-    "Name": "PM9D3a $index",
+-    "Probe": "xyz.openbmc_project.FruDevice({'PRODUCT_PRODUCT_NAME': 'PM9D3a', 'PRODUCT_MANUFACTURER': 'Samsung'})",
+-    "Type": "Board",
+-    "xyz.openbmc_project.Inventory.Decorator.Asset": {
+-        "Manufacturer": "$PRODUCT_MANUFACTURER",
+-        "Model": "$PRODUCT_PRODUCT_NAME",
+-        "PartNumber": "$PRODUCT_PART_NUMBER",
+-        "SerialNumber": "$PRODUCT_SERIAL_NUMBER"
+     }
+-}
++]
+-- 
+2.43.0
+

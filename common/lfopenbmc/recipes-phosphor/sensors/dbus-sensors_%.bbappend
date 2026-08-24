@@ -25,6 +25,7 @@ SRC_URI:append = " \
     file://0022-PSUSensor-add-ADI-MAX20912-and-MAX20916-support.patch \
     file://0023-nvmesensor-implement-in-place-threshold-updates-to-p.patch \
     file://0024-psusensor-skip-sensor-reads-during-firmware-updates.patch \
+    file://0025-PSUSensor-add-MPQ82D00-PMBus-device-support.patch \
 "
 
 SRC_URI:append:ventura2 = " \

@@ -1,12 +1,10 @@
-#!/usr/bin/env python3
-
 import sys
 import time
 import traceback
 from contextlib import contextmanager
 
-from modbus_impl_pyrmd import Modbus, ModbusCRCError, ModbusTimeout
-from modbus_update_helper import auto_int, get_parser, print_perc, retry
+from modbus_impl_pyrmd import ModbusCRCError, ModbusTimeout
+from modbus_update_helper import print_perc, retry
 
 # Status definitions
 NORMAL_OPERATION_MODE = 0x0000
@@ -99,16 +97,6 @@ vendor_params = {
         "hw_workarounds": ["FORCE_EXIT_BOOT_MODE"],
     },
 }
-
-parser = get_parser()
-parser.add_argument(
-    "--vendor",
-    type=str,
-    default="panasonic",
-    choices=list(vendor_params.keys()),
-    help="Pick vendor for device",
-)
-parser.add_argument("--block-size", type=auto_int, default=None, help="Block Size")
 
 
 def load_file(path):
@@ -297,17 +285,15 @@ def print_revision(dev, params):
     print("Version: ", vers)
 
 
-def main():
-    args = parser.parse_args()
-    params = vendor_params[args.vendor]
-    if args.block_size is not None:
-        params["block_size"] = args.block_size
+def main(dev, file, vendor, block_size=None):
+    params = vendor_params[vendor]
+    if block_size is not None:
+        params["block_size"] = block_size
     print("Upgrade Parameters: ", params)
-    dev = Modbus(args.addr)
     print_revision(dev, params)
     with dev.suppress_monitoring():
         try:
-            update_device(dev, args.file, params)
+            update_device(dev, file, params)
         except Exception as e:
             print("Firmware update failed %s" % str(e))
             traceback.print_exc()
@@ -318,7 +304,3 @@ def main():
         time.sleep(30.0)
         print("Upgrade success")
     print_revision(dev, params)
-
-
-if __name__ == "__main__":
-    main()

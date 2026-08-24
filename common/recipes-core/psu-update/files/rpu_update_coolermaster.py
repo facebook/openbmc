@@ -1,12 +1,9 @@
-#!/usr/bin/env python3
-
 import os
 import struct
 import sys
 import traceback
 
-from modbus_impl_pyrmd import Modbus
-from modbus_update_helper import get_parser, print_perc
+from modbus_update_helper import print_perc
 
 BLOCK_SIZE = 192
 
@@ -37,9 +34,6 @@ class Status:
         if self.val == 0xAC:
             return
         raise ValueError("Failed command %s : %s" % (cmd, str(self)))
-
-
-parser = get_parser()
 
 
 def get_rpu_revision(dev):
@@ -152,17 +146,11 @@ def update_rpu(dev, image, image_name="TODO"):
     file_block_end(dev)
 
 
-def main():
-    args = parser.parse_args()
-    dev = Modbus(args.addr)
+def main(dev, file):
     with dev.suppress_monitoring():
         try:
-            update_rpu(dev, args.file, os.path.basename(args.file))
+            update_rpu(dev, file, os.path.basename(file))
         except Exception:
             print("Update Failed")
             traceback.print_exc()
             sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()

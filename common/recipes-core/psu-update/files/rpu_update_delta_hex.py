@@ -1,11 +1,8 @@
-#!/usr/bin/env python3
-
 import sys
 import time
 import traceback
 
-from modbus_impl_pyrmd import Modbus
-from modbus_update_helper import get_parser, print_perc, retry
+from modbus_update_helper import print_perc, retry
 
 OPERATING_MODE_WR_REG = 0x9807
 OPERATING_MODE_RD_REG = 0x9800
@@ -29,8 +26,6 @@ TRANSMISSION_PENDING = 0x0
 
 HEX_UPDATE_RESULT_REG = 0x9808
 HEX_UPDATE_SUCCESS = 0x0
-
-parser = get_parser()
 
 
 def load_file(path):
@@ -123,17 +118,11 @@ def update_hex(dev, filename):
     verify_update(dev)
 
 
-def main():
-    args = parser.parse_args()
-    dev = Modbus(args.addr)
+def main(dev, file):
     with dev.suppress_monitoring():
         try:
-            update_hex(dev, args.file)
+            update_hex(dev, file)
             print("Update Successful!")
         except Exception:
             traceback.print_exc()
             sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()

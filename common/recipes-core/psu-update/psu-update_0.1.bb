@@ -38,6 +38,12 @@ LOCAL_URI = " \
     file://rpu_update_delta_plc.py \
     file://rpu_update_delta_hex.py \
     file://rpu_update_coolermaster.py \
+    file://psu-update-delta-orv3.py \
+    file://psu-update-aei.py \
+    file://orv3-device-update-mailbox.py \
+    file://rpu-update-delta-plc.py \
+    file://rpu-update-delta-hex.py \
+    file://rpu-update-coolermaster.py \
     file://delta_key.py \
     file://srec.py \
     file://hexfile.py \

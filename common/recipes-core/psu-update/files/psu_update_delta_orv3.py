@@ -1,23 +1,12 @@
-#!/usr/bin/env python3
-
-import argparse
-import json
-import os
-import os.path
 import struct
 import sys
 import time
 import traceback
-from binascii import hexlify
-from contextlib import ExitStack
 
 import delta_key
 import hexfile
-from modbus_impl_pyrmd import Modbus, ModbusException
-from modbus_update_helper import auto_int, bh, get_parser, print_perc
-
-parser = get_parser()
-parser.add_argument("--key", type=auto_int, default=delta_key.key, help="Sec key")
+from modbus_impl_pyrmd import ModbusException
+from modbus_update_helper import bh, print_perc
 
 # Tuple of firmware register address, length which holds  the firmware version
 Delta_PSU_FW_Revision = (48, 4)
@@ -281,16 +270,16 @@ def print_revision(dev):
     print("Version:", dev.read_str(reg, rlen))
 
 
-def main():
-    args = parser.parse_args()
-    if args.key is None:
-        print("PSU Update Key is needed to upgrade this device")
-        sys.exit(1)
-    dev = Modbus(args.addr)
+def main(dev, file, key=None):
+    if key is None:
+        key = delta_key.key
+        if key is None:
+            print("PSU Update Key is needed to upgrade this device")
+            sys.exit(1)
     with dev.suppress_monitoring():
         try:
             print_revision(dev)
-            update_psu(dev, args.file, args.key)
+            update_psu(dev, file, key)
         except Exception as e:
             print("Firmware update failed %s" % str(e))
             print("Status register dump:")
@@ -299,7 +288,3 @@ def main():
             sys.exit(1)
     print("Upgrade Success!")
     print_revision(dev)
-
-
-if __name__ == "__main__":
-    main()

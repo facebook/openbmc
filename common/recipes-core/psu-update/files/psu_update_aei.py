@@ -1,13 +1,11 @@
-#!/usr/bin/env python3
-
 import struct
 import sys
 import time
 import traceback
 from contextlib import contextmanager
 
-from modbus_impl_pyrmd import Modbus, ModbusException, ModbusTimeout
-from modbus_update_helper import get_parser, print_perc, retry
+from modbus_impl_pyrmd import ModbusException, ModbusTimeout
+from modbus_update_helper import print_perc, retry
 
 
 ISP_CTRL_CMD_ENTER = 0x1
@@ -31,14 +29,6 @@ device_params = {
         "embedded_block_no": True,
     },
 }
-parser = get_parser()
-parser.add_argument(
-    "--device",
-    type=str,
-    default="orv3",
-    choices=list(device_params.keys()),
-    help="Pick device type",
-)
 
 
 class StatusRegister:
@@ -250,21 +240,15 @@ def print_revision(dev):
     print("Version:", dev.read_str(reg, rlen))
 
 
-def main():
-    args = parser.parse_args()
-    params = device_params[args.device]
-    dev = Modbus(args.addr)
+def main(dev, file, device):
+    params = device_params[device]
     with dev.suppress_monitoring():
         print_revision(dev)
         try:
-            update_device(dev, args.file, params)
+            update_device(dev, file, params)
         except Exception as e:
             print("Firmware update failed %s" % str(e))
             traceback.print_exc()
             sys.exit(1)
     print("Upgrade success")
     print_revision(dev)
-
-
-if __name__ == "__main__":
-    main()

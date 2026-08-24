@@ -1,27 +1,13 @@
-#!/usr/bin/env python3
-
 import sys
 import time
 import traceback
 from contextlib import contextmanager
 from io import StringIO
 
-from modbus_impl_pyrmd import Modbus
-from modbus_update_helper import bh, get_parser, print_perc
-
+from modbus_update_helper import bh, print_perc
 
 # Tuple containing the register and length containing the PLC version
 RPU_PLC_FW_Revision = (6632, 4)
-
-
-parser = get_parser()
-parser.add_argument(
-    "--oem-block",
-    action="store_true",
-    default=False,
-    help="Use OEM Block programming",
-)
-
 
 def get_rpu_revision(dev):
     reg, rlen = RPU_PLC_FW_Revision
@@ -157,17 +143,11 @@ def update_rpu(dev, filename, oem_block):
     print("Version After Upgrade: %s" % (get_rpu_revision(dev)))
 
 
-def main():
-    args = parser.parse_args()
-    dev = Modbus(args.addr)
+def main(dev, file, oem_block):
     with dev.suppress_monitoring():
         try:
-            update_rpu(dev, args.file, args.oem_block)
+            update_rpu(dev, file, oem_block)
         except Exception:
             print("Update Failed")
             traceback.print_exc()
             sys.exit(1)
-
-
-if __name__ == "__main__":
-    main()

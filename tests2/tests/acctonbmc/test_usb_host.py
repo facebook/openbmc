@@ -20,15 +20,17 @@
 import unittest
 
 from common.base_usb_host_test import BaseUSBHostTest
-from utils.test_utils import qemu_check
 from tests.acctonbmc.helper.utils import PlatformInfo
+from utils.test_utils import qemu_check
+
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
-@unittest.skipIf(
-    (platform_name := PlatformInfo.get_platform()[0] or "") not in ["WEDGE800BACT", "WEDGE800CACT"],
-    f"Test skipped: unsupported platform {platform_name}"
-)
 class USBHostDeviceTest(BaseUSBHostTest, unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        PlatformInfo.skip_unless_platform(["WEDGE800BACT", "WEDGE800CACT"])
+        super().setUpClass()
+
     def set_usb_devices(self):
         self.usb_devices = [
             "1d6b:0002",  # USB 2.0 Root Hub

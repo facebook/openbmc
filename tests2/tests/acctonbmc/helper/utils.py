@@ -17,14 +17,25 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
-import subprocess
 import re
+import subprocess
+import sys
+import unittest
 
 
 class PlatformInfo:
     """
     Base class for reading EEPROM and filtering platforms.
     """
+
+    @classmethod
+    def skip_unless_platform(cls, supported):
+        platform_name = cls.get_platform()[0] or ""
+        if platform_name not in supported:
+            raise unittest.SkipTest(
+                f"Test skipped: unsupported platform {platform_name}"
+            )
+
     @classmethod
     def get_platform(cls):
         try:
@@ -34,13 +45,16 @@ class PlatformInfo:
                 stderr=subprocess.DEVNULL,
             )
         except Exception as e:
-            print(f"Unable to read chassis_eeprom: {e}")
+            # stdout is the test-list channel during CIT discovery, so this
+            # must never go there.
+            print(f"Unable to read chassis_eeprom: {e}", file=sys.stderr)
             return None, None
 
         platform_name_match = re.search(r"Product Name:\s*(.+)", output)
         platform_name = (
             platform_name_match.group(1).strip().upper().split("_")[0]
-            if platform_name_match else None
+            if platform_name_match
+            else None
         )
 
         state_match = re.search(r"Production State:\s*(.+)", output)
@@ -48,8 +62,7 @@ class PlatformInfo:
 
         state = state_match.group(1).strip().upper() if state_match else None
         sub_state = (
-            sub_state_match.group(1).strip().upper()
-            if sub_state_match else None
+            sub_state_match.group(1).strip().upper() if sub_state_match else None
         )
         platform_rev = f"{state}{sub_state}"
 

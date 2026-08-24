@@ -27,6 +27,7 @@ RDEPENDS:${PN}:append:ventura2 = " python3-minimalmodbus"
 S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://systemd_util.py \
+    file://modbus-update.py \
     file://modbus_common.py \
     file://modbus_monitor.py \
     file://modbus_impl_pyrmd.py \

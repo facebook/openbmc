@@ -8,7 +8,10 @@ from io import StringIO
 
 from modbus_impl_pyrmd import Modbus
 from modbus_update_helper import bh, get_parser, print_perc
-from pyrmd import RackmonInterface as rmd
+
+
+# Tuple containing the register and length containing the PLC version
+RPU_PLC_FW_Revision = (6632, 4)
 
 
 parser = get_parser()
@@ -21,7 +24,8 @@ parser.add_argument(
 
 
 def get_rpu_revision(dev):
-    return rmd.get(dev.dev_addr, "RPU_PLC_FW_Revision", True)
+    reg, rlen = RPU_PLC_FW_Revision
+    return dev.read_str(reg, rlen)
 
 
 def check_rpu_size(dev):

@@ -87,6 +87,10 @@ class Modbus:
                 self.dev_addr, reg, length=length, timeout=timeout
             )
 
+    def read_str(self, reg, length=1, timeout=0):
+        with _translate_errors():
+            return pyrmd.RackmonInterface.get(self.dev_addr, reg, True)
+
     def write(self, reg, data, timeout=0):
         with _translate_errors():
             return pyrmd.RackmonInterface.write(

@@ -15,10 +15,12 @@ import delta_key
 import hexfile
 from modbus_impl_pyrmd import Modbus, ModbusException
 from modbus_update_helper import auto_int, bh, get_parser, print_perc
-from pyrmd import RackmonInterface as rmd
 
 parser = get_parser()
 parser.add_argument("--key", type=auto_int, default=delta_key.key, help="Sec key")
+
+# Tuple of firmware register address, length which holds  the firmware version
+Delta_PSU_FW_Revision = (48, 4)
 
 
 class StatusRegister:
@@ -274,7 +276,9 @@ def update_psu(dev, filename, key):
 
 
 def print_revision(dev):
-    print("Version:", rmd.get(dev.dev_addr, "PSU_FW_Revision", True))
+    reg, rlen = Delta_PSU_FW_Revision
+    # The register happens to be the same for both HPR and ORv3 PSU
+    print("Version:", dev.read_str(reg, rlen))
 
 
 def main():

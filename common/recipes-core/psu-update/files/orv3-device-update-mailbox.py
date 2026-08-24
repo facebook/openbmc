@@ -7,7 +7,6 @@ from contextlib import contextmanager
 
 from modbus_impl_pyrmd import Modbus, ModbusCRCError, ModbusTimeout
 from modbus_update_helper import auto_int, get_parser, print_perc, retry
-from pyrmd import RackmonInterface as rmd
 
 # Status definitions
 NORMAL_OPERATION_MODE = 0x0000
@@ -17,38 +16,58 @@ WAIT_STATUS = 0x0018
 FIRMWARE_UPGRADE_FAILED = 0x0055
 FIRMWARE_UPGRADE_SUCCESS = 0x00AA
 
+# ORV3 BBU Register name: FW_Revision
+ORV3_BBU_VERSION_REGISTER = (56, 4)
+
+# HPR BBU Register name: FW_Revision
+HPR_BBU_VERSION_REGISTER = (56, 4)
+
+# HPR CBU Register name: FW_Revision
+HPR_CBU_VERSION_REGISTER = (56, 4)
+
+# HPR PMM Register name: PMM_FW_Revision
+HPR_PMM_VERSION_REGISTER = (56, 4)
+
+# Delta MiniUPS Version Registers
+MINIUPS_Shelf_Firmware_Version = (4104, 8)
+MINIUPS_Power_Module_1_Firmware_Version = (8202, 8)
+MINIUPS_Power_Module_2_Firmware_Version = (8330, 8)
+MINIUPS_Power_Module_3_Firmware_Version = (8458, 8)
+MINIUPS_Power_Module_4_Firmware_Version = (8586, 8)
+MINIUPS_Power_Module_5_Firmware_Version = (8714, 8)
+MINIUPS_Power_Module_6_Firmware_Version = (8842, 8)
 
 vendor_params = {
     "panasonic": {
         "block_size": 96,
         "boot_mode": 0xAA55,
         "block_wait": False,
-        "version-reg": ["FW_Revision"],
+        "version_regs": [ORV3_BBU_VERSION_REGISTER],
     },
     "delta": {
         "block_size": 64,
         "boot_mode": 0xA5A5,
         "block_wait": True,
-        "version-reg": ["FW_Revision"],
+        "version_regs": [ORV3_BBU_VERSION_REGISTER],
     },
     "delta_cbu": {
         "block_size": 64,
         "boot_mode": 0xA5A5,
         "block_wait": False,
-        "version-reg": ["FW_Revision"],
+        "version_regs": [HPR_CBU_VERSION_REGISTER],
     },
     "delta_miniups": {
         "block_size": 68,
         "boot_mode": 0xAA55,
         "block_wait": True,
-        "version-reg": [
-            "Shelf_Firmware_Version",
-            "Power_Module_1_Firmware_Version",
-            "Power_Module_2_Firmware_Version",
-            "Power_Module_3_Firmware_Version",
-            "Power_Module_4_Firmware_Version",
-            "Power_Module_5_Firmware_Version",
-            "Power_Module_6_Firmware_Version",
+        "version_regs": [
+            MINIUPS_Shelf_Firmware_Version,
+            MINIUPS_Power_Module_1_Firmware_Version,
+            MINIUPS_Power_Module_2_Firmware_Version,
+            MINIUPS_Power_Module_3_Firmware_Version,
+            MINIUPS_Power_Module_4_Firmware_Version,
+            MINIUPS_Power_Module_5_Firmware_Version,
+            MINIUPS_Power_Module_6_Firmware_Version,
         ],
         "verification_time": 90.0,
     },
@@ -56,27 +75,27 @@ vendor_params = {
         "block_size": 96,
         "boot_mode": 0xAA55,
         "block_wait": False,
-        "version-reg": ["FW_Revision"],
+        "version_regs": [HPR_BBU_VERSION_REGISTER],
         "hw_workarounds": ["FORCE_EXIT_BOOT_MODE", "FORCE_CLEAR_VERIFY"],
     },
     "hpr_pmm_panasonic": {
         "block_size": 68,
         "boot_mode": 0xAA55,
         "block_wait": True,
-        "version-reg": ["PMM_FW_Revision"],
+        "version_regs": [HPR_PMM_VERSION_REGISTER],
     },
     "hpr_pmm_delta": {
         "block_size": 68,
         "boot_mode": 0xAA55,
         "block_wait": True,
-        "version-reg": ["PMM_FW_Revision"],
+        "version_regs": [HPR_PMM_VERSION_REGISTER],
         "hw_workarounds": ["FORCE_EXIT_BOOT_MODE"],
     },
     "hpr_pmm_aei": {
         "block_size": 68,
         "boot_mode": 0xAA55,
         "block_wait": True,
-        "version-reg": ["PMM_FW_Revision"],
+        "version_regs": [HPR_PMM_VERSION_REGISTER],
         "hw_workarounds": ["FORCE_EXIT_BOOT_MODE"],
     },
 }
@@ -274,9 +293,7 @@ def update_device(dev, filename, vendor_param):
 
 @retry(5, delay=1.0)
 def print_revision(dev, params):
-    vers = ", ".join(
-        [rmd.get(dev.dev_addr, vers, True) for vers in params["version-reg"]]
-    )
+    vers = ", ".join([dev.read_str(reg, len) for reg, len in params["version_regs"]])
     print("Version: ", vers)
 
 

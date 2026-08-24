@@ -8,7 +8,6 @@ from contextlib import contextmanager
 
 from modbus_impl_pyrmd import Modbus, ModbusException, ModbusTimeout
 from modbus_update_helper import get_parser, print_perc, retry
-from pyrmd import RackmonInterface as rmd
 
 
 ISP_CTRL_CMD_ENTER = 0x1
@@ -17,6 +16,10 @@ ISP_CTRL_CMD_EXIT = 0x0
 BLOCK_WRITE_SUCCESS = 0x0
 BLOCK_WRITE_BLOCK_WRITTEN = 0x1
 BLOCK_WRITE_INVALID_RANGE = 0x2
+
+
+# Tuple of the firmware register address and length.
+AEI_PSU_FW_Revision = (48, 4)
 
 device_params = {
     "orv3": {
@@ -242,7 +245,9 @@ def update_device(dev, filename, params):
 
 
 def print_revision(dev):
-    print("Version:", rmd.get(dev.dev_addr, "PSU_FW_Revision", True))
+    reg, rlen = AEI_PSU_FW_Revision
+    # The register happens to be the same for both HPR and ORv3 PSU
+    print("Version:", dev.read_str(reg, rlen))
 
 
 def main():

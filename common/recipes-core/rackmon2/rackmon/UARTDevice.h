@@ -1,6 +1,7 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
 #pragma once
 
+#include <nlohmann/json.hpp>
 #include <mutex>
 #include <vector>
 #include "Device.h"
@@ -12,6 +13,14 @@ enum class Parity {
   ODD,
   NONE,
 };
+
+// Defined here rather than next to the other serializers in Register.cpp:
+// every translation unit which serializes a Parity (ModbusDevice.cpp does,
+// as part of the device info) needs to see this, else nlohmann falls back
+// to writing the enum out as its underlying integer.
+NLOHMANN_JSON_SERIALIZE_ENUM(
+    Parity,
+    {{Parity::EVEN, "EVEN"}, {Parity::ODD, "ODD"}, {Parity::NONE, "NONE"}});
 
 class UARTDevice : public Device {
   int baudrate_ = -1;

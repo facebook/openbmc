@@ -332,12 +332,16 @@ TEST_F(ModbusDeviceTest, DeviceStatus) {
   EXPECT_EQ(status.miscErrors, 0);
   EXPECT_EQ(status.timeouts, 0);
   EXPECT_EQ(status.mode, ModbusDeviceMode::ACTIVE);
+  EXPECT_EQ(status.parity, Parity::EVEN);
   EXPECT_EQ(j["devAddress"], 0x32);
   EXPECT_EQ(j["crcErrors"], 0);
   EXPECT_EQ(j["miscErrors"], 0);
   EXPECT_EQ(j["timeouts"], 0);
   EXPECT_EQ(j["mode"], "ACTIVE");
   EXPECT_EQ(j["baudrate"], 19200);
+  // Spelt out, not the enum's underlying integer: modbus-update.py hands
+  // this straight to the direct backend, which only knows the names.
+  EXPECT_EQ(j["parity"], "EVEN");
 }
 
 TEST_F(ModbusDeviceTest, MonitorInvalidRegOnce) {

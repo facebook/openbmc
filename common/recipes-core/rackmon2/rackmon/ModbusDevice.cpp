@@ -353,6 +353,7 @@ void to_json(json& j, const ModbusDeviceInfo& m) {
   j["timeouts"] = m.timeouts;
   j["miscErrors"] = m.miscErrors;
   j["baudrate"] = m.baudrate;
+  j["parity"] = m.parity;
   j["mode"] = m.mode;
 }
 

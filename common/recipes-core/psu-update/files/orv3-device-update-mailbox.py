@@ -6,13 +6,7 @@ import traceback
 from contextlib import contextmanager
 
 from modbus_impl_pyrmd import Modbus, ModbusCRCError, ModbusTimeout
-from modbus_update_helper import (
-    auto_int,
-    get_parser,
-    print_perc,
-    retry,
-    suppress_monitoring,
-)
+from modbus_update_helper import auto_int, get_parser, print_perc, retry
 from pyrmd import RackmonInterface as rmd
 
 # Status definitions
@@ -294,7 +288,7 @@ def main():
     print("Upgrade Parameters: ", params)
     dev = Modbus(args.addr)
     print_revision(dev, params)
-    with suppress_monitoring(dev.dev_addr):
+    with dev.suppress_monitoring():
         try:
             update_device(dev, args.file, params)
         except Exception as e:

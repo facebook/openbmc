@@ -6,7 +6,7 @@ import sys
 import traceback
 
 from modbus_impl_pyrmd import Modbus
-from modbus_update_helper import get_parser, print_perc, suppress_monitoring
+from modbus_update_helper import get_parser, print_perc
 
 BLOCK_SIZE = 192
 
@@ -155,7 +155,7 @@ def update_rpu(dev, image, image_name="TODO"):
 def main():
     args = parser.parse_args()
     dev = Modbus(args.addr)
-    with suppress_monitoring():
+    with dev.suppress_monitoring():
         try:
             update_rpu(dev, args.file, os.path.basename(args.file))
         except Exception:

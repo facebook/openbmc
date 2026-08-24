@@ -5,7 +5,7 @@ import time
 import traceback
 
 from modbus_impl_pyrmd import Modbus
-from modbus_update_helper import get_parser, print_perc, retry, suppress_monitoring
+from modbus_update_helper import get_parser, print_perc, retry
 
 OPERATING_MODE_WR_REG = 0x9807
 OPERATING_MODE_RD_REG = 0x9800
@@ -126,7 +126,7 @@ def update_hex(dev, filename):
 def main():
     args = parser.parse_args()
     dev = Modbus(args.addr)
-    with suppress_monitoring():
+    with dev.suppress_monitoring():
         try:
             update_hex(dev, args.file)
             print("Update Successful!")

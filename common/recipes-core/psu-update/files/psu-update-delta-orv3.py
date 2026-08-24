@@ -14,13 +14,7 @@ from contextlib import ExitStack
 import delta_key
 import hexfile
 from modbus_impl_pyrmd import Modbus, ModbusException
-from modbus_update_helper import (
-    auto_int,
-    bh,
-    get_parser,
-    print_perc,
-    suppress_monitoring,
-)
+from modbus_update_helper import auto_int, bh, get_parser, print_perc
 from pyrmd import RackmonInterface as rmd
 
 parser = get_parser()
@@ -289,7 +283,7 @@ def main():
         print("PSU Update Key is needed to upgrade this device")
         sys.exit(1)
     dev = Modbus(args.addr)
-    with suppress_monitoring(dev.dev_addr):
+    with dev.suppress_monitoring():
         try:
             print_revision(dev)
             update_psu(dev, args.file, args.key)

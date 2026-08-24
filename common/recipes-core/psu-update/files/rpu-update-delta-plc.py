@@ -7,7 +7,7 @@ from contextlib import contextmanager
 from io import StringIO
 
 from modbus_impl_pyrmd import Modbus
-from modbus_update_helper import bh, get_parser, print_perc, suppress_monitoring
+from modbus_update_helper import bh, get_parser, print_perc
 from pyrmd import RackmonInterface as rmd
 
 
@@ -156,7 +156,7 @@ def update_rpu(dev, filename, oem_block):
 def main():
     args = parser.parse_args()
     dev = Modbus(args.addr)
-    with suppress_monitoring():
+    with dev.suppress_monitoring():
         try:
             update_rpu(dev, args.file, args.oem_block)
         except Exception:

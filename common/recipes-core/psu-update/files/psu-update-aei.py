@@ -7,7 +7,7 @@ import traceback
 from contextlib import contextmanager
 
 from modbus_impl_pyrmd import Modbus, ModbusException, ModbusTimeout
-from modbus_update_helper import get_parser, print_perc, retry, suppress_monitoring
+from modbus_update_helper import get_parser, print_perc, retry
 from pyrmd import RackmonInterface as rmd
 
 
@@ -249,7 +249,7 @@ def main():
     args = parser.parse_args()
     params = device_params[args.device]
     dev = Modbus(args.addr)
-    with suppress_monitoring(dev.dev_addr):
+    with dev.suppress_monitoring():
         print_revision(dev)
         try:
             update_device(dev, args.file, params)

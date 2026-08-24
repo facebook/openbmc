@@ -16,7 +16,8 @@ normally goes with it.
 import time
 from contextlib import contextmanager, ExitStack
 
-from modbus_common import PMM_PAUSE_REG
+import phosphor_modbus
+from modbus_common import ModbusException, PMM_PAUSE_REG
 
 __all__ = [
     "Monitor",
@@ -24,12 +25,16 @@ __all__ = [
     "MonitorChain",
     "PmmMonitor",
     "RackmonMonitor",
+    "PhosphorModbusMonitor",
 ]
 
 # Allow rackmon monitoring threads to exit
 RACKMON_SETTLE_SECS = 5.0
 # Allow any monitoring threads in PMM to exit
 PMM_SETTLE_SECS = 1.0
+
+# Allow Phosphor Modbus to flush its async queue for the port.
+PHOSPHOR_MODBUS_SETTLE_SECS = 5.0
 
 # Request PMM to pause monitoring by writing 0x1 to PMM_PAUSE_REG
 PMM_PAUSE_MONITORING = 0x1
@@ -139,3 +144,67 @@ class RackmonMonitor(Monitor):
     def resume(self):
         print("Resuming rackmon monitoring...")
         self.rmd.resume()
+
+
+class PhosphorModbusMonitor(Monitor):
+    """
+    phosphor-modbus, stood off by disabling monitoring on the port
+    objects covering devpath.
+
+    The exclusion is per port, not per device, so devices sharing a port
+    (a device and its PMM) share one of these.
+    """
+
+    def __init__(self, devpath):
+        self.devpath = devpath
+        self.exclusion = phosphor_modbus.PhosphorModbusExclusion(devpath)
+        if not self.port_is_managed():
+            if phosphor_modbus.is_unit_running(phosphor_modbus.MODBUS_UNIT):
+                raise ValueError(
+                    "%s does not manage %s, refusing to drive it"
+                    % (phosphor_modbus.MODBUS_UNIT, self.devpath)
+                )
+            # Nothing is polling the port, so nothing needs excluding,
+            # but say so in case the service died.
+            print(
+                "WARNING: %s is not running, driving %s unsupervised"
+                % (phosphor_modbus.MODBUS_UNIT, self.devpath)
+            )
+
+    def port_is_managed(self):
+        """
+        True if a running phosphor-modbus polls the port covered by this
+        exclusion.
+
+        False also when the service is not running at all, in which case
+        there is nothing to exclude. Check is_unit_running() as well if
+        you need to tell the two apart.
+        """
+        if not phosphor_modbus.is_unit_running(phosphor_modbus.MODBUS_UNIT):
+            return False
+        try:
+            return bool(self.exclusion.get_port_paths())
+        except phosphor_modbus.ConfigError as e:
+            print("WARNING: %s" % e)
+            return False
+
+    def pause(self):
+        print("Pausing phosphor-modbus monitoring...")
+        # stop() reports False both when there was nothing to stop and
+        # when it could not stop it, and the two are only told apart by
+        # whether the service is up: the constructor already refused a
+        # port a running service does not manage. Driving the bus while
+        # something else polls it corrupts the transfer, so give up
+        # rather than start an update we cannot have to ourselves.
+        if not self.exclusion.stop() and phosphor_modbus.is_unit_running(
+            phosphor_modbus.MODBUS_UNIT
+        ):
+            raise ModbusException(
+                "Could not stop %s polling %s, refusing to drive it"
+                % (phosphor_modbus.MODBUS_UNIT, self.devpath)
+            )
+        time.sleep(PHOSPHOR_MODBUS_SETTLE_SECS)
+
+    def resume(self):
+        print("Resuming phosphor-modbus monitoring...")
+        self.exclusion.start()

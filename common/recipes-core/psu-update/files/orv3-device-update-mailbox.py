@@ -57,13 +57,6 @@ vendor_params = {
         ],
         "verification_time": 90.0,
     },
-    "delta_power_tether": {
-        "block_size": 16,
-        "boot_mode": 0xAA55,
-        "block_wait": True,
-        "hw_workarounds": ["WRITE_BLOCK_CRC_EXPECTED"],
-        "version-reg": ["PSU_FW_Revision"],
-    },
     "hpr_panasonic": {
         "block_size": 96,
         "boot_mode": 0xAA55,

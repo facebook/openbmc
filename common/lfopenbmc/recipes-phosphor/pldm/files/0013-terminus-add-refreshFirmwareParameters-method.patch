@@ -1,7 +1,7 @@
-From a5a2707afc0531493d7ee5c0bf31b4d28c545ba6 Mon Sep 17 00:00:00 2001
+From 32555e49c7751a55c46c1563aa9efd9a2452ca0e Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 7 May 2026 21:56:34 +0800
-Subject: [PATCH] terminus: add refreshFirmwareParameters method
+Subject: [PATCH 13/28] terminus: add refreshFirmwareParameters method
 
 Add `refreshFirmwareParameters` to query firmware parameters without
 running `handleMctpEndpoints`.
@@ -28,18 +28,18 @@ https://gerrit.openbmc.org/c/openbmc/pldm/+/90018
 
 Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
 ---
- fw-update/inventory_manager.cpp       | 100 +++++++++++++++++++++++++-
+ fw-update/inventory_manager.cpp       | 104 +++++++++++++++++++++++++-
  fw-update/inventory_manager.hpp       |  31 ++++++++
  fw-update/manager.hpp                 |   9 +++
- requester/mctp_endpoint_discovery.cpp |  12 ++++
- requester/mctp_endpoint_discovery.hpp |   8 +++
- 5 files changed, 159 insertions(+), 1 deletion(-)
+ requester/mctp_endpoint_discovery.cpp |  12 +++
+ requester/mctp_endpoint_discovery.hpp |   8 ++
+ 5 files changed, 163 insertions(+), 1 deletion(-)
 
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index 652458e..8697466 100644
+index 38d0338..829625e 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
-@@ -14,6 +14,11 @@ namespace pldm
+@@ -12,13 +12,22 @@ namespace pldm
  {
  namespace fw_update
  {
@@ -51,7 +51,18 @@ index 652458e..8697466 100644
  void InventoryManager::discoverFDs(const MctpInfos& mctpInfos)
  {
      for (const auto& mctpInfo : mctpInfos)
-@@ -32,11 +37,88 @@ void InventoryManager::discoverFDs(const MctpInfos& mctpInfos)
+     {
+         auto eid = std::get<pldm::eid>(mctpInfo);
++        debug(
++            "discoverFDs sending QueryDeviceIdentifiers for endpoint ID {EID}",
++            "EID", eid);
+         try
+         {
++            refreshRetriesRemaining[eid] = refreshFirmwareParametersRetryCount;
+             sendQueryDeviceIdentifiersRequest(eid);
+         }
+         catch (const std::exception& e)
+@@ -30,11 +39,88 @@ void InventoryManager::discoverFDs(const MctpInfos& mctpInfos)
      }
  }
  
@@ -140,7 +151,7 @@ index 652458e..8697466 100644
          firmwareDeviceNameMap.erase(eid);
          descriptorMap.erase(eid);
          downstreamDescriptorMap.erase(eid);
-@@ -92,6 +174,7 @@ void InventoryManager::queryDeviceIdentifiers(
+@@ -90,6 +176,7 @@ void InventoryManager::queryDeviceIdentifiers(
          error(
              "No response received for query device identifiers for endpoint ID {EID}",
              "EID", eid);
@@ -148,7 +159,7 @@ index 652458e..8697466 100644
          return;
      }
  
-@@ -641,10 +724,25 @@ void InventoryManager::getFirmwareParameters(
+@@ -639,10 +726,25 @@ void InventoryManager::getFirmwareParameters(
          error(
              "No response received for get firmware parameters for endpoint ID {EID}",
              "EID", eid);
@@ -301,5 +312,5 @@ index d7d77a0..0c65889 100644
       *
       *  @param[in] mctpInfoMap - information of discovered MCTP endpoints
 -- 
-2.53.0-Meta
+2.47.3
 

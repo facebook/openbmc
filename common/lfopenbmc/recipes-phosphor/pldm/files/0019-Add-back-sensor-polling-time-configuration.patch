@@ -1,7 +1,7 @@
-From f155037122183fa0e59cb0632ec0b0b537db241b Mon Sep 17 00:00:00 2001
+From ae9c26c0b2c03d1ddd94edc4fc748269c0548114 Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Tue, 21 Apr 2026 21:24:06 -0700
-Subject: [PATCH] Add back sensor polling time configuration
+Subject: [PATCH 19/28] Add back sensor polling time configuration
 
 When syncing the latest upstream changes, multiple
 Facebook platforms that used this option [1] failed
@@ -60,7 +60,7 @@ index cb0e866..0f63a71 100644
  option(
      'fw-update-pkg-inotify',
 diff --git a/platform-mc/sensor_manager.hpp b/platform-mc/sensor_manager.hpp
-index 1497072..6a36548 100644
+index 1d9e221..1540b1e 100644
 --- a/platform-mc/sensor_manager.hpp
 +++ b/platform-mc/sensor_manager.hpp
 @@ -18,8 +18,6 @@ namespace platform_mc
@@ -86,5 +86,5 @@ index 67298c2..aa2167a 100644
          });
      EXPECT_CALL(sensorManager, doSensorPolling(tid))
 -- 
-2.53.0-Meta
+2.47.3
 

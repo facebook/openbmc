@@ -1,7 +1,7 @@
-From d12fba3042a5df079416f264e0096f1781597d01 Mon Sep 17 00:00:00 2001
+From 0723a0b6ff55a0a3a9acffa241a8b3589a1952ac Mon Sep 17 00:00:00 2001
 From: Abhishek R <abhishek.ramireddygarireddy@arm.com>
 Date: Thu, 6 Aug 2026 14:47:48 +0000
-Subject: [PATCH] oem/arm: support UINT64 boot progress events
+Subject: [PATCH 26/28] oem/arm: support UINT64 boot progress events
 
 Decode Arm BootProgressCode numeric sensor events UINT64 values
 and publish the complete eight-byte value.
@@ -99,5 +99,5 @@ index 7757cf2..99545aa 100644
      platform_mc::Manager* manager = nullptr;
  };
 -- 
-2.53.0-Meta
+2.47.3
 

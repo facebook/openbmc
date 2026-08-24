@@ -1,7 +1,7 @@
-From c4a0e56f215209dbf1c6538c1189f9d67cae4cdd Mon Sep 17 00:00:00 2001
+From 7c013aa6cdc079fbfd498d3e0b4361603b7ed3b3 Mon Sep 17 00:00:00 2001
 From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
 Date: Tue, 30 Jun 2026 16:48:53 +0530
-Subject: [PATCH] platform-mc: add helper to get terminus name
+Subject: [PATCH 24/28] platform-mc: add helper to get terminus name
 
 Add a Manager helper to look up a discovered terminus by TID and
 return the terminus name from its Entity Auxiliary Names PDR.
@@ -60,5 +60,5 @@ index 056d7bc..6474180 100644
       *         PollForPlatformEventMessage command
       *
 -- 
-2.53.0-Meta
+2.47.3
 

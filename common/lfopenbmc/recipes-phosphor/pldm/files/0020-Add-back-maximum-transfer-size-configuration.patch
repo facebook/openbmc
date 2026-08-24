@@ -1,7 +1,7 @@
-From c1b6d448554b4dc361117888d713ce176097ef16 Mon Sep 17 00:00:00 2001
+From 8f72cd12f776fc013ec2ea42ac17c0d78ecc7648 Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Tue, 21 Apr 2026 23:45:07 -0700
-Subject: [PATCH] Add back maximum transfer size configuration
+Subject: [PATCH 20/28] Add back maximum transfer size configuration
 
 When syncing the latest upstream changes, multiple
 Facebook platforms that used this option [1] failed
@@ -77,5 +77,5 @@ index ab87a51..244f6b2 100644
  option(
      'system-specific-bios-json',
 -- 
-2.53.0-Meta
+2.47.3
 

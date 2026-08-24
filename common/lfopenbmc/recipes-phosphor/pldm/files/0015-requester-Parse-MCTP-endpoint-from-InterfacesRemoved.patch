@@ -1,7 +1,8 @@
-From 1e4dee900447c3e51c743b7451918dffdc207c7e Mon Sep 17 00:00:00 2001
+From 78cd57a8071a0a5eb9f2baf86a93fbb8a2cc3af4 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 12 Feb 2026 09:57:38 +0000
-Subject: [PATCH] requester: Parse MCTP endpoint from InterfacesRemoved signal
+Subject: [PATCH 15/28] requester: Parse MCTP endpoint from InterfacesRemoved
+ signal
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -138,7 +139,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  3 files changed, 318 insertions(+), 102 deletions(-)
 
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 5b1bab6..c5180c4 100644
+index 814d690..6ac5a6e 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -265,27 +265,6 @@ void MctpDiscovery::addToExistingMctpInfos(const MctpInfos& addedInfos)
@@ -651,5 +652,5 @@ index 71ce9c4..5d4e884 100644
 +    EXPECT_EQ(mctpDiscoveryHandler->existingMctpInfos.size(), 1);
 +}
 -- 
-2.53.0-Meta
+2.47.3
 

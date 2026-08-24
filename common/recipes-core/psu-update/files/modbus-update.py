@@ -20,6 +20,7 @@ try:
 except ImportError:
     ModbusDirect = None
 from modbus_impl_pyrmd import Modbus as ModbusRackmon
+from modbus_monitor import RackmonMonitor
 from modbus_update_helper import auto_int
 from pyrmd import RackmonInterface as rmd
 from rpu_update_coolermaster import AALCV2_COMPONENTS
@@ -160,6 +161,15 @@ def parse_args():
             "but stop before running the update"
         ),
     )
+    parser.add_argument(
+        "--force-direct",
+        action="store_true",
+        help=(
+            "Forces the upgrade to use the direct modbus implementation, "
+            "even if its managed by rackmon"
+        ),
+    )
+
     return parser.parse_args()
 
 
@@ -200,14 +210,21 @@ def get_rackmon_device_config(uaddr):
     raise ValueError(f"Unknown address: {uaddr}")
 
 
-def get_rackmon_device(name, device_type, device_position, device_number, uaddr):
+def get_rackmon_device(
+    name, device_type, device_position, device_number, uaddr, force_direct=False
+):
     if uaddr is None:
         uaddr = get_rackmon_device_uaddr(device_type, device_position, device_number)
-    # Not using the return. But instead using it to validate the device.
-    # We will need to use this if we want to switch to minimal modbus for these
-    # devices as well.
-    get_rackmon_device_config(uaddr)
-    return ModbusRackmon(uaddr)
+    config = get_rackmon_device_config(uaddr)
+    if not force_direct:
+        return ModbusRackmon(uaddr)
+    if ModbusDirect is None:
+        raise ValueError("minimalmodbus not installed")
+    baud = config["baudrate"]
+    addr = config["devAddress"]
+    parity = config["parity"]
+    devpath = rmd.get_interface(uaddr)
+    return ModbusDirect(addr, baud, parity, devpath, RackmonMonitor())
 
 
 def get_pmodbus_config(name):
@@ -236,7 +253,7 @@ def decode_name(name):
     return device_type, device_position, device_number
 
 
-def get_device(name, uaddr):
+def get_device(name, uaddr, force_direct=False):
     device_type, device_position, device_number = decode_name(name)
     if uaddr or is_rackmon_position(device_position):
         if device_type in ["PSU", "BBU"]:
@@ -246,7 +263,7 @@ def get_device(name, uaddr):
         else:
             raise ValueError(f"Unknown device type: {device_type}")
         dev = get_rackmon_device(
-            name, device_type, device_position, device_number, uaddr
+            name, device_type, device_position, device_number, uaddr, force_direct
         )
     else:
         dev = get_phosphor_modbus_device(name)
@@ -256,7 +273,7 @@ def get_device(name, uaddr):
 def main():
     args = parse_args()
 
-    device_type, dev = get_device(args.name, args.address)
+    device_type, dev = get_device(args.name, args.address, args.force_direct)
     with dev.suppress_monitoring():
         device_vendor = manufacturers.get_manufacturer(device_type, dev)
         update = get_updater(device_type, device_vendor, args.component)

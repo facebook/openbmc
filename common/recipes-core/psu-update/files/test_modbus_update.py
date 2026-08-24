@@ -248,21 +248,25 @@ class TestGetDevice(unittest.TestCase):
         with patch.object(mu, "get_rackmon_device") as get_rackmon:
             dev_type, dev = mu.get_device("PSU_100_1", None)
         self.assertEqual(dev_type, "ORV3_PSU")
-        get_rackmon.assert_called_once_with("PSU_100_1", "ORV3_PSU", 100, 1, None)
+        get_rackmon.assert_called_once_with(
+            "PSU_100_1", "ORV3_PSU", 100, 1, None, False
+        )
         self.assertIs(dev, get_rackmon.return_value)
 
     def test_bbu_on_a_legacy_shelf(self):
         with patch.object(mu, "get_rackmon_device") as get_rackmon:
             dev_type, _ = mu.get_device("BBU_101_2", None)
         self.assertEqual(dev_type, "ORV3_BBU")
-        get_rackmon.assert_called_once_with("BBU_101_2", "ORV3_BBU", 101, 2, None)
+        get_rackmon.assert_called_once_with(
+            "BBU_101_2", "ORV3_BBU", 101, 2, None, False
+        )
 
     def test_an_explicit_unique_address_forces_rackmon(self):
         # Even at a shelf which would otherwise be phosphor-modbus.
         with patch.object(mu, "get_rackmon_device") as get_rackmon:
             dev_type, _ = mu.get_device("PSU_1_1", 0x1E0)
         self.assertEqual(dev_type, "ORV3_PSU")
-        get_rackmon.assert_called_once_with("PSU_1_1", "ORV3_PSU", 1, 1, 0x1E0)
+        get_rackmon.assert_called_once_with("PSU_1_1", "ORV3_PSU", 1, 1, 0x1E0, False)
 
     def test_rpu_shelf_selects_the_rpu_generation(self):
         with patch.object(mu, "get_rackmon_device") as get_rackmon:
@@ -307,6 +311,50 @@ class TestGetRackmonDevice(unittest.TestCase):
                 with self.assertRaises(ValueError):
                     mu.get_rackmon_device("PSU_100_1", "ORV3_PSU", 100, 1, None)
         modbus.assert_not_called()
+
+
+class TestGetRackmonDeviceForcedDirect(unittest.TestCase):
+    """--force-direct: a rackmon device driven over minimalmodbus instead"""
+
+    def config(self):
+        return {
+            "uniqueDevAddress": 0x1E0,
+            "devAddress": 0xE0,
+            "baudrate": 19200,
+            "parity": "EVEN",
+        }
+
+    def test_the_line_settings_come_from_rackmons_own_device_config(self):
+        with patch.object(mu, "get_rackmon_device_config", return_value=self.config()):
+            with patch.object(
+                mu.rmd, "get_interface", return_value="/dev/ttyRS485-1"
+            ) as get_interface:
+                with patch.object(mu, "ModbusDirect") as modbus:
+                    with patch.object(mu, "RackmonMonitor") as monitor:
+                        dev = mu.get_rackmon_device(
+                            "PSU_100_1", "ORV3_PSU", 100, 1, None, True
+                        )
+        get_interface.assert_called_once_with(0x1E0)
+        modbus.assert_called_once_with(
+            0xE0, 19200, "EVEN", "/dev/ttyRS485-1", monitor.return_value
+        )
+        self.assertIs(dev, modbus.return_value)
+
+    def test_rackmon_is_still_the_monitor_to_suppress(self):
+        # The device is ours to drive, but rackmond is still the daemon
+        # polling it, so that is what has to stand off.
+        with patch.object(mu, "get_rackmon_device_config", return_value=self.config()):
+            with patch.object(mu.rmd, "get_interface", return_value="/dev/ttyRS485-1"):
+                with patch.object(mu, "ModbusDirect") as modbus:
+                    mu.get_rackmon_device("PSU_100_1", "ORV3_PSU", 100, 1, None, True)
+        monitor = modbus.call_args.args[4]
+        self.assertIsInstance(monitor, mu.RackmonMonitor)
+
+    def test_without_minimalmodbus_there_is_no_direct_backend(self):
+        with patch.object(mu, "get_rackmon_device_config", return_value=self.config()):
+            with patch.object(mu, "ModbusDirect", None):
+                with self.assertRaises(ValueError):
+                    mu.get_rackmon_device("PSU_100_1", "ORV3_PSU", 100, 1, None, True)
 
 
 class TestGetPhosphorModbusDevice(unittest.TestCase):
@@ -389,15 +437,27 @@ class TestMain(unittest.TestCase):
         # resumed on the way out.
         self.assertEqual(dev.suppressed, 1)
 
-    def test_the_address_option_forces_a_rackmon_lookup(self):
-        argv = ["modbus-update.py", "-n", "PSU_1_1", "-a", "0x1e0", "f"]
-        with patch("sys.argv", argv):
+    def resolve_device(self, argv):
+        """The get_device() mock main() resolved its device through"""
+        with patch("sys.argv", ["modbus-update.py"] + argv):
             with patch.object(mu, "get_device", return_value=("PSU", FakeDev())) as gd:
                 with patch.object(mu.manufacturers, "get_manufacturer"):
                     with patch.object(mu, "get_updater"):
                         with patch("sys.stdout", new=io.StringIO()):
                             mu.main()
-        gd.assert_called_once_with("PSU_1_1", 0x1E0)
+        return gd
+
+    def test_the_address_option_forces_a_rackmon_lookup(self):
+        gd = self.resolve_device(["-n", "PSU_1_1", "-a", "0x1e0", "f"])
+        gd.assert_called_once_with("PSU_1_1", 0x1E0, False)
+
+    def test_the_backend_is_rackmons_own_unless_told_otherwise(self):
+        gd = self.resolve_device(["-n", "PSU_100_1", "f"])
+        gd.assert_called_once_with("PSU_100_1", None, False)
+
+    def test_force_direct_is_passed_through(self):
+        gd = self.resolve_device(["-n", "PSU_100_1", "--force-direct", "f"])
+        gd.assert_called_once_with("PSU_100_1", None, True)
 
 
 if __name__ == "__main__":

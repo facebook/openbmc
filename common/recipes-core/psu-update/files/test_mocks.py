@@ -58,6 +58,7 @@ def _install_pyrmd():
         write = _unstubbed("write")
         raw = _unstubbed("raw")
         list = _unstubbed("list")
+        get_interface = _unstubbed("get_interface")
         pause = _unstubbed("pause")
         resume = _unstubbed("resume")
 

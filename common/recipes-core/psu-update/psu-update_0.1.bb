@@ -30,14 +30,14 @@ LOCAL_URI = " \
     file://modbus_impl_pyrmd.py \
     file://modbus_update_helper.py \
     file://psu-update-delta.py \
-    file://psu-update-delta-orv3.py \
+    file://psu_update_delta_orv3.py \
     file://psu-update-bel.py \
     file://psu-update-artesyn.py \
-    file://psu-update-aei.py \
-    file://orv3-device-update-mailbox.py \
-    file://rpu-update-delta-plc.py \
-    file://rpu-update-delta-hex.py \
-    file://rpu-update-coolermaster.py \
+    file://psu_update_aei.py \
+    file://orv3_device_update_mailbox.py \
+    file://rpu_update_delta_plc.py \
+    file://rpu_update_delta_hex.py \
+    file://rpu_update_coolermaster.py \
     file://delta_key.py \
     file://srec.py \
     file://hexfile.py \

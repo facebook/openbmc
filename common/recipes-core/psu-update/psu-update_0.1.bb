@@ -22,6 +22,7 @@ LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
 RDEPENDS:${PN} = "python3-core bash rackmon"
+RDEPENDS:${PN}:append:ventura2 = " python3-minimalmodbus"
 
 S = "${UNPACKDIR}"
 LOCAL_URI = " \
@@ -29,6 +30,7 @@ LOCAL_URI = " \
     file://modbus_common.py \
     file://modbus_monitor.py \
     file://modbus_impl_pyrmd.py \
+    file://modbus_impl_minimalmodbus.py \
     file://phosphor_modbus.py \
     file://modbus_update_helper.py \
     file://psu-update-delta.py \

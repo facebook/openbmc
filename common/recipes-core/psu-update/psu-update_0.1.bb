@@ -29,6 +29,7 @@ LOCAL_URI = " \
     file://modbus_common.py \
     file://modbus_monitor.py \
     file://modbus_impl_pyrmd.py \
+    file://phosphor_modbus.py \
     file://modbus_update_helper.py \
     file://psu-update-delta.py \
     file://psu_update_delta_orv3.py \

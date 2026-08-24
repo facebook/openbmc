@@ -1,4 +1,4 @@
-From eea5312f80ba6a701de5c41d8488ac8d300db86a Mon Sep 17 00:00:00 2001
+From 29966393c2b5285f19d24066bd7da08f3b4c5467 Mon Sep 17 00:00:00 2001
 From: Alan Tsai <alan-tsai@quantatw.com>
 Date: Fri, 21 Aug 2026 08:04:37 +0800
 Subject: [PATCH] ipmi: ssif_bmc: Prevent pending response from being lost
@@ -21,10 +21,10 @@ Signed-off-by: Alan Tsai <alan-tsai@quantatw.com>
  1 file changed, 10 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/char/ipmi/ssif_bmc.c b/drivers/char/ipmi/ssif_bmc.c
-index 6036897725f3..815d16c0540e 100644
+index a45e80d13e10..f7e1df585bba 100644
 --- a/drivers/char/ipmi/ssif_bmc.c
 +++ b/drivers/char/ipmi/ssif_bmc.c
-@@ -101,6 +101,8 @@ struct ssif_bmc_ctx {
+@@ -98,6 +98,8 @@ struct ssif_bmc_ctx {
  	bool                    response_in_progress;
  	bool                    busy;
  	bool                    aborting;
@@ -33,7 +33,7 @@ index 6036897725f3..815d16c0540e 100644
  	/* Buffer for SSIF Transaction part*/
  	struct ssif_part_buffer part_buf;
  	struct ipmi_ssif_msg    response;
-@@ -639,6 +641,7 @@ static void on_read_requested_event(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
+@@ -636,6 +638,7 @@ static void on_read_requested_event(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
  	}
  
  	ssif_bmc->msg_idx = 0;
@@ -41,7 +41,7 @@ index 6036897725f3..815d16c0540e 100644
  
  	/* Send 0 if there is nothing to send */
  	if (!ssif_bmc->response_in_progress || ssif_bmc->state == SSIF_ABORTING) {
-@@ -653,6 +656,7 @@ static void on_read_requested_event(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
+@@ -650,6 +653,7 @@ static void on_read_requested_event(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
  
  	calculate_response_part_pec(&ssif_bmc->part_buf);
  	ssif_bmc->part_buf.index = 0;
@@ -49,7 +49,7 @@ index 6036897725f3..815d16c0540e 100644
  	*val = ssif_bmc->part_buf.length;
  }
  
-@@ -671,7 +675,8 @@ static void on_read_processed_event(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
+@@ -668,7 +672,8 @@ static void on_read_processed_event(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
  	}
  
  	/* Send 0 if there is nothing to send */
@@ -59,7 +59,7 @@ index 6036897725f3..815d16c0540e 100644
  		*val = 0;
  		return;
  	}
-@@ -763,7 +768,8 @@ static void on_stop_event(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
+@@ -760,7 +765,8 @@ static void on_stop_event(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
  			ssif_bmc->aborting = true;
  		}
  	} else if (ssif_bmc->state == SSIF_RES_SENDING) {
@@ -69,7 +69,7 @@ index 6036897725f3..815d16c0540e 100644
  			memset(&ssif_bmc->part_buf, 0, sizeof(struct ssif_part_buffer));
  			/* Invalidate response buffer to denote it is sent */
  			complete_response(ssif_bmc);
-@@ -773,6 +779,7 @@ static void on_stop_event(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
+@@ -770,6 +776,7 @@ static void on_stop_event(struct ssif_bmc_ctx *ssif_bmc, u8 *val)
  
  	/* Reset message index */
  	ssif_bmc->msg_idx = 0;
@@ -77,7 +77,7 @@ index 6036897725f3..815d16c0540e 100644
  }
  
  /*
-@@ -835,6 +842,7 @@ static int ssif_bmc_probe(struct i2c_client *client)
+@@ -832,6 +839,7 @@ static int ssif_bmc_probe(struct i2c_client *client)
  	ssif_bmc->request_available = false;
  	ssif_bmc->response_in_progress = false;
  	ssif_bmc->busy = false;
@@ -86,4 +86,5 @@ index 6036897725f3..815d16c0540e 100644
  
  	/* Register misc device interface */
 -- 
-2.25.1
+2.53.0-Meta
+

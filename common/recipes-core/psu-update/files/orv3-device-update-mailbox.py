@@ -5,6 +5,7 @@ import time
 import traceback
 from contextlib import contextmanager
 
+from modbus_impl_pyrmd import Modbus, ModbusCRCError, ModbusTimeout
 from modbus_update_helper import (
     auto_int,
     get_parser,
@@ -12,7 +13,7 @@ from modbus_update_helper import (
     retry,
     suppress_monitoring,
 )
-from pyrmd import ModbusCRCError, ModbusTimeout, RackmonInterface as rmd
+from pyrmd import RackmonInterface as rmd
 
 # Status definitions
 NORMAL_OPERATION_MODE = 0x0000
@@ -112,49 +113,49 @@ def load_file(path):
 
 
 @retry(5, delay=0.5)
-def unlock_firmware(addr):
-    rmd.write(addr, 0x300, 0x55AA, timeout=1000)
+def unlock_firmware(dev):
+    dev.write(0x300, 0x55AA, timeout=1000)
 
 
 @retry(15, delay=1.0)
-def enter_boot_mode(addr, boot_mode):
+def enter_boot_mode(dev, boot_mode):
     print("Entering Boot Mode...")
-    rmd.write(addr, 0x301, 0xAA55, timeout=5000)
-    verify_firmware_status(addr, ENTERED_BOOT_MODE)
+    dev.write(0x301, 0xAA55, timeout=5000)
+    verify_firmware_status(dev, ENTERED_BOOT_MODE)
 
 
 @retry(5, delay=1.0)
-def exit_boot_mode(addr):
+def exit_boot_mode(dev):
     print("Exiting Boot Mode...")
     try:
-        rmd.write(addr, 0x304, 0x55AA, timeout=10000)
+        dev.write(0x304, 0x55AA, timeout=10000)
     except ModbusTimeout:
         print("Exit boot mode timed out... Checking if we are in correct status")
-        verify_firmware_status(addr, NORMAL_OPERATION_MODE)
+        verify_firmware_status(dev, NORMAL_OPERATION_MODE)
 
 
 @contextmanager
-def boot_mode(addr, boot_mode):
+def boot_mode(dev, boot_mode):
     """
     Ensure we always exit boot mode
     """
     try:
-        enter_boot_mode(addr, boot_mode)
+        enter_boot_mode(dev, boot_mode)
         yield
     finally:
         time.sleep(10.0)
-        exit_boot_mode(addr)
+        exit_boot_mode(dev)
         time.sleep(16.0)
-        verify_firmware_status(addr, NORMAL_OPERATION_MODE)
+        verify_firmware_status(dev, NORMAL_OPERATION_MODE)
 
 
-def get_firmware_status(addr):
-    return rmd.read(addr, 0x302, timeout=1000)[0]
+def get_firmware_status(dev):
+    return dev.read(0x302, timeout=1000)[0]
 
 
-def verify_firmware_status_noretry(addr, expected_status):
+def verify_firmware_status_noretry(dev, expected_status):
     # ensure 0x302 register contains expected status
-    a = get_firmware_status(addr)
+    a = get_firmware_status(dev)
     if a != expected_status:
         raise ValueError(
             "Bad firmware state: 0x%02x expected: 0x%02x"
@@ -163,12 +164,12 @@ def verify_firmware_status_noretry(addr, expected_status):
 
 
 @retry(5, delay=1.0)
-def verify_firmware_status(addr, expected_status):
-    verify_firmware_status_noretry(addr, expected_status)
+def verify_firmware_status(dev, expected_status):
+    verify_firmware_status_noretry(dev, expected_status)
 
 
 @retry(5, delay=1.0)
-def write_block(addr, data, block_size, workarounds):
+def write_block(dev, data, block_size, workarounds):
     if len(data) < block_size:
         # TODO this is a workaround with a bad .bin file
         # which can have spurious extra bytes at the end
@@ -176,10 +177,10 @@ def write_block(addr, data, block_size, workarounds):
         return
     assert len(data) == block_size
     if "WRITE_BLOCK_CRC_EXPECTED" not in workarounds:
-        rmd.write(addr, 0x310, data, timeout=1000)
+        dev.write(0x310, data, timeout=1000)
         return
     try:
-        rmd.write(addr, 0x310, data, timeout=1000)
+        dev.write(0x310, data, timeout=1000)
     except ModbusCRCError:
         # Ignore CRC Error to support early boot-loaders
         # which respond with incorrect CRC16 code.
@@ -190,22 +191,20 @@ def write_block(addr, data, block_size, workarounds):
 
 
 @retry(500, delay=0.01, verbose=0)
-def wait_write_block(addr):
-    verify_firmware_status_noretry(addr, FIRMWARE_PACKET_CORRECT)
+def wait_write_block(dev):
+    verify_firmware_status_noretry(dev, FIRMWARE_PACKET_CORRECT)
 
 
-def transfer_image(addr, image, block_size_words, block_wait, workarounds):
+def transfer_image(dev, image, block_size_words, block_wait, workarounds):
     num_words = len(image)
     sent_blocks = 0
     total_blocks = num_words // block_size_words
     if num_words % block_size_words != 0:
         total_blocks += 1
     for i in range(0, num_words, block_size_words):
-        write_block(
-            addr, image[i : i + block_size_words], block_size_words, workarounds
-        )
+        write_block(dev, image[i : i + block_size_words], block_size_words, workarounds)
         if block_wait:
-            wait_write_block(addr)
+            wait_write_block(dev)
         else:
             time.sleep(0.1)
         print_perc(
@@ -216,13 +215,13 @@ def transfer_image(addr, image, block_size_words, block_wait, workarounds):
     print_perc(100.0, "Sending block %d of %d..." % (sent_blocks, total_blocks))
 
 
-def verify_firmware(addr):
+def verify_firmware(dev):
     time.sleep(10.0)
-    rmd.write(addr, 0x303, 0x55AA, 10000)
+    dev.write(0x303, 0x55AA, 10000)
 
 
-def workaround_force_exit_boot_mode(addr, workarounds):
-    curr_mode = get_firmware_status(addr)
+def workaround_force_exit_boot_mode(dev, workarounds):
+    curr_mode = get_firmware_status(dev)
     if curr_mode == NORMAL_OPERATION_MODE:
         return
     print(
@@ -232,56 +231,58 @@ def workaround_force_exit_boot_mode(addr, workarounds):
     print("Initiating remediation")
     # Assume previous aborted upgrade. Force a verify to
     # walk it through a full abort.
-    verify_firmware(addr)
+    verify_firmware(dev)
     time.sleep(10.0)
     # Some devices need us to force clear the verify
     # register to walk it through completion
     if "FORCE_CLEAR_VERIFY" in workarounds:
-        rmd.write(addr, 0x303, 0)
+        dev.write(0x303, 0)
 
-    exit_boot_mode(addr)
+    exit_boot_mode(dev)
     time.sleep(10.0)
-    curr_mode = get_firmware_status(addr)
+    curr_mode = get_firmware_status(dev)
     if curr_mode != NORMAL_OPERATION_MODE:
         print("ERROR: Workaround to recover firmware from mode failed.")
         print("Current status: %02x" % (curr_mode))
         print("Continuing upgrade hoping for the best")
-    unlock_firmware(addr)
+    unlock_firmware(dev)
 
 
-def update_device(addr, filename, vendor_param):
+def update_device(dev, filename, vendor_param):
     workarounds = vendor_param.get("hw_workarounds", [])
     verification_time = vendor_param.get("verification_time", 10.0)
     print("Parsing Firmware...")
     binimg = load_file(filename)
     print("Unlock Engineering Mode")
-    unlock_firmware(addr)
+    unlock_firmware(dev)
 
     if "FORCE_EXIT_BOOT_MODE" in workarounds:
-        workaround_force_exit_boot_mode(addr, workarounds)
+        workaround_force_exit_boot_mode(dev, workarounds)
 
-    with boot_mode(addr, vendor_param["boot_mode"]):
+    with boot_mode(dev, vendor_param["boot_mode"]):
         print("Transferring image")
         time.sleep(5.0)
         transfer_image(
-            addr,
+            dev,
             binimg,
             vendor_param["block_size"] // 2,
             vendor_param["block_wait"],
             workarounds,
         )
         print("Request Verify Firmware")
-        verify_firmware(addr)
+        verify_firmware(dev)
         print("Waiting for verification to complete")
         time.sleep(verification_time)
         print("check firmware status")
-        verify_firmware_status(addr, FIRMWARE_UPGRADE_SUCCESS)
+        verify_firmware_status(dev, FIRMWARE_UPGRADE_SUCCESS)
     print("done")
 
 
 @retry(5, delay=1.0)
-def print_revision(addr, params):
-    vers = ", ".join([rmd.get(addr, vers, True) for vers in params["version-reg"]])
+def print_revision(dev, params):
+    vers = ", ".join(
+        [rmd.get(dev.dev_addr, vers, True) for vers in params["version-reg"]]
+    )
     print("Version: ", vers)
 
 
@@ -291,10 +292,11 @@ def main():
     if args.block_size is not None:
         params["block_size"] = args.block_size
     print("Upgrade Parameters: ", params)
-    print_revision(args.addr, params)
-    with suppress_monitoring(args.addr):
+    dev = Modbus(args.addr)
+    print_revision(dev, params)
+    with suppress_monitoring(dev.dev_addr):
         try:
-            update_device(args.addr, args.file, params)
+            update_device(dev, args.file, params)
         except Exception as e:
             print("Firmware update failed %s" % str(e))
             traceback.print_exc()
@@ -304,7 +306,7 @@ def main():
         print("Resetting....")
         time.sleep(30.0)
         print("Upgrade success")
-    print_revision(args.addr, params)
+    print_revision(dev, params)
 
 
 if __name__ == "__main__":

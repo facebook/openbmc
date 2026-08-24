@@ -6,15 +6,9 @@ import time
 import traceback
 from contextlib import contextmanager
 
-from modbus_update_helper import (
-    decode_modbus_address,
-    get_parser,
-    print_perc,
-    retry,
-    suppress_monitoring,
-)
-
-from pyrmd import ModbusException, ModbusTimeout, RackmonInterface as rmd
+from modbus_impl_pyrmd import Modbus, ModbusException, ModbusTimeout
+from modbus_update_helper import get_parser, print_perc, retry, suppress_monitoring
+from pyrmd import RackmonInterface as rmd
 
 
 ISP_CTRL_CMD_ENTER = 0x1
@@ -97,25 +91,23 @@ def load_file(path):
         return f.read()
 
 
-def isp_get_status(addr):
-    addr, uaddr = decode_modbus_address(addr, get_addr_bytes=False)
-    req = struct.pack(">BBB", addr, 0x43, 2)
-    resp = rmd.raw(req, expected=7, timeout=2000, unique_addr=uaddr)
-    raddr, rfunc, bcount, status = struct.unpack(">BBBH", resp)
-    if raddr != addr or rfunc != 0x43:
+def isp_get_status(dev):
+    req = struct.pack(">BB", 0x43, 2)
+    resp = dev.raw(req, expected=7, timeout=2000)
+    rfunc, bcount, status = struct.unpack(">BBH", resp)
+    if rfunc != 0x43:
         raise BadAEIResponse()
     return StatusRegister(status)
 
 
 @retry(5, delay=1.0)
-def isp_enter(addr):
-    addr, uaddr = decode_modbus_address(addr, get_addr_bytes=False)
-    req = struct.pack(">BBB", addr, 0x42, ISP_CTRL_CMD_ENTER)
-    resp = rmd.raw(req, expected=7, timeout=5000, unique_addr=uaddr)
-    raddr, rfun, rcmd, _ = struct.unpack(">BBBB", resp)
-    if raddr != addr or rfun != 0x42 or rcmd != ISP_CTRL_CMD_ENTER:
+def isp_enter(dev):
+    req = struct.pack(">BB", 0x42, ISP_CTRL_CMD_ENTER)
+    resp = dev.raw(req, expected=7, timeout=5000)
+    rfun, rcmd, _ = struct.unpack(">BBB", resp)
+    if rfun != 0x42 or rcmd != ISP_CTRL_CMD_ENTER:
         raise BadAEIResponse()
-    st = isp_get_status(addr)
+    st = isp_get_status(dev)
     if not st["FULL_IMAGE_RECV_PENDING"]:
         print(
             "PSU not ready to receive image after entering ISP mode. Status:", str(st)
@@ -123,13 +115,12 @@ def isp_enter(addr):
         raise BadAEIResponse()
 
 
-def isp_exit(addr):
-    addr, uaddr = decode_modbus_address(addr, get_addr_bytes=False)
-    req = struct.pack(">BBB", addr, 0x42, ISP_CTRL_CMD_EXIT)
+def isp_exit(dev):
+    req = struct.pack(">BB", 0x42, ISP_CTRL_CMD_EXIT)
     try:
-        resp = rmd.raw(req, expected=7, timeout=5000, unique_addr=uaddr)
-        raddr, rfun, rcmd, status, _ = struct.unpack(">BBBBB", resp)
-        if raddr != addr or rfun != 0x42 or rcmd != ISP_CTRL_CMD_EXIT:
+        resp = dev.raw(req, expected=7, timeout=5000)
+        rfun, rcmd, status, _ = struct.unpack(">BBBB", resp)
+        if rfun != 0x42 or rcmd != ISP_CTRL_CMD_EXIT:
             raise BadAEIResponse()
         # 0 - success, 1 - failure
         if status != 0:
@@ -141,34 +132,33 @@ def isp_exit(addr):
 
 
 @contextmanager
-def isp(addr):
+def isp(dev):
     """
     Ensure we always exit ISP mode
     """
     try:
         print("Enter ISP Mode")
-        isp_enter(addr)
+        isp_enter(dev)
         yield
     finally:
         print("Exit ISP Mode")
-        isp_exit(addr)
+        isp_exit(dev)
 
 
-def isp_flash_block(addr, block_no, block, params):
-    addr, uaddr = decode_modbus_address(addr, get_addr_bytes=False)
+def isp_flash_block(dev, block_no, block, params):
     bsize = params["block_size"]
     if len(block) != bsize:
         print(f"Ignoring unexpected block size {len(block)}")
         return
     if params["embedded_block_no"]:
         # Block# is embedded in the binary block read from file.
-        req = struct.pack(">BBB", addr, 0x45, bsize) + block
+        req = struct.pack(">BB", 0x45, bsize) + block
     else:
         # We need to prefix the 2 byte block#.
-        req = struct.pack(">BBBH", addr, 0x45, bsize + 2, block_no) + block
-    resp = rmd.raw(req, expected=8, timeout=2000, unique_addr=uaddr)
-    raddr, rfunc, rlen, rblock, rcode = struct.unpack(">BBBHB", resp)
-    if raddr != addr or rfunc != 0x45 or rlen != 0x3:
+        req = struct.pack(">BBH", 0x45, bsize + 2, block_no) + block
+    resp = dev.raw(req, expected=8, timeout=2000)
+    rfunc, rlen, rblock, rcode = struct.unpack(">BBHB", resp)
+    if rfunc != 0x45 or rlen != 0x3:
         print("Bad Block write response:", resp)
         raise BadAEIResponse()
     if not params["embedded_block_no"] and rblock != block_no:
@@ -184,14 +174,14 @@ def isp_flash_block(addr, block_no, block, params):
         raise BadAEIResponse()
 
 
-def transfer_image(addr, image, params):
+def transfer_image(dev, image, params):
     block_size = params["block_size"]
     sent_blocks = 0
     total_blocks = len(image) // block_size
     if len(image) % block_size != 0:
         print(f"Ignoring partial block at end size={len(image)}")
     for i in range(0, len(image), block_size):
-        isp_flash_block(addr, sent_blocks, image[i : i + block_size], params)
+        isp_flash_block(dev, sent_blocks, image[i : i + block_size], params)
         sent_blocks += 1
         print_perc(
             sent_blocks * 100.0 / total_blocks,
@@ -201,7 +191,7 @@ def transfer_image(addr, image, params):
     print_perc(100.0, "Sending block %d of %d..." % (last_block, last_block))
 
 
-def wait_update_complete(addr):
+def wait_update_complete(dev):
     last_set = set()
     error_fields = {
         "FULL_IMAGE_RECEIVED_CORRUPT",
@@ -214,7 +204,7 @@ def wait_update_complete(addr):
     max_time = 360
     for _ in range(max_time):
         try:
-            status = isp_get_status(addr)
+            status = isp_get_status(dev)
             if status.val == 0:
                 print("PSU Rebooted!")
                 break
@@ -234,41 +224,41 @@ def wait_update_complete(addr):
         raise ValueError("Timed out waiting for PSU to reset")
 
 
-def update_device(addr, filename, params):
+def update_device(dev, filename, params):
     print("Parsing Firmware")
     binimg = load_file(filename)
-    with isp(addr):
+    with isp(dev):
         time.sleep(10.0)  # Wait for PSU to erase flash.
         print("Transfer Image")
-        transfer_image(addr, binimg, params)
+        transfer_image(dev, binimg, params)
         print("Check Status")
-        st = isp_get_status(addr)
+        st = isp_get_status(dev)
         if not st["FULL_IMAGE_RECEIVED"]:
             print("PSU Did not receive the full image. Status:", str(st))
             raise BadAEIResponse()
     print("Wait update to complete. Sleeping for ~6min")
-    wait_update_complete(addr)
+    wait_update_complete(dev)
     print("done")
 
 
-def print_revision(addr):
-    print("Version:", rmd.get(addr, "PSU_FW_Revision", True))
+def print_revision(dev):
+    print("Version:", rmd.get(dev.dev_addr, "PSU_FW_Revision", True))
 
 
 def main():
-    global device_params
     args = parser.parse_args()
     params = device_params[args.device]
-    with suppress_monitoring(args.addr):
-        print_revision(args.addr)
+    dev = Modbus(args.addr)
+    with suppress_monitoring(dev.dev_addr):
+        print_revision(dev)
         try:
-            update_device(args.addr, args.file, params)
+            update_device(dev, args.file, params)
         except Exception as e:
             print("Firmware update failed %s" % str(e))
             traceback.print_exc()
             sys.exit(1)
     print("Upgrade success")
-    print_revision(args.addr)
+    print_revision(dev)
 
 
 if __name__ == "__main__":

@@ -37,6 +37,8 @@ class CHASSISEepromTest(EepromV5Test, unittest.TestCase):
             "MINIPACK3BA",
             "WEDGE800BACT",
             "WEDGE800CACT",
+            "WEDGE800BNHP",
+            "WEDGE800CNHP",
         ]
 
     def set_location_on_fabric(self):
@@ -76,8 +78,9 @@ class SCMEepromTest(EepromV5Test, unittest.TestCase):
 
 
 @unittest.skipIf(
-    (platform_name := PlatformInfo.get_platform()[0] or "") not in ["WEDGE800BACT", "WEDGE800CACT"],
-    f"Test skipped: unsupported platform {platform_name}"
+    (platform_name := PlatformInfo.get_platform()[0] or "")
+    not in ["WEDGE800BACT", "WEDGE800CACT", "WEDGE800BNHP", "WEDGE800CNHP"],
+    f"Test skipped: unsupported platform {platform_name}",
 )
 class RackMonEepromTest(EepromV5Test, unittest.TestCase):
     """

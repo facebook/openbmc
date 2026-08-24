@@ -25,6 +25,7 @@ RDEPENDS:${PN} = "python3-core bash rackmon"
 
 S = "${UNPACKDIR}"
 LOCAL_URI = " \
+    file://systemd_util.py \
     file://modbus_common.py \
     file://modbus_monitor.py \
     file://modbus_impl_pyrmd.py \

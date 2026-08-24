@@ -291,16 +291,15 @@ def main(dev, file, vendor, block_size=None):
         params["block_size"] = block_size
     print("Upgrade Parameters: ", params)
     print_revision(dev, params)
-    with dev.suppress_monitoring():
-        try:
-            update_device(dev, file, params)
-        except Exception as e:
-            print("Firmware update failed %s" % str(e))
-            traceback.print_exc()
-            print("Waiting for reset....")
-            time.sleep(30.0)
-            sys.exit(1)
-        print("Resetting....")
+    try:
+        update_device(dev, file, params)
+    except Exception as e:
+        print("Firmware update failed %s" % str(e))
+        traceback.print_exc()
+        print("Waiting for reset....")
         time.sleep(30.0)
-        print("Upgrade success")
+        sys.exit(1)
+    print("Resetting....")
+    time.sleep(30.0)
+    print("Upgrade success")
     print_revision(dev, params)

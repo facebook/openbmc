@@ -276,15 +276,14 @@ def main(dev, file, key=None):
         if key is None:
             print("PSU Update Key is needed to upgrade this device")
             sys.exit(1)
-    with dev.suppress_monitoring():
-        try:
-            print_revision(dev)
-            update_psu(dev, file, key)
-        except Exception as e:
-            print("Firmware update failed %s" % str(e))
-            print("Status register dump:")
-            print(get_status_reg(dev))
-            traceback.print_exc()
-            sys.exit(1)
+    try:
+        print_revision(dev)
+        update_psu(dev, file, key)
+    except Exception as e:
+        print("Firmware update failed %s" % str(e))
+        print("Status register dump:")
+        print(get_status_reg(dev))
+        traceback.print_exc()
+        sys.exit(1)
     print("Upgrade Success!")
     print_revision(dev)

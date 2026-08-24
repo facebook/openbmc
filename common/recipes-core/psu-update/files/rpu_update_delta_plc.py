@@ -144,10 +144,9 @@ def update_rpu(dev, filename, oem_block):
 
 
 def main(dev, file, oem_block):
-    with dev.suppress_monitoring():
-        try:
-            update_rpu(dev, file, oem_block)
-        except Exception:
-            print("Update Failed")
-            traceback.print_exc()
-            sys.exit(1)
+    try:
+        update_rpu(dev, file, oem_block)
+    except Exception:
+        print("Update Failed")
+        traceback.print_exc()
+        sys.exit(1)

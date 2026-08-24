@@ -147,10 +147,9 @@ def update_rpu(dev, image, image_name="TODO"):
 
 
 def main(dev, file):
-    with dev.suppress_monitoring():
-        try:
-            update_rpu(dev, file, os.path.basename(file))
-        except Exception:
-            print("Update Failed")
-            traceback.print_exc()
-            sys.exit(1)
+    try:
+        update_rpu(dev, file, os.path.basename(file))
+    except Exception:
+        print("Update Failed")
+        traceback.print_exc()
+        sys.exit(1)

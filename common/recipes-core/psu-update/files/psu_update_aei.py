@@ -242,13 +242,12 @@ def print_revision(dev):
 
 def main(dev, file, device):
     params = device_params[device]
-    with dev.suppress_monitoring():
-        print_revision(dev)
-        try:
-            update_device(dev, file, params)
-        except Exception as e:
-            print("Firmware update failed %s" % str(e))
-            traceback.print_exc()
-            sys.exit(1)
+    print_revision(dev)
+    try:
+        update_device(dev, file, params)
+    except Exception as e:
+        print("Firmware update failed %s" % str(e))
+        traceback.print_exc()
+        sys.exit(1)
     print("Upgrade success")
     print_revision(dev)

@@ -119,10 +119,9 @@ def update_hex(dev, filename):
 
 
 def main(dev, file):
-    with dev.suppress_monitoring():
-        try:
-            update_hex(dev, file)
-            print("Update Successful!")
-        except Exception:
-            traceback.print_exc()
-            sys.exit(1)
+    try:
+        update_hex(dev, file)
+        print("Update Successful!")
+    except Exception:
+        traceback.print_exc()
+        sys.exit(1)

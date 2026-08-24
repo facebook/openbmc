@@ -22,4 +22,5 @@ def parse_args():
 if __name__ == "__main__":
     args = parse_args()
     dev = Modbus(args.addr)
-    main(dev, args.file, args.oem_block)
+    with dev.suppress_monitoring():
+        main(dev, args.file, args.oem_block)

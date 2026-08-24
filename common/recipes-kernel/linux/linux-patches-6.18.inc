@@ -73,6 +73,7 @@ SRC_URI:append = " \
     file://0238-aspeed-i2c-add-i2c-clk-high-min-percent-property.patch \
     file://0239-iio-adc-aspeed-Support-deglitch-feature.patch \
     file://0240-iio-adc-Add-support-for-Texas-Instruments-ADS112C04.patch \
+    file://0241-ipmi-ssif_bmc-Prevent-pending-response-from-being-lo.patch \
 "
 
 #

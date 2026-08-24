@@ -9,6 +9,7 @@
 #include <sdbusplus/message.hpp>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
@@ -24,10 +25,8 @@ namespace mfgtool::cmds::log_display
 PHOSPHOR_LOG2_USING;
 namespace log_entry = dbuspath::log_entry;
 
-using DBusPropertiesMap =
-    std::unordered_map<std::string, log_entry::Proxy::PropertiesVariant>;
-using DBusInterfacesMap = std::unordered_map<std::string, DBusPropertiesMap>;
-using ManagedObjectType = std::map<sdbusplus::object_path, DBusInterfacesMap>;
+using DBusInterfacesMap =
+    utils::mapper::interfaces_map_t<log_entry::Proxy::PropertiesVariant>;
 
 struct command
 {
@@ -62,140 +61,107 @@ struct command
             }
         }
 
-        // Find the ObjectManager objects to query.
-        auto om_objects = co_await utils::mapper::subtree_services(
-            ctx, "/", "org.freedesktop.DBus.ObjectManager", 0);
-
-        std::vector<std::string_view> om_candidates;
-        for (const auto& [path, services] : om_objects)
-        {
-            if (std::ranges::find(services, log_entry::service) !=
-                services.end())
-            {
-                if (path.str.starts_with(log_entry::ns_path) || path.str == "/")
+        co_await utils::mapper::managed_objects_for_each<
+            log_entry::Proxy::PropertiesVariant>(
+            ctx, std::array{log_entry::ns_path},
+            std::array{log_entry::interface},
+            [&](const auto& objpath, const auto& interfaces, const auto&) {
+                auto iface = interfaces.find(log_entry::interface);
+                if (iface == interfaces.end() ||
+                    !objpath.str.starts_with(log_entry::ns_path))
                 {
-                    om_candidates.push_back(path.str);
-                }
-            }
-        }
-        if (om_candidates.empty())
-        {
-            warning("No ObjectManager found for service {SERVICE}.", "SERVICE",
-                    log_entry::service);
-        }
-
-        auto objs = ManagedObjectType{};
-        for (const auto& om_path : om_candidates)
-        {
-            try
-            {
-                auto proxy =
-                    sdbusplus::async::proxy()
-                        .service(log_entry::service)
-                        .path(om_path)
-                        .interface("org.freedesktop.DBus.ObjectManager");
-                objs.merge(co_await proxy.call<ManagedObjectType>(
-                    ctx, "GetManagedObjects"));
-            }
-            catch (const sdbusplus::exception_t& e)
-            {
-                warning("Failed GetManagedObjects at {PATH}: {ERROR}", "PATH",
-                        om_path, "ERROR", e);
-            }
-        }
-
-        for (const auto& [objpath, interfaces] : objs)
-        {
-            auto iface = interfaces.find(log_entry::interface);
-            if (iface == interfaces.end() ||
-                !objpath.str.starts_with(log_entry::ns_path))
-            {
-                continue;
-            }
-
-            try
-            {
-                auto properties =
-                    log_entry::Proxy::properties_t::unpack(iface->second);
-
-                if (properties.resolved && arg_unresolved_only)
-                {
-                    debug("Resolved and filtered out.");
-                    continue;
+                    return;
                 }
 
-                auto& entry_json = result[std::to_string(properties.id)];
-
-                entry_json["message"] = properties.message;
-                entry_json["severity"] =
-                    sdbusplus::message::convert_to_string(properties.severity);
-                entry_json["event_id"] = properties.event_id;
-
-                entry_json["additional_data"] = properties.additional_data;
-                entry_json["resolution"] = properties.resolution;
-                entry_json["resolved"] = properties.resolved;
-
-                auto epoch_to_iso8601 = [](auto ts) {
-                    using namespace std::chrono;
-                    return std::format("{:%FT%TZ}", time_point<system_clock>(
-                                                        milliseconds(ts)));
-                };
-
-                entry_json["timestamp"] =
-                    epoch_to_iso8601(properties.timestamp);
-                entry_json["updated_timestamp"] =
-                    epoch_to_iso8601(properties.update_timestamp);
-
-                // If the event is defined in the redfish registry, map
-                // it appropriately.
-                if (auto def = event_defs.find(properties.message);
-                    def != std::end(event_defs))
+                try
                 {
-                    using event_t = utils::redfish_registry::event_t;
-                    auto redfish = json::empty_map();
+                    auto properties =
+                        log_entry::Proxy::properties_t::unpack(iface->second);
 
-                    redfish["id"] = std::get<event_t>(*def).id;
-
-                    std::vector<std::string> args = {};
-                    for (const auto& arg : std::get<event_t>(*def).args)
+                    if (properties.resolved && arg_unresolved_only)
                     {
-                        if (properties.additional_data.contains(arg))
-                        {
-                            args.emplace_back(properties.additional_data[arg]);
-                        }
-                        else
-                        {
-                            args.emplace_back("");
-                        }
+                        debug("Resolved and filtered out.");
+                        return;
                     }
 
-                    if (auto message = std::get<event_t>(*def).message;
-                        !message.empty())
+                    auto& entry_json = result[std::to_string(properties.id)];
+
+                    entry_json["message"] = properties.message;
+                    entry_json["severity"] =
+                        sdbusplus::message::convert_to_string(
+                            properties.severity);
+                    entry_json["event_id"] = properties.event_id;
+
+                    entry_json["additional_data"] = properties.additional_data;
+                    entry_json["resolution"] = properties.resolution;
+                    entry_json["resolved"] = properties.resolved;
+
+                    auto epoch_to_iso8601 = [](auto ts) {
+                        using namespace std::chrono;
+                        return std::format(
+                            "{:%FT%TZ}",
+                            time_point<system_clock>(milliseconds(ts)));
+                    };
+
+                    entry_json["timestamp"] =
+                        epoch_to_iso8601(properties.timestamp);
+                    entry_json["updated_timestamp"] =
+                        epoch_to_iso8601(properties.update_timestamp);
+
+                    // If the event is defined in the redfish registry, map
+                    // it appropriately.
+                    if (auto def = event_defs.find(properties.message);
+                        def != std::end(event_defs))
                     {
-                        for (size_t i = args.size(); i > 0; --i)
+                        using event_t = utils::redfish_registry::event_t;
+                        auto redfish = json::empty_map();
+
+                        redfish["id"] = std::get<event_t>(*def).id;
+
+                        std::vector<std::string> args = {};
+                        for (const auto& arg : std::get<event_t>(*def).args)
                         {
-                            auto tag = "%" + std::to_string(i);
-                            if (auto pos = message.find(tag);
-                                pos != std::string::npos)
+                            if (properties.additional_data.contains(arg))
                             {
-                                message.replace(pos, tag.size(), args[i - 1]);
+                                args.emplace_back(
+                                    properties.additional_data[arg]);
+                            }
+                            else
+                            {
+                                args.emplace_back("");
                             }
                         }
-                        redfish["message"] = std::move(message);
-                    }
 
-                    redfish["args"] = std::move(args);
-                    entry_json["redfish"] = std::move(redfish);
+                        if (auto message = std::get<event_t>(*def).message;
+                            !message.empty())
+                        {
+                            for (size_t i = args.size(); i > 0; --i)
+                            {
+                                auto tag = "%" + std::to_string(i);
+                                if (auto pos = message.find(tag);
+                                    pos != std::string::npos)
+                                {
+                                    message.replace(pos, tag.size(),
+                                                    args[i - 1]);
+                                }
+                            }
+                            redfish["message"] = std::move(message);
+                        }
+
+                        redfish["args"] = std::move(args);
+                        entry_json["redfish"] = std::move(redfish);
+                    }
+                    log_value.emplace_back(std::to_string(properties.id),
+                                           std::move(entry_json));
                 }
-                log_value.emplace_back(std::to_string(properties.id),
-                                       std::move(entry_json));
-            }
-            catch (...)
-            {
-                warning("Failed to parse log entry: {PATH}", "PATH",
-                        objpath.str);
-            }
-        }
+                catch (...)
+                {
+                    warning("Failed to parse log entry: {PATH}", "PATH",
+                            objpath.str);
+                }
+            },
+            log_entry::service);
+
         json::sort_json_values(log_value);
         auto json_result = json::merge_duplicate_keys_to_json(log_value);
         json::display(json_result);

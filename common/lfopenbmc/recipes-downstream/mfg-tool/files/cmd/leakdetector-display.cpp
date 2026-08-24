@@ -8,13 +8,8 @@
 #include <sdbusplus/async.hpp>
 #include <sdbusplus/message.hpp>
 
-#include <algorithm>
-#include <map>
-#include <set>
+#include <array>
 #include <string>
-#include <string_view>
-#include <unordered_map>
-#include <vector>
 
 namespace mfgtool::cmds::leakdetector_display
 {
@@ -22,10 +17,8 @@ PHOSPHOR_LOG2_USING;
 namespace leakdetector = dbuspath::leak::detector;
 using namespace utils::string;
 
-using DBusPropertiesMap =
-    std::unordered_map<std::string, leakdetector::Proxy::PropertiesVariant>;
-using DBusInterfacesMap = std::unordered_map<std::string, DBusPropertiesMap>;
-using ManagedObjectType = std::map<sdbusplus::object_path, DBusInterfacesMap>;
+using DBusInterfacesMap =
+    utils::mapper::interfaces_map_t<leakdetector::Proxy::PropertiesVariant>;
 
 struct command
 {
@@ -44,68 +37,15 @@ struct command
         debug("Finding leak detector entries.");
         try
         {
-            std::set<std::string> target_services;
-            auto detector_srvs = co_await utils::mapper::subtree_services(
-                ctx, leakdetector::ns_path, leakdetector::interface, 0);
-            for (const auto& [path, services] : detector_srvs)
-            {
-                for (const auto& srv : services)
-                    target_services.insert(srv);
-            }
-
-            // Find the ObjectManager objects to query.
-            auto om_objects = co_await utils::mapper::subtree_services(
-                ctx, "/", "org.freedesktop.DBus.ObjectManager", 0);
-
-            for (const auto& service : target_services)
-            {
-                std::vector<std::string_view> om_candidates;
-                for (const auto& [path, services] : om_objects)
-                {
-                    if (std::ranges::find(services, service) != services.end())
-                    {
-                        if (path.str.starts_with(leakdetector::ns_path) ||
-                            path.str == "/")
-                        {
-                            om_candidates.push_back(path.str);
-                        }
-                    }
-                }
-                if (om_candidates.empty())
-                {
-                    warning("No ObjectManager found for service {SERVICE}.",
-                            "SERVICE", service);
-                    continue;
-                }
-
-                for (const auto& om_path : om_candidates)
-                {
-                    try
-                    {
-                        auto proxy =
-                            sdbusplus::async::proxy()
-                                .service(service)
-                                .path(om_path)
-                                .interface(
-                                    "org.freedesktop.DBus.ObjectManager");
-                        auto objs = co_await proxy.call<ManagedObjectType>(
-                            ctx, "GetManagedObjects");
-
-                        for (const auto& [objpath, interfaces] : objs)
-                        {
-                            parse_managed_object(result, objpath, interfaces);
-                        }
-                    }
-                    catch (const sdbusplus::exception::SdBusError& e)
-                    {
-                        warning(
-                            "Failed GetManagedObjects for {SERVICE} at {PATH}: {ERROR}",
-                            "SERVICE", service, "PATH", om_path, "ERROR", e);
-                    }
-                }
-            }
+            co_await utils::mapper::managed_objects_for_each<
+                leakdetector::Proxy::PropertiesVariant>(
+                ctx, std::array{leakdetector::ns_path},
+                std::array{leakdetector::interface},
+                [&](const auto& objpath, const auto& interfaces, const auto&) {
+                    parse_managed_object(result, objpath, interfaces);
+                });
         }
-        catch (const sdbusplus::exception::SdBusError& e)
+        catch (const sdbusplus::exception_t& e)
         {
             warning("No leak detectors found: {ERROR}", "ERROR", e);
         }

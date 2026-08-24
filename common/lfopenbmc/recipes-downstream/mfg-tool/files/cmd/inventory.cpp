@@ -5,12 +5,8 @@
 
 #include <sdbusplus/async.hpp>
 
-#include <algorithm>
-#include <map>
-#include <set>
+#include <array>
 #include <string>
-#include <string_view>
-#include <unordered_map>
 #include <variant>
 #include <vector>
 
@@ -26,9 +22,7 @@ using InventoryTypes = sdbusplus::utility::dedup_variant<
     bool, size_t, int64_t, uint64_t, uint16_t, double, std::string,
     std::vector<uint8_t>, std::vector<std::string>>;
 
-using DBusPropertiesMap = std::unordered_map<std::string, InventoryTypes>;
-using DBusInterfacesMap = std::unordered_map<std::string, DBusPropertiesMap>;
-using ManagedObjectType = std::map<sdbusplus::object_path, DBusInterfacesMap>;
+using DBusInterfacesMap = utils::mapper::interfaces_map_t<InventoryTypes>;
 
 static auto strip_path(const auto& p)
 {
@@ -55,64 +49,11 @@ struct command
         // TODO: We are using asset::interface here because a lot of the
         //       entity-manager content appears to be missing the
         //       Inventory.Item.  We need to get this fixed.
-        std::set<std::string> target_services;
-        auto asset_srvs = co_await utils::mapper::subtree_services(
-            ctx, item::ns_path, asset::interface, 0);
-        for (const auto& [path, services] : asset_srvs)
-        {
-            for (const auto& srv : services)
-                target_services.insert(srv);
-        }
-
-        // Find the ObjectManager objects to query.
-        auto om_objects = co_await utils::mapper::subtree_services(
-            ctx, "/", "org.freedesktop.DBus.ObjectManager", 0);
-
-        for (const auto& service : target_services)
-        {
-            std::vector<std::string_view> om_candidates;
-            for (const auto& [path, services] : om_objects)
-            {
-                if (std::ranges::find(services, service) != services.end())
-                {
-                    if (path.str.starts_with(item::ns_path) || path.str == "/")
-                    {
-                        om_candidates.push_back(path.str);
-                    }
-                }
-            }
-            if (om_candidates.empty())
-            {
-                warning("No ObjectManager found for service {SERVICE}.",
-                        "SERVICE", service);
-                continue;
-            }
-
-            for (const auto& om_path : om_candidates)
-            {
-                try
-                {
-                    auto proxy =
-                        sdbusplus::async::proxy()
-                            .service(service)
-                            .path(om_path)
-                            .interface("org.freedesktop.DBus.ObjectManager");
-                    auto objs = co_await proxy.call<ManagedObjectType>(
-                        ctx, "GetManagedObjects");
-
-                    for (const auto& [objpath, interfaces] : objs)
-                    {
-                        parse_managed_object(result, objpath, interfaces);
-                    }
-                }
-                catch (const sdbusplus::exception_t& e)
-                {
-                    warning(
-                        "Failed GetManagedObjects for {SERVICE} at {PATH}: {ERROR}",
-                        "SERVICE", service, "PATH", om_path, "ERROR", e);
-                }
-            }
-        }
+        co_await utils::mapper::managed_objects_for_each<InventoryTypes>(
+            ctx, std::array{item::ns_path}, std::array{asset::interface},
+            [&](const auto& objpath, const auto& interfaces, const auto&) {
+                parse_managed_object(result, objpath, interfaces);
+            });
 
         json::display(result);
         co_return;

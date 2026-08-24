@@ -23,6 +23,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 RDEPENDS:${PN} = "python3-core bash rackmon"
 RDEPENDS:${PN}:append:ventura2 = " python3-minimalmodbus"
+inherit ptest
 
 S = "${UNPACKDIR}"
 LOCAL_URI = " \
@@ -53,6 +54,24 @@ LOCAL_URI = " \
     file://delta_key.py \
     file://srec.py \
     file://hexfile.py \
+    file://test_mocks.py \
+    file://test_hexfile.py \
+    file://test_manufacturers.py \
+    file://test_modbus_common.py \
+    file://test_modbus_impl_minimalmodbus.py \
+    file://test_modbus_impl_pyrmd.py \
+    file://test_modbus_monitor.py \
+    file://test_modbus_update.py \
+    file://test_modbus_update_helper.py \
+    file://test_orv3_device_update_mailbox.py \
+    file://test_phosphor_modbus.py \
+    file://test_psu_update_aei.py \
+    file://test_psu_update_delta_orv3.py \
+    file://test_rpu_update_coolermaster.py \
+    file://test_rpu_update_delta_hex.py \
+    file://test_rpu_update_delta_plc.py \
+    file://test_srec.py \
+    file://test_systemd_util.py \
     "
 
 pkgdir = "psu"
@@ -65,8 +84,23 @@ do_install() {
     for f in ${LOCAL_URI}; do
         f=${f#file://}
         install -m 755 ${UNPACKDIR}/$f ${dst}/$f
+        # The unit tests sit next to the modules they import, but they
+        # are not commands.
+        case $f in
+            test_*) continue ;;
+        esac
         ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
     done
+}
+
+RDEPENDS:${PN}-ptest += "python3-unittest"
+
+do_compile_ptest() {
+  cat <<EOF > ${UNPACKDIR}/run-ptest
+#!/bin/sh
+cd /usr/local/fbpackages/${pkgdir} || exit 1
+python3 -m unittest discover -v
+EOF
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

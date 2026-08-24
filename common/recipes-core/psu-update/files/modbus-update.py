@@ -22,6 +22,7 @@ except ImportError:
 from modbus_impl_pyrmd import Modbus as ModbusRackmon
 from modbus_update_helper import auto_int
 from pyrmd import RackmonInterface as rmd
+from rpu_update_coolermaster import AALCV2_COMPONENTS
 
 
 def _mailbox(variant):
@@ -92,11 +93,17 @@ def rpu_updater(vendor, component):
     sys.exit(1)
 
 
-def rpu2_updater():
-    def update(dev, path):
-        rpu_update_coolermaster.main(dev, path)
+def rpu2_updater(component):
+    # component is optional here, the updater derives it from the image name
+    # when it is not given.
+    if component is not None and component not in AALCV2_COMPONENTS:
+        print(f"Unsupported RPU2 component: {component}")
+        sys.exit(1)
 
-    update.description = "rpu_update_coolermaster.main"
+    def update(dev, path):
+        rpu_update_coolermaster.main(dev, path, component)
+
+    update.description = f"rpu_update_coolermaster.main(component={component})"
     return update
 
 
@@ -104,7 +111,7 @@ def get_updater(device_type, device_vendor, component):
     if device_type == "RPU":
         return rpu_updater(device_vendor, component)
     if device_type == "RPU2":
-        return rpu2_updater()
+        return rpu2_updater(component)
     if device_type not in UPDATERS:
         print(f"Unsupported device type: {device_type}")
         sys.exit(1)

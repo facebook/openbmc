@@ -180,7 +180,22 @@ class TestGetUpdater(unittest.TestCase):
 
     def test_rpu2_is_always_a_coolermaster(self):
         mu.get_updater("RPU2", "coolermaster", None)(self.dev, "fw.bin")
-        self.rpu_update_coolermaster.main.assert_called_once_with(self.dev, "fw.bin")
+        self.rpu_update_coolermaster.main.assert_called_once_with(
+            self.dev, "fw.bin", None
+        )
+
+    def test_an_rpu2_component_is_passed_through(self):
+        mu.get_updater("RPU2", "coolermaster", "FAN_RACK_1_ETH")(self.dev, "fw.tar.gz")
+        self.rpu_update_coolermaster.main.assert_called_once_with(
+            self.dev, "fw.tar.gz", "FAN_RACK_1_ETH"
+        )
+
+    def test_an_unknown_rpu2_component_exits_before_the_device_is_touched(self):
+        with patch("sys.stdout", new=io.StringIO()) as out:
+            with self.assertRaises(SystemExit):
+                mu.get_updater("RPU2", "coolermaster", "FAN_RACK_9_ETH")
+        self.assertIn("Unsupported RPU2 component: FAN_RACK_9_ETH", out.getvalue())
+        self.rpu_update_coolermaster.main.assert_not_called()
 
     def test_unsupported_component_exits(self):
         with patch("sys.stdout", new=io.StringIO()) as out:

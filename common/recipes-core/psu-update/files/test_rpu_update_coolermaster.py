@@ -15,6 +15,8 @@ from rpu_update_coolermaster import (
     file_block_start,
     file_blocklen,
     file_target,
+    get_rpu_revision,
+    parse_file_path,
     parse_image,
     rpu_command,
     rpu_data,
@@ -214,66 +216,161 @@ class TestSendImage(QuietTestCase):
         self.assertEqual(dev.calls, [])
 
 
+class TestGetRpuRevision(QuietTestCase):
+    def test_it_reads_the_components_version_register(self):
+        dev = FakeDevice(read_str=["1.2.3"])
+        self.assertEqual(get_rpu_revision(dev, "FAN_RACK_1_ETH"), "1.2.3")
+        self.assertEqual(dev.calls, [("read_str", 0x1AB, 4, 0)])
+
+    def test_every_component_names_a_register_and_an_image(self):
+        for comp, info in cm.AALCV2_COMPONENTS.items():
+            with self.subTest(component=comp):
+                reg, num = info["vers_reg"]
+                self.assertIsInstance(reg, int)
+                self.assertIn(num, (4, 5))
+                self.assertTrue(info["name"].endswith(".tar.gz"))
+
+    def test_no_two_components_share_an_image_name(self):
+        names = [info["name"] for info in cm.AALCV2_COMPONENTS.values()]
+        self.assertEqual(len(set(names)), len(names))
+
+
+class TestParseFilePath(unittest.TestCase):
+    def test_the_component_comes_from_the_name(self):
+        self.assertEqual(
+            parse_file_path("/tmp/some/dir/MT-E_F1_1.2.3.tar.gz"), "FAN_RACK_1_ETH"
+        )
+        self.assertEqual(parse_file_path("UPSPFC_P_9.9.tar.gz"), "PUMP_RACK_UPSPFC")
+
+    def test_a_version_may_contain_underscores(self):
+        self.assertEqual(parse_file_path("MT-R_F2_1_0_5.tar.gz"), "FAN_RACK_2_RPU")
+
+    def test_a_name_which_is_not_a_tarball(self):
+        with self.assertRaises(ValueError) as ctx:
+            parse_file_path("MT-E_F1_1.2.3.bin")
+        self.assertIn("expected tar.gz", str(ctx.exception))
+
+    def test_a_name_which_is_missing_a_field(self):
+        with self.assertRaises(ValueError) as ctx:
+            parse_file_path("MT-E_F1.tar.gz")
+        self.assertIn("3 parts", str(ctx.exception))
+
+    def test_a_name_naming_no_component_we_know(self):
+        with self.assertRaises(ValueError) as ctx:
+            parse_file_path("MT-X_F9_1.0.tar.gz")
+        self.assertIn("Unknown component MT-X or target F9", str(ctx.exception))
+
+    def test_the_suffix_is_only_stripped_from_the_end(self):
+        # A stray ".tar.gz" inside the name must not be swallowed.
+        with self.assertRaises(ValueError) as ctx:
+            parse_file_path("MT-E.tar.gz_F1_1.0.tar.gz")
+        self.assertIn("Unknown component", str(ctx.exception))
+
+    def test_every_image_name_round_trips_to_its_component(self):
+        for comp, info in cm.AALCV2_COMPONENTS.items():
+            with self.subTest(component=comp):
+                name = info["name"].replace(".tar.gz", "_1.0.tar.gz")
+                self.assertEqual(parse_file_path(name), comp)
+
+
 class TestUpdateRpu(QuietTestCase):
-    def test_the_whole_sequence(self):
-        blocks = [b"\x01", b"\x02"]
-        dev = FakeDevice(
-            raw=[
+    def setUp(self):
+        super().setUp()
+        patcher = patch.object(cm.time, "sleep")
+        self.sleep = patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def full_exchange(self, num_blocks):
+        return (
+            [
                 UNLOCK_REQ,
                 cmd_reply(0x02),  # target
                 cmd_reply(0x04),  # binlen
                 cmd_reply(0x06),  # bincrc
                 cmd_reply(0x6F),  # blocklen
                 cmd_reply(0x1A),  # blockstart
-                data_reply(0),
-                data_reply(1),
-                cmd_reply(0x4D),  # blockend
             ]
+            + [data_reply(i) for i in range(num_blocks)]
+            + [cmd_reply(0x4D)]  # blockend
         )
+
+    def test_the_whole_sequence(self):
+        blocks = [b"\x01", b"\x02"]
+        dev = FakeDevice(raw=self.full_exchange(2), read_str=["1.0.0", "1.0.1"])
         with patch.object(cm, "parse_image", return_value=(blocks, 2, 0xDEADBEEF)):
-            update_rpu(dev, "fw.bin", "fw.bin")
-        self.assertEqual(len(dev.calls), 9)
-        self.assertEqual(dev.calls[-1][1], b"\x65\x4d\x00")
+            update_rpu(dev, "fw.bin", "PUMP_RACK_RPU")
+        raws = dev.calls_of("raw")
+        self.assertEqual(len(raws), 9)
+        self.assertEqual(raws[-1][1], b"\x65\x4d\x00")
+
+    def test_the_device_is_told_the_components_canonical_image_name(self):
+        # Not the path it was read from: the RPU keys off this name.
+        dev = FakeDevice(raw=self.full_exchange(1), read_str=["1.0.0", "1.0.1"])
+        with patch.object(cm, "parse_image", return_value=([b"\x01"], 1, 0)):
+            update_rpu(dev, "/tmp/MT-R_P_1.0.1.tar.gz", "PUMP_RACK_RPU")
+        self.assertEqual(dev.calls_of("raw")[1][1], b"\x65\x02\x0dMT-R_P.tar.gz")
+
+    def test_the_version_is_read_before_and_after_the_update(self):
+        dev = FakeDevice(raw=self.full_exchange(1), read_str=["1.0.0", "1.0.1"])
+        with patch.object(cm, "parse_image", return_value=([b"\x01"], 1, 0)):
+            update_rpu(dev, "fw.bin", "FAN_RACK_2_UPSCOM")
+        self.assertEqual(
+            dev.calls_of("read_str"),
+            [("read_str", 0x9174, 5, 0), ("read_str", 0x9174, 5, 0)],
+        )
+        self.assertIn("Current Version: 1.0.0", self.stdout.getvalue())
+        self.assertIn("Version After Upgrade: 1.0.1", self.stdout.getvalue())
+
+    def test_the_component_is_given_time_to_reboot_before_it_is_re_read(self):
+        dev = FakeDevice(raw=self.full_exchange(1), read_str=["1.0.0", "1.0.1"])
+        with patch.object(cm, "parse_image", return_value=([b"\x01"], 1, 0)):
+            update_rpu(dev, "fw.bin", "PUMP_RACK_RPU")
+        self.sleep.assert_called_once_with(cm.REBOOT_SECS)
+        # The last thing on the wire is the read-back, so the sleep landed
+        # between the end of the transfer and it.
+        self.assertEqual(dev.calls[-1][0], "read_str")
 
     def test_the_declared_length_and_crc_come_from_the_image(self):
-        dev = FakeDevice(
-            raw=[
-                UNLOCK_REQ,
-                cmd_reply(0x02),
-                cmd_reply(0x04),
-                cmd_reply(0x06),
-                cmd_reply(0x6F),
-                cmd_reply(0x1A),
-                data_reply(0),
-                cmd_reply(0x4D),
-            ]
-        )
+        dev = FakeDevice(raw=self.full_exchange(1), read_str=["1.0.0", "1.0.1"])
         with patch.object(cm, "parse_image", return_value=([b"\x01"], 1, 0x01020304)):
-            update_rpu(dev, "fw.bin")
-        self.assertEqual(dev.calls[2][1], b"\x65\x04\x04\x01\x00\x00\x00")
-        self.assertEqual(dev.calls[3][1], b"\x65\x06\x04\x04\x03\x02\x01")
-        self.assertEqual(dev.calls[4][1][3:], b"\xc0\x00")  # BLOCK_SIZE
-        self.assertEqual(dev.calls[5][1][3:], b"\x01\x00")  # one block
+            update_rpu(dev, "fw.bin", "PUMP_RACK_RPU")
+        raws = dev.calls_of("raw")
+        self.assertEqual(raws[2][1], b"\x65\x04\x04\x01\x00\x00\x00")
+        self.assertEqual(raws[3][1], b"\x65\x06\x04\x04\x03\x02\x01")
+        self.assertEqual(raws[4][1][3:], b"\xc0\x00")  # BLOCK_SIZE
+        self.assertEqual(raws[5][1][3:], b"\x01\x00")  # one block
 
     def test_an_rpu_which_does_not_unlock_is_not_written_to(self):
-        dev = FakeDevice(raw=[b"\x00"])
+        dev = FakeDevice(raw=[b"\x00"], read_str=["1.0.0"])
         with patch.object(cm, "parse_image", return_value=([b"\x01"], 1, 0)):
             with self.assertRaises(ValueError):
-                update_rpu(dev, "fw.bin")
-        self.assertEqual(len(dev.calls), 1)
+                update_rpu(dev, "fw.bin", "PUMP_RACK_RPU")
+        self.assertEqual(len(dev.calls_of("raw")), 1)
+
+    def test_an_unknown_component_is_rejected_before_the_device_is_touched(self):
+        dev = FakeDevice()
+        with self.assertRaises(KeyError):
+            update_rpu(dev, "fw.bin", "NO_SUCH_COMPONENT")
+        self.assertEqual(dev.calls, [])
 
 
 class TestMain(QuietTestCase):
-    def test_the_image_is_announced_by_its_basename(self):
+    def test_the_component_is_derived_from_the_file_name(self):
+        path = "/tmp/some/dir/MT-E_F1_1.2.3.tar.gz"
         with patch.object(cm, "update_rpu") as update:
-            cm.main("dev", "/tmp/some/dir/fw.bin")
-        update.assert_called_once_with("dev", "/tmp/some/dir/fw.bin", "fw.bin")
+            cm.main("dev", path)
+        update.assert_called_once_with("dev", path, "FAN_RACK_1_ETH")
+
+    def test_an_explicit_component_overrides_the_file_name(self):
+        with patch.object(cm, "update_rpu") as update:
+            cm.main("dev", "fw.bin", "PUMP_RACK_RPU")
+        update.assert_called_once_with("dev", "fw.bin", "PUMP_RACK_RPU")
 
     def test_a_failed_update_exits_non_zero(self):
         with patch.object(cm, "update_rpu", side_effect=ValueError("boom")):
             with patch("sys.stderr", new=io.StringIO()):
                 with self.assertRaises(SystemExit) as ctx:
-                    cm.main("dev", "fw.bin")
+                    cm.main("dev", "fw.bin", "PUMP_RACK_RPU")
         self.assertEqual(ctx.exception.code, 1)
         self.assertIn("Update Failed", self.stdout.getvalue())
 

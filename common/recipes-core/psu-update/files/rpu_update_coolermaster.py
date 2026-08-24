@@ -1,11 +1,88 @@
 import os
 import struct
 import sys
+import time
 import traceback
 
 from modbus_update_helper import print_perc
 
 BLOCK_SIZE = 192
+
+# How long the component takes to come back on the new image. Until then it
+# either does not answer or still reports the version it is replacing.
+REBOOT_SECS = 8.0
+
+IMAGE_SUFFIX = ".tar.gz"
+
+# vers_reg is the (register, num_registers) of the component's FW version
+# string as defined in the orv3_rpu2 rackmon register map.
+AALCV2_COMPONENTS = {
+    "PUMP_RACK_ETH": {
+        "name": "MT-E_P.tar.gz",
+        "vers_reg": (0x1A3, 4),
+    },
+    "PUMP_RACK_RPU": {
+        "name": "MT-R_P.tar.gz",
+        "vers_reg": (0x19F, 4),
+    },
+    "PUMP_RACK_UPSCOM": {
+        "name": "UPSCOM_P.tar.gz",
+        "vers_reg": (0x90F5, 5),
+    },
+    "PUMP_RACK_UPSINV": {
+        "name": "UPSINV_P.tar.gz",
+        "vers_reg": (0x90F0, 5),
+    },
+    "PUMP_RACK_UPSPFC": {
+        "name": "UPSPFC_P.tar.gz",
+        "vers_reg": (0x90EB, 5),
+    },
+    "FAN_RACK_1_ETH": {
+        "name": "MT-E_F1.tar.gz",
+        "vers_reg": (0x1AB, 4),
+    },
+    "FAN_RACK_1_RPU": {
+        "name": "MT-R_F1.tar.gz",
+        "vers_reg": (0x1A7, 4),
+    },
+    "FAN_RACK_1_UPSCOM": {
+        "name": "UPSCOM_F1.tar.gz",
+        "vers_reg": (0x9132, 5),
+    },
+    "FAN_RACK_1_UPSINV": {
+        "name": "UPSINV_F1.tar.gz",
+        "vers_reg": (0x912D, 5),
+    },
+    "FAN_RACK_1_UPSPFC": {
+        "name": "UPSPFC_F1.tar.gz",
+        "vers_reg": (0x9128, 5),
+    },
+    "FAN_RACK_2_ETH": {
+        "name": "MT-E_F2.tar.gz",
+        "vers_reg": (0x1B3, 4),
+    },
+    "FAN_RACK_2_RPU": {
+        "name": "MT-R_F2.tar.gz",
+        "vers_reg": (0x1AF, 4),
+    },
+    "FAN_RACK_2_UPSCOM": {
+        "name": "UPSCOM_F2.tar.gz",
+        "vers_reg": (0x9174, 5),
+    },
+    "FAN_RACK_2_UPSINV": {
+        "name": "UPSINV_F2.tar.gz",
+        "vers_reg": (0x916F, 5),
+    },
+    "FAN_RACK_2_UPSPFC": {
+        "name": "UPSPFC_F2.tar.gz",
+        "vers_reg": (0x916A, 5),
+    },
+}
+
+# The name the device is told to expect -> the component it belongs to.
+COMPONENT_BY_IMAGE_NAME = {
+    info["name"]: comp for comp, info in AALCV2_COMPONENTS.items()
+}
 
 
 class Status:
@@ -36,8 +113,31 @@ class Status:
         raise ValueError("Failed command %s : %s" % (cmd, str(self)))
 
 
-def get_rpu_revision(dev):
-    return "TODO"
+def get_rpu_revision(dev, component):
+    reg, num = AALCV2_COMPONENTS[component]["vers_reg"]
+    return dev.read_str(reg, num)
+
+
+def parse_file_path(path):
+    """
+    Images are named <component>_<target>_<version>.tar.gz, for example
+    MT-E_F1_1.2.3.tar.gz. Return the component the name describes. The version
+    in the name is not expected to match what the device reports, so it is
+    ignored.
+    """
+    name = os.path.basename(path)
+    if not name.endswith(IMAGE_SUFFIX):
+        raise ValueError(f"{path} is not the expected tar.gz")
+    # The version may itself contain underscores, the two fields before it
+    # may not, so stop splitting once they are consumed.
+    parts = name[: -len(IMAGE_SUFFIX)].split("_", 2)
+    if len(parts) != 3:
+        raise ValueError(f"{path} does not contain the 3 parts in name")
+    component, target, _version = parts
+    minimal_name = component + "_" + target + IMAGE_SUFFIX
+    if minimal_name not in COMPONENT_BY_IMAGE_NAME:
+        raise ValueError(f"Unknown component {component} or target {target}")
+    return COMPONENT_BY_IMAGE_NAME[minimal_name]
 
 
 def upgrade_unlock(dev):
@@ -134,7 +234,9 @@ def send_image(dev, blocks):
     )
 
 
-def update_rpu(dev, image, image_name="TODO"):
+def update_rpu(dev, image, component):
+    image_name = AALCV2_COMPONENTS[component]["name"]
+    print("Current Version: %s" % (get_rpu_revision(dev, component)))
     blocks, size, crc = parse_image(image)
     upgrade_unlock(dev)
     file_target(dev, image_name)
@@ -144,11 +246,15 @@ def update_rpu(dev, image, image_name="TODO"):
     file_block_start(dev, len(blocks))
     send_image(dev, blocks)
     file_block_end(dev)
+    time.sleep(REBOOT_SECS)
+    print("Version After Upgrade: %s" % (get_rpu_revision(dev, component)))
 
 
-def main(dev, file):
+def main(dev, file, component=None):
     try:
-        update_rpu(dev, file, os.path.basename(file))
+        if component is None:
+            component = parse_file_path(file)
+        update_rpu(dev, file, component)
     except Exception:
         print("Update Failed")
         traceback.print_exc()

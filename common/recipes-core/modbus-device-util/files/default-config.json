@@ -56,14 +56,14 @@
         "manufacturerDiscriminator": "RPU_MFR_Model",
         "manufacturers": {
             "delta": {
-                "registerValues": ["", "RDF040DSS5193E0"],
+                "registerValues": ["", "RDF040DSS5193E0", "RDF040DSS519BE0"],
                 "pumpDutyPercentage": 70,
-                "targetCoolantOutletTempTimesTen": 350
+                "targetCoolantOutletTempTimesTen": 400
             },
             "quanta": {
                 "registerValues": ["L05T"],
                 "pumpDutyPercentage": 50,
-                "targetCoolantOutletTempTimesTen": 350
+                "targetCoolantOutletTempTimesTen": 400
             }
         },
         "firmware": [
@@ -90,8 +90,18 @@
         },
         "firmware": [
             {
+                "register": "Pump_Rack_FW_Revision",
+                "component": "RPU_FIRMWARE_VERSION",
+                "type": "str"
+            },
+            {
                 "register": "Pump_Rack_RPU_FW_Revision",
                 "component": "RPU_FIRMWARE_VERSION",
+                "type": "str"
+            },
+            {
+                "register": "Fan_Rack_1_FW_Revision",
+                "component": "RPU_HEX_FIRMWARE_VERSION",
                 "type": "str"
             },
             {

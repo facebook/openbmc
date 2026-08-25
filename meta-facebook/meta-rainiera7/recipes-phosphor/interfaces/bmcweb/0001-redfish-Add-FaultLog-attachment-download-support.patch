@@ -1,4 +1,4 @@
-From 2a6e21d321ecfc8e33d7da5ab63b471d1e9ef484 Mon Sep 17 00:00:00 2001
+From af283471cc8f3b8fb4cda139e28e0e8b9d5fa021 Mon Sep 17 00:00:00 2001
 From: Meghana H <Meghana.H@arm.com>
 Date: Fri, 17 Apr 2026 14:19:47 +0000
 Subject: [PATCH] redfish: Add FaultLog attachment download support
@@ -62,7 +62,7 @@ Change-Id: I086de6fcf79b6c8ed92e7668ead61e4215678cb8
  3 files changed, 28 insertions(+), 3 deletions(-)
 
 diff --git a/redfish-core/include/utils/log_services_utils.hpp b/redfish-core/include/utils/log_services_utils.hpp
-index 0a7ca87..a421861 100644
+index 0a7ca87c..a421861b 100644
 --- a/redfish-core/include/utils/log_services_utils.hpp
 +++ b/redfish-core/include/utils/log_services_utils.hpp
 @@ -81,7 +81,8 @@ inline void downloadEntryCallback(
@@ -85,7 +85,7 @@ index 0a7ca87..a421861 100644
          if (!asyncResp->res.openFd(fd))
          {
 diff --git a/redfish-core/lib/log_services.hpp b/redfish-core/lib/log_services.hpp
-index 66ddd08..19e2880 100644
+index 66ddd087..19e28805 100644
 --- a/redfish-core/lib/log_services.hpp
 +++ b/redfish-core/lib/log_services.hpp
 @@ -347,6 +347,12 @@ inline void getDumpEntryCollection(
@@ -142,7 +142,7 @@ index 66ddd08..19e2880 100644
  {
      BMCWEB_ROUTE(
 diff --git a/redfish-core/src/redfish.cpp b/redfish-core/src/redfish.cpp
-index a960100..ea60625 100644
+index a9601000..ea606250 100644
 --- a/redfish-core/src/redfish.cpp
 +++ b/redfish-core/src/redfish.cpp
 @@ -171,6 +171,7 @@ RedfishService::RedfishService(App& app)
@@ -153,3 +153,6 @@ index a960100..ea60625 100644
          requestRoutesFaultLogDumpClear(app);
      }
  
+-- 
+2.53.0-Meta
+

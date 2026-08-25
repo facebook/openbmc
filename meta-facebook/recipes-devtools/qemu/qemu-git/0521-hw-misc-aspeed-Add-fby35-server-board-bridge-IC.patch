@@ -1,4 +1,4 @@
-From d0e1125d1fe80f63a2f97e132adb200071a83106 Mon Sep 17 00:00:00 2001
+From edd48b00a66d120581517c0b641f492f9a001a13 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 23 Aug 2022 16:57:35 -0700
 Subject: [PATCH] hw/misc/aspeed: Add fby35 server board bridge IC
@@ -361,7 +361,7 @@ index 0000000000..c7b1d420e2
 +
 +DEFINE_TYPES(types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index ce1eb6025e..a3ede5dae5 100644
+index ed59b3b8cf..b726e42f16 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
 @@ -147,6 +147,7 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
@@ -373,12 +373,12 @@ index ce1eb6025e..a3ede5dae5 100644
    'intel_me.c'))
  
 diff --git a/hw/misc/trace-events b/hw/misc/trace-events
-index 083b415661..5b129f4565 100644
+index c4ed8adf9d..d1357dbe92 100644
 --- a/hw/misc/trace-events
 +++ b/hw/misc/trace-events
-@@ -443,6 +443,10 @@ iommu_testdev_dma_verify(uint32_t expected, uint32_t actual) "expected=0x%x actu
- iommu_testdev_dma_result(uint32_t result) "DMA completed result=0x%x"
- iommu_testdev_dma_armed(bool armed) "armed=%d"
+@@ -449,6 +449,10 @@ vmlaunch_reset_enter(void) ""
+ vm_launchupdate_finalize(void) ""
+ restore_host_x86_igvm(void) ""
  
 +# fby35_sb_bic.c
 +fby35_sb_bic_ipmb_message(uint8_t src, uint8_t dst, uint8_t netfn, uint8_t cmd, uint8_t seq, uint8_t cc) "src 0x%02x dst 0x%02x netfn 0x%02x cmd 0x%02x seq 0x%02x cc 0x%02x"

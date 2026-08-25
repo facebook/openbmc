@@ -1,7 +1,10 @@
-From 999ca1bcc7093bec167faa464b6cd8de6f1cb3dc Mon Sep 17 00:00:00 2001
+From 1037341ae93dce29b5ac0cfab4aa15c2865772cd Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 23 Apr 2026 04:20:23 +0000
 Subject: [PATCH] Add drive state manager daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 Add phosphor-drive-state-manager, a single-instance daemon that
 implements the xyz.openbmc_project.State.Drive D-Bus interface for
@@ -102,7 +105,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
 
 diff --git a/drive_state_manager.cpp b/drive_state_manager.cpp
 new file mode 100644
-index 00000000..75a14a5b
+index 0000000..75a14a5
 --- /dev/null
 +++ b/drive_state_manager.cpp
 @@ -0,0 +1,392 @@
@@ -500,7 +503,7 @@ index 00000000..75a14a5b
 +} // namespace phosphor
 diff --git a/drive_state_manager.hpp b/drive_state_manager.hpp
 new file mode 100644
-index 00000000..7418798b
+index 0000000..7418798
 --- /dev/null
 +++ b/drive_state_manager.hpp
 @@ -0,0 +1,114 @@
@@ -620,7 +623,7 @@ index 00000000..7418798b
 +} // namespace phosphor
 diff --git a/drive_state_manager_main.cpp b/drive_state_manager_main.cpp
 new file mode 100644
-index 00000000..7651e3dd
+index 0000000..7651e3d
 --- /dev/null
 +++ b/drive_state_manager_main.cpp
 @@ -0,0 +1,141 @@
@@ -766,7 +769,7 @@ index 00000000..7651e3dd
 +    return 0;
 +}
 diff --git a/meson.build b/meson.build
-index b89c3e57..bbc01310 100644
+index b89c3e5..bbc0131 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -259,6 +259,16 @@ executable(
@@ -787,7 +790,7 @@ index b89c3e57..bbc01310 100644
      'phosphor-systemd-target-monitor',
      'systemd_service_parser.cpp',
 diff --git a/service_files/meson.build b/service_files/meson.build
-index 4fa6729b..73f061cd 100644
+index 4fa6729..73f061c 100644
 --- a/service_files/meson.build
 +++ b/service_files/meson.build
 @@ -25,6 +25,7 @@ unit_files = [
@@ -800,7 +803,7 @@ index 4fa6729b..73f061cd 100644
  # Add SMP-specific service file when multi-chassis SMP is enabled
 diff --git a/service_files/xyz.openbmc_project.State.Drive.service b/service_files/xyz.openbmc_project.State.Drive.service
 new file mode 100644
-index 00000000..f57170cd
+index 0000000..f57170c
 --- /dev/null
 +++ b/service_files/xyz.openbmc_project.State.Drive.service
 @@ -0,0 +1,13 @@
@@ -818,7 +821,7 @@ index 00000000..f57170cd
 +[Install]
 +WantedBy=multi-user.target
 diff --git a/target_files/meson.build b/target_files/meson.build
-index a9f9d098..2861b86f 100644
+index a9f9d09..2861b86 100644
 --- a/target_files/meson.build
 +++ b/target_files/meson.build
 @@ -7,6 +7,13 @@ unit_files = [
@@ -837,7 +840,7 @@ index a9f9d098..2861b86f 100644
      'obmc-fan-watchdog-takeover.target',
 diff --git a/target_files/obmc-drive-hard-reboot@.target b/target_files/obmc-drive-hard-reboot@.target
 new file mode 100644
-index 00000000..5b0c1543
+index 0000000..5b0c154
 --- /dev/null
 +++ b/target_files/obmc-drive-hard-reboot@.target
 @@ -0,0 +1,5 @@
@@ -848,7 +851,7 @@ index 00000000..5b0c1543
 +After=obmc-drive-powercycle@%i.target
 diff --git a/target_files/obmc-drive-powercycle@.target b/target_files/obmc-drive-powercycle@.target
 new file mode 100644
-index 00000000..e7dac437
+index 0000000..e7dac43
 --- /dev/null
 +++ b/target_files/obmc-drive-powercycle@.target
 @@ -0,0 +1,8 @@
@@ -862,7 +865,7 @@ index 00000000..e7dac437
 +After=multi-user.target
 diff --git a/target_files/obmc-drive-powered-off@.target b/target_files/obmc-drive-powered-off@.target
 new file mode 100644
-index 00000000..73a49a7a
+index 0000000..73a49a7
 --- /dev/null
 +++ b/target_files/obmc-drive-powered-off@.target
 @@ -0,0 +1,3 @@
@@ -871,7 +874,7 @@ index 00000000..73a49a7a
 +Conflicts=obmc-drive-powered-on@%i.target
 diff --git a/target_files/obmc-drive-powered-on@.target b/target_files/obmc-drive-powered-on@.target
 new file mode 100644
-index 00000000..9adc0354
+index 0000000..9adc035
 --- /dev/null
 +++ b/target_files/obmc-drive-powered-on@.target
 @@ -0,0 +1,3 @@
@@ -880,7 +883,7 @@ index 00000000..9adc0354
 +Conflicts=obmc-drive-powered-off@%i.target
 diff --git a/target_files/obmc-drive-poweroff@.target b/target_files/obmc-drive-poweroff@.target
 new file mode 100644
-index 00000000..421f3740
+index 0000000..421f374
 --- /dev/null
 +++ b/target_files/obmc-drive-poweroff@.target
 @@ -0,0 +1,7 @@
@@ -893,7 +896,7 @@ index 00000000..421f3740
 +Conflicts=obmc-drive-poweron@%i.target
 diff --git a/target_files/obmc-drive-poweron@.target b/target_files/obmc-drive-poweron@.target
 new file mode 100644
-index 00000000..75fa00c7
+index 0000000..75fa00c
 --- /dev/null
 +++ b/target_files/obmc-drive-poweron@.target
 @@ -0,0 +1,9 @@
@@ -908,7 +911,7 @@ index 00000000..75fa00c7
 +OnFailureJobMode=fail
 diff --git a/target_files/obmc-drive-reboot@.target b/target_files/obmc-drive-reboot@.target
 new file mode 100644
-index 00000000..920f40a1
+index 0000000..920f40a
 --- /dev/null
 +++ b/target_files/obmc-drive-reboot@.target
 @@ -0,0 +1,3 @@
@@ -916,5 +919,5 @@ index 00000000..920f40a1
 +Description=Reboot Drive%i
 +After=multi-user.target
 -- 
-2.43.0
+2.53.0-Meta
 

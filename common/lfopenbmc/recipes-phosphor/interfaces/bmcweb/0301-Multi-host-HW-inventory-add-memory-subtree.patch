@@ -1,4 +1,4 @@
-From 1c3804dab00741043827b82a9e6b67a635afb5da Mon Sep 17 00:00:00 2001
+From dd0be92b266592328f789f12cb1826c9f93564cd Mon Sep 17 00:00:00 2001
 From: Christopher Meis <christopher.meis@9elements.com>
 Date: Tue, 23 Sep 2025 10:24:36 +0200
 Subject: [PATCH] Multi-host/HW-inventory: add memory subtree
@@ -165,7 +165,7 @@ Signed-off-by: Christopher Meis <christopher.meis@9elements.com>
  2 files changed, 103 insertions(+), 34 deletions(-)
 
 diff --git a/redfish-core/lib/memory.hpp b/redfish-core/lib/memory.hpp
-index 7435b7b7..f1a2a525 100644
+index 4edb49df..468a4b54 100644
 --- a/redfish-core/lib/memory.hpp
 +++ b/redfish-core/lib/memory.hpp
 @@ -20,6 +20,7 @@
@@ -184,10 +184,10 @@ index 7435b7b7..f1a2a525 100644
 +    "xyz.openbmc_project.Inventory.Item.System",
 +};
 +
- inline std::string translateMemoryTypeToRedfish(const std::string& memoryType)
+ inline memory::MemoryDeviceType translateMemoryTypeToRedfish(
+     const std::string& memoryType)
  {
-     if (memoryType == "xyz.openbmc_project.Inventory.Item.Dimm.DeviceType.DDR")
-@@ -737,7 +742,8 @@ inline void getDimmPartitionData(std::shared_ptr<bmcweb::AsyncResp> asyncResp,
+@@ -744,7 +749,8 @@ inline void getDimmPartitionData(std::shared_ptr<bmcweb::AsyncResp> asyncResp,
  
  inline void afterGetDimmData(
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
@@ -197,7 +197,7 @@ index 7435b7b7..f1a2a525 100644
      const dbus::utility::MapperGetSubTreeResponse& subtree)
  {
      if (ec)
-@@ -814,25 +820,57 @@ inline void afterGetDimmData(
+@@ -821,25 +827,57 @@ inline void afterGetDimmData(
      }
      // Set @odata only if object is found
      asyncResp->res.jsonValue["@odata.type"] = "#Memory.v1_23_0.Memory";
@@ -264,7 +264,7 @@ index 7435b7b7..f1a2a525 100644
          });
  }
  
-@@ -950,22 +988,47 @@ inline void handleMemoryGet(App& app, const crow::Request& req,
+@@ -957,22 +995,47 @@ inline void handleMemoryGet(App& app, const crow::Request& req,
          return;
      }
  
@@ -319,7 +319,7 @@ index 7435b7b7..f1a2a525 100644
  }
  
  inline void handleMemoryCollectionGet(
-@@ -977,33 +1040,39 @@ inline void handleMemoryCollectionGet(
+@@ -984,33 +1047,39 @@ inline void handleMemoryCollectionGet(
      {
          return;
      }
@@ -375,7 +375,7 @@ index 7435b7b7..f1a2a525 100644
  
  inline void requestRoutesMemory(App& app)
 diff --git a/redfish-core/lib/systems.hpp b/redfish-core/lib/systems.hpp
-index 3786923d..c1ce31d1 100644
+index e8e986dc..92eea315 100644
 --- a/redfish-core/lib/systems.hpp
 +++ b/redfish-core/lib/systems.hpp
 @@ -3086,8 +3086,6 @@ inline void processComputerSystemGet(

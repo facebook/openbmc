@@ -1,4 +1,4 @@
-From 13eebeae06812da5f916ec93160ab085bb4674cb Mon Sep 17 00:00:00 2001
+From 0d0ed58fde694dd56d2e9210f5f6d6c74723e634 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 21 Jul 2026 14:33:30 +0200
 Subject: [PATCH] tests/qtest: ina238: add current/voltage/power monitor test
@@ -198,10 +198,10 @@ index 0000000000..85f9476b46
 +}
 +libqos_init(ina238_register_nodes);
 diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
-index b765ea9ef3..5e66271438 100644
+index 03e8b55532..3916f9dc0d 100644
 --- a/tests/qtest/meson.build
 +++ b/tests/qtest/meson.build
-@@ -315,6 +315,7 @@ qos_test_ss.add(
+@@ -317,6 +317,7 @@ qos_test_ss.add(
    'eepro100-test.c',
    'es1370-test.c',
    'ina230-test.c',

@@ -1,7 +1,7 @@
-From 4a276e174d68984f748d94d0ef1159fa419a3217 Mon Sep 17 00:00:00 2001
+From fe081cfe485937faced7eeecd0c4085a93b3d227 Mon Sep 17 00:00:00 2001
 From: Frank Chen <FrankChen4@quantatw.com>
 Date: Tue, 21 Jul 2026 15:02:54 +0800
-Subject: [PATCH 09/10] configurations: santabarbara: add NIC osfp sensor and
+Subject: [PATCH] configurations: santabarbara: add NIC osfp sensor and
  relative fsc
 
 Add pldm sensor "SENSOR_500", which is osfp sensor and add it into fsc.
@@ -17,10 +17,10 @@ Signed-off-by: Frank Chen <FrankChen4@quantatw.com>
  5 files changed, 221 insertions(+)
 
 diff --git a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_aeb.json b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_aeb.json
-index f51a517..e773e55 100644
+index e773e55..62ef96e 100644
 --- a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_aeb.json
 +++ b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_aeb.json
-@@ -720,6 +720,36 @@
+@@ -750,6 +750,36 @@
                  "Zone 0"
              ]
          },
@@ -57,7 +57,7 @@ index f51a517..e773e55 100644
          {
              "Class": "temp",
              "Inputs": [
-@@ -754,6 +784,41 @@
+@@ -819,6 +849,41 @@
                  "Zone 0"
              ]
          },
@@ -100,10 +100,10 @@ index f51a517..e773e55 100644
              "Address": "0x48",
              "Bus": 32,
 diff --git a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json
-index e9eb8a3..14295e0 100644
+index 14295e0..360a379 100644
 --- a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json
 +++ b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm.json
-@@ -663,6 +663,36 @@
+@@ -693,6 +693,36 @@
                  "Zone 0"
              ]
          },
@@ -140,7 +140,7 @@ index e9eb8a3..14295e0 100644
          {
              "Class": "temp",
              "Inputs": [
-@@ -697,6 +727,41 @@
+@@ -762,6 +792,41 @@
                  "Zone 0"
              ]
          },
@@ -183,10 +183,10 @@ index e9eb8a3..14295e0 100644
              "Address": "0x48",
              "Bus": 32,
 diff --git a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm_vr_sni.json b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm_vr_sni.json
-index 0f06a64..3de9bfe 100644
+index 3de9bfe..bd77d33 100644
 --- a/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm_vr_sni.json
 +++ b/configurations/meta/santabarbara/santabarbara_pcie_switch_board_brcm_vr_sni.json
-@@ -460,6 +460,36 @@
+@@ -490,6 +490,36 @@
                  "Zone 0"
              ]
          },
@@ -223,7 +223,7 @@ index 0f06a64..3de9bfe 100644
          {
              "Class": "temp",
              "Inputs": [
-@@ -494,6 +524,41 @@
+@@ -559,6 +589,41 @@
                  "Zone 0"
              ]
          },
@@ -314,5 +314,5 @@ index 45b4870..dc3165a 100644
              "Address": "0x1f",
              "Bus": "$bus",
 -- 
-2.47.3
+2.53.0-Meta
 

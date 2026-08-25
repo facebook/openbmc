@@ -1,4 +1,4 @@
-From 9c28edab5f64be7939644c3db90cbe7b13137ffa Mon Sep 17 00:00:00 2001
+From a385f42ecaea2b7a9d694f476807560f295f28ca Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 11:36:17 +0200
 Subject: [PATCH] hw: ds1338: use the TYPE_DS1338 constant instead of the
@@ -176,7 +176,7 @@ index 69e072c932..f0aa8b6759 100644
  /*
   * "BMC Storage Module" FRU data.  Generated with frugen.
 diff --git a/hw/arm/realview.c b/hw/arm/realview.c
-index 2b9f3271d6..c4389f1592 100644
+index 0c2daf5c01..700111fb6a 100644
 --- a/hw/arm/realview.c
 +++ b/hw/arm/realview.c
 @@ -29,6 +29,7 @@
@@ -187,7 +187,7 @@ index 2b9f3271d6..c4389f1592 100644
  #include "hw/sd/sd.h"
  #include "target/arm/cpu-qom.h"
  
-@@ -321,7 +322,7 @@ static void realview_init(MachineState *machine,
+@@ -324,7 +325,7 @@ static void realview_init(MachineState *machine,
  
      dev = sysbus_create_simple(TYPE_ARM_SBCON_I2C, 0x10002000, NULL);
      i2c = (I2CBus *)qdev_get_child_bus(dev, "i2c");
@@ -197,7 +197,7 @@ index 2b9f3271d6..c4389f1592 100644
      /* Memory map for RealView Emulation Baseboard:  */
      /* 0x10000000 System registers.  */
 diff --git a/hw/arm/versatilepb.c b/hw/arm/versatilepb.c
-index c6991a52e6..b576efb5c0 100644
+index 520af79c80..4d32194ad0 100644
 --- a/hw/arm/versatilepb.c
 +++ b/hw/arm/versatilepb.c
 @@ -19,6 +19,7 @@
@@ -208,7 +208,7 @@ index c6991a52e6..b576efb5c0 100644
  #include "hw/core/irq.h"
  #include "hw/core/boards.h"
  #include "hw/block/flash.h"
-@@ -341,7 +342,7 @@ static void versatile_init(MachineState *machine, int board_id)
+@@ -347,7 +348,7 @@ static void versatile_init(MachineState *machine, int board_id)
  
      dev = sysbus_create_simple(TYPE_ARM_SBCON_I2C, 0x10002000, NULL);
      i2c = (I2CBus *)qdev_get_child_bus(dev, "i2c");

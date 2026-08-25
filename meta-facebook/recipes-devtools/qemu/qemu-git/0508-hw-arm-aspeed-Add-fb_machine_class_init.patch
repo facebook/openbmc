@@ -1,4 +1,4 @@
-From eb5079fc46ceabbd2d14cfd1d935ca977209d63a Mon Sep 17 00:00:00 2001
+From 5cbc0b848a8989fc64ace46ea1d719173f7da381 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Fri, 20 May 2022 17:07:55 -0700
 Subject: [PATCH] hw/arm/aspeed: Add fb_machine_class_init
@@ -14,10 +14,10 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  6 files changed, 366 insertions(+)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index a9238e6217..6dc6190283 100644
+index 8fa16b3831..4e4e36bdcf 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -441,3 +441,5 @@ static const TypeInfo aspeed_machine_types[] = {
+@@ -438,3 +438,5 @@ static const TypeInfo aspeed_machine_types[] = {
  };
  
  DEFINE_TYPES(aspeed_machine_types)
@@ -366,10 +366,10 @@ index 3293dfe47f..a68e51c89d 100644
 +
 +DEFINE_FB_MACHINES()
 diff --git a/include/hw/arm/aspeed.h b/include/hw/arm/aspeed.h
-index a00238ed74..84252dcd41 100644
+index 54f0d7643d..31382412ee 100644
 --- a/include/hw/arm/aspeed.h
 +++ b/include/hw/arm/aspeed.h
-@@ -125,4 +125,72 @@ void aspeed_machine_ast2600_class_emmc_init(ObjectClass *oc);
+@@ -127,4 +127,72 @@ void aspeed_machine_ast2600_class_emmc_init(ObjectClass *oc);
   */
  void aspeed_connect_serial_hds_to_uarts(AspeedMachineState *bmc);
  

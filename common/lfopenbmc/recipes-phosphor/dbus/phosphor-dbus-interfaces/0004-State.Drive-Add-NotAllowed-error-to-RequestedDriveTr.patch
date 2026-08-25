@@ -1,4 +1,4 @@
-From 6803dab2d7d71d63f3e4a69363e01aafaa50fc8b Mon Sep 17 00:00:00 2001
+From 368a27bfb7a092bac202c461b7fc3f062d19b665 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Fri, 29 May 2026 12:35:05 +0000
 Subject: [PATCH] State.Drive: Add NotAllowed error to RequestedDriveTransition
@@ -13,7 +13,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/yaml/xyz/openbmc_project/State/Drive.interface.yaml b/yaml/xyz/openbmc_project/State/Drive.interface.yaml
-index 83041325..eb8454f2 100644
+index 8304132..eb8454f 100644
 --- a/yaml/xyz/openbmc_project/State/Drive.interface.yaml
 +++ b/yaml/xyz/openbmc_project/State/Drive.interface.yaml
 @@ -12,6 +12,8 @@ properties:
@@ -26,5 +26,5 @@ index 83041325..eb8454f2 100644
        type: enum[self.DriveState]
        default: "Unknown"
 -- 
-2.43.0
+2.53.0-Meta
 

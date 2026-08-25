@@ -1,4 +1,4 @@
-From ddb51fe59f645ecf5b76b016d9bd3d0392db179a Mon Sep 17 00:00:00 2001
+From b483459bba4fde96aace468bbc962559d59584cf Mon Sep 17 00:00:00 2001
 From: Zinc Lim <zinclim@meta.com>
 Date: Wed, 19 Aug 2026 23:00:38 -0700
 Subject: [PATCH] hw/i2c/aspeed_i2c: only raise the target IRQ for enabled
@@ -57,19 +57,20 @@ index f82775a210..8288e6c7f3 100644
      AspeedI2CClass *aic = ASPEED_I2C_GET_CLASS(bus->controller);
 +    uint32_t sts = bus->regs[R_I2CS_INTR_STS];
 +    uint32_t ctrl = bus->regs[R_I2CS_INTR_CTRL];
-
+ 
 -    if (!bus->regs[R_I2CS_INTR_STS]) {
 +    if (!(sts & ctrl)) {
          return;
      }
-
+ 
 @@ -901,6 +903,7 @@ static void aspeed_i2c_bus_new_write(AspeedI2CBus *bus, hwaddr offset,
          break;
      case A_I2CS_INTR_CTRL:
          bus->regs[R_I2CS_INTR_CTRL] = value;
 +        aspeed_i2c_bus_raise_slave_interrupt(bus);
          break;
-
+ 
      case A_I2CS_INTR_STS:
---
+-- 
 2.53.0-Meta
+

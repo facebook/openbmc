@@ -15,19 +15,15 @@ diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/b
 index fe72d47a7632..37b5e2614a9a 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-@@ -828,9 +828,10 @@ &sgpiom0 {
+@@ -867,6 +867,7 @@ &sgpiom0 {
  	"","",
  	"irq-pvddcore0-ocp-alert","",
  	"irq-pvddcore1-ocp-alert","",
 -	"","",
 +	"irq-retimer0-0v9-alert","",
  	/*O4-O7 line 232-239*/
--	"","","","","","","","",
+-	"","","","",
 +	"irq-retimer1-0v9-alert","",
-+	"","","","","","",
- 	/*P0-P3 line 240-247*/
- 	"","","","","","","","",
- 	/*P4-P7 line 248-255*/
++	"","",
 -- 
 2.43.0
-

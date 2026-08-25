@@ -59,6 +59,9 @@ declare -A PRJ_BOARD_DATA=(
 
     [13,name]="LADAKH800BCLS"
     [13,revs]="Pre-EVT & EVT-1;EVT-2A;EVT-2B/C;DVT-1A;DVT-1B;PPVT;PVT;MP"
+
+    [14,name]="LEH800BCLS"
+    [14,revs]="EVT-1A & EVT-1B;EVT-2;PPVT;PVT;MP"
 )
 
 wedge_board_type() {

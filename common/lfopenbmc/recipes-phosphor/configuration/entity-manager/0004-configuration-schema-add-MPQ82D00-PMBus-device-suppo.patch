@@ -1,4 +1,4 @@
-From 25ceb980333b5829f21419699378016fc9392e3d Mon Sep 17 00:00:00 2001
+From e7533bd9ae7df887c3d32e9bac5b63b61c9887b1 Mon Sep 17 00:00:00 2001
 From: Angela Cheng <angelaptcheng@gmail.com>
 Date: Fri, 21 Aug 2026 02:31:47 +0000
 Subject: [PATCH] configuration: schema: add MPQ82D00 PMBus device support
@@ -18,10 +18,10 @@ The corresponding kernel driver was added in: https://github.com/facebookexterna
  2 files changed, 2 insertions(+)
 
 diff --git a/schemas/firmware.json b/schemas/firmware.json
-index 39fcb13..44c7c50 100644
+index c921811..38affda 100644
 --- a/schemas/firmware.json
 +++ b/schemas/firmware.json
-@@ -54,6 +54,7 @@
+@@ -55,6 +55,7 @@
                          "MP297XFirmware",
                          "MP5998Firmware",
                          "MP994XFirmware",
@@ -41,5 +41,6 @@ index cad0256..40fbbee 100644
                          "MPQ8785",
                          "NCP4200",
                          "PLI1209BC",
---
-2.43.0
+-- 
+2.53.0-Meta
+

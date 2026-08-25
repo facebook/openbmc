@@ -1,7 +1,7 @@
-From 1c324816876627fba77d0bc12b35366c7e553ddd Mon Sep 17 00:00:00 2001
+From e814ba75dff286a66c1b3f4d465a8decf252b688 Mon Sep 17 00:00:00 2001
 From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
 Date: Tue, 9 Jun 2026 21:59:35 +0530
-Subject: [PATCH 25/28] oem: arm: handle boot progress sensor events
+Subject: [PATCH] oem: arm: handle boot progress sensor events
 
 Add Arm OEM handling for PHX BootProgressCode numeric sensor events
 from the MCP. The handler consumes direct PLDM sensor events, filters
@@ -616,5 +616,5 @@ index 0eb722e..44c9716 100644
      pldm::oem_meta::OemMETA oemMETA(&dbusHandler, invoker,
                                      platformHandler.get());
 -- 
-2.47.3
+2.53.0-Meta
 

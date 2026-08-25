@@ -1,7 +1,7 @@
-From e311e393d0120ec5b99c3d1e7fa896ab122ddfab Mon Sep 17 00:00:00 2001
+From 5a250292cb6e6ce2fe7726d7c56a6814c50371e6 Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Wed, 22 Apr 2026 09:25:29 -0700
-Subject: [PATCH 21/28] Add back instance id expiration interval
+Subject: [PATCH] Add back instance id expiration interval
 
 YV4 requires this to build.
 
@@ -14,7 +14,7 @@ Signed-off-by: James Athappilly <jamesatha@gmail.com>
  3 files changed, 15 insertions(+), 1 deletion(-)
 
 diff --git a/meson.build b/meson.build
-index 5d36242..cfe7858 100644
+index b42502e..f15c94c 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -106,6 +106,10 @@ if get_option('oem-ibm').allowed()
@@ -29,7 +29,7 @@ index 5d36242..cfe7858 100644
  conf_data.set(
      'FLIGHT_RECORDER_MAX_ENTRIES',
 diff --git a/meson.options b/meson.options
-index 164b113..c4d9b97 100644
+index 244f6b2..69a75c2 100644
 --- a/meson.options
 +++ b/meson.options
 @@ -56,6 +56,15 @@ option(
@@ -63,5 +63,5 @@ index 5b3f26d..1a007ed 100644
          std::chrono::milliseconds responseTimeOut =
              std::chrono::milliseconds(RESPONSE_TIME_OUT)) :
 -- 
-2.47.3
+2.53.0-Meta
 

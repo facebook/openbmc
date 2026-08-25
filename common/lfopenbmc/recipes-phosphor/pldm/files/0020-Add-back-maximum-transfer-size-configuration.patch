@@ -1,7 +1,7 @@
-From 8f72cd12f776fc013ec2ea42ac17c0d78ecc7648 Mon Sep 17 00:00:00 2001
+From bc6fc79d63f98ca924a712230a54c5c83fac5962 Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Tue, 21 Apr 2026 23:45:07 -0700
-Subject: [PATCH 20/28] Add back maximum transfer size configuration
+Subject: [PATCH] Add back maximum transfer size configuration
 
 When syncing the latest upstream changes, multiple
 Facebook platforms that used this option [1] failed
@@ -19,7 +19,7 @@ Signed-off-by: James Athappilly <jamesatha@gmail.com>
  4 files changed, 12 insertions(+), 2 deletions(-)
 
 diff --git a/fw-update/item_update_manager.cpp b/fw-update/item_update_manager.cpp
-index 6053a89..720f297 100644
+index 8eded1e..966378a 100644
 --- a/fw-update/item_update_manager.cpp
 +++ b/fw-update/item_update_manager.cpp
 @@ -83,7 +83,6 @@ bool ItemUpdateManager::processPackage()
@@ -31,7 +31,7 @@ index 6053a89..720f297 100644
      auto packageSpan = packageMap->getChars();
      packageDataStream =
 diff --git a/fw-update/update_manager.cpp b/fw-update/update_manager.cpp
-index 38782b1..de9e715 100644
+index 273dfbb..dbe88ee 100644
 --- a/fw-update/update_manager.cpp
 +++ b/fw-update/update_manager.cpp
 @@ -183,7 +183,6 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
@@ -77,5 +77,5 @@ index ab87a51..244f6b2 100644
  option(
      'system-specific-bios-json',
 -- 
-2.47.3
+2.53.0-Meta
 

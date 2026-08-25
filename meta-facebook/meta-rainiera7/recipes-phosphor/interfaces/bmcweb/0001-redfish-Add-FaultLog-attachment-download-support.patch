@@ -1,4 +1,4 @@
-From af283471cc8f3b8fb4cda139e28e0e8b9d5fa021 Mon Sep 17 00:00:00 2001
+From 7bc48c8ae5e1adf78abd98768d5c1ec2f3e53f05 Mon Sep 17 00:00:00 2001
 From: Meghana H <Meghana.H@arm.com>
 Date: Fri, 17 Apr 2026 14:19:47 +0000
 Subject: [PATCH] redfish: Add FaultLog attachment download support
@@ -85,10 +85,10 @@ index 0a7ca87c..a421861b 100644
          if (!asyncResp->res.openFd(fd))
          {
 diff --git a/redfish-core/lib/log_services.hpp b/redfish-core/lib/log_services.hpp
-index 66ddd087..19e28805 100644
+index 0901b1e2..b32846ab 100644
 --- a/redfish-core/lib/log_services.hpp
 +++ b/redfish-core/lib/log_services.hpp
-@@ -347,6 +347,12 @@ inline void getDumpEntryCollection(
+@@ -349,6 +349,12 @@ inline void getDumpEntryCollection(
                          "{}/{}/attachment", entriesPath, entryID);
                      thisEntry["AdditionalDataSizeBytes"] = size;
                  }
@@ -101,7 +101,7 @@ index 66ddd087..19e28805 100644
                  entriesArray.emplace_back(std::move(thisEntry));
              }
              asyncResp->res.jsonValue["Members@odata.count"] =
-@@ -447,6 +453,13 @@ inline void getDumpEntryById(
+@@ -452,6 +458,13 @@ inline void getDumpEntryById(
                                              entryID);
                      asyncResp->res.jsonValue["AdditionalDataSizeBytes"] = size;
                  }
@@ -115,7 +115,7 @@ index 66ddd087..19e28805 100644
              }
              if (!foundDumpEntry)
              {
-@@ -491,7 +504,7 @@ inline void downloadDumpEntry(
+@@ -496,7 +509,7 @@ inline void downloadDumpEntry(
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
      const std::string& entryID, const std::string& dumpType)
  {
@@ -124,7 +124,7 @@ index 66ddd087..19e28805 100644
      {
          BMCWEB_LOG_WARNING("Can't find Dump Entry {}", entryID);
          messages::resourceNotFound(asyncResp->res, dumpType + " dump", entryID);
-@@ -1587,6 +1600,16 @@ inline void requestRoutesFaultLogDumpEntry(App& app)
+@@ -1592,6 +1605,16 @@ inline void requestRoutesFaultLogDumpEntry(App& app)
              handleLogServicesDumpEntryDelete, std::ref(app), "FaultLog"));
  }
  

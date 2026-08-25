@@ -1,8 +1,7 @@
-From de52c1f98aade3738264f51ee168d9358db59d7c Mon Sep 17 00:00:00 2001
+From 06f9bf8c5097a6664e4b5a45979b0660b84bfebe Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Thu, 23 Oct 2025 14:34:12 +0800
-Subject: [PATCH 18/28] oem-meta: Add call to the fw-versions-sd-retimer
- service
+Subject: [PATCH] oem-meta: Add call to the fw-versions-sd-retimer service
 
 The fw-versions-sd-retimer service is triggered by the POST_COMPLETED
 and POST_ENDED events. This is a downstream-only implementation, as
@@ -61,5 +60,5 @@ index 5029f19..a9ad75e 100644
  
  int EventLogHandler::write(const message& eventData)
 -- 
-2.47.3
+2.53.0-Meta
 

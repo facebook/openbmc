@@ -1,4 +1,4 @@
-From 3abcf1140334b2e91e4209b580bdc7f340743625 Mon Sep 17 00:00:00 2001
+From 7ef40ae62c2aee21381ce031fa283dba3b81480e Mon Sep 17 00:00:00 2001
 From: Neil Cheng <Neil.Cheng@quantatw.com>
 Date: Wed, 8 Jul 2026 10:16:27 +0800
 Subject: [PATCH] spi: Report flashcp update progress during BIOS update
@@ -19,15 +19,15 @@ Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/phosphor-bmc-co
 Change-Id: Id774da76cbd8174be271c14202c280f2e30c0516
 Signed-off-by: Neil Cheng <Neil.Cheng@quantatw.com>
 ---
- bios/spi_device.cpp | 184 +++++++++++++++++++++++++++++++++++++++++++-
- bios/spi_device.hpp |   3 +
+ spi-flash/spi_device.cpp | 184 ++++++++++++++++++++++++++++++++++++++-
+ spi-flash/spi_device.hpp |   3 +
  2 files changed, 183 insertions(+), 4 deletions(-)
 
-diff --git a/bios/spi_device.cpp b/bios/spi_device.cpp
-index b1ba4a4..8dbe65a 100644
---- a/bios/spi_device.cpp
-+++ b/bios/spi_device.cpp
-@@ -382,11 +382,10 @@ sdbusplus::async::task<bool> SPIDevice::writeSPIFlashWithFlashcp(
+diff --git a/spi-flash/spi_device.cpp b/spi-flash/spi_device.cpp
+index 7ae6e70..b5be1ca 100644
+--- a/spi-flash/spi_device.cpp
++++ b/spi-flash/spi_device.cpp
+@@ -375,11 +375,10 @@ sdbusplus::async::task<bool> SPIDevice::writeSPIFlashWithFlashcp(
          co_return 1;
      }
  
@@ -42,7 +42,7 @@ index b1ba4a4..8dbe65a 100644
  
      std::filesystem::remove(path);
  
-@@ -522,3 +521,180 @@ std::optional<std::string> SPIDevice::getMTDDevicePath() const
+@@ -472,3 +471,180 @@ std::optional<std::string> SPIDevice::getMTDDevicePath() const
  
      return std::nullopt;
  }
@@ -223,11 +223,11 @@ index b1ba4a4..8dbe65a 100644
 +                                             std::chrono::milliseconds(50));
 +    }
 +}
-diff --git a/bios/spi_device.hpp b/bios/spi_device.hpp
-index a0b1b62..da53a89 100644
---- a/bios/spi_device.hpp
-+++ b/bios/spi_device.hpp
-@@ -126,4 +126,7 @@ class SPIDevice : public Device, public NotifyWatchIntf
+diff --git a/spi-flash/spi_device.hpp b/spi-flash/spi_device.hpp
+index f777866..2b6371c 100644
+--- a/spi-flash/spi_device.hpp
++++ b/spi-flash/spi_device.hpp
+@@ -124,4 +124,7 @@ class SPIDevice : public Device
  
      // @returns nullopt on error
      std::optional<std::string> getMTDDevicePath() const;

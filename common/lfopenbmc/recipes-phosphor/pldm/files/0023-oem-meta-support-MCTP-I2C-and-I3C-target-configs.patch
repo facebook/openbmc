@@ -1,7 +1,7 @@
-From 6ebe787d65f83bfcdb9138efad898727c7f40197 Mon Sep 17 00:00:00 2001
+From d256da0bc5ff2eb5a3fc06214ce7d5f9bea47917 Mon Sep 17 00:00:00 2001
 From: x <x@x>
 Date: Tue, 11 Aug 2026 16:21:14 -0700
-Subject: [PATCH 23/28] oem-meta: support MCTP I2C and I3C target configs
+Subject: [PATCH] oem-meta: support MCTP I2C and I3C target configs
 
 getSlotNumberStringByTID() currently only works for devices registered
 as MCTPEndpoint, so endpoints exposed through MCTPI2Ctarget or
@@ -438,5 +438,5 @@ index 28f63ed..dc8d41c 100644
   * @brief Get the slot number from D-Bus for the given sender tid.
   *
 -- 
-2.47.3
+2.53.0-Meta
 

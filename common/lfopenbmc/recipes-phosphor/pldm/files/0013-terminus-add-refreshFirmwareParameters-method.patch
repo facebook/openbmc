@@ -1,7 +1,7 @@
-From 32555e49c7751a55c46c1563aa9efd9a2452ca0e Mon Sep 17 00:00:00 2001
+From 6fe4f47d5cb8f156049e519d5515c728827bbac3 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 7 May 2026 21:56:34 +0800
-Subject: [PATCH 13/28] terminus: add refreshFirmwareParameters method
+Subject: [PATCH] terminus: add refreshFirmwareParameters method
 
 Add `refreshFirmwareParameters` to query firmware parameters without
 running `handleMctpEndpoints`.
@@ -36,10 +36,10 @@ Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
  5 files changed, 163 insertions(+), 1 deletion(-)
 
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index 38d0338..829625e 100644
+index 652458e..1281888 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
-@@ -12,13 +12,22 @@ namespace pldm
+@@ -14,13 +14,22 @@ namespace pldm
  {
  namespace fw_update
  {
@@ -62,7 +62,7 @@ index 38d0338..829625e 100644
              sendQueryDeviceIdentifiersRequest(eid);
          }
          catch (const std::exception& e)
-@@ -30,11 +39,88 @@ void InventoryManager::discoverFDs(const MctpInfos& mctpInfos)
+@@ -32,11 +41,88 @@ void InventoryManager::discoverFDs(const MctpInfos& mctpInfos)
      }
  }
  
@@ -151,7 +151,7 @@ index 38d0338..829625e 100644
          firmwareDeviceNameMap.erase(eid);
          descriptorMap.erase(eid);
          downstreamDescriptorMap.erase(eid);
-@@ -90,6 +176,7 @@ void InventoryManager::queryDeviceIdentifiers(
+@@ -92,6 +178,7 @@ void InventoryManager::queryDeviceIdentifiers(
          error(
              "No response received for query device identifiers for endpoint ID {EID}",
              "EID", eid);
@@ -159,7 +159,7 @@ index 38d0338..829625e 100644
          return;
      }
  
-@@ -639,10 +726,25 @@ void InventoryManager::getFirmwareParameters(
+@@ -641,10 +728,25 @@ void InventoryManager::getFirmwareParameters(
          error(
              "No response received for get firmware parameters for endpoint ID {EID}",
              "EID", eid);
@@ -312,5 +312,5 @@ index d7d77a0..0c65889 100644
       *
       *  @param[in] mctpInfoMap - information of discovered MCTP endpoints
 -- 
-2.47.3
+2.53.0-Meta
 

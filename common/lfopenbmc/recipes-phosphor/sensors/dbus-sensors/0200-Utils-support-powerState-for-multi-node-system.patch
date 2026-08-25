@@ -1,4 +1,4 @@
-From d279a33b3df7e6353b0f1ccf489a3e68d7cac68b Mon Sep 17 00:00:00 2001
+From ce959854e3d4b3469dbbe5e806732c3c14b66899 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH] Utils: support powerState for multi-node system
@@ -945,10 +945,10 @@ index 8599826..42d4800 100644
  
  struct PSUProperty
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
-index ff76a77..de8423b 100644
+index 602a186..a10f9fe 100644
 --- a/src/psu/PSUSensorMain.cpp
 +++ b/src/psu/PSUSensorMain.cpp
-@@ -857,6 +857,7 @@ static void createSensorsCallback(
+@@ -858,6 +858,7 @@ static void createSensorsCallback(
          checkGroupEvent(directory.string(), groupEventPathList);
  
          PowerState readState = getPowerState(*baseConfig);
@@ -956,7 +956,7 @@ index ff76a77..de8423b 100644
  
          /* Check if there are more sensors in the same interface */
          int i = 1;
-@@ -1442,7 +1443,7 @@ static void createSensorsCallback(
+@@ -1443,7 +1444,7 @@ static void createSensorsCallback(
                      sensorName, std::move(sensorThresholds), *interfacePath,
                      readState, sensorUnits, factor, maxReading, minReading,
                      sensorOffset, labelHead, thresholdConfSize, pollRate,
@@ -965,7 +965,7 @@ index ff76a77..de8423b 100644
  
                  if (fwName != nullptr)
                  {
-@@ -1585,7 +1586,11 @@ static void powerStateChanged(
+@@ -1586,7 +1587,11 @@ static void powerStateChanged(
          {
              if (sensor != nullptr && sensor->readState == type)
              {

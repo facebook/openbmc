@@ -1,8 +1,7 @@
-From 43dc4be3439b7b779e37f8c196f7810e19ed87ba Mon Sep 17 00:00:00 2001
+From 1c187ff30eb9cca04bba2688d22f9a202bc5df0e Mon Sep 17 00:00:00 2001
 From: Carter Chen <carter.chen.wiwynn@gmail.com>
 Date: Mon, 1 Dec 2025 08:46:59 +0000
-Subject: [PATCH 22/28] fw_update: Reimplement package parser to use new
- libpldm API
+Subject: [PATCH] fw_update: Reimplement package parser to use new libpldm API
 
 libpldm has revised the APIs for firmware package, the old APIs are
 now deprecated. Switch to the new APIs and use libpldm iterators to
@@ -22,8 +21,8 @@ Signed-off-by: Carter Chen <carter.chen.wiwynn@gmail.com>
  fw-update/device_updater.hpp                  |  20 +-
  fw-update/item_update_manager.cpp             |  28 +-
  fw-update/manager.hpp                         |   2 +-
- fw-update/package_parser.cpp                  | 474 +++++++++---------
- fw-update/package_parser.hpp                  | 114 ++---
+ fw-update/package_parser.cpp                  | 476 +++++++++---------
+ fw-update/package_parser.hpp                  | 113 ++---
  fw-update/test/device_updater_test.cpp        |  87 ++--
  .../test/firmware_inventory_manager_test.cpp  |   6 +-
  fw-update/test/firmware_inventory_test.cpp    |   3 +-
@@ -31,7 +30,7 @@ Signed-off-by: Carter Chen <carter.chen.wiwynn@gmail.com>
  fw-update/test/package_parser_test.cpp        | 247 +++++++--
  fw-update/update_manager.cpp                  | 322 ++++++++++--
  fw-update/update_manager.hpp                  |  37 +-
- 15 files changed, 1014 insertions(+), 586 deletions(-)
+ 15 files changed, 1013 insertions(+), 588 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
 index fe391e2..26c3dff 100644
@@ -619,7 +618,7 @@ index a0621c3..75c5ed8 100644
      /** @brief Component image information for all the components in the fw
       *         update package
 diff --git a/fw-update/item_update_manager.cpp b/fw-update/item_update_manager.cpp
-index 720f297..4799b53 100644
+index 966378a..4799b53 100644
 --- a/fw-update/item_update_manager.cpp
 +++ b/fw-update/item_update_manager.cpp
 @@ -45,24 +45,23 @@ bool ItemUpdateManager::processPackage()
@@ -647,7 +646,7 @@ index 720f297..4799b53 100644
      }
 -    try
 -    {
--        parser->parse(buffer, buffer.size());
+-        parser->parse(buffer);
 -    }
 -    catch (const std::exception& e)
 +    if (parser == nullptr)
@@ -700,7 +699,7 @@ index 7a04ea0..cebbfd5 100644
                       downstreamDescriptorMap, componentInfoMap, configurations,
                       updateManager)
 diff --git a/fw-update/package_parser.cpp b/fw-update/package_parser.cpp
-index b8745f6..d5cc0f6 100644
+index acbcb9d..d5cc0f6 100644
 --- a/fw-update/package_parser.cpp
 +++ b/fw-update/package_parser.cpp
 @@ -9,6 +9,7 @@
@@ -711,7 +710,7 @@ index b8745f6..d5cc0f6 100644
  
  PHOSPHOR_LOG2_USING;
  
-@@ -21,306 +22,309 @@ namespace fw_update
+@@ -21,308 +22,309 @@ namespace fw_update
  using InternalFailure =
      sdbusplus::xyz::openbmc_project::Common::Error::InternalFailure;
  
@@ -1088,8 +1087,10 @@ index b8745f6..d5cc0f6 100644
 -    }
 -}
 -
--void PackageParser::parse(const std::vector<uint8_t>& pkgHdr, uintmax_t pkgSize)
+-void PackageParser::parse(const std::vector<uint8_t>& pkgHdr)
 -{
+-    const uintmax_t pkgSize = pkgHdr.size();
+-
 -    if (pkgHeaderSize >= pkgHdr.size())
 -    {
 -        error("Invalid package header size '{PKG_HDR_SIZE}' ", "PKG_HDR_SIZE",
@@ -1257,7 +1258,7 @@ index b8745f6..d5cc0f6 100644
  
  } // namespace fw_update
 diff --git a/fw-update/package_parser.hpp b/fw-update/package_parser.hpp
-index ee3be56..aca9f54 100644
+index 3aeb2b2..aca9f54 100644
 --- a/fw-update/package_parser.hpp
 +++ b/fw-update/package_parser.hpp
 @@ -6,6 +6,7 @@
@@ -1268,7 +1269,7 @@ index ee3be56..aca9f54 100644
  #include <vector>
  
  namespace pldm
-@@ -30,28 +31,12 @@ class PackageParser
+@@ -30,27 +31,12 @@ class PackageParser
  
      /** @brief Constructor
       *
@@ -1287,14 +1288,13 @@ index ee3be56..aca9f54 100644
 -        componentBitmapBitLength(componentBitmapBitLength)
 -    {}
 -
--    /** @brief Parse the firmware update package header
+-    /** @brief Parse the firmware update package
 -     *
--     *  @param[in] pkgHdr - Package header
--     *  @param[in] pkgSize - Size of the firmware update package
+-     *  @param[in] pkgHdr - Package
 -     *
 -     *  @note Throws exception is parsing fails
 -     */
--    void parse(const std::vector<uint8_t>& pkgHdr, uintmax_t pkgSize);
+-    void parse(const std::vector<uint8_t>& pkgHdr);
 +    explicit PackageParser(std::span<const uint8_t> package)
 +    {
 +        parse(package);
@@ -1302,7 +1302,7 @@ index ee3be56..aca9f54 100644
  
      /** @brief Get firmware device ID records from the package
       *
-@@ -63,6 +48,16 @@ class PackageParser
+@@ -62,6 +48,16 @@ class PackageParser
          return fwDeviceIDRecords;
      }
  
@@ -1319,7 +1319,7 @@ index ee3be56..aca9f54 100644
      /** @brief Get component image information from the package
       *
       *  @return if parsing the package is successful, return component image
-@@ -73,55 +68,31 @@ class PackageParser
+@@ -72,55 +68,31 @@ class PackageParser
          return componentImageInfos;
      }
  
@@ -1389,7 +1389,7 @@ index ee3be56..aca9f54 100644
      /** @brief Component Image Information in the package */
      ComponentImageInfos componentImageInfos;
  
-@@ -130,17 +101,22 @@ class PackageParser
+@@ -129,17 +101,22 @@ class PackageParser
       *         shall be a multiple of 8 and be large enough to contain a bit
       *         for each component in the package.
       */
@@ -1423,7 +1423,7 @@ index ee3be56..aca9f54 100644
  } // namespace fw_update
  
 diff --git a/fw-update/test/device_updater_test.cpp b/fw-update/test/device_updater_test.cpp
-index 93641b6..92c78dd 100644
+index 6dcc954..92c78dd 100644
 --- a/fw-update/test/device_updater_test.cpp
 +++ b/fw-update/test/device_updater_test.cpp
 @@ -7,10 +7,8 @@
@@ -1490,7 +1490,7 @@ index 93641b6..92c78dd 100644
 +    auto parser = PackageParser{packageData};
      package.seekg(0);
 -
--    parser->parse(packageHeader, packageSize);
+-    parser->parse(packageHeader);
 -    const auto& fwDeviceIDRecords = parser->getFwDeviceIDRecords();
 -    const auto& testPkgCompImageInfos = parser->getComponentImageInfos();
 -
@@ -1627,19 +1627,21 @@ index 0b0672f..19124ad 100644
                           outDescriptorMap, outDownstreamDescriptorMap,
                           outComponentInfoMap, configurations, updateManager)
 diff --git a/fw-update/test/package_parser_test.cpp b/fw-update/test/package_parser_test.cpp
-index b53da29..89dd69b 100644
+index b8dc1e0..bab9f36 100644
 --- a/fw-update/test/package_parser_test.cpp
 +++ b/fw-update/test/package_parser_test.cpp
-@@ -1,5 +1,8 @@
+@@ -1,7 +1,10 @@
 +#include "common/utils.hpp"
  #include "fw-update/package_parser.hpp"
+ 
+ #include <libpldm/edac.h>
  
 +#include <xyz/openbmc_project/Common/error.hpp>
 +
  #include <typeinfo>
  
  #include <gmock/gmock.h>
-@@ -7,6 +10,9 @@
+@@ -9,6 +12,9 @@
  
  using namespace pldm::fw_update;
  
@@ -1649,7 +1651,7 @@ index b53da29..89dd69b 100644
  void imageGenerate(std::vector<uint8_t>& image, size_t size)
  {
      for (size_t i = 1; i <= size; ++i)
-@@ -43,15 +49,11 @@ TEST(PackageParser, ValidPkgSingleDescriptorSingleComponent)
+@@ -45,15 +51,11 @@ TEST(PackageParser, ValidPkgSingleDescriptorSingleComponent)
      std::vector<uint8_t> compImage;
      imageGenerate(compImage, pkgImageSize);
      imageInsert(fwPkgHdr, compImage);
@@ -1660,7 +1662,7 @@ index b53da29..89dd69b 100644
 -    EXPECT_EQ(parser->pkgHeaderSize, pkgHeaderSize);
 -    EXPECT_EQ(parser->pkgVersion, pkgVersion);
 -
--    parser->parse(fwPkgHdr, pkgSize);
+-    parser->parse(fwPkgHdr);
 -    auto outfwDeviceIDRecords = parser->getFwDeviceIDRecords();
 +    constexpr std::string_view packageVersion{"VersionString1"};
 +    auto parser = PackageParser(fwPkgHdr);
@@ -1670,7 +1672,7 @@ index b53da29..89dd69b 100644
      FirmwareDeviceIDRecords fwDeviceIDRecords{
          {1,
           {0},
-@@ -64,10 +66,23 @@ TEST(PackageParser, ValidPkgSingleDescriptorSingleComponent)
+@@ -66,10 +68,23 @@ TEST(PackageParser, ValidPkgSingleDescriptorSingleComponent)
      };
      EXPECT_EQ(outfwDeviceIDRecords, fwDeviceIDRecords);
  
@@ -1698,22 +1700,31 @@ index b53da29..89dd69b 100644
  }
  
  TEST(PackageParser, ValidPkgMultipleDescriptorsMultipleComponents)
-@@ -96,11 +111,11 @@ TEST(PackageParser, ValidPkgMultipleDescriptorsMultipleComponents)
+@@ -98,21 +113,19 @@ TEST(PackageParser, ValidPkgMultipleDescriptorsMultipleComponents)
          0x69, 0x6F, 0x6E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x35, 0x0A, 0x00,
          0xC8, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x01, 0x00, 0x61, 0x01,
          0x00, 0x00, 0x1B, 0x00, 0x00, 0x00, 0x01, 0x0E, 0x56, 0x65, 0x72, 0x73,
--        0x69, 0x6F, 0x6E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x36, 0x10, 0x00,
-+        0x69, 0x6F, 0x6E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x36, 0x0A, 0x00,
+-        0x69, 0x6F, 0x6E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x36, 0x0b, 0x00,
++        0x69, 0x6F, 0x6E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x36, 0x0B, 0x00,
          0x2C, 0x01, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x00, 0x0C, 0x00, 0x7C, 0x01,
          0x00, 0x00, 0x1B, 0x00, 0x00, 0x00, 0x01, 0x0E, 0x56, 0x65, 0x72, 0x73,
--        0x69, 0x6F, 0x6E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x37, 0xF1, 0x90,
--        0x9C, 0x71};
-+        0x69, 0x6F, 0x6E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x37, 0xE8, 0xEC,
-+        0xED, 0x11};
+         0x69, 0x6F, 0x6E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x37};
  
-     constexpr uintmax_t pkgSize = 407;
-     constexpr uintmax_t pkgHeaderSize = 326;
-@@ -112,15 +127,11 @@ TEST(PackageParser, ValidPkgMultipleDescriptorsMultipleComponents)
+     const uint32_t check = pldm_edac_crc32(fwPkgHdr.data(), fwPkgHdr.size());
+-
+     const auto checksum =
+         std::bit_cast<std::array<uint8_t, sizeof(check)>>(check);
+     fwPkgHdr.insert(fwPkgHdr.end(), checksum.begin(), checksum.end());
+ 
++    constexpr uintmax_t pkgSize = 407;
+     const uintmax_t pkgHeaderSize = fwPkgHdr.size();
+     EXPECT_EQ(pkgHeaderSize, 326);
+-
+-    constexpr uintmax_t pkgSize = 407;
+     const uintmax_t pkgImageSize = (pkgSize - pkgHeaderSize) / 3;
+     std::vector<uint8_t> compImage1, compImage2, compImage3;
+     imageGenerate(compImage1, pkgImageSize);
+@@ -121,15 +134,11 @@ TEST(PackageParser, ValidPkgMultipleDescriptorsMultipleComponents)
      imageInsert(fwPkgHdr, compImage1);
      imageInsert(fwPkgHdr, compImage2);
      imageInsert(fwPkgHdr, compImage3);
@@ -1724,7 +1735,7 @@ index b53da29..89dd69b 100644
 -    EXPECT_EQ(parser->pkgHeaderSize, pkgHeaderSize);
 -    EXPECT_EQ(parser->pkgVersion, pkgVersion);
 -
--    parser->parse(fwPkgHdr, pkgSize);
+-    parser->parse(fwPkgHdr);
 -    auto outfwDeviceIDRecords = parser->getFwDeviceIDRecords();
 +    constexpr std::string_view packageVersion{"VersionString1"};
 +    auto parser = PackageParser(fwPkgHdr);
@@ -1734,7 +1745,7 @@ index b53da29..89dd69b 100644
      FirmwareDeviceIDRecords fwDeviceIDRecords{
          {1,
           {0, 1},
-@@ -153,12 +164,55 @@ TEST(PackageParser, ValidPkgMultipleDescriptorsMultipleComponents)
+@@ -162,12 +171,55 @@ TEST(PackageParser, ValidPkgMultipleDescriptorsMultipleComponents)
      };
      EXPECT_EQ(outfwDeviceIDRecords, fwDeviceIDRecords);
  
@@ -1742,7 +1753,7 @@ index b53da29..89dd69b 100644
 -    ComponentImageInfos compImageInfos{
 -        {10, 100, 0xFFFFFFFF, 0, 0, 326, 27, "VersionString5"},
 -        {10, 200, 0xFFFFFFFF, 0, 1, 353, 27, "VersionString6"},
--        {16, 300, 0xFFFFFFFF, 1, 12, 380, 27, "VersionString7"}};
+-        {11, 300, 0xFFFFFFFF, 1, 12, 380, 27, "VersionString7"}};
 -    EXPECT_EQ(outCompImageInfos, compImageInfos);
 +    auto outCompImageInfos = parser.getComponentImageInfos();
 +    EXPECT_EQ(outCompImageInfos.size(), 3);
@@ -1783,7 +1794,7 @@ index b53da29..89dd69b 100644
 +            outCompImageInfoTuple3);
 +    const auto& outCompImage3 = std::get<CompImage>(outCompImageInfoTuple3);
 +    const auto& outCompVersion3 = std::get<CompVersion>(outCompImageInfoTuple3);
-+    EXPECT_EQ(outCompImageInfo3.component_classification, 10);
++    EXPECT_EQ(outCompImageInfo3.component_classification, 11);
 +    EXPECT_EQ(outCompImageInfo3.component_identifier, 300);
 +    EXPECT_EQ(outCompImageInfo3.component_comparison_stamp, 0xFFFFFFFF);
 +    EXPECT_EQ(outCompImageInfo3.component_options.value, 1);
@@ -1796,7 +1807,7 @@ index b53da29..89dd69b 100644
  }
  
  TEST(PackageParser, InvalidPkgHeaderInfoIncomplete)
-@@ -166,9 +220,7 @@ TEST(PackageParser, InvalidPkgHeaderInfoIncomplete)
+@@ -175,9 +227,7 @@ TEST(PackageParser, InvalidPkgHeaderInfoIncomplete)
      std::vector<uint8_t> fwPkgHdr{0xF0, 0x18, 0x87, 0x8C, 0xCB, 0x7D,
                                    0x49, 0x43, 0x98, 0x00, 0xA0, 0x2F,
                                    0x05, 0x9A, 0xCA, 0x02};
@@ -1807,7 +1818,7 @@ index b53da29..89dd69b 100644
  }
  
  TEST(PackageParser, InvalidPkgNotSupportedHeaderFormat)
-@@ -179,9 +231,7 @@ TEST(PackageParser, InvalidPkgNotSupportedHeaderFormat)
+@@ -188,9 +238,7 @@ TEST(PackageParser, InvalidPkgNotSupportedHeaderFormat)
          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x19, 0x0C, 0xE5,
          0x07, 0x00, 0x08, 0x00, 0x01, 0x0E, 0x56, 0x65, 0x72, 0x73,
          0x69, 0x6F, 0x6E, 0x53, 0x74, 0x72, 0x69, 0x6E, 0x67, 0x31};
@@ -1818,7 +1829,7 @@ index b53da29..89dd69b 100644
  }
  
  TEST(PackageParser, InvalidPkgBadChecksum)
-@@ -206,5 +256,126 @@ TEST(PackageParser, InvalidPkgBadChecksum)
+@@ -215,5 +263,126 @@ TEST(PackageParser, InvalidPkgBadChecksum)
      std::vector<uint8_t> compImage;
      imageGenerate(compImage, pkgImageSize);
      imageInsert(fwPkgHdr, compImage);
@@ -1947,7 +1958,7 @@ index b53da29..89dd69b 100644
 +    EXPECT_THROW(PackageParser{fwPkgHdr}, InternalFailure);
  }
 diff --git a/fw-update/update_manager.cpp b/fw-update/update_manager.cpp
-index de9e715..a4a9880 100644
+index dbe88ee..a4a9880 100644
 --- a/fw-update/update_manager.cpp
 +++ b/fw-update/update_manager.cpp
 @@ -5,14 +5,22 @@
@@ -2204,7 +2215,7 @@ index de9e715..a4a9880 100644
 -    package.seekg(0);
 -    try
 -    {
--        parser->parse(packageHeader, packageSize);
+-        parser->parse(packageHeader);
 -    }
 -    catch (const std::exception& e)
 +    if (parser == nullptr)
@@ -2493,5 +2504,5 @@ index 883b254..d58eb48 100644
      std::unordered_map<mctp_eid_t, std::unique_ptr<DeviceUpdater>>
          deviceUpdaterMap;
 -- 
-2.47.3
+2.53.0-Meta
 

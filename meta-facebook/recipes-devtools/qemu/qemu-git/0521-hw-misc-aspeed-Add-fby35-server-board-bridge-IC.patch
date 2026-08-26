@@ -1,4 +1,4 @@
-From edd48b00a66d120581517c0b641f492f9a001a13 Mon Sep 17 00:00:00 2001
+From 5e6e536534bccee9103bf064efa20a3004a7137e Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 23 Aug 2022 16:57:35 -0700
 Subject: [PATCH] hw/misc/aspeed: Add fby35 server board bridge IC
@@ -361,10 +361,10 @@ index 0000000000..c7b1d420e2
 +
 +DEFINE_TYPES(types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index ed59b3b8cf..b726e42f16 100644
+index 9388c9904b..9ea7864fea 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -147,6 +147,7 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -149,6 +149,7 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_xdma.c',
    'aspeed_peci.c',
    'aspeed_sli.c',
@@ -373,10 +373,10 @@ index ed59b3b8cf..b726e42f16 100644
    'intel_me.c'))
  
 diff --git a/hw/misc/trace-events b/hw/misc/trace-events
-index c4ed8adf9d..d1357dbe92 100644
+index a5d604496b..a3cdf6b462 100644
 --- a/hw/misc/trace-events
 +++ b/hw/misc/trace-events
-@@ -449,6 +449,10 @@ vmlaunch_reset_enter(void) ""
+@@ -453,6 +453,10 @@ vmlaunch_reset_enter(void) ""
  vm_launchupdate_finalize(void) ""
  restore_host_x86_igvm(void) ""
  

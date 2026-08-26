@@ -1,4 +1,4 @@
-From 6460b92b2ca7636e9576cb43b05220b4868a63f0 Mon Sep 17 00:00:00 2001
+From 2907ff6b03eab26b20478b81151df9aea154b997 Mon Sep 17 00:00:00 2001
 From: Amithash Prasad <amithash@meta.com>
 Date: Wed, 25 Mar 2026 15:51:35 -0700
 Subject: [PATCH] lg2: commit: Allow users to provide additional data
@@ -15,7 +15,7 @@ Signed-off-by: Amithash Prasad <amithash@meta.com>
  3 files changed, 33 insertions(+), 9 deletions(-)
 
 diff --git a/README.md b/README.md
-index 18b9602..5fd1690 100644
+index 2fc1fc1..8106852 100644
 --- a/README.md
 +++ b/README.md
 @@ -89,6 +89,15 @@ lg2::commit(sdbusplus::event::xyz::openbmc_project::Logging::Cleared(
@@ -86,7 +86,7 @@ index 75c6659..05e85ae 100644
  
  /** Resolve an existing event/error (using async context).
 diff --git a/lib/lg2_commit.cpp b/lib/lg2_commit.cpp
-index b45ee86..704db6b 100644
+index 5cad834..9bf03b6 100644
 --- a/lib/lg2_commit.cpp
 +++ b/lib/lg2_commit.cpp
 @@ -115,7 +115,8 @@ auto extractEvent(sdbusplus::exception::generated_event_base&& t)
@@ -121,7 +121,7 @@ index b45ee86..704db6b 100644
      -> sdbusplus::async::task<sdbusplus::object_path>
  {
      using details::Create;
-@@ -184,11 +187,13 @@ auto commit(sdbusplus::async::context& ctx,
+@@ -196,11 +199,13 @@ auto commit(sdbusplus::async::context& ctx,
  
      if constexpr (LG2_COMMIT_DBUS)
      {

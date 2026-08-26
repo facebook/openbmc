@@ -1,4 +1,4 @@
-From 00d48cb7351627e99e3a85468d93e8373bc143c6 Mon Sep 17 00:00:00 2001
+From 5f6273c8f4d872821c7b9540f3feb84615011c11 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH] hw/misc/aspeed: Add intel-me
@@ -26,10 +26,10 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  create mode 100644 hw/misc/intel_me.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 91c6b37da6..328e0c2d21 100644
+index aa9789fbce..1a225ce8e0 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -1290,6 +1290,7 @@ F: tests/*/*ast2700*
+@@ -1291,6 +1291,7 @@ F: tests/*/*ast2700*
  F: pc-bios/ast27x0_bootrom.bin
  F: roms/vbootrom
  F: hw/misc/fby35_sb_cpld.c
@@ -206,10 +206,10 @@ index 0000000000..ac99c6f05b
 +
 +DEFINE_TYPES(types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 79d25b871b..ed59b3b8cf 100644
+index f2a51897d8..9388c9904b 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -147,7 +147,8 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -149,7 +149,8 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_xdma.c',
    'aspeed_peci.c',
    'aspeed_sli.c',
@@ -220,10 +220,10 @@ index 79d25b871b..ed59b3b8cf 100644
  system_ss.add(when: 'CONFIG_MSF2', if_true: files('msf2-sysreg.c'))
  system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
 diff --git a/hw/misc/trace-events b/hw/misc/trace-events
-index ef15572aa9..c4ed8adf9d 100644
+index 78739ab6d1..a5d604496b 100644
 --- a/hw/misc/trace-events
 +++ b/hw/misc/trace-events
-@@ -452,3 +452,11 @@ restore_host_x86_igvm(void) ""
+@@ -456,3 +456,11 @@ restore_host_x86_igvm(void) ""
  # fby35_sb_cpld.c
  fby35_sb_cpld_read(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"
  fby35_sb_cpld_write(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"

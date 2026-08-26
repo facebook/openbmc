@@ -1,4 +1,4 @@
-From 5422b53f9b78354f90d320e8fdaf6d330042264d Mon Sep 17 00:00:00 2001
+From 2a5906b8eafc015d8ee38183e1afb3275c98f2ef Mon Sep 17 00:00:00 2001
 From: Sandy Chu <sandy.chu.wiwynn@gmail.com>
 Date: Fri, 5 Jun 2026 08:12:59 +0000
 Subject: [PATCH] mctp: add PowerState check in MCTPReactor
@@ -32,7 +32,7 @@ Signed-off-by: Sandy Chu <sandy.chu.wiwynn@gmail.com>
  5 files changed, 57 insertions(+), 9 deletions(-)
 
 diff --git a/src/mctp/MCTPEndpoint.cpp b/src/mctp/MCTPEndpoint.cpp
-index 53a3e50..92cabe2 100644
+index c710dae..0186cd3 100644
 --- a/src/mctp/MCTPEndpoint.cpp
 +++ b/src/mctp/MCTPEndpoint.cpp
 @@ -48,8 +48,10 @@ static constexpr const char* mctpdEndpointControlInterface =
@@ -48,7 +48,7 @@ index 53a3e50..92cabe2 100644
  {}
  
  void MCTPDDevice::onEndpointInterfacesRemoved(
-@@ -456,9 +458,11 @@ std::shared_ptr<I2CMCTPDDevice> I2CMCTPDDevice::from(
+@@ -457,9 +459,11 @@ std::shared_ptr<I2CMCTPDDevice> I2CMCTPDDevice::from(
          throw std::invalid_argument("Bad bus index");
      }
  
@@ -61,7 +61,7 @@ index 53a3e50..92cabe2 100644
      }
      catch (const MCTPException& ex)
      {
-@@ -511,9 +515,11 @@ std::shared_ptr<I3CMCTPDDevice> I3CMCTPDDevice::from(
+@@ -512,9 +516,11 @@ std::shared_ptr<I3CMCTPDDevice> I3CMCTPDDevice::from(
          throw std::invalid_argument("Bad bus index");
      }
  
@@ -143,10 +143,10 @@ index ab62bde..4ce3a1b 100644
      ~I3CMCTPDDevice() override = default;
  
 diff --git a/src/mctp/MCTPReactor.cpp b/src/mctp/MCTPReactor.cpp
-index d4f591c..b408971 100644
+index 9548d53..ddde631 100644
 --- a/src/mctp/MCTPReactor.cpp
 +++ b/src/mctp/MCTPReactor.cpp
-@@ -130,6 +130,23 @@ void MCTPReactor::trackEndpoint(const std::shared_ptr<MCTPEndpoint>& ep)
+@@ -131,6 +131,23 @@ void MCTPReactor::trackEndpoint(const std::shared_ptr<MCTPEndpoint>& ep)
  
  void MCTPReactor::setupEndpoint(const std::shared_ptr<MCTPDevice>& dev)
  {
@@ -171,7 +171,7 @@ index d4f591c..b408971 100644
          "Attempting to setup up MCTP endpoint for device at [ {MCTP_DEVICE} ]",
          "MCTP_DEVICE", dev->describe());
 diff --git a/src/mctp/MCTPReactorMain.cpp b/src/mctp/MCTPReactorMain.cpp
-index 59038f5..3c02fc2 100644
+index ad2802d..db7fee0 100644
 --- a/src/mctp/MCTPReactorMain.cpp
 +++ b/src/mctp/MCTPReactorMain.cpp
 @@ -251,6 +251,8 @@ int main()
@@ -184,10 +184,10 @@ index 59038f5..3c02fc2 100644
          auto gsc = std::make_shared<GetSensorConfiguration>(
              systemBus, std::bind_front(manageMCTPEntity, systemBus, reactor));
 diff --git a/src/tests/test_MCTPReactor.cpp b/src/tests/test_MCTPReactor.cpp
-index ee549ed..80580f7 100644
+index e132ee2..fe30b01 100644
 --- a/src/tests/test_MCTPReactor.cpp
 +++ b/src/tests/test_MCTPReactor.cpp
-@@ -26,6 +26,7 @@ class MockMCTPDevice : public MCTPDevice
+@@ -28,6 +28,7 @@ class MockMCTPDevice : public MCTPDevice
      MOCK_METHOD(void, remove, (), (override));
      MOCK_METHOD(std::string, describe, (), (const, override));
      MOCK_METHOD(std::size_t, id, (), (const, override));
@@ -195,7 +195,7 @@ index ee549ed..80580f7 100644
  };
  
  class MockMCTPEndpoint : public MCTPEndpoint
-@@ -65,6 +66,8 @@ class MCTPReactorFixture : public testing::Test
+@@ -67,6 +68,8 @@ class MCTPReactorFixture : public testing::Test
          EXPECT_CALL(*device, describe())
              .WillRepeatedly(testing::Return("mock device"));
          EXPECT_CALL(*device, id()).WillRepeatedly(testing::Return(0UL));
@@ -204,7 +204,7 @@ index ee549ed..80580f7 100644
  
          endpoint = std::make_shared<MockMCTPEndpoint>();
          EXPECT_CALL(*endpoint, device())
-@@ -483,6 +486,8 @@ TEST(MCTPReactor, replaceConfiguration)
+@@ -485,6 +488,8 @@ TEST(MCTPReactor, replaceConfiguration)
      EXPECT_CALL(*idev, setup(testing::_))
          .WillOnce(testing::InvokeArgument<0>(std::error_code(), iep));
      EXPECT_CALL(*idev, remove()).WillOnce([&]() { iep->remove(); });
@@ -213,7 +213,7 @@ index ee549ed..80580f7 100644
  
      EXPECT_CALL(*iep, device()).WillRepeatedly(testing::Return(idev));
  
-@@ -502,6 +507,8 @@ TEST(MCTPReactor, replaceConfiguration)
+@@ -504,6 +509,8 @@ TEST(MCTPReactor, replaceConfiguration)
      EXPECT_CALL(*rdev, setup(testing::_))
          .WillOnce(testing::InvokeArgument<0>(std::error_code(), rep));
      EXPECT_CALL(*rdev, remove()).WillOnce([&]() { rep->remove(); });
@@ -222,7 +222,7 @@ index ee549ed..80580f7 100644
  
      EXPECT_CALL(*rep, device()).WillRepeatedly(testing::Return(rdev));
  
-@@ -540,6 +547,8 @@ TEST(MCTPReactor, concurrentEndpointSetupReactorTeardown)
+@@ -542,6 +549,8 @@ TEST(MCTPReactor, concurrentEndpointSetupReactorTeardown)
          EXPECT_CALL(*device, id()).WillRepeatedly(testing::Return(0UL));
          EXPECT_CALL(*device, setup(testing::_))
              .WillOnce(testing::SaveArg<0>(&setupHandler));
@@ -231,7 +231,7 @@ index ee549ed..80580f7 100644
  
          reactor->manageMCTPDevice("/test", device);
      }
-@@ -575,6 +584,8 @@ TEST(MCTPReactor, manageMockDeviceDelayedSetup)
+@@ -577,6 +586,8 @@ TEST(MCTPReactor, manageMockDeviceDelayedSetup)
                      std::make_error_code(std::errc::permission_denied),
                      endpoint))
                  .WillOnce(testing::SaveArg<0>(&setupHandler));

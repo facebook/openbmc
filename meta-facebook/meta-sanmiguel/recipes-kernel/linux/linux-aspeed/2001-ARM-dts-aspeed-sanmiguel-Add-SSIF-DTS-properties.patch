@@ -21,7 +21,7 @@ index d7ed497d7227..265cc125418e 100644
  
  &i2c0 {
  	status = "okay";
-+	aspeed,enable-byte;
++	aspeed,transfer-mode = "byte";
  
  	ssif-bmc@10 {
  		compatible = "ssif-bmc";

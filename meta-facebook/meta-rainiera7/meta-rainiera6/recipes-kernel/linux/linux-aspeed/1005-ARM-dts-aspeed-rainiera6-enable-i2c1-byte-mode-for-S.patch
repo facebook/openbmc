@@ -18,7 +18,7 @@ index 93853a7dc..7bf5acdde 100644
  /* Rainiera6 SoC SSIF */
  &i2c1 {
  	status = "okay";
-+	aspeed,enable-byte;
++	aspeed,transfer-mode = "byte";
  
  	ssif_bmc: ssif-bmc@10 {
  		compatible = "ssif-bmc";

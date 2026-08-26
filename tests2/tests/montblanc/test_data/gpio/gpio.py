@@ -68,4 +68,11 @@ GPIOS = {
         "edge": "none",
         "value": 0,
     },
+    "FM_BMC_NMI_N": {
+        "active_low": "0",
+        "direction": "out",
+        "uevent": "",
+        "edge": "none",
+        "value": 1,
+    },
 }

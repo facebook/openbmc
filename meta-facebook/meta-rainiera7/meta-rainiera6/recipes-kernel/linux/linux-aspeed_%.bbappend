@@ -10,4 +10,5 @@ SRC_URI:append = " \
     file://1004-ARM-dts-aspeed-rainiera6-Add-I3C-Nodes.patch \
     file://1005-ARM-dts-aspeed-rainiera6-enable-i2c1-byte-mode-for-S.patch \
     file://1006-ARM-dts-aspeed-rainiera6-increase-ssif-response-time.patch \
+    file://rainiera6-local.cfg \
 "

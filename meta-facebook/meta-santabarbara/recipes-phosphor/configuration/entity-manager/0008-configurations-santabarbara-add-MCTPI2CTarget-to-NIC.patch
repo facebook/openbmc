@@ -1,0 +1,103 @@
+From 5213199746ca0735d1ea7f11a6764216ebee7f18 Mon Sep 17 00:00:00 2001
+From: Frank Chen <FrankChen4@quantatw.com>
+Date: Tue, 21 Jul 2026 15:02:54 +0800
+Subject: [PATCH 8/9] configurations: santabarbara: add MCTPI2CTarget to NIC
+
+Add PLDM sensors:
+- SENSOR_300 for network controller temperature.
+- SENSOR_500 for OSFP plug temperature.
+
+Tested-On: santabarbara
+```
+root@bmc:~# mfg-tool sensor-display 2>/dev/null | table-sensor-display | grep -i nic
+NIC1_OSFP_TEMP_C              	ok         	46        	DegreesC	N/A	N/A  	N/A	70 	80   	N/A
+NIC1_TEMP_C                   	ok         	73        	DegreesC	N/A	N/A  	N/A	97 	102  	115
+NIC1_TMP421_TEMP_C            	ok         	73        	DegreesC	N/A	N/A  	N/A	N/A	100  	N/A
+```
+
+Change-Id: I53e9b889b0613078d7e0956cf12a9985b27c581d
+Signed-off-by: Frank Chen <FrankChen4@quantatw.com>
+---
+ configurations/ocp/cx7_ocp.json | 21 +++++++++++++++++++--
+ configurations/ocp/cx8_ocp.json | 21 +++++++++++++++++++--
+ 2 files changed, 38 insertions(+), 4 deletions(-)
+
+diff --git a/configurations/ocp/cx7_ocp.json b/configurations/ocp/cx7_ocp.json
+index a083676..3bf777d 100644
+--- a/configurations/ocp/cx7_ocp.json
++++ b/configurations/ocp/cx7_ocp.json
+@@ -6,14 +6,31 @@
+             "Name": "OCP CX7 NIC FRU $bus % 109 % 11",
+             "Type": "EEPROM"
+         },
++        {
++            "Address": "0x32",
++            "Bus": "$bus",
++            "Inventory": "",
++            "Name": "NIC$bus % 109 % 11",
++            "PLDMSensors": [
++                {
++                    "ID": 300,
++                    "Name": "TEMP_C"
++                },
++                {
++                    "ID": 500,
++                    "Name": "OSFP_TEMP_C"
++                }
++            ],
++            "Type": "MCTPI2CTarget"
++        },
+         {
+             "Address": "0x1f",
+             "Bus": "$bus",
+             "Labels": [
+                 "temp2"
+             ],
+-            "Name": "NIC$bus % 109 % 11 TEMP_C",
+-            "Name1": "NIC$bus % 109 % 11 TEMP_C",
++            "Name": "NIC$bus % 109 % 11 TMP421_TEMP_C",
++            "Name1": "NIC$bus % 109 % 11 TMP421_TEMP_C",
+             "Thresholds": [
+                 {
+                     "Direction": "greater than",
+diff --git a/configurations/ocp/cx8_ocp.json b/configurations/ocp/cx8_ocp.json
+index 45b4870..b05d0fb 100644
+--- a/configurations/ocp/cx8_ocp.json
++++ b/configurations/ocp/cx8_ocp.json
+@@ -6,14 +6,31 @@
+             "Name": "OCP CX8 NIC FRU $bus % 109 % 11",
+             "Type": "EEPROM"
+         },
++        {
++            "Address": "0x32",
++            "Bus": "$bus",
++            "Inventory": "",
++            "Name": "NIC$bus % 109 % 11",
++            "PLDMSensors": [
++                {
++                    "ID": 300,
++                    "Name": "TEMP_C"
++                },
++                {
++                    "ID": 500,
++                    "Name": "OSFP_TEMP_C"
++                }
++            ],
++            "Type": "MCTPI2CTarget"
++        },
+         {
+             "Address": "0x1f",
+             "Bus": "$bus",
+             "Labels": [
+                 "temp2"
+             ],
+-            "Name": "NIC$bus % 109 % 11 TEMP_C",
+-            "Name1": "NIC$bus % 109 % 11 TEMP_C",
++            "Name": "NIC$bus % 109 % 11 TMP421_TEMP_C",
++            "Name1": "NIC$bus % 109 % 11 TMP421_TEMP_C",
+             "Thresholds": [
+                 {
+                     "Direction": "greater than",
+-- 
+2.43.0
+

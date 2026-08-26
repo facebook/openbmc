@@ -1,7 +1,7 @@
-From 804c50536e1e6f87f19879f7350fc36f2035e414 Mon Sep 17 00:00:00 2001
+From 624d0045e6c3b7bd6c35f588216748a23197a4d2 Mon Sep 17 00:00:00 2001
 From: Frank Chen <FrankChen4@quantatw.com>
 Date: Mon, 27 Jul 2026 08:52:54 +0800
-Subject: [PATCH] configurations: catalina_fio: update FIO thresholds
+Subject: [PATCH 9/9] configurations: catalina_fio: update FIO thresholds
 
 Santa Barbara and Catalina use the same FIO board but have
 different thermal threshold requirements.

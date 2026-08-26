@@ -1,0 +1,1135 @@
+From fd406aa243c02b492492753992e16ccdaa161bec Mon Sep 17 00:00:00 2001
+From: Alan Tsai <alan-tsai@quantatw.com>
+Date: Wed, 12 Aug 2026 10:48:23 +0800
+Subject: [PATCH] i2c-vr: add support for MPS MP2940x VR firmware update
+
+The MP2940x image configuration rows before the END marker are parsed
+and written through Page 3 command 0x2B for the first 128 rows and
+Page 3 command 0x2A for the remaining rows.
+
+The update flow follows the vendor timing requirement: wait 40 ms after
+the first row of each 128-row unit and 3 ms after the remaining rows.
+The current update flow supports only non-PEC transfers.
+
+Related PR:
+entity manager
+https://gerrit.openbmc.org/c/openbmc/entity-manager/+/93710
+https://gerrit.openbmc.org/c/openbmc/entity-manager/+/93714
+
+phosphor dbus interfaces
+https://gerrit.openbmc.org/c/openbmc/phosphor-dbus-interfaces/+/93186
+
+The corresponding change is under review in Gerrit [1].
+[1] https://gerrit.openbmc.org/c/openbmc/phosphor-bmc-code-mgmt/+/93437
+
+Tested on rainiera6.
+'''
+1. Power off the host before update.
+
+2. Add environment variables.
+export bmc=10.10.10.123
+export creds="-k -u root:0penBmc"
+export fwpath="rainier-mb-vr-cpu-cpu1-mem1-mps-E237E4B5.pldm"
+export target="MB_VR_CPU_CPU1_MEM1"
+export applytime="OnReset"
+
+3. Display the fw inventory
+curl --silent $creds \
+https://$bmc/redfish/v1/UpdateService/FirmwareInventory/ | jq
+
+  "Members": [
+    ...
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/MB_VR_CPU_CPU1_MEM1_Firmware_1612"
+    },
+
+    ...
+
+4. Update the target name.
+export targetpath=$(curl --silent $creds https://$bmc/redfish/v1/UpdateService/FirmwareInventory/ | \
+jq -r '.Members[]."@odata.id"' | \
+grep "^/redfish/v1/UpdateService/FirmwareInventory/${target}")
+
+5. show version before update
+curl --silent $creds https://$bmc${targetpath} | jq
+
+{
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/MB_VR_CPU_CPU1_MEM1_Firmware_1612",
+  "@odata.type": "#SoftwareInventory.v1_1_0.SoftwareInventory",
+  "Description": "Other image",
+  "Id": "MB_VR_CPU_CPU1_MEM1_Firmware_1612",
+  "Name": "Software Inventory",
+  "Status": {
+    "Health": "OK",
+    "HealthRollup": "OK",
+    "State": "Enabled"
+  },
+  "Updateable": true,
+  "Version": "D953048B"
+}
+
+6. Update VR.
+curl -k $creds \
+  -H "Content-Type:multipart/form-data" \
+  -X POST \
+  -F UpdateParameters="{\"Targets\":[\"$targetpath\"],\"@Redfish.OperationApplyTime\":\"$applytime\"};type=application/json" \
+  -F "UpdateFile=@$fwpath;type=application/octet-stream" \
+  https://${bmc}/redfish/v1/UpdateService/update-multipart
+
+{
+  "@odata.id": "/redfish/v1/TaskService/Tasks/0",
+  "@odata.type": "#Task.v1_4_3.Task",
+  "HidePayload": false,
+  "Id": "0",
+  "Messages": [
+    {
+      "@odata.type": "#Message.v1_1_1.Message",
+      "Message": "The task with Id '0' has started.",
+      "MessageArgs": [
+        "0"
+      ],
+      "MessageId": "TaskEvent.1.0.TaskStarted",
+      "MessageSeverity": "OK",
+      "Resolution": "None."
+    }
+  ],
+  "Name": "Task 0",
+  "Payload": {
+    "HttpHeaders": [],
+    "HttpOperation": "POST",
+    "TargetUri": "/redfish/v1/UpdateService/update-multipart"
+  },
+  "PercentComplete": 0,
+  "StartTime": "2026-08-21T00:44:33-07:00",
+  "TaskMonitor": "/redfish/v1/TaskService/TaskMonitors/0",
+  "TaskState": "Running",
+  "TaskStatus": "OK"
+
+7. Verify update status.
+curl --silent $creds https://$bmc/redfish/v1/TaskService/Tasks/0
+
+{
+  "@odata.id": "/redfish/v1/TaskService/Tasks/0",
+  "@odata.type": "#Task.v1_4_3.Task",
+  "EndTime": "2026-08-21T00:44:35-07:00",
+  "HidePayload": false,
+  "Id": "0",
+  "Messages": [
+    {
+      "@odata.type": "#Message.v1_1_1.Message",
+      "Message": "The task with Id '0' has started.",
+      "MessageArgs": [
+        "0"
+      ],
+      "MessageId": "TaskEvent.1.0.TaskStarted",
+      "MessageSeverity": "OK",
+      "Resolution": "None."
+    },
+    {
+      "@odata.type": "#Message.v1_1_1.Message",
+      "Message": "The task with Id '0' has changed to progress 20 percent complete.",
+      "MessageArgs": [
+        "0",
+        "20"
+      ],
+      "MessageId": "TaskEvent.1.0.TaskProgressChanged",
+      "MessageSeverity": "OK",
+      "Resolution": "None."
+    },
+    {
+      "@odata.type": "#Message.v1_1_1.Message",
+      "Message": "The task with Id '0' has changed to progress 50 percent complete.",
+      "MessageArgs": [
+        "0",
+        "50"
+      ],
+      "MessageId": "TaskEvent.1.0.TaskProgressChanged",
+      "MessageSeverity": "OK",
+      "Resolution": "None."
+    },
+    {
+      "@odata.type": "#Message.v1_1_1.Message",
+      "Message": "The task with Id '0' has changed to progress 100 percent complete.",
+      "MessageArgs": [
+        "0",
+        "100"
+      ],
+      "MessageId": "TaskEvent.1.0.TaskProgressChanged",
+      "MessageSeverity": "OK",
+      "Resolution": "None."
+    },
+    {
+      "@odata.type": "#Message.v1_1_1.Message",
+      "Message": "The task with Id '0' has completed.",
+      "MessageArgs": [
+        "0"
+      ],
+      "MessageId": "TaskEvent.1.0.TaskCompletedOK",
+      "MessageSeverity": "OK",
+      "Resolution": "None."
+    }
+  ],
+  "Name": "Task 0",
+  "Payload": {
+    "HttpHeaders": [],
+    "HttpOperation": "POST",
+    "JsonBody": "",
+    "TargetUri": "/redfish/v1/UpdateService/update-multipart"
+  },
+  "PercentComplete": 100,
+  "StartTime": "2026-08-21T00:44:33-07:00",
+  "TaskMonitor": "/redfish/v1/TaskService/TaskMonitors/0",
+  "TaskState": "Completed",
+  "TaskStatus": "OK"
+
+8. Display the fw inventory with newly updated fw.
+curl --silent $creds \
+https://$bmc/redfish/v1/UpdateService/FirmwareInventory/ | jq
+
+"Members": [
+...
+   {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/MB_VR_CPU_CPU1_MEM1_Firmware_5079"
+   },
+...
+
+9. Query the new fw version.
+curl --silent $creds \
+https://$bmc/redfish/v1/UpdateService/FirmwareInventory/MB_VR_CPU_CPU1_MEM1_Firmware_5079 | jq
+{
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/MB_VR_CPU_CPU1_MEM1_Firmware_5079",
+  "@odata.type": "#SoftwareInventory.v1_1_0.SoftwareInventory",
+  "Description": "Other image",
+  "Id": "MB_VR_CPU_CPU1_MEM1_Firmware_5079",
+  "Name": "Software Inventory",
+  "Status": {
+    "Health": "OK",
+    "HealthRollup": "OK",
+    "State": "Enabled"
+  },
+  "Updateable": false,
+  "Version": "E237E4B5"
+}
+
+10. Do AC cycle to make sure the new fw is applied.
+
+11. Display the fw inventory after AC cycle.
+curl --silent $creds \
+https://$bmc/redfish/v1/UpdateService/FirmwareInventory/ | jq
+
+"Members": [
+   ...
+   {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/MB_VR_CPU_CPU1_MEM1_Firmware_7266"
+    },
+    ...
+
+12. Query the fw version after AC cycle.
+curl --silent $creds \
+https://$bmc/redfish/v1/UpdateService/FirmwareInventory/MB_VR_CPU_CPU1_MEM1_Firmware_7266 | jq
+{
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/MB_VR_CPU_CPU1_MEM1_Firmware_7266",
+  "@odata.type": "#SoftwareInventory.v1_1_0.SoftwareInventory",
+  "Description": "Other image",
+  "Id": "MB_VR_CPU_CPU1_MEM1_Firmware_7266",
+  "Name": "Software Inventory",
+  "Status": {
+    "Health": "OK",
+    "HealthRollup": "OK",
+    "State": "Enabled"
+  },
+  "Updateable": true,
+  "Version": "E237E4B5"
+}
+
+'''
+
+Change-Id: I013ffecd0a3bc869f3a09aef15fe9a1d4f9c1e8c
+Signed-off-by: Alan Tsai <alan-tsai@quantatw.com>
+---
+ i2c-vr/i2cvr_software_manager.cpp |  10 +-
+ i2c-vr/meson.build                |   1 +
+ i2c-vr/mps/mp2940x.cpp            | 741 ++++++++++++++++++++++++++++++
+ i2c-vr/mps/mp2940x.hpp            |  46 ++
+ i2c-vr/vr.cpp                     |   4 +
+ i2c-vr/vr.hpp                     |   1 +
+ 6 files changed, 798 insertions(+), 5 deletions(-)
+ create mode 100644 i2c-vr/mps/mp2940x.cpp
+ create mode 100644 i2c-vr/mps/mp2940x.hpp
+
+diff --git a/i2c-vr/i2cvr_software_manager.cpp b/i2c-vr/i2cvr_software_manager.cpp
+index 8d24708..e6df5fe 100644
+--- a/i2c-vr/i2cvr_software_manager.cpp
++++ b/i2c-vr/i2cvr_software_manager.cpp
+@@ -21,11 +21,11 @@ namespace ManagerInf = phosphor::software::manager;
+ 
+ const std::string configDBusName = "I2CVR";
+ const std::vector<std::string> emConfigTypes = {
+-    "XDPE1X2XXFirmware",    "ISL69269Firmware",  "MP2X6XXFirmware",
+-    "MP292XFirmware",       "MP297XFirmware",    "MP5998Firmware",
+-    "MPQ87XXFirmware",      "MP994XFirmware",    "RAA22XGen2Firmware",
+-    "RAA22XGen3p5Firmware", "TDA38640AFirmware", "XDP71XFirmware",
+-    "TPS25990Firmware",     "RS31390Firmware"};
++    "XDPE1X2XXFirmware",  "ISL69269Firmware",     "MP2X6XXFirmware",
++    "MP292XFirmware",     "MP2940XFirmware",      "MP297XFirmware",
++    "MP5998Firmware",     "MPQ87XXFirmware",      "MP994XFirmware",
++    "RAA22XGen2Firmware", "RAA22XGen3p5Firmware", "TDA38640AFirmware",
++    "XDP71XFirmware",     "TPS25990Firmware",     "RS31390Firmware"};
+ 
+ I2CVRSoftwareManager::I2CVRSoftwareManager(sdbusplus::async::context& ctx) :
+     ManagerInf::SoftwareManager(ctx, configDBusName)
+diff --git a/i2c-vr/meson.build b/i2c-vr/meson.build
+index f5e51f5..7ccf3c5 100644
+--- a/i2c-vr/meson.build
++++ b/i2c-vr/meson.build
+@@ -2,6 +2,7 @@ i2cvr_src = files('i2cvr_device.cpp', 'i2cvr_software_manager.cpp', 'vr.cpp')
+ 
+ regulators_src = files(
+     'isl69269/isl69269.cpp',
++    'mps/mp2940x.cpp',
+     'mps/mp297x.cpp',
+     'mps/mp2x6xx.cpp',
+     'mps/mp5998.cpp',
+diff --git a/i2c-vr/mps/mp2940x.cpp b/i2c-vr/mps/mp2940x.cpp
+new file mode 100644
+index 0000000..bc3c729
+--- /dev/null
++++ b/i2c-vr/mps/mp2940x.cpp
+@@ -0,0 +1,741 @@
++#include "mp2940x.hpp"
++
++#include "common/include/host_power.hpp"
++#include "common/include/utils.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <chrono>
++#include <string>
++#include <vector>
++
++PHOSPHOR_LOG2_USING;
++
++namespace phosphor::software::VR
++{
++
++using namespace phosphor::software::host_power;
++
++static constexpr size_t statusByteLength = 1;
++static constexpr size_t pecLength = 1;
++static constexpr size_t firstConfigRows = 128;
++
++static constexpr uint8_t mp2940xPecConfigReg = 0x19;
++static constexpr uint8_t mp2940xConfigRegFirst128 = 0x2B;
++static constexpr uint8_t mp2940xConfigRegRemaining = 0x2A;
++
++static constexpr uint8_t mp2940xCRCUserReg = 0x61;
++static constexpr uint8_t mp2940xCRCMultiSelectReg = 0x03;
++static constexpr uint8_t mp2940xCRCMultiReadReg = 0x41;
++static constexpr uint8_t mp2940xCRCMulti1Index = 0x00;
++static constexpr uint8_t mp2940xCRCMulti2Index = 0x01;
++
++static uint32_t buildChecksum(uint16_t crcUser, uint16_t crcMulti1)
++{
++    return (static_cast<uint32_t>(crcUser) << 16) |
++           static_cast<uint32_t>(crcMulti1);
++}
++
++struct MP2940XExpectedCRC
++{
++    uint16_t user = 0;
++    uint16_t multi1 = 0;
++    uint16_t multi2 = 0;
++    bool foundUser = false;
++    bool foundMulti1 = false;
++    bool foundMulti2 = false;
++};
++
++static void updateExpectedCRC(const std::string& name, uint16_t value,
++                              MP2940XExpectedCRC& crc)
++{
++    if (name == "CRC_USER")
++    {
++        crc.user = value;
++        crc.foundUser = true;
++        return;
++    }
++
++    if (name == "CRC_Multi_1")
++    {
++        crc.multi1 = value;
++        crc.foundMulti1 = true;
++        return;
++    }
++
++    if (name == "CRC_Multi_2")
++    {
++        crc.multi2 = value;
++        crc.foundMulti2 = true;
++    }
++}
++
++static bool foundAllExpectedCRC(const MP2940XExpectedCRC& crc)
++{
++    return crc.foundUser && crc.foundMulti1 && crc.foundMulti2;
++}
++
++sdbusplus::async::task<bool> MP2940X::verifyImage(const uint8_t* image,
++                                                  size_t imageSize)
++{
++    /*
++     * MP2940X ATE file is the 8-column Type1 ATE format with writeType.
++     *
++     * Use the common MPS Type1 parser so B4 rows are converted in the same
++     * way as other MPS Type1 drivers:
++     *
++     *   ATE 6th column: A0003EFF
++     *   parser data   : 04 FF 3E 00 A0
++     *
++     * The first byte is the PMBus block byte count. Do not add another
++     * byte count when programming these parsed rows.
++     */
++    if (!co_await parseImage(image, imageSize, MPSImageType::type1))
++    {
++        error("MP2940X image verification failed: image parsing failed");
++        co_return false;
++    }
++
++    if (configuration->registersData.empty())
++    {
++        error("MP2940X image verification failed: no configuration data found");
++        co_return false;
++    }
++
++    if (configuration->configId == 0)
++    {
++        error("MP2940X image verification failed: missing config ID");
++        co_return false;
++    }
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> MP2940X::parseConfigRows(size_t& configRowCount)
++{
++    configRowCount = 0;
++
++    for (const auto& tokens : parser->lineTokens)
++    {
++        if (tokens.empty())
++        {
++            continue;
++        }
++
++        if (tokens[0].starts_with("END"))
++        {
++            break;
++        }
++
++        if (!parser->isValidDataTokens(tokens))
++        {
++            continue;
++        }
++
++        /*
++         * MP2940X AN240 Type1 ATE row format:
++         *   0: configId
++         *   1: pageNum
++         *   2: regAddrHex
++         *   3: regAddrDec
++         *   4: regName
++         *   5: regDataHex
++         *   6: regDataDec
++         *   7: writeType
++         *
++         * B4 rows are parsed by the common MPS Type1 parser as:
++         *   data[0]    = block byte count
++         *   data[1..4] = 6th column bytes in MPS parser order
++         *
++         * Example:
++         *   A0003EFF / B4 -> 04 FF 3E 00 A0
++         */
++        if (tokens.size() < static_cast<size_t>(ATE::colCount))
++        {
++            error("MP2940X invalid token count: {COUNT}", "COUNT",
++                  tokens.size());
++            co_return false;
++        }
++
++        const auto page = parser->getVal<uint8_t>(tokens, ATE::pageNum);
++        const auto reg = parser->getVal<uint8_t>(tokens, ATE::regAddrHex);
++
++        /*
++         * MP2940X configuration stream only uses Page3 0x2B / 0x2A B4 rows.
++         * Ignore other rows before END only if they are not part of the stream.
++         */
++        if (page != static_cast<uint8_t>(MPSPage::page3))
++        {
++            debug("MP2940X skip non-page3 row, page {PAGE}", "PAGE", lg2::hex,
++                  page);
++            continue;
++        }
++
++        if (reg != mp2940xConfigRegFirst128 && reg != mp2940xConfigRegRemaining)
++        {
++            debug("MP2940X skip unsupported register {REG}", "REG", lg2::hex,
++                  reg);
++            continue;
++        }
++
++        if (configuration->configId == 0)
++        {
++            configuration->configId =
++                parser->getVal<uint32_t>(tokens, ATE::configId);
++        }
++
++        ++configRowCount;
++    }
++    co_return true;
++}
++
++bool MP2940X::isConfigurationDataRow(const MPSData& data)
++{
++    if (data.page != static_cast<uint8_t>(MPSPage::page3))
++    {
++        return false;
++    }
++
++    if (data.addr != mp2940xConfigRegFirst128 &&
++        data.addr != mp2940xConfigRegRemaining)
++    {
++        return false;
++    }
++
++    return true;
++}
++
++std::vector<uint8_t> MP2940X::buildConfigurationWriteBuffer(const MPSData& data)
++{
++    /*
++     * Build PMBus Block Write buffer.
++     *
++     * data.addr:
++     *   PMBus command code from ATE column 3.
++     *   MP2940X config stream uses:
++     *     0x2B for the first 128 rows
++     *     0x2A for the remaining rows
++     *
++     * data.data:
++     *   Parsed by common MPS Type1 parser from ATE column 6 and writeType.
++     *   For B4 rows, data.data already includes the block byte count.
++     *
++     * Example ATE row:
++     *   0012 3 2B 43 2B_4_20 A0003EFF 2684370687 B4
++     *
++     * Common parser result:
++     *   data.addr   = 0x2B
++     *   data.length = 5
++     *   data.data   = 04 FF 3E 00 A0
++     *
++     * Final tbuf sent to I2C:
++     *   tbuf[0] = data.addr      = 0x2B  // PMBus command
++     *   tbuf[1] = data.data[0]   = 0x04  // block byte count
++     *   tbuf[2] = data.data[1]   = 0xFF  // data byte 0, LSB first
++     *   tbuf[3] = data.data[2]   = 0x3E  // data byte 1
++     *   tbuf[4] = data.data[3]   = 0x00  // data byte 2
++     *   tbuf[5] = data.data[4]   = 0xA0  // data byte 3, MSB
++     *
++     * Do not add another 0x04 here, because the common Type1 parser has
++     * already inserted the block byte count for B4.
++     */
++    std::vector<uint8_t> tbuf;
++    tbuf.reserve(static_cast<size_t>(data.length) + 1);
++    tbuf.push_back(data.addr);
++    tbuf.insert(tbuf.end(), data.data.begin(), data.data.begin() + data.length);
++
++    return tbuf;
++}
++
++sdbusplus::async::task<bool> MP2940X::parseDeviceConfiguration()
++{
++    if (!configuration)
++    {
++        error("MP2940X device configuration not initialized");
++        co_return false;
++    }
++
++    if (!parser)
++    {
++        error("MP2940X image parser not initialized");
++        co_return false;
++    }
++
++    size_t configRowCount = 0;
++    if (!co_await parseConfigRows(configRowCount))
++    {
++        co_return false;
++    }
++
++    if (configRowCount == 0)
++    {
++        error("MP2940X no configuration rows found");
++        co_return false;
++    }
++
++    if (configuration->registersData.empty())
++    {
++        error("MP2940X no Type1 parser data found");
++        co_return false;
++    }
++
++    expectedConfigRowCount = configRowCount;
++    debug("MP2940X parsed {COUNT} configuration rows from Type1 parser",
++          "COUNT", configRowCount);
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> MP2940X::setPage(MPSPage page, bool withPEC)
++{
++    std::vector<uint8_t> tbuf;
++    std::vector<uint8_t> rbuf;
++
++    tbuf = buildByteVector(PMBusCmd::page, page);
++
++    if (!i2cInterface.sendReceive(tbuf, rbuf))
++    {
++        error("MP2940X failed to set page {PAGE}, PEC {PEC}", "PAGE", lg2::hex,
++              static_cast<uint8_t>(page), "PEC",
++              withPEC ? "enabled" : "disabled");
++        co_return false;
++    }
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> MP2940X::readByte(uint8_t command, uint8_t& value,
++                                               bool withPEC)
++{
++    std::vector<uint8_t> tbuf;
++    std::vector<uint8_t> rbuf(
++        withPEC ? statusByteLength + pecLength : statusByteLength);
++
++    tbuf = {command};
++    if (!i2cInterface.sendReceive(tbuf, rbuf))
++    {
++        error("MP2940X read byte failed, command {CMD}, PEC {PEC}", "CMD",
++              lg2::hex, command, "PEC", withPEC ? "enabled" : "disabled");
++        co_return false;
++    }
++
++    value = rbuf[0];
++    co_return true;
++}
++
++sdbusplus::async::task<bool> MP2940X::readWord(uint8_t command, uint16_t& value,
++                                               bool withPEC)
++{
++    std::vector<uint8_t> tbuf;
++    std::vector<uint8_t> rbuf(withPEC ? 3 : 2);
++
++    tbuf = {command};
++
++    if (!i2cInterface.sendReceive(tbuf, rbuf))
++    {
++        error("MP2940X read word failed, command {CMD}, PEC {PEC}", "CMD",
++              lg2::hex, command, "PEC", withPEC ? "enabled" : "disabled");
++        co_return false;
++    }
++
++    /*
++     * PMBus Read Word returns low byte first.
++     * Example:
++     *   0xe9 0x09 -> 0x09E9
++     */
++    value = static_cast<uint16_t>(rbuf[0]) |
++            (static_cast<uint16_t>(rbuf[1]) << 8);
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> MP2940X::readCRCMulti(uint8_t index,
++                                                   uint16_t& value)
++{
++    if (!co_await setPage(MPSPage::page3, usePEC))
++    {
++        error("MP2940X failed to set Page3 for CRC_Multi read");
++        co_return false;
++    }
++
++    std::vector<uint8_t> tbuf = {
++        mp2940xCRCMultiSelectReg,
++        index,
++    };
++    std::vector<uint8_t> rbuf;
++
++    if (!i2cInterface.sendReceive(tbuf, rbuf))
++    {
++        error("MP2940X failed to select CRC_Multi");
++        co_return false;
++    }
++
++    if (!co_await readWord(mp2940xCRCMultiReadReg, value, usePEC))
++    {
++        error("MP2940X failed to read CRC_Multi");
++        co_return false;
++    }
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> MP2940X::detectPECMode()
++{
++    /*
++     * Before sending configuration data, read Page0 register 0x19 without PEC.
++     * This implementation only supports non-PEC transfers.
++     * If P0.19[7] indicates PEC mode, reject the update instead of forcing
++     * non-PEC writes to a PEC-enabled device.
++     */
++    if (!co_await setPage(MPSPage::page0, false))
++    {
++        co_return false;
++    }
++
++    uint8_t value = 0;
++    if (!co_await readByte(mp2940xPecConfigReg, value, false))
++    {
++        co_return false;
++    }
++
++    const bool devicePEC = (value & 0x80) != 0;
++    if (devicePEC)
++    {
++        error(
++            "MP2940X PEC mode is enabled, but only non-PEC update is currently supported");
++        co_return false;
++    }
++
++    usePEC = false;
++    info("MP2940X PEC mode: disabled");
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> MP2940X::programConfigurationData()
++{
++    /*
++     * Spec says MP2940X configuration data is sent through Page3.
++     */
++    if (!co_await setPage(MPSPage::page3, usePEC))
++    {
++        co_return false;
++    }
++
++    auto i2cWrite = [&](const std::vector<uint8_t>& tbufIn)
++        -> sdbusplus::async::task<bool> {
++        const std::vector<uint8_t>& tbuf = tbufIn;
++        std::vector<uint8_t> rbuf;
++
++        if (!i2cInterface.sendReceive(tbuf, rbuf))
++        {
++            error("MP2940X I2C write failed");
++            co_return false;
++        }
++
++        co_return true;
++    };
++
++    /*
++     * Vendor timing:
++     * Every 128 rows are one programming unit.
++     * Wait 40 ms after writing the first row of each unit.
++     * Wait 3 ms after writing each remaining row in the same unit.
++     */
++    constexpr size_t rowsPerUnit = 128;
++    constexpr auto firstRowOfUnitDelay = std::chrono::milliseconds(40);
++    constexpr auto remainingRowDelay = std::chrono::milliseconds(3);
++
++    size_t row = 0;
++
++    for (const auto& data : configuration->registersData)
++    {
++        if (!isConfigurationDataRow(data))
++        {
++            continue;
++        }
++
++        if (data.length != 5 || data.data[0] != 0x04)
++        {
++            error("MP2940X invalid parsed B4 data at row {ROW}: "
++                  "length {LEN}, byte_count {COUNT}",
++                  "ROW", row + 1, "LEN", data.length, "COUNT", lg2::hex,
++                  data.length > 0 ? data.data[0] : 0);
++            co_return false;
++        }
++
++        const uint8_t expectedCommand =
++            (row < firstConfigRows) ? mp2940xConfigRegFirst128
++                                    : mp2940xConfigRegRemaining;
++
++        if (data.addr != expectedCommand)
++        {
++            error("MP2940X unexpected register at row {ROW}: got {REG}, "
++                  "expected {EXP}",
++                  "ROW", row + 1, "REG", lg2::hex, data.addr, "EXP", lg2::hex,
++                  expectedCommand);
++            co_return false;
++        }
++
++        std::vector<uint8_t> tbuf = buildConfigurationWriteBuffer(data);
++
++        if (!co_await i2cWrite(tbuf))
++        {
++            error("MP2940X failed to write config row {ROW}, command {CMD}",
++                  "ROW", row + 1, "CMD", lg2::hex, data.addr);
++            co_return false;
++        }
++
++        const bool isFirstRowOfUnit = (row % rowsPerUnit) == 0;
++
++        co_await sdbusplus::async::sleep_for(
++            ctx, isFirstRowOfUnit ? firstRowOfUnitDelay : remainingRowDelay);
++
++        ++row;
++    }
++
++    if (row == 0)
++    {
++        error("MP2940X no Page3 0x2B/0x2A rows programmed");
++        co_return false;
++    }
++
++    if (row != expectedConfigRowCount)
++    {
++        error("MP2940X configuration row count mismatch: parsed {PARSED}, "
++              "programmed {PROGRAMMED}",
++              "PARSED", expectedConfigRowCount, "PROGRAMMED", row);
++        co_return false;
++    }
++
++    debug("MP2940X programmed {COUNT} configuration rows", "COUNT", row);
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> MP2940X::updateFirmware(bool force)
++{
++    (void)force;
++
++    auto powerState = co_await HostPower::getState(ctx);
++
++    if (powerState != stateOff)
++    {
++        error(
++            "MP2940X update rejected: host power must be off before VR update");
++        co_return false;
++    }
++
++    PageGuard guard(i2cInterface);
++
++    /*
++     * verifyImage() is called before updateFirmware().
++     * Keep this check here to avoid writing with empty parsed data.
++     */
++    if (!configuration || configuration->registersData.empty())
++    {
++        error("MP2940X update failed: image was not parsed");
++        co_return false;
++    }
++
++    if (!co_await detectPECMode())
++    {
++        error("MP2940X failed to detect PEC mode");
++        co_return false;
++    }
++
++    if (!co_await programConfigurationData())
++    {
++        error("MP2940X failed to program configuration data");
++        co_return false;
++    }
++
++    bool inCRCBlock = false;
++    MP2940XExpectedCRC expectedCRC;
++    if (!parser)
++    {
++        error(
++            "MP2940X failed to get expected checksum: parser not initialized");
++        co_return false;
++    }
++
++    for (const auto& tokens : parser->lineTokens)
++    {
++        if (tokens.empty())
++        {
++            continue;
++        }
++
++        if (tokens[0].starts_with("CRC_CHECK_START"))
++        {
++            inCRCBlock = true;
++            continue;
++        }
++
++        if (tokens[0].starts_with("CRC_CHECK_STOP"))
++        {
++            break;
++        }
++
++        if (!inCRCBlock)
++        {
++            continue;
++        }
++
++        if (tokens.size() < static_cast<size_t>(ATE::colCount))
++        {
++            continue;
++        }
++
++        std::string name = parser->getVal<std::string>(tokens, ATE::regName);
++        if (!name.empty() && name.back() == '\r')
++        {
++            name.pop_back();
++        }
++
++        const auto value = parser->getVal<uint16_t>(tokens, ATE::regDataHex);
++        updateExpectedCRC(name, value, expectedCRC);
++    }
++
++    if (!foundAllExpectedCRC(expectedCRC))
++    {
++        error("MP2940X failed to get expected checksum from image");
++        co_return false;
++    }
++
++    const uint32_t expectedChecksum =
++        buildChecksum(expectedCRC.user, expectedCRC.multi1);
++
++    uint32_t actualChecksum = 0;
++    if (!co_await getCRC(&actualChecksum))
++    {
++        error("MP2940X failed to get actual checksum");
++        co_return false;
++    }
++
++    const uint16_t actualCRCUser =
++        static_cast<uint16_t>((actualChecksum >> 16) & 0xFFFF);
++    const uint16_t actualCRCMulti1 =
++        static_cast<uint16_t>(actualChecksum & 0xFFFF);
++
++    uint16_t actualCRCMulti2 = 0;
++
++    if (!co_await readCRCMulti(mp2940xCRCMulti2Index, actualCRCMulti2))
++    {
++        co_return false;
++    }
++
++    debug(
++        "MP2940X checksum before AC: CRC_USER expected={EXPUSER}, actual={ACTUSER}, "
++        "CRC_Multi_1 expected={EXPMULTI1}, actual={ACTMULTI1}, "
++        "CRC_Multi_2 expected={EXPMULTI2}, actual={ACTMULTI2}, "
++        "checksum expected={EXPCHECKSUM}, actual={ACTCHECKSUM}",
++        "EXPUSER", lg2::hex, expectedCRC.user, "ACTUSER", lg2::hex,
++        actualCRCUser, "EXPMULTI1", lg2::hex, expectedCRC.multi1, "ACTMULTI1",
++        lg2::hex, actualCRCMulti1, "EXPMULTI2", lg2::hex, expectedCRC.multi2,
++        "ACTMULTI2", lg2::hex, actualCRCMulti2, "EXPCHECKSUM", lg2::hex,
++        expectedChecksum, "ACTCHECKSUM", lg2::hex, actualChecksum);
++
++    if (actualCRCUser != expectedCRC.user ||
++        actualCRCMulti1 != expectedCRC.multi1 ||
++        actualCRCMulti2 != expectedCRC.multi2)
++    {
++        error("MP2940X checksum mismatch before AC");
++        co_return false;
++    }
++
++    debug("MP2940X configuration write completed; checksum matched before AC");
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> MP2940X::getCRC(uint32_t* checksum)
++{
++    if (checksum == nullptr)
++    {
++        error("MP2940X getCRC() called with null checksum pointer");
++        co_return false;
++    }
++
++    PageGuard guard(i2cInterface);
++
++    /*
++     * This implementation currently supports only non-PEC transfers.
++     * Reject CRC read if the device is configured for PEC mode.
++     */
++    if (!co_await setPage(MPSPage::page0, false))
++    {
++        error("MP2940X failed to set Page0 for PEC mode check");
++        co_return false;
++    }
++
++    uint8_t pecConfig = 0;
++    if (!co_await readByte(mp2940xPecConfigReg, pecConfig, false))
++    {
++        error("MP2940X failed to read PEC mode");
++        co_return false;
++    }
++
++    if ((pecConfig & 0x80) != 0)
++    {
++        error("MP2940X PEC mode is enabled, but only non-PEC CRC read is "
++              "currently supported");
++        co_return false;
++    }
++
++    /*
++     * Force non-PEC for CRC read.
++     *
++     * MP2940X version format:
++     *   [31:16] = CRC_USER
++     *   [15:0]  = CRC_Multi_1
++     *
++     * Example:
++     *   CRC_USER    = 0x09E9
++     *   CRC_Multi_1 = 0x8679
++     *   Version     = 0x09E98679
++     */
++    usePEC = false;
++
++    uint16_t crcUser = 0;
++    uint16_t crcMulti1 = 0;
++    /*
++     * CRC_USER:
++     *   Set Page2
++     *   Read Word Page2 0x61
++     */
++
++    if (!co_await setPage(MPSPage::page2, usePEC))
++    {
++        error("MP2940X failed to set Page2 for CRC_USER read");
++        co_return false;
++    }
++
++    if (!co_await readWord(mp2940xCRCUserReg, crcUser, usePEC))
++    {
++        error("MP2940X failed to read CRC_USER");
++        co_return false;
++    }
++
++    if (!co_await readCRCMulti(mp2940xCRCMulti1Index, crcMulti1))
++    {
++        co_return false;
++    }
++
++    *checksum = (static_cast<uint32_t>(crcUser) << 16) |
++                static_cast<uint32_t>(crcMulti1);
++
++    debug("MP2940X CRC_USER {CRCUSER}, CRC_Multi_1 {CRCMULTI1}, "
++          "checksum {CHECKSUM}",
++          "CRCUSER", lg2::hex, crcUser, "CRCMULTI1", lg2::hex, crcMulti1,
++          "CHECKSUM", lg2::hex, *checksum);
++
++    co_return true;
++}
++
++bool MP2940X::forcedUpdateAllowed()
++{
++    return true;
++}
++
++} // namespace phosphor::software::VR
+diff --git a/i2c-vr/mps/mp2940x.hpp b/i2c-vr/mps/mp2940x.hpp
+new file mode 100644
+index 0000000..153e5f9
+--- /dev/null
++++ b/i2c-vr/mps/mp2940x.hpp
+@@ -0,0 +1,46 @@
++#pragma once
++
++#include "common/include/pmbus.hpp"
++#include "mps.hpp"
++
++#include <cstddef>
++#include <cstdint>
++#include <vector>
++
++namespace phosphor::software::VR
++{
++
++class MP2940X : public MPSVoltageRegulator
++{
++  public:
++    MP2940X(sdbusplus::async::context& ctx, uint16_t bus, uint16_t address) :
++        MPSVoltageRegulator(ctx, bus, address)
++    {}
++
++    sdbusplus::async::task<bool> verifyImage(const uint8_t* image,
++                                             size_t imageSize) final;
++    sdbusplus::async::task<bool> updateFirmware(bool force) final;
++    sdbusplus::async::task<bool> getCRC(uint32_t* checksum) final;
++    sdbusplus::async::task<bool> parseDeviceConfiguration() final;
++    bool forcedUpdateAllowed() final;
++
++  private:
++    bool usePEC = false;
++    size_t expectedConfigRowCount = 0;
++
++    sdbusplus::async::task<bool> parseConfigRows(size_t& configRowCount);
++    static bool isConfigurationDataRow(const MPSData& data);
++    static std::vector<uint8_t> buildConfigurationWriteBuffer(
++        const MPSData& data);
++    sdbusplus::async::task<bool> detectPECMode();
++    sdbusplus::async::task<bool> programConfigurationData();
++
++    sdbusplus::async::task<bool> setPage(MPSPage page, bool withPEC);
++    sdbusplus::async::task<bool> readByte(uint8_t command, uint8_t& value,
++                                          bool withPEC);
++    sdbusplus::async::task<bool> readWord(uint8_t command, uint16_t& value,
++                                          bool withPEC);
++    sdbusplus::async::task<bool> readCRCMulti(uint8_t index, uint16_t& value);
++};
++
++} // namespace phosphor::software::VR
+diff --git a/i2c-vr/vr.cpp b/i2c-vr/vr.cpp
+index f15d497..2d8760e 100644
+--- a/i2c-vr/vr.cpp
++++ b/i2c-vr/vr.cpp
+@@ -1,6 +1,7 @@
+ #include "vr.hpp"
+ 
+ #include "isl69269/isl69269.hpp"
++#include "mps/mp2940x.hpp"
+ #include "mps/mp297x.hpp"
+ #include "mps/mp2x6xx.hpp"
+ #include "mps/mp5998.hpp"
+@@ -31,6 +32,8 @@ std::unique_ptr<VoltageRegulator> create(sdbusplus::async::context& ctx,
+             return std::make_unique<MP2X6XX>(ctx, bus, address);
+         case VRType::MP292X:
+             return std::make_unique<MP292X>(ctx, bus, address);
++        case VRType::MP2940X:
++            return std::make_unique<MP2940X>(ctx, bus, address);
+         case VRType::MP297X:
+             return std::make_unique<MP297X>(ctx, bus, address);
+         case VRType::MP5998:
+@@ -65,6 +68,7 @@ bool stringToEnum(std::string& vrStr, VRType& vrType)
+         {"ISL69269Firmware", VRType::ISL69269},
+         {"MP2X6XXFirmware", VRType::MP2X6XX},
+         {"MP292XFirmware", VRType::MP292X},
++        {"MP2940XFirmware", VRType::MP2940X},
+         {"MP297XFirmware", VRType::MP297X},
+         {"MP5998Firmware", VRType::MP5998},
+         {"MP994XFirmware", VRType::MP994X},
+diff --git a/i2c-vr/vr.hpp b/i2c-vr/vr.hpp
+index e32f598..8176a38 100644
+--- a/i2c-vr/vr.hpp
++++ b/i2c-vr/vr.hpp
+@@ -15,6 +15,7 @@ enum class VRType
+     ISL69269,
+     MP2X6XX,
+     MP292X,
++    MP2940X,
+     MP297X,
+     MP5998,
+     MP994X,
+-- 
+2.25.1
+

@@ -1,0 +1,2584 @@
+From bd4bf009a0b61fbf6fef39383d80f83814f9c290 Mon Sep 17 00:00:00 2001
+From: Alan Tsai <alan-tsai@quantatw.com>
+Date: Wed, 12 Aug 2026 10:49:25 +0800
+Subject: [PATCH] i2c-vr: add support for TI TPS544X27 VR firmware update
+
+The update image is a TI Fusion PMBus CSV script. The driver parses the
+CSV commands, executes the supported PMBus write operations,
+and then commits the configuration to NVM with STORE_USER_ALL.
+
+Related PR:
+entity manager
+https://gerrit.openbmc.org/c/openbmc/entity-manager/+/93710
+https://gerrit.openbmc.org/c/openbmc/entity-manager/+/93714
+
+phosphor dbus interfaces
+https://gerrit.openbmc.org/c/openbmc/phosphor-dbus-interfaces/+/93186
+
+The corresponding change is under review in Gerrit [1].
+[1] https://gerrit.openbmc.org/c/openbmc/phosphor-bmc-code-mgmt/+/93438
+
+Tested on rainiera6.
+'''
+1. Power off the host before update.
+
+2. Add environment variables.
+export bmc=10.10.10.123
+export creds="-k -u root:0penBmc"
+export fwpath="rainier-mb-vr-cpu-v1p2-ti-9C3E.pldm"
+export target="MB_VR_CPU_V1P2"
+export applytime="OnReset"
+
+3. Display the fw inventory.
+curl --silent $creds \
+https://$bmc/redfish/v1/UpdateService/FirmwareInventory/ | jq
+
+  "Members": [
+    ...
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/MB_VR_CPU_V1P2_Firmware_2908"
+    },
+    ...
+    ]
+
+4. Update the target name.
+export targetpath=$(curl --silent $creds https://$bmc/redfish/v1/UpdateService/FirmwareInventory/ | \
+jq -r '.Members[]."@odata.id"' | \
+grep "^/redfish/v1/UpdateService/FirmwareInventory/${target}")
+
+5. Show version before update.
+curl --silent $creds https://$bmc${targetpath} | jq
+
+{
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/MB_VR_CPU_V1P2_Firmware_2908",
+  "@odata.type": "#SoftwareInventory.v1_1_0.SoftwareInventory",
+  "Description": "Other image",
+  "Id": "MB_VR_CPU_V1P2_Firmware_2908",
+  "Name": "Software Inventory",
+  "Status": {
+    "Health": "OK",
+    "HealthRollup": "OK",
+    "State": "Enabled"
+  },
+  "Updateable": true,
+  "Version": "AE12"
+}
+
+6. Update VR.
+curl -k $creds \
+  -H "Content-Type:multipart/form-data" \
+  -X POST \
+  -F UpdateParameters="{\"Targets\":[\"$targetpath\"],\"@Redfish.OperationApplyTime\":\"$applytime\"};type=application/json" \
+  -F "UpdateFile=@$fwpath;type=application/octet-stream" \
+  https://${bmc}/redfish/v1/UpdateService/update-multipart
+
+{
+  "@odata.id": "/redfish/v1/TaskService/Tasks/0",
+  "@odata.type": "#Task.v1_4_3.Task",
+  "HidePayload": false,
+  "Id": "0",
+  "Messages": [
+    {
+      "@odata.type": "#Message.v1_1_1.Message",
+      "Message": "The task with Id '0' has started.",
+      "MessageArgs": [
+        "0"
+      ],
+      "MessageId": "TaskEvent.1.0.TaskStarted",
+      "MessageSeverity": "OK",
+      "Resolution": "None."
+    }
+  ],
+  "Name": "Task 0",
+  "Payload": {
+    "HttpHeaders": [],
+    "HttpOperation": "POST",
+    "TargetUri": "/redfish/v1/UpdateService/update-multipart"
+  },
+  "PercentComplete": 0,
+  "StartTime": "2026-08-21T01:27:07-07:00",
+  "TaskMonitor": "/redfish/v1/TaskService/TaskMonitors/0",
+  "TaskState": "Running",
+  "TaskStatus": "OK"
+}
+
+7. Verify update status.
+curl --silent $creds https://$bmc/redfish/v1/TaskService/Tasks/0
+
+{
+  "@odata.id": "/redfish/v1/TaskService/Tasks/0",
+  "@odata.type": "#Task.v1_4_3.Task",
+  "EndTime": "2026-08-21T01:27:09-07:00",
+  "HidePayload": false,
+  "Id": "0",
+  "Messages": [
+    {
+      "@odata.type": "#Message.v1_1_1.Message",
+      "Message": "The task with Id '0' has started.",
+      "MessageArgs": [
+        "0"
+      ],
+      "MessageId": "TaskEvent.1.0.TaskStarted",
+      "MessageSeverity": "OK",
+      "Resolution": "None."
+    },
+    {
+      "@odata.type": "#Message.v1_1_1.Message",
+      "Message": "The task with Id '0' has changed to progress 20 percent complete.",
+      "MessageArgs": [
+        "0",
+        "20"
+      ],
+      "MessageId": "TaskEvent.1.0.TaskProgressChanged",
+      "MessageSeverity": "OK",
+      "Resolution": "None."
+    },
+    {
+      "@odata.type": "#Message.v1_1_1.Message",
+      "Message": "The task with Id '0' has changed to progress 50 percent complete.",
+      "MessageArgs": [
+        "0",
+        "50"
+      ],
+      "MessageId": "TaskEvent.1.0.TaskProgressChanged",
+      "MessageSeverity": "OK",
+      "Resolution": "None."
+    },
+    {
+      "@odata.type": "#Message.v1_1_1.Message",
+      "Message": "The task with Id '0' has changed to progress 100 percent complete.",
+      "MessageArgs": [
+        "0",
+        "100"
+      ],
+      "MessageId": "TaskEvent.1.0.TaskProgressChanged",
+      "MessageSeverity": "OK",
+      "Resolution": "None."
+    },
+    {
+      "@odata.type": "#Message.v1_1_1.Message",
+      "Message": "The task with Id '0' has completed.",
+      "MessageArgs": [
+        "0"
+      ],
+      "MessageId": "TaskEvent.1.0.TaskCompletedOK",
+      "MessageSeverity": "OK",
+      "Resolution": "None."
+    }
+  ],
+  "Name": "Task 0",
+  "Payload": {
+    "HttpHeaders": [],
+    "HttpOperation": "POST",
+    "JsonBody": "",
+    "TargetUri": "/redfish/v1/UpdateService/update-multipart"
+  },
+  "PercentComplete": 100,
+  "StartTime": "2026-08-21T01:27:07-07:00",
+  "TaskMonitor": "/redfish/v1/TaskService/TaskMonitors/0",
+  "TaskState": "Completed",
+  "TaskStatus": "OK"
+}
+
+8. Display the fw inventory with newly updated fw.
+curl --silent $creds \
+https://$bmc/redfish/v1/UpdateService/FirmwareInventory/ | jq
+
+"Members": [
+...
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/MB_VR_CPU_V1P2_Firmware_1582"
+    },
+...
+]
+9. Query the new fw version.
+curl --silent $creds \
+https://$bmc/redfish/v1/UpdateService/FirmwareInventory/MB_VR_CPU_V1P2_Firmware_1582 | jq
+{
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/MB_VR_CPU_V1P2_Firmware_1582",
+  "@odata.type": "#SoftwareInventory.v1_1_0.SoftwareInventory",
+  "Description": "Other image",
+  "Id": "MB_VR_CPU_V1P2_Firmware_1582",
+  "Name": "Software Inventory",
+  "Status": {
+    "Health": "OK",
+    "HealthRollup": "OK",
+    "State": "Enabled"
+  },
+  "Updateable": false,
+  "Version": "9C3E"
+}
+
+10. Do AC cycle to make sure the new fw is applied.
+
+11. Display the fw inventory after AC cycle.
+curl --silent $creds \
+https://$bmc/redfish/v1/UpdateService/FirmwareInventory/ | jq
+
+"Members": [
+   ...
+    {
+      "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/MB_VR_CPU_V1P2_Firmware_5245"
+    },
+   ...
+]
+12. Query the fw version after AC cycle.
+curl --silent $creds \
+https://$bmc/redfish/v1/UpdateService/FirmwareInventory/MB_VR_CPU_V1P2_Firmware_5245 | jq
+
+{
+  "@odata.id": "/redfish/v1/UpdateService/FirmwareInventory/MB_VR_CPU_V1P2_Firmware_5245",
+  "@odata.type": "#SoftwareInventory.v1_1_0.SoftwareInventory",
+  "Description": "Other image",
+  "Id": "MB_VR_CPU_V1P2_Firmware_5245",
+  "Name": "Software Inventory",
+  "Status": {
+    "Health": "OK",
+    "HealthRollup": "OK",
+    "State": "Enabled"
+  },
+  "Updateable": true,
+  "Version": "9C3E"
+}
+'''
+
+- meson test -C build-test utils --print-errorlogs
+  - 10/10 tests passed.
+- meson test -C build-test tps544x27_csv_parser --print-errorlogs
+  - 12/12 tests passed.
+
+Change-Id: Ia1bcdf4c1af68222255fff8373a1b9bfaac28368
+Signed-off-by: Alan Tsai <alan-tsai@quantatw.com>
+---
+ common/include/utils.hpp             |  21 +
+ common/src/utils.cpp                 | 153 +++++
+ i2c-vr/i2cvr_software_manager.cpp    |   3 +-
+ i2c-vr/meson.build                   |   2 +
+ i2c-vr/tps544x27/csv_parser.cpp      | 348 ++++++++++
+ i2c-vr/tps544x27/csv_parser.hpp      | 102 +++
+ i2c-vr/tps544x27/tps544x27.cpp       | 952 +++++++++++++++++++++++++++
+ i2c-vr/tps544x27/tps544x27.hpp       |  83 +++
+ i2c-vr/vr.cpp                        |   4 +
+ i2c-vr/vr.hpp                        |   1 +
+ test/common/meson.build              |   1 +
+ test/common/utils/meson.build        |  18 +
+ test/common/utils/utils.cpp          | 138 ++++
+ test/i2c-vr/meson.build              |   1 +
+ test/i2c-vr/tps544x27/csv_parser.cpp | 299 +++++++++
+ test/i2c-vr/tps544x27/meson.build    |  14 +
+ test/meson.build                     |   1 +
+ 17 files changed, 2140 insertions(+), 1 deletion(-)
+ create mode 100644 i2c-vr/tps544x27/csv_parser.cpp
+ create mode 100644 i2c-vr/tps544x27/csv_parser.hpp
+ create mode 100644 i2c-vr/tps544x27/tps544x27.cpp
+ create mode 100644 i2c-vr/tps544x27/tps544x27.hpp
+ create mode 100644 test/common/utils/meson.build
+ create mode 100644 test/common/utils/utils.cpp
+ create mode 100644 test/i2c-vr/meson.build
+ create mode 100644 test/i2c-vr/tps544x27/csv_parser.cpp
+ create mode 100644 test/i2c-vr/tps544x27/meson.build
+
+diff --git a/common/include/utils.hpp b/common/include/utils.hpp
+index 3d3c68f..bccfb01 100644
+--- a/common/include/utils.hpp
++++ b/common/include/utils.hpp
+@@ -2,8 +2,17 @@
+ 
+ #include <sdbusplus/async.hpp>
+ 
++#include <algorithm>
++#include <chrono>
++#include <cstddef>
++#include <cstdint>
+ #include <functional>
++#include <initializer_list>
+ #include <optional>
++#include <string>
++#include <type_traits>
++#include <utility>
++#include <vector>
+ 
+ /**
+  * @brief Asynchronously executes a shell command.
+@@ -135,3 +144,15 @@ std::vector<uint8_t> buildByteVector(Args&&... args)
+ 
+     return buf;
+ }
++
++std::string trim(const std::string& input);
++
++bool parseHexByte(const std::string& input, uint8_t& value);
++
++bool parseHexBytes(const std::string& input, std::vector<uint8_t>& output);
++
++std::string byteToHex(uint8_t value);
++
++std::string bytesToHex(const std::vector<uint8_t>& bytes);
++
++std::vector<std::string> splitCsvLine(const std::string& line);
+diff --git a/common/src/utils.cpp b/common/src/utils.cpp
+index 2e6d147..6a2d9e9 100644
+--- a/common/src/utils.cpp
++++ b/common/src/utils.cpp
+@@ -2,6 +2,11 @@
+ 
+ #include <phosphor-logging/lg2.hpp>
+ 
++#include <algorithm>
++#include <cctype>
++#include <iomanip>
++#include <sstream>
++
+ PHOSPHOR_LOG2_USING;
+ 
+ sdbusplus::async::task<bool> asyncSystem(
+@@ -112,3 +117,151 @@ sdbusplus::async::task<bool> asyncSystem(
+         co_return false;
+     }
+ }
++
++std::string trim(const std::string& s)
++{
++    size_t b = 0;
++    while (b < s.size() && std::isspace(static_cast<unsigned char>(s[b])))
++    {
++        ++b;
++    }
++
++    size_t e = s.size();
++    while (e > b && std::isspace(static_cast<unsigned char>(s[e - 1])))
++    {
++        --e;
++    }
++
++    return s.substr(b, e - b);
++}
++
++bool parseHexByte(const std::string& input, uint8_t& value)
++{
++    std::string s = trim(input);
++
++    if (s.rfind("0x", 0) == 0 || s.rfind("0X", 0) == 0)
++    {
++        s = s.substr(2);
++    }
++
++    if (s.empty() || s.size() > 2)
++    {
++        return false;
++    }
++
++    unsigned int v = 0;
++    std::stringstream ss;
++    ss << std::hex << s;
++    ss >> v;
++
++    if (ss.fail() || v > 0xFF)
++    {
++        return false;
++    }
++
++    value = static_cast<uint8_t>(v);
++    return true;
++}
++
++bool parseHexBytes(const std::string& input, std::vector<uint8_t>& out)
++{
++    std::string s = trim(input);
++
++    if (s.rfind("0x", 0) == 0 || s.rfind("0X", 0) == 0)
++    {
++        s = s.substr(2);
++    }
++
++    s.erase(std::remove_if(s.begin(), s.end(),
++                           [](unsigned char c) { return std::isspace(c); }),
++            s.end());
++
++    if (s.empty() || (s.size() % 2) != 0)
++    {
++        return false;
++    }
++
++    out.clear();
++
++    for (size_t i = 0; i < s.size(); i += 2)
++    {
++        std::string byteStr = s.substr(i, 2);
++
++        unsigned int v = 0;
++        std::stringstream ss;
++        ss << std::hex << byteStr;
++        ss >> v;
++
++        if (ss.fail() || v > 0xFF)
++        {
++            return false;
++        }
++
++        out.push_back(static_cast<uint8_t>(v));
++    }
++
++    return true;
++}
++
++std::string byteToHex(uint8_t b)
++{
++    std::ostringstream oss;
++    oss << "0x" << std::uppercase << std::hex << std::setw(2)
++        << std::setfill('0') << static_cast<int>(b);
++    return oss.str();
++}
++
++std::string bytesToHex(const std::vector<uint8_t>& bytes)
++{
++    if (bytes.empty())
++    {
++        return "-";
++    }
++
++    std::ostringstream oss;
++    for (size_t i = 0; i < bytes.size(); ++i)
++    {
++        if (i != 0)
++        {
++            oss << " ";
++        }
++
++        oss << byteToHex(bytes[i]);
++    }
++
++    return oss.str();
++}
++
++std::vector<std::string> splitCsvLine(const std::string& line)
++{
++    std::vector<std::string> fields;
++    std::string cur;
++    bool inQuote = false;
++
++    for (char c : line)
++    {
++        if (c == '"')
++        {
++            inQuote = !inQuote;
++            continue;
++        }
++
++        if (!inQuote && (c == ',' || c == '\t'))
++        {
++            fields.push_back(trim(cur));
++            cur.clear();
++            continue;
++        }
++
++        cur.push_back(c);
++    }
++
++    fields.push_back(trim(cur));
++
++    while (!fields.empty() && fields.back().empty())
++    {
++        fields.pop_back();
++    }
++
++    return fields;
++}
+diff --git a/i2c-vr/i2cvr_software_manager.cpp b/i2c-vr/i2cvr_software_manager.cpp
+index e6df5fe..4e17f54 100644
+--- a/i2c-vr/i2cvr_software_manager.cpp
++++ b/i2c-vr/i2cvr_software_manager.cpp
+@@ -25,7 +25,8 @@ const std::vector<std::string> emConfigTypes = {
+     "MP292XFirmware",     "MP2940XFirmware",      "MP297XFirmware",
+     "MP5998Firmware",     "MPQ87XXFirmware",      "MP994XFirmware",
+     "RAA22XGen2Firmware", "RAA22XGen3p5Firmware", "TDA38640AFirmware",
+-    "XDP71XFirmware",     "TPS25990Firmware",     "RS31390Firmware"};
++    "XDP71XFirmware",     "TPS25990Firmware",     "TPS544X27Firmware",
++    "RS31390Firmware"};
+ 
+ I2CVRSoftwareManager::I2CVRSoftwareManager(sdbusplus::async::context& ctx) :
+     ManagerInf::SoftwareManager(ctx, configDBusName)
+diff --git a/i2c-vr/meson.build b/i2c-vr/meson.build
+index 7ccf3c5..ad3905d 100644
+--- a/i2c-vr/meson.build
++++ b/i2c-vr/meson.build
+@@ -12,6 +12,8 @@ regulators_src = files(
+     'tda38640a/tda38640a.cpp',
+     'tps25990/rs31390.cpp',
+     'tps25990/tps25990.cpp',
++    'tps544x27/tps544x27.cpp',
++    'tps544x27/csv_parser.cpp',
+     'xdp71x/xdp71x.cpp',
+     'xdpe1x2xx/xdpe1x2xx.cpp',
+ )
+diff --git a/i2c-vr/tps544x27/csv_parser.cpp b/i2c-vr/tps544x27/csv_parser.cpp
+new file mode 100644
+index 0000000..d027fe1
+--- /dev/null
++++ b/i2c-vr/tps544x27/csv_parser.cpp
+@@ -0,0 +1,348 @@
++#include "csv_parser.hpp"
++
++#include "common/include/utils.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <algorithm>
++#include <exception>
++#include <sstream>
++#include <string>
++#include <utility>
++#include <vector>
++
++PHOSPHOR_LOG2_USING;
++
++namespace phosphor::software::VR
++{
++const char* TPS544X27CsvParser::csvOpToString(CsvOp op)
++{
++    const auto it =
++        std::find_if(csvOpTable.begin(), csvOpTable.end(),
++                     [op](const CsvOpEntry& entry) { return entry.op == op; });
++
++    if (it == csvOpTable.end())
++    {
++        return "Unknown";
++    }
++
++    return it->name.data();
++}
++
++bool TPS544X27CsvParser::parseCsvOp(const std::string& text, CsvOp& op)
++{
++    const auto it = std::find_if(
++        csvOpTable.begin(), csvOpTable.end(),
++        [&text](const CsvOpEntry& entry) { return entry.name == text; });
++
++    if (it == csvOpTable.end())
++    {
++        return false;
++    }
++
++    op = it->op;
++    return true;
++}
++
++bool TPS544X27CsvParser::parseCsvCommand(const std::vector<std::string>& fields,
++                                         size_t lineNo, const std::string& line,
++                                         CsvCommand& cmd, std::string& errorMsg)
++{
++    auto fail = [&](const std::string& msg) {
++        errorMsg = "CSV line ";
++        errorMsg += std::to_string(lineNo);
++        errorMsg += ": ";
++        errorMsg += msg;
++        errorMsg += " | ";
++        errorMsg += line;
++        error("TPS544x27 CSV parse failed: {ERR}", "ERR", errorMsg);
++        return false;
++    };
++    CsvOp op = CsvOp::Reset;
++    if (!parseCsvOp(fields[0], op))
++    {
++        return fail("unknown operation");
++    }
++
++    cmd.op = op;
++    cmd.lineNo = lineNo;
++
++    auto parseCmdField = [&]() -> bool {
++        if (fields.size() < 2)
++        {
++            return false;
++        }
++
++        return parseHexByte(fields[1], cmd.cmd);
++    };
++
++    switch (op)
++    {
++        case CsvOp::WriteByte:
++        {
++            if (!parseCmdField() || fields.size() < 3)
++            {
++                return fail("invalid WriteByte");
++            }
++
++            std::vector<uint8_t> raw;
++            if (!parseHexBytes(fields[2], raw) || raw.size() != 2)
++            {
++                return fail("WriteByte data must be data + PEC");
++            }
++
++            cmd.dataBytes = {raw[0]};
++            cmd.hasCsvPEC = true;
++            cmd.csvPEC = raw[1];
++            break;
++        }
++
++        case CsvOp::ReadByte:
++        {
++            if (!parseCmdField() || fields.size() < 3)
++            {
++                return fail("invalid ReadByte");
++            }
++
++            if (!parseHexBytes(fields[2], cmd.expectedBytes) ||
++                cmd.expectedBytes.size() != 1)
++            {
++                return fail("ReadByte expected must be 1 byte");
++            }
++            break;
++        }
++
++        case CsvOp::WriteWord:
++        {
++            if (!parseCmdField() || fields.size() < 3)
++            {
++                return fail("invalid WriteWord");
++            }
++
++            std::vector<uint8_t> raw;
++            if (!parseHexBytes(fields[2], raw) || raw.size() != 3)
++            {
++                return fail("WriteWord data must be low + high + PEC");
++            }
++
++            const uint8_t lo = raw[0];
++            const uint8_t hi = raw[1];
++
++            cmd.dataBytes = {lo, hi};
++            cmd.hasWordValue = true;
++            cmd.wordValue = static_cast<uint16_t>(lo) |
++                            (static_cast<uint16_t>(hi) << 8);
++
++            cmd.hasCsvPEC = true;
++            cmd.csvPEC = raw[2];
++            break;
++        }
++
++        case CsvOp::ReadWord:
++        {
++            if (!parseCmdField() || fields.size() < 3)
++            {
++                return fail("invalid ReadWord");
++            }
++
++            if (!parseHexBytes(fields[2], cmd.expectedBytes) ||
++                cmd.expectedBytes.size() != 2)
++            {
++                return fail("ReadWord expected must be 2 bytes");
++            }
++            break;
++        }
++
++        case CsvOp::BlockWrite:
++        {
++            if (!parseCmdField() || fields.size() < 3)
++            {
++                return fail("invalid BlockWrite");
++            }
++
++            std::vector<uint8_t> raw;
++            if (!parseHexBytes(fields[2], raw) || raw.size() < 3)
++            {
++                return fail("BlockWrite data must be length + data + PEC");
++            }
++
++            const uint8_t blockLen = raw[0];
++            const size_t dataLen = raw.size() - 2; // remove length and PEC
++
++            if (dataLen != blockLen)
++            {
++                return fail("BlockWrite length mismatch");
++            }
++
++            // Keep only data bytes here, no length and no CSV PEC.
++            cmd.dataBytes.assign(raw.begin() + 1, raw.end() - 1);
++
++            cmd.hasCsvPEC = true;
++            cmd.csvPEC = raw.back();
++            break;
++        }
++
++        case CsvOp::BlockRead:
++        {
++            if (!parseCmdField() || fields.size() < 3)
++            {
++                return fail("invalid BlockRead");
++            }
++
++            if (!parseHexBytes(fields[2], cmd.expectedBytes) ||
++                cmd.expectedBytes.empty())
++            {
++                return fail("BlockRead expected empty");
++            }
++
++            const uint8_t blockLen = cmd.expectedBytes[0];
++            const size_t dataLen = cmd.expectedBytes.size() - 1;
++
++            if (dataLen != blockLen)
++            {
++                return fail("BlockRead expected length mismatch");
++            }
++
++            break;
++        }
++
++        case CsvOp::BlockProcessCall:
++        {
++            if (fields.size() < 3)
++            {
++                return fail("invalid BlockProcessCall");
++            }
++
++            std::vector<uint8_t> request;
++            if (!parseHexBytes(fields[1], request) || request.size() < 2)
++            {
++                return fail("BlockProcessCall request must be cmd + data");
++            }
++
++            cmd.cmd = request[0];
++            cmd.dataBytes.assign(request.begin() + 1, request.end());
++
++            if (!parseHexBytes(fields[2], cmd.expectedBytes) ||
++                cmd.expectedBytes.empty())
++            {
++                return fail("BlockProcessCall expected empty");
++            }
++
++            const uint8_t blockLen = cmd.expectedBytes[0];
++            const size_t dataLen = cmd.expectedBytes.size() - 1;
++
++            if (dataLen != blockLen)
++            {
++                return fail("BlockProcessCall expected length mismatch");
++            }
++
++            break;
++        }
++
++        case CsvOp::SendByte:
++        {
++            if (!parseCmdField())
++            {
++                return fail("invalid SendByte");
++            }
++            break;
++        }
++
++        case CsvOp::Pause:
++        {
++            if (fields.size() < 2)
++            {
++                return fail("invalid Pause");
++            }
++
++            try
++            {
++                cmd.pauseMs = static_cast<uint32_t>(std::stoul(fields[1]));
++            }
++            catch (const std::exception&)
++            {
++                return fail("invalid Pause value");
++            }
++            break;
++        }
++
++        case CsvOp::Reset:
++        {
++            break;
++        }
++    }
++    return true;
++}
++
++bool TPS544X27CsvParser::parseCsvLines(const std::string& csvText,
++                                       std::string& errorMsg)
++{
++    std::istringstream iss(csvText);
++    std::string line;
++    size_t lineNo = 0;
++
++    while (std::getline(iss, line))
++    {
++        ++lineNo;
++
++        line = trim(line);
++        if (line.empty())
++        {
++            continue;
++        }
++
++        auto fields = splitCsvLine(line);
++        if (fields.empty())
++        {
++            continue;
++        }
++
++        if (fields[0] == "Comment")
++        {
++            if (line.find("PEC=True") != std::string::npos)
++            {
++                parsedImage.pecEnabled = true;
++            }
++
++            if (line.find("SMBusWordCommandBytesOrderAsLowByteFirst=True") !=
++                std::string::npos)
++            {
++                parsedImage.wordLowByteFirst = true;
++            }
++
++            if (line.find("IncludeBlockLength=True") != std::string::npos)
++            {
++                parsedImage.includeBlockLength = true;
++            }
++
++            continue;
++        }
++
++        CsvCommand cmd;
++
++        if (!parseCsvCommand(fields, lineNo, line, cmd, errorMsg))
++        {
++            return false;
++        }
++
++        parsedImage.commands.push_back(std::move(cmd));
++    }
++    return true;
++}
++
++bool TPS544X27CsvParser::parseImage(const uint8_t* image, size_t imageSize,
++                                    std::string& errorMsg)
++{
++    parsedImage = {};
++
++    if (image == nullptr || imageSize == 0)
++    {
++        errorMsg = "empty image";
++        return false;
++    }
++
++    std::string csvText(reinterpret_cast<const char*>(image), imageSize);
++    return parseCsvLines(csvText, errorMsg);
++}
++
++} // namespace phosphor::software::VR
+diff --git a/i2c-vr/tps544x27/csv_parser.hpp b/i2c-vr/tps544x27/csv_parser.hpp
+new file mode 100644
+index 0000000..184746f
+--- /dev/null
++++ b/i2c-vr/tps544x27/csv_parser.hpp
+@@ -0,0 +1,102 @@
++#pragma once
++
++#include <array>
++#include <cstddef>
++#include <cstdint>
++#include <string>
++#include <string_view>
++#include <vector>
++
++namespace phosphor::software::VR
++{
++
++class TPS544X27CsvParser
++{
++  public:
++    enum class CsvOp
++    {
++        WriteByte,
++        ReadByte,
++        WriteWord,
++        ReadWord,
++        BlockWrite,
++        BlockRead,
++        BlockProcessCall,
++        SendByte,
++        Pause,
++        Reset,
++    };
++
++    struct CsvCommand
++    {
++        CsvOp op = CsvOp::Reset;
++        size_t lineNo = 0;
++
++        uint8_t cmd = 0;
++
++        // Write data without block length or PEC.
++        std::vector<uint8_t> dataBytes;
++
++        // Expected raw bytes from the CSV.
++        std::vector<uint8_t> expectedBytes;
++
++        bool hasWordValue = false;
++        uint16_t wordValue = 0;
++
++        bool hasCsvPEC = false;
++        uint8_t csvPEC = 0;
++
++        uint32_t pauseMs = 0;
++    };
++
++    struct CsvImage
++    {
++        bool pecEnabled = false;
++        bool wordLowByteFirst = false;
++        bool includeBlockLength = false;
++
++        std::vector<CsvCommand> commands;
++    };
++
++    bool parseImage(const uint8_t* image, size_t imageSize,
++                    std::string& errorMsg);
++
++    const CsvImage& getParsedImage() const
++    {
++        return parsedImage;
++    }
++
++    static const char* csvOpToString(CsvOp op);
++
++  private:
++    struct CsvOpEntry
++    {
++        std::string_view name;
++        CsvOp op;
++    };
++
++    static constexpr std::array<CsvOpEntry, 10> csvOpTable{{
++        {"WriteByte", CsvOp::WriteByte},
++        {"ReadByte", CsvOp::ReadByte},
++        {"WriteWord", CsvOp::WriteWord},
++        {"ReadWord", CsvOp::ReadWord},
++        {"BlockWrite", CsvOp::BlockWrite},
++        {"BlockRead", CsvOp::BlockRead},
++        {"BlockProcessCall", CsvOp::BlockProcessCall},
++        {"SendByte", CsvOp::SendByte},
++        {"Pause", CsvOp::Pause},
++        {"Reset", CsvOp::Reset},
++    }};
++
++    static bool parseCsvOp(const std::string& text, CsvOp& op);
++
++    static bool parseCsvCommand(const std::vector<std::string>& fields,
++                                size_t lineNo, const std::string& line,
++                                CsvCommand& cmd, std::string& errorMsg);
++
++    bool parseCsvLines(const std::string& csvText, std::string& errorMsg);
++
++    CsvImage parsedImage;
++};
++
++} // namespace phosphor::software::VR
+diff --git a/i2c-vr/tps544x27/tps544x27.cpp b/i2c-vr/tps544x27/tps544x27.cpp
+new file mode 100644
+index 0000000..c9f78e0
+--- /dev/null
++++ b/i2c-vr/tps544x27/tps544x27.cpp
+@@ -0,0 +1,952 @@
++#include "tps544x27.hpp"
++
++#include "common/include/host_power.hpp"
++#include "common/include/utils.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <chrono>
++#include <string>
++#include <vector>
++
++PHOSPHOR_LOG2_USING;
++
++namespace phosphor::software::VR
++{
++
++using namespace phosphor::software::host_power;
++
++namespace
++{
++
++bool bytesEqualWithSpecialMask(uint8_t cmd,
++                               const std::vector<uint8_t>& expected,
++                               const std::vector<uint8_t>& actual)
++{
++    if (expected.size() != actual.size())
++    {
++        error(
++            "TPS544x27 compare size mismatch, cmd={CMD}, expected={EXPECTED}, actual={ACTUAL}",
++            "CMD", lg2::hex, cmd, "EXPECTED", bytesToHex(expected), "ACTUAL",
++            bytesToHex(actual));
++        return false;
++    }
++
++    // PMBUS_ADDR 0xD2: bit15 is RESERVED R-0h.
++    // Some CSV files contain raw 0E 8E, while the device reads back 0E 0E.
++    // Treat them as equal after masking bit15.
++    if (cmd == 0xD2 && expected.size() == 2)
++    {
++        uint16_t exp = static_cast<uint16_t>(expected[0]) |
++                       (static_cast<uint16_t>(expected[1]) << 8);
++        uint16_t act = static_cast<uint16_t>(actual[0]) |
++                       (static_cast<uint16_t>(actual[1]) << 8);
++
++        constexpr uint16_t maskReservedBit15 = 0x7FFF;
++
++        if ((exp & maskReservedBit15) != (act & maskReservedBit15))
++        {
++            error(
++                "TPS544x27 compare mismatch, cmd={CMD}, expected={EXPECTED}, actual={ACTUAL}",
++                "CMD", lg2::hex, cmd, "EXPECTED", bytesToHex(expected),
++                "ACTUAL", bytesToHex(actual));
++            return false;
++        }
++
++        return true;
++    }
++
++    if (expected != actual)
++    {
++        error(
++            "TPS544x27 compare mismatch, cmd={CMD}, expected={EXPECTED}, actual={ACTUAL}",
++            "CMD", lg2::hex, cmd, "EXPECTED", bytesToHex(expected), "ACTUAL",
++            bytesToHex(actual));
++        return false;
++    }
++
++    return true;
++}
++
++bool isReadOnlyCommandPerSpec(uint8_t cmd)
++{
++    switch (cmd)
++    {
++        case 0x24: // VOUT_MAX
++        case 0x28: // VOUT_DROOP
++        case 0x47: // IOUT_OC_FAULT_RESPONSE
++        case 0x98: // PMBUS_REVISION
++        case 0x99: // MFR_ID
++        case 0xC8: // DIE_ID
++                   // Spec lists Block Write/RW, but Data Validity says attempts
++                   // to write DIE_ID are treated as invalid/unsupported data
++                   // and reported via STATUS_CML IVD. Skip writes in update
++                   // flow.
++        case 0xDD: // VENDOR_ID
++        case 0xDE: // VID_SETTING
++        case 0xDF: // SVID_STATUS_1_2
++        case 0xE0: // CAPABILITY_SVID
++            return true;
++        default:
++            return false;
++    }
++}
++
++const char* readOnlyCommandName(uint8_t cmd)
++{
++    switch (cmd)
++    {
++        case 0x24:
++            return "VOUT_MAX";
++        case 0x28:
++            return "VOUT_DROOP";
++        case 0x47:
++            return "IOUT_OC_FAULT_RESPONSE";
++        case 0x98:
++            return "PMBUS_REVISION";
++        case 0x99:
++            return "MFR_ID";
++        case 0xC8:
++            return "DIE_ID";
++        case 0xDD:
++            return "VENDOR_ID";
++        case 0xDE:
++            return "VID_SETTING";
++        case 0xDF:
++            return "SVID_STATUS_1_2";
++        case 0xE0:
++            return "CAPABILITY_SVID";
++        default:
++            return "UNKNOWN_READ_ONLY";
++    }
++}
++
++bool isDangerousSecurityWrite(uint8_t cmd)
++{
++    switch (cmd)
++    {
++        case 0x0E: // PASSKEY
++            return true;
++        default:
++            return false;
++    }
++}
++
++const char* dangerousSecurityCommandName(uint8_t cmd)
++{
++    switch (cmd)
++    {
++        case 0x0E:
++            return "PASSKEY";
++        default:
++            return "UNKNOWN_SECURITY";
++    }
++}
++
++} // namespace
++
++constexpr uint8_t regPasskey = 0x0E;
++constexpr uint8_t regStoreUserAll = 0x15;
++constexpr uint8_t regRestoreUserAll = 0x16;
++constexpr uint8_t regICDeviceRev = 0xAE;
++
++constexpr std::chrono::milliseconds storeRestoreDelay{1000};
++
++uint8_t TPS544X27::calcPEC(const std::vector<uint8_t>& bytes)
++{
++    uint8_t crc = 0x00;
++
++    for (uint8_t byte : bytes)
++    {
++        crc ^= byte;
++        for (int bit = 0; bit < 8; ++bit)
++        {
++            if (crc & 0x80)
++            {
++                crc = static_cast<uint8_t>((crc << 1) ^ 0x07);
++            }
++            else
++            {
++                crc = static_cast<uint8_t>(crc << 1);
++            }
++        }
++    }
++
++    return crc;
++}
++
++sdbusplus::async::task<bool> TPS544X27::sendByte(uint8_t cmd)
++{
++    std::vector<uint8_t> tbuf{cmd};
++    std::vector<uint8_t> rbuf;
++
++    // Do not append PEC for SendByte in Fusion CSV.
++    // Example: SendByte,0x15
++    if (!i2cInterface.sendReceive(tbuf, rbuf))
++    {
++        error("TPS544x27 SendByte failed, cmd={CMD}", "CMD", lg2::hex, cmd);
++        co_return false;
++    }
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::readByte(uint8_t cmd, uint8_t* value)
++{
++    if (value == nullptr)
++    {
++        error("TPS544x27 ReadByte invalid input");
++        co_return false;
++    }
++
++    std::vector<uint8_t> tbuf{cmd};
++    std::vector<uint8_t> rbuf(1);
++
++    if (!i2cInterface.sendReceive(tbuf, rbuf))
++    {
++        error("TPS544x27 ReadByte failed, cmd={CMD}", "CMD", lg2::hex, cmd);
++        co_return false;
++    }
++
++    *value = rbuf[0];
++    co_return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::readWordRaw(uint8_t cmd,
++                                                    std::vector<uint8_t>& raw)
++{
++    std::vector<uint8_t> tbuf{cmd};
++    std::vector<uint8_t> rbuf(2);
++
++    if (!i2cInterface.sendReceive(tbuf, rbuf))
++    {
++        error("TPS544x27 ReadWordRaw failed, cmd={CMD}", "CMD", lg2::hex, cmd);
++        co_return false;
++    }
++
++    raw = std::move(rbuf);
++    co_return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::processCallReadWordRaw(
++    uint8_t cmd, uint8_t low, uint8_t high, std::vector<uint8_t>& raw)
++{
++    std::vector<uint8_t> tbuf{cmd, low, high};
++    std::vector<uint8_t> rbuf(2);
++
++    if (!i2cInterface.sendReceive(tbuf, rbuf))
++    {
++        error("TPS544x27 ProcessCall read word failed, cmd={CMD}", "CMD",
++              lg2::hex, cmd);
++        co_return false;
++    }
++
++    raw = std::move(rbuf);
++    co_return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::blockRead(
++    uint8_t cmd, std::vector<uint8_t>& data, size_t readLen)
++{
++    std::vector<uint8_t> tbuf{cmd};
++    std::vector<uint8_t> rbuf(readLen);
++
++    if (!i2cInterface.sendReceive(tbuf, rbuf))
++    {
++        error("TPS544x27 BlockRead failed, cmd={CMD}", "CMD", lg2::hex, cmd);
++        co_return false;
++    }
++
++    data = std::move(rbuf);
++    co_return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::readDeviceRev(uint8_t* rev)
++{
++    // Block Read
++    // 01 73
++    if (rev == nullptr)
++    {
++        error("TPS544x27 readDeviceRev invalid input");
++        co_return false;
++    }
++
++    std::vector<uint8_t> data;
++
++    if (!co_await blockRead(regICDeviceRev, data, 2))
++    {
++        error("TPS544x27 failed to read IC_DEVICE_REV");
++        co_return false;
++    }
++
++    if (data.size() != 2 || data[0] != 0x01)
++    {
++        error("TPS544x27 invalid IC_DEVICE_REV response");
++        co_return false;
++    }
++
++    *rev = data[1];
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::readPasskeyChecksum(uint16_t* checksum)
++{
++    if (checksum == nullptr)
++    {
++        error("TPS544x27 readPasskeyChecksum invalid input");
++        co_return false;
++    }
++
++    std::vector<uint8_t> raw;
++
++    // PASSKEY 0x0E is Block Read.
++    // Raw response:
++    //   raw[0] = byte count = 0x03
++    //   raw[1] = PASSKEY status/reserved bits
++    //   raw[2] = NVM_CHECKSUM high byte for Fusion/display
++    //   raw[3] = NVM_CHECKSUM low byte for Fusion/display
++    // Example: 03 00 44 ED -> checksum 0x44ED.
++    if (!co_await blockRead(regPasskey, raw, 4))
++    {
++        error("TPS544x27 failed to read PASSKEY");
++        co_return false;
++    }
++
++    if (raw.size() < 4 || raw[0] != 0x03)
++    {
++        error("TPS544x27 invalid PASSKEY response");
++        co_return false;
++    }
++
++    debug("TPS544x27 PASSKEY raw: {B0} {B1} {B2} {B3}", "B0", lg2::hex, raw[0],
++          "B1", lg2::hex, raw[1], "B2", lg2::hex, raw[2], "B3", lg2::hex,
++          raw[3]);
++
++    *checksum = (static_cast<uint16_t>(raw[2]) << 8) |
++                static_cast<uint16_t>(raw[3]);
++
++    debug("TPS544x27 NVM checksum: {CHECKSUM}", "CHECKSUM", lg2::hex,
++          *checksum);
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::getCRC(uint32_t* sum)
++{
++    if (sum == nullptr)
++    {
++        error("TPS544x27 getCRC invalid input");
++        co_return false;
++    }
++
++    uint16_t checksum = 0;
++
++    if (!co_await readPasskeyChecksum(&checksum))
++    {
++        error("TPS544x27 failed to get NVM checksum");
++        co_return false;
++    }
++
++    *sum = static_cast<uint32_t>(checksum);
++    co_return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::blockProcessCallRead(
++    uint8_t cmd, const std::vector<uint8_t>& requestData,
++    std::vector<uint8_t>& response, size_t readLen)
++{
++    if (requestData.size() > 255)
++    {
++        error("TPS544x27 BlockProcessCall request too large, cmd={CMD}", "CMD",
++              lg2::hex, cmd);
++        co_return false;
++    }
++
++    std::vector<uint8_t> tbuf;
++    tbuf.reserve(requestData.size() + 2);
++
++    tbuf.push_back(cmd);
++    tbuf.push_back(static_cast<uint8_t>(requestData.size()));
++    tbuf.insert(tbuf.end(), requestData.begin(), requestData.end());
++
++    std::vector<uint8_t> rbuf(readLen);
++
++    if (!i2cInterface.sendReceive(tbuf, rbuf))
++    {
++        error("TPS544x27 BlockProcessCall read failed, cmd={CMD}", "CMD",
++              lg2::hex, cmd);
++        co_return false;
++    }
++
++    response = std::move(rbuf);
++    co_return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::executeWriteByte(const CsvCommand& cmd)
++{
++    if (cmd.dataBytes.size() != 1)
++    {
++        error("TPS544x27 invalid WriteByte data, line={LINE}", "LINE",
++              cmd.lineNo);
++        co_return false;
++    }
++
++    if (isReadOnlyCommandPerSpec(cmd.cmd))
++    {
++        debug("TPS544x27 skip CSV WriteByte because spec says write is "
++              "not supported, line={LINE}, cmd={CMD}, name={NAME}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd, "NAME",
++              readOnlyCommandName(cmd.cmd));
++        co_return true;
++    }
++
++    if (isDangerousSecurityWrite(cmd.cmd))
++    {
++        error("TPS544x27 reject CSV WriteByte to security/passkey "
++              "command, line={LINE}, cmd={CMD}, name={NAME}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd, "NAME",
++              dangerousSecurityCommandName(cmd.cmd));
++        co_return false;
++    }
++
++    if (!cmd.hasCsvPEC)
++    {
++        error("TPS544x27 missing CSV PEC for WriteByte, line={LINE}, "
++              "cmd={CMD}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd);
++        co_return false;
++    }
++
++    std::vector<uint8_t> tbuf{cmd.cmd, cmd.dataBytes[0]};
++    std::vector<uint8_t> pecInput{static_cast<uint8_t>((address << 1) | 0x00)};
++    pecInput.insert(pecInput.end(), tbuf.begin(), tbuf.end());
++
++    const uint8_t calculatedPEC = calcPEC(pecInput);
++    if (calculatedPEC != cmd.csvPEC)
++    {
++        error("TPS544x27 CSV PEC mismatch for WriteByte, line={LINE}, "
++              "cmd={CMD}, csvPEC={CSV_PEC}, calculatedPEC={CALC_PEC}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd, "CSV_PEC", lg2::hex,
++              cmd.csvPEC, "CALC_PEC", lg2::hex, calculatedPEC);
++        co_return false;
++    }
++
++    tbuf.push_back(cmd.csvPEC);
++    std::vector<uint8_t> rbuf;
++    if (!i2cInterface.sendReceive(tbuf, rbuf))
++    {
++        error("TPS544x27 WriteByte failed after CSV PEC verification, "
++              "line={LINE}, cmd={CMD}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd);
++        co_return false;
++    }
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::executeReadByte(const CsvCommand& cmd)
++{
++    uint8_t actual = 0;
++
++    if (!co_await readByte(cmd.cmd, &actual))
++    {
++        co_return false;
++    }
++
++    std::vector<uint8_t> actualBytes{actual};
++
++    if (!bytesEqualWithSpecialMask(cmd.cmd, cmd.expectedBytes, actualBytes))
++    {
++        error("TPS544x27 ReadByte mismatch, line={LINE}, cmd={CMD}, "
++              "expected={EXPECTED}, actual={ACTUAL}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd, "EXPECTED",
++              bytesToHex(cmd.expectedBytes), "ACTUAL", bytesToHex(actualBytes));
++        co_return false;
++    }
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::executeWriteWord(const CsvCommand& cmd)
++{
++    if (!cmd.hasWordValue)
++    {
++        error("TPS544x27 invalid WriteWord data, line={LINE}", "LINE",
++              cmd.lineNo);
++        co_return false;
++    }
++
++    if (isReadOnlyCommandPerSpec(cmd.cmd))
++    {
++        debug("TPS544x27 skip CSV WriteWord because spec says write is "
++              "not supported, line={LINE}, cmd={CMD}, name={NAME}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd, "NAME",
++              readOnlyCommandName(cmd.cmd));
++        co_return true;
++    }
++
++    if (isDangerousSecurityWrite(cmd.cmd))
++    {
++        error("TPS544x27 reject CSV WriteWord to security/passkey "
++              "command, line={LINE}, cmd={CMD}, name={NAME}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd, "NAME",
++              dangerousSecurityCommandName(cmd.cmd));
++        co_return false;
++    }
++
++    if (!cmd.hasCsvPEC || cmd.dataBytes.size() != 2)
++    {
++        error("TPS544x27 missing CSV PEC or invalid data for WriteWord, "
++              "line={LINE}, cmd={CMD}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd);
++        co_return false;
++    }
++
++    std::vector<uint8_t> tbuf{cmd.cmd, cmd.dataBytes[0], cmd.dataBytes[1]};
++    std::vector<uint8_t> pecInput{static_cast<uint8_t>((address << 1) | 0x00)};
++    pecInput.insert(pecInput.end(), tbuf.begin(), tbuf.end());
++
++    const uint8_t calculatedPEC = calcPEC(pecInput);
++    if (calculatedPEC != cmd.csvPEC)
++    {
++        error("TPS544x27 CSV PEC mismatch for WriteWord, line={LINE}, "
++              "cmd={CMD}, csvPEC={CSV_PEC}, calculatedPEC={CALC_PEC}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd, "CSV_PEC", lg2::hex,
++              cmd.csvPEC, "CALC_PEC", lg2::hex, calculatedPEC);
++        co_return false;
++    }
++
++    tbuf.push_back(cmd.csvPEC);
++    std::vector<uint8_t> rbuf;
++    if (!i2cInterface.sendReceive(tbuf, rbuf))
++    {
++        error("TPS544x27 WriteWord failed after CSV PEC verification, "
++              "line={LINE}, cmd={CMD}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd);
++        co_return false;
++    }
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::executeReadWord(const CsvCommand& cmd)
++{
++    std::vector<uint8_t> actual;
++
++    if (cmd.cmd == 0xC4)
++    {
++        // ADV_TEL_BYTE 0xC4 is not a normal ReadWord readback.
++        // It uses a Process Call style read:
++        //   write:  C4 00 <adv_tel_address>
++        //   read:   <adv_tel_address> <data>
++        //
++        // Fusion CSV still records it as:
++        //   WriteWord,0xC4,0x0500...
++        //   ReadWord,0xC4,0x0500
++        //
++        // For the ReadWord line, expectedBytes[0] is the Adv Tel
++        // address and expectedBytes[1] is the expected data.
++        if (cmd.expectedBytes.size() != 2)
++        {
++            error("TPS544x27 invalid ADV_TEL_BYTE expected size, "
++                  "line={LINE}, size={SIZE}",
++                  "LINE", cmd.lineNo, "SIZE", cmd.expectedBytes.size());
++            co_return false;
++        }
++
++        const uint8_t advTelAddr = cmd.expectedBytes[0];
++
++        if (!co_await processCallReadWordRaw(cmd.cmd, 0x00, advTelAddr, actual))
++        {
++            co_return false;
++        }
++    }
++    else if (!co_await readWordRaw(cmd.cmd, actual))
++    {
++        co_return false;
++    }
++
++    if (!bytesEqualWithSpecialMask(cmd.cmd, cmd.expectedBytes, actual))
++    {
++        error("TPS544x27 ReadWord mismatch, line={LINE}, cmd={CMD}, "
++              "expected={EXPECTED}, actual={ACTUAL}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd, "EXPECTED",
++              bytesToHex(cmd.expectedBytes), "ACTUAL", bytesToHex(actual));
++        co_return false;
++    }
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::executeBlockWrite(const CsvCommand& cmd)
++{
++    if (isReadOnlyCommandPerSpec(cmd.cmd))
++    {
++        debug("TPS544x27 skip CSV BlockWrite because spec says write is "
++              "not supported, line={LINE}, cmd={CMD}, name={NAME}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd, "NAME",
++              readOnlyCommandName(cmd.cmd));
++        co_return true;
++    }
++
++    if (isDangerousSecurityWrite(cmd.cmd))
++    {
++        error("TPS544x27 reject CSV BlockWrite to security/passkey "
++              "command, line={LINE}, cmd={CMD}, name={NAME}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd, "NAME",
++              dangerousSecurityCommandName(cmd.cmd));
++        co_return false;
++    }
++
++    if (!cmd.hasCsvPEC)
++    {
++        error("TPS544x27 missing CSV PEC for BlockWrite, line={LINE}, "
++              "cmd={CMD}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd);
++        co_return false;
++    }
++
++    if (cmd.dataBytes.size() > 255)
++    {
++        error("TPS544x27 BlockWrite data too large, line={LINE}, "
++              "cmd={CMD}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd);
++        co_return false;
++    }
++
++    std::vector<uint8_t> tbuf{cmd.cmd};
++    if (csvParser.getParsedImage().includeBlockLength)
++    {
++        tbuf.push_back(static_cast<uint8_t>(cmd.dataBytes.size()));
++    }
++    tbuf.insert(tbuf.end(), cmd.dataBytes.begin(), cmd.dataBytes.end());
++
++    std::vector<uint8_t> pecInput{static_cast<uint8_t>((address << 1) | 0x00)};
++    pecInput.insert(pecInput.end(), tbuf.begin(), tbuf.end());
++
++    const uint8_t calculatedPEC = calcPEC(pecInput);
++    if (calculatedPEC != cmd.csvPEC)
++    {
++        error("TPS544x27 CSV PEC mismatch for BlockWrite, line={LINE}, "
++              "cmd={CMD}, csvPEC={CSV_PEC}, calculatedPEC={CALC_PEC}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd, "CSV_PEC", lg2::hex,
++              cmd.csvPEC, "CALC_PEC", lg2::hex, calculatedPEC);
++        co_return false;
++    }
++
++    tbuf.push_back(cmd.csvPEC);
++    std::vector<uint8_t> rbuf;
++    if (!i2cInterface.sendReceive(tbuf, rbuf))
++    {
++        error("TPS544x27 BlockWrite failed after CSV PEC verification, "
++              "line={LINE}, cmd={CMD}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd);
++        co_return false;
++    }
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::executeBlockRead(const CsvCommand& cmd)
++{
++    std::vector<uint8_t> actual;
++
++    if (!co_await blockRead(cmd.cmd, actual, cmd.expectedBytes.size()))
++    {
++        co_return false;
++    }
++
++    if (!bytesEqualWithSpecialMask(cmd.cmd, cmd.expectedBytes, actual))
++    {
++        error("TPS544x27 BlockRead mismatch, line={LINE}, cmd={CMD}, "
++              "expected={EXPECTED}, actual={ACTUAL}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd, "EXPECTED",
++              bytesToHex(cmd.expectedBytes), "ACTUAL", bytesToHex(actual));
++        co_return false;
++    }
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::executeBlockProcessCall(
++    const CsvCommand& cmd)
++{
++    std::vector<uint8_t> actual;
++
++    if (!co_await blockProcessCallRead(cmd.cmd, cmd.dataBytes, actual,
++                                       cmd.expectedBytes.size()))
++    {
++        co_return false;
++    }
++
++    if (!bytesEqualWithSpecialMask(cmd.cmd, cmd.expectedBytes, actual))
++    {
++        error("TPS544x27 BlockProcessCall mismatch, line={LINE}, "
++              "cmd={CMD}, expected={EXPECTED}, actual={ACTUAL}",
++              "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd, "EXPECTED",
++              bytesToHex(cmd.expectedBytes), "ACTUAL", bytesToHex(actual));
++        co_return false;
++    }
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::executeCsvCommandNoStore(
++    const CsvCommand& cmd)
++{
++    switch (cmd.op)
++    {
++        case CsvOp::WriteByte:
++            co_return co_await executeWriteByte(cmd);
++
++        case CsvOp::ReadByte:
++            co_return co_await executeReadByte(cmd);
++
++        case CsvOp::WriteWord:
++            co_return co_await executeWriteWord(cmd);
++
++        case CsvOp::ReadWord:
++            co_return co_await executeReadWord(cmd);
++
++        case CsvOp::BlockWrite:
++            co_return co_await executeBlockWrite(cmd);
++
++        case CsvOp::BlockRead:
++            co_return co_await executeBlockRead(cmd);
++
++        case CsvOp::BlockProcessCall:
++            co_return co_await executeBlockProcessCall(cmd);
++
++        case CsvOp::SendByte:
++        {
++            debug("TPS544x27 defer CSV SendByte to update flow, line={LINE}, "
++                  "cmd={CMD}",
++                  "LINE", cmd.lineNo, "CMD", lg2::hex, cmd.cmd);
++            co_return true;
++        }
++
++        case CsvOp::Pause:
++        {
++            co_return true;
++        }
++
++        case CsvOp::Reset:
++        {
++            debug("TPS544x27 skip Reset, line={LINE}", "LINE", cmd.lineNo);
++            co_return true;
++        }
++    }
++
++    error("TPS544x27 unknown CSV op, line={LINE}", "LINE", cmd.lineNo);
++    co_return false;
++}
++
++bool TPS544X27::getStoreDelay(std::chrono::milliseconds& storeDelay) const
++{
++    const auto& parsedImage = csvParser.getParsedImage();
++
++    bool hasStoreUserAll = false;
++    storeDelay = storeRestoreDelay;
++
++    for (size_t i = 0; i < parsedImage.commands.size(); ++i)
++    {
++        const auto& cmd = parsedImage.commands[i];
++
++        if (cmd.op == CsvOp::SendByte && cmd.cmd == regStoreUserAll)
++        {
++            hasStoreUserAll = true;
++
++            if ((i + 1) < parsedImage.commands.size() &&
++                parsedImage.commands[i + 1].op == CsvOp::Pause)
++            {
++                storeDelay = std::chrono::milliseconds(
++                    parsedImage.commands[i + 1].pauseMs);
++
++                constexpr std::chrono::milliseconds minimumDelay{150};
++
++                if (storeDelay < minimumDelay)
++                {
++                    error("TPS544x27 CSV delay is below minimum, "
++                          "delayMs={DELAY_MS}, minimumMs={MINIMUM_MS}",
++                          "DELAY_MS", storeDelay.count(), "MINIMUM_MS",
++                          minimumDelay.count());
++                    return false;
++                }
++                debug("TPS544x27 use CSV Pause after STORE_USER_ALL, "
++                      "line={LINE}, delayMs={DELAY_MS}",
++                      "LINE", parsedImage.commands[i + 1].lineNo, "DELAY_MS",
++                      parsedImage.commands[i + 1].pauseMs);
++            }
++            else
++            {
++                debug("TPS544x27 no CSV Pause after STORE_USER_ALL, "
++                      "use default delayMs={DELAY_MS}",
++                      "DELAY_MS", storeDelay.count());
++            }
++
++            break;
++        }
++    }
++
++    if (!hasStoreUserAll)
++    {
++        error("TPS544x27 CSV does not contain STORE_USER_ALL SendByte 0x15");
++        return false;
++    }
++
++    return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::executeCommandsBeforeStore()
++{
++    const auto& parsedImage = csvParser.getParsedImage();
++
++    for (const auto& cmd : parsedImage.commands)
++    {
++        if (cmd.op == CsvOp::SendByte && cmd.cmd == regStoreUserAll)
++        {
++            debug(
++                "TPS544x27 stop CSV execution before STORE_USER_ALL, line={LINE}",
++                "LINE", cmd.lineNo);
++            break;
++        }
++
++        if (!co_await executeCsvCommandNoStore(cmd))
++        {
++            error(
++                "TPS544x27 failed executing CSV line {LINE}, op={OP}, cmd={CMD}",
++                "LINE", cmd.lineNo, "OP",
++                TPS544X27CsvParser::csvOpToString(cmd.op), "CMD", lg2::hex,
++                cmd.cmd);
++            co_return false;
++        }
++    }
++    co_return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::executeParsedImage()
++{
++    const auto& parsedImage = csvParser.getParsedImage();
++    if (parsedImage.commands.empty())
++    {
++        error("TPS544x27 no parsed CSV image to execute");
++        co_return false;
++    }
++
++    if (!parsedImage.wordLowByteFirst)
++    {
++        error("TPS544x27 unsupported CSV word byte order");
++        co_return false;
++    }
++
++    if (!parsedImage.includeBlockLength)
++    {
++        error("TPS544x27 unsupported CSV without block length");
++        co_return false;
++    }
++
++    if (!parsedImage.pecEnabled)
++    {
++        error("TPS544x27 CSV without PEC is not supported");
++        co_return false;
++    }
++
++    auto powerState = co_await HostPower::getState(ctx);
++
++    if (powerState != stateOff)
++    {
++        error(
++            "TPS544x27 update rejected: host power must be off before VR update");
++        co_return false;
++    }
++
++    uint8_t rev = 0;
++    if (!co_await readDeviceRev(&rev))
++    {
++        co_return false;
++    }
++
++    debug("TPS544x27 IC_DEVICE_REV={REV}", "REV", lg2::hex, rev);
++
++    if ((rev & 0x0F) == 0x01)
++    {
++        error("TPS544x27 B0 silicon requires the special STORE_USER_ALL "
++              "recovery procedure, which is not supported, rev={REV}",
++              "REV", lg2::hex, rev);
++        co_return false;
++    }
++
++    std::chrono::milliseconds storeDelay;
++
++    if (!getStoreDelay(storeDelay))
++    {
++        co_return false;
++    }
++
++    if (!co_await executeCommandsBeforeStore())
++    {
++        co_return false;
++    }
++
++    debug("TPS544x27 execute STORE_USER_ALL, delayMs={DELAY_MS}", "DELAY_MS",
++          storeDelay.count());
++
++    if (!co_await sendByte(regStoreUserAll))
++    {
++        error("TPS544x27 STORE_USER_ALL failed");
++        co_return false;
++    }
++
++    co_await sdbusplus::async::sleep_for(ctx, storeDelay);
++
++    if (!co_await sendByte(regRestoreUserAll))
++    {
++        error("TPS544x27 RESTORE_USER_ALL failed");
++        co_return false;
++    }
++
++    co_await sdbusplus::async::sleep_for(ctx, storeDelay);
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::verifyImage(const uint8_t* image,
++                                                    size_t imageSize)
++{
++    std::string err;
++
++    if (!csvParser.parseImage(image, imageSize, err))
++    {
++        error("TPS544x27 image parse failed: {ERR}", "ERR", err);
++        co_return false;
++    }
++
++    const auto& parsedImage = csvParser.getParsedImage();
++    debug("TPS544x27 image parsed, commands={COUNT}, PEC={PEC}", "COUNT",
++          parsedImage.commands.size(), "PEC", parsedImage.pecEnabled);
++
++    co_return true;
++}
++
++sdbusplus::async::task<bool> TPS544X27::updateFirmware(bool force)
++{
++    (void)force;
++
++    debug("TPS544x27 updateFirmware real read/write store mode");
++
++    if (!co_await executeParsedImage())
++    {
++        error("TPS544x27 store update failed");
++        co_return false;
++    }
++
++    debug("TPS544x27 updateFirmware store mode passed");
++    co_return true;
++}
++
++bool TPS544X27::forcedUpdateAllowed()
++{
++    return true;
++}
++} // namespace phosphor::software::VR
+diff --git a/i2c-vr/tps544x27/tps544x27.hpp b/i2c-vr/tps544x27/tps544x27.hpp
+new file mode 100644
+index 0000000..4bf6650
+--- /dev/null
++++ b/i2c-vr/tps544x27/tps544x27.hpp
+@@ -0,0 +1,83 @@
++#pragma once
++
++#include "common/include/i2c/i2c.hpp"
++#include "csv_parser.hpp"
++#include "i2c-vr/vr.hpp"
++
++#include <sdbusplus/async.hpp>
++
++#include <chrono>
++#include <cstddef>
++#include <cstdint>
++#include <vector>
++
++namespace phosphor::software::VR
++{
++
++class TPS544X27 : public VoltageRegulator
++{
++  public:
++    TPS544X27(sdbusplus::async::context& ctx, uint16_t bus, uint16_t address) :
++        VoltageRegulator(ctx), i2cInterface(phosphor::i2c::I2C(bus, address)),
++        address(address)
++    {}
++
++    sdbusplus::async::task<bool> getCRC(uint32_t* sum) final;
++
++    sdbusplus::async::task<bool> verifyImage(const uint8_t* image,
++                                             size_t imageSize) final;
++
++    sdbusplus::async::task<bool> updateFirmware(bool force) final;
++
++    bool forcedUpdateAllowed() final;
++
++  private:
++    using CsvOp = TPS544X27CsvParser::CsvOp;
++    using CsvCommand = TPS544X27CsvParser::CsvCommand;
++    bool getStoreDelay(std::chrono::milliseconds& storeDelay) const;
++
++    static uint8_t calcPEC(const std::vector<uint8_t>& bytes);
++
++    sdbusplus::async::task<bool> sendByte(uint8_t cmd);
++    sdbusplus::async::task<bool> readByte(uint8_t cmd, uint8_t* value);
++
++    sdbusplus::async::task<bool> readWordRaw(uint8_t cmd,
++                                             std::vector<uint8_t>& raw);
++
++    sdbusplus::async::task<bool> processCallReadWordRaw(
++        uint8_t cmd, uint8_t low, uint8_t high, std::vector<uint8_t>& raw);
++
++    sdbusplus::async::task<bool> blockRead(
++        uint8_t cmd, std::vector<uint8_t>& data, size_t readLen);
++
++    sdbusplus::async::task<bool> blockProcessCallRead(
++        uint8_t cmd, const std::vector<uint8_t>& requestData,
++        std::vector<uint8_t>& response, size_t readLen);
++
++    sdbusplus::async::task<bool> executeWriteByte(const CsvCommand& cmd);
++    sdbusplus::async::task<bool> executeReadByte(const CsvCommand& cmd);
++    sdbusplus::async::task<bool> executeWriteWord(const CsvCommand& cmd);
++    sdbusplus::async::task<bool> executeReadWord(const CsvCommand& cmd);
++    sdbusplus::async::task<bool> executeBlockWrite(const CsvCommand& cmd);
++    sdbusplus::async::task<bool> executeBlockRead(const CsvCommand& cmd);
++    sdbusplus::async::task<bool> executeBlockProcessCall(const CsvCommand& cmd);
++
++    sdbusplus::async::task<bool> executeCsvCommandNoStore(
++        const CsvCommand& cmd);
++
++    sdbusplus::async::task<bool> executeCommandsBeforeStore();
++
++    sdbusplus::async::task<bool> executeParsedImage();
++
++    sdbusplus::async::task<bool> readDeviceRev(uint8_t* rev);
++
++    sdbusplus::async::task<bool> readPasskeyChecksum(uint16_t* checksum);
++
++    TPS544X27CsvParser csvParser;
++
++    phosphor::i2c::I2C i2cInterface;
++
++    uint16_t address;
++};
++
++} // namespace phosphor::software::VR
+diff --git a/i2c-vr/vr.cpp b/i2c-vr/vr.cpp
+index 2d8760e..66dfe9c 100644
+--- a/i2c-vr/vr.cpp
++++ b/i2c-vr/vr.cpp
+@@ -10,6 +10,7 @@
+ #include "tda38640a/tda38640a.hpp"
+ #include "tps25990/rs31390.hpp"
+ #include "tps25990/tps25990.hpp"
++#include "tps544x27/tps544x27.hpp"
+ #include "xdp71x/xdp71x.hpp"
+ #include "xdpe1x2xx/xdpe1x2xx.hpp"
+ 
+@@ -56,6 +57,8 @@ std::unique_ptr<VoltageRegulator> create(sdbusplus::async::context& ctx,
+             return std::make_unique<TPS25990>(ctx, bus, address);
+         case VRType::RS31390:
+             return std::make_unique<RS31390>(ctx, bus, address);
++        case VRType::TPS544X27:
++            return std::make_unique<TPS544X27>(ctx, bus, address);
+         default:
+             return nullptr;
+     }
+@@ -78,6 +81,7 @@ bool stringToEnum(std::string& vrStr, VRType& vrType)
+         {"TDA38640AFirmware", VRType::TDA38640A},
+         {"XDP71XFirmware", VRType::XDP71X},
+         {"TPS25990Firmware", VRType::TPS25990},
++        {"TPS544X27Firmware", VRType::TPS544X27},
+         {"RS31390Firmware", VRType::RS31390}};
+ 
+     if (VRTypeToString.contains(vrStr))
+diff --git a/i2c-vr/vr.hpp b/i2c-vr/vr.hpp
+index 8176a38..2569a5f 100644
+--- a/i2c-vr/vr.hpp
++++ b/i2c-vr/vr.hpp
+@@ -25,6 +25,7 @@ enum class VRType
+     TDA38640A,
+     XDP71X,
+     TPS25990,
++    TPS544X27,
+     RS31390
+ };
+ 
+diff --git a/test/common/meson.build b/test/common/meson.build
+index 782c48d..dac08b6 100644
+--- a/test/common/meson.build
++++ b/test/common/meson.build
+@@ -2,3 +2,4 @@ subdir('exampledevice')
+ subdir('device')
+ subdir('events')
+ subdir('software')
++subdir('utils')
+diff --git a/test/common/utils/meson.build b/test/common/utils/meson.build
+new file mode 100644
+index 0000000..9d50044
+--- /dev/null
++++ b/test/common/utils/meson.build
+@@ -0,0 +1,18 @@
++testcases = ['utils']
++
++foreach t : testcases
++    test(
++        t,
++        executable(
++            t,
++            f'@t@.cpp',
++            '../../../common/src/utils.cpp',
++            include_directories: [common_include],
++            dependencies: [
++                sdbusplus_dep,
++                phosphor_logging_dep,
++                gtest,
++            ],
++        ),
++    )
++endforeach
+diff --git a/test/common/utils/utils.cpp b/test/common/utils/utils.cpp
+new file mode 100644
+index 0000000..60c8a74
+--- /dev/null
++++ b/test/common/utils/utils.cpp
+@@ -0,0 +1,138 @@
++#include "common/include/utils.hpp"
++
++#include <cstdint>
++#include <string>
++#include <vector>
++
++#include <gtest/gtest.h>
++
++TEST(UtilsTest, Trim)
++{
++    EXPECT_EQ(trim("WriteWord"), "WriteWord");
++    EXPECT_EQ(trim("  WriteWord  "), "WriteWord");
++    EXPECT_EQ(trim("\t0x01\t"), "0x01");
++    EXPECT_EQ(trim("  0x112233\r\n"), "0x112233");
++    EXPECT_EQ(trim(""), "");
++    EXPECT_EQ(trim("   \t\r\n"), "");
++}
++
++TEST(UtilsTest, ParseHexByte)
++{
++    uint8_t value = 0;
++
++    ASSERT_TRUE(parseHexByte("0x01", value));
++    EXPECT_EQ(value, 0x01);
++
++    ASSERT_TRUE(parseHexByte("0XAB", value));
++    EXPECT_EQ(value, 0xAB);
++
++    ASSERT_TRUE(parseHexByte("ff", value));
++    EXPECT_EQ(value, 0xFF);
++
++    ASSERT_TRUE(parseHexByte("  0x02  ", value));
++    EXPECT_EQ(value, 0x02);
++
++    ASSERT_TRUE(parseHexByte("0", value));
++    EXPECT_EQ(value, 0x00);
++}
++
++TEST(UtilsTest, ParseHexByteInvalid)
++{
++    uint8_t value = 0;
++
++    EXPECT_FALSE(parseHexByte("", value));
++    EXPECT_FALSE(parseHexByte("0x", value));
++    EXPECT_FALSE(parseHexByte("0x100", value));
++    EXPECT_FALSE(parseHexByte("123", value));
++}
++
++TEST(UtilsTest, ParseHexBytes)
++{
++    std::vector<uint8_t> output;
++
++    ASSERT_TRUE(parseHexBytes("0x1122", output));
++    EXPECT_EQ(output, (std::vector<uint8_t>{0x11, 0x22}));
++
++    ASSERT_TRUE(parseHexBytes("0x112233", output));
++    EXPECT_EQ(output, (std::vector<uint8_t>{0x11, 0x22, 0x33}));
++
++    ASSERT_TRUE(parseHexBytes("0x0311223344", output));
++    EXPECT_EQ(output, (std::vector<uint8_t>{0x03, 0x11, 0x22, 0x33, 0x44}));
++
++    ASSERT_TRUE(parseHexBytes("0xAABB", output));
++    EXPECT_EQ(output, (std::vector<uint8_t>{0xAA, 0xBB}));
++
++    ASSERT_TRUE(parseHexBytes("  0x112233  ", output));
++    EXPECT_EQ(output, (std::vector<uint8_t>{0x11, 0x22, 0x33}));
++}
++
++TEST(UtilsTest, ParseHexBytesInvalid)
++{
++    std::vector<uint8_t> output;
++
++    EXPECT_FALSE(parseHexBytes("", output));
++    EXPECT_FALSE(parseHexBytes("0x", output));
++    EXPECT_FALSE(parseHexBytes("0x1", output));
++    EXPECT_FALSE(parseHexBytes("123", output));
++}
++
++TEST(UtilsTest, ByteToHex)
++{
++    EXPECT_EQ(byteToHex(0x00), "0x00");
++    EXPECT_EQ(byteToHex(0x01), "0x01");
++    EXPECT_EQ(byteToHex(0x0A), "0x0A");
++    EXPECT_EQ(byteToHex(0xAB), "0xAB");
++    EXPECT_EQ(byteToHex(0xFF), "0xFF");
++}
++
++TEST(UtilsTest, BytesToHex)
++{
++    EXPECT_EQ(bytesToHex({}), "-");
++    EXPECT_EQ(bytesToHex({0x11}), "0x11");
++    EXPECT_EQ(bytesToHex({0x11, 0x22}), "0x11 0x22");
++    EXPECT_EQ(bytesToHex({0x11, 0x22, 0x33}), "0x11 0x22 0x33");
++}
++
++TEST(UtilsTest, SplitCsvLine)
++{
++    auto fields = splitCsvLine("WriteWord,0x01,0x112233");
++
++    ASSERT_EQ(fields.size(), 3);
++    EXPECT_EQ(fields[0], "WriteWord");
++    EXPECT_EQ(fields[1], "0x01");
++    EXPECT_EQ(fields[2], "0x112233");
++
++    fields = splitCsvLine("BlockWrite,0x02,0x0311223344");
++
++    ASSERT_EQ(fields.size(), 3);
++    EXPECT_EQ(fields[0], "BlockWrite");
++    EXPECT_EQ(fields[1], "0x02");
++    EXPECT_EQ(fields[2], "0x0311223344");
++
++    fields = splitCsvLine("BlockProcessCall,0x0311,0x0122");
++
++    ASSERT_EQ(fields.size(), 3);
++    EXPECT_EQ(fields[0], "BlockProcessCall");
++    EXPECT_EQ(fields[1], "0x0311");
++    EXPECT_EQ(fields[2], "0x0122");
++}
++
++TEST(UtilsTest, SplitCsvLineTrimsFields)
++{
++    const auto fields = splitCsvLine("  WriteByte , 0x01 , 0x1122  ");
++
++    ASSERT_EQ(fields.size(), 3);
++    EXPECT_EQ(fields[0], "WriteByte");
++    EXPECT_EQ(fields[1], "0x01");
++    EXPECT_EQ(fields[2], "0x1122");
++}
++
++TEST(UtilsTest, SplitCsvLineRemovesTrailingEmptyFields)
++{
++    const auto fields = splitCsvLine("WriteByte,0x01,0x1122,,,");
++
++    ASSERT_EQ(fields.size(), 3);
++    EXPECT_EQ(fields[0], "WriteByte");
++    EXPECT_EQ(fields[1], "0x01");
++    EXPECT_EQ(fields[2], "0x1122");
++}
+diff --git a/test/i2c-vr/meson.build b/test/i2c-vr/meson.build
+new file mode 100644
+index 0000000..bb91e53
+--- /dev/null
++++ b/test/i2c-vr/meson.build
+@@ -0,0 +1 @@
++subdir('tps544x27')
+diff --git a/test/i2c-vr/tps544x27/csv_parser.cpp b/test/i2c-vr/tps544x27/csv_parser.cpp
+new file mode 100644
+index 0000000..40c273b
+--- /dev/null
++++ b/test/i2c-vr/tps544x27/csv_parser.cpp
+@@ -0,0 +1,299 @@
++#include "i2c-vr/tps544x27/csv_parser.hpp"
++
++#include <cstdint>
++#include <string>
++#include <vector>
++
++#include <gtest/gtest.h>
++
++using namespace phosphor::software::VR;
++
++TEST(TPS544X27CsvParserTest, ParsesMetadata)
++{
++    const std::string csv =
++        "Comment,Format=CSV,Hex=CoderUpper,BreakOutBytes=False,PEC=True,"
++        "SMBusWordCommandBytesOrderAsLowByteFirst=True,"
++        "IncludeBlockLength=True,HasAddress=False\n";
++
++    TPS544X27CsvParser parser;
++    std::string errorMsg;
++
++    ASSERT_TRUE(parser.parseImage(reinterpret_cast<const uint8_t*>(csv.data()),
++                                  csv.size(), errorMsg))
++        << errorMsg;
++
++    const auto& image = parser.getParsedImage();
++
++    EXPECT_TRUE(image.pecEnabled);
++    EXPECT_TRUE(image.wordLowByteFirst);
++    EXPECT_TRUE(image.includeBlockLength);
++    EXPECT_TRUE(image.commands.empty());
++}
++
++TEST(TPS544X27CsvParserTest, ParsesWriteByte)
++{
++    const std::string csv = "WriteByte,0x01,0x1122\n";
++
++    TPS544X27CsvParser parser;
++    std::string errorMsg;
++
++    ASSERT_TRUE(parser.parseImage(reinterpret_cast<const uint8_t*>(csv.data()),
++                                  csv.size(), errorMsg))
++        << errorMsg;
++
++    const auto& image = parser.getParsedImage();
++
++    ASSERT_EQ(image.commands.size(), 1);
++
++    const auto& cmd = image.commands[0];
++
++    EXPECT_EQ(cmd.op, TPS544X27CsvParser::CsvOp::WriteByte);
++    EXPECT_EQ(cmd.cmd, 0x01);
++    EXPECT_EQ(cmd.dataBytes, (std::vector<uint8_t>{0x11}));
++    EXPECT_TRUE(cmd.hasCsvPEC);
++    EXPECT_EQ(cmd.csvPEC, 0x22);
++}
++
++TEST(TPS544X27CsvParserTest, ParsesWriteWord)
++{
++    const std::string csv = "WriteWord,0x02,0x112233\n";
++
++    TPS544X27CsvParser parser;
++    std::string errorMsg;
++
++    ASSERT_TRUE(parser.parseImage(reinterpret_cast<const uint8_t*>(csv.data()),
++                                  csv.size(), errorMsg))
++        << errorMsg;
++
++    const auto& image = parser.getParsedImage();
++
++    ASSERT_EQ(image.commands.size(), 1);
++
++    const auto& cmd = image.commands[0];
++
++    EXPECT_EQ(cmd.op, TPS544X27CsvParser::CsvOp::WriteWord);
++    EXPECT_EQ(cmd.cmd, 0x02);
++    EXPECT_EQ(cmd.dataBytes, (std::vector<uint8_t>{0x11, 0x22}));
++    EXPECT_TRUE(cmd.hasWordValue);
++    EXPECT_EQ(cmd.wordValue, 0x2211);
++    EXPECT_TRUE(cmd.hasCsvPEC);
++    EXPECT_EQ(cmd.csvPEC, 0x33);
++}
++
++TEST(TPS544X27CsvParserTest, ParsesReadCommands)
++{
++    const std::string csv = "ReadByte,0x03,0x44\n"
++                            "ReadWord,0x04,0x5566\n";
++
++    TPS544X27CsvParser parser;
++    std::string errorMsg;
++
++    ASSERT_TRUE(parser.parseImage(reinterpret_cast<const uint8_t*>(csv.data()),
++                                  csv.size(), errorMsg))
++        << errorMsg;
++
++    const auto& image = parser.getParsedImage();
++
++    ASSERT_EQ(image.commands.size(), 2);
++
++    EXPECT_EQ(image.commands[0].op, TPS544X27CsvParser::CsvOp::ReadByte);
++    EXPECT_EQ(image.commands[0].cmd, 0x03);
++    EXPECT_EQ(image.commands[0].expectedBytes, (std::vector<uint8_t>{0x44}));
++
++    EXPECT_EQ(image.commands[1].op, TPS544X27CsvParser::CsvOp::ReadWord);
++    EXPECT_EQ(image.commands[1].cmd, 0x04);
++    EXPECT_EQ(image.commands[1].expectedBytes,
++              (std::vector<uint8_t>{0x55, 0x66}));
++}
++
++TEST(TPS544X27CsvParserTest, ParsesBlockWrite)
++{
++    const std::string csv = "BlockWrite,0x05,0x0311223344\n";
++
++    TPS544X27CsvParser parser;
++    std::string errorMsg;
++
++    ASSERT_TRUE(parser.parseImage(reinterpret_cast<const uint8_t*>(csv.data()),
++                                  csv.size(), errorMsg))
++        << errorMsg;
++
++    const auto& image = parser.getParsedImage();
++
++    ASSERT_EQ(image.commands.size(), 1);
++
++    const auto& cmd = image.commands[0];
++
++    EXPECT_EQ(cmd.op, TPS544X27CsvParser::CsvOp::BlockWrite);
++    EXPECT_EQ(cmd.cmd, 0x05);
++    EXPECT_EQ(cmd.dataBytes, (std::vector<uint8_t>{0x11, 0x22, 0x33}));
++    EXPECT_TRUE(cmd.hasCsvPEC);
++    EXPECT_EQ(cmd.csvPEC, 0x44);
++}
++
++TEST(TPS544X27CsvParserTest, ParsesBlockRead)
++{
++    const std::string csv = "BlockRead,0x06,0x03112233\n";
++
++    TPS544X27CsvParser parser;
++    std::string errorMsg;
++
++    ASSERT_TRUE(parser.parseImage(reinterpret_cast<const uint8_t*>(csv.data()),
++                                  csv.size(), errorMsg))
++        << errorMsg;
++
++    const auto& image = parser.getParsedImage();
++
++    ASSERT_EQ(image.commands.size(), 1);
++
++    const auto& cmd = image.commands[0];
++
++    EXPECT_EQ(cmd.op, TPS544X27CsvParser::CsvOp::BlockRead);
++    EXPECT_EQ(cmd.cmd, 0x06);
++    EXPECT_EQ(cmd.expectedBytes,
++              (std::vector<uint8_t>{0x03, 0x11, 0x22, 0x33}));
++}
++
++TEST(TPS544X27CsvParserTest, ParsesBlockProcessCall)
++{
++    const std::string csv = "BlockProcessCall,0x0711,0x0122\n";
++
++    TPS544X27CsvParser parser;
++    std::string errorMsg;
++
++    ASSERT_TRUE(parser.parseImage(reinterpret_cast<const uint8_t*>(csv.data()),
++                                  csv.size(), errorMsg))
++        << errorMsg;
++
++    const auto& image = parser.getParsedImage();
++
++    ASSERT_EQ(image.commands.size(), 1);
++
++    const auto& cmd = image.commands[0];
++
++    EXPECT_EQ(cmd.op, TPS544X27CsvParser::CsvOp::BlockProcessCall);
++    EXPECT_EQ(cmd.cmd, 0x07);
++    EXPECT_EQ(cmd.dataBytes, (std::vector<uint8_t>{0x11}));
++    EXPECT_EQ(cmd.expectedBytes, (std::vector<uint8_t>{0x01, 0x22}));
++}
++
++TEST(TPS544X27CsvParserTest, ParsesPauseAndReset)
++{
++    const std::string csv = "Pause,1000\n"
++                            "Reset\n";
++
++    TPS544X27CsvParser parser;
++    std::string errorMsg;
++
++    ASSERT_TRUE(parser.parseImage(reinterpret_cast<const uint8_t*>(csv.data()),
++                                  csv.size(), errorMsg))
++        << errorMsg;
++
++    const auto& image = parser.getParsedImage();
++
++    ASSERT_EQ(image.commands.size(), 2);
++
++    EXPECT_EQ(image.commands[0].op, TPS544X27CsvParser::CsvOp::Pause);
++    EXPECT_EQ(image.commands[0].pauseMs, 1000);
++
++    EXPECT_EQ(image.commands[1].op, TPS544X27CsvParser::CsvOp::Reset);
++}
++
++TEST(TPS544X27CsvParserTest, ParsesRepresentativeFusionCsv)
++{
++    const std::string csv =
++        "Comment,Format=CSV,Hex=CoderUpper,BreakOutBytes=False,PEC=True,"
++        "SMBusWordCommandBytesOrderAsLowByteFirst=True,"
++        "IncludeBlockLength=True,HasAddress=False\n"
++        "BlockRead,0x01,0x03112233\n"
++        "WriteByte,0x02,0x4455\n"
++        "ReadByte,0x02,0x44\n"
++        "WriteWord,0x03,0x667788\n"
++        "ReadWord,0x03,0x6677\n"
++        "BlockWrite,0x04,0x0311223344\n"
++        "BlockRead,0x04,0x03112233\n"
++        "BlockProcessCall,0x0511,0x0122\n"
++        "SendByte,0x06\n"
++        "Pause,1000\n"
++        "Reset\n";
++
++    TPS544X27CsvParser parser;
++    std::string errorMsg;
++
++    ASSERT_TRUE(parser.parseImage(reinterpret_cast<const uint8_t*>(csv.data()),
++                                  csv.size(), errorMsg))
++        << errorMsg;
++
++    const auto& image = parser.getParsedImage();
++
++    EXPECT_TRUE(image.pecEnabled);
++    EXPECT_TRUE(image.wordLowByteFirst);
++    EXPECT_TRUE(image.includeBlockLength);
++
++    ASSERT_EQ(image.commands.size(), 11);
++
++    EXPECT_EQ(image.commands[0].op, TPS544X27CsvParser::CsvOp::BlockRead);
++    EXPECT_EQ(image.commands[1].op, TPS544X27CsvParser::CsvOp::WriteByte);
++    EXPECT_EQ(image.commands[2].op, TPS544X27CsvParser::CsvOp::ReadByte);
++    EXPECT_EQ(image.commands[3].op, TPS544X27CsvParser::CsvOp::WriteWord);
++    EXPECT_EQ(image.commands[4].op, TPS544X27CsvParser::CsvOp::ReadWord);
++    EXPECT_EQ(image.commands[5].op, TPS544X27CsvParser::CsvOp::BlockWrite);
++    EXPECT_EQ(image.commands[6].op, TPS544X27CsvParser::CsvOp::BlockRead);
++    EXPECT_EQ(image.commands[7].op,
++              TPS544X27CsvParser::CsvOp::BlockProcessCall);
++    EXPECT_EQ(image.commands[8].op, TPS544X27CsvParser::CsvOp::SendByte);
++    EXPECT_EQ(image.commands[9].op, TPS544X27CsvParser::CsvOp::Pause);
++    EXPECT_EQ(image.commands[10].op, TPS544X27CsvParser::CsvOp::Reset);
++}
++
++TEST(TPS544X27CsvParserTest, RejectsUnknownOperation)
++{
++    const std::string csv = "Unknown,0x01,0x1122\n";
++
++    TPS544X27CsvParser parser;
++    std::string errorMsg;
++
++    EXPECT_FALSE(parser.parseImage(reinterpret_cast<const uint8_t*>(csv.data()),
++                                   csv.size(), errorMsg));
++
++    EXPECT_NE(errorMsg.find("unknown operation"), std::string::npos);
++}
++
++TEST(TPS544X27CsvParserTest, RejectsInvalidBlockWriteLength)
++{
++    const std::string csv = "BlockWrite,0x05,0x0211223344\n";
++
++    TPS544X27CsvParser parser;
++    std::string errorMsg;
++
++    EXPECT_FALSE(parser.parseImage(reinterpret_cast<const uint8_t*>(csv.data()),
++                                   csv.size(), errorMsg));
++
++    EXPECT_NE(errorMsg.find("length mismatch"), std::string::npos);
++}
++
++TEST(TPS544X27CsvParserTest, ClearsPreviousImage)
++{
++    TPS544X27CsvParser parser;
++    std::string errorMsg;
++
++    const std::string first = "WriteByte,0x01,0x1122\n"
++                              "SendByte,0x02\n";
++
++    ASSERT_TRUE(parser.parseImage(
++        reinterpret_cast<const uint8_t*>(first.data()), first.size(), errorMsg))
++        << errorMsg;
++
++    ASSERT_EQ(parser.getParsedImage().commands.size(), 2);
++
++    const std::string second = "Reset\n";
++
++    ASSERT_TRUE(
++        parser.parseImage(reinterpret_cast<const uint8_t*>(second.data()),
++                          second.size(), errorMsg))
++        << errorMsg;
++
++    const auto& image = parser.getParsedImage();
++
++    ASSERT_EQ(image.commands.size(), 1);
++    EXPECT_EQ(image.commands[0].op, TPS544X27CsvParser::CsvOp::Reset);
++}
+diff --git a/test/i2c-vr/tps544x27/meson.build b/test/i2c-vr/tps544x27/meson.build
+new file mode 100644
+index 0000000..2feafb1
+--- /dev/null
++++ b/test/i2c-vr/tps544x27/meson.build
+@@ -0,0 +1,14 @@
++test(
++    'tps544x27_csv_parser',
++    executable(
++        'tps544x27_csv_parser',
++        'csv_parser.cpp',
++        '../../../i2c-vr/tps544x27/csv_parser.cpp',
++        '../../../common/src/utils.cpp',
++        include_directories: [common_include],
++        dependencies: [
++            phosphor_logging_dep,
++            gtest_main,
++        ],
++    ),
++)
+diff --git a/test/meson.build b/test/meson.build
+index 14735cb..2ca813c 100644
+--- a/test/meson.build
++++ b/test/meson.build
+@@ -3,3 +3,4 @@ subdir('create_package')
+ gtest_main = dependency('gtest_main', main: true, required: true)
+ 
+ subdir('common')
++subdir('i2c-vr')
+-- 
+2.25.1
+

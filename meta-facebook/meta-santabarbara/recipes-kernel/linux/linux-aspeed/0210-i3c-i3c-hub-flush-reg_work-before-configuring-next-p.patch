@@ -1,0 +1,52 @@
+From 1a67990f5accdbd7b88b4b4d7ae95fd582b0c15a Mon Sep 17 00:00:00 2001
+From: Fred Chen <Fred.Chen@quantatw.com>
+Date: Fri, 21 Aug 2026 15:09:28 +0800
+Subject: [PATCH] i3c:i3c-hub: flush reg_work before configuring next port
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Commit 3f79dac3ea1c3 ("i3c: master: Defer new-device registration
+out of DAA caller context") [1] moved i3c device registration out of
+i3c_master_do_daa() into master->reg_work, run asynchronously on
+master->wq.
+
+i3c_hub_port_init_i3c_bridge() runs do_daa on the driving master
+for each I3C port, then i3c_hub_port_init() immediately disconnects
+the port and moves on to the next one. reg_work can still be
+registering the device found on the current port when the port
+mux is switched, racing against state it no longer matches and
+crashing the kernel.
+
+Flush reg_work right after do_daa so registration completes before
+the port is disconnected and the next one is initialized.
+
+[1] https://lore.kernel.org/all/20260608054312.10604-7-adrian.hunter@intel.com/
+
+Uptream status:
+We have notified the I3C hub vendor to submit the fix upstream as soon
+as possible. However, they mentioned that additional use
+cases—specifically idle-disconnect combined with hot-join scenarios—need
+to be considered, and they are still investigating and running tests. In
+the meantime, since this issue triggers a BMC kernel panic and breaks
+the build, we are applying a local patch to unblock our work.
+---
+ drivers/i3c/i3c-hub.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/i3c/i3c-hub.c b/drivers/i3c/i3c-hub.c
+index 8fbdc4e16..b30ea40b3 100644
+--- a/drivers/i3c/i3c-hub.c
++++ b/drivers/i3c/i3c-hub.c
+@@ -1571,6 +1571,8 @@ static int i3c_hub_port_init_i3c_bridge(struct i3c_hub *hub,
+ 	if (ret)
+ 		dev_warn(&hub->i3cdev->dev, "Failed to run DAA - port:%i\n", port->port_nr);
+ 
++	flush_work(&hub->driving_master->reg_work);
++
+ 	return ret;
+ }
+ 
+-- 
+2.39.3
+

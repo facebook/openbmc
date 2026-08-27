@@ -1,4 +1,4 @@
-From 2d196f07a175e6b7f6c8d4fd1d4628b092ed7439 Mon Sep 17 00:00:00 2001
+From 44aa1c7ef0d419f30c2ea4035b94ddc9f6442d03 Mon Sep 17 00:00:00 2001
 From: RQ Lai <r.q.lai@quantatw.com>
 Date: Mon, 29 Jun 2026 14:05:38 +0800
 Subject: [PATCH] ARM: dts: aspeed: rainiera6: Config ocp debug card

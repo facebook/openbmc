@@ -1,4 +1,4 @@
-From f303a50798640f5cb1ea8a4e827453c5f9da42cd Mon Sep 17 00:00:00 2001
+From 42c6b5c344d35650eb549df5878bb9fb3bc21eb7 Mon Sep 17 00:00:00 2001
 From: Neil Cheng <Neil.Cheng@quantatw.com>
 Date: Fri, 29 May 2026 19:02:34 +0800
 Subject: [PATCH] ARM: dts: aspeed: rainiera6: Add I3C Nodes
@@ -15,10 +15,10 @@ Signed-off-by: Neil Cheng <Neil.Cheng@quantatw.com>
  1 file changed, 37 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
-index 689184545..93853a7dc 100644
+index d1442b1a1..d03719620 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
-@@ -816,6 +816,43 @@ &i2c15 {
+@@ -817,6 +817,43 @@ &i2c15 {
  	status = "okay";
  };
  

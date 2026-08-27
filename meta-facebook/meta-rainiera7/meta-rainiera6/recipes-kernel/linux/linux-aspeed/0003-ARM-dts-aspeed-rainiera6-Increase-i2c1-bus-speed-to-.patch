@@ -1,27 +1,27 @@
-From 94fcc6e295f09d71592d062b3fdeee37dbeaa061 Mon Sep 17 00:00:00 2001
+From 2ac40e9bdbe5a4ca498d05b4d2469213699404e3 Mon Sep 17 00:00:00 2001
 From: Frank Tsao <Frank.Tsao@quantatw.com>
-Date: Mon, 29 Jun 2026 22:04:24 +0800
-Subject: [PATCH] ARM: dts: aspeed: rainiera6: enable i2c1 byte mode for SSIF
+Date: Wed, 26 Aug 2026 19:42:32 +0800
+Subject: [PATCH] ARM: dts: aspeed: rainiera6: Increase i2c1 bus speed to 400
+ kHz
 
-enable i2c1 byte mode for SSIF between CPU and BMC
-
-Signed-off-by: Frank Tsao <Frank.Tsao@quantatw.com>
+Follow BIOS to configure i2c1 to operate at 400 kHz instead of 100 kHz.
+This update aligns the bus settings with the hardware capabilities.
 ---
  arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts | 1 +
  1 file changed, 1 insertion(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
-index d03719620..a29d37a63 100644
+index 9748b0b7e..e94fa01ac 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
-@@ -206,6 +206,7 @@ &gpio1 {
+@@ -204,6 +204,7 @@ &gpio1 {
+ 
+ /* Rainiera6 SoC SSIF */
  &i2c1 {
- 	clock-frequency = <400000>;
++	clock-frequency = <400000>;
  	status = "okay";
-+	aspeed,transfer-mode = "byte";
  
  	ssif_bmc: ssif-bmc@10 {
- 		compatible = "ssif-bmc";
 -- 
 2.34.1
 

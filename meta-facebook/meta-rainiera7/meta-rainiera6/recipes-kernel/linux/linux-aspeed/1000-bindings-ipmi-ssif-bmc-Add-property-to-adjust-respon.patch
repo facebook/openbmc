@@ -1,4 +1,4 @@
-From 671b4ff1b1140027b81f892725127075fd121dc5 Mon Sep 17 00:00:00 2001
+From fd86144820b560b4ac30167bae1cea4090b45bce Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Mon, 3 Feb 2025 20:26:28 +0800
 Subject: [PATCH] bindings: ipmi: ssif-bmc: Add property to adjust response

@@ -1,4 +1,4 @@
-From 2ec80c22e92f16a6e7f05b71965e6b11e6902572 Mon Sep 17 00:00:00 2001
+From 2e1f680051134e78e37efe619eba254d3d0e9433 Mon Sep 17 00:00:00 2001
 From: Frank Tsao <Frank.Tsao@quantatw.com>
 Date: Tue, 30 Jun 2026 22:26:32 +0800
 Subject: [PATCH] ARM: dts: aspeed: rainiera6: Add EMC1403 temperature sensor

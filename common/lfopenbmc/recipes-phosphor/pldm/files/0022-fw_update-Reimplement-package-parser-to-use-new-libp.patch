@@ -1,4 +1,4 @@
-From 1c187ff30eb9cca04bba2688d22f9a202bc5df0e Mon Sep 17 00:00:00 2001
+From 0c0ffe4264c5fab911e6fd16d463d9fae0b3e056 Mon Sep 17 00:00:00 2001
 From: Carter Chen <carter.chen.wiwynn@gmail.com>
 Date: Mon, 1 Dec 2025 08:46:59 +0000
 Subject: [PATCH] fw_update: Reimplement package parser to use new libpldm API
@@ -7,6 +7,14 @@ libpldm has revised the APIs for firmware package, the old APIs are
 now deprecated. Switch to the new APIs and use libpldm iterators to
 ensure compatibility with the latest libpldm version and PLDM fw
 update pkg v1.3.0
+
+Since the reimplemented processPackage() no longer delegates to
+processStream(), it raises updateInProgress itself once the Activation
+and ActivationProgress objects exist. Upstream only sets that flag in
+processStream() and activatePackage() returns early without it, so
+without this a package dropped into the firmware update watch
+directory would stay in Activating forever and the update would never
+start.
 
 - Build Yosemite V4: Pass
 - Firmware update Yosemite V4 PLDM components: Pass
@@ -28,9 +36,9 @@ Signed-off-by: Carter Chen <carter.chen.wiwynn@gmail.com>
  fw-update/test/firmware_inventory_test.cpp    |   3 +-
  fw-update/test/inventory_manager_test.cpp     |   2 +-
  fw-update/test/package_parser_test.cpp        | 247 +++++++--
- fw-update/update_manager.cpp                  | 322 ++++++++++--
+ fw-update/update_manager.cpp                  | 329 ++++++++++--
  fw-update/update_manager.hpp                  |  37 +-
- 15 files changed, 1013 insertions(+), 588 deletions(-)
+ 15 files changed, 1020 insertions(+), 588 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
 index fe391e2..26c3dff 100644
@@ -1958,7 +1966,7 @@ index b8dc1e0..bab9f36 100644
 +    EXPECT_THROW(PackageParser{fwPkgHdr}, InternalFailure);
  }
 diff --git a/fw-update/update_manager.cpp b/fw-update/update_manager.cpp
-index dbe88ee..a4a9880 100644
+index dbe88ee..e9ba33f 100644
 --- a/fw-update/update_manager.cpp
 +++ b/fw-update/update_manager.cpp
 @@ -5,14 +5,22 @@
@@ -2005,7 +2013,7 @@ index dbe88ee..a4a9880 100644
              std::filesystem::remove(packageFilePath);
              return -1;
          }
-@@ -60,38 +76,153 @@ int UpdateManager::processPackage(const std::filesystem::path& packageFilePath)
+@@ -60,38 +76,160 @@ int UpdateManager::processPackage(const std::filesystem::path& packageFilePath)
          }
      }
  
@@ -2172,11 +2180,18 @@ index dbe88ee..a4a9880 100644
          return -1;
      }
 +
++    // The activation objects are in place, so RequestedActivation can now
++    // reach activatePackage(). That entry point is gated on updateInProgress,
++    // which upstream sets in processStream(); this path no longer goes through
++    // it, so the flag has to be raised here or the activation request is
++    // silently dropped.
++    updateInProgress = true;
++
 +    return 0;
  }
  
  std::string UpdateManager::processStreamDefer(std::istream& package,
-@@ -129,45 +260,50 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
+@@ -129,45 +267,50 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
              pldm::utils::DBusHandler::getBus(), objPath,
              software::Activation::Activations::Invalid, this);
          parser.reset();
@@ -2241,7 +2256,7 @@ index dbe88ee..a4a9880 100644
      if (!deviceUpdaterInfos.size())
      {
          error(
-@@ -176,23 +312,64 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
+@@ -176,23 +319,64 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
              pldm::utils::DBusHandler::getBus(), objPath,
              software::Activation::Activations::Invalid, this);
          parser.reset();
@@ -2314,7 +2329,7 @@ index dbe88ee..a4a9880 100644
      }
  
      updateInProgress = true;
-@@ -209,7 +386,9 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
+@@ -209,7 +393,9 @@ void UpdateManager::processStream(std::istream& package, uintmax_t packageSize)
  
  DeviceUpdaterInfos UpdateManager::associatePkgToDevices(
      const FirmwareDeviceIDRecords& fwDeviceIDRecords,
@@ -2324,7 +2339,7 @@ index dbe88ee..a4a9880 100644
      TotalComponentUpdates& totalNumComponentUpdates)
  {
      DeviceUpdaterInfos deviceUpdaterInfos;
-@@ -217,19 +396,56 @@ DeviceUpdaterInfos UpdateManager::associatePkgToDevices(
+@@ -217,19 +403,56 @@ DeviceUpdaterInfos UpdateManager::associatePkgToDevices(
      {
          const auto& deviceIDDescriptors =
              std::get<Descriptors>(fwDeviceIDRecords[index]);
@@ -2385,7 +2400,7 @@ index dbe88ee..a4a9880 100644
      return deviceUpdaterInfos;
  }
  
-@@ -393,13 +609,19 @@ void UpdateManager::resetActivationState()
+@@ -393,13 +616,19 @@ void UpdateManager::resetActivationState()
      activationProgress.reset();
      objPath.clear();
  

@@ -1,0 +1,85 @@
+From ddc23dbc213c25058089369edc6ed2b50ce70a94 Mon Sep 17 00:00:00 2001
+From: Jagpal Singh Gill <paligill@gmail.com>
+Date: Wed, 29 Jul 2026 23:56:33 -0700
+Subject: [PATCH] log_manager: do not reset entryId on eraseAll
+
+The entry ID is meant to be monotonically increasing so that each log
+entry gets a unique, ever-increasing identifier.
+
+eraseAll() reset entryId (to 0, or to the highest remaining ID when
+some entries are kept), which could reuse identifiers that had already
+been handed out. Drop these resets so the counter retains its value
+across a clear.
+
+Note: entryId is re-derived from the persisted entries on every service
+restart, so after clearing all logs it would still restart from 0 as no
+entries remain to derive from. If needed, persisting the last-used ID
+across reboots is out of scope here and should be handled separately.
+
+Change-Id: Ib94d4849c5742d78e010f8ec0548fb0981cc44b1
+Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
+---
+ log_manager.cpp              | 12 ------------
+ test/elog_errorwrap_test.cpp | 16 ++++++++++++++++
+ 2 files changed, 16 insertions(+), 12 deletions(-)
+
+diff --git a/log_manager.cpp b/log_manager.cpp
+index 74a34c1..a0158f9 100644
+--- a/log_manager.cpp
++++ b/log_manager.cpp
+@@ -571,7 +571,6 @@ size_t Manager::eraseAll()
+             ++iter;
+             erase(e);
+         }
+-        entryId = 0;
+     }
+     else
+     {
+@@ -596,17 +595,6 @@ size_t Manager::eraseAll()
+                 entriesSize--;
+             }
+         }
+-        if (!entries.empty())
+-        {
+-            entryId = std::ranges::max_element(entries, [](const auto& a,
+-                                                           const auto& b) {
+-                          return a.first < b.first;
+-                      })->first;
+-        }
+-        else
+-        {
+-            entryId = 0;
+-        }
+     }
+     return entriesSize;
+ }
+diff --git a/test/elog_errorwrap_test.cpp b/test/elog_errorwrap_test.cpp
+index 5c6f0d6..40040e6 100644
+--- a/test/elog_errorwrap_test.cpp
++++ b/test/elog_errorwrap_test.cpp
+@@ -26,6 +26,22 @@ TEST_F(TestLogManager, logCap)
+     EXPECT_EQ(ERROR_CAP, manager.getRealErrSize());
+ }
+ 
++TEST_F(TestLogManager, entryIdNotResetOnEraseAll)
++{
++    // Create a few entries so the ID counter advances past 0.
++    for (size_t i = 0; i < 3; i++)
++    {
++        manager.commitWithLvl(i, "FOO", 6);
++    }
++
++    auto idBeforeErase = manager.lastEntryID();
++    EXPECT_NE(0u, idBeforeErase);
++
++    // Clearing all logs must leave the ID counter untouched.
++    manager.eraseAll();
++    EXPECT_EQ(idBeforeErase, manager.lastEntryID());
++}
++
+ } // namespace internal
+ } // namespace logging
+ } // namespace phosphor
+-- 
+2.53.0-Meta
+

@@ -10,8 +10,8 @@ Summary:
 3. Update Thor3 NIC thresholds and sensor name to align with Mortaro.
 ---
  .../amd/vulcano_1O800_800g_ocp.json           | 142 +++++++++++++++++-
- configurations/broadcomm/800g_1p_ocp.json     |  22 +--
- 2 files changed, 154 insertions(+), 10 deletions(-)
+ configurations/broadcomm/800g_1p_ocp.json     |  21 ++-
+ 2 files changed, 155 insertions(+), 8 deletions(-)
 
 diff --git a/configurations/amd/vulcano_1O800_800g_ocp.json b/configurations/amd/vulcano_1O800_800g_ocp.json
 index 84ecebc..60996a4 100644
@@ -172,7 +172,7 @@ diff --git a/configurations/broadcomm/800g_1p_ocp.json b/configurations/broadcom
 index c80209c..67d65f1 100644
 --- a/configurations/broadcomm/800g_1p_ocp.json
 +++ b/configurations/broadcomm/800g_1p_ocp.json
-@@ -12,28 +12,32 @@
+@@ -12,28 +12,35 @@
              "Labels": [
                  "temp2"
              ],
@@ -183,24 +183,25 @@ index c80209c..67d65f1 100644
              "Thresholds": [
                  {
 -                    "Direction": "less than",
--                    "Index": 2,
++                    "Direction": "greater than",
+                     "Index": 2,
 -                    "Name": "lower critical",
 -                    "Severity": 1,
 -                    "Value": 5
-+                    "Direction": "greater than",
 +                    "Name": "upper non critical",
 +                    "Severity": 0,
 +                    "Value": 95
                  },
                  {
                      "Direction": "greater than",
--                    "Index": 2,
+                     "Index": 2,
                      "Name": "upper critical",
                      "Severity": 1,
 +                    "Value": 100
 +                },
 +                {
 +                    "Direction": "greater than",
++                    "Index": 2,
 +                    "Name": "upper non recoverable",
 +                    "Severity": 4,
                      "Value": 105

@@ -1,7 +1,7 @@
-From 5213199746ca0735d1ea7f11a6764216ebee7f18 Mon Sep 17 00:00:00 2001
+From b6b76ba34a7a3af1ca0dcdc1c6b773756250e0fc Mon Sep 17 00:00:00 2001
 From: Frank Chen <FrankChen4@quantatw.com>
 Date: Tue, 21 Jul 2026 15:02:54 +0800
-Subject: [PATCH 8/9] configurations: santabarbara: add MCTPI2CTarget to NIC
+Subject: [PATCH] configurations: santabarbara: add MCTPI2CTarget to NIC
 
 Add PLDM sensors:
 - SENSOR_300 for network controller temperature.
@@ -99,5 +99,5 @@ index 45b4870..b05d0fb 100644
                  {
                      "Direction": "greater than",
 -- 
-2.43.0
+2.53.0-Meta
 

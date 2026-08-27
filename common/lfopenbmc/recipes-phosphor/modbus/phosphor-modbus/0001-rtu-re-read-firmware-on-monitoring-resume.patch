@@ -1,4 +1,4 @@
-From a24721726aa6bbf4f2639e14a668d1e78c134931 Mon Sep 17 00:00:00 2001
+From dafa7acffd5f7c2da34b0c7d29a5dcc094136e36 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Wed, 15 Jul 2026 11:57:21 -0700
 Subject: [PATCH] rtu: re-read firmware on monitoring resume
@@ -26,7 +26,7 @@ Change-Id: I7b97967913a06ffdc672aa7872af50bd370f0ec4
  6 files changed, 79 insertions(+), 1 deletion(-)
 
 diff --git a/rtu/device/base_device.hpp b/rtu/device/base_device.hpp
-index 88c14dc..6be5353 100644
+index 88c14dc..2acabd3 100644
 --- a/rtu/device/base_device.hpp
 +++ b/rtu/device/base_device.hpp
 @@ -101,6 +101,16 @@ class BaseDevice
@@ -47,10 +47,10 @@ index 88c14dc..6be5353 100644
      // Pre-computed pairing of register config and its corresponding sensor,
      // built at construction to avoid map lookups on every poll cycle.
 diff --git a/rtu/device_manager.cpp b/rtu/device_manager.cpp
-index 087854a..26eb12e 100644
+index 70d5678..9040266 100644
 --- a/rtu/device_manager.cpp
 +++ b/rtu/device_manager.cpp
-@@ -106,7 +106,11 @@ auto DeviceManager::processPortAdded(const sdbusplus::object_path& objectPath,
+@@ -105,7 +105,11 @@ auto DeviceManager::processPortAdded(const sdbusplus::object_path& objectPath,
  
      try
      {
@@ -63,7 +63,7 @@ index 087854a..26eb12e 100644
      }
      catch (const std::exception& e)
      {
-@@ -287,6 +291,14 @@ auto DeviceManager::processDeviceAdded(const DeviceFactoryConfigIntf& config)
+@@ -286,6 +290,14 @@ auto DeviceManager::processDeviceAdded(const DeviceFactoryConfigIntf& config)
      }
  }
  
@@ -94,15 +94,15 @@ index 55efc99..b2ce6d1 100644
      entity_manager::EntityManagerInterface entityManager;
      EventIntf::Events events;
 diff --git a/rtu/port/base_port.cpp b/rtu/port/base_port.cpp
-index 98cd865..458c7b2 100644
+index af5064a..cbd4ee6 100644
 --- a/rtu/port/base_port.cpp
 +++ b/rtu/port/base_port.cpp
-@@ -85,6 +85,12 @@ auto BasePort::set_property(monitoring_enabled_t, bool enabled) -> bool
-     bool monitoringEnabled = !monitoringLock.has_value();
-     bool changed = (monitoringEnabled != properties.monitoring_enabled);
-     properties.monitoring_enabled = monitoringEnabled;
+@@ -89,6 +89,12 @@ auto BasePort::set_property(enabled_t, bool enabled) -> bool
+     bool portEnabled = !monitoringLock.has_value();
+     bool changed = (portEnabled != properties.enabled);
+     properties.enabled = portEnabled;
 +
-+    if (changed && monitoringEnabled && monitoringResumedHandler)
++    if (changed && portEnabled && monitoringResumedHandler)
 +    {
 +        monitoringResumedHandler();
 +    }
@@ -111,18 +111,18 @@ index 98cd865..458c7b2 100644
  }
  
 diff --git a/rtu/port/base_port.hpp b/rtu/port/base_port.hpp
-index b4808f2..e37f352 100644
+index e781957..ae828ca 100644
 --- a/rtu/port/base_port.hpp
 +++ b/rtu/port/base_port.hpp
-@@ -9,6 +9,7 @@
- #include <xyz/openbmc_project/Control/Port/aserver.hpp>
+@@ -10,6 +10,7 @@
+ #include <xyz/openbmc_project/Object/Enable/aserver.hpp>
  
  #include <concepts>
 +#include <functional>
  #include <optional>
  
  namespace phosphor::modbus::rtu::port
-@@ -173,6 +174,13 @@ class BasePort : public PortControlIntf
+@@ -175,6 +176,13 @@ class BasePort : public PortConnectorIntf
       *          reserved. */
      auto acquireExclusive() -> std::optional<ExclusiveLock>;
  
@@ -136,16 +136,16 @@ index b4808f2..e37f352 100644
    private:
      friend class ExclusiveLock;
      std::string name;
-@@ -182,6 +190,7 @@ class BasePort : public PortControlIntf
+@@ -184,6 +192,7 @@ class BasePort : public PortConnectorIntf
      bool busy = false;
-     // Held while monitoring is disabled via Control.Port; reset to resume.
+     // Held while the port is disabled via Object.Enable; reset to resume.
      std::optional<ExclusiveLock> monitoringLock;
 +    std::function<void()> monitoringResumedHandler;
  };
  
  } // namespace phosphor::modbus::rtu::port
 diff --git a/tests/test_port.cpp b/tests/test_port.cpp
-index d02e473..4c90fa2 100644
+index 36f8335..327e331 100644
 --- a/tests/test_port.cpp
 +++ b/tests/test_port.cpp
 @@ -149,6 +149,27 @@ class PortTest : public BaseTest
@@ -159,15 +159,15 @@ index d02e473..4c90fa2 100644
 +        port.onMonitoringResumed([&]() { resumeCount++; });
 +
 +        // Disabling monitoring reserves the port; the handler must not fire.
-+        port.monitoring_enabled(false);
++        port.enabled(false);
 +        EXPECT_EQ(resumeCount, 0);
 +
 +        // Re-enabling monitoring resumes the port and fires the handler once.
-+        port.monitoring_enabled(true);
++        port.enabled(true);
 +        EXPECT_EQ(resumeCount, 1);
 +
 +        // A redundant enable does not fire the handler again.
-+        port.monitoring_enabled(true);
++        port.enabled(true);
 +        EXPECT_EQ(resumeCount, 1);
 +
 +        co_return;
@@ -176,7 +176,7 @@ index d02e473..4c90fa2 100644
      template <typename Config, typename Properties>
      static inline void VerifyConfig(const Config& config,
                                      const Properties& property)
-@@ -317,3 +338,19 @@ TEST_F(PortTest, TestMonitoringEnabled)
+@@ -317,3 +338,19 @@ TEST_F(PortTest, TestPortEnabled)
  
      ctx.run();
  }

@@ -1,4 +1,4 @@
-From 7bc48c8ae5e1adf78abd98768d5c1ec2f3e53f05 Mon Sep 17 00:00:00 2001
+From 36214df891ff220558500483fdb8ad32f999513b Mon Sep 17 00:00:00 2001
 From: Meghana H <Meghana.H@arm.com>
 Date: Fri, 17 Apr 2026 14:19:47 +0000
 Subject: [PATCH] redfish: Add FaultLog attachment download support
@@ -62,10 +62,10 @@ Change-Id: I086de6fcf79b6c8ed92e7668ead61e4215678cb8
  3 files changed, 28 insertions(+), 3 deletions(-)
 
 diff --git a/redfish-core/include/utils/log_services_utils.hpp b/redfish-core/include/utils/log_services_utils.hpp
-index 0a7ca87c..a421861b 100644
+index 3ed3097a..8637341b 100644
 --- a/redfish-core/include/utils/log_services_utils.hpp
 +++ b/redfish-core/include/utils/log_services_utils.hpp
-@@ -81,7 +81,8 @@ inline void downloadEntryCallback(
+@@ -75,7 +75,8 @@ inline void downloadEntryCallback(
      }
  
      // Make sure we know how to process the retrieved entry attachment
@@ -75,7 +75,7 @@ index 0a7ca87c..a421861b 100644
      {
          BMCWEB_LOG_ERROR("downloadEntryCallback() invalid entry type: {}",
                           downloadEntryType);
-@@ -101,7 +102,7 @@ inline void downloadEntryCallback(
+@@ -95,7 +96,7 @@ inline void downloadEntryCallback(
          close(fd);
          return;
      }
@@ -85,10 +85,10 @@ index 0a7ca87c..a421861b 100644
          if (!asyncResp->res.openFd(fd))
          {
 diff --git a/redfish-core/lib/log_services.hpp b/redfish-core/lib/log_services.hpp
-index 0901b1e2..b32846ab 100644
+index 57be09c1..c5ae84d4 100644
 --- a/redfish-core/lib/log_services.hpp
 +++ b/redfish-core/lib/log_services.hpp
-@@ -349,6 +349,12 @@ inline void getDumpEntryCollection(
+@@ -346,6 +346,12 @@ inline void getDumpEntryCollection(
                          "{}/{}/attachment", entriesPath, entryID);
                      thisEntry["AdditionalDataSizeBytes"] = size;
                  }
@@ -101,7 +101,7 @@ index 0901b1e2..b32846ab 100644
                  entriesArray.emplace_back(std::move(thisEntry));
              }
              asyncResp->res.jsonValue["Members@odata.count"] =
-@@ -452,6 +458,13 @@ inline void getDumpEntryById(
+@@ -449,6 +455,13 @@ inline void getDumpEntryById(
                                              entryID);
                      asyncResp->res.jsonValue["AdditionalDataSizeBytes"] = size;
                  }
@@ -115,7 +115,7 @@ index 0901b1e2..b32846ab 100644
              }
              if (!foundDumpEntry)
              {
-@@ -496,7 +509,7 @@ inline void downloadDumpEntry(
+@@ -493,7 +506,7 @@ inline void downloadDumpEntry(
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
      const std::string& entryID, const std::string& dumpType)
  {
@@ -124,7 +124,7 @@ index 0901b1e2..b32846ab 100644
      {
          BMCWEB_LOG_WARNING("Can't find Dump Entry {}", entryID);
          messages::resourceNotFound(asyncResp->res, dumpType + " dump", entryID);
-@@ -1592,6 +1605,16 @@ inline void requestRoutesFaultLogDumpEntry(App& app)
+@@ -1589,6 +1602,16 @@ inline void requestRoutesFaultLogDumpEntry(App& app)
              handleLogServicesDumpEntryDelete, std::ref(app), "FaultLog"));
  }
  

@@ -1,4 +1,4 @@
-From 69b68a672ced155421713611744df4365fce5396 Mon Sep 17 00:00:00 2001
+From d1e52741a0dfdffa0685c1976d54a34b7ce48543 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Wed, 26 Mar 2025 16:20:54 +0000
 Subject: [PATCH] Show mapped and raw Dbus messages in Log services
@@ -59,10 +59,10 @@ Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
  1 file changed, 15 insertions(+), 12 deletions(-)
 
 diff --git a/redfish-core/include/utils/eventlog_utils.hpp b/redfish-core/include/utils/eventlog_utils.hpp
-index db4f4b39..8076fce8 100644
+index 15965e4b..0c0210ed 100644
 --- a/redfish-core/include/utils/eventlog_utils.hpp
 +++ b/redfish-core/include/utils/eventlog_utils.hpp
-@@ -535,26 +535,29 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
+@@ -539,26 +539,29 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
      const std::string& collectionStr, const std::string_view memberId,
      const std::string& logEntryDescriptor)
  {
@@ -105,5 +105,5 @@ index db4f4b39..8076fce8 100644
          objectToFillOut["Message"] = entry.Message;
          if ((entry.Resolution != nullptr) && !entry.Resolution->empty())
 -- 
-2.52.0
+2.53.0-Meta
 

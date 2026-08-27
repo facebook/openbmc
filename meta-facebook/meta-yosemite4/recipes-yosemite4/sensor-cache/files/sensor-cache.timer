@@ -1,9 +1,0 @@
-[Unit]
-Description=Check sensors every 2 minutes
-
-[Timer]
-OnCalendar=*:0/2
-
-[Install]
-WantedBy=timers.target
-

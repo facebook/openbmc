@@ -38,7 +38,7 @@
   "sensorConfig": {
     "associationPath": "/xyz/openbmc_project/inventory/system/board/AMD_AMC",
     "intervalMilliseconds": 2000,
-    "maxRetries": 3,
+    "maxRetries": 1,
     "retryIntervalMilliseconds": 200,
     "cacheConnection": false,
     "ignoreUnavailableSensor": true,
@@ -689,24 +689,34 @@
         "toId": "AMC_THERMAL_FPGA_DX_C"
       },
       {
-        "fromUrl": "/redfish/v1/Chassis/AcceleratorMgmtCard/Sensors/AMC_THERMAL_SENSOR_1",
+        "fromUrl": "/redfish/v1/Chassis/AcceleratorMgmtCard/Sensors/temperature_AMC_THERMAL_SENSOR_1",
         "toNamespace": "temperature",
         "toId": "AMC_THERMAL_SENSOR1_C"
       },
       {
-        "fromUrl": "/redfish/v1/Chassis/AcceleratorMgmtCard/Sensors/AMC_THERMAL_SENSOR_2",
+        "fromUrl": "/redfish/v1/Chassis/AcceleratorMgmtCard/Sensors/temperature_AMC_THERMAL_SENSOR_2",
         "toNamespace": "temperature",
         "toId": "AMC_THERMAL_SENSOR2_C"
       },
       {
-        "fromUrl": "/redfish/v1/Chassis/AcceleratorMgmtCard/Sensors/AMC_THERMAL_SENSOR_3",
+        "fromUrl": "/redfish/v1/Chassis/AcceleratorMgmtCard/Sensors/temperature_AMC_THERMAL_SENSOR_3",
         "toNamespace": "temperature",
         "toId": "AMC_THERMAL_SENSOR3_C"
       },
       {
-        "fromUrl": "/redfish/v1/Chassis/AcceleratorMgmtCard/Sensors/AMC_THERMAL_SENSOR_4",
+        "fromUrl": "/redfish/v1/Chassis/AcceleratorMgmtCard/Sensors/temperature_AMC_THERMAL_SENSOR_4",
         "toNamespace": "temperature",
         "toId": "AMC_THERMAL_SENSOR4_C"
+      },
+      {
+        "fromUrl": "/redfish/v1/Chassis/AcceleratorMgmtCard/Sensors/temperature_AMC_FPGA_THERMAL_DIODE",
+        "toNamespace": "temperature",
+        "toId": "AMC_FPGA_THERMAL_DIODE_C"
+      },
+      {
+        "fromUrl": "/redfish/v1/Chassis/AcceleratorMgmtCard/Sensors/temperature_FPGA_DIE_TEMP",
+        "toNamespace": "temperature",
+        "toId": "FPGA_DIE_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_065_UCIEAM_C_TEMP",
@@ -727,6 +737,11 @@
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_54V_FUSE_TEMP_PEAK",
         "toNamespace": "temperature",
         "toId": "EAM0_54V_FUSE_TEMP_PEAK_C"
+      },
+      {
+        "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_FPGA_DIE_TEMP",
+        "toNamespace": "temperature",
+        "toId": "EAM0_FPGA_DIE_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_GPU_THERMAL_SENSOR_0",
@@ -777,6 +792,11 @@
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_IBC3_TEMP",
         "toNamespace": "temperature",
         "toId": "EAM0_IBC3_TEMP_C"
+      },
+      {
+        "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_INLET_THERMISTOR",
+        "toNamespace": "temperature",
+        "toId": "EAM0_INLET_THERMISTOR_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_PCB_TEMP_SENSOR_0",
@@ -959,6 +979,11 @@
         "toId": "EAM1_54V_FUSE_TEMP_PEAK_C"
       },
       {
+        "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_FPGA_DIE_TEMP",
+        "toNamespace": "temperature",
+        "toId": "EAM1_FPGA_DIE_TEMP_C"
+      },
+      {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_GPU_THERMAL_SENSOR_0",
         "toNamespace": "temperature",
         "toId": "EAM1_GPU_THERMAL_SENSOR0_C"
@@ -1007,6 +1032,11 @@
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_IBC3_TEMP",
         "toNamespace": "temperature",
         "toId": "EAM1_IBC3_TEMP_C"
+      },
+      {
+        "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_INLET_THERMISTOR",
+        "toNamespace": "temperature",
+        "toId": "EAM1_INLET_THERMISTOR_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_PCB_TEMP_SENSOR_0",
@@ -1189,6 +1219,11 @@
         "toId": "EAM2_54V_FUSE_TEMP_PEAK_C"
       },
       {
+        "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_FPGA_DIE_TEMP",
+        "toNamespace": "temperature",
+        "toId": "EAM2_FPGA_DIE_TEMP_C"
+      },
+      {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_GPU_THERMAL_SENSOR_0",
         "toNamespace": "temperature",
         "toId": "EAM2_GPU_THERMAL_SENSOR0_C"
@@ -1237,6 +1272,11 @@
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_IBC3_TEMP",
         "toNamespace": "temperature",
         "toId": "EAM2_IBC3_TEMP_C"
+      },
+      {
+        "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_INLET_THERMISTOR",
+        "toNamespace": "temperature",
+        "toId": "EAM2_INLET_THERMISTOR_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_PCB_TEMP_SENSOR_0",
@@ -1419,6 +1459,11 @@
         "toId": "EAM3_54V_FUSE_TEMP_PEAK_C"
       },
       {
+        "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_FPGA_DIE_TEMP",
+        "toNamespace": "temperature",
+        "toId": "EAM3_FPGA_DIE_TEMP_C"
+      },
+      {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_GPU_THERMAL_SENSOR_0",
         "toNamespace": "temperature",
         "toId": "EAM3_GPU_THERMAL_SENSOR0_C"
@@ -1467,6 +1512,11 @@
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_IBC3_TEMP",
         "toNamespace": "temperature",
         "toId": "EAM3_IBC3_TEMP_C"
+      },
+      {
+        "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_INLET_THERMISTOR",
+        "toNamespace": "temperature",
+        "toId": "EAM3_INLET_THERMISTOR_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_PCB_TEMP_SENSOR_0",

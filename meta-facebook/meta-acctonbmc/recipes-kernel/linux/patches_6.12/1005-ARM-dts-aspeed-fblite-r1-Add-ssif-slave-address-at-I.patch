@@ -18,9 +18,9 @@ index 651f4b52377b..79c67f7457f5 100644
  
 +&i2c5 {
 +
-+	ssif-bmc@10 {
++	ssif-bmc@30 {
 +		compatible = "ssif-bmc";
-+		reg = <0x10>;
++		reg = <0x30>;
 +	};
 +};
 +

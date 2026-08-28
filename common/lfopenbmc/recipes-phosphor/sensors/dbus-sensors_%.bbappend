@@ -34,6 +34,12 @@ SRC_URI:append:ventura2 = " \
     file://0103-valve-monitor-catch-event-resolve-exceptions.patch \
 "
 
+SRC_URI:append:ventura2a7 = " \
+    file://0101-valve-monitor-add-analog-valve-support.patch \
+    file://0102-valve-monitor-delay-analog-valve-feedback-monitoring.patch \
+    file://0103-valve-monitor-catch-event-resolve-exceptions.patch \
+"
+
 SRC_URI:append:fb-compute-multihost = " \
     file://0200-Utils-support-powerState-for-multi-node-system.patch \
     file://0201-Avoid-recreating-hwmon-temp-when-blade-cycle.patch \

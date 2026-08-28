@@ -400,11 +400,11 @@ bic_get_ifx_vr_version_mfr(uint8_t bus, uint8_t addr, uint8_t *ver_data) {
     return ret;
   }
 
-  // Sanity check
+  // Report whatever CRC value comes back, even all-zero -- the IPMB transaction already
+  // succeeded, so the VR really is reporting this value (e.g. an invalidated/not-yet
+  // -committed section), not a failed read.
   if (ver_data[1] == 0 && ver_data[2] == 0 && ver_data[3] == 0 && ver_data[4] == 0) {
-    syslog(LOG_WARNING, "%s() Got all-zero CRC result (section not found), bus=%u addr=0x%02X",
-           __func__, bus, addr);
-    return -1;
+    syslog(LOG_WARNING, "%s() Read back all-zero CRC, bus=%u addr=0x%02X", __func__, bus, addr);
   }
 
   return ret;
@@ -517,11 +517,10 @@ bic_get_ifx_vr_remaining_writes_mfr(uint8_t bus, uint8_t addr, uint8_t *writes) 
   // Little-endian 16-bit remaining bytes (match original xdpe: only take lower 16 bits)
   uint16_t remaining_size = (uint16_t)(rbuf[1] | (rbuf[2] << 8));
 
-  // Sanity check : all-zero remaining size likely indicates
+  // Report whatever value comes back, even zero -- see bic_get_ifx_vr_version_mfr() above.
   if (remaining_size == 0) {
-    syslog(LOG_WARNING, "%s() Got zero remaining size (possible stale partition residual), "
-           "bus=%u addr=0x%02X", __func__, bus, addr);
-    return -1;
+    syslog(LOG_WARNING, "%s() Read back zero remaining size, bus=%u addr=0x%02X",
+           __func__, bus, addr);
   }
 
   // Convert to "remaining full-program counts"

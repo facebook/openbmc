@@ -312,6 +312,25 @@ bic_get_vr_device_id(uint8_t *rbuf, uint8_t *rlen, uint8_t bus, uint8_t addr) {
 }
 
 #ifdef CONFIG_GRANDCANYON2
+// Pause (enable=0) or resume (enable=1) BIC firmware's background VR sensor-monitor
+int
+bic_set_vr_sensor_monitor(uint8_t enable) {
+  uint8_t sm_tbuf[8] = {0};
+  uint8_t sm_rbuf[8] = {0};
+  uint8_t sm_rlen = sizeof(sm_rbuf);
+  int ret;
+
+  memcpy(sm_tbuf, (uint8_t *)&META_IANA_ID, IANA_ID_SIZE);
+  sm_tbuf[3] = enable ? 0x1 : 0x0;
+  ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_VR_MON_ENABLE, sm_tbuf, 4, sm_rbuf, &sm_rlen);
+  if (ret == 0 && !enable) {
+    // Give BIC time to finish any in-flight VR PMBus transaction (e.g. a page switch)
+    // started before disable took effect.
+    msleep(10);
+  }
+  return ret;
+}
+
 int
 bic_get_ifx_vr_version_mfr(uint8_t bus, uint8_t addr, uint8_t *ver_data) {
   uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
@@ -777,10 +796,18 @@ bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
   int fd = 0;
   int ret = 0;
 
+#ifdef CONFIG_GRANDCANYON2
+  // Pause BIC firmware's background VR sensor-monitor task
+  if (bic_set_vr_sensor_monitor(VR_SENSOR_MONITOR_DISABLE) < 0) {
+    syslog(LOG_WARNING, "%s: failed to disable BIC VR sensor monitor, aborting", __func__);
+    return -1;
+  }
+#endif
+
   ret = bic_get_vr_device_id(rbuf, &rlen, bus, addr);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s() Failed to get vr device id, ret=%d", __func__, ret);
-    return ret;
+    goto vr_mon_exit;
   }
 
   tbuf[0] = (bus << 1) + 1;
@@ -798,7 +825,7 @@ bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
         syslog(LOG_WARNING, "%s():%d Failed to lock VR sensor reading", __func__,__LINE__);
         remove(SERVER_SENSOR_LOCK);
         close(fd);
-        return -1;
+        goto vr_mon_exit;
       }
     }
 
@@ -909,8 +936,8 @@ cleanup:
     }
     close(fd);
     remove(SERVER_SENSOR_LOCK);
-    return ret;
-    
+    goto vr_mon_exit;
+
   } else if (rlen > 4) {
     //TI
     tbuf[2] = 0x02; //read cnt
@@ -919,9 +946,9 @@ cleanup:
     ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
     if (ret < 0) {
       syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
-      return ret;
+      goto vr_mon_exit;
     }
-    
+
 #ifdef CONFIG_GRANDCANYON2
     // TI VR has no remaining-writes query command; read software counter from BIC EEPROM
     {
@@ -968,7 +995,7 @@ cleanup:
     ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
     if (ret < 0) {
       syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
-      return ret;
+      goto vr_mon_exit;
     }
 
     tbuf[2] = 0x04; //read cnt
@@ -977,12 +1004,18 @@ cleanup:
     ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
     if (ret < 0) {
       syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
-      return ret;
-    }    
+      goto vr_mon_exit;
+    }
     snprintf(ver_str, MAX_VALUE_LEN, "Renesas %02X%02X%02X%02X, Remaining Writes: %d", rbuf[3], rbuf[2], rbuf[1], rbuf[0], remaining_writes);
     kv_set(key, ver_str, 0, 0);
   }
 
+vr_mon_exit:
+#ifdef CONFIG_GRANDCANYON2
+  if (bic_set_vr_sensor_monitor(VR_SENSOR_MONITOR_ENABLE) < 0) {
+    syslog(LOG_WARNING, "%s: failed to re-enable BIC VR sensor monitor", __func__);
+  }
+#endif
   return ret;
 }
 

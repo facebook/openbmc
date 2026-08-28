@@ -41,6 +41,9 @@ extern "C" {
 #define INF_VR_CMD_GET_VERSION    0x2D
 #define INF_VR_CMD_GET_REM_WRITES 0x10
 
+#define VR_SENSOR_MONITOR_DISABLE 0
+#define VR_SENSOR_MONITOR_ENABLE  1
+
 // BIC EEPROM for TI VR remaining write software counter
 #define BIC_EEPROM_BUS                     0x02
 #define BIC_EEPROM_ADDR                    0xA8
@@ -95,6 +98,7 @@ int bic_get_ifx_vr_remaining_writes(uint8_t bus, uint8_t addr, uint8_t *writes);
 #ifdef CONFIG_GRANDCANYON2
 int bic_get_ifx_vr_remaining_writes_mfr(uint8_t bus, uint8_t addr, uint8_t *writes);
 int bic_get_ifx_vr_version_mfr(uint8_t bus, uint8_t addr, uint8_t *ver_data);
+int bic_set_vr_sensor_monitor(uint8_t enable);
 #endif
 int bic_get_isl_vr_remaining_writes(uint8_t bus, uint8_t addr, uint8_t *writes);
 #ifdef CONFIG_GRANDCANYON2

@@ -8,7 +8,6 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://meson.build \
-    file://check_ssifd.sh \
     file://ssifd.c \
     file://ssifd.service \
     "
@@ -29,7 +28,6 @@ pkgdir = "ssifd"
 
 do_install:append() {
     install -d ${D}${prefix}/local/bin
-    install -m 0755 ${S}/check_ssifd.sh ${D}${prefix}/local/bin/check_ssifd.sh
     ln -snf ../fbpackages/${pkgdir}/ssifd ${D}${prefix}/local/bin/ssifd
 
     install -d ${D}${systemd_system_unitdir}

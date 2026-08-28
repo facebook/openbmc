@@ -1,4 +1,4 @@
-From 56ca6256898416b895b8812d392bb4cfb6937860 Mon Sep 17 00:00:00 2001
+From 9fd640558481d2e30434f834c5204af43b5c5bd7 Mon Sep 17 00:00:00 2001
 From: Sandy Chu <sandy.chu.wiwynn@gmail.com>
 Date: Thu, 25 Jun 2026 03:03:56 +0000
 Subject: [PATCH] configurations: yosemite5: add PowerState to MCTPI2CTarget
@@ -13,20 +13,20 @@ setup should be performed based on the current system power state.[1]
 Change-Id: I15511e2a6e43fbe64273d621d0c13e3856f79d37
 Signed-off-by: Sandy Chu <sandy.chu.wiwynn@gmail.com>
 ---
- configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps.json     | 1 +
- .../meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_dvt2_earlier.json   | 1 +
- configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa.json     | 1 +
- .../meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_dvt2_earlier.json   | 1 +
- configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps.json     | 1 +
- .../meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_dvt2_earlier.json   | 1 +
- configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa.json     | 1 +
- .../meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_dvt2_earlier.json   | 1 +
+ .../meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio3.json          | 1 +
+ .../meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio4.json          | 1 +
+ .../meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio3.json          | 1 +
+ .../meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio4.json          | 1 +
+ .../meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio3.json          | 1 +
+ .../meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio4.json          | 1 +
+ .../meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio3.json          | 1 +
+ .../meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio4.json          | 1 +
  8 files changed, 8 insertions(+)
 
-diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps.json b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps.json
-index d7053b3..2a33e9e 100644
---- a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps.json
-+++ b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps.json
+diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio3.json b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio3.json
+index 7ce945a..ee06c87 100644
+--- a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio3.json
++++ b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio3.json
 @@ -266,6 +266,7 @@
              "Address": "0x32",
              "Bus": "15",
@@ -35,34 +35,10 @@ index d7053b3..2a33e9e 100644
              "Type": "MCTPI2CTarget"
          },
          {
-diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_dvt2_earlier.json b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_dvt2_earlier.json
-index d0a0d82..ac1c0e5 100644
---- a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_dvt2_earlier.json
-+++ b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_dvt2_earlier.json
-@@ -266,6 +266,7 @@
-             "Address": "0x32",
-             "Bus": "12",
-             "Name": "CXL",
-+            "PowerState": "On",
-             "Type": "MCTPI2CTarget"
-         },
-         {
-diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa.json b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa.json
-index 48854f8..8936d49 100644
---- a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa.json
-+++ b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa.json
-@@ -266,6 +266,7 @@
-             "Address": "0x32",
-             "Bus": "15",
-             "Name": "CXL",
-+            "PowerState": "On",
-             "Type": "MCTPI2CTarget"
-         },
-         {
-diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_dvt2_earlier.json b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_dvt2_earlier.json
-index 2719b3b..54a9fa7 100644
---- a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_dvt2_earlier.json
-+++ b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_dvt2_earlier.json
+diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio4.json b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio4.json
+index b5d69cb..bfc6d17 100644
+--- a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio4.json
++++ b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio4.json
 @@ -266,6 +266,7 @@
              "Address": "0x32",
              "Bus": "12",
@@ -71,10 +47,34 @@ index 2719b3b..54a9fa7 100644
              "Type": "MCTPI2CTarget"
          },
          {
-diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps.json b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps.json
-index d8637bc..b15242f 100644
---- a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps.json
-+++ b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps.json
+diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio3.json b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio3.json
+index ae83302..c78537c 100644
+--- a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio3.json
++++ b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio3.json
+@@ -266,6 +266,7 @@
+             "Address": "0x32",
+             "Bus": "15",
+             "Name": "CXL",
++            "PowerState": "On",
+             "Type": "MCTPI2CTarget"
+         },
+         {
+diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio4.json b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio4.json
+index f0289dc..fbc2a83 100644
+--- a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio4.json
++++ b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio4.json
+@@ -266,6 +266,7 @@
+             "Address": "0x32",
+             "Bus": "12",
+             "Name": "CXL",
++            "PowerState": "On",
+             "Type": "MCTPI2CTarget"
+         },
+         {
+diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio3.json b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio3.json
+index ec2148e..c6c9587 100644
+--- a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio3.json
++++ b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio3.json
 @@ -246,6 +246,7 @@
              "Address": "0x32",
              "Bus": "15",
@@ -83,10 +83,10 @@ index d8637bc..b15242f 100644
              "Type": "MCTPI2CTarget"
          },
          {
-diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_dvt2_earlier.json b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_dvt2_earlier.json
-index 356ea13..284f97c 100644
---- a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_dvt2_earlier.json
-+++ b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_dvt2_earlier.json
+diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio4.json b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio4.json
+index 77b0a8c..90fa98f 100644
+--- a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio4.json
++++ b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio4.json
 @@ -246,6 +246,7 @@
              "Address": "0x32",
              "Bus": "12",
@@ -95,10 +95,10 @@ index 356ea13..284f97c 100644
              "Type": "MCTPI2CTarget"
          },
          {
-diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa.json b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa.json
-index 03bbeca..15fb6fc 100644
---- a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa.json
-+++ b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa.json
+diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio3.json b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio3.json
+index 22e72f0..01a3608 100644
+--- a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio3.json
++++ b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio3.json
 @@ -246,6 +246,7 @@
              "Address": "0x32",
              "Bus": "15",
@@ -107,10 +107,10 @@ index 03bbeca..15fb6fc 100644
              "Type": "MCTPI2CTarget"
          },
          {
-diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_dvt2_earlier.json b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_dvt2_earlier.json
-index f36bb93..e324d0f 100644
---- a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_dvt2_earlier.json
-+++ b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_dvt2_earlier.json
+diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio4.json b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio4.json
+index bb8e684..c59d2c3 100644
+--- a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio4.json
++++ b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio4.json
 @@ -246,6 +246,7 @@
              "Address": "0x32",
              "Bus": "12",
@@ -120,5 +120,5 @@ index f36bb93..e324d0f 100644
          },
          {
 -- 
-2.43.0
+2.53.0-Meta
 

@@ -341,48 +341,59 @@ bic_get_ifx_vr_version_mfr(uint8_t bus, uint8_t addr, uint8_t *ver_data) {
 
   usleep(300);
 
-  // Step 1 : Explicitly initialize MFR_FW_COMMAND_DATA (0xFD)
+  // Retry the init(0xFD)->execute(0xFE)->read(0xFD) sequence up to MAX_RETRY times on failure
+  for (int attempt = 0; attempt < MAX_RETRY; attempt++) {
+    // Step 1 : Explicitly initialize MFR_FW_COMMAND_DATA (0xFD)
+    tbuf[2] = 0x00; // read cnt
+    tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD (MFR_FW_COMMAND_DATA)
+    tbuf[4] = 0x04; // block write byte count = 4
+    tbuf[5] = 0x00; // header_code = 0 (query total checksum)
+    tbuf[6] = 0x00; // XVcode = 0
+    tbuf[7] = 0x00; // reserved
+    tbuf[8] = 0x00; // partition_number = 0
+    tlen = 9;
 
-  tbuf[2] = 0x00; // read cnt
-  tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD (MFR_FW_COMMAND_DATA)
-  tbuf[4] = 0x04; // block write byte count = 4
-  tbuf[5] = 0x00; // header_code = 0 (query total checksum)
-  tbuf[6] = 0x00; // XVcode = 0
-  tbuf[7] = 0x00; // reserved
-  tbuf[8] = 0x00; // partition_number = 0
-  tlen = 9;
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() attempt %d/%d failed to initialize MFR_FW_COMMAND_DATA (0xFD), retrying",
+             __func__, attempt + 1, MAX_RETRY);
+      continue;
+    }
 
-  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to initialize MFR_FW_COMMAND_DATA (0xFD)", __func__);
-    return ret;
+    usleep(300);
+
+    // Step 2 : Execute GET_CRC command (0x2D).
+    tbuf[2] = 0x00; // read cnt
+    tbuf[3] = CMD_INF_VR_MFR_EXECUTE; // 0xFE
+    tbuf[4] = INF_VR_CMD_GET_VERSION; // 0x2D (GET_CRC)
+    tlen = 5;
+
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() attempt %d/%d failed to execute GET_CRC command, retrying",
+             __func__, attempt + 1, MAX_RETRY);
+      continue;
+    }
+
+    // Wait for command execution completion (GET_CRC needs 20ms)
+    usleep(20000); // 20ms
+
+    // Step 3 : Read CRC result.
+    tbuf[2] = 0x05; // read cnt
+    tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD (MFR_FW_COMMAND_DATA)
+    tlen = 4;
+
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() attempt %d/%d failed to read CRC data, retrying",
+             __func__, attempt + 1, MAX_RETRY);
+      continue;
+    }
+
+    break; // full sequence succeeded
   }
-
-  usleep(300);
-
-  // Step 2 : Execute GET_CRC command (0x2D). 
-  tbuf[2] = 0x00; // read cnt
-  tbuf[3] = CMD_INF_VR_MFR_EXECUTE; // 0xFE
-  tbuf[4] = INF_VR_CMD_GET_VERSION; // 0x2D (GET_CRC)
-  tlen = 5;
-
-  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to execute GET_CRC command", __func__);
-    return ret;
-  }
-
-  // Wait for command execution completion (GET_CRC needs 20ms)
-  usleep(20000); // 20ms
-
-  // Step 3 : Read CRC result.
-  tbuf[2] = 0x05; // read cnt
-  tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD (MFR_FW_COMMAND_DATA)
-  tlen = 4;
-
-  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to read CRC data", __func__);
+    syslog(LOG_WARNING, "%s() Failed after %d retries", __func__, MAX_RETRY);
     return ret;
   }
 
@@ -465,47 +476,59 @@ bic_get_ifx_vr_remaining_writes_mfr(uint8_t bus, uint8_t addr, uint8_t *writes) 
   
   usleep(300);
 
-  // Step 1 : Explicitly initialize MFR_FW_COMMAND_DATA (0xFD).
-  tbuf[2] = 0x00; // read cnt
-  tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD
-  tbuf[4] = 0x04; // block write byte count = 4
-  tbuf[5] = 0x00;
-  tbuf[6] = 0x00;
-  tbuf[7] = 0x00;
-  tbuf[8] = 0x00; // partition_number = 0
-  tlen = 9;
-  
-  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to initialize MFR_FW_COMMAND_DATA (0xFD)", __func__);
-    return ret;
+  // Retry the init(0xFD)->execute(0xFE)->read(0xFD) sequence up to MAX_RETRY times on failure
+  for (int attempt = 0; attempt < MAX_RETRY; attempt++) {
+    // Step 1 : Explicitly initialize MFR_FW_COMMAND_DATA (0xFD).
+    tbuf[2] = 0x00; // read cnt
+    tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD
+    tbuf[4] = 0x04; // block write byte count = 4
+    tbuf[5] = 0x00;
+    tbuf[6] = 0x00;
+    tbuf[7] = 0x00;
+    tbuf[8] = 0x00; // partition_number = 0
+    tlen = 9;
+
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() attempt %d/%d failed to initialize MFR_FW_COMMAND_DATA (0xFD), retrying",
+             __func__, attempt + 1, MAX_RETRY);
+      continue;
+    }
+
+    usleep(300);
+
+    // Step 2 : Execute OTP_PARTITION_SIZE_REMAINING (0x10).
+    tbuf[2] = 0x00; // read cnt
+    tbuf[3] = CMD_INF_VR_MFR_EXECUTE; // 0xFE
+    tbuf[4] = INF_VR_CMD_GET_REM_WRITES; // 0x10
+    tlen = 5;
+
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() attempt %d/%d failed to execute OTP_PARTITION_SIZE_REMAINING, retrying",
+             __func__, attempt + 1, MAX_RETRY);
+      continue;
+    }
+
+    // Wait for command execution completion (OTP_PARTITION_SIZE_REMAINING needs 1ms)
+    usleep(1000);
+
+    // Step 3 : Read remaining space result
+    tbuf[2] = 0x06; // read cnt
+    tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD (MFR_FW_COMMAND_DATA)
+    tlen = 4;
+
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() attempt %d/%d failed to read remaining writes data, retrying",
+             __func__, attempt + 1, MAX_RETRY);
+      continue;
+    }
+
+    break; // full sequence succeeded
   }
-
-  usleep(300);
-
-  // Step 2 : Execute OTP_PARTITION_SIZE_REMAINING (0x10).
-  tbuf[2] = 0x00; // read cnt
-  tbuf[3] = CMD_INF_VR_MFR_EXECUTE; // 0xFE
-  tbuf[4] = INF_VR_CMD_GET_REM_WRITES; // 0x10
-  tlen = 5;
-
-  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to execute OTP_PARTITION_SIZE_REMAINING", __func__);
-    return ret;
-  }
-
-  // Wait for command execution completion (OTP_PARTITION_SIZE_REMAINING needs 1ms)
-  usleep(1000);
-
-  // Step 3 : Read remaining space result
-  tbuf[2] = 0x06; // read cnt
-  tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD (MFR_FW_COMMAND_DATA)
-  tlen = 4;
-  
-  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to read remaining writes data", __func__);
+    syslog(LOG_WARNING, "%s() Failed after %d retries", __func__, MAX_RETRY);
     return ret;
   }
 

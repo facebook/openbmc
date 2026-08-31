@@ -17,7 +17,7 @@
     "sperry" : {
       "entities" : ["1", "2", "3", "4", "5", "6", "7", "8"],
         "condition": "/usr/local/bin/fpga_ver.sh | grep PIM |  awk 'NR==2' | cut -d ' ' -f 4",
-        "get_version" : "/usr/local/bin/fpga_ver.sh|grep PIM|awk 'NR=={entity} + 5'|cut -d ' ' -f 4",
+        "get_version" : "/usr/local/bin/fpga_ver.sh|grep '^PIM {entity} :'|cut -d ' ' -f 4",
         "continue_on_error" : true,
         "upgrade_cmd" : "/usr/local/bin/fpga_util.sh lc{entity} program {filename}",
         "post_action" : "/usr/local/bin/wedge_power.sh lcreset -a; sleep 30",

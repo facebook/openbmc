@@ -1,67 +1,40 @@
+import json
+import os
 import re
 
-device_manufactor_determinator = {
-    "RPU": {
-        "register": 6604,
-        "length": 8,
-        "manufacturers": {"delta": ["", "RDF040DSS5193E0"], "quanta": ["L05T"]},
-    },
-    "RPU2": {"register": 192, "length": 20, "manufacturers": {"coolermaster": []}},
-    "ORV3_PSU": {
-        "register": 24,
-        "length": 16,
-        "isRegex": True,
-        "manufacturers": {
-            "artesyn": [r"^.{8}AE"],
-            "delta": [r"^.{8}DE"],
-        },
-    },
-    "ORV3_BBU": {
-        "register": 0,
-        "length": 8,
-        "manufacturers": {"delta": ["Delta"], "panasonic": ["Panasonic", "ARTESYN"]},
-    },
-    "PSU_PMM": {
-        # PMM_MFR_Name
-        "register": 8,
-        "length": 8,
-        "manufacturers": {"delta": ["Delta"], "artesyn": ["ARTESYN"]},
-    },
-    "BBU_PMM": {
-        # PMM_MFR_Name
-        "register": 8,
-        "length": 8,
-        "manufacturers": {"delta": ["Delta"], "panasonic": ["Panasonic"]},
-    },
-    "CBU_PMM": {
-        # PMM_MFR_Name
-        "register": 8,
-        "length": 8,
-        "manufacturers": {"delta": ["Delta"]},
-    },
-    "PSU": {
-        # PSU_MFR_Serial
-        "register": 24,
-        "length": 16,
-        "isRegex": True,
-        "manufacturers": {
-            "artesyn": [r"^.{8}AE"],
-            "delta": [r"^.{8}DE"],
-        },
-    },
-    "BBU": {
-        # Manufacture_Name
-        "register": 0,
-        "length": 8,
-        "manufacturers": {"delta": ["Delta"], "panasonic": ["Panasonic"]},
-    },
-    "CBU": {
-        # Manufacture_Name
-        "register": 0,
-        "length": 8,
-        "manufacturers": {"delta": ["Delta"]},
-    },
-}
+# How a device reports who built it is described by the modbus-device-util
+# config, so this module and the shell tooling in that package agree on the
+# answer. Resolution order matches those scripts: an override dropped on the
+# persistent partition wins over the config shipped with the image.
+CONFIG_PATH_ENV = "MODBUS_DEVICE_UTIL_CONFIG"
+OVERRIDE_CONFIG_PATH = (
+    "/run/mnt-persist/var-data/lib/modbus-device-util/override-config.json"
+)
+DEFAULT_CONFIG_PATH = "/var/lib/modbus-device-util/default-config.json"
+
+
+def get_config_path():
+    path = os.environ.get(CONFIG_PATH_ENV)
+    if path:
+        return path
+    if os.path.exists(OVERRIDE_CONFIG_PATH):
+        return OVERRIDE_CONFIG_PATH
+    return DEFAULT_CONFIG_PATH
+
+
+def get_determinator(config_file=None):
+    """
+    Load the config and key it by the device type modbus-update.py works in.
+
+    The config is keyed by the name the shell tooling passes around (psu,
+    rpu2, hpr_pmm_bbu, ...), each entry naming the device type it describes.
+    Entries without one are not devices this module can identify.
+    """
+    with open(config_file or get_config_path()) as f:
+        config = json.load(f)
+    return {
+        entry["deviceType"]: entry for entry in config.values() if "deviceType" in entry
+    }
 
 
 def normalize(value):
@@ -71,25 +44,27 @@ def normalize(value):
     A backend reading the wire directly returns the whole register range,
     NUL or space padded to its full width, where rackmon hands back the
     string its register map already trimmed. Only the tail is stripped:
-    the regex matchers above count characters from the start, so any
-    leading padding has to stay.
+    the regex matchers in the config count characters from the start, so
+    any leading padding has to stay.
     """
     return value.rstrip("\x00\t\r\n ")
 
 
-def get_manufacturer(dev_type, dev):
-    config = device_manufactor_determinator[dev_type]
-    value = normalize(dev.read_str(config["register"], config["length"]))
-    isRegex = config.get("isRegex", False)
-    for name, maps in config["manufacturers"].items():
-        # Having no matcher means this is the only manufacturer supported.
-        if len(maps) == 0:
-            return name
-        for pattern in maps:
-            if isRegex:
-                if re.search(pattern, value):
-                    return name
-            else:
-                if pattern == value:
-                    return name
+def get_manufacturer(dev_type, dev, config_file=None):
+    config = get_determinator(config_file)[dev_type]
+    value = normalize(
+        dev.read_str(
+            config["manufacturerDiscriminatorRegister"],
+            config["manufacturerDiscriminatorLength"],
+        )
+    )
+    for name, matcher in config["manufacturers"].items():
+        regex = matcher.get("registerRegex")
+        if regex is not None:
+            if re.search(regex, value):
+                return name
+            continue
+        for pattern in matcher.get("registerValues", []):
+            if pattern == value:
+                return name
     return None

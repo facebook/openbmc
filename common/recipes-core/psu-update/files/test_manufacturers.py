@@ -1,8 +1,44 @@
+import json
+import os
 import unittest
 
 import manufacturers
-from manufacturers import device_manufactor_determinator, get_manufacturer, normalize
+from manufacturers import get_determinator, get_manufacturer, normalize
 from test_mocks import FakeDevice
+
+# The determinator is owned by modbus-device-util. Prefer the copy in the
+# tree so the tests cover what a change is about to ship, and fall back to
+# the installed one when running out of the package on a target.
+_TREE_CONFIG = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "..",
+    "..",
+    "modbus-device-util",
+    "files",
+    "default-config.json",
+)
+
+
+def find_config():
+    for path in (_TREE_CONFIG, manufacturers.DEFAULT_CONFIG_PATH):
+        if os.path.exists(path):
+            return path
+    return None
+
+
+CONFIG = find_config()
+needs_config = unittest.skipIf(
+    CONFIG is None, "modbus-device-util default-config.json is not available"
+)
+
+
+def tmpdir(test):
+    import shutil
+    import tempfile
+
+    d = tempfile.mkdtemp()
+    test.addCleanup(shutil.rmtree, d)
+    return d
 
 
 class TestNormalize(unittest.TestCase):
@@ -23,10 +59,57 @@ class TestNormalize(unittest.TestCase):
         self.assertEqual(normalize(""), "")
 
 
+class TestConfigPath(unittest.TestCase):
+    def setUp(self):
+        self.env = os.environ.pop(manufacturers.CONFIG_PATH_ENV, None)
+
+    def tearDown(self):
+        if self.env is None:
+            os.environ.pop(manufacturers.CONFIG_PATH_ENV, None)
+        else:
+            os.environ[manufacturers.CONFIG_PATH_ENV] = self.env
+
+    def test_the_environment_wins(self):
+        os.environ[manufacturers.CONFIG_PATH_ENV] = "/tmp/somewhere.json"
+        self.assertEqual(manufacturers.get_config_path(), "/tmp/somewhere.json")
+
+    def test_the_shipped_config_is_used_without_an_override(self):
+        # The override lives on the persistent partition, which is not
+        # mounted where these tests run.
+        if os.path.exists(manufacturers.OVERRIDE_CONFIG_PATH):
+            self.skipTest("an override config is installed on this machine")
+        self.assertEqual(
+            manufacturers.get_config_path(), manufacturers.DEFAULT_CONFIG_PATH
+        )
+
+    def test_the_override_is_preferred_over_the_shipped_config(self):
+        # Same order the modbus-device-util shell scripts resolve in.
+        self.assertEqual(
+            manufacturers.OVERRIDE_CONFIG_PATH,
+            "/run/mnt-persist/var-data/lib/modbus-device-util/override-config.json",
+        )
+        self.assertEqual(
+            manufacturers.DEFAULT_CONFIG_PATH,
+            "/var/lib/modbus-device-util/default-config.json",
+        )
+
+    @needs_config
+    def test_the_config_is_read_from_the_path_it_is_given(self):
+        with open(CONFIG) as f:
+            config = json.load(f)
+        del config["rpu"]
+        path = os.path.join(tmpdir(self), "trimmed.json")
+        with open(path, "w") as f:
+            json.dump(config, f)
+        self.assertNotIn("RPU", get_determinator(path))
+        self.assertIn("RPU", get_determinator(CONFIG))
+
+
+@needs_config
 class TestGetManufacturer(unittest.TestCase):
     def detect(self, dev_type, value):
         dev = FakeDevice(read_str=[value])
-        vendor = get_manufacturer(dev_type, dev)
+        vendor = get_manufacturer(dev_type, dev, CONFIG)
         return vendor, dev
 
     def test_reads_the_register_the_device_type_names(self):
@@ -74,7 +157,7 @@ class TestGetManufacturer(unittest.TestCase):
         self.assertIsNone(self.detect("PSU_PMM", "Acme")[0])
         self.assertIsNone(self.detect("ORV3_BBU", "")[0])
 
-    def test_a_sole_manufacturer_needs_no_matcher(self):
+    def test_a_sole_manufacturer_matches_whatever_is_reported(self):
         # RPU2 is only ever a Cooler Master, whatever it reports.
         vendor, dev = self.detect("RPU2", "anything at all")
         self.assertEqual(vendor, "coolermaster")
@@ -88,50 +171,69 @@ class TestGetManufacturer(unittest.TestCase):
 
     def test_unknown_device_type(self):
         with self.assertRaises(KeyError):
-            get_manufacturer("TOASTER", FakeDevice(read_str=["Delta"]))
+            get_manufacturer("TOASTER", FakeDevice(read_str=["Delta"]), CONFIG)
 
     def test_read_failures_are_not_swallowed(self):
         dev = FakeDevice(read_str=[ValueError("boom")])
         with self.assertRaises(ValueError):
-            get_manufacturer("PSU_PMM", dev)
+            get_manufacturer("PSU_PMM", dev, CONFIG)
 
 
+@needs_config
 class TestDeterminatorTable(unittest.TestCase):
+    def setUp(self):
+        self.determinator = get_determinator(CONFIG)
+
     def test_every_entry_is_usable(self):
-        for dev_type, config in device_manufactor_determinator.items():
+        for dev_type, config in self.determinator.items():
             with self.subTest(dev_type=dev_type):
-                self.assertIsInstance(config["register"], int)
-                self.assertGreater(config["length"], 0)
+                self.assertIsInstance(config["manufacturerDiscriminatorRegister"], int)
+                self.assertGreater(config["manufacturerDiscriminatorLength"], 0)
                 self.assertTrue(config["manufacturers"])
+
+    def test_every_manufacturer_can_be_matched(self):
+        for dev_type, config in self.determinator.items():
+            for name, matcher in config["manufacturers"].items():
+                with self.subTest(dev_type=dev_type, manufacturer=name):
+                    self.assertTrue(
+                        matcher.get("registerRegex") or matcher.get("registerValues"),
+                        "no way to identify this manufacturer",
+                    )
 
     def test_every_regex_compiles(self):
         import re
 
-        for dev_type, config in device_manufactor_determinator.items():
-            if not config.get("isRegex", False):
-                continue
-            for patterns in config["manufacturers"].values():
-                for pattern in patterns:
-                    with self.subTest(dev_type=dev_type, pattern=pattern):
-                        re.compile(pattern)
+        for dev_type, config in self.determinator.items():
+            for _name, matcher in config["manufacturers"].items():
+                regex = matcher.get("registerRegex")
+                if regex is None:
+                    continue
+                with self.subTest(dev_type=dev_type, pattern=regex):
+                    re.compile(regex)
 
     def test_every_type_modbus_update_dispatches_on_is_known_here(self):
-        # manufacturers.py is what tells modbus-update.py which vendor a
-        # device is, so the two tables have to line up.
+        # The config is what tells modbus-update.py which vendor a device
+        # is, so the two tables have to line up.
         import test_modbus_update
 
         mu = test_modbus_update.load_modbus_update()
         for dev_type in mu.UPDATERS:
             with self.subTest(dev_type=dev_type):
-                self.assertIn(dev_type, device_manufactor_determinator)
+                self.assertIn(dev_type, self.determinator)
         for dev_type in ("RPU", "RPU2"):
-            self.assertIn(dev_type, device_manufactor_determinator)
+            self.assertIn(dev_type, self.determinator)
 
-    def test_module_exposes_the_table_under_its_public_name(self):
-        self.assertIs(
-            manufacturers.device_manufactor_determinator,
-            device_manufactor_determinator,
-        )
+    def test_every_vendor_the_config_names_has_an_updater(self):
+        # modbus-update.py may offer an updater for a vendor a device type
+        # cannot be (the PMM types share one vendor table), but a vendor the
+        # config can detect with no updater behind it is a gap.
+        import test_modbus_update
+
+        mu = test_modbus_update.load_modbus_update()
+        for dev_type, (_, vendors) in mu.UPDATERS.items():
+            for vendor in self.determinator[dev_type]["manufacturers"]:
+                with self.subTest(dev_type=dev_type, vendor=vendor):
+                    self.assertIn(vendor, vendors)
 
 
 if __name__ == "__main__":

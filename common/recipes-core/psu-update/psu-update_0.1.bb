@@ -21,7 +21,7 @@ PR = "r1"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
-RDEPENDS:${PN} = "python3-core bash rackmon"
+RDEPENDS:${PN} = "python3-core bash rackmon modbus-device-util"
 RDEPENDS:${PN}:append:ventura2 = " python3-minimalmodbus"
 inherit ptest
 

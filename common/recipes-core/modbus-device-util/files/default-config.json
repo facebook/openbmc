@@ -83,7 +83,7 @@
         "manufacturerDiscriminator": "MFR_Model",
         "manufacturers": {
             "coolermaster": {
-                "registerValues": [""],
+                "registerRegex": ".*",
                 "pumpDutyPercentage": 70,
                 "targetFlowRateTimesTen": 1500
             }

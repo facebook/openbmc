@@ -198,11 +198,11 @@ index 000000000..38ac86dbc
 +		&pinctrl_adc10_default &pinctrl_adc11_default>;
 +};
 +
-+/*
 +&ehci0 {
 +	status = "okay";
 +};
 +
++/*
 +&ehci1 {
 +	status = "okay";
 +};

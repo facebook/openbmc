@@ -1,6 +1,9 @@
 {
     "bbu": {
+        "deviceType": "ORV3_BBU",
         "manufacturerDiscriminator": "Manufacture_Name",
+        "manufacturerDiscriminatorRegister": 0,
+        "manufacturerDiscriminatorLength": 8,
         "manufacturers": {
             "delta": {
                 "registerValues": ["Delta"]
@@ -30,7 +33,10 @@
         ]
     },
     "psu": {
+        "deviceType": "ORV3_PSU",
         "manufacturerDiscriminator": "PSU_MFR_Serial",
+        "manufacturerDiscriminatorRegister": 24,
+        "manufacturerDiscriminatorLength": 16,
         "manufacturers": {
             "artesyn": {
                 "registerRegex": "^.{8}AE"
@@ -53,7 +59,10 @@
         ]
     },
     "rpu": {
+        "deviceType": "RPU",
         "manufacturerDiscriminator": "RPU_MFR_Model",
+        "manufacturerDiscriminatorRegister": 6604,
+        "manufacturerDiscriminatorLength": 8,
         "manufacturers": {
             "delta": {
                 "registerValues": ["", "RDF040DSS5193E0", "RDF040DSS519BE0"],
@@ -80,7 +89,10 @@
         ]
     },
     "rpu2": {
+        "deviceType": "RPU2",
         "manufacturerDiscriminator": "MFR_Model",
+        "manufacturerDiscriminatorRegister": 192,
+        "manufacturerDiscriminatorLength": 20,
         "manufacturers": {
             "coolermaster": {
                 "registerRegex": ".*",
@@ -110,5 +122,83 @@
                 "type": "str"
             }
         ]
+    },
+    "hpr_psu": {
+        "deviceType": "PSU",
+        "manufacturerDiscriminator": "PSU_MFR_Serial",
+        "manufacturerDiscriminatorRegister": 24,
+        "manufacturerDiscriminatorLength": 16,
+        "manufacturers": {
+            "artesyn": {
+                "registerRegex": "^.{8}AE"
+            },
+            "delta": {
+                "registerRegex": "^.{8}DE"
+            }
+        }
+    },
+    "hpr_bbu": {
+        "deviceType": "BBU",
+        "manufacturerDiscriminator": "Manufacture_Name",
+        "manufacturerDiscriminatorRegister": 0,
+        "manufacturerDiscriminatorLength": 8,
+        "manufacturers": {
+            "delta": {
+                "registerValues": ["Delta"]
+            },
+            "panasonic": {
+                "registerValues": ["Panasonic"]
+            }
+        }
+    },
+    "hpr_cbu": {
+        "deviceType": "CBU",
+        "manufacturerDiscriminator": "Manufacture_Name",
+        "manufacturerDiscriminatorRegister": 0,
+        "manufacturerDiscriminatorLength": 8,
+        "manufacturers": {
+            "delta": {
+                "registerValues": ["Delta"]
+            }
+        }
+    },
+    "hpr_pmm_psu": {
+        "deviceType": "PSU_PMM",
+        "manufacturerDiscriminator": "PMM_MFR_Name",
+        "manufacturerDiscriminatorRegister": 8,
+        "manufacturerDiscriminatorLength": 8,
+        "manufacturers": {
+            "delta": {
+                "registerValues": ["Delta"]
+            },
+            "artesyn": {
+                "registerValues": ["ARTESYN"]
+            }
+        }
+    },
+    "hpr_pmm_bbu": {
+        "deviceType": "BBU_PMM",
+        "manufacturerDiscriminator": "PMM_MFR_Name",
+        "manufacturerDiscriminatorRegister": 8,
+        "manufacturerDiscriminatorLength": 8,
+        "manufacturers": {
+            "delta": {
+                "registerValues": ["Delta"]
+            },
+            "panasonic": {
+                "registerValues": ["Panasonic"]
+            }
+        }
+    },
+    "hpr_pmm_cbu": {
+        "deviceType": "CBU_PMM",
+        "manufacturerDiscriminator": "PMM_MFR_Name",
+        "manufacturerDiscriminatorRegister": 8,
+        "manufacturerDiscriminatorLength": 8,
+        "manufacturers": {
+            "delta": {
+                "registerValues": ["Delta"]
+            }
+        }
     }
 }

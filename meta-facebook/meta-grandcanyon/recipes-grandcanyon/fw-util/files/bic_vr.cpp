@@ -22,10 +22,14 @@ using namespace std;
 #endif
 
 #ifdef CONFIG_GRANDCANYON2
-                           // addr, VR name
-map<uint8_t, string> list = {{0xC0, "PVCCIN_FIVRA"},
-                             {0xC4, "PVCCD_HV"},
-                             {0xEC, "PVCCINFAON"}};
+static map<uint8_t, string> build_vr_list() {
+  map<uint8_t, string> vr_addr_to_name;
+  for (size_t i = 0; i < bic_vr_list_size; i++) {
+    vr_addr_to_name[bic_vr_list[i].addr] = bic_vr_list[i].name;
+  }
+  return vr_addr_to_name;
+}
+map<uint8_t, string> list = build_vr_list();
 
 #else
                            // addr, VR name

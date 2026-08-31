@@ -163,8 +163,10 @@ server_power_12v_on() {
   uint8_t status = 0;
   int ret = 0, retry = 0, times = 0;
   i2c_master_rw_command command;
+#ifndef CONFIG_GRANDCANYON2
   char cmd[MAX_CMD_LEN] = {0};
-  
+#endif
+
   memset(&command, 0, sizeof(command));
   command.offset = 0x00;
   command.val = STAT_12V_ON;
@@ -194,11 +196,17 @@ server_power_12v_on() {
     ret = pal_get_server_12v_power(FRU_SERVER, &status);
     if ((ret == 0) && (status == SERVER_12V_ON)) {
       // store VR version to cache
+#ifdef CONFIG_GRANDCANYON2
+      if (bic_refresh_all_vr_ver_cache() < 0) {
+        syslog(LOG_WARNING, "%s(): get VR version failed\n", __func__);
+      }
+#else
       snprintf(cmd, sizeof(cmd), "/usr/bin/fw-util server --version vr > /dev/null 2>&1");
       if (system(cmd) != 0) {
         syslog(LOG_WARNING, "%s(): get VR version failed\n", __func__);
         ret = PAL_ENOTSUP;
       }
+#endif
       goto exit;
     } else {
       ret = -1;

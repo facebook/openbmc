@@ -786,6 +786,20 @@ bic_switch_mux_for_bios_spi(uint8_t mux) {
   return 0;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+static const char *
+vr_addr_to_name(uint8_t addr) {
+  size_t i;
+
+  for (i = 0; i < bic_vr_list_size; i++) {
+    if (bic_vr_list[i].addr == addr) {
+      return bic_vr_list[i].name;
+    }
+  }
+  return "unknown";
+}
+#endif
+
 int
 bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
   uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
@@ -838,13 +852,17 @@ bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
       
       ret = bic_get_ifx_vr_remaining_writes_mfr(bus, addr, &remaining_writes);
       if (ret < 0) {
-        syslog(LOG_WARNING, "%s():%d Failed to get remaining writes via MFR method, ret=%d", 
+        syslog(LOG_WARNING, "%s():%d Failed to get remaining writes via MFR method, ret=%d",
                __func__, __LINE__, ret);
-        
+
         remaining_writes = 0xFF;
-      }      
-      
-      if (byte_count >= 4) {        
+        // Failing to read remaining-writes is non-fatal -- the VR version
+        // itself was already read successfully above. Reset ret to 0 so
+        // this success path doesn't return a stale failure code.
+        ret = 0;
+      }
+
+      if (byte_count >= 4) {
         snprintf(ver_str, MAX_VALUE_LEN, "Infineon %02X%02X%02X%02X, Remaining Writes: %d", 
                  ver_data[4], ver_data[3], ver_data[2], ver_data[1], 
                  (remaining_writes == 0xFF) ? 0 : remaining_writes);
@@ -853,8 +871,14 @@ bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
                  (remaining_writes == 0xFF) ? 0 : remaining_writes);
       }
       
-      kv_set(key, ver_str, 0, 0);
-      
+      if (kv_set(key, ver_str, 0, 0) != 0) {
+        syslog(LOG_WARNING, "%s(): failed to write VR version to cache, key=%s", __func__, key);
+        // VR version was already read successfully above -- ver_str is
+        // valid. Report the cache-write failure distinctly instead of a
+        // generic failure, so callers don't discard a good ver_str.
+        ret = BIC_VR_VER_CACHE_WRITE_FAILED;
+      }
+
       syslog(LOG_INFO, "%s() Successfully read Infineon VR via MFR method: %s", __func__, ver_str);
       goto cleanup;
     }
@@ -889,7 +913,10 @@ bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
         snprintf(ver_str, MAX_VALUE_LEN, "Infineon (version unavailable), Remaining Writes: %d", 
                  remaining_writes);
       }
-      kv_set(key, ver_str, 0, 0);
+      if (kv_set(key, ver_str, 0, 0) != 0) {
+        syslog(LOG_WARNING, "%s(): failed to write VR version to cache, key=%s", __func__, key);
+        ret = -1;
+      }
 #endif
       goto error_exit;
     }
@@ -920,18 +947,30 @@ bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
       snprintf(ver_str, MAX_VALUE_LEN, "Infineon %02X%02X%02X%02X, Remaining Writes: %d", 
                rbuf[3], rbuf[2], rbuf[1], rbuf[0], remaining_writes);
     }
+    if (kv_set(key, ver_str, 0, 0) != 0) {
+      syslog(LOG_WARNING, "%s(): failed to write VR version to cache, key=%s", __func__, key);
+      // VR version was already read successfully above -- ver_str is
+      // valid. Report the cache-write failure distinctly instead of a
+      // generic failure, so callers don't discard a good ver_str.
+      ret = BIC_VR_VER_CACHE_WRITE_FAILED;
+    }
+
 #else
     snprintf(ver_str, MAX_VALUE_LEN, "Infineon %02X%02X%02X%02X, Remaining Writes: %d", 
              rbuf[3], rbuf[2], rbuf[1], rbuf[0], remaining_writes);
-#endif
     kv_set(key, ver_str, 0, 0);
-    
+#endif
+
 #ifdef CONFIG_GRANDCANYON2
 cleanup:
 #endif
   error_exit:
-    ret = flock(fd, LOCK_UN);
-    if (ret == -1) {
+    // Do NOT assign flock()'s own return value into "ret" here -- ret is
+    // still holding the actual VR-read result (0 on success, negative on
+    // any of the failure paths above via goto error_exit). Overwriting it
+    // with the unlock's result silently turned real read failures into a
+    // reported "success" (flock(LOCK_UN) essentially never fails).
+    if (flock(fd, LOCK_UN) == -1) {
       syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, SERVER_SENSOR_LOCK);
     }
     close(fd);
@@ -968,10 +1007,17 @@ cleanup:
                  rbuf[1], rbuf[0], remaining);
       }
     }
+    if (kv_set(key, ver_str, 0, 0) != 0) {
+      syslog(LOG_WARNING, "%s(): failed to write VR version to cache, key=%s", __func__, key);
+      // VR version was already read successfully above -- ver_str is
+      // valid. Report the cache-write failure distinctly instead of a
+      // generic failure, so callers don't discard a good ver_str.
+      ret = BIC_VR_VER_CACHE_WRITE_FAILED;
+    }
 #else
     snprintf(ver_str, MAX_VALUE_LEN, "Texas Instruments %02X%02X", rbuf[1], rbuf[0]);
-#endif
     kv_set(key, ver_str, 0, 0);
+#endif
   } else {
     //ISL
     //get the reamaining write
@@ -1007,13 +1053,27 @@ cleanup:
       goto vr_mon_exit;
     }
     snprintf(ver_str, MAX_VALUE_LEN, "Renesas %02X%02X%02X%02X, Remaining Writes: %d", rbuf[3], rbuf[2], rbuf[1], rbuf[0], remaining_writes);
+#ifdef CONFIG_GRANDCANYON2
+    if (kv_set(key, ver_str, 0, 0) != 0) {
+      syslog(LOG_WARNING, "%s(): failed to write VR version to cache, key=%s", __func__, key);
+      // VR version was already read successfully above -- ver_str is
+      // valid. Report the cache-write failure distinctly instead of a
+      // generic failure, so callers don't discard a good ver_str.
+      ret = BIC_VR_VER_CACHE_WRITE_FAILED;
+    }
+#else
     kv_set(key, ver_str, 0, 0);
+#endif
   }
 
 vr_mon_exit:
 #ifdef CONFIG_GRANDCANYON2
   if (bic_set_vr_sensor_monitor(VR_SENSOR_MONITOR_ENABLE) < 0) {
     syslog(LOG_WARNING, "%s: failed to re-enable BIC VR sensor monitor", __func__);
+  }
+
+  if (ret >= 0) {
+    syslog(LOG_INFO, "Get %s version from bic. bus=0x%X addr=0x%X", vr_addr_to_name(addr), bus, addr);
   }
 #endif
   return ret;
@@ -1028,16 +1088,55 @@ bic_get_vr_ver_cache(uint8_t bus, uint8_t addr, char *ver_str) {
   memset(tmp_str, 0, MAX_VALUE_LEN);
   snprintf(key, sizeof(key), "vr_%02xh_crc", addr);
   if (kv_get(key, tmp_str, NULL, 0) != 0) {
-    if (bic_get_vr_ver(bus, addr, key, tmp_str) != 0) {
+    if (bic_get_vr_ver(bus, addr, key, tmp_str) < 0) {
       return -1;
     }
+  } else {
+#ifdef CONFIG_GRANDCANYON2
+    syslog(LOG_INFO, "Get %s version from cache. bus=0x%X addr=0x%X", vr_addr_to_name(addr), bus, addr);
+#endif
   }
   if (snprintf(ver_str, MAX_VER_STR_LEN, "%s", tmp_str) > (MAX_VER_STR_LEN - 1)) {
     return -1;
   }
-
-  return 0;  
+  return 0;
 }
+
+#ifdef CONFIG_GRANDCANYON2
+#define VR_VER_CACHE_BUS 0x4
+const bic_vr_info_t bic_vr_list[] = {
+  {0xC0, "PVCCIN_FIVRA"},
+  {0xC4, "PVCCD_HV"},
+  {0xEC, "PVCCINFAON"},
+};
+const size_t bic_vr_list_size = sizeof(bic_vr_list) / sizeof(bic_vr_list[0]);
+
+int
+bic_refresh_all_vr_ver_cache(void) {
+  char key[MAX_KEY_LEN] = {0};
+  char ver_str[MAX_VALUE_LEN] = {0};
+  size_t i;
+  int ret = 0;
+  int r;
+
+  for (i = 0; i < bic_vr_list_size; i++) {
+    memset(key, 0, sizeof(key));
+    memset(ver_str, 0, sizeof(ver_str));
+    snprintf(key, sizeof(key), "vr_%02xh_crc", bic_vr_list[i].addr);
+    r = bic_get_vr_ver(VR_VER_CACHE_BUS, bic_vr_list[i].addr, key, ver_str);
+    if (r < 0) {
+      // Actually failed to read the VR version from hardware.
+      syslog(LOG_WARNING, "%s(): failed to refresh VR 0x%02X version cache", __func__, bic_vr_list[i].addr);
+      ret = -1;
+    } else if (r == BIC_VR_VER_CACHE_WRITE_FAILED) {
+      // VR version WAS read OK, only the cache persist step failed.
+      syslog(LOG_WARNING, "%s(): VR 0x%02X version read OK but cache write failed", __func__, bic_vr_list[i].addr);
+      ret = -1;
+    }
+  }
+  return ret;
+}
+#endif
 
 static int
 _read_fruid(uint8_t fru_id, uint32_t offset, uint8_t count, uint8_t *rbuf, uint8_t *rlen) {

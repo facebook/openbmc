@@ -21,6 +21,7 @@
 #ifndef __BIC_IPMI_H__
 #define __BIC_IPMI_H__
 
+#include <stddef.h>
 #include "bic_xfer.h"
 
 #ifdef __cplusplus
@@ -88,6 +89,16 @@ typedef union _bic_config_u {
   bic_config_t bits;
 } bic_config_u;
 
+#ifdef CONFIG_GRANDCANYON2
+typedef struct {
+  uint8_t addr;
+  const char *name;
+} bic_vr_info_t;
+
+extern const bic_vr_info_t bic_vr_list[];
+extern const size_t bic_vr_list_size;
+#endif
+
 int bic_get_fw_ver(uint8_t slot_id, uint8_t comp, uint8_t *ver);
 #ifdef CONFIG_GRANDCANYON2
 int bic_get_fw_rev_ver(uint8_t slot_id, uint8_t *ver);
@@ -105,8 +116,20 @@ int bic_get_isl_vr_remaining_writes(uint8_t bus, uint8_t addr, uint8_t *writes);
 int bic_get_ti_vr_remaining_wr(uint8_t addr, uint16_t *remain);
 int bic_set_ti_vr_remaining_wr(uint8_t addr, uint16_t remain);
 #endif
+// bic_get_vr_ver() return value contract:
+//   0                          -- full success: VR read AND cache write both OK
+//   negative                   -- VR read itself failed (hardware/IPMB error);
+//                                 *ver_str is NOT valid, callers must not use it
+//   BIC_VR_VER_CACHE_WRITE_FAILED (positive) -- VR read succeeded, *ver_str IS
+//                                 valid and usable, but persisting it to the
+//                                 kv cache failed (secondary/non-fatal issue)
+#define BIC_VR_VER_CACHE_WRITE_FAILED 2
+
 int bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str);
 int bic_get_vr_ver_cache(uint8_t bus, uint8_t addr, char *ver_str);
+#ifdef CONFIG_GRANDCANYON2
+int bic_refresh_all_vr_ver_cache(void);
+#endif
 int bic_switch_mux_for_bios_spi(uint8_t mux);
 int bic_get_fruid_info(uint8_t fru_id, ipmi_fruid_info_t *info);
 int bic_read_fruid(uint8_t fru_id, char *path, int *fru_size);

@@ -181,16 +181,8 @@ SRC_URI:append = " \
            file://0687-hw-arm-bletchley-align-the-I2C-layout-with-the-devic.patch \
            file://0688-hw-arm-bletchley-correct-the-file-copyright-header.patch \
            file://0689-hw-arm-bletchley-select-the-board-revision-with-a-ma.patch \
-           "
-
-# The following patches break our robot qemu tests. We want to keep them rebased
-# since they are out for review so we are keeping them in the list with an used
-# override platform
-SRC_URI:append:unused-but-want-to-keep-updated = " \
            file://0690-hw-arm-bletchley-populate-the-v1.0-FRU-EEPROMs.patch \
            file://0691-hw-arm-bletchley-populate-the-v1.5-FRU-EEPROMs.patch \
-           "
-SRC_URI:append = " \
            file://0692-hw-arm-harma-add-Facebook-Harma-BMC-machine.patch \
            file://0693-hw-arm-harma-populate-the-FRU-EEPROMs.patch \
            file://0694-hw-arm-ventura-add-Facebook-Ventura-BMC-machine.patch \

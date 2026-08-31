@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zinc Lim <zinclim@meta.com>
+Date: Mon, 31 Aug 2026 14:24:10 -0700
+Subject: [PATCH] hw/arm/aspeed: enable both fby35 BMC MACs
+
+The fby35 device tree enables MAC2 and MAC3, but the QEMU machine only
+allows a command-line network backend to be assigned to MAC3. This
+prevents Santabarbara from using separate user-network and RBT backends
+at the same time.
+
+Enable both MACs for command-line network configuration. QEMU assigns
+NIC configurations in MAC index order, so callers can attach user
+networking to MAC2 and RBT to MAC3, preserving the existing RBT mapping
+to eth1.
+
+Signed-off-by: Zinc Lim <zinclim@meta.com>
+---
+ hw/arm/aspeed_ast2600_fby35.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hw/arm/aspeed_ast2600_fby35.c b/hw/arm/aspeed_ast2600_fby35.c
+index 3999c06575..67490ae1cd 100644
+--- a/hw/arm/aspeed_ast2600_fby35.c
++++ b/hw/arm/aspeed_ast2600_fby35.c
+@@ -160,7 +160,7 @@ static void aspeed_machine_fby35_class_init(ObjectClass *oc, const void *data)
+     mc->reset      = fby35_reset;
+     amc->fmc_model = "mx66l1g45g";
+     amc->num_cs    = 2;
+-    amc->macs_mask = ASPEED_MAC3_ON;
++    amc->macs_mask = ASPEED_MAC2_ON | ASPEED_MAC3_ON;
+     amc->i2c_init  = fby35_i2c_init;
+     mc->default_ram_size = FBY35_BMC_RAM_SIZE;
+     aspeed_machine_class_init_cpus_defaults(mc);
+--
+2.53.0-Meta

@@ -64,13 +64,16 @@ class Create : public CreateSyncIntf
         return path;
     }
 
-    void createWithFFDCFiles(
+    sdbusplus::object_path createWithFFDCFiles(
         std::string, LoggingLevel, std::map<std::string, std::string>,
         std::vector<std::tuple<FFDCFormat, uint8_t, uint8_t,
                                sdbusplus::message::unix_fd>>) override
     {
-        // This test does not exercise the FFDC code path.
-        ASSERT_TRUE(false);
+        // This test does not exercise the FFDC code path. ADD_FAILURE rather
+        // than ASSERT_TRUE because the ASSERT_* macros return void and cannot
+        // be used in a function with a non-void return type.
+        ADD_FAILURE();
+        return sdbusplus::object_path{};
     }
 
   private:

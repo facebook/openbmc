@@ -785,7 +785,7 @@ new file mode 100644
 index 0000000..b8140ca
 --- /dev/null
 +++ b/src/valve-monitor/BaseValve.cpp
-@@ -0,0 +1,176 @@
+@@ -0,0 +1,177 @@
 +#include "BaseValve.hpp"
 +
 +#include "LocalConfig.hpp"
@@ -829,8 +829,9 @@ index 0000000..b8140ca
 +            valveName);
 +}
 +
-+constexpr ValveIntf::Value::properties_t initValues{0, 100, 0,
-+                                                    ValveIntf::Unit::Percent};
++constexpr ValveIntf::Value::properties_t initValues{
++    .value = 0, .max_value = 100, .min_value = 0,
++    .unit = ValveIntf::Unit::Percent};
 +constexpr ValveIntf::Definitions::properties_t initAssociations{};
 +constexpr ValveIntf::Availability::properties_t initAvailability{true};
 +constexpr ValveIntf::OperationalStatus::properties_t initOperationalState{true};
@@ -1123,7 +1124,7 @@ index f5e501b..44718c5 100644
                  .service(entity_manager::EntityManagerInterface::serviceName)
                  .path(objectPath.str)
                  .properties();
-@@ -91,78 +84,27 @@ auto getConfig(sdbusplus::async::context& ctx,
+@@ -91,79 +84,27 @@ auto getConfig(sdbusplus::async::context& ctx,
  
  } // namespace config
  
@@ -1143,8 +1144,9 @@ index f5e501b..44718c5 100644
 -            valveName);
 -}
 -
--constexpr ValveIntf::Value::properties_t initValues{0, 100, 0,
--                                                    ValveIntf::Unit::Percent};
+-constexpr ValveIntf::Value::properties_t initValues{
+-    .value = 0, .max_value = 100, .min_value = 0,
+-    .unit = ValveIntf::Unit::Percent};
 -constexpr ValveIntf::Definitions::properties_t initAssociations{};
 -constexpr ValveIntf::Availability::properties_t initAvailability{true};
 -constexpr ValveIntf::OperationalStatus::properties_t initOperationalState{true};

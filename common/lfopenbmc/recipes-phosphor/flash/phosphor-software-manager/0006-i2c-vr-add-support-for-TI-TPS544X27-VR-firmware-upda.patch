@@ -1,4 +1,4 @@
-From bd4bf009a0b61fbf6fef39383d80f83814f9c290 Mon Sep 17 00:00:00 2001
+From afe437eed2c380b92d3c4d303e78226777956012 Mon Sep 17 00:00:00 2001
 From: Alan Tsai <alan-tsai@quantatw.com>
 Date: Wed, 12 Aug 2026 10:49:25 +0800
 Subject: [PATCH] i2c-vr: add support for TI TPS544X27 VR firmware update
@@ -251,7 +251,7 @@ Change-Id: Ia1bcdf4c1af68222255fff8373a1b9bfaac28368
 Signed-off-by: Alan Tsai <alan-tsai@quantatw.com>
 ---
  common/include/utils.hpp             |  21 +
- common/src/utils.cpp                 | 153 +++++
+ common/src/utils.cpp                 | 152 +++++
  i2c-vr/i2cvr_software_manager.cpp    |   3 +-
  i2c-vr/meson.build                   |   2 +
  i2c-vr/tps544x27/csv_parser.cpp      | 348 ++++++++++
@@ -260,19 +260,17 @@ Signed-off-by: Alan Tsai <alan-tsai@quantatw.com>
  i2c-vr/tps544x27/tps544x27.hpp       |  83 +++
  i2c-vr/vr.cpp                        |   4 +
  i2c-vr/vr.hpp                        |   1 +
- test/common/meson.build              |   1 +
- test/common/utils/meson.build        |  18 +
+ test/common/utils/meson.build        |  17 +
  test/common/utils/utils.cpp          | 138 ++++
  test/i2c-vr/meson.build              |   1 +
  test/i2c-vr/tps544x27/csv_parser.cpp | 299 +++++++++
  test/i2c-vr/tps544x27/meson.build    |  14 +
  test/meson.build                     |   1 +
- 17 files changed, 2140 insertions(+), 1 deletion(-)
+ 16 files changed, 2137 insertions(+), 1 deletion(-)
  create mode 100644 i2c-vr/tps544x27/csv_parser.cpp
  create mode 100644 i2c-vr/tps544x27/csv_parser.hpp
  create mode 100644 i2c-vr/tps544x27/tps544x27.cpp
  create mode 100644 i2c-vr/tps544x27/tps544x27.hpp
- create mode 100644 test/common/utils/meson.build
  create mode 100644 test/common/utils/utils.cpp
  create mode 100644 test/i2c-vr/meson.build
  create mode 100644 test/i2c-vr/tps544x27/csv_parser.cpp
@@ -317,24 +315,24 @@ index 3d3c68f..bccfb01 100644
 +
 +std::vector<std::string> splitCsvLine(const std::string& line);
 diff --git a/common/src/utils.cpp b/common/src/utils.cpp
-index 2e6d147..6a2d9e9 100644
+index 03d953c..e34a70e 100644
 --- a/common/src/utils.cpp
 +++ b/common/src/utils.cpp
-@@ -2,6 +2,11 @@
+@@ -5,7 +5,11 @@
  
  #include <phosphor-logging/lg2.hpp>
  
 +#include <algorithm>
 +#include <cctype>
+ #include <cstdlib>
 +#include <iomanip>
 +#include <sstream>
-+
+ 
  PHOSPHOR_LOG2_USING;
  
- sdbusplus::async::task<bool> asyncSystem(
-@@ -112,3 +117,151 @@ sdbusplus::async::task<bool> asyncSystem(
-         co_return false;
-     }
+@@ -127,3 +131,151 @@ sdbusplus::async::task<bool> asyncSystem(
+     co_return co_await runParent(ctx, pid, exitPipefd[0],
+                                  result ? resultPipefd[0] : -1, result, cmd);
  }
 +
 +std::string trim(const std::string& s)
@@ -485,7 +483,7 @@ index 2e6d147..6a2d9e9 100644
 +    return fields;
 +}
 diff --git a/i2c-vr/i2cvr_software_manager.cpp b/i2c-vr/i2cvr_software_manager.cpp
-index e6df5fe..4e17f54 100644
+index 4842ac1..d1c6b8b 100644
 --- a/i2c-vr/i2cvr_software_manager.cpp
 +++ b/i2c-vr/i2cvr_software_manager.cpp
 @@ -25,7 +25,8 @@ const std::vector<std::string> emConfigTypes = {
@@ -2050,7 +2048,7 @@ index 2d8760e..66dfe9c 100644
  
      if (VRTypeToString.contains(vrStr))
 diff --git a/i2c-vr/vr.hpp b/i2c-vr/vr.hpp
-index 8176a38..2569a5f 100644
+index 6718e7e..bd742dd 100644
 --- a/i2c-vr/vr.hpp
 +++ b/i2c-vr/vr.hpp
 @@ -25,6 +25,7 @@ enum class VRType
@@ -2061,39 +2059,31 @@ index 8176a38..2569a5f 100644
      RS31390
  };
  
-diff --git a/test/common/meson.build b/test/common/meson.build
-index 782c48d..dac08b6 100644
---- a/test/common/meson.build
-+++ b/test/common/meson.build
-@@ -2,3 +2,4 @@ subdir('exampledevice')
- subdir('device')
- subdir('events')
- subdir('software')
-+subdir('utils')
 diff --git a/test/common/utils/meson.build b/test/common/utils/meson.build
-new file mode 100644
-index 0000000..9d50044
---- /dev/null
+index 9a8a048..258bba4 100644
+--- a/test/common/utils/meson.build
 +++ b/test/common/utils/meson.build
-@@ -0,0 +1,18 @@
-+testcases = ['utils']
+@@ -14,3 +14,20 @@ test(
+         ],
+     ),
+ )
 +
-+foreach t : testcases
-+    test(
-+        t,
-+        executable(
-+            t,
-+            f'@t@.cpp',
-+            '../../../common/src/utils.cpp',
-+            include_directories: [common_include],
-+            dependencies: [
-+                sdbusplus_dep,
-+                phosphor_logging_dep,
-+                gtest,
-+            ],
-+        ),
-+    )
-+endforeach
++test(
++    'utils',
++    executable(
++        'utils',
++        'utils.cpp',
++        include_directories: [common_include],
++        dependencies: [
++            sdbusplus_dep,
++            phosphor_logging_dep,
++            gtest,
++        ],
++        link_with: [
++            software_common_lib,
++        ],
++    ),
++)
 diff --git a/test/common/utils/utils.cpp b/test/common/utils/utils.cpp
 new file mode 100644
 index 0000000..60c8a74
@@ -2580,5 +2570,5 @@ index 14735cb..2ca813c 100644
  subdir('common')
 +subdir('i2c-vr')
 -- 
-2.25.1
+2.53.0-Meta
 

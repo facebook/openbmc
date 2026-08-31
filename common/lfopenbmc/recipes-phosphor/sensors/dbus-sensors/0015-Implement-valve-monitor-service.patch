@@ -557,7 +557,7 @@ new file mode 100644
 index 0000000..f5e501b
 --- /dev/null
 +++ b/src/valve-monitor/GPIOValve.cpp
-@@ -0,0 +1,299 @@
+@@ -0,0 +1,300 @@
 +#include "GPIOValve.hpp"
 +
 +#include "EntityManagerInterface.hpp"
@@ -667,8 +667,9 @@ index 0000000..f5e501b
 +            valveName);
 +}
 +
-+constexpr ValveIntf::Value::properties_t initValues{0, 100, 0,
-+                                                    ValveIntf::Unit::Percent};
++constexpr ValveIntf::Value::properties_t initValues{
++    .value = 0, .max_value = 100, .min_value = 0,
++    .unit = ValveIntf::Unit::Percent};
 +constexpr ValveIntf::Definitions::properties_t initAssociations{};
 +constexpr ValveIntf::Availability::properties_t initAvailability{true};
 +constexpr ValveIntf::OperationalStatus::properties_t initOperationalState{true};

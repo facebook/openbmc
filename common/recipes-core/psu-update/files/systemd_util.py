@@ -4,9 +4,9 @@ Talk to systemd and to D-Bus objects over busctl.
 Two layers, both used by phosphor_modbus.py:
 
   1. A thin wrapper over busctl: get_property(), set_property(),
-     get_all_properties(), get_managed_objects() and get_interfaces(),
-     all of which raise ConfigError when the call fails or its result
-     cannot be understood.
+     get_all_properties(), get_managed_objects(), get_subtree_paths()
+     and get_interfaces(), all of which raise ConfigError when the call
+     fails or its result cannot be understood.
   2. is_unit_running(), which asks the systemd manager whether a unit is
      active.
 
@@ -25,6 +25,10 @@ BUSCTL_TIMEOUT = 10.0
 PROPERTIES_IFACE = "org.freedesktop.DBus.Properties"
 INTROSPECTABLE_IFACE = "org.freedesktop.DBus.Introspectable"
 OBJECT_MANAGER_IFACE = "org.freedesktop.DBus.ObjectManager"
+
+OBJECT_MAPPER_SERVICE = "xyz.openbmc_project.ObjectMapper"
+OBJECT_MAPPER_PATH = "/xyz/openbmc_project/object_mapper"
+OBJECT_MAPPER_IFACE = "xyz.openbmc_project.ObjectMapper"
 
 SYSTEMD_SERVICE = "org.freedesktop.systemd1"
 SYSTEMD_PATH = "/org/freedesktop/systemd1"
@@ -116,6 +120,30 @@ def get_managed_objects(service, path) -> Dict[str, Dict[str, Any]]:
     ret = _busctl_call(service, path, OBJECT_MANAGER_IFACE, "GetManagedObjects")
     if not ret or not isinstance(ret[0], dict):
         raise ConfigError("Could not enumerate objects under %s" % path)
+    return ret[0]
+
+
+def get_subtree_paths(subtree, interfaces, depth=0) -> List[str]:
+    """
+    Ask the mapper for the object paths below subtree which implement
+    every one of interfaces. depth 0 is the whole subtree.
+
+    Unlike get_managed_objects() this does not need to know which
+    service exports the objects, nor where its ObjectManager sits.
+    """
+    ret = _busctl_call(
+        OBJECT_MAPPER_SERVICE,
+        OBJECT_MAPPER_PATH,
+        OBJECT_MAPPER_IFACE,
+        "GetSubTreePaths",
+        "sias",
+        subtree,
+        depth,
+        len(interfaces),
+        *interfaces,
+    )
+    if not ret or not isinstance(ret[0], list):
+        raise ConfigError("Could not enumerate objects under %s" % subtree)
     return ret[0]
 
 

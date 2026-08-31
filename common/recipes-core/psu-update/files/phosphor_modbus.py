@@ -34,6 +34,7 @@ import argparse
 import json
 import os
 import sys
+import time
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 from systemd_util import (
@@ -42,6 +43,7 @@ from systemd_util import (
     get_interfaces,
     get_managed_objects,
     get_property,
+    get_subtree_paths,
     is_unit_running,
     set_property,
 )
@@ -73,9 +75,13 @@ CONTAINED_BY = "contained_by"
 
 MODBUS_SERVICE = INVENTORY_SERVICE
 MODBUS_UNIT = MODBUS_SERVICE + ".service"
-PORT_NAMESPACE = "/xyz/openbmc_project/control/port"
-PORT_IFACE = "xyz.openbmc_project.Control.Port"
-MONITORING_ENABLED = "MonitoringEnabled"
+PORT_NAMESPACE = "/xyz/openbmc_project/inventory/system/connector"
+PORT_IFACE = "xyz.openbmc_project.Object.Enable"
+PORT_ENABLED = "Enabled"
+
+# How long to wait for the service to report back a value we wrote.
+PORT_SETTLE_TIMEOUT_SECS = 5.0
+PORT_SETTLE_POLL_SECS = 0.1
 
 
 class DeviceConfig(NamedTuple):
@@ -308,7 +314,7 @@ class PhosphorModbusExclusion:
     """
     Stop phosphor-modbus from polling a serial port.
 
-    stop() disables MonitoringEnabled on every port object of
+    stop() clears Enabled on every port connector object of
     xyz.openbmc_project.ModbusRTU which refers to the given device port,
     start() re-enables exactly those it disabled. Both are no-ops if the
     service is not active, or if it does not own the port.
@@ -322,23 +328,35 @@ class PhosphorModbusExclusion:
         self._stopped = False
 
     def get_port_paths(self) -> List[str]:
-        """Port objects of the service which refer to our tty"""
-        objects = get_managed_objects(MODBUS_SERVICE, PORT_NAMESPACE)
-        return [
-            path
-            for path, ifaces in sorted(objects.items())
-            if os.path.basename(path) == self.tty_name and PORT_IFACE in ifaces
-        ]
+        """Port connector objects which refer to our tty"""
+        # The connectors sit under the service's inventory ObjectManager
+        # rather than under PORT_NAMESPACE, so ask the mapper instead of
+        # enumerating an ObjectManager here.
+        paths = get_subtree_paths(PORT_NAMESPACE, [PORT_IFACE])
+        return sorted(p for p in paths if os.path.basename(p) == self.tty_name)
+
+    def _read_property(self, path: str) -> bool:
+        return bool(get_property(MODBUS_SERVICE, path, PORT_IFACE, PORT_ENABLED))
 
     def _change_property(self, path: str, enable: bool) -> None:
         set_property(
             MODBUS_SERVICE,
             path,
             PORT_IFACE,
-            MONITORING_ENABLED,
+            PORT_ENABLED,
             "b",
             "true" if enable else "false",
         )
+        # The write only queues the change; the port is not ours until
+        # the service reports the new value back.
+        deadline = time.monotonic() + PORT_SETTLE_TIMEOUT_SECS
+        while self._read_property(path) != enable:
+            if time.monotonic() >= deadline:
+                raise ConfigError(
+                    "%s on %s did not become %s within %gs"
+                    % (PORT_ENABLED, path, enable, PORT_SETTLE_TIMEOUT_SECS)
+                )
+            time.sleep(PORT_SETTLE_POLL_SECS)
 
     def stop(self) -> bool:
         """
@@ -355,18 +373,20 @@ class PhosphorModbusExclusion:
             print("WARNING: %s" % e, file=sys.stderr)
             return False
         for path in paths:
+            # Record the port before writing it: a write which is
+            # accepted but does not settle in time may still land, so it
+            # has to be undone either way.
+            self.changed_paths.append(path)
             try:
                 self._change_property(path, False)
             except ConfigError as e:
                 print(
-                    "WARNING: Could not disable %s on %s: %s"
-                    % (MONITORING_ENABLED, path, e),
+                    "WARNING: Could not disable %s on %s: %s" % (PORT_ENABLED, path, e),
                     file=sys.stderr,
                 )
                 # Leave the service the way we found it.
                 self.start()
                 return False
-            self.changed_paths.append(path)
         self._stopped = bool(self.changed_paths)
         return self._stopped
 
@@ -377,8 +397,7 @@ class PhosphorModbusExclusion:
                 self._change_property(path, True)
             except ConfigError as e:
                 print(
-                    "WARNING: Could not enable %s on %s: %s"
-                    % (MONITORING_ENABLED, path, e),
+                    "WARNING: Could not enable %s on %s: %s" % (PORT_ENABLED, path, e),
                     file=sys.stderr,
                 )
         self.changed_paths = []
@@ -396,13 +415,8 @@ class PhosphorModbusExclusion:
         return paths
 
     def get_monitoring(self) -> Dict[str, bool]:
-        """MonitoringEnabled of every port object of the device port"""
-        return {
-            path: bool(
-                get_property(MODBUS_SERVICE, path, PORT_IFACE, MONITORING_ENABLED)
-            )
-            for path in self.get_port_paths()
-        }
+        """Enabled of every port connector object of the device port"""
+        return {path: self._read_property(path) for path in self.get_port_paths()}
 
 
 def monitoring_main(args) -> int:
@@ -438,7 +452,7 @@ def monitoring_main(args) -> int:
         print("No port object of %s matches %s" % (MODBUS_SERVICE, port))
         return 1
     for path, enabled in states.items():
-        print("%s: %s = %s" % (path, MONITORING_ENABLED, enabled))
+        print("%s: %s = %s" % (path, PORT_ENABLED, enabled))
     return 0
 
 

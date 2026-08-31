@@ -384,18 +384,41 @@ class TestPhosphorModbusExclusion(unittest.TestCase):
 
     def setUp(self):
         self.exclusion = PhosphorModbusExclusion(self.PORT)
+        # Enabled of each port, as the service would report it. Ports
+        # start out enabled, which is what phosphor-modbus does.
+        self.enabled = {}
         patcher = patch.object(phosphor_modbus, "is_unit_running", return_value=True)
         self.is_unit_running = patcher.start()
         self.addCleanup(patcher.stop)
-        patcher = patch.object(phosphor_modbus, "set_property")
+        patcher = patch.object(
+            phosphor_modbus, "set_property", side_effect=self.apply_write
+        )
         self.set_property = patcher.start()
         self.addCleanup(patcher.stop)
+        patcher = patch.object(
+            phosphor_modbus, "get_property", side_effect=self.read_back
+        )
+        self.get_property = patcher.start()
+        self.addCleanup(patcher.stop)
+        # Keep the read-back loop from sleeping through the tests.
+        for name, value in (
+            ("PORT_SETTLE_TIMEOUT_SECS", 0.05),
+            ("PORT_SETTLE_POLL_SECS", 0.0),
+        ):
+            patcher = patch.object(phosphor_modbus, name, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def apply_write(self, service, path, iface, prop, signature, value):
+        """A service which honours the write straight away"""
+        self.enabled[path] = value == "true"
+
+    def read_back(self, service, path, iface, prop):
+        return self.enabled.get(path, True)
 
     def objects(self, *paths):
         return patch.object(
-            phosphor_modbus,
-            "get_managed_objects",
-            return_value={p: {phosphor_modbus.PORT_IFACE: {}} for p in paths},
+            phosphor_modbus, "get_subtree_paths", return_value=list(paths)
         )
 
     def test_the_object_path_spells_the_tty_without_dashes(self):
@@ -408,13 +431,12 @@ class TestPhosphorModbusExclusion(unittest.TestCase):
         with self.objects(self.PATH, other):
             self.assertEqual(self.exclusion.get_port_paths(), [self.PATH])
 
-    def test_get_port_paths_skips_objects_without_the_port_interface(self):
-        with patch.object(
-            phosphor_modbus,
-            "get_managed_objects",
-            return_value={self.PATH: {"org.freedesktop.DBus.Peer": {}}},
-        ):
-            self.assertEqual(self.exclusion.get_port_paths(), [])
+    def test_get_port_paths_asks_the_mapper_for_the_connector_namespace(self):
+        with self.objects(self.PATH) as subtree:
+            self.exclusion.get_port_paths()
+        subtree.assert_called_once_with(
+            phosphor_modbus.PORT_NAMESPACE, [phosphor_modbus.PORT_IFACE]
+        )
 
     def test_stop_disables_monitoring_and_start_puts_it_back(self):
         with self.objects(self.PATH):
@@ -423,7 +445,7 @@ class TestPhosphorModbusExclusion(unittest.TestCase):
             phosphor_modbus.MODBUS_SERVICE,
             self.PATH,
             phosphor_modbus.PORT_IFACE,
-            phosphor_modbus.MONITORING_ENABLED,
+            phosphor_modbus.PORT_ENABLED,
             "b",
             "false",
         )
@@ -435,7 +457,7 @@ class TestPhosphorModbusExclusion(unittest.TestCase):
             phosphor_modbus.MODBUS_SERVICE,
             self.PATH,
             phosphor_modbus.PORT_IFACE,
-            phosphor_modbus.MONITORING_ENABLED,
+            phosphor_modbus.PORT_ENABLED,
             "b",
             "true",
         )
@@ -460,22 +482,72 @@ class TestPhosphorModbusExclusion(unittest.TestCase):
 
     def test_a_port_which_cannot_be_enumerated_is_not_stopped(self):
         with patch.object(
-            phosphor_modbus, "get_managed_objects", side_effect=ConfigError("boom")
+            phosphor_modbus, "get_subtree_paths", side_effect=ConfigError("boom")
         ):
             with quiet():
                 self.assertFalse(self.exclusion.stop())
+
+    def test_a_write_is_confirmed_by_reading_it_back(self):
+        # The service applies the write asynchronously, so a write which
+        # was accepted is not yet a port we own.
+        with self.objects(self.PATH):
+            self.assertTrue(self.exclusion.stop())
+        self.get_property.assert_called_with(
+            phosphor_modbus.MODBUS_SERVICE,
+            self.PATH,
+            phosphor_modbus.PORT_IFACE,
+            phosphor_modbus.PORT_ENABLED,
+        )
+        self.assertIs(self.enabled[self.PATH], False)
+
+    def test_a_write_which_never_takes_effect_is_a_failure(self):
+        # Accepted but not applied: the service is still polling.
+        self.set_property.side_effect = None
+        with self.objects(self.PATH):
+            with quiet() as err:
+                self.assertFalse(self.exclusion.stop())
+        self.assertIn("Could not disable", err.getvalue())
+        self.assertEqual(self.exclusion.changed_paths, [])
+
+    def test_a_disable_which_does_not_settle_is_still_undone(self):
+        # An accepted write may land late, so it has to be rolled back
+        # even though we never saw it take effect.
+        self.set_property.side_effect = None
+        with self.objects(self.PATH):
+            with quiet():
+                self.assertFalse(self.exclusion.stop())
+        self.assertEqual(self.set_property.call_args_list[-1][0][5], "true")
+
+    def test_a_slow_write_is_waited_for_rather_than_given_up_on(self):
+        # Two reads still report the old value before it flips.
+        reads = iter([True, True, False])
+        self.get_property.side_effect = lambda *a: next(reads)
+        with self.objects(self.PATH):
+            self.assertTrue(self.exclusion.stop())
+        self.assertEqual(self.exclusion.changed_paths, [self.PATH])
 
     def test_a_failed_stop_re_enables_what_it_already_disabled(self):
         # Half-disabled monitoring would leave the service polling some
         # ports and not others once we are done.
         second = phosphor_modbus.PORT_NAMESPACE + "/bus1/ttyRS485_1"
         paths = [self.PATH, second]
+
+        denied = []
+
+        def deny_the_second_port(service, path, *args):
+            # Only the disable is refused; the rollback goes through.
+            if path == second and not denied:
+                denied.append(path)
+                raise ConfigError("denied")
+            self.apply_write(service, path, *args)
+
         with patch.object(self.exclusion, "get_port_paths", return_value=paths):
-            self.set_property.side_effect = [None, ConfigError("denied"), None]
+            self.set_property.side_effect = deny_the_second_port
             with quiet() as err:
                 self.assertFalse(self.exclusion.stop())
         self.assertIn("Could not disable", err.getvalue())
         self.assertEqual(self.set_property.call_args_list[-1][0][5], "true")
+        self.assertIs(self.enabled[self.PATH], True)
         self.assertEqual(self.exclusion.changed_paths, [])
 
     def test_start_reports_but_survives_a_failure(self):
@@ -503,7 +575,7 @@ class TestPhosphorModbusExclusion(unittest.TestCase):
             phosphor_modbus.MODBUS_SERVICE,
             self.PATH,
             phosphor_modbus.PORT_IFACE,
-            phosphor_modbus.MONITORING_ENABLED,
+            phosphor_modbus.PORT_ENABLED,
         )
 
 
@@ -534,7 +606,7 @@ class TestMonitoringMain(unittest.TestCase):
             self.Args(show=self.PORT), get_monitoring=lambda: {self.PATH: True}
         )
         self.assertEqual(rc, 0)
-        self.assertIn("%s: MonitoringEnabled = True" % self.PATH, out)
+        self.assertIn("%s: Enabled = True" % self.PATH, out)
 
     def test_show_fails_when_no_port_object_matches(self):
         rc, out = self.run_main(self.Args(show=self.PORT), get_monitoring=lambda: {})

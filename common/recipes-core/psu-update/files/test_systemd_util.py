@@ -12,6 +12,7 @@ from systemd_util import (
     get_interfaces,
     get_managed_objects,
     get_property,
+    get_subtree_paths,
     is_unit_running,
     set_property,
 )
@@ -154,7 +155,7 @@ class TestProperties(unittest.TestCase):
 
     def test_set_property_passes_the_value_as_a_variant(self):
         with patch.object(systemd_util, "_busctl_call", return_value=[]) as call:
-            set_property("svc", "/p", "iface", "MonitoringEnabled", "b", "false")
+            set_property("svc", "/p", "iface", "Enabled", "b", "false")
         call.assert_called_once_with(
             "svc",
             "/p",
@@ -162,7 +163,7 @@ class TestProperties(unittest.TestCase):
             "Set",
             "ssv",
             "iface",
-            "MonitoringEnabled",
+            "Enabled",
             "b",
             "false",
         )
@@ -190,12 +191,45 @@ class TestGetManagedObjects(unittest.TestCase):
                 get_managed_objects("svc", "/p")
 
 
+class TestGetSubTreePaths(unittest.TestCase):
+    IFACE = "xyz.openbmc_project.Object.Enable"
+
+    def test_asks_the_mapper_for_the_whole_subtree_by_default(self):
+        paths = ["/p/1", "/p/2"]
+        with patch.object(systemd_util, "_busctl_call", return_value=[paths]) as call:
+            self.assertEqual(get_subtree_paths("/p", [self.IFACE]), paths)
+        call.assert_called_once_with(
+            systemd_util.OBJECT_MAPPER_SERVICE,
+            systemd_util.OBJECT_MAPPER_PATH,
+            systemd_util.OBJECT_MAPPER_IFACE,
+            "GetSubTreePaths",
+            "sias",
+            "/p",
+            0,
+            1,
+            self.IFACE,
+        )
+
+    def test_the_interface_array_is_a_count_then_its_entries(self):
+        # busctl spells "as" as the number of entries followed by them.
+        with patch.object(systemd_util, "_busctl_call", return_value=[[]]) as call:
+            get_subtree_paths("/p", [self.IFACE, "iface2"], depth=2)
+        self.assertEqual(call.call_args[0][5:], ("/p", 2, 2, self.IFACE, "iface2"))
+
+    def test_a_subtree_the_mapper_does_not_know_is_a_config_error(self):
+        for ret in ([], ["not a list"]):
+            with self.subTest(ret=ret):
+                with patch.object(systemd_util, "_busctl_call", return_value=ret):
+                    with self.assertRaises(ConfigError):
+                        get_subtree_paths("/p", [self.IFACE])
+
+
 class TestGetInterfaces(unittest.TestCase):
     XML = (
         '<node name="/p">'
         '<interface name="org.freedesktop.DBus.Properties"/>'
-        '<interface name="xyz.openbmc_project.Control.Port">'
-        '<property name="MonitoringEnabled" type="b" access="readwrite"/>'
+        '<interface name="xyz.openbmc_project.Object.Enable">'
+        '<property name="Enabled" type="b" access="readwrite"/>'
         "</interface>"
         '<node name="child"/>'
         "</node>"
@@ -207,7 +241,7 @@ class TestGetInterfaces(unittest.TestCase):
                 get_interfaces("svc", "/p"),
                 [
                     "org.freedesktop.DBus.Properties",
-                    "xyz.openbmc_project.Control.Port",
+                    "xyz.openbmc_project.Object.Enable",
                 ],
             )
 

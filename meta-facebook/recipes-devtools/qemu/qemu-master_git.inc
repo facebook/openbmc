@@ -199,6 +199,8 @@ SRC_URI:append = " \
            file://0705-tests-functional-arm-ventura-add-BMC-boot-test.patch \
            file://0706-hw-i2c-aspeed_i2c-only-raise-the-target-IRQ-for-enab.patch \
            file://0707-hw-i2c-aspeed_i2c-only-clear-target-status-the-ISR-h.patch \
+           file://0708-hw-i2c-aspeed_i2c-model-AST2700-I2CC_SIRQ_LOG-target.patch \
+           file://0709-hw-i2c-aspeed_i2c-fix-AST2700-target-buffer-mode-rec.patch \
            "
 
 QEMU_CHECKOUT_DIR = "${BPN}-${PV}"

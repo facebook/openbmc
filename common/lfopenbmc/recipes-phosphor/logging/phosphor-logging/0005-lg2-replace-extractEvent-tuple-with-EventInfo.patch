@@ -1,7 +1,7 @@
-From 3ef7194392b6eb1eff915db0d456de7f7f2bef14 Mon Sep 17 00:00:00 2001
+From d86c72a4d9191d38efb280ed42fa7a2f5bd5f576 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Sun, 2 Aug 2026 01:52:14 -0500
-Subject: [PATCH 05/33] lg2: replace extractEvent tuple with EventInfo
+Subject: [PATCH] lg2: replace extractEvent tuple with EventInfo
 
 Replace the tuple returned by extractEvent() with a named EventInfo
 structure.
@@ -21,7 +21,7 @@ Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
  3 files changed, 34 insertions(+), 13 deletions(-)
 
 diff --git a/lib/lg2_commit.cpp b/lib/lg2_commit.cpp
-index 5cad834..711cdc7 100644
+index 9bf03b6..380651d 100644
 --- a/lib/lg2_commit.cpp
 +++ b/lib/lg2_commit.cpp
 @@ -106,10 +106,14 @@ static auto data_from_json(sdbusplus::exception::generated_event_base& t)
@@ -95,7 +95,7 @@ index 9c76e04..1f9beaf 100644
  bool filterEvent(const std::string&);
  bool filterError(const std::string&);
 diff --git a/log_manager.cpp b/log_manager.cpp
-index 74a34c1..ca9658c 100644
+index a0158f9..de96f40 100644
 --- a/log_manager.cpp
 +++ b/log_manager.cpp
 @@ -310,8 +310,10 @@ auto Manager::createFromEvent(
@@ -112,5 +112,5 @@ index 74a34c1..ca9658c 100644
  
  bool Manager::isQuiesceOnErrorEnabled()
 -- 
-2.54.0
+2.53.0-Meta
 

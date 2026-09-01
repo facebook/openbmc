@@ -1,7 +1,7 @@
-From 07af3e3bd7380ab2ee0cfa5f43d6b156f46d553e Mon Sep 17 00:00:00 2001
+From d4673f56e01c9cb8d4aed26b758b47cd523d3934 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Sun, 2 Aug 2026 03:36:32 -0500
-Subject: [PATCH 17/33] plugin:CPER:Processed Add extension support
+Subject: [PATCH] plugin:CPER:Processed Add extension support
 
 Add support for the
 xyz.openbmc_project.Logging.Extension.CPER Processed
@@ -626,5 +626,5 @@ index a728ed9..2a64a7a 100644
 +    ),
 +)
 -- 
-2.54.0
+2.53.0-Meta
 

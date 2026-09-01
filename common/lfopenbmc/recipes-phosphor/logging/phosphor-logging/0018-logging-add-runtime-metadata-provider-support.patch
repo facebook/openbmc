@@ -1,7 +1,7 @@
-From a5b2d56905f079552161459a14e9ed8feec0ed31 Mon Sep 17 00:00:00 2001
+From 399fb8b0d0277024038db7d4dde98d80deeab159 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Tue, 11 Aug 2026 09:11:15 -0500
-Subject: [PATCH 18/33] logging: add runtime metadata provider support
+Subject: [PATCH] logging: add runtime metadata provider support
 
 Introduce a runtime metadata provider framework that allows
 extensions to contribute metadata during log creation.
@@ -151,7 +151,7 @@ index 4456aef..2f56b09 100644
       * @brief Say if the default log capping policy should be disabled
       * @return bool - true if it should be disabled
 diff --git a/log_manager.cpp b/log_manager.cpp
-index 8264d4c..474dfa8 100644
+index b9f70c5..c9c5386 100644
 --- a/log_manager.cpp
 +++ b/log_manager.cpp
 @@ -37,6 +37,11 @@ extern const std::map<
@@ -166,7 +166,7 @@ index 8264d4c..474dfa8 100644
  namespace phosphor
  {
  namespace logging
-@@ -829,6 +834,16 @@ auto Manager::create(const std::string& message, Entry::Level severity,
+@@ -817,6 +822,16 @@ auto Manager::create(const std::string& message, Entry::Level severity,
  
      auto requests = buildPluginRequests(data);
  
@@ -183,7 +183,7 @@ index 8264d4c..474dfa8 100644
      return createEntry(message, severity, std::move(data), ffdc,
                         std::move(requests));
  }
-@@ -1111,6 +1126,32 @@ auto Manager::buildPluginRequests(
+@@ -1099,6 +1114,32 @@ auto Manager::buildPluginRequests(
      return requests;
  }
  
@@ -306,5 +306,5 @@ index 089209c..52261b5 100644
 +    EXPECT_EQ(metadata["Provider"], "Provider1");
 +}
 -- 
-2.54.0
+2.53.0-Meta
 

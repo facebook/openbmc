@@ -1,7 +1,7 @@
-From 629a5559e07c44fc29e19012364852da3b8d1eb9 Mon Sep 17 00:00:00 2001
+From e4a3ab74c75d3decc0158747f36026b8e8213d26 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 28 May 2026 09:24:26 -0500
-Subject: [PATCH 19/33] extensions: add initial AEL infrastructure
+Subject: [PATCH] extensions: add initial AEL infrastructure
 
 Add the initial AMD Event Log (AEL) extension framework.
 
@@ -278,5 +278,5 @@ index 6d547d5..8f07edd 100644
      'openpower-pel-extension',
      type: 'feature',
 -- 
-2.54.0
+2.53.0-Meta
 

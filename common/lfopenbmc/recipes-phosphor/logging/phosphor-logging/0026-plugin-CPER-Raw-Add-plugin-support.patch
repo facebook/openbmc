@@ -1,7 +1,7 @@
-From 2d0b0963bfad114602ae4c0b6d2ece9e5c06e902 Mon Sep 17 00:00:00 2001
+From f7cf577b83bf233582adf8cc1f0ab14d788deb3f Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Tue, 25 Aug 2026 02:42:00 -0500
-Subject: [PATCH 26/33] plugin:CPER:Raw Add plugin support
+Subject: [PATCH] plugin:CPER:Raw Add plugin support
 
 Add support for the
 xyz.openbmc_project.Logging.Extension.CPER.Raw extension.
@@ -645,5 +645,5 @@ index ebe1248..64f9d7d 100644
 +    ),
 +)
 -- 
-2.54.0
+2.53.0-Meta
 

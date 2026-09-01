@@ -1,7 +1,7 @@
-From dc0cb52676b83c35ece02083a474473b485fcd32 Mon Sep 17 00:00:00 2001
+From c89888a6dd8d248f268894f53efa1fab6f8068bb Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 27 Aug 2026 06:41:22 -0500
-Subject: [PATCH 29/33] logging: add plugin deletion lifecycle support
+Subject: [PATCH] logging: add plugin deletion lifecycle support
 
 Introduce an optional plugin deletion callback and
 update log entry deletion processing to notify
@@ -100,5 +100,5 @@ index a2d7afa..d75c5a7 100644
 +
  } // namespace phosphor::logging::test
 -- 
-2.54.0
+2.53.0-Meta
 

@@ -1,7 +1,7 @@
-From 8d90ebfdb06f977d001e527a948f7477186776f4 Mon Sep 17 00:00:00 2001
+From b2b783266ec3cd94adbd8b6c16a653c5f7fcead2 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 22 Jul 2026 03:23:00 -0500
-Subject: [PATCH 04/33] test:openpower-pels: sync extension build settings
+Subject: [PATCH] test:openpower-pels: sync extension build settings
 
 The openpower-pels tests compile sources from
 log_manager_ext_sources, but do not inherit all extension build
@@ -82,5 +82,5 @@ index 5528522..a1fb868 100644
      )
  endforeach
 -- 
-2.54.0
+2.53.0-Meta
 

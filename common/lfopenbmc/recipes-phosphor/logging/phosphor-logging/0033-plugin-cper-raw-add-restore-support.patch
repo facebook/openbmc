@@ -1,7 +1,7 @@
-From 2015f2cee65f35cf9084e8d27cda06460d3019d3 Mon Sep 17 00:00:00 2001
+From d1b201307b7c373c128965008e07873d32131220 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Sat, 29 Aug 2026 01:29:54 -0500
-Subject: [PATCH 33/33] plugin:cper:raw add restore support
+Subject: [PATCH] plugin:cper:raw add restore support
 
 Add serialization and deserialization support for the
 CPER Raw plugin.
@@ -160,5 +160,5 @@ index 99bbec6..73585e0 100644
 +
  } // namespace phosphor::logging::plugin::cper::raw
 -- 
-2.54.0
+2.53.0-Meta
 

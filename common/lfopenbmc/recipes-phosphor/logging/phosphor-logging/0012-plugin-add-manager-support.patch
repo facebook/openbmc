@@ -1,7 +1,7 @@
-From eea73ef70c7e66ff66bedb5beea8037a8e17d537 Mon Sep 17 00:00:00 2001
+From b07aa4555030c108ea7688fbccfe7bc2df605136 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Sun, 2 Aug 2026 04:38:59 -0500
-Subject: [PATCH 12/33] plugin: add manager support
+Subject: [PATCH] plugin: add manager support
 
 Add PluginManager as the coordination point for the logging plugin
 framework.
@@ -407,5 +407,5 @@ index 0000000..a2d7afa
 +
 +} // namespace phosphor::logging::test
 -- 
-2.54.0
+2.53.0-Meta
 

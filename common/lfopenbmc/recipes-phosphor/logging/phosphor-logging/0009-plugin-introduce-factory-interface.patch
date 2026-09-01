@@ -1,7 +1,7 @@
-From 60016a38c3d3e7ce7a239c854f772ffd2b66f5ef Mon Sep 17 00:00:00 2001
+From b7efb7cc681c23a61d50dc1fd470fc2273de83cf Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Sun, 2 Aug 2026 08:40:17 -0500
-Subject: [PATCH 09/33] plugin: introduce factory interface
+Subject: [PATCH] plugin: introduce factory interface
 
 Introduce the factory abstraction used by the logging plugin
 framework.
@@ -86,5 +86,5 @@ index 0000000..d9af134
 +
 +} // namespace phosphor::logging
 -- 
-2.54.0
+2.53.0-Meta
 

@@ -1,7 +1,7 @@
-From fa7769f650f7f8eeda23c0dedd85368bd94751d8 Mon Sep 17 00:00:00 2001
+From 9c46c004281296da068ca19d0241e35977eb4387 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 27 Aug 2026 00:57:07 -0500
-Subject: [PATCH 28/33] amd-event-log: add Redfish projection support
+Subject: [PATCH] amd-event-log: add Redfish projection support
 
 Introduce AMD OEM Redfish projection support for AEL
 runtime metadata.
@@ -726,5 +726,5 @@ index 0000000..99c4cd2
 +
 +} // namespace phosphor::logging::extensions::ael::redfish
 -- 
-2.54.0
+2.53.0-Meta
 

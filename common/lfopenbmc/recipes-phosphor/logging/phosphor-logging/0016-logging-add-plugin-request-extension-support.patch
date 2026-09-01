@@ -1,7 +1,7 @@
-From 3b695145a539ad661db2c380ac03538f387c8b00 Mon Sep 17 00:00:00 2001
+From fb6eee1426b685875a4fd64b0346a66c3acf9d61 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Mon, 10 Aug 2026 05:58:43 -0500
-Subject: [PATCH 16/33] logging: add plugin request extension support
+Subject: [PATCH] logging: add plugin request extension support
 
 Allow extensions to augment plugin requests before
 runtime plugin creation.
@@ -141,10 +141,10 @@ index 614103c..4456aef 100644
       * @brief Say if the default log capping policy should be disabled
       * @return bool - true if it should be disabled
 diff --git a/log_manager.cpp b/log_manager.cpp
-index 9570a94..8264d4c 100644
+index 7078ba2..b9f70c5 100644
 --- a/log_manager.cpp
 +++ b/log_manager.cpp
-@@ -1043,6 +1043,26 @@ bool Manager::refreshFromDisk(uint32_t id)
+@@ -1031,6 +1031,26 @@ bool Manager::refreshFromDisk(uint32_t id)
      return true;
  }
  
@@ -171,7 +171,7 @@ index 9570a94..8264d4c 100644
  auto Manager::buildPluginRequests(
      std::map<std::string, std::string>& additionalData) -> plugin::RequestList
  {
-@@ -1061,10 +1081,19 @@ auto Manager::buildPluginRequests(
+@@ -1049,10 +1069,19 @@ auto Manager::buildPluginRequests(
  
          for (const auto& [interface, data] : extensions.items())
          {
@@ -262,5 +262,5 @@ index d5f29eb..089209c 100644
 +    EXPECT_EQ(request.data["Injected"], "true");
 +}
 -- 
-2.54.0
+2.53.0-Meta
 

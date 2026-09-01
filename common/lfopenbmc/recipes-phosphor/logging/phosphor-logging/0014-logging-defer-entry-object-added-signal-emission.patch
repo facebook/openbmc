@@ -1,7 +1,7 @@
-From 6426af178c6df564526ddd68b1cbbc112b02dab1 Mon Sep 17 00:00:00 2001
+From 5ccca4adc58ebdefa791368c290ae6768d4e79a3 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Sun, 2 Aug 2026 11:24:28 -0500
-Subject: [PATCH 14/33] logging: defer entry object-added signal emission
+Subject: [PATCH] logging: defer entry object-added signal emission
 
 Move log entry object-added signal emission from Entry construction
 to the logging manager.
@@ -35,7 +35,7 @@ index 8f4d6be..33c9589 100644
  
      /** @brief Constructor that puts an "empty" error object on the bus,
 diff --git a/log_manager.cpp b/log_manager.cpp
-index ca9658c..9ab61c4 100644
+index de96f40..4e76572 100644
 --- a/log_manager.cpp
 +++ b/log_manager.cpp
 @@ -290,6 +290,8 @@ auto Manager::createEntry(std::string errMsg, Entry::Level errLvl,
@@ -48,5 +48,5 @@ index ca9658c..9ab61c4 100644
          isCalloutPresent(*e))
      {
 -- 
-2.54.0
+2.53.0-Meta
 

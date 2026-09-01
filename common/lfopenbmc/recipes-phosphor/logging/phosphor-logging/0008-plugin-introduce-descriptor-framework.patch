@@ -1,7 +1,7 @@
-From cb383c2b1ed9ff9fc5019084cbb8bdc8232f7f05 Mon Sep 17 00:00:00 2001
+From 0b18b528b2b870d31ce818bfd7a39b4714f52646 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 5 Aug 2026 01:21:52 -0500
-Subject: [PATCH 08/33] plugin: introduce descriptor framework
+Subject: [PATCH] plugin: introduce descriptor framework
 
 Introduce the descriptor abstractions used by the logging
 plugin framework.
@@ -77,5 +77,5 @@ index 0000000..264000c
 +
 +} // namespace phosphor::logging::plugin
 -- 
-2.54.0
+2.53.0-Meta
 

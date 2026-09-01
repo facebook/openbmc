@@ -1,7 +1,7 @@
-From e967b69b2777a0a3097490a5f576f20f4392b056 Mon Sep 17 00:00:00 2001
+From db7e13d87369832048a9e0018dc40054115f21d8 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Fri, 28 Aug 2026 07:01:35 -0500
-Subject: [PATCH 31/33] plugin: add runtime plugin persistence framework
+Subject: [PATCH] plugin: add runtime plugin persistence framework
 
 Add framework support for persisting and restoring
 plugin-owned runtime state across log manager restarts.
@@ -134,10 +134,10 @@ index 162a0c1..ba08363 100644
  } // namespace logging
  } // namespace phosphor
 diff --git a/log_manager.cpp b/log_manager.cpp
-index 3490d11..1827c40 100644
+index 27dc182..be03bca 100644
 --- a/log_manager.cpp
 +++ b/log_manager.cpp
-@@ -757,6 +757,16 @@ void Manager::restore()
+@@ -745,6 +745,16 @@ void Manager::restore()
              {
                  continue;
              }
@@ -373,5 +373,5 @@ index d75c5a7..33b0720 100644
 +
  } // namespace phosphor::logging::test
 -- 
-2.54.0
+2.53.0-Meta
 

@@ -1,8 +1,7 @@
-From 9072030d105393aacc48f331779b5da4e4fc644b Mon Sep 17 00:00:00 2001
+From 2b6d8002bd06d9dfbdbe86ee14b31b43ea753c24 Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Fri, 28 Aug 2026 14:46:14 -0400
-Subject: [PATCH 03/33] log-create: add --extend to attach extension data to
- events
+Subject: [PATCH] log-create: add --extend to attach extension data to events
 
 Add an option to `log-create` as `--extend` which act as the equivalent
 of `event.extend(...)`.  This allows users to mock extension data, or
@@ -383,5 +382,5 @@ index 4fcb914..92e3f5c 100644
      'elog_quiesce_test',
      'elog_update_ts_test',
 -- 
-2.54.0
+2.53.0-Meta
 

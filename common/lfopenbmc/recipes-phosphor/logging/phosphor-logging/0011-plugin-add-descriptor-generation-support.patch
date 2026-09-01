@@ -1,7 +1,7 @@
-From 57e5fe188deb4669bffe1c57fda269842daa6c82 Mon Sep 17 00:00:00 2001
+From 68f3da1b7758533825d5de9daa226f67c5621c3c Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 5 Aug 2026 05:34:18 -0500
-Subject: [PATCH 11/33] plugin: add descriptor generation support
+Subject: [PATCH] plugin: add descriptor generation support
 
 Add support for generating plugin descriptors from
 plugin request information.
@@ -195,5 +195,5 @@ index bef76d3..052cf70 100644
 +
  } // namespace phosphor::logging
 -- 
-2.54.0
+2.53.0-Meta
 

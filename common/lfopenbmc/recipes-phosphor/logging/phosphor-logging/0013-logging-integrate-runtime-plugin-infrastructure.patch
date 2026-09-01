@@ -1,7 +1,7 @@
-From 407e95024d07d19a866e4cbd33f3ca9648450aed Mon Sep 17 00:00:00 2001
+From d489df2baa18f0f462a98e0ec2bb8b2a5ecb8bef Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Sun, 2 Aug 2026 10:29:57 -0500
-Subject: [PATCH 13/33] logging: integrate runtime plugin infrastructure
+Subject: [PATCH] logging: integrate runtime plugin infrastructure
 
 Integrate the plugin framework into the logging infrastructure.
 
@@ -78,5 +78,5 @@ index 8710e13..8f4d6be 100644
       * @brief Closes the file descriptor passed in.
       * @details This is called from the event loop to close FDs returned from
 -- 
-2.54.0
+2.53.0-Meta
 

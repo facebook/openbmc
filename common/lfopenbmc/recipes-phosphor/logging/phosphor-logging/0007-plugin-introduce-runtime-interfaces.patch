@@ -1,7 +1,7 @@
-From 215ebf12816a90d16e88c3cca4da268a21d04713 Mon Sep 17 00:00:00 2001
+From d94c918be95693121cf7321d77178f4c275870f0 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 5 Aug 2026 01:37:12 -0500
-Subject: [PATCH 07/33] plugin: introduce runtime interfaces
+Subject: [PATCH] plugin: introduce runtime interfaces
 
 Introduce the runtime interfaces used by the logging plugin framework.
 
@@ -90,5 +90,5 @@ index 0000000..8221fff
 +
 +} // namespace phosphor::logging
 -- 
-2.54.0
+2.53.0-Meta
 

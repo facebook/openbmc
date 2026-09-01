@@ -1,7 +1,7 @@
-From 130e6a2c7a313872e34fb1d6bdd06d364214357b Mon Sep 17 00:00:00 2001
+From 246a216b5367e80cc24bcf8f4befa820d9555e98 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 13 Aug 2026 05:01:25 -0500
-Subject: [PATCH 22/33] config: Add meson option for runtime metadata
+Subject: [PATCH] config: Add meson option for runtime metadata
 
 Add a new option 'runtime-metadata-plugin' that is in
 preparation for supporting runtime metadata through the logging
@@ -71,5 +71,5 @@ index 8f07edd..5df763e 100644
 +    description: 'Plugin interface used for runtime metadata',
 +)
 -- 
-2.54.0
+2.53.0-Meta
 

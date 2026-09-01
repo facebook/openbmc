@@ -1,7 +1,7 @@
-From b8720cf562c392b3d7f75423137d9a1b360e67f3 Mon Sep 17 00:00:00 2001
+From 8662946eac9c0814fff9a52a785a1f30d49bbcdd Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 13 Aug 2026 06:41:49 -0500
-Subject: [PATCH 23/33] plugin: Add extension payload builder support
+Subject: [PATCH] plugin: Add extension payload builder support
 
 Add support for plugin-specific construction of extension
 payloads stored in the _EXTENSIONS transport object.
@@ -32,10 +32,10 @@ Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
  10 files changed, 198 insertions(+), 3 deletions(-)
 
 diff --git a/log_manager.cpp b/log_manager.cpp
-index 474dfa8..3490d11 100644
+index c9c5386..27dc182 100644
 --- a/log_manager.cpp
 +++ b/log_manager.cpp
-@@ -832,18 +832,23 @@ auto Manager::create(const std::string& message, Entry::Level severity,
+@@ -820,18 +820,23 @@ auto Manager::create(const std::string& message, Entry::Level severity,
  {
      auto data = additionalData;
  
@@ -62,7 +62,7 @@ index 474dfa8..3490d11 100644
      return createEntry(message, severity, std::move(data), ffdc,
                         std::move(requests));
  }
-@@ -1152,6 +1157,30 @@ nlohmann::json Manager::collectRuntimeMetadata(
+@@ -1140,6 +1145,30 @@ nlohmann::json Manager::collectRuntimeMetadata(
      return metadata;
  }
  
@@ -372,5 +372,5 @@ index 052cf70..f854e9d 100644
 +
  } // namespace phosphor::logging
 -- 
-2.54.0
+2.53.0-Meta
 

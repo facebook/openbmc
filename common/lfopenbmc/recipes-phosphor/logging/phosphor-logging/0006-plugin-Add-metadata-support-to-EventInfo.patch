@@ -1,7 +1,7 @@
-From c1b7fc5d89c1f69a88ad968d6fc00bd51c7b813d Mon Sep 17 00:00:00 2001
+From a5cb0f7ef2a3623a545a295382eaa126cd1732f0 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 5 Aug 2026 00:57:00 -0500
-Subject: [PATCH 06/33] plugin: Add metadata support to EventInfo
+Subject: [PATCH] plugin: Add metadata support to EventInfo
 
 Introduce PluginRequest to represent plugin requests associated
 with logging events.
@@ -31,7 +31,7 @@ Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
  create mode 100644 plugin/plugin_type.hpp
 
 diff --git a/lib/lg2_commit.cpp b/lib/lg2_commit.cpp
-index 711cdc7..77e5496 100644
+index 380651d..8ade721 100644
 --- a/lib/lg2_commit.cpp
 +++ b/lib/lg2_commit.cpp
 @@ -113,6 +113,7 @@ auto extractEvent(sdbusplus::exception::generated_event_base&& event)
@@ -536,5 +536,5 @@ index 0000000..d62d8e4
 +
 +} // namespace phosphor::logging::plugin
 -- 
-2.54.0
+2.53.0-Meta
 

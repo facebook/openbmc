@@ -1,7 +1,7 @@
-From 160bde5ba77f1ea60c99c9c71c324e849c8c4c5c Mon Sep 17 00:00:00 2001
+From 515895f0f2550c318e41faed0f3b96d1228c02dd Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 22 Jul 2026 04:17:17 -0500
-Subject: [PATCH 20/33] amd-event-log: add AEL reverse LUT codegen support
+Subject: [PATCH] amd-event-log: add AEL reverse LUT codegen support
 
 Add support for build-time generation of AEL reverse lookup
 table (LUT) from a JSON definition.
@@ -1169,5 +1169,5 @@ index 8b3962f..3ee4640 100644
 +    include_directories('../include'),
 +]
 -- 
-2.54.0
+2.53.0-Meta
 

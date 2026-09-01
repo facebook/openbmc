@@ -1,7 +1,7 @@
-From 2e4a67f9981ded8e4c4d3c6f3b6444beb7aed583 Mon Sep 17 00:00:00 2001
+From a1f404548b9c9c48b37e25c175ecebc979cb6ae5 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Tue, 25 Aug 2026 02:08:47 -0500
-Subject: [PATCH 25/33] plugin: add artifact storage support
+Subject: [PATCH] plugin: add artifact storage support
 
 Introduce generic artifact storage support for logging extensions.
 
@@ -516,5 +516,5 @@ index 2a64a7a..ebe1248 100644
 +    ),
 +)
 -- 
-2.54.0
+2.53.0-Meta
 

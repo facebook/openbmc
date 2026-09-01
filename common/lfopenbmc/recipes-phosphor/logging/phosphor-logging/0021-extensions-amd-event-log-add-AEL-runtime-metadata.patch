@@ -1,7 +1,7 @@
-From c027584c84b083551dfa2c71c55c02c264a34274 Mon Sep 17 00:00:00 2001
+From 9230ffef614ad7d95cdc080e583bd7586225ea79 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 22 Jul 2026 07:58:56 -0500
-Subject: [PATCH 21/33] extensions: amd-event-log: add AEL runtime metadata
+Subject: [PATCH] extensions: amd-event-log: add AEL runtime metadata
 
 Add glue code to derive AEL metadata from LUT-backed
 AFID lookups and contribute the resulting AMD-specific
@@ -390,5 +390,5 @@ index 9d60761..06452e1 100644
  subdir('plugin')
  
 -- 
-2.54.0
+2.53.0-Meta
 

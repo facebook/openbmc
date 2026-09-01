@@ -1,7 +1,7 @@
-From 306a825c9e87bb5676ce98f622dcf737cd7d7e23 Mon Sep 17 00:00:00 2001
+From 6c4d7cb16eceba7fbcc96c07970844c438bea30f Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 13 Aug 2026 06:50:26 -0500
-Subject: [PATCH 24/33] plugin:CPER:Processed Add extension payload support
+Subject: [PATCH] plugin:CPER:Processed Add extension payload support
 
 Implement PluginFactory::buildPayload() for the CPER Processed plugin.
 
@@ -192,5 +192,5 @@ index 5a61453..5dd092e 100644
 +
  } // namespace phosphor::logging::plugin::cper::processed
 -- 
-2.54.0
+2.53.0-Meta
 

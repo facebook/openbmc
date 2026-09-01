@@ -1,7 +1,7 @@
-From 295fb3ade9fa211cbfcf617a46afc0e3346ffecb Mon Sep 17 00:00:00 2001
+From 4975784f72b2c988c8c3bfc58d6f4cdbcedde270 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Sat, 29 Aug 2026 01:07:56 -0500
-Subject: [PATCH 32/33] plugin:cper:processed add persistence support
+Subject: [PATCH] plugin:cper:processed add persistence support
 
 Implement serialization and restoration support for the
 CPER Processed plugin.
@@ -164,5 +164,5 @@ index 5dd092e..eddfa0f 100644
 +
  } // namespace phosphor::logging::plugin::cper::processed
 -- 
-2.54.0
+2.53.0-Meta
 

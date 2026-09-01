@@ -1,7 +1,7 @@
-From 793145e8e479f85337f1402603aa89aaa5b600ba Mon Sep 17 00:00:00 2001
+From 6be1cf62285bb7af5d7f47d3b3bf679fc28b147f Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 27 Aug 2026 06:42:17 -0500
-Subject: [PATCH 30/33] plugin:CPER:Raw Cleanup artifact on entry deletion
+Subject: [PATCH] plugin:CPER:Raw Cleanup artifact on entry deletion
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -82,5 +82,5 @@ index 4af249d..99bbec6 100644
  
  namespace phosphor::logging::plugin::cper::raw
 -- 
-2.54.0
+2.53.0-Meta
 

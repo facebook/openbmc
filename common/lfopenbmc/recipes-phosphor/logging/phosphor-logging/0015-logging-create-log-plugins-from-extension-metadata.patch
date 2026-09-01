@@ -1,7 +1,7 @@
-From bd1c93e1c34e1da9710914e59f915ede2e67a760 Mon Sep 17 00:00:00 2001
+From 376ada3c2c22efcd47452f62be97dd00b681720f Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 5 Aug 2026 07:05:30 -0500
-Subject: [PATCH 15/33] logging: create log plugins from extension metadata
+Subject: [PATCH] logging: create log plugins from extension metadata
 
 Add support for processing event extension metadata during
 log creation and translating it into plugin requests.
@@ -38,7 +38,7 @@ Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
  create mode 100644 plugin/plugin_service.hpp
 
 diff --git a/lib/lg2_commit.cpp b/lib/lg2_commit.cpp
-index 77e5496..cd0d087 100644
+index 8ade721..d31af89 100644
 --- a/lib/lg2_commit.cpp
 +++ b/lib/lg2_commit.cpp
 @@ -93,6 +93,13 @@ static auto data_from_json(sdbusplus::exception::generated_event_base& t)
@@ -56,7 +56,7 @@ index 77e5496..cd0d087 100644
          {
              result.emplace(item.key(), item.value());
 diff --git a/log_manager.cpp b/log_manager.cpp
-index 9ab61c4..9570a94 100644
+index 4e76572..7078ba2 100644
 --- a/log_manager.cpp
 +++ b/log_manager.cpp
 @@ -218,7 +218,8 @@ void Manager::_commit(uint64_t transactionId [[maybe_unused]],
@@ -89,7 +89,7 @@ index 9ab61c4..9570a94 100644
  
      serialize(*e);
      serializeJSON(*e);
-@@ -817,7 +825,12 @@ auto Manager::create(const std::string& message, Entry::Level severity,
+@@ -805,7 +813,12 @@ auto Manager::create(const std::string& message, Entry::Level severity,
                       const std::map<std::string, std::string>& additionalData,
                       const FFDCEntries& ffdc) -> sdbusplus::object_path
  {
@@ -103,7 +103,7 @@ index 9ab61c4..9570a94 100644
  }
  
  void Manager::setupErrorFileWatch()
-@@ -1030,6 +1043,45 @@ bool Manager::refreshFromDisk(uint32_t id)
+@@ -1018,6 +1031,45 @@ bool Manager::refreshFromDisk(uint32_t id)
      return true;
  }
  
@@ -314,5 +314,5 @@ index 0000000..12f5cee
 +
 +} // namespace phosphor::logging
 -- 
-2.54.0
+2.53.0-Meta
 

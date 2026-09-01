@@ -1,7 +1,7 @@
-From d4d18281b645e501f442c8a43d9712c040d40e6e Mon Sep 17 00:00:00 2001
+From 492b24a246c6925df59d4887ff265f839226f352 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 27 Aug 2026 05:31:19 -0500
-Subject: [PATCH 27/33] amd-event-log: add common metadata support
+Subject: [PATCH] amd-event-log: add common metadata support
 
 Add ael_common_info.hpp and AEL.RACK_ID support as the
 foundation for common metadata shared across AMD
@@ -106,5 +106,5 @@ index abf160e..0fc3b1a 100644
      catch (const std::exception& e)
      {
 -- 
-2.54.0
+2.53.0-Meta
 

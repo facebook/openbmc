@@ -1,0 +1,762 @@
+From 2ee1fde70b53708b80028a805895ed7159d9cfef Mon Sep 17 00:00:00 2001
+From: Sandeep Kumar <sandeepkumar.sanku@amd.com>
+Date: Sat, 29 Aug 2026 13:54:00 -0700
+Subject: [PATCH] LogEntry: Add support for parsing and presenting CPER
+ interface data
+
+- Added fetching of CPERProcessed interface properties on
+  event log entries
+- Added support for fetching CPER raw data using CPERRaw interface
+
+Tested:
+- Qemu tests passed on target platform
+- Passed local CI docker run for bmcweb unit tests
+
+Change-Id: Ibc406ea0b81243e3563fbc99586dc934f7498c86
+Signed-off-by: Sandeep Kumar <sandeepkumar.sanku@amd.com>
+---
+ .../include/utils/dbus_event_log_entry.hpp    | 132 +++++
+ redfish-core/include/utils/eventlog_utils.hpp |  29 +-
+ redfish-core/lib/log_services.hpp             |  18 +
+ redfish-core/lib/log_services_rawcper.hpp     | 454 ++++++++++++++++++
+ redfish-core/src/redfish.cpp                  |   3 +
+ 5 files changed, 632 insertions(+), 4 deletions(-)
+ create mode 100644 redfish-core/lib/log_services_rawcper.hpp
+
+diff --git a/redfish-core/include/utils/dbus_event_log_entry.hpp b/redfish-core/include/utils/dbus_event_log_entry.hpp
+index 7c2f4f27..7452c2f1 100644
+--- a/redfish-core/include/utils/dbus_event_log_entry.hpp
++++ b/redfish-core/include/utils/dbus_event_log_entry.hpp
+@@ -1,13 +1,21 @@
+ #pragma once
+ 
++#include "bmcweb_config.h"
++
+ #include "dbus_utility.hpp"
++#include "logging.hpp"
+ #include "utils/dbus_utils.hpp"
+ 
++#include <boost/url/format.hpp>
++#include <nlohmann/json.hpp>
+ #include <sdbusplus/unpack_properties.hpp>
+ 
++#include <algorithm>
+ #include <cstdint>
+ #include <optional>
++#include <ranges>
+ #include <string>
++#include <string_view>
+ #include <unordered_map>
+ 
+ namespace redfish
+@@ -56,4 +64,128 @@ inline std::optional<DbusEventLogEntry> fillDbusEventLogEntryFromPropertyMap(
+     }
+     return entry;
+ }
++
++inline std::string translateDiagnosticDataTypeDbusToRedfish(
++    const std::string& s)
++{
++    // D-Bus enum strings are fully qualified; extract the trailing enum value.
++    constexpr std::string_view prefix =
++        "xyz.openbmc_project.Logging.CPER.Types.ContentType.";
++    if (s.starts_with(prefix))
++    {
++        return s.substr(prefix.size());
++    }
++    return "";
++}
++
++inline void fillEventLogCperFromPropertyMap(
++    const dbus::utility::DBusPropertiesMap& resp,
++    nlohmann::json& objectToFillOut, bool hasRawCper = false)
++{
++    const std::string* diagnosticDataType = nullptr;
++    const std::string* notificationType = nullptr;
++    const std::string* sectionType = nullptr;
++
++    // clang-format off
++    sdbusplus::unpackPropertiesNoThrow(
++        dbus_utils::UnpackErrorPrinter(), resp,
++        "DiagnosticDataType", diagnosticDataType,
++        "NotificationType", notificationType,
++        "SectionType", sectionType
++    );
++    // clang-format on
++
++    if (diagnosticDataType == nullptr)
++    {
++        // Entry has no CPER diagnostic data; nothing to add.
++        return;
++    }
++
++    std::string redfishType =
++        translateDiagnosticDataTypeDbusToRedfish(*diagnosticDataType);
++    if (redfishType.empty())
++    {
++        BMCWEB_LOG_WARNING(
++            "Dropping CPER data: unrecognized DiagnosticDataType '{}'",
++            *diagnosticDataType);
++        return;
++    }
++
++    objectToFillOut["DiagnosticDataType"] = redfishType;
++
++    // Cross-link to the raw counterpart only when the entry actually carries a
++    // raw CPER artifact, signalled by the xyz.openbmc_project.Logging.CPER.Raw
++    // interface (determined by the caller). CPER.Processed properties alone are
++    // not sufficient; they also appear on non-CPER entries.
++    auto idIt = objectToFillOut.find("Id");
++    if (hasRawCper && idIt != objectToFillOut.end() && idIt->is_string())
++    {
++        const auto& entryId = idIt->get_ref<const std::string&>();
++        // RawCPER is co-located with the EventLog, so link to the same parent.
++        constexpr std::string_view rawCperParentSegment =
++            (BMCWEB_REDFISH_EVENTLOG_LOCATION == "managers")
++                ? "Managers"
++                : "Systems";
++        constexpr std::string_view rawCperParentId =
++            (BMCWEB_REDFISH_EVENTLOG_LOCATION == "managers")
++                ? std::string_view(BMCWEB_REDFISH_MANAGER_URI_NAME)
++                : std::string_view(BMCWEB_REDFISH_SYSTEM_URI_NAME);
++        nlohmann::json::array_t related;
++        nlohmann::json::object_t relatedRef;
++        relatedRef["@odata.id"] = boost::urls::format(
++            "/redfish/v1/{}/{}/LogServices/CPERRawLog/Entries/{}",
++            rawCperParentSegment, rawCperParentId, entryId);
++        related.emplace_back(std::move(relatedRef));
++        objectToFillOut["Links"]["RelatedLogEntries@odata.count"] =
++            related.size();
++        objectToFillOut["Links"]["RelatedLogEntries"] = std::move(related);
++    }
++
++    nlohmann::json& cper = objectToFillOut["CPER"];
++    if (notificationType != nullptr && !notificationType->empty())
++    {
++        cper["NotificationType"] = *notificationType;
++    }
++    if (sectionType != nullptr && !sectionType->empty())
++    {
++        cper["SectionType"] = *sectionType;
++    }
++
++    // Oem is a{ss} — unpack can't resolve this variant; search directly.
++    const auto oemProp = std::ranges::find_if(resp, [](const auto& prop) {
++        return prop.first == "Oem";
++    });
++    if (oemProp == resp.end())
++    {
++        return;
++    }
++
++    nlohmann::json& oemObj = cper["Oem"];
++    // Oem is a{ss} — unpack can't resolve this variant; search directly.
++    for (const auto& [key, value] : resp)
++    {
++        if (key != "Oem")
++        {
++            continue;
++        }
++        const auto* oemDict =
++            std::get_if<std::unordered_map<std::string, std::string>>(&value);
++        if (oemDict != nullptr && !oemDict->empty())
++        {
++            for (const auto& [k, v] : *oemDict)
++            {
++                auto parsed = nlohmann::json::parse(v, nullptr, false);
++                if (!parsed.is_discarded())
++                {
++                    oemObj[k] = std::move(parsed);
++                }
++                else
++                {
++                    oemObj[k] = v;
++                }
++            }
++        }
++        break;
++    }
++}
+ } // namespace redfish
+diff --git a/redfish-core/include/utils/eventlog_utils.hpp b/redfish-core/include/utils/eventlog_utils.hpp
+index 0c0210ed..6eb0c9f6 100644
+--- a/redfish-core/include/utils/eventlog_utils.hpp
++++ b/redfish-core/include/utils/eventlog_utils.hpp
+@@ -282,7 +282,7 @@ static LogParseError fillEventLogEntryJson(
+     }
+ 
+     // Fill in the log entry with the gathered data
+-    logEntryJson["@odata.type"] = "#LogEntry.v1_9_0.LogEntry";
++    logEntryJson["@odata.type"] = "#LogEntry.v1_15_0.LogEntry";
+     logEntryJson["@odata.id"] =
+         boost::urls::format("/redfish/v1/{}/{}/LogServices/EventLog/Entries/{}",
+                             collectionStr, memberId, logEntryID);
+@@ -574,7 +574,7 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
+ 
+     auto logEntryID = std::to_string(entry.Id);
+ 
+-    objectToFillOut["@odata.type"] = "#LogEntry.v1_9_0.LogEntry";
++    objectToFillOut["@odata.type"] = "#LogEntry.v1_15_0.LogEntry";
+     objectToFillOut["@odata.id"] =
+         boost::urls::format("/redfish/v1/{}/{}/LogServices/EventLog/Entries/{}",
+                             collectionStr, memberId, logEntryID);
+@@ -652,9 +652,17 @@ inline void afterLogEntriesGetManagedObjects(
+             messages::internalError(asyncResp->res);
+             return;
+         }
++        // Raw-CPER membership is authoritatively signalled by the
++        // xyz.openbmc_project.Logging.CPER.Raw interface being present on the
++        // entry object (it carries no properties, so check the interface list).
++        const bool hasRawCper =
++            std::ranges::any_of(objectPath.second, [](const auto& iface) {
++                return iface.first == "xyz.openbmc_project.Logging.CPER.Raw";
++            });
++        nlohmann::json& entryJson = entriesArray.emplace_back();
+         fillEventLogLogEntryFromDbusLogEntry(
+-            *optEntry, entriesArray.emplace_back(), collectionStr, memberId,
+-            logEntryDescriptor);
++            *optEntry, entryJson, collectionStr, memberId, logEntryDescriptor);
++        fillEventLogCperFromPropertyMap(propsFlattened, entryJson, hasRawCper);
+     }
+ 
+     redfish::json_util::sortJsonArrayByKey(entriesArray, "Id");
+@@ -735,6 +743,19 @@ inline void afterDBusEventLogEntryGet(
+     fillEventLogLogEntryFromDbusLogEntry(
+         *optEntry, asyncResp->res.jsonValue, collectionStr, memberId,
+         logEntryDescriptor);
++    // The raw counterpart cross-link is added only when the entry exposes the
++    // xyz.openbmc_project.Logging.CPER.Raw interface. That interface has no
++    // properties, so detect it via the object mapper rather than the property
++    // map returned by GetAll.
++    constexpr std::array<std::string_view, 1> rawCperIfaces = {
++        "xyz.openbmc_project.Logging.CPER.Raw"};
++    dbus::utility::getDbusObject(
++        "/xyz/openbmc_project/logging/entry/" + entryID, rawCperIfaces,
++        [asyncResp, resp](const boost::system::error_code& ec2,
++                          const dbus::utility::MapperGetObject& object) {
++            fillEventLogCperFromPropertyMap(resp, asyncResp->res.jsonValue,
++                                            !ec2 && !object.empty());
++        });
+ }
+ 
+ inline void dBusEventLogEntryGet(
+diff --git a/redfish-core/lib/log_services.hpp b/redfish-core/lib/log_services.hpp
+index 57be09c1..18662e98 100644
+--- a/redfish-core/lib/log_services.hpp
++++ b/redfish-core/lib/log_services.hpp
+@@ -943,6 +943,15 @@ inline void handleSystemsLogServiceCollectionGet(
+                                 BMCWEB_REDFISH_SYSTEM_URI_NAME);
+         logServiceArray.emplace_back(std::move(hostlogger));
+     }
++
++    if constexpr (BMCWEB_REDFISH_EVENTLOG_LOCATION == "systems")
++    {
++        nlohmann::json::object_t rawCper;
++        rawCper["@odata.id"] =
++            boost::urls::format("/redfish/v1/Systems/{}/LogServices/CPERRawLog",
++                                BMCWEB_REDFISH_SYSTEM_URI_NAME);
++        logServiceArray.emplace_back(std::move(rawCper));
++    }
+     asyncResp->res.jsonValue["Members@odata.count"] = logServiceArray.size();
+ 
+     constexpr std::array<std::string_view, 1> interfaces = {
+@@ -1026,6 +1035,15 @@ inline void handleManagersLogServicesCollectionGet(
+         logServiceArray.emplace_back(std::move(eventLog));
+     }
+ 
++    if constexpr (BMCWEB_REDFISH_EVENTLOG_LOCATION == "managers")
++    {
++        nlohmann::json::object_t rawCper;
++        rawCper["@odata.id"] = boost::urls::format(
++            "/redfish/v1/Managers/{}/LogServices/CPERRawLog",
++            BMCWEB_REDFISH_MANAGER_URI_NAME);
++        logServiceArray.emplace_back(std::move(rawCper));
++    }
++
+     asyncResp->res.jsonValue["Members@odata.count"] = logServiceArray.size();
+ 
+     if constexpr (BMCWEB_REDFISH_DUMP_LOG)
+diff --git a/redfish-core/lib/log_services_rawcper.hpp b/redfish-core/lib/log_services_rawcper.hpp
+new file mode 100644
+index 00000000..1cf0adab
+--- /dev/null
++++ b/redfish-core/lib/log_services_rawcper.hpp
+@@ -0,0 +1,454 @@
++// SPDX-License-Identifier: Apache-2.0
++// SPDX-FileCopyrightText: Copyright OpenBMC Authors
++#pragma once
++
++#include "bmcweb_config.h"
++
++#include "app.hpp"
++#include "async_resp.hpp"
++#include "dbus_utility.hpp"
++#include "error_messages.hpp"
++#include "http_body.hpp"
++#include "http_request.hpp"
++#include "logging.hpp"
++#include "query.hpp"
++#include "registries/privilege_registry.hpp"
++#include "utils/dbus_event_log_entry.hpp"
++#include "utils/dbus_utils.hpp"
++#include "utils/json_utils.hpp"
++#include "utils/log_services_utils.hpp"
++#include "utils/time_utils.hpp"
++
++#include <unistd.h>
++
++#include <boost/beast/http/field.hpp>
++#include <boost/beast/http/verb.hpp>
++#include <boost/url/format.hpp>
++#include <nlohmann/json.hpp>
++#include <sdbusplus/message/native_types.hpp>
++#include <sdbusplus/unpack_properties.hpp>
++
++#include <algorithm>
++#include <memory>
++#include <optional>
++#include <string>
++#include <string_view>
++#include <utility>
++
++namespace redfish
++{
++
++// RawCPER is co-located with the EventLog it is correlated to (1:1 by entry
++// Id), so its parent resource follows the same BMCWEB_REDFISH_EVENTLOG_LOCATION
++// knob rather than a separate option.
++inline constexpr bool rawCperUnderManagers =
++    (BMCWEB_REDFISH_EVENTLOG_LOCATION == "managers");
++inline constexpr std::string_view rawCperParentSegment =
++    rawCperUnderManagers ? "Managers" : "Systems";
++inline constexpr std::string_view rawCperParentId =
++    rawCperUnderManagers ? std::string_view(BMCWEB_REDFISH_MANAGER_URI_NAME)
++                         : std::string_view(BMCWEB_REDFISH_SYSTEM_URI_NAME);
++inline constexpr std::string_view rawCperParentType =
++    rawCperUnderManagers ? "Manager" : "ComputerSystem";
++
++// Renders the CPERRawLog LogEntry JSON for an entry already known to carry raw
++// CPER. Membership in this service is decided by the presence of the
++// xyz.openbmc_project.Logging.CPER.Raw interface on the entry object (the
++// plugin registers it only when a raw CPER artifact exists), not by any
++// property read here. The processed CPER (Oem) stays on the phosphor-logging
++// EventLog entry, which links here 1:1 by entry Id via Links/RelatedLogEntries;
++// the raw entry deliberately does not link back, to avoid a $expand cycle.
++inline void fillRawCperLogEntryFromPropertyMap(
++    const dbus::utility::DBusPropertiesMap& resp, const std::string& entryId,
++    nlohmann::json& entryJson)
++{
++    const std::string* notificationType = nullptr;
++    const std::string* sectionType = nullptr;
++
++    // clang-format off
++    sdbusplus::unpackPropertiesNoThrow(
++        dbus_utils::UnpackErrorPrinter(), resp,
++        "NotificationType", notificationType,
++        "SectionType", sectionType
++    );
++    // clang-format on
++
++    // A present SectionType indicates a single-section record.
++    const bool isSection = (sectionType != nullptr && !sectionType->empty());
++
++    entryJson["@odata.type"] = "#LogEntry.v1_15_0.LogEntry";
++    entryJson["@odata.id"] = boost::urls::format(
++        "/redfish/v1/{}/{}/LogServices/CPERRawLog/Entries/{}",
++        rawCperParentSegment, rawCperParentId, entryId);
++    entryJson["Id"] = entryId;
++    entryJson["Name"] = "Raw CPER Log Entry";
++    entryJson["EntryType"] = "Event";
++    entryJson["DiagnosticDataType"] = isSection ? "CPERSection" : "CPER";
++
++    nlohmann::json& cper = entryJson["CPER"];
++    if (notificationType != nullptr && !notificationType->empty())
++    {
++        cper["NotificationType"] = *notificationType;
++    }
++    if (isSection)
++    {
++        cper["SectionType"] = *sectionType;
++    }
++
++    // For CPER/CPERSection entries the raw binary is served via the attachment
++    // (backed by the CPERRaw/GetFileHandle interface).
++    entryJson["AdditionalDataURI"] = boost::urls::format(
++        "/redfish/v1/{}/{}/LogServices/CPERRawLog/Entries/{}/attachment",
++        rawCperParentSegment, rawCperParentId, entryId);
++}
++
++inline void handleRawCperLogServiceGet(
++    crow::App& app, const crow::Request& req,
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const std::string& managerId)
++{
++    if (!redfish::setUpRedfishRoute(app, req, asyncResp))
++    {
++        return;
++    }
++    if (managerId != rawCperParentId)
++    {
++        messages::resourceNotFound(asyncResp->res, rawCperParentType,
++                                   managerId);
++        return;
++    }
++
++    asyncResp->res.jsonValue["@odata.type"] = "#LogService.v1_2_0.LogService";
++    asyncResp->res.jsonValue["@odata.id"] =
++        boost::urls::format("/redfish/v1/{}/{}/LogServices/CPERRawLog",
++                            rawCperParentSegment, rawCperParentId);
++    asyncResp->res.jsonValue["Name"] = "Raw CPER Log Service";
++    asyncResp->res.jsonValue["Description"] =
++        "Raw CPER Log Service holding the raw CPER binary for CPER events";
++    asyncResp->res.jsonValue["Id"] = "CPERRawLog";
++    asyncResp->res.jsonValue["Entries"]["@odata.id"] =
++        boost::urls::format("/redfish/v1/{}/{}/LogServices/CPERRawLog/Entries",
++                            rawCperParentSegment, rawCperParentId);
++
++    std::pair<std::string, std::string> redfishDateTimeOffset =
++        redfish::time_utils::getDateTimeOffsetNow();
++    asyncResp->res.jsonValue["DateTime"] = redfishDateTimeOffset.first;
++    asyncResp->res.jsonValue["DateTimeLocalOffset"] =
++        redfishDateTimeOffset.second;
++}
++
++inline void afterRawCperEntryCollection(
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const boost::system::error_code& ec,
++    const dbus::utility::ManagedObjectType& resp)
++{
++    if (ec)
++    {
++        if (ec.value() == EBADR || ec == boost::system::errc::host_unreachable)
++        {
++            BMCWEB_LOG_DEBUG(
++                "CPERRawLog entry collection unavailable on DBus, returning empty collection: {}",
++                ec);
++            asyncResp->res.jsonValue["Members@odata.count"] = 0;
++            asyncResp->res.jsonValue["Members"] = nlohmann::json::array();
++            return;
++        }
++        BMCWEB_LOG_ERROR(
++            "CPERRawLog getManagedObjects resp_handler got error {}", ec);
++        messages::internalError(asyncResp->res);
++        return;
++    }
++
++    nlohmann::json::array_t entriesArray;
++    for (const auto& objectPath : resp)
++    {
++        // Must be a phosphor-logging entry.
++        auto isEntry =
++            std::ranges::find_if(objectPath.second, [](const auto& object) {
++                return object.first == "xyz.openbmc_project.Logging.Entry";
++            });
++        if (isEntry == objectPath.second.end())
++        {
++            continue;
++        }
++
++        dbus::utility::DBusPropertiesMap propsFlattened;
++        for (const auto& interfaceMap : objectPath.second)
++        {
++            for (const auto& propertyMap : interfaceMap.second)
++            {
++                propsFlattened.emplace_back(propertyMap.first,
++                                            propertyMap.second);
++            }
++        }
++
++        // Raw-CPER membership is signalled by the
++        // xyz.openbmc_project.Logging.CPER.Raw interface on the entry object;
++        // it carries no properties, so check the interface list.
++        const bool hasRawCper =
++            std::ranges::any_of(objectPath.second, [](const auto& iface) {
++                return iface.first == "xyz.openbmc_project.Logging.CPER.Raw";
++            });
++        if (!hasRawCper)
++        {
++            continue;
++        }
++
++        std::optional<DbusEventLogEntry> optEntry =
++            fillDbusEventLogEntryFromPropertyMap(propsFlattened);
++        if (!optEntry.has_value())
++        {
++            continue;
++        }
++
++        std::string entryId = std::to_string(optEntry->Id);
++        nlohmann::json& entryJson = entriesArray.emplace_back();
++        fillRawCperLogEntryFromPropertyMap(propsFlattened, entryId, entryJson);
++    }
++
++    redfish::json_util::sortJsonArrayByKey(entriesArray, "Id");
++    asyncResp->res.jsonValue["Members@odata.count"] = entriesArray.size();
++    asyncResp->res.jsonValue["Members"] = std::move(entriesArray);
++}
++
++inline void handleRawCperEntryCollection(
++    crow::App& app, const crow::Request& req,
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const std::string& managerId)
++{
++    if (!redfish::setUpRedfishRoute(app, req, asyncResp))
++    {
++        return;
++    }
++    if (managerId != rawCperParentId)
++    {
++        messages::resourceNotFound(asyncResp->res, rawCperParentType,
++                                   managerId);
++        return;
++    }
++
++    asyncResp->res.jsonValue["@odata.type"] =
++        "#LogEntryCollection.LogEntryCollection";
++    asyncResp->res.jsonValue["@odata.id"] =
++        boost::urls::format("/redfish/v1/{}/{}/LogServices/CPERRawLog/Entries",
++                            rawCperParentSegment, rawCperParentId);
++    asyncResp->res.jsonValue["Name"] = "Raw CPER Log Entries";
++    asyncResp->res.jsonValue["Description"] =
++        "Collection of Raw CPER Log Entries";
++
++    sdbusplus::object_path path("/xyz/openbmc_project/logging");
++    dbus::utility::getManagedObjects(
++        "xyz.openbmc_project.Logging", path,
++        [asyncResp](const boost::system::error_code& ec,
++                    const dbus::utility::ManagedObjectType& managedResp) {
++            afterRawCperEntryCollection(asyncResp, ec, managedResp);
++        });
++}
++
++inline void afterRawCperEntryGetObject(
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const std::string& entryId, const dbus::utility::DBusPropertiesMap& resp,
++    const boost::system::error_code& ec,
++    const dbus::utility::MapperGetObject& object)
++{
++    if (ec || object.empty())
++    {
++        messages::resourceNotFound(asyncResp->res, "LogEntry", entryId);
++        return;
++    }
++    fillRawCperLogEntryFromPropertyMap(resp, entryId, asyncResp->res.jsonValue);
++}
++
++inline void afterRawCperEntryGet(
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const std::string& entryId, const boost::system::error_code& ec,
++    const dbus::utility::DBusPropertiesMap& resp)
++{
++    if (ec.value() == EBADR)
++    {
++        messages::resourceNotFound(asyncResp->res, "LogEntry", entryId);
++        return;
++    }
++    if (ec)
++    {
++        BMCWEB_LOG_ERROR("CPERRawLog LogEntry (DBus) resp_handler got error {}",
++                         ec);
++        messages::internalError(asyncResp->res);
++        return;
++    }
++
++    // Membership is signalled by the xyz.openbmc_project.Logging.CPER.Raw
++    // interface, which has no properties, so detect it via the object mapper
++    // rather than the property map returned by GetAll.
++    std::string dbusEntryId = entryId;
++    dbus::utility::escapePathForDbus(dbusEntryId);
++    constexpr std::array<std::string_view, 1> rawCperIfaces = {
++        "xyz.openbmc_project.Logging.CPER.Raw"};
++    dbus::utility::getDbusObject(
++        "/xyz/openbmc_project/logging/entry/" + dbusEntryId, rawCperIfaces,
++        [asyncResp, entryId,
++         resp](const boost::system::error_code& ec2,
++               const dbus::utility::MapperGetObject& object) {
++            afterRawCperEntryGetObject(asyncResp, entryId, resp, ec2, object);
++        });
++}
++
++inline void handleRawCperEntryGet(
++    crow::App& app, const crow::Request& req,
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const std::string& managerId, const std::string& entryId)
++{
++    if (!redfish::setUpRedfishRoute(app, req, asyncResp))
++    {
++        return;
++    }
++    if (managerId != rawCperParentId)
++    {
++        messages::resourceNotFound(asyncResp->res, rawCperParentType,
++                                   managerId);
++        return;
++    }
++
++    std::string dbusEntryId = entryId;
++    dbus::utility::escapePathForDbus(dbusEntryId);
++
++    dbus::utility::getAllProperties(
++        "xyz.openbmc_project.Logging",
++        "/xyz/openbmc_project/logging/entry/" + dbusEntryId, "",
++        std::bind_front(afterRawCperEntryGet, asyncResp, entryId));
++}
++
++inline void afterRawCperEntryAttachment(
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const std::string& entryId, const boost::system::error_code& ec,
++    const sdbusplus::message::unix_fd& unixfd)
++{
++    if (ec.value() == EBADR)
++    {
++        messages::resourceNotFound(asyncResp->res, "LogEntry", entryId);
++        return;
++    }
++    if (ec)
++    {
++        // GetFileHandle fails when the entry carries no raw CPER artifact.
++        messages::resourceNotFound(asyncResp->res, "LogEntry", entryId);
++        return;
++    }
++
++    int fd = dup(unixfd);
++    if (fd < 0)
++    {
++        BMCWEB_LOG_ERROR("Failed to dup CPER fd");
++        messages::internalError(asyncResp->res);
++        return;
++    }
++    if (!log_services_utils::checkSizeLimit(fd, asyncResp->res))
++    {
++        close(fd);
++        return;
++    }
++    // Stream the raw CPER binary straight from the fd as octet-stream.
++    if (!asyncResp->res.openFd(fd))
++    {
++        messages::internalError(asyncResp->res);
++        close(fd);
++        return;
++    }
++    asyncResp->res.addHeader(boost::beast::http::field::content_type,
++                             "application/octet-stream");
++}
++
++inline void handleRawCperEntryAttachment(
++    crow::App& app, const crow::Request& req,
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const std::string& managerId, const std::string& entryId)
++{
++    if (!redfish::setUpRedfishRoute(app, req, asyncResp))
++    {
++        return;
++    }
++    if (managerId != rawCperParentId)
++    {
++        messages::resourceNotFound(asyncResp->res, rawCperParentType,
++                                   managerId);
++        return;
++    }
++
++    std::string dbusEntryId = entryId;
++    dbus::utility::escapePathForDbus(dbusEntryId);
++
++    // Fetch the raw CPER binary via the authoritative fd interface; the fd both
++    // supplies the bytes and confirms membership in this service.
++    // async_method_call introspects the handler via callable_traits, so it must
++    // be a plain lambda (not std::bind_front, whose operator() is templated).
++    dbus::utility::async_method_call(
++        [asyncResp, entryId](const boost::system::error_code& ec,
++                             const sdbusplus::message::unix_fd& unixfd) {
++            afterRawCperEntryAttachment(asyncResp, entryId, ec, unixfd);
++        },
++        "xyz.openbmc_project.Logging",
++        "/xyz/openbmc_project/logging/entry/" + dbusEntryId,
++        "xyz.openbmc_project.Logging.CPER.Raw", "GetFileHandle");
++}
++
++inline void requestRoutesRawCper(App& app)
++{
++    // RawCPER is co-located with the EventLog; register its routes under the
++    // same parent resource selected by BMCWEB_REDFISH_EVENTLOG_LOCATION.
++    if constexpr (rawCperUnderManagers)
++    {
++        BMCWEB_ROUTE(app, "/redfish/v1/Managers/<str>/LogServices/CPERRawLog/")
++            .privileges(redfish::privileges::getLogService)
++            .methods(boost::beast::http::verb::get)(
++                std::bind_front(handleRawCperLogServiceGet, std::ref(app)));
++
++        BMCWEB_ROUTE(
++            app, "/redfish/v1/Managers/<str>/LogServices/CPERRawLog/Entries/")
++            .privileges(redfish::privileges::getLogEntryCollection)
++            .methods(boost::beast::http::verb::get)(
++                std::bind_front(handleRawCperEntryCollection, std::ref(app)));
++
++        BMCWEB_ROUTE(
++            app,
++            "/redfish/v1/Managers/<str>/LogServices/CPERRawLog/Entries/<str>/")
++            .privileges(redfish::privileges::getLogEntry)
++            .methods(boost::beast::http::verb::get)(
++                std::bind_front(handleRawCperEntryGet, std::ref(app)));
++
++        BMCWEB_ROUTE(
++            app,
++            "/redfish/v1/Managers/<str>/LogServices/CPERRawLog/Entries/<str>/attachment/")
++            .privileges(redfish::privileges::getLogEntry)
++            .methods(boost::beast::http::verb::get)(
++                std::bind_front(handleRawCperEntryAttachment, std::ref(app)));
++    }
++    else
++    {
++        BMCWEB_ROUTE(app, "/redfish/v1/Systems/<str>/LogServices/CPERRawLog/")
++            .privileges(redfish::privileges::getLogService)
++            .methods(boost::beast::http::verb::get)(
++                std::bind_front(handleRawCperLogServiceGet, std::ref(app)));
++
++        BMCWEB_ROUTE(
++            app, "/redfish/v1/Systems/<str>/LogServices/CPERRawLog/Entries/")
++            .privileges(redfish::privileges::getLogEntryCollection)
++            .methods(boost::beast::http::verb::get)(
++                std::bind_front(handleRawCperEntryCollection, std::ref(app)));
++
++        BMCWEB_ROUTE(
++            app,
++            "/redfish/v1/Systems/<str>/LogServices/CPERRawLog/Entries/<str>/")
++            .privileges(redfish::privileges::getLogEntry)
++            .methods(boost::beast::http::verb::get)(
++                std::bind_front(handleRawCperEntryGet, std::ref(app)));
++
++        BMCWEB_ROUTE(
++            app,
++            "/redfish/v1/Systems/<str>/LogServices/CPERRawLog/Entries/<str>/attachment/")
++            .privileges(redfish::privileges::getLogEntry)
++            .methods(boost::beast::http::verb::get)(
++                std::bind_front(handleRawCperEntryAttachment, std::ref(app)));
++    }
++}
++
++} // namespace redfish
+diff --git a/redfish-core/src/redfish.cpp b/redfish-core/src/redfish.cpp
+index a9601000..29c0190e 100644
+--- a/redfish-core/src/redfish.cpp
++++ b/redfish-core/src/redfish.cpp
+@@ -22,6 +22,7 @@
+ #include "fan.hpp"
+ #include "hypervisor_system.hpp"
+ #include "log_services.hpp"
++#include "log_services_rawcper.hpp"
+ #include "manager_diagnostic_data.hpp"
+ #include "manager_logservices_dbus_eventlog.hpp"
+ #include "manager_logservices_journal.hpp"
+@@ -126,6 +127,8 @@ RedfishService::RedfishService(App& app)
+ 
+     requestRoutesSystemsLogServicesPostCode(app);
+ 
++    requestRoutesRawCper(app);
++
+     if constexpr (BMCWEB_REDFISH_EVENTLOG_LOCATION == "systems")
+     {
+         requestRoutesSystemsEventLogService(app);
+-- 
+2.54.0
+

@@ -44,3 +44,8 @@ SRC_URI:append = " \
 SRC_URI:append = " \
     file://0400-storage-Add-Drive.Reset-action-with-association-base.patch \
 "
+
+# CPER support
+SRC_URI:append = " \
+    file://0410-LogEntry-Add-support-for-parsing-and-presenting-CPER.patch \
+"

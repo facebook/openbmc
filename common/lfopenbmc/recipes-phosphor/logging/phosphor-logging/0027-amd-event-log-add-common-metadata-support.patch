@@ -1,0 +1,110 @@
+From d4d18281b645e501f442c8a43d9712c040d40e6e Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Thu, 27 Aug 2026 05:31:19 -0500
+Subject: [PATCH 27/33] amd-event-log: add common metadata support
+
+Add ael_common_info.hpp and AEL.RACK_ID support as the
+foundation for common metadata shared across AMD
+extensions.
+
+Update the runtime metadata provider to incorporate
+common metadata and allow event-specific values to
+override common defaults before publishing the final
+metadata.
+
+This establishes a reusable framework for future
+common metadata enrichment and consumers.
+
+Change-Id: Ic252c7d09f98dbe5f2bd0ad9e46318d3c59318fd
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ .../amd-event-log/include/ael_common_info.hpp | 34 +++++++++++++++++++
+ .../amd-event-log/src/ael_common_info.cpp     | 16 +++++++++
+ extensions/amd-event-log/src/entry_points.cpp |  7 ++++
+ 3 files changed, 57 insertions(+)
+ create mode 100644 extensions/amd-event-log/include/ael_common_info.hpp
+ create mode 100644 extensions/amd-event-log/src/ael_common_info.cpp
+
+diff --git a/extensions/amd-event-log/include/ael_common_info.hpp b/extensions/amd-event-log/include/ael_common_info.hpp
+new file mode 100644
+index 0000000..0232e6a
+--- /dev/null
++++ b/extensions/amd-event-log/include/ael_common_info.hpp
+@@ -0,0 +1,34 @@
++#pragma once
++
++#include <optional>
++#include <string>
++
++namespace phosphor::logging::extensions::ael
++{
++
++/**
++ * @brief Common metadata shared across AEL extensions.
++ *
++ * Common metadata is derived by the AEL infrastructure
++ * and may be consumed by multiple AEL extensions and
++ * projection layers.
++ */
++struct CommonInfo
++{
++    /**
++     * @brief Rack identifier associated with the event.
++     */
++    std::optional<std::string> rackId;
++};
++
++/**
++ * @brief Generate common AEL metadata.
++ *
++ * The initial implementation provides the framework for
++ * future common metadata enrichment.
++ *
++ * @return Common metadata.
++ */
++CommonInfo getCommonInfo();
++
++} // namespace phosphor::logging::extensions::ael
+diff --git a/extensions/amd-event-log/src/ael_common_info.cpp b/extensions/amd-event-log/src/ael_common_info.cpp
+new file mode 100644
+index 0000000..b7791a6
+--- /dev/null
++++ b/extensions/amd-event-log/src/ael_common_info.cpp
+@@ -0,0 +1,16 @@
++#include "ael_common_info.hpp"
++
++namespace phosphor::logging::extensions::ael
++{
++
++CommonInfo getCommonInfo()
++{
++    CommonInfo info;
++
++    // TODO replace with actual data
++    info.rackId = "AMD:RACK_ID";
++
++    return info;
++}
++
++} // namespace phosphor::logging::extensions::ael
+diff --git a/extensions/amd-event-log/src/entry_points.cpp b/extensions/amd-event-log/src/entry_points.cpp
+index abf160e..0fc3b1a 100644
+--- a/extensions/amd-event-log/src/entry_points.cpp
++++ b/extensions/amd-event-log/src/entry_points.cpp
+@@ -57,6 +57,13 @@ static void amdRuntimeMetadataProvider(
+ 
+             lg2::debug("FruList=[{FRUS}]", "FRUS", frus);
+         }
++
++	CommonInfo commonInfo = getCommonInfo();
++    if (commonInfo.rackId)
++    {
++        amd[std::string(fields::RackId)] = *commonInfo.rackId;
++    }
++
+     }
+     catch (const std::exception& e)
+     {
+-- 
+2.54.0
+

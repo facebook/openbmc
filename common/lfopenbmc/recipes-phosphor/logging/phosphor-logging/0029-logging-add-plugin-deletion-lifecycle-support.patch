@@ -1,0 +1,104 @@
+From dc0cb52676b83c35ece02083a474473b485fcd32 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Thu, 27 Aug 2026 06:41:22 -0500
+Subject: [PATCH 29/33] logging: add plugin deletion lifecycle support
+
+Introduce an optional plugin deletion callback and
+update log entry deletion processing to notify
+attached runtime plugins before entry destruction.
+
+This provides a common cleanup mechanism for plugin-
+owned resources while preserving the existing plugin
+ownership and lifetime model.
+
+Change-Id: Ibb9ea83e191df0232fa8b864673994cafd90eb88
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ elog_entry.cpp                      | 14 +++++++++++++-
+ plugin/plugin.hpp                   |  8 ++++++++
+ test/plugin/plugin_manager_test.cpp | 18 ++++++++++++++++++
+ 3 files changed, 39 insertions(+), 1 deletion(-)
+
+diff --git a/elog_entry.cpp b/elog_entry.cpp
+index d7d5f04..3d621ba 100644
+--- a/elog_entry.cpp
++++ b/elog_entry.cpp
+@@ -22,9 +22,21 @@ void Entry::persist()
+ }
+ 
+ // TODO Add interfaces to handle the error log id numbering
+-
+ void Entry::delete_()
+ {
++    for (auto& plugin : plugins)
++    {
++        try
++        {
++            plugin->onDelete();
++        }
++        catch (const std::exception& e)
++        {
++            lg2::error("Plugin delete callback failed: {ERROR}", "ERROR",
++                       e.what());
++        }
++    }
++
+     parent.erase(id());
+ }
+ 
+diff --git a/plugin/plugin.hpp b/plugin/plugin.hpp
+index 49a9780..b7768ae 100644
+--- a/plugin/plugin.hpp
++++ b/plugin/plugin.hpp
+@@ -54,6 +54,14 @@ class Plugin
+      * @return Plugin interface name.
+      */
+     virtual std::string_view interface() const = 0;
++
++    /**
++     * @brief Invoked before the owning log entry is deleted.
++     *
++     * Plugins may override this method to release any
++     * plugin-owned resources associated with the entry.
++     */
++    virtual void onDelete() {}
+ };
+ 
+ /** Unique ownership of a runtime plugin instance. */
+diff --git a/test/plugin/plugin_manager_test.cpp b/test/plugin/plugin_manager_test.cpp
+index a2d7afa..d75c5a7 100644
+--- a/test/plugin/plugin_manager_test.cpp
++++ b/test/plugin/plugin_manager_test.cpp
+@@ -19,6 +19,13 @@ class TestPlugin : public Plugin
+     {
+         return testInterface;
+     }
++
++    void onDelete() override
++    {
++        deleted = true;
++    }
++
++    bool deleted = false;
+ };
+ 
+ class TestDescriptor : public plugin::Descriptor
+@@ -119,4 +126,15 @@ TEST(PluginManagerTest, CreateMultiplePlugins)
+     EXPECT_EQ(plugins[1]->interface(), testInterface);
+ }
+ 
++TEST(PluginLifecycleTest, DeleteCallback)
++{
++    TestPlugin plugin;
++
++    EXPECT_FALSE(plugin.deleted);
++
++    plugin.onDelete();
++
++    EXPECT_TRUE(plugin.deleted);
++}
++
+ } // namespace phosphor::logging::test
+-- 
+2.54.0
+

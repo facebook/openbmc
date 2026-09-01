@@ -1,0 +1,376 @@
+From b8720cf562c392b3d7f75423137d9a1b360e67f3 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Thu, 13 Aug 2026 06:41:49 -0500
+Subject: [PATCH 23/33] plugin: Add extension payload builder support
+
+Add support for plugin-specific construction of extension
+payloads stored in the _EXTENSIONS transport object.
+
+A new PluginFactory API allows plugins to transform
+runtime metadata into the payload format associated with
+an extension interface. Payload construction is exposed
+through the PluginService integration layer and delegated
+to the corresponding plugin implementation.
+
+This keeps plugin-specific schema knowledge outside of
+log_manager while allowing plugins to control their own
+extension payload format.
+
+Change-Id: I72f1fb440d43a2d24ef5d4b7a82432d9a0f6a3be
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ log_manager.cpp                      | 35 ++++++++++++++++++--
+ log_manager.hpp                      | 18 +++++++++++
+ plugin/plugin_factory.hpp            | 20 ++++++++++++
+ plugin/plugin_manager.cpp            |  6 ++++
+ plugin/plugin_manager.hpp            | 17 ++++++++++
+ plugin/plugin_registry.cpp           | 13 ++++++++
+ plugin/plugin_registry.hpp           | 15 +++++++++
+ plugin/plugin_service.cpp            |  6 ++++
+ plugin/plugin_service.hpp            | 23 +++++++++++++
+ test/plugin/plugin_registry_test.cpp | 48 ++++++++++++++++++++++++++++
+ 10 files changed, 198 insertions(+), 3 deletions(-)
+
+diff --git a/log_manager.cpp b/log_manager.cpp
+index 474dfa8..3490d11 100644
+--- a/log_manager.cpp
++++ b/log_manager.cpp
+@@ -832,18 +832,23 @@ auto Manager::create(const std::string& message, Entry::Level severity,
+ {
+     auto data = additionalData;
+ 
+-    auto requests = buildPluginRequests(data);
++    constexpr std::string_view pluginInterface{RUNTIME_METADATA_PLUGIN};
+ 
+-    if (!requests.empty())
++    if (!pluginInterface.empty())
+     {
+         auto metadata = collectRuntimeMetadata(message, severity, data);
+ 
+         if (!metadata.empty())
+         {
+-            data[extensionsKey] = metadata.dump();
++            auto payload =
++                pluginService.buildExtensionPayload(pluginInterface, metadata);
++
++            updateExtensions(data, pluginInterface, payload);
+         }
+     }
+ 
++    auto requests = buildPluginRequests(data);
++
+     return createEntry(message, severity, std::move(data), ffdc,
+                        std::move(requests));
+ }
+@@ -1152,6 +1157,30 @@ nlohmann::json Manager::collectRuntimeMetadata(
+     return metadata;
+ }
+ 
++void Manager::updateExtensions(
++    std::map<std::string, std::string>& additionalData,
++    std::string_view interface, const nlohmann::json& payload)
++{
++    nlohmann::json extensions = nlohmann::json::object();
++
++    auto extIt = additionalData.find(extensionsKey);
++    if (extIt != additionalData.end())
++    {
++        try
++        {
++            extensions = nlohmann::json::parse(extIt->second);
++        }
++        catch (const std::exception& e)
++        {
++            lg2::warning("Failed to parse extension metadata: {ERROR}", "ERROR",
++                         e.what());
++        }
++    }
++
++    extensions[std::string(interface)] = payload;
++    additionalData[extensionsKey] = extensions.dump();
++}
++
+ } // namespace internal
+ } // namespace logging
+ } // namespace phosphor
+diff --git a/log_manager.hpp b/log_manager.hpp
+index ecb8fad..dcb7da8 100644
+--- a/log_manager.hpp
++++ b/log_manager.hpp
+@@ -412,6 +412,24 @@ class Manager : public details::ServerObject<details::ManagerIface>
+         const std::string& message, Entry::Level level,
+         const std::map<std::string, std::string>& additionalData);
+ 
++    /**
++     * @brief Add or update plugin metadata in the extension container.
++     *
++     * Stores the supplied payload under the provided interface name
++     * within the _EXTENSIONS additional-data field.
++     *
++     * If the extension container already exists, the new payload is
++     * merged with existing entries. Existing plugin data for other
++     * interfaces is preserved.
++     *
++     * @param[in,out] additionalData AdditionalData map.
++     * @param[in] interface Plugin interface name.
++     * @param[in] payload Plugin-specific payload.
++     */
++    static void updateExtensions(
++        std::map<std::string, std::string>& additionalData,
++        std::string_view interface, const nlohmann::json& payload);
++
+     /** @brief Persistent sdbusplus DBus bus connection. */
+     sdbusplus::bus_t& busLog;
+ 
+diff --git a/plugin/plugin_factory.hpp b/plugin/plugin_factory.hpp
+index 1d17df8..4f13db3 100644
+--- a/plugin/plugin_factory.hpp
++++ b/plugin/plugin_factory.hpp
+@@ -56,6 +56,26 @@ class PluginFactory
+      */
+     virtual plugin::DescriptorPtr createDescriptor(
+         const plugin::Request& request) const = 0;
++
++    /**
++     * @brief Build plugin transport payload.
++     *
++     * Converts plugin-specific metadata into the payload stored
++     * under the plugin interface within the _EXTENSIONS
++     * additional-data field.
++     *
++     * The default implementation returns the input metadata
++     * unchanged.
++     *
++     * @param[in] metadata Plugin metadata.
++     *
++     * @return Extension payload.
++     */
++    virtual nlohmann::json buildExtensionPayload(
++        const nlohmann::json& metadata) const
++    {
++        return metadata;
++    }
+ };
+ 
+ /** Unique ownership of a plugin factory. */
+diff --git a/plugin/plugin_manager.cpp b/plugin/plugin_manager.cpp
+index bae6456..324105a 100644
+--- a/plugin/plugin_manager.cpp
++++ b/plugin/plugin_manager.cpp
+@@ -60,4 +60,10 @@ PluginPtr PluginManager::create(const PluginContext& context,
+     return factory->create(context, descriptor);
+ }
+ 
++nlohmann::json PluginManager::buildExtensionPayload(
++    std::string_view interface, const nlohmann::json& metadata) const
++{
++    return registry.buildExtensionPayload(interface, metadata);
++}
++
+ } // namespace phosphor::logging
+diff --git a/plugin/plugin_manager.hpp b/plugin/plugin_manager.hpp
+index 8103aa4..c3a770a 100644
+--- a/plugin/plugin_manager.hpp
++++ b/plugin/plugin_manager.hpp
+@@ -5,6 +5,8 @@
+ #include "plugin/plugin_registry.hpp"
+ #include "plugin/plugin_request.hpp"
+ 
++#include <nlohmann/json.hpp>
++
+ namespace phosphor::logging
+ {
+ 
+@@ -54,6 +56,21 @@ class PluginManager
+     PluginList create(const PluginContext& context,
+                       const plugin::RequestList& requests) const;
+ 
++    /**
++     * @brief Build an extension payload.
++     *
++     * Resolves the specified plugin interface and delegates
++     * payload construction to the corresponding registered
++     * plugin implementation.
++     *
++     * @param[in] interface Extension interface name.
++     * @param[in] metadata Runtime metadata.
++     *
++     * @return Extension payload.
++     */
++    nlohmann::json buildExtensionPayload(std::string_view interface,
++                                         const nlohmann::json& metadata) const;
++
+   private:
+     /**
+      * @brief Create a plugin instance.
+diff --git a/plugin/plugin_registry.cpp b/plugin/plugin_registry.cpp
+index cd960f8..ff7ab5a 100644
+--- a/plugin/plugin_registry.cpp
++++ b/plugin/plugin_registry.cpp
+@@ -45,4 +45,17 @@ plugin::DescriptorPtr PluginRegistry::createDescriptor(
+     return factory->createDescriptor(request);
+ }
+ 
++nlohmann::json PluginRegistry::buildExtensionPayload(
++    std::string_view interface, const nlohmann::json& metadata) const
++{
++    const auto* factory = lookup(interface);
++
++    if (factory == nullptr)
++    {
++        return metadata;
++    }
++
++    return factory->buildExtensionPayload(metadata);
++}
++
+ } // namespace phosphor::logging
+diff --git a/plugin/plugin_registry.hpp b/plugin/plugin_registry.hpp
+index e7f44fd..345ad60 100644
+--- a/plugin/plugin_registry.hpp
++++ b/plugin/plugin_registry.hpp
+@@ -69,6 +69,21 @@ class PluginRegistry
+     plugin::DescriptorPtr createDescriptor(
+         const plugin::Request& request) const;
+ 
++    /**
++     * @brief Build extension payload for a plugin.
++     *
++     * Resolves the specified plugin interface and invokes the
++     * registered plugin factory to construct the payload stored
++     * in _EXTENSIONS.
++     *
++     * @param[in] interface Plugin interface name.
++     * @param[in] metadata Plugin metadata.
++     *
++     * @return Plugin payload.
++     */
++    nlohmann::json buildExtensionPayload(std::string_view interface,
++                                         const nlohmann::json& metadata) const;
++
+   private:
+     /** Registered plugin factories. */
+     std::unordered_map<std::string, PluginFactoryPtr> registry;
+diff --git a/plugin/plugin_service.cpp b/plugin/plugin_service.cpp
+index 50b8b9e..ed22fc9 100644
+--- a/plugin/plugin_service.cpp
++++ b/plugin/plugin_service.cpp
+@@ -9,4 +9,10 @@ PluginList PluginService::create(const PluginContext& context,
+     return manager.create(context, requests);
+ }
+ 
++nlohmann::json PluginService::buildExtensionPayload(
++    std::string_view interface, const nlohmann::json& metadata)
++{
++    return manager.buildExtensionPayload(interface, metadata);
++}
++
+ } // namespace phosphor::logging
+diff --git a/plugin/plugin_service.hpp b/plugin/plugin_service.hpp
+index 12f5cee..cd9e60c 100644
+--- a/plugin/plugin_service.hpp
++++ b/plugin/plugin_service.hpp
+@@ -4,6 +4,8 @@
+ #include "plugin/plugin_manager.hpp"
+ #include "plugin/plugin_request.hpp"
+ 
++#include <nlohmann/json.hpp>
++
+ namespace phosphor::logging
+ {
+ 
+@@ -42,6 +44,27 @@ class PluginService
+     PluginList create(const PluginContext& context,
+                       const plugin::RequestList& requests);
+ 
++    /**
++     * @brief Build an extension payload.
++     *
++     * Resolves the specified plugin interface and invokes the
++     * corresponding plugin implementation to construct an
++     * extension payload suitable for storage within the
++     * _EXTENSIONS transport object.
++     *
++     * This API allows runtime metadata providers to remain
++     * independent of plugin-specific schemas while enabling
++     * plugin implementations to define the payload format
++     * associated with their extension interfaces.
++     *
++     * @param[in] interface Extension interface name.
++     * @param[in] metadata Runtime metadata.
++     *
++     * @return Extension payload.
++     */
++    nlohmann::json buildExtensionPayload(std::string_view interface,
++                                         const nlohmann::json& metadata);
++
+   private:
+     /** Plugin framework manager. */
+     PluginManager manager;
+diff --git a/test/plugin/plugin_registry_test.cpp b/test/plugin/plugin_registry_test.cpp
+index 052cf70..f854e9d 100644
+--- a/test/plugin/plugin_registry_test.cpp
++++ b/test/plugin/plugin_registry_test.cpp
+@@ -41,6 +41,30 @@ class TestFactory : public PluginFactory
+     }
+ };
+ 
++class PayloadFactory : public PluginFactory
++{
++  public:
++    std::unique_ptr<plugin::Descriptor> createDescriptor(
++        const plugin::Request&) const override
++    {
++        return nullptr;
++    }
++
++    std::unique_ptr<Plugin> create(const PluginContext&,
++                                   const plugin::Descriptor&) const override
++    {
++        return nullptr;
++    }
++
++    nlohmann::json buildExtensionPayload(
++        const nlohmann::json& metadata) const override
++    {
++        return {
++            {"Payload", metadata},
++        };
++    }
++};
++
+ } // namespace
+ 
+ TEST(PluginRegistryTest, RegisterAndLookupFactory)
+@@ -98,4 +122,28 @@ TEST(PluginRegistryTest, CreateDescriptorUnknownInterface)
+     EXPECT_EQ(descriptor, nullptr);
+ }
+ 
++TEST(PluginRegistryTest, BuildExtensionPayloadUnknownInterface)
++{
++    PluginRegistry registry;
++    nlohmann::json metadata{
++        {"Key", "Value"},
++    };
++    auto payload =
++        registry.buildExtensionPayload("unknown.interface", metadata);
++
++    EXPECT_EQ(payload, metadata);
++}
++
++TEST(PluginRegistryTest, BuildExtensionPayloadUsesFactory)
++{
++    PluginRegistry registry;
++    registry.registerPlugin(testInterface, std::make_unique<PayloadFactory>());
++    nlohmann::json metadata{
++        {"Key", "Value"},
++    };
++    auto payload = registry.buildExtensionPayload(testInterface, metadata);
++
++    EXPECT_EQ(payload["Payload"]["Key"], "Value");
++}
++
+ } // namespace phosphor::logging
+-- 
+2.54.0
+

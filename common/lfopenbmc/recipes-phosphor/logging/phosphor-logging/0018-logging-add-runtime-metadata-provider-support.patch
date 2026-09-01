@@ -1,0 +1,310 @@
+From a5b2d56905f079552161459a14e9ed8feec0ed31 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Tue, 11 Aug 2026 09:11:15 -0500
+Subject: [PATCH 18/33] logging: add runtime metadata provider support
+
+Introduce a runtime metadata provider framework that allows
+extensions to contribute metadata during log creation.
+
+Unlike plugin extension hooks, which operate on plugin
+requests, runtime metadata providers operate on the log
+creation path and enable metadata enrichment without
+requiring changes to event producers.
+
+Registered providers receive log creation context and
+may append runtime-derived metadata to a shared JSON
+object. The aggregated metadata is stored in log
+additional data for subsequent consumption by plugin
+extensions or other framework components.
+
+This establishes a generic runtime enrichment mechanism
+while preserving existing plugin processing, descriptor
+generation, and lifecycle management flows.
+
+Change-Id: I069bb5d230ae965fe1d9cd4c1bba1b69c7f76e03
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ extensions.cpp           |  6 ++++
+ extensions.hpp           | 64 +++++++++++++++++++++++++++++++++++++++-
+ log_manager.cpp          | 41 +++++++++++++++++++++++++
+ log_manager.hpp          | 26 ++++++++++++++++
+ test/extensions_test.cpp | 30 +++++++++++++++++++
+ 5 files changed, 166 insertions(+), 1 deletion(-)
+
+diff --git a/extensions.cpp b/extensions.cpp
+index 6fd0f40..532cfb4 100644
+--- a/extensions.cpp
++++ b/extensions.cpp
+@@ -54,5 +54,11 @@ PluginRequestExtensionFunctions&
+     return callbacks;
+ }
+ 
++RuntimeMetadataFunctions& Extensions::getRuntimeMetadataFunctions()
++{
++    static RuntimeMetadataFunctions providers;
++    return providers;
++}
++
+ } // namespace logging
+ } // namespace phosphor
+diff --git a/extensions.hpp b/extensions.hpp
+index 4456aef..2f56b09 100644
+--- a/extensions.hpp
++++ b/extensions.hpp
+@@ -90,6 +90,33 @@ using ExtensionLogAssociation =
+ using PluginRequestExtensionFunction =
+     std::function<void(plugin::Request& request)>;
+ 
++/**
++ * @brief Runtime metadata provider callback.
++ *
++ * Runtime metadata providers may contribute additional
++ * metadata derived from log creation context.
++ *
++ * The metadata object is owned by the framework and is
++ * shared across all registered providers. Providers may
++ * append or update metadata entries as required.
++ *
++ * @param[in,out] metadata
++ *     Aggregated runtime metadata object.
++ *
++ * @param[in] message
++ *     Error log message.
++ *
++ * @param[in] level
++ *     Error severity level.
++ *
++ * @param[in] additionalData
++ *     Event additional data.
++ *
++ */
++using RuntimeMetadataFunction = std::function<void(
++    nlohmann::json& metadata, const std::string& message, Entry::Level level,
++    const std::map<std::string, std::string>& additionalData)>;
++
+ using StartupFunctions = std::vector<StartupFunction>;
+ using CreateFunctions = std::vector<CreateFunction>;
+ using DeleteFunctions = std::vector<DeleteFunction>;
+@@ -97,7 +124,7 @@ using DeleteProhibitedFunctions = std::vector<DeleteProhibitedFunction>;
+ using ExtensionLogAssociations = std::vector<ExtensionLogAssociation>;
+ using PluginRequestExtensionFunctions =
+     std::vector<PluginRequestExtensionFunction>;
+-
++using RuntimeMetadataFunctions = std::vector<RuntimeMetadataFunction>;
+ /**
+  * @brief Register an extension hook function
+  *
+@@ -141,6 +168,21 @@ using PluginRequestExtensionFunctions =
+         Extensions e{func};                                                    \
+     }
+ 
++/**
++ * @brief Register a runtime metadata provider.
++ *
++ * Call this macro at global scope to register a callback
++ * that contributes runtime metadata during log creation.
++ *
++ * @param func
++ *     Runtime metadata provider callback.
++ */
++#define REGISTER_RUNTIME_METADATA_PROVIDER(func)                               \
++    namespace func##_runtime_metadata_ns                                       \
++    {                                                                          \
++        Extensions e{func};                                                    \
++    }
++
+ /**
+  * @class Extensions
+  *
+@@ -273,6 +315,18 @@ class Extensions
+         getPluginRequestExtensionFunctions().push_back(std::move(func));
+     }
+ 
++    /**
++     * @brief Constructor to register a runtime metadata
++     *        provider.
++     *
++     * @param[in] func
++     *     Runtime metadata provider callback.
++     */
++    explicit Extensions(RuntimeMetadataFunction func)
++    {
++        getRuntimeMetadataFunctions().push_back(std::move(func));
++    }
++
+     /**
+      * @brief Returns the Startup functions
+      * @return StartupFunctions - the Startup functions
+@@ -326,6 +380,14 @@ class Extensions
+     static PluginRequestExtensionFunctions&
+         getPluginRequestExtensionFunctions();
+ 
++    /**
++     * @brief Returns registered runtime metadata providers.
++     *
++     * @return Reference to registered runtime metadata
++     *         provider callbacks.
++     */
++    static RuntimeMetadataFunctions& getRuntimeMetadataFunctions();
++
+     /**
+      * @brief Say if the default log capping policy should be disabled
+      * @return bool - true if it should be disabled
+diff --git a/log_manager.cpp b/log_manager.cpp
+index 8264d4c..474dfa8 100644
+--- a/log_manager.cpp
++++ b/log_manager.cpp
+@@ -37,6 +37,11 @@ extern const std::map<
+     std::function<phosphor::logging::metadata::associations::Type>>
+     meta;
+ 
++namespace
++{
++constexpr auto extensionsKey = "_EXTENSIONS";
++} // namespace
++
+ namespace phosphor
+ {
+ namespace logging
+@@ -829,6 +834,16 @@ auto Manager::create(const std::string& message, Entry::Level severity,
+ 
+     auto requests = buildPluginRequests(data);
+ 
++    if (!requests.empty())
++    {
++        auto metadata = collectRuntimeMetadata(message, severity, data);
++
++        if (!metadata.empty())
++        {
++            data[extensionsKey] = metadata.dump();
++        }
++    }
++
+     return createEntry(message, severity, std::move(data), ffdc,
+                        std::move(requests));
+ }
+@@ -1111,6 +1126,32 @@ auto Manager::buildPluginRequests(
+     return requests;
+ }
+ 
++nlohmann::json Manager::collectRuntimeMetadata(
++    const std::string& message, Entry::Level level,
++    const std::map<std::string, std::string>& additionalData)
++{
++    auto metadata = nlohmann::json::object();
++
++    for (auto& fn : Extensions::getRuntimeMetadataFunctions())
++    {
++        try
++        {
++            fn(metadata, message, level, additionalData);
++        }
++        catch (const std::exception& e)
++        {
++            lg2::warning("Ignoring runtime metadata exception: {ERROR}",
++                         "ERROR", e.what());
++        }
++        catch (...)
++        {
++            lg2::warning("Ignoring unknown runtime metadata exception");
++        }
++    }
++
++    return metadata;
++}
++
+ } // namespace internal
+ } // namespace logging
+ } // namespace phosphor
+diff --git a/log_manager.hpp b/log_manager.hpp
+index 9cf8fbe..ecb8fad 100644
+--- a/log_manager.hpp
++++ b/log_manager.hpp
+@@ -386,6 +386,32 @@ class Manager : public details::ServerObject<details::ManagerIface>
+     /** Runtime plugin integration service. */
+     PluginService pluginService;
+ 
++    /**
++     * @brief Collect runtime metadata from registered providers.
++     *
++     * Internal helper used by the logging path to invoke all
++     * registered runtime metadata provider functions and
++     * aggregate their contributions into a single JSON object.
++     *
++     * @param[in] message
++     *     Log message associated with the entry.
++     *
++     * @param[in] level
++     *     Severity level of the entry.
++     *
++     * @param[in] additionalData
++     *     Additional data supplied during log creation.
++     *
++     * @return Aggregated runtime metadata collected from all
++     *         registered providers.
++     *
++     * @note
++     *     This API is intended for internal use only.
++     */
++    static nlohmann::json collectRuntimeMetadata(
++        const std::string& message, Entry::Level level,
++        const std::map<std::string, std::string>& additionalData);
++
+     /** @brief Persistent sdbusplus DBus bus connection. */
+     sdbusplus::bus_t& busLog;
+ 
+diff --git a/test/extensions_test.cpp b/test/extensions_test.cpp
+index 089209c..52261b5 100644
+--- a/test/extensions_test.cpp
++++ b/test/extensions_test.cpp
+@@ -52,6 +52,17 @@ void pluginExtension1(plugin::Request& request)
+     request.data["Injected"] = "true";
+ }
+ 
++void runtimeMetadataProvider1(
++    nlohmann::json& metadata, const std::string& message, Entry::Level level,
++    const std::map<std::string, std::string>& additionalData)
++{
++    (void)level;
++    (void)additionalData;
++
++    metadata["Message"] = message;
++    metadata["Provider"] = "Provider1";
++}
++
+ DISABLE_LOG_ENTRY_CAPS()
+ REGISTER_EXTENSION_FUNCTION(startup1)
+ REGISTER_EXTENSION_FUNCTION(startup2)
+@@ -64,6 +75,7 @@ REGISTER_EXTENSION_FUNCTION(logIDWithHwIsolation2)
+ REGISTER_EXTENSION_FUNCTION(deleteLog1)
+ REGISTER_EXTENSION_FUNCTION(deleteLog2)
+ REGISTER_PLUGIN_REQUEST_EXTENSION(pluginExtension1)
++REGISTER_RUNTIME_METADATA_PROVIDER(runtimeMetadataProvider1)
+ 
+ TEST(ExtensionsTest, FunctionCallTest)
+ {
+@@ -139,3 +151,21 @@ TEST(ExtensionsTest, PluginExtensionFunctionTest)
+     ASSERT_TRUE(request.data.contains("Injected"));
+     EXPECT_EQ(request.data["Injected"], "true");
+ }
++
++TEST(ExtensionsTest, RuntimeMetadataProviderTest)
++{
++    EXPECT_EQ(Extensions::getRuntimeMetadataFunctions().size(), 1);
++
++    nlohmann::json metadata = nlohmann::json::object();
++
++    std::map<std::string, std::string> additionalData;
++
++    for (auto& fn : Extensions::getRuntimeMetadataFunctions())
++    {
++        fn(metadata, "test-message", Entry::Level::Informational,
++           additionalData);
++    }
++
++    EXPECT_EQ(metadata["Message"], "test-message");
++    EXPECT_EQ(metadata["Provider"], "Provider1");
++}
+-- 
+2.54.0
+

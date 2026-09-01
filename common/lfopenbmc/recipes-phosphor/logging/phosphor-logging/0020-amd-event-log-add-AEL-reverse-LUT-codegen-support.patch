@@ -1,0 +1,1173 @@
+From 160bde5ba77f1ea60c99c9c71c324e849c8c4c5c Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Wed, 22 Jul 2026 04:17:17 -0500
+Subject: [PATCH 20/33] amd-event-log: add AEL reverse LUT codegen support
+
+Add support for build-time generation of AEL reverse lookup
+table (LUT) from a JSON definition.
+
+  - Add generate_lut.py to produce constexpr LUT header
+  - Generate amd_ael_lut_gen.hpp via Meson custom_target
+  - Provide default LUT JSON input under data/
+  - Implement constexpr AFID lookup without runtime parsing
+  - Add validation for JSON structure and conflict detection
+
+This enables efficient, compile-time lookup for AEL decoding
+and ensures consistency between LUT definitions and tests.
+
+Change-Id: I4ec23ed1a50d82d5633006dd80bf7599ec3be484
+Signed-off-by: Abhijeet Singh <abhijeet.singh@amd.com>
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ extensions/amd-event-log/README.md            |  11 +
+ extensions/amd-event-log/codegen/README.md    |  81 +++++
+ .../amd-event-log/codegen/generate_lut.py     | 316 ++++++++++++++++++
+ .../codegen/generate_lut_tests.py             | 304 +++++++++++++++++
+ .../amd-event-log/data/reverse_lut.json       |  75 +++++
+ .../amd-event-log/data/tools/validate_lut.py  | 161 +++++++++
+ .../amd-event-log/include/amd_afid_utils.hpp  |  36 ++
+ extensions/amd-event-log/meson.build          |   1 -
+ .../amd-event-log/src/amd_afid_utils.cpp      |  37 ++
+ extensions/amd-event-log/src/meson.build      |  32 ++
+ 10 files changed, 1053 insertions(+), 1 deletion(-)
+ create mode 100644 extensions/amd-event-log/codegen/README.md
+ create mode 100644 extensions/amd-event-log/codegen/generate_lut.py
+ create mode 100644 extensions/amd-event-log/codegen/generate_lut_tests.py
+ create mode 100644 extensions/amd-event-log/data/reverse_lut.json
+ create mode 100644 extensions/amd-event-log/data/tools/validate_lut.py
+ create mode 100644 extensions/amd-event-log/include/amd_afid_utils.hpp
+ create mode 100644 extensions/amd-event-log/src/amd_afid_utils.cpp
+
+diff --git a/extensions/amd-event-log/README.md b/extensions/amd-event-log/README.md
+index 8c0abf5..bd0afdd 100644
+--- a/extensions/amd-event-log/README.md
++++ b/extensions/amd-event-log/README.md
+@@ -72,6 +72,17 @@ event information derived from the log context.
+ 
+ ---
+ 
++## AEL Reverse Lookup Table
++
++- Provides mapping of Redfish events to AMD-specific identifiers (AFID,
++  originOfCondition)
++- Uses a JSON-defined reverse LUT generated at build time
++- Eliminates runtime parsing via compile-time generated C++ code
++- Ensures deterministic and efficient lookup behavior
++- Supports OEM customization through Yocto-based JSON override
++
++---
++
+ ## Extensibility
+ 
+ The AMD extension infrastructure is designed to support additional AMD-specific
+diff --git a/extensions/amd-event-log/codegen/README.md b/extensions/amd-event-log/codegen/README.md
+new file mode 100644
+index 0000000..8f3ce89
+--- /dev/null
++++ b/extensions/amd-event-log/codegen/README.md
+@@ -0,0 +1,81 @@
++# AMD AEL Code Generation
++
++## Overview
++
++This directory contains scripts used to generate the AMD Event Log (AEL) reverse
++lookup table (LUT) and associated unit tests at build time.
++
++The code generation process converts JSON-based LUT definitions into C++ source
++artifacts used by the AEL decoder.
++
++---
++
++## Components
++
++| File                    | Description                              |
++| ----------------------- | ---------------------------------------- |
++| `generate_lut.py`       | Generates the LUT header from JSON input |
++| `generate_lut_tests.py` | Generates unit tests from JSON input     |
++
++---
++
++## Reverse LUT Configuration
++
++The AEL reverse lookup table is defined in:
++
++data/reverse_lut.json
++
++This file maps Redfish event information to AMD-specific identifiers such as
++AFID and `originOfCondition`.
++
++---
++
++### Reverse LUT Platform Customization
++
++Platform-specific LUT content can be provided through a Yocto layer by
++overriding the default `reverse_lut.json` during the build without requiring
++changes to the core implementation.
++
++---
++
++## Build-Time Generation
++
++The LUT is generated during the Meson build:
++
++reverse_lut.json (data/) ↓ generate_lut.py ↓ amd_ael_lut_gen.hpp (build dir)
++
++The generated header is consumed by the runtime decoder.
++
++---
++
++## Test Generation
++
++Unit tests are generated from the same JSON:
++
++reverse_lut.json ↓ generate_lut_tests.py ↓ test_ael_lut_generated.cpp
++
++This ensures consistency between runtime behavior and test coverage.
++
++---
++
++## Validation
++
++Input JSON is expected to follow a strict hierarchical format:
++
++registry → messageId → arg1 → ... → {afid, originOfCondition}
++
++Invalid structures or conflicting patterns may result in build-time failures.
++
++---
++
++## Usage
++
++These scripts are invoked automatically through Meson `custom_target`
++definitions and are not intended to be run manually during normal builds.
++
++For standalone validation or debugging, the scripts can be executed directly:
++
++```bash
++python3 generate_lut.py --input <json> --output <header>
++python3 generate_lut_tests.py --input <json> --output <test>
++```
+diff --git a/extensions/amd-event-log/codegen/generate_lut.py b/extensions/amd-event-log/codegen/generate_lut.py
+new file mode 100644
+index 0000000..78696e8
+--- /dev/null
++++ b/extensions/amd-event-log/codegen/generate_lut.py
+@@ -0,0 +1,316 @@
++#!/usr/bin/env python3
++# SPDX-License-Identifier: Apache-2.0
++"""
++------------------------------------------------------------
++THIS FILE IS AUTO-GENERATED - DO NOT EDIT DIRECTLY
++
++Generated by : generate_lut.py
++------------------------------------------------------------
++"""
++
++import argparse
++import json
++from datetime import UTC, datetime
++from pathlib import Path
++
++
++# ==========================================================
++# CLI
++# ==========================================================
++def parse_args():
++    parser = argparse.ArgumentParser(description="Generate constexpr LUT")
++    parser.add_argument("--input", required=True)
++    parser.add_argument("--output", required=True)
++    return parser.parse_args()
++
++
++# ==========================================================
++# Validation
++# ==========================================================
++def is_leaf(node):
++    return (
++        isinstance(node, dict)
++        and "afid" in node
++        and "originOfCondition" in node
++    )
++
++
++def validate_leaf(node, path):
++    # Validate AFID
++    if not isinstance(node["afid"], int):
++        raise ValueError(f"afid must be int at {path}")
++
++    if node["afid"] < 0:
++        raise ValueError(f"afid must be non-negative at {path}")
++
++    # Validate originOfCondition
++    if not isinstance(node["originOfCondition"], str):
++        raise ValueError(f"originOfCondition must be string at {path}")
++
++    origins = [o.strip() for o in node["originOfCondition"].split(",")]
++
++    if not origins:
++        raise ValueError(
++            f"originOfCondition must contain at least one path at {path}"
++        )
++
++    for origin in origins:
++        if not origin:
++            raise ValueError(f"Empty originOfCondition entry at {path}")
++
++
++def validate_node(node, path="root"):
++    if is_leaf(node):
++        validate_leaf(node, path)
++        return
++
++    if not isinstance(node, dict):
++        raise ValueError(f"Invalid node at {path}")
++
++    for k, v in node.items():
++
++        if "=" not in k:
++            raise ValueError(f"Missing keyword prefix at {path}->{k}")
++
++        validate_node(v, f"{path}->{k}")
++
++
++def validate_structure(lookup):
++    for message, message_val in lookup.items():
++
++        if is_leaf(message_val):
++            raise ValueError(
++                f"Invalid LUT: Missing lookup key level at {message}"
++            )
++
++        validate_node(message_val, message)
++
++
++def validate_json(data):
++    if "lookup" not in data:
++        raise ValueError("Missing 'lookup' section")
++
++    validate_structure(data["lookup"])
++
++
++# ==========================================================
++# Helpers
++# ==========================================================
++def escape(s):
++    return s.replace("\\", "\\\\").replace('"', '\\"')
++
++
++def split_patterns(key):
++    return [p.strip() for p in key.split("|")]
++
++
++def split_keyword_pattern(key):
++    pos = key.find("=")
++
++    if pos == -1:
++        raise ValueError(
++            f"Invalid LUT key '{key}'. " "Expected KEYWORD=pattern format."
++        )
++
++    return (
++        key[:pos].strip(),
++        key[pos + 1 :].strip(),
++    )
++
++
++# ==========================================================
++# Pattern dedup
++# ==========================================================
++class PatternPool:
++    def __init__(self):
++        self.pool = {}
++
++    def get(self, patterns):
++        key = tuple(sorted(patterns))
++        if key not in self.pool:
++            self.pool[key] = f"p_{len(self.pool)}"
++        return self.pool[key]
++
++    def emit(self, out):
++        for patterns, name in sorted(self.pool.items(), key=lambda x: x[1]):
++            out.write(f"constexpr std::string_view {name}[] = {{\n")
++            for p in patterns:
++                out.write(f'    "{escape(p)}",\n')
++            out.write("};\n\n")
++
++
++# ==========================================================
++# Code generation
++# ==========================================================
++def generate(data, out_path, input_file):
++    lookup = data["lookup"]
++    fallback = int(data.get("fallthrough_afid", 0))
++
++    pool = PatternPool()
++
++    # Collect patterns
++    def collect(node):
++        if is_leaf(node):
++            return
++        for k, v in sorted(node.items()):
++            _, pattern = split_keyword_pattern(k)
++            pool.get(split_patterns(pattern))
++            collect(v)
++
++    for _, message_node in sorted(lookup.items()):
++        collect(message_node)
++
++    with open(out_path, "w") as out:
++
++        # ===== Header =====
++        out.write("// SPDX-License-Identifier: Apache-2.0\n")
++        out.write(
++            "// ------------------------------------------------------------\n"
++        )
++        out.write("// THIS FILE IS AUTO-GENERATED - DO NOT EDIT DIRECTLY\n")
++        out.write("//\n")
++        out.write("// Generated by : generate_lut.py\n")
++        out.write(f"// Input file : {Path(input_file).name}\n")
++        out.write(f"// Build time : {datetime.now(UTC)}\n")
++        out.write(
++            "// ------------------------------------------------------------\n\n"
++        )
++
++        out.write("#pragma once\n\n")
++        out.write("#include <cstdint>\n")
++        out.write("#include <string_view>\n")
++        out.write("#include <vector>\n\n")
++
++        out.write(
++            "struct AFIDResult { "
++            "uint64_t afid; "
++            "std::vector<std::string_view> origins; "
++            "};\n\n"
++        )
++
++        # ===== Match functions =====
++        out.write(
++            "constexpr bool matchPattern(std::string_view s, std::string_view p){\n"
++        )
++        out.write('    if(p=="*") return true;\n')
++        out.write("    auto i=p.find('*');\n")
++        out.write("    if(i==std::string_view::npos) return s==p;\n")
++        out.write("    auto pre=p.substr(0,i);\n")
++        out.write("    auto suf=p.substr(i+1);\n")
++        out.write(
++            "    if(!pre.empty() && s.substr(0, pre.size())!=pre) return false;\n"
++        )
++        out.write(
++            "    if(!suf.empty() && s.substr(s.size()-suf.size())!=suf) return false;\n"
++        )
++        out.write("    return true;\n")
++        out.write("}\n\n")
++
++        out.write("template<size_t N>\n")
++        out.write(
++            "constexpr bool matchAny(std::string_view v,const std::string_view(&a)[N]){\n"
++        )
++        out.write("    for(auto p:a) if(matchPattern(v,p)) return true;\n")
++        out.write("    return false;\n")
++        out.write("}\n\n")
++
++        out.write(
++            "inline std::string_view getValue(\n"
++            "    const std::vector<std::string>& additionalData,\n"
++            "    std::string_view key)\n"
++            "{\n"
++            "    for (const auto& item : additionalData)\n"
++            "    {\n"
++            "        auto pos = item.find('=');\n"
++            "\n"
++            "        if (pos == std::string::npos)\n"
++            "        {\n"
++            "            continue;\n"
++            "        }\n"
++            "\n"
++            "        std::string_view k(item.data(), pos);\n"
++            "\n"
++            "        if (k == key)\n"
++            "        {\n"
++            "            return std::string_view(\n"
++            "                item.data() + pos + 1,\n"
++            "                item.size() - pos - 1);\n"
++            "        }\n"
++            "    }\n"
++            "\n"
++            "    return {};\n"
++            "}\n\n"
++        )
++
++        pool.emit(out)
++
++        # ===== API =====
++
++        out.write("constexpr AFIDResult lookupAFID(\n")
++        out.write("    std::string_view message,\n")
++        out.write("    const std::vector<std::string>& additionalData)\n")
++        out.write("{\n")
++
++        # Emit tree
++        def emit(node, indent):
++            ind = " " * indent
++
++            if is_leaf(node):
++                origins = [
++                    o.strip() for o in node["originOfCondition"].split(",")
++                ]
++
++                origins_cpp = ", ".join(
++                    f'"{escape(origin)}"' for origin in origins
++                )
++
++                out.write(
++                    f'{ind}return {{ {node["afid"]}, '
++                    f"{{ {origins_cpp} }} }};\n"
++                )
++                return
++
++            for k, v in sorted(node.items()):
++
++                keyword, pattern = split_keyword_pattern(k)
++
++                arr = pool.get(split_patterns(pattern))
++
++                out.write(
++                    f"{ind}if(matchAny("
++                    f'getValue(additionalData, "{escape(keyword)}"), '
++                    f"{arr})){{\n"
++                )
++
++                emit(v, indent + 4)
++
++                out.write(f"{ind}}}\n")
++
++        for message, msgv in sorted(lookup.items()):
++            out.write(f'    if(message=="{escape(message)}"){{\n')
++
++            emit(msgv, 8)
++
++            out.write("    }\n")
++
++        out.write(f"    return {{ {fallback}, {{}} }};\n")
++        out.write("}\n")
++
++
++# ==========================================================
++# MAIN
++# ==========================================================
++if __name__ == "__main__":
++    args = parse_args()
++
++    with open(args.input) as f:
++        data = json.load(f)
++
++    validate_json(data)
++
++    out_file = Path(args.output)
++    out_file.parent.mkdir(parents=True, exist_ok=True)
++
++    generate(data, out_file, args.input)
++
++    print(f"[AEL] LUT generated: {out_file}")
+diff --git a/extensions/amd-event-log/codegen/generate_lut_tests.py b/extensions/amd-event-log/codegen/generate_lut_tests.py
+new file mode 100644
+index 0000000..998e52e
+--- /dev/null
++++ b/extensions/amd-event-log/codegen/generate_lut_tests.py
+@@ -0,0 +1,304 @@
++#!/usr/bin/env python3
++# SPDX-License-Identifier: Apache-2.0
++
++import argparse
++import json
++from pathlib import Path
++
++
++# ==========================================================
++# CLI
++# ==========================================================
++def parse_args():
++    p = argparse.ArgumentParser()
++    p.add_argument("--input", required=True)
++    p.add_argument("--output", required=True)
++    return p.parse_args()
++
++
++# ==========================================================
++# Helpers
++# ==========================================================
++def is_leaf(n):
++    return isinstance(n, dict) and "afid" in n
++
++
++def split_patterns(k):
++    return [p.strip() for p in k.split("|")]
++
++
++def normalize_pattern(p):
++    return p.replace("*", "")
++
++
++def is_overlap(p1, p2):
++    """
++    Detect prefix overlap:
++    BRB_* vs BRB_L_*
++    """
++    s1 = normalize_pattern(p1)
++    s2 = normalize_pattern(p2)
++
++    return s1.startswith(s2) or s2.startswith(s1)
++
++
++def split_keyword_pattern(key):
++    pos = key.find("=")
++
++    if pos == -1:
++        raise ValueError(f"Invalid LUT key: {key}")
++
++    return (
++        key[:pos].strip(),
++        key[pos + 1 :].strip(),
++    )
++
++
++# ==========================================================
++# Overlap Detection
++# ==========================================================
++def detect_overlaps(lookup):
++    overlaps = []
++
++    def check(node, path):
++
++        if is_leaf(node):
++            return
++
++        keys = list(node.keys())
++
++        for i in range(len(keys)):
++            for j in range(i + 1, len(keys)):
++                p1 = keys[i]
++                p2 = keys[j]
++
++                for a in split_patterns(p1):
++                    for b in split_patterns(p2):
++                        if a != b and is_overlap(a, b):
++                            overlaps.append((path, a, b))
++
++        for k, v in node.items():
++            check(v, f"{path}->{k}")
++
++    check(lookup, "root")
++    return overlaps
++
++
++# ==========================================================
++# Positive Case Generator
++# ==========================================================
++def generate_positive_cases(lookup):
++
++    cases = []
++
++    def walk(message, node, add_data):
++
++        if is_leaf(node):
++            cases.append(
++                {
++                    "message": message,
++                    "additional_data": add_data.copy(),
++                    "afid": node["afid"],
++                    "origins": [
++                        o.strip() for o in node["originOfCondition"].split(",")
++                    ],
++                }
++            )
++            return
++
++        for key, child in node.items():
++
++            keyword, pattern = split_keyword_pattern(key)
++
++            if pattern == "*":
++                value = "TEST_VALUE"
++            else:
++                value = split_patterns(pattern)[0].replace("*", "X")
++
++            new_add_data = add_data.copy()
++            new_add_data.append(f"{keyword}={value}")
++
++            walk(message, child, new_add_data)
++
++    for message, node in sorted(lookup.items()):
++        walk(message, node, [])
++
++    return cases
++
++
++# ==========================================================
++# Negative Cases
++# ==========================================================
++def generate_negative_cases(lookup, fallback):
++
++    cases = []
++
++    cases.append(
++        {
++            "message": "INVALID.MESSAGE",
++            "additional_data": [],
++            "afid": fallback,
++        }
++    )
++
++    for message in lookup:
++        cases.append(
++            {
++                "message": message,
++                "additional_data": ["INVALID_KEY=INVALID_VALUE"],
++                "afid": fallback,
++            }
++        )
++
++    return cases
++
++
++# ==========================================================
++# Overlap Behavior Tests
++# ==========================================================
++def generate_overlap_tests(lookup):
++
++    tests = []
++
++    def walk(node, path):
++
++        if is_leaf(node):
++            return
++
++        keys = list(node.keys())
++
++        for i in range(len(keys)):
++            for j in range(i + 1, len(keys)):
++                p1 = keys[i]
++                p2 = keys[j]
++
++                for a in split_patterns(p1):
++                    for b in split_patterns(p2):
++                        if a != b and is_overlap(a, b):
++
++                            # create specific vs generic test
++                            tests.append(
++                                {"pattern_big": a, "pattern_small": b}
++                            )
++
++        for v in node.values():
++            walk(v, path)
++
++    walk(lookup, "")
++    return tests
++
++
++# ==========================================================
++# Emit C++
++# ==========================================================
++def emit_cpp(pos, neg, overlap, output, fallback):
++
++    with open(output, "w") as out:
++
++        out.write("// SPDX-License-Identifier: Apache-2.0\n")
++        out.write("// AUTO-GENERATED TESTS\n\n")
++
++        out.write("#include <gtest/gtest.h>\n")
++        out.write('#include "amd_ael_decoder.hpp"\n\n')
++
++        out.write("using phosphor::logging::amd::lookupAFID;\n\n")
++
++        # ---------------- Positive ----------------
++        out.write("TEST(AELTest, PositiveCases) {\n")
++
++        for i, c in enumerate(pos):
++
++            out.write(f"    // Case {i}\n")
++            out.write("    {\n")
++
++            out.write(f'    auto r = lookupAFID("{c["message"]}", {{')
++
++            if c["additional_data"]:
++                out.write("\n")
++
++                for item in c["additional_data"]:
++                    out.write(f'        "{item}",\n')
++
++                out.write("    ")
++
++            out.write("});\n")
++
++            out.write("    ASSERT_TRUE(r.has_value());\n")
++            out.write(f"    EXPECT_EQ(r->afid, {c['afid']}ULL);\n")
++
++            out.write(
++                f"    EXPECT_EQ(r->origins.size(), {len(c['origins'])}ULL);\n"
++            )
++
++            for idx, origin in enumerate(c["origins"]):
++                out.write(f'    EXPECT_EQ(r->origins[{idx}], "{origin}");\n')
++
++            out.write("    }\n")
++
++        # ---------------- Negative ----------------
++        out.write("TEST(AELTest, NegativeCases) {\n")
++
++        for i, c in enumerate(neg):
++
++            out.write(f"    // Negative {i}\n")
++            out.write("    {\n")
++
++            out.write(f'    auto r = lookupAFID("{c["message"]}", {{')
++
++            if c["additional_data"]:
++                out.write("\n")
++
++                for item in c["additional_data"]:
++                    out.write(f'        "{item}",\n')
++
++                out.write("    ")
++
++            out.write("});\n")
++
++            out.write("    ASSERT_TRUE(r.has_value());\n")
++            out.write(f"    EXPECT_EQ(r->afid, {fallback}ULL);\n")
++            out.write("    }\n")
++
++        # ---------------- Overlap ----------------
++        out.write("TEST(AELTest, OverlapDetection) {\n")
++
++        if len(overlap) == 0:
++            out.write("    SUCCEED();\n")
++
++        for i, t in enumerate(overlap):
++            out.write(
++                f'    ADD_FAILURE() << "Overlap detected: {t["pattern_big"]} vs {t["pattern_small"]}";\n'
++            )
++
++        out.write("}\n")
++
++
++# ==========================================================
++# MAIN
++# ==========================================================
++if __name__ == "__main__":
++    args = parse_args()
++
++    with open(args.input) as f:
++        data = json.load(f)
++
++    lookup = data["lookup"]
++    fallback = int(data.get("fallthrough_afid", -1))
++
++    overlaps = detect_overlaps(lookup)
++
++    if overlaps:
++        print("[AEL] ERROR: overlapping patterns detected:")
++        for o in overlaps:
++            print(o)
++        exit(1)
++
++    pos = generate_positive_cases(lookup)
++    neg = generate_negative_cases(lookup, fallback)
++    ov = generate_overlap_tests(lookup)
++
++    Path(args.output).parent.mkdir(parents=True, exist_ok=True)
++
++    emit_cpp(pos, neg, ov, args.output, fallback)
++
++    print(f"[AEL] Generated tests: {len(pos)} pos, {len(neg)} neg")
+diff --git a/extensions/amd-event-log/data/reverse_lut.json b/extensions/amd-event-log/data/reverse_lut.json
+new file mode 100644
+index 0000000..f899d8a
+--- /dev/null
++++ b/extensions/amd-event-log/data/reverse_lut.json
+@@ -0,0 +1,75 @@
++{
++    "version": "1.2.1",
++    "generated_at": "2026-05-27 14:56:52.533657",
++    "fallthrough_afid": 12999,
++    "lookup": {
++        "xyz.openbmc_project.State.Leak.Detector.LeakDetectedWarning": {
++            "NAME=/xyz/openbmc_project/state/leak/detector/EAM0_Cold_Plate": {
++                "originOfCondition": "/xyz/openbmc_project/inventory/system/Board/ABC,test,ABC",
++                "afid": 1
++            },
++            "NAME=/xyz/openbmc_project/state/leak/detector/EAM1_Cold_Plate": {
++                "originOfCondition": "/xyz/openbmc_project/inventory/system/Board/ABC",
++                "afid": 2
++            },
++            "NAME=/xyz/openbmc_project/state/leak/detector/EAM2_Cold_Plate": {
++                "originOfCondition": "/xyz/openbmc_project/inventory/system/Board/ABC",
++                "afid": 3
++            },
++            "NAME=/xyz/openbmc_project/state/leak/detector/EAM3_Cold_Plate": {
++                "originOfCondition": "/xyz/openbmc_project/inventory/system/Board/ABC",
++                "afid": 4
++            },
++            "NAME=/xyz/openbmc_project/state/leak/detector/CPU_DIMM_Cold_Plate": {
++                "originOfCondition": "/xyz/openbmc_project/inventory/system/Board/ABC",
++                "afid": 5
++            }
++        },
++        "xyz.openbmc_project.State.Leak.Detector.LeakDetectedCritical": {
++            "DEVICE=/xyz/openbmc_project/state/leak/detector/Manifold_1": {
++                "originOfCondition": "/xyz/openbmc_project/inventory/system/Board/DEF",
++                "afid": 6
++            },
++            "DEVICE=/xyz/openbmc_project/state/leak/detector/Manifold_2": {
++                "originOfCondition": "/xyz/openbmc_project/inventory/system/Board/DEF",
++                "afid": 7
++            }
++        },
++        "xyz.openbmc_project.Sensor.Threshold.ReadingAboveLowerCriticalThreshold": {
++            "SensorName=BRB_L_VR_*_VOLT_V": {
++                "originOfCondition": "/xyz/openbmc_project/inventory/system/Board/XYZ",
++                "afid": 8
++            },
++            "SensorName=BRB_L_VR_*_CURR_A": {
++                "originOfCondition": "/xyz/openbmc_project/inventory/system/Board/XYZ",
++                "afid": 9
++            },
++            "SensorName=BRB_L_*_TEMP_C|EAM0_*_Temp_C|EAM1_*_Temp_C": {
++                "originOfCondition": "/xyz/openbmc_project/inventory/system/Board/XYZ",
++                "afid": 10
++            },
++            "SensorName=BRB_L_VR_*_PWR_W": {
++                "originOfCondition": "/xyz/openbmc_project/inventory/system/Board/XYZ",
++                "afid": 11
++            }
++        },
++        "xyz.openbmc_project.Sensor.Threshold.ReadingAboveUpperHardShutdownThreshold": {
++            "SensorName=MB_*_VOLT_V": {
++                "originOfCondition": "/xyz/openbmc_project/inventory/system/Board/ABC",
++                "afid": 12
++            },
++            "SensorName=MB_VR_*_CURR_A": {
++                "originOfCondition": "/xyz/openbmc_project/inventory/system/Board/ABC",
++                "afid": 13
++            },
++            "SensorName=MB_*_TEMP_C": {
++                "originOfCondition": "/xyz/openbmc_project/inventory/system/Board/ABC",
++                "afid": 14
++            },
++            "SensorName=MB_*_TEMP_W": {
++                "originOfCondition": "/xyz/openbmc_project/inventory/system/Board/ABC",
++                "afid": 15
++            }
++        }
++    }
++}
+diff --git a/extensions/amd-event-log/data/tools/validate_lut.py b/extensions/amd-event-log/data/tools/validate_lut.py
+new file mode 100644
+index 0000000..3dbca83
+--- /dev/null
++++ b/extensions/amd-event-log/data/tools/validate_lut.py
+@@ -0,0 +1,161 @@
++#!/usr/bin/env python3
++
++import argparse
++import json
++import sys
++
++
++def is_leaf(node):
++    return isinstance(node, dict) and "afid" in node
++
++
++def split_patterns(pattern):
++    return pattern.split("|")
++
++
++def is_prefix(pattern):
++    return pattern.endswith("*")
++
++
++def check_overlap(patterns):
++    """Detect overlapping patterns (basic prefix conflict check)."""
++    expanded = []
++    for p in patterns:
++        expanded.extend(split_patterns(p))
++
++    for i in range(len(expanded)):
++        for j in range(i + 1, len(expanded)):
++            a = expanded[i]
++            b = expanded[j]
++
++            if a == "*" or b == "*":
++                continue
++
++            if is_prefix(a) and is_prefix(b):
++                if a[:-1].startswith(b[:-1]) or b[:-1].startswith(a[:-1]):
++                    raise ValueError(
++                        f"Overlapping prefix patterns: '{a}' and '{b}'"
++                    )
++
++            elif is_prefix(a):
++                if b.startswith(a[:-1]):
++                    raise ValueError(f"Pattern overlap: '{a}' matches '{b}'")
++
++            elif is_prefix(b):
++                if a.startswith(b[:-1]):
++                    raise ValueError(f"Pattern overlap: '{b}' matches '{a}'")
++
++            elif a == b:
++                raise ValueError(f"Duplicate exact pattern: '{a}'")
++
++
++def validate_leaf(node, path):
++    if not isinstance(node["afid"], int):
++        raise ValueError(f"afid must be int at {path}")
++
++    if node["afid"] < 0:
++        raise ValueError(f"afid must be non-negative at {path}")
++
++    if not isinstance(node["originOfCondition"], str):
++        raise ValueError(f"originOfCondition must be string at {path}")
++
++    origins = [o.strip() for o in node["originOfCondition"].split(",")]
++
++    if not origins:
++        raise ValueError(
++            f"originOfCondition must contain at least one value at {path}"
++        )
++
++    for origin in origins:
++        if not origin:
++            raise ValueError(f"Empty originOfCondition entry at {path}")
++
++
++def validate_node(node, path="root"):
++    if is_leaf(node):
++        validate_leaf(node, path)
++        return
++
++    if not isinstance(node, dict):
++        raise ValueError(f"Invalid node type at {path}")
++
++    keys = list(node.keys())
++
++    check_overlap(keys)
++
++    for key, child in node.items():
++
++        if not isinstance(key, str):
++            raise ValueError(f"Invalid key type at {path}: {key}")
++
++        if "=" not in key:
++            raise ValueError(
++                f"Expected KEYWORD=pattern format at " f"{path}->{key}"
++            )
++
++        keyword, pattern = key.split("=", 1)
++
++        if not keyword.strip():
++            raise ValueError(f"Empty keyword at {path}->{key}")
++
++        if not pattern.strip():
++            raise ValueError(f"Empty pattern at {path}->{key}")
++
++        validate_node(child, f"{path}->{key}")
++
++
++def validate_lookup_structure(lookup):
++    if not isinstance(lookup, dict):
++        raise ValueError("lookup must be a dictionary")
++
++    for message, node in lookup.items():
++
++        if not isinstance(node, dict):
++            raise ValueError(f"Invalid message node: {message}")
++
++        if is_leaf(node):
++            raise ValueError(
++                f"Message '{message}' must contain "
++                "at least one KEYWORD=pattern level"
++            )
++
++        validate_node(node, message)
++
++
++def validate_json(data):
++    """Top-level validation."""
++
++    if "lookup" not in data:
++        raise ValueError("Missing 'lookup' section")
++
++    validate_lookup_structure(data["lookup"])
++
++    if "fallthrough_afid" not in data:
++        raise ValueError("Missing 'fallthrough_afid'")
++
++    if not isinstance(data["fallthrough_afid"], int):
++        raise ValueError("'fallthrough_afid' must be integer")
++
++
++def main():
++    parser = argparse.ArgumentParser(description="Validate AEL LUT JSON")
++    parser.add_argument("--input", required=True, help="Path to LUT JSON file")
++
++    args = parser.parse_args()
++
++    try:
++        with open(args.input, "r") as f:
++            data = json.load(f)
++
++        validate_json(data)
++
++        print(f"[AEL] Validation PASSED: {args.input}")
++        sys.exit(0)
++
++    except Exception as e:
++        print(f"[AEL] Validation FAILED: {e}", file=sys.stderr)
++        sys.exit(1)
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/extensions/amd-event-log/include/amd_afid_utils.hpp b/extensions/amd-event-log/include/amd_afid_utils.hpp
+new file mode 100644
+index 0000000..331abc9
+--- /dev/null
++++ b/extensions/amd-event-log/include/amd_afid_utils.hpp
+@@ -0,0 +1,36 @@
++#pragma once
++
++#include <cstdint>
++#include <map>
++#include <optional>
++#include <string>
++#include <vector>
++
++namespace phosphor::logging::extensions::ael
++{
++
++/**
++ * @brief AMD Field ID metadata.
++ */
++struct AFIDInfo
++{
++    /** AMD Field Identifier. */
++    uint64_t afid{};
++
++    /** Associated FRU inventory paths. */
++    std::vector<std::string> frus;
++};
++
++/**
++ * @brief Lookup AFID metadata associated with an event.
++ *
++ * @param[in] message Event message identifier.
++ * @param[in] addData Event additional data.
++ *
++ * @return AFID metadata if a matching entry is found.
++ */
++std::optional<AFIDInfo> lookupAFID(
++    const std::string& message,
++    const std::map<std::string, std::string>& addData);
++
++} // namespace phosphor::logging::extensions::ael
+diff --git a/extensions/amd-event-log/meson.build b/extensions/amd-event-log/meson.build
+index a6b1774..82adbf7 100644
+--- a/extensions/amd-event-log/meson.build
++++ b/extensions/amd-event-log/meson.build
+@@ -1,4 +1,3 @@
+ # AMD Event Log (AEL) Extension
+ 
+ subdir('src')
+-
+diff --git a/extensions/amd-event-log/src/amd_afid_utils.cpp b/extensions/amd-event-log/src/amd_afid_utils.cpp
+new file mode 100644
+index 0000000..737b589
+--- /dev/null
++++ b/extensions/amd-event-log/src/amd_afid_utils.cpp
+@@ -0,0 +1,37 @@
++#include "amd_afid_utils.hpp"
++
++#include "amd_afid_db_gen.hpp"
++
++namespace phosphor::logging::extensions::ael
++{
++
++std::optional<AFIDInfo> lookupAFID(
++    const std::string& message,
++    const std::map<std::string, std::string>& additionalData)
++{
++    if (message.empty())
++    {
++        return std::nullopt;
++    }
++
++    std::vector<std::string> addDataVec;
++    addDataVec.reserve(additionalData.size());
++
++    for (const auto& [key, value] : additionalData)
++    {
++        addDataVec.emplace_back(key + "=" + value);
++    }
++
++    auto result = ::lookupAFID(message, addDataVec);
++    // TODO Revist this check
++    if (result.origins.empty())
++    {
++        return std::nullopt;
++    }
++
++    return AFIDInfo{
++        result.afid,
++        std::vector<std::string>(result.origins.begin(), result.origins.end())};
++}
++
++} // namespace phosphor::logging::extensions::ael
+diff --git a/extensions/amd-event-log/src/meson.build b/extensions/amd-event-log/src/meson.build
+index 8b3962f..3ee4640 100644
+--- a/extensions/amd-event-log/src/meson.build
++++ b/extensions/amd-event-log/src/meson.build
+@@ -1,10 +1,42 @@
++python = import('python').find_installation(required: true)
++
++lut_json_file = meson.current_source_dir() / '../data/reverse_lut.json'
++
++lut_script = files('../codegen/generate_lut.py')[0]
++
++lut_gen = custom_target(
++    'amd_afid_db_gen',
++    output: 'amd_afid_db_gen.hpp',
++    command: [
++        python,
++        lut_script,
++        '--input',
++        lut_json_file,
++        '--output',
++        '@OUTPUT@',
++    ],
++    depend_files: [
++        lut_json_file,
++        lut_script,
++    ],
++    build_by_default: true,
++)
++
+ ael_sources = files(
++    'amd_afid_utils.cpp',
+     'entry_points.cpp',
+ )
+ 
++ael_inc = include_directories('../include')
++
+ log_manager_ext_sources += ael_sources
++log_manager_ext_sources += [lut_gen]
+ 
+ log_manager_ext_deps += [
+     phosphor_logging_dep,
+     conf_h_dep,
+ ]
++
++log_manager_ext_inc += [
++    include_directories('../include'),
++]
+-- 
+2.54.0
+

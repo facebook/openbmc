@@ -1,0 +1,345 @@
+From 09449f7d41cf4efca72743a07925287a946c4bac Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Wed, 5 Aug 2026 02:09:59 -0500
+Subject: [PATCH 10/33] plugin: add registry support
+
+Add a registry used to associate plugin interfaces with
+plugin factories.
+
+The registry provides the lookup mechanism used by the
+plugin framework to locate factories responsible for
+creating runtime plugin instances.
+
+Add support for builtin plugin registration. Builtin
+registration serves as the framework composition point
+for integrating plugin implementations compiled into
+phosphor-logging.
+
+Separating plugin lookup from plugin construction keeps
+plugin-specific logic encapsulated within PluginFactory
+implementations and out of framework consumers.
+
+Registering the same plugin interface more than once is
+treated as an error, ensuring a one-to-one mapping
+between plugin interfaces and factory implementations.
+
+Add unit tests covering plugin registration and factory
+lookup. Update Meson build files to build the registry
+implementation and associated test cases. Also update
+OpenPOWER PEL test configuration to accommodate the new
+plugin test infrastructure.
+
+No runtime plugin processing is introduced by this
+change.
+
+Change-Id: Ib48a62ed323ef0181595e9c9f53e5227792d1dc4
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ meson.build                          |  2 +
+ plugin/meson.build                   |  4 ++
+ plugin/plugin_builtin.cpp            |  8 ++++
+ plugin/plugin_builtin.hpp            | 22 ++++++++++
+ plugin/plugin_registry.cpp           | 34 +++++++++++++++
+ plugin/plugin_registry.hpp           | 62 ++++++++++++++++++++++++++++
+ test/meson.build                     |  2 +
+ test/openpower-pels/meson.build      |  1 +
+ test/plugin/meson.build              | 17 ++++++++
+ test/plugin/plugin_registry_test.cpp | 52 +++++++++++++++++++++++
+ 10 files changed, 204 insertions(+)
+ create mode 100644 plugin/meson.build
+ create mode 100644 plugin/plugin_builtin.cpp
+ create mode 100644 plugin/plugin_builtin.hpp
+ create mode 100644 plugin/plugin_registry.cpp
+ create mode 100644 plugin/plugin_registry.hpp
+ create mode 100644 test/plugin/meson.build
+ create mode 100644 test/plugin/plugin_registry_test.cpp
+
+diff --git a/meson.build b/meson.build
+index 95ec943..b0ca31c 100644
+--- a/meson.build
++++ b/meson.build
+@@ -39,6 +39,7 @@ endif
+ subdir('config')
+ subdir('tools')
+ subdir('lib')
++subdir('plugin')
+ 
+ if get_option('libonly')
+     subdir_done()
+@@ -171,6 +172,7 @@ log_manager_sources = [
+         'util.cpp',
+     ),
+ ]
++log_manager_sources += plugin_sources
+ log_manager_deps = [
+     cereal_dep,
+     conf_h_dep,
+diff --git a/plugin/meson.build b/plugin/meson.build
+new file mode 100644
+index 0000000..45c19f8
+--- /dev/null
++++ b/plugin/meson.build
+@@ -0,0 +1,4 @@
++plugin_sources = files(
++    'plugin_builtin.cpp',
++    'plugin_registry.cpp',
++)
+diff --git a/plugin/plugin_builtin.cpp b/plugin/plugin_builtin.cpp
+new file mode 100644
+index 0000000..13a66f0
+--- /dev/null
++++ b/plugin/plugin_builtin.cpp
+@@ -0,0 +1,8 @@
++#include "plugin/plugin_builtin.hpp"
++
++namespace phosphor::logging
++{
++
++void registerBuiltins(PluginRegistry&) {}
++
++} // namespace phosphor::logging
+diff --git a/plugin/plugin_builtin.hpp b/plugin/plugin_builtin.hpp
+new file mode 100644
+index 0000000..a771433
+--- /dev/null
++++ b/plugin/plugin_builtin.hpp
+@@ -0,0 +1,22 @@
++#pragma once
++
++namespace phosphor::logging
++{
++
++class PluginRegistry;
++
++/**
++ * @brief Register built-in plugin implementations.
++ *
++ * Populates the supplied plugin registry with plugin
++ * implementations compiled into phosphor-logging.
++ *
++ * This function serves as the framework composition point
++ * for builtin plugins. New builtin plugin implementations
++ * should be integrated through this interface.
++ *
++ * @param[in,out] registry Plugin registry.
++ */
++void registerBuiltins(PluginRegistry& registry);
++
++} // namespace phosphor::logging
+diff --git a/plugin/plugin_registry.cpp b/plugin/plugin_registry.cpp
+new file mode 100644
+index 0000000..062fc9d
+--- /dev/null
++++ b/plugin/plugin_registry.cpp
+@@ -0,0 +1,34 @@
++#include "plugin/plugin_registry.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <stdexcept>
++#include <utility>
++
++namespace phosphor::logging
++{
++
++void PluginRegistry::registerPlugin(std::string_view interface,
++                                    PluginFactoryPtr factory)
++{
++    auto [it, inserted] = registry.emplace(interface, std::move(factory));
++    if (!inserted)
++    {
++        lg2::warning("Duplicate plugin registration: {INTERFACE}", "INTERFACE",
++                     interface);
++        return;
++    }
++}
++
++const PluginFactory* PluginRegistry::lookup(std::string_view interface) const
++{
++    auto it = registry.find(std::string(interface));
++    if (it == registry.end())
++    {
++        return nullptr;
++    }
++
++    return it->second.get();
++}
++
++} // namespace phosphor::logging
+diff --git a/plugin/plugin_registry.hpp b/plugin/plugin_registry.hpp
+new file mode 100644
+index 0000000..2169ad7
+--- /dev/null
++++ b/plugin/plugin_registry.hpp
+@@ -0,0 +1,62 @@
++#pragma once
++
++#include "plugin/plugin_factory.hpp"
++
++#include <memory>
++#include <string>
++#include <string_view>
++#include <unordered_map>
++
++namespace phosphor::logging
++{
++
++/**
++ * @brief Registry of plugin factories.
++ *
++ * PluginRegistry maintains the association between a
++ * plugin interface identifier and the corresponding
++ * PluginFactory implementation.
++ *
++ * The registry is used by the plugin framework to locate
++ * the factory responsible for creating runtime plugin
++ * instances from plugin descriptors.
++ */
++class PluginRegistry
++{
++  public:
++    PluginRegistry() = default;
++
++    PluginRegistry(const PluginRegistry&) = delete;
++    PluginRegistry(PluginRegistry&&) = delete;
++    PluginRegistry& operator=(const PluginRegistry&) = delete;
++    PluginRegistry& operator=(PluginRegistry&&) = delete;
++
++    ~PluginRegistry() = default;
++
++    /**
++     * @brief Register a plugin factory.
++     *
++     * Registering the same plugin interface more than once
++     * is an error.
++     *
++     * @param[in] interface Plugin interface identifier.
++     * @param[in] factory Plugin factory.
++     */
++    void registerPlugin(std::string_view interface, PluginFactoryPtr factory);
++
++    /**
++     * @brief Lookup a plugin factory.
++     *
++     * @param[in] interface Plugin interface identifier.
++     *
++     * @return Registered plugin factory or nullptr if no
++     *         factory is registered.
++     */
++    const PluginFactory* lookup(std::string_view interface) const;
++
++  private:
++    /** Registered plugin factories. */
++    std::unordered_map<std::string, PluginFactoryPtr> registry;
++};
++
++} // namespace phosphor::logging
+diff --git a/test/meson.build b/test/meson.build
+index 92e3f5c..9d60761 100644
+--- a/test/meson.build
++++ b/test/meson.build
+@@ -23,6 +23,8 @@ if get_option('openpower-pel-extension').allowed()
+     subdir('openpower-pels')
+ endif
+ 
++subdir('plugin')
++
+ tests = [
+     'bmc_pos_mgr_test',
+     'extensions_test',
+diff --git a/test/openpower-pels/meson.build b/test/openpower-pels/meson.build
+index a1fb868..de104bf 100644
+--- a/test/openpower-pels/meson.build
++++ b/test/openpower-pels/meson.build
+@@ -34,6 +34,7 @@ openpower_pels = {
+             callouts_gen,
+             generated_sources,
+             log_manager_ext_sources,
++            plugin_sources,
+         ],
+         'deps': [cereal_dep],
+     },
+diff --git a/test/plugin/meson.build b/test/plugin/meson.build
+new file mode 100644
+index 0000000..aefeeb5
+--- /dev/null
++++ b/test/plugin/meson.build
+@@ -0,0 +1,17 @@
++test(
++    'test_plugin_registry',
++    executable(
++        'test-plugin-registry',
++        'plugin_registry_test.cpp',
++        link_with: [log_manager_lib],
++        dependencies: [
++            gtest_dep,
++            gmock_dep,
++            log_manager_deps,
++        ],
++        include_directories: include_directories(
++            '../../',
++            '../../gen',
++        ),
++    ),
++)
+diff --git a/test/plugin/plugin_registry_test.cpp b/test/plugin/plugin_registry_test.cpp
+new file mode 100644
+index 0000000..bef76d3
+--- /dev/null
++++ b/test/plugin/plugin_registry_test.cpp
+@@ -0,0 +1,52 @@
++#include "plugin/plugin_factory.hpp"
++#include "plugin/plugin_registry.hpp"
++
++#include <gtest/gtest.h>
++
++namespace phosphor::logging
++{
++
++namespace
++{
++
++constexpr auto testInterface = "xyz.openbmc_project.Logging.Test";
++
++class TestFactory : public PluginFactory
++{
++  public:
++    PluginPtr create(const PluginContext&,
++                     const plugin::Descriptor&) const override
++    {
++        return nullptr;
++    }
++};
++
++} // namespace
++
++TEST(PluginRegistryTest, RegisterAndLookupFactory)
++{
++    PluginRegistry registry;
++    registry.registerPlugin(testInterface, std::make_unique<TestFactory>());
++
++    EXPECT_NE(registry.lookup(testInterface), nullptr);
++}
++
++TEST(PluginRegistryTest, LookupUnknownFactory)
++{
++    PluginRegistry registry;
++
++    EXPECT_EQ(registry.lookup(testInterface), nullptr);
++}
++
++TEST(PluginRegistryTest, DuplicateRegistrationKeepsOriginalFactory)
++{
++    PluginRegistry registry;
++    registry.registerPlugin(testInterface, std::make_unique<TestFactory>());
++    auto* original = registry.lookup(testInterface);
++
++    EXPECT_NO_THROW(registry.registerPlugin(testInterface,
++                                            std::make_unique<TestFactory>()));
++    EXPECT_EQ(registry.lookup(testInterface), original);
++}
++
++} // namespace phosphor::logging
+-- 
+2.54.0
+

@@ -1,0 +1,411 @@
+From eea73ef70c7e66ff66bedb5beea8037a8e17d537 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Sun, 2 Aug 2026 04:38:59 -0500
+Subject: [PATCH 12/33] plugin: add manager support
+
+Add PluginManager as the coordination point for the logging plugin
+framework.
+
+The manager owns the plugin registry, initializes builtin plugin
+registrations, and creates runtime plugin instances from plugin
+descriptors.
+
+At runtime, PluginManager uses PluginRegistry to locate the factory
+associated with a descriptor and delegates plugin construction to
+the corresponding PluginFactory implementation.
+
+Centralizing plugin-related operations behind a common interface
+isolates callers from registry, factory, and plugin implementation
+details.
+
+Add unit tests covering plugin creation using registered factories.
+Update Meson build files to build the manager tests.
+
+No functional changes are intended.
+
+Change-Id: Ic87b3c48617e5773c49280c319295d5719769237
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ plugin/meson.build                  |   1 +
+ plugin/plugin.hpp                   |   6 ++
+ plugin/plugin_manager.cpp           |  63 ++++++++++++++
+ plugin/plugin_manager.hpp           |  79 ++++++++++++++++++
+ plugin/plugin_registry.hpp          |   4 +-
+ plugin/plugin_request.hpp           |   2 +
+ test/plugin/meson.build             |  18 ++++
+ test/plugin/plugin_manager_test.cpp | 122 ++++++++++++++++++++++++++++
+ 8 files changed, 293 insertions(+), 2 deletions(-)
+ create mode 100644 plugin/plugin_manager.cpp
+ create mode 100644 plugin/plugin_manager.hpp
+ create mode 100644 test/plugin/plugin_manager_test.cpp
+
+diff --git a/plugin/meson.build b/plugin/meson.build
+index 45c19f8..01626a3 100644
+--- a/plugin/meson.build
++++ b/plugin/meson.build
+@@ -1,4 +1,5 @@
+ plugin_sources = files(
+     'plugin_builtin.cpp',
++    'plugin_manager.cpp',
+     'plugin_registry.cpp',
+ )
+diff --git a/plugin/plugin.hpp b/plugin/plugin.hpp
+index 8221fff..49a9780 100644
+--- a/plugin/plugin.hpp
++++ b/plugin/plugin.hpp
+@@ -5,6 +5,7 @@
+ #include <memory>
+ #include <string>
+ #include <string_view>
++#include <vector>
+ 
+ namespace phosphor::logging
+ {
+@@ -58,4 +59,9 @@ class Plugin
+ /** Unique ownership of a runtime plugin instance. */
+ using PluginPtr = std::unique_ptr<Plugin>;
+ 
++/**
++ * @brief Collection of runtime plugins associated with a log entry.
++ */
++using PluginList = std::vector<PluginPtr>;
++
+ } // namespace phosphor::logging
+diff --git a/plugin/plugin_manager.cpp b/plugin/plugin_manager.cpp
+new file mode 100644
+index 0000000..bae6456
+--- /dev/null
++++ b/plugin/plugin_manager.cpp
+@@ -0,0 +1,63 @@
++#include "plugin/plugin_manager.hpp"
++
++#include "plugin/plugin_builtin.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++namespace phosphor::logging
++{
++
++PluginManager::PluginManager()
++{
++    registerBuiltins();
++}
++
++PluginManager::PluginManager(PluginRegistry&& registry) :
++    registry(std::move(registry))
++{
++    registerBuiltins();
++}
++
++void PluginManager::registerBuiltins()
++{
++    ::phosphor::logging::registerBuiltins(registry);
++}
++
++PluginList PluginManager::create(const PluginContext& context,
++                                 const plugin::RequestList& requests) const
++{
++    PluginList plugins;
++
++    for (const auto& request : requests)
++    {
++        auto descriptor = registry.createDescriptor(request);
++        if (descriptor == nullptr)
++        {
++            lg2::warning("Unknown plugin interface '{INTERFACE}'", "INTERFACE",
++                         request.interface);
++            continue;
++        }
++
++        auto plugin = create(context, *descriptor);
++        if (plugin != nullptr)
++        {
++            plugins.emplace_back(std::move(plugin));
++        }
++    }
++
++    return plugins;
++}
++
++PluginPtr PluginManager::create(const PluginContext& context,
++                                const plugin::Descriptor& descriptor) const
++{
++    auto factory = registry.lookup(descriptor.interface());
++    if (factory == nullptr)
++    {
++        return nullptr;
++    }
++
++    return factory->create(context, descriptor);
++}
++
++} // namespace phosphor::logging
+diff --git a/plugin/plugin_manager.hpp b/plugin/plugin_manager.hpp
+new file mode 100644
+index 0000000..8103aa4
+--- /dev/null
++++ b/plugin/plugin_manager.hpp
+@@ -0,0 +1,79 @@
++#pragma once
++
++#include "plugin/plugin.hpp"
++#include "plugin/plugin_descriptor.hpp"
++#include "plugin/plugin_registry.hpp"
++#include "plugin/plugin_request.hpp"
++
++namespace phosphor::logging
++{
++
++/**
++ * @brief Manager for runtime plugin instances.
++ *
++ * PluginManager acts as the coordination layer between
++ * plugin requests, plugin descriptors, factories, and
++ * runtime plugin instances.
++ *
++ * The manager is responsible for operations involving
++ * runtime plugin instances. It uses PluginRegistry to
++ * construct plugin descriptors, locate the factory
++ * associated with a descriptor type, and delegate plugin
++ * construction to the corresponding PluginFactory.
++ *
++ * Centralizing plugin-related operations behind a single
++ * interface isolates callers from registry and factory
++ * implementation details.
++ */
++class PluginManager
++{
++  public:
++    /**
++     * @brief Construct a plugin manager.
++     */
++    PluginManager();
++    explicit PluginManager(PluginRegistry&& registry);
++
++    PluginManager(const PluginManager&) = delete;
++    PluginManager(PluginManager&&) = delete;
++    PluginManager& operator=(const PluginManager&) = delete;
++    PluginManager& operator=(PluginManager&&) = delete;
++    ~PluginManager() = default;
++
++    /**
++     * @brief Create runtime plugins.
++     *
++     * Creates runtime plugin instances from the supplied
++     * plugin requests.
++     *
++     * @param[in] context Plugin creation context.
++     * @param[in] requests Plugin requests.
++     *
++     * @return Runtime plugin instances.
++     */
++    PluginList create(const PluginContext& context,
++                      const plugin::RequestList& requests) const;
++
++  private:
++    /**
++     * @brief Create a plugin instance.
++     *
++     * @param[in] context Plugin creation context.
++     * @param[in] descriptor Plugin creation descriptor.
++     *
++     * @return Plugin instance or nullptr if no plugin is
++     *         registered for the descriptor type.
++     */
++    PluginPtr create(const PluginContext& context,
++                     const plugin::Descriptor& descriptor) const;
++
++    /**
++     * @brief Register builtin plugin implementations.
++     */
++    void registerBuiltins();
++
++    /** Plugin registry. */
++    PluginRegistry registry;
++};
++
++} // namespace phosphor::logging
+diff --git a/plugin/plugin_registry.hpp b/plugin/plugin_registry.hpp
+index 3fd5e8e..e7f44fd 100644
+--- a/plugin/plugin_registry.hpp
++++ b/plugin/plugin_registry.hpp
+@@ -27,9 +27,9 @@ class PluginRegistry
+     PluginRegistry() = default;
+ 
+     PluginRegistry(const PluginRegistry&) = delete;
+-    PluginRegistry(PluginRegistry&&) = delete;
++    PluginRegistry(PluginRegistry&&) = default;
+     PluginRegistry& operator=(const PluginRegistry&) = delete;
+-    PluginRegistry& operator=(PluginRegistry&&) = delete;
++    PluginRegistry& operator=(PluginRegistry&&) = default;
+ 
+     ~PluginRegistry() = default;
+ 
+diff --git a/plugin/plugin_request.hpp b/plugin/plugin_request.hpp
+index 833a503..88d5818 100644
+--- a/plugin/plugin_request.hpp
++++ b/plugin/plugin_request.hpp
+@@ -29,4 +29,6 @@ struct Request
+     nlohmann::json data;
+ };
+ 
++using RequestList = std::vector<Request>;
++
+ } // namespace phosphor::logging::plugin
+diff --git a/test/plugin/meson.build b/test/plugin/meson.build
+index aefeeb5..a728ed9 100644
+--- a/test/plugin/meson.build
++++ b/test/plugin/meson.build
+@@ -15,3 +15,21 @@ test(
+         ),
+     ),
+ )
++
++test(
++    'test_plugin_manager',
++    executable(
++        'test-plugin-manager',
++        'plugin_manager_test.cpp',
++        link_with: [log_manager_lib],
++        dependencies: [
++            gtest_dep,
++            gmock_dep,
++            log_manager_deps,
++        ],
++        include_directories: include_directories(
++            '../../',
++            '../../gen',
++        ),
++    ),
++)
+diff --git a/test/plugin/plugin_manager_test.cpp b/test/plugin/plugin_manager_test.cpp
+new file mode 100644
+index 0000000..a2d7afa
+--- /dev/null
++++ b/test/plugin/plugin_manager_test.cpp
+@@ -0,0 +1,122 @@
++#include "plugin/plugin_factory.hpp"
++#include "plugin/plugin_manager.hpp"
++#include "plugin/plugin_registry.hpp"
++
++#include <gtest/gtest.h>
++
++namespace phosphor::logging::test
++{
++
++namespace
++{
++
++constexpr auto testInterface = "xyz.openbmc_project.Logging.Test";
++
++class TestPlugin : public Plugin
++{
++  public:
++    std::string_view interface() const override
++    {
++        return testInterface;
++    }
++};
++
++class TestDescriptor : public plugin::Descriptor
++{
++  public:
++    std::string_view interface() const override
++    {
++        return testInterface;
++    }
++};
++
++class TestFactory : public PluginFactory
++{
++  public:
++    plugin::DescriptorPtr createDescriptor(
++        const plugin::Request&) const override
++    {
++        return std::make_unique<TestDescriptor>();
++    }
++
++    PluginPtr create(const PluginContext&,
++                     const plugin::Descriptor&) const override
++    {
++        return std::make_unique<TestPlugin>();
++    }
++};
++
++} // namespace
++
++TEST(PluginManagerTest, CreatePlugin)
++{
++    PluginRegistry registry;
++    registry.registerPlugin(testInterface, std::make_unique<TestFactory>());
++    PluginManager manager(std::move(registry));
++    auto bus = sdbusplus::bus::new_default();
++    PluginContext context{
++        bus,
++        "/xyz/openbmc_project/logging/entry/1",
++    };
++    plugin::RequestList requests{
++        {
++            .interface = testInterface,
++            .data = {},
++        },
++    };
++
++    auto plugins = manager.create(context, requests);
++    ASSERT_EQ(plugins.size(), 1);
++
++    EXPECT_EQ(plugins.front()->interface(), testInterface);
++}
++
++TEST(PluginManagerTest, CreateUnknownPlugin)
++{
++    PluginRegistry registry;
++    PluginManager manager(std::move(registry));
++    auto bus = sdbusplus::bus::new_default();
++    PluginContext context{
++        bus,
++        "/xyz/openbmc_project/logging/entry/1",
++    };
++    plugin::RequestList requests{
++        {
++            .interface = "unknown.interface",
++            .data = {},
++        },
++    };
++    auto plugins = manager.create(context, requests);
++
++    EXPECT_TRUE(plugins.empty());
++}
++
++TEST(PluginManagerTest, CreateMultiplePlugins)
++{
++    PluginRegistry registry;
++    registry.registerPlugin(testInterface, std::make_unique<TestFactory>());
++    PluginManager manager(std::move(registry));
++    auto bus = sdbusplus::bus::new_default();
++    PluginContext context{
++        bus,
++        "/xyz/openbmc_project/logging/entry/1",
++    };
++    plugin::RequestList requests{
++        {
++            .interface = testInterface,
++            .data = {},
++        },
++        {
++            .interface = testInterface,
++            .data = {},
++        },
++    };
++
++    auto plugins = manager.create(context, requests);
++    ASSERT_EQ(plugins.size(), 2);
++
++    EXPECT_EQ(plugins[0]->interface(), testInterface);
++    EXPECT_EQ(plugins[1]->interface(), testInterface);
++}
++
++} // namespace phosphor::logging::test
+-- 
+2.54.0
+

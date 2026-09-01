@@ -1,0 +1,649 @@
+From 2d0b0963bfad114602ae4c0b6d2ece9e5c06e902 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Tue, 25 Aug 2026 02:42:00 -0500
+Subject: [PATCH 26/33] plugin:CPER:Raw Add plugin support
+
+Add support for the
+xyz.openbmc_project.Logging.Extension.CPER.Raw extension.
+
+Introduce a schema-backed descriptor and runtime plugin implementation
+for CPERRaw metadata. Raw CPER payloads are validated against a
+configurable maximum payload size, persisted using the artifact
+utility, and represented through ArtifactRef instances stored by
+the descriptor.
+
+The plugin augments log entries with the
+xyz.openbmc_project.Logging.CPER.Raw D-Bus interface and exposes
+persisted raw CPER payloads through the GetFileHandle method.
+
+Add a corresponding plugin factory and register it with the
+plugin registry, enabling request-to-descriptor translation and
+runtime plugin creation through the existing plugin manager framework.
+
+Also add unit tests covering descriptor creation, plugin registration,
+factory creation, payload validation, artifact persistence, payload
+size enforcement, and raw artifact retrieval.
+
+Tested:
+
+'''
+Tested:
+    '''
+    Generated a test CPER event with a 16KB raw  payload.
+
+    busctl introspect xyz.openbmc_project.Logging \
+      /xyz/openbmc_project/logging/entry/362
+
+    ...
+
+    xyz.openbmc_project.Logging.CPER.Raw interface -         -
+    .GetCPERRaw                                   method    -         h
+
+    xyz.openbmc_project.Logging.Extension.CPER.Processed interface -         -
+    .DiagnosticDataType                           property  s
+    .NotificationType                             property  s
+    .SectionType                                  property  s
+    .Oem                                          property  a{ss}
+
+    xyz.openbmc_project.Logging.Entry interface -         -
+    .Id                                            property u 362
+    .Message                                       property s
+                                                  "xyz.openbmc_project.State.Cper.Error"
+
+    ...
+
+    busctl --json=pretty call xyz.openbmc_project.Logging \
+      /xyz/openbmc_project/logging/entry/362 \
+      org.freedesktop.DBus.Properties GetAll \
+      s xyz.openbmc_project.Logging.Extension.CPER.Processed
+
+    {
+        "DiagnosticDataType": {
+            "data": "xyz.openbmc_project.Logging.CPER.Types.ContentType.CPER"
+        },
+        "NotificationType": {
+            "data": "8f87f311-c998-4d9e-a0c4-fb4dfc2c8c14"
+        },
+        "SectionType": {
+            "data": "dc3ea0b0-a144-4797-b95b-53fa242b6e1d"
+        },
+        "Oem": {
+            "data": {
+                "Source":
+                    "/xyz/openbmc_project/inventory/system"
+            }
+        }
+    }
+
+    Verified that both CPERRaw and CPERProcessed metadata plugins were
+    attached to the same log entry, demonstrating support for multiple
+    runtime metadata plugins.
+
+    Verified raw CPER data was persisted as an artifact:
+
+    ls -l /var/lib/phosphor-logging/artifacts/
+
+    -rw------- 1 root root 16384 Aug 25 07:47 cperraw-phzOwZ
+
+    Verified persisted artifact size matches the generated 16KB CPER raw
+    payload and is accessible through the CPERRaw interface.
+    '''
+'''
+
+Change-Id: I42e068b768790e7181c8dcd81f0592f8268a145b
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ config/config.h.meson                |   1 +
+ config/meson.build                   |   2 +
+ meson.options                        |   7 ++
+ plugin/cper_raw_descriptor.hpp       |  95 +++++++++++++++++++++
+ plugin/cper_raw_plugin.cpp           |  84 +++++++++++++++++++
+ plugin/cper_raw_plugin.hpp           | 119 +++++++++++++++++++++++++++
+ plugin/meson.build                   |   1 +
+ plugin/plugin_builtin.cpp            |   2 +
+ test/plugin/cper_raw_plugin_test.cpp | 115 ++++++++++++++++++++++++++
+ test/plugin/meson.build              |  18 ++++
+ 10 files changed, 444 insertions(+)
+ create mode 100644 plugin/cper_raw_descriptor.hpp
+ create mode 100644 plugin/cper_raw_plugin.cpp
+ create mode 100644 plugin/cper_raw_plugin.hpp
+ create mode 100644 test/plugin/cper_raw_plugin_test.cpp
+
+diff --git a/config/config.h.meson b/config/config.h.meson
+index 301e822..613dc22 100644
+--- a/config/config.h.meson
++++ b/config/config.h.meson
+@@ -5,6 +5,7 @@ inline constexpr auto RSYSLOG_SERVER_CONFIG_FILE = "@rsyslog_server_conf@";
+ extern const bool IS_UNIT_TEST;
+ static constexpr size_t ERROR_CAP = @error_cap@;
+ static constexpr size_t ERROR_INFO_CAP = @error_info_cap@;
++static constexpr size_t MAX_CPER_RAW_BINARY_SIZE = @max_cper_raw_binary_size@;
+ static constexpr bool LG2_COMMIT_DBUS = @lg2_commit_dbus@;
+ static constexpr bool LG2_COMMIT_JOURNAL = @lg2_commit_journal@;
+ static constexpr bool REDUNDANT_BMC = @redundant_bmc@;
+diff --git a/config/meson.build b/config/meson.build
+index 9b2f988..fc57333 100644
+--- a/config/meson.build
++++ b/config/meson.build
+@@ -22,6 +22,8 @@ conf_data.set(
+     get_option('runtime-metadata-plugin'),
+ )
+ 
++conf_data.set('max_cper_raw_binary_size', get_option('max-cper-raw-binary-size'))
++
+ cxx = meson.get_compiler('cpp')
+ if cxx.has_header('poll.h')
+     add_project_arguments('-DPLDM_HAS_POLL=1', language: 'cpp')
+diff --git a/meson.options b/meson.options
+index 5df763e..963a566 100644
+--- a/meson.options
++++ b/meson.options
+@@ -75,3 +75,10 @@ option(
+     value: '',
+     description: 'Plugin interface used for runtime metadata',
+ )
++
++option(
++    'max-cper-raw-binary-size',
++    type: 'integer',
++    value: 16384,
++    description: 'Maximum supported raw CPER binary size in bytes',
++)
+diff --git a/plugin/cper_raw_descriptor.hpp b/plugin/cper_raw_descriptor.hpp
+new file mode 100644
+index 0000000..cd6dded
+--- /dev/null
++++ b/plugin/cper_raw_descriptor.hpp
+@@ -0,0 +1,95 @@
++#pragma once
++
++#include "plugin/plugin_descriptor.hpp"
++#include "plugin/utils/artifact.hpp"
++
++#include <string_view>
++#include <utility>
++
++namespace phosphor::logging::plugin::cper::raw
++{
++
++/**
++ * @brief CPERRaw D-Bus interface name.
++ */
++inline constexpr std::string_view interface =
++    "xyz.openbmc_project.Logging.Extension.CPER.Raw";
++
++/**
++ * @brief CPER Raw interface properties.
++ *
++ * Represents the schema-defined properties of the
++ * xyz.openbmc_project.Logging.Extension.CPER.Raw interface.
++ *
++ * This structure serves as the canonical in-memory
++ * representation of CPER Raw metadata within the plugin
++ * framework.
++ */
++struct Properties
++{
++    /**
++     * @brief Reference to the persisted CPER artifact.
++     *
++     * References the persisted raw CPER payload associated
++     * with the log entry.
++     */
++    utils::ArtifactRef artifact;
++};
++
++/**
++ * @brief CPER Raw plugin creation descriptor.
++ *
++ * Carries schema-backed CPERRaw metadata extracted from a
++ * logging event and serves as the creation input for a
++ * runtime CPERRaw plugin instance.
++ */
++class Descriptor : public phosphor::logging::plugin::Descriptor
++{
++  public:
++    Descriptor() = delete;
++    Descriptor(const Descriptor&) = delete;
++    Descriptor(Descriptor&&) = default;
++    Descriptor& operator=(const Descriptor&) = delete;
++    Descriptor& operator=(Descriptor&&) = default;
++    ~Descriptor() override = default;
++
++    /**
++     * @brief Construct a CPERRaw descriptor.
++     *
++     * @param[in] properties
++     *     CPERRaw interface properties.
++     */
++    explicit Descriptor(Properties properties) :
++        properties_(std::move(properties))
++    {}
++
++    /**
++     * @brief Return plugin interface identifier.
++     *
++     * @return Interface name.
++     */
++    std::string_view interface() const override
++    {
++        return cper::raw::interface;
++    }
++
++    /**
++     * @brief Return CPER Raw properties.
++     *
++     * Consumers should prefer this accessor over
++     * field-specific accessors to keep descriptor usage
++     * aligned with the underlying schema definition.
++     *
++     * @return CPER Raw properties.
++     */
++    const Properties& properties() const
++    {
++        return properties_;
++    }
++
++  private:
++    /** Schema-backed CPER Raw properties. */
++    Properties properties_;
++};
++
++} // namespace phosphor::logging::plugin::cper::raw
+diff --git a/plugin/cper_raw_plugin.cpp b/plugin/cper_raw_plugin.cpp
+new file mode 100644
+index 0000000..4ec9919
+--- /dev/null
++++ b/plugin/cper_raw_plugin.cpp
+@@ -0,0 +1,84 @@
++#include "config.h"
++
++#include "plugin/cper_raw_plugin.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <stdexcept>
++#include <utility>
++
++namespace phosphor::logging::plugin::cper::raw
++{
++
++Plugin::Plugin(const PluginContext& context, const Descriptor& descriptor) :
++    Interface(context.bus, context.objectPath.c_str()),
++    artifact_(descriptor.properties().artifact)
++{}
++
++std::string_view Plugin::interface() const
++{
++    return cper::raw::interface;
++}
++
++sdbusplus::message::unix_fd Plugin::getFileHandle()
++{
++    auto fd = utils::openArtifact(artifact_);
++    if (fd < 0)
++    {
++        throw std::runtime_error("Failed to open GetFileHandle artifact");
++    }
++
++    return sdbusplus::message::unix_fd(fd);
++}
++
++PluginPtr Factory::create(const PluginContext& context,
++                          const plugin::Descriptor& descriptor) const
++{
++    if (descriptor.interface() != cper::raw::interface)
++    {
++        throw std::invalid_argument(
++            "CPERRaw factory received non-CPER Raw descriptor");
++    }
++    const auto& rawDescriptor = dynamic_cast<const Descriptor&>(descriptor);
++
++    return std::make_unique<Plugin>(context, rawDescriptor);
++}
++
++void registerPlugin(PluginRegistry& registry)
++{
++    registry.registerPlugin(interface, std::make_unique<Factory>());
++}
++
++plugin::DescriptorPtr Factory::createDescriptor(
++    const plugin::Request& request) const
++{
++    const auto payload = request.data.value(dataKey, std::vector<uint8_t>{});
++    if (payload.empty())
++    {
++        return nullptr;
++    }
++    if (payload.size() > MAX_CPER_RAW_BINARY_SIZE)
++    {
++        lg2::warning("Ignoring oversized CPERRaw payload. "
++                     "SIZE={SIZE} LIMIT={LIMIT}",
++                     "SIZE", payload.size(), "LIMIT", MAX_CPER_RAW_BINARY_SIZE);
++
++        return nullptr;
++    }
++
++    auto artifact = utils::persistArtifact(payload, cperRawArtifactSuffix);
++    if (!artifact)
++    {
++        lg2::error("Failed to persist CPERRaw artifact");
++
++        return nullptr;
++    }
++
++    Properties properties{
++        .artifact = std::move(artifact),
++    };
++
++    return std::make_unique<Descriptor>(std::move(properties));
++}
++
++} // namespace phosphor::logging::plugin::cper::raw
+diff --git a/plugin/cper_raw_plugin.hpp b/plugin/cper_raw_plugin.hpp
+new file mode 100644
+index 0000000..de43057
+--- /dev/null
++++ b/plugin/cper_raw_plugin.hpp
+@@ -0,0 +1,119 @@
++#pragma once
++
++#include "plugin/cper_raw_descriptor.hpp"
++#include "plugin/plugin.hpp"
++#include "plugin/plugin_factory.hpp"
++#include "plugin/plugin_registry.hpp"
++#include "plugin/plugin_request.hpp"
++
++#include <xyz/openbmc_project/Logging/CPER/Raw/server.hpp>
++
++namespace phosphor::logging::plugin::cper::raw
++{
++
++inline constexpr auto dataKey = "Data";
++inline constexpr auto cperRawArtifactSuffix = "cperraw";
++
++/** CPER Raw runtime D-Bus interface. */
++using Interface = sdbusplus::server::xyz::openbmc_project::logging::cper::Raw;
++
++/**
++ * @brief CPER Raw plugin implementation.
++ *
++ * Augments a log entry with the
++ * xyz.openbmc_project.Logging.CPER Raw interface.
++ *
++ * The plugin exposes persisted raw CPER payloads
++ * associated with a logging entry.
++ */
++class Plugin : public phosphor::logging::Plugin, public Interface
++{
++  public:
++    Plugin() = delete;
++    Plugin(const Plugin&) = delete;
++    Plugin(Plugin&&) = delete;
++    Plugin& operator=(const Plugin&) = delete;
++    Plugin& operator=(Plugin&&) = delete;
++    ~Plugin() override = default;
++
++    /**
++     * @brief Construct a CPER Raw plugin.
++     *
++     * @param[in] context Plugin creation context.
++     * @param[in] descriptor CPER Raw descriptor.
++     */
++    Plugin(const PluginContext& context, const Descriptor& descriptor);
++
++    /**
++     * @brief Return plugin interface identifier.
++     *
++     * @return Plugin interface name.
++     */
++    std::string_view interface() const override;
++
++    /**
++     * @brief Retrieve the raw CPER artifact.
++     *
++     * Opens the persisted CPER artifact and returns a
++     * read-only file descriptor.
++     *
++     * @return File descriptor referencing the raw CPER
++     *         payload.
++     */
++    sdbusplus::message::unix_fd getFileHandle() override;
++
++  private:
++    /** Persisted CPER artifact reference. */
++    utils::ArtifactRef artifact_;
++};
++
++/**
++ * @brief Factory for CPER Raw plugins.
++ */
++class Factory : public phosphor::logging::PluginFactory
++{
++  public:
++    Factory() = default;
++    Factory(const Factory&) = delete;
++    Factory(Factory&&) = delete;
++    Factory& operator=(const Factory&) = delete;
++    Factory& operator=(Factory&&) = delete;
++    ~Factory() override = default;
++
++    /**
++     * @brief Create a CPER Raw plugin instance.
++     *
++     * @param[in] context Plugin creation context.
++     * @param[in] descriptor Plugin descriptor.
++     *
++     * @return Newly created CPER Raw plugin.
++     */
++    PluginPtr create(const PluginContext& context,
++                     const plugin::Descriptor& descriptor) const override;
++
++    /**
++     * @brief Create a CPER Raw descriptor.
++     *
++     * Converts request metadata into a runtime
++     * CPER Raw descriptor.
++     *
++     * Raw payloads are validated, persisted using the
++     * artifact utility, and represented through an
++     * ArtifactRef stored in the resulting descriptor.
++     *
++     * @param[in] request Plugin request information.
++     *
++     * @return CPERRaw descriptor.
++     */
++    plugin::DescriptorPtr createDescriptor(
++        const plugin::Request& request) const override;
++};
++
++/**
++ * @brief Register the CPER Raw plugin implementation.
++ *
++ * @param[in,out] registry Plugin registry.
++ */
++void registerPlugin(PluginRegistry& registry);
++
++} // namespace phosphor::logging::plugin::cper::raw
+diff --git a/plugin/meson.build b/plugin/meson.build
+index ae8fb98..20d2fe0 100644
+--- a/plugin/meson.build
++++ b/plugin/meson.build
+@@ -2,6 +2,7 @@ subdir('utils')
+ 
+ plugin_sources = files(
+     'cper_processed_plugin.cpp',
++    'cper_raw_plugin.cpp',
+     'plugin_builtin.cpp',
+     'plugin_manager.cpp',
+     'plugin_registry.cpp',
+diff --git a/plugin/plugin_builtin.cpp b/plugin/plugin_builtin.cpp
+index 8ca4a1b..56914fe 100644
+--- a/plugin/plugin_builtin.cpp
++++ b/plugin/plugin_builtin.cpp
+@@ -1,6 +1,7 @@
+ #include "plugin/plugin_builtin.hpp"
+ 
+ #include "plugin/cper_processed_plugin.hpp"
++#include "plugin/cper_raw_plugin.hpp"
+ 
+ namespace phosphor::logging
+ {
+@@ -8,6 +9,7 @@ namespace phosphor::logging
+ void registerBuiltins(PluginRegistry& registry)
+ {
+     plugin::cper::processed::registerPlugin(registry);
++    plugin::cper::raw::registerPlugin(registry);
+ }
+ 
+ } // namespace phosphor::logging
+diff --git a/test/plugin/cper_raw_plugin_test.cpp b/test/plugin/cper_raw_plugin_test.cpp
+new file mode 100644
+index 0000000..4af249d
+--- /dev/null
++++ b/test/plugin/cper_raw_plugin_test.cpp
+@@ -0,0 +1,115 @@
++#include "plugin/cper_raw_descriptor.hpp"
++#include "plugin/cper_raw_plugin.hpp"
++#include "plugin/plugin_registry.hpp"
++
++#include <gtest/gtest.h>
++
++namespace phosphor::logging::plugin::cper::raw
++{
++
++class CperRawPluginTest : public ::testing::Test
++{
++  protected:
++    void SetUp() override
++    {
++        bus = std::make_unique<sdbusplus::bus_t>(sdbusplus::bus::new_default());
++    }
++
++    PluginContext makeContext(
++        const std::string& path = "/xyz/openbmc_project/logging/entry/1")
++    {
++        return PluginContext{
++            *bus,
++            path,
++        };
++    }
++
++    static Descriptor makeDescriptor()
++    {
++        Properties properties{
++            .artifact = {.path = "/tmp/cperraw-artifact"},
++        };
++
++        return Descriptor(std::move(properties));
++    }
++
++    std::unique_ptr<sdbusplus::bus_t> bus;
++};
++
++class FakeDescriptor : public plugin::Descriptor
++{
++  public:
++    std::string_view interface() const override
++    {
++        return "xyz.openbmc_project.Logging.Extension.Fake";
++    }
++};
++
++TEST_F(CperRawPluginTest, RegistrationLookup)
++{
++    PluginRegistry registry;
++    registerPlugin(registry);
++
++    EXPECT_NE(registry.lookup(cper::raw::interface), nullptr);
++}
++
++TEST_F(CperRawPluginTest, LookupUnknownInterfaceReturnsNull)
++{
++    PluginRegistry registry;
++
++    EXPECT_EQ(registry.lookup("xyz.openbmc_project.Logging.Extension.Unknown"),
++              nullptr);
++}
++
++TEST_F(CperRawPluginTest, FactoryCreate)
++{
++    Factory factory;
++    auto descriptor = makeDescriptor();
++    auto plugin = factory.create(makeContext(), descriptor);
++    ASSERT_NE(plugin, nullptr);
++
++    EXPECT_EQ(plugin->interface(), interface);
++}
++
++TEST_F(CperRawPluginTest, FactoryCreatesRawPlugin)
++{
++    Factory factory;
++    auto descriptor = makeDescriptor();
++    auto plugin = factory.create(makeContext(), descriptor);
++    ASSERT_NE(plugin, nullptr);
++
++    EXPECT_NE(dynamic_cast<Plugin*>(plugin.get()), nullptr);
++}
++
++TEST_F(CperRawPluginTest, FactoryRejectsWrongDescriptor)
++{
++    Factory factory;
++    FakeDescriptor descriptor;
++
++    EXPECT_THROW(factory.create(makeContext(), descriptor),
++                 std::invalid_argument);
++}
++
++TEST_F(CperRawPluginTest, DescriptorPropertiesPropagated)
++{
++    Properties properties{
++        .artifact = {.path = "/tmp/cperraw-artifact"},
++    };
++    Descriptor descriptor(std::move(properties));
++    Plugin plugin(makeContext(), descriptor);
++
++    EXPECT_EQ(plugin.interface(), interface);
++}
++
++TEST_F(CperRawPluginTest, DescriptorReturnsArtifact)
++{
++    constexpr auto artifactPath = "/tmp/cperraw-artifact";
++    Properties properties{
++        .artifact = {.path = artifactPath},
++    };
++
++    Descriptor descriptor(std::move(properties));
++    EXPECT_EQ(descriptor.properties().artifact.path, artifactPath);
++}
++
++} // namespace phosphor::logging::plugin::cper::raw
+diff --git a/test/plugin/meson.build b/test/plugin/meson.build
+index ebe1248..64f9d7d 100644
+--- a/test/plugin/meson.build
++++ b/test/plugin/meson.build
+@@ -71,3 +71,21 @@ test(
+         ),
+     ),
+ )
++
++test(
++    'test_cper_raw_plugin',
++    executable(
++        'test-cper-raw-plugin',
++        'cper_raw_plugin_test.cpp',
++        link_with: [log_manager_lib],
++        dependencies: [
++            gtest_dep,
++            gmock_dep,
++            log_manager_deps,
++        ],
++        include_directories: include_directories(
++            '../../',
++            '../../gen',
++        ),
++    ),
++)
+-- 
+2.54.0
+

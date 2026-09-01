@@ -1,0 +1,75 @@
+From 130e6a2c7a313872e34fb1d6bdd06d364214357b Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Thu, 13 Aug 2026 05:01:25 -0500
+Subject: [PATCH 22/33] config: Add meson option for runtime metadata
+
+Add a new option 'runtime-metadata-plugin' that is in
+preparation for supporting runtime metadata through the logging
+plugin framework.
+
+The value of this option is stored in a new
+RUNTIME_METADATA_PLUGIN variable that will be used by upcoming
+code to enable the functionality.
+
+Tested:
+
+'''
+config.h snippets:
+static constexpr auto RUNTIME_METADATA_PLUGIN = "xyz.openbmc_project.Logging.Diagnostic.CPER";
+And when unset:
+static constexpr auto RUNTIME_METADATA_PLUGIN = "";
+'''
+
+Change-Id: Ibc8f29f34b0492f6f9e3b027c49898a7d71e0c44
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ config/config.h.meson | 1 +
+ config/meson.build    | 5 +++++
+ meson.options         | 7 +++++++
+ 3 files changed, 13 insertions(+)
+
+diff --git a/config/config.h.meson b/config/config.h.meson
+index d975101..301e822 100644
+--- a/config/config.h.meson
++++ b/config/config.h.meson
+@@ -8,5 +8,6 @@ static constexpr size_t ERROR_INFO_CAP = @error_info_cap@;
+ static constexpr bool LG2_COMMIT_DBUS = @lg2_commit_dbus@;
+ static constexpr bool LG2_COMMIT_JOURNAL = @lg2_commit_journal@;
+ static constexpr bool REDUNDANT_BMC = @redundant_bmc@;
++static constexpr auto RUNTIME_METADATA_PLUGIN = "@runtime_metadata_plugin@";
+ 
+ // vim: ft=cpp
+diff --git a/config/meson.build b/config/meson.build
+index 7d5df21..9b2f988 100644
+--- a/config/meson.build
++++ b/config/meson.build
+@@ -17,6 +17,11 @@ conf_data.set(
+ redundant_bmc = get_option('redundant-bmc')
+ conf_data.set10('redundant_bmc', redundant_bmc)
+ 
++conf_data.set(
++    'runtime_metadata_plugin',
++    get_option('runtime-metadata-plugin'),
++)
++
+ cxx = meson.get_compiler('cpp')
+ if cxx.has_header('poll.h')
+     add_project_arguments('-DPLDM_HAS_POLL=1', language: 'cpp')
+diff --git a/meson.options b/meson.options
+index 8f07edd..5df763e 100644
+--- a/meson.options
++++ b/meson.options
+@@ -68,3 +68,10 @@ option(
+     value: true,
+     description: 'Enable support for redundant BMC systems',
+ )
++
++option(
++    'runtime-metadata-plugin',
++    type: 'string',
++    value: '',
++    description: 'Plugin interface used for runtime metadata',
++)
+-- 
+2.54.0
+

@@ -1,0 +1,81 @@
+From cb383c2b1ed9ff9fc5019084cbb8bdc8232f7f05 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Wed, 5 Aug 2026 01:21:52 -0500
+Subject: [PATCH 08/33] plugin: introduce descriptor framework
+
+Introduce the descriptor abstractions used by the logging
+plugin framework.
+
+Descriptors provide a common representation for plugin-specific
+metadata extracted from events and serve as the interface between
+event processing and plugin creation.
+
+Add the base Descriptor interface together with common descriptor
+ownership and container types. Concrete plugin implementations
+can extend this interface to define plugin-specific metadata.
+
+No functional changes intended.
+
+Change-Id: I0084c783bd379f40b1d6613710aedfbf6eaeec84
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ plugin/plugin_descriptor.hpp | 47 ++++++++++++++++++++++++++++++++++++
+ 1 file changed, 47 insertions(+)
+ create mode 100644 plugin/plugin_descriptor.hpp
+
+diff --git a/plugin/plugin_descriptor.hpp b/plugin/plugin_descriptor.hpp
+new file mode 100644
+index 0000000..264000c
+--- /dev/null
++++ b/plugin/plugin_descriptor.hpp
+@@ -0,0 +1,47 @@
++#pragma once
++
++#include <memory>
++#include <string_view>
++#include <vector>
++
++namespace phosphor::logging::plugin
++{
++
++/**
++ * @brief Base class for plugin descriptors.
++ *
++ * A descriptor carries plugin-specific metadata extracted from an
++ * event and serves as the input used to construct a runtime plugin.
++ *
++ * Concrete descriptor implementations define the metadata required
++ * by individual plugin interfaces.
++ */
++class Descriptor
++{
++  public:
++    Descriptor() = default;
++    virtual ~Descriptor() = default;
++
++    Descriptor(const Descriptor&) = default;
++    Descriptor(Descriptor&&) = default;
++    Descriptor& operator=(const Descriptor&) = delete;
++    Descriptor& operator=(Descriptor&&) = default;
++
++    /**
++     * @brief Get the plugin interface identifier.
++     *
++     * The interface name is the canonical plugin identity used
++     * throughout the framework.
++     *
++     * @return Plugin interface name.
++     */
++    virtual std::string_view interface() const = 0;
++};
++
++/** Unique ownership of a plugin descriptor. */
++using DescriptorPtr = std::unique_ptr<Descriptor>;
++
++/** Collection of plugin descriptors associated with an event. */
++using DescriptorList = std::vector<DescriptorPtr>;
++
++} // namespace phosphor::logging::plugin
+-- 
+2.54.0
+

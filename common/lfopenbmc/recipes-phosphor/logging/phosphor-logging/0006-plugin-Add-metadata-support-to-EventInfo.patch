@@ -1,0 +1,540 @@
+From c1b7fc5d89c1f69a88ad968d6fc00bd51c7b813d Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Wed, 5 Aug 2026 00:57:00 -0500
+Subject: [PATCH 06/33] plugin: Add metadata support to EventInfo
+
+Introduce PluginRequest to represent plugin requests associated
+with logging events.
+
+Extend EventInfo with plugin metadata support, enabling
+logging events to carry framework-defined extension data
+alongside standard event information.
+
+Plugin metadata is represented as JSON to allow plugin-defined
+schemas and future extension mechanisms without requiring
+changes to the core event model.
+
+This change introduces the supporting data structures only and
+does not alter existing logging behavior.
+
+Change-Id: Ib69585b1d67ad94dccc2554f08d804f683fa275e
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ lib/lg2_commit.cpp        |   1 +
+ lib/lg2_commit.hpp        |   7 +
+ plugin/README.md          | 391 ++++++++++++++++++++++++++++++++++++++
+ plugin/plugin_request.hpp |  32 ++++
+ plugin/plugin_type.hpp    |  18 ++
+ 5 files changed, 449 insertions(+)
+ create mode 100644 plugin/README.md
+ create mode 100644 plugin/plugin_request.hpp
+ create mode 100644 plugin/plugin_type.hpp
+
+diff --git a/lib/lg2_commit.cpp b/lib/lg2_commit.cpp
+index 711cdc7..77e5496 100644
+--- a/lib/lg2_commit.cpp
++++ b/lib/lg2_commit.cpp
+@@ -113,6 +113,7 @@ auto extractEvent(sdbusplus::exception::generated_event_base&& event)
+         .message = event.name(),
+         .level = severity_from_syslog(event.severity()),
+         .additionalData = data_from_json(event),
++        .plugins = {},
+     };
+ }
+ 
+diff --git a/lib/lg2_commit.hpp b/lib/lg2_commit.hpp
+index 1f9beaf..b18718c 100644
+--- a/lib/lg2_commit.hpp
++++ b/lib/lg2_commit.hpp
+@@ -1,15 +1,19 @@
+ #pragma once
+ 
++#include "plugin/plugin_request.hpp"
++
+ #include <sdbusplus/exception.hpp>
+ #include <xyz/openbmc_project/Logging/Entry/client.hpp>
+ 
+ #include <map>
+ #include <string>
++#include <vector>
+ 
+ namespace lg2::details
+ {
+ 
+ using Entry = sdbusplus::client::xyz::openbmc_project::logging::Entry<>;
++using PluginRequest = phosphor::logging::plugin::Request;
+ 
+ /**
+  * Information extracted from a generated event.
+@@ -24,6 +28,9 @@ struct EventInfo
+ 
+     /** Event metadata. */
+     std::map<std::string, std::string> additionalData;
++
++    /** Optional plugin requests associated with the event. */
++    std::vector<PluginRequest> plugins;
+ };
+ 
+ /** Extract information from a generated event.
+diff --git a/plugin/README.md b/plugin/README.md
+new file mode 100644
+index 0000000..1c126bf
+--- /dev/null
++++ b/plugin/README.md
+@@ -0,0 +1,391 @@
++# phosphor-logging Plugin Framework
++
++## Overview
++
++The phosphor-logging plugin framework allows log entries to be extended with
++plugin-specific functionality while keeping the Logging Manager independent of
++plugin implementations.
++
++The framework provides a common mechanism for:
++
++1. Producing plugin requests
++2. Generating plugin descriptors
++3. Creating runtime plugin instances
++4. Associating plugins with log entries
++
++Plugin requests are represented by `plugin::Request` objects and may originate
++from:
++
++- Event extension metadata (`_EXTENSIONS`)
++- Platform-specific request providers
++- OEM-specific request providers
++- Plugin request extension callbacks
++- Future native event support
++
++All plugin requests follow the same flow:
++
++```text
++plugin::Request
++        │
++        ▼
++    Descriptor
++        │
++        ▼
++      Plugin
++        │
++        ▼
++    Log Entry
++```
++
++This allows new plugin types and plugin request sources to be added without
++introducing plugin-specific logic into the Logging Manager.
++
++---
++
++## Architecture
++
++The framework separates plugin request processing from runtime plugin creation.
++
++```text
++plugin::Request
++      │
++      ▼
++PluginRegistry
++      │
++      ▼
++PluginFactory::createDescriptor()
++      │
++      ▼
++Descriptor
++      │
++      ▼
++PluginFactory::create()
++      │
++      ▼
++Runtime Plugin
++      │
++      ▼
++Log Entry
++```
++
++---
++
++## Core Components
++
++### plugin::Request
++
++`plugin::Request` represents a request to associate a plugin with a log entry.
++
++```cpp
++plugin::Request
++{
++    interface =
++        "xyz.openbmc_project.Logging.Extension.CPER.Processed",
++
++    data = {
++        ...
++    }
++};
++```
++
++A request contains:
++
++- Plugin interface identifier
++- Plugin-specific metadata payload
++
++Requests are transient and exist only during plugin processing.
++
++---
++
++### Descriptor
++
++A descriptor contains validated, schema-backed data required to construct a
++runtime plugin instance.
++
++Descriptors:
++
++- Encapsulate plugin creation data
++- Separate request translation from runtime creation
++- Allow validation before instantiation
++- Provide a typed representation of extension metadata
++
++Descriptors are transient transport objects used only during plugin creation.
++
++---
++
++### PluginFactory
++
++Each plugin provides a factory responsible for:
++
++1. Translating `plugin::Request` into a descriptor
++2. Creating runtime plugins from descriptors
++
++```text
++plugin::Request
++      │
++      ▼
++createDescriptor()
++      │
++      ▼
++  Descriptor
++      │
++      ▼
++  create()
++      │
++      ▼
++    Plugin
++```
++
++---
++
++### PluginRegistry
++
++The registry maintains the mapping between plugin interfaces and their
++associated factories.
++
++Responsibilities:
++
++- Factory registration
++- Factory lookup
++- Descriptor generation support
++- Runtime plugin creation support
++
++A plugin interface is considered supported when a corresponding factory is
++registered with the registry.
++
++The registry owns plugin factories but does not own descriptors, runtime
++plugins, or log entries.
++
++---
++
++### PluginManager
++
++The plugin manager coordinates descriptor generation and runtime plugin
++creation.
++
++Responsibilities:
++
++- Translate requests into descriptors
++- Resolve factories associated with descriptors
++- Create runtime plugin instances
++- Register built-in plugin implementations
++
++`PluginManager` is a helper for runtime plugin construction and does not retain
++ownership of created plugins.
++
++---
++
++### Runtime Plugin
++
++A plugin is the runtime representation of a log entry extension.
++
++Plugins may:
++
++- Expose plugin-specific D-Bus interfaces
++- Maintain runtime state
++- Manage plugin-specific resources
++
++Plugins remain associated with their owning log entry for the lifetime of that
++entry.
++
++---
++
++## Plugin Request Sources
++
++Plugin requests can originate from multiple sources and are normalized into a
++common `plugin::Request` representation before descriptor generation.
++
++```text
++                Event
++                  │
++    ┌─────────────┼─────────────┐
++    │             │             │
++    ▼             ▼             ▼
++
++_EXTENSIONS   OEM Hook   Platform Hook
++
++                  │
++                  ▼
++      Plugin Request Extensions
++                  │
++                  ▼
++            plugin::Request
++                  │
++                  ▼
++              Descriptor
++                  │
++                  ▼
++                Plugin
++                  │
++                  ▼
++               Log Entry
++```
++
++Request extension callbacks may augment plugin metadata before descriptor
++generation. This allows platform and OEM code to contribute plugin-specific
++information without modifying plugin creation or lifecycle management flows.
++
++This allows new plugin request mechanisms to be added without modifying the
++descriptor, plugin creation, ownership, or lifecycle portions of the framework.
++
++---
++
++## Ownership Model
++
++```text
++Logging Manager
++       │
++       ▼
++  PluginService
++       │
++       ├── PluginRegistry
++       │
++       └── PluginManager
++
++Entry
++  │
++  └── Plugin(s)
++```
++
++Ownership rules:
++
++- Logging Manager owns `PluginService`
++- PluginService owns `PluginRegistry`
++- PluginService owns `PluginManager`
++- PluginRegistry owns registered factories
++- Entry owns runtime plugin instances
++- Descriptor objects are transient and discarded after plugin creation
++
++The framework intentionally separates:
++
++```text
++PluginRegistry  -> Factory registration and lookup
++PluginManager   -> Descriptor and plugin creation
++Plugin          -> Runtime functionality
++Entry           -> Runtime ownership
++```
++
++---
++
++## Event Extensions
++
++Plugins may be requested through event extension metadata.
++
++Example:
++
++```json
++{
++  "_EXTENSIONS": {
++    "xyz.openbmc_project.Logging.Extension.CPERProcessed": {
++      "DiagnosticDataType": "xyz.openbmc_project.Logging.CPER.Types.ContentType.CPER",
++      "NotificationType": "8f87f311-c998-4d9e-a0c4-fb4dfc2c8c14",
++      "SectionType": "dc3ea0b0-a144-4797-b95b-53fa242b6e1d",
++      "Oem": {
++        "AMD": {
++          "Processor": "0"
++        }
++      }
++    },
++
++    "xyz.openbmc_project.Logging.Extension.CPER.Raw": {
++      "Data": [1, 2, 3, 4]
++    }
++  }
++}
++```
++
++The `_EXTENSIONS` property acts as a transport mechanism for plugin-specific
++metadata.
++
++During log creation, each supported extension is translated into a
++`plugin::Request` and subsequently processed through the standard descriptor and
++runtime plugin creation flow.
++
++```text
++_EXTENSIONS
++      │
++      ▼
++plugin::Request
++      │
++      ▼
++Descriptor
++      │
++      ▼
++   Plugin
++```
++
++The Logging Manager remains independent of extension-specific schemas and
++delegates interpretation of extension metadata to the corresponding plugin
++implementation.
++
++Unsupported extensions are ignored.
++
++---
++
++## Extension Interface Model
++
++Extension interfaces provide the schema used to transport plugin metadata
++through events.
++
++Each extension interface becomes an independent `plugin::Request` during log
++creation.
++
++For example:
++
++```text
++xyz.openbmc_project.Logging.Extension.CPER.Processed
++        │
++        ▼
++ProcessedDescriptor
++        │
++        ▼
++ProcessedPlugin
++
++xyz.openbmc_project.Logging.Extension.CPER.Raw
++        │
++        ▼
++RawDescriptor
++        │
++        ▼
++   RawPlugin
++```
++
++This model allows multiple extensions to be associated with a single log entry
++while keeping plugin implementations independent from each other.
++
++---
++
++## Plugin Request Extension Hooks
++
++Plugin request extension callbacks provide a generic mechanism for augmenting
++plugin requests prior to descriptor creation.
++
++```text
++_EXTENSIONS
++      │
++      ▼
++plugin::Request
++      │
++      ▼
++Plugin Request Extension Hooks
++      │
++      ▼
++Descriptor
++      │
++      ▼
++   Plugin
++```
++
++Request extension callbacks may:
++
++- Add implementation-specific metadata
++- Inject platform-specific information
++- Inject OEM-specific information
++- Enrich requests using external context
++
++Request extension callbacks should not modify plugin-defined schema properties
++and should only contribute additional metadata required by the extension
++provider.
++
++This allows new metadata providers to integrate with the framework without
++modifying plugin factories, runtime plugins, or Logging Manager flows.
+diff --git a/plugin/plugin_request.hpp b/plugin/plugin_request.hpp
+new file mode 100644
+index 0000000..833a503
+--- /dev/null
++++ b/plugin/plugin_request.hpp
+@@ -0,0 +1,32 @@
++#pragma once
++
++#include <nlohmann/json.hpp>
++
++#include <string>
++
++namespace phosphor::logging::plugin
++{
++
++/**
++ * @brief Plugin request information.
++ *
++ * Describes a plugin requested by an event along with
++ * plugin-specific metadata derived from event extensions
++ * or other framework plugin request providers.
++ */
++struct Request
++{
++    /**
++     * Plugin interface identifier.
++     * Example: xyz.openbmc_project.Logging.Extension.CPER.Processed
++     */
++    std::string interface;
++
++    /**
++     * Plugin-specific metadata.
++     * The content is plugin-defined and may contain neste JSON objects.
++     */
++    nlohmann::json data;
++};
++
++} // namespace phosphor::logging::plugin
+diff --git a/plugin/plugin_type.hpp b/plugin/plugin_type.hpp
+new file mode 100644
+index 0000000..d62d8e4
+--- /dev/null
++++ b/plugin/plugin_type.hpp
+@@ -0,0 +1,18 @@
++#pragma once
++
++#include <string>
++
++namespace phosphor::logging::plugin
++{
++
++/**
++ * @brief Plugin extension interface name.
++ *
++ * The extension interface name is the canonical identifier
++ * for a plugin within the framework.
++ *
++ * Examples: xyz.openbmc_project.Logging.Extension.CPER.Processed
++ */
++using Interface = std::string;
++
++} // namespace phosphor::logging::plugin
+-- 
+2.54.0
+

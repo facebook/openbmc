@@ -1,0 +1,94 @@
+From 215ebf12816a90d16e88c3cca4da268a21d04713 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Wed, 5 Aug 2026 01:37:12 -0500
+Subject: [PATCH 07/33] plugin: introduce runtime interfaces
+
+Introduce the runtime interfaces used by the logging plugin framework.
+
+Add PluginContext and the base Plugin interface used by runtime
+plugin implementations. PluginContext provides access to resources
+required during plugin construction, while Plugin defines the common
+interface implemented by all log entry plugins.
+
+These interfaces establish the runtime foundation for plugin
+registration and creation introduced by subsequent changes.
+
+No functional changes intended.
+
+Change-Id: Iaf3b19ca6f66f4e6142ecef4828660658b70c31a
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ plugin/plugin.hpp | 61 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 61 insertions(+)
+ create mode 100644 plugin/plugin.hpp
+
+diff --git a/plugin/plugin.hpp b/plugin/plugin.hpp
+new file mode 100644
+index 0000000..8221fff
+--- /dev/null
++++ b/plugin/plugin.hpp
+@@ -0,0 +1,61 @@
++#pragma once
++
++#include <sdbusplus/bus.hpp>
++
++#include <memory>
++#include <string>
++#include <string_view>
++
++namespace phosphor::logging
++{
++
++/**
++ * @brief Context provided during plugin construction.
++ *
++ * Provides runtime resources required during plugin creation
++ * and association with a log entry.
++ */
++struct PluginContext
++{
++    /** D-Bus connection. */
++    sdbusplus::bus_t& bus;
++
++    /** Object path of the associated log entry. */
++    const std::string& objectPath;
++};
++
++/**
++ * @brief Base class for log entry plugins.
++ *
++ * Plugins extend log entries with plugin-specific metadata,
++ * behavior, and D-Bus interfaces.
++ *
++ * Concrete plugin implementations derive from this interface and
++ * are created from plugin descriptors during log processing.
++ */
++class Plugin
++{
++  public:
++    Plugin() = default;
++    virtual ~Plugin() = default;
++
++    Plugin(const Plugin&) = delete;
++    Plugin& operator=(const Plugin&) = delete;
++    Plugin(Plugin&&) = default;
++    Plugin& operator=(Plugin&&) = delete;
++
++    /**
++     * @brief Get the plugin interface identifier.
++     *
++     * This is the canonical plugin identity used by the
++     * framework.
++     *
++     * @return Plugin interface name.
++     */
++    virtual std::string_view interface() const = 0;
++};
++
++/** Unique ownership of a runtime plugin instance. */
++using PluginPtr = std::unique_ptr<Plugin>;
++
++} // namespace phosphor::logging
+-- 
+2.54.0
+

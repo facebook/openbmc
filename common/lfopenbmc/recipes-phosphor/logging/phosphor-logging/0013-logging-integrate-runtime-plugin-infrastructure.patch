@@ -1,0 +1,82 @@
+From 407e95024d07d19a866e4cbd33f3ca9648450aed Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Sun, 2 Aug 2026 10:29:57 -0500
+Subject: [PATCH 13/33] logging: integrate runtime plugin infrastructure
+
+Integrate the plugin framework into the logging infrastructure.
+
+Extend log entries to own runtime plugin instances associated with
+the entry. Plugins remain active for the lifetime of the owning entry,
+establishing plugin lifetime management through the existing entry
+lifecycle.
+
+This change establishes the runtime plugin ownership model used by
+future plugin request handling and log entry processing support.
+
+No producer-facing plugin APIs are introduced by this change and no
+functional behavior changes are intended.
+
+Change-Id: Ia98e29f229d7b9f1ff0683b46eaef3a87e28dd48
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ elog_entry.hpp | 17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/elog_entry.hpp b/elog_entry.hpp
+index 8710e13..8f4d6be 100644
+--- a/elog_entry.hpp
++++ b/elog_entry.hpp
+@@ -2,6 +2,7 @@
+ 
+ #include "config.h"
+ 
++#include "plugin/plugin.hpp"
+ #include "xyz/openbmc_project/Logging/Entry/server.hpp"
+ #include "xyz/openbmc_project/Object/Delete/server.hpp"
+ #include "xyz/openbmc_project/Software/Version/server.hpp"
+@@ -62,14 +63,17 @@ class Entry : public EntryIfaces
+      *  @param[in] fwVersion - The BMC code version.
+      *  @param[in] filePath - Serialization path
+      *  @param[in] parent - The error's parent.
++     *  @param[in] plugins - Runtime plugins associated with
++     *                       the entry.
+      */
+     Entry(sdbusplus::bus_t& bus, const std::string& objectPath, uint32_t idErr,
+           uint64_t timestampErr, Level severityErr, std::string&& msgErr,
+           std::map<std::string, std::string>&& additionalDataErr,
+           AssociationList&& objects, const std::string& fwVersion,
+-          const std::string& filePath, internal::Manager& parent) :
++          const std::string& filePath, internal::Manager& parent,
++          PluginList plugins = {}) :
+         EntryIfaces(bus, objectPath.c_str(), EntryIfaces::action::defer_emit),
+-        parent(parent)
++        parent(parent), plugins(std::move(plugins))
+     {
+         id(idErr, true);
+         severity(severityErr, true);
+@@ -78,6 +82,7 @@ class Entry : public EntryIfaces
+         message(std::move(msgErr), true);
+         additionalData(std::move(additionalDataErr), true);
+         associations(std::move(objects), true);
++
+         // Store a copy of associations in case we need to recreate
+         assocs = associations();
+         sdbusplus::server::xyz::openbmc_project::logging::Entry::resolved(
+@@ -173,6 +178,14 @@ class Entry : public EntryIfaces
+      */
+     std::unique_ptr<sdeventplus::source::Defer> fdCloseEventSource;
+ 
++    /**
++     * @brief Runtime plugins associated with this entry.
++     *
++     * Plugins remain active for the lifetime of the
++     * owning log entry.
++     */
++    PluginList plugins;
++
+     /**
+      * @brief Closes the file descriptor passed in.
+      * @details This is called from the event loop to close FDs returned from
+-- 
+2.54.0
+

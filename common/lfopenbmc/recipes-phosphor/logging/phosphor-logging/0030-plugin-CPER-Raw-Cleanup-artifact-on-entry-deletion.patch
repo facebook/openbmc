@@ -1,0 +1,86 @@
+From 793145e8e479f85337f1402603aa89aaa5b600ba Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Thu, 27 Aug 2026 06:42:17 -0500
+Subject: [PATCH 30/33] plugin:CPER:Raw Cleanup artifact on entry deletion
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Remove persisted CPER artifacts when the owning log entry is deleted.
+
+Implement the plugin deletion callback for the CPERRaw plugin to
+ensure plugin-managed artifacts are cleaned up as part of log
+entry removal.
+
+Tested:
+
+'''
+/var/lib/phosphor-logging/artifacts/
+└── cperraw-WCEVBn
+
+busctl call xyz.openbmc_project.Logging \
+    /xyz/openbmc_project/logging/entry/280 \
+    xyz.openbmc_project.Object.Delete Delete
+
+/var/lib/phosphor-logging/artifacts/
+(empty)
+
+'''
+
+Change-Id: Ic68a2f20204d8fdabf74fdd461ecb71900609479
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ plugin/cper_raw_plugin.cpp           | 5 +++++
+ plugin/cper_raw_plugin.hpp           | 5 +++++
+ test/plugin/cper_raw_plugin_test.cpp | 3 +++
+ 3 files changed, 13 insertions(+)
+
+diff --git a/plugin/cper_raw_plugin.cpp b/plugin/cper_raw_plugin.cpp
+index 4ec9919..ad680d8 100644
+--- a/plugin/cper_raw_plugin.cpp
++++ b/plugin/cper_raw_plugin.cpp
+@@ -31,6 +31,11 @@ sdbusplus::message::unix_fd Plugin::getFileHandle()
+     return sdbusplus::message::unix_fd(fd);
+ }
+ 
++void Plugin::onDelete()
++{
++    utils::removeArtifact(artifact_);
++}
++
+ PluginPtr Factory::create(const PluginContext& context,
+                           const plugin::Descriptor& descriptor) const
+ {
+diff --git a/plugin/cper_raw_plugin.hpp b/plugin/cper_raw_plugin.hpp
+index de43057..c206e7d 100644
+--- a/plugin/cper_raw_plugin.hpp
++++ b/plugin/cper_raw_plugin.hpp
+@@ -62,6 +62,11 @@ class Plugin : public phosphor::logging::Plugin, public Interface
+      */
+     sdbusplus::message::unix_fd getFileHandle() override;
+ 
++    /**
++     * @brief Cleanup plugin-owned resources.
++     */
++    void onDelete() override;
++
+   private:
+     /** Persisted CPER artifact reference. */
+     utils::ArtifactRef artifact_;
+diff --git a/test/plugin/cper_raw_plugin_test.cpp b/test/plugin/cper_raw_plugin_test.cpp
+index 4af249d..99bbec6 100644
+--- a/test/plugin/cper_raw_plugin_test.cpp
++++ b/test/plugin/cper_raw_plugin_test.cpp
+@@ -2,6 +2,9 @@
+ #include "plugin/cper_raw_plugin.hpp"
+ #include "plugin/plugin_registry.hpp"
+ 
++#include <filesystem>
++#include <fstream>
++
+ #include <gtest/gtest.h>
+ 
+ namespace phosphor::logging::plugin::cper::raw
+-- 
+2.54.0
+

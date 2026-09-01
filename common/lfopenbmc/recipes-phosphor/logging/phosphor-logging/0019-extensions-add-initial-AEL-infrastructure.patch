@@ -1,0 +1,282 @@
+From 629a5559e07c44fc29e19012364852da3b8d1eb9 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Thu, 28 May 2026 09:24:26 -0500
+Subject: [PATCH 19/33] extensions: add initial AEL infrastructure
+
+Add the initial AMD Event Log (AEL) extension framework.
+
+Introduce the extension layout, entry points, Meson
+integration, and documentation required to support
+AMD-specific event log enhancements.
+
+Update the build to explicitly include extension sources
+and dependencies in phosphor-log-manager. This ensures
+extension translation units are retained during linking
+and are not removed by toolchain optimizations such as
+LTO or dead code elimination.
+
+While existing extensions may not rely on this behavior,
+it provides a robust foundation for future extension-based
+features and enables the new AEL extension to participate
+in the logging framework.
+
+This change is limited to infrastructure and build-system
+integration. No functional AEL processing or AMD-specific
+runtime enrichment logic is introduced in this commit.
+
+Tested:
+  - Build validation
+
+Change-Id: I85b531bbe52b7811fd059422e0c0d4f08f72e940
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ extensions/amd-event-log/README.md            | 81 +++++++++++++++++++
+ extensions/amd-event-log/meson.build          |  4 +
+ extensions/amd-event-log/src/entry_points.cpp | 63 +++++++++++++++
+ extensions/amd-event-log/src/meson.build      | 10 +++
+ extensions/meson.build                        |  4 +
+ meson.build                                   |  8 +-
+ meson.options                                 |  7 ++
+ 7 files changed, 176 insertions(+), 1 deletion(-)
+ create mode 100644 extensions/amd-event-log/README.md
+ create mode 100644 extensions/amd-event-log/meson.build
+ create mode 100644 extensions/amd-event-log/src/entry_points.cpp
+ create mode 100644 extensions/amd-event-log/src/meson.build
+
+diff --git a/extensions/amd-event-log/README.md b/extensions/amd-event-log/README.md
+new file mode 100644
+index 0000000..8c0abf5
+--- /dev/null
++++ b/extensions/amd-event-log/README.md
+@@ -0,0 +1,81 @@
++# AMD Event Log Extension
++
++## Overview
++
++This extension provides AMD-specific functionality for the phosphor-logging
++framework.
++
++It builds on the extension infrastructure provided by phosphor-logging and
++enables AMD-specific processing during log creation.
++
++The extension framework allows AMD-specific logic to enrich log entries without
++modifying the core logging implementation.
++
++---
++
++## AMD Metadata Namespace
++
++AMD-specific metadata is stored under the `"AMD"` namespace within the runtime
++metadata object managed by phosphor-logging.
++
++### Example
++
++```json
++{
++  "AMD": {
++    "Key": "Value"
++  }
++}
++```
++
++### Guidelines
++
++- Only the `"AMD"` namespace is owned and modified by AMD extensions.
++- Metadata should be structured and compact.
++- Existing fields should remain backward compatible.
++- Consumers should ignore unrecognized fields.
++
++---
++
++## Runtime Metadata
++
++The AMD extension framework supports enriching log entries with AMD-specific
++runtime metadata.
++
++Metadata is generated during log creation and stored under the `"AMD"` namespace
++as structured JSON.
++
++### AEL Metadata
++
++The AMD Event Log (AEL) extension uses this framework to contribute AMD-specific
++event information derived from the log context.
++
++### AEL Core Fields
++
++| Field          | Description                                        |
++| -------------- | -------------------------------------------------- |
++| `AEL.VERSION`  | Version of the AEL schema                          |
++| `AEL.AFID`     | AMD Field ID identifying the error                 |
++| `AEL.FRU_LIST` | Inventory object path(s) associated with the fault |
++
++### Example
++
++```json
++{
++  "AMD": {
++    "AEL.VERSION": "1.0",
++    "AEL.AFID": "4660",
++    "AEL.FRU_LIST": "/xyz/openbmc_project/inventory/system/chassis"
++  }
++}
++```
++
++---
++
++## Extensibility
++
++The AMD extension infrastructure is designed to support additional AMD-specific
++logging features using the same runtime metadata framework.
++
++Extensions may contribute new metadata, diagnostics, or log enrichment features
++under the `"AMD"` namespace while maintaining a consistent schema for consumers.
+diff --git a/extensions/amd-event-log/meson.build b/extensions/amd-event-log/meson.build
+new file mode 100644
+index 0000000..a6b1774
+--- /dev/null
++++ b/extensions/amd-event-log/meson.build
+@@ -0,0 +1,4 @@
++# AMD Event Log (AEL) Extension
++
++subdir('src')
++
+diff --git a/extensions/amd-event-log/src/entry_points.cpp b/extensions/amd-event-log/src/entry_points.cpp
+new file mode 100644
+index 0000000..fd7eb7d
+--- /dev/null
++++ b/extensions/amd-event-log/src/entry_points.cpp
+@@ -0,0 +1,63 @@
++#include "extensions.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++namespace phosphor::logging::extensions::ael
++{
++
++using namespace phosphor::logging;
++
++/**
++ * @brief AMD runtime metadata provider.
++ *
++ * Contributes AMD-specific runtime metadata during
++ * log creation.
++ *
++ * @param[in,out] metadata
++ *     Aggregated runtime metadata object.
++ *
++ * @param[in] message
++ *     Log message associated with the entry.
++ *
++ * @param[in] level
++ *     Severity level of the entry.
++ *
++ * @param[in] additionalData
++ *     Additional data supplied during log creation.
++ */
++static void amdRuntimeMetadataProvider(
++    nlohmann::json& metadata, const std::string& /*message*/,
++    Entry::Level /*level*/,
++    const std::map<std::string, std::string>& /*additionalData*/)
++{
++    try
++    {
++        /*
++         * Create AMD runtime metadata section.
++         *
++         * Future enhancements may populate:
++         *   metadata["AMD"]["AFID"]
++         *   metadata["AMD"]["FRU"]
++         *   metadata["AMD"]["Platform"]
++         */
++        auto& amd = metadata["AMD"];
++        (void)amd;
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error("AMD runtime metadata provider failed: {ERROR}", "ERROR",
++                   e.what());
++    }
++    catch (...)
++    {
++        lg2::error(
++            "AMD runtime metadata provider failed with unknown exception");
++    }
++}
++
++/**
++ * Register AMD runtime metadata provider.
++ */
++REGISTER_RUNTIME_METADATA_PROVIDER(amdRuntimeMetadataProvider);
++
++} // namespace phosphor::logging::extensions::ael
+diff --git a/extensions/amd-event-log/src/meson.build b/extensions/amd-event-log/src/meson.build
+new file mode 100644
+index 0000000..8b3962f
+--- /dev/null
++++ b/extensions/amd-event-log/src/meson.build
+@@ -0,0 +1,10 @@
++ael_sources = files(
++    'entry_points.cpp',
++)
++
++log_manager_ext_sources += ael_sources
++
++log_manager_ext_deps += [
++    phosphor_logging_dep,
++    conf_h_dep,
++]
+diff --git a/extensions/meson.build b/extensions/meson.build
+index e9a5cde..2944dd9 100644
+--- a/extensions/meson.build
++++ b/extensions/meson.build
+@@ -1,3 +1,7 @@
+ if get_option('openpower-pel-extension').allowed()
+     subdir('openpower-pels')
+ endif
++
++if get_option('amd-event-log').allowed()
++    subdir('amd-event-log')
++endif
+diff --git a/meson.build b/meson.build
+index b0ca31c..41a4483 100644
+--- a/meson.build
++++ b/meson.build
+@@ -196,11 +196,17 @@ log_manager_lib = static_library(
+ executable(
+     'phosphor-log-manager',
+     'log_manager_main.cpp',
++    log_manager_ext_sources,
+     include_directories: [
+         include_directories('gen'),
+     ] + log_manager_ext_inc,
+     cpp_args: log_manager_ext_args,
+-    dependencies: [conf_h_dep, log_manager_deps, phosphor_logging_dep],
++    dependencies: [
++        conf_h_dep,
++        log_manager_deps,
++        log_manager_ext_deps,
++        phosphor_logging_dep,
++    ],
+     install: true,
+     install_dir: get_option('libexecdir') / 'phosphor-logging',
+     link_with: log_manager_lib,
+diff --git a/meson.options b/meson.options
+index 6d547d5..8f07edd 100644
+--- a/meson.options
++++ b/meson.options
+@@ -1,5 +1,12 @@
+ option('libonly', type: 'boolean', description: 'Build library only')
+ option('tests', type: 'feature', description: 'Build tests')
++option(
++    'amd-event-log',
++    type: 'feature',
++    description: 'Enable AMD Event Logging (AEL) extension',
++    value: 'disabled',
++)
++
+ option(
+     'openpower-pel-extension',
+     type: 'feature',
+-- 
+2.54.0
+

@@ -1,0 +1,52 @@
+From 6426af178c6df564526ddd68b1cbbc112b02dab1 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Sun, 2 Aug 2026 11:24:28 -0500
+Subject: [PATCH 14/33] logging: defer entry object-added signal emission
+
+Move log entry object-added signal emission from Entry construction
+to the logging manager.
+
+Deferring signal emission allows future changes to perform additional
+log entry initialization before the entry becomes visible on D-Bus.
+This is required to support plugin-provided interfaces that must be
+fully constructed before clients observe the associated log entry.
+
+No functional behavior changes are intended by this commit.
+
+Change-Id: I5e25ffbbe3cccfde79ac87d5cc9fc948afe36624
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ elog_entry.hpp  | 3 ---
+ log_manager.cpp | 2 ++
+ 2 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/elog_entry.hpp b/elog_entry.hpp
+index 8f4d6be..33c9589 100644
+--- a/elog_entry.hpp
++++ b/elog_entry.hpp
+@@ -91,9 +91,6 @@ class Entry : public EntryIfaces
+         version(fwVersion, true);
+         purpose(VersionPurpose::BMC, true);
+         path(filePath, true);
+-
+-        // Emit deferred signal.
+-        this->emit_object_added();
+     };
+ 
+     /** @brief Constructor that puts an "empty" error object on the bus,
+diff --git a/log_manager.cpp b/log_manager.cpp
+index ca9658c..9ab61c4 100644
+--- a/log_manager.cpp
++++ b/log_manager.cpp
+@@ -290,6 +290,8 @@ auto Manager::createEntry(std::string errMsg, Entry::Level errLvl,
+     serialize(*e);
+     serializeJSON(*e);
+ 
++    e->emit_object_added();
++
+     if (isQuiesceOnErrorEnabled() && (errLvl < Entry::sevLowerLimit) &&
+         isCalloutPresent(*e))
+     {
+-- 
+2.54.0
+

@@ -1,0 +1,90 @@
+From 60016a38c3d3e7ce7a239c854f772ffd2b66f5ef Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Sun, 2 Aug 2026 08:40:17 -0500
+Subject: [PATCH 09/33] plugin: introduce factory interface
+
+Introduce the factory abstraction used by the logging plugin
+framework.
+
+PluginFactory provides a common interface for constructing
+runtime plugin instances from plugin descriptors and a plugin
+creation context.
+
+Factories will be registered with the plugin framework and
+invoked during log entry creation. This separates plugin
+construction from event processing and allows new plugin
+implementations to be added without modifying core logging
+components.
+
+The interface also supports creation of multiple plugin
+instances for a single log entry when an event provides
+multiple plugin descriptors.
+
+No runtime plugin processing is introduced by this change.
+
+Change-Id: Ie10aac2cada0b3c36653467f640a9ef57a01e6de
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ plugin/plugin_factory.hpp | 50 +++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 50 insertions(+)
+ create mode 100644 plugin/plugin_factory.hpp
+
+diff --git a/plugin/plugin_factory.hpp b/plugin/plugin_factory.hpp
+new file mode 100644
+index 0000000..d9af134
+--- /dev/null
++++ b/plugin/plugin_factory.hpp
+@@ -0,0 +1,50 @@
++#pragma once
++
++#include "plugin/plugin.hpp"
++#include "plugin/plugin_descriptor.hpp"
++
++#include <memory>
++
++namespace phosphor::logging
++{
++
++/**
++ * @brief Base interface for plugin factories.
++ *
++ * Plugin factories create runtime plugin instances from
++ * plugin descriptors.
++ *
++ * Concrete plugin implementations may provide factory
++ * implementations that validate descriptor contents and
++ * construct the corresponding runtime plugin object.
++ */
++class PluginFactory
++{
++  public:
++    PluginFactory() = default;
++    virtual ~PluginFactory() = default;
++
++    PluginFactory(const PluginFactory&) = delete;
++    PluginFactory(PluginFactory&&) = delete;
++    PluginFactory& operator=(const PluginFactory&) = delete;
++    PluginFactory& operator=(PluginFactory&&) = delete;
++
++    /**
++     * @brief Create a runtime plugin instance.
++     *
++     * Construct a plugin from the supplied context and
++     * descriptor.
++     *
++     * @param[in] context Plugin creation context.
++     * @param[in] descriptor Plugin descriptor.
++     *
++     * @return Newly created plugin instance.
++     */
++    virtual PluginPtr create(const PluginContext& context,
++                             const plugin::Descriptor& descriptor) const = 0;
++};
++
++/** Unique ownership of a plugin factory. */
++using PluginFactoryPtr = std::unique_ptr<PluginFactory>;
++
++} // namespace phosphor::logging
+-- 
+2.54.0
+

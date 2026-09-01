@@ -1,0 +1,318 @@
+From bd1c93e1c34e1da9710914e59f915ede2e67a760 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Wed, 5 Aug 2026 07:05:30 -0500
+Subject: [PATCH 15/33] logging: create log plugins from extension metadata
+
+Add support for processing event extension metadata during
+log creation and translating it into plugin requests.
+
+Extension requests are extracted from the _EXTENSIONS
+metadata container and resolved through the runtime plugin
+service. The service bridges log entry processing with the
+plugin framework and is responsible for constructing
+runtime plugin instances from the supplied requests.
+
+Constructed plugin instances are attached to and owned by
+the created log entry, allowing plugin lifetime management
+to follow the existing entry lifecycle.
+
+This change establishes the end-to-end flow from event
+extension metadata to runtime log entry extensions while
+maintaining a clear separation between log management,
+plugin integration, and plugin framework responsibilities.
+
+The implementation serves as an intermediate step toward
+native event extension support in lg2 EventInfo.
+
+Change-Id: I3ca7d6fd776104114c5e179d8d551292632043ee
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ lib/lg2_commit.cpp        |  7 +++++
+ log_manager.cpp           | 58 +++++++++++++++++++++++++++++++++++++--
+ log_manager.hpp           | 51 ++++++++++++++++++++++++++++------
+ plugin/meson.build        |  1 +
+ plugin/plugin_service.cpp | 12 ++++++++
+ plugin/plugin_service.hpp | 50 +++++++++++++++++++++++++++++++++
+ 6 files changed, 168 insertions(+), 11 deletions(-)
+ create mode 100644 plugin/plugin_service.cpp
+ create mode 100644 plugin/plugin_service.hpp
+
+diff --git a/lib/lg2_commit.cpp b/lib/lg2_commit.cpp
+index 77e5496..cd0d087 100644
+--- a/lib/lg2_commit.cpp
++++ b/lib/lg2_commit.cpp
+@@ -93,6 +93,13 @@ static auto data_from_json(sdbusplus::exception::generated_event_base& t)
+             continue;
+         }
+ 
++        // Plugin transport metadata is handled separately.
++        if (item.key() == "_EXTENSIONS")
++        {
++            result.emplace(item.key(), item.value().dump());
++            continue;
++        }
++
+         if (item.value().type() == nlohmann::json::value_t::string)
+         {
+             result.emplace(item.key(), item.value());
+diff --git a/log_manager.cpp b/log_manager.cpp
+index 9ab61c4..9570a94 100644
+--- a/log_manager.cpp
++++ b/log_manager.cpp
+@@ -218,7 +218,8 @@ void Manager::_commit(uint64_t transactionId [[maybe_unused]],
+ 
+ auto Manager::createEntry(std::string errMsg, Entry::Level errLvl,
+                           std::map<std::string, std::string> additionalData,
+-                          const FFDCEntries& ffdc) -> sdbusplus::object_path
++                          const FFDCEntries& ffdc, plugin::RequestList requests)
++    -> sdbusplus::object_path
+ {
+     if (!Extensions::disableDefaultLogCaps())
+     {
+@@ -281,11 +282,18 @@ auto Manager::createEntry(std::string errMsg, Entry::Level errLvl,
+     auto additionalDataVec = util::additional_data::combine(additionalData);
+     processMetadata(errMsg, additionalDataVec, objects);
+ 
++    PluginContext context{
++        busLog,
++        objPath,
++    };
++    auto plugins = pluginService.create(context, requests);
++
+     auto e = std::make_unique<Entry>(
+         busLog, objPath, entryId,
+         ms, // Milliseconds since 1970
+         errLvl, std::move(errMsg), std::move(additionalData),
+-        std::move(objects), fwVersion, getEntrySerializePath(entryId), *this);
++        std::move(objects), fwVersion, getEntrySerializePath(entryId), *this,
++        std::move(plugins));
+ 
+     serialize(*e);
+     serializeJSON(*e);
+@@ -817,7 +825,12 @@ auto Manager::create(const std::string& message, Entry::Level severity,
+                      const std::map<std::string, std::string>& additionalData,
+                      const FFDCEntries& ffdc) -> sdbusplus::object_path
+ {
+-    return createEntry(message, severity, additionalData, ffdc);
++    auto data = additionalData;
++
++    auto requests = buildPluginRequests(data);
++
++    return createEntry(message, severity, std::move(data), ffdc,
++                       std::move(requests));
+ }
+ 
+ void Manager::setupErrorFileWatch()
+@@ -1030,6 +1043,45 @@ bool Manager::refreshFromDisk(uint32_t id)
+     return true;
+ }
+ 
++auto Manager::buildPluginRequests(
++    std::map<std::string, std::string>& additionalData) -> plugin::RequestList
++{
++    plugin::RequestList requests;
++
++    auto extIt = additionalData.find("_EXTENSIONS");
++
++    if (extIt == additionalData.end())
++    {
++        return requests;
++    }
++
++    try
++    {
++        auto extensions = nlohmann::json::parse(extIt->second);
++
++        for (const auto& [interface, data] : extensions.items())
++        {
++            requests.emplace_back(plugin::Request{
++                .interface = interface,
++                .data = data,
++            });
++        }
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error("Failed to process extension metadata: {ERROR}", "ERROR",
++                   e.what());
++    }
++
++    //
++    // Extension metadata is transport-only.
++    // Remove before Entry creation.
++    //
++    additionalData.erase(extIt);
++
++    return requests;
++}
++
+ } // namespace internal
+ } // namespace logging
+ } // namespace phosphor
+diff --git a/log_manager.hpp b/log_manager.hpp
+index 681f5a4..c7e5376 100644
+--- a/log_manager.hpp
++++ b/log_manager.hpp
+@@ -5,6 +5,7 @@
+ #include "bmc_pos_mgr.hpp"
+ #include "elog_block.hpp"
+ #include "elog_entry.hpp"
++#include "plugin/plugin_service.hpp"
+ #include "xyz/openbmc_project/Logging/Internal/Manager/server.hpp"
+ 
+ #include <phosphor-logging/lg2.hpp>
+@@ -280,18 +281,30 @@ class Manager : public details::ServerObject<details::ManagerIface>
+      */
+     void doExtensionLogCreate(const Entry& entry, const FFDCEntries& ffdc);
+ 
+-    /** @brief Common wrapper for creating an Entry object
++    /**
++     * @brief Create a log entry.
+      *
+-     * @param[in] errMsg - The error exception message associated with the
+-     *                     error log to be committed.
+-     * @param[in] errLvl - level of the error
+-     * @param[in] additionalData - The AdditionalData property for the error
+-     * @param[in] ffdc - A vector of FFDC file info. Defaults to an empty
+-     * vector.
++     * Creates a log entry using the supplied event
++     * information, FFDC data, and plugin requests.
++     *
++     * Plugin requests are resolved through the plugin
++     * framework to create runtime plugin instances
++     * associated with the log entry.
++     *
++     * @param[in] errMsg Error message.
++     * @param[in] errLvl Error severity.
++     * @param[in] additionalData Additional event data.
++     * @param[in] ffdc FFDC entries associated with the
++     *                 log entry.
++     * @param[in] requests Plugin requests associated
++     *                     with the log entry.
++     *
++     * @return Object path of the created log entry.
+      */
+     auto createEntry(std::string errMsg, Entry::Level errLvl,
+                      std::map<std::string, std::string> additionalData,
+-                     const FFDCEntries& ffdc = FFDCEntries{})
++                     const FFDCEntries& ffdc = {},
++                     plugin::RequestList requests = {})
+         -> sdbusplus::object_path;
+ 
+     /** @brief Notified on entry property changes
+@@ -340,6 +353,28 @@ class Manager : public details::ServerObject<details::ManagerIface>
+     void errorFileChanged(sdeventplus::source::IO& io, int fd,
+                           uint32_t revents);
+ 
++    /**
++     * @brief Build plugin requests from extension metadata.
++     *
++     * Consumes the _EXTENSIONS entry from AdditionalData and
++     * translates extension metadata into plugin requests.
++     *
++     * Unsupported or malformed extension metadata is ignored.
++     *
++     * The _EXTENSIONS entry acts as a transport container for
++     * plugin request metadata and is removed from AdditionalData
++     * after processing.
++     *
++     * @param[in,out] additionalData Event AdditionalData.
++     *
++     * @return Generated plugin requests.
++     */
++    plugin::RequestList buildPluginRequests(
++        std::map<std::string, std::string>& additionalData);
++
++    /** Runtime plugin integration service. */
++    PluginService pluginService;
++
+     /** @brief Persistent sdbusplus DBus bus connection. */
+     sdbusplus::bus_t& busLog;
+ 
+diff --git a/plugin/meson.build b/plugin/meson.build
+index 01626a3..7cc8243 100644
+--- a/plugin/meson.build
++++ b/plugin/meson.build
+@@ -2,4 +2,5 @@ plugin_sources = files(
+     'plugin_builtin.cpp',
+     'plugin_manager.cpp',
+     'plugin_registry.cpp',
++    'plugin_service.cpp',
+ )
+diff --git a/plugin/plugin_service.cpp b/plugin/plugin_service.cpp
+new file mode 100644
+index 0000000..50b8b9e
+--- /dev/null
++++ b/plugin/plugin_service.cpp
+@@ -0,0 +1,12 @@
++#include "plugin_service.hpp"
++
++namespace phosphor::logging
++{
++
++PluginList PluginService::create(const PluginContext& context,
++                                 const plugin::RequestList& requests)
++{
++    return manager.create(context, requests);
++}
++
++} // namespace phosphor::logging
+diff --git a/plugin/plugin_service.hpp b/plugin/plugin_service.hpp
+new file mode 100644
+index 0000000..12f5cee
+--- /dev/null
++++ b/plugin/plugin_service.hpp
+@@ -0,0 +1,50 @@
++#pragma once
++
++#include "plugin/plugin.hpp"
++#include "plugin/plugin_manager.hpp"
++#include "plugin/plugin_request.hpp"
++
++namespace phosphor::logging
++{
++
++/**
++ * @brief Runtime plugin integration service.
++ *
++ * Provides the logging-specific integration layer
++ * between log entry processing and the plugin
++ * framework.
++ *
++ * Plugin requests are resolved into runtime plugin
++ * instances through the underlying plugin manager.
++ */
++class PluginService
++{
++  public:
++    PluginService() = default;
++
++    PluginService(const PluginService&) = delete;
++    PluginService(PluginService&&) = delete;
++    PluginService& operator=(const PluginService&) = delete;
++    PluginService& operator=(PluginService&&) = delete;
++    ~PluginService() = default;
++
++    /**
++     * @brief Create runtime plugins.
++     *
++     * Creates runtime plugin instances from the
++     * supplied plugin requests.
++     *
++     * @param[in] context Plugin creation context.
++     * @param[in] requests Plugin requests.
++     *
++     * @return Runtime plugin instances.
++     */
++    PluginList create(const PluginContext& context,
++                      const plugin::RequestList& requests);
++
++  private:
++    /** Plugin framework manager. */
++    PluginManager manager;
++};
++
++} // namespace phosphor::logging
+-- 
+2.54.0
+

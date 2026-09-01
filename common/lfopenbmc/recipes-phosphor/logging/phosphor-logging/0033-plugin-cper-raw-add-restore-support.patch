@@ -1,0 +1,164 @@
+From 2015f2cee65f35cf9084e8d27cda06460d3019d3 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Sat, 29 Aug 2026 01:29:54 -0500
+Subject: [PATCH 33/33] plugin:cper:raw add restore support
+
+Add serialization and deserialization support for the
+CPER Raw plugin.
+
+Persisted artifact references are restored during log
+manager startup by reconstructing a CPER Raw descriptor
+and reusing the existing plugin creation flow to recreate
+the runtime plugin instance.
+
+Add unit test coverage for serialization and restore
+round-trip validation.
+
+Change-Id: Ib4c890fb7008826c53447ccc93edeb875729fe77
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ plugin/cper_raw_plugin.cpp           | 21 ++++++++++++++
+ plugin/cper_raw_plugin.hpp           | 25 +++++++++++++++++
+ test/plugin/cper_raw_plugin_test.cpp | 41 ++++++++++++++++++++++++++++
+ 3 files changed, 87 insertions(+)
+
+diff --git a/plugin/cper_raw_plugin.cpp b/plugin/cper_raw_plugin.cpp
+index ad680d8..6862b23 100644
+--- a/plugin/cper_raw_plugin.cpp
++++ b/plugin/cper_raw_plugin.cpp
+@@ -36,6 +36,13 @@ void Plugin::onDelete()
+     utils::removeArtifact(artifact_);
+ }
+ 
++nlohmann::json Plugin::serialize() const
++{
++    return {
++        {artifactPathKey, artifact_.path},
++    };
++}
++
+ PluginPtr Factory::create(const PluginContext& context,
+                           const plugin::Descriptor& descriptor) const
+ {
+@@ -86,4 +93,18 @@ plugin::DescriptorPtr Factory::createDescriptor(
+     return std::make_unique<Descriptor>(std::move(properties));
+ }
+ 
++PluginPtr Factory::deserialize(const PluginContext& context,
++                               const nlohmann::json& data) const
++{
++    Properties properties{
++        .artifact =
++            utils::ArtifactRef{
++                .path = data.at(artifactPathKey).get<std::filesystem::path>(),
++            },
++    };
++    Descriptor descriptor(std::move(properties));
++
++    return create(context, descriptor);
++}
++
+ } // namespace phosphor::logging::plugin::cper::raw
+diff --git a/plugin/cper_raw_plugin.hpp b/plugin/cper_raw_plugin.hpp
+index c206e7d..5f87086 100644
+--- a/plugin/cper_raw_plugin.hpp
++++ b/plugin/cper_raw_plugin.hpp
+@@ -13,6 +13,7 @@ namespace phosphor::logging::plugin::cper::raw
+ 
+ inline constexpr auto dataKey = "Data";
+ inline constexpr auto cperRawArtifactSuffix = "cperraw";
++inline constexpr auto artifactPathKey = "ArtifactPath";
+ 
+ /** CPER Raw runtime D-Bus interface. */
+ using Interface = sdbusplus::server::xyz::openbmc_project::logging::cper::Raw;
+@@ -67,6 +68,16 @@ class Plugin : public phosphor::logging::Plugin, public Interface
+      */
+     void onDelete() override;
+ 
++    /**
++     * @brief Serialize CPER Raw plugin state.
++     *
++     * Persists the artifact reference associated with the
++     * log entry.
++     *
++     * @return Serialized plugin state.
++     */
++    nlohmann::json serialize() const override;
++
+   private:
+     /** Persisted CPER artifact reference. */
+     utils::ArtifactRef artifact_;
+@@ -112,6 +123,20 @@ class Factory : public phosphor::logging::PluginFactory
+      */
+     plugin::DescriptorPtr createDescriptor(
+         const plugin::Request& request) const override;
++
++    /**
++     * @brief Restore a CPER Raw plugin instance.
++     *
++     * Reconstructs a CPER Raw descriptor from persisted
++     * plugin state and recreates the runtime plugin.
++     *
++     * @param[in] context Plugin runtime context.
++     * @param[in] data Serialized plugin state.
++     *
++     * @return Restored plugin instance.
++     */
++    PluginPtr deserialize(const PluginContext& context,
++                          const nlohmann::json& data) const override;
+ };
+ 
+ /**
+diff --git a/test/plugin/cper_raw_plugin_test.cpp b/test/plugin/cper_raw_plugin_test.cpp
+index 99bbec6..73585e0 100644
+--- a/test/plugin/cper_raw_plugin_test.cpp
++++ b/test/plugin/cper_raw_plugin_test.cpp
+@@ -115,4 +115,45 @@ TEST_F(CperRawPluginTest, DescriptorReturnsArtifact)
+     EXPECT_EQ(descriptor.properties().artifact.path, artifactPath);
+ }
+ 
++TEST_F(CperRawPluginTest, Serialize)
++{
++    Plugin plugin(makeContext(), makeDescriptor());
++    auto data = plugin.serialize();
++
++    EXPECT_EQ(data.at(artifactPathKey).get<std::filesystem::path>(),
++              std::filesystem::path("/tmp/cperraw-artifact"));
++}
++
++TEST_F(CperRawPluginTest, Deserialize)
++{
++    Factory factory;
++    auto plugin = factory.deserialize(
++        makeContext(),
++        {
++            {artifactPathKey, std::filesystem::path("/tmp/cperraw-artifact")},
++        });
++    ASSERT_NE(plugin, nullptr);
++
++    EXPECT_EQ(plugin->interface(), cper::raw::interface);
++}
++
++TEST_F(CperRawPluginTest, SerializeDeserializeRoundTrip)
++{
++    auto descriptor = makeDescriptor();
++    const auto expectedArtifact = descriptor.properties().artifact.path;
++    Plugin original(makeContext(), std::move(descriptor));
++    auto serialized = original.serialize();
++
++    Factory factory;
++    auto restored = factory.deserialize(
++        makeContext("/xyz/openbmc_project/logging/entry/2"), serialized);
++    ASSERT_NE(restored, nullptr);
++
++    EXPECT_EQ(restored->interface(), cper::raw::interface);
++    EXPECT_EQ(restored->serialize(), serialized);
++    EXPECT_EQ(
++        restored->serialize().at(artifactPathKey).get<std::filesystem::path>(),
++        expectedArtifact);
++}
++
+ } // namespace phosphor::logging::plugin::cper::raw
+-- 
+2.54.0
+

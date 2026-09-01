@@ -1,0 +1,199 @@
+From 57e5fe188deb4669bffe1c57fda269842daa6c82 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Wed, 5 Aug 2026 05:34:18 -0500
+Subject: [PATCH 11/33] plugin: add descriptor generation support
+
+Add support for generating plugin descriptors from
+plugin request information.
+
+Extend the plugin factory interface with descriptor generation
+support and add plugin registry helpers for invoking descriptor
+generation through registered plugin factories.
+
+Plugin-specific descriptor generation remains owned by individual
+plugin factories, allowing plugin metadata interpretation to remain
+local to each plugin and avoiding plugin-specific logic in
+framework consumers.
+
+This change establishes the plugin request to descriptor generation
+flow used by future plugin request handling and event extension
+integration.
+
+Add unit tests covering descriptor generation through registered
+plugin factories.
+
+No functional behavior changes are intended.
+
+Change-Id: Ifcd747054834914da3ba087afed34570120f6966
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ plugin/plugin_factory.hpp            | 14 ++++++++
+ plugin/plugin_registry.cpp           | 14 ++++++++
+ plugin/plugin_registry.hpp           | 15 ++++++++
+ test/plugin/plugin_registry_test.cpp | 53 ++++++++++++++++++++++++++--
+ 4 files changed, 94 insertions(+), 2 deletions(-)
+
+diff --git a/plugin/plugin_factory.hpp b/plugin/plugin_factory.hpp
+index d9af134..1d17df8 100644
+--- a/plugin/plugin_factory.hpp
++++ b/plugin/plugin_factory.hpp
+@@ -2,6 +2,7 @@
+ 
+ #include "plugin/plugin.hpp"
+ #include "plugin/plugin_descriptor.hpp"
++#include "plugin/plugin_request.hpp"
+ 
+ #include <memory>
+ 
+@@ -42,6 +43,19 @@ class PluginFactory
+      */
+     virtual PluginPtr create(const PluginContext& context,
+                              const plugin::Descriptor& descriptor) const = 0;
++
++    /**
++     * @brief Create a plugin descriptor.
++     *
++     * Converts plugin request information into a
++     * runtime descriptor.
++     *
++     * @param[in] request Plugin request information.
++     *
++     * @return Plugin descriptor.
++     */
++    virtual plugin::DescriptorPtr createDescriptor(
++        const plugin::Request& request) const = 0;
+ };
+ 
+ /** Unique ownership of a plugin factory. */
+diff --git a/plugin/plugin_registry.cpp b/plugin/plugin_registry.cpp
+index 062fc9d..cd960f8 100644
+--- a/plugin/plugin_registry.cpp
++++ b/plugin/plugin_registry.cpp
+@@ -31,4 +31,18 @@ const PluginFactory* PluginRegistry::lookup(std::string_view interface) const
+     return it->second.get();
+ }
+ 
++plugin::DescriptorPtr PluginRegistry::createDescriptor(
++    const plugin::Request& request) const
++{
++    auto factory = lookup(request.interface);
++    if (factory == nullptr)
++    {
++        lg2::warning("No plugin factory registered for interface {INTERFACE}",
++                     "INTERFACE", request.interface);
++        return nullptr;
++    }
++
++    return factory->createDescriptor(request);
++}
++
+ } // namespace phosphor::logging
+diff --git a/plugin/plugin_registry.hpp b/plugin/plugin_registry.hpp
+index 2169ad7..3fd5e8e 100644
+--- a/plugin/plugin_registry.hpp
++++ b/plugin/plugin_registry.hpp
+@@ -54,6 +54,21 @@ class PluginRegistry
+      */
+     const PluginFactory* lookup(std::string_view interface) const;
+ 
++    /**
++     * @brief Create a plugin descriptor.
++     *
++     * Resolves the plugin interface specified by the plugin
++     * request and invokes the corresponding registered
++     * factory to generate a descriptor.
++     *
++     * @param[in] request Plugin request information.
++     *
++     * @return Generated plugin descriptor or nullptr if the
++     *         plugin interface is not registered.
++     */
++    plugin::DescriptorPtr createDescriptor(
++        const plugin::Request& request) const;
++
+   private:
+     /** Registered plugin factories. */
+     std::unordered_map<std::string, PluginFactoryPtr> registry;
+diff --git a/test/plugin/plugin_registry_test.cpp b/test/plugin/plugin_registry_test.cpp
+index bef76d3..052cf70 100644
+--- a/test/plugin/plugin_registry_test.cpp
++++ b/test/plugin/plugin_registry_test.cpp
+@@ -11,12 +11,32 @@ namespace
+ 
+ constexpr auto testInterface = "xyz.openbmc_project.Logging.Test";
+ 
++class TestDescriptor : public plugin::Descriptor
++{
++  public:
++    std::string_view interface() const override
++    {
++        return testInterface;
++    }
++};
++
+ class TestFactory : public PluginFactory
+ {
+   public:
+-    PluginPtr create(const PluginContext&,
+-                     const plugin::Descriptor&) const override
++    plugin::DescriptorPtr createDescriptor(
++        const plugin::Request& request) const override
+     {
++        (void)request;
++
++        return std::make_unique<TestDescriptor>();
++    }
++
++    PluginPtr create(const PluginContext& context,
++                     const plugin::Descriptor& descriptor) const override
++    {
++        (void)context;
++        (void)descriptor;
++
+         return nullptr;
+     }
+ };
+@@ -42,6 +62,7 @@ TEST(PluginRegistryTest, DuplicateRegistrationKeepsOriginalFactory)
+ {
+     PluginRegistry registry;
+     registry.registerPlugin(testInterface, std::make_unique<TestFactory>());
++
+     auto* original = registry.lookup(testInterface);
+ 
+     EXPECT_NO_THROW(registry.registerPlugin(testInterface,
+@@ -49,4 +70,32 @@ TEST(PluginRegistryTest, DuplicateRegistrationKeepsOriginalFactory)
+     EXPECT_EQ(registry.lookup(testInterface), original);
+ }
+ 
++TEST(PluginRegistryTest, CreateDescriptor)
++{
++    PluginRegistry registry;
++    registry.registerPlugin(testInterface, std::make_unique<TestFactory>());
++    plugin::Request request{
++        .interface = testInterface,
++        .data = {},
++    };
++
++    auto descriptor = registry.createDescriptor(request);
++    ASSERT_NE(descriptor, nullptr);
++
++    EXPECT_EQ(descriptor->interface(), testInterface);
++}
++
++TEST(PluginRegistryTest, CreateDescriptorUnknownInterface)
++{
++    PluginRegistry registry;
++    plugin::Request request{
++        .interface = "unknown.interface",
++        .data = {},
++    };
++
++    auto descriptor = registry.createDescriptor(request);
++
++    EXPECT_EQ(descriptor, nullptr);
++}
++
+ } // namespace phosphor::logging
+-- 
+2.54.0
+

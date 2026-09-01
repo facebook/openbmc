@@ -1,0 +1,266 @@
+From 3b695145a539ad661db2c380ac03538f387c8b00 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Mon, 10 Aug 2026 05:58:43 -0500
+Subject: [PATCH 16/33] logging: add plugin request extension support
+
+Allow extensions to augment plugin requests before
+runtime plugin creation.
+
+Registered plugin request extension callbacks are
+invoked after plugin metadata has been extracted from
+_EXTENSIONS and before requests are processed by the
+plugin framework.
+
+This provides a generic mechanism for extensions to
+append additional request metadata without modifying
+plugin creation or plugin lifecycle management flows.
+
+Change-Id: I658a0b21d7e538deae91601b95e4e3e8a95668d6
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ extensions.cpp           |  7 +++++
+ extensions.hpp           | 61 ++++++++++++++++++++++++++++++++++++++++
+ log_manager.cpp          | 33 ++++++++++++++++++++--
+ log_manager.hpp          | 11 ++++++++
+ test/extensions_test.cpp | 24 ++++++++++++++++
+ 5 files changed, 134 insertions(+), 2 deletions(-)
+
+diff --git a/extensions.cpp b/extensions.cpp
+index 50fc931..6fd0f40 100644
+--- a/extensions.cpp
++++ b/extensions.cpp
+@@ -47,5 +47,12 @@ Extensions::DefaultErrorCaps& Extensions::getDefaultErrorCaps()
+     return defaultErrorCaps;
+ }
+ 
++PluginRequestExtensionFunctions&
++    Extensions::getPluginRequestExtensionFunctions()
++{
++    static PluginRequestExtensionFunctions callbacks;
++    return callbacks;
++}
++
+ } // namespace logging
+ } // namespace phosphor
+diff --git a/extensions.hpp b/extensions.hpp
+index 614103c..4456aef 100644
+--- a/extensions.hpp
++++ b/extensions.hpp
+@@ -72,11 +72,31 @@ using LogIDsWithHwIsolationFunctions =
+ using ExtensionLogAssociation =
+     std::function<void(uint32_t, const std::string&)>;
+ 
++/**
++ * @brief Plugin request extension callback function type.
++ *
++ * This function allows extensions to augment plugin
++ * requests before runtime plugin creation.
++ *
++ * Extensions may append additional request metadata
++ * prior to processing by the plugin framework.
++ *
++ * Callbacks should not modify plugin-defined fields and
++ * should only contribute extension-specific metadata.
++ *
++ * @param[in,out] request
++ *     Plugin request being processed.
++ */
++using PluginRequestExtensionFunction =
++    std::function<void(plugin::Request& request)>;
++
+ using StartupFunctions = std::vector<StartupFunction>;
+ using CreateFunctions = std::vector<CreateFunction>;
+ using DeleteFunctions = std::vector<DeleteFunction>;
+ using DeleteProhibitedFunctions = std::vector<DeleteProhibitedFunction>;
+ using ExtensionLogAssociations = std::vector<ExtensionLogAssociation>;
++using PluginRequestExtensionFunctions =
++    std::vector<PluginRequestExtensionFunction>;
+ 
+ /**
+  * @brief Register an extension hook function
+@@ -103,6 +123,24 @@ using ExtensionLogAssociations = std::vector<ExtensionLogAssociation>;
+         Extensions e{Extensions::DefaultErrorCaps::disable};                   \
+     }
+ 
++/**
++ * @brief Register a plugin extension function.
++ *
++ * Call this macro at global scope to register a plugin
++ * extension callback.
++ *
++ * Registered callbacks are invoked after plugin metadata
++ * is parsed and before plugin descriptors are created.
++ *
++ * @param func
++ *     Plugin extension callback.
++ */
++#define REGISTER_PLUGIN_REQUEST_EXTENSION(func)                                \
++    namespace func##_plugin_request_ns                                         \
++    {                                                                          \
++        Extensions e{func};                                                    \
++    }
++
+ /**
+  * @class Extensions
+  *
+@@ -222,6 +260,19 @@ class Extensions
+         getDefaultErrorCaps() = defaultCaps;
+     }
+ 
++    /**
++     * @brief Constructor to register a plugin extension function.
++     *
++     * Functions registered with this constructor are invoked
++     * before plugin descriptors are created.
++     *
++     * @param[in] func - Plugin extension callback.
++     */
++    explicit Extensions(PluginRequestExtensionFunction func)
++    {
++        getPluginRequestExtensionFunctions().push_back(std::move(func));
++    }
++
+     /**
+      * @brief Returns the Startup functions
+      * @return StartupFunctions - the Startup functions
+@@ -265,6 +316,16 @@ class Extensions
+      */
+     static ExtensionLogAssociations& getExtensionLogAssociationFunctions();
+ 
++    /**
++     * @brief Returns the registered plugin extension callbacks.
++     *
++     * Provides access to all registered plugin extension callbacks.
++     *
++     * @return PluginExtensionFunctions&
++     */
++    static PluginRequestExtensionFunctions&
++        getPluginRequestExtensionFunctions();
++
+     /**
+      * @brief Say if the default log capping policy should be disabled
+      * @return bool - true if it should be disabled
+diff --git a/log_manager.cpp b/log_manager.cpp
+index 9570a94..8264d4c 100644
+--- a/log_manager.cpp
++++ b/log_manager.cpp
+@@ -1043,6 +1043,26 @@ bool Manager::refreshFromDisk(uint32_t id)
+     return true;
+ }
+ 
++void Manager::extendPluginRequest(plugin::Request& request)
++{
++    for (auto& fn : Extensions::getPluginRequestExtensionFunctions())
++    {
++        try
++        {
++            fn(request);
++        }
++        catch (const std::exception& e)
++        {
++            lg2::warning("Ignoring plugin request extension exception: {ERROR}",
++                         "ERROR", e.what());
++        }
++        catch (...)
++        {
++            lg2::warning("Ignoring unknown plugin request extension exception");
++        }
++    }
++}
++
+ auto Manager::buildPluginRequests(
+     std::map<std::string, std::string>& additionalData) -> plugin::RequestList
+ {
+@@ -1061,10 +1081,19 @@ auto Manager::buildPluginRequests(
+ 
+         for (const auto& [interface, data] : extensions.items())
+         {
+-            requests.emplace_back(plugin::Request{
++            plugin::Request request{
+                 .interface = interface,
+                 .data = data,
+-            });
++            };
++
++            //
++            // Allow registered extensions to augment
++            // plugin request metadata prior to plugin
++            // processing.
++            //
++            extendPluginRequest(request);
++
++            requests.emplace_back(std::move(request));
+         }
+     }
+     catch (const std::exception& e)
+diff --git a/log_manager.hpp b/log_manager.hpp
+index c7e5376..9cf8fbe 100644
+--- a/log_manager.hpp
++++ b/log_manager.hpp
+@@ -353,6 +353,17 @@ class Manager : public details::ServerObject<details::ManagerIface>
+     void errorFileChanged(sdeventplus::source::IO& io, int fd,
+                           uint32_t revents);
+ 
++    /**
++     * @brief Run registered plugin request extension callbacks.
++     *
++     * Invokes all registered plugin request extension
++     * callbacks for the supplied request.
++     *
++     * @param[in,out] request
++     *     Plugin request to extend.
++     */
++    void extendPluginRequest(plugin::Request& request);
++
+     /**
+      * @brief Build plugin requests from extension metadata.
+      *
+diff --git a/test/extensions_test.cpp b/test/extensions_test.cpp
+index d5f29eb..089209c 100644
+--- a/test/extensions_test.cpp
++++ b/test/extensions_test.cpp
+@@ -47,6 +47,11 @@ void logIDWithHwIsolation2(std::vector<uint32_t>& logIDs)
+     logIDs.push_back(2);
+ }
+ 
++void pluginExtension1(plugin::Request& request)
++{
++    request.data["Injected"] = "true";
++}
++
+ DISABLE_LOG_ENTRY_CAPS()
+ REGISTER_EXTENSION_FUNCTION(startup1)
+ REGISTER_EXTENSION_FUNCTION(startup2)
+@@ -58,6 +63,7 @@ REGISTER_EXTENSION_FUNCTION(logIDWithHwIsolation1)
+ REGISTER_EXTENSION_FUNCTION(logIDWithHwIsolation2)
+ REGISTER_EXTENSION_FUNCTION(deleteLog1)
+ REGISTER_EXTENSION_FUNCTION(deleteLog2)
++REGISTER_PLUGIN_REQUEST_EXTENSION(pluginExtension1)
+ 
+ TEST(ExtensionsTest, FunctionCallTest)
+ {
+@@ -115,3 +121,21 @@ TEST(ExtensionsTest, FunctionCallTest)
+ 
+     EXPECT_TRUE(Extensions::disableDefaultLogCaps());
+ }
++
++TEST(ExtensionsTest, PluginExtensionFunctionTest)
++{
++    EXPECT_EQ(Extensions::getPluginRequestExtensionFunctions().size(), 1);
++
++    plugin::Request request{
++        .interface = "test.interface",
++        .data = {},
++    };
++
++    for (auto& fn : Extensions::getPluginRequestExtensionFunctions())
++    {
++        fn(request);
++    }
++
++    ASSERT_TRUE(request.data.contains("Injected"));
++    EXPECT_EQ(request.data["Injected"], "true");
++}
+-- 
+2.54.0
+

@@ -1,0 +1,730 @@
+From fa7769f650f7f8eeda23c0dedd85368bd94751d8 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Thu, 27 Aug 2026 00:57:07 -0500
+Subject: [PATCH 28/33] amd-event-log: add Redfish projection support
+
+Introduce AMD OEM Redfish projection support for AEL
+runtime metadata.
+
+Add a reusable Redfish projection framework capable of
+translating AEL metadata fields such as AEL.AFID and
+AEL.FRU_LIST into AMD OEM Redfish payloads.
+
+Support producer-supplied Redfish payloads through the
+AEL.REDFISH field. When present, the payload is treated
+as authoritative and bypasses automatic projection.
+
+Update the runtime metadata provider to generate the
+final AMD OEM payload during log creation and store the
+projected Redfish representation under the AMD
+namespace.
+
+Add unit tests covering metadata projection, FRU
+processing, AFID translation, and passthrough behavior.
+
+Tested:
+'''
+busctl --json=pretty call xyz.openbmc_project.Logging /xyz/openbmc_project/logging/entry/3 org.freedesktop.DBus.Properties GetAll   s xyz.openbmc_project.Logging.Extension.CPERProcessed
+{
+        "type" : "a{sv}",
+        "data" : [
+                {
+                        "DiagnosticDataType" : {
+                                "type" : "s",
+                                "data" : "xyz.openbmc_project.CPER.Types.ContentType.CPER"
+                        },
+                        "NotificationType" : {
+                                "type" : "s",
+                                "data" : ""
+                        },
+                        "SectionType" : {
+                                "type" : "s",
+                                "data" : ""
+                        },
+                        "Oem" : {
+                                "type" : "a{ss}",
+                                "data" : {
+                                        "AMD" : "{\"@odata.type\":\"#AMD_Message.v1_0_0.AMD_Message\",\"AMDFieldIdentifiers\":[{\"AFID\":8,\"Description\":\"Unknown Error\",\"ServiceableUnits\":[{\"InventoryPath\":\"/xyz/openbmc_project/inventory/system/Board/XYZ\"}],\"ServiceableUnits@odata.count\":1}],\"AMDFieldIdentifiers@odata.count\":1,\"RackUnitPosition\":\"AMD:RACK_ID\"}"
+                                }
+                        }
+                }
+        ]
+}
+'''
+
+Change-Id: I13dd55c434cf4bc97b565c8e0d7ae75e67ac9156
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ extensions/amd-event-log/README.md            | 85 ++++++++++++++++
+ .../include/redfish/amd_redfish_constants.hpp | 52 ++++++++++
+ .../include/redfish/amd_redfish_projector.hpp | 25 +++++
+ .../include/redfish/amd_redfish_utils.hpp     | 37 +++++++
+ extensions/amd-event-log/src/entry_points.cpp | 99 +++++++++++++------
+ extensions/amd-event-log/src/meson.build      |  4 +
+ .../src/redfish/amd_redfish_projector.cpp     | 92 +++++++++++++++++
+ .../src/redfish/amd_redfish_utils.cpp         | 44 +++++++++
+ .../amd-event-log/src/redfish/meson.build     |  4 +
+ test/amd-event-log/meson.build                | 20 ++++
+ test/amd-event-log/redfish_projector_test.cpp | 63 ++++++++++++
+ 11 files changed, 496 insertions(+), 29 deletions(-)
+ create mode 100644 extensions/amd-event-log/include/redfish/amd_redfish_constants.hpp
+ create mode 100644 extensions/amd-event-log/include/redfish/amd_redfish_projector.hpp
+ create mode 100644 extensions/amd-event-log/include/redfish/amd_redfish_utils.hpp
+ create mode 100644 extensions/amd-event-log/src/redfish/amd_redfish_projector.cpp
+ create mode 100644 extensions/amd-event-log/src/redfish/amd_redfish_utils.cpp
+ create mode 100644 extensions/amd-event-log/src/redfish/meson.build
+ create mode 100644 test/amd-event-log/redfish_projector_test.cpp
+
+diff --git a/extensions/amd-event-log/README.md b/extensions/amd-event-log/README.md
+index bd0afdd..945bff2 100644
+--- a/extensions/amd-event-log/README.md
++++ b/extensions/amd-event-log/README.md
+@@ -57,6 +57,8 @@ event information derived from the log context.
+ | `AEL.VERSION`  | Version of the AEL schema                          |
+ | `AEL.AFID`     | AMD Field ID identifying the error                 |
+ | `AEL.FRU_LIST` | Inventory object path(s) associated with the fault |
++| `AEL.RACK_ID`  | Rack identifier associated with the event          |
++| `AEL.REDFISH`  | Optional pre-rendered AMD OEM Redfish payload      |
+ 
+ ### Example
+ 
+@@ -70,6 +72,89 @@ event information derived from the log context.
+ }
+ ```
+ 
++### Redfish Projection
++
++The AEL framework supports projecting AMD runtime metadata into an AMD OEM
++Redfish representation.
++
++By default, the framework generates a Redfish payload from available AEL
++metadata.
++
++Applications may optionally provide a fully rendered OEM Redfish payload using
++the `AEL.REDFISH` field. When present, the supplied payload is treated as the
++authoritative AMD OEM representation and automatic projection is skipped.
++
++This supports two usage models:
++
++- Metadata-driven projection using AEL fields such as `AEL.AFID`,
++  `AEL.FRU_LIST`, and `AEL.RACK_ID`.
++- Direct passthrough of a fully rendered AMD OEM Redfish payload using
++  `AEL.REDFISH`.
++
++#### Metadata-Based Projection
++
++Input:
++
++```json
++{
++  "AMD": {
++    "AEL.AFID": "12001",
++    "AEL.FRU_LIST": "/xyz/openbmc_project/inventory/system/chassis"
++  }
++}
++```
++
++Projected Output:
++
++```json
++{
++  "@odata.type": "#AMD_Message.v1_0_0.AMD_Message",
++  "AMDFieldIdentifiers": [
++    {
++      "AFID": 12001,
++      "Description": "Compute Tray Error"
++    }
++  ]
++}
++```
++
++#### Pre-rendered OEM Payload (Passthrough)
++
++Input:
++
++```json
++{
++  "AMD": {
++    "AEL.REDFISH": {
++      "@odata.type": "#AMD_Message.v1_0_0.AMD_Message",
++      "AMDFieldIdentifiers": [
++        {
++          "AFID": 12001,
++          "Description": "Compute Tray Error"
++        }
++      ]
++    }
++  }
++}
++```
++
++Output:
++
++```json
++{
++  "@odata.type": "#AMD_Message.v1_0_0.AMD_Message",
++  "AMDFieldIdentifiers": [
++    {
++      "AFID": 12001,
++      "Description": "Compute Tray Error"
++    }
++  ]
++}
++```
++
++When `AEL.REDFISH` is present, the payload is used directly and no additional
++AEL metadata processing or Redfish projection is performed.
++
+ ---
+ 
+ ## AEL Reverse Lookup Table
+diff --git a/extensions/amd-event-log/include/redfish/amd_redfish_constants.hpp b/extensions/amd-event-log/include/redfish/amd_redfish_constants.hpp
+new file mode 100644
+index 0000000..e3c907a
+--- /dev/null
++++ b/extensions/amd-event-log/include/redfish/amd_redfish_constants.hpp
+@@ -0,0 +1,52 @@
++#pragma once
++
++#include <array>
++#include <cstdint>
++#include <string_view>
++
++namespace phosphor::logging::extensions::ael::redfish::constants
++{
++
++/*
++ * TODO:
++ * Replace static platform mappings with build-time
++ * generated metadata. Future implementations should
++ * derive AFID ownership, schema identifiers, and
++ * projection rules from platform-specific sources.
++ */
++
++/**
++ * @brief AFID range description mapping.
++ */
++struct AFIDRange
++{
++    /** First AFID in the range. */
++    uint64_t start{};
++
++    /** Last AFID in the range. */
++    uint64_t end{};
++
++    /** Description associated with the AFID range. */
++    std::string_view description;
++};
++
++/**
++ * @brief AFID ownership ranges.
++ */
++inline constexpr std::array<AFIDRange, 7> afidRanges{{
++    {11000, 11999, "EAM AMC Error"},
++    {12000, 12999, "Compute Tray Error"},
++    {13000, 13999, "Switch Tray Error"},
++    {14000, 14999, "Rack Error"},
++    {15000, 16999, "Compute Tray Tools Error"},
++    {20000, 39999, "CPU CPER Error"},
++    {40000, 59999, "GPU CPER Error"},
++}};
++
++/**
++ * @brief AMD OEM schema identifier.
++ */
++inline constexpr std::string_view messageOdataType =
++    "#AMD_Message.v1_0_0.AMD_Message";
++
++} // namespace phosphor::logging::extensions::ael::redfish::constants
+diff --git a/extensions/amd-event-log/include/redfish/amd_redfish_projector.hpp b/extensions/amd-event-log/include/redfish/amd_redfish_projector.hpp
+new file mode 100644
+index 0000000..2ef5fb2
+--- /dev/null
++++ b/extensions/amd-event-log/include/redfish/amd_redfish_projector.hpp
+@@ -0,0 +1,25 @@
++#pragma once
++
++#include <nlohmann/json.hpp>
++
++namespace phosphor::logging::extensions::ael::redfish
++{
++
++/*
++ * TODO:
++ * Extend projection support as additional AMD metadata
++ * domains become available. Initial implementation focuses
++ * on AEL metadata and establishes the foundation for CPER
++ * and future platform-specific extensions.
++ */
++
++/**
++ * @brief Generate Redfish JSON from AMD runtime metadata.
++ *
++ * @param[in] amdMetadata AMD runtime metadata namespace.
++ *
++ * @return Redfish OEM JSON.
++ */
++nlohmann::json project(const nlohmann::json& amdMetadata);
++
++} // namespace phosphor::logging::extensions::ael::redfish
+diff --git a/extensions/amd-event-log/include/redfish/amd_redfish_utils.hpp b/extensions/amd-event-log/include/redfish/amd_redfish_utils.hpp
+new file mode 100644
+index 0000000..040e64b
+--- /dev/null
++++ b/extensions/amd-event-log/include/redfish/amd_redfish_utils.hpp
+@@ -0,0 +1,37 @@
++#pragma once
++
++#include <cstdint>
++#include <string>
++#include <vector>
++
++namespace phosphor::logging::extensions::ael::redfish
++{
++
++/**
++ * @brief Resolve an AFID description.
++ *
++ * @param[in] afid AMD Field Identifier.
++ *
++ * @return Human-readable AFID description.
++ */
++[[nodiscard]] std::string getAFIDDescription(uint64_t afid);
++
++/**
++ * @brief Parse a comma-separated FRU list.
++ *
++ * @param[in] value Comma-separated FRU list.
++ *
++ * @return Parsed FRU vector.
++ */
++[[nodiscard]] std::vector<std::string> splitFRUs(const std::string& value);
++
++/**
++ * @brief Return the final component of a path.
++ *
++ * @param[in] path Input path.
++ *
++ * @return Final path component.
++ */
++[[nodiscard]] std::string basename(const std::string& path);
++
++} // namespace phosphor::logging::extensions::ael::redfish
+diff --git a/extensions/amd-event-log/src/entry_points.cpp b/extensions/amd-event-log/src/entry_points.cpp
+index 0fc3b1a..c8208db 100644
+--- a/extensions/amd-event-log/src/entry_points.cpp
++++ b/extensions/amd-event-log/src/entry_points.cpp
+@@ -1,5 +1,7 @@
++#include "ael_common_info.hpp"
+ #include "ael_info.hpp"
+ #include "extensions.hpp"
++#include "redfish/amd_redfish_projector.hpp"
+ 
+ #include <phosphor-logging/lg2.hpp>
+ 
+@@ -11,14 +13,67 @@ namespace phosphor::logging::extensions::ael
+ 
+ using namespace phosphor::logging;
+ 
++/**
++ * @brief Create AMD runtime metadata used for Redfish projection.
++ *
++ * Builds an intermediate AMD metadata object from AEL and
++ * common metadata sources. The resulting metadata is used
++ * as input to the AMD Redfish projector and is not exposed
++ * as the final AMD payload.
++ *
++ * Event-specific metadata may override common metadata
++ * defaults prior to projection.
++ *
++ * @param[in] info AEL metadata derived from the event.
++ *
++ * @return AMD metadata namespace used for Redfish
++ *         projection.
++ */
++static nlohmann::json createAMDMetadata(const AELInfo& info)
++{
++    nlohmann::json amdMetadata;
++
++    amdMetadata[std::string(fields::Version)] = info.version;
++
++    if (info.afid != 0)
++    {
++        amdMetadata[std::string(fields::AFID)] = std::to_string(info.afid);
++    }
++
++    if (!info.fruList.empty())
++    {
++        const auto joined = info.fruList | std::views::join_with(',');
++
++        const std::string frus(joined.begin(), joined.end());
++
++        amdMetadata[std::string(fields::FruList)] = frus;
++    }
++
++    const CommonInfo commonInfo = getCommonInfo();
++
++    if (commonInfo.rackId)
++    {
++        amdMetadata[std::string(fields::RackId)] = *commonInfo.rackId;
++    }
++
++    return amdMetadata;
++}
++
+ /**
+  * @brief AMD runtime metadata provider.
+  *
+- * Generates AEL metadata and contributes it to the
+- * aggregated runtime metadata object.
++ * Generates the AMD OEM payload associated with the
++ * current event.
++ *
++ * A producer may optionally provide a fully rendered
++ * Redfish payload using AEL.REDFISH. In this case the
++ * supplied payload is used directly and no additional
++ * metadata processing is performed.
++ *
++ * Otherwise, AMD metadata is collected and projected
++ * into the final Redfish representation.
+  *
+- * @param[in,out] metadata
+- *     Aggregated runtime metadata.
++ * @param[in,out] metadata Aggregated runtime metadata.
+  * @param[in] message Event message.
+  * @param[in] level Event severity.
+  * @param[in] additionalData Event additional data.
+@@ -29,41 +84,27 @@ static void amdRuntimeMetadataProvider(
+ {
+     try
+     {
+-        const AELInfo info =
+-            AELInfoProvider(message, level, additionalData).get();
++        auto redfishIt = additionalData.find(std::string(fields::Redfish));
+ 
+-        if (info.afid == 0 && info.fruList.empty())
++        if (redfishIt != additionalData.end())
+         {
+-            lg2::debug("amdRuntimeMetadataProvider: no AEL data found");
++            metadata["AMD"] = nlohmann::json::parse(redfishIt->second);
++
+             return;
+         }
+ 
+-        auto& amd = metadata["AMD"];
+-
+-        amd[std::string(fields::Version)] = info.version;
+-
+-        if (info.afid != 0)
+-        {
+-            amd[std::string(fields::AFID)] = std::to_string(info.afid);
+-        }
++        const AELInfo info =
++            AELInfoProvider(message, level, additionalData).get();
+ 
+-        if (!info.fruList.empty())
++        if (info.afid == 0 && info.fruList.empty())
+         {
+-            const auto joined = info.fruList | std::views::join_with(',');
+-
+-            const std::string frus(joined.begin(), joined.end());
+-
+-            amd[std::string(fields::FruList)] = frus;
+-
+-            lg2::debug("FruList=[{FRUS}]", "FRUS", frus);
++            lg2::debug("amdRuntimeMetadataProvider: no AEL data found");
++            return;
+         }
+ 
+-	CommonInfo commonInfo = getCommonInfo();
+-    if (commonInfo.rackId)
+-    {
+-        amd[std::string(fields::RackId)] = *commonInfo.rackId;
+-    }
++        const auto amdMetadata = createAMDMetadata(info);
+ 
++        metadata["AMD"] = redfish::project(amdMetadata);
+     }
+     catch (const std::exception& e)
+     {
+diff --git a/extensions/amd-event-log/src/meson.build b/extensions/amd-event-log/src/meson.build
+index 3b46fea..625efea 100644
+--- a/extensions/amd-event-log/src/meson.build
++++ b/extensions/amd-event-log/src/meson.build
+@@ -22,7 +22,10 @@ lut_gen = custom_target(
+     build_by_default: true,
+ )
+ 
++subdir('redfish')
++
+ ael_sources = files(
++    'ael_common_info.cpp',
+     'ael_info.cpp',
+     'amd_afid_utils.cpp',
+     'entry_points.cpp',
+@@ -31,6 +34,7 @@ ael_sources = files(
+ ael_inc = include_directories('../include')
+ 
+ log_manager_ext_sources += ael_sources
++log_manager_ext_sources += redfish_sources
+ log_manager_ext_sources += [lut_gen]
+ 
+ log_manager_ext_deps += [
+diff --git a/extensions/amd-event-log/src/redfish/amd_redfish_projector.cpp b/extensions/amd-event-log/src/redfish/amd_redfish_projector.cpp
+new file mode 100644
+index 0000000..88f551b
+--- /dev/null
++++ b/extensions/amd-event-log/src/redfish/amd_redfish_projector.cpp
+@@ -0,0 +1,92 @@
++#include "redfish/amd_redfish_projector.hpp"
++
++#include "ael_metadata.hpp"
++#include "redfish/amd_redfish_constants.hpp"
++#include "redfish/amd_redfish_utils.hpp"
++
++#include <charconv>
++#include <system_error>
++
++namespace phosphor::logging::extensions::ael::redfish
++{
++
++namespace
++{
++
++void projectAEL(const nlohmann::json& amdMetadata, nlohmann::json& output)
++{
++    auto afidIt = amdMetadata.find(std::string(fields::AFID));
++    if (afidIt == amdMetadata.end() || !afidIt->is_string())
++    {
++        return;
++    }
++
++    const auto& afidStr = afidIt->get_ref<const std::string&>();
++
++    uint64_t afid = 0;
++    auto [ptr, ec] =
++        std::from_chars(afidStr.data(), afidStr.data() + afidStr.size(), afid);
++    if (ec != std::errc() || ptr != afidStr.data() + afidStr.size())
++    {
++        return;
++    }
++
++    nlohmann::json fieldId;
++    fieldId["AFID"] = afid;
++    fieldId["Description"] = getAFIDDescription(afid);
++
++    auto fruIt = amdMetadata.find(std::string(fields::FruList));
++    if (fruIt != amdMetadata.end() && fruIt->is_string())
++    {
++        nlohmann::json serviceableUnits = nlohmann::json::array();
++        for (const auto& fru : splitFRUs(fruIt->get<std::string>()))
++        {
++            // TODO:
++            // Resolve inventory object paths into
++            // Redfish resource URIs once inventory-to-
++            // Redfish mapping infrastructure becomes
++            // available.
++            serviceableUnits.push_back({{"InventoryPath", fru}});
++        }
++
++        if (!serviceableUnits.empty())
++        {
++            fieldId["ServiceableUnits"] = std::move(serviceableUnits);
++
++            fieldId["ServiceableUnits@odata.count"] =
++                fieldId["ServiceableUnits"].size();
++        }
++    }
++
++    output["AMDFieldIdentifiers"] = nlohmann::json::array();
++    output["AMDFieldIdentifiers"].push_back(std::move(fieldId));
++    output["AMDFieldIdentifiers@odata.count"] =
++        output["AMDFieldIdentifiers"].size();
++
++    // TODO:
++    // Replace AEL.RACK_ID handling with generated
++    // platform metadata once common metadata becomes
++    // data-driven.
++    auto rackIt = amdMetadata.find(std::string(fields::RackId));
++    output["RackUnitPosition"] =
++        (rackIt != amdMetadata.end()) ? *rackIt : nlohmann::json(nullptr);
++}
++
++} // namespace
++
++nlohmann::json project(const nlohmann::json& amdMetadata)
++{
++    auto redfishIt = amdMetadata.find(std::string(fields::Redfish));
++    if (redfishIt != amdMetadata.end())
++    {
++        return *redfishIt;
++    }
++
++    nlohmann::json output;
++    output["@odata.type"] = constants::messageOdataType;
++    projectAEL(amdMetadata, output);
++
++    return output;
++}
++
++} // namespace phosphor::logging::extensions::ael::redfish
+diff --git a/extensions/amd-event-log/src/redfish/amd_redfish_utils.cpp b/extensions/amd-event-log/src/redfish/amd_redfish_utils.cpp
+new file mode 100644
+index 0000000..c458075
+--- /dev/null
++++ b/extensions/amd-event-log/src/redfish/amd_redfish_utils.cpp
+@@ -0,0 +1,44 @@
++#include "redfish/amd_redfish_utils.hpp"
++
++#include "redfish/amd_redfish_constants.hpp"
++
++#include <sstream>
++
++namespace phosphor::logging::extensions::ael::redfish
++{
++
++std::string getAFIDDescription(uint64_t afid)
++{
++    for (const auto& range : constants::afidRanges)
++    {
++        if (afid >= range.start && afid <= range.end)
++        {
++            return std::string(range.description);
++        }
++    }
++
++    return "Unknown Error";
++}
++
++std::vector<std::string> splitFRUs(const std::string& value)
++{
++    std::vector<std::string> frus;
++    std::istringstream ss(value);
++    std::string item;
++
++    while (std::getline(ss, item, ','))
++    {
++        const auto begin = item.find_first_not_of(" \t");
++        if (begin == std::string::npos)
++        {
++            continue;
++        }
++
++        const auto end = item.find_last_not_of(" \t");
++        frus.emplace_back(item.substr(begin, end - begin + 1));
++    }
++
++    return frus;
++}
++
++} // namespace phosphor::logging::extensions::ael::redfish
+diff --git a/extensions/amd-event-log/src/redfish/meson.build b/extensions/amd-event-log/src/redfish/meson.build
+new file mode 100644
+index 0000000..f400acc
+--- /dev/null
++++ b/extensions/amd-event-log/src/redfish/meson.build
+@@ -0,0 +1,4 @@
++redfish_sources = files(
++    'amd_redfish_projector.cpp',
++    'amd_redfish_utils.cpp',
++)
+diff --git a/test/amd-event-log/meson.build b/test/amd-event-log/meson.build
+index 21177d3..0229020 100644
+--- a/test/amd-event-log/meson.build
++++ b/test/amd-event-log/meson.build
+@@ -18,3 +18,23 @@ test(
+         ],
+     ),
+ )
++
++test(
++    'redfish_projector_test',
++    executable(
++        'redfish_projector_test',
++        [
++            'redfish_projector_test.cpp',
++            '../../extensions/amd-event-log/src/redfish/amd_redfish_projector.cpp',
++            '../../extensions/amd-event-log/src/redfish/amd_redfish_utils.cpp',
++        ],
++        include_directories: [
++            include_directories('../../extensions/amd-event-log/include'),
++        ],
++        dependencies: [
++            gtest_dep,
++            phosphor_logging_dep,
++            conf_h_dep,
++        ],
++    ),
++)
+diff --git a/test/amd-event-log/redfish_projector_test.cpp b/test/amd-event-log/redfish_projector_test.cpp
+new file mode 100644
+index 0000000..99c4cd2
+--- /dev/null
++++ b/test/amd-event-log/redfish_projector_test.cpp
+@@ -0,0 +1,63 @@
++#include "ael_metadata.hpp"
++#include "redfish/amd_redfish_projector.hpp"
++
++#include <gtest/gtest.h>
++
++namespace phosphor::logging::extensions::ael::redfish
++{
++
++TEST(RedfishProjectorTest, EmptyMetadata)
++{
++    nlohmann::json metadata;
++    auto result = project(metadata);
++
++    EXPECT_TRUE(result.contains("@odata.type"));
++    EXPECT_FALSE(result.contains("AMDFieldIdentifiers"));
++}
++
++TEST(RedfishProjectorTest, ProjectAFID)
++{
++    nlohmann::json metadata;
++    metadata[std::string(fields::AFID)] = "12001";
++
++    auto result = project(metadata);
++    ASSERT_TRUE(result.contains("AMDFieldIdentifiers"));
++
++    const auto& ids = result["AMDFieldIdentifiers"];
++    ASSERT_EQ(ids.size(), 1);
++
++    EXPECT_EQ(ids[0]["AFID"], 12001);
++    EXPECT_EQ(ids[0]["Description"], "Compute Tray Error");
++    EXPECT_EQ(result["AMDFieldIdentifiers@odata.count"], 1);
++}
++
++TEST(RedfishProjectorTest, UnknownAFID)
++{
++    nlohmann::json metadata;
++    metadata[std::string(fields::AFID)] = "999999";
++
++    auto result = project(metadata);
++    ASSERT_TRUE(result.contains("AMDFieldIdentifiers"));
++
++    const auto& ids = result["AMDFieldIdentifiers"];
++    ASSERT_EQ(ids.size(), 1);
++    EXPECT_EQ(ids[0]["Description"], "Unknown Error");
++}
++
++TEST(RedfishProjectorTest, PassthroughPayload)
++{
++    nlohmann::json payload = {
++        {"@odata.type", "#AMD_Message.v1_0_0.AMD_Message"},
++        {"AMDFieldIdentifiers",
++         nlohmann::json::array(
++             {{{"AFID", 12345}, {"Description", "PreRendered"}}})},
++    };
++
++    nlohmann::json metadata;
++    metadata[std::string(fields::Redfish)] = payload;
++
++    auto result = project(metadata);
++    EXPECT_EQ(result, payload);
++}
++
++} // namespace phosphor::logging::extensions::ael::redfish
+-- 
+2.54.0
+

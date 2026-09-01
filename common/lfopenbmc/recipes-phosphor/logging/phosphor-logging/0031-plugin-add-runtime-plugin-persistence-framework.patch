@@ -1,0 +1,377 @@
+From e967b69b2777a0a3097490a5f576f20f4392b056 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Fri, 28 Aug 2026 07:01:35 -0500
+Subject: [PATCH 31/33] plugin: add runtime plugin persistence framework
+
+Add framework support for persisting and restoring
+plugin-owned runtime state across log manager restarts.
+
+Plugin state is serialized into the JSON log entry
+representation using the plugin interface name as the
+persistence key. During log restoration, persisted plugin
+state is reconstructed through the plugin framework using
+factory-based deserialization.
+
+This change adds:
+- Plugin::serialize() persistence support
+- PluginFactory::deserialize() restoration hook
+- PluginManager::deserialize() reconstruction logic
+- PluginService::deserialize() integration API
+- Entry plugin accessors for persistence workflows
+- Plugin state serialization in elog JSON entries
+- Plugin state restoration during log manager startup
+- Unit test coverage for plugin deserialization support
+
+Individual plugins will add plugin-specific state
+serialization and restoration support in follow-up changes.
+
+Change-Id: I4fed96845638e4d950cab9a7ca15258abf7e19c4
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ elog_entry.hpp                      | 23 +++++++++++++++++
+ elog_serialize.cpp                  | 22 ++++++++++++++++
+ elog_serialize.hpp                  |  9 +++++++
+ log_manager.cpp                     | 10 ++++++++
+ plugin/plugin.hpp                   | 13 ++++++++++
+ plugin/plugin_factory.hpp           | 19 ++++++++++++++
+ plugin/plugin_manager.cpp           | 23 +++++++++++++++++
+ plugin/plugin_manager.hpp           | 14 +++++++++++
+ plugin/plugin_service.cpp           |  6 +++++
+ plugin/plugin_service.hpp           | 13 ++++++++++
+ test/plugin/plugin_manager_test.cpp | 39 +++++++++++++++++++++++++++++
+ 11 files changed, 191 insertions(+)
+
+diff --git a/elog_entry.hpp b/elog_entry.hpp
+index 33c9589..1a12eeb 100644
+--- a/elog_entry.hpp
++++ b/elog_entry.hpp
+@@ -162,6 +162,29 @@ class Entry : public EntryIfaces
+      */
+     sdbusplus::message::unix_fd getEntry() override;
+ 
++    /**
++     * @brief Get runtime plugins associated with this entry.
++     *
++     * @return Runtime plugins.
++     */
++    const PluginList& getPlugins() const
++    {
++        return plugins;
++    }
++
++    /**
++     * @brief Replace runtime plugins associated with this entry.
++     *
++     * Transfers ownership of the supplied runtime
++     * plugins to the entry.
++     *
++     * @param[in] plugins Runtime plugins.
++     */
++    void setPlugins(PluginList plugins)
++    {
++        this->plugins = std::move(plugins);
++    }
++
+   private:
+     /** @brief This entry's associations */
+     AssociationList assocs = {};
+diff --git a/elog_serialize.cpp b/elog_serialize.cpp
+index 08ee15d..b2c6204 100644
+--- a/elog_serialize.cpp
++++ b/elog_serialize.cpp
+@@ -175,6 +175,13 @@ fs::path serializeJSON(const Entry& e, const fs::path& dir)
+     j["eventId"] = e.eventId();
+     j["resolution"] = e.resolution();
+ 
++    j["plugins"] = nlohmann::json::object();
++
++    for (const auto& plugin : e.getPlugins())
++    {
++        j["plugins"][std::string(plugin->interface())] = plugin->serialize();
++    }
++
+     std::ofstream os(path.c_str());
+     os << j.dump(4);
+     return path;
+@@ -274,5 +281,20 @@ bool deserialize(const fs::path& path, Entry& e)
+     }
+ }
+ 
++nlohmann::json deserializePlugins(const fs::path& path)
++{
++    std::ifstream is(path.c_str());
++
++    nlohmann::json j;
++    is >> j;
++
++    if (auto it = j.find("plugins"); it != j.end())
++    {
++        return *it;
++    }
++
++    return nlohmann::json::object();
++}
++
+ } // namespace logging
+ } // namespace phosphor
+diff --git a/elog_serialize.hpp b/elog_serialize.hpp
+index 162a0c1..ba08363 100644
+--- a/elog_serialize.hpp
++++ b/elog_serialize.hpp
+@@ -57,5 +57,14 @@ bool deserialize(const fs::path& path, Entry& e);
+ fs::path getEntrySerializePath(uint32_t id,
+                                const fs::path& dir = fs::path(paths::error()));
+ 
++/**
++ * @brief Extract serialized plugin state.
++ *
++ * @param[in] path JSON entry file.
++ *
++ * @return Serialized plugin state.
++ */
++nlohmann::json deserializePlugins(const fs::path& path);
++
+ } // namespace logging
+ } // namespace phosphor
+diff --git a/log_manager.cpp b/log_manager.cpp
+index 3490d11..1827c40 100644
+--- a/log_manager.cpp
++++ b/log_manager.cpp
+@@ -757,6 +757,16 @@ void Manager::restore()
+             {
+                 continue;
+             }
++
++            auto pluginData = deserializePlugins(filePath);
++            PluginContext context{
++                busLog,
++                std::string(OBJ_ENTRY) + '/' + std::to_string(idNum),
++            };
++            auto plugins = pluginService.deserialize(context, pluginData);
++
++            e->setPlugins(std::move(plugins));
++
+             e->path(filePath, true);
+         }
+         else
+diff --git a/plugin/plugin.hpp b/plugin/plugin.hpp
+index b7768ae..0a4653b 100644
+--- a/plugin/plugin.hpp
++++ b/plugin/plugin.hpp
+@@ -1,5 +1,6 @@
+ #pragma once
+ 
++#include <nlohmann/json.hpp>
+ #include <sdbusplus/bus.hpp>
+ 
+ #include <memory>
+@@ -62,6 +63,18 @@ class Plugin
+      * plugin-owned resources associated with the entry.
+      */
+     virtual void onDelete() {}
++
++    /**
++     * @brief Serialize plugin owned state.
++     *
++     * Default implementation persists no state.
++     *
++     * @return Serialized plugin state.
++     */
++    virtual nlohmann::json serialize() const
++    {
++        return {};
++    }
+ };
+ 
+ /** Unique ownership of a runtime plugin instance. */
+diff --git a/plugin/plugin_factory.hpp b/plugin/plugin_factory.hpp
+index 4f13db3..1d67018 100644
+--- a/plugin/plugin_factory.hpp
++++ b/plugin/plugin_factory.hpp
+@@ -4,6 +4,8 @@
+ #include "plugin/plugin_descriptor.hpp"
+ #include "plugin/plugin_request.hpp"
+ 
++#include <nlohmann/json.hpp>
++
+ #include <memory>
+ 
+ namespace phosphor::logging
+@@ -76,6 +78,23 @@ class PluginFactory
+     {
+         return metadata;
+     }
++
++    /**
++     * @brief Restore plugin from serialized state.
++     *
++     * Plugins supporting persistence may override
++     * this method.
++     *
++     * @param[in] context Plugin runtime context.
++     * @param[in] data Serialized plugin state.
++     *
++     * @return Restored plugin instance.
++     */
++    virtual PluginPtr deserialize(const PluginContext&,
++                                  const nlohmann::json&) const
++    {
++        return nullptr;
++    }
+ };
+ 
+ /** Unique ownership of a plugin factory. */
+diff --git a/plugin/plugin_manager.cpp b/plugin/plugin_manager.cpp
+index 324105a..95b97e6 100644
+--- a/plugin/plugin_manager.cpp
++++ b/plugin/plugin_manager.cpp
+@@ -66,4 +66,27 @@ nlohmann::json PluginManager::buildExtensionPayload(
+     return registry.buildExtensionPayload(interface, metadata);
+ }
+ 
++PluginList PluginManager::deserialize(const PluginContext& context,
++                                      const nlohmann::json& data) const
++{
++    PluginList plugins;
++
++    for (const auto& [interface, state] : data.items())
++    {
++        auto factory = registry.lookup(interface);
++        if (factory == nullptr)
++        {
++            continue;
++        }
++
++        auto plugin = factory->deserialize(context, state);
++        if (plugin != nullptr)
++        {
++            plugins.emplace_back(std::move(plugin));
++        }
++    }
++
++    return plugins;
++}
++
+ } // namespace phosphor::logging
+diff --git a/plugin/plugin_manager.hpp b/plugin/plugin_manager.hpp
+index c3a770a..d814e5f 100644
+--- a/plugin/plugin_manager.hpp
++++ b/plugin/plugin_manager.hpp
+@@ -71,6 +71,20 @@ class PluginManager
+     nlohmann::json buildExtensionPayload(std::string_view interface,
+                                          const nlohmann::json& metadata) const;
+ 
++    /**
++     * @brief Restore runtime plugins from persisted state.
++     *
++     * Uses the registered plugin factories to recreate
++     * runtime plugin instances.
++     *
++     * @param[in] context Plugin runtime context.
++     * @param[in] data Serialized plugin state.
++     *
++     * @return Restored plugin instances.
++     */
++    PluginList deserialize(const PluginContext& context,
++                           const nlohmann::json& data) const;
++
+   private:
+     /**
+      * @brief Create a plugin instance.
+diff --git a/plugin/plugin_service.cpp b/plugin/plugin_service.cpp
+index ed22fc9..8d9baa4 100644
+--- a/plugin/plugin_service.cpp
++++ b/plugin/plugin_service.cpp
+@@ -15,4 +15,10 @@ nlohmann::json PluginService::buildExtensionPayload(
+     return manager.buildExtensionPayload(interface, metadata);
+ }
+ 
++PluginList PluginService::deserialize(const PluginContext& context,
++                                      const nlohmann::json& data) const
++{
++    return manager.deserialize(context, data);
++}
++
+ } // namespace phosphor::logging
+diff --git a/plugin/plugin_service.hpp b/plugin/plugin_service.hpp
+index cd9e60c..6b3a54f 100644
+--- a/plugin/plugin_service.hpp
++++ b/plugin/plugin_service.hpp
+@@ -65,6 +65,19 @@ class PluginService
+     nlohmann::json buildExtensionPayload(std::string_view interface,
+                                          const nlohmann::json& metadata);
+ 
++    /**
++     * @brief Restore runtime plugins.
++     *
++     * Delegates plugin restoration to PluginManager.
++     *
++     * @param[in] context Plugin runtime context.
++     * @param[in] data Serialized plugin state.
++     *
++     * @return Restored plugin instances.
++     */
++    PluginList deserialize(const PluginContext& context,
++                           const nlohmann::json& data) const;
++
+   private:
+     /** Plugin framework manager. */
+     PluginManager manager;
+diff --git a/test/plugin/plugin_manager_test.cpp b/test/plugin/plugin_manager_test.cpp
+index d75c5a7..33b0720 100644
+--- a/test/plugin/plugin_manager_test.cpp
++++ b/test/plugin/plugin_manager_test.cpp
+@@ -51,6 +51,12 @@ class TestFactory : public PluginFactory
+     {
+         return std::make_unique<TestPlugin>();
+     }
++
++    PluginPtr deserialize(const PluginContext&,
++                          const nlohmann::json&) const override
++    {
++        return std::make_unique<TestPlugin>();
++    }
+ };
+ 
+ } // namespace
+@@ -137,4 +143,37 @@ TEST(PluginLifecycleTest, DeleteCallback)
+     EXPECT_TRUE(plugin.deleted);
+ }
+ 
++TEST(PluginManagerTest, DeserializePlugin)
++{
++    PluginRegistry registry;
++    registry.registerPlugin(testInterface, std::make_unique<TestFactory>());
++    PluginManager manager(std::move(registry));
++    auto bus = sdbusplus::bus::new_default();
++    PluginContext context{
++        bus,
++        "/xyz/openbmc_project/logging/entry/1",
++    };
++    nlohmann::json data = {{testInterface, nlohmann::json::object()}};
++    auto plugins = manager.deserialize(context, data);
++
++    ASSERT_EQ(plugins.size(), 1);
++    EXPECT_EQ(plugins.front()->interface(), testInterface);
++}
++
++TEST(PluginManagerTest, DeserializeUnknownPlugin)
++{
++    PluginRegistry registry;
++    PluginManager manager(std::move(registry));
++    auto bus = sdbusplus::bus::new_default();
++    PluginContext context{
++        bus,
++        "/xyz/openbmc_project/logging/entry/1",
++    };
++    nlohmann::json data = {
++        {"xyz.openbmc_project.Logging.Unknown", nlohmann::json::object()}};
++    auto plugins = manager.deserialize(context, data);
++
++    EXPECT_TRUE(plugins.empty());
++}
++
+ } // namespace phosphor::logging::test
+-- 
+2.54.0
+

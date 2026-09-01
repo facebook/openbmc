@@ -1,0 +1,630 @@
+From 07af3e3bd7380ab2ee0cfa5f43d6b156f46d553e Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Sun, 2 Aug 2026 03:36:32 -0500
+Subject: [PATCH 17/33] plugin:CPER:Processed Add extension support
+
+Add support for the
+xyz.openbmc_project.Logging.Extension.CPER Processed
+extension.
+
+Introduce a schema-backed descriptor and runtime plugin
+implementation for CPER Processed metadata. The descriptor
+mirrors the properties defined by the CPER Processed D-Bus
+interface and is used to translate request metadata into
+runtime plugin instances.
+
+The plugin augments log entries with the
+xyz.openbmc_project.Logging.Extension.CPER.Processed D-Bus
+interface and exposes processed CPER metadata through
+D-Bus properties, including the diagnostic data type,
+notification type, section type, and OEM metadata.
+
+Add a corresponding plugin factory and register it with
+the plugin registry, enabling request-to-descriptor
+translation and runtime creation of CPERProcessed plugins
+through the existing plugin manager framework.
+
+Also add build integration and unit tests covering
+plugin registration, descriptor creation, request
+metadata propagation, factory creation, plugin manager
+integration, and descriptor property propagation.
+
+The plugin is limited to exposing processed CPER metadata
+associated with a log entry. Management of the underlying
+CPER artifact and support for additional CPER-specific
+extensions remain outside the scope of this change.
+
+Tested:
+
+'''
+Generated a CPER event with extension metadata
+
+Example:
+
+auto cperEvent =
+    sdbusplus::error::xyz::openbmc_project::state::Cper::Error(
+        nlohmann::json{
+            {"xyz.openbmc_project.State.Cper.Error",
+             {
+                 {"SOURCE",
+                  "/xyz/openbmc_project/inventory/system"},
+             }},
+        },
+        std::source_location::current());
+
+cperEvent.extend(
+    sdbusplus::common::xyz::openbmc_project::
+        logging::extension::CPER::Processed::properties_t{
+            .diagnostic_data_type =
+                sdbusplus::common::xyz::openbmc_project::Logging::
+                    cper::Types::ContentType::CPER,
+            .notification_type =
+                "8f87f311-c998-4d9e-a0c4-fb4dfc2c8c14",
+            .section_type =
+                "dc3ea0b0-a144-4797-b95b-53fa242b6e1d",
+            .oem =
+                {{"Source",
+                  "/xyz/openbmc_project/inventory/system"}},
+        });
+
+lg2::commit(std::move(cperEvent));
+
+Result:
+
+busctl introspect xyz.openbmc_project.Logging \
+  /xyz/openbmc_project/logging/entry/1
+
+...
+...
+
+xyz.openbmc_project.Logging.Extension.CPER.Processed interface -         -
+.DiagnosticDataType    property  s
+    "xyz.openbmc_project.Logging.CPER.Types.ContentType.CPER"
+
+.NotificationType      property  s
+    "8f87f311-c998-4d9e-a0c4-fb4dfc2c8c14"
+
+.Oem                   property  a{ss}
+    "Source" : "/xyz/openbmc_project/inventory/system"
+
+.SectionType           property  s
+    "dc3ea0b0-a144-4797-b95b-53fa242b6e1d"
+
+xyz.openbmc_project.Logging.Entry interface -         -
+.AdditionalData        property  a{ss}
+    5 entries
+
+.Id                    property  u
+    1
+
+...
+
+busctl --json=pretty call xyz.openbmc_project.Logging \
+  /xyz/openbmc_project/logging/entry/1 \
+  org.freedesktop.DBus.Properties GetAll \
+  s xyz.openbmc_project.Logging.Extension.CPER.Processed
+
+{
+    "DiagnosticDataType": {
+        "data": "xyz.openbmc_project.Logging.CPER.Types.ContentType.CPER"
+    },
+    "NotificationType": {
+        "data": "8f87f311-c998-4d9e-a0c4-fb4dfc2c8c14"
+    },
+    "SectionType": {
+        "data": "dc3ea0b0-a144-4797-b95b-53fa242b6e1d"
+    },
+    "Oem": {
+        "data": {
+            "Source": "/xyz/openbmc_project/inventory/system"
+        }
+    }
+}
+'''
+
+Change-Id: I9476a994db7902b586f5ca2e322e945ea7c19dc8
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ plugin/cper_processed_descriptor.hpp       | 106 ++++++++++++++++
+ plugin/cper_processed_plugin.cpp           |  57 +++++++++
+ plugin/cper_processed_plugin.hpp           | 108 ++++++++++++++++
+ plugin/meson.build                         |   1 +
+ plugin/plugin_builtin.cpp                  |   7 +-
+ test/plugin/cper_processed_plugin_test.cpp | 137 +++++++++++++++++++++
+ test/plugin/meson.build                    |  18 +++
+ 7 files changed, 433 insertions(+), 1 deletion(-)
+ create mode 100644 plugin/cper_processed_descriptor.hpp
+ create mode 100644 plugin/cper_processed_plugin.cpp
+ create mode 100644 plugin/cper_processed_plugin.hpp
+ create mode 100644 test/plugin/cper_processed_plugin_test.cpp
+
+diff --git a/plugin/cper_processed_descriptor.hpp b/plugin/cper_processed_descriptor.hpp
+new file mode 100644
+index 0000000..9f3a861
+--- /dev/null
++++ b/plugin/cper_processed_descriptor.hpp
+@@ -0,0 +1,106 @@
++#pragma once
++
++#include "plugin/plugin_descriptor.hpp"
++
++#include <xyz/openbmc_project/Logging/CPER/Types/common.hpp>
++
++#include <map>
++#include <string>
++#include <string_view>
++#include <utility>
++
++namespace phosphor::logging::plugin::cper::processed
++{
++
++using ContentType =
++    sdbusplus::common::xyz::openbmc_project::logging::cper::Types::ContentType;
++
++using OemMetadata = std::map<std::string, std::string>;
++
++inline constexpr std::string_view interface =
++    "xyz.openbmc_project.Logging.Extension.CPER::Processed";
++
++/**
++ * @brief CPER Processed interface properties.
++ *
++ * Represents the schema-defined properties of the
++ * xyz.openbmc_project.Logging.Extension.CPER.Processed
++ * interface.
++ *
++ * This structure should remain aligned with the D-Bus
++ * interface YAML definition and serves as the canonical
++ * in-memory representation of CPER Processed metadata within
++ * the plugin framework.
++ */
++struct Properties
++{
++    /** Record or section level CPER content. */
++    ContentType diagnosticDataType;
++
++    /** CPER Notification Type GUID. */
++    std::string notificationType;
++
++    /** CPER Section Type GUID. */
++    std::string sectionType;
++
++    /** OEM-specific CPER metadata. */
++    OemMetadata oem;
++};
++
++/**
++ * @brief CPER Processed plugin creation descriptor.
++ *
++ * Carries schema-backed CPER Processed metadata extracted
++ * from a logging event and provides the input used to
++ * construct a runtime CPER Processed plugin instance.
++ */
++class Descriptor : public phosphor::logging::plugin::Descriptor
++{
++  public:
++    Descriptor() = delete;
++    Descriptor(const Descriptor&) = delete;
++    Descriptor(Descriptor&&) = default;
++    Descriptor& operator=(const Descriptor&) = delete;
++    Descriptor& operator=(Descriptor&&) = default;
++    ~Descriptor() override = default;
++
++    /**
++     * @brief Construct a CPER Processed descriptor.
++     *
++     * @param[in] properties
++     *     CPER Processed interface properties.
++     */
++    explicit Descriptor(Properties properties) :
++        properties_(std::move(properties))
++    {}
++
++    /**
++     * @brief Return plugin interface identifier.
++     *
++     * @return Interface name.
++     */
++    std::string_view interface() const override
++    {
++        return cper::processed::interface;
++    }
++
++    /**
++     * @brief Return CPER Processed properties.
++     *
++     * Consumers should prefer this accessor over individual
++     * field-specific accessors to keep descriptor usage
++     * aligned with the underlying schema definition.
++     *
++     * @return CPER Processed properties.
++     */
++    const Properties& properties() const
++    {
++        return properties_;
++    }
++
++  private:
++    /** Schema-backed CPER Processed properties. */
++    Properties properties_;
++};
++
++} // namespace phosphor::logging::plugin::cper::processed
+diff --git a/plugin/cper_processed_plugin.cpp b/plugin/cper_processed_plugin.cpp
+new file mode 100644
+index 0000000..8e74d1f
+--- /dev/null
++++ b/plugin/cper_processed_plugin.cpp
+@@ -0,0 +1,57 @@
++#include "plugin/cper_processed_plugin.hpp"
++
++#include <stdexcept>
++
++namespace phosphor::logging::plugin::cper::processed
++{
++
++Plugin::Plugin(const PluginContext& context, const Descriptor& descriptor) :
++    Interface(context.bus, context.objectPath.c_str())
++{
++    const auto& properties = descriptor.properties();
++
++    diagnosticDataType(properties.diagnosticDataType, true);
++    notificationType(properties.notificationType, true);
++    sectionType(properties.sectionType, true);
++    oem(properties.oem, true);
++}
++
++std::string_view Plugin::interface() const
++{
++    return cper::processed::interface;
++}
++
++PluginPtr Factory::create(const PluginContext& context,
++                          const plugin::Descriptor& descriptor) const
++{
++    if (descriptor.interface() != cper::processed::interface)
++    {
++        throw std::invalid_argument(
++            "CPER Processed factory received non-CPER Processed descriptor");
++    }
++
++    const auto& cperDescriptor = dynamic_cast<const Descriptor&>(descriptor);
++
++    return std::make_unique<Plugin>(context, cperDescriptor);
++}
++
++void registerPlugin(PluginRegistry& registry)
++{
++    registry.registerPlugin(cper::processed::interface,
++                            std::make_unique<Factory>());
++}
++
++plugin::DescriptorPtr Factory::createDescriptor(
++    const plugin::Request& request) const
++{
++    Properties properties{};
++
++    properties.diagnosticDataType = ContentType::CPER;
++    properties.notificationType =
++        request.data.value(notificationTypeKey, std::string{});
++    properties.sectionType = request.data.value(sectionTypeKey, std::string{});
++    properties.oem = request.data.value(oemKey, OemMetadata{});
++
++    return std::make_unique<Descriptor>(std::move(properties));
++}
++} // namespace phosphor::logging::plugin::cper::processed
+diff --git a/plugin/cper_processed_plugin.hpp b/plugin/cper_processed_plugin.hpp
+new file mode 100644
+index 0000000..469303c
+--- /dev/null
++++ b/plugin/cper_processed_plugin.hpp
+@@ -0,0 +1,108 @@
++#pragma once
++
++#include "plugin/cper_processed_descriptor.hpp"
++#include "plugin/plugin.hpp"
++#include "plugin/plugin_factory.hpp"
++#include "plugin/plugin_registry.hpp"
++#include "plugin/plugin_request.hpp"
++
++#include <xyz/openbmc_project/Logging/Extension/CPER/Processed/server.hpp>
++
++namespace phosphor::logging::plugin::cper::processed
++{
++
++using Interface = sdbusplus::server::xyz::openbmc_project::logging::extension::
++    cper::Processed;
++
++inline constexpr auto diagnosticDataTypeKey = "DiagnosticDataType";
++inline constexpr auto notificationTypeKey = "NotificationType";
++inline constexpr auto sectionTypeKey = "SectionType";
++inline constexpr auto oemKey = "Oem";
++/**
++ * @brief CPE RProcessed plugin implementation.
++ *
++ * Augments a log entry with the
++ * xyz.openbmc_project.Logging.Extension.CPER.Processed
++ * interface.
++ *
++ * The plugin exposes processed CPER metadata associated
++ * with a logging entry and does not manage the underlying
++ * CPER artifact.
++ */
++class Plugin : public phosphor::logging::Plugin, public Interface
++{
++  public:
++    Plugin() = delete;
++    Plugin(const Plugin&) = delete;
++    Plugin(Plugin&&) = delete;
++    Plugin& operator=(const Plugin&) = delete;
++    Plugin& operator=(Plugin&&) = delete;
++    ~Plugin() override = default;
++
++    /**
++     * @brief Construct a CPER Processed plugin.
++     *
++     * @param[in] context Plugin creation context.
++     * @param[in] descriptor CPER Processed descriptor.
++     */
++    Plugin(const PluginContext& context, const Descriptor& descriptor);
++
++    /**
++     * @brief Return plugin interface identifier.
++     *
++     * @return Plugin interface name.
++     */
++    std::string_view interface() const override;
++};
++
++/**
++ * @brief Factory for CPER Processed plugins.
++ */
++class Factory : public phosphor::logging::PluginFactory
++{
++  public:
++    /**
++     * @brief Construct a CPER Processed factory.
++     */
++    Factory() = default;
++
++    Factory(const Factory&) = delete;
++    Factory(Factory&&) = delete;
++    Factory& operator=(const Factory&) = delete;
++    Factory& operator=(Factory&&) = delete;
++
++    ~Factory() override = default;
++
++    /**
++     * @brief Create a CPER Processed plugin instance.
++     *
++     * @param[in] context Plugin creation context.
++     * @param[in] descriptor Plugin descriptor.
++     *
++     * @return Newly created CPER Processed plugin.
++     */
++    PluginPtr create(const PluginContext& context,
++                     const plugin::Descriptor& descriptor) const override;
++
++    /**
++     * @brief Create a CPER Processed descriptor.
++     *
++     * Converts request metadata into a runtime
++     * CPER Processed descriptor.
++     *
++     * @param[in] request Plugin request information.
++     *
++     * @return CPER Processed descriptor.
++     */
++    plugin::DescriptorPtr createDescriptor(
++        const plugin::Request& request) const override;
++};
++
++/**
++ * @brief Register the CPER Processed plugin implementation.
++ *
++ * @param[in,out] registry Plugin registry.
++ */
++void registerPlugin(PluginRegistry& registry);
++
++} // namespace phosphor::logging::plugin::cper::processed
+diff --git a/plugin/meson.build b/plugin/meson.build
+index 7cc8243..8c8c00e 100644
+--- a/plugin/meson.build
++++ b/plugin/meson.build
+@@ -1,4 +1,5 @@
+ plugin_sources = files(
++    'cper_processed_plugin.cpp',
+     'plugin_builtin.cpp',
+     'plugin_manager.cpp',
+     'plugin_registry.cpp',
+diff --git a/plugin/plugin_builtin.cpp b/plugin/plugin_builtin.cpp
+index 13a66f0..8ca4a1b 100644
+--- a/plugin/plugin_builtin.cpp
++++ b/plugin/plugin_builtin.cpp
+@@ -1,8 +1,13 @@
+ #include "plugin/plugin_builtin.hpp"
+ 
++#include "plugin/cper_processed_plugin.hpp"
++
+ namespace phosphor::logging
+ {
+ 
+-void registerBuiltins(PluginRegistry&) {}
++void registerBuiltins(PluginRegistry& registry)
++{
++    plugin::cper::processed::registerPlugin(registry);
++}
+ 
+ } // namespace phosphor::logging
+diff --git a/test/plugin/cper_processed_plugin_test.cpp b/test/plugin/cper_processed_plugin_test.cpp
+new file mode 100644
+index 0000000..5a61453
+--- /dev/null
++++ b/test/plugin/cper_processed_plugin_test.cpp
+@@ -0,0 +1,137 @@
++#include "plugin/cper_processed_descriptor.hpp"
++#include "plugin/cper_processed_plugin.hpp"
++#include "plugin/plugin_registry.hpp"
++
++#include <gtest/gtest.h>
++
++namespace phosphor::logging::plugin::cper::processed
++{
++
++class PluginTest : public ::testing::Test
++{
++  protected:
++    void SetUp() override
++    {
++        bus = std::make_unique<sdbusplus::bus_t>(sdbusplus::bus::new_default());
++    }
++
++    PluginContext makeContext(
++        const std::string& path = "/xyz/openbmc_project/logging/entry/1")
++    {
++        return PluginContext{
++            *bus,
++            path,
++        };
++    }
++
++    static Descriptor makeDescriptor(ContentType type, OemMetadata oem = {})
++    {
++        Properties properties{
++            .diagnosticDataType = type,
++            .notificationType = "notification-guid",
++            .sectionType = "section-guid",
++            .oem = std::move(oem),
++        };
++
++        return Descriptor(std::move(properties));
++    }
++
++    std::unique_ptr<sdbusplus::bus_t> bus;
++};
++
++class FakeDescriptor : public plugin::Descriptor
++{
++  public:
++    std::string_view interface() const override
++    {
++        return "xyz.openbmc_project.Logging.Extension.Fake";
++    }
++};
++
++TEST_F(PluginTest, RegistrationLookup)
++{
++    PluginRegistry registry;
++    registerPlugin(registry);
++
++    EXPECT_NE(registry.lookup(interface), nullptr);
++}
++
++TEST_F(PluginTest, LookupUnknownInterfaceReturnsNull)
++{
++    PluginRegistry registry;
++
++    EXPECT_EQ(registry.lookup("xyz.openbmc_project.Logging.Extension.Unknown"),
++              nullptr);
++}
++
++TEST_F(PluginTest, FactoryCreate)
++{
++    Factory factory;
++    auto descriptor = makeDescriptor(ContentType::CPER);
++    auto plugin = factory.create(makeContext(), descriptor);
++    ASSERT_NE(plugin, nullptr);
++
++    EXPECT_EQ(plugin->interface(), interface);
++}
++
++TEST_F(PluginTest, FactoryCreatesPlugin)
++{
++    Factory factory;
++    auto descriptor = makeDescriptor(ContentType::CPER);
++    auto plugin = factory.create(makeContext(), descriptor);
++    ASSERT_NE(plugin, nullptr);
++
++    EXPECT_NE(dynamic_cast<Plugin*>(plugin.get()), nullptr);
++}
++
++TEST_F(PluginTest, FactoryRejectsWrongDescriptor)
++{
++    Factory factory;
++    FakeDescriptor descriptor;
++
++    EXPECT_THROW(factory.create(makeContext(), descriptor),
++                 std::invalid_argument);
++}
++
++TEST_F(PluginTest, CreatePluginWithCperSectionType)
++{
++    auto descriptor = makeDescriptor(ContentType::CPERSection);
++    Factory factory;
++    auto plugin = factory.create(makeContext(), descriptor);
++    ASSERT_NE(plugin, nullptr);
++
++    EXPECT_EQ(plugin->interface(), interface);
++}
++
++TEST_F(PluginTest, DescriptorPropertiesPropagated)
++{
++    OemMetadata oem{
++        {"OemVendor",
++         R"({"@odata.type":"#Example.v1_0_0.Record","Property":"Value"})"},
++    };
++    Properties properties{
++        .diagnosticDataType = ContentType::CPERSection,
++        .notificationType = "notification-guid",
++        .sectionType = "section-guid",
++        .oem = oem,
++    };
++    Descriptor descriptor(std::move(properties));
++    Plugin plugin(makeContext(), descriptor);
++
++    EXPECT_EQ(plugin.diagnosticDataType(), ContentType::CPERSection);
++    EXPECT_EQ(plugin.notificationType(), "notification-guid");
++    EXPECT_EQ(plugin.sectionType(), "section-guid");
++    EXPECT_EQ(plugin.oem(), oem);
++    EXPECT_EQ(plugin.oem().at("OemVendor"),
++              R"({"@odata.type":"#Example.v1_0_0.Record","Property":"Value"})");
++}
++
++TEST_F(PluginTest, EmptyOemMetadata)
++{
++    auto descriptor = makeDescriptor(ContentType::CPER);
++    Plugin plugin(makeContext(), descriptor);
++
++    EXPECT_TRUE(plugin.oem().empty());
++}
++
++} // namespace phosphor::logging::plugin::cper::processed
+diff --git a/test/plugin/meson.build b/test/plugin/meson.build
+index a728ed9..2a64a7a 100644
+--- a/test/plugin/meson.build
++++ b/test/plugin/meson.build
+@@ -33,3 +33,21 @@ test(
+         ),
+     ),
+ )
++
++test(
++    'test_plugin_cper_processed',
++    executable(
++        'test-plugin-cper-processed',
++        'cper_processed_plugin_test.cpp',
++        link_with: [log_manager_lib],
++        dependencies: [
++            gtest_dep,
++            gmock_dep,
++            log_manager_deps,
++        ],
++        include_directories: include_directories(
++            '../../',
++            '../../gen',
++        ),
++    ),
++)
+-- 
+2.54.0
+

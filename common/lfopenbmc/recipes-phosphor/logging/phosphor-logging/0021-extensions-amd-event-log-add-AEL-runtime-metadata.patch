@@ -1,0 +1,394 @@
+From c027584c84b083551dfa2c71c55c02c264a34274 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Wed, 22 Jul 2026 07:58:56 -0500
+Subject: [PATCH 21/33] extensions: amd-event-log: add AEL runtime metadata
+
+Add glue code to derive AEL metadata from LUT-backed
+AFID lookups and contribute the resulting AMD-specific
+metadata through the runtime metadata provider
+framework.
+
+Generated metadata includes schema version, AFID, and
+associated FRU information.
+
+Change-Id: Id69572699f6f84b787ad046fa05c0549e7e0db96
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ extensions/amd-event-log/include/ael_info.hpp | 98 +++++++++++++++++++
+ .../amd-event-log/include/ael_metadata.hpp    | 34 +++++++
+ extensions/amd-event-log/src/ael_info.cpp     | 31 ++++++
+ extensions/amd-event-log/src/entry_points.cpp | 70 +++++++------
+ extensions/amd-event-log/src/meson.build      |  1 +
+ test/amd-event-log/ael_info_test.cpp          | 19 ++++
+ test/amd-event-log/meson.build                | 20 ++++
+ test/meson.build                              |  3 +
+ 8 files changed, 246 insertions(+), 30 deletions(-)
+ create mode 100644 extensions/amd-event-log/include/ael_info.hpp
+ create mode 100644 extensions/amd-event-log/include/ael_metadata.hpp
+ create mode 100644 extensions/amd-event-log/src/ael_info.cpp
+ create mode 100644 test/amd-event-log/ael_info_test.cpp
+ create mode 100644 test/amd-event-log/meson.build
+
+diff --git a/extensions/amd-event-log/include/ael_info.hpp b/extensions/amd-event-log/include/ael_info.hpp
+new file mode 100644
+index 0000000..24497bf
+--- /dev/null
++++ b/extensions/amd-event-log/include/ael_info.hpp
+@@ -0,0 +1,98 @@
++#pragma once
++
++#include "ael_metadata.hpp"
++#include "amd_afid_utils.hpp"
++#include "elog_entry.hpp"
++
++#include <phosphor-logging/log.hpp>
++
++#include <map>
++#include <string>
++#include <string_view>
++#include <vector>
++
++namespace phosphor::logging::extensions::ael
++{
++
++/**
++ * @brief AMD Event Log metadata.
++ *
++ * Represents the complete set of metadata exported by
++ * the AEL runtime metadata provider.
++ */
++struct AELInfo
++{
++    /**
++     * AEL schema version.
++     */
++    std::string version{std::string(constants::SchemaVersion)};
++
++    /**
++     * AMD Field Identifier.
++     */
++    uint64_t afid{};
++
++    /**
++     * Associated inventory object paths.
++     */
++    std::vector<std::string> fruList;
++};
++
++/**
++ * @class AELInfoProvider
++ *
++ * @brief Produces AMD Event Log metadata for a
++ *        phosphor-logging event.
++ *
++ * Responsibilities:
++ *
++ *   - Populate AEL.VERSION
++ *   - Resolve AEL.AFID
++ *   - Populate AEL.FRU_LIST
++ *
++ * Event producers are not required to emit AEL-specific
++ * metadata. AEL properties are derived from the event
++ * message and event additional data.
++ */
++class AELInfoProvider
++{
++  public:
++    /**
++     * @brief Construct an AEL information provider.
++     *
++     * @param[in] msg
++     *     Event message.
++     *
++     * @param[in] level
++     *     Event severity.
++     *
++     * @param[in] additionalData
++     *     Event additional data.
++     */
++    AELInfoProvider(const std::string& msg, Entry::Level level,
++                    const std::map<std::string, std::string>& additionalData);
++
++    ~AELInfoProvider() = default;
++
++    AELInfoProvider(const AELInfoProvider&) = default;
++    AELInfoProvider& operator=(const AELInfoProvider&) = delete;
++
++    AELInfoProvider(AELInfoProvider&&) = default;
++    AELInfoProvider& operator=(AELInfoProvider&&) = delete;
++
++    /**
++     * @brief Generate AEL metadata for the event.
++     *
++     * @return Populated AEL information.
++     */
++    AELInfo get() const;
++
++  private:
++    const std::string& msg;
++
++    Entry::Level level;
++
++    const std::map<std::string, std::string>& additionalData;
++};
++
++} // namespace phosphor::logging::extensions::ael
+diff --git a/extensions/amd-event-log/include/ael_metadata.hpp b/extensions/amd-event-log/include/ael_metadata.hpp
+new file mode 100644
+index 0000000..bcc343a
+--- /dev/null
++++ b/extensions/amd-event-log/include/ael_metadata.hpp
+@@ -0,0 +1,34 @@
++#pragma once
++
++#include <string_view>
++
++namespace phosphor::logging::extensions::ael
++{
++
++namespace constants
++{
++
++constexpr std::string_view SchemaVersion = "1.0";
++
++} // namespace constants
++
++namespace fields
++{
++
++constexpr std::string_view Version = "AEL.VERSION";
++constexpr std::string_view AFID = "AEL.AFID";
++constexpr std::string_view FruList = "AEL.FRU_LIST";
++constexpr std::string_view RackId = "AEL.RACK_ID";
++
++/**
++ * @brief Pre-rendered AMD OEM Redfish payload.
++ *
++ * When present, the payload is treated as the
++ * authoritative Redfish representation and no
++ * projection is performed.
++ */
++constexpr std::string_view Redfish = "AEL.REDFISH";
++
++} // namespace fields
++
++} // namespace phosphor::logging::extensions::ael
+diff --git a/extensions/amd-event-log/src/ael_info.cpp b/extensions/amd-event-log/src/ael_info.cpp
+new file mode 100644
+index 0000000..ec6f205
+--- /dev/null
++++ b/extensions/amd-event-log/src/ael_info.cpp
+@@ -0,0 +1,31 @@
++#include "ael_info.hpp"
++
++namespace phosphor::logging::extensions::ael
++{
++
++AELInfoProvider::AELInfoProvider(
++    const std::string& msg, Entry::Level level,
++    const std::map<std::string, std::string>& additionalData) :
++    msg(msg), level(level), additionalData(additionalData)
++{}
++
++AELInfo AELInfoProvider::get() const
++{
++    (void)level;
++
++    AELInfo info;
++
++    auto afidInfo = lookupAFID(msg, additionalData);
++
++    if (!afidInfo)
++    {
++        return info;
++    }
++
++    info.afid = afidInfo->afid;
++    info.fruList = afidInfo->frus;
++
++    return info;
++}
++
++} // namespace phosphor::logging::extensions::ael
+diff --git a/extensions/amd-event-log/src/entry_points.cpp b/extensions/amd-event-log/src/entry_points.cpp
+index fd7eb7d..abf160e 100644
+--- a/extensions/amd-event-log/src/entry_points.cpp
++++ b/extensions/amd-event-log/src/entry_points.cpp
+@@ -1,7 +1,11 @@
++#include "ael_info.hpp"
+ #include "extensions.hpp"
+ 
+ #include <phosphor-logging/lg2.hpp>
+ 
++#include <ranges>
++#include <string>
++
+ namespace phosphor::logging::extensions::ael
+ {
+ 
+@@ -10,49 +14,55 @@ using namespace phosphor::logging;
+ /**
+  * @brief AMD runtime metadata provider.
+  *
+- * Contributes AMD-specific runtime metadata during
+- * log creation.
++ * Generates AEL metadata and contributes it to the
++ * aggregated runtime metadata object.
+  *
+  * @param[in,out] metadata
+- *     Aggregated runtime metadata object.
+- *
+- * @param[in] message
+- *     Log message associated with the entry.
+- *
+- * @param[in] level
+- *     Severity level of the entry.
+- *
+- * @param[in] additionalData
+- *     Additional data supplied during log creation.
++ *     Aggregated runtime metadata.
++ * @param[in] message Event message.
++ * @param[in] level Event severity.
++ * @param[in] additionalData Event additional data.
+  */
+ static void amdRuntimeMetadataProvider(
+-    nlohmann::json& metadata, const std::string& /*message*/,
+-    Entry::Level /*level*/,
+-    const std::map<std::string, std::string>& /*additionalData*/)
++    nlohmann::json& metadata, const std::string& message, Entry::Level level,
++    const std::map<std::string, std::string>& additionalData)
+ {
+     try
+     {
+-        /*
+-         * Create AMD runtime metadata section.
+-         *
+-         * Future enhancements may populate:
+-         *   metadata["AMD"]["AFID"]
+-         *   metadata["AMD"]["FRU"]
+-         *   metadata["AMD"]["Platform"]
+-         */
++        const AELInfo info =
++            AELInfoProvider(message, level, additionalData).get();
++
++        if (info.afid == 0 && info.fruList.empty())
++        {
++            lg2::debug("amdRuntimeMetadataProvider: no AEL data found");
++            return;
++        }
++
+         auto& amd = metadata["AMD"];
+-        (void)amd;
++
++        amd[std::string(fields::Version)] = info.version;
++
++        if (info.afid != 0)
++        {
++            amd[std::string(fields::AFID)] = std::to_string(info.afid);
++        }
++
++        if (!info.fruList.empty())
++        {
++            const auto joined = info.fruList | std::views::join_with(',');
++
++            const std::string frus(joined.begin(), joined.end());
++
++            amd[std::string(fields::FruList)] = frus;
++
++            lg2::debug("FruList=[{FRUS}]", "FRUS", frus);
++        }
+     }
+     catch (const std::exception& e)
+     {
+-        lg2::error("AMD runtime metadata provider failed: {ERROR}", "ERROR",
++        lg2::error("amdRuntimeMetadataProvider exception: {ERROR}", "ERROR",
+                    e.what());
+     }
+-    catch (...)
+-    {
+-        lg2::error(
+-            "AMD runtime metadata provider failed with unknown exception");
+-    }
+ }
+ 
+ /**
+diff --git a/extensions/amd-event-log/src/meson.build b/extensions/amd-event-log/src/meson.build
+index 3ee4640..3b46fea 100644
+--- a/extensions/amd-event-log/src/meson.build
++++ b/extensions/amd-event-log/src/meson.build
+@@ -23,6 +23,7 @@ lut_gen = custom_target(
+ )
+ 
+ ael_sources = files(
++    'ael_info.cpp',
+     'amd_afid_utils.cpp',
+     'entry_points.cpp',
+ )
+diff --git a/test/amd-event-log/ael_info_test.cpp b/test/amd-event-log/ael_info_test.cpp
+new file mode 100644
+index 0000000..9712047
+--- /dev/null
++++ b/test/amd-event-log/ael_info_test.cpp
+@@ -0,0 +1,19 @@
++#include "ael_info.hpp"
++
++#include <gtest/gtest.h>
++
++namespace phosphor::logging::extensions::ael
++{
++
++TEST(AELInfoTest, DefaultConstruction)
++{
++    AELInfo info;
++
++    EXPECT_EQ(info.version, std::string(constants::SchemaVersion));
++
++    EXPECT_EQ(info.afid, 0);
++
++    EXPECT_TRUE(info.fruList.empty());
++}
++
++} // namespace phosphor::logging::extensions::ael
+diff --git a/test/amd-event-log/meson.build b/test/amd-event-log/meson.build
+new file mode 100644
+index 0000000..21177d3
+--- /dev/null
++++ b/test/amd-event-log/meson.build
+@@ -0,0 +1,20 @@
++test(
++    'ael_info_test',
++    executable(
++        'ael_info_test',
++        [
++            'ael_info_test.cpp',
++            '../../extensions/amd-event-log/src/ael_info.cpp',
++            '../../extensions/amd-event-log/src/amd_afid_utils.cpp',
++            lut_gen,
++        ],
++        include_directories: [
++            include_directories('../../extensions/amd-event-log/include'),
++        ],
++        dependencies: [
++            gtest_dep,
++            phosphor_logging_dep,
++            conf_h_dep,
++        ],
++    ),
++)
+diff --git a/test/meson.build b/test/meson.build
+index 9d60761..06452e1 100644
+--- a/test/meson.build
++++ b/test/meson.build
+@@ -22,6 +22,9 @@ endif
+ if get_option('openpower-pel-extension').allowed()
+     subdir('openpower-pels')
+ endif
++if get_option('amd-event-log').allowed()
++    subdir('amd-event-log')
++endif
+ 
+ subdir('plugin')
+ 
+-- 
+2.54.0
+

@@ -1,0 +1,196 @@
+From 306a825c9e87bb5676ce98f622dcf737cd7d7e23 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Thu, 13 Aug 2026 06:50:26 -0500
+Subject: [PATCH 24/33] plugin:CPER:Processed Add extension payload support
+
+Implement PluginFactory::buildPayload() for the CPER Processed plugin.
+
+The CPER Processed factory converts r untime metadata into the payload
+stored under the
+xyz.openbmc_project.Logging.Extension.CPER.Processed entry
+within the _EXTENSIONS transport object.
+
+Payload construction is exposed through the plugin
+integration service, allowing runtime metadata providers
+to remain independent of CPER Processed schema details.
+
+This keeps CPER Processed-specific payload formatting and
+schema ownership within the plugin implementation while
+allowing log_manager to remain plugin agnostic.
+
+Tested:
+'''
+Enabled:
+  -Damd-event-log=enabled
+  -Druntime-metadata-plugin=xyz.openbmc_project.Logging.Extension.CPER.Processed
+
+busctl introspect xyz.openbmc_project.Logging \
+  /xyz/openbmc_project/logging/entry/72
+
+...
+...
+
+xyz.openbmc_project.Logging.Extension.CPER.Processed interface -         -
+.DiagnosticDataType    property  s  "xyz.openbmc_project.Logging.CPER.Types.ContentType.CPER"
+.NotificationType      property  s  ""
+.Oem                   property  a{ss}
+                              "AMD" :
+                              "{\"AEL.AFID\":\"8\",\
+\"AEL.FRU_LIST\":\"/xyz/openbmc_project/inventory/system/Board/XYZ\",\
+\"AEL.VERSION\":\"1.0\"}"
+.SectionType           property  s  ""
+
+xyz.openbmc_project.Logging.Entry interface -         -
+.AdditionalData        property  a{ss}
+                              "SensorName" :
+                              "BRB_L_VR_1_VOLT_V"
+.Id                    property  u  72
+.Message               property  s
+                              "xyz.openbmc_project.Sensor.Threshold.ReadingAboveLowerCriticalThreshold"
+
+...
+
+busctl --json=pretty call xyz.openbmc_project.Logging \
+  /xyz/openbmc_project/logging/entry/72 \
+  org.freedesktop.DBus.Properties GetAll \
+  s xyz.openbmc_project.Logging.Extension.CPER.Processed
+
+{
+    "DiagnosticDataType": {
+        "data": "xyz.openbmc_project.Logging.CPER.Types.ContentType.CPER"
+    },
+    "NotificationType": {
+        "data": ""
+    },
+    "SectionType": {
+        "data": ""
+    },
+    "Oem": {
+        "data": {
+            "AMD": {
+                "AEL.AFID": "8",
+                "AEL.FRU_LIST":
+                    "/xyz/openbmc_project/inventory/system/Board/XYZ",
+                "AEL.VERSION": "1.0"
+            }
+        }
+    }
+}
+'''
+
+Change-Id: If952d74589d92cd5badc9e51601035f4f0793211
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ plugin/cper_processed_descriptor.hpp       |  2 +-
+ plugin/cper_processed_plugin.cpp           | 16 ++++++++++++++
+ plugin/cper_processed_plugin.hpp           | 14 ++++++++++++
+ test/plugin/cper_processed_plugin_test.cpp | 25 ++++++++++++++++++++++
+ 4 files changed, 56 insertions(+), 1 deletion(-)
+
+diff --git a/plugin/cper_processed_descriptor.hpp b/plugin/cper_processed_descriptor.hpp
+index 9f3a861..4ae6d39 100644
+--- a/plugin/cper_processed_descriptor.hpp
++++ b/plugin/cper_processed_descriptor.hpp
+@@ -18,7 +18,7 @@ using ContentType =
+ using OemMetadata = std::map<std::string, std::string>;
+ 
+ inline constexpr std::string_view interface =
+-    "xyz.openbmc_project.Logging.Extension.CPER::Processed";
++    "xyz.openbmc_project.Logging.Extension.CPER.Processed";
+ 
+ /**
+  * @brief CPER Processed interface properties.
+diff --git a/plugin/cper_processed_plugin.cpp b/plugin/cper_processed_plugin.cpp
+index 8e74d1f..115937c 100644
+--- a/plugin/cper_processed_plugin.cpp
++++ b/plugin/cper_processed_plugin.cpp
+@@ -54,4 +54,20 @@ plugin::DescriptorPtr Factory::createDescriptor(
+ 
+     return std::make_unique<Descriptor>(std::move(properties));
+ }
++
++nlohmann::json Factory::buildExtensionPayload(
++    const nlohmann::json& metadata) const
++{
++    auto oem = nlohmann::json::object();
++
++    for (const auto& [ns, value] : metadata.items())
++    {
++        oem[ns] = value.dump();
++    }
++
++    return {
++        {oemKey, std::move(oem)},
++    };
++}
++
+ } // namespace phosphor::logging::plugin::cper::processed
+diff --git a/plugin/cper_processed_plugin.hpp b/plugin/cper_processed_plugin.hpp
+index 469303c..ddb3165 100644
+--- a/plugin/cper_processed_plugin.hpp
++++ b/plugin/cper_processed_plugin.hpp
+@@ -6,6 +6,7 @@
+ #include "plugin/plugin_registry.hpp"
+ #include "plugin/plugin_request.hpp"
+ 
++#include <nlohmann/json.hpp>
+ #include <xyz/openbmc_project/Logging/Extension/CPER/Processed/server.hpp>
+ 
+ namespace phosphor::logging::plugin::cper::processed
+@@ -96,6 +97,19 @@ class Factory : public phosphor::logging::PluginFactory
+      */
+     plugin::DescriptorPtr createDescriptor(
+         const plugin::Request& request) const override;
++
++    /**
++     * @brief Build CPERProcessed extension payload.
++     *
++     * Converts runtime metadata into the payload stored under
++     * the CPER entry within the _EXTENSIONS transport object.
++     *
++     * @param[in] metadata Runtime metadata.
++     *
++     * @return CPER extension payload.
++     */
++    nlohmann::json buildExtensionPayload(
++        const nlohmann::json& metadata) const override;
+ };
+ 
+ /**
+diff --git a/test/plugin/cper_processed_plugin_test.cpp b/test/plugin/cper_processed_plugin_test.cpp
+index 5a61453..5dd092e 100644
+--- a/test/plugin/cper_processed_plugin_test.cpp
++++ b/test/plugin/cper_processed_plugin_test.cpp
+@@ -134,4 +134,29 @@ TEST_F(PluginTest, EmptyOemMetadata)
+     EXPECT_TRUE(plugin.oem().empty());
+ }
+ 
++TEST_F(PluginTest, BuildPayload)
++{
++    Factory factory;
++    nlohmann::json metadata{
++        {"AMD",
++         {
++             {"AEL.VERSION", "1.0"},
++             {"AEL.AFID", "4660"},
++         }},
++    };
++
++    auto payload = factory.buildExtensionPayload(metadata);
++    ASSERT_TRUE(payload.contains(oemKey));
++    EXPECT_EQ(payload[oemKey]["AMD"], metadata["AMD"].dump());
++}
++
++TEST_F(PluginTest, BuildExtensionPayloadEmptyMetadata)
++{
++    Factory factory;
++    auto payload = factory.buildExtensionPayload(nlohmann::json::object());
++
++    ASSERT_TRUE(payload.contains(oemKey));
++    EXPECT_TRUE(payload[oemKey].empty());
++}
++
+ } // namespace phosphor::logging::plugin::cper::processed
+-- 
+2.54.0
+

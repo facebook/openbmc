@@ -1,0 +1,1199 @@
+{
+  "version": "1.0.0",
+  "generated_at": "2026-08-11 21:55:49.887272",
+  "fallthrough_afid": 12999,
+  "lookup": {
+    "xyz.openbmc_project.State.Power.PowerRailFault": {
+      "POWER_RAIL=AMCROT_BMC_S5_RDY_R|AMC_RDY_R|AMC_STBY_PGOOD_R|DIMM_PMIC_PG_TIMEOUT|EAM0_CPU_MOD_PWR_GD_R|EAM1_CPU_MOD_PWR_GD_R|EAM2_CPU_MOD_PWR_GD_R|EAM3_CPU_MOD_PWR_GD_R|FM_CPU0_DIMM_AH_P12V_EN_R_FLT|FM_CPU0_DIMM_IP_P12V_EN_R_FLT|FM_DIMM_AH_FAIL|FM_DIMM_IP_FAIL|FM_MAIN_PWREN_RMC_EN_ISO|FM_PVDD18_S5_P0_FLT|FM_PVDD33_S5_P0_FLT|FM_PVDDCR_CPU0_P0_FLT|FM_PVDDCR_CPU1_P0_FLT|FM_PVDDCR_SOC_P0_FLT|FM_PVDDIO_MEM_S3_P0_FLT|FM_PVDDIO_P0_FLT|FM_PWRGD_CPU0_PWROK|FM_RST_CPU0_RESET_N|P12V_DDR_AH_PWRGD_R|P12V_DDR_IP_PWRGD_R|PWRGD_PVDD18_S5_P0_PG|PWRGD_PVDD33_S5_P0_PG|PWRGD_PVDDCR_CPU0_P0|PWRGD_PVDDCR_CPU1_P0|PWRGD_PVDDCR_SOC_P0|PWRGD_PVDDIO_MEM_S3_P0|PWRGD_PVDDIO_P0": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12021
+      },
+      "POWER_RAIL=HPM_PWR_FAIL|HPM_STBY_RST_N|LPDB_P50V_FAN0_R2_PG|LPDB_P50V_FAN1_R2_PG|LPDB_P50V_FAN2_R2_PG|LPDB_P50V_FAN3_R2_PG|LPDB_P50V_FAN4_R2_PG|PDB_P12V_VRM0_FLT|PWRGD_P12V_VRM0_CPLD_PG_R|PWRGD_P1V0_STBY|PWRGD_P3V3|PWRGD_PDB_HSC4_CPLD_PG_R": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12022
+      },
+      "POWER_RAIL=FM_P3V3_EN_FLT|PDB_MAIN_EN_R_FLT|PDB_P12V_VRM1_FLT|PWRGD_P12V_VRM1_CPLD_PG_R|RPDB_P50V_FAN5_R2_PG|RPDB_P50V_FAN6_R2_PG|RPDB_P50V_FAN7_R2_PG|RPDB_P50V_FAN8_R2_PG": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12023
+      },
+      "POWER_RAIL=BRIDGE_L_STBY_PG_R|L_BNIC0_FLT|L_BNIC1_FLT|L_BNIC2_FLT|L_BNIC3_FLT|L_EDSFF2_PG|L_EDSFF3_PG|L_FNIC_FLT|L_RTM_SW_FLT": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_L",
+        "afid": 12019
+      },
+      "POWER_RAIL=BRIDGE_R_STBY_PG_R|HPM_EDSFF_PG|R_BNIC0_FLT|R_BNIC1_FLT|R_BNIC2_FLT|R_BNIC3_FLT|R_EDSFF2_PG|R_EDSFF3_PG|R_RTM_SW_FLT": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_R",
+        "afid": 12020
+      }
+    },
+    "xyz.openbmc_project.State.Leak.Detector.LeakDetectedWarning": {
+      "DETECTOR_NAME=/xyz/openbmc_project/state/leak/detector/EAM*_Cold_Plate": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12018
+      },
+      "DETECTOR_NAME=/xyz/openbmc_project/state/leak/detector/CPU_DIMM_Cold_Plate": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12017
+      }
+    },
+    "xyz.openbmc_project.State.Leak.Detector.LeakDetectedCritical": {
+      "DETECTOR_NAME=/xyz/openbmc_project/state/leak/detector/Manifold_*": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12016
+      }
+    },
+    "xyz.openbmc_project.Sensor.Threshold.ReadingAboveLowerCriticalThreshold": {
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/SCM_P*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12041
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/SCM_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12040
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/MB_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12026
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/MB_VR_CPU_PVDD*_P0_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12024
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/MB_*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12027
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/MB_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12025
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_L",
+        "afid": 12038
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/BRB_L_FE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_44",
+        "afid": 12042
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_39",
+        "afid": 12043
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_40",
+        "afid": 12044
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_41",
+        "afid": 12045
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_42",
+        "afid": 12046
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_R",
+        "afid": 12039
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_43",
+        "afid": 12047
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_45",
+        "afid": 12048
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_46",
+        "afid": 12049
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_47",
+        "afid": 12050
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12030
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_L_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12028
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_L_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12032
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12029
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_L_P50V_HSC*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12031
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_R_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12036
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12035
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_R_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12033
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_R_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12037
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12034
+      }
+    },
+    "xyz.openbmc_project.Sensor.Threshold.ReadingAboveLowerSoftShutdownThreshold": {
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/SCM_P*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12068
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/SCM_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12067
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/MB_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12065
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/MB_VR_CPU_PVDD*_P0_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12063
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/MB_*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12066
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/MB_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12064
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_L",
+        "afid": 12051
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/BRB_L_FE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_44",
+        "afid": 12069
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_39",
+        "afid": 12070
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_40",
+        "afid": 12071
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_41",
+        "afid": 12072
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_42",
+        "afid": 12073
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_R",
+        "afid": 12052
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_43",
+        "afid": 12074
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_45",
+        "afid": 12075
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_46",
+        "afid": 12076
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_47",
+        "afid": 12077
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12053
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_L_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12054
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_L_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12057
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12055
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_L_P50V_HSC*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12056
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_R_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12061
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12058
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_R_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12059
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_R_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12062
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12060
+      }
+    },
+    "xyz.openbmc_project.Sensor.Threshold.ReadingAboveUpperCriticalThreshold": {
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/SCM_P*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12095
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/SCM_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12094
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/MB_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12091
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/MB_VR_CPU_PVDD*_P0_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12093
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/MB_*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12092
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/MB_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12090
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_L",
+        "afid": 12078
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/BRB_L_FE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_44",
+        "afid": 12096
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_39",
+        "afid": 12097
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_40",
+        "afid": 12098
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_41",
+        "afid": 12099
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_42",
+        "afid": 12100
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_R",
+        "afid": 12079
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_43",
+        "afid": 12101
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_45",
+        "afid": 12102
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_46",
+        "afid": 12103
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_47",
+        "afid": 12104
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12080
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_L_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12081
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_L_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12084
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12082
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_L_P50V_HSC*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12083
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_R_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12088
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12085
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_R_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12086
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_R_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12089
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12087
+      }
+    },
+    "xyz.openbmc_project.Sensor.Threshold.ReadingAboveUpperSoftShutdownThreshold": {
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/SCM_P*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12122
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/SCM_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12121
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/MB_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12118
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/MB_VR_CPU_PVDD*_P0_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12120
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/MB_*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12119
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/MB_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12117
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_L",
+        "afid": 12105
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/BRB_L_FE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_44",
+        "afid": 12123
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_39",
+        "afid": 12124
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_40",
+        "afid": 12125
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_41",
+        "afid": 12126
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_42",
+        "afid": 12127
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_R",
+        "afid": 12106
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_43",
+        "afid": 12128
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_45",
+        "afid": 12129
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_46",
+        "afid": 12130
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_47",
+        "afid": 12131
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12107
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_L_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12108
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_L_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12111
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12109
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_L_P50V_HSC*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12110
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_R_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12115
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12112
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_R_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12113
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_R_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12116
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12114
+      }
+    },
+    "xyz.openbmc_project.Sensor.Threshold.ReadingAboveUpperHardShutdownThreshold": {
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/SCM_P*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12149
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/SCM_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12148
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/MB_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12145
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/MB_VR_CPU_PVDD*_P0_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12147
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/MB_*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12146
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/MB_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12144
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_L",
+        "afid": 12132
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/BRB_L_FE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_44",
+        "afid": 12150
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_39",
+        "afid": 12151
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_40",
+        "afid": 12152
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_41",
+        "afid": 12153
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_42",
+        "afid": 12154
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_R",
+        "afid": 12133
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_43",
+        "afid": 12155
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_45",
+        "afid": 12156
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_46",
+        "afid": 12157
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_47",
+        "afid": 12158
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12134
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_L_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12135
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_L_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12138
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12136
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_L_P50V_HSC*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12137
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_R_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12142
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12139
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_R_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12140
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_R_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12143
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12141
+      }
+    },
+    "xyz.openbmc_project.Sensor.Threshold.ReadingBelowLowerCriticalThreshold": {
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/SCM_P*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12176
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/SCM_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12175
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/MB_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12172
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/MB_VR_CPU_PVDD*_P0_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12174
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/MB_*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12173
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/MB_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12171
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_L",
+        "afid": 12159
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/BRB_L_FE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_44",
+        "afid": 12177
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_39",
+        "afid": 12178
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_40",
+        "afid": 12179
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_41",
+        "afid": 12180
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_42",
+        "afid": 12181
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_R",
+        "afid": 12160
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_43",
+        "afid": 12182
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_45",
+        "afid": 12183
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_46",
+        "afid": 12184
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_47",
+        "afid": 12185
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12161
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_L_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12162
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_L_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12165
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12163
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_L_P50V_HSC*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12164
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_R_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12169
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12166
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_R_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12167
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_R_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12170
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12168
+      }
+    },
+    "xyz.openbmc_project.Sensor.Threshold.ReadingBelowLowerSoftShutdownThreshold": {
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/SCM_P*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12203
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/SCM_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12202
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/MB_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12199
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/MB_VR_CPU_PVDD*_P0_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12201
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/MB_*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12200
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/MB_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12198
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_L",
+        "afid": 12186
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/BRB_L_FE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_44",
+        "afid": 12204
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_39",
+        "afid": 12205
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_40",
+        "afid": 12206
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_41",
+        "afid": 12207
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_42",
+        "afid": 12208
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_R",
+        "afid": 12187
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_43",
+        "afid": 12209
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_45",
+        "afid": 12210
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_46",
+        "afid": 12211
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_47",
+        "afid": 12212
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12188
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_L_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12189
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_L_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12192
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12190
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_L_P50V_HSC*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12191
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_R_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12196
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12193
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_R_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12194
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_R_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12197
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12195
+      }
+    },
+    "xyz.openbmc_project.Sensor.Threshold.ReadingBelowLowerHardShutdownThreshold": {
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/SCM_P*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12230
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/SCM_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12229
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/MB_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12226
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/MB_VR_CPU_PVDD*_P0_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12228
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/MB_*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12227
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/MB_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12225
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_L",
+        "afid": 12213
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/BRB_L_FE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_44",
+        "afid": 12231
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_39",
+        "afid": 12232
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_40",
+        "afid": 12233
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_41",
+        "afid": 12234
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_42",
+        "afid": 12235
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_R",
+        "afid": 12214
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_43",
+        "afid": 12236
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_45",
+        "afid": 12237
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_46",
+        "afid": 12238
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_47",
+        "afid": 12239
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12215
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_L_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12219
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_L_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12218
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12216
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_L_P50V_HSC*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12217
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_R_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12223
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12220
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_R_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12221
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_R_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12224
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12222
+      }
+    },
+    "xyz.openbmc_project.Sensor.Threshold.ReadingBelowUpperSoftShutdownThreshold": {
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/SCM_P*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12257
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/SCM_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12256
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/MB_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12253
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/MB_VR_CPU_PVDD*_P0_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12255
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/MB_*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12254
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/MB_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12252
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_L",
+        "afid": 12240
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/BRB_L_FE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_44",
+        "afid": 12258
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_39",
+        "afid": 12259
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_40",
+        "afid": 12260
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_41",
+        "afid": 12261
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_42",
+        "afid": 12262
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_R",
+        "afid": 12241
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_43",
+        "afid": 12263
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_45",
+        "afid": 12264
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_46",
+        "afid": 12265
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_47",
+        "afid": 12266
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12242
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_L_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12246
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_L_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12245
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12243
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_L_P50V_HSC*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12244
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_R_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12250
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12247
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_R_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12248
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_R_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12251
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12249
+      }
+    },
+    "xyz.openbmc_project.Sensor.Threshold.ReadingBelowUpperHardShutdownThreshold": {
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/SCM_P*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12284
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/SCM_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/SCM",
+        "afid": 12283
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/MB_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12280
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/MB_VR_CPU_PVDD*_P0_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12282
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/MB_*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12281
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/MB_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12279
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_L",
+        "afid": 12267
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/BRB_L_FE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_44",
+        "afid": 12285
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_39",
+        "afid": 12286
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM0_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_40",
+        "afid": 12287
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_41",
+        "afid": 12288
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM1_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_42",
+        "afid": 12289
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/BRB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_R",
+        "afid": 12268
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_43",
+        "afid": 12290
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM2_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_45",
+        "afid": 12291
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC0_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_46",
+        "afid": 12292
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/sensor/EAM3_BE_NIC1_Temp_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_47",
+        "afid": 12293
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN0_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN1_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN2_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN3_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN4_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12269
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_L_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12273
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_L_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12272
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_L_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12270
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_L_P50V_HSC*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_L",
+        "afid": 12271
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/voltage/PDB_R_*_VOLT_V": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12277
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN5_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN6_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN7_TACH_OL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_IL_SPEED_RPM|/xyz/openbmc_project/sensors/fan_tach/FAN8_TACH_OL_SPEED_RPM": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12274
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/current/PDB_R_P50V_HSC*_CURR_A": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12275
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/power/PDB_R_P50V_HSC*_PWR_W": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12278
+      },
+      "SENSOR_NAME=/xyz/openbmc_project/sensors/temperature/PDB_R_*_TEMP_C": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/PDB_R",
+        "afid": 12276
+      }
+    },
+    "xyz.openbmc_project.Software.Update.ActivateFailed": {
+      "TARGET_NAME=Anacapa_SCM_CPLD": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/Anacapa_SCM",
+        "afid": 12001
+      },
+      "TARGET_NAME=Anacapa_LBB_*": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_L",
+        "afid": 12002
+      },
+      "TARGET_NAME=Anacapa_RBB_*": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/BRB_R",
+        "afid": 12003
+      },
+      "TARGET_NAME=Anacapa_BIOS|Anacapa_MB_CPLD|Anacapa_MB_VR_pvdd18_s5_p0|Anacapa_MB_VR_pvdd33_s5_p0|Anacapa_MB_VR_pvddcr_cpu0_p0|Anacapa_MB_VR_pvddcr_cpu1_p0|Anacapa_MB_VR_pvddcr_soc_p0": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/MB",
+        "afid": 12004
+      },
+      "TARGET_NAME=AMD_OCP_NIC_39": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_39",
+        "afid": 12005
+      },
+      "TARGET_NAME=AMD_OCP_NIC_40": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_40",
+        "afid": 12006
+      },
+      "TARGET_NAME=AMD_OCP_NIC_41": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_41",
+        "afid": 12007
+      },
+      "TARGET_NAME=AMD_OCP_NIC_42": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_42",
+        "afid": 12008
+      },
+      "TARGET_NAME=AMD_OCP_NIC_43": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_43",
+        "afid": 12009
+      },
+      "TARGET_NAME=AMD_OCP_NIC_44": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_44",
+        "afid": 12010
+      },
+      "TARGET_NAME=AMD_OCP_NIC_45": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_45",
+        "afid": 12011
+      },
+      "TARGET_NAME=AMD_OCP_NIC_46": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_46",
+        "afid": 12012
+      },
+      "TARGET_NAME=AMD_OCP_NIC_47": {
+        "originOfCondition": "/xyz/openbmc_project/inventory/system/board/AMD_OCP_NIC_47",
+        "afid": 12013
+      }
+    }
+  }
+}

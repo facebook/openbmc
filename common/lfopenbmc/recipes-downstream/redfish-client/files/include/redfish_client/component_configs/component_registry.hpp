@@ -5,6 +5,7 @@
 #include <redfish_client/component_configs/hgx_thermal.hpp>
 #include <redfish_client/component_configs/hgx_leak_detector.hpp>
 #include <redfish_client/component_configs/sensor_threshold.hpp>
+#include <redfish_client/component_configs/instinct_gpu.hpp>
 #include <redfish_client/core/config.hpp>
 #include <string>
 #include <stdexcept>
@@ -12,7 +13,9 @@
 namespace redfish_client::component_config {
 
 inline void registerComponent(const std::string& componentName,
-                               const core::Config& config) {
+                               const core::Config& config,
+                               sdbusplus::async::context& ctx, 
+                               const std::string& host) {
     if (componentName == "grace_cpu")
     {
         registerGraceCpuMappers();
@@ -36,6 +39,10 @@ inline void registerComponent(const std::string& componentName,
     else if (componentName == "sensor_threshold")
     {
         registerSensorThresholdMappers(config.sensorConfig);
+    }
+    else if (componentName == "instinct_gpu")
+    {
+        registerInstinctGpuMappers(ctx, host);
     }
     else
     {

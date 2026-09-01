@@ -1,10 +1,10 @@
 {
   "host": "192.168.31.1",
   "compatible": "com.meta.Hardware.BMC.Model.Anacapa",
-  "components": [],
+  "components": ["sensor_threshold", "instinct_gpu"],
   "logServiceConfig": {
     "urls": [
-      "/redfish/v1/Systems/MI450/LogServices/EventLog/Entries"
+      "/redfish/v1/Systems/Accelerators/LogServices/EventLog/Entries"
     ],
     "intervalMilliseconds": 2000
   },

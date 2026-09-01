@@ -81,14 +81,12 @@ auto RedfishClient::loadConfig() -> sdbusplus::async::task<>
 void RedfishClient::registerLogMappers()
 {
     auto& registry = LogEntryMapperRegistry::instance();
-
     if (config->components.has_value()) {
         for (const auto& componentName : config->components.value()) {
             info("Registering component: {COMPONENT}", "COMPONENT", componentName);
-            component_config::registerComponent(componentName, *config);
+            component_config::registerComponent(componentName, *config, ctx, config->host);
         }
     }
-
     registry.registerMapper(std::make_unique<UnhandledMapper>(), 0);
     info("Mapper registration complete");
 }

@@ -1,9 +1,11 @@
 #include <redfish_client/core/sensor_threshold_mapper.hpp>
 #include <redfish_client/core/log_entry_mapper_utils.hpp>
+#include <redfish_client/core/sensor.hpp>
 #include <phosphor-logging/lg2.hpp>
 #include <phosphor-logging/commit.hpp>
+#include <xyz/openbmc_project/Logging/CPER/Types/common.hpp>
 #include <xyz/openbmc_project/Sensor/Threshold/event.hpp>
-#include <redfish_client/core/sensor.hpp>
+#include <xyz/openbmc_project/Logging/Extension/CPER/Processed/common.hpp>
 
 #include <optional>
 #include <string>
@@ -195,41 +197,89 @@ bool SensorThresholdMapper::canHandle(
            suffix == "ReadingBelowLowerFatalThreshold"    ||
            suffix == "ReadingBelowLowerCriticalThreshold" ||
            suffix == "ReadingBelowLowerCautionThreshold"  ||
+           suffix == "ReadingBelowUpperCriticalThreshold" ||
+           suffix == "ReadingAboveLowerCriticalThreshold" ||
+           suffix == "ReadingAboveLowerFatalThreshold" ||
+           suffix == "ReadingNoLongerCritical" ||
            suffix == "SensorReadingNormalRange";
 }
 
 void SensorThresholdMapper::map(redfish_binding::LogEntry::LogEntry& entry)
 {
     auto args = extractArgs(entry, mappers);
+    auto oemData = extractOemData(entry);
     auto suffix = getSuffix(entry.getMessageId().value());
+
+    std::optional<sdbusplus::common::xyz::openbmc_project::logging::extension::cper::Processed::properties_t> maybeCper;
+
+    if (oemData.has_value())
+    {
+        using CPERProcessed = sdbusplus::common::xyz::openbmc_project::logging::extension::cper::Processed;
+        using CPERTypes = sdbusplus::common::xyz::openbmc_project::logging::cper::Types;
+
+        CPERProcessed::properties_t cper{};
+        cper.diagnostic_data_type = CPERTypes::ContentType::CPER;
+        cper.oem = {
+            {oemData->vendor , oemData->jsonData},
+        };
+        maybeCper = std::move(cper);
+    }
+
+    auto commitWithOem = [&maybeCper](auto&& error)
+    {
+        if (maybeCper.has_value())
+        {
+            lg2::commit(std::move(error).extend(*maybeCper));
+        }
+        else
+        {
+            lg2::commit(std::move(error));
+        }
+    };
 
     if (suffix == "ReadingAboveUpperFatalThreshold")
     {
-        lg2::commit(makeThresholdError<ThresholdError::ReadingAboveUpperHardShutdownThreshold>(args));
+        commitWithOem(makeThresholdError<ThresholdError::ReadingAboveUpperHardShutdownThreshold>(args));
     }
     else if (suffix == "ReadingAboveUpperCriticalThreshold")
     {
-        lg2::commit(makeThresholdError<ThresholdError::ReadingAboveUpperCriticalThreshold>(args));
+        commitWithOem(makeThresholdError<ThresholdError::ReadingAboveUpperCriticalThreshold>(args));
     }
     else if (suffix == "ReadingAboveUpperCautionThreshold")
     {
-        lg2::commit(makeThresholdError<ThresholdError::ReadingAboveUpperWarningThreshold>(args));
+        commitWithOem(makeThresholdError<ThresholdError::ReadingAboveUpperWarningThreshold>(args));
     }
     else if (suffix == "ReadingBelowLowerFatalThreshold")
     {
-        lg2::commit(makeThresholdError<ThresholdError::ReadingBelowLowerHardShutdownThreshold>(args));
+        commitWithOem(makeThresholdError<ThresholdError::ReadingBelowLowerHardShutdownThreshold>(args));
     }
     else if (suffix == "ReadingBelowLowerCriticalThreshold")
     {
-        lg2::commit(makeThresholdError<ThresholdError::ReadingBelowLowerCriticalThreshold>(args));
+        commitWithOem(makeThresholdError<ThresholdError::ReadingBelowLowerCriticalThreshold>(args));
     }
     else if (suffix == "ReadingBelowLowerCautionThreshold")
     {
-        lg2::commit(makeThresholdError<ThresholdError::ReadingBelowLowerWarningThreshold>(args));
+        commitWithOem(makeThresholdError<ThresholdError::ReadingBelowLowerWarningThreshold>(args));
+    }
+    else if (suffix == "ReadingBelowUpperCriticalThreshold")
+    {
+        commitWithOem(makeThresholdError<ThresholdError::ReadingBelowUpperCriticalThreshold>(args));
+    }
+    else if (suffix == "ReadingAboveLowerCriticalThreshold")
+    {
+        commitWithOem(makeThresholdError<ThresholdError::ReadingAboveLowerCriticalThreshold>(args));
+    }
+    else if (suffix == "ReadingAboveLowerFatalThreshold")
+    {
+        commitWithOem(makeThresholdError<ThresholdError::ReadingAboveLowerHardShutdownThreshold>(args));
+    }
+    else if (suffix == "ReadingNoLongerCritical")
+    {
+        commitWithOem(makeThresholdNormal<ThresholdError::ReadingNoLongerCritical>(args));
     }
     else if (suffix == "SensorReadingNormalRange")
     {
-        lg2::commit(makeThresholdNormal<ThresholdEvent::SensorReadingNormalRange>(args));
+        commitWithOem(makeThresholdNormal<ThresholdEvent::SensorReadingNormalRange>(args));
     }
     else
     {

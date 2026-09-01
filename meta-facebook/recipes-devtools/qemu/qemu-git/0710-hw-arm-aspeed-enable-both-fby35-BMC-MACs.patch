@@ -22,9 +22,9 @@ diff --git a/hw/arm/aspeed_ast2600_fby35.c b/hw/arm/aspeed_ast2600_fby35.c
 index 3999c06575..67490ae1cd 100644
 --- a/hw/arm/aspeed_ast2600_fby35.c
 +++ b/hw/arm/aspeed_ast2600_fby35.c
-@@ -160,7 +160,7 @@ static void aspeed_machine_fby35_class_init(ObjectClass *oc, const void *data)
-     mc->reset      = fby35_reset;
-     amc->fmc_model = "mx66l1g45g";
+@@ -51,7 +51,7 @@ static void aspeed_machine_fby35_class_init(ObjectClass *oc, const void *data)
+     // mc->reset      = fby35_reset;
+     amc->fmc_model = "n25q00";
      amc->num_cs    = 2;
 -    amc->macs_mask = ASPEED_MAC3_ON;
 +    amc->macs_mask = ASPEED_MAC2_ON | ASPEED_MAC3_ON;

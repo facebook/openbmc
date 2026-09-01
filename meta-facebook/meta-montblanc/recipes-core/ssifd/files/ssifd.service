@@ -1,5 +1,4 @@
-#
-# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
+# Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -16,22 +15,12 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 #
+[Unit]
+Description=SSIF daemon
+Wants=ipmid.service
+After=ipmid.service
 
-inherit systemd
-
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-LOCAL_URI += " \
-    file://ipmbd.target \
-    file://ipmbd@.service \
-    "
-
-RDEPENDS:${PN} += "bash"
-
-do_install:append() {
-  install -d ${D}${systemd_system_unitdir}
-  install -m 0644 ${UNPACKDIR}/ipmbd.target ${D}${systemd_system_unitdir}
-  install -m 0644 ${UNPACKDIR}/ipmbd@.service ${D}${systemd_system_unitdir}
-}
-
-FILES:${PN} += "${systemd_system_unitdir}/ipmbd@.service"
-SYSTEMD_SERVICE:${PN} += "ipmbd.target"
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/ssifd
+Restart=always

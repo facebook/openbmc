@@ -1,5 +1,5 @@
 #
-# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
+# Copyright 2020-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -20,18 +20,20 @@
 inherit systemd
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+
+# Add custom ssifd.service override
 LOCAL_URI += " \
-    file://ipmbd.target \
-    file://ipmbd@.service \
+    file://ssifd.service \
     "
 
-RDEPENDS:${PN} += "bash"
-
 do_install:append() {
-  install -d ${D}${systemd_system_unitdir}
-  install -m 0644 ${UNPACKDIR}/ipmbd.target ${D}${systemd_system_unitdir}
-  install -m 0644 ${UNPACKDIR}/ipmbd@.service ${D}${systemd_system_unitdir}
+    install -d ${D}${systemd_system_unitdir}
+    install -m 0644 ${UNPACKDIR}/ssifd.service ${D}${systemd_system_unitdir}/ssifd.service
+  
+    rm -f ${D}${prefix}/local/bin/check_ssifd.sh
 }
 
-FILES:${PN} += "${systemd_system_unitdir}/ipmbd@.service"
-SYSTEMD_SERVICE:${PN} += "ipmbd.target"
+FILES:${PN} += "${systemd_system_unitdir}/ssifd.service"
+
+# Remove SYSTEMD_SERVICE from the main recipe to prevent it from being automatically enabled.
+SYSTEMD_SERVICE:${PN} = ""

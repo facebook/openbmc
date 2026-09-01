@@ -26,4 +26,5 @@ IMAGE_INSTALL += " \
     fbmc-snapshot \
     host-recovery \
     postcode-mond \
+    ssifd \
     "

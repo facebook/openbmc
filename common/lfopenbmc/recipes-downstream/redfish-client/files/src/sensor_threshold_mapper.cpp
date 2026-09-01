@@ -5,6 +5,7 @@
 #include <phosphor-logging/commit.hpp>
 #include <xyz/openbmc_project/Logging/CPER/Types/common.hpp>
 #include <xyz/openbmc_project/Sensor/Threshold/event.hpp>
+#include <xyz/openbmc_project/Sensor/event.hpp>
 #include <xyz/openbmc_project/Logging/Extension/CPER/Processed/common.hpp>
 
 #include <optional>
@@ -23,6 +24,8 @@ namespace ThresholdError =
     sdbusplus::error::xyz::openbmc_project::sensor::Threshold;
 namespace ThresholdEvent =
     sdbusplus::event::xyz::openbmc_project::sensor::Threshold;
+namespace SensorError = sdbusplus::error::xyz::openbmc_project::Sensor;
+namespace SensorEvent = sdbusplus::event::xyz::openbmc_project::Sensor;
 
 constexpr std::string_view kSensorEventPrefix = "SensorEvent.";
 
@@ -118,6 +121,39 @@ std::string extractSensorName(redfish_binding::LogEntry::LogEntry& entry,
     return "Unknown Sensor";
 }
 
+std::string extractBareSensorName(redfish_binding::LogEntry::LogEntry& entry,
+                                  const std::vector<SensorMapper>& mappers)
+{
+    auto& maybeArgs = entry.getMessageArgs();
+    if (!maybeArgs.hasValue() || maybeArgs.value().empty())
+    {
+        return "Unknown Sensor";
+    }
+    const auto& msgArgs = maybeArgs.value();
+
+    std::string origin = extractOrigin(entry);
+    for (const auto& mapper : mappers)
+    {
+        if (mapper.fromUrl == origin)
+        {
+            return std::string(Sensor::rootPath) + "/" + mapper.toNamespace +
+                   "/" + mapper.toId;
+        }
+    }
+
+    std::string sensorIdWithSlash = "/" + msgArgs[0];
+    for (const auto& mapper : mappers)
+    {
+        if (mapper.fromUrl.ends_with(sensorIdWithSlash))
+        {
+            return std::string(Sensor::rootPath) + "/" + mapper.toNamespace +
+                   "/" + mapper.toId;
+        }
+    }
+
+    return msgArgs[0];
+}
+
 // SensorEvent 1.0.0 MessageArgs layout:
 //   [0] SensorName  [1] ReadingValue  [2] Units  [3] ThresholdValue
 ThresholdArgs extractArgs(redfish_binding::LogEntry::LogEntry& entry,
@@ -175,6 +211,12 @@ T makeThresholdNormal(const ThresholdArgs& a)
              "UNITS", a.units);
 }
 
+template <typename T>
+T makeSensorEvent(const std::string& sensorName)
+{
+    return T("SENSOR_NAME", sdbusplus::object_path(sensorName));
+}
+
 } // anonymous namespace
 
 bool SensorThresholdMapper::canHandle(
@@ -201,7 +243,13 @@ bool SensorThresholdMapper::canHandle(
            suffix == "ReadingAboveLowerCriticalThreshold" ||
            suffix == "ReadingAboveLowerFatalThreshold" ||
            suffix == "ReadingNoLongerCritical" ||
-           suffix == "SensorReadingNormalRange";
+           suffix == "SensorReadingNormalRange" ||
+           suffix == "ReadingBelowUpperFatalThreshold" ||
+           suffix == "ReadingCritical" ||
+           suffix == "ReadingWarning" ||
+           suffix == "InvalidSensorReading" ||
+           suffix == "SensorFailure" ||
+           suffix == "SensorRestored";
 }
 
 void SensorThresholdMapper::map(redfish_binding::LogEntry::LogEntry& entry)
@@ -280,6 +328,33 @@ void SensorThresholdMapper::map(redfish_binding::LogEntry::LogEntry& entry)
     else if (suffix == "SensorReadingNormalRange")
     {
         commitWithOem(makeThresholdNormal<ThresholdEvent::SensorReadingNormalRange>(args));
+    }
+    else if (suffix == "ReadingBelowUpperFatalThreshold")
+    {
+        commitWithOem(makeThresholdError<ThresholdError::ReadingBelowUpperHardShutdownThreshold>(args));
+    }
+    else if (suffix == "ReadingCritical")
+    {
+        commitWithOem(makeThresholdNormal<ThresholdError::ReadingCritical>(args));
+    }
+    else if (suffix == "ReadingWarning")
+    {
+        commitWithOem(makeThresholdNormal<ThresholdError::ReadingWarning>(args));
+    }
+    else if (suffix == "InvalidSensorReading")
+    {
+        commitWithOem(makeSensorEvent<SensorError::InvalidSensorReading>(
+            extractBareSensorName(entry, mappers)));
+    }
+    else if (suffix == "SensorFailure")
+    {
+        commitWithOem(makeSensorEvent<SensorError::SensorFailure>(
+            extractBareSensorName(entry, mappers)));
+    }
+    else if (suffix == "SensorRestored")
+    {
+        commitWithOem(makeSensorEvent<SensorEvent::SensorRestored>(
+            extractBareSensorName(entry, mappers)));
     }
     else
     {

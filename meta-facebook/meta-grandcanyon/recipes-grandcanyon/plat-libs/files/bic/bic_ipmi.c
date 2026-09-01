@@ -37,6 +37,10 @@
 
 #define MAX_VER_STR_LEN 80
 
+//VR IC_DEVICE_ID block read length, 2 for XDPE152xx and 6 for TPS53689
+#define VR_DEVID_LEN_MIN 0x2
+#define VR_DEVID_LEN_MAX 0x6
+
 //FRU
 #define FRUID_READ_COUNT_MAX 0x20
 #define FRUID_WRITE_COUNT_MAX 0x20
@@ -295,17 +299,28 @@ bic_get_vr_device_id(uint8_t *rbuf, uint8_t *rlen, uint8_t bus, uint8_t addr) {
   }
 #endif
 
+  //Get first byte to check device id length
   tbuf[0] = (bus << 1) + 1;
   tbuf[1] = addr;
-  tbuf[2] = 0x07; //read back 7 bytes
+  tbuf[2] = 0x01; //read back 1 byte
   tbuf[3] = 0xAD; //get device id command
   tlen = 4;
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, rlen);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s() Failed to get vr device id, ret=%d", __func__, ret);
+  } else if ((rbuf[0] < VR_DEVID_LEN_MIN) || (rbuf[0] > VR_DEVID_LEN_MAX)) {
+    syslog(LOG_WARNING, "%s() Invalid vr device id length: 0x%02X", __func__, rbuf[0]);
+    ret = -1;
   } else {
-    *rlen = rbuf[0]; //read cnt
-    memmove(rbuf, &rbuf[1], *rlen);
+    //Get full device id
+    tbuf[2] = 1 + rbuf[0]; //read back length byte + device_id bytes
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() Failed to get vr device id, ret=%d", __func__, ret);
+    } else {
+      *rlen = rbuf[0]; //read cnt
+      memmove(rbuf, &rbuf[1], *rlen);
+    }
   }
 
   return ret;

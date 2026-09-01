@@ -37,7 +37,7 @@ SRC_URI:append:fb-compute-multihost = " \
 "
 
 SRC_URI:append = " \
-    file://0104-Store-Log-Entry-URI-for-Redfish-event.patch \
+    file://0350-Store-Log-Entry-URI-for-Redfish-event.patch \
 "
 
 # Drive state management - Redfish Drive.Reset action

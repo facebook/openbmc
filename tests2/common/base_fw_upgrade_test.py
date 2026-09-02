@@ -333,11 +333,18 @@ class BaseFwUpgradeTest(object):
         return True
 
     def flush_session_contents(self, logging=False):
+        """
+        Drain the session up to the next prompt. Returns whatever was drained so
+        callers can keep it -- for an upgrade this is the tail printed after the
+        matched keyword, which is often where the verify/summary lines land.
+        """
         try:
             self.bmc_ssh_session.session.prompt()
+            return self.receive_command_output_from_UUT()
         except pexpect.exceptions.EOF:
             if logging:
                 print("The child has exited!")
+            return ""
 
     def send_command_to_UUT(self, command, delay=None, prompt=True):
         if delay is None:
@@ -730,13 +737,17 @@ class BaseFwUpgradeTest(object):
         for component in component_test_data:
             if not component["upgrade_needed"]:
                 continue
+            # Show the log for anything that did not cleanly pass -- both a
+            # failed flash and one that flashed but could not be verified.
+            # Previously only the former printed, so an unverified component
+            # produced an empty "Failures Summary".
+            if component["upgrade_status"] and not component.get("unverified"):
+                continue
             entity = component["entity"]
-            if not component["upgrade_status"]:
-                print("Component: {}".format(entity))
-                print("Test log: ")
-                self.print_line(" Start ", "center", "=")
-                self.print_line(component["result"])
-                self.print_line(" End ", "center", "=")
+            print("Component: {}".format(entity))
+            print("Matched keyword: {!r}".format(component.get("matched_keyword")))
+            print("Test log: ")
+            self.print_raw_block("Start", component["result"])
 
     def summary_test(
         self,
@@ -795,6 +806,7 @@ class BaseFwUpgradeTest(object):
                 and versions_were_collected
                 and is_version_unverifiable(current_version)
             )
+            component["unverified"] = unverified
             if unverified:
                 result = "Unverified"
 
@@ -852,6 +864,53 @@ class BaseFwUpgradeTest(object):
                 component["upgrade_status"] = True
                 self.upgrade_one_component(component, logging)
 
+    def print_raw_block(self, title, body):
+        """
+        Print a multi-line block verbatim. Deliberately not print_line(), which
+        pads/truncates every line to MAX_LINE_LEN and destroys command output.
+        """
+        self.print_line(" {} ".format(title), "center", "=")
+        print(body.rstrip("\r\n") if body else "(no output captured)")
+        self.print_line(" end {} ".format(title), "center", "=")
+
+    def log_upgrade_command(self, entity, filename, cmd_to_execute):
+        """
+        Record exactly what is about to run on the UUT. Always goes to the
+        logfile; echoed to stdout under --verbose.
+        """
+        details = (
+            "{}: binary={}\n{}: pre-cmd={}\n{}: pre-cmd={}\n{}: upgrade-cmd={}"
+        ).format(
+            entity,
+            filename,
+            entity,
+            self.STOP_FSCD,
+            entity,
+            self.STOP_WDT,
+            entity,
+            cmd_to_execute,
+        )
+        Logger.info(details)
+        if G_VERBOSE:
+            print()
+            self.print_raw_block("{} command".format(entity), details)
+
+    def log_upgrade_output(self, component):
+        """
+        Record the upgrader's own output. Always goes to the logfile so a
+        post-mortem has it; echoed to stdout under --verbose.
+        """
+        entity = component["entity"]
+        matched = component.get("matched_keyword")
+        header = "{}: matched keyword {!r}".format(entity, matched)
+        Logger.info("{}\n{}".format(header, component["result"]))
+        if G_VERBOSE:
+            # The "Updating: <entity> ....." progress line is left open, so
+            # start on a fresh line rather than appending to it.
+            print()
+            print(header)
+            self.print_raw_block("{} output".format(entity), component["result"])
+
     def upgrade_one_component(self, component, logging=False):
         """
         main method to check and upgrade a component
@@ -867,9 +926,9 @@ class BaseFwUpgradeTest(object):
                     if not self.reconnect_to_remote_host(30):
                         self.fail("cannot reconnect to UUT!")
                 filename = self.remote_bin_path + "/" + self.json[entity][UFW_NAME]
-                Logger.info("ander-updating: filename is {}".format(filename))
                 cmd_to_execute = self.json[entity][UFW_CMD]
                 cmd_to_execute = cmd_to_execute.format(filename=filename)
+                self.log_upgrade_command(entity, filename, cmd_to_execute)
                 if logging:
                     self.print_line(
                         "Updating: {} ".format(entity),
@@ -894,17 +953,33 @@ class BaseFwUpgradeTest(object):
             # End timestamp
             end = time.perf_counter()
             component["execution_time"] = end - start
+            # Always capture the upgrader's output, not just on failure. On the
+            # success path this used to be dropped by flush_session_contents(),
+            # which left nothing to diagnose an upgrade that "passed" but did
+            # not take effect.
+            component["result"] = self.receive_command_output_from_UUT()
+            component["matched_keyword"] = (
+                self.expected_keyword[ret]
+                if 0 <= ret < len(self.expected_keyword)
+                else None
+            )
             if ret >= 0 and ret <= self.num_last_failed_expected_key:
                 if logging:
                     print("Failed")
                 component["upgrade_status"] = False
-                component["result"] = self.receive_command_output_from_UUT()
                 Logger.error("{}: Upgrading failed!".format(component))
             else:
                 if logging and ret == -1:
                     print("Done")
-        # flush the rest log.
-        self.flush_session_contents(logging)
+            # Whatever the upgrader printed after the matched keyword -- often
+            # the verify/summary lines -- would otherwise be discarded.
+            tail = self.flush_session_contents(logging)
+            if tail:
+                component["result"] = component["result"] + tail
+            self.log_upgrade_output(component)
+        else:
+            # flush the rest log.
+            self.flush_session_contents(logging)
         if logging:
             print("Done")
         time.sleep(10)  # delay for the current process to be done

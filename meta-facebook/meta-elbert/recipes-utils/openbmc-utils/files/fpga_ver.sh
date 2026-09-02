@@ -25,15 +25,33 @@ maj_ver="cpld_ver_major"
 min_ver="cpld_ver_minor"
 exitCode=0
 
+# Print "<label>: <major>.<minor>" for one CPLD.
+#
+# Reads must not write to stderr. Callers run this script as
+#   fpga_ver.sh | grep <LABEL> | cut -f 2 -d ' '
+# and stderr bypasses that pipeline: it reaches the terminal immediately
+# while the pipeline block-buffers stdout until the script exits. One
+# unreadable register therefore prints ahead of every other component's
+# version and is read as if it were that version. Report the failure on
+# stdout, on the component's own line, where the grep will scope it.
+print_cpld_ver() {
+    local label="$1" major minor
+    major=$(head -n 1 "$2" 2>/dev/null)
+    minor=$(head -n 1 "$3" 2>/dev/null)
+    if [ -z "$major" ] || [ -z "$minor" ]; then
+        echo "$label: VERSION_READ_ERROR"
+        return 1
+    fi
+    echo "$label: $((major)).$((minor))"
+}
+
 echo "------SCM-FPGA------"
 
 if [ ! -d "$SCMCPLD_SYSFS_DIR" ]; then
     echo "SCM_FPGA: FPGA_DRIVER_NOT_DETECTED"
     exitCode=1
 else
-    val_major=$(head -n 1 "$SCMCPLD_SYSFS_DIR"/"$maj_ver")
-    val_minor=$(head -n 1 "$SCMCPLD_SYSFS_DIR"/"$min_ver")
-    echo "SCM_FPGA: $((val_major)).$((val_minor))"
+    print_cpld_ver "SCM_FPGA" "$SCMCPLD_SYSFS_DIR"/"$maj_ver" "$SCMCPLD_SYSFS_DIR"/"$min_ver" || exitCode=1
 fi
 
 echo "------FAN-FPGA------"
@@ -41,9 +59,7 @@ if [ ! -d "$FANCPLD_SYSFS_DIR" ]; then
     echo "FAN_FPGA: FPGA_DRIVER_NOT_DETECTED"
     exitCode=1
 else
-    val_major=$(head -n 1 "$FANCPLD_SYSFS_DIR"/"$maj_ver")
-    val_minor=$(head -n 1 "$FANCPLD_SYSFS_DIR"/"$min_ver")
-    echo "FAN_FPGA: $((val_major)).$((val_minor))"
+    print_cpld_ver "FAN_FPGA" "$FANCPLD_SYSFS_DIR"/"$maj_ver" "$FANCPLD_SYSFS_DIR"/"$min_ver" || exitCode=1
 fi
 
 echo "------SMB-FPGA------"
@@ -52,21 +68,18 @@ if [ ! -d "$SMBCPLD_SYSFS_DIR" ]; then
     echo "Unable to retrieve PIM FPGA versions either"
     exitCode=1
 else
-    val_major=$(head -n 1 "$SMBCPLD_SYSFS_DIR"/"$maj_ver")
-    val_minor=$(head -n 1 "$SMBCPLD_SYSFS_DIR"/"$min_ver")
-    echo "SMB_FPGA: $((val_major)).$((val_minor))"
+    print_cpld_ver "SMB_FPGA" "$SMBCPLD_SYSFS_DIR"/"$maj_ver" "$SMBCPLD_SYSFS_DIR"/"$min_ver" || exitCode=1
 
     echo "------SMB-CPLD------"
-    val_major=$(head -n 1 "$SMBCPLD_SYSFS_DIR"/th4_cpld_ver_major)
-    val_minor=$(head -n 1 "$SMBCPLD_SYSFS_DIR"/th4_cpld_ver_minor)
-    echo "SMB_CPLD: $((val_major)).$((val_minor))"
+    print_cpld_ver "SMB_CPLD" "$SMBCPLD_SYSFS_DIR"/th4_cpld_ver_major \
+        "$SMBCPLD_SYSFS_DIR"/th4_cpld_ver_minor || exitCode=1
 
     echo "------PIM-FPGA------"
     pim_list="2 3 4 5 6 7 8 9"
     for pim in ${pim_list}; do
-      pim_present=$(head -n 1 "$SMBCPLD_SYSFS_DIR"/pim"$pim"_present)
-      pim_major=$(head -n 1 "$SMBCPLD_SYSFS_DIR"/pim"$pim"_fpga_rev_major)
-      pim_minor=$(head -n 1 "$SMBCPLD_SYSFS_DIR"/pim"$pim"_fpga_rev_minor)
+      pim_present=$(head -n 1 "$SMBCPLD_SYSFS_DIR"/pim"$pim"_present 2>/dev/null)
+      pim_major=$(head -n 1 "$SMBCPLD_SYSFS_DIR"/pim"$pim"_fpga_rev_major 2>/dev/null)
+      pim_minor=$(head -n 1 "$SMBCPLD_SYSFS_DIR"/pim"$pim"_fpga_rev_minor 2>/dev/null)
       if [ "$((pim_present))" -eq 0 ]; then
         echo "PIM $pim: NOT_INSERTED"
       elif [ "$((pim_major))" -eq 255 ]; then

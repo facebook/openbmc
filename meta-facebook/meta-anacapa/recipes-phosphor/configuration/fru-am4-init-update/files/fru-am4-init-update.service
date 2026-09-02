@@ -1,0 +1,15 @@
+[Unit]
+Description=FRU AM4 Init Update
+DefaultDependencies=no
+After=local-fs.target
+After=xyz.openbmc_project.FruDevice.service
+After=entity-manager.service
+
+[Service]
+Type=oneshot
+StateDirectory=fru-am4-init-update
+Environment=FRU_AM4_UNIT_NAME=%n
+ExecStart=/usr/libexec/phosphor-state-manager/fru-am4-init-update
+
+[Install]
+WantedBy=multi-user.target

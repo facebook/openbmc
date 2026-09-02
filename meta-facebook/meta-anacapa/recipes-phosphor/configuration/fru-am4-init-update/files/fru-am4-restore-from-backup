@@ -1,0 +1,301 @@
+#!/bin/bash
+
+set -euo pipefail
+
+BACKUP_DIR="${BACKUP_DIR:-/var/lib/fru-am4-init-update/fru-backup}"
+FORCE=0
+TARGET_FILTER="all"
+WRITTEN_BUSES=""
+MANUAL_BACKUP_FILE=""
+VALID_TARGETS="MB LBB RBB LPDB RPDB"
+
+# Keep target names aligned with fru-am4-init-update.
+TARGETS='
+MB|/sys/bus/i2c/devices/6-0050/eeprom
+LBB|/sys/bus/i2c/devices/36-0052/eeprom
+RBB|/sys/bus/i2c/devices/48-0052/eeprom
+LPDB|/sys/bus/i2c/devices/33-0050/eeprom
+RPDB|/sys/bus/i2c/devices/32-0050/eeprom
+'
+
+usage() {
+    cat <<USAGE
+Usage: $0 [--target NAME|all] [--backup-dir DIR] [--backup-file FILE] [--force]
+
+Options:
+  --target NAME       Restore only one target (MB/LBB/RBB/LPDB/RPDB), default: all
+  --backup-dir DIR    Backup directory, default: /var/lib/fru-am4-init-update/fru-backup
+  --backup-file FILE  Manually specify backup file (requires --target != all)
+  --force             Skip per-target confirmation prompt
+  -h, --help          Show this help
+
+Behavior:
+  - By default, each target picks the newest matching backup file by mtime.
+    Matching pattern: <TARGET>.bak and <TARGET>_*.bak
+USAGE
+}
+
+log() {
+    echo "$*"
+}
+
+is_valid_target() {
+    local t="$1"
+    case " $VALID_TARGETS " in
+        *" $t "*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+resolve_path() {
+    local candidates="$1"
+    local oldifs="$IFS"
+    IFS=','
+    for p in $candidates; do
+        if [ -e "$p" ]; then
+            IFS="$oldifs"
+            printf '%s' "$p"
+            return 0
+        fi
+    done
+    IFS="$oldifs"
+    return 1
+}
+
+record_bus() {
+    local path="$1"
+    local dev bus
+
+    dev="$(basename "$(dirname "$path")")"
+    bus="${dev%%-*}"
+    case "$bus" in
+        ""|*[!0-9]*) return 0 ;;
+    esac
+
+    case " $WRITTEN_BUSES " in
+        *" $bus "*) ;;
+        *) WRITTEN_BUSES="$WRITTEN_BUSES $bus" ;;
+    esac
+}
+
+confirm_restore() {
+    local name="$1"
+    local path="$2"
+    local backup="$3"
+    local ans
+
+    if [ "$FORCE" -eq 1 ]; then
+        return 0
+    fi
+
+    printf 'Restore %s from %s to %s ? [y/N]: ' "$name" "$backup" "$path"
+    read -r ans || true
+    case "$ans" in
+        y|Y|yes|YES) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+pick_latest_backup() {
+    local name="$1"
+    local newest
+
+    newest="$(find "$BACKUP_DIR" -maxdepth 1 -type f \(-name "${name}.bak" -o -name "${name}_*.bak" \) -printf '%T@ %p\n' 2>/dev/null | sort -nr | awk 'NR==1{print substr($0, index($0, " ")+1)}')"
+    if [ -n "$newest" ] && [ -f "$newest" ]; then
+        printf '%s' "$newest"
+        return 0
+    fi
+    return 1
+}
+
+resolve_backup_file() {
+    local name="$1"
+
+    if [ -n "$MANUAL_BACKUP_FILE" ]; then
+        if [ ! -f "$MANUAL_BACKUP_FILE" ]; then
+            echo "[$name] fail: manual backup file not found ($MANUAL_BACKUP_FILE)" >&2
+            return 1
+        fi
+        printf '%s' "$MANUAL_BACKUP_FILE"
+        return 0
+    fi
+
+    if pick_latest_backup "$name"; then
+        return 0
+    fi
+
+    echo "[$name] skip: no backup file found in $BACKUP_DIR (expected ${name}.bak or ${name}_*.bak)" >&2
+    return 1
+}
+
+restore_one() {
+    local name="$1"
+    local pathspec="$2"
+    local path backup size
+
+    # Return 3 means "not selected by --target" and should not affect summary.
+    if [ "$TARGET_FILTER" != "all" ] && [ "$TARGET_FILTER" != "$name" ]; then
+        return 3
+    fi
+
+    if ! backup="$(resolve_backup_file "$name")"; then
+        return 1
+    fi
+
+    if [ ! -s "$backup" ]; then
+        log "[$name] skip: backup not found or empty ($backup)"
+        return 1
+    fi
+
+    if ! path="$(resolve_path "$pathspec")"; then
+        log "[$name] skip: no EEPROM path found from '$pathspec'"
+        return 1
+    fi
+
+    size="$(wc -c < "$backup" 2>/dev/null || echo 0)"
+    case "$size" in
+        ''|*[!0-9]*)
+            log "[$name] fail: invalid backup size ($size)"
+            return 1
+            ;;
+    esac
+
+    log "[$name] backup=$backup size=${size}B target=$path"
+
+    if ! confirm_restore "$name" "$path" "$backup"; then
+        log "[$name] skipped by user"
+        return 1
+    fi
+
+    if ! dd if="$backup" of="$path" bs=1; then
+        log "[$name] fail: write error"
+        return 1
+    fi
+
+    if ! cmp -s "$backup" "$path"; then
+        log "[$name] fail: verify mismatch after restore"
+        return 1
+    fi
+
+    record_bus "$path"
+    log "[$name] restore: SUCCESS"
+    return 0
+}
+
+rescan_written_buses() {
+    local bus state rc=0
+
+    state="$(systemctl is-active xyz.openbmc_project.FruDevice.service 2>/dev/null || true)"
+    if [ "$state" != "active" ]; then
+        log "rescan: skip (xyz.openbmc_project.FruDevice.service state=$state)"
+        return 0
+    fi
+
+    for bus in $WRITTEN_BUSES; do
+        if busctl call xyz.openbmc_project.FruDevice \
+            /xyz/openbmc_project/FruDevice \
+            xyz.openbmc_project.FruDeviceManager \
+            ReScanBus q "$bus" >/dev/null 2>&1; then
+            log "rescan bus=$bus: SUCCESS"
+        else
+            log "rescan bus=$bus: FAILED"
+            rc=1
+        fi
+    done
+
+    return "$rc"
+}
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --target)
+            [ "$#" -ge 2 ] || { echo "ERROR: --target requires a value"; exit 2; }
+            TARGET_FILTER="$2"
+            shift 2
+            ;;
+        --backup-dir)
+            [ "$#" -ge 2 ] || { echo "ERROR: --backup-dir requires a value"; exit 2; }
+            BACKUP_DIR="$2"
+            shift 2
+            ;;
+        --backup-file)
+            [ "$#" -ge 2 ] || { echo "ERROR: --backup-file requires a value"; exit 2; }
+            MANUAL_BACKUP_FILE="$2"
+            shift 2
+            ;;
+        --force)
+            FORCE=1
+            shift
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            echo "ERROR: unknown option: $1"
+            usage
+            exit 2
+            ;;
+    esac
+done
+
+if [ ! -d "$BACKUP_DIR" ]; then
+    echo "ERROR: backup directory does not exist: $BACKUP_DIR"
+    exit 1
+fi
+
+if [ -n "$MANUAL_BACKUP_FILE" ] && [ "$TARGET_FILTER" = "all" ]; then
+    echo "ERROR: --backup-file requires --target to be a single target"
+    exit 2
+fi
+
+if [ "$TARGET_FILTER" != "all" ] && ! is_valid_target "$TARGET_FILTER"; then
+    echo "ERROR: invalid --target '$TARGET_FILTER' (valid: $VALID_TARGETS or all)"
+    exit 2
+fi
+
+ok=0
+fail=0
+
+while IFS='|' read -r name pathspec; do
+    name="${name:-}"
+    pathspec="${pathspec:-}"
+    name="$(printf '%s' "$name" | tr -d '[:space:]')"
+    pathspec="$(printf '%s' "$pathspec" | tr -d '[:space:]')"
+
+    [ -n "$name" ] || continue
+    [ -n "$pathspec" ] || continue
+    case "$name" in
+        *'#'*) continue ;;
+    esac
+
+    if restore_one "$name" "$pathspec"; then
+        rc=0
+    else
+        rc=$?
+    fi
+
+    if [ "$rc" -eq 0 ]; then
+        ok=$((ok + 1))
+    elif [ "$rc" -eq 3 ]; then
+        continue
+    else
+        fail=$((fail + 1))
+    fi
+done <<EOF_TARGETS
+$TARGETS
+EOF_TARGETS
+
+rescan_written_buses || true
+
+log "summary: ok=$ok fail=$fail target_filter=$TARGET_FILTER"
+
+if [ "$TARGET_FILTER" != "all" ] && [ "$ok" -eq 0 ]; then
+    exit 1
+fi
+
+if [ "$TARGET_FILTER" = "all" ] && [ "$ok" -eq 0 ]; then
+    exit 1
+fi
+
+exit 0

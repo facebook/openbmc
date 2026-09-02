@@ -1,8 +1,7 @@
-From 1f922f0e113cf0387e6baa18ea2d70be9e555069 Mon Sep 17 00:00:00 2001
+From f2badb3c146c1d95640a09df7df98c9a529753ac Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 30 Jul 2025 19:39:20 +0800
-Subject: [PATCH 1015/1015] ARM: dts: aspeed: catalina: enable i2c slave
- timeout
+Subject: [PATCH 1/1] ARM: dts: aspeed: catalina: enable i2c slave timeout
 
 Enable the I2C slave timeout property in the Harma device tree to
 prevent the slave interface from hanging due to incomplete or abnormal
@@ -14,53 +13,53 @@ Signed-off-by: Potin Lai <potin.lai@quantatw.com>
  1 file changed, 9 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
-index 8c4afa6bb718..bb4c878af250 100644
+index c0ec1743cbb8..442b6fefe818 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-catalina.dts
-@@ -196,6 +196,8 @@ flash@1 {
+@@ -198,6 +198,8 @@ flash@1 {
  &i2c0 {
  	status = "okay";
  	multi-master;
-+  i2c-scl-clk-low-timeout-us = <31744>;
++	i2c-scl-clk-low-timeout-us = <31744>;
 +
  	mctp@10 {
  		compatible = "mctp-i2c-controller";
  		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
-@@ -850,6 +852,8 @@ &i2c7 {
+@@ -852,6 +854,8 @@ &i2c7 {
  	status = "okay";
  	bus-frequency = <100000>;
  	multi-master;
-+  i2c-scl-clk-low-timeout-us = <31744>;
++	i2c-scl-clk-low-timeout-us = <31744>;
 +
  	aspeed,hw-timeout-ms = <1000>;
  
  	//USB Debug Connector
-@@ -898,6 +902,8 @@ &i2c10 {
+@@ -900,6 +904,8 @@ &i2c10 {
  	status = "okay";
  	multi-master;
  	mctp-controller;
-+  i2c-scl-clk-low-timeout-us = <31744>;
++	i2c-scl-clk-low-timeout-us = <31744>;
 +
  	mctp@10 {
  		compatible = "mctp-i2c-controller";
  		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
-@@ -919,6 +925,7 @@ eeprom@50 {
+@@ -921,6 +927,7 @@ eeprom@50 {
  &i2c11 {
  	status = "okay";
- 	aspeed,enable-byte;
-+  i2c-scl-clk-low-timeout-us = <31744>;
+ 	aspeed,transfer-mode = "byte";
++	i2c-scl-clk-low-timeout-us = <31744>;
  
  	ssif-bmc@10 {
  		compatible = "ssif-bmc";
-@@ -1028,6 +1035,8 @@ &i2c15 {
+@@ -1030,6 +1037,8 @@ &i2c15 {
  	status = "okay";
  	multi-master;
  	mctp-controller;
-+  i2c-scl-clk-low-timeout-us = <31744>;
++	i2c-scl-clk-low-timeout-us = <31744>;
 +
  	mctp@10 {
  		compatible = "mctp-i2c-controller";
  		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
 -- 
-2.47.3
+2.52.0
 

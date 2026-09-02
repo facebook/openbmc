@@ -1,0 +1,321 @@
+From: Pete O_o <pmb@meta.com>
+Date: Tue, 2 Sep 2026 14:00:00 -0700
+Subject: [PATCH] Event: carry the CPER section onto the pushed EventRecord
+
+Patch 0410 renders CPER on the Redfish LogEntry resource, but the realtime
+Event pushed to EventDestination subscribers never carried it, so a
+subscriber had no way to see a CPER without following LogEntry.@odata.id and
+issuing a second GET.
+
+The data was already present and being discarded. A log entry's
+InterfacesAdded signal carries every interface the entry exposes, but
+onDbusEventLogCreated() forwarded only the property map of
+xyz.openbmc_project.Logging.Entry -- so
+xyz.openbmc_project.Logging.Extension.CPER.Processed, which holds
+DiagnosticDataType/NotificationType/SectionType/Oem, was dropped before
+anything could read it.
+
+Collect that interface's property map alongside the Entry's, carry it on
+EventLogObjectsType, and merge it into the record in formatEventLogEntry().
+The Redfish shape is produced by fillEventLogCperFromPropertyMap(), the same
+helper 0410 uses for the LogEntry resource, so the two representations cannot
+drift. CPER is the identical schema object on both.
+
+Two deliberate choices:
+
+- The raw-CPER cross-link is not requested. Links.RelatedLogEntries is a
+  LogEntry construct with no counterpart on EventRecord, so the hasRawCper
+  argument is left at its default of false.
+
+- The pushed payload moves from #Event.v1_7_0.Event to #Event.v1_8_0.Event.
+  v1_8_0 is the first revision in which EventRecord defines CPER,
+  DiagnosticData and DiagnosticDataType; emitting them under v1_7_0 would be
+  schema-invalid. Note the installed CSDL/JSON schema pack may need
+  regenerating to match, the same consideration 0410 raised when it moved
+  LogEntry from v1_9_0 to v1_15_0.
+
+Entries with no CPER extension are byte-identical to before: the carrier is
+empty and the merge loop does nothing.
+
+Tests: dbus_log_watcher_test gains a case asserting the CPER extension is
+carried through with the vendor blob re-parsed into a real object, that an
+empty SectionType is omitted rather than emitted blank, and that no Links
+member appears on the record. The two existing cases now assert the
+no-CPER path leaves the record untouched.
+--- a/docs/Redfish.md
++++ b/docs/Redfish.md
+@@ -637,7 +637,12 @@
+ #### Event
+ 
+ - @odata.type
++- Events[]/CPER
++- Events[]/CPER/NotificationType
++- Events[]/CPER/Oem
++- Events[]/CPER/SectionType
+ - Events[]/Context
++- Events[]/DiagnosticDataType
+ - Events[]/EventId
+ - Events[]/EventTimestamp
+ - Events[]/LogEntry
+--- a/redfish-core/include/dbus_log_watcher.hpp
++++ b/redfish-core/include/dbus_log_watcher.hpp
+@@ -12,8 +12,12 @@
+     DbusEventLogMonitor();
+     sdbusplus::match dbusEventLogMonitor;
+ 
++    // cperMap is the property map of the entry's
++    // xyz.openbmc_project.Logging.Extension.CPER.Processed interface, or empty
++    // when the entry does not carry that interface.
+     static bool eventLogObjectFromDBus(
+         const dbus::utility::DBusPropertiesMap& map,
++        const dbus::utility::DBusPropertiesMap& cperMap,
+         EventLogObjectsType& event);
+ };
+ 
+--- a/redfish-core/include/event_logs_object_type.hpp
++++ b/redfish-core/include/event_logs_object_type.hpp
+@@ -3,6 +3,8 @@
+ // SPDX-FileCopyrightText: Copyright 2020 Intel Corporation
+ #pragma once
+ 
++#include <nlohmann/json.hpp>
++
+ #include <string>
+ #include <vector>
+ namespace redfish
+@@ -16,5 +18,11 @@
+     std::string resolution;
+     std::string severity;
+     std::string timestamp;
++    // Redfish-shaped CPER data lifted off the originating entry's
++    // xyz.openbmc_project.Logging.Extension.CPER.Processed interface by
++    // fillEventLogCperFromPropertyMap(). Holds the DiagnosticDataType and
++    // CPER members verbatim, ready to be merged into the EventRecord. Left
++    // empty for the overwhelming majority of entries, which carry no CPER.
++    nlohmann::json::object_t cper;
+ };
+ } // namespace redfish
+--- a/redfish-core/src/dbus_log_watcher.cpp
++++ b/redfish-core/src/dbus_log_watcher.cpp
+@@ -9,6 +9,7 @@
+ #include "utils/dbus_event_log_entry.hpp"
+ #include "utils/dbus_registries_map_utils.hpp"
+ 
++#include <nlohmann/json.hpp>
+ #include <sdbusplus/bus/match.hpp>
+ #include <sdbusplus/message.hpp>
+ #include <sdbusplus/message/native_types.hpp>
+@@ -25,7 +26,9 @@
+ {
+ 
+ bool DbusEventLogMonitor::eventLogObjectFromDBus(
+-    const dbus::utility::DBusPropertiesMap& map, EventLogObjectsType& event)
++    const dbus::utility::DBusPropertiesMap& map,
++    const dbus::utility::DBusPropertiesMap& cperMap,
++    EventLogObjectsType& event)
+ {
+     std::optional<DbusEventLogEntry> optEntry =
+         fillDbusEventLogEntryFromPropertyMap(map);
+@@ -39,16 +42,34 @@
+ 
+     const DbusEventLogEntry& entry = optEntry.value();
+ 
+-    return dbus_registries_map::dbusEventLogEntryToEventLogObjectsType(
+-        entry, event);
++    if (!dbus_registries_map::dbusEventLogEntryToEventLogObjectsType(entry,
++                                                                     event))
++    {
++        return false;
++    }
++
++    // Carry the CPER extension, when the entry has one, so the pushed
++    // EventRecord says the same thing as the LogEntry resource. The raw-CPER
++    // cross-link is deliberately not requested: RelatedLogEntries is a
++    // LogEntry construct and has no counterpart on EventRecord.
++    if (!cperMap.empty())
++    {
++        nlohmann::json cperJson = nlohmann::json::object();
++        fillEventLogCperFromPropertyMap(cperMap, cperJson);
++        event.cper = std::move(*cperJson.get_ptr<nlohmann::json::object_t*>());
++    }
++
++    return true;
+ }
+ 
+ static void dbusEventLogMatchHandlerSingleEntry(
+-    const dbus::utility::DBusPropertiesMap& map)
++    const dbus::utility::DBusPropertiesMap& map,
++    const dbus::utility::DBusPropertiesMap& cperMap)
+ {
+     std::vector<EventLogObjectsType> eventRecords;
+     EventLogObjectsType& event = eventRecords.emplace_back();
+-    bool success = DbusEventLogMonitor::eventLogObjectFromDBus(map, event);
++    bool success =
++        DbusEventLogMonitor::eventLogObjectFromDBus(map, cperMap, event);
+     if (!success)
+     {
+         BMCWEB_LOG_ERROR("Could not parse event log entry from dbus");
+@@ -69,15 +90,34 @@
+ 
+     msg.read(objectPath, interfaces);
+ 
+-    for (auto& pair : interfaces)
++    // A single InterfacesAdded signal carries every interface the new entry
++    // exposes, so collect both the Entry itself and its CPER extension before
++    // dispatching -- the extension can precede or follow the Entry.
++    const dbus::utility::DBusPropertiesMap* entryMap = nullptr;
++    const dbus::utility::DBusPropertiesMap* cperMap = nullptr;
++
++    for (const auto& pair : interfaces)
+     {
+         BMCWEB_LOG_DEBUG("Found dbus interface {}", pair.first);
+         if (pair.first == "xyz.openbmc_project.Logging.Entry")
+         {
+-            const dbus::utility::DBusPropertiesMap& map = pair.second;
+-            dbusEventLogMatchHandlerSingleEntry(map);
++            entryMap = &pair.second;
+         }
++        else if (pair.first ==
++                 "xyz.openbmc_project.Logging.Extension.CPER.Processed")
++        {
++            cperMap = &pair.second;
++        }
++    }
++
++    if (entryMap == nullptr)
++    {
++        return;
+     }
++
++    static const dbus::utility::DBusPropertiesMap emptyMap;
++    dbusEventLogMatchHandlerSingleEntry(
++        *entryMap, cperMap != nullptr ? *cperMap : emptyMap);
+ }
+ 
+ const std::string propertiesMatchString =
+--- a/redfish-core/src/event_log.cpp
++++ b/redfish-core/src/event_log.cpp
+@@ -169,6 +169,14 @@
+     }
+     logEntryJson["LogEntry"]["@odata.id"] =
+         formatEventLogEntryUri(eventLogParent, eventLogPath, logEntry.id);
++
++    // CPER is the same Redfish object on EventRecord as it is on LogEntry, so
++    // the members built for the LogEntry resource are merged in verbatim.
++    // Empty for entries with no CPER, which leaves the record untouched.
++    for (const auto& [key, value] : logEntry.cper)
++    {
++        logEntryJson[key] = value;
++    }
+ }
+ 
+ } // namespace event_log
+--- a/redfish-core/src/subscription.cpp
++++ b/redfish-core/src/subscription.cpp
+@@ -241,7 +241,9 @@
+     }
+ 
+     nlohmann::json msg;
+-    msg["@odata.type"] = "#Event.v1_7_0.Event";
++    // v1_8_0 is the first revision in which EventRecord defines CPER,
++    // DiagnosticData and DiagnosticDataType.
++    msg["@odata.type"] = "#Event.v1_8_0.Event";
+     msg["Id"] = std::to_string(eventId);
+     msg["Name"] = "Event Log";
+     msg["Events"] = std::move(logEntryArray);
+--- a/test/redfish-core/include/dbus_log_watcher_test.cpp
++++ b/test/redfish-core/include/dbus_log_watcher_test.cpp
+@@ -3,6 +3,8 @@
+ #include "event_logs_object_type.hpp"
+ #include "utils/time_utils.hpp"
+ 
++#include <nlohmann/json.hpp>
++
+ #include <cstdint>
+ #include <string>
+ #include <unordered_map>
+@@ -42,11 +44,15 @@
+ 
+     EventLogObjectsType event;
+ 
+-    const bool status =
+-        DbusEventLogMonitor::eventLogObjectFromDBus(propMapStub, event);
++    const DBusPropertiesMap noCper = {};
++    const bool status = DbusEventLogMonitor::eventLogObjectFromDBus(
++        propMapStub, noCper, event);
+ 
+     EXPECT_TRUE(status);
+ 
++    // An entry with no CPER extension must leave the record untouched.
++    EXPECT_TRUE(event.cper.empty());
++
+     EXPECT_EQ(event.id, "1838");
+ 
+     EXPECT_EQ(event.timestamp,
+@@ -86,10 +92,64 @@
+ 
+     EventLogObjectsType event;
+ 
+-    const bool status =
+-        DbusEventLogMonitor::eventLogObjectFromDBus(propMapWrong, event);
++    const DBusPropertiesMap noCper = {};
++    const bool status = DbusEventLogMonitor::eventLogObjectFromDBus(
++        propMapWrong, noCper, event);
+ 
+     EXPECT_FALSE(status);
+ }
+ 
++TEST(DBusLogWatcher, EventLogObjectFromDBusCarriesCperExtension)
++{
++    const DbusVariantType additionalData =
++        DbusVariantType(std::unordered_map<std::string, std::string>{
++            {"SENSOR_NAME", "BIC_JI_SENSOR_MB_RETIMER_TEMP_C"}});
++    const DBusPropertiesMap propMapStub = {
++        {"AdditionalData", additionalData},
++        {"EventId", DbusVariantType("")},
++        {"Id", DbusVariantType(static_cast<uint32_t>(471))},
++        {"Message",
++         DbusVariantType(
++             "xyz.openbmc_project.Sensor.Threshold.ReadingBelowLowerCriticalThreshold")},
++        {"Resolution", DbusVariantType("")},
++        {"Resolved", DbusVariantType(false)},
++        {"ServiceProviderNotify", DbusVariantType("")},
++        {"Severity", DbusVariantType("")},
++        {"Timestamp", DbusVariantType(static_cast<uint64_t>(1638312095123))},
++        {"UpdateTimestamp", DbusVariantType(static_cast<uint64_t>(3899))},
++    };
++
++    // xyz.openbmc_project.Logging.Extension.CPER.Processed. Oem is a{ss}: the
++    // vendor namespace maps to an opaque JSON string.
++    const DBusPropertiesMap cperMap = {
++        {"DiagnosticDataType",
++         DbusVariantType(
++             "xyz.openbmc_project.Logging.CPER.Types.ContentType.CPER")},
++        {"NotificationType",
++         DbusVariantType("FE6FF5E8-9C91-C54C-BA88-65ABE14913BB")},
++        {"SectionType", DbusVariantType("")},
++        {"Oem", DbusVariantType(std::unordered_map<std::string, std::string>{
++                    {"AMD", R"({"ErrDataArr":[{"MetaData":{"AmcId":"0"}}]})"}})},
++    };
++
++    EventLogObjectsType event;
++
++    const bool status =
++        DbusEventLogMonitor::eventLogObjectFromDBus(propMapStub, cperMap, event);
++
++    EXPECT_TRUE(status);
++
++    const nlohmann::json cper = event.cper;
++    EXPECT_EQ(cper["DiagnosticDataType"], "CPER");
++    EXPECT_EQ(cper["CPER"]["NotificationType"],
++              "FE6FF5E8-9C91-C54C-BA88-65ABE14913BB");
++    // An empty SectionType is omitted rather than emitted blank.
++    EXPECT_FALSE(cper["CPER"].contains("SectionType"));
++    // The vendor blob is re-parsed into a real object, not left a string.
++    EXPECT_EQ(cper["CPER"]["Oem"]["AMD"]["ErrDataArr"][0]["MetaData"]["AmcId"],
++              "0");
++    // RelatedLogEntries is a LogEntry construct; EventRecord must not get one.
++    EXPECT_FALSE(cper.contains("Links"));
++}
++
+ } // namespace redfish

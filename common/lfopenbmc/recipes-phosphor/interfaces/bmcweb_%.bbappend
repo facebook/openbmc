@@ -48,4 +48,5 @@ SRC_URI:append = " \
 # CPER support
 SRC_URI:append = " \
     file://0410-LogEntry-Add-support-for-parsing-and-presenting-CPER.patch \
+    file://0411-Event-carry-the-CPER-section-onto-the-pushed-EventRe.patch \
 "

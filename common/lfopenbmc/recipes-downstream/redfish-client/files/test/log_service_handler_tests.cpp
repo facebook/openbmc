@@ -10,6 +10,7 @@
 #include <redfish_client/core/sensor_threshold_mapper.hpp>
 
 #include <nlohmann/json.hpp>
+#include <sdbusplus/async/timer.hpp>
 #include <sdbusplus/server.hpp>
 #include <xyz/openbmc_project/Logging/Create/client.hpp>
 #include <xyz/openbmc_project/Logging/Create/common.hpp>
@@ -1059,5 +1060,75 @@ TEST_F(LogServiceHandlerTest, SensorThresholdMappingTest)
         co_return;
     }());
 }
+
+static constexpr auto kProcessedInterface =
+    "xyz.openbmc_project.Logging.Extension.CPER.Processed";
+
+// phosphor-logging transports extension interfaces as a single `_EXTENSIONS`
+// AdditionalData entry holding a json object keyed by interface name.
+static nlohmann::json extensionsOf(const Log& log)
+{
+    auto it = log.additionalData.find("_EXTENSIONS");
+    return it == log.additionalData.end() ? nlohmann::json::object()
+                                          : nlohmann::json::parse(it->second);
+}
+
+
+
+
+
+// Anacapa registers InstinctCperMapper, not CperMapper, so drive it directly
+// rather than through the shared registry -- both claim priority 100 and both
+// canHandle any entry with a CPER object.
+TEST_F(LogServiceHandlerTest, InstinctCperMapperSurvivesMissingLogEntryOem)
+{
+    nlohmann::json member;
+    member["@odata.id"] =
+        "/redfish/v1/Systems/Accelerators/LogServices/EventLog/Entries/9001";
+    member["@odata.type"] = "#LogEntry.v1_16_0.LogEntry";
+    member["Created"] = "2026-09-01T23:30:00+00:00";
+    member["Id"] = "9001";
+    member["Severity"] = "Critical";
+    member["MessageId"] = "Platform.1.0.PlatformError";
+    member["DiagnosticDataType"] = "CPER";
+    // Vendor OEM data hangs off the CPER object. There is deliberately no
+    // LogEntry-level `Oem`: reading that one and dereferencing the resulting
+    // empty optional used to abort the daemon outright.
+    member["CPER"]["NotificationType"] =
+        "FE6FF5E8-9C91-C54C-BA88-65ABE14913BB";
+    member["CPER"]["Oem"]["AMD"]["RackUnitPosition"] = "C01";
+
+    auto entry = redfish_binding::LogEntry::parseLogEntry(member.dump());
+
+    sdbusplus::async::context ctx;
+    InstinctCperMapper mapper(ctx, "127.0.0.1:8080");
+
+    ASSERT_TRUE(mapper.canHandle(entry));
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+        mapper.map(entry);
+        // map() hands the commit to a spawned task; give it a turn.
+        co_await sdbusplus::async::sleep_for(ctx,
+                                             std::chrono::milliseconds(200));
+    }());
+
+    ASSERT_EQ(1, logManager.logs->size());
+    Log log = (*logManager.logs)[0];
+
+    auto extensions = extensionsOf(log);
+    ASSERT_TRUE(extensions.contains(kProcessedInterface));
+    const auto& processed = extensions.at(kProcessedInterface);
+
+    EXPECT_EQ("xyz.openbmc_project.Logging.CPER.Types.ContentType.CPER",
+              processed.at("DiagnosticDataType").get<std::string>());
+    EXPECT_EQ("FE6FF5E8-9C91-C54C-BA88-65ABE14913BB",
+              processed.at("NotificationType").get<std::string>());
+
+    // The OEM block must come from CPER.Oem, not the absent LogEntry.Oem.
+    ASSERT_TRUE(processed.at("Oem").contains("AMD"));
+    auto amd =
+        nlohmann::json::parse(processed.at("Oem").at("AMD").get<std::string>());
+    EXPECT_EQ("C01", amd.at("RackUnitPosition").get<std::string>());
+}
+
 
 } // namespace redfish_client::core

@@ -8,6 +8,8 @@
 #include <xyz/openbmc_project/Logging/Extension/CPER/Raw/common.hpp>
 #include <xyz/openbmc_project/State/CPER/event.hpp>
 
+#include "redfish-binding/LogEntry_LogDiagnosticDataTypes.hpp"
+
 namespace redfish_client::core
 {
 
@@ -87,7 +89,10 @@ std::pair<std::string, std::string> getOemVendorAndData(auto& maybeCPER)
         return {};
     }
 
-    const auto& vendorEntry = oemJson.items().begin();
+    // Iterate the named local directly. `oemJson.items()` returns a proxy by
+    // value, so an iterator taken from it dangles once the full expression
+    // ends.
+    const auto vendorEntry = oemJson.begin();
 
     const std::string vendor = vendorEntry.key();
     const std::string data = vendorEntry.value().dump();
@@ -121,9 +126,35 @@ void InstinctCperMapper::map(redfish_binding::LogEntry::LogEntry& entry)
     data.notificationType = getNotificationType(maybeCPER);
     data.sectionType = getSectionType(maybeCPER);
 
-    auto oemData = extractOemData(entry);
-    data.vendor = oemData->vendor;
-    data.oemData = oemData->jsonData;
+    // Only CPER and CPERSection of the Redfish enum describe CPER content.
+    // Absent or anything else means a whole record, which is what an entry
+    // carrying a notification GUID is.
+    if (auto& maybeType = entry.getDiagnosticDataType();
+        maybeType.hasValue() &&
+        maybeType.value() ==
+            redfish_binding::LogEntry::LogDiagnosticDataTypes::CPERSection)
+    {
+        data.diagnosticDataType = CPERTypes::Types::ContentType::CPERSection;
+    }
+
+    // Vendor OEM data rides the CPER object -- that is where the AMC puts it,
+    // and `CPER.Oem` is what the Redfish schema defines. Fall back to the
+    // LogEntry-level `Oem` for producers that attach it there instead.
+    //
+    // Both are optional. `extractOemData` returns nullopt when the LogEntry
+    // has no `Oem`, and dereferencing it unconditionally aborted the whole
+    // daemon on any CPER entry that did not carry one.
+    if (auto [vendor, oemJson] = getOemVendorAndData(maybeCPER);
+        !vendor.empty())
+    {
+        data.vendor = std::move(vendor);
+        data.oemData = std::move(oemJson);
+    }
+    else if (auto oemData = extractOemData(entry); oemData.has_value())
+    {
+        data.vendor = std::move(oemData->vendor);
+        data.oemData = std::move(oemData->jsonData);
+    }
 
     auto& maybeURI = entry.getAdditionalDataURI();
     if (maybeURI.hasValue())
@@ -184,7 +215,7 @@ auto InstinctCperMapper::commitCPER(sdbusplus::async::context& ctx,
 
     // Build CPERProcessed properties
     CPERExtension::Processed::properties_t cperProperties{};
-    cperProperties.diagnostic_data_type = CPERTypes::Types::ContentType::CPER;
+    cperProperties.diagnostic_data_type = data.diagnosticDataType;
 
     if (!data.notificationType.empty())
     {

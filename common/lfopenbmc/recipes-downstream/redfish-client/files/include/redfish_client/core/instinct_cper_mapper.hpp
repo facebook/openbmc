@@ -4,6 +4,7 @@
 #include <redfish_client/core/async_http_client.hpp>
 #include <sdbusplus/async/context.hpp>
 #include <sdbusplus/async/task.hpp>
+#include <xyz/openbmc_project/Logging/CPER/Types/common.hpp>
 
 namespace redfish_client::core {
 
@@ -28,6 +29,9 @@ private:
   {
       std::string host;
       std::string source;
+      sdbusplus::common::xyz::openbmc_project::logging::cper::Types::ContentType
+          diagnosticDataType = sdbusplus::common::xyz::openbmc_project::
+              logging::cper::Types::ContentType::CPER;
       std::string notificationType;
       std::string sectionType;
       std::string vendor;

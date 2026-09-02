@@ -1073,9 +1073,155 @@ static nlohmann::json extensionsOf(const Log& log)
                                           : nlohmann::json::parse(it->second);
 }
 
+// Wrap a single LogEntry in the collection envelope the handler expects.
+static std::string oneEntryCollection(const nlohmann::json& member)
+{
+    nlohmann::json collection;
+    collection["@odata.id"] =
+        "/redfish/v1/Systems/System0/LogServices/EventLog/Entries";
+    collection["@odata.type"] = "#LogEntryCollection.LogEntryCollection";
+    collection["Members@odata.count"] = 1;
+    collection["Members"] = nlohmann::json::array({member});
+    return collection.dump();
+}
 
+TEST_F(LogServiceHandlerTest, CperMapperAttachesProcessedExtension)
+{
+    sdbusplus::async::context ctx;
+    auto handler =
+        std::make_shared<LogServiceHandler>(ctx, "fake.url", std::nullopt);
+    auto collection =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            kEventlogEntryCollectionJson);
 
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+        co_await handler->commit(collection);
+    }());
 
+    ASSERT_EQ(2, logManager.logs->size());
+    Log log = (*logManager.logs)[1];
+
+    auto extensions = extensionsOf(log);
+    ASSERT_TRUE(extensions.contains(kProcessedInterface));
+    const auto& processed = extensions.at(kProcessedInterface);
+
+    // The entry declares CPERSection, so the section GUID is the applicable
+    // one -- but this vendor supplied both and both are carried through.
+    EXPECT_EQ("xyz.openbmc_project.Logging.CPER.Types.ContentType.CPERSection",
+              processed.at("DiagnosticDataType").get<std::string>());
+    EXPECT_EQ("3d61a466-ab40-409a-a698-f362d464b38f",
+              processed.at("NotificationType").get<std::string>());
+    EXPECT_EQ("6d5244f2-2712-11ec-bea7-cb3fdb95c786",
+              processed.at("SectionType").get<std::string>());
+
+    // The `CPER` AdditionalData string stays until consumers that parse it out
+    // of messageArgs have migrated to the extension.
+    EXPECT_FALSE(log.additionalData["CPER"].empty());
+}
+
+TEST_F(LogServiceHandlerTest, CperMapperCarriesOemAndRecordContentType)
+{
+    // Modelled on a real Anacapa AMC payload.
+    nlohmann::json amd;
+    amd["@odata.type"] = "#AMD_LogEntry.v0_0_7.AMD_LogEntry";
+    amd["RackUnitPosition"] = "C01";
+    nlohmann::json afid;
+    afid["AFID"] = 11347;
+    afid["Description"] = "CPU RAS Fatal Error";
+    amd["AMDFieldIdentifiers"] = nlohmann::json::array({afid});
+
+    nlohmann::json cper;
+    cper["NotificationType"] = "FE6FF5E8-9C91-C54C-BA88-65ABE14913BB";
+    cper["Oem"]["AMD"] = amd;
+
+    nlohmann::json member;
+    member["@odata.id"] =
+        "/redfish/v1/Systems/System0/LogServices/EventLog/Entries/201";
+    member["@odata.type"] = "#LogEntry.v1_15_0.LogEntry";
+    member["Created"] = "2025-01-01T12:00:00+00:00";
+    member["EntryType"] = "Event";
+    member["Id"] = "201";
+    member["MessageId"] = "Platform.1.0.PlatformError";
+    member["Severity"] = "Critical";
+    member["DiagnosticDataType"] = "CPER";
+    member["CPER"] = cper;
+
+    sdbusplus::async::context ctx;
+    auto handler =
+        std::make_shared<LogServiceHandler>(ctx, "fake.url", std::nullopt);
+    auto collection =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            oneEntryCollection(member));
+
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+        co_await handler->commit(collection);
+    }());
+
+    ASSERT_EQ(1, logManager.logs->size());
+    Log log = (*logManager.logs)[0];
+    EXPECT_EQ("xyz.openbmc_project.State.CPER.GenericCPERFault", log.message);
+
+    auto extensions = extensionsOf(log);
+    ASSERT_TRUE(extensions.contains(kProcessedInterface));
+    const auto& processed = extensions.at(kProcessedInterface);
+
+    EXPECT_EQ("xyz.openbmc_project.Logging.CPER.Types.ContentType.CPER",
+              processed.at("DiagnosticDataType").get<std::string>());
+    EXPECT_EQ("FE6FF5E8-9C91-C54C-BA88-65ABE14913BB",
+              processed.at("NotificationType").get<std::string>());
+    // The vendor omitted the section GUID; the interface documents an empty
+    // string as "not applicable or unavailable".
+    EXPECT_EQ("", processed.at("SectionType").get<std::string>());
+
+    // Oem is a{ss}: each vendor namespace maps to its json object serialized
+    // as a string, so it survives without the interface knowing the schema.
+    ASSERT_TRUE(processed.at("Oem").contains("AMD"));
+    auto roundTripped =
+        nlohmann::json::parse(processed.at("Oem").at("AMD").get<std::string>());
+    EXPECT_EQ("C01", roundTripped.at("RackUnitPosition").get<std::string>());
+    EXPECT_EQ(11347,
+              roundTripped.at("AMDFieldIdentifiers")[0].at("AFID").get<int>());
+}
+
+TEST_F(LogServiceHandlerTest, CperMapperExtendsWarningsToo)
+{
+    nlohmann::json member;
+    member["@odata.id"] =
+        "/redfish/v1/Systems/System0/LogServices/EventLog/Entries/202";
+    member["@odata.type"] = "#LogEntry.v1_15_0.LogEntry";
+    member["Created"] = "2025-01-01T12:00:00+00:00";
+    member["EntryType"] = "Event";
+    member["Id"] = "202";
+    member["MessageId"] = "Platform.1.0.PlatformError";
+    member["Severity"] = "Warning";
+    member["CPER"]["NotificationType"] = "09a9d5ac-5204-4214-96e5-94992e752bcd";
+
+    sdbusplus::async::context ctx;
+    auto handler =
+        std::make_shared<LogServiceHandler>(ctx, "fake.url", std::nullopt);
+    auto collection =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            oneEntryCollection(member));
+
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+        co_await handler->commit(collection);
+    }());
+
+    ASSERT_EQ(1, logManager.logs->size());
+    Log log = (*logManager.logs)[0];
+    EXPECT_EQ("xyz.openbmc_project.State.CPER.GenericCPERWarning", log.message);
+
+    auto extensions = extensionsOf(log);
+    ASSERT_TRUE(extensions.contains(kProcessedInterface));
+    const auto& processed = extensions.at(kProcessedInterface);
+
+    // No DiagnosticDataType on the entry: one carrying a notification GUID is
+    // a whole record, which is the default.
+    EXPECT_EQ("xyz.openbmc_project.Logging.CPER.Types.ContentType.CPER",
+              processed.at("DiagnosticDataType").get<std::string>());
+    EXPECT_EQ("09a9d5ac-5204-4214-96e5-94992e752bcd",
+              processed.at("NotificationType").get<std::string>());
+}
 
 // Anacapa registers InstinctCperMapper, not CperMapper, so drive it directly
 // rather than through the shared registry -- both claim priority 100 and both
@@ -1130,5 +1276,24 @@ TEST_F(LogServiceHandlerTest, InstinctCperMapperSurvivesMissingLogEntryOem)
     EXPECT_EQ("C01", amd.at("RackUnitPosition").get<std::string>());
 }
 
+TEST_F(LogServiceHandlerTest, NonCperEntryGetsNoProcessedExtension)
+{
+    sdbusplus::async::context ctx;
+    auto handler =
+        std::make_shared<LogServiceHandler>(ctx, "fake.url", std::nullopt);
+    auto collection =
+        redfish_binding::LogEntryCollection::parseLogEntryCollection(
+            kEventlogEntryCollectionJson);
+
+    runAsync(ctx, [&]() -> sdbusplus::async::task<> {
+        co_await handler->commit(collection);
+    }());
+
+    ASSERT_EQ(2, logManager.logs->size());
+    // Entry 101 carries no CPER object, so CperMapper never sees it and
+    // nothing attaches the extension.
+    EXPECT_FALSE(
+        extensionsOf((*logManager.logs)[0]).contains(kProcessedInterface));
+}
 
 } // namespace redfish_client::core

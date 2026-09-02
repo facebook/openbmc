@@ -64,6 +64,21 @@ except Exception:
 # Global variables
 G_VERBOSE = False
 
+# Version strings that mean "the version could not be determined" rather than an
+# actual version. "N/A" is set by this module when the read fails or returns
+# something implausible; "UNKNOWN" is emitted by the platform version scripts
+# themselves (e.g. meta-elbert's bios_ver.sh when it cannot parse a version out
+# of the BIOS flash). A component we just upgraded that reports one of these has
+# not been verified, so it must not be reported as Passed.
+UNVERIFIABLE_VERSIONS = frozenset({"", "n/a", "unknown"})
+
+
+def is_version_unverifiable(version):
+    """
+    True when 'version' is a placeholder meaning the version is unknown.
+    """
+    return str(version).strip().lower() in UNVERIFIABLE_VERSIONS
+
 
 class BaseFwUpgradeTest(object):
     """
@@ -735,6 +750,7 @@ class BaseFwUpgradeTest(object):
         """
         failed_test = False
         failures_cnt = 0
+        unverified_entities = []
         if logging:
             print()
             self.print_line("", "center", "*")
@@ -761,10 +777,27 @@ class BaseFwUpgradeTest(object):
                 result = "   Skipped"
 
             entity = component["entity"]
-            if upgraded_components is None:
+            # upgraded_components is None when post-upgrade versions were never
+            # collected. That is "not checked", not "check failed", so it must
+            # not be treated as a verification failure.
+            versions_were_collected = upgraded_components is not None
+            if not versions_were_collected:
                 current_version = "N/A"
             else:
                 current_version = upgraded_components[index]["current_version"]
+
+            # A flash that reported success but leaves the component reporting
+            # no readable version has not been verified. Without this the test
+            # passes on an upgrade it cannot confirm actually took effect.
+            unverified = (
+                component["upgrade_needed"]
+                and component["upgrade_status"]
+                and versions_were_collected
+                and is_version_unverifiable(current_version)
+            )
+            if unverified:
+                result = "Unverified"
+
             if logging:
                 self.print_line(
                     [
@@ -780,10 +813,31 @@ class BaseFwUpgradeTest(object):
             if not component["upgrade_status"]:
                 failures_cnt += 1
                 failed_test = True
+            elif unverified:
+                failures_cnt += 1
+                failed_test = True
+                unverified_entities.append(entity)
 
+        if unverified_entities:
+            Logger.error(
+                "Upgraded but could not verify the resulting version for: {}".format(
+                    ", ".join(unverified_entities)
+                )
+            )
         if failed_test:
             self.show_failed_test_log(components_to_upgrade)
-            self.fail("{} components failed".format(failures_cnt))
+            self.fail(
+                "{} components failed{}".format(
+                    failures_cnt,
+                    (
+                        " ({} upgraded but unverified: {})".format(
+                            len(unverified_entities), ", ".join(unverified_entities)
+                        )
+                        if unverified_entities
+                        else ""
+                    ),
+                )
+            )
         if logging:
             self.print_line("", "center", "-")
 

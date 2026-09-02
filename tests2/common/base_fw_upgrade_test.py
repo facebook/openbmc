@@ -397,11 +397,17 @@ class BaseFwUpgradeTest(object):
     def receive_command_output_from_UUT(self, only_last=False):
         cmd_result = self.bmc_ssh_session.session.before.decode("utf-8")
         if only_last:
-            lines = cmd_result.split("\r\n")
-            if len(lines) > 1:
-                return lines[1]
-            else:
-                return ""
+            # Index 0 is the echoed command; take the last non-empty line
+            # after it rather than index 1. Every command read this way ends
+            # in a filter (cut/awk/uniq) that yields a single stdout line, but
+            # stderr from the same command is not filtered and reaches the
+            # session ahead of that line -- the pipeline block-buffers stdout
+            # while stderr is unbuffered -- so index 1 can be an unrelated
+            # error message. A long echoed command that wraps is also skipped
+            # for the same reason.
+            lines = [line.strip() for line in cmd_result.split("\r\n")[1:]]
+            lines = [line for line in lines if line]
+            return lines[-1] if lines else ""
         else:
             return cmd_result
 

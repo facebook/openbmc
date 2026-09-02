@@ -43,7 +43,7 @@ class FwUpgradeTest(unittest.TestCase):
         ],  # priority=4, upgrade_cmd
         "dawson": [
             2,
-            "usr/local/bin/fpga_util.sh sup program {filename}",  # noqa B950
+            "/usr/local/bin/fpga_util.sh sup program {filename}",  # noqa B950
         ],  # priority=2, upgrade_cmd
         "livingston": [
             3,

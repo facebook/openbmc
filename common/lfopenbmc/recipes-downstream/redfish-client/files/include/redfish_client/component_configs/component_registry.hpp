@@ -9,6 +9,8 @@
 #include <redfish_client/component_configs/common_openbmc.hpp>
 #include <redfish_client/component_configs/common_update.hpp>
 #include <redfish_client/component_configs/common_environmental.hpp>
+#include <redfish_client/component_configs/vera_cpu.hpp>
+#include <redfish_client/component_configs/rubin_gpu.hpp>
 #include <redfish_client/core/config.hpp>
 #include <string>
 #include <stdexcept>
@@ -58,6 +60,14 @@ inline void registerComponent(const std::string& componentName,
     else if (componentName == "common_environmental")
     {
         registerCommonEnvironmentalMappers();
+    }
+    else if (componentName == "vera_cpu")
+    {
+        registerVeraCpuMappers();
+    }
+    else if (componentName == "rubin_gpu")
+    {
+        registerRubinGpuMappers();
     }
     else
     {

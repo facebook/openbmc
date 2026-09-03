@@ -10,8 +10,8 @@ hwmon interface.
 Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
 ---
  tests/functional/arm/meson.build             |  2 +
- tests/functional/arm/test_aspeed_clemente.py | 63 ++++++++++++++++++++
- 2 files changed, 65 insertions(+)
+ tests/functional/arm/test_aspeed_clemente.py | 64 ++++++++++++++++++++
+ 2 files changed, 66 insertions(+)
  create mode 100644 tests/functional/arm/test_aspeed_clemente.py
 
 diff --git a/tests/functional/arm/meson.build b/tests/functional/arm/meson.build
@@ -39,7 +39,7 @@ new file mode 100644
 index 0000000000..c3feb4941b
 --- /dev/null
 +++ b/tests/functional/arm/test_aspeed_clemente.py
-@@ -0,0 +1,63 @@
+@@ -0,0 +1,64 @@
 +#!/usr/bin/env python3
 +#
 +# Functional test that boots the ASPEED machines
@@ -58,9 +58,10 @@ index 0000000000..c3feb4941b
 +    # TODO: the boot image currently lives on a personal fork; move it under
 +    # legoater/qemu-aspeed-boot before upstreaming.
 +    ASSET_CLEMENTE_FLASH = Asset(
-+        'https://github.com/eblot/qemu-aspeed-boot/raw/refs/heads/clemente-bmc/images/clemente-bmc/openbmc-20260806025108/'
-+            'obmc-phosphor-image-clemente-20260806025108.static.mtd.xz',
-+        'a8df75515a412696d3d51c573f2de5806702c5e19349f4c712d21342b2b52b51')
++        'https://github.com/eblot/qemu-aspeed-boot/raw/refs/heads/'
++            'clemente-bmc/images/clemente-bmc/openbmc-20260902025058/'
++            'obmc-phosphor-image-clemente-20260902025058.static.mtd.xz',
++        'ddd9ecd9793892ba0834ac466d66835353fd8125de0cfedf756d3fe8a7e23e0d')
 +
 +    # The OCP NIC TMP421 sensors sit directly on i2c10 and i2c15 at address
 +    # 0x1f; on each bus the sensor is the first slave instantiated (child[1],

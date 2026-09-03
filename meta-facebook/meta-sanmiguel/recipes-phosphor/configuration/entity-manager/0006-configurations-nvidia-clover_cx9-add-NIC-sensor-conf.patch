@@ -1,7 +1,8 @@
-From bfefd55bae591e76f112b4d92876df0d994a3377 Mon Sep 17 00:00:00 2001
+From bc95f294abc72c33471057dd1b3a35a20877955d Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 25 Mar 2026 20:05:24 +0800
-Subject: [PATCH] configurations: nvidia: clover_cx9: add NIC sensor configs
+Subject: [PATCH 1/1] configurations: nvidia: clover_cx9: add NIC sensor
+ configs
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -13,7 +14,6 @@ Add NIC sensor configuration to enable sensor monitoring.
 Tested:
 ```
 root@bmc:~# busctl tree xyz.openbmc_project.EntityManager | grep -e "NS_NIC"
-          │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_Clover/NS_NIC_OSFP_TEMP_C
           │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_Clover/NS_NIC_PWR_W
           │ ├─ /xyz/openbmc_project/inventory/system/board/NVIDIA_VR_NVL72_Clover/NS_NIC_TEMP_C
 ```
@@ -21,14 +21,14 @@ root@bmc:~# busctl tree xyz.openbmc_project.EntityManager | grep -e "NS_NIC"
 Signed-off-by: Potin Lai <potin.lai@quantatw.com>
 Change-Id: I3fc20fb3a25483d6aaaa72a4da41d345d15bd0c4
 ---
- configurations/nvidia/clover_cx9.json | 43 +++++++++++++++++++++++++++
- 1 file changed, 43 insertions(+)
+ configurations/nvidia/clover_cx9.json | 18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
 
 diff --git a/configurations/nvidia/clover_cx9.json b/configurations/nvidia/clover_cx9.json
-index 1129750..4deaec3 100644
+index 1129750..5abc559 100644
 --- a/configurations/nvidia/clover_cx9.json
 +++ b/configurations/nvidia/clover_cx9.json
-@@ -5,6 +5,49 @@
+@@ -5,6 +5,24 @@
              "Bus": "$bus",
              "Name": "NVIDIA VR NVL72 Clover FRU",
              "Type": "EEPROM"
@@ -38,31 +38,6 @@ index 1129750..4deaec3 100644
 +            "MinValue": -255.0,
 +            "Name": "NS_NIC_TEMP_C",
 +            "PowerState": "On",
-+            "Timeout": 30.0,
-+            "Type": "ExternalSensor",
-+            "Units": "DegreesC"
-+        },
-+        {
-+            "MaxValue": 255,
-+            "MinValue": -255.0,
-+            "Name": "NS_NIC_OSFP_TEMP_C",
-+            "PowerState": "On",
-+            "Thresholds": [
-+                {
-+                    "Direction": "greater than",
-+                    "Hysteresis": 1.36,
-+                    "Name": "upper critical",
-+                    "Severity": 1,
-+                    "Value": 68
-+                },
-+                {
-+                    "Direction": "less than",
-+                    "Hysteresis": 0.1,
-+                    "Name": "lower critical",
-+                    "Severity": 1,
-+                    "Value": 5
-+                }
-+            ],
 +            "Timeout": 30.0,
 +            "Type": "ExternalSensor",
 +            "Units": "DegreesC"
@@ -79,5 +54,5 @@ index 1129750..4deaec3 100644
      ],
      "Name": "NVIDIA VR NVL72 Clover",
 -- 
-2.53.0-Meta
+2.52.0
 

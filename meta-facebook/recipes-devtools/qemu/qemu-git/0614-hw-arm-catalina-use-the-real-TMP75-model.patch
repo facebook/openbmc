@@ -12,6 +12,7 @@ TYPE_TMP75 alias (and its guard) so the board instantiates the accurate
 device rather than a plain TMP105.
 
 Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
+Reviewed-by: Cédric Le Goater <clg@redhat.com>
 Link: https://lore.kernel.org/qemu-devel/20260731-sanmiguel-bmc-locator-v2-14-1266926ba769@free.fr
 Signed-off-by: Cédric Le Goater <clg@redhat.com>
 ---

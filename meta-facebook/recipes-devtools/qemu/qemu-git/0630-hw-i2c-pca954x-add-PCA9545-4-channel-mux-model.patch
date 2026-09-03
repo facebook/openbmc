@@ -15,9 +15,9 @@ switches keep their previous behaviour.
 
 Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
 ---
- hw/i2c/i2c_mux_pca954x.c         | 76 +++++++++++++++++++++++++++++++-
+ hw/i2c/i2c_mux_pca954x.c         | 71 +++++++++++++++++++++++++++++++-
  include/hw/i2c/i2c_mux_pca954x.h |  1 +
- 2 files changed, 75 insertions(+), 2 deletions(-)
+ 2 files changed, 70 insertions(+), 2 deletions(-)
 
 diff --git a/hw/i2c/i2c_mux_pca954x.c b/hw/i2c/i2c_mux_pca954x.c
 index 794651e7e2..81edf6a30c 100644
@@ -83,7 +83,7 @@ index 794651e7e2..81edf6a30c 100644
  } Pca954xClass;
  
  #define TYPE_PCA954X "pca954x"
-@@ -116,8 +132,14 @@ static void pca954x_enable_channel(Pca954xState *s, uint8_t enable_mask)
+@@ -116,8 +132,10 @@ static void pca954x_enable_channel(Pca954xState *s, uint8_t enable_mask)
  
  static void pca954x_write(Pca954xState *s, uint8_t data)
  {
@@ -91,16 +91,12 @@ index 794651e7e2..81edf6a30c 100644
 -    pca954x_enable_channel(s, data);
 +    Pca954xClass *c = PCA954X_GET_CLASS(s);
 +
-+    /*
-+     * Above the channel selection sits the read-only interrupt status on parts
-+     * that have it, so those bits are dropped rather than stored.
-+     */
 +    s->control = c->has_irq ? data & ((1 << c->nchans) - 1) : data;
 +    pca954x_enable_channel(s, s->control);
  
      trace_pca954x_write_bytes(data);
  }
-@@ -148,16 +170,46 @@ static int pca954x_write_data(SMBusDevice *d, uint8_t *buf, uint8_t len)
+@@ -148,16 +166,45 @@ static int pca954x_write_data(SMBusDevice *d, uint8_t *buf, uint8_t len)
  static uint8_t pca954x_read_byte(SMBusDevice *d)
  {
      Pca954xState *s = PCA954X(d);
@@ -121,8 +117,7 @@ index 794651e7e2..81edf6a30c 100644
  
 +/*
 + * A downstream device drives one of the INTn inputs. INTn and INT are active
-+ * low, and both carry the physical level: 0 is asserted, 1 is idle. The status
-+ * bits reported over the bus keep the datasheet polarity (1 == interrupt).
++ * low, and both carry the physical level: 0 is asserted, 1 is idle.
 + */
 +static void pca954x_irq_handler(void *opaque, int n, int level)
 +{
@@ -147,7 +142,7 @@ index 794651e7e2..81edf6a30c 100644
  }
  
  I2CBus *pca954x_i2c_get_bus(I2CSlave *mux, uint8_t channel)
-@@ -179,6 +231,13 @@ void pca954x_i2c_get_channels(I2CBus *bus, uint8_t address,
+@@ -179,6 +226,13 @@ void pca954x_i2c_get_channels(I2CBus *bus, uint8_t address,
      memcpy(channels, pca954x->bus, pc->nchans * sizeof(channels[0]));
  }
  
@@ -161,7 +156,7 @@ index 794651e7e2..81edf6a30c 100644
  static void pca9546_class_init(ObjectClass *klass, const void *data)
  {
      Pca954xClass *s = PCA954X_CLASS(klass);
-@@ -194,12 +253,20 @@ static void pca9548_class_init(ObjectClass *klass, const void *data)
+@@ -194,12 +248,20 @@ static void pca9548_class_init(ObjectClass *klass, const void *data)
  static void pca954x_realize(DeviceState *dev, Error **errp)
  {
      Pca954xState *s = PCA954X(dev);
@@ -182,7 +177,7 @@ index 794651e7e2..81edf6a30c 100644
  }
  
  static void pca954x_init(Object *obj)
-@@ -252,6 +319,11 @@ static const TypeInfo pca954x_info[] = {
+@@ -252,6 +314,11 @@ static const TypeInfo pca954x_info[] = {
          .class_init    = pca954x_class_init,
          .abstract      = true,
      },

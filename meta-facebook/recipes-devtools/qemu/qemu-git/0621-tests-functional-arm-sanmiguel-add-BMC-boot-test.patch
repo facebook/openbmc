@@ -13,18 +13,13 @@ guest hwmon interface reports it back.
 Address the sensors through the device locator rather than hardcoded QOM
 paths.
 
-The boot image is currently hosted in a personal fork
-(github.com/eblot/qemu-aspeed-boot); the asset URL will be updated to
-the Aspeed maintainer repository (github.com/legoater/qemu-aspeed-boot)
-once the machine image is accepted there.
-
 Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
 Link: https://lore.kernel.org/qemu-devel/20260731-sanmiguel-bmc-locator-v2-21-1266926ba769@free.fr
 Signed-off-by: Cédric Le Goater <clg@redhat.com>
 ---
  tests/functional/arm/meson.build              |  2 +
- tests/functional/arm/test_aspeed_sanmiguel.py | 72 +++++++++++++++++++
- 2 files changed, 74 insertions(+)
+ tests/functional/arm/test_aspeed_sanmiguel.py | 73 +++++++++++++++++++
+ 2 files changed, 75 insertions(+)
  create mode 100644 tests/functional/arm/test_aspeed_sanmiguel.py
 
 diff --git a/tests/functional/arm/meson.build b/tests/functional/arm/meson.build
@@ -52,7 +47,7 @@ new file mode 100644
 index 0000000000..a6ea915da3
 --- /dev/null
 +++ b/tests/functional/arm/test_aspeed_sanmiguel.py
-@@ -0,0 +1,72 @@
+@@ -0,0 +1,73 @@
 +#!/usr/bin/env python3
 +#
 +# Functional test that boots the Facebook SanMiguel BMC machine
@@ -77,8 +72,9 @@ index 0000000000..a6ea915da3
 +class SanMiguelMachine(AspeedTest):
 +
 +    ASSET_SANMIGUEL_FLASH = Asset(
-+        'https://github.com/eblot/qemu-aspeed-boot/raw/refs/heads/sanmiguel-bmc/images/'
-+            'sanmiguel-bmc/openbmc-20260616025450/obmc-phosphor-image-sanmiguel-20260616025450.static.mtd.xz',
++        'https://github.com/legoater/qemu-aspeed-boot/raw/refs/heads/'
++            'master/images/sanmiguel-bmc/openbmc-20260616025450/'
++            'obmc-phosphor-image-sanmiguel-20260616025450.static.mtd.xz',
 +        'f0b79a09cd861d79919facc16af1dbdc85a3df55b06dd62ba0318a01580d447b')
 +
 +    TMP75_SENSORS = (

@@ -339,9 +339,9 @@ index 628274bf39..a5d2287d07 100644
 +    dsc->status_w0_mask = 0;
 +    dsc->ctrl_reset = 0;
 +    dsc->status_reset = 0;
-+    dsc->eosc_mask = 0;                 /* control bit 7 is OUT, not EOSC */
++    dsc->eosc_mask = 0;
 +    dsc->osf_bit = 0;
-+    dsc->century_mask = 0;              /* no century bit on the DS1338 */
++    dsc->century_mask = 0;
 +}
 +
 +static void ds1339_class_init(ObjectClass *klass, const void *data)

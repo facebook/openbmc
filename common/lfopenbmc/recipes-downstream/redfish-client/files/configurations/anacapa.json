@@ -46,672 +46,672 @@
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_065_UCIEAM_C_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_065_UCIEAM_C_CURRENT_A"
+        "toId": "EAM0_065_UCIEAM_C_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_3V3_STBY_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_3V3_STBY_CURRENT_A"
+        "toId": "EAM0_3V3_STBY_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_54V_FUSE_CURRENT_IN",
         "toNamespace": "current",
-        "toId": "EAM0_54V_FUSE_CURRENT_IN_A"
+        "toId": "EAM0_54V_FUSE_IN_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_54V_FUSE_IN_CURRENT_PEAK",
         "toNamespace": "current",
-        "toId": "EAM0_54V_FUSE_IN_CURRENT_PEAK_A"
+        "toId": "EAM0_54V_FUSE_IN_PEAK_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_GPU_VDDAN_075_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_GPU_VDDAN_075_CURRENT_A"
+        "toId": "EAM0_GPU_VDDAN_075_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_IBC1_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_IBC1_CURRENT_A"
+        "toId": "EAM0_IBC1_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_IBC2_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_IBC2_CURRENT_A"
+        "toId": "EAM0_IBC2_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_IBC3_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_IBC3_CURRENT_A"
+        "toId": "EAM0_IBC3_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDD_18_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDD_18_CURRENT_A"
+        "toId": "EAM0_VDD_18_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDD_18_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDD_18_HBM_B_CURRENT_A"
+        "toId": "EAM0_VDD_18_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDD_18_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDD_18_HBM_D_CURRENT_A"
+        "toId": "EAM0_VDD_18_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDDAN_075_GTA_A_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDDAN_075_GTA_A_CURRENT_A"
+        "toId": "EAM0_VDDAN_075_GTA_A_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDDAN_075_GTA_C_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDDAN_075_GTA_C_CURRENT_A"
+        "toId": "EAM0_VDDAN_075_GTA_C_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDDCR_075_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDDCR_075_HBM_B_CURRENT_A"
+        "toId": "EAM0_VDDCR_075_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDDCR_075_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDDCR_075_HBM_D_CURRENT_A"
+        "toId": "EAM0_VDDCR_075_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDDCR_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDDCR_HBM_B_CURRENT_A"
+        "toId": "EAM0_VDDCR_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDDCR_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDDCR_HBM_D_CURRENT_A"
+        "toId": "EAM0_VDDCR_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDDCR_SOCIO_A_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDDCR_SOCIO_A_CURRENT_A"
+        "toId": "EAM0_VDDCR_SOCIO_A_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDDCR_SOCIO_C_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDDCR_SOCIO_C_CURRENT_A"
+        "toId": "EAM0_VDDCR_SOCIO_C_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDDCR_X0_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDDCR_X0_CURRENT_A"
+        "toId": "EAM0_VDDCR_X0_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDDCR_X1_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDDCR_X1_CURRENT_A"
+        "toId": "EAM0_VDDCR_X1_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDDIO_04_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDDIO_04_HBM_B_CURRENT_A"
+        "toId": "EAM0_VDDIO_04_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDDIO_04_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDDIO_04_HBM_D_CURRENT_A"
+        "toId": "EAM0_VDDIO_04_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDDIO_065_UCIEAA_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDDIO_065_UCIEAA_CURRENT_A"
+        "toId": "EAM0_VDDIO_065_UCIEAA_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDDIO_065_UCIEAM_A_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDDIO_065_UCIEAM_A_CURRENT_A"
+        "toId": "EAM0_VDDIO_065_UCIEAM_A_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDDIO_075_UCIE_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDDIO_075_UCIE_CURRENT_A"
+        "toId": "EAM0_VDDIO_075_UCIE_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDDIO_11_GTA_A_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDDIO_11_GTA_A_CURRENT_A"
+        "toId": "EAM0_VDDIO_11_GTA_A_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDDIO_11_GTA_C_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDDIO_11_GTA_C_CURRENT_A"
+        "toId": "EAM0_VDDIO_11_GTA_C_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDDIO_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDDIO_HBM_B_CURRENT_A"
+        "toId": "EAM0_VDDIO_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/current_EAM_0_VDDIO_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM0_VDDIO_HBM_D_CURRENT_A"
+        "toId": "EAM0_VDDIO_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_065_UCIEAM_C_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_065_UCIEAM_C_CURRENT_A"
+        "toId": "EAM1_065_UCIEAM_C_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_3V3_STBY_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_3V3_STBY_CURRENT_A"
+        "toId": "EAM1_3V3_STBY_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_54V_FUSE_CURRENT_IN",
         "toNamespace": "current",
-        "toId": "EAM1_54V_FUSE_CURRENT_IN_A"
+        "toId": "EAM1_54V_FUSE_IN_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_54V_FUSE_IN_CURRENT_PEAK",
         "toNamespace": "current",
-        "toId": "EAM1_54V_FUSE_IN_CURRENT_PEAK_A"
+        "toId": "EAM1_54V_FUSE_IN_PEAK_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_GPU_VDDAN_075_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_GPU_VDDAN_075_CURRENT_A"
+        "toId": "EAM1_GPU_VDDAN_075_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_IBC1_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_IBC1_CURRENT_A"
+        "toId": "EAM1_IBC1_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_IBC2_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_IBC2_CURRENT_A"
+        "toId": "EAM1_IBC2_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_IBC3_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_IBC3_CURRENT_A"
+        "toId": "EAM1_IBC3_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDD_18_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDD_18_CURRENT_A"
+        "toId": "EAM1_VDD_18_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDD_18_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDD_18_HBM_B_CURRENT_A"
+        "toId": "EAM1_VDD_18_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDD_18_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDD_18_HBM_D_CURRENT_A"
+        "toId": "EAM1_VDD_18_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDDAN_075_GTA_A_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDDAN_075_GTA_A_CURRENT_A"
+        "toId": "EAM1_VDDAN_075_GTA_A_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDDAN_075_GTA_C_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDDAN_075_GTA_C_CURRENT_A"
+        "toId": "EAM1_VDDAN_075_GTA_C_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDDCR_075_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDDCR_075_HBM_B_CURRENT_A"
+        "toId": "EAM1_VDDCR_075_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDDCR_075_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDDCR_075_HBM_D_CURRENT_A"
+        "toId": "EAM1_VDDCR_075_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDDCR_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDDCR_HBM_B_CURRENT_A"
+        "toId": "EAM1_VDDCR_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDDCR_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDDCR_HBM_D_CURRENT_A"
+        "toId": "EAM1_VDDCR_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDDCR_SOCIO_A_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDDCR_SOCIO_A_CURRENT_A"
+        "toId": "EAM1_VDDCR_SOCIO_A_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDDCR_SOCIO_C_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDDCR_SOCIO_C_CURRENT_A"
+        "toId": "EAM1_VDDCR_SOCIO_C_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDDCR_X0_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDDCR_X0_CURRENT_A"
+        "toId": "EAM1_VDDCR_X0_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDDCR_X1_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDDCR_X1_CURRENT_A"
+        "toId": "EAM1_VDDCR_X1_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDDIO_04_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDDIO_04_HBM_B_CURRENT_A"
+        "toId": "EAM1_VDDIO_04_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDDIO_04_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDDIO_04_HBM_D_CURRENT_A"
+        "toId": "EAM1_VDDIO_04_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDDIO_065_UCIEAA_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDDIO_065_UCIEAA_CURRENT_A"
+        "toId": "EAM1_VDDIO_065_UCIEAA_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDDIO_065_UCIEAM_A_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDDIO_065_UCIEAM_A_CURRENT_A"
+        "toId": "EAM1_VDDIO_065_UCIEAM_A_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDDIO_075_UCIE_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDDIO_075_UCIE_CURRENT_A"
+        "toId": "EAM1_VDDIO_075_UCIE_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDDIO_11_GTA_A_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDDIO_11_GTA_A_CURRENT_A"
+        "toId": "EAM1_VDDIO_11_GTA_A_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDDIO_11_GTA_C_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDDIO_11_GTA_C_CURRENT_A"
+        "toId": "EAM1_VDDIO_11_GTA_C_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDDIO_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDDIO_HBM_B_CURRENT_A"
+        "toId": "EAM1_VDDIO_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/current_EAM_1_VDDIO_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM1_VDDIO_HBM_D_CURRENT_A"
+        "toId": "EAM1_VDDIO_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_065_UCIEAM_C_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_065_UCIEAM_C_CURRENT_A"
+        "toId": "EAM2_065_UCIEAM_C_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_3V3_STBY_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_3V3_STBY_CURRENT_A"
+        "toId": "EAM2_3V3_STBY_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_54V_FUSE_CURRENT_IN",
         "toNamespace": "current",
-        "toId": "EAM2_54V_FUSE_CURRENT_IN_A"
+        "toId": "EAM2_54V_FUSE_IN_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_54V_FUSE_IN_CURRENT_PEAK",
         "toNamespace": "current",
-        "toId": "EAM2_54V_FUSE_IN_CURRENT_PEAK_A"
+        "toId": "EAM2_54V_FUSE_IN_PEAK_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_GPU_VDDAN_075_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_GPU_VDDAN_075_CURRENT_A"
+        "toId": "EAM2_GPU_VDDAN_075_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_IBC1_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_IBC1_CURRENT_A"
+        "toId": "EAM2_IBC1_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_IBC2_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_IBC2_CURRENT_A"
+        "toId": "EAM2_IBC2_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_IBC3_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_IBC3_CURRENT_A"
+        "toId": "EAM2_IBC3_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDD_18_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDD_18_CURRENT_A"
+        "toId": "EAM2_VDD_18_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDD_18_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDD_18_HBM_B_CURRENT_A"
+        "toId": "EAM2_VDD_18_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDD_18_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDD_18_HBM_D_CURRENT_A"
+        "toId": "EAM2_VDD_18_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDDAN_075_GTA_A_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDDAN_075_GTA_A_CURRENT_A"
+        "toId": "EAM2_VDDAN_075_GTA_A_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDDAN_075_GTA_C_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDDAN_075_GTA_C_CURRENT_A"
+        "toId": "EAM2_VDDAN_075_GTA_C_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDDCR_075_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDDCR_075_HBM_B_CURRENT_A"
+        "toId": "EAM2_VDDCR_075_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDDCR_075_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDDCR_075_HBM_D_CURRENT_A"
+        "toId": "EAM2_VDDCR_075_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDDCR_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDDCR_HBM_B_CURRENT_A"
+        "toId": "EAM2_VDDCR_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDDCR_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDDCR_HBM_D_CURRENT_A"
+        "toId": "EAM2_VDDCR_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDDCR_SOCIO_A_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDDCR_SOCIO_A_CURRENT_A"
+        "toId": "EAM2_VDDCR_SOCIO_A_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDDCR_SOCIO_C_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDDCR_SOCIO_C_CURRENT_A"
+        "toId": "EAM2_VDDCR_SOCIO_C_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDDCR_X0_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDDCR_X0_CURRENT_A"
+        "toId": "EAM2_VDDCR_X0_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDDCR_X1_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDDCR_X1_CURRENT_A"
+        "toId": "EAM2_VDDCR_X1_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDDIO_04_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDDIO_04_HBM_B_CURRENT_A"
+        "toId": "EAM2_VDDIO_04_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDDIO_04_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDDIO_04_HBM_D_CURRENT_A"
+        "toId": "EAM2_VDDIO_04_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDDIO_065_UCIEAA_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDDIO_065_UCIEAA_CURRENT_A"
+        "toId": "EAM2_VDDIO_065_UCIEAA_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDDIO_065_UCIEAM_A_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDDIO_065_UCIEAM_A_CURRENT_A"
+        "toId": "EAM2_VDDIO_065_UCIEAM_A_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDDIO_075_UCIE_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDDIO_075_UCIE_CURRENT_A"
+        "toId": "EAM2_VDDIO_075_UCIE_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDDIO_11_GTA_A_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDDIO_11_GTA_A_CURRENT_A"
+        "toId": "EAM2_VDDIO_11_GTA_A_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDDIO_11_GTA_C_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDDIO_11_GTA_C_CURRENT_A"
+        "toId": "EAM2_VDDIO_11_GTA_C_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDDIO_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDDIO_HBM_B_CURRENT_A"
+        "toId": "EAM2_VDDIO_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/current_EAM_2_VDDIO_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM2_VDDIO_HBM_D_CURRENT_A"
+        "toId": "EAM2_VDDIO_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_065_UCIEAM_C_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_065_UCIEAM_C_CURRENT_A"
+        "toId": "EAM3_065_UCIEAM_C_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_3V3_STBY_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_3V3_STBY_CURRENT_A"
+        "toId": "EAM3_3V3_STBY_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_54V_FUSE_CURRENT_IN",
         "toNamespace": "current",
-        "toId": "EAM3_54V_FUSE_CURRENT_IN_A"
+        "toId": "EAM3_54V_FUSE_IN_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_54V_FUSE_IN_CURRENT_PEAK",
         "toNamespace": "current",
-        "toId": "EAM3_54V_FUSE_IN_CURRENT_PEAK_A"
+        "toId": "EAM3_54V_FUSE_IN_PEAK_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_GPU_VDDAN_075_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_GPU_VDDAN_075_CURRENT_A"
+        "toId": "EAM3_GPU_VDDAN_075_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_IBC1_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_IBC1_CURRENT_A"
+        "toId": "EAM3_IBC1_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_IBC2_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_IBC2_CURRENT_A"
+        "toId": "EAM3_IBC2_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_IBC3_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_IBC3_CURRENT_A"
+        "toId": "EAM3_IBC3_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDD_18_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDD_18_CURRENT_A"
+        "toId": "EAM3_VDD_18_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDD_18_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDD_18_HBM_B_CURRENT_A"
+        "toId": "EAM3_VDD_18_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDD_18_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDD_18_HBM_D_CURRENT_A"
+        "toId": "EAM3_VDD_18_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDDAN_075_GTA_A_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDDAN_075_GTA_A_CURRENT_A"
+        "toId": "EAM3_VDDAN_075_GTA_A_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDDAN_075_GTA_C_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDDAN_075_GTA_C_CURRENT_A"
+        "toId": "EAM3_VDDAN_075_GTA_C_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDDCR_075_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDDCR_075_HBM_B_CURRENT_A"
+        "toId": "EAM3_VDDCR_075_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDDCR_075_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDDCR_075_HBM_D_CURRENT_A"
+        "toId": "EAM3_VDDCR_075_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDDCR_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDDCR_HBM_B_CURRENT_A"
+        "toId": "EAM3_VDDCR_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDDCR_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDDCR_HBM_D_CURRENT_A"
+        "toId": "EAM3_VDDCR_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDDCR_SOCIO_A_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDDCR_SOCIO_A_CURRENT_A"
+        "toId": "EAM3_VDDCR_SOCIO_A_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDDCR_SOCIO_C_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDDCR_SOCIO_C_CURRENT_A"
+        "toId": "EAM3_VDDCR_SOCIO_C_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDDCR_X0_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDDCR_X0_CURRENT_A"
+        "toId": "EAM3_VDDCR_X0_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDDCR_X1_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDDCR_X1_CURRENT_A"
+        "toId": "EAM3_VDDCR_X1_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDDIO_04_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDDIO_04_HBM_B_CURRENT_A"
+        "toId": "EAM3_VDDIO_04_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDDIO_04_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDDIO_04_HBM_D_CURRENT_A"
+        "toId": "EAM3_VDDIO_04_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDDIO_065_UCIEAA_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDDIO_065_UCIEAA_CURRENT_A"
+        "toId": "EAM3_VDDIO_065_UCIEAA_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDDIO_065_UCIEAM_A_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDDIO_065_UCIEAM_A_CURRENT_A"
+        "toId": "EAM3_VDDIO_065_UCIEAM_A_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDDIO_075_UCIE_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDDIO_075_UCIE_CURRENT_A"
+        "toId": "EAM3_VDDIO_075_UCIE_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDDIO_11_GTA_A_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDDIO_11_GTA_A_CURRENT_A"
+        "toId": "EAM3_VDDIO_11_GTA_A_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDDIO_11_GTA_C_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDDIO_11_GTA_C_CURRENT_A"
+        "toId": "EAM3_VDDIO_11_GTA_C_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDDIO_HBM_B_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDDIO_HBM_B_CURRENT_A"
+        "toId": "EAM3_VDDIO_HBM_B_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/current_EAM_3_VDDIO_HBM_D_CURRENT",
         "toNamespace": "current",
-        "toId": "EAM3_VDDIO_HBM_D_CURRENT_A"
+        "toId": "EAM3_VDDIO_HBM_D_CURR_A"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/power_GPU_0_POWER_CAP",
         "toNamespace": "power",
-        "toId": "EAM0_GPU0_POWER_CAP_W"
+        "toId": "EAM0_GPU0_CAP_PWR_W"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/power_GPU_0_POWER",
         "toNamespace": "power",
-        "toId": "EAM0_GPU0_POWER_W"
+        "toId": "EAM0_GPU0_PWR_W"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/power_GPU_1_POWER_CAP",
         "toNamespace": "power",
-        "toId": "EAM1_GPU1_POWER_CAP_W"
+        "toId": "EAM1_GPU1_CAP_PWR_W"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/power_GPU_1_POWER",
         "toNamespace": "power",
-        "toId": "EAM1_GPU1_POWER_W"
+        "toId": "EAM1_GPU1_PWR_W"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/power_GPU_2_POWER_CAP",
         "toNamespace": "power",
-        "toId": "EAM2_GPU2_POWER_CAP_W"
+        "toId": "EAM2_GPU2_CAP_PWR_W"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/power_GPU_2_POWER",
         "toNamespace": "power",
-        "toId": "EAM2_GPU2_POWER_W"
+        "toId": "EAM2_GPU2_PWR_W"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/power_GPU_3_POWER_CAP",
         "toNamespace": "power",
-        "toId": "EAM3_GPU3_POWER_CAP_W"
+        "toId": "EAM3_GPU3_CAP_PWR_W"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/power_GPU_3_POWER",
         "toNamespace": "power",
-        "toId": "EAM3_GPU3_POWER_W"
+        "toId": "EAM3_GPU3_PWR_W"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/AcceleratorMgmtCard/Sensors/AMC_THERMAL_FPGA_DX",
         "toNamespace": "temperature",
-        "toId": "AMC_THERMAL_FPGA_DX_C"
+        "toId": "AMC_THERMAL_FPGA_DX_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/AcceleratorMgmtCard/Sensors/temperature_AMC_THERMAL_SENSOR_1",
         "toNamespace": "temperature",
-        "toId": "AMC_THERMAL_SENSOR1_C"
+        "toId": "AMC_THERMAL_SENSOR1_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/AcceleratorMgmtCard/Sensors/temperature_AMC_THERMAL_SENSOR_2",
         "toNamespace": "temperature",
-        "toId": "AMC_THERMAL_SENSOR2_C"
+        "toId": "AMC_THERMAL_SENSOR2_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/AcceleratorMgmtCard/Sensors/temperature_AMC_THERMAL_SENSOR_3",
         "toNamespace": "temperature",
-        "toId": "AMC_THERMAL_SENSOR3_C"
+        "toId": "AMC_THERMAL_SENSOR3_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/AcceleratorMgmtCard/Sensors/temperature_AMC_THERMAL_SENSOR_4",
         "toNamespace": "temperature",
-        "toId": "AMC_THERMAL_SENSOR4_C"
+        "toId": "AMC_THERMAL_SENSOR4_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/AcceleratorMgmtCard/Sensors/temperature_AMC_FPGA_THERMAL_DIODE",
         "toNamespace": "temperature",
-        "toId": "AMC_FPGA_THERMAL_DIODE_C"
+        "toId": "AMC_FPGA_THERMAL_DIODE_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/AcceleratorMgmtCard/Sensors/temperature_FPGA_DIE_TEMP",
@@ -736,7 +736,7 @@
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_54V_FUSE_TEMP_PEAK",
         "toNamespace": "temperature",
-        "toId": "EAM0_54V_FUSE_TEMP_PEAK_C"
+        "toId": "EAM0_54V_FUSE_PEAK_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_FPGA_DIE_TEMP",
@@ -746,22 +746,22 @@
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_GPU_THERMAL_SENSOR_0",
         "toNamespace": "temperature",
-        "toId": "EAM0_GPU_THERMAL_SENSOR0_C"
+        "toId": "EAM0_GPU_THERMAL_SENSOR0_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_GPU_THERMAL_SENSOR_1",
         "toNamespace": "temperature",
-        "toId": "EAM0_GPU_THERMAL_SENSOR1_C"
+        "toId": "EAM0_GPU_THERMAL_SENSOR1_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_GPU_THERMAL_SENSOR_2",
         "toNamespace": "temperature",
-        "toId": "EAM0_GPU_THERMAL_SENSOR2_C"
+        "toId": "EAM0_GPU_THERMAL_SENSOR2_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_GPU_THERMAL_SENSOR_3",
         "toNamespace": "temperature",
-        "toId": "EAM0_GPU_THERMAL_SENSOR3_C"
+        "toId": "EAM0_GPU_THERMAL_SENSOR3_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_GPU_VDDAN_075_TEMP",
@@ -796,57 +796,57 @@
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_INLET_THERMISTOR",
         "toNamespace": "temperature",
-        "toId": "EAM0_INLET_THERMISTOR_C"
+        "toId": "EAM0_INLET_THERMISTOR_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_PCB_TEMP_SENSOR_0",
         "toNamespace": "temperature",
-        "toId": "EAM0_PCB_TEMP_SENSOR0_C"
+        "toId": "EAM0_PCB_SENSOR0_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_PCB_TEMP_SENSOR_1",
         "toNamespace": "temperature",
-        "toId": "EAM0_PCB_TEMP_SENSOR1_C"
+        "toId": "EAM0_PCB_SENSOR1_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_PCB_TEMP_SENSOR_2",
         "toNamespace": "temperature",
-        "toId": "EAM0_PCB_TEMP_SENSOR2_C"
+        "toId": "EAM0_PCB_SENSOR2_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_PCB_TEMP_SENSOR_3",
         "toNamespace": "temperature",
-        "toId": "EAM0_PCB_TEMP_SENSOR3_C"
+        "toId": "EAM0_PCB_SENSOR3_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_PCB_TEMP_SENSOR_4",
         "toNamespace": "temperature",
-        "toId": "EAM0_PCB_TEMP_SENSOR4_C"
+        "toId": "EAM0_PCB_SENSOR4_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_PCB_TEMP_SENSOR_5",
         "toNamespace": "temperature",
-        "toId": "EAM0_PCB_TEMP_SENSOR5_C"
+        "toId": "EAM0_PCB_SENSOR5_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_PCB_TEMP_SENSOR_6",
         "toNamespace": "temperature",
-        "toId": "EAM0_PCB_TEMP_SENSOR6_C"
+        "toId": "EAM0_PCB_SENSOR6_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_PCB_TEMP_SENSOR_7",
         "toNamespace": "temperature",
-        "toId": "EAM0_PCB_TEMP_SENSOR7_C"
+        "toId": "EAM0_PCB_SENSOR7_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_PCB_TEMP_SENSOR_8",
         "toNamespace": "temperature",
-        "toId": "EAM0_PCB_TEMP_SENSOR8_C"
+        "toId": "EAM0_PCB_SENSOR8_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_PCB_TEMP_SENSOR_9",
         "toNamespace": "temperature",
-        "toId": "EAM0_PCB_TEMP_SENSOR9_C"
+        "toId": "EAM0_PCB_SENSOR9_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/temperature_EAM_0_VDD_18_HBM_B_TEMP",
@@ -976,7 +976,7 @@
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_54V_FUSE_TEMP_PEAK",
         "toNamespace": "temperature",
-        "toId": "EAM1_54V_FUSE_TEMP_PEAK_C"
+        "toId": "EAM1_54V_FUSE_PEAK_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_FPGA_DIE_TEMP",
@@ -986,22 +986,22 @@
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_GPU_THERMAL_SENSOR_0",
         "toNamespace": "temperature",
-        "toId": "EAM1_GPU_THERMAL_SENSOR0_C"
+        "toId": "EAM1_GPU_THERMAL_SENSOR0_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_GPU_THERMAL_SENSOR_1",
         "toNamespace": "temperature",
-        "toId": "EAM1_GPU_THERMAL_SENSOR1_C"
+        "toId": "EAM1_GPU_THERMAL_SENSOR1_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_GPU_THERMAL_SENSOR_2",
         "toNamespace": "temperature",
-        "toId": "EAM1_GPU_THERMAL_SENSOR2_C"
+        "toId": "EAM1_GPU_THERMAL_SENSOR2_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_GPU_THERMAL_SENSOR_3",
         "toNamespace": "temperature",
-        "toId": "EAM1_GPU_THERMAL_SENSOR3_C"
+        "toId": "EAM1_GPU_THERMAL_SENSOR3_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_GPU_VDDAN_075_TEMP",
@@ -1036,57 +1036,57 @@
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_INLET_THERMISTOR",
         "toNamespace": "temperature",
-        "toId": "EAM1_INLET_THERMISTOR_C"
+        "toId": "EAM1_INLET_THERMISTOR_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_PCB_TEMP_SENSOR_0",
         "toNamespace": "temperature",
-        "toId": "EAM1_PCB_TEMP_SENSOR0_C"
+        "toId": "EAM1_PCB_SENSOR0_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_PCB_TEMP_SENSOR_1",
         "toNamespace": "temperature",
-        "toId": "EAM1_PCB_TEMP_SENSOR1_C"
+        "toId": "EAM1_PCB_SENSOR1_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_PCB_TEMP_SENSOR_2",
         "toNamespace": "temperature",
-        "toId": "EAM1_PCB_TEMP_SENSOR2_C"
+        "toId": "EAM1_PCB_SENSOR2_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_PCB_TEMP_SENSOR_3",
         "toNamespace": "temperature",
-        "toId": "EAM1_PCB_TEMP_SENSOR3_C"
+        "toId": "EAM1_PCB_SENSOR3_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_PCB_TEMP_SENSOR_4",
         "toNamespace": "temperature",
-        "toId": "EAM1_PCB_TEMP_SENSOR4_C"
+        "toId": "EAM1_PCB_SENSOR4_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_PCB_TEMP_SENSOR_5",
         "toNamespace": "temperature",
-        "toId": "EAM1_PCB_TEMP_SENSOR5_C"
+        "toId": "EAM1_PCB_SENSOR5_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_PCB_TEMP_SENSOR_6",
         "toNamespace": "temperature",
-        "toId": "EAM1_PCB_TEMP_SENSOR6_C"
+        "toId": "EAM1_PCB_SENSOR6_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_PCB_TEMP_SENSOR_7",
         "toNamespace": "temperature",
-        "toId": "EAM1_PCB_TEMP_SENSOR7_C"
+        "toId": "EAM1_PCB_SENSOR7_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_PCB_TEMP_SENSOR_8",
         "toNamespace": "temperature",
-        "toId": "EAM1_PCB_TEMP_SENSOR8_C"
+        "toId": "EAM1_PCB_SENSOR8_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_PCB_TEMP_SENSOR_9",
         "toNamespace": "temperature",
-        "toId": "EAM1_PCB_TEMP_SENSOR9_C"
+        "toId": "EAM1_PCB_SENSOR9_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/temperature_EAM_1_VDD_18_HBM_B_TEMP",
@@ -1216,7 +1216,7 @@
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_54V_FUSE_TEMP_PEAK",
         "toNamespace": "temperature",
-        "toId": "EAM2_54V_FUSE_TEMP_PEAK_C"
+        "toId": "EAM2_54V_FUSE_PEAK_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_FPGA_DIE_TEMP",
@@ -1226,22 +1226,22 @@
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_GPU_THERMAL_SENSOR_0",
         "toNamespace": "temperature",
-        "toId": "EAM2_GPU_THERMAL_SENSOR0_C"
+        "toId": "EAM2_GPU_THERMAL_SENSOR0_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_GPU_THERMAL_SENSOR_1",
         "toNamespace": "temperature",
-        "toId": "EAM2_GPU_THERMAL_SENSOR1_C"
+        "toId": "EAM2_GPU_THERMAL_SENSOR1_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_GPU_THERMAL_SENSOR_2",
         "toNamespace": "temperature",
-        "toId": "EAM2_GPU_THERMAL_SENSOR2_C"
+        "toId": "EAM2_GPU_THERMAL_SENSOR2_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_GPU_THERMAL_SENSOR_3",
         "toNamespace": "temperature",
-        "toId": "EAM2_GPU_THERMAL_SENSOR3_C"
+        "toId": "EAM2_GPU_THERMAL_SENSOR3_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_GPU_VDDAN_075_TEMP",
@@ -1276,57 +1276,57 @@
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_INLET_THERMISTOR",
         "toNamespace": "temperature",
-        "toId": "EAM2_INLET_THERMISTOR_C"
+        "toId": "EAM2_INLET_THERMISTOR_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_PCB_TEMP_SENSOR_0",
         "toNamespace": "temperature",
-        "toId": "EAM2_PCB_TEMP_SENSOR0_C"
+        "toId": "EAM2_PCB_SENSOR0_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_PCB_TEMP_SENSOR_1",
         "toNamespace": "temperature",
-        "toId": "EAM2_PCB_TEMP_SENSOR1_C"
+        "toId": "EAM2_PCB_SENSOR1_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_PCB_TEMP_SENSOR_2",
         "toNamespace": "temperature",
-        "toId": "EAM2_PCB_TEMP_SENSOR2_C"
+        "toId": "EAM2_PCB_SENSOR2_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_PCB_TEMP_SENSOR_3",
         "toNamespace": "temperature",
-        "toId": "EAM2_PCB_TEMP_SENSOR3_C"
+        "toId": "EAM2_PCB_SENSOR3_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_PCB_TEMP_SENSOR_4",
         "toNamespace": "temperature",
-        "toId": "EAM2_PCB_TEMP_SENSOR4_C"
+        "toId": "EAM2_PCB_SENSOR4_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_PCB_TEMP_SENSOR_5",
         "toNamespace": "temperature",
-        "toId": "EAM2_PCB_TEMP_SENSOR5_C"
+        "toId": "EAM2_PCB_SENSOR5_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_PCB_TEMP_SENSOR_6",
         "toNamespace": "temperature",
-        "toId": "EAM2_PCB_TEMP_SENSOR6_C"
+        "toId": "EAM2_PCB_SENSOR6_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_PCB_TEMP_SENSOR_7",
         "toNamespace": "temperature",
-        "toId": "EAM2_PCB_TEMP_SENSOR7_C"
+        "toId": "EAM2_PCB_SENSOR7_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_PCB_TEMP_SENSOR_8",
         "toNamespace": "temperature",
-        "toId": "EAM2_PCB_TEMP_SENSOR8_C"
+        "toId": "EAM2_PCB_SENSOR8_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_PCB_TEMP_SENSOR_9",
         "toNamespace": "temperature",
-        "toId": "EAM2_PCB_TEMP_SENSOR9_C"
+        "toId": "EAM2_PCB_SENSOR9_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/temperature_EAM_2_VDD_18_HBM_B_TEMP",
@@ -1456,7 +1456,7 @@
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_54V_FUSE_TEMP_PEAK",
         "toNamespace": "temperature",
-        "toId": "EAM3_54V_FUSE_TEMP_PEAK_C"
+        "toId": "EAM3_54V_FUSE_PEAK_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_FPGA_DIE_TEMP",
@@ -1466,22 +1466,22 @@
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_GPU_THERMAL_SENSOR_0",
         "toNamespace": "temperature",
-        "toId": "EAM3_GPU_THERMAL_SENSOR0_C"
+        "toId": "EAM3_GPU_THERMAL_SENSOR0_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_GPU_THERMAL_SENSOR_1",
         "toNamespace": "temperature",
-        "toId": "EAM3_GPU_THERMAL_SENSOR1_C"
+        "toId": "EAM3_GPU_THERMAL_SENSOR1_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_GPU_THERMAL_SENSOR_2",
         "toNamespace": "temperature",
-        "toId": "EAM3_GPU_THERMAL_SENSOR2_C"
+        "toId": "EAM3_GPU_THERMAL_SENSOR2_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_GPU_THERMAL_SENSOR_3",
         "toNamespace": "temperature",
-        "toId": "EAM3_GPU_THERMAL_SENSOR3_C"
+        "toId": "EAM3_GPU_THERMAL_SENSOR3_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_GPU_VDDAN_075_TEMP",
@@ -1516,57 +1516,57 @@
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_INLET_THERMISTOR",
         "toNamespace": "temperature",
-        "toId": "EAM3_INLET_THERMISTOR_C"
+        "toId": "EAM3_INLET_THERMISTOR_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_PCB_TEMP_SENSOR_0",
         "toNamespace": "temperature",
-        "toId": "EAM3_PCB_TEMP_SENSOR0_C"
+        "toId": "EAM3_PCB_SENSOR0_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_PCB_TEMP_SENSOR_1",
         "toNamespace": "temperature",
-        "toId": "EAM3_PCB_TEMP_SENSOR1_C"
+        "toId": "EAM3_PCB_SENSOR1_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_PCB_TEMP_SENSOR_2",
         "toNamespace": "temperature",
-        "toId": "EAM3_PCB_TEMP_SENSOR2_C"
+        "toId": "EAM3_PCB_SENSOR2_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_PCB_TEMP_SENSOR_3",
         "toNamespace": "temperature",
-        "toId": "EAM3_PCB_TEMP_SENSOR3_C"
+        "toId": "EAM3_PCB_SENSOR3_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_PCB_TEMP_SENSOR_4",
         "toNamespace": "temperature",
-        "toId": "EAM3_PCB_TEMP_SENSOR4_C"
+        "toId": "EAM3_PCB_SENSOR4_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_PCB_TEMP_SENSOR_5",
         "toNamespace": "temperature",
-        "toId": "EAM3_PCB_TEMP_SENSOR5_C"
+        "toId": "EAM3_PCB_SENSOR5_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_PCB_TEMP_SENSOR_6",
         "toNamespace": "temperature",
-        "toId": "EAM3_PCB_TEMP_SENSOR6_C"
+        "toId": "EAM3_PCB_SENSOR6_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_PCB_TEMP_SENSOR_7",
         "toNamespace": "temperature",
-        "toId": "EAM3_PCB_TEMP_SENSOR7_C"
+        "toId": "EAM3_PCB_SENSOR7_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_PCB_TEMP_SENSOR_8",
         "toNamespace": "temperature",
-        "toId": "EAM3_PCB_TEMP_SENSOR8_C"
+        "toId": "EAM3_PCB_SENSOR8_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_PCB_TEMP_SENSOR_9",
         "toNamespace": "temperature",
-        "toId": "EAM3_PCB_TEMP_SENSOR9_C"
+        "toId": "EAM3_PCB_SENSOR9_TEMP_C"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/temperature_EAM_3_VDD_18_HBM_B_TEMP",
@@ -1681,602 +1681,602 @@
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_065_UCIEAM_C_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_065_UCIEAM_C_VOLTAGE_V"
+        "toId": "EAM0_065_UCIEAM_C_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_3V3_STBY_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_3V3_STBY_VOLTAGE_V"
+        "toId": "EAM0_3V3_STBY_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_54V_FUSE_IN_VOLTAGE_MIN",
         "toNamespace": "voltage",
-        "toId": "EAM0_54V_FUSE_IN_VOLTAGE_MIN_V"
+        "toId": "EAM0_54V_FUSE_IN_MIN_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_54V_FUSE_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_54V_FUSE_VOLTAGE_V"
+        "toId": "EAM0_54V_FUSE_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_GPU_VDDAN_075_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_GPU_VDDAN_075_VOLTAGE_V"
+        "toId": "EAM0_GPU_VDDAN_075_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_IBC1_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_IBC1_VOLTAGE_V"
+        "toId": "EAM0_IBC1_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_IBC2_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_IBC2_VOLTAGE_V"
+        "toId": "EAM0_IBC2_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_IBC3_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_IBC3_VOLTAGE_V"
+        "toId": "EAM0_IBC3_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDD_18_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDD_18_HBM_B_VOLTAGE_V"
+        "toId": "EAM0_VDD_18_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDD_18_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDD_18_HBM_D_VOLTAGE_V"
+        "toId": "EAM0_VDD_18_HBM_D_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDD_18_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDD_18_VOLTAGE_V"
+        "toId": "EAM0_VDD_18_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDDAN_075_GTA_A_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDDAN_075_GTA_A_VOLTAGE_V"
+        "toId": "EAM0_VDDAN_075_GTA_A_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDDAN_075_GTA_C_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDDAN_075_GTA_C_VOLTAGE_V"
+        "toId": "EAM0_VDDAN_075_GTA_C_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDDCR_075_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDDCR_075_HBM_B_VOLTAGE_V"
+        "toId": "EAM0_VDDCR_075_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDDCR_075_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDDCR_075_HBM_D_VOLTAGE_V"
+        "toId": "EAM0_VDDCR_075_HBM_D_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDDCR_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDDCR_HBM_B_VOLTAGE_V"
+        "toId": "EAM0_VDDCR_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDDCR_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDDCR_HBM_D_VOLTAGE_V"
+        "toId": "EAM0_VDDCR_HBM_D_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDDCR_SOCIO_A_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDDCR_SOCIO_A_VOLTAGE_V"
+        "toId": "EAM0_VDDCR_SOCIO_A_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDDCR_SOCIO_C_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDDCR_SOCIO_C_VOLTAGE_V"
+        "toId": "EAM0_VDDCR_SOCIO_C_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDDCR_X0_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDDCR_X0_VOLTAGE_V"
+        "toId": "EAM0_VDDCR_X0_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDDCR_X1_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDDCR_X1_VOLTAGE_V"
+        "toId": "EAM0_VDDCR_X1_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDDIO_04_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDDIO_04_HBM_B_VOLTAGE_V"
+        "toId": "EAM0_VDDIO_04_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDDIO_04_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDDIO_04_HBM_D_VOLTAGE_V"
+        "toId": "EAM0_VDDIO_04_HBM_D_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDDIO_065_UCIEAA_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDDIO_065_UCIEAA_VOLTAGE_V"
+        "toId": "EAM0_VDDIO_065_UCIEAA_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDDIO_065_UCIEAM_A_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDDIO_065_UCIEAM_A_VOLTAGE_V"
+        "toId": "EAM0_VDDIO_065_UCIEAM_A_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDDIO_075_UCIE_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDDIO_075_UCIE_VOLTAGE_V"
+        "toId": "EAM0_VDDIO_075_UCIE_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDDIO_11_GTA_A_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDDIO_11_GTA_A_VOLTAGE_V"
+        "toId": "EAM0_VDDIO_11_GTA_A_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDDIO_11_GTA_C_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDDIO_11_GTA_C_VOLTAGE_V"
+        "toId": "EAM0_VDDIO_11_GTA_C_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDDIO_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDDIO_HBM_B_VOLTAGE_V"
+        "toId": "EAM0_VDDIO_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_0/Sensors/voltage_EAM_0_VDDIO_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM0_VDDIO_HBM_D_VOLTAGE_V"
+        "toId": "EAM0_VDDIO_HBM_D_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_065_UCIEAM_C_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_065_UCIEAM_C_VOLTAGE_V"
+        "toId": "EAM1_065_UCIEAM_C_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_3V3_STBY_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_3V3_STBY_VOLTAGE_V"
+        "toId": "EAM1_3V3_STBY_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_54V_FUSE_IN_VOLTAGE_MIN",
         "toNamespace": "voltage",
-        "toId": "EAM1_54V_FUSE_IN_VOLTAGE_MIN_V"
+        "toId": "EAM1_54V_FUSE_IN_MIN_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_54V_FUSE_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_54V_FUSE_VOLTAGE_V"
+        "toId": "EAM1_54V_FUSE_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_GPU_VDDAN_075_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_GPU_VDDAN_075_VOLTAGE_V"
+        "toId": "EAM1_GPU_VDDAN_075_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_IBC1_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_IBC1_VOLTAGE_V"
+        "toId": "EAM1_IBC1_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_IBC2_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_IBC2_VOLTAGE_V"
+        "toId": "EAM1_IBC2_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_IBC3_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_IBC3_VOLTAGE_V"
+        "toId": "EAM1_IBC3_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDD_18_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDD_18_HBM_B_VOLTAGE_V"
+        "toId": "EAM1_VDD_18_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDD_18_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDD_18_HBM_D_VOLTAGE_V"
+        "toId": "EAM1_VDD_18_HBM_D_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDD_18_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDD_18_VOLTAGE_V"
+        "toId": "EAM1_VDD_18_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDDAN_075_GTA_A_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDDAN_075_GTA_A_VOLTAGE_V"
+        "toId": "EAM1_VDDAN_075_GTA_A_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDDAN_075_GTA_C_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDDAN_075_GTA_C_VOLTAGE_V"
+        "toId": "EAM1_VDDAN_075_GTA_C_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDDCR_075_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDDCR_075_HBM_B_VOLTAGE_V"
+        "toId": "EAM1_VDDCR_075_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDDCR_075_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDDCR_075_HBM_D_VOLTAGE_V"
+        "toId": "EAM1_VDDCR_075_HBM_D_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDDCR_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDDCR_HBM_B_VOLTAGE_V"
+        "toId": "EAM1_VDDCR_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDDCR_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDDCR_HBM_D_VOLTAGE_V"
+        "toId": "EAM1_VDDCR_HBM_D_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDDCR_SOCIO_A_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDDCR_SOCIO_A_VOLTAGE_V"
+        "toId": "EAM1_VDDCR_SOCIO_A_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDDCR_SOCIO_C_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDDCR_SOCIO_C_VOLTAGE_V"
+        "toId": "EAM1_VDDCR_SOCIO_C_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDDCR_X0_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDDCR_X0_VOLTAGE_V"
+        "toId": "EAM1_VDDCR_X0_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDDCR_X1_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDDCR_X1_VOLTAGE_V"
+        "toId": "EAM1_VDDCR_X1_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDDIO_04_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDDIO_04_HBM_B_VOLTAGE_V"
+        "toId": "EAM1_VDDIO_04_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDDIO_04_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDDIO_04_HBM_D_VOLTAGE_V"
+        "toId": "EAM1_VDDIO_04_HBM_D_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDDIO_065_UCIEAA_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDDIO_065_UCIEAA_VOLTAGE_V"
+        "toId": "EAM1_VDDIO_065_UCIEAA_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDDIO_065_UCIEAM_A_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDDIO_065_UCIEAM_A_VOLTAGE_V"
+        "toId": "EAM1_VDDIO_065_UCIEAM_A_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDDIO_075_UCIE_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDDIO_075_UCIE_VOLTAGE_V"
+        "toId": "EAM1_VDDIO_075_UCIE_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDDIO_11_GTA_A_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDDIO_11_GTA_A_VOLTAGE_V"
+        "toId": "EAM1_VDDIO_11_GTA_A_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDDIO_11_GTA_C_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDDIO_11_GTA_C_VOLTAGE_V"
+        "toId": "EAM1_VDDIO_11_GTA_C_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDDIO_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDDIO_HBM_B_VOLTAGE_V"
+        "toId": "EAM1_VDDIO_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_1/Sensors/voltage_EAM_1_VDDIO_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM1_VDDIO_HBM_D_VOLTAGE_V"
+        "toId": "EAM1_VDDIO_HBM_D_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_065_UCIEAM_C_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_065_UCIEAM_C_VOLTAGE_V"
+        "toId": "EAM2_065_UCIEAM_C_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_3V3_STBY_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_3V3_STBY_VOLTAGE_V"
+        "toId": "EAM2_3V3_STBY_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_54V_FUSE_IN_VOLTAGE_MIN",
         "toNamespace": "voltage",
-        "toId": "EAM2_54V_FUSE_IN_VOLTAGE_MIN_V"
+        "toId": "EAM2_54V_FUSE_IN_MIN_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_54V_FUSE_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_54V_FUSE_VOLTAGE_V"
+        "toId": "EAM2_54V_FUSE_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_GPU_VDDAN_075_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_GPU_VDDAN_075_VOLTAGE_V"
+        "toId": "EAM2_GPU_VDDAN_075_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_IBC1_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_IBC1_VOLTAGE_V"
+        "toId": "EAM2_IBC1_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_IBC2_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_IBC2_VOLTAGE_V"
+        "toId": "EAM2_IBC2_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_IBC3_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_IBC3_VOLTAGE_V"
+        "toId": "EAM2_IBC3_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDD_18_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDD_18_HBM_B_VOLTAGE_V"
+        "toId": "EAM2_VDD_18_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDD_18_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDD_18_HBM_D_VOLTAGE_V"
+        "toId": "EAM2_VDD_18_HBM_D_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDD_18_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDD_18_VOLTAGE_V"
+        "toId": "EAM2_VDD_18_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDDAN_075_GTA_A_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDDAN_075_GTA_A_VOLTAGE_V"
+        "toId": "EAM2_VDDAN_075_GTA_A_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDDAN_075_GTA_C_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDDAN_075_GTA_C_VOLTAGE_V"
+        "toId": "EAM2_VDDAN_075_GTA_C_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDDCR_075_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDDCR_075_HBM_B_VOLTAGE_V"
+        "toId": "EAM2_VDDCR_075_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDDCR_075_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDDCR_075_HBM_D_VOLTAGE_V"
+        "toId": "EAM2_VDDCR_075_HBM_D_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDDCR_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDDCR_HBM_B_VOLTAGE_V"
+        "toId": "EAM2_VDDCR_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDDCR_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDDCR_HBM_D_VOLTAGE_V"
+        "toId": "EAM2_VDDCR_HBM_D_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDDCR_SOCIO_A_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDDCR_SOCIO_A_VOLTAGE_V"
+        "toId": "EAM2_VDDCR_SOCIO_A_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDDCR_SOCIO_C_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDDCR_SOCIO_C_VOLTAGE_V"
+        "toId": "EAM2_VDDCR_SOCIO_C_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDDCR_X0_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDDCR_X0_VOLTAGE_V"
+        "toId": "EAM2_VDDCR_X0_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDDCR_X1_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDDCR_X1_VOLTAGE_V"
+        "toId": "EAM2_VDDCR_X1_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDDIO_04_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDDIO_04_HBM_B_VOLTAGE_V"
+        "toId": "EAM2_VDDIO_04_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDDIO_04_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDDIO_04_HBM_D_VOLTAGE_V"
+        "toId": "EAM2_VDDIO_04_HBM_D_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDDIO_065_UCIEAA_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDDIO_065_UCIEAA_VOLTAGE_V"
+        "toId": "EAM2_VDDIO_065_UCIEAA_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDDIO_065_UCIEAM_A_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDDIO_065_UCIEAM_A_VOLTAGE_V"
+        "toId": "EAM2_VDDIO_065_UCIEAM_A_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDDIO_075_UCIE_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDDIO_075_UCIE_VOLTAGE_V"
+        "toId": "EAM2_VDDIO_075_UCIE_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDDIO_11_GTA_A_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDDIO_11_GTA_A_VOLTAGE_V"
+        "toId": "EAM2_VDDIO_11_GTA_A_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDDIO_11_GTA_C_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDDIO_11_GTA_C_VOLTAGE_V"
+        "toId": "EAM2_VDDIO_11_GTA_C_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDDIO_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDDIO_HBM_B_VOLTAGE_V"
+        "toId": "EAM2_VDDIO_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_2/Sensors/voltage_EAM_2_VDDIO_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM2_VDDIO_HBM_D_VOLTAGE_V"
+        "toId": "EAM2_VDDIO_HBM_D_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_065_UCIEAM_C_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_065_UCIEAM_C_VOLTAGE_V"
+        "toId": "EAM3_065_UCIEAM_C_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_3V3_STBY_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_3V3_STBY_VOLTAGE_V"
+        "toId": "EAM3_3V3_STBY_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_54V_FUSE_IN_VOLTAGE_MIN",
         "toNamespace": "voltage",
-        "toId": "EAM3_54V_FUSE_IN_VOLTAGE_MIN_V"
+        "toId": "EAM3_54V_FUSE_IN_MIN_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_54V_FUSE_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_54V_FUSE_VOLTAGE_V"
+        "toId": "EAM3_54V_FUSE_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_GPU_VDDAN_075_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_GPU_VDDAN_075_VOLTAGE_V"
+        "toId": "EAM3_GPU_VDDAN_075_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_IBC1_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_IBC1_VOLTAGE_V"
+        "toId": "EAM3_IBC1_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_IBC2_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_IBC2_VOLTAGE_V"
+        "toId": "EAM3_IBC2_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_IBC3_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_IBC3_VOLTAGE_V"
+        "toId": "EAM3_IBC3_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDD_18_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDD_18_HBM_B_VOLTAGE_V"
+        "toId": "EAM3_VDD_18_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDD_18_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDD_18_HBM_D_VOLTAGE_V"
+        "toId": "EAM3_VDD_18_HBM_D_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDD_18_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDD_18_VOLTAGE_V"
+        "toId": "EAM3_VDD_18_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDDAN_075_GTA_A_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDDAN_075_GTA_A_VOLTAGE_V"
+        "toId": "EAM3_VDDAN_075_GTA_A_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDDAN_075_GTA_C_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDDAN_075_GTA_C_VOLTAGE_V"
+        "toId": "EAM3_VDDAN_075_GTA_C_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDDCR_075_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDDCR_075_HBM_B_VOLTAGE_V"
+        "toId": "EAM3_VDDCR_075_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDDCR_075_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDDCR_075_HBM_D_VOLTAGE_V"
+        "toId": "EAM3_VDDCR_075_HBM_D_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDDCR_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDDCR_HBM_B_VOLTAGE_V"
+        "toId": "EAM3_VDDCR_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDDCR_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDDCR_HBM_D_VOLTAGE_V"
+        "toId": "EAM3_VDDCR_HBM_D_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDDCR_SOCIO_A_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDDCR_SOCIO_A_VOLTAGE_V"
+        "toId": "EAM3_VDDCR_SOCIO_A_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDDCR_SOCIO_C_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDDCR_SOCIO_C_VOLTAGE_V"
+        "toId": "EAM3_VDDCR_SOCIO_C_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDDCR_X0_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDDCR_X0_VOLTAGE_V"
+        "toId": "EAM3_VDDCR_X0_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDDCR_X1_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDDCR_X1_VOLTAGE_V"
+        "toId": "EAM3_VDDCR_X1_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDDIO_04_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDDIO_04_HBM_B_VOLTAGE_V"
+        "toId": "EAM3_VDDIO_04_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDDIO_04_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDDIO_04_HBM_D_VOLTAGE_V"
+        "toId": "EAM3_VDDIO_04_HBM_D_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDDIO_065_UCIEAA_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDDIO_065_UCIEAA_VOLTAGE_V"
+        "toId": "EAM3_VDDIO_065_UCIEAA_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDDIO_065_UCIEAM_A_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDDIO_065_UCIEAM_A_VOLTAGE_V"
+        "toId": "EAM3_VDDIO_065_UCIEAM_A_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDDIO_075_UCIE_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDDIO_075_UCIE_VOLTAGE_V"
+        "toId": "EAM3_VDDIO_075_UCIE_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDDIO_11_GTA_A_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDDIO_11_GTA_A_VOLTAGE_V"
+        "toId": "EAM3_VDDIO_11_GTA_A_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDDIO_11_GTA_C_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDDIO_11_GTA_C_VOLTAGE_V"
+        "toId": "EAM3_VDDIO_11_GTA_C_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDDIO_HBM_B_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDDIO_HBM_B_VOLTAGE_V"
+        "toId": "EAM3_VDDIO_HBM_B_VOLT_V"
       },
       {
         "fromUrl": "/redfish/v1/Chassis/EAM_3/Sensors/voltage_EAM_3_VDDIO_HBM_D_VOLTAGE",
         "toNamespace": "voltage",
-        "toId": "EAM3_VDDIO_HBM_D_VOLTAGE_V"
+        "toId": "EAM3_VDDIO_HBM_D_VOLT_V"
       }
     ]
   }

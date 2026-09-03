@@ -1,4 +1,4 @@
-From b7efb7cc681c23a61d50dc1fd470fc2273de83cf Mon Sep 17 00:00:00 2001
+From c05ebaf2aa4691faab0d99b741bc0821bcbb0d41 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Sun, 2 Aug 2026 08:40:17 -0500
 Subject: [PATCH] plugin: introduce factory interface

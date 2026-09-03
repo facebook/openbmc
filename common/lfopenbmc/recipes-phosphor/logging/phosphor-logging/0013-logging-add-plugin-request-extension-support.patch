@@ -1,4 +1,4 @@
-From fb6eee1426b685875a4fd64b0346a66c3acf9d61 Mon Sep 17 00:00:00 2001
+From a765b3e0f6b692740893a5e461d12c37ddb74041 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Mon, 10 Aug 2026 05:58:43 -0500
 Subject: [PATCH] logging: add plugin request extension support

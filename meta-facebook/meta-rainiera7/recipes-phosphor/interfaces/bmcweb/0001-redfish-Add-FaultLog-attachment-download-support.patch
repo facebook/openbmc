@@ -1,4 +1,4 @@
-From 36214df891ff220558500483fdb8ad32f999513b Mon Sep 17 00:00:00 2001
+From 99aceadb7468b08c8d4f6a2d5b413459c64d5e34 Mon Sep 17 00:00:00 2001
 From: Meghana H <Meghana.H@arm.com>
 Date: Fri, 17 Apr 2026 14:19:47 +0000
 Subject: [PATCH] redfish: Add FaultLog attachment download support
@@ -56,11 +56,51 @@ Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/bmcweb/+/91085]
 Signed-off-by: Meghana H <Meghana.H@arm.com>
 Change-Id: I086de6fcf79b6c8ed92e7668ead61e4215678cb8
 ---
- .../include/utils/log_services_utils.hpp      |  5 ++--
- redfish-core/lib/log_services.hpp             | 25 ++++++++++++++++++-
- redfish-core/src/redfish.cpp                  |  1 +
- 3 files changed, 28 insertions(+), 3 deletions(-)
+ redfish-core/include/utils/dump_utils.hpp         | 15 ++++++++++++++-
+ redfish-core/include/utils/log_services_utils.hpp |  5 +++--
+ redfish-core/lib/manager_logservices_dump.hpp     |  7 +++++++
+ 3 files changed, 24 insertions(+), 3 deletions(-)
 
+diff --git a/redfish-core/include/utils/dump_utils.hpp b/redfish-core/include/utils/dump_utils.hpp
+index 69cd729f..d1ebf599 100644
+--- a/redfish-core/include/utils/dump_utils.hpp
++++ b/redfish-core/include/utils/dump_utils.hpp
+@@ -362,6 +362,12 @@ inline void getDumpEntryCollection(
+                         "{}/{}/attachment", entriesPath, entryID);
+                     thisEntry["AdditionalDataSizeBytes"] = size;
+                 }
++                else if (dumpType == "FaultLog")
++                {
++                    thisEntry["AdditionalDataURI"] = boost::urls::format(
++                        "{}/{}/attachment", entriesPath, entryID);
++                    thisEntry["AdditionalDataSizeBytes"] = size;
++                }
+                 entriesArray.emplace_back(std::move(thisEntry));
+             }
+             asyncResp->res.jsonValue["Members@odata.count"] =
+@@ -465,6 +471,13 @@ inline void getDumpEntryById(
+                                             entryID);
+                     asyncResp->res.jsonValue["AdditionalDataSizeBytes"] = size;
+                 }
++                else if (dumpType == "FaultLog")
++                {
++                    asyncResp->res.jsonValue["AdditionalDataURI"] =
++                        boost::urls::format("{}/{}/attachment", entriesPath,
++                                            entryID);
++                    asyncResp->res.jsonValue["AdditionalDataSizeBytes"] = size;
++                }
+             }
+             if (!foundDumpEntry)
+             {
+@@ -509,7 +522,7 @@ inline void downloadDumpEntry(
+     const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
+     const std::string& entryID, const std::string& dumpType)
+ {
+-    if (dumpType != "BMC" && dumpType != "System")
++    if (dumpType != "BMC" && dumpType != "System" && dumpType != "FaultLog")
+     {
+         BMCWEB_LOG_WARNING("Can't find Dump Entry {}", entryID);
+         messages::resourceNotFound(asyncResp->res, dumpType + " dump", entryID);
 diff --git a/redfish-core/include/utils/log_services_utils.hpp b/redfish-core/include/utils/log_services_utils.hpp
 index 3ed3097a..8637341b 100644
 --- a/redfish-core/include/utils/log_services_utils.hpp
@@ -84,75 +124,24 @@ index 3ed3097a..8637341b 100644
      {
          if (!asyncResp->res.openFd(fd))
          {
-diff --git a/redfish-core/lib/log_services.hpp b/redfish-core/lib/log_services.hpp
-index 57be09c1..c5ae84d4 100644
---- a/redfish-core/lib/log_services.hpp
-+++ b/redfish-core/lib/log_services.hpp
-@@ -346,6 +346,12 @@ inline void getDumpEntryCollection(
-                         "{}/{}/attachment", entriesPath, entryID);
-                     thisEntry["AdditionalDataSizeBytes"] = size;
-                 }
-+                else if (dumpType == "FaultLog")
-+                {
-+                    thisEntry["AdditionalDataURI"] = boost::urls::format(
-+                        "{}/{}/attachment", entriesPath, entryID);
-+                    thisEntry["AdditionalDataSizeBytes"] = size;
-+                }
-                 entriesArray.emplace_back(std::move(thisEntry));
-             }
-             asyncResp->res.jsonValue["Members@odata.count"] =
-@@ -449,6 +455,13 @@ inline void getDumpEntryById(
-                                             entryID);
-                     asyncResp->res.jsonValue["AdditionalDataSizeBytes"] = size;
-                 }
-+                else if (dumpType == "FaultLog")
-+                {
-+                    asyncResp->res.jsonValue["AdditionalDataURI"] =
-+                        boost::urls::format("{}/{}/attachment", entriesPath,
-+                                            entryID);
-+                    asyncResp->res.jsonValue["AdditionalDataSizeBytes"] = size;
-+                }
-             }
-             if (!foundDumpEntry)
-             {
-@@ -493,7 +506,7 @@ inline void downloadDumpEntry(
-     const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
-     const std::string& entryID, const std::string& dumpType)
- {
--    if (dumpType != "BMC" && dumpType != "System")
-+    if (dumpType != "BMC" && dumpType != "System" && dumpType != "FaultLog")
-     {
-         BMCWEB_LOG_WARNING("Can't find Dump Entry {}", entryID);
-         messages::resourceNotFound(asyncResp->res, dumpType + " dump", entryID);
-@@ -1589,6 +1602,16 @@ inline void requestRoutesFaultLogDumpEntry(App& app)
-             handleLogServicesDumpEntryDelete, std::ref(app), "FaultLog"));
- }
+diff --git a/redfish-core/lib/manager_logservices_dump.hpp b/redfish-core/lib/manager_logservices_dump.hpp
+index 82598357..44460d7f 100644
+--- a/redfish-core/lib/manager_logservices_dump.hpp
++++ b/redfish-core/lib/manager_logservices_dump.hpp
+@@ -213,6 +213,13 @@ inline void requestRoutesManagersLogServicesDumpAndFaultLog(App& app)
+         .methods(boost::beast::http::verb::get)(std::bind_front(
+             handleLogServicesDumpEntryGet, std::ref(app), "FaultLog"));
  
-+inline void requestRoutesFaultLogDumpEntryDownload(App& app)
-+{
 +    BMCWEB_ROUTE(
 +        app,
 +        "/redfish/v1/Managers/<str>/LogServices/FaultLog/Entries/<str>/attachment/")
 +        .privileges(redfish::privileges::getLogEntry)
 +        .methods(boost::beast::http::verb::get)(std::bind_front(
 +            handleLogServicesDumpEntryDownloadGet, std::ref(app), "FaultLog"));
-+}
 +
- inline void requestRoutesFaultLogDumpClear(App& app)
- {
      BMCWEB_ROUTE(
-diff --git a/redfish-core/src/redfish.cpp b/redfish-core/src/redfish.cpp
-index a9601000..ea606250 100644
---- a/redfish-core/src/redfish.cpp
-+++ b/redfish-core/src/redfish.cpp
-@@ -171,6 +171,7 @@ RedfishService::RedfishService(App& app)
-         requestRoutesFaultLogDumpService(app);
-         requestRoutesFaultLogDumpEntryCollection(app);
-         requestRoutesFaultLogDumpEntry(app);
-+        requestRoutesFaultLogDumpEntryDownload(app);
-         requestRoutesFaultLogDumpClear(app);
-     }
- 
+         app, "/redfish/v1/Managers/<str>/LogServices/FaultLog/Entries/<str>/")
+         .privileges(redfish::privileges::deleteLogEntry)
 -- 
 2.53.0-Meta
 

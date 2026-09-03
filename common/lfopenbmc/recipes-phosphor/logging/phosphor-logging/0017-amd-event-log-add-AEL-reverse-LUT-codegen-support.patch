@@ -1,4 +1,4 @@
-From 515895f0f2550c318e41faed0f3b96d1228c02dd Mon Sep 17 00:00:00 2001
+From 45cdee87442b47157a9621206deb0094f4984563 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 22 Jul 2026 04:17:17 -0500
 Subject: [PATCH] amd-event-log: add AEL reverse LUT codegen support

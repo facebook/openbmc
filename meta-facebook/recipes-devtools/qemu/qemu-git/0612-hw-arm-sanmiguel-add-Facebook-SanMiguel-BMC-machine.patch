@@ -1,4 +1,4 @@
-From 4731d2aebe7e91f71ba5d6403aa32126ddcb26b6 Mon Sep 17 00:00:00 2001
+From b5955452e251636f1580ec9ec62fa0b20f7390dc Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:11 +0200
 Subject: [PATCH] hw/arm: sanmiguel: add Facebook SanMiguel BMC machine
@@ -171,10 +171,10 @@ index 0000000000..0f766449ae
 +
 +DEFINE_TYPES(aspeed_ast2600_sanmiguel_types)
 diff --git a/hw/arm/meson.build b/hw/arm/meson.build
-index ae07f80c68..96719a8067 100644
+index 384576a4f1..f1c0529b77 100644
 --- a/hw/arm/meson.build
 +++ b/hw/arm/meson.build
-@@ -65,6 +65,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -64,6 +64,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_ast2600_fuji.c',
    'aspeed_ast2600_gb200nvl.c',
    'aspeed_ast2600_rainier.c',

@@ -1,4 +1,4 @@
-From ddc23dbc213c25058089369edc6ed2b50ce70a94 Mon Sep 17 00:00:00 2001
+From c1b6779f6cac2b1a90d90077b1c1f3cce4170e22 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Wed, 29 Jul 2026 23:56:33 -0700
 Subject: [PATCH] log_manager: do not reset entryId on eraseAll
@@ -24,10 +24,10 @@ Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
  2 files changed, 16 insertions(+), 12 deletions(-)
 
 diff --git a/log_manager.cpp b/log_manager.cpp
-index 74a34c1..a0158f9 100644
+index ca9658c..de96f40 100644
 --- a/log_manager.cpp
 +++ b/log_manager.cpp
-@@ -571,7 +571,6 @@ size_t Manager::eraseAll()
+@@ -573,7 +573,6 @@ size_t Manager::eraseAll()
              ++iter;
              erase(e);
          }
@@ -35,7 +35,7 @@ index 74a34c1..a0158f9 100644
      }
      else
      {
-@@ -596,17 +595,6 @@ size_t Manager::eraseAll()
+@@ -598,17 +597,6 @@ size_t Manager::eraseAll()
                  entriesSize--;
              }
          }

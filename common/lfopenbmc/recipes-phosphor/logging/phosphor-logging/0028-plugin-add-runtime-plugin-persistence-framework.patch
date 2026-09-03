@@ -1,4 +1,4 @@
-From db7e13d87369832048a9e0018dc40054115f21d8 Mon Sep 17 00:00:00 2001
+From 20e69954203ec6ed9978472de2b9efec66bb1b5d Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Fri, 28 Aug 2026 07:01:35 -0500
 Subject: [PATCH] plugin: add runtime plugin persistence framework

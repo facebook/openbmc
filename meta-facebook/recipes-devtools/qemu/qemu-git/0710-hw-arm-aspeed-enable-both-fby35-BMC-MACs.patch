@@ -1,4 +1,4 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From 5a2582eec7dee37999047b401c3100f2f5e6f987 Mon Sep 17 00:00:00 2001
 From: Zinc Lim <zinclim@meta.com>
 Date: Mon, 31 Aug 2026 14:24:10 -0700
 Subject: [PATCH] hw/arm/aspeed: enable both fby35 BMC MACs
@@ -19,7 +19,7 @@ Signed-off-by: Zinc Lim <zinclim@meta.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/hw/arm/aspeed_ast2600_fby35.c b/hw/arm/aspeed_ast2600_fby35.c
-index 3999c06575..67490ae1cd 100644
+index 4fc5e12f0e..7f3abd6edd 100644
 --- a/hw/arm/aspeed_ast2600_fby35.c
 +++ b/hw/arm/aspeed_ast2600_fby35.c
 @@ -51,7 +51,7 @@ static void aspeed_machine_fby35_class_init(ObjectClass *oc, const void *data)
@@ -31,5 +31,6 @@ index 3999c06575..67490ae1cd 100644
      amc->i2c_init  = fby35_i2c_init;
      mc->default_ram_size = FBY35_BMC_RAM_SIZE;
      aspeed_machine_class_init_cpus_defaults(mc);
---
+-- 
 2.53.0-Meta
+

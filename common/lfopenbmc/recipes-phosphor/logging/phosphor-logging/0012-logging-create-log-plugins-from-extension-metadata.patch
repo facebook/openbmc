@@ -1,4 +1,4 @@
-From 376ada3c2c22efcd47452f62be97dd00b681720f Mon Sep 17 00:00:00 2001
+From fa1b8481cd086a1c24075b4078255d01deabc7fe Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 5 Aug 2026 07:05:30 -0500
 Subject: [PATCH] logging: create log plugins from extension metadata

@@ -1,4 +1,4 @@
-From a1f404548b9c9c48b37e25c175ecebc979cb6ae5 Mon Sep 17 00:00:00 2001
+From ba60689824575c1ed2b38e3209912609a7eb33d2 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Tue, 25 Aug 2026 02:08:47 -0500
 Subject: [PATCH] plugin: add artifact storage support

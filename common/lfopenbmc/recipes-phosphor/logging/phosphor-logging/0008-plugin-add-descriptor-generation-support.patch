@@ -1,4 +1,4 @@
-From 68f3da1b7758533825d5de9daa226f67c5621c3c Mon Sep 17 00:00:00 2001
+From 638bebc233f32794edcb138cf3534f3d381f4af0 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 5 Aug 2026 05:34:18 -0500
 Subject: [PATCH] plugin: add descriptor generation support

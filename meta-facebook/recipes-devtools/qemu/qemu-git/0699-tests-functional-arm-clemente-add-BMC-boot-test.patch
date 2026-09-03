@@ -1,4 +1,4 @@
-From dbbc1be6f37b50b6aec7dbc2ac5c3d69fdb95328 Mon Sep 17 00:00:00 2001
+From 832e4fae367c621c24a7b6ff65728dc06ebd7fc8 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 6 Aug 2026 11:09:35 +0200
 Subject: [PATCH] tests/functional/arm: clemente: add BMC boot test
@@ -36,7 +36,7 @@ index 81c67e3733..e82274b723 100644
    'aspeed_rainier',
 diff --git a/tests/functional/arm/test_aspeed_clemente.py b/tests/functional/arm/test_aspeed_clemente.py
 new file mode 100644
-index 0000000000..c3feb4941b
+index 0000000000..d30e3662cc
 --- /dev/null
 +++ b/tests/functional/arm/test_aspeed_clemente.py
 @@ -0,0 +1,64 @@

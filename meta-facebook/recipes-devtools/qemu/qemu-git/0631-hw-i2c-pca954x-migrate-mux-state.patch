@@ -1,4 +1,4 @@
-From 4cf7f42588a3821f82c1d6b0275925384d87226a Mon Sep 17 00:00:00 2001
+From be0cb27f3898c3c67dcb215defeef424b857aaa8 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 23 Jul 2026 12:17:51 +0200
 Subject: [PATCH] hw/i2c: pca954x: migrate mux state
@@ -29,7 +29,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  1 file changed, 32 insertions(+)
 
 diff --git a/hw/i2c/i2c_mux_pca954x.c b/hw/i2c/i2c_mux_pca954x.c
-index 81edf6a30c..7b50c7309b 100644
+index f187211fd7..8dfb2b4949 100644
 --- a/hw/i2c/i2c_mux_pca954x.c
 +++ b/hw/i2c/i2c_mux_pca954x.c
 @@ -19,6 +19,10 @@
@@ -51,7 +51,7 @@ index 81edf6a30c..7b50c7309b 100644
  #include "qemu/log.h"
  #include "qemu/queue.h"
  #include "qom/object.h"
-@@ -285,6 +290,32 @@ static void pca954x_init(Object *obj)
+@@ -280,6 +285,32 @@ static void pca954x_init(Object *obj)
      }
  }
  
@@ -84,7 +84,7 @@ index 81edf6a30c..7b50c7309b 100644
  static const Property pca954x_props[] = {
      DEFINE_PROP_STRING("name", Pca954xState, name),
  };
-@@ -302,6 +333,7 @@ static void pca954x_class_init(ObjectClass *klass, const void *data)
+@@ -297,6 +328,7 @@ static void pca954x_class_init(ObjectClass *klass, const void *data)
  
      dc->desc = "Pca954x i2c-mux";
      dc->realize = pca954x_realize;

@@ -1,4 +1,4 @@
-From 8662946eac9c0814fff9a52a785a1f30d49bbcdd Mon Sep 17 00:00:00 2001
+From fc9e74b4277eb59cda3363ccb2beae9f910c9965 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 13 Aug 2026 06:41:49 -0500
 Subject: [PATCH] plugin: Add extension payload builder support

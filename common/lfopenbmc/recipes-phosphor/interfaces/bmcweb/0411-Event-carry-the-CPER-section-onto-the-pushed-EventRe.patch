@@ -1,5 +1,6 @@
+From d61e0b4e0626854f232c2fa3a29b05fc2547bc75 Mon Sep 17 00:00:00 2001
 From: Pete O_o <pmb@meta.com>
-Date: Tue, 2 Sep 2026 14:00:00 -0700
+Date: Wed, 2 Sep 2026 14:00:00 -0700
 Subject: [PATCH] Event: carry the CPER section onto the pushed EventRecord
 
 Patch 0410 renders CPER on the Redfish LogEntry resource, but the realtime
@@ -42,9 +43,21 @@ carried through with the vendor blob re-parsed into a real object, that an
 empty SectionType is omitted rather than emitted blank, and that no Links
 member appears on the record. The two existing cases now assert the
 no-CPER path leaves the record untouched.
+---
+ docs/Redfish.md                               |  5 ++
+ redfish-core/include/dbus_log_watcher.hpp     |  4 ++
+ .../include/event_logs_object_type.hpp        |  8 +++
+ redfish-core/src/dbus_log_watcher.cpp         | 56 ++++++++++++---
+ redfish-core/src/event_log.cpp                |  8 +++
+ redfish-core/src/subscription.cpp             |  4 +-
+ .../include/dbus_log_watcher_test.cpp         | 68 +++++++++++++++++--
+ 7 files changed, 140 insertions(+), 13 deletions(-)
+
+diff --git a/docs/Redfish.md b/docs/Redfish.md
+index 76e85dc6..95e1210b 100644
 --- a/docs/Redfish.md
 +++ b/docs/Redfish.md
-@@ -637,7 +637,12 @@
+@@ -639,7 +639,12 @@ Fields common to all schemas
  #### Event
  
  - @odata.type
@@ -57,9 +70,11 @@ no-CPER path leaves the record untouched.
  - Events[]/EventId
  - Events[]/EventTimestamp
  - Events[]/LogEntry
+diff --git a/redfish-core/include/dbus_log_watcher.hpp b/redfish-core/include/dbus_log_watcher.hpp
+index 203d1878..d36118e7 100644
 --- a/redfish-core/include/dbus_log_watcher.hpp
 +++ b/redfish-core/include/dbus_log_watcher.hpp
-@@ -12,8 +12,12 @@
+@@ -12,8 +12,12 @@ class DbusEventLogMonitor
      DbusEventLogMonitor();
      sdbusplus::match dbusEventLogMonitor;
  
@@ -72,6 +87,8 @@ no-CPER path leaves the record untouched.
          EventLogObjectsType& event);
  };
  
+diff --git a/redfish-core/include/event_logs_object_type.hpp b/redfish-core/include/event_logs_object_type.hpp
+index 8be93c04..6c43e30e 100644
 --- a/redfish-core/include/event_logs_object_type.hpp
 +++ b/redfish-core/include/event_logs_object_type.hpp
 @@ -3,6 +3,8 @@
@@ -83,7 +100,7 @@ no-CPER path leaves the record untouched.
  #include <string>
  #include <vector>
  namespace redfish
-@@ -16,5 +18,11 @@
+@@ -16,5 +18,11 @@ struct EventLogObjectsType
      std::string resolution;
      std::string severity;
      std::string timestamp;
@@ -95,6 +112,8 @@ no-CPER path leaves the record untouched.
 +    nlohmann::json::object_t cper;
  };
  } // namespace redfish
+diff --git a/redfish-core/src/dbus_log_watcher.cpp b/redfish-core/src/dbus_log_watcher.cpp
+index 49837f19..156a24af 100644
 --- a/redfish-core/src/dbus_log_watcher.cpp
 +++ b/redfish-core/src/dbus_log_watcher.cpp
 @@ -9,6 +9,7 @@
@@ -105,7 +124,7 @@ no-CPER path leaves the record untouched.
  #include <sdbusplus/bus/match.hpp>
  #include <sdbusplus/message.hpp>
  #include <sdbusplus/message/native_types.hpp>
-@@ -25,7 +26,9 @@
+@@ -25,7 +26,9 @@ namespace redfish
  {
  
  bool DbusEventLogMonitor::eventLogObjectFromDBus(
@@ -116,7 +135,7 @@ no-CPER path leaves the record untouched.
  {
      std::optional<DbusEventLogEntry> optEntry =
          fillDbusEventLogEntryFromPropertyMap(map);
-@@ -39,16 +42,34 @@
+@@ -39,16 +42,34 @@ bool DbusEventLogMonitor::eventLogObjectFromDBus(
  
      const DbusEventLogEntry& entry = optEntry.value();
  
@@ -155,7 +174,7 @@ no-CPER path leaves the record untouched.
      if (!success)
      {
          BMCWEB_LOG_ERROR("Could not parse event log entry from dbus");
-@@ -69,15 +90,34 @@
+@@ -69,15 +90,34 @@ static void onDbusEventLogCreated(sdbusplus::message_t& msg)
  
      msg.read(objectPath, interfaces);
  
@@ -174,18 +193,18 @@ no-CPER path leaves the record untouched.
 -            const dbus::utility::DBusPropertiesMap& map = pair.second;
 -            dbusEventLogMatchHandlerSingleEntry(map);
 +            entryMap = &pair.second;
-         }
++        }
 +        else if (pair.first ==
 +                 "xyz.openbmc_project.Logging.Extension.CPER.Processed")
 +        {
 +            cperMap = &pair.second;
-+        }
-+    }
+         }
+     }
 +
 +    if (entryMap == nullptr)
 +    {
 +        return;
-     }
++    }
 +
 +    static const dbus::utility::DBusPropertiesMap emptyMap;
 +    dbusEventLogMatchHandlerSingleEntry(
@@ -193,9 +212,11 @@ no-CPER path leaves the record untouched.
  }
  
  const std::string propertiesMatchString =
+diff --git a/redfish-core/src/event_log.cpp b/redfish-core/src/event_log.cpp
+index 0bfada98..2e9a41e0 100644
 --- a/redfish-core/src/event_log.cpp
 +++ b/redfish-core/src/event_log.cpp
-@@ -169,6 +169,14 @@
+@@ -169,6 +169,14 @@ void formatEventLogEntry(uint64_t eventId,
      }
      logEntryJson["LogEntry"]["@odata.id"] =
          formatEventLogEntryUri(eventLogParent, eventLogPath, logEntry.id);
@@ -210,9 +231,11 @@ no-CPER path leaves the record untouched.
  }
  
  } // namespace event_log
+diff --git a/redfish-core/src/subscription.cpp b/redfish-core/src/subscription.cpp
+index 47dd52fe..31033219 100644
 --- a/redfish-core/src/subscription.cpp
 +++ b/redfish-core/src/subscription.cpp
-@@ -241,7 +241,9 @@
+@@ -241,7 +241,9 @@ void Subscription::filterAndSendEventLogs(
      }
  
      nlohmann::json msg;
@@ -223,6 +246,8 @@ no-CPER path leaves the record untouched.
      msg["Id"] = std::to_string(eventId);
      msg["Name"] = "Event Log";
      msg["Events"] = std::move(logEntryArray);
+diff --git a/test/redfish-core/include/dbus_log_watcher_test.cpp b/test/redfish-core/include/dbus_log_watcher_test.cpp
+index 15cc4e76..a35b08fc 100644
 --- a/test/redfish-core/include/dbus_log_watcher_test.cpp
 +++ b/test/redfish-core/include/dbus_log_watcher_test.cpp
 @@ -3,6 +3,8 @@
@@ -234,7 +259,7 @@ no-CPER path leaves the record untouched.
  #include <cstdint>
  #include <string>
  #include <unordered_map>
-@@ -42,11 +44,15 @@
+@@ -42,11 +44,15 @@ TEST(DBusLogWatcher, EventLogObjectFromDBusWithMappingSuccess)
  
      EventLogObjectsType event;
  
@@ -252,7 +277,7 @@ no-CPER path leaves the record untouched.
      EXPECT_EQ(event.id, "1838");
  
      EXPECT_EQ(event.timestamp,
-@@ -86,10 +92,64 @@
+@@ -86,10 +92,64 @@ TEST(DBusLogWatcher, EventLogObjectFromDBusFailMissingProperty)
  
      EventLogObjectsType event;
  
@@ -319,3 +344,6 @@ no-CPER path leaves the record untouched.
 +}
 +
  } // namespace redfish
+-- 
+2.53.0-Meta
+

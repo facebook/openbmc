@@ -1,4 +1,4 @@
-From 3e7eb437a639c55810480064b39531134c7ae5f1 Mon Sep 17 00:00:00 2001
+From 8b5feaaf89376430a57e1e157f0329aa1b89b368 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 6 Aug 2026 15:25:05 +0200
 Subject: [PATCH] hw/arm: santabarbara: add Facebook Santabarbara BMC machine
@@ -296,10 +296,10 @@ index 0000000000..65e133e6f7
 +
 +DEFINE_TYPES(aspeed_ast2600_santabarbara_types)
 diff --git a/hw/arm/meson.build b/hw/arm/meson.build
-index 17390895b1..3ad25df85a 100644
+index ecf1ec9b1b..6055c93128 100644
 --- a/hw/arm/meson.build
 +++ b/hw/arm/meson.build
-@@ -67,6 +67,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -66,6 +66,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_ast2600_gb200nvl.c',
    'aspeed_ast2600_minerva.c',
    'aspeed_ast2600_rainier.c',

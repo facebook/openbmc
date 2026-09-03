@@ -1,4 +1,4 @@
-From b07aa4555030c108ea7688fbccfe7bc2df605136 Mon Sep 17 00:00:00 2001
+From 2c966b17eddfbdfb9bc4924ddeaee03f4dc13b37 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Sun, 2 Aug 2026 04:38:59 -0500
 Subject: [PATCH] plugin: add manager support

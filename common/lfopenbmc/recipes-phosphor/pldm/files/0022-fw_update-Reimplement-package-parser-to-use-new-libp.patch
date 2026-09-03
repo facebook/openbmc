@@ -1,4 +1,4 @@
-From 0c0ffe4264c5fab911e6fd16d463d9fae0b3e056 Mon Sep 17 00:00:00 2001
+From c37c95299a1c73baf9cdc43a3375870ca231d8f6 Mon Sep 17 00:00:00 2001
 From: Carter Chen <carter.chen.wiwynn@gmail.com>
 Date: Mon, 1 Dec 2025 08:46:59 +0000
 Subject: [PATCH] fw_update: Reimplement package parser to use new libpldm API
@@ -25,7 +25,7 @@ Signed-off-by: Carter Chen <carter.chen.wiwynn@gmail.com>
 ---
  common/types.hpp                              |  49 +-
  fw-update/aggregate_update_manager.hpp        |   5 +-
- fw-update/device_updater.cpp                  | 204 ++++----
+ fw-update/device_updater.cpp                  | 218 ++++----
  fw-update/device_updater.hpp                  |  20 +-
  fw-update/item_update_manager.cpp             |  28 +-
  fw-update/manager.hpp                         |   2 +-
@@ -38,7 +38,7 @@ Signed-off-by: Carter Chen <carter.chen.wiwynn@gmail.com>
  fw-update/test/package_parser_test.cpp        | 247 +++++++--
  fw-update/update_manager.cpp                  | 329 ++++++++++--
  fw-update/update_manager.hpp                  |  37 +-
- 15 files changed, 1020 insertions(+), 588 deletions(-)
+ 15 files changed, 1020 insertions(+), 602 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
 index fe391e2..26c3dff 100644
@@ -166,7 +166,7 @@ index 6a82238..f06cd70 100644
      {}
  
 diff --git a/fw-update/device_updater.cpp b/fw-update/device_updater.cpp
-index 39fbd2d..aa1afd0 100644
+index b1a4164..aa1afd0 100644
 --- a/fw-update/device_updater.cpp
 +++ b/fw-update/device_updater.cpp
 @@ -9,6 +9,9 @@
@@ -448,29 +448,44 @@ index 39fbd2d..aa1afd0 100644
          return response;
      }
  
--    if (offset + length > compSize + PLDM_FWUP_BASELINE_TRANSFER_SIZE)
+-    if (offset > compSize)
 +    if (static_cast<uint64_t>(offset) + length >
 +        static_cast<uint64_t>(compImageSize) + PLDM_FWUP_BASELINE_TRANSFER_SIZE)
      {
          rc = encode_request_firmware_data_resp(
              request->hdr.instance_id, PLDM_FWUP_DATA_OUT_OF_RANGE, responseMsg,
-@@ -624,9 +617,9 @@ Response DeviceUpdater::requestFwData(const pldm_msg* request,
+@@ -623,24 +616,10 @@ Response DeviceUpdater::requestFwData(const pldm_msg* request,
+         return response;
      }
  
+-    const auto componentBytesRemaining = compSize - offset;
      size_t padBytes = 0;
--    if (offset + length > compSize)
+-    if (length > componentBytesRemaining)
 +    if (static_cast<uint64_t>(offset) + length > compImageSize)
      {
--        padBytes = offset + length - compSize;
+-        padBytes = length - componentBytesRemaining;
+-        if (padBytes > PLDM_FWUP_BASELINE_TRANSFER_SIZE)
+-        {
+-            rc = encode_request_firmware_data_resp(
+-                request->hdr.instance_id, PLDM_FWUP_DATA_OUT_OF_RANGE,
+-                responseMsg, sizeof(completionCode));
+-            if (rc)
+-            {
+-                error(
+-                    "Failed to encode request firmware date response for endpoint ID '{EID}', response code '{RC}'",
+-                    "EID", eid, "RC", rc);
+-            }
+-            return response;
+-        }
 +        padBytes = static_cast<uint64_t>(offset) + length - compImageSize;
      }
  
      if (componentIndex < progress.size())
-@@ -642,11 +635,8 @@ Response DeviceUpdater::requestFwData(const pldm_msg* request,
+@@ -656,11 +635,8 @@ Response DeviceUpdater::requestFwData(const pldm_msg* request,
  
      response.resize(sizeof(pldm_msg_hdr) + sizeof(completionCode) + length);
      responseMsg = new (response.data()) pldm_msg;
--    package.seekg(compOffset + offset);
+-    package.seekg(static_cast<std::streamoff>(compOffset) + offset);
 -    package.read(
 -        reinterpret_cast<char*>(
 -            response.data() + sizeof(pldm_msg_hdr) + sizeof(completionCode)),
@@ -480,7 +495,7 @@ index 39fbd2d..aa1afd0 100644
      rc = encode_request_firmware_data_resp(
          request->hdr.instance_id, completionCode, responseMsg,
          sizeof(completionCode));
-@@ -715,22 +705,21 @@ Response DeviceUpdater::transferComplete(const pldm_msg* request,
+@@ -729,22 +705,21 @@ Response DeviceUpdater::transferComplete(const pldm_msg* request,
          return response;
      }
  
@@ -508,7 +523,7 @@ index 39fbd2d..aa1afd0 100644
              transferResult);
          updateManager->updateDeviceCompletion(eid, false);
          componentUpdateStatus[componentIndex] = false;
-@@ -776,10 +765,9 @@ Response DeviceUpdater::verifyComplete(const pldm_msg* request,
+@@ -790,10 +765,9 @@ Response DeviceUpdater::verifyComplete(const pldm_msg* request,
          return response;
      }
  
@@ -522,7 +537,7 @@ index 39fbd2d..aa1afd0 100644
      if (componentIndex < progress.size())
      {
          progress[componentIndex].updateState(UpdateProgress::state::Verify);
-@@ -792,13 +780,13 @@ Response DeviceUpdater::verifyComplete(const pldm_msg* request,
+@@ -806,13 +780,13 @@ Response DeviceUpdater::verifyComplete(const pldm_msg* request,
      {
          info(
              "Component endpoint ID '{EID}' and version '{COMPONENT_VERSION}' verification complete.",
@@ -538,7 +553,7 @@ index 39fbd2d..aa1afd0 100644
              verifyResult);
          updateManager->updateDeviceCompletion(eid, false);
          componentUpdateStatus[componentIndex] = false;
-@@ -846,17 +834,16 @@ Response DeviceUpdater::applyComplete(const pldm_msg* request,
+@@ -860,17 +834,16 @@ Response DeviceUpdater::applyComplete(const pldm_msg* request,
          return response;
      }
  
@@ -560,7 +575,7 @@ index 39fbd2d..aa1afd0 100644
          if (componentIndex < progress.size())
          {
              progress[componentIndex].updateState(UpdateProgress::state::Apply);
-@@ -895,7 +882,8 @@ Response DeviceUpdater::applyComplete(const pldm_msg* request,
+@@ -909,7 +882,8 @@ Response DeviceUpdater::applyComplete(const pldm_msg* request,
      {
          error(
              "Failed to apply component endpoint ID '{EID}' and version '{COMPONENT_VERSION}', error - {ERROR}",
@@ -570,7 +585,7 @@ index 39fbd2d..aa1afd0 100644
          if (updateManager != nullptr)
          {
              updateManager->updateDeviceCompletion(eid, false);
-@@ -1070,8 +1058,6 @@ void DeviceUpdater::cancelUpdateComponent(
+@@ -1084,8 +1058,6 @@ void DeviceUpdater::cancelUpdateComponent(
          return;
      }
  
@@ -1431,7 +1446,7 @@ index 3aeb2b2..aca9f54 100644
  } // namespace fw_update
  
 diff --git a/fw-update/test/device_updater_test.cpp b/fw-update/test/device_updater_test.cpp
-index 6dcc954..92c78dd 100644
+index 66bdda3..c709567 100644
 --- a/fw-update/test/device_updater_test.cpp
 +++ b/fw-update/test/device_updater_test.cpp
 @@ -7,10 +7,8 @@
@@ -1550,7 +1565,7 @@ index 6dcc954..92c78dd 100644
      const std::vector<uint8_t> compFirst512B{
          0x0A, 0x05, 0x15, 0x00, 0x48, 0xD2, 0x1E, 0x80, 0x2E, 0x77, 0x71, 0x2C,
          0x8E, 0xE3, 0x1F, 0x6F, 0x30, 0x76, 0x65, 0x08, 0xB8, 0x1B, 0x4B, 0x03,
-@@ -138,8 +152,8 @@ TEST_F(DeviceUpdaterTest, ReadPackage512B)
+@@ -194,8 +208,8 @@ TEST_F(DeviceUpdaterTest, RejectOffsetPastComponentEnd)
  
  TEST_F(DeviceUpdaterTest, FullUpdateProgress)
  {
@@ -1561,7 +1576,7 @@ index 6dcc954..92c78dd 100644
  
      constexpr std::array<uint8_t, sizeof(pldm_msg_hdr) +
                                        sizeof(pldm_request_firmware_data_req)>
-@@ -184,3 +198,20 @@ TEST_F(DeviceUpdaterTest, FullUpdateProgress)
+@@ -240,3 +254,20 @@ TEST_F(DeviceUpdaterTest, FullUpdateProgress)
      deviceUpdater.activateFirmware(0, activateMsg, 3);
      EXPECT_EQ(deviceUpdater.getProgress(), 100);
  }

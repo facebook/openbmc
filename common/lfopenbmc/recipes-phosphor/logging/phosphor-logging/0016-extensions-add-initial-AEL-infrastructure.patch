@@ -1,4 +1,4 @@
-From e4a3ab74c75d3decc0158747f36026b8e8213d26 Mon Sep 17 00:00:00 2001
+From 011b95ff8e2656c6d9b3d45eea1318a66c68cbbc Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 28 May 2026 09:24:26 -0500
 Subject: [PATCH] extensions: add initial AEL infrastructure

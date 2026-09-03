@@ -1,4 +1,4 @@
-From 5ccca4adc58ebdefa791368c290ae6768d4e79a3 Mon Sep 17 00:00:00 2001
+From 8a3753e06b867ba51208203f468dc4e8ad271e9c Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Sun, 2 Aug 2026 11:24:28 -0500
 Subject: [PATCH] logging: defer entry object-added signal emission

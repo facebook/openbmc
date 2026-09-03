@@ -1,4 +1,4 @@
-From 25554610b49e9a7b4d3faa421c32a418b153df0e Mon Sep 17 00:00:00 2001
+From e6f4a240e260d1c280b468f2b2c2dde10b76ca59 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 6 Aug 2026 18:18:58 +0200
 Subject: [PATCH] hw/arm: yosemite5: add Facebook Yosemite 5 BMC machine
@@ -265,10 +265,10 @@ index 0000000000..2bfa6cf504
 +
 +DEFINE_TYPES(aspeed_ast2600_yosemite5_types)
 diff --git a/hw/arm/meson.build b/hw/arm/meson.build
-index 3ad25df85a..ab657d5654 100644
+index 6055c93128..69b98348c5 100644
 --- a/hw/arm/meson.build
 +++ b/hw/arm/meson.build
-@@ -69,6 +69,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -68,6 +68,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_ast2600_rainier.c',
    'aspeed_ast2600_santabarbara.c',
    'aspeed_ast2600_sanmiguel.c',

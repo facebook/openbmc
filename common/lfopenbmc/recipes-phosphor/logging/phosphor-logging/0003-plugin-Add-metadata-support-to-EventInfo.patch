@@ -1,4 +1,4 @@
-From a5cb0f7ef2a3623a545a295382eaa126cd1732f0 Mon Sep 17 00:00:00 2001
+From 179f046ab53f7fe214d2602bf63f480dda6ae0d1 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 5 Aug 2026 00:57:00 -0500
 Subject: [PATCH] plugin: Add metadata support to EventInfo

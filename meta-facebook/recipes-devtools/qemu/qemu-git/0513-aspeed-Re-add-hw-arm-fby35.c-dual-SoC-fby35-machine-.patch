@@ -1,4 +1,4 @@
-From 90006d47c1c33761e6bae229b0e9512510fa1a03 Mon Sep 17 00:00:00 2001
+From d89621853523fd28994d14cc3fc205f466b03a8d Mon Sep 17 00:00:00 2001
 From: Pete O_o <pmb@meta.com>
 Date: Thu, 2 Jul 2026 09:55:37 -0700
 Subject: [PATCH] aspeed: Re-add hw/arm/fby35.c (dual-SoC fby35 machine removed
@@ -227,10 +227,10 @@ index 0000000000..d3bfd2c7d2
 +
 +DEFINE_TYPES(fby35_types);
 diff --git a/hw/arm/meson.build b/hw/arm/meson.build
-index 4233a800be..28adf3e95e 100644
+index 78acb04c8b..384576a4f1 100644
 --- a/hw/arm/meson.build
 +++ b/hw/arm/meson.build
-@@ -75,7 +75,8 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -74,7 +74,8 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_ast27x0-fc.c',
    'aspeed_ast27x0-ssp.c',
    'aspeed_ast27x0-tsp.c',

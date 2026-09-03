@@ -1,4 +1,4 @@
-From 399fb8b0d0277024038db7d4dde98d80deeab159 Mon Sep 17 00:00:00 2001
+From 910ffbe862893010f9fc22387c5f2423f2b0448a Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Tue, 11 Aug 2026 09:11:15 -0500
 Subject: [PATCH] logging: add runtime metadata provider support

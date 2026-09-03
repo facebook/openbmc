@@ -1,4 +1,4 @@
-From d489df2baa18f0f462a98e0ec2bb8b2a5ecb8bef Mon Sep 17 00:00:00 2001
+From 3e309e3499f024887b8cc8a036c43a1b0401ebb7 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Sun, 2 Aug 2026 10:29:57 -0500
 Subject: [PATCH] logging: integrate runtime plugin infrastructure

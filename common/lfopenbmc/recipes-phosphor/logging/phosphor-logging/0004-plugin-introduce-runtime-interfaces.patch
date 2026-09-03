@@ -1,4 +1,4 @@
-From d94c918be95693121cf7321d77178f4c275870f0 Mon Sep 17 00:00:00 2001
+From b9ca0c2f107248a17a7b4f0d087184e13fe5a4d8 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 5 Aug 2026 01:37:12 -0500
 Subject: [PATCH] plugin: introduce runtime interfaces

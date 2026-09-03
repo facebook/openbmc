@@ -1,4 +1,4 @@
-From 2ee1fde70b53708b80028a805895ed7159d9cfef Mon Sep 17 00:00:00 2001
+From 00d263a0c9f7e1c248c45689cbd366a876c82450 Mon Sep 17 00:00:00 2001
 From: Sandeep Kumar <sandeepkumar.sanku@amd.com>
 Date: Sat, 29 Aug 2026 13:54:00 -0700
 Subject: [PATCH] LogEntry: Add support for parsing and presenting CPER
@@ -241,10 +241,10 @@ index 0c0210ed..6eb0c9f6 100644
  
  inline void dBusEventLogEntryGet(
 diff --git a/redfish-core/lib/log_services.hpp b/redfish-core/lib/log_services.hpp
-index 57be09c1..18662e98 100644
+index 990e27e3..92d16cf2 100644
 --- a/redfish-core/lib/log_services.hpp
 +++ b/redfish-core/lib/log_services.hpp
-@@ -943,6 +943,15 @@ inline void handleSystemsLogServiceCollectionGet(
+@@ -163,6 +163,15 @@ inline void handleSystemsLogServiceCollectionGet(
                                  BMCWEB_REDFISH_SYSTEM_URI_NAME);
          logServiceArray.emplace_back(std::move(hostlogger));
      }
@@ -260,7 +260,7 @@ index 57be09c1..18662e98 100644
      asyncResp->res.jsonValue["Members@odata.count"] = logServiceArray.size();
  
      constexpr std::array<std::string_view, 1> interfaces = {
-@@ -1026,6 +1035,15 @@ inline void handleManagersLogServicesCollectionGet(
+@@ -246,6 +255,15 @@ inline void handleManagersLogServicesCollectionGet(
          logServiceArray.emplace_back(std::move(eventLog));
      }
  
@@ -737,7 +737,7 @@ index 00000000..1cf0adab
 +
 +} // namespace redfish
 diff --git a/redfish-core/src/redfish.cpp b/redfish-core/src/redfish.cpp
-index a9601000..29c0190e 100644
+index 6cfeea48..e59c2f56 100644
 --- a/redfish-core/src/redfish.cpp
 +++ b/redfish-core/src/redfish.cpp
 @@ -22,6 +22,7 @@
@@ -747,8 +747,8 @@ index a9601000..29c0190e 100644
 +#include "log_services_rawcper.hpp"
  #include "manager_diagnostic_data.hpp"
  #include "manager_logservices_dbus_eventlog.hpp"
- #include "manager_logservices_journal.hpp"
-@@ -126,6 +127,8 @@ RedfishService::RedfishService(App& app)
+ #include "manager_logservices_dump.hpp"
+@@ -128,6 +129,8 @@ RedfishService::RedfishService(App& app)
  
      requestRoutesSystemsLogServicesPostCode(app);
  
@@ -758,5 +758,5 @@ index a9601000..29c0190e 100644
      {
          requestRoutesSystemsEventLogService(app);
 -- 
-2.54.0
+2.53.0-Meta
 

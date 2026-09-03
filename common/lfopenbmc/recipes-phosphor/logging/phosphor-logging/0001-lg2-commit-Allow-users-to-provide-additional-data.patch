@@ -1,4 +1,4 @@
-From 2907ff6b03eab26b20478b81151df9aea154b997 Mon Sep 17 00:00:00 2001
+From 29947bdf2f72e1240ce3c6f9f8cc3c6c1daa5b0d Mon Sep 17 00:00:00 2001
 From: Amithash Prasad <amithash@meta.com>
 Date: Wed, 25 Mar 2026 15:51:35 -0700
 Subject: [PATCH] lg2: commit: Allow users to provide additional data
@@ -86,10 +86,10 @@ index 75c6659..05e85ae 100644
  
  /** Resolve an existing event/error (using async context).
 diff --git a/lib/lg2_commit.cpp b/lib/lg2_commit.cpp
-index 5cad834..9bf03b6 100644
+index 711cdc7..380651d 100644
 --- a/lib/lg2_commit.cpp
 +++ b/lib/lg2_commit.cpp
-@@ -115,7 +115,8 @@ auto extractEvent(sdbusplus::exception::generated_event_base&& t)
+@@ -119,7 +119,8 @@ auto extractEvent(sdbusplus::exception::generated_event_base&& event)
  } // namespace details
  
  auto commit(sdbusplus::exception::generated_event_base&& t,
@@ -99,7 +99,7 @@ index 5cad834..9bf03b6 100644
  {
      int severity = overrideLevel.value_or(t.severity());
      // Check event filters first.
-@@ -144,8 +145,10 @@ auto commit(sdbusplus::exception::generated_event_base&& t,
+@@ -148,8 +149,10 @@ auto commit(sdbusplus::exception::generated_event_base&& t,
              b.new_method_call(Create::default_service, Create::instance_path,
                                Create::interface, "Create");
  
@@ -112,7 +112,7 @@ index 5cad834..9bf03b6 100644
  
          auto reply = b.call(m);
  
-@@ -171,7 +174,7 @@ void resolve(const sdbusplus::object_path& logPath)
+@@ -175,7 +178,7 @@ void resolve(const sdbusplus::object_path& logPath)
  
  auto commit(sdbusplus::async::context& ctx,
              sdbusplus::exception::generated_event_base&& t,
@@ -121,7 +121,7 @@ index 5cad834..9bf03b6 100644
      -> sdbusplus::async::task<sdbusplus::object_path>
  {
      using details::Create;
-@@ -196,11 +199,13 @@ auto commit(sdbusplus::async::context& ctx,
+@@ -200,11 +203,13 @@ auto commit(sdbusplus::async::context& ctx,
  
      if constexpr (LG2_COMMIT_DBUS)
      {

@@ -1,4 +1,4 @@
-From fa149ba5dc5506a47007d68f1465c7d27d04c12b Mon Sep 17 00:00:00 2001
+From 524f7f9dd489f2e3bf8ce979af1ee434b04dfc1a Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 10:43:47 +0200
 Subject: [PATCH] hw/arm: minerva: add Facebook BMC machine
@@ -224,10 +224,10 @@ index 0000000000..f3ec64adb3
 +
 +DEFINE_TYPES(aspeed_ast2600_minerva_types)
 diff --git a/hw/arm/meson.build b/hw/arm/meson.build
-index 96719a8067..ec3825a027 100644
+index f1c0529b77..da97c001f4 100644
 --- a/hw/arm/meson.build
 +++ b/hw/arm/meson.build
-@@ -64,6 +64,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -63,6 +63,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_ast2600_fby35.c',
    'aspeed_ast2600_fuji.c',
    'aspeed_ast2600_gb200nvl.c',

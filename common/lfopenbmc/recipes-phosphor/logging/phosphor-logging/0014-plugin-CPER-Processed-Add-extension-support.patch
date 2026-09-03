@@ -1,4 +1,4 @@
-From d4673f56e01c9cb8d4aed26b758b47cd523d3934 Mon Sep 17 00:00:00 2001
+From 14782514fc03fb6d6f1253e9f021346f469c0342 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Sun, 2 Aug 2026 03:36:32 -0500
 Subject: [PATCH] plugin:CPER:Processed Add extension support

@@ -1,4 +1,4 @@
-From f7cf577b83bf233582adf8cc1f0ab14d788deb3f Mon Sep 17 00:00:00 2001
+From 2da84b708a95bd52e68191366ddd99ebd5ac44e9 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Tue, 25 Aug 2026 02:42:00 -0500
 Subject: [PATCH] plugin:CPER:Raw Add plugin support

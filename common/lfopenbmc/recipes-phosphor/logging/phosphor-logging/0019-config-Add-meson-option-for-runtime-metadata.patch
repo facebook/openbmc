@@ -1,4 +1,4 @@
-From 246a216b5367e80cc24bcf8f4befa820d9555e98 Mon Sep 17 00:00:00 2001
+From e603348f0d7ff98378110f2d3c373de0b74114ca Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 13 Aug 2026 05:01:25 -0500
 Subject: [PATCH] config: Add meson option for runtime metadata

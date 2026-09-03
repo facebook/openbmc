@@ -1,8 +1,7 @@
-From bdb68b62d86b4631c57c81674c69f393dcda9fc8 Mon Sep 17 00:00:00 2001
+From 137622be2c968811518a095b1d175c9af87c2db6 Mon Sep 17 00:00:00 2001
 From: Zinc Lim <zinclim@meta.com>
 Date: Fri, 28 Aug 2026 11:58:40 -0700
-Subject: [PATCH 708/709] hw/i2c/aspeed_i2c: model AST2700 I2CC_SIRQ_LOG target
- address
+Subject: [PATCH] hw/i2c/aspeed_i2c: model AST2700 I2CC_SIRQ_LOG target address
 
 The AST2700 target ISR reads I2CC_SIRQ_LOG (0x8c) to learn which
 registered target a transfer was addressed to.

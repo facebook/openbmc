@@ -1,4 +1,4 @@
-From dafa7acffd5f7c2da34b0c7d29a5dcc094136e36 Mon Sep 17 00:00:00 2001
+From c0fff3f10bfbe89bfdea83cd24551af44441ddde Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Wed, 15 Jul 2026 11:57:21 -0700
 Subject: [PATCH] rtu: re-read firmware on monitoring resume
@@ -94,11 +94,11 @@ index 55efc99..b2ce6d1 100644
      entity_manager::EntityManagerInterface entityManager;
      EventIntf::Events events;
 diff --git a/rtu/port/base_port.cpp b/rtu/port/base_port.cpp
-index af5064a..cbd4ee6 100644
+index aa887d3..6f4c640 100644
 --- a/rtu/port/base_port.cpp
 +++ b/rtu/port/base_port.cpp
-@@ -89,6 +89,12 @@ auto BasePort::set_property(enabled_t, bool enabled) -> bool
-     bool portEnabled = !monitoringLock.has_value();
+@@ -93,6 +93,12 @@ auto BasePort::set_property(enabled_t, bool enabled) -> bool
+     bool portEnabled = !monitoringLock.has_value() || awaitingIdle;
      bool changed = (portEnabled != properties.enabled);
      properties.enabled = portEnabled;
 +
@@ -111,18 +111,18 @@ index af5064a..cbd4ee6 100644
  }
  
 diff --git a/rtu/port/base_port.hpp b/rtu/port/base_port.hpp
-index e781957..ae828ca 100644
+index d39ec04..d1561e0 100644
 --- a/rtu/port/base_port.hpp
 +++ b/rtu/port/base_port.hpp
-@@ -10,6 +10,7 @@
- #include <xyz/openbmc_project/Object/Enable/aserver.hpp>
+@@ -11,6 +11,7 @@
  
  #include <concepts>
+ #include <cstdint>
 +#include <functional>
  #include <optional>
  
  namespace phosphor::modbus::rtu::port
-@@ -175,6 +176,13 @@ class BasePort : public PortConnectorIntf
+@@ -181,6 +182,13 @@ class BasePort : public PortConnectorIntf
       *          reserved. */
      auto acquireExclusive() -> std::optional<ExclusiveLock>;
  
@@ -135,20 +135,20 @@ index e781957..ae828ca 100644
 +
    private:
      friend class ExclusiveLock;
-     std::string name;
-@@ -184,6 +192,7 @@ class BasePort : public PortConnectorIntf
-     bool busy = false;
-     // Held while the port is disabled via Object.Enable; reset to resume.
-     std::optional<ExclusiveLock> monitoringLock;
+ 
+@@ -199,6 +207,7 @@ class BasePort : public PortConnectorIntf
+     bool awaitingIdle = false;
+     // Incremented per reservation, so a superseded wait can be discarded.
+     uint64_t reservation = 0;
 +    std::function<void()> monitoringResumedHandler;
  };
  
  } // namespace phosphor::modbus::rtu::port
 diff --git a/tests/test_port.cpp b/tests/test_port.cpp
-index 36f8335..327e331 100644
+index b76b22d..8fb6fae 100644
 --- a/tests/test_port.cpp
 +++ b/tests/test_port.cpp
-@@ -149,6 +149,27 @@ class PortTest : public BaseTest
+@@ -166,6 +166,27 @@ class PortTest : public BaseTest
          co_return;
      }
  
@@ -176,7 +176,7 @@ index 36f8335..327e331 100644
      template <typename Config, typename Properties>
      static inline void VerifyConfig(const Config& config,
                                      const Properties& property)
-@@ -317,3 +338,19 @@ TEST_F(PortTest, TestPortEnabled)
+@@ -334,3 +355,19 @@ TEST_F(PortTest, TestPortEnabled)
  
      ctx.run();
  }

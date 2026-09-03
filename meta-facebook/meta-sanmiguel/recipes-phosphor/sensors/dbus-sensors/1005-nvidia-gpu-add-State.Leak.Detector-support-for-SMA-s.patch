@@ -1,8 +1,7 @@
-From 713de67b6dc05baa2e6b139edc45bbcfec7e17b4 Mon Sep 17 00:00:00 2001
+From 443e1159a13901a064a99540629936de29cf014a Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Fri, 21 Aug 2026 17:56:52 +0800
-Subject: [PATCH 2/2] nvidia-gpu: add State.Leak.Detector support for SMA
- sensors
+Subject: [PATCH] nvidia-gpu: add State.Leak.Detector support for SMA sensors
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -270,5 +269,5 @@ index 7fbd47f..61e931d 100644
  
  struct NvidiaSmaLeakSensorCarrier :
 -- 
-2.53.0
+2.53.0-Meta
 

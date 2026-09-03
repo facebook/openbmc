@@ -1,4 +1,4 @@
-From 492b24a246c6925df59d4887ff265f839226f352 Mon Sep 17 00:00:00 2001
+From 70adb7d3d417005ba6a49824de730daa36caabc7 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 27 Aug 2026 05:31:19 -0500
 Subject: [PATCH] amd-event-log: add common metadata support

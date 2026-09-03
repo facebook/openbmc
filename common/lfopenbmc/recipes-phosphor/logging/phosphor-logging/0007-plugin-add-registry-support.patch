@@ -1,4 +1,4 @@
-From 817fa09f4910535725671889236bdcb10ddd04b9 Mon Sep 17 00:00:00 2001
+From 0ba5c0ad3419f736966e5383f29a4c70945bcf75 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 5 Aug 2026 02:09:59 -0500
 Subject: [PATCH] plugin: add registry support

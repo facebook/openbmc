@@ -1,4 +1,4 @@
-From 1687057c5b63099a4ac391486841e7cf4a5d2c2a Mon Sep 17 00:00:00 2001
+From 969444766f3da65320f994d37c06414542be02e3 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 2 Feb 2026 07:47:26 -0800
 Subject: [PATCH] Subject: [PATCH] configure: lookup meson exutable from PATH
@@ -9,10 +9,10 @@ Upstream-Status: Inappropriate [workaround, would need a real fix for upstream]
  1 file changed, 1 insertion(+), 10 deletions(-)
 
 diff --git a/configure b/configure
-index d8bc10060e..a91906a864 100755
+index 46cbcc085b..8d9a7086a7 100755
 --- a/configure
 +++ b/configure
-@@ -953,12 +953,6 @@ mkvenv="$python ${source_path}/python/scripts/mkvenv.py"
+@@ -952,12 +952,6 @@ mkvenv="$python ${source_path}/python/scripts/mkvenv.py"
  $mkvenv ensuregroup --dir "${source_path}/python/wheels" \
       ${source_path}/pythondeps.toml meson || exit 1
  
@@ -25,7 +25,7 @@ index d8bc10060e..a91906a864 100755
  get_pwd() {
      if pwd -W >/dev/null 2>&1; then
          pwd -W
-@@ -967,10 +961,7 @@ get_pwd() {
+@@ -966,10 +960,7 @@ get_pwd() {
      fi
  }
  

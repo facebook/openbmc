@@ -1,4 +1,4 @@
-From 1f6a2332ef5d8c47840e5ad6fcec7a0b3d455b55 Mon Sep 17 00:00:00 2001
+From 787ac3f4027209d60a86cc6e11615aa560c54122 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 31 Mar 2026 20:37:28 +0800
 Subject: [PATCH] terminus: replace inventory and sensor configuration
@@ -108,7 +108,7 @@ index 2ae280a..c8b1bd8 100644
  
      Event event(sdeventplus::Event::get_default());
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index d831e24..2f4598e 100644
+index 86d9e72..83f5229 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -230,6 +230,12 @@ void Terminus::parseTerminusPDRs()
@@ -150,7 +150,7 @@ index d831e24..2f4598e 100644
      }
  
      addNextSensorFromPDRs();
-@@ -837,5 +855,127 @@ std::vector<std::string> Terminus::getSensorNames(const SensorID& sensorId)
+@@ -841,5 +859,127 @@ std::vector<std::string> Terminus::getSensorNames(const SensorID& sensorId)
      return sensorNames;
  }
  
@@ -279,7 +279,7 @@ index d831e24..2f4598e 100644
  } // namespace platform_mc
  } // namespace pldm
 diff --git a/platform-mc/terminus.hpp b/platform-mc/terminus.hpp
-index 4627737..af6a4da 100644
+index 4addf82..008240a 100644
 --- a/platform-mc/terminus.hpp
 +++ b/platform-mc/terminus.hpp
 @@ -119,6 +119,23 @@ class Terminus

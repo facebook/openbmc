@@ -1,4 +1,4 @@
-From 4975784f72b2c988c8c3bfc58d6f4cdbcedde270 Mon Sep 17 00:00:00 2001
+From 9af9d0b02bf27e5f91cf1011055b1c6c45eb9dc0 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Sat, 29 Aug 2026 01:07:56 -0500
 Subject: [PATCH] plugin:cper:processed add persistence support

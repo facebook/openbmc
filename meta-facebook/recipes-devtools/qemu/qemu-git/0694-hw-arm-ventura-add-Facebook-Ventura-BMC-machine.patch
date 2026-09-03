@@ -1,4 +1,4 @@
-From d334e4bef5c300b9c4986edbe6c9b7c72ed0e251 Mon Sep 17 00:00:00 2001
+From 2610687d0473defb308d3f9bc6fe72f088b19b83 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 17:43:53 +0200
 Subject: [PATCH] hw/arm: ventura: add Facebook Ventura BMC machine
@@ -211,10 +211,10 @@ index 0000000000..b9913e479f
 +
 +DEFINE_TYPES(aspeed_ast2600_ventura_types)
 diff --git a/hw/arm/meson.build b/hw/arm/meson.build
-index da68b634a0..301eec073e 100644
+index 79f366127a..388538566e 100644
 --- a/hw/arm/meson.build
 +++ b/hw/arm/meson.build
-@@ -70,6 +70,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -69,6 +69,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_ast2600_rainier.c',
    'aspeed_ast2600_santabarbara.c',
    'aspeed_ast2600_sanmiguel.c',

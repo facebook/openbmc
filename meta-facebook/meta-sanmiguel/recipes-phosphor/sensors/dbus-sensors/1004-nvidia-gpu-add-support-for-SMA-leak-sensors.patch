@@ -1,7 +1,7 @@
-From 4aaa196761abda33879ae99ac34393a22598d7e7 Mon Sep 17 00:00:00 2001
+From 516609e626f6521a059005f4fd8d6074625ccade Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Tue, 5 May 2026 20:34:03 +0800
-Subject: [PATCH 1/2] nvidia-gpu: add support for SMA leak sensors
+Subject: [PATCH] nvidia-gpu: add support for SMA leak sensors
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -247,7 +247,7 @@ index 3bdde27..02eb894 100644
 +
  } // namespace gpu
 diff --git a/src/nvidia-gpu/NvidiaSmaDevice.cpp b/src/nvidia-gpu/NvidiaSmaDevice.cpp
-index 44c7653..76bb1ee 100644
+index b0f753b..9cb9766 100644
 --- a/src/nvidia-gpu/NvidiaSmaDevice.cpp
 +++ b/src/nvidia-gpu/NvidiaSmaDevice.cpp
 @@ -7,6 +7,7 @@
@@ -258,7 +258,7 @@ index 44c7653..76bb1ee 100644
  #include "Thresholds.hpp"
  #include "Utils.hpp"
  
-@@ -49,6 +50,19 @@ void SmaDevice::makeSensors()
+@@ -50,6 +51,19 @@ void SmaDevice::makeSensors()
          objectServer, std::vector<thresholds::Threshold>{},
          gpu::DeviceIdentification::DEVICE_SMA);
  
@@ -278,7 +278,7 @@ index 44c7653..76bb1ee 100644
      lg2::info("Added MCA {NAME} Sensors with chassis path: {PATH}.", "NAME",
                name, "PATH", path);
  
-@@ -59,6 +73,8 @@ void SmaDevice::read()
+@@ -60,6 +74,8 @@ void SmaDevice::read()
  {
      tempSensor->update();
  
@@ -288,7 +288,7 @@ index 44c7653..76bb1ee 100644
      waitTimer.async_wait(
          [weak{weak_from_this()}](const boost::system::error_code& ec) {
 diff --git a/src/nvidia-gpu/NvidiaSmaDevice.hpp b/src/nvidia-gpu/NvidiaSmaDevice.hpp
-index 61d100c..835b88b 100644
+index 88e87c5..ce25124 100644
 --- a/src/nvidia-gpu/NvidiaSmaDevice.hpp
 +++ b/src/nvidia-gpu/NvidiaSmaDevice.hpp
 @@ -8,6 +8,7 @@
@@ -299,7 +299,7 @@ index 61d100c..835b88b 100644
  
  #include <boost/asio/io_context.hpp>
  #include <boost/asio/steady_timer.hpp>
-@@ -55,6 +56,8 @@ class SmaDevice : public std::enable_shared_from_this<SmaDevice>
+@@ -56,6 +57,8 @@ class SmaDevice : public std::enable_shared_from_this<SmaDevice>
  
      std::shared_ptr<NvidiaGpuTempSensor> tempSensor;
  
@@ -1252,5 +1252,5 @@ index 0000000..d7cf61d
 +
 +} // namespace
 -- 
-2.53.0
+2.53.0-Meta
 

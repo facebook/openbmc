@@ -1,4 +1,4 @@
-From cc4a7412f0b48921121f458495e497f59777c7dd Mon Sep 17 00:00:00 2001
+From 8f56c11684e9a010c621d2a2f5983421c20eba49 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 12:09:47 +0200
 Subject: [PATCH] hw/arm: harma: add Facebook Harma BMC machine
@@ -234,10 +234,10 @@ index 0000000000..5740fb1b8f
 +
 +DEFINE_TYPES(aspeed_ast2600_harma_types)
 diff --git a/hw/arm/meson.build b/hw/arm/meson.build
-index ab657d5654..da68b634a0 100644
+index 69b98348c5..79f366127a 100644
 --- a/hw/arm/meson.build
 +++ b/hw/arm/meson.build
-@@ -65,6 +65,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -64,6 +64,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_ast2600_fby35.c',
    'aspeed_ast2600_fuji.c',
    'aspeed_ast2600_gb200nvl.c',

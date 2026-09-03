@@ -1,4 +1,4 @@
-From 6be1cf62285bb7af5d7f47d3b3bf679fc28b147f Mon Sep 17 00:00:00 2001
+From 9320cb1739764b3d73d65e29a6849bb795c3f5c6 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 27 Aug 2026 06:42:17 -0500
 Subject: [PATCH] plugin:CPER:Raw Cleanup artifact on entry deletion

@@ -1,4 +1,4 @@
-From 0b18b528b2b870d31ce818bfd7a39b4714f52646 Mon Sep 17 00:00:00 2001
+From 2314ea769a823b28295bf484fb2d66a6a4e493fb Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 5 Aug 2026 01:21:52 -0500
 Subject: [PATCH] plugin: introduce descriptor framework

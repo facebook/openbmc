@@ -1,4 +1,4 @@
-From c89888a6dd8d248f268894f53efa1fab6f8068bb Mon Sep 17 00:00:00 2001
+From c2e84dbf8d70b010a9ff176e6af913a1f6aff51f Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 27 Aug 2026 06:41:22 -0500
 Subject: [PATCH] logging: add plugin deletion lifecycle support

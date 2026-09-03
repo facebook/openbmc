@@ -1,0 +1,10 @@
+[Unit]
+Description=power off drives by host
+After=obmc-host-stop@0.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/phosphor-state-manager/drive-host-off
+
+[Install]
+RequiredBy=obmc-host-stop@0.target

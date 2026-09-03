@@ -1,0 +1,48 @@
+#!/bin/bash
+
+source /usr/libexec/phosphor-state-manager/drive-power-control-util
+
+presence_drives=()
+tmpdir=$(mktemp -d)
+
+# check the presence state of each drive concurrently
+for ssd_num in $(seq 0 $((MAX_SSD_NUM - 1))); do
+    (
+        if check_presence_state "$ssd_num"; then
+            touch "$tmpdir/present_$ssd_num"
+        fi
+    ) &
+done
+
+# wait for all background checks to complete
+wait
+
+# collect present drives from results
+for ssd_num in $(seq 0 $((MAX_SSD_NUM - 1))); do
+    if [[ -f "$tmpdir/present_$ssd_num" ]]; then
+        presence_drives+=("$ssd_num")
+    fi
+done
+
+# cleanup temp files
+rm -rf "$tmpdir"
+
+# if there are no present drives, log a message and exit
+if (( ${#presence_drives[@]} == 0 )); then
+    log "No present drives to power on"
+    exit 0
+fi
+
+# Wait for EN_MCIO3A_PWR_R1 to be ready
+if wait_for_gpio "EN_MCIO3A_PWR_R1" "1" 15; then
+    log "EN_MCIO3A_PWR_R1 is ready, proceeding to power on drives"
+    # power on each present drive
+    for ssd_num in "${presence_drives[@]}"; do
+        single_drive_power_control "$ssd_num" "on"
+    done
+else
+    error "EN_MCIO3A_PWR_R1 is not ready after waiting, cannot power on drives"
+    exit 1
+fi
+
+exit 0

@@ -1,0 +1,9 @@
+[Unit]
+Description=power off drive:%i
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/phosphor-state-manager/drive-poweroff %i
+
+[Install]
+RequiredBy=obmc-drive-poweroff@%i.target

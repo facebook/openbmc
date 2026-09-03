@@ -1,0 +1,9 @@
+[Unit]
+Description=power cycle drive:%i
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/phosphor-state-manager/drive-powercycle %i
+
+[Install]
+RequiredBy=obmc-drive-powercycle@%i.target

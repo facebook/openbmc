@@ -184,7 +184,7 @@ index 0000000000..f9064a9679
 +    s->nic = NULL;
 +}
 +
-+static NetClientInfo net_client_info = {
++static NetClientInfo i2c_netdev_client_info = {
 +    .type = NET_CLIENT_DRIVER_NIC,
 +    .size = sizeof(NetClientState),
 +    .can_receive = i2c_netdev_can_receive_packet,
@@ -246,7 +246,7 @@ index 0000000000..f9064a9679
 +{
 +    I2CNetdev *s = I2C_NETDEV(dev);
 +    s->bus = I2C_BUS(qdev_get_parent_bus(dev));
-+    s->nic = qemu_new_nic(&net_client_info, &s->nic_conf, TYPE_I2C_NETDEV,
++    s->nic = qemu_new_nic(&i2c_netdev_client_info, &s->nic_conf, TYPE_I2C_NETDEV,
 +                          dev->id, &dev->mem_reentrancy_guard, s);
 +    s->bh = qemu_bh_new(i2c_netdev_bh, s);
 +    s->bh_bus_master = ASYNC_NONE;

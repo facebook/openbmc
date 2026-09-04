@@ -1,4 +1,4 @@
-From 524f7f9dd489f2e3bf8ce979af1ee434b04dfc1a Mon Sep 17 00:00:00 2001
+From cbea80263994c4aebdbe596e2f73cd8c2884a6a1 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 10:43:47 +0200
 Subject: [PATCH] hw/arm: minerva: add Facebook BMC machine
@@ -18,9 +18,9 @@ and IPMB) have no QEMU model and are left documented as comments.
 Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
 ---
  docs/system/arm/aspeed.rst      |   1 +
- hw/arm/aspeed_ast2600_minerva.c | 182 ++++++++++++++++++++++++++++++++
+ hw/arm/aspeed_ast2600_minerva.c | 180 ++++++++++++++++++++++++++++++++
  hw/arm/meson.build              |   1 +
- 3 files changed, 184 insertions(+)
+ 3 files changed, 182 insertions(+)
  create mode 100644 hw/arm/aspeed_ast2600_minerva.c
 
 diff --git a/docs/system/arm/aspeed.rst b/docs/system/arm/aspeed.rst
@@ -37,10 +37,10 @@ index f38f33cbe1..bbd3d9cdf4 100644
  Supported devices
 diff --git a/hw/arm/aspeed_ast2600_minerva.c b/hw/arm/aspeed_ast2600_minerva.c
 new file mode 100644
-index 0000000000..f3ec64adb3
+index 0000000000..1f46ac7d58
 --- /dev/null
 +++ b/hw/arm/aspeed_ast2600_minerva.c
-@@ -0,0 +1,182 @@
+@@ -0,0 +1,180 @@
 +/*
 + * Facebook Minerva Chassis Management Module
 + *
@@ -50,7 +50,6 @@ index 0000000000..f3ec64adb3
 + */
 +
 +#include "qemu/osdep.h"
-+#include "hw/arm/machines-qom.h"
 +#include "hw/arm/aspeed.h"
 +#include "hw/arm/aspeed_soc.h"
 +#include "hw/i2c/i2c_mux_pca954x.h"
@@ -218,7 +217,6 @@ index 0000000000..f3ec64adb3
 +        .name          = MACHINE_TYPE_NAME("minerva-bmc"),
 +        .parent        = TYPE_ASPEED_MACHINE,
 +        .class_init    = aspeed_machine_minerva_class_init,
-+        .interfaces    = arm_machine_interfaces,
 +    }
 +};
 +

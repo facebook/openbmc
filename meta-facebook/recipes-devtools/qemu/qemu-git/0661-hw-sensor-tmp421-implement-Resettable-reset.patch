@@ -1,4 +1,4 @@
-From 99d496622ced4aa7de61ddd530b9377d34a45cca Mon Sep 17 00:00:00 2001
+From 97d1a0ed9beef0b1f2882b789769046602684cb6 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 5 Aug 2026 17:56:43 +0200
 Subject: [PATCH] hw/sensor: tmp421: implement Resettable reset

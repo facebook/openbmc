@@ -1,4 +1,4 @@
-From 125b383f23898ac4000bc675707ab5727e89bf3e Mon Sep 17 00:00:00 2001
+From 3335af5a2927aaff5ec92578c29329f3749bbbac Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 23 Jul 2026 16:49:34 +0200
 Subject: [PATCH] tests/qtest: ina238: cover the ALERT path and

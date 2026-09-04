@@ -1,8 +1,8 @@
-From 7bb9e2448c74694f7b1ea271082f5c665cdc4554 Mon Sep 17 00:00:00 2001
+From 8cd8ea5fdac2a7d1a9b44205ce95d9f7a32299de Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 5 Aug 2026 17:59:51 +0200
-Subject: [PATCH] hw/sensor: tmp421: honor per-variant channels and channel
- enablement
+Subject: [PATCH] hw/sensor: tmp421: honor per-variant channels and
+ channel enablement
 
 Each part exposes a different number of temperature channels; register
 only the temperature properties that exist and gate the temperature

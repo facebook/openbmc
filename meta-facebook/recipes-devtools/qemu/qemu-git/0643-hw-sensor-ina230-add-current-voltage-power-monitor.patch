@@ -1,4 +1,4 @@
-From 5fb54c016f146b8642515ed3d84588363f0eb95e Mon Sep 17 00:00:00 2001
+From e4dda2b1aebed935072e75c0396160c8b7fab2d3 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 14:54:05 +0200
 Subject: [PATCH] hw/sensor: ina230: add current/voltage/power monitor

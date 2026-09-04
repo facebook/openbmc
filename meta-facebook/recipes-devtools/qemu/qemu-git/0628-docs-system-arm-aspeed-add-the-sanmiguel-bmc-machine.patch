@@ -1,4 +1,4 @@
-From 20d94b7ae5d39eff8ecd0a92cd278cabaf1dc1e1 Mon Sep 17 00:00:00 2001
+From b247df73c6419a584af445b5a2e5dbbc9ca3d9c7 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 3 Aug 2026 14:24:44 +0200
 Subject: [PATCH] docs/system/arm/aspeed: add the sanmiguel-bmc machine

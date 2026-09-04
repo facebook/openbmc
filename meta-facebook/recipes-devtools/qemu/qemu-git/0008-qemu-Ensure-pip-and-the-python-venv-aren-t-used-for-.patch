@@ -1,7 +1,8 @@
-From fba222e9ee5e53b79d10c0cc0c72f585671ec438 Mon Sep 17 00:00:00 2001
+From 767e0a6daaaee7f882b0ae0c6c471aa8cc77c8c3 Mon Sep 17 00:00:00 2001
 From: Richard Purdie <richard.purdie@linuxfoundation.org>
 Date: Wed, 22 May 2024 13:58:23 +0200
-Subject: [PATCH] qemu: Ensure pip and the python venv aren't used for meson
+Subject: [PATCH] qemu: Ensure pip and the python venv aren't used for
+ meson
 
 Qemu wants to use a supported python version and a specific meson version
 to "help" users and uses pip and creates a venv to do this. This is a nightmare

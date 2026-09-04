@@ -1,4 +1,4 @@
-From b5955452e251636f1580ec9ec62fa0b20f7390dc Mon Sep 17 00:00:00 2001
+From 04f481e3f8ab8262f6d8a530d9802b95e8785ab7 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:11 +0200
 Subject: [PATCH] hw/arm: sanmiguel: add Facebook SanMiguel BMC machine
@@ -17,17 +17,17 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
 Link: https://lore.kernel.org/qemu-devel/20260731-sanmiguel-bmc-locator-v2-12-1266926ba769@free.fr
 Signed-off-by: Cédric Le Goater <clg@redhat.com>
 ---
- hw/arm/aspeed_ast2600_sanmiguel.c | 142 ++++++++++++++++++++++++++++++
+ hw/arm/aspeed_ast2600_sanmiguel.c | 140 ++++++++++++++++++++++++++++++
  hw/arm/meson.build                |   1 +
- 2 files changed, 143 insertions(+)
+ 2 files changed, 141 insertions(+)
  create mode 100644 hw/arm/aspeed_ast2600_sanmiguel.c
 
 diff --git a/hw/arm/aspeed_ast2600_sanmiguel.c b/hw/arm/aspeed_ast2600_sanmiguel.c
 new file mode 100644
-index 0000000000..0f766449ae
+index 0000000000..ca07a0deaa
 --- /dev/null
 +++ b/hw/arm/aspeed_ast2600_sanmiguel.c
-@@ -0,0 +1,142 @@
+@@ -0,0 +1,140 @@
 +/*
 + * Facebook SanMiguel BMC
 + *
@@ -37,7 +37,6 @@ index 0000000000..0f766449ae
 + */
 +
 +#include "qemu/osdep.h"
-+#include "hw/arm/machines-qom.h"
 +#include "hw/arm/aspeed.h"
 +#include "hw/arm/aspeed_soc.h"
 +#include "hw/i2c/i2c_mux_pca954x.h"
@@ -165,7 +164,6 @@ index 0000000000..0f766449ae
 +        .name          = MACHINE_TYPE_NAME("sanmiguel-bmc"),
 +        .parent        = TYPE_ASPEED_MACHINE,
 +        .class_init    = aspeed_machine_sanmiguel_class_init,
-+        .interfaces    = arm_machine_interfaces,
 +    }
 +};
 +

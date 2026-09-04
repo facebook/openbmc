@@ -1,4 +1,4 @@
-From 3345999fde094c267a31c603841bfd0ecd5f612a Mon Sep 17 00:00:00 2001
+From 8b8186db1f975a285a45d8204fb3263f0b7bf585 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 27 Apr 2022 16:23:48 -0700
 Subject: [PATCH] hw/misc: Add i2c-netdev device

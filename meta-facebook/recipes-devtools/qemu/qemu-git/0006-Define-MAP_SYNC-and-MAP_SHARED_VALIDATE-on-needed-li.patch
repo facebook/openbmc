@@ -1,8 +1,8 @@
-From aea6bebb89df395e278f9af48ab46e4e361041d4 Mon Sep 17 00:00:00 2001
+From ff936c9ee5c9a857f8fea0656e3a0d49e4433fe0 Mon Sep 17 00:00:00 2001
 From: Khem Raj <raj.khem@gmail.com>
 Date: Mon, 21 Mar 2022 10:09:38 -0700
-Subject: [PATCH] Define MAP_SYNC and MAP_SHARED_VALIDATE on needed linux
- systems
+Subject: [PATCH] Define MAP_SYNC and MAP_SHARED_VALIDATE on needed
+ linux systems
 
 linux only wires MAP_SYNC and MAP_SHARED_VALIDATE for architectures
 which include asm-generic/mman.h and mips/powerpc are not including this

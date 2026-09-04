@@ -1,8 +1,8 @@
-From 554adfe530bd39746b5c7c647eaeea947aeb6261 Mon Sep 17 00:00:00 2001
+From cbd8a290965f3054eecc34e9d4b32190ab4f03c7 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:15 +0200
-Subject: [PATCH] tests/functional: aspeed: optionally check the device tree
- model on boot
+Subject: [PATCH] tests/functional: aspeed: optionally check the device
+ tree model on boot
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

@@ -1,7 +1,8 @@
-From 23a7d9d03ecd9d99132b669c5141c33928eb3df1 Mon Sep 17 00:00:00 2001
+From 81146e1ebf0693a90dfd922a70fff81c46991239 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:19 +0200
-Subject: [PATCH] tests/functional: aspeed: add hwmon sensor read helpers
+Subject: [PATCH] tests/functional: aspeed: add hwmon sensor read
+ helpers
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

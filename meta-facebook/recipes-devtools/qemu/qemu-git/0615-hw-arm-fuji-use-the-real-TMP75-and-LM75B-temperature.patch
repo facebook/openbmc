@@ -1,8 +1,8 @@
-From d374fd2b8592840a8bd492b6a96e647a6c3c64ff Mon Sep 17 00:00:00 2001
+From 01b79d01461118f2428dbe0ee8e5b678e56f1d03 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:14 +0200
-Subject: [PATCH] hw/arm: fuji: use the real TMP75 and LM75B temperature
- sensors
+Subject: [PATCH] hw/arm: fuji: use the real TMP75 and LM75B
+ temperature sensors
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -25,10 +25,10 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 7 insertions(+), 15 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_fuji.c b/hw/arm/aspeed_ast2600_fuji.c
-index e5aca6f0c0..a5e9ddd695 100644
+index 59fd338b9f..a71488044c 100644
 --- a/hw/arm/aspeed_ast2600_fuji.c
 +++ b/hw/arm/aspeed_ast2600_fuji.c
-@@ -16,14 +16,6 @@
+@@ -15,14 +15,6 @@
  #include "hw/sensor/tmp105.h"
  #include "hw/nvram/eeprom_at24c.h"
  
@@ -43,7 +43,7 @@ index e5aca6f0c0..a5e9ddd695 100644
  #define TYPE_TMP422 "tmp422"
  
  /* Fuji hardware value */
-@@ -53,8 +45,8 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -52,8 +44,8 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
                                   &i2c[80 + i * 8]);
      }
  
@@ -54,7 +54,7 @@ index e5aca6f0c0..a5e9ddd695 100644
  
      /*
       * EEPROM 24c64 size is 64Kbits or 8 Kbytes
-@@ -64,15 +56,15 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -63,15 +55,15 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
      at24c_eeprom_init(i2c[20], 0x50, 256);
      at24c_eeprom_init(i2c[22], 0x52, 256);
  

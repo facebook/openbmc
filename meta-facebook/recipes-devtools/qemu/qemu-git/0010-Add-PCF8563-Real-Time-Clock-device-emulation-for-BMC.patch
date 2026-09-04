@@ -1,4 +1,4 @@
-From 51596e0668a9d4fb5489f4f477d83f0804b66d70 Mon Sep 17 00:00:00 2001
+From fa60e0ec4b2fc2c27424b900a3bcaa9f0f4a30eb Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Fri, 26 Jun 2026 16:42:14 -0700
 Subject: [PATCH] Add PCF8563 Real-Time Clock device emulation for BMC

@@ -1,8 +1,8 @@
-From cb9f4f57f7e70bb267257f9880249ef94019f12f Mon Sep 17 00:00:00 2001
+From 5d5537a2110b0e1f9578f04c9baaa003077e3ba2 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 17:23:08 +0200
-Subject: [PATCH] hw/arm: bletchley: select the board revision with a machine
- property
+Subject: [PATCH] hw/arm: bletchley: select the board revision with a
+ machine property
 
 Two Bletchley revisions are in the field, differing only in FRU
 layout: the BMC MAC address moved from a custom field of the chassis
@@ -16,8 +16,8 @@ once the images land.
 Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
 ---
  docs/system/arm/aspeed.rst        | 13 +++++++++
- hw/arm/aspeed_ast2600_bletchley.c | 45 ++++++++++++++++++++++++++++++-
- 2 files changed, 57 insertions(+), 1 deletion(-)
+ hw/arm/aspeed_ast2600_bletchley.c | 44 ++++++++++++++++++++++++++++++-
+ 2 files changed, 56 insertions(+), 1 deletion(-)
 
 diff --git a/docs/system/arm/aspeed.rst b/docs/system/arm/aspeed.rst
 index e50422ac92..bef1c9986f 100644
@@ -44,7 +44,7 @@ index e50422ac92..bef1c9986f 100644
  ^^^^^^^^^^
  
 diff --git a/hw/arm/aspeed_ast2600_bletchley.c b/hw/arm/aspeed_ast2600_bletchley.c
-index 4dd000714b..3b9341694c 100644
+index 8fa3c3d7da..7b006d0712 100644
 --- a/hw/arm/aspeed_ast2600_bletchley.c
 +++ b/hw/arm/aspeed_ast2600_bletchley.c
 @@ -5,6 +5,10 @@
@@ -58,15 +58,7 @@ index 4dd000714b..3b9341694c 100644
   * Current limitations: the following devices from the device tree have no
   * QEMU model and are therefore not emulated:
   *   - mps,mp5023 power monitors
-@@ -15,6 +19,7 @@
-  */
- 
- #include "qemu/osdep.h"
-+#include "qapi/error.h"
- #include "hw/arm/machines-qom.h"
- #include "hw/arm/aspeed.h"
- #include "hw/arm/aspeed_soc.h"
-@@ -30,6 +35,15 @@
+@@ -30,6 +34,15 @@
  #define BLETCHLEY_BMC_HW_STRAP2 0x00000801
  #define BLETCHLEY_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
  
@@ -82,7 +74,7 @@ index 4dd000714b..3b9341694c 100644
  static void bletchley_bmc_i2c_init(AspeedMachineState *bmc)
  {
      AspeedSoCState *soc = bmc->soc;
-@@ -79,6 +93,28 @@ static void bletchley_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -79,6 +92,28 @@ static void bletchley_bmc_i2c_init(AspeedMachineState *bmc)
      /* Missing model: ipmb-dev @ 0x10 */
  }
  
@@ -111,7 +103,7 @@ index 4dd000714b..3b9341694c 100644
  static void aspeed_machine_bletchley_class_init(ObjectClass *oc,
                                                  const void *data)
  {
-@@ -96,12 +132,19 @@ static void aspeed_machine_bletchley_class_init(ObjectClass *oc,
+@@ -96,12 +131,19 @@ static void aspeed_machine_bletchley_class_init(ObjectClass *oc,
      amc->i2c_init  = bletchley_bmc_i2c_init;
      mc->default_ram_size = BLETCHLEY_BMC_RAM_SIZE;
      aspeed_machine_class_init_cpus_defaults(mc);
@@ -130,8 +122,8 @@ index 4dd000714b..3b9341694c 100644
          .parent        = TYPE_ASPEED_MACHINE,
 +        .instance_size = sizeof(BletchleyMachineState),
          .class_init    = aspeed_machine_bletchley_class_init,
-         .interfaces    = arm_machine_interfaces,
      }
+ };
 -- 
 2.53.0-Meta
 

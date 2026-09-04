@@ -1,4 +1,4 @@
-From b3c76a0b869ecf4f43c9a0a3dfa8c3abda3964f5 Mon Sep 17 00:00:00 2001
+From 738bd39dfd2ce42f85f17fee7b226333a4d24955 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 21 Jul 2026 14:33:13 +0200
 Subject: [PATCH] hw/sensor: ina238: add current/voltage/power monitor

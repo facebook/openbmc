@@ -1,8 +1,8 @@
-From a0fb05e1bc7e4c29a863d819f3da02cb773bf248 Mon Sep 17 00:00:00 2001
+From fe7cb0c597f285038ba2dd8be19d2a7734ae3b9d Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:09 +0200
-Subject: [PATCH] tests/qtest: tmp105: cover one-shot and fault-queue write
- immunity
+Subject: [PATCH] tests/qtest: tmp105: cover one-shot and fault-queue
+ write immunity
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

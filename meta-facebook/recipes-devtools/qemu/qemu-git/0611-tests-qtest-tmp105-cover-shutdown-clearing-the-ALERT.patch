@@ -1,8 +1,8 @@
-From 128f01825271061b1aa8b5123bb43ea15e605ca4 Mon Sep 17 00:00:00 2001
+From 9b01065d242d4f2b2e5b2dd41708cef9fa904369 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:10 +0200
-Subject: [PATCH] tests/qtest: tmp105: cover shutdown clearing the ALERT across
- variants
+Subject: [PATCH] tests/qtest: tmp105: cover shutdown clearing the
+ ALERT across variants
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

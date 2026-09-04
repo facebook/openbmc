@@ -1,4 +1,4 @@
-From 5cbc0b848a8989fc64ace46ea1d719173f7da381 Mon Sep 17 00:00:00 2001
+From cca3c9083c82d24daa42d6cffe3d522ee34bc81c Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Fri, 20 May 2022 17:07:55 -0700
 Subject: [PATCH] hw/arm/aspeed: Add fb_machine_class_init
@@ -10,24 +10,24 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  hw/arm/aspeed_ast2500_evb.c      | 137 +++++++++++++++++++++++++++++++
  hw/arm/aspeed_ast2600_evb.c      |  40 +++++++++
  hw/arm/aspeed_ast2600_fuji.c     |  58 +++++++++++++
- include/hw/arm/aspeed.h          |  68 +++++++++++++++
- 6 files changed, 366 insertions(+)
+ include/hw/arm/aspeed.h          |  67 +++++++++++++++
+ 6 files changed, 365 insertions(+)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 8fa16b3831..4e4e36bdcf 100644
+index a7cfbd6c5e..3988820dc6 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -438,3 +438,5 @@ static const TypeInfo aspeed_machine_types[] = {
+@@ -437,3 +437,5 @@ static const TypeInfo aspeed_machine_types[] = {
  };
  
  DEFINE_TYPES(aspeed_machine_types)
 +
 +
 diff --git a/hw/arm/aspeed_ast2400_palmetto.c b/hw/arm/aspeed_ast2400_palmetto.c
-index 776aa43a45..9465a40cf3 100644
+index e2350e5b6c..de2c4a5a1b 100644
 --- a/hw/arm/aspeed_ast2400_palmetto.c
 +++ b/hw/arm/aspeed_ast2400_palmetto.c
-@@ -12,6 +12,15 @@
+@@ -11,6 +11,15 @@
  #include "hw/arm/aspeed.h"
  #include "hw/arm/aspeed_soc.h"
  #include "hw/i2c/smbus_eeprom.h"
@@ -43,7 +43,7 @@ index 776aa43a45..9465a40cf3 100644
  
  /* Palmetto hardware value: 0x120CE416 */
  #define PALMETTO_BMC_HW_STRAP1 (                                        \
-@@ -78,3 +87,55 @@ static const TypeInfo aspeed_ast2400_palmetto_types[] = {
+@@ -76,3 +85,55 @@ static const TypeInfo aspeed_ast2400_palmetto_types[] = {
  };
  
  DEFINE_TYPES(aspeed_ast2400_palmetto_types)
@@ -100,10 +100,10 @@ index 776aa43a45..9465a40cf3 100644
 +
 +DEFINE_FB_MACHINES()
 diff --git a/hw/arm/aspeed_ast2500_evb.c b/hw/arm/aspeed_ast2500_evb.c
-index 8b5cb67be9..6fcafc7212 100644
+index 6ca2a36322..0c5948edd8 100644
 --- a/hw/arm/aspeed_ast2500_evb.c
 +++ b/hw/arm/aspeed_ast2500_evb.c
-@@ -65,3 +65,140 @@ static const TypeInfo aspeed_ast2500_evb_types[] = {
+@@ -63,3 +63,140 @@ static const TypeInfo aspeed_ast2500_evb_types[] = {
  };
  
  DEFINE_TYPES(aspeed_ast2500_evb_types)
@@ -245,10 +245,10 @@ index 8b5cb67be9..6fcafc7212 100644
 +
 +DEFINE_FB_MACHINES()
 diff --git a/hw/arm/aspeed_ast2600_evb.c b/hw/arm/aspeed_ast2600_evb.c
-index c43d2687c1..fce5eddac3 100644
+index 8a17c4453e..b9e5c35517 100644
 --- a/hw/arm/aspeed_ast2600_evb.c
 +++ b/hw/arm/aspeed_ast2600_evb.c
-@@ -18,6 +18,8 @@
+@@ -17,6 +17,8 @@
  #define AST2600_EVB_HW_STRAP1 0x000000C0
  #define AST2600_EVB_HW_STRAP2 0x00000003
  
@@ -257,7 +257,7 @@ index c43d2687c1..fce5eddac3 100644
  static void ast2600_evb_i2c_init(AspeedMachineState *bmc)
  {
      AspeedSoCState *soc = bmc->soc;
-@@ -63,3 +65,41 @@ static const TypeInfo aspeed_ast2600_evb_types[] = {
+@@ -61,3 +63,41 @@ static const TypeInfo aspeed_ast2600_evb_types[] = {
  };
  
  DEFINE_TYPES(aspeed_ast2600_evb_types)
@@ -300,10 +300,10 @@ index c43d2687c1..fce5eddac3 100644
 +
 +DEFINE_FB_MACHINES()
 diff --git a/hw/arm/aspeed_ast2600_fuji.c b/hw/arm/aspeed_ast2600_fuji.c
-index 3293dfe47f..a68e51c89d 100644
+index 2285fe15ff..a70e22f8b4 100644
 --- a/hw/arm/aspeed_ast2600_fuji.c
 +++ b/hw/arm/aspeed_ast2600_fuji.c
-@@ -127,3 +127,61 @@ static const TypeInfo aspeed_ast2600_fuji_types[] = {
+@@ -125,3 +125,61 @@ static const TypeInfo aspeed_ast2600_fuji_types[] = {
  };
  
  DEFINE_TYPES(aspeed_ast2600_fuji_types)
@@ -366,10 +366,10 @@ index 3293dfe47f..a68e51c89d 100644
 +
 +DEFINE_FB_MACHINES()
 diff --git a/include/hw/arm/aspeed.h b/include/hw/arm/aspeed.h
-index 54f0d7643d..31382412ee 100644
+index 54f0d7643d..d4d966d741 100644
 --- a/include/hw/arm/aspeed.h
 +++ b/include/hw/arm/aspeed.h
-@@ -127,4 +127,72 @@ void aspeed_machine_ast2600_class_emmc_init(ObjectClass *oc);
+@@ -127,4 +127,71 @@ void aspeed_machine_ast2600_class_emmc_init(ObjectClass *oc);
   */
  void aspeed_connect_serial_hds_to_uarts(AspeedMachineState *bmc);
  
@@ -433,7 +433,6 @@ index 54f0d7643d..31382412ee 100644
 +            fb_machines[i].parent : TYPE_ASPEED_MACHINE;                    \
 +        types[i].class_init = fb_machine_class_init;                        \
 +        types[i].class_data = (void *)&fb_machines[i];                      \
-+        types[i].interfaces = arm_machine_interfaces;                       \
 +    }                                                                       \
 +                                                                            \
 +    type_register_static_array(types, ARRAY_SIZE(types));                   \

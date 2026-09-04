@@ -1,4 +1,4 @@
-From 72aca98fd05d2e182ad200e6dbd2cd7930536ace Mon Sep 17 00:00:00 2001
+From 1f2d36a35cc4cf3b6a1a8cfa99a6d57991a7031e Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 10:45:21 +0200
 Subject: [PATCH] tests/functional/arm: minerva: add BMC boot test

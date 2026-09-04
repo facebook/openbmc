@@ -1,8 +1,8 @@
-From b0a4d9bf06ab6a7c843bc53bd9256ab3e2fdb927 Mon Sep 17 00:00:00 2001
+From 899fcf22a1d895cf65b9395f39ede9be1ba15763 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 22 Jul 2026 17:24:58 +0200
-Subject: [PATCH] tests/qtest: ds1339: cover power-on defaults and reserved-bit
- masking
+Subject: [PATCH] tests/qtest: ds1339: cover power-on defaults and
+ reserved-bit masking
 
 Add checks for the power-on Control/Status defaults, the read-only and
 reserved bits of the Status register, and the reserved-bit masking of

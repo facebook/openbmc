@@ -1,4 +1,4 @@
-From be0cb27f3898c3c67dcb215defeef424b857aaa8 Mon Sep 17 00:00:00 2001
+From 4ae67ba162ba94566263fafc4a10b100974427b9 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 23 Jul 2026 12:17:51 +0200
 Subject: [PATCH] hw/i2c: pca954x: migrate mux state

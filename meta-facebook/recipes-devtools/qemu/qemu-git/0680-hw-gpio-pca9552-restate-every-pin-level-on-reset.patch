@@ -1,4 +1,4 @@
-From 3bd62a5946028d24f96e3ac79c315b6284bb15d6 Mon Sep 17 00:00:00 2001
+From 1d470b1f36cfa097caf99f699fe4d5be58ca22ff Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 14 Aug 2026 15:26:36 +0200
 Subject: [PATCH] hw/gpio: pca9552: restate every pin level on reset

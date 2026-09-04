@@ -1,4 +1,4 @@
-From 52e843961e2e4958021b7cefd9dfb685a0624c88 Mon Sep 17 00:00:00 2001
+From cf3154b109087974fccfad3c785526ba8f2b6af4 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH] hw/misc/aspeed: Add fby35-sb-cpld
@@ -33,7 +33,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  create mode 100644 hw/misc/fby35_sb_cpld.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index a1830cdad1..722abc2987 100644
+index f524d90523..cc42dd2a31 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
 @@ -1280,6 +1280,7 @@ F: tests/*/*aspeed*

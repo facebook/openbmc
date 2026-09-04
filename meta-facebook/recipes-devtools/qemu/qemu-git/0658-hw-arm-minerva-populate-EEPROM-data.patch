@@ -1,4 +1,4 @@
-From bdf19ce1045c156b45a505c29445b8d1f91e2d6e Mon Sep 17 00:00:00 2001
+From f05d388f6c03a243b889d7866fd86b196bb57c4d Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 3 Aug 2026 15:24:04 +0200
 Subject: [PATCH] hw/arm: minerva: populate EEPROM data
@@ -16,10 +16,10 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  1 file changed, 695 insertions(+), 19 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_minerva.c b/hw/arm/aspeed_ast2600_minerva.c
-index f3ec64adb3..ec4d976735 100644
+index 1f46ac7d58..5c95dee99a 100644
 --- a/hw/arm/aspeed_ast2600_minerva.c
 +++ b/hw/arm/aspeed_ast2600_minerva.c
-@@ -25,14 +25,667 @@
+@@ -24,14 +24,667 @@
  #define MINERVA_BMC_HW_STRAP2 0x00000800
  #define MINERVA_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
  
@@ -689,7 +689,7 @@ index f3ec64adb3..ec4d976735 100644
      /* pwm@5e - maxim,max31790 (no model) */
      /* power-sensor@40/41/44/45 - ti,ina238 */
      i2c_slave_create_simple(bus, TYPE_INA238, 0x40);
-@@ -49,12 +702,14 @@ static void minerva_fcb_i2c_init(I2CBus *bus)
+@@ -48,12 +701,14 @@ static void minerva_fcb_i2c_init(I2CBus *bus)
  }
  
  static void minerva_pca9545_eeprom_init(I2CBus *bus, uint8_t addr,
@@ -705,7 +705,7 @@ index f3ec64adb3..ec4d976735 100644
      }
  }
  
-@@ -88,46 +743,61 @@ static void minerva_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -87,46 +742,61 @@ static void minerva_bmc_i2c_init(AspeedMachineState *bmc)
      i2c_slave_create_simple(i2c[1], TYPE_TMP75, 0x4b);
      i2c_slave_create_simple(i2c[1], TYPE_TMP75, 0x4f);
      /* eeprom@54 - atmel,24c128 */
@@ -779,7 +779,7 @@ index f3ec64adb3..ec4d976735 100644
      at24c_eeprom_init(i2c[9], 0x50, 8 * KiB);
      /* rtc@51 - nxp,pcf8563 (no model) */
      /* rtc@68 - dallas,ds1339 */
-@@ -135,20 +805,26 @@ static void minerva_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -134,20 +804,26 @@ static void minerva_bmc_i2c_init(AspeedMachineState *bmc)
  
      /* &i2c12 */
      /* i2c-mux@70 (PCA9545) - imux40-42 eeprom@50, imux43 empty */

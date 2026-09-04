@@ -1,7 +1,8 @@
-From 9d567bfcda3fabaae8af0dc8ecfecbf009095474 Mon Sep 17 00:00:00 2001
+From ebe2fe6d64617d693f4907fcabb19600510801f3 Mon Sep 17 00:00:00 2001
 From: Zinc Lim <zinclim@meta.com>
 Date: Fri, 28 Aug 2026 11:59:33 -0700
-Subject: [PATCH] hw/i2c/aspeed_i2c: fix AST2700 target buffer-mode receive
+Subject: [PATCH] hw/i2c/aspeed_i2c: fix AST2700 target buffer-mode
+ receive
 
 AST2700 gives the target its own pool region and drives it through the
 DMA register set, where AST2600 shares the controller pool and uses the

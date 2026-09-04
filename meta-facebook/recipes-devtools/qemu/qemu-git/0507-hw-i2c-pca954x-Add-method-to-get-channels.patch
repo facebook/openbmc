@@ -1,4 +1,4 @@
-From 3cd03e48c218b51d685507cc16e0acd8cf09d231 Mon Sep 17 00:00:00 2001
+From b42168a09c0798aca9ea3006a20b85fc2b45e955 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH] hw/i2c/pca954x: Add method to get channels
@@ -36,10 +36,10 @@ Signed-off-by: Cédric Le Goater <clg@kaod.org>
  3 files changed, 32 insertions(+), 20 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_fuji.c b/hw/arm/aspeed_ast2600_fuji.c
-index 37db252e27..3293dfe47f 100644
+index 8a87c2dbee..2285fe15ff 100644
 --- a/hw/arm/aspeed_ast2600_fuji.c
 +++ b/hw/arm/aspeed_ast2600_fuji.c
-@@ -24,15 +24,6 @@
+@@ -23,15 +23,6 @@
  #define FUJI_BMC_HW_STRAP2    0x00000000
  #define FUJI_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
  
@@ -55,7 +55,7 @@ index 37db252e27..3293dfe47f 100644
  static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
  {
      AspeedSoCState *soc = bmc->soc;
-@@ -41,20 +32,18 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -40,20 +31,18 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
      for (int i = 0; i < 16; i++) {
          i2c[i] = aspeed_i2c_get_bus(&soc->i2c, i);
      }

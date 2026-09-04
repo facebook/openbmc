@@ -1,7 +1,8 @@
-From 245cdeff49e89e9d9ba25d86840032465a97bfcf Mon Sep 17 00:00:00 2001
+From 2790964a37d30bd17d8236bd5813de1450c2f813 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:06 +0200
-Subject: [PATCH] hw/sensor: tmp105: add TMP75, TMP175 and LM75B variants
+Subject: [PATCH] hw/sensor: tmp105: add TMP75, TMP175 and LM75B
+ variants
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

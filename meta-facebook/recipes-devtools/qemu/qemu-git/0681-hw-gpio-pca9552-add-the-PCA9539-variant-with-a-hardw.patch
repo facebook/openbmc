@@ -1,8 +1,8 @@
-From 2f163d074bd1af41d8a4c9b473840f694eb43b84 Mon Sep 17 00:00:00 2001
+From 2f5e924e2094f871a63744165192a1c36ae451c3 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 6 Aug 2026 17:24:49 +0200
-Subject: [PATCH] hw/gpio: pca9552: add the PCA9539 variant with a hardware
- reset pin
+Subject: [PATCH] hw/gpio: pca9552: add the PCA9539 variant with a
+ hardware reset pin
 
 The PCA9539 is register-compatible with the PCA9535 and PCA9555 I/O
 expanders already handled here, differing only by an active-low

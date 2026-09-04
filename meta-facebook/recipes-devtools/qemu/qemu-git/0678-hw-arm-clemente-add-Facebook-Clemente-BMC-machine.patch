@@ -1,4 +1,4 @@
-From c7da51f49a24570edeee968db0989326cfbb74db Mon Sep 17 00:00:00 2001
+From c9a705689ba8b2bf1fbeb9b56c6d3c0fa463a972 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 5 Aug 2026 16:40:36 +0200
 Subject: [PATCH] hw/arm: clemente: add Facebook Clemente BMC machine
@@ -19,9 +19,9 @@ documented as comments.
 Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
 ---
  docs/system/arm/aspeed.rst       |   1 +
- hw/arm/aspeed_ast2600_clemente.c | 234 +++++++++++++++++++++++++++++++
+ hw/arm/aspeed_ast2600_clemente.c | 232 +++++++++++++++++++++++++++++++
  hw/arm/meson.build               |   1 +
- 3 files changed, 236 insertions(+)
+ 3 files changed, 234 insertions(+)
  create mode 100644 hw/arm/aspeed_ast2600_clemente.c
 
 diff --git a/docs/system/arm/aspeed.rst b/docs/system/arm/aspeed.rst
@@ -38,10 +38,10 @@ index bbd3d9cdf4..db0035189b 100644
  - ``minerva-bmc``          Facebook Minerva BMC
 diff --git a/hw/arm/aspeed_ast2600_clemente.c b/hw/arm/aspeed_ast2600_clemente.c
 new file mode 100644
-index 0000000000..67b7b28675
+index 0000000000..f983b9e021
 --- /dev/null
 +++ b/hw/arm/aspeed_ast2600_clemente.c
-@@ -0,0 +1,234 @@
+@@ -0,0 +1,232 @@
 +/*
 + * Facebook Clemente BMC
 + *
@@ -61,7 +61,6 @@ index 0000000000..67b7b28675
 + */
 +
 +#include "qemu/osdep.h"
-+#include "hw/arm/machines-qom.h"
 +#include "hw/arm/aspeed.h"
 +#include "hw/arm/aspeed_soc.h"
 +#include "hw/i2c/i2c_mux_pca954x.h"
@@ -271,7 +270,6 @@ index 0000000000..67b7b28675
 +        .name          = MACHINE_TYPE_NAME("clemente-bmc"),
 +        .parent        = TYPE_ASPEED_MACHINE,
 +        .class_init    = aspeed_machine_clemente_class_init,
-+        .interfaces    = arm_machine_interfaces,
 +    }
 +};
 +

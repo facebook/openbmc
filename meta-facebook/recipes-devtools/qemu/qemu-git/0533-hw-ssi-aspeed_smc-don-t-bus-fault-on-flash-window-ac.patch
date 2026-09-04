@@ -1,8 +1,8 @@
-From c23cc2627d520704fbeeffd11d5f408f2f3cd34e Mon Sep 17 00:00:00 2001
+From 53a66a4abd8ec39532ccb60fa67b35c4052efad9 Mon Sep 17 00:00:00 2001
 From: Rick Yazwinski <rickyaz@meta.com>
 Date: Thu, 4 Jun 2026 08:21:12 -0700
-Subject: [PATCH] hw/ssi/aspeed_smc: don't bus-fault on flash window access in
- read mode
+Subject: [PATCH] hw/ssi/aspeed_smc: don't bus-fault on flash window
+ access in read mode
 
 Commit 80c5be9458 ("hw/ssi/aspeed_smc: Convert mem ops to
 read/write_with_attrs for error handling") made aspeed_smc_flash_read()

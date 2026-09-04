@@ -1,7 +1,8 @@
-From 181af945894b455f2bdab021a6090f699b9d40df Mon Sep 17 00:00:00 2001
+From 422e2808cadfb5ae1ff0ac3d85730b89c4be7c32 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 14 Aug 2026 17:19:14 +0200
-Subject: [PATCH] hw/sensor: tmp421: describe the temperature properties
+Subject: [PATCH] hw/sensor: tmp421: describe the temperature
+ properties
 
 Attach a description to each temperature property so it shows up in
 qom-list-properties.

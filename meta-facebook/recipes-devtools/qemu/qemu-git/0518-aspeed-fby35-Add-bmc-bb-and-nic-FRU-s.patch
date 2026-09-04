@@ -1,4 +1,4 @@
-From 3ea03d7147612ecc2ad342666c6c0fabbbed1bbb Mon Sep 17 00:00:00 2001
+From 9e3d89a1d610bc1349f37148f0be81dd4fb7a79c Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 15 Jun 2022 13:45:39 -0700
 Subject: [PATCH] aspeed: fby35: Add bmc, bb, and nic FRU's

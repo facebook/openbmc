@@ -1,7 +1,8 @@
-From 969444766f3da65320f994d37c06414542be02e3 Mon Sep 17 00:00:00 2001
+From 037598c60303d686ab7acbd529a3c9769a247db5 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 2 Feb 2026 07:47:26 -0800
-Subject: [PATCH] Subject: [PATCH] configure: lookup meson exutable from PATH
+Subject: [PATCH] Subject: [PATCH] configure: lookup meson exutable
+ from PATH
 
 Upstream-Status: Inappropriate [workaround, would need a real fix for upstream]
 ---

@@ -1,4 +1,4 @@
-From 2610687d0473defb308d3f9bc6fe72f088b19b83 Mon Sep 17 00:00:00 2001
+From 943d923bb80f9266eca24212453d2fc86a838362 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 17:43:53 +0200
 Subject: [PATCH] hw/arm: ventura: add Facebook Ventura BMC machine
@@ -24,9 +24,9 @@ documented as comments.
 Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
 ---
  docs/system/arm/aspeed.rst      |   1 +
- hw/arm/aspeed_ast2600_ventura.c | 163 ++++++++++++++++++++++++++++++++
+ hw/arm/aspeed_ast2600_ventura.c | 161 ++++++++++++++++++++++++++++++++
  hw/arm/meson.build              |   1 +
- 3 files changed, 165 insertions(+)
+ 3 files changed, 163 insertions(+)
  create mode 100644 hw/arm/aspeed_ast2600_ventura.c
 
 diff --git a/docs/system/arm/aspeed.rst b/docs/system/arm/aspeed.rst
@@ -43,10 +43,10 @@ index b011ceca0d..c95a95b8b2 100644
  
 diff --git a/hw/arm/aspeed_ast2600_ventura.c b/hw/arm/aspeed_ast2600_ventura.c
 new file mode 100644
-index 0000000000..b9913e479f
+index 0000000000..11c823279f
 --- /dev/null
 +++ b/hw/arm/aspeed_ast2600_ventura.c
-@@ -0,0 +1,163 @@
+@@ -0,0 +1,161 @@
 +/*
 + * Facebook Ventura BMC
 + *
@@ -66,7 +66,6 @@ index 0000000000..b9913e479f
 + */
 +
 +#include "qemu/osdep.h"
-+#include "hw/arm/machines-qom.h"
 +#include "hw/arm/aspeed.h"
 +#include "hw/arm/aspeed_soc.h"
 +#include "hw/i2c/i2c_mux_pca954x.h"
@@ -205,7 +204,6 @@ index 0000000000..b9913e479f
 +        .name          = MACHINE_TYPE_NAME("ventura-bmc"),
 +        .parent        = TYPE_ASPEED_MACHINE,
 +        .class_init    = aspeed_machine_ventura_class_init,
-+        .interfaces    = arm_machine_interfaces,
 +    }
 +};
 +

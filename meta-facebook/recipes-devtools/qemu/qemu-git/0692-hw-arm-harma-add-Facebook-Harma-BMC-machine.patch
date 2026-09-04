@@ -1,4 +1,4 @@
-From 8f56c11684e9a010c621d2a2f5983421c20eba49 Mon Sep 17 00:00:00 2001
+From d69f5530b4f070a60337cd71d6d53f92c3af8058 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 12:09:47 +0200
 Subject: [PATCH] hw/arm: harma: add Facebook Harma BMC machine
@@ -19,9 +19,9 @@ so the gaps are explicit.
 Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
 ---
  docs/system/arm/aspeed.rst    |   1 +
- hw/arm/aspeed_ast2600_harma.c | 191 ++++++++++++++++++++++++++++++++++
+ hw/arm/aspeed_ast2600_harma.c | 189 ++++++++++++++++++++++++++++++++++
  hw/arm/meson.build            |   1 +
- 3 files changed, 193 insertions(+)
+ 3 files changed, 191 insertions(+)
  create mode 100644 hw/arm/aspeed_ast2600_harma.c
 
 diff --git a/docs/system/arm/aspeed.rst b/docs/system/arm/aspeed.rst
@@ -38,10 +38,10 @@ index bef1c9986f..b011ceca0d 100644
  
 diff --git a/hw/arm/aspeed_ast2600_harma.c b/hw/arm/aspeed_ast2600_harma.c
 new file mode 100644
-index 0000000000..5740fb1b8f
+index 0000000000..326b348cd8
 --- /dev/null
 +++ b/hw/arm/aspeed_ast2600_harma.c
-@@ -0,0 +1,191 @@
+@@ -0,0 +1,189 @@
 +/*
 + * Facebook Harma BMC
 + *
@@ -64,7 +64,6 @@ index 0000000000..5740fb1b8f
 + */
 +
 +#include "qemu/osdep.h"
-+#include "hw/arm/machines-qom.h"
 +#include "hw/arm/aspeed.h"
 +#include "hw/arm/aspeed_soc.h"
 +#include "hw/i2c/i2c_mux_pca954x.h"
@@ -228,7 +227,6 @@ index 0000000000..5740fb1b8f
 +        .name          = MACHINE_TYPE_NAME("harma-bmc"),
 +        .parent        = TYPE_ASPEED_MACHINE,
 +        .class_init    = aspeed_machine_harma_class_init,
-+        .interfaces    = arm_machine_interfaces,
 +    }
 +};
 +

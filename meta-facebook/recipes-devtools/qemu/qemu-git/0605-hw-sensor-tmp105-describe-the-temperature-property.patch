@@ -1,4 +1,4 @@
-From 88a77bf88c23d3408530092531102997c5af3e62 Mon Sep 17 00:00:00 2001
+From c64eefadfbdc5c500c7e9cf4b58eeeeca511e0a5 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:04 +0200
 Subject: [PATCH] hw/sensor: tmp105: describe the temperature property

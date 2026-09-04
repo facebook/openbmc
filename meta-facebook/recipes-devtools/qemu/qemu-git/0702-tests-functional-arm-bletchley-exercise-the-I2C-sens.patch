@@ -1,7 +1,8 @@
-From fa1a60be2a9b90e91d49db9c25e8c7022ba7e5ef Mon Sep 17 00:00:00 2001
+From f6ba38ccf3ca7eb752040abe8247b590c36b26c1 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 15:52:57 +0200
-Subject: [PATCH] tests/functional/arm: bletchley: exercise the I2C sensors
+Subject: [PATCH] tests/functional/arm: bletchley: exercise the I2C
+ sensors
 
 The test stopped at the login prompt, so it only proved the machine
 boots. Log in and drive the sled power monitor and the two front-panel

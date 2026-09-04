@@ -1,7 +1,8 @@
-From c80a475588e8a9ccc02ada90d8690802bb393891 Mon Sep 17 00:00:00 2001
+From 7955427e5d475dce5226eebd669e1f1bbd27b6e2 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 23 Jul 2026 16:49:28 +0200
-Subject: [PATCH] tests/qtest: ina230: cover the ALERT limit functions and CVRF
+Subject: [PATCH] tests/qtest: ina230: cover the ALERT limit functions
+ and CVRF
 
 Cover the shunt/bus/power alert-limit functions, the alert latch
 behaviour and the conversion-ready flag.

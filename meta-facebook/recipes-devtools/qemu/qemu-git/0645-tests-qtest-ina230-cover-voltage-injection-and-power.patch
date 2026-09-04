@@ -1,8 +1,8 @@
-From 59ab5aff3b234d4ebda32a0ff9a36b290c05abcb Mon Sep 17 00:00:00 2001
+From cac59603b37966d52c2118aad2a76fd099b2e660 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 23 Jul 2026 16:49:27 +0200
-Subject: [PATCH] tests/qtest: ina230: cover voltage injection and power
- derivation
+Subject: [PATCH] tests/qtest: ina230: cover voltage injection and
+ power derivation
 
 Cover the shunt- and bus-voltage injection properties and the current
 and power values the device derives from them through the Calibration

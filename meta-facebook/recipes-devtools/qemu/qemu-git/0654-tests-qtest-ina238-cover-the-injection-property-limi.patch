@@ -1,7 +1,8 @@
-From 5813fae35ce4da553f73a98e0e73556c1249abbf Mon Sep 17 00:00:00 2001
+From 847839e0557f87aa31d7e8fc52c57f6060230960 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 21 Jul 2026 15:29:01 +0200
-Subject: [PATCH] tests/qtest: ina238: cover the injection-property limits
+Subject: [PATCH] tests/qtest: ina238: cover the injection-property
+ limits
 
 Verify that the extremes of the shunt-voltage, bus-voltage and
 die-temperature injection ranges are handled without truncation or

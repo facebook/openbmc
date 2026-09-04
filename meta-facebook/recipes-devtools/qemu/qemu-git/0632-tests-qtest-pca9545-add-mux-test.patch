@@ -1,4 +1,4 @@
-From f3a0def7b054186ea30a09c478179bb94c7e7d98 Mon Sep 17 00:00:00 2001
+From 524942d3ff7c8477f53f5f139f3a1962d79db0f8 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 10:39:59 +0200
 Subject: [PATCH] tests/qtest: pca9545: add mux test
@@ -14,10 +14,10 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  create mode 100644 tests/qtest/pca9545-test.c
 
 diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
-index b43f5d903f..1019fa3f38 100644
+index 83c388628b..e11804d842 100644
 --- a/tests/qtest/meson.build
 +++ b/tests/qtest/meson.build
-@@ -329,6 +329,7 @@ qos_test_ss.add(
+@@ -330,6 +330,7 @@ qos_test_ss.add(
    'ne2000-test.c',
    'tulip-test.c',
    'nvme-test.c',

@@ -1,4 +1,4 @@
-From 8c12b53f48fb722b4acbeaa80f8227ea7ca24fd4 Mon Sep 17 00:00:00 2001
+From 818febf8cf3d0a4469c10d1da93d6310950041ae Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 10:38:22 +0200
 Subject: [PATCH] hw/i2c: pca954x: drop unused header inclusions

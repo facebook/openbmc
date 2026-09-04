@@ -1,7 +1,8 @@
-From 8b5feaaf89376430a57e1e157f0329aa1b89b368 Mon Sep 17 00:00:00 2001
+From b996d59f508505077f8f0b9955c6f685484e2f1c Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 6 Aug 2026 15:25:05 +0200
-Subject: [PATCH] hw/arm: santabarbara: add Facebook Santabarbara BMC machine
+Subject: [PATCH] hw/arm: santabarbara: add Facebook Santabarbara BMC
+ machine
 
 Add the 'santabarbara-bmc' machine type, an AST2600-based BMC, modelled
 from its device tree (aspeed-bmc-facebook-santabarbara.dts).
@@ -21,9 +22,9 @@ documented as comments.
 Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
 ---
  docs/system/arm/aspeed.rst           |   1 +
- hw/arm/aspeed_ast2600_santabarbara.c | 251 +++++++++++++++++++++++++++
+ hw/arm/aspeed_ast2600_santabarbara.c | 249 +++++++++++++++++++++++++++
  hw/arm/meson.build                   |   1 +
- 3 files changed, 253 insertions(+)
+ 3 files changed, 251 insertions(+)
  create mode 100644 hw/arm/aspeed_ast2600_santabarbara.c
 
 diff --git a/docs/system/arm/aspeed.rst b/docs/system/arm/aspeed.rst
@@ -40,10 +41,10 @@ index db0035189b..aa43e0d47b 100644
  - ``minerva-bmc``          Facebook Minerva BMC
 diff --git a/hw/arm/aspeed_ast2600_santabarbara.c b/hw/arm/aspeed_ast2600_santabarbara.c
 new file mode 100644
-index 0000000000..65e133e6f7
+index 0000000000..21cd9820d3
 --- /dev/null
 +++ b/hw/arm/aspeed_ast2600_santabarbara.c
-@@ -0,0 +1,251 @@
+@@ -0,0 +1,249 @@
 +/*
 + * Facebook Santabarbara BMC
 + *
@@ -65,7 +66,6 @@ index 0000000000..65e133e6f7
 + */
 +
 +#include "qemu/osdep.h"
-+#include "hw/arm/machines-qom.h"
 +#include "hw/arm/aspeed.h"
 +#include "hw/arm/aspeed_soc.h"
 +#include "hw/i2c/i2c_mux_pca954x.h"
@@ -290,7 +290,6 @@ index 0000000000..65e133e6f7
 +        .name          = MACHINE_TYPE_NAME("santabarbara-bmc"),
 +        .parent        = TYPE_ASPEED_MACHINE,
 +        .class_init    = aspeed_machine_santabarbara_class_init,
-+        .interfaces    = arm_machine_interfaces,
 +    }
 +};
 +

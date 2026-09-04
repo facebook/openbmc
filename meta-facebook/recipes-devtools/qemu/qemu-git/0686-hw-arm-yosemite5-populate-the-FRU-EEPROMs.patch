@@ -1,4 +1,4 @@
-From ecee07a15ffb33b9ca500a0e933222578a2c0011 Mon Sep 17 00:00:00 2001
+From 519cf12d3170eedb55ae5f43e364a89c9d4b652a Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 12 Aug 2026 15:58:44 +0200
 Subject: [PATCH] hw/arm: yosemite5: populate the FRU EEPROMs
@@ -22,10 +22,10 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  1 file changed, 351 insertions(+), 9 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_yosemite5.c b/hw/arm/aspeed_ast2600_yosemite5.c
-index 2bfa6cf504..81a10a39a9 100644
+index 6f2bb0d061..12d27197c2 100644
 --- a/hw/arm/aspeed_ast2600_yosemite5.c
 +++ b/hw/arm/aspeed_ast2600_yosemite5.c
-@@ -40,6 +40,339 @@
+@@ -39,6 +39,339 @@
  #define YOSEMITE5_BMC_HW_STRAP2 0x00000800
  #define YOSEMITE5_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
  
@@ -365,7 +365,7 @@ index 2bfa6cf504..81a10a39a9 100644
  /*
   * CXL board behind a nested PCA9546 on i2c8: two ADCs, an I/O expander,
   * temperature and power sensors and a FRU EEPROM.
-@@ -59,7 +392,8 @@ static void yosemite5_cxl_bd_init(I2CBus *bus)
+@@ -58,7 +391,8 @@ static void yosemite5_cxl_bd_init(I2CBus *bus)
      /* temperature-sensor@4e - ti,tmp75 */
      i2c_slave_create_simple(bus, TYPE_TMP75, 0x4e);
      /* eeprom@50 - atmel,24c64 (CXL FRU) */
@@ -375,7 +375,7 @@ index 2bfa6cf504..81a10a39a9 100644
  }
  
  static void yosemite5_bmc_i2c_init(AspeedMachineState *bmc)
-@@ -87,7 +421,8 @@ static void yosemite5_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -86,7 +420,8 @@ static void yosemite5_bmc_i2c_init(AspeedMachineState *bmc)
      /* temperature-sensor@1f - ti,tmp421 (OCP NIC) */
      i2c_slave_create_simple(i2c[4], TYPE_TMP421, 0x1f);
      /* eeprom@50 - atmel,24c64 (OCP NIC FRU) */
@@ -385,7 +385,7 @@ index 2bfa6cf504..81a10a39a9 100644
  
      /* &i2c5 */
      /* i2c-mux@70/77 - PCA9546 (MCIO, channels empty) */
-@@ -120,9 +455,11 @@ static void yosemite5_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -119,9 +454,11 @@ static void yosemite5_bmc_i2c_init(AspeedMachineState *bmc)
      i2c_slave_create_simple(i2c[8], TYPE_TMP75, 0x48);
      i2c_slave_create_simple(i2c[8], TYPE_TMP75, 0x49);
      /* eeprom@56 - atmel,24c128 (PDB FRU) */
@@ -399,7 +399,7 @@ index 2bfa6cf504..81a10a39a9 100644
      /* power-monitor@58/59/5a/5b - renesas,isl28022 (no model) */
      /* psu@5c - renesas,raa228006 (no model) */
      /* fan-controller@5e - maxim,max31790 (no model) */
-@@ -137,9 +474,11 @@ static void yosemite5_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -136,9 +473,11 @@ static void yosemite5_bmc_i2c_init(AspeedMachineState *bmc)
      /* temperature-sensor@4b - ti,tmp75 */
      i2c_slave_create_simple(i2c[9], TYPE_TMP75, 0x4b);
      /* eeprom@50 - atmel,24c128 (SCM FRU) */
@@ -413,7 +413,7 @@ index 2bfa6cf504..81a10a39a9 100644
  
      /* &i2c10 - MCIO 0A */
      /* gpio-expander@21/22 - nxp,pca9535 (E1.S backplane) */
-@@ -150,7 +489,8 @@ static void yosemite5_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -149,7 +488,8 @@ static void yosemite5_bmc_i2c_init(AspeedMachineState *bmc)
      /* temperature-sensor@49 - ti,tmp75 */
      i2c_slave_create_simple(i2c[10], TYPE_TMP75, 0x49);
      /* eeprom@54 - atmel,24c128 (E1.S backplane FRU) */
@@ -423,7 +423,7 @@ index 2bfa6cf504..81a10a39a9 100644
  
      /* &i2c11 */
      /* gpio-expander@21 - nxp,pca9535 (MB) */
-@@ -179,9 +519,11 @@ static void yosemite5_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -178,9 +518,11 @@ static void yosemite5_bmc_i2c_init(AspeedMachineState *bmc)
      /* eeprom@50 - atmel,24c16 (CLKGEN FRU) */
      at24c_eeprom_init(i2c[13], 0x50, 2 * KiB);
      /* eeprom@51 - atmel,24c128 (MB FRU) */

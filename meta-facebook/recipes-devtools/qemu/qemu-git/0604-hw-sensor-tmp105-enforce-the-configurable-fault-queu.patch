@@ -1,7 +1,8 @@
-From b76f22a68224a1ba9538cf0077fb62ebb4d3a930 Mon Sep 17 00:00:00 2001
+From e7d1f5d2aaeea60c89936d5b898afea8ae3cb660 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:03 +0200
-Subject: [PATCH] hw/sensor: tmp105: enforce the configurable fault queue
+Subject: [PATCH] hw/sensor: tmp105: enforce the configurable fault
+ queue
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

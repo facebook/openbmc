@@ -1,7 +1,8 @@
-From 5269bcc9f8be34f2e0e4a943c245fce8afa31405 Mon Sep 17 00:00:00 2001
+From f9c458bae06d703dab2cfe976d5443a3b692da6e Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 14:54:20 +0200
-Subject: [PATCH] tests/qtest: ina230: add current/voltage/power monitor test
+Subject: [PATCH] tests/qtest: ina230: add current/voltage/power
+ monitor test
 
 Introduce the INA230 qtest: the qgraph node and the register map. Cover
 the power-on-reset defaults and Die ID, the software reset, and the
@@ -137,10 +138,10 @@ index 0000000000..4f1c509732
 +}
 +libqos_init(ina230_register_nodes);
 diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
-index 5c6eda7726..d3f5545102 100644
+index d9b8e246d5..66a09b372a 100644
 --- a/tests/qtest/meson.build
 +++ b/tests/qtest/meson.build
-@@ -323,6 +323,7 @@ qos_test_ss.add(
+@@ -324,6 +324,7 @@ qos_test_ss.add(
    'e1000-test.c',
    'eepro100-test.c',
    'es1370-test.c',

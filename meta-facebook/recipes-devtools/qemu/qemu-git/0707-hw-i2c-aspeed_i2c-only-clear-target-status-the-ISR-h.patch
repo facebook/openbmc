@@ -1,7 +1,8 @@
-From a0d2f89208654fa69c16f7ed352cade98243fd98 Mon Sep 17 00:00:00 2001
+From 1f4e7e58f107c8bcc6693d93a5724e6910506ce0 Mon Sep 17 00:00:00 2001
 From: Zinc Lim <zinclim@meta.com>
 Date: Thu, 20 Aug 2026 19:02:02 -0700
-Subject: [PATCH] hw/i2c/aspeed_i2c: only clear target status the ISR has seen
+Subject: [PATCH] hw/i2c/aspeed_i2c: only clear target status the ISR
+ has seen
 
 A packet mode PKT_CMD_DONE acknowledge clears the whole low word of
 I2CS_INTR_STS, not the bits the guest wrote. Target status is latched

@@ -1,4 +1,4 @@
-From 99bdd68ce3b06c88d41be1dae9218c870bf42ea0 Mon Sep 17 00:00:00 2001
+From 9f5034c101ab355112af6a2b1215d4d4db93257d Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:13 +0200
 Subject: [PATCH] hw/arm: catalina: use the real TMP75 model
@@ -20,10 +20,10 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 6 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_catalina.c b/hw/arm/aspeed_ast2600_catalina.c
-index 33e75338ef..928e140b21 100644
+index d3cc0fc5c0..ad2953dfea 100644
 --- a/hw/arm/aspeed_ast2600_catalina.c
 +++ b/hw/arm/aspeed_ast2600_catalina.c
-@@ -22,12 +22,6 @@
+@@ -21,12 +21,6 @@
  #define CATALINA_BMC_HW_STRAP2 0x00000800
  #define CATALINA_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
  

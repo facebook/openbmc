@@ -1,4 +1,4 @@
-From 7f2845d3b766b32e88f59363426b2b073b1da240 Mon Sep 17 00:00:00 2001
+From c46dcd262ed8308f1f0b11e8298196a4f6bc0137 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:12 +0200
 Subject: [PATCH] hw/arm: sanmiguel: populate EEPROM data
@@ -17,10 +17,10 @@ Signed-off-by: Cédric Le Goater <clg@redhat.com>
  1 file changed, 269 insertions(+), 6 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_sanmiguel.c b/hw/arm/aspeed_ast2600_sanmiguel.c
-index 0f766449ae..251dab141f 100644
+index ca07a0deaa..599ef1701f 100644
 --- a/hw/arm/aspeed_ast2600_sanmiguel.c
 +++ b/hw/arm/aspeed_ast2600_sanmiguel.c
-@@ -23,6 +23,267 @@
+@@ -22,6 +22,267 @@
  
  #define TYPE_DS1338 "ds1338"
  
@@ -288,7 +288,7 @@ index 0f766449ae..251dab141f 100644
  static void sanmiguel_bmc_i2c_init(AspeedMachineState *bmc)
  {
      /* Reference: aspeed-bmc-facebook-sanmiguel.dts */
-@@ -56,7 +317,8 @@ static void sanmiguel_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -55,7 +316,8 @@ static void sanmiguel_bmc_i2c_init(AspeedMachineState *bmc)
      /* smm_temp: lm75@48 */
      i2c_slave_create_simple(i2c[5], TYPE_TMP75, 0x48);
      /* smm_fru: eeprom@50 (24c128 = 16 KiB) */
@@ -298,7 +298,7 @@ index 0f766449ae..251dab141f 100644
      /* rtc@6f — nct3018y (ds1338 stand-in) */
      i2c_slave_create_simple(i2c[5], TYPE_DS1338, 0x6f);
  
-@@ -81,16 +343,16 @@ static void sanmiguel_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -80,16 +342,16 @@ static void sanmiguel_bmc_i2c_init(AspeedMachineState *bmc)
      /* pdb_temp: lm75@4e */
      i2c_slave_create_simple(i2c[9], TYPE_TMP75, 0x4e);
      /* pdb_fru: eeprom@50 (24c128 = 16 KiB) */
@@ -318,7 +318,7 @@ index 0f766449ae..251dab141f 100644
      at24c_eeprom_init(i2c[11], 0x50, 8 * KiB);
  
      /* &i2c12 — empty */
-@@ -100,13 +362,14 @@ static void sanmiguel_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -99,13 +361,14 @@ static void sanmiguel_bmc_i2c_init(AspeedMachineState *bmc)
      /* smm_ext_ioexp: pca9554@38 */
      i2c_slave_create_simple(i2c[13], TYPE_PCA9554, 0x38);
      /* smm_ext_fru: eeprom@55 (24c128 = 16 KiB) */

@@ -1,4 +1,4 @@
-From ffda02e05b2ab1bb07c0c11a4e799c9d1a0bee6e Mon Sep 17 00:00:00 2001
+From 0d38db020bd3bc03156df60d97dc8d0a512fddf9 Mon Sep 17 00:00:00 2001
 From: Bin Huang <binhuang@fb.com>
 Date: Tue, 13 Sep 2022 12:00:56 -0700
 Subject: [PATCH] aspeed: Add Sandia
@@ -8,10 +8,10 @@ Subject: [PATCH] aspeed: Add Sandia
  1 file changed, 11 insertions(+)
 
 diff --git a/hw/arm/aspeed_ast2600_evb.c b/hw/arm/aspeed_ast2600_evb.c
-index f4d0c428b0..af734e706b 100644
+index 4b89b8dbb0..85aa5f09b1 100644
 --- a/hw/arm/aspeed_ast2600_evb.c
 +++ b/hw/arm/aspeed_ast2600_evb.c
-@@ -78,6 +78,17 @@ static const struct FBMachineData fb_machines[] = {
+@@ -76,6 +76,17 @@ static const struct FBMachineData fb_machines[] = {
          .stdout_path = ASPEED_DEV_UART1,
          .ram_size    = FUJI_BMC_RAM_SIZE,
      },

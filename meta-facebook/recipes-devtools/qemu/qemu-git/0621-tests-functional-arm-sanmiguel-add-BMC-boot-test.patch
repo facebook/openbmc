@@ -1,4 +1,4 @@
-From 2765a36b8b471a334a7f23f936053028a6ea3833 Mon Sep 17 00:00:00 2001
+From f5921bfe4ce80645f2c9068867f0359d6230c5b3 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:20 +0200
 Subject: [PATCH] tests/functional/arm: sanmiguel: add BMC boot test

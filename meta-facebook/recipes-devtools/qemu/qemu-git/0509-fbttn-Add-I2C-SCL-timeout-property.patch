@@ -1,4 +1,4 @@
-From 982e89de12ac37b99013437f343e619bca96791e Mon Sep 17 00:00:00 2001
+From ba307c9b157dbd1d421af90994013326f0a364c2 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Tue, 16 Aug 2022 00:32:54 -0700
 Subject: [PATCH] fbttn: Add I2C SCL timeout property
@@ -25,20 +25,20 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  5 files changed, 52 insertions(+), 2 deletions(-)
 
 diff --git a/hw/arm/aspeed.c b/hw/arm/aspeed.c
-index 4e4e36bdcf..8fa16b3831 100644
+index 3988820dc6..a7cfbd6c5e 100644
 --- a/hw/arm/aspeed.c
 +++ b/hw/arm/aspeed.c
-@@ -438,5 +438,3 @@ static const TypeInfo aspeed_machine_types[] = {
+@@ -437,5 +437,3 @@ static const TypeInfo aspeed_machine_types[] = {
  };
  
  DEFINE_TYPES(aspeed_machine_types)
 -
 -
 diff --git a/hw/arm/aspeed_ast2500_evb.c b/hw/arm/aspeed_ast2500_evb.c
-index 6fcafc7212..86e15b68eb 100644
+index 0c5948edd8..554561cab4 100644
 --- a/hw/arm/aspeed_ast2500_evb.c
 +++ b/hw/arm/aspeed_ast2500_evb.c
-@@ -55,6 +55,12 @@ static void aspeed_machine_ast2500_evb_class_init(ObjectClass *oc,
+@@ -54,6 +54,12 @@ static void aspeed_machine_ast2500_evb_class_init(ObjectClass *oc,
      aspeed_machine_class_init_cpus_defaults(mc);
  };
  
@@ -51,7 +51,7 @@ index 6fcafc7212..86e15b68eb 100644
  static const TypeInfo aspeed_ast2500_evb_types[] = {
      {
          .name          = MACHINE_TYPE_NAME("ast2500-evb"),
-@@ -110,6 +116,7 @@ static const struct FBMachineData fb_machines[] = {
+@@ -108,6 +114,7 @@ static const struct FBMachineData fb_machines[] = {
          .macs_mask   = ASPEED_MAC0_ON,
          .stdout_path = ASPEED_DEV_UART5,
          .ram_size    = 1 * GiB,

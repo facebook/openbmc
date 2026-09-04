@@ -1,4 +1,4 @@
-From 5f80e94477808cd90cf6a4bc84b8af62744fe26f Mon Sep 17 00:00:00 2001
+From 0cb2d5c1706f99f5896d4ed8e0a5b5c6ba4221c5 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Thu, 18 Aug 2022 16:10:19 -0700
 Subject: [PATCH] aspeed: Add greatlakes-bmc
@@ -9,10 +9,10 @@ Signed-off-by: Peter Delevoryas <pdel@fb.com>
  1 file changed, 5 insertions(+)
 
 diff --git a/hw/arm/aspeed_ast2600_evb.c b/hw/arm/aspeed_ast2600_evb.c
-index bafc54845f..f4d0c428b0 100644
+index ec448e6bc1..4b89b8dbb0 100644
 --- a/hw/arm/aspeed_ast2600_evb.c
 +++ b/hw/arm/aspeed_ast2600_evb.c
-@@ -100,6 +100,11 @@ static const struct FBMachineData fb_machines[] = {
+@@ -98,6 +98,11 @@ static const struct FBMachineData fb_machines[] = {
          .stdout_path = ASPEED_DEV_UART5,
          .ram_size    = FUJI_BMC_RAM_SIZE,
      },

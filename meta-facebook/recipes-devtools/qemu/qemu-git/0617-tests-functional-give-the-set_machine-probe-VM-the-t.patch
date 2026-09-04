@@ -1,8 +1,8 @@
-From 06fd0b06995737d8ff4e1febfed38f6344a5b8f7 Mon Sep 17 00:00:00 2001
+From 429e52ed8f33422c9646ce4ac405108120ce2186 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:16 +0200
-Subject: [PATCH] tests/functional: give the set_machine probe VM the test
- workdir
+Subject: [PATCH] tests/functional: give the set_machine probe VM the
+ test workdir
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

@@ -1,4 +1,4 @@
-From 5e6e536534bccee9103bf064efa20a3004a7137e Mon Sep 17 00:00:00 2001
+From f361f4fa256c56055f362d5a8d15554e10411e37 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 23 Aug 2022 16:57:35 -0700
 Subject: [PATCH] hw/misc/aspeed: Add fby35 server board bridge IC

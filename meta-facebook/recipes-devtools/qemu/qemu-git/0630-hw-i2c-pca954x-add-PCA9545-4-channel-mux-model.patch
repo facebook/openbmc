@@ -1,4 +1,4 @@
-From f599e8806e1295eccbd01755b36b8a51b135019f Mon Sep 17 00:00:00 2001
+From b5c266ad92fa6c90e89fe059898cb4ee2a937879 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 10:39:59 +0200
 Subject: [PATCH] hw/i2c: pca954x: add PCA9545 4-channel mux model
@@ -20,7 +20,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  2 files changed, 70 insertions(+), 2 deletions(-)
 
 diff --git a/hw/i2c/i2c_mux_pca954x.c b/hw/i2c/i2c_mux_pca954x.c
-index 794651e7e2..81edf6a30c 100644
+index 794651e7e2..f187211fd7 100644
 --- a/hw/i2c/i2c_mux_pca954x.c
 +++ b/hw/i2c/i2c_mux_pca954x.c
 @@ -12,12 +12,20 @@

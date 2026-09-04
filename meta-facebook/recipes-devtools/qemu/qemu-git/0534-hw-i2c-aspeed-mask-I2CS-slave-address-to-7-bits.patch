@@ -1,4 +1,4 @@
-From 645c2fa24e539ed020a3eb20d415407a7429ac11 Mon Sep 17 00:00:00 2001
+From 9edd02b480d3e3867e0f29d084d73f4fb1633d98 Mon Sep 17 00:00:00 2001
 From: Zinc Lim <zinclim@meta.com>
 Date: Tue, 21 Jul 2026 14:04:45 -0700
 Subject: [PATCH] hw/i2c/aspeed: mask I2CS slave address to 7 bits

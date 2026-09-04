@@ -1,8 +1,8 @@
-From b483459bba4fde96aace468bbc962559d59584cf Mon Sep 17 00:00:00 2001
+From 9bf33f2c949e9131916ec41a8b7c9e75ee823b9c Mon Sep 17 00:00:00 2001
 From: Zinc Lim <zinclim@meta.com>
 Date: Wed, 19 Aug 2026 23:00:38 -0700
-Subject: [PATCH] hw/i2c/aspeed_i2c: only raise the target IRQ for enabled
- sources
+Subject: [PATCH] hw/i2c/aspeed_i2c: only raise the target IRQ for
+ enabled sources
 
 aspeed_i2c_bus_raise_slave_interrupt() asserts the bus IRQ whenever
 I2CS_INTR_STS is non-zero, without masking against I2CS_INTR_CTRL. Its

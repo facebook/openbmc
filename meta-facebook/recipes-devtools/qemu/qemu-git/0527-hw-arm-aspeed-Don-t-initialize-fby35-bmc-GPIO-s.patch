@@ -1,4 +1,4 @@
-From f66e4d235c8ed36fb74da712ad85e91447bf9e6a Mon Sep 17 00:00:00 2001
+From 63c33f3b8ebd9468aac92bf4e9cc119253198e64 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@meta.com>
 Date: Sun, 18 Dec 2022 14:41:31 -0800
 Subject: [PATCH] hw/arm/aspeed: Don't initialize fby35-bmc GPIO's
@@ -15,10 +15,10 @@ Signed-off-by: Peter Delevoryas <pdel@meta.com>
  1 file changed, 3 insertions(+), 1 deletion(-)
 
 diff --git a/hw/arm/aspeed_ast2600_fby35.c b/hw/arm/aspeed_ast2600_fby35.c
-index eaf37c48e4..288c6c7ec8 100644
+index 13b7cb9f63..7de5b823fa 100644
 --- a/hw/arm/aspeed_ast2600_fby35.c
 +++ b/hw/arm/aspeed_ast2600_fby35.c
-@@ -31,6 +31,7 @@ static void fby35_i2c_init(AspeedMachineState *bmc)
+@@ -30,6 +30,7 @@ static void fby35_i2c_init(AspeedMachineState *bmc)
      i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 0), "fby35-sb-bic", 0x20);
  }
  
@@ -26,7 +26,7 @@ index eaf37c48e4..288c6c7ec8 100644
  static void fby35_reset(MachineState *state, ResetType type)
  {
      AspeedMachineState *bmc = ASPEED_MACHINE(state);
-@@ -39,6 +40,7 @@ static void fby35_reset(MachineState *state, ResetType type)
+@@ -38,6 +39,7 @@ static void fby35_reset(MachineState *state, ResetType type)
  
      fby35_bmc_reset_gpios(bmc->soc);
  }
@@ -34,7 +34,7 @@ index eaf37c48e4..288c6c7ec8 100644
  
  static void aspeed_machine_fby35_class_init(ObjectClass *oc, const void *data)
  {
-@@ -46,7 +48,7 @@ static void aspeed_machine_fby35_class_init(ObjectClass *oc, const void *data)
+@@ -45,7 +47,7 @@ static void aspeed_machine_fby35_class_init(ObjectClass *oc, const void *data)
      AspeedMachineClass *amc = ASPEED_MACHINE_CLASS(oc);
  
      mc->desc       = "Facebook fby35 BMC (Cortex-A7)";

@@ -1,4 +1,4 @@
-From 135510dadd472df08f2fc47df837d277b5087a2d Mon Sep 17 00:00:00 2001
+From 068ed5c468b78b38b47520c278adb2964d925b8c Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 24 Aug 2022 00:48:44 -0700
 Subject: [PATCH] hw/i2c/aspeed: Add bus ID to all trace events

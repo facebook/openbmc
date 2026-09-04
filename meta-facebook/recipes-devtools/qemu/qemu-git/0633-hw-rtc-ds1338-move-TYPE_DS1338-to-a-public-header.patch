@@ -1,4 +1,4 @@
-From f7c888f5a9264c096a999c36079ec1bad3557de8 Mon Sep 17 00:00:00 2001
+From 065540bf6f973a188b0d93a018b58d1e4421093c Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 11:25:29 +0200
 Subject: [PATCH] hw/rtc: ds1338: move TYPE_DS1338 to a public header

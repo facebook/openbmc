@@ -1,4 +1,4 @@
-From 89fe132db4b686fa4faccaa78449226830e7839c Mon Sep 17 00:00:00 2001
+From af084551240270b344b27a5876b4f78811d7b408 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 16:27:25 +0200
 Subject: [PATCH] hw/arm: bletchley: populate the v1.0 FRU EEPROMs
@@ -16,10 +16,10 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  1 file changed, 306 insertions(+), 3 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_bletchley.c b/hw/arm/aspeed_ast2600_bletchley.c
-index 3b9341694c..d894655864 100644
+index 7b006d0712..c3f7dfb27b 100644
 --- a/hw/arm/aspeed_ast2600_bletchley.c
 +++ b/hw/arm/aspeed_ast2600_bletchley.c
-@@ -35,6 +35,304 @@
+@@ -34,6 +34,304 @@
  #define BLETCHLEY_BMC_HW_STRAP2 0x00000801
  #define BLETCHLEY_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
  
@@ -324,7 +324,7 @@ index 3b9341694c..d894655864 100644
  #define TYPE_BLETCHLEY_MACHINE MACHINE_TYPE_NAME("bletchley-bmc")
  OBJECT_DECLARE_SIMPLE_TYPE(BletchleyMachineState, BLETCHLEY_MACHINE)
  
-@@ -46,6 +344,7 @@ struct BletchleyMachineState {
+@@ -45,6 +343,7 @@ struct BletchleyMachineState {
  
  static void bletchley_bmc_i2c_init(AspeedMachineState *bmc)
  {
@@ -332,7 +332,7 @@ index 3b9341694c..d894655864 100644
      AspeedSoCState *soc = bmc->soc;
      I2CBus *i2c[13] = {};
      for (int i = 0; i < 13; i++) {
-@@ -64,17 +363,21 @@ static void bletchley_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -63,17 +362,21 @@ static void bletchley_bmc_i2c_init(AspeedMachineState *bmc)
          i2c_slave_create_simple(i2c[i], TYPE_PCA9539, 0x76);
          i2c_slave_create_simple(i2c[i], TYPE_PCA9552, 0x67);
          /* Missing model: fsc,fusb302 @ 0x22 */

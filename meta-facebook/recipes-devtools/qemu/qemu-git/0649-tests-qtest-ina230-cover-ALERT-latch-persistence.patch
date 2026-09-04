@@ -1,4 +1,4 @@
-From c87fea42d2b536803923f1f09894583c4875d802 Mon Sep 17 00:00:00 2001
+From 801a55748d0457dd8c2731b925d0f06ea4c47e80 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 22 Jul 2026 17:28:16 +0200
 Subject: [PATCH] tests/qtest: ina230: cover ALERT latch persistence

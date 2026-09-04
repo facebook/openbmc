@@ -1,4 +1,4 @@
-From 570423b5c3e74f72b852c31d7925589630a2e490 Mon Sep 17 00:00:00 2001
+From 71aa97e97a9044702deab7e6ae4f86bef8ca55eb Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH] hw/misc/aspeed: Add intel-me
@@ -26,7 +26,7 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  create mode 100644 hw/misc/intel_me.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 722abc2987..ef2bce4e83 100644
+index cc42dd2a31..bf294e418c 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
 @@ -1281,6 +1281,7 @@ F: tests/*/*ast2700*

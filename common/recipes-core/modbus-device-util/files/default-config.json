@@ -158,7 +158,7 @@
         "manufacturerDiscriminatorLength": 8,
         "manufacturers": {
             "delta": {
-                "registerValues": ["Delta"]
+                "registerValues": ["DELTA"]
             }
         }
     },

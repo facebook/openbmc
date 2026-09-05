@@ -123,7 +123,9 @@ class TestGetManufacturer(unittest.TestCase):
         self.assertEqual(self.detect("PSU_PMM", "Delta")[0], "delta")
         self.assertEqual(self.detect("PSU_PMM", "ARTESYN")[0], "artesyn")
         self.assertEqual(self.detect("BBU", "Panasonic")[0], "panasonic")
-        self.assertEqual(self.detect("CBU", "Delta")[0], "delta")
+        # A CBU spells it in caps where a PSU PMM does not.
+        self.assertEqual(self.detect("CBU", "DELTA")[0], "delta")
+        self.assertIsNone(self.detect("CBU", "Delta")[0])
 
     def test_exact_match_is_case_sensitive(self):
         self.assertIsNone(self.detect("PSU_PMM", "delta")[0])

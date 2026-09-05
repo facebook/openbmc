@@ -92,7 +92,7 @@ SRC_URI:append = " \
            "
 
 SRC_URI:append = " \
-           file://0601-hw-sensor-tmp105-make-device-state-private-to-the-im.patch \
+           file://0601-hw-sensor-tmp105-make-device-state-internal-to-the-im.patch \
            file://0602-hw-sensor-tmp105-name-the-parent-object-field-parent.patch \
            file://0603-hw-sensor-tmp105-implement-Resettable-reset.patch \
            file://0604-hw-sensor-tmp105-enforce-the-configurable-fault-queu.patch \

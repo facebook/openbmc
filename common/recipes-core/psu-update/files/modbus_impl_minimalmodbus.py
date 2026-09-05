@@ -146,6 +146,15 @@ class Modbus:
             self.devpath, self.dev_addr, mode=minimalmodbus.MODE_RTU
         )
 
+    def __str__(self):
+        desc = (
+            f"MinimalModbus({self.dev_addr}:B{self.baudrate}"
+            f":P{self.parity} @ {self.devpath}"
+        )
+        if self.pmm is not None:
+            desc += f" PMM={self.pmm}"
+        return desc + ")"
+
     def _select(self, timeout):
         """
         minimalmodbus caches one serial.Serial per device path, so every

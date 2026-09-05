@@ -81,6 +81,12 @@ class Modbus:
             monitor = RackmonMonitor()
         self.monitor = MonitorChain(monitor, PmmMonitor(self.pmm) if self.pmm else None)
 
+    def __str__(self):
+        desc = f"RmdModbus({self.dev_addr},{self.addr}"
+        if self.pmm is not None:
+            desc += f" PMM={self.pmm}"
+        return desc + ")"
+
     def read(self, reg, length=1, timeout=0):
         with _translate_errors():
             return pyrmd.RackmonInterface.read(

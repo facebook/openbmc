@@ -167,6 +167,21 @@ class TestModbusSetup(ModbusTestCase):
             self.assertIs(dev.suppress_monitoring(), suppress.return_value)
 
 
+class TestModbusDescription(ModbusTestCase):
+    def test_a_device_names_its_backend_its_line_settings_and_its_port(self):
+        dev = self.device(addr=0x28, baudrate=19200, parity="E")
+        self.assertEqual(str(dev), "MinimalModbus(40:B19200:PE @ /dev/ttyRS485-1)")
+
+    def test_a_device_behind_a_pmm_names_the_pmm_too(self):
+        dev = self.device(addr=0x7B, baudrate=19200, parity="N")
+        self.assertEqual(
+            str(dev),
+            "MinimalModbus(123:B19200:PN @ /dev/ttyRS485-1"
+            f" PMM=MinimalModbus(21:B{PMM_BAUDRATE}"
+            f":P{decode_parity(PMM_PARITY)} @ /dev/ttyRS485-1))",
+        )
+
+
 class TestSelect(ModbusTestCase):
     def test_the_settings_are_applied_before_the_transaction(self):
         dev = self.device(baudrate=19200, parity="E")

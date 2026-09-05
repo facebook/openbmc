@@ -103,6 +103,17 @@ class TestModbusMonitors(unittest.TestCase):
             self.assertIs(dev.suppress_monitoring(), suppress.return_value)
 
 
+class TestModbusDescription(unittest.TestCase):
+    def test_a_device_names_its_backend_and_its_addresses(self):
+        # 0x28 is outside every PMM's range.
+        dev = Modbus(0x0C28, monitor=NullMonitor())
+        self.assertEqual(str(dev), "RmdModbus(3112,40)")
+
+    def test_a_device_behind_a_pmm_names_the_pmm_too(self):
+        dev = Modbus(0x7B, monitor=NullMonitor())
+        self.assertEqual(str(dev), "RmdModbus(123,123 PMM=RmdModbus(21,21))")
+
+
 class TestModbusTransfers(unittest.TestCase):
     def setUp(self):
         self.dev = Modbus(0x0132, monitor=NullMonitor())

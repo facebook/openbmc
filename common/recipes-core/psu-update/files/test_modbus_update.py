@@ -409,6 +409,17 @@ class TestMain(unittest.TestCase):
         self.assertEqual(dev.suppressed, 1)
         get_updater.return_value.assert_called_once_with(dev, "fw.bin")
 
+    def test_what_is_about_to_be_updated_is_printed_first(self):
+        # The same lines a dry run prints, so a log of a real update
+        # says what it was given and what it made of it.
+        _, _, out = self.run_main(["-n", "PSU_1_1", "fw.bin"], FakeDev())
+        self.assertIn("Updating Name: PSU_1_1", out)
+        self.assertIn("File: fw.bin", out)
+        self.assertIn("Device Type: PSU", out)
+        self.assertIn("Detected vendor: delta", out)
+        self.assertIn("Updater:", out)
+        self.assertNotIn("Dry run", out)
+
     def test_the_vendor_is_detected_from_the_device(self):
         dev = FakeDev()
         get_manufacturer, get_updater, _ = self.run_main(
@@ -431,7 +442,7 @@ class TestMain(unittest.TestCase):
         get_updater.return_value.assert_not_called()
         self.assertIn("Dry run", out)
         self.assertIn("Device Type: PSU", out)
-        self.assertIn("Vendor: delta", out)
+        self.assertIn("Detected vendor: delta", out)
         self.assertIn("File: fw.bin", out)
         # Monitoring was still suppressed to read the vendor out, and
         # resumed on the way out.
@@ -442,7 +453,8 @@ class TestMain(unittest.TestCase):
         with patch("sys.argv", ["modbus-update.py"] + argv):
             with patch.object(mu, "get_device", return_value=("PSU", FakeDev())) as gd:
                 with patch.object(mu.manufacturers, "get_manufacturer"):
-                    with patch.object(mu, "get_updater"):
+                    with patch.object(mu, "get_updater") as get_updater:
+                        get_updater.return_value.__name__ = "fake_updater"
                         with patch("sys.stdout", new=io.StringIO()):
                             mu.main()
         return gd

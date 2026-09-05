@@ -278,13 +278,15 @@ def main():
         device_vendor = manufacturers.get_manufacturer(device_type, dev)
         update = get_updater(device_type, device_vendor, args.component)
 
+        print(f"Updating Name: {args.name} Component: {args.component}")
+        print(f"  File: {args.file}")
+        print(f"  Device Type: {device_type}")
+        print(f"  Device: {dev}")
+        print(f"  Detected vendor: {device_vendor}")
+        print(f"  Backend: {type(dev).__module__}")
+        print(f"  Updater: {getattr(update, 'description', update.__name__)}")
         if args.dry_run:
-            print(f"Dry run, not updating {args.name}:")
-            print(f"  Device Type: {device_type}")
-            print(f"  Vendor: {device_vendor}")
-            print(f"  Backend: {type(dev).__module__}")
-            print(f"  File: {args.file}")
-            print(f"  Updater: {getattr(update, 'description', update.__name__)}")
+            print(f"  Dry run, not updating {args.name}")
             return
         update(dev, args.file)
 

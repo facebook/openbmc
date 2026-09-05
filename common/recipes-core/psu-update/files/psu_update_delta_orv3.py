@@ -6,7 +6,7 @@ import traceback
 import delta_key
 import hexfile
 from modbus_impl_pyrmd import ModbusException
-from modbus_update_helper import bh, print_perc
+from modbus_update_helper import bh, print_perc, retry
 
 # Tuple of firmware register address, length which holds  the firmware version
 Delta_PSU_FW_Revision = (48, 4)
@@ -264,10 +264,15 @@ def update_psu(dev, filename, key):
     activate(dev)
 
 
-def print_revision(dev):
+@retry(10, delay=1.0)
+def get_revision(dev):
     reg, rlen = Delta_PSU_FW_Revision
+    return dev.read_str(reg, rlen)
+
+
+def print_revision(dev):
     # The register happens to be the same for both HPR and ORv3 PSU
-    print("Version:", dev.read_str(reg, rlen))
+    print("Version:", get_revision(dev))
 
 
 def main(dev, file, key=None):

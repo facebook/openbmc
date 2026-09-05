@@ -10,6 +10,7 @@ from psu_update_delta_orv3 import (
     delta_seccalckey,
     erase_flash,
     get_challenge,
+    get_revision,
     get_status_reg,
     key_handshake,
     send_image,
@@ -352,6 +353,30 @@ class TestUpdatePsu(QuietTestCase):
         with patch.object(delta.hexfile, "load", return_value=image):
             update_psu(dev, "fw.hex", 0x1122334455667788)
         self.assertEqual(len(dev.calls), 11)
+
+
+class TestGetRevision(QuietTestCase):
+    def timeouts(self, count):
+        return [delta.ModbusException("ERR_TIMEOUT")] * count
+
+    def test_reads_the_revision_register(self):
+        dev = FakeDevice(read_str=["1.0"])
+        self.assertEqual(get_revision(dev), "1.0")
+        self.assertEqual(dev.calls_of("read_str"), [("read_str", 48, 4, 0)])
+
+    def test_a_psu_still_resetting_after_an_update_is_waited_for(self):
+        # print_revision() runs again once the new image is activated,
+        # where the PSU is some seconds away from answering at all.
+        dev = FakeDevice(read_str=self.timeouts(3) + ["2.0"])
+        self.assertEqual(get_revision(dev), "2.0")
+        self.assertEqual(len(dev.calls_of("read_str")), 4)
+
+    def test_a_psu_which_never_comes_back(self):
+        # 10 retries and the attempt which raises out of the decorator.
+        dev = FakeDevice(read_str=self.timeouts(11))
+        with self.assertRaises(delta.ModbusException):
+            get_revision(dev)
+        self.assertEqual(len(dev.calls_of("read_str")), 11)
 
 
 class TestMain(QuietTestCase):

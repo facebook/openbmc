@@ -1,6 +1,9 @@
+import contextlib
+import io
 import json
 import os
 import unittest
+from unittest.mock import patch
 
 import manufacturers
 from manufacturers import get_determinator, get_manufacturer, normalize
@@ -174,6 +177,41 @@ class TestGetManufacturer(unittest.TestCase):
     def test_unknown_device_type(self):
         with self.assertRaises(KeyError):
             get_manufacturer("TOASTER", FakeDevice(read_str=["Delta"]), CONFIG)
+
+    def detect_through_a_stale_override(self, dev_type, value):
+        """
+        Detect against an override which does not describe the RPU, as one
+        left on the persistent partition by an older image would not, with
+        the tree config standing in for the one shipped in the image.
+        """
+        with open(CONFIG) as f:
+            config = json.load(f)
+        del config["rpu"]
+        override = os.path.join(tmpdir(self), "override-config.json")
+        with open(override, "w") as f:
+            json.dump(config, f)
+
+        out = io.StringIO()
+        with patch.object(manufacturers, "DEFAULT_CONFIG_PATH", CONFIG):
+            with contextlib.redirect_stdout(out):
+                vendor = get_manufacturer(
+                    dev_type, FakeDevice(read_str=[value]), override
+                )
+        return vendor, out.getvalue()
+
+    def test_a_stale_override_falls_back_to_the_default_config(self):
+        vendor, out = self.detect_through_a_stale_override("RPU", "L05T")
+        self.assertEqual(vendor, "quanta")
+        self.assertIn("RPU is not in", out)
+
+    def test_the_override_still_wins_for_what_it_does_describe(self):
+        vendor, out = self.detect_through_a_stale_override("PSU_PMM", "Delta")
+        self.assertEqual(vendor, "delta")
+        self.assertEqual(out, "")
+
+    def test_a_device_type_neither_config_knows_is_still_an_error(self):
+        with self.assertRaises(KeyError):
+            self.detect_through_a_stale_override("TOASTER", "Delta")
 
     def test_read_failures_are_not_swallowed(self):
         dev = FakeDevice(read_str=[ValueError("boom")])

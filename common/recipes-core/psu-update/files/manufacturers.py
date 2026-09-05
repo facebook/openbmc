@@ -51,7 +51,16 @@ def normalize(value):
 
 
 def get_manufacturer(dev_type, dev, config_file=None):
-    config = get_determinator(config_file)[dev_type]
+    path = config_file or get_config_path()
+    configs = get_determinator(path)
+    # An override on the persistent partition outlives the image it was
+    # dropped on, so it can predate the device type we were asked about.
+    # The config shipped with the image always knows what the image knows.
+    if dev_type not in configs and path != DEFAULT_CONFIG_PATH:
+        if os.path.exists(DEFAULT_CONFIG_PATH):
+            print(f"{dev_type} is not in {path}, reverting to the default config")
+            configs = get_determinator(DEFAULT_CONFIG_PATH)
+    config = configs[dev_type]
     value = normalize(
         dev.read_str(
             config["manufacturerDiscriminatorRegister"],

@@ -40,6 +40,9 @@ PHOSPHOR_MODBUS_SETTLE_SECS = 5.0
 PMM_PAUSE_MONITORING = 0x1
 # Request PMM to resume monitoring by writhing 0x0 to PMM_PAUSE_REG
 PMM_RESUME_MONITORING = 0x0
+# A PMM busy with its own poll can be slow to answer, and giving up on it
+# leaves it polling through the update.
+PMM_PAUSE_TIMEOUT_MS = 1000
 
 
 class Monitor:
@@ -110,7 +113,7 @@ class PmmMonitor(Monitor):
 
     def _set_pause(self, pause):
         try:
-            self.pmm.write(PMM_PAUSE_REG, pause)
+            self.pmm.write(PMM_PAUSE_REG, pause, PMM_PAUSE_TIMEOUT_MS)
         except Exception:
             print(f"WARNING: Control PMM:{self.pmm.dev_addr} {pause} failed")
 

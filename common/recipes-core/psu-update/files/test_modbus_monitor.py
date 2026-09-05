@@ -11,6 +11,7 @@ from modbus_monitor import (
     NullMonitor,
     PHOSPHOR_MODBUS_SETTLE_SECS,
     PhosphorModbusMonitor,
+    PMM_PAUSE_TIMEOUT_MS,
     PMM_SETTLE_SECS,
     PmmMonitor,
     RACKMON_SETTLE_SECS,
@@ -112,10 +113,13 @@ class TestPmmMonitor(NoiseFree):
     def test_pause_and_resume_drive_the_pause_register(self):
         monitor, pmm = self.monitor()
         with monitor.suppress():
-            pmm.write.assert_called_once_with(PMM_PAUSE_REG, 0x1)
+            pmm.write.assert_called_once_with(PMM_PAUSE_REG, 0x1, PMM_PAUSE_TIMEOUT_MS)
         self.assertEqual(
             pmm.write.call_args_list,
-            [call(PMM_PAUSE_REG, 0x1), call(PMM_PAUSE_REG, 0x0)],
+            [
+                call(PMM_PAUSE_REG, 0x1, PMM_PAUSE_TIMEOUT_MS),
+                call(PMM_PAUSE_REG, 0x0, PMM_PAUSE_TIMEOUT_MS),
+            ],
         )
 
     def test_pause_gives_the_pmm_time_to_stand_off(self):

@@ -29,17 +29,11 @@ SRC_URI:append = " \
     file://0026-common-fix-missing-power-gated-sensors-after-BMC-res.patch \
 "
 
-SRC_URI:append:ventura2 = " \
+SRC_URI:append:mf-fb-liquid-cooled = " \
     file://0101-valve-monitor-add-analog-valve-support.patch \
     file://0102-valve-monitor-delay-analog-valve-feedback-monitoring.patch \
     file://0103-valve-monitor-catch-event-resolve-exceptions.patch \
     file://0104-valve-monitor-defer-control-interface-until-state-is.patch \
-"
-
-SRC_URI:append:ventura2a7 = " \
-    file://0101-valve-monitor-add-analog-valve-support.patch \
-    file://0102-valve-monitor-delay-analog-valve-feedback-monitoring.patch \
-    file://0103-valve-monitor-catch-event-resolve-exceptions.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \

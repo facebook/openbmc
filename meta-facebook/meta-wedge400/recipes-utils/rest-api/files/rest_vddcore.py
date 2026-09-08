@@ -18,11 +18,17 @@
 # Boston, MA 02110-1301 USA
 #
 
-import subprocess
 import glob
+import re
+import subprocess
 from typing import Dict
 
 from rest_utils import DEFAULT_TIMEOUT_SEC
+
+
+# set_vdd.sh evaluates its argument with shell arithmetic expansion ($(($1))),
+# so only hand it an unsigned decimal integer.
+VDD_CORE_VALUE_RE = re.compile(r"[0-9]+")
 
 
 # Handler for vdd_core resource endpoint
@@ -41,8 +47,12 @@ def get_vdd_core_data() -> Dict:
     return {"VDD_CORE": data.decode("utf-8").split("\n")[0]}
 
 
-def set_vdd_core(value) -> Dict:
-    cmd = ["/usr/local/bin/set_vdd.sh", value]
+def set_vdd_core(value: str) -> Dict:
+    if VDD_CORE_VALUE_RE.fullmatch(value) is None or int(value) <= 0:
+        return {"result": "failure", "reason": "invalid value"}
+    # Pass the canonical form: shell arithmetic reads a leading zero as octal,
+    # so "0750" would otherwise set 488 mV instead of 750 mV.
+    cmd = ["/usr/local/bin/set_vdd.sh", str(int(value))]
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     data, _ = proc.communicate(timeout=DEFAULT_TIMEOUT_SEC)
     rc = proc.returncode

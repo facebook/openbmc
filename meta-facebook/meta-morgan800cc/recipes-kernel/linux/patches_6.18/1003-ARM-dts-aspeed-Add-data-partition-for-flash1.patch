@@ -1,0 +1,45 @@
+From 5f6b94e4cd56389e9a59a4c58e215f534cf5de3d Mon Sep 17 00:00:00 2001
+From: gubalasu <gubalasu@cisco.com>
+Date: Tue, 28 Oct 2025 18:11:04 +0000
+Subject: [PATCH] ARM: dts: aspeed: Add data partition for flash1
+
+Summary: Represent data section of non-active flash as a mtd partition
+
+The data partition for the non-active flash needs to be represented to
+handle easier access during corruption scenarios. This change will
+create a logical mtd partition for the data section of the non-active
+flash.
+
+Test:
+- Ensure flash1-data0 partition can be mounted as a ubifs.
+- Read and write tests on flash1-data0 partition after mounting. Test
+  done when booted from both Primary and Alternate flash.
+
+Signed-off-by: gubalasu <gubalasu@cisco.com>
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts    | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+index 5178d961a..2da1a4ce5 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+@@ -38,6 +38,15 @@ flash@0 {
+ 		/delete-node/partitions;
+ #include "facebook-bmc-flash-layout-128-data64.dtsi"
+ 	};
++
++	flash@1 {
++		partitions {
++			flash1-data0@4000000 {
++				reg = <0x4000000 0x4000000>;
++				label = "flash1-data0";
++			};
++		};
++	};
+ };
+ 
+ &i2c11 {
+-- 
+2.34.1
+

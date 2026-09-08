@@ -1,8 +1,7 @@
-From 9f313659f546a139f07aaf5ea0f485aa6c622892 Mon Sep 17 00:00:00 2001
+From ca3bfd500f8ed0153b51a9cd12345b98ea0fa3a2 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 6 Aug 2026 18:18:58 +0200
-Subject: [PATCH] hw/arm: yosemite5: add Facebook Yosemite 5 BMC
- machine
+Subject: [PATCH] hw/arm: yosemite5: add Facebook Yosemite 5 BMC machine
 
 Add an AST2600-based machine for the Facebook Yosemite 5 platform,
 modelled from its device tree (aspeed-bmc-facebook-yosemite5.dts).

@@ -1,8 +1,8 @@
-From 306049bf383179350f8b3b7435b19aa70ba4ba53 Mon Sep 17 00:00:00 2001
+From 0dfd21e9a0ef8802fa9b8ef1138d8849876738d0 Mon Sep 17 00:00:00 2001
 From: Pete O_o <pmb@meta.com>
 Date: Thu, 2 Jul 2026 09:55:37 -0700
-Subject: [PATCH] aspeed: Re-add hw/arm/fby35.c (dual-SoC fby35 machine
- removed upstream)
+Subject: [PATCH] aspeed: Re-add hw/arm/fby35.c (dual-SoC fby35 machine removed
+ upstream)
 
 Upstream removed hw/arm/fby35.c (commit 34f634a207) when it split the aspeed
 machines into per-machine files and kept only the BMC-only fby35-bmc. The

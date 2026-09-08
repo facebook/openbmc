@@ -1,8 +1,7 @@
-From 97872cd20d2c7265e2604c0a35c31da48fd897aa Mon Sep 17 00:00:00 2001
+From cc6210bf755cf90e4bca0bf60d6ed2d7ed8a246d Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 15:57:25 +0200
-Subject: [PATCH] tests/qtest: ds1338: cover the DS1338-specific
- register map
+Subject: [PATCH] tests/qtest: ds1338: cover the DS1338-specific register map
 
 The register map  has just become a set of per-model class properties.
 Add DS1338 tests that pin the DS1338-specific values, so that a later

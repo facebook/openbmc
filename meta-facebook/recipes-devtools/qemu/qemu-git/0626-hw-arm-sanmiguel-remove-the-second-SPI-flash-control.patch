@@ -1,8 +1,7 @@
-From 3ed2f1815ee1333ed627edad6259b6a8d441c0f6 Mon Sep 17 00:00:00 2001
+From 4ea7398943c747603d722004f632c29e5faaa032 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 15:31:12 +0200
-Subject: [PATCH] hw/arm: sanmiguel: remove the second SPI flash
- controller
+Subject: [PATCH] hw/arm: sanmiguel: remove the second SPI flash controller
 
 The board only populates the flash device attached to the FMC
 controller; the SoC SPI controllers are left unused. Advertising a

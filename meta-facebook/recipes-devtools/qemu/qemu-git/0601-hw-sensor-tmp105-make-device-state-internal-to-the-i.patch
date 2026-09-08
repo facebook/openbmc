@@ -1,4 +1,4 @@
-From b2b6449dc8376604d3b6c083c511ded87173a61a Mon Sep 17 00:00:00 2001
+From 10b4cfed3fb16ca0cedfecd60b7a4c49c1acf661 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:00 +0200
 Subject: [PATCH] hw/sensor: tmp105: make device state internal to the

@@ -1,8 +1,8 @@
-From 034f7cbe3079395d684687994b169eef5637b3f7 Mon Sep 17 00:00:00 2001
+From 647aed42cc2de765b23d76566d02759fec1e1295 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:23 +0200
-Subject: [PATCH] hw/arm: catalina: drive pca9554 io expander input
- pins externally
+Subject: [PATCH] hw/arm: catalina: drive pca9554 io expander input pins
+ externally
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

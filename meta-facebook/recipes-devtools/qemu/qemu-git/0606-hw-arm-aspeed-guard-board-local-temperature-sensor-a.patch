@@ -1,8 +1,7 @@
-From 7d3cae61c633304979aa04339f9a63cacd4edd21 Mon Sep 17 00:00:00 2001
+From 85600aa3e5bcc603532cef31cbde5e6d4e6c9f3c Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:05 +0200
-Subject: [PATCH] hw/arm: aspeed: guard board-local temperature-sensor
- aliases
+Subject: [PATCH] hw/arm: aspeed: guard board-local temperature-sensor aliases
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

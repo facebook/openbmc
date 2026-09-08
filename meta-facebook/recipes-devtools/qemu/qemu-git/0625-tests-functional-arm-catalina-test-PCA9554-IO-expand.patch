@@ -1,8 +1,8 @@
-From 27eeabbaeaa6cf67e7c3963431cdcc3dcf0fdf6e Mon Sep 17 00:00:00 2001
+From 0e12650ac4726edddac3cc8d34a91f0d70e8a1dc Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:24 +0200
-Subject: [PATCH] tests/functional/arm: catalina: test PCA9554 IO
- expander via QOM
+Subject: [PATCH] tests/functional/arm: catalina: test PCA9554 IO expander via
+ QOM
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit

@@ -1,8 +1,7 @@
-From 9a6d44e7de3034a6ac65ae690c6885a1d011c4f8 Mon Sep 17 00:00:00 2001
+From c89802434c4476443cad6692cba5b94254c9aeb0 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 21 Jul 2026 15:29:01 +0200
-Subject: [PATCH] tests/qtest: ina230: cover the injection-property
- limits
+Subject: [PATCH] tests/qtest: ina230: cover the injection-property limits
 
 Verify that the extremes of the shunt- and bus-voltage injection ranges
 are handled without truncation or wraparound: the minimum and maximum

@@ -28,7 +28,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=a3b50d8b88dcc0eb3d7d39b760b9e821 \
 #   git ls-remote https://github.com/qemu/qemu.git refs/heads/master | cut -f1
 # This is normally updated by the daily yocto sync job when
 # --refresh-patches is enabled
-QEMU_REF ?= "d2843fbf80260e4346c856819e8cea11768c9d0e"
+QEMU_REF ?= "cacd3462963a0a4f5bab4263ce79c2aa4b32692d"
 
 # Use git protocol (required by BitBake QA)
 SRC_URI = "git://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \
@@ -92,7 +92,7 @@ SRC_URI:append = " \
            "
 
 SRC_URI:append = " \
-           file://0601-hw-sensor-tmp105-make-device-state-internal-to-the-im.patch \
+           file://0601-hw-sensor-tmp105-make-device-state-internal-to-the-i.patch \
            file://0602-hw-sensor-tmp105-name-the-parent-object-field-parent.patch \
            file://0603-hw-sensor-tmp105-implement-Resettable-reset.patch \
            file://0604-hw-sensor-tmp105-enforce-the-configurable-fault-queu.patch \

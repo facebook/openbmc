@@ -1,7 +1,7 @@
-From 820422fd097d4ee23f81d944399dd53613e85d27 Mon Sep 17 00:00:00 2001
+From 78efab5981926638065ffd25bf8f8c83cdcab96e Mon Sep 17 00:00:00 2001
 From: Pankit Garg <pankit.garg@nxp.com>
 Date: Wed, 7 May 2025 12:56:18 +0530
-Subject: [PATCH 1/1] rtc: Add NXP PCF85053A driver support
+Subject: [PATCH] rtc: Add NXP PCF85053A driver support
 
 PCF85053A is i2c based RTC which supports timer and calendar
 functionality.
@@ -676,5 +676,5 @@ index 000000000000..83e2bcbca4d4
 +MODULE_DESCRIPTION("NXP pcf85053a RTC driver");
 +MODULE_LICENSE("GPL");
 -- 
-2.52.0
+2.53.0-Meta
 

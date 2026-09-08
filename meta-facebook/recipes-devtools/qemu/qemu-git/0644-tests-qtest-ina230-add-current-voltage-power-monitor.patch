@@ -1,8 +1,7 @@
-From f9c458bae06d703dab2cfe976d5443a3b692da6e Mon Sep 17 00:00:00 2001
+From 1dc25dec60e644e34881880f83c8489ccee12a1a Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 14:54:20 +0200
-Subject: [PATCH] tests/qtest: ina230: add current/voltage/power
- monitor test
+Subject: [PATCH] tests/qtest: ina230: add current/voltage/power monitor test
 
 Introduce the INA230 qtest: the qgraph node and the register map. Cover
 the power-on-reset defaults and Die ID, the software reset, and the

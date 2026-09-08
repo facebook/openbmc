@@ -1,8 +1,7 @@
-From 5e28bd722db2a73f9d47b1808b3e67d668f6f55f Mon Sep 17 00:00:00 2001
+From eb2f3e62020359d53ff6a41a1fc705beb5f29a67 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 6 Aug 2026 16:21:41 +0200
-Subject: [PATCH] tests/qtest: tmp105: cover the TMP1075 config
- register width
+Subject: [PATCH] tests/qtest: tmp105: cover the TMP1075 config register width
 
 Check that the 16-bit Config register keeps single-byte read and write
 compatibility and that the reserved low byte reads back constant.

@@ -1,4 +1,4 @@
-From 516609e626f6521a059005f4fd8d6074625ccade Mon Sep 17 00:00:00 2001
+From ca72b66a0167338386cdca8a8041fef9f0b82db2 Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Tue, 5 May 2026 20:34:03 +0800
 Subject: [PATCH] nvidia-gpu: add support for SMA leak sensors
@@ -81,10 +81,10 @@ Signed-off-by: Mike Hsieh <mike_hsieh@quantatw.com>
  create mode 100644 src/tests/nvidia-gpu/test_NvidiaSmaLeakSensor.cpp
 
 diff --git a/src/nvidia-gpu/NvidiaGpuMctpVdm.cpp b/src/nvidia-gpu/NvidiaGpuMctpVdm.cpp
-index 1df8f37..a8d9c89 100644
+index c0df1f5..7a89784 100644
 --- a/src/nvidia-gpu/NvidiaGpuMctpVdm.cpp
 +++ b/src/nvidia-gpu/NvidiaGpuMctpVdm.cpp
-@@ -1859,4 +1859,118 @@ int decodeGetEccModeResponse(std::span<const uint8_t> buf,
+@@ -1983,4 +1983,118 @@ int decodeGetEccModeResponse(std::span<const uint8_t> buf,
      return buffer.getError();
  }
  
@@ -204,10 +204,10 @@ index 1df8f37..a8d9c89 100644
 +
  } // namespace gpu
 diff --git a/src/nvidia-gpu/NvidiaGpuMctpVdm.hpp b/src/nvidia-gpu/NvidiaGpuMctpVdm.hpp
-index 3bdde27..02eb894 100644
+index 33dafbd..9932502 100644
 --- a/src/nvidia-gpu/NvidiaGpuMctpVdm.hpp
 +++ b/src/nvidia-gpu/NvidiaGpuMctpVdm.hpp
-@@ -58,6 +58,7 @@ enum class PlatformEnvironmentalCommands : uint8_t
+@@ -61,6 +61,7 @@ enum class PlatformEnvironmentalCommands : uint8_t
      GET_VOLTAGE = 0x0F,
      SET_CLOCK_LIMIT = 0x10,
      GET_CLOCK_LIMIT = 0x11,
@@ -215,9 +215,9 @@ index 3bdde27..02eb894 100644
      GET_VIOLATION_DURATION = 0x45,
      GET_CURRENT_UTILIZATION = 0x47,
      GET_ECC_MODE = 0x4F,
-@@ -195,6 +196,9 @@ constexpr size_t maxInventoryDataSize = 256;
- constexpr size_t queryDeviceIdentificationRequestSize =
-     ocp::accelerator_management::commonRequestSize;
+@@ -209,6 +210,9 @@ constexpr size_t getSupportedMessageTypesRequestSize =
+ constexpr size_t getSupportedCommandCodesRequestSize =
+     ocp::accelerator_management::commonRequestSize + 1;
  
 +constexpr size_t getLeakDetectionInfoRequestSize =
 +    queryDeviceIdentificationRequestSize;
@@ -225,7 +225,7 @@ index 3bdde27..02eb894 100644
  constexpr size_t getNumericSensorReadingRequestSize =
      ocp::accelerator_management::commonRequestSize + 1;
  
-@@ -515,4 +519,20 @@ int decodeGetEccModeResponse(std::span<const uint8_t> buf,
+@@ -545,4 +549,20 @@ int decodeGetEccModeResponse(std::span<const uint8_t> buf,
                               bool& currentEccModeEnabled,
                               bool& pendingEccModeEnabled);
  
@@ -689,10 +689,10 @@ index 0000000..7fbd47f
 +    std::vector<gpu::LeakSensorData> parsedSensors;
 +};
 diff --git a/src/nvidia-gpu/meson.build b/src/nvidia-gpu/meson.build
-index 418ef2c..3a70b2f 100644
+index a20e4bf..340c8d5 100644
 --- a/src/nvidia-gpu/meson.build
 +++ b/src/nvidia-gpu/meson.build
-@@ -30,6 +30,7 @@ gpusensor_sources = files(
+@@ -31,6 +31,7 @@ gpusensor_sources = files(
      'NvidiaPciePort.cpp',
      'NvidiaPciePortMetrics.cpp',
      'NvidiaSmaDevice.cpp',
@@ -701,18 +701,18 @@ index 418ef2c..3a70b2f 100644
      'SerialQueue.cpp',
  )
 diff --git a/src/tests/nvidia-gpu/meson.build b/src/tests/nvidia-gpu/meson.build
-index ad96e6e..3149215 100644
+index 545cec1..56f5690 100644
 --- a/src/tests/nvidia-gpu/meson.build
 +++ b/src/tests/nvidia-gpu/meson.build
-@@ -12,6 +12,7 @@ gpusensor_sources = files(
-     gpusensor_dir / 'NvidiaGpuPowerSensor.cpp',
-     gpusensor_dir / 'NvidiaGpuTempSensor.cpp',
+@@ -26,6 +26,7 @@ gpusensor_sources = files(
      gpusensor_dir / 'NvidiaGpuVoltageSensor.cpp',
+     gpusensor_dir / 'NvidiaGpuXid.cpp',
+     gpusensor_dir / 'NvidiaLongRunningHandler.cpp',
 +    gpusensor_dir / 'NvidiaSmaLeakSensor.cpp',
      gpusensor_dir / 'NvidiaPcieDevice.cpp',
      gpusensor_dir / 'NvidiaPcieFunction.cpp',
      gpusensor_dir / 'NvidiaPcieInterface.cpp',
-@@ -42,6 +43,7 @@ test(
+@@ -60,6 +61,7 @@ test(
          'test_NvidiaGpuPowerSensor.cpp',
          'test_NvidiaGpuEnergySensor.cpp',
          'test_NvidiaGpuVoltageSensor.cpp',
@@ -721,10 +721,10 @@ index ad96e6e..3149215 100644
          'test_NvidiaDriverInformation.cpp',
          'test_NvidiaPcieInterface.cpp',
 diff --git a/src/tests/nvidia-gpu/test_NvidiaGpuMctpVdm.cpp b/src/tests/nvidia-gpu/test_NvidiaGpuMctpVdm.cpp
-index 61c4f15..b2e525b 100644
+index 4849f0f..c1e462d 100644
 --- a/src/tests/nvidia-gpu/test_NvidiaGpuMctpVdm.cpp
 +++ b/src/tests/nvidia-gpu/test_NvidiaGpuMctpVdm.cpp
-@@ -4859,4 +4859,141 @@ TEST_F(GpuMctpVdmTests, DecodeSetClockLimitResponseBufferTooSmall)
+@@ -5052,4 +5052,141 @@ TEST_F(GpuMctpVdmTests, DecodeSetClockLimitResponseBufferTooSmall)
      EXPECT_EQ(result, EINVAL);
  }
  

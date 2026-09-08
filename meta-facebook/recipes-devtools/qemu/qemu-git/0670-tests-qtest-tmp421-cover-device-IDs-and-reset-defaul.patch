@@ -1,8 +1,7 @@
-From 2a4c95d1d19d7fefeea9c33044b273ce8a6aa551 Mon Sep 17 00:00:00 2001
+From 08edd7c2735f10a647748606329c2976cab042f2 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 5 Aug 2026 18:06:08 +0200
-Subject: [PATCH] tests/qtest: tmp421: cover device IDs and reset
- defaults
+Subject: [PATCH] tests/qtest: tmp421: cover device IDs and reset defaults
 
 Add a qgraph test that instantiates each variant and checks the
 manufacturer and device identification bytes and the reset values of

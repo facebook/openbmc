@@ -1,8 +1,7 @@
-From cfd2c27a530997dbadfc2c003a64f1aa48ceec4f Mon Sep 17 00:00:00 2001
+From fd6a1bc1bab0fe8e4ff2d980d46d368a4d6133af Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 21 Jul 2026 14:33:30 +0200
-Subject: [PATCH] tests/qtest: ina238: add current/voltage/power
- monitor test
+Subject: [PATCH] tests/qtest: ina238: add current/voltage/power monitor test
 
 Introduce the INA238 qtest: the qgraph node, the QMP injection helpers
 and the register map. Cover the reset defaults, the software reset, and

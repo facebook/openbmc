@@ -1,4 +1,4 @@
-From 71aa97e97a9044702deab7e6ae4f86bef8ca55eb Mon Sep 17 00:00:00 2001
+From 3c82f1b3eca4d85c8abeea95946dbe0fd5c3270e Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH] hw/misc/aspeed: Add intel-me
@@ -26,10 +26,10 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  create mode 100644 hw/misc/intel_me.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index cc42dd2a31..bf294e418c 100644
+index 594fcd4777..090db2b2f2 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -1281,6 +1281,7 @@ F: tests/*/*ast2700*
+@@ -1282,6 +1282,7 @@ F: tests/*/*ast2700*
  F: pc-bios/ast27x0_bootrom.bin
  F: roms/vbootrom
  F: hw/misc/fby35_sb_cpld.c

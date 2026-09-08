@@ -1,4 +1,4 @@
-From 5d94d0cdc6c4280be5c7c7169331bbd9dd6812d9 Mon Sep 17 00:00:00 2001
+From 6664f113aec2f0328202712a4e3ddae244f5d6e6 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 12 Aug 2026 16:10:15 +0200
 Subject: [PATCH] hw/arm: santabarbara: populate the FRU EEPROMs
@@ -24,10 +24,10 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  1 file changed, 443 insertions(+), 13 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_santabarbara.c b/hw/arm/aspeed_ast2600_santabarbara.c
-index 65e133e6f7..1c0114a9e6 100644
+index 21cd9820d3..54c0030d0d 100644
 --- a/hw/arm/aspeed_ast2600_santabarbara.c
 +++ b/hw/arm/aspeed_ast2600_santabarbara.c
-@@ -37,15 +37,434 @@
+@@ -36,15 +36,434 @@
  #define SANTABARBARA_BMC_HW_STRAP2 0x00000000
  #define SANTABARBARA_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
  
@@ -464,7 +464,7 @@ index 65e133e6f7..1c0114a9e6 100644
  
      /* i2c-mux@71 - PCA9546 */
      I2CSlave *mux = i2c_slave_create_simple(bus, TYPE_PCA9546, 0x71);
-@@ -101,7 +520,8 @@ static void santabarbara_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -100,7 +519,8 @@ static void santabarbara_bmc_i2c_init(AspeedMachineState *bmc)
  
      /* &i2c0 */
      /* eeprom@53 - atmel,24c128 (MB FRU) */
@@ -474,7 +474,7 @@ index 65e133e6f7..1c0114a9e6 100644
      /* rtc@68 - dallas,ds1339 */
      i2c_slave_create_simple(i2c[0], TYPE_DS1339, 0x68);
  
-@@ -145,11 +565,13 @@ static void santabarbara_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -144,11 +564,13 @@ static void santabarbara_bmc_i2c_init(AspeedMachineState *bmc)
      i2c_slave_create_simple(bus, TYPE_TMP75, 0x4b);
      i2c_slave_create_simple(bus, TYPE_TMP75, 0x4f);
      /* eeprom@53 - atmel,24c512 (FIO FRU) */
@@ -490,7 +490,7 @@ index 65e133e6f7..1c0114a9e6 100644
      /* i2c-mux@71 - PCA9546 (channels empty) */
      i2c_slave_create_simple(i2c[5], TYPE_PCA9546, 0x71);
      /* i2c-mux@72 - PCA9546 */
-@@ -167,37 +589,44 @@ static void santabarbara_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -166,37 +588,44 @@ static void santabarbara_bmc_i2c_init(AspeedMachineState *bmc)
      i2c_slave_create_simple(pca954x_i2c_get_bus(mux, 3), TYPE_PCA9539, 0x74);
  
      /* &i2c6 - Rainbow 0 */
@@ -542,7 +542,7 @@ index 65e133e6f7..1c0114a9e6 100644
      /* i2c-mux@72 - PCA9548 */
      mux = i2c_slave_create_simple(i2c[12], TYPE_PCA9548, 0x72);
      /* channel 0 */
-@@ -214,7 +643,8 @@ static void santabarbara_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -213,7 +642,8 @@ static void santabarbara_bmc_i2c_init(AspeedMachineState *bmc)
      /* channel 4 - voltage-sensor@49 ti,ads7830 (no model) */
  
      /* &i2c13 - Rainbow 1 */

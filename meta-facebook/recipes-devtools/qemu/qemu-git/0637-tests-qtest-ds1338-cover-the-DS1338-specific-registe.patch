@@ -1,4 +1,4 @@
-From e6c484444c6f992e979460842ebe3b63f6c236a6 Mon Sep 17 00:00:00 2001
+From cc6210bf755cf90e4bca0bf60d6ed2d7ed8a246d Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 15:57:25 +0200
 Subject: [PATCH] tests/qtest: ds1338: cover the DS1338-specific register map

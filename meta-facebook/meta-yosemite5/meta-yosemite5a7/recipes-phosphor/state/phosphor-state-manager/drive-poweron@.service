@@ -1,0 +1,11 @@
+[Unit]
+Description=power on drive:%i
+Before=obmc-host-start@0.target
+PartOf=obmc-drive-poweron@%i.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/phosphor-state-manager/drive-poweron %i
+
+[Install]
+RequiredBy=obmc-drive-poweron@%i.target

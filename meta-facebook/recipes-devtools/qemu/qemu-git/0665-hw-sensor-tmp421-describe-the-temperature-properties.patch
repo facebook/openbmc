@@ -1,4 +1,4 @@
-From 181af945894b455f2bdab021a6090f699b9d40df Mon Sep 17 00:00:00 2001
+From a2b224bec4b50c40593e132ed77a902c807c742e Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 14 Aug 2026 17:19:14 +0200
 Subject: [PATCH] hw/sensor: tmp421: describe the temperature properties

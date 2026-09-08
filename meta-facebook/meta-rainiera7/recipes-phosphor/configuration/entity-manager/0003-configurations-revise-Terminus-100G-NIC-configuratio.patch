@@ -1,7 +1,7 @@
-From 4b13c42817551d69659b90faf7f004fe29186df4 Mon Sep 17 00:00:00 2001
+From 4487dedf4daccd9377e6ab55ddda292c9b09d1d4 Mon Sep 17 00:00:00 2001
 From: Alan Tsai <alan-tsai@quantatw.com>
 Date: Thu, 20 Aug 2026 21:52:38 +0800
-Subject: [PATCH 2/2] configurations: revise Terminus 100G NIC configuration.
+Subject: [PATCH] configurations: revise Terminus 100G NIC configuration.
 
 Add an MCTPI2CTarget entry to allow MCTPReactor to automatically
 assign an EID to the BRCM NIC over I2C, removing the need for manual
@@ -49,5 +49,5 @@ index e4f92d7..a3fefe2 100644
      ],
      "Name": "Terminus NIC FRU $bus",
 -- 
-2.25.1
+2.53.0-Meta
 

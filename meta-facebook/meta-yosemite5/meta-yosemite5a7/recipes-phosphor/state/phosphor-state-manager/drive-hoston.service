@@ -1,0 +1,10 @@
+[Unit]
+Description=power on drives by host
+Before=obmc-host-startmin@0.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/phosphor-state-manager/drive-host-on
+
+[Install]
+RequiredBy=obmc-host-startmin@0.target

@@ -37,10 +37,16 @@ SRC_URI:append:fb-compute-multihost = " \
 "
 
 SRC_URI:append = " \
-    file://0104-Store-Log-Entry-URI-for-Redfish-event.patch \
+    file://0350-Store-Log-Entry-URI-for-Redfish-event.patch \
 "
 
 # Drive state management - Redfish Drive.Reset action
 SRC_URI:append = " \
     file://0400-storage-Add-Drive.Reset-action-with-association-base.patch \
+"
+
+# CPER support
+SRC_URI:append = " \
+    file://0410-LogEntry-Add-support-for-parsing-and-presenting-CPER.patch \
+    file://0411-Event-carry-the-CPER-section-onto-the-pushed-EventRe.patch \
 "

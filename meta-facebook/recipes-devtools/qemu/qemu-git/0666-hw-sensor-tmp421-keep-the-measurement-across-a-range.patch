@@ -1,4 +1,4 @@
-From 640dd3cd84af95de48d7e4ec11d87db6ca429442 Mon Sep 17 00:00:00 2001
+From fa3f979247d4a407cb4e2a0dc4b6a8a86ce4a780 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 14 Aug 2026 17:19:15 +0200
 Subject: [PATCH] hw/sensor: tmp421: keep the measurement across a range change

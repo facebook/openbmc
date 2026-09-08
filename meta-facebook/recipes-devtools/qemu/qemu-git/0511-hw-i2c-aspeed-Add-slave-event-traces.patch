@@ -1,4 +1,4 @@
-From 61eb1d0b48aeeacebee31f0f2358a00b154058cc Mon Sep 17 00:00:00 2001
+From aba92b2339e30e5cefc9649b04f57d4f6d01e49d Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 24 Aug 2022 01:53:43 -0700
 Subject: [PATCH] hw/i2c/aspeed: Add slave event traces

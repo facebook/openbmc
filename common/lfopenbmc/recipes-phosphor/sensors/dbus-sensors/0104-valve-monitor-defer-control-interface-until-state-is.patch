@@ -1,0 +1,391 @@
+From eda7efe30542f2b571df884634b5b39081bbb0e3 Mon Sep 17 00:00:00 2001
+From: Eldin Lee <eldin.lee@quantatw.com>
+Date: Mon, 27 Jul 2026 13:25:26 +0800
+Subject: [PATCH] valve-monitor: defer control interface until state is known
+
+The Control.Valve interface was published before hardware feedback was
+available, exposing the default state as though it had been confirmed
+and allowing control requests to be evaluated against that state.
+
+Defer publishing the interface for both analog and GPIO valves until
+the first valid feedback reading. Treat the initial reading as
+initialization without generating a valve event, and generate events
+only for subsequent state changes.
+
+For analog valves, also start the systemd unit corresponding to the
+initial state so the report output is synchronized at startup.
+
+Change-Id: I5074a1209c37b8a68e4d1abf2dd63de8ec413468
+Signed-off-by: Eldin Lee <eldin.lee@quantatw.com>
+---
+ src/valve-monitor/AnalogValve.cpp  | 25 ++++++----
+ src/valve-monitor/BaseValve.cpp    | 79 +++++++++++++++++-------------
+ src/valve-monitor/BaseValve.hpp    | 37 +++++++-------
+ src/valve-monitor/GPIOValve.cpp    | 16 ++++--
+ src/valve-monitor/ValveFactory.cpp |  4 +-
+ 5 files changed, 91 insertions(+), 70 deletions(-)
+
+diff --git a/src/valve-monitor/AnalogValve.cpp b/src/valve-monitor/AnalogValve.cpp
+index b52a9a4..766ecca 100644
+--- a/src/valve-monitor/AnalogValve.cpp
++++ b/src/valve-monitor/AnalogValve.cpp
+@@ -139,8 +139,8 @@ static constexpr auto pollIntervalMs = 1000;
+ static constexpr double hwmonMillivoltScale = 1000.0;
+ 
+ AnalogValve::AnalogValve(sdbusplus::async::context& ctx,
+-                         sdbusplus::object_path& objectPath,
+-                         Events& events, const LocalConfig& localConfig,
++                         sdbusplus::object_path& objectPath, Events& events,
++                         const LocalConfig& localConfig,
+                          const config::AnalogConfig& config) :
+     BaseValve(ctx, objectPath, events, localConfig, config),
+     analogConfig(config)
+@@ -183,12 +183,12 @@ auto AnalogValve::getState() const -> State
+ auto AnalogValve::setState(State state) -> bool
+ {
+     debug("Setting {VALVE} to {STATE}", "VALVE", baseConfig.name, "STATE",
+-          convertStateToString(state));
++          Valve::convertStateToString(state));
+ 
+     if ((!isOpen && state == State::Close) || (isOpen && state == State::Open))
+     {
+         info("Ignoring, as new state {STATE} matches the current state",
+-             "STATE", convertStateToString(state));
++             "STATE", Valve::convertStateToString(state));
+         return true;
+     }
+ 
+@@ -214,14 +214,14 @@ auto AnalogValve::setState(State state) -> bool
+     if (!writeDACVoltage(targetVoltage))
+     {
+         error("Failed to set {VALVE} to {STATE}", "VALVE", baseConfig.name,
+-              "STATE", convertStateToString(state));
++              "STATE", Valve::convertStateToString(state));
+         return false;
+     }
+ 
+     currentSetPointVoltage = targetVoltage;
+     lastSetPointChange = std::chrono::steady_clock::now();
+     info("Successfully set {VALVE} to {STATE}", "VALVE", baseConfig.name,
+-         "STATE", convertStateToString(state));
++         "STATE", Valve::convertStateToString(state));
+     return true;
+ }
+ 
+@@ -249,12 +249,17 @@ auto AnalogValve::handleStateChange(double voltage) -> sdbusplus::async::task<>
+         isOpen = (voltage > analogConfig.openThreshold + hysteresis);
+     }
+ 
+-    if (wasOpen == isOpen)
++    // Publish the control interface once the initial state is known; generate
++    // events only for subsequent state changes.
++    if (!publishControlInterface())
+     {
+-        co_return;
+-    }
++        if (wasOpen == isOpen)
++        {
++            co_return;
++        }
+ 
+-    co_await events.generateValveEvent(inventoryPath, isOpen);
++        co_await events.generateValveEvent(inventoryPath, isOpen);
++    }
+ 
+     /** @brief Valve state to systemd target service map */
+     static constexpr std::array<std::pair<State, std::string_view>, 2>
+diff --git a/src/valve-monitor/BaseValve.cpp b/src/valve-monitor/BaseValve.cpp
+index b8140ca..cd8fd63 100644
+--- a/src/valve-monitor/BaseValve.cpp
++++ b/src/valve-monitor/BaseValve.cpp
+@@ -25,6 +25,43 @@ namespace valve
+ 
+ PHOSPHOR_LOG2_USING;
+ 
++using association_t = std::tuple<std::string, std::string, std::string>;
++using association_list_t = std::vector<association_t>;
++
++using ValveControlIntf = sdbusplus::async::server_t<
++    ValveControl, sdbusplus::aserver::xyz::openbmc_project::control::Valve,
++    sdbusplus::aserver::xyz::openbmc_project::association::Definitions>;
++
++class ValveControl : public ValveControlIntf
++{
++  public:
++    ValveControl(sdbusplus::async::context& ctx,
++                 const sdbusplus::object_path& objectPath,
++                 const sdbusplus::object_path& inventoryPath,
++                 BaseValve& valve) :
++        ValveControlIntf(ctx, objectPath), valve(valve)
++    {
++        associations({{"controlling", "controlled_by", inventoryPath}});
++        Definitions::emit_added();
++        Valve::emit_added();
++    }
++
++    // NOLINTNEXTLINE(readability-identifier-naming)
++    auto get_property(state_t /*unused*/) const -> State
++    {
++        return valve.getState();
++    }
++
++    // NOLINTNEXTLINE(readability-identifier-naming)
++    auto set_property(state_t /*unused*/, State state) -> bool
++    {
++        return valve.setState(state);
++    }
++
++  private:
++    BaseValve& valve;
++};
++
+ static auto getObjectPath(std::string valveName)
+ {
+     std::replace(valveName.begin(), valveName.end(), ' ', '_');
+@@ -46,9 +83,6 @@ constexpr ValveIntf::Value::properties_t initValues{0, 100, 0,
+ constexpr ValveIntf::Definitions::properties_t initAssociations{};
+ constexpr ValveIntf::Availability::properties_t initAvailability{true};
+ constexpr ValveIntf::OperationalStatus::properties_t initOperationalState{true};
+-constexpr ValveControlIntf::Valve::properties_t initControl{
+-    ValveControlIntf::State::Close};
+-constexpr ValveControlIntf::Definitions::properties_t initControlAssociations{};
+ 
+ BaseValve::BaseValve(sdbusplus::async::context& ctx,
+                      const sdbusplus::object_path& objectPath,
+@@ -56,8 +90,6 @@ BaseValve::BaseValve(sdbusplus::async::context& ctx,
+                      const config::BaseConfig& config) :
+     ValveIntf(ctx, getObjectPath(config.name).str.c_str(), initValues,
+               initAssociations, initAvailability, initOperationalState),
+-    ValveControlIntf(ctx, getControlObjectPath(config.name).str.c_str(),
+-                     initControl, initControlAssociations),
+     ctx(ctx),
+     inventoryPath(std::filesystem::path(objectPath.str).parent_path().string()),
+     events(events), localConfig(localConfig), baseConfig(config)
+@@ -65,12 +97,11 @@ BaseValve::BaseValve(sdbusplus::async::context& ctx,
+     info("Created valve {VALVE}", "VALVE", baseConfig.name);
+ }
+ 
+-auto BaseValve::emitInterfaces() -> void
++auto BaseValve::emitSensorInterfaces() -> void
+ {
+     Value::emit_added();
+     OperationalStatus::emit_added();
+     Availability::emit_added();
+-    Valve::emit_added();
+ }
+ 
+ BaseValve::~BaseValve()
+@@ -78,23 +109,18 @@ BaseValve::~BaseValve()
+     available(false);
+ }
+ 
+-auto BaseValve::get_property(state_t /*unused*/) const -> State
++auto BaseValve::publishControlInterface() -> bool
+ {
+-    return getState();
+-}
+-
+-auto BaseValve::createAssociations() -> sdbusplus::async::task<>
+-{
+-    co_await createSensorAssociations();
+-
+-    createControlAssociations();
++    if (controlInterface)
++    {
++        return false;
++    }
+ 
+-    co_return;
++    controlInterface = std::make_unique<ValveControl>(
++        ctx, getControlObjectPath(baseConfig.name), inventoryPath, *this);
++    return true;
+ }
+ 
+-using association_t = std::tuple<std::string, std::string, std::string>;
+-using association_list_t = std::vector<association_t>;
+-
+ auto BaseValve::createSensorAssociations() -> sdbusplus::async::task<>
+ {
+     association_list_t associationList;
+@@ -119,19 +145,6 @@ auto BaseValve::createSensorAssociations() -> sdbusplus::async::task<>
+     co_return;
+ }
+ 
+-auto BaseValve::createControlAssociations() -> void
+-{
+-    association_list_t associationList;
+-
+-    association_t association = {"controlling", "controlled_by", inventoryPath};
+-
+-    associationList.emplace_back(association);
+-
+-    ValveControlIntf::associations(associationList);
+-
+-    ValveControlIntf::Definitions::emit_added();
+-}
+-
+ auto BaseValve::getContainingChassis(sdbusplus::async::context& ctx,
+                                      std::string& objectPath)
+     -> sdbusplus::async::task<std::optional<std::string>>
+diff --git a/src/valve-monitor/BaseValve.hpp b/src/valve-monitor/BaseValve.hpp
+index 90de751..76cdfd8 100644
+--- a/src/valve-monitor/BaseValve.hpp
++++ b/src/valve-monitor/BaseValve.hpp
+@@ -12,6 +12,7 @@
+ #include <xyz/openbmc_project/State/Decorator/Availability/aserver.hpp>
+ #include <xyz/openbmc_project/State/Decorator/OperationalStatus/aserver.hpp>
+ 
++#include <memory>
+ #include <optional>
+ #include <string>
+ 
+@@ -34,6 +35,7 @@ struct BaseConfig
+ } // namespace config
+ 
+ class BaseValve;
++class ValveControl;
+ 
+ using ValveIntf = sdbusplus::async::server_t<
+     BaseValve, sdbusplus::aserver::xyz::openbmc_project::sensor::Value,
+@@ -42,13 +44,12 @@ using ValveIntf = sdbusplus::async::server_t<
+     sdbusplus::aserver::xyz::openbmc_project::state::decorator::
+         OperationalStatus>;
+ 
+-using ValveControlIntf = sdbusplus::async::server_t<
+-    BaseValve, sdbusplus::aserver::xyz::openbmc_project::control::Valve,
+-    sdbusplus::aserver::xyz::openbmc_project::association::Definitions>;
+-
+-class BaseValve : public ValveIntf, public ValveControlIntf
++class BaseValve : public ValveIntf
+ {
+   public:
++    using Valve = sdbusplus::common::xyz::openbmc_project::control::Valve;
++    using State = Valve::State;
++
+     explicit BaseValve(sdbusplus::async::context& ctx,
+                        const sdbusplus::object_path& objectPath,
+                        Events& events, const LocalConfig& localConfig,
+@@ -61,25 +62,21 @@ class BaseValve : public ValveIntf, public ValveControlIntf
+     BaseValve& operator=(const BaseValve&) = delete;
+     BaseValve& operator=(BaseValve&&) = delete;
+ 
+-    /** @brief Emit D-Bus interfaces after construction is complete */
+-    auto emitInterfaces() -> void;
+-
+-    /** @brief Create associations for the valve */
+-    auto createAssociations() -> sdbusplus::async::task<>;
+-
+-    // NOLINTNEXTLINE(readability-identifier-naming)
+-    auto get_property(state_t /*unused*/) const -> State;
++    /** @brief Emit sensor D-Bus interfaces after construction is complete */
++    auto emitSensorInterfaces() -> void;
+ 
+-    // NOLINTNEXTLINE(readability-identifier-naming)
+-    auto set_property(state_t /*unused*/, auto state) -> bool
+-    {
+-        return setState(state);
+-    }
++    /** @brief Create associations for the valve sensor */
++    auto createSensorAssociations() -> sdbusplus::async::task<>;
+ 
+   protected:
+     virtual auto getState() const -> State = 0;
+     virtual auto setState(State state) -> bool = 0;
+ 
++    /** @brief Publish the control interface once the valve state is known
++     *  @return true if the interface was published by this call
++     */
++    auto publishControlInterface() -> bool;
++
+     /** @brief Get the chassis containing the given object path */
+     static auto getContainingChassis(sdbusplus::async::context& ctx,
+                                      std::string& objectPath)
+@@ -92,9 +89,9 @@ class BaseValve : public ValveIntf, public ValveControlIntf
+     config::BaseConfig baseConfig;
+ 
+   private:
+-    auto createSensorAssociations() -> sdbusplus::async::task<>;
++    friend class ValveControl;
+ 
+-    auto createControlAssociations() -> void;
++    std::unique_ptr<ValveControl> controlInterface;
+ };
+ 
+ } // namespace valve
+diff --git a/src/valve-monitor/GPIOValve.cpp b/src/valve-monitor/GPIOValve.cpp
+index 44718c5..87369e9 100644
+--- a/src/valve-monitor/GPIOValve.cpp
++++ b/src/valve-monitor/GPIOValve.cpp
+@@ -105,13 +105,13 @@ auto GPIOValve::getState() const -> State
+ auto GPIOValve::setState(State state) -> bool
+ {
+     debug("Setting {VALVE} to {STATE}", "VALVE", baseConfig.name, "STATE",
+-          convertStateToString(state));
++          Valve::convertStateToString(state));
+ 
+     if ((value() == 0 && state == State::Close) ||
+         (value() != 0 && state == State::Open))
+     {
+         info("Ignoring, as new state {STATE} matches the current state",
+-             "STATE", convertStateToString(state));
++             "STATE", Valve::convertStateToString(state));
+         return true;
+     }
+ 
+@@ -126,7 +126,7 @@ auto GPIOValve::setState(State state) -> bool
+         if (res)
+         {
+             info("Successfully set {VALVE} to {STATE}", "VALVE",
+-                 baseConfig.name, "STATE", convertStateToString(state));
++                 baseConfig.name, "STATE", Valve::convertStateToString(state));
+             return res;
+         }
+     }
+@@ -138,7 +138,7 @@ auto GPIOValve::setState(State state) -> bool
+     }
+ 
+     error("Failed to set {VALVE} to {STATE}", "VALVE", baseConfig.name, "STATE",
+-          convertStateToString(state));
++          Valve::convertStateToString(state));
+ 
+     return false;
+ }
+@@ -146,13 +146,19 @@ auto GPIOValve::setState(State state) -> bool
+ auto GPIOValve::updateGPIOStateAsync(bool gpioState) -> sdbusplus::async::task<>
+ {
+     auto newValue = gpioState ? 100 : 0;
++    const bool stateChanged = newValue != value();
+ 
+-    if (newValue != value())
++    if (stateChanged)
+     {
+         debug("Updating valve {VALVE} to {VALUE}", "VALVE", baseConfig.name,
+               "VALUE", newValue);
+         value(newValue);
++    }
+ 
++    // Publish the control interface once the initial state is known; generate
++    // events only for subsequent state changes.
++    if (!publishControlInterface() && stateChanged)
++    {
+         co_await events.generateValveEvent(inventoryPath, gpioState);
+     }
+ 
+diff --git a/src/valve-monitor/ValveFactory.cpp b/src/valve-monitor/ValveFactory.cpp
+index c7b153b..f54a743 100644
+--- a/src/valve-monitor/ValveFactory.cpp
++++ b/src/valve-monitor/ValveFactory.cpp
+@@ -65,8 +65,8 @@ auto ValveFactory::createValve(sdbusplus::async::context& ctx,
+         co_return nullptr;
+     }
+ 
+-    valve->emitInterfaces();
+-    co_await valve->createAssociations();
++    valve->emitSensorInterfaces();
++    co_await valve->createSensorAssociations();
+     co_return valve;
+ }
+ 
+-- 
+2.34.1
+

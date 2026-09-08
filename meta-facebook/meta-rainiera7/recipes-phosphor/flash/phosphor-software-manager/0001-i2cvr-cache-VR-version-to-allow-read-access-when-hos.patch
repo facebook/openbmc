@@ -1,0 +1,121 @@
+From b551029d3a3421524e6666c5476cb4d0c78c5086 Mon Sep 17 00:00:00 2001
+From: Alan Tsai <alan-tsai@quantatw.com>
+Date: Fri, 21 Aug 2026 14:37:52 +0800
+Subject: [PATCH 1/1] i2cvr: cache VR version to allow read access when host is
+ powered on
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When the host is powered on, a GPIO pin is driven high (set to 1),
+which blocks the BMC from reading the VR version directly over I2C.
+To address this issue, introduce a caching mechanism:
+- Cache the VR version to a persistent file whenever a successful
+  I2C read occurs.
+- If the I2C read fails (e.g., while the host is on), fall back to reading
+  the cached version from the file instead.
+
+Tested:
+1. power off
+2. busctl tree xyz.openbmc_project.Software.I2CVR
+└─ /xyz
+  └─ /xyz/openbmc_project
+    └─ /xyz/openbmc_project/software
+      ├─ /xyz/openbmc_project/software/MB_VR_CPU_CPU0_MEM0_Firmware_8055
+      ├─ /xyz/openbmc_project/software/MB_VR_CPU_CPU1_MEM1_Firmware_862
+      ├─ /xyz/openbmc_project/software/MB_VR_CPU_SYS0_SOC0_Firmware_9383
+      ├─ /xyz/openbmc_project/software/MB_VR_CPU_SYS1_SOC1_Firmware_4518
+      ├─ /xyz/openbmc_project/software/MB_VR_CPU_V0P75_PCIE_VDDQ_Firmware_58
+      ├─ /xyz/openbmc_project/software/MB_VR_CPU_V1P2_Firmware_4662
+      ├─ /xyz/openbmc_project/software/Yosemite5_PDB_P52V_HSC_3797
+      └─ /xyz/openbmc_project/software/Yosemite5_Paddle_HSC_P12V_AUX_5799
+3. power on
+4. reboot BMC
+5. check xyz.openbmc_project.Software.I2CVR again
+---
+ i2c-vr/i2cvr_software_manager.cpp | 45 ++++++++++++++++++++++++++++++-
+ meson.build                       |  1 +
+ 2 files changed, 45 insertions(+), 1 deletion(-)
+
+diff --git a/i2c-vr/i2cvr_software_manager.cpp b/i2c-vr/i2cvr_software_manager.cpp
+index 88db3e3..b2b307e 100644
+--- a/i2c-vr/i2cvr_software_manager.cpp
++++ b/i2c-vr/i2cvr_software_manager.cpp
+@@ -11,6 +11,9 @@
+ #include <xyz/openbmc_project/ObjectMapper/client.hpp>
+ 
+ #include <cstdint>
++#include <iostream>
++#include <fstream>
++#include <nlohmann/json.hpp>
+ 
+ PHOSPHOR_LOG2_USING;
+ 
+@@ -94,11 +97,51 @@ sdbusplus::async::task<bool> I2CVRSoftwareManager::initDevice(
+     co_await sdbusplus::async::sleep_for(ctx, std::chrono::milliseconds(1000));
+ 
+     uint32_t sum;
++    std::string filename = "/var/local/vr_version.json";
++    std::ifstream inFile(filename);
++    nlohmann::json version;
++
++    // Initialize as an empty JSON object
++    version = nlohmann::json::object();
++
++    if (inFile.is_open())
++    {
++        try
++        {
++            inFile >> version;
++        }
++        catch (const nlohmann::json::parse_error& e)
++        {
++            error("json file parse error: {ERROR}", "ERROR", e.what());
++        }
++    }
++
++    inFile.close();
++
+     if (!(co_await i2cDevice->getVersion(&sum)))
+     {
+         error("unable to obtain Version/CRC from voltage regulator");
+-        co_return false;
++
++        info("get version from file.");
++        if (version.contains(config.configName))
++        {
++            sum = version[config.configName];
++        }
++        else
++        {
++            error("unable to obtain Version/CRC from file");
++            co_return false;
++        }
+     }
++    else
++    {
++        // update the version into file.
++        version[config.configName] = sum;
++    }
++
++    std::ofstream outFile(filename);
++    outFile << std::setw(4) << version << std::endl;
++    outFile.close();
+ 
+     software->setActivation(ActivationInterface::Activations::Active);
+     error("Set software ID {SWID} to Active.", "SWID", software->swid);
+diff --git a/meson.build b/meson.build
+index 2a31a7c..4c41c61 100644
+--- a/meson.build
++++ b/meson.build
+@@ -27,6 +27,7 @@ cpp = meson.get_compiler('cpp')
+ 
+ boost_dep = dependency('boost')
+ 
++nlohmann_json_dep = dependency('nlohmann_json', include_type: 'system')
+ sdbusplus_dep = dependency('sdbusplus')
+ sdbusplusplus_prog = find_program('sdbus++', native: true)
+ sdbuspp_gen_meson_prog = find_program('sdbus++-gen-meson', native: true)
+-- 
+2.25.1
+

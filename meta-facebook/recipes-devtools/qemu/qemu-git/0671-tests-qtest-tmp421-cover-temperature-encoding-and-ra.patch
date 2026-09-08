@@ -1,4 +1,4 @@
-From d147443e9f0afc773eb49abe1a3e53e0d266502c Mon Sep 17 00:00:00 2001
+From b742b90fd2ecd906a1a9957245da30d5b46ff588 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 5 Aug 2026 18:07:02 +0200
 Subject: [PATCH] tests/qtest: tmp421: cover temperature encoding and range

@@ -1,4 +1,4 @@
-From 4cd7421230d69a9621dab62e0f29de8aefb532e3 Mon Sep 17 00:00:00 2001
+From d80ed332ba01aead6e739b38bc380d7c4eb61cba Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 12 Aug 2026 15:51:12 +0200
 Subject: [PATCH] hw/arm: harma: populate the FRU EEPROMs
@@ -20,10 +20,10 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  1 file changed, 250 insertions(+), 6 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_harma.c b/hw/arm/aspeed_ast2600_harma.c
-index 5740fb1b8f..6ab695f8b5 100644
+index 326b348cd8..4df5855075 100644
 --- a/hw/arm/aspeed_ast2600_harma.c
 +++ b/hw/arm/aspeed_ast2600_harma.c
-@@ -41,6 +41,244 @@
+@@ -40,6 +40,244 @@
   * Fan control board: a fan controller, four power sensors, a temperature
   * sensor and an I/O expander, replicated on i2c0 and i2c2.
   */
@@ -268,7 +268,7 @@ index 5740fb1b8f..6ab695f8b5 100644
  static void harma_fan_board_init(I2CBus *bus)
  {
      /* pwm@5e - maxim,max31790 (no model) */
-@@ -76,7 +314,8 @@ static void harma_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -75,7 +313,8 @@ static void harma_bmc_i2c_init(AspeedMachineState *bmc)
      /* temperature-sensor@4b - ti,tmp75 */
      i2c_slave_create_simple(i2c[1], TYPE_TMP75, 0x4b);
      /* eeprom@50 - atmel,24c64 (MB NIC FRU) */
@@ -278,7 +278,7 @@ index 5740fb1b8f..6ab695f8b5 100644
  
      /* &i2c2 - fan control board 1 */
      harma_fan_board_init(i2c[2]);
-@@ -90,7 +329,8 @@ static void harma_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -89,7 +328,8 @@ static void harma_bmc_i2c_init(AspeedMachineState *bmc)
  
      /* &i2c4 */
      /* eeprom@52 - atmel,24c64 (PDB FRU) */
@@ -288,7 +288,7 @@ index 5740fb1b8f..6ab695f8b5 100644
      /* power-monitor@69 - pmbus (no model) */
      /* temperature-sensor@49 - ti,tmp75 */
      i2c_slave_create_simple(i2c[4], TYPE_TMP75, 0x49);
-@@ -126,7 +366,8 @@ static void harma_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -125,7 +365,8 @@ static void harma_bmc_i2c_init(AspeedMachineState *bmc)
      i2c_slave_create_simple(i2c[11], TYPE_PCA9555, 0x30);
      i2c_slave_create_simple(i2c[11], TYPE_PCA9555, 0x31);
      /* eeprom@52 - atmel,24c64 (Aegis FRU) */
@@ -298,7 +298,7 @@ index 5740fb1b8f..6ab695f8b5 100644
  
      /* &i2c12 */
      /* retimer@24 - asteralabs,pt5161l (no model) */
-@@ -145,7 +386,8 @@ static void harma_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -144,7 +385,8 @@ static void harma_bmc_i2c_init(AspeedMachineState *bmc)
      /* channel 1 */
      bus = pca954x_i2c_get_bus(mux, 1);
      /* eeprom@54 - atmel,24c64 (MB FRU) */
@@ -308,7 +308,7 @@ index 5740fb1b8f..6ab695f8b5 100644
      /* adc@1d/1f - ti,adc128d818 (mode 1) */
      i2c_slave_create_simple(bus, TYPE_ADC128D818, 0x1d);
      i2c_slave_create_simple(bus, TYPE_ADC128D818, 0x1f);
-@@ -156,9 +398,11 @@ static void harma_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -155,9 +397,11 @@ static void harma_bmc_i2c_init(AspeedMachineState *bmc)
  
      /* &i2c15 */
      /* eeprom@50 - atmel,24c64 (SCM FRU) */

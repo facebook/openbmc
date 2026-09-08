@@ -1,8 +1,7 @@
-From 6416b1aadf9385ec5e888327fcb0d11550a0d373 Mon Sep 17 00:00:00 2001
+From f635ec2a4f18af983d2eaa190df9dd1875330ec1 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 23 Apr 2026 04:17:42 +0000
-Subject: [PATCH 3/4] sub-device-manager: Add shared entity-manager discovery
- layer
+Subject: [PATCH] sub-device-manager: Add shared entity-manager discovery layer
 
 Add SubDeviceManager, a reusable class that watches for entity-manager
 InterfacesAdded/InterfacesRemoved signals and performs an initial
@@ -45,10 +44,10 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  create mode 100644 sub_device_manager.hpp
 
 diff --git a/meson.build b/meson.build
-index 090babb..8de5ef1 100644
+index e975881..b89c3e5 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -135,6 +135,12 @@ utils_lib = static_library(
+@@ -153,6 +153,12 @@ utils_lib = static_library(
      dependencies: [sdbusplus, phosphorlogging, phosphordbusinterfaces, libgpiod],
  )
  
@@ -271,5 +270,5 @@ index 0000000..3f3b68a
 +} // namespace state
 +} // namespace phosphor
 -- 
-2.43.0
+2.53.0-Meta
 

@@ -64,6 +64,21 @@ except Exception:
 # Global variables
 G_VERBOSE = False
 
+# Version strings that mean "the version could not be determined" rather than an
+# actual version. "N/A" is set by this module when the read fails or returns
+# something implausible; "UNKNOWN" is emitted by the platform version scripts
+# themselves (e.g. meta-elbert's bios_ver.sh when it cannot parse a version out
+# of the BIOS flash). A component we just upgraded that reports one of these has
+# not been verified, so it must not be reported as Passed.
+UNVERIFIABLE_VERSIONS = frozenset({"", "n/a", "unknown"})
+
+
+def is_version_unverifiable(version):
+    """
+    True when 'version' is a placeholder meaning the version is unknown.
+    """
+    return str(version).strip().lower() in UNVERIFIABLE_VERSIONS
+
 
 class BaseFwUpgradeTest(object):
     """
@@ -115,6 +130,23 @@ class BaseFwUpgradeTest(object):
         "bic succeeded",
     ]
     NUM_LAST_FAILED_EXPECTED_KEY = 4  # zero-based number 0...N
+    # Lower bound on the "is this a version or an error message?" length cap.
+    # Historically this was the whole check, as a bare literal (10, bumped to
+    # 11 in 2021 to fit one vendor's string). Entities whose expected version
+    # is longer raise the cap to fit; see checking_components_version().
+    MIN_PLAUSIBLE_VERSION_LENGTH = 11
+    # Per-entity override of EXPECTED_KEYWORD, for components whose upgrade
+    # command keeps working after the keyword the shared list would match. Empty
+    # by default: every platform and every component not named here keeps using
+    # self.expected_keyword unchanged.
+    DEFAULT_EXPECTED_KEYWORD_BY_ENTITY = {}
+    # Entities whose upgrade command ends by closing the session (a compound
+    # command ending in `exit`). For these, matching a success keyword is
+    # unsafe: it fires mid-stream while later stages of the command are still
+    # running. Wait for the session to close instead -- the command's real end
+    # -- so nothing is truncated and the whole output is captured. Failure
+    # keywords still short-circuit. Empty by default.
+    DEFAULT_WAIT_FOR_EOF_ENTITIES = frozenset()
     DEFAULT_BMC_RECONNECT_TIMEOUT = 400  # BMC Booting timeout
     DEFAULT_SCM_BOOT_TIME = 30  # SCM startup time
     DEFAULT_COMMAND_EXEC_DELAY = 4  # Delay for UUT command handler
@@ -145,6 +177,10 @@ class BaseFwUpgradeTest(object):
         self.skip_components = None
         self.num_last_failed_expected_key = self.NUM_LAST_FAILED_EXPECTED_KEY
         self.expected_keyword = self.EXPECTED_KEYWORD
+        self.expected_keyword_by_entity = self.DEFAULT_EXPECTED_KEYWORD_BY_ENTITY
+        self.wait_for_eof_entities = self.DEFAULT_WAIT_FOR_EOF_ENTITIES
+        # Set by flush_session_contents(): did the command actually finish?
+        self.settled = True
         self.upgrading_timeout = self.DEFAULT_UPGRADING_TIMEOUT
         self.bmc_reconnect_timeout = self.DEFAULT_BMC_RECONNECT_TIMEOUT
         self.power_reset_cmd = self.DEFAULT_POWER_RESET_CMD
@@ -317,12 +353,36 @@ class BaseFwUpgradeTest(object):
             print("Done")
         return True
 
-    def flush_session_contents(self, logging=False):
+    def flush_session_contents(self, logging=False, timeout=None):
+        """
+        Drain the session up to the next prompt. Returns whatever was drained so
+        callers can keep it -- for an upgrade this is the tail printed after the
+        matched keyword, which is often where the verify/summary lines land.
+
+        Pass `timeout` when waiting on a long-running command: the default is
+        pexpect's, which is far shorter than a flash takes. Sets self.settled to
+        say whether the command actually finished within that budget.
+        """
         try:
-            self.bmc_ssh_session.session.prompt()
+            if timeout is None:
+                settled = self.bmc_ssh_session.session.prompt()
+            else:
+                settled = self.bmc_ssh_session.session.prompt(timeout=timeout)
+            self.settled = bool(settled)
+            return self.receive_command_output_from_UUT()
         except pexpect.exceptions.EOF:
+            # The command ended by closing the session (e.g. a compound command
+            # ending in `exit`). That is a completed command, not a hang.
+            self.settled = True
             if logging:
                 print("The child has exited!")
+            # session.before still holds everything received before the close.
+            # Returning "" here discards precisely the tail we need: for a
+            # command ending in `exit`, that IS the end of the upgrade.
+            try:
+                return self.receive_command_output_from_UUT()
+            except Exception:
+                return ""
 
     def send_command_to_UUT(self, command, delay=None, prompt=True):
         if delay is None:
@@ -337,11 +397,17 @@ class BaseFwUpgradeTest(object):
     def receive_command_output_from_UUT(self, only_last=False):
         cmd_result = self.bmc_ssh_session.session.before.decode("utf-8")
         if only_last:
-            lines = cmd_result.split("\r\n")
-            if len(lines) > 1:
-                return lines[1]
-            else:
-                return ""
+            # Index 0 is the echoed command; take the last non-empty line
+            # after it rather than index 1. Every command read this way ends
+            # in a filter (cut/awk/uniq) that yields a single stdout line, but
+            # stderr from the same command is not filtered and reaches the
+            # session ahead of that line -- the pipeline block-buffers stdout
+            # while stderr is unbuffered -- so index 1 can be an unrelated
+            # error message. A long echoed command that wraps is also skipped
+            # for the same reason.
+            lines = [line.strip() for line in cmd_result.split("\r\n")[1:]]
+            lines = [line for line in lines if line]
+            return lines[-1] if lines else ""
         else:
             return cmd_result
 
@@ -601,7 +667,40 @@ class BaseFwUpgradeTest(object):
                     )
 
             version_length = len(current_ver)
-            if version_length > 11 or version_length == 0:
+            # The length cap guards against a get_version command that returns
+            # an error message instead of a version. Bound it by what this
+            # entity's version actually looks like rather than a fixed 11
+            # chars: the package version in the JSON is the expected shape, so
+            # anything up to that length is plausible. elbert's bios reports
+            # "Aboot-norcal7-7.3.5-cb411-generic-8x1-43071231" (46 chars) and a
+            # fixed cap discarded it as unreadable, making the component
+            # impossible to verify. MIN_PLAUSIBLE_VERSION_LENGTH keeps the
+            # original bound for entities whose versions are shorter than it.
+            max_version_length = max(
+                self.MIN_PLAUSIBLE_VERSION_LENGTH, len(package_ver)
+            )
+            # Log the RAW read before the cap can rewrite it: "N/A" alone
+            # cannot distinguish "read returned nothing" from "read returned a
+            # perfectly good version that was too long".
+            Logger.info(
+                "{}: raw version read = {!r} (len {}, max {}); cmd = {!r}".format(
+                    fw_entity,
+                    current_ver,
+                    version_length,
+                    max_version_length,
+                    check_version_cmd,
+                )
+            )
+            # No package version on any platform contains whitespace, but
+            # shell errors ("sh: bios_ver.sh: not found") always do. Rejecting
+            # those directly keeps the guard the length cap used to provide
+            # even where the cap is now wide enough to admit them.
+            looks_like_error = any(c.isspace() for c in current_ver)
+            if (
+                version_length > max_version_length
+                or version_length == 0
+                or looks_like_error
+            ):
                 current_ver = "N/A"
                 need_to_upgrade = True
                 warning_msg = (
@@ -715,13 +814,17 @@ class BaseFwUpgradeTest(object):
         for component in component_test_data:
             if not component["upgrade_needed"]:
                 continue
+            # Show the log for anything that did not cleanly pass -- both a
+            # failed flash and one that flashed but could not be verified.
+            # Previously only the former printed, so an unverified component
+            # produced an empty "Failures Summary".
+            if component["upgrade_status"] and not component.get("unverified"):
+                continue
             entity = component["entity"]
-            if not component["upgrade_status"]:
-                print("Component: {}".format(entity))
-                print("Test log: ")
-                self.print_line(" Start ", "center", "=")
-                self.print_line(component["result"])
-                self.print_line(" End ", "center", "=")
+            print("Component: {}".format(entity))
+            print("Matched keyword: {!r}".format(component.get("matched_keyword")))
+            print("Test log: ")
+            self.print_raw_block("Start", component["result"])
 
     def summary_test(
         self,
@@ -735,6 +838,7 @@ class BaseFwUpgradeTest(object):
         """
         failed_test = False
         failures_cnt = 0
+        unverified_entities = []
         if logging:
             print()
             self.print_line("", "center", "*")
@@ -761,10 +865,28 @@ class BaseFwUpgradeTest(object):
                 result = "   Skipped"
 
             entity = component["entity"]
-            if upgraded_components is None:
+            # upgraded_components is None when post-upgrade versions were never
+            # collected. That is "not checked", not "check failed", so it must
+            # not be treated as a verification failure.
+            versions_were_collected = upgraded_components is not None
+            if not versions_were_collected:
                 current_version = "N/A"
             else:
                 current_version = upgraded_components[index]["current_version"]
+
+            # A flash that reported success but leaves the component reporting
+            # no readable version has not been verified. Without this the test
+            # passes on an upgrade it cannot confirm actually took effect.
+            unverified = (
+                component["upgrade_needed"]
+                and component["upgrade_status"]
+                and versions_were_collected
+                and is_version_unverifiable(current_version)
+            )
+            component["unverified"] = unverified
+            if unverified:
+                result = "Unverified"
+
             if logging:
                 self.print_line(
                     [
@@ -780,23 +902,153 @@ class BaseFwUpgradeTest(object):
             if not component["upgrade_status"]:
                 failures_cnt += 1
                 failed_test = True
+            elif unverified:
+                failures_cnt += 1
+                failed_test = True
+                unverified_entities.append(entity)
 
+        if unverified_entities:
+            Logger.error(
+                "Upgraded but could not verify the resulting version for: {}".format(
+                    ", ".join(unverified_entities)
+                )
+            )
         if failed_test:
             self.show_failed_test_log(components_to_upgrade)
-            self.fail("{} components failed".format(failures_cnt))
+            self.fail(
+                "{} components failed{}".format(
+                    failures_cnt,
+                    (
+                        " ({} upgraded but unverified: {})".format(
+                            len(unverified_entities), ", ".join(unverified_entities)
+                        )
+                        if unverified_entities
+                        else ""
+                    ),
+                )
+            )
         if logging:
             self.print_line("", "center", "-")
 
     def upgrade_components(self, components_to_upgrade, logging=False):
         for component in components_to_upgrade:
             self.upgrade_one_component(component, logging)
-            # Retry an intermittently failed upgrade
+            # Retry an intermittently failed upgrade. Only safe once the command
+            # has exited: if it is still running, a retry would be typed into
+            # the live session as stdin rather than run as a command.
             if not component["upgrade_status"]:
+                if component.get("still_running"):
+                    print(
+                        f"*** Upgrade of component {component['entity']} has not "
+                        "exited; not retrying ***"
+                    )
+                    continue
                 print(
                     f"*** Upgrade of component {component['entity']} failed, retrying ***"
                 )
                 component["upgrade_status"] = True
                 self.upgrade_one_component(component, logging)
+
+    def keywords_for_entity(self, entity):
+        """
+        Keyword list to wait on for this component. Falls back to the shared
+        self.expected_keyword, so behaviour is unchanged unless a platform
+        explicitly overrides an entity.
+
+        An override must keep the failure keywords -- indices 0 through
+        num_last_failed_expected_key -- identical, because that boundary is a
+        positional index into the list.
+        """
+        keywords = self.expected_keyword_by_entity.get(entity)
+        if keywords is None:
+            return self.expected_keyword
+        boundary = self.num_last_failed_expected_key + 1
+        if list(keywords[:boundary]) != list(self.expected_keyword[:boundary]):
+            self.fail(
+                "expected_keyword_by_entity[{}] must keep the first {} (failure) "
+                "keywords identical to expected_keyword; "
+                "num_last_failed_expected_key is a positional index".format(
+                    entity, boundary
+                )
+            )
+        return keywords
+
+    def print_raw_block(self, title, body):
+        """
+        Print a multi-line block verbatim. Deliberately not print_line(), which
+        pads/truncates every line to MAX_LINE_LEN and destroys command output.
+        """
+        self.print_line(" {} ".format(title), "center", "=")
+        print(body.rstrip("\r\n") if body else "(no output captured)")
+        self.print_line(" end {} ".format(title), "center", "=")
+
+    def log_upgrade_command(self, entity, filename, cmd_to_execute):
+        """
+        Record exactly what is about to run on the UUT. Always goes to the
+        logfile; echoed to stdout under --verbose.
+        """
+        # "wait-mode" states which completion strategy is in effect, so a log
+        # alone shows which revision of this file actually ran.
+        if entity in self.wait_for_eof_entities:
+            wait_mode = "command exit (EOF); failure keywords only: {}".format(
+                list(self.keywords_for_entity(entity))[
+                    : self.num_last_failed_expected_key + 1
+                ]
+            )
+        else:
+            wait_mode = "first matching keyword: {}".format(
+                list(self.keywords_for_entity(entity))
+            )
+        details = (
+            "{}: binary={}\n{}: pre-cmd={}\n{}: pre-cmd={}\n{}: upgrade-cmd={}\n"
+            "{}: timeout={}s\n{}: wait-mode={}"
+        ).format(
+            entity,
+            filename,
+            entity,
+            self.STOP_FSCD,
+            entity,
+            self.STOP_WDT,
+            entity,
+            cmd_to_execute,
+            entity,
+            self.upgrading_timeout.get(entity),
+            entity,
+            wait_mode,
+        )
+        Logger.info(details)
+        if G_VERBOSE:
+            print()
+            self.print_raw_block("{} command".format(entity), details)
+
+    def log_upgrade_output(self, component):
+        """
+        Record the upgrader's own output. Always goes to the logfile so a
+        post-mortem has it; echoed to stdout under --verbose.
+        """
+        entity = component["entity"]
+        matched = component.get("matched_keyword")
+        # Summarise the flash activity actually observed. A command that does
+        # more than one write (e.g. elbert bios --init-aconf) must show more
+        # than one write/verify cycle; a truncated wait shows fewer.
+        output = component["result"] or ""
+        stats = "{}: observed {} write(s), {} verify(ies), {} session-alive={}".format(
+            entity,
+            output.count("Erase/write done"),
+            output.count("VERIFIED."),
+            "{} bytes of output;".format(len(output)),
+            self.bmc_ssh_session.session.isalive(),
+        )
+        Logger.info(stats)
+        header = "{}: matched keyword {!r}".format(entity, matched)
+        Logger.info("{}\n{}".format(header, component["result"]))
+        if G_VERBOSE:
+            # The "Updating: <entity> ....." progress line is left open, so
+            # start on a fresh line rather than appending to it.
+            print()
+            print(stats)
+            print(header)
+            self.print_raw_block("{} output".format(entity), component["result"])
 
     def upgrade_one_component(self, component, logging=False):
         """
@@ -807,15 +1059,18 @@ class BaseFwUpgradeTest(object):
         entity = component["entity"]
         ret = -1
         if component["upgrade_needed"]:
+            keywords = self.keywords_for_entity(entity)
+            wait_for_eof = entity in self.wait_for_eof_entities
+            eof_index = self.num_last_failed_expected_key + 1
             try:
                 if not self.bmc_ssh_session.session.isalive():
                     print("remote ssh session broke! retrying...")
                     if not self.reconnect_to_remote_host(30):
                         self.fail("cannot reconnect to UUT!")
                 filename = self.remote_bin_path + "/" + self.json[entity][UFW_NAME]
-                Logger.info("ander-updating: filename is {}".format(filename))
                 cmd_to_execute = self.json[entity][UFW_CMD]
                 cmd_to_execute = cmd_to_execute.format(filename=filename)
+                self.log_upgrade_command(entity, filename, cmd_to_execute)
                 if logging:
                     self.print_line(
                         "Updating: {} ".format(entity),
@@ -827,8 +1082,19 @@ class BaseFwUpgradeTest(object):
                 self.send_command_to_UUT(self.STOP_FSCD)
                 self.send_command_to_UUT(self.STOP_WDT)
                 self.send_command_to_UUT(cmd_to_execute, prompt=False)
+                # For an entity whose command closes the session, wait for the
+                # close rather than a success keyword: the success keywords all
+                # fire mid-stream while later stages are still running. Failure
+                # keywords keep their positions so the boundary check below is
+                # unchanged.
+                if wait_for_eof:
+                    patterns = list(
+                        keywords[: self.num_last_failed_expected_key + 1]
+                    ) + [pexpect.EOF]
+                else:
+                    patterns = list(keywords)
                 ret = self.bmc_ssh_session.session.expect_exact(
-                    self.expected_keyword, timeout=self.upgrading_timeout[entity]
+                    patterns, timeout=self.upgrading_timeout[entity]
                 )
             except pexpect.exceptions.TIMEOUT:
                 ret = -1
@@ -840,17 +1106,75 @@ class BaseFwUpgradeTest(object):
             # End timestamp
             end = time.perf_counter()
             component["execution_time"] = end - start
+            # Always capture the upgrader's output, not just on failure. On the
+            # success path this used to be dropped by flush_session_contents(),
+            # which left nothing to diagnose an upgrade that "passed" but did
+            # not take effect.
+            component["result"] = self.receive_command_output_from_UUT()
+            exited = wait_for_eof and ret == eof_index
+            if exited:
+                component["matched_keyword"] = "<command exited (EOF)>"
+            else:
+                component["matched_keyword"] = (
+                    keywords[ret] if 0 <= ret < len(keywords) else None
+                )
+            Logger.info(
+                "{}: upgrade wait ended after {:.1f}s -- {}".format(
+                    entity,
+                    component["execution_time"],
+                    (
+                        "command exited"
+                        if exited
+                        else "matched {!r}".format(component["matched_keyword"])
+                    ),
+                )
+            )
             if ret >= 0 and ret <= self.num_last_failed_expected_key:
                 if logging:
                     print("Failed")
                 component["upgrade_status"] = False
-                component["result"] = self.receive_command_output_from_UUT()
                 Logger.error("{}: Upgrading failed!".format(component))
             else:
                 if logging and ret == -1:
                     print("Done")
-        # flush the rest log.
-        self.flush_session_contents(logging)
+            if exited:
+                # The session is already closed; there is no prompt to wait for
+                # and everything the command printed is already captured.
+                self.settled = True
+            else:
+                # Whatever the upgrader printed after the matched keyword --
+                # often the verify/summary lines -- would otherwise be
+                # discarded. Wait out the component's own flash budget, not
+                # pexpect's default, which is far shorter than a flash takes.
+                tail = self.flush_session_contents(
+                    logging, timeout=self.upgrading_timeout[entity]
+                )
+                if tail:
+                    component["result"] = component["result"] + tail
+            # A prompt timeout here means the upgrade command is STILL RUNNING.
+            # Falling through used to report "Done" and let the caller power
+            # cycle the box mid-flash, truncating any work the command had left
+            # to do. Treat it as a failure instead.
+            if not self.settled:
+                if logging:
+                    print("Still running")
+                component["upgrade_status"] = False
+                # Retrying would type a fresh command into a session that is
+                # still executing the previous one, corrupting both.
+                component["still_running"] = True
+                Logger.error(
+                    "{}: upgrade command had not exited {}s after matching {!r}; "
+                    "refusing to continue while the flash may still be in "
+                    "progress".format(
+                        entity,
+                        self.upgrading_timeout[entity],
+                        component["matched_keyword"],
+                    )
+                )
+            self.log_upgrade_output(component)
+        else:
+            # flush the rest log.
+            self.flush_session_contents(logging)
         if logging:
             print("Done")
         time.sleep(10)  # delay for the current process to be done

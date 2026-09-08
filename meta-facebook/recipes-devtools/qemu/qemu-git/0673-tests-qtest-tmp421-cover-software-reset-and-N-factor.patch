@@ -1,4 +1,4 @@
-From f7e7e1d53c51b2a5fbaf78995314555024d999d5 Mon Sep 17 00:00:00 2001
+From 3f0080c18acbe2da1ccdd09985422a3d1ac1f565 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 5 Aug 2026 18:08:39 +0200
 Subject: [PATCH] tests/qtest: tmp421: cover software reset and N-factor

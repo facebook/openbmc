@@ -6,14 +6,8 @@ import time
 import traceback
 
 import hexfile
-from modbus_update_helper import (
-    auto_int,
-    bh,
-    get_parser,
-    print_perc,
-    retry,
-    suppress_monitoring,
-)
+from modbus_monitor import RackmonMonitor
+from modbus_update_helper import auto_int, bh, get_parser, print_perc, retry
 from pyrmd import (
     ModbusCRCError,
     ModbusException,
@@ -27,15 +21,15 @@ parser.add_argument("--key", type=auto_int, required=True, help="Sec key")
 
 
 class BadMEIResponse(ModbusException):
-    ...
+    pass
 
 
 def mei_command(addr, func_code, mei_type=0x64, data=None, timeout=0):
     i_data = data
     if i_data is None:
-        i_data = b"\xFF" * 7
+        i_data = b"\xff" * 7
     if len(i_data) < 7:
-        i_data = i_data + (b"\xFF" * (7 - len(i_data)))
+        i_data = i_data + (b"\xff" * (7 - len(i_data)))
     assert len(i_data) == 7
     command = struct.pack("BBBB", addr, 0x2B, mei_type, func_code) + i_data
     return rmd.raw(command, expected=13, timeout=timeout)
@@ -54,7 +48,7 @@ def mei_expect(response, addr, data_pfx, error, success_mei_type=0x71):
     expected = (
         struct.pack("BBB", addr, 0x2B, success_mei_type)
         + data_pfx
-        + (b"\xFF" * (8 - len(data_pfx)))
+        + (b"\xff" * (8 - len(data_pfx)))
     )
     if response != expected:
         print(error + ", response: " + bh(response))
@@ -64,7 +58,7 @@ def mei_expect(response, addr, data_pfx, error, success_mei_type=0x71):
 def start_programming(addr):
     print("Send start programming...")
     response = mei_command(addr, 0x70, timeout=10000)
-    mei_expect(response, addr, b"\xB0", "Start programming failed")
+    mei_expect(response, addr, b"\xb0", "Start programming failed")
     print("Start programming succeeded.")
 
 
@@ -102,14 +96,14 @@ def delta_seccalckey(challenge, key):
 def verify_flash(addr):
     print("Verifying program...")
     response = mei_command(addr, 0x76, timeout=60000)
-    mei_expect(response, addr, b"\xB6", "Program verification failed")
+    mei_expect(response, addr, b"\xb6", "Program verification failed")
 
 
 def set_write_address(psu_addr, flash_addr):
     # print("Set write address to " + hex(flash_addr))
     data = struct.pack(">LB", flash_addr, 0xEA)
     response = mei_command(psu_addr, 0x61, data=data, timeout=3000)
-    mei_expect(response, psu_addr, b"\xA1\xEA", "Set address failed")
+    mei_expect(response, psu_addr, b"\xa1\xea", "Set address failed")
 
 
 def write_data(addr, data):
@@ -158,7 +152,7 @@ def send_image(addr, fwimg):
         for i in range(0, len(s), 8):
             chunk = s.data[i : i + 8]
             if len(chunk) < 8:
-                chunk = chunk + (b"\xFF" * (8 - len(chunk)))
+                chunk = chunk + (b"\xff" * (8 - len(chunk)))
             sent_chunks += 1
             # dont fill the restapi log with junk
             print_perc(
@@ -176,7 +170,7 @@ def reset_psu(addr):
     except ModbusTimeout:
         print("No reply from PSU reset (expected.)")
         return
-    expected = struct.pack(">BBBB", addr, 0x2B, 0x71, 0xB2) + (b"\xFF" * 7)
+    expected = struct.pack(">BBBB", addr, 0x2B, 0x71, 0xB2) + (b"\xff" * 7)
     if response != expected:
         print("Bad response to unit reset request: " + bh(response))
         raise BadMEIResponse()
@@ -185,7 +179,7 @@ def reset_psu(addr):
 def erase_flash(addr):
     print("Erasing flash... ")
     response = mei_command(addr, 0x65, timeout=30000)
-    expected = struct.pack(">BBBB", addr, 0x2B, 0x71, 0xA5) + (b"\xFF" * 7)
+    expected = struct.pack(">BBBB", addr, 0x2B, 0x71, 0xA5) + (b"\xff" * 7)
     if response != expected:
         print("Bad response to erasing flash: " + bh(response))
         raise BadMEIResponse()
@@ -216,7 +210,8 @@ def update_psu(addr, filename, key):
 
 def main():
     args = parser.parse_args()
-    with suppress_monitoring():
+    monitor = RackmonMonitor()
+    with monitor.suppress():
         try:
             update_psu(args.addr, args.file, args.key)
         except Exception as e:

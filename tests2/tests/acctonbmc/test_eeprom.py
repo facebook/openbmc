@@ -77,15 +77,15 @@ class SCMEepromTest(EepromV5Test, unittest.TestCase):
         pass
 
 
-@unittest.skipIf(
-    (platform_name := PlatformInfo.get_platform()[0] or "")
-    not in ["WEDGE800BACT", "WEDGE800CACT", "WEDGE800BNHP", "WEDGE800CNHP"],
-    f"Test skipped: unsupported platform {platform_name}",
-)
 class RackMonEepromTest(EepromV5Test, unittest.TestCase):
     """
     Test for RackMon EEPROM
     """
+
+    @classmethod
+    def setUpClass(cls):
+        PlatformInfo.skip_unless_platform(["WEDGE800BACT", "WEDGE800CACT", "WEDGE800BNHP", "WEDGE800CNHP"])
+        super().setUpClass()
 
     def set_eeprom_cmd(self):
         self.eeprom_cmd = ["/usr/bin/weutil -e rackmon_eeprom"]
@@ -94,7 +94,7 @@ class RackMonEepromTest(EepromV5Test, unittest.TestCase):
         self.product_name = ["RACKMON"]
 
     def set_location_on_fabric(self):
-        platform_name, platform_rev  = PlatformInfo.get_platform()
+        platform_name, platform_rev = PlatformInfo.get_platform()
 
         if platform_name in ["WEDGE800BACT"] and platform_rev in ["EVT1"]:
             self.location_on_fabric = ["SMB"]

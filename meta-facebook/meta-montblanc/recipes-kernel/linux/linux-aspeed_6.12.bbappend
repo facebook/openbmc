@@ -24,4 +24,5 @@ SRC_URI:append = " \
     file://1001-ARM-dts-aspeed-fblite-r1-fixup-device-settings.patch \
     file://1002-ARM-dts-aspeed-fblite-r1-increase-hostflash-size.patch \
     file://1003-ARM-dts-aspeed-fblite-r1-enable-snoop-device.patch \
+    file://1004-i2c-aspeed-Acknowledge-Tx-ack-late-when-in-SLAVE_REA.patch \
 "

@@ -1,4 +1,4 @@
-From ac8a7b91ff920851168ded860a0f8324997aa58e Mon Sep 17 00:00:00 2001
+From 55c052173acbbe47491029863c1b22c7b65122f5 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 14 Aug 2026 18:13:54 +0200
 Subject: [PATCH] hw/sensor: tmp421: migrate the exact measurement

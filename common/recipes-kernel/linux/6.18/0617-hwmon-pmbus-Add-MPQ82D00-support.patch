@@ -1,4 +1,4 @@
-From 8e3d357352e7156e8d6f0080acbc225827d59b55 Mon Sep 17 00:00:00 2001
+From 5e44d18d371cf96436d94771ce82ed2ee3987a71 Mon Sep 17 00:00:00 2001
 From: Angela Cheng <angelaptcheng@gmail.com>
 Date: Thu, 20 Aug 2026 05:40:21 +0000
 Subject: [PATCH] hwmon: (pmbus) Add MPQ82D00 support
@@ -7,7 +7,6 @@ Upstream-Status: Backport [https://lore.kernel.org/all/20260704081810.1701587-1-
 
 Add PMBus hwmon driver support for the MPS MPQ82D00 and
 the corresponding device tree bindings.
-
 ---
  .../devicetree/bindings/trivial-devices.yaml  |   2 +
  Documentation/hwmon/index.rst                 |   1 +
@@ -21,10 +20,10 @@ the corresponding device tree bindings.
  create mode 100644 drivers/hwmon/pmbus/mpq82d00.c
 
 diff --git a/Documentation/devicetree/bindings/trivial-devices.yaml b/Documentation/devicetree/bindings/trivial-devices.yaml
-index dd5077ab3..8923e456a 100644
+index 01393fd75c40..8c79ad11e458 100644
 --- a/Documentation/devicetree/bindings/trivial-devices.yaml
 +++ b/Documentation/devicetree/bindings/trivial-devices.yaml
-@@ -343,6 +343,8 @@ properties:
+@@ -347,6 +347,8 @@ properties:
            - mps,mp29612
              # Monolithic Power Systems Inc. multi-phase controller mp29816
            - mps,mp29816
@@ -34,10 +33,10 @@ index dd5077ab3..8923e456a 100644
            - mps,mpq8785
              # Temperature sensor with integrated fan control
 diff --git a/Documentation/hwmon/index.rst b/Documentation/hwmon/index.rst
-index c5ab1aa5d..136ffb914 100644
+index cff141061a0d..4ae98735224d 100644
 --- a/Documentation/hwmon/index.rst
 +++ b/Documentation/hwmon/index.rst
-@@ -188,6 +188,7 @@ Hardware Monitoring Kernel Drivers
+@@ -189,6 +189,7 @@ Hardware Monitoring Kernel Drivers
     mp5990
     mp9941
     mp9945
@@ -47,7 +46,7 @@ index c5ab1aa5d..136ffb914 100644
     nct6775
 diff --git a/Documentation/hwmon/mpq82d00.rst b/Documentation/hwmon/mpq82d00.rst
 new file mode 100644
-index 000000000..30ce9f5f7
+index 000000000000..30ce9f5f71c0
 --- /dev/null
 +++ b/Documentation/hwmon/mpq82d00.rst
 @@ -0,0 +1,73 @@
@@ -126,13 +125,13 @@ index 000000000..30ce9f5f7
 +**temp1_crit_alarm**
 \ No newline at end of file
 diff --git a/MAINTAINERS b/MAINTAINERS
-index af75b0465..97fe3fd87 100644
+index 4410c16db1c0..b1309115ca46 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -17557,6 +17557,13 @@ S:	Maintained
+@@ -17580,6 +17580,13 @@ S:	Maintained
  F:	Documentation/hwmon/mp9945.rst
  F:	drivers/hwmon/pmbus/mp9945.c
-
+ 
 +MPS MPQ82D00 DRIVER
 +M:	Wensheng Wang <wenswang@yeah.net>
 +L:	linux-hwmon@vger.kernel.org
@@ -144,11 +143,13 @@ index af75b0465..97fe3fd87 100644
  M:	Alexey Klimov <alexey.klimov@linaro.org>
  L:	linux-media@vger.kernel.org
 diff --git a/drivers/hwmon/pmbus/Kconfig b/drivers/hwmon/pmbus/Kconfig
-index 3043d1899..730b6b0d1 100644
+index 2e5432dee5f1..b206d20dc602 100644
 --- a/drivers/hwmon/pmbus/Kconfig
 +++ b/drivers/hwmon/pmbus/Kconfig
-@@ -525,2 +525,11 @@ config SENSORS_MPQ7932
-
+@@ -532,6 +532,15 @@ config SENSORS_MPQ7932
+ 	  This driver can also be built as a module. If so, the module will
+ 	  be called mpq7932.
+ 
 +config SENSORS_MPQ82D00
 +	tristate "MPS MPQ82D00"
 +	help
@@ -159,11 +160,13 @@ index 3043d1899..730b6b0d1 100644
 +	  be called mpq82d00.
 +
  config SENSORS_MPQ8785
+ 	tristate "MPS MPQ8785"
+ 	help
 diff --git a/drivers/hwmon/pmbus/Makefile b/drivers/hwmon/pmbus/Makefile
-index bd2dd3bb2..60a0c5770 100644
+index f9974ad649b3..952aab665979 100644
 --- a/drivers/hwmon/pmbus/Makefile
 +++ b/drivers/hwmon/pmbus/Makefile
-@@ -52,6 +52,7 @@ obj-$(CONFIG_SENSORS_MP5990)	+= mp5990.o
+@@ -53,6 +53,7 @@ obj-$(CONFIG_SENSORS_MP5990)	+= mp5990.o
  obj-$(CONFIG_SENSORS_MP9941)	+= mp9941.o
  obj-$(CONFIG_SENSORS_MP9945)	+= mp9945.o
  obj-$(CONFIG_SENSORS_MPQ7932)	+= mpq7932.o
@@ -173,7 +176,7 @@ index bd2dd3bb2..60a0c5770 100644
  obj-$(CONFIG_SENSORS_PM6764TR)	+= pm6764tr.o
 diff --git a/drivers/hwmon/pmbus/mpq82d00.c b/drivers/hwmon/pmbus/mpq82d00.c
 new file mode 100644
-index 000000000..12e4786e0
+index 000000000000..12e4786e0600
 --- /dev/null
 +++ b/drivers/hwmon/pmbus/mpq82d00.c
 @@ -0,0 +1,249 @@
@@ -427,5 +430,6 @@ index 000000000..12e4786e0
 +MODULE_LICENSE("GPL");
 +MODULE_IMPORT_NS("PMBUS");
 \ No newline at end of file
---
-2.43.0
+-- 
+2.53.0-Meta
+

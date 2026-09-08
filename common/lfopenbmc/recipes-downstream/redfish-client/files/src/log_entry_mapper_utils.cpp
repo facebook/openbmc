@@ -1,6 +1,7 @@
 #include <redfish_client/core/log_entry_mapper_utils.hpp>
 #include "redfish-binding/LogEntry_EventSeverity.hpp"
 
+#include <phosphor-logging/lg2.hpp>
 #include <nlohmann/json.hpp>
 
 #include <optional>
@@ -49,6 +50,44 @@ std::string extractOrigin(redfish_binding::LogEntry::LogEntry& entry)
         }
     }
     return "Unknown Source";
+}
+
+std::optional<OemData> extractOemData(
+    redfish_binding::LogEntry::LogEntry& entry)
+{
+    auto& maybeOem = entry.getOem();
+    if (!maybeOem.hasValue())
+    {
+        return std::nullopt;
+    }
+
+    try
+    {
+        nlohmann::json oemJson = maybeOem.value();
+
+        // Oem block must be a non-empty object
+        if (!oemJson.is_object() || oemJson.empty())
+        {
+            lg2::warning("Oem section is empty or not an object");
+            return std::nullopt;
+        }
+
+        // First key is the vendor name (e.g. "AMD")
+        auto it = oemJson.begin();
+        const std::string vendor = it.key();
+        const nlohmann::json& vendorData = it.value();
+
+        return OemData{
+            .vendor = vendor,
+            .jsonData = vendorData.dump(),
+        };
+    }
+    catch (const nlohmann::json::exception& e)
+    {
+        lg2::warning("Failed to serialize Oem section: {ERROR}",
+                     "ERROR", e.what());
+        return std::nullopt;
+    }
 }
 
 std::string formatFailureData(

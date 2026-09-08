@@ -43,6 +43,7 @@
 #include <openbmc/obmc-i2c.h>
 #include "netlakenext_common.h"
 #include <openbmc/ipmb.h>
+#include <openbmc/kv.h>
 
 const char platform_signature[PLAT_SIG_SIZE] = "Netlake";
 
@@ -224,6 +225,75 @@ netlakenext_common_i2c_transfer(uint8_t bus, uint8_t addr, uint8_t *tbuf, uint8_
   close(i2cfd);
 
   return ret;
+}
+
+void
+netlakenext_vr_dump(void) {
+  int ret = 0;
+  uint8_t addr_list[] = {VR_PVDDCR_ADDR, VR_PVDD_MISC_ADDR};
+  uint8_t page_list[] = {VR_PAGE_0, VR_PAGE_1};
+  uint8_t reg_list[] = {VR_STATUS_BYTE_REG, VR_STATUS_WORD_REG, VR_STATUS_IOUT_REG};
+  uint8_t tbuf[PMBUS_RW_WORD] = {0};
+  uint8_t rbuf[PMBUS_RW_WORD] = {0};
+  char val[MAX_VALUE_LEN] = {0};
+
+  ret = kv_get(VR_DUMP_KV_KEY, val, NULL, 0);
+  if ((ret == 0) && (strcmp(val, HIGH_STR) == 0)) {
+    syslog(LOG_ERR, "%s: VR dump is already in progress, skipping\n", __func__);
+    return;
+  }
+
+  ret = kv_set(VR_DUMP_KV_KEY, HIGH_STR, 0, 0);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s: Failed to set VR dump key to HIGH in kv\n", __func__);
+    return;
+  }
+
+  /*
+   * Allow ongoing PMBus polling transaction to complete
+   * Reading a single VR sensor may take around 200 ms, so wait 500 ms here.
+   */
+  usleep(500000);
+
+  for (size_t addr_idx = 0; addr_idx < ARRAY_SIZE(addr_list); addr_idx++) {
+    uint8_t addr = addr_list[addr_idx];
+    for (size_t page_idx = 0; page_idx < ARRAY_SIZE(page_list); page_idx++) {
+      uint8_t page = page_list[page_idx];
+      if (addr == VR_PVDD_MISC_ADDR && page == VR_PAGE_1) {
+        continue;
+      }
+      tbuf[0] = VR_PAGE_REG;
+      tbuf[1] = page;
+      ret = netlakenext_common_i2c_transfer(VR_BUS, addr, tbuf, PMBUS_RW_WORD, NULL, 0);
+      if (ret < 0) {
+        syslog(LOG_ERR, "VR: failed to set page bus %d, addr 0x%02x, page %d\n", VR_BUS, addr >> 1, page);
+        continue;
+      }
+      syslog(LOG_CRIT, "VR: set page bus %d, addr 0x%02x, page %d\n", VR_BUS, addr >> 1, page);
+      for (size_t reg_idx = 0; reg_idx < ARRAY_SIZE(reg_list); reg_idx++) {
+        uint8_t reg = reg_list[reg_idx];
+        int rlen = (reg == VR_STATUS_WORD_REG) ? PMBUS_RW_WORD : PMBUS_RW_BYTE;
+        tbuf[0] = reg;
+        ret = netlakenext_common_i2c_transfer(VR_BUS, addr, tbuf, PMBUS_RW_BYTE, rbuf, rlen);
+        if (ret < 0) {
+          syslog(LOG_ERR, "VR: failed to read bus %d, addr 0x%02x, offset 0x%02x\n", VR_BUS, addr >> 1, reg);
+          continue;
+        }
+        if (rlen == PMBUS_RW_WORD) {
+          syslog(LOG_CRIT, "VR: read bus %d, addr 0x%02x, offset 0x%02x, value 0x%02x%02x\n", VR_BUS, addr >> 1, reg, rbuf[1], rbuf[0]);
+        } else {
+          syslog(LOG_CRIT, "VR: read bus %d, addr 0x%02x, offset 0x%02x, value 0x%02x\n", VR_BUS, addr >> 1, reg, rbuf[0]);
+        }
+      }
+    }
+  }
+
+  ret = kv_set(VR_DUMP_KV_KEY, LOW_STR, 0, 0);
+  if (ret < 0) {
+    syslog(LOG_ERR, "%s: Failed to set VR dump key to LOW in kv\n", __func__);
+  }
+
+  return;
 }
 
 int

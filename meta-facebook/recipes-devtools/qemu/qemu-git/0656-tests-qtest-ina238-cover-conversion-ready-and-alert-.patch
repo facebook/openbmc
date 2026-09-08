@@ -1,4 +1,4 @@
-From 7d6653608bd232c63f3e6c191d2d5413db076665 Mon Sep 17 00:00:00 2001
+From 8337c680d15729242a3734efce4020f0268d09f6 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 22 Jul 2026 17:33:07 +0200
 Subject: [PATCH] tests/qtest: ina238: cover conversion-ready and alert-latch

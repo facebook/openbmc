@@ -1,4 +1,4 @@
-From 25554610b49e9a7b4d3faa421c32a418b153df0e Mon Sep 17 00:00:00 2001
+From ca3bfd500f8ed0153b51a9cd12345b98ea0fa3a2 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 6 Aug 2026 18:18:58 +0200
 Subject: [PATCH] hw/arm: yosemite5: add Facebook Yosemite 5 BMC machine
@@ -21,9 +21,9 @@ have no QEMU model and are left documented as comments.
 Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
 ---
  docs/system/arm/aspeed.rst        |   1 +
- hw/arm/aspeed_ast2600_yosemite5.c | 220 ++++++++++++++++++++++++++++++
+ hw/arm/aspeed_ast2600_yosemite5.c | 218 ++++++++++++++++++++++++++++++
  hw/arm/meson.build                |   1 +
- 3 files changed, 222 insertions(+)
+ 3 files changed, 220 insertions(+)
  create mode 100644 hw/arm/aspeed_ast2600_yosemite5.c
 
 diff --git a/docs/system/arm/aspeed.rst b/docs/system/arm/aspeed.rst
@@ -40,10 +40,10 @@ index aa43e0d47b..e50422ac92 100644
  Supported devices
 diff --git a/hw/arm/aspeed_ast2600_yosemite5.c b/hw/arm/aspeed_ast2600_yosemite5.c
 new file mode 100644
-index 0000000000..2bfa6cf504
+index 0000000000..6f2bb0d061
 --- /dev/null
 +++ b/hw/arm/aspeed_ast2600_yosemite5.c
-@@ -0,0 +1,220 @@
+@@ -0,0 +1,218 @@
 +/*
 + * Facebook Yosemite 5 BMC
 + *
@@ -67,7 +67,6 @@ index 0000000000..2bfa6cf504
 + */
 +
 +#include "qemu/osdep.h"
-+#include "hw/arm/machines-qom.h"
 +#include "hw/arm/aspeed.h"
 +#include "hw/arm/aspeed_soc.h"
 +#include "hw/i2c/i2c_mux_pca954x.h"
@@ -259,16 +258,15 @@ index 0000000000..2bfa6cf504
 +        .name          = MACHINE_TYPE_NAME("yosemite5-bmc"),
 +        .parent        = TYPE_ASPEED_MACHINE,
 +        .class_init    = aspeed_machine_yosemite5_class_init,
-+        .interfaces    = arm_machine_interfaces,
 +    }
 +};
 +
 +DEFINE_TYPES(aspeed_ast2600_yosemite5_types)
 diff --git a/hw/arm/meson.build b/hw/arm/meson.build
-index 3ad25df85a..ab657d5654 100644
+index 6055c93128..69b98348c5 100644
 --- a/hw/arm/meson.build
 +++ b/hw/arm/meson.build
-@@ -69,6 +69,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -68,6 +68,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_ast2600_rainier.c',
    'aspeed_ast2600_santabarbara.c',
    'aspeed_ast2600_sanmiguel.c',

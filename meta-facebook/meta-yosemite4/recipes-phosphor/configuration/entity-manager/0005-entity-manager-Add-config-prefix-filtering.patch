@@ -1,4 +1,4 @@
-From 66779455457f3c0834209572fb3f5cdc120ddc09 Mon Sep 17 00:00:00 2001
+From e24caf77d8a759bc5196ff2ef691c89106a3a06c Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 11 Mar 2025 13:47:42 +0800
 Subject: [PATCH] entity-manager: Add config-prefix filtering
@@ -70,10 +70,10 @@ index cafa9e1..a0544e1 100644
          for (const auto& configurationDirectory : configurationDirectories)
          {
 diff --git a/src/utils.cpp b/src/utils.cpp
-index db476f3..6322b8e 100644
+index 3872c4e..ddf4d2f 100644
 --- a/src/utils.cpp
 +++ b/src/utils.cpp
-@@ -19,8 +19,29 @@
+@@ -20,8 +20,29 @@
  
  namespace fs = std::filesystem;
  
@@ -104,7 +104,7 @@ index db476f3..6322b8e 100644
  {
      if (!fs::exists(dirPath))
      {
-@@ -28,51 +49,42 @@ bool findFiles(const fs::path& dirPath, const std::string& matchString,
+@@ -29,51 +50,42 @@ bool findFiles(const fs::path& dirPath, const std::string& matchString,
      }
  
      std::regex search(matchString);
@@ -180,7 +180,7 @@ index db476f3..6322b8e 100644
  
      return !foundPaths.empty();
 diff --git a/src/utils.hpp b/src/utils.hpp
-index 35825f4..001e752 100644
+index 2fd247d..982068e 100644
 --- a/src/utils.hpp
 +++ b/src/utils.hpp
 @@ -24,10 +24,16 @@ using LastIndex = size_t;

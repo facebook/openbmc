@@ -55,6 +55,7 @@ extern "C" {
 #define CPLD_BUS_4 4
 #define CPLD_ADDR_BUS_4 0x3E
 #define CPLD_SYS_CONFIG_REG_REG 0x01
+#define CPLD_OCP_THERMTRIP_REG 0x07
 #define CPLD_REV_ID_BIT (0x07)
 #define CPLD_VR_SOURCE_BIT (0x18)
 #define CPLD_SPI_MUX_REG 0x0A
@@ -72,11 +73,18 @@ extern "C" {
 #define VR_PVDDCR_BUS 20
 #define VR_PVDDCR_SOC_BUS 20
 #define VR_PVDD_MISC_BUS 21
-#define VR_VOUT_MODE_REG 0x20
-#define VR_MFR_VOUT_SCALE_LOOP_REG 0x29
+// PVDDCR and PVDDCR_SOC share the same PMBus address
 #define VR_PVDDCR_ADDR 0x40
 #define VR_PVDDCR_SOC_ADDR 0x40
 #define VR_PVDD_MISC_ADDR 0x42
+#define VR_PAGE_REG 0x00
+#define VR_PAGE_0 0x00
+#define VR_PAGE_1 0x01
+#define VR_VOUT_MODE_REG 0x20
+#define VR_MFR_VOUT_SCALE_LOOP_REG 0x29
+#define VR_STATUS_BYTE_REG 0x78
+#define VR_STATUS_WORD_REG 0x79
+#define VR_STATUS_IOUT_REG 0x7B
 #define VR_MFR_ID_REG 0x99
 #define VR_MFR_ID_MAX_LEN 6
 #define VR_MFR_ID_MPS 0x4D5053
@@ -157,6 +165,12 @@ extern "C" {
 #define POST_CMPLT_KV_KEY   "post_complete_status"
 #define SKIP_BMC_FWUPD_PRECHK_KV_KEY   "skip_bmc_fwupd_precheck"
 #define ADDC_INIT_KV_KEY    "addc_init"
+#define VR_DUMP_KV_KEY      "vr_dump_in_progress"
+
+enum pmbus_rw_size {
+  PMBUS_RW_BYTE  = 1,
+  PMBUS_RW_WORD  = 2,
+};
 
 enum {
   FRU_ALL = 0,
@@ -221,6 +235,7 @@ int netlakenext_common_get_sys_cfg(uint8_t* sys_cfg);
 int netlakenext_common_get_vr_sku(uint8_t* sku);
 int netlakenext_common_linear11_convert(uint8_t *value_raw, float *value_linear11);
 int netlakenext_common_linear16_convert(uint8_t *value_raw, uint8_t mode, float *value_linear16);
+void netlakenext_vr_dump(void);
 
 #ifdef __cplusplus
 } // extern "C"

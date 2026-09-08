@@ -1,4 +1,4 @@
-From 2e7c67a73bdc53337d8881e4603a58f7d4877f1f Mon Sep 17 00:00:00 2001
+From 80ed53e77f4d75b2f12bd49e69fbced8961d2e32 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Thu, 16 Apr 2026 12:38:46 +0800
 Subject: [PATCH] configuration: ventura2: Add MCTPI2C for E810
@@ -28,10 +28,10 @@ index 7a37e91..be59bd2 100644
              },
              {
 diff --git a/configurations/meta/ventura2/ventura2_rmcv2_mb_2nd.json b/configurations/meta/ventura2/ventura2_rmcv2_mb_2nd.json
-index 8a1d546..c6419d2 100644
+index 09786a0..39c62ce 100644
 --- a/configurations/meta/ventura2/ventura2_rmcv2_mb_2nd.json
 +++ b/configurations/meta/ventura2/ventura2_rmcv2_mb_2nd.json
-@@ -507,6 +507,12 @@
+@@ -508,6 +508,12 @@
                  "Bus": "38",
                  "Inventory": "Ventura2",
                  "Name": "E810",
@@ -44,3 +44,6 @@ index 8a1d546..c6419d2 100644
                  "Type": "MCTPI2CTarget"
              },
              {
+-- 
+2.53.0-Meta
+

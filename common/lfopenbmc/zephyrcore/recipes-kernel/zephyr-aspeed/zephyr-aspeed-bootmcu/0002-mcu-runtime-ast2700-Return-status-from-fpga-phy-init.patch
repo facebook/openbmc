@@ -1,0 +1,66 @@
+From afe253ded20ff89213d331e12d99b07c9b7e3d0c Mon Sep 17 00:00:00 2001
+From: Cool Lee <cool_lee@aspeedtech.com>
+Date: Fri, 8 May 2026 10:57:39 +0800
+Subject: [PATCH] mcu-runtime: ast2700: Return status from fpga phy init
+
+Fix FPGA phy return status.
+
+Signed-off-by: Cool Lee <cool_lee@aspeedtech.com>
+Change-Id: I506be3620660729b82788540a5683283ae317371
+---
+ apps/mcu-runtime/soc/ast2700/fpga_phy.c              | 4 +++-
+ apps/mcu-runtime/soc/ast2700/include/sdram_ast2700.h | 2 +-
+ apps/mcu-runtime/soc/ast2700/sdram_ast2700.c         | 2 +-
+ 3 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/apps/mcu-runtime/soc/ast2700/fpga_phy.c b/apps/mcu-runtime/soc/ast2700/fpga_phy.c
+index 6eedb6a..e80dc5b 100644
+--- a/apps/mcu-runtime/soc/ast2700/fpga_phy.c
++++ b/apps/mcu-runtime/soc/ast2700/fpga_phy.c
+@@ -7,7 +7,7 @@
+ 
+ #define SCU_CPU_PINMUX1                 (SCU0_REG + 0x400)
+ 
+-void fpga_phy_init(struct sdramc *sdramc)
++int fpga_phy_init(struct sdramc *sdramc)
+ {
+ 	struct sdramc_regs *regs = sdramc->regs;
+ 
+@@ -48,6 +48,8 @@ void fpga_phy_init(struct sdramc *sdramc)
+ 		;
+ 
+ 	sys_write32(DRAMC_IRQSTA_PHY_INIT_DONE, (uint32_t)&regs->intr_clear);
++
++	return 0;
+ }
+ 
+ #if defined(ASPEED_FPGA_DDR_CALI)
+diff --git a/apps/mcu-runtime/soc/ast2700/include/sdram_ast2700.h b/apps/mcu-runtime/soc/ast2700/include/sdram_ast2700.h
+index d8c644f..0c9b357 100644
+--- a/apps/mcu-runtime/soc/ast2700/include/sdram_ast2700.h
++++ b/apps/mcu-runtime/soc/ast2700/include/sdram_ast2700.h
+@@ -481,7 +481,7 @@ struct train_bin {
+ 	uint32_t dmem_len;
+ };
+ 
+-void fpga_phy_init(struct sdramc *sdramc);
++int fpga_phy_init(struct sdramc *sdramc);
+ int dwc_phy_init(struct sdramc *sdramc);
+ bool is_ddr4(void);
+ //void sdramc_mpu_enable(struct udevice *dev);
+diff --git a/apps/mcu-runtime/soc/ast2700/sdram_ast2700.c b/apps/mcu-runtime/soc/ast2700/sdram_ast2700.c
+index ea4c880..56a5534 100644
+--- a/apps/mcu-runtime/soc/ast2700/sdram_ast2700.c
++++ b/apps/mcu-runtime/soc/ast2700/sdram_ast2700.c
+@@ -374,7 +374,7 @@ static int sdramc_phy_init(struct sdramc *sdramc, struct sdramc_ac_timing *ac)
+ 
+ 	/* initialize phy */
+ 	if (sdramc->fpga)
+-		fpga_phy_init(sdramc);
++		err = fpga_phy_init(sdramc);
+ 	else
+ 		err = dwc_phy_init(sdramc);
+ 
+-- 
+2.34.1
+

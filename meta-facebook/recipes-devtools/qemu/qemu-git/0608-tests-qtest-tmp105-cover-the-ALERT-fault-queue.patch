@@ -1,4 +1,4 @@
-From 021ff20c5a08de723806a28f218230ff15c141b4 Mon Sep 17 00:00:00 2001
+From ef9ba859a40563d25f96aac0b6d865292254ce31 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:07 +0200
 Subject: [PATCH] tests/qtest: tmp105: cover the ALERT fault queue
@@ -13,6 +13,7 @@ on an in-range conversion and its effect on both asserting and releasing
 the alarm.
 
 Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
+Reviewed-by: Cédric Le Goater <clg@redhat.com>
 Link: https://lore.kernel.org/qemu-devel/20260731-sanmiguel-bmc-locator-v2-8-1266926ba769@free.fr
 Signed-off-by: Cédric Le Goater <clg@redhat.com>
 ---

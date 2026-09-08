@@ -26,8 +26,6 @@ usage() {
 
 FAN_DIR=$(i2c_device_sysfs_abspath 8-0033)
 
-set -e
-
 # This util is called by fscd system service as a pre-condition
 # Therefore, if fscd thermal model is not configured, do that here
 # This is the target file that the config will be written
@@ -72,6 +70,8 @@ if [ "$profile" != "$default_fsc_config" ]; then
 else
   echo "Using the default fscd config file"
 fi
+
+set -e
 
 if [ "$#" -ne 2 ] && [ "$#" -ne 1 ]; then
     usage

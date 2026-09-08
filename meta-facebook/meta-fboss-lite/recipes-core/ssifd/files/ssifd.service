@@ -22,7 +22,6 @@ After=openbmc_gpio_setup.service ipmid.service
 
 [Service]
 Type=simple
-ExecCondition=/usr/local/bin/check_ssifd.sh
 ExecStart=/usr/local/bin/ssifd
 Restart=on-failure
 RestartSec=3

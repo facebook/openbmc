@@ -1,4 +1,4 @@
-From 7aef4d6375197d780a1baf55bd05f13aaee0bc6b Mon Sep 17 00:00:00 2001
+From c2a7c854888a4844ce07bd40c66e1995541120ac Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 22 Jul 2026 17:27:57 +0200
 Subject: [PATCH] tests/qtest: ina230: cover operating modes and triggered

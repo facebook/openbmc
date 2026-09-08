@@ -1,0 +1,256 @@
+#!/bin/bash
+
+source /usr/libexec/fb-common-functions
+
+MAX_SSD_NUM=26
+lock="/run/ssd_power.lock"
+
+# SSD remap: user-facing ssd0~ssd25 -> physical ssd2,ssd3,...,ssd25,ssd0,ssd1 (shift +2 with wrap)
+SSD_REMAP_OFFSET=2
+SSD_TOTAL_NUM=26
+
+# Retry configuration
+MAX_RETRIES=10
+RETRY_DELAY=0.1
+
+log()   { echo "[$(date)][INFO]  $1"; }
+error() { echo "[$(date)][ERROR] $1" >&2; }
+
+get_gpio_retry() {
+    local gpio_name=$1
+    local retry=0
+
+    while (( retry < MAX_RETRIES )); do
+        if get_gpio "$gpio_name"; then
+            return 0
+        fi
+        retry=$(( retry + 1 ))
+        if (( retry < MAX_RETRIES )); then
+            sleep "$RETRY_DELAY"
+        fi
+    done
+
+    error "get_gpio failed after $MAX_RETRIES attempts for $gpio_name"
+    return 1
+}
+
+set_gpio_retry() {
+    local gpio_name=$1
+    local value=$2
+    local retry=0
+
+    while (( retry < MAX_RETRIES )); do
+        if set_gpio "$gpio_name" "$value"; then
+            return 0
+        fi
+        retry=$(( retry + 1 ))
+        if (( retry < MAX_RETRIES )); then
+            sleep "$RETRY_DELAY"
+        fi
+    done
+
+    error "set_gpio failed after $MAX_RETRIES attempts for setting $gpio_name to $value"
+    return 1
+}
+
+get_dbus_object_retry() {
+    local service_name=$1
+    local object_name=$2
+    local retry=0
+
+    while (( retry < MAX_RETRIES )); do
+        if busctl introspect "$service_name" "$object_name" >/dev/null 2>&1; then
+            return 0
+        fi
+        retry=$(( retry + 1 ))
+        if (( retry < MAX_RETRIES )); then
+            sleep "$RETRY_DELAY"
+        fi
+    done
+
+    return 1
+}
+
+check_presence_state() {
+    local ssd_num=$1
+
+    # try to find the corresponding gpiopresence dbus object
+    if get_dbus_object_retry "xyz.openbmc_project.gpiopresence" "/xyz/openbmc_project/GPIODeviceDetected/ssd${ssd_num}"; then
+        log "SSD $ssd_num is ready to power on"
+        return 0
+    else
+        log "SSD $ssd_num is not present, skipping"
+        return 1
+    fi
+}
+
+check_gpio_state() {
+    local gpio_name=$1
+    local expected_state=$2
+    local retry=0
+
+    while (( retry < MAX_RETRIES )); do
+        gpio_state=$(get_gpio_retry "$gpio_name")
+        if [[ "$gpio_state" = "$expected_state" ]]; then
+            return 0
+        fi
+        retry=$(( retry + 1 ))
+        if (( retry < MAX_RETRIES )); then
+            sleep "$RETRY_DELAY"
+        fi
+    done
+
+    error "GPIO $gpio_name did not reach expected state $expected_state after $MAX_RETRIES attempts"
+    return 1
+}
+
+# Get physical SSD number from user-facing SSD number
+# Remap (shift +2 with wrap): ssd0->2, ssd1->3, ..., ssd24->0, ssd25->1
+get_physical_ssd_num() {
+    local user_ssd=$1
+    echo $(( (user_ssd + SSD_REMAP_OFFSET) % SSD_TOTAL_NUM ))
+}
+
+# Echo the reset pin name for the given physical SSD number. Caller must have validated ssd_num.
+get_reset_pin() {
+    local ssd_num=$1
+    if (( ssd_num <= 9 )); then
+        echo "RST_3A_IOEXP5_AND$((ssd_num+1))_R_N"
+    elif (( ssd_num <= 17 )); then
+        echo "RST_2A_IOEXP4_AND$((ssd_num+1))_R_N"
+    else
+        echo "RST_1A_IOEXP4_AND$((ssd_num+1))_R_N"
+    fi
+}
+
+wait_for_gpio() {
+    local gpio_name=$1 
+    local expected=$2
+    local timeout=$3
+    local elapsed=0
+    local interval=1
+
+    if ! [[ "$timeout" =~ ^[0-9]+$ ]]; then
+        error "Invalid timeout value: $timeout. Must be a positive integer."
+        exit 1
+    fi
+
+    while (( elapsed < timeout )); do
+        if check_gpio_state "$gpio_name" "$expected"; then
+            return 0
+        fi
+        sleep "$interval"
+        (( elapsed += interval ))
+    done
+    error "Timeout waiting for $gpio_name to become $expected after $timeout seconds."
+    exit 1
+}
+
+single_drive_power_control() {
+    local user_ssd_num=$1
+    local power_state=$2
+
+    # Remap user-facing SSD number to physical SSD number
+    local ssd_num
+    ssd_num=$(get_physical_ssd_num "$user_ssd_num")
+
+    if (( ssd_num >= MAX_SSD_NUM )); then
+        error "Invalid SSD number: $ssd_num. Must be between 0 and $((MAX_SSD_NUM-1))."
+        return 1
+    fi
+
+    # get the correct GPIO names based on the SSD number
+    if (( ssd_num <= 1 )); then
+        power_enable_pin="EN_P12V_U2_$((ssd_num+1))_R"
+        power_good_pin="PG_P12V_U2_$((ssd_num+1))"
+    else
+        power_enable_pin="EN_P12V_U2_$((ssd_num+1))_R1"
+        power_good_pin="PG_P12V_U2_$((ssd_num+1))_R1"
+    fi
+
+    local reset_pin
+    reset_pin=$(get_reset_pin "$ssd_num")
+
+    if [[ "$power_state" = "on" ]]; then
+        drive_power_state=$(get_gpio_retry "$power_good_pin")
+        if [[ "$drive_power_state" = "1" ]]; then
+            log "SSD $user_ssd_num (physical: $ssd_num) is already powered on"
+            exit 0
+        fi
+
+        log "Powering on SSD $user_ssd_num (physical: $ssd_num)"
+        # pull high the power enable GPIO pin and check the power good GPIO pin to ensure the drive is ready
+        retry=0
+        while (( retry < MAX_RETRIES )); do
+            {
+                flock -x -w 30 100 || { error "Other power control process is running, cannot power control SSD $user_ssd_num"; exit 1; }
+                # pull low the reset pin first to ensure the drive is in reset state before powering on
+                set_gpio_retry "$reset_pin" 0
+                set_gpio_retry "$power_enable_pin" 1
+
+                # time interval between drives
+                sleep 0.045
+
+                if check_gpio_state "$power_good_pin" "1"; then
+                    # wait 100ms and pull high the reset pin
+                    sleep 0.1
+                    set_gpio_retry "$reset_pin" 1
+                    log "SSD $user_ssd_num power is enabled"
+                    break
+                fi
+                error "SSD $user_ssd_num is not ready to power on, retrying..."
+                sleep "$RETRY_DELAY"
+                retry=$(( retry + 1 ))
+            } 100>"$lock"
+        done
+        if ! check_gpio_state "$power_good_pin" "1"; then
+            error "SSD $user_ssd_num failed to power on after $MAX_RETRIES retries"
+        fi
+    elif [[ "$power_state" = "off" ]]; then
+        log "Powering off SSD $user_ssd_num (physical: $ssd_num)"
+        {
+            flock -x -w 30 100 || { error "Other power control process is running, cannot power control SSD $user_ssd_num"; exit 1; }
+            # pull low the reset pin first
+            set_gpio_retry "$reset_pin" 0
+            set_gpio_retry "$power_enable_pin" 0
+        } 100>"$lock"
+        log "SSD $user_ssd_num power is disabled"
+    else
+        error "Invalid power state: $power_state. Use 'on' or 'off'."
+        return 1
+    fi
+}
+
+invalid_input() {
+    local input="$1"
+
+    error "Invalid SSD number: $input"
+    exit 1
+}
+
+drive_reset() {
+    local user_ssd_num=$1
+
+    # Remap user-facing SSD number to physical SSD number
+    local ssd_num
+    ssd_num=$(get_physical_ssd_num "$user_ssd_num")
+
+    if (( ssd_num >= MAX_SSD_NUM )); then
+        error "Invalid SSD number: $ssd_num. Must be between 0 and $((MAX_SSD_NUM-1))."
+        return 1
+    fi
+
+    local reset_pin
+    reset_pin=$(get_reset_pin "$ssd_num")
+    log "Resetting SSD $user_ssd_num (physical: $ssd_num)"
+
+    {
+        # pull low the reset pin for 200ms and then pull it high to reset the drive
+        flock -x -w 30 100 || { error "Other power control process is running, cannot reset SSD $user_ssd_num"; exit 1; }
+        set_gpio_retry "$reset_pin" 0
+        sleep 0.2
+        set_gpio_retry "$reset_pin" 1
+    } 100>"$lock"
+
+    log "SSD $user_ssd_num has been reset"
+}

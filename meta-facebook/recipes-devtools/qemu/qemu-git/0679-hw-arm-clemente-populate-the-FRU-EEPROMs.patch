@@ -1,4 +1,4 @@
-From b932b75b9c186a129401d91983598b8629a9ae0f Mon Sep 17 00:00:00 2001
+From fc55ce46162a347f92ccae95684cf69aeb338b6c Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 12 Aug 2026 16:07:13 +0200
 Subject: [PATCH] hw/arm: clemente: populate the FRU EEPROMs
@@ -25,10 +25,10 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  1 file changed, 948 insertions(+), 26 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_clemente.c b/hw/arm/aspeed_ast2600_clemente.c
-index 67b7b28675..3560c6105e 100644
+index f983b9e021..21646af6bd 100644
 --- a/hw/arm/aspeed_ast2600_clemente.c
 +++ b/hw/arm/aspeed_ast2600_clemente.c
-@@ -33,34 +33,937 @@
+@@ -32,34 +32,937 @@
  #define CLEMENTE_BMC_HW_STRAP2 0x00000800
  #define CLEMENTE_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
  
@@ -973,7 +973,7 @@ index 67b7b28675..3560c6105e 100644
  }
  
  static void clemente_bmc_i2c_init(AspeedMachineState *bmc)
-@@ -79,12 +982,14 @@ static void clemente_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -78,12 +981,14 @@ static void clemente_bmc_i2c_init(AspeedMachineState *bmc)
      /* i2c-mux@71 (PCA9546) */
      i2c_mux = i2c_slave_create_simple(i2c[0], TYPE_PCA9546, 0x71);
      /* channel 1 - HDD FRU eeprom@56 and E1.S backplane */
@@ -990,7 +990,7 @@ index 67b7b28675..3560c6105e 100644
  
      /* i2c-mux@73 (PCA9546) - channels empty */
      i2c_slave_create_simple(i2c[0], TYPE_PCA9546, 0x73);
-@@ -92,17 +997,20 @@ static void clemente_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -91,17 +996,20 @@ static void clemente_bmc_i2c_init(AspeedMachineState *bmc)
      /* i2c-mux@75 (PCA9546) */
      i2c_mux = i2c_slave_create_simple(i2c[0], TYPE_PCA9546, 0x75);
      /* channel 1 - HDD FRU eeprom@56 and E1.S backplane */
@@ -1014,7 +1014,7 @@ index 67b7b28675..3560c6105e 100644
  
      /* &i2c1 */
      /* power-monitor@12/14 - ti,lm5066i (no model) */
-@@ -111,7 +1019,8 @@ static void clemente_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -110,7 +1018,8 @@ static void clemente_bmc_i2c_init(AspeedMachineState *bmc)
      /* temperature-sensor@4e - ti,tmp1075 */
      i2c_slave_create_simple(i2c[1], TYPE_TMP1075, 0x4e);
      /* eeprom@50 - atmel,24c02 (PDB FRU) */
@@ -1024,7 +1024,7 @@ index 67b7b28675..3560c6105e 100644
      /* vrm@60/61 - renesas,raa228004 (no model) */
      /* i2c-mux@70 (PCA9548) - interposer */
      i2c_mux = i2c_slave_create_simple(i2c[1], TYPE_PCA9548, 0x70);
-@@ -119,7 +1028,8 @@ static void clemente_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -118,7 +1027,8 @@ static void clemente_bmc_i2c_init(AspeedMachineState *bmc)
      /* temperature-sensor@4f - ti,tmp75 */
      i2c_slave_create_simple(pca954x_i2c_get_bus(i2c_mux, 5), TYPE_TMP75, 0x4f);
      /* eeprom@54 - atmel,24c64 */
@@ -1034,7 +1034,7 @@ index 67b7b28675..3560c6105e 100644
      /* channel 6 - io_expander5 gpio@27 - nxp,pca9554 */
      i2c_slave_create_simple(pca954x_i2c_get_bus(i2c_mux, 6),
                              TYPE_PCA9554, 0x27);
-@@ -127,7 +1037,8 @@ static void clemente_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -126,7 +1036,8 @@ static void clemente_bmc_i2c_init(AspeedMachineState *bmc)
      /* temperature-sensor@4b - ti,tmp75 */
      i2c_slave_create_simple(pca954x_i2c_get_bus(i2c_mux, 7), TYPE_TMP75, 0x4b);
      /* eeprom@51 - atmel,24c64 */
@@ -1044,7 +1044,7 @@ index 67b7b28675..3560c6105e 100644
  
      /* &i2c2 */
      /* gpio@20/21/27 - nxp,pca9555 */
-@@ -157,35 +1068,45 @@ static void clemente_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -156,35 +1067,45 @@ static void clemente_bmc_i2c_init(AspeedMachineState *bmc)
      /* gpio@4f - nxp,pca9555 */
      i2c_slave_create_simple(i2c[9], TYPE_PCA9555, 0x4f);
      /* eeprom@50 - atmel,24c64 (SCM FRU) */
@@ -1100,7 +1100,7 @@ index 67b7b28675..3560c6105e 100644
  
      /* &i2c14 */
      /* gpio@10/11/12/13/14 - nxp,pca9555 (PDB CPLD) */
-@@ -200,7 +1121,8 @@ static void clemente_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -199,7 +1120,8 @@ static void clemente_bmc_i2c_init(AspeedMachineState *bmc)
      /* temperature-sensor@1f - ti,tmp421 (OCP NIC1) */
      i2c_slave_create_simple(i2c[15], TYPE_TMP421, 0x1f);
      /* eeprom@52 - atmel,24c64 (OCP NIC1 FRU) */

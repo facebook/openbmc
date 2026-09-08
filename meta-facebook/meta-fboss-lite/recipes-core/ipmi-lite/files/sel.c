@@ -456,7 +456,10 @@ int sel_rsv_id(int node) {
 int sel_get_entry(int node, int read_rec_id, sel_msg_t* msg, int* next_rec_id) {
   int index;
 
-  // Find the index in to array based on given index
+  // Find the index in to array based on given record ID.
+  // Record IDs are 1-indexed except SEL_RECID_FIRST (0x0000)
+  // and SEL_RECID_LAST (0xFFFF) which are reserved access commands.
+  // Array indices are 0-based.
   if (read_rec_id == SEL_RECID_FIRST) {
     index = g_sel_hdr[node].begin;
   } else if (read_rec_id == SEL_RECID_LAST) {
@@ -466,7 +469,7 @@ int sel_get_entry(int node, int read_rec_id, sel_msg_t* msg, int* next_rec_id) {
       index = SEL_INDEX_MAX;
     }
   } else {
-    index = read_rec_id;
+    index = read_rec_id - 1;
   }
 
   // If the log is empty return error
@@ -499,14 +502,15 @@ int sel_get_entry(int node, int read_rec_id, sel_msg_t* msg, int* next_rec_id) {
 
   memcpy(msg->msg, g_sel_data[node][index].msg, sizeof(sel_msg_t));
 
-  // Return the next record ID in the log
-  *next_rec_id = ++read_rec_id;
-  if (*next_rec_id > SEL_INDEX_MAX) {
-    *next_rec_id = SEL_INDEX_MIN;
+  // Return the next record ID in the log.
+  // Record ID is 1-indexed and we want the one after.
+  *next_rec_id = index + 2;
+  if (*next_rec_id > SEL_RECID_MAX) {
+    *next_rec_id = SEL_RECID_MIN;
   }
 
   // If this is the last entry in the log, return 0xFFFF
-  if (*next_rec_id == g_sel_hdr[node].end) {
+  if (*next_rec_id == g_sel_hdr[node].end + 1) {
     *next_rec_id = SEL_RECID_LAST;
   }
 
@@ -536,8 +540,11 @@ int sel_add_entry(int node, sel_msg_t* msg, int* rec_id) {
     }
   }
 
-  msg->msg[0] = g_sel_hdr[node].end & 0xFF;
-  msg->msg[1] = (g_sel_hdr[node].end >> 8) & 0xFF;
+  // Record ID is 1-indexed, while `g_sel_hdr[node].end` is the
+  // 0-based index to store this entry.
+  *rec_id = g_sel_hdr[node].end + 1;
+  msg->msg[0] = *rec_id & 0xFF;
+  msg->msg[1] = (*rec_id >> 8) & 0xFF;
 
   // Update message's time stamp starting at byte 4
   if (msg->msg[2] < 0xE0)
@@ -546,9 +553,6 @@ int sel_add_entry(int node, sel_msg_t* msg, int* rec_id) {
   // Add the enry at end
   memcpy(
       g_sel_data[node][g_sel_hdr[node].end].msg, msg->msg, sizeof(sel_msg_t));
-
-  // Return the newly added record ID
-  *rec_id = g_sel_hdr[node].end + 1;
 
   // Print the data in syslog
   dump_sel_syslog(node, msg);

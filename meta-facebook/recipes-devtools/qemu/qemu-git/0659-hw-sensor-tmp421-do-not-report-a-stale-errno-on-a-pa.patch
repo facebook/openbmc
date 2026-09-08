@@ -1,4 +1,4 @@
-From 327d0fefec16c57251e8f7f1be992ce588ac634f Mon Sep 17 00:00:00 2001
+From bdea761876c4e4162765e333999191dab370761e Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 11 Aug 2026 12:15:33 +0200
 Subject: [PATCH] hw/sensor: tmp421: do not report a stale errno on a parse

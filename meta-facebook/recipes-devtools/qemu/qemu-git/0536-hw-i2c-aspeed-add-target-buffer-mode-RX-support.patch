@@ -1,4 +1,4 @@
-From a449b373d511bd0f495541b305863c0ade0492c8 Mon Sep 17 00:00:00 2001
+From b1695226664fcfc017357292447c5f9dd5ad45b6 Mon Sep 17 00:00:00 2001
 From: Zinc Lim <zinclim@meta.com>
 Date: Wed, 12 Aug 2026 00:21:10 -0700
 Subject: [PATCH] hw/i2c/aspeed: add target buffer mode RX support

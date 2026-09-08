@@ -1,0 +1,14 @@
+#!/bin/bash
+
+source /usr/libexec/phosphor-state-manager/drive-power-control-util
+
+# Check if MCIO3A power is low before powering down SSDs
+if check_gpio_state "EN_MCIO3A_PWR_R1" "0"; then
+    for ssd_num in $(seq 0 $((MAX_SSD_NUM - 1))); do
+        single_drive_power_control "$ssd_num" "off"
+    done
+    exit 0
+else
+    error "Cannot power down SSDs because MCIO3A power is still high"
+    exit 1
+fi

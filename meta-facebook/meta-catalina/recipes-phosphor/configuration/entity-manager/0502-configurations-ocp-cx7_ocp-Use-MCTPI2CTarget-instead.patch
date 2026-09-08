@@ -1,0 +1,59 @@
+From 4b80277df1b424988626c8993e847df13b2a8920 Mon Sep 17 00:00:00 2001
+From: Bruce Hung <bruce.jy.hung@fii-foxconn.com>
+Date: Sun, 23 Aug 2026 06:51:49 -0700
+Subject: [PATCH] configurations: ocp: cx7_ocp: Use MCTPI2CTarget instead of
+ ExternalSensor
+
+Converts the NIC$bus % 2 TEMP_C ExternalSensor entry to a real
+MCTPI2CTarget record, so mctp-reactor creates and owns the endpoint
+and pldmd's own platform-mc polls it directly.
+---
+ configurations/ocp/cx7_ocp.json | 29 ++++++++---------------------
+ 1 file changed, 8 insertions(+), 21 deletions(-)
+
+diff --git a/configurations/ocp/cx7_ocp.json b/configurations/ocp/cx7_ocp.json
+index 0c16355..a8b0952 100644
+--- a/configurations/ocp/cx7_ocp.json
++++ b/configurations/ocp/cx7_ocp.json
+@@ -7,30 +7,17 @@
+             "Type": "EEPROM"
+         },
+         {
+-            "Name": "NIC$bus % 2 TEMP_C",
+-            "Units": "DegreesC",
+-            "MinValue": -255,
+-            "MaxValue": 255,
+-            "Timeout": 30.0,
+-            "Thresholds": [
+-                {
+-                    "Direction": "less than",
+-                    "Hysteresis": 0.1,
+-                    "Index": 2,
+-                    "Name": "lower critical",
+-                    "Severity": 1,
+-                    "Value": 5
+-                },
++            "Address": "0x32",
++            "Bus": "$bus",
++            "Name": "NIC$bus % 2",
++            "NetworkId": 1,
++            "PLDMSensors": [
+                 {
+-                    "Direction": "greater than",
+-                    "Hysteresis": 2.1,
+-                    "Index": 2,
+-                    "Name": "upper critical",
+-                    "Severity": 1,
+-                    "Value": 105
++                    "ID": 1,
++                    "Name": "TEMP_C"
+                 }
+             ],
+-            "Type": "ExternalSensor"
++            "Type": "MCTPI2CTarget"
+         }
+     ],
+     "Name": "OCP CX7 NIC $bus % 2",
+-- 
+2.53.0-Meta
+

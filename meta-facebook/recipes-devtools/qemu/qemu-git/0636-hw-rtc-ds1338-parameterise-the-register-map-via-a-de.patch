@@ -1,4 +1,4 @@
-From 125b6d271d19cd44122543f5433507d75ba86da9 Mon Sep 17 00:00:00 2001
+From b978773ba77dc722aef500d33b0acc6ce96331e2 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 11:26:59 +0200
 Subject: [PATCH] hw/rtc: ds1338: parameterise the register map via a device

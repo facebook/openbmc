@@ -1,4 +1,4 @@
-From 5e0c0512096af8b471aee819bc119dfd4e9002b5 Mon Sep 17 00:00:00 2001
+From 2621b8660c0ded3cd9f14e2702089099a7d2de32 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:18 +0200
 Subject: [PATCH] tests/functional: add a device-locator self-check

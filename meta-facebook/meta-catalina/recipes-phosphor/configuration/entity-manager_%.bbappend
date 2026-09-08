@@ -14,6 +14,6 @@ SRC_URI:append = " \
 
 SRC_URI:append:clemente = " \
     file://0501-Update-nvidia_hmc.json.patch \
-    file://0502-Update-CX7-sensor-thresholds.patch \
+    file://0502-configurations-ocp-cx7_ocp-Use-MCTPI2CTarget-instead.patch \
     file://0503-configurations-nvidia-Use-external-senosr-for-gb300-.patch \
 "

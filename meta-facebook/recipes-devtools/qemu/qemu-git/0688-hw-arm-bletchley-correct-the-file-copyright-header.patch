@@ -1,4 +1,4 @@
-From 8c55c4bb74f7d9be60784d9b8b04496c78f15235 Mon Sep 17 00:00:00 2001
+From 2dd70d647e747dd2a477f8b469c90f5affcf876e Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 11:25:16 +0200
 Subject: [PATCH] hw/arm: bletchley: correct the file copyright header
@@ -23,7 +23,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_bletchley.c b/hw/arm/aspeed_ast2600_bletchley.c
-index 7d0b4afefb..4dd000714b 100644
+index 7954202fff..8fa3c3d7da 100644
 --- a/hw/arm/aspeed_ast2600_bletchley.c
 +++ b/hw/arm/aspeed_ast2600_bletchley.c
 @@ -1,7 +1,7 @@

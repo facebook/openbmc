@@ -1,4 +1,4 @@
-From a0fb05e1bc7e4c29a863d819f3da02cb773bf248 Mon Sep 17 00:00:00 2001
+From f08a544821b26cd3206d8c3c753cb08a167ca101 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:09 +0200
 Subject: [PATCH] tests/qtest: tmp105: cover one-shot and fault-queue write
@@ -13,6 +13,7 @@ configuration/limit-register writes never advance the fault queue — only
 real conversions do.
 
 Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
+Reviewed-by: Cédric Le Goater <clg@redhat.com>
 Link: https://lore.kernel.org/qemu-devel/20260731-sanmiguel-bmc-locator-v2-10-1266926ba769@free.fr
 Signed-off-by: Cédric Le Goater <clg@redhat.com>
 ---

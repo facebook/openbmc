@@ -1,4 +1,4 @@
-From b15b134fb9b8f8d2bd50274ac2322fb037f892e1 Mon Sep 17 00:00:00 2001
+From 3d6d52db0b81a70a6fb0ff509cb31224c4857788 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 17:23:08 +0200
 Subject: [PATCH] hw/arm: bletchley: populate the v1.5 FRU EEPROMs
@@ -16,10 +16,10 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  1 file changed, 286 insertions(+), 1 deletion(-)
 
 diff --git a/hw/arm/aspeed_ast2600_bletchley.c b/hw/arm/aspeed_ast2600_bletchley.c
-index d894655864..551bafea36 100644
+index c3f7dfb27b..6439859504 100644
 --- a/hw/arm/aspeed_ast2600_bletchley.c
 +++ b/hw/arm/aspeed_ast2600_bletchley.c
-@@ -333,6 +333,290 @@ static const BletchleyFruSet bletchley_fru_v1_0 = {
+@@ -332,6 +332,290 @@ static const BletchleyFruSet bletchley_fru_v1_0 = {
      .cc  = { fru_v1_0_7_0054, sizeof(fru_v1_0_7_0054) },
  };
  
@@ -310,7 +310,7 @@ index d894655864..551bafea36 100644
  #define TYPE_BLETCHLEY_MACHINE MACHINE_TYPE_NAME("bletchley-bmc")
  OBJECT_DECLARE_SIMPLE_TYPE(BletchleyMachineState, BLETCHLEY_MACHINE)
  
-@@ -344,7 +628,8 @@ struct BletchleyMachineState {
+@@ -343,7 +627,8 @@ struct BletchleyMachineState {
  
  static void bletchley_bmc_i2c_init(AspeedMachineState *bmc)
  {

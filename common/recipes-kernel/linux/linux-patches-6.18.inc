@@ -72,6 +72,10 @@ SRC_URI:append = " \
     file://0237-net-ftgmac100-add-support-for-AST2700.patch \
     file://0238-aspeed-i2c-add-i2c-clk-high-min-percent-property.patch \
     file://0239-iio-adc-aspeed-Support-deglitch-feature.patch \
+    file://0240-dt-bindings-iio-adc-ti-ads112c04-Add-binding-for-ADS.patch \
+    file://0241-iio-adc-ti-ads112c04-Add-support-for-TI-ADS112C04.patch \
+    file://0242-ipmi-ssif_bmc-Prevent-pending-response-from-being-lo.patch \
+    file://0243-aspeed-i2c-fix-AST2700-target-buffer-mode-NULL-deref.patch \
 "
 
 #
@@ -107,6 +111,13 @@ SRC_URI:append = " \
 "
 
 #
+# RTC drivers
+#
+SRC_URI:append = " \
+    file://0800-rtc-Add-NXP-PCF85053A-driver-support.patch \
+"
+
+#
 # Hacks and workarounds
 #
 SRC_URI:append = " \
@@ -133,3 +144,4 @@ SRC_URI:append = " \
     file://2709-usb-host-ehci-platform-add-ASPEED-AST2700-support.patch \
     file://2710-arm64-dts-aspeed-add-EHCI-and-MDIO-nodes-for-G7-plat.patch \
 "
+

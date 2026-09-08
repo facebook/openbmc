@@ -124,9 +124,16 @@ struct RackmonExclusion : public ServiceExclusionBase {
 
 struct PhosphorModbusExclusion : public ServiceExclusionBase {
   static constexpr auto kService = "xyz.openbmc_project.ModbusRTU";
-  static constexpr auto kPortNamespace = "/xyz/openbmc_project/control/port";
-  static constexpr auto kPortInterface = "xyz.openbmc_project.Control.Port";
-  static constexpr auto kMonitoringEnabled = "MonitoringEnabled";
+  static constexpr auto kPortNamespace =
+      "/xyz/openbmc_project/inventory/system/connector";
+  static constexpr auto kPortInterface = "xyz.openbmc_project.Object.Enable";
+  static constexpr auto kEnabled = "Enabled";
+  static constexpr auto kMapperService = "xyz.openbmc_project.ObjectMapper";
+  static constexpr auto kMapperPath = "/xyz/openbmc_project/object_mapper";
+  static constexpr auto kMapperInterface = "xyz.openbmc_project.ObjectMapper";
+  // How long to wait for the service to report back a value we wrote.
+  static constexpr auto kSettleTimeout = std::chrono::seconds(5);
+  static constexpr auto kSettlePoll = std::chrono::milliseconds(100);
   std::string ttyName;
   std::vector<std::string> changedPaths;
 
@@ -144,18 +151,20 @@ struct PhosphorModbusExclusion : public ServiceExclusionBase {
         kService,
         path.c_str(),
         kPortInterface,
-        kMonitoringEnabled,
+        kEnabled,
         &error,
         "b",
         static_cast<int>(start));
     if (r < 0) {
-      std::cerr << "Failed to set " << kMonitoringEnabled << " on " << path
-                << ": " << (error.message ? error.message : "unknown error")
+      std::cerr << "Failed to set " << kEnabled << " on " << path << ": "
+                << (error.message ? error.message : "unknown error")
                 << std::endl;
       sd_bus_error_free(&error);
       return false;
     }
-    return true;
+    // The write only queues the change; the port is not ours until the
+    // service reports the new value back.
+    return waitForProperty(path, start);
   }
 
   bool stopMonitoring() {
@@ -167,11 +176,14 @@ struct PhosphorModbusExclusion : public ServiceExclusionBase {
       if (std::filesystem::path(path).filename() != ttyName) {
         continue;
       }
+      // Record the port before writing it: a write which is accepted
+      // but does not settle in time may still land, so it has to be
+      // undone either way.
+      changedPaths.push_back(path);
       if (!changeProperty(path, false)) {
         startMonitoring();
         return false;
       }
-      changedPaths.push_back(path);
     }
     return true;
   }
@@ -189,20 +201,72 @@ struct PhosphorModbusExclusion : public ServiceExclusionBase {
   }
 
  private:
-  // Enumerate the serial port objects exported under the port-control
-  // namespace via the service's ObjectManager.
+  bool readProperty(const std::string& path, bool& value) {
+    sd_bus_error error = SD_BUS_ERROR_NULL;
+    int enabled = 0;
+    int r = sd_bus_get_property_trivial(
+        bus,
+        kService,
+        path.c_str(),
+        kPortInterface,
+        kEnabled,
+        &error,
+        'b',
+        &enabled);
+    if (r < 0) {
+      std::cerr << "Failed to read " << kEnabled << " on " << path << ": "
+                << (error.message ? error.message : "unknown error")
+                << std::endl;
+      sd_bus_error_free(&error);
+      return false;
+    }
+    sd_bus_error_free(&error);
+    value = enabled != 0;
+    return true;
+  }
+
+  // Poll the property until it reads back as expected. A write which is
+  // accepted but never applied would otherwise leave us driving the bus
+  // while the service is still polling it.
+  bool waitForProperty(const std::string& path, bool expected) {
+    auto deadline = std::chrono::steady_clock::now() + kSettleTimeout;
+    while (true) {
+      bool value = false;
+      if (!readProperty(path, value)) {
+        return false;
+      }
+      if (value == expected) {
+        return true;
+      }
+      if (std::chrono::steady_clock::now() >= deadline) {
+        std::cerr << "Timed out waiting for " << kEnabled << " on " << path
+                  << " to become " << std::boolalpha << expected << std::endl;
+        return false;
+      }
+      std::this_thread::sleep_for(kSettlePoll);
+    }
+  }
+
+  // Enumerate the serial port connector objects exported under the inventory
+  // connector namespace. They live under the service's inventory
+  // ObjectManager, so ask the mapper for everything below the connector
+  // namespace implementing Object.Enable.
   bool getPortPaths(std::vector<std::string>& portPaths) {
     sd_bus_error error = SD_BUS_ERROR_NULL;
     sd_bus_message* reply = nullptr;
     int r = sd_bus_call_method(
         bus,
-        kService,
-        kPortNamespace,
-        "org.freedesktop.DBus.ObjectManager",
-        "GetManagedObjects",
+        kMapperService,
+        kMapperPath,
+        kMapperInterface,
+        "GetSubTreePaths",
         &error,
         &reply,
-        "");
+        "sias",
+        kPortNamespace,
+        0,
+        1,
+        kPortInterface);
     if (r < 0) {
       std::cerr << "Failed to enumerate ports under " << kPortNamespace << ": "
                 << (error.message ? error.message : "unknown error")
@@ -211,22 +275,15 @@ struct PhosphorModbusExclusion : public ServiceExclusionBase {
       return false;
     }
 
-    r = sd_bus_message_enter_container(
-        reply, SD_BUS_TYPE_ARRAY, "{oa{sa{sv}}}");
+    r = sd_bus_message_enter_container(reply, SD_BUS_TYPE_ARRAY, "s");
     if (r < 0) {
       sd_bus_error_free(&error);
       sd_bus_message_unref(reply);
       return false;
     }
-    while (sd_bus_message_enter_container(
-               reply, SD_BUS_TYPE_DICT_ENTRY, "oa{sa{sv}}") > 0) {
-      const char* objPath = nullptr;
-      if (sd_bus_message_read(reply, "o", &objPath) < 0) {
-        break;
-      }
+    const char* objPath = nullptr;
+    while (sd_bus_message_read(reply, "s", &objPath) > 0) {
       portPaths.emplace_back(objPath);
-      sd_bus_message_skip(reply, "a{sa{sv}}");
-      sd_bus_message_exit_container(reply);
     }
     sd_bus_message_exit_container(reply);
 

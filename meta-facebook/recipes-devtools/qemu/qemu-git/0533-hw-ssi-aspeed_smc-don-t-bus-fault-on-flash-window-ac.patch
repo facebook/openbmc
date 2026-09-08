@@ -1,4 +1,4 @@
-From c23cc2627d520704fbeeffd11d5f408f2f3cd34e Mon Sep 17 00:00:00 2001
+From 885a480731b4d52b85eb827a10d0633f9c798f4d Mon Sep 17 00:00:00 2001
 From: Rick Yazwinski <rickyaz@meta.com>
 Date: Thu, 4 Jun 2026 08:21:12 -0700
 Subject: [PATCH] hw/ssi/aspeed_smc: don't bus-fault on flash window access in

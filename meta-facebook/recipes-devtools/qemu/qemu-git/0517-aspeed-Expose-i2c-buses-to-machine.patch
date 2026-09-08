@@ -1,4 +1,4 @@
-From 33d37af9b34bbe87f270a58ac76e9b3d4439b0ed Mon Sep 17 00:00:00 2001
+From 177f715906a9e068166cd96e4252fb995234cfa4 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH] aspeed: Expose i2c buses to machine
@@ -43,20 +43,20 @@ index 7f7768c0ee..28aae10c83 100644
                       hwaddr addr)
  {
 diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
-index d3bfd2c7d2..bcb26cf83b 100644
+index 8dbd43651c..447156a5d0 100644
 --- a/hw/arm/fby35.c
 +++ b/hw/arm/fby35.c
-@@ -15,6 +15,9 @@
+@@ -14,6 +14,9 @@
+ #include "hw/core/qdev-clock.h"
  #include "hw/arm/aspeed_soc.h"
  #include "hw/arm/boot.h"
- #include "hw/arm/machines-qom.h"
 +#include "hw/arm/fby35.h"
 +#include "hw/i2c/i2c.h"
 +#include "hw/i2c/i2c_mux_pca954x.h"
  
  #define TYPE_FBY35 MACHINE_TYPE_NAME("fby35")
  OBJECT_DECLARE_SIMPLE_TYPE(Fby35State, FBY35);
-@@ -74,7 +77,6 @@ static void fby35_bmc_init(Fby35State *s)
+@@ -73,7 +76,6 @@ static void fby35_bmc_init(Fby35State *s)
      AspeedSoCState *soc;
      AspeedSoCClass *sc;
  
@@ -64,7 +64,7 @@ index d3bfd2c7d2..bcb26cf83b 100644
      soc = ASPEED_SOC(&s->bmc);
      sc = ASPEED_SOC_GET_CLASS(soc);
  
-@@ -127,7 +129,6 @@ static void fby35_bic_init(Fby35State *s)
+@@ -126,7 +128,6 @@ static void fby35_bic_init(Fby35State *s)
      s->bic_sysclk = clock_new(OBJECT(s), "SYSCLK");
      clock_set_hz(s->bic_sysclk, 200000000ULL);
  
@@ -72,7 +72,7 @@ index d3bfd2c7d2..bcb26cf83b 100644
      soc = ASPEED_SOC(&s->bic);
      sc = ASPEED_SOC_GET_CLASS(soc);
  
-@@ -149,8 +150,18 @@ static void fby35_bic_init(Fby35State *s)
+@@ -148,8 +149,18 @@ static void fby35_bic_init(Fby35State *s)
  static void fby35_init(MachineState *machine)
  {
      Fby35State *s = FBY35(machine);

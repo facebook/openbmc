@@ -1,4 +1,4 @@
-From 8fdc361c981086264b87c975ed5f447550080fa9 Mon Sep 17 00:00:00 2001
+From 3fdd8c4a1090435ef75d87c1e44f5dbf3eb83618 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 5 Aug 2026 18:01:09 +0200
 Subject: [PATCH] hw/sensor: tmp421: implement register write masks, one-shot

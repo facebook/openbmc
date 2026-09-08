@@ -1,4 +1,4 @@
-From fa1a60be2a9b90e91d49db9c25e8c7022ba7e5ef Mon Sep 17 00:00:00 2001
+From a0e9f3a0da3ff131cbe99194accee58975ff2589 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 15:52:57 +0200
 Subject: [PATCH] tests/functional/arm: bletchley: exercise the I2C sensors

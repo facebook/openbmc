@@ -44,4 +44,3 @@ i2c_device_add 1 0x35 scmcpld
 
 # CPU IPMI
 ulimit -q 1024000
-i2c_device_add 5 0x1010 slave-mqueue  # mqueue for ipmi from COMe CPU

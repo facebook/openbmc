@@ -1,4 +1,4 @@
-From a932af0a57635000ac2c9f9548d4c6dadbe201a6 Mon Sep 17 00:00:00 2001
+From 9c581457e4b5bdf640c1246caac53d11c724c3ad Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Fri, 26 Aug 2022 02:03:46 -0700
 Subject: [PATCH] qemu: Add i2c devices to oby35-cl
@@ -14,18 +14,18 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  3 files changed, 4 insertions(+), 13 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_fuji.c b/hw/arm/aspeed_ast2600_fuji.c
-index a68e51c89d..00d78bf803 100644
+index a70e22f8b4..d7c709182d 100644
 --- a/hw/arm/aspeed_ast2600_fuji.c
 +++ b/hw/arm/aspeed_ast2600_fuji.c
-@@ -11,6 +11,7 @@
- #include "hw/arm/machines-qom.h"
+@@ -10,6 +10,7 @@
+ #include "qapi/error.h"
  #include "hw/arm/aspeed.h"
  #include "hw/arm/aspeed_soc.h"
 +#include "hw/arm/fby35.h"
  #include "hw/i2c/i2c_mux_pca954x.h"
  #include "hw/sensor/tmp105.h"
  #include "hw/nvram/eeprom_at24c.h"
-@@ -137,18 +138,7 @@ static void create_unimplemented_i2c_device(I2CBus *bus, uint8_t addr)
+@@ -135,18 +136,7 @@ static void create_unimplemented_i2c_device(I2CBus *bus, uint8_t addr)
  static void oby35_cl_i2c_init(AspeedMachineState *bmc)
  {
      AspeedSoCState *soc = bmc->soc;
@@ -46,10 +46,10 @@ index a68e51c89d..00d78bf803 100644
  
  static void oby35_bb_i2c_init(AspeedMachineState *bmc)
 diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
-index a4731dfacd..abd2387c74 100644
+index 0c52daecf4..1ef7b1d583 100644
 --- a/hw/arm/fby35.c
 +++ b/hw/arm/fby35.c
-@@ -46,7 +46,7 @@ struct Fby35State {
+@@ -45,7 +45,7 @@ struct Fby35State {
  #define FBY35_BMC_RAM_SIZE (2 * GiB)
  #define FBY35_BMC_FIRMWARE_ADDR 0x0
  

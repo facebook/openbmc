@@ -1,4 +1,4 @@
-From 59ab5aff3b234d4ebda32a0ff9a36b290c05abcb Mon Sep 17 00:00:00 2001
+From 4ec26afcd33820e5a801105e028f6b26ab9d3875 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 23 Jul 2026 16:49:27 +0200
 Subject: [PATCH] tests/qtest: ina230: cover voltage injection and power

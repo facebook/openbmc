@@ -1,4 +1,4 @@
-From 021857ef431b643488e393ad6aa1fb83ad4a8fdb Mon Sep 17 00:00:00 2001
+From 0e12650ac4726edddac3cc8d34a91f0d70e8a1dc Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:24 +0200
 Subject: [PATCH] tests/functional/arm: catalina: test PCA9554 IO expander via

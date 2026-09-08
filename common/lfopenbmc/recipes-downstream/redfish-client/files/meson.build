@@ -69,11 +69,15 @@ srcs = [
     'src/log_entry_mapper_registry.cpp',
     'src/log_entry_mapper_utils.cpp',
     'src/cper_mapper.cpp',
+    'src/instinct_cper_mapper.cpp',
     'src/hgx_ps_run_pwr_fault_mapper.cpp',
     'src/unhandled_mapper.cpp',
     'src/hgx_thermal_mapper.cpp',
     'src/hgx_leak_detector_mapper.cpp',
     'src/sensor_threshold_mapper.cpp',
+    'src/openbmc_mapper.cpp',
+    'src/update_mapper.cpp',
+    'src/environmental_mapper.cpp',
 ]
 
 root_inc = include_directories('include')

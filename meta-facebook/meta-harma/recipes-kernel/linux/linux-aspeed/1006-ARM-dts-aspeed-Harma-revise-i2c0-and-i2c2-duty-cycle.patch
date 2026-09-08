@@ -1,8 +1,7 @@
-From a067e530be4d8837b6b73dc211ae19edbad725a4 Mon Sep 17 00:00:00 2001
+From bb6def7754fe5b44588233060a1f6b661cba5f84 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Fri, 30 Aug 2024 15:45:27 +0800
-Subject: [PATCH 1006/1008] ARM: dts: aspeed: Harma: revise i2c0 and i2c2 duty
- cycle
+Subject: [PATCH] ARM: dts: aspeed: Harma: revise i2c0 and i2c2 duty cycle
 
 Revise the duty cycle for I2C0 and I2C2 to match the definitions in the datasheet.
 This patch only in meta,
@@ -14,7 +13,7 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  1 file changed, 2 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-index 70a416c38dce..f822275802a2 100644
+index 9bba25187e60..007af6d29e2a 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 @@ -203,6 +203,7 @@ &kcs3 {
@@ -25,7 +24,7 @@ index 70a416c38dce..f822275802a2 100644
  
  	pwm@5e {
  		compatible = "maxim,max31790";
-@@ -275,6 +276,7 @@ eeprom@50 {
+@@ -283,6 +284,7 @@ eeprom@50 {
  
  &i2c2 {
  	status = "okay";
@@ -34,5 +33,5 @@ index 70a416c38dce..f822275802a2 100644
  	pwm@5e {
  		compatible = "maxim,max31790";
 -- 
-2.47.3
+2.53.0-Meta
 

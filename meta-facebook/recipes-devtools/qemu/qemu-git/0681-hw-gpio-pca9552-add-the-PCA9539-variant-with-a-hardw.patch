@@ -1,4 +1,4 @@
-From 2f163d074bd1af41d8a4c9b473840f694eb43b84 Mon Sep 17 00:00:00 2001
+From 290e9687c19e2c4d8e8c5d0a59dea4eb24cf8528 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 6 Aug 2026 17:24:49 +0200
 Subject: [PATCH] hw/gpio: pca9552: add the PCA9539 variant with a hardware

@@ -386,10 +386,6 @@ NLOHMANN_JSON_SERIALIZE_ENUM(
         {RegisterValueType::LONG, "LONG"},
     });
 
-NLOHMANN_JSON_SERIALIZE_ENUM(
-    Parity,
-    {{Parity::EVEN, "EVEN"}, {Parity::ODD, "ODD"}, {Parity::NONE, "NONE"}});
-
 void from_json(const json& j, RegisterDescriptor& i) {
   j.at("begin").get_to(i.begin);
   j.at("length").get_to(i.length);

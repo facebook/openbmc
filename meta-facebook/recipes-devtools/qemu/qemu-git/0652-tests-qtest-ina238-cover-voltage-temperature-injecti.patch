@@ -1,4 +1,4 @@
-From d8d03b5a7e7b20c0cbef6e2a67a9fabe8416a594 Mon Sep 17 00:00:00 2001
+From 08280aaf1874e1ae8e51cbce125b6fe33249ce6c Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 23 Jul 2026 16:49:34 +0200
 Subject: [PATCH] tests/qtest: ina238: cover voltage/temperature injection and

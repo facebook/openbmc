@@ -1,4 +1,4 @@
-From c3f27ca98b3978f381337d5c4fea23b81d281e07 Mon Sep 17 00:00:00 2001
+From 30f7cdeacbb5e7ea7ed1a9c083c5f236ccbedf92 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 18:03:29 +0200
 Subject: [PATCH] hw/arm: ventura: populate the FRU EEPROMs
@@ -23,10 +23,10 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  1 file changed, 262 insertions(+), 9 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_ventura.c b/hw/arm/aspeed_ast2600_ventura.c
-index b9913e479f..ebb4d1a938 100644
+index 11c823279f..931eb43803 100644
 --- a/hw/arm/aspeed_ast2600_ventura.c
 +++ b/hw/arm/aspeed_ast2600_ventura.c
-@@ -31,12 +31,258 @@
+@@ -30,12 +30,258 @@
  #define VENTURA_BMC_HW_STRAP2 0x00000801
  #define VENTURA_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
  
@@ -286,7 +286,7 @@ index b9913e479f..ebb4d1a938 100644
  {
      /* adc@1f - ti,adc128d818 (mode 1) */
      i2c_slave_create_simple(bus, TYPE_ADC128D818, 0x1f);
-@@ -44,7 +290,7 @@ static void ventura_fan_board_init(I2CBus *bus)
+@@ -43,7 +289,7 @@ static void ventura_fan_board_init(I2CBus *bus)
      i2c_slave_create_simple(bus, TYPE_PCA9555, 0x21);
      /* adc@35 - maxim,max11617 (no model) */
      /* eeprom@56 - atmel,24c128 (fan board FRU) */
@@ -295,7 +295,7 @@ index b9913e479f..ebb4d1a938 100644
  }
  
  static void ventura_bmc_i2c_init(AspeedMachineState *bmc)
-@@ -68,13 +314,16 @@ static void ventura_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -67,13 +313,16 @@ static void ventura_bmc_i2c_init(AspeedMachineState *bmc)
      mux = i2c_slave_create_simple(i2c[3], TYPE_PCA9548, 0x77);
      /* channels 0-2 - empty */
      /* channels 3, 4 - fan boards 0 and 1 */
@@ -315,7 +315,7 @@ index b9913e479f..ebb4d1a938 100644
      /* channel 7 - empty */
  
      /* &i2c4 - empty */
-@@ -86,7 +335,8 @@ static void ventura_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -85,7 +334,8 @@ static void ventura_bmc_i2c_init(AspeedMachineState *bmc)
      i2c_slave_create_simple(i2c[5], TYPE_TMP75, 0x4e);
      i2c_slave_create_simple(i2c[5], TYPE_TMP75, 0x4f);
      /* eeprom@54 - atmel,24c128 (RMC FRU) */
@@ -325,7 +325,7 @@ index b9913e479f..ebb4d1a938 100644
  
      /* &i2c6 */
      /* gpio@20/21/22 - nxp,pca9555 */
-@@ -102,9 +352,11 @@ static void ventura_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -101,9 +351,11 @@ static void ventura_bmc_i2c_init(AspeedMachineState *bmc)
      /* temperature-sensor@4b - ti,tmp75 (SCM) */
      i2c_slave_create_simple(i2c[9], TYPE_TMP75, 0x4b);
      /* eeprom@50 - atmel,24c128 (SCM FRU) */
@@ -339,7 +339,7 @@ index b9913e479f..ebb4d1a938 100644
  
      /* &i2c10 */
      /* gpio@10/11 - nxp,pca9555 (power good, pump control) */
-@@ -129,7 +381,8 @@ static void ventura_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -128,7 +380,8 @@ static void ventura_bmc_i2c_init(AspeedMachineState *bmc)
      i2c_slave_create_simple(i2c[15], TYPE_PCA9555, 0x25);
      i2c_slave_create_simple(i2c[15], TYPE_PCA9555, 0x26);
      /* eeprom@56 - atmel,24c128 (LED board FRU) */

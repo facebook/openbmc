@@ -1,4 +1,4 @@
-From 7fa0284e4ef8b9f982d7433dc6fc29aaccefc6d4 Mon Sep 17 00:00:00 2001
+From 1186d0f3740b750bcfc92ad092ce8a153e6efda1 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 22 Jul 2026 17:25:54 +0200
 Subject: [PATCH] tests/qtest: ds1339: cover the Century bit

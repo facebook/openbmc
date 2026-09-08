@@ -957,7 +957,7 @@ bool CpldLatticeManager::waitBusyAndVerify()
             if(retry > 0)
             {
                 std::cout << std::endl;
-            }            
+            }
             break;
         }
     } // while loop busy check
@@ -1321,7 +1321,7 @@ cleanup:
     }
 
     std::cout << "\nVerify " << (verifyFail ? "failed" : "completed") << "!."
-              << std::endl; 
+              << std::endl;
     return (verifyFail ? -1 : 0);
 }
 
@@ -1564,6 +1564,17 @@ bool XO5I2CManager::verifyCfg()
     return true;
 }
 
+bool XO5I2CManager::programDone()
+{
+    std::array<uint8_t, 4> cmd{static_cast<uint8_t>(Cmd::ProgramDone), 0x0,
+                               0x0, 0x0};
+    if (i2cWriteReadCmd(cmd) != 0)
+    {
+        return false;
+    }
+    return true;
+}
+
 int CpldLatticeManager::XO5Family_update(bool legacy)
 {
     std::cout << std::format("Starting to update {}\n", chip);
@@ -1622,6 +1633,14 @@ int CpldLatticeManager::XO5Family_update(bool legacy)
         std::cerr << "Verify cfg data failed.\n";
         return -1;
     }
+
+    std::cout << std::format("ProgramDone sending {}...\n", target);
+    if (!i2cManager.programDone())
+    {
+        std::cerr << "ProgramDone failed.\n";
+        return -1;
+    }
+
     std::cout << "\nUpdate completed! Please AC.\n";
 
     return 0;
@@ -1850,7 +1869,7 @@ int CpldLatticeManager::getVersion()
 }
 
 void CpldLatticeManager::updateFailedWarning()
-{    
+{
     std::cerr << "CPLD ROM is now corrupted, do not perform power cycle before it's recovered, otherwise the slot will bricked." << std::endl;
     std::cerr << "Strong recommend to perform the update again right away." << std::endl;
 }

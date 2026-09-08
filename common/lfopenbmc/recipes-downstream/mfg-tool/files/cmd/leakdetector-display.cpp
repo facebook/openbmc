@@ -8,11 +8,17 @@
 #include <sdbusplus/async.hpp>
 #include <sdbusplus/message.hpp>
 
+#include <array>
+#include <string>
+
 namespace mfgtool::cmds::leakdetector_display
 {
 PHOSPHOR_LOG2_USING;
 namespace leakdetector = dbuspath::leak::detector;
 using namespace utils::string;
+
+using DBusInterfacesMap =
+    utils::mapper::interfaces_map_t<leakdetector::Proxy::PropertiesVariant>;
 
 struct command
 {
@@ -31,45 +37,56 @@ struct command
         debug("Finding leak detector entries.");
         try
         {
-            co_await utils::mapper::subtree_for_each(
-                ctx, leakdetector::ns_path, leakdetector::interface,
-
-                [&](const auto& path,
-                    const auto& service) -> sdbusplus::async::task<> {
-                    auto& entry_json = result[last_element(path)];
-                    try
-                    {
-                        auto proxy =
-                            leakdetector::Proxy(ctx).service(service).path(
-                                path.str);
-                        auto properties = co_await proxy.properties();
-
-                        entry_json["name"] = properties.pretty_name;
-
-                        auto state = properties.state;
-                        entry_json["status"] =
-                            (state == leakdetector::Proxy::DetectorState::Normal
-                                 ? "ok"
-                                 : "critical");
-                        entry_json["type"] = "Moisture";
-                    }
-                    catch (const sdbusplus::exception::SdBusError& e)
-                    {
-                        warning(
-                            "Failed to get leak detector state: {PATH}, error: {ERROR}",
-                            "PATH", path.str, "ERROR", e);
-                        entry_json["status"] = "dbus error";
-                    }
+            co_await utils::mapper::managed_objects_for_each<
+                leakdetector::Proxy::PropertiesVariant>(
+                ctx, std::array{leakdetector::ns_path},
+                std::array{leakdetector::interface},
+                [&](const auto& objpath, const auto& interfaces, const auto&) {
+                    parse_managed_object(result, objpath, interfaces);
                 });
         }
-        catch (const sdbusplus::exception::SdBusError& e)
+        catch (const sdbusplus::exception_t& e)
         {
-            warning("No leak detectors found: {ERROR}", "ERROR", e.what());
+            warning("No leak detectors found: {ERROR}", "ERROR", e);
         }
 
         json::display(result);
 
         co_return;
+    }
+
+    static void parse_managed_object(nlohmann::json& result,
+                                     const sdbusplus::object_path& objpath,
+                                     const DBusInterfacesMap& interfaces)
+    {
+        auto iface = interfaces.find(leakdetector::interface);
+        if (iface == interfaces.end() ||
+            !objpath.str.starts_with(leakdetector::ns_path))
+        {
+            return;
+        }
+
+        auto& entry_json = result[last_element(objpath.str)];
+        try
+        {
+            auto properties =
+                leakdetector::Proxy::properties_t::unpack(iface->second);
+
+            entry_json["name"] = properties.pretty_name;
+
+            auto state = properties.state;
+            entry_json["status"] =
+                (state == leakdetector::Proxy::DetectorState::Normal
+                     ? "ok"
+                     : "critical");
+            entry_json["type"] = "Moisture";
+        }
+        catch (const sdbusplus::exception_t& e)
+        {
+            warning("Failed to get leak detector state: {PATH}, error: {ERROR}",
+                    "PATH", objpath.str, "ERROR", e);
+            entry_json["status"] = "dbus error";
+        }
     }
 };
 

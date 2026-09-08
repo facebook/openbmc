@@ -28,7 +28,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=a3b50d8b88dcc0eb3d7d39b760b9e821 \
 #   git ls-remote https://github.com/qemu/qemu.git refs/heads/master | cut -f1
 # This is normally updated by the daily yocto sync job when
 # --refresh-patches is enabled
-QEMU_REF ?= "ae4f3443209ab154b48b706a146e5f557ab147cb"
+QEMU_REF ?= "cacd3462963a0a4f5bab4263ce79c2aa4b32692d"
 
 # Use git protocol (required by BitBake QA)
 SRC_URI = "git://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \
@@ -92,7 +92,7 @@ SRC_URI:append = " \
            "
 
 SRC_URI:append = " \
-           file://0601-hw-sensor-tmp105-make-device-state-private-to-the-im.patch \
+           file://0601-hw-sensor-tmp105-make-device-state-internal-to-the-i.patch \
            file://0602-hw-sensor-tmp105-name-the-parent-object-field-parent.patch \
            file://0603-hw-sensor-tmp105-implement-Resettable-reset.patch \
            file://0604-hw-sensor-tmp105-enforce-the-configurable-fault-queu.patch \
@@ -181,16 +181,8 @@ SRC_URI:append = " \
            file://0687-hw-arm-bletchley-align-the-I2C-layout-with-the-devic.patch \
            file://0688-hw-arm-bletchley-correct-the-file-copyright-header.patch \
            file://0689-hw-arm-bletchley-select-the-board-revision-with-a-ma.patch \
-           "
-
-# The following patches break our robot qemu tests. We want to keep them rebased
-# since they are out for review so we are keeping them in the list with an used
-# override platform
-SRC_URI:append:unused-but-want-to-keep-updated = " \
            file://0690-hw-arm-bletchley-populate-the-v1.0-FRU-EEPROMs.patch \
            file://0691-hw-arm-bletchley-populate-the-v1.5-FRU-EEPROMs.patch \
-           "
-SRC_URI:append = " \
            file://0692-hw-arm-harma-add-Facebook-Harma-BMC-machine.patch \
            file://0693-hw-arm-harma-populate-the-FRU-EEPROMs.patch \
            file://0694-hw-arm-ventura-add-Facebook-Ventura-BMC-machine.patch \
@@ -206,6 +198,10 @@ SRC_URI:append = " \
            file://0704-tests-functional-arm-harma-add-BMC-boot-test.patch \
            file://0705-tests-functional-arm-ventura-add-BMC-boot-test.patch \
            file://0706-hw-i2c-aspeed_i2c-only-raise-the-target-IRQ-for-enab.patch \
+           file://0707-hw-i2c-aspeed_i2c-only-clear-target-status-the-ISR-h.patch \
+           file://0708-hw-i2c-aspeed_i2c-model-AST2700-I2CC_SIRQ_LOG-target.patch \
+           file://0709-hw-i2c-aspeed_i2c-fix-AST2700-target-buffer-mode-rec.patch \
+           file://0710-hw-arm-aspeed-enable-both-fby35-BMC-MACs.patch \
            "
 
 QEMU_CHECKOUT_DIR = "${BPN}-${PV}"

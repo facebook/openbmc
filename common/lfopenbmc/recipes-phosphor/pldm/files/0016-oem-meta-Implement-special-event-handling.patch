@@ -1,4 +1,4 @@
-From 4bd2fbfd645b86e4ccfdb34a96299ee756323987 Mon Sep 17 00:00:00 2001
+From aaf13e9272c647b771ae7a52bbd0493ac398548b Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 21 May 2026 07:03:10 +0000
 Subject: [PATCH] oem-meta: Implement special event handling

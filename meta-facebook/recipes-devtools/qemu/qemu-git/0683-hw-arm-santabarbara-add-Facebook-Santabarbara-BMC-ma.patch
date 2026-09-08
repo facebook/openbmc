@@ -1,4 +1,4 @@
-From 3e7eb437a639c55810480064b39531134c7ae5f1 Mon Sep 17 00:00:00 2001
+From 24ccdc4539a884d487cba6df4992a873aac15faa Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 6 Aug 2026 15:25:05 +0200
 Subject: [PATCH] hw/arm: santabarbara: add Facebook Santabarbara BMC machine
@@ -21,9 +21,9 @@ documented as comments.
 Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
 ---
  docs/system/arm/aspeed.rst           |   1 +
- hw/arm/aspeed_ast2600_santabarbara.c | 251 +++++++++++++++++++++++++++
+ hw/arm/aspeed_ast2600_santabarbara.c | 249 +++++++++++++++++++++++++++
  hw/arm/meson.build                   |   1 +
- 3 files changed, 253 insertions(+)
+ 3 files changed, 251 insertions(+)
  create mode 100644 hw/arm/aspeed_ast2600_santabarbara.c
 
 diff --git a/docs/system/arm/aspeed.rst b/docs/system/arm/aspeed.rst
@@ -40,10 +40,10 @@ index db0035189b..aa43e0d47b 100644
  - ``minerva-bmc``          Facebook Minerva BMC
 diff --git a/hw/arm/aspeed_ast2600_santabarbara.c b/hw/arm/aspeed_ast2600_santabarbara.c
 new file mode 100644
-index 0000000000..65e133e6f7
+index 0000000000..21cd9820d3
 --- /dev/null
 +++ b/hw/arm/aspeed_ast2600_santabarbara.c
-@@ -0,0 +1,251 @@
+@@ -0,0 +1,249 @@
 +/*
 + * Facebook Santabarbara BMC
 + *
@@ -65,7 +65,6 @@ index 0000000000..65e133e6f7
 + */
 +
 +#include "qemu/osdep.h"
-+#include "hw/arm/machines-qom.h"
 +#include "hw/arm/aspeed.h"
 +#include "hw/arm/aspeed_soc.h"
 +#include "hw/i2c/i2c_mux_pca954x.h"
@@ -290,16 +289,15 @@ index 0000000000..65e133e6f7
 +        .name          = MACHINE_TYPE_NAME("santabarbara-bmc"),
 +        .parent        = TYPE_ASPEED_MACHINE,
 +        .class_init    = aspeed_machine_santabarbara_class_init,
-+        .interfaces    = arm_machine_interfaces,
 +    }
 +};
 +
 +DEFINE_TYPES(aspeed_ast2600_santabarbara_types)
 diff --git a/hw/arm/meson.build b/hw/arm/meson.build
-index 17390895b1..3ad25df85a 100644
+index ecf1ec9b1b..6055c93128 100644
 --- a/hw/arm/meson.build
 +++ b/hw/arm/meson.build
-@@ -67,6 +67,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -66,6 +66,7 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_ast2600_gb200nvl.c',
    'aspeed_ast2600_minerva.c',
    'aspeed_ast2600_rainier.c',

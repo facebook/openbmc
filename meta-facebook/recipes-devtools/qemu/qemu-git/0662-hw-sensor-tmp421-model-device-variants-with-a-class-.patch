@@ -1,4 +1,4 @@
-From 0db2595bec2bb0af50222d08c21bb4c70890725b Mon Sep 17 00:00:00 2001
+From f844e4f71d3673f6a5ab4c2e7fd3a6b2e38aad7a Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 5 Aug 2026 17:58:08 +0200
 Subject: [PATCH] hw/sensor: tmp421: model device variants with a class

@@ -1,4 +1,4 @@
-From ec5230ef75ef14d8f66bdf188bb60689e8033b76 Mon Sep 17 00:00:00 2001
+From d9ea6fe0e147af41df6315a855d27c8cbccf81aa Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 5 Aug 2026 18:07:53 +0200
 Subject: [PATCH] tests/qtest: tmp421: cover per-variant channels and

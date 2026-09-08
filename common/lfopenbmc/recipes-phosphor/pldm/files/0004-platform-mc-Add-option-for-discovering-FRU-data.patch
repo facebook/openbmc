@@ -1,4 +1,4 @@
-From 3a4a4e74c946cb8ee6400ff8cfac5899243f1548 Mon Sep 17 00:00:00 2001
+From 5f0e50686d22568e766a57745fa2e78e6ae19625 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
 Subject: [PATCH] platform-mc: Add option for discovering FRU data
@@ -18,7 +18,7 @@ Upstream-Status: Pending
  4 files changed, 59 insertions(+), 3 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index 26da906..70878de 100644
+index 4bf5d27..80bde94 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -119,6 +119,10 @@ elif get_option('transport-implementation') == 'af-mctp'
@@ -33,7 +33,7 @@ index 26da906..70878de 100644
  # Firmware update inotify option
  if get_option('fw-update-pkg-inotify').allowed()
 diff --git a/meson.options b/meson.options
-index 4c8234f..2555022 100644
+index e4700e7..93ad066 100644
 --- a/meson.options
 +++ b/meson.options
 @@ -133,6 +133,14 @@ option(
@@ -52,10 +52,10 @@ index 4c8234f..2555022 100644
  option(
      'fw-update-pkg-inotify',
 diff --git a/platform-mc/platform_manager.cpp b/platform-mc/platform_manager.cpp
-index bb90053..792e31a 100644
+index c5ef1c3..cd649ba 100644
 --- a/platform-mc/platform_manager.cpp
 +++ b/platform-mc/platform_manager.cpp
-@@ -681,6 +681,7 @@ exec::task<int> PlatformManager::eventMessageSupported(
+@@ -682,6 +682,7 @@ exec::task<int> PlatformManager::eventMessageSupported(
  exec::task<int> PlatformManager::getFRURecordTableMetadata(pldm_tid_t tid,
                                                             uint16_t* total)
  {
@@ -63,7 +63,7 @@ index bb90053..792e31a 100644
      Request request(
          sizeof(pldm_msg_hdr) + PLDM_GET_FRU_RECORD_TABLE_METADATA_REQ_BYTES);
      auto requestMsg = new (request.data()) pldm_msg;
-@@ -743,6 +744,11 @@ exec::task<int> PlatformManager::getFRURecordTableMetadata(pldm_tid_t tid,
+@@ -744,6 +745,11 @@ exec::task<int> PlatformManager::getFRURecordTableMetadata(pldm_tid_t tid,
      }
  
      co_return rc;
@@ -75,7 +75,7 @@ index bb90053..792e31a 100644
  }
  
  exec::task<int> PlatformManager::getFRURecordTable(
-@@ -751,6 +757,7 @@ exec::task<int> PlatformManager::getFRURecordTable(
+@@ -752,6 +758,7 @@ exec::task<int> PlatformManager::getFRURecordTable(
      uint8_t* transferFlag, size_t* responseCnt,
      std::vector<uint8_t>& recordData)
  {
@@ -83,7 +83,7 @@ index bb90053..792e31a 100644
      Request request(sizeof(pldm_msg_hdr) + PLDM_GET_FRU_RECORD_TABLE_REQ_BYTES);
      auto requestMsg = new (request.data()) pldm_msg;
  
-@@ -808,11 +815,22 @@ exec::task<int> PlatformManager::getFRURecordTable(
+@@ -809,11 +816,22 @@ exec::task<int> PlatformManager::getFRURecordTable(
      }
  
      co_return rc;
@@ -106,7 +106,7 @@ index bb90053..792e31a 100644
      if (tid == PLDM_TID_RESERVED || !termini.contains(tid) || !termini[tid])
      {
          lg2::error("Invalid terminus {TID}", "TID", tid);
-@@ -820,12 +838,19 @@ void PlatformManager::updateInventoryWithFru(
+@@ -821,12 +839,19 @@ void PlatformManager::updateInventoryWithFru(
      }
  
      termini[tid]->updateInventoryWithFru(fruData, fruLen);
@@ -126,7 +126,7 @@ index bb90053..792e31a 100644
      if (!totalTableRecords)
      {
          lg2::info("Fru record table has 0 records");
-@@ -881,6 +906,12 @@ exec::task<int> PlatformManager::getFRURecordTables(
+@@ -882,6 +907,12 @@ exec::task<int> PlatformManager::getFRURecordTables(
      fruData = receivedFru;
  
      co_return PLDM_SUCCESS;
@@ -140,7 +140,7 @@ index bb90053..792e31a 100644
  
  } // namespace platform_mc
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index b536b0c..0bec89f 100644
+index 71897cf..998d6c4 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -109,7 +109,8 @@ uint16_t Terminus::findTerminusEntityType()
@@ -169,7 +169,7 @@ index b536b0c..0bec89f 100644
          return true;
      }
      catch (const sdbusplus::exception_t& e)
-@@ -647,8 +655,8 @@ std::shared_ptr<NumericSensor> Terminus::getSensorObject(SensorID id)
+@@ -651,8 +659,8 @@ std::shared_ptr<NumericSensor> Terminus::getSensorObject(SensorID id)
   *  @param[in] p - pointer to each record of FRU record table
   *  @param[in] tableSize - FRU table size
   */
@@ -180,7 +180,7 @@ index b536b0c..0bec89f 100644
  {
      auto offset = p - table;
      return (tableSize - offset) < sizeof(struct pldm_fru_record_data_format);
-@@ -657,6 +665,7 @@ static bool isTableEnd(const uint8_t* table, const uint8_t* p,
+@@ -661,6 +669,7 @@ static bool isTableEnd(const uint8_t* table, const uint8_t* p,
  void Terminus::updateInventoryWithFru(const uint8_t* fruData,
                                        const size_t fruLen)
  {
@@ -188,7 +188,7 @@ index b536b0c..0bec89f 100644
      auto tmp = getTerminusName();
      if (!tmp || tmp.value().empty())
      {
-@@ -769,6 +778,10 @@ void Terminus::updateInventoryWithFru(const uint8_t* fruData,
+@@ -773,6 +782,10 @@ void Terminus::updateInventoryWithFru(const uint8_t* fruData,
              ptr += sizeof(pldm_fru_record_tlv) - 1 + tlv->length;
          }
      }

@@ -1,4 +1,4 @@
-From 8e7377e8bd656de3465402588b57e72b947702c6 Mon Sep 17 00:00:00 2001
+From d93148cc1f9b425a75d6705c61d2fe42107ac471 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 16:16:03 +0200
 Subject: [PATCH] tests/functional/arm: harma: add BMC boot test

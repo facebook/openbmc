@@ -1,0 +1,21 @@
+{
+    "platform_name": "aristabmc",
+    "eeprom devices": [
+        {
+            "name": "bmc",
+            "sysfs_path": "/sys/bus/i2c/devices/14-0050/eeprom"
+        },
+        {
+            "name": "cpu",
+            "sysfs_path": "/sys/bus/i2c/devices/9-0050/eeprom"
+        },
+        {
+            "name": "switchcard",
+            "sysfs_path": "/sys/bus/i2c/devices/9-0052/eeprom"
+        },
+        {
+            "name": "chassis_eeprom",
+            "sysfs_path": "/sys/bus/i2c/devices/9-0053/eeprom"
+        }
+    ]
+  }

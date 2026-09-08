@@ -42,6 +42,7 @@ PLATFORMS = [
     "tahan",
     "ventura",
     "ventura2",
+    "ventura2a7",
     "wedge100",
     "wedge400",
     "yamp",

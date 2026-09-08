@@ -19,7 +19,7 @@ require recipes-core/images/fboss-lite-image.inc
 
 IMAGE_INSTALL += " \
     host-recovery \
-    show-tech \
+    fbmc-snapshot \
     ssifd \
     rackmon \
     ftdicmd \

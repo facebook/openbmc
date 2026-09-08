@@ -1,4 +1,4 @@
-From 62ddcde8f7bc5b0491f54a00db7881ee514ac74d Mon Sep 17 00:00:00 2001
+From 02dae71b6593b92f68351eff6c6d95e13e6a2584 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 6 Aug 2026 18:18:58 +0200
 Subject: [PATCH] tests/functional/arm: yosemite5: add BMC boot test

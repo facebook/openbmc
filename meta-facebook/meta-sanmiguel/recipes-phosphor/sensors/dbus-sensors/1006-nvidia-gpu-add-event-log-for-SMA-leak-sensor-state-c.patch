@@ -1,0 +1,115 @@
+From 6f01588e5f3f1bf5f566b17a26839d9c5554f68b Mon Sep 17 00:00:00 2001
+From: Mike Hsieh <mike_hsieh@quantatw.com>
+Date: Wed, 2 Sep 2026 19:17:22 +0800
+Subject: [PATCH] nvidia-gpu: add event log for SMA leak sensor state changes
+
+This commit enhances the Nvidia SMA leak sensor by generating standard
+OpenBMC event logs when the leak state or fault state changes.
+
+Key changes:
+- Included necessary sdbusplus event headers for Leak Detector.
+- Trigger `LeakDetectedCritical` error log when the leak detector state
+  or fault state transitions to `Abnormal`.
+- Trigger `LeakDetectedNormal` event log when the leak detector state
+  or fault state transitions back to `Normal`.
+
+These event logs will be properly routed to Redfish Event Logs by
+phosphor-logging, providing administrators with immediate notification
+of critical leak detections and recovery events.
+
+Tested:
+- Verified the code compiles successfully.
+- State transitions correctly generate `LeakDetectedCritical` and
+  `LeakDetectedNormal` logs respectively on the BMC.
+```
+    {
+      "@odata.id": "/redfish/v1/Managers/bmc/LogServices/EventLog/Entries/283",
+      "@odata.type": "#LogEntry.v1_15_0.LogEntry",
+      "AdditionalDataURI": "/redfish/v1/Managers/bmc/LogServices/EventLog/Entries/283/attachment",
+      "Created": "2026-09-02T04:21:16.599-07:00",
+      "EntryType": "Event",
+      "Id": "283",
+      "Message": "Leak detector '/xyz/openbmc_project/state/leak/detector/Nvidia_SMA_10_LEAKDETECTOR_0' reports a critical level leak.",
+      "MessageArgs": [
+        "/xyz/openbmc_project/state/leak/detector/Nvidia_SMA_10_LEAKDETECTOR_0"
+      ],
+      "MessageId": "Environmental.1.1.LeakDetectedCritical",
+      "Modified": "2026-09-02T04:21:16.599-07:00",
+      "Name": "Manager Event Log Entry",
+      "Resolution": "Check the condition of the resource listed in OriginOfCondition.",
+      "Resolved": false,
+      "Severity": "Critical"
+    },
+
+```
+
+Change-Id: I0e41f8eb1d952243740aa0831594fc087b62b9e0
+Signed-off-by: Mike Hsieh <mike_hsieh@quantatw.com>
+---
+ src/nvidia-gpu/NvidiaSmaLeakSensor.cpp | 32 ++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+
+diff --git a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
+index 207a9d0..b4c188d 100644
+--- a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
++++ b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
+@@ -17,10 +17,12 @@
+ #include <MctpRequester.hpp>
+ #include <NvidiaGpuMctpVdm.hpp>
+ #include <OcpMctpVdm.hpp>
++#include <phosphor-logging/commit.hpp>
+ #include <phosphor-logging/lg2.hpp>
+ #include <sdbusplus/asio/connection.hpp>
+ #include <sdbusplus/asio/object_server.hpp>
+ #include <sdbusplus/message/native_types.hpp>
++#include <xyz/openbmc_project/State/Leak/Detector/event.hpp>
+ 
+ #include <array>
+ #include <cstddef>
+@@ -199,6 +201,21 @@ void NvidiaSmaLeakSensor::updateState(uint8_t value)
+                     : "xyz.openbmc_project.State.Leak.Detector.DetectorState.Abnormal"));
+ 
+         triggerSystemdService("critical", lastLeakState, escapeName(name));
++
++        std::string detectorPath =
++            "/xyz/openbmc_project/state/leak/detector/" + escapeName(name);
++        if (lastLeakState == LeakState::Abnormal)
++        {
++            using LeakDetectedCritical = sdbusplus::error::xyz::
++                openbmc_project::state::leak::Detector::LeakDetectedCritical;
++            lg2::commit(LeakDetectedCritical("DETECTOR_NAME", detectorPath));
++        }
++        else
++        {
++            using LeakDetectedNormal = sdbusplus::event::xyz::openbmc_project::
++                state::leak::Detector::LeakDetectedNormal;
++            lg2::commit(LeakDetectedNormal("DETECTOR_NAME", detectorPath));
++        }
+     }
+ 
+     if (newFault != lastLeakFault)
+@@ -214,6 +231,21 @@ void NvidiaSmaLeakSensor::updateState(uint8_t value)
+         // suffix in the name
+         triggerSystemdService("critical", lastLeakFault,
+                               escapeName(name) + "_Fault");
++
++        std::string faultPath = "/xyz/openbmc_project/state/leak/detector/" +
++                                escapeName(name) + "_Fault";
++        if (lastLeakFault == LeakState::Abnormal)
++        {
++            using LeakDetectedCritical = sdbusplus::error::xyz::
++                openbmc_project::state::leak::Detector::LeakDetectedCritical;
++            lg2::commit(LeakDetectedCritical("DETECTOR_NAME", faultPath));
++        }
++        else
++        {
++            using LeakDetectedNormal = sdbusplus::event::xyz::openbmc_project::
++                state::leak::Detector::LeakDetectedNormal;
++            lg2::commit(LeakDetectedNormal("DETECTOR_NAME", faultPath));
++        }
+     }
+ }
+ 
+-- 
+2.53.0
+

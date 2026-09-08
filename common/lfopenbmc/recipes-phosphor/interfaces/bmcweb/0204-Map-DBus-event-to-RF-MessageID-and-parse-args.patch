@@ -1,4 +1,4 @@
-From 5e71e39fa3ccc59d7768131e6d24dd048450b1d2 Mon Sep 17 00:00:00 2001
+From ccdc12ebaafe3d20adfab5f0d7c91cc7995631e5 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 15:59:10 +0000
 Subject: [PATCH] Map DBus event to RF MessageID and parse args
@@ -143,10 +143,10 @@ index fd8c0f96..4dd7fbc1 100644
  
  // clang-format on
 diff --git a/meson.build b/meson.build
-index be329359..024e8811 100644
+index 45f1a07b..3f66c0b6 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -395,6 +395,7 @@ srcfiles_bmcweb = files(
+@@ -431,6 +431,7 @@ srcfiles_bmcweb = files(
      'redfish-core/src/subscription.cpp',
      'redfish-core/src/task_messages.cpp',
      'redfish-core/src/update_messages.cpp',
@@ -311,18 +311,18 @@ index 00000000..f028f65c
 +} // namespace dbus_registries_map
 +} // namespace redfish
 diff --git a/redfish-core/include/utils/eventlog_utils.hpp b/redfish-core/include/utils/eventlog_utils.hpp
-index 7e08ecd0..9be9a5ed 100644
+index ca9b3378..15965e4b 100644
 --- a/redfish-core/include/utils/eventlog_utils.hpp
 +++ b/redfish-core/include/utils/eventlog_utils.hpp
-@@ -13,6 +13,7 @@
+@@ -16,6 +16,7 @@
  #include "registries.hpp"
  #include "str_utility.hpp"
  #include "utils/dbus_event_log_entry.hpp"
 +#include "utils/dbus_registries_map_utils.hpp"
+ #include "utils/dbus_utils.hpp"
  #include "utils/etag_utils.hpp"
- #include "utils/log_services_utils.hpp"
- #include "utils/query_param.hpp"
-@@ -534,14 +535,45 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
+ #include "utils/json_utils.hpp"
+@@ -538,14 +539,45 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
      const std::string& collectionStr, const std::string_view memberId,
      const std::string& logEntryDescriptor)
  {
@@ -371,7 +371,7 @@ index 7e08ecd0..9be9a5ed 100644
      objectToFillOut["Resolved"] = entry.Resolved;
      std::optional<bool> notifyAction =
          getProviderNotifyAction(entry.ServiceProviderNotify);
-@@ -549,13 +581,7 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
+@@ -553,13 +585,7 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
      {
          objectToFillOut["ServiceProviderNotified"] = *notifyAction;
      }
@@ -385,7 +385,7 @@ index 7e08ecd0..9be9a5ed 100644
      objectToFillOut["Created"] =
          redfish::time_utils::getDateTimeUintMs(entry.Timestamp);
      objectToFillOut["Modified"] =
-@@ -564,7 +590,7 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
+@@ -568,7 +594,7 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
      {
          objectToFillOut["AdditionalDataURI"] = boost::urls::format(
              "/redfish/v1/{}/{}/LogServices/EventLog/Entries/{}/attachment",
@@ -766,12 +766,12 @@ index 00000000..5f036526
 +} // namespace dbus_registries_map
 +} // namespace redfish
 diff --git a/test/meson.build b/test/meson.build
-index c09b2184..7784d87d 100644
+index 91fe0b38..42eda99a 100644
 --- a/test/meson.build
 +++ b/test/meson.build
-@@ -54,6 +54,7 @@ srcfiles_unittest = files(
-     'redfish-core/lib/chassis_test.cpp',
+@@ -57,6 +57,7 @@ srcfiles_unittest = files(
      'redfish-core/lib/ethernet_test.cpp',
+     'redfish-core/lib/fabric_test.cpp',
      'redfish-core/lib/log_services_dump_test.cpp',
 +    'redfish-core/lib/log_services_test.cpp',
      'redfish-core/lib/manager_diagnostic_data_test.cpp',

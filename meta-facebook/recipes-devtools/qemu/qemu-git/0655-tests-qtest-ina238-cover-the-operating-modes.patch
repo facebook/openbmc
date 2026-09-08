@@ -1,4 +1,4 @@
-From 8f24987b6125ada2d226b5a3aed0d50ceb4b198f Mon Sep 17 00:00:00 2001
+From 18f3ffe5ca5a1a28d693ab59dda52eef1585aed9 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 22 Jul 2026 17:31:44 +0200
 Subject: [PATCH] tests/qtest: ina238: cover the operating modes

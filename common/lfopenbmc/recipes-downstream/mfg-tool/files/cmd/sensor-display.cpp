@@ -28,9 +28,7 @@ using DbusVariantType = sdbusplus::utility::merge_variants_t<
     sensor::hard_shutdown::Proxy::PropertiesVariant,
     threshold::Proxy::PropertiesVariant, metric::Proxy::PropertiesVariant>;
 
-using DBusPropertiesMap = std::unordered_map<std::string, DbusVariantType>;
-using DBusInterfacesMap = std::unordered_map<std::string, DBusPropertiesMap>;
-using ManagedObjectType = std::map<sdbusplus::object_path, DBusInterfacesMap>;
+using DBusInterfacesMap = utils::mapper::interfaces_map_t<DbusVariantType>;
 
 struct command
 {
@@ -44,75 +42,14 @@ struct command
     auto run(sdbusplus::async::context& ctx) -> sdbusplus::async::task<>
     {
         auto result = json::empty_map();
-        std::set<std::string> target_services;
 
-        auto sensor_srvs = co_await utils::mapper::subtree_services(
-            ctx, sensor::ns_path, sensor::interface, 0);
-        for (const auto& [path, services] : sensor_srvs)
-        {
-            for (const auto& srv : services)
-                target_services.insert(srv);
-        }
-
-        auto metric_srvs = co_await utils::mapper::subtree_services(
-            ctx, metric::ns_path, metric::interface, 0);
-        for (const auto& [path, services] : metric_srvs)
-        {
-            for (const auto& srv : services)
-                target_services.insert(srv);
-        }
-
-        auto om_objects = co_await utils::mapper::subtree_services(
-            ctx, "/", "org.freedesktop.DBus.ObjectManager", 0);
-
-        for (const auto& service : target_services)
-        {
-            std::vector<std::string_view> om_candidates;
-            for (const auto& [path, services] : om_objects)
-            {
-                if (std::ranges::find(services, service) != services.end())
-                {
-                    if (path.str.starts_with(sensor::ns_path) ||
-                        path.str.starts_with(metric::ns_path) ||
-                        path.str == "/")
-                    {
-                        om_candidates.push_back(path.str);
-                    }
-                }
-            }
-            if (om_candidates.empty())
-            {
-                warning("No ObjectManager found for service {SERVICE}.",
-                        "SERVICE", service);
-                continue;
-            }
-
-            for (const auto& om_path : om_candidates)
-            {
-                try
-                {
-                    auto proxy =
-                        sdbusplus::async::proxy()
-                            .service(service)
-                            .path(om_path)
-                            .interface("org.freedesktop.DBus.ObjectManager");
-                    auto objs = co_await proxy.call<ManagedObjectType>(
-                        ctx, "GetManagedObjects");
-
-                    for (const auto& [objpath, interfaces] : objs)
-                    {
-                        parse_managed_object(result, objpath, interfaces,
-                                             service);
-                    }
-                }
-                catch (const sdbusplus::exception_t& e)
-                {
-                    warning(
-                        "Failed GetManagedObjects for {SERVICE} at {PATH}: {ERROR}",
-                        "SERVICE", service, "PATH", om_path, "ERROR", e.what());
-                }
-            }
-        }
+        co_await utils::mapper::managed_objects_for_each<DbusVariantType>(
+            ctx, std::array{sensor::ns_path, metric::ns_path},
+            std::array{sensor::interface, metric::interface},
+            [&](const auto& objpath, const auto& interfaces,
+                const auto& service) {
+                parse_managed_object(result, objpath, interfaces, service);
+            });
 
         json::display(result);
 

@@ -1,4 +1,4 @@
-From 88a77bf88c23d3408530092531102997c5af3e62 Mon Sep 17 00:00:00 2001
+From c64eefadfbdc5c500c7e9cf4b58eeeeca511e0a5 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via <qemu-arm@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:04 +0200
 Subject: [PATCH] hw/sensor: tmp105: describe the temperature property
@@ -11,6 +11,7 @@ documented in the QOM introspection output (qom-list-properties). The
 value is expressed in millidegrees Celsius.
 
 Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
+Reviewed-by: Cédric Le Goater <clg@redhat.com>
 Link: https://lore.kernel.org/qemu-devel/20260731-sanmiguel-bmc-locator-v2-5-1266926ba769@free.fr
 Signed-off-by: Cédric Le Goater <clg@redhat.com>
 ---

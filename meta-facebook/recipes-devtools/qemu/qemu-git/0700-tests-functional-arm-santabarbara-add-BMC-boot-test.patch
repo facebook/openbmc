@@ -1,4 +1,4 @@
-From db8bee435f53d9aea2d1cab49f042735f50fa634 Mon Sep 17 00:00:00 2001
+From 238dfab13818471a7791cfe9604f2951c525afcd Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 6 Aug 2026 15:54:34 +0200
 Subject: [PATCH] tests/functional/arm: santabarbara: add BMC boot test

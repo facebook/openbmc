@@ -1,4 +1,4 @@
-From f155037122183fa0e59cb0632ec0b0b537db241b Mon Sep 17 00:00:00 2001
+From 4e65a8c843a6fc8d7d54df84443b22908a53db2a Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Tue, 21 Apr 2026 21:24:06 -0700
 Subject: [PATCH] Add back sensor polling time configuration
@@ -19,7 +19,7 @@ Signed-off-by: James Athappilly <jamesatha@gmail.com>
  4 files changed, 20 insertions(+), 3 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index 9aa05d4..a266f23 100644
+index dce2808..f014e0e 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -132,6 +132,8 @@ conf_data.set(
@@ -32,7 +32,7 @@ index 9aa05d4..a266f23 100644
  if get_option('fw-update-pkg-inotify').allowed()
      conf_data.set('FW_UPDATE_INOTIFY_ENABLED', 1)
 diff --git a/meson.options b/meson.options
-index cb0e866..0f63a71 100644
+index 82416f4..ab87a51 100644
 --- a/meson.options
 +++ b/meson.options
 @@ -159,6 +159,23 @@ option(
@@ -60,7 +60,7 @@ index cb0e866..0f63a71 100644
  option(
      'fw-update-pkg-inotify',
 diff --git a/platform-mc/sensor_manager.hpp b/platform-mc/sensor_manager.hpp
-index 1497072..6a36548 100644
+index 1d9e221..1540b1e 100644
 --- a/platform-mc/sensor_manager.hpp
 +++ b/platform-mc/sensor_manager.hpp
 @@ -18,8 +18,6 @@ namespace platform_mc

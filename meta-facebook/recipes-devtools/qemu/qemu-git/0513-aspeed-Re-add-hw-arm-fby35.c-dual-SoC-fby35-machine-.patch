@@ -1,4 +1,4 @@
-From 90006d47c1c33761e6bae229b0e9512510fa1a03 Mon Sep 17 00:00:00 2001
+From 0dfd21e9a0ef8802fa9b8ef1138d8849876738d0 Mon Sep 17 00:00:00 2001
 From: Pete O_o <pmb@meta.com>
 Date: Thu, 2 Jul 2026 09:55:37 -0700
 Subject: [PATCH] aspeed: Re-add hw/arm/fby35.c (dual-SoC fby35 machine removed
@@ -12,17 +12,17 @@ meson.build entry before re-applying the FB fby35 patches.
 
 Signed-off-by: OpenBMC QEMU rebase <openbmc-packman@meta.com>
 ---
- hw/arm/fby35.c     | 203 +++++++++++++++++++++++++++++++++++++++++++++
+ hw/arm/fby35.c     | 201 +++++++++++++++++++++++++++++++++++++++++++++
  hw/arm/meson.build |   3 +-
- 2 files changed, 205 insertions(+), 1 deletion(-)
+ 2 files changed, 203 insertions(+), 1 deletion(-)
  create mode 100644 hw/arm/fby35.c
 
 diff --git a/hw/arm/fby35.c b/hw/arm/fby35.c
 new file mode 100644
-index 0000000000..d3bfd2c7d2
+index 0000000000..8dbd43651c
 --- /dev/null
 +++ b/hw/arm/fby35.c
-@@ -0,0 +1,203 @@
+@@ -0,0 +1,201 @@
 +/*
 + * Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 + *
@@ -39,7 +39,6 @@ index 0000000000..d3bfd2c7d2
 +#include "hw/core/qdev-clock.h"
 +#include "hw/arm/aspeed_soc.h"
 +#include "hw/arm/boot.h"
-+#include "hw/arm/machines-qom.h"
 +
 +#define TYPE_FBY35 MACHINE_TYPE_NAME("fby35")
 +OBJECT_DECLARE_SIMPLE_TYPE(Fby35State, FBY35);
@@ -221,16 +220,15 @@ index 0000000000..d3bfd2c7d2
 +        .class_init = fby35_class_init,
 +        .instance_size = sizeof(Fby35State),
 +        .instance_init = fby35_instance_init,
-+        .interfaces = arm_machine_interfaces,
 +    },
 +};
 +
 +DEFINE_TYPES(fby35_types);
 diff --git a/hw/arm/meson.build b/hw/arm/meson.build
-index 4233a800be..28adf3e95e 100644
+index 78acb04c8b..384576a4f1 100644
 --- a/hw/arm/meson.build
 +++ b/hw/arm/meson.build
-@@ -75,7 +75,8 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -74,7 +74,8 @@ arm_common_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_ast27x0-fc.c',
    'aspeed_ast27x0-ssp.c',
    'aspeed_ast27x0-tsp.c',

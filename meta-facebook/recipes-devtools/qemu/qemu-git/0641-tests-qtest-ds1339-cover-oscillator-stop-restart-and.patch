@@ -1,4 +1,4 @@
-From b470e7b9ca261a6336ef3c17848fbeacad740a35 Mon Sep 17 00:00:00 2001
+From 6d988b1903baec0f602f44a2d3b870cb0b6251a7 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 22 Jul 2026 17:25:24 +0200
 Subject: [PATCH] tests/qtest: ds1339: cover oscillator stop/restart and time

@@ -1,4 +1,4 @@
-From 4130e813c202b0cc0dfdefd8f1ef0063f52aa855 Mon Sep 17 00:00:00 2001
+From 86fa76fe8d79edf4a80ef368e5de207e3130f6ec Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 3 Aug 2026 14:24:35 +0200
 Subject: [PATCH] docs/system/arm/aspeed: add the catalina-bmc machine

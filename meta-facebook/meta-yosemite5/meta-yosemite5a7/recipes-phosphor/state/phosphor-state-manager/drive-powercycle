@@ -1,0 +1,32 @@
+#!/bin/bash
+
+source /usr/libexec/phosphor-state-manager/drive-power-control-util
+
+DRIVE_ID=$1
+
+if [ -z "$DRIVE_ID" ]; then
+    error "Usage: $0 <drive_instance>"
+    exit 1
+fi
+
+# Power off the drive
+log "Powering off drive $DRIVE_ID..."
+if ! /usr/libexec/phosphor-state-manager/drive-poweroff "$DRIVE_ID"; then
+    error "Failed to power off drive $DRIVE_ID"
+    exit 1
+fi
+
+# Wait 2 seconds
+log "Waiting 2 seconds before power on..."
+sleep 2
+
+# Power on the drive
+log "Powering on drive $DRIVE_ID..."
+if ! /usr/libexec/phosphor-state-manager/drive-poweron "$DRIVE_ID"; then
+    error "Failed to power on drive $DRIVE_ID"
+    exit 1
+fi
+
+log "Drive $DRIVE_ID power cycle complete"
+
+exit 0

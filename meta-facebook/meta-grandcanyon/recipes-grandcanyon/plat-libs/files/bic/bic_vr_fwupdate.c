@@ -1676,6 +1676,7 @@ static int vr_XDPE152XX_program(uint8_t addr, struct xdpe152xx_config *config, u
   int prog_cnt = 0;
   int upload_total_cnt = 0;
   int did_global_invalidate = 0;
+  int vr_mon_disabled = 0;
 
   // 0) Stop monitor: acquire VR sensor polling lock to prevent polling from changing PAGE
   fd = open(SERVER_SENSOR_LOCK, O_CREAT | O_RDWR, 0666);
@@ -1710,6 +1711,14 @@ static int vr_XDPE152XX_program(uint8_t addr, struct xdpe152xx_config *config, u
     printf("Nothing to program (no non-Trim sections)\n");
     return 0;
   }
+
+  // Pause BIC firmware's background VR sensor-monitor task
+  if (bic_set_vr_sensor_monitor(VR_SENSOR_MONITOR_DISABLE) < 0) {
+    syslog(LOG_WARNING, "%s: failed to disable BIC VR sensor monitor, aborting", __func__);
+    ret = -1;
+    goto cleanup_unlock;
+  }
+  vr_mon_disabled = 1;
 
   // 1) Already-flashed guard (aligned with common/xdpe152xx.c program_xdpe152xx(),
   //    which checks CRC before remaining writes; also matches ISL/TI ordering)
@@ -2007,6 +2016,11 @@ cleanup_lockback:
   vr_XDPE152XX_lock_reg(addr);
 
 cleanup_unlock:
+  // Resume BIC firmware's VR sensor-monitor
+  if (vr_mon_disabled && bic_set_vr_sensor_monitor(VR_SENSOR_MONITOR_ENABLE) < 0) {
+    syslog(LOG_WARNING, "%s: failed to re-enable BIC VR sensor monitor", __func__);
+  }
+
   // Release monitoring lock
   if (fd >= 0) {
     if (flock(fd, LOCK_UN) == -1) {

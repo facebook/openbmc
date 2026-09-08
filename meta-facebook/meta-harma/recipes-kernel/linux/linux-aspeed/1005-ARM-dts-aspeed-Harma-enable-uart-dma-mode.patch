@@ -1,7 +1,7 @@
-From 5a02eda7d09d626439dc740d6f0896d9db398d1b Mon Sep 17 00:00:00 2001
+From 001ef4eaadeaa21f768bf56f7ccc9556a478ebbe Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Thu, 22 Aug 2024 22:50:05 +0800
-Subject: [PATCH 1005/1008] ARM: dts: aspeed: Harma: enable uart dma mode
+Subject: [PATCH] ARM: dts: aspeed: Harma: enable uart dma mode
 
 enable uart dma mode in uart4 and uart6.
 
@@ -12,7 +12,7 @@ The DMA UART driver has not yet been merged upstream, so the patch is currently 
  1 file changed, 9 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-index cc399a222aac..70a416c38dce 100644
+index 0a0a5a1e187a..9bba25187e60 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 @@ -86,21 +86,30 @@ tpm@0 {
@@ -47,5 +47,5 @@ index cc399a222aac..70a416c38dce 100644
  
  // BMC Debug Console
 -- 
-2.47.3
+2.53.0-Meta
 

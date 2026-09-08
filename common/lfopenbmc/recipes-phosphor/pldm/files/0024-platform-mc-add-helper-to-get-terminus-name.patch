@@ -1,4 +1,4 @@
-From c4a0e56f215209dbf1c6538c1189f9d67cae4cdd Mon Sep 17 00:00:00 2001
+From 2af35d29edaf72e3945b2c5aa161f64dbcf3d9ea Mon Sep 17 00:00:00 2001
 From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
 Date: Tue, 30 Jun 2026 16:48:53 +0530
 Subject: [PATCH] platform-mc: add helper to get terminus name

@@ -1,4 +1,4 @@
-From 4bf3b915b6b758e7cd4a7e3aa7d02a6af9bb32f7 Mon Sep 17 00:00:00 2001
+From c444ce02c78a73ff7e90413fdffb17795bc40b7b Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:01 +0200
 Subject: [PATCH] hw/sensor: tmp105: name the parent object field parent_obj
@@ -11,6 +11,7 @@ to be named parent_obj. Rename the TMP105State I2CSlave member
 accordingly and update its references; the change is purely cosmetic.
 
 Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
+Reviewed-by: Cédric Le Goater <clg@redhat.com>
 Link: https://lore.kernel.org/qemu-devel/20260731-sanmiguel-bmc-locator-v2-2-1266926ba769@free.fr
 Signed-off-by: Cédric Le Goater <clg@redhat.com>
 ---

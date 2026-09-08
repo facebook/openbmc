@@ -1,4 +1,4 @@
-From 0676a59bcfa53cb73b362626a34bc506e3ed4fec Mon Sep 17 00:00:00 2001
+From 6c5467f66e153355c5b333102d7ad2d38f5140c2 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 21 Jul 2026 14:33:37 +0200
 Subject: [PATCH] tests/functional/arm: minerva: test INA238

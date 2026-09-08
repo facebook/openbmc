@@ -1,4 +1,4 @@
-From 27e46cfaa88d8d1c136a4b77d41275b6012ecb30 Mon Sep 17 00:00:00 2001
+From 412fcc0063f6ced4c8217423ccc78db5cd88d54d Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 17:23:08 +0200
 Subject: [PATCH] tests/functional/arm: bletchley: cover the v1.5 board

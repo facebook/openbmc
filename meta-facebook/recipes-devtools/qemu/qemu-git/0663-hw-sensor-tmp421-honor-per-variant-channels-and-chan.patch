@@ -1,4 +1,4 @@
-From 7bb9e2448c74694f7b1ea271082f5c665cdc4554 Mon Sep 17 00:00:00 2001
+From f03ba2466e77b77b4c6365c3a8c8fbbfe44ec4f6 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 5 Aug 2026 17:59:51 +0200
 Subject: [PATCH] hw/sensor: tmp421: honor per-variant channels and channel

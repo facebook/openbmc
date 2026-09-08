@@ -7,3 +7,7 @@ EXTRA_OEMESON:append = " \
     -Denable-fallback-terminus-name=disabled \
     -Dfw-update-pkg-inotify=enabled \
 "
+
+do_install:append:openbmc-fb-lf() {
+    rm -f ${D}/usr/share/pldm/host_eid
+}

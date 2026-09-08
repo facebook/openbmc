@@ -1,4 +1,4 @@
-From 61f74bd0031a8545943c73cf749f7dd92f15f3b9 Mon Sep 17 00:00:00 2001
+From 7fe59a5651a3725a29b702c83c5a9364eb5e8bae Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot via qemu development <qemu-devel@nongnu.org>
 Date: Fri, 31 Jul 2026 12:45:17 +0200
 Subject: [PATCH] tests/functional: add a pure-Python device-locator resolver

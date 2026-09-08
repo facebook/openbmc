@@ -1,4 +1,4 @@
-From e7855d1a0a9dbb2bf43edb8bf9972a633a24f434 Mon Sep 17 00:00:00 2001
+From 9c4281fbfa8f9a37d29fe4b9c3e9c55a1c769347 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 19 Mar 2026 17:16:49 +0800
 Subject: [PATCH] requester: refresh MCTP endpoints after host reaches running
@@ -29,7 +29,7 @@ Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
  2 files changed, 158 insertions(+)
 
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 6e4dd13..5b1bab6 100644
+index 54fb5e7..814d690 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -32,6 +32,12 @@ MctpDiscovery::MctpDiscovery(

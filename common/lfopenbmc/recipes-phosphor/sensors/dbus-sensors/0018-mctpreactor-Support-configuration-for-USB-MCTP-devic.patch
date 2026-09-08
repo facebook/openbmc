@@ -1,4 +1,4 @@
-From b20ed750aa439c6d81e0bd551b7b23bf4b061bc6 Mon Sep 17 00:00:00 2001
+From caaa9bfab9118bc1a7b0627313ab5f554babfba4 Mon Sep 17 00:00:00 2001
 From: Saptarsi Saha <saptarsis@nvidia.com>
 Date: Tue, 20 May 2025 21:38:37 +0530
 Subject: [PATCH] mctpreactor: Support configuration for USB MCTP devices
@@ -25,7 +25,7 @@ Signed-off-by: Deepak Kodihalli <deepak.kodihalli.83@gmail.com>
  3 files changed, 241 insertions(+), 2 deletions(-)
 
 diff --git a/src/mctp/MCTPEndpoint.cpp b/src/mctp/MCTPEndpoint.cpp
-index efa2898..53a3e50 100644
+index 192c089..c710dae 100644
 --- a/src/mctp/MCTPEndpoint.cpp
 +++ b/src/mctp/MCTPEndpoint.cpp
 @@ -21,13 +21,17 @@
@@ -46,7 +46,7 @@ index efa2898..53a3e50 100644
  #include <system_error>
  #include <utility>
  #include <variant>
-@@ -561,3 +565,203 @@ std::string I3CMCTPDDevice::interfaceFromBus(int bus)
+@@ -562,3 +566,203 @@ std::string I3CMCTPDDevice::interfaceFromBus(int bus)
            "I3C_BUS", bus, "NET_DEVICE", netdir);
      throw MCTPException("No matching net device found for the specified bus");
  }
@@ -294,7 +294,7 @@ index 371d2ad..ab62bde 100644
 +        uint8_t interfaceNum);
 +};
 diff --git a/src/mctp/MCTPReactorMain.cpp b/src/mctp/MCTPReactorMain.cpp
-index ba1bbf8..59038f5 100644
+index e415214..ad2802d 100644
 --- a/src/mctp/MCTPReactorMain.cpp
 +++ b/src/mctp/MCTPReactorMain.cpp
 @@ -93,6 +93,12 @@ static std::shared_ptr<MCTPDevice> deviceFromConfig(
@@ -318,7 +318,7 @@ index ba1bbf8..59038f5 100644
 +        if (I2CMCTPDDevice::match(removed) || I3CMCTPDDevice::match(removed) ||
 +            USBMCTPDDevice::match(removed))
          {
-             reactor->unmanageMCTPDevice(path.str);
+             reactor->unmanageMCTPDevice(path);
          }
 @@ -247,7 +254,7 @@ int main()
      boost::asio::post(io, [reactor, systemBus]() {

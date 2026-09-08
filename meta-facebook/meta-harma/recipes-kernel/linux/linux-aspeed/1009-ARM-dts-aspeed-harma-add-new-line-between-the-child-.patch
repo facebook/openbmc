@@ -1,8 +1,7 @@
-From 15e611783c462850143c6d050709b67e3ccab908 Mon Sep 17 00:00:00 2001
+From 3f02385ce370260c6643299606cb60fbf2dc8f61 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Wed, 17 Sep 2025 15:33:57 +0800
-Subject: [PATCH 1009/1012] ARM: dts: aspeed: harma: add new line between the
- child nodes
+Subject: [PATCH] ARM: dts: aspeed: harma: add new line between the child nodes
 
 lore:https://lore.kernel.org/all/20250917101828.2589069-2-peteryin.openbmc@gmail.com/
 
@@ -15,10 +14,10 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  1 file changed, 6 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-index 23eaf47a38e8..41ae86180534 100644
+index c52ba08b0e69..ef5705f89c00 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-@@ -524,26 +524,32 @@ power-sensor@20 {
+@@ -562,26 +562,32 @@ power-sensor@20 {
  				compatible = "mps,mp5990";
  				reg = <0x20>;
  			};
@@ -52,5 +51,5 @@ index 23eaf47a38e8..41ae86180534 100644
  				compatible = "infineon,xdpe152c4";
  				reg = <0x68>;
 -- 
-2.43.0
+2.53.0-Meta
 

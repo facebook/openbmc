@@ -2,13 +2,15 @@
 
 # ARGUMENTS:
 # 1: device type
-# 2: unique device address
+# 2: device location in <position>_<device_number> format
+#    On RMCv1, position = unique device address and device_number = "NA"
+#    On RMCv2, position = shelf (starts with 100) and device_number = spot in shelf
 # 3: Optional override config
 
 if [ $# -lt 2 ]; then
-    echo "Usage: $0 <device_type> <unique_device_address> [override_config]
+    echo "Usage: $0 <device_type> <device_location> [override_config]
       device_type: device type we will be upgrading
-      unique_device_address: The address of the modbus device to upgrade
+      device_location: The location of the modbus device to upgrade in <position>_<device_number> format
       override_config: Optional configuration file to override default settings"
     exit 1
 fi
@@ -19,7 +21,16 @@ set -u
 
 DEVICE_TYPE="$1"
 
-UDA="$2"
+DEVICE_LOCATION="$2"
+
+position="${DEVICE_LOCATION%%_*}"
+device_number="${DEVICE_LOCATION#*_}"
+if [[ "$device_number" == "NA" ]]; then
+    UDA="$position"
+else
+    echo "This upgrade is not supported yet"
+    exit 1
+fi
 
 CONFIG_FILE="/var/lib/modbus-device-util/default-config.json"
 
@@ -34,7 +45,7 @@ FLOCK="flock /tmp/modbus_dynamo_solitonbeam.lock"
 
 ERRORS=""
 SUCCESSES=""
-FIRMWARE_FILE="/tmp/firmware-${DEVICE_TYPE}-${UDA}"
+FIRMWARE_FILE="/tmp/firmware-${DEVICE_TYPE}-${DEVICE_LOCATION}"
 trap "rm ${FIRMWARE_FILE}" EXIT
 UPDATE_COMMANDS=()
 manufacturer=$("$script_dir/get-manufacturer" "$DEVICE_TYPE" "$UDA" "$CONFIG_FILE")

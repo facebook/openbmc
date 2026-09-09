@@ -2,13 +2,13 @@
 
 # ARGUMENTS:
 # 1: device type
-# 2: hyphen separated list of unique device addresses
+# 2: unique device address
 # 3: Optional override config
 
 if [ $# -lt 2 ]; then
-    echo "Usage: $0 <device_type> <unique_device_addresses> [override_config]
+    echo "Usage: $0 <device_type> <unique_device_address> [override_config]
       device_type: device type we will be upgrading
-      unique_device_addresses: The addresses of the modbus device to upgrade (hyphen separated)
+      unique_device_address: The address of the modbus device to upgrade
       override_config: Optional configuration file to override default settings"
     exit 1
 fi
@@ -19,8 +19,7 @@ set -u
 
 DEVICE_TYPE="$1"
 
-# unique device addresses
-UDAS="$2"
+UDA="$2"
 
 CONFIG_FILE="/var/lib/modbus-device-util/default-config.json"
 
@@ -35,72 +34,62 @@ FLOCK="flock /tmp/modbus_dynamo_solitonbeam.lock"
 
 ERRORS=""
 SUCCESSES=""
-OLD_IFS="$IFS"
-IFS='-'
-FIRMWARE_FILE=""
+FIRMWARE_FILE="/tmp/firmware-${DEVICE_TYPE}-${UDA}"
+trap "rm ${FIRMWARE_FILE}" EXIT
 UPDATE_COMMANDS=()
-for uda in $UDAS; do
-    if [ -z "$FIRMWARE_FILE" ]; then
-        FIRMWARE_FILE="/tmp/firmware-${DEVICE_TYPE}-${uda}"
-        trap "rm ${FIRMWARE_FILE}" EXIT
-    fi
+manufacturer=$("$script_dir/get-manufacturer" "$DEVICE_TYPE" "$UDA" "$CONFIG_FILE")
 
-    manufacturer=$("$script_dir/get-manufacturer" "$DEVICE_TYPE" "$uda" "$CONFIG_FILE")
-
-    case "$manufacturer" in
+case "$manufacturer" in
         "artesyn")
             case "$DEVICE_TYPE" in
                 "psu")
-                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/psu-update-aei.py --addr $uda $FIRMWARE_FILE")
+                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/psu-update-aei.py --addr $UDA $FIRMWARE_FILE")
                     ;;
                 *)
-                    ERRORS+="${DEVICE_TYPE} at address ${uda} has ${manufacturer} without known firmware upgrade process\n"
+                    ERRORS+="${DEVICE_TYPE} at address ${UDA} has ${manufacturer} without known firmware upgrade process\n"
                     ;;
             esac
             ;;
         "coolermaster")
             case "$DEVICE_TYPE" in
                 "rpu2")
-                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/rpu-update-coolermaster.py --addr $uda $FIRMWARE_FILE")
+                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/rpu-update-coolermaster.py --addr $UDA $FIRMWARE_FILE")
                     ;;
                 *)
-                    ERRORS+="${DEVICE_TYPE} at address ${uda} has ${manufacturer} without known firmware upgrade process\n"
+                    ERRORS+="${DEVICE_TYPE} at address ${UDA} has ${manufacturer} without known firmware upgrade process\n"
                     ;;
             esac
             ;;
         "delta")
             case "$DEVICE_TYPE" in
                 "bbu")
-                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/orv3-device-update-mailbox.py -vendor delta --addr $uda $FIRMWARE_FILE")
+                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/orv3-device-update-mailbox.py -vendor delta --addr $UDA $FIRMWARE_FILE")
                     ;;
                 "psu")
-                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/psu-update-delta-orv3.py --addr $uda $FIRMWARE_FILE")
+                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/psu-update-delta-orv3.py --addr $UDA $FIRMWARE_FILE")
                     ;;
                 "rpu")
-                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/rpu-update-delta-plc.py --addr $uda --oem-block $FIRMWARE_FILE")
+                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/rpu-update-delta-plc.py --addr $UDA --oem-block $FIRMWARE_FILE")
                     ;;
                 *)
-                    ERRORS+="${DEVICE_TYPE} at address ${uda} has ${manufacturer} without known firmware upgrade process\n"
+                    ERRORS+="${DEVICE_TYPE} at address ${UDA} has ${manufacturer} without known firmware upgrade process\n"
                     ;;
             esac
             ;;
         "panasonic")
             case "$DEVICE_TYPE" in
                 "bbu")
-                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/orv3-device-update-mailbox.py -vendor panasonic --addr $uda $FIRMWARE_FILE")
+                    UPDATE_COMMANDS+=("$FLOCK /usr/local/bin/orv3-device-update-mailbox.py -vendor panasonic --addr $UDA $FIRMWARE_FILE")
                     ;;
                 *)
-                    ERRORS+="${DEVICE_TYPE} at address ${uda} has ${manufacturer} without known firmware upgrade process\n"
+                    ERRORS+="${DEVICE_TYPE} at address ${UDA} has ${manufacturer} without known firmware upgrade process\n"
                     ;;
             esac
             ;;
         *)
-            ERRORS+="Could not identify manufacturer for ${DEVICE_TYPE} at address ${uda}\n"
+            ERRORS+="Could not identify manufacturer for ${DEVICE_TYPE} at address ${UDA}\n"
             ;;
-    esac
-done
-
-IFS="$OLD_IFS"
+esac
 
 for cmd in "${UPDATE_COMMANDS[@]}"; do
     if eval "$cmd"; then
@@ -117,6 +106,6 @@ if [ -z "$ERRORS" ]; then
 fi
 
 echo -e "${SUCCESSES}"
-echo "FAILED TO UPGRADE ALL DEVICES. LOOK ABOVE FOR LOGS"
+echo "FAILED TO UPGRADE DEVICE. LOOK ABOVE FOR LOGS"
 echo -e "${ERRORS}"
 exit 1

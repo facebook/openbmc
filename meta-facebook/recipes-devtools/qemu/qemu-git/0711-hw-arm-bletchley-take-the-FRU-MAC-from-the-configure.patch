@@ -27,10 +27,10 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  #include "qemu/osdep.h"
  #include "qapi/error.h"
 +#include "qemu/host-utils.h"
- #include "hw/arm/machines-qom.h"
  #include "hw/arm/aspeed.h"
  #include "hw/arm/aspeed_soc.h"
-@@ -51,6 +52,14 @@
+ #include "hw/gpio/pca9552.h"
+@@ -50,6 +51,14 @@
      BletchleyFru sled[6];   /* i2c0-5 @0x54 */
      BletchleyFru bsm;       /* i2c6 @0x56 */
      BletchleyFru cc;        /* i2c7 @0x54 */
@@ -45,7 +45,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  } BletchleyFruSet;
  
  /* Bletchley v1.0 */
-@@ -331,6 +340,8 @@
+@@ -330,6 +339,8 @@
      },
      .bsm = { fru_v1_0_6_0056, sizeof(fru_v1_0_6_0056) },
      .cc  = { fru_v1_0_7_0054, sizeof(fru_v1_0_7_0054) },
@@ -54,7 +54,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  };
  
  /* Bletchley v1.5 */
-@@ -615,8 +626,65 @@
+@@ -614,8 +625,65 @@
      },
      .bsm = { fru_v1_5_6_0056, sizeof(fru_v1_5_6_0056) },
      .cc  = { fru_v1_5_7_0054, sizeof(fru_v1_5_7_0054) },
@@ -120,7 +120,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  #define TYPE_BLETCHLEY_MACHINE MACHINE_TYPE_NAME("bletchley-bmc")
  OBJECT_DECLARE_SIMPLE_TYPE(BletchleyMachineState, BLETCHLEY_MACHINE)
  
-@@ -630,7 +698,9 @@
+@@ -629,7 +697,9 @@
  {
      const BletchleyFruSet *fru = BLETCHLEY_MACHINE(bmc)->v1_5 ?
                                   &bletchley_fru_v1_5 : &bletchley_fru_v1_0;
@@ -130,7 +130,7 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
      I2CBus *i2c[13] = {};
      for (int i = 0; i < 13; i++) {
          if ((i == 8) || (i == 11)) {
-@@ -660,9 +730,17 @@
+@@ -659,9 +729,17 @@
      i2c_slave_create_simple(i2c[6], TYPE_DS1338, 0x51);
  
  

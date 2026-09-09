@@ -1,4 +1,4 @@
-From dedfc68fc9d32da3df91f9d9dc6aa1595297e704 Mon Sep 17 00:00:00 2001
+From 14010e946b168770019a4804d86c0cc0c8501494 Mon Sep 17 00:00:00 2001
 From: Bright Cheng <bright_cheng@wiwynn.com>
 Date: Mon, 26 Aug 2024 11:37:53 +0800
 Subject: [PATCH] Utils: support powerState for multi-node system
@@ -137,7 +137,7 @@ index 599433a..eea9f50 100644
 @@ -56,14 +57,29 @@
  #include <variant>
  #include <vector>
-
+ 
 -static bool powerStatusOn = false;
 -static bool biosHasPost = false;
 +using powerStatePair = std::pair<std::string, bool>;
@@ -150,7 +150,7 @@ index 599433a..eea9f50 100644
 +static std::vector<powerStatePair> biosHasPost;
 +static std::vector<powerStatePair> chassisStatusOn;
 +static std::vector<powerStatePair> chassisReqPowerTransOff;
-
+ 
  static std::unique_ptr<sdbusplus::match> powerMatch = nullptr;
  static std::unique_ptr<sdbusplus::match> postMatch = nullptr;
  static std::unique_ptr<sdbusplus::match> chassisMatch = nullptr;
@@ -164,13 +164,13 @@ index 599433a..eea9f50 100644
 +static std::vector<std::shared_ptr<boost::asio::steady_timer>> timerVec;
 +static std::vector<std::shared_ptr<boost::asio::steady_timer>>
 +    timerChassisStatusVec;
-
+ 
  /**
   * return the contents of a file
 @@ -304,44 +320,105 @@ bool findFiles(const std::filesystem::path& dirPath,
      return true;
  }
-
+ 
 -bool isPowerOn()
 +std::vector<powerStatePair>::iterator findPowerStateByPath(
 +    const std::string& path, std::vector<powerStatePair>& powerStatus)
@@ -206,7 +206,7 @@ index 599433a..eea9f50 100644
 +
 +    return it->second;
  }
-
+ 
 -bool hasBiosPost()
 +bool hasBiosPost(const size_t& slotId)
  {
@@ -226,7 +226,7 @@ index 599433a..eea9f50 100644
 +
 +    return it->second;
  }
-
+ 
 -bool isChassisOn()
 +bool isChassisOn(const size_t& slotId)
  {
@@ -261,7 +261,7 @@ index 599433a..eea9f50 100644
 +    }
 +    return it->second;
  }
-
+ 
 -bool readingStateGood(const PowerState& powerState)
 +
 +bool readingStateGood(const PowerState& powerState, const size_t& slotId)
@@ -287,7 +287,7 @@ index 599433a..eea9f50 100644
          return false;
      }
 @@ -351,13 +428,15 @@ bool readingStateGood(const PowerState& powerState)
-
+ 
  static void getPowerStatus(
      const std::shared_ptr<sdbusplus::asio::connection>& conn,
 -    const std::function<void(PowerState type, bool state)>& hostStatusCallback,
@@ -344,7 +344,7 @@ index 599433a..eea9f50 100644
 +        busname, path, properties::interface, properties::get, power::interface,
 +        power::property);
  }
-
+ 
  static void getPostStatus(
      const std::shared_ptr<sdbusplus::asio::connection>& conn,
 -    const std::function<void(PowerState type, bool state)>& hostStatusCallback,
@@ -406,7 +406,7 @@ index 599433a..eea9f50 100644
 +        busname, path, properties::interface, properties::get, post::interface,
 +        post::property);
  }
-
+ 
  static void getChassisStatus(
      const std::shared_ptr<sdbusplus::asio::connection>& conn,
 -    const std::function<void(PowerState type, bool state)>& hostStatusCallback,
@@ -463,7 +463,7 @@ index 599433a..eea9f50 100644
 +        busname, path, properties::interface, properties::get,
          chassis::interface, chassis::property);
  }
-
+ 
  void setupPowerMatchCallback(
      const std::shared_ptr<sdbusplus::asio::connection>& conn,
 -    std::function<void(PowerState type, bool state)>&& callback)
@@ -477,7 +477,7 @@ index 599433a..eea9f50 100644
 @@ -505,117 +554,234 @@ void setupPowerMatchCallback(
          return;
      }
-
+ 
 -    auto hostStatusCallback = std::move(callback);
 -
 -    powerMatch = std::make_unique<sdbusplus::match>(
@@ -803,13 +803,13 @@ index 599433a..eea9f50 100644
 +        chassisReqPowerTransOffMatchVec.emplace_back(
 +            std::make_pair(std::string(path), std::move(chassisReqPowerTransOffMatch)));
 +
-
+ 
 -    getPowerStatus(conn, hostStatusCallback);
 -    getPostStatus(conn, hostStatusCallback);
 -    getChassisStatus(conn, hostStatusCallback);
 +    }
  }
-
+ 
  void setupPowerMatch(const std::shared_ptr<sdbusplus::asio::connection>& conn)
 diff --git a/src/Utils.hpp b/src/Utils.hpp
 index 10d9a31..59d46a5 100644
@@ -821,7 +821,7 @@ index 10d9a31..59d46a5 100644
                std::vector<std::pair<std::string, std::vector<std::string>>>>>;
 +using GetSubTreePathsType = std::vector<std::string>;
  using Association = std::tuple<std::string, std::string, std::string>;
-
+ 
  inline std::string escapeName(const std::string& sensorName)
 @@ -80,9 +81,10 @@ bool findFiles(const std::filesystem::path& dirPath,
                 std::string_view matchString,
@@ -840,10 +840,10 @@ index 10d9a31..59d46a5 100644
 @@ -100,7 +102,7 @@ void createAssociation(
  void findLimits(std::pair<double, double>& limits,
                  const SensorBaseConfiguration* data);
-
+ 
 -bool readingStateGood(const PowerState& powerState);
 +bool readingStateGood(const PowerState& powerState, const size_t& slotId = 0);
-
+ 
  constexpr const char* configInterfacePrefix =
      "xyz.openbmc_project.Configuration.";
 @@ -116,6 +118,7 @@ constexpr const char* busName = "xyz.openbmc_project.ObjectMapper";
@@ -852,10 +852,10 @@ index 10d9a31..59d46a5 100644
  constexpr const char* subtree = "GetSubTree";
 +constexpr const char* subtreepaths = "GetSubTreePaths";
  } // namespace mapper
-
+ 
  namespace properties
 @@ -127,27 +130,29 @@ constexpr const char* set = "Set";
-
+ 
  namespace power
  {
 -const static constexpr char* busname = "xyz.openbmc_project.State.Host0";
@@ -865,7 +865,7 @@ index 10d9a31..59d46a5 100644
 +const static constexpr char* path = "/xyz/openbmc_project/state/host";
  const static constexpr char* property = "CurrentHostState";
  } // namespace power
-
+ 
  namespace chassis
  {
 -const static constexpr char* busname = "xyz.openbmc_project.State.Chassis0";
@@ -878,7 +878,7 @@ index 10d9a31..59d46a5 100644
 +const static constexpr char* propRequestedPowerTransition = "RequestedPowerTransition";
 +const static constexpr char* rOff = "Transition.Off";
  } // namespace chassis
-
+ 
  namespace post
  {
 -const static constexpr char* busname = "xyz.openbmc_project.State.Host0";
@@ -889,11 +889,11 @@ index 10d9a31..59d46a5 100644
 +const static constexpr char* path = "/xyz/openbmc_project/state/host";
  const static constexpr char* property = "OperatingSystemState";
  } // namespace post
-
+ 
 @@ -217,6 +222,19 @@ inline PowerState getPowerState(const SensorBaseConfigMap& cfg)
      return state;
  }
-
+ 
 +inline size_t getSlotId(const SensorBaseConfigMap& cfg)
 +{
 +    size_t slotId = 0; // If there's no slotId defined, default to chassis0
@@ -918,7 +918,7 @@ index 10d9a31..59d46a5 100644
 +        dbusConnection(std::move(connection)),
 +        callback(std::move(callbackFunc))
      {}
-
+ 
      void getPath(const std::string& path, const std::string& interface,
 diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
 index b8b46ce..85272bd 100644
@@ -927,7 +927,7 @@ index b8b46ce..85272bd 100644
 @@ -616,6 +616,33 @@ void interfaceRemoved(
      }
  }
-
+ 
 +static void powerStateChanged(
 +    PowerState type, bool newState,
 +    boost::container::flat_map<std::string, std::shared_ptr<HwmonTempSensor>>&
@@ -959,7 +959,7 @@ index b8b46ce..85272bd 100644
  {
      boost::asio::io_context io;
 @@ -631,9 +658,7 @@ int main()
-
+ 
      auto powerCallBack = [&sensors, &io, &objectServer,
                            &systemBus](PowerState type, bool state) {
 -        handlePowerStateChanged(type, state, sensors, io, [&]() {
@@ -968,7 +968,7 @@ index b8b46ce..85272bd 100644
 +        powerStateChanged(type, state, sensors, io, objectServer, systemBus);
      };
      setupPowerMatchCallback(systemBus, powerCallBack);
-
+ 
 diff --git a/src/psu/PSUSensor.cpp b/src/psu/PSUSensor.cpp
 index b428aa2..900abc1 100644
 --- a/src/psu/PSUSensor.cpp
@@ -1010,7 +1010,7 @@ index 8599826..42d4800 100644
          static_cast<unsigned int>(defaultSensorPoll * 1000);
 +    size_t slotId;
  };
-
+ 
  struct PSUProperty
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
 index 9b657f0..a10f9fe 100644
@@ -1018,10 +1018,10 @@ index 9b657f0..a10f9fe 100644
 +++ b/src/psu/PSUSensorMain.cpp
 @@ -858,6 +858,7 @@ static void createSensorsCallback(
          checkGroupEvent(directory.string(), groupEventPathList);
-
+ 
          PowerState readState = getPowerState(*baseConfig);
 +        size_t readSlot = getSlotId(*baseConfig);
-
+ 
          /* Check if there are more sensors in the same interface */
          int i = 1;
 @@ -1443,7 +1444,7 @@ static void createSensorsCallback(
@@ -1030,13 +1030,13 @@ index 9b657f0..a10f9fe 100644
                      sensorOffset, labelHead, thresholdConfSize, pollRate,
 -                    i2cDev, std::move(bridgeGpio));
 +                    i2cDev, std::move(bridgeGpio), readSlot);
-
+ 
                  if (fwName != nullptr)
                  {
 @@ -1569,6 +1570,33 @@ void createSensors(
      getter->getConfiguration(types);
  }
-
+ 
 +static void powerStateChanged(
 +    PowerState type, bool newState,
 +    boost::container::flat_map<std::string, std::shared_ptr<PSUSensor>>&
@@ -1070,7 +1070,7 @@ index 9b657f0..a10f9fe 100644
 @@ -1581,12 +1609,10 @@ int main()
      auto sensorsChanged =
          std::make_shared<boost::container::flat_set<std::string>>();
-
+ 
 -    auto powerCallBack =
 -        [&io, &objectServer, &systemBus](PowerState type, bool state) {
 -            handlePowerStateChanged(type, state, sensors, io, [&]() {
@@ -1081,9 +1081,9 @@ index 9b657f0..a10f9fe 100644
 +                          &systemBus](PowerState type, bool state) {
 +        powerStateChanged(type, state, sensors, io, objectServer, systemBus);
 +    };
-
+ 
      setupPowerMatchCallback(systemBus, powerCallBack);
-
+ 
 diff --git a/src/sensor.hpp b/src/sensor.hpp
 index 216c4d6..5bdbacc 100644
 --- a/src/sensor.hpp
@@ -1111,16 +1111,16 @@ index 216c4d6..5bdbacc 100644
 +    size_t slotId;
      size_t errCount{0};
      std::unique_ptr<SensorInstrumentation> instrumentation;
-
+ 
 @@ -456,7 +457,7 @@ struct Sensor
-
+ 
      bool readingStateGood() const
      {
 -        return ::readingStateGood(readState);
 +        return ::readingStateGood(readState, slotId);
      }
-
+ 
      void markFunctional(bool isFunctional)
---
-2.53.0
+-- 
+2.53.0-Meta
 

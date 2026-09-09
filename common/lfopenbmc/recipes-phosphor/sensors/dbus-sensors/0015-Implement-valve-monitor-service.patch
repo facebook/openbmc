@@ -1,4 +1,4 @@
-From 096a0c72d9b25ae8a45f3798fa228f4264cbbb83 Mon Sep 17 00:00:00 2001
+From 79e8d5b538b6dc0e12ff82a181ed4b8bbab47503 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Tue, 29 Jul 2025 21:01:23 -0700
 Subject: [PATCH] Implement valve monitor service
@@ -109,7 +109,7 @@ Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
  src/leakdetector/LeakGPIODetector.hpp         |   4 +-
  src/leakdetector/meson.build                  |   2 +-
  src/meson.build                               |  22 +-
- src/valve-monitor/GPIOValve.cpp               | 299 ++++++++++++++++++
+ src/valve-monitor/GPIOValve.cpp               | 300 ++++++++++++++++++
  src/valve-monitor/GPIOValve.hpp               | 105 ++++++
  src/valve-monitor/Readme.md                   |  50 +++
  src/valve-monitor/ValveEvents.cpp             |  34 ++
@@ -117,7 +117,7 @@ Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
  src/valve-monitor/ValveMonitor.cpp            | 102 ++++++
  src/valve-monitor/ValveMonitor.hpp            |  49 +++
  src/valve-monitor/meson.build                 |  22 ++
- 19 files changed, 862 insertions(+), 79 deletions(-)
+ 19 files changed, 863 insertions(+), 79 deletions(-)
  create mode 100644 service_files/xyz.openbmc_project.valvemonitor.service
  rename src/{GPIOInterface.cpp => GPIInterface.cpp} (55%)
  create mode 100644 src/GPIInterface.hpp
@@ -554,7 +554,7 @@ index 3ecf709..2e7d82e 100644
  
 diff --git a/src/valve-monitor/GPIOValve.cpp b/src/valve-monitor/GPIOValve.cpp
 new file mode 100644
-index 0000000..f5e501b
+index 0000000..61da637
 --- /dev/null
 +++ b/src/valve-monitor/GPIOValve.cpp
 @@ -0,0 +1,300 @@

@@ -1,4 +1,4 @@
-From eda7efe30542f2b571df884634b5b39081bbb0e3 Mon Sep 17 00:00:00 2001
+From 06f0a1ed5a0fac489c16af0eff597724dd155800 Mon Sep 17 00:00:00 2001
 From: Eldin Lee <eldin.lee@quantatw.com>
 Date: Mon, 27 Jul 2026 13:25:26 +0800
 Subject: [PATCH] valve-monitor: defer control interface until state is known
@@ -95,7 +95,7 @@ index b52a9a4..766ecca 100644
      /** @brief Valve state to systemd target service map */
      static constexpr std::array<std::pair<State, std::string_view>, 2>
 diff --git a/src/valve-monitor/BaseValve.cpp b/src/valve-monitor/BaseValve.cpp
-index b8140ca..cd8fd63 100644
+index ff64bb2..847828e 100644
 --- a/src/valve-monitor/BaseValve.cpp
 +++ b/src/valve-monitor/BaseValve.cpp
 @@ -25,6 +25,43 @@ namespace valve
@@ -142,7 +142,7 @@ index b8140ca..cd8fd63 100644
  static auto getObjectPath(std::string valveName)
  {
      std::replace(valveName.begin(), valveName.end(), ' ', '_');
-@@ -46,9 +83,6 @@ constexpr ValveIntf::Value::properties_t initValues{0, 100, 0,
+@@ -47,9 +84,6 @@ constexpr ValveIntf::Value::properties_t initValues{
  constexpr ValveIntf::Definitions::properties_t initAssociations{};
  constexpr ValveIntf::Availability::properties_t initAvailability{true};
  constexpr ValveIntf::OperationalStatus::properties_t initOperationalState{true};
@@ -152,7 +152,7 @@ index b8140ca..cd8fd63 100644
  
  BaseValve::BaseValve(sdbusplus::async::context& ctx,
                       const sdbusplus::object_path& objectPath,
-@@ -56,8 +90,6 @@ BaseValve::BaseValve(sdbusplus::async::context& ctx,
+@@ -57,8 +91,6 @@ BaseValve::BaseValve(sdbusplus::async::context& ctx,
                       const config::BaseConfig& config) :
      ValveIntf(ctx, getObjectPath(config.name).str.c_str(), initValues,
                initAssociations, initAvailability, initOperationalState),
@@ -161,7 +161,7 @@ index b8140ca..cd8fd63 100644
      ctx(ctx),
      inventoryPath(std::filesystem::path(objectPath.str).parent_path().string()),
      events(events), localConfig(localConfig), baseConfig(config)
-@@ -65,12 +97,11 @@ BaseValve::BaseValve(sdbusplus::async::context& ctx,
+@@ -66,12 +98,11 @@ BaseValve::BaseValve(sdbusplus::async::context& ctx,
      info("Created valve {VALVE}", "VALVE", baseConfig.name);
  }
  
@@ -175,7 +175,7 @@ index b8140ca..cd8fd63 100644
  }
  
  BaseValve::~BaseValve()
-@@ -78,23 +109,18 @@ BaseValve::~BaseValve()
+@@ -79,23 +110,18 @@ BaseValve::~BaseValve()
      available(false);
  }
  
@@ -207,7 +207,7 @@ index b8140ca..cd8fd63 100644
  auto BaseValve::createSensorAssociations() -> sdbusplus::async::task<>
  {
      association_list_t associationList;
-@@ -119,19 +145,6 @@ auto BaseValve::createSensorAssociations() -> sdbusplus::async::task<>
+@@ -120,19 +146,6 @@ auto BaseValve::createSensorAssociations() -> sdbusplus::async::task<>
      co_return;
  }
  
@@ -387,5 +387,5 @@ index c7b153b..f54a743 100644
  }
  
 -- 
-2.34.1
+2.53.0-Meta
 

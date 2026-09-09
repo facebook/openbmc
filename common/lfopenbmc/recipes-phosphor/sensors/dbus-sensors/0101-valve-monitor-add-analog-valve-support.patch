@@ -1,4 +1,4 @@
-From dbc99f395eb942c616e8e5a81c742aecda6280a0 Mon Sep 17 00:00:00 2001
+From 371afeea5e18b85e65b20842528b5935ddd00966 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <jagpalgill@fb.com>
 Date: Wed, 1 Apr 2026 00:27:58 -0700
 Subject: [PATCH] valve-monitor: add analog valve support
@@ -123,9 +123,9 @@ Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
 ---
  src/valve-monitor/AnalogValve.cpp  | 503 +++++++++++++++++++++++++++++
  src/valve-monitor/AnalogValve.hpp  | 116 +++++++
- src/valve-monitor/BaseValve.cpp    | 176 ++++++++++
+ src/valve-monitor/BaseValve.cpp    | 177 ++++++++++
  src/valve-monitor/BaseValve.hpp    | 100 ++++++
- src/valve-monitor/GPIOValve.cpp    | 185 ++---------
+ src/valve-monitor/GPIOValve.cpp    | 186 ++---------
  src/valve-monitor/GPIOValve.hpp    |  54 +---
  src/valve-monitor/LocalConfig.cpp  | 132 ++++++++
  src/valve-monitor/LocalConfig.hpp  |  44 +++
@@ -138,7 +138,7 @@ Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
  src/valve-monitor/ValveMonitor.cpp |  41 ++-
  src/valve-monitor/ValveMonitor.hpp |  10 +-
  src/valve-monitor/meson.build      |   6 +
- 17 files changed, 1349 insertions(+), 229 deletions(-)
+ 17 files changed, 1350 insertions(+), 230 deletions(-)
  create mode 100644 src/valve-monitor/AnalogValve.cpp
  create mode 100644 src/valve-monitor/AnalogValve.hpp
  create mode 100644 src/valve-monitor/BaseValve.cpp
@@ -782,7 +782,7 @@ index 0000000..f8a2228
 +} // namespace valve
 diff --git a/src/valve-monitor/BaseValve.cpp b/src/valve-monitor/BaseValve.cpp
 new file mode 100644
-index 0000000..b8140ca
+index 0000000..ff64bb2
 --- /dev/null
 +++ b/src/valve-monitor/BaseValve.cpp
 @@ -0,0 +1,177 @@
@@ -1070,7 +1070,7 @@ index 0000000..90de751
 +
 +} // namespace valve
 diff --git a/src/valve-monitor/GPIOValve.cpp b/src/valve-monitor/GPIOValve.cpp
-index f5e501b..44718c5 100644
+index 61da637..44718c5 100644
 --- a/src/valve-monitor/GPIOValve.cpp
 +++ b/src/valve-monitor/GPIOValve.cpp
 @@ -1,28 +1,21 @@
@@ -1211,7 +1211,7 @@ index f5e501b..44718c5 100644
            convertStateToString(state));
  
      if ((value() == 0 && state == State::Close) ||
-@@ -175,25 +117,27 @@ auto GPIOValve::set_property(state_t /*unused*/, auto state) -> bool
+@@ -176,25 +117,27 @@ auto GPIOValve::set_property(state_t /*unused*/, auto state) -> bool
  
      try
      {
@@ -1247,7 +1247,7 @@ index f5e501b..44718c5 100644
            convertStateToString(state));
  
      return false;
-@@ -205,7 +149,7 @@ auto GPIOValve::updateGPIOStateAsync(bool gpioState) -> sdbusplus::async::task<>
+@@ -206,7 +149,7 @@ auto GPIOValve::updateGPIOStateAsync(bool gpioState) -> sdbusplus::async::task<>
  
      if (newValue != value())
      {
@@ -1256,7 +1256,7 @@ index f5e501b..44718c5 100644
                "VALUE", newValue);
          value(newValue);
  
-@@ -215,85 +159,4 @@ auto GPIOValve::updateGPIOStateAsync(bool gpioState) -> sdbusplus::async::task<>
+@@ -216,85 +159,4 @@ auto GPIOValve::updateGPIOStateAsync(bool gpioState) -> sdbusplus::async::task<>
      co_return;
  }
  

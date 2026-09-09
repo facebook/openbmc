@@ -1,4 +1,4 @@
-From a7c7a8d58bc0cc2b300a7e22cdffde372c0a7fed Mon Sep 17 00:00:00 2001
+From 10dae1cbaf8402c841e3db2517578ca7199c78cf Mon Sep 17 00:00:00 2001
 From: Daniel Hsu <Daniel-Hsu@quantatw.com>
 Date: Tue, 11 Aug 2026 10:17:36 +0800
 Subject: [PATCH] common: fix missing power-gated sensors after BMC reset
@@ -50,7 +50,7 @@ index 8632ea1..599433a 100644
 --- a/src/Utils.cpp
 +++ b/src/Utils.cpp
 @@ -351,11 +351,13 @@ bool readingStateGood(const PowerState& powerState)
-
+ 
  static void getPowerStatus(
      const std::shared_ptr<sdbusplus::asio::connection>& conn,
 +    const std::function<void(PowerState type, bool state)>& hostStatusCallback,
@@ -79,7 +79,7 @@ index 8632ea1..599433a 100644
 +                    });
                      return;
                  }
-
+ 
 @@ -376,7 +378,18 @@ static void getPowerStatus(
                             "ERROR_MESSAGE", ec.message());
                  return;
@@ -101,7 +101,7 @@ index 8632ea1..599433a 100644
          power::busname, power::path, properties::interface, properties::get,
          power::interface, power::property);
 @@ -384,11 +397,13 @@ static void getPowerStatus(
-
+ 
  static void getPostStatus(
      const std::shared_ptr<sdbusplus::asio::connection>& conn,
 +    const std::function<void(PowerState type, bool state)>& hostStatusCallback,
@@ -157,7 +157,7 @@ index 8632ea1..599433a 100644
          post::busname, post::path, properties::interface, properties::get,
          post::interface, post::property);
 @@ -419,11 +446,13 @@ static void getPostStatus(
-
+ 
  static void getChassisStatus(
      const std::shared_ptr<sdbusplus::asio::connection>& conn,
 +    const std::function<void(PowerState type, bool state)>& hostStatusCallback,
@@ -186,7 +186,7 @@ index 8632ea1..599433a 100644
 +                    });
                      return;
                  }
-
+ 
 @@ -445,8 +474,19 @@ static void getChassisStatus(
                      "ERROR_MESSAGE", ec.message());
                  return;
@@ -210,7 +210,7 @@ index 8632ea1..599433a 100644
          chassis::busname, chassis::path, properties::interface, properties::get,
          chassis::interface, chassis::property);
 @@ -454,7 +494,7 @@ static void getChassisStatus(
-
+ 
  void setupPowerMatchCallback(
      const std::shared_ptr<sdbusplus::asio::connection>& conn,
 -    std::function<void(PowerState type, bool state)>&& hostStatusCallback)
@@ -221,7 +221,7 @@ index 8632ea1..599433a 100644
 @@ -465,6 +505,8 @@ void setupPowerMatchCallback(
          return;
      }
-
+ 
 +    auto hostStatusCallback = std::move(callback);
 +
      powerMatch = std::make_unique<sdbusplus::match>(
@@ -249,14 +249,14 @@ index 8632ea1..599433a 100644
 +    getPostStatus(conn, hostStatusCallback);
 +    getChassisStatus(conn, hostStatusCallback);
  }
-
+ 
  void setupPowerMatch(const std::shared_ptr<sdbusplus::asio::connection>& conn)
 diff --git a/src/Utils.hpp b/src/Utils.hpp
 index c082697..10d9a31 100644
 --- a/src/Utils.hpp
 +++ b/src/Utils.hpp
 @@ -431,3 +431,49 @@ bool getDeviceBusAddr(const std::string& deviceName, T& bus, T& addr)
-
+ 
      return true;
  }
 +
@@ -312,7 +312,7 @@ index 23549c4..b8b46ce 100644
 @@ -616,29 +616,6 @@ void interfaceRemoved(
      }
  }
-
+ 
 -static void powerStateChanged(
 -    PowerState type, bool newState,
 -    boost::container::flat_map<std::string, std::shared_ptr<HwmonTempSensor>>&
@@ -340,7 +340,7 @@ index 23549c4..b8b46ce 100644
  {
      boost::asio::io_context io;
 @@ -654,7 +631,9 @@ int main()
-
+ 
      auto powerCallBack = [&sensors, &io, &objectServer,
                            &systemBus](PowerState type, bool state) {
 -        powerStateChanged(type, state, sensors, io, objectServer, systemBus);
@@ -349,7 +349,7 @@ index 23549c4..b8b46ce 100644
 +        });
      };
      setupPowerMatchCallback(systemBus, powerCallBack);
-
+ 
 diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
 index 602a186..9b657f0 100644
 --- a/src/psu/PSUSensorMain.cpp
@@ -357,7 +357,7 @@ index 602a186..9b657f0 100644
 @@ -1569,29 +1569,6 @@ void createSensors(
      getter->getConfiguration(types);
  }
-
+ 
 -static void powerStateChanged(
 -    PowerState type, bool newState,
 -    boost::container::flat_map<std::string, std::shared_ptr<PSUSensor>>&
@@ -387,7 +387,7 @@ index 602a186..9b657f0 100644
 @@ -1604,10 +1581,12 @@ int main()
      auto sensorsChanged =
          std::make_shared<boost::container::flat_set<std::string>>();
-
+ 
 -    auto powerCallBack = [&io, &objectServer,
 -                          &systemBus](PowerState type, bool state) {
 -        powerStateChanged(type, state, sensors, io, objectServer, systemBus);
@@ -398,9 +398,9 @@ index 602a186..9b657f0 100644
 +                createSensors(io, objectServer, systemBus, nullptr, true);
 +            });
 +        };
-
+ 
      setupPowerMatchCallback(systemBus, powerCallBack);
-
---
-2.53.0
+ 
+-- 
+2.53.0-Meta
 

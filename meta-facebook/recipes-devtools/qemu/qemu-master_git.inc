@@ -202,6 +202,7 @@ SRC_URI:append = " \
            file://0708-hw-i2c-aspeed_i2c-model-AST2700-I2CC_SIRQ_LOG-target.patch \
            file://0709-hw-i2c-aspeed_i2c-fix-AST2700-target-buffer-mode-rec.patch \
            file://0710-hw-arm-aspeed-enable-both-fby35-BMC-MACs.patch \
+           file://0711-hw-arm-bletchley-take-the-FRU-MAC-from-the-configure.patch \
            "
 
 QEMU_CHECKOUT_DIR = "${BPN}-${PV}"

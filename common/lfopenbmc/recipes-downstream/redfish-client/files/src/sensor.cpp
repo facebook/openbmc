@@ -37,6 +37,10 @@ auto Sensor::toMaybeMetadata(const std::string& unitsStr)
         {"V", {Unit::Volts, 0.0, 255.0}},
         {"W", {Unit::Watts, 0.0, 3000.0}},
         {"A", {Unit::Amperes, 0.0, 255.0}},
+        {"DegreesC", {Unit::DegreesC, -128.0, 127.0}},
+        {"Volts", {Unit::Volts, 0.0, 255.0}},
+        {"Watts", {Unit::Watts, 0.0, 3000.0}},
+        {"Amperes", {Unit::Amperes, 0.0, 255.0}},
     };
 
     if (auto it = table.find(unitsStr); it != table.end())

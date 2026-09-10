@@ -1,8 +1,8 @@
-From 7c268dc273827128700d8613e63741786bba3c92 Mon Sep 17 00:00:00 2001
+From 8deb2c6c00c89971e5483680469a06155b1b7da4 Mon Sep 17 00:00:00 2001
 From: "Fred.Chen" <Fred.Chen@quantatw.com>
 Date: Thu, 14 May 2026 12:13:39 +0800
-Subject: [PATCH 1001/1008] ARM: dts: aspeed: santabarbara: add device nodes
- behind the i3c hub
+Subject: [PATCH] ARM: dts: aspeed: santabarbara: add device nodes behind the
+ i3c hub
 
 Add device nodes behind the i3c hub. Each hub slave port can be
 configured to use either SMBus or I3C protocol.
@@ -17,7 +17,7 @@ https://lore.kernel.org/all/20250917142055.2806576-2-steven.niu.uj@renesas.com/
  1 file changed, 1052 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
-index d4dcd8b53..400e893af 100644
+index d4dcd8b53..a8344ea25 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
 @@ -39,6 +39,14 @@ aliases {
@@ -431,7 +431,7 @@ index d4dcd8b53..400e893af 100644
 +};
 +
 +&i3c1 {
-+	status = "okay";
++	status = "disabled";
 +	pinctrl-names = "default";
 +	pinctrl-0 = <&pinctrl_i3c2_default>;
 +	i3c-pp-scl-hi-period-ns = <30>;

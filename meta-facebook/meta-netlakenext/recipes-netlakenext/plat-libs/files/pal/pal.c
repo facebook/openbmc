@@ -50,6 +50,11 @@
 #define MAX_NUM_GPIO_LED_POSTCODE 8
 #define UNINITIAL_POWER_LIMIT 0x02
 #define MAX_MCE_ERROR_STR_LEN 256
+#define POSTCODE_EEEF0000 0xEEEF0000
+#define POSTCODE_EA00E098 0xEA00E098
+#define POSTCODE_EA00E0C9 0xEA00E0C9
+
+static bool appear_EEEF0000 = false;
 
 const char pal_fru_list[] = "all, server, bmc, pdb, fio, nic";
 
@@ -1752,6 +1757,18 @@ pal_check_abl_error(uint32_t postcode) {
   return 0;
 }
 
+void check_postcode(uint32_t postcode) {
+  if (appear_EEEF0000 && (postcode != POSTCODE_EA00E098 && postcode != POSTCODE_EA00E0C9)) {
+    syslog(LOG_INFO, "%s: %08X appear after EEEF0000", __func__, postcode);
+    syslog(LOG_CRIT, "PSP response abnormal");
+  }
+  if (postcode == POSTCODE_EEEF0000) {
+    appear_EEEF0000 = true;
+  } else {
+    appear_EEEF0000 = false;
+  }
+}
+
 int pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
 {
   const char *dev_path = "/dev/aspeed-lpc-pcc";
@@ -1811,6 +1828,7 @@ int pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
       if (data_in == data_out) {
         data_out = (data_out + 1) % PCC_FIFO_SIZE;
       }
+      check_postcode(post_code);
       pal_check_psb_error(post_code);
       pal_check_abl_error(post_code);
       pal_mrc_warning_detect(0, post_code);
@@ -1886,19 +1904,55 @@ int pal_lpc_pcc_read(uint8_t *buf, size_t max_len, size_t *rlen)
   return PAL_EOK;
 }
 
+// the DIMM temperature sensor and the PMIC on the same module are accessed
+// through separate I2C addresses, so they are reported as separate events
+enum dimm_err_part {
+  ERR_PART_DIMM,
+  ERR_PART_PMIC,
+  MAX_ERR_PART,
+};
+
+static bool dimm_i2c_fail_logged[MAX_DIMM_NUM_NETLAKE2][MAX_ERR_PART] = {{false}};
+
+static void
+pal_log_dimm_i2c_fail(int id, int err_part) {
+  if ((id < 0) || (id >= MAX_DIMM_NUM_NETLAKE2)) {
+    return;
+  }
+  if ((err_part < ERR_PART_DIMM) || (err_part >= MAX_ERR_PART)) {
+    return;
+  }
+  if (dimm_i2c_fail_logged[id][err_part] == true) {
+    return;
+  }
+
+  if (err_part == ERR_PART_DIMM) {
+    syslog(LOG_CRIT, "FRU: %d, DIMM %s I2C access failure", FRU_SERVER,
+          get_dimm_label(0, id));
+  } else {
+    syslog(LOG_CRIT, "FRU: %d, DIMM %s PMIC I2C access failure", FRU_SERVER,
+          get_dimm_label(0, id));
+  }
+  dimm_i2c_fail_logged[id][err_part] = true;
+}
+
 int pal_dimm_page_init()
 {
   int ret = 0;
-  uint8_t retry = SENSOR_RETRY_TIME;
   uint8_t rbuf = 0;
   uint8_t rlen = DIMM_TEMP_LEN;
+  uint8_t fail_dimm_cnt = 0;
 
   for (uint8_t id = 0; id < MAX_DIMM_NUM_NETLAKE2; id++) {
+    uint8_t retry = SENSOR_RETRY_TIME;
     int fd = i2c_cdev_slave_open(DIMM_BUS, dimm_addr_list[id] >> 1,
                             I2C_SLAVE_FORCE_CLAIM);
     if (fd < 0) {
-      syslog(LOG_ERR, "Failed to open DIMM 0x%x\n", dimm_addr_list[id]);
-      return -1;
+      syslog(LOG_ERR, "%s() Failed to open DIMM %x-%x", __func__,
+            DIMM_BUS, dimm_addr_list[id]);
+      pal_log_dimm_i2c_fail(id, ERR_PART_DIMM);
+      fail_dimm_cnt++;
+      continue;
     }
 
     // set page 0 for DIMM temp sensor
@@ -1914,14 +1968,21 @@ int pal_dimm_page_init()
     } while ((ret < 0) && ((retry--) > 0));
 
     if (ret < 0) {
-      syslog(LOG_ERR, "%s() Failed to set 2-byte mode %x-%x", __func__,
+      syslog(LOG_ERR, "%s() Failed to set page 0 %x-%x", __func__,
             DIMM_BUS, dimm_addr_list[id]);
       close(fd);
-      return -1;
+      pal_log_dimm_i2c_fail(id, ERR_PART_DIMM);
+      fail_dimm_cnt++;
+      continue;
     }
     close(fd);
-    retry = SENSOR_RETRY_TIME;
   }
+
+  if (fail_dimm_cnt > 0) {
+    syslog(LOG_ERR, "%s() Failed to set page 0 for %d DIMM(s)", __func__, fail_dimm_cnt);
+    return -1;
+  }
+
   return 0;
 }
 
@@ -2045,12 +2106,17 @@ static int pal_pmic_modify_reg(int fd, uint8_t addr, uint8_t offset,
 
 int pal_pmic_pwr_setting()
 {
+  uint8_t fail_pmic_cnt = 0;
+
   for (uint8_t id = 0; id < MAX_DIMM_NUM_NETLAKE2; id++) {
     int fd = i2c_cdev_slave_open(DIMM_BUS, pmic_addr_list[id] >> 1,
                             I2C_SLAVE_FORCE_CLAIM);
     if (fd < 0) {
-      syslog(LOG_ERR, "Failed to open PMIC 0x%x\n", pmic_addr_list[id]);
-      return -1;
+      syslog(LOG_ERR, "%s() Failed to open PMIC %x-%x", __func__,
+            DIMM_BUS, pmic_addr_list[id]);
+      pal_log_dimm_i2c_fail(id, ERR_PART_PMIC);
+      fail_pmic_cnt++;
+      continue;
     }
     // set 0x30 bit 7 as 1 to enable ADC
     int ret = pal_pmic_modify_reg(fd, pmic_addr_list[id], PMIC_ADC_REG, 0, (1 << 7));
@@ -2058,7 +2124,9 @@ int pal_pmic_pwr_setting()
       syslog(LOG_ERR, "%s() Failed to enable PMIC ADC %x-%x", __func__,
             DIMM_BUS, pmic_addr_list[id]);
       close(fd);
-      return -1;
+      pal_log_dimm_i2c_fail(id, ERR_PART_PMIC);
+      fail_pmic_cnt++;
+      continue;
     }
 
     // set 0x1A bit 1 as 1 to read total power value
@@ -2067,7 +2135,9 @@ int pal_pmic_pwr_setting()
       syslog(LOG_ERR, "%s() Failed to set PMIC total power %x-%x", __func__,
             DIMM_BUS, pmic_addr_list[id]);
       close(fd);
-      return -1;
+      pal_log_dimm_i2c_fail(id, ERR_PART_PMIC);
+      fail_pmic_cnt++;
+      continue;
     }
     // set 0x1B bit 6 as 1 to read power value
     ret = pal_pmic_modify_reg(fd, pmic_addr_list[id], PMIC_PWR_SELECT, 0, (1 << 6));
@@ -2075,10 +2145,18 @@ int pal_pmic_pwr_setting()
       syslog(LOG_ERR, "%s() Failed to set PMIC power read %x-%x", __func__,
             DIMM_BUS, pmic_addr_list[id]);
       close(fd);
-      return -1;
+      pal_log_dimm_i2c_fail(id, ERR_PART_PMIC);
+      fail_pmic_cnt++;
+      continue;
     }
     close(fd);
   }
+
+  if (fail_pmic_cnt > 0) {
+    syslog(LOG_ERR, "%s() Failed to set PMIC power for %d PMIC(s)", __func__, fail_pmic_cnt);
+    return -1;
+  }
+
   return 0;
 }
 

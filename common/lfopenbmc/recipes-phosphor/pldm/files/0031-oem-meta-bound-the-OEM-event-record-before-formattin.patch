@@ -1,0 +1,92 @@
+From b6b4dcc241c6933ebf8479bacd25d600fc483e86 Mon Sep 17 00:00:00 2001
+From: Pete O_o <pmb@meta.com>
+Date: Tue, 8 Sep 2026 15:47:56 -0700
+Subject: [PATCH 31/32] oem-meta: bound the OEM event record before formatting
+ it
+
+handleOemEvent() sized the record with
+
+    eventDataSize = payloadLength - eventDataOffset;
+
+without checking that payloadLength reaches the offset, so a short
+message wrapped the subtraction and every bound derived from it was
+meaningless. Nothing then checked the size either: processOemMetaEvent()
+reads eventData[0] and the record formatters read fixed offsets up to
+eventData[13], so a two-byte event read past the end of the payload.
+
+Check the offset against the payload, and require enough bytes for the
+offsets the formatters actually read. Also size the raw-log loop with a
+size_t rather than casting the length to int, which turned a wrapped
+size into a negative count.
+
+Downstream note: this copy is anchored against the Meta patch series,
+which has already converted the formatters to std::span; the gerrit
+change of the same Change-Id is anchored against upstream.
+
+Tested: builds clean. Not exercised on hardware.
+
+Change-Id: I5cbfb2208d55a90165c4f9aef3e4a39cca3ead9b
+Signed-off-by: Pete O_o <pmb@meta.com>
+---
+ oem/meta/event/oem_event_manager.cpp | 28 +++++++++++++++++++++++++++-
+ 1 file changed, 27 insertions(+), 1 deletion(-)
+
+diff --git a/oem/meta/event/oem_event_manager.cpp b/oem/meta/event/oem_event_manager.cpp
+index 70cc9a9..eb9e7bf 100644
+--- a/oem/meta/event/oem_event_manager.cpp
++++ b/oem/meta/event/oem_event_manager.cpp
+@@ -26,6 +26,13 @@ std::map<std::tuple<pldm_tid_t, uint8_t, uint8_t>,
+          std::pair<uint32_t, std::chrono::steady_clock::time_point>>
+     receivedEventMsgTimeStamp;
+ 
++/* The record formatters below read the event at fixed offsets, the highest
++ * of which is index 13. A record shorter than that is not one of the
++ * records they know how to read, and indexing the span past its end
++ * aborts.
++ */
++static constexpr size_t oemMetaEventMinSize = 14;
++
+ int OemEventManager::processOemMetaEvent(
+     pldm_tid_t tid, const uint8_t* eventData, size_t eventDataSize) const
+ {
+@@ -65,7 +72,7 @@ int OemEventManager::processOemMetaEvent(
+     std::string rawLog = [eventData, eventDataSize]() {
+         std::stringstream stream;
+         stream << std::hex << std::uppercase << std::setfill('0');
+-        for (int i = 0; i < static_cast<int>(eventDataSize); ++i)
++        for (size_t i = 0; i < eventDataSize; ++i)
+         {
+             stream << std::setw(2) << static_cast<int>(eventData[i]);
+         }
+@@ -86,9 +93,28 @@ int OemEventManager::handleOemEvent(
+     const pldm_msg* request, size_t payloadLength, uint8_t /* formatVersion */,
+     pldm_tid_t tid, size_t eventDataOffset) const
+ {
++    /* Without this the subtraction below wraps and every bound derived from
++     * it is meaningless.
++     */
++    if (payloadLength < eventDataOffset)
++    {
++        lg2::error(
++            "OEM Meta event payload of {LENGTH} bytes is shorter than its own data offset {OFFSET}",
++            "LENGTH", payloadLength, "OFFSET", eventDataOffset);
++        return PLDM_ERROR;
++    }
++
+     auto eventData =
+         reinterpret_cast<const uint8_t*>(request->payload) + eventDataOffset;
+     auto eventDataSize = payloadLength - eventDataOffset;
++
++    if (eventDataSize < oemMetaEventMinSize)
++    {
++        lg2::error(
++            "Ignoring OEM Meta event of {SIZE} bytes, the record formatters read {MINIMUM}",
++            "SIZE", eventDataSize, "MINIMUM", oemMetaEventMinSize);
++        return PLDM_ERROR;
++    }
+     if (pldm::oem_meta::checkMetaIana(tid) == false)
+     {
+         lg2::error("Receive OEM Meta event from not Meta specific device");
+-- 
+2.53.0-Meta
+

@@ -1,0 +1,100 @@
+From 816385eefbfb0494869cd1cd5ed820d9efa81ff0 Mon Sep 17 00:00:00 2001
+From: Pete O_o <pmb@meta.com>
+Date: Tue, 8 Sep 2026 15:47:56 -0700
+Subject: [PATCH 32/32] pldmd: don't die when a request handler throws
+
+processRxMsg() caught std::out_of_range and nothing else, so any other
+exception out of a handler unwound past the sd-event callback and
+terminated the daemon. The handlers are request parsers reached from the
+network, and on a multi-host chassis pldmd is shared, so one parser bug
+becomes a denial of service for every host behind that BMC - and a
+restart loop if the sender repeats.
+
+Catch std::exception as well and answer with PLDM_ERROR. The response
+construction the out_of_range path already did is now shared with it
+rather than written twice.
+
+This does not fix any particular parser; it stops the ones we have not
+found from taking the daemon with them.
+
+Tested: builds clean. Not exercised on hardware.
+
+Change-Id: If7f55215fa4a4a3dd322578205284cd4dff0d2d7
+Signed-off-by: Pete O_o <pmb@meta.com>
+---
+ pldmd/pldmd.cpp | 46 ++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 36 insertions(+), 10 deletions(-)
+
+diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
+index d63a459..ba22f2d 100644
+--- a/pldmd/pldmd.cpp
++++ b/pldmd/pldmd.cpp
+@@ -121,6 +121,24 @@ static std::optional<Response> processRxMsg(
+         Response response;
+         auto request = reinterpret_cast<const pldm_msg*>(hdr);
+         size_t requestLen = requestMsg.size() - sizeof(struct pldm_msg_hdr);
++
++        /* Build a completion-code-only response for a handler that threw. */
++        auto errorResponse = [&](uint8_t completionCode) -> bool {
++            response.resize(sizeof(pldm_msg_hdr));
++            auto responseHdr = new (response.data()) pldm_msg_hdr;
++            pldm_header_info header{};
++            header.msg_type = PLDM_RESPONSE;
++            header.instance = hdrFields.instance;
++            header.pldm_type = hdrFields.pldm_type;
++            header.command = hdrFields.command;
++            if (PLDM_SUCCESS != pack_pldm_header(&header, responseHdr))
++            {
++                return false;
++            }
++            response.insert(response.end(), completionCode);
++            return true;
++        };
++
+         try
+         {
+             if (hdrFields.pldm_type != PLDM_FWUP)
+@@ -137,22 +155,30 @@ static std::optional<Response> processRxMsg(
+         }
+         catch (const std::out_of_range& e)
+         {
+-            uint8_t completion_code = PLDM_ERROR_UNSUPPORTED_PLDM_CMD;
+-            response.resize(sizeof(pldm_msg_hdr));
+-            auto responseHdr = new (response.data()) pldm_msg_hdr;
+-            pldm_header_info header{};
+-            header.msg_type = PLDM_RESPONSE;
+-            header.instance = hdrFields.instance;
+-            header.pldm_type = hdrFields.pldm_type;
+-            header.command = hdrFields.command;
+-            if (PLDM_SUCCESS != pack_pldm_header(&header, responseHdr))
++            if (!errorResponse(PLDM_ERROR_UNSUPPORTED_PLDM_CMD))
+             {
+                 error(
+                     "Failed to add response header for processing Rx, error - {ERROR}",
+                     "ERROR", e);
+                 return std::nullopt;
+             }
+-            response.insert(response.end(), completion_code);
++        }
++        catch (const std::exception& e)
++        {
++            /* A handler is a request parser reached from the network. Letting
++             * anything it throws escape this frame unwinds out of the event
++             * loop callback and takes the daemon down, which turns any one
++             * parser bug into a denial of service for every host on the
++             * chassis. Answer with an error and stay up.
++             */
++            error(
++                "Handler for PLDM type {TYPE} command {CMD} threw, error - {ERROR}",
++                "TYPE", hdrFields.pldm_type, "CMD", hdrFields.command, "ERROR",
++                e);
++            if (!errorResponse(PLDM_ERROR))
++            {
++                return std::nullopt;
++            }
+         }
+         return response;
+     }
+-- 
+2.53.0-Meta
+

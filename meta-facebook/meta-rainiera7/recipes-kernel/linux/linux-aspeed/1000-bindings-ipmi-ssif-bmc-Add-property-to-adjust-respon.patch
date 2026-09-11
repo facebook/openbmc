@@ -1,8 +1,8 @@
-From 09fb2034b054251d1aad6de62e7b9f3311dad94d Mon Sep 17 00:00:00 2001
+From 9ddec7b7fcb4cc711cc920bb8a0818d9b6eae9f0 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai.pt@gmail.com>
 Date: Mon, 3 Feb 2025 20:26:28 +0800
-Subject: [PATCH] bindings: ipmi: ssif-bmc: Add property to adjust response
- timeout
+Subject: [PATCH 1000/1004] bindings: ipmi: ssif-bmc: Add property to adjust
+ response timeout
 
 The SSIF response is handled by a userspace application, which may exceed
 the default 500 ms timeout when the BMC or application is under heavy load.
@@ -19,7 +19,7 @@ LORE: https://lore.kernel.org/all/20250203-ssif-response-timeout-ms-v1-1-6fe2797
  1 file changed, 6 insertions(+)
 
 diff --git a/Documentation/devicetree/bindings/ipmi/ssif-bmc.yaml b/Documentation/devicetree/bindings/ipmi/ssif-bmc.yaml
-index 02b662d78..c8a863d44 100644
+index 02b662d780bb..c8a863d44f97 100644
 --- a/Documentation/devicetree/bindings/ipmi/ssif-bmc.yaml
 +++ b/Documentation/devicetree/bindings/ipmi/ssif-bmc.yaml
 @@ -19,6 +19,12 @@ properties:
@@ -36,5 +36,5 @@ index 02b662d78..c8a863d44 100644
    - compatible
    - reg
 -- 
-2.34.1
+2.54.0
 

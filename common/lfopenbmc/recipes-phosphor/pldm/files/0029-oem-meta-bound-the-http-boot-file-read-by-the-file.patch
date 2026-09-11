@@ -1,0 +1,97 @@
+From 10335b384aa475fe4d5858dbd4fc47a868ee2dbd Mon Sep 17 00:00:00 2001
+From: Pete O_o <pmb@meta.com>
+Date: Tue, 8 Sep 2026 14:42:57 -0700
+Subject: [PATCH] oem-meta: bound the http boot file read by the file
+
+The read handler took the requester's offset on trust. Three things went
+wrong when it pointed past the end of the file:
+
+  - sb.st_size - offset went negative and was stored in a uint8_t
+    length, so an offset one byte past the end asked for 255 bytes
+  - that revised length can exceed the requested length, and the caller
+    sizes the response buffer from the requested length, so the memcpy
+    ran off the end of it
+  - read() at that offset returns 0, but the code copied the full length
+    regardless, handing back uninitialised heap
+
+Reject an offset past the end of the file. With that in place the
+subtraction cannot go negative and can only revise the length down, so
+the response buffer is no longer overrun. Separately, copy only the
+bytes read() actually returned, so a short read cannot disclose the tail
+of the buffer either.
+
+Tested: builds clean. Not exercised on hardware.
+
+Change-Id: Ib9228462c4b0ee8343945af10f03f81b22187645
+Signed-off-by: Pete O_o <pmb@meta.com>
+---
+ .../file_io_type_http_boot.cpp                | 32 +++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+
+diff --git a/oem/meta/libpldmresponder/file_io_type_http_boot.cpp b/oem/meta/libpldmresponder/file_io_type_http_boot.cpp
+index 24bc0de..efeec66 100644
+--- a/oem/meta/libpldmresponder/file_io_type_http_boot.cpp
++++ b/oem/meta/libpldmresponder/file_io_type_http_boot.cpp
+@@ -111,6 +111,19 @@ int HttpBootHandler::read(struct pldm_oem_meta_file_io_read_resp* data)
+             uint8_t transferFlag = data->info.data.transferFlag;
+             uint16_t offset = data->info.data.offset;
+ 
++            /* There is nothing behind an offset past the end of the file, and
++             * the bytes-remaining subtraction below would wrap if we tried to
++             * answer one.
++             */
++            if (offset > sb.st_size)
++            {
++                error(
++                    "Rejecting Http boot read at offset={OFFSET}, past the end of a file of size={SIZE}",
++                    "OFFSET", offset, "SIZE", sb.st_size);
++                close(fd);
++                return PLDM_ERROR;
++            }
++
+             int ret = lseek(fd, offset, SEEK_SET);
+             if (ret < 0)
+             {
+@@ -121,6 +134,11 @@ int HttpBootHandler::read(struct pldm_oem_meta_file_io_read_resp* data)
+                 return PLDM_ERROR;
+             }
+ 
++            /* Now that the offset is known to be inside the file this cannot
++             * go negative, and it only ever revises the length down: the
++             * caller sized the response buffer from the requested length, so
++             * growing it here would overrun that buffer.
++             */
+             if (offset + data->length >= sb.st_size)
+             {
+                 transferFlag = PLDM_END;
+@@ -131,6 +149,14 @@ int HttpBootHandler::read(struct pldm_oem_meta_file_io_read_resp* data)
+                 transferFlag = PLDM_MIDDLE;
+             }
+ 
++            if (data->length == 0)
++            {
++                data->info.data.transferFlag = PLDM_END;
++                data->info.data.offset = offset;
++                close(fd);
++                return PLDM_SUCCESS;
++            }
++
+             uint8_t* buffer = (uint8_t*)malloc(data->length);
+             if (buffer == nullptr)
+             {
+@@ -152,6 +178,12 @@ int HttpBootHandler::read(struct pldm_oem_meta_file_io_read_resp* data)
+                 return PLDM_ERROR;
+             }
+ 
++            /* Return only what was actually read. The tail of the buffer is
++             * uninitialised heap, and a short read would otherwise hand it to
++             * the requester.
++             */
++            data->length = static_cast<uint8_t>(ret);
++
+             memcpy(pldm_oem_meta_file_io_read_resp_data(data), buffer,
+                    data->length);
+             free(buffer);
+-- 
+2.53.0-Meta
+

@@ -1,7 +1,7 @@
-From b551029d3a3421524e6666c5476cb4d0c78c5086 Mon Sep 17 00:00:00 2001
+From 22ddf1ee52bb996c2339db6c588d503e15b4b11a Mon Sep 17 00:00:00 2001
 From: Alan Tsai <alan-tsai@quantatw.com>
 Date: Fri, 21 Aug 2026 14:37:52 +0800
-Subject: [PATCH 1/1] i2cvr: cache VR version to allow read access when host is
+Subject: [PATCH] i2cvr: cache VR version to allow read access when host is
  powered on
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
@@ -38,7 +38,7 @@ Tested:
  2 files changed, 45 insertions(+), 1 deletion(-)
 
 diff --git a/i2c-vr/i2cvr_software_manager.cpp b/i2c-vr/i2cvr_software_manager.cpp
-index 88db3e3..b2b307e 100644
+index d1c6b8b..7be8986 100644
 --- a/i2c-vr/i2cvr_software_manager.cpp
 +++ b/i2c-vr/i2cvr_software_manager.cpp
 @@ -11,6 +11,9 @@
@@ -51,7 +51,7 @@ index 88db3e3..b2b307e 100644
  
  PHOSPHOR_LOG2_USING;
  
-@@ -94,11 +97,51 @@ sdbusplus::async::task<bool> I2CVRSoftwareManager::initDevice(
+@@ -95,11 +98,51 @@ sdbusplus::async::task<bool> I2CVRSoftwareManager::initDevice(
      co_await sdbusplus::async::sleep_for(ctx, std::chrono::milliseconds(1000));
  
      uint32_t sum;
@@ -105,7 +105,7 @@ index 88db3e3..b2b307e 100644
      software->setActivation(ActivationInterface::Activations::Active);
      error("Set software ID {SWID} to Active.", "SWID", software->swid);
 diff --git a/meson.build b/meson.build
-index 2a31a7c..4c41c61 100644
+index 40bc8e4..657f835 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -27,6 +27,7 @@ cpp = meson.get_compiler('cpp')
@@ -117,5 +117,5 @@ index 2a31a7c..4c41c61 100644
  sdbusplusplus_prog = find_program('sdbus++', native: true)
  sdbuspp_gen_meson_prog = find_program('sdbus++-gen-meson', native: true)
 -- 
-2.25.1
+2.54.0
 

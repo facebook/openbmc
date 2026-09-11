@@ -1,4 +1,4 @@
-From 01738e1ccefe11e3d1bfd38be5e5ce59e43d9553 Mon Sep 17 00:00:00 2001
+From e706067d707a70108c0298d965c3b4f6c5a7f774 Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Fri, 26 Jun 2026 14:40:22 -0700
 Subject: [PATCH] Add MAX31790 fan controller device emulation for BMC
@@ -16,10 +16,10 @@ management in servers.
  create mode 100644 hw/sensor/max31790.c
 
 diff --git a/hw/arm/Kconfig b/hw/arm/Kconfig
-index 5db7ce057f..e5b96a18c3 100644
+index eae06369b0..b8d183dc6f 100644
 --- a/hw/arm/Kconfig
 +++ b/hw/arm/Kconfig
-@@ -542,6 +542,7 @@ config ASPEED_SOC
+@@ -543,6 +543,7 @@ config ASPEED_SOC
      select LED
      select PMBUS
      select MAX31785
@@ -490,5 +490,5 @@ index fe36c9ef91..1945aa4edb 100644
  system_ss.add(when: 'CONFIG_ISL_PMBUS_VR', if_true: files('isl_pmbus_vr.c'))
  system_ss.add(when: 'CONFIG_MAX31785', if_true: files('max31785.c'))
 -- 
-2.53.0-Meta
+2.54.0
 

@@ -1,7 +1,7 @@
-From 5c75e4544b223230f418566dcd6ec7962703987c Mon Sep 17 00:00:00 2001
+From e93388b049fe244f817e6ba8086b0303dace0c4a Mon Sep 17 00:00:00 2001
 From: Alan Tsai <Alan-Tsai@quantatw.com>
 Date: Fri, 31 Jul 2026 10:18:42 +0800
-Subject: [PATCH] i3c: add aspeed mipi-i3c-hci driver
+Subject: [PATCH 1002/1004] i3c: add aspeed mipi-i3c-hci driver
 
 Porting mipi-i3c-hci driver from AspeedTech-BMC linux.
 ---
@@ -4838,7 +4838,7 @@ index a0c76adf7ea3..d731c633ce38 100644
 +			     struct i3c_device_info *info, u16 write_len);
  #endif /* I3C_INTERNAL_H */
 diff --git a/drivers/i3c/master.c b/drivers/i3c/master.c
-index 0fe7d2228e4a..3946c2792afc 100644
+index 226bc87b241b..f1fcfbe62771 100644
 --- a/drivers/i3c/master.c
 +++ b/drivers/i3c/master.c
 @@ -18,6 +18,7 @@
@@ -6249,10 +6249,10 @@ index 0fe7d2228e4a..3946c2792afc 100644
 +			dev_warn(i3cdev_to_dev(i3cdev->dev), "Failed to disable IBI, ret = %d",
 +				 ret);
 +
- 		i3cdev->dev->desc = NULL;
- 		if (device_is_registered(&i3cdev->dev->dev))
+ 		if (device_is_registered(&i3cdev->dev->dev)) {
+ 			get_device(&i3cdev->dev->dev);
  			device_unregister(&i3cdev->dev->dev);
-@@ -3092,10 +3356,6 @@ int i3c_master_register(struct i3c_master_controller *master,
+@@ -3093,10 +3357,6 @@ int i3c_master_register(struct i3c_master_controller *master,
  	INIT_LIST_HEAD(&master->boardinfo.i2c);
  	INIT_LIST_HEAD(&master->boardinfo.i3c);
  
@@ -6263,7 +6263,7 @@ index 0fe7d2228e4a..3946c2792afc 100644
  	device_initialize(&master->dev);
  
  	master->dev.dma_mask = parent->dma_mask;
-@@ -3139,13 +3399,11 @@ int i3c_master_register(struct i3c_master_controller *master,
+@@ -3140,13 +3400,11 @@ int i3c_master_register(struct i3c_master_controller *master,
  	if (ret)
  		goto err_put_dev;
  
@@ -6278,7 +6278,7 @@ index 0fe7d2228e4a..3946c2792afc 100644
  
  	ret = i3c_master_bus_init(master);
  	if (ret)
-@@ -3171,20 +3429,10 @@ int i3c_master_register(struct i3c_master_controller *master,
+@@ -3172,20 +3430,10 @@ int i3c_master_register(struct i3c_master_controller *master,
  
  	/*
  	 * We're done initializing the bus and the controller, we can now
@@ -6301,7 +6301,7 @@ index 0fe7d2228e4a..3946c2792afc 100644
  
  	return 0;
  
-@@ -3195,7 +3443,6 @@ int i3c_master_register(struct i3c_master_controller *master,
+@@ -3196,7 +3444,6 @@ int i3c_master_register(struct i3c_master_controller *master,
  	i3c_master_bus_cleanup(master);
  
  err_put_dev:
@@ -6309,7 +6309,7 @@ index 0fe7d2228e4a..3946c2792afc 100644
  	put_device(&master->dev);
  
  	return ret;
-@@ -3211,10 +3458,6 @@ EXPORT_SYMBOL_GPL(i3c_master_register);
+@@ -3212,10 +3459,6 @@ EXPORT_SYMBOL_GPL(i3c_master_register);
  void i3c_master_unregister(struct i3c_master_controller *master)
  {
  	i3c_bus_notify(&master->bus, I3C_NOTIFY_BUS_REMOVE);
@@ -6320,7 +6320,7 @@ index 0fe7d2228e4a..3946c2792afc 100644
  
  	i3c_master_i2c_adapter_cleanup(master);
  	i3c_master_unregister_i3c_devs(master);
-@@ -3224,6 +3467,258 @@ void i3c_master_unregister(struct i3c_master_controller *master)
+@@ -3225,6 +3468,258 @@ void i3c_master_unregister(struct i3c_master_controller *master)
  }
  EXPORT_SYMBOL_GPL(i3c_master_unregister);
  
@@ -6579,7 +6579,7 @@ index 0fe7d2228e4a..3946c2792afc 100644
  int i3c_dev_setdasa_locked(struct i3c_dev_desc *dev)
  {
  	struct i3c_master_controller *master;
-@@ -3243,6 +3738,56 @@ int i3c_dev_setdasa_locked(struct i3c_dev_desc *dev)
+@@ -3244,6 +3739,56 @@ int i3c_dev_setdasa_locked(struct i3c_dev_desc *dev)
  						dev->boardinfo->init_dyn_addr);
  }
  
@@ -6636,7 +6636,7 @@ index 0fe7d2228e4a..3946c2792afc 100644
  int i3c_dev_do_priv_xfers_locked(struct i3c_dev_desc *dev,
  				 struct i3c_priv_xfer *xfers,
  				 int nxfers)
-@@ -3256,10 +3801,81 @@ int i3c_dev_do_priv_xfers_locked(struct i3c_dev_desc *dev,
+@@ -3257,10 +3802,81 @@ int i3c_dev_do_priv_xfers_locked(struct i3c_dev_desc *dev,
  	if (!master || !xfers)
  		return -EINVAL;
  
@@ -6649,9 +6649,8 @@ index 0fe7d2228e4a..3946c2792afc 100644
 +	}
 +
 +	if (!master->target_ops->priv_xfers)
- 		return -EOPNOTSUPP;
- 
--	return master->ops->priv_xfers(dev, xfers, nxfers);
++		return -EOPNOTSUPP;
++
 +	return master->target_ops->priv_xfers(dev, xfers, nxfers);
 +}
 +
@@ -6693,8 +6692,9 @@ index 0fe7d2228e4a..3946c2792afc 100644
 +		return -EINVAL;
 +
 +	if (!master->target_ops->pending_read_notify)
-+		return -EOPNOTSUPP;
-+
+ 		return -EOPNOTSUPP;
+ 
+-	return master->ops->priv_xfers(dev, xfers, nxfers);
 +	return master->target_ops->pending_read_notify(dev, pending_read,
 +						       ibi_notify);
 +}
@@ -6720,7 +6720,7 @@ index 0fe7d2228e4a..3946c2792afc 100644
  }
  
  int i3c_dev_disable_ibi_locked(struct i3c_dev_desc *dev)
-@@ -3345,18 +3961,8 @@ void i3c_dev_free_ibi_locked(struct i3c_dev_desc *dev)
+@@ -3346,18 +3962,8 @@ void i3c_dev_free_ibi_locked(struct i3c_dev_desc *dev)
  	if (!dev->ibi)
  		return;
  
@@ -6741,7 +6741,7 @@ index 0fe7d2228e4a..3946c2792afc 100644
  
  	master->ops->free_ibi(dev);
  
-@@ -3369,6 +3975,37 @@ void i3c_dev_free_ibi_locked(struct i3c_dev_desc *dev)
+@@ -3370,6 +3976,37 @@ void i3c_dev_free_ibi_locked(struct i3c_dev_desc *dev)
  	dev->ibi = NULL;
  }
  
@@ -6780,7 +6780,7 @@ index 0fe7d2228e4a..3946c2792afc 100644
  {
  	int res;
 diff --git a/drivers/i3c/master/adi-i3c-master.c b/drivers/i3c/master/adi-i3c-master.c
-index d329faf4b3f9..82ac0b3d057a 100644
+index f0c2ddb2f4b2..cf873d46e10f 100644
 --- a/drivers/i3c/master/adi-i3c-master.c
 +++ b/drivers/i3c/master/adi-i3c-master.c
 @@ -362,7 +362,7 @@ static int adi_i3c_master_send_ccc_cmd(struct i3c_master_controller *m,
@@ -12680,7 +12680,7 @@ index 000000000000..2d10a2692b32
 +
 +#endif
 diff --git a/drivers/i3c/master/renesas-i3c.c b/drivers/i3c/master/renesas-i3c.c
-index 5b1bf5a0266c..275f7b924288 100644
+index b6c4dfc51fe5..1749980ed303 100644
 --- a/drivers/i3c/master/renesas-i3c.c
 +++ b/drivers/i3c/master/renesas-i3c.c
 @@ -8,7 +8,6 @@
@@ -12691,7 +12691,7 @@ index 5b1bf5a0266c..275f7b924288 100644
  #include <linux/clk.h>
  #include <linux/completion.h>
  #include <linux/err.h>
-@@ -801,12 +800,13 @@ static int renesas_i3c_priv_xfers(struct i3c_dev_desc *dev, struct i3c_priv_xfer
+@@ -816,12 +815,13 @@ static int renesas_i3c_priv_xfers(struct i3c_dev_desc *dev, struct i3c_priv_xfer
  	struct i3c_master_controller *m = i3c_dev_get_master(dev);
  	struct renesas_i3c *i3c = to_renesas_i3c(m);
  	struct renesas_i3c_i2c_dev_data *data = i3c_dev_get_master_data(dev);
@@ -12707,7 +12707,7 @@ index 5b1bf5a0266c..275f7b924288 100644
  		return -ENOMEM;
  
 diff --git a/drivers/i3c/master/svc-i3c-master.c b/drivers/i3c/master/svc-i3c-master.c
-index d33f4c765497..93531cb216d1 100644
+index b6a697173e19..0ec445fb4e07 100644
 --- a/drivers/i3c/master/svc-i3c-master.c
 +++ b/drivers/i3c/master/svc-i3c-master.c
 @@ -201,6 +201,7 @@ struct svc_i3c_drvdata {
@@ -12741,7 +12741,7 @@ index d33f4c765497..93531cb216d1 100644
  static struct i3c_dev_desc *
  svc_i3c_master_dev_from_addr(struct svc_i3c_master *master,
  			     unsigned int ibiaddr)
-@@ -604,7 +614,7 @@ static void svc_i3c_master_ibi_isr(struct svc_i3c_master *master)
+@@ -612,7 +622,7 @@ static void svc_i3c_master_ibi_isr(struct svc_i3c_master *master)
  	case SVC_I3C_MSTATUS_IBITYPE_HOT_JOIN:
  		svc_i3c_master_emit_stop(master);
  		if (is_events_enabled(master, SVC_I3C_EVENT_HOTJOIN))
@@ -12750,7 +12750,7 @@ index d33f4c765497..93531cb216d1 100644
  		break;
  	case SVC_I3C_MSTATUS_IBITYPE_MASTER_REQUEST:
  		svc_i3c_master_emit_stop(master);
-@@ -625,18 +635,10 @@ static irqreturn_t svc_i3c_master_irq_handler(int irq, void *dev_id)
+@@ -633,18 +643,10 @@ static irqreturn_t svc_i3c_master_irq_handler(int irq, void *dev_id)
  	/* Clear the interrupt status */
  	writel(SVC_I3C_MINT_SLVSTART, master->regs + SVC_I3C_MSTATUS);
  
@@ -12773,7 +12773,7 @@ index d33f4c765497..93531cb216d1 100644
  
  	/*
  	 * The SDA line remains low until the request is processed.
-@@ -1939,6 +1941,7 @@ static int svc_i3c_master_probe(struct platform_device *pdev)
+@@ -1947,6 +1949,7 @@ static int svc_i3c_master_probe(struct platform_device *pdev)
  	if (ret)
  		return dev_err_probe(dev, ret, "can't enable I3C clocks\n");
  
@@ -12781,7 +12781,7 @@ index d33f4c765497..93531cb216d1 100644
  	mutex_init(&master->lock);
  
  	ret = devm_request_irq(dev, master->irq, svc_i3c_master_irq_handler,
-@@ -1997,6 +2000,7 @@ static void svc_i3c_master_remove(struct platform_device *pdev)
+@@ -2005,6 +2008,7 @@ static void svc_i3c_master_remove(struct platform_device *pdev)
  {
  	struct svc_i3c_master *master = platform_get_drvdata(pdev);
  
@@ -14610,5 +14610,5 @@ index 000000000000..5adc1e3e7c4f
 +
 +#endif
 -- 
-2.53.0-Meta
+2.54.0
 

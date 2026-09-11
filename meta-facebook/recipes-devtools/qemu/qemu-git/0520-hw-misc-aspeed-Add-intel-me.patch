@@ -1,4 +1,4 @@
-From 3c82f1b3eca4d85c8abeea95946dbe0fd5c3270e Mon Sep 17 00:00:00 2001
+From a6aa8d734e937ceb6532ccd4ff2f01e59bddd82d Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH] hw/misc/aspeed: Add intel-me
@@ -206,10 +206,10 @@ index 0000000000..ac99c6f05b
 +
 +DEFINE_TYPES(types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index f2a51897d8..9388c9904b 100644
+index 1a7f289363..05ad525f7f 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -149,7 +149,8 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
+@@ -150,7 +150,8 @@ system_ss.add(when: 'CONFIG_ASPEED_SOC', if_true: files(
    'aspeed_xdma.c',
    'aspeed_peci.c',
    'aspeed_sli.c',
@@ -220,10 +220,10 @@ index f2a51897d8..9388c9904b 100644
  system_ss.add(when: 'CONFIG_MSF2', if_true: files('msf2-sysreg.c'))
  system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
 diff --git a/hw/misc/trace-events b/hw/misc/trace-events
-index 78739ab6d1..a5d604496b 100644
+index de67390381..f3b2fe9fcd 100644
 --- a/hw/misc/trace-events
 +++ b/hw/misc/trace-events
-@@ -456,3 +456,11 @@ restore_host_x86_igvm(void) ""
+@@ -464,3 +464,11 @@ restore_host_x86_igvm(void) ""
  # fby35_sb_cpld.c
  fby35_sb_cpld_read(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"
  fby35_sb_cpld_write(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"
@@ -236,5 +236,5 @@ index 78739ab6d1..a5d604496b 100644
 +intel_me_tx_data(uint8_t addr, uint8_t data) "addr 0x%02x data 0x%02x"
 +intel_me_tx_end(uint8_t addr) "addr 0x%02x"
 -- 
-2.53.0-Meta
+2.54.0
 

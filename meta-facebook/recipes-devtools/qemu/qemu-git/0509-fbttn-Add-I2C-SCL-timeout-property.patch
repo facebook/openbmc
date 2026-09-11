@@ -1,4 +1,4 @@
-From ba307c9b157dbd1d421af90994013326f0a364c2 Mon Sep 17 00:00:00 2001
+From 3d3c64455aa51ca28a14278536ba3b55061b7042 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Tue, 16 Aug 2022 00:32:54 -0700
 Subject: [PATCH] fbttn: Add I2C SCL timeout property
@@ -60,7 +60,7 @@ index 0c5948edd8..554561cab4 100644
      {
          .name        = "fbtp-bmc",
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index 68bdcd0e25..3aa7e5e275 100644
+index 0bc4bb6fbe..a2ab6fa1ab 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
 @@ -26,6 +26,7 @@
@@ -80,7 +80,7 @@ index 68bdcd0e25..3aa7e5e275 100644
          break;
      case A_I2CD_DMA_ADDR:
          if (!aic->has_dma) {
-@@ -608,11 +611,28 @@ static void aspeed_i2c_bus_handle_cmd(AspeedI2CBus *bus, uint64_t value)
+@@ -640,11 +643,28 @@ static void aspeed_i2c_bus_handle_cmd(AspeedI2CBus *bus, uint64_t value)
          aspeed_i2c_bus_cmd_dump(bus);
      }
  
@@ -109,7 +109,7 @@ index 68bdcd0e25..3aa7e5e275 100644
          aspeed_i2c_set_state(bus, state);
  
          addr = aspeed_i2c_get_addr(bus);
-@@ -1616,6 +1636,24 @@ static const Property aspeed_i2c_bus_properties[] = {
+@@ -1648,6 +1668,24 @@ static const Property aspeed_i2c_bus_properties[] = {
      DEFINE_PROP_STRING("bus-name", AspeedI2CBus, name),
  };
  
@@ -134,7 +134,7 @@ index 68bdcd0e25..3aa7e5e275 100644
  static void aspeed_i2c_bus_class_init(ObjectClass *klass, const void *data)
  {
      DeviceClass *dc = DEVICE_CLASS(klass);
-@@ -1625,6 +1663,11 @@ static void aspeed_i2c_bus_class_init(ObjectClass *klass, const void *data)
+@@ -1657,6 +1695,11 @@ static void aspeed_i2c_bus_class_init(ObjectClass *klass, const void *data)
      dc->realize = aspeed_i2c_bus_realize;
      rc->phases.hold = aspeed_i2c_bus_reset_hold;
      device_class_set_props(dc, aspeed_i2c_bus_properties);
@@ -159,10 +159,10 @@ index 1ad0e95c0e..5337e922b5 100644
  # mpc_i2c.c
  
 diff --git a/include/hw/i2c/aspeed_i2c.h b/include/hw/i2c/aspeed_i2c.h
-index 05937a7a0b..6beca7bba6 100644
+index 480c6418fe..6ca703a105 100644
 --- a/include/hw/i2c/aspeed_i2c.h
 +++ b/include/hw/i2c/aspeed_i2c.h
-@@ -253,6 +253,7 @@ struct AspeedI2CBus {
+@@ -255,6 +255,7 @@ struct AspeedI2CBus {
      char *name;
      uint8_t id;
      qemu_irq irq;
@@ -171,5 +171,5 @@ index 05937a7a0b..6beca7bba6 100644
      uint32_t regs[ASPEED_I2C_NEW_NUM_REG];
      uint32_t pending_intr_sts;
 -- 
-2.53.0-Meta
+2.54.0
 

@@ -1,4 +1,4 @@
-From b42168a09c0798aca9ea3006a20b85fc2b45e955 Mon Sep 17 00:00:00 2001
+From 68c23b0eb37fee80006cfa0583e1a3f91a86e503 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH] hw/i2c/pca954x: Add method to get channels
@@ -36,10 +36,10 @@ Signed-off-by: Cédric Le Goater <clg@kaod.org>
  3 files changed, 32 insertions(+), 20 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_fuji.c b/hw/arm/aspeed_ast2600_fuji.c
-index 8a87c2dbee..2285fe15ff 100644
+index dae0239387..dd6d763cdd 100644
 --- a/hw/arm/aspeed_ast2600_fuji.c
 +++ b/hw/arm/aspeed_ast2600_fuji.c
-@@ -23,15 +23,6 @@
+@@ -21,15 +21,6 @@
  #define FUJI_BMC_HW_STRAP2    0x00000000
  #define FUJI_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
  
@@ -55,7 +55,7 @@ index 8a87c2dbee..2285fe15ff 100644
  static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
  {
      AspeedSoCState *soc = bmc->soc;
-@@ -40,20 +31,18 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -38,20 +29,18 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
      for (int i = 0; i < 16; i++) {
          i2c[i] = aspeed_i2c_get_bus(&soc->i2c, i);
      }
@@ -84,7 +84,7 @@ index 8a87c2dbee..2285fe15ff 100644
 +                                 &i2c[80 + i * 8]);
      }
  
-     i2c_slave_create_simple(i2c[17], TYPE_LM75, 0x4c);
+     i2c_slave_create_simple(i2c[17], TYPE_LM75B, 0x4c);
 diff --git a/hw/i2c/i2c_mux_pca954x.c b/hw/i2c/i2c_mux_pca954x.c
 index c603446028..2905e51b07 100644
 --- a/hw/i2c/i2c_mux_pca954x.c
@@ -129,5 +129,5 @@ index 3dd25ec983..3a676a30a9 100644
 +
  #endif
 -- 
-2.53.0-Meta
+2.54.0
 

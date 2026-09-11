@@ -1,4 +1,4 @@
-From cca3c9083c82d24daa42d6cffe3d522ee34bc81c Mon Sep 17 00:00:00 2001
+From fc243ee5acc7445f656f306f7a86b440249fe472 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Fri, 20 May 2022 17:07:55 -0700
 Subject: [PATCH] hw/arm/aspeed: Add fb_machine_class_init
@@ -300,10 +300,10 @@ index 8a17c4453e..b9e5c35517 100644
 +
 +DEFINE_FB_MACHINES()
 diff --git a/hw/arm/aspeed_ast2600_fuji.c b/hw/arm/aspeed_ast2600_fuji.c
-index 2285fe15ff..a70e22f8b4 100644
+index dd6d763cdd..b5f50cba47 100644
 --- a/hw/arm/aspeed_ast2600_fuji.c
 +++ b/hw/arm/aspeed_ast2600_fuji.c
-@@ -125,3 +125,61 @@ static const TypeInfo aspeed_ast2600_fuji_types[] = {
+@@ -123,3 +123,61 @@ static const TypeInfo aspeed_ast2600_fuji_types[] = {
  };
  
  DEFINE_TYPES(aspeed_ast2600_fuji_types)
@@ -442,5 +442,5 @@ index 54f0d7643d..d4d966d741 100644
 +
  #endif
 -- 
-2.53.0-Meta
+2.54.0
 

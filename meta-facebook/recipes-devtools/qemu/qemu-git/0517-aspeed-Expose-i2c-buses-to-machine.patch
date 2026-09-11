@@ -1,4 +1,4 @@
-From 177f715906a9e068166cd96e4252fb995234cfa4 Mon Sep 17 00:00:00 2001
+From 9a994731ea835068c35029b7de05ed1a71e06671 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH] aspeed: Expose i2c buses to machine
@@ -92,10 +92,10 @@ index 8dbd43651c..447156a5d0 100644
  }
  
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
-index bedc2847ca..06f63df25f 100644
+index 7ece64a094..ac20652bd7 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
-@@ -1631,7 +1631,12 @@ static void aspeed_i2c_bus_realize(DeviceState *dev, Error **errp)
+@@ -1663,7 +1663,12 @@ static void aspeed_i2c_bus_realize(DeviceState *dev, Error **errp)
  
      sysbus_init_irq(SYS_BUS_DEVICE(dev), &s->irq);
  
@@ -109,7 +109,7 @@ index bedc2847ca..06f63df25f 100644
      s->slave = i2c_slave_create_simple(s->bus, TYPE_ASPEED_I2C_BUS_SLAVE,
                                         0xff);
      ASPEED_I2C_BUS_SLAVE(s->slave)->bus = s;
-@@ -1650,6 +1655,7 @@ static const Property aspeed_i2c_bus_properties[] = {
+@@ -1682,6 +1687,7 @@ static const Property aspeed_i2c_bus_properties[] = {
      DEFINE_PROP_LINK("controller", AspeedI2CBus, controller, TYPE_ASPEED_I2C,
                       AspeedI2CState *),
      DEFINE_PROP_STRING("bus-name", AspeedI2CBus, name),
@@ -118,10 +118,10 @@ index bedc2847ca..06f63df25f 100644
  
  static void aspeed_i2c_bus_get_scl_timeout(Object *obj, Visitor *v,
 diff --git a/include/hw/arm/aspeed_soc.h b/include/hw/arm/aspeed_soc.h
-index cd68c7f1ca..05f5c06690 100644
+index 38226d9b80..d3fe763540 100644
 --- a/include/hw/arm/aspeed_soc.h
 +++ b/include/hw/arm/aspeed_soc.h
-@@ -307,6 +307,8 @@ bool aspeed_soc_uart_realize(MemoryRegion *memory, SerialMM *smm,
+@@ -314,6 +314,8 @@ bool aspeed_soc_uart_realize(MemoryRegion *memory, SerialMM *smm,
  void aspeed_soc_uart_set_chr(SerialMM *uart, int dev, int uarts_base,
                               int uarts_num, Chardev *chr);
  bool aspeed_soc_dram_init(AspeedSoCState *s, Error **errp);
@@ -247,5 +247,5 @@ index 0000000000..b8fbd1bf9a
 +
 +#endif
 -- 
-2.53.0-Meta
+2.54.0
 

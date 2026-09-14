@@ -56,14 +56,15 @@ set_gpio_retry() {
 get_dbus_object_retry() {
     local service_name=$1
     local object_name=$2
+    local retry_times="${3:-$MAX_RETRIES}"
     local retry=0
 
-    while (( retry < MAX_RETRIES )); do
+    while (( retry < retry_times )); do
         if busctl introspect "$service_name" "$object_name" >/dev/null 2>&1; then
             return 0
         fi
         retry=$(( retry + 1 ))
-        if (( retry < MAX_RETRIES )); then
+        if (( retry < retry_times )); then
             sleep "$RETRY_DELAY"
         fi
     done
@@ -73,10 +74,11 @@ get_dbus_object_retry() {
 
 check_presence_state() {
     local ssd_num=$1
+    local retry_times="${2:-$MAX_RETRIES}"
 
     # try to find the corresponding gpiopresence dbus object
-    if get_dbus_object_retry "xyz.openbmc_project.gpiopresence" "/xyz/openbmc_project/GPIODeviceDetected/ssd${ssd_num}"; then
-        log "SSD $ssd_num is ready to power on"
+    if get_dbus_object_retry "xyz.openbmc_project.gpiopresence" "/xyz/openbmc_project/GPIODeviceDetected/ssd${ssd_num}" "$retry_times"; then
+        log "SSD $ssd_num is present"
         return 0
     else
         log "SSD $ssd_num is not present, skipping"

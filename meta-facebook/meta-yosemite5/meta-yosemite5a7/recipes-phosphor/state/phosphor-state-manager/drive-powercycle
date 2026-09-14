@@ -11,7 +11,7 @@ fi
 
 # Power off the drive
 log "Powering off drive $DRIVE_ID..."
-if ! /usr/libexec/phosphor-state-manager/drive-poweroff "$DRIVE_ID"; then
+if ! systemctl start "obmc-drive-poweroff@${DRIVE_ID}.target"; then
     error "Failed to power off drive $DRIVE_ID"
     exit 1
 fi
@@ -22,7 +22,7 @@ sleep 2
 
 # Power on the drive
 log "Powering on drive $DRIVE_ID..."
-if ! /usr/libexec/phosphor-state-manager/drive-poweron "$DRIVE_ID"; then
+if ! systemctl start "obmc-drive-poweron@${DRIVE_ID}.target"; then
     error "Failed to power on drive $DRIVE_ID"
     exit 1
 fi

@@ -1,0 +1,604 @@
+From 8fda5fb6427b60dbd093a57d873a51f59f8fb553 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Mon, 7 Sep 2026 00:58:20 -0500
+Subject: [PATCH 09/12] logging: add runtime extension enrichment support
+
+Add support for runtime enrichment of event extension payloads.
+
+During log creation, registered runtime metadata providers may
+contribute extension payloads that are consolidated into the
+existing _EXTENSIONS transport object. The resulting data is
+processed using the normal event extension framework and requires
+no changes to event producers.
+
+User supplied extension data takes precedence over runtime generated
+payloads, allowing platform specific enrichment to coexist with
+explicitly provided extension metadata.
+
+This infrastructure enables OEM specific extension data, such as
+CPER OEM metadata, to be automatically populated while preserving
+the existing extension transport, serialization, restore, and
+lifecycle management flows.
+
+Change-Id: Ie5dc1a68844e8e342b13fa74ebf5f8bc40d8749d
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ config/config.h.meson               |  1 +
+ config/meson.build                  |  4 ++
+ event_extensions/cper/processed.cpp | 21 +++++--
+ event_extensions/cper/processed.hpp | 16 +++++
+ event_extensions/manager.cpp        | 18 ++++++
+ event_extensions/manager.hpp        | 12 ++++
+ event_extensions/registry.hpp       | 12 ++++
+ extensions.cpp                      |  6 ++
+ extensions.hpp                      | 56 +++++++++++++++++
+ log_manager.cpp                     | 94 ++++++++++++++++++++++++++---
+ log_manager.hpp                     | 50 +++++++++++++++
+ meson.options                       |  7 +++
+ test/extensions_test.cpp            | 48 +++++++++++++++
+ 13 files changed, 331 insertions(+), 14 deletions(-)
+
+diff --git a/config/config.h.meson b/config/config.h.meson
+index d0e86e3..613dc22 100644
+--- a/config/config.h.meson
++++ b/config/config.h.meson
+@@ -9,5 +9,6 @@ static constexpr size_t MAX_CPER_RAW_BINARY_SIZE = @max_cper_raw_binary_size@;
+ static constexpr bool LG2_COMMIT_DBUS = @lg2_commit_dbus@;
+ static constexpr bool LG2_COMMIT_JOURNAL = @lg2_commit_journal@;
+ static constexpr bool REDUNDANT_BMC = @redundant_bmc@;
++static constexpr auto RUNTIME_METADATA_PLUGIN = "@runtime_metadata_plugin@";
+ 
+ // vim: ft=cpp
+diff --git a/config/meson.build b/config/meson.build
+index d2f0268..a715e01 100644
+--- a/config/meson.build
++++ b/config/meson.build
+@@ -17,6 +17,10 @@ conf_data.set(
+ redundant_bmc = get_option('redundant-bmc')
+ conf_data.set10('redundant_bmc', redundant_bmc)
+ conf_data.set('max_cper_raw_binary_size', get_option('max-cper-raw-binary-size'))
++conf_data.set(
++    'runtime_metadata_plugin',
++    get_option('runtime-metadata-plugin'),
++)
+ 
+ cxx = meson.get_compiler('cpp')
+ if cxx.has_header('poll.h')
+diff --git a/event_extensions/cper/processed.cpp b/event_extensions/cper/processed.cpp
+index a59e858..594f3b0 100644
+--- a/event_extensions/cper/processed.cpp
++++ b/event_extensions/cper/processed.cpp
+@@ -48,12 +48,25 @@ ExtensionPtr restore(const Context& context, const nlohmann::json& data)
+                                        std::move(properties));
+ }
+ 
++nlohmann::json buildRuntimeMetadataPayload(const nlohmann::json& metadata)
++{
++    nlohmann::json oem;
++    for (const auto& [name, value] : metadata.items())
++    {
++        oem[name] = value.dump();
++    }
++
++    return {{"Oem", std::move(oem)}};
++}
++
+ void registerExtension(Registry& registry)
+ {
+-    registry.registerExtension(interface, {
+-                                              .createCallback = create,
+-                                              .restoreCallback = restore,
+-                                          });
++    registry.registerExtension(
++        interface, {
++                       .createCallback = create,
++                       .restoreCallback = restore,
++                       .runtimeMetadataCallback = buildRuntimeMetadataPayload,
++                   });
+ }
+ 
+ } // namespace phosphor::logging::event_extensions::cper::processed
+diff --git a/event_extensions/cper/processed.hpp b/event_extensions/cper/processed.hpp
+index b4180ae..d6c5b84 100644
+--- a/event_extensions/cper/processed.hpp
++++ b/event_extensions/cper/processed.hpp
+@@ -123,4 +123,20 @@ ExtensionPtr restore(const Context& context, const nlohmann::json& data);
+  */
+ void registerExtension(Registry& registry);
+ 
++/**
++ * @brief Build a CPER payload from runtime metadata.
++ *
++ * Converts aggregated runtime metadata into the payload
++ * format expected by the CPER Processed extension.
++ *
++ * Runtime metadata namespaces are added under the Oem
++ * property. Existing CPER schema properties such as
++ * NotificationType and SectionType are not modified.
++ *
++ * @param[in] metadata Aggregated runtime metadata.
++ *
++ * @return CPER extension payload.
++ */
++nlohmann::json buildRuntimeMetadataPayload(const nlohmann::json& metadata);
++
+ } // namespace phosphor::logging::event_extensions::cper::processed
+diff --git a/event_extensions/manager.cpp b/event_extensions/manager.cpp
+index 2aa37a3..eebfcd0 100644
+--- a/event_extensions/manager.cpp
++++ b/event_extensions/manager.cpp
+@@ -59,4 +59,22 @@ ExtensionList Manager::restore(const Context& context,
+     return extensions;
+ }
+ 
++nlohmann::json Manager::buildRuntimeMetadataPayload(
++    std::string_view interface, const nlohmann::json& metadata) const
++{
++    const auto* registration = registry.find(interface);
++
++    if (registration == nullptr)
++    {
++        return {};
++    }
++
++    if (!registration->runtimeMetadataCallback)
++    {
++        return metadata;
++    }
++
++    return registration->runtimeMetadataCallback(metadata);
++}
++
+ } // namespace phosphor::logging::event_extensions
+diff --git a/event_extensions/manager.hpp b/event_extensions/manager.hpp
+index a1d3e1b..ae4b858 100644
+--- a/event_extensions/manager.hpp
++++ b/event_extensions/manager.hpp
+@@ -50,6 +50,18 @@ class Manager
+     ExtensionList restore(const Context& context,
+                           const nlohmann::json& data) const;
+ 
++    /**
++     * @brief Build an extension-specific payload from
++     *        runtime metadata.
++     *
++     * @param[in] interface Extension interface name.
++     * @param[in] metadata Aggregated runtime metadata.
++     *
++     * @return Extension payload.
++     */
++    nlohmann::json buildRuntimeMetadataPayload(
++        std::string_view interface, const nlohmann::json& metadata) const;
++
+   private:
+     Registry registry;
+ };
+diff --git a/event_extensions/registry.hpp b/event_extensions/registry.hpp
+index 29c5112..9c2e973 100644
+--- a/event_extensions/registry.hpp
++++ b/event_extensions/registry.hpp
+@@ -25,6 +25,17 @@ using CreateCallback =
+ using RestoreCallback =
+     std::function<ExtensionPtr(const Context&, const nlohmann::json&)>;
+ 
++/**
++ * @brief Callback used to transform runtime metadata
++ *        into an extension-specific payload.
++ *
++ * @param[in] metadata Aggregated runtime metadata.
++ *
++ * @return Extension-specific payload.
++ */
++using RuntimeMetadataCallback =
++    std::function<nlohmann::json(const nlohmann::json&)>;
++
+ /**
+  * @brief Extension registration callbacks.
+  */
+@@ -32,6 +43,7 @@ struct Registration
+ {
+     CreateCallback createCallback;
+     RestoreCallback restoreCallback;
++    RuntimeMetadataCallback runtimeMetadataCallback{};
+ };
+ 
+ /**
+diff --git a/extensions.cpp b/extensions.cpp
+index 50fc931..6d1dbcb 100644
+--- a/extensions.cpp
++++ b/extensions.cpp
+@@ -47,5 +47,11 @@ Extensions::DefaultErrorCaps& Extensions::getDefaultErrorCaps()
+     return defaultErrorCaps;
+ }
+ 
++RuntimeMetadataFunctions& Extensions::getRuntimeMetadataFunctions()
++{
++    static RuntimeMetadataFunctions providers;
++    return providers;
++}
++
+ } // namespace logging
+ } // namespace phosphor
+diff --git a/extensions.hpp b/extensions.hpp
+index 614103c..ec300a1 100644
+--- a/extensions.hpp
++++ b/extensions.hpp
+@@ -72,11 +72,32 @@ using LogIDsWithHwIsolationFunctions =
+ using ExtensionLogAssociation =
+     std::function<void(uint32_t, const std::string&)>;
+ 
++/**
++ * @brief Runtime metadata provider callback.
++ *
++ * Providers may contribute extension payload data during
++ * log creation.
++ *
++ * The supplied payload object is shared across all
++ * registered providers. Each provider may add or update
++ * extension metadata associated with the configured
++ * runtime extension interface.
++ *
++ * @param[in,out] payload Aggregated extension payload.
++ * @param[in] message Error log message.
++ * @param[in] level Error severity.
++ * @param[in] additionalData Log additional data.
++ */
++using RuntimeMetadataFunction = std::function<void(
++    nlohmann::json& payload, const std::string& message, Entry::Level level,
++    const std::map<std::string, std::string>& additionalData)>;
++
+ using StartupFunctions = std::vector<StartupFunction>;
+ using CreateFunctions = std::vector<CreateFunction>;
+ using DeleteFunctions = std::vector<DeleteFunction>;
+ using DeleteProhibitedFunctions = std::vector<DeleteProhibitedFunction>;
+ using ExtensionLogAssociations = std::vector<ExtensionLogAssociation>;
++using RuntimeMetadataFunctions = std::vector<RuntimeMetadataFunction>;
+ 
+ /**
+  * @brief Register an extension hook function
+@@ -103,6 +124,20 @@ using ExtensionLogAssociations = std::vector<ExtensionLogAssociation>;
+         Extensions e{Extensions::DefaultErrorCaps::disable};                   \
+     }
+ 
++/**
++ * @brief Register a runtime metadata provider.
++ *
++ * Registers a callback that contributes runtime
++ * metadata during log creation.
++ *
++ * @param[in] func Runtime metadata provider callback.
++ */
++#define REGISTER_RUNTIME_METADATA_PROVIDER(func)                               \
++    namespace func##_runtime_metadata_ns                                       \
++    {                                                                          \
++        Extensions e{func};                                                    \
++    }
++
+ /**
+  * @class Extensions
+  *
+@@ -222,6 +257,19 @@ class Extensions
+         getDefaultErrorCaps() = defaultCaps;
+     }
+ 
++    /**
++     * @brief Register a runtime metadata provider.
++     *
++     * Adds the specified provider to the runtime metadata
++     * provider registry.
++     *
++     * @param[in] func Runtime metadata provider callback.
++     */
++    explicit Extensions(RuntimeMetadataFunction func)
++    {
++        getRuntimeMetadataFunctions().push_back(std::move(func));
++    }
++
+     /**
+      * @brief Returns the Startup functions
+      * @return StartupFunctions - the Startup functions
+@@ -273,6 +321,14 @@ class Extensions
+     {
+         return getDefaultErrorCaps() == DefaultErrorCaps::disable;
+     }
++
++    /**
++     * @brief Get registered runtime metadata providers.
++     *
++     * @return Reference to the registered runtime metadata
++     *         providers.
++     */
++    static RuntimeMetadataFunctions& getRuntimeMetadataFunctions();
+ };
+ 
+ } // namespace logging
+diff --git a/log_manager.cpp b/log_manager.cpp
+index 740ccba..4db6a33 100644
+--- a/log_manager.cpp
++++ b/log_manager.cpp
+@@ -37,6 +37,11 @@ extern const std::map<
+     std::function<phosphor::logging::metadata::associations::Type>>
+     meta;
+ 
++namespace
++{
++constexpr auto extensionsKey = "_EXTENSIONS";
++} // namespace
++
+ namespace phosphor
+ {
+ namespace logging
+@@ -826,6 +831,25 @@ auto Manager::create(const std::string& message, Entry::Level severity,
+                      const FFDCEntries& ffdc) -> sdbusplus::object_path
+ {
+     auto data = additionalData;
++    constexpr std::string_view extensionInterface{RUNTIME_METADATA_PLUGIN};
++    /*
++     * Generate runtime metadata only when a runtime metadata plugin
++     * is configured and the caller has not already supplied extension
++     * data through _EXTENSIONS.
++     */
++    if (!extensionInterface.empty() && data.find("_EXTENSIONS") == data.end())
++    {
++        auto metadata = collectRuntimeMetadata(message, severity, data);
++        if (!metadata.empty())
++        {
++            auto payload = extensionManager.buildRuntimeMetadataPayload(
++                extensionInterface, metadata);
++            if (!payload.empty())
++            {
++                updateExtensions(data, extensionInterface, payload);
++            }
++        }
++    }
+     auto requests = buildEventExtensionRequests(data);
+ 
+     return createEntry(message, severity, std::move(data), ffdc,
+@@ -836,13 +860,13 @@ void Manager::setupErrorFileWatch()
+ {
+     auto errDir = paths::error();
+ 
+-    // In the redundant BMC sync flow, files are written to a temporary path
+-    // first and moved into place only after the write completes. Using
+-    // IN_MOVED_TO ensures we react only when the finalized file appears in the
+-    // target directory.
++    // In the redundant BMC sync flow, files are written to a temporary
++    // path first and moved into place only after the write completes.
++    // Using IN_MOVED_TO ensures we react only when the finalized file
++    // appears in the target directory.
+     //
+-    // IN_DELETE handles synced file removals so the corresponding in-memory
+-    // event log entry is also removed.
++    // IN_DELETE handles synced file removals so the corresponding
++    // in-memory event log entry is also removed.
+     uint32_t mask = IN_MOVED_TO | IN_DELETE;
+ 
+     if (!util::setupInotifyWatch(errDir, mask, errDirInotifyFD,
+@@ -864,8 +888,8 @@ void Manager::errorFileChanged(sdeventplus::source::IO&, int, uint32_t revents)
+     }
+ 
+     // As per inotify(7), sizeof(struct inotify_event) + NAME_MAX + 1 is
+-    // sufficient for one worst-case event. Keep a larger buffer so one read
+-    // can drain multiple queued events. this size allows up to 240
++    // sufficient for one worst-case event. Keep a larger buffer so one
++    // read can drain multiple queued events. this size allows up to 240
+     // worst-case events in a single read.
+     std::array<uint8_t, 272 * 240> buf{};
+     const auto bytesRead = read(errDirInotifyFD, buf.data(), buf.size());
+@@ -1032,8 +1056,8 @@ bool Manager::refreshFromDisk(uint32_t id)
+         return false;
+     }
+ 
+-    // Assign properties from the deserialized temp entry using assignment
+-    // operator, will only update properties that differ
++    // Assign properties from the deserialized temp entry using
++    // assignment operator, will only update properties that differ
+     auto& existingEntry = it->second;
+     *existingEntry = *tempEntry;
+ 
+@@ -1082,6 +1106,56 @@ auto Manager::buildEventExtensionRequests(
+     return requests;
+ }
+ 
++void Manager::updateExtensions(
++    std::map<std::string, std::string>& additionalData,
++    std::string_view interface, const nlohmann::json& payload)
++{
++    nlohmann::json extensions = nlohmann::json::object();
++
++    auto extIt = additionalData.find(extensionsKey);
++    if (extIt != additionalData.end())
++    {
++        try
++        {
++            extensions = nlohmann::json::parse(extIt->second);
++        }
++        catch (const std::exception& e)
++        {
++            lg2::warning("Failed to parse extension metadata: {ERROR}", "ERROR",
++                         e.what());
++        }
++    }
++
++    extensions[std::string(interface)] = payload;
++    additionalData[extensionsKey] = extensions.dump();
++}
++
++nlohmann::json Manager::collectRuntimeMetadata(
++    const std::string& message, Entry::Level level,
++    const std::map<std::string, std::string>& additionalData)
++{
++    auto metadata = nlohmann::json::object();
++
++    for (auto& provider : Extensions::getRuntimeMetadataFunctions())
++    {
++        try
++        {
++            provider(metadata, message, level, additionalData);
++        }
++        catch (const std::exception& e)
++        {
++            lg2::warning("Ignoring runtime metadata exception: {ERROR}",
++                         "ERROR", e.what());
++        }
++        catch (...)
++        {
++            lg2::warning("Ignoring unknown runtime metadata exception");
++        }
++    }
++
++    return metadata;
++}
++
+ } // namespace internal
+ } // namespace logging
+ } // namespace phosphor
+diff --git a/log_manager.hpp b/log_manager.hpp
+index 09aa480..b9f7579 100644
+--- a/log_manager.hpp
++++ b/log_manager.hpp
+@@ -359,6 +359,56 @@ class Manager : public details::ServerObject<details::ManagerIface>
+     event_extensions::RequestList buildEventExtensionRequests(
+         std::map<std::string, std::string>& additionalData);
+ 
++    /**
++     * @brief Collect runtime metadata from registered providers.
++     *
++     * Invokes all registered runtime metadata providers and
++     * aggregates their contributions into a single metadata
++     * object.
++     *
++     * Runtime metadata providers are intended to contribute
++     * extension-specific metadata derived from runtime
++     * platform state.
++     *
++     * @param[in] message
++     *     Log message associated with the entry.
++     *
++     * @param[in] level
++     *     Severity level of the entry.
++     *
++     * @param[in] additionalData
++     *     Additional data supplied during log creation.
++     *
++     * @return Aggregated runtime metadata collected from all
++     *         registered providers.
++     */
++    static nlohmann::json collectRuntimeMetadata(
++        const std::string& message, Entry::Level level,
++        const std::map<std::string, std::string>& additionalData);
++
++    /**
++     * @brief Add or update extension metadata.
++     *
++     * Stores the supplied payload under the specified
++     * extension interface within the _EXTENSIONS
++     * transport object.
++     *
++     * Existing metadata associated with other extension
++     * interfaces is preserved.
++     *
++     * @param[in,out] additionalData
++     *     Additional data map.
++     *
++     * @param[in] interface
++     *     Extension interface name.
++     *
++     * @param[in] payload
++     *     Extension payload.
++     */
++    static void updateExtensions(
++        std::map<std::string, std::string>& additionalData,
++        std::string_view interface, const nlohmann::json& payload);
++
+     /** @brief Persistent sdbusplus DBus bus connection. */
+     sdbusplus::bus_t& busLog;
+ 
+diff --git a/meson.options b/meson.options
+index 2f8e7ae..6811ab6 100644
+--- a/meson.options
++++ b/meson.options
+@@ -68,3 +68,10 @@ option(
+     value: 16384,
+     description: 'Maximum supported raw CPER binary size in bytes',
+ )
++
++option(
++    'runtime-metadata-plugin',
++    type: 'string',
++    value: '',
++    description: 'Enable runtime extension enrichment',
++)
+diff --git a/test/extensions_test.cpp b/test/extensions_test.cpp
+index d5f29eb..73fc89c 100644
+--- a/test/extensions_test.cpp
++++ b/test/extensions_test.cpp
+@@ -47,6 +47,24 @@ void logIDWithHwIsolation2(std::vector<uint32_t>& logIDs)
+     logIDs.push_back(2);
+ }
+ 
++void runtimeMetadataProvider1(
++    nlohmann::json& metadata, const std::string& message, Entry::Level level,
++    const std::map<std::string, std::string>& additionalData)
++{
++    (void)level;
++    (void)additionalData;
++
++    metadata["Message"] = message;
++    metadata["Provider"] = "Provider1";
++}
++
++void runtimeMetadataProvider2(nlohmann::json& metadata, const std::string&,
++                              Entry::Level,
++                              const std::map<std::string, std::string>&)
++{
++    metadata["Provider2"] = true;
++}
++
+ DISABLE_LOG_ENTRY_CAPS()
+ REGISTER_EXTENSION_FUNCTION(startup1)
+ REGISTER_EXTENSION_FUNCTION(startup2)
+@@ -58,6 +76,8 @@ REGISTER_EXTENSION_FUNCTION(logIDWithHwIsolation1)
+ REGISTER_EXTENSION_FUNCTION(logIDWithHwIsolation2)
+ REGISTER_EXTENSION_FUNCTION(deleteLog1)
+ REGISTER_EXTENSION_FUNCTION(deleteLog2)
++REGISTER_RUNTIME_METADATA_PROVIDER(runtimeMetadataProvider1)
++REGISTER_RUNTIME_METADATA_PROVIDER(runtimeMetadataProvider2)
+ 
+ TEST(ExtensionsTest, FunctionCallTest)
+ {
+@@ -115,3 +135,31 @@ TEST(ExtensionsTest, FunctionCallTest)
+ 
+     EXPECT_TRUE(Extensions::disableDefaultLogCaps());
+ }
++
++TEST(ExtensionsTest, RuntimeMetadataProviderTest)
++{
++    nlohmann::json metadata = nlohmann::json::object();
++    std::map<std::string, std::string> additionalData;
++    for (auto& provider : Extensions::getRuntimeMetadataFunctions())
++    {
++        provider(metadata, "test-message", Entry::Level::Informational,
++                 additionalData);
++    }
++
++    EXPECT_EQ(metadata["Message"], "test-message");
++    EXPECT_EQ(metadata["Provider"], "Provider1");
++}
++
++TEST(ExtensionsTest, RuntimeMetadataProvidersAggregate)
++{
++    nlohmann::json metadata = nlohmann::json::object();
++    std::map<std::string, std::string> additionalData;
++    for (auto& provider : Extensions::getRuntimeMetadataFunctions())
++    {
++        provider(metadata, "test-message", Entry::Level::Informational,
++                 additionalData);
++    }
++
++    EXPECT_EQ(metadata["Provider"], "Provider1");
++    EXPECT_TRUE(metadata["Provider2"]);
++}
+-- 
+2.43.0
+

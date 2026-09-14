@@ -1,0 +1,420 @@
+From 4330131fbfcd61b1f625d033f398d006969cde21 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Wed, 2 Sep 2026 07:17:39 -0500
+Subject: [PATCH 08/12] event_extensions:CPER: Add Raw extension
+
+Add a CPER Raw event extension implementation.
+
+Implement create, restore, and serialize support for the
+CPER Raw extension. Raw CPER payloads are persisted as
+artifacts, exposed through the CPER Raw D-Bus interface,
+and cleaned up when the owning log entry is deleted.
+
+Register the extension with the builtin event extension
+framework and add unit tests covering extension
+registration.
+
+This change exercises artifact persistence and cleanup
+through the event extension lifecycle.
+
+Change-Id: I9a12e52e0b8f6c34e1734a25c9da3963eb64f48e
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ config/config.h.meson                   |   1 +
+ config/meson.build                      |   1 +
+ event_extensions/builtins.cpp           |   2 +
+ event_extensions/cper/meson.build       |   1 +
+ event_extensions/cper/raw.cpp           | 105 +++++++++++++++++++
+ event_extensions/cper/raw.hpp           | 128 ++++++++++++++++++++++++
+ meson.options                           |   7 ++
+ test/event_extensions/cper_raw_test.cpp |  37 +++++++
+ test/event_extensions/meson.build       |  17 ++++
+ 9 files changed, 299 insertions(+)
+ create mode 100644 event_extensions/cper/raw.cpp
+ create mode 100644 event_extensions/cper/raw.hpp
+ create mode 100644 test/event_extensions/cper_raw_test.cpp
+
+diff --git a/config/config.h.meson b/config/config.h.meson
+index d975101..d0e86e3 100644
+--- a/config/config.h.meson
++++ b/config/config.h.meson
+@@ -5,6 +5,7 @@ inline constexpr auto RSYSLOG_SERVER_CONFIG_FILE = "@rsyslog_server_conf@";
+ extern const bool IS_UNIT_TEST;
+ static constexpr size_t ERROR_CAP = @error_cap@;
+ static constexpr size_t ERROR_INFO_CAP = @error_info_cap@;
++static constexpr size_t MAX_CPER_RAW_BINARY_SIZE = @max_cper_raw_binary_size@;
+ static constexpr bool LG2_COMMIT_DBUS = @lg2_commit_dbus@;
+ static constexpr bool LG2_COMMIT_JOURNAL = @lg2_commit_journal@;
+ static constexpr bool REDUNDANT_BMC = @redundant_bmc@;
+diff --git a/config/meson.build b/config/meson.build
+index 7d5df21..d2f0268 100644
+--- a/config/meson.build
++++ b/config/meson.build
+@@ -16,6 +16,7 @@ conf_data.set(
+ 
+ redundant_bmc = get_option('redundant-bmc')
+ conf_data.set10('redundant_bmc', redundant_bmc)
++conf_data.set('max_cper_raw_binary_size', get_option('max-cper-raw-binary-size'))
+ 
+ cxx = meson.get_compiler('cpp')
+ if cxx.has_header('poll.h')
+diff --git a/event_extensions/builtins.cpp b/event_extensions/builtins.cpp
+index 7f39a93..d697378 100644
+--- a/event_extensions/builtins.cpp
++++ b/event_extensions/builtins.cpp
+@@ -1,6 +1,7 @@
+ #include "event_extensions/builtins.hpp"
+ 
+ #include "event_extensions/cper/processed.hpp"
++#include "event_extensions/cper/raw.hpp"
+ 
+ namespace phosphor::logging::event_extensions
+ {
+@@ -8,6 +9,7 @@ namespace phosphor::logging::event_extensions
+ void registerBuiltins(Registry& registry)
+ {
+     cper::processed::registerExtension(registry);
++    cper::raw::registerExtension(registry);
+ }
+ 
+ } // namespace phosphor::logging::event_extensions
+diff --git a/event_extensions/cper/meson.build b/event_extensions/cper/meson.build
+index dd83db1..48f3d5e 100644
+--- a/event_extensions/cper/meson.build
++++ b/event_extensions/cper/meson.build
+@@ -1,3 +1,4 @@
+ event_extensions_sources += files(
+     'processed.cpp',
++    'raw.cpp',
+ )
+diff --git a/event_extensions/cper/raw.cpp b/event_extensions/cper/raw.cpp
+new file mode 100644
+index 0000000..ccba614
+--- /dev/null
++++ b/event_extensions/cper/raw.cpp
+@@ -0,0 +1,105 @@
++#include "config.h"
++
++#include "event_extensions/cper/raw.hpp"
++
++#include <unistd.h>
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <functional>
++#include <stdexcept>
++
++namespace phosphor::logging::event_extensions::cper::raw
++{
++
++Extension::Extension(sdbusplus::bus_t& bus, const std::string& objectPath,
++                     utils::ArtifactRef artifact) :
++    Interface(bus, objectPath.c_str()), artifact(std::move(artifact))
++{}
++
++sdbusplus::message::unix_fd Extension::getFileHandle()
++{
++    auto fd = utils::openArtifact(artifact);
++
++    if (fd < 0)
++    {
++        throw std::runtime_error("Failed to open CPER Raw artifact");
++    }
++
++    auto event = sdeventplus::Event::get_default();
++    fdCloseEventSource = std::make_unique<sdeventplus::source::Defer>(
++        event, std::bind_front(&Extension::closeFD, this, fd));
++
++    return fd;
++}
++
++void Extension::closeFD(int fd, sdeventplus::source::EventBase&)
++{
++    ::close(fd);
++    fdCloseEventSource.reset();
++}
++
++void Extension::onDelete()
++{
++    utils::removeArtifact(artifact);
++}
++
++nlohmann::json Extension::serialize() const
++{
++    return {
++        {artifactPathKey, artifact.path},
++    };
++}
++
++ExtensionPtr create(const Context& context, const Request& request)
++{
++    const auto payload = request.data.value(dataKey, std::vector<uint8_t>{});
++    if (payload.empty())
++    {
++        return nullptr;
++    }
++
++    if (payload.size() > MAX_CPER_RAW_BINARY_SIZE)
++    {
++        lg2::warning("Ignoring oversized CPER Raw payload. "
++                     "SIZE={SIZE} LIMIT={LIMIT}",
++                     "SIZE", payload.size(), "LIMIT", MAX_CPER_RAW_BINARY_SIZE);
++
++        return nullptr;
++    }
++
++    try
++    {
++        auto artifact = utils::persistArtifact(payload, cperRawArtifactSuffix);
++
++        return std::make_unique<Extension>(context.bus, context.objectPath,
++                                           std::move(artifact));
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error("Failed to persist CPER Raw artifact: "
++                   "{ERROR}",
++                   "ERROR", e);
++
++        return nullptr;
++    }
++}
++
++ExtensionPtr restore(const Context& context, const nlohmann::json& data)
++{
++    return std::make_unique<Extension>(
++        context.bus, context.objectPath,
++        utils::ArtifactRef{
++            .path = data.at(artifactPathKey).get<std::filesystem::path>(),
++        });
++}
++
++void registerExtension(Registry& registry)
++{
++    registry.registerExtension(interface, {
++                                              .createCallback = create,
++                                              .restoreCallback = restore,
++                                          });
++}
++
++} // namespace phosphor::logging::event_extensions::cper::raw
+diff --git a/event_extensions/cper/raw.hpp b/event_extensions/cper/raw.hpp
+new file mode 100644
+index 0000000..0cfd170
+--- /dev/null
++++ b/event_extensions/cper/raw.hpp
+@@ -0,0 +1,128 @@
++#pragma once
++
++#include "event_extensions/extension.hpp"
++#include "event_extensions/registry.hpp"
++#include "event_extensions/utils/artifact.hpp"
++
++#include <nlohmann/json.hpp>
++#include <sdeventplus/event.hpp>
++#include <sdeventplus/source/event.hpp>
++#include <xyz/openbmc_project/Logging/CPER/Raw/server.hpp>
++
++#include <memory>
++#include <string>
++#include <string_view>
++
++namespace phosphor::logging::event_extensions::cper::raw
++{
++
++using Interface = sdbusplus::server::xyz::openbmc_project::logging::cper::Raw;
++
++inline constexpr std::string_view interface =
++    "xyz.openbmc_project.Logging.Extension.CPER.Raw";
++inline constexpr auto dataKey = "Data";
++inline constexpr auto artifactPathKey = "ArtifactPath";
++inline constexpr auto cperRawArtifactSuffix = "cperraw";
++
++/**
++ * @brief CPER Raw event extension.
++ *
++ * Exposes a persisted CPER artifact through the
++ * xyz.openbmc_project.Logging.Extension.CPER.Raw
++ * interface.
++ */
++class Extension : public event_extensions::Extension, public Interface
++{
++  public:
++    Extension() = delete;
++    Extension(const Extension&) = delete;
++    Extension(Extension&&) = delete;
++    Extension& operator=(const Extension&) = delete;
++    Extension& operator=(Extension&&) = delete;
++    ~Extension() override = default;
++
++    /**
++     * @brief Construct a CPER Raw extension.
++     *
++     * @param[in] bus D-Bus connection.
++     * @param[in] objectPath Log entry object path.
++     * @param[in] artifact Persisted CPER artifact.
++     */
++    Extension(sdbusplus::bus_t& bus, const std::string& objectPath,
++              utils::ArtifactRef artifact);
++
++    /**
++     * @brief Return implemented interface name.
++     *
++     * @return Interface name.
++     */
++    std::string_view interface() const override
++    {
++        return raw::interface;
++    }
++
++    /**
++     * @brief Retrieve raw CPER artifact.
++     *
++     * @return File descriptor to the artifact.
++     */
++    sdbusplus::message::unix_fd getFileHandle() override;
++
++    /**
++     * @brief Cleanup extension-owned resources.
++     */
++    void onDelete() override;
++
++    /**
++     * @brief Serialize extension state.
++     *
++     * @return Serialized extension state.
++     */
++    nlohmann::json serialize() const override;
++
++  private:
++    /**
++     * @brief Close a transferred file descriptor.
++     *
++     * Invoked after D-Bus transfer completes.
++     *
++     * @param[in] fd File descriptor to close.
++     * @param[in] source Deferred event source.
++     */
++    void closeFD(int fd, sdeventplus::source::EventBase& source);
++
++    /** Persisted artifact backing this extension. */
++    utils::ArtifactRef artifact;
++
++    /** Deferred cleanup for transferred file descriptors. */
++    std::unique_ptr<sdeventplus::source::Defer> fdCloseEventSource;
++};
++
++/**
++ * @brief Create a CPER Raw extension.
++ *
++ * @param[in] context Runtime creation context.
++ * @param[in] request Extension request.
++ *
++ * @return Created extension.
++ */
++ExtensionPtr create(const Context& context, const Request& request);
++
++/**
++ * @brief Restore a CPER Raw extension.
++ *
++ * @param[in] context Runtime creation context.
++ * @param[in] data Serialized extension state.
++ *
++ * @return Restored extension.
++ */
++ExtensionPtr restore(const Context& context, const nlohmann::json& data);
++
++/**
++ * @brief Register the CPER Raw extension.
++ *
++ * @param[in,out] registry Event extension registry.
++ */
++void registerExtension(Registry& registry);
++
++} // namespace phosphor::logging::event_extensions::cper::raw
+diff --git a/meson.options b/meson.options
+index 6d547d5..2f8e7ae 100644
+--- a/meson.options
++++ b/meson.options
+@@ -61,3 +61,10 @@ option(
+     value: true,
+     description: 'Enable support for redundant BMC systems',
+ )
++
++option(
++    'max-cper-raw-binary-size',
++    type: 'integer',
++    value: 16384,
++    description: 'Maximum supported raw CPER binary size in bytes',
++)
+diff --git a/test/event_extensions/cper_raw_test.cpp b/test/event_extensions/cper_raw_test.cpp
+new file mode 100644
+index 0000000..5e83de5
+--- /dev/null
++++ b/test/event_extensions/cper_raw_test.cpp
+@@ -0,0 +1,37 @@
++#include "event_extensions/cper/raw.hpp"
++#include "event_extensions/registry.hpp"
++
++#include <gtest/gtest.h>
++
++namespace phosphor::logging::event_extensions
++{
++
++TEST(CPERRawTest, RegisterExtension)
++{
++    Registry registry;
++    cper::raw::registerExtension(registry);
++    const auto* registration = registry.find(cper::raw::interface);
++    ASSERT_NE(registration, nullptr);
++
++    EXPECT_TRUE(static_cast<bool>(registration->createCallback));
++    EXPECT_TRUE(static_cast<bool>(registration->restoreCallback));
++}
++
++TEST(CPERRawTest, InterfaceName)
++{
++    EXPECT_EQ(cper::raw::interface,
++              "xyz.openbmc_project.Logging.Extension.CPER.Raw");
++}
++
++TEST(CPERRawTest, CreateAndRestoreCallbacksRegistered)
++{
++    Registry registry;
++    cper::raw::registerExtension(registry);
++    const auto* registration = registry.find(cper::raw::interface);
++    ASSERT_NE(registration, nullptr);
++
++    EXPECT_TRUE(static_cast<bool>(registration->createCallback));
++    EXPECT_TRUE(static_cast<bool>(registration->restoreCallback));
++}
++
++} // namespace phosphor::logging::event_extensions
+diff --git a/test/event_extensions/meson.build b/test/event_extensions/meson.build
+index 10493d5..ccaed8a 100644
+--- a/test/event_extensions/meson.build
++++ b/test/event_extensions/meson.build
+@@ -51,3 +51,20 @@ test(
+         ),
+     ),
+ )
++
++test(
++    'test_cper_raw',
++    executable(
++        'test-cper-raw',
++        'cper_raw_test.cpp',
++        link_with: [log_manager_lib],
++        dependencies: [
++            gtest_dep,
++            log_manager_deps,
++        ],
++        include_directories: include_directories(
++            '../../',
++            '../../gen',
++        ),
++    ),
++)
+-- 
+2.43.0
+

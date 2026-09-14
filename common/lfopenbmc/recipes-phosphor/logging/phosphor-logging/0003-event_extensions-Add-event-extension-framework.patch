@@ -1,0 +1,942 @@
+From d215fb6a5d088a54afd5a3607ba47b2da947adf0 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Wed, 2 Sep 2026 00:33:06 -0500
+Subject: [PATCH 03/12] event_extensions: Add event extension framework
+
+Add a framework for attaching extension-specific D-Bus
+interfaces to log entries.
+
+Introduce the core framework components:
+- Request
+- Extension
+- Registry
+- Manager
+
+LogManager owns a single Manager instance that resolves
+extension requests and creates runtime extensions.
+Extensions are attached to and owned by individual log
+entries and receive delete notifications through
+Extension::onDelete().
+
+Add builtin extension registration to decouple framework
+infrastructure from extension implementations.
+
+No concrete extensions are introduced by this change.
+Subsequent commits will add CPER-based extensions.
+
+Add unit tests and update build integration, including
+OpenPOWER PEL test configuration changes required for the
+new framework.
+
+Change-Id: If4d3f0f46d7608674d48b3ea612bba4696bdae64
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ README.md                                     | 11 ++++
+ elog_entry.cpp                                | 18 +++++
+ elog_entry.hpp                                | 15 ++++-
+ event_extensions/README.md                    | 49 ++++++++++++++
+ event_extensions/builtins.cpp                 | 10 +++
+ event_extensions/builtins.hpp                 | 15 +++++
+ event_extensions/extension.hpp                | 66 +++++++++++++++++++
+ event_extensions/manager.cpp                  | 41 ++++++++++++
+ event_extensions/manager.hpp                  | 44 +++++++++++++
+ event_extensions/meson.build                  |  5 ++
+ event_extensions/registry.cpp                 | 34 ++++++++++
+ event_extensions/registry.hpp                 | 59 +++++++++++++++++
+ event_extensions/request.hpp                  | 39 +++++++++++
+ lib/lg2_commit.cpp                            |  8 +++
+ lib/lg2_commit.hpp                            |  5 ++
+ log_manager.cpp                               | 60 ++++++++++++++++-
+ log_manager.hpp                               | 34 +++++++++-
+ meson.build                                   |  2 +
+ .../event_extensions_test.cpp                 | 58 ++++++++++++++++
+ test/event_extensions/meson.build             | 16 +++++
+ test/meson.build                              |  2 +
+ test/openpower-pels/meson.build               |  1 +
+ 22 files changed, 585 insertions(+), 7 deletions(-)
+ create mode 100644 event_extensions/README.md
+ create mode 100644 event_extensions/builtins.cpp
+ create mode 100644 event_extensions/builtins.hpp
+ create mode 100644 event_extensions/extension.hpp
+ create mode 100644 event_extensions/manager.cpp
+ create mode 100644 event_extensions/manager.hpp
+ create mode 100644 event_extensions/meson.build
+ create mode 100644 event_extensions/registry.cpp
+ create mode 100644 event_extensions/registry.hpp
+ create mode 100644 event_extensions/request.hpp
+ create mode 100644 test/event_extensions/event_extensions_test.cpp
+ create mode 100644 test/event_extensions/meson.build
+
+diff --git a/README.md b/README.md
+index 8106852..08cbfb5 100644
+--- a/README.md
++++ b/README.md
+@@ -9,6 +9,7 @@ logging.
+ - [Structured Logging](#structured-logging)
+ - [Event Logs](#event-logs)
+ - [Event Log Extensions](#event-log-extensions)
++- [Log Entry Extensions](#log-entry-extensions)
+ - [Remote Logging](#remote-logging-via-rsyslog)
+ - [Boot Fail on Hardware Errors](#boot-fail-on-hardware-errors)
+ - [Encoding BMC position in entry ID](#encoding-the-bmc-position-in-the-entry-id)
+@@ -443,6 +444,16 @@ internet. Here are few pointers :
+ <https://docs.rsyslog.com/doc/configuration/filters.html>
+ <https://docs.rsyslog.com/doc/configuration/index.html>
+ 
++## Log Entry Extensions
++
++Log Entry Extensions allow log entries to be augmented with additional
++schema-specific D-Bus interfaces.
++
++`LogManager` owns an extension `Manager`, which maintains registered extension
++`Provider`s. When an event requests an extension, the corresponding `Provider`
++creates a runtime `Extension` instance that is attached to and owned by the
++associated `Entry`.
++
+ ### Configuring rsyslog server for remote logging
+ 
+ The BMC is an rsyslog client. To stream out logs, it needs to talk to an rsyslog
+diff --git a/elog_entry.cpp b/elog_entry.cpp
+index d7d5f04..07ed128 100644
+--- a/elog_entry.cpp
++++ b/elog_entry.cpp
+@@ -25,6 +25,24 @@ void Entry::persist()
+ 
+ void Entry::delete_()
+ {
++    for (auto& eventExtension : eventExtensions)
++    {
++        try
++        {
++            eventExtension->onDelete();
++        }
++        catch (const std::exception& e)
++        {
++            lg2::error("Event extension delete callback failed: {ERROR}",
++                       "ERROR", e.what());
++        }
++        catch (...)
++        {
++            lg2::error(
++                "Event extension delete callback failed: unknown exception");
++        }
++    }
++
+     parent.erase(id());
+ }
+ 
+diff --git a/elog_entry.hpp b/elog_entry.hpp
+index 8710e13..ac9928e 100644
+--- a/elog_entry.hpp
++++ b/elog_entry.hpp
+@@ -2,6 +2,7 @@
+ 
+ #include "config.h"
+ 
++#include "event_extensions/extension.hpp"
+ #include "xyz/openbmc_project/Logging/Entry/server.hpp"
+ #include "xyz/openbmc_project/Object/Delete/server.hpp"
+ #include "xyz/openbmc_project/Software/Version/server.hpp"
+@@ -62,14 +63,16 @@ class Entry : public EntryIfaces
+      *  @param[in] fwVersion - The BMC code version.
+      *  @param[in] filePath - Serialization path
+      *  @param[in] parent - The error's parent.
++     *  @param[in] eventExtensions - Event extensions
+      */
+     Entry(sdbusplus::bus_t& bus, const std::string& objectPath, uint32_t idErr,
+           uint64_t timestampErr, Level severityErr, std::string&& msgErr,
+           std::map<std::string, std::string>&& additionalDataErr,
+           AssociationList&& objects, const std::string& fwVersion,
+-          const std::string& filePath, internal::Manager& parent) :
++          const std::string& filePath, internal::Manager& parent,
++          event_extensions::ExtensionList eventExtensions = {}) :
+         EntryIfaces(bus, objectPath.c_str(), EntryIfaces::action::defer_emit),
+-        parent(parent)
++        parent(parent), eventExtensions(std::move(eventExtensions))
+     {
+         id(idErr, true);
+         severity(severityErr, true);
+@@ -184,6 +187,14 @@ class Entry : public EntryIfaces
+ 
+     /** @brief Persist the entry state */
+     void persist();
++
++    /**
++     * @brief Runtime extensions associated with this entry.
++     *
++     * Extensions remain active for the lifetime of the
++     * owning log entry.
++     */
++    event_extensions::ExtensionList eventExtensions;
+ };
+ 
+ } // namespace logging
+diff --git a/event_extensions/README.md b/event_extensions/README.md
+new file mode 100644
+index 0000000..a9309cc
+--- /dev/null
++++ b/event_extensions/README.md
+@@ -0,0 +1,49 @@
++# Event Extensions Framework
++
++The Event Extensions framework allows log entries to be augmented with
++additional D-Bus interfaces.
++
++## Class Overview
++
++### Request
++
++Represents an extension requested by an event.
++
++Contains the extension interface name and extension-specific metadata.
++
++### Registry
++
++Maintains the mapping between extension interface names and extension creation
++callbacks.
++
++### Manager
++
++Framework entry point owned by LogManager.
++
++Responsible for resolving requests and creating runtime extension instances.
++
++### Extension
++
++Base class for runtime event extensions.
++
++Extension instances are owned by Entry.
++
++## Ownership Model
++
++```text
+++------------+          +-------+
++| LogManager |          | Entry |
+++------------+          +-------+
++       |                    |
++       | owns               | owns
++       v                    v
+++------------+      +---------------+
++|  Manager   |      |   Extensions  |
+++------------+      +---------------+
++       |
++       | owns
++       v
+++------------+
++|  Registry  |
+++------------+
++```
+diff --git a/event_extensions/builtins.cpp b/event_extensions/builtins.cpp
+new file mode 100644
+index 0000000..c752ffb
+--- /dev/null
++++ b/event_extensions/builtins.cpp
+@@ -0,0 +1,10 @@
++#include "event_extensions/builtins.hpp"
++
++#include "event_extensions/registry.hpp"
++
++namespace phosphor::logging::event_extensions
++{
++
++void registerBuiltins(Registry&) {}
++
++} // namespace phosphor::logging::event_extensions
+diff --git a/event_extensions/builtins.hpp b/event_extensions/builtins.hpp
+new file mode 100644
+index 0000000..1eb438d
+--- /dev/null
++++ b/event_extensions/builtins.hpp
+@@ -0,0 +1,15 @@
++#pragma once
++
++namespace phosphor::logging::event_extensions
++{
++
++class Registry;
++
++/**
++ * @brief Register builtin event extension.
++ *
++ * @param[in,out] registry Event extension registry.
++ */
++void registerBuiltins(Registry& registry);
++
++} // namespace phosphor::logging::event_extensions
+diff --git a/event_extensions/extension.hpp b/event_extensions/extension.hpp
+new file mode 100644
+index 0000000..c4d1529
+--- /dev/null
++++ b/event_extensions/extension.hpp
+@@ -0,0 +1,66 @@
++#pragma once
++
++#include <sdbusplus/bus.hpp>
++
++#include <memory>
++#include <string>
++#include <string_view>
++#include <vector>
++
++namespace phosphor::logging::event_extensions
++{
++
++/**
++ * @brief Runtime context used during extension creation.
++ *
++ * Provides resources required when associating
++ * extensions with a log entry.
++ */
++struct Context
++{
++    /** D-Bus connection. */
++    sdbusplus::bus_t& bus;
++
++    /** Log entry object path. */
++    const std::string& objectPath;
++};
++
++/**
++ * @brief Base class for runtime event extensions.
++ *
++ * Extension instances are owned by a log entry and
++ * exist for the lifetime of that entry.
++ *
++ * Event extensions augment log entries with additional
++ * D-Bus interfaces and extension-specific behavior.
++ */
++class Extension
++{
++  public:
++    Extension() = default;
++    Extension(const Extension&) = default;
++    Extension(Extension&&) = default;
++    Extension& operator=(const Extension&) = default;
++    Extension& operator=(Extension&&) = default;
++    virtual ~Extension() = default;
++
++    /**
++     * @brief Return implemented D-Bus interface name.
++     *
++     * @return Interface name.
++     */
++    virtual std::string_view interface() const = 0;
++
++    /**
++     * @brief Invoked before the owning log entry is deleted.
++     *
++     * Extensions may override this method to release
++     * extension-owned resources.
++     */
++    virtual void onDelete() {}
++};
++
++using ExtensionPtr = std::unique_ptr<Extension>;
++using ExtensionList = std::vector<ExtensionPtr>;
++
++} // namespace phosphor::logging::event_extensions
+diff --git a/event_extensions/manager.cpp b/event_extensions/manager.cpp
+new file mode 100644
+index 0000000..55ef8f0
+--- /dev/null
++++ b/event_extensions/manager.cpp
+@@ -0,0 +1,41 @@
++#include "event_extensions/manager.hpp"
++
++#include "event_extensions/builtins.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++namespace phosphor::logging::event_extensions
++{
++
++Manager::Manager()
++{
++    registerBuiltins(registry);
++}
++
++ExtensionList Manager::create(const Context& context,
++                              const RequestList& requests) const
++{
++    ExtensionList extensions;
++
++    for (const auto& request : requests)
++    {
++        const auto* createCallback = registry.find(request.interface);
++        if (createCallback == nullptr)
++        {
++            lg2::warning("No event extension registered for "
++                         "{INTERFACE}",
++                         "INTERFACE", request.interface);
++            continue;
++        }
++
++        auto extension = createCallback->operator()(context, request);
++        if (extension != nullptr)
++        {
++            extensions.emplace_back(std::move(extension));
++        }
++    }
++
++    return extensions;
++}
++
++} // namespace phosphor::logging::event_extensions
+diff --git a/event_extensions/manager.hpp b/event_extensions/manager.hpp
+new file mode 100644
+index 0000000..65e4966
+--- /dev/null
++++ b/event_extensions/manager.hpp
+@@ -0,0 +1,44 @@
++#pragma once
++
++#include "extension.hpp"
++#include "registry.hpp"
++#include "request.hpp"
++
++namespace phosphor::logging::event_extensions
++{
++
++/**
++ * @brief Event extension framework entry point.
++ *
++ * Manager owns the extension registry and builtin
++ * extension registration.
++ *
++ * LogManager creates a single Manager instance and uses
++ * it to create runtime extensions for log entries.
++ */
++class Manager
++{
++  public:
++    Manager();
++    Manager(const Manager&) = delete;
++    Manager& operator=(const Manager&) = delete;
++    Manager(Manager&&) = delete;
++    Manager& operator=(Manager&&) = delete;
++    ~Manager() = default;
++
++    /**
++     * @brief Create extensions from requests.
++     *
++     * @param[in] context Runtime creation context.
++     * @param[in] requests Requested extensions.
++     *
++     * @return Created extensions.
++     */
++    ExtensionList create(const Context& context,
++                         const RequestList& requests) const;
++
++  private:
++    Registry registry;
++};
++
++} // namespace phosphor::logging::event_extensions
+diff --git a/event_extensions/meson.build b/event_extensions/meson.build
+new file mode 100644
+index 0000000..a80e3ea
+--- /dev/null
++++ b/event_extensions/meson.build
+@@ -0,0 +1,5 @@
++event_extensions_sources = files(
++    'builtins.cpp',
++    'registry.cpp',
++    'manager.cpp',
++)
+diff --git a/event_extensions/registry.cpp b/event_extensions/registry.cpp
+new file mode 100644
+index 0000000..7ed6a12
+--- /dev/null
++++ b/event_extensions/registry.cpp
+@@ -0,0 +1,34 @@
++#include "event_extensions/registry.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++namespace phosphor::logging::event_extensions
++{
++
++void Registry::registerExtension(std::string_view interface,
++                                 CreateCallback createCallback)
++{
++    auto [it, inserted] =
++        registrations.emplace(interface, std::move(createCallback));
++
++    if (!inserted)
++    {
++        lg2::warning("Duplicate event extension registration: "
++                     "{INTERFACE}",
++                     "INTERFACE", interface);
++    }
++}
++
++const CreateCallback* Registry::find(std::string_view interface) const
++{
++    auto it = registrations.find(std::string(interface));
++
++    if (it == registrations.end())
++    {
++        return nullptr;
++    }
++
++    return &it->second;
++}
++
++} // namespace phosphor::logging::event_extensions
+diff --git a/event_extensions/registry.hpp b/event_extensions/registry.hpp
+new file mode 100644
+index 0000000..db64eec
+--- /dev/null
++++ b/event_extensions/registry.hpp
+@@ -0,0 +1,59 @@
++#pragma once
++
++#include "extension.hpp"
++#include "request.hpp"
++
++#include <functional>
++#include <string>
++#include <string_view>
++#include <unordered_map>
++
++namespace phosphor::logging::event_extensions
++{
++
++/**
++ * @brief Callback used to create a runtime extension.
++ */
++using CreateCallback =
++    std::function<ExtensionPtr(const Context&, const Request&)>;
++
++/**
++ * @brief Registry of event extensions.
++ *
++ * Maintains the mapping between extension interface names
++ * and extension creation callbacks.
++ */
++class Registry
++{
++  public:
++    Registry() = default;
++    Registry(const Registry&) = delete;
++    Registry& operator=(const Registry&) = delete;
++    Registry(Registry&&) = delete;
++    Registry& operator=(Registry&&) = delete;
++    ~Registry() = default;
++
++    /**
++     * @brief Register an extension.
++     *
++     * @param[in] interface Extension interface name.
++     * @param[in] createCallback Extension creation callback.
++     */
++    void registerExtension(std::string_view interface,
++                           CreateCallback createCallback);
++
++    /**
++     * @brief Lookup an extension creation callback.
++     *
++     * @param[in] interface Extension interface name.
++     *
++     * @return Registered callback or nullptr if no
++     *         extension is registered.
++     */
++    const CreateCallback* find(std::string_view interface) const;
++
++  private:
++    std::unordered_map<std::string, CreateCallback> registrations;
++};
++
++} // namespace phosphor::logging::event_extensions
+diff --git a/event_extensions/request.hpp b/event_extensions/request.hpp
+new file mode 100644
+index 0000000..a06ef3e
+--- /dev/null
++++ b/event_extensions/request.hpp
+@@ -0,0 +1,39 @@
++#pragma once
++
++#include <nlohmann/json.hpp>
++
++#include <string>
++#include <vector>
++
++namespace phosphor::logging::event_extensions
++{
++
++/**
++ * @brief Event extension request.
++ *
++ * Represents an event-requested extension and any
++ * extension-specific metadata associated with it.
++ */
++struct Request
++{
++    /**
++     * @brief D-Bus interface implemented by the extension.
++     *
++     * Example:
++     * xyz.openbmc_project.Logging.Extension.CPER.Raw
++     */
++    std::string interface;
++
++    /**
++     * @brief Extension-specific metadata.
++     *
++     * The schema and contents are defined by the extension
++     * implementation.
++     */
++    nlohmann::json data;
++};
++
++/** Collection of event extension requests. */
++using RequestList = std::vector<Request>;
++
++} // namespace phosphor::logging::event_extensions
+diff --git a/lib/lg2_commit.cpp b/lib/lg2_commit.cpp
+index 380651d..8c5cccb 100644
+--- a/lib/lg2_commit.cpp
++++ b/lib/lg2_commit.cpp
+@@ -93,6 +93,13 @@ static auto data_from_json(sdbusplus::exception::generated_event_base& t)
+             continue;
+         }
+ 
++        // Event extension metadata is handled separately.
++        if (item.key() == "_EXTENSIONS")
++        {
++            result.emplace(item.key(), item.value().dump());
++            continue;
++        }
++
+         if (item.value().type() == nlohmann::json::value_t::string)
+         {
+             result.emplace(item.key(), item.value());
+@@ -113,6 +120,7 @@ auto extractEvent(sdbusplus::exception::generated_event_base&& event)
+         .message = event.name(),
+         .level = severity_from_syslog(event.severity()),
+         .additionalData = data_from_json(event),
++        .extensions = {},
+     };
+ }
+ 
+diff --git a/lib/lg2_commit.hpp b/lib/lg2_commit.hpp
+index 1f9beaf..220c036 100644
+--- a/lib/lg2_commit.hpp
++++ b/lib/lg2_commit.hpp
+@@ -1,5 +1,7 @@
+ #pragma once
+ 
++#include "event_extensions/request.hpp"
++
+ #include <sdbusplus/exception.hpp>
+ #include <xyz/openbmc_project/Logging/Entry/client.hpp>
+ 
+@@ -24,6 +26,9 @@ struct EventInfo
+ 
+     /** Event metadata. */
+     std::map<std::string, std::string> additionalData;
++
++    /** Optional event extension requests. */
++    phosphor::logging::event_extensions::RequestList extensions;
+ };
+ 
+ /** Extract information from a generated event.
+diff --git a/log_manager.cpp b/log_manager.cpp
+index de96f40..a454b61 100644
+--- a/log_manager.cpp
++++ b/log_manager.cpp
+@@ -218,7 +218,9 @@ void Manager::_commit(uint64_t transactionId [[maybe_unused]],
+ 
+ auto Manager::createEntry(std::string errMsg, Entry::Level errLvl,
+                           std::map<std::string, std::string> additionalData,
+-                          const FFDCEntries& ffdc) -> sdbusplus::object_path
++                          const FFDCEntries& ffdc,
++                          const event_extensions::RequestList& requests)
++    -> sdbusplus::object_path
+ {
+     if (!Extensions::disableDefaultLogCaps())
+     {
+@@ -281,11 +283,19 @@ auto Manager::createEntry(std::string errMsg, Entry::Level errLvl,
+     auto additionalDataVec = util::additional_data::combine(additionalData);
+     processMetadata(errMsg, additionalDataVec, objects);
+ 
++    event_extensions::Context context{
++        busLog,
++        objPath,
++    };
++
++    auto eventExtensions = extensionManager.create(context, requests);
++
+     auto e = std::make_unique<Entry>(
+         busLog, objPath, entryId,
+         ms, // Milliseconds since 1970
+         errLvl, std::move(errMsg), std::move(additionalData),
+-        std::move(objects), fwVersion, getEntrySerializePath(entryId), *this);
++        std::move(objects), fwVersion, getEntrySerializePath(entryId), *this,
++        std::move(eventExtensions));
+ 
+     serialize(*e);
+     serializeJSON(*e);
+@@ -803,7 +813,11 @@ auto Manager::create(const std::string& message, Entry::Level severity,
+                      const std::map<std::string, std::string>& additionalData,
+                      const FFDCEntries& ffdc) -> sdbusplus::object_path
+ {
+-    return createEntry(message, severity, additionalData, ffdc);
++    auto data = additionalData;
++    auto requests = buildEventExtensionRequests(data);
++
++    return createEntry(message, severity, std::move(data), ffdc,
++                       std::move(requests));
+ }
+ 
+ void Manager::setupErrorFileWatch()
+@@ -1016,6 +1030,46 @@ bool Manager::refreshFromDisk(uint32_t id)
+     return true;
+ }
+ 
++auto Manager::buildEventExtensionRequests(
++    std::map<std::string, std::string>& additionalData)
++    -> event_extensions::RequestList
++{
++    event_extensions::RequestList requests;
++
++    auto extIt = additionalData.find("_EXTENSIONS");
++    if (extIt == additionalData.end())
++    {
++        return requests;
++    }
++
++    try
++    {
++        auto extensions = nlohmann::json::parse(extIt->second);
++
++        for (const auto& [interface, data] : extensions.items())
++        {
++            requests.emplace_back(event_extensions::Request{
++                .interface = interface,
++                .data = data,
++            });
++        }
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error("Failed to process event extension metadata: "
++                   "{ERROR}",
++                   "ERROR", e.what());
++    }
++
++    /*
++     * Extension metadata is transport-only and should
++     * not be persisted as entry additional data.
++     */
++    additionalData.erase(extIt);
++
++    return requests;
++}
++
+ } // namespace internal
+ } // namespace logging
+ } // namespace phosphor
+diff --git a/log_manager.hpp b/log_manager.hpp
+index 681f5a4..09aa480 100644
+--- a/log_manager.hpp
++++ b/log_manager.hpp
+@@ -5,6 +5,7 @@
+ #include "bmc_pos_mgr.hpp"
+ #include "elog_block.hpp"
+ #include "elog_entry.hpp"
++#include "event_extensions/manager.hpp"
+ #include "xyz/openbmc_project/Logging/Internal/Manager/server.hpp"
+ 
+ #include <phosphor-logging/lg2.hpp>
+@@ -287,11 +288,14 @@ class Manager : public details::ServerObject<details::ManagerIface>
+      * @param[in] errLvl - level of the error
+      * @param[in] additionalData - The AdditionalData property for the error
+      * @param[in] ffdc - A vector of FFDC file info. Defaults to an empty
+-     * vector.
++     *                  vector.
++     * @param[in] requests Event extension requests
++     *                     associated with the log entry.
+      */
+     auto createEntry(std::string errMsg, Entry::Level errLvl,
+                      std::map<std::string, std::string> additionalData,
+-                     const FFDCEntries& ffdc = FFDCEntries{})
++                     const FFDCEntries& ffdc = FFDCEntries{},
++                     const event_extensions::RequestList& requests = {})
+         -> sdbusplus::object_path;
+ 
+     /** @brief Notified on entry property changes
+@@ -340,6 +344,21 @@ class Manager : public details::ServerObject<details::ManagerIface>
+     void errorFileChanged(sdeventplus::source::IO& io, int fd,
+                           uint32_t revents);
+ 
++    /**
++     * @brief Build event extension requests from additional
++     *        data.
++     *
++     * Extracts extension metadata from the _EXTENSIONS
++     * transport field and converts it into runtime event
++     * extension requests.
++     *
++     * @param[in,out] additionalData Event additional data.
++     *
++     * @return Event extension requests.
++     */
++    event_extensions::RequestList buildEventExtensionRequests(
++        std::map<std::string, std::string>& additionalData);
++
+     /** @brief Persistent sdbusplus DBus bus connection. */
+     sdbusplus::bus_t& busLog;
+ 
+@@ -386,6 +405,17 @@ class Manager : public details::ServerObject<details::ManagerIface>
+      * entry directory.
+      */
+     int errDirWatcherWD = -1;
++
++    /** Event extension framework manager. */
++    event_extensions::Manager extensionManager;
++
++    /**
++     * @brief Event extension framework manager.
++     *
++     * Owns registered event extension providers and creates
++     * runtime event extensions for log entries.
++     */
++    event_extensions::Manager eventExtensionManager;
+ };
+ 
+ } // namespace internal
+diff --git a/meson.build b/meson.build
+index 95ec943..5495cd5 100644
+--- a/meson.build
++++ b/meson.build
+@@ -39,6 +39,7 @@ endif
+ subdir('config')
+ subdir('tools')
+ subdir('lib')
++subdir('event_extensions')
+ 
+ if get_option('libonly')
+     subdir_done()
+@@ -171,6 +172,7 @@ log_manager_sources = [
+         'util.cpp',
+     ),
+ ]
++log_manager_sources += event_extensions_sources
+ log_manager_deps = [
+     cereal_dep,
+     conf_h_dep,
+diff --git a/test/event_extensions/event_extensions_test.cpp b/test/event_extensions/event_extensions_test.cpp
+new file mode 100644
+index 0000000..926a805
+--- /dev/null
++++ b/test/event_extensions/event_extensions_test.cpp
+@@ -0,0 +1,58 @@
++#include "event_extensions/registry.hpp"
++#include "event_extensions/request.hpp"
++
++#include <gtest/gtest.h>
++
++namespace phosphor::logging::event_extensions
++{
++
++namespace
++{
++
++ExtensionPtr createExtension(const Context&, const Request&)
++{
++    return {};
++}
++
++} // namespace
++
++TEST(RequestTest, DefaultConstruct)
++{
++    Request request;
++    EXPECT_TRUE(request.interface.empty());
++    EXPECT_TRUE(request.data.is_null());
++}
++
++TEST(RequestTest, EmptyRequestList)
++{
++    RequestList requests;
++    EXPECT_TRUE(requests.empty());
++}
++
++TEST(RegistryTest, UnknownExtensionLookup)
++{
++    Registry registry;
++    EXPECT_EQ(registry.find("test.interface"), nullptr);
++}
++
++TEST(RegistryTest, RegisterExtension)
++{
++    Registry registry;
++
++    registry.registerExtension("test.interface", createExtension);
++
++    EXPECT_NE(registry.find("test.interface"), nullptr);
++}
++
++TEST(RegistryTest, DuplicateExtensionRegistration)
++{
++    Registry registry;
++
++    registry.registerExtension("test.interface", createExtension);
++
++    registry.registerExtension("test.interface", createExtension);
++
++    EXPECT_NE(registry.find("test.interface"), nullptr);
++}
++
++} // namespace phosphor::logging::event_extensions
+diff --git a/test/event_extensions/meson.build b/test/event_extensions/meson.build
+new file mode 100644
+index 0000000..8f02bf1
+--- /dev/null
++++ b/test/event_extensions/meson.build
+@@ -0,0 +1,16 @@
++test(
++    'test_event_extensions',
++    executable(
++        'test-event-extensions',
++        'event_extensions_test.cpp',
++        link_with: [log_manager_lib],
++        dependencies: [
++            gtest_dep,
++            log_manager_deps,
++        ],
++        include_directories: include_directories(
++            '../../',
++            '../../gen',
++        ),
++    ),
++)
+diff --git a/test/meson.build b/test/meson.build
+index 92e3f5c..8d88121 100644
+--- a/test/meson.build
++++ b/test/meson.build
+@@ -23,6 +23,8 @@ if get_option('openpower-pel-extension').allowed()
+     subdir('openpower-pels')
+ endif
+ 
++subdir('event_extensions')
++
+ tests = [
+     'bmc_pos_mgr_test',
+     'extensions_test',
+diff --git a/test/openpower-pels/meson.build b/test/openpower-pels/meson.build
+index a1fb868..0803a70 100644
+--- a/test/openpower-pels/meson.build
++++ b/test/openpower-pels/meson.build
+@@ -34,6 +34,7 @@ openpower_pels = {
+             callouts_gen,
+             generated_sources,
+             log_manager_ext_sources,
++            event_extensions_sources,
+         ],
+         'deps': [cereal_dep],
+     },
+-- 
+2.43.0
+

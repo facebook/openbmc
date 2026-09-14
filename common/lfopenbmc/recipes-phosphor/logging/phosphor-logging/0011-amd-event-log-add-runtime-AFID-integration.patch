@@ -1,0 +1,525 @@
+From 09fd48352af2ee03852497df21dd9de7ea41d714 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Thu, 10 Sep 2026 02:17:43 -0500
+Subject: [PATCH 11/12] amd-event-log: add runtime AFID integration
+
+Add runtime helper APIs on top of the generated AFID
+lookup database.
+
+The implementation provides support for resolving AFID
+metadata from event messages and associated AdditionalData.
+The runtime layer converts event data into structures that
+can be consumed by AEL extensions without requiring direct
+access to the generated lookup database.
+
+Also add common helper utilities and unit tests covering
+AFID resolution and AdditionalData parsing behavior.
+
+This change introduces runtime integration support only.
+AMD Redfish payload projection and OEM metadata rendering
+are added in subsequent changes.
+
+Change-Id: I1b873dba21ed234247d711107842c918dd1b9954
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ extensions/amd-event-log/README.md            | 134 ++++++++++++++++++
+ .../amd-event-log/include/ael_common_info.hpp |  20 +++
+ extensions/amd-event-log/include/ael_info.hpp |  29 ++++
+ .../amd-event-log/src/ael_common_info.cpp     |  25 ++++
+ extensions/amd-event-log/src/ael_info.cpp     |  20 +++
+ extensions/amd-event-log/src/entry_points.cpp |  68 +++++++++
+ extensions/amd-event-log/src/meson.build      |   3 +
+ test/amd-event-log/ael_info_test.cpp          |  85 +++++++++++
+ test/amd-event-log/meson.build                |  21 +++
+ test/meson.build                              |   3 +
+ 10 files changed, 408 insertions(+)
+ create mode 100644 extensions/amd-event-log/README.md
+ create mode 100644 extensions/amd-event-log/include/ael_common_info.hpp
+ create mode 100644 extensions/amd-event-log/include/ael_info.hpp
+ create mode 100644 extensions/amd-event-log/src/ael_common_info.cpp
+ create mode 100644 extensions/amd-event-log/src/ael_info.cpp
+ create mode 100644 extensions/amd-event-log/src/entry_points.cpp
+ create mode 100644 test/amd-event-log/ael_info_test.cpp
+ create mode 100644 test/amd-event-log/meson.build
+
+diff --git a/extensions/amd-event-log/README.md b/extensions/amd-event-log/README.md
+new file mode 100644
+index 0000000..31ebaa8
+--- /dev/null
++++ b/extensions/amd-event-log/README.md
+@@ -0,0 +1,134 @@
++# AMD Event Log Extension
++
++## Overview
++
++This extension provides AMD-specific functionality for the phosphor-logging
++framework.
++
++It builds on the extension infrastructure provided by phosphor-logging and
++enables AMD-specific processing during log creation.
++
++The extension framework allows AMD-specific logic to enrich log entries without
++modifying the core logging implementation.
++
++---
++
++## AMD Metadata Namespace
++
++AMD-specific metadata is stored under the `"AMD"` namespace within the runtime
++metadata object managed by phosphor-logging.
++
++### Example
++
++```json
++{
++  "AMD": {
++    "Key": "Value"
++  }
++}
++```
++
++### Guidelines
++
++1. Only the `"AMD"` namespace is owned and modified by AMD extensions.
++2. Metadata should be structured and compact.
++3. Existing fields should remain backward compatible.
++4. Consumers should ignore unrecognized fields.
++
++---
++
++## Runtime Metadata
++
++The AMD extension framework supports enriching log entries with AMD-specific
++runtime metadata.
++
++Metadata is generated during log creation and stored under the `"AMD"` namespace
++as structured JSON.
++
++---
++
++## AEL Metadata
++
++The AMD Event Log (AEL) extension uses this framework to contribute AMD-specific
++event information derived from the log context.
++
++### AEL Core Fields
++
++| Field          | Description                                        |
++| -------------- | -------------------------------------------------- |
++| `AEL.VERSION`  | Version of the AEL schema                          |
++| `AEL.AFID`     | AMD Field ID identifying the error                 |
++| `AEL.FRU_LIST` | Inventory object path(s) associated with the fault |
++| `AEL.RACK_ID`  | Rack identifier associated with the event          |
++
++### Example
++
++```json
++{
++  "AMD": {
++    "AEL.VERSION": "1.0",
++    "AEL.AFID": "4660",
++    "AEL.FRU_LIST": "/xyz/openbmc_project/inventory/system/chassis"
++  }
++}
++```
++
++---
++
++### Pre-rendered OEM Payload (Passthrough)
++
++#### Input
++
++```json
++{
++  "AMD": {
++    "AEL.REDFISH": {
++      "@odata.type": "#AMD_Message.v1_0_0.AMD_Message",
++      "AMDFieldIdentifiers": [
++        {
++          "AFID": 12001,
++          "Description": "Compute Tray Error"
++        }
++      ]
++    }
++  }
++}
++```
++
++#### Output
++
++```json
++{
++  "@odata.type": "#AMD_Message.v1_0_0.AMD_Message",
++  "AMDFieldIdentifiers": [
++    {
++      "AFID": 12001,
++      "Description": "Compute Tray Error"
++    }
++  ]
++}
++```
++
++When `AEL.REDFISH` is present, the payload is used directly and no additional
++AEL metadata processing or Redfish projection is performed.
++
++---
++
++## AEL Reverse Lookup Table
++
++1. Provides mapping of Redfish events to AMD-specific identifiers (`AFID`,
++   `originOfCondition`).
++2. Uses a JSON-defined reverse LUT generated at build time.
++3. Eliminates runtime parsing via compile-time generated C++ code.
++4. Ensures deterministic and efficient lookup behavior.
++5. Supports OEM customization through Yocto-based JSON override.
++
++---
++
++## Extensibility
++
++The AMD extension infrastructure is designed to support additional AMD-specific
++logging features using the same runtime metadata framework.
++
++Extensions may contribute new metadata, diagnostics, or log enrichment features
++under the `"AMD"` namespace while maintaining a consistent schema for consumers.
+diff --git a/extensions/amd-event-log/include/ael_common_info.hpp b/extensions/amd-event-log/include/ael_common_info.hpp
+new file mode 100644
+index 0000000..a89703e
+--- /dev/null
++++ b/extensions/amd-event-log/include/ael_common_info.hpp
+@@ -0,0 +1,20 @@
++#pragma once
++
++#include <map>
++#include <string>
++#include <vector>
++
++namespace phosphor::logging::extensions::ael
++{
++
++using AdditionalDataMap = std::map<std::string, std::string>;
++
++/**
++ * Parse phosphor-logging AdditionalData entries of the form:
++ *
++ * KEY=value
++ */
++AdditionalDataMap parseAdditionalData(
++    const std::vector<std::string>& additionalData);
++
++} // namespace phosphor::logging::extensions::ael
+diff --git a/extensions/amd-event-log/include/ael_info.hpp b/extensions/amd-event-log/include/ael_info.hpp
+new file mode 100644
+index 0000000..6d0b02f
+--- /dev/null
++++ b/extensions/amd-event-log/include/ael_info.hpp
+@@ -0,0 +1,29 @@
++#pragma once
++
++#include "amd_afid_utils.hpp"
++
++#include <map>
++#include <optional>
++#include <string>
++
++namespace phosphor::logging::extensions::ael
++{
++
++/**
++ * @brief Resolve AFID metadata for an event.
++ *
++ * Uses the generated AFID lookup database to resolve
++ * event-specific metadata based on the event message and
++ * associated AdditionalData fields.
++ *
++ * @param[in] message Event message identifier.
++ * @param[in] additionalData Event AdditionalData key/value pairs.
++ *
++ * @return AFID metadata when a matching lookup entry is
++ *         found, otherwise std::nullopt.
++ */
++std::optional<AFIDInfo> resolveAFID(
++    const std::string& message,
++    const std::map<std::string, std::string>& additionalData);
++
++} // namespace phosphor::logging::extensions::ael
+diff --git a/extensions/amd-event-log/src/ael_common_info.cpp b/extensions/amd-event-log/src/ael_common_info.cpp
+new file mode 100644
+index 0000000..89494fe
+--- /dev/null
++++ b/extensions/amd-event-log/src/ael_common_info.cpp
+@@ -0,0 +1,25 @@
++#include "ael_common_info.hpp"
++
++namespace phosphor::logging::extensions::ael
++{
++
++AdditionalDataMap parseAdditionalData(
++    const std::vector<std::string>& additionalData)
++{
++    AdditionalDataMap result;
++
++    for (const auto& entry : additionalData)
++    {
++        auto pos = entry.find('=');
++        if (pos == std::string::npos)
++        {
++            continue;
++        }
++
++        result.emplace(entry.substr(0, pos), entry.substr(pos + 1));
++    }
++
++    return result;
++}
++
++} // namespace phosphor::logging::extensions::ael
+diff --git a/extensions/amd-event-log/src/ael_info.cpp b/extensions/amd-event-log/src/ael_info.cpp
+new file mode 100644
+index 0000000..8d32d87
+--- /dev/null
++++ b/extensions/amd-event-log/src/ael_info.cpp
+@@ -0,0 +1,20 @@
++#include "ael_info.hpp"
++
++namespace phosphor::logging::extensions::ael
++{
++
++std::optional<AFIDInfo> resolveAFID(
++    const std::string& message,
++    const std::map<std::string, std::string>& additionalData)
++{
++    auto info = lookupAFID(message, additionalData);
++
++    if (info.afid == 0)
++    {
++        return std::nullopt;
++    }
++
++    return info;
++}
++
++} // namespace phosphor::logging::extensions::ael
+diff --git a/extensions/amd-event-log/src/entry_points.cpp b/extensions/amd-event-log/src/entry_points.cpp
+new file mode 100644
+index 0000000..3c442e9
+--- /dev/null
++++ b/extensions/amd-event-log/src/entry_points.cpp
+@@ -0,0 +1,68 @@
++#include "ael_info.hpp"
++#include "extensions.hpp"
++
++#include <phosphor-logging/lg2.hpp>
++
++namespace phosphor::logging::extensions::ael
++{
++
++using namespace phosphor::logging;
++
++/**
++ * @brief AMD runtime metadata provider.
++ *
++ * Resolves AFID metadata for an event and adds it to the
++ * aggregated runtime metadata. This provider is responsible
++ * only for AFID lookup integration and does not perform any
++ * Redfish payload projection.
++ *
++ * @param[in,out] metadata Aggregated runtime metadata.
++ * @param[in] message Event message identifier.
++ * @param[in] level Event severity.
++ * @param[in] additionalData Event additional data.
++ */
++static void amdRuntimeMetadataProvider(
++    nlohmann::json& metadata, const std::string& message,
++    [[maybe_unused]] Entry::Level level,
++    const std::map<std::string, std::string>& additionalData)
++{
++    try
++    {
++        auto info = resolveAFID(message, additionalData);
++        if (!info)
++        {
++            lg2::debug("amdRuntimeMetadataProvider: "
++                       "no AFID metadata found");
++            return;
++        }
++
++        nlohmann::json amdMetadata;
++        amdMetadata["AFID"] = info->afid;
++        if (!info->description.empty())
++        {
++            amdMetadata["Description"] = info->description;
++        }
++        if (!info->origins.empty())
++        {
++            amdMetadata["OriginOfCondition"] = info->origins;
++        }
++        if (!info->redfishMappings.empty())
++        {
++            amdMetadata["RedfishMappings"] = info->redfishMappings;
++        }
++        metadata["AMD"] = std::move(amdMetadata);
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error("amdRuntimeMetadataProvider exception: "
++                   "{ERROR}",
++                   "ERROR", e.what());
++    }
++}
++
++/**
++ * Register AMD runtime metadata provider.
++ */
++REGISTER_RUNTIME_METADATA_PROVIDER(amdRuntimeMetadataProvider);
++
++} // namespace phosphor::logging::extensions::ael
+diff --git a/extensions/amd-event-log/src/meson.build b/extensions/amd-event-log/src/meson.build
+index e494343..038d3e2 100644
+--- a/extensions/amd-event-log/src/meson.build
++++ b/extensions/amd-event-log/src/meson.build
+@@ -24,6 +24,9 @@ lut_gen = custom_target(
+ 
+ ael_sources = files(
+     'amd_afid_utils.cpp',
++    'ael_common_info.cpp',
++    'ael_info.cpp',
++    'entry_points.cpp',
+ )
+ 
+ log_manager_ext_sources += ael_sources
+diff --git a/test/amd-event-log/ael_info_test.cpp b/test/amd-event-log/ael_info_test.cpp
+new file mode 100644
+index 0000000..03ee6ac
+--- /dev/null
++++ b/test/amd-event-log/ael_info_test.cpp
+@@ -0,0 +1,85 @@
++#include "ael_info.hpp"
++
++#include <gtest/gtest.h>
++
++namespace phosphor::logging::extensions::ael
++{
++
++TEST(AELInfoTest, UnknownMessageReturnsNullopt)
++{
++    auto result = resolveAFID("INVALID.MESSAGE", {});
++
++    EXPECT_FALSE(result.has_value());
++}
++
++TEST(AELInfoTest, LookupReturnsAFID)
++{
++    std::map<std::string, std::string> additionalData{
++        {"SENSOR_NAME", "GPU0_TEMP"},
++    };
++    auto result = resolveAFID("xyz.openbmc_project.Sensor.Threshold."
++                              "ReadingAboveLowerCriticalThreshold",
++                              additionalData);
++    if (!result)
++    {
++        GTEST_FAIL() << "Expected AFID lookup to succeed";
++        return;
++    }
++
++    EXPECT_NE(result->afid, 0ULL);
++}
++
++TEST(AELInfoTest, LookupReturnsValidMetadataObject)
++{
++    std::map<std::string, std::string> additionalData{
++        {"SENSOR_NAME", "GPU0_TEMP"},
++    };
++    auto result = resolveAFID("xyz.openbmc_project.Sensor.Threshold."
++                              "ReadingAboveLowerCriticalThreshold",
++                              additionalData);
++    if (!result)
++    {
++        GTEST_FAIL() << "Expected AFID lookup to succeed";
++        return;
++    }
++
++    EXPECT_NE(result->afid, 0ULL);
++    EXPECT_GE(result->origins.size(), 0U);
++    EXPECT_GE(result->redfishMappings.size(), 0U);
++}
++
++TEST(AELInfoTest, LookupReturnsConsistentResult)
++{
++    std::map<std::string, std::string> additionalData{
++        {"SENSOR_NAME", "GPU0_TEMP"},
++    };
++    auto result1 = resolveAFID("xyz.openbmc_project.Sensor.Threshold."
++                               "ReadingAboveLowerCriticalThreshold",
++                               additionalData);
++    auto result2 = resolveAFID("xyz.openbmc_project.Sensor.Threshold."
++                               "ReadingAboveLowerCriticalThreshold",
++                               additionalData);
++    if (!result1 || !result2)
++    {
++        GTEST_FAIL() << "Expected AFID lookup to succeed";
++        return;
++    }
++
++    EXPECT_EQ(result1->afid, result2->afid);
++    EXPECT_EQ(result1->description, result2->description);
++    EXPECT_EQ(result1->origins.size(), result2->origins.size());
++    EXPECT_EQ(result1->redfishMappings.size(), result2->redfishMappings.size());
++}
++
++TEST(AELInfoTest, EmptyAdditionalDataHandled)
++{
++    auto result = resolveAFID("xyz.openbmc_project.Sensor.Threshold."
++                              "ReadingAboveLowerCriticalThreshold",
++                              {});
++    if (result)
++    {
++        EXPECT_NE(result->afid, 0ULL);
++    }
++}
++
++} // namespace phosphor::logging::extensions::ael
+diff --git a/test/amd-event-log/meson.build b/test/amd-event-log/meson.build
+new file mode 100644
+index 0000000..d94b2d4
+--- /dev/null
++++ b/test/amd-event-log/meson.build
+@@ -0,0 +1,21 @@
++test(
++    'ael_info_test',
++    executable(
++        'ael_info_test',
++        [
++            'ael_info_test.cpp',
++            '../../extensions/amd-event-log/src/ael_info.cpp',
++            '../../extensions/amd-event-log/src/amd_afid_utils.cpp',
++            lut_gen,
++        ],
++        include_directories: [
++            include_directories('../../extensions/amd-event-log/include'),
++        ],
++        dependencies: [
++            gtest_dep,
++            phosphor_logging_dep,
++            conf_h_dep,
++        ],
++    ),
++)
++
+diff --git a/test/meson.build b/test/meson.build
+index 8d88121..2ce27bc 100644
+--- a/test/meson.build
++++ b/test/meson.build
+@@ -22,6 +22,9 @@ endif
+ if get_option('openpower-pel-extension').allowed()
+     subdir('openpower-pels')
+ endif
++if get_option('amd-event-log').allowed()
++    subdir('amd-event-log')
++endif
+ 
+ subdir('event_extensions')
+ 
+-- 
+2.43.0
+

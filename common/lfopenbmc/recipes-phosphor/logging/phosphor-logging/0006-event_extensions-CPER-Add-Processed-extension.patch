@@ -1,0 +1,341 @@
+From 84dbc51d0c8927fdaa1694de0a20d329e336ed5f Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Wed, 2 Sep 2026 03:04:36 -0500
+Subject: [PATCH 06/12] event_extensions:CPER: Add Processed extension
+
+Add the first event extension implementation based on the
+CPER Processed D-Bus interface.
+
+Implement create, restore, and serialize support for the
+CPER Processed extension and register it with the builtin
+event extension framework.
+
+This change exercises the complete event extension
+lifecycle end-to-end.
+
+Change-Id: If935cb2b5c4dd3549b59ba29f86f9c6a584ba60e
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ event_extensions/builtins.cpp                 |   7 +-
+ event_extensions/cper/meson.build             |   3 +
+ event_extensions/cper/processed.cpp           |  59 ++++++++
+ event_extensions/cper/processed.hpp           | 126 ++++++++++++++++++
+ event_extensions/meson.build                  |   2 +
+ test/event_extensions/cper_processed_test.cpp |  40 ++++++
+ test/event_extensions/meson.build             |  17 +++
+ 7 files changed, 252 insertions(+), 2 deletions(-)
+ create mode 100644 event_extensions/cper/meson.build
+ create mode 100644 event_extensions/cper/processed.cpp
+ create mode 100644 event_extensions/cper/processed.hpp
+ create mode 100644 test/event_extensions/cper_processed_test.cpp
+
+diff --git a/event_extensions/builtins.cpp b/event_extensions/builtins.cpp
+index c752ffb..7f39a93 100644
+--- a/event_extensions/builtins.cpp
++++ b/event_extensions/builtins.cpp
+@@ -1,10 +1,13 @@
+ #include "event_extensions/builtins.hpp"
+ 
+-#include "event_extensions/registry.hpp"
++#include "event_extensions/cper/processed.hpp"
+ 
+ namespace phosphor::logging::event_extensions
+ {
+ 
+-void registerBuiltins(Registry&) {}
++void registerBuiltins(Registry& registry)
++{
++    cper::processed::registerExtension(registry);
++}
+ 
+ } // namespace phosphor::logging::event_extensions
+diff --git a/event_extensions/cper/meson.build b/event_extensions/cper/meson.build
+new file mode 100644
+index 0000000..dd83db1
+--- /dev/null
++++ b/event_extensions/cper/meson.build
+@@ -0,0 +1,3 @@
++event_extensions_sources += files(
++    'processed.cpp',
++)
+diff --git a/event_extensions/cper/processed.cpp b/event_extensions/cper/processed.cpp
+new file mode 100644
+index 0000000..a59e858
+--- /dev/null
++++ b/event_extensions/cper/processed.cpp
+@@ -0,0 +1,59 @@
++#include "event_extensions/cper/processed.hpp"
++
++namespace phosphor::logging::event_extensions::cper::processed
++{
++
++Extension::Extension(sdbusplus::bus_t& bus, const std::string& objectPath,
++                     Properties properties) : Interface(bus, objectPath.c_str())
++{
++    diagnosticDataType(properties.diagnosticDataType, true);
++    notificationType(std::move(properties.notificationType), true);
++    sectionType(std::move(properties.sectionType), true);
++    oem(std::move(properties.oem), true);
++}
++
++nlohmann::json Extension::serialize() const
++{
++    return {
++        {diagnosticDataTypeKey, diagnosticDataType()},
++        {notificationTypeKey, notificationType()},
++        {sectionTypeKey, sectionType()},
++        {oemKey, oem()},
++    };
++}
++
++ExtensionPtr create(const Context& context, const Request& request)
++{
++    Properties properties{};
++    properties.diagnosticDataType = ContentType::CPER;
++    properties.notificationType =
++        request.data.value(notificationTypeKey, std::string{});
++    properties.sectionType = request.data.value(sectionTypeKey, std::string{});
++    properties.oem = request.data.value(oemKey, OemMetadata{});
++    return std::make_unique<Extension>(context.bus, context.objectPath,
++                                       std::move(properties));
++}
++
++ExtensionPtr restore(const Context& context, const nlohmann::json& data)
++{
++    Properties properties{};
++    properties.diagnosticDataType =
++        data.at(diagnosticDataTypeKey).get<ContentType>();
++    properties.notificationType =
++        data.at(notificationTypeKey).get<std::string>();
++    properties.sectionType = data.at(sectionTypeKey).get<std::string>();
++    properties.oem = data.at(oemKey).get<OemMetadata>();
++
++    return std::make_unique<Extension>(context.bus, context.objectPath,
++                                       std::move(properties));
++}
++
++void registerExtension(Registry& registry)
++{
++    registry.registerExtension(interface, {
++                                              .createCallback = create,
++                                              .restoreCallback = restore,
++                                          });
++}
++
++} // namespace phosphor::logging::event_extensions::cper::processed
+diff --git a/event_extensions/cper/processed.hpp b/event_extensions/cper/processed.hpp
+new file mode 100644
+index 0000000..b4180ae
+--- /dev/null
++++ b/event_extensions/cper/processed.hpp
+@@ -0,0 +1,126 @@
++#pragma once
++
++#include "event_extensions/extension.hpp"
++#include "event_extensions/registry.hpp"
++
++#include <nlohmann/json.hpp>
++#include <xyz/openbmc_project/Logging/CPER/Types/common.hpp>
++#include <xyz/openbmc_project/Logging/Extension/CPER/Processed/server.hpp>
++
++#include <map>
++#include <string>
++#include <string_view>
++
++namespace phosphor::logging::event_extensions::cper::processed
++{
++
++using Interface = sdbusplus::server::xyz::openbmc_project::logging::extension::
++    cper::Processed;
++using ContentType =
++    sdbusplus::common::xyz::openbmc_project::logging::cper::Types::ContentType;
++using OemMetadata = std::map<std::string, std::string>;
++
++inline constexpr std::string_view interface =
++    "xyz.openbmc_project.Logging.Extension.CPER.Processed";
++inline constexpr auto diagnosticDataTypeKey = "DiagnosticDataType";
++inline constexpr auto notificationTypeKey = "NotificationType";
++inline constexpr auto sectionTypeKey = "SectionType";
++inline constexpr auto oemKey = "Oem";
++
++/**
++ * @brief CPER Processed interface properties.
++ *
++ * Represents the persisted state exposed through the
++ * xyz.openbmc_project.Logging.Extension.CPER.Processed
++ * interface.
++ */
++struct Properties
++{
++    ContentType diagnosticDataType;
++    std::string notificationType;
++    std::string sectionType;
++    OemMetadata oem;
++};
++
++/**
++ * @brief CPER Processed event extension.
++ *
++ * Provides the
++ * xyz.openbmc_project.Logging.Extension.CPER.Processed
++ * D-Bus interface on a log entry.
++ */
++class Extension : public event_extensions::Extension, public Interface
++{
++  public:
++    Extension() = delete;
++    Extension(const Extension&) = delete;
++    Extension(Extension&&) = delete;
++    Extension& operator=(const Extension&) = delete;
++    Extension& operator=(Extension&&) = delete;
++    ~Extension() override = default;
++
++    /**
++     * @brief Construct a CPER Processed extension.
++     *
++     * @param[in] bus D-Bus connection.
++     * @param[in] objectPath Log entry object path.
++     * @param[in] properties CPER Processed properties.
++     */
++    Extension(sdbusplus::bus_t& bus, const std::string& objectPath,
++              Properties properties);
++
++    /**
++     * @brief Return implemented interface name.
++     *
++     * @return Interface name.
++     */
++    std::string_view interface() const override
++    {
++        return processed::interface;
++    }
++
++    /**
++     * @brief Serialize extension state.
++     *
++     * @return Serialized extension state.
++     */
++    nlohmann::json serialize() const override;
++};
++
++/**
++ * @brief Create a CPER Processed extension.
++ *
++ * Constructs a runtime CPER Processed extension from
++ * event extension request data.
++ *
++ * @param[in] context Runtime creation context.
++ * @param[in] request Extension request.
++ *
++ * @return Created extension.
++ */
++ExtensionPtr create(const Context& context, const Request& request);
++
++/**
++ * @brief Restore a CPER Processed extension.
++ *
++ * Reconstructs a runtime CPER Processed extension from
++ * serialized extension state.
++ *
++ * @param[in] context Runtime creation context.
++ * @param[in] data Serialized extension state.
++ *
++ * @return Restored extension.
++ */
++ExtensionPtr restore(const Context& context, const nlohmann::json& data);
++
++/**
++ * @brief Register the CPER Processed extension.
++ *
++ * Registers create and restore callbacks with the
++ * event extension registry.
++ *
++ * @param[in,out] registry Event extension registry.
++ */
++void registerExtension(Registry& registry);
++
++} // namespace phosphor::logging::event_extensions::cper::processed
+diff --git a/event_extensions/meson.build b/event_extensions/meson.build
+index a80e3ea..37be970 100644
+--- a/event_extensions/meson.build
++++ b/event_extensions/meson.build
+@@ -3,3 +3,5 @@ event_extensions_sources = files(
+     'registry.cpp',
+     'manager.cpp',
+ )
++
++subdir('cper')
+diff --git a/test/event_extensions/cper_processed_test.cpp b/test/event_extensions/cper_processed_test.cpp
+new file mode 100644
+index 0000000..56a04d4
+--- /dev/null
++++ b/test/event_extensions/cper_processed_test.cpp
+@@ -0,0 +1,40 @@
++#include "event_extensions/cper/processed.hpp"
++#include "event_extensions/registry.hpp"
++
++#include <gtest/gtest.h>
++
++namespace phosphor::logging::event_extensions
++{
++
++TEST(CPERProcessedTest, RegisterExtension)
++{
++    Registry registry;
++
++    cper::processed::registerExtension(registry);
++
++    EXPECT_NE(registry.find(cper::processed::interface), nullptr);
++}
++
++TEST(CPERProcessedTest, SerializeProperties)
++{
++    cper::processed::Properties properties{
++        cper::processed::ContentType::CPER,
++        "notification-type",
++        "section-type",
++        {{"Vendor", "AMD"}},
++    };
++
++    EXPECT_EQ(properties.diagnosticDataType,
++              cper::processed::ContentType::CPER);
++    EXPECT_EQ(properties.notificationType, "notification-type");
++    EXPECT_EQ(properties.sectionType, "section-type");
++    EXPECT_EQ(properties.oem.at("Vendor"), "AMD");
++}
++
++TEST(CPERProcessedTest, InterfaceName)
++{
++    EXPECT_EQ(cper::processed::interface,
++              "xyz.openbmc_project.Logging.Extension.CPER.Processed");
++}
++
++} // namespace phosphor::logging::event_extensions
+diff --git a/test/event_extensions/meson.build b/test/event_extensions/meson.build
+index 8f02bf1..a5897e7 100644
+--- a/test/event_extensions/meson.build
++++ b/test/event_extensions/meson.build
+@@ -14,3 +14,20 @@ test(
+         ),
+     ),
+ )
++
++test(
++    'test_cper_processed',
++    executable(
++        'test-cper-processed',
++        'cper_processed_test.cpp',
++        link_with: [log_manager_lib],
++        dependencies: [
++            gtest_dep,
++            log_manager_deps,
++        ],
++        include_directories: include_directories(
++            '../../',
++            '../../gen',
++        ),
++    ),
++)
+-- 
+2.43.0
+

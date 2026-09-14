@@ -1,0 +1,452 @@
+From a67d7e12eebcd951583332f539c5178e314ce0dd Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Wed, 2 Sep 2026 02:31:33 -0500
+Subject: [PATCH 05/12] event_extensions: Add persistence support
+
+Add serialization and restoration support for runtime event extensions.
+
+Persist extension state in log entry JSON files and restore event
+extensions during log recovery. Update Entry ownership APIs and
+log serialization infrastructure to support extension lifecycle
+management.
+
+Change-Id: I0a86623553c6ab4060600e4ac90bcc4016e34846
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ elog_entry.hpp                                | 24 +++++++
+ elog_serialize.cpp                            | 23 +++++++
+ elog_serialize.hpp                            |  9 +++
+ event_extensions/extension.hpp                | 11 +++
+ event_extensions/manager.cpp                  | 29 ++++++--
+ event_extensions/manager.hpp                  | 13 ++++
+ event_extensions/registry.cpp                 |  8 +--
+ event_extensions/registry.hpp                 | 31 +++++++--
+ log_manager.cpp                               | 10 +++
+ .../event_extensions_test.cpp                 | 67 +++++++++++++++++--
+ 10 files changed, 206 insertions(+), 19 deletions(-)
+
+diff --git a/elog_entry.hpp b/elog_entry.hpp
+index 3b01ce1..fac3156 100644
+--- a/elog_entry.hpp
++++ b/elog_entry.hpp
+@@ -160,6 +160,30 @@ class Entry : public EntryIfaces
+      */
+     sdbusplus::message::unix_fd getEntry() override;
+ 
++    /**
++     * @brief Get runtime event extensions associated with
++     *        this entry.
++     *
++     * @return Runtime event extensions.
++     */
++    const event_extensions::ExtensionList& getEventExtensions() const
++    {
++        return eventExtensions;
++    }
++
++    /**
++     * @brief Replace runtime event extensions associated with this entry.
++     *
++     * Transfers ownership of the supplied runtime event
++     * extensions to the entry.
++     *
++     * @param[in] eventExtensions Runtime event extensions.
++     */
++    void setEventExtensions(event_extensions::ExtensionList eventExtensions)
++    {
++        this->eventExtensions = std::move(eventExtensions);
++    }
++
+   private:
+     /** @brief This entry's associations */
+     AssociationList assocs = {};
+diff --git a/elog_serialize.cpp b/elog_serialize.cpp
+index 08ee15d..444cace 100644
+--- a/elog_serialize.cpp
++++ b/elog_serialize.cpp
+@@ -175,6 +175,14 @@ fs::path serializeJSON(const Entry& e, const fs::path& dir)
+     j["eventId"] = e.eventId();
+     j["resolution"] = e.resolution();
+ 
++    j["eventExtensions"] = nlohmann::json::object();
++
++    for (const auto& extension : e.getEventExtensions())
++    {
++        j["eventExtensions"][std::string(extension->interface())] =
++            extension->serialize();
++    }
++
+     std::ofstream os(path.c_str());
+     os << j.dump(4);
+     return path;
+@@ -274,5 +282,20 @@ bool deserialize(const fs::path& path, Entry& e)
+     }
+ }
+ 
++nlohmann::json deserializeEventExtensions(const fs::path& path)
++{
++    std::ifstream is(path.c_str());
++
++    nlohmann::json j;
++    is >> j;
++
++    if (auto it = j.find("eventExtensions"); it != j.end())
++    {
++        return *it;
++    }
++
++    return nlohmann::json::object();
++}
++
+ } // namespace logging
+ } // namespace phosphor
+diff --git a/elog_serialize.hpp b/elog_serialize.hpp
+index 162a0c1..4cbe8b3 100644
+--- a/elog_serialize.hpp
++++ b/elog_serialize.hpp
+@@ -57,5 +57,14 @@ bool deserialize(const fs::path& path, Entry& e);
+ fs::path getEntrySerializePath(uint32_t id,
+                                const fs::path& dir = fs::path(paths::error()));
+ 
++/**
++ * @brief Deserialize persisted event extension data.
++ *
++ * @param[in] path Log entry JSON file.
++ *
++ * @return Event extension data indexed by interface name.
++ */
++nlohmann::json deserializeEventExtensions(const fs::path& path);
++
+ } // namespace logging
+ } // namespace phosphor
+diff --git a/event_extensions/extension.hpp b/event_extensions/extension.hpp
+index c4d1529..ffe5e5b 100644
+--- a/event_extensions/extension.hpp
++++ b/event_extensions/extension.hpp
+@@ -1,5 +1,6 @@
+ #pragma once
+ 
++#include <nlohmann/json.hpp>
+ #include <sdbusplus/bus.hpp>
+ 
+ #include <memory>
+@@ -58,6 +59,16 @@ class Extension
+      * extension-owned resources.
+      */
+     virtual void onDelete() {}
++
++    /**
++     * @brief Serialize extension state.
++     *
++     * @return Extension-specific serialized state.
++     */
++    virtual nlohmann::json serialize() const
++    {
++        return {};
++    }
+ };
+ 
+ using ExtensionPtr = std::unique_ptr<Extension>;
+diff --git a/event_extensions/manager.cpp b/event_extensions/manager.cpp
+index 55ef8f0..2aa37a3 100644
+--- a/event_extensions/manager.cpp
++++ b/event_extensions/manager.cpp
+@@ -16,11 +16,10 @@ ExtensionList Manager::create(const Context& context,
+                               const RequestList& requests) const
+ {
+     ExtensionList extensions;
+-
+     for (const auto& request : requests)
+     {
+-        const auto* createCallback = registry.find(request.interface);
+-        if (createCallback == nullptr)
++        const auto* registration = registry.find(request.interface);
++        if (registration == nullptr)
+         {
+             lg2::warning("No event extension registered for "
+                          "{INTERFACE}",
+@@ -28,7 +27,29 @@ ExtensionList Manager::create(const Context& context,
+             continue;
+         }
+ 
+-        auto extension = createCallback->operator()(context, request);
++        auto extension = registration->createCallback(context, request);
++        if (extension != nullptr)
++        {
++            extensions.emplace_back(std::move(extension));
++        }
++    }
++
++    return extensions;
++}
++
++ExtensionList Manager::restore(const Context& context,
++                               const nlohmann::json& data) const
++{
++    ExtensionList extensions;
++    for (const auto& [interface, payload] : data.items())
++    {
++        const auto* registration = registry.find(interface);
++        if (registration == nullptr)
++        {
++            continue;
++        }
++
++        auto extension = registration->restoreCallback(context, payload);
+         if (extension != nullptr)
+         {
+             extensions.emplace_back(std::move(extension));
+diff --git a/event_extensions/manager.hpp b/event_extensions/manager.hpp
+index 65e4966..a1d3e1b 100644
+--- a/event_extensions/manager.hpp
++++ b/event_extensions/manager.hpp
+@@ -4,6 +4,8 @@
+ #include "registry.hpp"
+ #include "request.hpp"
+ 
++#include <nlohmann/json.hpp>
++
+ namespace phosphor::logging::event_extensions
+ {
+ 
+@@ -37,6 +39,17 @@ class Manager
+     ExtensionList create(const Context& context,
+                          const RequestList& requests) const;
+ 
++    /**
++     * @brief Restore extensions from serialized data.
++     *
++     * @param[in] context Runtime creation context.
++     * @param[in] data Serialized extension state.
++     *
++     * @return Restored extensions.
++     */
++    ExtensionList restore(const Context& context,
++                          const nlohmann::json& data) const;
++
+   private:
+     Registry registry;
+ };
+diff --git a/event_extensions/registry.cpp b/event_extensions/registry.cpp
+index 7ed6a12..6d245ca 100644
+--- a/event_extensions/registry.cpp
++++ b/event_extensions/registry.cpp
+@@ -6,10 +6,10 @@ namespace phosphor::logging::event_extensions
+ {
+ 
+ void Registry::registerExtension(std::string_view interface,
+-                                 CreateCallback createCallback)
++                                 Registration registration)
+ {
+-    auto [it, inserted] =
+-        registrations.emplace(interface, std::move(createCallback));
++    auto [it,
++          inserted] = registrations.emplace(interface, std::move(registration));
+ 
+     if (!inserted)
+     {
+@@ -19,7 +19,7 @@ void Registry::registerExtension(std::string_view interface,
+     }
+ }
+ 
+-const CreateCallback* Registry::find(std::string_view interface) const
++const Registration* Registry::find(std::string_view interface) const
+ {
+     auto it = registrations.find(std::string(interface));
+ 
+diff --git a/event_extensions/registry.hpp b/event_extensions/registry.hpp
+index db64eec..29c5112 100644
+--- a/event_extensions/registry.hpp
++++ b/event_extensions/registry.hpp
+@@ -3,6 +3,8 @@
+ #include "extension.hpp"
+ #include "request.hpp"
+ 
++#include <nlohmann/json.hpp>
++
+ #include <functional>
+ #include <string>
+ #include <string_view>
+@@ -17,11 +19,26 @@ namespace phosphor::logging::event_extensions
+ using CreateCallback =
+     std::function<ExtensionPtr(const Context&, const Request&)>;
+ 
++/**
++ * @brief Callback used to restore a runtime extension.
++ */
++using RestoreCallback =
++    std::function<ExtensionPtr(const Context&, const nlohmann::json&)>;
++
++/**
++ * @brief Extension registration callbacks.
++ */
++struct Registration
++{
++    CreateCallback createCallback;
++    RestoreCallback restoreCallback;
++};
++
+ /**
+  * @brief Registry of event extensions.
+  *
+  * Maintains the mapping between extension interface names
+- * and extension creation callbacks.
++ * and extension registration callbacks.
+  */
+ class Registry
+ {
+@@ -37,23 +54,23 @@ class Registry
+      * @brief Register an extension.
+      *
+      * @param[in] interface Extension interface name.
+-     * @param[in] createCallback Extension creation callback.
++     * @param[in] registration Extension registration callbacks.
+      */
+     void registerExtension(std::string_view interface,
+-                           CreateCallback createCallback);
++                           Registration registration);
+ 
+     /**
+-     * @brief Lookup an extension creation callback.
++     * @brief Lookup an extension registration.
+      *
+      * @param[in] interface Extension interface name.
+      *
+-     * @return Registered callback or nullptr if no
++     * @return Registered callbacks or nullptr if no
+      *         extension is registered.
+      */
+-    const CreateCallback* find(std::string_view interface) const;
++    const Registration* find(std::string_view interface) const;
+ 
+   private:
+-    std::unordered_map<std::string, CreateCallback> registrations;
++    std::unordered_map<std::string, Registration> registrations;
+ };
+ 
+ } // namespace phosphor::logging::event_extensions
+diff --git a/log_manager.cpp b/log_manager.cpp
+index f667772..740ccba 100644
+--- a/log_manager.cpp
++++ b/log_manager.cpp
+@@ -743,6 +743,16 @@ void Manager::restore()
+                 continue;
+             }
+             e->path(filePath, true);
++
++            // Event extension
++            auto eventExtensionData = deserializeEventExtensions(filePath);
++            event_extensions::Context context{
++                busLog,
++                std::string(OBJ_ENTRY) + '/' + std::to_string(idNum),
++            };
++            auto eventExtensions =
++                eventExtensionManager.restore(context, eventExtensionData);
++            e->setEventExtensions(std::move(eventExtensions));
+         }
+         else
+         {
+diff --git a/test/event_extensions/event_extensions_test.cpp b/test/event_extensions/event_extensions_test.cpp
+index 926a805..09bb1c6 100644
+--- a/test/event_extensions/event_extensions_test.cpp
++++ b/test/event_extensions/event_extensions_test.cpp
+@@ -1,3 +1,4 @@
++#include "event_extensions/extension.hpp"
+ #include "event_extensions/registry.hpp"
+ #include "event_extensions/request.hpp"
+ 
+@@ -9,9 +10,30 @@ namespace phosphor::logging::event_extensions
+ namespace
+ {
+ 
++class TestExtension : public Extension
++{
++  public:
++    std::string_view interface() const override
++    {
++        return "test.interface";
++    }
++
++    nlohmann::json serialize() const override
++    {
++        return {
++            {"Value", "test"},
++        };
++    }
++};
++
+ ExtensionPtr createExtension(const Context&, const Request&)
+ {
+-    return {};
++    return std::make_unique<TestExtension>();
++}
++
++ExtensionPtr restoreExtension(const Context&, const nlohmann::json&)
++{
++    return std::make_unique<TestExtension>();
+ }
+ 
+ } // namespace
+@@ -39,7 +61,11 @@ TEST(RegistryTest, RegisterExtension)
+ {
+     Registry registry;
+ 
+-    registry.registerExtension("test.interface", createExtension);
++    registry.registerExtension("test.interface",
++                               {
++                                   .createCallback = createExtension,
++                                   .restoreCallback = restoreExtension,
++                               });
+ 
+     EXPECT_NE(registry.find("test.interface"), nullptr);
+ }
+@@ -48,11 +74,44 @@ TEST(RegistryTest, DuplicateExtensionRegistration)
+ {
+     Registry registry;
+ 
+-    registry.registerExtension("test.interface", createExtension);
++    registry.registerExtension("test.interface",
++                               {
++                                   .createCallback = createExtension,
++                                   .restoreCallback = restoreExtension,
++                               });
+ 
+-    registry.registerExtension("test.interface", createExtension);
++    registry.registerExtension("test.interface",
++                               {
++                                   .createCallback = createExtension,
++                                   .restoreCallback = restoreExtension,
++                               });
+ 
+     EXPECT_NE(registry.find("test.interface"), nullptr);
+ }
+ 
++TEST(ExtensionTest, Serialize)
++{
++    TestExtension extension;
++    auto data = extension.serialize();
++
++    EXPECT_TRUE(data.contains("Value"));
++    EXPECT_EQ(data["Value"], "test");
++}
++
++TEST(RegistryTest, RegistrationCallbacksPresent)
++{
++    Registry registry;
++    registry.registerExtension("test.interface",
++                               {
++                                   .createCallback = createExtension,
++                                   .restoreCallback = restoreExtension,
++                               });
++
++    const auto* registration = registry.find("test.interface");
++    ASSERT_NE(registration, nullptr);
++
++    EXPECT_TRUE(static_cast<bool>(registration->createCallback));
++    EXPECT_TRUE(static_cast<bool>(registration->restoreCallback));
++}
++
+ } // namespace phosphor::logging::event_extensions
+-- 
+2.43.0
+

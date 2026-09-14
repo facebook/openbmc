@@ -1,7 +1,7 @@
-From ba60689824575c1ed2b38e3209912609a7eb33d2 Mon Sep 17 00:00:00 2001
+From 004e8c905898ab8438000b50611bd0dba28f29a5 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
-Date: Tue, 25 Aug 2026 02:08:47 -0500
-Subject: [PATCH] plugin: add artifact storage support
+Date: Wed, 2 Sep 2026 07:03:35 -0500
+Subject: [PATCH 07/12] event_extensions: add artifact storage support
 
 Introduce generic artifact storage support for logging extensions.
 
@@ -17,44 +17,37 @@ by future plugins requiring external artifact storage.
 
 No functional changes are introduced by this commit.
 
-Change-Id: Ic2f15f306090194c6f9adc3828fe7733ac9d1ef4
+Change-Id: I56c0ee27bece79e4dbdf8ad8bd050fad68ea00b0
 Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
 ---
- plugin/meson.build            |   4 +
- plugin/utils/artifact.cpp     | 203 ++++++++++++++++++++++++++++++++++
- plugin/utils/artifact.hpp     |  96 ++++++++++++++++
- plugin/utils/meson.build      |   3 +
- test/plugin/artifact_test.cpp | 113 +++++++++++++++++++
- test/plugin/meson.build       |  20 ++++
- 6 files changed, 439 insertions(+)
- create mode 100644 plugin/utils/artifact.cpp
- create mode 100644 plugin/utils/artifact.hpp
- create mode 100644 plugin/utils/meson.build
- create mode 100644 test/plugin/artifact_test.cpp
+ event_extensions/meson.build            |   1 +
+ event_extensions/utils/artifact.cpp     | 203 ++++++++++++++++++++++++
+ event_extensions/utils/artifact.hpp     |  96 +++++++++++
+ event_extensions/utils/meson.build      |   3 +
+ test/event_extensions/artifact_test.cpp | 113 +++++++++++++
+ test/event_extensions/meson.build       |  20 +++
+ 6 files changed, 436 insertions(+)
+ create mode 100644 event_extensions/utils/artifact.cpp
+ create mode 100644 event_extensions/utils/artifact.hpp
+ create mode 100644 event_extensions/utils/meson.build
+ create mode 100644 test/event_extensions/artifact_test.cpp
 
-diff --git a/plugin/meson.build b/plugin/meson.build
-index 8c8c00e..ae8fb98 100644
---- a/plugin/meson.build
-+++ b/plugin/meson.build
-@@ -1,3 +1,5 @@
-+subdir('utils')
-+
- plugin_sources = files(
-     'cper_processed_plugin.cpp',
-     'plugin_builtin.cpp',
-@@ -5,3 +7,5 @@ plugin_sources = files(
-     'plugin_registry.cpp',
-     'plugin_service.cpp',
+diff --git a/event_extensions/meson.build b/event_extensions/meson.build
+index 37be970..283b173 100644
+--- a/event_extensions/meson.build
++++ b/event_extensions/meson.build
+@@ -5,3 +5,4 @@ event_extensions_sources = files(
  )
-+
-+plugin_sources += plugin_utils_sources
-diff --git a/plugin/utils/artifact.cpp b/plugin/utils/artifact.cpp
+ 
+ subdir('cper')
++subdir('utils')
+diff --git a/event_extensions/utils/artifact.cpp b/event_extensions/utils/artifact.cpp
 new file mode 100644
-index 0000000..e5e7f0f
+index 0000000..8dd2616
 --- /dev/null
-+++ b/plugin/utils/artifact.cpp
++++ b/event_extensions/utils/artifact.cpp
 @@ -0,0 +1,203 @@
-+#include "plugin/utils/artifact.hpp"
++#include "event_extensions/utils/artifact.hpp"
 +
 +#include <fcntl.h>
 +#include <unistd.h>
@@ -67,7 +60,7 @@ index 0000000..e5e7f0f
 +#include <string>
 +#include <utility>
 +
-+namespace phosphor::logging::plugin::utils
++namespace phosphor::logging::event_extensions::utils
 +{
 +
 +namespace
@@ -256,12 +249,12 @@ index 0000000..e5e7f0f
 +    }
 +}
 +
-+} // namespace phosphor::logging::plugin::utils
-diff --git a/plugin/utils/artifact.hpp b/plugin/utils/artifact.hpp
++} // namespace phosphor::logging::event_extensions::utils
+diff --git a/event_extensions/utils/artifact.hpp b/event_extensions/utils/artifact.hpp
 new file mode 100644
-index 0000000..18d090e
+index 0000000..48c871f
 --- /dev/null
-+++ b/plugin/utils/artifact.hpp
++++ b/event_extensions/utils/artifact.hpp
 @@ -0,0 +1,96 @@
 +#pragma once
 +
@@ -269,7 +262,7 @@ index 0000000..18d090e
 +#include <span>
 +#include <string_view>
 +
-+namespace phosphor::logging::plugin::utils
++namespace phosphor::logging::event_extensions::utils
 +{
 +
 +/**
@@ -358,23 +351,23 @@ index 0000000..18d090e
 + */
 +void removeArtifact(const ArtifactRef& artifact);
 +
-+} // namespace phosphor::logging::plugin::utils
-diff --git a/plugin/utils/meson.build b/plugin/utils/meson.build
++} // namespace phosphor::logging::event_extensions::utils
+diff --git a/event_extensions/utils/meson.build b/event_extensions/utils/meson.build
 new file mode 100644
-index 0000000..1c34e21
+index 0000000..58e7db2
 --- /dev/null
-+++ b/plugin/utils/meson.build
++++ b/event_extensions/utils/meson.build
 @@ -0,0 +1,3 @@
-+plugin_utils_sources = files(
++event_extensions_sources += files(
 +    'artifact.cpp',
 +)
-diff --git a/test/plugin/artifact_test.cpp b/test/plugin/artifact_test.cpp
+diff --git a/test/event_extensions/artifact_test.cpp b/test/event_extensions/artifact_test.cpp
 new file mode 100644
-index 0000000..ed4efde
+index 0000000..a8e3d82
 --- /dev/null
-+++ b/test/plugin/artifact_test.cpp
++++ b/test/event_extensions/artifact_test.cpp
 @@ -0,0 +1,113 @@
-+#include "plugin/utils/artifact.hpp"
++#include "event_extensions/utils//artifact.hpp"
 +
 +#include <fcntl.h>
 +#include <unistd.h>
@@ -384,7 +377,7 @@ index 0000000..ed4efde
 +
 +#include <gtest/gtest.h>
 +
-+namespace phosphor::logging::plugin::utils
++namespace phosphor::logging::event_extensions::utils
 +{
 +
 +class ArtifactTest : public ::testing::Test
@@ -486,12 +479,12 @@ index 0000000..ed4efde
 +    EXPECT_NE(first.path, second.path);
 +}
 +
-+} // namespace phosphor::logging::plugin::utils
-diff --git a/test/plugin/meson.build b/test/plugin/meson.build
-index 2a64a7a..ebe1248 100644
---- a/test/plugin/meson.build
-+++ b/test/plugin/meson.build
-@@ -51,3 +51,23 @@ test(
++} // namespace phosphor::logging::event_extensions::utils
+diff --git a/test/event_extensions/meson.build b/test/event_extensions/meson.build
+index a5897e7..10493d5 100644
+--- a/test/event_extensions/meson.build
++++ b/test/event_extensions/meson.build
+@@ -31,3 +31,23 @@ test(
          ),
      ),
  )
@@ -516,5 +509,5 @@ index 2a64a7a..ebe1248 100644
 +    ),
 +)
 -- 
-2.53.0-Meta
+2.43.0
 

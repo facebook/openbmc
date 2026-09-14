@@ -1,7 +1,7 @@
-From 8a3753e06b867ba51208203f468dc4e8ad271e9c Mon Sep 17 00:00:00 2001
+From fb22660077e0bef32b6cc92e3ffd914f8948f795 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Sun, 2 Aug 2026 11:24:28 -0500
-Subject: [PATCH] logging: defer entry object-added signal emission
+Subject: [PATCH 04/12] logging: defer entry object-added signal emission
 
 Move log entry object-added signal emission from Entry construction
 to the logging manager.
@@ -21,10 +21,10 @@ Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
  2 files changed, 2 insertions(+), 3 deletions(-)
 
 diff --git a/elog_entry.hpp b/elog_entry.hpp
-index 8f4d6be..33c9589 100644
+index ac9928e..3b01ce1 100644
 --- a/elog_entry.hpp
 +++ b/elog_entry.hpp
-@@ -91,9 +91,6 @@ class Entry : public EntryIfaces
+@@ -89,9 +89,6 @@ class Entry : public EntryIfaces
          version(fwVersion, true);
          purpose(VersionPurpose::BMC, true);
          path(filePath, true);
@@ -35,10 +35,10 @@ index 8f4d6be..33c9589 100644
  
      /** @brief Constructor that puts an "empty" error object on the bus,
 diff --git a/log_manager.cpp b/log_manager.cpp
-index de96f40..4e76572 100644
+index a454b61..f667772 100644
 --- a/log_manager.cpp
 +++ b/log_manager.cpp
-@@ -290,6 +290,8 @@ auto Manager::createEntry(std::string errMsg, Entry::Level errLvl,
+@@ -300,6 +300,8 @@ auto Manager::createEntry(std::string errMsg, Entry::Level errLvl,
      serialize(*e);
      serializeJSON(*e);
  
@@ -48,5 +48,5 @@ index de96f40..4e76572 100644
          isCalloutPresent(*e))
      {
 -- 
-2.53.0-Meta
+2.43.0
 

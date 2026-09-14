@@ -93,7 +93,7 @@ index a2ab6fa1ab..f4bba51228 100644
      } else {
          data = i2c_recv(bus->bus);
 -        trace_aspeed_i2c_bus_recv("BYTE", 1, 1, bus->regs[reg_byte_buf]);
-+        trace_aspeed_i2c_bus_recv(bus-id, "BYTE", 1, 1,
++        trace_aspeed_i2c_bus_recv(bus->id, "BYTE", 1, 1,
 +                                  bus->regs[reg_byte_buf]);
          aspeed_i2c_bus_latch_rx_byte(bus, data);
      }

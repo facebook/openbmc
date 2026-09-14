@@ -39,15 +39,20 @@ no interrupt to report it, deadlocking against the withheld bus ACK.
 
 Signed-off-by: Zinc Lim <zinclim@meta.com>
 ---
- hw/i2c/aspeed_i2c.c         | 37 ++++++++++++++++++++++++++++++++-----
+ hw/i2c/aspeed_i2c.c         | 38 ++++++++++++++++++++++++++++++++------
  include/hw/i2c/aspeed_i2c.h |  9 +++++++++
- 2 files changed, 41 insertions(+), 5 deletions(-)
+ 2 files changed, 41 insertions(+), 6 deletions(-)
 
 diff --git a/hw/i2c/aspeed_i2c.c b/hw/i2c/aspeed_i2c.c
 index 022b47ed36..ac1295af10 100644
 --- a/hw/i2c/aspeed_i2c.c
 +++ b/hw/i2c/aspeed_i2c.c
-@@ -169,6 +169,11 @@ static uint64_t aspeed_i2c_bus_new_read(AspeedI2CBus *bus, hwaddr offset,
+@@ -164,11 +164,15 @@ static uint64_t aspeed_i2c_bus_new_read(AspeedI2CBus *bus, hwaddr offset,
+     case A_I2CS_CMD:
+     case A_I2CS_INTR_CTRL:
+     case A_I2CS_DMA_LEN_STS:
+-    case A_I2CS_INTR_STS:
+     case A_I2CC_BYTE_DATA_LOG:
      case A_I2CC_VERSION_CTRL:
          value = bus->regs[offset / sizeof(*bus->regs)];
          break;

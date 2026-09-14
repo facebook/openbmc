@@ -1,4 +1,4 @@
-From c7b9ca33f01da5fda4f908fbc0c36b5ac7aec048 Mon Sep 17 00:00:00 2001
+From 9a28b7eabc3fd783a02c8f348daeba8d7041c2c8 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Wed, 27 May 2026 15:14:14 +0800
 Subject: [PATCH] meta-facebook-ventura2-Add-aspeed-bmc-facebook-ventura2.dts
@@ -8,15 +8,15 @@ lore: https://lore.kernel.org/all/20260424-ventura2_initial_dts-v4-0-806b00ea431
 Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 ---
  arch/arm/boot/dts/aspeed/Makefile             |    1 +
- .../aspeed/aspeed-bmc-facebook-ventura2.dts   | 2958 +++++++++++++++++
- 2 files changed, 2959 insertions(+)
+ .../aspeed/aspeed-bmc-facebook-ventura2.dts   | 2938 +++++++++++++++++
+ 2 files changed, 2939 insertions(+)
  create mode 100644 arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
 
 diff --git a/arch/arm/boot/dts/aspeed/Makefile b/arch/arm/boot/dts/aspeed/Makefile
-index 6b68671f9379..6874b621deb4 100644
+index 776fe6d2f..b7aa3583c 100644
 --- a/arch/arm/boot/dts/aspeed/Makefile
 +++ b/arch/arm/boot/dts/aspeed/Makefile
-@@ -38,6 +38,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
+@@ -40,6 +40,7 @@ dtb-$(CONFIG_ARCH_ASPEED) += \
  	aspeed-bmc-facebook-sanmiguel.dtb \
  	aspeed-bmc-facebook-santabarbara.dtb \
  	aspeed-bmc-facebook-tiogapass.dtb \
@@ -26,10 +26,10 @@ index 6b68671f9379..6874b621deb4 100644
  	aspeed-bmc-facebook-wedge400-data64.dtb \
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
 new file mode 100644
-index 000000000000..679d62ae8b10
+index 000000000..576ec3b44
 --- /dev/null
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura2.dts
-@@ -0,0 +1,2958 @@
+@@ -0,0 +1,2938 @@
 +// SPDX-License-Identifier: GPL-2.0
 +// Copyright (c) 2023 Facebook Inc.
 +/dts-v1/;
@@ -1834,11 +1834,6 @@ index 000000000000..679d62ae8b10
 +		"PRSNT_RACKMON_MCIO_N", "PRSNT_RIO_RACKMON_N";
 +	};
 +
-+	temp-sensor@4f {
-+		compatible = "ti,tmp75";
-+		reg = <0x4f>;
-+	};
-+
 +	eeprom@54 {
 +		compatible = "atmel,24c128";
 +		reg = <0x54>;
@@ -2209,21 +2204,6 @@ index 000000000000..679d62ae8b10
 +	power-monitor@69 {
 +		compatible = "pmbus";
 +		reg = <0x69>;
-+	};
-+
-+	temp-sensor@4d {
-+		compatible = "ti,tmp75";
-+		reg = <0x4d>;
-+	};
-+
-+	temp-sensor@4c {
-+		compatible = "ti,tmp75";
-+		reg = <0x4c>;
-+	};
-+
-+	temp-sensor@4e {
-+		compatible = "ti,tmp75";
-+		reg = <0x4e>;
 +	};
 +
 +	legacy_prsnt_io_expander0: gpio@11 {
@@ -2989,5 +2969,5 @@ index 000000000000..679d62ae8b10
 +};
 +
 -- 
-2.53.0-Meta
+2.34.1
 

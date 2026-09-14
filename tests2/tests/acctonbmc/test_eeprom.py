@@ -37,6 +37,8 @@ class CHASSISEepromTest(EepromV5Test, unittest.TestCase):
             "MINIPACK3BA",
             "WEDGE800BACT",
             "WEDGE800CACT",
+            "WEDGE800BNHP",
+            "WEDGE800CNHP",
         ]
 
     def set_location_on_fabric(self):
@@ -82,7 +84,7 @@ class RackMonEepromTest(EepromV5Test, unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        PlatformInfo.skip_unless_platform(["WEDGE800BACT", "WEDGE800CACT"])
+        PlatformInfo.skip_unless_platform(["WEDGE800BACT", "WEDGE800CACT", "WEDGE800BNHP", "WEDGE800CNHP"])
         super().setUpClass()
 
     def set_eeprom_cmd(self):

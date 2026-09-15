@@ -187,6 +187,7 @@ SRC_URI:append = " \
            file://0693-hw-i2c-aspeed_i2c-fix-AST2700-target-buffer-mode-rec.patch \
            file://0694-hw-arm-aspeed-enable-both-fby35-BMC-MACs.patch \
            file://0695-hw-arm-bletchley-take-the-FRU-MAC-from-the-configure.patch \
+           file://0696-hw-misc-i2c-netdev2-don-t-drop-packets-on-the-single.patch \
            "
 
 QEMU_CHECKOUT_DIR = "${BPN}-${PV}"

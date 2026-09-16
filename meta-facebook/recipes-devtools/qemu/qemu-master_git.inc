@@ -188,6 +188,12 @@ SRC_URI:append = " \
            file://0694-hw-arm-aspeed-enable-both-fby35-BMC-MACs.patch \
            file://0695-hw-arm-bletchley-take-the-FRU-MAC-from-the-configure.patch \
            file://0696-hw-misc-i2c-netdev2-don-t-drop-packets-on-the-single.patch \
+           file://0697-net-slirp-Add-dhcp-lease-parameter-for-static-DHCP-l.patch \
+           "
+
+# slirp is a subproject: its patches need a patchdir, or they hit QEMU's tree.
+SRC_URI:append = " \
+           file://slirp-0001-bootp-honour-static-DHCP-leases.patch;patchdir=${S}/subprojects/slirp \
            "
 
 QEMU_CHECKOUT_DIR = "${BPN}-${PV}"

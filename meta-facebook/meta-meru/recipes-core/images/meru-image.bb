@@ -22,6 +22,7 @@ IMAGE_INSTALL += " \
   flashrom \
   ipmitool \
   kcsd \
+  ssifd \
   libcpldupdate-dll-ioctl \
   show-tech \
   "

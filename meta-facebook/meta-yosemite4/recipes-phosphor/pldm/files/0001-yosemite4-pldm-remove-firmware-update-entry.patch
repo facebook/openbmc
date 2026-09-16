@@ -1,6 +1,6 @@
-From ad2d3b211e56f7755bd0b764a43e533f8f5b76ff Mon Sep 17 00:00:00 2001
+From 4fd9c3b6c5f63ab6b67e5b4cd97ab463b1dcc2ae Mon Sep 17 00:00:00 2001
 From: Unive Tien <unive.tien.wiwynn@gmail.com>
-Date: Thu, 27 Nov 2025 08:48:08 +0000
+Date: Thu, 27 Aug 2026 16:47:00 +0800
 Subject: [PATCH] yosemite4: pldm: remove firmware update entry
 
 Description:
@@ -19,28 +19,42 @@ Tested on the Yosemite4 platform to ensure that the firmware update entry
 is no longer exposed on D-Bus, and verified that other inventory
 functionalities remain unaffected.
 ---
- fw-update/inventory_manager.cpp | 8 --------
- 1 file changed, 8 deletions(-)
+ fw-update/inventory_manager.cpp | 15 ---------------
+ 1 file changed, 15 deletions(-)
 
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index de25b5e..8f5d46c 100644
+index d38662a..24011f3 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
-@@ -723,14 +723,6 @@ void InventoryManager::getFirmwareParameters(
+@@ -814,14 +814,6 @@ void InventoryManager::getFirmwareParameters(
              auto componentName =
                  std::format("{}_Component_{}", firmwareDeviceNameMap.at(eid),
                              compIdentifier);
 -
 -            firmwareInventoryManager.createFirmwareEntry(
 -                SoftwareIdentifier(eid, compIdentifier), componentName,
--                utils::toString(activeCompVerStr), descriptorMap.at(eid),
--                componentInfo, [this, eid]() {
+-                currentCompVerStr, descriptorMap.at(eid), componentInfo,
+-                [this, eid]() {
 -                    this->sendQueryDeviceIdentifiersRequest(eid);
 -                    this->sendQueryDownstreamDevicesRequest(eid);
 -                });
          }
          else
          {
+@@ -845,13 +837,6 @@ void InventoryManager::getFirmwareParameters(
+             descIt != descriptorMap.end())
+         {
+             const SoftwareIdentifier totalIdentifier{eid, std::nullopt};
+-
+-            firmwareInventoryManager.createFirmwareEntry(
+-                totalIdentifier, devNameIt->second, imageSetVersion,
+-                descIt->second, componentInfo, [this, eid]() {
+-                    this->sendQueryDeviceIdentifiersRequest(eid);
+-                    this->sendQueryDownstreamDevicesRequest(eid);
+-                });
+         }
+     }
+ 
 -- 
-2.53.0-Meta
+2.47.3
 

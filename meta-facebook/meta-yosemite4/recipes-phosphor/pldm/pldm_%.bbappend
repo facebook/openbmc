@@ -4,6 +4,10 @@ SRC_URI += " \
     file://yosemite4.conf \
     file://pldmd-exit-handler.service \
     file://pldmd-exit-handler \
+"
+
+# Must apply after common/lfopenbmc pldm patches.
+SRC_URI:append:openbmc-fb-lf = " \
     file://0001-yosemite4-pldm-remove-firmware-update-entry.patch \
 "
 

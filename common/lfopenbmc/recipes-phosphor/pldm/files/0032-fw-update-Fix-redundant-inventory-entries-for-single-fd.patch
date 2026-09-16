@@ -1,0 +1,150 @@
+From 878c0980c768fcc4278cad67bf1bab68eb5333ee Mon Sep 17 00:00:00 2001
+From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
+Date: Tue, 28 Jul 2026 09:22:38 +0800
+Subject: [PATCH] fw-update: Fix redundant inventory entries for
+ single-component FDs
+
+Currently, single-component devices (e.g., CX7) expose duplicate
+firmware entries when their image set version matches the component
+version.
+
+Additionally, the image-level firmware entry previously reused the
+CompIdentifier value to represent a device/image-level entry that
+is not tied to any specific PLDM component.
+
+DSP0267 does not reserve any CompIdentifier value for image-level
+version string, so any fixed sentinel value risks colliding with a
+vendor-assigned component identifier.
+
+This commit resolves these issues by:
+1. Skipping the image-level entry if its version string matches any
+   component's version, prioritizing the actual component entry.
+2. Introducing an optional component-identifier field in
+   SoftwareIdentifier (common/types.hpp). std::nullopt now explicitly
+   represents a device/image-level entry, removing the need for a
+   magic-number sentinel and eliminating the ID-collision risk at the
+   type level rather than relying on a value that is merely unlikely
+   to collide.
+
+Change-Id: I967f158e76a376ff615f5793aa24e0cca873abfe
+Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
+---
+ common/types.hpp                |  3 +-
+ fw-update/inventory_manager.cpp | 52 +++++++++++++++++++--------------
+ 2 files changed, 32 insertions(+), 23 deletions(-)
+
+diff --git a/common/types.hpp b/common/types.hpp
+index 26c3dff..826565d 100644
+--- a/common/types.hpp
++++ b/common/types.hpp
+@@ -7,6 +7,7 @@
+ #include <cstdint>
+ #include <functional>
+ #include <map>
++#include <optional>
+ #include <set>
+ #include <span>
+ #include <string>
+@@ -141,7 +142,7 @@ using DownstreamDescriptorMap = std::unordered_map<eid, DownstreamDeviceInfo>;
+ // Component information
+ using CompClassification = uint16_t;
+ using CompIdentifier = uint16_t;
+-using SoftwareIdentifier = std::pair<eid, CompIdentifier>;
++using SoftwareIdentifier = std::pair<eid, std::optional<CompIdentifier>>;
+ using CompKey = std::pair<CompClassification, CompIdentifier>;
+ using CompClassificationIndex = uint8_t;
+ using ComponentInfo = std::map<CompKey, CompClassificationIndex>;
+diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
+index 8697466..d127db3 100644
+--- a/fw-update/inventory_manager.cpp
++++ b/fw-update/inventory_manager.cpp
+@@ -777,25 +777,7 @@ void InventoryManager::getFirmwareParameters(
+     ComponentInfo componentInfo{};
+ 
+     const auto imageSetVersion = utils::toString(activeCompImageSetVerStr);
+-
+-    if (!imageSetVersion.empty())
+-    {
+-        auto devNameIt = firmwareDeviceNameMap.find(eid);
+-        auto descIt = descriptorMap.find(eid);
+-
+-        if (devNameIt != firmwareDeviceNameMap.end() &&
+-            descIt != descriptorMap.end())
+-        {
+-            const SoftwareIdentifier totalIdentifier = std::make_pair(eid, 0);
+-
+-            firmwareInventoryManager.createFirmwareEntry(
+-                totalIdentifier, devNameIt->second, imageSetVersion,
+-                descIt->second, componentInfo, [this, eid]() {
+-                    this->sendQueryDeviceIdentifiersRequest(eid);
+-                    this->sendQueryDownstreamDevicesRequest(eid);
+-                });
+-        }
+-    }
++    bool isImageVersionMatched = false;
+ 
+     while (fwParams.comp_count-- && (compParamTableLen > 0))
+     {
+@@ -807,7 +789,7 @@ void InventoryManager::getFirmwareParameters(
+             error(
+                 "Failed to decode component parameter table entry for endpoint ID {EID}, response code {RC}",
+                 "EID", eid, "RC", rc);
+-            return;
++            break;
+         }
+ 
+         auto compClassification = compEntry.comp_classification;
+@@ -816,6 +798,13 @@ void InventoryManager::getFirmwareParameters(
+             std::make_pair(compClassification, compIdentifier),
+             compEntry.comp_classification_index);
+ 
++        auto currentCompVerStr = utils::toString(activeCompVerStr);
++
++        if (!imageSetVersion.empty() && imageSetVersion == currentCompVerStr)
++        {
++            isImageVersionMatched = true;
++        }
++
+         if (firmwareDeviceNameMap.contains(eid) and descriptorMap.contains(eid))
+         {
+             auto componentName =
+@@ -824,8 +813,8 @@ void InventoryManager::getFirmwareParameters(
+ 
+             firmwareInventoryManager.createFirmwareEntry(
+                 SoftwareIdentifier(eid, compIdentifier), componentName,
+-                utils::toString(activeCompVerStr), descriptorMap.at(eid),
+-                componentInfo, [this, eid]() {
++                currentCompVerStr, descriptorMap.at(eid), componentInfo,
++                [this, eid]() {
+                     this->sendQueryDeviceIdentifiersRequest(eid);
+                     this->sendQueryDownstreamDevicesRequest(eid);
+                 });
+@@ -843,6 +832,25 @@ void InventoryManager::getFirmwareParameters(
+                              activeCompVerStr.length + pendingCompVerStr.length;
+     }
+ 
++    if (!imageSetVersion.empty() && !isImageVersionMatched)
++    {
++        auto devNameIt = firmwareDeviceNameMap.find(eid);
++        auto descIt = descriptorMap.find(eid);
++
++        if (devNameIt != firmwareDeviceNameMap.end() &&
++            descIt != descriptorMap.end())
++        {
++            const SoftwareIdentifier totalIdentifier{eid, std::nullopt};
++
++            firmwareInventoryManager.createFirmwareEntry(
++                totalIdentifier, devNameIt->second, imageSetVersion,
++                descIt->second, componentInfo, [this, eid]() {
++                    this->sendQueryDeviceIdentifiersRequest(eid);
++                    this->sendQueryDownstreamDevicesRequest(eid);
++                });
++        }
++    }
++
+     componentInfoMap.insert_or_assign(eid, std::move(componentInfo));
+ }
+ 
+-- 
+2.47.3
+

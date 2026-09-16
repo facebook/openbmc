@@ -1,7 +1,7 @@
-From 651fae021307b5ec3c91efa35f9b9f68abcc76a3 Mon Sep 17 00:00:00 2001
+From 4058963388f252c1f031660d66cc8b4aa6ad2338 Mon Sep 17 00:00:00 2001
 From: Unive Tien <unive.tien.wiwynn@gmail.com>
 Date: Fri, 7 Aug 2026 06:29:45 +0000
-Subject: [PATCH] oem-meta: don't drop OEM event during MCTP endpoint
+Subject: [PATCH 28/31] oem-meta: don't drop OEM event during MCTP endpoint
  re-registration
 
 checkMetaIana() returns std::optional<bool>: true = confirmed Meta device,
@@ -78,5 +78,5 @@ index dc8d41c..c493613 100644
  /**
   * @brief Get the MCTP configuration object path for the given sender tid.
 -- 
-2.53.0-Meta
+2.54.0
 

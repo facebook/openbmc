@@ -1,7 +1,7 @@
-From b6b4dcc241c6933ebf8479bacd25d600fc483e86 Mon Sep 17 00:00:00 2001
+From 6fe6d51be5346340044d3c6fbba4ca6b1e2068f2 Mon Sep 17 00:00:00 2001
 From: Pete O_o <pmb@meta.com>
 Date: Tue, 8 Sep 2026 15:47:56 -0700
-Subject: [PATCH 31/32] oem-meta: bound the OEM event record before formatting
+Subject: [PATCH 29/31] oem-meta: bound the OEM event record before formatting
  it
 
 handleOemEvent() sized the record with
@@ -88,5 +88,5 @@ index 70cc9a9..eb9e7bf 100644
      {
          lg2::error("Receive OEM Meta event from not Meta specific device");
 -- 
-2.53.0-Meta
+2.54.0
 

@@ -1,7 +1,7 @@
-From 816385eefbfb0494869cd1cd5ed820d9efa81ff0 Mon Sep 17 00:00:00 2001
+From 922b54977cb63d648005237dd0ddbfd2eb9d9bf8 Mon Sep 17 00:00:00 2001
 From: Pete O_o <pmb@meta.com>
 Date: Tue, 8 Sep 2026 15:47:56 -0700
-Subject: [PATCH 32/32] pldmd: don't die when a request handler throws
+Subject: [PATCH 31/31] pldmd: don't die when a request handler throws
 
 processRxMsg() caught std::out_of_range and nothing else, so any other
 exception out of a handler unwound past the sd-event callback and
@@ -26,10 +26,10 @@ Signed-off-by: Pete O_o <pmb@meta.com>
  1 file changed, 36 insertions(+), 10 deletions(-)
 
 diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
-index d63a459..ba22f2d 100644
+index 44c9716..438c275 100644
 --- a/pldmd/pldmd.cpp
 +++ b/pldmd/pldmd.cpp
-@@ -121,6 +121,24 @@ static std::optional<Response> processRxMsg(
+@@ -125,6 +125,24 @@ static std::optional<Response> processRxMsg(
          Response response;
          auto request = reinterpret_cast<const pldm_msg*>(hdr);
          size_t requestLen = requestMsg.size() - sizeof(struct pldm_msg_hdr);
@@ -54,7 +54,7 @@ index d63a459..ba22f2d 100644
          try
          {
              if (hdrFields.pldm_type != PLDM_FWUP)
-@@ -137,22 +155,30 @@ static std::optional<Response> processRxMsg(
+@@ -141,22 +159,30 @@ static std::optional<Response> processRxMsg(
          }
          catch (const std::out_of_range& e)
          {
@@ -96,5 +96,5 @@ index d63a459..ba22f2d 100644
          return response;
      }
 -- 
-2.53.0-Meta
+2.54.0
 

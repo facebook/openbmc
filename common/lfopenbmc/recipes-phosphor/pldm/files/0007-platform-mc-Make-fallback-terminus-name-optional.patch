@@ -1,7 +1,7 @@
-From c0d65c1baf14fdf99a1940e58661cd3453337dd6 Mon Sep 17 00:00:00 2001
+From 4399d76cbf5f75370037bf33348e44232636cfd4 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Mon, 13 Oct 2025 11:10:37 +0000
-Subject: [PATCH] platform-mc: Make fallback terminus name optional
+Subject: [PATCH 07/31] platform-mc: Make fallback terminus name optional
 
 Previously, since commit `platform-mc: Use a default terminus name if
 empty` [1], a fallback name in the format "Terminus_{tid}" was always
@@ -45,7 +45,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  3 files changed, 19 insertions(+)
 
 diff --git a/meson.build b/meson.build
-index e9cbe3a..9aa05d4 100644
+index 54bfe8a..dce2808 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -127,6 +127,10 @@ conf_data.set(
@@ -60,7 +60,7 @@ index e9cbe3a..9aa05d4 100644
  # Firmware update inotify option
  if get_option('fw-update-pkg-inotify').allowed()
 diff --git a/meson.options b/meson.options
-index 8a0ed9e..d08fc13 100644
+index 5fb6fe1..b8866e3 100644
 --- a/meson.options
 +++ b/meson.options
 @@ -151,6 +151,14 @@ option(
@@ -79,7 +79,7 @@ index 8a0ed9e..d08fc13 100644
  option(
      'fw-update-pkg-inotify',
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 0bec89f..d831e24 100644
+index 998d6c4..86d9e72 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
 @@ -240,7 +240,14 @@ void Terminus::parseTerminusPDRs()
@@ -98,5 +98,5 @@ index 0bec89f..d831e24 100644
  
      if (createInventoryPath(terminusName, findTerminusEntityType()))
 -- 
-2.53.0-Meta
+2.54.0
 

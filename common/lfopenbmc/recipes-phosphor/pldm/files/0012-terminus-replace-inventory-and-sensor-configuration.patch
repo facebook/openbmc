@@ -1,7 +1,7 @@
-From 787ac3f4027209d60a86cc6e11615aa560c54122 Mon Sep 17 00:00:00 2001
+From 071d7be1c14b260930fdbd9d75122d53a126ec23 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 31 Mar 2026 20:37:28 +0800
-Subject: [PATCH] terminus: replace inventory and sensor configuration
+Subject: [PATCH 12/31] terminus: replace inventory and sensor configuration
 
 Some devices (e.g. OCP NIC) do not provide auxiliary sensor names.
 When auxiliary names are unavailable, pldmd uses a combination of
@@ -996,5 +996,5 @@ index 3eb57cf..71ce9c4 100644
      constexpr auto mockedDbusPath =
          "/xyz/openbmc_project/inventory/system/board/Mocked_Board_Slot_1/MockedDevice";
 -- 
-2.53.0-Meta
+2.54.0
 

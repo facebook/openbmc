@@ -34,9 +34,8 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0026-oem-arm-support-UINT64-boot-progress-events.patch \
     file://0027-platform-mc-use-tagged-numeric-sensor-decode.patch \
     file://0028-oem-meta-don-t-drop-OEM-event-during-MCTP-endpoint-r.patch \
-    file://0029-oem-meta-bound-the-http-boot-file-read-by-the-file.patch \
-    file://0031-oem-meta-bound-the-OEM-event-record-before-formattin.patch \
-    file://0032-fw-update-Fix-redundant-inventory-entries-for-single-fd.patch \
+    file://0029-oem-meta-bound-the-OEM-event-record-before-formattin.patch \
+    file://0030-fw-update-Fix-redundant-inventory-entries-for-single.patch \
 "
 
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"

@@ -1,7 +1,7 @@
-From 5f0e50686d22568e766a57745fa2e78e6ae19625 Mon Sep 17 00:00:00 2001
+From f39bea4877f1f032fafe8f65c53b66aaf9eca7e5 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 6 Mar 2025 17:40:53 +0800
-Subject: [PATCH] platform-mc: Add option for discovering FRU data
+Subject: [PATCH 04/31] platform-mc: Add option for discovering FRU data
 
 Allow enabling or disabling the discovery of FRU data from terminus.
 Supports retrieving FRU data during the terminus discovery phase and
@@ -200,5 +200,5 @@ index 71897cf..998d6c4 100644
  
  std::vector<std::string> Terminus::getSensorNames(const SensorID& sensorId)
 -- 
-2.53.0-Meta
+2.54.0
 

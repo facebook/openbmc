@@ -1,7 +1,7 @@
-From 878c0980c768fcc4278cad67bf1bab68eb5333ee Mon Sep 17 00:00:00 2001
+From 4bfc8a93779c1d52630b6fca67a3e67eb62555a0 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Tue, 28 Jul 2026 09:22:38 +0800
-Subject: [PATCH] fw-update: Fix redundant inventory entries for
+Subject: [PATCH 30/31] fw-update: Fix redundant inventory entries for
  single-component FDs
 
 Currently, single-component devices (e.g., CX7) expose duplicate
@@ -55,10 +55,10 @@ index 26c3dff..826565d 100644
  using CompClassificationIndex = uint8_t;
  using ComponentInfo = std::map<CompKey, CompClassificationIndex>;
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index 8697466..d127db3 100644
+index 1281888..d38662a 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
-@@ -777,25 +777,7 @@ void InventoryManager::getFirmwareParameters(
+@@ -781,25 +781,7 @@ void InventoryManager::getFirmwareParameters(
      ComponentInfo componentInfo{};
  
      const auto imageSetVersion = utils::toString(activeCompImageSetVerStr);
@@ -85,7 +85,7 @@ index 8697466..d127db3 100644
  
      while (fwParams.comp_count-- && (compParamTableLen > 0))
      {
-@@ -807,7 +789,7 @@ void InventoryManager::getFirmwareParameters(
+@@ -811,7 +793,7 @@ void InventoryManager::getFirmwareParameters(
              error(
                  "Failed to decode component parameter table entry for endpoint ID {EID}, response code {RC}",
                  "EID", eid, "RC", rc);
@@ -94,7 +94,7 @@ index 8697466..d127db3 100644
          }
  
          auto compClassification = compEntry.comp_classification;
-@@ -816,6 +798,13 @@ void InventoryManager::getFirmwareParameters(
+@@ -820,6 +802,13 @@ void InventoryManager::getFirmwareParameters(
              std::make_pair(compClassification, compIdentifier),
              compEntry.comp_classification_index);
  
@@ -108,7 +108,7 @@ index 8697466..d127db3 100644
          if (firmwareDeviceNameMap.contains(eid) and descriptorMap.contains(eid))
          {
              auto componentName =
-@@ -824,8 +813,8 @@ void InventoryManager::getFirmwareParameters(
+@@ -828,8 +817,8 @@ void InventoryManager::getFirmwareParameters(
  
              firmwareInventoryManager.createFirmwareEntry(
                  SoftwareIdentifier(eid, compIdentifier), componentName,
@@ -119,7 +119,7 @@ index 8697466..d127db3 100644
                      this->sendQueryDeviceIdentifiersRequest(eid);
                      this->sendQueryDownstreamDevicesRequest(eid);
                  });
-@@ -843,6 +832,25 @@ void InventoryManager::getFirmwareParameters(
+@@ -847,6 +836,25 @@ void InventoryManager::getFirmwareParameters(
                               activeCompVerStr.length + pendingCompVerStr.length;
      }
  
@@ -146,5 +146,5 @@ index 8697466..d127db3 100644
  }
  
 -- 
-2.47.3
+2.54.0
 

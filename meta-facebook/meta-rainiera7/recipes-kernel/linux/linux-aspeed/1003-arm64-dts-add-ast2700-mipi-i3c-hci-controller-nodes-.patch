@@ -1,8 +1,8 @@
-From b6ca10cb2bd0d79cbf830ae2d676fdc4068a2d32 Mon Sep 17 00:00:00 2001
+From 11ad90859c1430482a0b6716ed6155bc019fb2ff Mon Sep 17 00:00:00 2001
 From: Alan Tsai <Alan-Tsai@quantatw.com>
 Date: Fri, 31 Jul 2026 10:20:07 +0800
-Subject: [PATCH 1003/1004] arm64: dts: add ast2700 mipi-i3c-hci controller
- nodes from AspeedTech to aspeed-g7-common.dtsi
+Subject: [PATCH] arm64: dts: add ast2700 mipi-i3c-hci controller nodes from
+ AspeedTech to aspeed-g7-common.dtsi
 
 This driver is referenced from below link:
 Link: https://github.com/AspeedTech-BMC/linux/commit/0fac7a7c2839f5566c6ad9931020bcf5860a126b
@@ -230,5 +230,5 @@ index 3ceb82197de4..66c22532b2f2 100644
  		compatible = "aspeed,ast2700-otp";
  		reg = <0 0x14c07000 0 0x1000>;
 -- 
-2.54.0
+2.53.0-Meta
 

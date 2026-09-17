@@ -63,7 +63,7 @@ extern "C" {
 #define SENSORD_FILE_PSU "/tmp/cache_store/psu%d_sensor%d"
 #define SENSORD_FILE_PEM "/tmp/cache_store/pem%d_sensor%d"
 #define KV_PATH "/mnt/data/kv_store/%s"
-
+#define CACHE_PATH "/tmp/cache_store/%s"
 #define WEDGE400_SDR_PATH "/tmp/sdr_%s.bin"
 
 #define COM_PWR_BTN_N "come_pwr_btn_n"

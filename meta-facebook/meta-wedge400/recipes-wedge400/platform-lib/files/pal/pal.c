@@ -826,46 +826,29 @@ static float hsc_rsense[MAX_NUM_FRUS] = {0};
 const char pal_fru_list[] = "all, scm, smb, pem1, pem2, \
 psu1, psu2, fan1, fan2, fan3, fan4";
 
-char * key_list[] = {
-  "pwr_server_last_state",
-  "sysfw_ver_server",
-  "timestamp_sled",
-  "server_por_cfg",
-  "server_sel_error",
-  "scm_sensor_health",
-  "smb_sensor_health",
-  "pem1_sensor_health",
-  "pem2_sensor_health",
-  "psu1_sensor_health",
-  "psu2_sensor_health",
-  "fan1_sensor_health",
-  "fan2_sensor_health",
-  "fan3_sensor_health",
-  "fan4_sensor_health",
-  "server_boot_order",
-  /* Add more Keys here */
-  LAST_KEY /* This is the last key of the list */
-};
 
-char * def_val_list[] = {
-  "on", /* pwr_server_last_state */
-  "0", /* sysfw_ver_server */
-  "0", /* timestamp_sled */
-  "lps", /* server_por_cfg */
-  "1", /* server_sel_error */
-  "1", /* scm_sensor_health */
-  "1", /* smb_sensor_health */
-  "1", /* pem1_sensor_health */
-  "1", /* pem2_sensor_health */
-  "1", /* psu1_sensor_health */
-  "1", /* psu2_sensor_health */
-  "1", /* fan1_sensor_health */
-  "1", /* fan2_sensor_health */
-  "1", /* fan3_sensor_health */
-  "1", /* fan4_sensor_health */
-  "0000000",/* server_boot_order */
-  /* Add more def values for the correspoding keys*/
-  LAST_KEY /* Same as last entry of the key_list */
+struct pal_key_cfg {
+  char *name;
+  char *def_val;
+  uint32_t region;
+} kv_store_list[] = {
+  { "pwr_server_last_state", "on",      KV_FPERSIST },
+  { "sysfw_ver_server",      "0",       KV_FPERSIST },
+  { "timestamp_sled",        "0",       KV_FPERSIST },
+  { "server_por_cfg",        "lps",     KV_FPERSIST },
+  { "server_sel_error",      "1",       KV_FPERSIST },
+  { "scm_sensor_health",     "1",       0 },
+  { "smb_sensor_health",     "1",       0 },
+  { "pem1_sensor_health",    "1",       0 },
+  { "pem2_sensor_health",    "1",       0 },
+  { "psu1_sensor_health",    "1",       0 },
+  { "psu2_sensor_health",    "1",       0 },
+  { "fan1_sensor_health",    "1",       0 },
+  { "fan2_sensor_health",    "1",       0 },
+  { "fan3_sensor_health",    "1",       0 },
+  { "fan4_sensor_health",    "1",       0 },
+  { "server_boot_order",     "0000000", KV_FPERSIST },
+  { LAST_KEY,                NULL,      0 },
 };
 
 void
@@ -912,10 +895,10 @@ pal_key_check(char *key) {
   int i;
 
   i = 0;
-  while(strcmp(key_list[i], LAST_KEY)) {
+  while(strcmp(kv_store_list[i].name, LAST_KEY)) {
     // If Key is valid, return success
-    if (!strcmp(key, key_list[i]))
-      return 0;
+    if (!strcmp(key, kv_store_list[i].name))
+      return i;
 
     i++;
   }
@@ -930,10 +913,11 @@ int
 pal_get_key_value(char *key, char *value) {
   int ret;
   // Check is key is defined and valid
-  if (pal_key_check(key))
+  int i = pal_key_check(key);
+  if (i < 0)
     return -1;
 
-  ret = kv_get(key, value, NULL, KV_FPERSIST);
+  ret = kv_get(key, value, NULL, kv_store_list[i].region);
   return ret;
 }
 
@@ -941,10 +925,11 @@ int
 pal_set_key_value(char *key, char *value) {
 
   // Check is key is defined and valid
-  if (pal_key_check(key))
+  int i = pal_key_check(key);
+  if (i < 0)
     return -1;
 
-  return kv_set(key, value, 0, KV_FPERSIST);
+  return kv_set(key, value, 0, kv_store_list[i].region);
 }
 
 int
@@ -6847,10 +6832,14 @@ pal_set_def_key_value(void) {
   int i, ret;
   char path[LARGEST_DEVICE_NAME + 1];
 
-  for (i = 0; strcmp(key_list[i], LAST_KEY) != 0; i++) {
-    snprintf(path, LARGEST_DEVICE_NAME, KV_PATH, key_list[i]);
-    if ((ret = kv_set(key_list[i], def_val_list[i],
-                    0, KV_FPERSIST | KV_FCREATE)) < 0) {
+  for (i = 0; strcmp(kv_store_list[i].name, LAST_KEY) != 0; i++) {
+    if (kv_store_list[i].region == KV_FPERSIST) {
+      snprintf(path, LARGEST_DEVICE_NAME, KV_PATH, kv_store_list[i].name);
+    } else {
+      snprintf(path, LARGEST_DEVICE_NAME, CACHE_PATH, kv_store_list[i].name);
+    }
+    if ((ret = kv_set(kv_store_list[i].name, kv_store_list[i].def_val,
+                    0, kv_store_list[i].region | KV_FCREATE)) < 0) {
 #ifdef DEBUG
       OBMC_WARN("pal_set_def_key_value: kv_set failed. %d", ret);
 #endif

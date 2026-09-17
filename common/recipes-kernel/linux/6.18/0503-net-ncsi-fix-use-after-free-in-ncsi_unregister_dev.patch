@@ -1,0 +1,117 @@
+From 4fc9596b9d4dea8758864b472d485cc015becb87 Mon Sep 17 00:00:00 2001
+From: Adrian Ambrozewicz <aambrozewicz@nvidia.com>
+Date: Thu, 29 Jan 2026 12:47:30 +0000
+Subject: [PATCH 2/2] net/ncsi: fix use-after-free in ncsi_unregister_dev()
+
+ncsi_unregister_dev() frees the ncsi_dev_priv structure while timers
+and workqueue may still be accessing it, causing use-after-free.
+
+The problem involves two async mechanisms:
+1. Request timers (ncsi_request_timeout) - fire when NCSI responses
+   are not received in time
+2. Workqueue (ncsi_dev_work) - processes NCSI state machine
+
+These can cascade: timer handlers call ncsi_free_request() which may
+call schedule_work(), and work can send commands that arm new timers.
+
+The fix adds proper synchronization before kfree():
+
+  dev_remove_pack()         - stop packet reception
+  timer_delete_sync() x 256 - cancel all request timers
+  cancel_work_sync()        - wait for workqueue to complete
+  kfree(ndp)
+
+Order matters: timers must be cancelled before work because timer
+handlers may schedule new work via ncsi_free_request().
+
+Note: ncsi_dev_work() is non-blocking - it sends a command, arms a
+timer, and returns immediately. It does not wait for timer completion.
+The timer firing later triggers schedule_work() for the next state.
+So cancel_work_sync() will not hang waiting for cancelled timers.
+
+This relies on ncsi_stop_dev() being called first (guaranteed by the
+network device lifecycle). ncsi_stop_dev() sets state to
+ncsi_dev_state_functional, which causes ncsi_dev_work() to exit
+immediately without sending commands or arming timers. This breaks
+the timer<->work cycle and ensures the synchronization terminates.
+
+Timeline showing the race (without fix):
+
+  CPU 0 (unregister)            CPU 1 (async)
+  ------------------            -------------
+  ncsi_unregister_dev()
+    dev_remove_pack()
+                                ncsi_request_timeout()
+                                  ncsi_free_request()
+                                    schedule_work()
+    kfree(ndp)
+                                ncsi_dev_work()
+                                  ndp->...         <- UAF!
+
+With fix:
+
+  CPU 0 (unregister)            CPU 1 (async)
+  ------------------            -------------
+  ncsi_unregister_dev()
+    dev_remove_pack()
+    timer_delete_sync() x 256   <- waits for timer handlers
+                                ncsi_request_timeout()
+                                  ncsi_free_request()
+                                    schedule_work()
+    cancel_work_sync()          <- waits for work
+                                ncsi_dev_work()
+                                  state=0x100, exits immediately
+    kfree(ndp)                  <- safe
+
+Signed-off-by: Adrian Ambrozewicz <aambrozewicz@nvidia.com>
+Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
+
+[1] LORE: https://lore.kernel.org/all/20260908-ncsi-over-usb-v2-2-92dd78272fbd@gmail.com/
+---
+ net/ncsi/ncsi-manage.c | 20 ++++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/net/ncsi/ncsi-manage.c b/net/ncsi/ncsi-manage.c
+index 2d760b712ba6a..a744988d964f6 100644
+--- a/net/ncsi/ncsi-manage.c
++++ b/net/ncsi/ncsi-manage.c
+@@ -1804,6 +1804,7 @@ struct ncsi_dev *ncsi_register_dev(struct net_device *dev,
+ 	ndp->ptype.dev = dev;
+ 	dev_add_pack(&ndp->ptype);
+ 
++	ndp->max_package = NCSI_MAX_PACKAGE;
+ 	pdev = to_platform_device(dev->dev.parent);
+ 	if (pdev) {
+ 		np = pdev->dev.of_node;
+@@ -1986,9 +1987,28 @@ void ncsi_unregister_dev(struct ncsi_dev *nd)
+ 	struct ncsi_dev_priv *ndp = TO_NCSI_DEV_PRIV(nd);
+ 	struct ncsi_package *np, *tmp;
+ 	unsigned long flags;
++	int i;
+ 
+ 	dev_remove_pack(&ndp->ptype);
+ 
++	/*
++	 * Synchronize with async operations before freeing ndp.
++	 *
++	 * Note: The caller must have called ncsi_stop_dev() first, which
++	 * sets nd->state to ncsi_dev_state_functional (0x100). This causes
++	 * any running or scheduled ncsi_dev_work() to exit immediately
++	 * without sending commands or arming new timers, breaking the
++	 * potential cycle of: work -> arm timer -> timer -> schedule work.
++	 *
++	 * Order matters:
++	 * 1. timer_delete_sync() - cancel timers, handlers may schedule work
++	 * 2. cancel_work_sync() - cancel work scheduled by timer handlers
++	 */
++	for (i = 0; i < ARRAY_SIZE(ndp->requests); i++)
++		timer_delete_sync(&ndp->requests[i].timer);
++
++	cancel_work_sync(&ndp->work);
++
+ 	list_for_each_entry_safe(np, tmp, &ndp->packages, node)
+ 		ncsi_remove_package(np);
+ 
+-- 
+2.52.0
+

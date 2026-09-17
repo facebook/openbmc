@@ -84,6 +84,8 @@ SRC_URI:append = " \
 SRC_URI:append = " \
     file://0500-NCSI-Add-propety-no-channel-monitor-and-start-redo-p.patch \
     file://0501-net-ncsi-specify-maximum-package-to-probe.patch \
+    file://0502-net-usb-cdc_ether-add-NCSI-passthrough-support.patch \
+    file://0503-net-ncsi-fix-use-after-free-in-ncsi_unregister_dev.patch \
 "
 
 #

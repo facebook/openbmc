@@ -1,8 +1,7 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From c2dc771df48bcdfeeab93ca5b308900901fd434d Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Sat, 18 Jul 2026 03:37:05 +0800
-Subject: [PATCH v2] rtc: pcf85363: Add error checking to regmap calls in
- probe()
+Subject: [PATCH] rtc: pcf85363: Add error checking to regmap calls in probe()
 
 The probe() function ignores errors returned by regmap operations.
 If an I2C transport error occurs (e.g., -ENXIO), the driver continues
@@ -55,5 +54,5 @@ index 540042b9eec8..ccc7834e5759 100644
  
  	if (client->irq > 0) {
 -- 
-2.43.0
+2.53.0-Meta
 

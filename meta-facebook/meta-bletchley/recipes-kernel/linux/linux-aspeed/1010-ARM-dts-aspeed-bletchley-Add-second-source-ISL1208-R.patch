@@ -1,4 +1,4 @@
-From 5ac61f284cd374de1ec41bb7c0a1c4d882a587cf Mon Sep 17 00:00:00 2001
+From 41ceb98b51e94be344a54613c38225e81128ec4d Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Fri, 29 May 2026 08:51:59 +0800
 Subject: [PATCH] ARM: dts: aspeed: bletchley: Add second source ISL1208 RTC
@@ -28,5 +28,5 @@ index 3da1cf9bbb99..01dbbda3e4b6 100644
  
  &i2c7 {
 -- 
-2.53.0
+2.53.0-Meta
 

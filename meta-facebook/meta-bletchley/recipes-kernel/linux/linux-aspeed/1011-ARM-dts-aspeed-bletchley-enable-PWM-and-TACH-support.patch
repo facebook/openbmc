@@ -1,4 +1,4 @@
-From eb96c2c7f08b189d1d588c46f14da0fbfb8d1698 Mon Sep 17 00:00:00 2001
+From 11d8e7655e05b2ca56f9ab7bb3b746d2e11a3780 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Thu, 31 Aug 2023 16:55:58 +0800
 Subject: [PATCH] ARM: dts: aspeed: bletchley: enable PWM and TACH support
@@ -102,5 +102,5 @@ index 01dbbda3e4b6..9ba0de957845 100644
 +	};
 +};
 -- 
-2.53.0
+2.53.0-Meta
 

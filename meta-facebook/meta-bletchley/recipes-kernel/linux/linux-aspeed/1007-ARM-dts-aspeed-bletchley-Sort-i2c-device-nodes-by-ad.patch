@@ -1,4 +1,4 @@
-From aa564c0c7329c2fb2fe5cbb8af8190d04fcfc15c Mon Sep 17 00:00:00 2001
+From a1bb51025c2e75dd0f4568880ca15e58b0378062 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Wed, 29 Jul 2026 10:43:07 +0800
 Subject: [PATCH] ARM: dts: aspeed: bletchley: Sort i2c device nodes by address
@@ -671,5 +671,5 @@ index d1a04b63df9e..b022bdd02c1e 100644
  
  &i2c7 {
 -- 
-2.53.0
+2.53.0-Meta
 

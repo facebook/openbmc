@@ -28,12 +28,28 @@ LOCAL_URI = " \
     file://000_collect_log_messages.sh \
     file://001_collect_system_state.sh \
     file://002_collect_uboot_info.sh \
+    file://dump_gpios.sh \
+    file://i2c_scan.sh \
+    file://meta_info.sh \
+    file://oob-mdio-util.sh \
     "
 
 SHOWTECH_RULES_FILES = " \
     000_collect_log_messages.sh \
     001_collect_system_state.sh \
     002_collect_uboot_info.sh \
+    "
+
+# Debug utilities the rules call, also usable interactively. show-tech
+# installs the same paths, so platforms still carrying it set this to "0"
+# until they migrate.
+SHOWTECH_INSTALL_UTILS ?= "1"
+
+SHOWTECH_UTILS_FILES = " \
+    dump_gpios.sh \
+    i2c_scan.sh \
+    meta_info.sh \
+    oob-mdio-util.sh \
     "
 
 do_install() {
@@ -47,7 +63,13 @@ do_install() {
     for f in ${SHOWTECH_RULES_FILES}; do
         install -m 755 $f ${showtech_rules_dir}/${f}
     done
+
+    if [ "${SHOWTECH_INSTALL_UTILS}" = "1" ]; then
+        for f in ${SHOWTECH_UTILS_FILES}; do
+            install -m 755 $f ${localbindir}/${f}
+        done
+    fi
 }
 
 RDEPENDS:${PN} += "bash"
-FILES:${PN} = "/usr/local/bin/showtech.sh /usr/local/bin/showtech /etc/showtech/rules/"
+FILES:${PN} = "/usr/local/bin /etc/showtech/rules/"

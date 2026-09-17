@@ -1,3 +1,5 @@
+#!/bin/bash
+#
 # Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -14,25 +16,16 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+# shellcheck disable=SC1091
+. /usr/local/bin/openbmc-utils.sh
 
-# Temporary: show-tech still installs these paths on this layer's platforms.
-# Each platform sets "1" in the change that drops show-tech.
-SHOWTECH_INSTALL_UTILS = "0"
-
-LOCAL_URI += "\
-    file://100_weutil.sh \
-    file://101_x86_mTerm.sh \
-    "
-
-do_install:append() {
-    showtech_rules_dir="${D}/etc/showtech/rules/"
-    install -d ${showtech_rules_dir}
-
-    install -m 755 100_weutil.sh ${showtech_rules_dir}/100_weutil.sh
-    install -m 755 101_x86_mTerm.sh ${showtech_rules_dir}/101_x86_mTerm.sh
-}
-
-RDEPENDS:${PN} += "bash"
-FILES:${PN} += "/etc/showtech/rules/"
+printf "%-1s | %-3s | %-30s\n" "v" "dir" "GPIONAME"
+for i in /tmp/gpionames/*
+do
+   gpio="$(basename "$i")"
+   val="$(gpio_get_value "$gpio")"
+   direction="$(gpio_get_direction "$gpio")"
+   printf "%-1s | %-3s | %-30s\n" "$val" "$direction" "$gpio"
+done

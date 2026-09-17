@@ -1,3 +1,5 @@
+#!/bin/bash
+#
 # Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -14,25 +16,32 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+# shellcheck disable=SC1091
+# read the Hardware revision from MCB CPLD register
+. /usr/local/bin/openbmc-utils.sh
 
-# Temporary: show-tech still installs these paths on this layer's platforms.
-# Each platform sets "1" in the change that drops show-tech.
-SHOWTECH_INSTALL_UTILS = "0"
+list_i2cbus() {
+    local dev
 
-LOCAL_URI += "\
-    file://100_weutil.sh \
-    file://101_x86_mTerm.sh \
-    "
-
-do_install:append() {
-    showtech_rules_dir="${D}/etc/showtech/rules/"
-    install -d ${showtech_rules_dir}
-
-    install -m 755 100_weutil.sh ${showtech_rules_dir}/100_weutil.sh
-    install -m 755 101_x86_mTerm.sh ${showtech_rules_dir}/101_x86_mTerm.sh
+    # /sys/class/i2c-dev holds one entry per /dev/i2c-N the kernel created,
+    # so this is exactly the set i2cdetect can open.
+    for dev in /sys/class/i2c-dev/i2c-*; do
+        [ -e "$dev" ] || continue
+        echo "${dev##*/i2c-}"
+    done | sort -n
 }
 
-RDEPENDS:${PN} += "bash"
-FILES:${PN} += "/etc/showtech/rules/"
+scan_i2cbus() {
+    local bus
+
+    for bus in $(list_i2cbus); do
+        echo -e "##### I2C Bus${bus} INFO #####"
+        # i2cdetect command
+        timeout 5 i2cdetect -y "$bus"
+
+        echo ""
+    done
+}
+scan_i2cbus

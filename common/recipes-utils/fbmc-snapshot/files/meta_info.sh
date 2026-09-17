@@ -1,3 +1,5 @@
+#!/bin/bash
+#
 # Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -14,25 +16,33 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+# This utility prints the meta information for specified boot flash
+# mtd partition
+START_OFFSET_KB=960
+LEN_KB=64
 
-# Temporary: show-tech still installs these paths on this layer's platforms.
-# Each platform sets "1" in the change that drops show-tech.
-SHOWTECH_INSTALL_UTILS = "0"
-
-LOCAL_URI += "\
-    file://100_weutil.sh \
-    file://101_x86_mTerm.sh \
-    "
-
-do_install:append() {
-    showtech_rules_dir="${D}/etc/showtech/rules/"
-    install -d ${showtech_rules_dir}
-
-    install -m 755 100_weutil.sh ${showtech_rules_dir}/100_weutil.sh
-    install -m 755 101_x86_mTerm.sh ${showtech_rules_dir}/101_x86_mTerm.sh
+usage() {
+    echo "Usage $0 [flash0|flash1]"
 }
 
-RDEPENDS:${PN} += "bash"
-FILES:${PN} += "/etc/showtech/rules/"
+case "$1" in
+    flash0|flash1)
+        # Match the quoted name: an unquoted match also picks up
+        # partitions such as "flash1-data0".
+        mtd="$(grep "\"$1\"" /proc/mtd | awk '{print $1}' | tr -d ':')"
+        ;;
+    *)
+        usage
+        exit 1
+        ;;
+esac
+
+if [ -z "$mtd" ]; then
+    echo "No $1 partition in /proc/mtd!"
+    exit 1
+fi
+
+dd if=/dev/"$mtd" of=/tmp/."$1"_meta bs=1K skip="$START_OFFSET_KB" count="$LEN_KB"
+strings /tmp/."$1"_meta

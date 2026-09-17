@@ -859,6 +859,10 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
         if (ret == 0) {
           pal_host_power_on_post_actions();
         }
+      } else {
+        if (pal_host_power_on_pre_actions() < 0 ) {
+          return POWER_STATUS_ERR;
+        }
       }
       
       if (is_ctrl_via_bic == true) {

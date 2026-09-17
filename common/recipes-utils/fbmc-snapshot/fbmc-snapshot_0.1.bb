@@ -28,6 +28,15 @@ LOCAL_URI = " \
     file://000_collect_log_messages.sh \
     file://001_collect_system_state.sh \
     file://002_collect_uboot_info.sh \
+    file://003_network_status.sh \
+    file://004_sensors.sh \
+    file://005_i2c_detect.sh \
+    file://006_dump_gpio.sh \
+    file://007_debug_logs.sh \
+    file://008_host_postcode.sh \
+    file://009_running_processes.sh \
+    file://010_mterm_rotated.sh \
+    file://011_boot_info.sh \
     file://dump_gpios.sh \
     file://i2c_scan.sh \
     file://meta_info.sh \
@@ -38,6 +47,15 @@ SHOWTECH_RULES_FILES = " \
     000_collect_log_messages.sh \
     001_collect_system_state.sh \
     002_collect_uboot_info.sh \
+    003_network_status.sh \
+    004_sensors.sh \
+    005_i2c_detect.sh \
+    006_dump_gpio.sh \
+    007_debug_logs.sh \
+    008_host_postcode.sh \
+    009_running_processes.sh \
+    010_mterm_rotated.sh \
+    011_boot_info.sh \
     "
 
 # Debug utilities the rules call, also usable interactively. show-tech

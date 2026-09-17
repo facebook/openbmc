@@ -95,7 +95,8 @@ fi
 
 # Wait for the SMB EEPROM and CPLD drivers to load
 modprobe at24
-wait_sysfs_file_present "$SMB_EEPROM_SYSFS" 10
+smb_eeprom_sysfs=$(smb_eeprom_sysfs_path)
+wait_sysfs_file_present "$smb_eeprom_sysfs" 10
 wait_sysfs_file_present "$SCM_CPU_READY_SYSFS" 10
 
 maybe_fix_dmi_config

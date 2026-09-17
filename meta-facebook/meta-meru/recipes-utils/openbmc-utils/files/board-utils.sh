@@ -23,7 +23,6 @@ PWRCPLD_SYSFS_DIR="/sys/bus/i2c/drivers/pwrcpld/12-0043"
 SCM_PWR_IN_RESET_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_in_reset"
 SCM_CPU_READY_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_ready"
 CPU_CONTROL_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_control"
-SMB_EEPROM_SYSFS="/sys/bus/i2c/drivers/at24/9-0052/eeprom"
 SMB_NONSTDBY_PWR_SYSFS="${PWRCPLD_SYSFS_DIR}/smb_nonstdby_pwr"
 CPU_NONSTDBY_PWR_SYSFS="${PWRCPLD_SYSFS_DIR}/cpu_nonstdby_pwr"
 
@@ -118,6 +117,20 @@ wedge_cpu_needs_extra_spi_gpios() {
     return 1
 }
 
+smb_eeprom_sysfs_path() {
+    driver="/sys/bus/i2c/drivers/at24"
+    sysfs_path="${driver}/9-0052/eeprom"
+
+    cpu_id=$(wedge_cpu_id)
+    if [[ "$cpu_id" == "$BOARD_ID_RUGGLES" || \
+          "$cpu_id" == "$BOARD_ID_ICECUBE" ]]; then
+        # On ICECUBE systems, alias smb to 9-0050.
+        sysfs_path="${driver}/9-0050/eeprom"
+    fi
+
+    echo "$sysfs_path"
+}
+
 wedge_oob_mdio_is_safe() {
     cpu_id=$(wedge_cpu_id)
     if [ "${cpu_id}" -gt 6 ]; then
@@ -146,7 +159,8 @@ wedge_power_asic() {
         return 1
     fi
 
-    if [ ! -e "$SMB_EEPROM_SYSFS" ]; then
+    smb_eeprom_sysfs=$(smb_eeprom_sysfs_path)
+    if [ ! -e "$smb_eeprom_sysfs" ]; then
         echo "Warn: SMB eeprom not detected; skipping asic power operation."
         return 1
     fi

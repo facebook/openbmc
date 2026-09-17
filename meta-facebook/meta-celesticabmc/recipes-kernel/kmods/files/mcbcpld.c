@@ -19,7 +19,8 @@ static const i2c_dev_attr_st mcbcpld_attrs[] = {
 		" 0x7 : Tahansb800bc\n"
 		" 0x8 : Icecube\n"
 		" 0x9 : Icetea\n"
-		" 0xD : Ladakh800bcls",
+		" 0xD : Ladakh800bcls\n"
+		" 0xF : M4061CLSC",
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,
 		0x0,

@@ -38,6 +38,7 @@ class ChassisEepromTest(EepromV5Test, unittest.TestCase):
             BoardRevision.BRD_TYPE_ICETEA: ["ICETEA", "ICETEAM"],
             BoardRevision.BRD_TYPE_LADAKH800BCLS: ["LADAKH800BCLS", "LADAKH800BCLSM"],
             BoardRevision.BRD_TYPE_LEH800BCLS: ["LEH800BCLS", "LEH800BCLSM"],
+            BoardRevision.BRD_TYPE_M4061CLSC: ["M4061CLSC"],
         }
         self.product_name = platform_to_product_name_map.get(get_platform_id())
         if self.product_name is None:

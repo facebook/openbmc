@@ -1738,7 +1738,7 @@ void pal_update_ts_sled() {
 }
 
 int 
-pal_check_abl_error(uint32_t postcode) {
+pal_check_psb_error(uint32_t postcode) {
   uint8_t head = postcode >> 24;
   uint8_t last = postcode & 0xff;
   if (head != 0xEE || ((postcode >> 16) & 0xff) != 0xF6) {
@@ -1747,13 +1747,27 @@ pal_check_abl_error(uint32_t postcode) {
   else {
     switch (last) {
       case 0x00:
-        syslog(LOG_CRIT, "Reset the system as ABL workaround for the Hynix S3 DRAM issue.");
+        syslog(LOG_CRIT, "Reset the system as PSP workaround for the Hynix S3 DRAM issue.");
         break;
       default:
-        syslog(LOG_CRIT, "unknown ABL Event(postcode = 0x%08X) ", postcode);
+        syslog(LOG_CRIT, "unknown PSP Event(postcode = 0x%08X) ", postcode);
         break;
     }
   }
+  return 0;
+}
+
+int
+pal_check_abl_error(uint32_t postcode) {
+  //Check ABL section
+  switch (postcode) {
+      case 0xEA00E2EC:
+        syslog(LOG_CRIT, "ABL reports MBIST error with EA00E2EC");
+        break;
+    default:
+      break;
+  }
+
   return 0;
 }
 

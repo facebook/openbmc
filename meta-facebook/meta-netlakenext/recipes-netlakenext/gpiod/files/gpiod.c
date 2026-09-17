@@ -178,7 +178,7 @@ dimm_hot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
 
 static void
 vr_hot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
-  uint8_t value = 0;
+  uint8_t reg_value = 0;
   bool assertion = false;
 
   if (last == GPIO_VALUE_HIGH && curr == GPIO_VALUE_LOW) {
@@ -192,13 +192,41 @@ vr_hot_handler(gpiopoll_pin_t *desc, gpio_value_t last, gpio_value_t curr) {
   syslog(LOG_CRIT, "FRU: %d VR Hot/OC Warning %s",
                     FRU_SERVER, assertion ? "Assertion" : "Deassertion");
 
-  if (assertion) {
-    if (netlakenext_get_cpld_data(CPLD_BUS_2, CPLD_ADDR_BUS_2, CPLD_OCP_THERMTRIP_REG, &value)) {
-      syslog(LOG_ERR, "CPLD: Failed to read OCP/THERMTRIP register");
-    } else {
-      syslog(LOG_CRIT, "CPLD: read bus %d, addr 0x%02X, offset 0x%02X, value 0x%02X",
-                        CPLD_BUS_2, CPLD_ADDR_BUS_2 >> 1, CPLD_OCP_THERMTRIP_REG, value);
+  if (netlakenext_get_cpld_data(CPLD_BUS_2, CPLD_ADDR_BUS_2, CPLD_VR_OCP_LATCH_REG, &reg_value)) {
+    syslog(LOG_ERR, "CPLD: Failed to read CPLD_VR_OCP_LATCH_REG register");
+    return;
+  }
+
+  const uint8_t both_ocp_bits_mask = CPLD_VR_OCP_LATCH_PVDDCR_PVDDCRSOC_BIT | CPLD_VR_OCP_LATCH_PVDD_MISC_BIT;
+  const uint8_t active_ocp = (~reg_value) & both_ocp_bits_mask;
+
+  if (!assertion) {
+    if (active_ocp == both_ocp_bits_mask) {
+      syslog(LOG_WARNING, "CPLD: clear PVDDCR_PVDDCRSOC and PVDD_MISC OCP Warning");
+    } else if (active_ocp & CPLD_VR_OCP_LATCH_PVDDCR_PVDDCRSOC_BIT) {
+      syslog(LOG_WARNING, "CPLD: clear PVDDCR_PVDDCRSOC OCP Warning");
+    } else if (active_ocp & CPLD_VR_OCP_LATCH_PVDD_MISC_BIT) {
+      syslog(LOG_WARNING, "CPLD: clear PVDD_MISC OCP Warning");
     }
+    /* CPLD_VR_OCP_LATCH_REG is W1C: write 1 to clear the OCP latch bits. */
+    if (netlakenext_common_i2c_transfer(CPLD_BUS_2, CPLD_ADDR_BUS_2,
+            (uint8_t[]){CPLD_VR_OCP_LATCH_REG, both_ocp_bits_mask}, 2, NULL, 0)) {
+      syslog(LOG_ERR, "CPLD: Failed to clear VR OCP latch");
+    }
+    return;
+  }
+
+  if (active_ocp == both_ocp_bits_mask) {
+    syslog(LOG_CRIT, "CPLD: detect PVDDCR_PVDDCRSOC and PVDD_MISC OCP Warning");
+    netlakenext_vr_dump();
+  } else if (active_ocp & CPLD_VR_OCP_LATCH_PVDDCR_PVDDCRSOC_BIT) {
+    syslog(LOG_CRIT, "CPLD: detect PVDDCR_PVDDCRSOC OCP Warning");
+    netlakenext_vr_dump_single(VR_PVDDCR_ADDR);
+  } else if (active_ocp & CPLD_VR_OCP_LATCH_PVDD_MISC_BIT) {
+    syslog(LOG_CRIT, "CPLD: detect PVDD_MISC OCP Warning");
+    netlakenext_vr_dump_single(VR_PVDD_MISC_ADDR);
+  } else {
+    syslog(LOG_CRIT, "CPLD: VR Hot/OC asserted but no VR OCP Warning detected");
     netlakenext_vr_dump();
   }
 }
@@ -503,6 +531,8 @@ post_code_led_handler() {
 
     sleep(1);
   }
+
+  return NULL;
 }
 
 static int8_t

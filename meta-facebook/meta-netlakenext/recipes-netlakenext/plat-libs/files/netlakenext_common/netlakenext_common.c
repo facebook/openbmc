@@ -227,10 +227,9 @@ netlakenext_common_i2c_transfer(uint8_t bus, uint8_t addr, uint8_t *tbuf, uint8_
   return ret;
 }
 
-void
-netlakenext_vr_dump(void) {
+static void
+netlakenext_vr_dump_internal(const uint8_t* addr_list, size_t addr_list_size) {
   int ret = 0;
-  uint8_t addr_list[] = {VR_PVDDCR_ADDR, VR_PVDD_MISC_ADDR};
   uint8_t page_list[] = {VR_PAGE_0, VR_PAGE_1};
   uint8_t reg_list[] = {VR_STATUS_BYTE_REG, VR_STATUS_WORD_REG, VR_STATUS_IOUT_REG};
   uint8_t tbuf[PMBUS_RW_WORD] = {0};
@@ -255,7 +254,7 @@ netlakenext_vr_dump(void) {
    */
   usleep(500000);
 
-  for (size_t addr_idx = 0; addr_idx < ARRAY_SIZE(addr_list); addr_idx++) {
+  for (size_t addr_idx = 0; addr_idx < addr_list_size; addr_idx++) {
     uint8_t addr = addr_list[addr_idx];
     for (size_t page_idx = 0; page_idx < ARRAY_SIZE(page_list); page_idx++) {
       uint8_t page = page_list[page_idx];
@@ -294,6 +293,17 @@ netlakenext_vr_dump(void) {
   }
 
   return;
+}
+
+void
+netlakenext_vr_dump(void) {
+  uint8_t addr_list[] = {VR_PVDDCR_ADDR, VR_PVDD_MISC_ADDR};
+  netlakenext_vr_dump_internal(addr_list, ARRAY_SIZE(addr_list));
+}
+
+void
+netlakenext_vr_dump_single(uint8_t addr) {
+  netlakenext_vr_dump_internal(&addr, 1);
 }
 
 int

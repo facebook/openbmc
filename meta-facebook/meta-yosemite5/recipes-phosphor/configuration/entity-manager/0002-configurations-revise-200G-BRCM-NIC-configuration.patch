@@ -34,7 +34,7 @@ index 3f028b7..a9c29b6 100644
 +        {
 +            "Address": "0x32",
 +            "Bus": "$bus",
-+            "Name": "NIC",
++            "Name": "NIC$bus / 10",
 +            "Type": "MCTPI2CTarget"
 +        },
          {

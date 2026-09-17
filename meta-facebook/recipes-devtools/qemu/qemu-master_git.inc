@@ -192,7 +192,7 @@ SRC_URI:append = " \
 
 # slirp is a subproject: its patches need a patchdir, or they hit QEMU's tree.
 SRC_URI:append = " \
-           file://slirp-0001-bootp-honour-static-DHCP-leases.patch;patchdir=${S}/subprojects/slirp \
+           file://slirp-0001-bootp-honour-static-DHCP-leases.patch;patchdir=subprojects/slirp \
            "
 
 QEMU_CHECKOUT_DIR = "${BPN}-${PV}"

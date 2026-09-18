@@ -28,7 +28,7 @@ LIC_FILES_CHKSUM = "file://COPYING;md5=a3b50d8b88dcc0eb3d7d39b760b9e821 \
 #   git ls-remote https://github.com/qemu/qemu.git refs/heads/master | cut -f1
 # This is normally updated by the daily yocto sync job when
 # --refresh-patches is enabled
-QEMU_REF ?= "209b2afaface001c7d4d981e38f186afe7b24a50"
+QEMU_REF ?= "f8296b816fabd370307cd22b0270b610fc0fa279"
 
 # Use git protocol (required by BitBake QA)
 SRC_URI = "git://github.com/qemu/qemu.git;protocol=https;branch=master;lfs=0 \
@@ -187,7 +187,7 @@ SRC_URI:append = " \
            file://0693-hw-i2c-aspeed_i2c-fix-AST2700-target-buffer-mode-rec.patch \
            file://0694-hw-arm-aspeed-enable-both-fby35-BMC-MACs.patch \
            file://0695-hw-arm-bletchley-take-the-FRU-MAC-from-the-configure.patch \
-           file://0697-net-slirp-Add-dhcp-lease-parameter-for-static-DHCP-l.patch \
+           file://0696-slirp-pin-the-guest-address-with-a-static-DHCP-lease.patch \
            "
 
 # slirp is a subproject: its patches need a patchdir, or they hit QEMU's tree.

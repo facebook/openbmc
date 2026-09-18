@@ -1,5 +1,59 @@
+From fc569196b4451a150bbaba6a5495548d068e3fef Mon Sep 17 00:00:00 2001
+From: Emmanuel Blot <emmanuel.blot@free.fr>
+Date: Tue, 1 Sep 2026 12:00:00 +0200
+Subject: [PATCH] slirp: pin the guest address with a static DHCP lease
+
+QEMU gives the emulated BMC its network through slirp, a user-mode networking
+library. Here it is set up to put the guest on a private network and forward a
+couple of host ports into it, and those forwarded ports are the only way in:
+anything on the host that wants to reach the BMC -- a browser, curl, ssh, the
+robot rig -- goes through them. None of it corresponds to anything on the
+board. Among the services slirp offers on that private network is a DHCP
+server, and it hands out addresses in the order clients ask for them: first
+come, first served, starting at 10.0.2.15.
+
+That ordering is the problem, and it has no counterpart in real hardware. On a
+machine with an NC-SI NIC the BMC does not keep one identity for the whole boot.
+It comes up with the MAC the controller powers on with and asks for an address.
+The NIC then hands it a different MAC over NC-SI, so it asks again -- as far as
+the DHCP server is concerned, a second, unrelated client -- and is given
+whichever address happens to be free. Which of the two MACs gets there first is
+a matter of timing; on catalina the window is about thirty milliseconds. The
+address the BMC ends up holding is therefore not predictable from one run to the
+next.
+
+The host side, by contrast, is fixed. The forwarded ports carrying Redfish and
+SSH are bound to one guest address when QEMU starts and never move. When the BMC
+lands on the other address, nothing on the host can reach it. The machine is up
+and bmcweb is answering, but the test rig sees silence and reports a broken BMC.
+Catalina failed three of twenty-four robot runs this way.
+
+Real hardware does not have this failure mode. There is no first-come pool: the
+BMC is given its address by a DHCP server that knows it by MAC, or configured
+statically, and whoever wants to reach it uses that address regardless of what
+order anything happened in.
+
+So give slirp what an ordinary DHCP server has -- a static lease. Bind a MAC to
+an address: that MAC always gets it, and no other client ever does. The start
+script binds the address the ports are forwarded to, to the MAC the BMC ends up
+with. Whichever request arrives first, the BMC is reachable. The transient MAC
+still gets a lease of its own, just not that one, so nothing the guest does is
+hidden from the test.
+
+Two notes on the shape of it. The lease is a generic MAC-to-address binding that
+knows nothing about NC-SI; the start script holds the platform knowledge. And
+the start script now names the guest address once and passes it to all three
+places that need it -- where the pool begins, the lease, and the forwarding
+rules -- rather than leaving any of them to a default, so they cannot disagree.
+
+Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
+---
+ net/slirp.c   | 48 +++++++++++++++++++++++++++++++++++++++++++++++-
+ qapi/net.json |  5 ++++-
+ 2 files changed, 51 insertions(+), 2 deletions(-)
+
 diff --git a/net/slirp.c b/net/slirp.c
-index 75bc2d2..422487c 100644
+index 75bc2d25e7..422487c898 100644
 --- a/net/slirp.c
 +++ b/net/slirp.c
 @@ -107,6 +107,7 @@ static QTAILQ_HEAD(, SlirpState) slirp_stacks =
@@ -93,7 +147,7 @@ index 75bc2d2..422487c 100644
      while (slirp_configs) {
          config = slirp_configs;
 diff --git a/qapi/net.json b/qapi/net.json
-index 78138a1..9f186bc 100644
+index fbec6b1a95..3dec4cb829 100644
 --- a/qapi/net.json
 +++ b/qapi/net.json
 @@ -365,6 +365,8 @@
@@ -116,5 +170,5 @@ index 78138a1..9f186bc 100644
  ##
  # @NetdevTapOptions:
 -- 
-2.53.0-Meta
+2.52.0
 

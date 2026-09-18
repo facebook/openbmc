@@ -1,4 +1,4 @@
-From afe437eed2c380b92d3c4d303e78226777956012 Mon Sep 17 00:00:00 2001
+From f33b7e56041a818fa937128098e1115a05e478e2 Mon Sep 17 00:00:00 2001
 From: Alan Tsai <alan-tsai@quantatw.com>
 Date: Wed, 12 Aug 2026 10:49:25 +0800
 Subject: [PATCH] i2c-vr: add support for TI TPS544X27 VR firmware update
@@ -483,11 +483,11 @@ index 03d953c..e34a70e 100644
 +    return fields;
 +}
 diff --git a/i2c-vr/i2cvr_software_manager.cpp b/i2c-vr/i2cvr_software_manager.cpp
-index 4842ac1..d1c6b8b 100644
+index 392be5a..22e07ea 100644
 --- a/i2c-vr/i2cvr_software_manager.cpp
 +++ b/i2c-vr/i2cvr_software_manager.cpp
-@@ -25,7 +25,8 @@ const std::vector<std::string> emConfigTypes = {
-     "MP292XFirmware",     "MP2940XFirmware",      "MP297XFirmware",
+@@ -26,7 +26,8 @@ const std::vector<std::string> emConfigTypes = {
+     "MP2X6XXFirmware",    "MP292XFirmware",       "MP2940XFirmware",    "MP297XFirmware",
      "MP5998Firmware",     "MPQ87XXFirmware",      "MP994XFirmware",
      "RAA22XGen2Firmware", "RAA22XGen3p5Firmware", "TDA38640AFirmware",
 -    "XDP71XFirmware",     "TPS25990Firmware",     "RS31390Firmware"};
@@ -497,10 +497,10 @@ index 4842ac1..d1c6b8b 100644
  I2CVRSoftwareManager::I2CVRSoftwareManager(sdbusplus::async::context& ctx) :
      ManagerInf::SoftwareManager(ctx, configDBusName)
 diff --git a/i2c-vr/meson.build b/i2c-vr/meson.build
-index 7ccf3c5..ad3905d 100644
+index 45b938a..ea0a6fe 100644
 --- a/i2c-vr/meson.build
 +++ b/i2c-vr/meson.build
-@@ -12,6 +12,8 @@ regulators_src = files(
+@@ -13,6 +13,8 @@ regulators_src = files(
      'tda38640a/tda38640a.cpp',
      'tps25990/rs31390.cpp',
      'tps25990/tps25990.cpp',
@@ -2019,10 +2019,10 @@ index 0000000..4bf6650
 +
 +} // namespace phosphor::software::VR
 diff --git a/i2c-vr/vr.cpp b/i2c-vr/vr.cpp
-index 2d8760e..66dfe9c 100644
+index edef57d..fb71809 100644
 --- a/i2c-vr/vr.cpp
 +++ b/i2c-vr/vr.cpp
-@@ -10,6 +10,7 @@
+@@ -11,6 +11,7 @@
  #include "tda38640a/tda38640a.hpp"
  #include "tps25990/rs31390.hpp"
  #include "tps25990/tps25990.hpp"
@@ -2030,7 +2030,7 @@ index 2d8760e..66dfe9c 100644
  #include "xdp71x/xdp71x.hpp"
  #include "xdpe1x2xx/xdpe1x2xx.hpp"
  
-@@ -56,6 +57,8 @@ std::unique_ptr<VoltageRegulator> create(sdbusplus::async::context& ctx,
+@@ -59,6 +60,8 @@ std::unique_ptr<VoltageRegulator> create(sdbusplus::async::context& ctx,
              return std::make_unique<TPS25990>(ctx, bus, address);
          case VRType::RS31390:
              return std::make_unique<RS31390>(ctx, bus, address);
@@ -2039,7 +2039,7 @@ index 2d8760e..66dfe9c 100644
          default:
              return nullptr;
      }
-@@ -78,6 +81,7 @@ bool stringToEnum(std::string& vrStr, VRType& vrType)
+@@ -82,6 +85,7 @@ bool stringToEnum(std::string& vrStr, VRType& vrType)
          {"TDA38640AFirmware", VRType::TDA38640A},
          {"XDP71XFirmware", VRType::XDP71X},
          {"TPS25990Firmware", VRType::TPS25990},
@@ -2048,10 +2048,10 @@ index 2d8760e..66dfe9c 100644
  
      if (VRTypeToString.contains(vrStr))
 diff --git a/i2c-vr/vr.hpp b/i2c-vr/vr.hpp
-index 6718e7e..bd742dd 100644
+index 5124551..ec78212 100644
 --- a/i2c-vr/vr.hpp
 +++ b/i2c-vr/vr.hpp
-@@ -25,6 +25,7 @@ enum class VRType
+@@ -26,6 +26,7 @@ enum class VRType
      TDA38640A,
      XDP71X,
      TPS25990,
@@ -2570,5 +2570,5 @@ index 14735cb..2ca813c 100644
  subdir('common')
 +subdir('i2c-vr')
 -- 
-2.53.0-Meta
+2.52.0
 

@@ -1,7 +1,7 @@
-From 4330131fbfcd61b1f625d033f398d006969cde21 Mon Sep 17 00:00:00 2001
+From 9cb472c4151381da83970316352b6162dc25130b Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 2 Sep 2026 07:17:39 -0500
-Subject: [PATCH 08/12] event_extensions:CPER: Add Raw extension
+Subject: [PATCH] event_extensions:CPER: Add Raw extension
 
 Add a CPER Raw event extension implementation.
 
@@ -416,5 +416,5 @@ index 10493d5..ccaed8a 100644
 +    ),
 +)
 -- 
-2.43.0
+2.53.0-Meta
 

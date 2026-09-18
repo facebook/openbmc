@@ -1,4 +1,4 @@
-From fd406aa243c02b492492753992e16ccdaa161bec Mon Sep 17 00:00:00 2001
+From 6cc22f82acdcc0dccdfef73261e8c830955e11a0 Mon Sep 17 00:00:00 2001
 From: Alan Tsai <alan-tsai@quantatw.com>
 Date: Wed, 12 Aug 2026 10:48:23 +0800
 Subject: [PATCH] i2c-vr: add support for MPS MP2940x VR firmware update
@@ -247,44 +247,36 @@ https://$bmc/redfish/v1/UpdateService/FirmwareInventory/MB_VR_CPU_CPU1_MEM1_Firm
 Change-Id: I013ffecd0a3bc869f3a09aef15fe9a1d4f9c1e8c
 Signed-off-by: Alan Tsai <alan-tsai@quantatw.com>
 ---
- i2c-vr/i2cvr_software_manager.cpp |  10 +-
+ i2c-vr/i2cvr_software_manager.cpp |   2 +-
  i2c-vr/meson.build                |   1 +
  i2c-vr/mps/mp2940x.cpp            | 741 ++++++++++++++++++++++++++++++
  i2c-vr/mps/mp2940x.hpp            |  46 ++
  i2c-vr/vr.cpp                     |   4 +
  i2c-vr/vr.hpp                     |   1 +
- 6 files changed, 798 insertions(+), 5 deletions(-)
+ 6 files changed, 794 insertions(+), 1 deletion(-)
  create mode 100644 i2c-vr/mps/mp2940x.cpp
  create mode 100644 i2c-vr/mps/mp2940x.hpp
 
 diff --git a/i2c-vr/i2cvr_software_manager.cpp b/i2c-vr/i2cvr_software_manager.cpp
-index 8d24708..e6df5fe 100644
+index b69c011..392be5a 100644
 --- a/i2c-vr/i2cvr_software_manager.cpp
 +++ b/i2c-vr/i2cvr_software_manager.cpp
-@@ -21,11 +21,11 @@ namespace ManagerInf = phosphor::software::manager;
- 
+@@ -23,7 +23,7 @@ namespace ManagerInf = phosphor::software::manager;
  const std::string configDBusName = "I2CVR";
  const std::vector<std::string> emConfigTypes = {
--    "XDPE1X2XXFirmware",    "ISL69269Firmware",  "MP2X6XXFirmware",
--    "MP292XFirmware",       "MP297XFirmware",    "MP5998Firmware",
--    "MPQ87XXFirmware",      "MP994XFirmware",    "RAA22XGen2Firmware",
--    "RAA22XGen3p5Firmware", "TDA38640AFirmware", "XDP71XFirmware",
--    "TPS25990Firmware",     "RS31390Firmware"};
-+    "XDPE1X2XXFirmware",  "ISL69269Firmware",     "MP2X6XXFirmware",
-+    "MP292XFirmware",     "MP2940XFirmware",      "MP297XFirmware",
-+    "MP5998Firmware",     "MPQ87XXFirmware",      "MP994XFirmware",
-+    "RAA22XGen2Firmware", "RAA22XGen3p5Firmware", "TDA38640AFirmware",
-+    "XDP71XFirmware",     "TPS25990Firmware",     "RS31390Firmware"};
- 
- I2CVRSoftwareManager::I2CVRSoftwareManager(sdbusplus::async::context& ctx) :
-     ManagerInf::SoftwareManager(ctx, configDBusName)
+     "XDPE1X2XXFirmware",  "ISL69269Firmware",     "MAX209XXFirmware",
+-    "MP2X6XXFirmware",    "MP292XFirmware",       "MP297XFirmware",
++    "MP2X6XXFirmware",    "MP292XFirmware",       "MP2940XFirmware",    "MP297XFirmware",
+     "MP5998Firmware",     "MPQ87XXFirmware",      "MP994XFirmware",
+     "RAA22XGen2Firmware", "RAA22XGen3p5Firmware", "TDA38640AFirmware",
+     "XDP71XFirmware",     "TPS25990Firmware",     "RS31390Firmware"};
 diff --git a/i2c-vr/meson.build b/i2c-vr/meson.build
-index f5e51f5..7ccf3c5 100644
+index bf5395e..45b938a 100644
 --- a/i2c-vr/meson.build
 +++ b/i2c-vr/meson.build
-@@ -2,6 +2,7 @@ i2cvr_src = files('i2cvr_device.cpp', 'i2cvr_software_manager.cpp', 'vr.cpp')
- 
+@@ -3,6 +3,7 @@ i2cvr_src = files('i2cvr_device.cpp', 'i2cvr_software_manager.cpp', 'vr.cpp')
  regulators_src = files(
+     'adi/max209xx.cpp',
      'isl69269/isl69269.cpp',
 +    'mps/mp2940x.cpp',
      'mps/mp297x.cpp',
@@ -1090,18 +1082,18 @@ index 0000000..153e5f9
 +
 +} // namespace phosphor::software::VR
 diff --git a/i2c-vr/vr.cpp b/i2c-vr/vr.cpp
-index f15d497..2d8760e 100644
+index 288329c..edef57d 100644
 --- a/i2c-vr/vr.cpp
 +++ b/i2c-vr/vr.cpp
-@@ -1,6 +1,7 @@
- #include "vr.hpp"
+@@ -2,6 +2,7 @@
  
+ #include "adi/max209xx.hpp"
  #include "isl69269/isl69269.hpp"
 +#include "mps/mp2940x.hpp"
  #include "mps/mp297x.hpp"
  #include "mps/mp2x6xx.hpp"
  #include "mps/mp5998.hpp"
-@@ -31,6 +32,8 @@ std::unique_ptr<VoltageRegulator> create(sdbusplus::async::context& ctx,
+@@ -34,6 +35,8 @@ std::unique_ptr<VoltageRegulator> create(sdbusplus::async::context& ctx,
              return std::make_unique<MP2X6XX>(ctx, bus, address);
          case VRType::MP292X:
              return std::make_unique<MP292X>(ctx, bus, address);
@@ -1110,8 +1102,8 @@ index f15d497..2d8760e 100644
          case VRType::MP297X:
              return std::make_unique<MP297X>(ctx, bus, address);
          case VRType::MP5998:
-@@ -65,6 +68,7 @@ bool stringToEnum(std::string& vrStr, VRType& vrType)
-         {"ISL69269Firmware", VRType::ISL69269},
+@@ -69,6 +72,7 @@ bool stringToEnum(std::string& vrStr, VRType& vrType)
+         {"MAX209XXFirmware", VRType::MAX209XX},
          {"MP2X6XXFirmware", VRType::MP2X6XX},
          {"MP292XFirmware", VRType::MP292X},
 +        {"MP2940XFirmware", VRType::MP2940X},
@@ -1119,11 +1111,11 @@ index f15d497..2d8760e 100644
          {"MP5998Firmware", VRType::MP5998},
          {"MP994XFirmware", VRType::MP994X},
 diff --git a/i2c-vr/vr.hpp b/i2c-vr/vr.hpp
-index e32f598..8176a38 100644
+index 77a3fbd..5124551 100644
 --- a/i2c-vr/vr.hpp
 +++ b/i2c-vr/vr.hpp
-@@ -15,6 +15,7 @@ enum class VRType
-     ISL69269,
+@@ -16,6 +16,7 @@ enum class VRType
+     MAX209XX,
      MP2X6XX,
      MP292X,
 +    MP2940X,
@@ -1131,5 +1123,5 @@ index e32f598..8176a38 100644
      MP5998,
      MP994X,
 -- 
-2.25.1
+2.52.0
 

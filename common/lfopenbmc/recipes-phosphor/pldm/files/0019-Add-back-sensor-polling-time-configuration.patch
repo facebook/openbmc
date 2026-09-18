@@ -1,7 +1,7 @@
-From 538aa11778399730b6c73653b0f6b911ea01ea85 Mon Sep 17 00:00:00 2001
+From d24c05263ec5ff80ee1f3a4900358ddba3ad814b Mon Sep 17 00:00:00 2001
 From: James Athappilly <jamesatha@meta.com>
 Date: Tue, 21 Apr 2026 21:24:06 -0700
-Subject: [PATCH 19/31] Add back sensor polling time configuration
+Subject: [PATCH] Add back sensor polling time configuration
 
 When syncing the latest upstream changes, multiple
 Facebook platforms that used this option [1] failed
@@ -86,5 +86,5 @@ index 67298c2..aa2167a 100644
          });
      EXPECT_CALL(sensorManager, doSensorPolling(tid))
 -- 
-2.54.0
+2.53.0-Meta
 

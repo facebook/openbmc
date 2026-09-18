@@ -1,7 +1,7 @@
-From 192a18e0f20a140a7c584e5837ad364782dfea54 Mon Sep 17 00:00:00 2001
+From 1f85835879e12a0907472c0bc2663bd38ace17e9 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 21 May 2026 07:03:10 +0000
-Subject: [PATCH 16/31] oem-meta: Implement special event handling
+Subject: [PATCH] oem-meta: Implement special event handling
 
 Certain events must be recorded by directly invoking phosphor-logging.
 In particular, the CXL HB requires controlling the event severity based
@@ -25,10 +25,10 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  1 file changed, 63 insertions(+), 8 deletions(-)
 
 diff --git a/oem/meta/libpldmresponder/file_io_type_event_log.cpp b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-index 1bf37df..5029f19 100644
+index e338e06..12c52cb 100644
 --- a/oem/meta/libpldmresponder/file_io_type_event_log.cpp
 +++ b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-@@ -805,16 +805,17 @@ static void thermalFault(const message& eventData, const std::string&,
+@@ -1166,16 +1166,17 @@ static void thermalFault(const message& eventData, const std::string&,
      auto device = "/xyz/openbmc_project/State/Thermal/host" + slotNum + "/cpu0";
      EventAssert eventStatus = static_cast<EventAssert>(eventData[1]);
  
@@ -49,7 +49,7 @@ index 1bf37df..5029f19 100644
  }
  
  static void prochotSdSensor(const message& eventData, const std::string&,
-@@ -902,6 +903,60 @@ static void rainbowFault(const message& eventData, const std::string&,
+@@ -1307,6 +1308,60 @@ static void arkeFault(const message& eventData, const std::string&,
      recordEventLog(updatedFault, eventStatus, eventData[3], eventData[4]);
  }
  
@@ -110,7 +110,7 @@ index 1bf37df..5029f19 100644
  static void reportError(const message&, const std::string& event,
                          const std::string&)
  {
-@@ -964,11 +1019,11 @@ static const std::map<EventType, EventDescriptor> eventHandlers = {
+@@ -1369,11 +1424,11 @@ static const std::map<EventType, EventDescriptor> eventHandlers = {
      {EventType::POWER_ON_SEQUENCE_FAILURE, {report::powerRailFault, nullptr}},
      {EventType::DIMM_PMIC_ERROR,
       {report::powerRailFault, format::dimmPmicError}},
@@ -128,5 +128,5 @@ index 1bf37df..5029f19 100644
       {report::prochotSdSensor, nullptr}},
      {EventType::MTIA_FAULT, {report::mtiaFault, nullptr}},
 -- 
-2.54.0
+2.53.0-Meta
 

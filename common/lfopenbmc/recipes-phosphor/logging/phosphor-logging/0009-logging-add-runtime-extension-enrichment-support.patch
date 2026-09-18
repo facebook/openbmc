@@ -1,7 +1,7 @@
-From 8fda5fb6427b60dbd093a57d873a51f59f8fb553 Mon Sep 17 00:00:00 2001
+From 430176c8301f800fb7a924c8d9954a3c73bc11c6 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Mon, 7 Sep 2026 00:58:20 -0500
-Subject: [PATCH 09/12] logging: add runtime extension enrichment support
+Subject: [PATCH] logging: add runtime extension enrichment support
 
 Add support for runtime enrichment of event extension payloads.
 
@@ -600,5 +600,5 @@ index d5f29eb..73fc89c 100644
 +    EXPECT_TRUE(metadata["Provider2"]);
 +}
 -- 
-2.43.0
+2.53.0-Meta
 

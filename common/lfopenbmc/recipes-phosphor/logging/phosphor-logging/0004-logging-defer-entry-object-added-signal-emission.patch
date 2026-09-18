@@ -1,7 +1,7 @@
-From fb22660077e0bef32b6cc92e3ffd914f8948f795 Mon Sep 17 00:00:00 2001
+From 518a5be85d2ba8b35e90cff1107ffbdf7385969a Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Sun, 2 Aug 2026 11:24:28 -0500
-Subject: [PATCH 04/12] logging: defer entry object-added signal emission
+Subject: [PATCH] logging: defer entry object-added signal emission
 
 Move log entry object-added signal emission from Entry construction
 to the logging manager.
@@ -48,5 +48,5 @@ index a454b61..f667772 100644
          isCalloutPresent(*e))
      {
 -- 
-2.43.0
+2.53.0-Meta
 

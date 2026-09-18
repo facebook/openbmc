@@ -1,8 +1,7 @@
-From e0244121034ff698603fdc0ab3013cd6cec3146a Mon Sep 17 00:00:00 2001
+From 219720d6ba1a7765a9ba3ca6deefc411de2090be Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 12 Feb 2026 09:57:38 +0000
-Subject: [PATCH 15/31] requester: Parse MCTP endpoint from InterfacesRemoved
- signal
+Subject: [PATCH] requester: Parse MCTP endpoint from InterfacesRemoved signal
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -652,5 +651,5 @@ index 71ce9c4..5d4e884 100644
 +    EXPECT_EQ(mctpDiscoveryHandler->existingMctpInfos.size(), 1);
 +}
 -- 
-2.54.0
+2.53.0-Meta
 

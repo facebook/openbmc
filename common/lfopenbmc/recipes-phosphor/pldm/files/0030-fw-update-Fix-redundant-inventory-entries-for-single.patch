@@ -1,7 +1,7 @@
-From 4bfc8a93779c1d52630b6fca67a3e67eb62555a0 Mon Sep 17 00:00:00 2001
+From 8b265f9ae6472a698760c0167f709cec08fe3d4c Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Tue, 28 Jul 2026 09:22:38 +0800
-Subject: [PATCH 30/31] fw-update: Fix redundant inventory entries for
+Subject: [PATCH] fw-update: Fix redundant inventory entries for
  single-component FDs
 
 Currently, single-component devices (e.g., CX7) expose duplicate
@@ -146,5 +146,5 @@ index 1281888..d38662a 100644
  }
  
 -- 
-2.54.0
+2.53.0-Meta
 

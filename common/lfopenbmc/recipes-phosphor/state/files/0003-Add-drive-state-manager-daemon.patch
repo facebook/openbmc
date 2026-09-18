@@ -1,4 +1,4 @@
-From 1037341ae93dce29b5ac0cfab4aa15c2865772cd Mon Sep 17 00:00:00 2001
+From 537d5079f9cea13d99d42f9dfb6fdafd2ca39083 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 23 Apr 2026 04:20:23 +0000
 Subject: [PATCH] Add drive state manager daemon
@@ -769,10 +769,10 @@ index 0000000..7651e3d
 +    return 0;
 +}
 diff --git a/meson.build b/meson.build
-index b89c3e5..bbc0131 100644
+index 1d79521..eafb51a 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -259,6 +259,16 @@ executable(
+@@ -267,6 +267,16 @@ executable(
      install_dir: get_option('libexecdir') / 'phosphor-state-manager',
  )
  

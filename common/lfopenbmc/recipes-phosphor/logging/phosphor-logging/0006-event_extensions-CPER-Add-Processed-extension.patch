@@ -1,7 +1,7 @@
-From 84dbc51d0c8927fdaa1694de0a20d329e336ed5f Mon Sep 17 00:00:00 2001
+From e722b0194452fe3149a5dc2fe0aa1aa7e3bf6ef9 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 2 Sep 2026 03:04:36 -0500
-Subject: [PATCH 06/12] event_extensions:CPER: Add Processed extension
+Subject: [PATCH] event_extensions:CPER: Add Processed extension
 
 Add the first event extension implementation based on the
 CPER Processed D-Bus interface.
@@ -337,5 +337,5 @@ index 8f02bf1..a5897e7 100644
 +    ),
 +)
 -- 
-2.43.0
+2.53.0-Meta
 

@@ -1,7 +1,7 @@
-From edf78d04e334eb375bc1bce535cb87a91afe14b3 Mon Sep 17 00:00:00 2001
+From 6438456d79355483436bffc557bdbf9bbaa66be0 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 10 Sep 2026 03:17:47 -0500
-Subject: [PATCH 12/12] amd-event-log: add Redfish projection support
+Subject: [PATCH] amd-event-log: add Redfish projection support
 
 Add AMD Redfish projection support for AMD Event Log
 (AEL) runtime metadata.
@@ -623,5 +623,5 @@ index d94b2d4..e82dd6c 100644
 +    ),
 +)
 -- 
-2.43.0
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From ff7333c497ac407f3f3b7c98b9423860d82cd64b Mon Sep 17 00:00:00 2001
+From 17cce0a54ec78091528e0c599a69c4011e94b7da Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Fri, 21 Nov 2025 18:32:59 +0800
 Subject: [PATCH] i3c: dw: Handle unexpected responses caused by SDA noise
@@ -19,7 +19,7 @@ Change-Id: I6d66b30ea02fcb3f9bc0c6514d62989ab26c65fb
  1 file changed, 14 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/i3c/master/dw-i3c-master.c b/drivers/i3c/master/dw-i3c-master.c
-index 90a0b44d1109..f12705e68dd2 100644
+index 917b7fb7f067..f9f8c1767042 100644
 --- a/drivers/i3c/master/dw-i3c-master.c
 +++ b/drivers/i3c/master/dw-i3c-master.c
 @@ -569,8 +569,12 @@ static void dw_i3c_master_end_xfer_locked(struct dw_i3c_master *master, u32 isr)
@@ -67,7 +67,7 @@ index 90a0b44d1109..f12705e68dd2 100644
  
  	sda_lvl_pre = FIELD_GET(SDA_LINE_SIGNAL_LEVEL,
  				readl(master->regs + PRESENT_STATE));
-@@ -1180,7 +1187,7 @@ static int dw_i3c_master_priv_xfers(struct i3c_dev_desc *dev,
+@@ -1188,7 +1195,7 @@ static int dw_i3c_master_priv_xfers(struct i3c_dev_desc *dev,
  				COMMAND_PORT_SPEED(dev->info.max_write_ds);
  		}
  
@@ -76,7 +76,7 @@ index 90a0b44d1109..f12705e68dd2 100644
  			       COMMAND_PORT_DEV_INDEX(data->index) |
  			       COMMAND_PORT_ROC;
  
-@@ -1346,7 +1353,7 @@ static int dw_i3c_master_i2c_xfers(struct i2c_dev_desc *dev,
+@@ -1354,7 +1361,7 @@ static int dw_i3c_master_i2c_xfers(struct i2c_dev_desc *dev,
  		cmd->cmd_hi = COMMAND_PORT_ARG_DATA_LEN(i2c_xfers[i].len) |
  			COMMAND_PORT_TRANSFER_ARG;
  
@@ -86,5 +86,5 @@ index 90a0b44d1109..f12705e68dd2 100644
  			      COMMAND_PORT_ROC;
  
 -- 
-2.52.0
+2.53.0-Meta
 

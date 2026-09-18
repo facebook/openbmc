@@ -1,8 +1,7 @@
-From d69763c8a0f0f6b7276c6e2950eb42a2a1dbbca2 Mon Sep 17 00:00:00 2001
+From 7cdbc3b72c629f5b231dc1dd3d6bc61eceb7738f Mon Sep 17 00:00:00 2001
 From: Sora Su <baxiche@gmail.com>
 Date: Thu, 23 Oct 2025 14:34:12 +0800
-Subject: [PATCH 18/31] oem-meta: Add call to the fw-versions-sd-retimer
- service
+Subject: [PATCH] oem-meta: Add call to the fw-versions-sd-retimer service
 
 The fw-versions-sd-retimer service is triggered by the POST_COMPLETED
 and POST_ENDED events. This is a downstream-only implementation, as
@@ -17,10 +16,10 @@ Upstream-Status: Inappropriate
  1 file changed, 26 insertions(+)
 
 diff --git a/oem/meta/libpldmresponder/file_io_type_event_log.cpp b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-index 5029f19..a9ad75e 100644
+index 12c52cb..4bef505 100644
 --- a/oem/meta/libpldmresponder/file_io_type_event_log.cpp
 +++ b/oem/meta/libpldmresponder/file_io_type_event_log.cpp
-@@ -962,6 +962,25 @@ static void reportError(const message&, const std::string& event,
+@@ -1367,6 +1367,25 @@ static void reportError(const message&, const std::string& event,
  {
      pldm::utils::reportError(event.c_str());
  }
@@ -46,7 +45,7 @@ index 5029f19..a9ad75e 100644
  } // namespace report
  
  namespace format
-@@ -1125,6 +1144,13 @@ static void addSystemEventLogAndJournal(const message& eventData,
+@@ -1531,6 +1550,13 @@ static void addSystemEventLogAndJournal(const message& eventData,
      {
          lg2::error("Unexpected error: {ERROR}", "ERROR", event);
      }
@@ -61,5 +60,5 @@ index 5029f19..a9ad75e 100644
  
  int EventLogHandler::write(const message& eventData)
 -- 
-2.54.0
+2.53.0-Meta
 

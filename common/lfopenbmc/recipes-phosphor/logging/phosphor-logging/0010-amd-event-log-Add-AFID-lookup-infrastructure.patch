@@ -1,7 +1,7 @@
-From 71129f123d786990293e835e87b77c255f9ef5ba Mon Sep 17 00:00:00 2001
+From be5bb1af14fc7b0ae59943d5e8c7f4b7e7d9b682 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 10 Sep 2026 01:12:39 -0500
-Subject: [PATCH 10/12] amd-event-log: Add AFID lookup infrastructure
+Subject: [PATCH] amd-event-log: Add AFID lookup infrastructure
 
 Add build-time generation of the AMD Event Log (AEL)
 reverse lookup table from a JSON-based configuration.
@@ -1586,5 +1586,5 @@ index 6811ab6..4a61905 100644
      'openpower-pel-extension',
      type: 'feature',
 -- 
-2.43.0
+2.53.0-Meta
 

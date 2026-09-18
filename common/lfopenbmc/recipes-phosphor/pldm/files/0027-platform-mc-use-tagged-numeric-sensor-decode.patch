@@ -1,7 +1,7 @@
-From b3d28a24c02a97a026e94eed86cc810bad447529 Mon Sep 17 00:00:00 2001
+From 5f9d7f40780212b1fa8a333ca95df0b7a107379d Mon Sep 17 00:00:00 2001
 From: Abhishek R <abhishek.ramireddygarireddy@arm.com>
 Date: Thu, 6 Aug 2026 14:48:45 +0000
-Subject: [PATCH 27/31] platform-mc: use tagged numeric sensor decode
+Subject: [PATCH] platform-mc: use tagged numeric sensor decode
 
 Use decode_numeric_sensor_data_to_value() to retain the numeric
 sensor data type and support 64-bit readings without truncation.
@@ -101,5 +101,5 @@ index fc0a6e8..d752830 100644
          "processNumericSensorEvent tid {TID}, sensorID {SID} value {VAL} previousState {PSTATE} eventState {ESTATE}",
          "TID", tid, "SID", sensorId, "VAL", value, "PSTATE", previousEventState,
 -- 
-2.54.0
+2.53.0-Meta
 

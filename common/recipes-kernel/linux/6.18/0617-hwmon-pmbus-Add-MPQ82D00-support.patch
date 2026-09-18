@@ -1,4 +1,4 @@
-From 5e44d18d371cf96436d94771ce82ed2ee3987a71 Mon Sep 17 00:00:00 2001
+From 4d80c861aa343d34cfc7e337d453d7a88b78b6fd Mon Sep 17 00:00:00 2001
 From: Angela Cheng <angelaptcheng@gmail.com>
 Date: Thu, 20 Aug 2026 05:40:21 +0000
 Subject: [PATCH] hwmon: (pmbus) Add MPQ82D00 support
@@ -125,10 +125,10 @@ index 000000000000..30ce9f5f71c0
 +**temp1_crit_alarm**
 \ No newline at end of file
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 4410c16db1c0..b1309115ca46 100644
+index 706c5de9efaa..76fb0c19de6c 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -17580,6 +17580,13 @@ S:	Maintained
+@@ -17582,6 +17582,13 @@ S:	Maintained
  F:	Documentation/hwmon/mp9945.rst
  F:	drivers/hwmon/pmbus/mp9945.c
  

@@ -1,7 +1,7 @@
-From 09fd48352af2ee03852497df21dd9de7ea41d714 Mon Sep 17 00:00:00 2001
+From 11bf3fd3d65b2062ff12e4a3c4bf0983c273b62d Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Thu, 10 Sep 2026 02:17:43 -0500
-Subject: [PATCH 11/12] amd-event-log: add runtime AFID integration
+Subject: [PATCH] amd-event-log: add runtime AFID integration
 
 Add runtime helper APIs on top of the generated AFID
 lookup database.
@@ -521,5 +521,5 @@ index 8d88121..2ce27bc 100644
  subdir('event_extensions')
  
 -- 
-2.43.0
+2.53.0-Meta
 

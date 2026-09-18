@@ -1,7 +1,7 @@
-From d215fb6a5d088a54afd5a3607ba47b2da947adf0 Mon Sep 17 00:00:00 2001
+From 7e17578b0bac426f9fdbe32ac43e3731cf2955ec Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 2 Sep 2026 00:33:06 -0500
-Subject: [PATCH 03/12] event_extensions: Add event extension framework
+Subject: [PATCH] event_extensions: Add event extension framework
 
 Add a framework for attaching extension-specific D-Bus
 interfaces to log entries.
@@ -97,7 +97,7 @@ index 8106852..08cbfb5 100644
  
  The BMC is an rsyslog client. To stream out logs, it needs to talk to an rsyslog
 diff --git a/elog_entry.cpp b/elog_entry.cpp
-index d7d5f04..07ed128 100644
+index c1b9963..fd65cc6 100644
 --- a/elog_entry.cpp
 +++ b/elog_entry.cpp
 @@ -25,6 +25,24 @@ void Entry::persist()
@@ -938,5 +938,5 @@ index a1fb868..0803a70 100644
          'deps': [cereal_dep],
      },
 -- 
-2.43.0
+2.53.0-Meta
 

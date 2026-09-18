@@ -1,4 +1,4 @@
-From 22ddf1ee52bb996c2339db6c588d503e15b4b11a Mon Sep 17 00:00:00 2001
+From fbdf33392ccad57db6146fc2fd640cc3f8ee7766 Mon Sep 17 00:00:00 2001
 From: Alan Tsai <alan-tsai@quantatw.com>
 Date: Fri, 21 Aug 2026 14:37:52 +0800
 Subject: [PATCH] i2cvr: cache VR version to allow read access when host is
@@ -38,20 +38,20 @@ Tested:
  2 files changed, 45 insertions(+), 1 deletion(-)
 
 diff --git a/i2c-vr/i2cvr_software_manager.cpp b/i2c-vr/i2cvr_software_manager.cpp
-index d1c6b8b..7be8986 100644
+index 22e07ea..9087182 100644
 --- a/i2c-vr/i2cvr_software_manager.cpp
 +++ b/i2c-vr/i2cvr_software_manager.cpp
-@@ -11,6 +11,9 @@
- #include <xyz/openbmc_project/ObjectMapper/client.hpp>
+@@ -12,6 +12,9 @@
  
  #include <cstdint>
-+#include <iostream>
+ #include <exception>
 +#include <fstream>
++#include <iostream>
 +#include <nlohmann/json.hpp>
  
  PHOSPHOR_LOG2_USING;
  
-@@ -95,11 +98,51 @@ sdbusplus::async::task<bool> I2CVRSoftwareManager::initDevice(
+@@ -105,11 +108,51 @@ sdbusplus::async::task<bool> I2CVRSoftwareManager::initDevice(
      co_await sdbusplus::async::sleep_for(ctx, std::chrono::milliseconds(1000));
  
      uint32_t sum;
@@ -117,5 +117,5 @@ index 40bc8e4..657f835 100644
  sdbusplusplus_prog = find_program('sdbus++', native: true)
  sdbuspp_gen_meson_prog = find_program('sdbus++-gen-meson', native: true)
 -- 
-2.54.0
+2.53.0-Meta
 

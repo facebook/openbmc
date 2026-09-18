@@ -1,7 +1,7 @@
-From 004e8c905898ab8438000b50611bd0dba28f29a5 Mon Sep 17 00:00:00 2001
+From 56644888664dafe455f2843d6b32f2d92cd43bf0 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 2 Sep 2026 07:03:35 -0500
-Subject: [PATCH 07/12] event_extensions: add artifact storage support
+Subject: [PATCH] event_extensions: add artifact storage support
 
 Introduce generic artifact storage support for logging extensions.
 
@@ -509,5 +509,5 @@ index a5897e7..10493d5 100644
 +    ),
 +)
 -- 
-2.43.0
+2.53.0-Meta
 

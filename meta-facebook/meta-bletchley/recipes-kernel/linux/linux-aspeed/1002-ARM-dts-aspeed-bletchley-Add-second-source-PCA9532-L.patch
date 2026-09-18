@@ -1,4 +1,4 @@
-From 273f2530e9662deb74bb65a35f01636fe93f2022 Mon Sep 17 00:00:00 2001
+From 8d46795d7a5097b17f5a3a59e66eed825f1e6c84 Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Fri, 29 May 2026 08:57:08 +0800
 Subject: [PATCH] ARM: dts: aspeed: bletchley: Add second source PCA9532 LED

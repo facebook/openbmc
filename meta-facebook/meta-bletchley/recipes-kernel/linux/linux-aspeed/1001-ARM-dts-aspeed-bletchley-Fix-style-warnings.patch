@@ -1,4 +1,4 @@
-From 375b43dc7c7c17e8c3cf094b4d1c8045900aae39 Mon Sep 17 00:00:00 2001
+From 54069eecada9bb8992c27e9e4dc6838fded73ddc Mon Sep 17 00:00:00 2001
 From: Cosmo Chou <chou.cosmo@gmail.com>
 Date: Wed, 29 Jul 2026 14:12:04 +0800
 Subject: [PATCH] ARM: dts: aspeed: bletchley: Fix style warnings

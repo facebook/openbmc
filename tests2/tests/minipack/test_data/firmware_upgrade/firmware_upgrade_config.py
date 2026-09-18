@@ -46,7 +46,10 @@ UPGRADING_TIMEOUT = {
     "16q_fpga": 80,
     "4dd_fpga": 80,
     "16o_fpga": 80,
-    "pdb": 38,
+    # cpldupdate-i2c programs and then verifies 34800 CFG + 8192 UFM pages
+    # over i2c, ~100s on a minipack. This budget is spent twice: once waiting
+    # for a keyword, once waiting for the prompt.
+    "pdb": 300,
     "scm": 780,
     "fcm": 1760,
     "pim_spi_mux": 177,

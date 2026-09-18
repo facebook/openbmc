@@ -16,7 +16,7 @@
 # Boston, MA 02110-1301 USA
 
 obj-m := pwrcpld.o
-obj-m += scmcpld.o
+obj-m += smbcpld.o
 
 ccflags-y += -I$(KERNEL_EXTRA_HEADER_PATH)
 

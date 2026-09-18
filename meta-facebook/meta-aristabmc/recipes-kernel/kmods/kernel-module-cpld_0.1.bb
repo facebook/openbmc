@@ -28,9 +28,11 @@ S = "${UNPACKDIR}"
 LOCAL_URI = " \
     file://Makefile \
     file://pwrcpld.c \
-    file://scmcpld.c \
+    file://smbcpld.c \
     file://COPYING \
     "
 
 DEPENDS += "kernel-module-i2c-dev-sysfs"
 RDEPENDS:${PN} += "kernel-module-i2c-dev-sysfs"
+
+KERNEL_MODULE_AUTOLOAD += "pwrcpld smbcpld"

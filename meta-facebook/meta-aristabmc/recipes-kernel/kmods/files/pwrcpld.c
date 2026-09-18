@@ -9,23 +9,78 @@
 #include "i2c_dev_sysfs.h"
 
 /*
- * FIXME: fill the below structure to export sysfs entries to the user
- * space.
- * NOTE: ONLY export register fields that are required from user space.
+ * Host CPU CPLD register map.
  */
 static const i2c_dev_attr_st pwrcpld_attrs[] = {
-	/*
-	 * Example:
 	{
-		"cpld_ver",
+		"cpld_ver_minor",
 		NULL,
 		I2C_DEV_ATTR_SHOW_DEFAULT,
 		NULL,
-		0x01,
+		0x0,
 		0,
 		8,
 	},
-	 */
+	{
+		"cpld_ver_major",
+		NULL,
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x1,
+		0,
+		8,
+	},
+	{
+		"power_cycle",
+		"0xDE: Initiate chassis power cycle",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		I2C_DEV_ATTR_STORE_DEFAULT,
+		0x70,
+		0,
+		8,
+	},
+	{
+		"cpu_ready",
+		"0x1: CPU is ready\n"
+		"0x0: CPU is NOT ready",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x72,
+		1,
+		1,
+	},
+	{
+		"cpu_control",
+		"Write 1: take CPU out of reset"
+		"Write 0: put CPU into reset"
+		"0x1: CPU is NOT in reset\n"
+		"0x0: CPU is in reset",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		I2C_DEV_ATTR_STORE_DEFAULT,
+		0x72,
+		0,
+		1,
+	},
+	{
+		"smb_nonstdby_pwr",
+		"0x1: SMB non-standby powered on\n"
+		"0x0: SMB non-standby power off",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		I2C_DEV_ATTR_STORE_DEFAULT,
+		0x7C,
+		2,
+		1,
+	},
+	{
+		"cpu_nonstdby_pwr",
+		"0x1: CPU Card non-standby powered on\n"
+		"0x0: CPU Card non-standby power off",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		I2C_DEV_ATTR_STORE_DEFAULT,
+		0x7C,
+		1,
+		1,
+	},
 };
 
 static const struct i2c_device_id pwrcpld_id[] = {
@@ -59,6 +114,6 @@ static struct i2c_driver pwrcpld_driver = {
 
 module_i2c_driver(pwrcpld_driver);
 
-MODULE_AUTHOR("Tao Ren <taoren@meta.com>");
-MODULE_DESCRIPTION("FBOSS OpenBMC Power-CPLD Driver");
+MODULE_AUTHOR("Bianca Giocas <bgiocas@arista.com>");
+MODULE_DESCRIPTION("FBOSS Aristabmc OpenBMC Power-CPLD Driver");
 MODULE_LICENSE("GPL");

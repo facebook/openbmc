@@ -1,0 +1,1171 @@
+From 6dbf570709b779330a700eb073add79a86c7534d Mon Sep 17 00:00:00 2001
+From: Bianca Giocas <bgiocas@arista.com>
+Date: Fri, 4 Sep 2026 12:04:57 +0000
+Subject: [PATCH] serial: 8250: aspeed: Add AST2700 UART and UDMA support
+
+Update the Aspeed 8250 platform driver with the AST2700 implementation
+from the Aspeed v6.18 tree. Add the Aspeed UDMA driver and interface,
+and connect it to the 8250 driver through Kconfig and the SoC Makefile.
+
+The updated driver binds to aspeed,ast2700-uart nodes and supports the
+AST2700 UART register properties, virtual UARTs, and optional UART DMA.
+
+Ported from:
+ - soc/aspeed/Kconfig: only porting ASPEED_UDMA from 
+   https://github.com/AspeedTech-BMC/linux/commit/6f3e9ab5fe40c49963d803e86d6ab4ecfce5c8a0
+ - Makefile: only porting CONFIG_ASPEED_UDMA from 
+   https://github.com/AspeedTech-BMC/linux/commit/6f3e9ab5fe40c49963d803e86d6ab4ecfce5c8a0
+ - aspeed-udma.c: https://github.com/AspeedTech-BMC/linux/commit/ea5522ad4a411f8b9383f665bc86266a1d1cc889
+ - 8250_aspeed.c: https://github.com/AspeedTech-BMC/linux/commit/0550b1447c1e3d3a075d32c2f4596a8e9a70b320
+ - aspeed-udma.h: https://github.com/AspeedTech-BMC/linux/commit/ea5522ad4a411f8b9383f665bc86266a1d1cc889
+ - tty/serial/8250/Kconfig: only porting SERIAL_8250_ASPEED update from
+   https://github.com/AspeedTech-BMC/linux/commit/90966b82759733b3aa0c1a0bab4aa254a6c69004
+
+Differences from the vendor files: the implementation was adjusted to correct UDMA
+channel bounds and error handling, select the RX reset register for RX
+channels, and allocate the complete RX ring-buffer descriptor. These fixes
+are not present in the referenced upstream/vendor revisions.
+
+Upstream-Status: Pending
+Signed-off-by: Bianca Giocas <bgiocas@arista.com>
+---
+ drivers/soc/aspeed/Kconfig             |   8 +
+ drivers/soc/aspeed/Makefile            |   1 +
+ drivers/soc/aspeed/aspeed-udma.c       | 424 +++++++++++++++++++++
+ drivers/tty/serial/8250/8250_aspeed.c  | 504 ++++++++++++++++++++-----
+ drivers/tty/serial/8250/Kconfig        |   3 +-
+ include/linux/soc/aspeed/aspeed-udma.h |  26 ++
+ 6 files changed, 871 insertions(+), 95 deletions(-)
+ create mode 100644 drivers/soc/aspeed/aspeed-udma.c
+ create mode 100644 include/linux/soc/aspeed/aspeed-udma.h
+
+diff --git a/drivers/soc/aspeed/Kconfig b/drivers/soc/aspeed/Kconfig
+index a4eaad8aa9f2..44a28d10eb95 100644
+--- a/drivers/soc/aspeed/Kconfig
++++ b/drivers/soc/aspeed/Kconfig
+@@ -75,6 +75,14 @@ config ASPEED_XDMA
+ 	  and a host processor. The driver provides ioctl() interface to reset
+ 	  and initialize engine.
+ 
++config ASPEED_UDMA
++	tristate "Aspeed UDMA Engine Driver"
++	depends on ARCH_ASPEED && REGMAP && MFD_SYSCON && HAS_DMA
++	help
++	  Enable support for the Aspeed UDMA Engine found on the Aspeed AST2XXX
++	  SOCs. The UDMA engine can perform UART DMA operations between the memory
++	  buffer and the UART/VUART devices.
++
+ config AST2700_OTP
+ 	tristate "Aspeed AST2700 OTP Driver"
+ 	depends on ARCH_ASPEED
+diff --git a/drivers/soc/aspeed/Makefile b/drivers/soc/aspeed/Makefile
+index 58c1c2beae94..af920766a397 100644
+--- a/drivers/soc/aspeed/Makefile
++++ b/drivers/soc/aspeed/Makefile
+@@ -2,6 +2,7 @@
+ obj-$(CONFIG_ASPEED_LPC_CTRL)		+= aspeed-lpc-ctrl.o
+ obj-$(CONFIG_ASPEED_LPC_SNOOP)		+= aspeed-lpc-snoop.o
+ obj-$(CONFIG_ASPEED_UART_ROUTING)	+= aspeed-uart-routing.o
++obj-$(CONFIG_ASPEED_UDMA)		+= aspeed-udma.o
+ obj-$(CONFIG_ASPEED_OTP)		+= ast2600-otp.o
+ obj-$(CONFIG_ASPEED_P2A_CTRL)		+= aspeed-p2a-ctrl.o
+ obj-$(CONFIG_ASPEED_SOCINFO)		+= aspeed-socinfo.o
+diff --git a/drivers/soc/aspeed/aspeed-udma.c b/drivers/soc/aspeed/aspeed-udma.c
+new file mode 100644
+index 000000000000..8dc6f3cfc1db
+--- /dev/null
++++ b/drivers/soc/aspeed/aspeed-udma.c
+@@ -0,0 +1,424 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++/*
++ * Copyright 2020 Aspeed Technology Inc.
++ */
++#include <linux/bitfield.h>
++#include <linux/delay.h>
++#include <linux/dma-mapping.h>
++#include <linux/interrupt.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_device.h>
++#include <linux/platform_device.h>
++#include <linux/sizes.h>
++#include <linux/soc/aspeed/aspeed-udma.h>
++#include <linux/spinlock.h>
++
++#define DEVICE_NAME "aspeed-udma"
++
++/* UART DMA registers offset */
++#define UDMA_TX_DMA_EN		0x000
++#define UDMA_RX_DMA_EN		0x004
++#define UDMA_MISC		0x008
++#define   UDMA_MISC_RX_BUFSZ	GENMASK(3, 2)
++#define   UDMA_MISC_TX_BUFSZ	GENMASK(1, 0)
++#define UDMA_TMOUT_TIMER	0x00c
++#define UDMA_TX_DMA_RST		0x020
++#define UDMA_RX_DMA_RST		0x024
++#define UDMA_TX_DMA_INT_EN	0x030
++#define UDMA_TX_DMA_INT_STS	0x034
++#define UDMA_RX_DMA_INT_EN	0x038
++#define UDMA_RX_DMA_INT_STS	0x03c
++
++#define UDMA_CHX_OFF(x)			((x) * 0x20)
++#define UDMA_CHX_TX_RD_PTR(x)		(0x040 + UDMA_CHX_OFF(x))
++#define UDMA_CHX_TX_WR_PTR(x)		(0x044 + UDMA_CHX_OFF(x))
++#define UDMA_CHX_TX_BUF_ADDR(x)		(0x048 + UDMA_CHX_OFF(x))
++#define UDMA_CHX_TX_CTRL(x)		(0x04c + UDMA_CHX_OFF(x))
++#define   UDMA_TX_CTRL_BUF_ADDRH	GENMASK(10, 8)
++#define   UDMA_TX_CTRL_TMOUT_DIS	BIT(4)
++#define   UDMA_TX_CTRL_BUFSZ		GENMASK(3, 0)
++#define UDMA_CHX_RX_RD_PTR(x)		(0x050 + UDMA_CHX_OFF(x))
++#define UDMA_CHX_RX_WR_PTR(x)		(0x054 + UDMA_CHX_OFF(x))
++#define UDMA_CHX_RX_BUF_ADDR(x)		(0x058 + UDMA_CHX_OFF(x))
++#define UDMA_CHX_RX_CTRL(x)		(0x05c + UDMA_CHX_OFF(x))
++#define   UDMA_RX_CTRL_BUF_ADDRH	GENMASK(10, 8)
++#define   UDMA_RX_CTRL_TMOUT_DIS	BIT(4)
++#define   UDMA_RX_CTRL_BUFSZ		GENMASK(1, 0)
++
++#define UDMA_MAX_CHANNEL	16
++#define UDMA_TMOUT		0x200
++
++enum aspeed_udma_bufsz_code {
++	UDMA_BUFSZ_CODE_1KB,
++	UDMA_BUFSZ_CODE_4KB,
++	UDMA_BUFSZ_CODE_16KB,
++	UDMA_BUFSZ_CODE_64KB,
++};
++
++struct aspeed_udma_chan {
++	dma_addr_t dma_addr;
++
++	u32 rb_sz;
++
++	aspeed_udma_cb_t cb;
++	void *cb_arg;
++
++	bool dis_tmout;
++};
++
++struct aspeed_udma {
++	struct device *dev;
++	u8 __iomem *regs;
++	int irq;
++	struct aspeed_udma_chan tx_chs[UDMA_MAX_CHANNEL];
++	struct aspeed_udma_chan rx_chs[UDMA_MAX_CHANNEL];
++	spinlock_t lock;
++};
++
++struct aspeed_udma udma[1];
++
++static int aspeed_udma_get_bufsz_code(u32 buf_sz)
++{
++	switch (buf_sz) {
++	case SZ_1K:
++		return UDMA_BUFSZ_CODE_1KB;
++	case SZ_4K:
++		return UDMA_BUFSZ_CODE_4KB;
++	case SZ_16K:
++		return UDMA_BUFSZ_CODE_16KB;
++	case SZ_64K:
++		return UDMA_BUFSZ_CODE_64KB;
++	default:
++		break;
++	}
++
++	return -1;
++}
++
++static u32 aspeed_udma_get_tx_rptr(u32 ch_no)
++{
++	return readl(udma->regs + UDMA_CHX_TX_RD_PTR(ch_no));
++}
++
++static u32 aspeed_udma_get_rx_wptr(u32 ch_no)
++{
++	return readl(udma->regs + UDMA_CHX_RX_WR_PTR(ch_no));
++}
++
++static void aspeed_udma_set_ptr(u32 ch_no, u32 ptr, bool is_tx)
++{
++	writel(ptr, udma->regs +
++	       ((is_tx) ? UDMA_CHX_TX_WR_PTR(ch_no) : UDMA_CHX_RX_RD_PTR(ch_no)));
++}
++
++void aspeed_udma_set_tx_wptr(u32 ch_no, u32 wptr)
++{
++	aspeed_udma_set_ptr(ch_no, wptr, true);
++}
++EXPORT_SYMBOL(aspeed_udma_set_tx_wptr);
++
++void aspeed_udma_set_rx_rptr(u32 ch_no, u32 rptr)
++{
++	aspeed_udma_set_ptr(ch_no, rptr, false);
++}
++EXPORT_SYMBOL(aspeed_udma_set_rx_rptr);
++
++static int aspeed_udma_free_chan(u32 ch_no, bool is_tx)
++{
++	u32 reg;
++	unsigned long flags;
++
++	if (ch_no >= UDMA_MAX_CHANNEL)
++		return -EINVAL;
++
++	spin_lock_irqsave(&udma->lock, flags);
++
++	reg = readl(udma->regs +
++		    ((is_tx) ? UDMA_TX_DMA_INT_EN : UDMA_RX_DMA_INT_EN));
++	reg &= ~(0x1 << ch_no);
++
++	writel(reg, udma->regs +
++	       ((is_tx) ? UDMA_TX_DMA_INT_EN : UDMA_RX_DMA_INT_EN));
++
++	spin_unlock_irqrestore(&udma->lock, flags);
++
++	return 0;
++}
++
++int aspeed_udma_free_tx_chan(u32 ch_no)
++{
++	return aspeed_udma_free_chan(ch_no, true);
++}
++EXPORT_SYMBOL(aspeed_udma_free_tx_chan);
++
++int aspeed_udma_free_rx_chan(u32 ch_no)
++{
++	return aspeed_udma_free_chan(ch_no, false);
++}
++EXPORT_SYMBOL(aspeed_udma_free_rx_chan);
++
++static int aspeed_udma_request_chan(u32 ch_no, dma_addr_t addr, u32 rb_sz,
++				    aspeed_udma_cb_t cb, void *id,
++				    bool dis_tmout, bool is_tx)
++{
++	int retval = 0;
++	int rbsz_code;
++
++	u32 reg;
++	unsigned long flags;
++	struct aspeed_udma_chan *ch;
++
++	if (ch_no >= UDMA_MAX_CHANNEL) {
++		retval = -EINVAL;
++		goto out;
++	}
++
++	rbsz_code = aspeed_udma_get_bufsz_code(rb_sz);
++	if (rbsz_code < 0) {
++		retval = -EINVAL;
++		goto out;
++	}
++
++	spin_lock_irqsave(&udma->lock, flags);
++
++	if (is_tx) {
++		reg = readl(udma->regs + UDMA_TX_DMA_INT_EN);
++		if (reg & (0x1 << ch_no)) {
++			retval = -EBUSY;
++			goto unlock_n_out;
++		}
++
++		reg |= (0x1 << ch_no);
++		writel(reg, udma->regs + UDMA_TX_DMA_INT_EN);
++
++		reg = FIELD_PREP(UDMA_TX_CTRL_BUF_ADDRH, (u64)addr >> 32) |
++		      ((dis_tmout) ? UDMA_TX_CTRL_TMOUT_DIS : 0) |
++		      FIELD_PREP(UDMA_TX_CTRL_BUFSZ, rbsz_code);
++		writel(reg, udma->regs + UDMA_CHX_TX_CTRL(ch_no));
++
++		writel(addr, udma->regs + UDMA_CHX_TX_BUF_ADDR(ch_no));
++	} else {
++		reg = readl(udma->regs + UDMA_RX_DMA_INT_EN);
++		if (reg & (0x1 << ch_no)) {
++			retval = -EBUSY;
++			goto unlock_n_out;
++		}
++
++		reg |= (0x1 << ch_no);
++		writel(reg, udma->regs + UDMA_RX_DMA_INT_EN);
++
++		reg = FIELD_PREP(UDMA_RX_CTRL_BUF_ADDRH, (u64)addr >> 32) |
++		      ((dis_tmout) ? UDMA_RX_CTRL_TMOUT_DIS : 0) |
++		      FIELD_PREP(UDMA_RX_CTRL_BUFSZ, rbsz_code);
++		writel(reg, udma->regs + UDMA_CHX_RX_CTRL(ch_no));
++
++		writel(addr, udma->regs + UDMA_CHX_RX_BUF_ADDR(ch_no));
++	}
++
++	ch = (is_tx) ? &udma->tx_chs[ch_no] : &udma->rx_chs[ch_no];
++	ch->rb_sz = rb_sz;
++	ch->cb = cb;
++	ch->cb_arg = id;
++	ch->dma_addr = addr;
++	ch->dis_tmout = dis_tmout;
++
++unlock_n_out:
++	spin_unlock_irqrestore(&udma->lock, flags);
++out:
++	return retval;
++}
++
++int aspeed_udma_request_tx_chan(u32 ch_no, dma_addr_t addr, u32 rb_sz,
++				aspeed_udma_cb_t cb, void *id, bool dis_tmout)
++{
++	return aspeed_udma_request_chan(ch_no, addr, rb_sz, cb, id,
++					dis_tmout, true);
++}
++EXPORT_SYMBOL(aspeed_udma_request_tx_chan);
++
++int aspeed_udma_request_rx_chan(u32 ch_no, dma_addr_t addr, u32 rb_sz,
++				aspeed_udma_cb_t cb, void *id, bool dis_tmout)
++{
++	return aspeed_udma_request_chan(ch_no, addr, rb_sz, cb, id,
++					dis_tmout, false);
++}
++EXPORT_SYMBOL(aspeed_udma_request_rx_chan);
++
++static void aspeed_udma_chan_ctrl(u32 ch_no, u32 op, bool is_tx)
++{
++	unsigned long flags;
++	u32 reg_en, reg_rst;
++	u32 reg_en_off = (is_tx) ? UDMA_TX_DMA_EN : UDMA_RX_DMA_EN;
++	u32 reg_rst_off = (is_tx) ? UDMA_TX_DMA_RST : UDMA_RX_DMA_RST;
++
++	if (ch_no >= UDMA_MAX_CHANNEL)
++		return;
++
++	spin_lock_irqsave(&udma->lock, flags);
++
++	reg_en = readl(udma->regs + reg_en_off);
++	reg_rst = readl(udma->regs + reg_rst_off);
++
++	switch (op) {
++	case ASPEED_UDMA_OP_ENABLE:
++		reg_en |= (0x1 << ch_no);
++		writel(reg_en, udma->regs + reg_en_off);
++		break;
++	case ASPEED_UDMA_OP_DISABLE:
++		reg_en &= ~(0x1 << ch_no);
++		writel(reg_en, udma->regs + reg_en_off);
++		break;
++	case ASPEED_UDMA_OP_RESET:
++		reg_en &= ~(0x1 << ch_no);
++		writel(reg_en, udma->regs + reg_en_off);
++
++		reg_rst |= (0x1 << ch_no);
++		writel(reg_rst, udma->regs + reg_rst_off);
++
++		udelay(100);
++
++		reg_rst &= ~(0x1 << ch_no);
++		writel(reg_rst, udma->regs + reg_rst_off);
++		break;
++	default:
++		break;
++	}
++
++	spin_unlock_irqrestore(&udma->lock, flags);
++}
++
++void aspeed_udma_tx_chan_ctrl(u32 ch_no, enum aspeed_udma_ops op)
++{
++	aspeed_udma_chan_ctrl(ch_no, op, true);
++}
++EXPORT_SYMBOL(aspeed_udma_tx_chan_ctrl);
++
++void aspeed_udma_rx_chan_ctrl(u32 ch_no, enum aspeed_udma_ops op)
++{
++	aspeed_udma_chan_ctrl(ch_no, op, false);
++}
++EXPORT_SYMBOL(aspeed_udma_rx_chan_ctrl);
++
++static irqreturn_t aspeed_udma_isr(int irq, void *arg)
++{
++	u32 bit;
++	unsigned long tx_sts = readl(udma->regs + UDMA_TX_DMA_INT_STS);
++	unsigned long rx_sts = readl(udma->regs + UDMA_RX_DMA_INT_STS);
++
++	if (udma != (struct aspeed_udma *)arg)
++		return IRQ_NONE;
++
++	if (tx_sts == 0 && rx_sts == 0)
++		return IRQ_NONE;
++
++	for_each_set_bit(bit, &tx_sts, UDMA_MAX_CHANNEL) {
++		writel((0x1 << bit), udma->regs + UDMA_TX_DMA_INT_STS);
++		if (udma->tx_chs[bit].cb)
++			udma->tx_chs[bit].cb(aspeed_udma_get_tx_rptr(bit),
++					     udma->tx_chs[bit].cb_arg);
++	}
++
++	for_each_set_bit(bit, &rx_sts, UDMA_MAX_CHANNEL) {
++		writel((0x1 << bit), udma->regs + UDMA_RX_DMA_INT_STS);
++		if (udma->rx_chs[bit].cb)
++			udma->rx_chs[bit].cb(aspeed_udma_get_rx_wptr(bit),
++					     udma->rx_chs[bit].cb_arg);
++	}
++
++	return IRQ_HANDLED;
++}
++
++static int aspeed_udma_probe(struct platform_device *pdev)
++{
++	int i, rc;
++	uint32_t reg;
++	struct resource *res;
++	struct device *dev = &pdev->dev;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (IS_ERR_OR_NULL(res)) {
++		dev_err(dev, "failed to get register base\n");
++		return -ENODEV;
++	}
++
++	udma->regs = devm_ioremap_resource(dev, res);
++	if (IS_ERR_OR_NULL(udma->regs)) {
++		dev_err(dev, "failed to map registers\n");
++		return PTR_ERR(udma->regs);
++	}
++
++	/* disable for safety */
++	writel(0x0, udma->regs + UDMA_TX_DMA_EN);
++	writel(0x0, udma->regs + UDMA_RX_DMA_EN);
++
++	udma->irq = platform_get_irq(pdev, 0);
++	if (udma->irq < 0) {
++		dev_err(dev, "failed to get IRQ number\n");
++		return -ENODEV;
++	}
++
++	rc = devm_request_irq(dev, udma->irq, aspeed_udma_isr,
++			      IRQF_SHARED, DEVICE_NAME, udma);
++	if (rc) {
++		dev_err(dev, "failed to request IRQ handler\n");
++		return rc;
++	}
++
++	/*
++	 * For legacy design.
++	 *  - TX ringbuffer size: 4KB
++	 *  - RX ringbuffer size: 64KB
++	 *  - Timeout timer disabled
++	 */
++	reg = FIELD_PREP(UDMA_MISC_TX_BUFSZ, UDMA_BUFSZ_CODE_4KB) |
++	      FIELD_PREP(UDMA_MISC_RX_BUFSZ, UDMA_BUFSZ_CODE_64KB);
++	writel(reg, udma->regs + UDMA_MISC);
++
++	for (i = 0; i < UDMA_MAX_CHANNEL; ++i) {
++		writel(0, udma->regs + UDMA_CHX_TX_WR_PTR(i));
++		writel(0, udma->regs + UDMA_CHX_RX_RD_PTR(i));
++	}
++
++	writel(0xffffffff, udma->regs + UDMA_TX_DMA_RST);
++	writel(0x0, udma->regs + UDMA_TX_DMA_RST);
++
++	writel(0xffffffff, udma->regs + UDMA_RX_DMA_RST);
++	writel(0x0, udma->regs + UDMA_RX_DMA_RST);
++
++	writel(0x0, udma->regs + UDMA_TX_DMA_INT_EN);
++	writel(0xffffffff, udma->regs + UDMA_TX_DMA_INT_STS);
++	writel(0x0, udma->regs + UDMA_RX_DMA_INT_EN);
++	writel(0xffffffff, udma->regs + UDMA_RX_DMA_INT_STS);
++
++	writel(UDMA_TMOUT, udma->regs + UDMA_TMOUT_TIMER);
++
++	spin_lock_init(&udma->lock);
++
++	dev_set_drvdata(dev, udma);
++
++	return 0;
++}
++
++static const struct of_device_id aspeed_udma_match[] = {
++	{ .compatible = "aspeed,ast2500-udma" },
++	{ .compatible = "aspeed,ast2600-udma" },
++	{ .compatible = "aspeed,ast2700-udma" },
++	{ },
++};
++
++static struct platform_driver aspeed_udma_driver = {
++	.driver = {
++		.name = DEVICE_NAME,
++		.of_match_table = aspeed_udma_match,
++
++	},
++	.probe = aspeed_udma_probe,
++};
++
++module_platform_driver(aspeed_udma_driver);
++
++MODULE_AUTHOR("Chia-Wei Wang <chiawei_wang@aspeedtech.com>");
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("Aspeed UDMA Engine Driver");
+diff --git a/drivers/tty/serial/8250/8250_aspeed.c b/drivers/tty/serial/8250/8250_aspeed.c
+index da68b5d560f9..02fd6afe4b11 100644
+--- a/drivers/tty/serial/8250/8250_aspeed.c
++++ b/drivers/tty/serial/8250/8250_aspeed.c
+@@ -17,129 +17,365 @@
+ #include <linux/circ_buf.h>
+ #include <linux/tty_flip.h>
+ #include <linux/pm_runtime.h>
++#include <linux/soc/aspeed/aspeed-udma.h>
+ 
+ #include "8250.h"
+ 
+ #define DEVICE_NAME "aspeed-uart"
++#define UNKNOWN 0
++#define AST2500_PLAT 1
++#define AST2600_PLAT 2
++#define AST2700_PLAT 3
++
++/* offsets for the aspeed virtual uart registers */
++#define VUART_GCRA	0x20
++#define   VUART_GCRA_VUART_EN			BIT(0)
++#define   VUART_GCRA_SIRQ_POLARITY		BIT(1)
++#define   VUART_GCRA_CHARACTER_TIMEOUT_TIME_MASK	GENMASK(3, 2)
++#define   VUART_GCRA_DISABLE_HOST_TX_DISCARD	BIT(5)
++#define VUART_GCRB	0x24
++#define   VUART_GCRB_HOST_SIRQ_MASK		GENMASK(7, 4)
++#define   VUART_GCRB_HOST_SIRQ_SHIFT		4
++#define VUART_ADDRL	0x28
++#define VUART_ADDRH	0x2c
++#define VUART_GCRG	0x38
++#define   VUART_GCRG_CHARACTER_TIMEOUT_TIME_CONTROL	BIT(1)
++
++#define DMA_RX_BUFSZ	(64 * 1024)
++
++struct uart_ops ast8250_pops;
++
++struct ast8250_vuart {
++	u32 port;
++	u32 sirq;
++	u32 sirq_pol;
++	bool character_timeout_time_en;
++};
++
++struct ast8250_udma {
++	u32 ch;
++
++	u32 tx_rbsz;
++	u32 rx_rbsz;
++
++	dma_addr_t tx_addr;
++	dma_addr_t rx_addr;
++
++	struct tty_port *tport;
++	struct circ_buf *rx_rb;
++
++	bool tx_tmout_dis;
++	bool rx_tmout_dis;
++};
+ 
+ struct ast8250_data {
+ 	int line;
+-	int irq;
++
++	struct resource *res;
+ 	u8 __iomem *regs;
++
++	bool is_vuart;
++	bool use_dma;
++
+ 	struct reset_control *rst;
+ 	struct clk *clk;
+-#ifdef CONFIG_SERIAL_8250_DMA
+-	struct uart_8250_dma dma;
+-#endif
++
++	struct ast8250_vuart vuart;
++	struct ast8250_udma dma;
+ };
+ 
+-#ifdef CONFIG_SERIAL_8250_DMA
+-static int ast8250_rx_dma(struct uart_8250_port *p);
++static void ast8250_dma_tx_complete(int tx_rb_rptr, void *id)
++{
++	unsigned long flags;
++	struct uart_port *port = id;
++	struct ast8250_data *data = port->private_data;
++	unsigned int count, tail;
++
++	uart_port_lock_irqsave(port, &flags);
++
++	count = kfifo_out_linear(&data->dma.tport->xmit_fifo, &tail, data->dma.tx_rbsz);
++	count = CIRC_CNT(tx_rb_rptr, tail, data->dma.tx_rbsz);
++	if (!count)
++		count = data->dma.tx_rbsz;
++	kfifo_dma_out_finish(&data->dma.tport->xmit_fifo, count);
++	port->icount.tx += count;
++
++	if (kfifo_len(&data->dma.tport->xmit_fifo) < WAKEUP_CHARS)
++		uart_write_wakeup(port);
+ 
+-static void ast8250_rx_dma_complete(void *param)
++	uart_port_unlock_irqrestore(port, flags);
++}
++
++static void ast8250_dma_rx_complete(int rx_rb_wptr, void *id)
+ {
+-	struct uart_8250_port *p = param;
+-	struct uart_8250_dma *dma = p->dma;
+-	struct tty_port *tty_port = &p->port.state->port;
+-	struct dma_tx_state	state;
+-	int	count;
++	unsigned long flags;
++	struct uart_port *up = (struct uart_port*)id;
++	struct tty_port *tp = &up->state->port;
++	struct ast8250_data *data = up->private_data;
++	struct ast8250_udma *dma = &data->dma;
++	struct circ_buf *rx_rb = dma->rx_rb;
++	u32 rx_rbsz = dma->rx_rbsz;
++	u32 count = 0;
++
++	uart_port_lock_irqsave(up, &flags);
++
++	rx_rb->head = rx_rb_wptr;
+ 
+-	dmaengine_tx_status(dma->rxchan, dma->rx_cookie, &state);
++	dma_sync_single_for_cpu(up->dev,
++			dma->rx_addr, dma->rx_rbsz, DMA_FROM_DEVICE);
+ 
+-	count = dma->rx_size - state.residue;
++	while (CIRC_CNT(rx_rb->head, rx_rb->tail, rx_rbsz)) {
++		count = CIRC_CNT_TO_END(rx_rb->head, rx_rb->tail, rx_rbsz);
+ 
+-	tty_insert_flip_string(tty_port, dma->rx_buf, count);
+-	p->port.icount.rx += count;
++		tty_insert_flip_string(tp, rx_rb->buf + rx_rb->tail, count);
+ 
+-	tty_flip_buffer_push(tty_port);
++		rx_rb->tail += count;
++		rx_rb->tail %= rx_rbsz;
++
++		up->icount.rx += count;
++	}
++
++	if (count) {
++		aspeed_udma_set_rx_rptr(data->dma.ch, rx_rb->tail);
++		tty_flip_buffer_push(tp);
++	}
+ 
+-	ast8250_rx_dma(p);
++	uart_port_unlock_irqrestore(up, flags);
+ }
+ 
+-static int ast8250_rx_dma(struct uart_8250_port *p)
++static void ast8250_dma_start_tx(struct uart_port *port)
+ {
+-	struct uart_8250_dma *dma = p->dma;
+-	struct dma_async_tx_descriptor *tx;
++	struct ast8250_data *data = port->private_data;
++	struct ast8250_udma *dma = &data->dma;
++	typeof(&dma->tport->xmit_fifo) tmp = &dma->tport->xmit_fifo;
++	struct __kfifo *tx_rb = &tmp->kfifo;
+ 
+-	tx = dmaengine_prep_slave_single(dma->rxchan, dma->rx_addr,
+-					 dma->rx_size, DMA_DEV_TO_MEM,
+-					 DMA_PREP_INTERRUPT | DMA_CTRL_ACK);
+-	if (!tx)
+-		return -EBUSY;
++	dma_sync_single_for_device(port->dev,
++			dma->tx_addr, dma->tx_rbsz, DMA_TO_DEVICE);
+ 
+-	tx->callback = ast8250_rx_dma_complete;
+-	tx->callback_param = p;
++	aspeed_udma_set_tx_wptr(dma->ch, tx_rb->in);
++}
+ 
+-	dma->rx_cookie = dmaengine_submit(tx);
++static void ast8250_dma_pops_hook(struct uart_port *port)
++{
++	static int first = 1;
+ 
+-	dma_async_issue_pending(dma->rxchan);
++	if (first) {
++		ast8250_pops = *port->ops;
++		ast8250_pops.start_tx = ast8250_dma_start_tx;
++	}
+ 
+-	return 0;
++	first = 0;
++	port->ops = &ast8250_pops;
++}
++
++static void ast8250_vuart_init(struct ast8250_data *data)
++{
++	u8 reg;
++	struct ast8250_vuart *vuart = &data->vuart;
++
++	/* IO port address */
++	writeb((u8)(vuart->port >> 0), data->regs + VUART_ADDRL);
++	writeb((u8)(vuart->port >> 8), data->regs + VUART_ADDRH);
++
++	/* SIRQ number */
++	reg = readb(data->regs + VUART_GCRB);
++	reg &= ~VUART_GCRB_HOST_SIRQ_MASK;
++	reg |= ((vuart->sirq << VUART_GCRB_HOST_SIRQ_SHIFT) & VUART_GCRB_HOST_SIRQ_MASK);
++	writeb(reg, data->regs + VUART_GCRB);
++
++	/* SIRQ polarity */
++	reg = readb(data->regs + VUART_GCRA);
++	if (vuart->sirq_pol)
++		reg |= VUART_GCRA_SIRQ_POLARITY;
++	else
++		reg &= ~VUART_GCRA_SIRQ_POLARITY;
++	writeb(reg, data->regs + VUART_GCRA);
++
++	if (vuart->character_timeout_time_en) {
++		/* Character timeout time */
++		reg = readb(data->regs + VUART_GCRA);
++		reg |= VUART_GCRA_CHARACTER_TIMEOUT_TIME_MASK;
++		writeb(reg, data->regs + VUART_GCRA);
++
++		/* Character timeout time by LCLK control bit */
++		reg = readb(data->regs + VUART_GCRG);
++		reg |= VUART_GCRG_CHARACTER_TIMEOUT_TIME_CONTROL;
++		writeb(reg, data->regs + VUART_GCRG);
++	}
++}
++
++static void ast8250_vuart_set_host_tx_discard(struct ast8250_data *data, bool discard)
++{
++	u8 reg;
++
++	reg = readb(data->regs + VUART_GCRA);
++	if (discard)
++		reg &= ~VUART_GCRA_DISABLE_HOST_TX_DISCARD;
++	else
++		reg |= VUART_GCRA_DISABLE_HOST_TX_DISCARD;
++	writeb(reg, data->regs + VUART_GCRA);
++}
++
++static void ast8250_vuart_set_enable(struct ast8250_data *data, bool enable)
++{
++	u8 reg;
++
++	reg = readb(data->regs + VUART_GCRA);
++	if (enable)
++		reg |= VUART_GCRA_VUART_EN;
++	else
++		reg &= ~VUART_GCRA_VUART_EN;
++	writeb(reg, data->regs + VUART_GCRA);
+ }
+-#endif
+ 
+ static int ast8250_handle_irq(struct uart_port *port)
+ {
+-	return serial8250_handle_irq(port, serial_port_in(port, UART_IIR));
++	u32 iir = port->serial_in(port, UART_IIR);
++	return serial8250_handle_irq(port, iir);
+ }
+ 
+ static int ast8250_startup(struct uart_port *port)
+ {
+-#ifdef CONFIG_SERIAL_8250_DMA
++	int rc = 0;
++	struct ast8250_data *data = port->private_data;
++	struct ast8250_udma *dma;
++
++	if (data->is_vuart)
++		ast8250_vuart_set_host_tx_discard(data, false);
++
++	if (data->use_dma) {
++		dma = &data->dma;
++
++		dma->tx_rbsz = UART_XMIT_SIZE;
++		dma->rx_rbsz = DMA_RX_BUFSZ;
++
++		/*
++		 * We take the xmit buffer passed from upper layers as
++		 * the DMA TX buffer and allocate a new buffer for the
++		 * RX use.
++		 *
++		 * To keep the TX/RX operation consistency, we use the
++		 * streaming DMA interface instead of the coherent one
++		 */
++		dma->tport = &port->state->port;
++		dma->rx_rb->buf = kzalloc(data->dma.rx_rbsz, GFP_KERNEL);
++		if (IS_ERR_OR_NULL(dma->rx_rb->buf)) {
++			dev_err(port->dev, "failed to allcoate RX DMA buffer\n");
++			rc = -ENOMEM;
++			goto out;
++		}
++
++		dma->tx_addr = dma_map_single(port->dev, dma->tport->xmit_buf,
++				dma->tx_rbsz, DMA_TO_DEVICE);
++		if (dma_mapping_error(port->dev, dma->tx_addr)) {
++			dev_err(port->dev, "failed to map streaming TX DMA region\n");
++			rc = -ENOMEM;
++			goto free_dma_n_out;
++		}
++
++		dma->rx_addr = dma_map_single(port->dev, dma->rx_rb->buf,
++				dma->rx_rbsz, DMA_FROM_DEVICE);
++		if (dma_mapping_error(port->dev, dma->rx_addr)) {
++			dev_err(port->dev, "failed to map streaming RX DMA region\n");
++			rc = -ENOMEM;
++			goto free_dma_n_out;
++		}
++
++		rc = aspeed_udma_request_tx_chan(dma->ch, dma->tx_addr,
++				dma->tx_rbsz, ast8250_dma_tx_complete, port, dma->tx_tmout_dis);
++		if (rc) {
++			dev_err(port->dev, "failed to request DMA TX channel\n");
++			goto free_dma_n_out;
++		}
++
++		rc = aspeed_udma_request_rx_chan(dma->ch, dma->rx_addr,
++				dma->rx_rbsz, ast8250_dma_rx_complete, port, dma->rx_tmout_dis);
++		if (rc) {
++			dev_err(port->dev, "failed to request DMA RX channel\n");
++			goto free_dma_n_out;
++		}
++
++		ast8250_dma_pops_hook(port);
++
++		aspeed_udma_tx_chan_ctrl(dma->ch, ASPEED_UDMA_OP_ENABLE);
++		aspeed_udma_rx_chan_ctrl(dma->ch, ASPEED_UDMA_OP_ENABLE);
++	}
++
++	memset(&port->icount, 0, sizeof(port->icount));
++	return serial8250_do_startup(port);
++
++free_dma_n_out:
++	kfree(dma->rx_rb->buf);
++out:
++	return rc;
++}
++
++static void ast8250_shutdown(struct uart_port *port)
++{
+ 	int rc;
+-	struct uart_8250_port *up = up_to_u8250p(port);
++	struct ast8250_data *data = port->private_data;
++	struct ast8250_udma *dma;
+ 
+-	rc = serial8250_do_startup(port);
+-	if (rc)
+-		return rc;
++	if (data->use_dma) {
++		dma = &data->dma;
+ 
+-	/*
+-	 * The default RX DMA is launched upon rising DR bit.
+-	 *
+-	 * However, this can result in byte lost if UART FIFO has
+-	 * been overruned before the DMA engine gets prepared and
+-	 * read the data out. This is especially common when UART
+-	 * DMA is used for file transfer. Thus we initiate RX DMA
+-	 * as early as possible.
+-	 */
+-	if (up->dma)
+-		return ast8250_rx_dma(up);
++		aspeed_udma_tx_chan_ctrl(dma->ch, ASPEED_UDMA_OP_RESET);
++		aspeed_udma_rx_chan_ctrl(dma->ch, ASPEED_UDMA_OP_RESET);
+ 
++		aspeed_udma_tx_chan_ctrl(dma->ch, ASPEED_UDMA_OP_DISABLE);
++		aspeed_udma_rx_chan_ctrl(dma->ch, ASPEED_UDMA_OP_DISABLE);
++
++		rc = aspeed_udma_free_tx_chan(dma->ch);
++		if (rc)
++			dev_err(port->dev, "failed to free DMA TX channel, rc=%d\n", rc);
++
++		rc = aspeed_udma_free_rx_chan(dma->ch);
++		if (rc)
++			dev_err(port->dev, "failed to free DMA TX channel, rc=%d\n", rc);
++
++		dma_unmap_single(port->dev, dma->tx_addr,
++				dma->tx_rbsz, DMA_TO_DEVICE);
++		dma_unmap_single(port->dev, dma->rx_addr,
++				dma->rx_rbsz, DMA_FROM_DEVICE);
++
++		if (dma->rx_rb->buf)
++			kfree(dma->rx_rb->buf);
++	}
++
++	if (data->is_vuart)
++		ast8250_vuart_set_host_tx_discard(data, true);
++
++	serial8250_do_shutdown(port);
++}
++
++static int __maybe_unused ast8250_suspend(struct device *dev)
++{
++	struct ast8250_data *data = dev_get_drvdata(dev);
++	serial8250_suspend_port(data->line);
+ 	return 0;
+-#else
+-	return serial8250_do_startup(port);
+-#endif
+ }
+ 
+-static void ast8250_shutdown(struct uart_port *port)
++static int __maybe_unused ast8250_resume(struct device *dev)
+ {
+-	return serial8250_do_shutdown(port);
++	struct ast8250_data *data = dev_get_drvdata(dev);
++	serial8250_resume_port(data->line);
++	return 0;
+ }
+ 
+-static int ast8250_probe(struct platform_device *pdev)
++static int ast8250_probe_of(struct platform_device *pdev, struct uart_port *p,
++			    struct ast8250_data *data)
+ {
+-	int rc;
+-	struct uart_8250_port uart = {};
+-	struct uart_port *port = &uart.port;
+ 	struct device *dev = &pdev->dev;
+-	struct ast8250_data *data;
+-	struct resource *res;
+-
+-	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
+-	if (!data)
+-		return -ENOMEM;
+-
+-	data->irq = platform_get_irq(pdev, 0);
+-	if (data->irq < 0)
+-		return data->irq;
++	int rc;
+ 
+-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+-	if (res == NULL) {
++	data->res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!data->res) {
+ 		dev_err(dev, "failed to get register base\n");
+ 		return -ENODEV;
+ 	}
+ 
+-	data->regs = devm_ioremap(dev, res->start, resource_size(res));
++	data->regs = devm_ioremap(dev, data->res->start, resource_size(data->res));
+ 	if (IS_ERR(data->regs)) {
+ 		dev_err(dev, "failed to map registers\n");
+ 		return PTR_ERR(data->regs);
+@@ -151,43 +387,112 @@ static int ast8250_probe(struct platform_device *pdev)
+ 		return -ENODEV;
+ 	}
+ 
++	data->rst = devm_reset_control_get_optional_exclusive(dev, NULL);
++
++	data->is_vuart = of_property_read_bool(dev->of_node, "virtual");
++	if (data->is_vuart) {
++		u32 plat = (unsigned long)of_device_get_match_data(dev);
++
++		rc = of_property_read_u32(dev->of_node, "port", &data->vuart.port);
++		if (rc) {
++			dev_err(dev, "failed to get VUART port address\n");
++			return -ENODEV;
++		}
++
++		rc = of_property_read_u32(dev->of_node, "sirq", &data->vuart.sirq);
++		if (rc) {
++			dev_err(dev, "failed to get VUART SIRQ number\n");
++			return -ENODEV;
++		}
++
++		rc = of_property_read_u32(dev->of_node, "sirq-polarity", &data->vuart.sirq_pol);
++		if (rc) {
++			dev_err(dev, "failed to get VUART SIRQ polarity\n");
++			return -ENODEV;
++		}
++
++		if (plat == AST2700_PLAT)
++			data->vuart.character_timeout_time_en = true;
++		else
++			data->vuart.character_timeout_time_en = false;
++	}
++
++	data->use_dma = of_property_read_bool(dev->of_node, "dma-mode");
++	if (data->use_dma) {
++		rc = of_property_read_u32(dev->of_node, "dma-channel", &data->dma.ch);
++		if (rc) {
++			dev_err(dev, "failed to get DMA channel\n");
++			return -ENODEV;
++		}
++
++		data->dma.tx_tmout_dis = of_property_read_bool(dev->of_node, "dma-tx-timeout-disable");
++		data->dma.rx_tmout_dis = of_property_read_bool(dev->of_node, "dma-rx-timeout-disable");
++	}
++
++	return 0;
++}
++
++static int ast8250_probe(struct platform_device *pdev)
++{
++	int rc;
++	struct uart_8250_port uart = {};
++	struct uart_port *port = &uart.port;
++	struct device *dev = &pdev->dev;
++	struct ast8250_data *data;
++
++	rc = dma_set_mask_and_coherent(dev, DMA_BIT_MASK(64));
++	if (rc) {
++		dev_err(dev, "cannot set 64-bits DMA mask\n");
++		return rc;
++	}
++
++	data = devm_kzalloc(dev, sizeof(*data), GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
++
++	data->dma.rx_rb = devm_kzalloc(dev, sizeof(*data->dma.rx_rb), GFP_KERNEL);
++	if (!data->dma.rx_rb)
++		return -ENOMEM;
++
++	rc = ast8250_probe_of(pdev, port, data);
++	if (rc)
++		return rc;
++
+ 	rc = clk_prepare_enable(data->clk);
+ 	if (rc) {
+ 		dev_err(dev, "failed to enable clock\n");
+ 		return rc;
+ 	}
+ 
+-	data->rst = devm_reset_control_get_optional_exclusive(dev, NULL);
+ 	if (!IS_ERR(data->rst))
+ 		reset_control_deassert(data->rst);
+ 
++	if (data->is_vuart) {
++		ast8250_vuart_init(data);
++		ast8250_vuart_set_host_tx_discard(data, true);
++		ast8250_vuart_set_enable(data, true);
++	}
++
+ 	spin_lock_init(&port->lock);
+ 	port->dev = dev;
+-	port->type = PORT_16550A;
+-	port->irq = data->irq;
+-	port->line = of_alias_get_id(dev->of_node, "serial");
+-	port->handle_irq = ast8250_handle_irq;
+-	port->mapbase = res->start;
+-	port->mapsize = resource_size(res);
++	port->mapbase = data->res->start;
++	port->mapsize = resource_size(data->res);
+ 	port->membase = data->regs;
+-	port->uartclk = clk_get_rate(data->clk);
+-	port->regshift = 2;
+-	port->iotype = UPIO_MEM32;
+ 	port->flags = UPF_FIXED_TYPE | UPF_FIXED_PORT | UPF_SHARE_IRQ;
+ 	port->startup = ast8250_startup;
+ 	port->shutdown = ast8250_shutdown;
+ 	port->private_data = data;
+-#ifdef CONFIG_SERIAL_8250_DMA
+-	data->dma.rxconf.src_maxburst = UART_XMIT_SIZE;
+-	data->dma.txconf.dst_maxburst = UART_XMIT_SIZE;
+-	uart.dma = &data->dma;
++	uart.bugs |= UART_BUG_TXRACE;
+ 
+-	rc = dma_set_mask_and_coherent(dev, DMA_BIT_MASK(64));
+-	if (rc) {
+-		dev_err(dev, "cannot set 64-bits DMA mask\n");
++	rc = uart_read_port_properties(port);
++	if (rc)
+ 		return rc;
+-	}
+-#endif
++
++	port->type = (data->is_vuart) ? PORT_ASPEED_VUART : PORT_16550A;
++	port->handle_irq = ast8250_handle_irq;
++	port->uartclk = clk_get_rate(data->clk);
++
++	uart.capabilities = UART_CAP_FIFO | UART_CAP_AFE;
+ 
+ 	data->line = serial8250_register_8250_port(&uart);
+ 	if (data->line < 0) {
+@@ -195,8 +500,10 @@ static int ast8250_probe(struct platform_device *pdev)
+ 		return data->line;
+ 	}
+ 
+-	platform_set_drvdata(pdev, data);
++	pm_runtime_set_active(&pdev->dev);
++	pm_runtime_enable(&pdev->dev);
+ 
++	platform_set_drvdata(pdev, data);
+ 	return 0;
+ }
+ 
+@@ -204,18 +511,27 @@ static void ast8250_remove(struct platform_device *pdev)
+ {
+ 	struct ast8250_data *data = platform_get_drvdata(pdev);
+ 
++	if (data->is_vuart)
++		ast8250_vuart_set_enable(data, false);
++
+ 	serial8250_unregister_port(data->line);
+ }
+ 
++static const struct dev_pm_ops ast8250_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(ast8250_suspend, ast8250_resume)
++};
++
+ static const struct of_device_id ast8250_of_match[] = {
+-	{ .compatible = "aspeed,ast2600-uart" },
+-	{ .compatible = "aspeed,ast2700-uart" },
++	{ .compatible = "aspeed,ast2500-uart", .data = (void *)AST2500_PLAT},
++	{ .compatible = "aspeed,ast2600-uart", .data = (void *)AST2600_PLAT},
++	{ .compatible = "aspeed,ast2700-uart", .data = (void *)AST2700_PLAT},
+ 	{ },
+ };
+ 
+ static struct platform_driver ast8250_platform_driver = {
+ 	.driver = {
+ 		.name = DEVICE_NAME,
++		.pm = &ast8250_pm_ops,
+ 		.of_match_table = ast8250_of_match,
+ 	},
+ 	.probe = ast8250_probe,
+@@ -226,4 +542,4 @@ module_platform_driver(ast8250_platform_driver);
+ 
+ MODULE_AUTHOR("Chia-Wei Wang <chiawei_wang@aspeedtech.com>");
+ MODULE_LICENSE("GPL");
+-MODULE_DESCRIPTION("Aspeed 8250 UART Driver with DMA support");
++MODULE_DESCRIPTION("Aspeed UART Driver");
+diff --git a/drivers/tty/serial/8250/Kconfig b/drivers/tty/serial/8250/Kconfig
+index 229ce59f7c54..dd165176db56 100644
+--- a/drivers/tty/serial/8250/Kconfig
++++ b/drivers/tty/serial/8250/Kconfig
+@@ -259,7 +259,8 @@ config SERIAL_8250_ACCENT
+ 
+ config SERIAL_8250_ASPEED
+ 	tristate "Aspeed UART"
+-	depends on ARCH_ASPEED && SERIAL_8250
++	depends on SERIAL_8250 && ARCH_ASPEED
++	select ASPEED_UDMA
+ 	help
+ 	  If you have a system using an Aspeed AST26xx SoCs and wish to
+ 	  make use of its 16550A-compatible UART devices with DMA support,
+diff --git a/include/linux/soc/aspeed/aspeed-udma.h b/include/linux/soc/aspeed/aspeed-udma.h
+new file mode 100644
+index 000000000000..439d901c1c0f
+--- /dev/null
++++ b/include/linux/soc/aspeed/aspeed-udma.h
+@@ -0,0 +1,26 @@
++#ifndef __ASPEED_UDMA_H__
++#define __ASPEED_UDMA_H__
++
++typedef void (*aspeed_udma_cb_t)(int rb_rwptr, void *id);
++
++enum aspeed_udma_ops {
++	ASPEED_UDMA_OP_ENABLE,
++	ASPEED_UDMA_OP_DISABLE,
++	ASPEED_UDMA_OP_RESET,
++};
++
++void aspeed_udma_set_tx_wptr(u32 ch_no, u32 wptr);
++void aspeed_udma_set_rx_rptr(u32 ch_no, u32 rptr);
++
++void aspeed_udma_tx_chan_ctrl(u32 ch_no, enum aspeed_udma_ops op);
++void aspeed_udma_rx_chan_ctrl(u32 ch_no, enum aspeed_udma_ops op);
++
++int aspeed_udma_request_tx_chan(u32 ch_no, dma_addr_t addr, u32 rb_sz,
++				aspeed_udma_cb_t cb, void *id, bool en_tmout);
++int aspeed_udma_request_rx_chan(u32 ch_no, dma_addr_t addr, u32 rb_sz,
++				aspeed_udma_cb_t cb, void *id, bool en_tmout);
++
++int aspeed_udma_free_tx_chan(u32 ch_no);
++int aspeed_udma_free_rx_chan(u32 ch_no);
++
++#endif
+-- 
+2.51.0

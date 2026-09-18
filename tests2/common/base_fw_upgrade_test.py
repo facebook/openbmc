@@ -161,8 +161,12 @@ class BaseFwUpgradeTest(object):
 
     USERVER_HOSTNAME = "DEFAULT"
     BMC_HOSTNAME = "DEFAULT"
-    STOP_FSCD = "sv force-stop fscd"
-    START_FSCD = "sv start fscd"
+    # Platforms are split across init systems -- minipack, fuji and wedge400
+    # boot systemd, yamp and grandcanyon are still runit -- and on a systemd
+    # image `sv` exits non-zero instead of doing anything, so try both. Leaving
+    # fscd running holds the watchdog open, which makes STOP_WDT fail too.
+    STOP_FSCD = "sv force-stop fscd || systemctl stop fscd"
+    START_FSCD = "sv start fscd || systemctl start fscd"
     STOP_WDT = "wdtcli stop"
     MAX_LINE_LEN = 83
     MAX_APPEND_LEN = 10

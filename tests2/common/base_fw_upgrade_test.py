@@ -495,15 +495,25 @@ class BaseFwUpgradeTest(object):
             else:
                 self.fail("unknow hash type on component {}".format(fw_entity))
 
-            self.send_command_to_UUT(test_cmd)
+            prompt_returned = self.send_command_to_UUT(test_cmd)
             binary_hash = self.receive_command_output_from_UUT(only_last=True)
 
-            # verify hash string from UUT
+            # A binary whose content is wrong and a hash that was never read
+            # produce the same failure. A prompt that never came back leaves
+            # the previous command's tail in the buffer and only_last then
+            # returns that, so report both values and which case this was.
             matchingHash = binary_hash == self.json[fw_entity][UFW_HASH_VALUE]
             self.assertTrue(
                 matchingHash,
-                "firmware component {} missmatch for file {}".format(
-                    fw_entity, filename
+                "firmware component {} missmatch for file {}: read {!r}, "
+                "expected {!r} (prompt_returned={}, cmd={!r}, before={!r})".format(
+                    fw_entity,
+                    filename,
+                    binary_hash,
+                    self.json[fw_entity][UFW_HASH_VALUE],
+                    prompt_returned,
+                    test_cmd,
+                    self.bmc_ssh_session.session.before,
                 ),
             )
         if logging:
@@ -612,20 +622,20 @@ class BaseFwUpgradeTest(object):
         # A just-flashed component (or a briefly hung OOB session) can return an
         # empty version read; re-read with a settle delay and reconnect on EOF.
         attempts = self.DEFAULT_POST_UPGRADE_VERSION_RETRIES if retry_on_empty else 1
-        synced = False
+        prompt_returned = False
         current_ver = ""
         for attempt in range(attempts):
             try:
-                synced = self.send_command_to_UUT(check_version_cmd)
+                prompt_returned = self.send_command_to_UUT(check_version_cmd)
                 current_ver = self.receive_command_output_from_UUT(only_last=True)
             except pexpect.exceptions.EOF:
-                synced, current_ver = False, ""
+                prompt_returned, current_ver = False, ""
                 self.reconnect_to_remote_host(self.bmc_reconnect_timeout)
-            if synced and current_ver != "":
-                return synced, current_ver
+            if prompt_returned and current_ver != "":
+                return prompt_returned, current_ver
             if attempt < attempts - 1:
                 time.sleep(self.DEFAULT_POST_UPGRADE_VERSION_DELAY)
-        return synced, current_ver
+        return prompt_returned, current_ver
 
     def checking_components_version(
         self, components=None, logging=False, retry_on_empty=False
@@ -661,10 +671,10 @@ class BaseFwUpgradeTest(object):
             if len(check_version_cmd) == 0:
                 current_ver = ""
             else:
-                synced, current_ver = self._read_component_version(
+                prompt_returned, current_ver = self._read_component_version(
                     check_version_cmd, retry_on_empty
                 )
-                if not synced or current_ver == "":
+                if not prompt_returned or current_ver == "":
                     self.fail(
                         "empty version output for {} (cmd={!r}, before={!r})".format(
                             fw_entity,

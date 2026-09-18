@@ -146,5 +146,9 @@ SRC_URI:append = " \
     file://2708-pinctrl-aspeed-Fix-GPIO-mux-value-for-ADC-capable-ba.patch \
     file://2709-usb-host-ehci-platform-add-ASPEED-AST2700-support.patch \
     file://2710-arm64-dts-aspeed-add-EHCI-and-MDIO-nodes-for-G7-plat.patch \
+    file://2711-usb-gadget-aspeed-vhub-add-AST2700-support.patch \
+    file://2712-arm64-dts-aspeed-add-missing-AST2700-peripheral-nodes.patch \
+    file://2713-spi-aspeed-add-AST2700-txrx-controller.patch \
+    file://2714-arm64-dts-aspeed-add-AST2700-128MB-flash-layout.patch \
+    file://2715-pinctrl-aspeed-Split-TRST-out-of-AST2700-JTAGM1.patch \
 "
-

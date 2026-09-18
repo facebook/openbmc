@@ -1,0 +1,81 @@
+From 51af15404a0d06cb533327baf10e51e21f34c239 Mon Sep 17 00:00:00 2001
+From: Bianca Giocas <bgiocas@arista.com>
+Date: Tue, 1 Sep 2026 00:00:00 +0000
+Subject: [PATCH] arm64: dts: aspeed: Add AST2700 128MB flash layout
+
+Add an AST2700-compatible 128MiB fixed-partition layout based on the
+existing Facebook layout. Retain its partition structure and labels;
+only the offsets and sizes differ to match the AST2700 image map.
+
+Upstream-Status: Pending
+Signed-off-by: Bianca Giocas <bgiocas@arista.com>
+---
+ .../dts/aspeed/facebook-bmc-flash-layout-128.dtsi   | 58 +++++++++++++++++++++
+ 1 file changed, 58 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/aspeed/facebook-bmc-flash-layout-128.dtsi b/arch/arm64/boot/dts/aspeed/facebook-bmc-flash-layout-128.dtsi
+new file mode 100644
+index 000000000000..9ee119bc5b2c
+--- /dev/null
++++ b/arch/arm64/boot/dts/aspeed/facebook-bmc-flash-layout-128.dtsi
+@@ -0,0 +1,58 @@
++// SPDX-License-Identifier: GPL-2.0+
++// Copyright (c) Meta Platforms, Inc. and affiliates.
++
++partitions {
++	compatible = "fixed-partitions";
++	#address-cells = <1>;
++	#size-cells = <1>;
++
++	/*
++	 * u-boot partition: 4000KiB.
++	 */
++	u-boot@0 {
++		reg = <0x0 0x3e8000>;
++		label = "u-boot";
++	};
++
++	/*
++	 * u-boot environment variables: 128KiB.
++	 */
++	u-boot-env@400000 {
++		reg = <0x400000 0x20000>;
++		label = "env";
++	};
++
++	/*
++	 * image metadata partition: 96KiB.
++	 */
++	image-meta@3e8000 {
++		reg = <0x3e8000 0x18000>;
++		label = "meta";
++	};
++
++	/*
++	 * FIT image: 91.875MiB.
++	 */
++	fit@420000 {
++		reg = <0x420000 0x5be0000>;
++		label = "fit";
++	};
++
++	/*
++	 * "data0" partition: 32MiB.
++	 */
++	data0@6000000 {
++		reg = <0x6000000 0x2000000>;
++		label = "data0";
++	};
++
++	/*
++	 * Although the master partition can be created by enabling
++	 * MTD_PARTITIONED_MASTER option, below "flash0" partition is
++	 * explicitly created to avoid breaking legacy applications.
++	 */
++	flash0@0 {
++		reg = <0x0 0x8000000>;
++		label = "flash0";
++	};
++};
+-- 
+2.51.0

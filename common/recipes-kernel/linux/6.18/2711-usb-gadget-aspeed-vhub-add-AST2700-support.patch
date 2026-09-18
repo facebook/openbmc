@@ -1,0 +1,306 @@
+From b01f1ea5c72e36029718231948a7a13a80be3940 Mon Sep 17 00:00:00 2001
+From: Bianca Giocas <bgiocas@arista.com>
+Date: Tue, 11 Aug 2026 14:35:00 +0000
+Subject: [PATCH] usb: gadget: aspeed-vhub: Add AST2700 support
+
+Add AST2700 DMA, reset, FIFO, and TX FIFO retry support from Aspeed's
+v6.18 vendor kernel.
+
+Sources:
+ - Kconfig: AspeedTech-BMC/linux@5661a7fe813c0952b2c57af042cc994ef350fc03
+ - vhub.h: AspeedTech-BMC/linux@730ad22ded48f2509fb811205ff7e6608607592d
+ - core.c: AspeedTech-BMC/linux@a8ee43a1a20ebeec9e2c07fe1e018171872f36e6
+
+Changes up to AspeedTech-BMC/linux@21496a50c4cf46bfc7ecc4219532945b57dbe0fe were upstreamed in
+torvalds/linux@36723c6c1ea2d4736540eaa0cb4e59dba40d8573.
+
+Upstream-Status: Pending
+Signed-off-by: Bianca Giocas <bgiocas@arista.com>
+---
+ drivers/usb/gadget/udc/aspeed-vhub/Kconfig |   5 +-
+ drivers/usb/gadget/udc/aspeed-vhub/core.c  | 110 +++++++++++++++++++++
+ drivers/usb/gadget/udc/aspeed-vhub/vhub.h  |  27 +++++
+ 3 files changed, 140 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/usb/gadget/udc/aspeed-vhub/Kconfig b/drivers/usb/gadget/udc/aspeed-vhub/Kconfig
+index 605500b19cf3..a94f305ab354 100644
+--- a/drivers/usb/gadget/udc/aspeed-vhub/Kconfig
++++ b/drivers/usb/gadget/udc/aspeed-vhub/Kconfig
+@@ -4,5 +4,6 @@ config USB_ASPEED_VHUB
+ 	depends on ARCH_ASPEED || COMPILE_TEST
+ 	depends on USB_LIBCOMPOSITE
+ 	help
+-	  USB peripheral controller for the Aspeed AST2400, AST2500 and
+-	  AST2600 family SoCs supporting the "vHub" functionality and USB2.0
++	  USB peripheral controller for the Aspeed AST2400, AST2500, AST2600,
++	  and AST2700 family SoCs supporting the "vHub" functionality and
++	  USB2.0
+diff --git a/drivers/usb/gadget/udc/aspeed-vhub/core.c b/drivers/usb/gadget/udc/aspeed-vhub/core.c
+index f2685f89b3e5..14deacb7f3b2 100644
+--- a/drivers/usb/gadget/udc/aspeed-vhub/core.c
++++ b/drivers/usb/gadget/udc/aspeed-vhub/core.c
+@@ -23,6 +23,7 @@
+ #include <linux/of.h>
+ #include <linux/regmap.h>
+ #include <linux/dma-mapping.h>
++#include <linux/reset.h>
+ 
+ #include "vhub.h"
+ 
+@@ -239,9 +240,24 @@ void ast_vhub_init_hw(struct ast_vhub *vhub)
+ 	if (vhub->force_usb1)
+ 		ctrl |= VHUB_CTRL_FULL_SPEED_ONLY;
+ 
++	/* Enlarge FIFO for ast2700 soc0 vhub1 */
++	if (vhub->enlarge_fifo)
++		ctrl |= VHUB_CTRL_ENLARGE_FIFO;
++
++	ctrl |= VHUB_CTRL_AUTO_REMOTE_WAKEUP;
+ 	ctrl |= VHUB_CTRL_UPSTREAM_CONNECT;
+ 	writel(ctrl, vhub->regs + AST_VHUB_CTRL);
+ 
++	/* AST2700 SoC0 vhub0 only: force retry via CRC error injection
++	 * when DRAM access is delayed due to bus contention.
++	 */
++	if (vhub->txfifo_retry_quirk) {
++		u32 val = readl(vhub->regs + AST_VHUB_PHY_00);
++
++		val |= AST_VHUB0_FIFO_FORCE_RETRY;
++		writel(val, vhub->regs + AST_VHUB_PHY_00);
++	}
++
+ 	/* Enable some interrupts */
+ 	writel(VHUB_IRQ_HUB_EP0_IN_ACK_STALL |
+ 	       VHUB_IRQ_HUB_EP0_OUT_ACK_STALL |
+@@ -280,6 +296,8 @@ static void ast_vhub_remove(struct platform_device *pdev)
+ 	if (vhub->clk)
+ 		clk_disable_unprepare(vhub->clk);
+ 
++	reset_control_assert(vhub->rst);
++
+ 	spin_unlock_irqrestore(&vhub->lock, flags);
+ 
+ 	if (vhub->ep0_bufs)
+@@ -291,9 +309,65 @@ static void ast_vhub_remove(struct platform_device *pdev)
+ 	vhub->ep0_bufs = NULL;
+ }
+ 
++static int ast_vhub_init_uart(struct device *dev, struct ast_vhub *vhub)
++{
++	const struct device_node *np = dev->of_node;
++	void __iomem *regs = vhub->regs + 0x800;
++	int i, rc = 0;
++	int num_ports;
++	u32 ports[AST_VHUB_NUM_UART_PORTS], port;
++	u32 mode_sel = 0, dev_en = 0;
++
++	num_ports = of_property_count_u32_elems(np, "aspeed,uart-ports");
++	if (num_ports == -EINVAL) {
++		/* Property not found */
++		return 0;
++	}
++	if (num_ports < 0) {
++		dev_err(dev, "Failed to read uart-ports property\n");
++		return num_ports;
++	}
++	if (num_ports > AST_VHUB_NUM_UART_PORTS) {
++		dev_warn(dev, "Too many UART ports (%d), max is %d\n",
++			 num_ports, AST_VHUB_NUM_UART_PORTS);
++		num_ports = AST_VHUB_NUM_UART_PORTS;
++	}
++
++	rc = of_property_read_u32_array(np, "aspeed,uart-ports",
++					ports, num_ports);
++	if (rc)
++		return rc;
++
++	dev_en = readl(regs + AST_VHUB_COM_EN_CTRL);
++
++	for (i = 0; i < num_ports; i++) {
++		// io-die uart only
++		if (ports[i] == 4 || ports[i] > AST_VHUB_NUM_UART_PORTS) {
++			dev_warn(dev, "Ignoring invalid UART port %d\n",
++				 ports[i]);
++			continue;
++		}
++
++		if (ports[i] < 4)
++			port = ports[i];
++		else
++			port = ports[i] - 1;
++
++		mode_sel |= (0x2 << (port * 2));
++		dev_en |= BIT(port + 16);
++	}
++
++	dev_info(dev, "Enabled UART ports\n");
++
++	writel(mode_sel, regs + AST_VHUB_COM_MODE_SEL);
++	writel(dev_en, regs + AST_VHUB_COM_EN_CTRL);
++	return 0;
++}
++
+ static int ast_vhub_probe(struct platform_device *pdev)
+ {
+ 	enum usb_device_speed max_speed;
++	const u64 *dma_mask_ptr;
+ 	struct ast_vhub *vhub;
+ 	struct resource *res;
+ 	int i, rc = 0;
+@@ -323,6 +397,10 @@ static int ast_vhub_probe(struct platform_device *pdev)
+ 	if (!vhub->epns)
+ 		return -ENOMEM;
+ 
++	vhub->enlarge_fifo = of_property_read_bool(np, "aspeed,enlarge-fifo");
++	vhub->txfifo_retry_quirk =
++		of_property_read_bool(np, "aspeed,txfifo-retry-quirk");
++
+ 	spin_lock_init(&vhub->lock);
+ 	vhub->pdev = pdev;
+ 	vhub->port_irq_mask = GENMASK(VHUB_IRQ_DEV1_BIT + vhub->max_ports - 1,
+@@ -348,6 +426,21 @@ static int ast_vhub_probe(struct platform_device *pdev)
+ 		goto err;
+ 	}
+ 
++	vhub->rst = devm_reset_control_get_optional_shared(&pdev->dev, NULL);
++	if (IS_ERR(vhub->rst)) {
++		rc = PTR_ERR(vhub->rst);
++		goto err;
++	}
++
++	if (vhub->rst) {
++		mdelay(10);
++		rc = reset_control_deassert(vhub->rst);
++		if (rc)
++			goto err;
++	}
++
++	ast_vhub_init_uart(&pdev->dev, vhub);
++
+ 	/* Check if we need to limit the HW to USB1 */
+ 	max_speed = usb_get_maximum_speed(&pdev->dev);
+ 	if (max_speed != USB_SPEED_UNKNOWN && max_speed < USB_SPEED_HIGH)
+@@ -370,6 +463,13 @@ static int ast_vhub_probe(struct platform_device *pdev)
+ 		goto err;
+ 	}
+ 
++	dma_mask_ptr = (u64 *)of_device_get_match_data(&pdev->dev);
++	if (dma_mask_ptr) {
++		rc = dma_coerce_mask_and_coherent(&pdev->dev, *dma_mask_ptr);
++		if (rc)
++			goto err;
++	}
++
+ 	/*
+ 	 * Allocate DMA buffers for all EP0s in one chunk,
+ 	 * one per port and one for the vHub itself
+@@ -412,15 +512,25 @@ static int ast_vhub_probe(struct platform_device *pdev)
+ 	return rc;
+ }
+ 
++static const u64 dma_mask_32 =	DMA_BIT_MASK(32);
++static const u64 dma_mask_64 =	DMA_BIT_MASK(64);
++
+ static const struct of_device_id ast_vhub_dt_ids[] = {
+ 	{
+ 		.compatible = "aspeed,ast2400-usb-vhub",
++		.data = &dma_mask_32,
+ 	},
+ 	{
+ 		.compatible = "aspeed,ast2500-usb-vhub",
++		.data = &dma_mask_32,
+ 	},
+ 	{
+ 		.compatible = "aspeed,ast2600-usb-vhub",
++		.data = &dma_mask_32,
++	},
++	{
++		.compatible = "aspeed,ast2700-usb-vhub",
++		.data = &dma_mask_64,
+ 	},
+ 	{ }
+ };
+diff --git a/drivers/usb/gadget/udc/aspeed-vhub/vhub.h b/drivers/usb/gadget/udc/aspeed-vhub/vhub.h
+index 6b9dfa6e10eb..03069dd50bbe 100644
+--- a/drivers/usb/gadget/udc/aspeed-vhub/vhub.h
++++ b/drivers/usb/gadget/udc/aspeed-vhub/vhub.h
+@@ -29,12 +29,14 @@
+ #define AST_VHUB_EP1_STS_CHG	0x3C	/* Endpoint 1 Status Change Bitmap Data */
+ #define AST_VHUB_SETUP0		0x80	/* Root Device Setup Data Buffer0 */
+ #define AST_VHUB_SETUP1		0x84	/* Root Device Setup Data Buffer1 */
++#define AST_VHUB_PHY_00		0x800	/* USB PHY Control/Status #1 */
+ 
+ /* Main control reg */
+ #define VHUB_CTRL_PHY_CLK			(1 << 31)
+ #define VHUB_CTRL_PHY_LOOP_TEST			(1 << 25)
+ #define VHUB_CTRL_DN_PWN			(1 << 24)
+ #define VHUB_CTRL_DP_PWN			(1 << 23)
++#define VHUB_CTRL_ENLARGE_FIFO			(1 << 21)
+ #define VHUB_CTRL_LONG_DESC			(1 << 18)
+ #define VHUB_CTRL_ISO_RSP_CTRL			(1 << 17)
+ #define VHUB_CTRL_SPLIT_IN			(1 << 16)
+@@ -184,6 +186,13 @@
+ #define VHUB_EP_DMA_SET_CPU_WPTR(x)	(x)
+ #define VHUB_EP_DMA_SINGLE_KICK		(1 << 0) /* WPTR = 1 for single mode */
+ 
++/*******************************************
++ *                                         *
++ * PHY Control/Status register definitions *
++ *                                         *
++ *******************************************/
++#define AST_VHUB0_FIFO_FORCE_RETRY	BIT(13)
++
+ /*******************************
+  *                             *
+  * DMA descriptors definitions *
+@@ -199,6 +208,14 @@
+ #define VHUB_DSC1_IN_SET_LEN(x)		((x) & 0xfff)
+ #define VHUB_DSC1_IN_LEN(x)		((x) & 0xfff)
+ 
++/***********************************
++ *                                 *
++ * USB2COM register definitions *
++ *                                 *
++ ***********************************/
++#define AST_VHUB_COM_MODE_SEL		0x10
++#define AST_VHUB_COM_EN_CTRL		0x1C
++
+ /****************************************
+  *                                      *
+  * Data structures and misc definitions *
+@@ -218,6 +235,8 @@
+ 					 * values are 256 and 32)
+ 					 */
+ 
++#define AST_VHUB_NUM_UART_PORTS	15	/* USB2COM ports */
++
+ struct ast_vhub;
+ struct ast_vhub_dev;
+ 
+@@ -388,6 +407,7 @@ struct ast_vhub {
+ 	spinlock_t			lock;
+ 	struct work_struct		wake_work;
+ 	struct clk			*clk;
++	struct reset_control		*rst;
+ 
+ 	/* EP0 DMA buffers allocated in one chunk */
+ 	void				*ep0_bufs;
+@@ -417,8 +437,15 @@ struct ast_vhub {
+ 	/* Force full speed only */
+ 	bool				force_usb1 : 1;
+ 
++	/* Enlarge FIFO for ast2700 soc0 vhub1 */
++	bool				enlarge_fifo : 1;
++
++	/* Force TXFIFO retry when is DRAM busy for ast2700 soc0 vhub0 */
++	bool				txfifo_retry_quirk : 1;
++
+ 	/* Upstream bus speed captured at bus reset */
+ 	unsigned int			speed;
++	u8				current_config;
+ 
+ 	/* Standard USB Descriptors of the vhub. */
+ 	struct usb_device_descriptor	vhub_dev_desc;
+-- 
+2.51.0
+

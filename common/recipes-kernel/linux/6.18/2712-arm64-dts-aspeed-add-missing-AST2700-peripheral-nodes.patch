@@ -1,0 +1,36 @@
+From 745f3428b850d66d002f4f15dbe7098c67280c12 Mon Sep 17 00:00:00 2001
+From: Bianca Giocas <bgiocas@arista.com>
+Date: Thu, 16 Jul 2026 11:16:23 +0000
+Subject: [PATCH] arm64: dts: aspeed: Add AST2700 VHUBA0 node
+
+Backporting the AST2700 SoC0 VHUBA0 node from 
+https://github.com/torvalds/linux/commit/e77bb5dc57593a4698aaacd57a776728cf552e73
+
+Signed-off-by: Bianca Giocas <bgiocas@arista.com>
+---
+--- a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
++++ b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
+@@ -127,6 +127,21 @@
+ 		no-loopback-test;
+ 		status = "disabled";
+ 	};
++
++	vhuba0: usb-vhub@12060000 {
++		compatible = "aspeed,ast2700-usb-vhub";
++		reg = <0x0 0x12060000 0x0 0x820>;
++		interrupts-extended = <&intc0 33>;
++		clocks = <&syscon0 SCU0_CLK_GATE_PORTAUSB2CLK>;
++		resets = <&syscon0 SCU0_RESET_PORTA_VHUB_EHCI>;
++		aspeed,vhub-downstream-ports = <7>;
++		aspeed,vhub-generic-endpoints = <21>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_usb2ad0_default>;
++		aspeed,txfifo-retry-quirk;
++		status = "disabled";
++	};
++
+ };
+ 
+ &soc1 {
+-- 
+2.52.0

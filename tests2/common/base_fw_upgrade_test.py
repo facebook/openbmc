@@ -561,6 +561,9 @@ class BaseFwUpgradeTest(object):
                         self.upgrading_timeout.update(
                             {new_entity_key: self.upgrading_timeout[fw_entity]}
                         )
+                        keywords = self.expected_keyword_by_entity.get(fw_entity)
+                        if keywords is not None:
+                            self.expected_keyword_by_entity[new_entity_key] = keywords
 
             if is_sub_entity_exist:
                 self.json.pop(fw_entity)

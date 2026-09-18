@@ -68,6 +68,14 @@ EXPECTED_KEYWORD = [
     "bic succeeded",
 ]
 NUM_LAST_FAILED_EXPECTED_KEY = 4  # zero-based number 0...N
+# cpldupdate-i2c, which drives the pdb update, prints none of the shared
+# success keywords, so a pdb wait could only ever end by timing out.
+# "Refreshing CPLD" is its last stage, printed just before it exits. The
+# failure keywords are sliced rather than retyped: that boundary is a
+# positional index, and keywords_for_entity() rejects an override that moves it.
+EXPECTED_KEYWORD_BY_ENTITY = {
+    "pdb": EXPECTED_KEYWORD[: NUM_LAST_FAILED_EXPECTED_KEY + 1] + ["Refreshing CPLD"],
+}
 BMC_RECONNECT_TIMEOUT = 300
 SCM_BOOT_TIME = 30
 try:
@@ -89,6 +97,7 @@ class FwUpgradeTest(BaseFwUpgradeTest):
         self.hostname = None
         self.num_last_failed_expected_key = NUM_LAST_FAILED_EXPECTED_KEY
         self.expected_keyword = EXPECTED_KEYWORD
+        self.expected_keyword_by_entity = EXPECTED_KEYWORD_BY_ENTITY
         self.upgrader_path = DEV_SERVER_RESOURCE_PATH
         self.remote_bin_path = UUT_RESOURCE_PATH
         self.upgrading_timeout = UPGRADING_TIMEOUT

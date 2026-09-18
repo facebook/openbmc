@@ -31,7 +31,7 @@ int cpldupdate_helper_open(const char *dll_name,
     return EINVAL;
   }
 
-  memset(helper, sizeof(*helper), 0);
+  memset(helper, 0, sizeof(*helper));
 
   helper->dll_hdl = dlopen(dll_name, RTLD_LAZY);
   if (!helper->dll_hdl) {
@@ -64,7 +64,7 @@ int cpldupdate_helper_open(const char *dll_name,
   if (helper->dll_hdl) {
     dlclose(helper->dll_hdl);
   }
-  memset(helper, sizeof(*helper), 0);
+  memset(helper, 0, sizeof(*helper));
 
   return rc;
 }
@@ -82,5 +82,5 @@ void cpldupdate_helper_close(struct cpldupdate_helper_st *helper) {
     dlclose(helper->dll_hdl);
   }
 
-  memset(helper, sizeof(*helper), 0);
+  memset(helper, 0, sizeof(*helper));
 }

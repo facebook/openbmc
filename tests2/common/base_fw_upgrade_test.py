@@ -168,6 +168,12 @@ class BaseFwUpgradeTest(object):
     STOP_FSCD = "sv force-stop fscd || systemctl stop fscd"
     START_FSCD = "sv start fscd || systemctl start fscd"
     STOP_WDT = "wdtcli stop"
+    # Appended to a command when the caller asks for its exit status, so the
+    # status can be read back without being mistaken for the command's own
+    # output. Note `$?` after a pipeline is the status of its last stage: exact
+    # for a bare command, weak for the filtered version and checksum reads,
+    # where a failing upgrader can still be followed by a `cut` that exits 0.
+    EXIT_CODE_MARKER = "__CIT_EXIT__"
     MAX_LINE_LEN = 83
     MAX_APPEND_LEN = 10
 
@@ -185,6 +191,9 @@ class BaseFwUpgradeTest(object):
         self.wait_for_eof_entities = self.DEFAULT_WAIT_FOR_EOF_ENTITIES
         # Set by flush_session_contents(): did the command actually finish?
         self.settled = True
+        # Exit status of the last command sent with capture_rc; None when the
+        # caller did not ask for it, or when the command never got that far.
+        self.last_exit_code = None
         self.upgrading_timeout = self.DEFAULT_UPGRADING_TIMEOUT
         self.bmc_reconnect_timeout = self.DEFAULT_BMC_RECONNECT_TIMEOUT
         self.power_reset_cmd = self.DEFAULT_POWER_RESET_CMD
@@ -388,9 +397,12 @@ class BaseFwUpgradeTest(object):
             except Exception:
                 return ""
 
-    def send_command_to_UUT(self, command, delay=None, prompt=True):
+    def send_command_to_UUT(self, command, delay=None, prompt=True, capture_rc=False):
         if delay is None:
             delay = self.command_exec_delay
+        self.last_exit_code = None
+        if capture_rc:
+            command = "{}; echo {}$?".format(command, self.EXIT_CODE_MARKER)
         self.bmc_ssh_session.session.sendline(command)  # send command
         time.sleep(delay)  # Delay for UUT execute the command
         if prompt:
@@ -398,8 +410,27 @@ class BaseFwUpgradeTest(object):
                 timeout=self.command_promtp_timeout
             )  # wait for prompt
 
+    def take_exit_code_from_output(self, cmd_result):
+        """
+        Record the exit status echoed by a capture_rc command in
+        self.last_exit_code, and return the output without it. The echoed
+        command carries the marker too, but followed by a literal `$?` rather
+        than digits, so only the status line itself is taken.
+        """
+        kept = []
+        for line in cmd_result.split("\r\n"):
+            status = line.strip()
+            if status.startswith(self.EXIT_CODE_MARKER):
+                status = status[len(self.EXIT_CODE_MARKER) :]
+                if status.isdigit():
+                    self.last_exit_code = int(status)
+                    continue
+            kept.append(line)
+        return "\r\n".join(kept)
+
     def receive_command_output_from_UUT(self, only_last=False):
         cmd_result = self.bmc_ssh_session.session.before.decode("utf-8")
+        cmd_result = self.take_exit_code_from_output(cmd_result)
         if only_last:
             # Index 0 is the echoed command; take the last non-empty line
             # after it rather than index 1. Every command read this way ends
@@ -495,7 +526,7 @@ class BaseFwUpgradeTest(object):
             else:
                 self.fail("unknow hash type on component {}".format(fw_entity))
 
-            prompt_returned = self.send_command_to_UUT(test_cmd)
+            prompt_returned = self.send_command_to_UUT(test_cmd, capture_rc=True)
             binary_hash = self.receive_command_output_from_UUT(only_last=True)
 
             # A binary whose content is wrong and a hash that was never read
@@ -506,12 +537,14 @@ class BaseFwUpgradeTest(object):
             self.assertTrue(
                 matchingHash,
                 "firmware component {} missmatch for file {}: read {!r}, "
-                "expected {!r} (prompt_returned={}, cmd={!r}, before={!r})".format(
+                "expected {!r} (prompt_returned={}, exit_code={}, cmd={!r}, "
+                "before={!r})".format(
                     fw_entity,
                     filename,
                     binary_hash,
                     self.json[fw_entity][UFW_HASH_VALUE],
                     prompt_returned,
+                    self.last_exit_code,
                     test_cmd,
                     self.bmc_ssh_session.session.before,
                 ),
@@ -626,7 +659,9 @@ class BaseFwUpgradeTest(object):
         current_ver = ""
         for attempt in range(attempts):
             try:
-                prompt_returned = self.send_command_to_UUT(check_version_cmd)
+                prompt_returned = self.send_command_to_UUT(
+                    check_version_cmd, capture_rc=True
+                )
                 current_ver = self.receive_command_output_from_UUT(only_last=True)
             except pexpect.exceptions.EOF:
                 prompt_returned, current_ver = False, ""
@@ -676,8 +711,11 @@ class BaseFwUpgradeTest(object):
                 )
                 if not prompt_returned or current_ver == "":
                     self.fail(
-                        "empty version output for {} (cmd={!r}, before={!r})".format(
+                        "empty version output for {} (prompt_returned={}, "
+                        "exit_code={}, cmd={!r}, before={!r})".format(
                             fw_entity,
+                            prompt_returned,
+                            self.last_exit_code,
                             check_version_cmd,
                             self.bmc_ssh_session.session.before,
                         )

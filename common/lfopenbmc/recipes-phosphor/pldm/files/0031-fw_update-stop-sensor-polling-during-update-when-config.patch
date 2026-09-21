@@ -1,0 +1,1008 @@
+From 11ec460756bd08081cd11cfaa1280714f8ed7e7e Mon Sep 17 00:00:00 2001
+From: Kevin Tung <kevin.tung.openbmc@gmail.com>
+Date: Mon, 17 Aug 2026 20:23:51 +0800
+Subject: [PATCH] fw_update: stop sensor polling during update when configured
+
+This commit introduces the StopSensorPolling condition for firmware
+updates, following the concept defined in the code-update design [1].
+
+Some devices cannot tolerate PLDM sensor/event traffic during firmware
+updates. Add a per-component 'StopSensorPolling' setting to the
+condition config, alongside the existing PreUpdateTarget and
+PostUpdateTarget settings.
+
+When enabled, pause sensor polling for the device's terminus before the
+update starts and resume it after the update completes, regardless of
+the outcome.
+
+[1] https://gerrit.openbmc.org/c/openbmc/docs/+/93751
+
+Tested on YV5:
+```
+root@bmc:~# journalctl -u pldmd | grep -iE "stop|resume|firmware|Component"
+Aug 25 06:36:21 bmc pldmd[748]: Firmware update condition for component CXL_Component_0 sets sensor polling stop to True
+Aug 25 06:36:21 bmc pldmd[748]: Firmware update condition for component NIC_Component_1 sets sensor polling stop to True
+Aug 25 06:38:22 bmc pldmd[748]: Paused sensor polling for TID 2 during firmware update
+Aug 25 06:38:22 bmc pldmd[748]: Component at endpoint ID '10' with version '26.07.00' can be updated
+Aug 25 06:51:10 bmc pldmd[748]: Component endpoint ID '10' and version '26.07.00' transfer complete.
+Aug 25 06:51:11 bmc pldmd[748]: Component endpoint ID '10' and version '26.07.00' verification complete.
+Aug 25 06:52:56 bmc pldmd[748]: Component endpoint ID '10' with '26.07.00' apply complete.
+Aug 25 06:52:56 bmc pldmd[748]: Resumed sensor polling for TID 2 after firmware update
+Aug 25 06:52:56 bmc pldmd[748]: Firmware update time: 873545.005563ms
+```
+
+Gerrit link: https://gerrit.openbmc.org/c/openbmc/pldm/+/93664
+
+Change-Id: I6e45faaa6545534000cf77e6b8d30df37ff243a5
+Signed-off-by: Kevin Tung <kevin.tung.openbmc@gmail.com>
+---
+ .../fw-update-conditions/schema/schema.json   |   5 +
+ fw-update/aggregate_update_manager.cpp        |   6 +-
+ fw-update/aggregate_update_manager.hpp        |  14 +-
+ fw-update/condition_collector.hpp             |  59 +++--
+ fw-update/firmware_inventory_manager.cpp      |   4 +-
+ fw-update/item_update_manager.cpp             |  11 +
+ fw-update/item_update_manager.hpp             |  35 ++-
+ fw-update/manager.hpp                         |  15 ++
+ fw-update/test/condition_collector_test.cpp   | 221 +++++++++++++-----
+ fw-update/update_manager.cpp                  |  16 ++
+ fw-update/update_manager.hpp                  |  48 +++-
+ platform-mc/manager.hpp                       |  24 ++
+ platform-mc/sensor_manager.cpp                |   9 +
+ platform-mc/sensor_manager.hpp                |   4 +
+ platform-mc/terminus_manager.cpp              |  17 ++
+ platform-mc/terminus_manager.hpp              |  13 ++
+ pldmd/pldmd.cpp                               |  26 +++
+ 17 files changed, 407 insertions(+), 120 deletions(-)
+
+diff --git a/configurations/fw-update-conditions/schema/schema.json b/configurations/fw-update-conditions/schema/schema.json
+index cb628b9..70f2d9e 100644
+--- a/configurations/fw-update-conditions/schema/schema.json
++++ b/configurations/fw-update-conditions/schema/schema.json
+@@ -35,6 +35,11 @@
+                     "type": "string",
+                     "pattern": "^[^/]+\\.(service|target)$",
+                     "description": "Systemd unit name to run after a successful update, for example ABC_PostUpdate.service. A template unit name such as ABC_PostUpdate@.service receives all supported named arguments as its instance name. Omit this property when the component has no post-condition."
++                },
++                "StopSensorPolling": {
++                    "type": "boolean",
++                    "default": false,
++                    "description": "When true, PLDM pauses sensor polling during the update and resumes it afterward. Use for devices that do not support concurrent sensor/event traffic during firmware updates."
+                 }
+             }
+         }
+diff --git a/fw-update/aggregate_update_manager.cpp b/fw-update/aggregate_update_manager.cpp
+index 821f077..c6a34fc 100644
+--- a/fw-update/aggregate_update_manager.cpp
++++ b/fw-update/aggregate_update_manager.cpp
+@@ -29,7 +29,7 @@ void AggregateUpdateManager::createUpdateManager(
+     const SoftwareIdentifier& softwareIdentifier,
+     const Descriptors& descriptors, const ComponentInfo& componentInfo,
+     const std::string& updateObjPath, const std::string& generatedId,
+-    const ConditionPaths& conditionPathPair, const std::string& conditionArg,
++    const ComponentCondition& condition, const std::string& conditionArg,
+     std::function<void()> taskCompletionCallback)
+ {
+     auto eid = softwareIdentifier.first;
+@@ -42,8 +42,8 @@ void AggregateUpdateManager::createUpdateManager(
+     updateManagers[softwareIdentifier] = std::make_unique<ItemUpdateManager>(
+         eid, event, handler, instanceIdDb, updateObjPath, generatedId,
+         *descriptorMap[softwareIdentifier],
+-        *componentInfoMap[softwareIdentifier], conditionPathPair, conditionArg,
+-        std::move(taskCompletionCallback));
++        *componentInfoMap[softwareIdentifier], condition, conditionArg,
++        std::move(taskCompletionCallback), sensorPollingCallback);
+ }
+ 
+ void AggregateUpdateManager::eraseUpdateManager(
+diff --git a/fw-update/aggregate_update_manager.hpp b/fw-update/aggregate_update_manager.hpp
+index f06cd70..1873f81 100644
+--- a/fw-update/aggregate_update_manager.hpp
++++ b/fw-update/aggregate_update_manager.hpp
+@@ -31,14 +31,9 @@ class AggregateUpdateManager : public UpdateManager
+         pldm::requester::Handler<pldm::requester::Request>& handler,
+         InstanceIdDb& instanceIdDb, const DescriptorMap& descriptorMap,
+         const DownstreamDescriptorMap& downstreamDescriptorMap,
+-        const ComponentInfoMap& componentInfoMap,
+-        const ConditionPaths& conditionPathPair = ConditionPaths{},
+-        const std::string& conditionArg = std::string{},
+-        std::function<void()> taskCompletionCallback = nullptr) :
++        const ComponentInfoMap& componentInfoMap) :
+         UpdateManager(event, handler, instanceIdDb, descriptorMap,
+-                      downstreamDescriptorMap, componentInfoMap,
+-                      conditionPathPair, conditionArg,
+-                      std::move(taskCompletionCallback))
++                      downstreamDescriptorMap, componentInfoMap)
+     {}
+ 
+     /**
+@@ -72,8 +67,7 @@ class AggregateUpdateManager : public UpdateManager
+      * software identifier
+      * @param[in] updateObjPath - The D-Bus object path for the update manager
+      * @param[in] generatedId - The software hash identifier
+-     * @param[in] conditionPathPair - The condition paths associated with the
+-     * update manager
++     * @param[in] condition - The component's condition config
+      * @param[in] conditionArg - The condition argument associated with the
+      * update manager
+      * @param[in] taskCompletionCallback - The callback function to be called
+@@ -83,7 +77,7 @@ class AggregateUpdateManager : public UpdateManager
+         const SoftwareIdentifier& softwareIdentifier,
+         const Descriptors& descriptors, const ComponentInfo& componentInfo,
+         const std::string& updateObjPath, const std::string& generatedId,
+-        const ConditionPaths& conditionPathPair = ConditionPaths{},
++        const ComponentCondition& condition = ComponentCondition{},
+         const std::string& conditionArg = std::string{},
+         std::function<void()> taskCompletionCallback = nullptr);
+ 
+diff --git a/fw-update/condition_collector.hpp b/fw-update/condition_collector.hpp
+index 79a2ee4..0d8a696 100644
+--- a/fw-update/condition_collector.hpp
++++ b/fw-update/condition_collector.hpp
+@@ -11,6 +11,7 @@
+ #include <format>
+ #include <fstream>
+ #include <optional>
++#include <unordered_map>
+ 
+ PHOSPHOR_LOG2_USING;
+ 
+@@ -26,6 +27,9 @@ struct ComponentCondition
+     std::string component;
+     std::optional<std::string> preUpdateTarget;
+     std::optional<std::string> postUpdateTarget;
++    bool stopSensorPolling = false;
++
++    bool operator==(const ComponentCondition&) const = default;
+ };
+ 
+ // Custom from_json for ComponentCondition
+@@ -47,6 +51,11 @@ inline void from_json(const Json& j, ComponentCondition& cc)
+     {
+         cc.postUpdateTarget = j["PostUpdateTarget"].get<std::string>();
+     }
++
++    if (j.contains("StopSensorPolling") && j["StopSensorPolling"].is_boolean())
++    {
++        cc.stopSensorPolling = j["StopSensorPolling"].get<bool>();
++    }
+ }
+ 
+ class ConditionConfigManager
+@@ -63,6 +72,9 @@ class ConditionConfigManager
+             error("Json file does not exist: {JSPATH}", "JSPATH", jsonPath);
+             return;
+         }
++
++        info("Found condition file: {JSPATH}", "JSPATH", jsonPath);
++
+         std::ifstream jsonFile(jsonPath);
+         if (!jsonFile.is_open())
+         {
+@@ -85,32 +97,30 @@ class ConditionConfigManager
+                 {
+                     ComponentCondition cc =
+                         componentJson.get<ComponentCondition>();
+-                    ConditionPath prePath = cc.preUpdateTarget.value_or("");
+-                    ConditionPath postPath = cc.postUpdateTarget.value_or("");
++
++                    info("Firmware update condition for component "
++                         "{COMPONENT} sets sensor polling stop to {STOP}",
++                         "COMPONENT", cc.component, "STOP",
++                         cc.stopSensorPolling);
+ 
+                     // The schema requires a non-empty unit name and omission of
+                     // the property to skip a condition. Warn on a present but
+                     // empty name so a misconfiguration is not silently treated
+                     // as an intentionally omitted hook.
+-                    if (prePath.empty() && cc.preUpdateTarget)
++                    if (cc.preUpdateTarget && cc.preUpdateTarget->empty())
+                     {
+                         warning(
+                             "Empty 'PreUpdateTarget' for component {COMPONENT}, treating it as no pre-condition",
+                             "COMPONENT", cc.component);
+                     }
+-                    if (postPath.empty() && cc.postUpdateTarget)
++                    if (cc.postUpdateTarget && cc.postUpdateTarget->empty())
+                     {
+                         warning(
+                             "Empty 'PostUpdateTarget' for component {COMPONENT}, treating it as no post-condition",
+                             "COMPONENT", cc.component);
+                     }
+ 
+-                    // Skip entries where both pre and post conditions are empty
+-                    if (!prePath.empty() || !postPath.empty())
+-                    {
+-                        conditionMap.insert_or_assign(
+-                            cc.component, ConditionPaths{prePath, postPath});
+-                    }
++                    conditionMap.insert_or_assign(cc.component, cc);
+                 }
+                 catch (const std::exception& e)
+                 {
+@@ -128,25 +138,14 @@ class ConditionConfigManager
+         }
+     }
+ 
+-    ConditionPath preCondition(const ConditionIdentifier& name) const
+-    {
+-        if (conditionMap.contains(name))
+-        {
+-            return conditionMap.at(name).first;
+-        }
+-        return "";
+-    }
+-
+-    ConditionPath postCondition(const ConditionIdentifier& name) const
+-    {
+-        if (conditionMap.contains(name))
+-        {
+-            return conditionMap.at(name).second;
+-        }
+-        return "";
+-    }
+-
+-    ConditionPaths conditions(const ConditionIdentifier& name) const
++    /** @brief The named component's condition config
++     *
++     *  @param[in] name - ConditionIdentifier (component name) to look up
++     *
++     *  @return The component's ComponentCondition; a default-constructed
++     *          ComponentCondition when the component is not configured
++     */
++    ComponentCondition getCondition(const ConditionIdentifier& name) const
+     {
+         if (conditionMap.contains(name))
+         {
+@@ -156,7 +155,7 @@ class ConditionConfigManager
+     }
+ 
+   private:
+-    PrePostConditionMap conditionMap;
++    std::unordered_map<ConditionIdentifier, ComponentCondition> conditionMap;
+ };
+ 
+ /**
+diff --git a/fw-update/firmware_inventory_manager.cpp b/fw-update/firmware_inventory_manager.cpp
+index 3a75a85..5150f75 100644
+--- a/fw-update/firmware_inventory_manager.cpp
++++ b/fw-update/firmware_inventory_manager.cpp
+@@ -46,12 +46,12 @@ void FirmwareInventoryManager::createFirmwareEntry(
+         "{}/{}_{}", SoftwareVersion::namespace_path, boardName, softwareName);
+     const auto generatedId = std::to_string(utils::generateSwId());
+ 
+-    auto conditions = conditionConfigManager.conditions(softwareName);
++    auto condition = conditionConfigManager.getCondition(softwareName);
+     auto conditionArg = generateArg(boardName);
+ 
+     updateManager.createUpdateManager(
+         softwareIdentifier, descriptors, componentInfo, softwarePath,
+-        generatedId, conditions, conditionArg,
++        generatedId, condition, conditionArg,
+         std::move(taskCompletionCallback));
+ 
+     softwareMap.insert_or_assign(softwareIdentifier,
+diff --git a/fw-update/item_update_manager.cpp b/fw-update/item_update_manager.cpp
+index 4799b53..f9e35fc 100644
+--- a/fw-update/item_update_manager.cpp
++++ b/fw-update/item_update_manager.cpp
+@@ -88,6 +88,12 @@ bool ItemUpdateManager::processPackage()
+         eid, DeviceIDRecord{fwDeviceIDRecords[*deviceIdRecordOffset]},
+         compImageInfos, componentInfo, MAXIMUM_TRANSFER_SIZE, this);
+     inProgressActivation->activation(software::Activation::Activations::Ready);
++
++    if (stopSensorPollingDuringUpdate && sensorPollingCallback)
++    {
++        sensorPollingCallback(eid, SensorPollingAction::Pause);
++    }
++
+     if (!preConditionPath.empty())
+     {
+         SystemdInterface::getInstance(pldm::utils::DBusHandler::getBus())
+@@ -230,6 +236,11 @@ void ItemUpdateManager::completeUpdate(bool status)
+         return;
+     }
+ 
++    if (stopSensorPollingDuringUpdate && sensorPollingCallback)
++    {
++        sensorPollingCallback(eid, SensorPollingAction::Resume);
++    }
++
+     // A failing pre-update condition completes the update before the firmware
+     // update flow starts, so neither the progress interface nor the start time
+     // is necessarily available here.
+diff --git a/fw-update/item_update_manager.hpp b/fw-update/item_update_manager.hpp
+index ef580a5..aa380b1 100644
+--- a/fw-update/item_update_manager.hpp
++++ b/fw-update/item_update_manager.hpp
+@@ -1,5 +1,6 @@
+ #pragma once
+ 
++#include "condition_collector.hpp"
+ #include "update_manager.hpp"
+ 
+ #include <xyz/openbmc_project/Software/ApplyTime/server.hpp>
+@@ -42,6 +43,13 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
+      * @param[in] generatedId The software hash identifier
+      * @param[in] descriptors The descriptors for the device
+      * @param[in] componentInfo The component information for the device
++     * @param[in] condition The device's condition config
++     * @param[in] conditionArg Named arguments known before an update, passed
++     * to a parameterized condition service
++     * @param[in] taskCompletionCallback Callback invoked once the update
++     * completes
++     * @param[in] sensorPollingCallback Callback to pause and resume sensor
++     * polling for the device's terminus during the update
+      */
+     explicit ItemUpdateManager(
+         mctp_eid_t eid, Event& event,
+@@ -49,17 +57,22 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
+         InstanceIdDb& instanceIdDb, const std::string& objPath,
+         const std::string& generatedId, const Descriptors& descriptors,
+         const ComponentInfo& componentInfo,
+-        const ConditionPaths& conditionPathPair = ConditionPaths{},
++        const ComponentCondition& condition = ComponentCondition{},
+         const std::string& conditionArg = std::string{},
+-        std::function<void()> taskCompletionCallback = nullptr) :
++        std::function<void()> taskCompletionCallback = nullptr,
++        std::function<void(mctp_eid_t, SensorPollingAction)>
++            sensorPollingCallback = nullptr) :
+         UpdateManagerBase(event, handler, instanceIdDb),
+         ItemUpdateIntf(pldm::utils::DBusHandler::getBus(),
+                        std::format("{}_{}", objPath, generatedId).c_str()),
+         eid(eid), objPath(objPath), descriptors(descriptors),
+-        componentInfo(componentInfo), preConditionPath(conditionPathPair.first),
+-        postConditionPath(conditionPathPair.second),
++        componentInfo(componentInfo),
++        preConditionPath(condition.preUpdateTarget.value_or("")),
++        postConditionPath(condition.postUpdateTarget.value_or("")),
++        stopSensorPollingDuringUpdate(condition.stopSensorPolling),
+         baseConditionArg(conditionArg), conditionArg(conditionArg),
+-        taskCompletionCallback(std::move(taskCompletionCallback))
++        taskCompletionCallback(std::move(taskCompletionCallback)),
++        sensorPollingCallback(std::move(sensorPollingCallback))
+     {}
+ 
+     /**
+@@ -231,6 +244,12 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
+     std::string preConditionPath;
+     std::string postConditionPath;
+ 
++    /**
++     * @brief Whether this device's condition config sets
++     * 'StopSensorPolling' to true
++     */
++    bool stopSensorPollingDuringUpdate = false;
++
+     /**
+      * @brief Named arguments known before an update is requested
+      */
+@@ -254,6 +273,12 @@ class ItemUpdateManager : public UpdateManagerBase, public ItemUpdateIntf
+ 
+     std::function<void()> taskCompletionCallback;
+ 
++    /**
++     * @brief Callback to pause/resume sensor polling for this device's
++     * terminus. A no-op when unset.
++     */
++    std::function<void(mctp_eid_t, SensorPollingAction)> sensorPollingCallback;
++
+     bool updateInProgress = false;
+ 
+     /** @brief The last progress that was calculated. Used to avoid spamming
+diff --git a/fw-update/manager.hpp b/fw-update/manager.hpp
+index cebbfd5..3e3a98f 100644
+--- a/fw-update/manager.hpp
++++ b/fw-update/manager.hpp
+@@ -50,6 +50,21 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+                      updateManager)
+     {}
+ 
++    /**
++     * @brief Set the callback used to pause/resume sensor polling for a
++     * device's terminus around its firmware update
++     *
++     * @param[in] sensorPollingCallback Callback invoked with the terminus TID
++     * and the requested action
++     */
++    void setSensorPollingCallback(
++        std::function<void(mctp_eid_t, SensorPollingAction)>
++            sensorPollingCallback)
++    {
++        updateManager.setSensorPollingCallback(
++            std::move(sensorPollingCallback));
++    }
++
+     /** @brief Helper function to invoke registered handlers for
+      *         the added MCTP endpoints
+      *
+diff --git a/fw-update/test/condition_collector_test.cpp b/fw-update/test/condition_collector_test.cpp
+index 7144618..29ce77b 100644
+--- a/fw-update/test/condition_collector_test.cpp
++++ b/fw-update/test/condition_collector_test.cpp
+@@ -28,23 +28,34 @@ class ConditionCollectorTest : public testing::Test
+     fs::path testConfigPath;
+ };
+ 
+-TEST_F(ConditionCollectorTest, EmptyPathReturnsEmpty)
++TEST_F(ConditionCollectorTest, UnconfiguredLookupReturnsDefault)
+ {
+-    ConditionConfigManager manager("");
+-    EXPECT_EQ(manager.preCondition("BIC"), "");
+-    EXPECT_EQ(manager.postCondition("BIC"), "");
+-    EXPECT_EQ(manager.conditions("BIC"), ConditionPaths());
+-}
++    ConditionConfigManager emptyPathManager("");
++    EXPECT_EQ(emptyPathManager.getCondition("BIC"), ComponentCondition());
+ 
+-TEST_F(ConditionCollectorTest, NonExistentFileReturnsEmpty)
+-{
+-    fs::path nonExistentPath = "/nonexistent/path/config.json";
+-    ConditionConfigManager manager(nonExistentPath);
+-    EXPECT_EQ(manager.preCondition("BIC"), "");
+-    EXPECT_EQ(manager.postCondition("BIC"), "");
++    ConditionConfigManager missingFileManager("/nonexistent/path/config.json");
++    EXPECT_EQ(missingFileManager.getCondition("BIC"), ComponentCondition());
++
++    const std::string configContent = R"(
++    {
++        "Components": [
++            {
++                "Component": "BIC",
++                "PreUpdateTarget": "bic-pre.service",
++                "PostUpdateTarget": "bic-post.service"
++            }
++        ]
++    }
++    )";
++    std::ofstream configFile(testConfigPath);
++    configFile << configContent;
++    configFile.close();
++
++    ConditionConfigManager loadedManager(testConfigPath);
++    EXPECT_EQ(loadedManager.getCondition("UNKNOWN"), ComponentCondition());
+ }
+ 
+-TEST_F(ConditionCollectorTest, ValidConfigParsingPreCondition)
++TEST_F(ConditionCollectorTest, ValidConfigParsing)
+ {
+     const std::string configContent = R"(
+     {
+@@ -63,12 +74,10 @@ TEST_F(ConditionCollectorTest, ValidConfigParsingPreCondition)
+     configFile.close();
+ 
+     ConditionConfigManager manager(testConfigPath);
+-    EXPECT_EQ(manager.preCondition("BIC"), "bic-pre-update.service");
+-    EXPECT_EQ(manager.postCondition("BIC"), "bic-post-update@.service");
+-
+-    auto [pre, post] = manager.conditions("BIC");
+-    EXPECT_EQ(pre, "bic-pre-update.service");
+-    EXPECT_EQ(post, "bic-post-update@.service");
++    ComponentCondition condition = manager.getCondition("BIC");
++    EXPECT_EQ(condition.preUpdateTarget, "bic-pre-update.service");
++    EXPECT_EQ(condition.postUpdateTarget, "bic-post-update@.service");
++    EXPECT_FALSE(condition.stopSensorPolling);
+ }
+ 
+ TEST_F(ConditionCollectorTest, GenerateArgFromBoardName)
+@@ -99,8 +108,9 @@ TEST_F(ConditionCollectorTest, EmptyConditionStrings)
+     configFile.close();
+ 
+     ConditionConfigManager manager(testConfigPath);
+-    EXPECT_EQ(manager.preCondition("NIC"), "");
+-    EXPECT_EQ(manager.postCondition("NIC"), "");
++    ComponentCondition condition = manager.getCondition("NIC");
++    EXPECT_EQ(condition.preUpdateTarget, "");
++    EXPECT_EQ(condition.postUpdateTarget, "");
+ }
+ 
+ TEST_F(ConditionCollectorTest, MultipleComponentsParsing)
+@@ -131,38 +141,17 @@ TEST_F(ConditionCollectorTest, MultipleComponentsParsing)
+ 
+     ConditionConfigManager manager(testConfigPath);
+ 
+-    EXPECT_EQ(manager.preCondition("BIOS"), "bios-pre.service");
+-    EXPECT_EQ(manager.postCondition("BIOS"), "bios-post.service");
+-
+-    EXPECT_EQ(manager.preCondition("BIOS_VR"), "");
+-    EXPECT_EQ(manager.postCondition("BIOS_VR"), "vr-post.service");
+-
+-    EXPECT_EQ(manager.preCondition("EC"), "ec-pre.service");
+-    EXPECT_EQ(manager.postCondition("EC"), "");
+-}
+-
+-TEST_F(ConditionCollectorTest, NonExistentComponentReturnsEmpty)
+-{
+-    const std::string configContent = R"(
+-    {
+-        "Components": [
+-            {
+-                "Component": "BIC",
+-                "PreUpdateTarget": "bic-pre.service",
+-                "PostUpdateTarget": "bic-post.service"
+-            }
+-        ]
+-    }
+-    )";
++    ComponentCondition bios = manager.getCondition("BIOS");
++    EXPECT_EQ(bios.preUpdateTarget, "bios-pre.service");
++    EXPECT_EQ(bios.postUpdateTarget, "bios-post.service");
+ 
+-    std::ofstream configFile(testConfigPath);
+-    configFile << configContent;
+-    configFile.close();
++    ComponentCondition biosVr = manager.getCondition("BIOS_VR");
++    EXPECT_FALSE(biosVr.preUpdateTarget);
++    EXPECT_EQ(biosVr.postUpdateTarget, "vr-post.service");
+ 
+-    ConditionConfigManager manager(testConfigPath);
+-    EXPECT_EQ(manager.preCondition("UNKNOWN"), "");
+-    EXPECT_EQ(manager.postCondition("UNKNOWN"), "");
+-    EXPECT_EQ(manager.conditions("UNKNOWN"), ConditionPaths());
++    ComponentCondition ec = manager.getCondition("EC");
++    EXPECT_EQ(ec.preUpdateTarget, "ec-pre.service");
++    EXPECT_FALSE(ec.postUpdateTarget);
+ }
+ 
+ TEST_F(ConditionCollectorTest, InvalidJsonFormat)
+@@ -175,7 +164,7 @@ TEST_F(ConditionCollectorTest, InvalidJsonFormat)
+ 
+     // Should not throw, just handle gracefully
+     ConditionConfigManager manager(testConfigPath);
+-    EXPECT_EQ(manager.preCondition("BIC"), "");
++    EXPECT_EQ(manager.getCondition("BIC"), ComponentCondition());
+ }
+ 
+ TEST_F(ConditionCollectorTest, MissingComponentsKey)
+@@ -191,7 +180,7 @@ TEST_F(ConditionCollectorTest, MissingComponentsKey)
+     configFile.close();
+ 
+     ConditionConfigManager manager(testConfigPath);
+-    EXPECT_EQ(manager.preCondition("BIC"), "");
++    EXPECT_EQ(manager.getCondition("BIC"), ComponentCondition());
+ }
+ 
+ TEST_F(ConditionCollectorTest, MissingComponentNameField)
+@@ -213,13 +202,13 @@ TEST_F(ConditionCollectorTest, MissingComponentNameField)
+ 
+     // Should skip invalid entry and not crash
+     ConditionConfigManager manager(testConfigPath);
+-    EXPECT_EQ(manager.preCondition("BIC"), "");
++    EXPECT_EQ(manager.getCondition("BIC"), ComponentCondition());
+ }
+ 
+ TEST_F(ConditionCollectorTest, BothTargetFieldsAbsent)
+ {
+     // Neither PreUpdateTarget nor PostUpdateTarget is present —
+-    // entry should be skipped and queries should return empty string
++    // both should come back unset, not just empty
+     const std::string configContent = R"(
+     {
+         "Components": [
+@@ -235,14 +224,15 @@ TEST_F(ConditionCollectorTest, BothTargetFieldsAbsent)
+     configFile.close();
+ 
+     ConditionConfigManager manager(testConfigPath);
+-    EXPECT_EQ(manager.preCondition("BIC"), "");
+-    EXPECT_EQ(manager.postCondition("BIC"), "");
++    ComponentCondition condition = manager.getCondition("BIC");
++    EXPECT_FALSE(condition.preUpdateTarget);
++    EXPECT_FALSE(condition.postUpdateTarget);
+ }
+ 
+ TEST_F(ConditionCollectorTest, OnlyPreTargetAbsent)
+ {
+     // PostUpdateTarget is present but PreUpdateTarget is absent —
+-    // pre should default to empty string, post should be populated
++    // pre should come back unset, post should be populated
+     const std::string configContent = R"(
+     {
+         "Components": [
+@@ -259,14 +249,15 @@ TEST_F(ConditionCollectorTest, OnlyPreTargetAbsent)
+     configFile.close();
+ 
+     ConditionConfigManager manager(testConfigPath);
+-    EXPECT_EQ(manager.preCondition("BIOS"), "");
+-    EXPECT_EQ(manager.postCondition("BIOS"), "bios-post.service");
++    ComponentCondition condition = manager.getCondition("BIOS");
++    EXPECT_FALSE(condition.preUpdateTarget);
++    EXPECT_EQ(condition.postUpdateTarget, "bios-post.service");
+ }
+ 
+ TEST_F(ConditionCollectorTest, OnlyPostTargetAbsent)
+ {
+     // PreUpdateTarget is present but PostUpdateTarget is absent —
+-    // post should default to empty string, pre should be populated
++    // post should come back unset, pre should be populated
+     const std::string configContent = R"(
+     {
+         "Components": [
+@@ -283,6 +274,110 @@ TEST_F(ConditionCollectorTest, OnlyPostTargetAbsent)
+     configFile.close();
+ 
+     ConditionConfigManager manager(testConfigPath);
+-    EXPECT_EQ(manager.preCondition("NIC"), "nic-pre.service");
+-    EXPECT_EQ(manager.postCondition("NIC"), "");
++    ComponentCondition condition = manager.getCondition("NIC");
++    EXPECT_EQ(condition.preUpdateTarget, "nic-pre.service");
++    EXPECT_FALSE(condition.postUpdateTarget);
++}
++
++TEST_F(ConditionCollectorTest, StopSensorPollingTrueWithoutTargets)
++{
++    // A component may opt into stopping sensor polling without configuring
++    // either a pre or post condition service.
++    const std::string configContent = R"(
++    {
++        "Components": [
++            {
++                "Component": "BIC",
++                "StopSensorPolling": true
++            }
++        ]
++    }
++    )";
++
++    std::ofstream configFile(testConfigPath);
++    configFile << configContent;
++    configFile.close();
++
++    ConditionConfigManager manager(testConfigPath);
++    ComponentCondition condition = manager.getCondition("BIC");
++    EXPECT_TRUE(condition.stopSensorPolling);
++    EXPECT_FALSE(condition.preUpdateTarget);
++    EXPECT_FALSE(condition.postUpdateTarget);
++}
++
++TEST_F(ConditionCollectorTest, StopSensorPollingFalseIsDefault)
++{
++    // Omitting the property defaults to false, same as an explicit false.
++    const std::string configContent = R"(
++    {
++        "Components": [
++            {
++                "Component": "BIC",
++                "PreUpdateTarget": "bic-pre.service"
++            },
++            {
++                "Component": "NIC",
++                "PreUpdateTarget": "nic-pre.service",
++                "StopSensorPolling": false
++            }
++        ]
++    }
++    )";
++
++    std::ofstream configFile(testConfigPath);
++    configFile << configContent;
++    configFile.close();
++
++    ConditionConfigManager manager(testConfigPath);
++    EXPECT_FALSE(manager.getCondition("BIC").stopSensorPolling);
++    EXPECT_FALSE(manager.getCondition("NIC").stopSensorPolling);
++}
++
++TEST_F(ConditionCollectorTest, StopSensorPollingCombinedWithConditions)
++{
++    const std::string configContent = R"(
++    {
++        "Components": [
++            {
++                "Component": "BIC",
++                "PreUpdateTarget": "bic-pre.service",
++                "PostUpdateTarget": "bic-post.service",
++                "StopSensorPolling": true
++            }
++        ]
++    }
++    )";
++
++    std::ofstream configFile(testConfigPath);
++    configFile << configContent;
++    configFile.close();
++
++    ConditionConfigManager manager(testConfigPath);
++    ComponentCondition condition = manager.getCondition("BIC");
++    EXPECT_TRUE(condition.stopSensorPolling);
++    EXPECT_EQ(condition.preUpdateTarget, "bic-pre.service");
++    EXPECT_EQ(condition.postUpdateTarget, "bic-post.service");
++}
++
++TEST_F(ConditionCollectorTest, StopSensorPollingWrongTypeIsIgnored)
++{
++    // Ignore non-boolean StopSensorPolling values, treating them the same as
++    // an absent property without throwing or crashing.
++    const std::string configContent = R"(
++    {
++        "Components": [
++            {
++                "Component": "BIC",
++                "StopSensorPolling": "true"
++            }
++        ]
++    }
++    )";
++
++    std::ofstream configFile(testConfigPath);
++    configFile << configContent;
++    configFile.close();
++
++    ConditionConfigManager manager(testConfigPath);
++    EXPECT_FALSE(manager.getCondition("BIC").stopSensorPolling);
+ }
+diff --git a/fw-update/update_manager.cpp b/fw-update/update_manager.cpp
+index e9ba33f..5187522 100644
+--- a/fw-update/update_manager.cpp
++++ b/fw-update/update_manager.cpp
+@@ -549,6 +549,14 @@ void UpdateManager::activatePackage()
+         return;
+     }
+ 
++    if (stopSensorPollingDuringUpdate && sensorPollingCallback)
++    {
++        for (const auto& [eid, deviceUpdaterPtr] : deviceUpdaterMap)
++        {
++            sensorPollingCallback(eid, SensorPollingAction::Pause);
++        }
++    }
++
+     if (!preConditionPath.empty())
+     {
+         SystemdInterface::getInstance(pldm::utils::DBusHandler::getBus())
+@@ -595,6 +603,14 @@ void UpdateManager::completeUpdate(bool status)
+         return;
+     }
+ 
++    if (stopSensorPollingDuringUpdate && sensorPollingCallback)
++    {
++        for (const auto& [eid, deviceUpdaterPtr] : deviceUpdaterMap)
++        {
++            sensorPollingCallback(eid, SensorPollingAction::Resume);
++        }
++    }
++
+     updateInProgress = false;
+     auto endTime = std::chrono::steady_clock::now();
+     auto dur =
+diff --git a/fw-update/update_manager.hpp b/fw-update/update_manager.hpp
+index d58eb48..9db5feb 100644
+--- a/fw-update/update_manager.hpp
++++ b/fw-update/update_manager.hpp
+@@ -42,6 +42,15 @@ using DeviceUpdaterInfo =
+ using DeviceUpdaterInfos = std::vector<DeviceUpdaterInfo>;
+ using TotalComponentUpdates = size_t;
+ 
++/**
++ * @brief Sensor-polling action requested around a device's firmware update
++ */
++enum class SensorPollingAction
++{
++    Pause,
++    Resume,
++};
++
+ /**
+  * @brief The base class of the UpdateManager and the
+  *        ItemBaseUpdateManager
+@@ -103,10 +112,7 @@ class UpdateManager : public UpdateManagerBase
+         pldm::requester::Handler<pldm::requester::Request>& handler,
+         InstanceIdDb& instanceIdDb, const DescriptorMap& descriptorMap,
+         const DownstreamDescriptorMap& downstreamDescriptorMap,
+-        const ComponentInfoMap& componentInfoMap,
+-        const ConditionPaths& conditionPathPair = ConditionPaths{},
+-        const std::string& conditionArg = std::string{},
+-        std::function<void()> taskCompletionCallback = nullptr) :
++        const ComponentInfoMap& componentInfoMap) :
+         UpdateManagerBase(event, handler, instanceIdDb),
+         descriptorMap(descriptorMap),
+         downstreamDescriptorMap(downstreamDescriptorMap),
+@@ -122,11 +128,23 @@ class UpdateManager : public UpdateManagerBase
+                                          "/xyz/openbmc_project/software/pldm",
+                                          this)),
+ #endif
+-        totalNumComponentUpdates(0), preConditionPath(conditionPathPair.first),
+-        postConditionPath(conditionPathPair.second), conditionArg(conditionArg),
+-        taskCompletionCallback(std::move(taskCompletionCallback))
++        totalNumComponentUpdates(0)
+     {}
+ 
++    /**
++     * @brief Set the callback used to pause/resume sensor polling for a
++     * device's terminus around its firmware update
++     *
++     * @param[in] sensorPollingCallback Callback invoked with the terminus TID
++     * and the requested action
++     */
++    void setSensorPollingCallback(
++        std::function<void(mctp_eid_t, SensorPollingAction)>
++            sensorPollingCallback)
++    {
++        this->sensorPollingCallback = std::move(sensorPollingCallback);
++    }
++
+     /** @brief Handle PLDM request for the commands in the FW update
+      *         specification
+      *
+@@ -250,7 +268,23 @@ class UpdateManager : public UpdateManagerBase
+     std::string preConditionPath;
+     std::string postConditionPath;
+     std::string conditionArg;
++
++    /**
++     * @brief Whether this package's condition config sets
++     * 'StopSensorPolling' to true, applied to every device in the package
++     */
++    bool stopSensorPollingDuringUpdate = false;
++
+     std::function<void()> taskCompletionCallback;
++
++  protected:
++    /**
++     * @brief Callback to pause/resume sensor polling for a device's
++     * terminus. A no-op when unset.
++     */
++    std::function<void(mctp_eid_t, SensorPollingAction)> sensorPollingCallback;
++
++  private:
+     bool updateInProgress = false;
+ 
+     /** @brief The last progress that was calculated. Used to avoid spamming
+diff --git a/platform-mc/manager.hpp b/platform-mc/manager.hpp
+index 6474180..6a389b3 100644
+--- a/platform-mc/manager.hpp
++++ b/platform-mc/manager.hpp
+@@ -133,6 +133,30 @@ class Manager : public pldm::MctpDiscoveryHandlerIntf
+         sensorManager.stopPolling(tid);
+     }
+ 
++    /** @brief Helper function to pause sensor polling timer
++     *         of the terminus TID
++     */
++    void pauseSensorPollingTimer(pldm_tid_t tid)
++    {
++        sensorManager.pauseSensorPollTimer(tid);
++    }
++
++    /** @brief Helper function to resume sensor polling timer
++     *         of the terminus TID
++     */
++    void resumeSensorPollingTimer(pldm_tid_t tid)
++    {
++        sensorManager.startSensorPollTimer(tid);
++    }
++
++    /** @brief Helper function to look up the TID currently associated with
++     *         an EID
++     */
++    std::optional<pldm_tid_t> getTidByEid(mctp_eid_t eid) const
++    {
++        return terminusManager.getTidByEid(eid);
++    }
++
+     /** @brief Sensor event handler function
+      *
+      *  @param[in] request - Event message
+diff --git a/platform-mc/sensor_manager.cpp b/platform-mc/sensor_manager.cpp
+index b0e8ff1..c685bf7 100644
+--- a/platform-mc/sensor_manager.cpp
++++ b/platform-mc/sensor_manager.cpp
+@@ -109,6 +109,15 @@ void SensorManager::stopPolling(pldm_tid_t tid)
+     availableState.erase(tid);
+ }
+ 
++void SensorManager::pauseSensorPollTimer(pldm_tid_t tid)
++{
++    if (sensorPollTimers.contains(tid) && sensorPollTimers[tid] &&
++        sensorPollTimers[tid]->isRunning())
++    {
++        sensorPollTimers[tid]->stop();
++    }
++}
++
+ void SensorManager::doSensorPolling(pldm_tid_t tid)
+ {
+     auto it = doSensorPollingTaskHandles.find(tid);
+diff --git a/platform-mc/sensor_manager.hpp b/platform-mc/sensor_manager.hpp
+index 1540b1e..b5e5942 100644
+--- a/platform-mc/sensor_manager.hpp
++++ b/platform-mc/sensor_manager.hpp
+@@ -47,6 +47,10 @@ class SensorManager
+      */
+     void startSensorPollTimer(pldm_tid_t tid);
+ 
++    /** @brief Helper function to pause sensor polling timer
++     */
++    void pauseSensorPollTimer(pldm_tid_t tid);
++
+     /** @brief Helper function to set all terminus sensor as nan when the
+      *  terminus is not available for pldm request
+      */
+diff --git a/platform-mc/terminus_manager.cpp b/platform-mc/terminus_manager.cpp
+index 1c31d22..d9ae42b 100644
+--- a/platform-mc/terminus_manager.cpp
++++ b/platform-mc/terminus_manager.cpp
+@@ -52,6 +52,23 @@ std::optional<pldm_tid_t> TerminusManager::toTid(const MctpInfo& mctpInfo) const
+     return mctpInfoTableIt->first;
+ }
+ 
++std::optional<pldm_tid_t> TerminusManager::getTidByEid(mctp_eid_t eid) const
++{
++    if (!pldm::utils::isValidEID(eid))
++    {
++        return std::nullopt;
++    }
++
++    auto mctpInfoTableIt =
++        std::find_if(mctpInfoTable.begin(), mctpInfoTable.end(),
++                     [eid](auto& v) { return std::get<0>(v.second) == eid; });
++    if (mctpInfoTableIt == mctpInfoTable.end())
++    {
++        return std::nullopt;
++    }
++    return mctpInfoTableIt->first;
++}
++
+ std::optional<pldm_tid_t> TerminusManager::storeTerminusInfo(
+     const MctpInfo& mctpInfo, pldm_tid_t tid)
+ {
+diff --git a/platform-mc/terminus_manager.hpp b/platform-mc/terminus_manager.hpp
+index 4f5c9ab..35ca20c 100644
+--- a/platform-mc/terminus_manager.hpp
++++ b/platform-mc/terminus_manager.hpp
+@@ -113,6 +113,19 @@ class TerminusManager
+      */
+     std::optional<pldm_tid_t> toTid(const MctpInfo& mctpInfo) const;
+ 
++    /** @brief Look up the TID currently associated with an EID
++     *
++     *  Matches on EID only. When more than one network is in use and an EID
++     *  could exist on more than one of them, use toTid() with the full
++     *  MctpInfo instead for a precise match.
++     *
++     *  @param[in] eid - MCTP endpoint ID
++     *
++     *  @return tid - Terminus tid, std::nullopt when no terminus with this
++     *          EID is known
++     */
++    std::optional<pldm_tid_t> getTidByEid(mctp_eid_t eid) const;
++
+     /** @brief Member functions to find the TID for MCTP interface. Response the
+      *         Terminus TID when mctpInfo is already in the data base. Response
+      *         new tid from pool when mctpInfo is new.
+diff --git a/pldmd/pldmd.cpp b/pldmd/pldmd.cpp
+index 44c9716..2865cdd 100644
+--- a/pldmd/pldmd.cpp
++++ b/pldmd/pldmd.cpp
+@@ -349,6 +349,32 @@ int main(int argc, char** argv)
+     std::unique_ptr<fw_update::Manager> fwManager =
+         std::make_unique<fw_update::Manager>(&dbusHandler, event, reqHandler,
+                                              instanceIdDb);
++    fwManager->setSensorPollingCallback([pm = platformManager.get()](
++                                            mctp_eid_t eid,
++                                            fw_update::SensorPollingAction
++                                                action) {
++        auto tid = pm->getTidByEid(eid);
++        if (!tid)
++        {
++            warning(
++                "No TID found for EID {EID}, skipping sensor polling change",
++                "EID", eid);
++            return;
++        }
++        if (action == fw_update::SensorPollingAction::Pause)
++        {
++            pm->pauseSensorPollingTimer(*tid);
++            info("Paused sensor polling for TID {TID} during firmware update",
++                 "TID", *tid);
++        }
++        else
++        {
++            pm->resumeSensorPollingTimer(*tid);
++            info("Resumed sensor polling for TID {TID} after firmware update",
++                 "TID", *tid);
++        }
++    });
++
+     MctpDiscovery mctpDiscoveryHandler(
+         bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
+ #ifdef OEM_META

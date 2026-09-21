@@ -1,0 +1,16 @@
+{
+    "Components" :[
+        {
+            "Component": "CXL_Component_0",
+            "StopSensorPolling": true
+        },
+        {
+            "Component": "NIC0_Component_0",
+            "StopSensorPolling": true
+        },
+        {
+            "Component": "NIC0_Component_1",
+            "StopSensorPolling": true
+        }
+    ]
+}

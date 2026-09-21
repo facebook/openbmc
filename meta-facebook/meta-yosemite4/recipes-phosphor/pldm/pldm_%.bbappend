@@ -6,11 +6,6 @@ SRC_URI += " \
     file://pldmd-exit-handler \
 "
 
-# Must apply after common/lfopenbmc pldm patches.
-SRC_URI:append:openbmc-fb-lf = " \
-    file://0001-yosemite4-pldm-remove-firmware-update-entry.patch \
-"
-
 FILES:${PN}:append = " \
     ${systemd_system_unitdir}/pldmd.service.d/*.conf \
     ${systemd_system_unitdir}/pldmd-exit-handler \

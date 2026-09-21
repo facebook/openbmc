@@ -39,6 +39,11 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0031-fw_update-stop-sensor-polling-during-update-when-config.patch \
 "
 
+# Must apply after common/lfopenbmc pldm patches.
+SRC_URI:append:yosemite4 = " \
+    file://0100-yosemite4-pldm-remove-firmware-update-entry.patch \
+"
+
 SYSTEMD_AUTO_ENABLE:${PN}:openbmc-fb-lf = "enable"
 
 do_install:append:openbmc-fb-lf() {

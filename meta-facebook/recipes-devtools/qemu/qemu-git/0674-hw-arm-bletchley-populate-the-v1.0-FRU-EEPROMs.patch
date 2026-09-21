@@ -1,4 +1,4 @@
-From 0d471875ffbc316cc00a5caf94a66651fb647b22 Mon Sep 17 00:00:00 2001
+From 38a18e16dc1a2f6e8d3a6bec516d1bc521003875 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 16:27:25 +0200
 Subject: [PATCH] hw/arm: bletchley: populate the v1.0 FRU EEPROMs
@@ -16,12 +16,12 @@ Signed-off-by: Emmanuel Blot <emmanuel.blot@free.fr>
  1 file changed, 306 insertions(+), 3 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_bletchley.c b/hw/arm/aspeed_ast2600_bletchley.c
-index 7b006d0712..c3f7dfb27b 100644
+index c6f98f6eb9..e2491f9b77 100644
 --- a/hw/arm/aspeed_ast2600_bletchley.c
 +++ b/hw/arm/aspeed_ast2600_bletchley.c
 @@ -34,6 +34,304 @@
  #define BLETCHLEY_BMC_HW_STRAP2 0x00000801
- #define BLETCHLEY_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
+ #define BLETCHLEY_BMC_RAM_SIZE (2 * GiB)
  
 +/*
 + * FRU images read back from hardware and sanitized: part and serial
@@ -358,5 +358,5 @@ index 7b006d0712..c3f7dfb27b 100644
      /* Bus 9 */
      i2c_slave_create_simple(i2c[9], TYPE_TMP421, 0x4f);
 -- 
-2.54.0
+2.53.0-Meta
 

@@ -1,4 +1,4 @@
-From 0ec47bf4072905c4becfca0a1755bdce6375f987 Mon Sep 17 00:00:00 2001
+From bf640a0cd973d16fb300b67a6905d5e5d8c06375 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 5 Aug 2026 18:04:47 +0200
 Subject: [PATCH] hw/arm/aspeed: use the TMP421 type-name macros
@@ -167,7 +167,7 @@ index 3ba1ed5f6f..3dd0d37175 100644
  }
  
 diff --git a/hw/arm/aspeed_ast2600_bletchley.c b/hw/arm/aspeed_ast2600_bletchley.c
-index 7bd1f90555..f29115bf8a 100644
+index 0e746055a2..536e910229 100644
 --- a/hw/arm/aspeed_ast2600_bletchley.c
 +++ b/hw/arm/aspeed_ast2600_bletchley.c
 @@ -13,8 +13,7 @@
@@ -181,7 +181,7 @@ index 7bd1f90555..f29115bf8a 100644
  #define BLETCHLEY_BMC_HW_STRAP1 0x00002000
  #define BLETCHLEY_BMC_HW_STRAP2 0x00000801
 diff --git a/hw/arm/aspeed_ast2600_catalina.c b/hw/arm/aspeed_ast2600_catalina.c
-index ed65efe638..5565dfcae6 100644
+index 3036e35ef2..5421b3edff 100644
 --- a/hw/arm/aspeed_ast2600_catalina.c
 +++ b/hw/arm/aspeed_ast2600_catalina.c
 @@ -16,14 +16,13 @@
@@ -193,7 +193,7 @@ index ed65efe638..5565dfcae6 100644
  /* Catalina hardware value */
  #define CATALINA_BMC_HW_STRAP1 0x00002002
  #define CATALINA_BMC_HW_STRAP2 0x00000800
- #define CATALINA_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
+ #define CATALINA_BMC_RAM_SIZE (2 * GiB)
  
 -#define TYPE_TMP421 "tmp421"
 -
@@ -217,7 +217,7 @@ index 7de5b823fa..4403404909 100644
  static void fby35_i2c_init(AspeedMachineState *bmc)
  {
 diff --git a/hw/arm/aspeed_ast2600_fuji.c b/hw/arm/aspeed_ast2600_fuji.c
-index a71488044c..30530232d9 100644
+index 455286cc01..52b911fd35 100644
 --- a/hw/arm/aspeed_ast2600_fuji.c
 +++ b/hw/arm/aspeed_ast2600_fuji.c
 @@ -13,10 +13,9 @@
@@ -266,5 +266,5 @@ index 43a8f01a9e..bdbc78aee7 100644
  
      i2c_slave_create_simple(aspeed_i2c_get_bus(&soc->i2c, 11), TYPE_TMP105,
 -- 
-2.54.0
+2.53.0-Meta
 

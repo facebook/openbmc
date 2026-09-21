@@ -1,4 +1,4 @@
-From fc243ee5acc7445f656f306f7a86b440249fe472 Mon Sep 17 00:00:00 2001
+From c9b9998c1c44595353e235402336defac5189d88 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Fri, 20 May 2022 17:07:55 -0700
 Subject: [PATCH] hw/arm/aspeed: Add fb_machine_class_init
@@ -300,7 +300,7 @@ index 8a17c4453e..b9e5c35517 100644
 +
 +DEFINE_FB_MACHINES()
 diff --git a/hw/arm/aspeed_ast2600_fuji.c b/hw/arm/aspeed_ast2600_fuji.c
-index dd6d763cdd..b5f50cba47 100644
+index 9b8e771ca0..057e4fbbc3 100644
 --- a/hw/arm/aspeed_ast2600_fuji.c
 +++ b/hw/arm/aspeed_ast2600_fuji.c
 @@ -123,3 +123,61 @@ static const TypeInfo aspeed_ast2600_fuji_types[] = {
@@ -366,10 +366,10 @@ index dd6d763cdd..b5f50cba47 100644
 +
 +DEFINE_FB_MACHINES()
 diff --git a/include/hw/arm/aspeed.h b/include/hw/arm/aspeed.h
-index 54f0d7643d..d4d966d741 100644
+index 989d39528e..2a7ed5166d 100644
 --- a/include/hw/arm/aspeed.h
 +++ b/include/hw/arm/aspeed.h
-@@ -127,4 +127,71 @@ void aspeed_machine_ast2600_class_emmc_init(ObjectClass *oc);
+@@ -120,4 +120,71 @@ void aspeed_machine_ast2600_class_emmc_init(ObjectClass *oc);
   */
  void aspeed_connect_serial_hds_to_uarts(AspeedMachineState *bmc);
  
@@ -442,5 +442,5 @@ index 54f0d7643d..d4d966d741 100644
 +
  #endif
 -- 
-2.54.0
+2.53.0-Meta
 

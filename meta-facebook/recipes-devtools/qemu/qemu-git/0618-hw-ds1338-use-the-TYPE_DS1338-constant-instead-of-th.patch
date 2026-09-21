@@ -1,4 +1,4 @@
-From 508c32693e20daca5961eff5661d487105e78da3 Mon Sep 17 00:00:00 2001
+From 337de44f97600b5d56312367a22e518e2a8b37fa Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 11:36:17 +0200
 Subject: [PATCH] hw: ds1338: use the TYPE_DS1338 constant instead of the
@@ -135,7 +135,7 @@ index 26ddb67347..c69065846c 100644
      smbus_eeprom_init_one(aspeed_i2c_get_bus(&soc->i2c, 11), 0x51,
                            eeprom_buf);
 diff --git a/hw/arm/aspeed_ast2600_bletchley.c b/hw/arm/aspeed_ast2600_bletchley.c
-index 2822f6bdf5..7bd1f90555 100644
+index 6fa606c047..0e746055a2 100644
 --- a/hw/arm/aspeed_ast2600_bletchley.c
 +++ b/hw/arm/aspeed_ast2600_bletchley.c
 @@ -12,6 +12,7 @@
@@ -156,7 +156,7 @@ index 2822f6bdf5..7bd1f90555 100644
  
      /* Bus 7 */
 diff --git a/hw/arm/aspeed_ast2600_catalina.c b/hw/arm/aspeed_ast2600_catalina.c
-index ec25ae7968..ed65efe638 100644
+index a44ec63867..3036e35ef2 100644
 --- a/hw/arm/aspeed_ast2600_catalina.c
 +++ b/hw/arm/aspeed_ast2600_catalina.c
 @@ -14,6 +14,7 @@
@@ -168,7 +168,7 @@ index ec25ae7968..ed65efe638 100644
  
  /* Catalina hardware value */
 @@ -22,7 +23,6 @@
- #define CATALINA_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
+ #define CATALINA_BMC_RAM_SIZE (2 * GiB)
  
  #define TYPE_TMP421 "tmp421"
 -#define TYPE_DS1338 "ds1338"
@@ -260,5 +260,5 @@ index 8a219afef7..910713c6bb 100644
  
      /* Load or create device tree */
 -- 
-2.54.0
+2.53.0-Meta
 

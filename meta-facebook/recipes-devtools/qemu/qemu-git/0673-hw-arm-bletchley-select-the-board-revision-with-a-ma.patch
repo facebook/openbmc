@@ -1,4 +1,4 @@
-From 91bdec65ff4ab78f37b6a22ab912c5fe7597f05f Mon Sep 17 00:00:00 2001
+From 4097cf047682e58a679ded0888b4d8dac816f3d8 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 17:23:08 +0200
 Subject: [PATCH] hw/arm: bletchley: select the board revision with a machine
@@ -44,7 +44,7 @@ index e50422ac92..bef1c9986f 100644
  ^^^^^^^^^^
  
 diff --git a/hw/arm/aspeed_ast2600_bletchley.c b/hw/arm/aspeed_ast2600_bletchley.c
-index 8fa3c3d7da..7b006d0712 100644
+index fc918753ec..c6f98f6eb9 100644
 --- a/hw/arm/aspeed_ast2600_bletchley.c
 +++ b/hw/arm/aspeed_ast2600_bletchley.c
 @@ -5,6 +5,10 @@
@@ -60,7 +60,7 @@ index 8fa3c3d7da..7b006d0712 100644
   *   - mps,mp5023 power monitors
 @@ -30,6 +34,15 @@
  #define BLETCHLEY_BMC_HW_STRAP2 0x00000801
- #define BLETCHLEY_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
+ #define BLETCHLEY_BMC_RAM_SIZE (2 * GiB)
  
 +#define TYPE_BLETCHLEY_MACHINE MACHINE_TYPE_NAME("bletchley-bmc")
 +OBJECT_DECLARE_SIMPLE_TYPE(BletchleyMachineState, BLETCHLEY_MACHINE)
@@ -125,5 +125,5 @@ index 8fa3c3d7da..7b006d0712 100644
      }
  };
 -- 
-2.54.0
+2.53.0-Meta
 

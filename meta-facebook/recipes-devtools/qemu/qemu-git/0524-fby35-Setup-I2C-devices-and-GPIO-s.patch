@@ -1,20 +1,20 @@
-From d3f41fc536eb902a457a4394c8bbc27c6858c337 Mon Sep 17 00:00:00 2001
+From 2a6965a7924bbeb3a59f58eebbdb00e0e7420622 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 23 Aug 2022 23:24:36 -0700
 Subject: [PATCH] fby35: Setup I2C devices and GPIO's
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 ---
- hw/arm/aspeed_ast2600_fby35.c | 119 ++--------------------------------
+ hw/arm/aspeed_ast2600_fby35.c | 121 ++--------------------------------
  hw/arm/fby35.c                |  93 ++++++++++++++++++++++++++
  include/hw/arm/fby35.h        |   5 ++
- 3 files changed, 102 insertions(+), 115 deletions(-)
+ 3 files changed, 103 insertions(+), 116 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_fby35.c b/hw/arm/aspeed_ast2600_fby35.c
-index c26909dc4e..13b7cb9f63 100644
+index 9820a197da..13b7cb9f63 100644
 --- a/hw/arm/aspeed_ast2600_fby35.c
 +++ b/hw/arm/aspeed_ast2600_fby35.c
-@@ -10,6 +10,7 @@
+@@ -10,144 +10,33 @@
  #include "qapi/error.h"
  #include "hw/arm/aspeed.h"
  #include "hw/arm/aspeed_soc.h"
@@ -22,10 +22,10 @@ index c26909dc4e..13b7cb9f63 100644
  #include "hw/nvram/eeprom_at24c.h"
  #include "hw/sensor/tmp105.h"
  #include "system/reset.h"
-@@ -17,137 +18,25 @@
+ 
  #define TYPE_LM75 TYPE_TMP105
  #define TYPE_TMP421 "tmp421"
- #define FBY35_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
+-#define FBY35_BMC_RAM_SIZE (2 * GiB)
 -
 -static const uint8_t fby35_nic_fruid[] = {
 -    0x01, 0x00, 0x00, 0x01, 0x0f, 0x20, 0x00, 0xcf, 0x01, 0x0e, 0x19, 0xd7,
@@ -101,6 +101,7 @@ index c26909dc4e..13b7cb9f63 100644
 -};
 -static const size_t fby35_bmc_fruid_len = sizeof(fby35_bmc_fruid);
 -
++#define FBY35_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
  static void fby35_i2c_init(AspeedMachineState *bmc)
  {
      AspeedSoCState *soc = bmc->soc;

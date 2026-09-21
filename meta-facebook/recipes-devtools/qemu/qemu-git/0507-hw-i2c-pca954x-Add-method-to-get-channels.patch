@@ -1,4 +1,4 @@
-From 68c23b0eb37fee80006cfa0583e1a3f91a86e503 Mon Sep 17 00:00:00 2001
+From 9d20dc97964e36a67a9425cda8fc727820c8f73f Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH] hw/i2c/pca954x: Add method to get channels
@@ -36,12 +36,12 @@ Signed-off-by: Cédric Le Goater <clg@kaod.org>
  3 files changed, 32 insertions(+), 20 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_fuji.c b/hw/arm/aspeed_ast2600_fuji.c
-index dae0239387..dd6d763cdd 100644
+index 08d809b2fd..9b8e771ca0 100644
 --- a/hw/arm/aspeed_ast2600_fuji.c
 +++ b/hw/arm/aspeed_ast2600_fuji.c
 @@ -21,15 +21,6 @@
  #define FUJI_BMC_HW_STRAP2    0x00000000
- #define FUJI_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
+ #define FUJI_BMC_RAM_SIZE (2 * GiB)
  
 -static void get_pca9548_channels(I2CBus *bus, uint8_t mux_addr,
 -                                 I2CBus **channels)
@@ -129,5 +129,5 @@ index 3dd25ec983..3a676a30a9 100644
 +
  #endif
 -- 
-2.54.0
+2.53.0-Meta
 

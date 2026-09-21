@@ -1,4 +1,4 @@
-From b01f1ea5c72e36029718231948a7a13a80be3940 Mon Sep 17 00:00:00 2001
+From d2a2beb008e838dfe5b462af6e49421afe7f45cb Mon Sep 17 00:00:00 2001
 From: Bianca Giocas <bgiocas@arista.com>
 Date: Tue, 11 Aug 2026 14:35:00 +0000
 Subject: [PATCH] usb: gadget: aspeed-vhub: Add AST2700 support
@@ -221,7 +221,7 @@ index f2685f89b3e5..14deacb7f3b2 100644
  	{ }
  };
 diff --git a/drivers/usb/gadget/udc/aspeed-vhub/vhub.h b/drivers/usb/gadget/udc/aspeed-vhub/vhub.h
-index 6b9dfa6e10eb..03069dd50bbe 100644
+index 6b9dfa6e10eb..100d25a1ce38 100644
 --- a/drivers/usb/gadget/udc/aspeed-vhub/vhub.h
 +++ b/drivers/usb/gadget/udc/aspeed-vhub/vhub.h
 @@ -29,12 +29,14 @@
@@ -302,5 +302,5 @@ index 6b9dfa6e10eb..03069dd50bbe 100644
  	/* Standard USB Descriptors of the vhub. */
  	struct usb_device_descriptor	vhub_dev_desc;
 -- 
-2.51.0
+2.53.0-Meta
 

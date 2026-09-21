@@ -1,4 +1,4 @@
-From 2e78c0e8b362bbeaab6021f863d7b6f3e1290ee6 Mon Sep 17 00:00:00 2001
+From 844695644cb9aac77e874d657a42c83946321f5a Mon Sep 17 00:00:00 2001
 From: Christopher Meis <christopher.meis@9elements.com>
 Date: Tue, 23 Sep 2025 10:24:36 +0200
 Subject: [PATCH] Multi-host/HW-inventory: add memory subtree
@@ -165,7 +165,7 @@ Signed-off-by: Christopher Meis <christopher.meis@9elements.com>
  2 files changed, 103 insertions(+), 34 deletions(-)
 
 diff --git a/redfish-core/lib/memory.hpp b/redfish-core/lib/memory.hpp
-index 4edb49df..468a4b54 100644
+index 1bec96a3..45138846 100644
 --- a/redfish-core/lib/memory.hpp
 +++ b/redfish-core/lib/memory.hpp
 @@ -20,6 +20,7 @@
@@ -187,7 +187,7 @@ index 4edb49df..468a4b54 100644
  inline memory::MemoryDeviceType translateMemoryTypeToRedfish(
      const std::string& memoryType)
  {
-@@ -744,7 +749,8 @@ inline void getDimmPartitionData(std::shared_ptr<bmcweb::AsyncResp> asyncResp,
+@@ -748,7 +753,8 @@ inline void getDimmPartitionData(std::shared_ptr<bmcweb::AsyncResp> asyncResp,
  
  inline void afterGetDimmData(
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
@@ -197,7 +197,7 @@ index 4edb49df..468a4b54 100644
      const dbus::utility::MapperGetSubTreeResponse& subtree)
  {
      if (ec)
-@@ -821,25 +827,57 @@ inline void afterGetDimmData(
+@@ -825,25 +831,57 @@ inline void afterGetDimmData(
      }
      // Set @odata only if object is found
      asyncResp->res.jsonValue["@odata.type"] = "#Memory.v1_23_0.Memory";
@@ -264,7 +264,7 @@ index 4edb49df..468a4b54 100644
          });
  }
  
-@@ -957,22 +995,47 @@ inline void handleMemoryGet(App& app, const crow::Request& req,
+@@ -961,22 +999,47 @@ inline void handleMemoryGet(App& app, const crow::Request& req,
          return;
      }
  
@@ -319,7 +319,7 @@ index 4edb49df..468a4b54 100644
  }
  
  inline void handleMemoryCollectionGet(
-@@ -984,33 +1047,39 @@ inline void handleMemoryCollectionGet(
+@@ -988,33 +1051,39 @@ inline void handleMemoryCollectionGet(
      {
          return;
      }
@@ -375,7 +375,7 @@ index 4edb49df..468a4b54 100644
  
  inline void requestRoutesMemory(App& app)
 diff --git a/redfish-core/lib/systems.hpp b/redfish-core/lib/systems.hpp
-index 324cdc00..f59fd06b 100644
+index 002de88c..27acb93d 100644
 --- a/redfish-core/lib/systems.hpp
 +++ b/redfish-core/lib/systems.hpp
 @@ -3091,8 +3091,6 @@ inline void processComputerSystemGet(

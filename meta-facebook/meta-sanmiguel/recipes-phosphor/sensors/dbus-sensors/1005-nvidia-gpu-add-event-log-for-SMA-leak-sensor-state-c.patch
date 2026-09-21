@@ -1,4 +1,4 @@
-From 6f01588e5f3f1bf5f566b17a26839d9c5554f68b Mon Sep 17 00:00:00 2001
+From 0c023a8ee4e28eede1f613b80145943dc34458f6 Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Wed, 2 Sep 2026 19:17:22 +0800
 Subject: [PATCH] nvidia-gpu: add event log for SMA leak sensor state changes
@@ -50,10 +50,10 @@ Signed-off-by: Mike Hsieh <mike_hsieh@quantatw.com>
  1 file changed, 32 insertions(+)
 
 diff --git a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
-index 207a9d0..b4c188d 100644
+index 0970234..e6b97bf 100644
 --- a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
 +++ b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
-@@ -17,10 +17,12 @@
+@@ -15,10 +15,12 @@
  #include <MctpRequester.hpp>
  #include <NvidiaGpuMctpVdm.hpp>
  #include <OcpMctpVdm.hpp>
@@ -66,7 +66,7 @@ index 207a9d0..b4c188d 100644
  
  #include <array>
  #include <cstddef>
-@@ -199,6 +201,21 @@ void NvidiaSmaLeakSensor::updateState(uint8_t value)
+@@ -200,6 +202,21 @@ void NvidiaSmaLeakSensor::updateState(uint8_t value)
                      : "xyz.openbmc_project.State.Leak.Detector.DetectorState.Abnormal"));
  
          triggerSystemdService("critical", lastLeakState, escapeName(name));
@@ -88,7 +88,7 @@ index 207a9d0..b4c188d 100644
      }
  
      if (newFault != lastLeakFault)
-@@ -214,6 +231,21 @@ void NvidiaSmaLeakSensor::updateState(uint8_t value)
+@@ -215,6 +232,21 @@ void NvidiaSmaLeakSensor::updateState(uint8_t value)
          // suffix in the name
          triggerSystemdService("critical", lastLeakFault,
                                escapeName(name) + "_Fault");
@@ -111,5 +111,5 @@ index 207a9d0..b4c188d 100644
  }
  
 -- 
-2.53.0
+2.53.0-Meta
 

@@ -1,7 +1,7 @@
-From 7e855f007bca5b7a8ed89a3b11f4a3269f640573 Mon Sep 17 00:00:00 2001
+From d65085ac691e6845f3f9bf3dfd09da025a98daa0 Mon Sep 17 00:00:00 2001
 From: Alan Tsai <Alan-Tsai@quantatw.com>
 Date: Fri, 31 Jul 2026 10:18:42 +0800
-Subject: [PATCH 1002/1004] i3c: add aspeed mipi-i3c-hci driver
+Subject: [PATCH] i3c: add aspeed mipi-i3c-hci driver
 
 Porting mipi-i3c-hci driver from AspeedTech-BMC linux.
 ---

@@ -1,4 +1,4 @@
-From 51af15404a0d06cb533327baf10e51e21f34c239 Mon Sep 17 00:00:00 2001
+From 11fbebcd4dd1f67a1578055ba46a318acf4ef0f4 Mon Sep 17 00:00:00 2001
 From: Bianca Giocas <bgiocas@arista.com>
 Date: Tue, 1 Sep 2026 00:00:00 +0000
 Subject: [PATCH] arm64: dts: aspeed: Add AST2700 128MB flash layout
@@ -10,12 +10,13 @@ only the offsets and sizes differ to match the AST2700 image map.
 Upstream-Status: Pending
 Signed-off-by: Bianca Giocas <bgiocas@arista.com>
 ---
- .../dts/aspeed/facebook-bmc-flash-layout-128.dtsi   | 58 +++++++++++++++++++++
+ .../aspeed/facebook-bmc-flash-layout-128.dtsi | 58 +++++++++++++++++++
  1 file changed, 58 insertions(+)
+ create mode 100644 arch/arm64/boot/dts/aspeed/facebook-bmc-flash-layout-128.dtsi
 
 diff --git a/arch/arm64/boot/dts/aspeed/facebook-bmc-flash-layout-128.dtsi b/arch/arm64/boot/dts/aspeed/facebook-bmc-flash-layout-128.dtsi
 new file mode 100644
-index 000000000000..9ee119bc5b2c
+index 000000000000..a9de8aa3a9c0
 --- /dev/null
 +++ b/arch/arm64/boot/dts/aspeed/facebook-bmc-flash-layout-128.dtsi
 @@ -0,0 +1,58 @@
@@ -78,4 +79,5 @@ index 000000000000..9ee119bc5b2c
 +	};
 +};
 -- 
-2.51.0
+2.53.0-Meta
+

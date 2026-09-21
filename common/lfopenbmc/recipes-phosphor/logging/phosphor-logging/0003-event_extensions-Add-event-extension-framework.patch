@@ -1,4 +1,4 @@
-From 7e17578b0bac426f9fdbe32ac43e3731cf2955ec Mon Sep 17 00:00:00 2001
+From 5308f80681f65ef3d9e893ced511513992ca9b8f Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 2 Sep 2026 00:33:06 -0500
 Subject: [PATCH] event_extensions: Add event extension framework
@@ -642,7 +642,7 @@ index 1f9beaf..220c036 100644
  
  /** Extract information from a generated event.
 diff --git a/log_manager.cpp b/log_manager.cpp
-index de96f40..a454b61 100644
+index 6a7552e..7bd6792 100644
 --- a/log_manager.cpp
 +++ b/log_manager.cpp
 @@ -218,7 +218,9 @@ void Manager::_commit(uint64_t transactionId [[maybe_unused]],
@@ -677,7 +677,7 @@ index de96f40..a454b61 100644
  
      serialize(*e);
      serializeJSON(*e);
-@@ -803,7 +813,11 @@ auto Manager::create(const std::string& message, Entry::Level severity,
+@@ -810,7 +820,11 @@ auto Manager::create(const std::string& message, Entry::Level severity,
                       const std::map<std::string, std::string>& additionalData,
                       const FFDCEntries& ffdc) -> sdbusplus::object_path
  {
@@ -690,7 +690,7 @@ index de96f40..a454b61 100644
  }
  
  void Manager::setupErrorFileWatch()
-@@ -1016,6 +1030,46 @@ bool Manager::refreshFromDisk(uint32_t id)
+@@ -1023,6 +1037,46 @@ bool Manager::refreshFromDisk(uint32_t id)
      return true;
  }
  

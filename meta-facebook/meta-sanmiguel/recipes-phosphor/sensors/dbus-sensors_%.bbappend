@@ -4,9 +4,8 @@ SRC_URI:append = " \
     file://1001-Add-NVMeMI-sensor-service.patch \
     file://1002-Fix-NVMeMI-sensor-build-error.patch \
     file://1003-nvidia-gpu-add-option-to-disable-PCIe-device-support.patch \
-    file://1004-nvidia-gpu-add-support-for-SMA-leak-sensors.patch \
-    file://1005-nvidia-gpu-add-State.Leak.Detector-support-for-SMA-s.patch \
-    file://1006-nvidia-gpu-add-event-log-for-SMA-leak-sensor-state-c.patch \
+    file://1004-nvidia-gpu-add-State.Leak.Detector-support-for-SMA-s.patch \
+    file://1005-nvidia-gpu-add-event-log-for-SMA-leak-sensor-state-c.patch \
 "
 
 DEPENDS += " libnvme"

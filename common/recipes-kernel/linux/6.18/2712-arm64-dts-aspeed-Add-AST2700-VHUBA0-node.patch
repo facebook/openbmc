@@ -1,16 +1,21 @@
-From 745f3428b850d66d002f4f15dbe7098c67280c12 Mon Sep 17 00:00:00 2001
+From 6c29c450c8d50a0afa0d6a2d96659e9324ee8b9e Mon Sep 17 00:00:00 2001
 From: Bianca Giocas <bgiocas@arista.com>
 Date: Thu, 16 Jul 2026 11:16:23 +0000
 Subject: [PATCH] arm64: dts: aspeed: Add AST2700 VHUBA0 node
 
-Backporting the AST2700 SoC0 VHUBA0 node from 
+Backporting the AST2700 SoC0 VHUBA0 node from
 https://github.com/torvalds/linux/commit/e77bb5dc57593a4698aaacd57a776728cf552e73
 
 Signed-off-by: Bianca Giocas <bgiocas@arista.com>
 ---
+ arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
+index 3ceb82197de4..4711628aa60c 100644
 --- a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
-@@ -127,6 +127,21 @@
+@@ -127,6 +127,21 @@ uart4: serial@12c1a000 {
  		no-loopback-test;
  		status = "disabled";
  	};
@@ -33,4 +38,5 @@ Signed-off-by: Bianca Giocas <bgiocas@arista.com>
  
  &soc1 {
 -- 
-2.52.0
+2.53.0-Meta
+

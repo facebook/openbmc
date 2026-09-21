@@ -1,7 +1,7 @@
-From 4fc9596b9d4dea8758864b472d485cc015becb87 Mon Sep 17 00:00:00 2001
+From bf48d50388101bfee52d8b968fabc8dcfa029923 Mon Sep 17 00:00:00 2001
 From: Adrian Ambrozewicz <aambrozewicz@nvidia.com>
 Date: Thu, 29 Jan 2026 12:47:30 +0000
-Subject: [PATCH 2/2] net/ncsi: fix use-after-free in ncsi_unregister_dev()
+Subject: [PATCH] net/ncsi: fix use-after-free in ncsi_unregister_dev()
 
 ncsi_unregister_dev() frees the ncsi_dev_priv structure while timers
 and workqueue may still be accessing it, causing use-after-free.
@@ -72,7 +72,7 @@ Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
  1 file changed, 20 insertions(+)
 
 diff --git a/net/ncsi/ncsi-manage.c b/net/ncsi/ncsi-manage.c
-index 2d760b712ba6a..a744988d964f6 100644
+index 2d760b712ba6..a744988d964f 100644
 --- a/net/ncsi/ncsi-manage.c
 +++ b/net/ncsi/ncsi-manage.c
 @@ -1804,6 +1804,7 @@ struct ncsi_dev *ncsi_register_dev(struct net_device *dev,
@@ -113,5 +113,5 @@ index 2d760b712ba6a..a744988d964f6 100644
  		ncsi_remove_package(np);
  
 -- 
-2.52.0
+2.53.0-Meta
 

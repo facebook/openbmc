@@ -1,7 +1,7 @@
-From 209c09a2a4fca51a83d4c89a975b252c75e40ceb Mon Sep 17 00:00:00 2001
+From c8e136c56f2305c4def56b11c19b674f25371c60 Mon Sep 17 00:00:00 2001
 From: Adrian Ambrozewicz <aambrozewicz@nvidia.com>
 Date: Sat, 24 Jan 2026 00:26:06 +0000
-Subject: [PATCH 1/2] net: usb: cdc_ether: add NCSI passthrough support
+Subject: [PATCH] net: usb: cdc_ether: add NCSI passthrough support
 
 Add NCSI (Network Controller Sideband Interface) passthrough support for
 USB CDC Ethernet devices. This enables BMC-to-host sideband management
@@ -43,7 +43,7 @@ Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
  2 files changed, 206 insertions(+), 1 deletion(-)
 
 diff --git a/drivers/net/usb/Kconfig b/drivers/net/usb/Kconfig
-index da0f6a138f4fc..3f59b9b2055ab 100644
+index da0f6a138f4f..3f59b9b2055a 100644
 --- a/drivers/net/usb/Kconfig
 +++ b/drivers/net/usb/Kconfig
 @@ -241,6 +241,26 @@ config USB_NET_CDCETHER
@@ -74,7 +74,7 @@ index da0f6a138f4fc..3f59b9b2055ab 100644
  	tristate "CDC EEM support"
  	depends on USB_USBNET
 diff --git a/drivers/net/usb/cdc_ether.c b/drivers/net/usb/cdc_ether.c
-index a032c1ded4063..9aead69d25f73 100644
+index a032c1ded406..9aead69d25f7 100644
 --- a/drivers/net/usb/cdc_ether.c
 +++ b/drivers/net/usb/cdc_ether.c
 @@ -532,6 +532,165 @@ static const struct driver_info	cdc_info = {
@@ -279,5 +279,5 @@ index a032c1ded4063..9aead69d25f73 100644
  			USB_CDC_PROTO_NONE),
  	.driver_info = (unsigned long) &cdc_info,
 -- 
-2.52.0
+2.53.0-Meta
 

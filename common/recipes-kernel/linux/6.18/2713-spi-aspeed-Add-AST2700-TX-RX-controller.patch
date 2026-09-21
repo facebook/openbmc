@@ -1,4 +1,4 @@
-From 1161370b7144ac033f9e0023b043d4b476f9dfa5 Mon Sep 17 00:00:00 2001
+From b41f8d226af4e434557ae62f38cff33be293ece5 Mon Sep 17 00:00:00 2001
 From: Bianca Giocas <bgiocas@arista.com>
 Date: Tue, 1 Sep 2026 10:26:13 +0000
 Subject: [PATCH] spi: aspeed: Add AST2700 TX/RX controller
@@ -16,8 +16,8 @@ This is porting the following changes:
 Upstream-Status: Pending
 Signed-off-by: Bianca Giocas <bgiocas@arista.com>
 ---
- drivers/spi/Kconfig           | 10 ++++++++++
- drivers/spi/Makefile          |  1 +
+ drivers/spi/Kconfig           |  10 +
+ drivers/spi/Makefile          |   1 +
  drivers/spi/spi-aspeed-txrx.c | 671 ++++++++++++++++++++++++++++++++++
  3 files changed, 682 insertions(+)
  create mode 100644 drivers/spi/spi-aspeed-txrx.c
@@ -57,7 +57,7 @@ index 3290fd3be968..806e645b5409 100644
  obj-$(CONFIG_SPI_ATMEL_QUADSPI)		+= atmel-quadspi.o
 diff --git a/drivers/spi/spi-aspeed-txrx.c b/drivers/spi/spi-aspeed-txrx.c
 new file mode 100644
-index 000000000000..359f609f280c
+index 000000000000..a0f4902fc23a
 --- /dev/null
 +++ b/drivers/spi/spi-aspeed-txrx.c
 @@ -0,0 +1,671 @@
@@ -733,4 +733,5 @@ index 000000000000..359f609f280c
 +MODULE_AUTHOR("Chin-Ting Kuo");
 +MODULE_LICENSE("GPL");
 -- 
-2.51.0
+2.53.0-Meta
+

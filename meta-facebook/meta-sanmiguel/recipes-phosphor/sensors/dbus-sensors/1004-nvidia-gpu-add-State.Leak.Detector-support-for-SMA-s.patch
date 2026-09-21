@@ -1,4 +1,4 @@
-From 443e1159a13901a064a99540629936de29cf014a Mon Sep 17 00:00:00 2001
+From 00bfe3881d76f46f000a9400a005dec27120c1a2 Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Fri, 21 Aug 2026 17:56:52 +0800
 Subject: [PATCH] nvidia-gpu: add State.Leak.Detector support for SMA sensors
@@ -68,32 +68,24 @@ NAME        TYPE     SIGNATURE RESULT/VALUE                             FLAGS
 Change-Id: Iea80606d74b0ab4178af2abbef19b372d4e97322
 Signed-off-by: Mike Hsieh <mike_hsieh@quantatw.com>
 ---
- src/nvidia-gpu/NvidiaSmaLeakSensor.cpp | 116 ++++++++++++++++++++++++-
+ src/nvidia-gpu/NvidiaSmaLeakSensor.cpp | 115 ++++++++++++++++++++++++-
  src/nvidia-gpu/NvidiaSmaLeakSensor.hpp |  16 ++++
- 2 files changed, 131 insertions(+), 1 deletion(-)
+ 2 files changed, 130 insertions(+), 1 deletion(-)
 
 diff --git a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
-index a4eae1e..207a9d0 100644
+index 8b27f26..0970234 100644
 --- a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
 +++ b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
-@@ -20,6 +20,7 @@
- #include <phosphor-logging/lg2.hpp>
- #include <sdbusplus/asio/connection.hpp>
- #include <sdbusplus/asio/object_server.hpp>
-+#include <sdbusplus/message/native_types.hpp>
- 
- #include <array>
- #include <cstddef>
-@@ -47,7 +48,7 @@ NvidiaSmaLeakSensor::NvidiaSmaLeakSensor(
+@@ -47,7 +47,7 @@ NvidiaSmaLeakSensor::NvidiaSmaLeakSensor(
      Sensor(escapeName(name), std::move(thresholdData), sensorConfiguration,
             "voltage", false, true, smaLeakSensorMaxReading,
             smaLeakSensorMinReading, conn),
--    objectServer(objectServer)
-+    conn(conn), objectServer(objectServer)
+-    eid(eid), sensorId(sensorId), mctpRequester(mctpRequester),
++    eid(eid), sensorId(sensorId), conn(conn), mctpRequester(mctpRequester),
+     objectServer(objectServer)
  {
-     std::string dbusPath = sensorPathPrefix + "voltage/"s + escapeName(name);
- 
-@@ -83,6 +84,50 @@ NvidiaSmaLeakSensor::NvidiaSmaLeakSensor(
+     sdbusplus::object_path dbusPath =
+@@ -85,6 +85,50 @@ NvidiaSmaLeakSensor::NvidiaSmaLeakSensor(
                  "NAME", name);
          }
      }
@@ -144,7 +136,7 @@ index a4eae1e..207a9d0 100644
  }
  
  NvidiaSmaLeakSensor::~NvidiaSmaLeakSensor()
-@@ -97,6 +142,14 @@ NvidiaSmaLeakSensor::~NvidiaSmaLeakSensor()
+@@ -99,6 +143,14 @@ NvidiaSmaLeakSensor::~NvidiaSmaLeakSensor()
      {
          objectServer.remove_interface(commonPhysicalContextInterface);
      }
@@ -159,7 +151,7 @@ index a4eae1e..207a9d0 100644
  }
  
  void NvidiaSmaLeakSensor::checkThresholds()
-@@ -104,6 +157,66 @@ void NvidiaSmaLeakSensor::checkThresholds()
+@@ -106,6 +158,66 @@ void NvidiaSmaLeakSensor::checkThresholds()
      thresholds::checkThresholds(this);
  }
  
@@ -223,35 +215,34 @@ index a4eae1e..207a9d0 100644
 +    }
 +}
 +
- NvidiaSmaLeakSensorCarrier::NvidiaSmaLeakSensorCarrier(
-     std::shared_ptr<sdbusplus::asio::connection>& conn,
-     mctp::MctpRequester& mctpRequester, const std::string& name,
-@@ -243,6 +356,7 @@ void NvidiaSmaLeakSensorCarrier::processResponse(
+ void NvidiaSmaLeakSensor::processResponse(const std::error_code& ec,
+                                           std::span<const uint8_t> buffer)
+ {
+@@ -146,6 +258,7 @@ void NvidiaSmaLeakSensor::processResponse(const std::error_code& ec,
              // Reading from the device is in millivolts and unit set on the dbus
              // is volts.
-             it->second->updateValue(sensorData.adcReadingMv / 1000.0);
-+            it->second->updateState(sensorData.leakState);
+             updateValue(sensorData.adcReadingMv / 1000.0);
++            updateState(sensorData.leakState);
+             break;
          }
      }
- }
 diff --git a/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp b/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
-index 7fbd47f..61e931d 100644
+index 83a1bce..1e896f8 100644
 --- a/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
 +++ b/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
-@@ -35,6 +35,8 @@ struct NvidiaSmaLeakSensor :
+@@ -36,6 +36,8 @@ struct NvidiaSmaLeakSensor :
  
      void checkThresholds() override;
  
 +    void updateState(uint8_t value);
 +
+     void update();
+ 
    private:
-     std::shared_ptr<sdbusplus::asio::connection> conn;
- 
-@@ -42,6 +44,20 @@ struct NvidiaSmaLeakSensor :
- 
+@@ -57,5 +59,19 @@ struct NvidiaSmaLeakSensor :
      std::shared_ptr<sdbusplus::asio::dbus_interface>
          commonPhysicalContextInterface;
-+
+ 
 +    std::shared_ptr<sdbusplus::asio::dbus_interface> leakDetectorInterface;
 +
 +    std::shared_ptr<sdbusplus::asio::dbus_interface> leakFaultInterface;
@@ -265,9 +256,9 @@ index 7fbd47f..61e931d 100644
 +    LeakState lastLeakState = LeakState::Normal;
 +
 +    LeakState lastLeakFault = LeakState::Normal;
++
+     std::vector<gpu::LeakSensorData> parsedSensors;
  };
- 
- struct NvidiaSmaLeakSensorCarrier :
 -- 
 2.53.0-Meta
 

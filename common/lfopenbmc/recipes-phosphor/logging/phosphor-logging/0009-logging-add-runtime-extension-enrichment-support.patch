@@ -1,4 +1,4 @@
-From 430176c8301f800fb7a924c8d9954a3c73bc11c6 Mon Sep 17 00:00:00 2001
+From 39acec4dadebd4447806ecffe48eda6f220912af Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Mon, 7 Sep 2026 00:58:20 -0500
 Subject: [PATCH] logging: add runtime extension enrichment support
@@ -313,7 +313,7 @@ index 614103c..ec300a1 100644
  
  } // namespace logging
 diff --git a/log_manager.cpp b/log_manager.cpp
-index 740ccba..4db6a33 100644
+index d50c6e8..6063189 100644
 --- a/log_manager.cpp
 +++ b/log_manager.cpp
 @@ -37,6 +37,11 @@ extern const std::map<
@@ -328,7 +328,7 @@ index 740ccba..4db6a33 100644
  namespace phosphor
  {
  namespace logging
-@@ -826,6 +831,25 @@ auto Manager::create(const std::string& message, Entry::Level severity,
+@@ -833,6 +838,25 @@ auto Manager::create(const std::string& message, Entry::Level severity,
                       const FFDCEntries& ffdc) -> sdbusplus::object_path
  {
      auto data = additionalData;
@@ -354,7 +354,7 @@ index 740ccba..4db6a33 100644
      auto requests = buildEventExtensionRequests(data);
  
      return createEntry(message, severity, std::move(data), ffdc,
-@@ -836,13 +860,13 @@ void Manager::setupErrorFileWatch()
+@@ -843,13 +867,13 @@ void Manager::setupErrorFileWatch()
  {
      auto errDir = paths::error();
  
@@ -374,7 +374,7 @@ index 740ccba..4db6a33 100644
      uint32_t mask = IN_MOVED_TO | IN_DELETE;
  
      if (!util::setupInotifyWatch(errDir, mask, errDirInotifyFD,
-@@ -864,8 +888,8 @@ void Manager::errorFileChanged(sdeventplus::source::IO&, int, uint32_t revents)
+@@ -871,8 +895,8 @@ void Manager::errorFileChanged(sdeventplus::source::IO&, int, uint32_t revents)
      }
  
      // As per inotify(7), sizeof(struct inotify_event) + NAME_MAX + 1 is
@@ -385,7 +385,7 @@ index 740ccba..4db6a33 100644
      // worst-case events in a single read.
      std::array<uint8_t, 272 * 240> buf{};
      const auto bytesRead = read(errDirInotifyFD, buf.data(), buf.size());
-@@ -1032,8 +1056,8 @@ bool Manager::refreshFromDisk(uint32_t id)
+@@ -1039,8 +1063,8 @@ bool Manager::refreshFromDisk(uint32_t id)
          return false;
      }
  
@@ -396,7 +396,7 @@ index 740ccba..4db6a33 100644
      auto& existingEntry = it->second;
      *existingEntry = *tempEntry;
  
-@@ -1082,6 +1106,56 @@ auto Manager::buildEventExtensionRequests(
+@@ -1089,6 +1113,56 @@ auto Manager::buildEventExtensionRequests(
      return requests;
  }
  

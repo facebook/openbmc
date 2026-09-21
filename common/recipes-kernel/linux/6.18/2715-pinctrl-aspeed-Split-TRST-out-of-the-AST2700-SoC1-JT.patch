@@ -1,7 +1,8 @@
-From 0e1d07a5d37a032ceed6a6b013f115c060ccfb61 Mon Sep 17 00:00:00 2001
+From 293374793c00a280dddc302a8fe622aaa81152f0 Mon Sep 17 00:00:00 2001
 From: Bianca Giocas <bgiocas@arista.com>
 Date: Wed, 9 Sep 2026 14:53:13 +0000
-Subject: [PATCH] pinctrl: aspeed: Split TRST out of the AST2700 SoC1 JTAGM1 group
+Subject: [PATCH] pinctrl: aspeed: Split TRST out of the AST2700 SoC1 JTAGM1
+ group
 
 Backport pinctrl-aspeed-g7-soc1 driver update from
 https://github.com/torvalds/linux/commit/7a8a6e1cfcb69cdd5b353e6ac222b4294006e108
@@ -44,4 +45,5 @@ index 50027d69c342..f8b4066699ce 100644
  	FUNC(LPC1, (2), "LPC1"),
  	FUNC(LTPI, (2), "LTPI"),
 -- 
-2.51.0
+2.53.0-Meta
+

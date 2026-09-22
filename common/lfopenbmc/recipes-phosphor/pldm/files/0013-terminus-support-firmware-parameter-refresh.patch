@@ -1,42 +1,38 @@
-From bfb58e0c92f090daad971de0ac62eec1e17fc441 Mon Sep 17 00:00:00 2001
+From 86b05afb26f6629600e29a409bb3eb928bc1dda3 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 7 May 2026 21:56:34 +0800
-Subject: [PATCH] terminus: add refreshFirmwareParameters method
+Subject: [PATCH] terminus: support firmware parameter refresh
 
-Add `refreshFirmwareParameters` to query firmware parameters without
-running `handleMctpEndpoints`.
+Add a refreshFirmwareParameters path so callers can update PLDM
+firmware version information for existing MCTP endpoints without
+rerunning handleMctpEndpoints. The refresh path sends
+GetFirmwareParameters when descriptors are already cached, and falls
+back to QueryDeviceIdentifiers when descriptors still need to be
+populated.
 
-After the OS is ready, if the PLDM device version information needs
-to be queried. However, using handleMctpEndpoints for this purpose
-may be risky, because it re-initializes MCTP endpoints while the
-PLDM bus may already be busy with other traffic. This may affect
-firmware updates and increase bus contention. Since only the
-firmware parameters are needed, add refreshFirmwareParameters to
-query them directly without rerunning handleMctpEndpoints.
+Track refresh retries per endpoint and retry the request that timed out.
+If QueryDeviceIdentifiers times out while populating descriptorMap,
+retry QueryDeviceIdentifiers directly instead of re-entering the refresh
+path, which could skip it once descriptorMap is populated by another
+path.
 
-`getFirmwareParameters` requires `descriptorMap` to be available. If
-`descriptorMap` does not exist yet, send
-`sendQueryDeviceIdentifiersRequest` first to populate it. The retry
-mechanism then automatically re-triggers
-`refreshFirmwareParameters` to read the version information.
-
-If reading firmware parameters fails, the same retry mechanism is
-triggered automatically.
+When GetFirmwareParameters still fails after retries, preserve existing
+firmware parameter data if component information is already present.
 
 The link of the gerrit:
 https://gerrit.openbmc.org/c/openbmc/pldm/+/90018
 
 Signed-off-by: Henry Wu <Henry_Wu@quantatw.com>
 ---
- fw-update/inventory_manager.cpp       | 104 +++++++++++++++++++++++++-
- fw-update/inventory_manager.hpp       |  31 ++++++++
- fw-update/manager.hpp                 |   9 +++
+ fw-update/inventory_manager.cpp       | 122 +++++++++++++++++++++++++-
+ fw-update/inventory_manager.hpp       |  50 +++++++++++
+ fw-update/manager.hpp                 |   9 ++
  requester/mctp_endpoint_discovery.cpp |  12 +++
  requester/mctp_endpoint_discovery.hpp |   8 ++
- 5 files changed, 163 insertions(+), 1 deletion(-)
+ 5 files changed, 200 insertions(+), 1 deletion(-)
 
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
-index 652458e..1281888 100644
+index 652458e..68355f1 100644
 --- a/fw-update/inventory_manager.cpp
 +++ b/fw-update/inventory_manager.cpp
 @@ -14,13 +14,22 @@ namespace pldm
@@ -62,7 +58,7 @@ index 652458e..1281888 100644
              sendQueryDeviceIdentifiersRequest(eid);
          }
          catch (const std::exception& e)
-@@ -32,11 +41,88 @@ void InventoryManager::discoverFDs(const MctpInfos& mctpInfos)
+@@ -32,11 +41,106 @@ void InventoryManager::discoverFDs(const MctpInfos& mctpInfos)
      }
  }
  
@@ -75,7 +71,7 @@ index 652458e..1281888 100644
 +    {
 +        auto eid = std::get<pldm::eid>(mctpInfo);
 +        debug("Refreshing firmware parameters for endpoint ID {EID}", "EID",
-+             eid);
++              eid);
 +        try
 +        {
 +            refreshRetriesRemaining[eid] = refreshFirmwareParametersRetryCount;
@@ -94,22 +90,23 @@ index 652458e..1281888 100644
 +{
 +    if (descriptorMap.contains(eid))
 +    {
-+        debug(
-+            "Descriptor map found for endpoint ID {EID}, sending GetFirmwareParameters",
++        info(
++            "Refresh firmware parameters for endpoint ID {EID}: cached descriptors found, sending GetFirmwareParameters",
 +            "EID", eid);
 +        sendGetFirmwareParametersRequest(eid);
 +    }
 +    else
 +    {
-+        debug(
-+            "Descriptor map missing for endpoint ID {EID}, sending QueryDeviceIdentifiers",
++        info(
++            "Refresh firmware parameters for endpoint ID {EID}: descriptors missing, sending QueryDeviceIdentifiers",
 +            "EID", eid);
 +        sendQueryDeviceIdentifiersRequest(eid);
 +    }
 +}
 +
-+bool InventoryManager::retryRefreshFirmwareParameters(
-+    mctp_eid_t eid, std::string_view requestName)
++bool InventoryManager::retryFirmwareInventoryRequest(
++    mctp_eid_t eid, std::string_view retryDescription,
++    void (InventoryManager::*sendRequest)(mctp_eid_t))
 +{
 +    auto retryIt = refreshRetriesRemaining.find(eid);
 +    if (retryIt == refreshRetriesRemaining.end())
@@ -125,21 +122,38 @@ index 652458e..1281888 100644
 +
 +    --retryIt->second;
 +    warning(
-+        "Retrying refresh firmware parameters after {REQUEST} timeout for endpoint ID {EID}, remaining refresh retries {RETRIES}",
-+        "REQUEST", requestName, "EID", eid, "RETRIES", retryIt->second);
++        "Retrying {REQUEST} for endpoint ID {EID}, remaining refresh retries {RETRIES}",
++        "REQUEST", retryDescription, "EID", eid, "RETRIES", retryIt->second);
 +
 +    try
 +    {
-+        sendRefreshFirmwareParametersRequest(eid);
++        (this->*sendRequest)(eid);
 +        return true;
 +    }
 +    catch (const std::exception& e)
 +    {
-+        error(
-+            "Failed to retry refresh firmware parameters for endpoint ID {EID} with {ERROR}",
-+            "EID", eid, "ERROR", e);
++        error("Failed to retry {REQUEST} for endpoint ID {EID} with {ERROR}",
++              "REQUEST", retryDescription, "EID", eid, "ERROR", e);
 +        return false;
 +    }
++}
++
++bool InventoryManager::retryQueryDeviceIdentifiers(mctp_eid_t eid)
++{
++    return retryFirmwareInventoryRequest(
++        eid, "QueryDeviceIdentifiers after timeout",
++        &InventoryManager::sendQueryDeviceIdentifiersRequest);
++}
++
++bool InventoryManager::retryRefreshFirmwareParameters(
++    mctp_eid_t eid, std::string_view requestName)
++{
++    const auto retryDescription = std::format(
++        "refresh firmware parameters after {} timeout", requestName);
++
++    return retryFirmwareInventoryRequest(
++        eid, retryDescription,
++        &InventoryManager::sendRefreshFirmwareParametersRequest);
 +}
 +
  void InventoryManager::removeFDs(const MctpInfos& mctpInfos)
@@ -151,15 +165,15 @@ index 652458e..1281888 100644
          firmwareDeviceNameMap.erase(eid);
          descriptorMap.erase(eid);
          downstreamDescriptorMap.erase(eid);
-@@ -92,6 +178,7 @@ void InventoryManager::queryDeviceIdentifiers(
+@@ -92,6 +196,7 @@ void InventoryManager::queryDeviceIdentifiers(
          error(
              "No response received for query device identifiers for endpoint ID {EID}",
              "EID", eid);
-+        retryRefreshFirmwareParameters(eid, "QueryDeviceIdentifiers");
++        retryQueryDeviceIdentifiers(eid);
          return;
      }
  
-@@ -641,10 +728,25 @@ void InventoryManager::getFirmwareParameters(
+@@ -641,10 +746,25 @@ void InventoryManager::getFirmwareParameters(
          error(
              "No response received for get firmware parameters for endpoint ID {EID}",
              "EID", eid);
@@ -187,7 +201,7 @@ index 652458e..1281888 100644
      variable_field activeCompImageSetVerStr{};
      variable_field pendingCompImageSetVerStr{};
 diff --git a/fw-update/inventory_manager.hpp b/fw-update/inventory_manager.hpp
-index e100a52..fb1ed2c 100644
+index e100a52..c216f1b 100644
 --- a/fw-update/inventory_manager.hpp
 +++ b/fw-update/inventory_manager.hpp
 @@ -67,6 +67,16 @@ class InventoryManager
@@ -207,11 +221,11 @@ index e100a52..fb1ed2c 100644
      /** @brief Remove the firmware identifiers and component details of FDs
       *
       *  This function removes the firmware identifiers, component details and
-@@ -185,6 +195,24 @@ class InventoryManager
+@@ -185,6 +195,43 @@ class InventoryManager
       */
      void sendGetFirmwareParametersRequest(mctp_eid_t eid);
  
-+        /** @brief Sends the next request needed for refreshing firmware parameters.
++    /** @brief Sends the next request needed for refreshing firmware parameters.
 +     *
 +     *  If descriptors are available, GetFirmwareParameters is sent directly.
 +     *  Otherwise QueryDeviceIdentifiers is sent first.
@@ -219,6 +233,25 @@ index e100a52..fb1ed2c 100644
 +     *  @param[in] eid - Remote MCTP endpoint
 +     */
 +    void sendRefreshFirmwareParametersRequest(mctp_eid_t eid);
++
++    /** @brief Retry a firmware inventory request after timeout.
++     *
++     *  @param[in] eid - Remote MCTP endpoint
++     *  @param[in] retryDescription - Description of the retry being attempted
++     *  @param[in] sendRequest - Request sender to retry
++     *  @return true if another request was queued, false otherwise
++     */
++    bool retryFirmwareInventoryRequest(
++        mctp_eid_t eid, std::string_view retryDescription,
++        void (InventoryManager::*sendRequest)(mctp_eid_t));
++
++    /** @brief Retry a QueryDeviceIdentifiers request after timeout.
++     *
++     *  @param[in] eid - Remote MCTP endpoint
++     *  @return true if another QueryDeviceIdentifiers request was queued, false
++     *          otherwise
++     */
++    bool retryQueryDeviceIdentifiers(mctp_eid_t eid);
 +
 +    /** @brief Retry a refresh firmware parameters flow after timeout.
 +     *
@@ -232,7 +265,7 @@ index e100a52..fb1ed2c 100644
      /** @brief PLDM request handler */
      pldm::requester::Handler<pldm::requester::Request>& handler;
  
-@@ -208,6 +236,9 @@ class InventoryManager
+@@ -208,6 +255,9 @@ class InventoryManager
  
      /** @brief Dbus Inventory Item Manager */
      FirmwareInventoryManager firmwareInventoryManager;
@@ -312,5 +345,5 @@ index d7d77a0..0c65889 100644
       *
       *  @param[in] mctpInfoMap - information of discovered MCTP endpoints
 -- 
-2.53.0-Meta
+2.47.3
 

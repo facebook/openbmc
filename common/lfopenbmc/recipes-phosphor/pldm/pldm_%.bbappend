@@ -18,7 +18,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0010-oem-meta-Add-MCTP-configuration-discovery.patch \
     file://0011-pldm-Increase-maximum-of-dbus-timeout-value.patch \
     file://0012-terminus-replace-inventory-and-sensor-configuration.patch \
-    file://0013-terminus-add-refreshFirmwareParameters-method.patch \
+    file://0013-terminus-support-firmware-parameter-refresh.patch \
     file://0014-requester-refresh-MCTP-endpoints-after-host-reaches-.patch \
     file://0015-requester-Parse-MCTP-endpoint-from-InterfacesRemoved.patch \
     file://0016-oem-meta-Implement-special-event-handling.patch \

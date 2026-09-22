@@ -1,0 +1,32 @@
+From 9e2c4d1a5bed9da895ddbd3e3a6395146bdb8d81 Mon Sep 17 00:00:00 2001
+From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
+Date: Fri, 18 Sep 2026 10:16:17 +0800
+Subject: [PATCH 1/2] hwmontempsensor: add support for adt7461 temp sensors
+
+adt7461 support is handled with the lm90 driver [1]
+
+[1]: https://github.com/torvalds/linux/blob/master/drivers/hwmon/lm90.c#L304
+
+gerrit:
+https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/90281
+
+Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
+---
+ src/hwmon-temp/HwmonTempMain.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/hwmon-temp/HwmonTempMain.cpp b/src/hwmon-temp/HwmonTempMain.cpp
+index b8b46ce..b575db6 100644
+--- a/src/hwmon-temp/HwmonTempMain.cpp
++++ b/src/hwmon-temp/HwmonTempMain.cpp
+@@ -66,6 +66,7 @@ static constexpr double minValueTemperature = -128;     // DegreesC
+ static constexpr auto sensorTypes =
+     std::to_array<std::pair<std::string_view, I2CDeviceType>>({
+         {"ADM1021", I2CDeviceType{"adm1021", true}},
++        {"ADT7461", I2CDeviceType{"adt7461", true}},
+         {"BME280", I2CDeviceType{"bme280", false}},
+         {"DPS310", I2CDeviceType{"dps310", false}},
+         {"EMC1403", I2CDeviceType{"emc1403", true}},
+-- 
+2.34.1
+

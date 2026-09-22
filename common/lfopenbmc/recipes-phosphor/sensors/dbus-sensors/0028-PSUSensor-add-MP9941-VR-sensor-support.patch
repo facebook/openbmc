@@ -1,0 +1,31 @@
+From 9e59d122b67f5b5b24e72711ff45e0a68d28e9ad Mon Sep 17 00:00:00 2001
+From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
+Date: Fri, 18 Sep 2026 10:18:10 +0800
+Subject: [PATCH 2/2] PSUSensor: add MP9941 VR sensor support
+
+MP9941 support is handled with the MP9941 driver [1]
+
+[1]: https://github.com/torvalds/linux/blob/master/drivers/hwmon/pmbus/mp9941.c
+
+gerrit: https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/90850
+
+Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
+---
+ src/psu/PSUSensorMain.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
+index 9b657f0..4b5cb9a 100644
+--- a/src/psu/PSUSensorMain.cpp
++++ b/src/psu/PSUSensorMain.cpp
+@@ -138,6 +138,7 @@ static constexpr auto sensorTypes = std::to_array<
+     {"MP5926", I2CDeviceType{"mp5926", true}},
+     {"MP5990", I2CDeviceType{"mp5990", true}},
+     {"MP5998", I2CDeviceType{"mp5998", true}},
++    {"MP9941", I2CDeviceType{"mp9941", true}},
+     {"MP9945", I2CDeviceType{"mp9945", true}},
+     {"MP29612", I2CDeviceType{"mp29612", true}},
+     {"MPQ82D00", I2CDeviceType{"mpq82d00", true}},
+-- 
+2.34.1
+

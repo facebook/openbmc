@@ -27,6 +27,8 @@ SRC_URI:append = " \
     file://0024-psusensor-skip-sensor-reads-during-firmware-updates.patch \
     file://0025-PSUSensor-add-MPQ82D00-PMBus-device-support.patch \
     file://0026-common-fix-missing-power-gated-sensors-after-BMC-res.patch \
+    file://0027-hwmontempsensor-add-support-for-adt7461-temp-sensors.patch \
+    file://0028-PSUSensor-add-MP9941-VR-sensor-support.patch \
 "
 
 SRC_URI:append:mf-fb-liquid-cooled = " \

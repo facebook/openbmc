@@ -34,7 +34,6 @@ PLATFORMS = [
     "minipack",
     "montblanc",
     "morgan800cc",
-    "nexthopbmc",
     "northdome",
     "rainiera6",
     "rainiera7",

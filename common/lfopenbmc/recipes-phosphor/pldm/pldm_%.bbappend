@@ -36,7 +36,7 @@ SRC_URI:append:openbmc-fb-lf = " \
     file://0028-oem-meta-don-t-drop-OEM-event-during-MCTP-endpoint-r.patch \
     file://0029-oem-meta-bound-the-OEM-event-record-before-formattin.patch \
     file://0030-fw-update-Fix-redundant-inventory-entries-for-single.patch \
-    file://0031-fw_update-stop-sensor-polling-during-update-when-config.patch \
+    file://0031-fw_update-stop-sensor-polling-during-update-when-con.patch \
 "
 
 # Must apply after common/lfopenbmc pldm patches.

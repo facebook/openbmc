@@ -1,4 +1,4 @@
-From 57551c2639acdda87c114c0761db1908e40673e7 Mon Sep 17 00:00:00 2001
+From b8fd403d2bd62b9db37b202b2c499f7d464e6386 Mon Sep 17 00:00:00 2001
 From: Andy Chung <Andy.Chung@amd.com>
 Date: Thu, 16 Jul 2026 14:08:59 +0800
 Subject: [PATCH] hwmon: (kb9002) Add driver for Kandou KB9002 retimer
@@ -17,7 +17,7 @@ LORE: https://lore.kernel.org/all/20260715-kb9002-upstream-v2-0-2fd390383da5@amd
  create mode 100644 drivers/hwmon/kb9002.c
 
 diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 68473da93941..cccd954e0bcb 100644
+index 4c24aea7764f..0355a98f1be1 100644
 --- a/drivers/hwmon/Kconfig
 +++ b/drivers/hwmon/Kconfig
 @@ -355,6 +355,17 @@ config SENSORS_KFAN

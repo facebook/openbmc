@@ -1,4 +1,4 @@
-From 5617eaaee0ab28e8f8ee454e9f9f5896197e42e3 Mon Sep 17 00:00:00 2001
+From 19d311f8054e740ab504377348b14683a08b4ec1 Mon Sep 17 00:00:00 2001
 From: Carl Lee <carl.lee@amd.com>
 Date: Tue, 1 Sep 2026 17:29:05 +0800
 Subject: [PATCH] hwmon: (pmbus/ltc4286) Add writable shunt_resistor sysfs
@@ -170,5 +170,5 @@ index 8715d380784a..8190706d1beb 100644
  			~VRANGE_SELECT_BIT; /* VRANGE_SELECT = 0, 25.6 volts */
  
 -- 
-2.34.1
+2.53.0-Meta
 

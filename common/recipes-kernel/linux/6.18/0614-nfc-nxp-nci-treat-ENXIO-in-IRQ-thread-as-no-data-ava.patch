@@ -1,4 +1,4 @@
-From 41fc24395c7eedeaac6519d01688996075403a96 Mon Sep 17 00:00:00 2001
+From a4444b92eb642af87d04d6d7aa14843257d5abbe Mon Sep 17 00:00:00 2001
 From: Carl Lee <carl.lee@amd.com>
 Date: Wed, 20 May 2026 18:23:56 +0800
 Subject: [PATCH] nfc: nxp-nci: treat -ENXIO in IRQ thread as no data available
@@ -43,5 +43,5 @@ index a6c08175d9dd..1d9d7d6fd542 100644
  		nfc_err(&client->dev, "Read failed with error %d\n", r);
  		goto exit_irq_handled;
 -- 
-2.34.1
+2.53.0-Meta
 

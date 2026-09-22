@@ -1,4 +1,4 @@
-From d65085ac691e6845f3f9bf3dfd09da025a98daa0 Mon Sep 17 00:00:00 2001
+From da0254d3ba05b9f0c18139997cd3c5614c26869d Mon Sep 17 00:00:00 2001
 From: Alan Tsai <Alan-Tsai@quantatw.com>
 Date: Fri, 31 Jul 2026 10:18:42 +0800
 Subject: [PATCH] i3c: add aspeed mipi-i3c-hci driver
@@ -9259,7 +9259,7 @@ index b1bf87daa651..086c29e44dae 100644
  };
  
 diff --git a/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c b/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c
-index efb7a1f92641..d4ca9060c8b0 100644
+index b6ba18ccdd2d..555ff86d0333 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/cmd_v1.c
 @@ -9,6 +9,7 @@
@@ -9582,7 +9582,7 @@ index efb7a1f92641..d4ca9060c8b0 100644
  			break;
  		}
  
-@@ -375,7 +519,10 @@ static int hci_cmd_v1_daa(struct i3c_hci *hci)
+@@ -373,7 +517,10 @@ static int hci_cmd_v1_daa(struct i3c_hci *hci)
  
  const struct hci_cmd_ops mipi_i3c_hci_cmd_v1 = {
  	.prep_ccc		= hci_cmd_v1_prep_ccc,
@@ -9594,7 +9594,7 @@ index efb7a1f92641..d4ca9060c8b0 100644
  	.perform_daa		= hci_cmd_v1_daa,
  };
 diff --git a/drivers/i3c/master/mipi-i3c-hci/cmd_v2.c b/drivers/i3c/master/mipi-i3c-hci/cmd_v2.c
-index 5fc2e4c55ebb..87319a7d0424 100644
+index d7999d341a22..45ba2cf86225 100644
 --- a/drivers/i3c/master/mipi-i3c-hci/cmd_v2.c
 +++ b/drivers/i3c/master/mipi-i3c-hci/cmd_v2.c
 @@ -149,7 +149,8 @@ static void hci_cmd_v2_prep_private_xfer(struct i3c_hci *hci,
@@ -12674,7 +12674,7 @@ index 000000000000..2d10a2692b32
 +
 +#endif
 diff --git a/drivers/i3c/master/svc-i3c-master.c b/drivers/i3c/master/svc-i3c-master.c
-index b6a697173e19..0ec445fb4e07 100644
+index 1f936196b30c..e94a0d8dfcef 100644
 --- a/drivers/i3c/master/svc-i3c-master.c
 +++ b/drivers/i3c/master/svc-i3c-master.c
 @@ -201,6 +201,7 @@ struct svc_i3c_drvdata {
@@ -12717,7 +12717,7 @@ index b6a697173e19..0ec445fb4e07 100644
  		break;
  	case SVC_I3C_MSTATUS_IBITYPE_MASTER_REQUEST:
  		svc_i3c_master_emit_stop(master);
-@@ -633,18 +643,10 @@ static irqreturn_t svc_i3c_master_irq_handler(int irq, void *dev_id)
+@@ -642,18 +652,10 @@ static irqreturn_t svc_i3c_master_irq_handler(int irq, void *dev_id)
  	/* Clear the interrupt status */
  	writel(SVC_I3C_MINT_SLVSTART, master->regs + SVC_I3C_MSTATUS);
  
@@ -12740,7 +12740,7 @@ index b6a697173e19..0ec445fb4e07 100644
  
  	/*
  	 * The SDA line remains low until the request is processed.
-@@ -1947,6 +1949,7 @@ static int svc_i3c_master_probe(struct platform_device *pdev)
+@@ -1956,6 +1958,7 @@ static int svc_i3c_master_probe(struct platform_device *pdev)
  	if (ret)
  		return dev_err_probe(dev, ret, "can't enable I3C clocks\n");
  
@@ -12748,7 +12748,7 @@ index b6a697173e19..0ec445fb4e07 100644
  	mutex_init(&master->lock);
  
  	ret = devm_request_irq(dev, master->irq, svc_i3c_master_irq_handler,
-@@ -2005,6 +2008,7 @@ static void svc_i3c_master_remove(struct platform_device *pdev)
+@@ -2014,6 +2017,7 @@ static void svc_i3c_master_remove(struct platform_device *pdev)
  {
  	struct svc_i3c_master *master = platform_get_drvdata(pdev);
  

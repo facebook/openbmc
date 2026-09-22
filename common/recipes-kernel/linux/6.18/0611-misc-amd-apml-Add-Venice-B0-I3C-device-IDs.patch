@@ -1,4 +1,4 @@
-From d3c34af7be7b78833bf227832f34e4996ff221f1 Mon Sep 17 00:00:00 2001
+From 2efc5762c0eeb68ea9828fd9c892775973de2fef Mon Sep 17 00:00:00 2001
 From: Andy Chung <Andy.Chung@amd.com>
 Date: Thu, 25 Jun 2026 13:29:05 +0800
 Subject: [PATCH] misc: amd-apml: Add Venice B0 I3C device IDs
@@ -35,5 +35,5 @@ index 27e1f420aa1c..8b7db2a1ab63 100644
  };
  MODULE_DEVICE_TABLE(i3c, sbrmi_i3c_id);
 -- 
-2.52.0
+2.53.0-Meta
 

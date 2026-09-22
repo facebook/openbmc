@@ -1,4 +1,4 @@
-From 11ec460756bd08081cd11cfaa1280714f8ed7e7e Mon Sep 17 00:00:00 2001
+From 136dd32c01ead3ce429aaa4bc5782f6a4891d8ca Mon Sep 17 00:00:00 2001
 From: Kevin Tung <kevin.tung.openbmc@gmail.com>
 Date: Mon, 17 Aug 2026 20:23:51 +0800
 Subject: [PATCH] fw_update: stop sensor polling during update when configured
@@ -1006,3 +1006,6 @@ index 44c9716..2865cdd 100644
      MctpDiscovery mctpDiscoveryHandler(
          bus, std::initializer_list<MctpDiscoveryHandlerIntf*>{
  #ifdef OEM_META
+-- 
+2.53.0-Meta
+

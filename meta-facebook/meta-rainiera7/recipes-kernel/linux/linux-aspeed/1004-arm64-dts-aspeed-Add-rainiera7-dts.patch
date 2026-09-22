@@ -1,4 +1,4 @@
-From 3188ab0125a4d10dcbc5631f523a88505838c8a5 Mon Sep 17 00:00:00 2001
+From e5e42d44d0be9931f5e1ee9abd514292e026f850 Mon Sep 17 00:00:00 2001
 From: Alan Tsai <alan-tsai@quantatw.com>
 Date: Wed, 26 Aug 2026 21:27:36 +0800
 Subject: [PATCH] arm64: dts: aspeed: Add rainiera7 dts
@@ -22,7 +22,7 @@ index ffe7e15017cc..75b510a0d1d9 100644
  	ast2700-evb.dtb
 diff --git a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts
 new file mode 100644
-index 000000000..cf79f1467
+index 000000000000..15e149ec0951
 --- /dev/null
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts
 @@ -0,0 +1,1099 @@

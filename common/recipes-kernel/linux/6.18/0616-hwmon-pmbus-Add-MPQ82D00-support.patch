@@ -1,4 +1,4 @@
-From 4d80c861aa343d34cfc7e337d453d7a88b78b6fd Mon Sep 17 00:00:00 2001
+From 0e16e7fcedab1263411f590eb3b8bcaa97b6155e Mon Sep 17 00:00:00 2001
 From: Angela Cheng <angelaptcheng@gmail.com>
 Date: Thu, 20 Aug 2026 05:40:21 +0000
 Subject: [PATCH] hwmon: (pmbus) Add MPQ82D00 support
@@ -125,7 +125,7 @@ index 000000000000..30ce9f5f71c0
 +**temp1_crit_alarm**
 \ No newline at end of file
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 706c5de9efaa..76fb0c19de6c 100644
+index f4ce8464a1c5..b6dcaf9fa6d2 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
 @@ -17582,6 +17582,13 @@ S:	Maintained

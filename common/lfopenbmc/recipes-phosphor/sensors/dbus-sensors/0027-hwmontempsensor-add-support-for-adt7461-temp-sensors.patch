@@ -1,7 +1,7 @@
-From 9e2c4d1a5bed9da895ddbd3e3a6395146bdb8d81 Mon Sep 17 00:00:00 2001
+From d161034629dd6a838a20a246ca05e62ae6b12986 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Fri, 18 Sep 2026 10:16:17 +0800
-Subject: [PATCH 1/2] hwmontempsensor: add support for adt7461 temp sensors
+Subject: [PATCH] hwmontempsensor: add support for adt7461 temp sensors
 
 adt7461 support is handled with the lm90 driver [1]
 
@@ -28,5 +28,5 @@ index b8b46ce..b575db6 100644
          {"DPS310", I2CDeviceType{"dps310", false}},
          {"EMC1403", I2CDeviceType{"emc1403", true}},
 -- 
-2.34.1
+2.53.0-Meta
 

@@ -20,7 +20,8 @@ class RedfishClient
     RedfishClient(sdbusplus::async::context& ctx, const std::string& configDir,
                   const std::string& persistDir);
 
-    RedfishClient(sdbusplus::async::context& ctx, const Config& config,
+    RedfishClient(sdbusplus::async::context& ctx,
+                  const std::vector<Config>& configs,
                   const std::string& persistDir);
 
     auto run() -> sdbusplus::async::task<>;
@@ -32,7 +33,7 @@ class RedfishClient
 
     void registerLogMappers();
 
-    Config loadCompatibleConfig(
+    std::vector<Config> loadCompatibleConfigs(
         const std::string& configDir,
         const std::vector<std::string>& compatiblePlatformNames);
 
@@ -49,7 +50,7 @@ class RedfishClient
 
     sdbusplus::async::context& ctx;
     std::string configDir;
-    std::optional<Config> config;
+    std::vector<Config> configs;
     std::string persistDir;
 };
 

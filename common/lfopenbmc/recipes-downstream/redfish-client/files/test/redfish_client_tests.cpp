@@ -121,7 +121,8 @@ TEST(RedfishClientTests, WiresUpHandlers)
     Software::randomIdGenerator() = []() { return 1234; };
     auto clientThread = std::make_unique<std::thread>([&ctx, &config]() {
         ctx.request_name(kServiceName);
-        RedfishClient client(ctx, config, /*persistDir=*/"");
+        RedfishClient client(ctx, std::vector<Config>{config},
+                             /*persistDir=*/"");
         ctx.spawn(client.run());
         ctx.run();
     });

@@ -17,8 +17,11 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
+# Temporary: drop once show-tech is gone and the utilities install
+# unconditionally.
+SHOWTECH_INSTALL_UTILS = "1"
+
 LOCAL_URI += "\
-    file://900_dump_gpio.sh \
     file://901_dump_mcb_fpga.sh \
     file://902_dump_scm_fpga.sh \
     file://903_collect_bios_info.sh \
@@ -29,7 +32,6 @@ do_install:append() {
     showtech_rules_dir="${D}/etc/showtech/rules/"
     install -d ${showtech_rules_dir}
 
-    install -m 755 900_dump_gpio.sh ${showtech_rules_dir}/900_dump_gpio.sh
     install -m 755 901_dump_mcb_fpga.sh ${showtech_rules_dir}/901_dump_mcb_fpga.sh
     install -m 755 902_dump_scm_fpga.sh ${showtech_rules_dir}/902_dump_scm_fpga.sh
     install -m 755 903_collect_bios_info.sh ${showtech_rules_dir}/903_collect_bios_info.sh

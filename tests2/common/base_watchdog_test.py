@@ -139,3 +139,12 @@ class WatchdogTest(object):
             iterations - 1,
             "Failed to kick watchdog for {} iterations".format(iterations),
         )
+
+    def test_second_watchdog_disabled_after_boot(self):
+        """
+        Test if the second watchdog has been disabled after kernel boot.
+        """
+        self.assertFalse(
+            self.wdtUtils.second_watchdog_is_running(),
+            "Second watchdog is not disabled after bmc bootup",
+        )

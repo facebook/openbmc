@@ -30,6 +30,7 @@ class WatchdogUtils:
     _DEVMEM_CMD = "/sbin/devmem"
     _WDT1_CTRL_REG = "0x1E78500C"
     _WDT1_STATUS_REG = "0x1E785000"
+    _FMC_WDT2_REG = "0x1E620064"
     _WDTCLI_CMD = "/usr/local/bin/wdtcli"
 
     def start_watchdog(self):
@@ -61,6 +62,13 @@ class WatchdogUtils:
         """Read watchdog status register.
         """
         cmd = self._DEVMEM_CMD + " " + self._WDT1_STATUS_REG
+        cmd_out = run_shell_cmd(cmd)
+        return int(cmd_out, 16)
+
+    def _read_fmc_wdt2_register(self):
+        """Read FMC WDT2 register.
+        """
+        cmd = self._DEVMEM_CMD + " " + self._FMC_WDT2_REG
         cmd_out = run_shell_cmd(cmd)
         return int(cmd_out, 16)
 
@@ -98,3 +106,9 @@ class WatchdogUtils:
             return False
 
         return True
+
+    def second_watchdog_is_running(self):
+        """Check if second watchdog is running.
+        """
+        reg_val = self._read_fmc_wdt2_register()
+        return (reg_val & 1) == 1

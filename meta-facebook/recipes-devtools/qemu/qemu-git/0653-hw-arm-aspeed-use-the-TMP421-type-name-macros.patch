@@ -213,7 +213,7 @@ index 7de5b823fa..4403404909 100644
  
  #define TYPE_LM75 TYPE_TMP105
 -#define TYPE_TMP421 "tmp421"
- #define FBY35_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
+ #define FBY35_BMC_RAM_SIZE (2 * GiB)
  static void fby35_i2c_init(AspeedMachineState *bmc)
  {
 diff --git a/hw/arm/aspeed_ast2600_fuji.c b/hw/arm/aspeed_ast2600_fuji.c

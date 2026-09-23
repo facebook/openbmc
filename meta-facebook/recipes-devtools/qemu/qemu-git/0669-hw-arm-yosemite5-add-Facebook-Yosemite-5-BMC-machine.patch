@@ -83,7 +83,7 @@ index 0000000000..6f2bb0d061
 +/* Yosemite 5 hardware values. */
 +#define YOSEMITE5_BMC_HW_STRAP1 0x00002002
 +#define YOSEMITE5_BMC_HW_STRAP2 0x00000800
-+#define YOSEMITE5_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
++#define YOSEMITE5_BMC_RAM_SIZE (2 * GiB)
 +
 +/*
 + * CXL board behind a nested PCA9546 on i2c8: two ADCs, an I/O expander,

@@ -28,7 +28,7 @@ index 11c823279f..931eb43803 100644
 +++ b/hw/arm/aspeed_ast2600_ventura.c
 @@ -30,12 +30,258 @@
  #define VENTURA_BMC_HW_STRAP2 0x00000801
- #define VENTURA_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
+ #define VENTURA_BMC_RAM_SIZE (2 * GiB)
  
 +/*
 + * FRU images read back from hardware and sanitized: part and serial

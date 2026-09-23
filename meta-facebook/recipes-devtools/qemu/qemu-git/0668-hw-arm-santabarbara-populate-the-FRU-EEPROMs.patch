@@ -29,7 +29,7 @@ index 21cd9820d3..54c0030d0d 100644
 +++ b/hw/arm/aspeed_ast2600_santabarbara.c
 @@ -36,15 +36,434 @@
  #define SANTABARBARA_BMC_HW_STRAP2 0x00000000
- #define SANTABARBARA_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
+ #define SANTABARBARA_BMC_RAM_SIZE (2 * GiB)
  
 +/*
 + * FRU images read back from hardware and sanitized: part and serial

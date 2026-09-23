@@ -30,7 +30,7 @@ index f983b9e021..21646af6bd 100644
 +++ b/hw/arm/aspeed_ast2600_clemente.c
 @@ -32,34 +32,937 @@
  #define CLEMENTE_BMC_HW_STRAP2 0x00000800
- #define CLEMENTE_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
+ #define CLEMENTE_BMC_RAM_SIZE (2 * GiB)
  
 +/*
 + * FRU images read back from hardware and sanitized: part and serial

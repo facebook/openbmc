@@ -65,7 +65,7 @@ index 0000000000..1f46ac7d58
 + */
 +#define MINERVA_BMC_HW_STRAP1 0x00002002
 +#define MINERVA_BMC_HW_STRAP2 0x00000800
-+#define MINERVA_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
++#define MINERVA_BMC_RAM_SIZE (2 * GiB)
 +
 +/*
 + * Fan Controller Board (FCB).  The Minerva BMC device tree describes six

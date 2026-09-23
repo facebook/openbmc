@@ -78,7 +78,7 @@ index 0000000000..326b348cd8
 +/* Harma hardware values. */
 +#define HARMA_BMC_HW_STRAP1 0x00002002
 +#define HARMA_BMC_HW_STRAP2 0x00000800
-+#define HARMA_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
++#define HARMA_BMC_RAM_SIZE (2 * GiB)
 +
 +/*
 + * Fan control board: a fan controller, four power sensors, a temperature

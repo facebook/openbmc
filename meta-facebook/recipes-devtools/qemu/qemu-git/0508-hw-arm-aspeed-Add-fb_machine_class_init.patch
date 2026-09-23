@@ -252,7 +252,7 @@ index 8a17c4453e..b9e5c35517 100644
  #define AST2600_EVB_HW_STRAP1 0x000000C0
  #define AST2600_EVB_HW_STRAP2 0x00000003
  
-+#define FUJI_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
++#define FUJI_BMC_RAM_SIZE (2 * GiB)
 +
  static void ast2600_evb_i2c_init(AspeedMachineState *bmc)
  {

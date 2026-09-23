@@ -80,7 +80,7 @@ index 0000000000..21cd9820d3
 +/* Santabarbara hardware values. */
 +#define SANTABARBARA_BMC_HW_STRAP1 0x00002002
 +#define SANTABARBARA_BMC_HW_STRAP2 0x00000000
-+#define SANTABARBARA_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
++#define SANTABARBARA_BMC_RAM_SIZE (2 * GiB)
 +
 +/*
 + * A "Rainbow" accelerator module, replicated on i2c6/8/10/13: a FRU EEPROM,

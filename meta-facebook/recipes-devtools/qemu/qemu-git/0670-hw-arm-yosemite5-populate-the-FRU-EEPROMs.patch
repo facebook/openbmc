@@ -27,7 +27,7 @@ index 6f2bb0d061..12d27197c2 100644
 +++ b/hw/arm/aspeed_ast2600_yosemite5.c
 @@ -39,6 +39,339 @@
  #define YOSEMITE5_BMC_HW_STRAP2 0x00000800
- #define YOSEMITE5_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
+ #define YOSEMITE5_BMC_RAM_SIZE (2 * GiB)
  
 +/*
 + * FRU images read back from hardware and sanitized: part and serial

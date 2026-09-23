@@ -21,7 +21,7 @@ index 1f46ac7d58..5c95dee99a 100644
 +++ b/hw/arm/aspeed_ast2600_minerva.c
 @@ -24,14 +24,667 @@
  #define MINERVA_BMC_HW_STRAP2 0x00000800
- #define MINERVA_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
+ #define MINERVA_BMC_RAM_SIZE (2 * GiB)
  
 +/* FRU EEPROM content meaningful size */
 +#define MINERVA_FRU_LEN 192

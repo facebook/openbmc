@@ -5,10 +5,10 @@ Subject: [PATCH] fby35: Setup I2C devices and GPIO's
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 ---
- hw/arm/aspeed_ast2600_fby35.c | 121 ++--------------------------------
+ hw/arm/aspeed_ast2600_fby35.c | 119 +---------------------------------
  hw/arm/fby35.c                |  93 ++++++++++++++++++++++++++
  include/hw/arm/fby35.h        |   5 ++
- 3 files changed, 103 insertions(+), 116 deletions(-)
+ 3 files changed, 102 insertions(+), 115 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_fby35.c b/hw/arm/aspeed_ast2600_fby35.c
 index 9820a197da..13b7cb9f63 100644
@@ -25,7 +25,7 @@ index 9820a197da..13b7cb9f63 100644
  
  #define TYPE_LM75 TYPE_TMP105
  #define TYPE_TMP421 "tmp421"
--#define FBY35_BMC_RAM_SIZE (2 * GiB)
+ #define FBY35_BMC_RAM_SIZE (2 * GiB)
 -
 -static const uint8_t fby35_nic_fruid[] = {
 -    0x01, 0x00, 0x00, 0x01, 0x0f, 0x20, 0x00, 0xcf, 0x01, 0x0e, 0x19, 0xd7,
@@ -101,7 +101,6 @@ index 9820a197da..13b7cb9f63 100644
 -};
 -static const size_t fby35_bmc_fruid_len = sizeof(fby35_bmc_fruid);
 -
-+#define FBY35_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
  static void fby35_i2c_init(AspeedMachineState *bmc)
  {
      AspeedSoCState *soc = bmc->soc;

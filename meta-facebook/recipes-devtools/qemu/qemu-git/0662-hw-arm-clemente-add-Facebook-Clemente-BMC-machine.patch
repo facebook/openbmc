@@ -74,7 +74,7 @@ index 0000000000..f983b9e021
 +/* Clemente hardware values. */
 +#define CLEMENTE_BMC_HW_STRAP1 0x00002002
 +#define CLEMENTE_BMC_HW_STRAP2 0x00000800
-+#define CLEMENTE_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
++#define CLEMENTE_BMC_RAM_SIZE (2 * GiB)
 +
 +/*
 + * E1.S backplane hanging off a PCA9546 channel: an FRU EEPROM plus a

@@ -77,7 +77,7 @@ index 0000000000..11c823279f
 +/* Ventura hardware values. */
 +#define VENTURA_BMC_HW_STRAP1 0x00002002
 +#define VENTURA_BMC_HW_STRAP2 0x00000801
-+#define VENTURA_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
++#define VENTURA_BMC_RAM_SIZE (2 * GiB)
 +
 +/*
 + * Fan board: an ADC, an I/O expander driving the fan LEDs and reporting

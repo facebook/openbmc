@@ -186,6 +186,7 @@ EXTRA_APIS_NETWORK = " \
     file://rest_fruid_pim.py \
     file://rest_piminfo.py \
     file://rest_gpios.py \
+    file://rest_leakage.py \
     file://rest_server.py \
     file://rest_sensors.py \
     file://rest_psu_update.py \

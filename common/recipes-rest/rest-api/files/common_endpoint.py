@@ -24,6 +24,7 @@ import rest_fruid
 import rest_fruid_pim
 import rest_fscd_sensor_data
 import rest_gpios
+import rest_leakage
 import rest_modbus
 import rest_modbus_cmd
 import rest_psu_update
@@ -104,6 +105,16 @@ class commonApp_Handler:
     async def rest_bmc_hdl(self, request):
         result = await rest_bmc.get_bmc()
         return web.json_response(result, dumps=dumps_bytestr)
+
+    # Handler for sys/mb/leakage resource endpoint
+    def helper_rest_leakage_hdl(self, request):
+        return web.json_response(
+            rest_leakage.get_leakage_status(), dumps=dumps_bytestr, status=200
+        )
+
+    @common_force_async
+    def rest_leakage_hdl(self, request):
+        return self.helper_rest_leakage_hdl(request)
 
     # Handler for sys/server resource endpoint
     def helper_rest_server_hdl(self, request):

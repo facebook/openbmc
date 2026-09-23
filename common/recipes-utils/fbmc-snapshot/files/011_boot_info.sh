@@ -32,7 +32,7 @@ echo "################################"
 run_util /usr/local/bin/boot_info.sh bmc
 
 echo -e "\n##### FLASH0 META_INFO #####"
-run_util /usr/local/bin/meta_info.sh flash0
+run_util /usr/local/bin/mtd_metadata.sh flash0
 
 echo -e "\n##### FLASH1 META_INFO #####"
-run_util /usr/local/bin/meta_info.sh flash1
+run_util /usr/local/bin/mtd_metadata.sh flash1

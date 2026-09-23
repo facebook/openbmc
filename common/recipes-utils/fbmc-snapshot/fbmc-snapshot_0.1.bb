@@ -39,7 +39,7 @@ LOCAL_URI = " \
     file://011_boot_info.sh \
     file://dump_gpios.sh \
     file://i2c_scan.sh \
-    file://meta_info.sh \
+    file://mtd_metadata.sh \
     file://oob-mdio-util.sh \
     "
 
@@ -62,7 +62,7 @@ SHOWTECH_RULES_FILES = " \
 SHOWTECH_UTILS_FILES = " \
     dump_gpios.sh \
     i2c_scan.sh \
-    meta_info.sh \
+    mtd_metadata.sh \
     oob-mdio-util.sh \
     "
 

@@ -1,5 +1,3 @@
-#!/bin/bash
-#
 # Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -16,9 +14,7 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-#
 
-# shellcheck disable=SC1091
-# read the Hardware revision from MCB CPLD register
-. /usr/local/bin/openbmc-utils.sh
-/usr/bin/weutil -e chassis_eeprom
+# Temporary: drop once show-tech is gone and the utilities install
+# unconditionally.
+SHOWTECH_INSTALL_UTILS = "1"

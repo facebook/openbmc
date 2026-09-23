@@ -1,4 +1,4 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+# Copyright 2026-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,7 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-
-SRC_URI += "file://facebook-fblite_defconfig.append \
-           "
+do_compile[depends] += " \
+    ${@oe.utils.conditional('UBOOT_FIT_TEE', '1', 'optee-os:do_deploy', '', d)} \
+    ${@oe.utils.conditional('UBOOT_FIT_ARM_TRUSTED_FIRMWARE', '1', 'trusted-firmware-a:do_deploy', '', d)} \
+    "

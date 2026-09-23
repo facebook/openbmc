@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2021-present Facebook. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -18,27 +18,11 @@
 # Boston, MA 02110-1301 USA
 #
 
-# This utility prints the meta information for specified boot flash
-# mtd partition
-START_OFFSET_KB=960
-LEN_KB=64
+echo -e "\n##### BMC EEPROM INFO #####"
 
-usage() {
-    echo "Usage $0 [flash0|flash1]"
-}
-
-case "$1" in
-    flash0)
-        mtd="$(grep flash0 /proc/mtd | awk '{print $1}' | tr -d ':')"
-        ;;
-    flash1)
-        mtd="$(grep flash1 /proc/mtd | awk '{print $1}' | tr -d ':')"
-        ;;
-    *)
-        usage
-        exit 1
-        ;;
-esac
-
-dd if=/dev/"$mtd" of=/tmp/."$1"_meta bs=1K skip="$START_OFFSET_KB" count="$LEN_KB"
-strings /tmp/."$1"_meta
+# Both EEPROMs here are Arista prefdl, not Meta wedge-eeprom, so "weutil -a"
+# fails: prefdl-eeprom's compat wrapper does not recognise -a and passes it to
+# weutil_prefdl, which reads it as a filename. The wrapper dispatches on a
+# positional device name instead, so name the two devices explicitly.
+weutil bmc
+weutil chassis

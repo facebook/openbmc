@@ -1,4 +1,4 @@
-From 306cd007a921fe468067ec66ea8e47de4aa1e7e2 Mon Sep 17 00:00:00 2001
+From 1e7364e379ade3d15407017f64076ee46697c576 Mon Sep 17 00:00:00 2001
 From: Alan Tsai <alan-tsai@quantatw.com>
 Date: Thu, 20 Aug 2026 21:50:12 +0800
 Subject: [PATCH] configurations: revise 100G BRCM NIC configuration
@@ -49,5 +49,5 @@ index d3cb955..b198af0 100644
              ],
              "Type": "TMP421"
 -- 
-2.53.0-Meta
+2.52.0
 

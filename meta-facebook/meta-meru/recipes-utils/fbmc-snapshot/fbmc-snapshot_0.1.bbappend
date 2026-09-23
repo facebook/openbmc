@@ -1,4 +1,4 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,23 +15,23 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-require recipes-core/images/fboss-lite-image.inc
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-IMAGE_INSTALL += " \
-  fio \
-  flashrom \
-  ipmitool \
-  kcsd \
-  ssifd \
-  libcpldupdate-dll-ioctl \
-  fbmc-snapshot \
-  "
+# Temporary: drop once show-tech is gone and the utilities install
+# unconditionally.
+SHOWTECH_INSTALL_UTILS = "1"
 
-remove_systemd_osc_context() {
-  rm -f ${IMAGE_ROOTFS}${sysconfdir}/profile.d/80-systemd-osc-context.sh
-  rm -f ${IMAGE_ROOTFS}${libdir}/systemd/profile.d/80-systemd-osc-context.sh
-  # This prevents systemd from recreating the symlink at runtime
-  rm -f ${IMAGE_ROOTFS}${libdir}/tmpfiles.d/20-systemd-osc-context.conf
-}
+LOCAL_URI += "\
+    file://900_dump_cpld.sh \
+    file://901_power_status.sh \
+    "
 
-ROOTFS_POSTPROCESS_COMMAND += "remove_systemd_osc_context; "
+SHOWTECH_RULES_FILES:append = " \
+    900_dump_cpld.sh \
+    901_power_status.sh \
+    "
+
+# The OOB switch here is a BCM53134P, so openbmc-utils owns oob-mdio-util.sh.
+# files/oob-status.sh overrides the layer copy to match it; the two are a pair
+# and must be changed together.
+SHOWTECH_UTILS_FILES:remove = "oob-mdio-util.sh"

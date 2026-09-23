@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright 2023-present Facebook. All Rights Reserved.
+# Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -18,27 +18,19 @@
 # Boston, MA 02110-1301 USA
 #
 
-# This utility prints the meta information for specified boot flash
-# mtd partition
-START_OFFSET_KB=960
-LEN_KB=64
+dump_cpld() {
+	echo -e "\n################################"
+	echo "##### $3 ####"
+	echo "################################"
 
-usage() {
-    echo "Usage $0 [flash0|flash1]"
+	echo -e "\n##### $4 #####"
+	if [ ! -e "/dev/i2c-$1" ]; then
+		echo "/dev/i2c-$1 doesn't exist!"
+	else
+		# -f is needed because the CPLD is bound to a kernel driver.
+		i2cdump -f -y "$1" "$2" b
+	fi
 }
 
-case "$1" in
-    flash0)
-        mtd="$(grep flash0 /proc/mtd | awk '{print $1}' | tr -d ':')"
-        ;;
-    flash1)
-        mtd="$(grep flash1 /proc/mtd | awk '{print $1}' | tr -d ':')"
-        ;;
-    *)
-        usage
-        exit 1
-        ;;
-esac
-
-dd if=/dev/"$mtd" of=/tmp/."$1"_meta bs=1K skip="$START_OFFSET_KB" count="$LEN_KB"
-strings /tmp/."$1"_meta
+dump_cpld 9 0x23 "SWITCHCARD DEBUG INFO" "SMB CPLD I2CDUMP"
+dump_cpld 12 0x43 "SUPERVISOR DEBUG INFO" "SCM CPLD I2CDUMP"

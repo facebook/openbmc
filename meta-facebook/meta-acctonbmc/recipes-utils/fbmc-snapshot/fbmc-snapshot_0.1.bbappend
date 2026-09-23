@@ -17,10 +17,6 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-# Temporary: drop once show-tech is gone and the utilities install
-# unconditionally.
-SHOWTECH_INSTALL_UTILS = "1"
-
 LOCAL_URI += "\
     file://907_boot_console_log.sh \
     "

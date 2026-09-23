@@ -17,10 +17,6 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-# Temporary: show-tech still installs these paths on this layer's platforms.
-# Each platform sets "1" in the change that drops show-tech.
-SHOWTECH_INSTALL_UTILS = "0"
-
 LOCAL_URI += "\
     file://100_weutil.sh \
     file://101_x86_mTerm.sh \

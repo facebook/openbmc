@@ -58,11 +58,7 @@ SHOWTECH_RULES_FILES = " \
     011_boot_info.sh \
     "
 
-# Debug utilities the rules call, also usable interactively. show-tech
-# installs the same paths, so platforms still carrying it set this to "0"
-# until they migrate.
-SHOWTECH_INSTALL_UTILS ?= "1"
-
+# Debug utilities the rules call, also usable interactively.
 SHOWTECH_UTILS_FILES = " \
     dump_gpios.sh \
     i2c_scan.sh \
@@ -82,11 +78,9 @@ do_install() {
         install -m 755 $f ${showtech_rules_dir}/${f}
     done
 
-    if [ "${SHOWTECH_INSTALL_UTILS}" = "1" ]; then
-        for f in ${SHOWTECH_UTILS_FILES}; do
-            install -m 755 $f ${localbindir}/${f}
-        done
-    fi
+    for f in ${SHOWTECH_UTILS_FILES}; do
+        install -m 755 $f ${localbindir}/${f}
+    done
 }
 
 RDEPENDS:${PN} += "bash"

@@ -15,18 +15,6 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
-
-LOCAL_URI += "\
-    file://900_dump_gpio.sh \
-    "
-
-do_install:append() {
-    showtech_rules_dir="${D}/etc/showtech/rules/"
-    install -d ${showtech_rules_dir}
-
-    install -m 755 900_dump_gpio.sh ${showtech_rules_dir}/900_dump_gpio.sh
-}
-
-RDEPENDS:${PN} += "bash"
-FILES:${PN} += "/etc/showtech/rules/"
+# Temporary: drop once show-tech is gone and the utilities install
+# unconditionally.
+SHOWTECH_INSTALL_UTILS = "1"

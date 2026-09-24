@@ -2147,24 +2147,21 @@ int update_bic_vr(char *image, uint8_t force) {
   }
 
   // Step 1: Read the Device ID from any device in dev_list
-  do {
+  for (i = 0; i < dev_table_size; i++) {
     ret = bic_get_vr_device_id(rbuf, &rlen, VR_BUS, dev_list[i].addr);
     if (ret == 0 && rlen <= TI_DEVID_LEN) { // the longest length of dev id
       break;
     }
-  } while (i++ < dev_table_size);
+  }
 
   if (i == dev_table_size) {
     printf("Couldn't get the devid from VRs\n");
+    ret = -1;
     goto error_exit;
   }
 
   // Use vr_detect_device_type to further distinguish (especially IFX vs XDPE152xx)
   sel_vendor = vr_detect_device_type(dev_list[i].addr, rbuf, rlen);
-  if (sel_vendor == VR_UNKNOWN) {
-    printf("Unknown VR type at 0x%02X (devid_len=%u)\n", dev_list[i].addr, rlen);
-    goto error_exit;
-  }
   printf("VR vendor=%s (devid_len=%u) at 0x%02X\n",
          (sel_vendor == VR_XDPE152XX) ? "XDPE152XX" :
          (sel_vendor == VR_IFX) ? "IFX" :
@@ -2177,6 +2174,7 @@ int update_bic_vr(char *image, uint8_t force) {
     struct xdpe152xx_config *xdpe_config = vr_XDPE152XX_parse_file(image);
     if (!xdpe_config) {
       printf("Cannot parse the XDPE152xx configuration file!\n");
+      ret = -1;
       goto error_exit;
     }
 
@@ -2191,6 +2189,7 @@ int update_bic_vr(char *image, uint8_t force) {
     if (xdpe_config->addr == 0) {
       printf("ERROR: Parsed image does not provide a forced PMBus address.\n");
       free(xdpe_config);
+      ret = -1;
       goto error_exit;
     }
 
@@ -2198,6 +2197,7 @@ int update_bic_vr(char *image, uint8_t force) {
     if (!addr_in_dev_list(xdpe_config->addr)) {
       printf("ERROR: Image PMBus write address 0x%02X not in dev_list\n", xdpe_config->addr);
       free(xdpe_config);
+      ret = -1;
       goto error_exit;
     }
 
@@ -2247,6 +2247,7 @@ int update_bic_vr(char *image, uint8_t force) {
     ret = bic_get_vr_device_id(abuf, &alen, VR_BUS, vr_list[0].addr);
     if (ret < 0 || alen == 0) {
       printf("Couldn't get the devid from target VR at 0x%02X\n", vr_list[0].addr);
+      ret = -1;
       goto error_exit;
     }
     if (vr_list[0].devid_len != alen || memcmp(vr_list[0].devid, abuf, alen) != 0) {

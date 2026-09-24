@@ -2176,21 +2176,20 @@ int pal_pmic_pwr_setting()
 
 void*
 pmic_monitor(void *arg) {
-  char str[MAX_VALUE_LEN] = {0};
   uint8_t slot_id = FRU_SERVER;
   uint8_t error_data[MAX_DIMM_NUM_NETLAKE2][ERR_PATTERN_LEN] = {{0}};
 
   (void)arg;
 
   while (1) {
-    // check POST complete status before reading PMIC power, to avoid HOST reboot
-    int ret = kv_get(POST_CMPLT_KV_KEY, str, NULL, 0);
-    if (ret < 0 || strncmp(str, LOW_STR, strlen(LOW_STR)) != 0) {
-      sleep(MONITOR_PMIC_ERROR_TIME_S);
-      continue;
-    }
     for (uint8_t dimm = 0; dimm < MAX_DIMM_NUM_NETLAKE2; dimm++) {
-      ret = get_pmic_error_data_raw(slot_id, dimm, error_data[dimm]);
+      // check POST complete status before reading PMIC power, to avoid HOST reboot
+      // FM_BIOS_POST_CMPLT_R_N is active low: LOW means POST complete
+      if (gpio_get_value_by_shadow("FM_BIOS_POST_CMPLT_R_N") != GPIO_VALUE_LOW) {
+        break;
+      }
+
+      int ret = get_pmic_error_data_raw(slot_id, dimm, error_data[dimm]);
       if (ret < 0) {
         syslog(LOG_ERR, "%s() Failed to get PMIC raw error data from slot %d dimm %d PMIC addr 0x%02x",
               __func__, slot_id, dimm, pmic_addr_list[dimm]);

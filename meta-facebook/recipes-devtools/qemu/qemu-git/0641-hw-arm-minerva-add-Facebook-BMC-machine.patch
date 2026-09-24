@@ -1,4 +1,4 @@
-From d27fbf2e68aac705264899a1a90974d4a40170c6 Mon Sep 17 00:00:00 2001
+From dfde2fe4a1c72e92f9fa605eda477b8f7ef412b8 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Mon, 20 Jul 2026 10:43:47 +0200
 Subject: [PATCH] hw/arm: minerva: add Facebook BMC machine
@@ -37,7 +37,7 @@ index f38f33cbe1..bbd3d9cdf4 100644
  Supported devices
 diff --git a/hw/arm/aspeed_ast2600_minerva.c b/hw/arm/aspeed_ast2600_minerva.c
 new file mode 100644
-index 0000000000..1f46ac7d58
+index 0000000000..93abc64770
 --- /dev/null
 +++ b/hw/arm/aspeed_ast2600_minerva.c
 @@ -0,0 +1,180 @@
@@ -234,5 +234,5 @@ index f1c0529b77..da97c001f4 100644
    'aspeed_ast2600_sanmiguel.c',
    'aspeed_ast10x0.c',
 -- 
-2.54.0
+2.53.0-Meta
 

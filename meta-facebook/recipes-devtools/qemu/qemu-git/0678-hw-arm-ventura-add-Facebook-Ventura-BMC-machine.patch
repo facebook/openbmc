@@ -1,4 +1,4 @@
-From 409f00a26c3f8e6e63cadc85167c7be47fd95697 Mon Sep 17 00:00:00 2001
+From 680971c972acb4e82e322e8e4d160341ef4eccc5 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 17:43:53 +0200
 Subject: [PATCH] hw/arm: ventura: add Facebook Ventura BMC machine
@@ -43,7 +43,7 @@ index b011ceca0d..c95a95b8b2 100644
  
 diff --git a/hw/arm/aspeed_ast2600_ventura.c b/hw/arm/aspeed_ast2600_ventura.c
 new file mode 100644
-index 0000000000..11c823279f
+index 0000000000..8013a9f992
 --- /dev/null
 +++ b/hw/arm/aspeed_ast2600_ventura.c
 @@ -0,0 +1,161 @@
@@ -221,5 +221,5 @@ index 79f366127a..388538566e 100644
    'aspeed_ast10x0.c',
    'aspeed_ast10x0_evb.c',
 -- 
-2.54.0
+2.53.0-Meta
 

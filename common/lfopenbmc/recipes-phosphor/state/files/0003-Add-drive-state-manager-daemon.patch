@@ -1,4 +1,4 @@
-From 537d5079f9cea13d99d42f9dfb6fdafd2ca39083 Mon Sep 17 00:00:00 2001
+From f1455f63e750626de8961ab8c7fdeafaa22dd9c4 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 23 Apr 2026 04:20:23 +0000
 Subject: [PATCH] Add drive state manager daemon
@@ -769,10 +769,10 @@ index 0000000..7651e3d
 +    return 0;
 +}
 diff --git a/meson.build b/meson.build
-index 1d79521..eafb51a 100644
+index 747bf36..e49698d 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -267,6 +267,16 @@ executable(
+@@ -285,6 +285,16 @@ executable(
      install_dir: get_option('libexecdir') / 'phosphor-state-manager',
  )
  
@@ -790,10 +790,10 @@ index 1d79521..eafb51a 100644
      'phosphor-systemd-target-monitor',
      'systemd_service_parser.cpp',
 diff --git a/service_files/meson.build b/service_files/meson.build
-index 4fa6729..73f061c 100644
+index d8d2b12..70186f2 100644
 --- a/service_files/meson.build
 +++ b/service_files/meson.build
-@@ -25,6 +25,7 @@ unit_files = [
+@@ -26,6 +26,7 @@ unit_files = [
      'phosphor-set-chassis-transition-to-off@.service',
      'phosphor-bmc-quiesce-reboot.service',
      'phosphor-wait-poweron-blocks.service',

@@ -1,4 +1,4 @@
-From 3f0d5832a39f7f300f71f316704ac7ec91b3b971 Mon Sep 17 00:00:00 2001
+From 4e91c8fd8dde8d6ad2e82daa84f96ac1ec3817b2 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Fri, 7 Aug 2026 12:09:47 +0200
 Subject: [PATCH] hw/arm: harma: add Facebook Harma BMC machine
@@ -38,7 +38,7 @@ index bef1c9986f..b011ceca0d 100644
  
 diff --git a/hw/arm/aspeed_ast2600_harma.c b/hw/arm/aspeed_ast2600_harma.c
 new file mode 100644
-index 0000000000..326b348cd8
+index 0000000000..a87ca37957
 --- /dev/null
 +++ b/hw/arm/aspeed_ast2600_harma.c
 @@ -0,0 +1,189 @@
@@ -244,5 +244,5 @@ index 69b98348c5..79f366127a 100644
    'aspeed_ast2600_rainier.c',
    'aspeed_ast2600_santabarbara.c',
 -- 
-2.54.0
+2.53.0-Meta
 

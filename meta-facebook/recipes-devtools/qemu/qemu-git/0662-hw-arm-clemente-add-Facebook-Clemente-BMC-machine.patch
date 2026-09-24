@@ -1,4 +1,4 @@
-From 748ba9b328a7d338897a737bc84f5998853fdbc9 Mon Sep 17 00:00:00 2001
+From b1a07d6f28686c99300934f35c702a7a91c5cd76 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Wed, 5 Aug 2026 16:40:36 +0200
 Subject: [PATCH] hw/arm: clemente: add Facebook Clemente BMC machine
@@ -38,7 +38,7 @@ index bbd3d9cdf4..db0035189b 100644
  - ``minerva-bmc``          Facebook Minerva BMC
 diff --git a/hw/arm/aspeed_ast2600_clemente.c b/hw/arm/aspeed_ast2600_clemente.c
 new file mode 100644
-index 0000000000..f983b9e021
+index 0000000000..bf5a13bc49
 --- /dev/null
 +++ b/hw/arm/aspeed_ast2600_clemente.c
 @@ -0,0 +1,232 @@
@@ -287,5 +287,5 @@ index da97c001f4..ecf1ec9b1b 100644
    'aspeed_ast2600_fby35.c',
    'aspeed_ast2600_fuji.c',
 -- 
-2.54.0
+2.53.0-Meta
 

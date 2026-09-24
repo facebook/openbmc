@@ -1,20 +1,20 @@
-From 2a6965a7924bbeb3a59f58eebbdb00e0e7420622 Mon Sep 17 00:00:00 2001
+From f8e54dc7fc07a97b0f4603a944c94524c9164e82 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Tue, 23 Aug 2022 23:24:36 -0700
 Subject: [PATCH] fby35: Setup I2C devices and GPIO's
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 ---
- hw/arm/aspeed_ast2600_fby35.c | 119 +---------------------------------
+ hw/arm/aspeed_ast2600_fby35.c | 119 ++--------------------------------
  hw/arm/fby35.c                |  93 ++++++++++++++++++++++++++
  include/hw/arm/fby35.h        |   5 ++
  3 files changed, 102 insertions(+), 115 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_fby35.c b/hw/arm/aspeed_ast2600_fby35.c
-index 9820a197da..13b7cb9f63 100644
+index 9820a197da..e068e7eb16 100644
 --- a/hw/arm/aspeed_ast2600_fby35.c
 +++ b/hw/arm/aspeed_ast2600_fby35.c
-@@ -10,144 +10,33 @@
+@@ -10,6 +10,7 @@
  #include "qapi/error.h"
  #include "hw/arm/aspeed.h"
  #include "hw/arm/aspeed_soc.h"
@@ -22,7 +22,7 @@ index 9820a197da..13b7cb9f63 100644
  #include "hw/nvram/eeprom_at24c.h"
  #include "hw/sensor/tmp105.h"
  #include "system/reset.h"
- 
+@@ -17,137 +18,25 @@
  #define TYPE_LM75 TYPE_TMP105
  #define TYPE_TMP421 "tmp421"
  #define FBY35_BMC_RAM_SIZE (2 * GiB)

@@ -1,4 +1,4 @@
-From 62b6ae08793d3e3a6dec0f9c9a8f55b008617d01 Mon Sep 17 00:00:00 2001
+From 5869eb7299e0aa41c4dabf0d26eb63298d14d7d8 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Thu, 6 Aug 2026 15:25:05 +0200
 Subject: [PATCH] hw/arm: santabarbara: add Facebook Santabarbara BMC machine
@@ -40,7 +40,7 @@ index db0035189b..aa43e0d47b 100644
  - ``minerva-bmc``          Facebook Minerva BMC
 diff --git a/hw/arm/aspeed_ast2600_santabarbara.c b/hw/arm/aspeed_ast2600_santabarbara.c
 new file mode 100644
-index 0000000000..21cd9820d3
+index 0000000000..c2f4a4bfbc
 --- /dev/null
 +++ b/hw/arm/aspeed_ast2600_santabarbara.c
 @@ -0,0 +1,249 @@
@@ -306,5 +306,5 @@ index ecf1ec9b1b..6055c93128 100644
    'aspeed_ast10x0.c',
    'aspeed_ast10x0_evb.c',
 -- 
-2.54.0
+2.53.0-Meta
 

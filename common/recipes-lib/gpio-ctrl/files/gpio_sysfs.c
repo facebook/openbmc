@@ -74,8 +74,15 @@
  * Aspeed gpio controller's device name in sysfs tree.
  */
 #define GPIO_SYSFS_ASPEED_DEVICE	"1e780000.gpio"
+#define GPIO_SYSFS_ASPEED_G7_DEVICE	"14c0b000.gpio" /* AST2700 sysfs name */
 #define SGPIO_SYSFS_ASPEED_DEVICE	"1e780500.sgpiom"
 #define GPIO1V8_SYSFS_ASPEED_DEVICE     "1e780800.gpio"
+
+static bool is_aspeed_gpio_device(const char *dev_name)
+{
+	return strcmp(dev_name, GPIO_SYSFS_ASPEED_DEVICE) == 0 ||
+	       strcmp(dev_name, GPIO_SYSFS_ASPEED_G7_DEVICE) == 0;
+}
 
 static char* gsysfs_value_abspath(char *buf, size_t size, int pin_num)
 {
@@ -516,7 +523,7 @@ static void chip_desc_init(gpiochip_desc_t *gcdesc,
 	/*
 	 * Update "chip_type" and gpiochip_ops.
 	 */
-	if (strcmp(dev_name, GPIO_SYSFS_ASPEED_DEVICE) == 0) {
+	if (is_aspeed_gpio_device(dev_name)) {
 		strncpy(gcdesc->chip_type, GPIO_CHIP_ASPEED_SOC,
 			sizeof(gcdesc->chip_type) - 1);
 		gcdesc->ops = &aspeed_gpiochip_ops;
@@ -607,7 +614,7 @@ static int sysfs_gpiochip_enumerate(gpiochip_desc_t *chips, size_t size)
 		GLOG_DEBUG("found gpiochip <%s>, base=%d, ngpio=%d\n",
 			   dev_name, base, ngpio);
 		chip_desc_init(&chips[i], base, ngpio, dev_name);
-		if (strcmp(dev_name, GPIO_SYSFS_ASPEED_DEVICE) == 0)
+		if (is_aspeed_gpio_device(dev_name))
 			found_aspeed_chip = true;
 		if (++i >= size)
 			break;

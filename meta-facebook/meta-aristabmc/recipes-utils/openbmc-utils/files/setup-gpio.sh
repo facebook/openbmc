@@ -29,5 +29,35 @@
 
 # shellcheck disable=SC1091
 . /usr/local/bin/openbmc-utils.sh
-# BMC ready event to COME
-setup_gpio FM_BMC_READY_R_L  GPIOP0 out 0
+
+# GPIO1 (SoC1)
+setup_gpio VRHOT_L                 GPIOB0 in
+setup_gpio CPU_MSMI_L              GPIOB3 in
+setup_gpio CPU_RESET_L             GPIOB5 in
+setup_gpio CP_PWR_ON               GPIOB6 in
+setup_gpio SW_CPLD_JTAG_SEL        GPIOB7 out 0
+setup_gpio DPM_CP_PGOOD            GPIOC0 in
+setup_gpio CPLD_2_BMC_INTR         GPIOC1 in
+setup_gpio CPU_CATERR_L            GPIOC2 in
+setup_gpio BMC_MODE                GPIOC4 in
+setup_gpio EPHY_INT_L              GPIOC5 in
+setup_gpio AST_IDPROM_WP           GPIOC7 out 1
+setup_gpio SICSID_ALERT_L          GPIOD1 in
+setup_gpio OVERTEMP_L              GPIOD4 in
+setup_gpio USB_DONGLE_PRSNT        GPIOD7 in
+setup_gpio SYS_RESET               GPIOF0 in
+setup_gpio BMC_WDTRST1             GPIOF1 in
+setup_gpio CPU_OT_L                GPIOF4 in
+setup_gpio DPM_APU_SYS_PWRGOOD     GPIOL0 in
+setup_gpio BUF_BFLSH_WP_L          GPIOL1 out 0
+setup_gpio BMC_ALIVE               GPIOL2 out 1
+setup_gpio CPU_OVER_TEMP           GPIOL3 in
+setup_gpio MSW_INTR_L              GPIOL4 in
+setup_gpio SWC_CP_PWR_OK           GPIOL5 in
+setup_gpio CPU_JTAG_SEL            GPIOL6 out 0
+setup_gpio ABOOT_GRAB              GPIOL7 out 0
+setup_gpio SW_SPI_WP_L             GPIOO3 out 0
+setup_gpio SW_SPI_HOLD_L           GPIOO4 out 1
+setup_gpio BMC_LITE_L              GPIOS7 out 0
+setup_gpio BMC_SPI_2_CPLD          GPIOV0 out 0
+setup_gpio SPI_ROM_REQ             GPIOAA3 in

@@ -1,4 +1,4 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+# Copyright 2026-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,10 +15,7 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-require recipes-core/images/fboss-lite-image.inc
-require aristabmc-image-layout.inc
-
-IMAGE_INSTALL:append = " \
-    kernel-module-cpld \
-    libcpldupdate-dll-ioctl \
-    "
+# AST2700 uses the Caliptra/BootMCU boot flow, which has no compatible VBS
+# SRAM handoff.  Keep libvbs available for fw-util, but make its VBS API
+# report unsupported without accessing /dev/mem.
+CFLAGS:append:aristabmc = " -DLIBVBS_UNSUPPORTED"

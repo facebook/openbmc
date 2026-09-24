@@ -30,6 +30,11 @@ VERIFIED_BOOT_ALGORITHM ??= "sha256,rsa4096"
 VERIFIED_BOOT_HASH_ALGORITHM ??= "sha256"
 VERIFIED_BOOT_KEYNAME ??= "subordinate"
 
+# FIT addresses use one 32-bit cell on legacy Aspeed platforms.  Platforms
+# with 64-bit kernel addresses override this to two cells in their machine
+# configuration.
+FIT_ADDRESS_CELLS ??= "1"
+
 # Emit the fitImage ITS header
 # $1 - FIT source file
 fitimage_emit_fit_header() {
@@ -39,7 +44,7 @@ fitimage_emit_fit_header() {
 
 / {
         description = "U-Boot fitImage for ${DISTRO_NAME}/${PV}/${MACHINE}";
-        #address-cells = <1>;
+        #address-cells = <${FIT_ADDRESS_CELLS}>;
 EOF
 }
 
@@ -111,15 +116,26 @@ EOF
 # $2 - Image counter
 # $3 - Path to kernel image
 # $4 - Compression type
-# $5 - Load address
-# $6 - Entry point
+# $5... - Load address cells
+# remaining arguments - Entry point cells
 fitimage_emit_section_kernel() {
     SOURCE=$1
     IMAGE_COUNTER=$2
     IMAGE_KERNEL=$3
     IMAGE_COMPRESSION=$4
-    LOAD_ADDRESS=$5
-    ENTRY_POINT=$6
+    case "${FIT_ADDRESS_CELLS}" in
+    1)
+        LOAD_ADDRESS=$5
+        ENTRY_POINT=$6
+        ;;
+    2)
+        LOAD_ADDRESS="$5 $6"
+        ENTRY_POINT="$7 $8"
+        ;;
+    *)
+        bbfatal "FIT_ADDRESS_CELLS must be 1 or 2, got ${FIT_ADDRESS_CELLS}"
+        ;;
+    esac
 
     cat << EOF >> ${SOURCE}
         kernel@${IMAGE_COUNTER} {

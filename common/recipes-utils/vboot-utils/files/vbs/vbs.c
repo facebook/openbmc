@@ -34,9 +34,9 @@
 #define VAR_NAME_VALUE(var) #var "="  VALUE(var)
 
 /* Location in SRAM used for verified boot content/flags. */
-#ifdef AST_SRAM_VBS_BASE
+#if defined(AST_SRAM_VBS_BASE) && !defined(LIBVBS_UNSUPPORTED)
 # pragma message(VAR_NAME_VALUE(AST_SRAM_VBS_BASE))
-#else
+#elif !defined(LIBVBS_UNSUPPORTED)
 # error "Please define AST_SRAM_VBS_BASE in libvbs_1.0.bb"
 #endif
 
@@ -102,6 +102,9 @@ bool is_vbs_valid(const struct vbs *vbs)
 
 struct vbs *vboot_status()
 {
+#ifdef LIBVBS_UNSUPPORTED
+  return NULL;
+#else
   static struct vbs vbs_cache = {0};
   static bool   vbs_cache_valid = false;
   int mem_fd;
@@ -131,11 +134,16 @@ struct vbs *vboot_status()
   if (is_vbs_valid(&vbs_cache))
     return &vbs_cache;
   return NULL;
+#endif
 }
 
 bool vboot_supported(void)
 {
+#ifdef LIBVBS_UNSUPPORTED
+  return false;
+#else
   return vboot_partition_exist() && vboot_status() != NULL;
+#endif
 }
 
 const char *vboot_error(uint32_t error_code)

@@ -1,4 +1,4 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+# Copyright 2026-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -15,10 +15,8 @@
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
 
-require recipes-core/images/fboss-lite-image.inc
-require aristabmc-image-layout.inc
-
-IMAGE_INSTALL:append = " \
-    kernel-module-cpld \
-    libcpldupdate-dll-ioctl \
-    "
+# AST2700's firmware bundle occupies the first 4000 KiB of flash, placing
+# the Facebook image metadata at 0x003e8000.  The image validator reads
+# the legacy AST2600 metadata offset at 0x000f0000 by default, so it needs
+# to be overriden.
+CXXFLAGS:append:aristabmc = " -DFW_UTIL_IMAGE_META_OFFSET=0x003E8000"

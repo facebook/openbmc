@@ -1,7 +1,7 @@
-From 221fc46543fa55a0226c2f1281027009ad95e05c Mon Sep 17 00:00:00 2001
+From 29a2a91b955c7c4a9f3a620d8c8c017935e42195 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Fri, 17 Apr 2026 11:16:57 +0000
-Subject: [PATCH] State.Drive: Add On/Off transitions and namespace path
+Subject: [PATCH 4/5] State.Drive: Add On/Off transitions and namespace path
 
 Add On and Off values to the Drive Transition enum to support
 independent drive power on and power off operations, matching the
@@ -90,5 +90,5 @@ index d661cdda..12283fb7 100644
  0 is reserved for complete system. In multi chassis system this can be named as
  chassis_system1 to chassis_systemN
 -- 
-2.43.0
+2.55.0
 

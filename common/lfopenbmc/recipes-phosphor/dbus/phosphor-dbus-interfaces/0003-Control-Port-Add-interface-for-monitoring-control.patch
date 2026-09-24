@@ -1,7 +1,7 @@
-From fe156bb5deeb3555e87f12c360ce8b42ad95bcb3 Mon Sep 17 00:00:00 2001
+From 22315c2f00de888c3553e79160bd4c50e51d6435 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Mon, 13 Jul 2026 14:14:45 -0700
-Subject: [PATCH] Control/Port: Add interface for monitoring control
+Subject: [PATCH 3/5] Control/Port: Add interface for monitoring control
 
 Add xyz.openbmc_project.Control.Port with a writable MonitoringEnabled
 boolean property (default true) and a /xyz/openbmc_project/control/port
@@ -20,7 +20,7 @@ Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
 
 diff --git a/gen/xyz/openbmc_project/Control/Port/meson.build b/gen/xyz/openbmc_project/Control/Port/meson.build
 new file mode 100644
-index 0000000..7f0d179
+index 00000000..7f0d179c
 --- /dev/null
 +++ b/gen/xyz/openbmc_project/Control/Port/meson.build
 @@ -0,0 +1,40 @@
@@ -65,7 +65,7 @@ index 0000000..7f0d179
 +)
 +
 diff --git a/gen/xyz/openbmc_project/Control/meson.build b/gen/xyz/openbmc_project/Control/meson.build
-index 717218a..e9ce5f6 100644
+index 717218a2..e9ce5f6a 100644
 --- a/gen/xyz/openbmc_project/Control/meson.build
 +++ b/gen/xyz/openbmc_project/Control/meson.build
 @@ -11,6 +11,7 @@ subdir('FieldMode')
@@ -109,7 +109,7 @@ index 717218a..e9ce5f6 100644
      input: [
 diff --git a/yaml/xyz/openbmc_project/Control/Port.interface.yaml b/yaml/xyz/openbmc_project/Control/Port.interface.yaml
 new file mode 100644
-index 0000000..bbf802e
+index 00000000..bbf802e7
 --- /dev/null
 +++ b/yaml/xyz/openbmc_project/Control/Port.interface.yaml
 @@ -0,0 +1,14 @@
@@ -128,5 +128,5 @@ index 0000000..bbf802e
 +          resumes normal monitoring.
 +      default: true
 -- 
-2.53.0-Meta
+2.55.0
 

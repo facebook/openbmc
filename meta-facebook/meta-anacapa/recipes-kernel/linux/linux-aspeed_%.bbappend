@@ -30,4 +30,5 @@ SRC_URI:append = " \
     file://1025-jtag-jtag-aspeed-Increase-the-wait-iteration-to-300.patch \
     file://1026-ARM-dts-aspeed-anacapa-Add-MCTP-I2C-controller-node.patch \
     file://1027-ARM-dts-aspeed-anacapa-add-NCT7363-fan-controllers.patch \
+    file://1028-arm-dts-anacapa-Align-Cable-and-SSD-SGPIO-pin-names.patch \
 "

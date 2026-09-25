@@ -1,7 +1,7 @@
-From 30efec30800bdd559af0c38554e3e8fe1791ecda Mon Sep 17 00:00:00 2001
+From 5749992c9e7038028b3d16dd7a85f12fcf58c30a Mon Sep 17 00:00:00 2001
 From: Patrick Williams <patrick@stwcx.xyz>
 Date: Thu, 24 Sep 2026 06:50:21 -0400
-Subject: [PATCH 2/5] CPER: add generic event for CPER errors
+Subject: [PATCH] CPER: add generic event for CPER errors
 
 We do not have a high-level design for CPER errors from libcper and/or
 SMCs, but these devices are able to create CPER events.  Define simple
@@ -17,7 +17,7 @@ Change-Id: Icffe6aa892cc57c4f0f9e0c326e53d2ba92e27cf
  1 file changed, 32 insertions(+)
 
 diff --git a/yaml/xyz/openbmc_project/State/CPER.events.yaml b/yaml/xyz/openbmc_project/State/CPER.events.yaml
-index 9fe122c6..73ab7ffb 100644
+index 9fe122c..73ab7ff 100644
 --- a/yaml/xyz/openbmc_project/State/CPER.events.yaml
 +++ b/yaml/xyz/openbmc_project/State/CPER.events.yaml
 @@ -19,6 +19,22 @@ errors:
@@ -67,5 +67,5 @@ index 9fe122c6..73ab7ffb 100644
        severity: informational
        errno: EIO
 -- 
-2.55.0
+2.53.0-Meta
 

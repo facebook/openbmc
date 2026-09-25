@@ -1,7 +1,7 @@
-From 29a2a91b955c7c4a9f3a620d8c8c017935e42195 Mon Sep 17 00:00:00 2001
+From afe09481e9fa646db7d50fa634ad018c2074456c Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Fri, 17 Apr 2026 11:16:57 +0000
-Subject: [PATCH 4/5] State.Drive: Add On/Off transitions and namespace path
+Subject: [PATCH] State.Drive: Add On/Off transitions and namespace path
 
 Add On and Off values to the Drive Transition enum to support
 independent drive power on and power off operations, matching the
@@ -22,7 +22,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  2 files changed, 26 insertions(+), 2 deletions(-)
 
 diff --git a/yaml/xyz/openbmc_project/State/Drive.interface.yaml b/yaml/xyz/openbmc_project/State/Drive.interface.yaml
-index 8681a681..83041325 100644
+index 8681a68..8304132 100644
 --- a/yaml/xyz/openbmc_project/State/Drive.interface.yaml
 +++ b/yaml/xyz/openbmc_project/State/Drive.interface.yaml
 @@ -34,6 +34,12 @@ enumerations:
@@ -49,7 +49,7 @@ index 8681a681..83041325 100644
 +          - name: Drive
 +            value: drive
 diff --git a/yaml/xyz/openbmc_project/State/README.md b/yaml/xyz/openbmc_project/State/README.md
-index d661cdda..12283fb7 100644
+index d661cdd..12283fb 100644
 --- a/yaml/xyz/openbmc_project/State/README.md
 +++ b/yaml/xyz/openbmc_project/State/README.md
 @@ -11,8 +11,8 @@ reboot the BMC and hosts, and turn on and off power to the chassis. The
@@ -90,5 +90,5 @@ index d661cdda..12283fb7 100644
  0 is reserved for complete system. In multi chassis system this can be named as
  chassis_system1 to chassis_systemN
 -- 
-2.55.0
+2.53.0-Meta
 

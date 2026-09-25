@@ -1,4 +1,4 @@
-From 844695644cb9aac77e874d657a42c83946321f5a Mon Sep 17 00:00:00 2001
+From 0a4edae1d4057146986e3505af20d5708889212a Mon Sep 17 00:00:00 2001
 From: Christopher Meis <christopher.meis@9elements.com>
 Date: Tue, 23 Sep 2025 10:24:36 +0200
 Subject: [PATCH] Multi-host/HW-inventory: add memory subtree
@@ -375,10 +375,10 @@ index 1bec96a3..45138846 100644
  
  inline void requestRoutesMemory(App& app)
 diff --git a/redfish-core/lib/systems.hpp b/redfish-core/lib/systems.hpp
-index 002de88c..27acb93d 100644
+index 2b5d14f0..b20cc14f 100644
 --- a/redfish-core/lib/systems.hpp
 +++ b/redfish-core/lib/systems.hpp
-@@ -3091,8 +3091,6 @@ inline void processComputerSystemGet(
+@@ -3094,8 +3094,6 @@ inline void processComputerSystemGet(
      {
          asyncResp->res.jsonValue["Bios"]["@odata.id"] =
              boost::urls::format("/redfish/v1/Systems/{}/Bios", systemName);
@@ -387,7 +387,7 @@ index 002de88c..27acb93d 100644
          asyncResp->res.jsonValue["Storage"]["@odata.id"] =
              boost::urls::format("/redfish/v1/Systems/{}/Storage", systemName);
          asyncResp->res.jsonValue["FabricAdapters"]["@odata.id"] =
-@@ -3100,6 +3098,8 @@ inline void processComputerSystemGet(
+@@ -3103,6 +3101,8 @@ inline void processComputerSystemGet(
                                  systemName);
      }
  

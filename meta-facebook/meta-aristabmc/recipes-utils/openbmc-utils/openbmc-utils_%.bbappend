@@ -18,7 +18,20 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LOCAL_URI += "\
+    file://aristabmc_cpu_flash.layout \
+    file://bios_util.sh \
     file://board-utils.sh \
     file://setup-gpio.sh \
     file://setup_i2c.sh \
     "
+
+OPENBMC_UTILS_FILES += "\
+    bios_util.sh \
+    "
+
+do_install:append() {
+    install -m 0644 ${UNPACKDIR}/aristabmc_cpu_flash.layout \
+        ${D}${sysconfdir}/aristabmc_cpu_flash.layout
+}
+
+FILES:${PN} += "${sysconfdir}/aristabmc_cpu_flash.layout"

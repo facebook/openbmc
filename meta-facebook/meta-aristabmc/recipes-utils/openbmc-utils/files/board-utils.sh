@@ -29,6 +29,8 @@ CPU_PWR_CYCLE_SYSFS="${PWRCPLD_SYSFS_DIR}/power_cycle"
 
 WEUTIL_CMD='weutil -e'
 
+LAYOUT_FILE="/etc/aristabmc_cpu_flash.layout"
+
 wedge_is_cpu_personality() {
     io_reg_val=$(i2cget -f -y "$DS4520_BUS" 0x52 "$DS4520_IO0_REG")
     if [ "$((io_reg_val & 0x1))" = "1" ]; then
@@ -140,7 +142,7 @@ bmc_mac_addr() {
 # shellcheck disable=SC2120
 userver_mac_addr() {
     local eeprom_source
-    eeprom_source="scm"
+    eeprom_source="chassis_eeprom"
     # support v4 or v5/v6 eeprom version
     $WEUTIL_CMD "$eeprom_source" | grep -E '(Extended|CPU) MAC B' | awk -F': ' '{print $2}'
 }
@@ -156,4 +158,136 @@ check_fwupgrade_running()
     fi
     pid=$$
     echo $pid 1>&200
+}
+
+bind_spi_nor_driver() {
+    # Ensure SPI bus/chip-select $1 is bound to spi-nor.
+    local spi="spi${1:?}"
+    local driver
+
+    driver=$(basename "$(readlink "/sys/bus/spi/devices/$spi/driver")" \
+        2>/dev/null) || driver=""
+    if [ "$driver" = spidev ]; then
+        echo "Unbinding $spi from spidev"
+        echo "$spi" > /sys/bus/spi/drivers/spidev/unbind || return 1
+        sleep 0.5
+    elif [ -n "$driver" ] && [ "$driver" != spi-nor ]; then
+        echo "$spi is unexpectedly bound to $driver" >&2
+        return 1
+    fi
+
+    # A boot-time probe occurs before the external CPU-flash mux is selected.
+    # The spi-nor driver can remain bound even though that probe found no chip
+    # and therefore created no MTD. Force a fresh probe after selecting the
+    # mux rather than treating the stale driver binding as success.
+    if [ "$driver" = spi-nor ] && ! spi_mtd_for_channel "$1" > /dev/null; then
+        echo "Rebinding $spi to spi-nor after its boot-time probe failed"
+        echo "$spi" > /sys/bus/spi/drivers/spi-nor/unbind || return 1
+        driver=""
+        sleep 0.5
+    fi
+
+    if [ "$driver" != spi-nor ]; then
+        echo "Binding $spi to spi-nor"
+        echo "$spi" > /sys/bus/spi/drivers/spi-nor/bind || return 1
+        sleep 0.5
+    fi
+
+    if ! spi_mtd_for_channel "$1" > /dev/null; then
+        echo "Failed to locate the MTD device for $spi" >&2
+        return 1
+    fi
+}
+
+unbind_spi_nor_driver() {
+    # Remove the temporary MTD before disconnecting the external flash mux.
+    local spi="spi${1:?}"
+    local driver
+
+    driver=$(basename "$(readlink "/sys/bus/spi/devices/$spi/driver")" \
+        2>/dev/null) || driver=""
+    if [ "$driver" = spi-nor ]; then
+        echo "Unbinding $spi from spi-nor"
+        echo "$spi" > /sys/bus/spi/drivers/spi-nor/unbind || return 1
+        sleep 0.5
+    fi
+}
+
+spi_mtd_for_channel() {
+    # Return the MTD device dynamically created for SPI bus/chip-select $1.
+    local matches=(/sys/bus/spi/devices/spi"${1:?}"/mtd/mtd[0-9]*)
+    local mtd
+
+    if [ "${#matches[@]}" -eq 1 ] && [ -e "${matches[0]}" ]; then
+        basename "${matches[0]}"
+        return
+    fi
+
+    # Linux 6.18 does not expose this SPI-NOR MTD below the SPI device's
+    # sysfs directory. Aristabmc supplies its unique label for /proc/mtd.
+    if [ -n "${SPI_MTD_LABEL:-}" ]; then
+        mtd=$(mtd_lookup_by_name "$SPI_MTD_LABEL")
+        if [ -n "$mtd" ]; then
+            echo "$mtd"
+            return
+        fi
+    fi
+
+    return 1
+}
+
+do_spi_image() {
+    # $1 image, $2 FLASHROM|SPINOR, $3 bus/chip-select, $4 BIOS,
+    # $5 operation, remaining arguments are flash-layout partitions.
+    local image="$1" driver="$2" spi_name="$3" region="$4" action="$5"
+    local mtd layout operation
+    local -a partitions partition_args
+    shift 5
+    partitions=("$@")
+
+    case "${driver^^}" in
+        FLASHROM) driver="linux_spi:dev=/dev/spidev${spi_name}" ;;
+        SPINOR)
+            mtd=$(spi_mtd_for_channel "$spi_name") || {
+                echo "Failed to locate the MTD device for spi${spi_name}" >&2
+                return 1
+            }
+            # flashrom expects the numeric MTD index (for example "7"), not
+            # the kernel device name ("mtd7").
+            driver="linux_mtd:dev=${mtd#mtd}"
+            ;;
+        *) echo "Unknown SPI driver: $driver" >&2; return 1 ;;
+    esac
+
+    [ "${region^^}" = BIOS ] || { echo "Unknown SPI region: $region" >&2; return 1; }
+    case "${action^^}" in
+        READ|FULLREAD) operation=-r ;;
+        WRITE|PROGRAM|FULLWRITE) operation=-w ;;
+        VERIFY) operation=-v ;;
+        ERASE) operation=-E ;;
+        *) echo "Unknown SPI operation: $action" >&2; return 1 ;;
+    esac
+
+    layout="$LAYOUT_FILE"
+    for partition in "${partitions[@]}"; do
+        partition_args+=(--include "$partition")
+    done
+
+    case "$operation" in
+        -r)
+            flashrom -p "$driver" --layout "$layout" "${partition_args[@]}" -r "$image" || return 1
+            sleep 1
+            flashrom -p "$driver" --layout "$layout" "${partition_args[@]}" -v "$image"
+            ;;
+        -w)
+            local attempt=1
+            while ! flashrom -p "$driver" -N --layout "$layout" "${partition_args[@]}" -w "$image"; do
+                [ "$attempt" -lt 3 ] || return 1
+                echo "Programming SPI failed; retrying ($attempt/3)"
+                attempt=$((attempt + 1))
+            done
+            ;;
+        -E) flashrom -p "$driver" --layout "$layout" "${partition_args[@]}" -E ;;
+        -v) flashrom -p "$driver" --layout "$layout" "${partition_args[@]}" -v "$image" ;;
+    esac
 }

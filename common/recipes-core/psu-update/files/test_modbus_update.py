@@ -50,7 +50,7 @@ class TestDecodeName(unittest.TestCase):
         self.assertEqual(mu.decode_name("PSU_100_3"), ("PSU", 100, 3))
 
     def test_number_is_optional(self):
-        self.assertEqual(mu.decode_name("RPU_200"), ("RPU", 200, None))
+        self.assertEqual(mu.decode_name("RPU_100"), ("RPU", 100, None))
 
     def test_type_is_upper_cased(self):
         self.assertEqual(mu.decode_name("psu_1_2"), ("PSU", 1, 2))
@@ -74,46 +74,35 @@ class TestIsRackmonPosition(unittest.TestCase):
 
 
 class TestGetRackmonDeviceUaddr(unittest.TestCase):
-    def test_rpu(self):
-        self.assertEqual(mu.get_rackmon_device_uaddr("RPU", 100, None), 0x10C)
-        self.assertEqual(mu.get_rackmon_device_uaddr("RPU", 102, None), 0x30C)
-
-    def test_rpu2(self):
-        self.assertEqual(mu.get_rackmon_device_uaddr("RPU2", 200, None), 0x10D)
-        self.assertEqual(mu.get_rackmon_device_uaddr("RPU2", 202, None), 0x30D)
-
-    def test_an_rpu_has_no_device_number(self):
-        for dev_type in ("RPU", "RPU2"):
-            with self.subTest(dev_type=dev_type):
-                with self.assertRaises(ValueError):
-                    mu.get_rackmon_device_uaddr(dev_type, 100, 1)
-
     def test_orv3_psu(self):
         # rack 0, PSU 1: dtype=3, r2=1 -> 0x1E0
-        self.assertEqual(mu.get_rackmon_device_uaddr("ORV3_PSU", 100, 1), 0x1E0)
-        self.assertEqual(mu.get_rackmon_device_uaddr("ORV3_PSU", 100, 2), 0x1E1)
+        self.assertEqual(mu.get_rackmon_orv3_device_uaddr("ORV3_PSU", 100, 1), 0x1E0)
+        self.assertEqual(mu.get_rackmon_orv3_device_uaddr("ORV3_PSU", 100, 2), 0x1E1)
 
     def test_orv3_bbu(self):
         # rack 1, BBU 2: dtype=1, r2=0 -> 0x249
-        self.assertEqual(mu.get_rackmon_device_uaddr("ORV3_BBU", 101, 2), 0x249)
+        self.assertEqual(mu.get_rackmon_orv3_device_uaddr("ORV3_BBU", 101, 2), 0x249)
 
     def test_the_shelf_ends_up_in_the_upper_byte(self):
         for position in range(100, 104):
-            uaddr = mu.get_rackmon_device_uaddr("ORV3_PSU", position, 1)
+            uaddr = mu.get_rackmon_orv3_device_uaddr("ORV3_PSU", position, 1)
             with self.subTest(position=position):
                 self.assertEqual(uaddr >> 8, position - 99)
 
     def test_addresses_of_one_shelf_are_distinct(self):
         seen = {
-            mu.get_rackmon_device_uaddr(dev_type, 100, num)
+            mu.get_rackmon_orv3_device_uaddr(dev_type, 100, num)
             for dev_type in ("ORV3_PSU", "ORV3_BBU")
             for num in range(1, 7)
         }
         self.assertEqual(len(seen), 12)
 
-    def test_unknown_device_type(self):
-        with self.assertRaises(ValueError):
-            mu.get_rackmon_device_uaddr("PSU", 100, 1)
+    def test_a_device_type_with_no_derivation(self):
+        # Including the RPUs, whose address comes off rackmon's list.
+        for dev_type in ("PSU", "RPU", "RPU2"):
+            with self.subTest(dev_type=dev_type):
+                with self.assertRaises(ValueError):
+                    mu.get_rackmon_orv3_device_uaddr(dev_type, 100, 1)
 
 
 class TestGetUpdater(unittest.TestCase):
@@ -243,20 +232,75 @@ class TestGetRackmonDeviceConfig(unittest.TestCase):
                 mu.get_rackmon_device_config(0x1E0)
 
 
-class TestNameToRackmonType(unittest.TestCase):
-    def test_a_name_addresses_the_orv3_part(self):
-        self.assertEqual(mu.name_to_rackmon_type("PSU", 100), "ORV3_PSU")
-        self.assertEqual(mu.name_to_rackmon_type("BBU", 101), "ORV3_BBU")
+class TestRpuRackmonUaddr(unittest.TestCase):
+    """Both RPU generations share shelves 100-102, rackmon's list settles it"""
 
-    def test_the_rpu_generation_comes_from_the_shelf(self):
-        self.assertEqual(mu.name_to_rackmon_type("RPU", 100), "RPU")
-        self.assertEqual(mu.name_to_rackmon_type("RPU", 200), "RPU2")
+    def rackmon_has(self, *devices):
+        return patch.object(
+            mu.rmd,
+            "list",
+            return_value=[{"uniqueDevAddress": u, "deviceType": t} for u, t in devices],
+        )
+
+    # AALCv1: one RPU per rack, so the shelf picks which.
+    def test_the_aalcv1_rpu_on_that_rack(self):
+        with self.rackmon_has((0x10C, "ORV3_RPU")):
+            self.assertEqual(mu.get_rackmon_rpu_device_uaddr(100), 0x10C)
+
+    def test_a_later_shelf_is_a_different_aalcv1_rpu(self):
+        with self.rackmon_has((0x10C, "ORV3_RPU"), (0x30C, "ORV3_RPU")):
+            self.assertEqual(mu.get_rackmon_rpu_device_uaddr(102), 0x30C)
+
+    def test_the_rest_of_the_rack_is_not_an_rpu(self):
+        # Every rack has PSUs and BBUs on it too.
+        with self.rackmon_has((0x1E0, "ORV3_PSU"), (0x10C, "ORV3_RPU")):
+            self.assertEqual(mu.get_rackmon_rpu_device_uaddr(100), 0x10C)
+
+    # AALCv2: one master controller for the whole pod, so every shelf
+    # oobit reports a pod component at is that same device.
+    def test_every_shelf_of_a_pod_is_the_one_device(self):
+        with self.rackmon_has((0x10D, "ORV3_RPU2")):
+            for position in (100, 101, 102):
+                with self.subTest(position=position):
+                    self.assertEqual(mu.get_rackmon_rpu_device_uaddr(position), 0x10D)
+
+    def test_a_pod_is_not_assumed_to_be_on_the_first_rack(self):
+        with self.rackmon_has((0x20D, "ORV3_RPU2")):
+            self.assertEqual(mu.get_rackmon_rpu_device_uaddr(102), 0x20D)
+
+    def test_no_rpu_on_that_shelf(self):
+        # Another rack's AALCv1 RPU is no help, and no pod to fall back on.
+        with self.rackmon_has((0x20C, "ORV3_RPU"), (0x1E0, "ORV3_PSU")):
+            with self.assertRaises(ValueError):
+                mu.get_rackmon_rpu_device_uaddr(100)
+
+    def test_a_register_map_this_script_does_not_know(self):
+        with self.rackmon_has((0x10C, "SOME_FUTURE_RPU")):
+            with self.assertRaises(ValueError):
+                mu.get_rackmon_rpu_device_uaddr(100)
+
+
+class TestNameToRackmonUaddr(unittest.TestCase):
+    def test_a_name_addresses_the_orv3_part(self):
+        self.assertEqual(mu.name_to_rackmon_uaddr("PSU", 100, 1), 0x1E0)
+        self.assertEqual(mu.name_to_rackmon_uaddr("BBU", 101, 2), 0x249)
+
+    def test_an_rpu_address_comes_from_rackmon(self):
+        with patch.object(
+            mu, "get_rackmon_rpu_device_uaddr", return_value=0x10D
+        ) as rpu_uaddr:
+            self.assertEqual(mu.name_to_rackmon_uaddr("RPU", 101, None), 0x10D)
+        rpu_uaddr.assert_called_once_with(101)
+
+    def test_an_rpu_has_no_device_number(self):
+        with self.assertRaises(ValueError):
+            mu.name_to_rackmon_uaddr("RPU", 100, 1)
 
     def test_a_type_the_naming_scheme_does_not_place_on_the_bus(self):
         for dev_type in ("CBU", "PSU_PMM", "BBU_PMM", "CBU_PMM"):
             with self.subTest(dev_type=dev_type):
                 with self.assertRaises(ValueError):
-                    mu.name_to_rackmon_type(dev_type, 100)
+                    mu.name_to_rackmon_uaddr(dev_type, 100, 1)
 
 
 class TestGetDevice(unittest.TestCase):
@@ -279,13 +323,24 @@ class TestGetDevice(unittest.TestCase):
         ):
             self.assertEqual(mu.get_device("PSU_100_1", None)[0], "ORV3_PSU")
 
-    def test_rpu_shelf_selects_the_rpu_generation(self):
-        with patch.object(mu, "get_rackmon_device_by_addr") as by_addr:
-            mu.get_device("RPU_100", None)
-            mu.get_device("RPU_200", None)
-        self.assertEqual(
-            [call.args[0] for call in by_addr.call_args_list], [0x10C, 0x10D]
-        )
+    def test_an_rpu_shelf_is_resolved_by_rackmon(self):
+        with patch.object(
+            mu, "get_rackmon_rpu_device_uaddr", return_value=0x10D
+        ) as rpu_uaddr:
+            with patch.object(mu, "get_rackmon_device_by_addr") as by_addr:
+                mu.get_device("RPU_101", None)
+        rpu_uaddr.assert_called_once_with(101)
+        by_addr.assert_called_once_with(0x10D, False)
+
+    def test_every_shelf_of_an_aalcv2_pod_reaches_the_same_device(self):
+        # oobit reports the pod's components across shelves 100-102, but
+        # they are one modbus device, so all three names land on it.
+        pod = [{"uniqueDevAddress": 0x10D, "deviceType": "ORV3_RPU2"}]
+        with patch.object(mu.rmd, "list", return_value=pod):
+            with patch.object(mu, "get_rackmon_device_by_addr") as by_addr:
+                for name in ("RPU_100", "RPU_101", "RPU_102"):
+                    mu.get_device(name, None)
+        self.assertEqual([call.args[0] for call in by_addr.call_args_list], [0x10D] * 3)
 
     def test_a_type_rackmon_cannot_be_addressed_by_name(self):
         with self.assertRaises(ValueError):

@@ -198,19 +198,7 @@ def is_rackmon_position(device_position):
     return device_position >= 100
 
 
-def get_rackmon_device_uaddr(device_type, device_position, device_number):
-    if device_type == "RPU":
-        if device_number is not None:
-            raise ValueError("RPU does not have a device number")
-        upper = device_position + 1 - 100  # convert 100-102 to 1-3
-        lower = 0xC
-        return upper << 8 | lower
-    if device_type == "RPU2":
-        if device_number is not None:
-            raise ValueError("RPU does not have a device number")
-        upper = device_position + 1 - 200  # convert 100-102 to 1-3
-        lower = 0xD
-        return upper << 8 | lower
+def get_rackmon_orv3_device_uaddr(device_type, device_position, device_number):
     if device_type in ["ORV3_PSU", "ORV3_BBU"]:
         dtype = 3 if device_type == "ORV3_PSU" else 1
         dnum = device_number - 1
@@ -227,6 +215,35 @@ def get_rackmon_device_config(uaddr):
         if dev["uniqueDevAddress"] == uaddr:
             return dev
     raise ValueError(f"Unknown address: {uaddr}")
+
+
+def get_rackmon_rpu_device_uaddr(device_position):
+    """
+    The address of the RPU a shelf names.
+
+    Both generations live on shelves 100-102 and neither is derivable
+    from the name, so the address comes off rackmon's device list.
+    The same pod cannot contain both generations, so we can use the
+    device type to disambiguate.
+
+    AALCv1 puts one RPU on each rack, and a unique device address is
+    port << 8 | address with the port being the rack, so the shelf picks
+    between them.
+
+    An AALCv2 cooling pod is a single modbus device -- the master
+    controller -- fronting every rack assembly in the pod. oobit reports
+    its components across shelves 100-102 so they do not collide, but
+    they are all that one device, so any of those shelves resolves to it.
+    Which assembly to write is --component's business, not the shelf's.
+    """
+    rack = device_position + 1 - 100  # convert 100-102 to 1-3
+    for dev in rmd.list():
+        device_type = RACKMON_DEVICE_TYPES.get(dev["deviceType"])
+        if device_type == "RPU" and dev["uniqueDevAddress"] >> 8 == rack:
+            return dev["uniqueDevAddress"]
+        if device_type == "RPU2":
+            return dev["uniqueDevAddress"]
+    raise ValueError(f"Rackmon has no RPU at position {device_position}")
 
 
 def make_rackmon_device(uaddr, config, force_direct=False):
@@ -285,19 +302,23 @@ def decode_name(name):
     return device_type, device_position, device_number
 
 
-def name_to_rackmon_type(device_type, device_position):
+def name_to_rackmon_uaddr(device_type, device_position, device_number):
     """
-    The device type an address is derived under.
+    Where a name sits on the bus.
 
-    Only used to work out where a name sits on the bus: the rackmon
-    naming scheme describes ORv3 parts, so PSU and BBU mean their ORv3
-    variants here. What the device turns out to be is rackmon's answer,
-    not this one.
+    The rackmon naming scheme describes ORv3 parts, so PSU and BBU mean
+    their ORv3 variants here and their address is derived from the name.
+    An RPU's is not, see get_rackmon_rpu_device_uaddr(). Either way,
+    what the device turns out to be is rackmon's answer, not this one.
     """
     if device_type in ["PSU", "BBU"]:
-        return "ORV3_" + device_type
+        return get_rackmon_orv3_device_uaddr(
+            "ORV3_" + device_type, device_position, device_number
+        )
     if device_type == "RPU":
-        return "RPU2" if device_position >= 200 else "RPU"
+        if device_number is not None:
+            raise ValueError("RPU does not have a device number")
+        return get_rackmon_rpu_device_uaddr(device_position)
     raise ValueError(f"Unknown device type: {device_type}")
 
 
@@ -311,11 +332,7 @@ def get_device(name, uaddr, force_direct=False):
     device_type, device_position, device_number = decode_name(name)
     if not is_rackmon_position(device_position):
         return device_type, get_phosphor_modbus_device(name)
-    uaddr = get_rackmon_device_uaddr(
-        name_to_rackmon_type(device_type, device_position),
-        device_position,
-        device_number,
-    )
+    uaddr = name_to_rackmon_uaddr(device_type, device_position, device_number)
     # Rackmon probed the device and matched it against a register map,
     # which is better evidence of what it is than the name we were
     # handed. It is also the only way to tell an HPR part from the ORv3

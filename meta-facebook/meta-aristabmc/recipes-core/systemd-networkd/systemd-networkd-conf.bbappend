@@ -18,4 +18,15 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 SRC_URI += "file://10-eth0.network \
+            file://40-eth0.4092.netdev \
+            file://40-eth0.4092.network \
            "
+do_install:append() {
+    install -d ${D}${sysconfdir}/systemd/network
+    install -m 0644 40-eth0.4092.network ${D}${sysconfdir}/systemd/network
+    install -m 0644 40-eth0.4092.netdev ${D}${sysconfdir}/systemd/network
+}
+
+CONFFILES:${PN} += "${sysconfdir}/systemd/network/40-eth0.4092.network \
+                 ${sysconfdir}/systemd/network/40-eth0.4092.netdev \
+                 "

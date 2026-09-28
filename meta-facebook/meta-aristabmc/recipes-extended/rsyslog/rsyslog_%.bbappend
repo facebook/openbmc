@@ -14,9 +14,12 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
+MTERM_LOG_FILES = "mTerm_wedge"
 
-# AST2700's firmware bundle occupies the first 4000 KiB of flash, placing
-# the Facebook image metadata at 0x003e8000.  The image validator reads
-# the legacy AST2600 metadata offset at 0x000f0000 by default, so it needs
-# to be overriden.
-CXXFLAGS:append:aristabmc = " -DFW_UTIL_IMAGE_META_OFFSET=0x003E8000"
+do_install:append:aristabmc() {
+    # Do not continuously retry the Meta-internal default
+    # remote target when no syslog server has been configured.
+    rm -f \
+        ${D}${sysconfdir}/rsyslog.d/remote.conf
+}

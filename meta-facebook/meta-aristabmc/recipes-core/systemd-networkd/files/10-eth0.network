@@ -22,6 +22,10 @@ Name=eth0
 IPv6AcceptRA=yes
 DHCP=yes
 VLAN=eth0.4088
+VLAN=eth0.4092
+
+[IPv6AcceptRA]
+UseMTU=no
 
 [DHCP]
 UseDomains=yes

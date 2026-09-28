@@ -1,4 +1,4 @@
-From fe50b27593bfe0aad0c0dbe91012b867fbe73164 Mon Sep 17 00:00:00 2001
+From 3f79fe24baaabc1a6400ae2c49bfb376f065c397 Mon Sep 17 00:00:00 2001
 From: Jayanth Othayoth <ojayanth@gmail.com>
 Date: Wed, 2 Sep 2026 02:31:33 -0500
 Subject: [PATCH] event_extensions: Add persistence support
@@ -326,10 +326,10 @@ index db64eec..29c5112 100644
  
  } // namespace phosphor::logging::event_extensions
 diff --git a/log_manager.cpp b/log_manager.cpp
-index 547f798..d50c6e8 100644
+index cf130c2..7dfd83e 100644
 --- a/log_manager.cpp
 +++ b/log_manager.cpp
-@@ -745,6 +745,16 @@ void Manager::restore()
+@@ -759,6 +759,16 @@ void Manager::restore()
                  continue;
              }
              e->path(filePath, true);

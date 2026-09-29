@@ -1,4 +1,4 @@
-From 86b05afb26f6629600e29a409bb3eb928bc1dda3 Mon Sep 17 00:00:00 2001
+From 4d9552e49d49c0cf06a23a6bf98bc12b4bff268c Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Thu, 7 May 2026 21:56:34 +0800
 Subject: [PATCH] terminus: support firmware parameter refresh
@@ -296,10 +296,10 @@ index 924f4fc..7a04ea0 100644
       *         the updated EM configurations
       *
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 7b3a911..54fb5e7 100644
+index b3045c8..2a019c6 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
-@@ -419,6 +419,18 @@ void MctpDiscovery::updateMctpEndpointAvailability(const MctpInfo& mctpInfo,
+@@ -427,6 +427,18 @@ void MctpDiscovery::updateMctpEndpointAvailability(const MctpInfo& mctpInfo,
      }
  }
  
@@ -345,5 +345,5 @@ index d7d77a0..0c65889 100644
       *
       *  @param[in] mctpInfoMap - information of discovered MCTP endpoints
 -- 
-2.47.3
+2.53.0-Meta
 

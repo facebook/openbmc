@@ -1,4 +1,4 @@
-From 219720d6ba1a7765a9ba3ca6deefc411de2090be Mon Sep 17 00:00:00 2001
+From 1131e899f51bebbfa1b7b83820222e635c5c9b06 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 12 Feb 2026 09:57:38 +0000
 Subject: [PATCH] requester: Parse MCTP endpoint from InterfacesRemoved signal
@@ -138,10 +138,10 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  3 files changed, 318 insertions(+), 102 deletions(-)
 
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index 814d690..6ac5a6e 100644
+index d1f4ccf..e205187 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
-@@ -265,27 +265,6 @@ void MctpDiscovery::addToExistingMctpInfos(const MctpInfos& addedInfos)
+@@ -273,27 +273,6 @@ void MctpDiscovery::addToExistingMctpInfos(const MctpInfos& addedInfos)
      }
  }
  
@@ -169,7 +169,7 @@ index 814d690..6ac5a6e 100644
  void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
  {
      using Interface = std::string;
-@@ -513,19 +492,95 @@ void MctpDiscovery::discoverEndpoints(sdbusplus::message_t& msg)
+@@ -521,19 +500,95 @@ void MctpDiscovery::discoverEndpoints(sdbusplus::message_t& msg)
      handleMctpEndpoints(addedInfos);
  }
  

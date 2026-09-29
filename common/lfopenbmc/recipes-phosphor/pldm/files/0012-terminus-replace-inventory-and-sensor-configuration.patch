@@ -1,4 +1,4 @@
-From a6faaf3b6b7d49b4d00a765258695b24dc6a1051 Mon Sep 17 00:00:00 2001
+From cbb914df7aed89d521040ebca68726696efa0208 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 31 Mar 2026 20:37:28 +0800
 Subject: [PATCH] terminus: replace inventory and sensor configuration
@@ -639,7 +639,7 @@ index 3b0173d..4bb39b4 100644
      auto tid = mappedTid.value();
      termini[tid] = std::make_shared<pldm::platform_mc::Terminus>(
 diff --git a/requester/mctp_endpoint_discovery.cpp b/requester/mctp_endpoint_discovery.cpp
-index d24bd43..7b3a911 100644
+index ec77371..b3045c8 100644
 --- a/requester/mctp_endpoint_discovery.cpp
 +++ b/requester/mctp_endpoint_discovery.cpp
 @@ -80,9 +80,9 @@ void MctpDiscovery::getMctpInfos(std::map<MctpInfo, Availability>& mctpInfoMap)
@@ -655,7 +655,7 @@ index d24bd43..7b3a911 100644
                  searchConfigurationFor(pldm::utils::DBusHandler(), mctpInfo);
                  mctpInfoMap[std::move(mctpInfo)] = availability;
              }
-@@ -236,8 +236,8 @@ void MctpDiscovery::getAddedMctpInfos(sdbusplus::message_t& msg,
+@@ -244,8 +244,8 @@ void MctpDiscovery::getAddedMctpInfos(sdbusplus::message_t& msg,
                      info(
                          "Adding Endpoint networkId '{NETWORK}' and EID '{EID}' UUID '{UUID}'",
                          "NETWORK", networkId, "EID", eid, "UUID", uuid);
@@ -666,7 +666,7 @@ index d24bd43..7b3a911 100644
                      searchConfigurationFor(pldm::utils::DBusHandler(),
                                             mctpInfo);
                      mctpInfos.emplace_back(std::move(mctpInfo));
-@@ -335,7 +335,8 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
+@@ -343,7 +343,8 @@ void MctpDiscovery::propertiesChangedCb(sdbusplus::message_t& msg)
              const UUID& uuid = getEndpointUUIDProp(service, objPath);
  
              MctpInfo mctpInfo(std::get<eid>(epProps), uuid, "",
@@ -676,7 +676,7 @@ index d24bd43..7b3a911 100644
              searchConfigurationFor(pldm::utils::DBusHandler(), mctpInfo);
              if (!std::ranges::contains(existingMctpInfos, mctpInfo))
              {
-@@ -438,71 +439,163 @@ std::string MctpDiscovery::constructMctpReactorObjectPath(
+@@ -446,71 +447,163 @@ std::string MctpDiscovery::constructMctpReactorObjectPath(
             "/endpoints/" + std::to_string(eid) + "/configured_by";
  }
  

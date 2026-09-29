@@ -44,7 +44,7 @@ index 01dbbda3e4b6..9ba0de957845 100644
  	sled1_gpio_leds {
  		compatible = "gpio-leds";
  
-@@ -1573,3 +1593,56 @@ &wdt1 {
+@@ -1573,3 +1593,57 @@ &wdt1 {
  
  	status = "okay";
  };
@@ -60,6 +60,7 @@ index 01dbbda3e4b6..9ba0de957845 100644
 +		    &pinctrl_tach4_default &pinctrl_tach5_default
 +		    &pinctrl_tach6_default &pinctrl_tach7_default>;
 +	pinctrl-names = "default";
++	status = "okay";
 +
 +	tach0-I@0 {
 +		min-rpm = <700>;

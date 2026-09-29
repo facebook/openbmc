@@ -240,6 +240,17 @@ TEST_F(RackmonTest, BasicLoad) {
   EXPECT_THROW(db.at(163), std::out_of_range);
 }
 
+TEST_F(RackmonTest, GetInterfaceNames) {
+  MockRackmon mon;
+  EXPECT_CALL(mon, makeInterface())
+      .Times(1)
+      .WillOnce(Return(ByMove(std::make_unique<Modbus>())));
+
+  mon.load(r_conf, r_test_dir);
+
+  EXPECT_EQ(mon.getInterfaceNames(), std::vector<std::string>{"/tmp/blah"});
+}
+
 TEST_F(RackmonTest, BasicScanFoundNone) {
   MockRackmon mon;
   // Mock a modbus with no active devices,

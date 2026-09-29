@@ -278,7 +278,7 @@ class PyrmdSyncTest(unittest.TestCase):
         )
 
     def test_get_interface_sync(self, sync_exec, async_exec):
-        exp_resp = {"status": "SUCCESS", "data": "/dev/ttyUSB0"}
+        exp_resp = {"status": "SUCCESS", "data": ["/dev/ttyUSB0"]}
         exp_req = {"type": "getInterface", "devAddress": 0xA4}
         self.do_cmd(
             sync_exec,
@@ -289,6 +289,22 @@ class PyrmdSyncTest(unittest.TestCase):
             pyrmd.RackmonInterface.get_interface,
             pyrmd.RackmonAsyncInterface.get_interface,
             0xA4,
+        )
+
+    def test_get_all_interfaces_sync(self, sync_exec, async_exec):
+        exp_resp = {
+            "status": "SUCCESS",
+            "data": ["/dev/ttyUSB0", "/dev/ttyUSB1"],
+        }
+        exp_req = {"type": "getInterface"}
+        self.do_cmd(
+            sync_exec,
+            async_exec,
+            exp_req,
+            exp_resp,
+            ["/dev/ttyUSB0", "/dev/ttyUSB1"],
+            pyrmd.RackmonInterface.get_interface,
+            pyrmd.RackmonAsyncInterface.get_interface,
         )
 
     def test_get_interface_no_such_device(self, sync_exec, async_exec):

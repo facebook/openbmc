@@ -162,8 +162,11 @@ class RackmonInterface:
         return {"type": "listModbusDevices"}
 
     @classmethod
-    def _get_interface(cls, addr):
-        return {"type": "getInterface", "devAddress": addr}
+    def _get_interface(cls, addr=None):
+        req = {"type": "getInterface"}
+        if addr is not None:
+            req["devAddress"] = addr
+        return req
 
     @classmethod
     def _data(cls, raw, dataFilter=None):
@@ -278,14 +281,14 @@ class RackmonInterface:
         return result["data"]
 
     @classmethod
-    def get_interface(cls, addr):
+    def get_interface(cls, addr=None):
         try:
             result = cls._do(cls._get_interface, addr)
         except ModbusException as e:
             if cls._isNoSuchDevice(e):
                 return None
             raise
-        return result["data"]
+        return result["data"][0] if addr is not None else result["data"]
 
     @classmethod
     def data(cls, raw=True, dataFilter=None, decodeJson=True):
@@ -363,14 +366,14 @@ class RackmonAsyncInterface(RackmonInterface):
         return result["data"]
 
     @classmethod
-    async def get_interface(cls, addr):
+    async def get_interface(cls, addr=None):
         try:
             result = await cls._do(cls._get_interface, addr)
         except ModbusException as e:
             if cls._isNoSuchDevice(e):
                 return None
             raise
-        return result["data"]
+        return result["data"][0] if addr is not None else result["data"]
 
     @classmethod
     async def data(cls, raw=True, dataFilter=None, decodeJson=True):

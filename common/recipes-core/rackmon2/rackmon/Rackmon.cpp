@@ -1,6 +1,7 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
 #include "Rackmon.h"
 #include <nlohmann/json.hpp>
+#include <algorithm>
 #include <fstream>
 #include <optional>
 #include "DeviceLocationFilter.h"
@@ -147,6 +148,16 @@ std::string Rackmon::getInterfaceName(
   return deviceInventory_->getModbusDevice(deviceAddress, port)
       ->getInterface()
       .name();
+}
+
+std::vector<std::string> Rackmon::getInterfaceNames() const {
+  std::vector<std::string> names;
+  std::transform(
+      interfaces_.begin(),
+      interfaces_.end(),
+      std::back_inserter(names),
+      [](const auto& interface) { return interface->name(); });
+  return names;
 }
 
 void Rackmon::readHoldingRegisters(

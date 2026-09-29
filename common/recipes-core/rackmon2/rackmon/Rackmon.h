@@ -119,6 +119,9 @@ class Rackmon {
       uint8_t deviceAddress,
       std::optional<uint8_t> port) const;
 
+  // Get the names of all interfaces managed by rackmond.
+  std::vector<std::string> getInterfaceNames() const;
+
   // Get status of devices
   std::vector<ModbusDeviceInfo> listDevices() const;
 

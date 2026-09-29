@@ -3,10 +3,12 @@
 #include <sys/file.h>
 #include <systemd/sd-bus.h>
 #include <unistd.h>
+#include <algorithm>
 #include <chrono>
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
+#include <optional>
 #include <regex>
 #include <thread>
 #include "InterfaceScanner.h"
@@ -32,13 +34,12 @@ struct ServiceExclusionBase {
     sd_bus_unref(bus);
   }
 
-  void init() {
+  bool init() {
     if (!isServiceRunning()) {
-      return;
+      return false;
     }
-    if (serviceAction(false)) {
-      stopped_ = true;
-    }
+    stopped_ = serviceAction(false);
+    return stopped_;
   }
   void deinit() {
     if (stopped_) {
@@ -106,6 +107,30 @@ struct ServiceExclusionBase {
 
 struct RackmonExclusion : public ServiceExclusionBase {
   RackmonExclusion() : ServiceExclusionBase("rackmond") {}
+
+  std::optional<bool> isTTYManaged(const std::string& tty) {
+    try {
+      json req;
+      req["type"] = "getInterface";
+      rackmonsvc::RackmonClient cli;
+      json resp = json::parse(cli.request(req.dump()));
+
+      std::string status;
+      resp.at("status").get_to(status);
+      if (status != "SUCCESS") {
+        std::cerr << "ACTION: getInterface failed" << std::endl;
+        return std::nullopt;
+      }
+      const auto interfaces = resp.at("data").get<std::vector<std::string>>();
+      return std::find(interfaces.begin(), interfaces.end(), tty) !=
+          interfaces.end();
+    } catch (const std::exception& e) {
+      std::cerr << "Failed to query rackmond interfaces: " << e.what()
+                << std::endl;
+      return std::nullopt;
+    }
+  }
+
   bool serviceAction(bool start) override {
     json req;
     req["type"] = start ? "resume" : "pause";
@@ -299,11 +324,19 @@ struct ServiceExclusion {
   ServiceExclusion(const std::string& tty)
       : rackmonLock(std::make_unique<RackmonExclusion>()),
         modbusLock(std::make_unique<PhosphorModbusExclusion>(tty)) {
-    rackmonLock->init();
+    auto rackmonManaged = rackmonLock->isTTYManaged(tty);
+    // If the query fails, retain the safer legacy behavior and pause rackmond.
+    bool rackmonPaused = false;
+    if (!rackmonManaged || *rackmonManaged) {
+      rackmonPaused = rackmonLock->init();
+    }
+
     modbusLock->init();
 
-    // Wait for the service to settle down after we've paused it.
-    std::this_thread::sleep_for(std::chrono::seconds(5));
+    if (rackmonPaused) {
+      // Wait for the service to settle down after we've paused it.
+      std::this_thread::sleep_for(std::chrono::seconds(5));
+    }
   }
 
   ~ServiceExclusion() {

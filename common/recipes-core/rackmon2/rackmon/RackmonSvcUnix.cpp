@@ -171,9 +171,14 @@ void RackmonUNIXSocketService::executeJSONCommand(const json& req, json& resp) {
   } else if (cmd == "rescan") {
     rackmond_.forceScan();
   } else if (cmd == "getInterface") {
-    auto [port, devAddress] =
-        getVerifiedAddress(req.at("devAddress"), uniqueDevAddress);
-    resp["data"] = rackmond_.getInterfaceName(devAddress, port);
+    if (req.contains("devAddress")) {
+      auto [port, devAddress] =
+          getVerifiedAddress(req.at("devAddress"), uniqueDevAddress);
+      resp["data"] = std::vector<std::string>{
+          rackmond_.getInterfaceName(devAddress, port)};
+    } else {
+      resp["data"] = rackmond_.getInterfaceNames();
+    }
   } else if (cmd == "getMonitorData") {
     ModbusDataFilter filter{};
     if (req.contains("filter")) {

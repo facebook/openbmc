@@ -25,6 +25,7 @@ import rest_fruid_pim
 import rest_fscd_sensor_data
 import rest_gpios
 import rest_leakage
+import rest_logfile
 import rest_modbus
 import rest_modbus_cmd
 import rest_psu_update
@@ -164,6 +165,14 @@ class commonApp_Handler:
     @common_force_async
     def rest_fcpresent_hdl(self, request):
         return self.helper_rest_fcpresent_hdl(request)
+
+    # Handler for the persistent critical log resource endpoint.
+    # POST, not GET: auth_enforcer refuses a request with no matching ACL
+    # entry only for non-GET methods, so POST fails closed if the externally
+    # managed acl_config is ever absent. Arguments travel in the JSON body.
+    @staticmethod
+    async def rest_logfile_hdl(request: web.Request) -> web.Response:
+        return await rest_logfile.post_logfile(request)
 
     # Handler for psu_update resource endpoint
     def helper_psu_update_hdl(self, request):

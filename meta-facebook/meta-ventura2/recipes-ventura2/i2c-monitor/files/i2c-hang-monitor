@@ -1,0 +1,312 @@
+#!/bin/sh
+#
+# i2c-hang-monitor
+#
+# The AST2600 I2C controller sometimes gets stuck: the state machine stops
+# mid-transfer, raises no interrupt and reports no error, while SDA and SCL
+# sit idle high. Every transfer then times out forever.
+#
+# The kernel only toggles MASTER_EN on timeout and that does not clear it.
+# Writing 0 to the whole FUN_CTRL register and restoring it does.
+#
+# This script watches for that, resets the controller, and makes sure MCTP
+# and PLDM come back.
+
+CONF=/etc/default/i2c-hang-monitor
+# shellcheck disable=SC1090
+[ -r "$CONF" ] && . "$CONF"
+
+BASE="${BASE:-0x1e78a280}"                 # i2c4 controller
+LOCAL_EID="${LOCAL_EID:-10}"               # BMC's own MCTP EID
+PEER_EID="${PEER_EID:-}"                   # required remote EID, empty = any
+INTERVAL="${INTERVAL:-5}"                  # seconds between polls
+CONFIRM="${CONFIRM:-3}"                    # identical samples before acting
+COOLDOWN="${COOLDOWN:-30}"                 # pause after a recovery
+SVC_CHECK_EVERY="${SVC_CHECK_EVERY:-12}"   # check MCTP/PLDM every N polls
+SVC_RETRY="${SVC_RETRY:-120}"              # retry a failed repair every N polls
+DISCOVERY_WAIT="${DISCOVERY_WAIT:-45}"     # seconds to wait for E810 discovery
+RESTART_PLDM_ON_EID_FIX="${RESTART_PLDM_ON_EID_FIX:-1}"   # restart pldmd after an EID restore
+RESNAP_EVERY="${RESNAP_EVERY:-60}"         # refresh snapshot every N polls
+ENABLE_REBIND="${ENABLE_REBIND:-1}"
+MCTP_SERVICE="${MCTP_SERVICE:-mctpd.service}"
+PLDM_SERVICE="${PLDM_SERVICE:-pldmd.service}"
+STATE_DIR="${STATE_DIR:-/run/i2c-hang-monitor}"
+
+# Used only if a snapshot reads back as zero, i.e. the controller was
+# already broken when we started.
+FALLBACK_CTRL="${FALLBACK_CTRL:-00020003}"
+FALLBACK_SCMD="${FALLBACK_SCMD:-00070000}"
+FALLBACK_IER="${FALLBACK_IER:-00012000}"
+
+# Registers = controller base + offset
+R_CTRL=$((  BASE + 0x00 ))    # master/slave enable
+R_STS=$((   BASE + 0x08 ))    # SDA / SCL / BUS_BUSY status
+R_IER=$((   BASE + 0x10 ))    # interrupt enable
+R_ISR=$((   BASE + 0x14 ))    # interrupt status + state machine
+R_CMD=$((   BASE + 0x18 ))    # current master command
+R_SCMD=$((  BASE + 0x28 ))    # target engine arm
+R_SADDR=$(( BASE + 0x40 ))    # target address (0x10)
+
+DEV="$(printf '%x' "$BASE").i2c"   # 1e78a280.i2c
+MCTP_TREE="busctl tree au.com.codeconstruct.MCTP1"
+mkdir -p "$STATE_DIR" 2>/dev/null
+
+# devmem already prints 8 uppercase hex digits, so just drop the 0x.
+rd() { v=$(devmem "$1" 32 2>/dev/null); echo "${v#0x}"; }
+
+# Restart a unit. If that hangs or fails, kill it and start it again.
+restart_svc() {
+	timeout 30 systemctl restart "$1" 2>/dev/null && return 0
+	echo "  $1 restart failed, forcing"
+	timeout 30 systemctl kill -s SIGKILL "$1" 2>/dev/null
+	sleep 2
+	timeout 30 systemctl start "$1" 2>/dev/null
+}
+
+# Remember the healthy register values so we can restore them later.
+take_snapshot() {
+	c=$(rd $R_CTRL); sc=$(rd $R_SCMD); sa=$(rd $R_SADDR); ie=$(rd $R_IER)
+	for v in "$c" "$sc" "$sa" "$ie"; do
+		case "$v" in
+			[0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f][0-9A-Fa-f]) ;;
+			*) return 1 ;;
+		esac
+	done
+	[ "$c" = "00000000" ] && return 1      # controller not up yet
+
+	SNAP_CTRL=$c; SNAP_SCMD=$sc; SNAP_SADDR=$sa; SNAP_IER=$ie
+	# A zero here means the controller was already broken. Restoring zero
+	# would leave the target engine disarmed and MCTP silently deaf.
+	[ "$SNAP_SCMD" = "00000000" ] && SNAP_SCMD=$FALLBACK_SCMD
+	[ "$SNAP_IER"  = "00000000" ] && SNAP_IER=$FALLBACK_IER
+	return 0
+}
+
+# Stuck = state machine busy, but nothing to be busy about.
+#   ISR bits 31:28 state machine (0 = idle)   ISR bits 15:0 error flags
+#   STS bit 16 BUS_BUSY   bit 17 SDA   bit 18 SCL
+is_wedged() {
+	isr=$(rd $R_ISR); sts=$(rd $R_STS)
+	[ ${#isr} -eq 8 ] && [ ${#sts} -eq 8 ] || return 1
+
+	nib=$(( 0x$(t=${sts#???}; echo "${t%????}") ))   # 4th hex char = bits 19:16
+
+	[ "${isr%???????}" != "0" ]    || return 1   # state machine busy
+	[ "${isr#????}" = "0000" ]     || return 1   # no error flags
+	[ $(( nib & 1 )) -eq 0 ]       || return 1   # bus not busy
+	[ $(( (nib>>1) & 1 )) -eq 1 ]  || return 1   # SDA high
+	[ $(( (nib>>2) & 1 )) -eq 1 ]  || return 1   # SCL high
+	return 0
+}
+
+# Check MCTP/PLDM, repair if needed. Logs only when the state changes, and
+# if a fault persists it retries every SVC_RETRY polls instead of every
+# time, so a permanent problem does not spam the journal or thrash daemons.
+# Sets $ifname and returns 0 if MCTP is fully up: netdev present, our EID
+# assigned, and at least one remote endpoint (the E810) discovered.
+svc_ok() {
+	# The netdev is mctpi2c4 or mctpi2c38 depending on the DTS, so find it
+	# by type (ARPHRD_MCTP = 290) instead of hardcoding a name.
+	ifname=""
+	for d in /sys/class/net/*; do
+		[ "$(cat "$d/type" 2>/dev/null)" = "290" ] && ifname=${d##*/} && break
+	done
+	[ -n "$ifname" ] || return 1
+
+	mctp addr 2>/dev/null | grep -q "^eid $LOCAL_EID .*dev $ifname" || return 1
+
+	# Our own EID also shows up as an endpoint, so ignore it - a remote one
+	# is what proves discovery actually worked. PEER_EID pins it to a
+	# specific endpoint; empty means any remote one will do.
+	remote=$($MCTP_TREE 2>/dev/null | sed -n 's|.*/endpoints/\([0-9]*\)$|\1|p' |
+	         grep -v "^$LOCAL_EID$")
+	if [ -n "$PEER_EID" ]; then
+		echo "$remote" | grep -q "^$PEER_EID$" || return 1
+	else
+		[ -n "$remote" ] || return 1
+	fi
+	return 0
+}
+
+svc_bad=0
+svc_last_try=0
+# $1 = 1 forces a repair attempt even while backing off.
+check_services() {
+	if svc_ok; then
+		[ "$svc_bad" -eq 1 ] && { echo "mctp/pldm healthy again"; svc_bad=0; }
+		return 0
+	fi
+
+	if [ "$svc_bad" -eq 0 ]; then
+		echo "mctp/pldm unhealthy, repairing"
+	elif [ "$1" = "1" ] || [ $(( poll - svc_last_try )) -ge "$SVC_RETRY" ]; then
+		echo "mctp/pldm still unhealthy, repairing"
+	else
+		return 0        # backing off, do nothing this round
+	fi
+	svc_bad=1
+	svc_last_try=$poll
+
+	# No netdev at all - only a daemon restart can recreate it.
+	if [ -z "$ifname" ]; then
+		echo "  no mctp netdev, restarting $MCTP_SERVICE"
+		restart_svc "$MCTP_SERVICE"
+		sleep 5
+		for d in /sys/class/net/*; do
+			[ "$(cat "$d/type" 2>/dev/null)" = "290" ] && ifname=${d##*/} && break
+		done
+		[ -n "$ifname" ] || { echo "  still no mctp netdev"; return 1; }
+	fi
+
+	# Set the EID ourselves rather than trusting mctpd's setup-local-eid,
+	# which may have failed while the bus was stuck.
+	if ! mctp addr 2>/dev/null | grep -q "^eid $LOCAL_EID .*dev $ifname"; then
+		echo "  eid $LOCAL_EID missing on $ifname, restoring"
+		timeout 30 mctp link set "$ifname" up 2>/dev/null
+		timeout 30 mctp addr add "$LOCAL_EID" dev "$ifname" 2>/dev/null
+		if ! mctp addr 2>/dev/null | grep -q "^eid $LOCAL_EID .*dev $ifname"; then
+			echo "  restore failed, restarting $MCTP_SERVICE"
+			restart_svc "$MCTP_SERVICE"
+			sleep 5
+		elif [ "$RESTART_PLDM_ON_EID_FIX" = "1" ]; then
+			# The EID is back, but pldmd may have given up on the terminus
+			# while it was gone, and that is not visible from the MCTP layer.
+			echo "  eid restored, restarting $PLDM_SERVICE"
+			restart_svc "$PLDM_SERVICE"
+			sleep 5
+		fi
+	fi
+
+	# No peers means discovery never ran. Fix the EID first (done above):
+	# the E810 cannot be discovered until the BMC has its own address.
+	# mctpd owns the endpoint objects, so it restarts too.
+	if ! svc_ok; then
+		echo "  no peers, restarting $MCTP_SERVICE and $PLDM_SERVICE"
+		restart_svc "$MCTP_SERVICE"
+		sleep 5
+		restart_svc "$PLDM_SERVICE"
+
+		# Discovery of the E810 takes 10-20s after mctpd starts, so wait for
+		# it instead of guessing a sleep.
+		w=0
+		while [ $w -lt "$DISCOVERY_WAIT" ]; do
+			sleep 5
+			svc_ok && break
+			w=$(( w + 5 ))
+		done
+	fi
+
+	svc_ok && { echo "mctp/pldm healthy again"; svc_bad=0; }
+	svc_last_try=$poll
+}
+
+# Reset the controller, then make sure MCTP/PLDM survived it.
+do_recover() {
+	isr=$(rd $R_ISR); cmd=$(rd $R_CMD); sts=$(rd $R_STS)
+	echo "WEDGED: isr=0x$isr cmd=0x$cmd sts=0x$sts"
+
+	# Clearing only MASTER_EN is what the kernel does and it is not enough.
+	# The whole register has to go to 0 and back.
+	devmem $R_CTRL 32 0x00000000 >/dev/null
+	devmem $R_CTRL 32 "0x$SNAP_CTRL" >/dev/null
+
+	# That also disarmed the target engine. Re-arm it or MCTP stops
+	# receiving with no error anywhere.
+	[ "$SNAP_SADDR" != "00000000" ] && devmem $R_SADDR 32 "0x$SNAP_SADDR" >/dev/null
+	[ "$SNAP_SCMD"  != "00000000" ] && devmem $R_SCMD  32 "0x$SNAP_SCMD"  >/dev/null
+	[ "$SNAP_IER"   != "00000000" ] && devmem $R_IER   32 "0x$SNAP_IER"   >/dev/null
+	sleep 1
+
+	# Only the state machine has to be idle; other bits may already be set
+	# again by a retried transfer.
+	now=$(rd $R_ISR)
+	if [ "${now%???????}" = "0" ]; then
+		echo "  reset ok"
+		result=ok
+	elif [ "$ENABLE_REBIND" = "1" ]; then
+		echo "  reset failed (isr=0x$now), rebinding driver"
+		echo "$DEV" > /sys/bus/platform/drivers/i2c_ast2600/unbind 2>/dev/null
+		sleep 1
+		echo "$DEV" > /sys/bus/platform/drivers/i2c_ast2600/bind 2>/dev/null
+		sleep 3
+		result=rebind
+	else
+		echo "  reset failed (isr=0x$now)"
+		result=fail
+	fi
+
+	check_services 1
+	[ "$result" = "ok" ] && take_snapshot
+
+	count=$(( count + 1 ))
+	echo "$count" > "$STATE_DIR/count"
+	echo "$(date '+%F %T') isr=0x$isr cmd=0x$cmd sts=0x$sts result=$result" >> "$STATE_DIR/log"
+	echo "  result=$result, total recoveries=$count"
+}
+
+# ---------------------------------------------------------------- startup --
+poll=0
+count=$(cat "$STATE_DIR/count" 2>/dev/null || echo 0)
+
+if ! take_snapshot; then
+	echo "warning: controller not readable, using fallback values"
+	SNAP_CTRL=$FALLBACK_CTRL
+	SNAP_SCMD=$FALLBACK_SCMD
+	SNAP_IER=$FALLBACK_IER
+	SNAP_SADDR=00000000
+fi
+echo "i2c-hang-monitor: base=$BASE ctrl=0x$SNAP_CTRL scmd=0x$SNAP_SCMD saddr=0x$SNAP_SADDR"
+
+# Already stuck before we started - fix it now, then snapshot again from a
+# controller we know is healthy.
+if is_wedged; then
+	echo "wedged at startup"
+	do_recover
+	take_snapshot
+	echo "re-snapshot: ctrl=0x$SNAP_CTRL scmd=0x$SNAP_SCMD saddr=0x$SNAP_SADDR"
+fi
+
+# If the bus was stuck during boot, setup-local-eid failed and discovery
+# never ran.
+check_services
+
+# -------------------------------------------------------------- main loop --
+while true; do
+	poll=$(( poll + 1 ))
+
+	if is_wedged; then
+		sig="$(rd $R_ISR)$(rd $R_CMD)"
+		# Interrupt count for this controller, summed over the CPU columns.
+		irq0=$(awk -v k="$DEV" '$0~k {s=0
+			for (i=2; i<=NF; i++) { if ($i~/^[0-9]+$/) s+=$i; else break }
+			print s; exit}' /proc/interrupts)
+
+		# A live transfer also looks busy, so require the same registers
+		# several times in a row.
+		stable=1
+		n=1
+		while [ $n -lt "$CONFIRM" ]; do
+			sleep 1
+			is_wedged || { stable=0; break; }
+			[ "$(rd $R_ISR)$(rd $R_CMD)" = "$sig" ] || { stable=0; break; }
+			n=$(( n + 1 ))
+		done
+
+		# A working controller always raises interrupts.
+		irq1=$(awk -v k="$DEV" '$0~k {s=0
+			for (i=2; i<=NF; i++) { if ($i~/^[0-9]+$/) s+=$i; else break }
+			print s; exit}' /proc/interrupts)
+		[ -n "$irq0" ] && [ -n "$irq1" ] && [ "$irq0" = "$irq1" ] || stable=0
+
+		if [ $stable -eq 1 ]; then
+			do_recover
+			sleep "$COOLDOWN"
+		fi
+	else
+		[ $(( poll % RESNAP_EVERY )) -eq 0 ] && take_snapshot
+	fi
+
+	[ $(( poll % SVC_CHECK_EVERY )) -eq 0 ] && check_services
+
+	sleep "$INTERVAL"
+done

@@ -1,0 +1,37 @@
+From 5aedb36a17b2e1aa0f6018ca86b9f5ef88665aca Mon Sep 17 00:00:00 2001
+From: "Sue.Wang" <Sue.Wang@quantatw.com>
+Date: Thu, 17 Sep 2026 16:51:54 +0800
+Subject: [PATCH] Add 200ms delay before creating vt status log
+
+Change-Id: I387c4deba18c739fa2c8631f8c7b8961ada529ac
+Signed-off-by: Sue.Wang <Sue.Wang@quantatw.com>
+---
+ src/valve-monitor/GPIOValve.cpp | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/valve-monitor/GPIOValve.cpp b/src/valve-monitor/GPIOValve.cpp
+index 87369e9..45356a5 100644
+--- a/src/valve-monitor/GPIOValve.cpp
++++ b/src/valve-monitor/GPIOValve.cpp
+@@ -145,6 +145,10 @@ auto GPIOValve::setState(State state) -> bool
+ 
+ auto GPIOValve::updateGPIOStateAsync(bool gpioState) -> sdbusplus::async::task<>
+ {
++    // Delay before generating valve events to prevent spurious logs
++    // caused by GPIO transitions during BMC shutdown.
++    static constexpr auto valveEventDelay = std::chrono::milliseconds(200);
++
+     auto newValue = gpioState ? 100 : 0;
+     const bool stateChanged = newValue != value();
+ 
+@@ -159,6 +163,7 @@ auto GPIOValve::updateGPIOStateAsync(bool gpioState) -> sdbusplus::async::task<>
+     // events only for subsequent state changes.
+     if (!publishControlInterface() && stateChanged)
+     {
++        co_await sdbusplus::async::sleep_for(ctx, valveEventDelay);
+         co_await events.generateValveEvent(inventoryPath, gpioState);
+     }
+ 
+-- 
+2.34.1
+

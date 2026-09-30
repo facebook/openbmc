@@ -36,6 +36,7 @@ SRC_URI:append:mf-fb-liquid-cooled = " \
     file://0102-valve-monitor-delay-analog-valve-feedback-monitoring.patch \
     file://0103-valve-monitor-catch-event-resolve-exceptions.patch \
     file://0104-valve-monitor-defer-control-interface-until-state-is.patch \
+    file://0105-valve-monitor-add-200ms-delay-before-creating-vt-log.patch \
 "
 
 SRC_URI:append:fb-compute-multihost = " \

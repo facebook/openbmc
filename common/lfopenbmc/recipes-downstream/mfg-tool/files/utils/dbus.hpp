@@ -7,6 +7,7 @@
 #include <xyz/openbmc_project/Inventory/Decorator/Asset/client.hpp>
 #include <xyz/openbmc_project/Inventory/Item/client.hpp>
 #include <xyz/openbmc_project/Logging/Entry/client.hpp>
+#include <xyz/openbmc_project/Logging/Extension/CPER/Processed/client.hpp>
 #include <xyz/openbmc_project/Metric/Value/client.hpp>
 #include <xyz/openbmc_project/Sensor/Threshold/Critical/client.hpp>
 #include <xyz/openbmc_project/Sensor/Threshold/HardShutdown/client.hpp>
@@ -108,6 +109,14 @@ inline auto path(size_t id)
     return std::string(ns_path) + "/" +
            std::string(Proxy::namespace_path::entry) + "/" + std::to_string(id);
 }
+
+namespace cper_processed
+{
+using Proxy = sdbusplus::client::xyz::openbmc_project::logging::extension::
+    cper::Processed<>;
+static constexpr auto interface = Proxy::interface;
+} // namespace cper_processed
+
 } // namespace log_entry
 
 namespace metric

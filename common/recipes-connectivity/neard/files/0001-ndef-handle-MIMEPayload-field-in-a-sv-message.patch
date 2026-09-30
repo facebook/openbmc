@@ -1,0 +1,105 @@
+From b0ebc9c06d51c7c8edbdb7f609f0561f17cc89a8 Mon Sep 17 00:00:00 2001
+From: Carl Lee <carl.lee@amd.com>
+Date: Wed, 22 Apr 2026 17:32:59 +0800
+Subject: [PATCH] ndef: handle MIMEPayload field in a{sv} message
+
+Parse MIME payload from the "MIMEPayload" field in a{sv} instead of
+relying on get_mime_payload_data().
+
+The previous implementation attempted to read payload data using an
+uninitialized iterator, which could lead to undefined behavior or
+failure when handling generic MIME records.
+
+This change:
+- Adds support for extracting payload from "MIMEPayload" (byte array)
+- Removes the incorrect legacy payload parsing path
+- Ensures payload is validated before building the NDEF record
+
+Tested:
+  busctl call org.neard /org/neard/nfc0/tag0 org.neard.Tag Write \
+    a{sv} 3 \
+    Type s "MIME" \
+    MIME s "application/octet-stream" \
+    MIMEPayload ay 4 1 2 3 4
+
+Signed-off-by: Carl Lee <carl.lee@amd.com>
+---
+ src/ndef.c | 48 ++++++++++++++++++++++++++++++------------------
+ 1 file changed, 30 insertions(+), 18 deletions(-)
+
+diff --git a/src/ndef.c b/src/ndef.c
+index c8fea50..f03428a 100644
+--- a/src/ndef.c
++++ b/src/ndef.c
+@@ -3498,8 +3498,10 @@ static struct near_ndef_message *near_ndef_prepare_mime_payload_record(
+ 
+ static struct near_ndef_message *build_mime_record(DBusMessageIter *msg)
+ {
+-	DBusMessageIter iter, arr_iter;
++	DBusMessageIter arr_iter;
+ 	char *key, *mime_str, *ssid, *passphrase;
++	const uint8_t *payload = NULL;
++	int payload_len = 0;
+ 
+ 	DBG("");
+ 
+@@ -3551,29 +3553,39 @@ static struct near_ndef_message *build_mime_record(DBusMessageIter *msg)
+ 				g_free(carrier);
+ 
+ 				return mime;
+-			} else {
+-				/*
+-				 * Expect data is set in the Payload field of
+-				 * message.
+-				 */
+-				DBusMessageIter payload_iter;
+-				char *payload;
+-				int payload_len;
+-
+-				DBG("mime string %s", mime_str);
+-				dbus_message_iter_recurse(&iter, &payload_iter);
+-				if (!get_mime_payload_data(payload_iter,
+-							&payload, &payload_len))
+-					return NULL;
+-
+-				return near_ndef_prepare_mime_payload_record(
+-					mime_str, payload, payload_len);
+ 			}
+ 		}
++		else if (g_strcmp0(key, "MIMEPayload") == 0) {
++
++			DBusMessageIter payload_iter;
++
++			dbus_message_iter_next(&ent_iter);
++			dbus_message_iter_recurse(&ent_iter, &var_iter);
+ 
++			 if (dbus_message_iter_get_arg_type(&var_iter) != DBUS_TYPE_ARRAY)
++				return NULL;
++
++				dbus_message_iter_recurse(&var_iter, &payload_iter);
++
++				dbus_message_iter_get_fixed_array(
++					&payload_iter,
++					&payload,
++					&payload_len
++				);
++			}
+ 		dbus_message_iter_next(&arr_iter);
+ 	}
+ 
++	if (mime_str) {
++		DBG("mime string %s", mime_str);
++
++		if (!payload || payload_len <= 0)
++			return NULL;
++
++		return near_ndef_prepare_mime_payload_record(
++			mime_str, payload, payload_len);
++	}
++
+ 	return NULL;
+ }
+ 
+-- 
+2.34.1
+

@@ -125,7 +125,7 @@ void HgxPsRunPwrFaultMapper::map(
             lg2::commit(PowerError::PowerRailFault(
                 PowerError::PowerRailFault::metadata_t<"POWER_RAIL">{
                     "POWER_RAIL"},
-                sdbusplus::message::object_path(origin),
+                sdbusplus::object_path(origin),
                 PowerError::PowerRailFault::metadata_t<"FAILURE_DATA">{
                     "FAILURE_DATA"},
                 failureData));

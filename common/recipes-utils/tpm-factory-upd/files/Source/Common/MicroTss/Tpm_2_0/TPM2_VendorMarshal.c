@@ -4,7 +4,7 @@
  *              structures and types.
  *  @file       TPM2_VendorMarshal.c
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -55,6 +55,12 @@ TSS_TPML_MAX_BUFFER_Unmarshal(
         unReturnValue = TSS_UINT32_Unmarshal((TSS_UINT32 *) & (PpTarget->count), PprgbBuffer, PpnBufferSize);
         if (RC_SUCCESS != unReturnValue)
             break;
+        // Check returned buffer count
+        if (TSS_MAX_VENDOR_PROPERTY_COUNT < PpTarget->count)
+        {
+            unReturnValue = RC_E_FAIL;
+            break;
+        }
 
         unReturnValue = TSS_TPM2B_MAX_BUFFER_Array_Unmarshal((TSS_TPM2B_MAX_BUFFER*)&PpTarget->buffer, PprgbBuffer, PpnBufferSize, PpTarget->count);
         if (RC_SUCCESS != unReturnValue)

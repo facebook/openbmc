@@ -22,10 +22,14 @@ using namespace std;
 #endif
 
 #ifdef CONFIG_GRANDCANYON2
-                           // addr, VR name
-map<uint8_t, string> list = {{0xC0, "PVCCIN_FIVRA"},
-                             {0xC4, "PVCCD_HV"},
-                             {0xEC, "PVCCINFAON"}};
+static map<uint8_t, string> build_vr_list() {
+  map<uint8_t, string> vr_addr_to_name;
+  for (size_t i = 0; i < bic_vr_list_size; i++) {
+    vr_addr_to_name[bic_vr_list[i].addr] = bic_vr_list[i].name;
+  }
+  return vr_addr_to_name;
+}
+map<uint8_t, string> list = build_vr_list();
 
 #else
                            // addr, VR name
@@ -146,4 +150,25 @@ int VrComponent::update(const string& image) {
 
   return ret;
 }
+
+#ifdef CONFIG_GRANDCANYON2
+int VrComponent::fupdate(const string& image) {
+  int ret = 0;
+
+  try {
+    server.ready();
+
+    ret = bic_update_fw(FRU_SERVER, FW_VR, (char *)image.c_str(), FORCE_UPDATE_SET);
+    if (ret < 0) {
+      return -1;
+    }
+  } catch (string err) {
+    printf("%s\n", err.c_str());
+    return FW_STATUS_NOT_SUPPORTED;
+  }
+
+  return ret;
+}
+#endif
+
 #endif

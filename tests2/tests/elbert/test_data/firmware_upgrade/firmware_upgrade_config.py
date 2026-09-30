@@ -61,6 +61,20 @@ EXPECTED_KEYWORD = [
     "Erase/write done",
 ]
 NUM_LAST_FAILED_EXPECTED_KEY = 4  # zero-based number 0...N
+
+# bios runs
+#   wedge_power.sh off && sleep 60 && bios_util.sh write <rom> --init-aconf; \
+#     RC=$?; wedge_power.sh on; exit $RC
+# --init-aconf performs a SECOND flash write (the aboot_conf partition) after
+# the main image. Every success keyword -- "Erase/write done", then "VERIFIED."
+# -- is printed by the FIRST write, so matching any of them ends the wait while
+# aboot_conf is still unwritten. The test then power cycles the box, leaving the
+# host with no valid Aboot config and unable to boot (`aconf_util.sh program`
+# is what recovers it).
+#
+# The command ends in `exit`, so the session closing is its real completion
+# signal. Wait for that instead; failure keywords still short-circuit.
+WAIT_FOR_EOF_ENTITIES = frozenset({"bios"})
 BMC_RECONNECT_TIMEOUT = 300
 SCM_BOOT_TIME = 30
 try:
@@ -82,6 +96,7 @@ class FwUpgradeTest(BaseFwUpgradeTest):
         self.hostname = None
         self.num_last_failed_expected_key = NUM_LAST_FAILED_EXPECTED_KEY
         self.expected_keyword = EXPECTED_KEYWORD
+        self.wait_for_eof_entities = WAIT_FOR_EOF_ENTITIES
         self.upgrader_path = DEV_SERVER_RESOURCE_PATH
         self.remote_bin_path = UUT_RESOURCE_PATH
         self.upgrading_timeout = UPGRADING_TIMEOUT

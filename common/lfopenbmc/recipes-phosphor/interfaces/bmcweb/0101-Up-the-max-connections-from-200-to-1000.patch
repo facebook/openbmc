@@ -1,4 +1,4 @@
-From b975b8c4a7afdaedf306e01255c8fb5d235301cf Mon Sep 17 00:00:00 2001
+From d5af941732316a12022ff3c59b0b64367f514da0 Mon Sep 17 00:00:00 2001
 From: Pete O_o <pmb@meta.com>
 Date: Wed, 19 Feb 2025 19:55:56 -0700
 Subject: [PATCH] Up the max connections from 200 to 1000
@@ -22,10 +22,10 @@ Subject: [PATCH] Up the max connections from 200 to 1000
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/http/http_connection.hpp b/http/http_connection.hpp
-index 6592f2b0..a5001364 100644
+index 82967ddb..e0b5cbb2 100644
 --- a/http/http_connection.hpp
 +++ b/http/http_connection.hpp
-@@ -208,7 +208,7 @@ class Connection :
+@@ -209,7 +209,7 @@ class Connection :
          BMCWEB_LOG_DEBUG("{} Connection started, total {}", logPtr(this),
                           connectionCount);
          readClientIp();
@@ -35,5 +35,5 @@ index 6592f2b0..a5001364 100644
              BMCWEB_LOG_CRITICAL("{} Max connection count exceeded. Request {}",
                                  logPtr(this), ip.to_string());
 -- 
-2.52.0
+2.53.0-Meta
 

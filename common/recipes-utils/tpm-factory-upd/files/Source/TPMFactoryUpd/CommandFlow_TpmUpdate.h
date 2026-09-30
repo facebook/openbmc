@@ -3,7 +3,7 @@
  *  @details    This module processes the firmware update. Afterwards the result is returned to the calling module.
  *  @file       CommandFlow_TpmUpdate.h
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -116,6 +116,43 @@ _Check_return_
 unsigned int
 CommandFlow_TpmUpdate_ProceedUpdateConfig(
     _Inout_ IfxUpdate* PpTpmUpdate);
+
+/**
+ *  @brief      Prepares a policy session for TPM firmware.
+ *  @details    The function prepares a policy session for TPM Firmware Update and returns the session handle
+ *              for non empty platform authorization using default policy behaviour utilizing policy command code or
+ *              having options in authorization including the TPM Firmware Update command.
+ *              Further the function returns the policy handle for an external created policy session.
+ *
+ *  @param      PphPolicySession                    Pointer to session handle that will be filled in by this method.
+ *
+ *  @retval     RC_SUCCESS                          The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER                  An invalid parameter was passed to the function. It is invalid or NULL.
+ *  @retval     RC_E_FAIL                           An unexpected error occurred.
+ *  @retval     RC_E_PLATFORM_AUTH_NOT_EMPTY        In case PlatformAuth is not the Empty Buffer.
+ *  @retval     RC_E_PLATFORM_HIERARCHY_DISABLED    In case platform hierarchy has been disabled.
+ *  @retval     TPM_RC_VALUE                        In case policy command code has not been set correctly before calling TSS_TPM2_PolicyOR.
+ *  @retval     ...                                 Error codes from called functions. like TPM error codes.
+ */
+_Check_return_
+unsigned int
+CommandFlow_TpmUpdate_GetTPM20PolicyHandle(
+    _Out_ TSS_TPMI_SH_AUTH_SESSION* PphPolicySession);
+
+/**
+ *  @brief      Parses the update policy configuration settings
+ *  @details    Parses the update policy configuration settings for a settings file based update flow
+ *
+ *  @param      PpPolicyDigestList      Pointer to an initialized buffer containing the concatonated policy digests.
+ *
+ *  @retval     RC_SUCCESS              The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER      An invalid parameter was passed to the function. It is NULL or empty.
+ *  @retval     RC_E_FAIL               An unexpected error occurred.
+ */
+_Check_return_
+unsigned int
+CommandFlow_TpmUpdate_ProceedUpdatePolicyConfig(
+    _Out_ TSS_TPML_DIGEST* PpPolicyDigestList);
 
 #ifdef __cplusplus
 }

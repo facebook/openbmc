@@ -1,0 +1,74 @@
+From 9c0b9800b76f349c6ae34a23050a220afbb4c3b2 Mon Sep 17 00:00:00 2001
+From: Zane Li <zane.li.wiwynn@gmail.com>
+Date: Thu, 22 Jan 2026 00:25:43 +0000
+Subject: [PATCH 3/6] From 3c522d716254ec344c1c10308ee80ad7c5d4a0ee Mon Sep 17
+ 00:00:00 2001 From: Akshay Gupta <akshay.gupta@amd.com> Date: Thu, 26 Jun
+ 2025 09:34:42 +0000 Subject: [PATCH 03/12] sbrmi: Fix SBRMI register size
+ identification
+
+- Reading revision to identify the RMI register address size in
+  first transaction may return 0.
+  In current implementation, this can provide wrong data and set
+  the register address size as 1 byte for Turin platform.
+  Reread the SBRMI Revision register if read data is not the
+  accepted value.
+
+Signed-off-by: Akshay Gupta <Akshay.Gupta@amd.com>
+Signed-off-by: Naveen Krishna Chatradhi <naveenkrishna.chatradhi@amd.com>
+
+Signed-off-by: Zane Li <zane.li.wiwynn@gmail.com>
+---
+ drivers/apml/sbrmi.c | 28 ++++++++++++++++++++++------
+ 1 file changed, 22 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/apml/sbrmi.c b/drivers/apml/sbrmi.c
+index bae96c1ee..6e578f452 100644
+--- a/drivers/apml/sbrmi.c
++++ b/drivers/apml/sbrmi.c
+@@ -385,10 +385,18 @@ static int sbrmi_i2c_identify_reg_addr_size(struct i2c_client *i2c, u32 *size, u
+ 		}
+ 	}
+ 
+-	if (*rev == 0x21)
+-		*size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
+-	else
++	switch (*rev) {
++	case 0x10:
++	case 0x20:
+ 		*size = SBRMI_REG_ADDR_SIZE_DEF;
++		break;
++	case 0x21:
++		*size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
++		break;
++	default:
++		ret = -EIO;
++		break;
++	}
+ 	return ret;
+ }
+ 
+@@ -483,10 +491,18 @@ static int sbrmi_i3c_identify_reg_addr_size(struct i3c_device *i3cdev, u32 *size
+ 		}
+ 	}
+ 
+-	if (*rev == 0x21)
+-		*size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
+-	else
++	switch (*rev) {
++	case 0x10:
++	case 0x20:
+ 		*size = SBRMI_REG_ADDR_SIZE_DEF;
++		break;
++	case 0x21:
++		*size = SBRMI_REG_ADDR_SIZE_TWO_BYTE;
++		break;
++	default:
++		ret = -EIO;
++		break;
++	}
+ 	return ret;
+ }
+ #endif
+-- 
+2.43.0
+

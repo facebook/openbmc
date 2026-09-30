@@ -19,8 +19,9 @@ type LFMetaLocations struct {
 //
 //	https://github.com/openbmc/openbmc/blob/2d43f028cd98e622d53365b83c39cd120cac5cc2/meta-phosphor/classes/image_types_phosphor.bbclass#L58
 var lfmetaImageMetaLocations = []LFMetaLocations{
-	{380 * 1024, 4 * 1024}, // default 32 MB layout
-	{888 * 1024, 8 * 1024}, // default 64 MB and 128 MB layout
+	{380 * 1024, 4 * 1024},  // default 32 MB layout
+	{888 * 1024, 8 * 1024},  // default 64 MB and 128 MB layout
+	{4088 * 1024, 8 * 1024}, // AST2700 (e.g. yosemite5a7): manifest precedes the 4 MB u-boot region
 }
 
 func init() {

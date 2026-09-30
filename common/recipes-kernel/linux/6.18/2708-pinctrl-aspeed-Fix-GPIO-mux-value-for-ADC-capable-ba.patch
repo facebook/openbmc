@@ -1,0 +1,50 @@
+From 2319e8b62ca47033f5be3c35b1060c5672984f47 Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Fri, 5 Jun 2026 14:38:09 +0800
+Subject: [PATCH] pinctrl: aspeed: Fix GPIO mux value for ADC-capable balls
+
+aspeed_g7_soc1_gpio_request_enable() unconditionally writes mux
+function 0 to route the requested pin to GPIO. This is wrong for the
+ADC-capable balls W17 through AB19 (ADC0-ADC15), where function 0
+selects the ADC input and function 1 selects GPIO. Requesting one of
+those GPIOs therefore muxed the ball to ADC instead.
+
+Write mux value 1 for balls W17 through AB19 so the GPIO function is
+actually selected.
+
+Fixes: 4af4eb66aac3 ("pinctrl: aspeed: Add AST2700 SoC1 support")
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+---
+ drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c | 11 ++++++++++-
+ 1 file changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c b/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c
+index a1ef52ad5c75..50027d69c342 100644
+--- a/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c
++++ b/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c
+@@ -691,12 +691,21 @@ static int aspeed_g7_soc1_gpio_request_enable(struct pinctrl_dev *pctldev,
+ {
+ 	struct aspeed_g7_soc1_pinctrl *pctl = pinctrl_dev_get_drvdata(pctldev);
+ 	struct aspeed_g7_field field;
++	unsigned int val = 0;
+ 	int ret = -ENOTSUPP;
+ 
+ 	if (pin <= AC24) {
++		/*
++		 * Balls W17 through AB19 are the ADC-capable pins: mux
++		 * function 0 selects the ADC input and function 1 selects
++		 * GPIO, unlike all other pins where function 0 is GPIO.
++		 */
++		if (pin >= W17 && pin <= AB19)
++			val = 1;
+ 		field = aspeed_g7_soc1_pinmux_field_from_pin(pin);
+ 		ret = regmap_update_bits(pctl->regmap, field.reg,
+-					 field.mask << field.shift, 0);
++					 field.mask << field.shift,
++					 val << field.shift);
+ 	}
+ 
+ 	return ret;
+-- 
+2.52.0
+

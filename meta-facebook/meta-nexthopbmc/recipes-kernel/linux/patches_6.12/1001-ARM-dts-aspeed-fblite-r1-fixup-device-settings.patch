@@ -1,0 +1,32 @@
+From 2bcffb587bfdbf13b5f272e0d5e671ffeb9b9269 Mon Sep 17 00:00:00 2001
+From: Nate White <nate@nexthop.ai>
+Date: Tue, 28 Apr 2026 17:15:42 +0100
+Subject: [PATCH] ARM: dts: aspeed: fblite-r1: fixup device settings
+
+Summary:
+
+Add the UART used on nexthopbmc for CPU/COME.
+
+Test Plan:
+
+1) "bitbake nexthopbmc-image" passed.
+2) booted up nexthopbmc-image successfully.
+3) "sol.sh" accesses the COME serial console.
+
+Signed-off-by: Nate White <nate@nexthop.ai>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+index d14c01415..691e883fd 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+@@ -73,3 +73,7 @@ fixed-link {
+ 		full-duplex;
+ 	};
+ };
++
++&uart3 {
++	status = "okay";
++};

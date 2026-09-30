@@ -1,0 +1,104 @@
+From 32999eee27ff13152b42a1964336137c6c210ebd Mon Sep 17 00:00:00 2001
+From: Akshay Gupta <Akshay.Gupta@amd.com>
+Date: Thu, 3 Apr 2025 04:17:26 -0500
+Subject: [PATCH 1/6] sbtsi: update label for hwmon entry to include socket
+ number
+
+The data name label under hwmon for i2c is sbtsi and for i3c is sbtsi_i3c.
+This makes difficult to distinguish between socket 0 and socket 1 from
+hwmon entry. New name for i2c/i3c will be sbtsi_X.Y, where X is socket
+index and Y is IOD index in the socket
+Signed-off-by: Akshay Gupta <Akshay.Gupta@amd.com>
+Signed-off-by: Naveen Krishna Chatradhi <naveenkrishna.chatradhi@amd.com>
+---
+ drivers/apml/apml_sbtsi.c | 41 ++++++++++++++++++++++++++++++++-------
+ 1 file changed, 34 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/apml/apml_sbtsi.c b/drivers/apml/apml_sbtsi.c
+index 87193e2cc..c0e4be6c5 100644
+--- a/drivers/apml/apml_sbtsi.c
++++ b/drivers/apml/apml_sbtsi.c
+@@ -299,6 +299,7 @@ static int sbtsi_i3c_probe(struct i3c_device *i3cdev)
+ 		.val_bits = 8,
+ 	};
+ 	struct regmap *regmap;
++	const char *name;
+ 
+ 	regmap = devm_regmap_init_i3c(i3cdev, &sbtsi_i3c_regmap_config);
+ 	if (IS_ERR(regmap)) {
+@@ -315,15 +316,28 @@ static int sbtsi_i3c_probe(struct i3c_device *i3cdev)
+ 	mutex_init(&tsi_dev->lock);
+ 
+ 	dev_set_drvdata(dev, (void *)tsi_dev);
+-	hwmon_dev = devm_hwmon_device_register_with_info(dev, "sbtsi_i3c", tsi_dev,
++
++	/* Need to verify for the static address for i3cdev */
++	tsi_dev->dev_static_addr = i3cdev->desc->info.static_addr;
++
++	switch(tsi_dev->dev_static_addr) {
++	case 0x4c:
++		name = devm_kasprintf(dev, GFP_KERNEL, "sbtsi_%s", "0.0");
++		break;
++	case 0x48:
++		name = devm_kasprintf(dev, GFP_KERNEL, "sbtsi_%s", "1.0");
++		break;
++	default:
++		name = devm_kasprintf(dev, GFP_KERNEL, "sbtsi_");
++		break;
++	}
++
++	hwmon_dev = devm_hwmon_device_register_with_info(dev, name, tsi_dev,
+ 							 &sbtsi_chip_info, NULL);
+ 
+ 	if (!hwmon_dev)
+ 		return PTR_ERR_OR_ZERO(hwmon_dev);
+ 
+-	/* Need to verify for the static address for i3cdev */
+-	tsi_dev->dev_static_addr = i3cdev->desc->info.static_addr;
+-
+ 	return create_misc_tsi_device(tsi_dev, dev);
+ }
+ 
+@@ -341,6 +355,7 @@ static int sbtsi_i2c_probe(struct i2c_client *client)
+ 		.reg_bits = 8,
+ 		.val_bits = 8,
+ 	};
++	const char *name;
+ 
+ 	tsi_dev = devm_kzalloc(dev, sizeof(struct apml_sbtsi_device), GFP_KERNEL);
+ 	if (!tsi_dev)
+@@ -353,7 +368,21 @@ static int sbtsi_i2c_probe(struct i2c_client *client)
+ 
+ 	dev_set_drvdata(dev, (void *)tsi_dev);
+ 
+-	hwmon_dev = devm_hwmon_device_register_with_info(dev, client->name,
++	tsi_dev->dev_static_addr = client->addr;
++
++	switch(tsi_dev->dev_static_addr) {
++	case 0x4c:
++		name = devm_kasprintf(dev, GFP_KERNEL, "sbtsi_%s", "0.0");
++		break;
++	case 0x48:
++		name = devm_kasprintf(dev, GFP_KERNEL, "sbtsi_%s", "1.0");
++		break;
++	default:
++		name = devm_kasprintf(dev, GFP_KERNEL, "sbtsi_");
++		break;
++	}
++
++	hwmon_dev = devm_hwmon_device_register_with_info(dev, name,
+ 							 tsi_dev,
+ 							 &sbtsi_chip_info,
+ 							 NULL);
+@@ -361,8 +390,6 @@ static int sbtsi_i2c_probe(struct i2c_client *client)
+ 	if (!hwmon_dev)
+ 		return PTR_ERR_OR_ZERO(hwmon_dev);
+ 
+-	tsi_dev->dev_static_addr = client->addr;
+-
+ 	return create_misc_tsi_device(tsi_dev, dev);
+ }
+ 
+-- 
+2.43.0
+

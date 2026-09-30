@@ -17,6 +17,7 @@
  */
 
 #include <errno.h>
+#include <stddef.h>
 #include <stdio.h>
 
 #include <openbmc/log.h>
@@ -46,20 +47,32 @@ void read_local_mac(char *buffer)
  * and has a dependency in FBNet
  */
 
-int main(int argc, const char *argv[])
+/*
+ * Every EEPROM yamp exposes, in the order show_tech collected them.
+ */
+static const char *yamp_targets[] = {
+  "CHASSIS", "SCD", "SUP",
+  "lc1", "lc2", "lc3", "lc4", "lc5", "lc6", "lc7", "lc8",
+};
+#define YAMP_NUM_TARGETS (sizeof(yamp_targets) / sizeof(yamp_targets[0]))
+
+static void usage(const char *prog)
 {
-  const char *fn;
+  printf("Usage: %s [-a | --all | <device>]\n", prog);
+  printf("   -a | --all : print every EEPROM device\n");
+  printf("   <device>   : one of");
+  for (size_t i = 0; i < YAMP_NUM_TARGETS; i++)
+    printf(" %s", yamp_targets[i]);
+  printf(" (default CHASSIS)\n");
+}
+
+static int dump_eeprom(const char *fn)
+{
   struct wedge_eeprom_st eeprom;
   int rc;
   char local_mac[20];
   uint8_t parsed_mac[6];
   uint8_t sup_mac[6];
-
-  if (argc >= 2) {
-    fn = argv[1];
-  } else {
-    fn = "CHASSIS";
-  }
 
   rc = yamp_eeprom_parse(fn, &eeprom);
   if (rc) {
@@ -71,6 +84,7 @@ int main(int argc, const char *argv[])
   read_local_mac(local_mac);
   yamp_parse_mac(parsed_mac,local_mac,0);
   yamp_calculate_mac(parsed_mac, -1, sup_mac);
+  /* SUP reports the calculated MAC rather than the BMC's own. */
   if (!strcmp(fn, "SUP"))
     for (int i = 0; i < 6; i++)
       parsed_mac[i] = sup_mac[i];
@@ -106,4 +120,40 @@ int main(int argc, const char *argv[])
   printf("CRC8: 0x%x\n", eeprom.fbw_crc8);
 
   return 0;
+}
+
+int main(int argc, const char *argv[])
+{
+  const char *fn;
+
+  if (argc >= 2 &&
+      (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help"))) {
+    usage(argv[0]);
+    return 0;
+  }
+
+  if (argc >= 2 &&
+      (!strcmp(argv[1], "-a") || !strcmp(argv[1], "--all"))) {
+    int failed = 0;
+
+    /*
+     * Keep going when a device is absent: line card slots may be empty,
+     * and the rest of the dump is still useful.
+     */
+    for (size_t i = 0; i < YAMP_NUM_TARGETS; i++) {
+      if (i)
+        printf("\n");
+      if (dump_eeprom(yamp_targets[i]))
+        failed++;
+    }
+    return failed == (int)YAMP_NUM_TARGETS ? -1 : 0;
+  }
+
+  if (argc >= 2) {
+    fn = argv[1];
+  } else {
+    fn = "CHASSIS";
+  }
+
+  return dump_eeprom(fn) ? -1 : 0;
 }

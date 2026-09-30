@@ -1,0 +1,111 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: OpenBMC Developer <openbmc@example.com>
+Date: Mon, 20 Jul 2026 00:00:00 +0000
+Subject: [PATCH] mtd: spi-nor: support GC2 alternate flashes
+
+Add the GigaDevice GD55B01GF and Puya PY25Q01GHB 1-Gbit parts used as
+alternate sources on Grand Canyon 2.
+
+Both devices provide 4-KiB erase and dedicated 4-byte address opcodes.
+PY25Q01GHB uses bit 1 of status register 2 as its quad-enable bit.
+
+Signed-off-by: OpenBMC Developer <openbmc@example.com>
+---
+ drivers/mtd/spi-nor/Makefile     |  1 +
+ drivers/mtd/spi-nor/core.c       |  1 +
+ drivers/mtd/spi-nor/core.h       |  1 +
+ drivers/mtd/spi-nor/gigadevice.c |  6 ++++++
+ drivers/mtd/spi-nor/puya.c       | 32 ++++++++++++++++++++++++++++++++
+ 5 files changed, 41 insertions(+)
+ create mode 100644 drivers/mtd/spi-nor/puya.c
+
+diff --git a/drivers/mtd/spi-nor/Makefile b/drivers/mtd/spi-nor/Makefile
+index 6b904e439372..5970c4f3f24c 100644
+--- a/drivers/mtd/spi-nor/Makefile
++++ b/drivers/mtd/spi-nor/Makefile
+@@ -12,6 +12,7 @@ spi-nor-objs			+= issi.o
+ spi-nor-objs			+= macronix.o
+ spi-nor-objs			+= micron-st.o
+ spi-nor-objs			+= spansion.o
++spi-nor-objs			+= puya.o
+ spi-nor-objs			+= sst.o
+ spi-nor-objs			+= winbond.o
+ spi-nor-objs			+= xilinx.o
+diff --git a/drivers/mtd/spi-nor/core.c b/drivers/mtd/spi-nor/core.c
+index 0369d98b2d12..45714dd86487 100644
+--- a/drivers/mtd/spi-nor/core.c
++++ b/drivers/mtd/spi-nor/core.c
+@@ -2024,6 +2024,7 @@ static const struct spi_nor_manufacturer *manufacturers[] = {
+ 	&spi_nor_micron,
+ 	&spi_nor_st,
+ 	&spi_nor_spansion,
++	&spi_nor_puya,
+ 	&spi_nor_sst,
+ 	&spi_nor_winbond,
+ 	&spi_nor_xilinx,
+diff --git a/drivers/mtd/spi-nor/core.h b/drivers/mtd/spi-nor/core.h
+index 0d9e91db3446..e968a2247bd8 100644
+--- a/drivers/mtd/spi-nor/core.h
++++ b/drivers/mtd/spi-nor/core.h
+@@ -397,5 +397,6 @@ extern const struct spi_nor_manufacturer spi_nor_micron;
+ extern const struct spi_nor_manufacturer spi_nor_st;
+ extern const struct spi_nor_manufacturer spi_nor_spansion;
++extern const struct spi_nor_manufacturer spi_nor_puya;
+ extern const struct spi_nor_manufacturer spi_nor_sst;
+ extern const struct spi_nor_manufacturer spi_nor_winbond;
+ extern const struct spi_nor_manufacturer spi_nor_xilinx;
+diff --git a/drivers/mtd/spi-nor/gigadevice.c b/drivers/mtd/spi-nor/gigadevice.c
+index 447d84bb2128..64d2eb8179b0 100644
+--- a/drivers/mtd/spi-nor/gigadevice.c
++++ b/drivers/mtd/spi-nor/gigadevice.c
+@@ -51,5 +51,11 @@ static const struct flash_info gigadevice_parts[] = {
+ 			   SPI_NOR_HAS_TB | SPI_NOR_TB_SR_BIT6)
+ 		.fixups = &gd25q256_fixups },
++	{ "gd55b01ge", INFO(0xc8471b, 0, 64 * 1024, 2048,
++			   SECT_4K | SPI_NOR_QUAD_READ | SPI_NOR_4B_OPCODES |
++			   SPI_NOR_HAS_LOCK | SPI_NOR_HAS_TB) },
++	{ "gd55b01gf", INFO(0xc8401b, 0, 64 * 1024, 2048,
++			   SECT_4K | SPI_NOR_QUAD_READ | SPI_NOR_4B_OPCODES |
++			   SPI_NOR_HAS_LOCK | SPI_NOR_HAS_TB) },
+ };
+ 
+ const struct spi_nor_manufacturer spi_nor_gigadevice = {
+diff --git a/drivers/mtd/spi-nor/puya.c b/drivers/mtd/spi-nor/puya.c
+new file mode 100644
+index 000000000000..a42d4d7d6342
+--- /dev/null
++++ b/drivers/mtd/spi-nor/puya.c
+@@ -0,0 +1,31 @@
++// SPDX-License-Identifier: GPL-2.0
++/*
++ * Copyright (C) 2026
++ */
++
++#include <linux/mtd/spi-nor.h>
++
++#include "core.h"
++
++static void py25q01ghb_default_init(struct spi_nor *nor)
++{
++	/* PY25Q01GHB stores QE in status register 2 bit 1. */
++	nor->params->quad_enable = spi_nor_sr2_bit1_quad_enable;
++}
++
++static const struct spi_nor_fixups py25q01ghb_fixups = {
++	.default_init = py25q01ghb_default_init,
++};
++
++static const struct flash_info puya_parts[] = {
++	{ "py25q01ghb", INFO(0x85201b, 0, 64 * 1024, 2048,
++			    SECT_4K | SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ |
++			    SPI_NOR_4B_OPCODES)
++		.fixups = &py25q01ghb_fixups },
++};
++
++const struct spi_nor_manufacturer spi_nor_puya = {
++	.name = "puya",
++	.parts = puya_parts,
++	.nparts = ARRAY_SIZE(puya_parts),
++};
+-- 
+2.39.2

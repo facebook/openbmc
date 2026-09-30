@@ -3,7 +3,7 @@
  *  @details    Implements an internal firmware update interface used by IFXTPMUpdate and TPMFactoryUpd.
  *  @file       FirmwareUpdate.c
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -882,7 +882,7 @@ FirmwareUpdate_CheckManifest(
             break;
         }
 
-        if (!PbfTpmAttributes.tpmInOperationalMode)
+        if (!PbfTpmAttributes.tpmInOperationalMode && OM_FU_BEFORE_FINALIZE != PbfTpmAttributes.tpm20OperationMode && OM_RE_BEFORE_FINALIZE != PbfTpmAttributes.tpm20OperationMode)
         {
             // Get manifest hash from TPM
             BYTE bMoreData = 0;
@@ -952,6 +952,103 @@ FirmwareUpdate_CheckManifest(
     }
     WHILE_FALSE_END;
 
+    return unReturnValue;
+}
+
+/**
+ *  @brief      Function to check the given firmware image sales code bytes against TPM vendor string values
+ *  @details    This function checks the given sales code bytes included in the firmware image
+                against the vendor string values returned by the TPM via TPM2_GetCapability call.
+                Depending on the sales code size the complete sales code or less bytes are checked (starts with).
+                If a mismatch is detected RC_E_WRONG_FW_IMAGE is returned.
+ *
+ *  @param      PpsFirmwareImage    Pointer to the unmarshalled firmware image structure (Unmarshalled PrgbFirmwareImage).
+ *
+ *  @retval     RC_SUCCESS                      The operation completed successfully.
+ *  @retval     RC_E_FAIL                       An unexpected error occurred.
+ *  @retval     RC_E_BAD_PARAMETER              In case of a NULL input parameter or usSalesCodeSize > 16.
+ *  @retval     RC_E_WRONG_FW_IMAGE             In case the TPM is not updatable with the given image.
+ *  @retval     ...                             Error codes from called functions.
+ */
+_Check_return_
+unsigned int
+FirmwareUpdate_CheckSalesCode(
+    _In_ IfxFirmwareImage* PpsFirmwareImage)
+{
+    unsigned int unReturnValue = RC_E_FAIL;
+    LOGGING_WRITE_LEVEL4(LOGGING_METHOD_ENTRY_STRING);
+
+    do
+    {
+        // Check parameter
+        if (NULL == PpsFirmwareImage &&
+            PpsFirmwareImage->usSalesCodeSize > 16)
+        {
+            unReturnValue = RC_E_BAD_PARAMETER;
+            ERROR_STORE(unReturnValue, L"Parameter not initialized correctly.");
+            break;
+        }
+
+        BYTE bMoreData = 0;
+        TSS_TPMS_CAPABILITY_DATA capabilityData;
+        Platform_MemorySet(&capabilityData, 0, sizeof(capabilityData));
+
+        // Read TPM_PT_VENDOR_STRING_1 - 4
+        unReturnValue = TSS_TPM2_GetCapability(TSS_TPM_CAP_TPM_PROPERTIES, TSS_TPM_PT_VENDOR_STRING_1, 4, &bMoreData, &capabilityData);
+        if (unReturnValue != TSS_TPM_RC_SUCCESS)
+        {
+            ERROR_STORE(unReturnValue, L"Error calling TSS_TPM2_GetCapability (TSS_TPM_PT_VENDOR_STRING_1 - 4).");
+            break;
+        }
+
+        // Check if capability count is correct
+        if (4 != capabilityData.data.tpmProperties.count)
+        {
+            unReturnValue = RC_E_FAIL;
+            ERROR_STORE_FMT(unReturnValue, L"Error calling TSS_TPM2_GetCapability (TSS_TPM_PT_VENDOR_STRING_1-4). Unexpected capability count returned (%d).", capabilityData.data.tpmProperties.count);
+            break;
+        }
+
+        // Check endianness
+        TSS_UINT16 ui16Value = 1;
+        BOOL fIsLittleEndian = (*(TSS_UINT8*)&ui16Value == 1) ? TRUE : FALSE;
+
+        // Check the sales code with the given length (max 16 byte) against the vendor string returned by the TPM.
+        // The vendor string normally is a null terminated ASCII string filled with additional zeros until the end.
+        // Using a smaller sales code size in the firmware image allows to check only the beginning of a sales code (starts with).
+        int iLength = PpsFirmwareImage->usSalesCodeSize;
+        int iResult = !0;
+        for (int nIndex = 0; nIndex < 4 && iLength > 0; nIndex++)
+        {
+            TSS_UINT32 ui32TempData = capabilityData.data.tpmProperties.tpmProperty[nIndex].value;
+
+            // Swap bytes if required
+            if (fIsLittleEndian)
+            {
+                ui32TempData = ((ui32TempData & 0x000000FF) << 24) | ((ui32TempData & 0x0000FF00) << 8) |
+                                ((ui32TempData & 0x00FF0000) >> 8) | ((ui32TempData & 0xFF000000) >> 24);
+            }
+
+            // Calculate length for compare (max 4bytes)
+            int iComp = (iLength > 4) ? 4 : iLength;
+            iResult = Platform_MemoryCompare(&ui32TempData, &PpsFirmwareImage->rgbSalesCode[4*nIndex], iComp);
+            // Stop check if mismatch is found
+            if (0 != iResult)
+                break;
+
+            // Decrement length
+            iLength -= 4;
+        }
+
+        // Return success or wrong fw image in dependency of check
+        if (0 == iResult)
+            unReturnValue = RC_SUCCESS;
+        else
+            unReturnValue = RC_E_WRONG_FW_IMAGE;
+    }
+    WHILE_FALSE_END;
+
+    LOGGING_WRITE_LEVEL4_FMT(LOGGING_METHOD_EXIT_STRING_RET_VAL, unReturnValue);
     return unReturnValue;
 }
 
@@ -1043,7 +1140,7 @@ FirmwareUpdate_IsFirmwareUpdatable(
             Platform_MemorySet(rgbHash, 0, sizeof(rgbHash));
 
             // Check structure version of the firmware image file for V1 images.
-            if (FIRMWARE_IMAGE_V1 == PpsFirmwareImage->bImageVersion && PpsFirmwareImage->usImageStructureVersion < 2)
+            if (FIRMWARE_IMAGE_V1 == PpsFirmwareImage->bImageVersion && PpsFirmwareImage->usImageStructureVersion < FIRMWARE_IMAGE_STRUCT_V2)
             {
                 ERROR_STORE(RC_E_CORRUPT_FW_IMAGE, L"The structure of the firmware image file is too old and therefore does not meet the minimum requirements");
                 unReturnValue = RC_SUCCESS;
@@ -1082,6 +1179,7 @@ FirmwareUpdate_IsFirmwareUpdatable(
                     break;
                 }
 
+#ifndef UEFI
                 // Recalculate the SHA-256 digest on which the signature is based
                 unReturnValue = Crypt_SHA256(PrgbFirmwareImage, nSizeOfDataForHash, rgbHash);
                 if (RC_SUCCESS != unReturnValue)
@@ -1092,9 +1190,14 @@ FirmwareUpdate_IsFirmwareUpdatable(
 
                 // Verify the signature of the firmware image file
                 unReturnValue = Crypt_VerifySignature(rgbHash, sizeof(rgbHash), PpsFirmwareImage->rgbSignature, sizeof(PpsFirmwareImage->rgbSignature), s_rgPublicKeys[unIndexKey].rgbPublicKey, 256);
+#else
+                // Verify the signature of the firmware image file with the image buffer as message (not its SHA-256 digest)
+                unReturnValue = Crypt_VerifySignatureRsaPssSha256(PrgbFirmwareImage, nSizeOfDataForHash, PpsFirmwareImage->rgbSignature, sizeof(PpsFirmwareImage->rgbSignature), s_rgPublicKeys[unIndexKey].rgbPublicKey, 256);
+#endif // !UEFI
+
                 if (RC_SUCCESS != unReturnValue && RC_E_VERIFY_SIGNATURE != unReturnValue)
                 {
-                    ERROR_STORE(unReturnValue, L"Crypt_VerifySignature returned an unexpected value");
+                    ERROR_STORE(unReturnValue, L"The signature verification returned an unexpected value");
                     break;
                 }
                 else if (RC_E_VERIFY_SIGNATURE == unReturnValue)
@@ -1338,6 +1441,7 @@ FirmwareUpdate_IsFirmwareUpdatable(
 
             if (FALSE == fImageAllowed)
             {
+                LOGGING_WRITE_LEVEL3(L"Current firmware version could not be found in firmware image.");
                 *PpunErrorDetails = RC_E_WRONG_FW_IMAGE;
                 unReturnValue = RC_SUCCESS;
                 break;
@@ -1370,6 +1474,23 @@ FirmwareUpdate_IsFirmwareUpdatable(
                 {
                     PpbfNewTpmFirmwareInfo->fwUpdateSameVersion = 0;
                     PpbfNewTpmFirmwareInfo->fwRecovery = 1;
+                }
+            }
+
+            // Check if sales code is set (added with image struct version 5)
+            if (PpsFirmwareImage->usImageStructureVersion >= FIRMWARE_IMAGE_STRUCT_V5 &&
+                PpsFirmwareImage->usSalesCodeSize > 0)
+            {
+                unReturnValue = FirmwareUpdate_CheckSalesCode(PpsFirmwareImage);
+                if (RC_SUCCESS != unReturnValue)
+                {
+                    LOGGING_WRITE_LEVEL3_FMT(L"Check of sales code failed (0x%.8X).", unReturnValue);
+                    if (RC_E_WRONG_FW_IMAGE == unReturnValue)
+                    {
+                        *PpunErrorDetails = unReturnValue;
+                        unReturnValue = RC_SUCCESS;
+                    }
+                    break;
                 }
             }
         }
@@ -1500,6 +1621,76 @@ FirmwareUpdate_IsFirmwareUpdatable(
 }
 
 /**
+ *  @brief      Checks if the given policy handle matches a loaded policy session.
+ *  @details    The function calls TPM2_GetCapability to check whether the given policy handle can be found within loaded policy sessions.
+ *
+ *  @param      PphPolicySessionHandle               Pointer to policy session handle.
+ *
+ *  @retval     RC_SUCCESS                           The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER                   An invalid parameter was passed to the function.
+ *  @retval     RC_E_TPM20_POLICY_SESSION_NOT_LOADED The policy handle does not match to a loaded Policy session.
+ *  @retval     RC_E_FAIL                            An unexpected error occurred.
+ *  @retval     ...                                  Error codes from called functions.
+ */
+_Check_return_
+unsigned int
+FirmwareUpdate_IsPolicySessionLoaded(
+    _In_ TSS_TPMI_SH_AUTH_SESSION* PphPolicySessionHandle)
+{
+    unsigned int unReturnValue = RC_E_FAIL;
+
+    LOGGING_WRITE_LEVEL4(LOGGING_METHOD_ENTRY_STRING);
+
+    do
+    {
+        // Check parameters
+        if (NULL == PphPolicySessionHandle)
+        {
+            unReturnValue = RC_E_BAD_PARAMETER;
+            ERROR_STORE(unReturnValue, L"Parameter not initialized correctly (PphPolicySessionHandle is NULL)");
+            break;
+        }
+
+        // Check if policy session handle is available,
+        // therefore read out the list of loaded session handles from the TPM.
+        TSS_TPMS_CAPABILITY_DATA handleCapabilityData;
+        BYTE bMoreData = 0;
+        unsigned int unIndex = 0;
+        BOOL fFound = FALSE;
+        Platform_MemorySet(&handleCapabilityData, 0, sizeof(handleCapabilityData));
+
+        unReturnValue = TSS_TPM2_GetCapability(TSS_TPM_CAP_HANDLES, TSS_TPM_HT_LOADED_SESSION << 24, 256, &bMoreData, &handleCapabilityData);
+        if (RC_SUCCESS == unReturnValue)
+        {
+            unsigned int unCountofHandles = handleCapabilityData.data.handles.count;
+            for (unIndex = 0; unIndex < unCountofHandles; unIndex++)
+            {
+                // Check whether the given SessionHandle is in the list
+                if (*PphPolicySessionHandle == handleCapabilityData.data.handles.handle[unIndex])
+                    fFound = TRUE;
+            }
+
+            if (!fFound)
+            {
+                unReturnValue = RC_E_TPM20_POLICY_SESSION_NOT_LOADED;
+                LOGGING_WRITE_LEVEL4_FMT(L"Could not find the policy session handle (0x%.8X) to update the configured target firmware version.", *PphPolicySessionHandle);
+                break;
+            }
+        }
+        else
+        {
+            ERROR_STORE(unReturnValue, L"TSS_TPM2_GetCapability returned an unexpected value. (TPM_CAP_HANDLES,TPM_HT_LOADED_SESSION)");
+            break;
+        }
+    }
+    WHILE_FALSE_END;
+
+    LOGGING_WRITE_LEVEL4_FMT(LOGGING_METHOD_EXIT_STRING_RET_VAL, unReturnValue);
+
+    return unReturnValue;
+}
+
+/**
  *  @brief      Returns the TPM state attributes
  *  @details
  *
@@ -1541,6 +1732,9 @@ FirmwareUpdate_CalculateState(
         }
 
         if (TSS_TPM_RC_SUCCESS == unReturnValue ||
+#ifdef WINDOWS
+                (TPM_E_COMMAND_BLOCKED | RC_TPM_MASK) == unReturnValue ||
+#endif
                 TSS_TPM_RC_INITIALIZE == (unReturnValue ^ RC_TPM_MASK) ||
                 TSS_TPM_RC_FAILURE == (unReturnValue ^ RC_TPM_MASK) ||
                 TSS_TPM_RC_REBOOT == (unReturnValue ^ RC_TPM_MASK))
@@ -1684,9 +1878,12 @@ FirmwareUpdate_CalculateState(
                     }
                     else
                     {
-                        // If TPM restart is pending capability may not be available
-                        if (PpsTpmState->attribs.tpm20restartRequired)
+                        // If TPM restart is pending or update is not finalized capability may not be available
+                        if (PpsTpmState->attribs.tpm20restartRequired || (bOperationMode & 0x7) == 0x3)
+                        {
+                            LOGGING_WRITE_LEVEL2_FMT(L"TSS_TPM2_GetCapability failed (0x%.8X). TPM restart is pending or update is not finalized.", unReturnValue)
                             unReturnValue = RC_SUCCESS;
+                        }
                         else
                             ERROR_STORE(unReturnValue, L"Error calling TSS_TPM2_GetCapability returned an unexpected value. (TSS_TPM_CAP_VENDOR_PROPERTY,TPM_PT_VENDOR_FIX_FU_PROPERTIES)");
                     }
@@ -1723,18 +1920,26 @@ FirmwareUpdate_CalculateState(
                     // The platformAuth is the Empty Buffer and platform hierarchy is enabled. The TPM can be updated with TPMFactoryUpd.
                     PpsTpmState->attribs.tpm20emptyPlatformAuth = 1;
                 }
-                else if ((unReturnValue ^ RC_TPM_MASK) == (TSS_TPM_RC_HIERARCHY | TSS_TPM_RC_1))
+                else if ((unReturnValue ^ RC_TPM_MASK) == (TSS_TPM_RC_HIERARCHY | TSS_TPM_RC_1) ||
+                    (unReturnValue ^ RC_TPM_MASK) == (TSS_TPM_RC_HIERARCHY))
                 {
                     // The platform hierarchy is disabled. The TPM cannot be updated with TPMFactoryUpd.
                     PpsTpmState->attribs.tpm20phDisabled = 1;
                     unReturnValue = RC_SUCCESS;
                 }
-                else if ((unReturnValue ^ RC_TPM_MASK) == (TSS_TPM_RC_BAD_AUTH | TSS_TPM_RC_S | TSS_TPM_RC_1))
+                else if ((unReturnValue ^ RC_TPM_MASK) == (TSS_TPM_RC_BAD_AUTH | TSS_TPM_RC_S | TSS_TPM_RC_1) ||
+                            (unReturnValue ^ RC_TPM_MASK) == (TSS_TPM_RC_BAD_AUTH))
                 {
                     // The platformAuth is not the Empty Buffer. The TPM cannot be updated with TPMFactoryUpd.
                     // (Hint: platformAuth is not protected by DA, so a failed TPM2_HierarchyChangeAuth does not have DA implications)
                     unReturnValue = RC_SUCCESS;
                 }
+#ifdef WINDOWS
+                else if ((TPM_E_COMMAND_BLOCKED | RC_TPM_MASK) == unReturnValue)
+                {
+                    unReturnValue = RC_SUCCESS;
+                }
+#endif
                 else
                 {
                     ERROR_STORE(unReturnValue, L"TSS_TPM2_HierarchyChangeAuth returned an unexpected value.");
@@ -2028,7 +2233,8 @@ FirmwareUpdate_Start_Tpm20(
 
         // Initialize authorization command data structure
         sAuthSessionData.authHandle = PunSessionHandle;
-        sAuthSessionData.sessionAttributes.continueSession = 1;
+        // Explicitly set continueSession to zero, since entering FW update mode will destroy session automatically (internal TPM restart)
+        sAuthSessionData.sessionAttributes.continueSession = 0;
 
         // Call TPM2_FieldUpgradeStartVendor command
         unReturnValue = TSS_TPM2_FieldUpgradeStartVendor(TSS_TPM_RH_PLATFORM, &sAuthSessionData, bSubCommand, &sData, &usStartSize, &sAckAuthSessionData);
@@ -2974,7 +3180,7 @@ FirmwareUpdate_CheckImage(
 
 /**
  *  @brief      Prepares a policy session for TPM firmware.
- *  @details    The function prepares a policy session for TPM Firmware Update.
+ *  @details    The function prepares a policy session for TPM Firmware Update for empty platform authorization.
  *
  *  @param      PphPolicySession                    Pointer to session handle that will be filled in by this method.
  *
@@ -3037,16 +3243,18 @@ FirmwareUpdate_PrepareTPM20Policy(
         unReturnValue = TSS_TPM2_SetPrimaryPolicy(TSS_TPM_RH_PLATFORM, &sAuthSessionData, &sPolicyDigest, TSS_TPM_ALG_SHA256, &sAckAuthSessionData);
         if (TSS_TPM_RC_SUCCESS != unReturnValue)
         {
-            if ((TSS_TPM_RC_HIERARCHY | TSS_TPM_RC_1) == (unReturnValue ^ RC_TPM_MASK))
+            if ((TSS_TPM_RC_HIERARCHY | TSS_TPM_RC_1) == (unReturnValue ^ RC_TPM_MASK) ||
+                (TSS_TPM_RC_HIERARCHY == (unReturnValue ^ RC_TPM_MASK)))
             {
-                ERROR_STORE_FMT(RC_E_PLATFORM_HIERARCHY_DISABLED, L"TSS_TPM2_SetPrimaryPolicy returned that platform hierarchy is disabled. (0x%.8X)", unReturnValue);
-                unReturnValue = RC_E_PLATFORM_HIERARCHY_DISABLED;
+                ERROR_STORE_FMT(RC_E_FU_PLATFORM_HIERARCHY_DISABLED, L"TSS_TPM2_SetPrimaryPolicy returned that platform hierarchy is disabled. (0x%.8X)", unReturnValue);
+                unReturnValue = RC_E_FU_PLATFORM_HIERARCHY_DISABLED;
                 break;
             }
-            else if ((TSS_TPM_RC_BAD_AUTH | TSS_TPM_RC_S | TSS_TPM_RC_1) == (unReturnValue ^ RC_TPM_MASK))
+            else if ((TSS_TPM_RC_BAD_AUTH | TSS_TPM_RC_S | TSS_TPM_RC_1) == (unReturnValue ^ RC_TPM_MASK) ||
+                (TSS_TPM_RC_BAD_AUTH  == (unReturnValue ^ RC_TPM_MASK)))
             {
-                ERROR_STORE_FMT(RC_E_PLATFORM_AUTH_NOT_EMPTY, L"TSS_TPM2_SetPrimaryPolicy returned that platformAuth is not the EmptyBuffer. (0x%.8X)", unReturnValue);
-                unReturnValue = RC_E_PLATFORM_AUTH_NOT_EMPTY;
+                ERROR_STORE_FMT(RC_E_FU_PLATFORM_AUTH_NOT_EMPTY, L"TSS_TPM2_SetPrimaryPolicy returned that platformAuth is not the EmptyBuffer. (0x%.8X)", unReturnValue);
+                unReturnValue = RC_E_FU_PLATFORM_AUTH_NOT_EMPTY;
                 break;
             }
             ERROR_STORE(unReturnValue, L"Error calling TSS_TPM2_SetPrimaryPolicy");

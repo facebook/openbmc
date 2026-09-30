@@ -1,0 +1,42 @@
+From b35a99a39b20de00ed4f336323b62f24b269cc6e Mon Sep 17 00:00:00 2001
+From: Andy Chung <Andy.Chung@amd.com>
+Date: Tue, 7 Jul 2026 10:51:46 +0800
+Subject: [PATCH] ARM: dts: aspeed: anacapa: Support Venice B0 CPU APML
+
+Remove I3C APML child nodes, SBRMI/SBTSI are enumerated via DAA and
+matched by the driver's i3c_id table, which covers both Venice A0 and
+B0 I3C HID.
+Also adjust I3C bus sda-tx-hold-ns to fit B0 CPU.
+
+Signed-off-by: Andy Chung <Andy.Chung@amd.com>
+---
+ .../dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts | 13 +------------
+ 1 file changed, 1 insertion(+), 12 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+index fe1401a4d219..59bd51e2599c 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+@@ -996,18 +996,7 @@ &i2c15 {
+ &i3c0 {
+ 	status = "okay";
+ 	i3c-scl-hz = <12500000>;
+-
+-	/* PID for Venice A0 */
+-	sbtsi_p0: sbtsi@4c,22400000118 {
+-		reg = <0x4c 0x224 0x00000118>;
+-		assigned-address = <0x4c>;
+-	};
+-
+-	/* PID for Venice A0 */
+-	sbrmi_p0: sbrmi@3c,22400001118 {
+-		reg = <0x3c 0x224 0x00001118>;
+-		assigned-address = <0x3c>;
+-	};
++	sda-tx-hold-ns = <40>;
+ };
+ 
+ &kcs2 {
+-- 
+2.53.0-Meta
+

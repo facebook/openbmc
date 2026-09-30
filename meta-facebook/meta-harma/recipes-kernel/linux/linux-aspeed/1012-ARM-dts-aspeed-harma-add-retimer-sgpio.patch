@@ -1,7 +1,7 @@
-From 366572080ad4d0a32ab94be0f1b37005f4f125be Mon Sep 17 00:00:00 2001
+From 5bac94f06317039ce9683ff99dcb5d0d1011f4e2 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Wed, 17 Sep 2025 16:06:53 +0800
-Subject: [PATCH 1012/1012] ARM: dts: aspeed: harma: add retimer sgpio
+Subject: [PATCH] ARM: dts: aspeed: harma: add retimer sgpio
 
 lore:https://lore.kernel.org/all/20250917101828.2589069-5-peteryin.openbmc@gmail.com/
 
@@ -12,22 +12,22 @@ for power fail monitor.
  1 file changed, 3 insertions(+), 2 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-index fe72d47a7632..37b5e2614a9a 100644
+index e11a6eaddf72..93dcec4baf22 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-@@ -828,9 +828,10 @@ &sgpiom0 {
+@@ -867,9 +867,10 @@ &sgpiom0 {
  	"","",
  	"irq-pvddcore0-ocp-alert","",
  	"irq-pvddcore1-ocp-alert","",
 -	"","",
 +	"irq-retimer0-0v9-alert","",
  	/*O4-O7 line 232-239*/
--	"","","","","","","","",
+-	"","","","",
 +	"irq-retimer1-0v9-alert","",
-+	"","","","","","",
++	"","",
+ 	"presence-lower-fanboard1","",
+ 	"presence-lower-fanboard2","",
  	/*P0-P3 line 240-247*/
- 	"","","","","","","","",
- 	/*P4-P7 line 248-255*/
 -- 
-2.43.0
+2.53.0-Meta
 

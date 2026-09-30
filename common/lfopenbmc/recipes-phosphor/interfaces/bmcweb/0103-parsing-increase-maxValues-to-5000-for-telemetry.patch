@@ -1,4 +1,4 @@
-From 1300015c0311c0346f881fc8d8d614504572102e Mon Sep 17 00:00:00 2001
+From 970e9ad8476d5fa9cf0877f01347e0421fd1bfc1 Mon Sep 17 00:00:00 2001
 From: Jagpal Singh Gill <paligill@gmail.com>
 Date: Wed, 27 May 2026 00:00:00 -0700
 Subject: [PATCH] parsing: increase maxValues to 5000 for telemetry
@@ -18,18 +18,18 @@ Signed-off-by: Jagpal Singh Gill <paligill@gmail.com>
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/http/parsing.hpp b/http/parsing.hpp
-index 5a012bd3..467e2c7c 100644
+index 78b09876..02f84b7d 100644
 --- a/http/parsing.hpp
 +++ b/http/parsing.hpp
 @@ -51,7 +51,7 @@ class BmcwebSaxParse : public nlohmann::json::json_sax_t
      constexpr static int maxDepth = 10;
  
      int totalValues = 0;
--    constexpr static int maxValues = 500;
+-    constexpr static int maxValues = 2000;
 +    constexpr static int maxValues = 5000;
  
    public:
      BmcwebSaxParse(nlohmann::json& j) : parser(j, false) {}
 -- 
-2.52.0
+2.53.0-Meta
 

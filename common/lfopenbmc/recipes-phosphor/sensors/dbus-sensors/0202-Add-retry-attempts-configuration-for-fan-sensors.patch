@@ -1,4 +1,4 @@
-From 7e6b2ce8ca4d5dd34b7b2b3f42f5eea83b9bba70 Mon Sep 17 00:00:00 2001
+From d570417a73e92a72652f7800c23283efd9e32270 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Wed, 26 Mar 2025 18:49:46 +0800
 Subject: [PATCH] Add retry attempts configuration for fan sensors
@@ -12,13 +12,13 @@ number of retry attempts for fan sensor operations.
  3 files changed, 9 insertions(+), 2 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index 1b30ce6..26a5301 100644
+index b40be7d..56486f1 100644
 --- a/meson.build
 +++ b/meson.build
-@@ -28,6 +28,7 @@ add_project_arguments(
-     '-DBOOST_ALLOW_DEPRECATED_HEADERS',
+@@ -29,6 +29,7 @@ add_project_arguments(
      '-DBOOST_ASIO_HAS_IO_URING',
      '-DBOOST_ASIO_DISABLE_EPOLL',
+     '-DJSON_NOEXCEPTION',
 +    '-DFAN_SENSOR_RETRY_ATTEMPTS=' + get_option('fan_sensor_retry_attempts').to_string(),
      language: 'cpp',
  )
@@ -38,10 +38,10 @@ index d04fca0..86bb4a4 100644
 +    description: 'Number of retry attempts for fan sensor operations',
 +)
 diff --git a/src/fan/FanMain.cpp b/src/fan/FanMain.cpp
-index c2fdaa5..1fdad2f 100644
+index 0baca76..0ff32cc 100644
 --- a/src/fan/FanMain.cpp
 +++ b/src/fan/FanMain.cpp
-@@ -671,7 +671,7 @@ int main()
+@@ -684,7 +684,7 @@ int main()
  
      boost::asio::post(io, [&]() {
          createSensors(io, objectServer, tachSensors, pwmSensors, presenceGpios,
@@ -50,7 +50,7 @@ index c2fdaa5..1fdad2f 100644
      });
  
      boost::asio::steady_timer filterTimer(io);
-@@ -693,7 +693,7 @@ int main()
+@@ -706,7 +706,7 @@ int main()
                      return;
                  }
                  createSensors(io, objectServer, tachSensors, pwmSensors,
@@ -60,5 +60,5 @@ index c2fdaa5..1fdad2f 100644
          };
  
 -- 
-2.52.0
+2.53.0-Meta
 

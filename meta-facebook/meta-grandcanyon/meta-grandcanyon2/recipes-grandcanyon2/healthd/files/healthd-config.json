@@ -40,6 +40,8 @@
   },
   "ecc_monitoring" : {
     "enabled": true,
+    "ecc_source": "edac",
+    "edac_sysfs_path": "/sys/devices/system/edac/mc/mc0",
     "ecc_address_log": true,
     "monitor_interval": 2,
     "recov_max_counter": 255,

@@ -1,0 +1,57 @@
+From 6b894207b310529448908ba72581e5b33199dfc2 Mon Sep 17 00:00:00 2001
+From: Michael Kao <michael.kao@quantatw.com>
+Date: Fri, 31 Jul 2026 05:09:00 +0800
+Subject: [PATCH] leakdetector: Raise leakdetector file limit
+
+The leakdetector service monitors each configured leak GPIO with a
+separate event fd. On ventura2, monitoring 256 leak ports with two
+statuses per port can exceed the default soft open-file limit of 1024.
+
+Add LimitNOFILE to raise the limit so that all leak GPIOs can be
+monitored.
+
+Tested on Ventura2:
+```
+:~# systemctl cat xyz.openbmc_project.leakdetector.service
+
+[Unit]
+Description=Leak Detector for Liquid Cooling
+Requires=xyz.openbmc_project.EntityManager.service
+After=xyz.openbmc_project.EntityManager.service
+
+[Service]
+Type=dbus
+BusName=xyz.openbmc_project.leakdetector
+Restart=always
+RestartSec=5
+ExecStart=/usr/libexec/dbus-sensors/leakdetector
+LimitNOFILE=8192
+
+[Install]
+WantedBy=multi-user.target
+
+:~# cat /proc/$(pidof leakdetector)/limits | grep "Max open files"
+Max open files            8192                 8192                 files
+```
+
+Change-Id: I4b41289126e6a69fadf7cf2ef85c244291b8d76a
+Signed-off-by: Michael Kao <michael.kao@quantatw.com>
+---
+ service_files/xyz.openbmc_project.leakdetector.service | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/service_files/xyz.openbmc_project.leakdetector.service b/service_files/xyz.openbmc_project.leakdetector.service
+index 6edfa8b..a3808fd 100644
+--- a/service_files/xyz.openbmc_project.leakdetector.service
++++ b/service_files/xyz.openbmc_project.leakdetector.service
+@@ -10,6 +10,7 @@ BusName=xyz.openbmc_project.leakdetector
+ Restart=always
+ RestartSec=5
+ ExecStart=/usr/libexec/dbus-sensors/leakdetector
++LimitNOFILE=8192
+ 
+ [Install]
+ WantedBy=multi-user.target
+-- 
+2.43.0
+

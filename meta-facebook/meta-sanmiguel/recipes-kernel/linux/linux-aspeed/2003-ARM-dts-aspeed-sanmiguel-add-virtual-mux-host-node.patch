@@ -1,0 +1,43 @@
+From fdc8b5247170f3a0a0857df6fe936dc51d359694 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Fri, 22 May 2026 10:08:11 +0800
+Subject: [PATCH] ARM: dts: aspeed: sanmiguel: add virtual-mux-host node
+
+Add a virtual-mux-host node and its corresponding properties on the
+i2c1 bus. This enables the BMC to access the HPM and HMC FRU EEPROMs
+via NVIDIA's virtual-mux mechanism, which allows accessing multiple
+FRU EEPROMs under a single I2C address.
+
+[1] https://github.com/NVIDIA/linux/commit/4313ef5318b80ebdf7d8d74292b68a89e505fa6a
+[2] https://github.com/NVIDIA/linux/commit/ba0bb79db8169a953c53a0ad8988370e6f05392f
+
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
+index f9f37a3deb30..b14a9f3b55b6 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
+@@ -440,6 +440,17 @@ ssif-bmc@10 {
+ 
+ &i2c1 {
+ 	status = "okay";
++
++	bridge@54 {
++		compatible = "virtual-mux-host";
++		reg = <0x54>;
++		virtual-bus-num = <90>;
++		use-crc16;
++		xfer-poll-sleep-ms = <40>;
++		xfer-timeout-ms = <2500>;
++		host-retry-max-ms = <8000>;
++		host-retry-sleep-ms = <20>;
++	};
+ };
+ 
+ &i2c2 {
+-- 
+2.53.0-Meta
+

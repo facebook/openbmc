@@ -46,3 +46,6 @@ setup_gpio IOB_FLASH_SEL                    GPIOG4 out 0
 
 # SPI Mux select to COME (B89) and PROT module
 setup_gpio SPI_MUX_SEL                      GPIOQ6 out 0
+
+# Diagnostic pin that triggers NMI
+setup_gpio FM_BMC_NMI_N                     GPIOO3 out 1

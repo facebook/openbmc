@@ -1,0 +1,38 @@
+From be20ca9d52dc9d2bd504596d28dfacb18ae83e66 Mon Sep 17 00:00:00 2001
+From: Mike Hsieh <mike_hsieh@quantatw.com>
+Date: Mon, 31 Aug 2026 17:21:42 +0800
+Subject: [PATCH] ARM: dts: aspeed: clemente: Remove nct3018y rtc node
+
+The Clemente platform has a second source RTC chip (PCF85053A) that
+shares the same I2C address (0x6f) with the existing NCT3018Y.
+
+Remove the statically defined nct3018y RTC node from the device tree.
+The correct RTC driver will be dynamically detected and instantiated
+from userspace/early-init script at runtime.
+
+Signed-off-by: Mike Hsieh <mike_hsieh@quantatw.com>
+
+[1] LORE: https://lore.kernel.org/all/20260831-clemente-remove-rtc-v1-1-84fc5787a6bb@quantatw.com/
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
+index 820d39a92974..51e90a4fba0e 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-clemente.dts
+@@ -958,11 +958,6 @@ io_expander3: gpio@21 {
+ 			"",
+ 			"";
+ 	};
+-
+-	rtc@6f {
+-		compatible = "nuvoton,nct3018y";
+-		reg = <0x6f>;
+-	};
+ };
+ 
+ &i2c7 {
+-- 
+2.53.0
+

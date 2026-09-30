@@ -204,7 +204,7 @@ typedef int64_t TSS_INT64;
 #define TSS_ENABLE_PCR_NO_INCREMENT             TSS_YES                                 /* indicates if the TPM_PT_PCR_NO_INCREMENT group is implemented */
 #define TSS_CRT_FORMAT_RSA                      TSS_YES                                 /* - */
 #define TSS_PRIVATE_VENDOR_SPECIFIC_BYTES       ((TSS_MAX_RSA_KEY_BYTES/2) * (3 + TSS_CRT_FORMAT_RSA * 2))/* TSS_MAX_RSA_KEY_BYTES is auto generated from the RSA key size selection in Table 4. If RSA is not implemented, this may need to be manually removed. */
-
+#define TSS_MAX_VENDOR_PROPERTY_COUNT           1                                       /* used by TPM2_GetCapability() processing the returned amount of vendor specific properties. */
 /**
  * Table 8 - Defines for NIST_P521 ECC Values
  */
@@ -337,7 +337,7 @@ typedef TSS_UINT16 TSS_TPM_KEY_SIZE;
 typedef TSS_UINT16 TSS_TPM_KEY_BITS;
 #define TSS_MAX_SYM_KEY_BYTES 32
 #define TSS_MAX_SYM_BLOCK_SIZE 16
-#define TSS_MAX_RSA_KEY_BYTES 256
+#define TSS_MAX_RSA_KEY_BYTES 384
 #define TSS_MAX_ECC_KEY_BYTES 48
 typedef TSS_TPM_KEY_BITS TSS_TPMI_AES_KEY_BITS;
 typedef TSS_TPM_KEY_BITS TSS_TPMI_SM4_KEY_BITS;

@@ -6,7 +6,11 @@
             11
         ]
     ],
-    "probe_register": 266,
+    "probe": [
+      {
+        "register": 266
+      }
+    ],
     "baudrate": 115200,
     "registers": [
         {

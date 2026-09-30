@@ -5,7 +5,7 @@ project(
     version: '0.2',
     license: 'GPL2',
     # Meson 0.40 only supports c++1z as an alias for c++17.
-    default_options: ['cpp_std=c++1z', 'warning_level=3', 'werror=true'],
+    default_options: ['cpp_std=c++2a', 'warning_level=3', 'werror=true'],
     meson_version: '>=0.40',
 )
 
@@ -21,10 +21,10 @@ common = files(
     'UARTDevice.cpp',
     'InterfaceScanner.cpp',
     'ModbusDeviceInventory.cpp',
+    'UnixSock.cpp',
 )
 svc_common = common + files(
     'Rackmon.cpp',
-    'UnixSock.cpp',
 )
 srcs = svc_common + files('RackmonSvcUnix.cpp')
 test_srcs = svc_common + files(
@@ -94,7 +94,7 @@ rackmon_cli_exe = executable(
 modbus_util_exe = executable(
     'modbus-util',
     common + files('ModbusUtil.cpp'),
-    dependencies: deps,
+    dependencies: deps + [cc.find_library('systemd')],
     install: true,
     install_dir: 'local/bin',
 )
@@ -109,7 +109,6 @@ if get_option('orv3') == true
         'orv3_bbu.json',
         'orv3_rpu.json',
         'orv3_rpu2.json',
-        'orv3_power_recv.json',
         'orv3_hpr_pmm_psu.json',
         'orv3_hpr_pmm_bbu.json',
         'orv3_hpr_pmm_cbu.json',

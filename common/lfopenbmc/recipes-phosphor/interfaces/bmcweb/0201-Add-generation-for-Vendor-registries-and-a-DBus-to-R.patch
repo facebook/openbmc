@@ -1,4 +1,4 @@
-From 70f42d9100d80f8a923135874a3ede73062a3678 Mon Sep 17 00:00:00 2001
+From 3f47fddfec9d46594b32ad88a2d6fef28afa7144 Mon Sep 17 00:00:00 2001
 From: Igor Kanyuka <ifelmail@gmail.com>
 Date: Mon, 24 Feb 2025 12:50:55 +0000
 Subject: [PATCH] Add generation for Vendor registries and a DBus to RF map
@@ -30,7 +30,7 @@ Signed-off-by: Igor Kanyuka <ifelmail@gmail.com>
  1 file changed, 349 insertions(+), 72 deletions(-)
 
 diff --git a/scripts/parse_registries.py b/scripts/parse_registries.py
-index e132b373..ba1b91a5 100755
+index 7eabbb15..6b793d0a 100755
 --- a/scripts/parse_registries.py
 +++ b/scripts/parse_registries.py
 @@ -4,6 +4,7 @@ import json
@@ -160,7 +160,7 @@ index e132b373..ba1b91a5 100755
                      version_split=version_split,
                      description=description,
                  )
-@@ -691,6 +711,247 @@ def to_pascal_case(text: str) -> str:
+@@ -676,6 +696,247 @@ def to_pascal_case(text: str) -> str:
      return "".join(i.capitalize() for i in s1[0:])
  
  
@@ -408,7 +408,7 @@ index e132b373..ba1b91a5 100755
  def main() -> None:
      dmtf_registries = OrderedDict(
          [
-@@ -711,7 +972,7 @@ def main() -> None:
+@@ -696,7 +957,7 @@ def main() -> None:
              ("storage_device", "1.2.1"),
              ("task_event", "1.0.3"),
              ("telemetry", "1.0.0"),
@@ -417,7 +417,7 @@ index e132b373..ba1b91a5 100755
          ]
      )
  
-@@ -723,63 +984,79 @@ def main() -> None:
+@@ -708,63 +969,79 @@ def main() -> None:
          + ",".join([dmtf for dmtf in dmtf_registries]),
          help="Comma delimited list of registries to update",
      )
@@ -549,5 +549,5 @@ index e132b373..ba1b91a5 100755
  
  if __name__ == "__main__":
 -- 
-2.52.0
+2.53.0-Meta
 

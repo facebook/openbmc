@@ -1,0 +1,124 @@
+From 0a89bbeb2b1be384bd3edb25f67bec55e98793b1 Mon Sep 17 00:00:00 2001
+From: Sandy Chu <sandy.chu.wiwynn@gmail.com>
+Date: Thu, 25 Jun 2026 03:03:56 +0000
+Subject: [PATCH] configurations: yosemite5: add PowerState to MCTPI2CTarget
+
+Add the PowerState property to CXL MCTP device configurations.
+
+This property is used by MCTPReactor to determine whether MCTP endpoint
+setup should be performed based on the current system power state.[1]
+
+[1] https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/91003
+
+Change-Id: I15511e2a6e43fbe64273d621d0c13e3856f79d37
+Signed-off-by: Sandy Chu <sandy.chu.wiwynn@gmail.com>
+---
+ .../meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio3.json          | 1 +
+ .../meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio4.json          | 1 +
+ .../meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio3.json          | 1 +
+ .../meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio4.json          | 1 +
+ .../meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio3.json          | 1 +
+ .../meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio4.json          | 1 +
+ .../meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio3.json          | 1 +
+ .../meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio4.json          | 1 +
+ 8 files changed, 8 insertions(+)
+
+diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio3.json b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio3.json
+index c4a95b9..085e7b8 100644
+--- a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio3.json
++++ b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio3.json
+@@ -287,6 +287,7 @@
+             "Address": "0x32",
+             "Bus": "15",
+             "Name": "CXL",
++            "PowerState": "On",
+             "Type": "MCTPI2CTarget"
+         },
+         {
+diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio4.json b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio4.json
+index 163d7d4..7a55dee 100644
+--- a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio4.json
++++ b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_mps_mcio4.json
+@@ -287,6 +287,7 @@
+             "Address": "0x32",
+             "Bus": "12",
+             "Name": "CXL",
++            "PowerState": "On",
+             "Type": "MCTPI2CTarget"
+         },
+         {
+diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio3.json b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio3.json
+index 8b8bbbf..51c99d2 100644
+--- a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio3.json
++++ b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio3.json
+@@ -287,6 +287,7 @@
+             "Address": "0x32",
+             "Bus": "15",
+             "Name": "CXL",
++            "PowerState": "On",
+             "Type": "MCTPI2CTarget"
+         },
+         {
+diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio4.json b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio4.json
+index 76c6d13..1011ade 100644
+--- a/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio4.json
++++ b/configurations/meta/yv5/yosemite5_cxl_ddr4_board_vr_raa_mcio4.json
+@@ -287,6 +287,7 @@
+             "Address": "0x32",
+             "Bus": "12",
+             "Name": "CXL",
++            "PowerState": "On",
+             "Type": "MCTPI2CTarget"
+         },
+         {
+diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio3.json b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio3.json
+index 12efe40..5a04873 100644
+--- a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio3.json
++++ b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio3.json
+@@ -265,6 +265,7 @@
+             "Address": "0x32",
+             "Bus": "15",
+             "Name": "CXL",
++            "PowerState": "On",
+             "Type": "MCTPI2CTarget"
+         },
+         {
+diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio4.json b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio4.json
+index e65bccc..7b22231 100644
+--- a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio4.json
++++ b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_mps_mcio4.json
+@@ -265,6 +265,7 @@
+             "Address": "0x32",
+             "Bus": "12",
+             "Name": "CXL",
++            "PowerState": "On",
+             "Type": "MCTPI2CTarget"
+         },
+         {
+diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio3.json b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio3.json
+index 27cdfd6..e55f089 100644
+--- a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio3.json
++++ b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio3.json
+@@ -265,6 +265,7 @@
+             "Address": "0x32",
+             "Bus": "15",
+             "Name": "CXL",
++            "PowerState": "On",
+             "Type": "MCTPI2CTarget"
+         },
+         {
+diff --git a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio4.json b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio4.json
+index 1766509..1701e17 100644
+--- a/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio4.json
++++ b/configurations/meta/yv5/yosemite5_cxl_ddr5_board_vr_raa_mcio4.json
+@@ -265,6 +265,7 @@
+             "Address": "0x32",
+             "Bus": "12",
+             "Name": "CXL",
++            "PowerState": "On",
+             "Type": "MCTPI2CTarget"
+         },
+         {
+-- 
+2.53.0-Meta
+

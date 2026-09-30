@@ -1,0 +1,12 @@
+[Unit]
+Description=MaxLinear XR21GpioMod
+Before=rackmond.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/xr21-gpio/gpio5_auto_rs485.py
+SyslogIdentifier=XR21 GPIO MOD
+
+[Install]
+WantedBy=multi-user.target

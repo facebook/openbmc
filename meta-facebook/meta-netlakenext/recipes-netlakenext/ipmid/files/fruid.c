@@ -60,7 +60,7 @@ plat_fruid_init() {
   int path_len = sizeof(path);
 
   //create the fru binary in /tmp/
-  //fruid_server.bin
+  //fruid_fboss.bin, MB FRU uses Meta FBOSS EEPROM format
   snprintf(path, path_len, EEPROM_PATH, I2C_SERVER_BUS, SERVER_FRU_ADDR);
   if (pal_copy_eeprom_to_bin(path, FRU_SERVER_BIN) < 0) {
     syslog(LOG_WARNING, "%s() Failed to copy %s to %s", __func__, path, FRU_SERVER_BIN);
@@ -107,7 +107,9 @@ plat_fruid_data(unsigned char payload_id, int fru_id, int offset, int count, uns
     return -1;
   }
 
-  if (pal_get_fru_name(bmc_fruid, fru_name) < 0) {
+  if (bmc_fruid == FRU_SERVER) {
+    snprintf(fru_name, MAX_FRU_CMD_STR, "%s", "fboss");
+  } else if (pal_get_fru_name(bmc_fruid, fru_name) < 0) {
     syslog(LOG_WARNING, "%s() Fail to get fru%u name\n", __func__, bmc_fruid);
     return -1;
   }
@@ -146,17 +148,13 @@ plat_fruid_size(unsigned char payload_id) {
   int ret = 0;
   char fru_path[MAX_PATH_LEN] = {0};
   char fru_name[MAX_FRU_CMD_STR] = {0};
-
+  // netlakenext server FRU is stored in Meta FBOSS EEPROM format
   if (payload_id != FRU_SERVER) {
     syslog(LOG_WARNING, "%s() Payload id: %u not support, only support get fruid size from server\n", __func__, (uint8_t)payload_id);
     return 0;
   }
 
-  if (pal_get_fru_name((uint8_t)payload_id, fru_name) < 0) {
-    syslog(LOG_WARNING, "%s() Fail to get fru%u name\n", __func__, (uint8_t)payload_id);
-    return 0;
-  }
-
+  strcpy(fru_name, "fboss");
   snprintf(fru_path, sizeof(fru_path), COMMON_FRU_PATH, fru_name);
 
   // check the size of the file and return size

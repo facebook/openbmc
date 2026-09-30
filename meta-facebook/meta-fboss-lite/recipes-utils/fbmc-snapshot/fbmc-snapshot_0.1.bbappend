@@ -20,6 +20,16 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LOCAL_URI += "\
     file://100_weutil.sh \
     file://101_x86_mTerm.sh \
+    file://102_oob_status.sh \
+    file://oob-status.sh \
+    "
+
+SHOWTECH_RULES_FILES:append = " \
+    102_oob_status.sh \
+    "
+
+SHOWTECH_UTILS_FILES:append = " \
+    oob-status.sh \
     "
 
 do_install:append() {

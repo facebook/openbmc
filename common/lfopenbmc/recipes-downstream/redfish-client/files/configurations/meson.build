@@ -1,1 +1,1 @@
-configurations = ['catalina.json', 'clemente.json', 'sanmiguel.json']
+configurations = ['catalina.json', 'clemente.json', 'sanmiguel.json', 'anacapa.json']

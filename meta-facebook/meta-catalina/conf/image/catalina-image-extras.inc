@@ -4,3 +4,7 @@ IMAGE_INSTALL:append = " \
     redfish-client \
     cpld-fw-handler \
 "
+
+IMAGE_INSTALL:append:clemente = " \
+    pldm-update \
+"

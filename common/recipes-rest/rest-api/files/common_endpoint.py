@@ -24,6 +24,8 @@ import rest_fruid
 import rest_fruid_pim
 import rest_fscd_sensor_data
 import rest_gpios
+import rest_leakage
+import rest_logfile
 import rest_modbus
 import rest_modbus_cmd
 import rest_psu_update
@@ -105,6 +107,16 @@ class commonApp_Handler:
         result = await rest_bmc.get_bmc()
         return web.json_response(result, dumps=dumps_bytestr)
 
+    # Handler for sys/mb/leakage resource endpoint
+    def helper_rest_leakage_hdl(self, request):
+        return web.json_response(
+            rest_leakage.get_leakage_status(), dumps=dumps_bytestr, status=200
+        )
+
+    @common_force_async
+    def rest_leakage_hdl(self, request):
+        return self.helper_rest_leakage_hdl(request)
+
     # Handler for sys/server resource endpoint
     def helper_rest_server_hdl(self, ctx: RequestContext):
         return web.json_response(rest_server.get_server(), dumps=dumps_bytestr)
@@ -152,6 +164,14 @@ class commonApp_Handler:
     @async_web_handler_in_common_executor
     def rest_fcpresent_hdl(self, ctx: RequestContext):
         return self.helper_rest_fcpresent_hdl(ctx)
+
+    # Handler for the persistent critical log resource endpoint.
+    # POST, not GET: auth_enforcer refuses a request with no matching ACL
+    # entry only for non-GET methods, so POST fails closed if the externally
+    # managed acl_config is ever absent. Arguments travel in the JSON body.
+    @staticmethod
+    async def rest_logfile_hdl(request: web.Request) -> web.Response:
+        return await rest_logfile.post_logfile(request)
 
     # Handler for psu_update resource endpoint
     def helper_psu_update_hdl(self, ctx: RequestContext):

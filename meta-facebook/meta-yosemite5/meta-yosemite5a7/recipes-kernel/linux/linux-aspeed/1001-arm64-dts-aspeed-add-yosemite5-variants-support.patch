@@ -1,0 +1,1094 @@
+From c2ba37b4b15bf4b017c07223d8f98c528fd8d77a Mon Sep 17 00:00:00 2001
+From: Pat Lin <pat.lin.wiwynn@gmail.com>
+Date: Wed, 22 Jul 2026 03:19:20 +0000
+Subject: [PATCH] arm64: dts: aspeed: add yosemite5 variants support
+
+This commit introduces support for new Yosemite 5 variants (T22) and
+resolves hardware conflicts with the existing T2 platform.
+
+Changes include:
+- Add support for the 3kW paddle board, Rio Grande board, and 2nd
+  NIC devices.
+- Remove conflicting I2C devices on i2c8 (&i2c4) as T22 variants do
+  not use the 1kW paddle board:
+  1. Drop the T2 1kW paddle board (tic) TPS25990 at 0x47. The T22 3kW
+     paddle board utilizes MP5998 and TPS25990 at the same address,
+     and the 3kW TPS25990 requires a different Rimon resistor setting.
+  2. Drop the T2 1kW paddle board (rds) TPS25990 at 0x4b. The T22 Rio
+     Grande board uses this address for its temperature sensor behind
+     the I2C mux.
+- Decrease bus frequency of i2c15 (&i2c11) and i2c12 (&i2c8) from
+  400kHz to 100kHz. This is required because the Pure Storage SSD
+  used in T22 only supports 100kHz.
+
+Note: Lowering the I2C frequency will significantly increase the PLDM
+update time for CXL devices on i2c12 in the T2 platform.
+---
+ .../aspeed-bmc-facebook-yosemite5a7.dts       | 947 +++++++++++++++++-
+ 1 file changed, 935 insertions(+), 12 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
+index 440a91413749..86083a3510d6 100644
+--- a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
++++ b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-yosemite5a7.dts
+@@ -5,6 +5,7 @@
+ #include "aspeed-g7-a35.dtsi"
+ #include <dt-bindings/gpio/aspeed-gpio.h>
+ #include <dt-bindings/i2c/i2c.h>
++#include <dt-bindings/leds/leds-pca955x.h>
+ 
+ / {
+ 	model = "Facebook Yosemite 5 BMC";
+@@ -54,6 +55,40 @@ aliases {
+ 		i2c35 = &i2c30mux0ch3;
+ 		i2c36 = &i2c10mux0ch0;
+ 		i2c37 = &i2c10mux0ch1;
++		i2c38 = &i2c12mux0ch0;
++		i2c39 = &i2c12mux0ch1;
++		i2c40 = &i2c12mux1ch0;
++		i2c41 = &i2c12mux1ch1;
++		i2c42 = &i2c12mux1ch2;
++		i2c43 = &i2c12mux1ch3;
++		i2c44 = &i2c12mux1ch4;
++		i2c45 = &i2c12mux1ch5;
++		i2c46 = &i2c12mux1ch6;
++		i2c47 = &i2c12mux1ch7;
++		i2c48 = &i2c15mux0ch0;
++		i2c49 = &i2c15mux0ch1;
++		i2c50 = &i2c15mux0ch2;
++		i2c51 = &i2c15mux0ch3;
++		i2c52 = &i2c15mux0ch4;
++		i2c53 = &i2c15mux0ch5;
++		i2c54 = &i2c15mux0ch6;
++		i2c55 = &i2c15mux0ch7;
++		i2c56 = &i2c2mux0ch0;
++		i2c57 = &i2c2mux0ch1;
++		i2c58 = &i2c2mux0ch2;
++		i2c59 = &i2c2mux0ch3;
++		i2c60 = &i2c2mux0ch4;
++		i2c61 = &i2c2mux0ch5;
++		i2c62 = &i2c2mux0ch6;
++		i2c63 = &i2c2mux0ch7;
++		i2c64 = &i2c8mux1ch0;
++		i2c65 = &i2c8mux1ch1;
++		i2c66 = &i2c8mux1ch2;
++		i2c67 = &i2c8mux1ch3;
++		i2c68 = &i2c8mux1ch4;
++		i2c69 = &i2c8mux1ch5;
++		i2c70 = &i2c8mux1ch6;
++		i2c71 = &i2c8mux1ch7;
+ 	};
+ 
+ 	chosen {
+@@ -422,6 +457,44 @@ adc@1d {
+ 		reg = <0x1d>;
+ 		ti,mode = /bits/ 8 <1>;
+ 	};
++	
++	/* 3KW IOEXP0 U3 */
++	paddle_io_expander0: gpio-expander@21 {
++		compatible = "nxp,pca9535";
++		reg = <0x21>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++				  /*00-07*/
++				  "PRSNT_CBL_SLOT_1_R_N", "PRSNT_CBL_SLOT_2_R_N",
++				  "PRSNT_CBL_SLOT_3_R_N", "PRSNT_CBL_SLOT_4_R_N",
++				  "PRSNT_CBL_SLOT_5_R_N", "",
++				  "", "",
++				  /*10-17*/
++				  "PG_CBL_R_ACCL1", "PG_CBL_R_ACCL2",
++				  "PG_CBL_R_ACCL3", "PG_CBL_R_ACCL4",
++				  "PG_CBL_R_ACCL5", "",
++				  "INT_IOEXP_2_R_N", "INT_IOEXP_3_R_N";
++	};
++
++	/* 3KW IOEXP2 U184 */
++	paddle_io_expander2: gpio-expander@23 {
++		compatible = "nxp,pca9535";
++		reg = <0x23>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++				  /*00-07*/
++				  "HSC_OC_GPIO0", "HSC_OC_GPIO1",
++				  "HSC_OC_GPIO2", "HSC_OC_GPIO3",
++				  "REV_ID2_R", "REV_ID1_R",
++				  "REV_ID0_R", "BOARD_ID0_R",
++				  /*10-17*/
++				  "BOARD_ID1_R", "RST_SMB_MUX",
++				  "PRSNT_MB_1_R1_N", "PRSNT_MB_2_R1_N",
++				  "PRSNT_CBL_SLOT_7_R_N", "EN_P12V_SLOT_FLASH_R1",
++				  "PRSNT0_CBL_FLASH_BRD_R2_N", "PRSNT1_CBL_FLASH_BRD_R2_N";
++	};
+ 
+ 	/* PDB IOEXP0 */
+ 	pdb_io_expander0: gpio-expander@24 {
+@@ -463,6 +536,25 @@ gpio-expander@25 {
+ 			"","";
+ 	};
+ 
++	/* 3KW IOEXP1 U7 */
++	paddle_io_expander1: gpio-expander@26 {
++		compatible = "nxp,pca9535";
++		reg = <0x26>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++				  /*00-07*/
++				  "PG_P12V_SLOT_1", "PG_P12V_SLOT_2",
++				  "PG_P12V_SLOT_3", "PG_P12V_SLOT_4",
++				  "PG_P12V_SLOT_5", "",
++				  "PG_P12V_SLOT_7", "PWRGD_P3V3_AUX",
++				  /*10-17*/
++				  "ALRT_HSC_SLOT_1_N", "ALRT_HSC_SLOT_2_N",
++				  "ALRT_HSC_SLOT_3_N", "ALRT_HSC_SLOT_4_N",
++				  "ALRT_HSC_SLOT_5_N", "",
++				  "ALRT_HSC_SLOT_7_N", "PWRGD_P2V5_AUX";
++	};
++
+ 	power-sensor@40 {
+ 		compatible = "ti,ina238";
+ 		reg = <0x40>;
+@@ -509,12 +601,6 @@ power-monitor@46 {
+ 		reg = <0x46>;
+ 	};
+ 
+-	power-monitor@47 {
+-		compatible = "ti,tps25990";
+-		reg = <0x47>;
+-		ti,rimon-micro-ohms = <430000000>;
+-	};
+-
+ 	temperature-sensor@48 {
+ 		compatible = "ti,tmp75";
+ 		reg = <0x48>;
+@@ -525,10 +611,10 @@ temperature-sensor@49 {
+ 		reg = <0x49>;
+ 	};
+ 
+-	power-monitor@4b {
+-		compatible = "ti,tps25990";
+-		reg = <0x4b>;
+-		ti,rimon-micro-ohms = <430000000>;
++	/* 3kW Paddle BD FRU */
++	eeprom@55 {
++		compatible = "atmel,24c256";
++		reg = <0x55>;
+ 	};
+ 
+ 	/* PDB FRU */
+@@ -607,6 +693,285 @@ i2c8mux0ch1: i2c@1 {
+ 			reg = <1>;
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
++
++			/* I2C MUX U6 */
++			i2c-mux@74 {
++				compatible = "nxp,pca9548";
++				reg = <0x74>;
++				#address-cells = <1>;
++				#size-cells = <0>;
++				i2c-mux-idle-disconnect;
++
++				i2c8mux1ch0: i2c@0 {
++					reg = <0>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++				};
++
++				i2c8mux1ch1: i2c@1 {
++					reg = <1>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++				};
++
++				i2c8mux1ch2: i2c@2 {
++					reg = <2>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++				};
++
++				i2c8mux1ch3: i2c@3 {
++					reg = <3>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++				};
++
++				i2c8mux1ch4: i2c@4 {
++					reg = <4>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++				};
++
++				i2c8mux1ch5: i2c@5 {
++					reg = <5>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++
++					drive_fault_led_controller0: pca9552@64 {
++						compatible = "nxp,pca9552";
++						#address-cells = <1>;
++						#size-cells = <0>;
++						reg = <0x64>;
++
++						led@0 {
++							label = "drive0_fault_amber";
++							reg = <0>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@1 {
++							label = "drive1_fault_amber";
++							reg = <1>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@2 {
++							label = "drive2_fault_amber";
++							reg = <2>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@3 {
++							label = "drive3_fault_amber";
++							reg = <3>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@4 {
++							label = "drive4_fault_amber";
++							reg = <4>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@5 {
++							label = "drive5_fault_amber";
++							reg = <5>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@6 {
++							label = "drive6_fault_amber";
++							reg = <6>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@7 {
++							label = "drive7_fault_amber";
++							reg = <7>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@8 {
++							label = "drive8_fault_amber";
++							reg = <8>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@9 {
++							label = "drive9_fault_amber";
++							reg = <9>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@10 {
++							label = "drive10_fault_amber";
++							reg = <10>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@11 {
++							label = "drive11_fault_amber";
++							reg = <11>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@12 {
++							label = "drive12_fault_amber";
++							reg = <12>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++					};
++				};
++
++				i2c8mux1ch6: i2c@6 {
++					reg = <6>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++
++					drive_fault_led_controller1: pca9552@65 {
++						compatible = "nxp,pca9552";
++						#address-cells = <1>;
++						#size-cells = <0>;
++						reg = <0x65>;
++
++						led@0 {
++							label = "drive13_fault_amber";
++							reg = <0>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@1 {
++							label = "drive14_fault_amber";
++							reg = <1>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@2 {
++							label = "drive15_fault_amber";
++							reg = <2>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@3 {
++							label = "drive16_fault_amber";
++							reg = <3>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@4 {
++							label = "drive17_fault_amber";
++							reg = <4>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@5 {
++							label = "drive18_fault_amber";
++							reg = <5>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@6 {
++							label = "drive19_fault_amber";
++							reg = <6>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@7 {
++							label = "drive20_fault_amber";
++							reg = <7>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@8 {
++							label = "drive21_fault_amber";
++							reg = <8>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@9 {
++							label = "drive22_fault_amber";
++							reg = <9>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@10 {
++							label = "drive23_fault_amber";
++							reg = <10>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@11 {
++							label = "drive24_fault_amber";
++							reg = <11>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++
++						led@12 {
++							label = "drive25_fault_amber";
++							reg = <12>;
++							retain-state-shutdown;
++							default-state = "keep";
++							type = <PCA955X_TYPE_LED>;
++						};
++					};
++				};
++
++				i2c8mux1ch7: i2c@7 {
++					reg = <7>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++				};
++			};
+ 		};
+ 
+ 		/* PWRPIC #12 (Connector to CXL BD) */
+@@ -731,8 +1096,23 @@ eeprom@56 {
+ 
+ /* MCIO 0A I2C */
+ &i2c6 {
++	multi-master;
++	i2c-scl-clk-low-timeout-us = <31744>;
++	mctp-controller;
++	//clock-frequency = <400000>;
+ 	status = "okay";
+ 
++	mctp@10 {
++		compatible = "mctp-i2c-controller";
++		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++	};
++
++	/* OCP NIC1 TEMP */
++	temperature-sensor@1f {
++		compatible = "ti,tmp421";
++		reg = <0x1f>;
++	};
++
+ 	/* E1S EB IOEXP0 */
+ 	gpio-expander@21 {
+ 		compatible = "nxp,pca9535";
+@@ -864,12 +1244,24 @@ adc@4b {
+ 		reg = <0x4b>;
+ 	};
+ 
++	/* DVT OCP NIC1 FRU EEPROM */
++	eeprom@50 {
++		compatible = "atmel,24c64";
++		reg = <0x50>;
++	};
++
+ 	/* E1S EB FRU */
+ 	eeprom@54 {
+ 		compatible = "atmel,24c128";
+ 		reg = <0x54>;
+ 	};
+ 
++	/* EVT OCP NIC1 FRU EEPROM */
++	eeprom@56 {
++		compatible = "atmel,24c64";
++		reg = <0x56>;
++	};
++
+ 	/* I2C MUX on E1S x4 board */
+ 	i2c-mux@73 {
+ 		compatible = "nxp,pca9543";
+@@ -971,13 +1363,214 @@ &i2c8 {
+ 	multi-master;
+ 	i2c-scl-clk-low-timeout-us = <31744>;
+ 	mctp-controller;
+-	clock-frequency = <400000>;
++	clock-frequency = <100000>;
+ 	status = "okay";
+ 
+ 	mctp@10 {
+ 		compatible = "mctp-i2c-controller";
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+ 	};
++
++	/* RIO GRANDE IOEXP0 U255 */
++	rio_io_expander0: gpio-expander@26 {
++		compatible = "nxp,pca9506";
++		reg = <0x26>;
++
++		interrupt-parent = <&sgpiom0>;
++		interrupts = <114 IRQ_TYPE_LEVEL_LOW>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++				  /*00-07*/
++				  "IFDET_U2_3_R1_N", "IFDET_U2_4_R1_N",
++				  "IFDET_U2_5_R1_N", "IFDET_U2_6_R1_N",
++				  "IFDET_U2_7_R1_N", "IFDET_U2_8_R1_N",
++				  "IFDET_U2_9_R1_N", "IFDET_U2_10_R1_N",
++				  /*10-17*/
++				  "EN_P12V_U2_3_R1", "EN_P12V_U2_4_R1",
++				  "EN_P12V_U2_5_R1", "EN_P12V_U2_6_R1",
++				  "EN_P12V_U2_7_R1", "EN_P12V_U2_8_R1",
++				  "EN_P12V_U2_9_R1", "EN_P12V_U2_10_R1",
++				  /*20-27*/
++				  "PG_P12V_U2_3_R1", "PG_P12V_U2_4_R1",
++				  "PG_P12V_U2_5_R1", "PG_P12V_U2_6_R1",
++				  "PG_P12V_U2_7_R1", "PG_P12V_U2_8_R1",
++				  "PG_P12V_U2_9_R1", "PG_P12V_U2_10_R1",
++				  /*30-37*/
++				  "FAULT_P3V3_AUX_U2_3_R1_N", "FAULT_P3V3_AUX_U2_4_R1_N",
++				  "FAULT_P3V3_AUX_U2_5_R1_N", "FAULT_P3V3_AUX_U2_6_R1_N",
++				  "FAULT_P3V3_AUX_U2_7_R1_N", "FAULT_P3V3_AUX_U2_8_R1_N",
++				  "FAULT_P3V3_AUX_U2_9_R1_N", "FAULT_P3V3_AUX_U2_10_R1_N",
++				  /*40-47*/
++				  "PG_HOST_CPLD_MCIO3A_R1", "INT_MCIO3A_IOEXP2_R1_N",
++				  "INT_MCIO3A_IOEXP3_R1_N", "INT_MCIO3A_IOEXP4_R1_N",
++				  "INT_MCIO3A_IOEXP5_R1_N", "ALT_SMB_TMP1_R1_N",
++				  "PG_P12V_1_SB4_R1", "";
++	};
++
++	/* RIO GRANDE IOEXP3 U253 */
++	rio_io_expander3: gpio-expander@21 {
++		compatible = "nxp,pca9555";
++		reg = <0x21>;
++		interrupt-parent = <&rio_io_expander0>;
++		interrupts = <35 IRQ_TYPE_LEVEL_LOW>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++				  /*00-07*/
++				  "EN_P12V_U2_1_R", "PG_P12V_U2_1",
++				  "FAULT_P3V3_AUX_U2_1_N", "ALT_P12V_U2_1_N",
++				  "CLKREQ_U2_1_N", "WAKE_U2_1_N",
++				  "PWRDIS_U2_1", "IFDET_U2_1_N",
++				  /*10-17*/
++				  "EN_P12V_U2_2_R", "PG_P12V_U2_2",
++				  "FAULT_P3V3_AUX_U2_2_N", "ALT_P12V_U2_2_N",
++				  "CLKREQ_U2_2_N", "WAKE_U2_2_N",
++				  "PWRDIS_U2_2", "IFDET_U2_2_N";
++	};
++
++	/* RIO GRANDE IOEXP4 U256 */
++	rio_io_expander4: gpio-expander@22 {
++		compatible = "nxp,pca9555";
++		reg = <0x22>;
++		interrupt-parent = <&rio_io_expander0>;
++		interrupts = <33 IRQ_TYPE_LEVEL_LOW>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++				  /*00-07*/
++				  "CLKREQ_U2_3_N", "CLKREQ_U2_4_N",
++				  "CLKREQ_U2_5_N", "CLKREQ_U2_6_N",
++				  "CLKREQ_U2_7_N", "CLKREQ_U2_8_N",
++				  "CLKREQ_U2_9_N", "CLKREQ_U2_10_N",
++				  /*10-17*/
++				  "ALT_P12V_U2_3_N", "ALT_P12V_U2_4_N",
++				  "ALT_P12V_U2_5_N", "ALT_P12V_U2_6_N",
++				  "ALT_P12V_U2_7_N", "ALT_P12V_U2_8_N",
++				  "ALT_P12V_U2_9_N", "ALT_P12V_U2_10_N";
++	};
++
++	/* RIO GRANDE IOEXP5 U257 */
++	rio_io_expander5: gpio-expander@23 {
++		compatible = "nxp,pca9555";
++		reg = <0x23>;
++		interrupt-parent = <&rio_io_expander0>;
++		interrupts = <34 IRQ_TYPE_LEVEL_LOW>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++				  /*00-07*/
++				  "WAKE_U2_3_N", "WAKE_U2_4_N",
++				  "WAKE_U2_5_N", "WAKE_U2_6_N",
++				  "WAKE_U2_7_N", "WAKE_U2_8_N",
++				  "WAKE_U2_9_N", "WAKE_U2_10_N",
++				  /*10-17*/
++				  "PWRDIS_U2_3", "PWRDIS_U2_4",
++				  "PWRDIS_U2_5", "PWRDIS_U2_6",
++				  "PWRDIS_U2_7", "PWRDIS_U2_8",
++				  "PWRDIS_U2_9", "PWRDIS_U2_10";
++	};
++
++	/* RIO GRANDE IOEXP10 U270 */
++	rio_io_expander10: gpio-expander@24 {
++		compatible = "nxp,pca9555";
++		reg = <0x24>;
++		interrupt-parent = <&rio_io_expander0>;
++		interrupts = <36 IRQ_TYPE_LEVEL_LOW>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++				  /*00-07*/
++				  "RST_PCIE_MCIO4B_N", "RST_PCIE_MCIO3B_N",
++				  "", "RST_3A_IOEXP5_AND3_R_N",
++				  "RST_3A_IOEXP5_AND5_R_N", "RST_3A_IOEXP5_AND7_R_N",
++				  "RST_3A_IOEXP5_AND9_R_N", "",
++				  /*10-17*/
++				  "", "",
++				  "RST_3A_IOEXP5_AND10_R_N", "RST_3A_IOEXP5_AND8_R_N",
++				  "RST_3A_IOEXP5_AND6_R_N", "RST_3A_IOEXP5_AND4_R_N",
++				  "RST_3A_IOEXP5_AND2_R_N", "RST_3A_IOEXP5_AND1_R_N";
++	};
++
++	/* RIO GRANDE I2C MUX U249 */
++	i2c-mux@70 {
++		compatible = "nxp,pca9543";
++		reg = <0x70>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		i2c-mux-idle-disconnect;
++
++		i2c12mux0ch0: i2c@0 {
++			reg = <0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c12mux0ch1: i2c@1 {
++			reg = <1>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++	};
++
++	/* RIO GRANDE I2C MUX U250 */
++	i2c-mux@71 {
++		compatible = "nxp,pca9548";
++		reg = <0x71>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		i2c-mux-idle-disconnect;
++
++		i2c12mux1ch0: i2c@0 {
++			reg = <0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c12mux1ch1: i2c@1 {
++			reg = <1>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c12mux1ch2: i2c@2 {
++			reg = <2>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c12mux1ch3: i2c@3 {
++			reg = <3>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c12mux1ch4: i2c@4 {
++			reg = <4>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c12mux1ch5: i2c@5 {
++			reg = <5>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c12mux1ch6: i2c@6 {
++			reg = <6>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c12mux1ch7: i2c@7 {
++			reg = <7>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++	};
+ };
+ 
+ &i2c9 {
+@@ -1045,13 +1638,177 @@ &i2c11 {
+ 	multi-master;
+ 	i2c-scl-clk-low-timeout-us = <31744>;
+ 	mctp-controller;
+-	clock-frequency = <400000>;
++	clock-frequency = <100000>;
+ 	status = "okay";
+ 
+ 	mctp@10 {
+ 		compatible = "mctp-i2c-controller";
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+ 	};
++
++	/* RIO GRANDE IOEXP1 U259 */
++	rio_io_expander1: gpio-expander@26 {
++		compatible = "nxp,pca9506";
++		reg = <0x26>;
++		interrupt-parent = <&sgpiom0>;
++		interrupts = <110 IRQ_TYPE_LEVEL_LOW>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++				  /*00-07*/
++				  "IFDET_U2_11_R1_N", "IFDET_U2_12_R1_N",
++				  "IFDET_U2_13_R1_N", "IFDET_U2_14_R1_N",
++				  "IFDET_U2_15_R1_N", "IFDET_U2_16_R1_N",
++				  "IFDET_U2_17_R1_N", "IFDET_U2_18_R1_N",
++				  /*10-17*/
++				  "EN_P12V_U2_11_R1", "EN_P12V_U2_12_R1",
++				  "EN_P12V_U2_13_R1", "EN_P12V_U2_14_R1",
++				  "EN_P12V_U2_15_R1", "EN_P12V_U2_16_R1",
++				  "EN_P12V_U2_17_R1", "EN_P12V_U2_18_R1",
++				  /*20-27*/
++				  "PG_P12V_U2_11_R1", "PG_P12V_U2_12_R1",
++				  "PG_P12V_U2_13_R1", "PG_P12V_U2_14_R1",
++				  "PG_P12V_U2_15_R1", "PG_P12V_U2_16_R1",
++				  "PG_P12V_U2_17_R1", "PG_P12V_U2_18_R1",
++				  /*30-37*/
++				  "FAULT_P3V3_AUX_U2_11_R1_N", "FAULT_P3V3_AUX_U2_12_R1_N",
++				  "FAULT_P3V3_AUX_U2_13_R1_N", "FAULT_P3V3_AUX_U2_14_R1_N",
++				  "FAULT_P3V3_AUX_U2_15_R1_N", "FAULT_P3V3_AUX_U2_16_R1_N",
++				  "FAULT_P3V3_AUX_U2_17_R1_N", "FAULT_P3V3_AUX_U2_18_R1_N",
++				  /*40-47*/
++				  "PG_HOST_CPLD_MCIO2A_R1", "INT_MCIO2A_IOEXP2_R1_N",
++				  "INT_MCIO2A_IOEXP3_R1_N", "INT_MCIO2A_IOEXP4_R1_N",
++				  "ALT_SMB_TMP2_R1_N", "PG_P12V_2_SB4_R1",
++				  "EN_MCIO3B_PWR_R1", "EN_MCIO3A_PWR_R1";
++	};
++
++	/* RIO GRANDE IOEXP6 U260 */
++	rio_io_expander6: gpio-expander@21 {
++		compatible = "nxp,pca9555";
++		reg = <0x21>;
++		interrupt-parent = <&rio_io_expander1>;
++		interrupts = <33 IRQ_TYPE_LEVEL_LOW>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++				  /*00-07*/
++				  "CLKREQ_U2_11_N", "CLKREQ_U2_12_N",
++				  "CLKREQ_U2_13_N", "CLKREQ_U2_14_N",
++				  "CLKREQ_U2_15_N", "CLKREQ_U2_16_N",
++				  "CLKREQ_U2_17_N", "CLKREQ_U2_18_N",
++				  /*10-17*/
++				  "ALT_P12V_U2_11_N", "ALT_P12V_U2_12_N",
++				  "ALT_P12V_U2_13_N", "ALT_P12V_U2_14_N",
++				  "ALT_P12V_U2_15_N", "ALT_P12V_U2_16_N",
++				  "ALT_P12V_U2_17_N", "ALT_P12V_U2_18_N";
++	};
++
++	/* RIO GRANDE IOEXP7 U261 */
++	rio_io_expander7: gpio-expander@22 {
++		compatible = "nxp,pca9555";
++		reg = <0x22>;
++		interrupt-parent = <&rio_io_expander1>;
++		interrupts = <34 IRQ_TYPE_LEVEL_LOW>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++				  /*00-07*/
++				  "WAKE_U2_11_N", "WAKE_U2_12_N",
++				  "WAKE_U2_13_N", "WAKE_U2_14_N",
++				  "WAKE_U2_15_N", "WAKE_U2_16_N",
++				  "WAKE_U2_17_N", "WAKE_U2_18_N",
++				  /*10-17*/
++				  "PWRDIS_U2_11", "PWRDIS_U2_12",
++				  "PWRDIS_U2_13", "PWRDIS_U2_14",
++				  "PWRDIS_U2_15", "PWRDIS_U2_16",
++				  "PWRDIS_U2_17", "PWRDIS_U2_18";
++	};
++
++	/* RIO GRANDE IOEXP11 U271 */
++	rio_io_expander11: gpio-expander@24 {
++		compatible = "nxp,pca9555";
++		reg = <0x24>;
++		interrupt-parent = <&rio_io_expander1>;
++		interrupts = <35 IRQ_TYPE_LEVEL_LOW>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++				  /*00-07*/
++				  "RST_PCIE_MCIO2B_N", "",
++				  "RST_2A_IOEXP4_AND12_R_N", "RST_2A_IOEXP4_AND14_R_N",
++				  "RST_2A_IOEXP4_AND16_R_N", "RST_2A_IOEXP4_AND18_R_N",
++				  "", "",
++				  /*10-17*/
++				  "", "",
++				  "", "",
++				  "RST_2A_IOEXP4_AND17_R_N", "RST_2A_IOEXP4_AND15_R_N",
++				  "RST_2A_IOEXP4_AND13_R_N", "RST_2A_IOEXP4_AND11_R_N";
++	};
++
++	/* RIO GRANDE I2C MUX U251 */
++	i2c-mux@70 {
++		compatible = "nxp,pca9548";
++		reg = <0x70>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		i2c-mux-idle-disconnect;
++
++		i2c15mux0ch0: i2c@0 {
++			reg = <0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c15mux0ch1: i2c@1 {
++			reg = <1>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c15mux0ch2: i2c@2 {
++			reg = <2>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c15mux0ch3: i2c@3 {
++			reg = <3>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c15mux0ch4: i2c@4 {
++			reg = <4>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c15mux0ch5: i2c@5 {
++			reg = <5>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c15mux0ch6: i2c@6 {
++			reg = <6>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c15mux0ch7: i2c@7 {
++			reg = <7>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++	};
++
++	/* RIO GRANDE FRU */
++	eeprom@50 {
++		compatible = "atmel,24c256";
++		reg = <0x50>;
++	};
+ };
+ 
+ /* MB CPLD I2C */
+@@ -1070,6 +1827,164 @@ &i2c13 {
+ &i2c14 {
+ 	status = "okay";
+ 	pinctrl-0 = <&pinctrl_di2c14_default>;
++
++	/* RIO GRANDE IOEXP2 U263 */
++	rio_io_expander2: gpio-expander@26 {
++		compatible = "nxp,pca9506";
++		reg = <0x26>;
++		interrupt-parent = <&sgpiom0>;
++		interrupts = <106 IRQ_TYPE_LEVEL_LOW>;
++		interrupt-controller;
++		#interrupt-cells = <2>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++				  /*00-07*/
++				  "IFDET_U2_19_R1_N", "IFDET_U2_20_R1_N",
++				  "IFDET_U2_21_R1_N", "IFDET_U2_22_R1_N",
++				  "IFDET_U2_23_R1_N", "IFDET_U2_24_R1_N",
++				  "IFDET_U2_25_R1_N", "IFDET_U2_26_R1_N",
++				  /*10-17*/
++				  "EN_P12V_U2_19_R1", "EN_P12V_U2_20_R1",
++				  "EN_P12V_U2_21_R1", "EN_P12V_U2_22_R1",
++				  "EN_P12V_U2_23_R1", "EN_P12V_U2_24_R1",
++				  "EN_P12V_U2_25_R1", "EN_P12V_U2_26_R1",
++				  /*20-27*/
++				  "PG_P12V_U2_19_R1", "PG_P12V_U2_20_R1",
++				  "PG_P12V_U2_21_R1", "PG_P12V_U2_22_R1",
++				  "PG_P12V_U2_23_R1", "PG_P12V_U2_24_R1",
++				  "PG_P12V_U2_25_R1", "PG_P12V_U2_26_R1",
++				  /*30-37*/
++				  "FAULT_P3V3_AUX_U2_19_R1_N", "FAULT_P3V3_AUX_U2_20_R1_N",
++				  "FAULT_P3V3_AUX_U2_21_R1_N", "FAULT_P3V3_AUX_U2_22_R1_N",
++				  "FAULT_P3V3_AUX_U2_23_R1_N", "FAULT_P3V3_AUX_U2_24_R1_N",
++				  "FAULT_P3V3_AUX_U2_25_R1_N", "FAULT_P3V3_AUX_U2_26_R1_N",
++				  /*40-47*/
++				  "PG_HOST_CPLD_MCIO1A_R1", "INT_MCIO1A_IOEXP2_R1_N",
++				  "INT_MCIO1A_IOEXP3_R1_N", "INT_MCIO1A_IOEXP4_R1_N",
++				  "EN_MCIO2B_PWR_R1", "EN_MCIO2A_PWR_R1",
++				  "EN_MCIO1A_PWR_R1", "EN_MCIO1B_PWR_R1";
++	};
++
++	/* RIO GRANDE IOEXP8 U264 */
++	rio_io_expander8: gpio-expander@21 {
++		compatible = "nxp,pca9555";
++		reg = <0x21>;
++		interrupt-parent = <&rio_io_expander2>;
++		interrupts = <33 IRQ_TYPE_LEVEL_LOW>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++				  /*00-07*/
++				  "CLKREQ_U2_19_N", "CLKREQ_U2_20_N",
++				  "CLKREQ_U2_21_N", "CLKREQ_U2_22_N",
++				  "CLKREQ_U2_23_N", "CLKREQ_U2_24_N",
++				  "CLKREQ_U2_25_N", "CLKREQ_U2_26_N",
++				  /*10-17*/
++				  "ALT_P12V_U2_19_N", "ALT_P12V_U2_20_N",
++				  "ALT_P12V_U2_21_N", "ALT_P12V_U2_22_N",
++				  "ALT_P12V_U2_23_N", "ALT_P12V_U2_24_N",
++				  "ALT_P12V_U2_25_N", "ALT_P12V_U2_26_N";
++	};
++
++	/* RIO GRANDE IOEXP9 U265 */
++	rio_io_expander9: gpio-expander@22 {
++		compatible = "nxp,pca9555";
++		reg = <0x22>;
++		interrupt-parent = <&rio_io_expander2>;
++		interrupts = <34 IRQ_TYPE_LEVEL_LOW>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++				  /*00-07*/
++				  "WAKE_U2_19_N", "WAKE_U2_20_N",
++				  "WAKE_U2_21_N", "WAKE_U2_22_N",
++				  "WAKE_U2_23_N", "WAKE_U2_24_N",
++				  "WAKE_U2_25_N", "WAKE_U2_26_N",
++				  /*10-17*/
++				  "PWRDIS_U2_19", "PWRDIS_U2_20",
++				  "PWRDIS_U2_21", "PWRDIS_U2_22",
++				  "PWRDIS_U2_23", "PWRDIS_U2_24",
++				  "PWRDIS_U2_25", "PWRDIS_U2_26";
++	};
++
++	/* RIO GRANDE IOEXP12 U272 */
++	rio_io_expander12: gpio-expander@24 {
++		compatible = "nxp,pca9555";
++		reg = <0x24>;
++		interrupt-parent = <&rio_io_expander2>;
++		interrupts = <35 IRQ_TYPE_LEVEL_LOW>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		gpio-line-names =
++				  /*00-07*/
++				  "", "RST_PCIE_MCIO1B_N",
++				  "RST_1A_IOEXP4_AND20_R_N", "RST_1A_IOEXP4_AND22_R_N",
++				  "RST_1A_IOEXP4_AND24_R_N", "RST_1A_IOEXP4_AND26_R_N",
++				  "", "",
++				  /*10-17*/
++				  "", "",
++				  "", "",
++				  "RST_1A_IOEXP4_AND25_R_N", "RST_1A_IOEXP4_AND23_R_N",
++				  "RST_1A_IOEXP4_AND21_R_N", "RST_1A_IOEXP4_AND19_R_N";
++	};
++
++	/* RIO GRANDE I2C MUX U252 */
++	i2c-mux@70 {
++		compatible = "nxp,pca9548";
++		reg = <0x70>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++		i2c-mux-idle-disconnect;
++
++		i2c2mux0ch0: i2c@0 {
++			reg = <0>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c2mux0ch1: i2c@1 {
++			reg = <1>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c2mux0ch2: i2c@2 {
++			reg = <2>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c2mux0ch3: i2c@3 {
++			reg = <3>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c2mux0ch4: i2c@4 {
++			reg = <4>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c2mux0ch5: i2c@5 {
++			reg = <5>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c2mux0ch6: i2c@6 {
++			reg = <6>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c2mux0ch7: i2c@7 {
++			reg = <7>;
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++	};
+ };
+ 
+ &i2c15 {
+@@ -1117,6 +2032,14 @@ &mac0 {
+ 	status = "okay";
+ };
+ 
++&mac1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_rmii1_default>;
++	use-ncsi;
++	phy-mode = "rmii";
++	status = "okay";
++};
++
+ /*
+ &mdio0 {
+ 	status = "okay";
+-- 
+2.43.0
+

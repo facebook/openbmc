@@ -1,0 +1,35 @@
+From 699cbe3ce7f7170381a0ca8c30be9a823e0bad96 Mon Sep 17 00:00:00 2001
+From: Cool Lee <cool_lee@aspeedtech.com>
+Date: Mon, 18 May 2026 19:05:30 +0800
+Subject: [PATCH] mcu-runtime: sdram_ast2700: Improve RX eye height.
+
+Improve signal quality.
+
+Signed-off-by: Cool Lee <cool_lee@aspeedtech.com>
+Change-Id: I16ec2063686733f90cb263d4018ab9393354e437
+---
+ .../ast2700/dwc_ddrphy_phyinit_ddr5-3200-nodimm-train2D.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/apps/mcu-runtime/soc/ast2700/dwc_ddrphy_phyinit_ddr5-3200-nodimm-train2D.c b/apps/mcu-runtime/soc/ast2700/dwc_ddrphy_phyinit_ddr5-3200-nodimm-train2D.c
+index c61303c..e1837d8 100644
+--- a/apps/mcu-runtime/soc/ast2700/dwc_ddrphy_phyinit_ddr5-3200-nodimm-train2D.c
++++ b/apps/mcu-runtime/soc/ast2700/dwc_ddrphy_phyinit_ddr5-3200-nodimm-train2D.c
+@@ -4228,10 +4228,10 @@ dwc_ddrphy_apb_wr(0x200fd, 0xf5); // DWC_DDRPHYA_MASTER0_base0_DqPreamblePattern
+ dwc_ddrphy_apb_wr(0x2003a, 0x2); // DWC_DDRPHYA_MASTER0_base0_DbyteDllModeCntrl
+ //// [phyinit_C_initPhyConfig] Pstate=0, Memclk=1600MHz, Programming TxOdtDrvStren::TxOdtStrenPu to 0x4
+ //// [phyinit_C_initPhyConfig] Pstate=0, Memclk=1600MHz, Programming TxOdtDrvStren::TxOdtStrenPd to 0x0
+-dwc_ddrphy_apb_wr(0x1004d, 0x82); // DWC_DDRPHYA_DBYTE0_base0_TxOdtDrvStren_b0_p0
+-dwc_ddrphy_apb_wr(0x1014d, 0x82); // DWC_DDRPHYA_DBYTE0_base0_TxOdtDrvStren_b1_p0
+-dwc_ddrphy_apb_wr(0x1104d, 0x82); // DWC_DDRPHYA_DBYTE1_base0_TxOdtDrvStren_b0_p0
+-dwc_ddrphy_apb_wr(0x1114d, 0x82); // DWC_DDRPHYA_DBYTE1_base0_TxOdtDrvStren_b1_p0
++dwc_ddrphy_apb_wr(0x1004d, 0x9e); // DWC_DDRPHYA_DBYTE0_base0_TxOdtDrvStren_b0_p0
++dwc_ddrphy_apb_wr(0x1014d, 0x9e); // DWC_DDRPHYA_DBYTE0_base0_TxOdtDrvStren_b1_p0
++dwc_ddrphy_apb_wr(0x1104d, 0x9e); // DWC_DDRPHYA_DBYTE1_base0_TxOdtDrvStren_b0_p0
++dwc_ddrphy_apb_wr(0x1114d, 0x9e); // DWC_DDRPHYA_DBYTE1_base0_TxOdtDrvStren_b1_p0
+ //// [phyinit_C_initPhyConfig] Pstate=0, Memclk=1600MHz, Programming ATxImpedance::ADrvStrenP to 0x3f
+ //// [phyinit_C_initPhyConfig] Pstate=0, Memclk=1600MHz, Programming ATxImpedance::ADrvStrenN to 0x3f
+ //// [phyinit_C_initPhyConfig] Pstate=0, Memclk=1600MHz, Programming ATxImpedance::ATxReserved13x12 to 0x0
+-- 
+2.34.1
+

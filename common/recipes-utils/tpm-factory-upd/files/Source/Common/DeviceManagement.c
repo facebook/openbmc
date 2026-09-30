@@ -3,7 +3,7 @@
  *  @details    Implements the connection to the underlying TPM access module (TpmIO interface).
  *  @file       DeviceManagement.c
  *
- *  Copyright 2013 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2013 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -189,6 +189,24 @@ BOOL
 DeviceManagement_IsConnected()
 {
     return s_fTpmConnected;
+}
+
+/**
+ *  @brief      Device management GetDeviceAccessMode function
+ *  @details    This function returns the device access mode
+ *
+ *  @retval     TPM_DEVICE_ACCESS_xxx    See Globals.h for definitions.
+ */
+unsigned int
+DeviceManagement_GetDeviceAccessMode()
+{
+    unsigned int unDeviceAccessMode = 0;
+    // Get access mode
+    if (!PropertyStorage_GetUIntegerValueByKey(PROPERTY_TPM_DEVICE_ACCESS_MODE, &unDeviceAccessMode))
+    {
+        LOGGING_WRITE_LEVEL4(L"PropertyStorage_GetUIntegerValueByKey(PROPERTY_TPM_DEVICE_ACCESS_MODE) failed!");
+    }
+    return unDeviceAccessMode;
 }
 
 /**

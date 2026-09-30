@@ -49,7 +49,7 @@ CHASSIS_POWER_CYCLE="${MCBCPLD_SYSFS_DIR}/power_cycle_go"
 
 declare -A PRJ_BOARD_DATA=(
     [7,name]="TAHANSB800BC"
-    [7,revs]="EVT1;EVT2A-EVT2D;EVT2E;DVT-1;DVT-2;PVT;MP"
+    [7,revs]="EVT1;EVT2A-EVT2D;EVT2E;DVT-1A/1B;PPVT;MP;RSVD"
 
     [8,name]="ICECUBE800BC"
     [8,revs]="Pre-EVT & EVT-1;EVT-2;EVT-3;DVT-1;DVT-2;PPVT;PVT;MP"
@@ -59,6 +59,12 @@ declare -A PRJ_BOARD_DATA=(
 
     [13,name]="LADAKH800BCLS"
     [13,revs]="Pre-EVT & EVT-1;EVT-2A;EVT-2B/C;DVT-1A;DVT-1B;PPVT;PVT;MP"
+
+    [14,name]="LEH800BCLS"
+    [14,revs]="EVT-1A & EVT-1B;EVT-2;PPVT;PVT;MP"
+
+    [15,name]="M4061CLSC"
+    [15,revs]="EVT1;EVT2;DVT1;DVT2;PPVT;PVT;MP"
 )
 
 wedge_board_type() {

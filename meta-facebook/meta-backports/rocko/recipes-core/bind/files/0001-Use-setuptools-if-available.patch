@@ -1,0 +1,45 @@
+From 6d3281bbbb65018e818de4ed77502a69eed485e9 Mon Sep 17 00:00:00 2001
+From: Amithash Prasad <amithash@meta.com>
+Date: Wed, 10 Jun 2026 09:46:16 -0700
+Subject: [PATCH] Use setuptools if available.
+
+Summary:
+Migrates away from distutils to setuptools.
+---
+ bin/python/setup.py | 23 ++++++++++++++---------
+ 1 file changed, 14 insertions(+), 9 deletions(-)
+
+diff --git a/bin/python/setup.py b/bin/python/setup.py
+index c7759c2..b3625f4 100644
+--- a/bin/python/setup.py
++++ b/bin/python/setup.py
+@@ -14,12 +14,17 @@
+ # PERFORMANCE OF THIS SOFTWARE.
+ ############################################################################
+ 
+-from distutils.core import setup
+-setup(name='isc',
+-      version='1.0',
+-      description='Python functions to support BIND utilities',
+-      url='https://www.isc.org/bind',
+-      author='Internet Systems Consortium, Inc',
+-      author_email='bind9-bugs@isc.org',
+-      license='ISC',
+-      packages=['isc'])
++try:
++    from setuptools import setup
++except ImportError:
++    from distutils.core import setup
++setup(
++    name="isc",
++    version="1.0",
++    description="Python functions to support BIND utilities",
++    url="https://www.isc.org/bind",
++    author="Internet Systems Consortium, Inc",
++    author_email="bind9-bugs@isc.org",
++    license="ISC",
++    packages=["isc"],
++)
+-- 
+2.52.0
+

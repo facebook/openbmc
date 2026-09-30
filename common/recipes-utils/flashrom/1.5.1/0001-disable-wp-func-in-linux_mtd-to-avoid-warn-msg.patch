@@ -1,8 +1,8 @@
-diff --git a/linux_mtd.c b/linux_mtd.c
-index b1d0255d..ccf1d128 100644
---- a/linux_mtd.c
-+++ b/linux_mtd.c
-@@ -311,123 +311,6 @@ static int linux_mtd_shutdown(void *data)
+diff --git a/programmers/linux_mtd.c b/programmers/linux_mtd.c
+index 42aa194..5196df1 100644
+--- a/programmers/linux_mtd.c
++++ b/programmers/linux_mtd.c
+@@ -303,123 +303,6 @@ static int linux_mtd_shutdown(void *data)
  	return 0;
  }
  
@@ -126,7 +126,7 @@ index b1d0255d..ccf1d128 100644
  static void linux_mtd_nop_delay(const struct flashctx *flash, unsigned int usecs)
  {
  	/*
-@@ -445,9 +328,6 @@ static const struct opaque_master linux_mtd_opaque_master = {
+@@ -437,9 +320,6 @@ static const struct opaque_master linux_mtd_opaque_master = {
  	.write		= linux_mtd_write,
  	.erase		= linux_mtd_erase,
  	.shutdown	= linux_mtd_shutdown,

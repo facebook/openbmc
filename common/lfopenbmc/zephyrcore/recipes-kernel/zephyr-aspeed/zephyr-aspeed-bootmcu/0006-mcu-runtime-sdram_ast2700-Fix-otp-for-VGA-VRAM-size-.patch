@@ -1,0 +1,84 @@
+From 5c7bf424512da2eb4faf684e966939582f08f881 Mon Sep 17 00:00:00 2001
+From: Jammy Huang <jammy_huang@aspeedtech.com>
+Date: Mon, 15 Jun 2026 17:12:05 +0800
+Subject: [PATCH] mcu-runtime: sdram_ast2700: Fix otp for VGA VRAM size NG
+
+OTP configure gfmcfg for VGA VRAM size. Current retry flow will
+invalid this operation.
+
+Fix it by adding gfmcfg to preset/postset.
+
+Signed-off-by: Jammy Huang <jammy_huang@aspeedtech.com>
+Change-Id: Id7f444549cc12907354875337d1d5c90b9ae6a4e
+---
+ .../soc/ast2700/include/sdram_ast2700.h        |  1 +
+ apps/mcu-runtime/soc/ast2700/sdram_ast2700.c   | 18 +++++++++++++-----
+ 2 files changed, 14 insertions(+), 5 deletions(-)
+
+diff --git a/apps/mcu-runtime/soc/ast2700/include/sdram_ast2700.h b/apps/mcu-runtime/soc/ast2700/include/sdram_ast2700.h
+index 0c9b357..503aca4 100644
+--- a/apps/mcu-runtime/soc/ast2700/include/sdram_ast2700.h
++++ b/apps/mcu-runtime/soc/ast2700/include/sdram_ast2700.h
+@@ -314,6 +314,7 @@ struct sdramc {
+ 	struct mpu_info mpu[MAX_MPU_COUNT];
+ 	int mpu_cnt;
+ 	uint32_t wdt_swrst[5];
++	uint32_t gfmcfg_bak;
+ };
+ 
+ struct sdramc_port {
+diff --git a/apps/mcu-runtime/soc/ast2700/sdram_ast2700.c b/apps/mcu-runtime/soc/ast2700/sdram_ast2700.c
+index 40be8f0..c92131a 100644
+--- a/apps/mcu-runtime/soc/ast2700/sdram_ast2700.c
++++ b/apps/mcu-runtime/soc/ast2700/sdram_ast2700.c
+@@ -1124,10 +1124,6 @@ void sdramc_reset(struct sdramc *sdramc)
+ 	// enable phy clock.
+ 	sys_write32(BIT(11), 0x12c02244);
+ 
+-	// save wdt sw reset mask
+-	for (int i = 0; i < 5; i++)
+-		sdramc->wdt_swrst[i] = sys_read32(WDT_SW_RESET_MASK_REG + i * 4);
+-
+ 	// wdt sw reset for dramc only
+ 	sys_write32(WDT_SW_RESET_DRAM_MASK, WDT_SW_RESET_MASK_REG);
+ 	sys_write32(0x0, WDT_SW_RESET_MASK_REG + 4);
+@@ -1156,6 +1152,15 @@ void sdramc_pll_reset(struct sdramc *sdramc)
+ }
+ 
+ void sdramc_preset(struct sdramc *sdramc)
++{
++	// save wdt sw reset mask
++	for (int i = 0; i < 5; i++)
++		sdramc->wdt_swrst[i] = sys_read32(WDT_SW_RESET_MASK_REG + i * 4);
++	// save gfm cfg
++	sdramc->gfmcfg_bak = sdramc->regs->gfmcfg;
++}
++
++void sdramc_full_reset(struct sdramc *sdramc)
+ {
+ 	sdramc_pll_reset(sdramc);
+ 	sdramc_reset(sdramc);
+@@ -1166,6 +1171,8 @@ void sdramc_postset(struct sdramc *sdramc)
+ 	// restore wdt reset mask
+ 	for (int i = 0; i < 5; i++)
+ 		sys_write32(sdramc->wdt_swrst[i], WDT_SW_RESET_MASK_REG + i * 4);
++	// restore gfm cfg
++	sdramc->regs->gfmcfg = sdramc->gfmcfg_bak;
+ }
+ 
+ int dram_init(struct ast_chip *chip)
+@@ -1182,9 +1189,10 @@ int dram_init(struct ast_chip *chip)
+ 	if (is_ddr_initialized(sdramc))
+ 		return 0;
+ 
++	sdramc_preset(sdramc);
+ 	while (retry--) {
+ 
+-		sdramc_preset(sdramc);
++		sdramc_full_reset(sdramc);
+ 		sdramc_unlock(sdramc);
+ 
+ 		err = sdramc_init(sdramc, &ac);
+-- 
+2.34.1
+

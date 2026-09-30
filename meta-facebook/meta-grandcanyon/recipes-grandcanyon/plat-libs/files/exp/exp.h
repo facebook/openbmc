@@ -67,6 +67,9 @@ typedef struct ExpanderVersion {
   ver_set firmware_region1;
   ver_set firmware_region2;
   ver_set configuration;
+#ifdef CONFIG_GRANDCANYON2
+  uint8_t sub_ver;
+#endif
 } exp_ver;
 
 typedef struct _ExpanderGetFruidCommand {

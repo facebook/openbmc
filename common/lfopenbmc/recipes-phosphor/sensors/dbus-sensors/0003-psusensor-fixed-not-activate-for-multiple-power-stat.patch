@@ -1,0 +1,86 @@
+From 756b2c598ae40589e142f45e949ffaadc2680f72 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Thu, 23 Jan 2025 15:10:57 +0800
+Subject: [PATCH] psusensor: fixed not activate for multiple power state
+
+Link:https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/77426
+
+Due to the deactivation function being sensor-specific
+while the check findI2CDev != devices.end() is chip-specific,
+some sensors may fail to activate during power state changes.
+
+For example, consider the following EM configuration:
+
+{
+  "in0_Name": "MB_P12V_MEM0_VOLT_V",
+  "in0_PowerState": "Always",
+  "in1_Name": "MB_P5V_STBY_VOLT_V",
+  "in2_Name": "MB_PVDD33_S5_VOLT_V",
+  "in3_Name": "MB_P1V8_STBY_VOLT_V",
+  "in4_Name": "MB_P12V_MEM1_VOLT_V",
+  "in5_Name": "MB_P1V8_CPU_RT_VOLT_V",
+  "in5_PowerState": "On"
+}
+
+If in0_PowerState is set to Always, and we perform a DC off followed
+by a DC on, in5 might fail to activate. This happens because
+the condition "activateOnly && !findI2CDev->second.second"
+evaluates to true, causing the function to return early.
+
+To address this issue, an additional condition has been added to bypass
+the check when multiple power states are detected, ensuring that all
+sensors can be properly activated
+
+Change-Id: I6d91a8f2d5c86e215bd89f8d03bee6f8ecdc502a
+Signed-off-by: Peter Yin <peter.yin@quantatw.com>
+---
+ src/psu/PSUSensorMain.cpp | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+
+diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
+index 798b16a..2167700 100644
+--- a/src/psu/PSUSensorMain.cpp
++++ b/src/psu/PSUSensorMain.cpp
+@@ -325,6 +325,27 @@ void checkEventLimits(const std::string& sensorPathStr,
+     }
+ }
+ 
++static bool hasLabelPowerState(const SensorBaseConfigMap& baseConfig)
++{
++    auto findLabelObj = baseConfig.find("Labels");
++    if (findLabelObj == baseConfig.end())
++    {
++        return false;
++    }
++
++    const auto& labels =
++        std::get<std::vector<std::string>>(findLabelObj->second);
++    for (const auto& label : labels)
++    {
++        if (baseConfig.find(label + "_PowerState") != baseConfig.end())
++        {
++            return true;
++        }
++    }
++
++    return false;
++}
++
+ static void checkPWMSensor(
+     const std::filesystem::path& sensorPath, std::string& labelHead,
+     const std::string& interfacePath,
+@@ -537,6 +558,11 @@ static void createSensorsCallback(
+         std::shared_ptr<I2CDevice> i2cDev;
+         if (findI2CDev != devices.end())
+         {
++            if (hasLabelPowerState(*baseConfig))
++            {
++                // Mark device as needing power state handling
++                findI2CDev->second.second = true;
++            }
+             if (activateOnly && !findI2CDev->second.second)
+             {
+                 continue;
+-- 
+2.53.0-Meta
+

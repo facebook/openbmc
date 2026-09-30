@@ -386,7 +386,7 @@ int device_open(int device, int intf_id) {
   enum ftdi_interface ft2232_interface = intf_id;
   struct libusb_device_descriptor dsc;
   struct ftdi_device_list* ftdi_count;
-  int ftdi_num = 0, result;
+  int result;
   struct ftdi_context ftdi_tmp;
 
   if (ftdi_init(&ftdic) < 0) {
@@ -433,7 +433,6 @@ int device_open(int device, int intf_id) {
       break;
     }
     ftdi_count = ftdi_count->next;
-    ftdi_num++;
   }
 
   if (f < 0 && f != -5) {

@@ -3,7 +3,7 @@
  *  @details    Implements helper functions to access a firmware image.
  *  @file       FirmwareImage.c
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -420,13 +420,13 @@ FirmwareImage_Unmarshal(
             }
 
             // Unmarshal TPM target state
-            if (PpTarget->usImageStructureVersion >= 1)
+            if (PpTarget->usImageStructureVersion >= FIRMWARE_IMAGE_STRUCT_V1)
             {
                 unReturnValue = TSS_UINT32_Unmarshal((TSS_UINT32*)&PpTarget->bfTargetState, PprgbBuffer, PpnBufferSize);
                 if (RC_SUCCESS != unReturnValue)
                     break;
 
-                if (PpTarget->usImageStructureVersion >= 3)
+                if (PpTarget->usImageStructureVersion >= FIRMWARE_IMAGE_STRUCT_V3)
                 {
                     // Unmarshal firmware image capabilities
                     unReturnValue = TSS_UINT32_Unmarshal((TSS_UINT32*)&PpTarget->bfCapabilities, PprgbBuffer, PpnBufferSize);
@@ -455,6 +455,30 @@ FirmwareImage_Unmarshal(
                     }
                 }
 
+                // Unmarshal sales code (new with image struct 5)
+                PpTarget->usSalesCodeSize = 0;
+                if (PpTarget->usImageStructureVersion >= FIRMWARE_IMAGE_STRUCT_V5)
+                {
+                    // Unmarshal sales code size in bytes
+                    unReturnValue = TSS_UINT16_Unmarshal(&PpTarget->usSalesCodeSize, PprgbBuffer, PpnBufferSize);
+                    if (RC_SUCCESS != unReturnValue)
+                        break;
+
+                    if (PpTarget->usSalesCodeSize > RG_LEN(PpTarget->rgbSalesCode))
+                    {
+                        unReturnValue = RC_E_CORRUPT_FW_IMAGE;
+                        break;
+                    }
+
+                    // Unmarshal sales code if included in firmware image (size > 0)
+                    if (PpTarget->usSalesCodeSize != 0)
+                    {
+                        unReturnValue = TSS_UINT8_Array_Unmarshal((TSS_UINT8*)&PpTarget->rgbSalesCode, PprgbBuffer, PpnBufferSize, PpTarget->usSalesCodeSize);
+                        if (RC_SUCCESS != unReturnValue)
+                            break;
+                    }
+                }
+
                 // Get remaining size
                 int nRemaining = *PpnBufferSize - sizeof(PpTarget->usSignatureKeyId) - sizeof(PpTarget->rgbSignature) - sizeof(PpTarget->unChecksum);
                 if (nRemaining < 0)
@@ -472,7 +496,7 @@ FirmwareImage_Unmarshal(
                 }
 
                 // Unmarshal image signature
-                if (PpTarget->usImageStructureVersion >= 2)
+                if (PpTarget->usImageStructureVersion >= FIRMWARE_IMAGE_STRUCT_V2)
                 {
                     // Unmarshal signature key identifier
                     unReturnValue = TSS_UINT16_Unmarshal(&PpTarget->usSignatureKeyId, PprgbBuffer, PpnBufferSize);

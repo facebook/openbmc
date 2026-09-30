@@ -37,6 +37,9 @@ if [ ! -f "$BIOS_VER_CACHE" ]; then
         ver="UNKNOWN"
     fi
     echo "$ver" > "$BIOS_VER_CACHE"
+    echo "$ver"
+else
+    # Use Cache file
+    cat "$BIOS_VER_CACHE"
 fi
 
-cat "$BIOS_VER_CACHE"

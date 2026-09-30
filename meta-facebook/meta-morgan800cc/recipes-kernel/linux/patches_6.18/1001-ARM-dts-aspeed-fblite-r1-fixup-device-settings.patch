@@ -1,0 +1,50 @@
+From 238b7a3f49dbeb1c766fffece96c76912573c137 Mon Sep 17 00:00:00 2001
+From: Tao Ren <taoren@meta.com>
+Date: Sun, 21 Sep 2025 14:31:23 -0700
+Subject: [PATCH] ARM: dts: aspeed: fblite-r1: fixup device settings
+
+Enable spi1 and mdio0 for morgan800cc.
+---
+ .../aspeed/aspeed-bmc-facebook-fblite-r1.dts  | 29 +++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+index d14c0141533b..5a954c3240c2 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+@@ -73,3 +73,32 @@ fixed-link {
+ 		full-duplex;
+ 	};
+ };
++
++&spi1 {
++	reg = < 0x1e630000 0xc4
++		0x30000000 0x4000000 >;
++
++	flash@0 {
++		status = "okay";
++		m25p,fast-read;
++		compatible = "jedec,spi-nor";
++		label = "spi1.0";
++		spi-rx-bus-width = <1>;
++		spi-max-frequency = <10000000>;
++
++		partitions {
++			compatible = "fixed-partitions";
++			#address-cells = <1>;
++			#size-cells = <1>;
++
++			bios@0 {
++				reg = <0x0 0x4000000>;
++				label = "bios";
++			};
++		};
++	};
++};
++
++&mdio0 {
++	status = "okay";
++};
+-- 
+2.47.3
+

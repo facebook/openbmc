@@ -21,15 +21,31 @@ PR = "r1"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
-RDEPENDS:${PN} = "python3-core bash rackmon"
+RDEPENDS:${PN} = "python3-core bash rackmon modbus-device-util"
+RDEPENDS:${PN}:append:ventura2 = " python3-minimalmodbus"
+inherit ptest
 
 S = "${UNPACKDIR}"
 LOCAL_URI = " \
+    file://systemd_util.py \
+    file://modbus-update.py \
+    file://modbus_common.py \
+    file://modbus_monitor.py \
+    file://modbus_impl_pyrmd.py \
+    file://modbus_impl_minimalmodbus.py \
+    file://phosphor_modbus.py \
+    file://manufacturers.py \
     file://modbus_update_helper.py \
     file://psu-update-delta.py \
-    file://psu-update-delta-orv3.py \
+    file://psu_update_delta_orv3.py \
     file://psu-update-bel.py \
     file://psu-update-artesyn.py \
+    file://psu_update_aei.py \
+    file://orv3_device_update_mailbox.py \
+    file://rpu_update_delta_plc.py \
+    file://rpu_update_delta_hex.py \
+    file://rpu_update_coolermaster.py \
+    file://psu-update-delta-orv3.py \
     file://psu-update-aei.py \
     file://orv3-device-update-mailbox.py \
     file://rpu-update-delta-plc.py \
@@ -38,6 +54,24 @@ LOCAL_URI = " \
     file://delta_key.py \
     file://srec.py \
     file://hexfile.py \
+    file://test_mocks.py \
+    file://test_hexfile.py \
+    file://test_manufacturers.py \
+    file://test_modbus_common.py \
+    file://test_modbus_impl_minimalmodbus.py \
+    file://test_modbus_impl_pyrmd.py \
+    file://test_modbus_monitor.py \
+    file://test_modbus_update.py \
+    file://test_modbus_update_helper.py \
+    file://test_orv3_device_update_mailbox.py \
+    file://test_phosphor_modbus.py \
+    file://test_psu_update_aei.py \
+    file://test_psu_update_delta_orv3.py \
+    file://test_rpu_update_coolermaster.py \
+    file://test_rpu_update_delta_hex.py \
+    file://test_rpu_update_delta_plc.py \
+    file://test_srec.py \
+    file://test_systemd_util.py \
     "
 
 pkgdir = "psu"
@@ -50,8 +84,23 @@ do_install() {
     for f in ${LOCAL_URI}; do
         f=${f#file://}
         install -m 755 ${UNPACKDIR}/$f ${dst}/$f
+        # The unit tests sit next to the modules they import, but they
+        # are not commands.
+        case $f in
+            test_*) continue ;;
+        esac
         ln -snf ../fbpackages/${pkgdir}/$f ${bin}/$f
     done
+}
+
+RDEPENDS:${PN}-ptest += "python3-unittest"
+
+do_compile_ptest() {
+  cat <<EOF > ${UNPACKDIR}/run-ptest
+#!/bin/sh
+cd /usr/local/fbpackages/${pkgdir} || exit 1
+python3 -m unittest discover -v
+EOF
 }
 
 FBPACKAGEDIR = "${prefix}/local/fbpackages"

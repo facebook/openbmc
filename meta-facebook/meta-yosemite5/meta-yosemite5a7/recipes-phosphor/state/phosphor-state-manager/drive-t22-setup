@@ -1,0 +1,96 @@
+#!/bin/bash
+
+source /usr/libexec/fb-common-functions
+source /usr/libexec/phosphor-state-manager/drive-power-control-util
+
+UNIT_DIR="/usr/lib/systemd/system"
+HOSTON_REQUIRES="/run/systemd/system/obmc-host-startmin@0.target.requires"
+HOSTOFF_REQUIRES="/run/systemd/system/obmc-host-stop@0.target.requires"
+
+i2ctransfer_retry() {
+    local max_retries=5
+    local i
+
+    for ((i=0; i<max_retries; i++)); do
+        if i2ctransfer "$@"; then
+            return 0
+        fi
+
+        sleep 1
+    done
+
+    return 1
+}
+
+get_data_from_pdb_cpld() {
+    local bus=8
+    local addr=0x0f
+    local reg_value
+
+    if ! reg_value=$(i2ctransfer_retry -fy ${bus} w1@${addr} "${1}" r1 2>/dev/null); then
+        echo "Error: I2C transfer failed, bus=${bus}, addr=${addr}, reg=${1}" >&2
+        return 1
+    fi
+
+    echo "${reg_value}"
+    return 0
+}
+
+# Get SKU from PDB CPLD.
+# [3:0]:
+#   0x0 --> T2
+#   0x1 --> T11
+#   0x2 --> T1
+#   0x3 --> T22
+get_sku() {
+    local reg=0x12
+    local reg_value
+    local sku
+
+    if ! reg_value=$(get_data_from_pdb_cpld ${reg}); then
+        return 1
+    fi
+
+    sku=$((reg_value & 0x0f))
+    echo "${sku}"
+    return 0
+}
+
+is_t22() {
+    if ! sku=$(get_sku) ; then
+        error "Failed to get SKU, defaulting to 0"
+        sku=0
+    fi
+
+    if [[ "$sku" -eq 3 ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+
+# If the SKU is not T22, exit silently.
+if ! is_t22; then
+    exit 0
+fi
+
+if ! mkdir -p "$HOSTON_REQUIRES" "$HOSTOFF_REQUIRES"; then
+    error "Failed to create the drive power dependency directories"
+    exit 1
+fi
+
+if ! ln -sf "$UNIT_DIR/drive-hoston.service" \
+            "$HOSTON_REQUIRES/drive-hoston.service" ||
+   ! ln -sf "$UNIT_DIR/drive-hostoff.service" \
+            "$HOSTOFF_REQUIRES/drive-hostoff.service"; then
+    error "Failed to link the drive power services into the host power targets"
+    exit 1
+fi
+
+if ! systemctl daemon-reload; then
+    error "Failed to reload systemd after linking the drive power services"
+    exit 1
+fi
+
+exit 0

@@ -1,0 +1,85 @@
+From 35e9140c544f0d5c90fef92d316085345c57959e Mon Sep 17 00:00:00 2001
+From: Akshay Gupta <akshay.gupta@amd.com>
+Date: Fri, 8 May 2026 13:26:25 +0530
+Subject: [PATCH] arm: dts: anacapa: Modify the RMI/TSI device IDs
+
+Modify RMI and TSI device IDs for Venice A0 to dts for
+device recognition.
+---
+ .../aspeed-bmc-facebook-anacapa-evt1.dts      | 24 +++++++++++--------
+ .../aspeed-bmc-facebook-anacapa-evt2.dts      | 24 +++++++++++--------
+ 2 files changed, 28 insertions(+), 20 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts
+index f3b58fb79167..2336593d6897 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt1.dts
+@@ -188,16 +188,20 @@ &gfx {
+ 
+ // CPU SIC/SID (APML)
+ &i3c0 {
+-    status = "okay";
+-    i3c-scl-hz = <6000000>;
+-        sbtsi_p0_0: sbtsi@4c,22400000001 {
+-        reg = <0x4c 0x224 0x00000001>;
+-        assigned-address = <0x4c>;
+-    };
+-    sbrmi_p0_1: sbrmi@3c,22400000002 {
+-        reg = <0x3c 0x224 0x00000002>;
+-        assigned-address = <0x3c>;
+-    };
++	status = "okay";
++	i3c-scl-hz = <12500000>;
++
++	/* PID for Venice A0 */
++	sbtsi_p0: sbtsi@4c,22400000118 {
++		reg = <0x4c 0x224 0x00000118>;
++		assigned-address = <0x4c>;
++	};
++
++	/* PID for Venice A0 */
++	sbrmi_p0: sbrmi@3c,22400001118 {
++		reg = <0x3c 0x224 0x00001118>;
++		assigned-address = <0x3c>;
++	};
+ };
+ 
+ &gpio0 {
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+index c3ab9746d069..5dc4d9e6517b 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+@@ -940,16 +940,20 @@ &i2c15 {
+ 
+ // CPU SIC/SID (APML)
+ &i3c0 {
+-    status = "okay";
+-    i3c-scl-hz = <6000000>;
+-        sbtsi_p0_0: sbtsi@4c,22400000001 {
+-        reg = <0x4c 0x224 0x00000001>;
+-        assigned-address = <0x4c>;
+-    };
+-    sbrmi_p0_1: sbrmi@3c,22400000002 {
+-        reg = <0x3c 0x224 0x00000002>;
+-        assigned-address = <0x3c>;
+-    };
++	status = "okay";
++	i3c-scl-hz = <12500000>;
++
++	/* PID for Venice A0 */
++	sbtsi_p0: sbtsi@4c,22400000118 {
++		reg = <0x4c 0x224 0x00000118>;
++		assigned-address = <0x4c>;
++	};
++
++	/* PID for Venice A0 */
++	sbrmi_p0: sbrmi@3c,22400001118 {
++		reg = <0x3c 0x224 0x00001118>;
++		assigned-address = <0x3c>;
++	};
+ };
+ 
+ &kcs2 {
+-- 
+2.52.0
+

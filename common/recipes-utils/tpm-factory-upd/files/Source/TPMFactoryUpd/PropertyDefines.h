@@ -3,7 +3,7 @@
  *  @details
  *  @file       TPMFactoryUpd\PropertyDefines.h
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -84,6 +84,12 @@ extern "C" {
 #define PROPERTY_CONFIG_TARGET_FIRMWARE_VERSION_SLB9615 L"TargetFirmwareVersionSLB9615"
 /// Define for Target Firmware Version for SLB 9645 TPM
 #define PROPERTY_CONFIG_TARGET_FIRMWARE_VERSION_SLB9645 L"TargetFirmwareVersionSLB9645"
+/// Define for policy update section setting PolicyDigest[1..8]
+#define PROPERTY_CONFIG_POLICY_UPDATE_DIGESTx    L"PolicyDigest%d"
+/// Define for policy update section setting PolicyDigest1
+#define PROPERTY_CONFIG_POLICY_UPDATE_DIGEST1    L"PolicyDigest1"
+/// Define for policy update section setting PolicyDigest2
+#define PROPERTY_CONFIG_POLICY_UPDATE_DIGEST2    L"PolicyDigest2"
 /// Define for Firmware Folder Path
 #define PROPERTY_CONFIG_FIRMWARE_FOLDER_PATH    L"FirmwareFolderPath"
 /// Define for Owner Authorization
@@ -96,6 +102,10 @@ extern "C" {
 #define PROPERTY_ABANDON_UPDATE_MODE            L"AbandonUpdateMode"
 /// Define for force property
 #define PROPERTY_FORCE                          L"Force"
+/// Define for policy configuration file path
+#define PROPERTY_POLICYFILE_PATH                L"PolicyFile"
+/// Define for policy handle property
+#define PROPERTY_POLICYHANDLE                   L"PolicyHandle"
 /// Definitions for PROPERTY_ABANDON_UPDATE_MODE (bit field)
 /// Define for no action if firmware update fails
 #define ABANDON_UPDATE_NO_ACTION                (UINT32)0x00000000

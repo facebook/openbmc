@@ -51,7 +51,7 @@ get_bmc_fruid(uint8_t ipmi_fruid, uint8_t *fruid) {
     return -1;
   }
 
-  if (ipmi_fruid >= (FRU_CNT - 1)) {
+  if (ipmi_fruid >= MAX_NUM_FRUS) {
     syslog(LOG_WARNING, "%s() Invalid fruid: %u\n", __func__, ipmi_fruid);
     return -1;
   }

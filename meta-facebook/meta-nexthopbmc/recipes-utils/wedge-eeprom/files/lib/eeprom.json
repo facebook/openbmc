@@ -1,0 +1,9 @@
+{
+  "platform" : "nexthopbmc",
+  "eeprom devices" : [
+    {
+      "name" : "chassis_eeprom",
+      "sysfs_path" : "/sys/bus/i2c/devices/i2c-4/4-0050/eeprom"
+    }
+  ]
+}

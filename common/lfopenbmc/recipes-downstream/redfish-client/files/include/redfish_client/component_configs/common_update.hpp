@@ -1,0 +1,13 @@
+#pragma once
+#include <redfish_client/core/log_entry_mapper_registry.hpp>
+#include <redfish_client/core/update_mapper.hpp>
+
+namespace redfish_client::component_config {
+
+inline void registerCommonUpdateMappers() {
+    auto& registry = core::LogEntryMapperRegistry::instance();
+
+    registry.registerMapper(std::make_unique<core::UpdateMapper>(), 99);
+}
+
+} // namespace redfish_client::component_config

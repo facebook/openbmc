@@ -1,0 +1,33 @@
+From b15bf52ed78855e452cc9203c95d4fafcb353e40 Mon Sep 17 00:00:00 2001
+From: Hoik Chen <hoik_chen@wiwynn.com>
+Date: Fri, 29 May 2026 15:47:45 +0800
+Subject: [PATCH] netlakenext: dimm-util: remove unsupport PMIC error
+
+In netlakenext, SODIMM use PMIC 5100 and it does not support
+those PMIC error types.
+SWDout_OV, SWDout_UV, VinM_OV, VinB_UV, Vin_switchover
+
+Signed-off-by: Hoik Chen <hoik_chen@wiwynn.com>
+---
+ dimm-util.cpp | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/dimm-util.cpp b/dimm-util.cpp
+index 2b9ed2ac143..5006d6ff6c4 100644
+--- a/dimm-util.cpp
++++ b/dimm-util.cpp
+@@ -193,9 +193,8 @@ print_usage_help(void) {
+   printf("   --force    - skips ME status check\n");
+   printf("   --err_list - show PMIC error\n");
+   printf("   --err_inj  - the error to inject, option list:\n");
+-  printf("                <SWAout_OV|SWBout_OV|SWCout_OV|SWDout_OV|VinB_OV|VinM_OV|\n");
+-  printf("                 SWAout_UV|SWBout_UV|SWCout_UV|SWDout_UV|VinB_UV|\n");
+-  printf("                 Vin_switchover|\n");
++  printf("                <SWAout_OV|SWBout_OV|SWCout_OV|VinB_OV|\n");
++  printf("                 SWAout_UV|SWBout_UV|SWCout_UV|\n");
+   printf("                 high_temp|\n");
+   printf("                 Vout_1v8_PG|\n");
+   printf("                 high_current|\n");
+-- 
+2.25.1
+

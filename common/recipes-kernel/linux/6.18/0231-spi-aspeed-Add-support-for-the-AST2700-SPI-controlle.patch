@@ -1,4 +1,4 @@
-From 616ee751fef90639b116c9e21584fcde5cc2a280 Mon Sep 17 00:00:00 2001
+From 1edac6ec70d4b48d80cf2c87541ed1004637df90 Mon Sep 17 00:00:00 2001
 From: Chin-Ting Kuo <chin-ting_kuo@aspeedtech.com>
 Date: Fri, 14 Nov 2025 18:10:42 +0800
 Subject: [PATCH] spi: aspeed: Add support for the AST2700 SPI controller
@@ -24,7 +24,7 @@ Signed-off-by: Mark Brown <broonie@kernel.org>
  1 file changed, 102 insertions(+)
 
 diff --git a/drivers/spi/spi-aspeed-smc.c b/drivers/spi/spi-aspeed-smc.c
-index 8e53b7d72fe4..4ec97350fa60 100644
+index 2d6d39c0061e..7228affe79a3 100644
 --- a/drivers/spi/spi-aspeed-smc.c
 +++ b/drivers/spi/spi-aspeed-smc.c
 @@ -49,6 +49,12 @@
@@ -69,7 +69,7 @@ index 8e53b7d72fe4..4ec97350fa60 100644
  	/* Restore defaults */
  	if (addr_mode != addr_mode_backup)
  		writel(addr_mode_backup, aspi->regs + CE_CTRL_REG);
-@@ -859,6 +873,41 @@ static u32 aspeed_spi_segment_ast2600_reg(struct aspeed_spi *aspi,
+@@ -860,6 +874,41 @@ static u32 aspeed_spi_segment_ast2600_reg(struct aspeed_spi *aspi,
  		((end - 1) & AST2600_SEG_ADDR_MASK);
  }
  
@@ -111,7 +111,7 @@ index 8e53b7d72fe4..4ec97350fa60 100644
  /*
   * Read timing compensation sequences
   */
-@@ -1203,6 +1252,57 @@ static const struct aspeed_spi_data ast2600_spi_data = {
+@@ -1204,6 +1253,57 @@ static const struct aspeed_spi_data ast2600_spi_data = {
  	.segment_reg   = aspeed_spi_segment_ast2600_reg,
  };
  
@@ -169,7 +169,7 @@ index 8e53b7d72fe4..4ec97350fa60 100644
  static const struct of_device_id aspeed_spi_matches[] = {
  	{ .compatible = "aspeed,ast2400-fmc", .data = &ast2400_fmc_data },
  	{ .compatible = "aspeed,ast2400-spi", .data = &ast2400_spi_data },
-@@ -1210,6 +1310,8 @@ static const struct of_device_id aspeed_spi_matches[] = {
+@@ -1211,6 +1311,8 @@ static const struct of_device_id aspeed_spi_matches[] = {
  	{ .compatible = "aspeed,ast2500-spi", .data = &ast2500_spi_data },
  	{ .compatible = "aspeed,ast2600-fmc", .data = &ast2600_fmc_data },
  	{ .compatible = "aspeed,ast2600-spi", .data = &ast2600_spi_data },
@@ -179,5 +179,5 @@ index 8e53b7d72fe4..4ec97350fa60 100644
  };
  MODULE_DEVICE_TABLE(of, aspeed_spi_matches);
 -- 
-2.52.0
+2.53.0-Meta
 

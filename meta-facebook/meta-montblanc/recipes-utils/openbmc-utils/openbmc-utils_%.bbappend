@@ -23,6 +23,7 @@ LOCAL_URI += "\
     file://setup-gpio.sh\
     file://read_INA230.sh \
     file://setup_board.sh \
+    file://come_identify.sh \
     "
 
 OPENBMC_UTILS_FILES += " \

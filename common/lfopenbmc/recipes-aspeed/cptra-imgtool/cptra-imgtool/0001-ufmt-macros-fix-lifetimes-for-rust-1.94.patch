@@ -1,0 +1,51 @@
+From 2787311fb4dfaa1278a47e61b29dd0c7224fe392 Mon Sep 17 00:00:00 2001
+From: Vince Chang <vince_chang@aspeedtech.com>
+Date: Fri, 15 May 2026 15:06:59 +0800
+Subject: [PATCH] ufmt-macros: fix lifetimes for Rust 1.94
+
+Rust 1.94 enables the mismatched_lifetime_syntaxes lint by default.
+ufmt-macros denies warnings, so these signatures must use explicit
+placeholder lifetimes.
+
+Upstream-Status: Pending
+
+Signed-off-by: Khang D Nguyen <khangng@os.amperecomputing.com>
+Signed-off-by: Vince Chang <vince_chang@aspeedtech.com>
+---
+ macros/src/lib.rs | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/macros/src/lib.rs b/macros/src/lib.rs
+index dafc6c1..fa26b71 100644
+--- a/macros/src/lib.rs
++++ b/macros/src/lib.rs
+@@ -340,7 +340,7 @@ fn mk_ident(i: usize) -> Ident {
+ }
+ 
+ // `}}` -> `}`
+-fn unescape(mut literal: &str, span: Span) -> parse::Result<Cow<str>> {
++fn unescape(mut literal: &str, span: Span) -> parse::Result<Cow<'_, str>> {
+     if literal.contains('}') {
+         let mut buf = String::new();
+ 
+@@ -374,7 +374,7 @@ fn unescape(mut literal: &str, span: Span) -> parse::Result<Cow<str>> {
+     }
+ }
+ 
+-fn parse(mut literal: &str, span: Span) -> parse::Result<Vec<Piece>> {
++fn parse(mut literal: &str, span: Span) -> parse::Result<Vec<Piece<'_>>> {
+     let mut pieces = vec![];
+ 
+     let mut buf = String::new();
+@@ -476,7 +476,7 @@ fn split_number(src: &str) -> (&str, usize) {
+ }
+ 
+ /// parses the stuff after a `{:` into a [Piece] and the trailing `&str` (what comes after the `}`)
+-fn parse_colon(format: &str, span: Span) -> parse::Result<(Piece, &str)> {
++fn parse_colon(format: &str, span: Span) -> parse::Result<(Piece<'_>, &str)> {
+     let (format, prefix) = if let Some(tail) = format.strip_prefix('#') {
+         (tail, true)
+     } else {
+-- 
+2.43.0
+

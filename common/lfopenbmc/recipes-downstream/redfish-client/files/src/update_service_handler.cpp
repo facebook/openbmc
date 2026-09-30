@@ -24,7 +24,6 @@ auto loop(sdbusplus::async::context& ctx,
           std::unique_ptr<UpdateServiceHandler> handler,
           size_t intervalMilliseconds) -> sdbusplus::async::task<void>
 {
-    sdbusplus::server::manager_t manager{ctx, SoftwareVersion::namespace_path};
     while (!ctx.stop_requested())
     {
         co_await handler->load(ctx);
@@ -104,7 +103,7 @@ SoftwareActivationProgress::SoftwareActivationProgress(
 
 bool SoftwareActivationProgress::set_property(progress_t, auto progress)
 {
-    progress_ = progress;
+    properties.progress = progress;
     // Always return true, even if the new value is unchanged.
     // This ensures that a property changed signal is emitted every time.
     // Otherwise, bmcweb may mark the associated task as aborted if it does not
@@ -269,11 +268,11 @@ auto MultipartSoftwareUpdate::update(sdbusplus::message::unix_fd image,
 
 Software::Software(sdbusplus::async::context& ctx, const std::string& id) :
     sdbusplus::async::context_ref(ctx), id(id),
-    path(sdbusplus::message::object_path(SoftwareVersion::namespace_path) /
+    path(sdbusplus::object_path(SoftwareVersion::namespace_path) /
          std::format("{}_{}", id, randomIdGenerator()()))
 {}
 
-sdbusplus::message::object_path Software::getPath() const
+sdbusplus::object_path Software::getPath() const
 {
     return path;
 }

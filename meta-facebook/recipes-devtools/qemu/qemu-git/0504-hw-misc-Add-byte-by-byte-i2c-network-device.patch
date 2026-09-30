@@ -1,24 +1,24 @@
-From 5de8f8fea497186d997bc6e6f36e2a2dd04d85ec Mon Sep 17 00:00:00 2001
+From 32f6682042a4be1ae1ec32e2c21e8de776e826bb Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Thu, 5 Jan 2023 01:13:45 -0800
-Subject: [PATCH 504/512] hw/misc: Add byte-by-byte i2c network device
+Subject: [PATCH] hw/misc: Add byte-by-byte i2c network device
 
 Signed-off-by: Peter Delevoryas <peter@pjd.dev>
 ---
- hw/misc/i2c-netdev2.c         | 259 ++++++++++++++++++++++++++++++++++
+ hw/misc/i2c-netdev2.c         | 262 ++++++++++++++++++++++++++++++++++
  hw/misc/meson.build           |   2 +-
  tests/qtest/aspeed_i2c-test.c | 243 +++++++++++++++++++++++++++++++
  tests/qtest/meson.build       |   1 +
- 4 files changed, 504 insertions(+), 1 deletion(-)
+ 4 files changed, 507 insertions(+), 1 deletion(-)
  create mode 100644 hw/misc/i2c-netdev2.c
  create mode 100644 tests/qtest/aspeed_i2c-test.c
 
 diff --git a/hw/misc/i2c-netdev2.c b/hw/misc/i2c-netdev2.c
 new file mode 100644
-index 0000000000..732cebd822
+index 0000000000..1c7f7449cb
 --- /dev/null
 +++ b/hw/misc/i2c-netdev2.c
-@@ -0,0 +1,259 @@
+@@ -0,0 +1,262 @@
 +#include "qemu/osdep.h"
 +#include "qemu/main-loop.h"
 +#include "qapi/error.h"
@@ -78,7 +78,7 @@ index 0000000000..732cebd822
 +    s->nic = NULL;
 +}
 +
-+static NetClientInfo net_client_info = {
++static NetClientInfo i2c_netdev2_client_info = {
 +    .type = NET_CLIENT_DRIVER_NIC,
 +    .size = sizeof(NetClientState),
 +    .receive = i2c_netdev2_nic_receive,
@@ -112,6 +112,9 @@ index 0000000000..732cebd822
 +    switch (len) {
 +    case START_LEN:
 +        i2c_bus_master(s->bus, s->bh);
++        /* i2c_bus_master() only queues; kick the scheduler so an idle bus
++         * runs s->bh (no-op if busy, release runs it later). */
++        i2c_schedule_pending_master(s->bus);
 +        break;
 +    case DATA_LEN:
 +        qemu_bh_schedule(s->bh);
@@ -178,7 +181,7 @@ index 0000000000..732cebd822
 +    I2CNetdev2 *s = I2C_NETDEV2(dev);
 +
 +    s->bus = I2C_BUS(qdev_get_parent_bus(dev));
-+    s->nic = qemu_new_nic(&net_client_info, &s->nic_conf, TYPE_I2C_NETDEV2,
++    s->nic = qemu_new_nic(&i2c_netdev2_client_info, &s->nic_conf, TYPE_I2C_NETDEV2,
 +                          dev->id, &dev->mem_reentrancy_guard, s);
 +    s->bh = qemu_bh_new(i2c_netdev2_slave_mode_rx, s);
 +    s->rx_len = 0;
@@ -279,10 +282,10 @@ index 0000000000..732cebd822
 +
 +type_init(register_types);
 diff --git a/hw/misc/meson.build b/hw/misc/meson.build
-index 9ef88e1437..406364ad89 100644
+index 5c04523447..12ca18bd8e 100644
 --- a/hw/misc/meson.build
 +++ b/hw/misc/meson.build
-@@ -152,7 +152,7 @@ system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
+@@ -157,7 +157,7 @@ system_ss.add(when: 'CONFIG_NRF51_SOC', if_true: files('nrf51_rng.c'))
  system_ss.add(when: 'CONFIG_GRLIB', if_true: files('grlib_ahb_apb_pnp.c'))
  
  system_ss.add(when: 'CONFIG_I2C_ECHO', if_true: files('i2c-echo.c'))
@@ -541,17 +544,17 @@ index 0000000000..aaf8c85427
 +    return ret;
 +}
 diff --git a/tests/qtest/meson.build b/tests/qtest/meson.build
-index 728dde54b3..6c61ca3956 100644
+index c3593f7530..460a0b92de 100644
 --- a/tests/qtest/meson.build
 +++ b/tests/qtest/meson.build
-@@ -217,6 +217,7 @@ qtests_npcm8xx = \
-   ['npcm_gmac-test']
+@@ -232,6 +232,7 @@ qtests_npcm8xx = \
  qtests_aspeed = \
-   ['aspeed_gpio-test',
+   ['aspeed-acry-test',
+    'aspeed_gpio-test',
 +   'aspeed_i2c-test',
     'aspeed_hace-test',
+    'aspeed-sbc-test',
     'aspeed_scu-test',
-    'aspeed_smc-test']
 -- 
-2.52.0
+2.54.0
 

@@ -22,6 +22,7 @@ namespace ThermalError = sdbusplus::error::xyz::openbmc_project::state::Thermal;
  */
 const std::vector<std::string> thermalKeywords = {
     "THERM_WARN_INT",
+    "THERM_OVERT_INT",
     "TEMP_ALERT_INT",
     "ThrottleReason",
     "HWThermalSlowdown",

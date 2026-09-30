@@ -42,15 +42,15 @@ def cli_logging(func):
 
 
 @cli_logging
-def run_cmd(cmd=None):
+def run_cmd(cmd=None, errors="strict"):
     if not cmd:
         raise Exception("cmd not set")
-    info = subprocess.check_output(cmd).decode("utf-8")
+    info = subprocess.check_output(cmd).decode("utf-8", errors=errors)
     return info
 
 
 @cli_logging
-def run_shell_cmd(cmd=None, ignore_err=False, expected_return_code=0):
+def run_shell_cmd(cmd=None, ignore_err=False, expected_return_code=0, errors="strict"):
     if not cmd:
         raise Exception("cmd not set")
     try:
@@ -61,14 +61,16 @@ def run_shell_cmd(cmd=None, ignore_err=False, expected_return_code=0):
         )
         data, err = f.communicate()
         if not ignore_err:
-            err = err.decode("utf-8")
+            err = err.decode("utf-8", errors=errors)
             if len(err) > 0:
                 raise Exception(err + " [FAILED]")
         if f.returncode != expected_return_code:
             raise Exception(
                 "{} exited with non {} exit code".format(cmd, expected_return_code)
             )
-        info = data.decode("utf-8")
+        info = data.decode("utf-8", errors=errors)
     except Exception as e:
-        raise Exception("Failed to run command = {} and exception {}".format(cmd, e))
+        raise Exception(
+            "Failed to run command = {} and exception {}".format(cmd, e)
+        ) from e
     return info

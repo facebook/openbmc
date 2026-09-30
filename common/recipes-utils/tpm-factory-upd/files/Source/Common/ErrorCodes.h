@@ -3,7 +3,7 @@
  *  @details    This file contains definitions for all error and return codes.
  *  @file       ErrorCodes.h
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -57,7 +57,18 @@
 /// Not supported state in case of a TPM2.0 (0xE029500B)
 #define RC_E_TPM_WRONG_STATE                    RC_APP_MASK + 0x00B
 #define MSG_RC_E_TPM_WRONG_STATE                L"The selected command line option cannot be used in the current TPM state."
-
+/// Error code for not empty platform authentication
+#define RC_E_PLATFORM_AUTH_NOT_EMPTY            RC_APP_MASK + 0x0C
+#define MSG_RC_E_PLATFORM_AUTH_NOT_EMPTY        L"TPM2.0 PlatformAuth is not the Empty Buffer."
+/// Error code for disabled platform hierarchy
+#define RC_E_PLATFORM_HIERARCHY_DISABLED        RC_APP_MASK + 0x0D
+#define MSG_RC_E_PLATFORM_HIERARCHY_DISABLED    L"TPM2.0 platform hierarchy is disabled."
+/// Error code for an aborted operation or request
+#define RC_E_ABORTED                            RC_APP_MASK + 0x0E
+#define MSG_RC_E_ABORTED                        L"Operation aborted."
+/// Error code if TPM commands are / will be blocked
+#define RC_E_TPM_COMMANDS_BLOCKED               RC_APP_MASK + 0x0F
+#define MSG_RC_E_TPM_COMMANDS_BLOCKED           L"Some TPM commands cannot be submitted through the used TPM software stack."
 //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -154,11 +165,11 @@
 #define RC_E_NO_IFX_TPM                         RC_E_TPM_FIRMWARE_UPDATE + 0x06
 #define MSG_RC_E_NO_IFX_TPM                     L"The TPM is not an Infineon TPM."
 /// Error code for not empty platform authentication (0xE0295507)
-#define RC_E_PLATFORM_AUTH_NOT_EMPTY            RC_E_TPM_FIRMWARE_UPDATE + 0x07
-#define MSG_RC_E_PLATFORM_AUTH_NOT_EMPTY        L"TPM2.0: PlatformAuth is not the Empty Buffer. The firmware cannot be updated."
+#define RC_E_FU_PLATFORM_AUTH_NOT_EMPTY         RC_E_TPM_FIRMWARE_UPDATE + 0x07
+#define MSG_RC_E_FU_PLATFORM_AUTH_NOT_EMPTY     L"TPM2.0: PlatformAuth is not the Empty Buffer. The firmware cannot be updated."
 /// Error code for disabled platform hierarchy (0xE0295508)
-#define RC_E_PLATFORM_HIERARCHY_DISABLED        RC_E_TPM_FIRMWARE_UPDATE + 0x08
-#define MSG_RC_E_PLATFORM_HIERARCHY_DISABLED    L"TPM2.0: The platform hierarchy is disabled. The firmware cannot be updated."
+#define RC_E_FU_PLATFORM_HIERARCHY_DISABLED     RC_E_TPM_FIRMWARE_UPDATE + 0x08
+#define MSG_RC_E_FU_PLATFORM_HIERARCHY_DISABLED L"TPM2.0: The platform hierarchy is disabled. The firmware cannot be updated."
 /// Error code for blocked firmware update (0xE0295509)
 #define RC_E_FW_UPDATE_BLOCKED                  RC_E_TPM_FIRMWARE_UPDATE + 0x09
 #define MSG_RC_E_FW_UPDATE_BLOCKED              L"The TPM does not allow further updates because the update counter is zero."
@@ -239,6 +250,9 @@
 /// Error code for invalid ownerauth parameter
 #define RC_E_INVALID_OWNERAUTH_OPTION           RC_E_TPM_FIRMWARE_UPDATE + 0x2B
 #define MSG_RC_E_INVALID_OWNERAUTH_OPTION       L"An invalid value was passed in the <ownerauth> command line option."
+/// Error code for invalid policyhandle parameter
+#define RC_E_INVALID_POLICYHANDLE_OPTION        RC_E_TPM_FIRMWARE_UPDATE + 0x2C
+#define MSG_RC_E_INVALID_POLICYHANDLE_OPTION    L"An invalid value was passed in the <policyhandle> command line option. Set up policy session and try again."
 
 //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 // TPM Firmware Update error codes for internal mapping

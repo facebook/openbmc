@@ -96,7 +96,7 @@ class Software : private sdbusplus::async::context_ref
 
     Software(sdbusplus::async::context& ctx, const std::string& id);
 
-    sdbusplus::message::object_path getPath() const;
+    sdbusplus::object_path getPath() const;
 
     std::string getId() const;
 
@@ -114,7 +114,7 @@ class Software : private sdbusplus::async::context_ref
 
   private:
     const std::string id;
-    const sdbusplus::message::object_path path;
+    const sdbusplus::object_path path;
     std::unique_ptr<SoftwareVersion> version{nullptr};
     std::unique_ptr<SoftwareActivation> activation{nullptr};
     std::unique_ptr<MultipartSoftwareUpdate> multipartUpdate{nullptr};

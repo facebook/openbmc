@@ -1,4 +1,4 @@
-From 9fcd9aacb633b926b1ccd4daf088481103762354 Mon Sep 17 00:00:00 2001
+From 79fd2317810e8b555faf0c6b579d087bf0c88019 Mon Sep 17 00:00:00 2001
 From: Andy Chung <Andy.Chung@amd.com>
 Date: Wed, 10 Dec 2025 17:05:01 +0800
 Subject: [PATCH] apml: Add support for SP7 platform
@@ -12,10 +12,10 @@ Link: https://github.com/AMDESE/linux-aspeed/commit/387d564e2a06289e4ff6d8202cb9
  3 files changed, 9 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/i3c/device.c b/drivers/i3c/device.c
-index 2396545763ff..6db78bceae82 100644
+index 6382d70299e2..2763bf8f58af 100644
 --- a/drivers/i3c/device.c
 +++ b/drivers/i3c/device.c
-@@ -226,7 +226,7 @@ i3c_device_match_id(struct i3c_device *i3cdev,
+@@ -266,7 +266,7 @@ i3c_device_match_id(struct i3c_device *i3cdev,
  {
  	struct i3c_device_info devinfo;
  	const struct i3c_device_id *id;
@@ -24,7 +24,7 @@ index 2396545763ff..6db78bceae82 100644
  	bool rndpid;
  
  	i3c_device_get_info(i3cdev, &devinfo);
-@@ -234,6 +234,8 @@ i3c_device_match_id(struct i3c_device *i3cdev,
+@@ -274,6 +274,8 @@ i3c_device_match_id(struct i3c_device *i3cdev,
  	manuf = I3C_PID_MANUF_ID(devinfo.pid);
  	part = I3C_PID_PART_ID(devinfo.pid);
  	ext_info = I3C_PID_EXTRA_INFO(devinfo.pid);

@@ -1,8 +1,7 @@
-From aad8237429664c941913cbc5d96f57f8d14d60df Mon Sep 17 00:00:00 2001
+From fa047890f080be19db5fb08fd9851c76b974a6c5 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Wed, 17 Sep 2025 15:57:25 +0800
-Subject: [PATCH 1011/1012] ARM: dts: aspeed: harma: add sq52206 power monitor
- device
+Subject: [PATCH] ARM: dts: aspeed: harma: add sq52206 power monitor device
 
 lore:https://lore.kernel.org/all/20250917101828.2589069-4-peteryin.openbmc@gmail.com/
 
@@ -14,10 +13,10 @@ Signed-off-by: Peter Yin <peter.yin@quantatw.com>
  1 file changed, 17 insertions(+), 11 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-index bcef91e6eb54..fe72d47a7632 100644
+index 8b9ff836cf02..e11a6eaddf72 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-@@ -353,14 +353,15 @@ eeprom@52 {
+@@ -380,14 +380,15 @@ eeprom@52 {
  		reg = <0x52>;
  	};
  
@@ -39,7 +38,7 @@ index bcef91e6eb54..fe72d47a7632 100644
  	};
  
  	power-monitor@44 {
-@@ -369,16 +370,21 @@ power-monitor@44 {
+@@ -396,16 +397,21 @@ power-monitor@44 {
  		shunt-resistor-micro-ohms = <250>;
  	};
  
@@ -67,5 +66,5 @@ index bcef91e6eb54..fe72d47a7632 100644
  
  &i2c5 {
 -- 
-2.43.0
+2.53.0-Meta
 

@@ -1,0 +1,34 @@
+From a04d7856162c55f1eb1c8c25bd26c916cabf3373 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Wed, 6 May 2026 09:57:59 +0800
+Subject: [PATCH] configurations: nvidia: p3809-hmc: Add NvidiaMctpVdm config
+
+Add NvidiaMctpVdm config to enable NSM management via nvidia-gpu sensor
+service.
+
+[1] https://gerrit.openbmc.org/c/openbmc/entity-manager/+/89948/1
+
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+Change-Id: Ia61f0481f04b87ebf34d3d2d43fa6f36b26a757e
+---
+ configurations/nvidia/p3809-hmc.json | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/configurations/nvidia/p3809-hmc.json b/configurations/nvidia/p3809-hmc.json
+index 7797a3c..588da87 100644
+--- a/configurations/nvidia/p3809-hmc.json
++++ b/configurations/nvidia/p3809-hmc.json
+@@ -798,6 +798,10 @@
+             "Type": "SmbpbiVirtualEeprom",
+             "Units": "Volts",
+             "ValueType": "FLOAT64"
++        },
++        {
++            "Name": "NvidiaNSM",
++            "Type": "NvidiaMctpVdm"
+         }
+     ],
+     "Name": "NVIDIA HMC",
+-- 
+2.53.0-Meta
+

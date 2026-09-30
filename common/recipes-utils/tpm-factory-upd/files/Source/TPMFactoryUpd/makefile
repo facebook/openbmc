@@ -1,5 +1,5 @@
 ﻿#
-# Copyright 2015 - 2022 Infineon Technologies AG ( www.infineon.com )
+# Copyright 2015 - 2025 Infineon Technologies AG ( www.infineon.com )
 #
 # All rights reserved.
 #
@@ -24,7 +24,6 @@ CFLAGS+= \
 	-Wextra \
 	-std=gnu1x -Wpedantic \
 	-Wno-missing-field-initializers \
-	-Wno-error=deprecated-declarations \
 	-Werror \
 	-Wshadow \
 	-Wcast-align \
@@ -101,6 +100,7 @@ OBJFILES=\
 	TPM2_HierarchyChangeAuth.o \
 	TPM2_Marshal.o \
 	TPM2_PolicyCommandCode.o \
+	TPM2_PolicyOR.o \
 	TPM2_PolicySecret.o \
 	TPM2_SetPrimaryPolicy.o \
 	TPM2_Shutdown.o \

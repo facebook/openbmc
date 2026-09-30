@@ -1,0 +1,9 @@
+[Unit]
+Description=AMC DateTime Sync
+After=platform-sys-init.service
+
+[Service]
+Type=oneshot
+SyslogIdentifier=amc-datetime-sync
+ExecStart=/usr/bin/amc-util syncdatetime
+LogLevelMax=warning

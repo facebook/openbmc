@@ -3,7 +3,7 @@
  *  @details    This module parses the command line and provides the command line properties
  *  @file       CommandLineParser.c
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -131,6 +131,10 @@ CommandLineParser_Parse(
                 else if (0 == Platform_StringCompare(wszValue, CMD_UPDATE_OPTION_CONFIG_FILE, RG_LEN(CMD_UPDATE_OPTION_CONFIG_FILE), TRUE))
                 {
                     unUpdateType = UPDATE_TYPE_CONFIG_FILE;
+                }
+                else if (0 == Platform_StringCompare(wszValue, CMD_UPDATE_OPTION_TPM20_PLATFORMPOLICY, RG_LEN(CMD_UPDATE_OPTION_TPM20_PLATFORMPOLICY), TRUE))
+                {
+                    unUpdateType = UPDATE_TYPE_TPM20_PLATFORMPOLICY;
                 }
                 else
                 {
@@ -307,14 +311,46 @@ CommandLineParser_Parse(
                 break;
             }
 
-            // Check if value is 1 or 3 for the TPM device access mode
-            if (!PropertyStorage_GetUIntegerValueByKey(PROPERTY_TPM_DEVICE_ACCESS_MODE, &unAccessMode) ||
-                    (TPM_DEVICE_ACCESS_DRIVER != unAccessMode && TPM_DEVICE_ACCESS_MEMORY_BASED != unAccessMode))
+            // Check TPM device access mode
+            if (FALSE == PropertyStorage_GetUIntegerValueByKey(PROPERTY_TPM_DEVICE_ACCESS_MODE, &unAccessMode))
             {
                 unReturnValue = RC_E_INVALID_ACCESS_MODE;
                 ERROR_STORE_FMT(unReturnValue, L"An invalid value (%ls) was passed in the <access-mode> command line option.", wszValue);
                 break;
             }
+            switch (unAccessMode)
+            {
+#if !(defined (__aarch64__) || defined (__arm__))
+                case TPM_DEVICE_ACCESS_MEMORY_BASED:
+                {
+                    unReturnValue = RC_SUCCESS;
+                    break;
+                }
+#endif
+#if defined(LINUX) || defined(DEVTEST_LINUX)
+                case TPM_DEVICE_ACCESS_DRIVER:
+                {
+                    unReturnValue = RC_SUCCESS;
+                    break;
+                }
+#endif
+#ifdef WINDOWS_TBS
+                case TPM_DEVICE_ACCESS_WIN_TBS:
+                {
+                    unReturnValue = RC_SUCCESS;
+                    break;
+                }
+#endif // WINDOWS_TBS
+                default:
+                {
+                    unReturnValue = RC_E_INVALID_ACCESS_MODE;
+                    ERROR_STORE_FMT(unReturnValue, L"An invalid value (%d) was passed in the <access-mode> command line option.", unAccessMode);
+                    break;
+                }
+            }
+
+            if (RC_SUCCESS != unReturnValue)
+                break;
 
             // Read optional device path
             unValueSize = RG_LEN(wszValue);
@@ -458,6 +494,71 @@ CommandLineParser_Parse(
             break;
         }
 
+        // **** -policyhandle
+        if (0 == Platform_StringCompare(PwszCommandLineOption, CMD_POLICYHANDLE, RG_LEN(CMD_POLICYHANDLE), TRUE))
+        {
+            unsigned int unPolicySessionHandle = 0;
+
+            unReturnValue = CommandLineParser_CheckCommandLineOptions(PwszCommandLineOption);
+            if (RC_SUCCESS != unReturnValue)
+                break;
+
+            // Read parameter policy handle
+            unReturnValue = CommandLineParser_ReadParameter(PrgwszArgv, PnMaxArg, PpunCurrentArgIndex, wszValue, &unValueSize);
+            if (RC_SUCCESS != unReturnValue)
+            {
+                ERROR_STORE(unReturnValue, L"Missing policy handle for command line parameter <policyhandle>.");
+                break;
+            }
+
+            // Convert hex string to unsigned integer
+            unReturnValue = Utility_UIntegerParseHexString(wszValue, &unPolicySessionHandle);
+            if (RC_SUCCESS != unReturnValue)
+            {
+                unReturnValue = RC_E_BAD_COMMANDLINE;
+                ERROR_STORE(unReturnValue, L"Bad value detected. Policy session handle parameter is not valid.");
+                break;
+            }
+
+            // Set policy handle in property store
+            if (!PropertyStorage_SetUIntegerValueByKey(PROPERTY_POLICYHANDLE, unPolicySessionHandle))
+            {
+                unReturnValue = RC_E_FAIL;
+                ERROR_STORE_FMT(unReturnValue, CwszErrorMsgFormatPropertyStorage_Set, PROPERTY_POLICYHANDLE);
+                break;
+            }
+
+            unReturnValue = CommandLineParser_IncrementOptionCount();
+            break;
+        }
+
+        // **** -policyfile
+        if (0 == Platform_StringCompare(PwszCommandLineOption, CMD_POLICYFILE, RG_LEN(CMD_POLICYFILE), TRUE))
+        {
+            unReturnValue = CommandLineParser_CheckCommandLineOptions(PwszCommandLineOption);
+            if (RC_SUCCESS != unReturnValue)
+                break;
+
+            // Read parameter policy file
+            unReturnValue = CommandLineParser_ReadParameter(PrgwszArgv, PnMaxArg, PpunCurrentArgIndex, wszValue, &unValueSize);
+            if (RC_SUCCESS != unReturnValue)
+            {
+                ERROR_STORE(unReturnValue, L"Missing policy file for command line parameter <policyfile>.");
+                break;
+            }
+
+            // Set policy file in property store
+            if (!PropertyStorage_SetValueByKey(PROPERTY_POLICYFILE_PATH, wszValue))
+            {
+                unReturnValue = RC_E_FAIL;
+                ERROR_STORE_FMT(unReturnValue, CwszErrorMsgFormatPropertyStorage_Set, PROPERTY_POLICYFILE_PATH);
+                break;
+            }
+
+            unReturnValue = CommandLineParser_IncrementOptionCount();
+            break;
+        }
+
         unReturnValue = RC_E_BAD_COMMANDLINE;
         ERROR_STORE_FMT(unReturnValue, L"Unknown command line parameter (%ls).", PwszCommandLineOption);
     }
@@ -591,6 +692,16 @@ CommandLineParser_FinalizeParsing(
                 {
                     PunReturnValue = RC_E_BAD_COMMANDLINE;
                     ERROR_STORE(PunReturnValue, L"Mandatory command line option ownerauth is missing.");
+                    break;
+                }
+            }
+            else if (UPDATE_TYPE_TPM20_PLATFORMPOLICY == unUpdateType)
+            {
+                // The firmware option is set for -update tpm20-platformpolicy
+                if (FALSE == PropertyStorage_ExistsElement(PROPERTY_FIRMWARE_PATH))
+                {
+                    PunReturnValue = RC_E_BAD_COMMANDLINE;
+                    ERROR_STORE(PunReturnValue, L"Mandatory command line option firmware is missing.");
                     break;
                 }
             }
@@ -856,6 +967,8 @@ CommandLineParser_CheckCommandLineOptions(
         BOOL fOwnerAuth = FALSE;
         BOOL fSetMode = FALSE;
         BOOL fForce = FALSE;
+        BOOL fPolicyHandle = FALSE;
+        BOOL fPolicyFile = FALSE;
 
         // Read Property storage
         if (TRUE == PropertyStorage_ExistsElement(PROPERTY_HELP))
@@ -880,6 +993,10 @@ CommandLineParser_CheckCommandLineOptions(
             fSetMode = TRUE;
         if (TRUE == PropertyStorage_ExistsElement(PROPERTY_FORCE))
             fForce = TRUE;
+        if (TRUE == PropertyStorage_ExistsElement(PROPERTY_POLICYHANDLE))
+            fPolicyHandle = TRUE;
+        if (TRUE == PropertyStorage_ExistsElement(PROPERTY_POLICYFILE_PATH))
+            fPolicyFile = TRUE;
 
         // **** -help [Help]
         if (0 == Platform_StringCompare(PwszCommand, CMD_HELP, RG_LEN(CMD_HELP), TRUE) ||
@@ -896,7 +1013,9 @@ CommandLineParser_CheckCommandLineOptions(
                     TRUE == fConfigFileOption ||
                     TRUE == fOwnerAuth ||
                     TRUE == fSetMode ||
-                    TRUE == fForce)
+                    TRUE == fForce ||
+                    TRUE == fPolicyHandle ||
+                    TRUE == fPolicyFile)
                 unReturnValue = RC_E_BAD_COMMANDLINE;
             break;
         }
@@ -913,7 +1032,9 @@ CommandLineParser_CheckCommandLineOptions(
                     TRUE == fConfigFileOption ||
                     TRUE == fOwnerAuth ||
                     TRUE == fSetMode ||
-                    TRUE == fForce)
+                    TRUE == fForce ||
+                    TRUE == fPolicyHandle ||
+                    TRUE == fPolicyFile)
                 unReturnValue = RC_E_BAD_COMMANDLINE;
             break;
         }
@@ -966,7 +1087,9 @@ CommandLineParser_CheckCommandLineOptions(
                     TRUE == fFwPathUpdateOption ||
                     TRUE == fConfigFileOption ||
                     TRUE == fSetMode ||
-                    TRUE == fForce)
+                    TRUE == fForce ||
+                    TRUE == fPolicyHandle ||
+                    TRUE == fPolicyFile)
                 unReturnValue = RC_E_BAD_COMMANDLINE;
             break;
         }
@@ -1003,7 +1126,9 @@ CommandLineParser_CheckCommandLineOptions(
                     TRUE == fHelpOption ||
                     TRUE == fInfoOption ||
                     TRUE == fSetMode ||
-                    TRUE == fForce)
+                    TRUE == fForce ||
+                    TRUE == fPolicyHandle ||
+                    TRUE == fPolicyFile)
                 unReturnValue = RC_E_BAD_COMMANDLINE;
             break;
         }
@@ -1019,7 +1144,9 @@ CommandLineParser_CheckCommandLineOptions(
                     TRUE == fClearOwnership ||
                     TRUE == fConfigFileOption ||
                     TRUE == fOwnerAuth ||
-                    TRUE == fForce)
+                    TRUE == fForce ||
+                    TRUE == fPolicyHandle ||
+                    TRUE == fPolicyFile)
                 unReturnValue = RC_E_BAD_COMMANDLINE;
             break;
         }
@@ -1034,6 +1161,36 @@ CommandLineParser_CheckCommandLineOptions(
                     TRUE == fClearOwnership ||
                     TRUE == fOwnerAuth ||
                     TRUE == fSetMode)
+                unReturnValue = RC_E_BAD_COMMANDLINE;
+            break;
+        }
+
+        // **** -policyhandle [Policy Handle]
+        if (0 == Platform_StringCompare(PwszCommand, CMD_POLICYHANDLE, RG_LEN(CMD_POLICYHANDLE), TRUE))
+        {
+            // Command line parameter 'policyHandle' combined with the following parameters is invalid
+            if (TRUE == fPolicyHandle || // Parameter 'policyHandle' should not be given twice
+                    TRUE == fOwnerAuth ||
+                    TRUE == fHelpOption ||
+                    TRUE == fInfoOption ||
+                    TRUE == fClearOwnership ||
+                    TRUE == fSetMode ||
+                    TRUE == fPolicyFile)
+                unReturnValue = RC_E_BAD_COMMANDLINE;
+            break;
+        }
+
+        // **** -policyfile [Policy file]
+        if (0 == Platform_StringCompare(PwszCommand, CMD_POLICYFILE, RG_LEN(CMD_POLICYFILE), TRUE))
+        {
+            // Command line parameter 'policyfile' combined with the following parameters is invalid
+            if (TRUE == fPolicyFile || // Parameter 'policyFile' should not be given twice
+                    TRUE == fOwnerAuth ||
+                    TRUE == fHelpOption ||
+                    TRUE == fInfoOption ||
+                    TRUE == fClearOwnership ||
+                    TRUE == fSetMode ||
+                    TRUE == fPolicyHandle)
                 unReturnValue = RC_E_BAD_COMMANDLINE;
             break;
         }

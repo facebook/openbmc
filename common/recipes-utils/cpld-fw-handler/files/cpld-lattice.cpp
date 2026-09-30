@@ -1,8 +1,10 @@
 #include "cpld-lattice.hpp"
 #include "xo5/xo5_sram_recover.hpp"
 #include <openssl/sha.h>
+#include <unistd.h>
 #include <cstdint>
 #include <fstream>
+#include <iomanip>
 #include <map>
 #include <numeric>
 #include <thread>
@@ -21,6 +23,7 @@ const std::map<std::string, std::vector<uint8_t>> chipToDeviceIdMappingTable = {
     {"LCMXO3LF-6900", {0x61, 0x2b, 0xd0, 0x43}},
     {"LCMXO3D-4300", {0x01, 0x2e, 0x20, 0x43}},
     {"LCMXO3D-9400", {0x21, 0x2e, 0x30, 0x43}},
+    {"LFMXO5-25", {0x01, 0x0f, 0x70, 0x43}},
     {"LFMXO5-65T", {0x01, 0x0f, 0xc0, 0x43}},
 };
 
@@ -372,6 +375,40 @@ int CpldLatticeManager::readDeviceId()
     {
         std::cerr << chip.first << "\n";
     }
+
+    return -1;
+}
+
+int CpldLatticeManager::autoDetectChip()
+{
+    std::vector<uint8_t> cmd = {CMD_READ_DEVICE_ID, 0x0, 0x0, 0x0};
+    std::array<uint8_t, 5> readData = {};
+
+    if (CheckSOFTIP() && ((softIpVersion & 0xF0) == 0x10))
+    {
+        appendCrc16(cmd);
+    }
+
+    if (i2cWriteReadCmd(cmd, readData.size(), readData) != 0)
+    {
+        std::cerr << "Fail to read device Id for auto-detection.\n";
+        return -1;
+    }
+
+    for (const auto& [name, idBytes] : chipToDeviceIdMappingTable)
+    {
+        if (std::equal(idBytes.begin(), idBytes.end(), readData.begin()) ||
+            (readData[0] == 0x00 &&
+             std::equal(idBytes.begin(), idBytes.end(), readData.begin() + 1)))
+        {
+            this->chip = name;
+            std::cout << std::format("Found CPLD Chip: {}\n", name);
+            return 0;
+        }
+    }
+    std::cerr << std::format(
+        "Unknown Device ID: {:02X} {:02X} {:02X} {:02X} {:02X}\n", readData[0],
+        readData[1], readData[2], readData[3], readData[4]);
 
     return -1;
 }
@@ -920,7 +957,7 @@ bool CpldLatticeManager::waitBusyAndVerify()
             if(retry > 0)
             {
                 std::cout << std::endl;
-            }            
+            }
             break;
         }
     } // while loop busy check
@@ -1035,7 +1072,7 @@ int CpldLatticeManager::readUserCode(uint32_t& userCode)
         return -1;
     }
     std::vector<uint8_t> cmd;
-    if ((softIpVersion & 0xF0) == 0x20)
+    if ((softIpVersion & 0xF0) == 0x20 || chip == "LFMXO5-25")
     {
         uint8_t targetIdx = 0x00;
         if (target == "CFG0")
@@ -1284,7 +1321,7 @@ cleanup:
     }
 
     std::cout << "\nVerify " << (verifyFail ? "failed" : "completed") << "!."
-              << std::endl; 
+              << std::endl;
     return (verifyFail ? -1 : 0);
 }
 
@@ -1527,6 +1564,17 @@ bool XO5I2CManager::verifyCfg()
     return true;
 }
 
+bool XO5I2CManager::programDone()
+{
+    std::array<uint8_t, 4> cmd{static_cast<uint8_t>(Cmd::ProgramDone), 0x0,
+                               0x0, 0x0};
+    if (i2cWriteReadCmd(cmd) != 0)
+    {
+        return false;
+    }
+    return true;
+}
+
 int CpldLatticeManager::XO5Family_update(bool legacy)
 {
     std::cout << std::format("Starting to update {}\n", chip);
@@ -1585,6 +1633,14 @@ int CpldLatticeManager::XO5Family_update(bool legacy)
         std::cerr << "Verify cfg data failed.\n";
         return -1;
     }
+
+    std::cout << std::format("ProgramDone sending {}...\n", target);
+    if (!i2cManager.programDone())
+    {
+        std::cerr << "ProgramDone failed.\n";
+        return -1;
+    }
+
     std::cout << "\nUpdate completed! Please AC.\n";
 
     return 0;
@@ -1748,7 +1804,7 @@ int CpldLatticeManager::getVersion()
 
     uint32_t userCode = 0;
 
-    if (target.empty())
+    if (target.empty() || chip == "LFMXO5-25")
     {
         if (readUserCode(userCode) < 0)
         {
@@ -1756,8 +1812,15 @@ int CpldLatticeManager::getVersion()
             return -1;
         }
 
-        std::cout << "CPLD version: 0x" << std::hex << std::setfill('0')
-                    << std::setw(8) << userCode << std::endl;
+        if (target.empty())
+        {
+            std::cout << std::format("CPLD version: 0x{:08x}\n", userCode);
+        }
+        else
+        {
+            std::cout << std::format("CPLD {} version: 0x{:08x}\n", target,
+                                     userCode);
+        }
     }
     else if (target == "CFG0" || target == "CFG1")
     {
@@ -1806,7 +1869,7 @@ int CpldLatticeManager::getVersion()
 }
 
 void CpldLatticeManager::updateFailedWarning()
-{    
+{
     std::cerr << "CPLD ROM is now corrupted, do not perform power cycle before it's recovered, otherwise the slot will bricked." << std::endl;
     std::cerr << "Strong recommend to perform the update again right away." << std::endl;
 }

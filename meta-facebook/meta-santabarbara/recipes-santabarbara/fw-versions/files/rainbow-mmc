@@ -1,24 +1,52 @@
 #!/bin/bash
 
-declare -A ASIC_MODULE_MMC_CONFIG=(
-    [0]="10:asic_module0_mmc"
-    [1]="20:asic_module1_mmc"
-    [2]="30:asic_module2_mmc"
-    [3]="40:asic_module3_mmc"
-)
+get_eid_by_mctp_dev() {
+    local mctp_dev="$1"
+
+    mctp neigh 2>/dev/null | awk -v mctp_dev="$mctp_dev" '
+        $1 == "eid" {
+            for (i = 1; i <= NF; i++) {
+                if ($i == "dev" && $(i + 1) == mctp_dev) {
+                    print $2
+                    exit
+                }
+            }
+        }'
+}
 
 asic_module_mmc_index=$1
-config=${ASIC_MODULE_MMC_CONFIG[$asic_module_mmc_index]}
-eid=${config%:*}
-dbus_path=${config#*:}
 
-echo "Getting asic_module-mmc$asic_module_mmc_index version (EID=$eid)"
+if [[ ! "$asic_module_mmc_index" =~ ^[0-3]$ ]]; then
+    echo "Usage: $0 <asic module mmc index: 0-3>"
+    exit 1
+fi
+
+if ! command -v mctp >/dev/null 2>&1; then
+    echo "mctp command not found"
+    exit 1
+fi
+
+mctp_dev="mctpi2c$((102 + asic_module_mmc_index))"
+dbus_path="asic_module${asic_module_mmc_index}_mmc"
+
+echo "Getting asic_module-mmc$asic_module_mmc_index version (dev=$mctp_dev)"
 
 MAX_RETRIES=3
 RETRY_COUNT=0
 version=""
 
 while [ "$RETRY_COUNT" -lt "$MAX_RETRIES" ]; do
+    eid=$(get_eid_by_mctp_dev "$mctp_dev")
+
+    if [ -z "$eid" ]; then
+        echo "Cannot find EID for $mctp_dev, retrying... ($((RETRY_COUNT + 1))/$MAX_RETRIES)"
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        sleep 5
+        continue
+    fi
+
+    echo "Using EID=$eid for $mctp_dev"
+
     version=$( pldmtool fw_update GetFwParams -m "$eid" 2>/dev/null | \
                jq -r '.ActiveComponentImageSetVersionString' 2>/dev/null )
 

@@ -3,7 +3,7 @@
  *  @details    This module provides platform related functions (memory allocation, string manipulation, time, etc.).
  *  @file       Linux\Platform.c
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -912,7 +912,7 @@ Platform_UnmarshalString(
         }
 
         // Check if target buffer is too small to fit the input string.
-        if (PunBufferLen / 2 >= *PpunTargetStringLen)
+        if (PunBufferLen / 2 > *PpunTargetStringLen)
         {
             unReturnValue = RC_E_BUFFER_TOO_SMALL;
             break;

@@ -1,0 +1,7 @@
+/*
+ * Copyright 2026-present Facebook. All Rights Reserved.
+ */
+
+&sdrammc {
+	ecc-enable;
+};

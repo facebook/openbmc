@@ -1,0 +1,36 @@
+From 152f9b6c1fd6a0c4dfbfebbb322b405e26cc4899 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Thu, 23 Jan 2025 14:27:45 +0800
+Subject: [PATCH] psusensors: fixed multiple power state issue
+
+Link:https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/77391
+
+If the entity does not set powerState for each channel,
+label_powerState will be contaminated by the state of the previous
+channel. Therefore, if label_powerState is not found,the powerState
+should be updated.
+
+Change-Id: I61d68834a006dec9f355d1b3f2a339ee30ada89d
+Signed-off-by: Peter Yin <peter.yin@quantatw.com>
+---
+ src/psu/PSUSensorMain.cpp | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
+index 2167700..e22fec8 100644
+--- a/src/psu/PSUSensorMain.cpp
++++ b/src/psu/PSUSensorMain.cpp
+@@ -941,6 +941,10 @@ static void createSensorsCallback(
+                                                     findPowerState->second);
+                 setReadState(powerState, readState);
+             }
++            else
++            {
++                readState = getPowerState(*baseConfig);
++            }
+             if (!(minReading < maxReading))
+             {
+                 lg2::error("Min must be less than Max");
+-- 
+2.53.0-Meta
+

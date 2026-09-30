@@ -16,3 +16,14 @@
 # Boston, MA 02110-1301 USA
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+
+LOCAL_URI += " \
+    file://BIOS_UTIL_NL2.json \
+    file://bios_cpu_package_power_limit.py \
+    "
+
+binfiles += "bios_cpu_package_power_limit.py"
+
+do_install:append() {
+  cp BIOS_UTIL_NL2.json ${dst}/bios_support.json
+}

@@ -3,7 +3,7 @@
  *  @details    Standard include header file of project TPMFactoryUpd
  *  @file       TPMFactoryUpd/StdInclude.h
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -97,6 +97,7 @@ typedef struct _GUID
 #include <io.h>
 #include <conio.h>
 #include <bcrypt.h>
+#include <Shlobj.h>
 
 #include "Globals.h"
 
@@ -106,6 +107,7 @@ typedef struct _GUID
 #endif // WINDOWS
 
 #include "Logging.h"
+#include "DeviceManagement.h"
 #include "Error.h"
 #include "ErrorCodes.h"
 #include "TPM2_Types.h"

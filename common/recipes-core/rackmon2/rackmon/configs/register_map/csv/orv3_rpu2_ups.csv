@@ -23,6 +23,11 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 37095,1,,,,,FLOAT,,,0,,1,,UPS_Pump_Rack_Battery_Shutdown_Voltage,Volts
 37096,1,,,,,FLOAT,,,0,,1,,UPS_Pump_Rack_Battery_Low_Voltage,Volts
 37097,1,,,,,FLOAT,,,0,,1,,UPS_Pump_Rack_Battery_High_Voltage,Volts
+37099,5,,,,,STRING,,,,,,,UPS_Pump_Rack_PFC_FW_Version,
+37104,5,,,,,STRING,,,,,,,UPS_Pump_Rack_INV_FW_Version,
+37109,5,,,,,STRING,,,,,,,UPS_Pump_Rack_COM_FW_Version,
+37114,5,,,,,STRING,,,,,,,UPS_Pump_Rack_LCD_FW_Version,
+37121,1,,,,,FLOAT,,,0,,1,,UPS_Pump_Rack_Battery_Temperature,DegreesC
 37135,1,,,,,INTEGER,,,,,,,UPS_Fan_Rack_1_Warning_Information_1,
 37136,1,,,,,INTEGER,,,,,,,UPS_Fan_Rack_1_Warning_Information_2,
 37137,1,,,,,INTEGER,,,,,,,UPS_Fan_Rack_1_Warning_Information_3,
@@ -47,6 +52,11 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 37156,1,,,,,FLOAT,,,0,,1,,UPS_Fan_Rack_1_Battery_Shutdown_Voltage,Volts
 37157,1,,,,,FLOAT,,,0,,1,,UPS_Fan_Rack_1_Battery_Low_Voltage,Volts
 37158,1,,,,,FLOAT,,,0,,1,,UPS_Fan_Rack_1_Battery_High_Voltage,Volts
+37160,5,,,,,STRING,,,,,,,UPS_Fan_Rack_1_PFC_FW_Version,
+37165,5,,,,,STRING,,,,,,,UPS_Fan_Rack_1_INV_FW_Version,
+37170,5,,,,,STRING,,,,,,,UPS_Fan_Rack_1_COM_FW_Version,
+37175,5,,,,,STRING,,,,,,,UPS_Fan_Rack_1_LCD_FW_Version,
+37182,1,,,,,FLOAT,,,0,,1,,UPS_Fan_Rack_1_Battery_Temperature,DegreesC
 37201,1,,,,,INTEGER,,,,,,,UPS_Fan_Rack_2_Warning_Information_1,
 37202,1,,,,,INTEGER,,,,,,,UPS_Fan_Rack_2_Warning_Information_2,
 37203,1,,,,,INTEGER,,,,,,,UPS_Fan_Rack_2_Warning_Information_3,
@@ -71,3 +81,11 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 37222,1,,,,,FLOAT,,,0,,1,,UPS_Fan_Rack_2_Battery_Shutdown_Voltage,Volts
 37223,1,,,,,FLOAT,,,0,,1,,UPS_Fan_Rack_2_Battery_Low_Voltage,Volts
 37224,1,,,,,FLOAT,,,0,,1,,UPS_Fan_Rack_2_Battery_High_Voltage,Volts
+37226,5,,,,,STRING,,,,,,,UPS_Fan_Rack_2_PFC_FW_Version,
+37231,5,,,,,STRING,,,,,,,UPS_Fan_Rack_2_INV_FW_Version,
+37236,5,,,,,STRING,,,,,,,UPS_Fan_Rack_2_COM_FW_Version,
+37241,5,,,,,STRING,,,,,,,UPS_Fan_Rack_2_LCD_FW_Version,
+37248,1,,,,,FLOAT,,,0,,1,,UPS_Fan_Rack_2_Battery_Temperature,DegreesC
+37696,5,,,,,STRING,,,,,,,UPS_Pump_Rack_FBPN,
+37701,5,,,,,STRING,,,,,,,UPS_Fan_Rack_1_FBPN,
+37706,5,,,,,STRING,,,,,,,UPS_Fan_Rack_2_FBPN,

@@ -1,0 +1,286 @@
+From babaf1e5d4309bca2cb983fe9bba822f377e7fad Mon Sep 17 00:00:00 2001
+From: Zane Li <zane.li.wiwynn@gmail.com>
+Date: Tue, 19 May 2026 01:25:36 +0000
+Subject: [PATCH] netlakenext: prevent update with incompatible fw
+
+Description:
+- Add a platform-specific BMC firmware pre-check before update.
+- For PVT boards, fw-util now validates the image version against
+a minimum supported firmware version by parsing the U-Boot version
+string from the image. The update will be rejected if the image
+version is older than the required baseline.
+- A KV override mechanism is also added to allow bypassing the
+pre-check when necessary.
+
+Motivation:
+- Prevent PVT systems from being downgraded to incompatible BMC
+firmware versions that may not support the required hardware
+configuration or platform behavior.
+
+Test plan:
+- Build pass
+
+Signed-off-by: Zane Li <zane.li.wiwynn@gmail.com>
+---
+ bmc.cpp          |  9 +++++
+ bmc.h            |  2 ++
+ check_image.cpp  | 87 ++++++++++++++++++++++++++++++++++++++++++++++++
+ plat/meson.build |  1 +
+ platform.cpp     | 52 +++++++++++++++++++++++++++--
+ platform.hpp     | 14 ++++++++
+ 6 files changed, 163 insertions(+), 2 deletions(-)
+ create mode 100644 platform.hpp
+
+diff --git a/bmc.cpp b/bmc.cpp
+index 36307b5..6812730 100644
+--- a/bmc.cpp
++++ b/bmc.cpp
+@@ -18,6 +18,10 @@ using namespace std;
+ #define ROMX_SIZE                   (84 * 1024)
+ #define META_SIZE                   (64 * 1024)
+ 
++bool __attribute__((weak)) BmcComponent::pre_check(const std::string& image) {
++    return true;
++}
++
+ int BmcComponent::update(const string& image)
+ {
+   string dev;
+@@ -38,6 +42,11 @@ int BmcComponent::update(const string& image)
+     return FW_STATUS_FAILURE;
+   }
+ 
++  if (pre_check(image) == false) {
++    sys().error << "Pre-check failed, cannot proceed with BMC fw upgrade" << endl;
++    return FW_STATUS_FAILURE;
++  }
++
+   if (!sys().get_mtd_name(_mtd_name, dev)) {
+     sys().error << "Failed to get device for " << _mtd_name << endl;
+     return FW_STATUS_FAILURE;
+diff --git a/bmc.h b/bmc.h
+index 124d5d1..753a51e 100644
+--- a/bmc.h
++++ b/bmc.h
+@@ -11,6 +11,8 @@ class BmcComponent : public Component {
+     size_t _skip_offset;
+     std::string get_bmc_version(void);
+     std::string get_bmc_version(const std::string &mtd);
++    bool pre_check(const std::string& image);
++    bool is_version_valid(const std::string& image, const std::string& minVersion, const std::string& maxVersion);
+   public:
+     BmcComponent(const std::string& fru, const std::string& comp, const std::string& mtd, const std::string& vers = "", size_t w_offset = 0, size_t skip_offset = 0)
+       : Component(fru, comp), _mtd_name(mtd), _vers_mtd(vers), _writable_offset(w_offset), _skip_offset(skip_offset) {}
+diff --git a/check_image.cpp b/check_image.cpp
+index 0ab1f2b..85b631a 100644
+--- a/check_image.cpp
++++ b/check_image.cpp
+@@ -19,6 +19,16 @@ using nlohmann::json;
+ #define EVP_MD_CTX_free EVP_MD_CTX_destroy
+ #endif
+ 
++struct Version {
++    int year;
++    int week;
++};
++
++enum class VersionCheck {
++    Min,
++    Max
++};
++
+ std::string getMd5(const char* data, size_t size) {
+   unsigned int MD5Len = EVP_MD_size(EVP_md5());
+   EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+@@ -375,6 +385,69 @@ void validate(
+   }
+ }
+ 
++std::string getVersion(const std::string_view& uboot) {
++  size_t off = 0;
++  const std::string keyStr{"U-Boot 20"};
++  const std::regex ubootVerRegex(R"(U-Boot \d{4}\.\d{2}\s+(\S+)\s+)");
++  while (off != uboot.npos) {
++    off = uboot.find(keyStr, off);
++    if (off == uboot.npos) {
++      break;
++    }
++    std::string_view checkStr = uboot.substr(off, 256);
++    std::match_results<typename decltype(checkStr)::const_iterator>
++        matchResults{};
++    auto ret = std::regex_search(
++        checkStr.begin(), checkStr.end(), matchResults, ubootVerRegex);
++    if (ret) {
++      size_t matchedStrLen = static_cast<size_t>(matchResults.length(1));
++      auto matchedStr = checkStr.data() + matchResults.position(1);
++      return std::string(matchedStr, matchedStrLen);
++    }
++    off += keyStr.length();
++  }
++  throw std::runtime_error("Cannot find version name");
++}
++
++Version parseVersion(const std::string& version) {
++    auto pos = version.find("-v");
++    if (pos == std::string_view::npos)
++        throw std::runtime_error("No version");
++
++    pos += 2;
++
++    int y, w;
++    sscanf(version.data() + pos, "%d.%d", &y, &w);
++
++    return {y, w};
++}
++
++bool validateVersion(const std::string& path, const std::string& compVersion, const VersionCheck checkType) {
++  Image image(path);
++  size_t ubootSize = 1024 * 1024;
++  std::string_view uboot(image.peekExact(0, ubootSize), ubootSize);
++  std::string imgVersion = getVersion(uboot);
++  Version imgVer = parseVersion(imgVersion);
++  Version minVer = parseVersion(compVersion);
++
++  if (checkType == VersionCheck::Min) {
++    if (std::tie(imgVer.year, imgVer.week) >=
++        std::tie(minVer.year, minVer.week)) {
++      return true;
++    }
++  } else {
++    if (std::tie(imgVer.year, imgVer.week) <=
++        std::tie(minVer.year, minVer.week)) {
++      return true;
++    }
++  }
++  std::cerr << "Image version: " << imgVersion
++          << " " << ((checkType == VersionCheck::Min) ? "<" : ">")
++          << " required: " << compVersion
++          << std::endl;
++  return false;
++}
++
+ #ifndef TEST_STANDALONE_VALIDATOR
+ bool BmcComponent::is_valid(const std::string& image, bool /* pfr_active */) {
+   uint32_t timestamp = 0;
+@@ -392,6 +465,20 @@ bool BmcComponent::is_valid(const std::string& image, bool /* pfr_active */) {
+   }
+   return true;
+ }
++bool BmcComponent::is_version_valid(const std::string& image, const std::string& minVersion, const std::string& maxVersion) {
++  try {
++    if (!minVersion.empty() && validateVersion(image, minVersion, VersionCheck::Min) == false) {
++      return false;
++    }
++    if (!maxVersion.empty() && validateVersion(image, maxVersion, VersionCheck::Max) == false) {
++      return false;
++    }
++    return true;
++  } catch (std::exception& ex) {
++    std::cerr << ex.what() << std::endl;
++    return false;
++  }
++}
+ #else
+ int main(int argc, char* argv[]) {
+   System system;
+diff --git a/plat/meson.build b/plat/meson.build
+index 48e046d..275b0e6 100644
+--- a/plat/meson.build
++++ b/plat/meson.build
+@@ -1,5 +1,6 @@
+ srcs += [
+     'bmc_cpld.cpp',
++    'platform.hpp',
+     'platform.cpp',
+     'bios.cpp',
+     'bmc_bios.cpp',
+diff --git a/platform.cpp b/platform.cpp
+index 3390817..9490387 100644
+--- a/platform.cpp
++++ b/platform.cpp
+@@ -1,8 +1,11 @@
++#include "bmc.h"
+ #include "bmc_cpld.h"
++#include "nic.h"
++#include "platform.hpp"
+ #include "vr_fw.h"
++#include <cstring>
+ #include <syslog.h>
+-#include <facebook/netlakenext_common.h>
+-#include "nic.h"
++#include <openbmc/kv.h>
+ 
+ BmcCpldComponent  cpld_server("server", "cpld", "LFMXO5-25", "3", "0x40");
+ 
+@@ -11,3 +14,48 @@ NicComponent  nic("nic", "nic");
+ VrComponent vr_vddcr("server", "vr_vddcr", "VR_VDDCR/VR_VDDCR_SOC");
+ VrComponent vr_vdd_misc("server", "vr_vdd_misc", "VR_VDD_MISC");
+ 
++const std::array<VersionRange, BOARD_REV_COUNT> verMap =
++{
++    VersionRange{"EVT", "", ""},
++    VersionRange{"EVT2", "", "netlakenext-v2026.20.1"},
++    VersionRange{"EVT3", "", ""},
++    VersionRange{"PreDVT", "", ""},
++    VersionRange{"DVT", "", ""},
++    VersionRange{"PVT", "netlakenext-v2026.21.1", ""},
++    VersionRange{"MP", "", ""},
++};
++
++bool BmcComponent::pre_check(const std::string& image) {
++    uint8_t sysCfg = 0;
++    uint8_t boardRev = 0;
++    int ret = 0;
++    char value[MAX_VALUE_LEN] = {0};
++
++    ret = kv_get(SKIP_BMC_FWUPD_PRECHK_KV_KEY, value, NULL, 0);
++
++    if ((ret == 0) &&
++        (strncmp(value, HIGH_STR, strlen(HIGH_STR)) == 0)) {
++        sys().output << "Skip pre-check\n";
++        return true;
++    }
++
++    ret = netlakenext_common_get_sys_cfg(&sysCfg);
++    if (ret < 0) {
++        sys().error << "Failed to get system configuration, pre-check failed\n";
++        return false;
++    }
++    boardRev = (sysCfg & CPLD_REV_ID_BIT);
++    if (boardRev >= verMap.size()) {
++        sys().error << "Invalid board revision(dec): " << int(boardRev)
++                    << ", system config(dec): " << int(sysCfg) << "\n";
++        return false;
++    }
++
++    sys().output << "Detected " << verMap[boardRev].stage << " stage board\n";
++
++    if(is_version_valid(image, verMap[boardRev].minVer, verMap[boardRev].maxVer) == false) {
++        return false;
++    }
++
++    return true;
++}
+diff --git a/platform.hpp b/platform.hpp
+new file mode 100644
+index 0000000..146ed4d
+--- /dev/null
++++ b/platform.hpp
+@@ -0,0 +1,14 @@
++#pragma once
++
++#include <array>
++#include <string>
++#include <facebook/netlakenext_common.h>
++
++struct VersionRange
++{
++    std::string stage;
++    std::string minVer;
++    std::string maxVer;
++};
++
++extern const std::array<VersionRange, BOARD_REV_COUNT> verMap;
+-- 
+2.43.0
+

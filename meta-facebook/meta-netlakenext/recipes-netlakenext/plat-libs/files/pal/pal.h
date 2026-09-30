@@ -87,10 +87,14 @@ extern "C" {
 #define UART3_TO_UART4 0x6
 #define UART4_TO_UART3 0x4
 
+#define MONITOR_PMIC_ERROR_TIME_S 5
+
 extern const char pal_fru_list_sensor_history[];
 extern const char pal_fru_list[];
 extern size_t pal_pwm_cnt;
 extern size_t pal_tach_cnt;
+extern const uint8_t pmic_addr_list[];
+extern const uint8_t dimm_addr_list[];
 
 enum {
   FRU_ABSENT           = 0,
@@ -107,6 +111,8 @@ int pal_copy_eeprom_to_bin(const char *eeprom_file, const char *bin_file);
 int pal_check_fru_is_valid(const char* fruid_path);
 int pal_get_cpld_ver(uint8_t fru, char *rbuf);
 int pal_post_display(uint8_t status);
+int pal_parse_sel(uint8_t fru, uint8_t *sel, char *error_log);
+void parse_mce_error_sel(uint8_t *event_data, char *error_log);
 
 int pal_set_id_led(uint8_t fru, enum LED_HIGH_ACTIVE value);
 int pal_set_fault_led(uint8_t fru, enum LED_HIGH_ACTIVE value);
@@ -118,6 +124,11 @@ int8_t pal_set_uart_routing(uint8_t routing);
 int pal_get_sensor_util_timeout(uint8_t fru);
 int pal_hwmon_probe(char *path, char *dev);
 int pal_dimm_page_init(void);
+int pal_pmic_pwr_setting(void);
+int pal_pmic_monitor_init(void);
+void pal_dimm_init(void);
+int pal_set_pwm_kv_value(int pwm_value);
+int pal_get_pwm_kv_value(int *pwm_value);
 
 #ifdef __cplusplus
 } // extern "C"

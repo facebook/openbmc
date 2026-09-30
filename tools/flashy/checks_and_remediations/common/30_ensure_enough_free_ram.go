@@ -36,17 +36,34 @@ func init() {
 // This should be a generous limit to allow flashy and flashcp to run.
 const minMemoryNeeded = 45 * 1024 * 1024
 
+// S697061: wedge100 keeps a far larger rootfs pinned in unevictable ramfs than the platforms
+// this check was originally sized against, so it sits below the default limit on all
+// but a freshly booted device and ends up asking for a reboot on every upgrade.
+const wedge100MinMemoryNeeded = 30 * 1024 * 1024
+
 func ensureEnoughFreeRAM(stepParams step.StepParams) step.StepExitError {
 	memInfo, err := utils.GetMemInfo()
 	if err != nil {
 		return step.ExitSafeToReboot{Err: err}
 	}
-	log.Printf("Memory status: %v B total memory, %v B free memory", memInfo.MemTotal, memInfo.MemFree)
-	log.Printf("Minimum memory needed for update is %v B", minMemoryNeeded)
 
-	if memInfo.MemFree < minMemoryNeeded {
+	platform, err := utils.GetOpenBMCPlatformFromIssueFile()
+	if err != nil {
+		return step.ExitSafeToReboot{Err: fmt.Errorf("Unable to determine platform: %w", err)}
+	}
+
+	// S697061: Newer wedge100 versions have a much larger rootfs
+	minMemory := uint64(minMemoryNeeded)
+	if platform == "wedge100" {
+		minMemory = wedge100MinMemoryNeeded
+	}
+
+	log.Printf("Memory status: %v B total memory, %v B free memory", memInfo.MemTotal, memInfo.MemFree)
+	log.Printf("Minimum memory needed for update is %v B", minMemory)
+
+	if memInfo.MemFree < minMemory {
 		errMsg := fmt.Errorf("Free memory (%v B) < minimum memory needed (%v B), reboot needed",
-			memInfo.MemFree, minMemoryNeeded)
+			memInfo.MemFree, minMemory)
 		return step.ExitSafeToReboot{Err: errMsg}
 	}
 

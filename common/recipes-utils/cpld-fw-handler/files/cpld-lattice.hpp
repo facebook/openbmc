@@ -77,6 +77,11 @@ class CpldLatticeManager : public CpldManager
     int fwUpdate(bool legacy) override;
     int fwVerifyOnly(bool legacy) override;
     int jedFileParser();
+    int autoDetectChip();
+    std::string getChipName() const
+    {
+        return chip;
+    }
 
     uint8_t softIpVersion = 0;
     bool CheckSOFTIP();
@@ -136,6 +141,7 @@ class XO5I2CManager : public CpldLatticeManager
     bool eraseCfg();
     bool programCfg();
     bool verifyCfg();
+    bool programDone();
 
   private:
     enum class Cmd : uint8_t
@@ -143,7 +149,8 @@ class XO5I2CManager : public CpldLatticeManager
         SectorErase = 0xd8,
         PageProgram = 0x02,
         PageRead = 0x0b,
-        ReadUsercode = 0xc0
+        ReadUsercode = 0xc0,
+        ProgramDone = 0x5e
     };
 
     enum class Status : uint8_t

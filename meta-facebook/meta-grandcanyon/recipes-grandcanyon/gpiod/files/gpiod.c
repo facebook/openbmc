@@ -51,6 +51,7 @@
 #define SSD_P12V_EN_CPLD_OFFSET                 0x00
 #define SSD1_P12V_EN_BIT                        6
 #define SSD0_P12V_EN_BIT                        7
+#define ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #endif
 
 
@@ -236,7 +237,7 @@ fru_insert_event(int fru_id, uint8_t *e1s_iocm_present_status) {
 static void *
 fru_missing_monitor() {
   uint8_t fru_present_flag = 0, chassis_type = 0, uic_location_id = 0;
-  uint8_t fru_present_status[FRU_CNT] = {FRU_PRESENT};
+  uint8_t fru_present_status[MAX_NUM_FRUS+1] = {FRU_PRESENT};
   uint8_t e1s_iocm_present_status[E1S_IOCM_SLOT_NUM] = {FRU_PRESENT};
   char fru_name[MAX_FRU_NAME_STR] = {0};
   char uic_location = '?';
@@ -250,7 +251,7 @@ fru_missing_monitor() {
   kv_set("flag_gpiod_fru_miss", STR_VALUE_1, 0, 0);
 
   while(1) {
-    for (fru_id = FRU_SERVER; fru_id < FRU_CNT; fru_id++) {
+    for (fru_id = FRU_SERVER; fru_id <= pal_get_fru_count(); fru_id++) {
       if ((fru_id == FRU_SERVER) || (fru_id == FRU_SCC)) {
         if (pal_is_fru_prsnt(fru_id, &fru_present_flag) < 0) {
           syslog(LOG_WARNING, "%s(): fail to get fru: %d present status\n", __func__, fru_id);
@@ -310,7 +311,17 @@ fru_missing_monitor() {
         // Type 5 and Type unknown
         } else {
           if (pal_get_uic_location(&uic_location_id) < 0) {
+#ifdef CONFIG_GRANDCANYON2
+            static bool uic_location_fail_logged = false;
+            if (!uic_location_fail_logged) {
+              if (pal_log_once("/tmp/gpiod_uic_location_fail_logged")) {
+                syslog(LOG_WARNING, "%s(): fail to get uic location\n", __func__);
+              }
+              uic_location_fail_logged = true;
+            }
+#else
             syslog(LOG_WARNING, "%s(): fail to get uic location\n", __func__);
+#endif
             uic_location = '?';
           } else {
             if(uic_location_id == UIC_SIDEA) {
@@ -385,6 +396,7 @@ server_power_monitor() {
           //*****Server power from off change to on
           } else if (((server_pre_pwr_status == SERVER_POWER_OFF) || (server_pre_pwr_status == SERVER_12V_OFF))
                    && (server_cur_pwr_status == SERVER_POWER_ON)) {
+            pal_clear_mrc_warning(FRU_SERVER);
             syslog(LOG_CRIT, "FRU: %d, Server is powered on", FRU_SERVER);
           }
 
@@ -615,8 +627,180 @@ classify_fault(uint16_t status_word, int status_out, const efuse_profile_t *faul
   return FAULT_INVALID;
 }
 
+static const efuse_threshold_cfg_t scc_mp5998_threshold_cfgs[] = {
+  { PMBUS_VIN_OV_FLT,          0x236F, "VIN_OV_FAULT_LIMIT" },
+  { PMBUS_VIN_OV_WARN,         0x034D, "VIN_OV_WARN_LIMIT"  },
+  { PMBUS_VIN_UV_WARN,         0x02B3, "VIN_UV_WARN_LIMIT"  },
+  { PMBUS_IIN_OC_FAULT_LIMIT,  0x0080, "IIN_OC_FAULT_LIMIT" },
+  { PMBUS_IIN_OC_WARN,         0x007A, "IIN_OC_WARN_LIMIT"  },
+  { PMBUS_VIN_OFF,             0x029A, "VIN_OFF"            },
+};
+
+static const efuse_threshold_cfg_t scc_tps25990_threshold_cfgs[] = {
+  { PMBUS_VIN_OV_FLT,  0x000B, "VIN_OV_FLT"  },
+  { PMBUS_VIN_OV_WARN, 0x00AD, "VIN_OV_WARN" },
+  { PMBUS_VIN_UV_WARN, 0x008E, "VIN_UV_WARN" },
+  { PMBUS_VIN_UV_FLT,  0x0088, "VIN_UV_FLT"  },
+  { PMBUS_IIN_OC_WARN, 0x007B, "IIN_OC_WARN" },
+};
+
+static int
+read_efuse_word(uint8_t bus, uint8_t addr, uint8_t reg, uint16_t *value)
+{
+  uint8_t txbuf[4] = {0};
+  uint8_t rxbuf[4] = {0};
+  uint8_t rxlen = 0;
+  uint8_t bus_sel = bus * 2 + 1;
+  int ret;
+  int retry;
+
+  if (value == NULL) {
+    return -1;
+  }
+
+  txbuf[0] = bus_sel;
+  txbuf[1] = addr;
+  txbuf[2] = BLOCK_READ_2BYTE;
+  txbuf[3] = reg;
+
+  for (retry = 0; retry < MAX_RETRY; retry++) {
+    rxlen = 0;
+    ret = expander_ipmb_wrapper(EXPANDER_NETFN, EXPANDER_CMD,
+                                txbuf, sizeof(txbuf),
+                                rxbuf, &rxlen);
+
+    if (ret == 0 && rxlen >= 2) {
+      *value = (uint16_t)rxbuf[0] | ((uint16_t)rxbuf[1] << 8);
+      return 0;
+    }
+
+    syslog(LOG_WARNING, "%s: read reg retry %d failed, bus=exp[%u] addr=0x%02X reg=0x%02X ret=%d len=%u", __func__, retry + 1, bus, addr, reg, ret, rxlen);
+
+    msleep(IPMI_RETRY_DELAY_MS);
+  }
+
+  return -1;
+}
+
+static int
+write_efuse_word(uint8_t bus, uint8_t addr, uint8_t reg, uint16_t value)
+{
+  uint8_t txbuf[6] = {0};
+  uint8_t rxbuf[4] = {0};
+  uint8_t rxlen = 0;
+  uint8_t bus_sel = bus * 2 + 1;
+  int ret;
+  int retry;
+
+  txbuf[0] = bus_sel;
+  txbuf[1] = addr;
+  txbuf[2] = WRITE_BYTE;
+  txbuf[3] = reg;
+  txbuf[4] = value & 0xFF;
+  txbuf[5] = (value >> 8) & 0xFF;
+
+  for (retry = 0; retry < MAX_RETRY; retry++) {
+    rxlen = 0;
+    ret = expander_ipmb_wrapper(EXPANDER_NETFN, EXPANDER_CMD,
+                                txbuf, sizeof(txbuf),
+                                rxbuf, &rxlen);
+
+    if (ret == 0) {
+      return 0;
+    }
+
+    syslog(LOG_WARNING, "%s: write reg retry %d failed, bus=exp[%u] addr=0x%02X reg=0x%02X value=0x%04X ret=%d", __func__, retry + 1, bus, addr, reg, value, ret);
+
+    msleep(IPMI_RETRY_DELAY_MS);
+  }
+
+  return -1;
+}
+
+static int
+write_efuse_thresholds(uint8_t bus, uint8_t addr,
+                       const efuse_threshold_cfg_t *cfgs,
+                       size_t cfg_cnt,
+                       const char *mfr_name)
+{
+  size_t i;
+  int ret;
+  int fail_cnt = 0;
+  const char *comp = "P12V_STBY_SCC";
+
+  if (cfgs == NULL || mfr_name == NULL) {
+    return -1;
+  }
+
+  for (i = 0; i < cfg_cnt; i++) {
+    uint16_t old_value = 0;
+    uint16_t target_value = cfgs[i].value;
+    uint16_t verify_value = 0;
+
+    ret = read_efuse_word(bus, addr, cfgs[i].reg, &old_value);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s: failed to read %s, bus=exp[%u] addr=0x%02X reg=0x%02X", __func__, comp, bus, addr, cfgs[i].reg);
+      fail_cnt++;
+      continue;
+    }
+
+    if (old_value == target_value) {
+      continue;
+    }
+
+    ret = write_efuse_word(bus, addr, cfgs[i].reg, target_value);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s: failed to set %s %s(0x%02X)", __func__, comp, cfgs[i].name, cfgs[i].reg);
+      fail_cnt++;
+      continue;
+    }
+
+    ret = read_efuse_word(bus, addr, cfgs[i].reg, &verify_value);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s: write done but readback failed,%s %s(0x%02X) to 0x%04X",
+             __func__, comp, cfgs[i].name, cfgs[i].reg, target_value);
+      fail_cnt++;
+      continue;
+    }
+
+    if (verify_value != target_value) {
+      syslog(LOG_WARNING, "%s: verify failed, %s %s(0x%02X), bus=exp[%u] addr=0x%02X old=0x%04X target=0x%04X readback=0x%04X",
+             __func__, comp, cfgs[i].name, cfgs[i].reg, bus, addr, old_value, target_value, verify_value);
+      fail_cnt++;
+      continue;
+    }
+
+    syslog(LOG_INFO,"%s: %s set %s(0x%02X) old=0x%04X target=0x%04X verified=0x%04X", __func__, comp, cfgs[i].name, cfgs[i].reg, old_value, target_value, verify_value);
+  }
+
+  return (fail_cnt == 0) ? 0 : -1;
+}
+
+static int
+init_scc_efuse_thresholds(mfr_id_t mfr, uint8_t bus, uint8_t addr)
+{
+  switch (mfr) {
+    case MFR_MPS:
+      return write_efuse_thresholds(bus, addr,
+                                    scc_mp5998_threshold_cfgs,
+                                    ARRAY_SIZE(scc_mp5998_threshold_cfgs),
+                                    "MP5998");
+
+    case MFR_TI:
+      return write_efuse_thresholds(bus, addr,
+                                    scc_tps25990_threshold_cfgs,
+                                    ARRAY_SIZE(scc_tps25990_threshold_cfgs),
+                                    "TPS25990");
+
+    default:
+      syslog(LOG_WARNING, "%s: unsupported efuse MFR %d, bus=exp[%u] addr=0x%02X",
+             __func__, mfr, bus, addr);
+      return -1;
+  }
+}
+
 static void
-scc_stby_uv_fault_check(void)
+scc_stby_uv_fault_check_and_config_setting(void)
 {
   mfr_id_t mfr;
   const efuse_profile_t *fault_config;
@@ -630,6 +814,11 @@ scc_stby_uv_fault_check(void)
   sleep(SCC_STARTUP_DELAY_S);
 
   mfr = pal_detect_efuse_mfr_id(SCC_STBY_BUS, SCC_STBY_ADDR);
+
+  if (init_scc_efuse_thresholds(mfr, SCC_STBY_BUS, SCC_STBY_ADDR) < 0) {
+    syslog(LOG_WARNING,"%s: %s failed to init eFuse thresholds, continue UV fault check", __func__, comp);
+  }
+
   fault_config = get_efuse_mfr_fault_config(mfr);
   if (fault_config == NULL) {
     syslog(LOG_WARNING, "%s: %s unknown MFR_ID (%s), bus=%u addr=0x%02X",
@@ -732,7 +921,7 @@ scc_stby_uv_fault_monitor(void *arg)
       }
 
       if (!local_clear_done) {
-        scc_stby_uv_fault_check();
+        scc_stby_uv_fault_check_and_config_setting();
 
         if (scc_flag_lock(__func__) == 0) {
           scc_startup_clear_done = true;

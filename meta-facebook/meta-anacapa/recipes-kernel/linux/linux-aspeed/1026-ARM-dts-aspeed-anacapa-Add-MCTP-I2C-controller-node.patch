@@ -1,0 +1,40 @@
+From 5565d8f3f0915bd77b53f75541aaf60b4b1ba1a4 Mon Sep 17 00:00:00 2001
+From: Dirk Chen <dirkchen@amd.com>
+Date: Fri, 28 Aug 2026 16:33:56 +0800
+Subject: [PATCH] ARM: dts: aspeed: anacapa: Add MCTP I2C controller node
+
+The Facebook Anacapa BMC uses I2C5 as an MCTP (Management Component
+Transport Protocol) bus. This patch enables the controller by
+adding the mctp-i2c-controller node under I2C5, with multi-master
+support.
+
+lore link:
+https://lore.kernel.org/all/20260828-anacapa-dts-amc-v1-1-463eb4e6a6a2@amd.com/
+
+Signed-off-by: Dirk Chen <dirkchen@amd.com>
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts  | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+index 59bd51e25..84822ebf1 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+@@ -466,6 +466,14 @@ i2c4mux0ch7: i2c@7 {
+ // AMC
+ &i2c5 {
+ 	status = "okay";
++
++	mctp-controller;
++	multi-master;
++
++	mctp@10 {
++		compatible = "mctp-i2c-controller";
++		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
++	};
+ };
+ 
+ // MB
+-- 
+2.34.1
+

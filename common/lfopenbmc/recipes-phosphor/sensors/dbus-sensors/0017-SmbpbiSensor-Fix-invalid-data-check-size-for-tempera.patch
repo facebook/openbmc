@@ -1,0 +1,56 @@
+From 3bfc2c3677d1c824e35f8a7afe0d28af5d53d2e3 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Fri, 20 Mar 2026 13:29:18 +0800
+Subject: [PATCH] SmbpbiSensor: Fix invalid data check size for temperature
+ sensor
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+We observed transient temperature readings of -1.99609375 in
+event logs, which recover within a few seconds.
+
+Converting this value to raw data shows that data[0–3] are all
+0xff, indicating an invalid reading. However,
+checkInvalidReading() fails to detect this condition.
+
+The current implementation assumes an 8-byte (uint64_t) data
+size for all sensors. Since the temperature sensor provides
+only 4 bytes of valid data, the validation should be limited
+to the first 4 bytes.
+
+Update the logic to check only the valid 4-byte range for
+temperature sensors, ensuring invalid readings are correctly
+detected.
+
+[1] Gerrit: https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/88512
+
+Change-Id: I9838c53749864248f21439a1e09a3deea59a978c
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+---
+ src/smbpbi/SmbpbiSensor.cpp | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/src/smbpbi/SmbpbiSensor.cpp b/src/smbpbi/SmbpbiSensor.cpp
+index ff293ab..b5ff674 100644
+--- a/src/smbpbi/SmbpbiSensor.cpp
++++ b/src/smbpbi/SmbpbiSensor.cpp
+@@ -276,9 +276,13 @@ int SmbpbiSensor::readRawEEPROMData(double& data)
+     {
+         return ret;
+     }
++
++    // temperature sensor only contains 4 bytes of valid data.
++    size_t checkSize =
++        (sensorType == "temperature") ? sizeof(uint32_t) : sizeof(reading);
++
+     // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+-    if (checkInvalidReading(reinterpret_cast<uint8_t*>(&reading),
+-                            sizeof(reading)))
++    if (checkInvalidReading(reinterpret_cast<uint8_t*>(&reading), checkSize))
+     {
+         data = std::numeric_limits<double>::quiet_NaN();
+         return 0;
+-- 
+2.53.0-Meta
+

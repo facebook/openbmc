@@ -136,6 +136,7 @@ function start_rpu2 {
     if [ "$manufacturer" == "coolermaster" ]; then
         # Clear sticky registers
         rackmoncli write "$UDA" 0x940B 0x03
+        rackmoncli write "$UDA" 0x940B 0x00
 
         # HMI_Remote_Mode
         rackmoncli write "$UDA" 0x9400 0x0001
@@ -183,6 +184,7 @@ elif [ "$deviceType" == "ORV3_RPU2" ]; then
         rackmoncli write "$UDA" 0x9410 0x8000
     elif [ "$COMMAND" == "clear-sticky-registers" ]; then
         rackmoncli write "$UDA" 0x940B 0x03
+        rackmoncli write "$UDA" 0x940B 0x00
     elif [ "$COMMAND" == "start" ]; then
         start_rpu2
     else

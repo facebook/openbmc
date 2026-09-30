@@ -38,7 +38,7 @@ TEST(RegisterMapTest, JSONCoversion) {
   std::string inp = R"({
     "name": "orv2_psu",
     "address_range": [[160, 191]],
-    "probe_register": 104,
+    "probe": [{"register": 104}],
     "baudrate": 19200,
     "max_span_length": 4,
     "registers": [
@@ -67,12 +67,11 @@ TEST(RegisterMapTest, JSONCoversion) {
           [](auto const& ent) {
             return (ent.first == 160 && ent.second == 191);
           }));
-  EXPECT_EQ(rmap.probeRegister, 104);
+  EXPECT_EQ(rmap.probe.probeRegisters[0].registerAddress, 104);
   EXPECT_EQ(rmap.baudrate, 19200);
   EXPECT_EQ(rmap.name, "orv2_psu");
   EXPECT_EQ(rmap.maxRegisterSpanLength, 4);
   EXPECT_EQ(rmap.registerDescriptors.size(), 2);
-  EXPECT_EQ(rmap.specialHandlers.size(), 0);
   EXPECT_EQ(rmap.at(0).begin, 0);
   EXPECT_EQ(rmap.at(0).length, 8);
   EXPECT_EQ(rmap.at(0).format, RegisterValueType::STRING);
@@ -93,7 +92,7 @@ TEST(RegisterMapTest, JSONCoversionBaudrate) {
   std::string inp = R"({
     "name": "orv2_psu",
     "address_range": [[160, 191]],
-    "probe_register": 104,
+    "probe": [{"register": 104}],
     "baudrate": 19200,
     "registers": [
       {
@@ -116,70 +115,37 @@ TEST(RegisterMapTest, JSONCoversionBaudrate) {
   EXPECT_EQ(
       rmap.maxRegisterSpanLength,
       RegisterStoreSpan::kDefaultMaxRegisterSpanLength);
-  EXPECT_EQ(rmap.probeRegister, 104);
+  EXPECT_EQ(rmap.probe.probeRegisters[0].registerAddress, 104);
   EXPECT_EQ(rmap.baudrate, 19200);
   EXPECT_EQ(rmap.name, "orv2_psu");
   EXPECT_EQ(rmap.registerDescriptors.size(), 1);
-  EXPECT_EQ(rmap.specialHandlers.size(), 0);
+  EXPECT_FALSE(rmap.timeSync.has_value());
 }
 
-TEST(RegisterMapTest, JSONCoversionSpecial) {
+TEST(RegisterMapTest, JSONConversionCurrentTime) {
   std::string inp = R"({
     "name": "orv2_psu",
     "address_range": [[160, 191]],
-    "probe_register": 104,
+    "time_sync": {
+      "address": 42,
+      "interval": 32
+    },
+    "probe": [{"register": 104}],
     "baudrate": 19200,
-    "special_handlers": [
-      {
-        "reg": 298,
-        "len": 2,
-        "period": 3600,
-        "action": "write",
-        "info": {
-          "interpret": "INTEGER",
-          "shell": "date +%s"
-        }
-      }
-    ],
     "registers": [
       {
         "begin": 0,
         "length": 8,
         "format": "STRING",
         "name": "MFG_MODEL"
-      },
-      {
-          "begin": 127,
-          "length": 1,
-          "keep": 10,
-          "format": "FLOAT",
-          "precision": 6,
-          "name": "BBU Absolute State of Charge"
       }
     ]
   })";
   nlohmann::json j = nlohmann::json::parse(inp);
   RegisterMap rmap = j;
-  EXPECT_TRUE(
-      std::any_of(
-          rmap.applicableAddresses.range.cbegin(),
-          rmap.applicableAddresses.range.cend(),
-          [](auto const& ent) {
-            return (ent.first == 160 && ent.second == 191);
-          }));
-  EXPECT_EQ(rmap.probeRegister, 104);
-  EXPECT_EQ(rmap.baudrate, 19200);
-  EXPECT_EQ(rmap.name, "orv2_psu");
-  EXPECT_EQ(rmap.registerDescriptors.size(), 2);
-  EXPECT_EQ(rmap.specialHandlers.size(), 1);
-  EXPECT_EQ(rmap.specialHandlers[0].reg, 0x12A);
-  EXPECT_EQ(rmap.specialHandlers[0].len, 2);
-  EXPECT_EQ(rmap.specialHandlers[0].period, 3600);
-  EXPECT_EQ(rmap.specialHandlers[0].action, "write");
-  EXPECT_EQ(rmap.specialHandlers[0].info.interpret, RegisterValueType::INTEGER);
-  EXPECT_TRUE(rmap.specialHandlers[0].info.shell);
-  EXPECT_FALSE(rmap.specialHandlers[0].info.value);
-  EXPECT_EQ(rmap.specialHandlers[0].info.shell.value(), R"(date +%s)");
+  EXPECT_TRUE(rmap.timeSync.has_value());
+  EXPECT_EQ(rmap.timeSync->reg, 42);
+  EXPECT_EQ(rmap.timeSync->period, 32);
 }
 
 class RegisterMapDatabaseTest : public ::testing::Test {
@@ -196,7 +162,7 @@ class RegisterMapDatabaseTest : public ::testing::Test {
     json1 = R"({
         "name": "orv2_psu",
         "address_range": [[160, 191], [10, 10]],
-        "probe_register": 104,
+        "probe": [{"register": 104}],
         "baudrate": 19200,
         "registers": [
           {
@@ -211,7 +177,7 @@ class RegisterMapDatabaseTest : public ::testing::Test {
     json2 = R"({
         "name": "orv3_psu",
         "address_range": [[110, 140], [10, 10]],
-        "probe_register": 104,
+        "probe": [{"register": 104}],
         "baudrate": 115200,
         "registers": [
           {

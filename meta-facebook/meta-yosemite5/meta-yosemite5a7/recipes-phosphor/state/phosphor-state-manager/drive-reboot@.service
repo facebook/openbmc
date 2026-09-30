@@ -1,0 +1,9 @@
+[Unit]
+Description=reboot drive:%i
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/phosphor-state-manager/drive-reboot %i
+
+[Install]
+RequiredBy=obmc-drive-reboot@%i.target

@@ -41,9 +41,8 @@ platform.
 
 3. How to include this package in platforms:
 --------------------------------------------
-As of now, this package is included in Fuji and Montblanc platform. To include
-this package in a platform, we need to add the pakage "fbmc-snapshot" in the
-"IMAGE_INSTALL" section of image.bb file as shown as below,
+To include this package in a platform, add "fbmc-snapshot" to the
+"IMAGE_INSTALL" section of its image.bb, as shown below,
 Path : meta-facebook/meta-<platform>/recipes-core/images/<platform>-image.bb
 
 
@@ -58,8 +57,8 @@ specific plugins with the proper naming conventions as mentioned in Description
 	  Path : meta-facebook/meta-fboss-lite/recipes-utils/fbmc-snapshot/files/
 	  (file name should start with the range from 100 to 200 - ex:100_weutil.sh)
 
-	2.Need to include the file name in the "LOCAL_URI" and "do_install:append()"
-	  sections in the bbappend file,
+	2.Need to include the file name in the "LOCAL_URI" and
+	  "SHOWTECH_RULES_FILES:append" sections in the bbappend file,
 	  Path: meta-facebook/meta-fboss-lite/recipes-utils/fbmc-snapshot/fbmc-snapshot_0.1.bbappend
 
 	4.2.How to add platform specific plugins:
@@ -68,8 +67,8 @@ specific plugins with the proper naming conventions as mentioned in Description
       Path : meta-facebook/meta-<platform>/recipes-utils/fbmc-snapshot/files/
       (file name should start with the range from 900 to 999 - ex:900_dump_gpio.sh)
 
-    2.Need to include the file name in the "LOCAL_URI" and "do_install:append()"
-      sections in the bbappend file,
+    2.Need to include the file name in the "LOCAL_URI" and
+      "SHOWTECH_RULES_FILES:append" sections in the bbappend file,
       Path: meta-facebook/meta-<platform>/recipes-utils/fbmc-snapshot/fbmc-snapshot_0.1.bbappend
 
 Once the above steps are done, the plugins should be installed in the device

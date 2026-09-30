@@ -18,6 +18,3 @@
 [Unit]
 Description=Group and control all IPMBD instances
 Requires=ipmbd@5.service
-
-[Install]
-WantedBy=multi-user.target

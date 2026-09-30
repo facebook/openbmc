@@ -1,0 +1,58 @@
+From 3c13fcbdb6060b332763941297577fd598030848 Mon Sep 17 00:00:00 2001
+From: Peter Yin <peter.yin@quantatw.com>
+Date: Tue, 2 Sep 2025 10:07:42 +0800
+Subject: [PATCH] psusensor: Add support for per-sensor PollRate config
+
+Previously, all sensors used a global PollRate. This commit adds
+support for a per-sensor PollRate (e.g., ADC Channel 1/2/3 PollRate),
+allowing each sensor to have its own polling interval.
+
+This is useful for sensors where different labels or channels may
+require different monitoring frequencies depending on their
+characteristics or criticality. For example, battery voltage
+channels may not need to be checked as frequently.
+
+The PollRate selection logic now first checks for a label- or
+channel-specific PollRate in the configuration. If not found, it
+falls back to the global PollRate or the default value.
+
+Change-Id: I0b1d003ee96669784c67070f24174009d7938e72
+Signed-off-by: Peter Yin <peter.yin@quantatw.com>
+---
+ src/psu/PSUSensorMain.cpp | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/src/psu/PSUSensorMain.cpp b/src/psu/PSUSensorMain.cpp
+index 85bf392..a085685 100644
+--- a/src/psu/PSUSensorMain.cpp
++++ b/src/psu/PSUSensorMain.cpp
+@@ -1089,6 +1089,7 @@ static void createSensorsCallback(
+             std::string keyOffset = labelHead + "_Offset";
+             std::string keyPowerState = labelHead + "_PowerState";
+             std::string keyShuntResistor = labelHead + "_ShuntResistorInOhms";
++            std::string keyPollRate = labelHead + "_PollRate";
+ 
+             bool customizedName = false;
+             auto findCustomName = baseConfig->find(keyName);
+@@ -1202,6 +1203,18 @@ static void createSensorsCallback(
+                 continue;
+             }
+ 
++            auto findPollRate = baseConfig->find(keyPollRate);
++            if (findPollRate != baseConfig->end())
++            {
++                pollRate =
++                    std::visit(VariantToDoubleVisitor(), findPollRate->second);
++            }
++            else
++            {
++                pollRate =
++                    getPollRate(*baseConfig, PSUSensor::defaultSensorPoll);
++            }
++
+             // If the sensor name is being customized by config file,
+             // then prefix/suffix composition becomes not necessary,
+             // and in fact not wanted, because it gets in the way.
+-- 
+2.53.0-Meta
+

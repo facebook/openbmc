@@ -39,7 +39,7 @@ static bool is_dpb_sensor_cached = false;
 static bool is_scc_sensor_cached = false;
 
 static sensor_info_t g_sinfo[MAX_SENSOR_NUM + 1] = {0};
-static bool is_sdr_init[FRU_CNT] = {false};
+static bool is_sdr_init[MAX_NUM_FRUS+1] = {false};
 
 static uint8_t dpb_source_info = UNKNOWN_SOURCE;
 static uint8_t iocm_source_info = UNKNOWN_SOURCE;
@@ -428,6 +428,8 @@ PAL_SENSOR_MAP dpb_sensor_map[] = {
   {"PTB_DCMODULE0_12V_PWR_W", EXPANDER, NULL, false, {1063.92, 0, 0, 0, 0, 0, 0, 0}, POWER},
   [PTB_P12V_PU3_DC_MODULE_Power] =
   {"PTB_DCMODULE1_12V_PWR_W", EXPANDER, NULL, false, {1063.92, 0, 0, 0, 0, 0, 0, 0}, POWER},
+  [PTB_P48V_AUX_TEMP] =
+  {"PTB_HSC_48V_AUX_TEMP_C", EXPANDER, NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [FAN_0_FRONT] =
   {"DPB_FAN0_FRONT_TACH_RPM", EXPANDER, NULL, false, {13000, 12700, 0, 700, 800, 0, 0, 0}, FAN},
   [FAN_0_REAR] =
@@ -730,9 +732,9 @@ PAL_SENSOR_MAP dvt_dpb_sensor_map[] = {
   [PTB_P12V_PU3_DC_MODULE] =
   {"PTB_DCMODULE1_12V_VOLT_V", EXPANDER, NULL, false, {13, 0, 0, 11.3, 0, 0, 0, 0}, VOLT},
   [PTB_U19_ADC_MONITOR] =
-  {"PTB_VSENSE_48V_VOLT_V", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
+  {"PTB_VSENSE_48V_VOLT_mV", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
   [PTB_U20_ADC_MONITOR] =
-  {"PTB_VSENSE_GND_VOLT_V", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
+  {"PTB_VSENSE_GND_VOLT_mV", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
   [PTB_P48V_AUX_Current] =
   {"PTB_HSC_48V_AUX_CURR_A", EXPANDER, NULL, false, {48, 0, 0, 0, 0, 0, 0, 0}, CURR},
   [PTB_P12V_PU2_DC_MODULE_Current] =
@@ -750,9 +752,11 @@ PAL_SENSOR_MAP dvt_dpb_sensor_map[] = {
   [PTB_P12V_PU3_DC_MODULE_TEMP] =
   {"PTB_DCMODULE1_12V_TEMP_C", EXPANDER, NULL, false, {113, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [PTB_U34_ADC_MONITOR_V] =
-  {"PTB_TSENSE_48V_VOLT_V", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
+  {"PTB_TSENSE_48V_VOLT_mV", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
   [PTB_U35_ADC_MONITOR_V] =
-  {"PTB_TSENSE_GND_VOLT_V", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
+  {"PTB_TSENSE_GND_VOLT_mV", EXPANDER, NULL, false, {0.08, 0, 0, -0.01, 0, 0, 0, 0}, mV},
+  [PTB_P48V_AUX_TEMP] =
+  {"PTB_HSC_48V_AUX_TEMP_C", EXPANDER, NULL, false, {0, 0, 0, 0, 0, 0, 0, 0}, TEMP},
   [FAN_0_FRONT] =
   {"DPB_FAN0_FRONT_TACH_RPM", EXPANDER, NULL, false, {13000, 12700, 0, 700, 800, 0, 0, 0}, FAN},
   [FAN_0_REAR] =
@@ -1507,6 +1511,7 @@ const uint8_t dpb_sensor_list[] = {
   PTB_P48V_AUX_Power,
   PTB_P12V_PU2_DC_MODULE_Power,
   PTB_P12V_PU3_DC_MODULE_Power,
+  PTB_P48V_AUX_TEMP,
   FAN_0_FRONT,
   FAN_0_REAR,
   FAN_1_FRONT,
@@ -1671,6 +1676,7 @@ const uint8_t dvt_dpb_sensor_list[] = {
   PTB_P12V_PU3_DC_MODULE_TEMP,
   PTB_U34_ADC_MONITOR_V,
   PTB_U35_ADC_MONITOR_V,
+  PTB_P48V_AUX_TEMP,
   FAN_0_FRONT,
   FAN_0_REAR,
   FAN_1_FRONT,
@@ -3399,6 +3405,13 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
     } else if ((p_sensor_data[i].raw_data_1 == 0xFF) && (p_sensor_data[i].raw_data_2 == 0xFF)) {
       // Sensor value is not ready
       snprintf(str, sizeof(str), "NA");
+#ifdef CONFIG_GRANDCANYON2
+    } else if ((p_sensor_data[i].sensor_status == EXP_SENSOR_STATUS_OK) && (p_sensor_data[i].raw_data_1 == 0x00) && (p_sensor_data[i].raw_data_2 == 0x00)){
+      pal_get_sensor_units(fru, p_sensor_data[i].sensor_num, units);
+      if (strncmp(units, "Volts", sizeof(units)) == 0){
+        snprintf(str, sizeof(str), "NA");
+      }
+#endif
     } else {
       // search the corresponding sensor table to fill up the raw data and status
       pal_get_sensor_units(fru, p_sensor_data[i].sensor_num, units);
@@ -4569,7 +4582,17 @@ pal_get_fan_speed(uint8_t fan, int *rpm) {
   if (ret == 0) {
     *rpm = (int) value;
   } else {
+#ifdef CONFIG_GRANDCANYON2
+    static bool fan_speed_fail_logged = false;
+    if (!fan_speed_fail_logged) {
+      if (pal_log_once("/tmp/pal_get_fan_speed_fail_logged")) {
+        syslog(LOG_ERR, "%s() failed to get fan%d speed\n", __func__, fan);
+      }
+      fan_speed_fail_logged = true;
+    }
+#else
     syslog(LOG_ERR, "%s() failed to get fan%d speed\n", __func__, fan);
+#endif
   }
 
   return ret;

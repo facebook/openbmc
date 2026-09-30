@@ -4,22 +4,62 @@
 
 #include <phosphor-logging/commit.hpp>
 #include <phosphor-logging/lg2.hpp>
+#include <sdbusplus/async/timer.hpp>
 #include <xyz/openbmc_project/State/CPER/event.hpp>
 
 #include <chrono>
 #include <exception>
 #include <filesystem>
 #include <format>
+#include <memory>
 #include <optional>
 #include <regex>
 #include <sstream>
+#include <vector>
 
 PHOSPHOR_LOG2_USING;
 
 namespace redfish_client::core
 {
 
-auto LogServiceHandler::runOnce() -> sdbusplus::async::task<>
+namespace
+{
+
+auto loop(sdbusplus::async::context& ctx,
+          std::vector<std::unique_ptr<LogServiceHandler>> handlers,
+          size_t intervalMilliseconds) -> sdbusplus::async::task<void>
+{
+    while (!ctx.stop_requested())
+    {
+        for (auto& handler : handlers)
+        {
+            co_await handler->load();
+        }
+        co_await sdbusplus::async::sleep_for(
+            ctx, std::chrono::milliseconds(intervalMilliseconds));
+    }
+    co_return;
+}
+
+} // namespace
+
+auto LogServiceHandler::run(
+    sdbusplus::async::context& ctx, const std::string& host,
+    const LogServiceConfig& config, const std::string& persistDir)
+    -> sdbusplus::async::task<void>
+{
+    std::vector<std::unique_ptr<LogServiceHandler>> handlers;
+    for (const auto& url : config.urls)
+    {
+        handlers.push_back(std::make_unique<LogServiceHandler>(
+            ctx, std::format("http://{}{}", host, url),
+            config.skipHistoricalEntriesThresholdSeconds, persistDir));
+    }
+    ctx.spawn(loop(ctx, std::move(handlers), config.intervalMilliseconds));
+    co_return;
+}
+
+auto LogServiceHandler::load() -> sdbusplus::async::task<>
 {
     std::string logEntryJson;
 

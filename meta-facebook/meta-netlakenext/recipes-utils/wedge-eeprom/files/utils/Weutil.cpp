@@ -347,37 +347,49 @@ static void modifyEepromData(const std::string& eDeviceName,
     return;
   }
 
-  size_t Check_CRC_location = 0;
-  // check CRC TL byte is in eeprom or not
-  for (int i = 0 ; i < data.size() ; i++) {
-    if ((data[i+1] == CRC_TYPE_ADR)&&(data[i+2] == CRC_LEN_ADR)) {
-      Check_CRC_location = i;
-      break;
+  // Robust CRC TLV check: find by TLV boundaries, ensure uniqueness, optional padding, verify value
+  size_t crcStart = SIZE_MAX;
+  int crcCount = 0;
+
+  // Parse TLVs from the start of the TLV region (replace HEADER_LEN with your TLV start offset)
+  for (size_t i = HEADER_LEN; i + 1 < data.size(); ) {
+    uint8_t type = data[i];
+    uint8_t len  = data[i + 1];
+    size_t next  = i + 2 + len;
+
+    if (type == NULL_TYPE) break;
+    if (next > data.size()) {
+        std::cerr << "ERROR: Malformed TLV chain (length beyond buffer)\n";
+        return;
     }
+    if (type == CRC_TYPE_ADR && len == CRC_LEN_ADR) {
+        crcStart = i;     // TLV start (type position)
+        ++crcCount;
+    }
+    i = next;
   }
 
-  // check is there has garbage data after CRC TLV byte
-  if ((data[Check_CRC_location+5] == NULL_BYTE)&&(data[Check_CRC_location+6] == NULL_BYTE)) {
-      // check CRC TL byte is in eeprom again
-    for (int j = Check_CRC_location+5 ; j < data.size() ; j++) {
-      if ((data[j] == CRC_TYPE_ADR)&&(data[j] == CRC_LEN_ADR)) {
-        std::cerr << std::endl;
-        std::cerr << "ERROR: Get Another CRC TL data!" << std::endl;
-        return;
-      }
-    }
-  } else {
-    std::cerr << std::endl;
-    std::cerr << "ERROR: Garbage Data after CRC TLV!" << std::endl;
+  if (crcCount == 0) {
+    std::cerr << "ERROR: CRC TLV (type 0xFA, len 0x02) not found\n";
+    return;
+  }
+  if (crcCount > 1) {
+    std::cerr << "ERROR: Duplicate CRC TLVs found\n";
+    return;
+  }
+  if (crcStart + 3 >= data.size()) {
+    std::cerr << "ERROR: CRC TLV truncated\n";
     return;
   }
 
-  if (Check_CRC_location == 0) {
-    std::cerr << std::endl;
-    std::cerr << "ERROR: Can'r get CRC TL Data Byte in eeprom" << std::endl;
-  } else {
-    std::cout << "Check CRC TLV ------------- [Pass]" <<std::endl;
+  // Check 4 bytes after CRC TLV does not contain garbage data
+  for (size_t k = crcStart + 4; k < data.size() && k < crcStart + 8; ++k) {
+    if (data[k] != 0xFF) {
+      std::cerr << "ERROR: Garbage Data after CRC TLV\n";
+      return;
+    }
   }
+  std::cout << "Check CRC TLV ------------- [Pass]" << std::endl;
 
   // set the new eeprom data need to follow TLV format
   int eepromType = 4;             // eeprom type address, the fist one is at 4
@@ -421,7 +433,7 @@ static void modifyEepromData(const std::string& eDeviceName,
         }
 
         // add data value to new_eeprom_data after add modify value
-        if (data.size() > (eepromType + eepromLength_adr_size + (static_cast<int>(data[eepromLength])) + 1)) {
+        if (data.size() > static_cast<size_t>(eepromType + eepromLength_adr_size + (static_cast<int>(data[eepromLength])) + 1)) {
           new_eeprom_data.insert(new_eeprom_data.end(), data.begin() + eepromType + eepromLength_adr_size + (static_cast<int>(data[eepromLength])) + 1, data.end());
         } else {
           std::cerr << std::endl;
@@ -444,20 +456,34 @@ static void modifyEepromData(const std::string& eDeviceName,
     }
     std::cout << "Modify Value -------------- [Pass]" << std::endl;
 
-    // calculate new_eeprom_data Header ~ CRC type & length
-    size_t CRCendIndex = 0;
-    for (int i = new_eeprom_data.size() - 1; i > HEADER_LEN; --i) {
-      if ((new_eeprom_data[i-1] == CRC_TYPE_ADR)&&(new_eeprom_data[i] == CRC_LEN_ADR)) {
-        CRCendIndex = i-2;
-        break;
-      }
+    // Locate CRC TLV by parsing TLVs forward, then compute and write CRC
+    size_t CRCstartIndex = SIZE_MAX;
+
+    // Find the CRC TLV start (Type position)
+    for (size_t i = HEADER_LEN; i + 1 < new_eeprom_data.size(); ) {
+        uint8_t type = new_eeprom_data[i];
+        uint8_t len  = new_eeprom_data[i + 1];
+        size_t next  = i + 2 + len;
+        if (next > new_eeprom_data.size()) {
+            std::cerr << "ERROR: malformed TLV chain while seeking CRC TLV" << std::endl;
+            return;
+        }
+        if (type == CRC_TYPE_ADR && len == CRC_LEN_ADR) {
+            CRCstartIndex = i;  // TLV start index
+            break;
+        }
+        i = next; // advance to next TLV
     }
 
-    if (CRCendIndex) {
-      std::vector<uint8_t> modifyCRCdata(new_eeprom_data.begin(), new_eeprom_data.begin() + CRCendIndex + 1); // get calculate CRC data
-      // calculate CRC16(CCITT-AUG) Checksum and set to new eeprom data
-      uint16_t newCRC = CRC_INIT;
-      for (auto byte : modifyCRCdata) { // XOR current CRC with byte shifted left
+    if (CRCstartIndex == SIZE_MAX || CRCstartIndex + 3 >= new_eeprom_data.size()) {
+        std::cerr << "ERROR: CRC TLV not found or truncated" << std::endl;
+        return;
+    }
+
+    std::vector<uint8_t> modifyCRCdata(new_eeprom_data.begin(), new_eeprom_data.begin() + CRCstartIndex); // get calculate CRC data
+        // calculate CRC16(CCITT-AUG) Checksum and set to new eeprom data
+    uint16_t newCRC = CRC_INIT;
+    for (auto byte : modifyCRCdata) { // XOR current CRC with byte shifted left
         newCRC ^= static_cast<uint16_t>(byte) << 8;
         for (int i = 0; i < 8; ++i) {
           if (newCRC & CHECK_HIGHEST_BIT) { // Check if the leftmost (highest) bit of newCRC is set 1
@@ -466,18 +492,13 @@ static void modifyEepromData(const std::string& eDeviceName,
             newCRC = newCRC << 1; // If the highest bit is 0, simply left shift newCRC by one
           }
         }
-      }
-      std::cout << "Calculate CRC-CCITT_AUG --- [Pass]" << std::endl;
-
-      new_eeprom_data[CRCendIndex + CRC_TYPE] = CRC_TYPE_ADR;
-      new_eeprom_data[CRCendIndex + CRC_LENGTH] = CRC_LEN_ADR;
-      new_eeprom_data[CRCendIndex + CRC_VALUE_H] = newCRC >> 8;   // CRC HighByte
-      new_eeprom_data[CRCendIndex + CRC_VALUE_L] = newCRC & 0xFF; // CRC LowByte
-    } else {
-      std::cerr << std::endl;
-      std::cerr << "ERROR: CRC processing error !" <<std::endl;
-      return;
     }
+    std::cout << "Calculate CRC-CCITT_AUG --- [Pass]" << std::endl;
+
+    new_eeprom_data[CRCstartIndex] = CRC_TYPE_ADR;
+    new_eeprom_data[CRCstartIndex + CRC_LENGTH] = CRC_LEN_ADR;
+    new_eeprom_data[CRCstartIndex + CRC_VALUE_H] = newCRC >> 8;   // CRC HighByte
+    new_eeprom_data[CRCstartIndex + CRC_VALUE_L] = newCRC & 0xFF; // CRC LowByte
 
   } else {
     std::cerr << std::endl;

@@ -412,13 +412,11 @@ static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
   }
 
   // FW data transfer
-  int loopCount = 0;
   int idleCnt = 0;
   int applyCnt = 0;
   int pldmCmd = 0;
   setPldmTimeout(CMD_UPDATE_COMPONENT, &waitTOsec);
   while (idleCnt < (waitTOsec * 1000 /SLEEP_TIME_MS) ) {
-//    printf("\n04 QueryPendingNcPldmRequestOp, loop=%d\n", loopCount);
     ret = create_ncsi_ctrl_pkt(nl_msg, ch, NCSI_QUERY_PENDING_NC_PLDM_REQ, 0, NULL);
     if (ret) {
       goto free_exit;
@@ -447,7 +445,6 @@ static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
          (pldmCmd == CMD_VERIFY_COMPLETE) ||
          (pldmCmd == CMD_APPLY_COMPLETE)) {
       setPldmTimeout(pldmCmd, &waitTOsec);
-      loopCount++;
       waitcycle = 0;
       pldmCmdStatus = pldmFwUpdateCmdHandler(pkgHdr, &pldmReq, pldmRes, applyCnt);
       ret = create_ncsi_ctrl_pkt(nl_msg, ch, NCSI_SEND_NC_PLDM_REPLY,

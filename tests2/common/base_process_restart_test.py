@@ -54,7 +54,7 @@ class BaseProcessRestartTest(object):
 
     def get_processes(self) -> Dict[str, int]:
         processes = {}
-        stream = run_shell_cmd("ps")
+        stream = run_shell_cmd("ps", errors="surrogateescape")
         for line in stream.splitlines():
             for process_name in self.expected_process:
                 process_regex = r".*" + re.escape(process_name) + r".*"

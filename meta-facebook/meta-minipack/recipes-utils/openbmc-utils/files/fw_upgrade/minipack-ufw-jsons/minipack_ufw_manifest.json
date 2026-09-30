@@ -27,8 +27,8 @@
     },
     "16q_fpga" : {
       "entities" : ["1", "2", "3", "4", "5", "6", "7", "8"],
-        "condition" : "/usr/local/bin/fpga_ver.sh | grep DOMFPGA:|head -{entity}|tail -1 |grep 16Q",
-        "get_version" : "/usr/local/bin/fpga_ver.sh|grep 16Q|head -{entity}|tail -1|cut -d ' ' -f 3",
+        "condition" : "/usr/local/bin/fpga_ver.sh | grep DOMFPGA:|head -n {entity}|tail -n 1 |grep 16Q",
+        "get_version" : "/usr/local/bin/fpga_ver.sh|grep 16Q|head -n {entity}|tail -n 1|cut -d ' ' -f 3",
         "continue_on_error" : true,
         "upgrade_cmd" : "timeout -s KILL 900 /usr/local/bin/spi_util.sh write spi2 PIM{entity} DOM_FPGA_FLASH {filename}",
         "post_action" : "/usr/local/bin/wedge_power.sh pimreset -a; sleep 30",
@@ -36,20 +36,20 @@
     },
     "16o_fpga" : {
       "entities" : ["1", "2", "3", "4", "5", "6", "7", "8"],
-        "condition" : "/usr/local/bin/fpga_ver.sh | grep DOMFPGA:|head -{entity}|tail -1 |grep 16O",
-        "get_version" : "/usr/local/bin/fpga_ver.sh|grep 16O|head -{entity}|tail -1|cut -d ' ' -f 3",
+        "condition" : "/usr/local/bin/fpga_ver.sh | grep DOMFPGA:|head -n {entity}|tail -n 1 |grep 16O",
+        "get_version" : "/usr/local/bin/fpga_ver.sh|grep 16O|head -n {entity}|tail -n 1|cut -d ' ' -f 3",
         "continue_on_error" : true,
         "upgrade_cmd" : "timeout -s KILL 900 /usr/local/bin/spi_util.sh write spi2 PIM{entity} DOM_FPGA_FLASH {filename}",
         "post_action"    : "./minipack_pim_helper.sh reset_pim16o",
         "priority": 2
     },
     "scm" : {
-        "get_version" : "/usr/local/bin/cpld_ver.sh |grep SCM|grep Top|cut -d ' ' -f 3",
+        "get_version" : "/usr/local/bin/cpld_ver.sh | awk -F': ' '/^SCMCPLD:/ {print $2}'",
         "upgrade_cmd" : "/usr/local/bin/scmcpld_update.sh {filename}",
         "priority": 5
     },
     "smb" : {
-        "get_version" : "/usr/local/bin/cpld_ver.sh |grep SMB|grep Top|cut -d ' ' -f 3",
+        "get_version" : "/usr/local/bin/cpld_ver.sh | awk -F': ' '/^SMBCPLD:/ {print $2}'",
         "upgrade_cmd" : "/usr/local/bin/smbcpld_update.sh {filename}",
         "priority": 7
     }

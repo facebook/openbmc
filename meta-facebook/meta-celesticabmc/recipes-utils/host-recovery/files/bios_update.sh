@@ -67,7 +67,6 @@ check_flash_file_size() {
 ui(){
     op=$1
     file=$2
-    check_flash_file_size "$file"
     export_gpio
     config_spi1_pin_and_path "COME_BIOS"
     operate_spi1_dev "$op" "COME_BIOS" "$file"
@@ -91,7 +90,11 @@ check_parameter(){
 
     # check operations.
     case ${op} in
-        "read" | "write" | "erase")
+        "read" | "erase")
+            ;;
+        "write") 
+            check_flash_file_size "$file"
+            return $?
             ;;
         *)
             return 1

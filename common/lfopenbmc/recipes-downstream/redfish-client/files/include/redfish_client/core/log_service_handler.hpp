@@ -1,6 +1,7 @@
 #pragma once
 
 #include <redfish_client/core/async_http_client.hpp>
+#include <redfish_client/core/config.hpp>
 #include <redfish_client/core/persist_map.hpp>
 #include "redfish-binding/LogEntryCollection_LogEntryCollection.hpp"
 #include "redfish-binding/LogEntry_EventSeverity.hpp"
@@ -31,7 +32,16 @@ class LogServiceHandler : private sdbusplus::async::context_ref,
         committedEntries(getPersistPath(url, persistDir)),
         httpHandle(std::make_unique<AsyncHttpHandle>(url)) {};
 
-    auto runOnce() -> sdbusplus::async::task<>;
+    // Spawn a loop that polls every configured log-service URL on the
+    // configured interval until the context stops.
+    static auto run(sdbusplus::async::context& ctx, const std::string& host,
+                    const LogServiceConfig& config,
+                    const std::string& persistDir)
+        -> sdbusplus::async::task<void>;
+
+    // Poll this URL once: fetch the log entry collection and commit any new
+    // entries.
+    auto load() -> sdbusplus::async::task<>;
 
     auto commit(
         redfish_binding::LogEntryCollection::LogEntryCollection& collection)

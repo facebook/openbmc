@@ -553,7 +553,9 @@ sel_add_entry(int node, sel_msg_t *msg, int *rec_id) {
   dump_sel_syslog(node, msg);
 
   // Parse the SEL message
-  parse_sel((uint8_t) node, msg);
+  if (!pal_ignore_sel((uint8_t) node, msg->msg)) {
+    parse_sel((uint8_t) node, msg);
+  }
 
   if (file_store_sel_data(node, *rec_id, msg)) {
     syslog(LOG_WARNING, "sel_add_entry: file_store_sel_data\n");

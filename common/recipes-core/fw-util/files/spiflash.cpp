@@ -145,7 +145,7 @@ int MTDComponent::update(const std::string& image)
 {
   // flash_method default is "flashcp"
   if (flash_method == "flashrom") {
-    std::cout << "Update by using flasrom" << std::endl;
+    std::cout << "Update by using flashrom" << std::endl;
     return update_by_flashrom(image);
   } else {
     std::cout << "Update by using flashcp" << std::endl;
@@ -321,57 +321,58 @@ int GPIOSwitchedSPIMTDComponent::dump(const std::string& image)
 }
 
 
+// Runs flashrom for the given operation ("-w" or "-r"). Tries plain
+// auto-probe first; if that fails, retries once per entry in
+// _chip_candidates with -c, in order, stopping at the first success.
+// This covers boards where auto-probe is ambiguous (e.g. two chip
+// definitions in flashrom's DB share the same ID) without breaking
+// boards where auto-probe already works fine on its own.
+int ExternalSPIComponent::runFlashrom(const std::string& op, const std::string& image)
+{
+  string base_cmd = "flashrom -p " + _programmer_type;
+  if (!_chip_params.empty()) {
+    base_cmd += ":" + _chip_params;
+  }
+
+  string cmd = base_cmd + " " + op + " " + image;
+  sys().output << "Command: " << cmd << endl;
+  int ret = sys().runcmd(cmd);
+
+  for (size_t i = 0; ret != 0 && i < _chip_candidates.size(); i++) {
+    cmd = base_cmd + " -c " + _chip_candidates[i] + " " + op + " " + image;
+    sys().output << "Command: " << cmd << endl;
+    ret = sys().runcmd(cmd);
+  }
+
+  return ret;
+}
+
 int ExternalSPIComponent::update(const std::string& image)
 {
-  string cmd;
   const string& comp = this->component();
-  int ret;
 
   syslog(LOG_CRIT, "Component %s upgrade initiated", comp.c_str());
   sys().output << "Flashing using external SPI programmer" << endl;
 
-  cmd = "flashrom -p " + _programmer_type;
-  if (!_chip_params.empty()) {
-      cmd += ":" + _chip_params;
-    }
-  
-  cmd += " -w " + image;
-  
-  sys().output << "Command: " << cmd << endl;
-  
-  ret = sys().runcmd(cmd);
-  
-  if (ret == 0) {
+  if (runFlashrom("-w", image) == 0) {
     syslog(LOG_CRIT, "Component %s upgrade completed", comp.c_str());
     return FW_STATUS_SUCCESS;
   }
-  
+
   return FW_STATUS_FAILURE;
 }
 
 int ExternalSPIComponent::dump(const std::string& image)
 {
-  string cmd;
   const string& comp = this->component();
-  int ret;
 
   syslog(LOG_CRIT, "Component %s dump initiated", comp.c_str());
   sys().output << "Reading flash using external SPI programmer" << endl;
-  cmd = "flashrom -p " + _programmer_type;
-  if (!_chip_params.empty()) {
-    cmd += ":" + _chip_params;
-  }
-  
-  cmd += " -r " + image;
-  
-  sys().output << "Command: " << cmd << endl;
-  
-  ret = sys().runcmd(cmd);
-  
-  if (ret == 0) {
+
+  if (runFlashrom("-r", image) == 0) {
     syslog(LOG_CRIT, "Component %s dump completed", comp.c_str());
     return FW_STATUS_SUCCESS;
   }
-  
+
   return FW_STATUS_FAILURE;
 }

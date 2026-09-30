@@ -3,7 +3,7 @@
  *  @details
  *  @file       TpmDeviceAccess/TPM_TIS.h
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -51,6 +51,8 @@
 #define TIS_TPM_BURSTCOUNT 0x00000019
 /// Register offset for TPM Data FIFO register
 #define TIS_TPM_DATA_FIFO 0x00000024
+/// Register offset for TPM VID register
+#define TIS_TPM_VID 0x00000F00
 
 /// TPM Access register bit for access valid
 #define TIS_TPM_ACCESS_VALID 0x80
@@ -79,6 +81,9 @@
 #define TIS_TPM_STS_EXPECT 0x08
 /// TPM Status register bit for status retry
 #define TIS_TPM_STS_RETRY 0x02
+
+// Infineon TPM Vendor ID
+#define TPM_VID_IFX 0x15D1
 
 // TIS timeouts, use default values only
 /// TIS Timeout A
@@ -369,7 +374,7 @@ TIS_Retry(
  */
 _Check_return_
 UINT32
-TIS_SendLPC(
+TIS_Send(
     _In_                    BYTE        PbLocality,
     _In_bytecount_(PusLen)  const BYTE* PrgbByteBuf,
     _In_                    UINT16      PusLen);
@@ -402,7 +407,7 @@ TIS_SendLPC(
  */
 _Check_return_
 UINT32
-TIS_ReadLPC(
+TIS_Read(
     _In_                    BYTE    PbLocality,
     _Out_bytecap_(*PpusLen) BYTE*   PrgbByteBuf,
     _Inout_                 UINT16* PpusLen);
@@ -421,14 +426,14 @@ TIS_ReadLPC(
  *  @retval     RC_SUCCESS                  The operation completed successfully.
  *  @retval     RC_E_TPM_NO_DATA_AVAILABLE  TPM no data available.
  *  @retval     ...                         Error codes from:
- *                                              TIS_SendLPC,
+ *                                              TIS_Send,
  *                                              TIS_IsDataAvailable,
- *                                              TIS_ReadLPC,
+ *                                              TIS_Read,
  *                                              TIS_ReleaseActiveLocality function
  */
 _Check_return_
 UINT32
-TIS_TransceiveLPC(
+TIS_Transceive(
     _In_                        BYTE        PbLocality,
     _In_bytecount_(PusTxLen)    const BYTE* PrgbTxBuffer,
     _In_                        UINT16      PusTxLen,

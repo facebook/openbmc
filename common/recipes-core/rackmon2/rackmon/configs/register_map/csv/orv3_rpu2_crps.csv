@@ -12,6 +12,7 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 37469,1,,,,,FLOAT,,,0,,1,,Pump_Rack_CRPS_PSU2_OTP_Hotspot_Threshold,DegreesC
 37470,1,,,,,FLOAT,,,0,,1,,Pump_Rack_CRPS_PSU1_OTP_Ambient_Threshold,DegreesC
 37471,1,,,,,FLOAT,,,0,,1,,Pump_Rack_CRPS_PSU2_OTP_Ambient_Threshold,DegreesC
+37472,3,,,,,STRING,,,,,,,Pump_Rack_CRPS_PSU_FW_Revision,
 37479,1,,,,,FLOAT,,,0,,0.001,,Fan_Rack_1_CRPS_PSU1_Vout,Volts
 37480,1,,,,,FLOAT,,,0,,0.001,,Fan_Rack_1_CRPS_PSU2_Vout,Volts
 37481,1,,,,,FLOAT,,,0,,0.001,,Fan_Rack_1_CRPS_PSU1_Iout,Amperes
@@ -25,6 +26,7 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 37489,1,,,,,FLOAT,,,0,,1,,Fan_Rack_1_CRPS_PSU2_OTP_Hotspot_Threshold,DegreesC
 37490,1,,,,,FLOAT,,,0,,1,,Fan_Rack_1_CRPS_PSU1_OTP_Ambient_Threshold,DegreesC
 37491,1,,,,,FLOAT,,,0,,1,,Fan_Rack_1_CRPS_PSU2_OTP_Ambient_Threshold,DegreesC
+37492,3,,,,,STRING,,,,,,,Fan_Rack_1_CRPS_PSU_FW_Revision,
 37499,1,,,,,FLOAT,,,0,,0.001,,Fan_Rack_2_CRPS_PSU1_Vout,Volts
 37500,1,,,,,FLOAT,,,0,,0.001,,Fan_Rack_2_CRPS_PSU2_Vout,Volts
 37501,1,,,,,FLOAT,,,0,,0.001,,Fan_Rack_2_CRPS_PSU1_Iout,Amperes
@@ -38,3 +40,7 @@ begin,length,keep,changes_only,flags_bit,flags_name,format,endian,interval,preci
 37509,1,,,,,FLOAT,,,0,,1,,Fan_Rack_2_CRPS_PSU2_OTP_Hotspot_Threshold,DegreesC
 37510,1,,,,,FLOAT,,,0,,1,,Fan_Rack_2_CRPS_PSU1_OTP_Ambient_Threshold,DegreesC
 37511,1,,,,,FLOAT,,,0,,1,,Fan_Rack_2_CRPS_PSU2_OTP_Ambient_Threshold,DegreesC
+37512,3,,,,,STRING,,,,,,,Fan_Rack_2_CRPS_PSU_FW_Revision,
+37726,5,,,,,STRING,,,,,,,Pump_Rack_CRPS_FBPN,
+37731,5,,,,,STRING,,,,,,,Fan_Rack_1_CRPS_FBPN,
+37736,5,,,,,STRING,,,,,,,Fan_Rack_2_CRPS_FBPN,

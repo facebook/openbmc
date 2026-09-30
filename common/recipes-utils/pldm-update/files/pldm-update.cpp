@@ -39,7 +39,7 @@ is_pldmd_service_running(std::string& pldmdBusName)
             "org.freedesktop.systemd1.Manager",
             "GetUnit");
         msg.append(target);
-        auto pldmdObjPath = sdbusplus::message::object_path();
+        auto pldmdObjPath = sdbusplus::object_path();
         auto reply = bus.call(msg);
         reply.read(pldmdObjPath);
 

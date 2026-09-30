@@ -121,7 +121,7 @@ get_chassis_type() {
 
 get_system_stage() {
   local stage=0
-  for i in $(seq 2 -1 0); do
+  for i in $(seq 3 -1 0); do
     val=$(gpio_get BOARD_REV_ID${i})
     ((stage*=2))
     ((stage+=$val))

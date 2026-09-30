@@ -29,12 +29,11 @@
 #define PRODUCT_VER_STATE_LEN 1
 #define MAC_ADR_LEN 5
 #define MAC_ADR_BASE_LEN 1
-#define HEADER_LEN 3
+#define HEADER_LEN 4
 #define RMA_LEN 1
-#define CRC_TYPE 1
-#define CRC_LENGTH 2
-#define CRC_VALUE_H 3
-#define CRC_VALUE_L 4
+#define CRC_LENGTH 1
+#define CRC_VALUE_H 2
+#define CRC_VALUE_L 3
 #define CRC_TYPE_ADR 0xFA
 #define CRC_LEN_ADR 0x02
 #define NULL_TYPE 0xFF

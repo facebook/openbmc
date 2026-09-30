@@ -4,7 +4,7 @@
  *              errors to outgoing error codes and messages for logging and displaying.
  *  @file       Error.c
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -89,6 +89,8 @@ Error_MapToFinalCode(
         case RC_E_NO_IFX_TPM:
         case RC_E_PLATFORM_AUTH_NOT_EMPTY:
         case RC_E_PLATFORM_HIERARCHY_DISABLED:
+        case RC_E_FU_PLATFORM_AUTH_NOT_EMPTY:
+        case RC_E_FU_PLATFORM_HIERARCHY_DISABLED:
         case RC_E_FW_UPDATE_BLOCKED:
         case RC_E_FIRMWARE_UPDATE_FAILED:
         case RC_E_TPM12_OWNED:
@@ -118,6 +120,8 @@ Error_MapToFinalCode(
         case RC_E_RESUME_RUNDATA_NOT_FOUND:
         case RC_E_TPM12_FAILED_SELFTEST:
         case RC_E_INVALID_OWNERAUTH_OPTION:
+        case RC_E_INVALID_POLICYHANDLE_OPTION:
+        case RC_E_TPM_COMMANDS_BLOCKED:
             unReturnValue = PunErrorCode;
             break;
 
@@ -264,8 +268,14 @@ Error_MapFinalCodeToMessage(
             case RC_E_PLATFORM_AUTH_NOT_EMPTY:
                 unReturnValue = Platform_StringCopy(PwszErrorMessage, PpunBufferSize, MSG_RC_E_PLATFORM_AUTH_NOT_EMPTY);
                 break;
+            case RC_E_FU_PLATFORM_AUTH_NOT_EMPTY:
+                unReturnValue = Platform_StringCopy(PwszErrorMessage, PpunBufferSize, MSG_RC_E_FU_PLATFORM_AUTH_NOT_EMPTY);
+                break;
             case RC_E_PLATFORM_HIERARCHY_DISABLED:
                 unReturnValue = Platform_StringCopy(PwszErrorMessage, PpunBufferSize, MSG_RC_E_PLATFORM_HIERARCHY_DISABLED);
+                break;
+            case RC_E_FU_PLATFORM_HIERARCHY_DISABLED:
+                unReturnValue = Platform_StringCopy(PwszErrorMessage, PpunBufferSize, MSG_RC_E_FU_PLATFORM_HIERARCHY_DISABLED);
                 break;
             case RC_E_FW_UPDATE_BLOCKED:
                 unReturnValue = Platform_StringCopy(PwszErrorMessage, PpunBufferSize, MSG_RC_E_FW_UPDATE_BLOCKED);
@@ -353,6 +363,12 @@ Error_MapFinalCodeToMessage(
                 break;
             case RC_E_INVALID_OWNERAUTH_OPTION:
                 unReturnValue = Platform_StringCopy(PwszErrorMessage, PpunBufferSize, MSG_RC_E_INVALID_OWNERAUTH_OPTION);
+                break;
+            case RC_E_INVALID_POLICYHANDLE_OPTION:
+                unReturnValue = Platform_StringCopy(PwszErrorMessage, PpunBufferSize, MSG_RC_E_INVALID_POLICYHANDLE_OPTION);
+                break;
+            case RC_E_TPM_COMMANDS_BLOCKED:
+                unReturnValue = Platform_StringCopy(PwszErrorMessage, PpunBufferSize, MSG_RC_E_TPM_COMMANDS_BLOCKED);
                 break;
             default:
                 unReturnValue = Platform_StringCopy(PwszErrorMessage, PpunBufferSize, MSG_RC_E_FAIL);

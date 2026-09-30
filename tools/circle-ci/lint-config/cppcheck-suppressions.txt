@@ -12,6 +12,12 @@
 *:*/common/recipes-core/asd/*
 *:*/common/recipes-core/asd_1.4.3/*
 *:*/recipes-utils/jam/*
+// Infineon TPMFactoryUpd, vendor source shipped as-is. Its sources include
+// StdInclude.h from the sibling Source/TPMFactoryUpd directory, which cppcheck
+// cannot resolve since it is linted without the makefile's -I list or -DLINUX.
+// It therefore never reads Globals.h / Globals_Linux.h, leaving WHILE_FALSE_END
+// and the SAL annotations undefined, and misparses the whole tree.
+*:*/recipes-utils/tpm-factory-upd/*
 
 // Macro not expanding correctly? FIXME
 syntaxError:*recipes-utils/TPMUpdate/*

@@ -196,11 +196,11 @@ func TestGetNormalizedBuildNameFromVersion(t *testing.T) {
 }
 
 func TestGetOpenBMCVersionFromImageFile(t *testing.T) {
-	// mock and defer restore MmapFileRO
-	mmapOrig := fileutils.MmapFileRange
+	// mock and defer restore MmapFile
+	mmapOrig := fileutils.MmapFile
 	munmapOrig := fileutils.Munmap
 	defer func() {
-		fileutils.MmapFileRange = mmapOrig
+		fileutils.MmapFile = mmapOrig
 		fileutils.Munmap = munmapOrig
 	}()
 
@@ -247,7 +247,7 @@ func TestGetOpenBMCVersionFromImageFile(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			fileutils.MmapFileRange = func(filename string, offset int64, length, prot, flags int) ([]byte, error) {
+			fileutils.MmapFile = func(filename string, prot, flags int) ([]byte, error) {
 				if filename != "x" {
 					t.Errorf("want filename '%v' got '%v'", "x", filename)
 				}

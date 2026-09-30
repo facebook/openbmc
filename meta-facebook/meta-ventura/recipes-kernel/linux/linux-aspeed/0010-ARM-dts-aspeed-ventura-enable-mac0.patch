@@ -1,0 +1,38 @@
+From fb4884fb973710c45963297ca1fb9da7beb6f582 Mon Sep 17 00:00:00 2001
+From: "Sue.Wang" <Sue.Wang@quantatw.com>
+Date: Tue, 29 Sep 2026 16:09:33 +0800
+Subject: [PATCH 2/2] meta-facebook-ventura-enable-mac0
+
+https://lore.kernel.org/all/20260929075106.74731-
+1-suwangquanta@gmail.com/T/#u
+
+Signed-off-by: Sue.Wang <Sue.Wang@quantatw.com>
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts   | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
+index c21542cbe..62a60741b 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
+@@ -1408,6 +1408,17 @@ eeprom@56 {
+ 	};
+ };
+ 
++&mac0 {
++    status = "okay";
++    phy-mode = "rgmii";
++    pinctrl-names = "default";
++    pinctrl-0 = <&pinctrl_rgmii1_default>;
++    fixed-link {
++        speed = <1000>;
++        full-duplex;
++    };
++};
++
+ &mac3 {
+ 	status = "okay";
+ 	phy-mode = "rmii";
+-- 
+2.34.1
+

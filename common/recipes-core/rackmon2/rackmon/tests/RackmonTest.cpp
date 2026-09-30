@@ -145,7 +145,7 @@ class RackmonTest : public ::testing::Test {
     std::string json1 = R"({
         "name": "orv2_psu",
         "address_range": [[160, 162]],
-        "probe_register": 104,
+        "probe": [{"register": 104}],
         "baudrate": 19200,
         "registers": [
           {
@@ -201,7 +201,7 @@ TEST_F(RackmonTest, BasicLoad) {
   std::string json2 = R"({
       "name": "orv3_psu",
       "address_range": [[110, 112]],
-      "probe_register": 104,
+      "probe": [{"register": 104}],
       "baudrate": 19200,
       "registers": [
         {
@@ -240,6 +240,17 @@ TEST_F(RackmonTest, BasicLoad) {
   EXPECT_THROW(db.at(163), std::out_of_range);
 }
 
+TEST_F(RackmonTest, GetInterfaceNames) {
+  MockRackmon mon;
+  EXPECT_CALL(mon, makeInterface())
+      .Times(1)
+      .WillOnce(Return(ByMove(std::make_unique<Modbus>())));
+
+  mon.load(r_conf, r_test_dir);
+
+  EXPECT_EQ(mon.getInterfaceNames(), std::vector<std::string>{"/tmp/blah"});
+}
+
 TEST_F(RackmonTest, BasicScanFoundNone) {
   MockRackmon mon;
   // Mock a modbus with no active devices,
@@ -265,7 +276,7 @@ TEST_F(RackmonTest, BasicScanFoundOne) {
   std::string json2 = R"({
       "name": "orv3_psu",
       "address_range": [[161, 161]],
-      "probe_register": 104,
+      "probe": [{"register": 104}],
       "baudrate": 115200,
       "registers": [
         {
@@ -325,6 +336,13 @@ TEST_F(RackmonTest, BasicScanFoundOne) {
   records[0].data.resize(2);
   EXPECT_THROW(
       mon.readFileRecord(100, std::nullopt, records), std::out_of_range);
+  EXPECT_THROW(mon.getInterfaceName(100, std::nullopt), std::out_of_range);
+
+  // A known address resolves to the interface it was found on. Mock3Modbus
+  // has initialize() mocked out, so its device path is never populated and
+  // the name comes back empty.
+  EXPECT_EQ(mon.getInterfaceName(161, std::nullopt), "");
+  EXPECT_EQ(mon.getInterfaceName(161, 123), "");
 
   // Use a known handled response.
   ReadHoldingRegistersReq req(161, 0, 8);
@@ -443,7 +461,7 @@ TEST_F(RackmonTest, DormantRecovery) {
   json regmapConfig = R"({
     "name": "orv2_psu",
     "address_range": [[161, 161]],
-    "probe_register": 104,
+    "probe": [{"register": 104}],
     "baudrate": 19200,
     "registers": [
       {

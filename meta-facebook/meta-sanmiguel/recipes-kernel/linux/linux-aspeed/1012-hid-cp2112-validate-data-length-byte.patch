@@ -1,0 +1,74 @@
+From 02f824e29160d3d844666dbdbe86dfda8b5c2d45 Mon Sep 17 00:00:00 2001
+From: Kai Chen <tingkaic@nvidia.com>
+Date: Sat, 18 Apr 2026 02:49:22 -0700
+Subject: [PATCH] hid-cp2112: validate data length byte
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Check the byte count field (the 1st byte of received data) against
+I2C_SMBUS_BLOCK_MAX to guard against a device returning a malformed
+length byte.
+
+Test setup:
+
+```
+AST2600 EVB
+  |- USB -----> MCXN947 (LPU SMA_M) | I2c2 (FC3) ┐
+  └- i2c4 <--------------------------------------┘
+```
+
+Test steps:
+1. Build custom kernel modules with the patches from the snippet [0].
+2. Create a virtual i2c device on i2c4 @ 0x20
+```
+root@lp30-bmc:~# modprobe mp29816-emul.ko bus=4 addr=0x20
+```
+3. Test the error register 0x9e, whose data length byte of the
+   SMBUS_BLOCK_DATA is 100, with pmbus_check_block_register wrapper.
+```
+ # With the fix
+root@lp30-bmc:~# rmmod pmbus_check_block_register-tester
+root@lp30-bmc:~# modprobe pmbus_check_block_register-tester.ko bus=67 addr=0x20 reg=0x9e
+[  392.772065] pmbus_check_block_register-tester: calling i2c_smbus_read_block_data(bus=67 addr=0x20 reg=0x9e)
+[  392.792296] pmbus_check_block_register-tester: read failed: -71 (pmbus_check_block_register would return false)
+
+ # Without the fix
+root@lp30-bmc:~# rmmod pmbus_check_block_register-tester
+root@lp30-bmc:~# modprobe pmbus_check_block_register-tester.ko bus=67 addr=0x20 reg=0x9e
+[ 3691.154058] pmbus_check_block_register-tester: calling i2c_smbus_read_block_data(bus=67 addr=0x20 reg=0x9e)
+...kernel panic log
+[ 3691.672443] Call trace:
+[ 3691.672456]  __fortify_panic from i2c_smbus_write_block_data+0x0/0xa4
+[ 3691.682497] Code: e28dd008 e8bd81f0 e92d4010 ebe0d7d0 (e7f001f2)
+[ 3691.689305] ---[ end trace 0000000000000000 ]---
+[ 3691.706724] Kernel panic - not syncing: Fatal exception
+```
+
+[0]: https://gitlab-master.nvidia.com/-/snippets/14576
+
+Signed-off-by: Ting-Kai Chen <tingkaic@nvidia.com>
+Fixes nvbug https://nvbugspro.nvidia.com/bug/5992548
+
+[1] https://github.com/NVIDIA/linux/commit/6cd25d378057455c8ba625f67bbe44ea9f98985b
+---
+ drivers/hid/hid-cp2112.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/hid/hid-cp2112.c b/drivers/hid/hid-cp2112.c
+index 1347fbb242df..309fd7c85bcb 100644
+--- a/drivers/hid/hid-cp2112.c
++++ b/drivers/hid/hid-cp2112.c
+@@ -895,7 +895,8 @@ static int cp2112_xfer(struct i2c_adapter *adap, u16 addr,
+ 		memcpy(data->block + 1, buf, read_length);
+ 		break;
+ 	case I2C_SMBUS_BLOCK_DATA:
+-		if (read_length > I2C_SMBUS_BLOCK_MAX) {
++		if (read_length < 1 || read_length > I2C_SMBUS_BLOCK_MAX ||
++		    buf[0] > I2C_SMBUS_BLOCK_MAX) {
+ 			ret = -EPROTO;
+ 			goto power_normal;
+ 		}
+-- 
+2.53.0-Meta
+

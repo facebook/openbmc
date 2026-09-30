@@ -1,0 +1,36 @@
+From 741a379ebca6f1309cccebc4bfc48515dd762238 Mon Sep 17 00:00:00 2001
+From: Nate White <nate@nexthop.ai>
+Date: Thu, 28 May 2026 14:38:16 +0100
+Subject: [PATCH] ARM: dts: aspeed: fblite-r1: fix usb device
+
+Summary:
+
+Enable UDC on USB port B for nexthopbmc.
+
+Test Plan:
+
+1) "bitbake nexthopbmc-image" passed.
+2) booted up nexthopbmc-image successfully
+3) usb0 shows link up and can communicate with x86
+
+Signed-off-by: Nate White <nate@nexthop.ai>
+---
+ .../arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+index 691e883fd..0a9dc481a 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+@@ -77,3 +77,11 @@ fixed-link {
+ &uart3 {
+ 	status = "okay";
+ };
++
++&vhub {
++	status = "disabled";
++};
++
++&udc {
++	status = "okay";
++};

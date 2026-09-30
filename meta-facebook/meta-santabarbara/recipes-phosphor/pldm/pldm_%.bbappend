@@ -4,4 +4,5 @@ EXTRA_OEMESON:append = " \
   -Dmctp-recovery=disabled \
   -Denable-fallback-terminus-name=disabled \
   -Dfw-update-pkg-inotify=enabled \
+  -Ddbus-timeout-value=60 \
 "

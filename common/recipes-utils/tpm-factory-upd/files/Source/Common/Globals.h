@@ -3,7 +3,7 @@
  *  @details
  *  @file       Globals.h
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -28,8 +28,10 @@
 #define MAX_MESSAGE_SIZE        6144
 /// Define of maximum supported EK certificates readed out by on call
 #define MAX_EK_CERTIFICATES     2
+/// Define of maximum supported feature configurations readed out by on call
+#define MAX_FEATURE_CONFIGS     3
 /// Application version
-#define APP_VERSION L"02.01.3534.00" // Will be patched by build process
+#define APP_VERSION L"02.03.4733.00" // Will be patched by build process
 /// Define for usage of big console buffer size for more columns and lines
 #define CONSOLE_BUFFER_BIG      1
 /// Define for untouched console buffer
@@ -44,8 +46,21 @@
 #define TPM_DEVICE_ACCESS_DRIVER 3
 /// TPM device access through UEFI protocol (EFI_TCG2_PROTOCOL)
 #define TPM_DEVICE_ACCESS_EFI_TCG2_PROTOCOL 4
+/// TPM device access through Windows TBS
+#define TPM_DEVICE_ACCESS_WIN_TBS 5
+
+#ifdef LINUX
+#define TPM_DEVICE_ACCESS_DEFAULT TPM_DEVICE_ACCESS_DRIVER
+#else // LINUX
+#define TPM_DEVICE_ACCESS_DEFAULT TPM_DEVICE_ACCESS_MEMORY_BASED
+#endif // LINUX
+
 /// TPM DEVICE_ACCESS_PATH
+#ifdef WINDOWS
+#define TPM_DEVICE_ACCESS_PATH L"TPMIO.dll"
+#else
 #define TPM_DEVICE_ACCESS_PATH L"/dev/tpm0"
+#endif
 /// Define for TPM device access mode property string
 #define PROPERTY_TPM_DEVICE_ACCESS_MODE     L"TpmDeviceAccessMode"
 /// Define for TPM device driver path property string

@@ -3,7 +3,7 @@
  *  @details    Module to verify and store configuration settings. Implements the IConfigSettings interface.
  *  @file       TPMFactoryUpd\ConfigSettings.h
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -87,6 +87,14 @@ extern "C" {
 #define CONFIG_SECTION_FIRMWARE_FOLDER  L"FirmwareFolder"
 /// Define for firmware folder section setting path
 #define CONFIG_FIRMWARE_FOLDER_PATH     L"path"
+
+/// Define for policy-file configuration section POLICYOR_TPMFWUPDATE
+#define CONFIG_SECTION_POLICY_UPDATE    L"POLICYOR_TPMFWUPDATE"
+/// Define for policy update section setting PolicyDigest[1..8]
+#define CONFIG_POLICY_UPDATE_DIGESTx    L"PolicyDigest%d"
+
+/// Max amount of policy digests to be defined in policy config file
+#define CONFIG_POLICY_DIGEST_MAX_COUNT  8
 
 /// Default max log file size in kilobyte
 #define LOGGING_FILE_MAX_SIZE 1024

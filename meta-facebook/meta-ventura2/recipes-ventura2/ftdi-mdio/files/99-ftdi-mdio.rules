@@ -1,1 +1,0 @@
-ACTION=="add", SUBSYSTEM=="usb", ENV{ID_PATH}=="platform-1e6a1000.usb-usb-0:1.4", TAG+="systemd", ENV{SYSTEMD_WANTS}+="marvell-switch-init_evt.service"

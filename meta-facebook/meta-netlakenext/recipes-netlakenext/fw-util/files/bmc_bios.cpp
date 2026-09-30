@@ -79,8 +79,8 @@ int BmcBiosComponent::reboot(uint8_t fruid) {
 // Note: This is only applicable to EVT1 hardware; it has been deprecated since EVT2 following an electrical design change.
 void BmcBiosComponent::spiMuxSelCPLD(uint8_t spiOwner) {
   int fd = 0, ret = -1;
-  uint8_t bus = CPLD_SPI_MUX_BUS;
-  uint8_t addr = CPLD_SPI_MUX_ADDR;
+  uint8_t bus = CPLD_BUS_4;
+  uint8_t addr = CPLD_ADDR_BUS_4;
   uint8_t tbufGetSPI = CPLD_SPI_MUX_REG;
   uint8_t tlenGetSPI = sizeof(tbufGetSPI);
   uint8_t rbuf;

@@ -1,0 +1,27 @@
+From 2ac40e9bdbe5a4ca498d05b4d2469213699404e3 Mon Sep 17 00:00:00 2001
+From: Frank Tsao <Frank.Tsao@quantatw.com>
+Date: Wed, 26 Aug 2026 19:42:32 +0800
+Subject: [PATCH] ARM: dts: aspeed: rainiera6: Increase i2c1 bus speed to 400
+ kHz
+
+Follow BIOS to configure i2c1 to operate at 400 kHz instead of 100 kHz.
+This update aligns the bus settings with the hardware capabilities.
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
+index 9748b0b7e..e94fa01ac 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
+@@ -204,6 +204,7 @@ &gpio1 {
+ 
+ /* Rainiera6 SoC SSIF */
+ &i2c1 {
++	clock-frequency = <400000>;
+ 	status = "okay";
+ 
+ 	ssif_bmc: ssif-bmc@10 {
+-- 
+2.34.1
+

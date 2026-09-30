@@ -1,0 +1,6 @@
+[wrap-git]
+url = https://github.com/openbmc/phosphor-dbus-interfaces.git
+revision = HEAD
+
+[provide]
+phosphor-dbus-interfaces = phosphor_dbus_interfaces_dep

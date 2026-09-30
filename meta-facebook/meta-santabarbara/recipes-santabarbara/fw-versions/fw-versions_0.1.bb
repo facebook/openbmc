@@ -11,7 +11,6 @@ FW_TOOLS = "\
     mb-cpld,,multi-user.target,multi-user.target,0 \
     nic,pldmd.service,multi-user.target,multi-user.target,0:1:2:3:4 \
     rainbow-mmc,pldmd.service_pldmd.service,multi-user.target,multi-user.target,0:1:2:3 \
-    pcie-switch,pldmd.service,multi-user.target,multi-user.target,0 \
 "
 
 S = "${UNPACKDIR}"

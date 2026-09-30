@@ -1,0 +1,34 @@
+From c4b7395d7a262ffbb64c525afbb403a204b844ed Mon Sep 17 00:00:00 2001
+From: Alan Tsai <alan-tsai@quantatw.com>
+Date: Wed, 9 Sep 2026 10:45:57 +0800
+Subject: [PATCH] ARM: dts: aspeed: rainiera6: Remove nct3018y rtc node
+
+The Rainier platform has a second source RTC chip (PCF85053A) that
+shares the same I2C address (0x6f) with the existing NCT3018Y.
+
+Remove the statically defined nct3018y RTC node from the device tree.
+The correct RTC driver will be dynamically detected and instantiated
+from userspace/early-init script at runtime.
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
+index f4e3b92bb..6e9ae61eb 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-rainiera6.dts
+@@ -731,11 +731,6 @@ adc@4b {
+ 		compatible = "ti,ads7830";
+ 		reg = <0x4b>;
+ 	};
+-	rtc@6f {
+-		compatible = "nuvoton,nct3018y";
+-		reg = <0x6f>;
+-		status = "okay";
+-	};
+ };
+ 
+ /* MCIO 4A I2C */
+-- 
+2.25.1
+

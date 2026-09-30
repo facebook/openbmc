@@ -40,3 +40,7 @@ do_generate_ubi_tar[depends] += "${PN}:do_merge_uboot"
 do_generate_static_tar[depends] += "${PN}:do_merge_uboot"
 do_generate_static_norootfs[depends] += "${PN}:do_merge_uboot"
 do_generate_ext4_tar[depends] += "${PN}:do_merge_uboot"
+
+# fbobmc-image assembles a complete flash image from do_image_complete.
+# Ensure that image always uses the merged Caliptra/U-Boot payload.
+do_image_complete[depends] += "${PN}:do_merge_uboot"

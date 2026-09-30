@@ -115,9 +115,13 @@ var getNormalizedBuildNameFromVersion = func(ver string) (string, error) {
 // WARNING: This relies on the U-Boot version string on the image
 // there is no guarantee that this will succeed
 var GetOpenBMCVersionFromImageFile = func(imageFilePath string) (string, error) {
-	// mmap the first 1MB of the image file
-	imageFileBuf, err := fileutils.MmapFileRange(
-		imageFilePath, 0, 1024*1024, syscall.PROT_READ, syscall.MAP_SHARED,
+	// mmap the whole image file. The U-Boot version string is near the start of
+	// flat images, but for container-packaged images (e.g. AST2700/yosemite5a7,
+	// where U-Boot lives inside a multi-MB u-boot-fit partition) it sits several
+	// MB in, past any fixed-size window. The regex scan stops at the first match,
+	// so only the pages up to the match are faulted in.
+	imageFileBuf, err := fileutils.MmapFile(
+		imageFilePath, syscall.PROT_READ, syscall.MAP_SHARED,
 	)
 	if err != nil {
 		return "", fmt.Errorf("Unable to read and mmap image file '%v': %v",

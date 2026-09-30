@@ -1,4 +1,4 @@
-// me-functions.cpp (Yosemite4, no libbic; read SPD via pldmtool raw, buffer-style)
+// me-functions.cpp (Yosemite4, no libbic; read SPD via in-process libpldm AF-MCTP)
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,11 +9,15 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <array>
+#include <map>
 #include <cctype>
 
 #include <jansson.h>
 #include <openbmc/kv.h>
 #include <openbmc/ipmi.h>
+#include <libpldm/transport.h>
+#include <libpldm/transport/af-mctp.h>
 
 #include "dimm.h"
 
@@ -62,10 +66,23 @@
 
 static uint8_t g_cxl_page_for_dimm[8] = {0};
 static uint8_t g_slot_tier_cache[9] = {0}; // 0=Unknown, 1=T1, 2=T2
+static uint8_t g_pldm_iid = 0; // local PLDM instance-id counter (0-31); single-threaded,
+                               // one outstanding request per process -> no DB needed
+
+// In-process cache of each host DIMM's 0x50 compact SPD, keyed by (eid, dimm_id).
+// get_config_spd5 reads the same DIMM's compact ~18x (9 field extractors, each a
+// probe + fill), and the BIC serves byte-identical cached bytes every time, so we
+// fetch once per DIMM per process. A "present but not ready" compact is NOT cached
+// (see read_spd_compact) so the existing read retry can re-fetch until the BIC
+// finishes building its SPD cache. The cache lives only for this process; the
+// dimm-inventory script re-runs dimm-util (new process, empty cache) to pick up
+// DIMMs that became ready later, so no stale data survives across reads.
+static std::map<uint16_t, std::array<uint8_t, 0x50>> g_compact_cache;
 
 
 static inline uint8_t slot_to_eid(uint8_t slot_id);
-static bool run_pldmtool_and_get_rx(const std::string& cmd, std::vector<uint8_t>& out);
+static int pldm_oem_send_recv(uint8_t eid, const std::vector<uint8_t>& request,
+                              std::vector<uint8_t>& response);
 static bool is_slot_t2(uint8_t fru);
 static std::string detect_slot_tier_via_dbus(uint8_t slot);
 static bool active_probe_slot_is_t2(uint8_t fru);
@@ -183,17 +200,28 @@ static int read_spd_compact(uint8_t eid, uint8_t dimm_id, uint8_t out[0x50]) {
   if (!out){
     return -1;
   }
-  char cmd[256];
-  // device_type = 0x03, len = 0x50, offset = 0x0000
-  snprintf(cmd, sizeof(cmd),
-           "pldmtool raw -m %u -d "
-           "0x80 0x3F 0x01 0x15 0xA0 0x00 "
-           "0xE0 0xB1 0x15 0xA0 0x00 "
-           "0x%02X 0x03 0x%02X 0x%02X 0x%02X",
-           eid, dimm_id, 0x50, 0x00, 0x00);
+
+  // Serve from the per-(eid,dimm_id) cache if we already fetched this DIMM's
+  // compact in this process (see g_compact_cache).
+  const uint16_t cache_key = (uint16_t)(((uint16_t)eid << 8) | dimm_id);
+  auto cached = g_compact_cache.find(cache_key);
+  if (cached != g_compact_cache.end()) {
+    memcpy(out, cached->second.data(), 0x50);
+    return 0;
+  }
+
+  // OEM compact SPD read: device_type = 0x03, len = 0x50, offset = 0x0000.
+  // Same request bytes as the former "pldmtool raw -m <eid> -d 0x80 0x3F 0x01
+  // 0x15 0xA0 0x00 0xE0 0xB1 0x15 0xA0 0x00 <dimm> 0x03 0x50 0x00 0x00"; only the
+  // instance-id nibble in byte 0 now varies per request.
+  uint8_t iid = (uint8_t)(g_pldm_iid++ & 0x1F);
+  std::vector<uint8_t> request = {
+      (uint8_t)(0x80 | iid), 0x3F, 0x01, 0x15, 0xA0, 0x00,
+      0xE0, 0xB1, 0x15, 0xA0, 0x00,
+      dimm_id, 0x03, 0x50, 0x00, 0x00};
 
   std::vector<uint8_t> rx;
-  if (!run_pldmtool_and_get_rx(cmd, rx))
+  if (pldm_oem_send_recv(eid, request, rx) != 0)
   {
     return -1;
   }
@@ -212,6 +240,18 @@ static int read_spd_compact(uint8_t eid, uint8_t dimm_id, uint8_t out[0x50]) {
   }
 
   memcpy(out, rx.data() + idx, 0x50);
+
+  // Cache the fetched compact unless the DIMM is present but its SPD is not yet
+  // ready: in that case the byte content can still change as the BIC finishes
+  // building its cache, so leave it uncached and let util_read_spd_with_retry
+  // re-fetch. Absent or ready DIMMs are stable for this process and safe to cache.
+  bool present = (out[SPD_C_OEM_PRESENT] == 1);
+  bool ready   = (out[SPD_C_OEM_STATUS] & (1u << SPD_READY_BIT)) != 0;
+  if (!present || ready) {
+    std::array<uint8_t, 0x50> buf;
+    memcpy(buf.data(), out, 0x50);
+    g_compact_cache.emplace(cache_key, buf);
+  }
   return 0;
 }
 
@@ -265,52 +305,54 @@ static inline uint8_t slot_to_eid(uint8_t slot_id) {
   return (uint8_t)(slot_id * 10);
 }
 
-static bool run_pldmtool_and_get_rx(const std::string& cmd, std::vector<uint8_t>& out)
+// Send an OEM PLDM request and receive the full response over an in-process
+// AF-MCTP transport, replacing popen("pldmtool raw ..."). Non-reuse: the
+// transport is opened and destroyed per call, mirroring how pldmtool ran a fresh
+// process per invocation. The kernel AF_MCTP socket isolates responses per
+// (socket, EID) so a local instance-id counter is sufficient (no instance-id DB).
+// Returns 0 on success (response populated), -1 otherwise.
+// Reference: yaapd bic_jtag_handler.cpp pldmDirectSendRecv (pldmtool -> libpldm).
+static int pldm_oem_send_recv(uint8_t eid, const std::vector<uint8_t>& request,
+                              std::vector<uint8_t>& response)
 {
-  FILE* fp = popen(cmd.c_str(), "r");
-  if (!fp) {
-    DBG_PRINT("popen failed for cmd: %s\n", cmd.c_str());
-    return false;
+  response.clear();
+
+  struct pldm_transport_af_mctp* af_mctp = nullptr;
+  if (pldm_transport_af_mctp_init(&af_mctp) != 0 || af_mctp == nullptr) {
+    DBG_PRINT("af_mctp init failed (eid %u)\n", eid);
+    return -1;
   }
 
-  char line[1024] = {0};
-  std::string last_rx_line;
-  while (fgets(line, sizeof(line), fp)) {
-    std::string s(line);
-    if (s.find("Rx:") != std::string::npos) {
-      last_rx_line = s; // Take the last line containing "Rx:"
-    }
-  }
-  pclose(fp);
-
-  if (last_rx_line.empty()) {
-    DBG_PRINT("No 'Rx:' found for cmd: %s\n", cmd.c_str());
-    return false;
+  // Map the target TID == EID; the AF_MCTP kernel socket handles tag routing.
+  if (pldm_transport_af_mctp_map_tid(af_mctp, eid, eid) != PLDM_REQUESTER_SUCCESS) {
+    pldm_transport_af_mctp_destroy(af_mctp);
+    return -1;
   }
 
-  // Decode the hex string that follows "Rx:"
-  size_t pos = last_rx_line.find("Rx:");
-  if (pos == std::string::npos) {
-    return false;
+  struct pldm_transport* transport = pldm_transport_af_mctp_core(af_mctp);
+  if (transport == nullptr) {
+    pldm_transport_af_mctp_destroy(af_mctp);
+    return -1;
   }
-  std::string hex = last_rx_line.substr(pos + 3); // skip "Rx:"
-  std::istringstream iss(hex);
-  std::string tok;
-  out.clear();
-  while (iss >> tok) {
-    tok.erase(std::remove_if(tok.begin(), tok.end(),
-                             [](char c){ return c==',' || c==':'; }), tok.end());
-    char* endp = nullptr;
-    long v = strtol(tok.c_str(), &endp, 16);
-    if (endp != tok.c_str() && *endp == '\0' && v >= 0 && v <= 0xFF) {
-      out.push_back((uint8_t)v);
-    }
+
+  void* rxmsg = nullptr;
+  size_t rxlen = 0;
+  int rc = pldm_transport_send_recv_msg(transport, eid, request.data(),
+                                        request.size(), &rxmsg, &rxlen);
+  if (rc == PLDM_REQUESTER_SUCCESS && rxmsg != nullptr && rxlen > 0) {
+    uint8_t* p = reinterpret_cast<uint8_t*>(rxmsg);
+    response.assign(p, p + rxlen);
   }
-  if (out.empty()) {
-    DBG_PRINT("Parsed Rx is empty. line: %s\n", last_rx_line.c_str());
-    return false;
+  if (rxmsg != nullptr) {
+    free(rxmsg);
   }
-  return true;
+  pldm_transport_af_mctp_destroy(af_mctp);
+
+  if (response.empty()) {
+    DBG_PRINT("pldm_oem_send_recv: no response (eid %u, rc %d)\n", eid, rc);
+    return -1;
+  }
+  return 0;
 }
 
 static bool probe_dimm_present_ready(uint8_t fru_id, uint8_t dimm, bool* ready_out) {
@@ -333,20 +375,20 @@ static int pldm_data_wrapper(uint8_t eid, uint8_t pldm_type, uint8_t pldm_cmd,
                              const uint8_t* tbuf, uint8_t tlen,
                              uint8_t* rbuf, size_t* prlen) {
   if (!tbuf || !rbuf || !prlen) return -1;
-  
-  std::ostringstream oss;
-  oss << "pldmtool raw -m " << unsigned(eid) << " -d"
-      << " 0x80"
-      << " 0x" << std::hex << std::uppercase << int(pldm_type)
-      << " 0x" << int(pldm_cmd);
-  
-  for (uint8_t i = 0; i < tlen; i++) {
-    oss << " 0x" << std::hex << std::uppercase << int(tbuf[i]);
-  }
+
+  // Same request bytes as the former "pldmtool raw -m <eid> -d 0x80 <type> <cmd>
+  // <tbuf...>"; only the instance-id nibble in byte 0 now varies per request.
+  uint8_t iid = (uint8_t)(g_pldm_iid++ & 0x1F);
+  std::vector<uint8_t> request;
+  request.reserve(3 + tlen);
+  request.push_back((uint8_t)(0x80 | iid));
+  request.push_back(pldm_type);
+  request.push_back(pldm_cmd);
+  request.insert(request.end(), tbuf, tbuf + tlen);
 
   std::vector<uint8_t> rx;
-  if (!run_pldmtool_and_get_rx(oss.str(), rx)) return -1;
-  
+  if (pldm_oem_send_recv(eid, request, rx) != 0) return -1;
+
   size_t copy = (rx.size() < *prlen) ? rx.size() : *prlen;
   memcpy(rbuf, rx.data(), copy);
   *prlen = copy;

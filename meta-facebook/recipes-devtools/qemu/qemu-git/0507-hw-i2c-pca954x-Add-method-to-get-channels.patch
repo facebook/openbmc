@@ -1,7 +1,7 @@
-From d7b8c968e078538093fbefeeab1c6a914ea08f76 Mon Sep 17 00:00:00 2001
+From 9d20dc97964e36a67a9425cda8fc727820c8f73f Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <peter@pjd.dev>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
-Subject: [PATCH 507/512] hw/i2c/pca954x: Add method to get channels
+Subject: [PATCH] hw/i2c/pca954x: Add method to get channels
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -36,12 +36,12 @@ Signed-off-by: Cédric Le Goater <clg@kaod.org>
  3 files changed, 32 insertions(+), 20 deletions(-)
 
 diff --git a/hw/arm/aspeed_ast2600_fuji.c b/hw/arm/aspeed_ast2600_fuji.c
-index 37db252e27..3293dfe47f 100644
+index 08d809b2fd..9b8e771ca0 100644
 --- a/hw/arm/aspeed_ast2600_fuji.c
 +++ b/hw/arm/aspeed_ast2600_fuji.c
-@@ -24,15 +24,6 @@
+@@ -21,15 +21,6 @@
  #define FUJI_BMC_HW_STRAP2    0x00000000
- #define FUJI_BMC_RAM_SIZE ASPEED_RAM_SIZE(2 * GiB)
+ #define FUJI_BMC_RAM_SIZE (2 * GiB)
  
 -static void get_pca9548_channels(I2CBus *bus, uint8_t mux_addr,
 -                                 I2CBus **channels)
@@ -55,7 +55,7 @@ index 37db252e27..3293dfe47f 100644
  static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
  {
      AspeedSoCState *soc = bmc->soc;
-@@ -41,20 +32,18 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
+@@ -38,20 +29,18 @@ static void fuji_bmc_i2c_init(AspeedMachineState *bmc)
      for (int i = 0; i < 16; i++) {
          i2c[i] = aspeed_i2c_get_bus(&soc->i2c, i);
      }
@@ -84,7 +84,7 @@ index 37db252e27..3293dfe47f 100644
 +                                 &i2c[80 + i * 8]);
      }
  
-     i2c_slave_create_simple(i2c[17], TYPE_LM75, 0x4c);
+     i2c_slave_create_simple(i2c[17], TYPE_LM75B, 0x4c);
 diff --git a/hw/i2c/i2c_mux_pca954x.c b/hw/i2c/i2c_mux_pca954x.c
 index c603446028..2905e51b07 100644
 --- a/hw/i2c/i2c_mux_pca954x.c

@@ -1,0 +1,16 @@
+[Unit]
+Description=Ventura XR21 Hardware Reset
+Before=xr21-gpio-mod.service
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c ' \
+    if /bin/lsusb 2> /dev/null | /bin/grep -q Exar; \
+    then /bin/echo "XR21B1424 found" && /usr/bin/gpioset 4 13=0 && /bin/sleep 0.1 && /usr/bin/gpioset 4 13=1; \
+    else /bin/echo "XR21B1424 not found"; \
+    fi'
+
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

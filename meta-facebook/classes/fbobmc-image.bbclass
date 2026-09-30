@@ -9,15 +9,16 @@ inherit kernel_fitimage
 # Default Golden Image size is 32 MB
 FBVBOOT_GOLDEN_IMAGE_SIZE_MB ??= "32"
 
+# Metadata normally follows the legacy Aspeed layout.  Platforms with a
+# different flash layout can override this in their image-layout include.
+FBOBMC_IMAGE_META_OFFSET ??= "0x000F0000"
+
 python __anonymous () {
     # Todo get the version information from common place to get consistent with
     # tools: pypartition, sign-tools etc.
 
     # provide the image meta JSON version
     d.setVar("FBOBMC_IMAGE_META_VER", "1")
-
-    # meta partiton offset
-    d.setVar("FBOBMC_IMAGE_META_OFFSET", "0x000F0000")
 
     # sanity check and set FBVBOOT_GOLDEN_IMAGE_SIZE
     golden_image_size_cfg = d.getVar("FBVBOOT_GOLDEN_IMAGE_SIZE_MB", True)

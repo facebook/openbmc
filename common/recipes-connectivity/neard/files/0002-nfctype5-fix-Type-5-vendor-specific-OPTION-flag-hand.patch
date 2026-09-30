@@ -1,0 +1,46 @@
+From 9134e31d246ab655e2951ed5dd98e8e6d58b6f99 Mon Sep 17 00:00:00 2001
+From: Carl Lee <carl.lee@amd.com>
+Date: Wed, 3 Jun 2026 10:32:41 +0800
+Subject: [PATCH] nfctype5: fix Type 5 vendor-specific OPTION flag handling
+
+CMD_FLAG_OPTION is only required by TI Type 5 tags, but was
+previously enabled for all non-ST tags. This breaks operation
+on NXP tags.
+
+Signed-off-by: Carl Lee <carl.lee@amd.com>
+---
+ plugins/nfctype5.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/plugins/nfctype5.c b/plugins/nfctype5.c
+index eef2afe..ebfa5b1 100644
+--- a/plugins/nfctype5.c
++++ b/plugins/nfctype5.c
+@@ -501,8 +501,8 @@ static int t5_write_resp(uint8_t *resp, int length, void *data)
+ 	if (err)
+ 		goto out_done;
+ 
+-	/* CMD_FLAG_OPTION should be set for non ST tags */
+-	if (!t5_manufacturer_is_stmicro(tag))
++	/* CMD_FLAG_OPTION should be set for TI tags */
++	if (t5_manufacturer_is_ti(tag))
+ 		t5_cmd->hdr.flags |= CMD_FLAG_OPTION;
+ 
+ 	t5_cmd->blk_no = cookie->blk;
+@@ -558,10 +558,10 @@ static int t5_write(struct near_tag *tag, uint8_t offset, uint8_t *buf,
+ 
+ 	/*
+ 	 * Above workaround : OPTION flag setting done for TI tags
+-	 * does not work with ST Type5 tags.
+-	 * So, implemeting OPTION flag set only for non ST tags.
++	 * does not work with other Type5 tags.
++	 * So, implemeting OPTION flag set only for TI tags.
+ 	 */
+-	if (!t5_manufacturer_is_stmicro(tag))
++	if (t5_manufacturer_is_ti(tag))
+ 		t5_cmd->hdr.flags |= CMD_FLAG_OPTION;
+ 
+ 	t5_cmd->blk_no = offset / blk_size;
+-- 
+2.34.1
+

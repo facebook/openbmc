@@ -105,7 +105,7 @@ i2c_device_add 4 0x44 net_brcm
 # SMBus 6
 i2c_device_add 6 0x60 fancpld
 # Outlet Temperature
-i2c_device_add 6 0x4c max6658
+hwmon_device_add 6 0x4c max6658
 
 # SMBus 7 CHASSIS EEPROM
 i2c_device_add 7 0x50 24c512

@@ -70,6 +70,12 @@ SRC_URI:append = " \
     file://0235-iio-adc-aspeed-Add-AST2700-ADC-support.patch \
     file://0236-iio-adc-aspeed-Disable-the-last-channel-by-default.patch \
     file://0237-net-ftgmac100-add-support-for-AST2700.patch \
+    file://0238-aspeed-i2c-add-i2c-clk-high-min-percent-property.patch \
+    file://0239-iio-adc-aspeed-Support-deglitch-feature.patch \
+    file://0240-dt-bindings-iio-adc-ti-ads112c04-Add-binding-for-ADS.patch \
+    file://0241-iio-adc-ti-ads112c04-Add-support-for-TI-ADS112C04.patch \
+    file://0242-ipmi-ssif_bmc-Prevent-pending-response-from-being-lo.patch \
+    file://0243-aspeed-i2c-fix-AST2700-target-buffer-mode-NULL-deref.patch \
 "
 
 #
@@ -78,6 +84,8 @@ SRC_URI:append = " \
 SRC_URI:append = " \
     file://0500-NCSI-Add-propety-no-channel-monitor-and-start-redo-p.patch \
     file://0501-net-ncsi-specify-maximum-package-to-probe.patch \
+    file://0502-net-usb-cdc_ether-add-NCSI-passthrough-support.patch \
+    file://0503-net-ncsi-fix-use-after-free-in-ncsi_unregister_dev.patch \
 "
 
 #
@@ -94,7 +102,21 @@ SRC_URI:append = " \
     file://0607-iio-adc-ltc2309-explicitly-assign-hex-values-to-chan.patch \
     file://0608-iio-adc-ltc2309-add-support-for-ltc2305.patch \
     file://0609-amd-apml-sbrmi-update-SBRMI-revision-for-Venice.patch \
-    file://0610-iio-adc-rtq6056-add-i2c_device_id-support.patch \
+    file://0610-nfc-nxp-nci-Add-ISO15693-support.patch \
+    file://0611-misc-amd-apml-Add-Venice-B0-I3C-device-IDs.patch \
+    file://0612-dt-bindings-trivial-devices-Add-adi-max20912-and-max.patch \
+    file://0613-hwmon-pmbus-Add-driver-for-Analog-Devices-MAX20912-a.patch \
+    file://0614-nfc-nxp-nci-treat-ENXIO-in-IRQ-thread-as-no-data-ava.patch \
+    file://0615-hwmon-kb9002-Add-driver-for-Kandou-KB9002-retimer.patch \
+    file://0616-hwmon-pmbus-Add-MPQ82D00-support.patch \
+    file://0617-hwmon-pmbus-ltc4286-Add-writable-shunt_resistor-sysf.patch \
+"
+
+#
+# RTC drivers
+#
+SRC_URI:append = " \
+    file://0800-rtc-Add-NXP-PCF85053A-driver-support.patch \
 "
 
 #
@@ -120,4 +142,12 @@ SRC_URI:append = " \
     file://2705-pinctrl-aspeed-Add-AST2700-SoC0-support.patch \
     file://2706-arm64-dts-aspeed-add-pinctrl-definitions-for-G7-plat.patch \
     file://2707-arm64-dts-aspeed-add-peripheral-nodes-for-G7-platfor.patch \
+    file://2708-pinctrl-aspeed-Fix-GPIO-mux-value-for-ADC-capable-ba.patch \
+    file://2709-usb-host-ehci-platform-add-ASPEED-AST2700-support.patch \
+    file://2710-arm64-dts-aspeed-add-EHCI-and-MDIO-nodes-for-G7-plat.patch \
+    file://2711-usb-gadget-aspeed-vhub-Add-AST2700-support.patch \
+    file://2712-arm64-dts-aspeed-Add-AST2700-VHUBA0-node.patch \
+    file://2713-spi-aspeed-Add-AST2700-TX-RX-controller.patch \
+    file://2714-arm64-dts-aspeed-Add-AST2700-128MB-flash-layout.patch \
+    file://2715-pinctrl-aspeed-Split-TRST-out-of-the-AST2700-SoC1-JT.patch \
 "

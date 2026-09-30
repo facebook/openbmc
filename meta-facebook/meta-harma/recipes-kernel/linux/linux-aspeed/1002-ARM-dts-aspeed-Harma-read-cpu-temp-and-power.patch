@@ -1,7 +1,7 @@
-From a2d89b944bc738455ad35408b85f54b774eae3ee Mon Sep 17 00:00:00 2001
+From 9e243f618b58ef60de6d1e7bf439ec62dcb68c78 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peteryin.openbmc@gmail.com>
 Date: Fri, 14 Jun 2024 13:36:36 +0800
-Subject: [PATCH 1002/1008] ARM: dts: aspeed: Harma: read cpu temp and power
+Subject: [PATCH] ARM: dts: aspeed: Harma: read cpu temp and power
 
 Add sbrmi and sbtsi device
 
@@ -14,10 +14,10 @@ Signed-off-by: Peter Yin <peteryin.openbmc@gmail.com>
  1 file changed, 10 insertions(+)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-index 7c6f95d1401c..2c2d5a9f4b31 100644
+index 41cbe585cbad..af877019cb1e 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-harma.dts
-@@ -427,6 +427,16 @@ power-monitor@45 {
+@@ -435,6 +435,16 @@ power-monitor@45 {
  
  &i2c7 {
  	status = "okay";
@@ -35,5 +35,5 @@ index 7c6f95d1401c..2c2d5a9f4b31 100644
  
  &i2c8 {
 -- 
-2.47.3
+2.53.0-Meta
 

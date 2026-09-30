@@ -1252,7 +1252,7 @@ int CpldLatticeManager::XO5Family_update(bool legacy)
         return -1;
     }
 
-    if (netlakenext_common_get_board_rev(&i2cManager.boardId) < 0)
+    if (netlakenext_common_get_sys_cfg(&i2cManager.boardId) < 0)
     {
         std::cerr << "Error: Unable to obtain boardId.\n";
         return -1;

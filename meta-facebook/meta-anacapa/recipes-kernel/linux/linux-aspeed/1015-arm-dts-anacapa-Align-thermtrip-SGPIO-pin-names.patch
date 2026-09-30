@@ -1,0 +1,39 @@
+From 0cafcf7494aba8d832c64c38fcdca75b80180501 Mon Sep 17 00:00:00 2001
+From: Rex Fu <Rex.Fu@amd.com>
+Date: Fri, 26 Jun 2026 16:30:20 +0800
+Subject: [PATCH] arm: dts: anacapa: Align thermtrip SGPIO pin names
+
+Summary:
+- Align thermtrip SGPIO pin names with upstream Anacapa DTS.
+
+LORE: https://lore.kernel.org/all/20260602-anacapa-devlop-phase-devicetree-v3-3-7c93c5df8d9b@gmail.com/
+
+Motivation:
+- To keep local Anacapa DTS naming consistent with upstream DTS.
+
+Test Plan:
+- Build pass
+
+Signed-off-by: Rex Fu <Rex.Fu@amd.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+index 67764d0b6157..1723e86bfa5a 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+@@ -1150,8 +1150,8 @@ &sgpiom0 {
+ 	"HPM_PWR_FAIL", "Port80_b0",
+ 	"FM_DIMM_IP_FAIL", "Port80_b1",
+ 	"FM_DIMM_AH_FAIL", "Port80_b2",
+-	"HPM_AMC_THERMTRIP_R_L", "Port80_b3",
+-	"cpu_thermtrip_detect", "Port80_b4",
++	"AMC_THERMTRIP_ASSERT", "Port80_b3",
++	"CPU_THERMTRIP_ASSERT", "Port80_b4",
+ 	"PVDDCR_SOC_P0_OCP_L", "Port80_b5",
+ 	"CPLD_SGPIO_RDY", "Port80_b6",
+ 	"FM_MAIN_PWREN_RMC_EN_ISO", "Port80_b7",
+-- 
+2.52.0
+

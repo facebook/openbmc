@@ -1,4 +1,6 @@
 #include <redfish_client/core/redfish_client.hpp>
+#include <redfish_client/core/log_service_handler.hpp>
+#include <redfish_client/core/sensor_handler.hpp>
 #include <redfish_client/core/update_service_handler.hpp>
 #include <redfish_client/core/log_entry_mapper_registry.hpp>
 #include <redfish_client/core/unhandled_mapper.hpp>
@@ -30,221 +32,78 @@ RedfishClient::RedfishClient(sdbusplus::async::context& ctx, const std::string& 
     ctx(ctx), configDir(configDir), persistDir(persistDir)
 {}
 
-RedfishClient::RedfishClient(sdbusplus::async::context& ctx, const Config& config,
-              const std::string& persistDir) :
-    ctx(ctx), config(config), persistDir(persistDir)
+RedfishClient::RedfishClient(sdbusplus::async::context& ctx,
+                             const std::vector<Config>& configs,
+                             const std::string& persistDir) :
+    ctx(ctx), configs(configs), persistDir(persistDir)
 {}
 
 auto RedfishClient::run() -> sdbusplus::async::task<>
 {
     info("Running RedfishClient");
-    if (!config.has_value())
+    if (configs.empty())
     {
         co_await loadConfig();
     }
 
     registerLogMappers();
 
-    if (config->sensorConfig.has_value())
+    for (const auto& config : configs)
     {
-        const auto& sensorConfig = config->sensorConfig.value();
-        info("Creating Sensor objects: {SIZE}", "SIZE",
-             sensorConfig.mappers.size());
-        for (const auto& mapper : sensorConfig.mappers)
+        if (config.sensorConfig.has_value())
         {
-            auto metricNamespace = std::string(
-                getActualMetricNamespace(mapper.toNamespace.c_str()));
-
-            std::string fullMetricPath =
-                std::string(getSensorRootPath()) + "/" + metricNamespace +
-                "/" + mapper.toId;
-
-            metrics[mapper.toId] = std::make_shared<SensorDbusObject>(
-                ctx, fullMetricPath.c_str(), mapper,
-                sensorConfig.associationPath);
+            const auto& sensorConfig = config.sensorConfig.value();
+            info("Configured Sensor objects: {SIZE}", "SIZE",
+                 sensorConfig.mappers.size());
+            ctx.spawn(SensorHandler::run(ctx, config.host, sensorConfig));
         }
-        sensorThread = std::thread([this] { runSensorLoop(); });
-    }
 
-    if (config->logServiceConfig.has_value())
-    {
-        const auto& logServiceConfig = config->logServiceConfig.value();
-        info("logServiceConfig intervalMilliseconds = {INTERVAL}",
-             "INTERVAL", logServiceConfig.intervalMilliseconds);
-        for (const auto& url : logServiceConfig.urls)
+        if (config.logServiceConfig.has_value())
         {
-            auto expandedUrl =
-                std::format("http://{}{}", config->host, url);
-            info("logServiceConfig url = {URL}", "URL",
-                 expandedUrl.c_str());
-            info("persistDir = {PERSIST_DIR}", "PERSIST_DIR", persistDir);
-
-            logServiceHandlers.push_back(
-                std::make_shared<LogServiceHandler>(
-                    ctx, expandedUrl,
-                    logServiceConfig.skipHistoricalEntriesThresholdSeconds,
-                    persistDir));
+            ctx.spawn(LogServiceHandler::run(
+                ctx, config.host, config.logServiceConfig.value(), persistDir));
         }
-        ctx.spawn(runEventPollingLoop());
-    }
 
-    if (config->updateServiceConfig.has_value())
-    {
-        ctx.spawn(UpdateServiceHandler::run(
-                ctx, config->host, config->updateServiceConfig.value()));
+        if (config.updateServiceConfig.has_value())
+        {
+            ctx.spawn(UpdateServiceHandler::run(
+                ctx, config.host, config.updateServiceConfig.value()));
+        }
     }
     co_return;
 }
 
-RedfishClient::~RedfishClient()
-{
-    if (sensorThread.joinable())
-    {
-        sensorThread.join();
-    }
-}
-
-std::optional<Sensor> RedfishClient::readWithRetries(const SensorMapper& mapper)
-{
-    for (size_t i = 0; i < config->sensorConfig.value().maxRetries; ++i)
-    {
-        std::string sensorJson;
-        auto expandedUrl =
-            std::format("http://{}{}", config->host, mapper.fromUrl);
-        try
-        {
-            auto it = httpHandles.find(expandedUrl);
-            if (it == httpHandles.end())
-            {
-                it = httpHandles
-                         .insert({expandedUrl,
-                                  std::make_unique<AsyncHttpHandle>(
-                                      expandedUrl)})
-                         .first;
-            }
-            auto& httpHandle = it->second;
-            // TODO: Switch to co_await when this function is switched to
-            // coroutine
-            auto maybeResponse = stdexec::sync_wait(httpHandle->get(ctx));
-            if (!maybeResponse.has_value())
-            {
-                throw std::runtime_error("Http request stopped");
-            }
-            const auto& response = std::get<0>(maybeResponse.value());
-            if (response.code != 200)
-            {
-                throw std::runtime_error(std::format(
-                    "Http response error code: {}", response.code));
-            }
-            sensorJson = response.body;
-        }
-        catch (const std::exception& exn)
-        {
-            info("Exception while querying url ({URL}): {EXC}", "URL",
-                 expandedUrl.c_str(), "EXC", exn);
-        };
-
-        try
-        {
-            return Sensor::parseSensor(sensorJson);
-        }
-        catch (const std::exception& exn)
-        {
-            info("Exception while parsing sensor json from ({URL}): {EXC}, {JSON}",
-                 "URL", expandedUrl.c_str(), "EXC", exn, "JSON",
-                 sensorJson.c_str());
-        };
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(
-            config->sensorConfig.value().retryIntervalMilliseconds));
-    }
-    return std::nullopt;
-}
-
-auto RedfishClient::runEventPollingLoop() -> sdbusplus::async::task<>
-{
-    if (logServiceHandlers.size() == 0)
-    {
-        co_return;
-    }
-
-    info("Running event polling loop");
-
-    try
-    {
-        while (!ctx.stop_requested())
-        {
-            for (auto& logServiceHandler : logServiceHandlers)
-            {
-                co_await logServiceHandler->runOnce();
-            }
-
-            co_await sdbusplus::async::sleep_for(
-                ctx,
-                std::chrono::milliseconds(
-                    config->logServiceConfig.value().intervalMilliseconds));
-        }
-    }
-    catch (const std::logic_error& exn)
-    {
-        debug("Unhandled logic error: {NAME}", "WHAT", exn.what());
-    };
-
-    co_return;
-}
-
-void RedfishClient::runSensorLoop()
-{
-    info("Running sensor loop");
-    try
-    {
-        while (!ctx.stop_requested())
-        {
-            for (const auto& [metricKey, metric] : metrics)
-            {
-                auto maybeSensor = readWithRetries(metric->mapper);
-                if (!maybeSensor.has_value())
-                {
-                    continue;
-                }
-                ctx.spawn(metric->update(maybeSensor.value()));
-            }
-            std::this_thread::sleep_for(std::chrono::milliseconds(
-                config->sensorConfig.value().intervalMilliseconds));
-        }
-    }
-    catch (const std::logic_error& exn)
-    {
-        debug("Unhandled logic error: {NAME}", "WHAT", exn.what());
-    };
-}
+RedfishClient::~RedfishClient() = default;
 
 auto RedfishClient::loadConfig() -> sdbusplus::async::task<>
 {
     auto compatiblePlatformName = co_await getCompatiblePlatformNames();
-    config = loadCompatibleConfig(configDir, compatiblePlatformName);
+    configs = loadCompatibleConfigs(configDir, compatiblePlatformName);
     co_return;
 }
 
 void RedfishClient::registerLogMappers()
 {
     auto& registry = LogEntryMapperRegistry::instance();
-
-    if (config->components.has_value()) {
-        for (const auto& componentName : config->components.value()) {
+    if (!configs.empty() && configs.front().components)
+    {
+        const auto& config = configs.front();
+        for (const auto& componentName : config.components.value())
+        {
             info("Registering component: {COMPONENT}", "COMPONENT", componentName);
-            component_config::registerComponent(componentName, *config);
+            component_config::registerComponent(componentName, config, ctx,
+                                                config.host);
         }
     }
-
     registry.registerMapper(std::make_unique<UnhandledMapper>(), 0);
     info("Mapper registration complete");
 }
 
-Config RedfishClient::loadCompatibleConfig(
+std::vector<Config> RedfishClient::loadCompatibleConfigs(
     const std::string& configDir,
     const std::vector<std::string>& compatiblePlatformNames)
 {
+    std::vector<Config> matchedConfigs;
     namespace fs = std::filesystem;
     for (const auto& entry : fs::directory_iterator(configDir))
     {
@@ -265,13 +124,19 @@ Config RedfishClient::loadCompatibleConfig(
             {
                 info("Matched config file: {FILE}", "FILE",
                      entry.path().string());
-                return config;
+                matchedConfigs.push_back(std::move(config));
+                break;
             }
         }
     }
-    error("No matching config file found for platform list: {PLATFORM}",
-          "PLATFORM", std::format("{}", compatiblePlatformNames));
-    throw std::runtime_error("No matching config file found");
+    if (matchedConfigs.empty())
+    {
+        error("No matching config file found for platform list: {PLATFORM}",
+              "PLATFORM", std::format("{}", compatiblePlatformNames));
+        throw std::runtime_error("No matching config file found");
+    }
+
+    return matchedConfigs;
 }
 
 auto RedfishClient::subtree_for_target_interface(

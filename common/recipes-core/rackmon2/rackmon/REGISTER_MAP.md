@@ -34,7 +34,7 @@ Example configuration covering all the cases:
 | default_baudrate | Default baud-rate used for the device during discovery |
 | preferred_baudrate | (Optional) Operating baud-rate which rackmon should negotiate to (See [Baud-rate Negotiation](#baud-rate-negotiation)) |
 | baud_config | (Optional) See [Baud-rate Negotiation](#baud-rate-negotiation) |
-| special_handlers | (Optional) See [Special Handling](#special-handling) |
+| time_sync | (Optional) See [Time Sync](#time-sync) |
 | registers | List of register descriptors - See [Register Descriptor](#register-descriptor-json) |
 
 ## Register Format Types
@@ -117,43 +117,21 @@ consuming tables within tables).
 }
 ```
 
-## Special Handling
-Sometimes we want to perform certain "special" operations on registers
-of all discovered modbus devices. For example, PSUs/BBUs do not have a
-synchronized clock. Thus, it is beneficial if the controller "feeds" the
-correct system time to the PSU, which would make blackbox/debug data
-retrieved from the PSU dependable (useless if the time-stamp is inaccurate).
-
-This is accomplished using the `special_handlers` key in the register map.
-(This is not shown in the earlier section to maintain simplicity).
+## Time Sync
+Some devices may have clocks with a week crystal which may drift over time. To workaround this, we can
+sync the current time on a regular basis. These devices usually have a register which can be written to
+with the current unix time. To accomadate this, we can specify the following in the register map:
 
 ```
-{
-  "special_handlers": [
-    {
+    "time_sync": {
       "reg": 298,
-      "len": 2,
-      "period": 3600,
-      "action": "write",
-      "info": {
-        "interpret": "INTEGER",
-        "shell": "date +%s"
-      }
-    }
-  ]
-}
+      "period": 3600
 ```
+
 | Field | Field Description |
 | ----- | ----------------- |
-| reg | Register address on which the action is performed |
-| len | The length of data we are performing the operation with |
-| period | If provided, the action is periodic. If not provided, the action is performed once at start up |
-| action | action to take. Currently only "write" is supported. This allows a particular value to be written to the register |
-| info | This determines what value is written. We need one of the two keys to be present: "shell", "value" |
-| interpret | How to interpret the output (See [Register Format Types](#register-format-types)) |
-| shell | Run a shell command and interpret its output (Example, date +%s) |
-| value | Write the value provided |
-
+| reg | Register address on which the action is performed. Currently this is hard-coded to be of length 2 |
+| period | The interval in seconds at which the time is synced. |
 
 ## Baud-rate Negotiation
 

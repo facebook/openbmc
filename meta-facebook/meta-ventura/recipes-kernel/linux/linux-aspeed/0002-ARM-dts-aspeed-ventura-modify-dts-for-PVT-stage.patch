@@ -1,7 +1,7 @@
-From dfc69a2f8b16c426fe9febd1773c5e6e1844b77e Mon Sep 17 00:00:00 2001
+From c0b1322387391b186515a86e7c775c0f8046c719 Mon Sep 17 00:00:00 2001
 From: Yang Chen <yang.chen@quantatw.com>
 Date: Fri, 7 Feb 2025 15:23:13 +0800
-Subject: [PATCH 2/2] ARM: dts: aspeed: ventura: modify dts for PVT stage
+Subject: [PATCH] ARM: dts: aspeed: ventura: modify dts for PVT stage
 
 Modify the DTS of ventura for PVT stage as follow items:
 1. Add gpio-led for each tray led control.
@@ -690,5 +690,5 @@ index 8bbb7e88bc3c..c9887839ac3b 100644
  		reg = <0x26>;
  		gpio-controller;
 -- 
-2.34.1
+2.53.0-Meta
 

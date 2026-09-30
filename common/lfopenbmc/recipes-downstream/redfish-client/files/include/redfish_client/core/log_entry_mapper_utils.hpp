@@ -16,6 +16,15 @@ std::optional<std::string> extractSeverity(
 // Returns "Unknown Source" if the origin is not available.
 std::string extractOrigin(redfish_binding::LogEntry::LogEntry& entry);
 
+// Extracts OEM data from log entry if present.
+// Returns std::nullopt if OEM data is not present.
+struct OemData
+{
+    std::string vendor;
+    std::string jsonData;
+};
+std::optional<OemData> extractOemData(redfish_binding::LogEntry::LogEntry& entry);
+
 // Formats key fields from a log entry as a JSON string for use as failure
 // correlation data. The output is capped at maxSize bytes to ensure the
 // resulting BMC event stays under 4k total.

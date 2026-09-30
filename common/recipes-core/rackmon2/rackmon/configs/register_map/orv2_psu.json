@@ -6,20 +6,16 @@
             191
         ]
     ],
-    "probe_register": 104,
-    "baudrate": 19200,
-    "special_handlers": [
-        {
-            "reg": 298,
-            "len": 2,
-            "period": 3600,
-            "action": "write",
-            "info": {
-                "interpret": "INTEGER",
-                "shell": "date +%s"
-            }
-        }
+    "probe": [
+      {
+        "register": 104
+      }
     ],
+    "baudrate": 19200,
+    "time_sync": {
+        "address": 298,
+        "interval": 3600
+    },
     "max_span_length": 16,
     "registers": [
         {
@@ -1387,4 +1383,3 @@
         }
     ]
 }
-

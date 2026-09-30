@@ -1,0 +1,1259 @@
+#!/bin/bash
+
+set -euo pipefail
+
+CUSTOM_INDEX=3
+PAD_CUSTOM="NA"
+BACKUP_DIR="/var/lib/fru-am4-init-update/fru-backup"
+LOCK_FILE="/run/lock/fru-am4-init-update.lock"
+STATE_DIR="/var/lib/fru-am4-init-update"
+RUN_LOG="${STATE_DIR}/last_run.log"
+RUN_REASON="${STATE_DIR}/last_reason"
+RUN_HISTORY="${STATE_DIR}/history.log"
+MAX_RETRY="${MAX_RETRY:-3}"
+RETRY_DELAY_SEC="${RETRY_DELAY_SEC:-2}"
+STRICT_FAIL="${STRICT_FAIL:-0}"
+PATH_WAIT_RETRY="${PATH_WAIT_RETRY:-20}"
+PATH_WAIT_SEC="${PATH_WAIT_SEC:-1}"
+UNIT_NAME="${FRU_AM4_UNIT_NAME:-fru-am4-init-update.service}"
+HISTORY_ROTATE_MAX_BYTES="${HISTORY_ROTATE_MAX_BYTES:-1048576}"
+HISTORY_ROTATE_KEEP="${HISTORY_ROTATE_KEEP:-3}"
+ROLLBACK_STRICT="${ROLLBACK_STRICT:-1}"
+
+RUN_TOTAL=0
+RUN_OK=0
+RUN_SKIP=0
+RUN_FAIL=0
+RUN_WRITE=0
+RUN_HEALTHY=0
+RUN_PENDING=0
+FINAL_REASON="UNSET"
+BACKUP_LAST_PATH=""
+ROLLBACK_FAILED=0
+WRITTEN_BUSES=""
+
+# name|candidate_paths(comma-separated)|new_am4_value
+TARGETS='
+MB|/sys/bus/i2c/devices/6-0050/eeprom|ADC-TI MEMVR-MPS CPUVR-MPS SOCVR-MPS PVDD33VR-MPS PVDD18VR-MPS
+LBB|/sys/bus/i2c/devices/36-0052/eeprom|RETIMER-ASTERA TMP-TI
+RBB|/sys/bus/i2c/devices/48-0052/eeprom|RETIMER-ASTERA TMP-TI
+LPDB|/sys/bus/i2c/devices/33-0050/eeprom|TMP-TI FSC-MAX HSC-ADI SWVR-DLTA
+RPDB|/sys/bus/i2c/devices/32-0050/eeprom|TMP8-TI TMP29-TI FSC-MAX ADC-TI HSC-ADI MBVR-DLTA STBYVR-DLTA
+'
+
+log() {
+    echo "$*"
+}
+
+
+now_ts() {
+    date -u +"%Y-%m-%dT%H:%M:%SZ"
+}
+
+
+current_boot_id() {
+    if [ -r /proc/sys/kernel/random/boot_id ]; then
+        cat /proc/sys/kernel/random/boot_id
+    else
+        printf 'unknown'
+    fi
+}
+
+rotate_history_if_needed() {
+    local f="$RUN_HISTORY"
+    local max="$HISTORY_ROTATE_MAX_BYTES"
+    local keep="$HISTORY_ROTATE_KEEP"
+    local size i prev src dst
+
+    case "$max" in
+        ''|*[!0-9]*) return 0 ;;
+    esac
+    case "$keep" in
+        ''|*[!0-9]*) return 0 ;;
+    esac
+    [ "$max" -le 0 ] && return 0
+    [ "$keep" -le 0 ] && return 0
+    [ -f "$f" ] || return 0
+
+    size="$(wc -c < "$f" 2>/dev/null || echo 0)"
+    case "$size" in
+        ''|*[!0-9]*) return 0 ;;
+    esac
+    [ "$size" -lt "$max" ] && return 0
+
+    i="$keep"
+    while [ "$i" -ge 1 ]; do
+        prev=$((i - 1))
+        if [ "$prev" -eq 0 ]; then
+            src="$f"
+        else
+            src="$f.$prev"
+        fi
+        dst="$f.$i"
+        if [ -f "$src" ]; then
+            mv -f "$src" "$dst" 2>/dev/null || true
+        fi
+        i=$((i - 1))
+    done
+
+    : > "$f" 2>/dev/null || true
+}
+
+audit_log() {
+    local msg="$1"
+    mkdir -p "$STATE_DIR" >/dev/null 2>&1 || true
+    rotate_history_if_needed
+
+    printf '%s %s\n' "$(now_ts)" "$msg" >> "$RUN_LOG" 2>/dev/null || true
+    printf '%s %s\n' "$(now_ts)" "$msg" >> "$RUN_HISTORY" 2>/dev/null || true
+}
+
+write_reason() {
+    local reason="$1"
+    mkdir -p "$STATE_DIR" >/dev/null 2>&1 || true
+    {
+        printf 'timestamp=%s\n' "$(now_ts)"
+        printf 'reason=%s\n' "$reason"
+        printf 'unit=%s\n' "$UNIT_NAME"
+        printf 'invocation_id=%s\n' "${INVOCATION_ID:-unknown}"
+        printf 'pid=%s\n' "$$"
+        printf 'boot_id=%s\n' "$(current_boot_id)"
+        printf 'strict_fail=%s\n' "$STRICT_FAIL"
+        printf 'total=%s\n' "$RUN_TOTAL"
+        printf 'ok=%s\n' "$RUN_OK"
+        printf 'skipped=%s\n' "$RUN_SKIP"
+        printf 'failed=%s\n' "$RUN_FAIL"
+        printf 'written=%s\n' "$RUN_WRITE"
+    } > "$RUN_REASON" 2>/dev/null || true
+}
+
+on_exit() {
+    local rc="$?"
+
+    if [ "$FINAL_REASON" = "UNSET" ]; then
+        if [ "$rc" -eq 0 ]; then
+            FINAL_REASON="PASS_UNKNOWN_PATH"
+        else
+            FINAL_REASON="FAIL_UNEXPECTED"
+        fi
+    fi
+
+    audit_log "run_end rc=$rc reason=$FINAL_REASON total=$RUN_TOTAL ok=$RUN_OK skipped=$RUN_SKIP failed=$RUN_FAIL written=$RUN_WRITE"
+    write_reason "$FINAL_REASON"
+}
+
+trap on_exit EXIT
+
+resolve_path() {
+    local candidates="$1"
+    local oldifs="$IFS"
+    IFS=','
+    for p in $candidates; do
+        if [ -e "$p" ]; then
+            IFS="$oldifs"
+            echo "$p"
+            return 0
+        fi
+    done
+    IFS="$oldifs"
+    return 1
+}
+
+
+wait_resolve_path() {
+    local pathspec="$1"
+    local attempt=1
+    local p
+
+    while true; do
+        if p="$(resolve_path "$pathspec")"; then
+            printf '%s' "$p"
+            return 0
+        fi
+
+        if [ "$attempt" -ge "$PATH_WAIT_RETRY" ]; then
+            return 1
+        fi
+
+        sleep "$PATH_WAIT_SEC"
+        attempt=$((attempt + 1))
+    done
+}
+
+
+record_written_bus() {
+    local path="$1"
+    local dev bus
+
+    dev="$(basename "$(dirname "$path")")"
+    bus="${dev%%-*}"
+    case "$bus" in
+        ""|*[!0-9]*) return 0 ;;
+    esac
+
+    case " $WRITTEN_BUSES " in
+        *" $bus "*) ;;
+        *) WRITTEN_BUSES="$WRITTEN_BUSES $bus" ;;
+    esac
+}
+
+rescan_written_buses() {
+    local bus rc=0
+    local fru_state
+
+    fru_state="$(systemctl is-active xyz.openbmc_project.FruDevice.service 2>/dev/null || true)"
+    if [ "$fru_state" != "active" ]; then
+        audit_log "rescan skip reason=frudevice_not_active state=$fru_state"
+        return 0
+    fi
+
+    for bus in $WRITTEN_BUSES; do
+        audit_log "rescan bus=$bus start"
+        if busctl call xyz.openbmc_project.FruDevice \
+            /xyz/openbmc_project/FruDevice \
+            xyz.openbmc_project.FruDeviceManager \
+            ReScanBus q "$bus" >/dev/null 2>&1; then
+            audit_log "rescan bus=$bus success"
+        else
+            audit_log "rescan bus=$bus failed"
+            rc=1
+        fi
+    done
+
+    return "$rc"
+}
+backup_fru() {
+    local name="$1"
+    local src_hex="$2"
+    local out
+
+    mkdir -p "$BACKUP_DIR"
+    out="$BACKUP_DIR/${name}.bak"
+
+    if ! printf '%s' "$src_hex" | xxd -r -p > "$out"; then
+        log "[$name] backup: FAILED (hex->file $out)"
+        return 1
+    fi
+
+    BACKUP_LAST_PATH="$out"
+}
+rollback_fru_from_backup() {
+    local name="$1"
+    local path="$2"
+    local backup="$3"
+    local expected_size="$4"
+    local verify_hex verify_size backup_size
+
+    if [ -z "$backup" ] || [ ! -s "$backup" ]; then
+        log "[$name] rollback: invalid backup file ($backup)"
+        return 1
+    fi
+
+    backup_size="$(wc -c < "$backup" 2>/dev/null || echo 0)"
+    if [ "$backup_size" -ne "$expected_size" ]; then
+        log "[$name] rollback: invalid backup size ($backup_size != $expected_size)"
+        return 1
+    fi
+
+    if ! dd_write_with_seek "$backup" "$path" 0; then
+        log "[$name] rollback: write FAILED"
+        return 1
+    fi
+
+    if ! cmp -s "$backup" "$path"; then
+        log "[$name] rollback: verify FAILED (byte-for-byte compare mismatch)"
+        return 1
+    fi
+
+    verify_hex="$(read_fru_hex "$path")"
+    verify_size=$(( ${#verify_hex} / 2 ))
+    if [ "$verify_size" -ne "$expected_size" ]; then
+        log "[$name] rollback: verify FAILED (size mismatch: $verify_size != $expected_size)"
+        return 1
+    fi
+
+    if ! validate_fru_structure "$verify_hex" "$verify_size" "$name"; then
+        log "[$name] rollback: verify FAILED (invalid FRU structure)"
+        return 1
+    fi
+
+    log "[$name] rollback: SUCCESS"
+    return 0
+}
+
+auto_rollback_on_failure() {
+    local name="$1"
+    local path="$2"
+    local backup="$3"
+    local expected_size="$4"
+    local reason="$5"
+        log "[$name] $path: $reason"
+    log "    => Auto-rollback: start"
+
+    if rollback_fru_from_backup "$name" "$path" "$backup" "$expected_size"; then
+        log "    => Auto-rollback: SUCCESS"
+    else
+        log "    !! CRITICAL: auto-rollback FAILED; manual recovery required from $backup"
+        ROLLBACK_FAILED=1
+    fi
+}
+
+read_fru_hex() {
+    local path="$1"
+    xxd -p -c 4096 "$path" | tr -d "\n"
+}
+
+
+byte_at_hex() {
+    local hex="$1"
+    local idx="$2"
+    printf '%d' "$((16#${hex:idx*2:2}))"
+}
+
+replace_byte_in_hex() {
+    local hex="$1"
+    local idx="$2"
+    local value="$3"
+    local pos=$((idx * 2))
+    printf '%s%02x%s' "${hex:0:pos}" "$value" "${hex:pos+2}"
+}
+
+hex_field_to_text() {
+    local hx="$1"
+    printf '%s' "$hx" | xxd -r -p | tr -cd '\11\12\15\40-\176'
+}
+
+trim_string() {
+    local s="$1"
+    s="${s#"${s%%[![:space:]]*}"}"
+    s="${s%"${s##*[![:space:]]}"}"
+    printf '%s' "$s"
+}
+
+to_upper() {
+    printf '%s' "$1" | tr '[:lower:]' '[:upper:]'
+}
+
+normalize_ws() {
+    local s="$1"
+    s="$(printf '%s' "$s" | tr '\t\r\n' '   ' | tr -s ' ')"
+    s="$(trim_string "$s")"
+    printf '%s' "$s"
+}
+
+normalize_upper_ws() {
+    to_upper "$(normalize_ws "$1")"
+}
+
+string_semantic_equal() {
+    local a b
+    a="$(normalize_upper_ws "$1")"
+    b="$(normalize_upper_ws "$2")"
+    [ "$a" = "$b" ]
+}
+
+canonicalize_am4_tokens() {
+    local s
+    s="$(normalize_ws "$1")"
+    if [ -z "$s" ]; then
+        printf '%s' ""
+        return 0
+    fi
+    printf '%s' "$s" | tr ' ' '\n' | sed '/^$/d' | tr '[:lower:]' '[:upper:]' | sort | tr '\n' ' ' | sed 's/ $//'
+}
+
+am4_semantic_equal() {
+    local a b
+    a="$(canonicalize_am4_tokens "$1")"
+    b="$(canonicalize_am4_tokens "$2")"
+    [ "$a" = "$b" ]
+}
+
+bytes_to_hex() {
+    local out=""
+    local b
+    for b in "$@"; do
+        printf -v h '%02x' "$b"
+        out+="$h"
+    done
+    printf '%s' "$out"
+}
+
+dd_write_with_seek() {
+    local input="$1"
+    local output="$2"
+    local seek="$3"
+    local total off rem head mid mid_bytes tail tmp_mid
+
+    total="$(wc -c < "$input" 2>/dev/null || echo 0)"
+    [ "$total" -gt 0 ] || return 1
+
+    off="$seek"
+    rem="$total"
+
+    # Write unaligned head bytes first, then use bs=64 for aligned middle chunk.
+    head=$(( (64 - (off % 64)) % 64 ))
+    [ "$head" -gt "$rem" ] && head="$rem"
+    if [ "$head" -gt 0 ]; then
+        dd if="$input" of="$output" bs=1 skip=0 seek="$off" count="$head" >/dev/null 2>&1 || return 1
+        off=$((off + head))
+        rem=$((rem - head))
+    fi
+
+    mid=$((rem / 64))
+    mid_bytes=$((mid * 64))
+    if [ "$mid" -gt 0 ]; then
+        tmp_mid="$(mktemp /tmp/fru_mid.XXXXXX)" || return 1
+        dd if="$input" of="$tmp_mid" bs=1 skip="$head" count="$mid_bytes" >/dev/null 2>&1 || {
+            rm -f "$tmp_mid"
+            return 1
+        }
+        dd if="$tmp_mid" of="$output" bs=64 seek=$((off / 64)) >/dev/null 2>&1 || \
+        dd if="$tmp_mid" of="$output" bs=1 seek="$off" count="$mid_bytes" >/dev/null 2>&1 || {
+            rm -f "$tmp_mid"
+            return 1
+        }
+        rm -f "$tmp_mid"
+        off=$((off + mid_bytes))
+        rem=$((rem - mid_bytes))
+    fi
+
+    tail="$rem"
+    if [ "$tail" -gt 0 ]; then
+        dd if="$input" of="$output" bs=1 skip=$((total - tail)) seek="$off" count="$tail" >/dev/null 2>&1 || return 1
+    fi
+
+    return 0
+}
+
+mktemp_file() {
+    local prefix="$1"
+    local suffix="$2"
+    local p
+    p="$(mktemp "/tmp/${prefix}.XXXXXX")" || return 1
+    if [ -n "$suffix" ]; then
+        mv "$p" "${p}${suffix}"
+        p="${p}${suffix}"
+    fi
+    printf '%s' "$p"
+}
+
+validate_multirecord_area() {
+    local img_hex="$1"
+    local img_size="$2"
+    local off="$3"
+    local tag="$4"
+
+    local cur="$off"
+    local guard=0
+    local h0 h1 h2 h3 h4 rec_len rec_end eol i sum b
+
+    while true; do
+        guard=$((guard + 1))
+        if [ "$guard" -gt 1024 ]; then
+            log "[$tag] protocol-check: multirecord guard triggered"
+            return 1
+        fi
+
+        if [ $((cur + 5)) -gt "$img_size" ]; then
+            log "[$tag] protocol-check: multirecord header overruns FRU"
+            return 1
+        fi
+
+        h0="$(byte_at_hex "$img_hex" "$cur")"
+        h1="$(byte_at_hex "$img_hex" $((cur + 1)))"
+        h2="$(byte_at_hex "$img_hex" $((cur + 2)))"
+        h3="$(byte_at_hex "$img_hex" $((cur + 3)))"
+        h4="$(byte_at_hex "$img_hex" $((cur + 4)))"
+
+        rec_len="$h2"
+        rec_end=$((cur + 5 + rec_len))
+        if [ "$rec_end" -gt "$img_size" ]; then
+            log "[$tag] protocol-check: multirecord data overruns FRU"
+            return 1
+        fi
+
+        # FRU spec: header checksum covers bytes 0..3 and byte4 is the checksum byte.
+        sum=$((h0 + h1 + h2 + h3 + h4))
+        if [ $((sum & 255)) -ne 0 ]; then
+            log "[$tag] protocol-check: multirecord header checksum invalid"
+            return 1
+        fi
+
+        # FRU spec: record checksum byte (h3) covers only record payload.
+        sum=0
+        for ((i = cur + 5; i < rec_end; i++)); do
+            b="$(byte_at_hex "$img_hex" "$i")"
+            sum=$((sum + b))
+        done
+        sum=$((sum + h3))
+        if [ $((sum & 255)) -ne 0 ]; then
+            log "[$tag] protocol-check: multirecord data checksum invalid"
+            return 1
+        fi
+
+        eol=$((h1 & 128))
+        cur="$rec_end"
+        if [ "$eol" -ne 0 ]; then
+            break
+        fi
+    done
+
+    MULTIREC_END="$cur"
+    return 0
+}
+
+validate_fru_structure() {
+    local img_hex="$1"
+    local img_size="$2"
+    local tag="$3"
+
+    if [ "$img_size" -lt 8 ]; then
+        log "[$tag] protocol-check: FRU too small"
+        return 1
+    fi
+
+    local i b sum off area_len val
+
+    # Common Header must be version 1 and checksum-correct.
+    val="$(byte_at_hex "$img_hex" 0)"
+    if [ "$val" -ne 1 ]; then
+        log "[$tag] protocol-check: invalid common header version ($val)"
+        return 1
+    fi
+
+    sum=0
+    for i in 0 1 2 3 4 5 6 7; do
+        b="$(byte_at_hex "$img_hex" "$i")"
+        sum=$((sum + b))
+    done
+    if [ $((sum & 255)) -ne 0 ]; then
+        log "[$tag] protocol-check: common header checksum invalid"
+        return 1
+    fi
+
+    # Offsets in 8-byte units from common header.
+    local off1 off2 off3 off4 off5
+    off1=$(( $(byte_at_hex "$img_hex" 1) * 8 ))
+    off2=$(( $(byte_at_hex "$img_hex" 2) * 8 ))
+    off3=$(( $(byte_at_hex "$img_hex" 3) * 8 ))
+    off4=$(( $(byte_at_hex "$img_hex" 4) * 8 ))
+    off5=$(( $(byte_at_hex "$img_hex" 5) * 8 ))
+
+    for i in 1 2 3 4 5; do
+        val="$(byte_at_hex "$img_hex" "$i")"
+        [ "$val" -eq 0 ] && continue
+        off=$((val * 8))
+        if [ $((off % 8)) -ne 0 ]; then
+            log "[$tag] protocol-check: area index $i offset not 8-byte aligned"
+            return 1
+        fi
+        if [ "$off" -ge "$img_size" ]; then
+            log "[$tag] protocol-check: area index $i offset out of range ($off)"
+            return 1
+        fi
+    done
+
+    local starts=()
+    local ends=()
+
+    # Internal Use Area (index 1): no standard area-length/checksum field.
+    # Range is [offset1, next area offset) or EOF.
+    if [ "$(byte_at_hex "$img_hex" 1)" -ne 0 ]; then
+        local next_off="$img_size"
+        for off in "$off2" "$off3" "$off4" "$off5"; do
+            if [ "$off" -gt "$off1" ] && [ "$off" -lt "$next_off" ]; then
+                next_off="$off"
+            fi
+        done
+        if [ "$next_off" -le "$off1" ]; then
+            log "[$tag] protocol-check: internal use area has invalid range"
+            return 1
+        fi
+        starts+=("$off1")
+        ends+=("$next_off")
+    fi
+
+    # Chassis/Board/Product areas (index 2/3/4): header length field + area checksum.
+    for i in 2 3 4; do
+        val="$(byte_at_hex "$img_hex" "$i")"
+        [ "$val" -eq 0 ] && continue
+
+        off=$((val * 8))
+        if [ $((off + 1)) -ge "$img_size" ]; then
+            log "[$tag] protocol-check: area index $i has invalid offset ($off)"
+            return 1
+        fi
+
+        area_len=$(( $(byte_at_hex "$img_hex" $((off + 1))) * 8 ))
+        if [ "$area_len" -le 0 ]; then
+            log "[$tag] protocol-check: area index $i has invalid length (0)"
+            return 1
+        fi
+        if [ $((area_len % 8)) -ne 0 ]; then
+            log "[$tag] protocol-check: area index $i length not 8-byte aligned ($area_len)"
+            return 1
+        fi
+        if [ $((off + area_len)) -gt "$img_size" ]; then
+            log "[$tag] protocol-check: area index $i overruns FRU size"
+            return 1
+        fi
+
+        local area_sum=0 j
+        for ((j = off; j < off + area_len; j++)); do
+            b="$(byte_at_hex "$img_hex" "$j")"
+            area_sum=$((area_sum + b))
+        done
+        if [ $((area_sum & 255)) -ne 0 ]; then
+            log "[$tag] protocol-check: area index $i checksum invalid"
+            return 1
+        fi
+
+        starts+=("$off")
+        ends+=("$((off + area_len))")
+    done
+
+    # MultiRecord Area (index 5): per-record header/data checksums.
+    val="$(byte_at_hex "$img_hex" 5)"
+    if [ "$val" -ne 0 ]; then
+        off=$((val * 8))
+        if ! validate_multirecord_area "$img_hex" "$img_size" "$off" "$tag"; then
+            return 1
+        fi
+        starts+=("$off")
+        ends+=("$MULTIREC_END")
+    fi
+
+    # Generic overlap check among all present areas.
+    local a c sa ea sc ec
+    for ((a = 0; a < ${#starts[@]}; a++)); do
+        sa="${starts[$a]}"
+        ea="${ends[$a]}"
+        for ((c = a + 1; c < ${#starts[@]}; c++)); do
+            sc="${starts[$c]}"
+            ec="${ends[$c]}"
+            if [ "$sa" -lt "$ec" ] && [ "$sc" -lt "$ea" ]; then
+                log "[$tag] protocol-check: area overlap detected"
+                return 1
+            fi
+        done
+    done
+
+    return 0
+}
+
+parse_board_fields() {
+    local img_hex="$1"
+    local board_off="$2"
+    local board_len="$3"
+
+    F_TYPES=()
+    F_HEXES=()
+
+    local off=$((board_off + 6))
+    local end=$((board_off + board_len))
+    local tl len typ val_hex val_pos
+    local found_end=0
+
+    while [ "$off" -lt "$end" ]; do
+        tl="$(byte_at_hex "$img_hex" "$off")"
+        if [ "$tl" -eq 193 ]; then
+            found_end=1
+            break
+        fi
+        len=$((tl & 63))
+        typ=$((tl & 192))
+        if [ $((off + 1 + len)) -gt "$end" ]; then
+            log "malformed board area: field overruns area"
+            return 1
+        fi
+        val_pos=$(((off + 1) * 2))
+        val_hex="${img_hex:val_pos:len*2}"
+        F_TYPES+=("$typ")
+        F_HEXES+=("$val_hex")
+        off=$((off + 1 + len))
+    done
+
+    if [ "$found_end" -ne 1 ]; then
+        log "malformed board area: 0xC1 end marker not found"
+        return 1
+    fi
+
+    return 0
+}
+
+get_board_layout() {
+    local img_hex="$1"
+    local img_size="$2"
+
+    BOARD_OFF=$(( $(byte_at_hex "$img_hex" 3) * 8 ))
+    if [ "$BOARD_OFF" -eq 0 ]; then
+        log "no Board Info Area in this FRU (header[3]=0)"
+        return 1
+    fi
+    if [ $((BOARD_OFF + 1)) -ge "$img_size" ]; then
+        log "invalid Board Info offset"
+        return 1
+    fi
+
+    BOARD_LEN=$(( $(byte_at_hex "$img_hex" $((BOARD_OFF + 1))) * 8 ))
+    if [ "$BOARD_LEN" -le 0 ] || [ $((BOARD_OFF + BOARD_LEN)) -gt "$img_size" ]; then
+        log "invalid Board Info length"
+        return 1
+    fi
+
+    BOARD_VER="$(byte_at_hex "$img_hex" "$BOARD_OFF")"
+    BOARD_LANG="$(byte_at_hex "$img_hex" $((BOARD_OFF + 2)))"
+    BOARD_DATE0="$(byte_at_hex "$img_hex" $((BOARD_OFF + 3)))"
+    BOARD_DATE1="$(byte_at_hex "$img_hex" $((BOARD_OFF + 4)))"
+    BOARD_DATE2="$(byte_at_hex "$img_hex" $((BOARD_OFF + 5)))"
+
+    return 0
+}
+
+select_am4_field_index() {
+    local new_value="$1"
+    local custom_start=5
+    local legacy_idx=$((custom_start + CUSTOM_INDEX))
+    local cur_raw cur cur_up
+
+    AM4_FIELD_IDX=""
+    AM4_FIND_MODE=""
+
+    # Target only the AM4 legacy slot (Custom4) instead of scanning all custom fields.
+    if [ "$legacy_idx" -ge "${#F_HEXES[@]}" ]; then
+        AM4_FIELD_IDX="$legacy_idx"
+        AM4_FIND_MODE="append_legacy"
+        return 0
+    fi
+
+    cur_raw="$(hex_field_to_text "${F_HEXES[$legacy_idx]}")"
+    cur="$(trim_string "$cur_raw")"
+    cur_up="$(to_upper "$cur")"
+
+    AM4_FIELD_IDX="$legacy_idx"
+
+    if am4_semantic_equal "$cur" "$new_value"; then
+        AM4_FIND_MODE="already_set"
+        return 0
+    fi
+
+    if [ -z "$cur" ] || [ "$cur_up" = "$(to_upper "$PAD_CUSTOM")" ]; then
+        AM4_FIND_MODE="content_legacy"
+        return 0
+    fi
+
+    AM4_FIND_MODE="legacy_nonempty"
+    return 0
+}
+build_board_hex() {
+    local new_value="$1"
+    local custom_field_idx="$2"
+    local new_hex
+    new_hex="$(printf '%s' "$new_value" | xxd -p -c 4096 | tr -d '\n')"
+    local new_len=$(( ${#new_hex} / 2 ))
+    if [ "$new_len" -gt 63 ]; then
+        log "string exceeds the single type/length field limit (63 bytes)"
+        return 1
+    fi
+
+    local pad_hex
+    pad_hex="$(printf '%s' "$PAD_CUSTOM" | xxd -p -c 4096 | tr -d '\n')"
+
+    while [ "${#F_TYPES[@]}" -lt "$custom_field_idx" ]; do
+        F_TYPES+=(192)
+        F_HEXES+=("$pad_hex")
+    done
+
+    if [ "${#F_TYPES[@]}" -eq "$custom_field_idx" ]; then
+        F_TYPES+=(192)
+        F_HEXES+=("$new_hex")
+    else
+        F_TYPES[custom_field_idx]=192
+        F_HEXES[custom_field_idx]="$new_hex"
+    fi
+
+    BOARD_BYTES=("$BOARD_VER" 0 "$BOARD_LANG" "$BOARD_DATE0" "$BOARD_DATE1" "$BOARD_DATE2")
+
+    local i tl vhx j b
+    for ((i = 0; i < ${#F_TYPES[@]}; i++)); do
+        vhx="${F_HEXES[$i]}"
+        tl=$(( F_TYPES[i] | (${#vhx} / 2) ))
+        BOARD_BYTES+=("$tl")
+        for ((j = 0; j < ${#vhx}; j += 2)); do
+            b=$((16#${vhx:j:2}))
+            BOARD_BYTES+=("$b")
+        done
+    done
+
+    BOARD_BYTES+=(193)
+    while [ $((( ${#BOARD_BYTES[@]} + 1 ) % 8)) -ne 0 ]; do
+        BOARD_BYTES+=(0)
+    done
+    BOARD_BYTES+=(0)
+
+    BOARD_BYTES[1]=$(( ${#BOARD_BYTES[@]} / 8 ))
+
+    local sum=0 checksum idx
+    for ((idx = 0; idx < ${#BOARD_BYTES[@]} - 1; idx++)); do
+        sum=$((sum + BOARD_BYTES[idx]))
+    done
+    checksum=$(( (-sum) & 255 ))
+    BOARD_BYTES[${#BOARD_BYTES[@]}-1]="$checksum"
+
+    NEW_BOARD_HEX="$(bytes_to_hex "${BOARD_BYTES[@]}")"
+    NEW_BOARD_LEN=$(( ${#NEW_BOARD_HEX} / 2 ))
+
+    return 0
+}
+
+process_one() {
+    local name="$1"
+    local path="$2"
+    local new_value="$3"
+
+
+    local orig_hex size
+    local header_hex board_hdr_hex pre_hex
+    local board_off_pre board_len_pre board_end_pre
+
+    size="$(wc -c < "$path" 2>/dev/null || echo 0)"
+    if [ "$size" -lt 8 ]; then
+        log "[$name] $path: FRU too small"
+        return 2
+    fi
+
+    # Fast pre-check path: read only common header and Board area for AM4 decision.
+    header_hex="$(dd if="$path" bs=1 count=8 2>/dev/null | xxd -p -c 4096 | tr -d '\n')"
+    if [ "${#header_hex}" -ne 16 ]; then
+        log "[$name] $path: failed to read FRU common header"
+        return 2
+    fi
+
+    if [ "$(byte_at_hex "$header_hex" 0)" -ne 1 ]; then
+        log "[$name] $path: invalid common header version"
+        return 2
+    fi
+
+    local hdr_sum=0 i b
+    for i in 0 1 2 3 4 5 6 7; do
+        b="$(byte_at_hex "$header_hex" "$i")"
+        hdr_sum=$((hdr_sum + b))
+    done
+    if [ $((hdr_sum & 255)) -ne 0 ]; then
+        log "[$name] $path: common header checksum invalid"
+        return 2
+    fi
+
+    board_off_pre=$(( $(byte_at_hex "$header_hex" 3) * 8 ))
+    if [ "$board_off_pre" -eq 0 ]; then
+        log "[$name] $path: no Board Info Area in this FRU"
+        return 2
+    fi
+    if [ $((board_off_pre + 1)) -ge "$size" ]; then
+        log "[$name] $path: invalid Board Info offset"
+        return 2
+    fi
+
+    board_hdr_hex="$(dd if="$path" bs=1 skip="$board_off_pre" count=2 2>/dev/null | xxd -p -c 4096 | tr -d '\n')"
+    if [ "${#board_hdr_hex}" -ne 4 ]; then
+        log "[$name] $path: failed to read Board Info header"
+        return 2
+    fi
+
+    board_len_pre=$((16#${board_hdr_hex:2:2} * 8))
+    if [ "$board_len_pre" -le 0 ] || [ $((board_off_pre + board_len_pre)) -gt "$size" ]; then
+        log "[$name] $path: invalid Board Info length"
+        return 2
+    fi
+
+    board_end_pre=$((board_off_pre + board_len_pre))
+    pre_hex="$(dd if="$path" bs=1 count="$board_end_pre" 2>/dev/null | xxd -p -c 4096 | tr -d '\n')"
+    if [ "$(( ${#pre_hex} / 2 ))" -ne "$board_end_pre" ]; then
+        log "[$name] $path: failed to read Board Info range"
+        return 2
+    fi
+
+    local board_sum=0
+    for ((i = board_off_pre; i < board_end_pre; i++)); do
+        b="$(byte_at_hex "$pre_hex" "$i")"
+        board_sum=$((board_sum + b))
+    done
+    if [ $((board_sum & 255)) -ne 0 ]; then
+        log "[$name] $path: Board Info checksum invalid"
+        return 2
+    fi
+
+    BOARD_OFF="$board_off_pre"
+    BOARD_LEN="$board_len_pre"
+    BOARD_VER="$(byte_at_hex "$pre_hex" "$BOARD_OFF")"
+    if [ "$BOARD_VER" -ne 1 ]; then
+        log "[$name] $path: invalid Board Info version ($BOARD_VER)"
+        return 2
+    fi
+    BOARD_LANG="$(byte_at_hex "$pre_hex" $((BOARD_OFF + 2)))"
+    BOARD_DATE0="$(byte_at_hex "$pre_hex" $((BOARD_OFF + 3)))"
+    BOARD_DATE1="$(byte_at_hex "$pre_hex" $((BOARD_OFF + 4)))"
+    BOARD_DATE2="$(byte_at_hex "$pre_hex" $((BOARD_OFF + 5)))"
+
+    if ! parse_board_fields "$pre_hex" "$BOARD_OFF" "$BOARD_LEN"; then
+        log "[$name] $path: cannot parse board fields"
+        return 2
+    fi
+
+    local pname=""
+    local pname0="" pname1=""
+    local expected_name
+    expected_name="Anacapa ${name} DVT"
+    if [ "${#F_HEXES[@]}" -gt 0 ]; then
+        pname0="$(trim_string "$(hex_field_to_text "${F_HEXES[0]}")")"
+    fi
+    if [ "${#F_HEXES[@]}" -gt 1 ]; then
+        pname1="$(trim_string "$(hex_field_to_text "${F_HEXES[1]}")")"
+    fi
+    if string_semantic_equal "$pname0" "$expected_name"; then
+        pname="$pname0"
+    elif string_semantic_equal "$pname1" "$expected_name"; then
+        pname="$pname1"
+    elif [ -n "$pname0" ]; then
+        pname="$pname0"
+    else
+        pname="$pname1"
+    fi
+
+
+    if ! string_semantic_equal "$pname" "$expected_name"; then
+        return 10
+    fi
+
+    local custom_field_idx
+    if ! select_am4_field_index "$new_value"; then
+        log "[$name] $path: cannot uniquely determine AM4 field index"
+        return 2
+    fi
+    custom_field_idx="$AM4_FIELD_IDX"
+
+    case "$AM4_FIND_MODE" in
+        already_set)
+            return 11
+            ;;
+        legacy_nonempty)
+            log "[$name] $path: AM4 content differs from expected semantic value"
+            return 10
+            ;;
+        *)
+            ;;
+    esac
+
+
+    # Slow path starts here: only read and validate full FRU when write is needed.
+    orig_hex="$(read_fru_hex "$path")"
+    size=$(( ${#orig_hex} / 2 ))
+    if [ "$size" -lt 8 ]; then
+        log "[$name] $path: FRU too small"
+        return 2
+    fi
+
+    if ! validate_fru_structure "$orig_hex" "$size" "$name"; then
+        log "[$name] $path: pre-check failed (invalid FRU structure)"
+        return 2
+    fi
+
+    if ! get_board_layout "$orig_hex" "$size"; then
+        log "[$name] $path: cannot parse board layout"
+        return 2
+    fi
+
+    if ! parse_board_fields "$orig_hex" "$BOARD_OFF" "$BOARD_LEN"; then
+        log "[$name] $path: cannot parse board fields"
+        return 2
+    fi
+
+    if ! select_am4_field_index "$new_value"; then
+        log "[$name] $path: cannot uniquely determine AM4 field index"
+        return 2
+    fi
+    custom_field_idx="$AM4_FIELD_IDX"
+    case "$AM4_FIND_MODE" in
+        already_set)
+            return 11
+            ;;
+        legacy_nonempty)
+            log "[$name] $path: AM4 content differs from expected semantic value"
+            return 10
+            ;;
+        *)
+            ;;
+    esac
+
+
+    if ! build_board_hex "$new_value" "$custom_field_idx"; then
+        log "[$name] $path: cannot build new board area"
+        return 2
+    fi
+
+    local delta=$((NEW_BOARD_LEN - BOARD_LEN))
+    if [ $((delta % 8)) -ne 0 ]; then
+        log "[$name] $path: board length delta is not 8-byte aligned"
+        return 2
+    fi
+
+    local prefix_len=$((BOARD_OFF * 2))
+    local suffix_pos=$(((BOARD_OFF + BOARD_LEN) * 2))
+    local new_img_hex
+    new_img_hex="${orig_hex:0:prefix_len}${NEW_BOARD_HEX}${orig_hex:suffix_pos}"
+
+    local new_size=$(( ${#new_img_hex} / 2 ))
+    if [ "$new_size" -gt "$size" ]; then
+        local overflow="${new_img_hex:size*2}"
+        if [ -n "${overflow//[fF]/}" ]; then
+            log "[$name] $path: no room to grow board area"
+            return 2
+        fi
+        new_img_hex="${new_img_hex:0:size*2}"
+        new_size=$size
+    elif [ "$new_size" -lt "$size" ]; then
+        for ((i = new_size; i < size; i++)); do
+            new_img_hex+="ff"
+        done
+    fi
+
+    local val nv
+    for i in 1 2 4 5; do
+        val="$(byte_at_hex "$orig_hex" "$i")"
+        if [ "$val" -gt 0 ] && [ $((val * 8)) -gt "$BOARD_OFF" ]; then
+            nv=$((val + delta / 8))
+            if [ "$nv" -gt 255 ]; then
+                log "[$name] $path: shifted header offset overflows 1-byte field (index $i -> $nv)"
+                return 2
+            fi
+            new_img_hex="$(replace_byte_in_hex "$new_img_hex" "$i" "$nv")"
+        fi
+    done
+
+    local sum=0 header_ck
+    for i in 0 1 2 3 4 5 6; do
+        b="$(byte_at_hex "$new_img_hex" "$i")"
+        sum=$((sum + b))
+    done
+    header_ck=$(((-sum) & 255))
+    new_img_hex="$(replace_byte_in_hex "$new_img_hex" 7 "$header_ck")"
+
+    if ! validate_fru_structure "$new_img_hex" "$size" "$name"; then
+        log "[$name] $path: generated FRU failed protocol check"
+        return 2
+    fi
+
+
+    if [ "$new_img_hex" = "$orig_hex" ]; then
+        return 12
+    fi
+
+    local diff_file full_expected current_file lo hi chunk_file backup_path
+    diff_file="$(mktemp_file fru_diff .txt)"
+    full_expected="$(mktemp_file fru_newimg .bin)"
+    chunk_file="$(mktemp_file fru_chunk .bin)"
+
+    printf '%s' "$new_img_hex" | xxd -r -p > "$full_expected"
+    current_file="$(mktemp_file fru_current .bin)"
+    printf '%s' "$orig_hex" | xxd -r -p > "$current_file"
+    if cmp -l "$current_file" "$full_expected" > "$diff_file"; then
+        rm -f "$diff_file" "$full_expected" "$chunk_file" "$current_file"
+        return 12
+    fi
+
+    lo=$(awk 'NR==1{print $1-1}' "$diff_file")
+    hi=$(awk 'END{print $1-1}' "$diff_file")
+
+    if ! dd if="$full_expected" of="$chunk_file" bs=1 skip="$lo" count="$((hi - lo + 1))" >/dev/null 2>&1; then
+        rm -f "$diff_file" "$full_expected" "$chunk_file" "$current_file"
+        log "[$name] $path: failed to prepare write chunk"
+        return 2
+    fi
+
+    # Backup only after we have confirmed a write is required.
+    BACKUP_LAST_PATH=""
+    if ! backup_fru "$name" "$orig_hex"; then
+        rm -f "$diff_file" "$full_expected" "$chunk_file" "$current_file"
+        log "[$name] $path: backup failed, aborting write"
+        return 2
+    fi
+    backup_path="$BACKUP_LAST_PATH"
+    if [ -z "$backup_path" ] || [ ! -s "$backup_path" ]; then
+        rm -f "$diff_file" "$full_expected" "$chunk_file" "$current_file"
+        log "[$name] $path: backup path missing, aborting write"
+        return 2
+    fi
+
+    local backup_size
+    backup_size="$(wc -c < "$backup_path" 2>/dev/null || echo 0)"
+    if [ "$backup_size" -ne "$size" ]; then
+        rm -f "$diff_file" "$full_expected" "$chunk_file" "$current_file"
+        log "[$name] $path: backup size mismatch ($backup_size != $size), aborting write"
+        return 2
+    fi
+    if ! dd_write_with_seek "$chunk_file" "$path" "$lo"; then
+        rm -f "$diff_file" "$full_expected" "$chunk_file" "$current_file"
+        auto_rollback_on_failure "$name" "$path" "$backup_path" "$size" "EEPROM write failed"
+        return 2
+    fi
+
+
+    local verify_file
+    verify_file="$(mktemp_file fru_verify .bin)"
+    if ! dd if="$path" of="$verify_file" bs=1 skip="$lo" count="$((hi - lo + 1))" >/dev/null 2>&1; then
+        rm -f "$diff_file" "$full_expected" "$chunk_file" "$current_file" "$verify_file"
+        auto_rollback_on_failure "$name" "$path" "$backup_path" "$size" "failed to read back written chunk"
+        return 2
+    fi
+    if ! cmp -s "$chunk_file" "$verify_file"; then
+        rm -f "$diff_file" "$full_expected" "$chunk_file" "$current_file" "$verify_file"
+        auto_rollback_on_failure "$name" "$path" "$backup_path" "$size" "verify failed (written byte range mismatch)"
+        return 2
+    fi
+
+    # Lightweight post-write verification: changed-range readback compare is authoritative.
+    rm -f "$diff_file" "$full_expected" "$chunk_file" "$current_file" "$verify_file"
+
+    return 0
+}
+process_one_with_retry() {
+    local name="$1"
+    local path="$2"
+    local value="$3"
+
+    local attempt=1
+    local rc
+
+    while true; do
+        process_one "$name" "$path" "$value"
+        rc=$?
+
+        if [ "$rc" -eq 0 ]; then
+            return 0
+        fi
+
+        if [ "$rc" -eq 10 ] || [ "$rc" -eq 11 ] || [ "$rc" -eq 12 ]; then
+            return "$rc"
+        fi
+
+        if [ "$attempt" -ge "$MAX_RETRY" ]; then
+            return "$rc"
+        fi
+
+        sleep "$RETRY_DELAY_SEC"
+        attempt=$((attempt + 1))
+    done
+}
+
+main() {
+    if ! mkdir -p "$STATE_DIR" "$BACKUP_DIR"; then
+        log "ERROR: cannot create state/backup directory ($STATE_DIR, $BACKUP_DIR)"
+        FINAL_REASON="FAIL_STATE_DIR_CREATE"
+        return 1
+    fi
+
+
+    : > "$RUN_LOG"
+    RUN_TOTAL=0
+    RUN_OK=0
+    RUN_SKIP=0
+    RUN_FAIL=0
+    RUN_WRITE=0
+    RUN_HEALTHY=0
+    RUN_PENDING=0
+
+    if command -v flock >/dev/null 2>&1; then
+        mkdir -p "$(dirname "$LOCK_FILE")"
+        exec 9>"$LOCK_FILE"
+        if ! flock -n 9; then
+            log "Another fru-am4-init-update instance is running; exiting"
+            FINAL_REASON="SKIP_LOCK_HELD"
+            audit_log "lock_busy file=$LOCK_FILE"
+            return 0
+        fi
+    else
+        log "flock not available; continue without lock"
+        audit_log "lock_disabled reason=flock_not_available"
+    fi
+
+    audit_log "run_start unit=$UNIT_NAME invocation_id=${INVOCATION_ID:-unknown} pid=$$ strict_fail=$STRICT_FAIL max_retry=$MAX_RETRY"
+    audit_log "boot_id=$(current_boot_id)"
+    write_reason "STARTED"
+
+    local name pathspec value path rc
+
+    while IFS='|' read -r name pathspec value; do
+        [ -z "${name:-}" ] && continue
+        RUN_TOTAL=$((RUN_TOTAL + 1))
+
+        if ! path="$(wait_resolve_path "$pathspec")"; then
+            RUN_SKIP=$((RUN_SKIP + 1))
+            RUN_PENDING=$((RUN_PENDING + 1))
+            audit_log "target=$name result=SKIP reason=no_candidate_path pathspec=$pathspec"
+            continue
+        fi
+
+        if process_one_with_retry "$name" "$path" "$value"; then
+            RUN_OK=$((RUN_OK + 1))
+            RUN_WRITE=$((RUN_WRITE + 1))
+            RUN_HEALTHY=$((RUN_HEALTHY + 1))
+            record_written_bus "$path"
+            audit_log "target=$name result=OK wrote=1 path=$path"
+        else
+            rc=$?
+            if [ "$rc" -eq 10 ] || [ "$rc" -eq 11 ] || [ "$rc" -eq 12 ]; then
+                RUN_SKIP=$((RUN_SKIP + 1))
+                if [ "$rc" -eq 11 ] || [ "$rc" -eq 12 ]; then
+                    RUN_HEALTHY=$((RUN_HEALTHY + 1))
+                else
+                    RUN_PENDING=$((RUN_PENDING + 1))
+                fi
+                audit_log "target=$name result=SKIP rc=$rc path=$path"
+            else
+                RUN_FAIL=$((RUN_FAIL + 1))
+                audit_log "target=$name result=FAIL rc=$rc path=$path"
+            fi
+        fi
+    done <<EOF2
+$TARGETS
+EOF2
+
+    if [ "$ROLLBACK_FAILED" -eq 1 ] && [ "$ROLLBACK_STRICT" -eq 1 ]; then
+        FINAL_REASON="FAIL_ROLLBACK"
+        log "Exit policy: rollback failed and ROLLBACK_STRICT=1"
+        return 1
+    fi
+
+    if [ "$RUN_WRITE" -gt 0 ]; then
+        if ! rescan_written_buses; then
+            RUN_FAIL=$((RUN_FAIL + 1))
+            audit_log "rescan result=FAIL"
+        else
+            audit_log "rescan result=OK"
+        fi
+    fi
+
+    if [ "$STRICT_FAIL" -eq 1 ]; then
+        if [ "$RUN_FAIL" -eq 0 ] && [ "$RUN_PENDING" -eq 0 ]; then
+            FINAL_REASON="PASS_STRICT"
+            return 0
+        fi
+        FINAL_REASON="FAIL_STRICT_ERRORS"
+        return 1
+    fi
+
+    if [ "$RUN_FAIL" -eq 0 ] && [ "$RUN_PENDING" -eq 0 ]; then
+        if [ "$RUN_WRITE" -gt 0 ]; then
+            FINAL_REASON="PASS_WRITES_DONE"
+        else
+            FINAL_REASON="PASS_NO_WRITE"
+        fi
+
+    else
+        FINAL_REASON="PASS_NON_STRICT_WITH_FAILURES"
+    fi
+
+    return 0
+}
+main "$@"

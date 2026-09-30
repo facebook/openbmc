@@ -114,7 +114,7 @@ bool BmcFpgaComponent::is_valid_image(string image, bool force) {
       comp = FW_BIC_FPGA;
       expected_board_id = BOARD_ID_SB;
       if (get_server_board_revision_id(&board_rev_id, sizeof(board_rev_id)) < 0) {
-        cout << "Failed to get stage of Barton Springs" << endl;
+        cout << "Failed to get stage of " << (is_gc2 ? "Emerald Springs" : "Barton Springs") << endl;
         goto end;
       }
       if (board_rev_id > 0 && is_gc2 == false) {

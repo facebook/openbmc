@@ -1,0 +1,50 @@
+From 27d0b37b85dfed3b56cd8fbd34c1f69b3760ae50 Mon Sep 17 00:00:00 2001
+From: Zane Li <zane.li.wiwynn@gmail.com>
+Date: Thu, 28 May 2026 06:13:48 +0000
+Subject: [PATCH] netlakenext: linux: fix unaligned access in amd sbtsi struct
+
+Description:
+Remove __packed from struct apml_sbtsi_device and move
+dev_static_addr to the end of the structure to keep atomic_t
+and sync primitives naturally aligned.
+
+Motivation:
+- NL2 stress testing found unexpected BMC reboots caused by a kernel panic
+in the AMD SBTSI driver.
+- The __packed attribute removed structure padding and caused
+atomic_t members to become misaligned after u8 dev_static_addr.
+- On ARMv7-A, misaligned LDREX/STREX accesses trigger an Alignment Fault,
+which leads to a kernel panic.
+
+META JIRA: https://metainfra.atlassian.net/browse/NET2-217
+AMD ticket: https://ontrack.amd.com/browse/ECET-28171
+
+Test plan:
+- build pass
+
+Signed-off-by: Zane Li <zane.li.wiwynn@gmail.com>
+---
+ drivers/apml/apml_sbtsi.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/apml/apml_sbtsi.c b/drivers/apml/apml_sbtsi.c
+index 17a20328a..dc625461b 100644
+--- a/drivers/apml/apml_sbtsi.c
++++ b/drivers/apml/apml_sbtsi.c
+@@ -64,11 +64,11 @@ struct apml_sbtsi_device {
+ 	struct miscdevice sbtsi_misc_dev;
+ 	struct regmap *regmap;
+ 	struct mutex lock;
+-	u8 dev_static_addr;
+ 	atomic_t in_progress;
+ 	atomic_t no_new_trans;
+ 	struct completion misc_fops_done;
+-} __packed;
++	u8 dev_static_addr;
++};
+ 
+ /*
+  * From SB-TSI spec: CPU temperature readings and limit registers encode the
+-- 
+2.43.0
+

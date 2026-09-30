@@ -8,6 +8,7 @@ SRC_URI += " \
     file://xyz.openbmc_project.valve.open@.service \
     file://xyz.openbmc_project.valve.close@.service \
     file://valve-event-handler \
+    file://0001-leakdetector-Raise-leakdetector-file-limit.patch \
 "
 
 do_install:append() {

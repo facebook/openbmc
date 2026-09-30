@@ -3,7 +3,7 @@
  *  @details    This module controls the TPMFactoryUpd view and business layers.
  *  @file       Controller.c
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -282,6 +282,35 @@ Controller_ProceedWork(
             unReturnValue = CommandFlow_TpmInfo_Execute(&pIfxUpdate->info);
             if (RC_SUCCESS != unReturnValue)
                 break;
+
+#ifdef WINDOWS
+            if (TPM_DEVICE_ACCESS_WIN_TBS == DeviceManagement_GetDeviceAccessMode())
+            {
+                // Check TPM model. Only TPMs with TPM2.0 based firmware update loaders are supported.
+                if (!pIfxUpdate->info.sTpmState.attribs.tpmHasFULoader20)
+                {
+                    unReturnValue = RC_E_UNSUPPORTED_CHIP;
+                    ERROR_STORE_FMT(unReturnValue, L"Only TPMs with a TPM2.0 based firmware update loader are supported (FW version = %s).", pIfxUpdate->info.wszVersionName);
+                    break;
+                }
+
+                // Check administrative rights for updating TPM firmware
+                if (!IsUserAnAdmin())
+                {
+                    unReturnValue = RC_E_TPM_ACCESS_DENIED;
+                    ERROR_STORE(unReturnValue, L"Administrative rights are required to update the TPM firmware.");
+                    break;
+                }
+
+                // Check if firmware update commands are blocked
+                if (pIfxUpdate->info.fFuCommandsBlocked)
+                {
+                    unReturnValue = RC_E_TPM_COMMANDS_BLOCKED;
+                    ERROR_STORE(unReturnValue, L"TPM firmware update commands will be blocked by TBS.");
+                    break;
+                }
+            }
+#endif // WINDOWS
 
             // Execute command
             (*PppResponseData)->unSize = sizeof(IfxUpdate);

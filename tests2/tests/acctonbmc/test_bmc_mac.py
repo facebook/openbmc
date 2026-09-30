@@ -30,8 +30,9 @@ class BMCMacTest(BaseBMCMacTest, unittest.TestCase):
         self.bmc_interface = "eth0"
 
     def set_valid_mac_pattern(self):
-        # Accton Vendor OUI
+        # Accton Vendor OUIs
         # ref: https://maclookup.app/vendors/accton-technology-corporation
         self.mac_pattern = [
+            r"(9c\:47\:11\:..\:..\:..)",
             r"(ac\:81\:b5\:..\:..\:..)",
         ]

@@ -1,0 +1,46 @@
+From c35e5a5322003085b153eab994bdbee03db4639b Mon Sep 17 00:00:00 2001
+From: Akshay Gupta <akshay.gupta@amd.com>
+Date: Wed, 5 Nov 2025 07:19:56 +0000
+Subject: [PATCH 4/6] sbrmi: Validate the original mailbox command ID with
+ SBRMI_x30
+
+- The firmware mirrors the original mailbox command to
+  SBRMI::OutBndMsg_inst0 (SBRMI_x30).
+  Validating the command ID against this register detects
+  I2C transmission errors, bit-flips, and signal noise, ensuring
+  reliable command execution.
+
+Signed-off-by: Akshay Gupta <Akshay.Gupta@amd.com>
+Signed-off-by: Naveen Krishna Chatradhi <naveenkrishna.chatradhi@amd.com>
+---
+ drivers/apml/sbrmi-common.c | 14 ++++++++++++++
+ 1 file changed, 14 insertions(+)
+
+diff --git a/drivers/apml/sbrmi-common.c b/drivers/apml/sbrmi-common.c
+index c61f9bbbf..15c2aa345 100644
+--- a/drivers/apml/sbrmi-common.c
++++ b/drivers/apml/sbrmi-common.c
+@@ -466,6 +466,20 @@ int rmi_mailbox_xfer(struct apml_sbrmi_device *rmi_dev,
+ 	ret = sbrmi_wait_status(rmi_dev, &sw_status, SW_ALERT_MASK);
+ 	if (ret)
+ 		goto exit_unlock;
++	/*
++	 * The firmware mirrors the original mailbox command to
++	 * SBRMI::OutBndMsg_inst0 (SBRMI_x30). Validating the command ID
++	 * against this register detects I2C transmission errors, bit-flips,
++	 * and signal noise, ensuring reliable command execution.
++	 */
++	ret = regmap_read(rmi_dev->regmap, SBRMI_OUTBNDMSG0, &bytes);
++	if (ret)
++		goto exit_unlock;
++
++	if (bytes != msg->cmd) {
++		ret = -EIO;
++		goto exit_unlock;
++	}
+ 
+ 	ret = regmap_read(rmi_dev->regmap, SBRMI_OUTBNDMSG7, &ec);
+ 	if (ret || (ec && ec != ERR_WITH_DATA))
+-- 
+2.43.0
+

@@ -36,8 +36,9 @@ do_install:append() {
 def dimm_inventory_services(d):
     services = []
     for i in d.getVar('OBMC_HOST_INSTANCES', True).split():
-        for target in ["obmc-host-start@{}.target".format(i),
-                        "obmc-host-reboot@{}.target".format(i)]:
+        # host-start only: DIMM population cannot change on a warm reboot
+        # (12V stays up), so do not re-trigger on obmc-host-reboot.
+        for target in ["obmc-host-start@{}.target".format(i)]:
             services.append("{}:dimm-inventory@{}.service:dimm-inventory@.service".format(
                 target, i))
     return " ".join(services)

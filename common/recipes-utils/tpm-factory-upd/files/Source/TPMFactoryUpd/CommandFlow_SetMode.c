@@ -3,7 +3,7 @@
  *  @details    This module validates if all preconditions are met to switch to the requested operation mode and executes the task.
  *  @file       CommandFlow_SetMode.c
  *
- *  Copyright 2020 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2020 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -83,6 +83,7 @@ CommandFlow_SetMode_Execute(
             Platform_MemorySet(&sAckAuthSessionData, 0, sizeof(sAckAuthSessionData));
             Platform_MemorySet(&sData, 0, sizeof(sData));
 
+            // SetMode needs empty platform authentication
             TSS_TPMI_SH_AUTH_SESSION hPolicySession = 0;
             unReturnValue = FirmwareUpdate_PrepareTPM20Policy(&hPolicySession);
             if (RC_SUCCESS != unReturnValue)

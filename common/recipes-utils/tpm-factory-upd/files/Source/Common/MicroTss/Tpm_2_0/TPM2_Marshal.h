@@ -1241,6 +1241,26 @@ TSS_TPM2B_DIGEST_Unmarshal(
     _Inout_ TSS_INT32*                  PpnSize);
 
 /**
+ *  @brief      Marshals a TSS_TPM2B_DIGEST array
+ *  @details    Refer to: Table 72 - Definition of TPM2B_DIGEST Structure
+ *
+ *  @param      PpSource    Location containing the value that is to be marshaled in to the designated buffer.
+ *  @param      PprgbBuffer Location in the output buffer where the first octet of the TYPE is to be placed.
+ *  @param      PpnSize     Number of octets remaining in **PprgbBuffer.
+ *  @param      PnCount     Number of elements.
+ *
+ *  @retval     RC_SUCCESS  The operation completed successfully.
+ *  @retval     ...         Error codes from called functions.
+ */
+_Check_return_
+unsigned int
+TSS_TPM2B_DIGEST_Array_Marshal(
+    _In_    const TSS_TPM2B_DIGEST*         PpSource,
+    _Inout_ TSS_BYTE**                      PprgbBuffer,
+    _Inout_ TSS_INT32*                      PpnSize,
+    _In_    TSS_INT32                       PnCount);
+
+/**
  *  @brief      Marshals a TPM2B_NONCE type
  *  @details    Refer to: Table 74 - Definition of Types for TPM2B_NONCE
  *
@@ -1609,6 +1629,24 @@ TSS_TPML_HANDLE_Unmarshal(
     _Out_   TSS_TPML_HANDLE*        PpTarget,
     _Inout_ TSS_BYTE**              PprgbBuffer,
     _Inout_ TSS_INT32*              PpnSize);
+
+/**
+ *  @brief      Marshals a TSS_TPML_DIGEST structure
+ *  @details    Refer to: Table 99 - Definition of TPML_DIGEST Structure
+ *
+ *  @param      PpSource    Location containing the value that is to be marshaled in to the designated buffer.
+ *  @param      PprgbBuffer Location in the output buffer where the first octet of the TYPE is to be placed.
+ *  @param      PpnSize     Number of octets remaining in **PprgbBuffer.
+ *
+ *  @retval     RC_SUCCESS  The operation completed successfully.
+ *  @retval     ...         Error codes from called functions.
+ */
+_Check_return_
+unsigned int
+TSS_TPML_DIGEST_Marshal(
+    _In_    const TSS_TPML_DIGEST*          PpSource,
+    _Inout_ TSS_BYTE**                      PprgbBuffer,
+    _Inout_ TSS_INT32*                      PpnSize);
 
 /**
  *  @brief      Unmarshals a TSS_TPML_PCR_SELECTION structure

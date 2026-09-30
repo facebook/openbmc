@@ -10,6 +10,15 @@ if ! busctl get-property \
     echo "WF not active"
     exit
 fi
+wf_fru=$(
+    busctl get-property \
+        xyz.openbmc_project.EntityManager "/xyz/openbmc_project/inventory/system/board/Yosemite_4_Wailua_Falls_Slot_$slot" \
+        xyz.openbmc_project.Inventory.Decorator.Asset Model --timeout=120 2>&1
+)
+if [[ "$wf_fru" == *"without ASIC"* ]]; then
+    echo "Slot $slot does not have ASIC"
+    exit
+fi
 
 MAX_RETRIES=3
 RETRY_COUNT=0

@@ -18,5 +18,6 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files/vr:"
 LOCAL_URI += " \
     file://platform.c \
+    file://plat/meson.build \
     "
 

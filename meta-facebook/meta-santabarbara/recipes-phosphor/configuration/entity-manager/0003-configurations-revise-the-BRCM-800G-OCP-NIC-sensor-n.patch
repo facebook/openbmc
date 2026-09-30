@@ -1,4 +1,4 @@
-From db22804cab31f2bafd3bd3d6c3b771683e14763f Mon Sep 17 00:00:00 2001
+From 95bb652fda962a9eb35b47c48c87cd2aa42578b6 Mon Sep 17 00:00:00 2001
 From: Freddie Jheng <Freddie.Jheng@quantatw.com>
 Date: Mon, 2 Mar 2026 11:00:50 +0800
 Subject: [PATCH] configurations: revise the BRCM 800G OCP NIC sensor name
@@ -46,5 +46,5 @@ index 2ab1c56..767a2a5 100644
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
 -- 
-2.52.0
+2.53.0-Meta
 

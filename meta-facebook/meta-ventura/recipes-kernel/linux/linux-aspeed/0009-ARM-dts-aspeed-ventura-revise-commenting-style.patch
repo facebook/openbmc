@@ -1,0 +1,266 @@
+From ccc38327fce07d55b19fc4513b5887dcfd39e332 Mon Sep 17 00:00:00 2001
+From: "Sue.Wang" <Sue.Wang@quantatw.com>
+Date: Tue, 29 Sep 2026 16:05:18 +0800
+Subject: [PATCH 1/2] meta-facebook-ventura-revise-commenting-style
+
+lore: https://lore.kernel.org/all/20260929075106.74731-
+1-suwangquanta@gmail.com/T/#u
+
+Signed-off-by: Sue.Wang <Sue.Wang@quantatw.com>
+---
+ .../aspeed/aspeed-bmc-facebook-ventura.dts    | 110 +++++++++---------
+ 1 file changed, 57 insertions(+), 53 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
+index 8570f1214..c21542cbe 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
+@@ -7,43 +7,43 @@
+ #include <dt-bindings/gpio/aspeed-gpio.h>
+ 
+ / {
+-	model = "Facebook ventura RMC";
++	model = "Facebook Ventura RMC";
+ 	compatible = "facebook,ventura-rmc", "aspeed,ast2600";
+ 
+ 	aliases {
+ 		serial4 = &uart5;
+-		i2c16 = &i2c3mux0ch3;
+-		i2c17 = &i2c3mux0ch4;
+-		i2c18 = &i2c3mux0ch5;
+-		i2c19 = &i2c3mux0ch6;
+-		i2c20 = &i2c3mux0ch0;
+-		i2c21 = &i2c3mux0ch1;
+-		i2c22 = &i2c3mux0ch2;
+-		i2c23 = &i2c3mux0ch7;
+-		i2c24 = &i2c0mux0ch0;
+-		i2c25 = &i2c0mux0ch1;
+-		i2c26 = &i2c0mux0ch2;
+-		i2c27 = &i2c0mux0ch3;
+-		i2c28 = &i2c0mux0ch4;
+-		i2c29 = &i2c0mux0ch5;
+-		i2c30 = &i2c0mux0ch6;
+-		i2c31 = &i2c0mux0ch7;
+-		i2c32 = &i2c1mux0ch0;
+-		i2c33 = &i2c1mux0ch1;
+-		i2c34 = &i2c1mux0ch2;
+-		i2c35 = &i2c1mux0ch3;
+-		i2c36 = &i2c1mux0ch4;
+-		i2c37 = &i2c1mux0ch5;
+-		i2c38 = &i2c1mux0ch6;
+-		i2c39 = &i2c1mux0ch7;
+-		i2c40 = &i2c2mux0ch0;
+-		i2c41 = &i2c2mux0ch1;
+-		i2c42 = &i2c2mux0ch2;
+-		i2c43 = &i2c2mux0ch3;
+-		i2c44 = &i2c2mux0ch4;
+-		i2c45 = &i2c2mux0ch5;
+-		i2c46 = &i2c2mux0ch6;
+-		i2c47 = &i2c2mux0ch7;
++		i2c16 = &i2c3mux0ch3; /* Fan Board 0 */
++		i2c17 = &i2c3mux0ch4; /* Fan Board 1 */
++		i2c18 = &i2c3mux0ch5; /* Fan IC */
++		i2c19 = &i2c3mux0ch6; /* Rear IO Board */
++		i2c20 = &i2c3mux0ch0; /* NVS Blade 7 */
++		i2c21 = &i2c3mux0ch1; /* NVS Blade 8 */
++		i2c22 = &i2c3mux0ch2; /* NVS Blade 9 */
++		i2c23 = &i2c3mux0ch7; /* Reserved */
++		i2c24 = &i2c0mux0ch0; /* Compute Blade 1 */
++		i2c25 = &i2c0mux0ch1; /* Compute Blade 2 */
++		i2c26 = &i2c0mux0ch2; /* Compute Blade 3 */
++		i2c27 = &i2c0mux0ch3; /* Compute Blade 4 */
++		i2c28 = &i2c0mux0ch4; /* Compute Blade 5 */
++		i2c29 = &i2c0mux0ch5; /* Compute Blade 6 */
++		i2c30 = &i2c0mux0ch6; /* Compute Blade 7 */
++		i2c31 = &i2c0mux0ch7; /* Compute Blade 8 */
++		i2c32 = &i2c1mux0ch0; /* Compute Blade 9 */
++		i2c33 = &i2c1mux0ch1; /* Compute Blade 10 */
++		i2c34 = &i2c1mux0ch2; /* Compute Blade 11 */
++		i2c35 = &i2c1mux0ch3; /* Compute Blade 12 */
++		i2c36 = &i2c1mux0ch4; /* Compute Blade 13 */
++		i2c37 = &i2c1mux0ch5; /* Compute Blade 14 */
++		i2c38 = &i2c1mux0ch6; /* Compute Blade 15 */
++		i2c39 = &i2c1mux0ch7; /* Compute Blade 16 */
++		i2c40 = &i2c2mux0ch0; /* Compute Blade 17 */
++		i2c41 = &i2c2mux0ch1; /* Compute Blade 18 */
++		i2c42 = &i2c2mux0ch2; /* NVS Blade 1 */
++		i2c43 = &i2c2mux0ch3; /* NVS Blade 2 */
++		i2c44 = &i2c2mux0ch4; /* NVS Blade 3 */
++		i2c45 = &i2c2mux0ch5; /* NVS Blade 4 */
++		i2c46 = &i2c2mux0ch6; /* NVS Blade 5 */
++		i2c47 = &i2c2mux0ch7; /* NVS Blade 6 */
+ 	};
+ 
+ 	chosen {
+@@ -997,7 +997,7 @@ adc@35 {
+ 				reg = <0x35>;
+ 			};
+ 
+-			// Fan Board 0 FRU
++			/* Fan Board 0 FRU */
+ 			eeprom@56 {
+ 				compatible = "atmel,24c128";
+ 				reg = <0x56>;
+@@ -1037,7 +1037,7 @@ adc@35 {
+ 				reg = <0x35>;
+ 			};
+ 
+-			// Fan Board 1 FRU
++			/* Fan Board 1 FRU */
+ 			eeprom@56 {
+ 				compatible = "atmel,24c128";
+ 				reg = <0x56>;
+@@ -1069,49 +1069,49 @@ hwmon: hwmon@23 {
+ 				reg = <0x23>;
+ 				#pwm-cells = <2>;
+ 
+-				//fan 0 IL
++				/* fan 0 IL */
+ 				fan-0 {
+ 					pwms = <&hwmon 0 20000>;
+ 					tach-ch = /bits/ 8 <0x09>;
+ 				};
+ 
+-				//fan 0 OL
++				/* fan 0 OL */
+ 				fan-1 {
+ 					pwms = <&hwmon 0 20000>;
+ 					tach-ch = /bits/ 8 <0x0B>;
+ 				};
+ 
+-				//fan 1 IL
++				/* fan 1 IL */
+ 				fan-2 {
+ 					pwms = <&hwmon 4 20000>;
+ 					tach-ch = /bits/ 8 <0x0A>;
+ 				};
+ 
+-				//fan 1 OL
++				/* fan 1 OL */
+ 				fan-3 {
+ 					pwms = <&hwmon 4 20000>;
+ 					tach-ch = /bits/ 8 <0x0D>;
+ 				};
+ 
+-				//fan 2 IL
++				/* fan 2 IL */
+ 				fan-4 {
+ 					pwms = <&hwmon 6 20000>;
+ 					tach-ch = /bits/ 8 <0x0F>;
+ 				};
+ 
+-				//fan 2 OL
++				/* fan 2 OL */
+ 				fan-5 {
+ 					pwms = <&hwmon 6 20000>;
+ 					tach-ch = /bits/ 8 <0x01>;
+ 				};
+ 
+-				//fan 3 IL
++				/* fan 3 IL */
+ 				fan-6 {
+ 					pwms = <&hwmon 10 20000>;
+ 					tach-ch = /bits/ 8 <0x00>;
+ 				};
+ 
+-				//fan 3 OL
++				/* fan 3 OL */
+ 				fan-7 {
+ 					pwms = <&hwmon 10 20000>;
+ 					tach-ch = /bits/ 8 <0x03>;
+@@ -1124,7 +1124,7 @@ i2c3mux0ch6: i2c@6 {
+ 			#size-cells = <0>;
+ 			reg = <6>;
+ 
+-			// REAR-IO Board FRU
++			/* REAR-IO Board FRU */
+ 			eeprom@56 {
+ 				compatible = "atmel,24c128";
+ 				reg = <0x56>;
+@@ -1147,19 +1147,19 @@ &i2c4 {
+ &i2c5 {
+ 	status = "okay";
+ 
+-	// VR TEMP U399
++	/* VR TEMP U399 */
+ 	temperature-sensor@4c {
+ 		compatible = "ti,tmp75";
+ 		reg = <0x4c>;
+ 	};
+ 
+-	// VR TEMP U397
++	/* VR TEMP U397 */
+ 	temperature-sensor@4d {
+ 		compatible = "ti,tmp75";
+ 		reg = <0x4d>;
+ 	};
+ 
+-	// BRICK TEMP U398
++	/* BRICK TEMP U398 */
+ 	temperature-sensor@4e {
+ 		compatible = "ti,tmp75";
+ 		reg = <0x4e>;
+@@ -1170,7 +1170,7 @@ temperature-sensor@4f {
+ 		reg = <0x4f>;
+ 	};
+ 
+-	// RMC FRU
++	/* RMC FRU */
+ 	eeprom@54 {
+ 		compatible = "atmel,24c128";
+ 		reg = <0x54>;
+@@ -1213,7 +1213,7 @@ &i2c7 {
+ 	multi-master;
+ 	i2c-scl-clk-low-timeout-us = <31744>;
+ 
+-	//USB Debug Connector
++	/* USB Debug Connector */
+ 	ipmb@10 {
+ 		compatible = "ipmb-dev";
+ 		reg = <(0x10 | I2C_OWN_SLAVE_ADDRESS)>;
+@@ -1224,19 +1224,19 @@ ipmb@10 {
+ &i2c9 {
+ 	status = "okay";
+ 
+-	// SCM TEMP SENSOR
++	/* SCM TEMP SENSOR */
+ 	temperature-sensor@4b {
+ 		compatible = "ti,tmp75";
+ 		reg = <0x4b>;
+ 	};
+ 
+-	// SCM FRU EEPROM
++	/* SCM FRU EEPROM */
+ 	eeprom@50 {
+ 		compatible = "atmel,24c128";
+ 		reg = <0x50>;
+ 	};
+ 
+-	// BSM FRU EEPROM
++	/* BSM FRU EEPROM */
+ 	eeprom@56 {
+ 		compatible = "atmel,24c64";
+ 		reg = <0x56>;
+@@ -1401,7 +1401,7 @@ tray_leds_g6_gpio: gpio@26 {
+ 		#gpio-cells = <2>;
+ 	};
+ 
+-	// LED Board FRU
++	/* LED Board FRU */
+ 	eeprom@56 {
+ 		compatible = "atmel,24c128";
+ 		reg = <0x56>;
+@@ -1421,6 +1421,10 @@ fixed-link {
+ 
+ &mdio0 {
+ 	status = "okay";
++	/* Intentionally left empty.
++	 * Enabled to allow user-space tools (e.g., mdio)
++	 * to access the unmanaged Marvell switch registers.
++	 */
+ };
+ 
+ &sgpiom0 {
+-- 
+2.34.1
+

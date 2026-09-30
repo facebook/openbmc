@@ -1,0 +1,55 @@
+From a0ea1c176c8c86281d392247678751bd5b15c7f3 Mon Sep 17 00:00:00 2001
+From: Fred Chen <fredchen.openbmc@gmail.com>
+Date: Fri, 7 Aug 2026 10:55:36 +0800
+Subject: [PATCH 1005/1008] ARM: dts: aspeed: santabarbara: Disable power
+ monitor nodes
+
+Due to a design change, this power monitor IC now has multiple
+sources, and different vendors' parts require different drivers.
+Disable these nodes so the kernel does not auto-probe a driver, and
+let userspace instantiate the correct driver based on the part
+actually populated on the board.
+
+lore link: https://lore.kernel.org/all/20260807083415.672008-3-fredchen.openbmc@gmail.com/
+
+Signed-off-by: Fred Chen <fredchen.openbmc@gmail.com>
+---
+ arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+index ab50fd0b1..2772ae739 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-santabarbara.dts
+@@ -610,24 +610,28 @@ power-monitor@40 {
+ 				compatible = "ti,ina230";
+ 				reg = <0x40>;
+ 				shunt-resistor = <2000>;
++				status = "disabled";
+ 			};
+ 
+ 			power-monitor@41 {
+ 				compatible = "ti,ina230";
+ 				reg = <0x41>;
+ 				shunt-resistor = <2000>;
++				status = "disabled";
+ 			};
+ 
+ 			power-monitor@44 {
+ 				compatible = "ti,ina230";
+ 				reg = <0x44>;
+ 				shunt-resistor = <2000>;
++				status = "disabled";
+ 			};
+ 
+ 			power-monitor@45 {
+ 				compatible = "ti,ina230";
+ 				reg = <0x45>;
+ 				shunt-resistor = <2000>;
++				status = "disabled";
+ 			};
+ 		};
+ 
+-- 
+2.39.3
+

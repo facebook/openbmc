@@ -24,4 +24,6 @@ SRC_URI:append = " \
     file://1001-ARM-dts-aspeed-fblite-r1-fixup-device-settings.patch \
     file://1002-ARM-dts-aspeed-fblite-r1-increase-hostflash-size.patch \
     file://1003-ARM-dts-aspeed-fblite-r1-enable-snoop-device.patch \
+    file://0608-Update-the-AMD-APML-kernel-driver-apml_modules.patch \
+    file://1005-ARM-dts-aspeed-fblite-r1-add-AMD-APML-device-to-i2c14.patch \
 "

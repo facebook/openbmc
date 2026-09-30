@@ -114,6 +114,14 @@ class Rackmon {
       std::vector<FileRecord>& records,
       ModbusTime timeout = ModbusTime::zero());
 
+  // Get the name of the interface a device is reachable on
+  std::string getInterfaceName(
+      uint8_t deviceAddress,
+      std::optional<uint8_t> port) const;
+
+  // Get the names of all interfaces managed by rackmond.
+  std::vector<std::string> getInterfaceNames() const;
+
   // Get status of devices
   std::vector<ModbusDeviceInfo> listDevices() const;
 

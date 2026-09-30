@@ -17,6 +17,7 @@
  */
 
 #include <errno.h>
+#include <stddef.h>
 #include <stdio.h>
 
 #include <facebook/wedge_eeprom.h>
@@ -39,23 +40,37 @@ void read_local_mac(char *buffer)
 }
 
 /*
+ * Every EEPROM elbert exposes, in the order show_tech collected them.
+ */
+static const char *elbert_targets[] = {
+  "CHASSIS", "SMB", "SCM",
+  "PIM2", "PIM3", "PIM4", "PIM5", "PIM6", "PIM7", "PIM8", "PIM9",
+  "SMB_EXTRA", "BMC",
+};
+#define ELBERT_NUM_TARGETS \
+  (sizeof(elbert_targets) / sizeof(elbert_targets[0]))
+
+static void usage(const char *prog)
+{
+  printf("Usage: %s [-a | --all | <device>]\n", prog);
+  printf("   -a | --all : print every EEPROM device\n");
+  printf("   <device>   : one of");
+  for (size_t i = 0; i < ELBERT_NUM_TARGETS; i++)
+    printf(" %s", elbert_targets[i]);
+  printf(" (default CHASSIS)\n");
+}
+
+/*
  * Following fruid info translates to thrift structures in Fboss
  * and has a dependency in FBNet
  */
 
-int main(int argc, const char *argv[])
+static int dump_eeprom(const char *fn)
 {
-  const char *fn;
   struct wedge_eeprom_st eeprom;
   int rc;
   char local_mac[20];
   uint8_t parsed_mac[6];
-
-  if (argc >= 2) {
-    fn = argv[1];
-  } else {
-    fn = "CHASSIS";
-  }
 
   rc = elbert_eeprom_parse(fn, &eeprom);
   if (rc) {
@@ -100,4 +115,40 @@ int main(int argc, const char *argv[])
   printf("CRC8: 0x%x\n", eeprom.fbw_crc8);
 
   return 0;
+}
+
+int main(int argc, const char *argv[])
+{
+  const char *fn;
+
+  if (argc >= 2 &&
+      (!strcmp(argv[1], "-h") || !strcmp(argv[1], "--help"))) {
+    usage(argv[0]);
+    return 0;
+  }
+
+  if (argc >= 2 &&
+      (!strcmp(argv[1], "-a") || !strcmp(argv[1], "--all"))) {
+    int failed = 0;
+
+    /*
+     * Keep going when a device is absent: on a partly populated chassis
+     * some PIM slots are empty, and the rest of the dump is still useful.
+     */
+    for (size_t i = 0; i < ELBERT_NUM_TARGETS; i++) {
+      if (i)
+        printf("\n");
+      if (dump_eeprom(elbert_targets[i]))
+        failed++;
+    }
+    return failed == (int)ELBERT_NUM_TARGETS ? -1 : 0;
+  }
+
+  if (argc >= 2) {
+    fn = argv[1];
+  } else {
+    fn = "CHASSIS";
+  }
+
+  return dump_eeprom(fn) ? -1 : 0;
 }

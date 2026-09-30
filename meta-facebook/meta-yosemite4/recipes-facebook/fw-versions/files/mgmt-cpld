@@ -1,7 +1,10 @@
 #!/bin/bash
 set -e
 
-version=$(cpld-fw-handler version -i i2c -b 35 -a 0x40 | awk '{print $NF}')
+version=$(cpld-fw-handler version -i i2c -b 35 -a 0x40 |
+    awk 'BEGIN { sep="" }
+         { printf "%s%s", sep, $NF; sep=" " }
+         END { print "" }')
 
 busctl set-property \
     xyz.openbmc_project.Settings \

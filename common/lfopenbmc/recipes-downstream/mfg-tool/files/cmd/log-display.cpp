@@ -7,17 +7,89 @@
 #include <phosphor-logging/lg2.hpp>
 #include <sdbusplus/async.hpp>
 #include <sdbusplus/message.hpp>
+#include <sdbusplus/utility/merge_variants.hpp>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cstdint>
 #include <filesystem>
 #include <format>
+#include <map>
 #include <string>
+#include <string_view>
+#include <unordered_map>
+#include <vector>
 
 namespace mfgtool::cmds::log_display
 {
 PHOSPHOR_LOG2_USING;
+namespace log_entry = dbuspath::log_entry;
+
+// An entry may carry optional extension interfaces alongside the entry
+// itself, so the variant has to cover the properties of both.
+using PropertiesVariant = sdbusplus::utility::merge_variants_t<
+    log_entry::Proxy::PropertiesVariant,
+    log_entry::cper_processed::Proxy::PropertiesVariant>;
+
+using DBusInterfacesMap = utils::mapper::interfaces_map_t<PropertiesVariant>;
+
+/** Add the CPER data from an entry's CPER extension to the entry's json. */
+static void add_cper(
+    js& entry_json, const sdbusplus::object_path& objpath,
+    const utils::mapper::properties_map_t<PropertiesVariant>& properties)
+{
+    try
+    {
+        auto props =
+            log_entry::cper_processed::Proxy::properties_t::unpack(properties);
+
+        auto cper = json::empty_map();
+        cper["diagnostic_data_type"] =
+            sdbusplus::message::convert_to_string(props.diagnostic_data_type);
+
+        // A GUID is only applicable to one of the content types; the other
+        // is reported as an empty string.
+        if (!props.notification_type.empty())
+        {
+            cper["notification_type"] = props.notification_type;
+        }
+        if (!props.section_type.empty())
+        {
+            cper["section_type"] = props.section_type;
+        }
+
+        // Each Oem value is a Redfish-compliant JSON object carried as a
+        // string.  Display it as json so the output stays readable, but fall
+        // back to the raw string if a producer sends something unparsable.
+        if (!props.oem.empty())
+        {
+            auto oem = json::empty_map();
+            for (const auto& [vendor, value] : props.oem)
+            {
+                auto parsed = js::parse(value, nullptr, false);
+                if (parsed.is_discarded())
+                {
+                    warning("Unparsable CPER Oem json from {VENDOR}: {PATH}",
+                            "VENDOR", vendor, "PATH", objpath.str);
+                    oem[vendor] = value;
+                }
+                else
+                {
+                    oem[vendor] = std::move(parsed);
+                }
+            }
+            cper["oem"] = std::move(oem);
+        }
+
+        entry_json["cper"] = std::move(cper);
+    }
+    catch (const sdbusplus::exception_t& e)
+    {
+        warning("Failed to parse CPER extension: {PATH}, error: {ERROR}",
+                "PATH", objpath.str, "ERROR", e.what());
+    }
+}
 
 struct command
 {
@@ -32,38 +104,46 @@ struct command
 
     auto run(sdbusplus::async::context& ctx) -> sdbusplus::async::task<>
     {
-        namespace log_entry = dbuspath::log_entry;
-
         const auto event_defs = utils::redfish_registry::load();
 
         auto result = json::empty_map();
         auto log_value = std::vector<std::pair<std::string, js>>{};
 
         debug("Finding log entries.");
-        co_await utils::mapper::subtree_for_each(
-            ctx, log_entry::ns_path, log_entry::interface,
-
-            [&](const auto& path,
-                const auto& service) -> sdbusplus::async::task<> {
-                if (service != log_entry::service)
+        auto log_entry_srvs = co_await utils::mapper::subtree_services(
+            ctx, log_entry::ns_path, log_entry::interface, 0);
+        for (const auto& [path, services] : log_entry_srvs)
+        {
+            for (const auto& srv : services)
+            {
+                if (srv != log_entry::service)
                 {
                     warning("Entry ({PATH}) not hosted by logging service.",
                             "PATH", path);
-                    co_return;
+                }
+            }
+        }
+
+        co_await utils::mapper::managed_objects_for_each<PropertiesVariant>(
+            ctx, std::array{log_entry::ns_path},
+            std::array{log_entry::interface},
+            [&](const auto& objpath, const auto& interfaces, const auto&) {
+                auto iface = interfaces.find(log_entry::interface);
+                if (iface == interfaces.end() ||
+                    !objpath.str.starts_with(log_entry::ns_path))
+                {
+                    return;
                 }
 
                 try
                 {
-                    auto entry = log_entry::Proxy(ctx)
-                                     .service(log_entry::service)
-                                     .path(path.str);
-
-                    auto properties = co_await entry.properties();
+                    auto properties =
+                        log_entry::Proxy::properties_t::unpack(iface->second);
 
                     if (properties.resolved && arg_unresolved_only)
                     {
                         debug("Resolved and filtered out.");
-                        co_return;
+                        return;
                     }
 
                     auto& entry_json = result[std::to_string(properties.id)];
@@ -133,15 +213,27 @@ struct command
                         redfish["args"] = std::move(args);
                         entry_json["redfish"] = std::move(redfish);
                     }
+
+                    // The CPER extension is optional and only present on
+                    // entries created from a CPER.
+                    if (auto ext = interfaces.find(
+                            log_entry::cper_processed::interface);
+                        ext != interfaces.end())
+                    {
+                        add_cper(entry_json, objpath, ext->second);
+                    }
+
                     log_value.emplace_back(std::to_string(properties.id),
                                            std::move(entry_json));
                 }
                 catch (...)
                 {
                     warning("Failed to parse log entry: {PATH}", "PATH",
-                            path.str);
+                            objpath.str);
                 }
-            });
+            },
+            log_entry::service);
+
         json::sort_json_values(log_value);
         auto json_result = json::merge_duplicate_keys_to_json(log_value);
         json::display(json_result);

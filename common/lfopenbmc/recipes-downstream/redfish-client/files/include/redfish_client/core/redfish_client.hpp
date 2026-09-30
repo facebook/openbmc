@@ -1,15 +1,12 @@
 #include <redfish_client/core/config.hpp>
-#include <redfish_client/core/sensor.hpp>
-#include <redfish_client/core/sensor_dbus_object.hpp>
-#include <redfish_client/core/log_service_handler.hpp>
 
 #include <sdbusplus/async.hpp>
 #include <xyz/openbmc_project/ObjectMapper/client.hpp>
 
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 namespace redfish_client::core
@@ -23,7 +20,8 @@ class RedfishClient
     RedfishClient(sdbusplus::async::context& ctx, const std::string& configDir,
                   const std::string& persistDir);
 
-    RedfishClient(sdbusplus::async::context& ctx, const Config& config,
+    RedfishClient(sdbusplus::async::context& ctx,
+                  const std::vector<Config>& configs,
                   const std::string& persistDir);
 
     auto run() -> sdbusplus::async::task<>;
@@ -31,17 +29,11 @@ class RedfishClient
     ~RedfishClient();
 
   private:
-    std::optional<Sensor> readWithRetries(const SensorMapper& mapper);
-
-    auto runEventPollingLoop() -> sdbusplus::async::task<>;
-
-    void runSensorLoop();
-
     auto loadConfig() -> sdbusplus::async::task<>;
 
     void registerLogMappers();
 
-    Config loadCompatibleConfig(
+    std::vector<Config> loadCompatibleConfigs(
         const std::string& configDir,
         const std::vector<std::string>& compatiblePlatformNames);
 
@@ -57,14 +49,9 @@ class RedfishClient
         -> sdbusplus::async::task<std::vector<std::string>>;
 
     sdbusplus::async::context& ctx;
-    std::unordered_map<std::string, std::shared_ptr<SensorDbusObject>> metrics;
-    std::vector<std::shared_ptr<LogServiceHandler>> logServiceHandlers;
     std::string configDir;
-    std::optional<Config> config;
-    std::thread sensorThread;
+    std::vector<Config> configs;
     std::string persistDir;
-    std::unordered_map<std::string, std::unique_ptr<AsyncHttpHandle>>
-        httpHandles;
 };
 
 } // namespace redfish_client::core

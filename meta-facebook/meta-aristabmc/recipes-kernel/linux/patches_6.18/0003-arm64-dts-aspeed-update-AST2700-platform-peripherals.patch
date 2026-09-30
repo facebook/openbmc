@@ -1,0 +1,584 @@
+From 34a53b6a7c6db8f2d75460823037cc4da8400986 Mon Sep 17 00:00:00 2001
+From: Bianca Giocas <bgiocas@arista.com>
+Date: Fri, 4 Sep 2026 10:50:53 +0000
+Subject: [PATCH] arm64: dts: aspeed: Update AST2700 platform peripherals
+
+Align the local AST2700 common DTS and pinctrl descriptions with the
+Aspeed v6.18 tree while retaining the local flattened
+interrupt-controller topology. Update the SRAM mappings, pinctrl
+register windows, SoC1 clock assignments, UART descriptions, SPI2,
+MDIO, JTAG1, and LPC0 UART-routing node.
+
+Add the UART TX/RX and JTAG reset pinctrl states required by the
+updated AST2700 peripheral nodes.
+
+Ported from: https://github.com/AspeedTech-BMC/linux/blob/aspeed-master-v6.18/arch/arm64/boot/dts/aspeed/aspeed-g7.dtsi
+Upstreaming in progress: https://lore.kernel.org/linux-aspeed/20250904103401.88287-5-billy_tsai@aspeedtech.com/
+
+Upstream-Status: Pending
+Signed-off-by: Bianca Giocas <bgiocas@arista.com>
+---
+ .../boot/dts/aspeed/aspeed-g7-common.dtsi     | 142 ++++++++++++++----
+ .../boot/dts/aspeed/aspeed-g7-pinctrl.dtsi    | 114 ++++++++++++++
+ 2 files changed, 224 insertions(+), 32 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
+index 4711628aa60c..ff762cbdf8b8 100644
+--- a/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
++++ b/arch/arm64/boot/dts/aspeed/aspeed-g7-common.dtsi
+@@ -13,12 +13,13 @@ &soc0 {
+ 	sram0: sram@10000000 {
+ 		compatible = "mmio-sram";
+ 		reg = <0x0 0x10000000 0x0 0x20000>;
+-		ranges = <0x0 0x0 0x10000000 0x20000>;
+-		#address-cells = <1>;
+-		#size-cells = <1>;
++		ranges = <0x0 0x0 0x0 0x10000000 0x0 0x20000>;
++		#address-cells = <2>;
++		#size-cells = <2>;
++		no-memory-wc;
+ 
+-		soc0-sram@0 {
+-			reg = <0x0 0x20000>;
++		exported@0 {
++			reg = <0 0x0 0 0x20000>;
+ 			export;
+ 		};
+ 	};
+@@ -100,7 +101,7 @@ scu_ic1: interrupt-controller@1e0 {
+ 
+ 		pinctrl0: pinctrl@400 {
+ 			compatible = "aspeed,ast2700-soc0-pinctrl";
+-			reg = <0x400 0x318>;
++			reg = <0x400 0x600>;
+ 		};
+ 	};
+ 
+@@ -118,7 +119,7 @@ gpio0: gpio@12c11000 {
+ 	};
+ 
+ 	uart4: serial@12c1a000 {
+-		compatible = "ns16550a";
++		compatible = "aspeed,ast2700-uart";
+ 		reg = <0x0 0x12c1a000 0x0 0x1000>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+@@ -148,12 +149,13 @@ &soc1 {
+ 	sram1: sram@14b80000 {
+ 		compatible = "mmio-sram";
+ 		reg = <0x0 0x14b80000 0x0 0x40000>;
+-		ranges = <0x0 0x0 0x14b80000 0x40000>;
+-		#address-cells = <1>;
+-		#size-cells = <1>;
++		ranges = <0x0 0x0 0x0 0x14b80000 0x0 0x40000>;
++		#address-cells = <2>;
++		#size-cells = <2>;
++		no-memory-wc;
+ 
+-		soc1-sram@0 {
+-			reg = <0x0 0x40000>;
++		exported@0 {
++			reg = <0 0x0 0 0x40000>;
+ 			export;
+ 		};
+ 	};
+@@ -167,6 +169,11 @@ syscon1: syscon@14c02000 {
+ 		#clock-cells = <1>;
+ 		#reset-cells = <1>;
+ 
++		assigned-clocks = <&syscon1 SCU1_CLK_MACHCLK>,
++					<&syscon1 SCU1_CLK_RGMII>,
++					<&syscon1 SCU1_CLK_RMII>;
++		assigned-clock-rates = <200000000>, <125000000>, <50000000>;
++
+ 		scu_ic2: interrupt-controller@100 {
+ 			compatible = "aspeed,ast2700-scu-ic2";
+ 			reg = <0x100 0x8>;
+@@ -185,7 +192,7 @@ scu_ic3: interrupt-controller@108 {
+ 
+ 		pinctrl1: pinctrl@400 {
+ 			compatible = "aspeed,ast2700-soc1-pinctrl";
+-			reg = <0x400 0x2A0>;
++			reg = <0x400 0x100>;
+ 		};
+ 	};
+ 
+@@ -250,156 +257,201 @@ otp: otp@14c07000 {
+ 	};
+ 
+ 	uart0: serial@14c33000 {
+-		compatible = "ns16550a";
++		compatible = "aspeed,ast2700-uart";
+ 		reg = <0x0 0x14c33000 0x0 0x100>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+ 		clocks = <&syscon1 SCU1_CLK_GATE_UART0CLK>;
++		resets = <&lpc0_reset 4>;
+ 		interrupts-extended = <&intc1 135>;
+ 		no-loopback-test;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_txd0_default &pinctrl_rxd0_default>;
++		dma-channel = <0>;
+ 		status = "disabled";
+ 	};
+ 
+ 	uart1: serial@14c33100 {
+-		compatible = "ns16550a";
++		compatible = "aspeed,ast2700-uart";
+ 		reg = <0x0 0x14c33100 0x0 0x100>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+ 		clocks = <&syscon1 SCU1_CLK_GATE_UART1CLK>;
++		resets = <&lpc0_reset 5>;
+ 		interrupts-extended = <&intc1 136>;
+ 		no-loopback-test;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_txd1_default &pinctrl_rxd1_default>;
++		dma-channel = <1>;
+ 		status = "disabled";
+ 	};
+ 
+ 	uart2: serial@14c33200 {
+-		compatible = "ns16550a";
++		compatible = "aspeed,ast2700-uart";
+ 		reg = <0x0 0x14c33200 0x0 0x100>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+ 		clocks = <&syscon1 SCU1_CLK_GATE_UART2CLK>;
++		resets = <&lpc0_reset 6>;
+ 		interrupts-extended = <&intc1 137>;
+ 		no-loopback-test;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_txd2_default &pinctrl_rxd2_default>;
++		dma-channel = <2>;
+ 		status = "disabled";
+ 	};
+ 
+ 	uart3: serial@14c33300 {
+-		compatible = "ns16550a";
++		compatible = "aspeed,ast2700-uart";
+ 		reg = <0x0 0x14c33300 0x0 0x100>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+ 		clocks = <&syscon1 SCU1_CLK_GATE_UART3CLK>;
++		resets = <&lpc0_reset 7>;
+ 		interrupts-extended = <&intc1 138>;
+ 		no-loopback-test;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_txd3_default &pinctrl_rxd3_default>;
++		dma-channel = <3>;
+ 		status = "disabled";
+ 	};
+ 
+ 	uart5: serial@14c33400 {
+-		compatible = "ns16550a";
++		compatible = "aspeed,ast2700-uart";
+ 		reg = <0x0 0x14c33400 0x0 0x100>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+ 		clocks = <&syscon1 SCU1_CLK_GATE_UART5CLK>;
++		resets = <&lpc1_reset 4>;
+ 		interrupts-extended = <&intc1 139>;
+ 		no-loopback-test;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_txd5_default &pinctrl_rxd5_default>;
++		dma-channel = <4>;
+ 		status = "disabled";
+ 	};
+ 
+ 	uart6: serial@14c33500 {
+-		compatible = "ns16550a";
++		compatible = "aspeed,ast2700-uart";
+ 		reg = <0x0 0x14c33500 0x0 0x100>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+ 		clocks = <&syscon1 SCU1_CLK_GATE_UART6CLK>;
++		resets = <&lpc1_reset 5>;
+ 		interrupts-extended = <&intc1 140>;
+ 		no-loopback-test;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_txd6_default &pinctrl_rxd6_default>;
++		dma-channel = <5>;
+ 		status = "disabled";
+ 	};
+ 
+ 	uart7: serial@14c33600 {
+-		compatible = "ns16550a";
++		compatible = "aspeed,ast2700-uart";
+ 		reg = <0x0 0x14c33600 0x0 0x100>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+ 		clocks = <&syscon1 SCU1_CLK_GATE_UART7CLK>;
++		resets = <&lpc1_reset 6>;
+ 		interrupts-extended = <&intc1 141>;
+ 		no-loopback-test;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_txd7_default &pinctrl_rxd7_default>;
++		dma-channel = <6>;
+ 		status = "disabled";
+ 	};
+ 
+ 	uart8: serial@14c33700 {
+-		compatible = "ns16550a";
++		compatible = "aspeed,ast2700-uart";
+ 		reg = <0x0 0x14c33700 0x0 0x100>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+ 		clocks = <&syscon1 SCU1_CLK_GATE_UART8CLK>;
++		resets = <&lpc1_reset 7>;
+ 		interrupts-extended = <&intc1 142>;
+ 		no-loopback-test;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_txd8_default &pinctrl_rxd8_default>;
++		dma-channel = <7>;
+ 		status = "disabled";
+ 	};
+ 
+ 	uart9: serial@14c33800 {
+-		compatible = "ns16550a";
++		compatible = "aspeed,ast2700-uart";
+ 		reg = <0x0 0x14c33800 0x0 0x100>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+ 		clocks = <&syscon1 SCU1_CLK_GATE_UART9CLK>;
+ 		interrupts-extended = <&intc1 143>;
+ 		no-loopback-test;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_txd9_default &pinctrl_rxd9_default>;
++		dma-channel = <8>;
+ 		status = "disabled";
+ 	};
+ 
+ 	uart10: serial@14c33900 {
+-		compatible = "ns16550a";
++		compatible = "aspeed,ast2700-uart";
+ 		reg = <0x0 0x14c33900 0x0 0x100>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+ 		clocks = <&syscon1 SCU1_CLK_GATE_UART10CLK>;
+ 		interrupts-extended = <&intc1 144>;
+ 		no-loopback-test;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_txd10_default &pinctrl_rxd10_default>;
++		dma-channel = <9>;
+ 		status = "disabled";
+ 	};
+ 
+ 	uart11: serial@14c33a00 {
+-		compatible = "ns16550a";
++		compatible = "aspeed,ast2700-uart";
+ 		reg = <0x0 0x14c33a00 0x0 0x100>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+ 		clocks = <&syscon1 SCU1_CLK_GATE_UART11CLK>;
+ 		interrupts-extended = <&intc1 145>;
+ 		no-loopback-test;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_txd11_default &pinctrl_rxd11_default>;
++		dma-channel = <10>;
+ 		status = "disabled";
+ 	};
+ 
+ 	uart12: serial@14c33b00 {
+-		compatible = "ns16550a";
++		compatible = "aspeed,ast2700-uart";
+ 		reg = <0x0 0x14c33b00 0x0 0x100>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+ 		clocks = <&syscon1 SCU1_CLK_GATE_UART12CLK>;
+ 		interrupts-extended = <&intc1 146>;
+ 		no-loopback-test;
++		pinctrl-names = "default";
++		dma-channel = <11>;
+ 		status = "disabled";
+ 	};
+ 
+ 	uart13: serial@14c33c00 {
+-		compatible = "ns16550a";
++		compatible = "aspeed,ast2700-uart";
+ 		reg = <0x0 0x14c33c00 0x0 0x100>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+ 		clocks = <&syscon1 SCU1_CLK_UART13>;
+ 		interrupts-extended = <&intc1 23>;
+ 		no-loopback-test;
++		pinctrl-names = "default";
+ 		status = "disabled";
+ 	};
+ 
+ 	uart14: serial@14c33d00 {
+-		compatible = "ns16550a";
++		compatible = "aspeed,ast2700-uart";
+ 		reg = <0x0 0x14c33d00 0x0 0x100>;
+ 		reg-shift = <2>;
+ 		reg-io-width = <4>;
+ 		clocks = <&syscon1 SCU1_CLK_UART14>;
+ 		interrupts-extended = <&intc1 55>;
+ 		no-loopback-test;
++		pinctrl-names = "default";
+ 		status = "disabled";
+ 	};
+ 
+@@ -507,6 +559,7 @@ spi2: spi@14030000 {
+ 		#size-cells = <0>;
+ 		compatible = "aspeed,ast2700-spi";
+ 		clocks = <&syscon1 SCU1_CLK_AHB>;
++		resets = <&syscon1 SCU1_RESET_SPI2>;
+ 		interrupts-extended = <&intc1 124>;
+ 		status = "disabled";
+ 		num-cs = <2>;
+@@ -530,12 +583,10 @@ flash@1 {
+ 
+ 	mdio0: mdio@14040000 {
+ 		compatible = "aspeed,ast2700-mdio", "aspeed,ast2600-mdio";
+-		reg = <0x0 0x14040000 0x0 0x8>;
++		reg = <0 0x14040000 0 0x8>;
+ 		resets = <&syscon1 SCU1_RESET_MII>;
+ 		pinctrl-names = "default";
+ 		pinctrl-0 = <&pinctrl_mdio0_default>;
+-		#address-cells = <1>;
+-		#size-cells = <0>;
+ 		status = "disabled";
+ 	};
+ 
+@@ -581,8 +632,19 @@ adc1: adc@14c00100 {
+ 		status = "disabled";
+ 	};
+ 
++	jtag1: jtag@14c09000 {
++		compatible = "aspeed,ast2700-jtag";
++		reg= <0x0 0x14c09000 0x0 0x40>;
++		interrupts-extended = <&intc1 162>;
++		clocks = <&syscon1 SCU1_CLK_AHB>;
++		resets = <&syscon1 SCU1_RESET_JTAG1>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_jtagm1_default &pinctrl_jtagm1trst_default>;
++		status = "disabled";
++	};
++
+ 	lpc0: lpc@14c31000 {
+-		compatible = "aspeed,ast2600-lpc-v2", "simple-mfd", "syscon";
++		compatible = "aspeed,ast2700-lpc", "simple-mfd", "syscon";
+ 		reg = <0x0 0x14c31000 0x0 0x1000>;
+ 		reg-io-width = <4>;
+ 
+@@ -639,12 +701,28 @@ lpc0_reset: reset-controller@98 {
+ 		};
+ 
+ 		lpc0_uart_routing: uart-routing@98 {
+-			compatible = "aspeed,ast2600-uart-routing";
++			compatible = "aspeed,ast2700n0-uart-routing";
+ 			reg = <0x98 0x8>;
+ 			status = "disabled";
+ 		};
+ 	};
+ 
++	lpc1: lpc@14c32000 {
++		compatible = "aspeed,ast2700-lpc", "simple-mfd", "syscon";
++		reg = <0x0 0x14c32000 0x0 0x1000>;
++		reg-io-width = <4>;
++
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges = <0x0 0x0 0x14c32000 0x1000>;
++
++		lpc1_reset: reset-controller@98 {
++			compatible = "aspeed,ast2600-lpc-reset";
++			reg = <0x98 0x4>;
++			#reset-cells = <1>;
++		};
++	};
++
+ 	wdt0: watchdog@14c37000 {
+ 		compatible = "aspeed,ast2700-wdt";
+ 		reg = <0x0 0x14c37000 0x0 0x80>;
+diff --git a/arch/arm64/boot/dts/aspeed/aspeed-g7-pinctrl.dtsi b/arch/arm64/boot/dts/aspeed/aspeed-g7-pinctrl.dtsi
+index 219fdd9e9885..128ecad7f73f 100644
+--- a/arch/arm64/boot/dts/aspeed/aspeed-g7-pinctrl.dtsi
++++ b/arch/arm64/boot/dts/aspeed/aspeed-g7-pinctrl.dtsi
+@@ -490,6 +490,11 @@ pinctrl_jtagm1_default: jtagm1-default-state {
+ 		groups = "JTAGM1";
+ 	};
+ 
++	pinctrl_jtagm1trst_default: jtagm1trst-default {
++		function = "JTAGM1";
++		groups = "JTAGM1TRST";
++	};
++
+ 	pinctrl_mdio0_default: mdio0-default-state {
+ 		function = "MDIO0";
+ 		groups = "MDIO0";
+@@ -1114,6 +1119,16 @@ pinctrl_nrts0_default: nrts0-default-state {
+ 		groups = "NRTS0";
+ 	};
+ 
++	pinctrl_txd0_default: txd0-default {
++		function = "UART0";
++		groups = "TXD0";
++	};
++
++	pinctrl_rxd0_default: rxd0-default {
++		function = "UART0";
++		groups = "RXD0";
++	};
++
+ 	pinctrl_uart0_default: uart0-default-state {
+ 		function = "UART0";
+ 		groups = "UART0";
+@@ -1149,15 +1164,44 @@ pinctrl_nrts1_default: nrts1-default-state {
+ 		groups = "NRTS1";
+ 	};
+ 
++	pinctrl_txd1_default: txd1-default {
++		function = "UART1";
++		groups = "TXD1";
++	};
++
++	pinctrl_rxd1_default: rxd1-default {
++		function = "UART1";
++		groups = "RXD1";
++	};
++
+ 	pinctrl_uart1_default: uart1-default-state {
+ 		function = "UART1";
+ 		groups = "UART1";
+ 	};
+ 
++	pinctrl_txd2_default: txd2-default {
++		function = "UART2";
++		groups = "TXD2";
++	};
++
++	pinctrl_rxd2_default: rxd2-default {
++		function = "UART2";
++		groups = "RXD2";
++	};
++
+ 	pinctrl_uart2_default: uart2-default-state {
+ 		function = "UART2";
+ 		groups = "UART2";
+ 	};
++	pinctrl_txd3_default: txd3-default {
++		function = "UART3";
++		groups = "TXD3";
++	};
++
++	pinctrl_rxd3_default: rxd3-default {
++		function = "UART3";
++		groups = "RXD3";
++	};
+ 
+ 	pinctrl_uart3_default: uart3-default-state {
+ 		function = "UART3";
+@@ -1194,6 +1238,16 @@ pinctrl_nrts5_default: nrts5-default-state {
+ 		groups = "NRTS5";
+ 	};
+ 
++	pinctrl_txd5_default: txd5-default {
++		function = "UART5";
++		groups = "TXD5";
++	};
++
++	pinctrl_rxd5_default: rxd5-default {
++		function = "UART5";
++		groups = "RXD5";
++	};
++
+ 	pinctrl_uart5_default: uart5-default-state {
+ 		function = "UART5";
+ 		groups = "UART5";
+@@ -1234,32 +1288,92 @@ pinctrl_uart6_default: uart6-default-state {
+ 		groups = "UART6";
+ 	};
+ 
++	pinctrl_txd6_default: txd6-default {
++		function = "UART6";
++		groups = "TXD6";
++	};
++
++	pinctrl_rxd6_default: rxd6-default {
++		function = "UART6";
++		groups = "RXD6";
++	};
++
+ 	pinctrl_uart7_default: uart7-default-state {
+ 		function = "UART7";
+ 		groups = "UART7";
+ 	};
+ 
++	pinctrl_txd7_default: txd7-default {
++		function = "UART7";
++		groups = "TXD7";
++	};
++
++	pinctrl_rxd7_default: rxd7-default {
++		function = "UART7";
++		groups = "RXD7";
++	};
++
+ 
+ 	pinctrl_uart8_default: uart8-default-state {
+ 		function = "UART8";
+ 		groups = "UART8";
+ 	};
+ 
++	pinctrl_txd8_default: txd8-default {
++		function = "UART8";
++		groups = "TXD8";
++	};
++
++	pinctrl_rxd8_default: rxd8-default {
++		function = "UART8";
++		groups = "RXD8";
++	};
++
+ 	pinctrl_uart9_default: uart9-default-state {
+ 		function = "UART9";
+ 		groups = "UART9";
+ 	};
++	
++	pinctrl_txd9_default: txd9-default {
++		function = "UART9";
++		groups = "TXD9";
++	};
++
++	pinctrl_rxd9_default: rxd9-default {
++		function = "UART9";
++		groups = "RXD9";
++	};
+ 
+ 	pinctrl_uart10_default: uart10-default-state {
+ 		function = "UART10";
+ 		groups = "UART10";
+ 	};
+ 
++	pinctrl_txd10_default: txd10-default {
++		function = "UART10";
++		groups = "TXD10";
++	};
++
++	pinctrl_rxd10_default: rxd10-default {
++		function = "UART10";
++		groups = "RXD10";
++	};
++
+ 	pinctrl_uart11_default: uart11-default-state {
+ 		function = "UART11";
+ 		groups = "UART11";
+ 	};
+ 
++	pinctrl_txd11_default: txd11-default {
++		function = "UART11";
++		groups = "TXD11";
++	};
++
++	pinctrl_rxd11_default: rxd11-default {
++		function = "UART11";
++		groups = "RXD11";
++	};
++
+ 	pinctrl_pcierc2_perst_default: pcierc2-perst-default-state {
+ 		function = "PCIERC";
+ 		groups = "PE2SGRSTN";
+-- 
+2.51.0

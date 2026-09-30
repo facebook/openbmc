@@ -33,4 +33,5 @@ do_install:append() {
   install -m 0644 ${UNPACKDIR}/ipmbd@.service ${D}${systemd_system_unitdir}
 }
 
-SYSTEMD_SERVICE:${PN} += "ipmbd@.service ipmbd.target"
+FILES:${PN} += "${systemd_system_unitdir}/ipmbd@.service"
+SYSTEMD_SERVICE:${PN} += "ipmbd.target"

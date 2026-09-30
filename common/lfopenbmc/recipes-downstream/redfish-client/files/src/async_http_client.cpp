@@ -5,6 +5,7 @@
 #include <sdbusplus/async/timer.hpp>
 
 #include <format>
+#include <vector>
 
 namespace redfish_client::core
 {
@@ -285,22 +286,80 @@ sdbusplus::async::task<AsyncHttpResponse> AsyncHttpHandle::perform(
         }
         if (fdioEnabled)
         {
-            constexpr auto fdSize = 1;
-            curl_waitfd fds[fdSize];
+            // curl_multi_waitfds() returns CURLM_OUT_OF_MEMORY when the
+            // supplied buffer is too small to hold every descriptor curl wants
+            // to wait on, setting fdCount to the number required. Size the
+            // buffer to demand and retry instead of treating that as fatal
+            // (newer libcurl reports >1 descriptor where it previously did not).
+            std::vector<curl_waitfd> fds(1);
             unsigned int fdCount = 0;
-            if (auto res =
-                    curl_multi_waitfds(multiHandle, fds, fdSize, &fdCount);
-                res != CURLM_OK)
+            auto res = curl_multi_waitfds(multiHandle, fds.data(),
+                                          static_cast<unsigned int>(fds.size()),
+                                          &fdCount);
+            if (res == CURLM_OUT_OF_MEMORY && fdCount > fds.size())
+            {
+                fds.resize(fdCount);
+                res = curl_multi_waitfds(multiHandle, fds.data(),
+                                         static_cast<unsigned int>(fds.size()),
+                                         &fdCount);
+            }
+            if (res != CURLM_OK)
             {
                 throw std::runtime_error(std::format(
                     "curl_multi_waitfds failed: {}", curl_multi_strerror(res)));
             }
-            if (fdCount == 0 || (fds[0].events & CURL_WAIT_POLLIN) == 0)
+            // curl must be driven again whenever its internal timer expires,
+            // not only when a socket becomes readable (e.g. while connecting,
+            // while waiting to write, or for keep-alive/timeout handling).
+            // Bound every wait by curl's requested timeout so progress is
+            // always made; without a finite bound the fdio wait below blocks
+            // forever on an EPOLLIN edge that newer libcurl may never produce.
+            long curlTimeoutMs = -1;
+            curl_multi_timeout(multiHandle, &curlTimeoutMs);
+            constexpr long maxWaitMs = 100;
+            if (curlTimeoutMs < 0 || curlTimeoutMs > maxWaitMs)
             {
+                // No timer set, or a long one: cap so we re-check periodically.
+                curlTimeoutMs = maxWaitMs;
+            }
+            else if (curlTimeoutMs < 1)
+            {
+                // curl wants an immediate re-drive; floor to avoid a hot loop.
+                curlTimeoutMs = 1;
+            }
+            // Find the first descriptor curl wants to read from, if any.
+            const curl_waitfd* readable = nullptr;
+            for (unsigned int i = 0; i < fdCount && i < fds.size(); ++i)
+            {
+                if ((fds[i].events & CURL_WAIT_POLLIN) != 0)
+                {
+                    readable = &fds[i];
+                    break;
+                }
+            }
+            if (readable == nullptr)
+            {
+                // Nothing to read yet (connecting/writing or timer-only wait);
+                // wait out curl's timeout, then drive it again.
+                co_await sdbusplus::async::sleep_for(
+                    ctx, std::chrono::milliseconds(curlTimeoutMs));
                 continue;
             }
-            sdbusplus::async::fdio fdioInstance{ctx, fds[0].fd};
-            co_await fdioInstance.next();
+            // Wake as soon as the socket is readable, but never block longer
+            // than curl's timeout. fdio throws fdio_timeout_exception when the
+            // timer fires first; treat that as "drive curl again".
+            sdbusplus::async::fdio fdioInstance{
+                ctx, readable->fd,
+                std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::milliseconds(curlTimeoutMs))};
+            try
+            {
+                co_await fdioInstance.next();
+            }
+            catch (const sdbusplus::async::fdio_timeout_exception&)
+            {
+                // Timed out waiting for readability; loop to re-drive curl.
+            }
         }
         else
         {

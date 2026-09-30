@@ -37,6 +37,10 @@
 
 #define MAX_VER_STR_LEN 80
 
+//VR IC_DEVICE_ID block read length, 2 for XDPE152xx and 6 for TPS53689
+#define VR_DEVID_LEN_MIN 0x2
+#define VR_DEVID_LEN_MAX 0x6
+
 //FRU
 #define FRUID_READ_COUNT_MAX 0x20
 #define FRUID_WRITE_COUNT_MAX 0x20
@@ -60,6 +64,9 @@
 #define XDPE19283B_CONF_SIZE 1416
 #define PRODUCT_ID_XDPE19283 0x95
 #endif
+
+#define ME_RETRY_DELAY_SEC      1
+#define ME_STATE_INITIAL_DELAY  10
 
 typedef struct _sdr_rec_hdr_t {
   uint16_t rec_id;
@@ -204,37 +211,48 @@ bic_me_recovery(uint8_t command) {
   uint8_t rlen = 0;
   int ret = 0;
   int retry = 0;
+  const char *cmd_name = "Unknown";
+  const int log_level = fbgc_common_is_grandcanyon2() ? LOG_WARNING : LOG_CRIT;
 
-  while (retry <= MAX_RETRY) {
-    tbuf[0] = 0xB8;
-    tbuf[1] = 0xDF;
-    tbuf[2] = 0x57;
-    tbuf[3] = 0x01;
-    tbuf[4] = 0x00;
-    tbuf[5] = command;
-    tlen = 6;
+  if (command == RECOVERY_MODE) {
+    cmd_name = "Restart using Recovery Firmware";
+  } else if (command == RESTORE_FACTORY_DEFAULT) {
+    cmd_name = "Restore Factory Default";
+  }
+
+  tbuf[0] = 0xB8;
+  tbuf[1] = 0xDF;
+  tbuf[2] = 0x57;
+  tbuf[3] = 0x01;
+  tbuf[4] = 0x00;
+  tbuf[5] = command;
+  tlen = 6;
+
+  for (retry = 0; retry <= MAX_RETRY; retry++) {
+    memset(rbuf, 0, sizeof(rbuf));
+    rlen = 0;
 
     ret = bic_me_xmit(tbuf, tlen, rbuf, &rlen);
-    if (ret != 0) {
-      retry++;
-      sleep(1);
-      continue;
-    }
-    else {
+    if (ret == 0) {
       break;
     }
+
+    if (retry < MAX_RETRY) {
+      sleep(ME_RETRY_DELAY_SEC);
+    }
   }
-  if (retry == MAX_RETRY + 1) { //if the third retry still failed, return -1
+
+  if (ret != 0) {
+#ifndef CONFIG_GRANDCANYON2
     syslog(LOG_CRIT, "%s: Restart using Recovery Firmware failed..., retried: %d", __func__,  retry);
+#endif
     return -1;
   }
 
-  sleep(10);
-  retry = 0;
-  memset(&tbuf, 0, sizeof(tbuf));
-  memset(&rbuf, 0, sizeof(rbuf));
+  sleep(ME_STATE_INITIAL_DELAY);
+
   /*
-      0x6 0x4: Get Self-Test Results
+    0x6 0x4: Get Self-Test Results
     Byte 1 - Completion Code
     Byte 2
       = 55h - No error. All Self-Tests Passed.
@@ -244,33 +262,45 @@ bic_me_recovery(uint8_t command) {
       =02h - recovery mode entered by IPMI command "Force ME Recovery"
   */
   //Using ME self-test result to check if the ME Recovery Command Success or not
-  while (retry <= MAX_RETRY) {
-    tbuf[0] = 0x18;
-    tbuf[1] = 0x04;
-    tlen = 2;
+  memset(tbuf, 0, sizeof(tbuf));
+  tbuf[0] = 0x18;
+  tbuf[1] = 0x04;
+  tlen = 2;
+
+  for (retry = 0; retry <= MAX_RETRY; retry++) {
+    memset(rbuf, 0, sizeof(rbuf));
+    rlen = 0;
+
     ret = bic_me_xmit(tbuf, tlen, rbuf, &rlen);
-    if (ret != 0) {
-      retry++;
-      sleep(1);
-      continue;
+
+    if ((ret == 0) && (rlen >= 3)) {
+      if ((command == RECOVERY_MODE) &&
+          (rbuf[1] == 0x81) &&
+          (rbuf[2] == 0x02)) {
+        return 0;
+      }
+
+      if ((command == RESTORE_FACTORY_DEFAULT) &&
+          (rbuf[1] == 0x55) &&
+          (rbuf[2] == 0x00)) {
+        return 0;
+      }
+
+      break;
     }
 
-    //if Get Self-Test Results is 0x55 0x00, means No error. All Self-Tests Passed.
-    //if Get Self-Test Results is 0x81 0x02, means Firmware entered Recovery bootloader mode
-    if ((command == RECOVERY_MODE) && (rbuf[1] == 0x81) && (rbuf[2] == 0x02)) {
-      return 0;
-    } else if ((command == RESTORE_FACTORY_DEFAULT) && (rbuf[1] == 0x55) && (rbuf[2] == 0x00)) {
-      return 0;
-    } else {
-      return -1;
+    if (retry < MAX_RETRY) {
+      sleep(ME_RETRY_DELAY_SEC);
     }
   }
-  if (retry == MAX_RETRY + 1) { //if the third retry still failed, return -1
-    syslog(LOG_CRIT, "%s: Restore Factory Default failed..., retried: %d", __func__,  retry);
-    return -1;
+
+  if ((ret == 0) && (rlen < 3)) {
+    syslog(log_level, "Failed to verify ME state for \"%s\": incomplete self-test response, rlen=%u", cmd_name, rlen);
+  } else {
+    syslog(log_level, "Failed to verify ME state for \"%s\", ret=%d, self-test=0x%02x 0x%02x", cmd_name, ret, rbuf[1], rbuf[2]);
   }
 
-  return 0;
+  return -1;
 }
 
 // Custom Command for getting vr version/device id
@@ -280,6 +310,7 @@ bic_get_vr_device_id(uint8_t *rbuf, uint8_t *rlen, uint8_t bus, uint8_t addr) {
   uint8_t tlen = 0;
   int ret = 0;
 
+#ifndef CONFIG_GRANDCANYON2
   // set VR page
   tbuf[0] = (bus << 1) + 1;
   tbuf[1] = addr;
@@ -288,37 +319,59 @@ bic_get_vr_device_id(uint8_t *rbuf, uint8_t *rlen, uint8_t bus, uint8_t addr) {
   tbuf[4] = 0x01;
   tlen = 5;
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, rlen);
-#ifdef CONFIG_GRANDCANYON2
-  if (ret < 0) {
-    syslog(LOG_WARNING,
-           "%s():%d Page set failed for addr=0x%02X, "
-           "still trying to read device ID. ret=%d",
-           __func__, __LINE__, addr, ret);
-  }
-#else
   if (ret < 0) {
     syslog(LOG_WARNING, "%s():%d Failed to send command code to switch VR page. ret=%d", __func__,__LINE__, ret);
     return ret;
   }
 #endif
 
+  //Get first byte to check device id length
   tbuf[0] = (bus << 1) + 1;
   tbuf[1] = addr;
-  tbuf[2] = 0x07; //read back 7 bytes
+  tbuf[2] = 0x01; //read back 1 byte
   tbuf[3] = 0xAD; //get device id command
   tlen = 4;
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, rlen);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s() Failed to get vr device id, ret=%d", __func__, ret);
+  } else if ((rbuf[0] < VR_DEVID_LEN_MIN) || (rbuf[0] > VR_DEVID_LEN_MAX)) {
+    syslog(LOG_WARNING, "%s() Invalid vr device id length: 0x%02X", __func__, rbuf[0]);
+    ret = -1;
   } else {
-    *rlen = rbuf[0]; //read cnt
-    memmove(rbuf, &rbuf[1], *rlen);
+    //Get full device id
+    tbuf[2] = 1 + rbuf[0]; //read back length byte + device_id bytes
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() Failed to get vr device id, ret=%d", __func__, ret);
+    } else {
+      *rlen = rbuf[0]; //read cnt
+      memmove(rbuf, &rbuf[1], *rlen);
+    }
   }
 
   return ret;
 }
 
 #ifdef CONFIG_GRANDCANYON2
+// Pause (enable=0) or resume (enable=1) BIC firmware's background VR sensor-monitor
+int
+bic_set_vr_sensor_monitor(uint8_t enable) {
+  uint8_t sm_tbuf[8] = {0};
+  uint8_t sm_rbuf[8] = {0};
+  uint8_t sm_rlen = sizeof(sm_rbuf);
+  int ret;
+
+  memcpy(sm_tbuf, (uint8_t *)&META_IANA_ID, IANA_ID_SIZE);
+  sm_tbuf[3] = enable ? 0x1 : 0x0;
+  ret = bic_ipmb_wrapper(NETFN_OEM_1S_REQ, CMD_OEM_1S_SET_VR_MON_ENABLE, sm_tbuf, 4, sm_rbuf, &sm_rlen);
+  if (ret == 0 && !enable) {
+    // Give BIC time to finish any in-flight VR PMBus transaction (e.g. a page switch)
+    // started before disable took effect.
+    msleep(10);
+  }
+  return ret;
+}
+
 int
 bic_get_ifx_vr_version_mfr(uint8_t bus, uint8_t addr, uint8_t *ver_data) {
   uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
@@ -327,87 +380,104 @@ bic_get_ifx_vr_version_mfr(uint8_t bus, uint8_t addr, uint8_t *ver_data) {
   uint8_t rlen = 0;
   int ret = 0;
 
+  if (ver_data == NULL) {
+    syslog(LOG_ERR, "%s: pointer is NULL\n", __func__);
+    return -1;
+  }
+
   tbuf[0] = (bus << 1) + 1;
   tbuf[1] = addr;
 
-  // Set Register Pointer (RPTR = 0x10)
   tbuf[2] = 0x00; // read cnt
-  tbuf[3] = 0x10; // RPTR register
-  tbuf[4] = 0x00; // Initialize data
+  tbuf[3] = 0x10; // write protect
+  tbuf[4] = 0x00; // unlock
   tlen = 5;
   
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to initialize RPTR", __func__);
-    goto error_exit;
+    syslog(LOG_WARNING, "%s() Failed to unlock WP", __func__);
+    return ret;
   }
 
-  // Initialize MFR_FW_COMMAND
-  tbuf[2] = 0x00; // read cnt
-  tbuf[3] = CMD_INF_VR_MFR_EXECUTE; // 0xFE
-  tbuf[4] = 0x00; // Initialize/clear
-  tlen = 5;
-  
-  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to initialize MFR_FW_COMMAND", __func__);
-    goto error_exit;
+  usleep(300);
+
+  // Retry the init(0xFD)->execute(0xFE)->read(0xFD) sequence up to MAX_RETRY times on failure
+  for (int attempt = 0; attempt < MAX_RETRY; attempt++) {
+    // Step 1 : Explicitly initialize MFR_FW_COMMAND_DATA (0xFD)
+    tbuf[2] = 0x00; // read cnt
+    tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD (MFR_FW_COMMAND_DATA)
+    tbuf[4] = 0x04; // block write byte count = 4
+    tbuf[5] = 0x00; // header_code = 0 (query total checksum)
+    tbuf[6] = 0x00; // XVcode = 0
+    tbuf[7] = 0x00; // reserved
+    tbuf[8] = 0x00; // partition_number = 0
+    tlen = 9;
+
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() attempt %d/%d failed to initialize MFR_FW_COMMAND_DATA (0xFD), retrying",
+             __func__, attempt + 1, MAX_RETRY);
+      continue;
+    }
+
+    usleep(300);
+
+    // Step 2 : Execute GET_CRC command (0x2D).
+    tbuf[2] = 0x00; // read cnt
+    tbuf[3] = CMD_INF_VR_MFR_EXECUTE; // 0xFE
+    tbuf[4] = INF_VR_CMD_GET_VERSION; // 0x2D (GET_CRC)
+    tlen = 5;
+
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() attempt %d/%d failed to execute GET_CRC command, retrying",
+             __func__, attempt + 1, MAX_RETRY);
+      continue;
+    }
+
+    // Wait for command execution completion (GET_CRC needs 20ms)
+    usleep(20000); // 20ms
+
+    // Step 3 : Read CRC result.
+    tbuf[2] = 0x05; // read cnt
+    tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD (MFR_FW_COMMAND_DATA)
+    tlen = 4;
+
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() attempt %d/%d failed to read CRC data, retrying",
+             __func__, attempt + 1, MAX_RETRY);
+      continue;
+    }
+
+    break; // full sequence succeeded
   }
-
-  // Execute GET_CRC command (0x2D)  
-  tbuf[2] = 0x00; // read cnt
-  tbuf[3] = CMD_INF_VR_MFR_EXECUTE; // 0xFE
-  tbuf[4] = INF_VR_CMD_GET_VERSION; // 0x2D (GET_CRC)
-  tlen = 5;
-  
-  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to execute GET_CRC command", __func__);
-    goto error_exit;
-  }
-
-  // Wait for command execution completion (GET_CRC needs 20ms)
-  usleep(20000); // 20ms
-
-  // Read CRC result
-  tbuf[2] = 0x05; // read cnt
-  tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD (MFR_FW_COMMAND_DATA)
-  tlen = 4;
-  
-  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to read CRC data", __func__);
-    goto error_exit;
+    syslog(LOG_WARNING, "%s() Failed after %d retries", __func__, MAX_RETRY);
+    return ret;
   }
 
   // Copy result
   if (rlen >= 5) {
     memcpy(ver_data, rbuf, 5);
     // ver_data[0] = 0x04 (length)
-    // ver_data[1] = 0x5E (CRC byte 0)
-    // ver_data[2] = 0xDA (CRC byte 1)
-    // ver_data[3] = 0xA2 (CRC byte 2)
-    // ver_data[4] = 0x02 (CRC byte 3)
+    // ver_data[1] = CRC byte 0
+    // ver_data[2] = CRC byte 1
+    // ver_data[3] = CRC byte 2
+    // ver_data[4] = CRC byte 3
   } else {
     syslog(LOG_WARNING, "%s() Invalid response length: %d, expected >= 5", __func__, rlen);
     ret = -1;
-    goto error_exit;
+    return ret;
   }
 
-  // Cleanup/restore RPTR  
-  tbuf[2] = 0x00; // read cnt
-  tbuf[3] = 0x10; // RPTR register
-  tbuf[4] = 0x80; // Cleanup/reset flag
-  tlen = 5;
-  
-  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to cleanup RPTR (non-fatal)", __func__);
-    // This error doesn't affect the result, just log warning
-    ret = 0; // Reset to success
+  // Report whatever CRC value comes back, even all-zero -- the IPMB transaction already
+  // succeeded, so the VR really is reporting this value (e.g. an invalidated/not-yet
+  // -committed section), not a failed read.
+  if (ver_data[1] == 0 && ver_data[2] == 0 && ver_data[3] == 0 && ver_data[4] == 0) {
+    syslog(LOG_WARNING, "%s() Read back all-zero CRC, bus=%u addr=0x%02X", __func__, bus, addr);
   }
 
-error_exit:
   return ret;
 }
 
@@ -450,81 +520,96 @@ bic_get_ifx_vr_remaining_writes_mfr(uint8_t bus, uint8_t addr, uint8_t *writes) 
   int conf_size = get_xdpe152xx_config_size_by_devid(product_id, rev_code);
   if (conf_size <= 0) conf_size = XDPE15284C_CONF_SIZE; // fallback
 
-  // RPTR init
   tbuf[0] = (bus << 1) + 1;
   tbuf[1] = addr;
 
-  // Set Register Pointer (RPTR = 0x10)
   tbuf[2] = 0x00; // read cnt
-  tbuf[3] = 0x10; // RPTR register
-  tbuf[4] = 0x00; // Initialize data
+  tbuf[3] = 0x10; // write protect
+  tbuf[4] = 0x00; // unlock
   tlen = 5;
   
   ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to initialize RPTR", __func__);
+    syslog(LOG_WARNING, "%s() Failed to unlock WP", __func__);
     return ret;
   }
-
-  // Initialize MFR_FW_COMMAND  
-  tbuf[2] = 0x00; // read cnt
-  tbuf[3] = CMD_INF_VR_MFR_EXECUTE; // 0xFE
-  tbuf[4] = 0x00; // Initialize/clear
-  tlen = 5;
   
-  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to initialize MFR_FW_COMMAND", __func__);
-    goto out_cleanup_rptr;
+  usleep(300);
+
+  // Retry the init(0xFD)->execute(0xFE)->read(0xFD) sequence up to MAX_RETRY times on failure
+  for (int attempt = 0; attempt < MAX_RETRY; attempt++) {
+    // Step 1 : Explicitly initialize MFR_FW_COMMAND_DATA (0xFD).
+    tbuf[2] = 0x00; // read cnt
+    tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD
+    tbuf[4] = 0x04; // block write byte count = 4
+    tbuf[5] = 0x00;
+    tbuf[6] = 0x00;
+    tbuf[7] = 0x00;
+    tbuf[8] = 0x00; // partition_number = 0
+    tlen = 9;
+
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() attempt %d/%d failed to initialize MFR_FW_COMMAND_DATA (0xFD), retrying",
+             __func__, attempt + 1, MAX_RETRY);
+      continue;
+    }
+
+    usleep(300);
+
+    // Step 2 : Execute OTP_PARTITION_SIZE_REMAINING (0x10).
+    tbuf[2] = 0x00; // read cnt
+    tbuf[3] = CMD_INF_VR_MFR_EXECUTE; // 0xFE
+    tbuf[4] = INF_VR_CMD_GET_REM_WRITES; // 0x10
+    tlen = 5;
+
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() attempt %d/%d failed to execute OTP_PARTITION_SIZE_REMAINING, retrying",
+             __func__, attempt + 1, MAX_RETRY);
+      continue;
+    }
+
+    // Wait for command execution completion (OTP_PARTITION_SIZE_REMAINING needs 1ms)
+    usleep(1000);
+
+    // Step 3 : Read remaining space result
+    tbuf[2] = 0x06; // read cnt
+    tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD (MFR_FW_COMMAND_DATA)
+    tlen = 4;
+
+    ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s() attempt %d/%d failed to read remaining writes data, retrying",
+             __func__, attempt + 1, MAX_RETRY);
+      continue;
+    }
+
+    break; // full sequence succeeded
   }
-
-  // Execute OTP_PARTITION_SIZE_REMAINING command (0x10)  
-  tbuf[2] = 0x00; // read cnt
-  tbuf[3] = CMD_INF_VR_MFR_EXECUTE; // 0xFE
-  tbuf[4] = INF_VR_CMD_GET_REM_WRITES; // 0x10
-  tlen = 5;
-  
-  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
   if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to execute OTP_PARTITION_SIZE_REMAINING", __func__);
-    goto out_cleanup_rptr;
-  }
-
-  // Wait for command execution completion (OTP_PARTITION_SIZE_REMAINING needs 1ms)
-  usleep(1000); // 1ms
-  
-  // Read remaining space result  
-  tbuf[2] = 0x06; // read cnt
-  tbuf[3] = CMD_INF_VR_MFR_WRITE; // 0xFD (MFR_FW_COMMAND_DATA)
-  tlen = 4;
-  
-  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s() Failed to read remaining writes data", __func__);
-    goto out_cleanup_rptr;
+    syslog(LOG_WARNING, "%s() Failed after %d retries", __func__, MAX_RETRY);
+    return ret;
   }
 
   if (rlen < 5 || rbuf[0] != 0x04) {
     syslog(LOG_WARNING, "%s() Invalid block read: rlen=%u, len=%u", __func__, rlen, rbuf[0]);
-    ret = -1;
-    goto out_cleanup_rptr;
+    return -1;
   }
 
   // Little-endian 16-bit remaining bytes (match original xdpe: only take lower 16 bits)
   uint16_t remaining_size = (uint16_t)(rbuf[1] | (rbuf[2] << 8));
 
+  // Report whatever value comes back, even zero -- see bic_get_ifx_vr_version_mfr() above.
+  if (remaining_size == 0) {
+    syslog(LOG_WARNING, "%s() Read back zero remaining size, bus=%u addr=0x%02X",
+           __func__, bus, addr);
+  }
+
   // Convert to "remaining full-program counts"
   *writes = (uint8_t)(remaining_size / conf_size);
 
-  // RPTR cleanup (optional)
-out_cleanup_rptr:
-  tbuf[2] = 0x00; // read cnt
-  tbuf[3] = 0x10; // RPTR register
-  tbuf[4] = 0x80; // Cleanup/reset flag
-  tlen = 5;
-  (void)bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
-
-  return (ret < 0) ? ret : 0;
+  return 0;
 }
 #endif // CONFIG_GRANDCANYON2
 
@@ -616,6 +701,109 @@ error_exit:
   return ret;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+// Calculate zero-sum checksum: 2's complement of the sum of all data bytes,
+// such that sum(data) + checksum = 0 (mod 256)
+static uint8_t
+zero_checksum_calculate(uint8_t *buf, uint8_t len) {
+  uint8_t i, ret = 0;
+  for (i = 0; i < len; i++) {
+    ret += *(buf++);
+  }
+  ret = (~ret) + 1;
+  return ret;
+}
+
+// Validate zero-sum checksum: 2's complement of sum(data) + checksum should be 0
+static bool
+zero_checksum_valid(uint8_t *buf, uint8_t len) {
+  uint8_t i, ret = 0;
+  for (i = 0; i < len; i++) {
+    ret += *(buf++);
+  }
+  ret += *(buf++);   // include checksum byte
+  ret = (~ret) + 1;
+  return (ret == 0) ? true : false;
+}
+
+// Read TI VR remaining writes from BIC EEPROM
+int
+bic_get_ti_vr_remaining_wr(uint8_t addr, uint16_t *remain) {
+  uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  if (remain == NULL) {
+    syslog(LOG_WARNING, "%s: NULL pointer", __func__);
+    return -1;
+  }
+
+  tbuf[0] = BIC_EEPROM_BUS;
+  tbuf[1] = BIC_EEPROM_ADDR;
+  tbuf[2] = 3;                                   // read 3 bytes (high, low, checksum)
+  tbuf[3] = VR_REMAINING_WRITE_START_ADDR;
+  tbuf[4] = TI_VR_REMAINING_WRITE_OFFSET(addr);
+  tlen = 5;
+
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
+                         tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to read EEPROM, addr=0x%02X, ret=%d",
+           __func__, addr, ret);
+    return ret;
+  }
+
+  *remain = ((uint16_t)rbuf[0] << 8) | rbuf[1];  // higher byte first
+
+  // UNINITIALIZED_EEPROM means not yet provisioned; let caller auto-init
+  if (*remain == UNINITIALIZED_EEPROM) {
+    syslog(LOG_INFO, "%s() EEPROM uninitialized for VR addr=0x%02X, will auto-init",
+           __func__, addr);
+    return 0;
+  }
+
+  if (!zero_checksum_valid(rbuf, VR_REMAIN_WR_SIZE)) {
+    syslog(LOG_WARNING, "%s() Checksum invalid for VR addr=0x%02X "
+           "(0x%02X 0x%02X 0x%02X)",
+           __func__, addr, rbuf[0], rbuf[1], rbuf[2]);
+    return -1;
+  }
+
+  return 0;
+}
+
+// Write TI VR remaining writes back to BIC EEPROM
+int
+bic_set_ti_vr_remaining_wr(uint8_t addr, uint16_t remain) {
+  uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t rbuf[MAX_IPMB_BUFFER] = {0};
+  uint8_t tlen = 0;
+  uint8_t rlen = 0;
+  int ret = 0;
+
+  tbuf[0] = BIC_EEPROM_BUS;
+  tbuf[1] = BIC_EEPROM_ADDR;
+  tbuf[2] = 0;                                   // write only
+  tbuf[3] = VR_REMAINING_WRITE_START_ADDR;
+  tbuf[4] = TI_VR_REMAINING_WRITE_OFFSET(addr);
+  tbuf[5] = (remain >> 8) & 0xFF;                // higher byte
+  tbuf[6] = remain & 0xFF;                       // lower byte
+  tbuf[7] = zero_checksum_calculate(&tbuf[5], VR_REMAIN_WR_SIZE);
+  tlen = 8;
+
+  ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ,
+                         tbuf, tlen, rbuf, &rlen);
+  if (ret < 0) {
+    syslog(LOG_WARNING, "%s() Failed to write EEPROM, addr=0x%02X, remain=%u, ret=%d",
+           __func__, addr, remain, ret);
+  }
+
+  return ret;
+}
+#endif // CONFIG_GRANDCANYON2
+
 int
 bic_switch_mux_for_bios_spi(uint8_t mux) {
   uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
@@ -639,6 +827,20 @@ bic_switch_mux_for_bios_spi(uint8_t mux) {
   return 0;
 }
 
+#ifdef CONFIG_GRANDCANYON2
+static const char *
+vr_addr_to_name(uint8_t addr) {
+  size_t i;
+
+  for (i = 0; i < bic_vr_list_size; i++) {
+    if (bic_vr_list[i].addr == addr) {
+      return bic_vr_list[i].name;
+    }
+  }
+  return "unknown";
+}
+#endif
+
 int
 bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
   uint8_t tbuf[MAX_IPMB_BUFFER] = {0};
@@ -649,10 +851,18 @@ bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
   int fd = 0;
   int ret = 0;
 
+#ifdef CONFIG_GRANDCANYON2
+  // Pause BIC firmware's background VR sensor-monitor task
+  if (bic_set_vr_sensor_monitor(VR_SENSOR_MONITOR_DISABLE) < 0) {
+    syslog(LOG_WARNING, "%s: failed to disable BIC VR sensor monitor, aborting", __func__);
+    return -1;
+  }
+#endif
+
   ret = bic_get_vr_device_id(rbuf, &rlen, bus, addr);
   if (ret < 0) {
     syslog(LOG_WARNING, "%s() Failed to get vr device id, ret=%d", __func__, ret);
-    return ret;
+    goto vr_mon_exit;
   }
 
   tbuf[0] = (bus << 1) + 1;
@@ -670,7 +880,7 @@ bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
         syslog(LOG_WARNING, "%s():%d Failed to lock VR sensor reading", __func__,__LINE__);
         remove(SERVER_SENSOR_LOCK);
         close(fd);
-        return -1;
+        goto vr_mon_exit;
       }
     }
 
@@ -683,13 +893,17 @@ bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
       
       ret = bic_get_ifx_vr_remaining_writes_mfr(bus, addr, &remaining_writes);
       if (ret < 0) {
-        syslog(LOG_WARNING, "%s():%d Failed to get remaining writes via MFR method, ret=%d", 
+        syslog(LOG_WARNING, "%s():%d Failed to get remaining writes via MFR method, ret=%d",
                __func__, __LINE__, ret);
-        
+
         remaining_writes = 0xFF;
-      }      
-      
-      if (byte_count >= 4) {        
+        // Failing to read remaining-writes is non-fatal -- the VR version
+        // itself was already read successfully above. Reset ret to 0 so
+        // this success path doesn't return a stale failure code.
+        ret = 0;
+      }
+
+      if (byte_count >= 4) {
         snprintf(ver_str, MAX_VALUE_LEN, "Infineon %02X%02X%02X%02X, Remaining Writes: %d", 
                  ver_data[4], ver_data[3], ver_data[2], ver_data[1], 
                  (remaining_writes == 0xFF) ? 0 : remaining_writes);
@@ -698,8 +912,14 @@ bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
                  (remaining_writes == 0xFF) ? 0 : remaining_writes);
       }
       
-      kv_set(key, ver_str, 0, 0);
-      
+      if (kv_set(key, ver_str, 0, 0) != 0) {
+        syslog(LOG_WARNING, "%s(): failed to write VR version to cache, key=%s", __func__, key);
+        // VR version was already read successfully above -- ver_str is
+        // valid. Report the cache-write failure distinctly instead of a
+        // generic failure, so callers don't discard a good ver_str.
+        ret = BIC_VR_VER_CACHE_WRITE_FAILED;
+      }
+
       syslog(LOG_INFO, "%s() Successfully read Infineon VR via MFR method: %s", __func__, ver_str);
       goto cleanup;
     }
@@ -734,7 +954,10 @@ bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
         snprintf(ver_str, MAX_VALUE_LEN, "Infineon (version unavailable), Remaining Writes: %d", 
                  remaining_writes);
       }
-      kv_set(key, ver_str, 0, 0);
+      if (kv_set(key, ver_str, 0, 0) != 0) {
+        syslog(LOG_WARNING, "%s(): failed to write VR version to cache, key=%s", __func__, key);
+        ret = -1;
+      }
 #endif
       goto error_exit;
     }
@@ -765,24 +988,36 @@ bic_get_vr_ver(uint8_t bus, uint8_t addr, char *key, char *ver_str) {
       snprintf(ver_str, MAX_VALUE_LEN, "Infineon %02X%02X%02X%02X, Remaining Writes: %d", 
                rbuf[3], rbuf[2], rbuf[1], rbuf[0], remaining_writes);
     }
+    if (kv_set(key, ver_str, 0, 0) != 0) {
+      syslog(LOG_WARNING, "%s(): failed to write VR version to cache, key=%s", __func__, key);
+      // VR version was already read successfully above -- ver_str is
+      // valid. Report the cache-write failure distinctly instead of a
+      // generic failure, so callers don't discard a good ver_str.
+      ret = BIC_VR_VER_CACHE_WRITE_FAILED;
+    }
+
 #else
     snprintf(ver_str, MAX_VALUE_LEN, "Infineon %02X%02X%02X%02X, Remaining Writes: %d", 
              rbuf[3], rbuf[2], rbuf[1], rbuf[0], remaining_writes);
-#endif
     kv_set(key, ver_str, 0, 0);
-    
+#endif
+
 #ifdef CONFIG_GRANDCANYON2
 cleanup:
 #endif
   error_exit:
-    ret = flock(fd, LOCK_UN);
-    if (ret == -1) {
+    // Do NOT assign flock()'s own return value into "ret" here -- ret is
+    // still holding the actual VR-read result (0 on success, negative on
+    // any of the failure paths above via goto error_exit). Overwriting it
+    // with the unlock's result silently turned real read failures into a
+    // reported "success" (flock(LOCK_UN) essentially never fails).
+    if (flock(fd, LOCK_UN) == -1) {
       syslog(LOG_WARNING, "%s: failed to unflock on %s", __func__, SERVER_SENSOR_LOCK);
     }
     close(fd);
     remove(SERVER_SENSOR_LOCK);
-    return ret;
-    
+    goto vr_mon_exit;
+
   } else if (rlen > 4) {
     //TI
     tbuf[2] = 0x02; //read cnt
@@ -791,15 +1026,39 @@ cleanup:
     ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
     if (ret < 0) {
       syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
-      return ret;
+      goto vr_mon_exit;
     }
-    
+
 #ifdef CONFIG_GRANDCANYON2
-    snprintf(ver_str, MAX_VALUE_LEN, "Texas Instruments %02X%02X, Remaining Writes: Not support", rbuf[1], rbuf[0]);
+    // TI VR has no remaining-writes query command; read software counter from BIC EEPROM
+    {
+      uint16_t remaining = 0;
+      if (bic_get_ti_vr_remaining_wr(addr, &remaining) < 0) {
+        snprintf(ver_str, MAX_VALUE_LEN,
+                 "Texas Instruments %02X%02X, Remaining Writes: Unknown",
+                 rbuf[1], rbuf[0]);
+      } else {
+        if (remaining == UNINITIALIZED_EEPROM) {
+          // Auto-init on first use
+          remaining = MAX_TI_VR_REMAIN_WR;
+          bic_set_ti_vr_remaining_wr(addr, remaining);
+        }
+        snprintf(ver_str, MAX_VALUE_LEN,
+                 "Texas Instruments %02X%02X, Remaining Writes: %u",
+                 rbuf[1], rbuf[0], remaining);
+      }
+    }
+    if (kv_set(key, ver_str, 0, 0) != 0) {
+      syslog(LOG_WARNING, "%s(): failed to write VR version to cache, key=%s", __func__, key);
+      // VR version was already read successfully above -- ver_str is
+      // valid. Report the cache-write failure distinctly instead of a
+      // generic failure, so callers don't discard a good ver_str.
+      ret = BIC_VR_VER_CACHE_WRITE_FAILED;
+    }
 #else
     snprintf(ver_str, MAX_VALUE_LEN, "Texas Instruments %02X%02X", rbuf[1], rbuf[0]);
-#endif
     kv_set(key, ver_str, 0, 0);
+#endif
   } else {
     //ISL
     //get the reamaining write
@@ -823,7 +1082,7 @@ cleanup:
     ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
     if (ret < 0) {
       syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
-      return ret;
+      goto vr_mon_exit;
     }
 
     tbuf[2] = 0x04; //read cnt
@@ -832,12 +1091,32 @@ cleanup:
     ret = bic_ipmb_wrapper(NETFN_APP_REQ, CMD_APP_MASTER_WRITE_READ, tbuf, tlen, rbuf, &rlen);
     if (ret < 0) {
       syslog(LOG_WARNING, "%s():%d Failed to send command code to get vr ver. ret=%d", __func__,__LINE__, ret);
-      return ret;
-    }    
+      goto vr_mon_exit;
+    }
     snprintf(ver_str, MAX_VALUE_LEN, "Renesas %02X%02X%02X%02X, Remaining Writes: %d", rbuf[3], rbuf[2], rbuf[1], rbuf[0], remaining_writes);
+#ifdef CONFIG_GRANDCANYON2
+    if (kv_set(key, ver_str, 0, 0) != 0) {
+      syslog(LOG_WARNING, "%s(): failed to write VR version to cache, key=%s", __func__, key);
+      // VR version was already read successfully above -- ver_str is
+      // valid. Report the cache-write failure distinctly instead of a
+      // generic failure, so callers don't discard a good ver_str.
+      ret = BIC_VR_VER_CACHE_WRITE_FAILED;
+    }
+#else
     kv_set(key, ver_str, 0, 0);
+#endif
   }
 
+vr_mon_exit:
+#ifdef CONFIG_GRANDCANYON2
+  if (bic_set_vr_sensor_monitor(VR_SENSOR_MONITOR_ENABLE) < 0) {
+    syslog(LOG_WARNING, "%s: failed to re-enable BIC VR sensor monitor", __func__);
+  }
+
+  if (ret >= 0) {
+    syslog(LOG_INFO, "Get %s version from bic. bus=0x%X addr=0x%X", vr_addr_to_name(addr), bus, addr);
+  }
+#endif
   return ret;
 }
 
@@ -850,16 +1129,55 @@ bic_get_vr_ver_cache(uint8_t bus, uint8_t addr, char *ver_str) {
   memset(tmp_str, 0, MAX_VALUE_LEN);
   snprintf(key, sizeof(key), "vr_%02xh_crc", addr);
   if (kv_get(key, tmp_str, NULL, 0) != 0) {
-    if (bic_get_vr_ver(bus, addr, key, tmp_str) != 0) {
+    if (bic_get_vr_ver(bus, addr, key, tmp_str) < 0) {
       return -1;
     }
+  } else {
+#ifdef CONFIG_GRANDCANYON2
+    syslog(LOG_INFO, "Get %s version from cache. bus=0x%X addr=0x%X", vr_addr_to_name(addr), bus, addr);
+#endif
   }
   if (snprintf(ver_str, MAX_VER_STR_LEN, "%s", tmp_str) > (MAX_VER_STR_LEN - 1)) {
     return -1;
   }
-
-  return 0;  
+  return 0;
 }
+
+#ifdef CONFIG_GRANDCANYON2
+#define VR_VER_CACHE_BUS 0x4
+const bic_vr_info_t bic_vr_list[] = {
+  {0xC0, "PVCCIN_FIVRA"},
+  {0xC4, "PVCCD_HV"},
+  {0xEC, "PVCCINFAON"},
+};
+const size_t bic_vr_list_size = sizeof(bic_vr_list) / sizeof(bic_vr_list[0]);
+
+int
+bic_refresh_all_vr_ver_cache(void) {
+  char key[MAX_KEY_LEN] = {0};
+  char ver_str[MAX_VALUE_LEN] = {0};
+  size_t i;
+  int ret = 0;
+  int r;
+
+  for (i = 0; i < bic_vr_list_size; i++) {
+    memset(key, 0, sizeof(key));
+    memset(ver_str, 0, sizeof(ver_str));
+    snprintf(key, sizeof(key), "vr_%02xh_crc", bic_vr_list[i].addr);
+    r = bic_get_vr_ver(VR_VER_CACHE_BUS, bic_vr_list[i].addr, key, ver_str);
+    if (r < 0) {
+      // Actually failed to read the VR version from hardware.
+      syslog(LOG_WARNING, "%s(): failed to refresh VR 0x%02X version cache", __func__, bic_vr_list[i].addr);
+      ret = -1;
+    } else if (r == BIC_VR_VER_CACHE_WRITE_FAILED) {
+      // VR version WAS read OK, only the cache persist step failed.
+      syslog(LOG_WARNING, "%s(): VR 0x%02X version read OK but cache write failed", __func__, bic_vr_list[i].addr);
+      ret = -1;
+    }
+  }
+  return ret;
+}
+#endif
 
 static int
 _read_fruid(uint8_t fru_id, uint32_t offset, uint8_t count, uint8_t *rbuf, uint8_t *rlen) {

@@ -1,0 +1,166 @@
+#!/bin/bash
+
+set -euo pipefail
+
+readonly DEFAULT_REDFISH_SCHEME="http"
+readonly DEFAULT_REDFISH_HOST="192.168.31.1"
+readonly REDFISH_ROOT_PATH="/redfish/v1"
+readonly CURL_TIMEOUT=10
+readonly RETRY_COUNT=3
+readonly RETRY_INTERVAL=10
+
+readonly COMMANDS=(
+    syncdatetime
+)
+
+CMDS="$(printf '  %s\n' "${COMMANDS[@]}")"
+readonly CMDS
+
+readonly USAGE=\
+"Usage: $0 [OPT] <CMD> [ARGS...]
+
+commands:
+$CMDS
+
+options:
+  -h, --help          show this help message and exit
+  -u USER:PASS        credentials passed to curl (-u USER:PASS)
+  -p PROTOCOL         protocol: http|https|80|443 (default: $DEFAULT_REDFISH_SCHEME)
+  -H HOST             host/ip to connect (default: $DEFAULT_REDFISH_HOST)"
+
+G_CURL_AUTH=()
+G_CURL_TLS=()
+G_REDFISH_SCHEME="$DEFAULT_REDFISH_SCHEME"
+G_REDFISH_HOST="$DEFAULT_REDFISH_HOST"
+G_AMC_REDFISH_BASE="${G_REDFISH_SCHEME}://${G_REDFISH_HOST}${REDFISH_ROOT_PATH}"
+G_AMC_MANAGER_URL="${G_AMC_REDFISH_BASE}/Managers/AMC"
+
+function print_help()
+{
+    echo "$USAGE"
+}
+
+function print_usage_err()
+{
+    echo "ERROR: $1" >&2
+    echo ""
+    print_help
+    exit 1
+}
+
+function log_info()
+{
+    echo "<6>$*"
+}
+
+function log_err()
+{
+    echo "<3>$*" >&2
+}
+
+function cmd_syncdatetime()
+{
+    local datetime http_code rc attempt
+
+    for ((attempt = 1; attempt <= RETRY_COUNT; attempt++)); do
+        datetime="$(date -u +%Y-%m-%dT%H:%M:%S+00:00)"
+
+        log_info "Setting AMC DateTime to ${datetime} (${G_AMC_MANAGER_URL})"
+
+        rc=0
+        http_code="$(curl "${G_CURL_AUTH[@]}" "${G_CURL_TLS[@]}" \
+            --connect-timeout "${CURL_TIMEOUT}" \
+            --max-time "${CURL_TIMEOUT}" \
+            -s -o /dev/null -w '%{http_code}' \
+            -H "Content-Type:application/json" \
+            -d "{\"DateTime\":\"${datetime}\"}" \
+            -X PATCH \
+            "${G_AMC_MANAGER_URL}")" || rc=$?
+
+        if [[ "${rc}" -eq 0 && "${http_code}" =~ ^2[0-9][0-9]$ ]]; then
+            log_info "AMC DateTime set OK (HTTP ${http_code})"
+            return 0
+        fi
+
+        if [[ "${rc}" -ne 0 ]]; then
+            log_err "AMC DateTime request failed: curl exit ${rc} (connect/timeout) [attempt ${attempt}/${RETRY_COUNT}]"
+        else
+            log_err "AMC DateTime set failed: HTTP ${http_code} [attempt ${attempt}/${RETRY_COUNT}]"
+        fi
+
+        if [[ "${attempt}" -lt "${RETRY_COUNT}" ]]; then
+            sleep "${RETRY_INTERVAL}"
+        fi
+    done
+
+    log_err "AMC DateTime set failed after ${RETRY_COUNT} attempts"
+    return 1
+}
+
+function handle_cmd()
+{
+    local cmd="$1"
+    shift
+    if [[ " ${COMMANDS[*]} " != *" ${cmd} "* ]]; then
+        print_usage_err "Invalid command '$cmd'"
+    fi
+    "cmd_${cmd}" "$@"
+}
+
+function main()
+{
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -h|--help)
+                print_help
+                exit 0
+                ;;
+            -u)
+                if [[ $# -lt 2 ]]; then
+                    print_usage_err "Option '-u' requires an argument: username:password"
+                fi
+                G_CURL_AUTH=(-u "$2")
+                shift 2
+                ;;
+            -p)
+                if [[ $# -lt 2 ]]; then
+                    print_usage_err "Option '-p' requires an argument: http|https|80|443"
+                fi
+                case "$2" in
+                    http|80)   G_REDFISH_SCHEME="http" ;;
+                    https|443) G_REDFISH_SCHEME="https" ;;
+                    *) print_usage_err "Invalid protocol '$2' (expected http, https, 80 or 443)" ;;
+                esac
+                shift 2
+                ;;
+            -H)
+                if [[ $# -lt 2 ]]; then
+                    print_usage_err "Option '-H' requires an argument: host/ip"
+                fi
+                G_REDFISH_HOST="$2"
+                shift 2
+                ;;
+            -*)
+                print_usage_err "Unknown option: $1"
+                ;;
+            *)
+                break
+                ;;
+        esac
+    done
+
+    if [[ $# -eq 0 ]]; then
+        print_usage_err "No command specified"
+    fi
+
+    G_AMC_REDFISH_BASE="${G_REDFISH_SCHEME}://${G_REDFISH_HOST}${REDFISH_ROOT_PATH}"
+    G_AMC_MANAGER_URL="${G_AMC_REDFISH_BASE}/Managers/AMC"
+
+    if [[ "${G_REDFISH_SCHEME}" == "https" ]]; then
+        G_CURL_TLS=(-k)
+    fi
+
+    handle_cmd "$@"
+}
+
+main "$@"

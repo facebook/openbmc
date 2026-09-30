@@ -1,0 +1,513 @@
+From 56644888664dafe455f2843d6b32f2d92cd43bf0 Mon Sep 17 00:00:00 2001
+From: Jayanth Othayoth <ojayanth@gmail.com>
+Date: Wed, 2 Sep 2026 07:03:35 -0500
+Subject: [PATCH] event_extensions: add artifact storage support
+
+Introduce generic artifact storage support for logging extensions.
+
+The new utility allows plugins to persist binary payloads and
+reference them through an ArtifactRef abstraction.
+
+Keeping binary data outside descriptor and entry state reduces
+memory usage and aligns with the transport-only handling of
+extension metadata.
+
+The implementation is intentionally generic so it can be reused
+by future plugins requiring external artifact storage.
+
+No functional changes are introduced by this commit.
+
+Change-Id: I56c0ee27bece79e4dbdf8ad8bd050fad68ea00b0
+Signed-off-by: Jayanth Othayoth <ojayanth@gmail.com>
+---
+ event_extensions/meson.build            |   1 +
+ event_extensions/utils/artifact.cpp     | 203 ++++++++++++++++++++++++
+ event_extensions/utils/artifact.hpp     |  96 +++++++++++
+ event_extensions/utils/meson.build      |   3 +
+ test/event_extensions/artifact_test.cpp | 113 +++++++++++++
+ test/event_extensions/meson.build       |  20 +++
+ 6 files changed, 436 insertions(+)
+ create mode 100644 event_extensions/utils/artifact.cpp
+ create mode 100644 event_extensions/utils/artifact.hpp
+ create mode 100644 event_extensions/utils/meson.build
+ create mode 100644 test/event_extensions/artifact_test.cpp
+
+diff --git a/event_extensions/meson.build b/event_extensions/meson.build
+index 37be970..283b173 100644
+--- a/event_extensions/meson.build
++++ b/event_extensions/meson.build
+@@ -5,3 +5,4 @@ event_extensions_sources = files(
+ )
+ 
+ subdir('cper')
++subdir('utils')
+diff --git a/event_extensions/utils/artifact.cpp b/event_extensions/utils/artifact.cpp
+new file mode 100644
+index 0000000..8dd2616
+--- /dev/null
++++ b/event_extensions/utils/artifact.cpp
+@@ -0,0 +1,203 @@
++#include "event_extensions/utils/artifact.hpp"
++
++#include <fcntl.h>
++#include <unistd.h>
++
++#include <phosphor-logging/lg2.hpp>
++
++#include <cerrno>
++#include <cstring>
++#include <filesystem>
++#include <string>
++#include <utility>
++
++namespace phosphor::logging::event_extensions::utils
++{
++
++namespace
++{
++
++class FileDescriptor
++{
++  public:
++    explicit FileDescriptor(int fd) : fd(fd) {}
++
++    FileDescriptor(const FileDescriptor&) = delete;
++    FileDescriptor& operator=(const FileDescriptor&) = delete;
++
++    FileDescriptor(FileDescriptor&& other) noexcept :
++        fd(std::exchange(other.fd, -1))
++    {}
++
++    FileDescriptor& operator=(FileDescriptor&& other) noexcept
++    {
++        if (this != &other)
++        {
++            reset();
++            fd = std::exchange(other.fd, -1);
++        }
++
++        return *this;
++    }
++
++    ~FileDescriptor()
++    {
++        reset();
++    }
++
++    int get() const noexcept
++    {
++        return fd;
++    }
++
++    explicit operator bool() const noexcept
++    {
++        return fd >= 0;
++    }
++
++  private:
++    void reset() noexcept
++    {
++        if (fd >= 0)
++        {
++            ::close(fd);
++            fd = -1;
++        }
++    }
++
++    int fd{-1};
++};
++
++} // namespace
++
++ArtifactRef persistArtifact(std::span<const uint8_t> data,
++                            std::string_view prefix,
++                            const std::filesystem::path& root)
++{
++    try
++    {
++        if (data.empty())
++        {
++            return {};
++        }
++
++        if (data.size() > maxArtifactPayloadSize)
++        {
++            lg2::error("Artifact payload exceeds maximum size. "
++                       "SIZE={SIZE} LIMIT={LIMIT}",
++                       "SIZE", data.size(), "LIMIT", maxArtifactPayloadSize);
++            return {};
++        }
++
++        std::error_code ec;
++        std::filesystem::create_directories(root, ec);
++
++        if (ec)
++        {
++            lg2::error("Failed to create artifact directory {DIR}: {ERROR}",
++                       "DIR", root.string(), "ERROR", ec.message());
++            return {};
++        }
++
++        auto templatePath = (root / (std::string(prefix) + "-XXXXXX")).string();
++        templatePath.push_back('\0');
++        FileDescriptor fd(::mkstemp(templatePath.data()));
++        if (!fd)
++        {
++            lg2::error("Failed to create artifact: {ERROR}", "ERROR",
++                       std::strerror(errno));
++            return {};
++        }
++
++        const auto* current = reinterpret_cast<const char*>(data.data());
++        auto remaining = static_cast<ssize_t>(data.size());
++
++        while (remaining > 0)
++        {
++            const auto rc = ::write(fd.get(), current, remaining);
++            if (rc < 0)
++            {
++                if (errno == EINTR)
++                {
++                    continue;
++                }
++
++                lg2::error("Failed to write artifact: {ERROR}", "ERROR",
++                           std::strerror(errno));
++                std::filesystem::remove(
++                    std::filesystem::path(templatePath.data()), ec);
++
++                return {};
++            }
++
++            current += rc;
++            remaining -= rc;
++        }
++
++        while (::fsync(fd.get()) < 0)
++        {
++            if (errno == EINTR)
++            {
++                continue;
++            }
++
++            lg2::error("Failed to sync artifact: {ERROR}", "ERROR",
++                       std::strerror(errno));
++            std::filesystem::remove(std::filesystem::path(templatePath.data()),
++                                    ec);
++
++            return {};
++        }
++
++        return ArtifactRef{.path = std::filesystem::path(templatePath.data())};
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error("Failed to persist artifact: {ERROR}", "ERROR", e.what());
++    }
++
++    return {};
++}
++
++int openArtifact(const ArtifactRef& artifact)
++{
++    if (!artifact)
++    {
++        return -1;
++    }
++
++    const auto fd = ::open(artifact.path.c_str(), O_RDONLY | O_CLOEXEC);
++    if (fd < 0)
++    {
++        lg2::error("Failed to open artifact {PATH}: {ERROR}", "PATH",
++                   artifact.path.string(), "ERROR", std::strerror(errno));
++    }
++
++    return fd;
++}
++
++void removeArtifact(const ArtifactRef& artifact)
++{
++    if (!artifact)
++    {
++        return;
++    }
++
++    try
++    {
++        std::error_code ec;
++        std::filesystem::remove(artifact.path, ec);
++        if (ec)
++        {
++            lg2::error("Failed to remove artifact {PATH}: {ERROR}", "PATH",
++                       artifact.path.string(), "ERROR", ec.message());
++        }
++    }
++    catch (const std::exception& e)
++    {
++        lg2::error("Failed to remove artifact {PATH}: {ERROR}", "PATH",
++                   artifact.path.string(), "ERROR", e.what());
++    }
++}
++
++} // namespace phosphor::logging::event_extensions::utils
+diff --git a/event_extensions/utils/artifact.hpp b/event_extensions/utils/artifact.hpp
+new file mode 100644
+index 0000000..48c871f
+--- /dev/null
++++ b/event_extensions/utils/artifact.hpp
+@@ -0,0 +1,96 @@
++#pragma once
++
++#include <filesystem>
++#include <span>
++#include <string_view>
++
++namespace phosphor::logging::event_extensions::utils
++{
++
++/**
++ * @brief Reference to a persisted artifact.
++ *
++ * Artifacts are stored in phosphor-logging managed storage and
++ * referenced by plugin descriptors and runtime plugins.
++ *
++ * An empty path indicates that persistence failed or the artifact
++ * is otherwise unavailable.
++ */
++struct ArtifactRef
++{
++    /** Persisted artifact location. */
++    std::filesystem::path path;
++
++    /**
++     * @brief Check whether the reference is valid.
++     *
++     * @return true if the artifact reference is valid.
++     */
++    explicit operator bool() const noexcept
++    {
++        return !path.empty();
++    }
++};
++
++/**
++ * @brief Default location used to persist artifacts.
++ */
++inline const std::filesystem::path defaultArtifactDirectory{
++    "/var/lib/phosphor-logging/artifacts"};
++
++/**
++ * @brief Generic artifact infrastructure payload limit.
++ *
++ * This limit acts as a safeguard against accidental storage
++ * exhaustion caused by malformed requests or future plugin
++ * implementations.
++ *
++ * Individual plugins may enforce stricter limits.
++ */
++inline constexpr std::size_t maxArtifactPayloadSize = 16 * 1024 * 1024;
++
++/**
++ * @brief Persist an artifact payload.
++ *
++ * Stores the supplied payload in phosphor-logging managed
++ * storage and returns a reference to the persisted artifact.
++ *
++ * Artifact allocation and naming are implementation details
++ * intentionally hidden behind this interface.
++ *
++ * Failures are logged and result in an empty ArtifactRef.
++ *
++ * @param[in] data Artifact payload.
++ * @param[in] prefix Artifact filename prefix.
++ * @param[in] root Artifact storage directory.
++ *
++ * @return Reference to the persisted artifact. An empty
++ *         reference indicates failure.
++ */
++ArtifactRef persistArtifact(
++    std::span<const uint8_t> data, std::string_view prefix,
++    const std::filesystem::path& root = defaultArtifactDirectory);
++
++/**
++ * @brief Open a persisted artifact.
++ *
++ * Opens an artifact for read-only access.
++ *
++ * Failures are logged and result in -1.
++ *
++ * @param[in] artifact Artifact reference.
++ *
++ * @return Read-only file descriptor on success, otherwise -1.
++ */
++int openArtifact(const ArtifactRef& artifact);
++
++/**
++ * @brief Remove a persisted artifact.
++ *
++ * Failures are logged and otherwise ignored.
++ *
++ * @param[in] artifact Artifact reference.
++ */
++void removeArtifact(const ArtifactRef& artifact);
++
++} // namespace phosphor::logging::event_extensions::utils
+diff --git a/event_extensions/utils/meson.build b/event_extensions/utils/meson.build
+new file mode 100644
+index 0000000..58e7db2
+--- /dev/null
++++ b/event_extensions/utils/meson.build
+@@ -0,0 +1,3 @@
++event_extensions_sources += files(
++    'artifact.cpp',
++)
+diff --git a/test/event_extensions/artifact_test.cpp b/test/event_extensions/artifact_test.cpp
+new file mode 100644
+index 0000000..a8e3d82
+--- /dev/null
++++ b/test/event_extensions/artifact_test.cpp
+@@ -0,0 +1,113 @@
++#include "event_extensions/utils//artifact.hpp"
++
++#include <fcntl.h>
++#include <unistd.h>
++
++#include <filesystem>
++#include <vector>
++
++#include <gtest/gtest.h>
++
++namespace phosphor::logging::event_extensions::utils
++{
++
++class ArtifactTest : public ::testing::Test
++{
++  protected:
++    void SetUp() override
++    {
++        root = std::filesystem::temp_directory_path() /
++               "phosphor-logging-artifact-test";
++        std::filesystem::create_directories(root);
++    }
++
++    void TearDown() override
++    {
++        std::error_code ec;
++        std::filesystem::remove_all(root, ec);
++    }
++
++    std::filesystem::path root;
++};
++
++TEST_F(ArtifactTest, PersistEmptyPayload)
++{
++    auto artifact = persistArtifact({}, "artifact", root);
++
++    EXPECT_FALSE(artifact);
++}
++
++TEST_F(ArtifactTest, PersistArtifact)
++{
++    const std::vector<uint8_t> data{0x01, 0x02, 0x03, 0x04};
++    auto artifact = persistArtifact(data, "artifact", root);
++    ASSERT_TRUE(artifact);
++
++    EXPECT_TRUE(std::filesystem::exists(artifact.path));
++}
++
++TEST_F(ArtifactTest, OpenArtifact)
++{
++    const std::vector<uint8_t> data{0x11, 0x22, 0x33, 0x44};
++    auto artifact = persistArtifact(data, "artifact", root);
++    ASSERT_TRUE(artifact);
++
++    auto fd = openArtifact(artifact);
++    ASSERT_GE(fd, 0);
++
++    std::vector<uint8_t> readBack(data.size());
++    auto bytes = ::read(fd, readBack.data(), readBack.size());
++
++    EXPECT_EQ(bytes, static_cast<ssize_t>(data.size()));
++    EXPECT_EQ(data, readBack);
++
++    ::close(fd);
++}
++
++TEST_F(ArtifactTest, OpenInvalidArtifact)
++{
++    ArtifactRef artifact{.path = "/tmp/does-not-exist"};
++
++    EXPECT_EQ(openArtifact(artifact), -1);
++}
++
++TEST_F(ArtifactTest, RemoveArtifact)
++{
++    const std::vector<uint8_t> data{0x01, 0x02};
++    auto artifact = persistArtifact(data, "artifact", root);
++    ASSERT_TRUE(artifact);
++
++    EXPECT_TRUE(std::filesystem::exists(artifact.path));
++
++    removeArtifact(artifact);
++
++    EXPECT_FALSE(std::filesystem::exists(artifact.path));
++}
++
++TEST_F(ArtifactTest, RemoveMissingArtifact)
++{
++    ArtifactRef artifact{.path = "/tmp/does-not-exist"};
++
++    EXPECT_NO_THROW(removeArtifact(artifact));
++}
++
++TEST_F(ArtifactTest, PayloadExceedsMaximumSize)
++{
++    std::vector<uint8_t> data(maxArtifactPayloadSize + 1, 0xAA);
++    auto artifact = persistArtifact(data, "artifact", root);
++
++    EXPECT_FALSE(artifact);
++}
++
++TEST_F(ArtifactTest, ArtifactNamesAreUnique)
++{
++    const std::vector<uint8_t> data{0x01, 0x02, 0x03};
++    auto first = persistArtifact(data, "artifact", root);
++    auto second = persistArtifact(data, "artifact", root);
++    ASSERT_TRUE(first);
++    ASSERT_TRUE(second);
++
++    EXPECT_NE(first.path, second.path);
++}
++
++} // namespace phosphor::logging::event_extensions::utils
+diff --git a/test/event_extensions/meson.build b/test/event_extensions/meson.build
+index a5897e7..10493d5 100644
+--- a/test/event_extensions/meson.build
++++ b/test/event_extensions/meson.build
+@@ -31,3 +31,23 @@ test(
+         ),
+     ),
+ )
++
++test(
++    'test_artifact',
++    executable(
++        'test-artifact',
++        'artifact_test.cpp',
++        link_with: [
++            log_manager_lib,
++        ],
++        dependencies: [
++            gtest_dep,
++            gmock_dep,
++            log_manager_deps,
++        ],
++        include_directories: include_directories(
++            '../../',
++            '../../gen',
++        ),
++    ),
++)
+-- 
+2.53.0-Meta
+

@@ -1,0 +1,406 @@
+From 6ced9f5ca0fc0e46959609b4c7b24f55419c0616 Mon Sep 17 00:00:00 2001
+From: Kai Chen <tingkaic@nvidia.com>
+Date: Thu, 5 Mar 2026 01:42:11 -0800
+Subject: [PATCH] Replace cp2112 sync xfer with async workqueue
+
+Calling hid_hw_raw_request() and hid_hw_output_report() directly from
+the I2C adapter or GPIO callback context blocks the calling thread until
+the USB transfer completes or timeout after 5 sec
+(USB_CTRL_SET_TIMEOUT). The long timeout can cause hung task panic when
+the USB connection fails at the downstream I2C device initialization
+stage.
+
+Introduce an async workqueue for cp2112 to decrease the timeout
+duration.
+- An ordered workqueue executes the actual HID call while the caller
+  waits on wait_for_completion_timeout().
+- An atomic 'abandoned' flag arbitrates xfer ownership on timeout:
+  - the work handler frees the xfer if the caller already gave up.
+  - otherwise the caller frees it.
+- Queue depth is capped at CP2112_XFER_QUEUE_MAX to provide -EBUSY
+  backpressure.
+- Timeout duration can be configured via DT property
+  `hid-xfer-timeout-ms` with default value 500ms.
+
+Test:
+* Normal case: all i2c xfer (for downstream IOx) and gpio xfer (for irq
+polling) pass without errors.
+
+* Failure case: HID xfer timeout after 500ms when manually disable USB
+xfers.
+
+Steps:
+1. Find the HID device name of cp2112.
+```
+root@vr-nvl-bmc:~# basename `dirname /sys/bus/hid/devices/0003\:0955\:CF11.000*/i2c-70`
+0003:0955:CF11.0003
+```
+
+2. monitor the kernel log of the cp2112 device (on the other session or
+background)
+```
+root@vr-nvl-bmc:~# grep '0003:0955:CF11.0003' /proc/kmsg &
+```
+
+3. Disable asynchronous & periodic schedule of USB host controller to
+simulate the failure case.
+```
+root@vr-nvl-bmc:~# while true; do devmem 0x1e6a3020 32 0x10005; done
+```
+
+4. Since cp2112 driver polls the gpio state for interrupt usage (at
+10Hz), the kernel log from step 2 should show the HID xfer timeout w/
+~500ms gap.
+```
+<3>[ 5397.622237] cp2112 0003:0955:CF11.0003: error requesting GPIO values: -110
+<3>[ 5398.242221] cp2112 0003:0955:CF11.0003: error requesting GPIO values: -110
+<3>[ 5398.862278] cp2112 0003:0955:CF11.0003: error requesting GPIO values: -110
+<3>[ 5399.482230] cp2112 0003:0955:CF11.0003: error requesting GPIO values: -110
+<3>[ 5400.102243] cp2112 0003:0955:CF11.0003: error requesting GPIO values: -110
+<3>[ 5400.722220] cp2112 0003:0955:CF11.0003: error requesting GPIO values: -110
+<3>[ 5401.342225] cp2112 0003:0955:CF11.0003: error requesting GPIO values: -110
+<3>[ 5401.962217] cp2112 0003:0955:CF11.0003: error requesting GPIO values: -110
+```
+
+5. Manually poll the downstream IOx pin value to simulate full workqueue
+case.
+```
+root@vr-nvl-bmc:~# basename /sys/bus/i2c/devices/70-0050/gpiochip*
+gpiochip20
+root@vr-nvl-bmc:~# while true; do gpioget gpiochip20 0; done
+gpioget: error reading GPIO values: Connection timed out
+gpioget: error reading GPIO values: Connection timed out
+gpioget: error reading GPIO values: Device or resource busy
+gpioget: error reading GPIO values: Device or resource busy
+gpioget: error reading GPIO values: Device or resource busy
+```
+
+Fixes jira https://jirasw.nvidia.com/browse/DGXOPENBMC-23606
+Signed-off-by: Ting-Kai Chen <tingkaic@nvidia.com>
+
+[1] https://github.com/NVIDIA/linux/commit/d6f8a4d95d29a8e3ca3167359e48fd984c7f1e54
+---
+ drivers/hid/hid-cp2112.c | 203 ++++++++++++++++++++++++++++-----------
+ 1 file changed, 145 insertions(+), 58 deletions(-)
+
+diff --git a/drivers/hid/hid-cp2112.c b/drivers/hid/hid-cp2112.c
+index 04379db93571..82f930db8e4f 100644
+--- a/drivers/hid/hid-cp2112.c
++++ b/drivers/hid/hid-cp2112.c
+@@ -27,6 +27,8 @@
+ #include <linux/nls.h>
+ #include <linux/string_choices.h>
+ #include <linux/usb/ch9.h>
++#include <linux/workqueue.h>
++#include <linux/completion.h>
+ #include "hid-ids.h"
+ 
+ /**
+@@ -156,7 +158,7 @@ struct cp2112_string_report {
+ /* Number of times to request transfer status before giving up waiting for a
+    transfer to complete. This may need to be changed if SMBUS clock, retries,
+    or read/write/scl_low timeout settings are changed. */
+-static const int XFER_STATUS_RETRIES = 10;
++static const int XFER_STATUS_RETRIES = 100;
+ 
+ /* Time in ms to wait for a CP2112_DATA_READ_RESPONSE or
+    CP2112_TRANSFER_STATUS_RESPONSE. */
+@@ -186,12 +188,125 @@ struct cp2112_device {
+ 	struct delayed_work gpio_poll_worker;
+ 	unsigned long irq_mask;
+ 	u8 gpio_prev_state;
++
++	/* Async Transfer Queue */
++	struct workqueue_struct *xfer_wq;
++	atomic_t xfer_queue_depth;
++	u32 hid_xfer_timeout_ms;
++};
++
++#define CP2112_XFER_QUEUE_MAX 10
++
++struct cp2112_hid_xfer {
++	struct work_struct work;
++	struct cp2112_device *dev;
++	unsigned char report_number;
++	unsigned char report_type;
++	size_t len;
++	bool is_get;
++	u8 buf[CP2112_REPORT_MAX_LENGTH];
++	int ret;
++	struct completion done;
++	atomic_t abandoned;
+ };
+ 
+ static int gpio_push_pull = CP2112_GPIO_ALL_GPIO_MASK;
+ module_param(gpio_push_pull, int, 0644);
+ MODULE_PARM_DESC(gpio_push_pull, "GPIO push-pull configuration bitmask");
+ 
++static void cp2112_xfer_work_handler(struct work_struct *work)
++{
++	struct cp2112_hid_xfer *xfer =
++		container_of(work, struct cp2112_hid_xfer, work);
++	struct cp2112_device *dev = xfer->dev;
++
++	if (xfer->is_get) {
++		xfer->ret = hid_hw_raw_request(dev->hdev, xfer->report_number,
++					       xfer->buf, xfer->len,
++					       xfer->report_type,
++					       HID_REQ_GET_REPORT);
++	} else {
++		if (xfer->report_type == HID_OUTPUT_REPORT)
++			xfer->ret = hid_hw_output_report(dev->hdev, xfer->buf,
++							 xfer->len);
++		else
++			xfer->ret = hid_hw_raw_request(dev->hdev, xfer->buf[0],
++						       xfer->buf, xfer->len,
++						       xfer->report_type,
++						       HID_REQ_SET_REPORT);
++	}
++
++	/* decrement before complete() so depth is accurate for incoming callers */
++	atomic_dec(&dev->xfer_queue_depth);
++
++	if (atomic_cmpxchg(&xfer->abandoned, 0, 1) == 0)
++		complete(&xfer->done); /* caller still waiting, it owns xfer */
++	else
++		kfree(xfer); /* caller timed out, we own xfer */
++}
++
++static int cp2112_hid_xfer_raw(struct hid_device *hdev,
++			       unsigned char report_number, u8 *data,
++			       size_t count, unsigned char report_type,
++			       bool is_get)
++{
++	struct cp2112_device *dev = hid_get_drvdata(hdev);
++	struct cp2112_hid_xfer *xfer;
++	unsigned long time_left;
++	int ret;
++
++	if (atomic_inc_return(&dev->xfer_queue_depth) > CP2112_XFER_QUEUE_MAX) {
++		atomic_dec(&dev->xfer_queue_depth);
++		return -EBUSY;
++	}
++
++	xfer = kzalloc(sizeof(*xfer), GFP_KERNEL);
++	if (!xfer) {
++		atomic_dec(&dev->xfer_queue_depth);
++		return -ENOMEM;
++	}
++
++	xfer->dev = dev;
++	xfer->report_number = report_number;
++	xfer->report_type = report_type;
++	xfer->len = count;
++	xfer->is_get = is_get;
++	if (!is_get)
++		memcpy(xfer->buf, data, count);
++	atomic_set(&xfer->abandoned, 0);
++	init_completion(&xfer->done);
++	INIT_WORK(&xfer->work, cp2112_xfer_work_handler);
++
++	queue_work(dev->xfer_wq, &xfer->work);
++
++	time_left = wait_for_completion_timeout(
++		&xfer->done, msecs_to_jiffies(dev->hid_xfer_timeout_ms));
++	if (!time_left) {
++		if (atomic_cmpxchg(&xfer->abandoned, 0, 1) == 0)
++			return -ETIMEDOUT; /* work handler will kfree xfer */
++		/* lost race: work completed just before our cmpxchg, fall through */
++	}
++
++	ret = xfer->ret;
++	if (is_get && ret > 0 && ret <= count)
++		memcpy(data, xfer->buf, ret);
++	kfree(xfer);
++	return ret;
++}
++
++static int cp2112_hid_get(struct hid_device *hdev, unsigned char report_number,
++			  u8 *data, size_t count, unsigned char report_type)
++{
++	return cp2112_hid_xfer_raw(hdev, report_number, data, count,
++				   report_type, true);
++}
++
++static int cp2112_hid_output(struct hid_device *hdev, u8 *data, size_t count,
++			     unsigned char report_type)
++{
++	return cp2112_hid_xfer_raw(hdev, 0, data, count, report_type, false);
++}
++
+ static int cp2112_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+ {
+ 	struct cp2112_device *dev = gpiochip_get_data(chip);
+@@ -201,9 +316,8 @@ static int cp2112_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+ 
+ 	guard(mutex)(&dev->lock);
+ 
+-	ret = hid_hw_raw_request(hdev, CP2112_GPIO_CONFIG, buf,
+-				 CP2112_GPIO_CONFIG_LENGTH, HID_FEATURE_REPORT,
+-				 HID_REQ_GET_REPORT);
++	ret = cp2112_hid_get(hdev, CP2112_GPIO_CONFIG, buf,
++			     CP2112_GPIO_CONFIG_LENGTH, HID_FEATURE_REPORT);
+ 	if (ret != CP2112_GPIO_CONFIG_LENGTH) {
+ 		hid_err(hdev, "error requesting GPIO config: %d\n", ret);
+ 		if (ret >= 0)
+@@ -214,9 +328,8 @@ static int cp2112_gpio_direction_input(struct gpio_chip *chip, unsigned offset)
+ 	buf[1] &= ~BIT(offset);
+ 	buf[2] = gpio_push_pull;
+ 
+-	ret = hid_hw_raw_request(hdev, CP2112_GPIO_CONFIG, buf,
+-				 CP2112_GPIO_CONFIG_LENGTH, HID_FEATURE_REPORT,
+-				 HID_REQ_SET_REPORT);
++	ret = cp2112_hid_output(hdev, buf, CP2112_GPIO_CONFIG_LENGTH,
++				HID_FEATURE_REPORT);
+ 	if (ret != CP2112_GPIO_CONFIG_LENGTH) {
+ 		hid_err(hdev, "error setting GPIO config: %d\n", ret);
+ 		if (ret >= 0)
+@@ -238,9 +351,8 @@ static int cp2112_gpio_set_unlocked(struct cp2112_device *dev,
+ 	buf[1] = value ? CP2112_GPIO_ALL_GPIO_MASK : 0;
+ 	buf[2] = BIT(offset);
+ 
+-	ret = hid_hw_raw_request(hdev, CP2112_GPIO_SET, buf,
+-				 CP2112_GPIO_SET_LENGTH, HID_FEATURE_REPORT,
+-				 HID_REQ_SET_REPORT);
++	ret = cp2112_hid_output(hdev, buf, CP2112_GPIO_SET_LENGTH,
++				HID_FEATURE_REPORT);
+ 	if (ret != CP2112_GPIO_SET_LENGTH) {
+ 		hid_err(hdev, "error setting GPIO values: %d\n", ret);
+ 		return ret < 0 ? ret : -EIO;
+@@ -268,9 +380,8 @@ static int cp2112_gpio_get_all(struct gpio_chip *chip)
+ 
+ 	guard(mutex)(&dev->lock);
+ 
+-	ret = hid_hw_raw_request(hdev, CP2112_GPIO_GET, buf,
+-				 CP2112_GPIO_GET_LENGTH, HID_FEATURE_REPORT,
+-				 HID_REQ_GET_REPORT);
++	ret = cp2112_hid_get(hdev, CP2112_GPIO_GET, buf, CP2112_GPIO_GET_LENGTH,
++			     HID_FEATURE_REPORT);
+ 	if (ret != CP2112_GPIO_GET_LENGTH) {
+ 		hid_err(hdev, "error requesting GPIO values: %d\n", ret);
+ 		return ret < 0 ? ret : -EIO;
+@@ -300,9 +411,8 @@ static int cp2112_gpio_direction_output(struct gpio_chip *chip,
+ 
+ 	guard(mutex)(&dev->lock);
+ 
+-	ret = hid_hw_raw_request(hdev, CP2112_GPIO_CONFIG, buf,
+-				 CP2112_GPIO_CONFIG_LENGTH, HID_FEATURE_REPORT,
+-				 HID_REQ_GET_REPORT);
++	ret = cp2112_hid_get(hdev, CP2112_GPIO_CONFIG, buf,
++			     CP2112_GPIO_CONFIG_LENGTH, HID_FEATURE_REPORT);
+ 	if (ret != CP2112_GPIO_CONFIG_LENGTH) {
+ 		hid_err(hdev, "error requesting GPIO config: %d\n", ret);
+ 		return ret < 0 ? ret : -EIO;
+@@ -311,9 +421,8 @@ static int cp2112_gpio_direction_output(struct gpio_chip *chip,
+ 	buf[1] |= 1 << offset;
+ 	buf[2] = gpio_push_pull;
+ 
+-	ret = hid_hw_raw_request(hdev, CP2112_GPIO_CONFIG, buf,
+-				 CP2112_GPIO_CONFIG_LENGTH, HID_FEATURE_REPORT,
+-				 HID_REQ_SET_REPORT);
++	ret = cp2112_hid_output(hdev, buf, CP2112_GPIO_CONFIG_LENGTH,
++				HID_FEATURE_REPORT);
+ 	if (ret < 0) {
+ 		hid_err(hdev, "error setting GPIO config: %d\n", ret);
+ 		return ret;
+@@ -326,43 +435,6 @@ static int cp2112_gpio_direction_output(struct gpio_chip *chip,
+ 	return cp2112_gpio_set_unlocked(dev, offset, value);
+ }
+ 
+-static int cp2112_hid_get(struct hid_device *hdev, unsigned char report_number,
+-			  u8 *data, size_t count, unsigned char report_type)
+-{
+-	u8 *buf;
+-	int ret;
+-
+-	buf = kmalloc(count, GFP_KERNEL);
+-	if (!buf)
+-		return -ENOMEM;
+-
+-	ret = hid_hw_raw_request(hdev, report_number, buf, count,
+-				       report_type, HID_REQ_GET_REPORT);
+-	memcpy(data, buf, count);
+-	kfree(buf);
+-	return ret;
+-}
+-
+-static int cp2112_hid_output(struct hid_device *hdev, u8 *data, size_t count,
+-			     unsigned char report_type)
+-{
+-	u8 *buf;
+-	int ret;
+-
+-	buf = kmemdup(data, count, GFP_KERNEL);
+-	if (!buf)
+-		return -ENOMEM;
+-
+-	if (report_type == HID_OUTPUT_REPORT)
+-		ret = hid_hw_output_report(hdev, buf, count);
+-	else
+-		ret = hid_hw_raw_request(hdev, buf[0], buf, count, report_type,
+-				HID_REQ_SET_REPORT);
+-
+-	kfree(buf);
+-	return ret;
+-}
+-
+ static int cp2112_wait(struct cp2112_device *dev, atomic_t *avail)
+ {
+ 	int ret = 0;
+@@ -1242,6 +1314,10 @@ static int cp2112_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 		return ret;
+ 	}
+ 
++	if (device_property_read_u32(&hdev->dev, "hid-xfer-timeout-ms",
++				     &dev->hid_xfer_timeout_ms))
++		dev->hid_xfer_timeout_ms = 500;
++
+ 	cp2112_fwnode = dev_fwnode(&hdev->dev);
+ 	if (is_acpi_device_node(cp2112_fwnode)) {
+ 		fwnode_for_each_child_node(cp2112_fwnode, child) {
+@@ -1288,6 +1364,15 @@ static int cp2112_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 		goto err_hid_close;
+ 	}
+ 
++	hid_set_drvdata(hdev, (void *)dev);
++	dev->hdev = hdev;
++	dev->xfer_wq = alloc_ordered_workqueue("cp2112_xfer", 0);
++	if (!dev->xfer_wq) {
++		ret = -ENOMEM;
++		goto err_power_normal;
++	}
++	atomic_set(&dev->xfer_queue_depth, 0);
++
+ 	ret = cp2112_hid_get(hdev, CP2112_GET_VERSION_INFO, buf, sizeof(buf),
+ 			     HID_FEATURE_REPORT);
+ 	if (ret != sizeof(buf)) {
+@@ -1323,8 +1408,6 @@ static int cp2112_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 		goto err_power_normal;
+ 	}
+ 
+-	hid_set_drvdata(hdev, (void *)dev);
+-	dev->hdev		= hdev;
+ 	dev->adap.owner		= THIS_MODULE;
+ 	dev->adap.class		= I2C_CLASS_HWMON;
+ 	dev->adap.algo		= &smbus_algorithm;
+@@ -1392,6 +1475,8 @@ static int cp2112_probe(struct hid_device *hdev, const struct hid_device_id *id)
+ 	i2c_del_adapter(&dev->adap);
+ err_power_normal:
+ 	hid_hw_power(hdev, PM_HINT_NORMAL);
++	if (dev->xfer_wq)
++		destroy_workqueue(dev->xfer_wq);
+ err_hid_close:
+ 	hid_hw_close(hdev);
+ err_hid_stop:
+@@ -1406,6 +1491,8 @@ static void cp2112_remove(struct hid_device *hdev)
+ 	sysfs_remove_group(&hdev->dev.kobj, &cp2112_attr_group);
+ 	i2c_del_adapter(&dev->adap);
+ 
++	destroy_workqueue(dev->xfer_wq);
++
+ 	if (dev->gpio_poll) {
+ 		dev->gpio_poll = false;
+ 		cancel_delayed_work_sync(&dev->gpio_poll_worker);
+-- 
+2.53.0-Meta
+

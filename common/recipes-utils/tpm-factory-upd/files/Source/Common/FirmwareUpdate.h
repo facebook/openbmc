@@ -3,7 +3,7 @@
  *  @details    Declares the internal firmware update interface used by IFXTPMUpdate and TPMFactoryUpd.
  *  @file       FirmwareUpdate.h
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -427,7 +427,7 @@ FirmwareUpdate_CheckOwnerAuthorization(
 
 /**
  *  @brief      Prepares a policy session for TPM firmware.
- *  @details    The function prepares a policy session for TPM Firmware Update.
+ *  @details    The function prepares a policy session for TPM Firmware Update for empty platform authorization.
  *
  *  @param      PphPolicySession                    Pointer to session handle that will be filled in by this method.
  *
@@ -442,6 +442,23 @@ _Check_return_
 unsigned int
 FirmwareUpdate_PrepareTPM20Policy(
     _Out_ TSS_TPMI_SH_AUTH_SESSION* PphPolicySession);
+
+/**
+ *  @brief      Checks if the given policy handle matches a loaded policy session.
+ *  @details    The function calls TPM2_GetCapability to check whether the given policy handle can be found within loaded policy sessions.
+ *
+ *  @param      PphPolicySessionHandle               Pointer to policy session handle.
+ *
+ *  @retval     RC_SUCCESS                           The operation completed successfully.
+ *  @retval     RC_E_BAD_PARAMETER                   An invalid parameter was passed to the function.
+ *  @retval     RC_E_TPM20_POLICY_SESSION_NOT_LOADED The policy handle does not match to a loaded Policy session.
+ *  @retval     RC_E_FAIL                            An unexpected error occurred.
+ *  @retval     ...                                  Error codes from called functions.
+ */
+_Check_return_
+unsigned int
+FirmwareUpdate_IsPolicySessionLoaded(
+    _In_ TSS_TPMI_SH_AUTH_SESSION* PphPolicySessionHandle);
 
 #ifdef __cplusplus
 }

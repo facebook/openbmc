@@ -3,7 +3,7 @@
  *  @details
  *  @file       TpmDeviceAccess/TPM_TIS.c
  *
- *  Copyright 2014 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2014 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -750,7 +750,7 @@ TIS_Retry(
  */
 _Check_return_
 UINT32
-TIS_SendLPC(
+TIS_Send(
     _In_                    BYTE        PbLocality,
     _In_bytecount_(PusLen)  const BYTE* PrgbByteBuf,
     _In_                    UINT16      PusLen)
@@ -790,7 +790,7 @@ TIS_SendLPC(
             unReturnCode = TIS_IsActiveLocality(PbLocality, &bFlag);
             if (RC_SUCCESS != unReturnCode)
             {
-                TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_SendLPC: Failed to test the active locality (0x%.8x)", unReturnCode);
+                TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Send: Failed to test the active locality (0x%.8x)", unReturnCode);
                 unTimeOut = 0;  // Stop immediately on error
             }
             else if (TRUE == bFlag)
@@ -802,7 +802,7 @@ TIS_SendLPC(
                 if (0 == unTimeOut)
                 {
                     unReturnCode = RC_E_LOCALITY_NOT_ACTIVE;
-                    TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_SendLPC: Locality 0x%.2X not active after 750ms (0x%.8x)", PbLocality, unReturnCode);
+                    TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Send: Locality 0x%.2X not active after 750ms (0x%.8x)", PbLocality, unReturnCode);
                 }
             }
         }
@@ -825,7 +825,7 @@ TIS_SendLPC(
                 unReturnCode = TIS_IsCommandReady(PbLocality, &bFlag);
                 if (RC_SUCCESS != unReturnCode)
                 {
-                    TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_SendLPC: Failed to read the command ready flag (0x%.8x)", unReturnCode);
+                    TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Send: Failed to read the command ready flag (0x%.8x)", unReturnCode);
                     unTimeOut = 0;  // Stop immediately on error
                 }
                 else if (TRUE == bFlag)
@@ -837,7 +837,7 @@ TIS_SendLPC(
                     if (0 == unTimeOut)
                     {
                         unReturnCode = RC_E_NOT_READY;
-                        TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_SendLPC: Command ready flag not set after 2000ms (0x%.8x)", unReturnCode);
+                        TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Send: Command ready flag not set after 2000ms (0x%.8x)", unReturnCode);
                     }
                 }
             }
@@ -857,7 +857,7 @@ TIS_SendLPC(
                     unReturnCode = TIS_GetBurstCount(PbLocality, &usBurstCount);
                     if (RC_SUCCESS != unReturnCode)
                     {
-                        TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_SendLPC: Failed to read the burst count (0x%.8x)", unReturnCode);
+                        TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Send: Failed to read the burst count (0x%.8x)", unReturnCode);
                         unTimeOut = 0;  // Stop immediately on error
                     }
                     else if (0 < usBurstCount)
@@ -869,7 +869,7 @@ TIS_SendLPC(
                         if (0 == unTimeOut)
                         {
                             unReturnCode = RC_E_NOT_READY;
-                            TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_SendLPC: Burst count not > 0 after 750ms. Burst count: 0x%.4X (0x%.8x)", usBurstCount, unReturnCode);
+                            TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Send: Burst count not > 0 after 750ms. Burst count: 0x%.4X (0x%.8x)", usBurstCount, unReturnCode);
                         }
                     }
                 }
@@ -913,7 +913,7 @@ TIS_SendLPC(
                 unReturnCode = TIS_ReadStsRegister(PbLocality, &bValue);
                 if (RC_SUCCESS != unReturnCode)
                 {
-                    TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_SendLPC: Failed to read the STS register before last byte (0x%.8x)", unReturnCode);
+                    TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Send: Failed to read the STS register before last byte (0x%.8x)", unReturnCode);
                     unTimeOut = 0;  // Stop immediately on error
                 }
                 else if ((bValue & TIS_TPM_STS_VALID) && (bValue & TIS_TPM_STS_EXPECT))
@@ -925,7 +925,7 @@ TIS_SendLPC(
                     if (0 == unTimeOut)
                     {
                         unReturnCode = RC_E_TPM_TRANSMIT_DATA;
-                        TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_SendLPC: STS register: TPM did not set stsValid and Expect bits after timeout of 750 ms. Register value: 0x%.2X (0x%.8x)", bValue, unReturnCode);
+                        TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Send: STS register: TPM did not set stsValid and Expect bits after timeout of 750 ms. Register value: 0x%.2X (0x%.8x)", bValue, unReturnCode);
                     }
                 }
             }
@@ -972,7 +972,7 @@ TIS_SendLPC(
             unReturnCode = TIS_ReadStsRegister(PbLocality, &bValue);
             if (RC_SUCCESS != unReturnCode)
             {
-                TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_SendLPC: Failed to read the STS register after last byte (0x%.8x)", unReturnCode);
+                TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Send: Failed to read the STS register after last byte (0x%.8x)", unReturnCode);
                 unTimeOut = 0;  // Stop immediately on error
             }
             else if ((bValue & TIS_TPM_STS_VALID) && (!(bValue & TIS_TPM_STS_EXPECT)))
@@ -984,7 +984,7 @@ TIS_SendLPC(
                 if (0 == unTimeOut)
                 {
                     unReturnCode = RC_E_TPM_TRANSMIT_DATA;
-                    TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_SendLPC: STS register: TPM did not set stsValid and !Expect bit after timeout of 750 ms. Register value: 0x%.2X (0x%.8x)", bValue, unReturnCode);
+                    TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Send: STS register: TPM did not set stsValid and !Expect bit after timeout of 750 ms. Register value: 0x%.2X (0x%.8x)", bValue, unReturnCode);
                 }
             }
         }
@@ -1035,7 +1035,7 @@ TIS_SendLPC(
  */
 _Check_return_
 UINT32
-TIS_ReadLPC(
+TIS_Read(
     _In_                    BYTE    PbLocality,
     _Out_bytecap_(*PpusLen) BYTE*   PrgbByteBuf,
     _Inout_                 UINT16* PpusLen)
@@ -1082,14 +1082,14 @@ TIS_ReadLPC(
             unReturnCode = TIS_IsActiveLocality(PbLocality, &bFlag);
             if (RC_SUCCESS != unReturnCode)
             {
-                TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_ReadLPC: ACCESS register cannot be read (0x%.8x)", unReturnCode);
+                TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Read: ACCESS register cannot be read (0x%.8x)", unReturnCode);
                 bRxDone = TRUE; // Retry not reasonable if ACCESS register cannot be read
                 break;  // Stop immediately on Error
             }
             if (FALSE == bFlag)
             {
                 unReturnCode = RC_E_LOCALITY_NOT_ACTIVE;
-                TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_ReadLPC: Requested locality is not available (0x%.8x)", unReturnCode);
+                TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Read: Requested locality is not available (0x%.8x)", unReturnCode);
                 bRxDone = TRUE; // Retry not reasonable if the Locality is not available
                 break;
             }
@@ -1098,14 +1098,14 @@ TIS_ReadLPC(
             unReturnCode = TIS_ReadStsRegister(PbLocality, &bValue);
             if (RC_SUCCESS != unReturnCode)
             {
-                TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_ReadLPC: STS register cannot be read (0x%.8x)", unReturnCode);
+                TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Read: STS register cannot be read (0x%.8x)", unReturnCode);
                 bRxDone = TRUE; // Retry not reasonable if the STS register cannot be read
                 break;  // Stop immediately on Error
             }
             if ((!(bValue & TIS_TPM_STS_VALID)) || (!(bValue & TIS_TPM_STS_AVAIL)))
             {
                 unReturnCode = RC_E_TPM_NO_DATA_AVAILABLE;
-                TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_ReadLPC: STS register contents are not as expected (0x%.2x)", bValue);
+                TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Read: STS register contents are not as expected (0x%.2x)", bValue);
                 bRxDone = TRUE; // Retry not reasonable when data are not available
                 break;
             }
@@ -1168,7 +1168,7 @@ TIS_ReadLPC(
                     // Check for sufficient space in the Buffer now
                     if (*PpusLen < usBytes2Read)
                     {
-                        TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_ReadLPC: Insufficient space in the receive buffer (%d, %d)", *PpusLen, usBytes2Read);
+                        TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Read: Insufficient space in the receive buffer (%d, %d)", *PpusLen, usBytes2Read);
                         unReturnCode = RC_E_INSUFFICIENT_BUFFER;
                         bRxDone = TRUE; // It makes no sense to retry if the buffer is too small
                         break;
@@ -1230,7 +1230,7 @@ TIS_ReadLPC(
             unReturnCode = TIS_Retry(PbLocality);
             if (RC_SUCCESS != unReturnCode)
             {
-                TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_ReadLPC: TIS_Retry failed (0x%.8x)", unReturnCode);
+                TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Read: TIS_Retry failed (0x%.8x)", unReturnCode);
                 bRxDone = TRUE; // It makes no sense to retry if we have an error here
             }
 
@@ -1244,7 +1244,7 @@ TIS_ReadLPC(
 #pragma warning(suppress: 6031)
 #endif
             TIS_Abort(PbLocality);
-            TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_ReadLPC: Exceeded the maximum number of read retries (0x%.8x, %d)", unReturnCode, bRetryCount);
+            TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Read: Exceeded the maximum number of read retries (0x%.8x, %d)", unReturnCode, bRetryCount);
             bRxDone = TRUE; // Max number of errors, abort reception
         }
     }
@@ -1271,14 +1271,14 @@ TIS_ReadLPC(
  *  @retval     RC_SUCCESS                  The operation completed successfully.
  *  @retval     RC_E_TPM_NO_DATA_AVAILABLE  TPM no data available.
  *  @retval     ...                         Error codes from:
- *                                              TIS_SendLPC,
+ *                                              TIS_Send,
  *                                              TIS_IsDataAvailable,
- *                                              TIS_ReadLPC,
+ *                                              TIS_Read,
  *                                              TIS_ReleaseActiveLocality function
  */
 _Check_return_
 UINT32
-TIS_TransceiveLPC(
+TIS_Transceive(
     _In_                        BYTE        PbLocality,
     _In_bytecount_(PusTxLen)    const BYTE* PrgbTxBuffer,
     _In_                        UINT16      PusTxLen,
@@ -1293,10 +1293,10 @@ TIS_TransceiveLPC(
 
     do
     {
-        unReturnCode = TIS_SendLPC(PbLocality, PrgbTxBuffer, PusTxLen);
+        unReturnCode = TIS_Send(PbLocality, PrgbTxBuffer, PusTxLen);
         if (RC_SUCCESS != unReturnCode)
         {
-            TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_TransceiveLPC: TIS_SendLPC failed with (0x%.8x)", unReturnCode);
+            TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Transceive: TIS_Send failed with (0x%.8x)", unReturnCode);
             break;
         }
 
@@ -1308,7 +1308,7 @@ TIS_TransceiveLPC(
             unReturnCode = TIS_IsDataAvailable(PbLocality, &bFlag);
             if (RC_SUCCESS != unReturnCode)
             {
-                TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_TransceiveLPC: TIS_IsDataAvailable failed with (0x%.8x)", unReturnCode);
+                TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Transceive: TIS_IsDataAvailable failed with (0x%.8x)", unReturnCode);
                 unTimeOut = 0;  // Stop immediately on Error
             }
             else if (TRUE == bFlag)
@@ -1322,7 +1322,7 @@ TIS_TransceiveLPC(
                 if (0 == unTimeOut)
                 {
                     unReturnCode = RC_E_TPM_NO_DATA_AVAILABLE;
-                    TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_TransceiveLPC: No data available after timeout of %d microseconds (0x%.8x)", PunMaxDuration, unReturnCode);
+                    TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Transceive: No data available after timeout of %d microseconds (0x%.8x)", PunMaxDuration, unReturnCode);
                 }
             }
         }
@@ -1331,10 +1331,10 @@ TIS_TransceiveLPC(
             break;
 
         usRxSize = *PpusRxLen;
-        unReturnCode = TIS_ReadLPC(PbLocality, PrgbRxBuffer, &usRxSize);
+        unReturnCode = TIS_Read(PbLocality, PrgbRxBuffer, &usRxSize);
         if (RC_SUCCESS != unReturnCode)
         {
-            TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_TransceiveLPC: TIS_ReadLPC failed with (0x%.8x)", unReturnCode);
+            TIS_LOGGING_WRITE_LEVEL1_FMT(L"Error: TIS_Transceive: TIS_Read failed with (0x%.8x)", unReturnCode);
             break;
         }
 

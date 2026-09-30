@@ -1,0 +1,43 @@
+From 235fa0cc64dbbc882f5cf1cd731a9c717f3937be Mon Sep 17 00:00:00 2001
+From: Davidson Kumaresan <davidson.kumaresan@arm.com>
+Date: Fri, 14 Aug 2026 20:41:25 +0530
+Subject: [PATCH] platform: use uint32 for CPER event data length
+
+Expand the CPER eventDataLength field from uint16_t to uint32_t. This
+also expands the CPER event wrapper minimum length from 4 to 6 bytes so
+the decoder consumes the 32-bit little-endian length field. This is to
+allow larger sized CPER events to be received and processed, since
+uint16_t only allows CPER events of up to 65K
+
+Change-Id: Idd4f22ec886aab26c83baaa48b0a01e89652a57d
+Signed-off-by: Vignesh Natarajan <Vignesh.Natarajan@arm.com>
+Signed-off-by: Davidson Kumaresan <davidson.kumaresan@arm.com>
+---
+ include/libpldm/platform.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/include/libpldm/platform.h b/include/libpldm/platform.h
+index e835162..68f30cf 100644
+--- a/include/libpldm/platform.h
++++ b/include/libpldm/platform.h
+@@ -89,7 +89,7 @@ enum pldm_platform_transfer_flag {
+ /* Minimum length of sensor event data */
+ #define PLDM_MSG_POLL_EVENT_LENGTH 7
+ /* Minimum data length of CPER event type */
+-#define PLDM_PLATFORM_CPER_EVENT_MIN_LENGTH 4
++#define PLDM_PLATFORM_CPER_EVENT_MIN_LENGTH 6
+ 
+ /* Minimum length of sensor event data */
+ #define PLDM_SENSOR_EVENT_DATA_MIN_LENGTH			 5
+@@ -1270,7 +1270,7 @@ struct pldm_message_poll_event {
+ struct pldm_platform_cper_event {
+ 	uint8_t format_version;
+ 	uint8_t format_type;
+-	uint16_t event_data_length;
++	uint32_t event_data_length;
+ #ifndef __cplusplus
+ 	uint8_t event_data[] LIBPLDM_CC_COUNTED_BY(event_data_length);
+ #endif
+-- 
+2.25.1
+

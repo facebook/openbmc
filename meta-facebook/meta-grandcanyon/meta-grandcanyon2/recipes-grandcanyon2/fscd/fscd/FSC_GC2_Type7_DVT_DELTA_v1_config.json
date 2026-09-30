@@ -64,7 +64,7 @@
         "util" : "/usr/local/bin/sensor-util"
       },
       "type": "pid",
-      "setpoint": -11,
+      "setpoint": -10,
       "negative_hysteresis": 3,
       "positive_hysteresis": 0,
       "kp": -1.5,

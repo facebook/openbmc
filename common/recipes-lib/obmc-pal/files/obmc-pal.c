@@ -1670,6 +1670,12 @@ pal_sel_handler(uint8_t fru, uint8_t snr_num, uint8_t *event_data)
 }
 
 int __attribute__((weak))
+pal_ignore_sel(uint8_t fru, uint8_t *sel)
+{
+  return 0;
+}
+
+int __attribute__((weak))
 pal_oem_unified_sel_handler(uint8_t fru, uint8_t general_info, uint8_t *sel)
 {
   return PAL_EOK;

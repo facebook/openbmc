@@ -109,6 +109,26 @@ static const i2c_dev_attr_st pwrcpld_attrs[] = {
 		0,
 		1,
 	},
+	{
+		"smb_nonstdby_pwr",
+		"0x1: SMB non-standby powered on\n"
+		"0x0: SMB non-standby power off",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		I2C_DEV_ATTR_STORE_DEFAULT,
+		0x7C,
+		2,
+		1,
+	},
+	{
+		"cpu_nonstdby_pwr",
+		"0x1: CPU Card non-standby powered on\n"
+		"0x0: CPU Card non-standby power off",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		I2C_DEV_ATTR_STORE_DEFAULT,
+		0x7C,
+		1,
+		1,
+	},
 };
 
 static const struct i2c_device_id pwrcpld_id[] = {

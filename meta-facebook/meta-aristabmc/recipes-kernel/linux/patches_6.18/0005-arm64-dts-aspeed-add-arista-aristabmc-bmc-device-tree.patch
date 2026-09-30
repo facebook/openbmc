@@ -1,0 +1,378 @@
+From 48c4dabfe866ed3e33eb3375bdcbd201b254d18b Mon Sep 17 00:00:00 2001
+From: Bianca Giocas <bgiocas@arista.com>
+Date: Thu, 25 Jun 2026 10:07:00 +0000
+Subject: [PATCH] arm64: dts: aspeed: Add Arista Aristabmc BMC device tree
+
+Add the Aristabmc AST2700 BMC device tree and its DTB build target.
+Describe the board-specific console, flash, Ethernet, I2C, JTAG,
+firmware-reserved memory, and peripheral configuration on top of the
+common AST2700 SoC DTS.
+
+Keep this board description in the Aristabmc layer; common patches provide
+only reusable AST2700 SoC support.
+
+Upstream-Status: Pending
+Signed-off-by: Bianca Giocas <bgiocas@arista.com>
+---
+ arch/arm64/boot/dts/aspeed/Makefile                            |   1 +
+ .../boot/dts/aspeed/aspeed-bmc-facebook-aristabmc.dts          | 342 ++++++++++++++++++++
+ 2 files changed, 343 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/aspeed/Makefile b/arch/arm64/boot/dts/aspeed/Makefile
+--- a/arch/arm64/boot/dts/aspeed/Makefile
++++ b/arch/arm64/boot/dts/aspeed/Makefile
+@@ -1,4 +1,5 @@
+ # SPDX-License-Identifier: GPL-2.0
+ 
+ dtb-$(CONFIG_ARCH_ASPEED) += \
++	aspeed-bmc-facebook-aristabmc.dtb \
+ 	ast2700-evb.dtb
+diff --git a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-aristabmc.dts b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-aristabmc.dts
+new file mode 100644
+--- /dev/null
++++ b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-aristabmc.dts
+@@ -0,0 +1,342 @@
++// SPDX-License-Identifier: GPL-2.0-or-later
++// Arista 2700 BMC Device Tree
++
++/dts-v1/;
++
++#include "aspeed-g7-a35.dtsi"
++#include "aspeed-g7-pinctrl.dtsi"
++
++/ {
++	model = "Facebook Aristabmc BMC";
++	compatible = "facebook,aristabmc-bmc", "aspeed,ast2700";
++
++	aliases {
++		i2c0 = &i2c0;
++		i2c1 = &i2c1;
++		i2c2 = &i2c2;
++		i2c3 = &i2c3;
++		i2c4 = &i2c4;
++		i2c5 = &i2c5;
++		i2c6 = &i2c6;
++		i2c7 = &i2c7;
++		i2c8 = &i2c8;
++		i2c9 = &i2c9;
++		i2c10 = &i2c10;
++		i2c11 = &i2c11;
++		i2c12 = &i2c12;
++		i2c13 = &i2c13;
++		i2c14 = &i2c14;
++		i2c15 = &i2c15;
++		serial1 = &uart1;
++		serial12 = &uart12;
++	};
++
++	chosen {
++		stdout-path = &uart12;
++	};
++
++	memory@400000000 {
++		device_type = "memory";
++		reg = <0x4 0x00000000 0x0 0x40000000>;
++	};
++
++	reserved-memory {
++		#address-cells = <2>;
++		#size-cells = <2>;
++		ranges;
++
++		ssp_memory: ssp-memory@42c000000 {
++			reg = <0x4 0x2c000000 0x0 0x2000000>;
++			no-map;
++		};
++
++		tsp_memory: tsp-memory@42e000000 {
++			reg = <0x4 0x2e000000 0x0 0x2000000>;
++			no-map;
++		};
++
++		ipc_ssp_share: ipc-ssp-share@431080000 {
++			reg = <0x4 0x31080000 0x0 0x800000>;
++			no-map;
++		};
++
++		ipc_bootmcu_share: ipc-bootmcu-share@431880000 {
++			reg = <0x4 0x31880000 0x0 0x2b0000>;
++			no-map;
++		};
++
++		vbios_base0: vbios-base0@431bb0000 {
++			reg = <0x4 0x31bb0000 0x0 0x10000>;
++			no-map;
++		};
++
++		vbios_base1: vbios-base1@431bc0000 {
++			reg = <0x4 0x31bc0000 0x0 0x10000>;
++			no-map;
++		};
++
++	};
++
++	iio-hwmon {
++		compatible = "iio-hwmon";
++		status = "okay";
++		io-channels = <&adc0 0>, <&adc0 1>, <&adc0 2>, <&adc0 3>,
++				<&adc0 4>, <&adc0 5>, <&adc0 6>, <&adc0 7>,
++				<&adc1 0>, <&adc1 1>, <&adc1 2>, <&adc1 3>,
++				<&adc1 4>, <&adc1 5>, <&adc1 6>, <&adc1 7>;
++	};
++};
++
++/* Host console */
++&uart1 {
++	status = "okay";
++};
++
++/* BMC console */
++&uart12 {
++	status = "okay";
++};
++
++/* FMC SPI: dual 128MB flash */
++&fmc {
++	status = "okay";
++
++	flash@0 {
++		status = "okay";
++		m25p,fast-read;
++		label = "spi0.0";
++		spi-max-frequency = <50000000>;
++		spi-tx-bus-width = <2>;
++		spi-rx-bus-width = <2>;
++
++#include "facebook-bmc-flash-layout-128.dtsi"
++	};
++
++	flash@1 {
++		status = "okay";
++		m25p,fast-read;
++		label = "spi0.1";
++		spi-max-frequency = <50000000>;
++		spi-tx-bus-width = <2>;
++		spi-rx-bus-width = <2>;
++
++		partitions {
++			compatible = "fixed-partitions";
++			#address-cells = <1>;
++			#size-cells = <1>;
++
++			flash1@0 {
++				reg = <0x0 0x8000000>; /* 128MB */
++				label = "flash1";
++			};
++		};
++	};
++};
++
++&spi1 {
++	status = "okay";
++	pinctrl-0 = <&pinctrl_spi1_default &pinctrl_spi1_cs1_default>;
++	pinctrl-names = "default";
++
++	flash@0 {
++		status = "okay";
++		m25p,fast-read;
++		label = "cpu-boot";
++		spi-max-frequency = <8000000>;
++		spi-tx-bus-width = <1>;
++		spi-rx-bus-width = <1>;
++	};
++
++	flash@1 {
++		status = "disabled";
++		m25p,fast-read;
++		label = "switch-card";
++		spi-max-frequency = <8000000>;
++		spi-tx-bus-width = <1>;
++		spi-rx-bus-width = <1>;
++	};
++};
++
++/* SPI2: TPM (SLB9672) */
++&spi2 {
++	compatible = "aspeed,ast2700-spi-txrx";
++	pinctrl-0 = <&pinctrl_spi2_default>;
++	pinctrl-names = "default";
++	status = "okay";
++
++	spi-aspeed-full-duplex;
++
++	tpm0: tpmdev@0 {
++		compatible = "tcg,tpm_tis-spi";
++		spi-max-frequency = <25000000>;
++		reg = <0>;
++		status = "okay";
++	};
++};
++
++/* USB virtual hub */
++&vhuba0 {
++	status = "okay";
++};
++
++&ehci1 {
++	status = "okay";
++};
++
++&pinctrl1 {
++	pinctrl_rgmii0_driving: rgmii0-driving {
++		/*
++		 * MAC0's RGMII output pads drive the BCM53134 IMP interface.
++		 * The AST2700 pinctrl binding expresses drive strength in mA;
++		 * 8 mA corresponds to the vendor RGMII0 drive selection.
++		 */
++		pins = "C20", "C19", "A8", "R14", "A7", "P14",
++		       "D20", "A6", "B6", "N14", "B7", "B8";
++		drive-strength = <8>;
++	};
++};
++
++/* ADC: 16 channels */
++&adc0 {
++	aspeed,int-vref-microvolt = <2500000>;
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_adc0_default &pinctrl_adc1_default
++		&pinctrl_adc2_default &pinctrl_adc3_default
++		&pinctrl_adc4_default &pinctrl_adc5_default
++		&pinctrl_adc6_default &pinctrl_adc7_default>;
++};
++
++&adc1 {
++	aspeed,int-vref-microvolt = <2500000>;
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_adc8_default &pinctrl_adc9_default
++		&pinctrl_adc10_default &pinctrl_adc11_default
++		&pinctrl_adc12_default &pinctrl_adc13_default
++		&pinctrl_adc14_default &pinctrl_adc15_default>;
++};
++
++&jtag1 {
++	status = "okay";
++};
++
++/* Watchdog */
++&wdt0 {
++	status = "okay";
++};
++
++&wdt1 {
++	status = "okay";
++};
++
++&otp {
++	status = "okay";
++};
++
++/* MDIO0 is connected to the BCM53134 management switch. */
++&mdio0 {
++	status = "okay";
++};
++
++/* MAC0 via RGMII fixed-link to the BCM53134 management switch. */
++&mac0 {
++	status = "okay";
++	phy-mode = "rgmii";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_rgmii0_default &pinctrl_rgmii0_driving>;
++
++	fixed-link {
++		speed = <1000>;
++		full-duplex;
++	};
++};
++
++&mac1 {
++	status = "disabled";
++};
++
++/* I2C buses */
++&i2c1 {
++	status = "okay";
++};
++
++&i2c2 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_di2c2_default>;
++};
++
++&i2c3 {
++	status = "okay";
++};
++
++&i2c4 {
++	status = "okay";
++	aspeed,enable-byte;
++
++	/* SMB4: host SMBUS1/I2C3 SSIF link, BMC is the slave at 0x20. */
++	ssif-bmc@20 {
++		compatible = "ssif-bmc";
++		reg = <0x20>;
++		status = "okay";
++		timeout-ms = <5000>;
++	};
++};
++
++&i2c5 {
++	status = "okay";
++};
++
++&i2c6 {
++	status = "okay";
++};
++
++&i2c7 {
++	status = "okay";
++};
++
++&i2c8 {
++	status = "okay";
++};
++
++&i2c9 {
++	status = "okay";
++};
++
++&i2c10 {
++	status = "okay";
++};
++
++&i2c11 {
++	status = "okay";
++};
++
++&i2c12 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_di2c12_default>;
++
++};
++
++&i2c13 {
++	status = "okay";
++};
++
++&i2c14 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_di2c14_default>;
++};
++
++&i2c15 {
++	status = "okay";
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_di2c15_default>;
++
++	temperature-sensor@4f {
++		compatible = "ti,tmp75";
++		reg = <0x4f>;
++	};
++};
++
+-- 
+2.51.0

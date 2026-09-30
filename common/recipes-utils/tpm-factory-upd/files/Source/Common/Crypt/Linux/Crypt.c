@@ -3,7 +3,7 @@
  *  @details    This module provides cryptographic functions.
  *  @file       Linux\Crypt.c
  *
- *  Copyright 2016 - 2022 Infineon Technologies AG ( www.infineon.com )
+ *  Copyright 2016 - 2025 Infineon Technologies AG ( www.infineon.com )
  *
  *  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
  *  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
@@ -14,16 +14,27 @@
 
 /// The used CRC-32 polynomial in hexadecimal representation
 #define CRC32MASKREV 0xEDB88320
-/// OpenSSL API has changed since OpenSSL Version 1.1
-#define OPENSSL_VERSION_1_1 0x10100000L
+/// OpenSSL API functionality differs depending on version
+#define OPENSSL_VERSION_1_1_1   0x10101000L
+#define OPENSSL_VERSION_3_0     0x30000000L
 
 #include "Crypt.h"
 
 #include <string.h>
+#include <openssl/evp.h>
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
 #include <openssl/rsa.h>
 #include <openssl/sha.h>
+
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0
+#include <openssl/param_build.h>
+#endif
+
+#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1_1
+#pragma message OPENSSL_VERSION_TEXT
+#pragma GCC error "openssl version < 1.1.1 no longer supported"
+#endif
 
 /**
  *  @brief      Calculate HMAC-SHA-1 on the given message
@@ -47,39 +58,91 @@ Crypt_HMAC(
     _Out_bytecap_(TSS_SHA1_DIGEST_SIZE)         BYTE            PrgbHMAC[TSS_SHA1_DIGEST_SIZE])
 {
     unsigned int unReturnValue = RC_E_FAIL;
+    size_t unHmacLength = TSS_SHA1_DIGEST_SIZE;
+    EVP_PKEY *pkey = NULL;
+    EVP_MD_CTX *mdctx = NULL;
 
     do
     {
-        unsigned int unHmacLength = TSS_SHA1_DIGEST_SIZE;
-#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1
-        HMAC_CTX *sContext = NULL;
-#else
-        HMAC_CTX sContext = {0};
-#endif
+	    // Check parameters
+	    if (NULL == PrgbInputMessage || 0 == PusInputMessageSize)
+	    {
+	        unReturnValue = RC_E_BAD_PARAMETER;
+	        break;
+	    }
+
         memset(PrgbHMAC, 0, TSS_SHA1_DIGEST_SIZE);
+        mdctx = EVP_MD_CTX_new();
+        if(!mdctx)
+            break;
+
+        pkey = EVP_PKEY_new_mac_key(EVP_PKEY_HMAC, NULL, PrgbKey, TSS_SHA1_DIGEST_SIZE);
+        if(!pkey)
+            break;
+
+        if (1 != EVP_DigestSignInit(mdctx, NULL, EVP_sha1(), NULL, pkey))
+            break;
+        if (1 != EVP_DigestSign(mdctx, PrgbHMAC, &unHmacLength, PrgbInputMessage, PusInputMessageSize))
+            break;
+
+        unReturnValue = RC_SUCCESS;
+    }
+    WHILE_FALSE_END;
+
+    // Cleanup
+    if (pkey)
+        EVP_PKEY_free(pkey);
+    if (mdctx)
+        EVP_MD_CTX_free(mdctx);
+
+    return unReturnValue;
+}
+
+/**
+ *  @brief      Calculate hash on the given data
+ *  @details    This function calculates a hash on the given data stream (only OpenSSL 1.1.1 or later).
+ *
+ *  @param      PrgbInputMessage        Input message.
+ *  @param      PunInputMessageSize     Input message size in bytes.
+ *  @param      PrgbDigest              Receives the calculated digest.
+ *  @param      PusDigestSize           Digest size in bytes.
+ *  @param      Ptype                   Digest type.
+ *
+ *  @retval     RC_SUCCESS              The operation completed successfully.
+ *  @retval     RC_E_FAIL               An unexpected error occurred.
+ *  @retval     RC_E_BAD_PARAMETER      An invalid parameter was passed to the function. PrgbInputMessage is NULL or PusInputMessageSize is 0.
+ */
+_Check_return_
+unsigned int
+Crypt_CalcDigest(
+    _In_bytecount_(PusInputMessageSize) const BYTE*     PrgbInputMessage,
+    _In_                                const UINT32    PunInputMessageSize,
+    _Out_bytecap_(PusDigestSize)        BYTE*           PrgbDigest,
+    _In_                                const UINT16    PusDigestSize,
+    _In_                                const EVP_MD*   Ptype)
+{
+    unsigned int unReturnValue = RC_E_FAIL;
+    do
+    {
+        memset(PrgbDigest, 0, PusDigestSize);
 
         // Check parameters
-        if (NULL == PrgbInputMessage || 0 == PusInputMessageSize)
+        if (NULL == PrgbInputMessage || NULL == PrgbDigest || 0 == PunInputMessageSize || 0 == PusDigestSize)
         {
             unReturnValue = RC_E_BAD_PARAMETER;
             break;
         }
 
-        // Calculate HMAC
-#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1
-        sContext = HMAC_CTX_new();
-        HMAC_Init_ex(sContext, PrgbKey, TSS_SHA1_DIGEST_SIZE, EVP_sha1(), NULL);
-        HMAC_Update(sContext, PrgbInputMessage, PusInputMessageSize);
-        HMAC_Final(sContext, PrgbHMAC, &unHmacLength);
-        HMAC_CTX_free(sContext);
-#else
-        HMAC_CTX_init(&sContext);
-        HMAC_Init_ex(&sContext, PrgbKey, TSS_SHA1_DIGEST_SIZE, EVP_sha1(), NULL);
-        HMAC_Update(&sContext, PrgbInputMessage, PusInputMessageSize);
-        HMAC_Final(&sContext, PrgbHMAC, &unHmacLength);
-        HMAC_CTX_cleanup(&sContext);
-#endif
-        unReturnValue = RC_SUCCESS;
+        memset(PrgbDigest, 0, PusDigestSize);
+
+	    unsigned int unSize = PusDigestSize;
+	    if (1 != EVP_Digest(PrgbInputMessage, PunInputMessageSize, PrgbDigest, &unSize, Ptype, NULL))
+            break;
+
+	    if(PusDigestSize != (UINT16)unSize)
+	        break;
+
+       unReturnValue = RC_SUCCESS;
     }
     WHILE_FALSE_END;
 
@@ -105,40 +168,7 @@ Crypt_SHA1(
     _In_                                const UINT16    PusInputMessageSize,
     _Out_bytecap_(TSS_SHA1_DIGEST_SIZE) BYTE            PrgbSHA1[TSS_SHA1_DIGEST_SIZE])
 {
-    unsigned int unReturnValue = RC_E_FAIL;
-    do
-    {
-        SHA_CTX sContext = {0};
-        memset(PrgbSHA1, 0, TSS_SHA1_DIGEST_SIZE);
-
-        // Check parameters
-        if (NULL == PrgbInputMessage || 0 == PusInputMessageSize)
-        {
-            unReturnValue = RC_E_BAD_PARAMETER;
-            break;
-        }
-
-        // Calculate SHA-1
-        if (1 != SHA1_Init(&sContext))
-        {
-            unReturnValue = RC_E_FAIL;
-            break;
-        }
-        if (1 != SHA1_Update(&sContext, PrgbInputMessage, PusInputMessageSize))
-        {
-            unReturnValue = RC_E_FAIL;
-            break;
-        }
-        if (1 != SHA1_Final(PrgbSHA1, &sContext))
-        {
-            unReturnValue = RC_E_FAIL;
-            break;
-        }
-        unReturnValue = RC_SUCCESS;
-    }
-    WHILE_FALSE_END;
-
-    return unReturnValue;
+    return Crypt_CalcDigest(PrgbInputMessage, PusInputMessageSize, PrgbSHA1, TSS_SHA1_DIGEST_SIZE, EVP_sha1());
 }
 
 /**
@@ -160,41 +190,7 @@ Crypt_SHA256(
     _In_                                    const UINT32    PunInputMessageSize,
     _Out_bytecap_(TSS_SHA256_DIGEST_SIZE)   BYTE            PrgbSHA256[TSS_SHA256_DIGEST_SIZE])
 {
-    unsigned int unReturnValue = RC_E_FAIL;
-
-    do
-    {
-        SHA256_CTX sContext = {{0}};
-        memset(PrgbSHA256, 0, TSS_SHA256_DIGEST_SIZE);
-
-        // Check parameters
-        if (NULL == PrgbInputMessage || 0 == PunInputMessageSize)
-        {
-            unReturnValue = RC_E_BAD_PARAMETER;
-            break;
-        }
-
-        // Calculate SHA-256
-        if (1 != SHA256_Init(&sContext))
-        {
-            unReturnValue = RC_E_FAIL;
-            break;
-        }
-        if (1 != SHA256_Update(&sContext, PrgbInputMessage, PunInputMessageSize))
-        {
-            unReturnValue = RC_E_FAIL;
-            break;
-        }
-        if (1 != SHA256_Final(PrgbSHA256, &sContext))
-        {
-            unReturnValue = RC_E_FAIL;
-            break;
-        }
-        unReturnValue = RC_SUCCESS;
-    }
-    WHILE_FALSE_END;
-
-    return unReturnValue;
+    return Crypt_CalcDigest(PrgbInputMessage, PunInputMessageSize, PrgbSHA256, TSS_SHA256_DIGEST_SIZE, EVP_sha256());
 }
 
 /**
@@ -216,41 +212,7 @@ Crypt_SHA384(
     _In_                                    const UINT32    PunInputMessageSize,
     _Out_bytecap_(TSS_SHA384_DIGEST_SIZE)   BYTE            PrgbSHA384[TSS_SHA384_DIGEST_SIZE])
 {
-    unsigned int unReturnValue = RC_E_FAIL;
-
-    do
-    {
-        SHA512_CTX sContext = { {0} };
-        memset(PrgbSHA384, 0, TSS_SHA384_DIGEST_SIZE);
-
-        // Check parameters
-        if (NULL == PrgbInputMessage || 0 == PunInputMessageSize)
-        {
-            unReturnValue = RC_E_BAD_PARAMETER;
-            break;
-        }
-
-        // Calculate SHA-384
-        if (1 != SHA384_Init(&sContext))
-        {
-            unReturnValue = RC_E_FAIL;
-            break;
-        }
-        if (1 != SHA384_Update(&sContext, PrgbInputMessage, PunInputMessageSize))
-        {
-            unReturnValue = RC_E_FAIL;
-            break;
-        }
-        if (1 != SHA384_Final(PrgbSHA384, &sContext))
-        {
-            unReturnValue = RC_E_FAIL;
-            break;
-        }
-        unReturnValue = RC_SUCCESS;
-    }
-    WHILE_FALSE_END;
-
-    return unReturnValue;
+    return Crypt_CalcDigest(PrgbInputMessage, PunInputMessageSize, PrgbSHA384, TSS_SHA384_DIGEST_SIZE, EVP_sha384());
 }
 
 /**
@@ -272,41 +234,7 @@ Crypt_SHA512(
     _In_                                    const UINT32    PunInputMessageSize,
     _Out_bytecap_(TSS_SHA512_DIGEST_SIZE)   BYTE            PrgbSHA512[TSS_SHA512_DIGEST_SIZE])
 {
-    unsigned int unReturnValue = RC_E_FAIL;
-
-    do
-    {
-        SHA512_CTX sContext = {{0}};
-        memset(PrgbSHA512, 0, TSS_SHA512_DIGEST_SIZE);
-
-        // Check parameters
-        if (NULL == PrgbInputMessage || 0 == PunInputMessageSize)
-        {
-            unReturnValue = RC_E_BAD_PARAMETER;
-            break;
-        }
-
-        // Calculate SHA-512
-        if (1 != SHA512_Init(&sContext))
-        {
-            unReturnValue = RC_E_FAIL;
-            break;
-        }
-        if (1 != SHA512_Update(&sContext, PrgbInputMessage, PunInputMessageSize))
-        {
-            unReturnValue = RC_E_FAIL;
-            break;
-        }
-        if (1 != SHA512_Final(PrgbSHA512, &sContext))
-        {
-            unReturnValue = RC_E_FAIL;
-            break;
-        }
-        unReturnValue = RC_SUCCESS;
-    }
-    WHILE_FALSE_END;
-
-    return unReturnValue;
+    return Crypt_CalcDigest(PrgbInputMessage, PunInputMessageSize, PrgbSHA512, TSS_SHA512_DIGEST_SIZE, EVP_sha512());
 }
 
 /**
@@ -400,6 +328,137 @@ Crypt_GetRandom(
 }
 
 /**
+ *  @brief      Create public key from the given input data
+ *  @details    The function creates a public key from the given input data (only OpenSSL 3.0 or later).
+ *
+ *  @param      PunPublicModulusSize            Size of public modulus in bytes.
+ *  @param      PrgbPublicModulus               Public modulus buffer.
+ *  @param      PunPublicExponentSize           Size of public exponent in bytes.
+ *  @param      PrgbPublicExponent              Public exponent buffer.
+ *  @param      PppRSAPubKey                    Created pubkey object.
+ *
+ *  @retval     RC_SUCCESS          The operation completed successfully.
+ *  @retval     RC_E_FAIL           An unexpected error occurred.
+ *  @retval     RC_E_BAD_PARAMETER  An invalid parameter was passed to the function. It was NULL or empty.
+ */
+_Check_return_
+unsigned int
+Crypt_GetRSAPubKey(
+    _In_                                        UINT32              PunPublicModulusSize,
+    _In_bytecount_(PunPublicModulusSize)        const BYTE*         PrgbPublicModulus,
+    _In_                                        UINT32              PunPublicExponentSize,
+    _In_bytecount_(PunPublicExponentSize)       const BYTE*         PrgbPublicExponent,
+    _Out_                                       EVP_PKEY**          PppRSAPubKey)
+{
+#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_3_0
+
+    unsigned int unReturnValue = RC_E_FAIL;
+    BIGNUM* pbnExponent = NULL;
+    BIGNUM* pbnPublicModulus = NULL;
+    EVP_PKEY_CTX* ctx = NULL;
+
+    OSSL_PARAM_BLD *ossl_params_build = NULL;
+    OSSL_PARAM *ossl_params = NULL;
+
+    do
+    {
+        // Check input parameters
+        if (NULL == PppRSAPubKey ||
+                NULL == PrgbPublicModulus || 0 == PunPublicModulusSize ||
+                NULL == PrgbPublicExponent || 0 == PunPublicExponentSize)
+        {
+            unReturnValue = RC_E_BAD_PARAMETER;
+            break;
+        }
+
+        *PppRSAPubKey = NULL;
+
+        if (NULL == (ossl_params_build = OSSL_PARAM_BLD_new()))
+            break;
+        if (NULL == (pbnPublicModulus = BN_bin2bn((const BYTE*)PrgbPublicModulus, PunPublicModulusSize, pbnPublicModulus)))
+            break;
+        if (1 != OSSL_PARAM_BLD_push_BN(ossl_params_build, "n", pbnPublicModulus))
+            break;
+        if (NULL == (pbnExponent = BN_bin2bn((const BYTE*)PrgbPublicExponent, PunPublicExponentSize, pbnExponent)))
+            break;
+        if (1 != OSSL_PARAM_BLD_push_BN(ossl_params_build, "e", pbnExponent))
+            break;
+        if (NULL == (ossl_params = OSSL_PARAM_BLD_to_param(ossl_params_build)))
+            break;
+        if (NULL == (ctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL)))
+            break;
+        if (1 != EVP_PKEY_fromdata_init(ctx))
+            break;
+        if (1 != EVP_PKEY_fromdata(ctx, PppRSAPubKey, EVP_PKEY_PUBLIC_KEY, ossl_params))
+            break;
+
+        unReturnValue = RC_SUCCESS;
+    }
+    WHILE_FALSE_END;
+
+    if (NULL != ossl_params_build)
+        OSSL_PARAM_BLD_free(ossl_params_build);
+    if (NULL != ossl_params)
+        OSSL_PARAM_free(ossl_params);
+    if (NULL != ctx)
+        EVP_PKEY_CTX_free(ctx);
+
+    return unReturnValue;
+#else
+
+    unsigned int unReturnValue = RC_E_FAIL;
+    BIGNUM* pbnExponent = NULL;
+    BIGNUM* pbnPublicModulus = NULL;
+    EVP_PKEY* pKey = NULL;
+    RSA *pRSAPubKey = NULL;
+
+    do
+    {
+        // Check input parameters
+        if (NULL == PppRSAPubKey ||
+                NULL == PrgbPublicModulus || 0 == PunPublicModulusSize ||
+                NULL == PrgbPublicExponent || 0 == PunPublicExponentSize)
+        {
+            unReturnValue = RC_E_BAD_PARAMETER;
+            break;
+        }
+
+        *PppRSAPubKey = NULL;
+
+        // Create RSA key object and set modulus and exponent
+        if (NULL == (pRSAPubKey = RSA_new()))
+            break;
+        if (NULL == (pbnPublicModulus = BN_bin2bn((const BYTE*)PrgbPublicModulus, PunPublicModulusSize, pbnPublicModulus)))
+            break;
+        if (NULL == (pbnExponent = BN_bin2bn((const BYTE*)PrgbPublicExponent, PunPublicExponentSize, pbnExponent)))
+            break;
+        if (1 != RSA_set0_key(pRSAPubKey, pbnPublicModulus, pbnExponent, NULL))
+            break;
+        // Create EVP_PKEY object and set RSA key
+        if (NULL == (pKey = EVP_PKEY_new()))
+            break;
+        if (1 != EVP_PKEY_set1_RSA(pKey, pRSAPubKey))
+            break;
+
+        // Return key if successful
+        *PppRSAPubKey = pKey;
+        pKey = NULL;
+        unReturnValue = RC_SUCCESS;
+    }
+    WHILE_FALSE_END;
+
+    // Cleanup
+    if (NULL != pRSAPubKey)
+        RSA_free(pRSAPubKey);
+    if (NULL != pKey)
+        EVP_PKEY_free(pKey);
+
+    return unReturnValue;
+
+#endif
+}
+
+/**
  *  @brief      Encrypt a byte array with a RSA 2048-bit public key
  *  @details    This function encrypts the given data stream with RSA 2048-bit.
  *
@@ -426,129 +485,97 @@ _Check_return_
 unsigned int
 Crypt_EncryptRSA(
     _In_                                        CRYPT_ENC_SCHEME    PusEncryptionScheme,
-    _In_                                        unsigned int        PunInputDataSize,
+    _In_                                        UINT32              PunInputDataSize,
     _In_bytecount_(PunInputDataSize)            const BYTE*         PrgbInputData,
-    _In_                                        unsigned int        PunPublicModulusSize,
+    _In_                                        UINT32              PunPublicModulusSize,
     _In_bytecount_(PunPublicModulusSize)        const BYTE*         PrgbPublicModulus,
-    _In_                                        unsigned int        PunPublicExponentSize,
+    _In_                                        UINT32              PunPublicExponentSize,
     _In_bytecount_(PunPublicExponentSize)       const BYTE*         PrgbPublicExponent,
-    _In_                                        unsigned int        PunLabelSize,
+    _In_                                        UINT32              PunLabelSize,
     _In_bytecount_(PunLabelSize)                const BYTE*         PrgbLabel,
-    _Inout_                                     unsigned int*       PpunEncryptedDataSize,
+    _Inout_                                     UINT32*             PpunEncryptedDataSize,
     _Inout_bytecap_(*PpunEncryptedDataSize)     BYTE*               PrgbEncryptedData)
 {
-    unsigned int unReturnValue = RC_E_FAIL;
-    RSA *pRSAPubKey = NULL;
-    BIGNUM* pbnPublicModulus = NULL;
-    BIGNUM* pbnExponent = NULL;
+    UINT32 unReturnValue = RC_E_FAIL;
+    size_t encryptedDataSize = 0;
+    EVP_PKEY *pRSAPubKey = NULL;
+    EVP_PKEY_CTX *ctx = NULL;
+    BYTE *pLabel = NULL;
 
     do
     {
         BYTE rgbPaddedBuffer[TSS_MAX_RSA_KEY_BYTES] = {0};
-        unsigned int unPaddedBufferSize = RG_LEN(rgbPaddedBuffer);
+        UINT32 unMaxPaddedBufferSize = RG_LEN(rgbPaddedBuffer);
 
         // Check input parameters
         if (NULL == PrgbInputData || 0 == PunInputDataSize ||
                 NULL == PrgbPublicModulus || 0 == PunPublicModulusSize ||
                 NULL == PrgbPublicExponent || 0 == PunPublicExponentSize ||
                 NULL == PrgbLabel || 0 == PunLabelSize ||
-                NULL == PrgbEncryptedData || NULL == PpunEncryptedDataSize)
+                NULL == PrgbEncryptedData || NULL == PpunEncryptedDataSize ||
+                *PpunEncryptedDataSize > unMaxPaddedBufferSize)
         {
             unReturnValue = RC_E_BAD_PARAMETER;
             break;
         }
 
-        if (*PpunEncryptedDataSize < unPaddedBufferSize)
+        // Check output buffer size (must be at least key length)
+        if (*PpunEncryptedDataSize < PunPublicModulusSize)
         {
             unReturnValue = RC_E_BUFFER_TOO_SMALL;
             break;
         }
 
-        // Initialize RSA Public Key object
-        pRSAPubKey = RSA_new();
-        if (NULL == pRSAPubKey)
-        {
-            unReturnValue = RC_E_FAIL;
-            break;
-        }
-
-        pbnPublicModulus = BN_bin2bn((const BYTE*)PrgbPublicModulus, PunPublicModulusSize, pbnPublicModulus);
-        if (NULL == pbnPublicModulus)
-        {
-            unReturnValue = RC_E_FAIL;
-            break;
-        }
-#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1
-        pRSAPubKey->n = pbnPublicModulus;
-#endif
-
-        pbnExponent = BN_bin2bn((const BYTE*)PrgbPublicExponent, PunPublicExponentSize, pbnExponent);
-        if (NULL == pbnExponent)
-        {
-            unReturnValue = RC_E_FAIL;
-            break;
-        }
-#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1
-        RSA_set0_key(pRSAPubKey, pbnPublicModulus, pbnExponent, NULL);
-#else
-        pRSAPubKey->e = pbnExponent;
-        pRSAPubKey->d = NULL;
-#endif
-
-        // Add padding to the decrypted data
-        if (CRYPT_ES_RSAESOAEP_SHA1_MGF1 == PusEncryptionScheme)
-        {
-            int nReturnValue = 0;
-
-            nReturnValue = RSA_padding_add_PKCS1_OAEP(
-                               (BYTE*)rgbPaddedBuffer,
-                               unPaddedBufferSize,
-                               (const BYTE*)PrgbInputData,
-                               PunInputDataSize,
-                               PrgbLabel,
-                               PunLabelSize);
-
-            if (0 == nReturnValue)
-            {
-                unReturnValue = RC_E_FAIL;
-                break;
-            }
-        }
-        else
+        // Code only supports OAEP padding with SHA1 MGF1
+        if (CRYPT_ES_RSAESOAEP_SHA1_MGF1 != PusEncryptionScheme)
         {
             unReturnValue = RC_E_INTERNAL;
             break;
         }
 
+        // Initialize RSA Public Key object
+        if (RC_SUCCESS != Crypt_GetRSAPubKey(PunPublicModulusSize, PrgbPublicModulus, PunPublicExponentSize, PrgbPublicExponent, &pRSAPubKey))
+            break;
+
+        // Init context and set encryption parameters
+        if (NULL == (ctx = EVP_PKEY_CTX_new(pRSAPubKey, NULL)))
+            break;
+        if (1 != EVP_PKEY_encrypt_init(ctx))
+            break;
+        if (1 != EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_OAEP_PADDING))
+            break;
+        if (1 != EVP_PKEY_CTX_set_rsa_oaep_md(ctx, EVP_sha1()))
+            break;
+        // Create OPENSSL-specific label buffer for function EVP_PKEY_CTX_set0_rsa_oaep_label()
+        if (NULL == (pLabel = OPENSSL_malloc(PunLabelSize)))
+            break;
+        if (!memcpy(pLabel, PrgbLabel, PunLabelSize))
+            break;
+        if (1 != EVP_PKEY_CTX_set0_rsa_oaep_label(ctx, pLabel, PunLabelSize))
+            break;
+
         // Encrypt data with public key.
-        {
-            int nReturnValue = RSA_public_encrypt(
-                                   unPaddedBufferSize,
-                                   rgbPaddedBuffer,
-                                   PrgbEncryptedData,
-                                   pRSAPubKey,
-                                   RSA_NO_PADDING);
-            if (0 > nReturnValue)
-            {
-                unReturnValue = RC_E_FAIL;
-                break;
-            }
-            *PpunEncryptedDataSize = nReturnValue;
-        }
+        encryptedDataSize = *PpunEncryptedDataSize;
+        if (1 != EVP_PKEY_encrypt(ctx, PrgbEncryptedData, &encryptedDataSize, PrgbInputData, PunInputDataSize))
+            break;
+
+        *PpunEncryptedDataSize = (UINT32)encryptedDataSize;
         unReturnValue = RC_SUCCESS;
     }
     WHILE_FALSE_END;
 
-    // Free RSA object and its components (BIGNUM)
+    // Cleanup
     if (NULL != pRSAPubKey)
-        RSA_free(pRSAPubKey);
+        EVP_PKEY_free(pRSAPubKey);
+    if (NULL != ctx)
+        EVP_PKEY_CTX_free(ctx);
 
     return unReturnValue;
 }
 
 /**
- *  @brief      Verify the given RSA PKCS#1 RSASSA-PSS signature
- *  @details    This function verifies the given RSA PKCS#1 RSASSA-PSS signature with a RSA 2048-bit public key.
+ *  @brief      Verify the given RSA PKCS#1 RSASSA-PSS signature using SHA-256
+ *  @details    This function verifies the given RSA PKCS#1 RSASSA-PSS signature using SHA-256 for a RSA 2048-bit public key.
  *
  *  @param      PrgbMessageHash         Message hash buffer.
  *  @param      PunMessageHashSize      Size of message hash buffer.
@@ -573,9 +600,8 @@ Crypt_VerifySignature(
     _In_                                const UINT32    PunModulusSize)
 {
     unsigned int unReturnValue = RC_E_FAIL;
-    RSA* pRSAPubKey = NULL;
-    BIGNUM* pbnModulus = NULL;
-    BIGNUM* pbnExponent = NULL;
+    EVP_PKEY* pRSAPubKey = NULL;
+    EVP_PKEY_CTX* ctx = NULL;
 
     do
     {
@@ -589,59 +615,35 @@ Crypt_VerifySignature(
         }
 
         // Initialize RSA Public Key object
-        pRSAPubKey = RSA_new();
-        if (NULL == pRSAPubKey)
-        {
-            unReturnValue = RC_E_FAIL;
+        if (RC_SUCCESS != Crypt_GetRSAPubKey(PunModulusSize, PrgbModulus, sizeof(RSA_DEFAULT_PUB_EXPONENT), RSA_DEFAULT_PUB_EXPONENT, &pRSAPubKey))
             break;
-        }
 
-        pbnModulus = BN_bin2bn(PrgbModulus, PunModulusSize, pbnModulus);
-        if (NULL == pbnModulus)
-        {
-            unReturnValue = RC_E_FAIL;
+        // Init context and set signature verification parameters
+        if (NULL == (ctx = EVP_PKEY_CTX_new(pRSAPubKey, NULL)))
             break;
-        }
-#if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_1
-        pRSAPubKey->n = pbnModulus;
-#endif
-        pbnExponent = BN_bin2bn(RSA_DEFAULT_PUB_EXPONENT, sizeof(RSA_DEFAULT_PUB_EXPONENT), pbnExponent);
-        if (NULL == pbnExponent)
-        {
-            unReturnValue = RC_E_FAIL;
+        if (1 != EVP_PKEY_verify_init(ctx))
             break;
-        }
-#if OPENSSL_VERSION_NUMBER >= OPENSSL_VERSION_1_1
-        RSA_set0_key(pRSAPubKey, pbnModulus, pbnExponent, NULL);
-#else
-        pRSAPubKey->e = pbnExponent;
-        pRSAPubKey->d = NULL;
-#endif
-        {
-            BYTE rgbDecryptedDigest[RSA2048_MODULUS_SIZE] = {0};
-            int nReturnValue = -1;
-            nReturnValue = RSA_public_decrypt(PunSignatureSize, PrgbSignature, rgbDecryptedDigest, pRSAPubKey, RSA_NO_PADDING);
-            if (-1 == nReturnValue)
-            {
-                unReturnValue = RC_E_FAIL;
-                break;
-            }
+        if (1 != EVP_PKEY_CTX_set_rsa_padding(ctx, RSA_PKCS1_PSS_PADDING))
+            break;
+        if (1 != EVP_PKEY_CTX_set_signature_md(ctx, EVP_sha256()))
+            break;
 
-            // Verify the signature
-            if (1 != RSA_verify_PKCS1_PSS(pRSAPubKey, PrgbMessageHash, EVP_sha256(), rgbDecryptedDigest, CRYPT_PSS_PADDING_SALT_SIZE))
-            {
-                unReturnValue = RC_E_VERIFY_SIGNATURE;
-                break;
-            }
+        // Verify the signature
+        if (1 != EVP_PKEY_verify(ctx, PrgbSignature, PunSignatureSize, PrgbMessageHash, PunMessageHashSize))
+        {
+            unReturnValue = RC_E_VERIFY_SIGNATURE;
+            break;
         }
 
         unReturnValue = RC_SUCCESS;
     }
     WHILE_FALSE_END;
 
-    // Free RSA object and its components (BIGNUM)
+    // Cleanup
     if (NULL != pRSAPubKey)
-        RSA_free(pRSAPubKey);
+        EVP_PKEY_free(pRSAPubKey);
+    if (NULL != ctx)
+        EVP_PKEY_CTX_free(ctx);
 
     return unReturnValue;
 }

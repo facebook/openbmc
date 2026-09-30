@@ -1,0 +1,79 @@
+From 7a58be9319a91d9f9761eecb4533ec75a97b42f8 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai.pt@gmail.com>
+Date: Thu, 30 Jul 2026 10:03:29 +0800
+Subject: [PATCH] ARM: dts: aspeed: sanmiguel: Disable HSC nodes
+
+Disable Hot-Swap Controller (HSC) power monitor nodes in the DTS.
+
+Due to design requirements, the HSC driver probing is moved to userspace.
+Disabling these nodes in the device tree prevents kernel-level automatic
+driver probing and allows userspace to handle HSC device instantiation.
+
+Signed-off-by: Potin Lai <potin.lai.pt@gmail.com>
+
+[1] https://lore.kernel.org/all/20260731-upstream-sanmiguel-remove-hsc-nodes-v2-1-6a954ea49ba8@gmail.com/
+---
+ .../arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
+index 49a2987bdfbe..bcec9f8ef0d0 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-sanmiguel.dts
+@@ -697,45 +697,53 @@ &i2c9 {
+ 	pdb_mps_hsc1: power-monitor@10 {
+ 		compatible = "mps,mp5926";
+ 		reg = <0x10>;
++		status = "disabled";
+ 	};
+ 
+ 	pdb_ti_hsc1: power-monitor@11 {
+ 		compatible = "ti,lm5066i";
+ 		reg = <0x11>;
+ 		shunt-resistor-micro-ohms = <1000>;
++		status = "disabled";
+ 	};
+ 
+ 	pdb_mps_hsc2: power-monitor@12 {
+ 		compatible = "mps,mp5926";
+ 		reg = <0x12>;
++		status = "disabled";
+ 	};
+ 
+ 	pdb_ti_hsc2: power-monitor@13 {
+ 		compatible = "ti,lm5066i";
+ 		reg = <0x13>;
+ 		shunt-resistor-micro-ohms = <321>;
++		status = "disabled";
+ 	};
+ 
+ 	pdb_mps_hsc3: power-monitor@14 {
+ 		compatible = "mps,mp5926";
+ 		reg = <0x14>;
++		status = "disabled";
+ 	};
+ 
+ 	pdb_ti_hsc3: power-monitor@15 {
+ 		compatible = "ti,lm5066i";
+ 		reg = <0x15>;
+ 		shunt-resistor-micro-ohms = <321>;
++		status = "disabled";
+ 	};
+ 
+ 	pdb_mps_hsc4: power-monitor@16 {
+ 		compatible = "mps,mp5926";
+ 		reg = <0x16>;
++		status = "disabled";
+ 	};
+ 
+ 	pdb_ti_hsc4: power-monitor@17 {
+ 		compatible = "ti,lm5066i";
+ 		reg = <0x17>;
+ 		shunt-resistor-micro-ohms = <500>;
++		status = "disabled";
+ 	};
+ 
+ 	pdb_ioexp_20: gpio@20 {
+-- 
+2.53.0-Meta
+

@@ -22,13 +22,22 @@ std::vector<DeviceLocation> ModbusDeviceInventory::inspectDormant() const {
     // change to something larger if required.
     if ((it.second->lastActive() + kDormantMinInactiveTime) < curr) {
       const RegisterMap& rmap = it.second->getRegisterMap();
-      uint16_t probe = rmap.probeRegister;
-      std::vector<uint16_t> v(1);
-      try {
-        it.second->readHoldingRegisters(probe, v);
-        ret.push_back(it.first);
-      } catch (...) {
-        continue;
+      for (auto& probeRegister : rmap.probe.probeRegisters) {
+        try {
+          std::vector<uint16_t> v(1);
+          it.second->readHoldingRegisters(probeRegister.registerAddress, v);
+          if (probeRegister.values &&
+              probeRegister.values->end() ==
+                  std::find(
+                      probeRegister.values->begin(),
+                      probeRegister.values->end(),
+                      v[0])) {
+            continue;
+          }
+          ret.push_back(it.first);
+        } catch (...) {
+          continue;
+        }
       }
     }
   }

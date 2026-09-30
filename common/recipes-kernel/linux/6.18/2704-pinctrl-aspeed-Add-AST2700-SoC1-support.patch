@@ -1,4 +1,4 @@
-From a675c9ebdbc62da2bbbb90cada10bb0681f8d440 Mon Sep 17 00:00:00 2001
+From 05705b852ee08c33e0cbf9c5e67cc3a7566c01bb Mon Sep 17 00:00:00 2001
 From: Billy Tsai <billy_tsai@aspeedtech.com>
 Date: Mon, 2 Mar 2026 15:09:10 +0800
 Subject: [PATCH] pinctrl: aspeed: Add AST2700 SoC1 support
@@ -17,23 +17,23 @@ syscon, allowing shared ownership of the SCU register block.
 
 Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
 ---
- drivers/pinctrl/aspeed/Kconfig                |   13 +
+ drivers/pinctrl/aspeed/Kconfig                |   14 +
  drivers/pinctrl/aspeed/Makefile               |    1 +
- .../pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c   | 1733 +++++++++++++++++
- 3 files changed, 1747 insertions(+)
+ .../pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c   | 1747 +++++++++++++++++
+ 3 files changed, 1762 insertions(+)
  create mode 100644 drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c
 
 diff --git a/drivers/pinctrl/aspeed/Kconfig b/drivers/pinctrl/aspeed/Kconfig
-index 1a4e5b9ed471..2cf78e969bd6 100644
+index 1a4e5b9ed471..e892292bf966 100644
 --- a/drivers/pinctrl/aspeed/Kconfig
 +++ b/drivers/pinctrl/aspeed/Kconfig
-@@ -31,3 +31,16 @@ config PINCTRL_ASPEED_G6
+@@ -31,3 +31,17 @@ config PINCTRL_ASPEED_G6
  	help
  	  Say Y here to enable pin controller support for Aspeed's 6th
  	  generation SoCs. GPIO is provided by a separate GPIO driver.
 +
 +config PINCTRL_ASPEED_G7_SOC1
-+	bool "ASPEED G7 SoC1 pinctrl driver"
++	bool "Aspeed G7 SoC1 pin control"
 +	depends on (ARCH_ASPEED || COMPILE_TEST) && OF
 +	select MFD_SYSCON
 +	select PINMUX
@@ -42,8 +42,9 @@ index 1a4e5b9ed471..2cf78e969bd6 100644
 +	select GENERIC_PINCONF
 +	select REGMAP_MMIO
 +	help
-+	  Say Y here to enable pin controller support for SoC1 in Aspeed's
-+	  7th generation SoCs. GPIO is provided by a separate GPIO driver.
++	  Say Y here to enable pin controller support for the SoC1 instance
++	  of Aspeed's 7th generation SoCs. GPIO is provided by a separate
++	  GPIO driver.
 diff --git a/drivers/pinctrl/aspeed/Makefile b/drivers/pinctrl/aspeed/Makefile
 index db2a7600ae2b..a4f2ed97a891 100644
 --- a/drivers/pinctrl/aspeed/Makefile
@@ -55,10 +56,10 @@ index db2a7600ae2b..a4f2ed97a891 100644
 +obj-$(CONFIG_PINCTRL_ASPEED_G7_SOC1)	+= pinctrl-aspeed-g7-soc1.o
 diff --git a/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c b/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c
 new file mode 100644
-index 000000000000..d09123e24ef7
+index 000000000000..a1ef52ad5c75
 --- /dev/null
 +++ b/drivers/pinctrl/aspeed/pinctrl-aspeed-g7-soc1.c
-@@ -0,0 +1,1733 @@
+@@ -0,0 +1,1747 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +/*
 + * Pinctrl driver for Aspeed G7 SoC1
@@ -92,7 +93,13 @@ index 000000000000..d09123e24ef7
 +#define ASPEED_G7_SOC1_DRV_BASE          0x4C0
 +#define ASPEED_G7_SOC1_PCIE_REG          0x908
 +#define ASPEED_G7_SOC1_USB_MODE_REG      0x3B0
++#define ASPEED_G7_SOC1_SGMII_REG         0x47C
 +
++/*
++ * Each pin occupies a 4-bit slot in the MUX registers (MUX_BITS_PER_PIN),
++ * but only bits [2:0] select the mux function; bit 3 is reserved read-only
++ * and must not be written.  MUX_FUNC_MASK therefore covers 3 bits, not 4.
++ */
 +#define ASPEED_G7_SOC1_MUX_FUNC_MASK 0x7
 +#define ASPEED_G7_SOC1_MUX_BITS_PER_PIN 4
 +#define ASPEED_G7_SOC1_MUX_PINS_PER_REG \
@@ -656,15 +663,13 @@ index 000000000000..d09123e24ef7
 +	const struct pingroup *grp;
 +	struct group_desc *gd;
 +	const char *gname;
-+	int i, g_idx = -1;
++	int i, g_idx = -1, ret;
 +
 +	gd = pinctrl_generic_get_group(pctldev, group);
 +	if (!gd)
 +		return -EINVAL;
 +
 +	grp = &gd->grp;
-+	if (!grp)
-+		return -EINVAL;
 +
 +	fd = pinmux_generic_get_function(pctldev, fselector);
 +	if (!fd)
@@ -712,6 +717,17 @@ index 000000000000..d09123e24ef7
 +			field.reg = ASPEED_G7_SOC1_USB_MODE_REG;
 +			field.mask = 0x3;
 +			field.shift = pin == PORTC_MODE ? 0 : 2;
++		} else if (pin == SGMII0) {
++			/*
++			 * SGMII0 is a virtual pin whose mux control resides at
++			 * SCU47C bit 0, outside the contiguous pin-indexed MUX
++			 * register range starting at MUX_BASE.  The field is
++			 * 1 bit wide; use a 1-bit mask to avoid clobbering
++			 * adjacent bits in SCU47C.
++			 */
++			field.reg = ASPEED_G7_SOC1_SGMII_REG;
++			field.shift = 0;
++			field.mask = 0x1;
 +		} else {
 +			/* Standard 4-bit-per-pin multi-function configuration */
 +			field = aspeed_g7_soc1_pinmux_field_from_pin(pin);
@@ -721,9 +737,11 @@ index 000000000000..d09123e24ef7
 +			"Setting pin %u reg 0x%x shift %u to function %s (muxval=0x%x)\n",
 +			pin, field.reg, field.shift, func->name, val);
 +
-+		regmap_update_bits(pctl->regmap, field.reg,
-+				   field.mask << field.shift,
-+				   val << field.shift);
++		ret = regmap_update_bits(pctl->regmap, field.reg,
++					 field.mask << field.shift,
++					 val << field.shift);
++		if (ret)
++			return ret;
 +	}
 +
 +	return 0;
@@ -739,9 +757,8 @@ index 000000000000..d09123e24ef7
 +
 +	if (pin <= AC24) {
 +		field = aspeed_g7_soc1_pinmux_field_from_pin(pin);
-+		regmap_update_bits(pctl->regmap, field.reg,
-+				   field.mask << field.shift, 0);
-+		ret = 0;
++		ret = regmap_update_bits(pctl->regmap, field.reg,
++					 field.mask << field.shift, 0);
 +	}
 +
 +	return ret;
@@ -813,11 +830,18 @@ index 000000000000..d09123e24ef7
 +		return -EINVAL;
 +
 +	switch (param) {
-+	case PIN_CONFIG_BIAS_PULL_DOWN:
-+	case PIN_CONFIG_BIAS_PULL_UP:
 +	case PIN_CONFIG_BIAS_DISABLE:
 +		field = aspeed_g7_soc1_bias_field_from_pin(pin);
 +		break;
++	case PIN_CONFIG_BIAS_PULL_DOWN:
++	case PIN_CONFIG_BIAS_PULL_UP:
++		/*
++		 * The hardware has a single 1-bit enable/disable field per
++		 * pin; pull direction is fixed in silicon and cannot be read
++		 * back from the register.  Reject readback requests for a
++		 * specific pull direction.
++		 */
++		return -ENOTSUPP;
 +	case PIN_CONFIG_DRIVE_STRENGTH:
 +		ds_idx = aspeed_g7_soc1_drv_map[pin];
 +		if (!ds_idx)
@@ -837,8 +861,9 @@ index 000000000000..d09123e24ef7
 +	if (param == PIN_CONFIG_DRIVE_STRENGTH)
 +		val = (val + ASPEED_G7_SOC1_DRV_STRENGTH_HW_BASE) *
 +		      ASPEED_G7_SOC1_DRV_STRENGTH_STEP_MA;
-+	else
-+		val = !val;
++
++	if (!val)
++		return -EINVAL;
 +
 +	*config = pinconf_to_config_packed(param, val);
 +
@@ -867,6 +892,12 @@ index 000000000000..d09123e24ef7
 +		switch (param) {
 +		case PIN_CONFIG_BIAS_PULL_DOWN:
 +		case PIN_CONFIG_BIAS_PULL_UP:
++			/*
++			 * The hardware has one enable/disable bit per pin;
++			 * pull direction is fixed in silicon.  Both PULL_UP
++			 * and PULL_DOWN map to "enable bias"; the caller must
++			 * request the direction that the hardware provides.
++			 */
 +		case PIN_CONFIG_BIAS_DISABLE:
 +			field = aspeed_g7_soc1_bias_field_from_pin(pin);
 +			val = (param == PIN_CONFIG_BIAS_DISABLE) ? 1 : 0;
@@ -900,26 +931,6 @@ index 000000000000..d09123e24ef7
 +	return 0;
 +}
 +
-+static int aspeed_g7_soc1_get_group_pins(struct pinctrl_dev *pctldev,
-+					 unsigned int selector,
-+					 const unsigned int **pins,
-+					 unsigned int *npins)
-+{
-+	struct group_desc *group;
-+
-+	group = pinctrl_generic_get_group(pctldev, selector);
-+	if (!group)
-+		return -EINVAL;
-+
-+	if (!group->grp.npins)
-+		return -ENODEV;
-+
-+	*pins = group->grp.pins;
-+	*npins = group->grp.npins;
-+
-+	return 0;
-+}
-+
 +static int aspeed_g7_soc1_pin_config_group_get(struct pinctrl_dev *pctldev,
 +					       unsigned int selector,
 +					       unsigned long *config)
@@ -928,9 +939,11 @@ index 000000000000..d09123e24ef7
 +	unsigned int npins;
 +	int ret;
 +
-+	ret = aspeed_g7_soc1_get_group_pins(pctldev, selector, &pins, &npins);
++	ret = pinctrl_generic_get_group_pins(pctldev, selector, &pins, &npins);
 +	if (ret)
 +		return ret;
++	if (!npins)
++		return -ENODEV;
 +
 +	return aspeed_g7_soc1_pin_config_get(pctldev, pins[0], config);
 +}
@@ -945,7 +958,7 @@ index 000000000000..d09123e24ef7
 +	int ret;
 +	int i;
 +
-+	ret = aspeed_g7_soc1_get_group_pins(pctldev, selector, &pins, &npins);
++	ret = pinctrl_generic_get_group_pins(pctldev, selector, &pins, &npins);
 +	if (ret)
 +		return ret;
 +
@@ -1740,16 +1753,18 @@ index 000000000000..d09123e24ef7
 +		return PTR_ERR(pctl->regmap);
 +	}
 +
-+	pctl->pctl = devm_pinctrl_register(dev, &aspeed_g7_soc1_desc, pctl);
-+	if (IS_ERR(pctl->pctl)) {
++	ret = devm_pinctrl_register_and_init(dev, &aspeed_g7_soc1_desc, pctl,
++					     &pctl->pctl);
++	if (ret) {
 +		dev_err(dev, "Failed to register pinctrl\n");
-+		return PTR_ERR(pctl->pctl);
++		return ret;
 +	}
 +
 +	for (i = 0; i < ARRAY_SIZE(aspeed_g7_soc1_groups); i++) {
 +		const struct pingroup *grp = &aspeed_g7_soc1_groups[i];
 +
-+		ret = pinctrl_generic_add_group(pctl->pctl, grp->name, (unsigned int *)grp->pins,
++		ret = pinctrl_generic_add_group(pctl->pctl, grp->name,
++						(const unsigned int *)grp->pins,
 +						grp->npins, pctl);
 +		if (ret < 0) {
 +			dev_err(dev, "Failed to add group %s\n", grp->name);
@@ -1769,7 +1784,7 @@ index 000000000000..d09123e24ef7
 +		}
 +	}
 +
-+	return 0;
++	return pinctrl_enable(pctl->pctl);
 +}
 +
 +static const struct of_device_id aspeed_g7_soc1_pinctrl_match[] = {
@@ -1793,5 +1808,5 @@ index 000000000000..d09123e24ef7
 +}
 +arch_initcall(aspeed_g7_soc1_pinctrl_init);
 -- 
-2.52.0
+2.53.0-Meta
 

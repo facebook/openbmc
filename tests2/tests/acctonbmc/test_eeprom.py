@@ -20,6 +20,7 @@
 import unittest
 
 from common.base_eeprom_test import EepromV5Test
+from tests.acctonbmc.helper.utils import PlatformInfo
 
 
 class CHASSISEepromTest(EepromV5Test, unittest.TestCase):
@@ -31,10 +32,15 @@ class CHASSISEepromTest(EepromV5Test, unittest.TestCase):
         self.eeprom_cmd = ["/usr/bin/weutil -e chassis_eeprom"]
 
     def set_product_name(self):
-        self.product_name = ["MINIPACK3N","MINIPACK3BA"]
+        self.product_name = [
+            "MINIPACK3N",
+            "MINIPACK3BA",
+            "WEDGE800BACT",
+            "WEDGE800CACT",
+        ]
 
     def set_location_on_fabric(self):
-        self.location_on_fabric = ["FCB"]
+        self.location_on_fabric = ["FCB", "MCB"]
 
     """
     Chassis EEPROM have only BMC and ASIC switch need to ignore x86
@@ -66,4 +72,42 @@ class SCMEepromTest(EepromV5Test, unittest.TestCase):
         pass
 
     def test_switch_asic_mac(self):
+        pass
+
+
+class RackMonEepromTest(EepromV5Test, unittest.TestCase):
+    """
+    Test for RackMon EEPROM
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        PlatformInfo.skip_unless_platform(["WEDGE800BACT", "WEDGE800CACT"])
+        super().setUpClass()
+
+    def set_eeprom_cmd(self):
+        self.eeprom_cmd = ["/usr/bin/weutil -e rackmon_eeprom"]
+
+    def set_product_name(self):
+        self.product_name = ["RACKMON"]
+
+    def set_location_on_fabric(self):
+        platform_name, platform_rev = PlatformInfo.get_platform()
+
+        if platform_name in ["WEDGE800BACT"] and platform_rev in ["EVT1"]:
+            self.location_on_fabric = ["SMB"]
+        else:
+            self.location_on_fabric = ["RACKMON"]
+
+    """
+    RackMon EEPROM need to ignore all
+    """
+
+    def test_bmc_mac(self):
+        pass
+
+    def test_switch_asic_mac(self):
+        pass
+
+    def test_x86_mac(self):
         pass

@@ -242,6 +242,7 @@ class CommonFanUtilBasedFansTest(BaseFansTest):
                         "FSCD Driver",
                         "iom",
                         "nic",
+                        "mb",
                     ],
                     "Accepted printed attributes",
                 )

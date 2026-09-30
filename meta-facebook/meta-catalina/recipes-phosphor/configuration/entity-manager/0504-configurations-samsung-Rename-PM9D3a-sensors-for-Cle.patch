@@ -1,0 +1,225 @@
+From 70896755521ec4cdb296a3e948362d867926866b Mon Sep 17 00:00:00 2001
+From: Alex Wang <alex.ts.wang@fii-foxconn.com>
+Date: Thu, 24 Sep 2026 14:45:48 +0800
+Subject: [PATCH 1/1] configurations: samsung: Rename PM9D3a sensors for
+ Clemente
+
+Rename the PM9D3a inventory and temperature sensor names to match the
+existing Clemente platform naming scheme.
+---
+ configurations/samsung/pm9d3a.json | 203 +++++++++++++++++++++++++----
+ 1 file changed, 179 insertions(+), 24 deletions(-)
+
+diff --git a/configurations/samsung/pm9d3a.json b/configurations/samsung/pm9d3a.json
+index 22477c2..ab0cba0 100644
+--- a/configurations/samsung/pm9d3a.json
++++ b/configurations/samsung/pm9d3a.json
+@@ -1,26 +1,181 @@
+-{
+-    "Exposes": [
+-        {
+-            "Address": "$address",
+-            "Bus": "$bus",
+-            "Name": "PM9D3a $index FRU",
+-            "Type": "EEPROM"
++[
++    {
++        "Exposes": [
++            {
++                "Address": "$address",
++                "Bus": "$bus",
++                "Name": "NVMe $bus - 48 / 2 % 2 + 1 FRU",
++                "Type": "EEPROM"
++            },
++            {
++                "Address": "0x6a",
++                "Bus": "$bus",
++                "Name": "HDDBOARD0 SSD$bus - 48 / 2 % 2 TEMP_C",
++                "PEC": "Required",
++                "PowerState": "On",
++                "Thresholds": [
++                    {
++                        "Direction": "greater than",
++                        "Index": 2,
++                        "Name": "upper non recoverable",
++                        "Severity": 4,
++                        "Value": 85
++                    },
++                    {
++                        "Direction": "greater than",
++                        "Index": 2,
++                        "Name": "upper critical",
++                        "Severity": 1,
++                        "Value": 78
++                    },
++                    {
++                        "Direction": "greater than",
++                        "Name": "upper non critical",
++                        "Severity": 0,
++                        "Value": 71
++                    },
++                    {
++                        "Direction": "less than",
++                        "Name": "lower non critical",
++                        "Severity": 0,
++                        "Value": -1
++                    }
++                ],
++                "Type": "NVME1000"
++            }
++        ],
++        /* Clemente Hard Disk Drive NVMe Board 0*/
++        "Name": "Clemente HDD NVMe 0 $bus - 48 / 2 % 2",
++        "Probe": [
++            "xyz.openbmc_project.FruDevice({'BUS': 48, 'ADDRESS': 83, 'PRODUCT_MANUFACTURER': 'Samsung'})",
++            "OR",
++            "xyz.openbmc_project.FruDevice({'BUS': 50, 'ADDRESS': 83, 'PRODUCT_MANUFACTURER': 'Samsung'})",
++            "AND",
++            "FOUND('Clemente HDD Carrier $bus - 25 % 11')"
++        ],
++        "Type": "NVMe",
++        "xyz.openbmc_project.Inventory.Decorator.Asset": {
++            "Manufacturer": "$PRODUCT_MANUFACTURER",
++            "Model": "$PRODUCT_PRODUCT_NAME",
++            "PartNumber": "$PRODUCT_PART_NUMBER",
++            "SerialNumber": "$PRODUCT_SERIAL_NUMBER"
+         },
+-        {
+-            "Address": "0x6a",
+-            "Bus": "$bus",
+-            "Name": "PM9D3a $index Temp",
+-            "PowerState": "On",
+-            "Type": "NVME1000"
+-        }
+-    ],
+-    "Name": "PM9D3a $index",
+-    "Probe": "xyz.openbmc_project.FruDevice({'PRODUCT_PRODUCT_NAME': 'PM9D3a', 'PRODUCT_MANUFACTURER': 'Samsung'})",
+-    "Type": "Board",
+-    "xyz.openbmc_project.Inventory.Decorator.Asset": {
+-        "Manufacturer": "$PRODUCT_MANUFACTURER",
+-        "Model": "$PRODUCT_PRODUCT_NAME",
+-        "PartNumber": "$PRODUCT_PART_NUMBER",
+-        "SerialNumber": "$PRODUCT_SERIAL_NUMBER"
++        "xyz.openbmc_project.Inventory.Item.Chassis": {}
++    },
++    {
++        "Exposes": [
++            {
++                "Address": "$address",
++                "Bus": "$bus",
++                "Name": "NVMe $bus - 52 / 2 % 2 + 1 FRU",
++                "Type": "EEPROM"
++            },
++            {
++                "Address": "0x6a",
++                "Bus": "$bus",
++                "Name": "HDDBOARD1 SSD$bus - 52 / 2 % 2 TEMP_C",
++                "PEC": "Required",
++                "PowerState": "On",
++                "Thresholds": [
++                    {
++                        "Direction": "greater than",
++                        "Index": 2,
++                        "Name": "upper non recoverable",
++                        "Severity": 4,
++                        "Value": 85
++                    },
++                    {
++                        "Direction": "greater than",
++                        "Index": 2,
++                        "Name": "upper critical",
++                        "Severity": 1,
++                        "Value": 78
++                    },
++                    {
++                        "Direction": "greater than",
++                        "Name": "upper non critical",
++                        "Severity": 0,
++                        "Value": 71
++                    },
++                    {
++                        "Direction": "less than",
++                        "Name": "lower non critical",
++                        "Severity": 0,
++                        "Value": -1
++                    }
++                ],
++                "Type": "NVME1000"
++            }
++        ],
++        /* Clemente Hard Disk Drive NVMe Board 1*/
++        "Name": "Clemente HDD NVMe 1 $bus - 52 / 2 % 2",
++        "Probe": [
++            "xyz.openbmc_project.FruDevice({'BUS': 52, 'ADDRESS': 83, 'PRODUCT_MANUFACTURER': 'Samsung'})",
++            "OR",
++            "xyz.openbmc_project.FruDevice({'BUS': 54, 'ADDRESS': 83, 'PRODUCT_MANUFACTURER': 'Samsung'})",
++            "AND",
++            "FOUND('Clemente HDD Carrier $bus - 25 % 11')"
++        ],
++        "Type": "NVMe",
++        "xyz.openbmc_project.Inventory.Decorator.Asset": {
++            "Manufacturer": "$PRODUCT_MANUFACTURER",
++            "Model": "$PRODUCT_PRODUCT_NAME",
++            "PartNumber": "$PRODUCT_PART_NUMBER",
++            "SerialNumber": "$PRODUCT_SERIAL_NUMBER"
++        },
++        "xyz.openbmc_project.Inventory.Item.Chassis": {}
++    },
++    {
++        "Exposes": [
++            {
++                "Address": "$address",
++                "Bus": "$bus",
++                "Name": "NVMe $index FRU",
++                "Type": "EEPROM"
++            },
++            {
++                "Address": "0x6a",
++                "Bus": "45",
++                "Name": "BOOTDRIVE_TEMP_C",
++                "PEC": "Required",
++                "PowerState": "On",
++                "Thresholds": [
++                    {
++                        "Direction": "greater than",
++                        "Name": "upper critical",
++                        "Severity": 1,
++                        "Value": 78
++                    },
++                    {
++                        "Direction": "greater than",
++                        "Name": "upper non critical",
++                        "Severity": 0,
++                        "Value": 71
++                    },
++                    {
++                        "Direction": "less than",
++                        "Name": "lower non critical",
++                        "Severity": 0,
++                        "Value": -1
++                    }
++                ],
++                "Type": "NVME1000"
++            }
++        ],
++        /* Clemente Boot Drive NVMe*/
++        "Name": "Clemente Boot Drive NVMe",
++        "Probe": [
++            "xyz.openbmc_project.FruDevice({'BUS': 45, 'ADDRESS': 83, 'PRODUCT_MANUFACTURER': 'Samsung'})",
++            "AND",
++            "FOUND('Clemente HDD Carrier $bus - 25 % 11')"
++        ],
++        "Type": "NVMe",
++        "xyz.openbmc_project.Inventory.Decorator.Asset": {
++            "Manufacturer": "$PRODUCT_MANUFACTURER",
++            "Model": "$PRODUCT_PRODUCT_NAME",
++            "PartNumber": "$PRODUCT_PART_NUMBER",
++            "SerialNumber": "$PRODUCT_SERIAL_NUMBER"
++        },
++        "xyz.openbmc_project.Inventory.Item.Chassis": {}
+     }
+-}
++]
+-- 
+2.43.0
+

@@ -29,7 +29,7 @@ const std::vector<std::string> thermalKeywords = {
     "SWPowerCap",
     "HWPowerBrakeSlowdown",
     "SyncBoost",
-    "GPUThermalOvertTreshold"
+    "GPUThermalOvertThreshold"
 };
 
 /**

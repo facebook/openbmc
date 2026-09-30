@@ -1,4 +1,4 @@
-From 771f2b11c98eaddf18a2e21154d4158923022519 Mon Sep 17 00:00:00 2001
+From 5b5c798fb4f509d694a92331aca3eaf6ea6df035 Mon Sep 17 00:00:00 2001
 From: Peter Delevoryas <pdel@fb.com>
 Date: Wed, 17 Aug 2022 10:14:07 +0200
 Subject: [PATCH] hw/misc/aspeed: Add fby35-sb-cpld
@@ -33,10 +33,10 @@ Signed-off-by: Peter Delevoryas <peter@pjd.dev>
  create mode 100644 hw/misc/fby35_sb_cpld.c
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 7183babd6a..594fcd4777 100644
+index 1312bbd1bd..f7c43848db 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -1281,6 +1281,7 @@ F: tests/*/*aspeed*
+@@ -1284,6 +1284,7 @@ F: tests/*/*aspeed*
  F: tests/*/*ast2700*
  F: pc-bios/ast27x0_bootrom.bin
  F: roms/vbootrom
@@ -214,5 +214,5 @@ index 6db4934dc5..de67390381 100644
 +fby35_sb_cpld_read(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"
 +fby35_sb_cpld_write(uint8_t reg, uint8_t value) "reg 0x%02x value 0x%02x"
 -- 
-2.54.0
+2.53.0-Meta
 

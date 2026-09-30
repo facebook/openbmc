@@ -1,8 +1,7 @@
-From 70896755521ec4cdb296a3e948362d867926866b Mon Sep 17 00:00:00 2001
+From c7b4edcef5578760d57dac1354b3968e4a6c50ec Mon Sep 17 00:00:00 2001
 From: Alex Wang <alex.ts.wang@fii-foxconn.com>
 Date: Thu, 24 Sep 2026 14:45:48 +0800
-Subject: [PATCH 1/1] configurations: samsung: Rename PM9D3a sensors for
- Clemente
+Subject: [PATCH] configurations: samsung: Rename PM9D3a sensors for Clemente
 
 Rename the PM9D3a inventory and temperature sensor names to match the
 existing Clemente platform naming scheme.
@@ -221,5 +220,5 @@ index 22477c2..ab0cba0 100644
 -}
 +]
 -- 
-2.43.0
+2.53.0-Meta
 

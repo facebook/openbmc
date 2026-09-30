@@ -1,4 +1,4 @@
-From e24caf77d8a759bc5196ff2ef691c89106a3a06c Mon Sep 17 00:00:00 2001
+From 00b7bb47d2ec4d99a041253aed5b44ac71519786 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Tue, 11 Mar 2025 13:47:42 +0800
 Subject: [PATCH] entity-manager: Add config-prefix filtering
@@ -19,7 +19,7 @@ Signed-off-by: Eric Yang <eric.yang.wiwynn@gmail.com>
  5 files changed, 68 insertions(+), 37 deletions(-)
 
 diff --git a/meson.build b/meson.build
-index 4df6652..67d0d6b 100644
+index a45e316..e8d060b 100644
 --- a/meson.build
 +++ b/meson.build
 @@ -6,8 +6,10 @@ project(
@@ -49,7 +49,7 @@ index 8cdd903..efbf48c 100644
 +    description: 'Comma-separated list of JSON filename prefixes to filter. Default loads all JSON files.',
 +)
 diff --git a/src/entity_manager/configuration.cpp b/src/entity_manager/configuration.cpp
-index cafa9e1..a0544e1 100644
+index 22ac896..1f5f1dc 100644
 --- a/src/entity_manager/configuration.cpp
 +++ b/src/entity_manager/configuration.cpp
 @@ -64,10 +64,15 @@ void Configuration::loadSingleConfigFile(const std::filesystem::path& jsonPath,
@@ -180,10 +180,10 @@ index 3872c4e..ddf4d2f 100644
  
      return !foundPaths.empty();
 diff --git a/src/utils.hpp b/src/utils.hpp
-index 2fd247d..982068e 100644
+index 70fc603..3dffbdd 100644
 --- a/src/utils.hpp
 +++ b/src/utils.hpp
-@@ -24,10 +24,16 @@ using LastIndex = size_t;
+@@ -27,10 +27,16 @@ using LastIndex = size_t;
  
  bool findFiles(const std::filesystem::path& dirPath,
                 const std::string& matchString,

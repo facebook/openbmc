@@ -1,7 +1,7 @@
-From ccc38327fce07d55b19fc4513b5887dcfd39e332 Mon Sep 17 00:00:00 2001
+From 8a82ee21740dedf034fa4e8930ea43d3b2680cbe Mon Sep 17 00:00:00 2001
 From: "Sue.Wang" <Sue.Wang@quantatw.com>
 Date: Tue, 29 Sep 2026 16:05:18 +0800
-Subject: [PATCH 1/2] meta-facebook-ventura-revise-commenting-style
+Subject: [PATCH] meta-facebook-ventura-revise-commenting-style
 
 lore: https://lore.kernel.org/all/20260929075106.74731-
 1-suwangquanta@gmail.com/T/#u
@@ -12,7 +12,7 @@ Signed-off-by: Sue.Wang <Sue.Wang@quantatw.com>
  1 file changed, 57 insertions(+), 53 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
-index 8570f1214..c21542cbe 100644
+index 8570f121496c..c21542cbeeb3 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-ventura.dts
 @@ -7,43 +7,43 @@
@@ -262,5 +262,5 @@ index 8570f1214..c21542cbe 100644
  
  &sgpiom0 {
 -- 
-2.34.1
+2.53.0-Meta
 

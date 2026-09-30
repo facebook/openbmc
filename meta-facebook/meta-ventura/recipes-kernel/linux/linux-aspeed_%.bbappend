@@ -11,4 +11,6 @@ SRC_URI += " \
     file://0006-ARM-dts-aspeed-ventura-add-missing-cable-presence-gp.patch \
     file://0007-ARM-dts-aspeed-Ventura-Enable-i2c-slave-timeout.patch \
     file://0008-ARM-dts-aspeed-ventura-add-the-0x11-ioexp-to-i2c10.patch \
+    file://0009-ARM-dts-aspeed-ventura-revise-commenting-style.patch \
+    file://0010-ARM-dts-aspeed-ventura-enable-mac0.patch \
 "

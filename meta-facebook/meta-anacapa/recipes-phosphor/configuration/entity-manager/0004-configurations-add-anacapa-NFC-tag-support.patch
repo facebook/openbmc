@@ -1,0 +1,56 @@
+From c2a1847d6d0814fe43a97f97d716befca556a406 Mon Sep 17 00:00:00 2001
+From: Carl Lee <carl.lee@amd.com>
+Date: Wed, 22 Apr 2026 19:06:22 +0800
+Subject: [PATCH] configurations: add anacapa NFC tag support
+
+Add support to expose NFC tag FRU data in anacapa_nfc_tag.
+Add LocationCode interface to support tray location
+
+Tested:
+Verified NFC FRU DBus objects are created correctly
+
+Change-Id: Id32645f7c5edc6d4f59228f2cf25a12740dcb99c
+Signed-off-by: Carl Lee <carl.lee@amd.com>
+---
+ configurations/meson.build                       |  1 +
+ configurations/meta/anacapa/anacapa_nfc_tag.json | 16 ++++++++++++++++
+ 2 files changed, 17 insertions(+)
+ create mode 100644 configurations/meta/anacapa/anacapa_nfc_tag.json
+
+diff --git a/configurations/meson.build b/configurations/meson.build
+index 421e299..d997a93 100644
+--- a/configurations/meson.build
++++ b/configurations/meson.build
+@@ -127,6 +127,7 @@ configs = [
+     'meta/anacapa/anacapa_mb_evt1.json',
+     'meta/anacapa/anacapa_mb_evt2.json',
+     'meta/anacapa/anacapa_nfc_adaptor.json',
++    'meta/anacapa/anacapa_nfc_tag.json',
+     'meta/anacapa/anacapa_pdb_l.json',
+     'meta/anacapa/anacapa_pdb_l_evt1.json',
+     'meta/anacapa/anacapa_pdb_l_evt2.json',
+diff --git a/configurations/meta/anacapa/anacapa_nfc_tag.json b/configurations/meta/anacapa/anacapa_nfc_tag.json
+new file mode 100644
+index 0000000..bad2c18
+--- /dev/null
++++ b/configurations/meta/anacapa/anacapa_nfc_tag.json
+@@ -0,0 +1,16 @@
++{
++    "Exposes": [],
++    "Name": "NFC Tag",
++    "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Anacapa Tag', 'BOARD_MANUFACTURER': 'AMD'})",
++    "Type": "Board",
++    "xyz.openbmc_project.Inventory.Decorator.Asset": {
++        "BuildDate": "$BOARD_MANUFACTURE_DATE",
++        "Manufacturer": "$BOARD_MANUFACTURER",
++        "Model": "$BOARD_PRODUCT_NAME",
++        "PartNumber": "$BOARD_PART_NUMBER",
++        "SerialNumber": "$BOARD_SERIAL_NUMBER"
++    },
++    "xyz.openbmc_project.Inventory.Decorator.LocationCode": {
++        "LocationCode": "$BOARD_INFO_AM1"
++    }
++}
+-- 
+2.34.1
+

@@ -27,6 +27,47 @@ from utils.test_utils import qemu_check
 
 
 @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
+class AstAdcSensorTest(LmSensorsTest, unittest.TestCase):
+    # sensor label -> (expected value, allowed delta), in Volts.
+    # Note: "+5 Voltage" reads ~4V on real hardware (known issue), so the
+    # range is widened to 3.5-5.5V.
+    AST_ADC_SENSORS = {
+        "+1 Core Voltage": (1.0, 0.1),
+        "+1 Analog Voltage": (1.0, 0.1),
+        "+5 Voltage": (4.5, 1.0),
+        "+3.3 Voltage": (3.3, 0.33),
+        "+2.5 Voltage": (2.5, 0.25),
+    }
+
+    def set_sensors_cmd(self):
+        self.sensors_cmd = ["sensors ast_adc_hwmon-*"]
+
+    def test_ast_adc_sensor_keys(self):
+        result = self.get_parsed_result()
+        for key in AstAdcSensorTest.AST_ADC_SENSORS:
+            with self.subTest(key=key):
+                self.assertIn(
+                    key,
+                    result.keys(),
+                    "Missing key {} in ast_adc_hwmon data".format(key),
+                )
+
+    def test_ast_adc_sensor_data_range(self):
+        result = self.get_parsed_result()
+        for key, (expected, delta) in AstAdcSensorTest.AST_ADC_SENSORS.items():
+            with self.subTest(key=key):
+                self.assertIn(key, result.keys())
+                # '+1.020 V' extract 1.020 from it
+                value = result[key].split("+")[1].split(" V")[0]
+                self.assertAlmostEqual(
+                    float(value),
+                    expected,
+                    delta=delta,
+                    msg="{} value is {} not within range".format(key, value),
+                )
+
+
+@unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
 class ComESensorTest(LmSensorsTest, unittest.TestCase):
     COM_E_DRIVER = [
         "CPU Vcore",

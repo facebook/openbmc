@@ -108,14 +108,14 @@ class commonApp_Handler:
         return web.json_response(result, dumps=dumps_bytestr)
 
     # Handler for sys/mb/leakage resource endpoint
-    def helper_rest_leakage_hdl(self, request):
+    def helper_rest_leakage_hdl(self, ctx: RequestContext):
         return web.json_response(
             rest_leakage.get_leakage_status(), dumps=dumps_bytestr, status=200
         )
 
-    @common_force_async
-    def rest_leakage_hdl(self, request):
-        return self.helper_rest_leakage_hdl(request)
+    @async_web_handler_in_common_executor
+    def rest_leakage_hdl(self, ctx: RequestContext):
+        return self.helper_rest_leakage_hdl(ctx)
 
     # Handler for sys/server resource endpoint
     def helper_rest_server_hdl(self, ctx: RequestContext):

@@ -20,13 +20,16 @@
 import unittest
 
 from common.base_gpio_test import BaseGpioTest
-from tests.fby3.test_data.gpio.gpio import GPIOS
+from tests.fby3.board_class import select_by_class
+from tests.fby3.test_data.gpio.gpio import GPIOS, GPIOS_BY_CLASS
 from utils.test_utils import qemu_check
 
 
 class GpioTest(BaseGpioTest, unittest.TestCase):
     def set_gpios(self):
-        self.gpios = GPIOS
+        # A class 2 single-host server has one slot and no baseboard, so none
+        # of the per-slot shadows exist there.
+        self.gpios = select_by_class(GPIOS_BY_CLASS, GPIOS)
 
     @unittest.skipIf(qemu_check(), "test env is QEMU, skipped")
     def test_gpios(self):

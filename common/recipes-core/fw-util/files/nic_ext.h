@@ -14,6 +14,7 @@ class NicExtComponent : public NicComponent {
       : NicComponent(fru, comp, key), _vid_key(key), _fru_id(fruid), _if_idx(idx), _ch_id(chid) {}
     int get_version(json& j);
     int update(const std::string& img) override;
+    uint8_t get_channel(void) { return _ch_id; }
 };
 
 #endif

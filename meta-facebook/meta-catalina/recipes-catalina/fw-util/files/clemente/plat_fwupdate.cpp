@@ -10,7 +10,7 @@
 #include <openbmc/cpld.h>
 #include <openbmc/obmc-i2c.h>
 #include "vr_fw.h"
-#include "nic_ext.h"
+#include "plat_nic_ext.h"
 #include "usbdbg.h"
 
 #define FRU_NIC0   (0)
@@ -51,12 +51,12 @@ public:
     kv_get("pdb_hw_rev", value, NULL, 0);
     if (std::string(value) == "EVT")
     {
-      static NicExtComponent nic1_evt("nic1", "nic1", "nic1_fw_ver", FRU_NIC1, 1, 0x00);
+      static PlatformNicExtComponent nic1_evt("nic1", "nic1", "nic1_fw_ver", FRU_NIC1, 1, 0x00);
     }
     else
     {
-      static NicExtComponent nic0("nic0", "nic0", "nic0_fw_ver", FRU_NIC0, 0, 0x00);
-      static NicExtComponent nic1("nic1", "nic1", "nic1_fw_ver", FRU_NIC1, 1, 0x20);
+      static PlatformNicExtComponent nic0("nic0", "nic0", "nic0_fw_ver", FRU_NIC0, 0, 0x00);
+      static PlatformNicExtComponent nic1("nic1", "nic1", "nic1_fw_ver", FRU_NIC1, 1, 0x20);
     }
 
     // VR Component

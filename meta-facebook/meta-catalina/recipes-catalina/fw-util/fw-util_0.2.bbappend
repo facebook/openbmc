@@ -35,6 +35,8 @@ LOCAL_URI += " \
     file://bmc.cpp \
     file://cpld.cpp \
     file://hmc.cpp \
+    file://plat_nic_ext.h \
+    file://plat_nic_ext.cpp \
     "
 
 DEPENDS += " \

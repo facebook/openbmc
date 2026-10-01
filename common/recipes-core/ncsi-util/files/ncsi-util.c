@@ -318,7 +318,7 @@ static int enable_multi_channel(char *dev_name, int channel_num, int channel_id)
   return ret;
 }
 
-static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
+static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch, bool force_update)
 {
 #define SLEEP_TIME_MS               20  // wait time per loop in ms
   NCSI_NL_MSG_T *nl_msg = NULL;
@@ -362,6 +362,12 @@ static int pldm_update_fw(char *path, int pldm_bufsize, uint8_t ch)
   if (!pkgHdr) {
     ret = -1;
     goto free_exit;
+  }
+
+  if (force_update) {
+    for (i = 0; i < pkgHdr->componentImageCnt; i++) {
+      pkgHdr->pCompImgInfo[i]->options |= 1;
+    }
   }
 
   pldmCreateReqUpdateCmd(pkgHdr, &pldmReq, pldm_bufsize);
@@ -576,6 +582,7 @@ static void default_ncsi_util_usage(void) {
   printf("       -S             show adapter statistics\n");
   printf("       -p [file]      Update NIC firmware via PLDM\n");
   printf("           -b [n]     (optional) buffer size for PLDM FW update [default=1024]\n");
+  printf("           -f         (optional) force update\n");
   printf("       -z             send \"PLDM Cancel Update\" cmd \n");
   printf("       -s [n]         socket test\n\n");
   printf("       -t [channels]  Enable multi channels\n\n");
@@ -599,16 +606,18 @@ static int default_ncsi_util_handler(int argc, char **argv,
   int fshowethstats = 0;
   int cancelUpdate = 0;
   int bufSize = 0;
+  int pldmBufSize = 1024;
   char *pfile = NULL;
   int fupgrade = 0;
   int ret = 0;
   int sockettest = 0;
   int channel_num = 0;
+  bool forceUpdate = false;
 
   /*
    * Handle ncsi DMTF command options
    */
-  while ((argflag = getopt(argc, argv, "hs:Sp:zt:?" NCSI_UTIL_COMMON_OPT_STR)) != -1)
+  while ((argflag = getopt(argc, argv, "hs:Sp:zt:b:f?" NCSI_UTIL_COMMON_OPT_STR)) != -1)
   {
     switch(argflag) {
     case 'h':
@@ -622,30 +631,8 @@ static int default_ncsi_util_handler(int argc, char **argv,
             fshowethstats = 1;
             break;
     case 'p':
-            bufSize = 1024; // buffer size for PLDM FW update [default=1024]
             pfile = optarg;
             printf ("Input file: \"%s\"\n", pfile);
-            argflag = getopt(argc, (char **)argv, "b:");
-            if (argflag == 'b') {
-              bufSize = (int)strtoul(optarg, NULL, 0);
-              if (bufSize <= 0) {
-                printf("bufSize %d is out of range.\n", bufSize);
-                goto free_err_exit;
-              } else {
-                printf("bufSize = %d\n", bufSize);
-              }
-            }
-            // if invalid opt str or missing argument, getopt returns a '?'
-            else if (argflag == '?') {
-              goto free_err_exit;
-            }
-            // if "b" is not found, getopt returns -1,  in this case, continue,
-            //   and uses default size
-            else if (argflag == -1) {
-              printf("use default buf size %d\n", bufSize);
-            } else {
-              goto free_err_exit;
-            }
             fupgrade = 1;
             break;
     case 'z':
@@ -668,6 +655,18 @@ static int default_ncsi_util_handler(int argc, char **argv,
               */
             }
             return ret;
+    case 'b':
+            pldmBufSize = (int)strtoul(optarg, NULL, 0);
+            if (pldmBufSize <= 0) {
+              printf("bufSize %d is out of range.\n", pldmBufSize);
+              goto free_err_exit;
+            } else {
+              printf("bufSize = %d\n", pldmBufSize);
+            }
+            break;
+    case 'f':
+            forceUpdate = true;
+            break;
     case NCSI_UTIL_GETOPT_COMMON_OPT_CHARS:
             // Already handled
             break;
@@ -717,7 +716,7 @@ static int default_ncsi_util_handler(int argc, char **argv,
 
  if (fupgrade) {
     // special case - invoke PLDM fw upgrade
-    ret = pldm_update_fw(pfile, bufSize, msg->channel_id);
+    ret = pldm_update_fw(pfile, pldmBufSize, msg->channel_id, forceUpdate);
   } else {
     // send individual NCSI cmds
 #ifdef DEBUG

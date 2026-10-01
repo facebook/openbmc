@@ -2531,8 +2531,9 @@ sq52205_init(uint8_t fru_num) {
     addr = pmon_info_list[NIC_PMON_VOLT].slv_addr;
   }
 
-  while (ret < 0 && retry-- > 0) {
+  while (retry-- > 0) {
     fd = i2c_cdev_slave_open(bus, addr >> 1, I2C_SLAVE_FORCE_CLAIM);
+    if (fd >= 0) break;
   }
   if (fd < 0) {
     syslog(LOG_WARNING, "%s() Failed to open I2C bus %d\n", __func__, bus);

@@ -1,4 +1,4 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+# Copyright 2014-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,15 +14,11 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
+[Unit]
+Description=SSIF daemon
 
-require recipes-core/images/fboss-lite-image.inc
-
-IMAGE_INSTALL += " \
-    host-recovery \
-    ssd-mond \
-    leakage-mond \
-    apml  \
-    postcode-mond \
-    fbmc-snapshot \
-    ssifd \
-    "
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/ssifd
+Restart=always

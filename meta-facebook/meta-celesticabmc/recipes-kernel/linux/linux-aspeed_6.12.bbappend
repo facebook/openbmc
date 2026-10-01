@@ -26,4 +26,5 @@ SRC_URI:append = " \
     file://1003-ARM-dts-aspeed-fblite-r1-enable-snoop-device.patch \
     file://0608-Update-the-AMD-APML-kernel-driver-apml_modules.patch \
     file://1005-ARM-dts-aspeed-fblite-r1-add-AMD-APML-device-to-i2c14.patch \
+    file://1004-i2c-aspeed-Acknowledge-Tx-ack-late-when-in-SLAVE_REA.patch \
 "

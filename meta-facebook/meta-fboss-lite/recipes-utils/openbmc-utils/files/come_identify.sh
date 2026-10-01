@@ -33,6 +33,10 @@ if [ "$netlake_type" -eq 1 ]; then
     modprobe apml_sbrmi
     modprobe apml_sbtsi
     modprobe apml_alertl
+    echo "Loading ssif modules for Netlake 2.0 on bus 5, address 0x30"
+    modprobe ssif_bmc
+    i2c_device_add 5 0x30 ssif-bmc
+    systemctl start ssifd.service
 elif [ "$netlake_type" -eq 0 ]; then
     # Netlake 1.0
     echo "No additional modules needed for Netlake 1.0"

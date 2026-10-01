@@ -21,6 +21,7 @@
 #include <syslog.h>
 #include <time.h>
 #include <openbmc/obmc-i2c.h>
+#include <openbmc/libgpio.h>
 #include <facebook/netlakenext_common.h>
 #include "dimm.h"
 #include "dimm-util-plat.h"
@@ -263,15 +264,30 @@ int get_pmic_error_data_raw(uint8_t slot_id, uint8_t dimm, uint8_t *error_data) 
 static bool
 is_pmic_data_valid(uint8_t dimm, const uint8_t *data) {
   for (uint8_t reg_idx = 0; reg_idx < ERR_PATTERN_LEN; reg_idx++) {
-    if (data[reg_idx] == 0xff) {
-      if (!is_pmic_data_invalid[dimm]) {
-        syslog(LOG_WARNING, "Invalid PMIC data(0xff) on DIMM %s, "
-               "raw R05/06/08/09/0A/0B: %02x %02x %02x %02x %02x %02x",
-               dimm_label[0][dimm], data[0], data[1], data[2], data[3], data[4], data[5]);
-        is_pmic_data_invalid[dimm] = true;
-      }
-      return false;
+    if (data[reg_idx] != 0xff) {
+      continue;
     }
+
+    // POST complete may be de-asserted during the read, which means the DIMM
+    // I2C bus MUX was switched back to the host, so 0xff is expected here.
+    gpio_value_t post = gpio_get_value_by_shadow("FM_BIOS_POST_CMPLT_R_N");
+
+    if (!is_pmic_data_invalid[dimm]) {
+      const char *reason = "";
+      if (post == GPIO_VALUE_HIGH) {
+        reason = " (POST not complete, DIMM I2C bus MUX switched to host)";
+      } else if (post != GPIO_VALUE_LOW) {
+        reason = " (failed to get POST complete status)";
+      }
+      syslog(LOG_WARNING, "Invalid PMIC data(0xff) on DIMM %s%s, "
+             "raw R05/06/08/09/0A/0B: %02x %02x %02x %02x %02x %02x",
+             dimm_label[0][dimm], reason,
+             data[0], data[1], data[2], data[3], data[4], data[5]);
+      // POST not complete is transient, don't latch the one-shot flag so a
+      // later genuine failure can still be logged
+      is_pmic_data_invalid[dimm] = (post != GPIO_VALUE_HIGH);
+    }
+    return false;
   }
 
   if (is_pmic_data_invalid[dimm]) {

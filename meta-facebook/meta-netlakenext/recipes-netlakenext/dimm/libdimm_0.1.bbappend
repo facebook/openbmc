@@ -12,5 +12,5 @@ LOCAL_URI += " \
         file://dimm-pmic.cpp \
         "
 
-DEPENDS += " libobmc-i2c libnetlakenext-common"
-RDEPENDS:${PN} += "libnetlakenext-common"
+DEPENDS += " libobmc-i2c libgpio-ctrl libnetlakenext-common"
+RDEPENDS:${PN} += "libgpio-ctrl libnetlakenext-common"

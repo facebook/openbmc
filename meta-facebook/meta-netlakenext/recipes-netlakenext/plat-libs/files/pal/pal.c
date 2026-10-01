@@ -53,6 +53,7 @@
 #define POSTCODE_EEEF0000 0xEEEF0000
 #define POSTCODE_EA00E098 0xEA00E098
 #define POSTCODE_EA00E0C9 0xEA00E0C9
+#define POSTCODE_EEB60E00 0xEEB60E00
 
 static bool appear_EEEF0000 = false;
 
@@ -1737,23 +1738,94 @@ void pal_update_ts_sled() {
   }
 }
 
-int 
+// PSB error code (postcode EE00**XX) to description mapping
+struct psb_err_desc {
+  uint8_t value;
+  const char *comment;
+};
+
+static const struct psb_err_desc psb_err_list[] = {
+  {0x03, "Buffer Overflow"},
+  {0x04, "Invalid Parameter(s)"},
+  {0x05, "Invalid Data Length"},
+  {0x0B, "Out of Resource Error"},
+  {0x13, "Failed to retrieve FW header during FW validation"},
+  {0x14, "Key size not supported"},
+  {0x18, "Generic FW Validation error"},
+  {0x22, "Entry not found at requested location"},
+  {0x23, "Null pointer provided"},
+  {0x3E, "Fuse info on all dies don't match"},
+  {0x47, "Decompressed FW size did not match UnCompImageSize in header"},
+  {0x4D, "Binary versions do not match"},
+  {0x4F, "BIOS is not loaded"},
+  {0x56, "Signature Not Found"},
+  {0x57, "Copying of ResetImage Signature FAIL"},
+  {0x62, "Reading fuse failed"},
+  {0x63, "The BIOS OEM public key of the BIOS was revoked for this platform"},
+  {0x64, "Fuse sense operation timed out"},
+  {0x65, "Fuse burn sequence/operation timed out waiting for burn done"},
+  {0x66, "Fuse burn sequence/operation timed out waiting for burn done"},
+  {0x67, "Fuse invalid operation"},
+  {0x68, "Fuse burn sequence/operation failed due to internal SOC error"},
+  {0x82, "Bootloader failed to find OEM signature"},
+  {0x83, "Error copying BIOS header to DRAM"},
+  {0x84, "Error validating BIOS image signature"},
+  {0x85, "The validation of the OEM public key token failed"},
+  {0x86, "Modulus of OEM Key is invalid"},
+  {0x87, "OEM key is invalid"},
+  {0x88, "The BIOS binding to the fused vendor/model id failed"},
+  {0x89, "Bootloader detects BIOS request boot from SPI-ROM, which is unsupported for PSB"},
+  {0x8A, "OEM BIOS signing Sub-CA leaf key failed signature verification"},
+  {0x8B, "OEM BIOS signing Sub-CA leaf key usage flag violation"},
+  {0x8C, "OEM BIOS signing Sub-CA leaf key is missing"},
+  {0x8D, "The BIOS key revision ID is failing anti-rollback check"},
+  {0x8E, "Error copying image header to DRAM"},
+  {0x90, "Reset image not found"},
+  {0x91, "FW type mismatch between the requested FW type and the FW type embedded in the FW binary header"},
+};
+
+static const char *
+pal_get_psb_err_desc(uint8_t value) {
+  size_t i;
+
+  for (i = 0; i < ARRAY_SIZE(psb_err_list); i++) {
+    if (psb_err_list[i].value == value) {
+      return psb_err_list[i].comment;
+    }
+  }
+
+  return NULL;
+}
+
+int
 pal_check_psb_error(uint32_t postcode) {
   uint8_t head = postcode >> 24;
   uint8_t last = postcode & 0xff;
-  if (head != 0xEE || ((postcode >> 16) & 0xff) != 0xF6) {
+
+  if (head != 0xEE) {
     return 0;
   }
-  else {
+
+  if (postcode == POSTCODE_EEB60E00) {
+    syslog(LOG_CRIT, "PSB Event (EEB60E00) BIOS Validate and load failed");
+  } else if (((postcode >> 16) & 0xff) == 0xF6) {
     switch (last) {
       case 0x00:
         syslog(LOG_CRIT, "Reset the system as PSP workaround for the Hynix S3 DRAM issue.");
         break;
       default:
-        syslog(LOG_CRIT, "unknown PSP Event(postcode = 0x%08X) ", postcode);
         break;
     }
+  } else if (((postcode >> 16) & 0xff) == 0x00) {
+    const char *desc = pal_get_psb_err_desc(last);
+
+    if (desc != NULL) {
+      syslog(LOG_CRIT, "PSB Event (EE00%02X) %s", last, desc);
+    } else {
+      syslog(LOG_CRIT, "unknown PSP Event (postcode = 0x%08X) ", postcode);
+    }
   }
+
   return 0;
 }
 

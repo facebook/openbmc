@@ -5,6 +5,8 @@ SRC_URI:append = " \
     file://0002-configuration-schema-mctp-target-add-powerstate-prop.patch \
     file://0003-configurations-santabarbara-add-MB-ADI-VR-sensors.patch \
     file://0004-configuration-schema-add-MPQ82D00-PMBus-device-suppo.patch \
+    file://0005-perform_scan-Extract-restorePersistedConfigurations.patch \
+    file://0006-perform_scan-Fix-rescan-retaining-removed-configs.patch \
 "
 
 do_install:append() {

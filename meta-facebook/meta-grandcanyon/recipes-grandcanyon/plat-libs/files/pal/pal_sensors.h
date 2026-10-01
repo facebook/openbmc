@@ -723,5 +723,8 @@ int get_current_dir(const char *device, char *dir_name);
 int pal_sensor_monitor_initial(void);
 bool is_e1s_iocm_i2c_enabled(uint8_t id);
 int pal_exp_sensor_threshold_init(uint8_t fru);
+#ifdef CONFIG_GRANDCANYON2
+const char *pal_get_server_sensor_name(uint8_t sensor_num);
+#endif
 
 #endif

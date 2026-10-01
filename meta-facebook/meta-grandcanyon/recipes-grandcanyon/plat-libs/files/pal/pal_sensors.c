@@ -4675,10 +4675,28 @@ int pal_register_sensor_failure_tolerance_policy(uint8_t fru) {
 }
 
 #ifdef CONFIG_GRANDCANYON2
-static const char *
+const char *
 pal_get_server_sensor_name(uint8_t sensor_num)
 {
   switch (sensor_num) {
+    case ES_INLET_TEMP:
+      return "MB_INLET_TEMP_C";
+    case ES_PCH_TEMP_C:
+      return "MB_PCH_TEMP_C";
+    case ES_CPU_TEMP:
+      return "MB_SOC_CPU_TEMP_C";
+    case ES_DIMMA2_TEMP_C:
+      return "MB_DIMMA2_TEMP_C";
+    case ES_DIMMA3_TEMP_C:
+      return "MB_DIMMA3_TEMP_C";
+    case ES_DIMMA6_TEMP_C:
+      return "MB_DIMMA6_TEMP_C";
+    case ES_DIMMA7_TEMP_C:
+      return "MB_DIMMA7_TEMP_C";
+    case ES_E1S_TEMP_C:
+      return "MB_E1S_TEMP_C";
+    case ES_HSC_TEMP_C:
+      return "MB_HSC_TEMP_C";
     case ES_THERMAL_MARGIN:
       return "MB_SOC_THERMAL_MARGIN_C";
     case ES_VR_VCCIN_TEMP_C:
@@ -4691,6 +4709,76 @@ pal_get_server_sensor_name(uint8_t sensor_num)
       return "MB_VR_VCCD_TEMP_C";
     case ES_VR_FAON_TEMP_C:
       return "MB_VR_FAON_TEMP_C";
+    case ES_CPU_TJMAX:
+      return "MB_SOC_TJMAX_C";
+    case ES_P12V_STBY:
+      return "MB_ADC_P12V_STBY_VOLT_V";
+    case ES_P3V3_STBY:
+      return "MB_ADC_P3V3_STBY_VOLT_V";
+    case ES_P1V05_STBY:
+      return "MB_ADC_P1V05_PCH_VOLT_V";
+    case ES_P3V_BAT:
+      return "MB_ADC_P3V_BAT_VOLT_V";
+    case ES_P5V_STBY:
+      return "MB_ADC_P5V_STBY_VOLT_V";
+    case ES_P12V_DIMM:
+      return "MB_ADC_P12V_DIMM_VOLT_V";
+    case ES_P1V2_STBY:
+      return "MB_ADC_P1V2_STBY_VOLT_V";
+    case ES_P1V8_STBY:
+      return "MB_ADC_P1V8_STBY_VOLT_V";
+    case ES_HSC_INPUT_VOLT_V:
+      return "MB_HSC_INPUT_VOLT_V";
+    case ES_VR_VCCIN_VOLT_V:
+      return "MB_VR_VCCIN_VOLT_V";
+    case ES_VR_FIVRA_VOLT_V:
+      return "MB_VR_FIVRA_VOLT_V";
+    case ES_VR_EHV_VOLT_V:
+      return "MB_VR_EHV_VOLT_V";
+    case ES_VR_VCCD_VOLT_V:
+      return "MB_VR_VCCD_VOLT_V";
+    case ES_VR_FAON_VOLT_V:
+      return "MB_VR_FAON_VOLT_V";
+    case ES_E1S_BOOt_DRIVE_VOLT_V:
+      return "MB_PMON_E1S_BOOT_VOLT_V";
+    case ES_HSC_OUTPUT_CURR_A:
+      return "MB_HSC_OUTPUT_CURR_A";
+    case ES_VR_VCCIN_CURR_A:
+      return "MB_VR_VCCIN_CURR_A";
+    case ES_VR_FIVRA_CURR_A:
+      return "MB_VR_FIVRA_CURR_A";
+    case ES_VR_EHV_CURR_A:
+      return "MB_VR_EHV_CURR_A";
+    case ES_VR_VCCD_CURR_A:
+      return "MB_VR_VCCD_CURR_A";
+    case ES_VR_FAON_CURR_A:
+      return "MB_VR_FAON_CURR_A";
+    case ES_E1S_BOOt_DRIVE_CURR_A:
+      return "MB_PMON_E1S_BOOT_CURR_A";
+    case ES_CPU_PWR_W:
+      return "MB_SOC_PACKAGE_PWR_W";
+    case ES_HSC_INPUT_PWR_W:
+      return "MB_HSC_INPUT_PWR_W";
+    case ES_VR_VCCIN_PWR_W:
+      return "MB_VR_VCCIN_PWR_W";
+    case ES_VR_FIVRA_PWR_W:
+      return "MB_VR_FIVRA_PWR_W";
+    case ES_VR_EHV_PWR_W:
+      return "MB_VR_EHV_PWR_W";
+    case ES_VR_VCCD_PWR_W:
+      return "MB_VR_VCCD_PWR_W";
+    case ES_VR_FAON_PWR_W:
+      return "MB_VR_FAON_PWR_W";
+    case ES_DIMMA2_PWR_W:
+      return "MB_VR_DIMMA2_PMIC_PWR_W";
+    case ES_DIMMA3_PWR_W:
+      return "MB_VR_DIMMA3_PMIC_PWR_W";
+    case ES_DIMMA6_PWR_W:
+      return "MB_VR_DIMMA6_PMIC_PWR_W";
+    case ES_DIMMA7_PWR_W:
+      return "MB_VR_DIMMA7_PMIC_PWR_W";
+    case ES_E1S_BOOt_DRIVE_PWR_W:
+      return "MB_PMON_E1S_BOOT_PWR_W";
     default:
       return "UNKNOWN_SENSOR";
   }

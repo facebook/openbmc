@@ -41,6 +41,7 @@
 #include <facebook/fbgc_gpio.h>
 #include <sys/un.h>
 #include "pal.h"
+#include "pal_sensors.h"
 
 #define NUM_SERVER_FRU       1
 #define NUM_NIC_FRU          1
@@ -4299,6 +4300,9 @@ pal_get_event_sensor_name(uint8_t fru, uint8_t *sel, char *name) {
       if (snr_num == BIC_SENSOR_VR_FAULT) {
         snprintf(name, MAX_SNR_NAME, "VR_FAULT");
         return PAL_EOK;
+      } else if (snr_num == BIC_SENSOR_SENSOR_POLL) {
+        snprintf(name, MAX_SNR_NAME, "SENSOR_POLL");
+        return PAL_EOK;
       } else {
         snprintf(name, MAX_SNR_NAME, "SYSTEM_STATUS");
         return PAL_EOK;
@@ -4512,6 +4516,41 @@ static int pal_parse_gc2_sys_vr_event(uint8_t *event_data, char *error_log)
 
   return PAL_EOK;
 }
+
+static int pal_parse_gc2_sys_sensor_poll_event(uint8_t *event_data, char *error_log)
+{
+  uint8_t is_global = 0;
+  uint8_t target = 0;
+  const char *state_str = NULL;
+  char event_str[MAX_EVENT_STR] = {0};
+
+  if (event_data == NULL || error_log == NULL) {
+    syslog(LOG_ERR, "%s(): NULL parameter", __func__);
+    return -1;
+  }
+
+  state_str = ((event_data[SEL_EVENT_DATA1_INDEX] & SEL_EVENT_DATA_FULL_MASK) == 0x00) ?
+              "Disabled" : "Enabled";
+  /* event_data2 is 0xFF when this is the global sensor_poll_enable_flag, else 0x00.
+   * event_data3 is 0x00 when global, 0xFF when every sensor changed at once,
+   * else the sensor number that changed.
+   */
+  is_global = event_data[SEL_EVENT_DATA2_INDEX];
+  target = event_data[SEL_EVENT_DATA3_INDEX];
+
+  if (is_global == 0xFF) {
+    snprintf(event_str, sizeof(event_str), "Global Sensor Poll %s", state_str);
+  } else if (target == 0xFF) {
+    snprintf(event_str, sizeof(event_str), "All Sensors Poll %s", state_str);
+  } else {
+    snprintf(event_str, sizeof(event_str), "Sensor %s Poll %s",
+             pal_get_server_sensor_name(target), state_str);
+  }
+
+  strcat(error_log, event_str);
+
+  return PAL_EOK;
+}
 #endif
 
 static int
@@ -4652,6 +4691,9 @@ pal_parse_sys_sts_event(uint8_t snr_num, uint8_t *event_data, char *error_log) {
 #ifdef CONFIG_GRANDCANYON2
   if (snr_num == BIC_SENSOR_VR_FAULT) {
     return pal_parse_gc2_sys_vr_event(event_data, error_log);
+  }
+  if (snr_num == BIC_SENSOR_SENSOR_POLL) {
+    return pal_parse_gc2_sys_sensor_poll_event(event_data, error_log);
   }
 #endif
   strcat(error_log, "Undefined system event");
@@ -5817,9 +5859,20 @@ pal_ignore_thresh(uint8_t fru, uint8_t snr_num, uint8_t thresh) {
 int
 pal_ignore_sel(uint8_t fru, uint8_t *sel) {
   char token[16] = {0};
+  char error_log[MAX_EVENT_STR] = {0};
 
   if ((sel == NULL) || (sel[2] != 0x02)) {
     return 0;
+  }
+
+  /* The sensor polling event is only for reference, so log it here with a lower priority and skip the default handling, which would log it into the event log. */
+  if ((sel[SEL_SNR_TYPE] == IPMI_OEM_SENSOR_TYPE_SYS_STA) &&
+      (sel[SEL_SNR_NUM] == BIC_SENSOR_SENSOR_POLL)) {
+    pal_parse_gc2_sys_sensor_poll_event(&sel[SEL_EVENT_DATA], error_log);
+    syslog(LOG_WARNING, "SEL Entry: FRU: %d, Sensor: SENSOR_POLL (0x%02X), Event Data: (%02X%02X%02X) %s",
+           fru, sel[SEL_SNR_NUM], sel[SEL_EVENT_DATA], sel[SEL_EVENT_DATA + 1],
+           sel[SEL_EVENT_DATA + 2], error_log);
+    return 1;
   }
 
   snprintf(token, sizeof(token), "0x%02X:0x%02X", sel[11], sel[13]);

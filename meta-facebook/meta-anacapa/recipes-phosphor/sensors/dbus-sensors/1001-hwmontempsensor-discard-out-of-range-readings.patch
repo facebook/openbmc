@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Pete O_o <pmb@meta.com>
+Date: Wed, 30 Sep 2026 18:55:54 -0700
+Subject: [PATCH] hwmontempsensor: discard out-of-range readings
+
+Discard hwmon readings which fall outside the sensor's min/max range
+(-128..127 C for temperature sensors), counting them as read errors
+instead.
+
+Reason:
+* Broadcom Thor Ultra NICs (BCM57708/BCM57704) report their core
+  temperature by emulating a TMP421.  While the NIC's management
+  co-processor runs POST its SMBus slave is not yet enabled, so the
+  BMC reads back 0xFF from the idle bus and the tmp421 driver decodes
+  it as 191.938 C.  This lasts up to ~5s after an AC cycle and <1s
+  after a DC cycle (Broadcom KB article 27559).
+* A single such reading exceeds every upper threshold on the NIC
+  sensor, logging spurious threshold events.
+
+The same approach was taken upstream for SmbpbiSensor [1].  A single
+bad read leaves the last good value in place; five in a row mark the
+sensor non-functional until a valid reading arrives.
+
+[1]: https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/83578
+
+Signed-off-by: Pete O_o <pmb@meta.com>
+---
+ src/hwmon-temp/HwmonTempSensor.cpp | 16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
+
+diff --git a/src/hwmon-temp/HwmonTempSensor.cpp b/src/hwmon-temp/HwmonTempSensor.cpp
+index 2957b09..50520f5 100644
+--- a/src/hwmon-temp/HwmonTempSensor.cpp
++++ b/src/hwmon-temp/HwmonTempSensor.cpp
+@@ -194,7 +194,21 @@ void HwmonTempSensor::handleResponse(const boost::system::error_code& err,
+         }
+         else
+         {
+-            updateValue((nvalue + offsetValue) * scaleValue);
++            double reading = (nvalue + offsetValue) * scaleValue;
++            // Some devices answer reads with garbage while initialising, e.g.
++            // a Broadcom Thor NIC emulating a TMP421 returns 0xFF during its
++            // POST, which decodes as 191.938 C.  Discard readings outside the
++            // sensor's range rather than asserting thresholds on them.
++            if (reading > maxValue || reading < minValue)
++            {
++                lg2::error("Sensor '{NAME}' reading out of range: {VALUE}",
++                           "NAME", name, "VALUE", reading);
++                incrementError();
++            }
++            else
++            {
++                updateValue(reading);
++            }
+         }
+     }
+     else
+-- 
+2.53.0-Meta
+

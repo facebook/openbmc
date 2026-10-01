@@ -25,3 +25,5 @@ MACHINE_ESSENTIAL_EXTRA_RDEPENDS += "kernel-module-i2c-dev-sysfs"
 
 EXTRA_IMAGE_FEATURES:append = " image-meta"
 FW_ENV_CONFIG_FILE = "fw_env.config.64k"
+
+REPRODUCIBLE_TIMESTAMP_ROOTFS = ""

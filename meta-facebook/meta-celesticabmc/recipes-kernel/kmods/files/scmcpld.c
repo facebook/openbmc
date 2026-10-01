@@ -66,6 +66,16 @@ static const i2c_dev_attr_st scmcpld_attrs[] = {
 		1,
 	},
 	{
+		"bios_post_cmplt_l",
+		"0: Boot to OS Stage\n"
+		"1: POST Code Stage",
+		I2C_DEV_ATTR_SHOW_DEFAULT,
+		NULL,
+		0x12,
+		6,
+		1,
+	},
+	{
 		"pwr_come_en",
 		"0: COMe power is off\n"
 		"1: COMe power is on",

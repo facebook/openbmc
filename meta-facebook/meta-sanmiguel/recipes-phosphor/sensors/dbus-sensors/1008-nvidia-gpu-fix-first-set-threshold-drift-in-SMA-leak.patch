@@ -1,0 +1,137 @@
+From 1f59aa65f178961662b492471483721c62d70f7e Mon Sep 17 00:00:00 2001
+From: Mike Hsieh <mike_hsieh@quantatw.com>
+Date: Tue, 22 Sep 2026 20:47:21 +0800
+Subject: [PATCH 5/7] nvidia-gpu: fix first-set threshold drift in SMA leak
+ sensor
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When a user sets any single leak-detection threshold for the first
+time after the sensor comes up, the other two thresholds drop by
+1 millivolt.
+
+The device stores each threshold 1 mV below the value written, so
+it reports (written − 1).  updateThresholds() seeded
+requestedThresholds by copying the reported values directly.  When
+handleThresholdSet() later built the Set Leak Detection Thresholds
+request, it filled the unchanged slots from requestedThresholds,
+which held (written − 1).  The device then stored
+(written − 1) − 1 = written − 2, dropping those thresholds by 1 mV.
+
+Fix this by using std::ranges::transform with +1 instead of
+std::ranges::copy when seeding requestedThresholds, so the stored
+values match what was originally written.  Subsequent sets were
+already correct because applyRequestedThresholds() updates
+requestedThresholds from the actually-sent values.
+
+Tested: Verified that setting a single threshold no longer causes
+the other two to decrease by 1 mV on the first write.
+
+[1] https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/94830/2
+
+Change-Id: I96b2124a3178e835c56d329eec578d2b54f9759d
+Signed-off-by: Mike Hsieh <mike_hsieh@quantatw.com>
+---
+ src/nvidia-gpu/NvidiaSmaLeakSensor.cpp           |  8 +++++++-
+ .../nvidia-gpu/test_NvidiaSmaLeakSensor.cpp      | 16 ++++++++--------
+ 2 files changed, 15 insertions(+), 9 deletions(-)
+
+diff --git a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
+index 317b7f29..3e4d0a03 100644
+--- a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
++++ b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
+@@ -442,7 +442,13 @@ void NvidiaSmaLeakSensor::updateThresholds(
+ 
+     if (!thresholdsKnown)
+     {
+-        std::ranges::copy(reported, requestedThresholds.begin());
++        // The device stores each threshold 1 mV below the value written,
++        // so the reported value is (written − 1).  Seed requestedThresholds
++        // with (reported + 1) so that re-sending an unchanged slot on the
++        // first user-initiated write reproduces the value the device holds
++        // rather than lowering it by 1 mV.
++        std::ranges::transform(reported, requestedThresholds.begin(),
++                               [](uint16_t v) -> uint16_t { return v + 1; });
+     }
+ 
+     std::ranges::copy(reported, deviceThresholds.begin());
+diff --git a/src/tests/nvidia-gpu/test_NvidiaSmaLeakSensor.cpp b/src/tests/nvidia-gpu/test_NvidiaSmaLeakSensor.cpp
+index 4b417b52..a12048d3 100644
+--- a/src/tests/nvidia-gpu/test_NvidiaSmaLeakSensor.cpp
++++ b/src/tests/nvidia-gpu/test_NvidiaSmaLeakSensor.cpp
+@@ -535,7 +535,7 @@ TEST_F(NvidiaSmaLeakSensorTest, WriteReachesTheDeviceInWireOrder)
+         pumpIoUntil([&request] { return !request.empty(); }, dispatchTimeout));
+     ASSERT_EQ(request.size(), gpu::setLeakDetectionThresholdsRequestSize);
+     EXPECT_THAT(thresholdsInRequest(request),
+-                testing::ElementsAre(minLeakMv, 1400, maxNormalMv));
++                testing::ElementsAre(minLeakMv + 1, 1400, maxNormalMv + 1));
+ }
+ 
+ TEST_F(NvidiaSmaLeakSensorTest, WriteThatCrossesTheThresholdsIsRefused)
+@@ -583,7 +583,7 @@ TEST_F(NvidiaSmaLeakSensorTest, WriteCarriesTheThresholdsLastRequested)
+     ASSERT_TRUE(
+         pumpIoUntil([&first] { return !first.empty(); }, dispatchTimeout));
+     EXPECT_THAT(thresholdsInRequest(first),
+-                testing::ElementsAre(minLeakMv, 1400, maxNormalMv));
++                testing::ElementsAre(minLeakMv + 1, 1400, maxNormalMv + 1));
+ 
+     EXPECT_FALSE(setProperty<double>(
+         path, "xyz.openbmc_project.Sensor.Threshold.Warning", "WarningLow",
+@@ -592,7 +592,7 @@ TEST_F(NvidiaSmaLeakSensorTest, WriteCarriesTheThresholdsLastRequested)
+         pumpIoUntil([&second] { return !second.empty(); }, dispatchTimeout));
+ 
+     EXPECT_THAT(thresholdsInRequest(second),
+-                testing::ElementsAre(minLeakMv, 1400, maxNormalMv));
++                testing::ElementsAre(minLeakMv + 1, 1400, maxNormalMv + 1));
+ }
+ 
+ TEST_F(NvidiaSmaLeakSensorTest, WriteLeavesTheThresholdsItDoesNotName)
+@@ -628,7 +628,7 @@ TEST_F(NvidiaSmaLeakSensorTest, WriteLeavesTheThresholdsItDoesNotName)
+         pumpIoUntil([&second] { return !second.empty(); }, dispatchTimeout));
+ 
+     EXPECT_THAT(thresholdsInRequest(second),
+-                testing::ElementsAre(minLeakMv, 1400, maxNormalMv + 100));
++                testing::ElementsAre(minLeakMv + 1, 1400, maxNormalMv + 100));
+ }
+ 
+ TEST_F(NvidiaSmaLeakSensorTest, SetIsFollowedByAReadingRightAway)
+@@ -662,7 +662,7 @@ TEST_F(NvidiaSmaLeakSensorTest, SetIsFollowedByAReadingRightAway)
+     ASSERT_TRUE(
+         pumpIoUntil([&second] { return !second.empty(); }, dispatchTimeout));
+     EXPECT_THAT(thresholdsInRequest(second),
+-                testing::ElementsAre(200, 1400, maxNormalMv));
++                testing::ElementsAre(200, 1400, maxNormalMv + 1));
+ }
+ 
+ TEST_F(NvidiaSmaLeakSensorTest, RejectedWriteDoesNotWedgeTheGate)
+@@ -691,7 +691,7 @@ TEST_F(NvidiaSmaLeakSensorTest, RejectedWriteDoesNotWedgeTheGate)
+     ASSERT_TRUE(pumpIoUntil([&rejected] { return !rejected.empty(); },
+                             dispatchTimeout));
+     EXPECT_THAT(thresholdsInRequest(rejected),
+-                testing::ElementsAre(200, maxLeakMv, maxNormalMv));
++                testing::ElementsAre(200, maxLeakMv + 1, maxNormalMv + 1));
+ 
+     EXPECT_FALSE(setProperty<double>(
+         path, "xyz.openbmc_project.Sensor.Threshold.Warning", "WarningLow",
+@@ -699,7 +699,7 @@ TEST_F(NvidiaSmaLeakSensorTest, RejectedWriteDoesNotWedgeTheGate)
+     ASSERT_TRUE(
+         pumpIoUntil([&next] { return !next.empty(); }, dispatchTimeout));
+     EXPECT_THAT(thresholdsInRequest(next),
+-                testing::ElementsAre(minLeakMv, 1400, maxNormalMv));
++                testing::ElementsAre(minLeakMv + 1, 1400, maxNormalMv + 1));
+ }
+ 
+ TEST_F(NvidiaSmaLeakSensorTest, WritesInOneBurstBecomeOneRequest)
+@@ -727,7 +727,7 @@ TEST_F(NvidiaSmaLeakSensorTest, WritesInOneBurstBecomeOneRequest)
+     ASSERT_TRUE(
+         pumpIoUntil([&request] { return !request.empty(); }, dispatchTimeout));
+     EXPECT_THAT(thresholdsInRequest(request),
+-                testing::ElementsAre(200, 1400, maxNormalMv));
++                testing::ElementsAre(200, 1400, maxNormalMv + 1));
+ }
+ 
+ TEST_F(NvidiaSmaLeakSensorTest, FailedReadingDoesNotWedgeTheGate)
+-- 
+2.53.0
+

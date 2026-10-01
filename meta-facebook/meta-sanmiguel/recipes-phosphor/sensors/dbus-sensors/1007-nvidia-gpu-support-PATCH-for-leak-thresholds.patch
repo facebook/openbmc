@@ -1,0 +1,1289 @@
+From 57fc3fddbae60d447b513041dbb664d390e370ff Mon Sep 17 00:00:00 2001
+From: Eric Liu <liuer@nvidia.com>
+Date: Mon, 14 Sep 2026 16:29:32 +0900
+Subject: [PATCH 4/7] nvidia-gpu: support PATCH for leak thresholds
+
+Make the WarningLow, CriticalLow and CriticalHigh properties on an SMA
+leak detector writable, so the thresholds the device holds can be
+configured from Redfish through bmcweb. A written threshold reaches
+the device with Set Leak Detection Thresholds, which carries all
+three thresholds, so a request carries the two it does not name as
+last requested rather than as last reported.
+
+Key changes:
+- src/nvidia-gpu/NvidiaGpuMctpVdm.cpp: encodes the Set Leak Detection
+  Thresholds request and decodes its completion code.
+- src/nvidia-gpu/NvidiaSmaLeakSensor.cpp: serves each threshold with a
+  setter that records what to write and a getter that returns what the
+  device last reported, checks the alarms against the same values,
+  keeps the thresholds last requested to fill the ones a write does
+  not name, and dispatches the writes of one burst as a single
+  request.
+- src/tests/nvidia-gpu/test_NvidiaGpuMctpVdm.cpp: covers the request
+  layout, an undersized buffer, and both completion codes.
+- src/tests/nvidia-gpu/test_NvidiaSmaLeakSensor.cpp: covers the
+  threshold mapping, the write path and the coalescing.
+
+Tested: Built an image for the vr-nvl-obmc machine with the
+following patches cherry-picked:
+
+```
+1. Kernel
+   https://lore.kernel.org/all/20260702165524.2168091-1-jackyhuang@nvidia.com/
+2. u-boot
+   https://lore.kernel.org/openbmc/20260629105202.1417679-1-jackyhuang@nvidia.com/
+3. meta-nvidia
+   https://gerrit.openbmc.org/c/openbmc/openbmc/+/90959
+   https://gerrit.openbmc.org/c/openbmc/openbmc/+/92346
+4. platform-init
+   https://gerrit.openbmc.org/c/openbmc/platform-init/+/92189
+   https://gerrit.openbmc.org/c/openbmc/platform-init/+/92190
+   https://gerrit.openbmc.org/c/openbmc/platform-init/+/92191
+   https://gerrit.openbmc.org/c/openbmc/platform-init/+/92192
+5. entity-manager
+   https://gerrit.openbmc.org/c/openbmc/entity-manager/+/93517
+6. mctp-over-usb-config
+   https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/91169
+   https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/91802
+   https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/80452
+   https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/86236
+   https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/93535
+   https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/86791
+   https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/93848
+   https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/93536
+
+$ busctl call xyz.openbmc_project.ObjectMapper /xyz/openbmc_project/object_mapper xyz.openbmc_project.ObjectMapper GetSubTreePaths sias /xyz/openbmc_project/state 0 1 xyz.openbmc_project.State.Leak.Detector
+
+$ busctl get-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Value Value
+d 1.74
+
+$ busctl get-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Threshold.Critical CriticalLow
+d 0.156
+
+$ busctl get-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Threshold.Warning WarningLow
+d 1.549
+
+$ busctl get-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Threshold.Critical CriticalHigh
+d 1.841
+
+$ busctl get-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Threshold.Warning WarningHigh
+d nan
+
+$ busctl set-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Threshold.Warning WarningLow d 1.5
+
+$ busctl get-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Threshold.Warning WarningLow
+d 1.499
+
+$ busctl set-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Threshold.Warning WarningLow d 99.0
+Failed to set property WarningLow on interface xyz.openbmc_project.Sensor.Threshold.Warning: Invalid argument was given.
+
+$ busctl set-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Threshold.Critical CriticalLow d 1.7
+Failed to set property CriticalLow on interface xyz.openbmc_project.Sensor.Threshold.Critical: Invalid argument was given.
+
+$ busctl get-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Threshold.Warning WarningLow
+d 1.499
+
+$ busctl set-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Threshold.Warning WarningLow d 1.78
+
+$ busctl get-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Threshold.Warning WarningLow
+d 1.779
+
+$ busctl get-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Threshold.Warning WarningAlarmLow
+b true
+
+$ busctl set-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Threshold.Critical CriticalHigh d 1.842
+$ busctl set-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Threshold.Warning WarningLow d 1.55
+$ busctl set-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Threshold.Critical CriticalLow d 0.157
+
+$ busctl get-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Threshold.Critical CriticalLow
+d 0.156
+
+$ busctl get-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Threshold.Warning WarningLow
+d 1.549
+
+$ busctl get-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Threshold.Critical CriticalHigh
+d 1.841
+
+$ busctl get-property xyz.openbmc_project.GpuSensor /xyz/openbmc_project/sensors/voltage/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0 xyz.openbmc_project.Sensor.Threshold.Warning WarningAlarmLow
+b false
+
+Unit tests: 347 passed, 0 failed.
+```
+
+1. A written threshold reaches the device: the value read back is the
+   value the device holds, a millivolt below the value written.
+2. A value outside the range the device can hold is refused, and so is
+   one that would cross the thresholds the device holds.
+3. A threshold the device does not report is served as NaN and is not
+   writable.
+4. The alarm follows the threshold that was written: with the sensor
+   reading 1.74 V, moving the low warning to 1.779 V asserts it.
+5. The three writes that restore the thresholds are one burst, so they
+   reach the device as a single request.
+6. A write carries the thresholds it does not name as last requested:
+   sending back the three thresholds the device reports returns them a
+   millivolt lower again, so a threshold nobody wrote would otherwise
+   walk down once per write.
+
+[1] https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/94200/4
+
+Change-Id: I72ab80d08db213621be458a0f6cc6c562008c064
+Signed-off-by: Eric Liu <liuer@nvidia.com>
+---
+ src/nvidia-gpu/NvidiaGpuMctpVdm.cpp           |  49 +++
+ src/nvidia-gpu/NvidiaGpuMctpVdm.hpp           |  19 +
+ src/nvidia-gpu/NvidiaSmaLeakSensor.cpp        | 295 ++++++++++++-
+ src/nvidia-gpu/NvidiaSmaLeakSensor.hpp        |  42 ++
+ .../nvidia-gpu/test_NvidiaGpuMctpVdm.cpp      | 107 +++++
+ .../nvidia-gpu/test_NvidiaSmaLeakSensor.cpp   | 409 +++++++++++++++++-
+ .../nvidia-gpu/utils/DbusMockTestBase.hpp     |  27 ++
+ 7 files changed, 933 insertions(+), 15 deletions(-)
+
+diff --git a/src/nvidia-gpu/NvidiaGpuMctpVdm.cpp b/src/nvidia-gpu/NvidiaGpuMctpVdm.cpp
+index 7a897845..f330a95b 100644
+--- a/src/nvidia-gpu/NvidiaGpuMctpVdm.cpp
++++ b/src/nvidia-gpu/NvidiaGpuMctpVdm.cpp
+@@ -2005,6 +2005,55 @@ int encodeGetLeakDetectionInfoRequest(uint8_t instanceId,
+     return buffer.getError();
+ }
+ 
++int encodeSetLeakDetectionThresholdsRequest(
++    uint8_t instanceId, uint8_t sensorId, uint16_t minLeakMv,
++    uint16_t maxLeakMv, uint16_t maxNormalMv, std::span<uint8_t> buf)
++{
++    PackBuffer buffer(buf);
++
++    const int rc = encodeRequestCommonHeader(
++        buffer, MessageType::PLATFORM_ENVIRONMENTAL,
++        static_cast<uint8_t>(
++            PlatformEnvironmentalCommands::SET_LEAK_DETECTION_THRESHOLDS),
++        instanceId);
++
++    if (rc != 0)
++    {
++        return rc;
++    }
++
++    const uint8_t detectorCount = 1;
++    const auto dataSize =
++        static_cast<uint8_t>(setLeakDetectionThresholdsDataSize);
++
++    buffer.pack(dataSize);
++    buffer.pack(detectorCount);
++    buffer.pack(leakDetectorThresholdCount);
++    buffer.pack(sensorId);
++
++    const uint8_t reserved = 0;
++    buffer.pack(reserved);
++
++    buffer.pack(minLeakMv);
++    buffer.pack(maxLeakMv);
++    buffer.pack(maxNormalMv);
++
++    return buffer.getError();
++}
++
++int decodeSetLeakDetectionThresholdsResponse(
++    std::span<const uint8_t> buf,
++    ocp::accelerator_management::CompletionCode& cc, uint16_t& reasonCode)
++{
++    UnpackBuffer buffer(buf);
++
++    return decodeResponseCommonHeader(
++        buffer, MessageType::PLATFORM_ENVIRONMENTAL,
++        static_cast<uint8_t>(
++            PlatformEnvironmentalCommands::SET_LEAK_DETECTION_THRESHOLDS),
++        cc, reasonCode);
++}
++
+ int decodeGetLeakDetectionInfoResponse(
+     std::span<const uint8_t> buf,
+     ocp::accelerator_management::CompletionCode& cc, uint16_t& reasonCode,
+diff --git a/src/nvidia-gpu/NvidiaGpuMctpVdm.hpp b/src/nvidia-gpu/NvidiaGpuMctpVdm.hpp
+index 5b19e822..19f0c399 100644
+--- a/src/nvidia-gpu/NvidiaGpuMctpVdm.hpp
++++ b/src/nvidia-gpu/NvidiaGpuMctpVdm.hpp
+@@ -61,6 +61,7 @@ enum class PlatformEnvironmentalCommands : uint8_t
+     GET_VOLTAGE = 0x0F,
+     SET_CLOCK_LIMIT = 0x10,
+     GET_CLOCK_LIMIT = 0x11,
++    SET_LEAK_DETECTION_THRESHOLDS = 0x16,
+     GET_LEAK_DETECTION_INFO = 0x17,
+     GET_VIOLATION_DURATION = 0x45,
+     GET_CURRENT_UTILIZATION = 0x47,
+@@ -245,6 +246,16 @@ constexpr size_t getViolationDurationRequestSize =
+ constexpr size_t getMemoryCapacityUtilizationRequestSize =
+     ocp::accelerator_management::commonRequestSize;
+ 
++constexpr uint8_t leakDetectorThresholdCount = 3;
++
++constexpr size_t setLeakDetectionThresholdsDataSize =
++    sizeof(uint8_t) + sizeof(uint8_t) + sizeof(uint8_t) + sizeof(uint8_t) +
++    (leakDetectorThresholdCount * sizeof(uint16_t));
++
++constexpr size_t setLeakDetectionThresholdsRequestSize =
++    ocp::accelerator_management::commonRequestSize +
++    setLeakDetectionThresholdsDataSize;
++
+ constexpr size_t queryScalarGroupTelemetryV1RequestSize =
+     ocp::accelerator_management::commonRequestSize + 2;
+ 
+@@ -560,6 +571,14 @@ struct LeakSensorData
+     uint16_t adcReadingMv{};
+ };
+ 
++int encodeSetLeakDetectionThresholdsRequest(
++    uint8_t instanceId, uint8_t sensorId, uint16_t minLeakMv,
++    uint16_t maxLeakMv, uint16_t maxNormalMv, std::span<uint8_t> buf);
++
++int decodeSetLeakDetectionThresholdsResponse(
++    std::span<const uint8_t> buf,
++    ocp::accelerator_management::CompletionCode& cc, uint16_t& reasonCode);
++
+ int decodeGetLeakDetectionInfoResponse(
+     std::span<const uint8_t> buf,
+     ocp::accelerator_management::CompletionCode& cc, uint16_t& reasonCode,
+diff --git a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
+index 0ef5fb91..317b7f29 100644
+--- a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
++++ b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
+@@ -16,16 +16,22 @@
+ #include <NvidiaGpuMctpVdm.hpp>
+ #include <OcpMctpVdm.hpp>
+ #include <phosphor-logging/commit.hpp>
++#include <boost/asio/error.hpp>
+ #include <phosphor-logging/lg2.hpp>
+ #include <sdbusplus/asio/connection.hpp>
+ #include <sdbusplus/asio/object_server.hpp>
+ #include <sdbusplus/message/native_types.hpp>
+ #include <xyz/openbmc_project/State/Leak/Detector/event.hpp>
++#include <xyz/openbmc_project/Common/error.hpp>
+ 
++#include <algorithm>
+ #include <array>
++#include <chrono>
++#include <cmath>
+ #include <cstddef>
+ #include <cstdint>
+ #include <functional>
++#include <limits>
+ #include <memory>
+ #include <optional>
+ #include <span>
+@@ -39,6 +45,33 @@ using namespace std::literals;
+ static constexpr double smaLeakSensorMaxReading = 5;
+ static constexpr double smaLeakSensorMinReading = 0;
+ 
++static constexpr double millivoltsPerVolt = 1000.0;
++
++static constexpr std::chrono::milliseconds setThresholdDebounce{100};
++
++static constexpr size_t minLeakSlot = 0;
++static constexpr size_t maxLeakSlot = 1;
++static constexpr size_t maxNormalSlot = 2;
++
++static std::optional<size_t> thresholdIndex(
++    const thresholds::Threshold& threshold)
++{
++    if (threshold.level == thresholds::Level::CRITICAL)
++    {
++        return threshold.direction == thresholds::Direction::LOW
++                   ? minLeakSlot
++                   : maxNormalSlot;
++    }
++
++    if (threshold.level == thresholds::Level::WARNING &&
++        threshold.direction == thresholds::Direction::LOW)
++    {
++        return maxLeakSlot;
++    }
++
++    return std::nullopt;
++}
++
+ NvidiaSmaLeakSensor::NvidiaSmaLeakSensor(
+     std::shared_ptr<sdbusplus::asio::connection>& conn,
+     mctp::MctpRequester& mctpRequester, const std::string& name,
+@@ -49,8 +82,8 @@ NvidiaSmaLeakSensor::NvidiaSmaLeakSensor(
+     Sensor(escapeName(name), std::move(thresholdData), sensorConfiguration,
+            "voltage", false, true, smaLeakSensorMaxReading,
+            smaLeakSensorMinReading, conn),
+-    eid(eid), sensorId(sensorId), mctpRequester(mctpRequester),
+-    objectServer(objectServer)
++    eid(eid), sensorId(sensorId), conn(conn), mctpRequester(mctpRequester),
++    objectServer(objectServer), setThresholdTimer(conn->get_io_context())
+ {
+     sdbusplus::object_path dbusPath =
+         sdbusplus::object_path(sensorPathPrefix) / "voltage" / escapeName(name);
+@@ -58,17 +91,12 @@ NvidiaSmaLeakSensor::NvidiaSmaLeakSensor(
+     sensorInterface = objectServer.add_interface(
+         dbusPath, "xyz.openbmc_project.Sensor.Value");
+ 
+-    for (const auto& threshold : thresholds)
+-    {
+-        std::string interface = thresholds::getInterface(threshold.level);
+-        thresholdInterfaces[static_cast<size_t>(threshold.level)] =
+-            objectServer.add_interface(dbusPath, interface);
+-    }
+-
+     association = objectServer.add_interface(dbusPath, association::interface);
+ 
+     setInitialProperties(sensor_paths::unitVolts);
+ 
++    registerThresholds(dbusPath);
++
+     const std::optional<std::string> physicalContext =
+         nvidia_sensor_utils::deviceTypeToPhysicalContext(deviceType);
+ 
+@@ -201,9 +229,254 @@ void NvidiaSmaLeakSensor::checkThresholds()
+     thresholds::checkThresholds(this);
+ }
+ 
++void NvidiaSmaLeakSensor::registerThresholds(
++    const sdbusplus::object_path& dbusPath)
++{
++    for (const auto& threshold : thresholds)
++    {
++        const auto level = static_cast<size_t>(threshold.level);
++
++        auto& iface = thresholdInterfaces[level];
++        if (!iface)
++        {
++            iface = objectServer.add_interface(
++                dbusPath, thresholds::getInterface(threshold.level));
++        }
++
++        const std::string property =
++            propertyLevel(threshold.level, threshold.direction);
++        const std::string alarm =
++            propertyAlarm(threshold.level, threshold.direction);
++
++        if (property.empty() || alarm.empty())
++        {
++            continue;
++        }
++
++        const std::optional<size_t> index = thresholdIndex(threshold);
++
++        if (!index)
++        {
++            iface->register_property(property, threshold.value);
++            iface->register_property(alarm, false);
++            continue;
++        }
++
++        const size_t slot = *index;
++
++        iface->register_property<double>(
++            property, threshold.value,
++            [this, slot](const double& newValue, double& /*current*/) {
++                return handleThresholdSet(slot, newValue);
++            },
++            [this, slot, configured = threshold.value](double&) {
++                return thresholdsKnown
++                           ? deviceThresholds[slot] / millivoltsPerVolt
++                           : configured;
++            });
++
++        iface->register_property(alarm, false);
++
++        publishedThresholds.emplace_back(iface, property, slot);
++    }
++
++    for (auto& iface : thresholdInterfaces)
++    {
++        if (iface && !iface->initialize())
++        {
++            lg2::error("Error initializing threshold interface for {NAME}",
++                       "NAME", name);
++        }
++    }
++}
++
++int NvidiaSmaLeakSensor::handleThresholdSet(const size_t index,
++                                            const double& newValue)
++{
++    if (!thresholdsKnown)
++    {
++        lg2::error(
++            "Leak threshold set rejected for detector {ID}: the device has not reported its thresholds",
++            "ID", sensorId);
++        throw sdbusplus::error::xyz::openbmc_project::common::Unavailable();
++    }
++
++    const double millivolts = newValue * millivoltsPerVolt;
++
++    if (!std::isfinite(millivolts) || millivolts < 0 ||
++        millivolts > std::numeric_limits<uint16_t>::max())
++    {
++        lg2::error(
++            "Leak threshold set rejected for detector {ID}: {VAL} is not a reading the device can hold",
++            "ID", sensorId, "VAL", millivolts);
++        throw sdbusplus::error::xyz::openbmc_project::common::InvalidArgument();
++    }
++
++    std::array<uint16_t, gpu::leakDetectorThresholdCount> candidate{};
++    for (size_t slot = 0; slot < candidate.size(); ++slot)
++    {
++        candidate[slot] =
++            pendingThresholds[slot].value_or(requestedThresholds[slot]);
++    }
++    candidate[index] = static_cast<uint16_t>(millivolts);
++
++    // The device refuses a request that crosses its thresholds over.
++    if (candidate[minLeakSlot] >= candidate[maxLeakSlot] ||
++        candidate[maxLeakSlot] >= candidate[maxNormalSlot])
++    {
++        lg2::error(
++            "Leak threshold set rejected for detector {ID}: {VAL} would cross the thresholds the device holds",
++            "ID", sensorId, "VAL", millivolts);
++        throw sdbusplus::error::xyz::openbmc_project::common::InvalidArgument();
++    }
++
++    pendingThresholds[index] = candidate[index];
++
++    armSetThresholdTimer();
++
++    return 1;
++}
++
++void NvidiaSmaLeakSensor::armSetThresholdTimer()
++{
++    setThresholdTimer.expires_after(setThresholdDebounce);
++    setThresholdTimer.async_wait(
++        [weak{weak_from_this()}](const boost::system::error_code& ec) {
++            if (ec == boost::asio::error::operation_aborted)
++            {
++                return;
++            }
++
++            std::shared_ptr<NvidiaSmaLeakSensor> self = weak.lock();
++            if (!self)
++            {
++                return;
++            }
++
++            self->applyRequestedThresholds();
++        });
++}
++
++void NvidiaSmaLeakSensor::applyRequestedThresholds()
++{
++    if (setInflight)
++    {
++        armSetThresholdTimer();
++        return;
++    }
++
++    std::array<uint16_t, gpu::leakDetectorThresholdCount> sent{};
++    for (size_t slot = 0; slot < sent.size(); ++slot)
++    {
++        sent[slot] =
++            pendingThresholds[slot].value_or(requestedThresholds[slot]);
++        pendingThresholds[slot].reset();
++    }
++
++    const int rc = gpu::encodeSetLeakDetectionThresholdsRequest(
++        0, sensorId, sent[0], sent[1], sent[2], setRequest);
++
++    if (rc != 0)
++    {
++        lg2::error(
++            "Error setting leak thresholds for detector {ID}: encode failed, rc={RC}",
++            "ID", sensorId, "RC", rc);
++        return;
++    }
++
++    setInflight = true;
++
++    mctpRequester.sendRecvMsg(
++        eid, setRequest,
++        [weak{weak_from_this()},
++         sent](const std::error_code& ec, std::span<const uint8_t> buffer) {
++            std::shared_ptr<NvidiaSmaLeakSensor> self = weak.lock();
++            if (!self)
++            {
++                return;
++            }
++
++            if (ec)
++            {
++                lg2::error(
++                    "Error setting leak thresholds for detector {ID}: sending message over MCTP failed, rc={RC}",
++                    "ID", self->sensorId, "RC", ec.message());
++                self->setInflight = false;
++                return;
++            }
++
++            ocp::accelerator_management::CompletionCode cc{};
++            uint16_t reasonCode = 0;
++
++            const int rc = gpu::decodeSetLeakDetectionThresholdsResponse(
++                buffer, cc, reasonCode);
++
++            if (rc != 0 ||
++                cc != ocp::accelerator_management::CompletionCode::SUCCESS)
++            {
++                lg2::error(
++                    "Error setting leak thresholds for detector {ID}: rc={RC}, cc={CC}, reasonCode={RESC}",
++                    "ID", self->sensorId, "RC", rc, "CC", cc, "RESC",
++                    reasonCode);
++                self->setInflight = false;
++                return;
++            }
++
++            self->requestedThresholds = sent;
++
++            self->awaitingReadback = true;
++
++            self->update();
++        });
++}
++
++void NvidiaSmaLeakSensor::updateThresholds(
++    const std::vector<uint16_t>& reported)
++{
++    if (reported.size() != gpu::leakDetectorThresholdCount)
++    {
++        return;
++    }
++
++    const auto previous = deviceThresholds;
++
++    if (!thresholdsKnown)
++    {
++        std::ranges::copy(reported, requestedThresholds.begin());
++    }
++
++    std::ranges::copy(reported, deviceThresholds.begin());
++
++    thresholdsKnown = true;
++
++    for (auto& threshold : thresholds)
++    {
++        const std::optional<size_t> index = thresholdIndex(threshold);
++
++        if (index)
++        {
++            threshold.value = deviceThresholds[*index] / millivoltsPerVolt;
++        }
++    }
++
++    for (const auto& published : publishedThresholds)
++    {
++        if (deviceThresholds[published.index] != previous[published.index])
++        {
++            published.interface->signal_property(published.property);
++        }
++    }
++}
++
+ void NvidiaSmaLeakSensor::processResponse(const std::error_code& ec,
+                                           std::span<const uint8_t> buffer)
+ {
++    if (awaitingReadback)
++    {
++        awaitingReadback = false;
++        setInflight = false;
++    }
++
+     if (ec)
+     {
+         lg2::error(
+@@ -238,9 +511,11 @@ void NvidiaSmaLeakSensor::processResponse(const std::error_code& ec,
+     {
+         if (sensorData.sensorId == sensorId)
+         {
++            updateThresholds(sensorData.thresholds);
++
+             // Reading from the device is in millivolts and unit set on the dbus
+             // is volts.
+-            updateValue(sensorData.adcReadingMv / 1000.0);
++            updateValue(sensorData.adcReadingMv / millivoltsPerVolt);
+             updateState(sensorData.leakState);
+             break;
+         }
+diff --git a/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp b/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
+index 4bc9cd9d..f8bd2322 100644
+--- a/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
++++ b/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
+@@ -10,6 +10,7 @@
+ #include "sensor.hpp"
+ 
+ #include <NvidiaGpuMctpVdm.hpp>
++#include <boost/asio/steady_timer.hpp>
+ #include <sdbusplus/asio/connection.hpp>
+ #include <sdbusplus/asio/object_server.hpp>
+ #include <sdbusplus/message/native_types.hpp>
+@@ -17,6 +18,7 @@
+ #include <array>
+ #include <cstdint>
+ #include <memory>
++#include <optional>
+ #include <string>
+ #include <vector>
+ 
+@@ -51,6 +53,16 @@ struct NvidiaSmaLeakSensor :
+         const sdbusplus::object_path& monitoredPath,
+         const std::string& detectorName);
+ 
++    void registerThresholds(const sdbusplus::object_path& dbusPath);
++
++    int handleThresholdSet(size_t index, const double& newValue);
++
++    void armSetThresholdTimer();
++
++    void applyRequestedThresholds();
++
++    void updateThresholds(const std::vector<uint16_t>& reported);
++
+     uint8_t eid{};
+ 
+     uint8_t sensorId{};
+@@ -63,6 +75,36 @@ struct NvidiaSmaLeakSensor :
+ 
+     std::array<uint8_t, gpu::getLeakDetectionInfoRequestSize> request{};
+ 
++    std::array<uint8_t, gpu::setLeakDetectionThresholdsRequestSize>
++        setRequest{};
++
++    std::array<uint16_t, gpu::leakDetectorThresholdCount> deviceThresholds{};
++
++    // The device holds a threshold a millivolt below the value written, so a
++    // threshold a request does not name is sent as last requested, not as
++    // last reported.
++    std::array<uint16_t, gpu::leakDetectorThresholdCount> requestedThresholds{};
++
++    std::array<std::optional<uint16_t>, gpu::leakDetectorThresholdCount>
++        pendingThresholds;
++
++    bool thresholdsKnown{false};
++
++    bool setInflight{false};
++
++    bool awaitingReadback{false};
++
++    struct PublishedThreshold
++    {
++        std::shared_ptr<sdbusplus::asio::dbus_interface> interface;
++        std::string property;
++        size_t index;
++    };
++
++    std::vector<PublishedThreshold> publishedThresholds;
++
++    boost::asio::steady_timer setThresholdTimer;
++
+     std::shared_ptr<sdbusplus::asio::dbus_interface>
+         commonPhysicalContextInterface;
+ 
+diff --git a/src/tests/nvidia-gpu/test_NvidiaGpuMctpVdm.cpp b/src/tests/nvidia-gpu/test_NvidiaGpuMctpVdm.cpp
+index c1e462d1..d5c49c22 100644
+--- a/src/tests/nvidia-gpu/test_NvidiaGpuMctpVdm.cpp
++++ b/src/tests/nvidia-gpu/test_NvidiaGpuMctpVdm.cpp
+@@ -5189,4 +5189,111 @@ TEST_F(GpuMctpVdmTests, DecodeGetLeakDetectionInfoResponseBufferTooSmall)
+     EXPECT_NE(result, 0); // Expect failure due to missing data
+ }
+ 
++TEST_F(GpuMctpVdmTests, EncodeSetLeakDetectionThresholdsRequestSuccess)
++{
++    const uint8_t instanceId = 3;
++    std::array<uint8_t, gpu::setLeakDetectionThresholdsRequestSize> buf{};
++
++    int result = gpu::encodeSetLeakDetectionThresholdsRequest(
++        instanceId, 2, 165, 1650, 1850, buf);
++
++    EXPECT_EQ(result, 0);
++
++    UnpackBuffer ubuf(std::span<const uint8_t>(buf.data(), buf.size()));
++    ocp::accelerator_management::MessageType msgType{};
++    uint8_t unpackedInstanceId = 0;
++    uint8_t unpackedMsgType = 0;
++    EXPECT_EQ(ocp::accelerator_management::unpackHeader(
++                  ubuf, gpu::nvidiaPciVendorId, msgType, unpackedInstanceId,
++                  unpackedMsgType),
++              0);
++    EXPECT_EQ(msgType, ocp::accelerator_management::MessageType::REQUEST);
++    uint8_t command = 0;
++    ubuf.unpack(command);
++    EXPECT_EQ(
++        command,
++        static_cast<uint8_t>(
++            gpu::PlatformEnvironmentalCommands::SET_LEAK_DETECTION_THRESHOLDS));
++    uint8_t dataSize = 0;
++    ubuf.unpack(dataSize);
++    EXPECT_EQ(dataSize, 10);
++    uint8_t detectorCount = 0;
++    uint8_t thresholdCount = 0;
++    ubuf.unpack(detectorCount);
++    ubuf.unpack(thresholdCount);
++    EXPECT_EQ(detectorCount, 1);
++    EXPECT_EQ(thresholdCount, gpu::leakDetectorThresholdCount);
++    uint8_t sensorId = 0;
++    uint8_t state = 0;
++    ubuf.unpack(sensorId);
++    ubuf.unpack(state);
++    EXPECT_EQ(sensorId, 2);
++    uint16_t minLeak = 0;
++    uint16_t maxLeak = 0;
++    uint16_t maxNormal = 0;
++    ubuf.unpack(minLeak);
++    ubuf.unpack(maxLeak);
++    ubuf.unpack(maxNormal);
++    EXPECT_EQ(minLeak, 165);
++    EXPECT_EQ(maxLeak, 1650);
++    EXPECT_EQ(maxNormal, 1850);
++    EXPECT_EQ(ubuf.getError(), 0);
++}
++
++TEST_F(GpuMctpVdmTests, EncodeSetLeakDetectionThresholdsRequestBufferTooSmall)
++{
++    std::array<uint8_t, gpu::setLeakDetectionThresholdsRequestSize - 1> buf{};
++
++    EXPECT_NE(gpu::encodeSetLeakDetectionThresholdsRequest(0, 0, 165, 1650,
++                                                           1850, buf),
++              0);
++}
++
++TEST_F(GpuMctpVdmTests, DecodeSetLeakDetectionThresholdsResponseSuccess)
++{
++    std::vector<uint8_t> buf(9);
++    PackBuffer packer(buf);
++
++    packCommonResponseHeader(
++        packer, static_cast<uint8_t>(gpu::MessageType::PLATFORM_ENVIRONMENTAL),
++        static_cast<uint8_t>(
++            gpu::PlatformEnvironmentalCommands::SET_LEAK_DETECTION_THRESHOLDS),
++        static_cast<uint8_t>(
++            ocp::accelerator_management::CompletionCode::SUCCESS),
++        0);
++
++    ASSERT_EQ(packer.getError(), 0);
++
++    ocp::accelerator_management::CompletionCode cc{};
++    uint16_t reasonCode{};
++
++    EXPECT_EQ(
++        gpu::decodeSetLeakDetectionThresholdsResponse(buf, cc, reasonCode), 0);
++    EXPECT_EQ(cc, ocp::accelerator_management::CompletionCode::SUCCESS);
++}
++
++TEST_F(GpuMctpVdmTests, DecodeSetLeakDetectionThresholdsResponseRejected)
++{
++    std::vector<uint8_t> buf(9);
++    PackBuffer packer(buf);
++
++    packCommonResponseHeader(
++        packer, static_cast<uint8_t>(gpu::MessageType::PLATFORM_ENVIRONMENTAL),
++        static_cast<uint8_t>(
++            gpu::PlatformEnvironmentalCommands::SET_LEAK_DETECTION_THRESHOLDS),
++        static_cast<uint8_t>(
++            ocp::accelerator_management::CompletionCode::ERR_INVALID_DATA),
++        0);
++
++    ASSERT_EQ(packer.getError(), 0);
++
++    ocp::accelerator_management::CompletionCode cc{};
++    uint16_t reasonCode{};
++
++    EXPECT_EQ(
++        gpu::decodeSetLeakDetectionThresholdsResponse(buf, cc, reasonCode), 0);
++    EXPECT_EQ(cc,
++              ocp::accelerator_management::CompletionCode::ERR_INVALID_DATA);
++}
++
+ } // namespace gpu_mctp_tests
+diff --git a/src/tests/nvidia-gpu/test_NvidiaSmaLeakSensor.cpp b/src/tests/nvidia-gpu/test_NvidiaSmaLeakSensor.cpp
+index c5c99489..4b417b52 100644
+--- a/src/tests/nvidia-gpu/test_NvidiaSmaLeakSensor.cpp
++++ b/src/tests/nvidia-gpu/test_NvidiaSmaLeakSensor.cpp
+@@ -13,9 +13,11 @@
+ 
+ #include <MessagePackUnpackUtils.hpp>
+ 
++#include <chrono>
+ #include <cmath>
+ #include <cstdint>
+ #include <memory>
++#include <span>
+ #include <string>
+ #include <system_error>
+ #include <utility>
+@@ -27,13 +29,15 @@
+ namespace
+ {
+ 
+-std::vector<uint8_t> buildLeakDetectionInfoResponse(uint16_t adcReadingMv)
++std::vector<uint8_t> buildLeakDetectionInfoResponse(
++    uint16_t adcReadingMv, const std::vector<uint16_t>& thresholds = {})
+ {
+     // dataSize = numSensors(1) + numThresholdLevels(1) +
+     //            numSensors * (sensorId(1) + leakState(1) +
+     //            thresholds(2*numThresholdLevels) + adcReadingMv(2))
+-    // We mock 1 sensor with 0 thresholds
+-    uint16_t dataSize = 1 + 1 + 1 * (1 + 1 + 0 + 2);
++    const auto levels = static_cast<uint8_t>(thresholds.size());
++    uint16_t dataSize =
++        static_cast<uint16_t>(1 + 1 + 1 * (1 + 1 + (2 * levels) + 2));
+ 
+     std::vector<uint8_t> buf(
+         ocp::accelerator_management::commonResponseSize + dataSize);
+@@ -51,16 +55,79 @@ std::vector<uint8_t> buildLeakDetectionInfoResponse(uint16_t adcReadingMv)
+ 
+     // payload
+     pack.pack(static_cast<uint8_t>(1)); // numSensors
+-    pack.pack(static_cast<uint8_t>(0)); // numThresholdLevels
++    pack.pack(levels);                  // numThresholdLevels
+ 
+     // sensor 1
+     pack.pack(static_cast<uint8_t>(0)); // sensorId
+     pack.pack(static_cast<uint8_t>(0)); // leakState
+-    pack.pack(adcReadingMv);            // adcReadingMv
++    for (const uint16_t threshold : thresholds)
++    {
++        pack.pack(threshold);
++    }
++    pack.pack(adcReadingMv); // adcReadingMv
+ 
+     return buf;
+ }
+ 
++std::vector<uint8_t> buildSetLeakThresholdsResponse(
++    ocp::accelerator_management::CompletionCode cc =
++        ocp::accelerator_management::CompletionCode::SUCCESS)
++{
++    return test_utils::buildPlatformEnvErrorResponse(
++        gpu::PlatformEnvironmentalCommands::SET_LEAK_DETECTION_THRESHOLDS,
++        static_cast<uint8_t>(cc), 0);
++}
++
++constexpr double millivoltsPerVolt = 1000.0;
++
++constexpr uint16_t minLeakMv = 156;
++constexpr uint16_t maxLeakMv = 1549;
++constexpr uint16_t maxNormalMv = 1841;
++constexpr uint16_t readingMv = 1740;
++
++const std::vector<uint16_t> deviceThresholds = {minLeakMv, maxLeakMv,
++                                                maxNormalMv};
++
++auto captureAndRespond(std::vector<uint8_t>& into,
++                       std::vector<uint8_t> response)
++{
++    return
++        [&into, response = std::move(response)](
++            uint8_t /*eid*/, std::span<const uint8_t> reqMsg, auto callback) {
++            into.assign(reqMsg.begin(), reqMsg.end());
++            callback(std::error_code{}, response);
++        };
++}
++
++constexpr std::chrono::seconds dispatchTimeout{5};
++
++std::vector<thresholds::Threshold> deviceThresholdConfig()
++{
++    std::vector<thresholds::Threshold> configured;
++    configured.emplace_back(thresholds::Level::CRITICAL,
++                            thresholds::Direction::LOW,
++                            minLeakMv / millivoltsPerVolt);
++    configured.emplace_back(thresholds::Level::WARNING,
++                            thresholds::Direction::LOW,
++                            maxLeakMv / millivoltsPerVolt);
++    configured.emplace_back(thresholds::Level::CRITICAL,
++                            thresholds::Direction::HIGH,
++                            maxNormalMv / millivoltsPerVolt);
++    return configured;
++}
++
++std::vector<uint16_t> thresholdsInRequest(const std::vector<uint8_t>& request)
++{
++    UnpackBuffer unpack(std::span<const uint8_t>(request).subspan(
++        ocp::accelerator_management::commonRequestSize + 4));
++    std::vector<uint16_t> values(gpu::leakDetectorThresholdCount);
++    for (uint16_t& value : values)
++    {
++        unpack.unpack(value);
++    }
++    return values;
++}
++
+ std::vector<uint8_t> buildLeakDetectionInfoEmptyResponse()
+ {
+     // dataSize = numSensors(1) + numThresholdLevels(1)
+@@ -362,3 +429,335 @@ TEST_F(NvidiaSmaLeakSensorTest, DestructorDoesNotCrash)
+ }
+ 
+ } // namespace
++
++TEST_F(NvidiaSmaLeakSensorTest, ThresholdsComeFromTheDevice)
++{
++    EXPECT_CALL(mctpMock, sendRecvMsg)
++        .WillOnce(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, deviceThresholds)));
++
++    const std::shared_ptr<NvidiaSmaLeakSensor> sensor =
++        createSensor("thr_from_device_0", deviceThresholdConfig());
++    sensor->update();
++
++    const std::string path = leakPath("thr_from_device_0");
++    EXPECT_DOUBLE_EQ(getProperty<double>(
++                         path, "xyz.openbmc_project.Sensor.Threshold.Critical",
++                         "CriticalLow"),
++                     minLeakMv / 1000.0);
++    EXPECT_DOUBLE_EQ(
++        getProperty<double>(
++            path, "xyz.openbmc_project.Sensor.Threshold.Warning", "WarningLow"),
++        maxLeakMv / 1000.0);
++    EXPECT_DOUBLE_EQ(getProperty<double>(
++                         path, "xyz.openbmc_project.Sensor.Threshold.Critical",
++                         "CriticalHigh"),
++                     maxNormalMv / 1000.0);
++}
++
++TEST_F(NvidiaSmaLeakSensorTest, ThresholdTheDeviceDoesNotReportStaysNaN)
++{
++    EXPECT_CALL(mctpMock, sendRecvMsg)
++        .WillOnce(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, deviceThresholds)));
++
++    const std::shared_ptr<NvidiaSmaLeakSensor> sensor =
++        createSensor("thr_nan_0", deviceThresholdConfig());
++    sensor->update();
++
++    const std::string path = leakPath("thr_nan_0");
++    EXPECT_TRUE(std::isnan(getProperty<double>(
++        path, "xyz.openbmc_project.Sensor.Threshold.Warning", "WarningHigh")));
++    EXPECT_FALSE(
++        getProperty<bool>(path, "xyz.openbmc_project.Sensor.Threshold.Warning",
++                          "WarningAlarmHigh"));
++}
++
++TEST_F(NvidiaSmaLeakSensorTest, ThresholdBeforeTheDeviceReportsIsTheConfigured)
++{
++    EXPECT_CALL(mctpMock, sendRecvMsg)
++        .WillOnce(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv)));
++
++    std::vector<thresholds::Threshold> configured;
++    configured.emplace_back(thresholds::Level::WARNING,
++                            thresholds::Direction::LOW, 2.5);
++
++    const std::shared_ptr<NvidiaSmaLeakSensor> sensor =
++        createSensor("thr_configured_0", std::move(configured));
++    sensor->update();
++
++    EXPECT_DOUBLE_EQ(
++        getProperty<double>(leakPath("thr_configured_0"),
++                            "xyz.openbmc_project.Sensor.Threshold.Warning",
++                            "WarningLow"),
++        2.5);
++}
++
++TEST_F(NvidiaSmaLeakSensorTest, WriteBeforeTheDeviceReportsIsRefused)
++{
++    EXPECT_CALL(mctpMock, sendRecvMsg)
++        .WillOnce(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv)));
++
++    std::vector<thresholds::Threshold> configured;
++    configured.emplace_back(thresholds::Level::WARNING,
++                            thresholds::Direction::LOW, 2.5);
++
++    const std::shared_ptr<NvidiaSmaLeakSensor> sensor =
++        createSensor("write_unknown_0", std::move(configured));
++    sensor->update();
++
++    EXPECT_TRUE(setProperty<double>(
++        leakPath("write_unknown_0"),
++        "xyz.openbmc_project.Sensor.Threshold.Warning", "WarningLow", 1.0));
++}
++
++TEST_F(NvidiaSmaLeakSensorTest, WriteReachesTheDeviceInWireOrder)
++{
++    std::vector<uint8_t> request;
++    EXPECT_CALL(mctpMock, sendRecvMsg)
++        .WillOnce(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, deviceThresholds)))
++        .WillOnce(captureAndRespond(request, buildSetLeakThresholdsResponse()))
++        .WillRepeatedly(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, deviceThresholds)));
++
++    const std::shared_ptr<NvidiaSmaLeakSensor> sensor =
++        createSensor("write_order_0", deviceThresholdConfig());
++    sensor->update();
++
++    EXPECT_FALSE(setProperty<double>(
++        leakPath("write_order_0"),
++        "xyz.openbmc_project.Sensor.Threshold.Warning", "WarningLow", 1.4));
++
++    ASSERT_TRUE(
++        pumpIoUntil([&request] { return !request.empty(); }, dispatchTimeout));
++    ASSERT_EQ(request.size(), gpu::setLeakDetectionThresholdsRequestSize);
++    EXPECT_THAT(thresholdsInRequest(request),
++                testing::ElementsAre(minLeakMv, 1400, maxNormalMv));
++}
++
++TEST_F(NvidiaSmaLeakSensorTest, WriteThatCrossesTheThresholdsIsRefused)
++{
++    EXPECT_CALL(mctpMock, sendRecvMsg)
++        .WillOnce(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, deviceThresholds)));
++
++    const std::shared_ptr<NvidiaSmaLeakSensor> sensor =
++        createSensor("write_cross_0", deviceThresholdConfig());
++    sensor->update();
++
++    const std::string path = leakPath("write_cross_0");
++    EXPECT_TRUE(setProperty<double>(
++        path, "xyz.openbmc_project.Sensor.Threshold.Critical", "CriticalLow",
++        maxLeakMv / 1000.0 + 0.1));
++    EXPECT_TRUE(setProperty<double>(
++        path, "xyz.openbmc_project.Sensor.Threshold.Warning", "WarningLow",
++        maxNormalMv / 1000.0 + 0.1));
++}
++
++TEST_F(NvidiaSmaLeakSensorTest, WriteCarriesTheThresholdsLastRequested)
++{
++    std::vector<uint8_t> first;
++    std::vector<uint8_t> second;
++    const std::vector<uint16_t> reread = {minLeakMv - 1, 1399, maxNormalMv - 1};
++    EXPECT_CALL(mctpMock, sendRecvMsg)
++        .WillOnce(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, deviceThresholds)))
++        .WillOnce(captureAndRespond(first, buildSetLeakThresholdsResponse()))
++        .WillOnce(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, reread)))
++        .WillOnce(captureAndRespond(second, buildSetLeakThresholdsResponse()))
++        .WillRepeatedly(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, reread)));
++
++    const std::shared_ptr<NvidiaSmaLeakSensor> sensor =
++        createSensor("write_reread_0", deviceThresholdConfig());
++    sensor->update();
++
++    const std::string path = leakPath("write_reread_0");
++    EXPECT_FALSE(setProperty<double>(
++        path, "xyz.openbmc_project.Sensor.Threshold.Warning", "WarningLow",
++        1.4));
++    ASSERT_TRUE(
++        pumpIoUntil([&first] { return !first.empty(); }, dispatchTimeout));
++    EXPECT_THAT(thresholdsInRequest(first),
++                testing::ElementsAre(minLeakMv, 1400, maxNormalMv));
++
++    EXPECT_FALSE(setProperty<double>(
++        path, "xyz.openbmc_project.Sensor.Threshold.Warning", "WarningLow",
++        1.4));
++    ASSERT_TRUE(
++        pumpIoUntil([&second] { return !second.empty(); }, dispatchTimeout));
++
++    EXPECT_THAT(thresholdsInRequest(second),
++                testing::ElementsAre(minLeakMv, 1400, maxNormalMv));
++}
++
++TEST_F(NvidiaSmaLeakSensorTest, WriteLeavesTheThresholdsItDoesNotName)
++{
++    std::vector<uint8_t> first;
++    std::vector<uint8_t> second;
++    const std::vector<uint16_t> reread = {minLeakMv - 1, 1399, maxNormalMv - 1};
++    EXPECT_CALL(mctpMock, sendRecvMsg)
++        .WillOnce(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, deviceThresholds)))
++        .WillOnce(captureAndRespond(first, buildSetLeakThresholdsResponse()))
++        .WillOnce(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, reread)))
++        .WillOnce(captureAndRespond(second, buildSetLeakThresholdsResponse()))
++        .WillRepeatedly(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, reread)));
++
++    const std::shared_ptr<NvidiaSmaLeakSensor> sensor =
++        createSensor("write_keeps_0", deviceThresholdConfig());
++    sensor->update();
++
++    const std::string path = leakPath("write_keeps_0");
++    EXPECT_FALSE(setProperty<double>(
++        path, "xyz.openbmc_project.Sensor.Threshold.Warning", "WarningLow",
++        1.4));
++    ASSERT_TRUE(
++        pumpIoUntil([&first] { return !first.empty(); }, dispatchTimeout));
++
++    EXPECT_FALSE(setProperty<double>(
++        path, "xyz.openbmc_project.Sensor.Threshold.Critical", "CriticalHigh",
++        (maxNormalMv + 100) / 1000.0));
++    ASSERT_TRUE(
++        pumpIoUntil([&second] { return !second.empty(); }, dispatchTimeout));
++
++    EXPECT_THAT(thresholdsInRequest(second),
++                testing::ElementsAre(minLeakMv, 1400, maxNormalMv + 100));
++}
++
++TEST_F(NvidiaSmaLeakSensorTest, SetIsFollowedByAReadingRightAway)
++{
++    std::vector<uint8_t> first;
++    std::vector<uint8_t> second;
++    EXPECT_CALL(mctpMock, sendRecvMsg)
++        .WillOnce(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, deviceThresholds)))
++        .WillOnce(captureAndRespond(first, buildSetLeakThresholdsResponse()))
++        .WillOnce(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, deviceThresholds)))
++        .WillOnce(captureAndRespond(second, buildSetLeakThresholdsResponse()))
++        .WillRepeatedly(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, deviceThresholds)));
++
++    const std::shared_ptr<NvidiaSmaLeakSensor> sensor =
++        createSensor("write_gate_0", deviceThresholdConfig());
++    sensor->update();
++
++    const std::string path = leakPath("write_gate_0");
++    EXPECT_FALSE(setProperty<double>(
++        path, "xyz.openbmc_project.Sensor.Threshold.Warning", "WarningLow",
++        1.4));
++    ASSERT_TRUE(
++        pumpIoUntil([&first] { return !first.empty(); }, dispatchTimeout));
++
++    EXPECT_FALSE(setProperty<double>(
++        path, "xyz.openbmc_project.Sensor.Threshold.Critical", "CriticalLow",
++        0.2));
++    ASSERT_TRUE(
++        pumpIoUntil([&second] { return !second.empty(); }, dispatchTimeout));
++    EXPECT_THAT(thresholdsInRequest(second),
++                testing::ElementsAre(200, 1400, maxNormalMv));
++}
++
++TEST_F(NvidiaSmaLeakSensorTest, RejectedWriteDoesNotWedgeTheGate)
++{
++    std::vector<uint8_t> rejected;
++    std::vector<uint8_t> next;
++    EXPECT_CALL(mctpMock, sendRecvMsg)
++        .WillOnce(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, deviceThresholds)))
++        .WillOnce(captureAndRespond(
++            rejected,
++            buildSetLeakThresholdsResponse(
++                ocp::accelerator_management::CompletionCode::ERR_INVALID_DATA)))
++        .WillOnce(captureAndRespond(next, buildSetLeakThresholdsResponse()))
++        .WillRepeatedly(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, deviceThresholds)));
++
++    const std::shared_ptr<NvidiaSmaLeakSensor> sensor =
++        createSensor("write_rejected_0", deviceThresholdConfig());
++    sensor->update();
++
++    const std::string path = leakPath("write_rejected_0");
++    EXPECT_FALSE(setProperty<double>(
++        path, "xyz.openbmc_project.Sensor.Threshold.Critical", "CriticalLow",
++        0.2));
++    ASSERT_TRUE(pumpIoUntil([&rejected] { return !rejected.empty(); },
++                            dispatchTimeout));
++    EXPECT_THAT(thresholdsInRequest(rejected),
++                testing::ElementsAre(200, maxLeakMv, maxNormalMv));
++
++    EXPECT_FALSE(setProperty<double>(
++        path, "xyz.openbmc_project.Sensor.Threshold.Warning", "WarningLow",
++        1.4));
++    ASSERT_TRUE(
++        pumpIoUntil([&next] { return !next.empty(); }, dispatchTimeout));
++    EXPECT_THAT(thresholdsInRequest(next),
++                testing::ElementsAre(minLeakMv, 1400, maxNormalMv));
++}
++
++TEST_F(NvidiaSmaLeakSensorTest, WritesInOneBurstBecomeOneRequest)
++{
++    std::vector<uint8_t> request;
++    EXPECT_CALL(mctpMock, sendRecvMsg)
++        .WillOnce(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, deviceThresholds)))
++        .WillOnce(captureAndRespond(request, buildSetLeakThresholdsResponse()))
++        .WillRepeatedly(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, deviceThresholds)));
++
++    const std::shared_ptr<NvidiaSmaLeakSensor> sensor =
++        createSensor("write_burst_0", deviceThresholdConfig());
++    sensor->update();
++
++    const std::string path = leakPath("write_burst_0");
++    EXPECT_FALSE(setProperty<double>(
++        path, "xyz.openbmc_project.Sensor.Threshold.Critical", "CriticalLow",
++        0.2));
++    EXPECT_FALSE(setProperty<double>(
++        path, "xyz.openbmc_project.Sensor.Threshold.Warning", "WarningLow",
++        1.4));
++
++    ASSERT_TRUE(
++        pumpIoUntil([&request] { return !request.empty(); }, dispatchTimeout));
++    EXPECT_THAT(thresholdsInRequest(request),
++                testing::ElementsAre(200, 1400, maxNormalMv));
++}
++
++TEST_F(NvidiaSmaLeakSensorTest, FailedReadingDoesNotWedgeTheGate)
++{
++    std::vector<uint8_t> first;
++    std::vector<uint8_t> second;
++    EXPECT_CALL(mctpMock, sendRecvMsg)
++        .WillOnce(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, deviceThresholds)))
++        .WillOnce(captureAndRespond(first, buildSetLeakThresholdsResponse()))
++        .WillOnce(mock_mctp::respondWith(
++            std::make_error_code(std::errc::timed_out), {}))
++        .WillOnce(captureAndRespond(second, buildSetLeakThresholdsResponse()))
++        .WillRepeatedly(mock_mctp::respondWith(
++            {}, buildLeakDetectionInfoResponse(readingMv, deviceThresholds)));
++
++    const std::shared_ptr<NvidiaSmaLeakSensor> sensor =
++        createSensor("read_fail_0", deviceThresholdConfig());
++    sensor->update();
++
++    const std::string path = leakPath("read_fail_0");
++    EXPECT_FALSE(setProperty<double>(
++        path, "xyz.openbmc_project.Sensor.Threshold.Warning", "WarningLow",
++        1.4));
++    ASSERT_TRUE(
++        pumpIoUntil([&first] { return !first.empty(); }, dispatchTimeout));
++
++    EXPECT_FALSE(setProperty<double>(
++        path, "xyz.openbmc_project.Sensor.Threshold.Critical", "CriticalLow",
++        0.2));
++    ASSERT_TRUE(
++        pumpIoUntil([&second] { return !second.empty(); }, dispatchTimeout));
++}
+diff --git a/src/tests/nvidia-gpu/utils/DbusMockTestBase.hpp b/src/tests/nvidia-gpu/utils/DbusMockTestBase.hpp
+index 11a09597..66e1ee2b 100644
+--- a/src/tests/nvidia-gpu/utils/DbusMockTestBase.hpp
++++ b/src/tests/nvidia-gpu/utils/DbusMockTestBase.hpp
+@@ -102,6 +102,33 @@ class DbusMockTestBase : public ::testing::Test
+         return std::move(state->value);
+     }
+ 
++    /**
++     * Write a property on this connection's own object server and return the
++     * error the call reported, so a test can assert on a refused write.
++     * Throws SdBusError only when the reply never arrives.
++     */
++    template <typename PropertyType>
++    static boost::system::error_code setProperty(
++        const std::string& path, const std::string& iface,
++        const std::string& prop, PropertyType value)
++    {
++        auto state =
++            std::make_shared<std::optional<boost::system::error_code>>();
++
++        sdbusplus::asio::setProperty(
++            *bus(), bus()->get_unique_name(), path, iface, prop,
++            std::move(value),
++            [state](const boost::system::error_code& ec) { *state = ec; });
++
++        if (!pumpIoUntil([state] { return state->has_value(); },
++                         propertyReadTimeout))
++        {
++            throw sdbusplus::exception::SdBusError(ETIMEDOUT,
++                                                   "setProperty timed out");
++        }
++        return state->value_or(boost::system::error_code{});
++    }
++
+     // Pump the shared io_context until done() holds; false on timeout. Needed
+     // by tests that wait on a timer inside the object under test.
+     static bool pumpIoUntil(const std::function<bool()>& done,
+-- 
+2.53.0
+

@@ -1,0 +1,815 @@
+From 4a4862068409b13ed08f73fdf16454d06f66549a Mon Sep 17 00:00:00 2001
+From: Ender Hsieh <andhsieh@nvidia.com>
+Date: Thu, 11 Jun 2026 02:45:13 +0900
+Subject: [PATCH 6/7] nvidia-gpu: react to MCTP endpoint connectivity
+
+An MCTP endpoint can stop answering while the device behind it stays
+configured. Nothing notices today: the device keeps polling an endpoint
+that is not there, so its sensors keep reporting the last value they
+happened to read rather than saying they have nothing to report.
+
+Polling now starts when the endpoint is confirmed online rather than
+when the sensors are built, so the SMA device tests say so explicitly
+instead of expecting init() alone to put a request on the wire.
+
+Track each endpoint through a small state machine and drive it from
+mctpd's Connectivity property:
+
+  Init       --(device init() done)-------->  Online
+  Online     --(Connectivity "Degraded")--->  Recovering
+  Recovering --(Connectivity "Available")-->  Online
+
+Degraded stops the poll and tells the sensors they are not functional,
+Available resumes it. How an unavailable reading is represented is the
+sensor's business, so the device says only that it cannot read. The
+D-Bus objects are kept across the transitions, so a consumer sees the
+same objects go unavailable rather than objects that come and go.
+
+Only the SMA is wired to this for now. mctpd's .Recover probes an
+endpoint by physical address, and a device behind the SMA bridge has
+none of its own, its phys is the bridge's, so the probe only reaches
+the SMA. Rediscovery of bridged devices is a follow-up change.
+
+Tested: Build an image for nvl32-obmc machine with the following
+patches cherry-picked:
+
+```
+1. Align with upstream u-boot dts tree:
+   https://gerrit.openbmc.org/c/openbmc/openbmc/+/89932
+2. mctpd configuration:
+   https://gerrit.openbmc.org/c/openbmc/openbmc/+/87390
+3. Enable nvidia-gpu sensor:
+   https://gerrit.openbmc.org/c/openbmc/openbmc/+/89933
+
+Deployed nvidiagpusensor and drove a recovery cycle on the SMA bridge
+endpoint via mctpd .Recover:
+- Connectivity "Degraded": the endpoint went offline; polling stopped,
+  Functional=false, and the temperature sensor read NaN.
+- Connectivity "Available": the endpoint returned online; polling
+  resumed and Functional returned to true.
+- D-Bus objects preserved throughout; service active with no restarts.
+```
+1. Verified startup poll, Degraded -> offline, Available -> online via
+   the nvidiagpusensor journal and busctl on the BMC.
+2. EndpointState transition unit tests pass.
+
+[1] https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/91169/27
+
+Change-Id: Ib7d5268d9a2681b0fac323f75cd7ff050f0a7f54
+Signed-off-by: Ender Hsieh <andhsieh@nvidia.com>
+---
+ src/nvidia-gpu/DeviceManager.cpp              | 201 ++++++++++++++----
+ src/nvidia-gpu/DeviceManager.hpp              |  45 +++-
+ src/nvidia-gpu/EndpointState.hpp              |  76 +++++++
+ src/nvidia-gpu/NvidiaGpuSensorMain.cpp        |  38 ++--
+ src/nvidia-gpu/NvidiaSmaDevice.cpp            |  10 +
+ src/nvidia-gpu/NvidiaSmaDevice.hpp            |  11 +
+ src/tests/nvidia-gpu/meson.build              |  11 +
+ src/tests/nvidia-gpu/test_EndpointState.cpp   |  54 +++++
+ src/tests/nvidia-gpu/test_NvidiaSmaDevice.cpp |   2 +
+ 9 files changed, 370 insertions(+), 78 deletions(-)
+ create mode 100644 src/nvidia-gpu/EndpointState.hpp
+ create mode 100644 src/tests/nvidia-gpu/test_EndpointState.cpp
+
+diff --git a/src/nvidia-gpu/DeviceManager.cpp b/src/nvidia-gpu/DeviceManager.cpp
+index 67a780fd..873493c3 100644
+--- a/src/nvidia-gpu/DeviceManager.cpp
++++ b/src/nvidia-gpu/DeviceManager.cpp
+@@ -10,12 +10,16 @@
+ #include "NvidiaSmaDevice.hpp"
+ #include "Utils.hpp"
+ 
++#include <EndpointState.hpp>
+ #include <MctpRequester.hpp>
+ #include <NvidiaGpuMctpVdm.hpp>
+ #include <NvidiaSensorConfig.hpp>
+ #include <OcpMctpVdm.hpp>
++#include <boost/asio/error.hpp>
+ #include <boost/asio/io_context.hpp>
++#include <boost/asio/steady_timer.hpp>
+ #include <boost/container/flat_map.hpp>
++#include <boost/system/error_code.hpp>
+ #include <phosphor-logging/lg2.hpp>
+ #include <sdbusplus/asio/connection.hpp>
+ #include <sdbusplus/asio/object_server.hpp>
+@@ -24,6 +28,7 @@
+ 
+ #include <algorithm>
+ #include <array>
++#include <chrono>
+ #include <cstdint>
+ #include <format>
+ #include <memory>
+@@ -41,12 +46,29 @@ DeviceManager::DeviceManager(boost::asio::io_context& io,
+                              std::shared_ptr<sdbusplus::asio::connection> conn,
+                              mctp::MctpRequester& mctpRequester) :
+     io(io), objectServer(objectServer), conn(std::move(conn)),
+-    mctpRequester(mctpRequester)
++    mctpRequester(mctpRequester), configTimer(io)
+ {}
+ 
++// A configuration usually arrives as several properties changing together,
++// so wait for them to settle rather than sweeping once per property.
++static constexpr std::chrono::seconds configSettleInterval{1};
++
++void DeviceManager::scheduleRescan()
++{
++    configTimer.expires_after(configSettleInterval);
++    configTimer.async_wait([this](const boost::system::error_code& ec) {
++        if (ec == boost::asio::error::operation_aborted)
++        {
++            return; // we're being canceled
++        }
++        createSensors();
++    });
++}
+ void DeviceManager::processQueryDeviceIdResponse(
+-    const SensorConfigs& configs, const sdbusplus::object_path& path,
+-    uint8_t eid, const std::error_code& sendRecvMsgResult,
++    const SensorConfigs& configs,
++    const sdbusplus::object_path& entityObjectPath,
++    const sdbusplus::object_path& mctpObjectPath, uint8_t eid,
++    const std::error_code& sendRecvMsgResult,
+     std::span<const uint8_t> queryDeviceIdentificationResponse)
+ {
+     if (sendRecvMsgResult)
+@@ -89,9 +111,9 @@ void DeviceManager::processQueryDeviceIdResponse(
+ 
+             if (gpu == nullptr)
+             {
+-                gpu = std::make_shared<GpuDevice>(configs, gpuName, path, conn,
+-                                                  eid, io, mctpRequester,
+-                                                  objectServer);
++                gpu = std::make_shared<GpuDevice>(
++                    configs, gpuName, entityObjectPath, conn, eid, io,
++                    mctpRequester, objectServer);
+ 
+                 gpu->init();
+             }
+@@ -114,15 +136,25 @@ void DeviceManager::processQueryDeviceIdResponse(
+ 
+             const std::string smaName = std::format("Nvidia_SMA_{}", eid);
+ 
+-            std::shared_ptr<SmaDevice>& sma = smaDevices[smaName];
++            auto existing =
++                std::ranges::find(smaDevices, smaName, &SmaDeviceRecord::name);
+ 
+-            if (sma == nullptr)
++            if (existing == smaDevices.end())
+             {
+-                sma = std::make_shared<SmaDevice>(configs, smaName, path, conn,
+-                                                  eid, io, mctpRequester,
+-                                                  objectServer);
++                auto sma = std::make_shared<SmaDevice>(
++                    configs, smaName, entityObjectPath, conn, eid, io,
++                    mctpRequester, objectServer);
+ 
+                 sma->init();
++
++                smaDevices.emplace_back(SmaDeviceRecord{
++                    .device = std::move(sma),
++                    .name = smaName,
++                    .mctpObjectPath = mctpObjectPath,
++                    .eid = eid,
++                    .state = EndpointState::Init});
++
++                applyEvent(mctpObjectPath, EndpointEvent::InitComplete);
+             }
+             else
+             {
+@@ -149,8 +181,8 @@ void DeviceManager::processQueryDeviceIdResponse(
+             if (pcie == nullptr)
+             {
+                 pcie = std::make_shared<PcieDevice>(
+-                    configs, pcieName, path, conn, eid, io, mctpRequester,
+-                    objectServer);
++                    configs, pcieName, entityObjectPath, conn, eid, io,
++                    mctpRequester, objectServer);
+ 
+                 pcie->init();
+             }
+@@ -176,8 +208,9 @@ void DeviceManager::processQueryDeviceIdResponse(
+ }
+ 
+ void DeviceManager::queryDeviceIdentification(
+-    const SensorConfigs& configs, const sdbusplus::object_path& path,
+-    uint8_t eid)
++    const SensorConfigs& configs,
++    const sdbusplus::object_path& entityObjectPath,
++    const sdbusplus::object_path& mctpObjectPath, uint8_t eid)
+ {
+     auto queryDeviceIdentificationRequest = std::make_shared<
+         std::array<uint8_t, gpu::queryDeviceIdentificationRequestSize>>();
+@@ -194,14 +227,18 @@ void DeviceManager::queryDeviceIdentification(
+ 
+     mctpRequester.sendRecvMsg(
+         eid, *queryDeviceIdentificationRequest,
+-        [this, configs, path, eid, queryDeviceIdentificationRequest](
+-            const std::error_code& ec, std::span<const uint8_t> response) {
+-            processQueryDeviceIdResponse(configs, path, eid, ec, response);
++        [this, configs, entityObjectPath, mctpObjectPath, eid,
++         queryDeviceIdentificationRequest](const std::error_code& ec,
++                                           std::span<const uint8_t> response) {
++            processQueryDeviceIdResponse(configs, entityObjectPath,
++                                         mctpObjectPath, eid, ec, response);
+         });
+ }
+ 
+ void DeviceManager::processEndpoint(
+-    const SensorConfigs& configs, const sdbusplus::object_path& path,
++    const SensorConfigs& configs,
++    const sdbusplus::object_path& entityObjectPath,
++    const sdbusplus::object_path& mctpObjectPath,
+     const boost::system::error_code& ec, const SensorBaseConfigMap& endpoint)
+ {
+     if (ec)
+@@ -266,12 +303,14 @@ void DeviceManager::processEndpoint(
+                   ocp::accelerator_management::messageType) != mctpTypes.end())
+     {
+         lg2::info("Found OCP MCTP VDM Endpoint with ID {EID}", "EID", eid);
+-        queryDeviceIdentification(configs, path, eid);
++        queryDeviceIdentification(configs, entityObjectPath, mctpObjectPath,
++                                  eid);
+     }
+ }
+ 
+ void DeviceManager::queryEndpoints(
+-    const SensorConfigs& configs, const sdbusplus::object_path& path,
++    const SensorConfigs& configs,
++    const sdbusplus::object_path& entityObjectPath,
+     const boost::system::error_code& ec, const GetSubTreeType& ret)
+ {
+     if (ec)
+@@ -295,10 +334,12 @@ void DeviceManager::queryEndpoints(
+                 if (iface == "xyz.openbmc_project.MCTP.Endpoint")
+                 {
+                     conn->async_method_call(
+-                        [this, configs,
+-                         path](const boost::system::error_code& ec,
+-                               const SensorBaseConfigMap& endpoint) {
+-                            processEndpoint(configs, path, ec, endpoint);
++                        [this, configs, entityObjectPath,
++                         mctpObjectPath{objPath}](
++                            const boost::system::error_code& ec,
++                            const SensorBaseConfigMap& endpoint) {
++                            processEndpoint(configs, entityObjectPath,
++                                            mctpObjectPath, ec, endpoint);
+                         },
+                         service, objPath, "org.freedesktop.DBus.Properties",
+                         "GetAll", iface);
+@@ -308,16 +349,17 @@ void DeviceManager::queryEndpoints(
+     }
+ }
+ 
+-void DeviceManager::discoverDevices(const SensorConfigs& configs,
+-                                    const sdbusplus::object_path& path)
++void DeviceManager::discoverDevices(
++    const SensorConfigs& configs,
++    const sdbusplus::object_path& entityObjectPath)
+ {
+     std::string searchPath{"/au/com/codeconstruct/"};
+     std::vector<std::string> ifaceList{{"xyz.openbmc_project.MCTP.Endpoint"}};
+ 
+     conn->async_method_call(
+-        [this, configs,
+-         path](const boost::system::error_code& ec, const GetSubTreeType& ret) {
+-            queryEndpoints(configs, path, ec, ret);
++        [this, configs, entityObjectPath](const boost::system::error_code& ec,
++                                          const GetSubTreeType& ret) {
++            queryEndpoints(configs, entityObjectPath, ec, ret);
+         },
+         "xyz.openbmc_project.ObjectMapper",
+         "/xyz/openbmc_project/object_mapper",
+@@ -327,7 +369,7 @@ void DeviceManager::discoverDevices(const SensorConfigs& configs,
+ 
+ void DeviceManager::processSensorConfigs(const ManagedObjectType& resp)
+ {
+-    for (const auto& [path, interfaces] : resp)
++    for (const auto& [entityObjectPath, interfaces] : resp)
+     {
+         for (const auto& [intf, cfg] : interfaces)
+         {
+@@ -361,11 +403,12 @@ void DeviceManager::processSensorConfigs(const ManagedObjectType& resp)
+                 configs.nicNetworkPortCount = 0;
+             }
+ 
+-            discoverDevices(configs, path);
++            discoverDevices(configs, entityObjectPath);
+ 
+             lg2::info(
+                 "Detected configuration {NAME} of type {TYPE} at path: {PATH}.",
+-                "NAME", configs.name, "TYPE", sensorType, "PATH", path);
++                "NAME", configs.name, "TYPE", sensorType, "PATH",
++                entityObjectPath);
+         }
+     }
+ }
+@@ -415,20 +458,11 @@ void DeviceManager::onConfigInterfaceRemoved(sdbusplus::message_t& message)
+         }
+     }
+ 
+-    auto smaSensorIt = smaDevices.begin();
+-    while (smaSensorIt != smaDevices.end())
+-    {
+-        if ((smaSensorIt->second->getPath() == removedPath) &&
+-            (std::find(interfaces.begin(), interfaces.end(),
+-                       configInterfaceName(sensorType)) != interfaces.end()))
+-        {
+-            smaSensorIt = smaDevices.erase(smaSensorIt);
+-        }
+-        else
+-        {
+-            smaSensorIt++;
+-        }
+-    }
++    std::erase_if(smaDevices, [&](const SmaDeviceRecord& rec) {
++        return (rec.device->getPath() == removedPath) &&
++               (std::find(interfaces.begin(), interfaces.end(),
++                          configInterfaceName(sensorType)) != interfaces.end());
++    });
+ 
+     auto pcieSensorIt = pcieDevices.begin();
+     while (pcieSensorIt != pcieDevices.end())
+@@ -445,3 +479,76 @@ void DeviceManager::onConfigInterfaceRemoved(sdbusplus::message_t& message)
+         }
+     }
+ }
++
++void DeviceManager::applyEvent(const sdbusplus::object_path& mctpObjectPath,
++                               EndpointEvent event)
++{
++    auto it = std::ranges::find(smaDevices, mctpObjectPath,
++                                &SmaDeviceRecord::mctpObjectPath);
++    if (it == smaDevices.end())
++    {
++        return;
++    }
++
++    SmaDeviceRecord& rec = *it;
++    const auto [next, action] = nextState(rec.state, event);
++    rec.state = next;
++
++    switch (action)
++    {
++        case EndpointAction::GoOffline:
++            lg2::info("MCTP endpoint {PATH} (eid {EID}) went offline", "PATH",
++                      mctpObjectPath, "EID", rec.eid);
++            rec.device->setOffline();
++            break;
++        case EndpointAction::GoOnline:
++            lg2::info("MCTP endpoint {PATH} (eid {EID}) came online", "PATH",
++                      mctpObjectPath, "EID", rec.eid);
++            rec.device->setOnline();
++            break;
++        case EndpointAction::None:
++            break;
++    }
++}
++
++// mctpd reports an endpoint as Degraded once it stops answering, and as
++// Available when it is reachable again.
++void DeviceManager::onConnectivityChanged(sdbusplus::message_t& msg)
++{
++    std::string iface;
++    boost::container::flat_map<std::string, std::variant<std::string>> props;
++    std::vector<std::string> invalidated;
++    msg.read(iface, props, invalidated);
++
++    auto it = props.find("Connectivity");
++    if (it == props.end())
++    {
++        return;
++    }
++
++    const sdbusplus::object_path mctpObjectPath{msg.get_path()};
++
++    const auto* value = std::get_if<std::string>(&it->second);
++    if (value == nullptr)
++    {
++        lg2::error(
++            "MCTP endpoint {PATH} reported a Connectivity that is not a string",
++            "PATH", mctpObjectPath);
++        return;
++    }
++
++    if (*value == "Degraded")
++    {
++        applyEvent(mctpObjectPath, EndpointEvent::ConnectivityDegraded);
++    }
++    else if (*value == "Available")
++    {
++        applyEvent(mctpObjectPath, EndpointEvent::ConnectivityAvailable);
++    }
++    else
++    {
++        lg2::error(
++            "MCTP endpoint {PATH} reported an unknown Connectivity {VALUE}",
++            "PATH", mctpObjectPath, "VALUE", *value);
++    }
++}
+diff --git a/src/nvidia-gpu/DeviceManager.hpp b/src/nvidia-gpu/DeviceManager.hpp
+index dbe22700..9bf4cb64 100644
+--- a/src/nvidia-gpu/DeviceManager.hpp
++++ b/src/nvidia-gpu/DeviceManager.hpp
+@@ -5,6 +5,7 @@
+ 
+ #pragma once
+ 
++#include "EndpointState.hpp"
+ #include "MctpRequester.hpp"
+ #include "NvidiaGpuDevice.hpp"
+ #include "NvidiaPcieDevice.hpp"
+@@ -13,6 +14,7 @@
+ #include "Utils.hpp"
+ 
+ #include <boost/asio/io_context.hpp>
++#include <boost/asio/steady_timer.hpp>
+ #include <boost/container/flat_map.hpp>
+ #include <boost/system/error_code.hpp>
+ #include <sdbusplus/asio/connection.hpp>
+@@ -35,37 +37,60 @@ class DeviceManager
+                   mctp::MctpRequester& mctpRequester);
+ 
+     void createSensors();
++    // Debounced re-discovery: coalesces bursts of entity-manager
++    // configuration changes into a single createSensors().
++    void scheduleRescan();
+     void onConfigInterfaceRemoved(sdbusplus::message_t& message);
++    void onConnectivityChanged(sdbusplus::message_t& msg);
+ 
+   private:
+     void processSensorConfigs(const ManagedObjectType& resp);
+     void discoverDevices(const SensorConfigs& configs,
+-                         const sdbusplus::object_path& path);
++                         const sdbusplus::object_path& entityObjectPath);
+     void queryEndpoints(const SensorConfigs& configs,
+-                        const sdbusplus::object_path& path,
++                        const sdbusplus::object_path& entityObjectPath,
+                         const boost::system::error_code& ec,
+                         const GetSubTreeType& ret);
+     void processEndpoint(const SensorConfigs& configs,
+-                         const sdbusplus::object_path& path,
++                         const sdbusplus::object_path& entityObjectPath,
++                         const sdbusplus::object_path& mctpObjectPath,
+                          const boost::system::error_code& ec,
+                          const SensorBaseConfigMap& endpoint);
+-    void queryDeviceIdentification(const SensorConfigs& configs,
+-                                   const sdbusplus::object_path& path,
+-                                   uint8_t eid);
++    void queryDeviceIdentification(
++        const SensorConfigs& configs,
++        const sdbusplus::object_path& entityObjectPath,
++        const sdbusplus::object_path& mctpObjectPath, uint8_t eid);
+     void processQueryDeviceIdResponse(
+-        const SensorConfigs& configs, const sdbusplus::object_path& path,
+-        uint8_t eid, const std::error_code& sendRecvMsgResult,
++        const SensorConfigs& configs,
++        const sdbusplus::object_path& entityObjectPath,
++        const sdbusplus::object_path& mctpObjectPath, uint8_t eid,
++        const std::error_code& sendRecvMsgResult,
+         std::span<const uint8_t> queryDeviceIdentificationResponse);
+ 
++    void applyEvent(const sdbusplus::object_path& mctpObjectPath,
++                    EndpointEvent event);
++
+     boost::asio::io_context& io;
+     sdbusplus::asio::object_server& objectServer;
+     std::shared_ptr<sdbusplus::asio::connection> conn;
+     mctp::MctpRequester& mctpRequester;
+ 
++    struct SmaDeviceRecord
++    {
++        std::shared_ptr<SmaDevice> device;
++        std::string name;
++        // The mctpd endpoint the device is reached through. A Connectivity
++        // signal only carries this path, so it is what a device is found by.
++        sdbusplus::object_path mctpObjectPath;
++        uint8_t eid{};
++        EndpointState state{EndpointState::Init};
++    };
++
+     boost::container::flat_map<std::string, std::shared_ptr<GpuDevice>>
+         gpuDevices;
+-    boost::container::flat_map<std::string, std::shared_ptr<SmaDevice>>
+-        smaDevices;
++    std::vector<SmaDeviceRecord> smaDevices;
+     boost::container::flat_map<std::string, std::shared_ptr<PcieDevice>>
+         pcieDevices;
++
++    boost::asio::steady_timer configTimer;
+ };
+diff --git a/src/nvidia-gpu/EndpointState.hpp b/src/nvidia-gpu/EndpointState.hpp
+new file mode 100644
+index 00000000..96186085
+--- /dev/null
++++ b/src/nvidia-gpu/EndpointState.hpp
+@@ -0,0 +1,76 @@
++/*
++ * SPDX-FileCopyrightText: Copyright OpenBMC Authors
++ * SPDX-License-Identifier: Apache-2.0
++ */
++#pragma once
++
++enum class EndpointState
++{
++    Init,       // device created, running init() (build); not polling yet
++    Online,     // init done, endpoint reachable, polling active
++    Recovering, // Connectivity Degraded, awaiting recovery
++};
++
++enum class EndpointEvent
++{
++    InitComplete,         // device init() finished -> start polling
++    ConnectivityDegraded, // received Connectivity=Degraded
++    ConnectivityAvailable // received Connectivity=Available
++};
++
++// Side-effect action the caller must perform.
++enum class EndpointAction
++{
++    None,      // no action (e.g. guard: duplicate event while Recovering)
++    GoOffline, // setOffline (stop polling, NaN reading sensors)
++    GoOnline,  // setOnline (start/resume polling)
++};
++
++struct Transition
++{
++    EndpointState next;
++    EndpointAction action;
++};
++
++// Pure function: given current state + event -> next state + action.
++constexpr Transition nextState(EndpointState s, EndpointEvent e)
++{
++    switch (s)
++    {
++        case EndpointState::Init:
++            switch (e)
++            {
++                case EndpointEvent::InitComplete:
++                    return {EndpointState::Online, EndpointAction::GoOnline};
++                case EndpointEvent::ConnectivityDegraded:
++                    return {EndpointState::Recovering,
++                            EndpointAction::GoOffline};
++                case EndpointEvent::ConnectivityAvailable:
++                    return {EndpointState::Init, EndpointAction::None};
++            }
++            break;
++        case EndpointState::Online:
++            switch (e)
++            {
++                case EndpointEvent::ConnectivityDegraded:
++                    return {EndpointState::Recovering,
++                            EndpointAction::GoOffline};
++                case EndpointEvent::ConnectivityAvailable:
++                case EndpointEvent::InitComplete:
++                    return {EndpointState::Online, EndpointAction::None};
++            }
++            break;
++        case EndpointState::Recovering:
++            switch (e)
++            {
++                case EndpointEvent::ConnectivityAvailable:
++                    return {EndpointState::Online, EndpointAction::GoOnline};
++                case EndpointEvent::ConnectivityDegraded:
++                case EndpointEvent::InitComplete:
++                    // guard: already recovering, ignore
++                    return {EndpointState::Recovering, EndpointAction::None};
++            }
++            break;
++    }
++    return {s, EndpointAction::None};
++}
+diff --git a/src/nvidia-gpu/NvidiaGpuSensorMain.cpp b/src/nvidia-gpu/NvidiaGpuSensorMain.cpp
+index 5c2d76c8..91f43c3d 100644
+--- a/src/nvidia-gpu/NvidiaGpuSensorMain.cpp
++++ b/src/nvidia-gpu/NvidiaGpuSensorMain.cpp
+@@ -8,11 +8,8 @@
+ #include "NvidiaSensorConfig.hpp"
+ #include "Utils.hpp"
+ 
+-#include <boost/asio/error.hpp>
+ #include <boost/asio/io_context.hpp>
+ #include <boost/asio/post.hpp>
+-#include <boost/asio/steady_timer.hpp>
+-#include <boost/system/error_code.hpp>
+ #include <phosphor-logging/lg2.hpp>
+ #include <sdbusplus/asio/connection.hpp>
+ #include <sdbusplus/asio/object_server.hpp>
+@@ -21,7 +18,6 @@
+ #include <sdbusplus/message.hpp>
+ 
+ #include <array>
+-#include <chrono>
+ #include <cstdlib>
+ #include <exception>
+ #include <functional>
+@@ -29,10 +25,6 @@
+ #include <string>
+ #include <string_view>
+ 
+-// Debounce window to coalesce a burst of entity-manager config property
+-// changes (which normally fire several at once) into one rescan.
+-constexpr std::chrono::seconds configSettleInterval{1};
+-
+ int main()
+ {
+     boost::asio::io_context io;
+@@ -53,20 +45,9 @@ int main()
+     boost::asio::post(io,
+                       [&deviceManager]() { deviceManager.createSensors(); });
+ 
+-    boost::asio::steady_timer configTimer(io);
+     std::function<void(sdbusplus::message_t&)> eventHandler =
+-        [&configTimer, &deviceManager](sdbusplus::message_t&) {
+-            // create a timer because normally multiple properties change at
+-            // once
+-            configTimer.expires_after(configSettleInterval);
+-            configTimer.async_wait(
+-                [&deviceManager](const boost::system::error_code& ec) {
+-                    if (ec == boost::asio::error::operation_aborted)
+-                    {
+-                        return; // we're being canceled
+-                    }
+-                    deviceManager.createSensors();
+-                });
++        [&deviceManager](sdbusplus::message_t&) {
++            deviceManager.scheduleRescan();
+         };
+ 
+     std::array<std::string_view, 1> sensorTypes({sensorType});
+@@ -83,6 +64,21 @@ int main()
+             deviceManager.onConfigInterfaceRemoved(msg);
+         });
+ 
++    // Watch mctpd for endpoint Connectivity changes so devices can react.
++    auto mctpConnectivityMatch = std::make_unique<sdbusplus::match>(
++        static_cast<sdbusplus::bus_t&>(*systemBus),
++        sdbusplus::match_rules::type::signal() +
++            sdbusplus::match_rules::interface(
++                "org.freedesktop.DBus.Properties") +
++            sdbusplus::match_rules::member("PropertiesChanged") +
++            sdbusplus::match_rules::argN(
++                0, "au.com.codeconstruct.MCTP.Endpoint1") +
++            sdbusplus::match_rules::path_namespace(
++                "/au/com/codeconstruct/mctp1"),
++        [&deviceManager](sdbusplus::message_t& msg) {
++            deviceManager.onConnectivityChanged(msg);
++        });
++
+     try
+     {
+         io.run();
+diff --git a/src/nvidia-gpu/NvidiaSmaDevice.cpp b/src/nvidia-gpu/NvidiaSmaDevice.cpp
+index b5544f33..8db42c19 100644
+--- a/src/nvidia-gpu/NvidiaSmaDevice.cpp
++++ b/src/nvidia-gpu/NvidiaSmaDevice.cpp
+@@ -59,7 +59,17 @@ void SmaDevice::makeSensors()
+ 
+     lg2::info("Added MCA {NAME} Sensors with chassis path: {PATH}.", "NAME",
+               name, "PATH", path);
++}
+ 
++void SmaDevice::setOffline()
++{
++    waitTimer.cancel();
++    tempSensor->markFunctional(false);
++}
++
++void SmaDevice::setOnline()
++{
++    tempSensor->markFunctional(true);
+     read();
+ }
+ 
+diff --git a/src/nvidia-gpu/NvidiaSmaDevice.hpp b/src/nvidia-gpu/NvidiaSmaDevice.hpp
+index b8987ea7..39227636 100644
+--- a/src/nvidia-gpu/NvidiaSmaDevice.hpp
++++ b/src/nvidia-gpu/NvidiaSmaDevice.hpp
+@@ -31,13 +31,24 @@ class SmaDevice : public std::enable_shared_from_this<SmaDevice>
+               mctp::MctpRequester& mctpRequester,
+               sdbusplus::asio::object_server& objectServer);
+ 
++    // The D-Bus path of the EntityManager configuration object the device
++    // was created from.
+     const sdbusplus::object_path& getPath() const
+     {
+         return path;
+     }
+ 
++    // Build the device's D-Bus objects. Polling only starts once the device
++    // is taken online.
+     void init();
+ 
++    // Stop polling timer(s) and set reading sensors to unavailable. The
++    // D-Bus objects are retained.
++    void setOffline();
++
++    // Resume polling.
++    void setOnline();
++
+   private:
+     void makeSensors();
+ 
+diff --git a/src/tests/nvidia-gpu/meson.build b/src/tests/nvidia-gpu/meson.build
+index 56f5690f..f79bf66d 100644
+--- a/src/tests/nvidia-gpu/meson.build
++++ b/src/tests/nvidia-gpu/meson.build
+@@ -94,3 +94,14 @@ test(
+         include_directories: gpusensor_inc,
+     ),
+ )
++
++test(
++    'EndpointState',
++    executable(
++        'test_EndpointState',
++        'test_EndpointState.cpp',
++        dependencies: [gtest_dep, gmock_dep],
++        implicit_include_directories: false,
++        include_directories: gpusensor_dir,
++    ),
++)
+diff --git a/src/tests/nvidia-gpu/test_EndpointState.cpp b/src/tests/nvidia-gpu/test_EndpointState.cpp
+new file mode 100644
+index 00000000..c17c208c
+--- /dev/null
++++ b/src/tests/nvidia-gpu/test_EndpointState.cpp
+@@ -0,0 +1,54 @@
++/*
++ * SPDX-FileCopyrightText: Copyright OpenBMC Authors
++ * SPDX-License-Identifier: Apache-2.0
++ */
++#include "EndpointState.hpp"
++
++#include <gtest/gtest.h>
++
++TEST(EndpointStateTest, OnlineDegradedGoesOfflineRecovering)
++{
++    auto t =
++        nextState(EndpointState::Online, EndpointEvent::ConnectivityDegraded);
++    EXPECT_EQ(t.next, EndpointState::Recovering);
++    EXPECT_EQ(t.action, EndpointAction::GoOffline);
++}
++
++TEST(EndpointStateTest, OnlineAvailableIsNoop)
++{
++    auto t =
++        nextState(EndpointState::Online, EndpointEvent::ConnectivityAvailable);
++    EXPECT_EQ(t.next, EndpointState::Online);
++    EXPECT_EQ(t.action, EndpointAction::None);
++}
++
++TEST(EndpointStateTest, RecoveringAvailableGoesOnline)
++{
++    auto t = nextState(EndpointState::Recovering,
++                       EndpointEvent::ConnectivityAvailable);
++    EXPECT_EQ(t.next, EndpointState::Online);
++    EXPECT_EQ(t.action, EndpointAction::GoOnline);
++}
++
++TEST(EndpointStateTest, RecoveringDuplicateDegradedIsGuarded)
++{
++    auto t = nextState(EndpointState::Recovering,
++                       EndpointEvent::ConnectivityDegraded);
++    EXPECT_EQ(t.next, EndpointState::Recovering);
++    EXPECT_EQ(t.action, EndpointAction::None);
++}
++
++TEST(EndpointStateTest, InitCompleteGoesOnline)
++{
++    auto t = nextState(EndpointState::Init, EndpointEvent::InitComplete);
++    EXPECT_EQ(t.next, EndpointState::Online);
++    EXPECT_EQ(t.action, EndpointAction::GoOnline);
++}
++
++TEST(EndpointStateTest, InitDegradedGoesRecovering)
++{
++    auto t =
++        nextState(EndpointState::Init, EndpointEvent::ConnectivityDegraded);
++    EXPECT_EQ(t.next, EndpointState::Recovering);
++    EXPECT_EQ(t.action, EndpointAction::GoOffline);
++}
+diff --git a/src/tests/nvidia-gpu/test_NvidiaSmaDevice.cpp b/src/tests/nvidia-gpu/test_NvidiaSmaDevice.cpp
+index 78f1d861..99716f8e 100644
+--- a/src/tests/nvidia-gpu/test_NvidiaSmaDevice.cpp
++++ b/src/tests/nvidia-gpu/test_NvidiaSmaDevice.cpp
+@@ -63,6 +63,7 @@ TEST_F(NvidiaSmaDeviceTest, InitSendsAtLeastOneRequest)
+ 
+     const std::shared_ptr<SmaDevice> device = createDevice();
+     device->init();
++    device->setOnline();
+ }
+ 
+ TEST_F(NvidiaSmaDeviceTest, ReadLoopStopsAfterDeviceIsDestroyed)
+@@ -80,6 +81,7 @@ TEST_F(NvidiaSmaDeviceTest, ReadLoopStopsAfterDeviceIsDestroyed)
+         const std::shared_ptr<SmaDevice> device =
+             createDevice("sma_readloop", defaultEid, fastPollMs);
+         device->init();
++        device->setOnline();
+ 
+         // While the device is alive the poll timer keeps re-arming the loop,
+         // so a later round has to produce more requests.
+-- 
+2.53.0
+

@@ -1,13 +1,24 @@
-From 00bfe3881d76f46f000a9400a005dec27120c1a2 Mon Sep 17 00:00:00 2001
+From 8269983d384e4e555ae4f91c8575c0c8f417308a Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Fri, 21 Aug 2026 17:56:52 +0800
-Subject: [PATCH] nvidia-gpu: add State.Leak.Detector support for SMA sensors
+Subject: [PATCH 1/7] nvidia-gpu: add State.Leak.Detector support for SMA
+ sensors
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 
 This commit enhances the Nvidia SMA leak sensor to support the standard
 OpenBMC Leak Detector interface and systemd target integration.
+
+As defined in the Liquid Leak Detector design doc [1] and the existing
+implementation in `src/leakdetector` [2], we start the specific systemd
+target xyz.openbmc_project.leakdetector.<level>.<action>@<name>.service
+upon leak state changes. This decoupled design allows platform-specific
+unit files to execute necessary actions (such as emergency power-off
+or alarms) without hardcoding the logic in the sensor daemon.
+
+[1] https://gerrit.openbmc.org/c/openbmc/docs/+/73152
+[2] https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/75329
 
 Tested: Build an image for sanmiguel platform.
 
@@ -65,33 +76,27 @@ NAME        TYPE     SIGNATURE RESULT/VALUE                             FLAGS
 
 ```
 
+[1] https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/93836/11
+
 Change-Id: Iea80606d74b0ab4178af2abbef19b372d4e97322
 Signed-off-by: Mike Hsieh <mike_hsieh@quantatw.com>
 ---
- src/nvidia-gpu/NvidiaSmaLeakSensor.cpp | 115 ++++++++++++++++++++++++-
- src/nvidia-gpu/NvidiaSmaLeakSensor.hpp |  16 ++++
- 2 files changed, 130 insertions(+), 1 deletion(-)
+ src/nvidia-gpu/NvidiaSmaLeakSensor.cpp | 135 +++++++++++++++++++++++++
+ src/nvidia-gpu/NvidiaSmaLeakSensor.hpp |  16 +++
+ 2 files changed, 151 insertions(+)
 
 diff --git a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
-index 8b27f26..0970234 100644
+index 8b27f26a..28fb8682 100644
 --- a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
 +++ b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
-@@ -47,7 +47,7 @@ NvidiaSmaLeakSensor::NvidiaSmaLeakSensor(
-     Sensor(escapeName(name), std::move(thresholdData), sensorConfiguration,
-            "voltage", false, true, smaLeakSensorMaxReading,
-            smaLeakSensorMinReading, conn),
--    eid(eid), sensorId(sensorId), mctpRequester(mctpRequester),
-+    eid(eid), sensorId(sensorId), conn(conn), mctpRequester(mctpRequester),
-     objectServer(objectServer)
- {
-     sdbusplus::object_path dbusPath =
-@@ -85,6 +85,50 @@ NvidiaSmaLeakSensor::NvidiaSmaLeakSensor(
+@@ -85,6 +85,52 @@ NvidiaSmaLeakSensor::NvidiaSmaLeakSensor(
                  "NAME", name);
          }
      }
 +
-+    std::string leakDetectorPath =
-+        "/xyz/openbmc_project/state/leak/detector/" + escapeName(name);
++    sdbusplus::object_path leakDetectorPath =
++        sdbusplus::object_path("/xyz/openbmc_project/state/leak/detector") /
++        escapeName(name);
 +    leakDetectorInterface = objectServer.add_interface(
 +        leakDetectorPath, "xyz.openbmc_project.State.Leak.Detector");
 +
@@ -112,8 +117,9 @@ index 8b27f26..0970234 100644
 +            "NAME", name);
 +    }
 +
-+    std::string leakFaultPath = "/xyz/openbmc_project/state/leak/detector/" +
-+                                escapeName(name) + "_Fault";
++    sdbusplus::object_path leakFaultPath =
++        sdbusplus::object_path("/xyz/openbmc_project/state/leak/detector") /
++        (escapeName(name) + "_Fault");
 +    leakFaultInterface = objectServer.add_interface(
 +        leakFaultPath, "xyz.openbmc_project.State.Leak.Detector");
 +
@@ -136,7 +142,7 @@ index 8b27f26..0970234 100644
  }
  
  NvidiaSmaLeakSensor::~NvidiaSmaLeakSensor()
-@@ -99,6 +143,14 @@ NvidiaSmaLeakSensor::~NvidiaSmaLeakSensor()
+@@ -99,6 +145,14 @@ NvidiaSmaLeakSensor::~NvidiaSmaLeakSensor()
      {
          objectServer.remove_interface(commonPhysicalContextInterface);
      }
@@ -151,16 +157,45 @@ index 8b27f26..0970234 100644
  }
  
  void NvidiaSmaLeakSensor::checkThresholds()
-@@ -106,6 +158,66 @@ void NvidiaSmaLeakSensor::checkThresholds()
-     thresholds::checkThresholds(this);
+@@ -146,6 +200,7 @@ void NvidiaSmaLeakSensor::processResponse(const std::error_code& ec,
+             // Reading from the device is in millivolts and unit set on the dbus
+             // is volts.
+             updateValue(sensorData.adcReadingMv / 1000.0);
++            updateState(sensorData.leakState);
+             break;
+         }
+     }
+@@ -175,3 +230,83 @@ void NvidiaSmaLeakSensor::update()
+             self->processResponse(ec, buffer);
+         });
  }
- 
++
 +void NvidiaSmaLeakSensor::updateState(uint8_t value)
 +{
-+    LeakState newState =
-+        ((value & 0x01) != 0) ? LeakState::Abnormal : LeakState::Normal;
-+    LeakState newFault =
-+        ((value & 0x02) != 0) ? LeakState::Abnormal : LeakState::Normal;
++    LeakState newState = LeakState::Normal;
++    LeakState newFault = LeakState::Normal;
++
++    switch (value & 0x03)
++    {
++        case 0: // Nominal reading
++            newState = LeakState::Normal;
++            newFault = LeakState::Normal;
++            break;
++        case 1: // Leak
++            newState = LeakState::Abnormal;
++            newFault = LeakState::Normal;
++            break;
++        case 2: // Sensor short (fault)
++            newState = LeakState::Normal;
++            newFault = LeakState::Abnormal;
++            break;
++        case 3: // Sensor open (fault)
++            newState = LeakState::Abnormal;
++            newFault = LeakState::Abnormal;
++            break;
++        default:
++            break;
++    }
 +
 +    auto triggerSystemdService = [this](const std::string& type,
 +                                        LeakState state,
@@ -173,7 +208,7 @@ index 8b27f26..0970234 100644
 +        lg2::info("Starting systemd target {TARGET} for leak state change",
 +                  "TARGET", target);
 +
-+        conn->async_method_call(
++        dbusConnection->async_method_call(
 +            [target](const boost::system::error_code& errc,
 +                     const sdbusplus::object_path&) {
 +                if (errc)
@@ -214,35 +249,24 @@ index 8b27f26..0970234 100644
 +                              escapeName(name) + "_Fault");
 +    }
 +}
-+
- void NvidiaSmaLeakSensor::processResponse(const std::error_code& ec,
-                                           std::span<const uint8_t> buffer)
- {
-@@ -146,6 +258,7 @@ void NvidiaSmaLeakSensor::processResponse(const std::error_code& ec,
-             // Reading from the device is in millivolts and unit set on the dbus
-             // is volts.
-             updateValue(sensorData.adcReadingMv / 1000.0);
-+            updateState(sensorData.leakState);
-             break;
-         }
-     }
 diff --git a/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp b/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
-index 83a1bce..1e896f8 100644
+index 83a1bcec..5bda4579 100644
 --- a/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
 +++ b/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
-@@ -36,6 +36,8 @@ struct NvidiaSmaLeakSensor :
+@@ -38,6 +38,8 @@ struct NvidiaSmaLeakSensor :
  
-     void checkThresholds() override;
+     void update();
  
 +    void updateState(uint8_t value);
 +
-     void update();
- 
    private:
-@@ -57,5 +59,19 @@ struct NvidiaSmaLeakSensor :
-     std::shared_ptr<sdbusplus::asio::dbus_interface>
+     void processResponse(const std::error_code& ec,
+                          std::span<const uint8_t> buffer);
+@@ -58,4 +60,18 @@ struct NvidiaSmaLeakSensor :
          commonPhysicalContextInterface;
  
+     std::vector<gpu::LeakSensorData> parsedSensors;
++
 +    std::shared_ptr<sdbusplus::asio::dbus_interface> leakDetectorInterface;
 +
 +    std::shared_ptr<sdbusplus::asio::dbus_interface> leakFaultInterface;
@@ -256,9 +280,7 @@ index 83a1bce..1e896f8 100644
 +    LeakState lastLeakState = LeakState::Normal;
 +
 +    LeakState lastLeakFault = LeakState::Normal;
-+
-     std::vector<gpu::LeakSensorData> parsedSensors;
  };
 -- 
-2.53.0-Meta
+2.53.0
 

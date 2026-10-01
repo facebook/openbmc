@@ -1,7 +1,8 @@
-From 0c023a8ee4e28eede1f613b80145943dc34458f6 Mon Sep 17 00:00:00 2001
+From c27bc47cf3eeb4878e91f5de85d73c159502b7bc Mon Sep 17 00:00:00 2001
 From: Mike Hsieh <mike_hsieh@quantatw.com>
 Date: Wed, 2 Sep 2026 19:17:22 +0800
-Subject: [PATCH] nvidia-gpu: add event log for SMA leak sensor state changes
+Subject: [PATCH 2/7] nvidia-gpu: add event log for SMA leak sensor state
+ changes
 
 This commit enhances the Nvidia SMA leak sensor by generating standard
 OpenBMC event logs when the leak state or fault state changes.
@@ -43,6 +44,8 @@ Tested:
 
 ```
 
+[1] https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/94195/4
+
 Change-Id: I0e41f8eb1d952243740aa0831594fc087b62b9e0
 Signed-off-by: Mike Hsieh <mike_hsieh@quantatw.com>
 ---
@@ -50,7 +53,7 @@ Signed-off-by: Mike Hsieh <mike_hsieh@quantatw.com>
  1 file changed, 32 insertions(+)
 
 diff --git a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
-index 0970234..e6b97bf 100644
+index 28fb8682..12f7089c 100644
 --- a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
 +++ b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
 @@ -15,10 +15,12 @@
@@ -66,7 +69,7 @@ index 0970234..e6b97bf 100644
  
  #include <array>
  #include <cstddef>
-@@ -200,6 +202,21 @@ void NvidiaSmaLeakSensor::updateState(uint8_t value)
+@@ -293,6 +295,21 @@ void NvidiaSmaLeakSensor::updateState(uint8_t value)
                      : "xyz.openbmc_project.State.Leak.Detector.DetectorState.Abnormal"));
  
          triggerSystemdService("critical", lastLeakState, escapeName(name));
@@ -88,7 +91,7 @@ index 0970234..e6b97bf 100644
      }
  
      if (newFault != lastLeakFault)
-@@ -215,6 +232,21 @@ void NvidiaSmaLeakSensor::updateState(uint8_t value)
+@@ -308,5 +325,20 @@ void NvidiaSmaLeakSensor::updateState(uint8_t value)
          // suffix in the name
          triggerSystemdService("critical", lastLeakFault,
                                escapeName(name) + "_Fault");
@@ -109,7 +112,6 @@ index 0970234..e6b97bf 100644
 +        }
      }
  }
- 
 -- 
-2.53.0-Meta
+2.53.0
 

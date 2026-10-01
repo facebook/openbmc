@@ -1,0 +1,185 @@
+From da096a27fc4f61b3fb4c2e8bf2e6870af64fe4d6 Mon Sep 17 00:00:00 2001
+From: Eric Liu <liuer@nvidia.com>
+Date: Wed, 2 Sep 2026 21:50:34 +0900
+Subject: [PATCH 3/7] nvidia-gpu: add SMA leak detector associations
+
+Publish the association naming the inventory item each SMA leak
+detector monitors, and an object manager so the mapper indexes the
+detectors.
+
+Key changes:
+- src/nvidia-gpu/NvidiaGpuSensorMain.cpp: adds an object manager on
+  the state namespace.
+- src/nvidia-gpu/NvidiaSmaLeakSensor.cpp: publishes a monitoring
+  association from each detector to the inventory item it monitors.
+- src/nvidia-gpu/NvidiaSmaLeakSensor.hpp: holds the association
+  interfaces for the lifetime of the detector.
+
+Tested: Built an image for the vr-nvl-obmc machine with the
+following patches cherry-picked:
+
+```
+1. Kernel
+   https://lore.kernel.org/all/20260702165524.2168091-1-jackyhuang@nvidia.com/
+2. u-boot
+   https://lore.kernel.org/openbmc/20260629105202.1417679-1-jackyhuang@nvidia.com/
+3. meta-nvidia
+   https://gerrit.openbmc.org/c/openbmc/openbmc/+/90959
+   https://gerrit.openbmc.org/c/openbmc/openbmc/+/92346
+4. platform-init
+   https://gerrit.openbmc.org/c/openbmc/platform-init/+/92189
+   https://gerrit.openbmc.org/c/openbmc/platform-init/+/92190
+   https://gerrit.openbmc.org/c/openbmc/platform-init/+/92191
+   https://gerrit.openbmc.org/c/openbmc/platform-init/+/92192
+5. entity-manager
+   https://gerrit.openbmc.org/c/openbmc/entity-manager/+/93517
+6. mctp-over-usb-config
+   https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/91169
+   https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/91802
+   https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/80452
+   https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/86236
+   https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/93535
+   https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/86791
+   https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/93848
+   https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/93536
+
+$ busctl call xyz.openbmc_project.ObjectMapper /xyz/openbmc_project/object_mapper xyz.openbmc_project.ObjectMapper GetSubTreePaths sias /xyz/openbmc_project/state 0 1 xyz.openbmc_project.State.Leak.Detector
+
+$ busctl call xyz.openbmc_project.ObjectMapper /xyz/openbmc_project/object_mapper xyz.openbmc_project.ObjectMapper GetSubTreePaths sias /xyz/openbmc_project/state 0 1 xyz.openbmc_project.State.Leak.Detector
+as 4 "/xyz/openbmc_project/state/leak/detector/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0" "/xyz/openbmc_project/state/leak/detector/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0_Fault" "/xyz/openbmc_project/state/leak/detector/VR_MCTP_USB_HPM1_SMA_LEAKDETECTOR_0" "/xyz/openbmc_project/state/leak/detector/VR_MCTP_USB_HPM1_SMA_LEAKDETECTOR_0_Fault"
+
+$ busctl get-property xyz.openbmc_project.ObjectMapper /xyz/openbmc_project/inventory/system/board/HGX_ProcessorModule_0/monitored_by xyz.openbmc_project.Association endpoints
+as 2 "/xyz/openbmc_project/state/leak/detector/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0" "/xyz/openbmc_project/state/leak/detector/VR_MCTP_USB_HPM0_SMA_LEAKDETECTOR_0_Fault"
+
+$ busctl get-property xyz.openbmc_project.ObjectMapper /xyz/openbmc_project/inventory/system/board/HGX_ProcessorModule_1/monitored_by xyz.openbmc_project.Association endpoints
+as 2 "/xyz/openbmc_project/state/leak/detector/VR_MCTP_USB_HPM1_SMA_LEAKDETECTOR_0" "/xyz/openbmc_project/state/leak/detector/VR_MCTP_USB_HPM1_SMA_LEAKDETECTOR_0_Fault"
+```
+
+1. The mapper indexes all four detectors the daemon publishes.
+2. Each of the two boards reports the two detectors that monitor it.
+
+[1] https://gerrit.openbmc.org/c/openbmc/dbus-sensors/+/94199/3
+
+Change-Id: I30b02455670d62eb2b143efae244fbcde9770312
+Signed-off-by: Eric Liu <liuer@nvidia.com>
+---
+ src/nvidia-gpu/NvidiaGpuSensorMain.cpp |  1 +
+ src/nvidia-gpu/NvidiaSmaLeakSensor.cpp | 39 ++++++++++++++++++++++++++
+ src/nvidia-gpu/NvidiaSmaLeakSensor.hpp | 11 ++++++++
+ 3 files changed, 51 insertions(+)
+
+diff --git a/src/nvidia-gpu/NvidiaGpuSensorMain.cpp b/src/nvidia-gpu/NvidiaGpuSensorMain.cpp
+index 17cd36e8..5c2d76c8 100644
+--- a/src/nvidia-gpu/NvidiaGpuSensorMain.cpp
++++ b/src/nvidia-gpu/NvidiaGpuSensorMain.cpp
+@@ -43,6 +43,7 @@ int main()
+     objectServer.add_manager("/xyz/openbmc_project/inventory");
+     objectServer.add_manager("/xyz/openbmc_project/software");
+     objectServer.add_manager("/xyz/openbmc_project/metric");
++    objectServer.add_manager("/xyz/openbmc_project/state");
+     systemBus->request_name("xyz.openbmc_project.GpuSensor");
+ 
+     mctp::MctpRequester mctpRequester(io);
+diff --git a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
+index 12f7089c..0ef5fb91 100644
+--- a/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
++++ b/src/nvidia-gpu/NvidiaSmaLeakSensor.cpp
+@@ -111,6 +111,12 @@ NvidiaSmaLeakSensor::NvidiaSmaLeakSensor(
+             "NAME", name);
+     }
+ 
++    const sdbusplus::object_path monitoredPath =
++        sdbusplus::object_path(sensorConfiguration).parent_path();
++
++    addMonitoringAssociation(leakDetectorAssociation, leakDetectorPath,
++                             monitoredPath, name);
++
+     sdbusplus::object_path leakFaultPath =
+         sdbusplus::object_path("/xyz/openbmc_project/state/leak/detector") /
+         (escapeName(name) + "_Fault");
+@@ -133,6 +139,9 @@ NvidiaSmaLeakSensor::NvidiaSmaLeakSensor(
+             "Error initializing Leak Fault Interface for Leak Sensor for {NAME}",
+             "NAME", name + "_Fault");
+     }
++
++    addMonitoringAssociation(leakFaultAssociation, leakFaultPath, monitoredPath,
++                             name + "_Fault");
+ }
+ 
+ NvidiaSmaLeakSensor::~NvidiaSmaLeakSensor()
+@@ -155,6 +164,36 @@ NvidiaSmaLeakSensor::~NvidiaSmaLeakSensor()
+     {
+         objectServer.remove_interface(leakFaultInterface);
+     }
++    if (leakDetectorAssociation)
++    {
++        objectServer.remove_interface(leakDetectorAssociation);
++    }
++    if (leakFaultAssociation)
++    {
++        objectServer.remove_interface(leakFaultAssociation);
++    }
++}
++
++void NvidiaSmaLeakSensor::addMonitoringAssociation(
++    std::shared_ptr<sdbusplus::asio::dbus_interface>& interface,
++    const sdbusplus::object_path& path,
++    const sdbusplus::object_path& monitoredPath,
++    const std::string& detectorName)
++{
++    interface = objectServer.add_interface(path, association::interface);
++
++    interface->register_property(
++        "Associations",
++        std::vector<Association>{
++            Association{"monitoring", "monitored_by", monitoredPath}});
++
++    if (!interface->initialize())
++    {
++        lg2::error("Error initializing Association Interface for {NAME}",
++                   "NAME", detectorName);
++        objectServer.remove_interface(interface);
++        interface = nullptr;
++    }
+ }
+ 
+ void NvidiaSmaLeakSensor::checkThresholds()
+diff --git a/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp b/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
+index 5bda4579..4bc9cd9d 100644
+--- a/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
++++ b/src/nvidia-gpu/NvidiaSmaLeakSensor.hpp
+@@ -12,6 +12,7 @@
+ #include <NvidiaGpuMctpVdm.hpp>
+ #include <sdbusplus/asio/connection.hpp>
+ #include <sdbusplus/asio/object_server.hpp>
++#include <sdbusplus/message/native_types.hpp>
+ 
+ #include <array>
+ #include <cstdint>
+@@ -44,6 +45,12 @@ struct NvidiaSmaLeakSensor :
+     void processResponse(const std::error_code& ec,
+                          std::span<const uint8_t> buffer);
+ 
++    void addMonitoringAssociation(
++        std::shared_ptr<sdbusplus::asio::dbus_interface>& interface,
++        const sdbusplus::object_path& path,
++        const sdbusplus::object_path& monitoredPath,
++        const std::string& detectorName);
++
+     uint8_t eid{};
+ 
+     uint8_t sensorId{};
+@@ -65,6 +72,10 @@ struct NvidiaSmaLeakSensor :
+ 
+     std::shared_ptr<sdbusplus::asio::dbus_interface> leakFaultInterface;
+ 
++    std::shared_ptr<sdbusplus::asio::dbus_interface> leakDetectorAssociation;
++
++    std::shared_ptr<sdbusplus::asio::dbus_interface> leakFaultAssociation;
++
+     enum class LeakState
+     {
+         Normal,
+-- 
+2.53.0
+

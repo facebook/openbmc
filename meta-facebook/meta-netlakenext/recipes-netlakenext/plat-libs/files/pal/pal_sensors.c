@@ -147,13 +147,13 @@ PAL_SENSOR_MAP nic_sensor_map[] = {
 
 PAL_SENSOR_MAP pdb_sensor_map[] = {
   [FAN0_TACH] =
-  {"FAN0_TACH", FAN0, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN, FAN_POLL_INTERVAL},
+  {"FAN0_TACH", FAN0, read_rpm, STBY_READING, {0, 0, 0, 1200, 0, 0, 0, 0}, FAN, FAN_POLL_INTERVAL},
   [FAN1_TACH] =
-  {"FAN1_TACH", FAN1, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN, FAN_POLL_INTERVAL},
+  {"FAN1_TACH", FAN1, read_rpm, STBY_READING, {0, 0, 0, 1200, 0, 0, 0, 0}, FAN, FAN_POLL_INTERVAL},
   [FAN2_TACH] =
-  {"FAN2_TACH", FAN2, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN, FAN_POLL_INTERVAL},
+  {"FAN2_TACH", FAN2, read_rpm, STBY_READING, {0, 0, 0, 1200, 0, 0, 0, 0}, FAN, FAN_POLL_INTERVAL},
   [FAN3_TACH] =
-  {"FAN3_TACH", FAN3, read_rpm, STBY_READING, {0, 0, 0, 0, 0, 0, 0, 0}, FAN, FAN_POLL_INTERVAL},
+  {"FAN3_TACH", FAN3, read_rpm, STBY_READING, {0, 0, 0, 1200, 0, 0, 0, 0}, FAN, FAN_POLL_INTERVAL},
 };
 
 const uint8_t server_sensor_list[] = {

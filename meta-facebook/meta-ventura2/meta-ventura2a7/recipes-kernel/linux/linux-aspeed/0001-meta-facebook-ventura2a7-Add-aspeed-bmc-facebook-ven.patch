@@ -143,7 +143,7 @@ index 000000000..93c91817d
 +		compatible = "iio-hwmon";
 +		io-channels = <&adc0 0>, <&adc0 1>, <&adc0 2>, <&adc0 3>,
 +		<&adc0 4>, <&adc0 5>, <&adc0 6>, <&adc0 7>,
-+		<&adc1 2>, <&adc_op_fb1 0>, <&adc_op_fb1 1>, <&adc_op_fb2 0>,
++		<&adc1 0>, <&adc_op_fb1 0>, <&adc_op_fb1 1>, <&adc_op_fb2 0>,
 +		<&adc_op_fb1_evt 0>, <&adc_op_fb1_evt 1>, <&adc_op_fb2_evt 0>;
 +	};
 +

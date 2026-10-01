@@ -1,13 +1,13 @@
-From e5e42d44d0be9931f5e1ee9abd514292e026f850 Mon Sep 17 00:00:00 2001
+From 5db36c6c31b5ed4ba1e91a66dcd76bd7b33b96ec Mon Sep 17 00:00:00 2001
 From: Alan Tsai <alan-tsai@quantatw.com>
-Date: Wed, 26 Aug 2026 21:27:36 +0800
+Date: Thu, 1 Oct 2026 13:45:15 +0800
 Subject: [PATCH] arm64: dts: aspeed: Add rainiera7 dts
 
 Add rainiera7 ast2700 dts.
 ---
  arch/arm64/boot/dts/aspeed/Makefile           |    1 +
- .../aspeed/aspeed-bmc-facebook-rainiera7.dts  | 1099 +++++++++++++++++
- 2 files changed, 1100 insertions(+)
+ .../aspeed/aspeed-bmc-facebook-rainiera7.dts  | 1109 +++++++++++++++++
+ 2 files changed, 1110 insertions(+)
  create mode 100644 arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts
 
 diff --git a/arch/arm64/boot/dts/aspeed/Makefile b/arch/arm64/boot/dts/aspeed/Makefile
@@ -22,10 +22,10 @@ index ffe7e15017cc..75b510a0d1d9 100644
  	ast2700-evb.dtb
 diff --git a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts
 new file mode 100644
-index 000000000000..15e149ec0951
+index 000000000..a0d25647e
 --- /dev/null
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-rainiera7.dts
-@@ -0,0 +1,1099 @@
+@@ -0,0 +1,1109 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +// Copyright (c) 2026 Facebook Inc.
 +
@@ -597,6 +597,11 @@ index 000000000000..15e149ec0951
 +&i2c7 {
 +	status = "okay";
 +	i2c-clk-high-min-percent = <50>;
++	manual-data-hold = <2>;
++
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_i2c7_default
++		     &pinctrl_i2c7_driving>;
 +
 +	/* I2C11_IOEXP_3 */
 +	gpio-expander@20 {
@@ -707,7 +712,7 @@ index 000000000000..15e149ec0951
 +	multi-master;
 +	i2c-scl-clk-low-timeout-us = <31744>;
 +	mctp-controller;
-+	clock-frequency = <400000>;
++	clock-frequency = <399800>;
 +	status = "okay";
 +	i2c-clk-high-min-percent = <40>;
 +
@@ -895,6 +900,11 @@ index 000000000000..15e149ec0951
 +&pinctrl1 {
 +	pinctrl_rmii0_tx_driving: rmii0-tx-driving {
 +		pins = "A6", "B6", "N14";
++		drive-strength = <16>;
++	};
++
++	pinctrl_i2c7_driving: i2c7-driving {
++		pins = "E8", "L12";
 +		drive-strength = <16>;
 +	};
 +};

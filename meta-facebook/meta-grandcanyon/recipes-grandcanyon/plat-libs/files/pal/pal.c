@@ -2736,52 +2736,68 @@ int pal_get_error_code(uint8_t *exp_codes, uint16_t *exp_cnt,
   int ret;
   int exp_total = 0;
   int bmc_total = 0;
+  int status = 0;
 
-  if (!exp_codes || !exp_cnt || !bmc_codes || !bmc_cnt) {
+  if ((exp_codes == NULL) != (exp_cnt == NULL)) {
+    syslog(LOG_WARNING, "%s: failed to get error code: invalid Expander output parameter", __func__);
     return -1;
   }
 
-  memset(exp_codes, 0, MAX_NUM_ERR_CODES);
-  memset(bmc_codes, 0, MAX_NUM_ERR_CODES);
-  *exp_cnt = 0;
-  *bmc_cnt = 0;
-
-  // 1) Expander error code bitmap
-  ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_OEM_EXP_ERROR_CODE,
-                              tbuf, tlen, rbuf, &rlen);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s(): failed to get exp error code", __func__);
-    memset(exp_bm, 0, sizeof(exp_bm));
-  } else {
-    memcpy(exp_bm, rbuf, MIN((size_t)rlen, sizeof(exp_bm)));
-
-    // code 0 = "No error" -> ignore
-    exp_bm[0] = CLEARBIT(exp_bm[0], 0);
+  if ((bmc_codes == NULL) != (bmc_cnt == NULL)) {
+    syslog(LOG_WARNING, "%s: failed to get error code: invalid BMC output parameter", __func__);
+    return -1;
   }
 
-  // 2) BMC bitmap
-  ret = pal_read_error_code_file(bmc_bm, ERR_CODE_BYTES);
-  if (ret < 0) {
-    syslog(LOG_WARNING, "%s(): failed to get bmc error code", __func__);
-    memset(bmc_bm, 0, sizeof(bmc_bm));
+  if (!exp_codes && !bmc_codes) {
+    syslog(LOG_WARNING, "%s: failed to get error code: no output parameter provided", __func__);
+    return -1;
   }
 
-  // 3) Convert bitmap -> code list (in pal_get_error_code)
-  exp_total = bitmap_to_codelist(exp_bm, ERR_CODE_BYTES, exp_codes, MAX_NUM_ERR_CODES);
-  bmc_total = bitmap_to_codelist(bmc_bm, ERR_CODE_BYTES, bmc_codes, MAX_NUM_ERR_CODES);
+  if (exp_codes) {
+    memset(exp_codes, 0, MAX_NUM_ERR_CODES);
+    *exp_cnt = 0;
 
-  int w = 0;
-  for (int i = 0; i < bmc_total && i < MAX_NUM_ERR_CODES; i++) {
-    if (bmc_codes[i] >= BMC_ERR_CODE_START_NUM) {
-      bmc_codes[w++] = bmc_codes[i];
+    ret = expander_ipmb_wrapper(NETFN_OEM_REQ, CMD_OEM_EXP_ERROR_CODE,
+                                tbuf, tlen, rbuf, &rlen);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s(): failed to get exp error code", __func__);
+      memset(exp_bm, 0, sizeof(exp_bm));
+      status |= PAL_ERR_CODE_EXP_UNREACHABLE;
+    } else {
+      memcpy(exp_bm, rbuf, MIN((size_t)rlen, sizeof(exp_bm)));
+
+      // Code 0 = "No error" -> ignore.
+      exp_bm[0] = CLEARBIT(exp_bm[0], 0);
     }
+
+    exp_total = bitmap_to_codelist(exp_bm, ERR_CODE_BYTES, exp_codes, MAX_NUM_ERR_CODES);
+    *exp_cnt = (exp_total > MAX_NUM_ERR_CODES) ? MAX_NUM_ERR_CODES : exp_total;
   }
-  bmc_total = w;
 
-  *exp_cnt = (exp_total > MAX_NUM_ERR_CODES) ? MAX_NUM_ERR_CODES : exp_total;
-  *bmc_cnt = (bmc_total > MAX_NUM_ERR_CODES) ? MAX_NUM_ERR_CODES : bmc_total;
+  if (bmc_codes) {
+    memset(bmc_codes, 0, MAX_NUM_ERR_CODES);
+    *bmc_cnt = 0;
 
-  return 0;
+    ret = pal_read_error_code_file(bmc_bm, ERR_CODE_BYTES);
+    if (ret < 0) {
+      syslog(LOG_WARNING, "%s(): failed to get bmc error code", __func__);
+      memset(bmc_bm, 0, sizeof(bmc_bm));
+      status |= PAL_ERR_CODE_BMC_FILE_FAIL;
+    }
+
+    bmc_total = bitmap_to_codelist(bmc_bm, ERR_CODE_BYTES, bmc_codes, MAX_NUM_ERR_CODES);
+
+    int valid_cnt = 0;
+    for (int i = 0; i < bmc_total && i < MAX_NUM_ERR_CODES; i++) {
+      if (bmc_codes[i] >= BMC_ERR_CODE_START_NUM) {
+        bmc_codes[valid_cnt++] = bmc_codes[i];
+      }
+    }
+
+    *bmc_cnt = valid_cnt;
+  }
+
+  return status;
 }
 #else //!CONFIG_GRANDCANYON2
 int
@@ -2793,6 +2809,7 @@ pal_get_error_code(uint8_t *data, uint8_t* error_count) {
   uint8_t exp_error_array[MAX_NUM_EXP_ERR_CODES_ARRAY] = {0};
   int ret = 0, i = 0, j = 0;
   int tmp_err_count = 0;
+  int status = 0;
 
   if (error_count == NULL) {
     printf("%s: fail to get error code because NULL parameter: *error_count", __func__);
@@ -2816,6 +2833,7 @@ pal_get_error_code(uint8_t *data, uint8_t* error_count) {
     printf("NetFn: 0x%2X Code: 0x%02X was error\n", NETFN_OEM_REQ, CMD_OEM_EXP_ERROR_CODE);
     // when Epander fail, fill all data to 0
     memset(exp_error_array, 0, sizeof(exp_error_array));
+    status |= PAL_ERR_CODE_EXP_UNREACHABLE;
   } else {
     memcpy(exp_error_array, rbuf, MIN(rlen, sizeof(exp_error_array)));
   }
@@ -2828,6 +2846,7 @@ pal_get_error_code(uint8_t *data, uint8_t* error_count) {
   if (ret < 0) {
     printf("enclosure-util: failed to get bmc error code\n");
     memset(total_error_array, 0, sizeof(total_error_array));
+    status |= PAL_ERR_CODE_BMC_FILE_FAIL;
   }
 
   // Expander Error Code 0~99; BMC Error Code 0x64(100)~0xFF(255)
@@ -2850,7 +2869,7 @@ pal_get_error_code(uint8_t *data, uint8_t* error_count) {
   }
   *error_count = tmp_err_count;
 
-  return 0;
+  return status;
 }
 
 #endif

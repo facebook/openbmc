@@ -74,29 +74,40 @@ void
 show_error_code() {
   uint8_t exp_codes[MAX_NUM_ERR_CODES] = {0}, bmc_codes[MAX_NUM_ERR_CODES] = {0};
   uint16_t exp_cnt = 0, bmc_cnt = 0;
+  int ret = 0;
 
-  if (pal_get_error_code(exp_codes, &exp_cnt, bmc_codes, &bmc_cnt) < 0) {
+  ret = pal_get_error_code(exp_codes, &exp_cnt, bmc_codes, &bmc_cnt);
+  if (ret < 0) {
     printf("enclosure-util: fail to get error code\n");
     return;
   }
 
-  if (exp_cnt == 0) {
-    printf("Expander Error Counter: 0 (No Error)\n");
+  if (ret & PAL_ERR_CODE_EXP_UNREACHABLE) {
+    printf("enclosure-util: failed to get expander error code\n");
+    printf("NetFn: 0x%2X Code: 0x%02X was error\n", NETFN_OEM_REQ, CMD_OEM_EXP_ERROR_CODE);
   } else {
-    printf("Expander Error Counter: %d\n", exp_cnt);
-    for (int i = 0; i < exp_cnt; i++) {
-      uint8_t c = exp_codes[i];
-      printf("Expander Error Code 0x%02X: %s\n", c, exp_error_code_description[c]);
+    if (exp_cnt == 0) {
+      printf("Expander Error Counter: 0 (No Error)\n");
+    } else {
+      printf("Expander Error Counter: %d\n", exp_cnt);
+      for (int i = 0; i < exp_cnt; i++) {
+        uint8_t exp_codes_index = exp_codes[i];
+        printf("Expander Error Code 0x%02X: %s\n", exp_codes_index, exp_error_code_description[exp_codes_index]);
+      }
     }
   }
 
-  if (bmc_cnt == 0){
-    printf("BMC Error Counter: 0 (No Error)\n");
+  if (ret & PAL_ERR_CODE_BMC_FILE_FAIL) {
+    printf("enclosure-util: failed to get bmc error code\n");
   } else {
-    printf("BMC Error Counter: %d\n", bmc_cnt);
-    for (int i = 0; i < bmc_cnt; i++) {
-      uint8_t c = bmc_codes[i];
-      printf("BMC Error Code 0x%02X: %s\n", c, bmc_error_code_description[c - BMC_ERR_CODE_START_NUM]);
+    if (bmc_cnt == 0){
+      printf("BMC Error Counter: 0 (No Error)\n");
+    } else {
+      printf("BMC Error Counter: %d\n", bmc_cnt);
+      for (int i = 0; i < bmc_cnt; i++) {
+        uint8_t bmc_codes_index = bmc_codes[i];
+        printf("BMC Error Code 0x%02X: %s\n", bmc_codes_index, bmc_error_code_description[bmc_codes_index - BMC_ERR_CODE_START_NUM]);
+      }
     }
 
   }

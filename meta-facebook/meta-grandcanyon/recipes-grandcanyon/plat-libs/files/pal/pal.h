@@ -204,6 +204,9 @@ extern "C" {
    BIT_MASK(13)  |  /* INPUT_FAULT */ \
    BIT_MASK(15))   /* OUT_STATUS */
 
+#define PAL_ERR_CODE_EXP_UNREACHABLE  (1 << 0)  // expander IPMB read failed, exp bitmap invalid
+#define PAL_ERR_CODE_BMC_FILE_FAIL    (1 << 1)  // BMC local error-code file read failed
+
 typedef enum {
   STATUS_LED_OFF,
   STATUS_LED_YELLOW,

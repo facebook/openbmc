@@ -50,6 +50,9 @@
 #define HEARTBEAT_TIMEOUT                 180 // second = 3 mins
 #define MAX_NUM_CHECK_HB_HEALTH           4
 
+// Debug-card-only code used when the Expander error code cannot be read.
+#define DBG_CARD_EXP_ERROR_READ_FAIL      0xFE
+
 // Thread to handle LED state of the SLED
 static void *
 led_sync_handler() {
@@ -151,7 +154,7 @@ system_status_led_handler() {
       } else {
 
         // Blinking Yellow: BMC have no fault
-        if ((bmc_cnt == 0) && (ret == 0)){
+        if ((ret >= 0) && !(ret & PAL_ERR_CODE_BMC_FILE_FAIL) && (bmc_cnt == 0)){
           if (blink_count > 0) {
             ret = pal_set_status_led(FRU_UIC, STATUS_LED_YELLOW);
           } else {
@@ -237,7 +240,7 @@ system_status_led_handler() {
         }
         
         // Blinking Yellow: BMC have no fault
-        if ((is_bmc_fault == false) && (ret == 0)){
+        if ((ret >= 0) && (is_bmc_fault == false) && !(ret & PAL_ERR_CODE_BMC_FILE_FAIL)){
           if (blink_count > 0) {
             ret = pal_set_status_led(FRU_UIC, STATUS_LED_YELLOW);
           } else {
@@ -315,8 +318,8 @@ dbg_card_show_error_code(void *arg)
   uint16_t cur_error_count = 0, pre_error_count = 0;
   int ret = 0;
   int poll_error_timer = 0, error_index = 0;
-  uint8_t exp_codes[MAX_NUM_ERR_CODES] = {0}, bmc_codes[MAX_NUM_ERR_CODES] = {0};
-  uint16_t exp_cnt = 0, bmc_cnt = 0;
+  uint8_t exp_codes[MAX_NUM_ERR_CODES] = {0};
+  uint16_t exp_cnt = 0;
   int i = 0;
 
   (void)arg;
@@ -344,20 +347,22 @@ dbg_card_show_error_code(void *arg)
     if (poll_error_timer == 0) {
       memset(error, 0, sizeof(error));
       memset(exp_codes, 0, sizeof(exp_codes));
-      memset(bmc_codes, 0, sizeof(bmc_codes));
 
       cur_error_count = 0;
       exp_cnt = 0;
-      bmc_cnt = 0;
 
-      ret = pal_get_error_code(exp_codes, &exp_cnt, bmc_codes, &bmc_cnt);
-      if (ret == 0) {
-        for (i = 0; i < exp_cnt && cur_error_count < MAX_NUM_ERR_CODES; i++) {
-          error[cur_error_count++] = exp_codes[i];
-        }
-
-        for (i = 0; i < bmc_cnt && cur_error_count < MAX_NUM_ERR_CODES; i++) {
-          error[cur_error_count++] = bmc_codes[i];
+      ret = pal_get_error_code(exp_codes, &exp_cnt, NULL, NULL);
+      if (ret < 0) {
+        cur_error_count = 0;
+        pre_error_count = 0;
+        error_index = 0;
+      } else {
+        if (ret & PAL_ERR_CODE_EXP_UNREACHABLE) {
+          error[cur_error_count++] = DBG_CARD_EXP_ERROR_READ_FAIL;
+        } else {
+          for (i = 0; i < exp_cnt && cur_error_count < MAX_NUM_ERR_CODES; i++) {
+            error[cur_error_count++] = exp_codes[i];
+          }
         }
 
         if (cur_error_count < pre_error_count) {
@@ -369,10 +374,6 @@ dbg_card_show_error_code(void *arg)
         }
 
         pre_error_count = cur_error_count;
-      } else {
-        cur_error_count = 0;
-        pre_error_count = 0;
-        error_index = 0;
       }
     }
 
@@ -410,7 +411,7 @@ dbg_card_show_error_code() {
   uint8_t dbg_present = 0;
   uint8_t uart_sel = 0;
   uint8_t error[MAX_NUM_ERR_CODES] = {0}, error_code = 0;
-  uint8_t cur_error_count = 0, pre_error_count = 0;
+  uint8_t cur_error_count = 0, pre_error_count = 0, all_error_count = 0;
   int ret = 0;
   int poll_error_timer = 0, error_index = 0;
   
@@ -427,7 +428,25 @@ dbg_card_show_error_code() {
         // update error code
         if (poll_error_timer == 0) {
           memset(error, 0, sizeof(error));
-          ret = pal_get_error_code(error, &cur_error_count);
+          ret = pal_get_error_code(error, &all_error_count);
+
+          if (ret < 0) {
+            cur_error_count = 0;
+            pre_error_count = 0;
+            error_index = 0;
+          } else if (ret & PAL_ERR_CODE_EXP_UNREACHABLE) {
+            memset(error, 0, sizeof(error));
+            error[0] = DBG_CARD_EXP_ERROR_READ_FAIL;
+            cur_error_count = 1;
+          } else {
+            // debug card only shows expander error codes, drop BMC error codes
+            cur_error_count = 0;
+            for (int i = 0; i < all_error_count; i++) {
+              if (error[i] < MAX_NUM_EXP_ERR_CODES) {
+                cur_error_count++;
+              }
+            }
+          }
         }
         
         if (cur_error_count == 0) {

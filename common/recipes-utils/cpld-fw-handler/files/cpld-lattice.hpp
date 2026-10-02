@@ -24,8 +24,9 @@ static constexpr std::string_view TAG_CHECKSUM = "C";
 static constexpr std::string_view TAG_USERCODE = "NOTE User Electronic";
 static constexpr std::string_view TAG_EBR_INIT_DATA = "NOTE EBR_INIT DATA";
 static constexpr std::string_view TAG_END_CONFIG = "NOTE END CONFIG DATA";
-static constexpr std::string_view TAG_END_CFG = "NOTE END OF CFG";
+static constexpr std::string_view TAG_END_CFG_XO5 = "NOTE END OF CFG";
 static constexpr std::string_view TAG_DEV_NAME = "NOTE DEVICE NAME";
+static constexpr std::string_view TAG_END_BITSTREAM = "NOTE END OF BITSTREAM";
 
 constexpr uint8_t isOK = 0;
 constexpr uint8_t isReady = 0;
@@ -164,6 +165,7 @@ class XO5I2CManager : public CpldLatticeManager
         static constexpr size_t PageSize = 256;
         static constexpr size_t PagesPerBlock = 256;
         static constexpr size_t BlocksPerCfg = 11;
+        static constexpr size_t BlocksPerUfm = 4;
     };
 
     static constexpr std::array<uint8_t, 3> CfgStartBlocks = {0x01, 0x10, 0x1F};

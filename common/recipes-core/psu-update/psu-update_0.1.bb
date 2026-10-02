@@ -23,6 +23,7 @@ LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5
 
 RDEPENDS:${PN} = "python3-core bash rackmon modbus-device-util"
 RDEPENDS:${PN}:append:ventura2 = " python3-minimalmodbus"
+RDEPENDS:${PN}:append:ventura2a7 = " python3-minimalmodbus"
 inherit ptest
 
 S = "${UNPACKDIR}"

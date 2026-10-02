@@ -29,6 +29,7 @@ SRC_URI:append = " \
     file://0026-common-fix-missing-power-gated-sensors-after-BMC-res.patch \
     file://0027-hwmontempsensor-add-support-for-adt7461-temp-sensors.patch \
     file://0028-PSUSensor-add-MP9941-VR-sensor-support.patch \
+    file://0029-dbus-sensors-preserve-state-on-external-sensor-thres.patch \
 "
 
 SRC_URI:append:mf-fb-liquid-cooled = " \

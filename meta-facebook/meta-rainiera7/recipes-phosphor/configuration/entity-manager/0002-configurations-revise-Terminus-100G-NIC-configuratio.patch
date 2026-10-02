@@ -1,4 +1,4 @@
-From 98afb9717752cdc88945da9fc83ee9ef4da73a49 Mon Sep 17 00:00:00 2001
+From fdc2faf700adee39c354ccce7cb3b1bea226837b Mon Sep 17 00:00:00 2001
 From: Alan Tsai <alan-tsai@quantatw.com>
 Date: Thu, 20 Aug 2026 21:52:38 +0800
 Subject: [PATCH] configurations: revise Terminus 100G NIC configuration.
@@ -14,16 +14,28 @@ Tested on Rainiera7:
 - Version object is properly exposed
 - Temperature sensor threshold is exposed correct value.
 ---
- configurations/meta/terminus_100g_nic_tsff.json | 13 +++++++++++++
- 1 file changed, 13 insertions(+)
+ .../meta/terminus_100g_nic_tsff.json          | 19 ++++++++++++++++---
+ 1 file changed, 16 insertions(+), 3 deletions(-)
 
 diff --git a/configurations/meta/terminus_100g_nic_tsff.json b/configurations/meta/terminus_100g_nic_tsff.json
-index e4f92d7..a3fefe2 100644
+index e4f92d7..46112a1 100644
 --- a/configurations/meta/terminus_100g_nic_tsff.json
 +++ b/configurations/meta/terminus_100g_nic_tsff.json
-@@ -14,6 +14,13 @@
+@@ -3,7 +3,7 @@
+         {
+             "Address": "$address",
+             "Bus": "$bus",
+-            "Name": "Terminus NIC FRU $bus",
++            "Name": "Terminus NIC FRU 0",
+             "Type": "EEPROM"
+         },
+         {
+@@ -12,8 +12,15 @@
+             "Labels": [
+                 "temp1"
              ],
-             "Name": "NIC TEMP $bus",
+-            "Name": "NIC TEMP $bus",
++            "Name": "NIC0_TEMP_C",
              "Thresholds": [
 +                {
 +                    "Direction": "less than",
@@ -35,7 +47,7 @@ index e4f92d7..a3fefe2 100644
                  {
                      "Direction": "greater than",
                      "Index": 1,
-@@ -30,6 +37,12 @@
+@@ -30,9 +37,15 @@
                  }
              ],
              "Type": "EMC1403"
@@ -47,7 +59,8 @@ index e4f92d7..a3fefe2 100644
 +            "Type": "MCTPI2CTarget"
          }
      ],
-     "Name": "Terminus NIC FRU $bus",
--- 
-2.52.0
-
+-    "Name": "Terminus NIC FRU $bus",
++    "Name": "Terminus NIC FRU 0",
+     "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Terminus .*100G NIC TSFF'})",
+     "Type": "Board",
+     "xyz.openbmc_project.Inventory.Decorator.Asset": {

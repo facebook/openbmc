@@ -39,7 +39,9 @@ except ImportError:
 
 # Some endpoints may respond with a code != 200 on tests environments
 ALLOWED_NON_OK_RESPONSES = {
-    re.compile("^/api/(sys|spb|iom|sled/mb)/(fscd_sensor_data|optics_thermal)$"): {
+    re.compile(
+        "^/api/(sys|spb|iom|sled/mb)/(fscd_sensor_data|logfile|optics_thermal)$"
+    ): {
         405  # This endpoint is POST only
     },
     re.compile("^/api/(sys|spb|iom|sled/mb)/ntp$"): {

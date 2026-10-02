@@ -19,6 +19,23 @@
 
 . /usr/local/bin/gpio-utils.sh
 
+# Serializes userver power operations (on/off/reset) so concurrent callers
+# don't interleave the power sequence on the CPE_CTRL GPIO.
+USERVER_PWR_LOCK="/run/userver_pwr.lock"
+
+# Standard Linux error codes used as exit codes (per FBOSS wedge_power.sh spec).
+EBUSY_ERR=16     # Device or resource busy (power sequencing in progress)
+EINVAL_ERR=22    # Invalid argument (reset requested while userver is off)
+
+# The power control is edge triggered for powering off. It needs 2 falling edges
+# to trigger.
+USERVER_PWR_OFF_PULSE_COUNT=2       # Falling edges required to power off
+USERVER_PWR_OFF_PULSE_GAP_SEC=0.005 # Minimum gap between level changes
+
+# Time to wait after the pulse train for the userver to power down (and, on
+# reset, before it is powered back on).
+USERVER_PWR_OFF_WAIT_SEC=6
+
 wedge_board_type() {
     echo 'nexthopbmc'
 }
@@ -29,30 +46,78 @@ wedge_board_rev() {
 }
 
 userver_power_is_on() {
-    local val
-    val=$(gpio_get_value CPE_CTRL)
-    if [ "$val" = "1" ]; then
-        return 0
-    else
-        return 1
-    fi
+    [ "$(gpio_get_value CPE_CTRL)" = "1" ]
+}
+
+# Generate USERVER_PWR_OFF_PULSE_COUNT falling edges on CPE_CTRL
+userver_power_off_pulse() {
+    local pulse
+    for pulse in $(seq 1 "$USERVER_PWR_OFF_PULSE_COUNT"); do
+        gpio_set_value CPE_CTRL 1
+        sleep "$USERVER_PWR_OFF_PULSE_GAP_SEC"
+        gpio_set_value CPE_CTRL 0
+        if [ "$pulse" -lt "$USERVER_PWR_OFF_PULSE_COUNT" ]; then
+            sleep "$USERVER_PWR_OFF_PULSE_GAP_SEC"
+        fi
+    done
 }
 
 userver_power_on() {
-    gpio_set_value CPE_CTRL 1
+    (
+        # Bail out if another power operation is already in progress.
+        if ! flock -n 9; then
+            echo "userver_power_on: power sequencing in progress, try again later" >&2
+            exit $EBUSY_ERR
+        fi
+
+        # No-op if the userver is already powered on.
+        if userver_power_is_on; then
+            exit 0
+        fi
+
+        gpio_set_value CPE_CTRL 1
+    ) 9>"$USERVER_PWR_LOCK"
 }
 
 userver_power_off() {
-    gpio_set_value CPE_CTRL 0
+    (
+        # Bail out if another power operation is already in progress.
+        if ! flock -n 9; then
+            echo "userver_power_off: power sequencing in progress, try again later" >&2
+            exit $EBUSY_ERR
+        fi
+
+        # No-op if the userver is already powered off.
+        if ! userver_power_is_on; then
+            exit 0
+        fi
+
+        userver_power_off_pulse
+
+        sleep "$USERVER_PWR_OFF_WAIT_SEC"
+    ) 9>"$USERVER_PWR_LOCK"
 }
 
 userver_reset() {
-    userver_power_off
+    (
+        # Bail out if another power operation is already in progress.
+        if ! flock -n 9; then
+            echo "userver_reset: power sequencing in progress, try again later" >&2
+            exit $EBUSY_ERR
+        fi
 
-    sleep 5
+        # Reset is invalid while the userver is powered off.
+        if ! userver_power_is_on; then
+            echo "userver is off, please run <wedge_power.sh on> to power on userver" >&2
+            exit $EINVAL_ERR
+        fi
 
-    userver_power_on
-    return 0
+        userver_power_off_pulse
+
+        sleep "$USERVER_PWR_OFF_WAIT_SEC"
+
+        gpio_set_value CPE_CTRL 1
+    ) 9>"$USERVER_PWR_LOCK"
 }
 
 chassis_power_cycle() {

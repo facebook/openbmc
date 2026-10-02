@@ -1,0 +1,42 @@
+From 4dfc2e431c7945653d73583a5efff93f44f1fbb7 Mon Sep 17 00:00:00 2001
+From: Nate White <nate@nexthop.ai>
+Date: Wed, 17 Jun 2026 19:08:46 +0100
+Subject: [PATCH] ARM: dts: aspeed: fblite-r1: Add ssif
+
+Summary:
+
+SSIF is connected to our BMCs i2c bus 13, we should listen on address
+0x10.
+
+Test plan:
+
+1) "bitbake nexthopbmc-image" passed
+2) booted up nexthopbmc-image successfully
+3) modprobe ssif_bmc && ls /dev/ipmi-ssif-host is not empty
+
+Signed-off-by: Nate White <nate@nexthop.ai>
+---
+ .../boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts  | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+index 2312a12b1..0922ab124 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-fblite-r1.dts
+@@ -35,6 +35,16 @@ &lpc_ctrl {
+ 	flash = <&spi1>;
+ };
+ 
++
++&i2c13 {
++	status = "okay";
++
++	ssif-bmc@10 {
++		compatible = "ssif-bmc";
++		reg = <0x10>;
++	};
++};
++
+ &kcs1 {
+ 	status = "okay";
+ 	aspeed,lpc-io-reg = <0xca0>;

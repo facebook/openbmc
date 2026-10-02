@@ -61,7 +61,7 @@ chassis_power_cycle() {
 
 bmc_mac_addr() {
     # Fetch mac addr supporting v5+ format.
-    bmc_mac=$(weutil | sed -nE 's/BMC MAC Base: (.*)/\1/p')
+    bmc_mac=$(weutil -e bmc_eeprom | sed -nE 's/BMC MAC Base: (.*)/\1/p')
     if [ -z "$bmc_mac" ]; then
         echo "BMC MAC Address Not Found !" 1>&2
         logger -p user.crit "BMC MAC Address Not Found !"
@@ -73,7 +73,11 @@ bmc_mac_addr() {
 
 userver_mac_addr() {
     # Fetch mac addr supporting v5+ format.
-    cpu_mac=$(weutil | sed -nE 's/X86 CPU MAC Base: (.*)/\1/p')
+    # Check SCM EEPROM first and fall back to BMC EEPROM for older revs
+    cpu_mac=$(weutil -e scm_eeprom 2>/dev/null | sed -nE 's/X86 CPU MAC Base: (.*)/\1/p')
+    if [ -z "$cpu_mac" ]; then
+        cpu_mac=$(weutil -e bmc_eeprom 2>/dev/null | sed -nE 's/X86 CPU MAC Base: (.*)/\1/p')
+    fi
     if [ -z "$cpu_mac" ]; then
         echo "x86 CPU MAC Address Not Found !" 1>&2
         logger -p user.crit "x86 CPU MAC Address Not Found !"

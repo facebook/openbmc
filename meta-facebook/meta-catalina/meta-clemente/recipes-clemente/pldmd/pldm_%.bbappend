@@ -1,3 +1,5 @@
+FILESEXTRAPATHS:prepend := "${THISDIR}:"
+
 # - Disable fallback terminus name to prevent sensors
 #   from being created when there is no correpoinding
 #   Auxiliary Name PDRs available.
@@ -17,6 +19,12 @@ EXTRA_OEMESON:append = " \
     -Ddbus-timeout-value=60 \
 "
 
+SRC_URI:append = " \
+    file://fw-update-targets.json \
+"
+
 do_install:append:openbmc-fb-lf() {
     rm -f ${D}/usr/share/pldm/host_eid
+    install -d ${D}/var/lib/pldmd
+    install -m 0644 ${UNPACKDIR}/fw-update-targets.json ${D}/var/lib/pldmd
 }

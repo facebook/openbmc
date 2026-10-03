@@ -7,7 +7,7 @@ import pal
 import redfish_chassis_helper
 import rest_pal_legacy
 from aiohttp import web
-from common_utils import common_force_async, dumps_bytestr, parse_expand_level
+from common_utils import async_in_common_executor, dumps_bytestr, parse_expand_level
 from redfish_base import validate_keys
 
 try:
@@ -99,7 +99,7 @@ async def get_redfish_sensor_handler(request: web.Request) -> web.Response:
     return web.json_response(body, dumps=dumps_bytestr)
 
 
-@common_force_async
+@async_in_common_executor
 def _get_sensor_members(parent_resource: str, fru_names: t.List[str], expand: bool):
     assert _SENSOR_LOCK.locked()
     members_json = []

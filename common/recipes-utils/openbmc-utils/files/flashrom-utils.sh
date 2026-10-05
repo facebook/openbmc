@@ -109,7 +109,7 @@ flash_get_model() {
         return 1
     fi
 
-    model=$(echo "$info" | cut -d '"' -f 2)
+    model=$(echo "$info" | head -n1 | cut -d '"' -f 2)
     if [ -z "$model" ]; then
         echo "Unable to determine flash model! flashrom output:"
         flash_dump_summary "$1"

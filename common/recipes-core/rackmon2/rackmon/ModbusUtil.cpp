@@ -193,6 +193,17 @@ struct PhosphorModbusExclusion : public ServiceExclusionBase {
       if (std::filesystem::path(path).filename() != ttyName) {
         continue;
       }
+      // Someone else already disabled the port. Leave it alone so we do
+      // not re-enable it behind their back when we are done.
+      bool enabled = false;
+      if (!readProperty(path, enabled)) {
+        startMonitoring();
+        return false;
+      }
+      if (!enabled) {
+        std::cerr << "Port " << path << " already disabled" << std::endl;
+        continue;
+      }
       // Record the port before writing it: a write which is accepted
       // but does not settle in time may still land, so it has to be
       // undone either way.
@@ -202,7 +213,7 @@ struct PhosphorModbusExclusion : public ServiceExclusionBase {
         return false;
       }
     }
-    return true;
+    return !changedPaths.empty();
   }
 
   bool startMonitoring() {

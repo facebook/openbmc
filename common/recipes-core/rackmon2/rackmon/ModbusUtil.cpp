@@ -106,44 +106,36 @@ struct ServiceExclusionBase {
 };
 
 struct RackmonExclusion : public ServiceExclusionBase {
-  RackmonExclusion() : ServiceExclusionBase("rackmond") {}
+  std::string tty;
 
-  std::optional<bool> isTTYManaged(const std::string& tty) {
-    try {
-      json req;
-      req["type"] = "getInterface";
-      rackmonsvc::RackmonClient cli;
-      json resp = json::parse(cli.request(req.dump()));
+  explicit RackmonExclusion(const std::string& ttyPath)
+      : ServiceExclusionBase("rackmond"), tty(ttyPath) {}
 
-      std::string status;
-      resp.at("status").get_to(status);
-      if (status != "SUCCESS") {
-        std::cerr << "ACTION: getInterface failed" << std::endl;
-        return std::nullopt;
-      }
-      const auto interfaces = resp.at("data").get<std::vector<std::string>>();
-      return std::find(interfaces.begin(), interfaces.end(), tty) !=
-          interfaces.end();
-    } catch (const std::exception& e) {
-      std::cerr << "Failed to query rackmond interfaces: " << e.what()
-                << std::endl;
-      return std::nullopt;
-    }
-  }
-
+  // Pause/resume just the port we are about to drive, leaving rackmond
+  // polling the rest. The reply says whether rackmond manages this port:
+  // if it does not, nothing was paused and there is nothing to wait for
+  // or to resume afterwards.
   bool serviceAction(bool start) override {
     json req;
     req["type"] = start ? "resume" : "pause";
-    rackmonsvc::RackmonClient cli;
-    std::string resp = cli.request(req.dump());
-    json resp_j = json::parse(resp);
-    std::string status;
-    resp_j.at("status").get_to(status);
-    if (status != "SUCCESS") {
-      std::cerr << "ACTION: " << req["type"] << " failed" << std::endl;
+    req["device_path"] = tty;
+    try {
+      rackmonsvc::RackmonClient cli;
+      json resp = json::parse(cli.request(req.dump()));
+      std::string status;
+      bool paused;
+      resp.at("status").get_to(status);
+      resp.at("data").get_to(paused);
+      if (status != "SUCCESS") {
+        std::cerr << "ACTION: " << req["type"] << " failed" << std::endl;
+        return false;
+      }
+      return paused;
+    } catch (const std::exception& e) {
+      std::cerr << "Failed to " << req["type"].get<std::string>()
+                << " rackmond on " << tty << ": " << e.what() << std::endl;
       return false;
     }
-    return true;
   }
 };
 
@@ -321,16 +313,10 @@ struct PhosphorModbusExclusion : public ServiceExclusionBase {
 struct ServiceExclusion {
   std::unique_ptr<RackmonExclusion> rackmonLock;
   std::unique_ptr<PhosphorModbusExclusion> modbusLock;
-  ServiceExclusion(const std::string& tty)
-      : rackmonLock(std::make_unique<RackmonExclusion>()),
+  explicit ServiceExclusion(const std::string& tty)
+      : rackmonLock(std::make_unique<RackmonExclusion>(tty)),
         modbusLock(std::make_unique<PhosphorModbusExclusion>(tty)) {
-    auto rackmonManaged = rackmonLock->isTTYManaged(tty);
-    // If the query fails, retain the safer legacy behavior and pause rackmond.
-    bool rackmonPaused = false;
-    if (!rackmonManaged || *rackmonManaged) {
-      rackmonPaused = rackmonLock->init();
-    }
-
+    bool rackmonPaused = rackmonLock->init();
     modbusLock->init();
 
     if (rackmonPaused) {

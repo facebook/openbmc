@@ -572,40 +572,40 @@ int main(int argc, char* argv[]) {
   write->add_option("values", wValues, "Value(s) to write")->required();
 
   CLI11_PARSE(app, argc, argv);
-  ServiceExclusion serviceExclusion(tty);
 
-  json intf;
-  intf["device_path"] = tty;
-  if (*raw) {
-    intf["baudrate"] = baudrate;
-    intf["min_delay"] = minDelay;
-    rackmon::Parity parity = parityMap.at(parityStr);
-    rawCommand(intf, cmd, respLen, parity, timeout);
-    return 0;
-  }
-  if (*data) {
-    intf["baudrate"] = 19200;
-    intf["min_delay"] = 3;
-    dataCommand(intf, regMapPath, true);
-    return 0;
-  }
-  if (*discover) {
-    intf["baudrate"] = 19200;
-    intf["min_delay"] = 3;
-    dataCommand(intf, discoverRegMapPath, false);
-    return 0;
-  }
-  if (*read) {
-    intf["baudrate"] = rBaud;
-    intf["min_delay"] = minDelay;
-    readCommand(intf, rAddr, rReg, rCount, parityMap.at(rParity), rTimeout);
-    return 0;
-  }
-  if (*write) {
-    intf["baudrate"] = wBaud;
-    intf["min_delay"] = minDelay;
-    writeCommand(intf, wAddr, wReg, wValues, parityMap.at(wParity), wTimeout);
-    return 0;
+  try {
+    // Scoped to the try so that any failure destroys it, resuming
+    // monitoring, before we report the error and exit.
+    ServiceExclusion serviceExclusion(tty);
+    json intf;
+    intf["device_path"] = tty;
+    if (*raw) {
+      intf["baudrate"] = baudrate;
+      intf["min_delay"] = minDelay;
+      rackmon::Parity parity = parityMap.at(parityStr);
+      rawCommand(intf, cmd, respLen, parity, timeout);
+    } else if (*data) {
+      intf["baudrate"] = 19200;
+      intf["min_delay"] = 3;
+      dataCommand(intf, regMapPath, true);
+    } else if (*discover) {
+      intf["baudrate"] = 19200;
+      intf["min_delay"] = 3;
+      dataCommand(intf, discoverRegMapPath, false);
+    } else if (*read) {
+      intf["baudrate"] = rBaud;
+      intf["min_delay"] = minDelay;
+      readCommand(intf, rAddr, rReg, rCount, parityMap.at(rParity), rTimeout);
+    } else if (*write) {
+      intf["baudrate"] = wBaud;
+      intf["min_delay"] = minDelay;
+      writeCommand(intf, wAddr, wReg, wValues, parityMap.at(wParity), wTimeout);
+    }
+  } catch (const std::exception& e) {
+    // Do not let this escape main: std::terminate would skip the
+    // exclusion's destructor and leave monitoring paused.
+    std::cerr << "ERROR: " << e.what() << std::endl;
+    return 1;
   }
 
   return 0;

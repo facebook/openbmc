@@ -1,6 +1,7 @@
 // Copyright 2021-present Facebook. All Rights Reserved.
 #pragma once
 #include <atomic>
+#include <map>
 #include <memory>
 #include <set>
 #include <shared_mutex>
@@ -20,6 +21,16 @@ struct ModbusDeviceFilter {
   std::optional<std::set<std::string>> typeFilter{};
   bool contains(const ModbusDevice& dev) const;
 };
+
+struct InterfaceStatus {
+  // Whether rackmond is monitoring the interface (true) or it is paused
+  // (false).
+  bool monitoring = false;
+  // Unique addresses of the devices rackmond knows of on the interface.
+  std::vector<uint16_t> devices{};
+  bool operator==(const InterfaceStatus&) const = default;
+};
+void to_json(nlohmann::json& j, const InterfaceStatus& m);
 
 class Rackmon {
   std::shared_mutex threadMutex_{};
@@ -114,13 +125,9 @@ class Rackmon {
       std::vector<FileRecord>& records,
       ModbusTime timeout = ModbusTime::zero());
 
-  // Get the name of the interface a device is reachable on
-  std::string getInterfaceName(
-      uint8_t deviceAddress,
-      std::optional<uint8_t> port) const;
-
-  // Get the names of all interfaces managed by rackmond.
-  std::vector<std::string> getInterfaceNames() const;
+  // Get the status of each interface managed by rackmond, keyed by its
+  // device path.
+  std::map<std::string, InterfaceStatus> getInterfaceStatus();
 
   // Get status of devices
   std::vector<ModbusDeviceInfo> listDevices() const;

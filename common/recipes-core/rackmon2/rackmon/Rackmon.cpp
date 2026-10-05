@@ -142,22 +142,23 @@ void Rackmon::rawCmd(
   resp.len += 2;
 }
 
-std::string Rackmon::getInterfaceName(
-    uint8_t deviceAddress,
-    std::optional<uint8_t> port) const {
-  return deviceInventory_->getModbusDevice(deviceAddress, port)
-      ->getInterface()
-      .name();
-}
-
-std::vector<std::string> Rackmon::getInterfaceNames() const {
-  std::vector<std::string> names;
-  std::transform(
-      interfaces_.begin(),
-      interfaces_.end(),
-      std::back_inserter(names),
-      [](const auto& interface) { return interface->name(); });
-  return names;
+std::map<std::string, InterfaceStatus> Rackmon::getInterfaceStatus() {
+  auto allDevices = deviceInventory_->getAllModbusDevices();
+  std::shared_lock lk(threadMutex_);
+  std::map<std::string, InterfaceStatus> status;
+  for (const auto& interface : interfaces_) {
+    const std::string& name = interface->name();
+    InterfaceStatus& iface = status[name];
+    iface.monitoring = !scanners_.empty();
+    for (const auto& device : allDevices) {
+      if (&device->getInterface() == interface.get()) {
+        iface.devices.push_back(
+            DeviceLocationFilter::combine(
+                interface->getPort(), device->getDeviceAddress()));
+      }
+    }
+  }
+  return status;
 }
 
 void Rackmon::readHoldingRegisters(
@@ -257,6 +258,11 @@ void Rackmon::reload(
       dev.forceReloadRegisters(regFilter);
     }
   }
+}
+
+void to_json(json& j, const InterfaceStatus& m) {
+  j["status"] = m.monitoring;
+  j["devices"] = m.devices;
 }
 
 } // namespace rackmon

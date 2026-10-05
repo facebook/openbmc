@@ -171,14 +171,10 @@ void RackmonUNIXSocketService::executeJSONCommand(const json& req, json& resp) {
   } else if (cmd == "rescan") {
     rackmond_.forceScan();
   } else if (cmd == "getInterface") {
-    if (req.contains("devAddress")) {
-      auto [port, devAddress] =
-          getVerifiedAddress(req.at("devAddress"), uniqueDevAddress);
-      resp["data"] = std::vector<std::string>{
-          rackmond_.getInterfaceName(devAddress, port)};
-    } else {
-      resp["data"] = rackmond_.getInterfaceNames();
-    }
+    // Reply with a map of device path to whether rackmond is monitoring
+    // the interface (true) or it is paused (false), and the unique
+    // addresses of the devices on it.
+    resp["data"] = rackmond_.getInterfaceStatus();
   } else if (cmd == "getMonitorData") {
     ModbusDataFilter filter{};
     if (req.contains("filter")) {

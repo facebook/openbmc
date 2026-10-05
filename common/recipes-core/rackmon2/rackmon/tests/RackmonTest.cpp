@@ -240,7 +240,7 @@ TEST_F(RackmonTest, BasicLoad) {
   EXPECT_THROW(db.at(163), std::out_of_range);
 }
 
-TEST_F(RackmonTest, GetInterfaceNames) {
+TEST_F(RackmonTest, GetInterfaceStatus) {
   MockRackmon mon;
   EXPECT_CALL(mon, makeInterface())
       .Times(1)
@@ -248,7 +248,21 @@ TEST_F(RackmonTest, GetInterfaceNames) {
 
   mon.load(r_conf, r_test_dir);
 
-  EXPECT_EQ(mon.getInterfaceNames(), std::vector<std::string>{"/tmp/blah"});
+  EXPECT_EQ(
+      mon.getInterfaceStatus(),
+      (std::map<std::string, InterfaceStatus>{{"/tmp/blah", {false, {}}}}));
+
+  json j = mon.getInterfaceStatus();
+  EXPECT_EQ(j, R"({"/tmp/blah": {"status": false, "devices": []}})"_json);
+
+  mon.start();
+  EXPECT_EQ(
+      mon.getInterfaceStatus(),
+      (std::map<std::string, InterfaceStatus>{{"/tmp/blah", {true, {}}}}));
+  mon.stop();
+  EXPECT_EQ(
+      mon.getInterfaceStatus(),
+      (std::map<std::string, InterfaceStatus>{{"/tmp/blah", {false, {}}}}));
 }
 
 TEST_F(RackmonTest, BasicScanFoundNone) {
@@ -336,13 +350,14 @@ TEST_F(RackmonTest, BasicScanFoundOne) {
   records[0].data.resize(2);
   EXPECT_THROW(
       mon.readFileRecord(100, std::nullopt, records), std::out_of_range);
-  EXPECT_THROW(mon.getInterfaceName(100, std::nullopt), std::out_of_range);
 
-  // A known address resolves to the interface it was found on. Mock3Modbus
-  // has initialize() mocked out, so its device path is never populated and
-  // the name comes back empty.
-  EXPECT_EQ(mon.getInterfaceName(161, std::nullopt), "");
-  EXPECT_EQ(mon.getInterfaceName(161, 123), "");
+  // The device is listed, with its port, on the interface it was found on.
+  // Mock3Modbus has initialize() mocked out, so its device path is never
+  // populated and comes back empty.
+  EXPECT_EQ(
+      mon.getInterfaceStatus(),
+      (std::map<std::string, InterfaceStatus>{
+          {"", {false, {(123 << 8) | 161}}}}));
 
   // Use a known handled response.
   ReadHoldingRegistersReq req(161, 0, 8);

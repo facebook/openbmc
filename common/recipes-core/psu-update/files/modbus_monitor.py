@@ -37,6 +37,11 @@ PMM_SETTLE_SECS = 1.0
 # Allow Phosphor Modbus to flush its async queue for the port.
 PHOSPHOR_MODBUS_SETTLE_SECS = 5.0
 
+# Allow a resumed daemon to poll the device again, so that what it
+# reports (e.g. the firmware version) is not stale from before the
+# update. Only the daemons wait for this: the PMM is not queried for it.
+MONITOR_REFRESH_SECS = 5.0
+
 # Request PMM to pause monitoring by writing 0x1 to PMM_PAUSE_REG
 PMM_PAUSE_MONITORING = 0x1
 # Request PMM to resume monitoring by writhing 0x0 to PMM_PAUSE_REG
@@ -172,6 +177,7 @@ class RackmonMonitor(Monitor):
         else:
             print(f"Resuming rackmon monitoring of {self.devpath}...")
             self.rmd.resume(self.devpath)
+        time.sleep(MONITOR_REFRESH_SECS)
 
 
 def get_rackmon_interface(dev_addr):
@@ -206,6 +212,7 @@ class PhosphorModbusMonitor(Monitor):
     def __init__(self, devpath):
         self.devpath = devpath
         self.exclusion = phosphor_modbus.PhosphorModbusExclusion(devpath)
+        self.paused = False
         if not self.port_is_managed():
             if phosphor_modbus.is_unit_running(phosphor_modbus.MODBUS_UNIT):
                 raise ValueError(
@@ -244,15 +251,22 @@ class PhosphorModbusMonitor(Monitor):
         # port a running service does not manage. Driving the bus while
         # something else polls it corrupts the transfer, so give up
         # rather than start an update we cannot have to ourselves.
-        if not self.exclusion.stop() and phosphor_modbus.is_unit_running(
-            phosphor_modbus.MODBUS_UNIT
-        ):
-            raise ModbusException(
-                "Could not stop %s polling %s, refusing to drive it"
-                % (phosphor_modbus.MODBUS_UNIT, self.devpath)
-            )
+        self.paused = self.exclusion.stop()
+        if not self.paused:
+            if phosphor_modbus.is_unit_running(phosphor_modbus.MODBUS_UNIT):
+                raise ModbusException(
+                    "Could not stop %s polling %s, refusing to drive it"
+                    % (phosphor_modbus.MODBUS_UNIT, self.devpath)
+                )
+            # Nothing was polling the port, so there is nothing to wait
+            # for or resume.
+            return
         time.sleep(PHOSPHOR_MODBUS_SETTLE_SECS)
 
     def resume(self):
+        if not self.paused:
+            return
+        self.paused = False
         print("Resuming phosphor-modbus monitoring...")
         self.exclusion.start()
+        time.sleep(MONITOR_REFRESH_SECS)

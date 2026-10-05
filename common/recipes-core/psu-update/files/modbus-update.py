@@ -423,6 +423,7 @@ def run(args):
             print(f"  Dry run, not updating {target}")
             return
         update(dev, args.file)
+    print("Update complete")
 
 
 if __name__ == "__main__":

@@ -8,6 +8,7 @@ from modbus_common import ModbusException, PMM_PAUSE_REG
 from modbus_monitor import (
     get_rackmon_interface,
     Monitor,
+    MONITOR_REFRESH_SECS,
     MonitorChain,
     NullMonitor,
     PHOSPHOR_MODBUS_SETTLE_SECS,
@@ -105,6 +106,15 @@ class TestMonitorChain(NoiseFree):
                 log.append("update")
         self.assertEqual(log, ["pause a", "pause b", "resume a"])
 
+    def test_a_daemon_and_its_pmm_refresh_once(self):
+        pmm = MagicMock()
+        pmm.dev_addr = 0x15
+        rackmon = RackmonMonitor()
+        with patch.object(rackmon, "rmd"):
+            with MonitorChain(rackmon, PmmMonitor(pmm)).suppress():
+                self.sleep.reset_mock()
+        self.sleep.assert_called_once_with(MONITOR_REFRESH_SECS)
+
 
 class TestPmmMonitor(NoiseFree):
     def monitor(self):
@@ -155,14 +165,15 @@ class TestRackmonMonitor(NoiseFree):
             monitor.pause()
         self.sleep.assert_called_once_with(RACKMON_SETTLE_SECS)
 
-    def test_resume_hands_the_bus_straight_back(self):
-        # Nothing of ours runs after it, so there is nothing to wait for.
+    def test_resume_waits_for_rackmon_to_refresh(self):
+        # Otherwise rackmon reports the firmware version from before the
+        # update.
         monitor = RackmonMonitor()
         with patch.object(monitor, "rmd"):
             monitor.pause()
             self.sleep.reset_mock()
             monitor.resume()
-        self.sleep.assert_not_called()
+        self.sleep.assert_called_once_with(MONITOR_REFRESH_SECS)
 
     def test_with_a_devpath_only_that_interface_is_paused(self):
         monitor = RackmonMonitor("/dev/ttyUSB0")
@@ -172,7 +183,10 @@ class TestRackmonMonitor(NoiseFree):
                 rmd.pause.assert_called_once_with("/dev/ttyUSB0")
                 rmd.resume.assert_not_called()
             rmd.resume.assert_called_once_with("/dev/ttyUSB0")
-        self.sleep.assert_called_once_with(RACKMON_SETTLE_SECS)
+        self.assertEqual(
+            self.sleep.call_args_list,
+            [call(RACKMON_SETTLE_SECS), call(MONITOR_REFRESH_SECS)],
+        )
 
     def test_a_port_rackmon_does_not_manage_is_not_waited_on(self):
         # Nothing of rackmond's polls it, so there is nothing to wait
@@ -194,9 +208,11 @@ class TestRackmonMonitor(NoiseFree):
                     monitor.resume()
                     rmd.pause.return_value = True
                     monitor.pause()
+                    self.sleep.reset_mock()
                     monitor.resume()
                     monitor.resume()
                 self.assertEqual(rmd.resume.call_count, 1)
+                self.sleep.assert_called_once_with(MONITOR_REFRESH_SECS)
 
 
 class TestGetRackmonInterface(unittest.TestCase):
@@ -263,6 +279,27 @@ class TestPhosphorModbusMonitor(NoiseFree):
         PhosphorModbusMonitor(self.PORT).pause()
         self.sleep.assert_called_once_with(PHOSPHOR_MODBUS_SETTLE_SECS)
 
+    def test_resume_waits_for_the_daemon_to_refresh(self):
+        # Otherwise mfg-tool reports the firmware version from before
+        # the update.
+        self.exclusion.stop.return_value = True
+        monitor = PhosphorModbusMonitor(self.PORT)
+        monitor.pause()
+        self.sleep.reset_mock()
+        monitor.resume()
+        self.sleep.assert_called_once_with(MONITOR_REFRESH_SECS)
+
+    def test_only_what_was_paused_is_resumed(self):
+        self.exclusion.stop.return_value = True
+        monitor = PhosphorModbusMonitor(self.PORT)
+        monitor.resume()
+        monitor.pause()
+        self.sleep.reset_mock()
+        monitor.resume()
+        monitor.resume()
+        self.exclusion.start.assert_called_once_with()
+        self.sleep.assert_called_once_with(MONITOR_REFRESH_SECS)
+
     def test_a_port_the_service_does_not_manage_is_refused(self):
         # Something else is polling it; driving it would corrupt the
         # transfer.
@@ -281,11 +318,13 @@ class TestPhosphorModbusMonitor(NoiseFree):
         self.is_unit_running.return_value = False
         monitor = PhosphorModbusMonitor(self.PORT)
         self.assertIn("is not running", self.stdout.getvalue())
-        # Nothing to exclude, so a stop() which reports False is fine.
+        # Nothing to exclude, so a stop() which reports False is fine,
+        # and there is nothing to wait for or resume.
         self.exclusion.stop.return_value = False
         with monitor.suppress():
             pass
-        self.exclusion.start.assert_called_once_with()
+        self.exclusion.start.assert_not_called()
+        self.sleep.assert_not_called()
 
     def test_a_service_which_will_not_stop_polling_aborts_the_update(self):
         monitor = PhosphorModbusMonitor(self.PORT)

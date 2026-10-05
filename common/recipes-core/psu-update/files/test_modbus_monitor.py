@@ -159,8 +159,44 @@ class TestRackmonMonitor(NoiseFree):
         # Nothing of ours runs after it, so there is nothing to wait for.
         monitor = RackmonMonitor()
         with patch.object(monitor, "rmd"):
+            monitor.pause()
+            self.sleep.reset_mock()
             monitor.resume()
         self.sleep.assert_not_called()
+
+    def test_with_a_devpath_only_that_interface_is_paused(self):
+        monitor = RackmonMonitor("/dev/ttyUSB0")
+        with patch.object(monitor, "rmd") as rmd:
+            rmd.pause.return_value = True
+            with monitor.suppress():
+                rmd.pause.assert_called_once_with("/dev/ttyUSB0")
+                rmd.resume.assert_not_called()
+            rmd.resume.assert_called_once_with("/dev/ttyUSB0")
+        self.sleep.assert_called_once_with(RACKMON_SETTLE_SECS)
+
+    def test_a_port_rackmon_does_not_manage_is_not_waited_on(self):
+        # Nothing of rackmond's polls it, so there is nothing to wait
+        # for, and nothing to resume.
+        monitor = RackmonMonitor("/dev/ttyUSB0")
+        with patch.object(monitor, "rmd") as rmd:
+            rmd.pause.return_value = False
+            with monitor.suppress():
+                pass
+            rmd.resume.assert_not_called()
+        self.sleep.assert_not_called()
+        self.assertIn("rackmon does not manage /dev/ttyUSB0", self.stdout.getvalue())
+
+    def test_only_what_was_paused_is_resumed(self):
+        for devpath in (None, "/dev/ttyUSB0"):
+            with self.subTest(devpath=devpath):
+                monitor = RackmonMonitor(devpath)
+                with patch.object(monitor, "rmd") as rmd:
+                    monitor.resume()
+                    rmd.pause.return_value = True
+                    monitor.pause()
+                    monitor.resume()
+                    monitor.resume()
+                self.assertEqual(rmd.resume.call_count, 1)
 
 
 class TestGetRackmonInterface(unittest.TestCase):

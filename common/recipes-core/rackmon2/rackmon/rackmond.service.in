@@ -5,6 +5,7 @@ REPLACE_WITH_SERVICE_AFTER
 REPLACE_WITH_SERVICE_WANT
 
 [Service]
+ExecStartPre=/bin/sh -c '[ -e /run/lock/modbus.lock ] || /bin/touch /run/lock/modbus.lock; [ -f /tmp/modbus_dynamo_solitonbeam.lock ] && [ ! -L /tmp/modbus_dynamo_solitonbeam.lock ] && /bin/rm -f /tmp/modbus_dynamo_solitonbeam.lock; [ -e /tmp/modbus_dynamo_solitonbeam.lock ] || [ -L /tmp/modbus_dynamo_solitonbeam.lock ] || /bin/ln -s /run/lock/modbus.lock /tmp/modbus_dynamo_solitonbeam.lock'
 ExecStart=/usr/local/bin/rackmond REPLACE_WITH_INTERFACE_CONFIG_PATH REPLACE_WITH_REGMAP_CONFIG_DIR_PATH
 
 [Install]

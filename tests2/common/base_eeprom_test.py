@@ -161,19 +161,6 @@ class CommonEepromTest(BaseEepromTest):
             "Location on Fabric {} not in set {}".format(name, self.location_on_fabric),
         )
 
-    def test_crc_matched(self):
-        """
-        Tests that the EEPROM CRC16 checksum matches.
-        """
-        self.set_eeprom_cmd()
-        output = run_shell_cmd(cmd=self.eeprom_cmd)
-        # example: "CRC16: 0x2861 (CRC Matched)"
-        crc_match = re.search(r"CRC16:\s+0x[0-9a-fA-F]+\s+\(CRC Matched\)", output)
-        self.assertTrue(
-            crc_match,
-            f"EEPROM CRC16 check failed or not found in output:\n{output}",
-        )
-
 
 class EepromV5Test(CommonEepromTest):
     # overide for FBOSS EEPROMv4,v5,v6 format, display different
@@ -188,6 +175,19 @@ class EepromV5Test(CommonEepromTest):
     # not asset tag field for FBOSS EEPROMv4,v5,v6 format
     def test_asset_tag(self):
         pass
+
+    def test_crc_matched(self):
+        """
+        Tests that the EEPROM CRC16 checksum matches.
+        """
+        self.set_eeprom_cmd()
+        output = run_shell_cmd(cmd=self.eeprom_cmd)
+        # example: "CRC16: 0x2861 (CRC Matched)"
+        crc_match = re.search(r"CRC16:\s+0x[0-9a-fA-F]+\s+\(CRC Matched\)", output)
+        self.assertTrue(
+            crc_match,
+            f"EEPROM CRC16 check failed or not found in output:\n{output}",
+        )
 
     # not local_mac field for FBOSS EEPROMv4,v5,v6 format
     def test_local_mac(self):

@@ -254,6 +254,35 @@ class PyrmdSyncTest(unittest.TestCase):
             pyrmd.RackmonAsyncInterface.resume,
         )
 
+    def test_pause_interface_sync(self, sync_exec, async_exec):
+        exp_resp = {"status": "SUCCESS", "data": True}
+        exp_req = {"type": "pause", "device_path": "/dev/ttyUSB0"}
+        self.do_cmd(
+            sync_exec,
+            async_exec,
+            exp_req,
+            exp_resp,
+            True,
+            pyrmd.RackmonInterface.pause,
+            pyrmd.RackmonAsyncInterface.pause,
+            "/dev/ttyUSB0",
+        )
+
+    def test_resume_unmanaged_interface_sync(self, sync_exec, async_exec):
+        # rackmond reports back that it does not drive this port.
+        exp_resp = {"status": "SUCCESS", "data": False}
+        exp_req = {"type": "resume", "device_path": "/dev/ttyUSB9"}
+        self.do_cmd(
+            sync_exec,
+            async_exec,
+            exp_req,
+            exp_resp,
+            False,
+            pyrmd.RackmonInterface.resume,
+            pyrmd.RackmonAsyncInterface.resume,
+            "/dev/ttyUSB9",
+        )
+
     def test_list_devices_sync(self, sync_exec, async_exec):
         dev1 = {
             "addr": 0xA4,

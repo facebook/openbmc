@@ -165,9 +165,20 @@ void RackmonUNIXSocketService::executeJSONCommand(const json& req, json& resp) {
     rackmond_.getRawData(ret);
     resp["data"] = ret;
   } else if (cmd == "pause") {
-    rackmond_.stop();
+    // With a device_path only that interface is paused, and the reply
+    // says whether rackmond manages it at all. Without one, the whole of
+    // rackmond is paused as before.
+    if (req.contains("device_path")) {
+      resp["data"] = rackmond_.pauseInterface(req.at("device_path"));
+    } else {
+      rackmond_.stop();
+    }
   } else if (cmd == "resume") {
-    rackmond_.start();
+    if (req.contains("device_path")) {
+      resp["data"] = rackmond_.resumeInterface(req.at("device_path"));
+    } else {
+      rackmond_.start();
+    }
   } else if (cmd == "rescan") {
     rackmond_.forceScan();
   } else if (cmd == "getInterface") {

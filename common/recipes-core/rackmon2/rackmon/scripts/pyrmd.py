@@ -139,12 +139,18 @@ class RackmonInterface:
         return ret
 
     @classmethod
-    def _pause(cls):
-        return {"type": "pause"}
+    def _pause(cls, device_path=None):
+        req = {"type": "pause"}
+        if device_path is not None:
+            req["device_path"] = device_path
+        return req
 
     @classmethod
-    def _resume(cls):
-        return {"type": "resume"}
+    def _resume(cls, device_path=None):
+        req = {"type": "resume"}
+        if device_path is not None:
+            req["device_path"] = device_path
+        return req
 
     @classmethod
     def _rescan(cls):
@@ -254,12 +260,14 @@ class RackmonInterface:
         return cls._rawResp(result, fullResp, isinstance(raw_cmd, bytes))
 
     @classmethod
-    def pause(cls):
-        cls._do(cls._pause)
+    def pause(cls, device_path=None):
+        # With a device_path, returns whether rackmond manages (and so
+        # paused) that interface. Without one, pauses all of rackmond.
+        return cls._do(cls._pause, device_path).get("data")
 
     @classmethod
-    def resume(cls):
-        cls._do(cls._resume)
+    def resume(cls, device_path=None):
+        return cls._do(cls._resume, device_path).get("data")
 
     @classmethod
     def rescan(cls):
@@ -334,12 +342,14 @@ class RackmonAsyncInterface(RackmonInterface):
         return cls._rawResp(result, fullResp, isinstance(raw_cmd, bytes))
 
     @classmethod
-    async def pause(cls):
-        await cls._do(cls._pause)
+    async def pause(cls, device_path=None):
+        resp = await cls._do(cls._pause, device_path)
+        return resp.get("data")
 
     @classmethod
-    async def resume(cls):
-        await cls._do(cls._resume)
+    async def resume(cls, device_path=None):
+        resp = await cls._do(cls._resume, device_path)
+        return resp.get("data")
 
     @classmethod
     async def rescan(cls):

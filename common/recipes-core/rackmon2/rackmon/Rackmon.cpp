@@ -80,6 +80,14 @@ void Rackmon::load(const std::string& confPath, const std::string& regmapDir) {
   }
 }
 
+std::shared_ptr<Modbus> Rackmon::findInterface(const std::string& name) const {
+  auto it = std::find_if(
+      interfaces_.begin(), interfaces_.end(), [&name](const auto& interface) {
+        return interface->name() == name;
+      });
+  return it == interfaces_.end() ? nullptr : *it;
+}
+
 bool Rackmon::hasScanner(const std::string& name) const {
   return std::any_of(
       scanners_.begin(), scanners_.end(), [&name](const auto& scanner) {
@@ -95,16 +103,56 @@ void Rackmon::addScanner(const std::shared_ptr<Modbus>& interface) {
   }
 }
 
+void Rackmon::removeScanner(const std::string& name) {
+  auto scanner = std::find_if(
+      scanners_.begin(), scanners_.end(), [&name](const auto& scanner) {
+        return scanner->interfaceName() == name;
+      });
+  if (scanner != scanners_.end()) {
+    // Cut short a scan in flight, then join this interface's threads.
+    (*scanner)->endForceScan();
+    scanners_.erase(scanner);
+  }
+}
+
 void Rackmon::start(PollThreadTime interval) {
   std::unique_lock lk(threadMutex_);
   logInfo << "Start was requested" << std::endl;
-  assertNotStarted("Already running");
+  if (scanners_.size() == interfaces_.size() && !interfaces_.empty()) {
+    throw std::runtime_error("Already running");
+  }
   interval_ = interval;
 
   deviceInventory_->setExclusiveModeForAll(false);
+  // Interfaces which were not paused on their own still have a scanner,
+  // addScanner() leaves those be.
   for (const auto& interface : interfaces_) {
     addScanner(interface);
   }
+}
+
+bool Rackmon::pauseInterface(const std::string& name) {
+  std::unique_lock lk(threadMutex_);
+  auto interface = findInterface(name);
+  if (!interface) {
+    return false;
+  }
+  logInfo << "Pause was requested on " << name << std::endl;
+  deviceInventory_->setExclusiveModeForInterface(*interface, true);
+  removeScanner(name);
+  return true;
+}
+
+bool Rackmon::resumeInterface(const std::string& name) {
+  std::unique_lock lk(threadMutex_);
+  auto interface = findInterface(name);
+  if (!interface) {
+    return false;
+  }
+  logInfo << "Resume was requested on " << name << std::endl;
+  deviceInventory_->setExclusiveModeForInterface(*interface, false);
+  addScanner(interface);
+  return true;
 }
 
 void Rackmon::stop(bool forceStop) {

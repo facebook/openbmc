@@ -301,6 +301,74 @@ TEST_F(RackmonTest, ScannerUsesStartInterval) {
   mon.stop();
 }
 
+TEST_F(RackmonTest, PauseResumeInterface) {
+  // Two interfaces, so that pausing one can be told apart from stopping
+  // rackmond altogether.
+  std::string rconf_s = R"({
+      "interfaces": [
+        {
+          "device_path": "/tmp/blah",
+          "baudrate": 19200
+        },
+        {
+          "device_path": "/tmp/blah2",
+          "baudrate": 19200
+        }
+      ]
+    })";
+  std::ofstream ofs(r_conf);
+  ofs << rconf_s;
+  ofs.close();
+
+  MockRackmon mon;
+  EXPECT_CALL(mon, makeInterface())
+      .Times(2)
+      .WillOnce(Return(ByMove(std::make_unique<Modbus>())))
+      .WillOnce(Return(ByMove(std::make_unique<Modbus>())));
+  // Interface status with each interface being monitored or not, and no
+  // devices on either.
+  auto status = [](bool blah, bool blah2) {
+    return std::map<std::string, InterfaceStatus>{
+        {"/tmp/blah", {blah, {}}}, {"/tmp/blah2", {blah2, {}}}};
+  };
+  mon.load(r_conf, r_test_dir);
+  EXPECT_EQ(mon.getInterfaceStatus(), status(false, false));
+  mon.start();
+  EXPECT_EQ(mon.getInterfaceStatus(), status(true, true));
+
+  // An interface rackmond does not manage is reported as such, and
+  // nothing is paused.
+  EXPECT_FALSE(mon.pauseInterface("/tmp/nosuch"));
+  EXPECT_FALSE(mon.resumeInterface("/tmp/nosuch"));
+  EXPECT_EQ(mon.getInterfaceStatus(), status(true, true));
+
+  // Pausing one interface leaves the other polling, and repeating it is
+  // harmless.
+  EXPECT_TRUE(mon.pauseInterface("/tmp/blah"));
+  EXPECT_EQ(mon.getInterfaceStatus(), status(false, true));
+  EXPECT_TRUE(mon.pauseInterface("/tmp/blah"));
+  EXPECT_EQ(mon.getInterfaceStatus(), status(false, true));
+
+  // A global resume brings the paused interface back rather than
+  // tripping over the interface which never stopped.
+  EXPECT_NO_THROW(mon.start());
+  EXPECT_EQ(mon.getInterfaceStatus(), status(true, true));
+  EXPECT_THROW(mon.start(), std::runtime_error);
+
+  EXPECT_TRUE(mon.pauseInterface("/tmp/blah2"));
+  EXPECT_EQ(mon.getInterfaceStatus(), status(true, false));
+  EXPECT_TRUE(mon.resumeInterface("/tmp/blah2"));
+  EXPECT_EQ(mon.getInterfaceStatus(), status(true, true));
+
+  // Out of a full stop, resuming one interface starts only that one.
+  mon.stop();
+  EXPECT_EQ(mon.getInterfaceStatus(), status(false, false));
+  EXPECT_TRUE(mon.resumeInterface("/tmp/blah2"));
+  EXPECT_EQ(mon.getInterfaceStatus(), status(false, true));
+  mon.stop();
+  EXPECT_EQ(mon.getInterfaceStatus(), status(false, false));
+}
+
 TEST_F(RackmonTest, BasicScanFoundNone) {
   MockRackmon mon;
   // Mock a modbus with no active devices,

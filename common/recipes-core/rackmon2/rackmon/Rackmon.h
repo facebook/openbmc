@@ -49,11 +49,18 @@ class Rackmon {
     }
   }
 
+  // Interface managed by rackmond with this name (its device path),
+  // or nullptr if there is none.
+  std::shared_ptr<Modbus> findInterface(const std::string& name) const;
+
   // True if the named interface has a scanner running.
   bool hasScanner(const std::string& name) const;
 
   // Start scanning the interface, unless it already has a scanner.
   void addScanner(const std::shared_ptr<Modbus>& interface);
+
+  // Stop and join the scanner of the named interface, if it has one.
+  void removeScanner(const std::string& name);
 
   // --------- Private Methods --------
  protected:
@@ -93,6 +100,13 @@ class Rackmon {
   void start(PollThreadTime interval = std::chrono::minutes(3));
   // Stop the monitoring/scanning loops
   void stop(bool forceStop = true);
+
+  // Stop the monitoring/scanning loops of a single interface, leaving the
+  // rest of the interfaces polling. Returns false if rackmond does not
+  // manage an interface with that name, in which case nothing was paused.
+  bool pauseInterface(const std::string& name);
+  // Undo pauseInterface(). Returns false if the interface is not managed.
+  bool resumeInterface(const std::string& name);
 
   // Force rackmond to do a full scan on the next scan loop.
   void forceScan();

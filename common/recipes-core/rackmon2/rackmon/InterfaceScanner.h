@@ -67,6 +67,11 @@ class InterfaceScanner {
     deviceScanner_.stop();
   }
 
+  // Name (device path) of the interface this scanner polls.
+  const std::string& interfaceName() const {
+    return interface_->name();
+  }
+
   // If there is a forced scan ongoing this will end it before it continues
   // to the next item
   void endForceScan() {

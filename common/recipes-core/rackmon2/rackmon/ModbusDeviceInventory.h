@@ -40,6 +40,12 @@ class ModbusDeviceInventory {
 
   void setExclusiveModeForAll(bool enable);
 
+  // Same, but only for the devices reachable on one interface. Returns
+  // false if no known device is on that interface, in which case nothing
+  // was changed: either the interface is not one of ours or no device has
+  // been discovered on it yet.
+  bool setExclusiveModeForInterface(const Modbus& interface, bool enable);
+
   virtual ~ModbusDeviceInventory() = default;
 };
 } // namespace rackmon

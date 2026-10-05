@@ -80,20 +80,31 @@ void Rackmon::load(const std::string& confPath, const std::string& regmapDir) {
   }
 }
 
+bool Rackmon::hasScanner(const std::string& name) const {
+  return std::any_of(
+      scanners_.begin(), scanners_.end(), [&name](const auto& scanner) {
+        return scanner->interfaceName() == name;
+      });
+}
+
+void Rackmon::addScanner(const std::shared_ptr<Modbus>& interface) {
+  if (!hasScanner(interface->name())) {
+    scanners_.push_back(
+        std::make_unique<InterfaceScanner>(
+            interface, *deviceInventory_, registerMapDB_, interval_));
+  }
+}
+
 void Rackmon::start(PollThreadTime interval) {
   std::unique_lock lk(threadMutex_);
   logInfo << "Start was requested" << std::endl;
   assertNotStarted("Already running");
+  interval_ = interval;
 
   deviceInventory_->setExclusiveModeForAll(false);
-  std::transform(
-      interfaces_.begin(),
-      interfaces_.end(),
-      std::back_inserter(scanners_),
-      [this, interval](const auto& interface) {
-        return std::make_unique<InterfaceScanner>(
-            interface, *this->deviceInventory_, this->registerMapDB_, interval);
-      });
+  for (const auto& interface : interfaces_) {
+    addScanner(interface);
+  }
 }
 
 void Rackmon::stop(bool forceStop) {
@@ -149,7 +160,7 @@ std::map<std::string, InterfaceStatus> Rackmon::getInterfaceStatus() {
   for (const auto& interface : interfaces_) {
     const std::string& name = interface->name();
     InterfaceStatus& iface = status[name];
-    iface.monitoring = !scanners_.empty();
+    iface.monitoring = hasScanner(name);
     for (const auto& device : allDevices) {
       if (&device->getInterface() == interface.get()) {
         iface.devices.push_back(

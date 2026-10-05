@@ -265,6 +265,42 @@ TEST_F(RackmonTest, GetInterfaceStatus) {
       (std::map<std::string, InterfaceStatus>{{"/tmp/blah", {false, {}}}}));
 }
 
+// Counts how often the interface is probed for a device. None are present.
+class CountingModbus : public Modbus {
+  std::atomic<int>& probes_;
+
+ public:
+  explicit CountingModbus(std::atomic<int>& probes) : probes_(probes) {}
+  bool isPresent() override {
+    ++probes_;
+    return false;
+  }
+};
+
+// start() remembers its interval, and the scanners added for it poll at
+// that rate rather than the default of three minutes.
+TEST_F(RackmonTest, ScannerUsesStartInterval) {
+  std::atomic<int> probes{0};
+  MockRackmon mon;
+  EXPECT_CALL(mon, makeInterface())
+      .Times(1)
+      .WillOnce(Return(ByMove(std::make_unique<CountingModbus>(probes))));
+  mon.load(r_conf, r_test_dir);
+  mon.start(0s);
+
+  // The full scan on start probes each of the 3 addresses 3 times. After
+  // that, only a scanner polling with no interval keeps probing without
+  // being ticked.
+  constexpr int kFullScanProbes = 9;
+  auto deadline = std::chrono::steady_clock::now() + 10s;
+  while (probes <= 10 * kFullScanProbes &&
+         std::chrono::steady_clock::now() < deadline) {
+    std::this_thread::sleep_for(10ms);
+  }
+  EXPECT_GT(probes, 10 * kFullScanProbes);
+  mon.stop();
+}
+
 TEST_F(RackmonTest, BasicScanFoundNone) {
   MockRackmon mon;
   // Mock a modbus with no active devices,

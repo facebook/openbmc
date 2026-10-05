@@ -39,11 +39,21 @@ class Rackmon {
   // to ensure users get destroyed before the interface.
   std::vector<std::shared_ptr<Modbus>> interfaces_{};
 
+  // Interval start() was last called with. New scanners poll at this rate,
+  // so an interface which starts scanning later keeps the cadence of the rest.
+  PollThreadTime interval_{std::chrono::minutes(3)};
+
   void assertNotStarted(const std::string& error) const {
     if (!scanners_.empty()) {
       throw std::runtime_error(error);
     }
   }
+
+  // True if the named interface has a scanner running.
+  bool hasScanner(const std::string& name) const;
+
+  // Start scanning the interface, unless it already has a scanner.
+  void addScanner(const std::shared_ptr<Modbus>& interface);
 
   // --------- Private Methods --------
  protected:

@@ -41,6 +41,16 @@ extern "C" {
 
 #ifdef CONFIG_GRANDCANYON2
 #define MAX_NUM_FRUS    12
+
+/*
+ * NVMe-MI register blocks for the data drive and boot drive block reads:
+ *   BLOCK0: offset 0x00, len 8  -> sflgs(0x01)/warning(0x02)/temp(0x03)/pdlu(0x04)
+ *   BLOCK1: offset 0x08, len 24 -> vendor(0x09-0x0A)/serial_num(0x0B..)
+ */
+#define NVME_BLOCK0_OFFSET   0x00
+#define NVME_BLOCK0_LEN      8
+#define NVME_BLOCK1_OFFSET   0x08
+#define NVME_BLOCK1_LEN      24
 #else
 #define MAX_NUM_FRUS    11
 #endif

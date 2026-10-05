@@ -51,8 +51,7 @@ mistake, but pointing it at the wrong *image* can still brick a device.
 ## New flow: `modbus-update.py`
 
 ```
-flock /tmp/modbus_dynamo_solitonbeam.lock \
-    /usr/local/bin/modbus-update.py (-n <NAME> | -a <UDA>) [-c <COMPONENT>] \
+/usr/local/bin/modbus-update.py (-n <NAME> | -a <UDA>) [-c <COMPONENT>] \
     [--dry-run] [--force-direct] <path>
 ```
 
@@ -176,39 +175,37 @@ default config is used instead (with a printed note).
 ### Examples
 
 ```
-FLOCK="flock /tmp/modbus_dynamo_solitonbeam.lock"
-
 # ORv3 PSU, rack 1 slot 3 — vendor (delta or artesyn) auto-detected
-$FLOCK /usr/local/bin/modbus-update.py -n PSU_100_3 /tmp/psu.bin
+/usr/local/bin/modbus-update.py -n PSU_100_3 /tmp/psu.bin
 
 # ORv3 BBU, rack 2 slot 1
-$FLOCK /usr/local/bin/modbus-update.py -n BBU_101_1 /tmp/bbu.bin
+/usr/local/bin/modbus-update.py -n BBU_101_1 /tmp/bbu.bin
 
 # AALCv1 RPU, PLC (default component)
-$FLOCK /usr/local/bin/modbus-update.py -n RPU_100 /tmp/rpu.bin
+/usr/local/bin/modbus-update.py -n RPU_100 /tmp/rpu.bin
 
 # AALCv1 RPU, HEX
-$FLOCK /usr/local/bin/modbus-update.py -n RPU_100 -c HEX /tmp/hex.bin
+/usr/local/bin/modbus-update.py -n RPU_100 -c HEX /tmp/hex.bin
 
 # AALCv2 RPU — same name, rackmon says which generation is on the shelf.
 # Component derived from the image filename if -c is omitted. The whole pod is
 # one device, so RPU_101 and RPU_102 reach it too
-$FLOCK /usr/local/bin/modbus-update.py -n RPU_100 /tmp/MT-R_P.tar.gz
-$FLOCK /usr/local/bin/modbus-update.py -n RPU_100 -c FAN_RACK_1_ETH /tmp/MT-E_F1.tar.gz
+/usr/local/bin/modbus-update.py -n RPU_100 /tmp/MT-R_P.tar.gz
+/usr/local/bin/modbus-update.py -n RPU_100 -c FAN_RACK_1_ETH /tmp/MT-E_F1.tar.gz
 
 # HPR PSU / BBU / CBU / PMMs behind phosphor-modbus
-$FLOCK /usr/local/bin/modbus-update.py -n PSU_1_1 /tmp/psu.bin
-$FLOCK /usr/local/bin/modbus-update.py -n BBU_1_2 /tmp/bbu.bin
-$FLOCK /usr/local/bin/modbus-update.py -n CBU_1_1 /tmp/cbu.bin
-$FLOCK /usr/local/bin/modbus-update.py -n BBU_PMM_1 /tmp/pmm.bin
+/usr/local/bin/modbus-update.py -n PSU_1_1 /tmp/psu.bin
+/usr/local/bin/modbus-update.py -n BBU_1_2 /tmp/bbu.bin
+/usr/local/bin/modbus-update.py -n CBU_1_1 /tmp/cbu.bin
+/usr/local/bin/modbus-update.py -n BBU_PMM_1 /tmp/pmm.bin
 
 # Anything rackmon knows, by address alone — the type comes from rackmon
-$FLOCK /usr/local/bin/modbus-update.py -a 0x1e0 /tmp/psu.bin
-$FLOCK /usr/local/bin/modbus-update.py --addr 0x1e0 /tmp/psu.bin
+/usr/local/bin/modbus-update.py -a 0x1e0 /tmp/psu.bin
+/usr/local/bin/modbus-update.py --addr 0x1e0 /tmp/psu.bin
 
 # Check what would happen without touching the device
-$FLOCK /usr/local/bin/modbus-update.py -n PSU_100_3 --dry-run /tmp/psu.bin
-$FLOCK /usr/local/bin/modbus-update.py -a 0x1e0 --dry-run /tmp/psu.bin
+/usr/local/bin/modbus-update.py -n PSU_100_3 --dry-run /tmp/psu.bin
+/usr/local/bin/modbus-update.py -a 0x1e0 --dry-run /tmp/psu.bin
 ```
 
 `--dry-run` prints the resolved device, detected vendor, backend and updater —
@@ -273,33 +270,35 @@ Panasonic `00.01.16`, HPR PSU AEI `004` (with PMM >= `0001G`), HPR PSU Delta
 
 One row per vendor/platform/component combination on the wiki, in the same
 order. `<addr>` is the rackmon unique device address, `<path>` the firmware file.
+The new commands drop the `flock` wrapper, since `modbus-update.py` takes the
+lock itself.
 
 | Component | Old command | New command |
 |---|---|---|
 | Delta ORv2 PSU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/psu-update-delta.py --addr <addr> <path>` | *no equivalent — keep the old command* |
 | Artesyn ORv2 PSU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/psu-update-artesyn.py --addr <addr> <path>` | *no equivalent — keep the old command* |
 | BEL ORv2 PSU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/psu-update-bel.py --addr <addr> <path>` | *no equivalent — keep the old command* |
-| Artesyn (AEI) ORv3 PSU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/psu-update-aei.py --addr <addr> <path>` | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --addr <addr> <path>` |
-| Delta ORv3 PSU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/psu-update-delta-orv3.py --addr <addr> <path>` | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --addr <addr> <path>` |
-| Delta ORv3 BBU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --vendor delta --addr <addr> <path>` | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --addr <addr> <path>` |
-| Panasonic ORv3 BBU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --vendor panasonic --addr <addr> <path>` | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --addr <addr> <path>` |
+| Artesyn (AEI) ORv3 PSU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/psu-update-aei.py --addr <addr> <path>` | `/usr/local/bin/modbus-update.py --addr <addr> <path>` |
+| Delta ORv3 PSU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/psu-update-delta-orv3.py --addr <addr> <path>` | `/usr/local/bin/modbus-update.py --addr <addr> <path>` |
+| Delta ORv3 BBU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --vendor delta --addr <addr> <path>` | `/usr/local/bin/modbus-update.py --addr <addr> <path>` |
+| Panasonic ORv3 BBU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --vendor panasonic --addr <addr> <path>` | `/usr/local/bin/modbus-update.py --addr <addr> <path>` |
 | Panasonic ORv3 BBU, very old (64-byte blocks) | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --vendor panasonic --block-size 64 --addr <addr> <path>` | *no equivalent — keep the old command* |
-| Artesyn (AEI) HPR PSU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/psu-update-aei.py --addr <addr> --device hpr <path>` | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --addr <addr> <path>` |
-| Delta HPR PSU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/psu-update-delta-orv3.py --addr <addr> <path>` | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --addr <addr> <path>` |
-| Delta HPR BBU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --vendor delta --addr <addr> <path>` | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --addr <addr> <path>` |
-| Panasonic HPR BBU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --vendor hpr_panasonic --addr <addr> <path>` | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --addr <addr> <path>` |
-| Delta HPR CBU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --vendor delta --addr <addr> <path>` | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --addr <addr> <path>` |
-| Artesyn (AEI) HPR PSU PMM | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --addr <addr> --vendor hpr_pmm_aei <path>` | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --addr <addr> <path>` |
-| Delta HPR PSU PMM | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --addr <addr> --vendor hpr_pmm_delta <path>` | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --addr <addr> <path>` |
-| Panasonic HPR BBU PMM | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --addr <addr> --vendor hpr_pmm_panasonic <path>` | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --addr <addr> <path>` |
-| Delta HPR BBU PMM | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --addr <addr> --vendor hpr_pmm_delta <path>` | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --addr <addr> <path>` |
-| Delta HPR CBU PMM | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --addr <addr> --vendor hpr_pmm_delta <path>` | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --addr <addr> <path>` |
+| Artesyn (AEI) HPR PSU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/psu-update-aei.py --addr <addr> --device hpr <path>` | `/usr/local/bin/modbus-update.py --addr <addr> <path>` |
+| Delta HPR PSU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/psu-update-delta-orv3.py --addr <addr> <path>` | `/usr/local/bin/modbus-update.py --addr <addr> <path>` |
+| Delta HPR BBU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --vendor delta --addr <addr> <path>` | `/usr/local/bin/modbus-update.py --addr <addr> <path>` |
+| Panasonic HPR BBU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --vendor hpr_panasonic --addr <addr> <path>` | `/usr/local/bin/modbus-update.py --addr <addr> <path>` |
+| Delta HPR CBU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --vendor delta --addr <addr> <path>` | `/usr/local/bin/modbus-update.py --addr <addr> <path>` |
+| Artesyn (AEI) HPR PSU PMM | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --addr <addr> --vendor hpr_pmm_aei <path>` | `/usr/local/bin/modbus-update.py --addr <addr> <path>` |
+| Delta HPR PSU PMM | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --addr <addr> --vendor hpr_pmm_delta <path>` | `/usr/local/bin/modbus-update.py --addr <addr> <path>` |
+| Panasonic HPR BBU PMM | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --addr <addr> --vendor hpr_pmm_panasonic <path>` | `/usr/local/bin/modbus-update.py --addr <addr> <path>` |
+| Delta HPR BBU PMM | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --addr <addr> --vendor hpr_pmm_delta <path>` | `/usr/local/bin/modbus-update.py --addr <addr> <path>` |
+| Delta HPR CBU PMM | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --addr <addr> --vendor hpr_pmm_delta <path>` | `/usr/local/bin/modbus-update.py --addr <addr> <path>` |
 | Delta HPR PMM, fw < `1000` (64-byte blocks) | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/orv3-device-update-mailbox.py --addr <addr> --vendor hpr_pmm_delta --block-size 64 <path>` | *no equivalent — keep the old command* |
-| Delta ORv3 RPU (PLC) | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/rpu-update-delta-plc.py --addr <addr> --oem-block <path>` | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --addr <addr> <path>` |
-| Quanta ORv3 RPU (PLC) | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/rpu-update-delta-plc.py --addr <addr> <path>` | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --addr <addr> <path>` |
-| Delta ORv3 RPU (HEX) | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/rpu-update-delta-hex.py --addr <addr> <path>` | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --addr <addr> --component HEX <path>` |
-| Coolermaster AALCv2 RPU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/rpu-update-coolermaster.py --addr <addr> <path>` | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --addr <addr> <path>` |
-| Coolermaster AALCv2 RPU, renamed image | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/rpu-update-coolermaster.py --addr <addr> --component <C> <path>` | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --addr <addr> --component <C> <path>` |
+| Delta ORv3 RPU (PLC) | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/rpu-update-delta-plc.py --addr <addr> --oem-block <path>` | `/usr/local/bin/modbus-update.py --addr <addr> <path>` |
+| Quanta ORv3 RPU (PLC) | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/rpu-update-delta-plc.py --addr <addr> <path>` | `/usr/local/bin/modbus-update.py --addr <addr> <path>` |
+| Delta ORv3 RPU (HEX) | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/rpu-update-delta-hex.py --addr <addr> <path>` | `/usr/local/bin/modbus-update.py --addr <addr> --component HEX <path>` |
+| Coolermaster AALCv2 RPU | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/rpu-update-coolermaster.py --addr <addr> <path>` | `/usr/local/bin/modbus-update.py --addr <addr> <path>` |
+| Coolermaster AALCv2 RPU, renamed image | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/rpu-update-coolermaster.py --addr <addr> --component <C> <path>` | `/usr/local/bin/modbus-update.py --addr <addr> --component <C> <path>` |
 
 Every row keeps the `<addr>` the old command took, since `--name` and `--addr`
 are mutually exclusive and the address is the one already in the runbook. Where
@@ -332,12 +331,12 @@ name entity-manager exports and `--addr` is dropped:
 
 | Component | New command |
 |---|---|
-| HPR PSU (shelves 1-4, slots 1-6) | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --name PSU_1_1 <path>` |
-| HPR BBU (shelves 1-4, slots 1-6) | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --name BBU_1_1 <path>` |
-| HPR CBU (shelves 1-10, slots 1-3) | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --name CBU_1_1 <path>` |
-| HPR PSU PMM (shelves 1-4) | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --name PSU_PMM_1 <path>` |
-| HPR BBU PMM (shelves 1-4) | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --name BBU_PMM_1 <path>` |
-| HPR CBU PMM (shelves 1-10) | `flock /tmp/modbus_dynamo_solitonbeam.lock /usr/local/bin/modbus-update.py --name CBU_PMM_1 <path>` |
+| HPR PSU (shelves 1-4, slots 1-6) | `/usr/local/bin/modbus-update.py --name PSU_1_1 <path>` |
+| HPR BBU (shelves 1-4, slots 1-6) | `/usr/local/bin/modbus-update.py --name BBU_1_1 <path>` |
+| HPR CBU (shelves 1-10, slots 1-3) | `/usr/local/bin/modbus-update.py --name CBU_1_1 <path>` |
+| HPR PSU PMM (shelves 1-4) | `/usr/local/bin/modbus-update.py --name PSU_PMM_1 <path>` |
+| HPR BBU PMM (shelves 1-4) | `/usr/local/bin/modbus-update.py --name BBU_PMM_1 <path>` |
+| HPR CBU PMM (shelves 1-10) | `/usr/local/bin/modbus-update.py --name CBU_PMM_1 <path>` |
 
 The vendor is detected either way, so there is one command per component rather
 than one per vendor. Shelf and slot ranges above are ventura2's

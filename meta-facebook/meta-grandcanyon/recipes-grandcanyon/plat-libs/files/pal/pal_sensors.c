@@ -3399,6 +3399,9 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
   p_sensor_data = (EXPANDER_SENSOR_DATA *)(&rbuf[1]);
 
   for(i = 0; i < sensor_cnt; i++) {
+    memset(units, 0, sizeof(units));
+    memset(str, 0, sizeof(str));
+    value = 0;
     if ((p_sensor_data[i].sensor_status != EXP_SENSOR_STATUS_OK) &&
         (p_sensor_data[i].sensor_status != EXP_SENSOR_STATUS_CRITICAL)) {
       //if sensor status byte is not 'OK' or 'Critical', means sensor reading is unavailable
@@ -3406,50 +3409,53 @@ exp_read_sensor_wrapper(uint8_t fru, uint8_t *sensor_list, int sensor_cnt, uint8
     } else if ((p_sensor_data[i].raw_data_1 == 0xFF) && (p_sensor_data[i].raw_data_2 == 0xFF)) {
       // Sensor value is not ready
       snprintf(str, sizeof(str), "NA");
-#ifdef CONFIG_GRANDCANYON2
-    } else if ((p_sensor_data[i].sensor_status == EXP_SENSOR_STATUS_OK) && (p_sensor_data[i].raw_data_1 == 0x00) && (p_sensor_data[i].raw_data_2 == 0x00)){
-      pal_get_sensor_units(fru, p_sensor_data[i].sensor_num, units);
-      if (strncmp(units, "Volts", sizeof(units)) == 0){
-        snprintf(str, sizeof(str), "NA");
-      }
-#endif
     } else {
       // search the corresponding sensor table to fill up the raw data and status
       pal_get_sensor_units(fru, p_sensor_data[i].sensor_num, units);
-      if (strncmp(units, "C", sizeof(units)) == 0) {
-        value = p_sensor_data[i].raw_data_1;
-      }
-      else if (strncmp(units, "RPM", sizeof(units)) == 0) {
-        value = (((p_sensor_data[i].raw_data_1 << 8) + p_sensor_data[i].raw_data_2));
-        value *= 10;
 
-        if (tach_cnt == SINGLE_FAN_CNT) {
-          if ((p_sensor_data[i].sensor_num == FAN_0_REAR) || (p_sensor_data[i].sensor_num == FAN_1_REAR)
-           || (p_sensor_data[i].sensor_num == FAN_2_REAR) || (p_sensor_data[i].sensor_num == FAN_3_REAR)) {
-             continue;
-           }
-        } else if (tach_cnt == UNKNOWN_FAN_CNT) {
-          continue;
-        }
+      if (fbgc_common_is_grandcanyon2() &&
+         (p_sensor_data[i].sensor_status == EXP_SENSOR_STATUS_OK) &&
+         (strncmp(units, "Volts", sizeof(units)) == 0) &&
+         (p_sensor_data[i].raw_data_1 == 0x00) &&
+         (p_sensor_data[i].raw_data_2 == 0x00)) {
+        snprintf(str, sizeof(str), "NA");
       }
-      else if (strncmp(units, "Watts", sizeof(units)) == 0) {
-        value = (((p_sensor_data[i].raw_data_1 << 8) + p_sensor_data[i].raw_data_2));
-      }
-#ifdef CONFIG_GRANDCANYON2
-      else if (strncmp(units, "mV", sizeof(units)) == 0) {
-        value = (((p_sensor_data[i].raw_data_1 << 8) + p_sensor_data[i].raw_data_2));
-        value /= 1000;
-      }
-#endif
       else {
-        value = (((p_sensor_data[i].raw_data_1 << 8) + p_sensor_data[i].raw_data_2));
-        value /= 100;
-      }
+        if (strncmp(units, "C", sizeof(units)) == 0) {
+          value = p_sensor_data[i].raw_data_1;
+        }
+        else if (strncmp(units, "RPM", sizeof(units)) == 0) {
+          value = (((p_sensor_data[i].raw_data_1 << 8) + p_sensor_data[i].raw_data_2));
+          value *= 10;
+
+          if (tach_cnt == SINGLE_FAN_CNT) {
+            if ((p_sensor_data[i].sensor_num == FAN_0_REAR) || (p_sensor_data[i].sensor_num == FAN_1_REAR)
+            || (p_sensor_data[i].sensor_num == FAN_2_REAR) || (p_sensor_data[i].sensor_num == FAN_3_REAR)) {
+              continue;
+            }
+          } else if (tach_cnt == UNKNOWN_FAN_CNT) {
+            continue;
+          }
+        }
+        else if (strncmp(units, "Watts", sizeof(units)) == 0) {
+          value = (((p_sensor_data[i].raw_data_1 << 8) + p_sensor_data[i].raw_data_2));
+        }
 #ifdef CONFIG_GRANDCANYON2
-      snprintf(str, sizeof(str), "%.3f",(float)value);
-#else
-      snprintf(str, sizeof(str), "%.2f",(float)value);
+        else if (strncmp(units, "mV", sizeof(units)) == 0) {
+          value = (((p_sensor_data[i].raw_data_1 << 8) + p_sensor_data[i].raw_data_2));
+          value /= 1000;
+        }
 #endif
+        else {
+          value = (((p_sensor_data[i].raw_data_1 << 8) + p_sensor_data[i].raw_data_2));
+          value /= 100;
+        }
+#ifdef CONFIG_GRANDCANYON2
+        snprintf(str, sizeof(str), "%.3f",(float)value);
+#else
+        snprintf(str, sizeof(str), "%.2f",(float)value);
+#endif
+      }
     }
 
     //cache sensor reading

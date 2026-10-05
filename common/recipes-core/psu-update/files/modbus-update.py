@@ -20,7 +20,7 @@ try:
 except ImportError:
     ModbusDirect = None
 from modbus_impl_pyrmd import Modbus as ModbusRackmon
-from modbus_monitor import RackmonMonitor
+from modbus_monitor import get_rackmon_interface, RackmonMonitor
 from modbus_update_helper import auto_int
 from pyrmd import RackmonInterface as rmd
 from rpu_update_coolermaster import AALCV2_COMPONENTS
@@ -254,7 +254,7 @@ def make_rackmon_device(uaddr, config, force_direct=False):
     baud = config["baudrate"]
     addr = config["devAddress"]
     parity = config["parity"]
-    devpath = rmd.get_interface(uaddr)
+    devpath = get_rackmon_interface(uaddr)
     return ModbusDirect(addr, baud, parity, devpath, RackmonMonitor())
 
 

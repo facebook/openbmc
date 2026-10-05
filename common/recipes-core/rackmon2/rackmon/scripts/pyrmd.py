@@ -86,13 +86,6 @@ class RackmonInterface:
             log("<-", status)
             raise ModbusException(status)
 
-    # rackmon reports an unknown address as ERR_INVALID_ARGS and a known
-    # but dormant device as ERR_IO_FAILURE. Both mean "no interface to
-    # report" rather than a failure to talk to rackmon itself.
-    @classmethod
-    def _isNoSuchDevice(cls, exception):
-        return str(exception) in ("ERR_INVALID_ARGS", "ERR_IO_FAILURE")
-
     @classmethod
     def _write(cls, addr, register, data, timeout):
         cmd = {
@@ -162,11 +155,8 @@ class RackmonInterface:
         return {"type": "listModbusDevices"}
 
     @classmethod
-    def _get_interface(cls, addr=None):
-        req = {"type": "getInterface"}
-        if addr is not None:
-            req["devAddress"] = addr
-        return req
+    def _get_interface(cls):
+        return {"type": "getInterface"}
 
     @classmethod
     def _data(cls, raw, dataFilter=None):
@@ -281,14 +271,9 @@ class RackmonInterface:
         return result["data"]
 
     @classmethod
-    def get_interface(cls, addr=None):
-        try:
-            result = cls._do(cls._get_interface, addr)
-        except ModbusException as e:
-            if cls._isNoSuchDevice(e):
-                return None
-            raise
-        return result["data"][0] if addr is not None else result["data"]
+    def get_interface(cls):
+        result = cls._do(cls._get_interface)
+        return result["data"]
 
     @classmethod
     def data(cls, raw=True, dataFilter=None, decodeJson=True):
@@ -366,14 +351,9 @@ class RackmonAsyncInterface(RackmonInterface):
         return result["data"]
 
     @classmethod
-    async def get_interface(cls, addr=None):
-        try:
-            result = await cls._do(cls._get_interface, addr)
-        except ModbusException as e:
-            if cls._isNoSuchDevice(e):
-                return None
-            raise
-        return result["data"][0] if addr is not None else result["data"]
+    async def get_interface(cls):
+        result = await cls._do(cls._get_interface)
+        return result["data"]
 
     @classmethod
     async def data(cls, raw=True, dataFilter=None, decodeJson=True):

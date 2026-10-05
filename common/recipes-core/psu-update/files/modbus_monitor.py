@@ -26,6 +26,7 @@ __all__ = [
     "PmmMonitor",
     "RackmonMonitor",
     "PhosphorModbusMonitor",
+    "get_rackmon_interface",
 ]
 
 # Allow rackmon monitoring threads to exit
@@ -147,6 +148,26 @@ class RackmonMonitor(Monitor):
     def resume(self):
         print("Resuming rackmon monitoring...")
         self.rmd.resume()
+
+
+def get_rackmon_interface(dev_addr):
+    """
+    The device path of the rackmond interface dev_addr is on, or None if
+    rackmond knows of no such device or of more than one.
+
+    dev_addr is matched the way rackmond matches addresses: a unique
+    address (port << 8 | addr) names one device, while a bare address
+    matches the device on any port.
+    """
+    import pyrmd
+
+    matches = [
+        devpath
+        for devpath, iface in pyrmd.RackmonInterface.get_interface().items()
+        for uaddr in iface["devices"]
+        if uaddr == dev_addr or (dev_addr <= 0xFF and uaddr & 0xFF == dev_addr)
+    ]
+    return matches[0] if len(matches) == 1 else None
 
 
 class PhosphorModbusMonitor(Monitor):

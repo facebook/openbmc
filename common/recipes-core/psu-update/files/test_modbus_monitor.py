@@ -6,6 +6,7 @@ import modbus_monitor
 import test_mocks  # noqa: F401  installs the fake pyrmd/minimalmodbus
 from modbus_common import ModbusException, PMM_PAUSE_REG
 from modbus_monitor import (
+    get_rackmon_interface,
     Monitor,
     MonitorChain,
     NullMonitor,
@@ -17,6 +18,7 @@ from modbus_monitor import (
     RACKMON_SETTLE_SECS,
     RackmonMonitor,
 )
+from test_mocks import pyrmd
 
 
 class RecordingMonitor(Monitor):
@@ -159,6 +161,39 @@ class TestRackmonMonitor(NoiseFree):
         with patch.object(monitor, "rmd"):
             monitor.resume()
         self.sleep.assert_not_called()
+
+
+class TestGetRackmonInterface(unittest.TestCase):
+    INTERFACES = {
+        "/dev/ttyUSB0": {"status": True, "devices": [0x01A4, 0x0128]},
+        "/dev/ttyUSB1": {"status": False, "devices": [0x02A4, 0x0230]},
+        "/dev/ttyUSB2": {"status": True, "devices": [0x40]},
+    }
+
+    def lookup(self, dev_addr):
+        with patch.object(
+            pyrmd.RackmonInterface, "get_interface", return_value=self.INTERFACES
+        ):
+            return get_rackmon_interface(dev_addr)
+
+    def test_a_unique_address_names_its_interface(self):
+        self.assertEqual(self.lookup(0x01A4), "/dev/ttyUSB0")
+        self.assertEqual(self.lookup(0x02A4), "/dev/ttyUSB1")
+
+    def test_a_bare_address_matches_on_any_port(self):
+        self.assertEqual(self.lookup(0x28), "/dev/ttyUSB0")
+        self.assertEqual(self.lookup(0x30), "/dev/ttyUSB1")
+        self.assertEqual(self.lookup(0x40), "/dev/ttyUSB2")
+
+    def test_a_bare_address_on_several_ports_is_ambiguous(self):
+        self.assertIsNone(self.lookup(0xA4))
+
+    def test_a_unique_address_does_not_match_another_port(self):
+        self.assertIsNone(self.lookup(0x0128 | 0x0300))
+        self.assertIsNone(self.lookup(0x0140))
+
+    def test_an_unknown_device_has_no_interface(self):
+        self.assertIsNone(self.lookup(0x55))
 
 
 class TestPhosphorModbusMonitor(NoiseFree):

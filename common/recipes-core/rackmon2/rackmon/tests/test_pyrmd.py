@@ -1,12 +1,12 @@
-import unittest
 import asyncio
+import unittest
 from unittest.mock import patch
 
 try:
     import pyrmd
 except ImportError:
-    import sys
     import os
+    import sys
 
     # Put pyrmd in the correct path relative to source tree.
     sys.path.insert(
@@ -278,23 +278,12 @@ class PyrmdSyncTest(unittest.TestCase):
         )
 
     def test_get_interface_sync(self, sync_exec, async_exec):
-        exp_resp = {"status": "SUCCESS", "data": ["/dev/ttyUSB0"]}
-        exp_req = {"type": "getInterface", "devAddress": 0xA4}
-        self.do_cmd(
-            sync_exec,
-            async_exec,
-            exp_req,
-            exp_resp,
-            "/dev/ttyUSB0",
-            pyrmd.RackmonInterface.get_interface,
-            pyrmd.RackmonAsyncInterface.get_interface,
-            0xA4,
-        )
-
-    def test_get_all_interfaces_sync(self, sync_exec, async_exec):
         exp_resp = {
             "status": "SUCCESS",
-            "data": ["/dev/ttyUSB0", "/dev/ttyUSB1"],
+            "data": {
+                "/dev/ttyUSB0": {"status": True, "devices": [0xA4, 0x1A4]},
+                "/dev/ttyUSB1": {"status": False, "devices": []},
+            },
         }
         exp_req = {"type": "getInterface"}
         self.do_cmd(
@@ -302,28 +291,12 @@ class PyrmdSyncTest(unittest.TestCase):
             async_exec,
             exp_req,
             exp_resp,
-            ["/dev/ttyUSB0", "/dev/ttyUSB1"],
+            exp_resp["data"],
             pyrmd.RackmonInterface.get_interface,
             pyrmd.RackmonAsyncInterface.get_interface,
         )
 
-    def test_get_interface_no_such_device(self, sync_exec, async_exec):
-        exp_req = {"type": "getInterface", "devAddress": 0xA4}
-        # Unknown address and dormant device are both reported as None.
-        for status in ("ERR_INVALID_ARGS", "ERR_IO_FAILURE"):
-            self.do_cmd(
-                sync_exec,
-                async_exec,
-                exp_req,
-                {"status": status},
-                None,
-                pyrmd.RackmonInterface.get_interface,
-                pyrmd.RackmonAsyncInterface.get_interface,
-                0xA4,
-            )
-
     def test_get_interface_except(self, sync_exec, async_exec):
-        # Anything else is a failure to talk to rackmon and must propagate.
         self.do_cmd_raises(
             sync_exec,
             async_exec,
@@ -332,7 +305,6 @@ class PyrmdSyncTest(unittest.TestCase):
             "ERR_TIMEOUT",
             pyrmd.RackmonInterface.get_interface,
             pyrmd.RackmonAsyncInterface.get_interface,
-            0xA4,
         )
 
     def test_monitor_raw_data_sync(self, sync_exec, async_exec):

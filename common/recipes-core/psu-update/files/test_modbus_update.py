@@ -446,7 +446,9 @@ class TestGetRackmonDeviceByAddr(unittest.TestCase):
 
     def test_force_direct_uses_the_same_line_settings(self):
         with patch.object(mu, "get_rackmon_device_config", return_value=self.config()):
-            with patch.object(mu.rmd, "get_interface", return_value="/dev/ttyRS485-1"):
+            with patch.object(
+                mu, "get_rackmon_interface", return_value="/dev/ttyRS485-1"
+            ):
                 with patch.object(mu, "ModbusDirect") as modbus:
                     with patch.object(mu, "RackmonMonitor") as monitor:
                         mu.get_rackmon_device_by_addr(0x1E0, True)
@@ -475,7 +477,7 @@ class TestMakeRackmonDevice(unittest.TestCase):
 
     def test_the_line_settings_come_from_rackmons_own_device_config(self):
         with patch.object(
-            mu.rmd, "get_interface", return_value="/dev/ttyRS485-1"
+            mu, "get_rackmon_interface", return_value="/dev/ttyRS485-1"
         ) as get_interface:
             with patch.object(mu, "ModbusDirect") as modbus:
                 with patch.object(mu, "RackmonMonitor") as monitor:
@@ -489,7 +491,7 @@ class TestMakeRackmonDevice(unittest.TestCase):
     def test_rackmon_is_still_the_monitor_to_suppress(self):
         # The device is ours to drive, but rackmond is still the daemon
         # polling it, so that is what has to stand off.
-        with patch.object(mu.rmd, "get_interface", return_value="/dev/ttyRS485-1"):
+        with patch.object(mu, "get_rackmon_interface", return_value="/dev/ttyRS485-1"):
             with patch.object(mu, "ModbusDirect") as modbus:
                 mu.make_rackmon_device(0x1E0, self.config(), True)
         monitor = modbus.call_args.args[4]

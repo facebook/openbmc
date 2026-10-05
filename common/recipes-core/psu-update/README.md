@@ -12,22 +12,39 @@ exist and still take `--addr`, but they are deprecated wrappers.
 
 ---
 
+## The bus lock
+
+Every firmware upgrade must run under the modbus bus lock, which guarantees
+exclusive access to the bus so no other tool performs read/write operations on
+the modbus device mid-upgrade.
+
+**`modbus-update.py` takes the lock itself.** It holds `/run/lock/modbus.lock`
+from before it resolves the device until it exits, so run it bare. If another
+tool holds the lock, it prints `Waiting for /run/lock/modbus.lock` and blocks
+until the lock is released, the same as `flock` does.
+
+rackmond creates `/run/lock/modbus.lock` at startup and makes the legacy
+`/tmp/modbus_dynamo_solitonbeam.lock` a symlink to it, so both paths are the
+same lock.
+
+Still wrapping it in `flock /tmp/modbus_dynamo_solitonbeam.lock` (or
+`flock /run/lock/modbus.lock`) is harmless. `modbus-update.py` sees that it
+already inherited the lock from `flock` and uses that lock instead of waiting
+for it. The exception is `flock -o`, which closes its descriptor before running
+the command: `modbus-update.py` would then wait on its own parent forever.
+Don't combine the two.
+
+The old per-vendor scripts do **not** take the lock. They still have to be run as
+
+```
+flock /tmp/modbus_dynamo_solitonbeam.lock <old upgrade command>
+```
+
 ## The part that did not change
 
-Every firmware upgrade — old flow or new — must still be run under the bus lock:
-
-```
-flock /tmp/modbus_dynamo_solitonbeam.lock <upgrade command>
-```
-
-This guarantees exclusive access to the bus so no other service performs
-read/write operations on the modbus device mid-upgrade. `modbus-update.py` does
-**not** take the lock for you.
-
-The other unchanged warning: nothing validates that you are pointing a firmware
-image at a device that should receive it. The new flow removes the "wrong script
-for the vendor" class of mistake, but pointing it at the wrong *image* can still
-brick a device.
+Nothing validates that you are pointing a firmware image at a device that should
+receive it. The new flow removes the "wrong script for the vendor" class of
+mistake, but pointing it at the wrong *image* can still brick a device.
 
 ---
 
@@ -344,6 +361,9 @@ than one per vendor. Shelf and slot ranges above are ventura2's
   BBU 96, all HPR PMMs 68 — so the new flow always uses it. The wiki's two
   legacy escape hatches (very old Panasonic BBUs, and Delta PMMs on firmware
   below `1000`) stay on `orv3-device-update-mailbox.py --block-size 64`.
+* **The bus lock is automatic.** `modbus-update.py` takes
+  `/run/lock/modbus.lock` itself, dry runs included, since they read the
+  vendor off the device. See [The bus lock](#the-bus-lock).
 * **Monitoring suppression is automatic.** `modbus-update.py` wraps the whole
   update in `dev.suppress_monitoring()`, which pauses rackmond (or
   phosphor-modbus) polling of the device and, for devices behind a PMM, the

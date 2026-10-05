@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 
 import argparse
+import fcntl
+import os
 import re
 import sys
+from contextlib import contextmanager
 
 import manufacturers
 import orv3_device_update_mailbox
@@ -24,6 +27,58 @@ from modbus_monitor import get_rackmon_interface, RackmonMonitor
 from modbus_update_helper import auto_int
 from pyrmd import RackmonInterface as rmd
 from rpu_update_coolermaster import AALCV2_COMPONENTS
+
+# Tools which drive the modbus ports serialize against each other with
+# flock on this file. rackmond creates it at startup and points the
+# legacy /tmp/modbus_dynamo_solitonbeam.lock at it.
+MODBUS_LOCK = "/run/lock/modbus.lock"
+
+
+def inherited_lock_fd(path):
+    """
+    A descriptor for the lock file this process was started with.
+
+    Callers used to have to wrap this script in
+    `flock /tmp/modbus_dynamo_solitonbeam.lock ...`, and some still do.
+    flock(1) holds the lock on a descriptor its command inherits, and
+    the /tmp path is a link to the same file, so opening the file afresh
+    and locking it would wait on our own parent forever. Locking the
+    inherited descriptor instead succeeds, as it is the one holding it.
+    """
+    try:
+        lock = os.stat(path)
+    except FileNotFoundError:
+        return None
+    for name in os.listdir("/proc/self/fd"):
+        try:
+            st = os.fstat(int(name))
+        except OSError:
+            # The descriptor listdir() read the directory through
+            continue
+        if (st.st_dev, st.st_ino) == (lock.st_dev, lock.st_ino):
+            return int(name)
+    return None
+
+
+@contextmanager
+def modbus_lock(path):
+    """Hold the modbus lock, waiting for whoever has it to let it go"""
+    fd = inherited_lock_fd(path)
+    inherited = fd is not None
+    if not inherited:
+        fd = os.open(path, os.O_RDONLY | os.O_CREAT, 0o644)
+    try:
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            print(f"Waiting for {path}", flush=True)
+            fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        # An inherited lock is our parent's to release, closing our own
+        # descriptor releases ours.
+        if not inherited:
+            os.close(fd)
 
 
 def _mailbox(variant):
@@ -343,6 +398,11 @@ def get_device(name, uaddr, force_direct=False):
 def main():
     args = parse_args()
 
+    with modbus_lock(MODBUS_LOCK):
+        run(args)
+
+
+def run(args):
     device_type, dev = get_device(args.name, args.address, args.force_direct)
     with dev.suppress_monitoring():
         device_vendor = manufacturers.get_manufacturer(device_type, dev)

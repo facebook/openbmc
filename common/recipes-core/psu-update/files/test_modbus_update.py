@@ -1,6 +1,9 @@
+import fcntl
 import importlib.util
 import io
 import os
+import tempfile
+import threading
 import unittest
 from contextlib import contextmanager
 from unittest.mock import MagicMock, patch
@@ -543,7 +546,101 @@ class TestGetPhosphorModbusDevice(unittest.TestCase):
                 mu.get_pmodbus_config("BBU_1_2")
 
 
+def is_locked(path):
+    """Whether someone other than this descriptor holds the lock"""
+    fd = os.open(path, os.O_RDONLY)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BlockingIOError:
+        return True
+    finally:
+        os.close(fd)
+    return False
+
+
+class TestModbusLock(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.path = os.path.join(tmp.name, "modbus.lock")
+        self.legacy = os.path.join(tmp.name, "modbus_dynamo_solitonbeam.lock")
+
+    def hold(self, path):
+        """Take the lock the way flock(1) does, on a descriptor we inherit"""
+        fd = os.open(path, os.O_RDONLY | os.O_CREAT)
+        self.addCleanup(os.close, fd)
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        return fd
+
+    def enter_within(self, path, timeout=5):
+        """Enter and leave modbus_lock(), failing rather than hanging"""
+        states = []
+
+        def enter():
+            with patch("sys.stdout", new=io.StringIO()):
+                with mu.modbus_lock(path):
+                    states.append(is_locked(path))
+
+        thread = threading.Thread(target=enter, daemon=True)
+        thread.start()
+        thread.join(timeout)
+        self.assertFalse(thread.is_alive(), "modbus_lock() did not return")
+        return states
+
+    def test_the_lock_is_held_inside_and_released_after(self):
+        with mu.modbus_lock(self.path):
+            self.assertTrue(is_locked(self.path))
+        self.assertFalse(is_locked(self.path))
+
+    def test_the_lock_file_is_created_if_missing(self):
+        with mu.modbus_lock(self.path):
+            self.assertTrue(os.path.exists(self.path))
+
+    def test_the_lock_is_released_when_the_update_fails(self):
+        with self.assertRaises(RuntimeError):
+            with mu.modbus_lock(self.path):
+                raise RuntimeError("update failed")
+        self.assertFalse(is_locked(self.path))
+
+    def test_waits_for_another_holder(self):
+        other = os.open(self.path, os.O_RDONLY | os.O_CREAT)
+        fcntl.flock(other, fcntl.LOCK_EX)
+        # Not inherited: modbus_lock() would find it in /proc/self/fd.
+        with patch.object(mu, "inherited_lock_fd", return_value=None):
+            threading.Timer(0.2, os.close, [other]).start()
+            with patch("sys.stdout", new=io.StringIO()) as out:
+                with mu.modbus_lock(self.path):
+                    self.assertTrue(is_locked(self.path))
+        self.assertIn(f"Waiting for {self.path}", out.getvalue())
+
+    def test_a_lock_the_caller_took_is_used_rather_than_waited_on(self):
+        self.hold(self.path)
+        self.assertEqual(self.enter_within(self.path), [True])
+        # It is the caller's lock, so it is still held on the way out.
+        self.assertTrue(is_locked(self.path))
+
+    def test_a_lock_taken_through_the_legacy_path_is_the_same_lock(self):
+        open(self.path, "w").close()
+        os.symlink(self.path, self.legacy)
+        fd = self.hold(self.legacy)
+        self.assertEqual(mu.inherited_lock_fd(self.path), fd)
+        self.assertEqual(self.enter_within(self.path), [True])
+
+    def test_no_inherited_descriptor(self):
+        self.assertIsNone(mu.inherited_lock_fd(self.path))
+        open(self.path, "w").close()
+        self.assertIsNone(mu.inherited_lock_fd(self.path))
+
+
 class TestMain(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.lock = os.path.join(tmp.name, "modbus.lock")
+        patcher = patch.object(mu, "MODBUS_LOCK", self.lock)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
     def run_main(self, argv, dev, vendor="delta"):
         with patch("sys.argv", ["modbus-update.py"] + argv):
             with patch.object(mu, "get_device", return_value=("PSU", dev)):
@@ -561,6 +658,29 @@ class TestMain(unittest.TestCase):
         _, get_updater, _ = self.run_main(["-n", "PSU_1_1", "fw.bin"], dev)
         self.assertEqual(dev.suppressed, 1)
         get_updater.return_value.assert_called_once_with(dev, "fw.bin")
+
+    def test_the_device_is_only_touched_with_the_modbus_lock_held(self):
+        held = []
+
+        def get_manufacturer(device_type, dev):
+            held.append(is_locked(self.lock))
+            return "delta"
+
+        def update(dev, path):
+            held.append(is_locked(self.lock))
+
+        update.description = "update"
+        with patch("sys.argv", ["modbus-update.py", "-n", "PSU_1_1", "fw.bin"]):
+            with patch.object(mu, "get_device", return_value=("PSU", FakeDev())):
+                with patch.object(
+                    mu.manufacturers, "get_manufacturer", get_manufacturer
+                ):
+                    with patch.object(mu, "get_updater", return_value=update):
+                        with patch("sys.stdout", new=io.StringIO()):
+                            mu.main()
+        # Once reading the vendor out, once for the update itself.
+        self.assertEqual(held, [True, True])
+        self.assertFalse(is_locked(self.lock))
 
     def test_what_is_about_to_be_updated_is_printed_first(self):
         # The same lines a dry run prints, so a log of a real update

@@ -11,7 +11,13 @@ from modbus_common import (
     ModbusUnknownError,
     PMM_PAUSE_REG,
 )
-from modbus_monitor import MonitorChain, NullMonitor, PmmMonitor, RackmonMonitor
+from modbus_monitor import (
+    get_rackmon_interface,
+    MonitorChain,
+    NullMonitor,
+    PmmMonitor,
+    RackmonMonitor,
+)
 
 # Re-exported so users of this module keep catching the exceptions off
 # the backend they imported. Both backends raise the same classes.
@@ -63,8 +69,9 @@ class Modbus:
     device is not behind one.
 
     monitor is who polls this device and has to be told to stand off
-    while we drive it, rackmond unless told otherwise. Whatever it is,
-    the PMM's own monitoring is suppressed along with it.
+    while we drive it, rackmond on the device's port unless told
+    otherwise. Whatever it is, the PMM's own monitoring is suppressed
+    along with it.
     """
 
     def __init__(self, dev_addr, monitor=None):
@@ -78,7 +85,9 @@ class Modbus:
             self.pmm = Modbus(self.pmm_addr, monitor=NullMonitor())
 
         if monitor is None:
-            monitor = RackmonMonitor()
+            # Only the port the device is on. A device rackmond does not
+            # know has no interface, and falls back to pausing all of it.
+            monitor = RackmonMonitor(get_rackmon_interface(self.dev_addr))
         self.monitor = MonitorChain(monitor, PmmMonitor(self.pmm) if self.pmm else None)
 
     def __str__(self):

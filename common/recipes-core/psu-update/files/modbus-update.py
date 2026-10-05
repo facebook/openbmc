@@ -310,7 +310,7 @@ def make_rackmon_device(uaddr, config, force_direct=False):
     addr = config["devAddress"]
     parity = config["parity"]
     devpath = get_rackmon_interface(uaddr)
-    return ModbusDirect(addr, baud, parity, devpath, RackmonMonitor())
+    return ModbusDirect(addr, baud, parity, devpath, RackmonMonitor(devpath))
 
 
 def get_rackmon_device_by_addr(uaddr, force_direct=False):

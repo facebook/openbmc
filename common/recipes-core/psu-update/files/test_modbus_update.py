@@ -455,6 +455,7 @@ class TestGetRackmonDeviceByAddr(unittest.TestCase):
                 with patch.object(mu, "ModbusDirect") as modbus:
                     with patch.object(mu, "RackmonMonitor") as monitor:
                         mu.get_rackmon_device_by_addr(0x1E0, True)
+        monitor.assert_called_once_with("/dev/ttyRS485-1")
         modbus.assert_called_once_with(
             0xE0, 19200, "EVEN", "/dev/ttyRS485-1", monitor.return_value
         )
@@ -486,6 +487,7 @@ class TestMakeRackmonDevice(unittest.TestCase):
                 with patch.object(mu, "RackmonMonitor") as monitor:
                     dev = mu.make_rackmon_device(0x1E0, self.config(), True)
         get_interface.assert_called_once_with(0x1E0)
+        monitor.assert_called_once_with("/dev/ttyRS485-1")
         modbus.assert_called_once_with(
             0xE0, 19200, "EVEN", "/dev/ttyRS485-1", monitor.return_value
         )

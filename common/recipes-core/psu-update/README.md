@@ -366,7 +366,10 @@ than one per vendor. Shelf and slot ranges above are ventura2's
 * **Monitoring suppression is automatic.** `modbus-update.py` wraps the whole
   update in `dev.suppress_monitoring()`, which pauses rackmond (or
   phosphor-modbus) polling of the device and, for devices behind a PMM, the
-  PMM's own polling — on exit including exit by exception.
+  PMM's own polling — on exit including exit by exception. Only the port the
+  device is on is paused; rackmond keeps monitoring the other ports through
+  the update. A device rackmond has no interface for falls back to pausing
+  all of rackmond, as before.
 * **On the rackmon path, rackmon says what the device is.** A name only ever
   decides *where to look*; the type comes from the register map rackmon matched
   when it probed the device. That is what tells `ORV3_HPR_PSU` from `ORV3_PSU`,

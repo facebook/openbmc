@@ -35,7 +35,7 @@ LOCAL_URI = " \
     file://007_debug_logs.sh \
     file://008_host_postcode.sh \
     file://009_running_processes.sh \
-    file://010_mterm_rotated.sh \
+    file://010_mterm_logs.sh \
     file://011_boot_info.sh \
     file://dump_gpios.sh \
     file://i2c_scan.sh \
@@ -54,7 +54,7 @@ SHOWTECH_RULES_FILES = " \
     007_debug_logs.sh \
     008_host_postcode.sh \
     009_running_processes.sh \
-    010_mterm_rotated.sh \
+    010_mterm_logs.sh \
     011_boot_info.sh \
     "
 

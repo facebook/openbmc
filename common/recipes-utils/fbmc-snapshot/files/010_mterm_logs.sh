@@ -18,7 +18,15 @@
 # Boston, MA 02110-1301 USA
 #
 
-# The live log comes from 101_x86_mTerm.sh; collect the rotated copies here.
+# Collects the live log and any rotated copies.
+echo -e "\n##### x86 mTerm Logs #####"
+# /var/log is a symlink to /var/volatile/log, so both names reach the same file.
+if [ ! -f /var/log/mTerm_wedge.log ]; then
+	echo "/var/log/mTerm_wedge.log doesn't exist!"
+else
+	cat /var/log/mTerm_wedge.log
+fi
+
 echo -e "\n##### x86 mTerm Rotated Logs #####"
 shopt -s nullglob
 found=0

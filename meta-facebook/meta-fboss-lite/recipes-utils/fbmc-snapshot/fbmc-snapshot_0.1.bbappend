@@ -19,7 +19,6 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 LOCAL_URI += "\
     file://100_weutil.sh \
-    file://101_x86_mTerm.sh \
     file://102_oob_status.sh \
     file://oob-status.sh \
     "
@@ -37,7 +36,6 @@ do_install:append() {
     install -d ${showtech_rules_dir}
 
     install -m 755 100_weutil.sh ${showtech_rules_dir}/100_weutil.sh
-    install -m 755 101_x86_mTerm.sh ${showtech_rules_dir}/101_x86_mTerm.sh
 }
 
 RDEPENDS:${PN} += "bash"

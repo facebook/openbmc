@@ -1092,7 +1092,7 @@ int CpldLatticeManager::readUserCode(uint32_t& userCode)
     const auto isXO5 = chip == "LFMXO5-25";
     size_t resSize;
     std::array<uint8_t, 6> data{};
-    if (isSOFTIP)
+    if (isSOFTIP && ((softIpVersion & 0xF0) == 0x10))
     {
         appendCrc16(cmd);
         resSize = 6;

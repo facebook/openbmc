@@ -41,7 +41,7 @@
         "/usr/bin/kv get server_cpu_ppin persistent",
         "/usr/bin/kv get server_restart_cause persistent",
         "/usr/bin/kv get sysfw_ver_server persistent",
-        "/usr/local/bin/show_tech.py",
+        "/usr/local/bin/showtech",
         "/usr/bin/kv get pim2_type",
         "/usr/bin/kv get pim3_type",
         "/usr/bin/kv get pim4_type",

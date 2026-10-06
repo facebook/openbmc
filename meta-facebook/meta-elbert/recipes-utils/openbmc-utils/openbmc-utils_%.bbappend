@@ -47,7 +47,6 @@ LOCAL_URI += "\
     file://dpm_utils.sh \
     file://dpm_ver.sh \
     file://pim_dpm_dump.sh \
-    file://show_tech.py \
     file://psu_show_tech.py \
     file://pim_types.sh \
     file://elbert_pim.layout \
@@ -86,7 +85,6 @@ OPENBMC_UTILS_FILES += " \
     dpm_utils.sh \
     pim_dpm_dump.sh \
     dpm_ver.sh \
-    show_tech.py \
     psu_show_tech.py \
     pim_types.sh \
     peutil \
@@ -202,8 +200,6 @@ do_install_board() {
 do_install:append() {
   do_install_bios_layout
   do_install_board
-
-  ln -s show_tech.py ${D}/usr/local/bin/showtech
 }
 
 FILES:${PN} += "${sysconfdir}"

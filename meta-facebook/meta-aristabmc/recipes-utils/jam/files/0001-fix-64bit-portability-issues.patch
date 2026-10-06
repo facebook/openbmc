@@ -1,0 +1,211 @@
+From 9897466683a94528dbdee4cfae7576fc1f19f721 Mon Sep 17 00:00:00 2001
+From: Adam Calabrigo <adamc@arista.com>
+Date: Tue, 2 Sep 2026 00:00:00 +0000
+Subject: [PATCH] jam: fix 64-bit portability issues
+
+The JAM STAPL player assumes sizeof(long) == 4 in several places,
+which breaks on 64-bit platforms (e.g. AST2700). Fix by:
+
+- Reversing byte-packing loops in jamarray.c so that in-place
+  expansion from char to long doesn't clobber unread bytes.
+- Using a fixed 4-byte count instead of sizeof(in_length) when
+  reading compressed data headers in jamcomp.c.
+- Replacing pointer-to-integer casts with proper jam_malloc
+  allocations in jamexec.c literal array conversion.
+- Using uint32_t for 32-bit packing/masking operations.
+- Sizing workspace buffers based on sizeof(long) rather than
+  hardcoded byte counts.
+
+Upstream-Status: Inappropriate [internal code]
+---
+ jamarray.c |  4 +--
+ jamcomp.c  |  3 ++-
+ jamexec.c  | 65 ++++++++++++++++++++++++++----------------------------
+ 3 files changed, 36 insertions(+), 36 deletions(-)
+
+diff --git a/jamarray.c b/jamarray.c
+index a2af910c9a6..c9561d4ab79 100644
+--- a/jamarray.c
++++ b/jamarray.c
+@@ -702,7 +702,7 @@ JAM_RETURN_TYPE jam_extract_bool_compressed
+ 				((heap_record->dimension & 0x1f) ? 1 : 0);
+ 			ch_data = (char *)heap_data;
+ 
+-			for (word = 0; word < out_size; ++word)
++			for (word = out_size - 1; word >= 0; --word)
+ 			{
+ 				heap_data[word] =
+ 					((((long) ch_data[(word * 4) + 3]) & 0xff) << 24L) |
+@@ -1252,7 +1252,7 @@ JAM_RETURN_TYPE jam_read_bool_compressed
+ 				((heap_record->dimension & 0x1f) ? 1 : 0);
+ 			ch_data = (char *)heap_data;
+ 
+-			for (word = 0; word < out_size; ++word)
++			for (word = out_size - 1; word >= 0; --word)
+ 			{
+ 				heap_data[word] =
+ 					((((long) ch_data[(word * 4) + 3]) & 0xff) << 24L) |
+diff --git a/jamcomp.c b/jamcomp.c
+index 1f09b479514..ee4486fe21e 100644
+--- a/jamcomp.c
++++ b/jamcomp.c
+@@ -20,6 +20,7 @@
+ 
+ #define	SHORT_BITS			16
+ #define	CHAR_BITS			8
++#define	DATA_BYTES			4
+ #define	DATA_BLOB_LENGTH	3
+ #define	MATCH_DATA_LENGTH	8192
+ 
+@@ -140,7 +141,7 @@ long jam_uncompress
+ 	for (i = 0; i < out_length; ++i) out[i] = 0;
+ 
+ 	/* Read number of bytes in data. */
+-	for (i = 0; i < sizeof (in_length); ++i) 
++	for (i = 0; i < DATA_BYTES; ++i)
+ 	{
+ 		data_length = data_length | ((long) jam_read_packed(in, in_length, CHAR_BITS) << (long) (i * CHAR_BITS));
+ 	}
+diff --git a/jamexec.c b/jamexec.c
+index 0835a5a7335..83783779558 100644
+--- a/jamexec.c
++++ b/jamexec.c
+@@ -33,6 +33,7 @@
+ #include "jamarray.h"
+ #include "jamjtag.h"
+ #include "jamcomp.h"
++#include <stdint.h>
+ 
+ /****************************************************************************/
+ /*																			*/
+@@ -1028,7 +1029,8 @@ JAM_RETURN_TYPE jam_convert_literal_binary
+ 
+ 		if (rev_index > 1)
+ 		{
+-			long_ptr = (long *) (((long) statement_buffer) & 0xfffffffcL);
++			long_ptr = (long *) jam_malloc(rev_index * sizeof(long));
++			jam_literal_aca_buffer[arg] = long_ptr;
+ 		}
+ 		else if (arg < JAMC_MAX_LITERAL_ARRAYS)
+ 		{
+@@ -1038,21 +1040,21 @@ JAM_RETURN_TYPE jam_convert_literal_binary
+ 		{
+ 			status = JAMC_INTERNAL_ERROR;
+ 		}
+-	}
+ 
+-	if (status == JAMC_SUCCESS)
+-	{
+-		for (i = 0; i < rev_index; ++i)
++		if ((status == JAMC_SUCCESS) && (long_ptr != NULL))
+ 		{
+-			j = i * 4;
+-			long_ptr[i] = (
+-				(((long)statement_buffer[j + 3] << 24L) & 0xff000000L) |
+-				(((long)statement_buffer[j + 2] << 16L) & 0x00ff0000L) |
+-				(((long)statement_buffer[j + 1] <<  8L) & 0x0000ff00L) |
+-				(((long)statement_buffer[j    ]       ) & 0x000000ffL));
+-		}
++			for (i = 0; i < rev_index; ++i)
++			{
++				j = i * 4;
++				long_ptr[i] = (uint32_t)(
++					(((uint32_t)statement_buffer[j + 3] << 24L) & 0xff000000U) |
++					(((uint32_t)statement_buffer[j + 2] << 16L) & 0x00ff0000U) |
++					(((uint32_t)statement_buffer[j + 1] <<  8L) & 0x0000ff00U) |
++					(((uint32_t)statement_buffer[j    ]       ) & 0x000000ffU));
++			}
+ 
+-		if (output_buffer != NULL) *output_buffer = long_ptr;
++			if (output_buffer != NULL) *output_buffer = long_ptr;
++		}
+ 	}
+ 
+ 	return (status);
+@@ -1177,7 +1179,8 @@ JAM_RETURN_TYPE jam_convert_literal_array
+ 
+ 		if (rev_index > 1)
+ 		{
+-			long_ptr = (long *) (((long) statement_buffer) & 0xfffffffcL);
++			long_ptr = (long *) jam_malloc(rev_index * sizeof(long));
++			jam_literal_aca_buffer[arg] = long_ptr;
+ 		}
+ 		else if (arg < JAMC_MAX_LITERAL_ARRAYS)
+ 		{
+@@ -1187,21 +1190,21 @@ JAM_RETURN_TYPE jam_convert_literal_array
+ 		{
+ 			status = JAMC_INTERNAL_ERROR;
+ 		}
+-	}
+ 
+-	if (status == JAMC_SUCCESS)
+-	{
+-		for (i = 0; i < rev_index; ++i)
++		if ((status == JAMC_SUCCESS) && (long_ptr != NULL))
+ 		{
+-			j = i * 4;
+-			long_ptr[i] = (
+-				(((long)statement_buffer[j + 3] << 24L) & 0xff000000L) |
+-				(((long)statement_buffer[j + 2] << 16L) & 0x00ff0000L) |
+-				(((long)statement_buffer[j + 1] <<  8L) & 0x0000ff00L) |
+-				(((long)statement_buffer[j    ]       ) & 0x000000ffL));
+-		}
++			for (i = 0; i < rev_index; ++i)
++			{
++				j = i * 4;
++				long_ptr[i] = (uint32_t)(
++					(((uint32_t)statement_buffer[j + 3] << 24L) & 0xff000000U) |
++					(((uint32_t)statement_buffer[j + 2] << 16L) & 0x00ff0000U) |
++					(((uint32_t)statement_buffer[j + 1] <<  8L) & 0x0000ff00U) |
++					(((uint32_t)statement_buffer[j    ]       ) & 0x000000ffU));
++			}
+ 
+-		if (output_buffer != NULL) *output_buffer = long_ptr;
++			if (output_buffer != NULL) *output_buffer = long_ptr;
++		}
+ 	}
+ 
+ 	return (status);
+@@ -1318,11 +1321,11 @@ JAM_RETURN_TYPE jam_convert_literal_aca
+ 		if ((uncompressed_length + 4) < 0x10000L)
+ 		{
+ 			buffer = jam_malloc((unsigned int) (uncompressed_length + 4));
+-			long_ptr = (long *) jam_malloc((unsigned int) (uncompressed_length + 4));
++			long_ptr = (long *) jam_malloc((unsigned int) (((uncompressed_length + 3) / 4) * sizeof(long)));
+ 		}
+ #else
+ 		buffer = jam_malloc(uncompressed_length + 4);
+-		long_ptr = (long *) jam_malloc(uncompressed_length + 4);
++		long_ptr = (long *) jam_malloc(((uncompressed_length + 3) / 4) * sizeof(long));
+ #endif
+ 
+ 		if ((buffer == NULL) || (long_ptr == NULL))
+@@ -3557,7 +3560,7 @@ JAM_RETURN_TYPE jam_process_drscan_compare
+ 	  if (tdi_data != NULL) {
+ 		 temp_array = tdi_data;
+ 	  } else {
+-		temp_array = jam_get_temp_workspace((count_value >> 3) + 4);
++		temp_array = jam_get_temp_workspace(((count_value + 31) / 32) * sizeof(long));
+ 
+ 		if (temp_array == NULL)
+ 		{
+@@ -5164,7 +5167,7 @@ JAM_RETURN_TYPE jam_process_irscan_compare
+ 	*/
+ 	if (status == JAMC_SUCCESS)
+ 	{
+-		temp_array = jam_get_temp_workspace((count_value >> 3) + 4);
++		temp_array = jam_get_temp_workspace(((count_value + 31) / 32) * sizeof(long));
+ 
+ 		if (temp_array == NULL)
+ 		{
+@@ -7888,7 +7891,7 @@ JAM_RETURN_TYPE jam_process_vector_compare
+ 	*/
+ 	if (status == JAMC_SUCCESS)
+ 	{
+-		temp_array = jam_get_temp_workspace((signal_count >> 3) + 4);
++		temp_array = jam_get_temp_workspace(((signal_count + 31) / 32) * sizeof(long));
+ 
+ 		if (temp_array == NULL)
+ 		{
+-- 
+2.50.1

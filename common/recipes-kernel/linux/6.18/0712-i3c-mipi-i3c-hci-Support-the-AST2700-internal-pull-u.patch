@@ -1,0 +1,196 @@
+From d7ff76631efc776677af84553e58f77607d6fd06 Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Tue, 1 Sep 2026 19:35:35 +0800
+Subject: [PATCH] i3c: mipi-i3c-hci: Support the AST2700 internal pull-ups
+
+Boards that do not populate external I3C pull-up resistors can use the
+pull-ups built into the AST2700 PHY.
+
+When bias-pull-up is present, determine the pin voltage domain from
+the pinctrl-0 group already selected for the bus and enable the
+internal pull-ups on both SCL and SDA at the requested strength.
+Currently only pinctrl-0 is inspected; a node selecting its group
+through a different pinctrl state is not yet supported. The controller
+reset clears the SW force control register, so the internal pull-ups
+start disabled unless bias-pull-up requests otherwise. A resistance
+with no entry in the domain's table, or an unrecognized pinctrl-0
+group, is rejected with an error.
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+Assisted-by: Claude:claude-fable-5
+Link: https://lore.kernel.org/r/20260901-b4-i3c-hci-ast2700-v1-8-19909e7cbd7e@aspeedtech.com
+---
+ .../i3c/master/mipi-i3c-hci/vendor_aspeed.c   | 118 ++++++++++++++++++
+ .../i3c/master/mipi-i3c-hci/vendor_aspeed.h   |   6 +
+ 2 files changed, 124 insertions(+)
+
+diff --git a/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.c b/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.c
+index 182111b857c9..d28d5680d326 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.c
++++ b/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.c
+@@ -12,6 +12,7 @@
+ #include <linux/i3c/master.h>
+ #include <linux/io.h>
+ #include <linux/of.h>
++#include <linux/string.h>
+ 
+ #include "hci.h"
+ #include "vendor_aspeed.h"
+@@ -86,6 +87,100 @@ static u32 aspeed_i3c_get_sdr_ctrl0_reg(struct i3c_hci *hci)
+ 	return ASPEED_I3C_PHY_I3C_SDR4_CTRL0;
+ }
+ 
++struct aspeed_i3c_pullup_ohms {
++	u32 ohms;
++	u8 code;
++};
++
++/* SW_FORCE_CTRL strength selector to resistance, by pin voltage domain */
++static const struct aspeed_i3c_pullup_ohms aspeed_i3c_pullup_hv[] = {
++	{ 600, 1 },
++	{ 470, 2 },
++	{ 400, 3 },
++};
++
++static const struct aspeed_i3c_pullup_ohms aspeed_i3c_pullup_lv[] = {
++	{ 750, 1 },
++	{ 550, 2 },
++	{ 317, 3 },
++	{ 400, 4 },
++	{ 261, 5 },
++	{ 231, 6 },
++	{ 177, 7 },
++};
++
++/* pinctrl-0 group names for each pin voltage domain */
++static const char * const aspeed_i3c_hv_groups[] = {
++	"HVI3C0", "HVI3C1", "HVI3C2", "HVI3C3",
++	"HVI3C12", "HVI3C13", "HVI3C14", "HVI3C15",
++};
++
++static const char * const aspeed_i3c_lv_groups[] = {
++	"I3C4", "I3C5", "I3C6", "I3C7",
++	"I3C8", "I3C9", "I3C10", "I3C11",
++};
++
++static int aspeed_i3c_pin_is_hv(struct i3c_hci *hci, bool *is_hv)
++{
++	struct device_node *np = hci->master.dev.of_node;
++	struct device_node *state;
++	const char *group;
++	int ret, i;
++
++	state = of_parse_phandle(np, "pinctrl-0", 0);
++	if (!state)
++		return -ENODEV;
++
++	ret = of_property_read_string(state, "groups", &group);
++	if (ret)
++		goto put_state;
++
++	for (i = 0; i < ARRAY_SIZE(aspeed_i3c_hv_groups); i++) {
++		if (!strcmp(group, aspeed_i3c_hv_groups[i])) {
++			*is_hv = true;
++			goto put_state;
++		}
++	}
++
++	for (i = 0; i < ARRAY_SIZE(aspeed_i3c_lv_groups); i++) {
++		if (!strcmp(group, aspeed_i3c_lv_groups[i])) {
++			*is_hv = false;
++			goto put_state;
++		}
++	}
++
++	dev_err(&hci->master.dev, "unrecognized pinctrl-0 group \"%s\"\n",
++		group);
++	ret = -EINVAL;
++
++put_state:
++	of_node_put(state);
++	return ret;
++}
++
++static int aspeed_i3c_pullup_code(struct i3c_hci *hci, bool is_hv, u32 ohms)
++{
++	const struct aspeed_i3c_pullup_ohms *map;
++	size_t i, n;
++
++	if (is_hv) {
++		map = aspeed_i3c_pullup_hv;
++		n = ARRAY_SIZE(aspeed_i3c_pullup_hv);
++	} else {
++		map = aspeed_i3c_pullup_lv;
++		n = ARRAY_SIZE(aspeed_i3c_pullup_lv);
++	}
++
++	for (i = 0; i < n; i++)
++		if (map[i].ohms == ohms)
++			return map[i].code;
++
++	dev_err(&hci->master.dev,
++		"unsupported internal pull-up %u ohms for %s-voltage domain\n",
++		ohms, is_hv ? "high" : "low");
++	return -EINVAL;
++}
++
+ int aspeed_i3c_phy_init(struct i3c_hci *hci)
+ {
+ 	u16 hcnt, lcnt, total_cnt, min_tbit_cnt, cas_lcnt, cas_cnt, cbp_cnt;
+@@ -95,6 +190,7 @@ int aspeed_i3c_phy_init(struct i3c_hci *hci)
+ 	struct device_node *np = hci->master.dev.of_node;
+ 	u32 sdr_ctrl0_reg, ctrl0, ctrl1, ctrl2;
+ 	unsigned long core_rate, period_ns;
++	u32 pullup_ohms = 0;
+ 
+ 	core_rate = clk_get_rate(to_aspeed_vendor_data(hci)->clk);
+ 	if (!core_rate) {
+@@ -257,6 +353,28 @@ int aspeed_i3c_phy_init(struct i3c_hci *hci)
+ 
+ 	aspeed_i3c_phy_write(hci, ASPEED_I3C_PHY_PULLUP_EN, 0);
+ 
++	of_property_read_u32(np, "bias-pull-up", &pullup_ohms);
++	if (pullup_ohms) {
++		int ret, strength;
++		bool is_hv;
++
++		ret = aspeed_i3c_pin_is_hv(hci, &is_hv);
++		if (ret)
++			return ret;
++
++		strength = aspeed_i3c_pullup_code(hci, is_hv, pullup_ohms);
++		if (strength < 0)
++			return strength;
++
++		aspeed_i3c_phy_write(hci, ASPEED_I3C_PHY_SW_FORCE_CTRL,
++				     ASPEED_I3C_PHY_SW_FORCE_SCL_PU_EN |
++				     ASPEED_I3C_PHY_SW_FORCE_SDA_PU_EN |
++				     FIELD_PREP(ASPEED_I3C_PHY_SW_FORCE_SCL_PU_VAL,
++						strength) |
++				     FIELD_PREP(ASPEED_I3C_PHY_SW_FORCE_SDA_PU_VAL,
++						strength));
++	}
++
+ 	hcnt = aspeed_i3c_ns_to_cnt(ASPEED_I3C_PHY_OD_DAP_NS, period_ns);
+ 	aspeed_i3c_phy_write(hci, ASPEED_I3C_PHY_I3C_OD_CTRL4,
+ 			     FIELD_PREP(ASPEED_I3C_PHY_I3C_OD_CTRL4_DAP, hcnt));
+diff --git a/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.h b/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.h
+index 7147abea830d..80938c580800 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.h
++++ b/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.h
+@@ -83,6 +83,12 @@ unsigned int aspeed_i3c_avail_tx_entries(struct i3c_hci *hci);
+ #define   ASPEED_INTR_SUM_PIO			BIT(1)
+ #define   ASPEED_INTR_SUM_CAP			BIT(0)
+ 
++#define ASPEED_I3C_PHY_SW_FORCE_CTRL		0x04
++#define   ASPEED_I3C_PHY_SW_FORCE_SCL_PU_EN	BIT(28)
++#define   ASPEED_I3C_PHY_SW_FORCE_SDA_PU_EN	BIT(24)
++#define   ASPEED_I3C_PHY_SW_FORCE_SCL_PU_VAL	GENMASK(10, 8)
++#define   ASPEED_I3C_PHY_SW_FORCE_SDA_PU_VAL	GENMASK(2, 0)
++
+ #define ASPEED_I3C_PHY_I2C_FM_CTRL0		0x08
+ #define   ASPEED_I3C_PHY_I2C_FM_CTRL0_CAS	GENMASK(26, 16)
+ #define   ASPEED_I3C_PHY_I2C_FM_CTRL0_SU_STO	GENMASK(10, 0)
+-- 
+2.53.0
+

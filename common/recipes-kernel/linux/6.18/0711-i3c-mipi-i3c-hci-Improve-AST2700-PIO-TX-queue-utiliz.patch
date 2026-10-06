@@ -1,0 +1,136 @@
+From 75cc1dc9eac43012fe1a631fa12b90959bc8196c Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Tue, 1 Sep 2026 19:35:34 +0800
+Subject: [PATCH] i3c: mipi-i3c-hci: Improve AST2700 PIO TX queue utilization
+
+The PIO TX path only pushes data once STAT_TX_THLD reports that
+tx_thresh_size words are free, with the threshold set to half the TX
+FIFO. The FIFO is therefore never filled beyond half from a single
+wait, which under-utilizes the queue, and sending buffers larger than
+the threshold makes software race against the hardware draining the
+FIFO, resulting in an unstable flow.
+
+The AST2700 vendor block exposes the TX FIFO read and write pointers,
+which give the exact number of free entries. When is_aspeed() is true,
+size each burst from those pointers, using CIRC_SPACE() to derive the
+free-entry count, so the FIFO can be used up to its full depth. Other
+controllers keep the existing threshold-based flow.
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+Assisted-by: Claude:claude-fable-5
+Link: https://lore.kernel.org/r/20260901-b4-i3c-hci-ast2700-v1-7-19909e7cbd7e@aspeedtech.com
+---
+ drivers/i3c/master/mipi-i3c-hci/pio.c         | 25 ++++++++++++++++---
+ .../i3c/master/mipi-i3c-hci/vendor_aspeed.c   | 11 ++++++++
+ .../i3c/master/mipi-i3c-hci/vendor_aspeed.h   |  6 +++++
+ 3 files changed, 38 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/i3c/master/mipi-i3c-hci/pio.c b/drivers/i3c/master/mipi-i3c-hci/pio.c
+index 830bb209b40c..02ec8c1c9700 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/pio.c
++++ b/drivers/i3c/master/mipi-i3c-hci/pio.c
+@@ -15,6 +15,7 @@
+ #include "cmd.h"
+ #include "ibi.h"
+ #include "pio.h"
++#include "vendor_aspeed.h"
+ 
+ 
+ /*
+@@ -231,11 +232,23 @@ static bool hci_pio_do_tx(struct i3c_hci *hci, struct hci_pio_data *pio)
+ 	p += (xfer->data_len - xfer->data_left) / 4;
+ 
+ 	while (xfer->data_left >= 4) {
+-		/* bail out if FIFO free space is below set threshold */
+-		if (!(pio_reg_read(INTR_STATUS) & STAT_TX_THLD))
++		unsigned int avail = pio->tx_thresh_size;
++
++		if (is_aspeed(hci)) {
++			/*
++			 * The vendor FIFO pointers give the exact free space,
++			 * allowing better TX FIFO utilization than the
++			 * threshold status.
++			 */
++			avail = aspeed_i3c_avail_tx_entries(hci);
++			if (!avail)
++				return false;
++		} else if (!(pio_reg_read(INTR_STATUS) & STAT_TX_THLD)) {
++			/* bail out if FIFO free space is below set threshold */
+ 			return false;
++		}
+ 		/* we can fill up to that TX threshold */
+-		nr_words = min(xfer->data_left / 4, pio->tx_thresh_size);
++		nr_words = min(xfer->data_left / 4, avail);
+ 		/* push data into the FIFO */
+ 		xfer->data_left -= nr_words * 4;
+ 		dev_dbg(&hci->master.dev, "now %d left %d",
+@@ -252,8 +265,12 @@ static bool hci_pio_do_tx(struct i3c_hci *hci, struct hci_pio_data *pio)
+ 		 * also get some bytes past the actual buffer but no one
+ 		 * should care as they won't be sent out.
+ 		 */
+-		if (!(pio_reg_read(INTR_STATUS) & STAT_TX_THLD))
++		if (is_aspeed(hci)) {
++			if (!aspeed_i3c_avail_tx_entries(hci))
++				return false;
++		} else if (!(pio_reg_read(INTR_STATUS) & STAT_TX_THLD)) {
+ 			return false;
++		}
+ 		dev_dbg(&hci->master.dev, "trailing %d", xfer->data_left);
+ 		pio_reg_write(XFER_DATA_PORT, *p);
+ 		xfer->data_left = 0;
+diff --git a/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.c b/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.c
+index e32dea0d5fc3..182111b857c9 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.c
++++ b/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.c
+@@ -6,6 +6,7 @@
+  */
+ 
+ #include <linux/bitfield.h>
++#include <linux/circ_buf.h>
+ #include <linux/clk.h>
+ #include <linux/device.h>
+ #include <linux/i3c/master.h>
+@@ -45,6 +46,16 @@ void aspeed_i3c_ibi_grow_threshold(struct i3c_hci *hci, unsigned int ibi_max_len
+ 			 FIELD_PREP(ASPEED_I3C_IBI_TERMINATE_LEN, ibi_max_len));
+ }
+ 
++/* Free TX FIFO entries derived from the vendor FIFO read/write pointers */
++unsigned int aspeed_i3c_avail_tx_entries(struct i3c_hci *hci)
++{
++	u32 ptr = aspeed_i3c_read(hci, ASPEED_I3C_QUEUE_PTR0);
++	unsigned int w = FIELD_GET(ASPEED_I3C_QUEUE_PTR0_TX_W, ptr);
++	unsigned int r = FIELD_GET(ASPEED_I3C_QUEUE_PTR0_TX_R, ptr);
++
++	return CIRC_SPACE(w, r, ASPEED_I3C_TX_QUEUE_ENTRIES);
++}
++
+ static void aspeed_i3c_phy_write(struct i3c_hci *hci, u32 reg, u32 val)
+ {
+ 	writel(val, to_aspeed_vendor_data(hci)->phy_regs + reg);
+diff --git a/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.h b/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.h
+index 84afb2bec956..7147abea830d 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.h
++++ b/drivers/i3c/master/mipi-i3c-hci/vendor_aspeed.h
+@@ -52,6 +52,7 @@ u32 aspeed_i3c_read(struct i3c_hci *hci, u32 reg);
+ void aspeed_i3c_write(struct i3c_hci *hci, u32 reg, u32 val);
+ int aspeed_i3c_phy_init(struct i3c_hci *hci);
+ void aspeed_i3c_ibi_grow_threshold(struct i3c_hci *hci, unsigned int ibi_max_len);
++unsigned int aspeed_i3c_avail_tx_entries(struct i3c_hci *hci);
+ 
+ #define ASPEED_I3C_CTRL				0x00
+ #define ASPEED_I3C_CTRL_CLOCK_STALL_EN		BIT(14)
+@@ -68,6 +69,11 @@ void aspeed_i3c_ibi_grow_threshold(struct i3c_hci *hci, unsigned int ibi_max_len
+ #define ASPEED_I3C_DAA_INDEX2			0x18
+ #define ASPEED_I3C_DAA_INDEX3			0x1c
+ 
++#define ASPEED_I3C_QUEUE_PTR0			0xd8
++#define   ASPEED_I3C_QUEUE_PTR0_TX_R		GENMASK(24, 20)
++#define   ASPEED_I3C_QUEUE_PTR0_TX_W		GENMASK(16, 12)
++#define ASPEED_I3C_TX_QUEUE_ENTRIES		32
++
+ #define ASPEED_I3C_INTR_STATUS			0xe0
+ #define ASPEED_I3C_INTR_STATUS_ENABLE		0xe4
+ #define ASPEED_I3C_INTR_SIGNAL_ENABLE		0xe8
+-- 
+2.53.0
+

@@ -1,0 +1,64 @@
+From 744af0578db045717a517c5474aafb4cd29968de Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Tue, 1 Sep 2026 19:35:30 +0800
+Subject: [PATCH] i3c: mipi-i3c-hci: Add a quirk for 64-bit DMA addressing
+
+The HCI ring base registers are 64 bits wide by specification, but not
+every implementation wires the upper half, so the driver leaves the
+platform device at the default 32-bit DMA mask unless told otherwise.
+ASPEED platforms place all of DRAM above the 32-bit boundary
+(0x4_00000000), so under the default mask every dma_alloc_coherent()
+call for the DMA rings fails.
+
+Add HCI_QUIRK_DMA_64BIT for controllers whose DMA engine drives the
+full address width, and declare a 64-bit streaming and coherent DMA
+mask for them before the rings are allocated.
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+Assisted-by: Claude:claude-fable-5
+Link: https://lore.kernel.org/r/20260901-b4-i3c-hci-ast2700-v1-3-19909e7cbd7e@aspeedtech.com
+---
+ drivers/i3c/master/mipi-i3c-hci/core.c | 7 +++++++
+ drivers/i3c/master/mipi-i3c-hci/hci.h  | 1 +
+ 2 files changed, 8 insertions(+)
+
+diff --git a/drivers/i3c/master/mipi-i3c-hci/core.c b/drivers/i3c/master/mipi-i3c-hci/core.c
+index c9a8876a5e77..1d9a15e1ca4a 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/core.c
++++ b/drivers/i3c/master/mipi-i3c-hci/core.c
+@@ -9,6 +9,7 @@
+ 
+ #include <linux/bitfield.h>
+ #include <linux/device.h>
++#include <linux/dma-mapping.h>
+ #include <linux/errno.h>
+ #include <linux/i3c/master.h>
+ #include <linux/interrupt.h>
+@@ -823,6 +824,12 @@ static int i3c_hci_probe(struct platform_device *pdev)
+ 	hci->master.dev.init_name = dev_name(&pdev->dev);
+ 
+ 	hci->quirks = (unsigned long)device_get_match_data(&pdev->dev);
++	if (hci->quirks & HCI_QUIRK_DMA_64BIT) {
++		ret = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64));
++		if (ret)
++			return dev_err_probe(&pdev->dev, ret,
++					     "cannot set DMA mask\n");
++	}
+ 
+ 	ret = i3c_hci_init(hci);
+ 	if (ret)
+diff --git a/drivers/i3c/master/mipi-i3c-hci/hci.h b/drivers/i3c/master/mipi-i3c-hci/hci.h
+index 0a85374540ca..fc9103dde101 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/hci.h
++++ b/drivers/i3c/master/mipi-i3c-hci/hci.h
+@@ -146,6 +146,7 @@ struct i3c_hci_dev_data {
+ #define HCI_QUIRK_RESP_BUF_THLD		BIT(4)  /* Set resp buf thld to 0 for AMD platforms */
+ #define HCI_QUIRK_DMA_ABORT_REQUIRES_PIO_RESET	BIT(8)  /* Do PIO queue SW resets after DMA abort */
+ #define HCI_QUIRK_DAT_INDEX_IS_ADDR	BIT(10)  /* DAT entries are indexed by device address */
++#define HCI_QUIRK_DMA_64BIT		BIT(11)  /* Controller DMA supports 64-bit addressing */
+ 
+ 
+ /* global functions */
+-- 
+2.53.0
+

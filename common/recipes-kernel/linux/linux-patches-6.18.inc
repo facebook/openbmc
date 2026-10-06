@@ -113,6 +113,25 @@ SRC_URI:append = " \
 "
 
 #
+# AST2700 I3C patches
+#
+SRC_URI:append = " \
+    file://0700-i3c-mipi-i3c-hci-Fix-race-in-DMA-ring-enqueue-for-pa.patch \
+    file://0701-i3c-mipi-i3c-hci-Fix-race-between-DMA-ring-dequeue-a.patch \
+    file://0702-i3c-mipi-i3c-hci-Consolidate-common-xfer-processing-.patch \
+    file://0703-i3c-mipi-i3c-hci-Fix-race-in-DMA-error-handling-in-i.patch \
+    file://0704-i3c-mipi-i3c-hci-Add-DMA-ring-abort-reset-quirk-for-.patch \
+    file://0705-dt-bindings-i3c-Document-the-AST2700-I3C-controller.patch \
+    file://0706-i3c-mipi-i3c-hci-Support-address-indexed-DAT-slots.patch \
+    file://0707-i3c-mipi-i3c-hci-Add-a-quirk-for-64-bit-DMA-addressi.patch \
+    file://0708-i3c-mipi-i3c-hci-Add-a-quirk-to-clear-the-TX-start-t.patch \
+    file://0709-i3c-mipi-i3c-hci-Add-support-for-the-AST2700-I3C-con.patch \
+    file://0710-i3c-mipi-i3c-hci-Program-AST2700-IBI-termination-thr.patch \
+    file://0711-i3c-mipi-i3c-hci-Improve-AST2700-PIO-TX-queue-utiliz.patch \
+    file://0712-i3c-mipi-i3c-hci-Support-the-AST2700-internal-pull-u.patch \
+"
+
+#
 # RTC drivers
 #
 SRC_URI:append = " \

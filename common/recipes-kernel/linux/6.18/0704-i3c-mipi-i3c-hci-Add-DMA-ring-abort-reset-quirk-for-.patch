@@ -1,0 +1,88 @@
+From 09b696584eaeffd2fa314ce5dcd9f6b7a4ffb3bd Mon Sep 17 00:00:00 2001
+From: Adrian Hunter <adrian.hunter@intel.com>
+Date: Wed, 3 Jun 2026 12:07:46 +0300
+Subject: [PATCH] i3c: mipi-i3c-hci: Add DMA ring abort/reset quirk for Intel
+ controllers
+
+commit 29ca24fbd2efa7ade70e342f3ebb4a7071353b62 upstream.
+
+Some Intel I3C HCI controllers cannot reliably restart a DMA ring after an
+ABORT.  Additional queue resets are required to recover, and must be
+performed using PIO reset bits even while operating in DMA mode.
+
+This behavior is non-standard.  Introduce a controller quirk to opt into
+the required PIO queue resets after a DMA ring abort, and enable it for
+Intel LPSS I3C controllers.
+
+Signed-off-by: Adrian Hunter <adrian.hunter@intel.com>
+Reviewed-by: Frank Li <Frank.Li@nxp.com>
+Link: https://patch.msgid.link/20260603090754.16252-10-adrian.hunter@intel.com
+Signed-off-by: Alexandre Belloni <alexandre.belloni@bootlin.com>
+
+[backport: drop the intel-lpss-i3c platform_device_id hunk, v6.18 has no
+ such entry, and adjust hci.h/dma.c context]
+---
+ drivers/i3c/master/mipi-i3c-hci/core.c | 12 ++++++++++++
+ drivers/i3c/master/mipi-i3c-hci/dma.c  |  4 ++++
+ drivers/i3c/master/mipi-i3c-hci/hci.h  |  2 ++
+ 3 files changed, 18 insertions(+)
+
+diff --git a/drivers/i3c/master/mipi-i3c-hci/core.c b/drivers/i3c/master/mipi-i3c-hci/core.c
+index a57b5575ca85..0f5fc0ed6dc7 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/core.c
++++ b/drivers/i3c/master/mipi-i3c-hci/core.c
+@@ -179,6 +179,18 @@ void mipi_i3c_hci_pio_reset(struct i3c_hci *hci)
+ 	reg_write(RESET_CONTROL, RX_FIFO_RST | TX_FIFO_RST | RESP_QUEUE_RST);
+ }
+ 
++#define ALL_QUEUES_RST (CMD_QUEUE_RST | RESP_QUEUE_RST | RX_FIFO_RST | TX_FIFO_RST | IBI_QUEUE_RST)
++
++void mipi_i3c_hci_pio_reset_all_queues(struct i3c_hci *hci)
++{
++	u32 regval;
++
++	reg_write(RESET_CONTROL, ALL_QUEUES_RST);
++	if (readx_poll_timeout_atomic(reg_read, RESET_CONTROL, regval,
++				      !(regval & ALL_QUEUES_RST), 0, 20))
++		dev_err(&hci->master.dev, "%s: Reset queues failed\n", __func__);
++}
++
+ /* located here rather than dct.c because needed bits are in core reg space */
+ void mipi_i3c_hci_dct_index_reset(struct i3c_hci *hci)
+ {
+diff --git a/drivers/i3c/master/mipi-i3c-hci/dma.c b/drivers/i3c/master/mipi-i3c-hci/dma.c
+index 3cc5ba2b0eb7..01e8e6803c74 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/dma.c
++++ b/drivers/i3c/master/mipi-i3c-hci/dma.c
+@@ -506,6 +506,10 @@ static bool hci_dma_dequeue_xfer(struct i3c_hci *hci,
+ 
+ 	spin_lock_irq(&hci->lock);
+ 
++	if ((hci->quirks & HCI_QUIRK_DMA_ABORT_REQUIRES_PIO_RESET) &&
++	    (rh_reg_read(RING_STATUS) & RING_STATUS_ABORTED))
++		mipi_i3c_hci_pio_reset_all_queues(hci);
++
+ 	for (i = 0; i < n; i++) {
+ 		struct hci_xfer *xfer = xfer_list + i;
+ 		int idx = xfer->ring_entry;
+diff --git a/drivers/i3c/master/mipi-i3c-hci/hci.h b/drivers/i3c/master/mipi-i3c-hci/hci.h
+index 93295c82c0b1..4ec3ec21d7f5 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/hci.h
++++ b/drivers/i3c/master/mipi-i3c-hci/hci.h
+@@ -144,11 +144,13 @@ struct i3c_hci_dev_data {
+ #define HCI_QUIRK_PIO_MODE	BIT(2)  /* Set PIO mode for AMD platforms */
+ #define HCI_QUIRK_OD_PP_TIMING		BIT(3)  /* Set OD and PP timings for AMD platforms */
+ #define HCI_QUIRK_RESP_BUF_THLD		BIT(4)  /* Set resp buf thld to 0 for AMD platforms */
++#define HCI_QUIRK_DMA_ABORT_REQUIRES_PIO_RESET	BIT(8)  /* Do PIO queue SW resets after DMA abort */
+ 
+ 
+ /* global functions */
+ void mipi_i3c_hci_resume(struct i3c_hci *hci);
+ void mipi_i3c_hci_pio_reset(struct i3c_hci *hci);
++void mipi_i3c_hci_pio_reset_all_queues(struct i3c_hci *hci);
+ void mipi_i3c_hci_dct_index_reset(struct i3c_hci *hci);
+ void amd_set_od_pp_timing(struct i3c_hci *hci);
+ void amd_set_resp_buf_thld(struct i3c_hci *hci);
+-- 
+2.53.0
+

@@ -1,0 +1,311 @@
+From e1d1d4a387b6975d4c62d7cc98d6d569a79aa625 Mon Sep 17 00:00:00 2001
+From: Billy Tsai <billy_tsai@aspeedtech.com>
+Date: Tue, 1 Sep 2026 19:35:31 +0800
+Subject: [PATCH] i3c: mipi-i3c-hci: Add a quirk to clear the TX start
+ threshold
+
+The DATA_TX_START_THLD field of the PIO data buffer threshold register
+holds off the start of a TX transfer until the FIFO holds a set amount
+of data, which in PIO mode cuts down on the number of software writes.
+The field resets to 0x1, requiring at least (2 ^ 2) DWORDs (16 bytes)
+in the FIFO before transmission starts.
+
+HCI controllers that support both PIO and DMA can expose the two as
+separate register blocks; nothing in the specification says selecting
+DMA mode disables the PIO block's own gating logic. On ASPEED
+platforms it doesn't: DATA_TX_START_THLD still holds up transfer
+start regardless of which mode feeds the FIFO, and in DMA mode that
+threshold is never satisfied for some transfer sizes:
+
+ - 1-4 bytes: uses the Immediate Data Transfer Command.
+ - 13+ bytes: since the hardware fetches data in 4-byte chunks, a
+   13-byte transfer fetches 16 bytes into the FIFO and reaches the
+   threshold.
+ - 5-12 bytes: the threshold is never reached and the transfer stalls.
+
+Add HCI_QUIRK_TX_START_THLD to clear the field whenever DMA mode is
+selected. The clear lives in i3c_hci_set_io_mode() rather than in
+probe so the reset-and-restore recovery path also reapplies it after
+a controller soft reset. Move the PIO Access Area register and
+bitfield definitions from pio.c to a new pio.h so this quirk can reuse
+PIO_DATA_BUFFER_THLD_CTRL and DATA_TX_START_THLD instead of
+redefining them.
+
+Signed-off-by: Billy Tsai <billy_tsai@aspeedtech.com>
+Assisted-by: Claude:claude-fable-5
+Link: https://lore.kernel.org/r/20260901-b4-i3c-hci-ast2700-v1-4-19909e7cbd7e@aspeedtech.com
+---
+ drivers/i3c/master/mipi-i3c-hci/core.c |  14 ++++
+ drivers/i3c/master/mipi-i3c-hci/hci.h  |   1 +
+ drivers/i3c/master/mipi-i3c-hci/pio.c  |  87 +-------------------
+ drivers/i3c/master/mipi-i3c-hci/pio.h  | 109 +++++++++++++++++++++++++
+ 4 files changed, 125 insertions(+), 86 deletions(-)
+ create mode 100644 drivers/i3c/master/mipi-i3c-hci/pio.h
+
+diff --git a/drivers/i3c/master/mipi-i3c-hci/core.c b/drivers/i3c/master/mipi-i3c-hci/core.c
+index 1d9a15e1ca4a..a9de51ef8e5c 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/core.c
++++ b/drivers/i3c/master/mipi-i3c-hci/core.c
+@@ -22,6 +22,7 @@
+ #include "ext_caps.h"
+ #include "cmd.h"
+ #include "dat.h"
++#include "pio.h"
+ 
+ 
+ /*
+@@ -766,6 +767,19 @@ static int i3c_hci_init(struct i3c_hci *hci)
+ 		} else {
+ 			hci->io = &mipi_i3c_hci_dma;
+ 			dev_dbg(&hci->master.dev, "Using DMA\n");
++
++			/*
++			 * On the ASPEED AST2700 the TX start threshold gates transfer start
++			 * even in DMA mode. Clear it so DMA transfers are not held back
++			 * waiting for a PIO FIFO level that will never be reached.
++			 */
++			if ((hci->quirks & HCI_QUIRK_TX_START_THLD) && hci->PIO_regs) {
++				void __iomem *thld_reg = hci->PIO_regs + PIO_DATA_BUFFER_THLD_CTRL;
++				u32 thld_val = readl(thld_reg);
++
++				thld_val &= ~DATA_TX_START_THLD;
++				writel(thld_val, thld_reg);
++			}
+ 		}
+ 	}
+ 
+diff --git a/drivers/i3c/master/mipi-i3c-hci/hci.h b/drivers/i3c/master/mipi-i3c-hci/hci.h
+index fc9103dde101..c121fd06d048 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/hci.h
++++ b/drivers/i3c/master/mipi-i3c-hci/hci.h
+@@ -147,6 +147,7 @@ struct i3c_hci_dev_data {
+ #define HCI_QUIRK_DMA_ABORT_REQUIRES_PIO_RESET	BIT(8)  /* Do PIO queue SW resets after DMA abort */
+ #define HCI_QUIRK_DAT_INDEX_IS_ADDR	BIT(10)  /* DAT entries are indexed by device address */
+ #define HCI_QUIRK_DMA_64BIT		BIT(11)  /* Controller DMA supports 64-bit addressing */
++#define HCI_QUIRK_TX_START_THLD		BIT(12)  /* Clear TX start threshold in DMA mode */
+ 
+ 
+ /* global functions */
+diff --git a/drivers/i3c/master/mipi-i3c-hci/pio.c b/drivers/i3c/master/mipi-i3c-hci/pio.c
+index cb3232c9cf33..830bb209b40c 100644
+--- a/drivers/i3c/master/mipi-i3c-hci/pio.c
++++ b/drivers/i3c/master/mipi-i3c-hci/pio.c
+@@ -14,6 +14,7 @@
+ #include "hci.h"
+ #include "cmd.h"
+ #include "ibi.h"
++#include "pio.h"
+ 
+ 
+ /*
+@@ -23,92 +24,6 @@
+ #define pio_reg_read(r)		readl(hci->PIO_regs + (PIO_##r))
+ #define pio_reg_write(r, v)	writel(v, hci->PIO_regs + (PIO_##r))
+ 
+-#define PIO_COMMAND_QUEUE_PORT		0x00
+-#define PIO_RESPONSE_QUEUE_PORT		0x04
+-#define PIO_XFER_DATA_PORT		0x08
+-#define PIO_IBI_PORT			0x0c
+-
+-#define PIO_QUEUE_THLD_CTRL		0x10
+-#define QUEUE_IBI_STATUS_THLD		GENMASK(31, 24)
+-#define QUEUE_IBI_DATA_THLD		GENMASK(23, 16)
+-#define QUEUE_RESP_BUF_THLD		GENMASK(15, 8)
+-#define QUEUE_CMD_EMPTY_BUF_THLD	GENMASK(7, 0)
+-
+-#define PIO_DATA_BUFFER_THLD_CTRL	0x14
+-#define DATA_RX_START_THLD		GENMASK(26, 24)
+-#define DATA_TX_START_THLD		GENMASK(18, 16)
+-#define DATA_RX_BUF_THLD		GENMASK(10, 8)
+-#define DATA_TX_BUF_THLD		GENMASK(2, 0)
+-
+-#define PIO_QUEUE_SIZE			0x18
+-#define TX_DATA_BUFFER_SIZE		GENMASK(31, 24)
+-#define RX_DATA_BUFFER_SIZE		GENMASK(23, 16)
+-#define IBI_STATUS_SIZE			GENMASK(15, 8)
+-#define CR_QUEUE_SIZE			GENMASK(7, 0)
+-
+-#define PIO_INTR_STATUS			0x20
+-#define PIO_INTR_STATUS_ENABLE		0x24
+-#define PIO_INTR_SIGNAL_ENABLE		0x28
+-#define PIO_INTR_FORCE			0x2c
+-#define STAT_TRANSFER_BLOCKED		BIT(25)
+-#define STAT_PERR_RESP_UFLOW		BIT(24)
+-#define STAT_PERR_CMD_OFLOW		BIT(23)
+-#define STAT_PERR_IBI_UFLOW		BIT(22)
+-#define STAT_PERR_RX_UFLOW		BIT(21)
+-#define STAT_PERR_TX_OFLOW		BIT(20)
+-#define STAT_ERR_RESP_QUEUE_FULL	BIT(19)
+-#define STAT_WARN_RESP_QUEUE_FULL	BIT(18)
+-#define STAT_ERR_IBI_QUEUE_FULL		BIT(17)
+-#define STAT_WARN_IBI_QUEUE_FULL	BIT(16)
+-#define STAT_ERR_RX_DATA_FULL		BIT(15)
+-#define STAT_WARN_RX_DATA_FULL		BIT(14)
+-#define STAT_ERR_TX_DATA_EMPTY		BIT(13)
+-#define STAT_WARN_TX_DATA_EMPTY		BIT(12)
+-#define STAT_TRANSFER_ERR		BIT(9)
+-#define STAT_WARN_INS_STOP_MODE		BIT(7)
+-#define STAT_TRANSFER_ABORT		BIT(5)
+-#define STAT_RESP_READY			BIT(4)
+-#define STAT_CMD_QUEUE_READY		BIT(3)
+-#define STAT_IBI_STATUS_THLD		BIT(2)
+-#define STAT_RX_THLD			BIT(1)
+-#define STAT_TX_THLD			BIT(0)
+-
+-#define PIO_QUEUE_CUR_STATUS		0x38
+-#define CUR_IBI_Q_LEVEL			GENMASK(28, 20)
+-#define CUR_RESP_Q_LEVEL		GENMASK(18, 10)
+-#define CUR_CMD_Q_EMPTY_LEVEL		GENMASK(8, 0)
+-
+-#define PIO_DATA_BUFFER_CUR_STATUS	0x3c
+-#define CUR_RX_BUF_LVL			GENMASK(26, 16)
+-#define CUR_TX_BUF_LVL			GENMASK(10, 0)
+-
+-/*
+- * Handy status bit combinations
+- */
+-
+-#define STAT_LATENCY_WARNINGS		(STAT_WARN_RESP_QUEUE_FULL | \
+-					 STAT_WARN_IBI_QUEUE_FULL | \
+-					 STAT_WARN_RX_DATA_FULL | \
+-					 STAT_WARN_TX_DATA_EMPTY | \
+-					 STAT_WARN_INS_STOP_MODE)
+-
+-#define STAT_LATENCY_ERRORS		(STAT_ERR_RESP_QUEUE_FULL | \
+-					 STAT_ERR_IBI_QUEUE_FULL | \
+-					 STAT_ERR_RX_DATA_FULL | \
+-					 STAT_ERR_TX_DATA_EMPTY)
+-
+-#define STAT_PROG_ERRORS		(STAT_TRANSFER_BLOCKED | \
+-					 STAT_PERR_RESP_UFLOW | \
+-					 STAT_PERR_CMD_OFLOW | \
+-					 STAT_PERR_IBI_UFLOW | \
+-					 STAT_PERR_RX_UFLOW | \
+-					 STAT_PERR_TX_OFLOW)
+-
+-#define STAT_ALL_ERRORS			(STAT_TRANSFER_ABORT | \
+-					 STAT_TRANSFER_ERR | \
+-					 STAT_LATENCY_ERRORS | \
+-					 STAT_PROG_ERRORS)
+-
+ struct hci_pio_dev_ibi_data {
+ 	struct i3c_generic_ibi_pool *pool;
+ 	unsigned int max_len;
+diff --git a/drivers/i3c/master/mipi-i3c-hci/pio.h b/drivers/i3c/master/mipi-i3c-hci/pio.h
+new file mode 100644
+index 000000000000..72318961e991
+--- /dev/null
++++ b/drivers/i3c/master/mipi-i3c-hci/pio.h
+@@ -0,0 +1,109 @@
++/* SPDX-License-Identifier: BSD-3-Clause */
++/*
++ * Copyright (c) 2020, MIPI Alliance, Inc.
++ *
++ * Author: Nicolas Pitre <npitre@baylibre.com>
++ *
++ * PIO Access Area register and bitfield definitions.
++ */
++
++#ifndef PIO_H
++#define PIO_H
++
++#define PIO_COMMAND_QUEUE_PORT		0x00
++#define PIO_RESPONSE_QUEUE_PORT		0x04
++#define PIO_XFER_DATA_PORT		0x08
++#define PIO_IBI_PORT			0x0c
++
++#define PIO_QUEUE_THLD_CTRL		0x10
++#define QUEUE_IBI_STATUS_THLD		GENMASK(31, 24)
++#define QUEUE_IBI_DATA_THLD		GENMASK(23, 16)
++#define QUEUE_RESP_BUF_THLD		GENMASK(15, 8)
++#define QUEUE_CMD_EMPTY_BUF_THLD	GENMASK(7, 0)
++
++#define PIO_DATA_BUFFER_THLD_CTRL	0x14
++#define DATA_TX_START_THLD		GENMASK(18, 16)
++#define DATA_RX_START_THLD		GENMASK(26, 24)
++#define DATA_RX_BUF_THLD		GENMASK(10, 8)
++#define DATA_TX_BUF_THLD		GENMASK(2, 0)
++
++#define PIO_QUEUE_SIZE			0x18
++#define TX_DATA_BUFFER_SIZE		GENMASK(31, 24)
++#define RX_DATA_BUFFER_SIZE		GENMASK(23, 16)
++#define IBI_STATUS_SIZE			GENMASK(15, 8)
++#define CR_QUEUE_SIZE			GENMASK(7, 0)
++
++#define PIO_ALT_QUEUE_SIZE		0x1C
++#define EXT_IBI_QUEUE_EN		BIT(28)
++#define ALT_RESP_QUEUE_EN		BIT(24)
++#define ALT_RESP_QUEUE_SIZE		GENMASK(7, 0)
++
++#define PIO_INTR_STATUS			0x20
++#define PIO_INTR_STATUS_ENABLE		0x24
++#define PIO_INTR_SIGNAL_ENABLE		0x28
++#define PIO_INTR_FORCE			0x2c
++#define STAT_TRANSFER_BLOCKED		BIT(25)
++#define STAT_PERR_RESP_UFLOW		BIT(24)
++#define STAT_PERR_CMD_OFLOW		BIT(23)
++#define STAT_PERR_IBI_UFLOW		BIT(22)
++#define STAT_PERR_RX_UFLOW		BIT(21)
++#define STAT_PERR_TX_OFLOW		BIT(20)
++#define STAT_ERR_RESP_QUEUE_FULL	BIT(19)
++#define STAT_WARN_RESP_QUEUE_FULL	BIT(18)
++#define STAT_ERR_IBI_QUEUE_FULL		BIT(17)
++#define STAT_WARN_IBI_QUEUE_FULL	BIT(16)
++#define STAT_ERR_RX_DATA_FULL		BIT(15)
++#define STAT_WARN_RX_DATA_FULL		BIT(14)
++#define STAT_ERR_TX_DATA_EMPTY		BIT(13)
++#define STAT_WARN_TX_DATA_EMPTY		BIT(12)
++#define STAT_TRANSFER_ERR		BIT(9)
++#define STAT_WARN_INS_STOP_MODE		BIT(7)
++#define STAT_TRANSFER_ABORT		BIT(5)
++#define STAT_RESP_READY			BIT(4)
++#define STAT_CMD_QUEUE_READY		BIT(3)
++#define STAT_IBI_STATUS_THLD		BIT(2)
++#define STAT_RX_THLD			BIT(1)
++#define STAT_TX_THLD			BIT(0)
++
++#define PIO_CONTROL			0x30
++#define PIO_CONTROL_ABORT		BIT(2)
++#define PIO_CONTROL_RS			BIT(1)
++#define PIO_CONTROL_ENABLE		BIT(0)
++
++#define PIO_QUEUE_CUR_STATUS		0x38
++#define CUR_IBI_Q_LEVEL			GENMASK(28, 20)
++#define CUR_RESP_Q_LEVEL		GENMASK(18, 10)
++#define CUR_CMD_Q_EMPTY_LEVEL		GENMASK(8, 0)
++
++#define PIO_DATA_BUFFER_CUR_STATUS	0x3c
++#define CUR_RX_BUF_LVL			GENMASK(26, 16)
++#define CUR_TX_BUF_LVL			GENMASK(10, 0)
++
++/*
++ * Handy status bit combinations
++ */
++
++#define STAT_LATENCY_WARNINGS		(STAT_WARN_RESP_QUEUE_FULL | \
++					 STAT_WARN_IBI_QUEUE_FULL | \
++					 STAT_WARN_RX_DATA_FULL | \
++					 STAT_WARN_TX_DATA_EMPTY | \
++					 STAT_WARN_INS_STOP_MODE)
++
++#define STAT_LATENCY_ERRORS		(STAT_ERR_RESP_QUEUE_FULL | \
++					 STAT_ERR_IBI_QUEUE_FULL | \
++					 STAT_ERR_RX_DATA_FULL | \
++					 STAT_ERR_TX_DATA_EMPTY)
++
++#define STAT_PROG_ERRORS		(STAT_TRANSFER_BLOCKED | \
++					 STAT_PERR_RESP_UFLOW | \
++					 STAT_PERR_CMD_OFLOW | \
++					 STAT_PERR_IBI_UFLOW | \
++					 STAT_PERR_RX_UFLOW | \
++					 STAT_PERR_TX_OFLOW)
++
++#define STAT_ALL_ERRORS			(STAT_TRANSFER_ABORT | \
++					 STAT_TRANSFER_ERR | \
++					 STAT_LATENCY_ERRORS | \
++					 STAT_PROG_ERRORS)
++
++#endif
+-- 
+2.53.0
+

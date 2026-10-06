@@ -41,12 +41,53 @@ wedge_is_cpu_personality() {
 }
 
 wedge_board_type() {
-    echo 'aristabmc'
+    echo "aristabmc"
+}
+
+wedge_product_eeprom_source() {
+    echo "chassis_eeprom"
+}
+
+wedge_product_name() {
+    local eeprom_source output
+    eeprom_source=$(wedge_product_eeprom_source)
+    output=$($WEUTIL_CMD "$eeprom_source" 2>/dev/null) || return 1
+    echo "$output" | awk -F ': ' '/^Product Name:/ { print $2; exit }'
 }
 
 wedge_board_rev() {
-    # FIXME if needed.
-    return 1
+    local eeprom_source
+    eeprom_source=$(wedge_product_eeprom_source)
+    board_rev=$($WEUTIL_CMD "$eeprom_source"|grep "Production State"|awk -F':' '{print $2}'|xargs)
+    case "$board_rev" in
+        1|"EVT")
+            echo "EVT"
+            ;;
+        2|"DVT")
+            echo "DVT"
+            ;;
+        3|"PVT")
+            echo "PVT"
+            ;;
+        4|"MP")
+            echo "MP"
+            ;;
+        *)
+            echo "Revision: unknown value [$board_rev]"
+            ;;
+    esac
+}
+
+wedge_board_type_rev() {
+    board_type=$(wedge_board_type)
+    board_rev=$(wedge_board_rev)
+
+    if [ -z "$board_type" ] || [ -z "$board_rev" ]; then
+        echo "Error: Unable to determine board type or revision!"
+        return 1
+    fi
+
+    echo "${board_type}_${board_rev}"
 }
 
 userver_power_is_on() {
@@ -142,7 +183,7 @@ bmc_mac_addr() {
 # shellcheck disable=SC2120
 userver_mac_addr() {
     local eeprom_source
-    eeprom_source="chassis_eeprom"
+    eeprom_source=$(wedge_product_eeprom_source)
     # support v4 or v5/v6 eeprom version
     $WEUTIL_CMD "$eeprom_source" | grep -E '(Extended|CPU) MAC B' | awk -F': ' '{print $2}'
 }

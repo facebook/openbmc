@@ -1,0 +1,118 @@
+From 0bde9b957189d4a7c3ee9652ae1231f3d1753ab6 Mon Sep 17 00:00:00 2001
+From: Rex Fu <rex.fu@amd.com>
+Date: Tue, 6 Oct 2026 16:59:18 +0800
+Subject: [PATCH] ARM: dts: aspeed: anacapa: Add LPDB fuse monitor GPIO
+ expander
+
+Add PCA9554 GPIO expanders for PDB fuse monitor signals on the
+Anacapa DVT board.
+
+The patch adds GPIO expander definitions for both the left and
+right PDBs under the i2c8 multiplexer and updates the associated
+gpio-line-names to reflect the final signal assignments.
+
+Signed-off-by: Rex Fu <rex.fu@amd.com>
+---
+ .../aspeed-bmc-facebook-anacapa-evt2.dts      | 52 +++++++++++++++----
+ 1 file changed, 42 insertions(+), 10 deletions(-)
+
+diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+index 601600cad..d773f0b06 100644
+--- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
++++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
+@@ -565,14 +565,14 @@ gpio@22 {
+ 				interrupts = <174 IRQ_TYPE_LEVEL_LOW>;
+ 
+ 				gpio-line-names =
+-					"RPDB_FAN_FULL_SPEED_R_N", "RPDB_I2C_TEMP75_U8_ALERT_R_N",
++					"RPDB_FAN_FULL_SPEED_R_N", "RPDB_I2C_TMP432_U8_ALERT_R_N",
+ 					"RPDB_I2C_TMP432_U29_ALERT_R_N", "RPDB_GLOBAL_WP",
+-					"RPDB_FAN_CT_FAN_FAIL_R_N", "",
+-					"", "",
++					"RPDB_FAN_CT_FAN_FAIL_R_N", "RPDB_VERID_A0",
++					"RPDB_VERID_A1", "RPDB_VERID_A2",
+ 					"RPDB_ALERT_P50V_HSC2_R_N", "RPDB_ALERT_P50V_HSC3_R_N",
+ 					"RPDB_ALERT_P50V_HSC4_R_N", "RPDB_ALERT_P50V_STBY_R_N",
+-					"RPDB_I2C_P12V_MB_VRM_ALERT_R_N",
+-					"RPDB_I2C_P12V_STBY_VRM_ALERT_R_N",
++					"RPDB_P12V_MB_VRM_ALERT_R_N",
++					"RPDB_P12V_STBY_VRM_ALERT_R_N",
+ 					"RPDB_PGD_P3V3_STBY_PWRGD_R",
+ 					"RPDB_P12V_STBY_VRM_PWRGD_BUF_R";
+ 			};
+@@ -592,12 +592,28 @@ gpio@24 {
+ 					"RPDB_PWRGD_P50V_STBY_SYS_BUF_R",
+ 					"RPDB_P50V_FAN5_R2_PG", "RPDB_P50V_FAN6_R2_PG",
+ 					"RPDB_P50V_FAN7_R2_PG", "RPDB_P50V_FAN8_R2_PG",
+-					"", "RPDB_FAN5_PRSNT_N_R",
++					"RPDB_SKU_ID0", "RPDB_FAN5_PRSNT_N_R",
+ 					"", "RPDB_FAN6_PRSNT_N_R",
+ 					"RPDB_FAN7_PRSNT_N_R", "RPDB_FAN8_PRSNT_N_R",
+ 					"", "";
+ 			};
+ 
++			gpio@38 {
++				compatible = "nxp,pca9554";
++				reg = <0x38>;
++				#gpio-cells = <2>;
++				gpio-controller;
++
++				gpio-line-names =
++					"RPDB_P50V_FUSE2_TVS1", "RPDB_P50V_FUSE2_TVS2",
++					"RPDB_P50V_FUSE3_TVS1", "RPDB_P50V_FUSE3_TVS2",
++					"RPDB_P50V_FUSE4_TVS1", "",
++					"", "";
++
++				interrupt-parent = <&sgpiom0>;
++				interrupts = <174 IRQ_TYPE_LEVEL_LOW>;
++			};
++
+ 			power-monitor@42 {
+ 				compatible = "lltc,ltc4287";
+ 				reg = <0x42>;
+@@ -642,12 +658,12 @@ gpio@22 {
+ 				gpio-line-names =
+ 					"LPDB_FAN_FULL_SPEED_R_N","LPDB_I2C_TEMP75_U8_ALERT_R_N",
+ 					"LPDB_I2C_TMP432_U29_ALERT_R_N","LPDB_GLOBAL_WP",
+-					"LPDB_FAN_CT_FAN_FAIL_R_N","",
+-					"","",
++					"LPDB_FAN_CT_FAN_FAIL_R_N","LPDB_VERID_A0",
++					"LPDB_VERID_A1","LPDB_VERID_A2",
+ 					"LPDB_ALERT_P50V_HSC0_R_N","LPDB_ALERT_P50V_HSC1_R_N",
+ 					"LPDB_ALERT_P50V_HSC5_R_N","LPDB_I2C_P12V_SW_VRM_ALERT_R_N",
+ 					"LPDB_EAM0_PRSNT_MOS_N_R","LPDB_EAM1_PRSNT_MOS_N_R",
+-					"LPDB_PWRGD_P50V_HSC5_SYS_R","";
++					"LPDB_PWRGD_P50V_HSC5_SYS_R","BARKLIP_PRSNT_N_R3";
+ 			};
+ 
+ 			fanctl0: fan-controller@23 {
+@@ -712,9 +728,25 @@ gpio@24 {
+ 					"LPDB_P50V_FAN4_R2_PG","LPDB_FAN0_PRSNT_N_R",
+ 					"LPDB_FAN1_PRSNT_N_R","LPDB_FAN2_PRSNT_N_R",
+ 					"LPDB_FAN3_PRSNT_N_R","LPDB_FAN4_PRSNT_N_R",
++					"LPDB_SKU_ID0","",
+ 					"","",
+-					"","",
++					"","LPDB_PG_P3V3_R";
++			};
++
++			gpio@38 {
++				compatible = "nxp,pca9554";
++				reg = <0x38>;
++				#gpio-cells = <2>;
++				gpio-controller;
++
++				gpio-line-names =
++					"LPDB_P50V_FUSE0_TVS1","LPDB_P50V_FUSE0_TVS2",
++					"LPDB_P50V_FUSE1_TVS1","LPDB_P50V_FUSE1_TVS2",
++					"LPDB_P50V_FUSE5_TVS1","",
+ 					"","";
++
++				interrupt-parent = <&sgpiom0>;
++				interrupts = <174 IRQ_TYPE_LEVEL_LOW>;
+ 			};
+ 
+ 			power-monitor@40 {
+-- 
+2.43.0
+

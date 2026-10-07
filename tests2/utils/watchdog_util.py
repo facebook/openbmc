@@ -23,58 +23,72 @@ from time import sleep
 from utils.shell_util import run_shell_cmd
 
 
+class UnknownSocError(Exception):
+    """Raised when the Aspeed SoC cannot be determined from the device tree."""
+
+
 class WatchdogUtils:
-    """Watchdog utility functions.
-    """
+    """Watchdog utility functions."""
 
     _DEVMEM_CMD = "/sbin/devmem"
     _WDT1_CTRL_REG = "0x1E78500C"
     _WDT1_STATUS_REG = "0x1E785000"
-    _FMC_WDT2_REG = "0x1E620064"
     _WDTCLI_CMD = "/usr/local/bin/wdtcli"
+    _DT_COMPATIBLE_PATH = "/proc/device-tree/compatible"
+    # Boot (second) watchdog enable register per SoC; keep in sync with
+    # common/recipes-utils/openbmc-utils/files/aspeed-g*/disable_watchdog.sh
+    _SECOND_WDT_ENABLE_REG = {
+        "ast2400": "0x1E78502C",  # WDT2 control
+        "ast2500": "0x1E78502C",  # WDT2 control
+        "ast2600": "0x1E620064",  # FMC_WDT2
+        "ast2700": "0x14C3740C",  # WDTA control
+    }
 
     def start_watchdog(self):
-        """Start the watchdog.
-        """
+        """Start the watchdog."""
         cmd = self._WDTCLI_CMD + " start"
         run_shell_cmd(cmd)
 
     def stop_watchdog(self):
-        """Stop the watchdog.
-        """
+        """Stop the watchdog."""
         cmd = self._WDTCLI_CMD + " stop"
         run_shell_cmd(cmd)
 
     def kick_watchdog(self):
-        """Kick the watchdog.
-        """
+        """Kick the watchdog."""
         cmd = self._WDTCLI_CMD + " kick"
         run_shell_cmd(cmd)
 
     def _read_ctrl_register(self):
-        """Read watchdog control register.
-        """
+        """Read watchdog control register."""
         cmd = self._DEVMEM_CMD + " " + self._WDT1_CTRL_REG
         cmd_out = run_shell_cmd(cmd)
         return int(cmd_out, 16)
 
     def _read_status_register(self):
-        """Read watchdog status register.
-        """
+        """Read watchdog status register."""
         cmd = self._DEVMEM_CMD + " " + self._WDT1_STATUS_REG
         cmd_out = run_shell_cmd(cmd)
         return int(cmd_out, 16)
 
-    def _read_fmc_wdt2_register(self):
-        """Read FMC WDT2 register.
+    def get_soc(self):
+        """Return the Aspeed SoC (e.g. "ast2500") from the device tree.
+
+        Raises UnknownSocError if it cannot be determined.
         """
-        cmd = self._DEVMEM_CMD + " " + self._FMC_WDT2_REG
-        cmd_out = run_shell_cmd(cmd)
-        return int(cmd_out, 16)
+        try:
+            with open(self._DT_COMPATIBLE_PATH, "rb") as f:
+                entries = f.read().decode("ascii", "ignore").rstrip("\0").split("\0")
+        except OSError as e:
+            raise UnknownSocError(f"cannot read {self._DT_COMPATIBLE_PATH}: {e}") from e
+        for entry in entries:
+            vendor, _, model = entry.partition(",")
+            if vendor == "aspeed" and model in self._SECOND_WDT_ENABLE_REG:
+                return model
+        raise UnknownSocError(f"no supported Aspeed SoC in compatible: {entries}")
 
     def _watchdog_is_ticking(self):
-        """Check if watchdog timer is ticking.
-        """
+        """Check if watchdog timer is ticking."""
         # NOTE: please make sure the watchdog is not touched by other
         # apps when this function is called; otherwise, the function
         # may return incorrect result because the watchdog might be
@@ -93,8 +107,7 @@ class WatchdogUtils:
             return False
 
     def watchdog_is_running(self, check_counter=False):
-        """Check if watchdog is running.
-        """
+        """Check if watchdog is running."""
         # Check if the last 2 bits of control register are set.
         #  - bit 0: set to enable watchdog.
         #  - bit 1: set to reboot system when timer expires.
@@ -108,7 +121,7 @@ class WatchdogUtils:
         return True
 
     def second_watchdog_is_running(self):
-        """Check if second watchdog is running.
-        """
-        reg_val = self._read_fmc_wdt2_register()
-        return (reg_val & 1) == 1
+        """Check if second watchdog is running."""
+        reg = self._SECOND_WDT_ENABLE_REG[self.get_soc()]
+        cmd_out = run_shell_cmd(self._DEVMEM_CMD + " " + reg)
+        return (int(cmd_out, 16) & 1) == 1

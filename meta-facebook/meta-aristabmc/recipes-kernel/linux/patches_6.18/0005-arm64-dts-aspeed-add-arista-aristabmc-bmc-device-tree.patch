@@ -15,8 +15,8 @@ Upstream-Status: Pending
 Signed-off-by: Bianca Giocas <bgiocas@arista.com>
 ---
  arch/arm64/boot/dts/aspeed/Makefile                            |   1 +
- .../boot/dts/aspeed/aspeed-bmc-facebook-aristabmc.dts          | 342 ++++++++++++++++++++
- 2 files changed, 343 insertions(+)
+ .../boot/dts/aspeed/aspeed-bmc-facebook-aristabmc.dts          | 344 ++++++++++++++++++++
+ 2 files changed, 345 insertions(+)
 
 diff --git a/arch/arm64/boot/dts/aspeed/Makefile b/arch/arm64/boot/dts/aspeed/Makefile
 --- a/arch/arm64/boot/dts/aspeed/Makefile
@@ -31,7 +31,7 @@ diff --git a/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-aristabmc.dts b/arch
 new file mode 100644
 --- /dev/null
 +++ b/arch/arm64/boot/dts/aspeed/aspeed-bmc-facebook-aristabmc.dts
-@@ -0,0 +1,342 @@
+@@ -0,0 +1,344 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +// Arista 2700 BMC Device Tree
 +
@@ -303,19 +303,21 @@ new file mode 100644
 +
 +&i2c3 {
 +	status = "okay";
-+};
++	clock-frequency = <400000>;
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_di2c3_default>;
 +
-+&i2c4 {
-+	status = "okay";
-+	aspeed,enable-byte;
-+
-+	/* SMB4: host SMBUS1/I2C3 SSIF link, BMC is the slave at 0x20. */
++	/* Host SSIF link; the BMC is the I2C slave at 0x20. */
 +	ssif-bmc@20 {
 +		compatible = "ssif-bmc";
 +		reg = <0x20>;
 +		status = "okay";
 +		timeout-ms = <5000>;
 +	};
++};
++
++&i2c4 {
++	status = "okay";
 +};
 +
 +&i2c5 {

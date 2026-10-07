@@ -23,4 +23,5 @@ IMAGE_INSTALL:append = " \
     ipmitool \
     kernel-module-cpld \
     libcpldupdate-dll-ioctl \
+    ssifd \
     "

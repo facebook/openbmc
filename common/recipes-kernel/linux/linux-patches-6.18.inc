@@ -96,14 +96,11 @@ SRC_URI:append = " \
     file://0601-hwmon-max31790-add-fanN_enable-for-all-fans.patch \
     file://0602-hwmon-pmbus-Add-xdpe132g5c-driver.patch \
     file://0603-hwmon-Add-net_brcm-driver.patch \
-    file://0604-Kernel6v5-Support-apml-driver.patch \
-    file://0605-apml-Add-support-for-SP7-platform.patch \
+    file://0604-misc-amd-apml-support-APML-driver.patch \
     file://0606-hwmon-pmbus-tda38640-Add-identification-for-PMBUS_VO.patch \
     file://0607-iio-adc-ltc2309-explicitly-assign-hex-values-to-chan.patch \
     file://0608-iio-adc-ltc2309-add-support-for-ltc2305.patch \
-    file://0609-amd-apml-sbrmi-update-SBRMI-revision-for-Venice.patch \
     file://0610-nfc-nxp-nci-Add-ISO15693-support.patch \
-    file://0611-misc-amd-apml-Add-Venice-B0-I3C-device-IDs.patch \
     file://0612-dt-bindings-trivial-devices-Add-adi-max20912-and-max.patch \
     file://0613-hwmon-pmbus-Add-driver-for-Analog-Devices-MAX20912-a.patch \
     file://0614-nfc-nxp-nci-treat-ENXIO-in-IRQ-thread-as-no-data-ava.patch \

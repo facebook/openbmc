@@ -103,8 +103,9 @@ userver_power_is_off() {
     ! userver_power_is_on
 }
 
-wait_until() {
-    local deadline="$1" msg="$2"
+wait_for() {
+    local timeout="$1" msg="$2"
+    local deadline=$(( SECONDS + timeout ))
     shift 2
     until "$@"; do
         if [ "$SECONDS" -ge "$deadline" ]; then
@@ -138,16 +139,14 @@ userver_power_on() {
     # Power on using the cpld
     echo 1 > "$CPU_CONTROL_SYSFS"
 
-    local deadline=$(( SECONDS + 15 ))
-    wait_until "$deadline" "userver failed to power on" userver_power_is_on
+    wait_for 15 "userver failed to power on" userver_power_is_on
 }
 
 userver_power_off() {
     # Power off using the cpld
     echo 0 > "$CPU_CONTROL_SYSFS"
 
-    local deadline=$(( SECONDS + 15 ))
-    wait_until "$deadline" "userver failed to power off" userver_power_is_off
+    wait_for 15 "userver failed to power off" userver_power_is_off
 }
 
 userver_reset() {

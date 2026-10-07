@@ -106,7 +106,7 @@ max([
 
   gpu_tray_gpu_linear(
     max([
-      all:hgx_hgx_gpu_sxm_1_temp_1_c_c,
+      all:hgx_hgx_gpu_sxm_1_temp_1_c,
       all:hgx_hgx_gpu_sxm_2_temp_1_c,
       all:hgx_hgx_gpu_sxm_3_temp_1_c,
       all:hgx_hgx_gpu_sxm_4_temp_1_c,

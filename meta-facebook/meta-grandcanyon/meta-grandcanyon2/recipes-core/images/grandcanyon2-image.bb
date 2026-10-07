@@ -47,7 +47,6 @@ IMAGE_INSTALL += " \
   gpiointrd \
   crashdump \
   me-util \
-  throttle-util \
   bios-util \
   ipmi-util \
   gpiod \

@@ -24,6 +24,8 @@ LOCAL_URI += "\
     file://bmc_board_rev.sh \
     file://board-utils.sh \
     file://cpld_ver.sh \
+    file://fpga_util.sh \
+    file://fpga_ver.sh \
     file://oob-mdio-util.sh \
     file://setup-gpio.sh \
     file://setup_i2c.sh \
@@ -35,6 +37,8 @@ OPENBMC_UTILS_FILES += "\
     bios_ver.sh \
     bmc_board_rev.sh \
     cpld_ver.sh \
+    fpga_util.sh \
+    fpga_ver.sh \
     oob-mdio-util.sh \
     switchToCpu.sh \
     "

@@ -21,6 +21,7 @@ LOCAL_URI += "\
     file://aristabmc_cpu_flash.layout \
     file://bios_util.sh \
     file://bios_ver.sh \
+    file://bmc_board_rev.sh \
     file://board-utils.sh \
     file://cpld_ver.sh \
     file://oob-mdio-util.sh \
@@ -32,6 +33,7 @@ LOCAL_URI += "\
 OPENBMC_UTILS_FILES += "\
     bios_util.sh \
     bios_ver.sh \
+    bmc_board_rev.sh \
     cpld_ver.sh \
     oob-mdio-util.sh \
     switchToCpu.sh \

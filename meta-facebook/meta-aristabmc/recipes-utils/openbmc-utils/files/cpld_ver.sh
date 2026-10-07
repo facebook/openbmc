@@ -1,4 +1,6 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+#!/bin/bash
+#
+# Copyright 2026-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,28 +16,22 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
+# Read the host CPU CPLD revision through its BMC I2C interface. The register
+# map defines minor revision at 0x00 and major revision at 0x01.
 
-FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
+set -euo pipefail
 
-LOCAL_URI += "\
-    file://aristabmc_cpu_flash.layout \
-    file://bios_util.sh \
-    file://board-utils.sh \
-    file://cpld_ver.sh \
-    file://oob-mdio-util.sh \
-    file://setup-gpio.sh \
-    file://setup_i2c.sh \
-    "
+readonly CPLD_BUS=12
+readonly CPLD_ADDRESS=0x43
+readonly CPLD_MINOR_REGISTER=0x00
+readonly CPLD_MAJOR_REGISTER=0x01
 
-OPENBMC_UTILS_FILES += "\
-    bios_util.sh \
-    cpld_ver.sh \
-    oob-mdio-util.sh \
-    "
-
-do_install:append() {
-    install -m 0644 ${UNPACKDIR}/aristabmc_cpu_flash.layout \
-        ${D}${sysconfdir}/aristabmc_cpu_flash.layout
+read_register() {
+    i2cget -f -y "$CPLD_BUS" "$CPLD_ADDRESS" "$1"
 }
 
-FILES:${PN} += "${sysconfdir}/aristabmc_cpu_flash.layout"
+minor="$(read_register "$CPLD_MINOR_REGISTER")"
+major="$(read_register "$CPLD_MAJOR_REGISTER")"
+
+printf 'CPU CPLD: %d.%d\n' "$((major))" "$((minor))"

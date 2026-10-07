@@ -6,8 +6,12 @@
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
+#include <ctime>
+#include <filesystem>
 #include <fstream>
 #include <initializer_list>
+#include <regex>
+#include <utility>
 
 bool debugFlag = false;
 CxlCoredumpCollector* g_collector = nullptr;
@@ -30,6 +34,7 @@ constexpr uint32_t coredumpPayloadAddr = 0x01F80010;
 constexpr uint32_t expectedSig         = 0xCDCD0100;
 constexpr uint16_t chunkSize           = 0x01f4;
 constexpr uint16_t headerSize          = 16;
+constexpr const char* coredumpDir      = "/var/log/cxl_crashdump/";
 
 //Convert pldmtool RX data to hex bytes
 std::vector<uint8_t> hexToBytes(std::string_view str)
@@ -116,8 +121,90 @@ uint8_t calculateProgressPercent(size_t completed, size_t total)
     return static_cast<uint8_t>(std::min<size_t>(100, percent));
 }
 
+void removeOldCoredumpFiles(const std::filesystem::path& coredumpDir,
+                           size_t maxFileNum, int slot,
+                           const std::string& cxlDevice)
+{
+    // Quota is per slot/CXL device, so only that pair's files are considered
+    const std::regex namePattern("^slot" + std::to_string(slot) + "_" +
+                                 cxlDevice +
+                                 R"(_coredump_(\d{8}_\d{6})_gdb\.bin$)");
+
+    std::error_code ec;
+    if (!std::filesystem::is_directory(coredumpDir, ec))
+    {
+        std::cerr << "Coredump directory not found: " << coredumpDir.string()
+                  << std::endl;
+        return;
+    }
+
+    std::vector<std::pair<std::string, std::filesystem::path>> files;
+    std::filesystem::directory_iterator it(coredumpDir, ec);
+    if (ec)
+    {
+        std::cerr << "Failed to scan " << coredumpDir.string() << ": "
+                  << ec.message() << std::endl;
+        return;
+    }
+
+    // Iterator increment throws on error; skip cleanup rather than act on a
+    // partial file list or let the exception bypass MuxGuard
+    try
+    {
+        for (const auto& entry : it)
+        {
+            std::error_code entryEc;
+            if (!entry.is_regular_file(entryEc))
+                continue;
+
+            std::string name = entry.path().filename().string();
+            std::smatch match;
+            if (!std::regex_match(name, match, namePattern))
+                continue;
+
+            files.emplace_back(match[1].str(), entry.path());
+        }
+    }
+    catch (const std::exception& e)
+    {
+        std::cerr << "Failed to scan " << coredumpDir.string() << ": "
+                  << e.what() << std::endl;
+        return;
+    }
+
+    // Keep maxFileNum - 1 files to reserve room for the one about to be written
+    if (files.size() < maxFileNum)
+        return;
+
+    // Fixed-width timestamps sort lexicographically in chronological order
+    std::sort(files.begin(), files.end(),
+              [](const auto& a, const auto& b) { return a.first < b.first; });
+
+    size_t removeCount = files.size() - (maxFileNum - 1);
+    for (size_t i = 0; i < removeCount; ++i)
+    {
+        if (std::filesystem::remove(files[i].second, ec) && !ec)
+            std::cout << "Removed old coredump file: "
+                      << files[i].second.string() << std::endl;
+        else
+            std::cerr << "Failed to remove old coredump file: "
+                      << files[i].second.string() << std::endl;
+    }
+}
+
 void writeBinFile(const std::string& path, const std::vector<uint8_t>& data)
 {
+    // Save folder may not exist yet on a fresh BMC
+    const std::filesystem::path dir = std::filesystem::path(path).parent_path();
+    std::error_code ec;
+    if (!dir.empty() && !std::filesystem::exists(dir, ec))
+    {
+        std::filesystem::create_directories(dir, ec);
+        if (ec)
+            throw std::runtime_error("Failed to create directory: " +
+                                     dir.string() + ": " + ec.message());
+    }
+
     std::ofstream ofs(path, std::ios::binary);
     if (!ofs)
         throw std::runtime_error("Failed to open file: " + path);
@@ -397,6 +484,7 @@ int main(int argc, char** argv)
     int slot = 0;
     std::string cxlDevice;
     std::string coredumpFilename;
+    size_t maxFileNum = 0;
 
     CLI::App app{"OpenBMC CXL coredump collection tool."};
     app.footer("Example: cxl-coredump-collection 1 cxl_1 coredump");
@@ -408,8 +496,11 @@ int main(int argc, char** argv)
         ->required()
         ->check(CLI::IsMember({"cxl_1", "cxl_2"}));
     app.add_option("coredump_filename", coredumpFilename,
-                   "Output coredump filename")
+                   "Output coredump filename prefix; ")
         ->required();
+    app.add_option("--maxfilenum", maxFileNum,
+                   "Max number of coredump files for each slot and each cxl device")
+        ->check(CLI::Range(1, 10));
     app.add_flag("--debug", debugFlag, "Enable debug logs");
 
     try
@@ -418,6 +509,7 @@ int main(int argc, char** argv)
     }
     catch (const CLI::ParseError& e)
     {
+        std::cerr << "Error parsing command line arguments: " << e.what() << std::endl;
         return app.exit(e);
     }
 
@@ -459,7 +551,7 @@ int main(int argc, char** argv)
     {
         printHeaderInfo(header, false);
         std::cerr << "Invalid coredump header from slot " << slot
-                  << " CXL flash" << std::endl;
+                  << " " << cxlDevice << std::endl;
         return 1;
     }
     // Read Payload and verify checksum
@@ -470,7 +562,7 @@ int main(int argc, char** argv)
     if (!collector.readPayload(payload, payloadSize))
     {
         std::cerr << "Failed to get coredump payload from slot " << slot
-                  << " CXL flash" << std::endl;
+                  << " " << cxlDevice << std::endl;
         return 1;
     }
 
@@ -486,19 +578,26 @@ int main(int argc, char** argv)
         std::cout << "Checksum verification passed" << std::endl;
     }
 
+    if (maxFileNum > 0)
+    {
+        removeOldCoredumpFiles(coredumpDir, maxFileNum, slot, cxlDevice);
+    }
+
     // If payload has padding, need to remove the padding part for gdb useage
     try
     {
-        if (header.padding)
+        if (debugFlag)
         {
             writeBinFile(coredumpFilename + "_verify.bin", payload);
+        }
+        if (header.padding)
+        {
             payload.resize(static_cast<size_t>(header.length));
             writeBinFile(coredumpFilename + "_gdb.bin", payload);
         }
         else
         {
-            writeBinFile(coredumpFilename + "_verify.bin", payload);
-            writeBinFile(coredumpFilename + "_gdb.bin",    payload);
+            writeBinFile(coredumpFilename + "_gdb.bin", payload);
         }
     }
     catch (const std::exception& e)
@@ -507,8 +606,11 @@ int main(int argc, char** argv)
         return 1;
     }
 
-    std::cout << "save " << coredumpFilename + "_verify.bin"
-              << " for checksum verification" << std::endl;
+    if (debugFlag)
+    {
+        std::cout << "save " << coredumpFilename + "_verify.bin"
+                  << " for checksum verification" << std::endl;
+    }
     std::cout << "save " << coredumpFilename + "_gdb.bin"
               << " for gdb analysis" << std::endl;
 

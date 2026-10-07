@@ -271,6 +271,22 @@ userver_power_is_on() {
     fi
 }
 
+userver_power_is_off() {
+    ! userver_power_is_on
+}
+
+wait_until() {
+    local deadline="$1" msg="$2"
+    shift 2
+    until "$@"; do
+        if [ "$SECONDS" -ge "$deadline" ]; then
+            echo "$msg"
+            return 62  # ETIME
+        fi
+        sleep 1
+    done
+}
+
 userver_power_on() {
     local cpu_id
     cpu_id=$(wedge_cpu_id)
@@ -286,9 +302,9 @@ userver_power_on() {
         # Power on using the SLG gpio
         i2cset -f -y 14 0x28 0x2e 0x1
     fi
-    sleep 0.5
     wedge_power_asic 0
-    return 0
+    local deadline=$(( SECONDS + 15 ))
+    wait_until "$deadline" "userver failed to power on" userver_power_is_on
 }
 
 userver_power_off() {
@@ -302,17 +318,14 @@ userver_power_off() {
         # Power off using the SLG gpio
         i2cset -f -y 14 0x28 0x2e 0x0
     fi
-    # Some delay is needed for "wedge_power reset" reset to take effect
-    sleep 10
-    return 0
+    local deadline=$(( SECONDS + 15 ))
+    wait_until "$deadline" "userver failed to power off" userver_power_is_off
 }
 
 userver_reset() {
     wedge_power_asic 1
-    userver_power_off
-    sleep 1
+    userver_power_off || return $?
     userver_power_on
-    return 0
 }
 
 chassis_power_cycle() {

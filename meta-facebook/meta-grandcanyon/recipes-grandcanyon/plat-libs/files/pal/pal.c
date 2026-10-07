@@ -2956,6 +2956,10 @@ pal_i2c_crash_deassert_handle(int i2c_bus_num) {
   }
 }
 
+#ifdef CONFIG_GRANDCANYON2
+#define UIC_FPGA_STAGE_MP_GC2  0x04
+#endif
+
 static int
 set_exp_uart_bridging(uint8_t bridging_status) {
   uint8_t bmc_rev_id = 0;
@@ -2995,6 +2999,13 @@ set_exp_uart_bridging(uint8_t bridging_status) {
       || (strcmp(uic_fpga_stage, "0A") == 0)) {
       is_ctrl_via_fpga = true;
     }
+#ifdef CONFIG_GRANDCANYON2
+    // GC2 stage encoding: 1:HACK 2:DVT 3:PVT 4:MP. Routing in UIC FPGA is supported on MP (any
+    // version number). Legacy PVT images use the GC1 encoding (stage "0A"), handled above.
+    if (strtoul(uic_fpga_stage, NULL, 16) == UIC_FPGA_STAGE_MP_GC2) {
+      is_ctrl_via_fpga = true;
+    }
+#endif
   } else {
     syslog(LOG_WARNING, "%s: failed to route UART because failed to get UIC FPGA firmware version", __func__);
     return CC_UNSPECIFIED_ERROR;

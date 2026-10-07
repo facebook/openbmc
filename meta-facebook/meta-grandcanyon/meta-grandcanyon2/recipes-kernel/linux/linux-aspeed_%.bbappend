@@ -7,5 +7,4 @@ COMPATIBLE_MACHINE = "grandcanyon2"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/plat_conf:"
 SRC_URI += "file://grandcanyon2.cfg \
-    file://0001-drivers-edac-aspeed-Upgrade-driver-to-v5.15-to-suppo.patch \
     "

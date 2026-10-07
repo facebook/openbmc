@@ -20,17 +20,21 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 LOCAL_URI += "\
     file://aristabmc_cpu_flash.layout \
     file://bios_util.sh \
+    file://bios_ver.sh \
     file://board-utils.sh \
     file://cpld_ver.sh \
     file://oob-mdio-util.sh \
     file://setup-gpio.sh \
     file://setup_i2c.sh \
+    file://switchToCpu.sh \
     "
 
 OPENBMC_UTILS_FILES += "\
     bios_util.sh \
+    bios_ver.sh \
     cpld_ver.sh \
     oob-mdio-util.sh \
+    switchToCpu.sh \
     "
 
 do_install:append() {

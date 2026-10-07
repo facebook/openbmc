@@ -54,3 +54,20 @@ class PowerUtilTest(BasePowerUtilTest):
         # symptom is cit_runner returning -1 with no verdict and no stderr,
         # because the connection the test ran over went away.
         super().test_12V_slot_cycle()
+
+    # pal_set_server_power() returns POWER_STATUS_ERR for SERVER_12V_ON and
+    # SERVER_12V_OFF when bmc_location == NIC_BMC: class 2 has no per-slot
+    # 12V control, so power-util exits 255 by design.
+    @unittest.skipIf(
+        get_board_class() == 2,
+        "class 2 firmware rejects 12V-off (no per-slot 12V control on NIC_BMC)",
+    )
+    def test_12V_slot_off(self):
+        super().test_12V_slot_off()
+
+    @unittest.skipIf(
+        get_board_class() == 2,
+        "class 2 firmware rejects 12V-on (no per-slot 12V control on NIC_BMC)",
+    )
+    def test_12V_slot_on(self):
+        super().test_12V_slot_on()

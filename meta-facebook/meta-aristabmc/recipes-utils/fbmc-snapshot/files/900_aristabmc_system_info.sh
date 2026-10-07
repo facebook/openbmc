@@ -1,4 +1,6 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+#!/bin/bash
+#
+# Copyright 2026-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,15 +16,21 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-require recipes-core/images/fboss-lite-image.inc
-require aristabmc-image-layout.inc
+run_util() {
+    if [ ! -x "$1" ]; then
+        echo "$1 doesn't exist!"
+    else
+        "$@"
+    fi
+}
 
-IMAGE_INSTALL:append = " \
-    fio \
-    ipmitool \
-    kernel-module-cpld \
-    libcpldupdate-dll-ioctl \
-    ssifd \
-    fbmc-snapshot \
-    "
+echo -e "\n##### USER PWR STATUS #####"
+run_util /usr/local/bin/wedge_power.sh status
+
+echo -e "\n##### BMC BOARD REVISION #####"
+run_util /usr/local/bin/fboss-board-revision.sh -s
+
+echo -e "\n##### BMC CMDLINE #####"
+cat /proc/cmdline

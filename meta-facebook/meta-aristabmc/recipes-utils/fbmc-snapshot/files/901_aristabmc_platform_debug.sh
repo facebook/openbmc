@@ -1,4 +1,6 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
+#!/bin/bash
+#
+# Copyright 2026-present Facebook. All Rights Reserved.
 #
 # This program file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by the
@@ -14,15 +16,22 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
+#
 
-require recipes-core/images/fboss-lite-image.inc
-require aristabmc-image-layout.inc
+echo -e "\n################################"
+echo "##### SWITCHCARD DEBUG INFO #####"
+echo "################################"
+echo "##### DS4520 MODE SELECTOR I2CDUMP #####"
+i2cdump -f -y 8 0x52 b
 
-IMAGE_INSTALL:append = " \
-    fio \
-    ipmitool \
-    kernel-module-cpld \
-    libcpldupdate-dll-ioctl \
-    ssifd \
-    fbmc-snapshot \
-    "
+echo -e "\n################################"
+echo "##### SUPERVISOR DEBUG INFO #####"
+echo "################################"
+echo "##### CPU CPLD VERSION #####"
+if [ -x /usr/local/bin/cpld_ver.sh ]; then
+    /usr/local/bin/cpld_ver.sh
+else
+    echo "/usr/local/bin/cpld_ver.sh doesn't exist!"
+fi
+echo "##### CPU POWER CPLD I2CDUMP #####"
+i2cdump -f -y 12 0x43 b

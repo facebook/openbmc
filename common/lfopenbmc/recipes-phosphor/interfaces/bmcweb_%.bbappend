@@ -50,3 +50,9 @@ SRC_URI:append = " \
     file://0410-LogEntry-Add-support-for-parsing-and-presenting-CPER.patch \
     file://0411-Event-carry-the-CPER-section-onto-the-pushed-EventRe.patch \
 "
+
+# Oem/Meta/Metrics in ManagerDiagnosticData, from Metric.Value objects under
+# /xyz/openbmc_project/metric/bmc/oem (adhoc-sensor's /run/openbmc/metrics)
+SRC_URI:append = " \
+    file://0420-ManagerDiagnosticData-report-Oem-Meta-Metrics-from-metr.patch \
+"

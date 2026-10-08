@@ -7,8 +7,9 @@ A streamlined OpenBMC service that provides numeric sensors (0-100%) from file c
 This service creates D-Bus sensors that track numeric values by reading file contents.
 Files are monitored via inotify for instant updates when values change.
 
-The service **automatically monitors** one directory:
-- `/run/openbmc/sensors/utilization/` - Numeric values (file contents)
+The service **automatically monitors** two directories:
+- `/run/openbmc/sensors/utilization/` - Numeric values (file contents), as sensors
+- `/run/openbmc/metrics/` - Numeric values, as OEM metrics (see below)
 
 ## Behavior
 
@@ -41,6 +42,47 @@ echo "invalid" > /run/openbmc/sensors/utilization/test
 # Remove sensor
 rm /run/openbmc/sensors/utilization/cpu_utilization
 # Removes sensor from D-Bus entirely
+```
+
+## OEM metrics (not sensors)
+
+The service also watches a second directory:
+
+- `/run/openbmc/metrics/<name>` - a number on line 1, optional unit on line 2
+
+Each file becomes an `xyz.openbmc_project.Metric.Value` object (the interface
+phosphor-health-monitor uses) at `/xyz/openbmc_project/metric/bmc/oem/<name>`.
+Unlike sensors there is no `_PCT` suffix, no 0-100 clamp and no chassis
+association. The value is a double (the only type Metric.Value carries), so
+flags and states are numbers. The unit (`bytes`, `count`, `frequency`,
+`percent`, `seconds`; default `count`) becomes the Metric.Value `Unit`
+property; it is const on D-Bus, so changing it republishes the object. `<name>` must be `[A-Za-z0-9_]+`, since it becomes a D-Bus path
+element; other names are ignored and logged.
+
+bmcweb reports every metric under that namespace in
+`/redfish/v1/Managers/bmc/ManagerDiagnosticData`:
+
+```json
+"Oem": {
+  "Meta": {
+    "@odata.type": "#MetaManagerDiagnosticData.v1_0_0.ManagerDiagnosticData",
+    "Metrics": {
+      "persist_rofs": { "Value": 1.0, "Unit": "Count" },
+      "free_kb": { "Value": 20080.0, "Unit": "Bytes" }
+    }
+  }
+}
+```
+
+Use the `bmc-oem-metric` helper rather than writing the files directly; it
+validates the name and value and renames the file into place atomically:
+
+```bash
+bmc-oem-metric set persist_rofs 1
+bmc-oem-metric set free_kb 20080 bytes
+bmc-oem-metric get persist_rofs
+bmc-oem-metric list
+bmc-oem-metric rm persist_rofs
 ```
 
 ## Use Cases

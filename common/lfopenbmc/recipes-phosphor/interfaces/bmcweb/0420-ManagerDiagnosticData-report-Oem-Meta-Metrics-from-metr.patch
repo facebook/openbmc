@@ -1,0 +1,232 @@
+From fd4ec56a8931027bb1187f210a7b55e5ec70ee60 Mon Sep 17 00:00:00 2001
+From: Pete O_o <pmb@meta.com>
+Date: Wed, 7 Oct 2026 20:28:04 -0700
+Subject: [PATCH] ManagerDiagnosticData: report Oem/Meta/Metrics from
+ metric/bmc/oem
+
+bmcweb maps a fixed set of phosphor-health-monitor Metric.Value objects
+(memory, cpu, storage/rw) onto ManagerDiagnosticData. There is no way to
+surface another BMC-side value without changing bmcweb each time.
+
+Report every xyz.openbmc_project.Metric.Value object directly under
+/xyz/openbmc_project/metric/bmc/oem as
+
+  Oem/Meta/Metrics/<leaf name>: {"Value": <number>, "Unit": "<unit>"}
+
+where Unit is the Metric.Value unit's short name (Bytes, Count,
+Frequency, Percent, Seconds). On Meta platforms adhoc-sensor publishes
+these from /run/openbmc/metrics, so a new metric needs no bmcweb change,
+and central_proxy, which already reads this resource for
+FreeStorageSpaceKiB, can pick it up.
+
+Best effort: if nothing is published, or a metric disappears between the
+subtree lookup and the read, the rest of the resource is unaffected.
+
+Tested: unit tests for value+unit, non-finite value and read error.
+---
+ redfish-core/lib/manager_diagnostic_data.hpp  | 95 +++++++++++++++++++
+ .../lib/manager_diagnostic_data_test.cpp      | 39 ++++++++
+ 2 files changed, 134 insertions(+)
+
+diff --git a/redfish-core/lib/manager_diagnostic_data.hpp b/redfish-core/lib/manager_diagnostic_data.hpp
+index 9ab5f789..9b6a35ff 100644
+--- a/redfish-core/lib/manager_diagnostic_data.hpp
++++ b/redfish-core/lib/manager_diagnostic_data.hpp
+@@ -12,6 +12,7 @@
+ #include "logging.hpp"
+ #include "query.hpp"
+ #include "registries/privilege_registry.hpp"
++#include "utils/dbus_utils.hpp"
+ 
+ #include <boost/asio/error.hpp>
+ #include <boost/beast/http/verb.hpp>
+@@ -19,15 +20,20 @@
+ #include <boost/system/linux_error.hpp>
+ #include <boost/url/format.hpp>
+ #include <nlohmann/json.hpp>
++#include <sdbusplus/message/native_types.hpp>
++#include <sdbusplus/unpack_properties.hpp>
+ 
++#include <array>
+ #include <chrono>
+ #include <cmath>
+ #include <cstdint>
+ #include <functional>
+ #include <memory>
++#include <optional>
+ #include <ratio>
+ #include <source_location>
+ #include <string>
++#include <string_view>
+ 
+ namespace redfish
+ {
+@@ -100,6 +106,94 @@ inline void managerGetStorageStatistics(
+                         nlohmann::json::json_pointer("/FreeStorageSpaceKiB")));
+ }
+ 
++// Metric.Value objects other BMC daemons publish directly under this
++// namespace (e.g. adhoc-sensor, from /run/openbmc/metrics/<name>) are reported
++// as Oem/Meta/Metrics/<name>: {"Value": <number>, "Unit": <Metric.Value
++// unit, e.g. "Count">}, so a new value needs no bmcweb change.
++static constexpr auto oemMetricsNamespace =
++    "/xyz/openbmc_project/metric/bmc/oem";
++
++inline void afterGetOemMetric(
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const std::string& name, const boost::system::error_code& ec,
++    const dbus::utility::DBusPropertiesMap& properties)
++{
++    // Best effort: a metric that goes away between the subtree lookup and
++    // this read must not fail the rest of the resource.
++    if (ec)
++    {
++        BMCWEB_LOG_DEBUG("Failed to read OEM metric {}: {}", name, ec);
++        return;
++    }
++
++    std::optional<double> value;
++    std::optional<std::string> unit;
++    if (!sdbusplus::unpackPropertiesNoThrow(dbus_utils::UnpackErrorPrinter(),
++                                            properties, valueProperty, value,
++                                            "Unit", unit))
++    {
++        BMCWEB_LOG_DEBUG("Failed to unpack OEM metric {}", name);
++        return;
++    }
++
++    nlohmann::json& metric =
++        asyncResp->res.jsonValue["Oem"]["Meta"]["Metrics"][name];
++    if (value && std::isfinite(*value))
++    {
++        metric["Value"] = *value;
++    }
++    else
++    {
++        metric["Value"] = nullptr;
++    }
++    if (unit)
++    {
++        // xyz.openbmc_project.Metric.Value.Unit.Count -> Count
++        std::string_view unitName = *unit;
++        if (size_t dot = unitName.rfind('.'); dot != std::string_view::npos)
++        {
++            unitName.remove_prefix(dot + 1);
++        }
++        metric["Unit"] = unitName;
++    }
++}
++
++inline void afterGetOemMetricsSubTree(
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
++    const boost::system::error_code& ec,
++    const dbus::utility::MapperGetSubTreeResponse& subtree)
++{
++    if (ec)
++    {
++        // Nothing published under the namespace is the normal case.
++        BMCWEB_LOG_DEBUG("No OEM metrics under {}: {}", oemMetricsNamespace,
++                         ec);
++        return;
++    }
++    for (const auto& [path, serviceMap] : subtree)
++    {
++        std::string name = sdbusplus::object_path(path).filename();
++        if (serviceMap.empty() || name.empty())
++        {
++            continue;
++        }
++        asyncResp->res.jsonValue["Oem"]["Meta"]["@odata.type"] =
++            "#MetaManagerDiagnosticData.v1_0_0.ManagerDiagnosticData";
++        dbus::utility::getAllProperties(
++            serviceMap.front().first, path, valueInterface,
++            std::bind_front(afterGetOemMetric, asyncResp, name));
++    }
++}
++
++inline void managerGetOemMetrics(
++    const std::shared_ptr<bmcweb::AsyncResp>& asyncResp)
++{
++    constexpr std::array<std::string_view, 1> interfaces = {valueInterface};
++    dbus::utility::getSubTree(
++        oemMetricsNamespace, 1, interfaces,
++        std::bind_front(afterGetOemMetricsSubTree, asyncResp));
++}
++
+ inline void setPercentProperty(
+     const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
+     const nlohmann::json::json_pointer& jPtr,
+@@ -264,6 +358,7 @@ inline void handleManagerDiagnosticDataGet(
+     managerGetProcessorStatistics(asyncResp);
+     managerGetMemoryStatistics(asyncResp);
+     managerGetStorageStatistics(asyncResp);
++    managerGetOemMetrics(asyncResp);
+ }
+ 
+ inline void requestRoutesManagerDiagnosticData(App& app)
+diff --git a/test/redfish-core/lib/manager_diagnostic_data_test.cpp b/test/redfish-core/lib/manager_diagnostic_data_test.cpp
+index b0778d8e..699afa69 100644
+--- a/test/redfish-core/lib/manager_diagnostic_data_test.cpp
++++ b/test/redfish-core/lib/manager_diagnostic_data_test.cpp
+@@ -1,6 +1,7 @@
+ // SPDX-License-Identifier: Apache-2.0
+ // SPDX-FileCopyrightText: Copyright OpenBMC Authors
+ #include "async_resp.hpp"
++#include "dbus_utility.hpp"
+ #include "manager_diagnostic_data.hpp"
+ 
+ #include <boost/asio/error.hpp>
+@@ -11,6 +12,7 @@
+ #include <cstdint>
+ #include <limits>
+ #include <memory>
++#include <string>
+ 
+ #include <gtest/gtest.h>
+ 
+@@ -78,5 +80,42 @@ TEST(ManagerDiagnosticDataTest, ManagerDataGetSuccess)
+               200);
+ }
+ 
++TEST(ManagerDiagnosticDataTest, OemMetricValueAndUnit)
++{
++    auto asyncResp = std::make_shared<bmcweb::AsyncResp>();
++    dbus::utility::DBusPropertiesMap properties = {
++        {"Value", 1.0},
++        {"Unit", std::string("xyz.openbmc_project.Metric.Value.Unit.Count")}};
++
++    afterGetOemMetric(asyncResp, "persist_rofs", {}, properties);
++    const nlohmann::json& metric =
++        asyncResp->res.jsonValue["Oem"]["Meta"]["Metrics"]["persist_rofs"];
++    EXPECT_EQ(metric["Value"], 1.0);
++    EXPECT_EQ(metric["Unit"], "Count");
++}
++
++TEST(ManagerDiagnosticDataTest, OemMetricNotFiniteIsNull)
++{
++    auto asyncResp = std::make_shared<bmcweb::AsyncResp>();
++    dbus::utility::DBusPropertiesMap properties = {
++        {"Value", std::numeric_limits<double>::quiet_NaN()}};
++
++    afterGetOemMetric(asyncResp, "persist_rofs", {}, properties);
++    const nlohmann::json& metric =
++        asyncResp->res.jsonValue["Oem"]["Meta"]["Metrics"]["persist_rofs"];
++    EXPECT_EQ(metric["Value"], nullptr);
++    EXPECT_FALSE(metric.contains("Unit"));
++}
++
++TEST(ManagerDiagnosticDataTest, OemMetricReadErrorDoesNotFailResource)
++{
++    auto asyncResp = std::make_shared<bmcweb::AsyncResp>();
++
++    afterGetOemMetric(asyncResp, "persist_rofs",
++                      boost::asio::error::operation_aborted, {});
++    EXPECT_TRUE(asyncResp->res.jsonValue.is_null());
++    EXPECT_EQ(asyncResp->res.result(), boost::beast::http::status::ok);
++}
++
+ } // namespace
+ } // namespace redfish
+-- 
+2.53.0-Meta
+

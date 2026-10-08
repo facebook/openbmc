@@ -1,7 +1,7 @@
 SUMMARY = "Ad-hoc Sensor Service"
 DESCRIPTION = "OpenBMC service providing ad-hoc sensors (0-100%) from file contents using sdbusplus"
 SECTION = "base"
-PR = "r1"
+PR = "r2"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
@@ -14,6 +14,7 @@ LOCAL_URI = " \
     file://adhoc-sensor.cpp \
     file://adhoc-sensor.service \
     file://README.md \
+    file://bmc-oem-metric \
     "
 
 DEPENDS += " \
@@ -35,6 +36,9 @@ do_install:append() {
     install -d ${D}${systemd_system_unitdir}
     install -m 0644 ${UNPACKDIR}/adhoc-sensor.service \
         ${D}${systemd_system_unitdir}/adhoc-sensor.service
+
+    install -d ${D}${bindir}
+    install -m 0755 ${UNPACKDIR}/bmc-oem-metric ${D}${bindir}/bmc-oem-metric
 }
 
 FILES:${PN} += "${systemd_system_unitdir}/adhoc-sensor.service"

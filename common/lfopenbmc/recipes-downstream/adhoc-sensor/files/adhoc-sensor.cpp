@@ -4,6 +4,7 @@
 #include <sdbusplus/async.hpp>
 #include <sdbusplus/server/manager.hpp>
 #include <xyz/openbmc_project/Association/Definitions/aserver.hpp>
+#include <xyz/openbmc_project/Metric/Value/aserver.hpp>
 #include <xyz/openbmc_project/Sensor/Value/aserver.hpp>
 
 #include <filesystem>
@@ -17,6 +18,8 @@
 #include <sys/inotify.h>
 #include <unistd.h>
 #include <poll.h>
+#include <algorithm>
+#include <cctype>
 #include <limits>
 #include <cmath>
 
@@ -25,6 +28,12 @@ PHOSPHOR_LOG2_USING;
 constexpr const char* SENSOR_BUSNAME = "xyz.openbmc_project.AdhocSensor";
 constexpr const char* SENSOR_NAMESPACE = "/xyz/openbmc_project/sensors/utilization";
 constexpr const char* ADHOC_DIR = "/run/openbmc/sensors/utilization";
+
+// Plain numeric BMC metrics, not sensors: no unit suffix, no clamping, no
+// chassis association. bmcweb reports every Metric.Value under this namespace
+// as ManagerDiagnosticData Oem/Meta/Metrics/<name>.
+constexpr const char* METRIC_NAMESPACE = "/xyz/openbmc_project/metric/bmc/oem";
+constexpr const char* METRICS_DIR = "/run/openbmc/metrics";
 
 // D-Bus server object using sdbusplus async server_t (CRTP pattern)
 class AdhocSensorObject;
@@ -47,6 +56,66 @@ class AdhocSensorObject : public AdhocSensorInterfaces
     }
 };
 
+class AdhocMetricObject;
+using AdhocMetricInterfaces = sdbusplus::async::server_t<
+    AdhocMetricObject, sdbusplus::aserver::xyz::openbmc_project::metric::Value>;
+
+class AdhocMetricObject : public AdhocMetricInterfaces
+{
+  public:
+    AdhocMetricObject(sdbusplus::async::context& ctx, const char* path) :
+        AdhocMetricInterfaces(ctx, path)
+    {}
+
+    void emit_added()
+    {
+        Value::emit_added();
+    }
+};
+
+using MetricUnit =
+    sdbusplus::common::xyz::openbmc_project::metric::Value::Unit;
+
+// Optional second line of a metric file. Empty means Count, the right unit for
+// flags and counters, which is what these metrics mostly are.
+MetricUnit parseMetricUnit(std::string text, const std::string& name)
+{
+    std::ranges::transform(text, text.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+    });
+    if (text.empty() || text == "count")
+    {
+        return MetricUnit::Count;
+    }
+    if (text == "bytes")
+    {
+        return MetricUnit::Bytes;
+    }
+    if (text == "frequency")
+    {
+        return MetricUnit::Frequency;
+    }
+    if (text == "percent")
+    {
+        return MetricUnit::Percent;
+    }
+    if (text == "seconds")
+    {
+        return MetricUnit::Seconds;
+    }
+    error("Unknown unit '{UNIT}' for metric {METRIC}, using count", "UNIT",
+          text, "METRIC", name);
+    return MetricUnit::Count;
+}
+
+// A metric name becomes a D-Bus object path element.
+bool isValidMetricName(const std::string& name)
+{
+    return !name.empty() && std::ranges::all_of(name, [](unsigned char c) {
+        return std::isalnum(c) || c == '_';
+    });
+}
+
 class SensorManager
 {
   public:
@@ -54,8 +123,9 @@ class SensorManager
         ctx(ctx),
         inotifyFd(-1)
     {
-        // Create watch directory if it doesn't exist
+        // Create watch directories if they don't exist
         std::filesystem::create_directories(ADHOC_DIR);
+        std::filesystem::create_directories(METRICS_DIR);
 
         // Initialize inotify
         setupInotify();
@@ -136,7 +206,7 @@ class SensorManager
         }
     }
 
-    double readAdhocFromFile(const std::filesystem::path& filePath)
+    double readNumberFromFile(const std::filesystem::path& filePath)
     {
         std::ifstream file(filePath);
         if (!file.is_open())
@@ -192,6 +262,27 @@ class SensorManager
                   "FILE", filePath.string(), "VALUE", line);
             return std::numeric_limits<double>::quiet_NaN();
         }
+
+        return value;
+    }
+
+    // Second line of the file, trimmed; empty if there is none.
+    std::string readUnitFromFile(const std::filesystem::path& filePath)
+    {
+        std::ifstream file(filePath);
+        std::string line;
+        if (!std::getline(file, line) || !std::getline(file, line))
+        {
+            return {};
+        }
+        line.erase(0, line.find_first_not_of(" \t\r\n"));
+        line.erase(line.find_last_not_of(" \t\r\n") + 1);
+        return line;
+    }
+
+    double readAdhocFromFile(const std::filesystem::path& filePath)
+    {
+        double value = readNumberFromFile(filePath);
 
         // Log warnings for out-of-range values (will be clamped in
         // setSensorValue)
@@ -270,6 +361,82 @@ class SensorManager
         }
     }
 
+    void scanMetricsDirectory()
+    {
+        std::unordered_set<std::string> currentFiles;
+
+        try
+        {
+            if (std::filesystem::exists(METRICS_DIR))
+            {
+                for (const auto& entry :
+                     std::filesystem::directory_iterator(METRICS_DIR))
+                {
+                    if (!entry.is_regular_file())
+                    {
+                        continue;
+                    }
+                    std::string name = entry.path().filename().string();
+                    if (!isValidMetricName(name))
+                    {
+                        error("Ignoring metric file {FILE}: names must be "
+                              "[A-Za-z0-9_]",
+                              "FILE", name);
+                        continue;
+                    }
+                    currentFiles.insert(name);
+
+                    double value = readNumberFromFile(entry.path());
+                    MetricUnit unit =
+                        parseMetricUnit(readUnitFromFile(entry.path()), name);
+
+                    auto it = metrics.find(name);
+                    if (it != metrics.end() && it->second.unit != unit)
+                    {
+                        // Unit is a const property: republish the object.
+                        info("Unit changed for metric {METRIC}, recreating",
+                             "METRIC", name);
+                        metrics.erase(it);
+                        it = metrics.end();
+                    }
+                    if (it == metrics.end())
+                    {
+                        std::string path =
+                            std::string(METRIC_NAMESPACE) + "/" + name;
+                        auto object = std::make_unique<AdhocMetricObject>(
+                            ctx, path.c_str());
+                        constexpr bool emitSignal = false;
+                        object->unit<emitSignal>(unit);
+                        object->value<emitSignal>(value);
+                        object->emit_added();
+                        info("Created metric: {METRIC} at {PATH}", "METRIC",
+                             name, "PATH", path);
+                        metrics[name] = {std::move(object), unit};
+                    }
+                    else
+                    {
+                        it->second.object->value<true>(value);
+                    }
+                }
+            }
+
+            std::erase_if(metrics, [&](const auto& kv) {
+                if (currentFiles.contains(kv.first))
+                {
+                    return false;
+                }
+                info("Metric file removed: {METRIC}, removing metric",
+                     "METRIC", kv.first);
+                return true;
+            });
+        }
+        catch (const std::exception& e)
+        {
+            error("Error scanning metrics directory: {ERROR}", "ERROR",
+                  e.what());
+        }
+    }
+
     void setupInotify()
     {
         inotifyFd = inotify_init1(IN_NONBLOCK);
@@ -296,8 +463,21 @@ class SensorManager
                  ADHOC_DIR);
         }
 
+        metricsWd = inotify_add_watch(inotifyFd, METRICS_DIR, mask);
+        if (metricsWd < 0)
+        {
+            error("Failed to add inotify watch for {DIR}: {ERROR}", "DIR",
+                  METRICS_DIR, "ERROR", strerror(errno));
+        }
+        else
+        {
+            info("Added inotify watch for metrics directory: {DIR}", "DIR",
+                 METRICS_DIR);
+        }
+
         // Do initial scan
         scanDirectory();
+        scanMetricsDirectory();
 
         // Start async monitoring
         ctx.spawn(monitorInotify());
@@ -335,9 +515,18 @@ class SensorManager
                         if (!(event->mask & IN_ISDIR) && event->len > 0)
                         {
                             std::string filename(event->name);
-                            info("Inotify event for adhoc file: {FILE}",
-                                 "FILE", filename);
-                            scanDirectory();
+                            if (event->wd == metricsWd)
+                            {
+                                info("Inotify event for metric file: {FILE}",
+                                     "FILE", filename);
+                                scanMetricsDirectory();
+                            }
+                            else
+                            {
+                                info("Inotify event for adhoc file: {FILE}",
+                                     "FILE", filename);
+                                scanDirectory();
+                            }
                         }
 
                         offset += sizeof(inotify_event) + event->len;
@@ -355,10 +544,17 @@ class SensorManager
     sdbusplus::async::context& ctx;
     std::unordered_map<std::string, std::unique_ptr<AdhocSensorObject>>
         sensors;
+    struct Metric
+    {
+        std::unique_ptr<AdhocMetricObject> object;
+        MetricUnit unit;
+    };
+    std::unordered_map<std::string, Metric> metrics;
 
     // Inotify members
     int inotifyFd;
     int adhocWd = -1;
+    int metricsWd = -1;
 };
 
 int main()
@@ -367,10 +563,14 @@ int main()
 
     ctx.request_name(SENSOR_BUSNAME);
     sdbusplus::server::manager_t manager{ctx, SENSOR_NAMESPACE};
+    sdbusplus::server::manager_t metricManager{ctx, METRIC_NAMESPACE};
 
     info("Adhoc sensor service started");
     info("Watching directory: {DIR} (file contents = numeric value 0-100)",
          "DIR", ADHOC_DIR);
+    info("Watching directory: {DIR} (file contents = numeric metric value, "
+         "optional unit on line 2)",
+         "DIR", METRICS_DIR);
 
     SensorManager sensorManager(ctx);
 

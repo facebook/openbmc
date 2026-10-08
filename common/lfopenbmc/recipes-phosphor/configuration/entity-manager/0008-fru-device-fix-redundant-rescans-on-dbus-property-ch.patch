@@ -1,0 +1,66 @@
+From 5559dfbec58d4304353d42feb7778c3dcd3edc28 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Wed, 30 Sep 2026 20:03:35 +0800
+Subject: [PATCH 2/3] fru-device: fix redundant rescans on dbus property
+ changes
+
+The DBus event handler for CurrentHostState changes on the
+xyz.openbmc_project.State.Host interface was previously triggering
+unnecessary FRU rescans.
+
+While the original logic did verify when the state changed to "Running",
+it suffered from two issues:
+1. It never updated the `powerIsOn` tracker to `false` when the host
+   transitioned to other states (such as turning off).
+2. The code that triggered the rescan was placed outside the property
+   validation block. As a result, once `powerIsOn` became `true`, any
+   subsequent DBus property change (such as RequestedHostTransition)
+   would inadvertently trigger a full rescan.
+
+This commit improves the handler by accurately updating the `powerIsOn`
+state for both running and non-running states, and safely moving the
+rescan invocation inside the state validation block. This ensures that
+rescans are strictly limited to when the host successfully transitions
+to the Running state, preventing unnecessary load on the daemon.
+
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+Change-Id: I80eed110a5fef99df7207c9508ab2135e5554cf6
+
+[1] Gerrit: https://gerrit.openbmc.org/c/openbmc/entity-manager/+/95064
+---
+ src/fru_device/fru_device.cpp | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/src/fru_device/fru_device.cpp b/src/fru_device/fru_device.cpp
+index 10d24135..56d4fcd4 100644
+--- a/src/fru_device/fru_device.cpp
++++ b/src/fru_device/fru_device.cpp
+@@ -1535,17 +1535,17 @@ int main()
+             auto findState = values.find("CurrentHostState");
+             if (findState != values.end())
+             {
+-                if (std::get<std::string>(findState->second) ==
+-                    "xyz.openbmc_project.State.Host.HostState.Running")
++                bool isRunning =
++                    (std::get<std::string>(findState->second) ==
++                     "xyz.openbmc_project.State.Host.HostState.Running");
++
++                fruDetails.powerIsOn = isRunning;
++
++                if (isRunning)
+                 {
+-                    fruDetails.powerIsOn = true;
++                    rescanBusses(busMap, fruDetails, objServer);
+                 }
+             }
+-
+-            if (fruDetails.powerIsOn)
+-            {
+-                rescanBusses(busMap, fruDetails, objServer);
+-            }
+         };
+ 
+     sdbusplus::match powerMatch = sdbusplus::match(
+-- 
+2.52.0
+

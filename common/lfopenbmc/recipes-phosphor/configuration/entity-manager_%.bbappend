@@ -7,6 +7,9 @@ SRC_URI:append = " \
     file://0004-configuration-schema-add-MPQ82D00-PMBus-device-suppo.patch \
     file://0005-perform_scan-Extract-restorePersistedConfigurations.patch \
     file://0006-perform_scan-Fix-rescan-retaining-removed-configs.patch \
+    file://0007-fru-device-avoid-recreating-unchanged-FRU-interfaces.patch \
+    file://0008-fru-device-fix-redundant-rescans-on-dbus-property-ch.patch \
+    file://0009-fru-device-defer-D-Bus-object-registration-to-preven.patch \
 "
 
 do_install:append() {

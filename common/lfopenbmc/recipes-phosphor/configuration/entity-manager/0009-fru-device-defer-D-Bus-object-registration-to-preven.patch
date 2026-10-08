@@ -1,0 +1,279 @@
+From 99bc5f54cce8b87f398cf8314daf59163ffb8bf0 Mon Sep 17 00:00:00 2001
+From: Potin Lai <potin.lai@quantatw.com>
+Date: Mon, 5 Oct 2026 15:24:48 +0800
+Subject: [PATCH 3/3] fru-device: defer D-Bus object registration to prevent
+ index changes
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When `ReScan` is triggered, fru-device used to incrementally remove
+and re-add D-Bus interfaces. This caused an issue with index inflation:
+`findIndexForFRU` evaluates the current state of `dbusInterfaceMap` to
+determine the next available index. Because interfaces were removed and
+added iteratively, the map still contained old entries when evaluating
+new ones, causing it to assign incremented name suffixes (e.g., `_0`,
+`_1`) even for the exact same device.
+
+To prevent these index changes during a ReScan, this commit refactors
+`publishAllFrus` and `rescanOneBus` to defer interface removal and
+addition. We now populate `PendingRemoveList` and `PendingAddList`
+first. After calling `objServer.remove_interface()`, we execute
+`pendingRemove.clear()` to drop all strong references and cleanly
+unregister the old objects from the D-Bus daemon before evaluating and
+registering the newly parsed FRUs.
+
+Tested on Clemente:
+The object path of each FRU remain same after ReScan called.
+```
+root@bmc:~# busctl tree xyz.openbmc_project.FruDevice
+└─ /xyz
+  └─ /xyz/openbmc_project
+    └─ /xyz/openbmc_project/FruDevice
+      ├─ /xyz/openbmc_project/FruDevice/BMC_Storage_Module_MP
+      ├─ /xyz/openbmc_project/FruDevice/Clemente_E1_S_BP_MP
+      ├─ /xyz/openbmc_project/FruDevice/Clemente_E1_S_BP_MP_0
+      ├─ /xyz/openbmc_project/FruDevice/Clemente_FIO_MP
+      ├─ /xyz/openbmc_project/FruDevice/Clemente_Interposer_MP
+      ├─ /xyz/openbmc_project/FruDevice/Clemente_OSFP_MP
+      ├─ /xyz/openbmc_project/FruDevice/Clemente_PDB_MP
+      ├─ /xyz/openbmc_project/FruDevice/Clemente_SCM_MP
+      ├─ /xyz/openbmc_project/FruDevice/ConnectX_8_800GE_2P_NIC
+      ├─ /xyz/openbmc_project/FruDevice/ConnectX_8_800GE_2P_NIC_0
+      ├─ /xyz/openbmc_project/FruDevice/Nvidia_ConnectX_7_OCP3_0
+      ├─ /xyz/openbmc_project/FruDevice/Nvidia_ConnectX_7_OCP3_0_0
+      ├─ /xyz/openbmc_project/FruDevice/P4764_A02
+      ├─ /xyz/openbmc_project/FruDevice/PG548
+      ├─ /xyz/openbmc_project/FruDevice/PG548_0
+      ├─ /xyz/openbmc_project/FruDevice/PM9D3a
+      ├─ /xyz/openbmc_project/FruDevice/PM9D3a_0
+      ├─ /xyz/openbmc_project/FruDevice/PM9D3a_1
+      ├─ /xyz/openbmc_project/FruDevice/PM9D3a_2
+      └─ /xyz/openbmc_project/FruDevice/XDZ
+root@bmc:~#
+root@bmc:~# busctl call xyz.openbmc_project.FruDevice /xyz/openbmc_project/FruDevice xyz.openbmc_project.FruDeviceManager ReScan
+root@bmc:~#
+root@bmc:~# busctl tree xyz.openbmc_project.FruDevice
+└─ /xyz
+  └─ /xyz/openbmc_project
+    └─ /xyz/openbmc_project/FruDevice
+      ├─ /xyz/openbmc_project/FruDevice/BMC_Storage_Module_MP
+      ├─ /xyz/openbmc_project/FruDevice/Clemente_E1_S_BP_MP
+      ├─ /xyz/openbmc_project/FruDevice/Clemente_E1_S_BP_MP_0
+      ├─ /xyz/openbmc_project/FruDevice/Clemente_FIO_MP
+      ├─ /xyz/openbmc_project/FruDevice/Clemente_Interposer_MP
+      ├─ /xyz/openbmc_project/FruDevice/Clemente_OSFP_MP
+      ├─ /xyz/openbmc_project/FruDevice/Clemente_PDB_MP
+      ├─ /xyz/openbmc_project/FruDevice/Clemente_SCM_MP
+      ├─ /xyz/openbmc_project/FruDevice/ConnectX_8_800GE_2P_NIC
+      ├─ /xyz/openbmc_project/FruDevice/ConnectX_8_800GE_2P_NIC_0
+      ├─ /xyz/openbmc_project/FruDevice/Nvidia_ConnectX_7_OCP3_0
+      ├─ /xyz/openbmc_project/FruDevice/Nvidia_ConnectX_7_OCP3_0_0
+      ├─ /xyz/openbmc_project/FruDevice/P4764_A02
+      ├─ /xyz/openbmc_project/FruDevice/PG548
+      ├─ /xyz/openbmc_project/FruDevice/PG548_0
+      ├─ /xyz/openbmc_project/FruDevice/PM9D3a
+      ├─ /xyz/openbmc_project/FruDevice/PM9D3a_0
+      ├─ /xyz/openbmc_project/FruDevice/PM9D3a_1
+      ├─ /xyz/openbmc_project/FruDevice/PM9D3a_2
+      └─ /xyz/openbmc_project/FruDevice/XDZ
+```
+
+Change-Id: I2f28cfb79400a13f5675a1530aadd8d47a113497
+Signed-off-by: Potin Lai <potin.lai@quantatw.com>
+
+[1] Gerrit: https://gerrit.openbmc.org/c/openbmc/entity-manager/+/95209
+---
+ src/fru_device/fru_device.cpp | 81 +++++++++++++++++++++++++++--------
+ 1 file changed, 62 insertions(+), 19 deletions(-)
+
+diff --git a/src/fru_device/fru_device.cpp b/src/fru_device/fru_device.cpp
+index 56d4fcd4..f5d2022e 100644
+--- a/src/fru_device/fru_device.cpp
++++ b/src/fru_device/fru_device.cpp
+@@ -1184,9 +1184,19 @@ bool writeFRU(uint8_t bus, uint8_t address, const std::vector<uint8_t>& fru)
+     return true;
+ }
+ 
++using PendingRemoveList =
++    std::vector<std::shared_ptr<sdbusplus::asio::dbus_interface>>;
++struct PendingAdd
++{
++    std::vector<uint8_t> device;
++    uint16_t busNum;
++    uint8_t address;
++};
++using PendingAddList = std::vector<PendingAdd>;
++
+ static void clearDBusInterfacesForBus(
+     uint16_t busNum, const std::set<uint8_t>& skipAddresses,
+-    FruDetails& fruDetails, sdbusplus::asio::object_server& objServer)
++    FruDetails& fruDetails, PendingRemoveList& pendingRemove)
+ {
+     for (auto busIface = fruDetails.dbusInterfaceMap.begin();
+          busIface != fruDetails.dbusInterfaceMap.end();)
+@@ -1198,7 +1208,7 @@ static void clearDBusInterfacesForBus(
+         if (ifaceBus == static_cast<size_t>(busNum) &&
+             !(skipAddresses.contains(ifaceAddress)))
+         {
+-            objServer.remove_interface(busIface->second);
++            pendingRemove.emplace_back(busIface->second);
+             fruDetails.publishedFru.erase(key);
+             busIface = fruDetails.dbusInterfaceMap.erase(busIface);
+         }
+@@ -1211,7 +1221,8 @@ static void clearDBusInterfacesForBus(
+ 
+ static void publishFruOnBusAddress(
+     std::vector<uint8_t>& device, uint16_t busNum, uint8_t address,
+-    FruDetails& fruDetails, sdbusplus::asio::object_server& objServer)
++    FruDetails& fruDetails, PendingRemoveList& pendingRemove,
++    PendingAddList& pendingAdd)
+ {
+     const std::pair<size_t, size_t> key = {busNum, address};
+ 
+@@ -1229,18 +1240,17 @@ static void publishFruOnBusAddress(
+ 
+     if (iface != fruDetails.dbusInterfaceMap.end())
+     {
+-        objServer.remove_interface(iface->second);
++        pendingRemove.emplace_back(iface->second);
+         fruDetails.publishedFru.erase(key);
+         fruDetails.dbusInterfaceMap.erase(iface);
+     }
+ 
+-    addFruObjectToDbus(device, fruDetails, static_cast<uint32_t>(busNum),
+-                       address, objServer);
++    pendingAdd.emplace_back(PendingAdd{device, busNum, address});
+ }
+ 
+-static void publishFrusOnBusCommon(BusMap& busmap, uint16_t busNum,
+-                                   FruDetails& fruDetails,
+-                                   sdbusplus::asio::object_server& objServer)
++static void publishFrusOnBusCommon(
++    BusMap& busmap, uint16_t busNum, FruDetails& fruDetails,
++    PendingRemoveList& pendingRemove, PendingAddList& pendingAdd)
+ {
+     auto it = busmap.find(busNum);
+ 
+@@ -1254,7 +1264,8 @@ static void publishFrusOnBusCommon(BusMap& busmap, uint16_t busNum,
+ 
+     // clear interfaces for all other addresses on this bus which do not
+     // get republished
+-    clearDBusInterfacesForBus(busNum, addressesCovered, fruDetails, objServer);
++    clearDBusInterfacesForBus(busNum, addressesCovered, fruDetails,
++                              pendingRemove);
+ 
+     if (it == busmap.end())
+     {
+@@ -1264,13 +1275,13 @@ static void publishFrusOnBusCommon(BusMap& busmap, uint16_t busNum,
+     for (const auto& entry : *(it->second))
+     {
+         publishFruOnBusAddress(entry.second, busNum, entry.first, fruDetails,
+-                               objServer);
++                               pendingRemove, pendingAdd);
+     }
+ }
+ 
+-static void publishFrusOnBus(BusMap& busmap, uint16_t busNum,
+-                             FruDetails& fruDetails,
+-                             sdbusplus::asio::object_server& objServer)
++static void publishFrusOnBus(
++    BusMap& busmap, uint16_t busNum, FruDetails& fruDetails,
++    PendingRemoveList& pendingRemove, PendingAddList& pendingAdd)
+ {
+     if (busNum == baseboardFruBus)
+     {
+@@ -1285,7 +1296,8 @@ static void publishFrusOnBus(BusMap& busmap, uint16_t busNum,
+         }
+     }
+ 
+-    publishFrusOnBusCommon(busmap, busNum, fruDetails, objServer);
++    publishFrusOnBusCommon(busmap, busNum, fruDetails, pendingRemove,
++                           pendingAdd);
+ }
+ 
+ // @returns all buses which still exist after i2c bus re-scan
+@@ -1301,11 +1313,32 @@ static std::set<uint16_t> getCoveredBuses(const BusMap& busmap)
+     return busesCovered;
+ }
+ 
++static void applyPendingAddRemoveLists(
++    PendingRemoveList& pendingRemove, PendingAddList& pendingAdd,
++    FruDetails& fruDetails, sdbusplus::asio::object_server& objServer)
++{
++    for (auto& iface : pendingRemove)
++    {
++        objServer.remove_interface(iface);
++    }
++    pendingRemove.clear();
++
++    for (auto& add : pendingAdd)
++    {
++        addFruObjectToDbus(add.device, fruDetails,
++                           static_cast<uint32_t>(add.busNum), add.address,
++                           objServer);
++    }
++}
++
+ static void publishAllFrus(BusMap& busmap, FruDetails& fruDetails,
+                            sdbusplus::asio::object_server& objServer)
+ {
+     fruDetails.unknownBusObjectCount = 0;
+ 
++    PendingRemoveList pendingRemove;
++    PendingAddList pendingAdd;
++
+     const std::set<uint16_t> busesCovered = getCoveredBuses(busmap);
+ 
+     // clear all interfaces on buses which are not republished
+@@ -1317,7 +1350,7 @@ static void publishAllFrus(BusMap& busmap, FruDetails& fruDetails,
+ 
+         if (!(busesCovered.contains(ifaceBus)) && !isNfcFru(ifaceBus))
+         {
+-            objServer.remove_interface(busIface->second);
++            pendingRemove.emplace_back(busIface->second);
+             fruDetails.publishedFru.erase(key);
+             busIface = fruDetails.dbusInterfaceMap.erase(busIface);
+         }
+@@ -1328,7 +1361,8 @@ static void publishAllFrus(BusMap& busmap, FruDetails& fruDetails,
+     }
+ 
+     // make sure baseboard fru rescan happens
+-    publishFrusOnBus(busmap, baseboardFruBus, fruDetails, objServer);
++    publishFrusOnBus(busmap, baseboardFruBus, fruDetails, pendingRemove,
++                     pendingAdd);
+ 
+     for (const auto& entry : busmap)
+     {
+@@ -1336,9 +1370,13 @@ static void publishAllFrus(BusMap& busmap, FruDetails& fruDetails,
+         // it may modify the bus map
+         if (entry.first != baseboardFruBus)
+         {
+-            publishFrusOnBus(busmap, entry.first, fruDetails, objServer);
++            publishFrusOnBus(busmap, entry.first, fruDetails, pendingRemove,
++                             pendingAdd);
+         }
+     }
++
++    applyPendingAddRemoveLists(pendingRemove, pendingAdd, fruDetails,
++                               objServer);
+ }
+ 
+ void rescanOneBus(BusMap& busmap, uint16_t busNum, FruDetails& fruDetails,
+@@ -1376,7 +1414,12 @@ void rescanOneBus(BusMap& busmap, uint16_t busNum, FruDetails& fruDetails,
+         i2cBuses, busmap, fruDetails.powerIsOn, objServer,
+         fruDetails.addressBlocklist,
+         [busNum, &busmap, &fruDetails, &objServer]() {
+-            publishFrusOnBus(busmap, busNum, fruDetails, objServer);
++            PendingRemoveList pendingRemove;
++            PendingAddList pendingAdd;
++            publishFrusOnBus(busmap, busNum, fruDetails, pendingRemove,
++                             pendingAdd);
++            applyPendingAddRemoveLists(pendingRemove, pendingAdd, fruDetails,
++                                       objServer);
+         });
+     scan->run();
+ }
+-- 
+2.52.0
+

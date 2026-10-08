@@ -187,7 +187,10 @@ int CpldLatticeManager::jedFileParser()
             state = ParseState::EndCfg;
             continue;
         }
-        else if (line.starts_with(TAG_UFM) || line.starts_with(TAG_TAG_DATA) || line.starts_with(TAG_END_CFG_XO5))
+        // LFMXO5-65T (XO5Familyv2_update) programs fwInfo.cfgData as one
+        // bitstream and never reads ufmData, so do not split UFM out at
+        else if (line.starts_with(TAG_UFM) || line.starts_with(TAG_TAG_DATA) ||
+                 (line.starts_with(TAG_END_CFG_XO5) && chip != "LFMXO5-65T"))
         {
             state = ParseState::Ufm;
             continue;

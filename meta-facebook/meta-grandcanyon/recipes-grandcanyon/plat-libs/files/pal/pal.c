@@ -6393,4 +6393,38 @@ pal_detect_nic_pmon_module(void)
   nic_pmon_source_info = UNKNOWN_SOURCE;
   return nic_pmon_source_info;
 }
+
+const char *
+pal_get_fsc_fan_mode_name(fsc_fan_mode_t mode)
+{
+  switch (mode) {
+    case FSC_NORMAL_MODE:
+      return "normal_mode";
+    case FSC_TRANS_MODE:
+      return "trans_mode";
+    case FSC_BOOST_MODE:
+      return "boost_mode";
+    case FSC_PROGRESSIVE_MODE:
+      return "progressive_mode";
+    case FSC_STANDBY_BOOST_MODE:
+      return "standby_boost_mode";
+    default:
+      return "unknown";
+  }
+}
+
+bool
+pal_is_valid_fsc_fan_mode(fsc_fan_mode_t mode)
+{
+  switch (mode) {
+    case FSC_NORMAL_MODE:
+    case FSC_TRANS_MODE:
+    case FSC_BOOST_MODE:
+    case FSC_PROGRESSIVE_MODE:
+    case FSC_STANDBY_BOOST_MODE:
+      return true;
+    default:
+      return false;
+  }
+}
 #endif

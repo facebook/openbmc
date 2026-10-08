@@ -715,7 +715,38 @@ bic_fallback:
 
   return 0;
 }
+#ifdef CONFIG_GRANDCANYON2
+static void
+pal_clear_cpu_vr_unr_fan_boost_event(const char *trigger)
+{
+  char value[8] = {0};
 
+  /*
+   * Only clear fan_mode_event if CPU/VR UNR was asserted before.
+   * EVENT_ASSERT is 0, so cpu_vr_unr="0" means asserted.
+  */
+  if (kv_get(CPU_VR_UNR_KEY, value, NULL, 0) < 0) {
+    return;
+  }
+
+  if (atoi(value) != EVENT_ASSERT) {
+    return;
+  }
+
+  if (kv_del(FSC_FAN_MODE_EVENT_KEY, 0) < 0 && errno != ENOENT) {
+    syslog(LOG_WARNING, "%s: Failed to delete %s flag", __func__, FSC_FAN_MODE_EVENT_KEY);
+    return;
+  } else {
+    syslog(LOG_INFO, "%s: Deleted %s or key was already absent, trigger: %s", __func__, FSC_FAN_MODE_EVENT_KEY, trigger ? trigger : "unknown");
+  }
+
+  if (kv_del(CPU_VR_UNR_KEY, 0) < 0 && errno != ENOENT) {
+    syslog(LOG_WARNING, "%s: Failed to delete %s flag", __func__, CPU_VR_UNR_KEY);
+  } else {
+    syslog(LOG_INFO, "%s: Deleted %s or key was already absent, trigger: %s", __func__, CPU_VR_UNR_KEY, trigger ? trigger : "unknown");
+  }
+}
+#endif
 // Host DC Off, Host DC On, or Host Reset the server
 int
 pal_set_server_power(uint8_t fru, uint8_t cmd) {
@@ -806,6 +837,9 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
 
       if (ret == 0) {
         pal_host_power_on_post_actions();
+#ifdef CONFIG_GRANDCANYON2
+        pal_clear_cpu_vr_unr_fan_boost_event("server power on");
+#endif
       }
 #ifdef CONFIG_GRANDCANYON2
       set_power_transition_state(ret == 0 ? "DC_ON" : "DC_ON_TRANSITION");
@@ -877,6 +911,9 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
       
       if (ret == 0) {
         pal_host_power_on_post_actions();
+#ifdef CONFIG_GRANDCANYON2
+        pal_clear_cpu_vr_unr_fan_boost_event("server power cycle");
+#endif
       }
       return ret;
 
@@ -945,6 +982,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
         set_power_transition_state("AC_OFF");
         return POWER_STATUS_ERR;
       }
+      pal_clear_cpu_vr_unr_fan_boost_event("server 12V on");
 #else
       ret = server_power_12v_on();
       if (ret == 0) {
@@ -1024,6 +1062,7 @@ pal_set_server_power(uint8_t fru, uint8_t cmd) {
           set_power_transition_state("AC_OFF");
           return POWER_STATUS_ERR;
         }
+        pal_clear_cpu_vr_unr_fan_boost_event("server 12V cycle");
 #else
         return server_power_12v_on();
 #endif

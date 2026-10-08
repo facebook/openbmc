@@ -4810,6 +4810,26 @@ is_server_unr_shutdown_sensor(uint8_t fru, uint8_t snr_num, uint8_t thresh)
       return false;
   }
 }
+
+static int
+pal_set_fsc_fan_mode_event(fsc_fan_mode_t mode, const char *reason)
+{
+  char value[4] = {0};
+
+  if (!pal_is_valid_fsc_fan_mode(mode)) {
+    syslog(LOG_WARNING, "%s: Invalid fan mode event %d", __func__, mode);
+    return -1;
+  }
+
+  snprintf(value, sizeof(value), "%d", mode);
+
+  if (kv_set(FSC_FAN_MODE_EVENT_KEY, value, 0, 0) < 0) {
+    syslog(LOG_WARNING, "%s: Failed to set %s=%s", __func__, FSC_FAN_MODE_EVENT_KEY , pal_get_fsc_fan_mode_name(mode));
+    return -1;
+  }
+  syslog(LOG_CRIT, "Set %s: %s, trigger: %s", FSC_FAN_MODE_EVENT_KEY, pal_get_fsc_fan_mode_name(mode), reason ? reason : "unknown");
+  return 0;
+}
 #endif
 
 void
@@ -4818,8 +4838,21 @@ pal_sensor_assert_handle(uint8_t fru, uint8_t snr_num, float val, uint8_t thresh
   char key[MAX_KEY_LEN] = {0};
 
 #ifdef CONFIG_GRANDCANYON2
+  char event[4] = {0};
+  snprintf(event, sizeof(event), "%d", EVENT_ASSERT);
   if (is_server_unr_shutdown_sensor(fru, snr_num, thresh) == true) {
     uint8_t server_power_status = 0;
+
+    if (kv_set(CPU_VR_UNR_KEY, event, 0, 0) < 0) {
+      syslog(LOG_WARNING, "%s: Failed to set %s", __func__, CPU_VR_UNR_KEY);
+    } else if (pal_set_fsc_fan_mode_event(FSC_BOOST_MODE, "CPU/VR over UNR") < 0) {
+
+      /* Roll back the marker since boost was not set successfully. */
+      if (kv_del(CPU_VR_UNR_KEY, 0) < 0 && errno != ENOENT) {
+         syslog(LOG_WARNING, "%s: Failed to rollback %s", __func__, CPU_VR_UNR_KEY);
+      }
+    }
+
     if (pal_get_server_power(fru, &server_power_status) < 0) {
       syslog(LOG_WARNING, "%s: Fail to get server power status", __func__);
       return;

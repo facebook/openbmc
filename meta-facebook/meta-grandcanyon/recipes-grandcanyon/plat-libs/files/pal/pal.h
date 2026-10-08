@@ -216,6 +216,8 @@ extern "C" {
 
 #define PAL_ERR_CODE_EXP_UNREACHABLE  (1 << 0)  // expander IPMB read failed, exp bitmap invalid
 #define PAL_ERR_CODE_BMC_FILE_FAIL    (1 << 1)  // BMC local error-code file read failed
+#define CPU_VR_UNR_KEY "cpu_vr_unr"
+#define FSC_FAN_MODE_EVENT_KEY "fan_mode_event"
 
 typedef enum {
   STATUS_LED_OFF,
@@ -672,6 +674,14 @@ typedef struct {
   const char *name;
 } efuse_threshold_cfg_t;
 
+typedef enum {
+  FSC_NORMAL_MODE = 0,
+  FSC_TRANS_MODE = 1,
+  FSC_BOOST_MODE = 2,
+  FSC_PROGRESSIVE_MODE = 3,
+  FSC_STANDBY_BOOST_MODE = 4,
+} fsc_fan_mode_t;
+
 int pal_set_id_led(uint8_t slot, enum LED_HIGH_ACTIVE status);
 int pal_set_status_led(uint8_t fru, status_led_color color);
 int pal_set_e1s_led(uint8_t fru, e1s_led_id id, enum LED_HIGH_ACTIVE status);
@@ -748,6 +758,8 @@ mfr_id_t pal_detect_efuse_mfr_id(uint8_t bus, uint8_t addr);
 const char *pal_get_mfr_name(mfr_id_t mfr);
 int pal_read_pmbus_byte_from_exp(uint8_t bus, uint8_t addr, uint8_t cmd, uint8_t rlen, uint8_t *data);
 uint8_t pal_detect_nic_pmon_module(void);
+const char *pal_get_fsc_fan_mode_name(fsc_fan_mode_t mode);
+bool pal_is_valid_fsc_fan_mode(fsc_fan_mode_t mode);
 #ifdef __cplusplus
 } // extern "C"
 #endif

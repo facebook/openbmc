@@ -932,10 +932,14 @@ class BaseFwUpgradeTest(object):
             # A flash that reported success but leaves the component reporting
             # no readable version has not been verified. Without this the test
             # passes on an upgrade it cannot confirm actually took effect.
+            # Only enforce this when the JSON gives a package version: without
+            # one (e.g. elbert scm) there is nothing to verify against, so the
+            # flash result alone decides.
             unverified = (
                 component["upgrade_needed"]
                 and component["upgrade_status"]
                 and versions_were_collected
+                and not is_version_unverifiable(component["image_version"])
                 and is_version_unverifiable(current_version)
             )
             component["unverified"] = unverified

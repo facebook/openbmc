@@ -139,6 +139,7 @@ LOCAL_URI = " \
     file://test_redfish_fwinfo.py \
     file://test_rest_fwinfo.py \
     file://test_redfish_sensors.py \
+    file://test_rest_sensors.py \
     file://test_redfish_log_service.py \
     file://.flake8 \
     "

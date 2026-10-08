@@ -7,6 +7,7 @@ from shutil import which
 
 import aggregate_sensor as libag
 import pal
+import rest_sensors
 import sdr
 from common_utils import async_exec
 
@@ -140,7 +141,9 @@ def get_older_fboss_sensor_details(fru_name: str) -> t.List[SensorDetails]:
     for chip in sensors.ChipIterator():
         for sensor in sensors.FeatureIterator(chip):
             chip_name = sensors.chip_snprintf_name(chip)
-            adapter_name = sensors.get_adapter_name(chip.bus)
+            adapter_name = rest_sensors.legacy_adapter_name(
+                sensors.get_adapter_name(chip.bus)
+            )
             sensor_tag = sensor.name.decode("utf-8")
             reading_key = sensor_tag + "_input"
             ucr_key = sensor_tag + "_max"

@@ -18,25 +18,14 @@
 # Boston, MA 02110-1301 USA
 #
 
-echo -e  "\n################################"
-echo "########## dmesg log ###########"
-echo "################################"
-dmesg
+run_util() {
+	echo -e "\n##### $2 #####"
+	if [ ! -x "$1" ]; then
+		echo "$1 doesn't exist!"
+	else
+		"$1"
+	fi
+}
 
-echo -e  "\n################################"
-echo "##### /var/log/messages log ####"
-echo "################################"
-if [ ! -f "/var/log/messages" ]; then
-	echo "/var/log/messages doesn't exist!"
-else
-	cat /var/log/messages
-fi
-
-echo -e  "\n################################"
-echo "########## journal log ###########"
-echo "##################################"
-if ! command -v journalctl >/dev/null 2>&1; then
-	echo "journalctl doesn't exist!"
-else
-	journalctl -a
-fi
+run_util /usr/local/bin/fpga_ver.sh  "FPGA VERSIONS"
+run_util /usr/local/bin/dpm_ver.sh   "DPM VERSIONS"

@@ -18,25 +18,19 @@
 # Boston, MA 02110-1301 USA
 #
 
-echo -e  "\n################################"
-echo "########## dmesg log ###########"
-echo "################################"
-dmesg
+dump_cpld() {
+	echo -e "\n################################"
+	echo "##### $3 ####"
+	echo "################################"
 
-echo -e  "\n################################"
-echo "##### /var/log/messages log ####"
-echo "################################"
-if [ ! -f "/var/log/messages" ]; then
-	echo "/var/log/messages doesn't exist!"
-else
-	cat /var/log/messages
-fi
+	echo -e "\n##### $4 #####"
+	if [ ! -e "/dev/i2c-$1" ]; then
+		echo "/dev/i2c-$1 doesn't exist!"
+	else
+		# -f is needed because the CPLD is bound to a kernel driver.
+		i2cdump -f -y "$1" "$2"
+	fi
+}
 
-echo -e  "\n################################"
-echo "########## journal log ###########"
-echo "##################################"
-if ! command -v journalctl >/dev/null 2>&1; then
-	echo "journalctl doesn't exist!"
-else
-	journalctl -a
-fi
+dump_cpld 4 0x23 "SWITCHCARD DEBUG INFO" "SMB CPLD I2CDUMP"
+dump_cpld 12 0x43 "PIM DEBUG INFO" "SCM CPLD I2CDUMP"

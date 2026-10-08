@@ -18,25 +18,9 @@
 # Boston, MA 02110-1301 USA
 #
 
-echo -e  "\n################################"
-echo "########## dmesg log ###########"
-echo "################################"
-dmesg
+echo -e "\n##### BMC EEPROM INFO #####"
 
-echo -e  "\n################################"
-echo "##### /var/log/messages log ####"
-echo "################################"
-if [ ! -f "/var/log/messages" ]; then
-	echo "/var/log/messages doesn't exist!"
-else
-	cat /var/log/messages
-fi
-
-echo -e  "\n################################"
-echo "########## journal log ###########"
-echo "##################################"
-if ! command -v journalctl >/dev/null 2>&1; then
-	echo "journalctl doesn't exist!"
-else
-	journalctl -a
-fi
+# yamp_weutil owns the device list, so CHASSIS, SCD, SUP and the line cards
+# lc1-8 are all covered here, in the same order. Each block is delimited by its
+# own "Wedge EEPROM <device>:" line.
+weutil -a

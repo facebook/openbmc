@@ -18,25 +18,27 @@
 # Boston, MA 02110-1301 USA
 #
 
-echo -e  "\n################################"
-echo "########## dmesg log ###########"
-echo "################################"
-dmesg
+dump_log() {
+	echo -e "\n#### $2 ####"
+	if [ ! -f "$1" ]; then
+		echo "$1 doesn't exist!"
+	else
+		cat "$1"
+	fi
+}
 
-echo -e  "\n################################"
-echo "##### /var/log/messages log ####"
+echo -e "\n################################"
+echo "########## FSCD LOG ############"
 echo "################################"
-if [ ! -f "/var/log/messages" ]; then
-	echo "/var/log/messages doesn't exist!"
-else
-	cat /var/log/messages
-fi
+dump_log /var/log/fscd.log.1 "FSCD LOG (rotated)"
+dump_log /var/log/fscd.log   "FSCD LOG"
 
-echo -e  "\n################################"
-echo "########## journal log ###########"
-echo "##################################"
-if ! command -v journalctl >/dev/null 2>&1; then
-	echo "journalctl doesn't exist!"
-else
-	journalctl -a
-fi
+echo -e "\n################################"
+echo "##########  DPM LOGS  ##########"
+echo "################################"
+dump_log /mnt/data1/log/dpm_log "DPM LOG"
+
+echo -e "\n################################"
+echo "###### BOOT CONSOLE LOG ########"
+echo "################################"
+dump_log /var/log/boot "BOOT CONSOLE LOG"

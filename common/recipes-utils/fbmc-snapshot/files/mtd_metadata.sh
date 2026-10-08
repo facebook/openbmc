@@ -45,4 +45,10 @@ if [ -z "$mtd" ]; then
 fi
 
 dd if=/dev/"$mtd" of=/tmp/."$1"_meta bs=1K skip="$START_OFFSET_KB" count="$LEN_KB"
+# Images without an image-meta partition (e.g. yamp) have unrelated data
+# here, which strings would print as noise.
+if ! grep -q FBOBMC_IMAGE_META_VER /tmp/."$1"_meta; then
+    echo "No image meta on $1"
+    exit 0
+fi
 strings /tmp/."$1"_meta

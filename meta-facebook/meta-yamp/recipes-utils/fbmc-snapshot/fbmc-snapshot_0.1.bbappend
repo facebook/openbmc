@@ -1,5 +1,3 @@
-#!/bin/bash
-#
 # Copyright (c) Meta Platforms, Inc. and affiliates. (http://www.meta.com)
 #
 # This program file is free software; you can redistribute it and/or modify it
@@ -16,27 +14,23 @@
 # Free Software Foundation, Inc.,
 # 51 Franklin Street, Fifth Floor,
 # Boston, MA 02110-1301 USA
-#
 
-echo -e  "\n################################"
-echo "########## dmesg log ###########"
-echo "################################"
-dmesg
+FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
-echo -e  "\n################################"
-echo "##### /var/log/messages log ####"
-echo "################################"
-if [ ! -f "/var/log/messages" ]; then
-	echo "/var/log/messages doesn't exist!"
-else
-	cat /var/log/messages
-fi
+LOCAL_URI += "\
+    file://900_power_status.sh \
+    file://901_versions.sh \
+    file://902_weutil.sh \
+    file://903_fan_info.sh \
+    file://904_dump_cpld.sh \
+    file://905_debug_logs.sh \
+    "
 
-echo -e  "\n################################"
-echo "########## journal log ###########"
-echo "##################################"
-if ! command -v journalctl >/dev/null 2>&1; then
-	echo "journalctl doesn't exist!"
-else
-	journalctl -a
-fi
+SHOWTECH_RULES_FILES:append = " \
+    900_power_status.sh \
+    901_versions.sh \
+    902_weutil.sh \
+    903_fan_info.sh \
+    904_dump_cpld.sh \
+    905_debug_logs.sh \
+    "

@@ -18,25 +18,14 @@
 # Boston, MA 02110-1301 USA
 #
 
-echo -e  "\n################################"
-echo "########## dmesg log ###########"
-echo "################################"
-dmesg
+SC_POWERGOOD="/sys/bus/i2c/drivers/supcpld/12-0043/switchcard_powergood"
 
-echo -e  "\n################################"
-echo "##### /var/log/messages log ####"
-echo "################################"
-if [ ! -f "/var/log/messages" ]; then
-	echo "/var/log/messages doesn't exist!"
-else
-	cat /var/log/messages
-fi
+echo -e "\n##### USER PWR STATUS #####"
+/usr/local/bin/wedge_power.sh status
 
-echo -e  "\n################################"
-echo "########## journal log ###########"
-echo "##################################"
-if ! command -v journalctl >/dev/null 2>&1; then
-	echo "journalctl doesn't exist!"
+echo -e "\n##### SWITCHCARD POWERGOOD STATUS #####"
+if [ ! -f "$SC_POWERGOOD" ]; then
+	echo "$SC_POWERGOOD doesn't exist!"
 else
-	journalctl -a
+	head -n 1 "$SC_POWERGOOD"
 fi

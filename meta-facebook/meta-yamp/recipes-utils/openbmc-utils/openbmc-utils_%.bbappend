@@ -50,7 +50,6 @@ LOCAL_URI += " \
     file://peutil \
     file://scdinfo \
     file://psu_show_tech.py \
-    file://show_tech.py \
     file://sup_eeprom.sh \
     file://dpm_dump.sh \
     "
@@ -74,7 +73,6 @@ OPENBMC_UTILS_FILES += " \
     peutil \
     scdinfo \
     psu_show_tech.py \
-    show_tech.py \
     dpm_dump.sh \
     "
 
@@ -156,7 +154,6 @@ do_install:append() {
 
     install -m 0755 ${UNPACKDIR}/yamp_flash.layout ${D}${sysconfdir}/yamp_flash.layout
 
-    ln -s show_tech.py ${D}/usr/local/bin/showtech
 }
 
 FILES:${PN} += "${sysconfdir}"

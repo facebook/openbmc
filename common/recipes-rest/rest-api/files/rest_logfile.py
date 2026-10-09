@@ -21,7 +21,7 @@
 import os
 
 from aiohttp import web
-from common_utils import common_force_async, dumps_bytestr
+from common_utils import async_in_common_executor, dumps_bytestr
 
 
 LOGFILE = "/mnt/data/logfile"
@@ -109,5 +109,5 @@ async def post_logfile(request: web.Request) -> web.Response:
 
     # Reading the file blocks, so keep it off the event loop. Positional args:
     # run_in_executor does not forward keywords.
-    result = await common_force_async(get_logfile)(lines, include_rotated)
+    result = await async_in_common_executor(get_logfile)(lines, include_rotated)
     return web.json_response(result, dumps=dumps_bytestr, status=200)

@@ -1,4 +1,4 @@
-From 17b90ec20ee1df3fd83d0d94e9ef463cd7722574 Mon Sep 17 00:00:00 2001
+From 673b502ad0710cc32a69d6618c8292a8bfbe7249 Mon Sep 17 00:00:00 2001
 From: Henry Wu <Henry_Wu@quantatw.com>
 Date: Wed, 8 Apr 2026 18:35:20 +0800
 Subject: [PATCH] common: restore VR page after update or CRC access
@@ -75,13 +75,13 @@ index e038ade..08bc1d3 100644
 +    std::optional<uint8_t> originalPage;
 +};
 diff --git a/common/meson.build b/common/meson.build
-index da2d177..3ad4a8d 100644
+index ea35ade..72bf94b 100644
 --- a/common/meson.build
 +++ b/common/meson.build
-@@ -28,6 +28,7 @@ software_common_lib = static_library(
-     'src/software_update.cpp',
+@@ -29,6 +29,7 @@ software_common_lib = static_library(
      'src/host_power.cpp',
      'src/utils.cpp',
+     'src/mctp/endpoint.cpp',
 +    'src/pmbus.cpp',
      include_directories: ['.', 'include/', common_include],
      dependencies: [
@@ -240,5 +240,5 @@ index fa496ca..d05e6dd 100644
      {
          co_return false;
 -- 
-2.52.0
+2.53.0-Meta
 

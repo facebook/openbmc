@@ -1,4 +1,4 @@
-From 00d263a0c9f7e1c248c45689cbd366a876c82450 Mon Sep 17 00:00:00 2001
+From cc519a471d50ab46af3462fc4081677084be831c Mon Sep 17 00:00:00 2001
 From: Sandeep Kumar <sandeepkumar.sanku@amd.com>
 Date: Sat, 29 Aug 2026 13:54:00 -0700
 Subject: [PATCH] LogEntry: Add support for parsing and presenting CPER
@@ -16,11 +16,11 @@ Change-Id: Ibc406ea0b81243e3563fbc99586dc934f7498c86
 Signed-off-by: Sandeep Kumar <sandeepkumar.sanku@amd.com>
 ---
  .../include/utils/dbus_event_log_entry.hpp    | 132 +++++
- redfish-core/include/utils/eventlog_utils.hpp |  29 +-
+ redfish-core/include/utils/eventlog_utils.hpp |  31 +-
  redfish-core/lib/log_services.hpp             |  18 +
  redfish-core/lib/log_services_rawcper.hpp     | 454 ++++++++++++++++++
  redfish-core/src/redfish.cpp                  |   3 +
- 5 files changed, 632 insertions(+), 4 deletions(-)
+ 5 files changed, 634 insertions(+), 4 deletions(-)
  create mode 100644 redfish-core/lib/log_services_rawcper.hpp
 
 diff --git a/redfish-core/include/utils/dbus_event_log_entry.hpp b/redfish-core/include/utils/dbus_event_log_entry.hpp
@@ -179,10 +179,10 @@ index 7c2f4f27..7452c2f1 100644
 +}
  } // namespace redfish
 diff --git a/redfish-core/include/utils/eventlog_utils.hpp b/redfish-core/include/utils/eventlog_utils.hpp
-index 0c0210ed..6eb0c9f6 100644
+index 1ef3ff61..3ddd9441 100644
 --- a/redfish-core/include/utils/eventlog_utils.hpp
 +++ b/redfish-core/include/utils/eventlog_utils.hpp
-@@ -282,7 +282,7 @@ static LogParseError fillEventLogEntryJson(
+@@ -283,7 +283,7 @@ static LogParseError fillEventLogEntryJson(
      }
  
      // Fill in the log entry with the gathered data
@@ -191,16 +191,16 @@ index 0c0210ed..6eb0c9f6 100644
      logEntryJson["@odata.id"] =
          boost::urls::format("/redfish/v1/{}/{}/LogServices/EventLog/Entries/{}",
                              collectionStr, memberId, logEntryID);
-@@ -574,7 +574,7 @@ inline void fillEventLogLogEntryFromDbusLogEntry(
+@@ -573,7 +573,7 @@ inline bool fillEventLogLogEntryFromDbusLogEntry(
  
-     auto logEntryID = std::to_string(entry.Id);
+     std::string logEntryID = std::to_string(entry.Id);
  
 -    objectToFillOut["@odata.type"] = "#LogEntry.v1_9_0.LogEntry";
 +    objectToFillOut["@odata.type"] = "#LogEntry.v1_15_0.LogEntry";
      objectToFillOut["@odata.id"] =
          boost::urls::format("/redfish/v1/{}/{}/LogServices/EventLog/Entries/{}",
                              collectionStr, memberId, logEntryID);
-@@ -652,9 +652,17 @@ inline void afterLogEntriesGetManagedObjects(
+@@ -652,13 +652,22 @@ inline void afterLogEntriesGetManagedObjects(
              messages::internalError(asyncResp->res);
              return;
          }
@@ -212,18 +212,25 @@ index 0c0210ed..6eb0c9f6 100644
 +                return iface.first == "xyz.openbmc_project.Logging.CPER.Raw";
 +            });
 +        nlohmann::json& entryJson = entriesArray.emplace_back();
-         fillEventLogLogEntryFromDbusLogEntry(
--            *optEntry, entriesArray.emplace_back(), collectionStr, memberId,
--            logEntryDescriptor);
-+            *optEntry, entryJson, collectionStr, memberId, logEntryDescriptor);
+         if (!fillEventLogLogEntryFromDbusLogEntry(
+-                *optEntry, entriesArray.emplace_back(), collectionStr,
+-                memberId, logEntryDescriptor))
++                *optEntry, entryJson, collectionStr, memberId,
++                logEntryDescriptor))
+         {
+             messages::internalError(asyncResp->res);
+             return;
+         }
 +        fillEventLogCperFromPropertyMap(propsFlattened, entryJson, hasRawCper);
      }
  
      redfish::json_util::sortJsonArrayByKey(entriesArray, "Id");
-@@ -735,6 +743,19 @@ inline void afterDBusEventLogEntryGet(
-     fillEventLogLogEntryFromDbusLogEntry(
-         *optEntry, asyncResp->res.jsonValue, collectionStr, memberId,
-         logEntryDescriptor);
+@@ -741,7 +750,21 @@ inline void afterDBusEventLogEntryGet(
+             logEntryDescriptor))
+     {
+         messages::internalError(asyncResp->res);
++        return;
+     }
 +    // The raw counterpart cross-link is added only when the entry exposes the
 +    // xyz.openbmc_project.Logging.CPER.Raw interface. That interface has no
 +    // properties, so detect it via the object mapper rather than the property
@@ -241,7 +248,7 @@ index 0c0210ed..6eb0c9f6 100644
  
  inline void dBusEventLogEntryGet(
 diff --git a/redfish-core/lib/log_services.hpp b/redfish-core/lib/log_services.hpp
-index 990e27e3..92d16cf2 100644
+index eefc3f3e..bcb003bc 100644
 --- a/redfish-core/lib/log_services.hpp
 +++ b/redfish-core/lib/log_services.hpp
 @@ -163,6 +163,15 @@ inline void handleSystemsLogServiceCollectionGet(

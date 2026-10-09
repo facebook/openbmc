@@ -1,4 +1,4 @@
-From cbb914df7aed89d521040ebca68726696efa0208 Mon Sep 17 00:00:00 2001
+From 374a89532310fc4e9a530a0c69f687f8c4f0c938 Mon Sep 17 00:00:00 2001
 From: Peter Yin <peter.yin@quantatw.com>
 Date: Tue, 31 Mar 2026 20:37:28 +0800
 Subject: [PATCH] terminus: replace inventory and sensor configuration
@@ -28,22 +28,22 @@ Inventory name update:
 Change-Id: I326459c75d6dc8b822302eaf7f0b85f13412b0db
 Signed-off-by: Peter Yin <peter.yin@quantatw.com>
 ---
- common/types.hpp                              |  11 +-
+ common/types.hpp                              |   7 +-
  fw-update/inventory_manager.cpp               |   2 +-
  .../test/firmware_inventory_manager_test.cpp  |   5 +-
- platform-mc/terminus.cpp                      | 146 +++++++++++++-
+ platform-mc/terminus.cpp                      | 147 +++++++++++++-
  platform-mc/terminus.hpp                      |  26 +++
  platform-mc/terminus_manager.cpp              |  54 +++++-
  platform-mc/test/event_manager_test.cpp       |  12 +-
  platform-mc/test/platform_manager_test.cpp    |  24 +--
  platform-mc/test/terminus_manager_test.cpp    |  32 ++--
  requester/mctp_endpoint_discovery.cpp         | 181 +++++++++++++-----
- requester/mctp_endpoint_discovery.hpp         |  15 +-
+ requester/mctp_endpoint_discovery.hpp         |  11 ++
  .../test/mctp_endpoint_discovery_test.cpp     |  31 +--
- 12 files changed, 438 insertions(+), 101 deletions(-)
+ 12 files changed, 435 insertions(+), 97 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
-index 4e76ac0..fe391e2 100644
+index 4e76ac0..d8b925a 100644
 --- a/common/types.hpp
 +++ b/common/types.hpp
 @@ -37,6 +37,10 @@ using NetworkId = uint32_t;
@@ -67,17 +67,6 @@ index 4e76ac0..fe391e2 100644
  
  /** @brief Type definition of MCTP endpoint D-Bus properties in
   *         xyz.openbmc_project.MCTP.Endpoint D-Bus interface.
-@@ -61,6 +66,10 @@ using MctpEndpointProps = std::tuple<NetworkId, eid, MCTPMsgTypes>;
-  */
- using MctpInfos = std::vector<MctpInfo>;
- 
-+const std::vector<std::string> interfaceFilter = {
-+    "xyz.openbmc_project.Configuration.MCTPI2CTarget",
-+    "xyz.openbmc_project.Configuration.MCTPI3CTarget"};
-+
- /**
-  * In `Table 2 - Special endpoint IDs` of DSP0236.
-  * EID from 1 to 7 is reserved EID. So the start valid EID is 8
 diff --git a/fw-update/inventory_manager.cpp b/fw-update/inventory_manager.cpp
 index de25b5e..652458e 100644
 --- a/fw-update/inventory_manager.cpp
@@ -108,10 +97,18 @@ index 2ae280a..c8b1bd8 100644
  
      Event event(sdeventplus::Event::get_default());
 diff --git a/platform-mc/terminus.cpp b/platform-mc/terminus.cpp
-index 86d9e72..83f5229 100644
+index 86d9e72..fbbafa4 100644
 --- a/platform-mc/terminus.cpp
 +++ b/platform-mc/terminus.cpp
-@@ -230,6 +230,12 @@ void Terminus::parseTerminusPDRs()
+@@ -2,6 +2,7 @@
+ 
+ #include "common/start_lifetime_as.hpp"
+ #include "dbus_impl_fru.hpp"
++#include "requester/mctp_endpoint_discovery.hpp"
+ 
+ #include <libpldm/platform.h>
+ 
+@@ -230,6 +231,12 @@ void Terminus::parseTerminusPDRs()
          }
      }
  
@@ -124,7 +121,7 @@ index 86d9e72..83f5229 100644
      auto tName = findTerminusName();
      if (tName && !tName.value().empty())
      {
-@@ -250,10 +256,22 @@ void Terminus::parseTerminusPDRs()
+@@ -250,10 +257,22 @@ void Terminus::parseTerminusPDRs()
  #endif
      }
  
@@ -150,7 +147,7 @@ index 86d9e72..83f5229 100644
      }
  
      addNextSensorFromPDRs();
-@@ -841,5 +859,127 @@ std::vector<std::string> Terminus::getSensorNames(const SensorID& sensorId)
+@@ -841,5 +860,127 @@ std::vector<std::string> Terminus::getSensorNames(const SensorID& sensorId)
      return sensorNames;
  }
  
@@ -879,21 +876,10 @@ index ec77371..b3045c8 100644
  
  void MctpDiscovery::removeConfigs(const MctpInfos& removedInfos)
 diff --git a/requester/mctp_endpoint_discovery.hpp b/requester/mctp_endpoint_discovery.hpp
-index 56214fc..d7d77a0 100644
+index a7a4378..d29f700 100644
 --- a/requester/mctp_endpoint_discovery.hpp
 +++ b/requester/mctp_endpoint_discovery.hpp
-@@ -28,10 +28,6 @@ constexpr const char* MCTPConnectivityProp = "Connectivity";
- constexpr const char* inventorySubtreePathStr =
-     "/xyz/openbmc_project/inventory/system";
- 
--const std::vector<std::string> interfaceFilter = {
--    "xyz.openbmc_project.Configuration.MCTPI2CTarget",
--    "xyz.openbmc_project.Configuration.MCTPI3CTarget"};
--
- /** @class MctpDiscoveryHandlerIntf
-  *
-  * This abstract class defines the APIs for MctpDiscovery class has common
-@@ -237,6 +233,17 @@ class MctpDiscovery
+@@ -238,6 +238,17 @@ class MctpDiscovery
       * information.
       */
      Configurations configurations;

@@ -1,4 +1,4 @@
-From 0bde9b957189d4a7c3ee9652ae1231f3d1753ab6 Mon Sep 17 00:00:00 2001
+From 1d46641247e3eebd41c271f6b501fb160003f8cb Mon Sep 17 00:00:00 2001
 From: Rex Fu <rex.fu@amd.com>
 Date: Tue, 6 Oct 2026 16:59:18 +0800
 Subject: [PATCH] ARM: dts: aspeed: anacapa: Add LPDB fuse monitor GPIO
@@ -17,7 +17,7 @@ Signed-off-by: Rex Fu <rex.fu@amd.com>
  1 file changed, 42 insertions(+), 10 deletions(-)
 
 diff --git a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
-index 601600cad..d773f0b06 100644
+index 601600cad66e..d773f0b06899 100644
 --- a/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 +++ b/arch/arm/boot/dts/aspeed/aspeed-bmc-facebook-anacapa-evt2.dts
 @@ -565,14 +565,14 @@ gpio@22 {
@@ -114,5 +114,5 @@ index 601600cad..d773f0b06 100644
  
  			power-monitor@40 {
 -- 
-2.43.0
+2.53.0-Meta
 

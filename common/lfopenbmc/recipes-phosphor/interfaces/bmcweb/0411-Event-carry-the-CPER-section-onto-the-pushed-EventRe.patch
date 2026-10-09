@@ -1,4 +1,4 @@
-From d61e0b4e0626854f232c2fa3a29b05fc2547bc75 Mon Sep 17 00:00:00 2001
+From f0bd8998904cc602d87e912447d07f6d6152c7df Mon Sep 17 00:00:00 2001
 From: Pete O_o <pmb@meta.com>
 Date: Wed, 2 Sep 2026 14:00:00 -0700
 Subject: [PATCH] Event: carry the CPER section onto the pushed EventRecord
@@ -45,16 +45,16 @@ member appears on the record. The two existing cases now assert the
 no-CPER path leaves the record untouched.
 ---
  docs/Redfish.md                               |  5 ++
- redfish-core/include/dbus_log_watcher.hpp     |  4 ++
+ redfish-core/include/dbus_log_watcher.hpp     |  8 ++-
  .../include/event_logs_object_type.hpp        |  8 +++
- redfish-core/src/dbus_log_watcher.cpp         | 56 ++++++++++++---
+ redfish-core/src/dbus_log_watcher.cpp         | 55 ++++++++++++---
  redfish-core/src/event_log.cpp                |  8 +++
  redfish-core/src/subscription.cpp             |  4 +-
  .../include/dbus_log_watcher_test.cpp         | 68 +++++++++++++++++--
- 7 files changed, 140 insertions(+), 13 deletions(-)
+ 7 files changed, 141 insertions(+), 15 deletions(-)
 
 diff --git a/docs/Redfish.md b/docs/Redfish.md
-index 76e85dc6..95e1210b 100644
+index a5c47879..ac6654b5 100644
 --- a/docs/Redfish.md
 +++ b/docs/Redfish.md
 @@ -639,7 +639,12 @@ Fields common to all schemas
@@ -71,10 +71,10 @@ index 76e85dc6..95e1210b 100644
  - Events[]/EventTimestamp
  - Events[]/LogEntry
 diff --git a/redfish-core/include/dbus_log_watcher.hpp b/redfish-core/include/dbus_log_watcher.hpp
-index 203d1878..d36118e7 100644
+index df3a0dd7..473b7b43 100644
 --- a/redfish-core/include/dbus_log_watcher.hpp
 +++ b/redfish-core/include/dbus_log_watcher.hpp
-@@ -12,8 +12,12 @@ class DbusEventLogMonitor
+@@ -12,9 +12,13 @@ class DbusEventLogMonitor
      DbusEventLogMonitor();
      sdbusplus::match dbusEventLogMonitor;
  
@@ -82,11 +82,14 @@ index 203d1878..d36118e7 100644
 +    // xyz.openbmc_project.Logging.Extension.CPER.Processed interface, or empty
 +    // when the entry does not carry that interface.
      static bool eventLogObjectFromDBus(
-         const dbus::utility::DBusPropertiesMap& map,
+-        const dbus::utility::DBusPropertiesMap& map, EventLogObjectsType& event,
+-        std::string_view tz = "");
++        const dbus::utility::DBusPropertiesMap& map,
 +        const dbus::utility::DBusPropertiesMap& cperMap,
-         EventLogObjectsType& event);
++        EventLogObjectsType& event, std::string_view tz = "");
  };
  
+ class DbusTelemetryMonitor
 diff --git a/redfish-core/include/event_logs_object_type.hpp b/redfish-core/include/event_logs_object_type.hpp
 index 8be93c04..6c43e30e 100644
 --- a/redfish-core/include/event_logs_object_type.hpp
@@ -113,7 +116,7 @@ index 8be93c04..6c43e30e 100644
  };
  } // namespace redfish
 diff --git a/redfish-core/src/dbus_log_watcher.cpp b/redfish-core/src/dbus_log_watcher.cpp
-index 49837f19..156a24af 100644
+index b33a20a0..5d2d3dca 100644
 --- a/redfish-core/src/dbus_log_watcher.cpp
 +++ b/redfish-core/src/dbus_log_watcher.cpp
 @@ -9,6 +9,7 @@
@@ -124,25 +127,24 @@ index 49837f19..156a24af 100644
  #include <sdbusplus/bus/match.hpp>
  #include <sdbusplus/message.hpp>
  #include <sdbusplus/message/native_types.hpp>
-@@ -25,7 +26,9 @@ namespace redfish
+@@ -24,7 +25,8 @@ namespace redfish
  {
  
  bool DbusEventLogMonitor::eventLogObjectFromDBus(
--    const dbus::utility::DBusPropertiesMap& map, EventLogObjectsType& event)
+-    const dbus::utility::DBusPropertiesMap& map, EventLogObjectsType& event,
 +    const dbus::utility::DBusPropertiesMap& map,
-+    const dbus::utility::DBusPropertiesMap& cperMap,
-+    EventLogObjectsType& event)
++    const dbus::utility::DBusPropertiesMap& cperMap, EventLogObjectsType& event,
+     std::string_view tz)
  {
      std::optional<DbusEventLogEntry> optEntry =
-         fillDbusEventLogEntryFromPropertyMap(map);
-@@ -39,16 +42,34 @@ bool DbusEventLogMonitor::eventLogObjectFromDBus(
- 
+@@ -38,16 +40,34 @@ bool DbusEventLogMonitor::eventLogObjectFromDBus(
+     }
      const DbusEventLogEntry& entry = optEntry.value();
  
 -    return dbus_registries_map::dbusEventLogEntryToEventLogObjectsType(
--        entry, event);
-+    if (!dbus_registries_map::dbusEventLogEntryToEventLogObjectsType(entry,
-+                                                                     event))
+-        entry, event, tz);
++    if (!dbus_registries_map::dbusEventLogEntryToEventLogObjectsType(
++            entry, event, tz))
 +    {
 +        return false;
 +    }
@@ -174,7 +176,7 @@ index 49837f19..156a24af 100644
      if (!success)
      {
          BMCWEB_LOG_ERROR("Could not parse event log entry from dbus");
-@@ -69,15 +90,34 @@ static void onDbusEventLogCreated(sdbusplus::message_t& msg)
+@@ -68,15 +88,34 @@ static void onDbusEventLogCreated(sdbusplus::message_t& msg)
  
      msg.read(objectPath, interfaces);
  
@@ -213,10 +215,10 @@ index 49837f19..156a24af 100644
  
  const std::string propertiesMatchString =
 diff --git a/redfish-core/src/event_log.cpp b/redfish-core/src/event_log.cpp
-index 0bfada98..2e9a41e0 100644
+index 7539ff51..92d9a3ee 100644
 --- a/redfish-core/src/event_log.cpp
 +++ b/redfish-core/src/event_log.cpp
-@@ -169,6 +169,14 @@ void formatEventLogEntry(uint64_t eventId,
+@@ -166,6 +166,14 @@ void formatEventLogEntry(uint64_t eventId,
      }
      logEntryJson["LogEntry"]["@odata.id"] =
          formatEventLogEntryUri(eventLogParent, eventLogPath, logEntry.id);
@@ -232,10 +234,10 @@ index 0bfada98..2e9a41e0 100644
  
  } // namespace event_log
 diff --git a/redfish-core/src/subscription.cpp b/redfish-core/src/subscription.cpp
-index 47dd52fe..31033219 100644
+index 1f705a97..b0d5bfe1 100644
 --- a/redfish-core/src/subscription.cpp
 +++ b/redfish-core/src/subscription.cpp
-@@ -241,7 +241,9 @@ void Subscription::filterAndSendEventLogs(
+@@ -237,7 +237,9 @@ void Subscription::filterAndSendEventLogs(
      }
  
      nlohmann::json msg;

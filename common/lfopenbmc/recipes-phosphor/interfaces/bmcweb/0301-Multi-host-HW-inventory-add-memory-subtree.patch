@@ -1,4 +1,4 @@
-From 0a4edae1d4057146986e3505af20d5708889212a Mon Sep 17 00:00:00 2001
+From 9160ef56c1034878daaf0fc68c896cf9fd551318 Mon Sep 17 00:00:00 2001
 From: Christopher Meis <christopher.meis@9elements.com>
 Date: Tue, 23 Sep 2025 10:24:36 +0200
 Subject: [PATCH] Multi-host/HW-inventory: add memory subtree
@@ -165,18 +165,18 @@ Signed-off-by: Christopher Meis <christopher.meis@9elements.com>
  2 files changed, 103 insertions(+), 34 deletions(-)
 
 diff --git a/redfish-core/lib/memory.hpp b/redfish-core/lib/memory.hpp
-index 1bec96a3..45138846 100644
+index c9dafac6..b79de76d 100644
 --- a/redfish-core/lib/memory.hpp
 +++ b/redfish-core/lib/memory.hpp
-@@ -20,6 +20,7 @@
- #include "utils/dbus_utils.hpp"
+@@ -21,6 +21,7 @@
  #include "utils/hex_utils.hpp"
  #include "utils/json_utils.hpp"
+ #include "utils/name_utils.hpp"
 +#include "utils/systems_utils.hpp"
  #include "utils/time_utils.hpp"
  
  #include <asm-generic/errno.h>
-@@ -45,6 +46,10 @@
+@@ -46,6 +47,10 @@
  namespace redfish
  {
  
@@ -187,7 +187,7 @@ index 1bec96a3..45138846 100644
  inline memory::MemoryDeviceType translateMemoryTypeToRedfish(
      const std::string& memoryType)
  {
-@@ -748,7 +753,8 @@ inline void getDimmPartitionData(std::shared_ptr<bmcweb::AsyncResp> asyncResp,
+@@ -749,7 +754,8 @@ inline void getDimmPartitionData(std::shared_ptr<bmcweb::AsyncResp> asyncResp,
  
  inline void afterGetDimmData(
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
@@ -197,7 +197,7 @@ index 1bec96a3..45138846 100644
      const dbus::utility::MapperGetSubTreeResponse& subtree)
  {
      if (ec)
-@@ -825,25 +831,57 @@ inline void afterGetDimmData(
+@@ -826,25 +832,57 @@ inline void afterGetDimmData(
      }
      // Set @odata only if object is found
      asyncResp->res.jsonValue["@odata.type"] = "#Memory.v1_23_0.Memory";
@@ -264,7 +264,7 @@ index 1bec96a3..45138846 100644
          });
  }
  
-@@ -961,22 +999,47 @@ inline void handleMemoryGet(App& app, const crow::Request& req,
+@@ -962,22 +1000,47 @@ inline void handleMemoryGet(App& app, const crow::Request& req,
          return;
      }
  
@@ -319,7 +319,7 @@ index 1bec96a3..45138846 100644
  }
  
  inline void handleMemoryCollectionGet(
-@@ -988,33 +1051,39 @@ inline void handleMemoryCollectionGet(
+@@ -989,33 +1052,39 @@ inline void handleMemoryCollectionGet(
      {
          return;
      }

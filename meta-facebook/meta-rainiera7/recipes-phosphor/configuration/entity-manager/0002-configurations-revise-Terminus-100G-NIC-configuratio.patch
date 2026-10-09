@@ -1,4 +1,4 @@
-From fdc2faf700adee39c354ccce7cb3b1bea226837b Mon Sep 17 00:00:00 2001
+From c9b836ae596b2715eb0762c2b640b0a235e84827 Mon Sep 17 00:00:00 2001
 From: Alan Tsai <alan-tsai@quantatw.com>
 Date: Thu, 20 Aug 2026 21:52:38 +0800
 Subject: [PATCH] configurations: revise Terminus 100G NIC configuration.
@@ -64,3 +64,6 @@ index e4f92d7..46112a1 100644
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'Terminus .*100G NIC TSFF'})",
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
+-- 
+2.53.0-Meta
+

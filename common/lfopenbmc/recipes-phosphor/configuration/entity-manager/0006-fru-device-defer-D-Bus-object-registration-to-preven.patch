@@ -1,8 +1,8 @@
-From 99bc5f54cce8b87f398cf8314daf59163ffb8bf0 Mon Sep 17 00:00:00 2001
+From 91c012eeb401ac2e7b0e591a31852404cf288a06 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Mon, 5 Oct 2026 15:24:48 +0800
-Subject: [PATCH 3/3] fru-device: defer D-Bus object registration to prevent
- index changes
+Subject: [PATCH] fru-device: defer D-Bus object registration to prevent index
+ changes
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -88,7 +88,7 @@ Signed-off-by: Potin Lai <potin.lai@quantatw.com>
  1 file changed, 62 insertions(+), 19 deletions(-)
 
 diff --git a/src/fru_device/fru_device.cpp b/src/fru_device/fru_device.cpp
-index 56d4fcd4..f5d2022e 100644
+index 56d4fcd..f5d2022 100644
 --- a/src/fru_device/fru_device.cpp
 +++ b/src/fru_device/fru_device.cpp
 @@ -1184,9 +1184,19 @@ bool writeFRU(uint8_t bus, uint8_t address, const std::vector<uint8_t>& fru)

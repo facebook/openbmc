@@ -1,4 +1,4 @@
-From bb5dc397b26c061cc3543826be79246f636ed1a2 Mon Sep 17 00:00:00 2001
+From 1372c45451ec45f25fb1562134c19545ca91c33c Mon Sep 17 00:00:00 2001
 From: Christopher Meis <christopher.meis@9elements.com>
 Date: Wed, 17 Sep 2025 09:07:06 +0200
 Subject: [PATCH] Multi-host/HW-inventory: add processor subtree
@@ -179,7 +179,7 @@ Signed-off-by: Christopher Meis <christopher.meis@9elements.com>
  2 files changed, 91 insertions(+), 49 deletions(-)
 
 diff --git a/redfish-core/lib/processor.hpp b/redfish-core/lib/processor.hpp
-index 39f1afeb..3cf9233b 100644
+index c6429b47..7c49296d 100644
 --- a/redfish-core/lib/processor.hpp
 +++ b/redfish-core/lib/processor.hpp
 @@ -21,6 +21,7 @@
@@ -213,7 +213,7 @@ index 39f1afeb..3cf9233b 100644
  /**
   * @brief Fill out uuid info of a processor by
   * requesting data from the given D-Bus object.
-@@ -906,26 +923,29 @@ inline void handleProcessorSubtree(
+@@ -915,26 +932,29 @@ inline void handleProcessorSubtree(
   */
  inline void getProcessorObject(
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
@@ -256,7 +256,7 @@ index 39f1afeb..3cf9233b 100644
          [asyncResp, processorId, callback{std::move(callback)}](
              const boost::system::error_code& ec,
              const dbus::utility::MapperGetSubTreeResponse& subtree) {
-@@ -936,16 +956,16 @@ inline void getProcessorObject(
+@@ -945,16 +965,16 @@ inline void getProcessorObject(
  
  inline void getProcessorData(
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
@@ -277,7 +277,7 @@ index 39f1afeb..3cf9233b 100644
      asyncResp->res.jsonValue["SubProcessors"]["@odata.id"] =
          boost::urls::format(
              "/redfish/v1/Systems/{}/Processors/{}/SubProcessors",
-@@ -1111,23 +1131,20 @@ inline void handleProcessorGet(
+@@ -1120,23 +1140,20 @@ inline void handleProcessorGet(
      {
          return;
      }
@@ -311,7 +311,7 @@ index 39f1afeb..3cf9233b 100644
  }
  
  inline void doPatchProcessor(
-@@ -1201,11 +1218,34 @@ inline void handleProcessorPatch(
+@@ -1210,11 +1227,34 @@ inline void handleProcessorPatch(
      // Check for 404 and find matching D-Bus object, then run
      // property patch handlers if that all succeeds.
      getProcessorObject(
@@ -347,7 +347,7 @@ index 39f1afeb..3cf9233b 100644
  inline void handleProcessorCollectionGet(
      App& app, const crow::Request& req,
      const std::shared_ptr<bmcweb::AsyncResp>& asyncResp,
-@@ -1215,32 +1255,34 @@ inline void handleProcessorCollectionGet(
+@@ -1224,32 +1264,34 @@ inline void handleProcessorCollectionGet(
      {
          return;
      }

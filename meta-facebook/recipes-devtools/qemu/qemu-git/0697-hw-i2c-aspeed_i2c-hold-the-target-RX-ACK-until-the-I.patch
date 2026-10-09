@@ -1,4 +1,4 @@
-From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From ba96549f242cb190835ef863755f397fa40addbc Mon Sep 17 00:00:00 2001
 From: Zinc Lim <zinclim@meta.com>
 Date: Thu, 1 Oct 2026 18:30:00 -0700
 Subject: [PATCH] hw/i2c/aspeed_i2c: hold the target RX ACK until the ISR acks
@@ -94,7 +94,8 @@ index 1a35579423..2a8b2d87dd 100644
 +    /* Target RX ACK released by a re-arm, held until the ISR acks. */
 +    bool slave_ack_deferred;
  };
-
+ 
  struct AspeedI2CState {
---
-2.52.0
+-- 
+2.53.0-Meta
+

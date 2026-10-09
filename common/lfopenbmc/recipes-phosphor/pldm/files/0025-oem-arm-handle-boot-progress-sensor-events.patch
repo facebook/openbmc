@@ -1,4 +1,4 @@
-From 80b894994a47d22a4b61eae67db90e17284ff137 Mon Sep 17 00:00:00 2001
+From 046f21128e38c9e8194e07824b24a281e5b09443 Mon Sep 17 00:00:00 2001
 From: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
 Date: Tue, 9 Jun 2026 21:59:35 +0530
 Subject: [PATCH] oem: arm: handle boot progress sensor events
@@ -26,8 +26,6 @@ Upstream-Status: Submitted [https://gerrit.openbmc.org/c/openbmc/pldm/+/91115]
 Change-Id: I53185814727cff1197407882d7795e17558ecfd1
 Signed-off-by: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
 ---
- common/utils.cpp                    |   8 +
- common/utils.hpp                    |   6 +
  meson.build                         |   8 +
  meson.options                       |   8 +
  oem/arm/event/meson.build           |   1 +
@@ -36,49 +34,13 @@ Signed-off-by: Manoj Kumar Prabakaran <manojkumar.prabakaran@arm.com>
  oem/arm/meson.build                 |   1 +
  oem/arm/oem_arm.hpp                 |  93 +++++++++++
  pldmd/pldmd.cpp                     |   8 +
- 10 files changed, 473 insertions(+)
+ 8 files changed, 459 insertions(+)
  create mode 100644 oem/arm/event/meson.build
  create mode 100644 oem/arm/event/oem_event_manager.cpp
  create mode 100644 oem/arm/event/oem_event_manager.hpp
  create mode 100644 oem/arm/meson.build
  create mode 100644 oem/arm/oem_arm.hpp
 
-diff --git a/common/utils.cpp b/common/utils.cpp
-index 0a4509a..9428d55 100644
---- a/common/utils.cpp
-+++ b/common/utils.cpp
-@@ -706,6 +706,14 @@ std::string getCurrentSystemTime()
-     return std::format("{:%F %Z %T}", zonedTime);
- }
- 
-+uint64_t getCurrentSystemTimeUsec()
-+{
-+    return static_cast<uint64_t>(
-+        std::chrono::duration_cast<std::chrono::microseconds>(
-+            std::chrono::system_clock::now().time_since_epoch())
-+            .count());
-+}
-+
- bool checkForFruPresence(const std::string& objPath)
- {
-     bool isPresent = false;
-diff --git a/common/utils.hpp b/common/utils.hpp
-index 7003ad5..c7b6a36 100644
---- a/common/utils.hpp
-+++ b/common/utils.hpp
-@@ -632,6 +632,12 @@ std::vector<std::string> split(std::string_view srcStr, std::string_view delim,
-  */
- std::string getCurrentSystemTime();
- 
-+/** @brief Get the current system timestamp in microseconds
-+ *
-+ *  @return - uint64_t equivalent of system time since epoch in microseconds
-+ */
-+uint64_t getCurrentSystemTimeUsec();
-+
- /** @brief checks if the FRU is actually present.
-  *  @param[in] objPath - FRU object path.
-  *
 diff --git a/meson.build b/meson.build
 index f15c94c..1d7033c 100644
 --- a/meson.build
@@ -133,7 +95,7 @@ index 0000000..900fafc
 +oem_files += files('oem_event_manager.cpp')
 diff --git a/oem/arm/event/oem_event_manager.cpp b/oem/arm/event/oem_event_manager.cpp
 new file mode 100644
-index 0000000..6f27efd
+index 0000000..266d319
 --- /dev/null
 +++ b/oem/arm/event/oem_event_manager.cpp
 @@ -0,0 +1,246 @@
@@ -361,7 +323,7 @@ index 0000000..6f27efd
 +            bootProgressObjectPath, bootProgressInterface,
 +            bootProgressLastUpdateProperty, "uint64_t"};
 +        dbusHandler.setDbusProperty(bootProgressLastUpdate,
-+                                    pldm::utils::getCurrentSystemTimeUsec());
++                                    pldm::utils::getCurrentSystemTimeInMicroseconds());
 +
 +        pldm::utils::DBusMapping bootProgress = {
 +            bootProgressObjectPath, bootProgressInterface, bootProgressProperty,

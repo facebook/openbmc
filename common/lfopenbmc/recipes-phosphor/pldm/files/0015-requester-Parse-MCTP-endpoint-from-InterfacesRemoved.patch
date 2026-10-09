@@ -1,4 +1,4 @@
-From 1131e899f51bebbfa1b7b83820222e635c5c9b06 Mon Sep 17 00:00:00 2001
+From 77995127224e5fefe980741c47e75a83727480a4 Mon Sep 17 00:00:00 2001
 From: Eric Yang <eric.yang.wiwynn@gmail.com>
 Date: Thu, 12 Feb 2026 09:57:38 +0000
 Subject: [PATCH] requester: Parse MCTP endpoint from InterfacesRemoved signal
@@ -276,10 +276,10 @@ index d1f4ccf..e205187 100644
  
  void MctpDiscovery::handleMctpEndpoints(const MctpInfos& mctpInfos)
 diff --git a/requester/mctp_endpoint_discovery.hpp b/requester/mctp_endpoint_discovery.hpp
-index 85689a8..b8685bc 100644
+index a9aadb2..2ec12d4 100644
 --- a/requester/mctp_endpoint_discovery.hpp
 +++ b/requester/mctp_endpoint_discovery.hpp
-@@ -178,14 +178,6 @@ class MctpDiscovery
+@@ -183,14 +183,6 @@ class MctpDiscovery
       */
      void addToExistingMctpInfos(const MctpInfos& mctpInfos);
  
@@ -294,7 +294,7 @@ index 85689a8..b8685bc 100644
      friend class ::TestMctpDiscovery;
  
    private:
-@@ -238,6 +230,17 @@ class MctpDiscovery
+@@ -243,6 +235,17 @@ class MctpDiscovery
      void searchConfigurationFor(const pldm::utils::DBusHandler& handler,
                                  MctpInfo& mctpInfo);
  

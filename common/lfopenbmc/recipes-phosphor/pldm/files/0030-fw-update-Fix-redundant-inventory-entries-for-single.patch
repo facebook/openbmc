@@ -1,4 +1,4 @@
-From 1d530e4f5939327022ab2c4329105e8817adc4f4 Mon Sep 17 00:00:00 2001
+From 7110ebdedd89cd090922c3e1f8d17d0434a31175 Mon Sep 17 00:00:00 2001
 From: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
 Date: Tue, 28 Jul 2026 09:22:38 +0800
 Subject: [PATCH] fw-update: Fix redundant inventory entries for
@@ -34,7 +34,7 @@ Signed-off-by: Kyle Hsieh <Kyle.Hsieh@quantatw.com>
  2 files changed, 32 insertions(+), 23 deletions(-)
 
 diff --git a/common/types.hpp b/common/types.hpp
-index 26c3dff..826565d 100644
+index feaa802..298f426 100644
 --- a/common/types.hpp
 +++ b/common/types.hpp
 @@ -7,6 +7,7 @@
@@ -45,7 +45,7 @@ index 26c3dff..826565d 100644
  #include <set>
  #include <span>
  #include <string>
-@@ -141,7 +142,7 @@ using DownstreamDescriptorMap = std::unordered_map<eid, DownstreamDeviceInfo>;
+@@ -137,7 +138,7 @@ using DownstreamDescriptorMap = std::unordered_map<eid, DownstreamDeviceInfo>;
  // Component information
  using CompClassification = uint16_t;
  using CompIdentifier = uint16_t;

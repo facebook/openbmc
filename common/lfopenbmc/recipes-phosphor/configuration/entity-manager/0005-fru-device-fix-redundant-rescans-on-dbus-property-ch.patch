@@ -1,8 +1,7 @@
-From 5559dfbec58d4304353d42feb7778c3dcd3edc28 Mon Sep 17 00:00:00 2001
+From fd1880fb1a810f422388de330008d9c57b87db94 Mon Sep 17 00:00:00 2001
 From: Potin Lai <potin.lai@quantatw.com>
 Date: Wed, 30 Sep 2026 20:03:35 +0800
-Subject: [PATCH 2/3] fru-device: fix redundant rescans on dbus property
- changes
+Subject: [PATCH] fru-device: fix redundant rescans on dbus property changes
 
 The DBus event handler for CurrentHostState changes on the
 xyz.openbmc_project.State.Host interface was previously triggering
@@ -32,7 +31,7 @@ Change-Id: I80eed110a5fef99df7207c9508ab2135e5554cf6
  1 file changed, 8 insertions(+), 8 deletions(-)
 
 diff --git a/src/fru_device/fru_device.cpp b/src/fru_device/fru_device.cpp
-index 10d24135..56d4fcd4 100644
+index 10d2413..56d4fcd 100644
 --- a/src/fru_device/fru_device.cpp
 +++ b/src/fru_device/fru_device.cpp
 @@ -1535,17 +1535,17 @@ int main()

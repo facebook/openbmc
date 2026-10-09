@@ -18,18 +18,17 @@ SRC_URI:append = " \
     file://0015-Implement-valve-monitor-service.patch \
     file://0016-psusensor-Add-support-for-per-sensor-PollRate-config.patch \
     file://0017-SmbpbiSensor-Fix-invalid-data-check-size-for-tempera.patch \
-    file://0018-mctpreactor-Support-configuration-for-USB-MCTP-devic.patch \
-    file://0019-dbus-sensors-implement-in-place-threshold-updates-to.patch \
-    file://0020-mctp-add-PowerState-check-in-MCTPReactor.patch \
-    file://0021-CableMonitor-increase-reconcile-delay-to-60s.patch \
-    file://0022-PSUSensor-add-ADI-MAX20912-and-MAX20916-support.patch \
-    file://0023-nvmesensor-implement-in-place-threshold-updates-to-p.patch \
-    file://0024-psusensor-skip-sensor-reads-during-firmware-updates.patch \
-    file://0025-PSUSensor-add-MPQ82D00-PMBus-device-support.patch \
-    file://0026-common-fix-missing-power-gated-sensors-after-BMC-res.patch \
-    file://0027-hwmontempsensor-add-support-for-adt7461-temp-sensors.patch \
-    file://0028-PSUSensor-add-MP9941-VR-sensor-support.patch \
-    file://0029-dbus-sensors-preserve-state-on-external-sensor-thres.patch \
+    file://0018-dbus-sensors-implement-in-place-threshold-updates-to.patch \
+    file://0019-mctp-add-PowerState-check-in-MCTPReactor.patch \
+    file://0020-CableMonitor-increase-reconcile-delay-to-60s.patch \
+    file://0021-PSUSensor-add-ADI-MAX20912-and-MAX20916-support.patch \
+    file://0022-nvmesensor-implement-in-place-threshold-updates-to-p.patch \
+    file://0023-psusensor-skip-sensor-reads-during-firmware-updates.patch \
+    file://0024-PSUSensor-add-MPQ82D00-PMBus-device-support.patch \
+    file://0025-common-fix-missing-power-gated-sensors-after-BMC-res.patch \
+    file://0026-hwmontempsensor-add-support-for-adt7461-temp-sensors.patch \
+    file://0027-PSUSensor-add-MP9941-VR-sensor-support.patch \
+    file://0028-dbus-sensors-preserve-state-on-external-sensor-thres.patch \
 "
 
 SRC_URI:append:mf-fb-liquid-cooled = " \

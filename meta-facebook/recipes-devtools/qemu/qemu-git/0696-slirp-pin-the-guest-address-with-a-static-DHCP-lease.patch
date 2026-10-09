@@ -1,4 +1,4 @@
-From fc569196b4451a150bbaba6a5495548d068e3fef Mon Sep 17 00:00:00 2001
+From 4994520ad0d64c974e97a1dada04b80b465606a1 Mon Sep 17 00:00:00 2001
 From: Emmanuel Blot <emmanuel.blot@free.fr>
 Date: Tue, 1 Sep 2026 12:00:00 +0200
 Subject: [PATCH] slirp: pin the guest address with a static DHCP lease
@@ -147,10 +147,10 @@ index 75bc2d25e7..422487c898 100644
      while (slirp_configs) {
          config = slirp_configs;
 diff --git a/qapi/net.json b/qapi/net.json
-index fbec6b1a95..3dec4cb829 100644
+index 4277a98af6..e27bef3633 100644
 --- a/qapi/net.json
 +++ b/qapi/net.json
-@@ -365,6 +365,8 @@
+@@ -359,6 +359,8 @@
  # @oob-eth-addr: MAC Address allocated for an out-of-band management
  #                controller, to be retrieved through NC-SI.
  #
@@ -159,7 +159,7 @@ index fbec6b1a95..3dec4cb829 100644
  # Since: 1.2
  ##
  { 'struct': 'NetdevUserOptions',
-@@ -392,7 +394,8 @@
+@@ -386,7 +388,8 @@
      '*guestfwd':  ['NetdevUserGuestForward'],
      '*tftp-server-name': 'str',
      '*mfr-id':    'uint32',
@@ -170,5 +170,5 @@ index fbec6b1a95..3dec4cb829 100644
  ##
  # @NetdevTapOptions:
 -- 
-2.52.0
+2.53.0-Meta
 

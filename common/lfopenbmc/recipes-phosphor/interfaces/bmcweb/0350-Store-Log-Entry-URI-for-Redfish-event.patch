@@ -1,4 +1,4 @@
-From 679b06008dbb3d5484ca6d3c30f6117bdf9f2e2a Mon Sep 17 00:00:00 2001
+From 68af8ead021378ba659face46e1fd4ec96a2513a Mon Sep 17 00:00:00 2001
 From: Archit Mehrotra <architmehrotra@meta.com>
 Date: Sat, 4 Apr 2026 11:20:55 -0700
 Subject: [PATCH] Store Log Entry URI for Redfish event
@@ -151,7 +151,7 @@ Signed-off-by: Archit Mehrotra <architmehrotra@meta.com>
  5 files changed, 75 insertions(+), 4 deletions(-)
 
 diff --git a/docs/Redfish.md b/docs/Redfish.md
-index 9f5a0897..76e85dc6 100644
+index cffa3c85..a5c47879 100644
 --- a/docs/Redfish.md
 +++ b/docs/Redfish.md
 @@ -634,6 +634,22 @@ Fields common to all schemas
@@ -178,12 +178,12 @@ index 9f5a0897..76e85dc6 100644
  
  #### JsonSchemaFileCollection
 diff --git a/redfish-core/include/event_log.hpp b/redfish-core/include/event_log.hpp
-index 18b26505..04bf50dc 100644
+index 9d5ccb53..c6cd5565 100644
 --- a/redfish-core/include/event_log.hpp
 +++ b/redfish-core/include/event_log.hpp
 @@ -3,6 +3,7 @@
- #include "event_logs_object_type.hpp"
  #include "utils/time_utils.hpp"
+ #include "event_logs_object_type.hpp"
  
 +#include <boost/url/url.hpp>
  #include <nlohmann/json.hpp>
@@ -201,7 +201,7 @@ index 18b26505..04bf50dc 100644
                           const redfish::EventLogObjectsType& logEntry,
                           const std::string& customText,
 diff --git a/redfish-core/src/event_log.cpp b/redfish-core/src/event_log.cpp
-index a5b4e985..0bfada98 100644
+index 6eea1bac..7539ff51 100644
 --- a/redfish-core/src/event_log.cpp
 +++ b/redfish-core/src/event_log.cpp
 @@ -3,11 +3,20 @@
@@ -226,7 +226,7 @@ index a5b4e985..0bfada98 100644
  #include <nlohmann/json.hpp>
  
  #include <cerrno>
-@@ -116,6 +125,15 @@ int getEventLogParams(const std::string& logEntry, std::string& timestamp,
+@@ -113,6 +122,15 @@ int getEventLogParams(const std::string& logEntry, std::string& timestamp,
      return 0;
  }
  
@@ -242,7 +242,7 @@ index a5b4e985..0bfada98 100644
  void formatEventLogEntry(uint64_t eventId,
                           const redfish::EventLogObjectsType& logEntry,
                           const std::string& customText,
-@@ -136,11 +154,21 @@ void formatEventLogEntry(uint64_t eventId,
+@@ -133,11 +151,21 @@ void formatEventLogEntry(uint64_t eventId,
      logEntryJson["EventId"] = std::to_string(eventId);
  
      logEntryJson["Severity"] = logEntry.severity;
@@ -265,10 +265,10 @@ index a5b4e985..0bfada98 100644
  
  } // namespace event_log
 diff --git a/redfish-core/src/subscription.cpp b/redfish-core/src/subscription.cpp
-index 8b028d3c..47dd52fe 100644
+index 7d9a683d..1f705a97 100644
 --- a/redfish-core/src/subscription.cpp
 +++ b/redfish-core/src/subscription.cpp
-@@ -100,7 +100,7 @@ void Subscription::sendHeartbeatEvent()
+@@ -99,7 +99,7 @@ void Subscription::sendHeartbeatEvent()
      eventRecord.emplace_back(std::move(eventMessage));
  
      nlohmann::json msgJson;
@@ -277,7 +277,7 @@ index 8b028d3c..47dd52fe 100644
      msgJson["Name"] = "Heartbeat";
      msgJson["Events"] = std::move(eventRecord);
  
-@@ -241,7 +241,7 @@ void Subscription::filterAndSendEventLogs(
+@@ -237,7 +237,7 @@ void Subscription::filterAndSendEventLogs(
      }
  
      nlohmann::json msg;
@@ -287,7 +287,7 @@ index 8b028d3c..47dd52fe 100644
      msg["Name"] = "Event Log";
      msg["Events"] = std::move(logEntryArray);
 diff --git a/test/redfish-core/include/event_log_test.cpp b/test/redfish-core/include/event_log_test.cpp
-index 42f06922..33bc3559 100644
+index fbea473f..20f72496 100644
 --- a/test/redfish-core/include/event_log_test.cpp
 +++ b/test/redfish-core/include/event_log_test.cpp
 @@ -1,6 +1,7 @@

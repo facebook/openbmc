@@ -1,4 +1,4 @@
-From 837221c3eb3391605805624b68727a6ac055f206 Mon Sep 17 00:00:00 2001
+From 85d88474d122a2915933d426ed109ba104e5148a Mon Sep 17 00:00:00 2001
 From: Alan Tsai <alan-tsai@quantatw.com>
 Date: Thu, 20 Aug 2026 21:50:12 +0800
 Subject: [PATCH] configurations: revise 100G BRCM NIC configuration
@@ -69,3 +69,6 @@ index d3cb955..746cf46 100644
      "Probe": "xyz.openbmc_project.FruDevice({'BOARD_PRODUCT_NAME': 'BRCM 100G 1P.*57504 OCP Mezz'})",
      "Type": "Board",
      "xyz.openbmc_project.Inventory.Decorator.Asset": {
+-- 
+2.53.0-Meta
+

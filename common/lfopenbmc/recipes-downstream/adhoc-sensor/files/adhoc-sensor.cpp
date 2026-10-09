@@ -10,15 +10,19 @@
 
 #include <filesystem>
 #include <fstream>
+#include <map>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include <chrono>
+#include <systemd/sd-bus.h>
 #include <sys/inotify.h>
 #include <unistd.h>
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <limits>
 #include <cmath>
@@ -26,7 +30,8 @@
 PHOSPHOR_LOG2_USING;
 
 constexpr const char* SENSOR_BUSNAME = "xyz.openbmc_project.AdhocSensor";
-constexpr const char* SENSOR_NAMESPACE = "/xyz/openbmc_project/sensors/utilization";
+constexpr const char* SENSOR_NAMESPACE = "/xyz/openbmc_project/sensors";
+// Kept for existing writers, though files may now be any sensor type.
 constexpr const char* ADHOC_DIR = "/run/openbmc/sensors/utilization";
 
 // Plain numeric BMC metrics, not sensors: no unit suffix, no clamping, no
@@ -123,19 +128,71 @@ MetricUnit parseMetricUnit(std::string text, const std::string& name)
     return MetricUnit::Count;
 }
 
-// A metric name becomes a D-Bus object path element.
-bool isValidMetricName(const std::string& name)
+// Sensor and metric file names become D-Bus object path elements.
+bool isValidName(const std::string& name)
 {
     return !name.empty() && std::ranges::all_of(name, [](unsigned char c) {
         return std::isalnum(c) || c == '_';
     });
 }
 
+using SensorUnit =
+    sdbusplus::common::xyz::openbmc_project::sensor::Value::Unit;
+
+// What an adhoc sensor file can be, selected by its optional second line.
+// The suffix is the unit token Meta's sensor naming convention requires
+// (central_proxy sensor_schema.py); names without one never reach ODS.
+struct SensorType
+{
+    std::string_view unitName;
+    std::string_view nameSpace;
+    SensorUnit unit;
+    std::string_view suffix;
+};
+
+constexpr std::array sensorTypes{
+    SensorType{"percent", "utilization", SensorUnit::Percent, "_UTIL_PCT"},
+    SensorType{"celsius", "temperature", SensorUnit::DegreesC, "_TEMP_C"},
+    SensorType{"watts", "power", SensorUnit::Watts, "_PWR_W"},
+    SensorType{"amperes", "current", SensorUnit::Amperes, "_CURR_A"},
+    SensorType{"volts", "voltage", SensorUnit::Volts, "_VOLT_V"},
+    SensorType{"rpm", "fan_tach", SensorUnit::RPMS, "_SPEED_RPM"},
+    SensorType{"cfm", "airflow", SensorUnit::CFM, "_AIRFLOW_CFM"},
+    SensorType{"joules", "energy", SensorUnit::Joules, "_ENERGY_J"},
+    SensorType{"pascals", "pressure", SensorUnit::Pascals, "_PRESSURE_PA"},
+};
+
+// Empty means percent, the only type before units were added. Unknown units
+// return nullptr: publishing a value under the wrong unit is worse than not
+// publishing it.
+const SensorType* parseSensorType(std::string text, const std::string& file)
+{
+    std::ranges::transform(text, text.begin(), [](unsigned char c) {
+        return static_cast<char>(std::tolower(c));
+    });
+    if (text.empty())
+    {
+        return sensorTypes.data();
+    }
+    auto it = std::ranges::find(sensorTypes, text, &SensorType::unitName);
+    if (it == sensorTypes.end())
+    {
+        error("Ignoring adhoc file {FILE}: unknown unit '{UNIT}'", "FILE", file,
+              "UNIT", text);
+        return nullptr;
+    }
+    return &*it;
+}
+
 class SensorManager
 {
   public:
+    // Runs on the caller's thread before ctx.run(). Everything after that runs
+    // on the context's worker thread and must not make synchronous bus calls:
+    // the caller thread is in sd_bus_wait on the same bus, and sd-bus is not
+    // thread safe.
     explicit SensorManager(sdbusplus::async::context& ctx) :
-        ctx(ctx),
+        ctx(ctx), selfName(ctx.get_bus().get_unique_name()),
         inotifyFd(-1)
     {
         // Create watch directories if they don't exist
@@ -154,65 +211,77 @@ class SensorManager
         }
     }
 
-    void addSensor(const std::string& sensorName)
+    sdbusplus::async::task<> addSensor(std::string file, const SensorType& type,
+                                       double value)
     {
-        auto it = sensors.find(sensorName);
-        if (it == sensors.end())
+        std::string name = file;
+        if (!name.ends_with(type.suffix))
         {
-            std::string path =
-                std::string(SENSOR_NAMESPACE) + "/" + sensorName;
+            name += type.suffix;
+        }
+        std::string path = std::string(SENSOR_NAMESPACE) + "/" +
+                           std::string(type.nameSpace) + "/" + name;
 
-            auto object =
-                std::make_unique<AdhocSensorObject>(ctx, path.c_str());
+        // Two owners of one sensor path make bmcweb fail requests for both,
+        // so a real sensor always wins. See also monitorSensorCollisions().
+        if (auto owner = co_await otherPathOwner(path); !owner.empty())
+        {
+            error("Not publishing {PATH} for adhoc file {FILE}: {SERVICE} "
+                  "already owns it. Rename the file.",
+                  "PATH", path, "FILE", file, "SERVICE", owner);
+            blockedFiles.insert(file);
+            co_return;
+        }
 
-            // Set initial properties without signaling
-            constexpr bool emitSignal = false;
-            object->unit<emitSignal>(
-                sdbusplus::common::xyz::openbmc_project::sensor::
-                    Value::Unit::Percent);
+        auto object = std::make_unique<AdhocSensorObject>(ctx, path.c_str());
+
+        // Set initial properties without signaling
+        constexpr bool emitSignal = false;
+        object->unit<emitSignal>(type.unit);
+        if (type.unit == SensorUnit::Percent)
+        {
             object->max_value<emitSignal>(100.0);
             object->min_value<emitSignal>(0.0);
-            object->value<emitSignal>(0.0);
-
-            object->associations<emitSignal>(chassisAssociations());
-
-            // Announce the object on D-Bus
-            object->emit_added();
-
-            sensors[sensorName] = std::move(object);
-
-            info("Created adhoc sensor: {SENSOR} at {PATH} associated with "
-                 "chassis: {CHASSIS}",
-                 "SENSOR", sensorName, "PATH", path, "CHASSIS", chassis);
         }
+        object->value<emitSignal>(value);
+        object->associations<emitSignal>(chassisAssociations());
+
+        // Announce the object on D-Bus
+        object->emit_added();
+
+        sensors[file] = {std::move(object), &type, path};
+
+        info("Created adhoc sensor: {PATH} associated with chassis: {CHASSIS}",
+             "PATH", path, "CHASSIS", chassis);
     }
 
-    void removeSensor(const std::string& sensorName)
+    // A service other than this one with a Sensor.Value at path, or empty.
+    // Unfiltered, the mapper lists itself for paths it hangs associations off.
+    sdbusplus::async::task<std::string> otherPathOwner(std::string path)
     {
-        auto it = sensors.find(sensorName);
-        if (it != sensors.end())
+        constexpr auto mapper = sdbusplus::async::proxy()
+                                    .service("xyz.openbmc_project.ObjectMapper")
+                                    .path("/xyz/openbmc_project/object_mapper")
+                                    .interface("xyz.openbmc_project.ObjectMapper");
+        std::map<std::string, std::vector<std::string>> owners;
+        try
         {
-            info("Removing sensor: {SENSOR}", "SENSOR", sensorName);
-            sensors.erase(it);
+            owners = co_await mapper.call<decltype(owners)>(
+                ctx, "GetObject", path,
+                std::vector<std::string>{"xyz.openbmc_project.Sensor.Value"});
         }
-    }
-
-    void setSensorValue(const std::string& sensorName, double value)
-    {
-        auto it = sensors.find(sensorName);
-        if (it != sensors.end())
+        catch (const std::exception&)
         {
-            // Clamp or pass through NaN
-            if (!std::isnan(value))
+            // ResourceNotFound: nobody has it.
+        }
+        for (const auto& [service, interfaces] : owners)
+        {
+            if (service != SENSOR_BUSNAME && service != selfName)
             {
-                value = std::max(0.0, std::min(100.0, value));
+                co_return service;
             }
-            it->second->value<true>(value);
         }
-        else
-        {
-            error("Sensor not found: {SENSOR}", "SENSOR", sensorName);
-        }
+        co_return std::string{};
     }
 
     double readNumberFromFile(const std::filesystem::path& filePath)
@@ -289,30 +358,29 @@ class SensorManager
         return line;
     }
 
-    double readAdhocFromFile(const std::filesystem::path& filePath)
+    // Percent is the only bounded unit.
+    double clampPercent(double value, const std::filesystem::path& filePath)
     {
-        double value = readNumberFromFile(filePath);
-
-        // Log warnings for out-of-range values (will be clamped in
-        // setSensorValue)
         if (value < 0.0)
         {
             warning("Negative value {VALUE} in file {FILE}, clamping to 0.0",
                     "VALUE", value, "FILE", filePath.string());
+            return 0.0;
         }
-        else if (value > 100.0)
+        if (value > 100.0)
         {
             warning(
                 "Value {VALUE} exceeds 100 in file {FILE}, clamping to 100.0",
                 "VALUE", value, "FILE", filePath.string());
+            return 100.0;
         }
-
-        return value;
+        return value; // includes NaN
     }
 
-    void scanDirectory()
+    sdbusplus::async::task<> scanDirectory()
     {
         std::unordered_set<std::string> currentFiles;
+        std::unordered_set<std::string> presentFiles;
 
         try
         {
@@ -321,47 +389,71 @@ class SensorManager
                 for (const auto& entry :
                      std::filesystem::directory_iterator(ADHOC_DIR))
                 {
-                    if (entry.is_regular_file())
+                    if (!entry.is_regular_file())
                     {
-                        std::string filename =
-                            entry.path().filename().string();
-                        // Append _PCT suffix to conform with Meta standards
-                        std::string sensorName = filename + "_PCT";
-                        currentFiles.insert(sensorName);
+                        continue;
+                    }
+                    std::string file = entry.path().filename().string();
+                    if (!isValidName(file))
+                    {
+                        error("Ignoring adhoc file {FILE}: names must be "
+                              "[A-Za-z0-9_]",
+                              "FILE", file);
+                        continue;
+                    }
+                    presentFiles.insert(file);
+                    if (blockedFiles.contains(file))
+                    {
+                        continue;
+                    }
+                    const SensorType* type =
+                        parseSensorType(readUnitFromFile(entry.path()), file);
+                    if (type == nullptr)
+                    {
+                        continue;
+                    }
+                    currentFiles.insert(file);
 
-                        // Add sensor if it doesn't exist
-                        if (sensors.find(sensorName) == sensors.end())
-                        {
-                            info("Detected new adhoc file: {FILE}, creating "
-                                 "sensor: {SENSOR}",
-                                 "FILE", filename, "SENSOR", sensorName);
-                            addSensor(sensorName);
-                        }
+                    double value = readNumberFromFile(entry.path());
+                    if (type->unit == SensorUnit::Percent)
+                    {
+                        value = clampPercent(value, entry.path());
+                    }
 
-                        // Read value from file
-                        double value = readAdhocFromFile(entry.path());
-                        setSensorValue(sensorName, value);
+                    auto it = sensors.find(file);
+                    if (it != sensors.end() && it->second.type != type)
+                    {
+                        // The unit picks the object path: republish.
+                        info("Unit changed for adhoc file {FILE}, recreating",
+                             "FILE", file);
+                        sensors.erase(it);
+                        it = sensors.end();
+                    }
+                    if (it == sensors.end())
+                    {
+                        co_await addSensor(file, *type, value);
+                    }
+                    else
+                    {
+                        it->second.object->value<true>(value);
                     }
                 }
             }
 
-            // Remove sensors for files that no longer exist
-            std::vector<std::string> sensorsToRemove;
-            for (const auto& [sensorName, sensor] : sensors)
-            {
-                if (currentFiles.find(sensorName) == currentFiles.end())
-                {
-                    sensorsToRemove.push_back(sensorName);
-                }
-            }
+            // Deleting a blocked file unblocks its name.
+            std::erase_if(blockedFiles, [&](const std::string& file) {
+                return !presentFiles.contains(file);
+            });
 
-            for (const auto& sensorName : sensorsToRemove)
-            {
-                info("Adhoc file removed for sensor: {SENSOR}, removing "
-                     "sensor",
-                     "SENSOR", sensorName);
-                removeSensor(sensorName);
-            }
+            std::erase_if(sensors, [&](const auto& kv) {
+                if (currentFiles.contains(kv.first))
+                {
+                    return false;
+                }
+                info("Adhoc file removed: {FILE}, removing sensor", "FILE",
+                     kv.first);
+                return true;
+            });
         }
         catch (const std::exception& e)
         {
@@ -386,7 +478,7 @@ class SensorManager
                         continue;
                     }
                     std::string name = entry.path().filename().string();
-                    if (!isValidMetricName(name))
+                    if (!isValidName(name))
                     {
                         error("Ignoring metric file {FILE}: names must be "
                               "[A-Za-z0-9_]",
@@ -453,6 +545,7 @@ class SensorManager
         {
             error("Failed to initialize inotify: {ERROR}", "ERROR",
                   strerror(errno));
+            ctx.spawn(monitorInotify()); // still does the initial scan
             return;
         }
 
@@ -484,19 +577,19 @@ class SensorManager
                  METRICS_DIR);
         }
 
-        // Do initial scan
-        scanDirectory();
-        scanMetricsDirectory();
-
-        // Start async monitoring
-        if (inotifyFd >= 0)
-        {
-            ctx.spawn(monitorInotify());
-        }
+        ctx.spawn(monitorInotify());
     }
 
     sdbusplus::async::task<> monitorInotify()
     {
+        // Initial scan
+        co_await scanDirectory();
+        scanMetricsDirectory();
+        if (inotifyFd < 0)
+        {
+            co_return;
+        }
+
         sdbusplus::async::fdio fdio(ctx, inotifyFd);
 
         while (!ctx.stop_requested())
@@ -536,7 +629,7 @@ class SensorManager
 
             if (adhocChanged)
             {
-                scanDirectory();
+                co_await scanDirectory();
             }
             if (metricsChanged)
             {
@@ -563,6 +656,51 @@ class SensorManager
         {
             co_await match.next();
             requestChassisRefresh();
+        }
+    }
+
+    // A real sensor that appears after ours, e.g. dbus-sensors starting
+    // later, takes the path: withdraw ours.
+    sdbusplus::async::task<> monitorSensorCollisions()
+    {
+        namespace rules = sdbusplus::bus::match::rules;
+        sdbusplus::async::match match(
+            ctx, rules::interfacesAdded() +
+                     rules::argNpath(0, std::string(SENSOR_NAMESPACE) + "/"));
+        while (!ctx.stop_requested())
+        {
+            auto msg = co_await match.next();
+            try
+            {
+                const char* sender = msg.get_sender();
+                if (sender == nullptr || selfName == sender)
+                {
+                    continue;
+                }
+                // Evaluating arg0path match rules reads the message after it
+                // was queued for us, so start from the beginning.
+                sd_bus_message_rewind(msg.get(), true);
+                sdbusplus::object_path path;
+                msg.read(path);
+                auto it = std::ranges::find_if(sensors, [&](const auto& kv) {
+                    return kv.second.path == path.str;
+                });
+                if (it == sensors.end())
+                {
+                    continue;
+                }
+                error("Withdrawing {PATH} for adhoc file {FILE}: {SERVICE} "
+                      "published it. Rename the file.",
+                      "PATH", path.str, "FILE", it->first, "SERVICE",
+                      std::string(sender));
+                blockedFiles.insert(it->first);
+                sensors.erase(it);
+            }
+            catch (const std::exception& e)
+            {
+                error("Error handling InterfacesAdded: {ERROR}", "ERROR",
+                      e.what());
+            }
         }
     }
 
@@ -683,7 +821,7 @@ class SensorManager
         chassis = path;
         for (auto& [name, sensor] : sensors)
         {
-            sensor->associations<true>(chassisAssociations());
+            sensor.object->associations<true>(chassisAssociations());
         }
     }
 
@@ -698,8 +836,17 @@ class SensorManager
     }
 
     sdbusplus::async::context& ctx;
-    std::unordered_map<std::string, std::unique_ptr<AdhocSensorObject>>
-        sensors;
+    std::string selfName;
+    struct Sensor
+    {
+        std::unique_ptr<AdhocSensorObject> object;
+        const SensorType* type;
+        std::string path;
+    };
+    // Keyed by file name.
+    std::unordered_map<std::string, Sensor> sensors;
+    // Files whose sensor path another service owns, until they are deleted.
+    std::unordered_set<std::string> blockedFiles;
     struct Metric
     {
         std::unique_ptr<AdhocMetricObject> object;
@@ -727,7 +874,8 @@ int main()
     sdbusplus::server::manager_t metricManager{ctx, METRIC_NAMESPACE};
 
     info("Adhoc sensor service started");
-    info("Watching directory: {DIR} (file contents = numeric value 0-100)",
+    info("Watching directory: {DIR} (file contents = numeric sensor value, "
+         "optional unit on line 2, default percent)",
          "DIR", ADHOC_DIR);
     info("Watching directory: {DIR} (file contents = numeric metric value, "
          "optional unit on line 2)",
@@ -735,6 +883,7 @@ int main()
 
     SensorManager sensorManager(ctx);
     ctx.spawn(sensorManager.monitorChassis());
+    ctx.spawn(sensorManager.monitorSensorCollisions());
 
     ctx.run();
 

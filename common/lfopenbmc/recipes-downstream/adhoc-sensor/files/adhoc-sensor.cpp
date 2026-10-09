@@ -2,6 +2,7 @@
 
 #include <phosphor-logging/lg2.hpp>
 #include <sdbusplus/async.hpp>
+#include <sdbusplus/bus/match.hpp>
 #include <sdbusplus/server/manager.hpp>
 #include <xyz/openbmc_project/Association/Definitions/aserver.hpp>
 #include <xyz/openbmc_project/Metric/Value/aserver.hpp>
@@ -17,7 +18,6 @@
 #include <chrono>
 #include <sys/inotify.h>
 #include <unistd.h>
-#include <poll.h>
 #include <algorithm>
 #include <cctype>
 #include <limits>
@@ -34,6 +34,21 @@ constexpr const char* ADHOC_DIR = "/run/openbmc/sensors/utilization";
 // as ManagerDiagnosticData Oem/Meta/Metrics/<name>.
 constexpr const char* METRIC_NAMESPACE = "/xyz/openbmc_project/metric/bmc/oem";
 constexpr const char* METRICS_DIR = "/run/openbmc/metrics";
+
+// Sensors are associated with one inventory chassis so bmcweb lists them under
+// /redfish/v1/Chassis/<id>/Sensors. entity-manager publishes inventory some
+// time after boot, so the chassis is discovered at runtime and re-evaluated as
+// inventory changes. bmcweb's Chassis collection includes boards, and most
+// platforms have no Item.Chassis at all, so boards are the fallback.
+constexpr const char* INVENTORY_PATH = "/xyz/openbmc_project/inventory";
+constexpr const char* CHASSIS_INTERFACE =
+    "xyz.openbmc_project.Inventory.Item.Chassis";
+constexpr const char* BOARD_INTERFACE =
+    "xyz.openbmc_project.Inventory.Item.Board";
+constexpr const char* ASSOCIATION_INTERFACE = "xyz.openbmc_project.Association";
+
+// entity-manager adds inventory in bursts; wait for it to settle.
+constexpr auto CHASSIS_SETTLE_TIME = std::chrono::seconds(2);
 
 // D-Bus server object using sdbusplus async server_t (CRTP pattern)
 class AdhocSensorObject;
@@ -159,12 +174,7 @@ class SensorManager
             object->min_value<emitSignal>(0.0);
             object->value<emitSignal>(0.0);
 
-            // Set chassis association
-            std::vector<std::tuple<std::string, std::string, std::string>>
-                associations;
-            associations.emplace_back("chassis", "all_sensors",
-                                      DEFAULT_CHASSIS);
-            object->associations<emitSignal>(associations);
+            object->associations<emitSignal>(chassisAssociations());
 
             // Announce the object on D-Bus
             object->emit_added();
@@ -173,8 +183,7 @@ class SensorManager
 
             info("Created adhoc sensor: {SENSOR} at {PATH} associated with "
                  "chassis: {CHASSIS}",
-                 "SENSOR", sensorName, "PATH", path, "CHASSIS",
-                 std::string(DEFAULT_CHASSIS));
+                 "SENSOR", sensorName, "PATH", path, "CHASSIS", chassis);
         }
     }
 
@@ -480,67 +489,214 @@ class SensorManager
         scanMetricsDirectory();
 
         // Start async monitoring
-        ctx.spawn(monitorInotify());
+        if (inotifyFd >= 0)
+        {
+            ctx.spawn(monitorInotify());
+        }
     }
 
     sdbusplus::async::task<> monitorInotify()
     {
-        while (true)
+        sdbusplus::async::fdio fdio(ctx, inotifyFd);
+
+        while (!ctx.stop_requested())
         {
-            // Use poll to wait for inotify events
-            struct pollfd pfd;
-            pfd.fd = inotifyFd;
-            pfd.events = POLLIN;
+            co_await fdio.next();
 
-            // Poll with a timeout to allow cooperative multitasking
-            int ret = poll(&pfd, 1, 100); // 100ms timeout
-
-            if (ret > 0 && (pfd.revents & POLLIN))
+            // Read and process events. One scan per directory per batch is
+            // enough: a scan reads the whole directory.
+            bool adhocChanged = false;
+            bool metricsChanged = false;
+            alignas(inotify_event) char buffer[4096];
+            ssize_t bytesRead = 0;
+            while ((bytesRead = read(inotifyFd, buffer, sizeof(buffer))) > 0)
             {
-                // Read and process events
-                char buffer[4096];
-                ssize_t bytesRead = read(inotifyFd, buffer, sizeof(buffer));
-
-                if (bytesRead > 0)
+                size_t offset = 0;
+                while (offset < static_cast<size_t>(bytesRead))
                 {
-                    size_t offset = 0;
-                    while (offset < static_cast<size_t>(bytesRead))
+                    const auto* event =
+                        reinterpret_cast<const inotify_event*>(buffer + offset);
+
+                    // Only process regular file events (ignore directories)
+                    if (!(event->mask & IN_ISDIR) && event->len > 0)
                     {
-                        const auto* event =
-                            reinterpret_cast<const inotify_event*>(buffer +
-                                                                   offset);
-
-                        // Only process regular file events (ignore
-                        // directories)
-                        if (!(event->mask & IN_ISDIR) && event->len > 0)
+                        if (event->wd == metricsWd)
                         {
-                            std::string filename(event->name);
-                            if (event->wd == metricsWd)
-                            {
-                                info("Inotify event for metric file: {FILE}",
-                                     "FILE", filename);
-                                scanMetricsDirectory();
-                            }
-                            else
-                            {
-                                info("Inotify event for adhoc file: {FILE}",
-                                     "FILE", filename);
-                                scanDirectory();
-                            }
+                            metricsChanged = true;
                         }
-
-                        offset += sizeof(inotify_event) + event->len;
+                        else
+                        {
+                            adhocChanged = true;
+                        }
                     }
+
+                    offset += sizeof(inotify_event) + event->len;
                 }
             }
 
-            // Yield to allow other tasks to run
-            co_await sdbusplus::async::sleep_for(
-                ctx, std::chrono::milliseconds(10));
+            if (adhocChanged)
+            {
+                scanDirectory();
+            }
+            if (metricsChanged)
+            {
+                scanMetricsDirectory();
+            }
+        }
+    }
+
+    // Watch inventory and keep the sensor chassis association current.
+    // Metrics do not depend on this.
+    sdbusplus::async::task<> monitorChassis()
+    {
+        namespace rules = sdbusplus::bus::match::rules;
+        // InterfacesAdded and InterfacesRemoved for any object under
+        // inventory. The signal path is the sender's ObjectManager, which may
+        // be "/", so match on the object path argument instead.
+        sdbusplus::async::match match(
+            ctx, rules::type::signal() +
+                     rules::interface("org.freedesktop.DBus.ObjectManager") +
+                     rules::argNpath(0, std::string(INVENTORY_PATH) + "/"));
+
+        requestChassisRefresh();
+        while (!ctx.stop_requested())
+        {
+            co_await match.next();
+            requestChassisRefresh();
         }
     }
 
   private:
+    sdbusplus::async::task<std::vector<std::string>>
+        inventoryPaths(const char* interface)
+    {
+        constexpr auto mapper = sdbusplus::async::proxy()
+                                    .service("xyz.openbmc_project.ObjectMapper")
+                                    .path("/xyz/openbmc_project/object_mapper")
+                                    .interface("xyz.openbmc_project.ObjectMapper");
+        try
+        {
+            co_return co_await mapper.call<std::vector<std::string>>(
+                ctx, "GetSubTreePaths", INVENTORY_PATH, 0,
+                std::vector<std::string>{interface});
+        }
+        catch (const std::exception& e)
+        {
+            // The mapper reports ResourceNotFound when nothing matches.
+            debug("No inventory objects with {INTF}: {ERROR}", "INTF",
+                  interface, "ERROR", e.what());
+            co_return std::vector<std::string>{};
+        }
+    }
+
+    sdbusplus::async::task<std::string> discoverChassis()
+    {
+        auto chassisPaths = co_await inventoryPaths(CHASSIS_INTERFACE);
+        auto boardPaths = co_await inventoryPaths(BOARD_INTERFACE);
+
+        const std::string configured = DEFAULT_CHASSIS;
+        if (!configured.empty() &&
+            (std::ranges::contains(chassisPaths, configured) ||
+             std::ranges::contains(boardPaths, configured)))
+        {
+            co_return configured;
+        }
+
+        auto candidates = chassisPaths.empty() ? boardPaths : chassisPaths;
+        if (candidates.empty())
+        {
+            co_return std::string{};
+        }
+
+        // Prefer top-level objects: entity-manager topology gives a contained
+        // chassis a "<path>/contained_by" association (e.g. YV4's slots).
+        auto associations = co_await inventoryPaths(ASSOCIATION_INTERFACE);
+        std::vector<std::string> topLevel;
+        std::ranges::copy_if(candidates, std::back_inserter(topLevel),
+                             [&](const std::string& path) {
+            return !std::ranges::contains(associations,
+                                          path + "/contained_by");
+        });
+        if (!topLevel.empty())
+        {
+            candidates = std::move(topLevel);
+        }
+
+        co_return std::ranges::min(candidates);
+    }
+
+    // Called for every inventory change. Starts refreshChassis() unless it is
+    // already running, in which case the new generation makes it wait longer.
+    void requestChassisRefresh()
+    {
+        ++inventoryGeneration;
+        if (!chassisRefreshRunning)
+        {
+            chassisRefreshRunning = true;
+            ctx.spawn(refreshChassis());
+        }
+    }
+
+    // Rediscovers the chassis once inventory has been quiet for
+    // CHASSIS_SETTLE_TIME. Tasks on the context only interleave at co_await,
+    // so inventoryGeneration can only change while this is suspended.
+    sdbusplus::async::task<> refreshChassis()
+    {
+        while (true)
+        {
+            const auto generation = inventoryGeneration;
+
+            co_await sdbusplus::async::sleep_for(ctx, CHASSIS_SETTLE_TIME);
+            if (generation != inventoryGeneration)
+            {
+                continue; // still changing
+            }
+
+            auto path = co_await discoverChassis();
+            if (generation != inventoryGeneration)
+            {
+                continue; // changed during discovery; the result may be stale
+            }
+
+            setChassis(path);
+            break;
+        }
+        chassisRefreshRunning = false;
+    }
+
+    void setChassis(const std::string& path)
+    {
+        if (path == chassis)
+        {
+            return;
+        }
+        if (path.empty())
+        {
+            warning("No inventory chassis found, adhoc sensors have no chassis "
+                    "association");
+        }
+        else
+        {
+            info("Associating adhoc sensors with chassis {CHASSIS}", "CHASSIS",
+                 path);
+        }
+        chassis = path;
+        for (auto& [name, sensor] : sensors)
+        {
+            sensor->associations<true>(chassisAssociations());
+        }
+    }
+
+    std::vector<std::tuple<std::string, std::string, std::string>>
+        chassisAssociations() const
+    {
+        if (chassis.empty())
+        {
+            return {};
+        }
+        return {{"chassis", "all_sensors", chassis}};
+    }
+
     sdbusplus::async::context& ctx;
     std::unordered_map<std::string, std::unique_ptr<AdhocSensorObject>>
         sensors;
@@ -550,6 +706,11 @@ class SensorManager
         MetricUnit unit;
     };
     std::unordered_map<std::string, Metric> metrics;
+
+    std::string chassis;
+    // Bumped on every inventory change; see requestChassisRefresh().
+    uint64_t inventoryGeneration = 0;
+    bool chassisRefreshRunning = false;
 
     // Inotify members
     int inotifyFd;
@@ -573,6 +734,7 @@ int main()
          "DIR", METRICS_DIR);
 
     SensorManager sensorManager(ctx);
+    ctx.spawn(sensorManager.monitorChassis());
 
     ctx.run();
 

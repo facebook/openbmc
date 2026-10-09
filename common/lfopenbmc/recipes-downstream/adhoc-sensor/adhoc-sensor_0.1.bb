@@ -1,7 +1,7 @@
 SUMMARY = "Ad-hoc Sensor Service"
 DESCRIPTION = "OpenBMC service providing ad-hoc sensors (0-100%) from file contents using sdbusplus"
 SECTION = "base"
-PR = "r2"
+PR = "r3"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://${COREBASE}/meta/files/common-licenses/Apache-2.0;md5=89aea4e17d99a7cacdbeed46a0096b10"
 
@@ -25,8 +25,9 @@ DEPENDS += " \
     systemd \
     "
 
-# Default chassis path - MUST be overridden in platform-specific bbappend
-CHASSIS_PATH ??= "/xyz/openbmc_project/inventory/system/chassis"
+# Inventory path to associate adhoc sensors with. Empty means discover it at
+# runtime; set it only if the discovered chassis is wrong for the platform.
+CHASSIS_PATH ??= ""
 
 EXTRA_OEMESON += "-Ddefault-chassis='${CHASSIS_PATH}'"
 
